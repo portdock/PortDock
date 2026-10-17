@@ -23,7 +23,7 @@
 - USB 변환기 16ms 안내(FTDI LatencyTimer, serialport-rs #275).
 
 ## 남은 아이디어 (우선순위 순)
-1. **자동응답(수신 패턴 → 응답)** — 비교한 도구 어디에도 전용 기능이 없음. 차별점.
+1. **자동응답(수신 패턴 → 응답)** — 오픈소스엔 전용 기능이 없지만 J1C(8쌍)·Docklight(와일드카드)엔 있다(아래 비공개 도구 절). 차별점이 되려면 와일드카드 + 체크섬 자동 계산 + 지연·조건까지.
 2. 전송 계층 trait(시리얼·TCP·UDP 공유) — Serial Studio HAL_Driver.h:203, SerialTest connection.h.
 3. 화면 상한을 바이트 기준으로, 넘치면 오래된 것부터 버리고 «버린 개수» 표시 — RSerial bus.rs:75-83, Serial Studio PipelineHost.
 4. 바이트를 JSON 숫자 배열 대신 raw 로 묶어 전송(크기 3~4배 절감).
