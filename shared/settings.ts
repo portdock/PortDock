@@ -53,11 +53,16 @@ function sanitize(s: Partial<Settings>): Settings {
 }
 
 /** 테마·글자 크기는 문서 전체에 바로 반영 */
+/** 가상 스크롤 기록의 한 줄 높이(px) — CSS --row-h 와 같은 값 */
+export const rowHeight = (fontSize: number) => Math.max(22, Math.round(fontSize * 1.7));
+
 function apply(s: Settings) {
   const root = document.documentElement;
   if (s.theme === "system") delete root.dataset.theme;
   else root.dataset.theme = s.theme;
   root.style.setProperty("--fs", `${s.fontSize}px`);
+  // 기록 한 줄 높이 — 글자를 키워도 줄이 잘리지 않게
+  root.style.setProperty("--row-h", `${rowHeight(s.fontSize)}px`);
   root.lang = s.lang;
 }
 

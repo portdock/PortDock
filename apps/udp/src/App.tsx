@@ -20,7 +20,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, rowHeight, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -200,7 +200,11 @@ export default function App() {
   }, [view]);
   const frames = framesRef.current;
   const listRef = useRef<HTMLDivElement>(null);
-  const rows = useVirtualizer({ count: frames.length, getScrollElement: () => listRef.current, estimateSize: () => 22, overscan: 20 });
+  const rows = useVirtualizer({ count: frames.length, getScrollElement: () => listRef.current, estimateSize: () => rowHeight(settings.fontSize), overscan: 20 });
+  // 글자 크기를 바꾸면 줄 높이를 다시 잰다
+  useEffect(() => {
+    rows.measure();
+  }, [settings.fontSize, rows]);
   useEffect(() => {
     if (autoscroll && frames.length) rows.scrollToIndex(frames.length - 1, { align: "end" });
   }, [version, autoscroll, frames.length, rows]);
@@ -473,7 +477,7 @@ export default function App() {
 
         <div className="sendbar">
           <div className="sendrow">
-            <select value={to} onChange={(e) => setTo(e.target.value)}>
+            <select className="target-sel" value={to} onChange={(e) => setTo(e.target.value)} data-tip={tip(lang, "target")}>
               <option value="">
                 {t("toRemote")} ({running ? applied ?? "—" : `${cfg.remoteHost}:${cfg.remotePort}`}){remotePending ? ` — ${t("notApplied")}` : ""}
               </option>
@@ -512,9 +516,9 @@ export default function App() {
               <option value="">
                 {t("suffix")}: {t("none")}
               </option>
-              <option value="\r">CR</option>
-              <option value="\n">LF</option>
-              <option value="\r\n">CR LF</option>
+              <option value="\r">{t("suffix")}: CR</option>
+              <option value="\n">{t("suffix")}: LF</option>
+              <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
             <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!canSend}>
               {t("send")}
@@ -537,7 +541,7 @@ export default function App() {
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!previewBytes}>
-              + {t("commands")}
+              + {t("addCommand")}
             </button>
           </div>
           {bcastBlocked && <div className="interlock">{t("ilBcast")}</div>}

@@ -322,12 +322,13 @@ export default function App() {
     let stale = false;
     api
       .preview(spec)
-      .then((b) => !stale && setPreview(`${hex(b)} (${b.length})`))
+      .then((b) => !stale && setPreview(b.length ? `${t("willSend")}: ${hex(b)} (${b.length})` : ""))
       .catch((e) => !stale && setPreview(String(e)));
     return () => {
       stale = true;
     };
-  }, [spec]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 언어가 바뀌면 문구만 다시
+  }, [spec, lang]);
   const inflight = useRef(false);
   useEffect(() => {
     if (!repeating || !running) return;
@@ -557,9 +558,9 @@ export default function App() {
                 <option value="">
                   {t("suffix")}: {t("none")}
                 </option>
-                <option value="\r">CR</option>
-                <option value="\n">LF</option>
-                <option value="\r\n">CR LF</option>
+                <option value="\r">{t("suffix")}: CR</option>
+                <option value="\n">{t("suffix")}: LF</option>
+                <option value="\r\n">{t("suffix")}: CR LF</option>
               </select>
               <button data-tip={tip(lang, "send")} className="btn small primary" disabled={!running} onClick={() => api.send(spec).catch((e) => setError(String(e)))}>
                 {t("send")}

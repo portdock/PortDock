@@ -100,7 +100,7 @@ html .dump {
   flex: 1;
 }
 .interlock {
-  font-size: 12px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--fail);
   border-left: 3px solid var(--fail);
   padding: 2px 8px;
@@ -169,14 +169,14 @@ html .dump {
 
 /* ---- 왜 꺼져 있는지 */
 .why {
-  font-size: 12px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--muted);
 }
 .locked {
   opacity: 0.75;
 }
 .lock-note {
-  font-size: 11.5px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--muted);
 }
 .empty-guide {
@@ -203,7 +203,7 @@ html .dump {
   transform: translateX(-50%);
   background: var(--ink);
   color: var(--panel);
-  font-size: 12px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   line-height: 1.5;
   padding: 6px 9px;
   border-radius: 6px;
@@ -241,7 +241,7 @@ html .dump {
 }
 .report-preview {
   height: 220px;
-  font-size: 11px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   white-space: pre;
 }
 .report-parts {
@@ -253,7 +253,7 @@ html .dump {
   flex-wrap: wrap;
 }
 .ok-msg {
-  font-size: 12px;
+  font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--ok);
   word-break: break-all;
 }
@@ -269,4 +269,38 @@ html .dump {
 }
 .brand-tools {
   margin-left: auto;
+}
+
+/* ---- 화면 점검(10/17) 뒤 보강 */
+/* 긴 기록 줄은 «…» 로 잘렸음을 보이고, 전체는 줄을 눌러 «상세» 에서 본다 */
+.row .data,
+.trow .data {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trow .data {
+  display: block;
+  white-space: nowrap;
+}
+.row .data > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 어두운 테마의 빨간 버튼 — 흰 글씨가 읽히도록 진한 빨강 */
+:root[data-theme="dark"] .btn.danger,
+:root[data-theme="dark"] .icon-btn.alert {
+  background: #b3261e;
+  border-color: #b3261e;
+  color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn.danger,
+  :root:not([data-theme="light"]) .icon-btn.alert {
+    background: #b3261e;
+    border-color: #b3261e;
+    color: #fff;
+  }
 }

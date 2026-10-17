@@ -25,7 +25,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { mbFunc, mbWord } from "./mbwords";
 import { parseTerminator, samePorts, trimFrames } from "@shared/framing";
-import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, rowHeight, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -316,9 +316,13 @@ export default function App() {
   const rows = useVirtualizer({
     count: frames.length,
     getScrollElement: () => listRef.current,
-    estimateSize: () => 22,
+    estimateSize: () => rowHeight(settings.fontSize),
     overscan: 20,
   });
+  // 글자 크기를 바꾸면 줄 높이를 다시 잰다
+  useEffect(() => {
+    rows.measure();
+  }, [settings.fontSize, rows]);
   useEffect(() => {
     if (autoscroll && frames.length) rows.scrollToIndex(frames.length - 1, { align: "end" });
   }, [version, autoscroll, frames.length, rows]);
@@ -782,9 +786,9 @@ export default function App() {
             </select>
             <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} data-tip={tip(lang, "suffix")}>
               <option value="">{t("suffix")}: {t("none")}</option>
-              <option value="\r">CR</option>
-              <option value="\n">LF</option>
-              <option value="\r\n">CR LF</option>
+              <option value="\r">{t("suffix")}: CR</option>
+              <option value="\n">{t("suffix")}: LF</option>
+              <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
             <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!online || !sendable}>
               {t("send")}
