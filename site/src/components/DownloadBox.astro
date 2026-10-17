@@ -15,6 +15,7 @@ const t = UI[lang];
   <h3>{t.dlTitle}</h3>
   <div class="dl-list">
     <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
+    <a class="btn" href={latest(`${tool.file}-portable.zip`)}>{t.dlPortable} <small>{lang === "ko" ? "설치 없이" : "no install"}</small></a>
   </div>
   <p class="note">{t.dlNote}</p>
   <p class="note">{t.webview}</p>
