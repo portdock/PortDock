@@ -9,6 +9,7 @@ pub mod framer;
 pub mod modbus;
 pub mod modbus_slave;
 pub mod ports;
+pub mod registry;
 pub mod serial;
 pub mod tcp;
 pub mod udp;

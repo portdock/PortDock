@@ -39,8 +39,8 @@ pub struct RuleSpec {
 #[derive(Debug, Clone)]
 pub struct Rule {
     pub name: String,
+    /// 포함(contains) 규칙은 앞뒤에 «0개 이상» 이 붙어 있다
     toks: Vec<Tok>,
-    kind: MatchKind,
     /// 체크섬·끝 문자까지 붙인 완성된 응답
     pub reply: Vec<u8>,
     pub delay_ms: u64,
@@ -131,16 +131,18 @@ fn matches_at(toks: &[Tok], data: &[u8], anchored_end: bool) -> bool {
 
 impl Rule {
     pub fn compile(spec: &RuleSpec) -> Result<Self, String> {
-        let toks = parse_pattern(&spec.pattern, spec.pattern_mode).map_err(|e| format!("«{}» 패턴: {e}", spec.name))?;
+        let mut toks = parse_pattern(&spec.pattern, spec.pattern_mode).map_err(|e| format!("«{}» 패턴: {e}", spec.name))?;
+        // 포함 = 앞뒤에 «0개 이상» 을 붙인 정확히 — 모든 시작 위치를 다시 훑지 않는다
+        if spec.kind == MatchKind::Contains {
+            toks.insert(0, Tok::Many);
+            toks.push(Tok::Many);
+        }
         let reply = codec::build(&spec.reply).map_err(|e| format!("«{}» 응답: {e}", spec.name))?;
-        Ok(Self { name: spec.name.clone(), toks, kind: spec.kind, reply, delay_ms: spec.delay_ms })
+        Ok(Self { name: spec.name.clone(), toks, reply, delay_ms: spec.delay_ms })
     }
 
     pub fn is_match(&self, frame: &[u8]) -> bool {
-        match self.kind {
-            MatchKind::Exact => matches_at(&self.toks, frame, true),
-            MatchKind::Contains => (0..=frame.len()).any(|i| matches_at(&self.toks, &frame[i..], false)),
-        }
+        matches_at(&self.toks, frame, true)
     }
 }
 

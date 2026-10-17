@@ -46,6 +46,10 @@ pub fn parse_hex(text: &str) -> Result<Vec<u8>, String> {
         if t.is_empty() {
             continue;
         }
+        // 한글 등 비ASCII 를 바이트 단위로 자르면 글자 경계에서 터진다 — 먼저 거른다
+        if let Some(c) = t.chars().find(|c| !c.is_ascii_hexdigit()) {
+            return Err(format!("HEX 가 아닌 글자: «{c}»"));
+        }
         if t.len() % 2 != 0 {
             return Err(format!("HEX 자릿수가 홀수입니다: «{token}»"));
         }
@@ -74,11 +78,12 @@ pub fn parse_ascii(text: &str) -> Result<Vec<u8>, String> {
             Some('0') => out.push(0),
             Some('\\') => out.push(b'\\'),
             Some('x') => {
-                let hi = chars.next();
-                let lo = chars.next();
-                let s: String = [hi, lo].iter().flatten().collect();
-                let b = u8::from_str_radix(&s, 16).map_err(|_| format!("잘못된 \\x 이스케이프: «\\x{s}»"))?;
-                out.push(b);
+                // 정확히 HEX 두 글자 — «\x+1»·«\xA» 같은 것은 오류
+                let s: String = [chars.next(), chars.next()].iter().flatten().collect();
+                if s.len() != 2 || !s.chars().all(|c| c.is_ascii_hexdigit()) {
+                    return Err(format!("잘못된 \\x 이스케이프: «\\x{s}» (HEX 두 자리)"));
+                }
+                out.push(u8::from_str_radix(&s, 16).unwrap());
             }
             Some(other) => return Err(format!("모르는 이스케이프: «\\{other}»")),
             None => out.push(b'\\'),
@@ -99,6 +104,10 @@ mod tests {
         assert_eq!(parse_hex("0x01,0x03,0x0A").unwrap(), want);
         assert!(parse_hex("013").is_err());
         assert!(parse_hex("0G").is_err());
+        // 한글이 섞여도 터지지 않고 오류
+        assert!(parse_hex("가나").is_err());
+        assert!(parse_hex("1가").is_err());
+        assert!(parse_hex("01 é").is_err());
         assert_eq!(parse_hex("  ").unwrap(), Vec::<u8>::new());
     }
 
@@ -108,6 +117,8 @@ mod tests {
         assert_eq!(parse_ascii("\\x02DATA\\x03").unwrap(), b"\x02DATA\x03".to_vec());
         assert_eq!(parse_ascii("a\\\\b").unwrap(), b"a\\b".to_vec());
         assert!(parse_ascii("\\q").is_err());
+        assert!(parse_ascii("\\x+1").is_err());
+        assert!(parse_ascii("\\xA").is_err());
         assert_eq!(parse_ascii("한").unwrap(), "한".as_bytes().to_vec());
     }
 }

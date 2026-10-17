@@ -83,6 +83,14 @@ pub fn decode(frame: &[u8]) -> Option<ModbusInfo> {
         return Some(info);
     }
     match (function, pdu.len()) {
+        // FC01·02 응답 바이트수 3 이면 요청과 길이가 같다 — 둘 다 보여 준다
+        (0x01 | 0x02, 5) if pdu[1] == 3 => {
+            info.kind = "request or response";
+            info.fields.push(field("as request: start", u16_at(pdu, 1).to_string()));
+            info.fields.push(field("as request: quantity", u16_at(pdu, 3).to_string()));
+            info.fields.push(field("as response: byte count", "3".into()));
+            info.values = bits(&pdu[2..], 24);
+        }
         // 읽기 요청: 함수 + 시작주소 + 개수
         (0x01..=0x04, 5) => {
             info.kind = "request";
@@ -152,6 +160,13 @@ mod tests {
         let resp = decode(&with_crc(&[0x01, 0x03, 0x06, 0x02, 0x2B, 0x00, 0x00, 0x00, 0x64])).unwrap();
         assert_eq!(resp.kind, "response");
         assert_eq!(resp.values, vec![555, 0, 100]);
+    }
+
+    #[test]
+    fn ambiguous_coil_response() {
+        let f = decode(&with_crc(&[0x01, 0x01, 0x03, 0xFF, 0x00, 0x01])).unwrap();
+        assert_eq!(f.kind, "request or response");
+        assert_eq!(f.values.len(), 24);
     }
 
     #[test]

@@ -70,8 +70,12 @@ struct Shared {
     log: Mutex<Option<BufWriter<File>>>,
     rules: Mutex<Vec<Rule>>,
     responder: Mutex<Option<Responder>>,
-    /// 마지막으로 응답기·규칙이 보낸 것 — 루프백으로 되돌아오면 다시 답하지 않는다
-    last_reply: Mutex<Vec<u8>>,
+    /// 마지막으로 응답기·규칙이 보낸 것과 보낸 시각 — 그 직후 똑같은 것이 들어오면
+    /// 루프백·에코로 보고 다시 답하지 않는다. 한 번 쓰면 비운다(Modbus 05·06 처럼
+    /// 요청과 응답이 같은 경우, 다음 정상 요청까지 막지 않도록)
+    last_reply: Mutex<Option<(Vec<u8>, Instant)>>,
+    /// 목록 감시 스레드가 «장치가 목록에서 사라짐» 을 알리는 자리
+    gone: AtomicBool,
     stop: AtomicBool,
 }
 
@@ -80,6 +84,7 @@ pub struct Session {
     tx: Option<Sender<Vec<u8>>>,
     reader: Option<JoinHandle<()>>,
     writer: Option<JoinHandle<()>>,
+    watcher: Option<JoinHandle<()>>,
 }
 
 fn open(cfg: &SerialConfig) -> Result<Port, String> {
@@ -116,6 +121,9 @@ struct Identity {
     /// 일련번호 없는 USB(CH340 등)는 VID:PID 만으로 «새로 나타난 단 하나» 를 찾는다
     vid_pid: Option<(u16, u16)>,
     has_serial: bool,
+    /// 열 때 포트 목록에 있었는지. 없던 포트(일부 가상 COM, \\.\COMn 직접 입력)는
+    /// 목록 감시로 끊김을 판단하지 않는다 — 읽기 오류로만
+    listed: bool,
 }
 
 impl Identity {
@@ -125,8 +133,9 @@ impl Identity {
                 key: p.identity(),
                 vid_pid: p.vid.zip(p.pid),
                 has_serial: p.serial_number.as_deref().is_some_and(|s| !s.is_empty()),
+                listed: true,
             },
-            None => Self { key: name.to_string(), vid_pid: None, has_serial: false },
+            None => Self { key: name.to_string(), vid_pid: None, has_serial: false, listed: false },
         }
     }
 
@@ -151,11 +160,20 @@ impl Identity {
     }
 }
 
+/// 버려지기만 해도 스레드가 멈추게(보관함에서 지워진 세션 등). `stop` 은 끝까지 기다린다.
+impl Drop for Session {
+    fn drop(&mut self) {
+        self.shared.stop.store(true, Ordering::SeqCst);
+    }
+}
+
 impl Session {
+    /// `responder` 는 첫 바이트가 오기 전에 꽂혀 있어야 시작 직후 요청도 놓치지 않는다
     pub fn start(
         cfg: SerialConfig,
         mode: FrameMode,
         rx_check: Option<ChecksumKind>,
+        responder: Option<Responder>,
         events: EventSink,
     ) -> Result<Self, String> {
         let port = open(&cfg)?;
@@ -169,8 +187,9 @@ impl Session {
             pending: Mutex::new(Vec::new()),
             log: Mutex::new(None),
             rules: Mutex::new(Vec::new()),
-            responder: Mutex::new(None),
-            last_reply: Mutex::new(Vec::new()),
+            responder: Mutex::new(responder),
+            last_reply: Mutex::new(None),
+            gone: AtomicBool::new(false),
             stop: AtomicBool::new(false),
         });
         events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
@@ -181,11 +200,16 @@ impl Session {
         }
 
         let (tx, rx) = mpsc::channel::<Vec<u8>>();
-        let (s, ev, baud) = (shared.clone(), events.clone(), cfg.baud);
-        let writer = std::thread::spawn(move || writer_loop(rx, baud, s, ev));
+        let (s, ev) = (shared.clone(), events.clone());
+        let writer = std::thread::spawn(move || writer_loop(rx, s, ev));
+        // 포트 목록 조회(SetupAPI)는 수십~수백 ms 걸린다 — 읽기 스레드를 막지 않게 따로
+        let watcher = identity.listed.then(|| {
+            let (s, id) = (shared.clone(), identity.clone());
+            std::thread::spawn(move || watch_loop(s, id))
+        });
         let (s, replies) = (shared.clone(), tx.clone());
         let reader = std::thread::spawn(move || reader_loop(port, cfg, identity, s, events, replies));
-        Ok(Self { shared, tx: Some(tx), reader: Some(reader), writer: Some(writer) })
+        Ok(Self { shared, tx: Some(tx), reader: Some(reader), writer: Some(writer), watcher })
     }
 
     pub fn set_framing(&self, mode: FrameMode, rx_check: Option<ChecksumKind>) {
@@ -220,15 +244,22 @@ impl Session {
         if changes.is_empty() {
             return Ok(());
         }
-        {
+        let online = {
             let mut w = self.shared.writer.lock().unwrap();
-            let port = w.as_mut().ok_or("포트가 끊겨 있습니다")?;
-            apply(port.as_mut(), &new).map_err(|e| e.to_string())?;
-        }
+            match w.as_mut() {
+                Some(port) => {
+                    apply(port.as_mut(), &new).map_err(|e| e.to_string())?;
+                    true
+                }
+                None => false,
+            }
+        };
         let mut cfg = self.shared.cfg.lock().unwrap();
         let port_name = cfg.port.clone();
         *cfg = SerialConfig { port: port_name, ..new };
-        note(&self.shared, format!("SET {}", changes.join(", ")));
+        drop(cfg);
+        let later = if online { "" } else { " (다시 연결될 때 적용)" };
+        note(&self.shared, format!("SET {}{later}", changes.join(", ")));
         Ok(())
     }
 
@@ -267,7 +298,7 @@ impl Session {
     pub fn stop(mut self) {
         self.shared.stop.store(true, Ordering::SeqCst);
         drop(self.tx.take()); // 쓰기 스레드가 큐 끝을 보고 나온다
-        for t in [self.reader.take(), self.writer.take()].into_iter().flatten() {
+        for t in [self.writer.take(), self.reader.take(), self.watcher.take()].into_iter().flatten() {
             let _ = t.join();
         }
     }
@@ -365,12 +396,12 @@ fn reader_loop(
     let mut name = cfg.port.clone();
     let mut buf = [0u8; 4096];
     let mut last_flush = Instant::now();
-    let mut last_watch = Instant::now();
     let mut last_lines = Instant::now();
     let mut lines: Option<[bool; 4]> = None;
     let _ = cfg; // 이후로는 s.cfg(연결 중 바뀐 설정 포함)를 쓴다
     loop {
         if s.stop.load(Ordering::SeqCst) {
+            drain(&s, &replies);
             drop(port.take());
             note(&s, "CLOSE".into());
             flush(&s, &events);
@@ -388,14 +419,12 @@ fn reader_loop(
             Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => None,
             Err(e) => Some(e.to_string()),
         };
-        // 일부 드라이버(블루투스 SPP 등)는 뽑혀도 TimedOut 만 낸다 → 목록에서 사라졌는지 따로 본다
-        if lost.is_none() && last_watch.elapsed() >= WATCH {
-            last_watch = Instant::now();
-            if !identity.present(&ports::list()) {
-                lost = Some("장치가 목록에서 사라졌습니다".into());
-            }
+        // 일부 드라이버(블루투스 SPP 등)는 뽑혀도 TimedOut 만 낸다 → 목록 감시 스레드가 알려 준다
+        if lost.is_none() && s.gone.swap(false, Ordering::SeqCst) {
+            lost = Some("장치가 목록에서 사라졌습니다".into());
         }
         if let Some(msg) = lost {
+            drain(&s, &replies);
             // 핸들을 먼저 닫는다 — 쥐고 있으면 같은 COM 을 다시 열 때 Access denied
             drop(port.take());
             *s.writer.lock().unwrap() = None;
@@ -403,8 +432,7 @@ fn reader_loop(
             flush(&s, &events);
             status(&events, "disconnected", &name, Some(msg));
             let before: Vec<String> = ports::list().into_iter().map(|p| p.name).collect();
-            let latest = s.cfg.lock().unwrap().clone();
-            match reconnect(&latest, &identity, &before, &s, &events) {
+            match reconnect(&identity, &before, &s, &events) {
                 Some((p, n)) => {
                     note(&s, if n == name { format!("RECONNECT {n}") } else { format!("RECONNECT {name} → {n}") });
                     s.cfg.lock().unwrap().port = n.clone();
@@ -456,7 +484,7 @@ fn reader_loop(
 
 /// 송신 큐. 부분 쓰기와 TimedOut 을 이어 쓰고, 정해진 시간 안에 못 보내면 오류를 알린다.
 /// FlushFileBuffers(flush) 는 흐름 제어로 막히면 끝없이 기다리므로 부르지 않는다.
-fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: EventSink) {
+fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
     loop {
         let bytes = match rx.recv_timeout(Duration::from_millis(200)) {
             Ok(b) => b,
@@ -468,7 +496,8 @@ fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: EventSi
             }
             Err(RecvTimeoutError::Disconnected) => return,
         };
-        // 이론 송신 시간(1바이트 = 약 11비트)의 3배 + 1초
+        // 이론 송신 시간(1바이트 = 약 11비트)의 3배 + 1초. 연결 중 속도를 바꿨을 수 있어 매번 읽는다
+        let baud = s.cfg.lock().unwrap().baud;
         let budget = Duration::from_millis(1_000 + bytes.len() as u64 * 11 * 3_000 / baud.max(1) as u64);
         let deadline = Instant::now() + budget;
         let mut sent = 0;
@@ -513,14 +542,26 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
         return;
     }
     let check = *s.rx_check.lock().unwrap();
+    let term = s.framer.lock().unwrap().terminator().to_vec();
+    let baud = s.cfg.lock().unwrap().baud;
     // Instant(첫 바이트) → 벽시계 ms
     let (now_i, now_w) = (Instant::now(), now_ms());
     let mut pending = s.pending.lock().unwrap();
     for (at, bytes) in frames {
         let ts = now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64);
-        let c = check.and_then(|k| k.verify(&bytes));
-        // 방금 우리가 보낸 응답이 루프백·에코로 돌아온 것이면 답하지 않는다 — 무한 반복 방지
-        let echo = *s.last_reply.lock().unwrap() == bytes;
+        let c = check.and_then(|k| k.verify_before(&bytes, &term));
+        // 방금 우리가 보낸 응답이 그 직후 그대로 돌아온 것이면(루프백·에코) 답하지 않는다 — 무한 반복 방지.
+        // 판정 창 = 응답 송신 시간 + 300ms. 한 번 쓰면 비운다
+        let echo = {
+            let mut lr = s.last_reply.lock().unwrap();
+            let hit = lr.as_ref().is_some_and(|(b, t)| {
+                *b == bytes && t.elapsed() < Duration::from_millis(300 + b.len() as u64 * 11_000 / baud.max(1) as u64)
+            });
+            if hit {
+                *lr = None;
+            }
+            hit
+        };
         let mut answer: Option<(Vec<u8>, u64, Option<String>)> = None;
         if !echo {
             if let Some(resp) = s.responder.lock().unwrap().as_mut() {
@@ -542,7 +583,7 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
             if reply.is_empty() {
                 continue;
             }
-            *s.last_reply.lock().unwrap() = reply.clone();
+            *s.last_reply.lock().unwrap() = Some((reply.clone(), Instant::now() + Duration::from_millis(delay_ms)));
             if delay_ms == 0 {
                 let _ = replies.send(reply);
             } else {
@@ -552,6 +593,30 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
                     let _ = tx.send(reply);
                 });
             }
+        }
+    }
+}
+
+/// 프레임 구분기에 남은 미완성 바이트를 내보낸다(닫기·끊김 직전)
+fn drain(s: &Shared, replies: &Sender<Vec<u8>>) {
+    let tail = s.framer.lock().unwrap().poll(Instant::now() + Duration::from_secs(3600));
+    if let Some(f) = tail {
+        push_rx(s, vec![f], replies);
+    }
+}
+
+/// 1초마다 포트 목록에서 장치가 사라졌는지 본다(연결돼 있을 때만)
+fn watch_loop(s: Arc<Shared>, identity: Identity) {
+    while !s.stop.load(Ordering::SeqCst) {
+        for _ in 0..(WATCH.as_millis() / 50) {
+            if s.stop.load(Ordering::SeqCst) {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        let online = s.writer.lock().unwrap().is_some();
+        if online && !identity.present(&ports::list()) {
+            s.gone.store(true, Ordering::SeqCst);
         }
     }
 }
@@ -571,25 +636,27 @@ fn flush(s: &Shared, events: &EventSink) {
 }
 
 /// 같은 장치가 다시 나타날 때까지 기다렸다가 연다. 사용자가 닫으면 None.
-fn reconnect(
-    cfg: &SerialConfig,
-    identity: &Identity,
-    before: &[String],
-    s: &Shared,
-    events: &EventSink,
-) -> Option<(Port, String)> {
-    if !cfg.auto_reconnect {
-        status(events, "closed", &cfg.port, None);
+/// 설정은 매 회차 다시 읽는다 — 기다리는 동안 사용자가 속도를 바꾸거나 자동 재연결을 끌 수 있다
+fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventSink) -> Option<(Port, String)> {
+    let first = s.cfg.lock().unwrap().clone();
+    if !first.auto_reconnect {
+        status(events, "closed", &first.port, None);
         return None;
     }
-    status(events, "reconnecting", &cfg.port, None);
+    status(events, "reconnecting", &first.port, None);
     loop {
         for _ in 0..10 {
             if s.stop.load(Ordering::SeqCst) {
-                status(events, "closed", &cfg.port, None);
+                status(events, "closed", &first.port, None);
                 return None;
             }
             std::thread::sleep(Duration::from_millis(50));
+        }
+        let cfg = s.cfg.lock().unwrap().clone();
+        if !cfg.auto_reconnect {
+            note(s, "RECONNECT cancelled".into());
+            status(events, "closed", &cfg.port, None);
+            return None;
         }
         let list = ports::list();
         let Some(info) = identity.find(&list, before) else { continue };
@@ -598,6 +665,7 @@ fn reconnect(
         c.port = info.name.clone();
         let Ok(p) = open(&c) else { continue };
         let Ok(w) = p.try_clone() else { continue };
+        s.gone.store(false, Ordering::SeqCst);
         *s.writer.lock().unwrap() = Some(w);
         let msg = (c.port != cfg.port).then(|| format!("{} → {}", cfg.port, c.port));
         status(events, "connected", &c.port, msg);
@@ -653,7 +721,7 @@ mod tests {
 
     #[test]
     fn reconnect_by_serial_number_even_if_com_changes() {
-        let id = Identity { key: usb("COM3", 0x0403, 0x6001, Some("A1")).identity(), vid_pid: Some((0x0403, 0x6001)), has_serial: true };
+        let id = Identity { key: usb("COM3", 0x0403, 0x6001, Some("A1")).identity(), vid_pid: Some((0x0403, 0x6001)), has_serial: true, listed: true };
         let list = vec![usb("COM7", 0x0403, 0x6001, Some("A1"))];
         assert_eq!(id.find(&list, &[]).unwrap().name, "COM7");
         // 일련번호가 다른 같은 칩에는 붙지 않는다
@@ -663,7 +731,7 @@ mod tests {
 
     #[test]
     fn no_serial_takes_single_fresh_port_only() {
-        let id = Identity { key: usb("COM3", 0x1A86, 0x7523, None).identity(), vid_pid: Some((0x1A86, 0x7523)), has_serial: false };
+        let id = Identity { key: usb("COM3", 0x1A86, 0x7523, None).identity(), vid_pid: Some((0x1A86, 0x7523)), has_serial: false, listed: true };
         let before = vec!["COM4".to_string()];
         // 다른 USB 구멍에 꽂아 COM9 로 나타남 — 새로 생긴 것이 하나뿐이면 그것
         let list = vec![usb("COM4", 0x1A86, 0x7523, None), usb("COM9", 0x1A86, 0x7523, None)];

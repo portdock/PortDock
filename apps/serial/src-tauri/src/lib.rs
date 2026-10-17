@@ -3,22 +3,23 @@
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
 use portdock_core::framer::FrameMode;
-use portdock_core::serial::{EventSink, SerialConfig, Session, SessionEvent};
+use portdock_core::registry::{Registry, auto_remove_sink};
+use portdock_core::serial::{SerialConfig, Session, SessionEvent};
 use portdock_core::{modbus, ports};
-use std::collections::HashMap;
-use std::sync::Mutex;
-use tauri::ipc::Channel;
+use std::sync::Arc;
 use tauri::State;
+use tauri::ipc::Channel;
 
+/// 열린 포트들(포트 이름 → 세션). 스스로 닫힌 세션은 알아서 빠진다
 #[derive(Default)]
-struct Sessions(Mutex<HashMap<String, Session>>);
-
+struct Sessions(Arc<Registry<Session>>);
 
 #[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
 }
 
+/// 여는 동안(블루투스 COM 은 수 초) 다른 명령을 막지 않는다
 #[tauri::command(async)]
 fn open_session(
     sessions: State<Sessions>,
@@ -27,57 +28,46 @@ fn open_session(
     rx_check: Option<ChecksumKind>,
     on_event: Channel<SessionEvent>,
 ) -> Result<(), String> {
-    let mut map = sessions.0.lock().unwrap();
-    if map.contains_key(&config.port) {
-        return Err(format!("{} 는 이미 열려 있습니다", config.port));
-    }
-    let id = config.port.clone();
-    let sink = EventSink::new(move |e| {
+    let reg = sessions.0.clone();
+    let opening = reg.begin(&config.port)?;
+    let sink = auto_remove_sink(reg.clone(), config.port.clone(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
-    let s = Session::start(config, framing, rx_check, sink)?;
-    map.insert(id, s);
+    let s = Session::start(config, framing, rx_check, None, sink)?;
+    opening.finish(s);
     Ok(())
 }
 
 #[tauri::command(async)]
 fn close_session(sessions: State<Sessions>, id: String) {
-    let s = sessions.0.lock().unwrap().remove(&id);
-    if let Some(s) = s {
+    if let Some(s) = sessions.0.take(&id) {
         s.stop();
     }
 }
 
-#[tauri::command]
-fn set_framing(
-    sessions: State<Sessions>,
-    id: String,
-    framing: FrameMode,
-    rx_check: Option<ChecksumKind>,
-) -> Result<(), String> {
-    let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.set_framing(framing, rx_check);
-    Ok(())
+#[tauri::command(async)]
+fn set_framing(sessions: State<Sessions>, id: String, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
+    sessions.0.with(&id, |s| s.set_framing(framing, rx_check))
 }
 
 /// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
 #[tauri::command(async)]
 fn reconfigure(sessions: State<Sessions>, id: String, config: SerialConfig) -> Result<(), String> {
-    let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.reconfigure(config)
+    sessions.0.with(&id, |s| s.reconfigure(config))?
 }
 
 #[tauri::command(async)]
 fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Result<(), String> {
-    let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.set_log(path)
+    sessions.0.with(&id, |s| s.set_log(path))?
 }
 
 #[tauri::command(async)]
 fn send(sessions: State<Sessions>, id: String, spec: SendSpec) -> Result<Vec<u8>, String> {
     let bytes = build(&spec)?;
-    let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.send(bytes.clone())?;
+    if bytes.is_empty() {
+        return Err("보낼 바이트가 없습니다".into());
+    }
+    sessions.0.with(&id, |s| s.send(bytes.clone()))??;
     Ok(bytes)
 }
 

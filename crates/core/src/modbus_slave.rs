@@ -208,6 +208,9 @@ impl Slave {
 
 /// 함수 코드 실행. Ok(응답 본문(주소·함수 뒤), 쓴 표), Err(예외 코드)
 fn execute(m: &mut Model, func: u8, pdu: &[u8]) -> Result<(Vec<u8>, Option<Table>), u8> {
+    if !matches!(func, 0x01..=0x06 | 0x0F | 0x10) {
+        return Err(1); // Illegal Function — 길이를 보기 전에
+    }
     let start = u16_at(pdu, 0).ok_or(3u8)?;
     let second = u16_at(pdu, 2).ok_or(3u8)?;
     match func {
@@ -345,9 +348,11 @@ mod tests {
         let (r, o) = s.handle(&req(&[1, 3, 0, 99, 0, 2]));
         assert_eq!(&r.unwrap()[..3], &[1, 0x83, 2]);
         assert_eq!(o.exception, Some(2));
-        // 없는 함수
+        // 없는 함수 — 본문이 짧아도 01
         let (r, _) = s.handle(&req(&[1, 0x2B, 0, 0, 0, 0]));
         assert_eq!(&r.unwrap()[..3], &[1, 0xAB, 1]);
+        let (r, _) = s.handle(&req(&[1, 0x07]));
+        assert_eq!(&r.unwrap()[..3], &[1, 0x87, 1]);
         // 개수 0
         let (r, _) = s.handle(&req(&[1, 3, 0, 0, 0, 0]));
         assert_eq!(&r.unwrap()[..3], &[1, 0x83, 3]);

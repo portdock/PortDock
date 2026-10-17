@@ -2,15 +2,19 @@
 
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
-use portdock_core::event::{EventSink, SessionEvent};
+use portdock_core::event::SessionEvent;
 use portdock_core::framer::FrameMode;
+use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::tcp::{TcpConfig, TcpSession};
-use std::sync::Mutex;
+use std::sync::Arc;
 use tauri::State;
 use tauri::ipc::Channel;
 
+/// 세션은 하나 — 보관함 이름 "main". 스스로 닫히면(접속 실패·자동 재접속 꺼짐) 알아서 빠진다
 #[derive(Default)]
-struct App(Mutex<Option<TcpSession>>);
+struct App(Arc<Registry<TcpSession>>);
+
+const MAIN: &str = "main";
 
 #[tauri::command(async)]
 fn start(
@@ -20,54 +24,47 @@ fn start(
     rx_check: Option<ChecksumKind>,
     on_event: Channel<SessionEvent>,
 ) -> Result<Option<String>, String> {
-    let mut slot = app.0.lock().unwrap();
-    if slot.is_some() {
-        return Err("이미 시작돼 있습니다".into());
-    }
-    let sink = EventSink::new(move |e| {
+    let reg = app.0.clone();
+    let opening = reg.begin(MAIN).map_err(|_| "이미 시작돼 있거나 시작하는 중입니다".to_string())?;
+    let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
-    let s = TcpSession::start(config, framing, rx_check, sink)?;
+    let s = TcpSession::start(config, framing, rx_check, None, sink)?;
     let local = s.local_addr().map(|a| a.to_string());
-    *slot = Some(s);
+    opening.finish(s);
     Ok(local)
 }
 
 #[tauri::command(async)]
 fn stop(app: State<App>) {
-    let s = app.0.lock().unwrap().take();
-    if let Some(s) = s {
+    if let Some(s) = app.0.take(MAIN) {
         s.stop();
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_framing(app: State<App>, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
-    let slot = app.0.lock().unwrap();
-    slot.as_ref().ok_or("시작돼 있지 않습니다")?.set_framing(framing, rx_check);
-    Ok(())
+    app.0.with(MAIN, |s| s.set_framing(framing, rx_check))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_echo(app: State<App>, on: bool) -> Result<(), String> {
-    let slot = app.0.lock().unwrap();
-    slot.as_ref().ok_or("시작돼 있지 않습니다")?.set_echo(on);
-    Ok(())
+    app.0.with(MAIN, |s| s.set_echo(on))
 }
 
 /// target 이 없으면 붙어 있는 모두에게
 #[tauri::command(async)]
 fn send(app: State<App>, target: Option<u64>, spec: SendSpec) -> Result<usize, String> {
     let bytes = build(&spec)?;
-    let slot = app.0.lock().unwrap();
-    slot.as_ref().ok_or("시작돼 있지 않습니다")?.send(target, &bytes)
+    if bytes.is_empty() {
+        return Err("보낼 바이트가 없습니다".into());
+    }
+    app.0.with(MAIN, |s| s.send(target, &bytes))?
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn kick(app: State<App>, id: u64) -> Result<(), String> {
-    let slot = app.0.lock().unwrap();
-    slot.as_ref().ok_or("시작돼 있지 않습니다")?.kick(id);
-    Ok(())
+    app.0.with(MAIN, |s| s.kick(id))
 }
 
 #[tauri::command]
@@ -77,18 +74,17 @@ fn preview(spec: SendSpec) -> Result<Vec<u8>, String> {
 
 #[tauri::command(async)]
 fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
-    let slot = app.0.lock().unwrap();
-    slot.as_ref().ok_or("시작돼 있지 않습니다")?.set_log(path)
+    app.0.with(MAIN, |s| s.set_log(path))?
 }
 
-/// 화면 내용 저장 — 사용자가 저장 대화상자에서 고른 경로만
-#[tauri::command]
+/// 화면 내용 저장 — 화면은 저장 대화상자에서 고른 경로만 넘긴다
+#[tauri::command(async)]
 fn write_text(path: String, text: String) -> Result<(), String> {
     std::fs::write(&path, text).map_err(|e| format!("{path}: {e}"))
 }
 
-/// 설정 가져오기 — 사용자가 열기 대화상자에서 고른 경로만
-#[tauri::command]
+/// 설정 가져오기 — 화면은 열기 대화상자에서 고른 경로만 넘긴다
+#[tauri::command(async)]
 fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }

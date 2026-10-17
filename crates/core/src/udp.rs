@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufWriter, ErrorKind, Write};
 use std::net::{Ipv4Addr, SocketAddr, ToSocketAddrs, UdpSocket};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -47,12 +47,22 @@ struct Shared {
     pending: Mutex<Vec<Frame>>,
     log: Mutex<Option<BufWriter<File>>>,
     responder: Mutex<Option<Responder>>,
-    /// 최근에 보내온 상대들 (주소 → 마지막 시각)
-    seen: Mutex<BTreeMap<String, Instant>>,
+    /// 보내온 상대들 (주소 → 처음 본 순서 번호, 마지막 시각). 번호는 바뀌지 않는다
+    seen: Mutex<BTreeMap<String, (u64, Instant)>>,
+    next_peer: AtomicU64,
     last_sender: Mutex<Option<SocketAddr>>,
     echo: AtomicBool,
+    echo_rate: Mutex<(Instant, u32)>,
+    /// 응답기가 마지막으로 보낸 것 — 그대로 되돌아오면 다시 답하지 않는다
+    last_reply: Mutex<Option<(Vec<u8>, Instant)>>,
+    local: SocketAddr,
     stop: AtomicBool,
 }
+
+/// 보내온 상대 목록 상한 — 넘으면 가장 오래 조용한 상대부터 지운다
+const MAX_PEERS: usize = 256;
+/// 초당 에코 상한(상대도 에코하는 핑퐁 방지)
+const ECHO_LIMIT: u32 = 200;
 
 pub struct UdpSession {
     shared: Arc<Shared>,
@@ -94,17 +104,66 @@ impl Shared {
         Ok(())
     }
 
-    fn on_datagram(&self, bytes: Vec<u8>, from: SocketAddr) {
-        let check = (*self.rx_check.lock().unwrap()).and_then(|k| k.verify(&bytes));
-        *self.last_sender.lock().unwrap() = Some(from);
-        let new_peer = self.seen.lock().unwrap().insert(from.to_string(), Instant::now()).is_none();
-        if new_peer {
-            let peers = self.seen.lock().unwrap().keys().enumerate().map(|(i, a)| Peer { id: i as u64, addr: a.clone() }).collect();
+    /// 우리가 보낸 것이 브로드캐스트·멀티캐스트 루프백으로 우리에게 돌아온 것인지
+    fn is_own(&self, from: SocketAddr) -> bool {
+        from.port() == self.local.port() && (from.ip().is_loopback() || self.local.ip().is_unspecified() || from.ip() == self.local.ip())
+    }
+
+    fn remember(&self, from: SocketAddr) {
+        let mut seen = self.seen.lock().unwrap();
+        let key = from.to_string();
+        let fresh = !seen.contains_key(&key);
+        let id = seen.get(&key).map(|v| v.0).unwrap_or_else(|| self.next_peer.fetch_add(1, Ordering::SeqCst));
+        seen.insert(key, (id, Instant::now()));
+        if seen.len() > MAX_PEERS {
+            let oldest = seen.iter().min_by_key(|(_, v)| v.1).map(|(k, _)| k.clone());
+            if let Some(k) = oldest {
+                seen.remove(&k);
+            }
+        }
+        if fresh {
+            let mut peers: Vec<Peer> = seen.iter().map(|(a, v)| Peer { id: v.0, addr: a.clone() }).collect();
+            peers.sort_by_key(|p| p.id);
+            drop(seen);
             self.events.send(SessionEvent::Peers { peers });
         }
-        let reply = self.responder.lock().unwrap().as_mut().map(|r| r(&bytes));
+    }
+
+    fn echo_allowed(&self) -> bool {
+        let mut r = self.echo_rate.lock().unwrap();
+        if r.0.elapsed() >= Duration::from_secs(1) {
+            *r = (Instant::now(), 0);
+        }
+        r.1 += 1;
+        if r.1 > ECHO_LIMIT {
+            drop(r);
+            self.echo.store(false, Ordering::SeqCst);
+            self.note(format!("ECHO OFF — 1초에 {ECHO_LIMIT}번을 넘었습니다(상대도 에코 중인지 확인)"));
+            self.events.send(SessionEvent::Error { message: format!("에코를 껐습니다: 1초에 {ECHO_LIMIT}번 초과") });
+            return false;
+        }
+        true
+    }
+
+    fn on_datagram(self: &Arc<Self>, bytes: Vec<u8>, from: SocketAddr) {
+        let check = (*self.rx_check.lock().unwrap()).and_then(|k| k.verify(&bytes));
+        let own = self.is_own(from);
+        if !own {
+            *self.last_sender.lock().unwrap() = Some(from);
+            self.remember(from);
+        }
+        let looped = {
+            let mut lr = self.last_reply.lock().unwrap();
+            let hit = lr.as_ref().is_some_and(|(b, t)| *b == bytes && t.elapsed() < Duration::from_millis(500));
+            if hit {
+                *lr = None;
+            }
+            hit
+        };
+        // 우리 자신이 보낸 것에는 에코·응답하지 않는다(자기 루프 폭주 방지)
+        let reply = if own || looped { None } else { self.responder.lock().unwrap().as_mut().map(|r| r(&bytes)) };
         self.pending.lock().unwrap().push(Frame::data("rx", bytes.clone(), check, Some(from.to_string())));
-        if self.echo.load(Ordering::SeqCst) {
+        if !own && self.echo.load(Ordering::SeqCst) && self.echo_allowed() {
             let _ = self.send_to(&bytes, from);
         }
         if let Some(r) = reply {
@@ -112,17 +171,33 @@ impl Shared {
                 self.note(n);
             }
             if let Some(b) = r.bytes.filter(|b| !b.is_empty()) {
-                if r.delay_ms > 0 {
-                    std::thread::sleep(Duration::from_millis(r.delay_ms));
+                *self.last_reply.lock().unwrap() = Some((b.clone(), Instant::now() + Duration::from_millis(r.delay_ms)));
+                if r.delay_ms == 0 {
+                    let _ = self.send_to(&b, from);
+                } else {
+                    // 지연 응답은 따로 — 소켓 하나로 모든 상대를 받으므로 수신을 막지 않는다
+                    let (s, delay) = (self.clone(), r.delay_ms);
+                    std::thread::spawn(move || {
+                        std::thread::sleep(Duration::from_millis(delay));
+                        if !s.stop.load(Ordering::SeqCst) {
+                            let _ = s.send_to(&b, from);
+                        }
+                    });
                 }
-                let _ = self.send_to(&b, from);
             }
         }
     }
 }
 
+/// 버려지기만 해도 스레드가 멈추게(보관함에서 지워진 세션 등). `stop` 은 끝까지 기다린다.
+impl Drop for UdpSession {
+    fn drop(&mut self) {
+        self.shared.stop.store(true, Ordering::SeqCst);
+    }
+}
+
 impl UdpSession {
-    pub fn start(cfg: UdpConfig, rx_check: Option<ChecksumKind>, events: EventSink) -> Result<Self, String> {
+    pub fn start(cfg: UdpConfig, rx_check: Option<ChecksumKind>, responder: Option<Responder>, events: EventSink) -> Result<Self, String> {
         let bind = resolve(&cfg.bind_host, cfg.bind_port)?;
         let socket = UdpSocket::bind(bind).map_err(|e| format!("{bind}: {e}"))?;
         let local = socket.local_addr().map_err(|e| e.to_string())?;
@@ -153,8 +228,12 @@ impl UdpSession {
             rx_check: Mutex::new(rx_check),
             pending: Mutex::new(Vec::new()),
             log: Mutex::new(None),
-            responder: Mutex::new(None),
+            responder: Mutex::new(responder),
             seen: Mutex::new(BTreeMap::new()),
+            next_peer: AtomicU64::new(1),
+            echo_rate: Mutex::new((Instant::now(), 0)),
+            last_reply: Mutex::new(None),
+            local,
             last_sender: Mutex::new(None),
             echo: AtomicBool::new(cfg.echo),
             stop: AtomicBool::new(false),
@@ -303,9 +382,9 @@ mod tests {
     #[test]
     fn datagrams_are_frames_and_echo_returns() {
         let (bs, brx) = sink();
-        let b = UdpSession::start(cfg(0, true), None, bs).unwrap();
+        let b = UdpSession::start(cfg(0, true), None, None, bs).unwrap();
         let (as_, arx) = sink();
-        let a = UdpSession::start(cfg(b.local_addr().port(), false), None, as_).unwrap();
+        let a = UdpSession::start(cfg(b.local_addr().port(), false), None, None, as_).unwrap();
 
         a.send(None, &[1, 2, 3]).unwrap();
         a.send(None, &[4]).unwrap();
@@ -328,14 +407,14 @@ mod tests {
         let (s, _) = sink();
         let mut c = cfg(0, false);
         c.multicast_group = "192.168.0.1".into();
-        let err = UdpSession::start(c, None, s).err().unwrap();
+        let err = UdpSession::start(c, None, None, s).err().unwrap();
         assert!(err.contains("멀티캐스트"));
     }
 
     #[test]
     fn send_without_target_errors() {
         let (s, _) = sink();
-        let u = UdpSession::start(cfg(0, false), None, s).unwrap();
+        let u = UdpSession::start(cfg(0, false), None, None, s).unwrap();
         assert!(u.send(None, &[1]).is_err());
         assert!(u.send(Some("last"), &[1]).is_err());
         assert!(u.send(Some("nonsense"), &[1]).is_err());

@@ -13,7 +13,7 @@ pub enum ChecksumKind {
     Crc16Xmodem,
     /// CRC8 (poly 0x07, init 0x00)
     Crc8,
-    /// Modbus ASCII LRC — 바이트 합의 2의 보수
+    /// LRC — 바이트 합의 2의 보수(Modbus ASCII 의 LRC 계산식을 원시 바이트에 적용)
     Lrc,
     /// BCC — 모든 바이트 XOR
     Bcc,
@@ -59,6 +59,16 @@ impl ChecksumKind {
                 .fold(0u16, |a, b| a.wrapping_add(*b as u16))
                 .to_be_bytes()
                 .to_vec(),
+        }
+    }
+
+    /// 끝 문자(예: CR LF)로 끝나는 프레임이면 그 앞의 체크섬을 검사한다.
+    /// 보낼 때 «본문 + 체크섬 + 끝 문자» 로 붙이는 것과 짝이다.
+    pub fn verify_before(self, frame: &[u8], terminator: &[u8]) -> Option<bool> {
+        if !terminator.is_empty() && frame.ends_with(terminator) {
+            self.verify(&frame[..frame.len() - terminator.len()])
+        } else {
+            self.verify(frame)
         }
     }
 

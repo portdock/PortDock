@@ -5,9 +5,11 @@ use portdock_core::checksum::ChecksumKind;
 use portdock_core::framer::FrameMode;
 use portdock_core::modbus_slave::{Faults, Slave, TABLE_SIZE, Table};
 use portdock_core::ports;
-use portdock_core::serial::{EventSink, Reply, SerialConfig, Session, SessionEvent};
+use portdock_core::registry::{Registry, auto_remove_sink};
+use portdock_core::serial::{Reply, Responder, SerialConfig, Session, SessionEvent};
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tauri::State;
 use tauri::ipc::Channel;
 
@@ -26,8 +28,11 @@ struct Stats {
 struct App {
     slave: Arc<Mutex<Slave>>,
     stats: Arc<Mutex<Stats>>,
-    session: Mutex<Option<Session>>,
+    /// 연결은 하나 — 보관함 이름 "main". 스스로 닫히면 알아서 빠진다
+    sess: Arc<Registry<Session>>,
 }
+
+const MAIN: &str = "main";
 
 fn func_name(f: u8) -> String {
     format!("{:02X}", f & 0x7F)
@@ -38,22 +43,20 @@ fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
 }
 
-#[tauri::command(async)]
-fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) -> Result<(), String> {
-    let mut slot = app.session.lock().unwrap();
-    if slot.is_some() {
-        return Err("이미 연결돼 있습니다".into());
-    }
-    let baud = config.baud;
-    let sink = EventSink::new(move |e| {
-        let _ = on_event.send(e);
-    });
-    let s = Session::start(config, FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus), sink)?;
-    let (slave, stats) = (app.slave.clone(), app.stats.clone());
-    s.set_responder(Some(Box::new(move |frame: &[u8]| {
+fn responder(slave: Arc<Mutex<Slave>>, stats: Arc<Mutex<Stats>>) -> Responder {
+    // 지연 응답을 보내기 전에 다음 요청이 오면, 한 번에 하나만 처리하는 실제 장비처럼 무시한다
+    let mut busy_until: Option<Instant> = None;
+    Box::new(move |frame: &[u8]| {
         let mut sl = slave.lock().unwrap();
         let delay_ms = sl.faults.delay_ms;
+        if busy_until.is_some_and(|t| Instant::now() < t) {
+            stats.lock().unwrap().ignored += 1;
+            return Reply { bytes: None, delay_ms: 0, note: Some("BUSY — 지연 응답을 보내기 전에 온 요청은 무시".into()) };
+        }
         let (bytes, o) = sl.handle(frame);
+        if bytes.is_some() && delay_ms > 0 {
+            busy_until = Some(Instant::now() + Duration::from_millis(delay_ms));
+        }
         let mut st = stats.lock().unwrap();
         st.requests += 1;
         if o.written.is_some() {
@@ -80,33 +83,44 @@ fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) 
             }
         };
         Reply { bytes, delay_ms, note }
-    })));
-    *slot = Some(s);
+    })
+}
+
+/// 여는 동안 다른 명령을 막지 않고, 응답기는 첫 바이트 전에 꽂는다
+#[tauri::command(async)]
+fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) -> Result<(), String> {
+    let reg = app.sess.clone();
+    let opening = reg.begin(MAIN).map_err(|_| "이미 연결돼 있거나 여는 중입니다".to_string())?;
+    let baud = config.baud;
+    let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
+        let _ = on_event.send(e);
+    });
+    let r = responder(app.slave.clone(), app.stats.clone());
+    let s = Session::start(config, FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus), Some(r), sink)?;
+    opening.finish(s);
     Ok(())
 }
 
 #[tauri::command(async)]
 fn close(app: State<App>) {
-    let s = app.session.lock().unwrap().take();
-    if let Some(s) = s {
+    if let Some(s) = app.sess.take(MAIN) {
         s.stop();
     }
 }
 
 #[tauri::command(async)]
 fn reconfigure(app: State<App>, config: SerialConfig) -> Result<(), String> {
-    let slot = app.session.lock().unwrap();
-    let s = slot.as_ref().ok_or("연결돼 있지 않습니다")?;
     let baud = config.baud;
-    s.reconfigure(config)?;
-    s.set_framing(FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus));
-    Ok(())
+    app.sess.with(MAIN, |s| {
+        s.reconfigure(config)?;
+        s.set_framing(FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus));
+        Ok(())
+    })?
 }
 
 #[tauri::command(async)]
 fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
-    let slot = app.session.lock().unwrap();
-    slot.as_ref().ok_or("연결돼 있지 않습니다")?.set_log(path)
+    app.sess.with(MAIN, |s| s.set_log(path))?
 }
 
 #[tauri::command]
@@ -117,6 +131,9 @@ fn set_faults(app: State<App>, faults: Faults) {
 /// 흉내 낼 슬레이브 주소 목록. 빠진 주소의 표는 지우고, 새 주소는 빈 표로 만든다.
 #[tauri::command]
 fn set_slave_ids(app: State<App>, ids: Vec<u8>) -> Result<(), String> {
+    if ids.is_empty() {
+        return Err("슬레이브 주소가 하나는 있어야 합니다".into());
+    }
     if ids.iter().any(|&i| i == 0 || i > 247) {
         return Err("슬레이브 주소는 1~247 입니다".into());
     }
@@ -154,6 +171,9 @@ fn get_values(app: State<App>, id: u8, table: Table, start: u32, count: u32) -> 
 
 #[tauri::command]
 fn set_values(app: State<App>, id: u8, table: Table, start: u32, values: Vec<u16>) -> Result<(), String> {
+    if values.is_empty() {
+        return Ok(());
+    }
     check_span(start, values.len() as u32)?;
     let bits = matches!(table, Table::Coils | Table::DiscreteInputs);
     let mut sl = app.slave.lock().unwrap();

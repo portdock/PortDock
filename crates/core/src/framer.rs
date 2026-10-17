@@ -69,6 +69,14 @@ impl Framer {
         &self.mode
     }
 
+    /// 끝 문자 방식이면 그 바이트들(체크섬 검사 때 떼고 본다), 아니면 빈 것
+    pub fn terminator(&self) -> &[u8] {
+        match &self.mode {
+            FrameMode::Terminator { bytes, .. } => bytes,
+            _ => &[],
+        }
+    }
+
     fn take(&mut self) -> Cut {
         let t = self.first_rx.take().unwrap_or_else(Instant::now);
         (t, std::mem::take(&mut self.buf))
@@ -90,7 +98,8 @@ impl Framer {
                 self.first_rx = Some(now);
             }
             self.buf.push(b);
-            if let Some(frame) = self.try_cut() {
+            // 모드를 바꿔 남은 버퍼가 길이보다 길 수 있다 — 자를 수 있는 만큼 모두
+            while let Some(frame) = self.try_cut() {
                 out.push(frame);
             }
         }

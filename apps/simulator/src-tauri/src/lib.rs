@@ -6,6 +6,7 @@ use portdock_core::codec::{SendSpec, build};
 use portdock_core::event::{EventSink, SessionEvent};
 use portdock_core::framer::FrameMode;
 use portdock_core::ports;
+use portdock_core::registry::{Opening, Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session};
 use portdock_core::tcp::{TcpConfig, TcpSession};
 use portdock_core::udp::{UdpConfig, UdpSession};
@@ -14,6 +15,7 @@ use std::sync::{Arc, Mutex};
 use tauri::State;
 use tauri::ipc::Channel;
 
+/// 지금 흉내 내는 연결 하나. 버려지면 안의 세션이 멈춘다(각 세션의 Drop)
 enum Sess {
     Serial(Session),
     Tcp(TcpSession),
@@ -24,22 +26,20 @@ enum Sess {
 struct App {
     rules: Arc<Mutex<Vec<Rule>>>,
     hits: Arc<Mutex<BTreeMap<String, u64>>>,
-    sess: Mutex<Option<Sess>>,
+    /// 보관함 이름 "main". 시작 연타는 «여는 중» 으로 막히고, 스스로 닫히면 알아서 빠진다
+    sess: Arc<Registry<Sess>>,
 }
 
-fn sink(ch: Channel<SessionEvent>) -> EventSink {
-    EventSink::new(move |e| {
+const MAIN: &str = "main";
+
+fn begin(app: &App) -> Result<Opening<'_, Sess>, String> {
+    app.sess.begin(MAIN).map_err(|_| "이미 시작돼 있거나 시작하는 중입니다".to_string())
+}
+
+fn sink(app: &App, generation: u64, ch: Channel<SessionEvent>) -> EventSink {
+    auto_remove_sink(app.sess.clone(), MAIN.into(), generation, move |e| {
         let _ = ch.send(e);
     })
-}
-
-fn put(app: &App, s: Sess) -> Result<(), String> {
-    let mut slot = app.sess.lock().unwrap();
-    if slot.is_some() {
-        return Err("이미 시작돼 있습니다".into());
-    }
-    *slot = Some(s);
-    Ok(())
 }
 
 #[tauri::command(async)]
@@ -49,42 +49,36 @@ fn list_ports() -> Vec<ports::PortInfo> {
 
 #[tauri::command(async)]
 fn start_serial(app: State<App>, config: SerialConfig, framing: FrameMode, on_event: Channel<SessionEvent>) -> Result<(), String> {
-    if app.sess.lock().unwrap().is_some() {
-        return Err("이미 시작돼 있습니다".into());
-    }
-    let s = Session::start(config, framing, None, sink(on_event))?;
-    s.set_responder(Some(autoreply::responder(app.rules.clone(), app.hits.clone())));
-    put(&app, Sess::Serial(s))
+    let opening = begin(&app)?;
+    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    let s = Session::start(config, framing, None, Some(r), sink(&app, opening.generation, on_event))?;
+    opening.finish(Sess::Serial(s));
+    Ok(())
 }
 
 #[tauri::command(async)]
 fn start_tcp(app: State<App>, config: TcpConfig, framing: FrameMode, on_event: Channel<SessionEvent>) -> Result<Option<String>, String> {
-    if app.sess.lock().unwrap().is_some() {
-        return Err("이미 시작돼 있습니다".into());
-    }
-    let s = TcpSession::start(config, framing, None, sink(on_event))?;
-    s.set_responder(Some(autoreply::responder(app.rules.clone(), app.hits.clone())));
+    let opening = begin(&app)?;
+    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    let s = TcpSession::start(config, framing, None, Some(r), sink(&app, opening.generation, on_event))?;
     let local = s.local_addr().map(|a| a.to_string());
-    put(&app, Sess::Tcp(s))?;
+    opening.finish(Sess::Tcp(s));
     Ok(local)
 }
 
 #[tauri::command(async)]
 fn start_udp(app: State<App>, config: UdpConfig, on_event: Channel<SessionEvent>) -> Result<String, String> {
-    if app.sess.lock().unwrap().is_some() {
-        return Err("이미 시작돼 있습니다".into());
-    }
-    let s = UdpSession::start(config, None, sink(on_event))?;
-    s.set_responder(Some(autoreply::responder(app.rules.clone(), app.hits.clone())));
+    let opening = begin(&app)?;
+    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    let s = UdpSession::start(config, None, Some(r), sink(&app, opening.generation, on_event))?;
     let local = s.local_addr().to_string();
-    put(&app, Sess::Udp(s))?;
+    opening.finish(Sess::Udp(s));
     Ok(local)
 }
 
 #[tauri::command(async)]
 fn stop(app: State<App>) {
-    let s = app.sess.lock().unwrap().take();
-    match s {
+    match app.sess.take(MAIN) {
         Some(Sess::Serial(s)) => s.stop(),
         Some(Sess::Tcp(s)) => s.stop(),
         Some(Sess::Udp(s)) => s.stop(),
@@ -92,13 +86,13 @@ fn stop(app: State<App>) {
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_framing(app: State<App>, framing: FrameMode) {
-    match app.sess.lock().unwrap().as_ref() {
-        Some(Sess::Serial(s)) => s.set_framing(framing, None::<ChecksumKind>),
-        Some(Sess::Tcp(s)) => s.set_framing(framing, None),
-        _ => {}
-    }
+    let _ = app.sess.with(MAIN, |s| match s {
+        Sess::Serial(s) => s.set_framing(framing, None::<ChecksumKind>),
+        Sess::Tcp(s) => s.set_framing(framing, None),
+        Sess::Udp(_) => {}
+    });
 }
 
 /// 규칙 교체(꺼진 규칙은 빠짐). 잘못된 규칙이 있으면 이름과 함께 오류. 실행 중에도 바로 적용된다.
@@ -124,12 +118,14 @@ fn reset_hits(app: State<App>) {
 #[tauri::command(async)]
 fn send(app: State<App>, spec: SendSpec) -> Result<(), String> {
     let bytes = build(&spec)?;
-    match app.sess.lock().unwrap().as_ref() {
-        Some(Sess::Serial(s)) => s.send(bytes),
-        Some(Sess::Tcp(s)) => s.send(None, &bytes).map(|_| ()),
-        Some(Sess::Udp(s)) => s.send(Some("last"), &bytes).or_else(|_| s.send(None, &bytes)).map(|_| ()),
-        None => Err("시작돼 있지 않습니다".into()),
+    if bytes.is_empty() {
+        return Err("보낼 바이트가 없습니다".into());
     }
+    app.sess.with(MAIN, |s| match s {
+        Sess::Serial(s) => s.send(bytes),
+        Sess::Tcp(s) => s.send(None, &bytes).map(|_| ()),
+        Sess::Udp(s) => s.send(Some("last"), &bytes).or_else(|_| s.send(None, &bytes)).map(|_| ()),
+    })?
 }
 
 #[tauri::command]
@@ -139,12 +135,11 @@ fn preview(spec: SendSpec) -> Result<Vec<u8>, String> {
 
 #[tauri::command(async)]
 fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
-    match app.sess.lock().unwrap().as_ref() {
-        Some(Sess::Serial(s)) => s.set_log(path),
-        Some(Sess::Tcp(s)) => s.set_log(path),
-        Some(Sess::Udp(s)) => s.set_log(path),
-        None => Err("시작돼 있지 않습니다".into()),
-    }
+    app.sess.with(MAIN, |s| match s {
+        Sess::Serial(s) => s.set_log(path),
+        Sess::Tcp(s) => s.set_log(path),
+        Sess::Udp(s) => s.set_log(path),
+    })?
 }
 
 /// 규칙 묶음 저장·불러오기 — 사용자가 대화상자에서 고른 경로만
