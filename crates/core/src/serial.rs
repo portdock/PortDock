@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,49 +44,7 @@ fn yes() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct Frame {
-    /// 유닉스 시각(ms)
-    pub ts: u64,
-    /// "rx" | "tx" | "ev"(연결·설정 변경·신호선 등 사건)
-    pub dir: &'static str,
-    pub bytes: Vec<u8>,
-    /// 수신 검증 체크섬이 설정돼 있을 때 결과
-    pub check: Option<bool>,
-    /// 사건 줄의 내용. 예: «SET baud 9600→115200»
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub note: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum SessionEvent {
-    Frames { frames: Vec<Frame> },
-    /// "connected" | "disconnected" | "reconnecting" | "closed"
-    Status { state: &'static str, port: String, message: Option<String> },
-    /// 송신 실패 등 연결은 유지되는 오류
-    Error { message: String },
-    /// 입력 신호선 상태
-    Lines { cts: bool, dsr: bool, ri: bool, cd: bool },
-}
-
-/// 화면 쪽으로 사건을 넘기는 통로. 앱이 Tauri Channel 등을 감싸서 넘긴다.
-#[derive(Clone)]
-pub struct EventSink(Arc<dyn Fn(SessionEvent) + Send + Sync>);
-
-impl EventSink {
-    pub fn new(f: impl Fn(SessionEvent) + Send + Sync + 'static) -> Self {
-        Self(Arc::new(f))
-    }
-
-    pub fn send(&self, e: SessionEvent) {
-        (self.0)(e);
-    }
-}
-
-pub fn now_ms() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
-}
+pub use crate::event::{EventSink, Frame, SessionEvent, log_line, now_ms};
 
 type Port = Box<dyn SerialPort>;
 
@@ -316,7 +274,7 @@ impl Session {
 }
 
 fn note(s: &Shared, text: String) {
-    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(text) });
+    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(text), peer: None });
 }
 
 /// «COM3 9600 8N1 flow=none DTR=0 RTS=0»
@@ -542,7 +500,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: EventSi
             }
         }
         if sent > 0 {
-            s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes[..sent].to_vec(), check: None, note: None });
+            s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes[..sent].to_vec(), check: None, note: None, peer: None });
         }
         if let Some(message) = error {
             events.send(SessionEvent::Error { message });
@@ -576,10 +534,10 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
                 answer = hit.map(|r| (r.reply, r.delay_ms, Some(format!("AUTO {}", r.name))));
             }
         }
-        pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None });
+        pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None, peer: None });
         if let Some((reply, delay_ms, note)) = answer {
             if let Some(n) = note {
-                pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(n) });
+                pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(n), peer: None });
             }
             if reply.is_empty() {
                 continue;
@@ -610,23 +568,6 @@ fn flush(s: &Shared, events: &EventSink) {
         let _ = log.flush();
     }
     events.send(SessionEvent::Frames { frames });
-}
-
-/// «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]»
-pub fn log_line(f: &Frame) -> String {
-    let t = chrono::DateTime::from_timestamp_millis(f.ts as i64)
-        .map(|d| d.with_timezone(&chrono::Local).format("%Y-%m-%d %H:%M:%S%.3f").to_string())
-        .unwrap_or_default();
-    let hex: Vec<String> = f.bytes.iter().map(|b| format!("{b:02X}")).collect();
-    let check = match f.check {
-        Some(true) => " [OK]",
-        Some(false) => " [CHECK FAIL]",
-        None => "",
-    };
-    match &f.note {
-        Some(n) => format!("{t} EV {n}"),
-        None => format!("{t} {} {}{check}", f.dir.to_uppercase(), hex.join(" ")),
-    }
 }
 
 /// 같은 장치가 다시 나타날 때까지 기다렸다가 연다. 사용자가 닫으면 None.
@@ -706,7 +647,7 @@ mod tests {
 
     #[test]
     fn event_log_line() {
-        let f = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()) };
+        let f = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()), peer: None };
         assert!(log_line(&f).ends_with(" EV SET baud 9600→115200"));
     }
 

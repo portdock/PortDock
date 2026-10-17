@@ -4,8 +4,10 @@
 pub mod autoreply;
 pub mod checksum;
 pub mod codec;
+pub mod event;
 pub mod framer;
 pub mod modbus;
 pub mod modbus_slave;
 pub mod ports;
 pub mod serial;
+pub mod tcp;

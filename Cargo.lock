@@ -2656,6 +2656,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-tcp"
+version = "0.1.0"
+dependencies = [
+ "portdock-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+]
+
+[[package]]
 name = "potential_utf"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
