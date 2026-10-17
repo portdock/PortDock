@@ -148,6 +148,24 @@ pub fn compile_all(specs: &[RuleSpec]) -> Result<Vec<Rule>, String> {
     specs.iter().filter(|s| s.enabled).map(Rule::compile).collect()
 }
 
+/// 규칙 목록을 세션(시리얼·TCP·UDP)에 꽂을 응답기로. 규칙은 밖에서 바꿀 수 있다.
+/// 위에서부터 처음 맞는 규칙 하나만 답하고, `hits` 에 규칙별 응답 횟수를 센다.
+pub fn responder(
+    rules: std::sync::Arc<std::sync::Mutex<Vec<Rule>>>,
+    hits: std::sync::Arc<std::sync::Mutex<std::collections::BTreeMap<String, u64>>>,
+) -> crate::serial::Responder {
+    Box::new(move |frame: &[u8]| {
+        let hit = rules.lock().unwrap().iter().find(|r| r.reply != frame && r.is_match(frame)).cloned();
+        match hit {
+            Some(r) => {
+                *hits.lock().unwrap().entry(r.name.clone()).or_default() += 1;
+                crate::serial::Reply { bytes: Some(r.reply), delay_ms: r.delay_ms, note: Some(format!("AUTO {}", r.name)) }
+            }
+            None => crate::serial::Reply { bytes: None, delay_ms: 0, note: None },
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

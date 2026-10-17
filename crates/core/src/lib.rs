@@ -11,3 +11,4 @@ pub mod modbus_slave;
 pub mod ports;
 pub mod serial;
 pub mod tcp;
+pub mod udp;

@@ -11,6 +11,10 @@
     "modbus-slave": "npm run tauri dev -w portdock-modbus-slave",
     "build:modbus-slave": "npm run tauri build -w portdock-modbus-slave",
     "tcp": "npm run tauri dev -w portdock-tcp",
-    "build:tcp": "npm run tauri build -w portdock-tcp"
+    "build:tcp": "npm run tauri build -w portdock-tcp",
+    "udp": "npm run tauri dev -w portdock-udp",
+    "build:udp": "npm run tauri build -w portdock-udp",
+    "simulator": "npm run tauri dev -w portdock-simulator",
+    "build:simulator": "npm run tauri build -w portdock-simulator"
   }
 }

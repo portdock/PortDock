@@ -1,0 +1,9 @@
+{
+  "name": "portdock-e2e",
+  "private": true,
+  "type": "module",
+  "description": "실제 PortDock 프로그램을 띄워 버튼을 누르고 캡처하는 검증 도구 (tauri-driver + Edge WebDriver)",
+  "dependencies": {
+    "selenium-webdriver": "4.27.0"
+  }
+}

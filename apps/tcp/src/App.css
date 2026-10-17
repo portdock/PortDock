@@ -532,3 +532,10 @@ hr {
 .btn {
   white-space: nowrap;
 }
+
+.sendrow select {
+  max-width: 230px;
+}
+.sendtext {
+  min-width: 200px;
+}
