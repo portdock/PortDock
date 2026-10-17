@@ -1,5 +1,6 @@
 // TCP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -30,6 +31,7 @@ export const help: HelpDoc = {
         "- 가운데 아래: 보내기 줄((서버) «받는 쪽», HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
         "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 그 줄의 상대 주소·바이트 수·HEX·ASCII).",
         "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
+        ...windowLines("ko"),
       ],
     },
     {
@@ -83,6 +85,7 @@ export const help: HelpDoc = {
         "- 붙는 순서는 언제나 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문 전체(첫 바이트부터)로 계산하고 줄 끝은 계산에 넣지 않습니다.",
         "- 예: «STATUS?» + CR LF, 또는 HEX «01 03 00 00 00 0A» + CRC16 Modbus → «01 03 00 00 00 0A C5 CD».",
         "- 보내기에 실패하면(2초 안에 못 씀 등) 그 접속은 믿을 수 없으므로 닫고 «SEND FAIL …» 을 남깁니다.",
+        ...notationLines("ko"),
       ],
     },
     {
@@ -91,8 +94,9 @@ export const help: HelpDoc = {
         "- «반복(ms)»: 체크하면 지금 입력을 정한 간격(10ms 이상)으로 계속 보냅니다. 앞 송신이 끝나지 않았으면 그 차례는 건너뜁니다.",
         "- 접속이 끊기면 반복이 꺼지고, 다시 붙어도 저절로 켜지지 않습니다.",
         "- «+ 목록에 추가»: 지금 입력(모드·체크섬·줄 끝 포함)을 오른쪽 «명령 목록» 에 추가합니다. 이름은 바로 고칠 수 있습니다.",
-        "- 목록의 ▶ 는 바로 보내기, ✎ 는 «입력칸으로 불러오기», ✕ 는 «삭제» 입니다. 서버에서는 «받는 쪽» 에 고른 상대에게 보냅니다.",
+        "- 서버에서는 명령도 «받는 쪽» 에 고른 상대에게 보냅니다.",
         "- 명령 목록은 프로그램을 껐다 켜도 남아 있습니다.",
+        ...commandLines("ko"),
       ],
     },
     {
@@ -119,6 +123,7 @@ export const help: HelpDoc = {
         "- STOP LISTEN: 서버 듣기를 멈췄습니다.",
         "- ECHO ON / ECHO OFF: 에코를 켜거나 껐습니다. 초당 200번을 넘어 저절로 꺼지면 이유가 함께 붙습니다.",
         "- SEND FAIL 주소: 그 상대에게 보내지 못했습니다.",
+        ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -140,7 +145,7 @@ export const help: HelpDoc = {
         "- 파일 한 줄 모양: «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]».",
         "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
         "- «지우기»: 화면 로그와 RX·TX 바이트 수를 비웁니다. 파일 로그는 그대로입니다.",
-        "- 로그 줄을 누르면 «자동 스크롤» 이 꺼지고 오른쪽 «상세» 에 시각·상대 주소·바이트 수·HEX·ASCII 가 나옵니다.",
+        "- 로그 줄을 누르면 오른쪽 «상세» 에 시각·상대 주소·바이트 수·HEX·ASCII 가 나옵니다(따라가기는 그대로).",
         "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<STX>» 처럼, 그 밖은 «<1B>» 처럼 보입니다.",
       ],
     },
@@ -162,19 +167,19 @@ export const help: HelpDoc = {
         "- «글자 크기(px)»: 11~18.",
         "- «로그 시각 표시»: «시:분:초.밀리초», «날짜 + 시각», «UTC», «시작부터 지난 시간 (지우면 다시)». 화면과 «화면 내용 저장» 에 적용됩니다(파일 로그는 늘 날짜 + 시각).",
         "- «화면에 남길 줄 수»: 1,000~1,000,000(기본 100,000). 넘치면 화면에서만 오래된 줄을 지웁니다.",
-        "- «새 줄이 오면 자동 스크롤»: 프로그램을 켤 때 «자동 스크롤» 의 처음 상태.",
+        "- «새 줄이 오면 자동 스크롤»: 프로그램을 켤 때 «자동 스크롤»(따라가기)의 처음 상태. 켜 두어도 위로 굴리면 멈춥니다.",
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 «portdock-tcp-날짜-시각.log» 에 저장합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기»: 실수로 창을 닫아 시험이 끊기는 것을 막습니다.",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 명령 목록을 JSON 파일로 옮깁니다. 다른 PortDock 프로그램의 파일은 받지 않습니다.",
         "- «기본값으로»: 화면 설정만 되돌립니다(명령 목록은 그대로).",
+        ...settingsLines("ko"),
       ],
     },
     {
       title: "단축키·팁",
       body: [
+        ...shortcutLines("ko", { saveView: true, repeat: true, find: true, startStop: true }),
         "- 입력칸에서 Enter: 보내기(보낼 상대가 있을 때).",
-        "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기.",
-        "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다.",
         "- 창이 좁으면 «☰ 명령 목록» 으로 오른쪽 칸을 펼치고, ✕ 나 바깥을 눌러 닫습니다.",
         "- 장비가 클라이언트인지 서버인지 모르면, 장비 설정 화면에서 «서버 IP»(장비가 접속할 곳)를 넣는 칸이 있는지 보세요. 있으면 이 프로그램을 서버로 씁니다.",
         "- 이 PC 의 IP 는 윈도우 명령 프롬프트에서 ipconfig 로 확인할 수 있습니다.",
@@ -223,6 +228,7 @@ export const help: HelpDoc = {
         "- Bottom: the send row ((server) «To», HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
         "- Right: «Commands» and «Detail» (click a log line to see its peer, byte count, HEX and ASCII).",
         "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
+        ...windowLines("en"),
       ],
     },
     {
@@ -276,6 +282,7 @@ export const help: HelpDoc = {
         "- The order is always «body + checksum + line ending». The checksum covers the whole body from the first byte, not the line ending.",
         "- Examples: «STATUS?» + CR LF, or HEX «01 03 00 00 00 0A» + CRC16 Modbus → «01 03 00 00 00 0A C5 CD».",
         "- If a write fails (e.g. not written within 2 s), that connection can no longer be trusted, so it is closed and «SEND FAIL …» is logged.",
+        ...notationLines("en"),
       ],
     },
     {
@@ -284,8 +291,9 @@ export const help: HelpDoc = {
         "- «Repeat (ms)»: when checked, the current input is sent at the set interval (10 ms or more). A turn is skipped if the previous send has not finished.",
         "- Repeat turns off when the connection drops and does not restart by itself.",
         "- «+ Save to list»: adds the current input (with mode, checksum and line ending) to «Commands» on the right. The name can be edited.",
-        "- In the list, ▶ sends, ✎ is «Load into the input» and ✕ is «Delete». As a server, commands go to the peer chosen in «To».",
+        "- As a server, commands go to the peer chosen in «To».",
         "- Commands are kept when you restart the program.",
+        ...commandLines("en"),
       ],
     },
     {
@@ -312,6 +320,7 @@ export const help: HelpDoc = {
         "- STOP LISTEN: the server stopped listening.",
         "- ECHO ON / ECHO OFF: echo was turned on or off. When it turns off by itself above 200 per second, the reason is added.",
         "- SEND FAIL address: sending to that peer failed.",
+        ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -333,7 +342,7 @@ export const help: HelpDoc = {
         "- A file line looks like «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]».",
         "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
         "- «Clear»: empties the screen log and RX/TX counts. The file log is not affected.",
-        "- Clicking a log line turns off «Auto-scroll» and shows time, peer, byte count, HEX and ASCII in «Detail».",
+        "- Clicking a log line shows time, peer, byte count, HEX and ASCII in «Detail» (following continues).",
         "- In ASCII view, control characters appear as «<CR>», «<LF>», «<STX>», others as «<1B>» and so on.",
       ],
     },
@@ -355,19 +364,19 @@ export const help: HelpDoc = {
         "- «Font size (px)»: 11 to 18.",
         "- «Log timestamp»: «hh:mm:ss.ms», «Date + time», «UTC» or «Elapsed since start (Clear resets)». Applies to the screen and «Save view» (the file log always uses date + time).",
         "- «Lines kept on screen»: 1,000 to 1,000,000 (default 100,000). Older lines are dropped from the screen only.",
-        "- «Auto-scroll on new lines»: the initial state of «Auto-scroll» when the program starts.",
+        "- «Auto-scroll on new lines»: the initial state of «Auto-scroll» (follow) when the program starts. Scrolling up still pauses it.",
         "- «Start file logging on connect»: with an «Auto-log folder» chosen, every start logs to «portdock-tcp-date-time.log».",
         "- «Ask before closing while connected or logging»: protects a running test from an accidental close.",
         "- «Export settings» and «Import settings»: move display settings and commands as a JSON file. Files from other PortDock programs are refused.",
         "- «Reset to defaults»: resets display settings only (commands are kept).",
+        ...settingsLines("en"),
       ],
     },
     {
       title: "Shortcuts and tips",
       body: [
+        ...shortcutLines("en", { saveView: true, repeat: true, find: true, startStop: true }),
         "- Enter in the input: send (when a peer is connected).",
-        "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear.",
-        "- F1 or the ? button: this help. Close it with Esc.",
         "- In a narrow window, open the right pane with «☰ Commands» and close it with ✕ or by clicking outside.",
         "- Not sure whether the device is a client or a server? If its settings have a «server IP» field (where the device connects to), use this program as the server.",
         "- You can find this PC's IP with ipconfig in a Windows command prompt.",

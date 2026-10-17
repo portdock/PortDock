@@ -1,5 +1,6 @@
 // Simulator 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -27,6 +28,7 @@ export const help: HelpDoc = {
         "- 가운데 위: «응답 규칙» 카드들, «끝 문자 떼고 비교»·«안 맞은 요청 기록(NO MATCH)», «횟수 초기화», «규칙 묶음 저장»·«규칙 묶음 불러오기».",
         "- 그 아래: «장비가 먼저 보내기» 줄.",
         "- 맨 아래: «통신 기록»(시각·RX ◀ / TX ▶ / EV·상대 주소·내용), HEX/ASCII 전환, «지우기».",
+        ...windowLines("ko"),
       ],
     },
     {
@@ -62,7 +64,7 @@ export const help: HelpDoc = {
         "- «안 맞은 요청 기록(NO MATCH)»(기본 켬): 어떤 규칙에도 맞지 않은 요청을 통신 기록에 «NO MATCH» 사건(EV)으로 남깁니다.",
         "- «응답»: 응답 방식(HEX/ASCII), 응답 내용, «체크섬», «줄 끝 붙이기», «지연»(ms, 0~600000).",
         "- 응답은 «내용 + 체크섬 + 줄 끝» 순으로 만듭니다. 체크섬은 응답 내용 전체로 계산합니다.",
-        "- ↑ «위로(먼저 검사)», ↓ «아래로», ✕ «삭제»(확인 창이 뜹니다).",
+        "- ↑ «위로(먼저 검사)», ↓ «아래로», ✕ «삭제»(확인 창 대신 5초 동안 알림의 «되돌리기» 로 같은 자리에 되살림). 응답의 HEX↔ASCII 를 바꾸면 같은 바이트의 새 표기로 바뀝니다.",
         "- 규칙을 고치면 실행 중에도 바로 적용됩니다. 패턴·응답이 틀린 규칙은 카드가 빨갛게 되고 아래에 이유가 나오며, 그 규칙만 빠지고 나머지 규칙은 동작합니다(«틀린 규칙 N개는 빼고 동작합니다»).",
         "- 규칙은 프로그램을 껐다 켜도 남아 있습니다.",
       ],
@@ -102,6 +104,7 @@ export const help: HelpDoc = {
         "- «반복(ms)» 을 체크하면 정한 간격(10ms 이상)으로 계속 보냅니다. 상대가 아직 없거나 끊겼으면 그 차례만 건너뛰고 «상대를 기다리는 중» 을 보이며, 상대가 붙으면 이어서 보냅니다. 체크를 끄거나 «멈춤» 을 눌러야 꺼집니다.",
         "- 보내는 곳: 시리얼은 그 포트, TCP 서버는 접속한 모든 상대, TCP 클라이언트는 접속한 상대, UDP 는 마지막으로 보내온 쪽(없으면 «보낼 곳»).",
         "- 시작 전에는 «보내기»·«반복» 이 잠깁니다.",
+        ...notationLines("ko"),
       ],
     },
     {
@@ -110,6 +113,7 @@ export const help: HelpDoc = {
         "- RX ◀ 받은 것, TX ▶ 보낸 것(규칙 응답·먼저 보내기), EV 사건(시작·접속·끊김·«AUTO 규칙이름» 등).",
         "- HEX/ASCII 버튼으로 보기 방식을 바꿉니다. 맨 아래에 있으면 새 줄을 따라 내려가고, 위로 올려 보면 멈춥니다.",
         "- «파일로 계속 저장»: 시작한 뒤에 파일을 고르면 그때부터 모든 줄을 계속 씁니다. «저장 멈춤» 으로 끝냅니다.",
+        ...logHandlingLines("ko", { sendAgain: true }),
       ],
     },
     {
@@ -119,12 +123,13 @@ export const help: HelpDoc = {
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 자동으로 저장합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기».",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정을 JSON 파일로 옮깁니다. 규칙은 «규칙 묶음 저장» 으로 따로 옮깁니다.",
+        ...settingsLines("ko"),
       ],
     },
     {
       title: "단축키·팁",
       body: [
-        "- F1 또는 ?: 이 도움말. Esc 로 닫습니다.",
+        ...shortcutLines("ko", { repeat: true, startStop: true }),
         "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
         "- 같은 PC 에서 시험하려면: TCP 는 서버 127.0.0.1 로, 시리얼은 가상 COM 쌍(com0com 등)으로 상위 프로그램과 연결합니다.",
         "- 응답 지연으로 상위 프로그램의 타임아웃 처리를, 일부러 틀린 응답으로 오류 처리를 시험할 수 있습니다.",
@@ -166,6 +171,7 @@ export const help: HelpDoc = {
         "- Top: «Reply rules» cards, «Ignore line ending when matching» / «Log unmatched requests (NO MATCH)», «Reset counts», «Save rule set» / «Load rule set».",
         "- Below: the «Device-initiated message» row.",
         "- Bottom: «Traffic» (time, RX ◀ / TX ▶ / EV, peer address, data), HEX/ASCII toggle, «Clear».",
+        ...windowLines("en"),
       ],
     },
     {
@@ -201,7 +207,7 @@ export const help: HelpDoc = {
         "- «Log unmatched requests (NO MATCH)» (on by default): a request no rule matched is logged as a «NO MATCH» event (EV).",
         "- «Reply»: reply mode (HEX/ASCII), content, «Checksum», «Line ending», «Delay» (ms, 0–600000).",
         "- A reply is built as «content + checksum + line ending»; the checksum covers the whole content.",
-        "- ↑ «Move up (checked first)», ↓ «Move down», ✕ «Delete» (asks first).",
+        "- ↑ «Move up (checked first)», ↓ «Move down», ✕ «Delete» (no dialog — «Undo» in the notice restores it in place for 5 seconds). Switching a reply between HEX and ASCII converts it to the same bytes.",
         "- Edits apply immediately, even while running. A rule with an invalid pattern or reply turns red with the reason below it; only that rule is skipped and the others stay active («N invalid rule(s) skipped»).",
         "- Rules are kept after restarting.",
       ],
@@ -241,6 +247,7 @@ export const help: HelpDoc = {
         "- Check «Repeat (ms)» to send every interval (10 ms or more). While no peer is connected, turns are skipped with «Waiting for a peer» and sending resumes when one connects. Only unchecking it or «Stop» turns it off.",
         "- Destination: the serial port; all connected peers (TCP server); the server (TCP client); the last sender, or «Send to» if none (UDP).",
         "- «Send» and «Repeat» are disabled until you start.",
+        ...notationLines("en"),
       ],
     },
     {
@@ -249,6 +256,7 @@ export const help: HelpDoc = {
         "- RX ◀ received, TX ▶ sent (rule replies and device-initiated messages), EV events (start, connect, disconnect, «AUTO rule name», …).",
         "- Toggle HEX/ASCII view. At the bottom the view follows new lines; scroll up to pause it.",
         "- «Log to file»: after starting, pick a file to write every line from then on. «Stop logging» ends it.",
+        ...logHandlingLines("en", { sendAgain: true }),
       ],
     },
     {
@@ -258,12 +266,13 @@ export const help: HelpDoc = {
         "- «Start file log automatically»: with an auto-log folder, each start writes a log automatically.",
         "- «Ask before closing while connected or logging».",
         "- «Export settings» / «Import settings» move display settings as JSON. Move rules with «Save rule set».",
+        ...settingsLines("en"),
       ],
     },
     {
       title: "Shortcuts and tips",
       body: [
-        "- F1 or ?: this help. Esc closes it.",
+        ...shortcutLines("en", { repeat: true, startStop: true }),
         "- Hover over a field to see a tooltip.",
         "- Testing on one PC: use a TCP server on 127.0.0.1, or a virtual COM pair (e.g. com0com) for serial.",
         "- Use reply delays to test the host's timeouts, and deliberately wrong replies to test its error handling.",

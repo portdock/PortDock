@@ -1,5 +1,6 @@
 // Modbus Slave 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { logHandlingLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -27,6 +28,7 @@ export const help: HelpDoc = {
         "- 가운데 위: 표 4종 버튼, 지금 보는 슬레이브(ID), «시작 주소»·«개수»·«표시», «채우기»·«표 내보내기»·«표 가져오기».",
         "- 가운데: 레지스터 표. 칸마다 왼쪽에 주소, 오른쪽에 값이 있습니다.",
         "- 아래: «통신 기록»(RX ◀ 요청, TX ▶ 응답, EV 사건)과 «파일로 계속 저장»·«지우기».",
+        ...windowLines("ko"),
       ],
     },
     {
@@ -49,7 +51,7 @@ export const help: HelpDoc = {
       body: [
         "- 이 프로그램은 슬레이브 여러 개를 한꺼번에 흉내 낼 수 있습니다. 주소마다 표 4종을 따로 가집니다.",
         "- 칸에 1~247 을 넣고 «추가»(또는 Enter)를 누르면 주소가 늘어납니다. 0(브로드캐스트), 248 이상, 이미 있는 주소는 칸이 빨개지고 이유가 나옵니다.",
-        "- 주소 버튼을 누르면 그 슬레이브의 표를 봅니다. × 로 지웁니다(하나는 남아야 합니다).",
+        "- 주소 버튼을 누르면 그 슬레이브의 표를 봅니다. × 로 지웁니다(하나는 남아야 합니다). 지우면 5초 동안 아래 알림의 «되돌리기» 로 표 값까지 되살릴 수 있습니다.",
         "- 목록에 없는 주소로 온 요청에는 답하지 않고 «무시» 로 셉니다.",
       ],
     },
@@ -137,6 +139,7 @@ export const help: HelpDoc = {
         "- 자기가 보낸 응답이 그대로 되돌아오면(RS-485 에코 등) 다시 답하지 않습니다.",
         "- «파일로 계속 저장»: 고른 파일에 모든 줄을 계속 덧붙입니다(이미 있는 파일이면 뒤에 이어 씁니다). 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
         "- «지우기»: 화면의 통신 기록만 비웁니다.",
+        ...logHandlingLines("ko", {}),
       ],
     },
     {
@@ -163,14 +166,16 @@ export const help: HelpDoc = {
         "- «연결·기록 중에 창을 닫으려 하면 묻기»: 실수로 창을 닫아 시험이 끊기는 것을 막습니다.",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 슬레이브 주소·범위·장애 설정·표 값을 JSON 파일로 옮깁니다. 다른 PortDock 프로그램의 파일은 받지 않습니다.",
         "- «기본값으로»: 화면 설정만 되돌립니다.",
+        ...settingsLines("ko"),
       ],
     },
     {
       title: "단축키·팁",
       body: [
+        ...shortcutLines("ko", {}),
         "- 슬레이브 주소 칸에서 Enter: «추가».",
-        "- 값 칸에서 Enter: 값 반영.",
-        "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다.",
+        "- 값 칸: Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸(옮기면서 반영), Esc 고치기 취소.",
+        "- 엑셀 등에서 여러 칸을 복사해 값 칸에 붙여 넣으면(탭·줄바꿈·쉼표로 나뉜 값) 그 칸부터 이어진 칸에 한꺼번에 들어갑니다. 지금 «표시»(U16·S16·HEX·BIN)로 읽고, 하나라도 못 읽으면 넣지 않고 알립니다. 범위를 넘는 값은 버립니다.",
         "- 값은 연결 전에 넣어 둘 수 있고, 연결 중에 바꿔도 다음 요청부터 바로 반영됩니다.",
         "- 마스터 쪽 화면과 이 표를 나란히 두고, 값을 바꿔 가며 마스터가 제대로 읽는지 확인하면 편합니다.",
       ],
@@ -215,6 +220,7 @@ export const help: HelpDoc = {
         "- Top: the four table buttons, the slave being viewed (ID), «Start», «Count», «Format», «Fill», «Export table», «Import table».",
         "- Middle: the register table. Each cell shows the address on the left and the value on the right.",
         "- Bottom: «Traffic» (RX ◀ requests, TX ▶ replies, EV events) with «Log to file» and «Clear».",
+        ...windowLines("en"),
       ],
     },
     {
@@ -237,7 +243,7 @@ export const help: HelpDoc = {
       body: [
         "- The program can simulate several slaves at once. Each ID has its own four tables.",
         "- Enter 1–247 and click «Add» (or press Enter) to add an ID. 0 (broadcast), 248 or more and duplicates turn the box red with the reason.",
-        "- Click an ID button to view that slave's tables. Remove one with × (at least one must remain).",
+        "- Click an ID button to view that slave's tables. Remove one with × (at least one must remain); «Undo» in the notice restores it, table values included, for 5 seconds.",
         "- Requests to IDs not in the list are not answered and are counted as «Ignored».",
       ],
     },
@@ -325,6 +331,7 @@ export const help: HelpDoc = {
         "- If our own reply comes straight back (RS-485 echo, etc.), it is not answered again.",
         "- «Log to file»: appends every line to the chosen file (an existing file is appended to). A line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
         "- «Clear»: empties the on-screen traffic only.",
+        ...logHandlingLines("en", {}),
       ],
     },
     {
@@ -351,14 +358,16 @@ export const help: HelpDoc = {
         "- «Ask before closing while connected or logging»: protects a running test from an accidental close.",
         "- «Export settings» and «Import settings»: move display settings, slave IDs, ranges, faults and table values as a JSON file. Files from other PortDock programs are refused.",
         "- «Reset to defaults»: resets display settings only.",
+        ...settingsLines("en"),
       ],
     },
     {
       title: "Shortcuts and tips",
       body: [
+        ...shortcutLines("en", {}),
         "- Enter in the slave ID box: «Add».",
-        "- Enter in a value cell: apply the value.",
-        "- F1 or the ? button: this help. Close it with Esc.",
+        "- Value cells: Enter/↓ next cell, ↑/Shift+Enter previous (applies as you move), Esc cancels the edit.",
+        "- Paste several cells copied from Excel etc. (values separated by tabs, new lines or commas) into a value cell to fill consecutive cells at once. Values are read in the current «Format» (U16, S16, HEX, BIN); if any cannot be read nothing is pasted and a notice says why. Values beyond the range are dropped.",
         "- Values can be entered before connecting; changes while connected apply from the next request.",
         "- Keeping the master's screen next to this table and changing values while watching it is a quick way to check reads.",
       ],

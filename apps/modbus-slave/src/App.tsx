@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
@@ -23,6 +23,16 @@ import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
+import { useSimpleLog } from "@shared/useSimpleLog";
+import { FollowButton } from "@shared/FollowButton";
+import { copyTextOf, selectedFrames, useCopyKey } from "@shared/logCopy";
+import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
+import { useToast } from "@shared/Toast";
+import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
+import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
+import { PinButton } from "@shared/PinButton";
+import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { ui } from "@shared/uiText";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -107,6 +117,9 @@ export default function App() {
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
+  // 아주 좁은 창(900px 이하)에서 왼쪽 연결 설정 칸을 펼칠지
+  const [showSide, setShowSide] = useState(false);
+  const toast = useToast(lang);
 
   // ---- 포트
   const [ports, setPorts] = useState<PortInfo[]>([]);
@@ -151,10 +164,13 @@ export default function App() {
 
   // ---- 통신 기록
   const traffic = useRef<Frame[]>([]);
+  // 줄마다 일련번호 — 줄 고르기·따라가기(멈춘 뒤 새 줄 수)에 쓴다
+  const seqRef = useRef(0);
   const timeBase = useRef<number | null>(null);
   const [tick, setTick] = useState(0);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
+      for (const f of e.frames) f.seq = ++seqRef.current;
       traffic.current.push(...e.frames);
       if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
       setTick((v) => v + 1);
@@ -174,16 +190,22 @@ export default function App() {
       setError(e.message);
     }
   }, []);
-  // 기록 칸만 맨 아래로 — scrollIntoView 는 창 전체를 움직이고, 이 WebView 에선 Promise 를 돌려준다
+  // 기록 칸 — 맨 아래에 있을 때만 새 줄을 따라간다(위로 굴리면 멈추고 «↓ 맨 아래로»). 마지막 300줄만 그린다
   const tlogRef = useRef<HTMLDivElement>(null);
-  const atBottom = useRef(true);
-  useEffect(() => {
-    const el = tlogRef.current;
-    if (el && atBottom.current && settings.autoScroll) el.scrollTop = el.scrollHeight;
-  }, [tick, settings.autoScroll]);
+  const log = useSimpleLog(traffic, seqRef, tlogRef, settings.autoScroll, tick, 300);
+  const [menu, setMenu] = useState<MenuAt>(null);
+  function clearTraffic() {
+    traffic.current = [];
+    log.sel.clear();
+    setMenu(null);
+    log.follow.resume();
+    setTick((x) => x + 1);
+  }
 
   // ---- 슬레이브·표 설정 (연결과 무관하게 살아 있다)
   const [ids, setIds] = useState<number[]>(() => load("ids", [1]));
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
   const [sel, setSel] = useState<number>(() => load("sel", 1));
   const [table, setTable] = useState<Table>(() => load("table", "holding-registers"));
   const [ranges, setRanges] = useState<Record<string, Range>>(() => load("ranges", {}));
@@ -376,6 +398,26 @@ export default function App() {
     remember(sel, table, range.start + i, [v]);
   }
 
+  /** 여러 값 붙여넣기(엑셀 등) — i 번째 칸부터 이어서 한 번에 쓴다. 범위를 넘는 값은 버리고 알린다 */
+  async function pasteMany(i: number, vals: number[]) {
+    const room = Math.max(0, range.count - i);
+    const put = vals.slice(0, room);
+    if (!put.length) return;
+    try {
+      await api.setValues(sel, table, range.start + i, put);
+    } catch (e) {
+      setError(String(e));
+      return;
+    }
+    const next = values.slice();
+    put.forEach((v, k) => i + k < next.length && (next[i + k] = v));
+    prev.current.v = next;
+    setValues(next);
+    remember(sel, table, range.start + i, put);
+    const msg = t("pasted").replace("{n}", String(put.length)).replace("{a}", String(range.start + i));
+    toast.show(vals.length > put.length ? `${msg} · ${t("pasteCut").replace("{n}", String(vals.length - put.length))}` : msg);
+  }
+
   async function fill() {
     if (!(await ask(t("askFill"), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
     const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
@@ -483,6 +525,43 @@ export default function App() {
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
 
+  /** 슬레이브 지우기 — 확인 창 대신 5초 «되돌리기». 되돌리면 표 값·범위도 그대로 돌아온다 */
+  function deleteSlave(id: number) {
+    const wasSel = sel;
+    // 지우면 저장된 표 값도 빠지므로(아래 효과) 미리 떠 둔다
+    const snap = JSON.parse(JSON.stringify(savedVals.current[id] ?? {})) as SavedValues[string];
+    const rest = ids.filter((x) => x !== id);
+    setIds(rest);
+    if (sel === id) setSel(rest[0]);
+    toast.show(ui(lang, "deletedSlave", { a: id }), {
+      undo: async () => {
+        // 그사이 다른 슬레이브를 더했어도 그대로 두고 이 주소만 되살린다
+        const back = [...new Set([...idsRef.current, id])].sort((a, b) => a - b);
+        try {
+          await api.setSlaveIds(back);
+          for (const tb of TABLES) {
+            const r = ranges[key(id, tb.id)] ?? { start: 0, count: 100 };
+            await api.setRange(id, tb.id, r.start, r.count);
+            const m = snap?.[tb.id];
+            const addrs = m ? Object.keys(m).map(Number) : [];
+            if (m && addrs.length) {
+              const lo = Math.min(...addrs);
+              const arr = new Array<number>(Math.max(...addrs) - lo + 1).fill(0);
+              for (const a of addrs) arr[a - lo] = m[a] & 0xffff;
+              await api.setValues(id, tb.id, lo, arr);
+            }
+          }
+        } catch (e) {
+          setError(String(e));
+        }
+        savedVals.current[id] = snap;
+        flushValues();
+        setIds(back);
+        if (wasSel === id) setSel(id);
+      },
+    });
+  }
+
   function addId() {
     const s = newId.trim();
     if (!s) return;
@@ -500,7 +579,6 @@ export default function App() {
   }
 
   const statusKey = `status_${status}` as Key;
-  const frames = traffic.current.slice(-300);
 
   // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
   if (!traffic.current.length) timeBase.current = null;
@@ -508,8 +586,32 @@ export default function App() {
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(connected || !!logPath, settings.confirmExit, lang, "PortDock Modbus Slave");
 
+  // ---- 단축키: F4 연결·끊기, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록
+  const runDisabled = connecting || (!connected && !ports.some((p) => p.name === cfg.port));
+  useShortcuts([
+    { key: "F4", run: () => !runDisabled && void (connected ? disconnect() : connect()) },
+    { key: "l", ctrl: true, run: clearTraffic },
+    { key: "l", ctrl: true, shift: true, run: () => connected && void toggleLog() },
+  ]);
+  // Ctrl+C — 고른 통신 기록 줄을 «시각 방향 HEX» 로
+  const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
+  useCopyKey(
+    () => {
+      const list = selectedFrames(log.sel, log.frameOf);
+      return list.length ? copyTextOf(list, "lines", "hex", fmt) : null;
+    },
+    (ok) => onCopied(ok, log.sel.set.size),
+  );
+
+  // ---- 창 제목: «COM5 · 슬레이브 1,2 — PortDock Modbus Slave»
+  const parityCh = cfg.parity === "odd" ? "O" : cfg.parity === "even" ? "E" : "N";
+  const slaveList = ids.length > 6 ? `${ids.slice(0, 6).join(",")},…` : ids.join(",");
+  useWindowTitle(windowTitle("PortDock Modbus Slave", connected ? [cfg.port, t("titleSlaves").replace("{a}", slaveList), status !== "connected" && t(statusKey)] : [], !!logPath));
+  const summaryLine = `${cfg.port || t("noPorts")} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits} · ${t("titleSlaves").replace("{a}", slaveList)} · ${t(statusKey)}`;
+
   return (
-    <div className="app">
+    <div className={showSide ? "app show-side" : "app"}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
       <aside className="side">
         <div className="brand">
           <span className="logo">
@@ -518,6 +620,7 @@ export default function App() {
           <span className="brand-tools">
           <select
             className="lang"
+            aria-label={lang === "ko" ? "언어" : "Language"}
             value={lang}
             onChange={(e) => {
               setLang(e.target.value as Lang);
@@ -527,13 +630,15 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock Modbus Slave" lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>
-          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+          <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
 
@@ -590,7 +695,7 @@ export default function App() {
             </select>
           </label>
         </div>
-        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={connecting || (!connected && !ports.some((p) => p.name === cfg.port))}>
+        <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={runDisabled}>
           {connected ? t("disconnect") : t("connect")}
         </button>
         {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -619,12 +724,7 @@ export default function App() {
                   className="chip-x"
                   aria-label={`${t("delete")} ${id}`}
                   title={`${t("delete")} ${id}`}
-                  onClick={async () => {
-                    if (!(await ask(t("askDelSlave").replace("{a}", String(id)), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
-                    const rest = ids.filter((x) => x !== id);
-                    setIds(rest);
-                    if (sel === id) setSel(rest[0]);
-                  }}
+                  onClick={() => deleteSlave(id)}
                 >
                   ×
                 </button>
@@ -706,6 +806,11 @@ export default function App() {
       </aside>
 
       <main className="main">
+        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={connectErr && !connected ? "s-disconnected" : `s-${status}`} summary={summaryLine}>
+          <button className={connected ? "btn small danger" : "btn small primary"} onClick={connected ? disconnect : connect} disabled={runDisabled} data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)}>
+            {connected ? t("disconnect") : t("connect")}
+          </button>
+        </NarrowBar>
         <div className="toolbar">
           {TABLES.map((tb) => (
             <button key={tb.id} className={table === tb.id ? "seg on" : "seg"} onClick={() => setTable(tb.id)} title={tb.fc}>
@@ -769,7 +874,13 @@ export default function App() {
               {bits ? (
                 <input type="checkbox" checked={v !== 0} onChange={(e) => writeValue(i, e.target.checked ? 1 : 0)} />
               ) : (
-                <RegInput value={v} format={format} onCommit={(n) => writeValue(i, n)} />
+                <RegInput
+                  value={v}
+                  format={format}
+                  onCommit={(n) => writeValue(i, n)}
+                  onPasteMany={(vals) => pasteMany(i, vals)}
+                  onPasteBad={(a) => toast.show(t("pasteBad").replace("{a}", a).replace("{b}", format.toUpperCase()), { error: true })}
+                />
               )}
             </div>
           ))}
@@ -779,36 +890,47 @@ export default function App() {
           <div className="toolbar">
             <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
             <span className="grow" />
-            <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn small" onClick={toggleLog} disabled={!connected}>
+            <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn small" onClick={toggleLog} disabled={!connected}>
               {logPath ? t("stopLog") : t("logToFile")}
             </button>
-            <button data-tip={tip(lang, "clear")}
-              className="btn small"
-              onClick={() => {
-                traffic.current = [];
-                setTick((x) => x + 1);
-              }}
-            >
+            <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearTraffic}>
               {t("clear")}
             </button>
           </div>
-          <div
-            className="tlog"
-            ref={tlogRef}
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
-            }}
-          >
-            {frames.map((f, i) => (
-              <div key={i} className={`trow ${f.dir}`}>
-                <span className="ts">{fmt(f.ts)}</span>
-                <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
-                <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
-                {f.check === false && <span className="badge fail">CRC</span>}
-              </div>
-            ))}
+          <div className="log-wrap">
+            <div className="tlog" ref={tlogRef}>
+              {log.frames.map((f) => {
+                const seq = f.seq ?? 0;
+                return (
+                  <div
+                    key={seq}
+                    className={`trow ${f.dir}${log.sel.has(seq) ? " sel" : ""}${log.sel.primary === seq ? " primary" : ""}`}
+                    onClick={(e: ReactMouseEvent) => log.sel.click(e, seq)}
+                    onContextMenu={(e: ReactMouseEvent) => {
+                      e.preventDefault();
+                      log.sel.context(seq);
+                      setMenu({ x: e.clientX, y: e.clientY, seq });
+                    }}
+                  >
+                    <span className="ts">{fmt(f.ts)}</span>
+                    <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
+                    <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
+                    {f.check === false && <span className="badge fail">CRC</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <FollowButton follow={log.follow} lang={lang} hidden={!traffic.current.length} />
           </div>
+          {menu && (
+            <LogMenu
+              x={menu.x}
+              y={menu.y}
+              label={t("traffic")}
+              onClose={() => setMenu(null)}
+              items={logMenuItems({ lang, frames: selectedFrames(log.sel, log.frameOf), clicked: log.frameOf(menu.seq), view: "hex", fmt, onCopied })}
+            />
+          )}
           {error && <div className="error">{error}</div>}
         </div>
       </main>
@@ -826,12 +948,29 @@ export default function App() {
           busy={connected || !!logPath}
         />
       )}
+      {toast.node}
     </div>
   );
 }
 
-/** 레지스터 칸 — 입력 중엔 화면 갱신이 덮어쓰지 않게, 엔터·포커스 잃을 때 반영 */
-function RegInput({ value, format, onCommit }: { value: number; format: Format; onCommit: (n: number) => void }) {
+/**
+ * 레지스터 칸 — 입력 중엔 화면 갱신이 덮어쓰지 않게, 엔터·포커스 잃을 때 반영.
+ * 표 칸처럼: Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸(옮기면서 반영), Esc 고치기 취소.
+ * 엑셀 등에서 여러 값(탭·줄바꿈·쉼표로 나뉨)을 붙여 넣으면 이 칸부터 이어진 칸에 한꺼번에 넣는다.
+ */
+function RegInput({
+  value,
+  format,
+  onCommit,
+  onPasteMany,
+  onPasteBad,
+}: {
+  value: number;
+  format: Format;
+  onCommit: (n: number) => void;
+  onPasteMany: (vals: number[]) => void;
+  onPasteBad: (token: string) => void;
+}) {
   const [text, setText] = useState(show(value, format));
   const [editing, setEditing] = useState(false);
   useEffect(() => {
@@ -843,6 +982,29 @@ function RegInput({ value, format, onCommit }: { value: number; format: Format; 
     if (n == null) setText(show(value, format));
     else if (n !== value) onCommit(n);
   };
+  /** 앞(-1)·다음(+1) 칸으로 — 옮기면 지금 칸은 포커스를 잃으며 반영된다. 끝 칸이면 반영만 */
+  const go = (el: HTMLInputElement, d: number) => {
+    const all = [...document.querySelectorAll<HTMLInputElement>(".regs .regval")];
+    const next = all[all.indexOf(el) + d];
+    if (next) {
+      next.focus();
+      next.select();
+    } else commit();
+  };
+  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const raw = e.clipboardData.getData("text");
+    const parts = raw
+      .split(/[\t\r\n,]+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (parts.length <= 1) return; // 값 하나는 보통 붙여넣기
+    e.preventDefault();
+    const vals = parts.map((p) => parse(p, format));
+    const bad = vals.findIndex((v) => v == null);
+    if (bad >= 0) return onPasteBad(parts[bad]);
+    setText(show(vals[0]!, format));
+    onPasteMany(vals as number[]);
+  };
   return (
     <input
       className={parse(text, format) == null ? "regval bad" : "regval"}
@@ -850,15 +1012,19 @@ function RegInput({ value, format, onCommit }: { value: number; format: Format; 
       onFocus={() => setEditing(true)}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
+      onPaste={onPaste}
       onKeyDown={(e) => {
-        if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
-        // 표 칸처럼 Enter 로 반영하고 다음 칸(Shift+Enter 는 앞 칸)으로 — 마지막 칸이면 반영만
-        const all = [...document.querySelectorAll<HTMLInputElement>(".regs .regval")];
-        const next = all[all.indexOf(e.currentTarget) + (e.shiftKey ? -1 : 1)];
-        if (next) {
-          next.focus();
-          next.select();
-        } else commit();
+        if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.key === "Enter" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          go(e.currentTarget, e.key === "ArrowUp" || (e.key === "Enter" && e.shiftKey) ? -1 : 1);
+        } else if (e.key === "Escape") {
+          // 고치던 글자를 버리고 지금 값으로 — 포커스는 그대로(다시 칠 수 있게)
+          e.preventDefault();
+          setText(show(value, format));
+          const el = e.currentTarget;
+          requestAnimationFrame(() => el.select());
+        }
       }}
     />
   );

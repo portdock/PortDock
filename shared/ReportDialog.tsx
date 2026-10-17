@@ -239,7 +239,7 @@ export function ReportDialog({
           <b>
             {app} · {u.title}
           </b>
-          <button className="btn small ghost" onClick={close} title={u.close}>
+          <button className="btn small ghost" onClick={close} title={u.close} aria-label={u.close}>
             ✕
           </button>
         </div>

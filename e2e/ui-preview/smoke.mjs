@@ -30,6 +30,8 @@ addEventListener('error', (e) => window.__smoke.errors.push('onerror: ' + (e.err
 addEventListener('unhandledrejection', (e) => window.__smoke.errors.push('unhandledrejection: ' + (e.reason && e.reason.stack || e.reason)));
 const __ce = console.error;
 console.error = function (...a) { window.__smoke.errors.push('console.error: ' + a.map((x) => x && x.stack || String(x)).join(' ').slice(0, 600)); return __ce.apply(console, a); };
+// 복사(Ctrl+C·우클릭 메뉴)한 글을 잡아 둔다 — 헤드리스에서는 클립보드를 읽을 수 없다
+try { if (navigator.clipboard) navigator.clipboard.writeText = (t) => { window.__smoke.clip = String(t); return Promise.resolve(); }; } catch (e) {}
 `;
 
 // ---- 페이지 안에서 도는 점검 도구(문자열로 넣는다)
@@ -293,6 +295,333 @@ async function runApp(app, port) {
       return s;
     }
     const mock = (code) => d.executeScript(`return (window.__pdMock && (${code}))`);
+    const conv = (step, detail, shotIt = true) => (async () => add(step, "convenience", detail, shotIt ? await shot(app, `${combo.name}-${step}`) : undefined))();
+    const blur = () => d.executeScript("document.activeElement && document.activeElement.blur && document.activeElement.blur()");
+    const keys = async (...k) => {
+      await d.actions().sendKeys(...k).perform();
+      await sleep(200);
+    };
+    const chord = async (mods, key) => {
+      let a = d.actions();
+      for (const m of mods) a = a.keyDown(m);
+      a = a.sendKeys(key);
+      for (const m of [...mods].reverse()) a = a.keyUp(m);
+      await a.perform();
+      await sleep(250);
+    };
+    const calls = (name) => js(`return window.__pdMock.calls.filter((c) => c === ${JSON.stringify(name)}).length`);
+
+    /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
+    async function convenience() {
+      const simple = app === "modbus-slave" || app === "simulator";
+      const LOG = simple ? ".tlog" : ".log";
+      const ROW = simple ? ".tlog .trow" : ".log .row";
+      // ---- 창 제목
+      const title = await d.getTitle();
+      if (!/ — PortDock /.test(title)) await conv("title", `연결 중인데 창 제목에 상태가 없음: «${title}»`, false);
+
+      // ---- 따라가기: 로그가 넘칠 때까지 기다린 뒤 위로 굴리면 멈추고, 새 줄이 와도 화면이 그대로, 버튼·End 로 재개
+      const over = await jsAsync(`const el = document.querySelector('${LOG}'); for (let i = 0; i < 75 && el.scrollHeight <= el.clientHeight + 60; i++) await new Promise((r) => setTimeout(r, 200)); return el.scrollHeight > el.clientHeight + 60;`);
+      if (!over) await conv("follow", "15초 안에 로그가 넘치지 않아 따라가기를 시험하지 못함");
+      else {
+        const gap0 = await js(`const el = document.querySelector('${LOG}'); return el.scrollHeight - el.scrollTop - el.clientHeight;`);
+        if (gap0 > 30) await conv("follow", `따라가는 중인데 맨 아래가 아님(남은 ${gap0}px)`);
+        await js(`const el = document.querySelector('${LOG}'); el.scrollTop = Math.max(0, el.scrollTop - 120);`);
+        await sleep(300);
+        const top1 = await js(`return document.querySelector('${LOG}').scrollTop`);
+        await sleep(2300);
+        const s2 = await js(`const el = document.querySelector('${LOG}'); const b = document.querySelector('.follow-btn'); return { top: el.scrollTop, btn: b && b.textContent, box: (document.querySelector('.toolbar label.inline input[type=checkbox]') || {}).checked };`);
+        if (!s2.btn) await conv("follow-paused", "위로 굴렸는데 «↓ 맨 아래로» 버튼이 안 보임");
+        if (Math.abs(s2.top - top1) > 2) await conv("follow-paused", `따라가기를 멈췄는데 화면이 움직임 (${top1} → ${s2.top})`);
+        if (!simple && s2.box !== false) await conv("follow-paused", "멈췄는데 «자동 스크롤» 체크가 그대로");
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-follow-paused`);
+        // 멈춘 동안 줄 고르기: 누르기·Shift+누르기 → Ctrl+C
+        const rows = await d.findElements(By.css(ROW));
+        if (rows.length >= 4) {
+          await rows[1].click();
+          await d.actions().keyDown(Key.SHIFT).click(rows[3]).keyUp(Key.SHIFT).perform();
+          await sleep(150);
+          const nSel = await js(`return document.querySelectorAll('${ROW}.sel').length`);
+          if (nSel !== 3) await conv("select", `Shift+누르기로 3줄을 골랐는데 ${nSel}줄`);
+          await d.actions().keyDown(Key.CONTROL).click(rows[2]).keyUp(Key.CONTROL).perform();
+          await sleep(150);
+          const nSel2 = await js(`return document.querySelectorAll('${ROW}.sel').length`);
+          if (nSel2 !== 2) await conv("select", `Ctrl+누르기로 한 줄을 뺐는데 ${nSel2}줄`);
+          await blur();
+          await js("window.__smoke.clip = null");
+          await chord([Key.CONTROL], "c");
+          const clip = await js("return window.__smoke.clip");
+          if (!clip || clip.split(/\r?\n/).length !== 2 || !/^\S+ (RX|TX|EV)\b/.test(clip)) await conv("ctrl-c", `Ctrl+C 로 고른 2줄이 «시각 방향 내용» 으로 복사되지 않음: ${JSON.stringify(clip)}`);
+          if (!(await js("return !!document.querySelector('.toast')"))) await conv("ctrl-c", "복사한 뒤 알림이 안 보임");
+          // 오른쪽 버튼 메뉴 — 데이터 줄에서
+          const dataRow = (await d.findElements(By.css(`${ROW}.rx, ${ROW}.tx`)))[0];
+          if (dataRow) {
+            await d.actions().contextClick(dataRow).perform();
+            await sleep(200);
+            const items = await js("return [...document.querySelectorAll('.log-menu button')].map((b) => b.textContent)");
+            if (items.length < 5) await conv("menu", `우클릭 메뉴 항목이 모자람: ${JSON.stringify(items)}`);
+            if (combo.name === "ko-light") await shot(app, `${combo.name}-menu`);
+            await js("window.__smoke.clip = null; document.querySelectorAll('.log-menu button')[4].click()");
+            await sleep(150);
+            const c = await js("return window.__smoke.clip");
+            if (!c || !/^\{0x[0-9A-F]{2}(, 0x[0-9A-F]{2})*\}/.test(c)) await conv("menu", `«C 배열로 복사» 결과가 이상함: ${JSON.stringify(c)}`);
+            if (await js("return !!document.querySelector('.log-menu')")) await conv("menu", "메뉴 항목을 눌렀는데 메뉴가 닫히지 않음");
+            await d.actions().contextClick(dataRow).perform();
+            await sleep(150);
+            await keys(Key.ESCAPE);
+            if (await js("return !!document.querySelector('.log-menu')")) await conv("menu", "Esc 로 우클릭 메뉴가 닫히지 않음");
+          }
+        }
+        // End → 다시 따라가기
+        await blur();
+        await keys(Key.END);
+        await sleep(200);
+        const s3 = await js(`const el = document.querySelector('${LOG}'); return { gap: el.scrollHeight - el.scrollTop - el.clientHeight, btn: !!document.querySelector('.follow-btn') };`);
+        if (s3.btn || s3.gap > 30) await conv("follow-end", `End 로 다시 따라가지 않음 (버튼 ${s3.btn}, 남은 ${s3.gap}px)`);
+        // 따라가는 중에 줄을 눌러도 따라가기는 그대로
+        const r2 = (await d.findElements(By.css(ROW))).slice(-1)[0];
+        if (r2) {
+          await r2.click();
+          await sleep(1500);
+          const s4 = await js(`const el = document.querySelector('${LOG}'); return { gap: el.scrollHeight - el.scrollTop - el.clientHeight, btn: !!document.querySelector('.follow-btn') };`);
+          if (s4.btn || s4.gap > 30) await conv("follow-click", "따라가는 중에 줄을 눌렀더니 따라가기가 꺼짐");
+        }
+      }
+      await verify("follow/select/menu");
+
+      // ---- 단축키: Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, F4 끊기·다시 연결
+      await blur();
+      await chord([Key.CONTROL], "l");
+      const left = await js(`return document.querySelectorAll('${ROW}').length`);
+      if (left > 2) await conv("ctrl-l", `Ctrl+L 뒤에도 로그가 ${left}줄`);
+      if (!simple) {
+        const n0 = await calls("plugin:dialog|save");
+        await chord([Key.CONTROL], "s");
+        if ((await calls("plugin:dialog|save")) !== n0 + 1) await conv("ctrl-s", "Ctrl+S 로 화면 저장 창이 열리지 않음", false);
+      }
+      const n1 = await calls("plugin:dialog|save");
+      await chord([Key.CONTROL, Key.SHIFT], "l");
+      if ((await calls("plugin:dialog|save")) !== n1 + 1) await conv("ctrl-shift-l", "Ctrl+Shift+L 로 파일 기록 창이 열리지 않음", false);
+      const before = (await state()).btn;
+      await keys(Key.F4);
+      await waitSettled("F4 stop", (s) => s.btn !== before);
+      await keys(Key.F4);
+      await waitSettled("F4 start", (s) => s.btn === before);
+      await sleep(800);
+      await verify("shortcuts");
+
+      // ---- 반복 보내기 → Esc 로 멈춤 (입력칸 밖에서)
+      if (app !== "modbus-slave") {
+        const sendSel = app === "simulator" ? ".unsol input.mono" : ".sendtext";
+        await js(`__sm.setVal(document.querySelector(${JSON.stringify(sendSel)}), ${JSON.stringify(VALID_TEXT[app])})`);
+        await sleep(300);
+        const box = (await d.findElements(By.css(app === "simulator" ? ".unsol label.inline input[type=checkbox]" : ".sendrow.sub label.inline input[type=checkbox]")))[0];
+        if (box && (await box.isEnabled())) {
+          await box.click();
+          await sleep(150);
+          await keys(Key.ESCAPE);
+          if (await box.isSelected()) await conv("esc-repeat", "Esc 로 반복 보내기가 멈추지 않음");
+        } else await conv("esc-repeat", "반복 체크가 꺼져 있어 Esc 를 시험하지 못함", false);
+      }
+
+      // ---- 숫자 칸: ↑ +1, Shift+↑ +10, PageDown −100
+      const num = (await d.findElements(By.css(app === "simulator" ? ".unsol input.num" : app === "modbus-slave" ? ".main .toolbar input.num" : ".sendrow.sub input.num")))[app === "modbus-slave" ? 1 : 0];
+      if (num) {
+        const v0 = Number(await num.getAttribute("value"));
+        await num.click();
+        await keys(Key.ARROW_UP);
+        await chord([Key.SHIFT], Key.ARROW_UP);
+        const v1 = Number(await num.getAttribute("value"));
+        await keys(Key.PAGE_DOWN);
+        const v2 = Number(await num.getAttribute("value"));
+        if (v1 !== v0 + 11 || v2 !== Math.max(1, v1 - 100)) await conv("numinput", `숫자 칸 키: ${v0} → ↑·Shift+↑ ${v1}(기대 ${v0 + 11}) → PageDown ${v2}`);
+        await blur();
+      }
+      // 속도 칸: ↑ 는 목록의 다음 값
+      if (app === "serial" || app === "modbus-slave") {
+        const baud = (await d.findElements(By.css("input[list=bauds]")))[0];
+        if (baud) {
+          await baud.click();
+          await keys(Key.ARROW_UP);
+          const b = await baud.getAttribute("value");
+          if (b !== "19200") await conv("baud-step", `속도 칸 9600 에서 ↑ → ${b} (기대 19200)`);
+          await keys(Key.ARROW_DOWN);
+          await blur();
+        }
+      }
+
+      // ---- HEX ↔ ASCII: 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
+      if (app !== "modbus-slave") {
+        const row = app === "simulator" ? ".unsol .arrow" : ".sendbar .sendrow";
+        const r = await jsAsync(`
+          const row = document.querySelector(${JSON.stringify(row)});
+          const mode = [...row.querySelectorAll('select')].find((s) => s.querySelector('option[value=ascii]'));
+          const orig = mode.value;
+          const ck = [...row.querySelectorAll('select')].find((s) => s.querySelector('option[value=crc16-modbus]'));
+          const inp = row.querySelector('input.sendtext, input.mono');
+          const w = () => new Promise((r) => setTimeout(r, 120));
+          __sm.setVal(mode, 'hex'); await w();
+          __sm.setVal(inp, '41 54 0D 0A'); await w();
+          __sm.setVal(ck, 'crc16-modbus'); await w();
+          __sm.setVal(mode, 'ascii'); await w();
+          const asc = inp.value;
+          const notes = [...document.querySelectorAll('.notice')].map((n) => n.textContent);
+          const off = document.querySelector('.notice.warn .btn');
+          if (off) off.click();
+          await w();
+          const ckAfter = ck.value;
+          __sm.setVal(mode, 'hex'); await w();
+          const back = inp.value;
+          __sm.setVal(mode, orig); await w();
+          return { asc, back, notes, ckAfter };`);
+        if (r.asc !== "AT\\r\\n" || r.back !== "41 54 0D 0A") await conv("notation", `표기 바꾸기 결과가 이상함: ${JSON.stringify(r)}`);
+        if (r.notes.length < 2 || r.ckAfter !== "") await conv("notation", `체크섬 알림줄·«끄기» 가 동작하지 않음: ${JSON.stringify(r)}`);
+        await js(`__sm.setVal(document.querySelector(${JSON.stringify(app === "simulator" ? ".unsol input.mono" : ".sendtext")}), ${JSON.stringify(VALID_TEXT[app])})`);
+      }
+
+      // ---- 명령 목록: 추가하면 이름 칸 포커스, ↑↓·Alt+↑↓, 복제, 지우기 → 되돌리기, 이름 칸 Enter 로 보내기
+      if (!simple) {
+        const nb = (await d.findElements(By.css(".toolbar .narrow-only")))[0];
+        if (nb && (await nb.isDisplayed())) await nb.click();
+        await sleep(200);
+        const add3 = await jsAsync(`
+          const w = () => new Promise((r) => setTimeout(r, 200));
+          const inp = document.querySelector('.sendtext');
+          const mode = [...document.querySelectorAll('.sendbar .sendrow select')].find((s) => s.querySelector('option[value=ascii]'));
+          __sm.setVal(mode, 'hex'); await w();
+          const out = [];
+          for (const v of ['01 03 00 00 00 0A', '01 06 00 01 00 03', '01 10 00 00']) {
+            __sm.setVal(inp, v); await w();
+            const btn = [...document.querySelectorAll('.sendrow.sub .btn.small')].pop();
+            btn.click(); await w(); await w();
+            out.push(document.activeElement && document.activeElement.className + '=' + document.activeElement.value);
+          }
+          return out;`);
+        if (!add3.every((a, i) => a && a.startsWith("cmdname=") && a.endsWith(["01 03 00 00 00 0A", "01 06 00 01 00 03", "01 10 00 00"][i])))
+          await conv("cmd-add-focus", `명령을 추가한 뒤 이름 칸에 포커스가 가지 않음: ${JSON.stringify(add3)}`);
+        const names = () => js("return [...document.querySelectorAll('.cmdname')].map((e) => e.value)");
+        const n0 = await names();
+        await js("document.querySelectorAll('.cmd-move .mv')[1].click()"); // 첫 줄 ↓
+        await sleep(200);
+        const n1 = await names();
+        if (n1[0] !== n0[1] || n1[1] !== n0[0]) await conv("cmd-move", `↓ 로 순서가 안 바뀜: ${JSON.stringify(n1)}`);
+        const nameEl = (await d.findElements(By.css(".cmdname")))[1];
+        await nameEl.click();
+        await chord([Key.ALT], Key.ARROW_UP);
+        const n2 = await names();
+        if (JSON.stringify(n2) !== JSON.stringify(n0)) await conv("cmd-alt-up", `Alt+↑ 로 순서가 안 바뀜: ${JSON.stringify(n2)}`);
+        const sends0 = await calls("send");
+        const nameNow = (await d.findElements(By.css(".cmdname")))[0];
+        await nameNow.click();
+        await keys(Key.ENTER);
+        await sleep(200);
+        if ((await calls("send")) !== sends0 + 1) await conv("cmd-enter", "이름 칸 Enter 로 명령이 보내지지 않음");
+        await js("[...document.querySelectorAll('.cmd')][0].querySelectorAll('.btn.ghost')[1].click()"); // ⧉
+        await sleep(200);
+        const n3 = await names();
+        if (n3.length !== 4 || n3[1] !== `${n0[0]} (2)`) await conv("cmd-dup", `복제 결과가 이상함: ${JSON.stringify(n3)}`);
+        await js("[...document.querySelectorAll('.cmd')][0].querySelectorAll('.btn.ghost')[2].click()"); // ✕
+        await sleep(200);
+        const n4 = await names();
+        const toast = await js("const t = document.querySelector('.toast'); return t && t.textContent");
+        if (n4.length !== 3 || !toast) await conv("cmd-del", `지우기 뒤 목록 ${n4.length}개 · 알림 ${toast}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-cmd-undo`);
+        await js("document.querySelector('.toast .toast-undo').click()");
+        await sleep(200);
+        const n5 = await names();
+        if (JSON.stringify(n5) !== JSON.stringify(n3)) await conv("cmd-undo", `되돌리기 뒤 목록이 원래대로가 아님: ${JSON.stringify(n5)}`);
+        await blur();
+        const close = (await d.findElements(By.css(".close-right")))[0];
+        if (close && (await close.isDisplayed())) await close.click();
+        await verify("commands");
+      }
+
+      // ---- Modbus Slave: 레지스터 칸 ↓↑·Esc·여러 값 붙여넣기, 슬레이브 지우기 → 되돌리기
+      if (app === "modbus-slave") {
+        const cells = await d.findElements(By.css(".regs .regval"));
+        await cells[0].click();
+        await keys(Key.ARROW_DOWN);
+        if (!(await js("return document.activeElement === document.querySelectorAll('.regs .regval')[1]"))) await conv("reg-down", "↓ 로 다음 칸에 가지 않음");
+        await keys(Key.ARROW_UP);
+        if (!(await js("return document.activeElement === document.querySelectorAll('.regs .regval')[0]"))) await conv("reg-up", "↑ 로 앞 칸에 가지 않음");
+        const orig = await cells[0].getAttribute("value");
+        await keys("777");
+        await keys(Key.ESCAPE);
+        if ((await cells[0].getAttribute("value")) !== orig) await conv("reg-esc", "Esc 로 고치기가 취소되지 않음");
+        await js(`const dt = new DataTransfer(); dt.setData('text/plain', '7\\t8\\t9\\r\\n'); document.querySelectorAll('.regs .regval')[0].dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));`);
+        await blur();
+        await sleep(900);
+        const vals = await js("return [...document.querySelectorAll('.regs .regval')].slice(0, 3).map((e) => e.value)");
+        if (vals.join(",") !== "7,8,9") await conv("reg-paste", `여러 값 붙여넣기 결과: ${vals}`);
+        // 슬레이브 2 를 더하고 지운 뒤 되돌리기
+        await js(`const i = document.querySelector('.side .row2 input'); __sm.setVal(i, '2'); __sm.key(i, 'Enter');`);
+        await sleep(300);
+        await js("[...document.querySelectorAll('.chip')].find((c) => c.textContent.startsWith('2')).querySelector('.chip-x').click()");
+        await sleep(200);
+        const gone = await js("return ![...document.querySelectorAll('.chip-btn')].some((b) => b.textContent === '2') && !!document.querySelector('.toast .toast-undo')");
+        if (!gone) await conv("slave-del", "슬레이브를 지웠는데 남아 있거나 «되돌리기» 알림이 없음");
+        await js("document.querySelector('.toast .toast-undo') && document.querySelector('.toast .toast-undo').click()");
+        await sleep(400);
+        if (!(await js("return [...document.querySelectorAll('.chip-btn')].some((b) => b.textContent === '2')"))) await conv("slave-undo", "되돌리기로 슬레이브가 돌아오지 않음");
+        await verify("modbus-slave keys");
+      }
+      // ---- Simulator: 규칙 지우기 → 되돌리기
+      if (app === "simulator") {
+        await js("[...document.querySelectorAll('.ar > .arrow .btn.small')][0].click()");
+        await sleep(200);
+        const n = await js("return document.querySelectorAll('.arcard').length");
+        await js("document.querySelector('.arcard .arrow .btn.small.ghost:last-child').click()");
+        await sleep(200);
+        const n2 = await js("return document.querySelectorAll('.arcard').length");
+        await js("document.querySelector('.toast .toast-undo') && document.querySelector('.toast .toast-undo').click()");
+        await sleep(200);
+        const n3 = await js("return document.querySelectorAll('.arcard').length");
+        if (n2 !== n - 1 || n3 !== n) await conv("rule-undo", `규칙 지우기·되돌리기: ${n} → ${n2} → ${n3}`);
+        await verify("simulator rules");
+      }
+
+      // ---- 항상 위 📌
+      const pin = (await d.findElements(By.css(".icon-btn.pin")))[0];
+      if (!pin) await conv("pin", "📌 버튼이 없음", false);
+      else {
+        const c0 = await calls("plugin:window|set_always_on_top");
+        await pin.click();
+        await sleep(200);
+        const on = await pin.getAttribute("aria-pressed");
+        if (on !== "true" || (await calls("plugin:window|set_always_on_top")) <= c0) await conv("pin", `📌 를 눌렀는데 항상 위가 켜지지 않음 (aria-pressed ${on})`);
+        await pin.click();
+        await sleep(150);
+      }
+      await blur();
+      await verify("convenience end");
+    }
+
+    /** 좁은 창(안쪽 760×600): 왼쪽 칸이 접히고 요약 줄·«⚙ 연결 설정» 이 보이며, 펼쳐도·연결해도 넘치지 않는지 */
+    async function narrow() {
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await load(port, combo);
+      await verify("narrow load");
+      const nb = await js("const b = document.querySelector('.narrow-bar'); return !!b && getComputedStyle(b).display !== 'none' && getComputedStyle(document.querySelector('aside.side')).display === 'none'");
+      if (!nb) await conv("narrow", "760 너비에서 왼쪽 칸이 접히지 않거나 요약 줄이 없음");
+      await js("document.querySelector('.narrow-bar .side-toggle').click()");
+      await sleep(250);
+      const side = await js("const s = document.querySelector('aside.side'); const r = s.getBoundingClientRect(); return getComputedStyle(s).display !== 'none' && r.width > 200 && r.right <= innerWidth");
+      if (!side) await conv("narrow-side", "«⚙ 연결 설정» 으로 왼쪽 칸이 펼쳐지지 않음");
+      await verify("narrow side open");
+      if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-narrow-760-side`);
+      await js("document.querySelector('.side-close').click()");
+      await sleep(200);
+      await js("document.querySelector('.narrow-bar .btn.primary').click()");
+      await sleep(2500);
+      await verify("narrow running");
+      await shot(app, `${combo.name}-narrow-760-running`);
+      await blur();
+      await keys(Key.F4);
+      await sleep(600);
+      await fitWindow();
+    }
 
     try {
       await load(port, combo);
@@ -394,6 +723,9 @@ async function runApp(app, port) {
         }
       }
 
+      // 편의성(10/17): 창 제목·따라가기·줄 고르기·Ctrl+C·우클릭 메뉴·단축키·명령 목록·숫자 칸·표기 바꾸기·되돌리기·항상 위
+      if (combo.full) await convenience();
+
       // 연결 중 다 눌러 보기(실행 버튼은 빼고)
       if (combo.full) await pageExercise("running", "#root", { skip: RUN_BTN });
 
@@ -486,6 +818,9 @@ async function runApp(app, port) {
         await pageExercise("running-yes", "#root", { skip: RUN_BTN + ", select.lang, .brand-tools button" });
         await clickRun("stop (yes)", (s) => s.btn === idleBtn);
       }
+
+      // ---- 좁은 창(화면 반쪽 맞춤 등): 안쪽 760×600
+      await narrow();
     } catch (e) {
       add("runner", "smoke-error", e && e.stack ? e.stack : e);
       try {

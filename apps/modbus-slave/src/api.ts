@@ -37,6 +37,8 @@ export interface Frame {
   bytes: number[];
   check: boolean | null;
   note?: string;
+  /** 화면에서 붙이는 일련번호(줄 고르기·따라가기용) */
+  seq?: number;
 }
 
 export type SessionEvent =

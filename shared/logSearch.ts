@@ -174,11 +174,21 @@ export function screenText(opts: {
         ? `전체 ${frames.length}줄`
         : `all ${frames.length} lines`
   }`;
-  const body = rows.map((f) => {
-    const peer = opts.peers ? ` [${f.peer ?? ""}]` : "";
-    if (f.dir === "ev") return `${fmt(f.ts)} EV${peer} ${f.note ?? ""}`;
-    const data = mode === "hex" ? hex(f.bytes) : mode === "ascii" ? ascii(f.bytes) : `${hex(f.bytes)} | ${ascii(f.bytes)}`;
-    return `${fmt(f.ts)} ${f.dir.toUpperCase()}${peer} ${data}${f.check === false ? " [CHECK FAIL]" : ""}`;
-  });
+  const body = rows.map((f) => frameLine(f, mode, fmt, hex, ascii, opts.peers));
   return [head, ...body].join("\n");
+}
+
+/** 한 줄 글 — «시각 방향 [상대] 내용». 화면 내용 저장과 로그 줄 복사(Ctrl+C)가 같은 모양을 쓴다 */
+export function frameLine(
+  f: LogFrame,
+  mode: ViewMode,
+  fmt: (ts: number) => string,
+  hex: (b: number[]) => string,
+  ascii: (b: number[]) => string,
+  peers?: boolean,
+) {
+  const peer = peers ? ` [${f.peer ?? ""}]` : "";
+  if (f.dir === "ev") return `${fmt(f.ts)} EV${peer} ${f.note ?? ""}`;
+  const data = mode === "hex" ? hex(f.bytes) : mode === "ascii" ? ascii(f.bytes) : `${hex(f.bytes)} | ${ascii(f.bytes)}`;
+  return `${fmt(f.ts)} ${f.dir.toUpperCase()}${peer} ${data}${f.check === false ? " [CHECK FAIL]" : ""}`;
 }

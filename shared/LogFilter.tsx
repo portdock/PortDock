@@ -183,7 +183,7 @@ export function LogFilterBar({
       <span className="grow" />
       {filter.active && <span className="shown">{t.shown.replace("{a}", filter.count.toLocaleString()).replace("{b}", total.toLocaleString())}</span>}
       {anyOn && (
-        <button className="btn small ghost" onClick={() => setState({ ...EMPTY_FILTER, qmode: state.qmode })} title={t.off} data-tip={tip(lang, "filterOff")}>
+        <button className="btn small ghost" onClick={() => setState({ ...EMPTY_FILTER, qmode: state.qmode })} title={t.off} aria-label={t.off} data-tip={tip(lang, "filterOff")}>
           ✕
         </button>
       )}

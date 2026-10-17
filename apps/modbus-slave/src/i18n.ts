@@ -66,6 +66,12 @@ const ko = {
   idZero: "0 은 브로드캐스트 주소라 슬레이브 주소로 쓸 수 없습니다",
   idRange: "슬레이브 주소는 1~247 사이 정수입니다",
   idDup: "{a} 은(는) 이미 있습니다",
+  // 레지스터 칸 붙여넣기(엑셀 등에서 여러 값)
+  pasted: "값 {n}개를 {a}번부터 넣었습니다",
+  pasteCut: "범위를 넘는 값 {n}개는 버렸습니다",
+  pasteBad: "붙여 넣은 값 «{a}» 을(를) {b} 로 읽을 수 없어 넣지 않았습니다",
+  regKeys: "Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸, Esc 고치기 취소. 엑셀에서 여러 칸을 복사해 붙여 넣으면 이어진 칸에 한꺼번에 들어갑니다.",
+  titleSlaves: "슬레이브 {a}",
 };
 
 const en: typeof ko = {
@@ -135,6 +141,11 @@ const en: typeof ko = {
   idZero: "0 is the broadcast address and cannot be a slave ID",
   idRange: "Slave IDs are whole numbers 1–247",
   idDup: "{a} is already in the list",
+  pasted: "Pasted {n} value(s) from address {a}",
+  pasteCut: "{n} value(s) beyond the range were dropped",
+  pasteBad: "Could not read the pasted value «{a}» as {b}, so nothing was pasted",
+  regKeys: "Enter/↓ next cell, ↑/Shift+Enter previous, Esc cancels the edit. Paste several cells copied from Excel to fill consecutive cells at once.",
+  titleSlaves: "slave {a}",
 };
 
 export type Lang = "ko" | "en";

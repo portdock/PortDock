@@ -1,5 +1,6 @@
 // Serial 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -31,6 +32,7 @@ export const help: HelpDoc = {
         "- 가운데 아래: 보내기 줄(HEX/ASCII, 입력칸, «Modbus 요청», 체크섬, 줄 끝 붙이기, «보내기»)과 «보낼 바이트» 미리보기, «반복(ms)», «+ 목록에 추가».",
         "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 그 줄의 HEX·ASCII 와 Modbus 풀이).",
         "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
+        ...windowLines("ko"),
       ],
     },
     {
@@ -76,9 +78,10 @@ export const help: HelpDoc = {
         "- «체크섬»: 본문 뒤에 붙일 체크섬을 고릅니다(아래 «체크섬 종류» 참고).",
         "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF 중 하나를 맨 뒤에 붙입니다.",
         "- 붙는 순서는 언제나 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문만으로 계산하고, 줄 끝은 계산에 들어가지 않습니다.",
-        "- ASCII 에 체크섬을 켜 두면 입력칸 옆에 노란 «+CRC16 Modbus 2바이트» 표시가 나옵니다. HEX↔ASCII 를 바꿀 때 체크섬이 켜져 있으면 끌지 묻습니다.",
+        "- ASCII 에 체크섬을 켜 두면 입력칸 옆에 노란 «+CRC16 Modbus 2바이트» 표시가 나옵니다.",
         "- 장비를 다시 꽂기를 기다리는 중에는 보낼 수 없습니다.",
         "- 송신이 너무 오래 걸리면(흐름 제어로 막힘 등) «송신 시간 초과 — n/m 바이트만 나감 (흐름 제어·CTS 확인)» 오류가 나옵니다.",
+        ...notationLines("ko"),
       ],
     },
     {
@@ -118,8 +121,8 @@ export const help: HelpDoc = {
         "- 연결이 끊기면 반복이 꺼지고 로그에 «REPEAT 멈춤 (연결 끊김)» 이 남습니다. 다시 연결돼도 저절로 켜지지 않습니다.",
         "- 간격이 실제 송신 시간보다 짧으면 송신이 쌓이므로, 프로그램이 쓸 수 있는 최소 간격으로 올려서 보냅니다(경고 문구가 나옵니다).",
         "- «+ 목록에 추가»: 지금 입력(모드·체크섬·줄 끝 포함)을 오른쪽 «명령 목록» 에 추가합니다. 이름은 입력 앞부분으로 정해지고, 바로 고칠 수 있습니다.",
-        "- 목록의 ▶ 는 바로 보내기, ✎ 는 «입력칸으로 불러오기», ✕ 는 «삭제» 입니다.",
         "- 명령 목록은 프로그램을 껐다 켜도 남아 있습니다.",
+        ...commandLines("ko"),
       ],
     },
     {
@@ -146,6 +149,7 @@ export const help: HelpDoc = {
         "- CTS ON/OFF, DSR ON/OFF, RI ON/OFF, CD ON/OFF: 장비 쪽 입력 신호선이 바뀌었습니다(0.1초마다 확인).",
         "- LOG START: 파일 저장을 시작했습니다. 그때의 포트 설정이 함께 적혀 로그만 봐도 조건을 알 수 있습니다.",
         "- REPEAT 멈춤 (연결 끊김 / 보내기 오류): 반복 보내기가 꺼진 이유입니다. 이 줄은 화면에만 나오고 파일 로그에는 남지 않습니다.",
+        ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -167,7 +171,7 @@ export const help: HelpDoc = {
         "- 파일 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». 사건 줄은 «… EV OPEN …».",
         "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
         "- «지우기»: 화면 로그와 RX·TX 바이트 수를 비웁니다. 파일 로그는 그대로입니다.",
-        "- 로그 줄을 누르면 «자동 스크롤» 이 꺼지고 오른쪽 «상세» 에 그 줄의 바이트 수·HEX·ASCII 가 나옵니다.",
+        "- 로그 줄을 누르면 오른쪽 «상세» 에 그 줄의 바이트 수·HEX·ASCII 가 나옵니다(따라가기는 그대로).",
         "- 프레임 구분이 «Modbus RTU» 이거나 줄 끝의 CRC16 Modbus 가 맞으면 «상세» 에 Modbus 풀이(슬레이브 주소, 함수 코드, 시작 주소·개수 같은 항목, «값», CRC «정상»/«틀림»)가 함께 나옵니다. 그 밖의 줄은 «Modbus 로 볼 수 없음 (CRC 불일치)» 한 줄만 나옵니다.",
         "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», 그 밖은 «<1B>» 처럼 보입니다.",
       ],
@@ -193,21 +197,20 @@ export const help: HelpDoc = {
         "- «글자 크기(px)»: 11~18.",
         "- «로그 시각 표시»: «시:분:초.밀리초», «날짜 + 시각», «UTC», «시작부터 지난 시간 (지우면 다시)»(연결한 시각, «지우기» 뒤에는 지운 시각부터 셉니다). 화면과 «화면 내용 저장» 에 적용됩니다(파일 로그는 늘 날짜 + 시각).",
         "- «화면에 남길 줄 수»: 1,000~1,000,000(기본 100,000). 넘치면 화면에서만 오래된 줄을 지웁니다.",
-        "- «새 줄이 오면 자동 스크롤»: 프로그램을 켤 때 «자동 스크롤» 의 처음 상태.",
+        "- «새 줄이 오면 자동 스크롤»: 프로그램을 켤 때 «자동 스크롤»(따라가기)의 처음 상태. 켜 두어도 위로 굴리면 멈춥니다.",
         "- «연결하면 자동으로 파일 로그 시작»: 켜고 «자동 로그 폴더» 를 고르면, 연결할 때마다 «portdock-serial-날짜-시각.log» 파일에 저장을 시작합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기»: 실수로 창을 닫아 시험이 끊기는 것을 막습니다.",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 명령 목록을 JSON 파일로 옮깁니다. 다른 PortDock 프로그램의 파일은 받지 않습니다.",
         "- «기본값으로»: 화면 설정만 되돌립니다(명령 목록은 그대로).",
+        ...settingsLines("ko"),
       ],
     },
     {
       title: "단축키·팁",
       body: [
+        ...shortcutLines("ko", { saveView: true, repeat: true, find: true }),
         "- 입력칸에서 Enter: 보내기(연결돼 있고 보낼 바이트가 있을 때).",
-        "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기.",
-        "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다.",
         "- 창이 좁으면 «☰ 명령 목록» 으로 오른쪽 칸을 펼치고, ✕ 나 바깥을 눌러 닫습니다.",
-        "- 로그 줄을 누르면 자동 스크롤이 꺼집니다. 다시 따라가려면 «자동 스크롤» 을 체크하세요.",
         "- 연결 설정·프레임 구분·입력 내용·명령 목록은 다음에 켤 때 그대로 남아 있습니다.",
       ],
     },
@@ -256,6 +259,7 @@ export const help: HelpDoc = {
         "- Bottom: the send row (HEX/ASCII, input, «Modbus request», checksum, line ending, «Send»), the «Bytes to send» preview, «Repeat (ms)» and «+ Save to list».",
         "- Right: «Commands» and «Detail» (click a log line to see its HEX, ASCII and Modbus decoding).",
         "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
+        ...windowLines("en"),
       ],
     },
     {
@@ -301,9 +305,10 @@ export const help: HelpDoc = {
         "- «Checksum»: the checksum appended after the body (see «Checksum types»).",
         "- «Line ending»: «None», CR, LF or CR LF appended at the very end.",
         "- The order is always «body + checksum + line ending». The checksum covers the body only, not the line ending.",
-        "- With a checksum on in ASCII mode, a yellow «+CRC16 Modbus 2 bytes» chip appears next to the input. When you switch HEX↔ASCII with a checksum on, you are asked whether to turn it off.",
+        "- With a checksum on in ASCII mode, a yellow «+CRC16 Modbus 2 bytes» chip appears next to the input.",
         "- You cannot send while waiting for the device to be plugged back in.",
         "- If sending takes too long (blocked by flow control, etc.), a «Send timed out — only n/m bytes went out (check flow control / CTS)» error appears.",
+        ...notationLines("en"),
       ],
     },
     {
@@ -343,8 +348,8 @@ export const help: HelpDoc = {
         "- Repeat turns off if the connection drops and the log shows «REPEAT stopped (disconnected)». It does not restart by itself after reconnecting.",
         "- If the interval is shorter than the real transmit time, sends would pile up, so the program raises it to the shortest usable interval (a warning appears).",
         "- «+ Save to list»: adds the current input (with mode, checksum and line ending) to «Commands» on the right. The name comes from the start of the input and can be edited.",
-        "- In the list, ▶ sends, ✎ is «Load into the input» and ✕ is «Delete».",
         "- Commands are kept when you restart the program.",
+        ...commandLines("en"),
       ],
     },
     {
@@ -371,6 +376,7 @@ export const help: HelpDoc = {
         "- CTS ON/OFF, DSR ON/OFF, RI ON/OFF, CD ON/OFF: an input line from the device changed (checked every 0.1 s).",
         "- LOG START: file logging started. The port settings at that moment are written too, so the log alone shows the test conditions.",
         "- REPEAT stopped (disconnected / send error): why repeat sending turned off. This line is shown on screen only, not written to the file log.",
+        ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -392,7 +398,7 @@ export const help: HelpDoc = {
         "- A file line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». Event lines look like «… EV OPEN …».",
         "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
         "- «Clear»: empties the screen log and the RX/TX byte counts. The file log is not affected.",
-        "- Clicking a log line turns off «Auto-scroll» and shows its byte count, HEX and ASCII in «Detail» on the right.",
+        "- Clicking a log line shows its byte count, HEX and ASCII in «Detail» on the right (following continues).",
         "- If framing is «Modbus RTU» or the line ends with a valid CRC16 Modbus, «Detail» also shows the Modbus decoding (slave ID, function code, fields such as start address and count, «Values», CRC «OK»/«FAIL»). Other lines show just «Not a Modbus frame (CRC mismatch)».",
         "- In ASCII view, control characters appear as «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», others as «<1B>» and so on.",
       ],
@@ -418,21 +424,20 @@ export const help: HelpDoc = {
         "- «Font size (px)»: 11 to 18.",
         "- «Log timestamp»: «hh:mm:ss.ms», «Date + time», «UTC» or «Elapsed since start (Clear resets)» (counted from the connect time, or from the last «Clear»). Applies to the screen and «Save view» (the file log always uses date + time).",
         "- «Lines kept on screen»: 1,000 to 1,000,000 (default 100,000). Older lines are dropped from the screen only.",
-        "- «Auto-scroll on new lines»: the initial state of «Auto-scroll» when the program starts.",
+        "- «Auto-scroll on new lines»: the initial state of «Auto-scroll» (follow) when the program starts. Scrolling up still pauses it.",
         "- «Start file logging on connect»: with an «Auto-log folder» chosen, every connection starts logging to «portdock-serial-date-time.log».",
         "- «Ask before closing while connected or logging»: protects a running test from an accidental close.",
         "- «Export settings» and «Import settings»: move display settings and commands as a JSON file. Files from other PortDock programs are refused.",
         "- «Reset to defaults»: resets display settings only (commands are kept).",
+        ...settingsLines("en"),
       ],
     },
     {
       title: "Shortcuts and tips",
       body: [
+        ...shortcutLines("en", { saveView: true, repeat: true, find: true }),
         "- Enter in the input: send (when connected and there are bytes to send).",
-        "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear.",
-        "- F1 or the ? button: this help. Close it with Esc.",
         "- In a narrow window, open the right pane with «☰ Commands» and close it with ✕ or by clicking outside.",
-        "- Clicking a log line turns auto-scroll off. Check «Auto-scroll» to follow new lines again.",
         "- Connection settings, framing, the input and commands are kept for next time.",
       ],
     },

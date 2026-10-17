@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, parseTerminator, store, samePorts } from "@shared/framing";
 import {
@@ -27,6 +27,17 @@ import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { AutoReply } from "./AutoReply";
+import { useSimpleLog } from "@shared/useSimpleLog";
+import { FollowButton } from "@shared/FollowButton";
+import { copyTextOf, selectedFrames, useCopyKey } from "@shared/logCopy";
+import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
+import { useToast } from "@shared/Toast";
+import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
+import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
+import { PinButton } from "@shared/PinButton";
+import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { useModeSwitch } from "@shared/SendMode";
+import { ui } from "@shared/uiText";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -58,6 +69,9 @@ export default function App() {
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
+  // 아주 좁은 창(900px 이하)에서 왼쪽 연결 설정 칸을 펼칠지
+  const [showSide, setShowSide] = useState(false);
+  const toast = useToast(lang);
 
   // ---- 연결 방식과 설정
   const [transport, setTransport] = useState<Transport>(() => load("transport", "serial"));
@@ -118,6 +132,8 @@ export default function App() {
   }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
   const traffic = useRef<Frame[]>([]);
+  // 줄마다 일련번호 — 줄 고르기·따라가기(멈춘 뒤 새 줄 수)에 쓴다
+  const seqRef = useRef(0);
   const timeBase = useRef<number | null>(null);
   const [tick, setTick] = useState(0);
   const [trafficView, setTrafficView] = useState<"hex" | "ascii">(() => load("trafficView", "hex"));
@@ -126,6 +142,7 @@ export default function App() {
   }, [trafficView]);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
+      for (const f of e.frames) f.seq = ++seqRef.current;
       traffic.current.push(...e.frames);
       if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
       setTick((x) => x + 1);
@@ -142,13 +159,17 @@ export default function App() {
       setError(e.message);
     }
   }, []);
-  // 새 줄이 왔을 때, 사용자가 맨 아래에 있을 때만 따라 내려간다(응답 횟수 폴링으로 끌려가지 않게)
+  // 통신 기록 — 맨 아래에 있을 때만 새 줄을 따라간다(위로 굴리면 멈추고 «↓ 맨 아래로»). 마지막 500줄만 그린다
   const tlog = useRef<HTMLDivElement>(null);
-  const atBottom = useRef(true);
-  useEffect(() => {
-    const el = tlog.current;
-    if (el && atBottom.current && settings.autoScroll) el.scrollTop = el.scrollHeight;
-  }, [tick, settings.autoScroll]);
+  const log = useSimpleLog(traffic, seqRef, tlog, settings.autoScroll, `${tick}:${trafficView}`, 500);
+  const [menu, setMenu] = useState<MenuAt>(null);
+  function clearTraffic() {
+    traffic.current = [];
+    log.sel.clear();
+    setMenu(null);
+    log.follow.resume();
+    setTick((x) => x + 1);
+  }
   useEffect(() => {
     if (running && transport !== "udp") api.setFraming(effFraming).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -365,8 +386,9 @@ export default function App() {
     };
   }, [repeating, repeatMs, spec, running]);
 
-  const frames = traffic.current.slice(-500);
   const net2 = transport !== "serial";
+  // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
+  const modeSwitch = useModeSwitch(spec, setSpec, lang);
 
   // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
   if (!traffic.current.length) timeBase.current = null;
@@ -374,8 +396,43 @@ export default function App() {
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock Simulator");
 
+  // ---- 단축키: F4 시작·멈춤, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
+  const runDisabled = (!running && transport === "serial" && !ports.some((p) => p.name === com.port)) || starting;
+  useShortcuts([
+    { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
+    { key: "l", ctrl: true, run: clearTraffic },
+    { key: "l", ctrl: true, shift: true, run: () => running && void toggleLog() },
+    { key: "Escape", inInput: false, run: () => repeating && setRepeating(false) },
+  ]);
+  // Ctrl+C — 고른 통신 기록 줄을 «시각 방향 [상대] 내용»(지금 보기대로)으로
+  const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
+  useCopyKey(
+    () => {
+      const list = selectedFrames(log.sel, log.frameOf);
+      return list.length ? copyTextOf(list, "lines", trafficView, fmt, net2) : null;
+    },
+    (ok) => onCopied(ok, log.sel.set.size),
+  );
+  /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
+  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
+
+  // ---- 창 제목: «TCP 서버 :502 · 규칙 3 — PortDock Simulator»
+  const where =
+    transport === "serial"
+      ? `${t("titleSerial")} ${com.port} ${com.baud}`
+      : transport === "tcp-server"
+        ? `${t("titleTcpServer")} :${net.port}`
+        : transport === "tcp-client"
+          ? `${t("titleTcpClient")} ${net.remoteHost}:${net.remotePort}`
+          : `UDP :${net.port}`;
+  const ruleCount = t("titleRules").replace("{n}", String(rules.filter((r) => r.enabled).length));
+  const statusText = dict[lang][`status_${status}` as Key] ?? status;
+  useWindowTitle(windowTitle("PortDock Simulator", running ? [where, ruleCount] : [], !!logPath));
+  const summaryLine = `${where} · ${statusText} · ${ruleCount}`;
+
   return (
-    <div className="app sim">
+    <div className={showSide ? "app sim show-side" : "app sim"}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
       <aside className="side">
         <div className="brand">
           <span className="logo">
@@ -384,6 +441,7 @@ export default function App() {
           <span className="brand-tools">
           <select
             className="lang"
+            aria-label={lang === "ko" ? "언어" : "Language"}
             value={lang}
             onChange={(e) => {
               setLang(e.target.value as Lang);
@@ -393,13 +451,15 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock Simulator" lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>
-          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+          <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
         <label data-tip={tip(lang, "transport")}>
@@ -514,7 +574,7 @@ export default function App() {
           </>
         )}
 
-        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !ports.some((p) => p.name === com.port)) || starting}>
+        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -522,12 +582,17 @@ export default function App() {
           {dict[lang][`status_${status}` as Key] ?? status}
           {statusMsg ? ` · ${statusMsg}` : ""}
         </div>
-        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn small" onClick={toggleLog} disabled={!running}>
+        <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn small" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
       </aside>
 
       <main className="main">
+        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
+            {running ? t("stop") : t("start")}
+          </button>
+        </NarrowBar>
         <div className="toolbar">
           <b data-tip={tip(lang, "rules")}>{t("rules")}</b>
           <label data-tip={tip(lang, "matchStrip")} className="inline">
@@ -548,11 +613,12 @@ export default function App() {
           </button>
         </div>
         <div className="rules">
-          <AutoReply rules={rules} setRules={setRules} hits={hits} t={t} />
+          <AutoReply rules={rules} setRules={setRules} hits={hits} t={t} toast={toast} />
           <div className="unsol">
             <div className="arlbl" data-tip={tip(lang, "unsolicited")}>{t("unsolicited")}</div>
             <div className="arrow">
-              <select value={spec.mode} onChange={(e) => setSpec({ ...spec, mode: e.target.value as TextMode })}>
+              {/* 바꾸면 같은 바이트의 새 표기로 옮기고, 켜진 체크섬은 아래 알림줄로 */}
+              <select value={spec.mode} onChange={(e) => modeSwitch.changeMode(e.target.value as TextMode)} data-tip={ui(lang, "sendModeTip")} aria-label="HEX / ASCII">
                 <option value="hex">HEX</option>
                 <option value="ascii">ASCII</option>
               </select>
@@ -561,7 +627,10 @@ export default function App() {
                 className="mono grow"
                 value={spec.text}
                 placeholder="STATUS OK"
-                onChange={(e) => setSpec({ ...spec, text: e.target.value })}
+                onChange={(e) => {
+                  setSpec({ ...spec, text: e.target.value });
+                  modeSwitch.onEdit();
+                }}
                 // 다른 프로그램처럼 Enter 로 보내기
                 onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && running && sendable && api.send(spec).catch((err) => setError(String(err)))}
               />
@@ -594,12 +663,13 @@ export default function App() {
               >
                 {t("send")}
               </button>
-              <label data-tip={tip(lang, "repeatSim")} className="inline">
+              <label data-tip={withKey(tip(lang, "repeatSim"), KEYS.stopRepeat)} className="inline">
                 <input type="checkbox" checked={repeating} disabled={!running && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
               </label>
               <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             </div>
             <div className="hint mono">{preview}</div>
+            {modeSwitch.node}
             {/* 보내기가 꺼진 이유 */}
             {!running ? <div className="hint">{t("whyNotStarted")}</div> : !sendable && !preview ? <div className="hint">{t("whyEmpty")}</div> : null}
             {repeating && running && waiting && <div className="hint warn">{t("waitingPeer")}</div>}
@@ -610,38 +680,58 @@ export default function App() {
           <div className="toolbar">
             <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
             {(["hex", "ascii"] as const).map((v) => (
-              <button key={v} className={trafficView === v ? "seg on" : "seg"} onClick={() => setTrafficView(v)}>
+              <button key={v} className={trafficView === v ? "seg on" : "seg"} onClick={() => setTrafficView(v)} aria-pressed={trafficView === v}>
                 {v.toUpperCase()}
               </button>
             ))}
             <span className="grow" />
-            <button data-tip={tip(lang, "clear")}
-              className="btn small"
-              onClick={() => {
-                traffic.current = [];
-                setTick((x) => x + 1);
-              }}
-            >
+            <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearTraffic}>
               {t("clear")}
             </button>
           </div>
-          <div
-            className="tlog"
-            ref={tlog}
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
-            }}
-          >
-            {frames.map((f, i) => (
-              <div key={i} className={`trow ${f.dir}`}>
-                <span className="ts">{fmt(f.ts)}</span>
-                <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
-                {net2 && f.dir !== "ev" && <span className="peeraddr">{f.peer}</span>}
-                <span className="data">{f.dir === "ev" ? f.note : trafficView === "ascii" ? ascii(f.bytes) : hex(f.bytes)}</span>
-              </div>
-            ))}
+          <div className="log-wrap">
+            <div className="tlog" ref={tlog}>
+              {log.frames.map((f) => {
+                const seq = f.seq ?? 0;
+                return (
+                  <div
+                    key={seq}
+                    className={`trow ${f.dir}${log.sel.has(seq) ? " sel" : ""}${log.sel.primary === seq ? " primary" : ""}`}
+                    onClick={(e: ReactMouseEvent) => log.sel.click(e, seq)}
+                    onContextMenu={(e: ReactMouseEvent) => {
+                      e.preventDefault();
+                      log.sel.context(seq);
+                      setMenu({ x: e.clientX, y: e.clientY, seq });
+                    }}
+                  >
+                    <span className="ts">{fmt(f.ts)}</span>
+                    <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
+                    {net2 && f.dir !== "ev" && <span className="peeraddr">{f.peer}</span>}
+                    <span className="data">{f.dir === "ev" ? f.note : trafficView === "ascii" ? ascii(f.bytes) : hex(f.bytes)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <FollowButton follow={log.follow} lang={lang} hidden={!traffic.current.length} />
           </div>
+          {menu && (
+            <LogMenu
+              x={menu.x}
+              y={menu.y}
+              label={t("traffic")}
+              onClose={() => setMenu(null)}
+              items={logMenuItems({
+                lang,
+                frames: selectedFrames(log.sel, log.frameOf),
+                clicked: log.frameOf(menu.seq),
+                view: trafficView,
+                fmt,
+                peers: net2,
+                onCopied,
+                sendAgain: { run: (b) => void api.send(rawSpec(b)).catch((e) => setError(String(e))), enabled: running, why: t("whyNotStarted") },
+              })}
+            />
+          )}
           {error && <div className="error">{error}</div>}
         </div>
       </main>
@@ -659,6 +749,7 @@ export default function App() {
           busy={running || !!logPath}
         />
       )}
+      {toast.node}
     </div>
   );
 }

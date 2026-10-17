@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ask, save } from "@tauri-apps/plugin-dialog";
+import { save } from "@tauri-apps/plugin-dialog";
 import { load, parseTerminator, store, trimFrames } from "@shared/framing";
 import {
   api,
@@ -27,6 +27,18 @@ import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
 import { screenText } from "@shared/logSearch";
+import { useFollowTail } from "@shared/useFollowTail";
+import { FollowButton } from "@shared/FollowButton";
+import { copyTextOf, selectedFrames, useCopyKey, useLogSelection } from "@shared/logCopy";
+import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
+import { useToast } from "@shared/Toast";
+import { CommandList, type CommandListHandle } from "@shared/CommandList";
+import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
+import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
+import { PinButton } from "@shared/PinButton";
+import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { useModeSwitch } from "@shared/SendMode";
+import { ui } from "@shared/uiText";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -50,6 +62,9 @@ export default function App() {
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
   // 좁은 창에서 오른쪽 칸(명령 목록·상세)을 펼칠지
   const [showRight, setShowRight] = useState(false);
+  // 아주 좁은 창(900px 이하)에서 왼쪽 연결 설정 칸을 펼칠지
+  const [showSide, setShowSide] = useState(false);
+  const toast = useToast(lang);
 
   // ---- 설정
   const [cfg, setCfg] = useState<TcpConfig>(() =>
@@ -193,8 +208,6 @@ export default function App() {
 
   // ---- 보기
   const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
-  const [autoscroll, setAutoscroll] = useState(settings.autoScroll);
-  const [selected, setSelected] = useState<number | null>(null);
   useEffect(() => {
     store("view", view);
   }, [view]);
@@ -207,26 +220,45 @@ export default function App() {
   useEffect(() => {
     rows.measure();
   }, [settings.fontSize, rows]);
-  useEffect(() => {
-    if (autoscroll && filter.count) rows.scrollToIndex(filter.count - 1, { align: "end" });
-  }, [version, autoscroll, filter.count, rows]);
-  // 찾은 줄로 — 고르고 가운데로 굴린다
+  // 따라가기 — 맨 아래에 있을 때만 새 줄을 따라간다(위로 굴리면 멈춤, «↓ 맨 아래로»·End 로 다시)
+  const follow = useFollowTail(listRef, settings.autoScroll, seqRef.current, `${version}:${filter.count}:${rows.getTotalSize()}`);
+  // 줄 고르기(누르기·Shift 범위·Ctrl 하나씩) — 누른 줄이 상세 칸에 나온다
+  const sel = useLogSelection({ indexOfSeq: filter.indexOfSeq, seqAt: (i) => filter.at(i)?.seq });
+  const selected = sel.primary;
+  const frameOf = (seq: number) => {
+    const f = frames.length ? frames[seq - (frames[0].seq ?? 0)] : undefined;
+    return f && f.seq === seq ? f : undefined;
+  };
+  const [menu, setMenu] = useState<MenuAt>(null);
+  // 찾은 줄로 — 고르고 가운데로 굴린다(따라가기는 멈춘다)
   const jumpTo = useCallback(
     (seq: number) => {
-      setSelected(seq);
-      setAutoscroll(false);
+      sel.only(seq);
+      follow.pause();
       const i = filter.indexOfSeq(seq);
       if (i >= 0) rows.scrollToIndex(i, { align: "center" });
     },
-    [filter, rows],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, rows, sel.only, follow.pause],
   );
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0, fail: 0 };
     screenBytes.current = 0;
-    setSelected(null);
+    sel.clear();
+    setMenu(null);
+    follow.resume();
     setVersion((v) => v + 1);
   }
+  // Ctrl+C — 고른 줄을 «시각 방향 [상대] 내용»(지금 보기대로)으로
+  const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
+  useCopyKey(
+    () => {
+      const list = selectedFrames(sel, frameOf);
+      return list.length ? copyTextOf(list, "lines", view, fmt, true) : null;
+    },
+    (ok) => onCopied(ok, sel.set.size),
+  );
   async function saveView() {
     const path = await save({ defaultPath: "portdock-tcp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
@@ -298,12 +330,25 @@ export default function App() {
     return () => clearInterval(id);
   }, [repeating, repeatMs, spec, running, doSend]);
 
+  // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
+  const modeSwitch = useModeSwitch(spec, setSpec, lang);
+
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
   useEffect(() => {
     store("commands", commands);
   }, [commands]);
+  const cmdList = useRef<CommandListHandle>(null);
+  /** 명령을 목록 끝에 넣고 이름 칸에 포커스 — 바로 이름을 고칠 수 있게 */
+  function pushCommand(c: Command) {
+    setCommands((list) => [...list, c]);
+    cmdList.current?.focusName(commands.length);
+  }
+  /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
+  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
+  // 명령(▶)·다시 보내기를 못 하는 이유
+  const cmdWhy = !running ? t("whyNotStarted") : peers.length === 0 ? t("whyNoPeers") : targetGone ? t("whyTargetGone") : undefined;
 
-  const sel = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
+  const selFrame = selected != null ? frameOf(selected) : undefined;
   const server = cfg.mode === "server";
 
   // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
@@ -312,8 +357,31 @@ export default function App() {
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock TCP");
 
+  // ---- 단축키: F4 시작·멈춤, Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
+  const runDisabled = (!running && !startable) || starting;
+  useShortcuts([
+    { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
+    { key: "l", ctrl: true, run: clearLog },
+    { key: "s", ctrl: true, run: () => void saveView() },
+    { key: "l", ctrl: true, shift: true, run: () => running && void toggleLog() },
+    { key: "Escape", inInput: false, run: () => repeatingRef.current && setRepeating(false) },
+  ]);
+
+  // ---- 창 제목: «서버 :5020 · 상대 2 — PortDock TCP» / «192.168.0.10:502 · 접속됨 — PortDock TCP»
+  const localPort = local?.match(/:(\d+)$/)?.[1] ?? String(cfg.port);
+  const statusText = t(`status_${status}` as Key);
+  useWindowTitle(
+    windowTitle(
+      "PortDock TCP",
+      !running ? [] : server ? [`${t("titleServer")} :${localPort}`, t("titlePeers").replace("{n}", String(peers.length))] : [`${cfg.host}:${cfg.port}`, statusText],
+      !!logPath,
+    ),
+  );
+  const summaryLine = server ? `${t("titleServer")} ${cfg.host}:${running ? localPort : cfg.port} · ${statusText}${running ? ` · ${t("titlePeers").replace("{n}", String(peers.length))}` : ""}` : `${cfg.host}:${cfg.port} · ${statusText}`;
+
   return (
-    <div className={showRight ? "app three show-right" : "app three"}>
+    <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
       <aside className="side">
         <div className="brand">
           <span className="logo">
@@ -322,6 +390,7 @@ export default function App() {
           <span className="brand-tools">
           <select
             className="lang"
+            aria-label={lang === "ko" ? "언어" : "Language"}
             value={lang}
             onChange={(e) => {
               setLang(e.target.value as Lang);
@@ -331,13 +400,15 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock TCP" lang={lang} frames={() => framesRef.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>
-          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+          <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
 
@@ -380,7 +451,7 @@ export default function App() {
             )}
           </>
         )}
-        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && !startable) || starting}>
+        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
           {running ? t("stop") : server ? t("listen") : t("connect")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -461,75 +532,115 @@ export default function App() {
             ))}
           </select>
         </label>
-        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn" onClick={toggleLog} disabled={!running}>
+        <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
       </aside>
 
       <main className="main">
+        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
+            {running ? t("stop") : server ? t("listen") : t("connect")}
+          </button>
+        </NarrowBar>
         <div className="toolbar">
           <span data-tip={tip(lang, "view")}>{t("view")}</span>
           {(["hex", "ascii", "both"] as ViewMode[]).map((v) => (
-            <button key={v} className={view === v ? "seg on" : "seg"} onClick={() => setView(v)}>
+            <button key={v} className={view === v ? "seg on" : "seg"} onClick={() => setView(v)} aria-pressed={view === v}>
               {v === "both" ? t("both") : v.toUpperCase()}
             </button>
           ))}
-          <label data-tip={tip(lang, "autoscroll")} className="inline">
-            <input type="checkbox" checked={autoscroll} onChange={(e) => setAutoscroll(e.target.checked)} /> {t("autoscroll")}
+          <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
+            <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
           </span>
           <FailCount lang={lang} n={counters.current.fail} filter={filter} />
-          <button data-tip={tip(lang, "saveView")} className="btn small" onClick={saveView}>
+          <button data-tip={withKey(tip(lang, "saveView"), KEYS.save)} className="btn small" onClick={saveView}>
             {t("saveView")}
           </button>
-          <button data-tip={tip(lang, "clear")} className="btn small" onClick={clearLog}>
+          <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
+          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
             ☰ {t("commands")}
           </button>
         </div>
 
         <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
 
-        <div className="log" ref={listRef}>
-          {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
-          <div style={{ height: rows.getTotalSize(), position: "relative" }}>
-            {rows.getVirtualItems().map((r) => {
-              const f = filter.at(r.index);
-              if (!f) return null;
-              const cls = `row ${f.dir}${filter.isHit(f.seq) ? " hit" : ""} ${selected === f.seq ? "sel" : ""}`;
-              const style = { transform: `translateY(${r.start}px)` };
-              const pick = () => {
-                setSelected(f.seq ?? null);
-                setAutoscroll(false);
-              };
-              if (f.dir === "ev")
+        <div className="log-wrap">
+          <div className="log" ref={listRef}>
+            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+            <div style={{ height: rows.getTotalSize(), position: "relative" }}>
+              {rows.getVirtualItems().map((r) => {
+                const f = filter.at(r.index);
+                if (!f || f.seq == null) return null;
+                const seq = f.seq;
+                const cls = `row ${f.dir}${filter.isHit(seq) ? " hit" : ""}${sel.has(seq) ? " sel" : ""}${selected === seq ? " primary" : ""}`;
+                const style = { transform: `translateY(${r.start}px)` };
+                // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
+                const handlers = {
+                  onClick: (e: ReactMouseEvent) => sel.click(e, seq),
+                  onContextMenu: (e: ReactMouseEvent) => {
+                    e.preventDefault();
+                    sel.context(seq);
+                    setMenu({ x: e.clientX, y: e.clientY, seq });
+                  },
+                };
+                if (f.dir === "ev")
+                  return (
+                    <div key={r.key} className={cls} style={style} {...handlers}>
+                      <span className="ts">{fmt(f.ts)}</span>
+                      <span className="dir">EV</span>
+                      <span className="note">{f.note}</span>
+                    </div>
+                  );
                 return (
-                  <div key={r.key} className={cls} style={style} onClick={pick}>
+                  <div key={r.key} className={cls} style={style} {...handlers}>
                     <span className="ts">{fmt(f.ts)}</span>
-                    <span className="dir">EV</span>
-                    <span className="note">{f.note}</span>
+                    <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
+                    {server && <span className="peeraddr">{f.peer}</span>}
+                    <span className="data">
+                      {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
+                      {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
+                    </span>
+                    {f.check != null && <span className={f.check ? "badge ok" : "badge fail"}>{f.check ? t("ok") : t("fail")}</span>}
                   </div>
                 );
-              return (
-                <div key={r.key} className={cls} style={style} onClick={pick}>
-                  <span className="ts">{fmt(f.ts)}</span>
-                  <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
-                  {server && <span className="peeraddr">{f.peer}</span>}
-                  <span className="data">
-                    {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
-                    {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
-                  </span>
-                  {f.check != null && <span className={f.check ? "badge ok" : "badge fail"}>{f.check ? t("ok") : t("fail")}</span>}
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
+          <FollowButton follow={follow} lang={lang} hidden={frames.length === 0} />
         </div>
+        {menu && (
+          <LogMenu
+            x={menu.x}
+            y={menu.y}
+            label={t("view")}
+            onClose={() => setMenu(null)}
+            items={logMenuItems({
+              lang,
+              frames: selectedFrames(sel, frameOf),
+              clicked: frameOf(menu.seq),
+              view,
+              fmt,
+              peers: true,
+              onCopied,
+              sendAgain: { run: (b) => void doSend(rawSpec(b)), enabled: !cmdWhy, why: cmdWhy },
+              addCommand: (b) => {
+                pushCommand({ ...rawSpec(b), name: hex(b).slice(0, 24) });
+                toast.show(ui(lang, "addedCmds", { n: 1 }));
+              },
+              find: (b) => {
+                filter.setState((s) => ({ ...s, query: hex(b), qmode: "hex" }));
+                document.querySelector<HTMLInputElement>(".filterbar .find")?.focus();
+              },
+            })}
+          />
+        )}
 
         <div className="sendbar">
           <div className="sendrow">
@@ -554,7 +665,8 @@ export default function App() {
                 ))}
               </select>
             )}
-            <select value={spec.mode} onChange={(e) => setSpec({ ...spec, mode: e.target.value as TextMode })}>
+            {/* 바꾸면 같은 바이트의 새 표기로 옮기고, 켜진 체크섬은 아래 알림줄로 */}
+            <select value={spec.mode} onChange={(e) => modeSwitch.changeMode(e.target.value as TextMode)} data-tip={ui(lang, "sendModeTip")} aria-label="HEX / ASCII">
               <option value="hex">HEX</option>
               <option value="ascii">ASCII</option>
             </select>
@@ -563,10 +675,13 @@ export default function App() {
               className="sendtext"
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "STATUS?"}
-              onChange={(e) => setSpec({ ...spec, text: e.target.value })}
+              onChange={(e) => {
+                setSpec({ ...spec, text: e.target.value });
+                modeSwitch.onEdit();
+              }}
               onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && canSend && doSend(spec)}
             />
-            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })}>
+            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} data-tip={tip(lang, "checksum")}>
               <option value="">
                 {t("checksum")}: {t("none")}
               </option>
@@ -576,7 +691,7 @@ export default function App() {
                 </option>
               ))}
             </select>
-            <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })}>
+            <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} data-tip={tip(lang, "suffix")}>
               <option value="">
                 {t("suffix")}: {t("none")}
               </option>
@@ -605,14 +720,15 @@ export default function App() {
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
             <span className="grow" />
-            <label data-tip={tip(lang, "repeat")} className="inline">
+            <label data-tip={withKey(tip(lang, "repeat"), KEYS.stopRepeat)} className="inline">
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
-            <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!sendable}>
+            <button className="btn small" onClick={() => pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd" })} disabled={!sendable}>
               + {t("addCommand")}
             </button>
           </div>
+          {modeSwitch.node}
           {targetBack && (
             <div className="interlock">
               {t("targetBack").replace("{a}", targetBack.addr)}{" "}
@@ -628,41 +744,42 @@ export default function App() {
 
       {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
-        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)} title={t("close")}>
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)} title={t("close")} aria-label={t("close")}>
           ✕
         </button>
-        <h3>{t("commands")}</h3>
-        <div className="cmds">
-          {commands.map((c, i) => (
-            <div key={i} className="cmd" title={c.text}>
-              <input className="cmdname" value={c.name} onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!running || peers.length === 0 || targetGone} title={targetGone ? t("whyTargetGone") : t("send")}>
-                ▶
-              </button>
-              <button className="btn small ghost" data-tip={tip(lang, "edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
-                ✎
-              </button>
-              <button data-tip={tip(lang, "delete")} className="btn small ghost" onClick={async () => (await ask(t("askDelCmd").replace("{a}", c.name), { title: "PortDock", kind: "warning" })) && setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
+        <CommandList
+          lang={lang}
+          app="PortDock TCP"
+          title={t("commands")}
+          commands={commands}
+          setCommands={setCommands}
+          onSend={(c) => void doSend(c)}
+          canSend={!cmdWhy}
+          sendWhy={cmdWhy}
+          onEdit={(c) => {
+            setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix });
+            sendInput.current?.focus();
+          }}
+          toast={toast}
+          writeText={api.writeText}
+          readText={api.readText}
+          handle={cmdList}
+        />
         <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
-        {!sel && <div className="hint">{t("selectFrame")}</div>}
-        {sel && (
+        {!selFrame && <div className="hint">{t("selectFrame")}</div>}
+        {selFrame && (
           <div className="detail">
             <div>
-              {sel.dir.toUpperCase()} · {fmt(sel.ts)}
-              {sel.peer ? ` · ${sel.peer}` : ""}
-              {sel.dir !== "ev" && ` · ${sel.bytes.length} ${t("bytes")}`}
+              {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
+              {selFrame.peer ? ` · ${selFrame.peer}` : ""}
+              {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
             </div>
-            {sel.dir === "ev" ? (
-              <pre className="dump">{sel.note}</pre>
+            {selFrame.dir === "ev" ? (
+              <pre className="dump">{selFrame.note}</pre>
             ) : (
               <>
-                <pre className="dump">{hex(sel.bytes)}</pre>
-                <pre className="dump">{ascii(sel.bytes)}</pre>
+                <pre className="dump">{hex(selFrame.bytes)}</pre>
+                <pre className="dump">{ascii(selFrame.bytes)}</pre>
               </>
             )}
           </div>
@@ -682,6 +799,7 @@ export default function App() {
           busy={running || !!logPath}
         />
       )}
+      {toast.node}
     </div>
   );
 }

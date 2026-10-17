@@ -1,5 +1,6 @@
 // UDP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -30,6 +31,7 @@ export const help: HelpDoc = {
         "- 가운데 아래: 보내기 줄(대상, HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
         "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 상대 주소·바이트 수·HEX·ASCII).",
         "- 창이 좁으면 오른쪽 칸이 숨고 «☰ 명령 목록» 버튼으로 펼칩니다.",
+        ...windowLines("ko"),
       ],
     },
     {
@@ -66,6 +68,7 @@ export const help: HelpDoc = {
         "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF. 붙는 순서는 «본문 + 체크섬 + 줄 끝» 입니다.",
         "- 한 번 보내기 = 데이터그램 하나입니다. 너무 크면(약 64KB 초과) 운영체제가 거절합니다.",
         "- 시작 전이거나 내용이 비면 «보내기» 가 잠기고 옆에 이유가 나옵니다. 보낼 곳이 없으면(«마지막으로 보내온 쪽» 인데 아직 받은 게 없음 등) 오류 문구가 나옵니다.",
+        ...notationLines("ko"),
       ],
     },
     {
@@ -73,8 +76,8 @@ export const help: HelpDoc = {
       body: [
         "- «반복(ms)»: 체크하면 지금 입력을 정한 간격(10ms 이상)으로 계속 보냅니다. 멈추면 저절로 꺼집니다.",
         "- «+ 목록에 추가»: 지금 입력(모드·체크섬·줄 끝 포함)을 오른쪽 «명령 목록» 에 추가합니다.",
-        "- ▶ 바로 보내기, ✎ «입력칸으로 불러오기», ✕ «삭제»(확인 창이 뜹니다).",
         "- 명령 목록은 껐다 켜도 남아 있습니다.",
+        ...commandLines("ko"),
       ],
     },
     {
@@ -91,7 +94,7 @@ export const help: HelpDoc = {
         "- EV 줄은 시작·멈춤·멀티캐스트 가입·에코 켜고 끄기·오류 같은 사건입니다.",
         "- «ICMP port unreachable»: 보낸 곳에서 아무도 듣고 있지 않다는 운영체제 알림입니다. 장비 포트와 전원을 확인하세요.",
         "- 화면에 남길 줄 수(기본 10만)를 넘으면 화면에서만 오래된 줄이 지워집니다. 파일 기록은 그대로입니다.",
-        "- «자동 스크롤» 을 끄면 새 줄이 와도 화면이 멈춰 있습니다.",
+        ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -121,14 +124,14 @@ export const help: HelpDoc = {
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 «portdock-udp-날짜-시각.log» 에 저장합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기».",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 명령 목록을 JSON 파일로 옮깁니다. «기본값으로» 는 화면 설정만 되돌립니다.",
+        ...settingsLines("ko"),
       ],
     },
     {
       title: "단축키·팁",
       body: [
+        ...shortcutLines("ko", { saveView: true, repeat: true, find: true, startStop: true }),
         "- 입력칸에서 Enter: 보내기.",
-        "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기.",
-        "- F1 또는 ?: 이 도움말. Esc 로 닫습니다.",
         "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
         "- 장비가 어디로 보내는지 모르면: 받을 포트를 맞게 넣고 시작한 뒤 «보내온 상대» 를 보세요.",
       ],
@@ -172,6 +175,7 @@ export const help: HelpDoc = {
         "- Bottom: send row (target, HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
         "- Right: «Commands» and «Detail» (click a log line to see peer, length, HEX, ASCII).",
         "- In a narrow window the right pane hides; open it with «☰ Commands».",
+        ...windowLines("en"),
       ],
     },
     {
@@ -208,6 +212,7 @@ export const help: HelpDoc = {
         "- «Line ending»: none, CR, LF or CR LF. The order is always «body + checksum + line ending».",
         "- One send = one datagram. The OS refuses datagrams larger than about 64 KB.",
         "- «Send» is disabled, with the reason shown, before starting or when the input is empty. With no destination (e.g. «Last sender» before anything arrived) an error message appears.",
+        ...notationLines("en"),
       ],
     },
     {
@@ -215,8 +220,8 @@ export const help: HelpDoc = {
       body: [
         "- «Repeat (ms)»: sends the current input every interval (10 ms or more). It turns off when you stop.",
         "- «+ Save to list» adds the current input (mode, checksum, line ending) to «Commands».",
-        "- ▶ sends, ✎ «Load into the input», ✕ «Delete» (asks first).",
         "- Commands are kept after restarting.",
+        ...commandLines("en"),
       ],
     },
     {
@@ -233,7 +238,7 @@ export const help: HelpDoc = {
         "- EV lines are events: start, stop, multicast join, echo on/off, errors.",
         "- «ICMP port unreachable»: the OS reports that nobody listens at the destination. Check the device port and power.",
         "- Above the line limit (default 100,000) old lines are removed from the screen only; file logs are unaffected.",
-        "- With «Auto-scroll» off the view stays put when new lines arrive.",
+        ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
     {
@@ -263,14 +268,14 @@ export const help: HelpDoc = {
         "- «Start file log automatically»: with an auto-log folder, each start writes «portdock-udp-date-time.log».",
         "- «Ask before closing while connected or logging».",
         "- «Export settings» / «Import settings» move display settings and commands as JSON. «Reset to defaults» resets display settings only.",
+        ...settingsLines("en"),
       ],
     },
     {
       title: "Shortcuts and tips",
       body: [
+        ...shortcutLines("en", { saveView: true, repeat: true, find: true, startStop: true }),
         "- Enter in the input: send.",
-        "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear.",
-        "- F1 or ?: this help. Esc closes it.",
         "- Hover over a field to see a tooltip.",
         "- Not sure where the device sends? Start on the right listen port and watch «Senders».",
       ],

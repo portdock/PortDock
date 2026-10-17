@@ -34,7 +34,8 @@ const T = {
     elapsed: "시작부터 지난 시간 (지우면 다시)",
     maxLines: "화면에 남길 줄 수",
     maxLinesHint: "넘치면 화면에서만 오래된 줄을 지웁니다(파일 로그는 그대로).",
-    autoScroll: "새 줄이 오면 자동 스크롤",
+    autoScroll: "새 줄이 오면 자동 스크롤(위로 굴리면 멈춤)",
+    alwaysOnTop: "항상 위 — 이 창을 다른 창 위에 늘 보이게(머리줄 📌)",
     autoLog: "연결하면 자동으로 파일 로그 시작",
     logFolder: "자동 로그 폴더",
     choose: "고르기",
@@ -79,7 +80,8 @@ const T = {
     elapsed: "Elapsed since start (Clear resets)",
     maxLines: "Lines kept on screen",
     maxLinesHint: "Older lines are dropped from the screen only (file logs keep everything).",
-    autoScroll: "Auto-scroll on new lines",
+    autoScroll: "Auto-scroll on new lines (pauses when you scroll up)",
+    alwaysOnTop: "Always on top — keep this window above others (📌 in the header)",
     autoLog: "Start file logging on connect",
     logFolder: "Auto-log folder",
     choose: "Choose",
@@ -187,7 +189,7 @@ export function SettingsDialog({
       <div className="modal" role="dialog" aria-label={t.title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <b>{t.title}</b>
-          <button className="btn small ghost" onClick={onClose} title={t.close}>
+          <button className="btn small ghost" onClick={onClose} title={t.close} aria-label={t.close}>
             ✕
           </button>
         </div>
@@ -227,6 +229,9 @@ export function SettingsDialog({
           </label>
           <label className="inline">
             <input type="checkbox" checked={settings.autoScroll} onChange={(e) => update({ autoScroll: e.target.checked })} /> {t.autoScroll}
+          </label>
+          <label className="inline">
+            <input type="checkbox" checked={settings.alwaysOnTop} onChange={(e) => update({ alwaysOnTop: e.target.checked })} /> {t.alwaysOnTop}
           </label>
           <label className="inline">
             <input type="checkbox" checked={settings.autoLog} onChange={(e) => update({ autoLog: e.target.checked })} /> {t.autoLog}

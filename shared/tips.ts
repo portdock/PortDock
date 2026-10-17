@@ -28,7 +28,7 @@ const TIPS: Record<string, Tip> = {
 
   // ---- 보기·로그
   view: ["로그를 HEX·ASCII·둘 다로 봅니다. ASCII 에서 제어 문자는 <CR> <LF> 처럼 보입니다.", "Show the log as HEX, ASCII or both. Control characters appear as <CR>, <LF>, …"],
-  autoscroll: ["새 줄이 오면 맨 아래로 따라갑니다. 줄을 누르면 꺼져서 그 자리를 볼 수 있습니다.", "Follows new lines. Clicking a line turns it off so you can inspect it."],
+  autoscroll: ["새 줄이 오면 맨 아래로 따라갑니다. 위로 굴리면 멈추고 «↓ 맨 아래로» 버튼이 나옵니다 — 누르거나 End 로 다시 따라갑니다.", "Follows new lines at the bottom. Scroll up to pause — a «↓ Jump to latest» button appears; click it or press End to follow again."],
   clear: ["화면의 기록만 지웁니다(파일 기록은 그대로).", "Clears the on-screen log only (file logs are kept)."],
   saveLog: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 «보기»(HEX·ASCII·둘 다)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).", "Saves the on-screen log to a text file, in the current view (HEX / ASCII / both). With a filter on, only the visible lines are saved (noted in the first line)."],
   saveView: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 «보기»(HEX·ASCII·둘 다)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).", "Saves the on-screen log to a text file, in the current view (HEX / ASCII / both). With a filter on, only the visible lines are saved (noted in the first line)."],
@@ -60,9 +60,9 @@ const TIPS: Record<string, Tip> = {
   repeatSerial: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 송신 시간보다 짧으면 자동으로 늘리고, 끊기면 멈춥니다.", "Sends the same input every this many ms while checked. Raised automatically if shorter than the transmit time; stops on disconnect."],
   // Simulator 용 — 상대가 없으면 기다렸다가 이어서 보낸다
   repeatSim: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 상대가 아직 없으면 그 차례는 건너뛰고 기다립니다. 체크를 끄거나 «멈춤» 을 눌러야 멈춥니다.", "Sends the same input every this many ms while checked. Turns are skipped while no peer is connected; only unchecking or Stop ends it."],
-  commands: ["자주 쓰는 송신 내용을 저장해 두는 목록. ▶ 보내기, ✎ 입력칸으로, ✕ 지우기.", "Saved commands: ▶ send, ✎ load into the input, ✕ delete."],
+  commands: ["자주 쓰는 송신 내용을 저장해 두는 목록. ▶ 보내기(이름 칸 Enter·더블클릭도), ✎ 입력칸으로, ⧉ 복제, ↑↓·Alt+↑↓ 순서, ✕ 지우기(5초 안에 되돌리기).", "Saved commands: ▶ send (Enter or double-click in the name too), ✎ load into the input, ⧉ duplicate, ↑↓ / Alt+↑↓ reorder, ✕ delete (undo within 5 s)."],
   edit: ["이 명령을 입력칸으로 불러옵니다.", "Loads this command into the input."],
-  delete: ["지웁니다(확인을 묻습니다).", "Deletes it (asks first)."],
+  delete: ["지웁니다 — 5초 안에 알림의 «되돌리기» 로 되살릴 수 있습니다.", "Deletes it — click «Undo» in the notice within 5 s to restore."],
 
   // ---- TCP
   mode: ["클라이언트: 이 PC 가 장비에 접속합니다. 서버: 장비가 이 PC 에 접속합니다.", "Client: this PC connects to the device. Server: the device connects to this PC."],

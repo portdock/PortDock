@@ -31,6 +31,9 @@ const ko = {
   listen: "듣기 시작",
   stop: "멈춤",
   peers: "접속한 상대",
+  // 창 제목·좁은 창 요약 줄용 짧은 말
+  titleServer: "서버",
+  titlePeers: "상대 {n}",
   noPeers: "아직 없음",
   all: "모두에게",
   kick: "끊기",
@@ -109,6 +112,8 @@ const en: typeof ko = {
   listen: "Start listening",
   stop: "Stop",
   peers: "Connected peers",
+  titleServer: "Server",
+  titlePeers: "{n} peer(s)",
   noPeers: "None yet",
   all: "All",
   kick: "Kick",

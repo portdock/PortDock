@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { ask } from "@tauri-apps/plugin-dialog";
 import { api, CHECKSUMS, type AutoRule, type ChecksumKind, type TextMode } from "./api";
 import type { Key } from "./i18n";
 import { NumInput } from "@shared/NumInput";
 import { tip } from "@shared/tips";
 import { duplicateNames, duplicatePatterns, shadowedRules } from "@shared/interlocks";
+import { convertNotation } from "@shared/notation";
+import type { ToastApi } from "@shared/Toast";
+import { ui } from "@shared/uiText";
 
 const blank = (n: number): AutoRule => ({
   name: `rule ${n}`,
@@ -22,11 +24,13 @@ export function AutoReply({
   setRules,
   hits,
   t,
+  toast,
 }: {
   rules: AutoRule[];
-  setRules: (r: AutoRule[]) => void;
+  setRules: (r: AutoRule[] | ((cur: AutoRule[]) => AutoRule[])) => void;
   hits: Record<string, number>;
   t: (k: Key) => string;
+  toast: ToastApi;
 }) {
   const [err, setErr] = useState<string | null>(null);
   // 말풍선 언어 — 화면 문구로 판단
@@ -63,6 +67,21 @@ export function AutoReply({
   // 같은 패턴이 위에 있으면 아래 것은 답하지 않는다
   const dupPat = duplicatePatterns(rules);
   const update = (i: number, patch: Partial<AutoRule>) => setRules(rules.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  /** 지우기 — 확인 창 대신 5초 «되돌리기»(같은 자리로 돌아온다) */
+  const remove = (i: number) => {
+    const r = rules[i];
+    setRules(rules.filter((_, j) => j !== i));
+    toast.show(ui(lang, "deletedRule", { a: r.name }), {
+      undo: () => setRules((cur) => [...cur.slice(0, Math.min(i, cur.length)), r, ...cur.slice(Math.min(i, cur.length))]),
+    });
+  };
+  /** 응답 HEX ↔ ASCII — 같은 바이트의 새 표기로. 못 바꾸면 글자는 그대로 두고 이유를 알린다 */
+  const replyMode = (i: number, mode: TextMode) => {
+    const r = rules[i];
+    const c = convertNotation(r.reply.text, r.reply.mode, mode, lang);
+    update(i, { reply: { ...r.reply, mode, text: c.text } });
+    if (c.error) toast.show(ui(lang, "convFail", { b: mode.toUpperCase(), e: c.error }), { error: true, ms: 5000 });
+  };
   const move = (i: number, d: number) => {
     const j = i + d;
     if (j < 0 || j >= rules.length) return;
@@ -88,7 +107,7 @@ export function AutoReply({
             <button data-tip={tip(lang, "moveDown")} className="btn small ghost" onClick={() => move(i, 1)} title={t("moveDown")} aria-label={t("moveDown")}>
               ↓
             </button>
-            <button className="btn small ghost" title={t("delete")} aria-label={t("delete")} onClick={async () => (await ask(t("askDelRule").replace("{a}", r.name), { title: "PortDock Simulator", kind: "warning" })) && setRules(rules.filter((_, j) => j !== i))}>
+            <button className="btn small ghost" data-tip={ui(lang, "cmdDelTip")} aria-label={t("delete")} onClick={() => remove(i)}>
               ✕
             </button>
           </div>
@@ -111,7 +130,7 @@ export function AutoReply({
           </div>
           <div className="arrow">
             <span className="arlbl" data-tip={tip(lang, "arReply")}>{t("arReply")}</span>
-            <select value={r.reply.mode} onChange={(e) => update(i, { reply: { ...r.reply, mode: e.target.value as TextMode } })}>
+            <select value={r.reply.mode} onChange={(e) => replyMode(i, e.target.value as TextMode)} data-tip={ui(lang, "sendModeTip")} aria-label="HEX / ASCII">
               <option value="hex">HEX</option>
               <option value="ascii">ASCII</option>
             </select>

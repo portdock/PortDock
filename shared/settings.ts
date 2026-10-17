@@ -24,6 +24,8 @@ export interface Settings {
   /** 연결·기록 중에 창을 닫으려 하면 묻기 */
   confirmExit: boolean;
   autoReport: AutoReport;
+  /** 창을 늘 다른 창 위에(머리줄 📌 과 같은 값) */
+  alwaysOnTop: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -37,6 +39,7 @@ export const DEFAULTS: Settings = {
   logFolder: "",
   confirmExit: true,
   autoReport: "ask",
+  alwaysOnTop: false,
 };
 
 export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000] } as const;
@@ -49,6 +52,7 @@ function sanitize(s: Partial<Settings>): Settings {
   if (!["local", "local-date", "utc", "elapsed"].includes(v.timeFormat)) v.timeFormat = "local";
   if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
   if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
+  v.alwaysOnTop = v.alwaysOnTop === true;
   return v;
 }
 
