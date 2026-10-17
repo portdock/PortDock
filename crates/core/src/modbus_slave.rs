@@ -86,7 +86,9 @@ impl Model {
 pub struct Faults {
     /// 응답 지연(ms)
     pub delay_ms: u64,
-    /// 응답하지 않음(타임아웃 시험)
+    /// 응답하지 않음(타임아웃 시험). 요청은 평소대로 처리한다 — 쓰기 요청(05·06·0F·10)이면
+    /// 값은 표에 반영되고 응답만 나가지 않는다(«받아서 처리했지만 응답이 사라진» 장비 흉내).
+    /// 쓰기까지 막으려면 이 옵션 대신 연결을 닫는다.
     pub no_response: bool,
     /// 모든 요청에 이 예외 코드로 답함(0 이면 끔)
     pub force_exception: u8,
@@ -198,6 +200,7 @@ impl Slave {
                 r
             }
         };
+        // 쓰기는 위에서 이미 표에 반영됐다 — 일부러 그렇게 둔다(Faults::no_response 참고)
         if self.faults.no_response {
             o.result = "no-response";
             return (None, o);

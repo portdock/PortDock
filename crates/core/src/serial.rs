@@ -12,8 +12,7 @@ use crate::framer::{Cut, FrameMode, Framer};
 use crate::ports;
 use serde::{Deserialize, Serialize};
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
-use std::fs::File;
-use std::io::{BufWriter, ErrorKind, Read, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
@@ -45,6 +44,7 @@ fn yes() -> bool {
 }
 
 pub use crate::event::{EventSink, Frame, SessionEvent, log_line, now_ms};
+use crate::event::{LogWriter, closed_reason, waiting_reason};
 
 type Port = Box<dyn SerialPort>;
 
@@ -67,7 +67,7 @@ struct Shared {
     /// 쓰기용 복제 핸들. 끊기면 None — 재연결할 때 읽기 스레드가 새로 넣는다
     writer: Mutex<Option<Port>>,
     pending: Mutex<Vec<Frame>>,
-    log: Mutex<Option<BufWriter<File>>>,
+    log: Mutex<Option<LogWriter>>,
     rules: Mutex<Vec<Rule>>,
     responder: Mutex<Option<Responder>>,
     /// 마지막으로 응답기·규칙이 보낸 것과 보낸 시각 — 그 직후 똑같은 것이 들어오면
@@ -108,7 +108,10 @@ fn open(cfg: &SerialConfig) -> Result<Port, String> {
         })
         .timeout(Duration::from_millis(5))
         .open()
-        .map_err(|e| format!("{}: {e}", cfg.port))?;
+        .map_err(|e| {
+            let listed = ports::list().iter().any(|p| p.name.eq_ignore_ascii_case(&cfg.port));
+            format!("{}: {}", cfg.port, crate::oserr::serial_open(&e, listed))
+        })?;
     let _ = p.write_data_terminal_ready(cfg.dtr);
     // 하드웨어 흐름제어(RTS/CTS)면 RTS 는 드라이버 몫
     if cfg.flow != "hardware" {
@@ -276,20 +279,10 @@ impl Session {
 
     /// 수신·송신 프레임을 파일에 계속 덧붙인다. None 이면 멈춘다.
     pub fn set_log(&self, path: Option<String>) -> Result<(), String> {
-        let file = match path {
-            Some(p) => Some(BufWriter::new(
-                std::fs::OpenOptions::new().create(true).append(true).open(&p).map_err(|e| format!("{p}: {e}"))?,
-            )),
-            None => None,
-        };
+        let file = path.as_deref().map(LogWriter::open).transpose()?;
         let started = file.is_some();
-        {
-            let mut log = self.shared.log.lock().unwrap();
-            if let Some(old) = log.as_mut() {
-                let _ = old.flush();
-            }
-            *log = file;
-        }
+        // 앞 파일에 남은 줄은 다음 묶음 전송 때 새 파일로 간다(BufWriter 는 버릴 때 비운다)
+        *self.shared.log.lock().unwrap() = file;
         // 파일 첫 줄에 지금 설정을 남겨 로그만 보고도 조건을 알 수 있게
         if started {
             let cfg = self.shared.cfg.lock().unwrap().clone();
@@ -333,6 +326,7 @@ fn describe_framing(m: &FrameMode) -> String {
         }
         FrameMode::Fixed { len, gap_ms } => format!("fixed {len} gap {gap_ms}ms"),
         FrameMode::ModbusRtu { baud } => format!("modbus-rtu @{baud}"),
+        FrameMode::ModbusRtuRequest { baud, min_gap_ms } => format!("modbus-rtu-request @{baud} min gap {min_gap_ms}ms"),
     }
 }
 
@@ -422,7 +416,7 @@ fn reader_loop(
                 None
             }
             Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => None,
-            Err(e) => Some(e.to_string()),
+            Err(e) => Some(crate::oserr::serial_io(&e)),
         };
         // 일부 드라이버(블루투스 SPP 등)는 뽑혀도 TimedOut 만 낸다 → 목록 감시 스레드가 알려 준다
         if lost.is_none() && s.gone.swap(false, Ordering::SeqCst) {
@@ -435,9 +429,9 @@ fn reader_loop(
             *s.writer.lock().unwrap() = None;
             note(&s, format!("LOST {msg}"));
             flush(&s, &events);
-            status(&events, "disconnected", &name, Some(msg));
+            status(&events, "disconnected", &name, Some(msg.clone()));
             let before: Vec<String> = ports::list().into_iter().map(|p| p.name).collect();
-            match reconnect(&identity, &before, &s, &events) {
+            match reconnect(&identity, &before, &s, &events, &msg) {
                 Some((p, n)) => {
                     note(&s, if n == name { format!("RECONNECT {n}") } else { format!("RECONNECT {name} → {n}") });
                     s.cfg.lock().unwrap().port = n.clone();
@@ -576,7 +570,8 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
                 }
             } else {
                 // 규칙은 위에서부터 처음 맞는 하나만
-                let hit = s.rules.lock().unwrap().iter().find(|r| r.reply != bytes && r.is_match(&bytes)).cloned();
+                // 응답이 요청과 같아도 답한다(05·06 정상 응답) — 되돌아온 것은 위 `echo` 가 막는다
+                let hit = s.rules.lock().unwrap().iter().find(|r| r.is_match(&bytes)).cloned();
                 answer = hit.map(|r| (r.reply, r.delay_ms, Some(format!("AUTO {}", r.name))));
             }
         }
@@ -628,27 +623,20 @@ fn watch_loop(s: Arc<Shared>, identity: Identity) {
 
 fn flush(s: &Shared, events: &EventSink) {
     let frames = std::mem::take(&mut *s.pending.lock().unwrap());
-    if frames.is_empty() {
-        return;
-    }
-    if let Some(log) = s.log.lock().unwrap().as_mut() {
-        for f in &frames {
-            let _ = writeln!(log, "{}", log_line(f));
-        }
-        let _ = log.flush();
-    }
-    events.send(SessionEvent::Frames { frames });
+    crate::event::flush_frames(frames, &s.log, events);
 }
 
 /// 같은 장치가 다시 나타날 때까지 기다렸다가 연다. 사용자가 닫으면 None.
-/// 설정은 매 회차 다시 읽는다 — 기다리는 동안 사용자가 속도를 바꾸거나 자동 재연결을 끌 수 있다
-fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventSink) -> Option<(Port, String)> {
+/// 설정은 매 회차 다시 읽는다 — 기다리는 동안 사용자가 속도를 바꾸거나 자동 재연결을 끌 수 있다.
+/// 상태 문구에는 끊긴 이유(`reason`)를 이어 붙인다 — 다시 열기 실패가 생기면 그것으로 바꾼다
+fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventSink, reason: &str) -> Option<(Port, String)> {
     let first = s.cfg.lock().unwrap().clone();
     if !first.auto_reconnect {
-        status(events, "closed", &first.port, None);
+        status(events, "closed", &first.port, Some(closed_reason(reason)));
         return None;
     }
-    status(events, "reconnecting", &first.port, None);
+    let mut last = reason.to_string();
+    status(events, "reconnecting", &first.port, Some(waiting_reason(&last)));
     loop {
         for _ in 0..10 {
             if s.stop.load(Ordering::SeqCst) {
@@ -660,7 +648,7 @@ fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventS
         let cfg = s.cfg.lock().unwrap().clone();
         if !cfg.auto_reconnect {
             note(s, "RECONNECT cancelled".into());
-            status(events, "closed", &cfg.port, None);
+            status(events, "closed", &cfg.port, Some(closed_reason(&last)));
             return None;
         }
         let list = ports::list();
@@ -668,7 +656,17 @@ fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventS
         // COM 번호가 바뀌었어도 같은 장치면 새 이름으로 연다
         let mut c = cfg.clone();
         c.port = info.name.clone();
-        let Ok(p) = open(&c) else { continue };
+        let p = match open(&c) {
+            Ok(p) => p,
+            Err(e) => {
+                // 다시 나타났는데 못 연다(다른 프로그램이 먼저 잡음 등) — 바뀐 이유만 알린다
+                if e != last {
+                    last = e;
+                    status(events, "reconnecting", &first.port, Some(waiting_reason(&last)));
+                }
+                continue;
+            }
+        };
         let Ok(w) = p.try_clone() else { continue };
         s.gone.store(false, Ordering::SeqCst);
         *s.writer.lock().unwrap() = Some(w);

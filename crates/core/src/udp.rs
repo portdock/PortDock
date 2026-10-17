@@ -2,13 +2,12 @@
 //! 브로드캐스트·멀티캐스트(가입·재가입)·에코(보낸 쪽으로 되돌리기).
 
 use crate::checksum::ChecksumKind;
-use crate::event::{EventSink, Frame, Peer, SessionEvent, log_line};
+use crate::event::{EventSink, Frame, LogWriter, Peer, SessionEvent};
 use crate::serial::Responder;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufWriter, ErrorKind, Write};
-use std::net::{Ipv4Addr, SocketAddr, ToSocketAddrs, UdpSocket};
+use std::collections::{BTreeMap, VecDeque};
+use std::io::ErrorKind;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -45,7 +44,7 @@ struct Shared {
     remote: Mutex<Option<SocketAddr>>,
     rx_check: Mutex<Option<ChecksumKind>>,
     pending: Mutex<Vec<Frame>>,
-    log: Mutex<Option<BufWriter<File>>>,
+    log: Mutex<Option<LogWriter>>,
     responder: Mutex<Option<Responder>>,
     /// 보내온 상대들 (주소 → 처음 본 순서 번호, 마지막 시각). 번호는 바뀌지 않는다
     seen: Mutex<BTreeMap<String, (u64, Instant)>>,
@@ -55,6 +54,8 @@ struct Shared {
     echo_rate: Mutex<(Instant, u32)>,
     /// 응답기가 마지막으로 보낸 것 — 그대로 되돌아오면 다시 답하지 않는다
     last_reply: Mutex<Option<(Vec<u8>, Instant)>>,
+    /// 우리에게 되돌아올 수 있는 곳(브로드캐스트·멀티캐스트·루프백, 우리 포트)으로 최근 보낸 것
+    sent_back: Mutex<VecDeque<(Vec<u8>, Instant)>>,
     local: SocketAddr,
     stop: AtomicBool,
 }
@@ -63,6 +64,9 @@ struct Shared {
 const MAX_PEERS: usize = 256;
 /// 초당 에코 상한(상대도 에코하는 핑퐁 방지)
 const ECHO_LIMIT: u32 = 200;
+/// 보낸 것이 루프백으로 돌아왔다고 볼 시간과 기억할 개수
+const OWN_WINDOW: Duration = Duration::from_millis(500);
+const OWN_KEEP: usize = 32;
 
 pub struct UdpSession {
     shared: Arc<Shared>,
@@ -71,12 +75,15 @@ pub struct UdpSession {
     group: Option<(Ipv4Addr, Ipv4Addr)>,
 }
 
-fn resolve(host: &str, port: u16) -> Result<SocketAddr, String> {
-    (host, port)
-        .to_socket_addrs()
-        .map_err(|e| format!("{host}:{port}: {e}"))?
-        .next()
-        .ok_or_else(|| crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")))
+use crate::tcp::resolve;
+
+/// 이 주소로 보낸 것이 우리 소켓으로 되돌아올 수 있는지(브로드캐스트·멀티캐스트·루프백).
+/// 서브넷 브로드캐스트(192.168.0.255 등)는 넷마스크를 모르므로 끝자리 255 로 본다
+fn loops_back(to: &SocketAddr) -> bool {
+    match to.ip() {
+        IpAddr::V4(ip) => ip.is_broadcast() || ip.is_multicast() || ip.is_loopback() || ip.is_unspecified() || ip.octets()[3] == 255,
+        IpAddr::V6(ip) => ip.is_multicast() || ip.is_loopback(),
+    }
 }
 
 impl Shared {
@@ -86,27 +93,43 @@ impl Shared {
 
     fn flush(&self) {
         let frames = std::mem::take(&mut *self.pending.lock().unwrap());
-        if frames.is_empty() {
-            return;
-        }
-        if let Some(log) = self.log.lock().unwrap().as_mut() {
-            for f in &frames {
-                let _ = writeln!(log, "{}", log_line(f));
-            }
-            let _ = log.flush();
-        }
-        self.events.send(SessionEvent::Frames { frames });
+        crate::event::flush_frames(frames, &self.log, &self.events);
     }
 
     fn send_to(&self, bytes: &[u8], to: SocketAddr) -> Result<(), String> {
-        self.socket.send_to(bytes, to).map_err(|e| format!("{to}: {e}"))?;
+        // 보내기 전에 적는다 — 루프백은 send_to 가 돌아오기 전에 수신 스레드에 닿을 수 있다
+        if to.port() == self.local.port() && loops_back(&to) {
+            let mut q = self.sent_back.lock().unwrap();
+            q.push_back((bytes.to_vec(), Instant::now()));
+            if q.len() > OWN_KEEP {
+                q.pop_front();
+            }
+        }
+        self.socket.send_to(bytes, to).map_err(|e| format!("{to}: {}", crate::oserr::net(&e)))?;
         self.pending.lock().unwrap().push(Frame::data("tx", bytes.to_vec(), None, Some(to.to_string())));
         Ok(())
     }
 
-    /// 우리가 보낸 것이 브로드캐스트·멀티캐스트 루프백으로 우리에게 돌아온 것인지
-    fn is_own(&self, from: SocketAddr) -> bool {
-        from.port() == self.local.port() && (from.ip().is_loopback() || self.local.ip().is_unspecified() || from.ip() == self.local.ip())
+    /// 우리가 보낸 것이 브로드캐스트·멀티캐스트·루프백으로 우리에게 돌아온 것인지.
+    /// 같은 포트라는 것만으로는 모른다 — 장비는 흔히 5001→5001 처럼 같은 포트를 쓴다.
+    /// 그래서 «우리 포트로 되돌아올 곳에 최근(500ms) 보낸 것과 바이트가 같을 때» 만 우리 것으로 본다
+    /// (특정 주소에 묶였으면 같은 주소·포트는 곧 이 소켓). 맞춘 기록은 지운다 — 돌아오는 건 한 번
+    fn is_own(&self, from: SocketAddr, bytes: &[u8]) -> bool {
+        if from.port() != self.local.port() {
+            return false;
+        }
+        if !self.local.ip().is_unspecified() && from.ip() == self.local.ip() {
+            return true;
+        }
+        let mut q = self.sent_back.lock().unwrap();
+        q.retain(|(_, t)| t.elapsed() < OWN_WINDOW);
+        match q.iter().position(|(b, _)| b == bytes) {
+            Some(i) => {
+                q.remove(i);
+                true
+            }
+            None => false,
+        }
     }
 
     fn remember(&self, from: SocketAddr) {
@@ -147,7 +170,7 @@ impl Shared {
 
     fn on_datagram(self: &Arc<Self>, bytes: Vec<u8>, from: SocketAddr) {
         let check = (*self.rx_check.lock().unwrap()).and_then(|k| k.verify(&bytes));
-        let own = self.is_own(from);
+        let own = self.is_own(from, &bytes);
         if !own {
             *self.last_sender.lock().unwrap() = Some(from);
             self.remember(from);
@@ -199,7 +222,7 @@ impl Drop for UdpSession {
 impl UdpSession {
     pub fn start(cfg: UdpConfig, rx_check: Option<ChecksumKind>, responder: Option<Responder>, events: EventSink) -> Result<Self, String> {
         let bind = resolve(&cfg.bind_host, cfg.bind_port)?;
-        let socket = UdpSocket::bind(bind).map_err(|e| format!("{bind}: {e}"))?;
+        let socket = UdpSocket::bind(bind).map_err(|e| format!("{bind}: {}", crate::oserr::net(&e)))?;
         let local = socket.local_addr().map_err(|e| e.to_string())?;
         socket.set_read_timeout(Some(Duration::from_millis(50))).map_err(|e| e.to_string())?;
         socket.set_broadcast(cfg.broadcast).map_err(|e| format!("broadcast: {e}"))?;
@@ -233,6 +256,7 @@ impl UdpSession {
             next_peer: AtomicU64::new(1),
             echo_rate: Mutex::new((Instant::now(), 0)),
             last_reply: Mutex::new(None),
+            sent_back: Mutex::new(VecDeque::new()),
             local,
             last_sender: Mutex::new(None),
             echo: AtomicBool::new(cfg.echo),
@@ -257,7 +281,7 @@ impl UdpSession {
                     // 윈도우: 보낸 곳에 아무도 없으면 다음 recv 가 ConnectionReset(ICMP port unreachable)
                     Err(e) if e.kind() == ErrorKind::ConnectionReset => s.note(crate::tr!("ICMP port unreachable (상대가 듣고 있지 않음)", "ICMP port unreachable (nobody is listening)").into()),
                     Err(e) => {
-                        s.note(format!("RECV ERROR {e}"));
+                        s.note(format!("RECV ERROR {}", crate::oserr::net(&e)));
                         std::thread::sleep(Duration::from_millis(200));
                     }
                 }
@@ -320,13 +344,7 @@ impl UdpSession {
     }
 
     pub fn set_log(&self, path: Option<String>) -> Result<(), String> {
-        let file = match path {
-            Some(p) => Some(BufWriter::new(
-                std::fs::OpenOptions::new().create(true).append(true).open(&p).map_err(|e| format!("{p}: {e}"))?,
-            )),
-            None => None,
-        };
-        *self.shared.log.lock().unwrap() = file;
+        *self.shared.log.lock().unwrap() = path.as_deref().map(LogWriter::open).transpose()?;
         Ok(())
     }
 
@@ -400,6 +418,57 @@ mod tests {
         assert_eq!(b.send(Some("last"), &[9]).unwrap(), a.local_addr());
         a.stop();
         b.stop();
+    }
+
+    /// 장비가 같은 포트끼리(5001→5001) 보내도 보낸 쪽으로 기록되고 에코가 간다.
+    /// 127.0.0.2 도 루프백이라 예전엔 «우리 자신» 으로 잘못 봤다
+    #[test]
+    fn same_port_device_is_a_peer() {
+        let (bs, brx) = sink();
+        let b = UdpSession::start(cfg(0, true), None, None, bs).unwrap();
+        let port = b.local_addr().port();
+        let dev = match UdpSocket::bind(("127.0.0.2", port)) {
+            Ok(s) => s,
+            Err(_) => return, // 127.0.0.2 를 못 쓰는 환경
+        };
+        dev.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        dev.send_to(b"HELLO", b.local_addr()).unwrap();
+        let got = wait_rx(&brx, 1);
+        assert_eq!(got[0].peer.as_deref(), Some(dev.local_addr().unwrap().to_string().as_str()));
+        // 에코가 장비로 돌아간다
+        let mut buf = [0u8; 16];
+        let (n, _) = dev.recv_from(&mut buf).unwrap();
+        assert_eq!(&buf[..n], b"HELLO");
+        assert_eq!(b.send(Some("last"), b"X").unwrap(), dev.local_addr().unwrap());
+        b.stop();
+    }
+
+    /// 자기 포트로 보낸 것(루프백)은 우리 것 — 보낸 쪽으로 기록하지 않고 에코하지 않는다
+    #[test]
+    fn own_loopback_is_not_a_peer() {
+        let (s, rx) = sink();
+        let mut c = cfg(0, true);
+        c.bind_host = "0.0.0.0".into();
+        let u = UdpSession::start(c, None, None, s).unwrap();
+        let me: SocketAddr = format!("127.0.0.1:{}", u.local_addr().port()).parse().unwrap();
+        u.send(Some(&me.to_string()), b"SELF").unwrap();
+        let got = wait_rx(&rx, 1);
+        assert_eq!(got.len(), 1);
+        assert!(u.send(Some("last"), b"x").is_err(), "own datagram must not become the last sender");
+        // 에코도 하지 않는다 — 더 오는 것이 없다
+        assert!(wait_rx_for(&rx, Duration::from_millis(300)).is_empty());
+        u.stop();
+    }
+
+    fn wait_rx_for(rx: &mpsc::Receiver<SessionEvent>, d: Duration) -> Vec<Frame> {
+        let mut got = Vec::new();
+        let deadline = Instant::now() + d;
+        while Instant::now() < deadline {
+            if let Ok(SessionEvent::Frames { frames }) = rx.recv_timeout(Duration::from_millis(50)) {
+                got.extend(frames.into_iter().filter(|f| f.dir == "rx"));
+            }
+        }
+        got
     }
 
     #[test]

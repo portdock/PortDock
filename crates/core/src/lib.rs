@@ -9,6 +9,7 @@ pub mod framer;
 pub mod i18n;
 pub mod modbus;
 pub mod modbus_slave;
+pub mod oserr;
 pub mod ports;
 pub mod registry;
 pub mod report;

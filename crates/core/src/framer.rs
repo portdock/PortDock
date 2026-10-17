@@ -15,6 +15,14 @@ pub enum FrameMode {
     Fixed { len: usize, gap_ms: u64 },
     /// Modbus RTU — 함수 코드로 길이를 알아내고, 모르면 3.5 문자 시간으로 끊기
     ModbusRtu { baud: u32 },
+    /// Modbus RTU 슬레이브가 받는 요청 — 요청 길이(01~06 = 8, 0F·10 = 9 + 바이트 수)를 알면
+    /// 다 모이는 즉시 끊는다. USB 어댑터가 요청을 쪼개 보내도(지연 16ms) 이어 붙도록
+    /// 무응답 시간은 3.5 문자와 `min_gap_ms` 중 긴 쪽. 모르는 함수 코드는 무응답 시간으로만.
+    ModbusRtuRequest {
+        baud: u32,
+        #[serde(default)]
+        min_gap_ms: u64,
+    },
 }
 
 impl Default for FrameMode {
@@ -30,6 +38,15 @@ impl FrameMode {
                 Duration::from_millis((*gap_ms).max(1))
             }
             Self::ModbusRtu { baud } => modbus_gap(*baud),
+            Self::ModbusRtuRequest { baud, min_gap_ms } => modbus_gap(*baud).max(Duration::from_millis(*min_gap_ms)),
+        }
+    }
+
+    /// 끝 문자 방식이면 그 바이트들, 아니면 빈 것
+    pub fn terminator(&self) -> &[u8] {
+        match self {
+            Self::Terminator { bytes, .. } => bytes,
+            _ => &[],
         }
     }
 }
@@ -71,10 +88,7 @@ impl Framer {
 
     /// 끝 문자 방식이면 그 바이트들(체크섬 검사 때 떼고 본다), 아니면 빈 것
     pub fn terminator(&self) -> &[u8] {
-        match &self.mode {
-            FrameMode::Terminator { bytes, .. } => bytes,
-            _ => &[],
-        }
+        self.mode.terminator()
     }
 
     fn take(&mut self) -> Cut {
@@ -120,6 +134,7 @@ impl Framer {
             }
             FrameMode::Fixed { len, .. } => (*len > 0 && self.buf.len() >= *len).then_some(*len),
             FrameMode::ModbusRtu { .. } => modbus_expected_len(&self.buf).filter(|n| self.buf.len() >= *n),
+            FrameMode::ModbusRtuRequest { .. } => modbus_request_len(&self.buf).filter(|n| self.buf.len() >= *n),
         }
         .or((self.buf.len() >= MAX_FRAME).then_some(MAX_FRAME))?;
         let rest = self.buf.split_off(cut);
@@ -139,6 +154,16 @@ pub fn modbus_expected_len(buf: &[u8]) -> Option<usize> {
         return Some(5); // 주소 · 함수|0x80 · 예외코드 · CRC 2
     }
     matches!(func, 0x05 | 0x06).then_some(8)
+}
+
+/// 마스터가 보내는 요청의 길이(CRC 포함). 0F·10 은 바이트 수(7번째)가 와야 안다.
+/// 모르는 함수 코드는 None — 무응답 시간에 맡긴다.
+pub fn modbus_request_len(buf: &[u8]) -> Option<usize> {
+    match *buf.get(1)? {
+        0x01..=0x06 => Some(8),
+        0x0F | 0x10 => Some(9 + *buf.get(6)? as usize),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -210,6 +235,59 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out[0].1.len(), 8);
         assert_eq!(out[1].1.len(), 5);
+    }
+
+    fn req_mode(min_gap_ms: u64) -> FrameMode {
+        FrameMode::ModbusRtuRequest { baud: 9600, min_gap_ms }
+    }
+
+    #[test]
+    fn modbus_request_split_by_usb_latency_is_joined() {
+        let start = t0();
+        let mut f = Framer::new(req_mode(20));
+        // 03 읽기 요청이 USB 어댑터 지연(16ms)으로 둘로 쪼개져 온다
+        assert!(f.feed(&[0x01, 0x03, 0x00], start).is_empty());
+        assert!(f.poll(start + Duration::from_millis(16)).is_none());
+        let out = f.feed(&[0x00, 0x00, 0x0A, 0xC5, 0xCD], start + Duration::from_millis(16));
+        // 길이가 차면 무응답 시간을 기다리지 않고 바로
+        assert_eq!(bytes(out), vec![vec![0x01, 0x03, 0x00, 0x00, 0x00, 0x0A, 0xC5, 0xCD]]);
+    }
+
+    #[test]
+    fn modbus_request_write_multiple_uses_byte_count() {
+        let start = t0();
+        let mut f = Framer::new(req_mode(20));
+        // 10 쓰기: 주소 2개 = 4바이트 → 9 + 4 = 13
+        let req = [0x01, 0x10, 0x00, 0x01, 0x00, 0x02, 0x04, 0x00, 0x0A, 0x01, 0x02, 0x92, 0x30];
+        assert!(f.feed(&req[..5], start).is_empty());
+        assert!(f.feed(&req[5..9], start + Duration::from_millis(15)).is_empty());
+        let out = f.feed(&req[9..], start + Duration::from_millis(30));
+        assert_eq!(bytes(out), vec![req.to_vec()]);
+        // 붙어 온 두 요청도 나뉜다
+        let mut two = vec![0x01, 0x06, 0x00, 0x01, 0x00, 0x03, 0x98, 0x0B];
+        two.extend([0x01, 0x05, 0x00, 0x00, 0xFF, 0x00, 0x8C, 0x3A]);
+        assert_eq!(f.feed(&two, start + Duration::from_secs(1)).len(), 2);
+    }
+
+    #[test]
+    fn modbus_request_unknown_function_and_stale_half_fall_back_to_gap() {
+        let start = t0();
+        let mut f = Framer::new(req_mode(20));
+        // 모르는 함수 코드 — 무응답 시간으로
+        assert!(f.feed(&[0x01, 0x2B, 0x0E, 0x01], start).is_empty());
+        assert!(f.poll(start + Duration::from_millis(19)).is_none());
+        assert_eq!(f.poll(start + Duration::from_millis(21)).map(|c| c.1.len()), Some(4));
+        // 반쪽만 오고 오래 조용하면(마스터가 포기) 그대로 내보낸다
+        f.feed(&[0x01, 0x03, 0x00], start + Duration::from_millis(100));
+        assert_eq!(f.poll(start + Duration::from_millis(130)).map(|c| c.1.len()), Some(3));
+        // 3.5 문자 쪽이 더 길면 그것(1200bps ≈ 32ms)
+        assert!(FrameMode::ModbusRtuRequest { baud: 1200, min_gap_ms: 20 }.gap() > Duration::from_millis(30));
+    }
+
+    #[test]
+    fn modbus_request_mode_serde_name() {
+        let m: FrameMode = serde_json::from_str(r#"{"kind":"modbus-rtu-request","baud":9600}"#).unwrap();
+        assert_eq!(m, FrameMode::ModbusRtuRequest { baud: 9600, min_gap_ms: 0 });
     }
 
     #[test]

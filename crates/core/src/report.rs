@@ -14,11 +14,63 @@ const KEEP: usize = 10;
 /// 화면으로 넘길 보고 하나의 최대 길이
 const MAX_TEXT: usize = 64 * 1024;
 
-/// %LOCALAPPDATA%\PortDock\reports\<프로그램>
+static DIR: OnceLock<PathBuf> = OnceLock::new();
+
+/// 보고 폴더.
+/// - 포터블: 실행 파일 옆에 `portdock-data` 폴더가 있고 쓸 수 있으면 `<exe 폴더>\portdock-data\reports\<프로그램>`
+///   (한 폴더에 여러 PortDock 을 두어도 서로의 보고를 묻지 않도록 프로그램별로 나눈다)
+/// - 그 밖: `%LOCALAPPDATA%\dev.portdock.<프로그램>\reports` — 설치 프로그램 식별자와 같은 폴더라
+///   제거할 때 «앱 데이터 삭제» 를 고르면 함께 지워진다
 pub fn reports_dir() -> PathBuf {
-    let app = APP.get().map(|a| a.0).unwrap_or("portdock");
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
-    base.join("PortDock").join("reports").join(app)
+    DIR.get_or_init(|| {
+        let app = APP.get().map(|a| a.0).unwrap_or("portdock");
+        let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf));
+        let local = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
+        pick_dir(exe_dir.as_deref(), local, app)
+    })
+    .clone()
+}
+
+fn pick_dir(exe_dir: Option<&Path>, local: Option<PathBuf>, app: &str) -> PathBuf {
+    if let Some(data) = exe_dir.map(|d| d.join("portdock-data"))
+        && data.is_dir()
+        && writable(&data)
+    {
+        return data.join("reports").join(app);
+    }
+    local.unwrap_or_else(std::env::temp_dir).join(format!("dev.portdock.{app}")).join("reports")
+}
+
+/// 실제로 파일을 만들어 본다(읽기 전용 매체·권한 없는 Program Files 등)
+fn writable(dir: &Path) -> bool {
+    let probe = dir.join(format!(".write-test-{}", std::process::id()));
+    let ok = fs::write(&probe, b"").is_ok();
+    let _ = fs::remove_file(&probe);
+    ok
+}
+
+/// 보고 글에서 사용자 폴더(C:\Users\이름)를 `~` 로 — 보고에 사용자 이름이 실려 나가지 않게
+fn redact_home(text: &str, home: &str) -> String {
+    let home = home.trim_end_matches(['\\', '/']);
+    if home.len() < 3 {
+        return text.to_string();
+    }
+    let mut out = text.to_string();
+    for h in [home.to_string(), home.replace('\\', "/")] {
+        // 윈도우 경로는 대소문자를 가리지 않는다. ASCII 만 소문자로 바꿔 바이트 위치를 그대로 둔다
+        let needle = h.to_ascii_lowercase();
+        let mut res = String::with_capacity(out.len());
+        let lower = out.to_ascii_lowercase();
+        let mut i = 0;
+        while let Some(pos) = lower[i..].find(&needle) {
+            res.push_str(&out[i..i + pos]);
+            res.push('~');
+            i += pos + needle.len();
+        }
+        res.push_str(&out[i..]);
+        out = res;
+    }
+    out
 }
 
 /// 프로그램 시작 때 한 번. 기본 panic 처리(콘솔 출력)는 그대로 두고 파일 기록을 더한다.
@@ -43,10 +95,61 @@ pub fn install(app: &'static str, version: &'static str) {
             std::env::consts::ARCH,
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f %z"),
         );
+        let text = match std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
+            Ok(home) => redact_home(&text, &home),
+            Err(_) => text,
+        };
         // 기록 실패는 무시 — panic 처리 중에 다시 죽으면 안 된다
         let _ = write_crash(&reports_dir(), &text);
         prev(info);
     }));
+}
+
+/// 화면이 뜨기 전의 치명적 오류를 기본 메시지 상자로 알린다(윈도우). 다른 OS 는 stderr
+pub fn fatal_box(title: &str, text: &str) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MB_SETFOREGROUND, MessageBoxW};
+        let wide = |s: &str| s.encode_utf16().chain(std::iter::once(0)).collect::<Vec<u16>>();
+        let (t, m) = (wide(title), wide(text));
+        // SAFETY: 두 버퍼 모두 NUL 로 끝나고 호출이 끝날 때까지 살아 있다. 부모 창은 없음(null)
+        unsafe {
+            MessageBoxW(std::ptr::null_mut(), m.as_ptr(), t.as_ptr(), MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
+        }
+    }
+    #[cfg(not(windows))]
+    eprintln!("{title}\n\n{text}");
+}
+
+pub const WEBVIEW2_URL: &str = "https://developer.microsoft.com/microsoft-edge/webview2/";
+
+/// WebView2 런타임이 없을 때 — 안내 상자를 띄우고 끝낸다(문제 보고는 남기지 않는다).
+/// 화면 언어를 아직 모르므로 한국어 다음에 영어를 함께 적는다.
+pub fn webview_missing(detail: &str) -> ! {
+    let text = format!(
+        "이 프로그램을 실행하려면 Microsoft Edge WebView2 Runtime 이 필요합니다.\n\
+         Windows 11 에는 기본으로 들어 있습니다. Windows 10 등에서 없다면 아래 주소에서 설치해 주세요.\n\
+         인터넷이 안 되는 PC 는 다른 PC 에서 «Evergreen Standalone Installer» 를 받아 옮겨 설치하면 됩니다.\n\n\
+         This program needs the Microsoft Edge WebView2 Runtime.\n\
+         Windows 11 already includes it. On Windows 10 and others, install it from the address below.\n\
+         For an offline PC, download the «Evergreen Standalone Installer» on another PC and install it there.\n\n\
+         {WEBVIEW2_URL}\n\n({detail})"
+    );
+    fatal_box("PortDock — WebView2", &text);
+    std::process::exit(1);
+}
+
+/// 화면을 띄우지 못했을 때(tauri 시작 실패) — panic 대신 안내 상자를 띄우고 끝낸다
+pub fn run_failed(detail: &str) -> ! {
+    let text = format!(
+        "프로그램 화면을 시작하지 못했습니다.\n\
+         WebView2 Runtime 이 설치돼 있는지 확인하고, 계속되면 아래 내용을 개발자에게 알려 주세요.\n\n\
+         The program window could not be started.\n\
+         Check that the WebView2 Runtime is installed; if this keeps happening, please send the text below to the developer.\n\n\
+         {WEBVIEW2_URL}\n\n{detail}"
+    );
+    fatal_box("PortDock", &text);
+    std::process::exit(1);
 }
 
 /// 시험용: 환경 변수 PORTDOCK_TEST_CRASH=1 로 켜면 3초 뒤 일부러 죽는다(보고 흐름 확인)
@@ -206,6 +309,27 @@ mod tests {
         assert_eq!(names, ["crash-20260103.txt", "crash-20260104.txt"]);
         assert!(d.join("other.txt").exists());
         let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn portable_dir_when_writable_else_local_appdata() {
+        let exe = tmp("portable");
+        fs::create_dir_all(&exe).unwrap();
+        let local = tmp("local");
+        assert_eq!(pick_dir(Some(&exe), Some(local.clone()), "tcp"), local.join("dev.portdock.tcp").join("reports"));
+        fs::create_dir_all(exe.join("portdock-data")).unwrap();
+        assert_eq!(pick_dir(Some(&exe), Some(local.clone()), "tcp"), exe.join("portdock-data").join("reports").join("tcp"));
+        // 시험 파일은 남지 않는다
+        assert_eq!(fs::read_dir(exe.join("portdock-data")).unwrap().count(), 0);
+        let _ = fs::remove_dir_all(&exe);
+    }
+
+    #[test]
+    fn home_is_redacted() {
+        let t = "panicked at C:\\Users\\홍길동\\src\\a.rs and c:/users/홍길동/b.rs";
+        assert_eq!(redact_home(t, "C:\\Users\\홍길동"), "panicked at ~\\src\\a.rs and ~/b.rs");
+        // 너무 짧은 값은 건드리지 않는다
+        assert_eq!(redact_home("C:\\x", "C:"), "C:\\x");
     }
 
     #[test]

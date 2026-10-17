@@ -1,7 +1,7 @@
 //! PortDock Simulator — 규칙(받으면 → 답하기)으로 아무 장비나 흉내. 시리얼·TCP·UDP 공통.
 
 use portdock_core::tr;
-use portdock_core::autoreply::{self, Rule, RuleSpec};
+use portdock_core::autoreply::{self, MatchOptions, Rule, RuleError, RuleSpec};
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
 use portdock_core::event::{EventSink, SessionEvent};
@@ -11,6 +11,7 @@ use portdock_core::registry::{Opening, Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session};
 use portdock_core::tcp::{TcpConfig, TcpSession};
 use portdock_core::udp::{UdpConfig, UdpSession};
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tauri::State;
@@ -27,6 +28,8 @@ enum Sess {
 struct App {
     rules: Arc<Mutex<Vec<Rule>>>,
     hits: Arc<Mutex<BTreeMap<String, u64>>>,
+    /// 맞춰 보기 옵션 + 지금 프레임 구분의 끝 문자(시작·set_framing 때 갱신)
+    opts: Arc<Mutex<MatchOptions>>,
     /// 보관함 이름 "main". 시작 연타는 «여는 중» 으로 막히고, 스스로 닫히면 알아서 빠진다
     sess: Arc<Registry<Sess>>,
 }
@@ -48,10 +51,15 @@ fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
 }
 
+fn responder(app: &App, framing: Option<&FrameMode>) -> portdock_core::serial::Responder {
+    app.opts.lock().unwrap().terminator = framing.map(|f| f.terminator().to_vec()).unwrap_or_default();
+    autoreply::responder_with(app.rules.clone(), app.hits.clone(), app.opts.clone())
+}
+
 #[tauri::command(async)]
 fn start_serial(app: State<App>, config: SerialConfig, framing: FrameMode, on_event: Channel<SessionEvent>) -> Result<(), String> {
     let opening = begin(&app)?;
-    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    let r = responder(&app, Some(&framing));
     let s = Session::start(config, framing, None, Some(r), sink(&app, opening.generation, on_event))?;
     opening.finish(Sess::Serial(s));
     Ok(())
@@ -60,7 +68,7 @@ fn start_serial(app: State<App>, config: SerialConfig, framing: FrameMode, on_ev
 #[tauri::command(async)]
 fn start_tcp(app: State<App>, config: TcpConfig, framing: FrameMode, on_event: Channel<SessionEvent>) -> Result<Option<String>, String> {
     let opening = begin(&app)?;
-    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    let r = responder(&app, Some(&framing));
     let s = TcpSession::start(config, framing, None, Some(r), sink(&app, opening.generation, on_event))?;
     let local = s.local_addr().map(|a| a.to_string());
     opening.finish(Sess::Tcp(s));
@@ -70,7 +78,8 @@ fn start_tcp(app: State<App>, config: TcpConfig, framing: FrameMode, on_event: C
 #[tauri::command(async)]
 fn start_udp(app: State<App>, config: UdpConfig, on_event: Channel<SessionEvent>) -> Result<String, String> {
     let opening = begin(&app)?;
-    let r = autoreply::responder(app.rules.clone(), app.hits.clone());
+    // UDP 는 데이터그램 하나가 프레임 — 끝 문자는 없고, 남은 CR·LF 만 뗀다
+    let r = responder(&app, None);
     let s = UdpSession::start(config, None, Some(r), sink(&app, opening.generation, on_event))?;
     let local = s.local_addr().to_string();
     opening.finish(Sess::Udp(s));
@@ -89,6 +98,10 @@ fn stop(app: State<App>) {
 
 #[tauri::command(async)]
 fn set_framing(app: State<App>, framing: FrameMode) {
+    let udp = app.sess.with(MAIN, |s| matches!(s, Sess::Udp(_))).unwrap_or(false);
+    if !udp {
+        app.opts.lock().unwrap().terminator = framing.terminator().to_vec();
+    }
     let _ = app.sess.with(MAIN, |s| match s {
         Sess::Serial(s) => s.set_framing(framing, None::<ChecksumKind>),
         Sess::Tcp(s) => s.set_framing(framing, None),
@@ -96,13 +109,31 @@ fn set_framing(app: State<App>, framing: FrameMode) {
     });
 }
 
-/// 규칙 교체(꺼진 규칙은 빠짐). 잘못된 규칙이 있으면 이름과 함께 오류. 실행 중에도 바로 적용된다.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RulesResult {
+    /// 지금 쓰이는 규칙 수
+    active: usize,
+    /// 건너뛴 규칙들 — index 는 넘겨받은 목록(꺼진 규칙 포함)의 순서(0부터)
+    errors: Vec<RuleError>,
+}
+
+/// 규칙 교체(꺼진 규칙은 빠짐). 규칙마다 따로 검사해 잘못된 것만 빼고 나머지는 바로 적용한다(실행 중에도).
 #[tauri::command]
-fn set_rules(app: State<App>, rules: Vec<RuleSpec>) -> Result<usize, String> {
-    let compiled = autoreply::compile_all(&rules)?;
-    let n = compiled.len();
+fn set_rules(app: State<App>, rules: Vec<RuleSpec>) -> RulesResult {
+    let (compiled, errors) = autoreply::compile_each(&rules);
+    let active = compiled.len();
     *app.rules.lock().unwrap() = compiled;
-    Ok(n)
+    RulesResult { active, errors }
+}
+
+/// 맞춰 보기 옵션. strip_terminator: 끝 문자(프레임 구분 설정)와 끝 CR·LF 를 떼고 맞춰 본다.
+/// log_no_match: 어느 규칙에도 안 맞으면 사건 줄 «NO MATCH». 기본은 둘 다 켬. 실행 중에도 바로 적용
+#[tauri::command]
+fn set_match_options(app: State<App>, strip_terminator: bool, log_no_match: bool) {
+    let mut o = app.opts.lock().unwrap();
+    o.strip_terminator = strip_terminator;
+    o.log_no_match = log_no_match;
 }
 
 #[tauri::command]
@@ -178,9 +209,13 @@ fn report_env() -> portdock_core::report::EnvInfo {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebView2 가 없으면 화면이 뜨지 않는다 — 문제 보고 대신 설치 안내를 띄우고 끝낸다
+    if let Err(e) = tauri::webview_version() {
+        portdock_core::report::webview_missing(&e.to_string());
+    }
     portdock_core::report::install("simulator", env!("CARGO_PKG_VERSION"));
     portdock_core::report::test_crash_if_asked();
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
@@ -196,6 +231,7 @@ pub fn run() {
             stop,
             set_framing,
             set_rules,
+            set_match_options,
             get_hits,
             reset_hits,
             send,
@@ -204,6 +240,8 @@ pub fn run() {
             write_text,
             read_text
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    if let Err(e) = result {
+        portdock_core::report::run_failed(&e.to_string());
+    }
 }

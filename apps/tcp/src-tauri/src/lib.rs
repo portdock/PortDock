@@ -7,6 +7,7 @@ use portdock_core::event::SessionEvent;
 use portdock_core::framer::FrameMode;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::tcp::{TcpConfig, TcpSession};
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::State;
 use tauri::ipc::Channel;
@@ -53,14 +54,24 @@ fn set_echo(app: State<App>, on: bool) -> Result<(), String> {
     app.0.with(MAIN, |s| s.set_echo(on))
 }
 
-/// target 이 없으면 붙어 있는 모두에게
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SendResult {
+    /// 실제로 보낸 연결 수
+    sent: usize,
+    /// 보내려 한 연결 수(대상 하나면 1, 모두면 붙어 있던 수)
+    total: usize,
+}
+
+/// target 이 없으면 붙어 있는 모두에게. 실패한 연결은 «SEND FAIL» 사건 줄을 남기고 닫힌다
 #[tauri::command(async)]
-fn send(app: State<App>, target: Option<u64>, spec: SendSpec) -> Result<usize, String> {
+fn send(app: State<App>, target: Option<u64>, spec: SendSpec) -> Result<SendResult, String> {
     let bytes = build(&spec)?;
     if bytes.is_empty() {
         return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
-    app.0.with(MAIN, |s| s.send(target, &bytes))?
+    let (sent, total) = app.0.with(MAIN, |s| s.send(target, &bytes))??;
+    Ok(SendResult { sent, total })
 }
 
 #[tauri::command(async)]
@@ -114,9 +125,13 @@ fn report_env() -> portdock_core::report::EnvInfo {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebView2 가 없으면 화면이 뜨지 않는다 — 문제 보고 대신 설치 안내를 띄우고 끝낸다
+    if let Err(e) = tauri::webview_version() {
+        portdock_core::report::webview_missing(&e.to_string());
+    }
     portdock_core::report::install("tcp", env!("CARGO_PKG_VERSION"));
     portdock_core::report::test_crash_if_asked();
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
@@ -125,6 +140,8 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env, start, stop, set_framing, set_echo, send, kick, preview, set_log, write_text, read_text])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    if let Err(e) = result {
+        portdock_core::report::run_failed(&e.to_string());
+    }
 }

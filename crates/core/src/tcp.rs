@@ -2,13 +2,12 @@
 //! 프레임 구분기를 따로 두고, 50ms 마다 한 번에 화면·로그로 내보낸다.
 
 use crate::checksum::ChecksumKind;
-use crate::event::{EventSink, Frame, Peer, SessionEvent, log_line};
+use crate::event::{EventSink, Frame, LogWriter, Peer, SessionEvent, closed_reason, waiting_reason};
 use crate::framer::{FrameMode, Framer};
 use crate::serial::Responder;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::{BufWriter, ErrorKind, Read, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -60,7 +59,7 @@ struct Shared {
     mode: Mutex<FrameMode>,
     rx_check: Mutex<Option<ChecksumKind>>,
     pending: Mutex<Vec<Frame>>,
-    log: Mutex<Option<BufWriter<File>>>,
+    log: Mutex<Option<LogWriter>>,
     responder: Mutex<Option<Responder>>,
     echo: AtomicBool,
     /// 에코는 서버에서만 — 클라이언트가 에코하면 상대 서버와 핑퐁이 되기 쉽다
@@ -87,12 +86,40 @@ pub struct TcpSession {
 
 const BATCH: Duration = Duration::from_millis(50);
 
-fn resolve(host: &str, port: u16) -> Result<SocketAddr, String> {
-    (host, port)
-        .to_socket_addrs()
-        .map_err(|e| format!("{host}:{port}: {e}"))?
-        .next()
-        .ok_or_else(|| crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")))
+/// 이름 → 주소들. IPv4 를 앞에 둔다 — 윈도우에서 localhost 는 ::1 이 먼저 나오는데
+/// 장비·서버는 대개 IPv4 에만 묶여 있다
+pub(crate) fn resolve_all(host: &str, port: u16) -> Result<Vec<SocketAddr>, String> {
+    let mut v: Vec<SocketAddr> = (host, port).to_socket_addrs().map_err(|e| format!("{host}:{port}: {e}"))?.collect();
+    v.sort_by_key(|a| a.is_ipv6()); // 안정 정렬 — 같은 종류 안의 순서는 그대로
+    if v.is_empty() {
+        return Err(crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")));
+    }
+    Ok(v)
+}
+
+pub(crate) fn resolve(host: &str, port: u16) -> Result<SocketAddr, String> {
+    Ok(resolve_all(host, port)?[0])
+}
+
+/// 죽은 상대(케이블 뽑힘·전원 꺼짐)를 몇 초 안에 알아채도록 keepalive 를 짧게
+const KEEPALIVE_TIME: Duration = Duration::from_secs(5);
+const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(1);
+
+fn keepalive(stream: &TcpStream) -> std::io::Result<()> {
+    let ka = socket2::TcpKeepalive::new().with_time(KEEPALIVE_TIME).with_interval(KEEPALIVE_INTERVAL);
+    socket2::SockRef::from(stream).set_tcp_keepalive(&ka)
+}
+
+/// 주소를 차례로 시도해 처음 붙는 것. 모두 실패하면 마지막 오류
+fn connect_any(addrs: &[SocketAddr], target: &str) -> Result<TcpStream, String> {
+    let mut last = String::new();
+    for a in addrs {
+        match TcpStream::connect_timeout(a, Duration::from_secs(3)) {
+            Ok(s) => return Ok(s),
+            Err(e) => last = format!("{target}: {}", crate::oserr::net(&e)),
+        }
+    }
+    Err(last)
 }
 
 impl Shared {
@@ -111,22 +138,16 @@ impl Shared {
 
     fn flush(&self) {
         let frames = std::mem::take(&mut *self.pending.lock().unwrap());
-        if frames.is_empty() {
-            return;
-        }
-        if let Some(log) = self.log.lock().unwrap().as_mut() {
-            for f in &frames {
-                let _ = writeln!(log, "{}", log_line(f));
-            }
-            let _ = log.flush();
-        }
-        self.events.send(SessionEvent::Frames { frames });
+        crate::event::flush_frames(frames, &self.log, &self.events);
     }
 
     fn add(&self, stream: TcpStream, no_delay: bool) -> Option<(u64, Arc<Conn>, TcpStream)> {
         let addr = stream.peer_addr().map(|a| a.to_string()).unwrap_or_else(|_| "?".into());
         let _ = stream.set_nodelay(no_delay);
         let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
+        if let Err(e) = keepalive(&stream) {
+            self.note(format!("KEEPALIVE {e}"));
+        }
         let reader = stream.try_clone().ok()?;
         let _ = reader.set_read_timeout(Some(Duration::from_millis(20)));
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
@@ -240,7 +261,7 @@ impl Shared {
                     self.push_rx(&conn, frames);
                 }
                 Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
-                Err(e) => break e.to_string(),
+                Err(e) => break crate::oserr::net(&e),
             }
             let tail = conn.framer.lock().unwrap().poll(Instant::now());
             if let Some(f) = tail {
@@ -312,7 +333,7 @@ impl TcpSession {
         match cfg.mode {
             TcpMode::Server => {
                 let addr = resolve(&cfg.host, cfg.port)?;
-                let listener = TcpListener::bind(addr).map_err(|e| format!("{addr}: {e}"))?;
+                let listener = TcpListener::bind(addr).map_err(|e| format!("{addr}: {}", crate::oserr::net(&e)))?;
                 listener.set_nonblocking(true).map_err(|e| e.to_string())?;
                 let bound = listener.local_addr().map_err(|e| e.to_string())?;
                 local = Some(bound);
@@ -386,8 +407,9 @@ impl TcpSession {
         *self.shared.responder.lock().unwrap() = r;
     }
 
-    /// target 이 None 이면 붙어 있는 모두에게. 보낸 연결 수를 돌려준다.
-    pub fn send(&self, target: Option<u64>, bytes: &[u8]) -> Result<usize, String> {
+    /// target 이 None 이면 붙어 있는 모두에게. (보낸 연결 수, 대상 연결 수) — 실패한 연결은
+    /// `write_to` 가 «SEND FAIL» 을 한 번 남기고 닫는다
+    pub fn send(&self, target: Option<u64>, bytes: &[u8]) -> Result<(usize, usize), String> {
         let conns: Vec<Arc<Conn>> = {
             let map = self.shared.conns.lock().unwrap();
             match target {
@@ -398,15 +420,9 @@ impl TcpSession {
         if conns.is_empty() {
             return Err(crate::tr!("연결된 상대가 없습니다", "No peer is connected").into());
         }
-        let mut n = 0;
-        for c in conns {
-            if self.shared.write_to(&c, bytes) {
-                n += 1;
-            } else {
-                self.shared.note(format!("SEND FAIL {}", c.addr));
-            }
-        }
-        Ok(n)
+        let total = conns.len();
+        let sent = conns.iter().filter(|c| self.shared.write_to(c, bytes)).count();
+        Ok((sent, total))
     }
 
     /// 서버: 특정 상대 끊기
@@ -418,13 +434,7 @@ impl TcpSession {
     }
 
     pub fn set_log(&self, path: Option<String>) -> Result<(), String> {
-        let file = match path {
-            Some(p) => Some(BufWriter::new(
-                std::fs::OpenOptions::new().create(true).append(true).open(&p).map_err(|e| format!("{p}: {e}"))?,
-            )),
-            None => None,
-        };
-        *self.shared.log.lock().unwrap() = file;
+        *self.shared.log.lock().unwrap() = path.as_deref().map(LogWriter::open).transpose()?;
         Ok(())
     }
 
@@ -446,37 +456,41 @@ impl TcpSession {
 }
 
 fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
+    // 끊긴·실패한 이유 — 다음 상태(재접속 대기·닫힘) 문구에 이어 붙여 덮어쓰지 않는다
+    let mut last: Option<String> = None;
     loop {
         if s.stop.load(Ordering::SeqCst) {
             break;
         }
-        let attempt = resolve(&cfg.host, cfg.port).and_then(|a| {
-            TcpStream::connect_timeout(&a, Duration::from_secs(3)).map_err(|e| format!("{target}: {e}"))
-        });
+        let attempt = resolve_all(&cfg.host, cfg.port).and_then(|a| connect_any(&a, &target));
         match attempt {
             Ok(stream) => {
                 if let Some((id, conn, reader)) = s.add(stream, cfg.no_delay) {
                     s.note(format!("CONNECT {}", conn.addr));
                     s.status("connected", &conn.addr, None);
                     let reason = s.read_conn(id, conn, reader);
-                    s.status("disconnected", &target, Some(reason));
+                    s.status("disconnected", &target, Some(reason.clone()));
+                    last = Some(reason);
                 }
             }
             Err(e) => {
                 s.note(format!("CONNECT FAIL {e}"));
-                s.status("disconnected", &target, Some(e));
+                s.status("disconnected", &target, Some(e.clone()));
+                last = Some(e);
             }
         }
         if !cfg.auto_reconnect || s.stop.load(Ordering::SeqCst) {
             break;
         }
-        s.status("reconnecting", &target, None);
+        s.status("reconnecting", &target, last.as_deref().map(waiting_reason));
         let until = Instant::now() + Duration::from_millis(cfg.reconnect_ms.max(200));
         while Instant::now() < until && !s.stop.load(Ordering::SeqCst) {
             std::thread::sleep(Duration::from_millis(50));
         }
     }
-    s.status("closed", &target, None);
+    // 사용자가 멈춘 것이면 이유를 붙이지 않는다
+    let msg = if s.stop.load(Ordering::SeqCst) { None } else { last.as_deref().map(closed_reason) };
+    s.status("closed", &target, msg);
 }
 
 #[cfg(test)]
@@ -526,7 +540,7 @@ mod tests {
         assert!(got[0].peer.as_deref().unwrap().starts_with("127.0.0.1:"));
 
         // 서버 → 모든 클라이언트
-        assert_eq!(server.send(None, b"OK\r\n").unwrap(), 1);
+        assert_eq!(server.send(None, b"OK\r\n").unwrap(), (1, 1));
         let back = wait_frames(&crx, "rx", 1);
         assert_eq!(back[0].bytes, b"OK\r\n".to_vec());
         client.stop();
@@ -569,5 +583,94 @@ mod tests {
         }
         assert!(saw);
         client.stop();
+    }
+
+    #[test]
+    fn reconnecting_keeps_last_failure_reason() {
+        let free = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let (csink, crx) = sink();
+        let c = TcpConfig { auto_reconnect: true, ..cfg(TcpMode::Client, free) };
+        let client = TcpSession::start(c, FrameMode::default(), None, None, csink).unwrap();
+        let mut msg = None;
+        let deadline = Instant::now() + Duration::from_secs(8);
+        while msg.is_none() && Instant::now() < deadline {
+            if let Ok(SessionEvent::Status { state: "reconnecting", message, .. }) = crx.recv_timeout(Duration::from_millis(100)) {
+                msg = Some(message);
+            }
+        }
+        let m = msg.expect("reconnecting").expect("message");
+        assert!(m.starts_with("재접속 대기 · 마지막 실패:"), "{m}");
+        assert!(m.contains("연결 거부") || m.contains("응답 없음"), "{m}");
+        client.stop();
+    }
+
+    #[test]
+    fn localhost_prefers_ipv4() {
+        let v = resolve_all("localhost", 80).unwrap();
+        if v.iter().any(|a| a.is_ipv4()) {
+            assert!(v[0].is_ipv4(), "{v:?}");
+        }
+    }
+
+    #[test]
+    fn client_reaches_ipv4_only_server_by_name() {
+        let (ssink, srx) = sink();
+        let server = TcpSession::start(cfg(TcpMode::Server, 0), FrameMode::Gap { gap_ms: 20 }, None, None, ssink).unwrap();
+        let port = server.local_addr().unwrap().port();
+        let (csink, _crx) = sink();
+        let client = TcpSession::start(TcpConfig { host: "localhost".into(), ..cfg(TcpMode::Client, port) }, FrameMode::Gap { gap_ms: 20 }, None, None, csink).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(8);
+        while client.send(None, b"").is_err() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        client.send(None, b"hi").unwrap();
+        assert_eq!(wait_frames(&srx, "rx", 1)[0].bytes, b"hi".to_vec());
+        client.stop();
+        server.stop();
+    }
+
+    fn rule(pat: &str, reply: &str) -> crate::autoreply::Rule {
+        use crate::codec::{SendSpec, TextMode};
+        crate::autoreply::Rule::compile(&crate::autoreply::RuleSpec {
+            name: pat.into(),
+            enabled: true,
+            pattern: pat.into(),
+            pattern_mode: TextMode::Ascii,
+            kind: crate::autoreply::MatchKind::Exact,
+            reply: SendSpec { text: reply.into(), mode: TextMode::Ascii, checksum: None, suffix: String::new() },
+            delay_ms: 0,
+        })
+        .unwrap()
+    }
+
+    fn ping_responder() -> Responder {
+        let rules = Arc::new(Mutex::new(vec![rule("PING", "PING")]));
+        crate::autoreply::responder(rules, Arc::new(Mutex::new(BTreeMap::new())))
+    }
+
+    /// 응답 = 요청(PING→PING) 규칙을 가진 둘이 마주 봐도 한 바퀴에서 멈춘다
+    #[test]
+    fn reply_equal_to_request_does_not_loop() {
+        let gap = FrameMode::Gap { gap_ms: 20 };
+        let (ssink, srx) = sink();
+        let server = TcpSession::start(cfg(TcpMode::Server, 0), gap.clone(), None, Some(ping_responder()), ssink).unwrap();
+        let port = server.local_addr().unwrap().port();
+        let (csink, crx) = sink();
+        let client = TcpSession::start(cfg(TcpMode::Client, port), gap, None, Some(ping_responder()), csink).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while client.send(None, b"").is_err() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        client.send(None, b"PING").unwrap();
+        std::thread::sleep(Duration::from_millis(1_000));
+        let count = |rx: &mpsc::Receiver<SessionEvent>| {
+            rx.try_iter().filter_map(|e| if let SessionEvent::Frames { frames } = e { Some(frames) } else { None }).flatten().filter(|f| f.dir == "rx").count()
+        };
+        // 서버: PING(보냄) + PING(클라이언트의 답, 되돌아온 것이라 무시) · 클라이언트: 서버의 답 하나
+        let (s, c) = (count(&srx), count(&crx));
+        assert!(s >= 1 && c >= 1, "server {s} client {c}");
+        assert!(s + c <= 3, "server {s} client {c}");
+        client.stop();
+        server.stop();
     }
 }

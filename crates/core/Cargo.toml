@@ -10,3 +10,12 @@ authors.workspace = true
 serde = { version = "1", features = ["derive"] }
 serialport = "4.10"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# TCP keepalive 시간 설정(죽은 상대 감지) — 이미 의존성 트리에 있는 판
+socket2 = "0.6"
+
+# 시작 실패(WebView2 없음 등)를 알리는 기본 메시지 상자 — 이미 의존성 트리에 있는 판
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging"] }
+
+[dev-dependencies]
+serde_json = "1"

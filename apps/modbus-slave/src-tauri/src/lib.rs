@@ -87,6 +87,15 @@ fn responder(slave: Arc<Mutex<Slave>>, stats: Arc<Mutex<Stats>>) -> Responder {
     })
 }
 
+/// USB 어댑터 지연(보통 16ms)으로 요청이 쪼개져 와도 이어 붙도록 USB 포트는 무응답 시간을 넉넉히
+const USB_MIN_GAP_MS: u64 = 20;
+
+/// 요청 길이를 아는 함수 코드는 다 모이는 즉시, 모르면 무응답 시간(3.5 문자, USB 는 20ms 이상)으로 끊는다
+fn framing(port: &str, baud: u32) -> FrameMode {
+    let usb = ports::list().iter().any(|p| p.name.eq_ignore_ascii_case(port) && p.kind == "usb");
+    FrameMode::ModbusRtuRequest { baud, min_gap_ms: if usb { USB_MIN_GAP_MS } else { 0 } }
+}
+
 /// 여는 동안 다른 명령을 막지 않고, 응답기는 첫 바이트 전에 꽂는다
 #[tauri::command(async)]
 fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) -> Result<(), String> {
@@ -97,7 +106,8 @@ fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) 
         let _ = on_event.send(e);
     });
     let r = responder(app.slave.clone(), app.stats.clone());
-    let s = Session::start(config, FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus), Some(r), sink)?;
+    let mode = framing(&config.port, baud);
+    let s = Session::start(config, mode, Some(ChecksumKind::Crc16Modbus), Some(r), sink)?;
     opening.finish(s);
     Ok(())
 }
@@ -111,10 +121,10 @@ fn close(app: State<App>) {
 
 #[tauri::command(async)]
 fn reconfigure(app: State<App>, config: SerialConfig) -> Result<(), String> {
-    let baud = config.baud;
+    let mode = framing(&config.port, config.baud);
     app.sess.with(MAIN, |s| {
         s.reconfigure(config)?;
-        s.set_framing(FrameMode::ModbusRtu { baud }, Some(ChecksumKind::Crc16Modbus));
+        s.set_framing(mode, Some(ChecksumKind::Crc16Modbus));
         Ok(())
     })?
 }
@@ -230,9 +240,13 @@ fn report_env() -> portdock_core::report::EnvInfo {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebView2 가 없으면 화면이 뜨지 않는다 — 문제 보고 대신 설치 안내를 띄우고 끝낸다
+    if let Err(e) = tauri::webview_version() {
+        portdock_core::report::webview_missing(&e.to_string());
+    }
     portdock_core::report::install("modbus-slave", env!("CARGO_PKG_VERSION"));
     portdock_core::report::test_crash_if_asked();
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
@@ -256,6 +270,8 @@ pub fn run() {
             write_text,
             read_text
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    if let Err(e) = result {
+        portdock_core::report::run_failed(&e.to_string());
+    }
 }

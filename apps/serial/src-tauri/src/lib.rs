@@ -124,9 +124,13 @@ fn report_env() -> portdock_core::report::EnvInfo {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebView2 가 없으면 화면이 뜨지 않는다 — 문제 보고 대신 설치 안내를 띄우고 끝낸다
+    if let Err(e) = tauri::webview_version() {
+        portdock_core::report::webview_missing(&e.to_string());
+    }
     portdock_core::report::install("serial", env!("CARGO_PKG_VERSION"));
     portdock_core::report::test_crash_if_asked();
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(Sessions::default())
@@ -147,8 +151,10 @@ pub fn run() {
             verify_checksum,
             write_text, read_text
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    if let Err(e) = result {
+        portdock_core::report::run_failed(&e.to_string());
+    }
 }
 
 #[cfg(test)]
