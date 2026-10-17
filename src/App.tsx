@@ -10,12 +10,14 @@ import {
   type ChecksumKind,
   type Frame,
   type FrameMode,
+  type Lines,
   type ModbusInfo,
   type PortInfo,
   type SendSpec,
   type SerialConfig,
   type SessionEvent,
   type TextMode,
+  summary,
 } from "./api";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
@@ -101,6 +103,7 @@ export default function App() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
+  const [lines, setLines] = useState<Lines | null>(null);
 
   // 프레임은 ref 에 쌓고 version 으로만 다시 그린다(대량 수신 시 배열 복사 방지)
   const framesRef = useRef<Frame[]>([]);
@@ -112,12 +115,14 @@ export default function App() {
       const arr = framesRef.current;
       for (const f of e.frames) {
         arr.push(f);
-        counters.current[f.dir] += f.bytes.length;
+        if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
       if (arr.length > MAX_FRAMES) arr.splice(0, arr.length - MAX_FRAMES);
       setVersion((v) => v + 1);
     } else if (e.type === "error") {
       setError(e.message);
+    } else if (e.type === "lines") {
+      setLines({ cts: e.cts, dsr: e.dsr, ri: e.ri, cd: e.cd });
     } else {
       setStatus(e.state);
       setStatusMsg(e.message);
@@ -125,6 +130,7 @@ export default function App() {
       if (e.state === "closed") {
         setSessionId(null);
         setLogPath(null);
+        setLines(null);
       }
     }
   }, []);
@@ -146,6 +152,15 @@ export default function App() {
     if (sessionId) api.setFraming(sessionId, effectiveFraming, rxCheck).catch((e) => setError(String(e)));
   }, [sessionId, effectiveFraming, rxCheck]);
 
+  const liveCfg = useMemo(() => ({ ...cfg }), [cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits, cfg.flow, cfg.dtr, cfg.rts, cfg.autoReconnect]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!sessionId) return;
+    const id = setTimeout(() => {
+      api.reconfigure(sessionId, liveCfg).catch((e) => setError(String(e)));
+    }, 300);
+    return () => clearTimeout(id);
+  }, [sessionId, liveCfg]);
+
   async function connect() {
     setError(null);
     try {
@@ -162,6 +177,7 @@ export default function App() {
     setSessionId(null);
     setStatus("closed");
     setLogPath(null);
+    setLines(null);
   }
 
   async function toggleLog() {
@@ -211,7 +227,11 @@ export default function App() {
     const path = await save({ defaultPath: "portdock-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     const text = framesRef.current
-      .map((f) => `${clock(f.ts)} ${f.dir.toUpperCase()} ${hex(f.bytes)}${f.check === false ? " [CHECK FAIL]" : ""}`)
+      .map((f) =>
+        f.dir === "ev"
+          ? `${clock(f.ts)} EV ${f.note ?? ""}`
+          : `${clock(f.ts)} ${f.dir.toUpperCase()} ${hex(f.bytes)}${f.check === false ? " [CHECK FAIL]" : ""}`,
+      )
       .join("\n");
     await api.writeText(path, text).catch((e: unknown) => setError(String(e)));
   }
@@ -220,7 +240,7 @@ export default function App() {
   const [modbus, setModbus] = useState<ModbusInfo | null>(null);
   const selFrame = selected != null ? frames[selected] : undefined;
   useEffect(() => {
-    if (!selFrame) {
+    if (!selFrame || selFrame.dir === "ev") {
       setModbus(null);
       return;
     }
@@ -318,7 +338,6 @@ export default function App() {
             <input
               list="bauds"
               value={cfg.baud}
-              disabled={connected}
               onChange={(e) => setCfg({ ...cfg, baud: Number(e.target.value) || 0 })}
             />
             <datalist id="bauds">
@@ -329,7 +348,7 @@ export default function App() {
           </label>
           <label>
             {t("dataBits")}
-            <select value={cfg.dataBits} disabled={connected} onChange={(e) => setCfg({ ...cfg, dataBits: Number(e.target.value) })}>
+            <select value={cfg.dataBits} onChange={(e) => setCfg({ ...cfg, dataBits: Number(e.target.value) })}>
               {[5, 6, 7, 8].map((n) => (
                 <option key={n}>{n}</option>
               ))}
@@ -337,7 +356,7 @@ export default function App() {
           </label>
           <label>
             {t("parity")}
-            <select value={cfg.parity} disabled={connected} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
+            <select value={cfg.parity} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
               <option value="none">{t("none")}</option>
               <option value="odd">{t("odd")}</option>
               <option value="even">{t("even")}</option>
@@ -345,7 +364,7 @@ export default function App() {
           </label>
           <label>
             {t("stopBits")}
-            <select value={cfg.stopBits} disabled={connected} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
+            <select value={cfg.stopBits} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
               <option value={1}>1</option>
               <option value={2}>2</option>
             </select>
@@ -353,7 +372,7 @@ export default function App() {
         </div>
         <label>
           {t("flow")}
-          <select value={cfg.flow} disabled={connected} onChange={(e) => setCfg({ ...cfg, flow: e.target.value as SerialConfig["flow"] })}>
+          <select value={cfg.flow} onChange={(e) => setCfg({ ...cfg, flow: e.target.value as SerialConfig["flow"] })}>
             <option value="none">{t("none")}</option>
             <option value="hardware">{t("hardware")}</option>
             <option value="software">{t("software")}</option>
@@ -361,17 +380,16 @@ export default function App() {
         </label>
         <div className="checks">
           <label className="inline">
-            <input type="checkbox" checked={cfg.dtr} disabled={connected} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
+            <input type="checkbox" checked={cfg.dtr} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
           </label>
           <label className="inline">
-            <input type="checkbox" checked={cfg.rts} disabled={connected} onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })} /> RTS
+            <input type="checkbox" checked={cfg.rts} onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })} /> RTS
           </label>
         </div>
         <label className="inline">
           <input
             type="checkbox"
             checked={cfg.autoReconnect}
-            disabled={connected}
             onChange={(e) => setCfg({ ...cfg, autoReconnect: e.target.checked })}
           />{" "}
           {t("autoReconnect")}
@@ -470,10 +488,41 @@ export default function App() {
           </button>
         </div>
 
+        <div className="statusbar">
+          <span className={`dot s-${status}`} />
+          <span className="mono">{connected ? summary(cfg) : t(statusKey)}</span>
+          {connected && (
+            <>
+              <span className={cfg.dtr ? "led on" : "led"}>DTR</span>
+              <span className={cfg.rts ? "led on" : "led"}>RTS</span>
+              <span className="sep" />
+              {(["cts", "dsr", "ri", "cd"] as const).map((k) => (
+                <span key={k} className={lines?.[k] ? "led in on" : "led in"} title={t("inputLine")}>
+                  {k.toUpperCase()}
+                </span>
+              ))}
+            </>
+          )}
+          {logPath && <span className="rec">● REC</span>}
+        </div>
+
         <div className="log" ref={listRef}>
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = frames[r.index];
+              if (f.dir === "ev")
+                return (
+                  <div
+                    key={r.key}
+                    className={`row ev ${selected === r.index ? "sel" : ""}`}
+                    style={{ transform: `translateY(${r.start}px)` }}
+                    onClick={() => setSelected(r.index)}
+                  >
+                    <span className="ts">{clock(f.ts)}</span>
+                    <span className="dir">EV</span>
+                    <span className="note">{f.note}</span>
+                  </div>
+                );
               return (
                 <div
                   key={r.key}
@@ -573,10 +622,17 @@ export default function App() {
         {selFrame && (
           <div className="detail">
             <div>
-              {selFrame.dir.toUpperCase()} · {clock(selFrame.ts)} · {selFrame.bytes.length} {t("bytes")}
+              {selFrame.dir.toUpperCase()} · {clock(selFrame.ts)}
+              {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
             </div>
-            <pre className="dump">{hex(selFrame.bytes)}</pre>
-            <pre className="dump">{ascii(selFrame.bytes)}</pre>
+            {selFrame.dir === "ev" ? (
+              <pre className="dump">{selFrame.note}</pre>
+            ) : (
+              <>
+                <pre className="dump">{hex(selFrame.bytes)}</pre>
+                <pre className="dump">{ascii(selFrame.bytes)}</pre>
+              </>
+            )}
             {modbus && (
               <div className="modbus">
                 <div className="mbhead">

@@ -65,6 +65,10 @@ impl Framer {
         self.mode = mode;
     }
 
+    pub fn mode(&self) -> &FrameMode {
+        &self.mode
+    }
+
     fn take(&mut self) -> Cut {
         let t = self.first_rx.take().unwrap_or_else(Instant::now);
         (t, std::mem::take(&mut self.buf))

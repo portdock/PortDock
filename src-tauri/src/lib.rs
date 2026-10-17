@@ -82,6 +82,13 @@ fn set_framing(
     Ok(())
 }
 
+/// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
+#[tauri::command(async)]
+fn reconfigure(sessions: State<Sessions>, id: String, config: SerialConfig) -> Result<(), String> {
+    let map = sessions.0.lock().unwrap();
+    map.get(&id).ok_or("세션이 없습니다")?.reconfigure(config)
+}
+
 #[tauri::command(async)]
 fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Result<(), String> {
     let map = sessions.0.lock().unwrap();
@@ -129,6 +136,7 @@ pub fn run() {
             open_session,
             close_session,
             set_framing,
+            reconfigure,
             set_log,
             send,
             preview,

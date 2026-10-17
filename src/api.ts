@@ -53,9 +53,18 @@ export interface SerialConfig {
 
 export interface Frame {
   ts: number;
-  dir: "rx" | "tx";
+  /** ev = 연결·설정 변경·신호선 등 사건 줄 */
+  dir: "rx" | "tx" | "ev";
   bytes: number[];
   check: boolean | null;
+  note?: string;
+}
+
+export interface Lines {
+  cts: boolean;
+  dsr: boolean;
+  ri: boolean;
+  cd: boolean;
 }
 
 export type SessionEvent =
@@ -66,7 +75,8 @@ export type SessionEvent =
       port: string;
       message: string | null;
     }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | ({ type: "lines" } & Lines);
 
 export interface SendSpec {
   text: string;
@@ -109,6 +119,7 @@ export const api = {
   close: (id: string) => invoke<void>("close_session", { id }),
   setFraming: (id: string, framing: FrameMode, rxCheck: ChecksumKind | null) =>
     invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
+  reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
   setLog: (id: string, path: string | null) => invoke<void>("set_log", { id, path }),
   send: (id: string, spec: SendSpec) => invoke<number[]>("send", { id, spec }),
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
@@ -124,6 +135,12 @@ export function ascii(bytes: number[]) {
   return bytes
     .map((b) => names[b] ?? (b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : `<${b.toString(16).toUpperCase().padStart(2, "0")}>`))
     .join("");
+}
+
+/** «COM3 · 9600 8N1 · flow none» */
+export function summary(c: SerialConfig) {
+  const p = c.parity === "odd" ? "O" : c.parity === "even" ? "E" : "N";
+  return `${c.port} · ${c.baud} ${c.dataBits}${p}${c.stopBits} · flow ${c.flow}`;
 }
 
 export function clock(ts: number) {

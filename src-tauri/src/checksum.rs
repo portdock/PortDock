@@ -24,6 +24,19 @@ pub enum ChecksumKind {
 }
 
 impl ChecksumKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Crc16Modbus => "crc16-modbus",
+            Self::Crc16Ccitt => "crc16-ccitt",
+            Self::Crc16Xmodem => "crc16-xmodem",
+            Self::Crc8 => "crc8",
+            Self::Lrc => "lrc",
+            Self::Bcc => "bcc",
+            Self::Sum8 => "sum8",
+            Self::Sum16 => "sum16",
+        }
+    }
+
     pub fn len(self) -> usize {
         match self {
             Self::Crc16Modbus | Self::Crc16Ccitt | Self::Crc16Xmodem | Self::Sum16 => 2,

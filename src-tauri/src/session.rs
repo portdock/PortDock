@@ -47,11 +47,14 @@ fn yes() -> bool {
 pub struct Frame {
     /// 유닉스 시각(ms)
     pub ts: u64,
-    /// "rx" | "tx"
+    /// "rx" | "tx" | "ev"(연결·설정 변경·신호선 등 사건)
     pub dir: &'static str,
     pub bytes: Vec<u8>,
     /// 수신 검증 체크섬이 설정돼 있을 때 결과
     pub check: Option<bool>,
+    /// 사건 줄의 내용. 예: «SET baud 9600→115200»
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -62,6 +65,8 @@ pub enum SessionEvent {
     Status { state: &'static str, port: String, message: Option<String> },
     /// 송신 실패 등 연결은 유지되는 오류
     Error { message: String },
+    /// 입력 신호선 상태
+    Lines { cts: bool, dsr: bool, ri: bool, cd: bool },
 }
 
 pub fn now_ms() -> u64 {
@@ -71,6 +76,8 @@ pub fn now_ms() -> u64 {
 type Port = Box<dyn SerialPort>;
 
 struct Shared {
+    /// 지금 적용된 설정 — 연결 중 변경·재연결에 쓴다
+    cfg: Mutex<SerialConfig>,
     framer: Mutex<Framer>,
     rx_check: Mutex<Option<ChecksumKind>>,
     /// 쓰기용 복제 핸들. 끊기면 None — 재연결할 때 읽기 스레드가 새로 넣는다
@@ -167,6 +174,7 @@ impl Session {
         let identity = Identity::of(&cfg.port);
         let writer_handle = port.try_clone().map_err(|e| e.to_string())?;
         let shared = Arc::new(Shared {
+            cfg: Mutex::new(cfg.clone()),
             framer: Mutex::new(Framer::new(mode)),
             rx_check: Mutex::new(rx_check),
             writer: Mutex::new(Some(writer_handle)),
@@ -175,6 +183,11 @@ impl Session {
             stop: AtomicBool::new(false),
         });
         let _ = events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
+        note(&shared, format!("OPEN {}", describe(&cfg)));
+        note(&shared, format!("FRAMING {}", describe_framing(shared.framer.lock().unwrap().mode())));
+        if let Some(k) = rx_check {
+            note(&shared, format!("RXCHECK {}", k.name()));
+        }
 
         let (tx, rx) = mpsc::channel::<Vec<u8>>();
         let (s, ev, baud) = (shared.clone(), events.clone(), cfg.baud);
@@ -185,8 +198,37 @@ impl Session {
     }
 
     pub fn set_framing(&self, mode: FrameMode, rx_check: Option<ChecksumKind>) {
-        self.shared.framer.lock().unwrap().set_mode(mode);
-        *self.shared.rx_check.lock().unwrap() = rx_check;
+        {
+            let mut f = self.shared.framer.lock().unwrap();
+            if *f.mode() != mode {
+                note(&self.shared, format!("FRAMING {}", describe_framing(&mode)));
+                f.set_mode(mode);
+            }
+        }
+        let mut rc = self.shared.rx_check.lock().unwrap();
+        if *rc != rx_check {
+            note(&self.shared, format!("RXCHECK {}", rx_check.map_or("none", |k| k.name())));
+            *rc = rx_check;
+        }
+    }
+
+    /// 연결을 끊지 않고 속도·패리티 등을 바꾼다. 바뀐 항목을 로그에 남긴다.
+    pub fn reconfigure(&self, new: SerialConfig) -> Result<(), String> {
+        let old = self.shared.cfg.lock().unwrap().clone();
+        let changes = diff(&old, &new);
+        if changes.is_empty() {
+            return Ok(());
+        }
+        {
+            let mut w = self.shared.writer.lock().unwrap();
+            let port = w.as_mut().ok_or("포트가 끊겨 있습니다")?;
+            apply(port.as_mut(), &new).map_err(|e| e.to_string())?;
+        }
+        let mut cfg = self.shared.cfg.lock().unwrap();
+        let port_name = cfg.port.clone();
+        *cfg = SerialConfig { port: port_name, ..new };
+        note(&self.shared, format!("SET {}", changes.join(", ")));
+        Ok(())
     }
 
     /// 송신 큐에 넣는다. 실제로 나간 뒤 화면에 TX 줄이 찍힌다.
@@ -205,11 +247,19 @@ impl Session {
             )),
             None => None,
         };
-        let mut log = self.shared.log.lock().unwrap();
-        if let Some(old) = log.as_mut() {
-            let _ = old.flush();
+        let started = file.is_some();
+        {
+            let mut log = self.shared.log.lock().unwrap();
+            if let Some(old) = log.as_mut() {
+                let _ = old.flush();
+            }
+            *log = file;
         }
-        *log = file;
+        // 파일 첫 줄에 지금 설정을 남겨 로그만 보고도 조건을 알 수 있게
+        if started {
+            let cfg = self.shared.cfg.lock().unwrap().clone();
+            note(&self.shared, format!("LOG START {}", describe(&cfg)));
+        }
         Ok(())
     }
 
@@ -220,6 +270,79 @@ impl Session {
             let _ = t.join();
         }
     }
+}
+
+fn note(s: &Shared, text: String) {
+    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(text) });
+}
+
+/// «COM3 9600 8N1 flow=none DTR=0 RTS=0»
+pub fn describe(c: &SerialConfig) -> String {
+    let parity = match c.parity.as_str() {
+        "odd" => 'O',
+        "even" => 'E',
+        _ => 'N',
+    };
+    format!(
+        "{} {} {}{}{} flow={} DTR={} RTS={}",
+        c.port, c.baud, c.data_bits, parity, c.stop_bits, c.flow, c.dtr as u8, c.rts as u8
+    )
+}
+
+fn describe_framing(m: &FrameMode) -> String {
+    match m {
+        FrameMode::Gap { gap_ms } => format!("gap {gap_ms}ms"),
+        FrameMode::Terminator { bytes, gap_ms } => {
+            let hex: Vec<String> = bytes.iter().map(|b| format!("{b:02X}")).collect();
+            format!("terminator [{}] gap {gap_ms}ms", hex.join(" "))
+        }
+        FrameMode::Fixed { len, gap_ms } => format!("fixed {len} gap {gap_ms}ms"),
+        FrameMode::ModbusRtu { baud } => format!("modbus-rtu @{baud}"),
+    }
+}
+
+/// 바뀐 항목 목록 «baud 9600→115200»
+fn diff(a: &SerialConfig, b: &SerialConfig) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut d = |k: &str, x: String, y: String| {
+        if x != y {
+            out.push(format!("{k} {x}→{y}"));
+        }
+    };
+    d("baud", a.baud.to_string(), b.baud.to_string());
+    d("data", a.data_bits.to_string(), b.data_bits.to_string());
+    d("parity", a.parity.clone(), b.parity.clone());
+    d("stop", a.stop_bits.to_string(), b.stop_bits.to_string());
+    d("flow", a.flow.clone(), b.flow.clone());
+    d("DTR", (a.dtr as u8).to_string(), (b.dtr as u8).to_string());
+    d("RTS", (a.rts as u8).to_string(), (b.rts as u8).to_string());
+    d("autoReconnect", a.auto_reconnect.to_string(), b.auto_reconnect.to_string());
+    out
+}
+
+/// 열린 포트에 설정을 적용 (DCB 는 복제 핸들로 바꿔도 같은 포트에 적용된다)
+fn apply(p: &mut dyn SerialPort, c: &SerialConfig) -> serialport::Result<()> {
+    p.set_baud_rate(c.baud)?;
+    p.set_data_bits(match c.data_bits {
+        5 => DataBits::Five,
+        6 => DataBits::Six,
+        7 => DataBits::Seven,
+        _ => DataBits::Eight,
+    })?;
+    p.set_parity(match c.parity.as_str() {
+        "odd" => Parity::Odd,
+        "even" => Parity::Even,
+        _ => Parity::None,
+    })?;
+    p.set_stop_bits(if c.stop_bits == 2 { StopBits::Two } else { StopBits::One })?;
+    p.set_flow_control(match c.flow.as_str() {
+        "hardware" => FlowControl::Hardware,
+        "software" => FlowControl::Software,
+        _ => FlowControl::None,
+    })?;
+    p.write_data_terminal_ready(c.dtr)?;
+    p.write_request_to_send(c.rts)?;
+    Ok(())
 }
 
 const BATCH: Duration = Duration::from_millis(50);
@@ -235,9 +358,13 @@ fn reader_loop(port: Port, cfg: SerialConfig, identity: Identity, s: Arc<Shared>
     let mut buf = [0u8; 4096];
     let mut last_flush = Instant::now();
     let mut last_watch = Instant::now();
+    let mut last_lines = Instant::now();
+    let mut lines: Option<[bool; 4]> = None;
+    let _ = cfg; // 이후로는 s.cfg(연결 중 바뀐 설정 포함)를 쓴다
     loop {
         if s.stop.load(Ordering::SeqCst) {
             drop(port.take());
+            note(&s, "CLOSE".into());
             flush(&s, &events);
             status(&events, "closed", &name, None);
             return;
@@ -264,17 +391,49 @@ fn reader_loop(port: Port, cfg: SerialConfig, identity: Identity, s: Arc<Shared>
             // 핸들을 먼저 닫는다 — 쥐고 있으면 같은 COM 을 다시 열 때 Access denied
             drop(port.take());
             *s.writer.lock().unwrap() = None;
+            note(&s, format!("LOST {msg}"));
             flush(&s, &events);
             status(&events, "disconnected", &name, Some(msg));
             let before: Vec<String> = ports::list().into_iter().map(|p| p.name).collect();
-            match reconnect(&cfg, &identity, &before, &s, &events) {
+            let latest = s.cfg.lock().unwrap().clone();
+            match reconnect(&latest, &identity, &before, &s, &events) {
                 Some((p, n)) => {
+                    note(&s, if n == name { format!("RECONNECT {n}") } else { format!("RECONNECT {name} → {n}") });
+                    s.cfg.lock().unwrap().port = n.clone();
                     port = Some(p);
                     name = n;
+                    lines = None;
                 }
-                None => return,
+                None => {
+                    note(&s, "CLOSE".into());
+                    flush(&s, &events);
+                    return;
+                }
             }
             continue;
+        }
+        // 입력 신호선(CTS·DSR·RI·CD)은 100ms 마다 보고, 바뀌면 기록한다
+        if last_lines.elapsed() >= Duration::from_millis(100) {
+            last_lines = Instant::now();
+            if let Some(p) = port.as_mut() {
+                let now = [
+                    p.read_clear_to_send().unwrap_or(false),
+                    p.read_data_set_ready().unwrap_or(false),
+                    p.read_ring_indicator().unwrap_or(false),
+                    p.read_carrier_detect().unwrap_or(false),
+                ];
+                if lines != Some(now) {
+                    if let Some(prev) = lines {
+                        for (i, label) in ["CTS", "DSR", "RI", "CD"].iter().enumerate() {
+                            if prev[i] != now[i] {
+                                note(&s, format!("{label} {}", if now[i] { "ON" } else { "OFF" }));
+                            }
+                        }
+                    }
+                    lines = Some(now);
+                    let _ = events.send(SessionEvent::Lines { cts: now[0], dsr: now[1], ri: now[2], cd: now[3] });
+                }
+            }
         }
         if let Some(f) = s.framer.lock().unwrap().poll(Instant::now()) {
             push_rx(&s, vec![f]);
@@ -332,7 +491,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: Channel
             }
         }
         if sent > 0 {
-            s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes[..sent].to_vec(), check: None });
+            s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes[..sent].to_vec(), check: None, note: None });
         }
         if let Some(message) = error {
             let _ = events.send(SessionEvent::Error { message });
@@ -351,7 +510,7 @@ fn push_rx(s: &Shared, frames: Vec<Cut>) {
     for (at, bytes) in frames {
         let ts = now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64);
         let c = check.and_then(|k| k.verify(&bytes));
-        pending.push(Frame { ts, dir: "rx", bytes, check: c });
+        pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None });
     }
 }
 
@@ -380,7 +539,10 @@ pub fn log_line(f: &Frame) -> String {
         Some(false) => " [CHECK FAIL]",
         None => "",
     };
-    format!("{t} {} {}{check}", f.dir.to_uppercase(), hex.join(" "))
+    match &f.note {
+        Some(n) => format!("{t} EV {n}"),
+        None => format!("{t} {} {}{check}", f.dir.to_uppercase(), hex.join(" ")),
+    }
 }
 
 /// 같은 장치가 다시 나타날 때까지 기다렸다가 연다. 사용자가 닫으면 None.
@@ -432,6 +594,36 @@ mod tests {
             manufacturer: None,
             product: None,
         }
+    }
+
+    fn cfg() -> SerialConfig {
+        SerialConfig {
+            port: "COM3".into(),
+            baud: 9600,
+            data_bits: 8,
+            parity: "none".into(),
+            stop_bits: 1,
+            flow: "none".into(),
+            dtr: false,
+            rts: false,
+            auto_reconnect: true,
+        }
+    }
+
+    #[test]
+    fn describe_and_diff() {
+        assert_eq!(describe(&cfg()), "COM3 9600 8N1 flow=none DTR=0 RTS=0");
+        let mut b = cfg();
+        b.baud = 115_200;
+        b.parity = "even".into();
+        assert_eq!(diff(&cfg(), &b), vec!["baud 9600→115200", "parity none→even"]);
+        assert!(diff(&cfg(), &cfg()).is_empty());
+    }
+
+    #[test]
+    fn event_log_line() {
+        let f = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()) };
+        assert!(log_line(&f).ends_with(" EV SET baud 9600→115200"));
     }
 
     #[test]
