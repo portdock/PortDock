@@ -1,3 +1,4 @@
+import { MB_FUNCS } from "@shared/modbusBuild";
 // Modbus 풀이(백엔드는 영어 키로 준다)를 화면 언어로
 const KO: Record<string, string> = {
   slave: "국번(슬레이브)",
@@ -22,15 +23,9 @@ export function mbWord(k: string, lang: "ko" | "en") {
   return lang === "ko" ? (KO[k] ?? k) : k;
 }
 
+// 함수 이름은 «Modbus 요청 만들기» 와 같은 표(shared/modbusBuild.ts)에서 — 0x17 만 따로
 const FUNC_KO: Record<number, string> = {
-  0x01: "코일 읽기",
-  0x02: "입력 접점 읽기",
-  0x03: "보유 레지스터 읽기",
-  0x04: "입력 레지스터 읽기",
-  0x05: "코일 하나 쓰기",
-  0x06: "레지스터 하나 쓰기",
-  0x0f: "코일 여러 개 쓰기",
-  0x10: "레지스터 여러 개 쓰기",
+  ...Object.fromEntries(MB_FUNCS.map((f) => [f.code, f.ko])),
   0x17: "레지스터 읽기·쓰기",
 };
 

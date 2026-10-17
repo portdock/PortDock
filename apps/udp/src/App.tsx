@@ -25,6 +25,8 @@ import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { looksBroadcast } from "@shared/interlocks";
+import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
+import { screenText } from "@shared/logSearch";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -90,7 +92,7 @@ export default function App() {
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
   const seqRef = useRef(0);
   const screenBytes = useRef(0);
-  const counters = useRef({ rx: 0, tx: 0 });
+  const counters = useRef({ rx: 0, tx: 0, fail: 0 });
   const [version, setVersion] = useState(0);
 
   const onEvent = useCallback((e: SessionEvent) => {
@@ -100,6 +102,7 @@ export default function App() {
         framesRef.current.push(f);
         screenBytes.current += f.bytes.length;
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
+        if (f.check === false) counters.current.fail++;
       }
       screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
@@ -200,17 +203,29 @@ export default function App() {
   }, [view]);
   const frames = framesRef.current;
   const listRef = useRef<HTMLDivElement>(null);
-  const rows = useVirtualizer({ count: frames.length, getScrollElement: () => listRef.current, estimateSize: () => rowHeight(settings.fontSize), overscan: 20 });
+  // 찾기·거르기 — 보기만 거른다(기록은 그대로)
+  const filter = useLogFilter(frames, version);
+  const rows = useVirtualizer({ count: filter.count, getScrollElement: () => listRef.current, estimateSize: () => rowHeight(settings.fontSize), overscan: 20 });
   // 글자 크기를 바꾸면 줄 높이를 다시 잰다
   useEffect(() => {
     rows.measure();
   }, [settings.fontSize, rows]);
   useEffect(() => {
-    if (autoscroll && frames.length) rows.scrollToIndex(frames.length - 1, { align: "end" });
-  }, [version, autoscroll, frames.length, rows]);
+    if (autoscroll && filter.count) rows.scrollToIndex(filter.count - 1, { align: "end" });
+  }, [version, autoscroll, filter.count, rows]);
+  // 찾은 줄로 — 고르고 가운데로 굴린다
+  const jumpTo = useCallback(
+    (seq: number) => {
+      setSelected(seq);
+      setAutoscroll(false);
+      const i = filter.indexOfSeq(seq);
+      if (i >= 0) rows.scrollToIndex(i, { align: "center" });
+    },
+    [filter, rows],
+  );
   function clearLog() {
     framesRef.current = [];
-    counters.current = { rx: 0, tx: 0 };
+    counters.current = { rx: 0, tx: 0, fail: 0 };
     screenBytes.current = 0;
     setSelected(null);
     setVersion((v) => v + 1);
@@ -218,9 +233,8 @@ export default function App() {
   async function saveView() {
     const path = await save({ defaultPath: "portdock-udp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
-    const text = framesRef.current
-      .map((f) => (f.dir === "ev" ? `${fmt(f.ts)} EV ${f.note ?? ""}` : `${fmt(f.ts)} ${f.dir.toUpperCase()} [${f.peer ?? ""}] ${hex(f.bytes)}`))
-      .join("\n");
+    // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
+    const text = screenText({ app: "PortDock UDP", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers: true });
     await api.writeText(path, text).catch((e) => setError(String(e)));
   }
 
@@ -429,6 +443,7 @@ export default function App() {
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
           </span>
+          <FailCount lang={lang} n={counters.current.fail} filter={filter} />
           <button data-tip={tip(lang, "saveView")} className="btn small" onClick={saveView}>
             {t("saveView")}
           </button>
@@ -440,12 +455,15 @@ export default function App() {
           </button>
         </div>
 
+        <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
+
         <div className="log" ref={listRef}>
           {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
-              const f = frames[r.index];
-              const cls = `row ${f.dir} ${selected === f.seq ? "sel" : ""}`;
+              const f = filter.at(r.index);
+              if (!f) return null;
+              const cls = `row ${f.dir}${filter.isHit(f.seq) ? " hit" : ""} ${selected === f.seq ? "sel" : ""}`;
               const style = { transform: `translateY(${r.start}px)` };
               const pick = () => {
                 setSelected(f.seq ?? null);

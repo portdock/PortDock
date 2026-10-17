@@ -25,6 +25,7 @@ export const help: HelpDoc = {
       body: [
         "- 왼쪽: 받는 쪽·보낼 곳·옵션, «시작»/«멈춤», 상태, «보내온 상대» 목록, «수신 체크섬 검사», «파일로 계속 저장».",
         "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다»), «자동 스크롤», 누적 바이트 수, «화면 내용 저장», «지우기».",
+        "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·상대 주소·내용. UDP 는 데이터그램 하나가 곧 한 줄입니다(프레임 구분이 필요 없음).",
         "- 가운데 아래: 보내기 줄(대상, HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
         "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 상대 주소·바이트 수·HEX·ASCII).",
@@ -94,9 +95,21 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "로그 찾기·거르기",
+      body: [
+        "도구줄 바로 아래 줄에서 로그를 찾고 거릅니다. 거르기는 보기만 바꾸며 기록은 그대로 남습니다(파일 로그에도 영향 없음).",
+        "- 찾기 칸: «01 03» 처럼 2자리 HEX 묶음이면 바이트로, 그 밖은 글자로(대소문자 무시) 찾습니다. 옆 칸에서 «자동»·«HEX»·«글자» 를 직접 고를 수 있습니다(«0A» 처럼 헷갈릴 때). 사건 줄(EV)은 글자로 찾을 때 설명 글에서 찾습니다.",
+        "- 찾은 줄은 노랗게 보이고, ▲·▼(또는 Enter·Shift+Enter)로 앞뒤 찾은 줄로 옮겨 고릅니다. «3/17» 은 17개 중 세 번째라는 뜻입니다(고른 줄이 찾은 줄이 아니면 «–/17»).",
+        "- «찾은 줄만»: 찾은 줄만 보입니다. «틀림만»: 수신 체크섬이 «틀림» 인 줄만 보입니다. 방향 칸: «전체»·RX·TX·EV.",
+        "- 거르는 중에는 오른쪽에 «120 / 5,000줄 보임» 처럼 나오고, ✕ 로 모두 끕니다. 거르는 중에도 새 줄은 계속 들어오고, 조건에 맞으면 보입니다.",
+        "- 도구줄의 «CHECK FAIL n»: «지우기» 뒤로 체크섬이 틀린 줄 수입니다(틀린 줄이 있을 때만 보임). 누르면 «틀림만» 이 켜지고 꺼집니다.",
+        "- 단축키: Ctrl+F 찾기 칸으로, Enter 다음, Shift+Enter 이전, Esc 찾는 글자 지우기(한 번 더 누르면 거르기 전체 끄기).",
+      ],
+    },
+    {
       title: "저장과 상세",
       body: [
-        "- «화면 내용 저장»: 지금 화면에 있는 줄을 텍스트 파일로 저장합니다.",
+        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
         "- «파일로 계속 저장»: 파일을 고르면 그때부터 오는 모든 줄을 계속 씁니다. 첫 줄에 설정이 적힙니다. «저장 멈춤» 으로 끝냅니다. 시작한 뒤에만 누를 수 있습니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 그 줄의 상대·바이트 수·HEX·ASCII 가 나옵니다.",
       ],
@@ -114,6 +127,7 @@ export const help: HelpDoc = {
       title: "단축키·팁",
       body: [
         "- 입력칸에서 Enter: 보내기.",
+        "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기.",
         "- F1 또는 ?: 이 도움말. Esc 로 닫습니다.",
         "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
         "- 장비가 어디로 보내는지 모르면: 받을 포트를 맞게 넣고 시작한 뒤 «보내온 상대» 를 보세요.",
@@ -153,6 +167,7 @@ export const help: HelpDoc = {
       body: [
         "- Left: local and destination settings, options, «Start»/«Stop», status, «Senders», «Verify RX checksum», «Log to file».",
         "- Toolbar: «View» (HEX, ASCII, «Both»), «Auto-scroll», byte counters, «Save view», «Clear».",
+        "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
         "- Log: time, direction (RX ◀ / TX ▶ / EV), peer address, data. One datagram is one line (no framing needed).",
         "- Bottom: send row (target, HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
         "- Right: «Commands» and «Detail» (click a log line to see peer, length, HEX, ASCII).",
@@ -222,9 +237,21 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "Find and filter the log",
+      body: [
+        "The row just below the toolbar finds and filters log lines. Filtering only changes the view — nothing is deleted, and the file log is not affected.",
+        "- Find box: 2-digit HEX groups such as «01 03» search bytes; anything else searches text (case-insensitive). Pick «Auto», «HEX» or «Text» next to it when ambiguous (e.g. «0A»). Event lines (EV) are searched by their description in text mode.",
+        "- Matches are highlighted; ▲/▼ (or Enter/Shift+Enter) select the previous/next match. «3/17» means the third of 17 matches («–/17» when the selected line is not a match).",
+        "- «Matches only» shows only matching lines. «FAIL only» shows only lines whose RX checksum failed. The direction box: «All», RX, TX, EV.",
+        "- While filtering, «120 of 5,000 lines» appears on the right; ✕ turns everything off. New lines keep arriving and appear when they match.",
+        "- «CHECK FAIL n» in the toolbar counts lines with a failed checksum since the last «Clear» (shown only when there are any). Click it to toggle «FAIL only».",
+        "- Keys: Ctrl+F focuses the find box, Enter next, Shift+Enter previous, Esc clears the text (press again to clear all filters).",
+      ],
+    },
+    {
       title: "Saving and detail",
       body: [
-        "- «Save view»: saves the lines on screen to a text file.",
+        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
         "- «Log to file»: writes every line from now on to a file, with the settings on the first line. «Stop logging» ends it. Available only while running.",
         "- Click a log line to see its peer, length, HEX and ASCII in «Detail».",
       ],
@@ -242,6 +269,7 @@ export const help: HelpDoc = {
       title: "Shortcuts and tips",
       body: [
         "- Enter in the input: send.",
+        "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear.",
         "- F1 or ?: this help. Esc closes it.",
         "- Hover over a field to see a tooltip.",
         "- Not sure where the device sends? Start on the right listen port and watch «Senders».",

@@ -590,3 +590,55 @@ input.bad {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---- Modbus 요청 만들기 */
+.mb-open {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.modal.mbuild {
+  width: min(560px, calc(100vw - 32px));
+}
+.mb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: end;
+}
+.mb-grid > label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.mb-grid .hint {
+  align-self: center;
+}
+.mb-span {
+  grid-column: 1 / -1;
+}
+.mb-addrmode {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.mb-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.mb-preview code {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 1.08);
+  word-break: break-all;
+}
+.mb-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.mono {
+  font-family: var(--mono);
+}

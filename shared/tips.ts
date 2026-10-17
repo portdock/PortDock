@@ -30,8 +30,19 @@ const TIPS: Record<string, Tip> = {
   view: ["로그를 HEX·ASCII·둘 다로 봅니다. ASCII 에서 제어 문자는 <CR> <LF> 처럼 보입니다.", "Show the log as HEX, ASCII or both. Control characters appear as <CR>, <LF>, …"],
   autoscroll: ["새 줄이 오면 맨 아래로 따라갑니다. 줄을 누르면 꺼져서 그 자리를 볼 수 있습니다.", "Follows new lines. Clicking a line turns it off so you can inspect it."],
   clear: ["화면의 기록만 지웁니다(파일 기록은 그대로).", "Clears the on-screen log only (file logs are kept)."],
-  saveLog: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다.", "Saves the on-screen log to a text file."],
-  saveView: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다.", "Saves the on-screen log to a text file."],
+  saveLog: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 «보기»(HEX·ASCII·둘 다)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).", "Saves the on-screen log to a text file, in the current view (HEX / ASCII / both). With a filter on, only the visible lines are saved (noted in the first line)."],
+  saveView: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 «보기»(HEX·ASCII·둘 다)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).", "Saves the on-screen log to a text file, in the current view (HEX / ASCII / both). With a filter on, only the visible lines are saved (noted in the first line)."],
+  // ---- 찾기·거르기
+  findBox: ["로그에서 찾을 내용. «01 03» 처럼 2자리 HEX 묶음이면 바이트로, 아니면 글자로(대소문자 무시) 찾습니다. 찾은 줄은 노랗게 보입니다. Ctrl+F 로 이 칸, Enter 다음 · Shift+Enter 이전 · Esc 지우기.", "Text to find in the log. «01 03»-style 2-digit HEX groups search bytes; anything else searches text (case-insensitive). Matches are highlighted. Ctrl+F focuses, Enter next, Shift+Enter previous, Esc clears."],
+  findMode: ["찾는 방식. «자동» 은 HEX 로 읽히면 바이트, 아니면 글자로 찾습니다. «0A» 처럼 헷갈리면 직접 고르세요.", "How to search. «Auto» treats HEX-looking input as bytes, otherwise text. Pick one explicitly when ambiguous (e.g. «0A»)."],
+  hitsOnly: ["찾은 줄만 보이게 거릅니다. 끄면 모든 줄이 보이고 찾은 줄만 노랗게 표시됩니다.", "Shows only matching lines. When off, all lines are shown and matches are highlighted."],
+  failOnly: ["수신 체크섬 검사에서 «틀림» 인 줄만 보입니다.", "Shows only lines whose RX checksum check FAILed."],
+  dirFilter: ["방향으로 거릅니다: 받은 것(RX), 보낸 것(TX), 사건(EV).", "Filter by direction: received (RX), sent (TX) or events (EV)."],
+  filterOff: ["찾기·거르기를 모두 끄고 전체 기록을 봅니다(Esc 두 번).", "Turns off find and all filters (Esc twice)."],
+  failCount: ["«지우기» 뒤로 체크섬이 틀린 줄 수(틀린 줄이 있을 때만 보임). 누르면 «틀림만» 을 켜고 끕니다.", "Lines with a failed checksum since the last Clear (shown only when there are any). Click to toggle «FAIL only»."],
+  // ---- Modbus 요청 만들기(시리얼)
+  modbusBuild: ["국번·함수·주소·개수(또는 값)를 고르면 Modbus RTU 요청을 만들어 줍니다. 입력칸에 넣으면 HEX 와 «CRC16 Modbus» 가 함께 맞춰집니다.", "Builds a Modbus RTU request from slave ID, function, address and quantity (or values). «Put in input» sets HEX mode and the «CRC16 Modbus» checksum."],
+  mbAddrMode: ["«0 기준» 은 통신에 실제로 들어가는 주소(0~65535). «PLC 표기» 는 설명서에 흔한 40001·30001·10001·00001 식 — 40001 이 0 기준 0 입니다.", "«0-based» is the address actually sent (0–65535). «PLC notation» is the manual-style 40001/30001/10001/00001 — 40001 is 0-based 0."],
   logToFile: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다.", "Appends all traffic and events to a file from now on."],
   // 첫 줄에 설정을 남기는 프로그램(시리얼)용
   logToFileSettings: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다. 첫 줄에 그때 설정이 기록됩니다.", "Appends all traffic and events to a file from now on. The first line records the current settings."],

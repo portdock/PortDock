@@ -30,6 +30,9 @@ import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { hasXonXoff, minRepeatMs, serialTxMs } from "@shared/interlocks";
+import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
+import { screenText } from "@shared/logSearch";
+import { ModbusBuilder } from "./ModbusBuilder";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -165,7 +168,7 @@ export default function App() {
   const screenBytes = useRef(0);
   const [livePort, setLivePort] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
-  const counters = useRef({ rx: 0, tx: 0 });
+  const counters = useRef({ rx: 0, tx: 0, fail: 0 });
   // 경과 시간 기준 — 연결한 시각(«지우기» 하면 그때부터). 앞줄이 잘려도 바뀌지 않게
   const baseTs = useRef<number | null>(null);
   const langRef = useRef(lang);
@@ -188,6 +191,7 @@ export default function App() {
         arr.push(f);
         screenBytes.current += f.bytes.length;
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
+        if (f.check === false) counters.current.fail++;
       }
       screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
@@ -304,7 +308,7 @@ export default function App() {
 
   function clearLog() {
     framesRef.current = [];
-    counters.current = { rx: 0, tx: 0 };
+    counters.current = { rx: 0, tx: 0, fail: 0 };
     screenBytes.current = 0;
     baseTs.current = Date.now();
     setSelected(null);
@@ -313,8 +317,10 @@ export default function App() {
 
   const listRef = useRef<HTMLDivElement>(null);
   const frames = framesRef.current;
+  // 찾기·거르기 — 보기만 거른다(기록은 그대로)
+  const filter = useLogFilter(frames, version);
   const rows = useVirtualizer({
-    count: frames.length,
+    count: filter.count,
     getScrollElement: () => listRef.current,
     estimateSize: () => rowHeight(settings.fontSize),
     overscan: 20,
@@ -324,19 +330,24 @@ export default function App() {
     rows.measure();
   }, [settings.fontSize, rows]);
   useEffect(() => {
-    if (autoscroll && frames.length) rows.scrollToIndex(frames.length - 1, { align: "end" });
-  }, [version, autoscroll, frames.length, rows]);
+    if (autoscroll && filter.count) rows.scrollToIndex(filter.count - 1, { align: "end" });
+  }, [version, autoscroll, filter.count, rows]);
+  // 찾은 줄로 — 고르고 가운데로 굴린다
+  const jumpTo = useCallback(
+    (seq: number) => {
+      setSelected(seq);
+      setAutoscroll(false);
+      const i = filter.indexOfSeq(seq);
+      if (i >= 0) rows.scrollToIndex(i, { align: "center" });
+    },
+    [filter, rows],
+  );
 
   async function saveView() {
     const path = await save({ defaultPath: "portdock-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
-    const text = framesRef.current
-      .map((f) =>
-        f.dir === "ev"
-          ? `${fmt(f.ts)} EV ${f.note ?? ""}`
-          : `${fmt(f.ts)} ${f.dir.toUpperCase()} ${hex(f.bytes)}${f.check === false ? " [CHECK FAIL]" : ""}`,
-      )
-      .join("\n");
+    // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
+    const text = screenText({ app: "PortDock Serial", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang });
     await api.writeText(path, text).catch((e: unknown) => setError(String(e)));
   }
 
@@ -422,6 +433,10 @@ export default function App() {
     const id = setInterval(() => doSend(repeatSpec.spec), effRepeat);
     return () => clearInterval(id);
   }, [repeatSpec, effRepeat, online, doSend]);
+
+  // ---- Modbus 요청 만들기 — HEX·CRC16 Modbus·줄 끝 없음으로 맞춘다(Modbus RTU 에는 줄 끝이 없다)
+  const [showMb, setShowMb] = useState(false);
+  const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "" });
 
   // ---- 명령 목록
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
@@ -678,6 +693,7 @@ export default function App() {
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
           </span>
+          <FailCount lang={lang} n={counters.current.fail} filter={filter} />
           <button data-tip={tip(lang, "saveLog")} className="btn small" onClick={saveView}>
             {t("saveLog")}
           </button>
@@ -707,16 +723,20 @@ export default function App() {
           {logPath && <span className="rec">● REC</span>}
         </div>
 
+        <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
+
         <div className="log" ref={listRef}>
           {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
-              const f = frames[r.index];
+              const f = filter.at(r.index);
+              if (!f) return null;
+              const hit = filter.isHit(f.seq) ? " hit" : "";
               if (f.dir === "ev")
                 return (
                   <div
                     key={r.key}
-                    className={`row ev ${selected === f.seq ? "sel" : ""}`}
+                    className={`row ev${hit} ${selected === f.seq ? "sel" : ""}`}
                     style={{ transform: `translateY(${r.start}px)` }}
                     onClick={() => setSelected(f.seq ?? null)}
                   >
@@ -728,7 +748,7 @@ export default function App() {
               return (
                 <div
                   key={r.key}
-                  className={`row ${f.dir} ${selected === f.seq ? "sel" : ""}`}
+                  className={`row ${f.dir}${hit} ${selected === f.seq ? "sel" : ""}`}
                   style={{ transform: `translateY(${r.start}px)` }}
                   onClick={() => {
                     setSelected(f.seq ?? null);
@@ -771,6 +791,9 @@ export default function App() {
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && online && sendable && doSend(spec)}
             />
+            <button className="btn mb-open" data-tip={tip(lang, "modbusBuild")} onClick={() => setShowMb(true)}>
+              {t("mbRequest")}
+            </button>
             {spec.mode === "ascii" && spec.checksum && (
               <span className="ck-chip" title={t("ckChipTip")}>
                 {fill(t("ckChip"), { a: CHECKSUMS.find((c) => c.kind === spec.checksum)?.label ?? spec.checksum, n: ckLen(spec.checksum) })}
@@ -917,6 +940,17 @@ export default function App() {
           </div>
         )}
       </aside>
+      {showMb && (
+        <ModbusBuilder
+          lang={lang}
+          onPut={(b) => {
+            setSpec(mbSpec(b));
+            setShowMb(false);
+          }}
+          onAdd={(name, b) => setCommands((c) => [...c, { ...mbSpec(b), name }])}
+          onClose={() => setShowMb(false)}
+        />
+      )}
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Serial" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog

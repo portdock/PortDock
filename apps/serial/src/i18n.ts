@@ -92,6 +92,7 @@ const ko = {
   repStopErr: "REPEAT 멈춤 (보내기 오류)",
   repeatingAs: "반복 중: {a}",
   logDlgTitle: "파일로 계속 저장 — 기존 파일이면 뒤에 이어 씁니다",
+  mbRequest: "Modbus 요청",
 };
 
 const en: typeof ko = {
@@ -187,6 +188,7 @@ const en: typeof ko = {
   repStopErr: "REPEAT stopped (send error)",
   repeatingAs: "Repeating: {a}",
   logDlgTitle: "Log to file — an existing file is appended to",
+  mbRequest: "Modbus request",
 };
 
 export type Lang = "ko" | "en";
