@@ -211,9 +211,24 @@ fn crash_stem(pid: u32) -> String {
 }
 
 fn write_crash(dir: &Path, text: &str) -> std::io::Result<PathBuf> {
+    write_crash_as(dir, &crash_stem(std::process::id()), text)
+}
+
+fn write_crash_as(dir: &Path, stem: &str, text: &str) -> std::io::Result<PathBuf> {
     fs::create_dir_all(dir)?;
-    let path = dir.join(format!("{}.txt", crash_stem(std::process::id())));
-    fs::File::create(&path)?.write_all(text.as_bytes())?;
+    // 같은 ms 에 두 번 죽어도(스레드 둘) 앞 기록을 덮지 않게 — 있으면 -1, -2 … 를 붙인다
+    let mut n = 0u32;
+    let (path, mut file) = loop {
+        let name = if n == 0 { format!("{stem}.txt") } else { format!("{stem}-{n}.txt") };
+        let path = dir.join(name);
+        match fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(f) => break (path, f),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && n < 1000 => n += 1,
+            Err(e) => return Err(e),
+        }
+    };
+    file.write_all(text.as_bytes())?;
+    drop(file);
     prune(dir, KEEP);
     Ok(path)
 }
@@ -376,6 +391,23 @@ mod tests {
         assert!(pending_in(&d).is_empty());
         // 이미 지운 것은 다시 지워도 괜찮다
         dismiss_in(&d, &name).unwrap();
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn same_ms_crashes_do_not_overwrite() {
+        let d = tmp("collide");
+        let stem = "crash-20260101-120000.123-42";
+        // 같은 시각·pid 로 세 번 — 앞 기록을 덮지 않고 따로 남는다
+        let a = write_crash_as(&d, stem, "first").unwrap();
+        let b = write_crash_as(&d, stem, "second").unwrap();
+        let c = write_crash_as(&d, stem, "third").unwrap();
+        assert_eq!(a.file_name().unwrap(), "crash-20260101-120000.123-42.txt");
+        assert_eq!(b.file_name().unwrap(), "crash-20260101-120000.123-42-1.txt");
+        assert_eq!(c.file_name().unwrap(), "crash-20260101-120000.123-42-2.txt");
+        assert_eq!(fs::read_to_string(&a).unwrap(), "first");
+        assert_eq!(fs::read_to_string(&b).unwrap(), "second");
+        assert_eq!(pending_in(&d).len(), 3);
         let _ = fs::remove_dir_all(&d);
     }
 

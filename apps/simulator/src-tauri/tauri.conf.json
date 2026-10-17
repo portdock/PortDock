@@ -15,7 +15,7 @@
         "title": "PortDock Simulator",
         "width": 1200,
         "height": 760,
-        "minWidth": 1000,
+        "minWidth": 760,
         "minHeight": 640
       }
     ],

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender, TrySendError};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -82,9 +82,21 @@ struct Shared {
     stop: AtomicBool,
 }
 
+/// 송신 대기열에 쌓아 둘 수 있는 최대 건수. 흐름 제어(CTS)로 막힌 채 반복 송신이 돌면
+/// 끝없이 쌓이지 않도록 — 가득 차면 새 송신을 거절한다
+pub const SEND_QUEUE_MAX: usize = 64;
+
+fn queue_full() -> String {
+    crate::tr!(
+        "송신 대기열이 가득 찼습니다 — 흐름 제어(CTS)로 막혀 있을 수 있습니다",
+        "The send queue is full — flow control (CTS) may be blocking it"
+    )
+    .into()
+}
+
 pub struct Session {
     shared: Arc<Shared>,
-    tx: Option<Sender<Vec<u8>>>,
+    tx: Option<SyncSender<Vec<u8>>>,
     reader: Option<JoinHandle<()>>,
     writer: Option<JoinHandle<()>>,
     watcher: Option<JoinHandle<()>>,
@@ -180,6 +192,32 @@ impl Drop for Session {
     }
 }
 
+impl Shared {
+    fn new(
+        cfg: SerialConfig,
+        mode: FrameMode,
+        rx_check: Option<ChecksumKind>,
+        responder: Option<Responder>,
+        writer: Port,
+        identity: Identity,
+    ) -> Self {
+        Self {
+            cfg: Mutex::new(cfg),
+            framer: Mutex::new(Framer::new(mode)),
+            rx_check: Mutex::new(rx_check),
+            writer: Mutex::new(Some(writer)),
+            pending: Mutex::new(Vec::new()),
+            log: Mutex::new(None),
+            rules: Mutex::new(Vec::new()),
+            responder: Mutex::new(responder),
+            last_reply: Mutex::new(None),
+            gone: AtomicBool::new(false),
+            identity: Mutex::new(identity),
+            stop: AtomicBool::new(false),
+        }
+    }
+}
+
 impl Session {
     /// `responder` 는 첫 바이트가 오기 전에 꽂혀 있어야 시작 직후 요청도 놓치지 않는다
     pub fn start(
@@ -192,20 +230,7 @@ impl Session {
         let port = open(&cfg)?;
         let identity = Identity::of(&cfg.port);
         let writer_handle = port.try_clone().map_err(|e| e.to_string())?;
-        let shared = Arc::new(Shared {
-            cfg: Mutex::new(cfg.clone()),
-            framer: Mutex::new(Framer::new(mode)),
-            rx_check: Mutex::new(rx_check),
-            writer: Mutex::new(Some(writer_handle)),
-            pending: Mutex::new(Vec::new()),
-            log: Mutex::new(None),
-            rules: Mutex::new(Vec::new()),
-            responder: Mutex::new(responder),
-            last_reply: Mutex::new(None),
-            gone: AtomicBool::new(false),
-            identity: Mutex::new(identity.clone()),
-            stop: AtomicBool::new(false),
-        });
+        let shared = Arc::new(Shared::new(cfg.clone(), mode, rx_check, responder, writer_handle, identity.clone()));
         events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
         note(&shared, format!("OPEN {}", describe(&cfg)));
         note(&shared, format!("FRAMING {}", describe_framing(shared.framer.lock().unwrap().mode())));
@@ -213,7 +238,7 @@ impl Session {
             note(&shared, format!("RXCHECK {}", k.name()));
         }
 
-        let (tx, rx) = mpsc::channel::<Vec<u8>>();
+        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(SEND_QUEUE_MAX);
         let (s, ev) = (shared.clone(), events.clone());
         let writer = std::thread::spawn(move || writer_loop(rx, s, ev));
         // 포트 목록 조회(SetupAPI)는 수십~수백 ms 걸린다 — 읽기 스레드를 막지 않게 따로
@@ -258,20 +283,21 @@ impl Session {
         if changes.is_empty() {
             return Ok(());
         }
-        let online = {
-            let mut w = self.shared.writer.lock().unwrap();
-            match w.as_mut() {
-                Some(port) => {
-                    apply(port.as_mut(), &new).map_err(|e| e.to_string())?;
-                    true
-                }
-                None => false,
+        // 쓰기 핸들 자물쇠를 쥔 채 설정까지 바꾼다 — 재연결이 핸들을 넣는 순간과 겹쳐도
+        // 둘 중 하나가 새 설정을 포트에 적용한다(install_writer 참고). 순서: writer → cfg
+        let mut w = self.shared.writer.lock().unwrap();
+        let online = match w.as_mut() {
+            Some(port) => {
+                apply(port.as_mut(), &new).map_err(|e| e.to_string())?;
+                true
             }
+            None => false,
         };
         let mut cfg = self.shared.cfg.lock().unwrap();
         let port_name = cfg.port.clone();
         *cfg = SerialConfig { port: port_name, ..new };
         drop(cfg);
+        drop(w);
         let later = if online { "" } else { crate::tr!(" (다시 연결될 때 적용)", " (applies on reconnect)") };
         note(&self.shared, format!("SET {}{later}", changes.join(", ")));
         Ok(())
@@ -282,7 +308,12 @@ impl Session {
         if self.shared.writer.lock().unwrap().is_none() {
             return Err(crate::tr!("포트가 끊겨 있습니다", "The port is disconnected").into());
         }
-        self.tx.as_ref().ok_or(crate::tr!("세션이 닫혔습니다", "The session is closed"))?.send(bytes).map_err(|_| crate::tr!("세션이 닫혔습니다", "The session is closed").to_string())
+        let closed = || crate::tr!("세션이 닫혔습니다", "The session is closed").to_string();
+        match self.tx.as_ref().ok_or_else(closed)?.try_send(bytes) {
+            Ok(()) => Ok(()),
+            Err(TrySendError::Full(_)) => Err(queue_full()),
+            Err(TrySendError::Disconnected(_)) => Err(closed()),
+        }
     }
 
     /// 수신·송신 프레임을 파일에 계속 덧붙인다. None 이면 멈춘다.
@@ -397,7 +428,7 @@ fn reader_loop(
     mut identity: Identity,
     s: Arc<Shared>,
     events: EventSink,
-    replies: Sender<Vec<u8>>,
+    replies: SyncSender<Vec<u8>>,
 ) {
     let mut port = Some(port);
     let mut name = cfg.port.clone();
@@ -551,7 +582,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
     }
 }
 
-fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
+fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &SyncSender<Vec<u8>>) {
     if frames.is_empty() {
         return;
     }
@@ -599,13 +630,16 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
                 continue;
             }
             *s.last_reply.lock().unwrap() = Some((reply.clone(), Instant::now() + Duration::from_millis(delay_ms)));
+            // 대기열이 가득 차면(흐름 제어로 막힘) 응답을 버린다 — 읽기 스레드를 막지 않게
             if delay_ms == 0 {
-                let _ = replies.send(reply);
+                if let Err(TrySendError::Full(_)) = replies.try_send(reply) {
+                    pending.push(Frame::event(format!("AUTO {}", queue_full())));
+                }
             } else {
                 let tx = replies.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(Duration::from_millis(delay_ms));
-                    let _ = tx.send(reply);
+                    let _ = tx.try_send(reply);
                 });
             }
         }
@@ -613,7 +647,7 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
 }
 
 /// 프레임 구분기에 남은 미완성 바이트를 내보낸다(닫기·끊김 직전)
-fn drain(s: &Shared, replies: &Sender<Vec<u8>>) {
+fn drain(s: &Shared, replies: &SyncSender<Vec<u8>>) {
     let tail = s.framer.lock().unwrap().flush();
     if let Some(f) = tail {
         push_rx(s, vec![f], replies);
@@ -693,11 +727,25 @@ fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventS
         // 식별을 먼저 바꾸고 나서 «연결됨» 으로 — 감시 스레드가 옛 식별로 «사라짐» 을 내지 않게
         *s.identity.lock().unwrap() = id.clone();
         s.gone.store(false, Ordering::SeqCst);
-        *s.writer.lock().unwrap() = Some(w);
+        install_writer(s, w, &c);
         let msg = (c.port != cfg.port).then(|| format!("{} → {}", cfg.port, c.port));
         status(events, "connected", &c.port, msg);
         return Some((p, c.port, id));
     }
+}
+
+/// 다시 연 포트의 쓰기 핸들을 넣는다. 연 뒤 넣기 전에 사용자가 설정을 바꿨으면
+/// (reconfigure 가 핸들이 없어 «다시 연결될 때 적용» 으로 미뤄 둔 것) 여기서 포트에 적용한다.
+/// 설정 비교와 넣기를 writer 자물쇠 안에서 해 reconfigure 와 엇갈리지 않는다
+fn install_writer(s: &Shared, mut w: Port, opened: &SerialConfig) {
+    let mut slot = s.writer.lock().unwrap();
+    let now = s.cfg.lock().unwrap().clone();
+    if !diff(opened, &now).is_empty()
+        && let Err(e) = apply(w.as_mut(), &now)
+    {
+        note(s, format!("SET failed: {e}"));
+    }
+    *slot = Some(w);
 }
 
 #[cfg(test)]
@@ -766,6 +814,156 @@ mod tests {
         // 새로 생긴 것이 둘이면 어느 것인지 모르므로 기다린다
         let list2 = vec![usb("COM9", 0x1A86, 0x7523, None), usb("COM10", 0x1A86, 0x7523, None)];
         assert!(id.find(&list2, &before).is_none());
+    }
+
+    /// 시험용 포트 — 쓰기는 늘 막혀 있고(CTS 막힘 흉내), 적용된 속도를 기록한다
+    struct Fake {
+        baud: Arc<Mutex<u32>>,
+    }
+
+    impl Read for Fake {
+        fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+            Err(ErrorKind::TimedOut.into())
+        }
+    }
+
+    impl Write for Fake {
+        fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+            Err(ErrorKind::TimedOut.into())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl SerialPort for Fake {
+        fn name(&self) -> Option<String> {
+            None
+        }
+        fn baud_rate(&self) -> serialport::Result<u32> {
+            Ok(*self.baud.lock().unwrap())
+        }
+        fn data_bits(&self) -> serialport::Result<DataBits> {
+            Ok(DataBits::Eight)
+        }
+        fn flow_control(&self) -> serialport::Result<FlowControl> {
+            Ok(FlowControl::None)
+        }
+        fn parity(&self) -> serialport::Result<Parity> {
+            Ok(Parity::None)
+        }
+        fn stop_bits(&self) -> serialport::Result<StopBits> {
+            Ok(StopBits::One)
+        }
+        fn timeout(&self) -> Duration {
+            Duration::from_millis(5)
+        }
+        fn set_baud_rate(&mut self, b: u32) -> serialport::Result<()> {
+            *self.baud.lock().unwrap() = b;
+            Ok(())
+        }
+        fn set_data_bits(&mut self, _: DataBits) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn set_flow_control(&mut self, _: FlowControl) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn set_parity(&mut self, _: Parity) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn set_stop_bits(&mut self, _: StopBits) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn set_timeout(&mut self, _: Duration) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn write_request_to_send(&mut self, _: bool) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn write_data_terminal_ready(&mut self, _: bool) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn read_clear_to_send(&mut self) -> serialport::Result<bool> {
+            Ok(false)
+        }
+        fn read_data_set_ready(&mut self) -> serialport::Result<bool> {
+            Ok(false)
+        }
+        fn read_ring_indicator(&mut self) -> serialport::Result<bool> {
+            Ok(false)
+        }
+        fn read_carrier_detect(&mut self) -> serialport::Result<bool> {
+            Ok(false)
+        }
+        fn bytes_to_read(&self) -> serialport::Result<u32> {
+            Ok(0)
+        }
+        fn bytes_to_write(&self) -> serialport::Result<u32> {
+            Ok(0)
+        }
+        fn clear(&self, _: serialport::ClearBuffer) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn try_clone(&self) -> serialport::Result<Box<dyn SerialPort>> {
+            Ok(Box::new(Fake { baud: self.baud.clone() }))
+        }
+        fn set_break(&self) -> serialport::Result<()> {
+            Ok(())
+        }
+        fn clear_break(&self) -> serialport::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn fake_shared(baud: &Arc<Mutex<u32>>) -> Arc<Shared> {
+        let id = Identity { key: "COM3".into(), vid_pid: None, has_serial: false, listed: false };
+        Arc::new(Shared::new(cfg(), FrameMode::Gap { gap_ms: 20 }, None, None, Box::new(Fake { baud: baud.clone() }), id))
+    }
+
+    /// 흐름 제어로 막힌 채 계속 보내도 대기열이 끝없이 늘지 않는다 — 가득 차면 거절
+    #[test]
+    fn send_queue_is_bounded_while_blocked() {
+        let baud = Arc::new(Mutex::new(9600));
+        let shared = fake_shared(&baud);
+        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(SEND_QUEUE_MAX);
+        let (s, ev) = (shared.clone(), EventSink::new(|_| {}));
+        let writer = std::thread::spawn(move || writer_loop(rx, s, ev));
+        let session = Session { shared, tx: Some(tx), reader: None, writer: Some(writer), watcher: None };
+        let mut accepted = 0;
+        let err = loop {
+            match session.send(vec![0x55; 8]) {
+                Ok(()) => accepted += 1,
+                Err(e) => break e,
+            }
+            assert!(accepted <= SEND_QUEUE_MAX + 1, "queue grew past the cap");
+        };
+        assert!(accepted >= SEND_QUEUE_MAX, "accepted {accepted}");
+        assert_eq!(err, queue_full());
+        session.stop();
+    }
+
+    /// 재연결로 포트를 다시 연 뒤 핸들을 넣기 전에 설정을 바꿨다면, 넣을 때 새 설정이 포트에 적용된다
+    #[test]
+    fn reconfigure_before_writer_install_applies_on_install() {
+        let baud = Arc::new(Mutex::new(9600));
+        let shared = fake_shared(&baud);
+        let opened = cfg(); // 재연결 때 9600 으로 열었다
+        *shared.writer.lock().unwrap() = None; // 아직 핸들을 넣기 전
+        let session = Session { shared: shared.clone(), tx: None, reader: None, writer: None, watcher: None };
+        let mut new = cfg();
+        new.baud = 115_200;
+        session.reconfigure(new).unwrap();
+        assert_eq!(*baud.lock().unwrap(), 9600, "offline — not applied yet");
+        let port = Box::new(Fake { baud: baud.clone() });
+        install_writer(&shared, port, &opened);
+        assert_eq!(*baud.lock().unwrap(), 115_200);
+        assert!(shared.writer.lock().unwrap().is_some());
+        // 바뀐 것이 없으면 건드리지 않는다
+        *baud.lock().unwrap() = 1;
+        let port = Box::new(Fake { baud: baud.clone() });
+        let same = shared.cfg.lock().unwrap().clone();
+        install_writer(&shared, port, &same);
+        assert_eq!(*baud.lock().unwrap(), 1);
     }
 
     /// 일련번호 없는 USB 가 COM3 → COM9 로 다시 붙은 뒤, 목록 감시는 새 식별로 봐야 한다.

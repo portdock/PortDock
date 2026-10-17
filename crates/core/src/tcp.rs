@@ -50,6 +50,8 @@ struct Conn {
     addr: String,
     writer: Mutex<TcpStream>,
     framer: Mutex<Framer>,
+    /// 송신 실패로 우리가 닫았으면 그 이유 — CLOSE 줄에 «상대가 끊음» 대신 남긴다
+    send_failed: Mutex<Option<String>>,
 }
 
 struct Shared {
@@ -60,6 +62,8 @@ struct Shared {
     rx_check: Mutex<Option<ChecksumKind>>,
     pending: Mutex<Vec<Frame>>,
     log: Mutex<Option<LogWriter>>,
+    /// 묶음 전송을 한 번에 하나씩 — 꺼낸 줄을 화면에 보내기 전에 상태 사건이 앞질러 가지 않게
+    flushing: Mutex<()>,
     responder: Mutex<Option<Responder>>,
     echo: AtomicBool,
     /// 에코는 서버에서만 — 클라이언트가 에코하면 상대 서버와 핑퐁이 되기 쉽다
@@ -137,6 +141,7 @@ impl Shared {
     }
 
     fn flush(&self) {
+        let _one = self.flushing.lock().unwrap();
         let frames = std::mem::take(&mut *self.pending.lock().unwrap());
         crate::event::flush_frames(frames, &self.log, &self.events);
     }
@@ -155,6 +160,7 @@ impl Shared {
             addr,
             writer: Mutex::new(stream),
             framer: Mutex::new(Framer::new(self.mode.lock().unwrap().clone())),
+            send_failed: Mutex::new(None),
         });
         self.conns.lock().unwrap().insert(id, conn.clone());
         self.peers();
@@ -240,6 +246,7 @@ impl Shared {
             }
             Err(e) => {
                 self.note(crate::tr!(format!("SEND FAIL {} ({e}) — 연결을 닫습니다", conn.addr), format!("SEND FAIL {} ({e}) — closing the connection", conn.addr)));
+                conn.send_failed.lock().unwrap().get_or_insert_with(|| crate::tr!(format!("송신 실패로 닫음: {e}"), format!("closed after send failure: {e}")));
                 let _ = conn.writer.lock().unwrap().shutdown(Shutdown::Both);
                 false
             }
@@ -275,6 +282,8 @@ impl Shared {
                 break crate::tr!("사용자가 끊음", "disconnected by user").to_string();
             }
         };
+        // 우리가 송신 실패로 닫은 것이면 읽기 쪽이 본 «상대가 끊음»·소켓 오류가 아니라 그 이유를 남긴다
+        let reason = conn.send_failed.lock().unwrap().take().unwrap_or(reason);
         let rest = conn.framer.lock().unwrap().flush();
         if let Some(f) = rest {
             self.push_rx(&conn, vec![f]);
@@ -313,6 +322,7 @@ impl TcpSession {
             rx_check: Mutex::new(rx_check),
             pending: Mutex::new(Vec::new()),
             log: Mutex::new(None),
+            flushing: Mutex::new(()),
             responder: Mutex::new(responder),
             echo: AtomicBool::new(cfg.echo && cfg.mode == TcpMode::Server),
             server: cfg.mode == TcpMode::Server,
@@ -373,7 +383,13 @@ impl TcpSession {
                             }
                         }
                     }
+                    // 연결별 스레드가 CLOSE 를 남길 때까지 기다리고, 남은 줄을 다 보낸 뒤에 «닫힘»
+                    let conns = std::mem::take(&mut *s.conn_threads.lock().unwrap());
+                    for t in conns {
+                        let _ = t.join();
+                    }
                     s.note("STOP LISTEN".into());
+                    s.flush();
                     s.status("closed", "", None);
                 }));
             }
@@ -494,6 +510,7 @@ fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
                     s.note(format!("CONNECT {}", conn.addr));
                     s.status("connected", &conn.addr, None);
                     let reason = s.read_conn(id, conn, reader);
+                    s.flush(); // CLOSE 줄이 상태 사건보다 먼저
                     s.status("disconnected", &target, Some(reason.clone()));
                     last = Some(reason);
                 }
@@ -515,6 +532,7 @@ fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
     }
     // 사용자가 멈춘 것이면 이유를 붙이지 않는다
     let msg = if s.stop.load(Ordering::SeqCst) { None } else { last.as_deref().map(closed_reason) };
+    s.flush();
     s.status("closed", &target, msg);
 }
 
@@ -585,6 +603,65 @@ mod tests {
         raw.read_exact(&mut buf).unwrap();
         assert_eq!(buf, [1, 2, 3]);
         server.stop();
+    }
+
+    /// 우리가 송신 실패로 닫은 연결은 CLOSE 줄에 «상대가 끊음» 이 아니라 송신 실패로 남는다
+    #[test]
+    fn close_after_send_failure_says_so() {
+        let (ssink, srx) = sink();
+        let server = TcpSession::start(cfg(TcpMode::Server, 0), FrameMode::Gap { gap_ms: 20 }, None, None, ssink).unwrap();
+        let port = server.local_addr().unwrap().port();
+        let _raw = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while server.shared.conns.lock().unwrap().is_empty() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        // 쓰기 쪽만 닫아 두면 다음 송신이 바로 실패한다
+        let conn = server.shared.conns.lock().unwrap().values().next().cloned().unwrap();
+        conn.writer.lock().unwrap().shutdown(Shutdown::Write).unwrap();
+        assert_eq!(server.send(None, b"x").unwrap(), (0, 1));
+        let close = loop {
+            let ev = wait_frames(&srx, "ev", 1);
+            assert!(!ev.is_empty(), "no CLOSE line");
+            if let Some(f) = ev.iter().find(|f| f.note.as_deref().is_some_and(|n| n.starts_with("CLOSE "))) {
+                break f.note.clone().unwrap();
+            }
+        };
+        assert!(!close.contains(crate::tr!("상대가 끊음", "closed by peer")), "{close}");
+        assert!(close.contains(crate::tr!("송신 실패", "send failure")), "{close}");
+        server.stop();
+    }
+
+    /// 서버를 멈추면 CLOSE·STOP LISTEN 줄이 «closed» 상태보다 먼저 온다
+    #[test]
+    fn server_stop_lines_arrive_before_closed() {
+        let (ssink, srx) = sink();
+        let server = TcpSession::start(cfg(TcpMode::Server, 0), FrameMode::Gap { gap_ms: 20 }, None, None, ssink).unwrap();
+        let port = server.local_addr().unwrap().port();
+        let _raw = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while server.shared.conns.lock().unwrap().is_empty() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        server.stop();
+        let mut notes = Vec::new();
+        let mut closed_at = None;
+        while let Ok(e) = rx_try(&srx) {
+            match e {
+                SessionEvent::Frames { frames } => notes.extend(frames.into_iter().filter_map(|f| f.note)),
+                SessionEvent::Status { state: "closed", .. } => closed_at = Some(notes.len()),
+                _ => {}
+            }
+        }
+        let closed_at = closed_at.expect("closed status");
+        let before = &notes[..closed_at];
+        assert!(before.iter().any(|n| n.starts_with("CLOSE ")), "{notes:?}");
+        assert!(before.iter().any(|n| n == "STOP LISTEN"), "{notes:?}");
+        assert_eq!(closed_at, notes.len(), "lines after closed: {notes:?}");
+    }
+
+    fn rx_try(rx: &mpsc::Receiver<SessionEvent>) -> Result<SessionEvent, mpsc::RecvTimeoutError> {
+        rx.recv_timeout(Duration::from_millis(200))
     }
 
     #[test]
