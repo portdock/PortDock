@@ -1,0 +1,32 @@
+---
+import Base from "../layouts/Base.astro";
+import { GUIDES } from "../data/guides";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+---
+
+<Base lang={lang} title={ko ? "가이드" : "Guides"} description={ko ? "현장 통신 문제를 바이트 단위로 풀어 보는 글." : "Field communication problems, explained byte by byte."} path="guides/">
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{ko ? "가이드" : "Guides"}</h1>
+      <p>{ko ? "현장에서 자주 막히는 통신 문제를 바이트 단위로 풀어 봅니다." : "Common field communication problems, explained byte by byte."}</p>
+    </div>
+  </header>
+  <div class="wrap grid" style="padding-top:24px">
+    {
+      GUIDES.map((g) => (
+        <a class="card" href={url(lang, `guides/${g.slug}/`)}>
+          <h3>{g.title[lang]}</h3>
+          <p>{g.desc[lang]}</p>
+          <span class="go">{ko ? "읽기" : "Read"} →</span>
+        </a>
+      ))
+    }
+  </div>
+</Base>

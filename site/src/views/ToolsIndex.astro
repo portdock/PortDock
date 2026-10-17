@@ -1,0 +1,35 @@
+---
+import Base from "../layouts/Base.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const items = [
+  { path: "tools/checksum/", ko: ["CRC·체크섬 계산기", "CRC16 Modbus·CCITT·XMODEM, CRC8, LRC, BCC, SUM8, SUM16 을 한 번에."], en: ["CRC & Checksum Calculator", "CRC16 Modbus/CCITT/XMODEM, CRC8, LRC, BCC, SUM8 and SUM16 at once."] },
+  { path: "tools/hex-ascii/", ko: ["HEX ↔ ASCII 변환기", String.raw`바이트를 글자로, 글자를 바이트로. 제어 문자는 \r \n \xNN 으로.`], en: ["HEX ↔ ASCII Converter", String.raw`Bytes to text and back. Control characters as \r \n \xNN.`] },
+];
+---
+
+<Base lang={lang} title={ko ? "웹 도구" : "Web tools"} description={ko ? "설치 없이 브라우저에서 쓰는 통신 계산 도구." : "Communication calculators that run in your browser."} path="tools/">
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{ko ? "웹 도구" : "Web tools"}</h1>
+      <p>{ko ? "설치 없이 브라우저에서 바로 씁니다. 입력한 데이터는 어디에도 보내지 않습니다." : "Run right in your browser. Nothing you type is sent anywhere."}</p>
+    </div>
+  </header>
+  <div class="wrap grid" style="padding-top:24px">
+    {
+      items.map((x) => (
+        <a class="card" href={url(lang, x.path)}>
+          <h3>{x[lang][0]}</h3>
+          <p>{x[lang][1]}</p>
+          <span class="go">{ko ? "열기" : "Open"} →</span>
+        </a>
+      ))
+    }
+  </div>
+</Base>

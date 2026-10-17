@@ -655,3 +655,12 @@ table.t td.mono {
 .grid > * {
   min-width: 0;
 }
+
+/* 표는 좁은 화면에서 자기 칸 안에서만 옆으로 넘긴다 */
+.tbl {
+  overflow-x: auto;
+  margin: 8px 0 16px;
+}
+.guide pre.result {
+  white-space: pre-wrap;
+}

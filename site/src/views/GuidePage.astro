@@ -1,0 +1,63 @@
+---
+// 가이드 글 — 본문 아래에만 광고(AdSlot). 이어지는 도구로 안내한다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { toolById, type Lang } from "../data/tools";
+import type { Guide } from "../data/guides";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  guide: Guide;
+}
+const { lang, guide } = Astro.props;
+const ko = lang === "ko";
+const tool = toolById(guide.tool);
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: guide.title[lang],
+  description: guide.desc[lang],
+  datePublished: guide.date,
+  inLanguage: lang,
+  author: { "@type": "Person", name: "Juhak" },
+};
+---
+
+<Base lang={lang} title={guide.title[lang]} description={guide.desc[lang]} path={`guides/${guide.slug}/`} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <div class="crumb"><a href={url(lang)}>PortDock</a> / <a href={url(lang, "guides/")}>{ko ? "가이드" : "Guides"}</a></div>
+      <h1>{guide.title[lang]}</h1>
+      <p>{guide.desc[lang]}</p>
+    </div>
+  </header>
+  <article class="wrap prose guide" style="padding-top:20px">
+    {
+      guide.body[lang].map((b) =>
+        "p" in b ? <p>{b.p}</p>
+        : "h" in b ? <h2>{b.h}</h2>
+        : "ul" in b ? <ul>{b.ul.map((x) => <li>{x}</li>)}</ul>
+        : "code" in b ? <pre class="result">{b.code}</pre>
+        : (
+          <div class="tbl">
+            <table class="t">
+              <thead><tr>{b.table.head.map((h) => <th>{h}</th>)}</tr></thead>
+              <tbody>{b.table.rows.map((r) => <tr>{r.map((c, i) => <td class={i === 0 ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        ),
+      )
+    }
+    <p class="note">{ko ? `작성 ${guide.date}` : `Published ${guide.date}`}</p>
+  </article>
+  <div class="wrap">
+    <AdSlot />
+    <div class="card">
+      <h3>{tool.name}</h3>
+      <p>{tool.tagline[lang]}</p>
+      <a class="go" href={url(lang, `${tool.id}/`)}>{ko ? "도구 보기" : "See the tool"} →</a>
+    </div>
+  </div>
+</Base>

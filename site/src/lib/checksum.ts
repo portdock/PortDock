@@ -122,3 +122,19 @@ export function parseAscii(text: string, lang: Lang = "ko"): number[] {
 }
 
 export const hex = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+
+/** 바이트 → 사람이 읽는 글자. 보이는 ASCII 는 그대로, 나머지는 \r \n \t \0 \\ \xNN — parseAscii 로 되돌리면 같은 바이트 */
+export function toEscaped(bytes: number[]) {
+  const BS = String.fromCharCode(0x5c); // 역슬래시
+  let s = "";
+  for (const b of bytes) {
+    if (b === 13) s += BS + "r";
+    else if (b === 10) s += BS + "n";
+    else if (b === 9) s += BS + "t";
+    else if (b === 0) s += BS + "0";
+    else if (b === 0x5c) s += BS + BS;
+    else if (b >= 0x20 && b < 0x7f) s += String.fromCharCode(b);
+    else s += BS + "x" + b.toString(16).toUpperCase().padStart(2, "0");
+  }
+  return s;
+}

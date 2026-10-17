@@ -1,7 +1,7 @@
 // crates/core/src/checksum.rs · codec.rs 시험과 같은 값 — 웹 계산기와 프로그램이 같은 답을 내는지
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compute, crc16Modbus, parseAscii, parseHex } from "./checksum.ts";
+import { compute, crc16Modbus, parseAscii, parseHex, toEscaped } from "./checksum.ts";
 
 const CHECK = [..."123456789"].map((c) => c.charCodeAt(0));
 
@@ -41,4 +41,11 @@ test("ASCII 이스케이프", () => {
   assert.throws(() => parseAscii("\\xA"));
   assert.throws(() => parseAscii("\\q"));
   assert.deepEqual(parseAscii("가"), [0xea, 0xb0, 0x80]);
+});
+
+test("바이트 → 이스케이프 글자 → 같은 바이트", () => {
+  const bytes = [0x02, 0x41, 0x5c, 0x0d, 0x0a, 0x00, 0x09, 0xff, 0x7e];
+  const s = toEscaped(bytes);
+  assert.equal(s, String.raw`\x02A\\\r\n\0\t\xFF~`);
+  assert.deepEqual(parseAscii(s), bytes);
 });

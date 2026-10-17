@@ -1,0 +1,126 @@
+---
+// 웹 도구: HEX ↔ ASCII 변환 — 한쪽을 고치면 다른 쪽이 바뀐다. PortDock 프로그램과 같은 규칙(lib/checksum.ts).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = ko
+  ? {
+      title: "HEX ↔ ASCII 변환기",
+      desc: "HEX 바이트를 글자로, 글자를 HEX 로 바꿉니다. CR·LF 같은 제어 문자는 \\r \\n \\xNN 으로 보여 줘서 그대로 복사해 보낼 수 있습니다.",
+      hex: "HEX",
+      ascii: "글자 (ASCII · 이스케이프)",
+      dec: "10진",
+      count: "바이트",
+      how: "보이는 글자(0x20~0x7E)는 그대로, 나머지는 \\r \\n \\t \\0 \\\\ \\xNN 으로 씁니다. 한글 같은 글자는 UTF-8 바이트가 됩니다. 계산은 이 브라우저 안에서만 합니다.",
+      tableTitle: "자주 쓰는 제어 문자",
+      appNote: "장비에 바로 보내 보려면",
+    }
+  : {
+      title: "HEX ↔ ASCII Converter",
+      desc: "Turn HEX bytes into text and text into HEX. Control characters such as CR and LF appear as \\r \\n \\xNN so you can copy and send them as is.",
+      hex: "HEX",
+      ascii: "Text (ASCII · escapes)",
+      dec: "Decimal",
+      count: "bytes",
+      how: "Printable characters (0x20–0x7E) stay as they are; everything else becomes \\r \\n \\t \\0 \\\\ \\xNN. Non-ASCII text becomes UTF-8 bytes. Everything runs in your browser.",
+      tableTitle: "Common control characters",
+      appNote: "To send it to a device right away, use",
+    };
+const CTRL: [string, string, string][] = [
+  ["00", "NUL", "\\0"],
+  ["02", "STX", "\\x02"],
+  ["03", "ETX", "\\x03"],
+  ["04", "EOT", "\\x04"],
+  ["06", "ACK", "\\x06"],
+  ["09", "TAB", "\\t"],
+  ["0A", "LF", "\\n"],
+  ["0D", "CR", "\\r"],
+  ["15", "NAK", "\\x15"],
+  ["1B", "ESC", "\\x1B"],
+];
+---
+
+<Base lang={lang} title={L.title} description={L.desc} path="tools/hex-ascii/" ads>
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="conv" data-lang={lang} data-count={L.count}>
+      <div class="row">
+        <label class="fld">
+          {L.hex}
+          <textarea id="hex" class="mono" rows="5" spellcheck="false">53 54 41 54 55 53 3F 0D 0A</textarea>
+        </label>
+        <label class="fld">
+          {L.ascii}
+          <textarea id="asc" class="mono" rows="5" spellcheck="false"></textarea>
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <p class="note"><span id="n"></span> · {L.dec}: <span id="dec" class="mono"></span></p>
+      <p class="note">{L.how}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.tableTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr><th>HEX</th><th>{ko ? "이름" : "Name"}</th><th>{ko ? "입력" : "Escape"}</th></tr></thead>
+          <tbody>{CTRL.map(([h, n, e]) => <tr><td class="mono">{h}</td><td>{n}</td><td class="mono">{e}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p>
+        {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
+      </p>
+    </section>
+  </div>
+  <script>
+    import { hex, parseAscii, parseHex, toEscaped, type Lang } from "../lib/checksum";
+    const root = document.getElementById("conv")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const hx = document.getElementById("hex") as HTMLTextAreaElement;
+    const as = document.getElementById("asc") as HTMLTextAreaElement;
+    const err = document.getElementById("err")!;
+    const n = document.getElementById("n")!;
+    const dec = document.getElementById("dec")!;
+    function show(bytes: number[]) {
+      n.textContent = `${bytes.length} ${root.dataset.count}`;
+      dec.textContent = bytes.slice(0, 64).join(" ") + (bytes.length > 64 ? " …" : "");
+    }
+    function fromHex() {
+      try {
+        const b = parseHex(hx.value, lang);
+        as.value = toEscaped(b);
+        err.textContent = "";
+        show(b);
+      } catch (e) {
+        err.textContent = (e as Error).message;
+      }
+    }
+    function fromAscii() {
+      try {
+        const b = parseAscii(as.value, lang);
+        hx.value = hex(b);
+        err.textContent = "";
+        show(b);
+      } catch (e) {
+        err.textContent = (e as Error).message;
+      }
+    }
+    hx.addEventListener("input", fromHex);
+    as.addEventListener("input", fromAscii);
+    fromHex();
+  </script>
+</Base>
