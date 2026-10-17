@@ -1,11 +1,25 @@
 //! 문제 보고 — 프로그램이 죽을 때(panic) 원인을 파일로 남기고, 다음에 켤 때 화면이 «개발자에게 보내기» 를 묻는다.
 //! 몰래 보내지 않는다: 파일은 이 PC 에만 남고, 보낼지·무엇을 보낼지는 사용자가 화면에서 정한다.
+//!
+//! 남기는 것 세 가지 — 모두 같은 폴더에 `crash-<시각>-<pid>.txt` (+ 네이티브면 같은 이름의 `.dmp`)
+//! - Rust panic: panic 훅([`install`])
+//! - 네이티브 크래시(접근 위반 등): 감시 프로세스가 minidump 를 쓴다([`crash_monitor_or_attach`])
+//! - WebView2 화면 프로세스가 죽음(흰 화면): `watch_webview2` (윈도우)
+
+mod native;
+#[cfg(windows)]
+mod webview;
+
+pub use native::crash_monitor_or_attach;
+#[cfg(windows)]
+pub use webview::watch_webview2;
 
 use serde::Serialize;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 static APP: OnceLock<(&'static str, &'static str)> = OnceLock::new();
 
@@ -13,6 +27,11 @@ static APP: OnceLock<(&'static str, &'static str)> = OnceLock::new();
 const KEEP: usize = 10;
 /// 화면으로 넘길 보고 하나의 최대 길이
 const MAX_TEXT: usize = 64 * 1024;
+/// 화면으로 넘길 minidump 의 최대 크기 — 보통 수백 KB. 이보다 크면 올리지 않는다(Sentry 한도 40 MB 안쪽)
+pub const MAX_DUMP: u64 = 20 * 1024 * 1024;
+
+/// panic 훅이 이미 기록했으면 네이티브 처리기는 덤프를 또 만들지 않는다(한 번의 사고에 보고 하나)
+static PANICKED: AtomicBool = AtomicBool::new(false);
 
 static DIR: OnceLock<PathBuf> = OnceLock::new();
 
@@ -73,6 +92,26 @@ fn redact_home(text: &str, home: &str) -> String {
     out
 }
 
+/// 보고 글 — 머리(프로그램·OS·시각) + 본문. 사용자 폴더는 `~` 로 가린다
+fn compose(body: &str) -> String {
+    let (app, version) = APP.get().copied().unwrap_or(("portdock", "?"));
+    let text = format!(
+        "PortDock crash report\napp: {app} {version}\nos: {} {}\ntime: {}\n{body}",
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f %z"),
+    );
+    match std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
+        Ok(home) => redact_home(&text, &home),
+        Err(_) => text,
+    }
+}
+
+/// panic 이 아닌 사고(WebView2 프로세스 종료 등)를 보고 파일로 남긴다. `message:` 줄이 Sentry 에서 제목이 된다
+pub fn record(message: &str, detail: &str) {
+    let _ = write_crash(&reports_dir(), &compose(&format!("message: {message}\n{detail}")));
+}
+
 /// 프로그램 시작 때 한 번. 기본 panic 처리(콘솔 출력)는 그대로 두고 파일 기록을 더한다.
 pub fn install(app: &'static str, version: &'static str) {
     if APP.set((app, version)).is_err() {
@@ -80,6 +119,7 @@ pub fn install(app: &'static str, version: &'static str) {
     }
     let prev = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
+        PANICKED.store(true, Ordering::SeqCst);
         let msg = info
             .payload()
             .downcast_ref::<&str>()
@@ -89,16 +129,7 @@ pub fn install(app: &'static str, version: &'static str) {
         let at = info.location().map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column())).unwrap_or_default();
         let thread = std::thread::current().name().unwrap_or("(unnamed)").to_string();
         let bt = std::backtrace::Backtrace::force_capture();
-        let text = format!(
-            "PortDock crash report\napp: {app} {version}\nos: {} {}\ntime: {}\nthread: {thread}\nmessage: {msg}\nlocation: {at}\n\nbacktrace:\n{bt}\n",
-            std::env::consts::OS,
-            std::env::consts::ARCH,
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f %z"),
-        );
-        let text = match std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
-            Ok(home) => redact_home(&text, &home),
-            Err(_) => text,
-        };
+        let text = compose(&format!("thread: {thread}\nmessage: {msg}\nlocation: {at}\n\nbacktrace:\n{bt}\n"));
         // 기록 실패는 무시 — panic 처리 중에 다시 죽으면 안 된다
         let _ = write_crash(&reports_dir(), &text);
         prev(info);
@@ -152,54 +183,85 @@ pub fn run_failed(detail: &str) -> ! {
     std::process::exit(1);
 }
 
-/// 시험용: 환경 변수 PORTDOCK_TEST_CRASH=1 로 켜면 3초 뒤 일부러 죽는다(보고 흐름 확인)
+/// 시험용: 환경 변수 PORTDOCK_TEST_CRASH 로 켜면 3초 뒤 일부러 죽는다(보고 흐름 확인)
+/// - `1`: Rust panic → panic 훅이 .txt 를 남긴다
+/// - `native`: 진짜 접근 위반(잘못된 주소에 쓰기) → 감시 프로세스가 .dmp + .txt 를 남긴다
 pub fn test_crash_if_asked() {
-    if std::env::var("PORTDOCK_TEST_CRASH").as_deref() == Ok("1") {
-        std::thread::Builder::new()
-            .name("test-crash".into())
-            .spawn(|| {
-                std::thread::sleep(std::time::Duration::from_secs(3));
-                panic!("PORTDOCK_TEST_CRASH: intentional crash for testing the report flow");
-            })
-            .ok();
-    }
+    let native = match std::env::var("PORTDOCK_TEST_CRASH").as_deref() {
+        Ok("1") => false,
+        Ok("native") => true,
+        _ => return,
+    };
+    std::thread::Builder::new()
+        .name("test-crash".into())
+        .spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(3));
+            if native {
+                // SAFETY: 일부러 죽는 시험 — 0x10 은 어느 프로세스에서도 매핑되지 않는 주소라 접근 위반이 난다
+                unsafe { std::ptr::without_provenance_mut::<u8>(0x10).write_volatile(1) };
+            }
+            panic!("PORTDOCK_TEST_CRASH: intentional crash for testing the report flow");
+        })
+        .ok();
+}
+
+/// 보고 이름의 앞부분(확장자 앞) — 이름에 시각이 들어 있어 이름순 = 시간순
+fn crash_stem(pid: u32) -> String {
+    format!("crash-{}-{pid}", chrono::Local::now().format("%Y%m%d-%H%M%S%.3f"))
 }
 
 fn write_crash(dir: &Path, text: &str) -> std::io::Result<PathBuf> {
     fs::create_dir_all(dir)?;
-    let name = format!("crash-{}-{}.txt", chrono::Local::now().format("%Y%m%d-%H%M%S%.3f"), std::process::id());
-    let path = dir.join(name);
+    let path = dir.join(format!("{}.txt", crash_stem(std::process::id())));
     fs::File::create(&path)?.write_all(text.as_bytes())?;
     prune(dir, KEEP);
     Ok(path)
 }
 
-fn crash_files(dir: &Path) -> Vec<PathBuf> {
-    let mut v: Vec<PathBuf> = fs::read_dir(dir)
-        .map(|rd| rd.flatten().map(|e| e.path()).filter(|p| p.file_name().and_then(|n| n.to_str()).is_some_and(valid_name)).collect())
+/// 보고 묶음의 이름 앞부분들(오래된 것부터). 같은 앞부분의 .txt 와 .dmp 는 한 건이다
+fn crash_stems(dir: &Path) -> Vec<String> {
+    let mut v: Vec<String> = fs::read_dir(dir)
+        .map(|rd| {
+            rd.flatten()
+                .filter_map(|e| e.file_name().to_str().filter(|n| valid_name(n)).map(|n| n[..n.len() - 4].to_string()))
+                .collect()
+        })
         .unwrap_or_default();
-    v.sort(); // 이름에 시각이 들어 있어 이름순 = 시간순
+    v.sort();
+    v.dedup();
     v
 }
 
+/// 오래된 보고부터 지운다 — .txt·.dmp 짝을 한 건으로 센다
 fn prune(dir: &Path, keep: usize) {
-    let files = crash_files(dir);
-    if files.len() > keep {
-        for p in &files[..files.len() - keep] {
-            let _ = fs::remove_file(p);
+    let stems = crash_stems(dir);
+    if stems.len() > keep {
+        for s in &stems[..stems.len() - keep] {
+            let _ = fs::remove_file(dir.join(format!("{s}.txt")));
+            let _ = fs::remove_file(dir.join(format!("{s}.dmp")));
         }
     }
 }
 
 /// 화면이 넘겨준 이름이 보고 폴더 밖을 가리키지 못하게
 fn valid_name(n: &str) -> bool {
-    n.starts_with("crash-") && n.ends_with(".txt") && !n.contains(['/', '\\', ':']) && !n.contains("..")
+    n.starts_with("crash-")
+        && (n.ends_with(".txt") || n.ends_with(".dmp"))
+        && n.is_ascii()
+        && !n.contains(['/', '\\', ':'])
+        && !n.contains("..")
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CrashReport {
+    /// 보고 글 파일 이름(.txt) — 지울 때 이 이름을 넘기면 짝인 .dmp 도 함께 지운다
     pub name: String,
     pub text: String,
+    /// 네이티브 크래시면 minidump 파일 이름(.dmp)
+    pub dump: Option<String>,
+    /// minidump 크기(바이트)
+    pub dump_size: Option<u64>,
 }
 
 /// 아직 처리하지 않은 보고(오래된 것부터)
@@ -208,10 +270,17 @@ pub fn pending() -> Vec<CrashReport> {
 }
 
 fn pending_in(dir: &Path) -> Vec<CrashReport> {
-    crash_files(dir)
+    crash_stems(dir)
         .into_iter()
-        .filter_map(|p| {
-            let mut text = fs::read_to_string(&p).ok()?;
+        .filter_map(|stem| {
+            let dump = format!("{stem}.dmp");
+            let dump_size = fs::metadata(dir.join(&dump)).ok().filter(|m| m.is_file()).map(|m| m.len());
+            let mut text = match fs::read_to_string(dir.join(format!("{stem}.txt"))) {
+                Ok(t) => t,
+                // 덤프만 남은 경우(설명 파일을 못 쓴 채 감시 프로세스가 끝남)
+                Err(_) if dump_size.is_some() => "PortDock crash report\nmessage: native crash (minidump)\n".to_string(),
+                Err(_) => return None,
+            };
             if text.len() > MAX_TEXT {
                 let mut cut = MAX_TEXT;
                 while !text.is_char_boundary(cut) {
@@ -220,7 +289,7 @@ fn pending_in(dir: &Path) -> Vec<CrashReport> {
                 text.truncate(cut);
                 text.push_str("\n…(truncated)");
             }
-            Some(CrashReport { name: p.file_name()?.to_string_lossy().into_owned(), text })
+            Some(CrashReport { name: format!("{stem}.txt"), text, dump: dump_size.map(|_| dump), dump_size })
         })
         .collect()
 }
@@ -234,11 +303,33 @@ fn dismiss_in(dir: &Path, name: &str) -> Result<(), String> {
     if !valid_name(name) {
         return Err(format!("bad report name: {name}"));
     }
-    match fs::remove_file(dir.join(name)) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(e.to_string()),
+    // 글이든 덤프든 이름 하나로 짝 둘 다 지운다
+    let stem = &name[..name.len() - 4];
+    for ext in ["txt", "dmp"] {
+        match fs::remove_file(dir.join(format!("{stem}.{ext}"))) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.to_string()),
+        }
     }
+    Ok(())
+}
+
+/// minidump 내용 — 화면이 Sentry 로 올릴 때 읽는다
+pub fn read_dump(name: &str) -> Result<Vec<u8>, String> {
+    read_dump_in(&reports_dir(), name)
+}
+
+fn read_dump_in(dir: &Path, name: &str) -> Result<Vec<u8>, String> {
+    if !valid_name(name) || !name.ends_with(".dmp") {
+        return Err(format!("bad dump name: {name}"));
+    }
+    let path = dir.join(name);
+    let len = fs::metadata(&path).map_err(|e| e.to_string())?.len();
+    if len > MAX_DUMP {
+        return Err(format!("dump too large: {len} bytes"));
+    }
+    fs::read(&path).map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -291,9 +382,79 @@ mod tests {
     #[test]
     fn rejects_paths_outside() {
         let d = tmp("bad");
-        for n in ["../x.txt", "crash-..\\..\\a.txt", "crash-a/b.txt", "C:crash-a.txt", "notes.txt", "crash-a.log"] {
+        for n in [
+            "../x.txt",
+            "crash-..\\..\\a.txt",
+            "crash-a/b.txt",
+            "C:crash-a.txt",
+            "notes.txt",
+            "crash-a.log",
+            "crash-..\\a.dmp",
+            "crash-a/b.dmp",
+            "x.dmp",
+            "crash-a.dmp.exe",
+            "crash-가.dmp",
+        ] {
             assert!(dismiss_in(&d, n).is_err(), "{n}");
+            assert!(read_dump_in(&d, n).is_err(), "{n}");
         }
+        // 덤프 읽기는 .dmp 만
+        assert!(read_dump_in(&d, "crash-1.txt").is_err());
+    }
+
+    #[test]
+    fn dump_pairs_with_text() {
+        let d = tmp("pair");
+        fs::create_dir_all(&d).unwrap();
+        fs::write(d.join("crash-20260101-000000.000-1.txt"), "panic").unwrap();
+        fs::write(d.join("crash-20260102-000000.000-2.txt"), "native").unwrap();
+        fs::write(d.join("crash-20260102-000000.000-2.dmp"), b"MDMP1234").unwrap();
+        // 설명 없이 덤프만 남은 것도 한 건
+        fs::write(d.join("crash-20260103-000000.000-3.dmp"), b"MDMP").unwrap();
+        let v = pending_in(&d);
+        assert_eq!(v.len(), 3);
+        assert_eq!(v[0].dump, None);
+        assert_eq!(v[1].name, "crash-20260102-000000.000-2.txt");
+        assert_eq!(v[1].text, "native");
+        assert_eq!(v[1].dump.as_deref(), Some("crash-20260102-000000.000-2.dmp"));
+        assert_eq!(v[1].dump_size, Some(8));
+        assert_eq!(v[2].name, "crash-20260103-000000.000-3.txt");
+        assert!(v[2].text.contains("minidump"));
+        assert_eq!(read_dump_in(&d, "crash-20260102-000000.000-2.dmp").unwrap(), b"MDMP1234");
+        // 글 이름으로 지우면 짝인 덤프도 지워진다
+        dismiss_in(&d, "crash-20260102-000000.000-2.txt").unwrap();
+        assert!(!d.join("crash-20260102-000000.000-2.dmp").exists());
+        dismiss_in(&d, "crash-20260103-000000.000-3.txt").unwrap();
+        let names: Vec<String> = pending_in(&d).into_iter().map(|r| r.name).collect();
+        assert_eq!(names, ["crash-20260101-000000.000-1.txt"]);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn prune_counts_pairs_as_one() {
+        let d = tmp("prunepair");
+        fs::create_dir_all(&d).unwrap();
+        for i in 0..4 {
+            fs::write(d.join(format!("crash-2026010{i}.txt")), "x").unwrap();
+            fs::write(d.join(format!("crash-2026010{i}.dmp")), "d").unwrap();
+        }
+        fs::write(d.join("crash-20260109.dmp"), "only dump").unwrap();
+        prune(&d, 2);
+        let mut left: Vec<String> = fs::read_dir(&d).unwrap().flatten().map(|e| e.file_name().into_string().unwrap()).collect();
+        left.sort();
+        assert_eq!(left, ["crash-20260103.dmp", "crash-20260103.txt", "crash-20260109.dmp"]);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn dump_size_limit() {
+        let d = tmp("big");
+        fs::create_dir_all(&d).unwrap();
+        let f = fs::File::create(d.join("crash-1.dmp")).unwrap();
+        f.set_len(MAX_DUMP + 1).unwrap();
+        drop(f);
+        assert!(read_dump_in(&d, "crash-1.dmp").unwrap_err().contains("too large"));
+        let _ = fs::remove_dir_all(&d);
     }
 
     #[test]

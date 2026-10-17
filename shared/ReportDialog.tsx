@@ -10,11 +10,13 @@ import {
   autoSendCrashes,
   buildReport,
   configSnapshot,
+  dumpKb,
   frameLines,
   issueUrl,
   mailtoUrl,
   recentErrors,
   reportApi,
+  sendMinidump,
   type CrashReport,
   type EnvInfo,
   type ReportFrame,
@@ -32,6 +34,9 @@ const UI = {
     env: "프로그램·윈도우 버전 (항상 넣음)",
     errors: "이번 실행의 오류 {n}개",
     crashes: "오류로 꺼진 기록 {n}개",
+    dumps: "덤프 파일 포함 ({n} KB)",
+    dumpsSend: " — «지금 바로 보내기» 때 함께 올라갑니다",
+    dumpManual: "덤프 파일은 이메일·GitHub 로 보낼 때 직접 첨부해 주세요(보내거나 지울 때까지 남겨 둡니다): {a}",
     config: "연결·화면 설정 (IP·포트·속도 등 — 명령 목록·규칙은 넣지 않음)",
     log: "최근 통신 기록 {n}줄",
     logWarn: "통신 기록에는 회사·장비 데이터가 들어 있을 수 있습니다. 보내도 되는 경우에만 켜세요.",
@@ -69,6 +74,9 @@ const UI = {
     env: "Program and Windows version (always included)",
     errors: "{n} error(s) in this session",
     crashes: "{n} crash record(s)",
+    dumps: "Dump file included ({n} KB)",
+    dumpsSend: " — uploaded with «Send now»",
+    dumpManual: "Please attach the dump file yourself when sending by email or GitHub (kept until sent or discarded): {a}",
     config: "Connection and display settings (IP, port, baud … — commands and rules are not included)",
     log: "Last {n} traffic lines",
     logWarn: "Traffic may contain company or device data. Include it only if that is allowed.",
@@ -125,6 +133,8 @@ export function ReportDialog({
   const [err, setErr] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const handled = useRef(false);
+  /** 덤프까지 올린 기록 — 닫을 때 지운다 */
+  const uploaded = useRef(new Set<string>());
   // 열 때 한 번만 찍어 둔다 — 보는 동안 내용이 바뀌지 않게
   const errors = useMemo(() => recentErrors(), []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,9 +161,17 @@ export function ReportDialog({
     log: incLog ? logs : null,
   });
 
-  /** 보냈거나 저장한 오류 종료 기록은 닫을 때 지운다(다음에 또 묻지 않게) */
+  const dumps = crashes.filter((c) => c.dump);
+  const dumpTotalKb = dumps.reduce((n, c) => n + dumpKb(c), 0);
+  const sep = env?.reportsDir.includes("/") ? "/" : "\\";
+  const dumpPaths = dumps.map((c) => `${env ? env.reportsDir + sep : ""}${c.dump}`).join(", ");
+
+  /**
+   * 보냈거나 저장한 오류 종료 기록은 닫을 때 지운다(다음에 또 묻지 않게).
+   * 덤프가 있는 기록은 덤프까지 올렸을 때만 — 직접 첨부할 파일이 사라지지 않게
+   */
   function close() {
-    if (handled.current && incCrashes) for (const c of crashes) reportApi.dismiss(c.name);
+    if (handled.current && incCrashes) for (const c of crashes) if (!c.dump || uploaded.current.has(c.name)) reportApi.dismiss(c.name);
     onClose();
   }
   function done(m: string) {
@@ -176,7 +194,7 @@ export function ReportDialog({
     if (!path) return;
     try {
       await invoke("write_text", { path, text: report });
-      done(fill(u.saved, { a: path }));
+      done(fill(u.saved, { a: path }) + (incCrashes && dumps.length ? " " + fill(u.dumpManual, { a: dumpPaths }) : ""));
     } catch (e) {
       setErr(String(e));
     }
@@ -194,7 +212,13 @@ export function ReportDialog({
     setSending(true);
     setMsg(null);
     const title = desc.trim().split("\n")[0].slice(0, 120) || "user report";
-    const ok = await autoSend({ source: "user", title, detail: report, level: incCrashes && crashes.length ? "fatal" : "info" });
+    let ok = await autoSend({ source: "user", title, detail: report, level: incCrashes && crashes.length ? "fatal" : "info" });
+    // 덤프는 따로 minidump 주소로 — Sentry 가 풀어서 스택을 보여 준다
+    if (ok && incCrashes)
+      for (const c of dumps) {
+        if (await sendMinidump(c)) uploaded.current.add(c.name);
+        else ok = false;
+      }
     setSending(false);
     if (ok) done(u.sentOk);
     else setErr(u.sendFail);
@@ -227,6 +251,7 @@ export function ReportDialog({
             {check(true, () => {}, u.env, true)}
             {check(incErrors, setIncErrors, fill(u.errors, { n: errors.length }), errors.length === 0)}
             {crashes.length > 0 && check(incCrashes, setIncCrashes, fill(u.crashes, { n: crashes.length }))}
+            {incCrashes && dumps.length > 0 && <div className="hint">{fill(u.dumps, { n: dumpTotalKb }) + (autoSendAvailable() ? u.dumpsSend : "")}</div>}
             {check(incConfig, setIncConfig, u.config)}
             {frames && check(incLog, setIncLog, fill(u.log, { n: logs.length }), logs.length === 0)}
             {incLog && <div className="interlock">{u.logWarn}</div>}

@@ -14,8 +14,13 @@ export const ISSUES_URL = "https://github.com/juhak0308/PortDock/issues/new";
 export const SENTRY_DSN = "";
 
 export interface CrashReport {
+  /** 보고 글 파일 이름(.txt) — 지우면 짝인 .dmp 도 함께 지워진다 */
   name: string;
   text: string;
+  /** 네이티브 크래시면 minidump 파일 이름(.dmp) */
+  dump?: string | null;
+  /** minidump 크기(바이트) */
+  dumpSize?: number | null;
 }
 export interface EnvInfo {
   app: string;
@@ -36,7 +41,12 @@ export const reportApi = {
   pending: () => invoke<CrashReport[]>("report_pending").catch(() => [] as CrashReport[]),
   dismiss: (name: string) => invoke<void>("report_dismiss", { name }).catch(() => {}),
   env: () => invoke<EnvInfo>("report_env").catch(() => null),
+  /** minidump 내용(바이트) — 이름은 pending 이 준 것만 */
+  readDump: (name: string) => invoke<ArrayBuffer>("report_read_dump", { name }),
 };
+
+/** 덤프 크기 표시용(KB, 올림) */
+export const dumpKb = (c: CrashReport) => Math.max(1, Math.ceil((c.dumpSize ?? 0) / 1024));
 
 // ---- 최근 오류(이번 실행 동안)
 export interface NotedError {
@@ -91,11 +101,19 @@ export interface AutoItem {
   level?: "error" | "fatal" | "info";
 }
 
+/** DSN → 받는 곳. 비었거나 꼴이 틀리면 null */
+function dsn() {
+  const m = /^https:\/\/([^@]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN.trim());
+  return m ? { key: m[1], host: m[2], project: m[3] } : null;
+}
+const releaseOf = (app: string, env: EnvInfo | null) => `portdock-${app}@${env?.version ?? "?"}`;
+const environment = () => (import.meta.env.DEV ? "dev" : "production");
+
 /** 보냈으면 true. 인터넷이 없거나 받는 곳이 없으면 false(호출한 쪽이 다음에 다시) */
 export async function autoSend(item: AutoItem): Promise<boolean> {
-  const m = /^https:\/\/([^@]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN.trim());
-  if (!m) return false;
-  const [, key, host, project] = m;
+  const d = dsn();
+  if (!d) return false;
+  const { key, host, project } = d;
   const env = await envOnce();
   const app = env?.app ?? document.title;
   const id = hex32();
@@ -105,8 +123,8 @@ export async function autoSend(item: AutoItem): Promise<boolean> {
     platform: "other",
     level: item.level ?? "error",
     logger: item.source,
-    release: `portdock-${app}@${env?.version ?? "?"}`,
-    environment: import.meta.env.DEV ? "dev" : "production",
+    release: releaseOf(app, env),
+    environment: environment(),
     // 사용자·PC 를 알아볼 정보는 보내지 않는다
     server_name: "-",
     tags: { app, source: item.source, os: env ? `${env.os}-${env.arch}` : "?", lang: navigator.language },
@@ -155,12 +173,63 @@ function autoSendException(source: string, text: string) {
   void autoSend({ source, title, detail: text });
 }
 
+/**
+ * 네이티브 크래시의 minidump 를 Sentry minidump 주소로 올린다(multipart, 설명 글은 첨부·extra 로).
+ * 보냈으면 true. Sentry 가 덤프를 풀어 스택을 보여 준다.
+ */
+export async function sendMinidump(c: CrashReport): Promise<boolean> {
+  const d = dsn();
+  if (!d || !c.dump) return false;
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await reportApi.readDump(c.dump);
+  } catch {
+    // 덤프를 읽지 못함(너무 큼·지워짐) — 설명 글만 일반 보고로 보낸다
+    const msg = /^message: (.*)$/m.exec(c.text)?.[1] ?? c.name;
+    return autoSend({ source: "crash", title: `crash: ${msg}`, detail: c.text, level: "fatal" });
+  }
+  const env = await envOnce();
+  const app = env?.app ?? document.title;
+  const text = hideUserPaths(c.text);
+  const form = new FormData();
+  form.append("upload_file_minidump", new Blob([bytes], { type: "application/octet-stream" }), c.dump);
+  form.append("sentry[release]", releaseOf(app, env));
+  form.append("sentry[environment]", environment());
+  form.append("sentry[level]", "fatal");
+  // 사용자·PC 를 알아볼 정보는 보내지 않는다
+  form.append("sentry[server_name]", "-");
+  form.append("sentry[tags][app]", app);
+  form.append("sentry[tags][source]", "native");
+  form.append("sentry[tags][os]", env ? `${env.os}-${env.arch}` : "?");
+  form.append("sentry[tags][lang]", navigator.language);
+  form.append("sentry[extra][report]", text.slice(0, 8000));
+  // 그 밖의 파일 칸은 Sentry 가 첨부 파일로 둔다
+  form.append("report_txt", new Blob([text], { type: "text/plain" }), "report.txt");
+  const target = `https://${d.host}/api/${d.project}/minidump/?sentry_key=${d.key}`;
+  // 먼저 보통 요청으로 보내 응답 코드를 본다 — 거부(4xx·5xx)면 덤프를 지우지 않고 다음에 다시
+  try {
+    const r = await fetch(target, { method: "POST", body: form, signal: AbortSignal.timeout(30000) });
+    return r.ok;
+  } catch {
+    /* CORS 로 응답을 못 읽었거나 네트워크 실패 — 아래에서 한 번 더 */
+  }
+  // 응답에 CORS 머리가 없으면 no-cors 로만 보낼 수 있다. 응답은 못 읽지만, 서버에 닿았으면 보낸 것으로 본다
+  // (네트워크가 끊겼으면 여기서도 예외 → 다음 실행 때 다시)
+  try {
+    await fetch(target, { method: "POST", mode: "no-cors", body: form, signal: AbortSignal.timeout(30000) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** 지난번 비정상 종료 기록을 보낸다. 보낸 것은 지우고, 못 보낸 수를 돌려준다(다음에 다시) */
 export async function autoSendCrashes(crashes: CrashReport[]) {
   let left = 0;
   for (const c of crashes) {
     const msg = /^message: (.*)$/m.exec(c.text)?.[1] ?? c.name;
-    if (await autoSend({ source: "crash", title: `crash: ${msg}`, detail: c.text, level: "fatal" })) await reportApi.dismiss(c.name);
+    const ok = c.dump ? await sendMinidump(c) : await autoSend({ source: "crash", title: `crash: ${msg}`, detail: c.text, level: "fatal" });
+    if (ok) await reportApi.dismiss(c.name);
     else left++;
   }
   return left;
@@ -247,7 +316,10 @@ export function buildReport(p: ReportParts) {
   }
   if (p.crashes && p.crashes.length) {
     out.push(`## Crash reports (${p.crashes.length})`);
-    for (const c of p.crashes) out.push(`### ${c.name}`, "```", c.text.trimEnd(), "```");
+    for (const c of p.crashes) {
+      out.push(`### ${c.name}`, "```", c.text.trimEnd(), "```");
+      if (c.dump) out.push(`minidump: ${p.env ? `${p.env.reportsDir}\\` : ""}${c.dump} (${dumpKb(c)} KB) — attach this file if you send the report by email or GitHub`);
+    }
     out.push("");
   }
   if (p.config) out.push("## Settings", "```json", JSON.stringify(p.config, null, 2), "```", "");

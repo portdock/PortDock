@@ -66,3 +66,25 @@ npx tauri icon tools/icons/serial.svg -o apps/serial/src-tauri/icons
 # 안드로이드·iOS 폴더와 64x64.png 는 쓰지 않으므로 지운다
 Remove-Item -Recurse apps/serial/src-tauri/icons/android, apps/serial/src-tauri/icons/ios, apps/serial/src-tauri/icons/64x64.png
 ```
+
+## 오류 보고(크래시) 확인
+
+받는 곳은 Sentry(`shared/report.ts` 의 `SENTRY_DSN`, 비면 자동 전송이 숨는다). 보내는 코드는 직접 만든 가벼운 것이다(공식 SDK 아님). 남기는 곳은 모두 보고 폴더(«문제 보고» 창의 환경 정보 `reportsDir`).
+
+| 사고 | 누가 남기나 | 파일 | 올리는 곳 |
+|---|---|---|---|
+| Rust panic | panic 훅 | `crash-<시각>-<pid>.txt` | envelope (+ 글 첨부) |
+| 네이티브 크래시(접근 위반 등) | 감시 프로세스(같은 exe 를 `--portdock-crash-monitor <소켓> <pid>` 로 창 없이 하나 더 띄움, 부모가 끝나면 함께 끝남) | `.dmp` + 같은 이름 `.txt` | `/api/<project>/minidump/` (`upload_file_minidump`) |
+| WebView2 화면 프로세스 종료(흰 화면) | `ProcessFailed` 이벤트 — 화면 다시 불러오기, 엔진 전체가 끝나면 안내 후 종료(30초에 보고 하나) | `.txt` | envelope |
+
+릴리스 전에 손으로 (테스트 노트북, 릴리스 빌드):
+
+```powershell
+$env:PORTDOCK_TEST_CRASH = "1";      & ".\PortDock TCP.exe"   # 3초 뒤 panic → crash-*.txt
+$env:PORTDOCK_TEST_CRASH = "native"; & ".\PortDock TCP.exe"   # 3초 뒤 접근 위반 → crash-*.dmp + crash-*.txt
+Remove-Item Env:PORTDOCK_TEST_CRASH;  & ".\PortDock TCP.exe"   # «지난번에 오류로 꺼졌습니다» → 보내기/보고서 보기
+```
+
+- 실행 중에는 언제나 작업 관리자에 같은 이름의 프로세스가 둘 보이는 것이 정상(하나가 감시, 창 없음). 프로그램을 닫으면 둘 다 사라져야 한다.
+- 디버그 빌드는 panic 이 프로그램을 끄지 않는다(기록만). `native` 는 디버그에서도 꺼진다.
+- 덤프는 보통 수백 KB, 20 MB 를 넘으면 올리지 않는다. 보고는 최근 10건(.txt·.dmp 짝을 한 건)만 남긴다.

@@ -238,6 +238,12 @@ fn report_env() -> portdock_core::report::EnvInfo {
     portdock_core::report::env_info()
 }
 
+/// 네이티브 크래시의 minidump 내용 — 화면이 Sentry 로 올릴 때(이름은 report_pending 이 준 것만)
+#[tauri::command(async)]
+fn report_read_dump(name: String) -> Result<tauri::ipc::Response, String> {
+    portdock_core::report::read_dump(&name).map(tauri::ipc::Response::new)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // WebView2 가 없으면 화면이 뜨지 않는다 — 문제 보고 대신 설치 안내를 띄우고 끝낸다
@@ -245,16 +251,29 @@ pub fn run() {
         portdock_core::report::webview_missing(&e.to_string());
     }
     portdock_core::report::install("modbus-slave", env!("CARGO_PKG_VERSION"));
+    // 네이티브 크래시 감시 — 감시 프로세스로 불렸으면 여기서 끝난다(화면을 만들지 않는다)
+    portdock_core::report::crash_monitor_or_attach();
     portdock_core::report::test_crash_if_asked();
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            // WebView2 화면 프로세스가 죽으면(흰 화면) 기록하고 다시 연다
+            #[cfg(windows)]
+            if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
+                let _ = w.with_webview(|wv| portdock_core::report::watch_webview2(&wv.controller()));
+            }
+            #[cfg(not(windows))]
+            let _ = app;
+            Ok(())
+        })
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
             report_pending,
             report_dismiss,
             report_env,
+            report_read_dump,
             list_ports,
             open,
             close,

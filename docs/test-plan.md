@@ -39,6 +39,9 @@
 | C31 | 정보·CSP | ⚙ 아래 정보(버전·저작권·GPL·링크), 개발자 도구 콘솔에 CSP 위반 없음 |
 | C32 | 휴대판 | zip 풀어 실행 → `portdock-data` 에 설정(EBWebView)·보고 폴더가 생김, 다른 PC 로 옮겨도 설정 유지 |
 | C33 | WebView2 없음 | WebView2 없는 PC(또는 가상 머신)에서 실행 → 한국어·영어 안내 창, 오류 보고 안 남음 |
+| C34 | 네이티브 크래시 (손으로) | 환경 변수 `PORTDOCK_TEST_CRASH=native` 로 실행 → 작업 관리자에 같은 이름 프로세스 2개(감시, 창 없음) → 3초 뒤 오류 창 없이 꺼짐 → 보고 폴더에 `crash-*.dmp` + 같은 이름 `.txt`(«native crash (minidump), exception=0xC0000005») → 감시 프로세스도 사라짐 → 다시 켜면 «지난번에 오류로 꺼졌습니다», 보고서에 «덤프 파일 포함 (N KB)», 파일로 저장 안내에 .dmp 경로 · 정상 종료 때도 감시 프로세스가 함께 끝남 |
+| C35 | 화면 엔진 크래시 (손으로) | 작업 관리자에서 이 앱의 msedgewebview2.exe 렌더러를 끝내기 → 화면이 다시 불러와지고 `crash-*.txt`(«WebView2 process failed: kind=render process exited») 생김 |
+| C36 | Modbus 요청·로그 찾기 | Serial «Modbus 요청» → 40001×10 → 입력칸에 넣기 → 보낼 바이트 `01 03 00 00 00 0A C5 CD` · Ctrl+F «01 03» → 노란 줄·▲▼ 이동·«찾은 줄만»·«틀림만» · 화면 내용 저장이 보기 방식·거른 줄을 따름 |
 
 ## ① Serial
 | # | 항목 | 장비 |
