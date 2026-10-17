@@ -24,6 +24,16 @@ export interface AutoRule {
   delayMs: number;
 }
 
+export interface MatchOptions {
+  stripTerminator: boolean;
+  logNoMatch: boolean;
+}
+
+export interface SetRulesResult {
+  active: number;
+  errors: { index: number; name: string; message: string }[];
+}
+
 export interface PortInfo {
   name: string;
   product: string | null;
@@ -61,7 +71,10 @@ export const api = {
   startUdp: (config: object, onEvent: (e: SessionEvent) => void) => invoke<string>("start_udp", { config, onEvent: channel(onEvent) }),
   stop: () => invoke<void>("stop"),
   setFraming: (framing: FrameMode) => invoke<void>("set_framing", { framing: frameModeToRust(framing) }),
-  setRules: (rules: AutoRule[]) => invoke<number>("set_rules", { rules }),
+  /** 맞는 규칙만 적용하고, 틀린 규칙은 건너뛴 채 이유를 돌려준다 */
+  setRules: (rules: AutoRule[]) => invoke<SetRulesResult>("set_rules", { rules }),
+  /** stripTerminator: 끝 문자·뒤쪽 CR LF 를 떼고 비교 · logNoMatch: 안 맞은 요청을 EV «NO MATCH» 로 */
+  setMatchOptions: (o: MatchOptions) => invoke<void>("set_match_options", { stripTerminator: o.stripTerminator, logNoMatch: o.logNoMatch }),
   getHits: () => invoke<Record<string, number>>("get_hits"),
   resetHits: () => invoke<void>("reset_hits"),
   send: (spec: SendSpec) => invoke<void>("send", { spec }),

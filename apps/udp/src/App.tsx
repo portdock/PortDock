@@ -76,6 +76,9 @@ export default function App() {
   const [local, setLocal] = useState<string | null>(null);
   const [senders, setSenders] = useState<Peer[]>([]);
   const [to, setTo] = useState<string>("");
+  // 실제로 적용된 기본 대상(«주소:포트»). 실행 중 바꾸기가 실패하면 이전 값 그대로 남고 remoteErr 에 이유
+  const [applied, setApplied] = useState<string | null>(null);
+  const [remoteErr, setRemoteErr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
   useEffect(() => {
@@ -83,6 +86,7 @@ export default function App() {
   }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
   const framesRef = useRef<Frame[]>([]);
+  const timeBase = useRef<number | null>(null);
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
   const seqRef = useRef(0);
   const screenBytes = useRef(0);
@@ -120,8 +124,24 @@ export default function App() {
   // 실행 중 기본 대상 바꾸기
   useEffect(() => {
     if (!running || !cfg.remoteHost || !cfg.remotePort) return;
-    const id = setTimeout(() => api.setRemote(cfg.remoteHost, cfg.remotePort).catch((e) => setError(String(e))), 400);
+    const want = `${cfg.remoteHost}:${cfg.remotePort}`;
+    if (want === applied) {
+      setRemoteErr(null);
+      return;
+    }
+    const id = setTimeout(
+      () =>
+        api
+          .setRemote(cfg.remoteHost, cfg.remotePort)
+          .then(() => {
+            setApplied(want);
+            setRemoteErr(null);
+          })
+          .catch((e) => setRemoteErr(String(e))),
+      400,
+    );
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, cfg.remoteHost, cfg.remotePort]);
 
   const [starting, setStarting] = useState(false);
@@ -132,6 +152,8 @@ export default function App() {
     setSenders([]);
     try {
       setLocal(await api.start(cfg, rxCheck, onEvent));
+      setApplied(`${cfg.remoteHost}:${cfg.remotePort}`);
+      setRemoteErr(null);
       setRunning(true);
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "udp");
@@ -148,6 +170,8 @@ export default function App() {
     setRunning(false);
     setStatus("closed");
     setTo("");
+    setApplied(null);
+    setRemoteErr(null);
     setLogPath(null);
   }
   async function toggleLog() {
@@ -225,7 +249,10 @@ export default function App() {
   // 인터락: 기본 대상이 브로드캐스트 주소인데 허용이 꺼져 있으면 운영체제가 거절한다
   const bcastBlocked = to === "" && looksBroadcast(cfg.remoteHost) && !cfg.broadcast;
   const noRemote = to === "" && (!cfg.remoteHost || cfg.remotePort === 0);
-  const canSend = running && sendable && !bcastBlocked && !noRemote;
+  // 기본 대상 칸이 실제 적용된 값과 다르면(바꾸기 실패·적용 대기) 기본 대상으로는 보내지 않는다 — 이전 주소로 새지 않게
+  const remotePending = running && applied !== `${cfg.remoteHost}:${cfg.remotePort}`;
+  const remoteBlocked = to === "" && remotePending;
+  const canSend = running && sendable && !bcastBlocked && !noRemote && !remoteBlocked;
   const startable = true;
   // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
   const inflight = useRef(false);
@@ -258,7 +285,10 @@ export default function App() {
 
   const sel = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
 
-  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
+  // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
+  if (!framesRef.current.length) timeBase.current = null;
+  else if (timeBase.current === null) timeBase.current = framesRef.current[0].ts;
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock UDP");
 
   return (
@@ -305,13 +335,18 @@ export default function App() {
         <div className="grid2">
           <label data-tip={tip(lang, "remoteHost")}>
             {t("remoteHost")}
-            <input value={cfg.remoteHost} onChange={(e) => setCfg({ ...cfg, remoteHost: e.target.value.trim() })} />
+            <input className={remoteErr ? "bad" : undefined} value={cfg.remoteHost} onChange={(e) => setCfg({ ...cfg, remoteHost: e.target.value.trim() })} />
           </label>
           <label data-tip={tip(lang, "remotePort")}>
             {t("remotePort")}
-            <NumInput min={0} max={65535} value={cfg.remotePort} onValue={(n) => setCfg({ ...cfg, remotePort: n })} />
+            <NumInput className={remoteErr ? "bad" : undefined} min={0} max={65535} value={cfg.remotePort} onValue={(n) => setCfg({ ...cfg, remotePort: n })} />
           </label>
         </div>
+        {remoteErr && (
+          <div className="interlock">
+            {t("ilRemoteFail").replace("{a}", applied ?? "—").replace("{e}", remoteErr)}
+          </div>
+        )}
         <label data-tip={tip(lang, "broadcast")} className="inline">
           <input type="checkbox" checked={cfg.broadcast} disabled={running} onChange={(e) => setCfg({ ...cfg, broadcast: e.target.checked })} /> {t("broadcast")}
         </label>
@@ -440,11 +475,11 @@ export default function App() {
           <div className="sendrow">
             <select value={to} onChange={(e) => setTo(e.target.value)}>
               <option value="">
-                {t("toRemote")} ({cfg.remoteHost}:{cfg.remotePort})
+                {t("toRemote")} ({running ? applied ?? "—" : `${cfg.remoteHost}:${cfg.remotePort}`}){remotePending ? ` — ${t("notApplied")}` : ""}
               </option>
               <option value="last">{t("toLast")}</option>
               {senders
-                .filter((p) => p.addr !== `${cfg.remoteHost}:${cfg.remotePort}`)
+                .filter((p) => p.addr !== (running ? applied : `${cfg.remoteHost}:${cfg.remotePort}`))
                 .map((p) => (
                   <option key={p.addr} value={p.addr}>
                     {p.addr}
@@ -486,7 +521,13 @@ export default function App() {
             </button>
           </div>
           <div className="sendrow sub">
-            {!running ? <span className="why">{t("whyNotStarted")}</span> : !sendable && !previewErr ? <span className="why">{t("whyEmpty")}</span> : null}
+            {!running ? (
+              <span className="why">{t("whyNotStarted")}</span>
+            ) : remoteBlocked && !noRemote ? (
+              <span className="why">{t("whyRemoteNotApplied")}</span>
+            ) : !sendable && !previewErr ? (
+              <span className="why">{t("whyEmpty")}</span>
+            ) : null}
             <span className={previewErr ? "preview err" : "preview"}>
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
@@ -515,7 +556,7 @@ export default function App() {
           {commands.map((c, i) => (
             <div key={i} className="cmd" title={c.text}>
               <input className="cmdname" value={c.name} onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!running} title={t("send")}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!running || (to === "" && (remotePending || noRemote))} title={to === "" && remotePending ? t("whyRemoteNotApplied") : t("send")}>
                 ▶
               </button>
               <button className="btn small ghost" data-tip={tip(lang, "edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>

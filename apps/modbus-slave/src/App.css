@@ -685,3 +685,15 @@ input.bad {
   margin-left: 6px;
   color: var(--muted);
 }
+
+/* 연결 실패 — 상태 칸을 빨갛게 */
+.status.s-failed {
+  color: var(--fail);
+  border: 1px solid var(--fail);
+}
+/* 시작 주소·개수를 바꾸면 응답 범위도 바뀐다는 경고 — 좁으면 줄을 바꾼다 */
+.range-warn {
+  white-space: normal;
+  min-width: 140px;
+  flex: 0 1 auto;
+}

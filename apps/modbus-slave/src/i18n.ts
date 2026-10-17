@@ -1,7 +1,7 @@
 // 한국어 기본, 영어 병행
 const ko = {
   helpTip: "도움말 (F1)",
-  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  lockedHint: "포트는 연결 중에 바꿀 수 없습니다. 속도·패리티 등은 바로 적용됩니다",
   askDelCmd: "«{a}» 명령을 지울까요?",
   askFill: "보이는 칸을 0, 1, 2… 로 덮어쓸까요? 지금 값은 사라집니다.",
   askDelSlave: "슬레이브 {a} 를 지울까요? 그 표의 값도 사라집니다.",
@@ -58,11 +58,19 @@ const ko = {
   delete: "삭제",
   badTableFile: "표 파일 형식이 틀립니다(start·values 0~65535 확인).",
   importOther: "파일의 대상(슬레이브/표 {a})이 지금 보는 것({b})과 다릅니다. 지금 표에 넣을까요?",
+  portSwitched: "저장된 {a} 이(가) 없어 {b} 로 바꿨습니다",
+  connectFailed: "연결 실패",
+  busyHint: "다른 프로그램이 사용 중일 수 있습니다",
+  rangeWarn: "바꾸면 마스터가 읽을 수 있는 주소 범위도 바뀝니다",
+  logDlgTitle: "파일로 계속 저장 — 기존 파일이면 뒤에 이어 씁니다",
+  idZero: "0 은 브로드캐스트 주소라 슬레이브 주소로 쓸 수 없습니다",
+  idRange: "슬레이브 주소는 1~247 사이 정수입니다",
+  idDup: "{a} 은(는) 이미 있습니다",
 };
 
 const en: typeof ko = {
   helpTip: "Help (F1)",
-  lockedHint: "Locked while connected — disconnect to change",
+  lockedHint: "Port is locked while connected; other settings apply immediately",
   askDelCmd: "Delete the command «{a}»?",
   askFill: "Overwrite the visible cells with 0, 1, 2…? Current values are lost.",
   askDelSlave: "Delete slave {a}? Its table values are lost too.",
@@ -119,6 +127,14 @@ const en: typeof ko = {
   delete: "Delete",
   badTableFile: "Invalid table file (check start and values 0–65535).",
   importOther: "The file targets slave/table {a}, but you are viewing {b}. Load it into the current table?",
+  portSwitched: "Saved {a} not found — switched to {b}",
+  connectFailed: "Connection failed",
+  busyHint: "Another program may be using this port",
+  rangeWarn: "Changing this also changes the address range the master can read",
+  logDlgTitle: "Log to file — an existing file is appended to",
+  idZero: "0 is the broadcast address and cannot be a slave ID",
+  idRange: "Slave IDs are whole numbers 1–247",
+  idDup: "{a} is already in the list",
 };
 
 export type Lang = "ko" | "en";

@@ -252,22 +252,45 @@ export function buildReport(p: ReportParts) {
   }
   if (p.config) out.push("## Settings", "```json", JSON.stringify(p.config, null, 2), "```", "");
   if (p.log) out.push(`## Last ${p.log.length} log lines`, "```", ...p.log, "```", "");
-  return out.join("\n");
+  return hideUserPaths(out.join("\n"));
 }
 
-/** 주소창 길이 제한 때문에 자른다 — 전체는 «파일로 저장» 해서 붙인다 */
-function cut(text: string, max: number, note: string) {
-  return text.length <= max ? text : `${text.slice(0, max)}\n\n…(${note})`;
+/** «C:\Users\홍길동\…» → «~\…» — 윈도우 사용자 이름을 보고서에 남기지 않는다(JSON 의 «\\»·«/» 도) */
+export function hideUserPaths(text: string) {
+  return text.replace(/\b[a-z]:(?:\\|\/)+users(?:\\|\/)+[^\\/\s"'`<>|]+/gi, "~");
+}
+
+/** 서로게이트 쌍을 가르지 않게 n 글자 앞까지 */
+function safeSlice(text: string, n: number) {
+  const c = text.charCodeAt(n - 1);
+  return text.slice(0, c >= 0xd800 && c <= 0xdbff ? n - 1 : n);
+}
+
+/**
+ * 주소창 길이 제한 때문에 자른다 — 인코딩한 뒤의 길이로 잰다(한글 한 글자는 9자로 늘어난다).
+ * 잘렸으면 끝에 «저장한 파일을 붙여 달라» 는 줄을 단다.
+ */
+function fitUrl(prefix: string, text: string, max: number) {
+  const full = prefix + encodeURIComponent(text);
+  if (full.length <= max) return full;
+  const tail = encodeURIComponent("\n\n…(truncated — please attach the report file saved with «Save to file» / «파일로 저장» 한 파일을 첨부해 주세요)");
+  const room = max - prefix.length - tail.length;
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (encodeURIComponent(safeSlice(text, mid)).length <= room) lo = mid;
+    else hi = mid - 1;
+  }
+  return prefix + encodeURIComponent(safeSlice(text, lo)) + tail;
 }
 
 export function mailtoUrl(app: string, report: string) {
   const subject = encodeURIComponent(`[${app}] problem report`);
-  const body = encodeURIComponent(cut(report, 1500, "truncated — the full report is attached as a file"));
-  return `mailto:${REPORT_EMAIL}?subject=${subject}&body=${body}`;
+  return fitUrl(`mailto:${REPORT_EMAIL}?subject=${subject}&body=`, report, 1800);
 }
 
 export function issueUrl(app: string, title: string, report: string) {
   const t = encodeURIComponent(`[${app}] ${title.trim().split("\n")[0].slice(0, 80) || "problem report"}`);
-  const body = encodeURIComponent(cut(report, 6000, "truncated — please attach the saved report file"));
-  return `${ISSUES_URL}?title=${t}&body=${body}`;
+  return fitUrl(`${ISSUES_URL}?title=${t}&body=`, report, 7000);
 }

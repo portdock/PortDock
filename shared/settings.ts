@@ -1,5 +1,5 @@
 // 다섯 프로그램 공통 설정 — 화면 쪽에서만 쓰는 값. 저장은 localStorage("settings").
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
 
@@ -64,17 +64,44 @@ function apply(s: Settings) {
 export function useSettings() {
   // 예전 판에서 따로 저장하던 언어도 이어받는다
   const [settings, setState] = useState<Settings>(() => sanitize({ lang: load("lang", DEFAULTS.lang), ...load<Partial<Settings>>("settings", {}) }));
+  const cur = useRef(settings);
+  cur.current = settings;
   useEffect(() => {
     // 백엔드 문구(오류·사건 줄)도 같은 언어로
     invoke("set_lang", { lang: settings.lang }).catch(() => {});
   }, [settings.lang]);
+  useEffect(() => apply(settings), [settings]);
+  // 같은 프로그램 창이 둘이면 서로 덮어쓰지 않게 — 바뀐 키만 마지막 저장값에 합쳐 쓴다
+  const save = useCallback((next: Settings) => {
+    store("settings", next);
+    store("lang", next.lang);
+  }, []);
+  const update = useCallback(
+    (patch: Partial<Settings>) => {
+      const next = sanitize({ ...cur.current, ...load<Partial<Settings>>("settings", {}), ...patch });
+      save(next);
+      setState(next);
+    },
+    [save],
+  );
+  const reset = useCallback(() => {
+    const next = sanitize({ lang: cur.current.lang });
+    save(next);
+    setState(next);
+  }, [save]);
+  // 다른 창에서 바꾼 설정도 받아 온다
   useEffect(() => {
-    apply(settings);
-    store("settings", settings);
-    store("lang", settings.lang);
-  }, [settings]);
-  const update = useCallback((patch: Partial<Settings>) => setState((s) => sanitize({ ...s, ...patch })), []);
-  const reset = useCallback(() => setState(sanitize({ lang: settings.lang })), [settings.lang]);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== "settings" || !e.newValue) return;
+      try {
+        setState(sanitize(JSON.parse(e.newValue) as Partial<Settings>));
+      } catch {
+        /* 읽을 수 없는 값 — 무시 */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   return { settings, update, reset };
 }
 

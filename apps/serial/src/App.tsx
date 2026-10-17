@@ -24,7 +24,7 @@ import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { mbFunc, mbWord } from "./mbwords";
-import { samePorts, trimFrames } from "@shared/framing";
+import { parseTerminator, samePorts, trimFrames } from "@shared/framing";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -58,6 +58,23 @@ function store(key: string, value: unknown) {
     /* 저장이 막힌 환경 — 무시 */
   }
 }
+
+/** 연결했던 장치 — COM 번호가 바뀌어도 같은 장치를 찾는 데 쓴다 */
+type PortId = { vid: number | null; pid: number | null; serial: string | null };
+
+/** 저장된 포트가 목록에 없으면 같은 장치(일련번호 → VID:PID)를, 없으면 첫 포트를 */
+function pickPort(ports: PortInfo[], id: PortId | null) {
+  const same =
+    id &&
+    ((id.serial && ports.find((p) => p.serial_number === id.serial && p.vid === id.vid && p.pid === id.pid)) ||
+      (id.vid != null && ports.find((p) => p.vid === id.vid && p.pid === id.pid)));
+  return (same || ports[0]).name;
+}
+
+const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
+
+/** 체크섬이 붙이는 바이트 수 */
+const ckLen = (k: ChecksumKind) => (k.startsWith("crc16") || k === "sum16" ? 2 : 1);
 
 function portLabel(p: PortInfo) {
   const desc = p.product ?? p.manufacturer;
@@ -107,16 +124,16 @@ export default function App() {
     }),
   );
   useEffect(() => store("cfg", cfg), [cfg]);
-  useEffect(() => {
-    if (!cfg.port && ports.length) setCfg((c) => ({ ...c, port: ports[0].name }));
-  }, [ports, cfg.port]);
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
+  // Modbus RTU 를 고를 때 수신 체크섬을 저절로 바꿨으면 그 전 값 — 다른 방식으로 돌아가면 되돌린다
+  const [rxAuto, setRxAuto] = useState<{ prev: ChecksumKind | null } | null>(() => load("rxAuto", null));
   useEffect(() => store("framing", framing), [framing]);
   useEffect(() => store("terminatorText", terminatorText), [terminatorText]);
   useEffect(() => store("rxCheck", rxCheck), [rxCheck]);
+  useEffect(() => store("rxAuto", rxAuto), [rxAuto]);
 
   // ---- 세션
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -127,8 +144,19 @@ export default function App() {
   useEffect(() => {
     if (error) noteError(error);
   }, [error]);
+  // 연결 실패는 상태 칸에 빨갛게
+  const [connectErr, setConnectErr] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
   const [lines, setLines] = useState<Lines | null>(null);
+
+  // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 연결 중엔 건드리지 않는다
+  const [portNotice, setPortNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (sessionId || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    const next = pickPort(ports, load<PortId | null>("portId", null));
+    if (cfg.port) setPortNotice(fill(dict[lang].portSwitched, { a: cfg.port, b: next }));
+    setCfg((c) => ({ ...c, port: next }));
+  }, [ports, cfg.port, sessionId, lang]);
 
   // 프레임은 ref 에 쌓고 version 으로만 다시 그린다(대량 수신 시 배열 복사 방지)
   const framesRef = useRef<Frame[]>([]);
@@ -138,6 +166,19 @@ export default function App() {
   const [livePort, setLivePort] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const counters = useRef({ rx: 0, tx: 0 });
+  // 경과 시간 기준 — 연결한 시각(«지우기» 하면 그때부터). 앞줄이 잘려도 바뀌지 않게
+  const baseTs = useRef<number | null>(null);
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  const repeatingRef = useRef(false);
+
+  /** 화면에서 만든 사건 줄(EV) — 파일 로그에는 남지 않는다 */
+  const addEv = useCallback((note: string) => {
+    const arr = framesRef.current;
+    arr.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+    screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
+    setVersion((v) => v + 1);
+  }, []);
 
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
@@ -160,29 +201,30 @@ export default function App() {
       if (e.state === "connected") {
         setSessionId((id) => id ?? e.port);
         setLivePort(e.port);
+        // 다시 꽂아 COM 번호가 바뀌었으면 다음 연결도 새 번호로
+        setCfg((c) => (c.port === e.port ? c : { ...c, port: e.port }));
       }
-      // 끊기면 반복을 끈다 — 다시 연결됐을 때 저절로 다시 보내지 않게
-      if (e.state !== "connected") setRepeating(false);
+      // 끊기면 반복을 끈다 — 다시 연결됐을 때 저절로 다시 보내지 않게. 이유는 사건 줄로 남긴다
+      if (e.state !== "connected" && repeatingRef.current) {
+        repeatingRef.current = false;
+        setRepeatSpec(null);
+        addEv(dict[langRef.current].repStopDisc);
+      }
       if (e.state === "closed") {
         setSessionId(null);
         setLogPath(null);
         setLines(null);
       }
     }
-  }, []);
+  }, [addEv]);
 
+  // 끝 문자 칸 — 백엔드와 같은 규칙 + CR·LF 같은 이름. 틀리면 빈 끝 문자(조용한 시간만)
+  const term = useMemo(() => parseTerminator(terminatorText, lang), [terminatorText, lang]);
   const effectiveFraming = useMemo<FrameMode>(() => {
-    if (framing.kind === "terminator") {
-      const bytes = terminatorText
-        .split(/[\s,]+/)
-        .filter(Boolean)
-        .map((h) => parseInt(h, 16))
-        .filter((n) => !Number.isNaN(n) && n >= 0 && n <= 255);
-      return { ...framing, bytes };
-    }
+    if (framing.kind === "terminator") return { ...framing, bytes: term.bytes };
     if (framing.kind === "modbus-rtu") return { kind: "modbus-rtu", baud: cfg.baud };
     return framing;
-  }, [framing, terminatorText, cfg.baud]);
+  }, [framing, term, cfg.baud]);
 
   useEffect(() => {
     if (sessionId) api.setFraming(sessionId, effectiveFraming, rxCheck).catch((e) => setError(String(e)));
@@ -202,15 +244,21 @@ export default function App() {
     if (connecting) return;
     setConnecting(true);
     setError(null);
+    setConnectErr(null);
+    setPortNotice(null);
     try {
       await api.open(cfg, effectiveFraming, rxCheck, onEvent);
       setSessionId(cfg.port);
+      baseTs.current = Date.now();
+      const p = ports.find((x) => x.name === cfg.port);
+      if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "serial");
         await api.setLog(cfg.port, p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
-      setError(String(e));
+      setConnectErr(String(e));
+      noteError(String(e));
     } finally {
       setConnecting(false);
     }
@@ -238,7 +286,7 @@ export default function App() {
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const path = await save({ defaultPath: `portdock-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const path = await save({ title: t("logDlgTitle"), defaultPath: `portdock-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
     if (!path) return;
     try {
       await api.setLog(sessionId, path);
@@ -258,6 +306,7 @@ export default function App() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0 };
     screenBytes.current = 0;
+    baseTs.current = Date.now();
     setSelected(null);
     setVersion((v) => v + 1);
   }
@@ -289,6 +338,8 @@ export default function App() {
 
   // ---- 상세(Modbus 풀이)
   const [modbus, setModbus] = useState<ModbusInfo | null>(null);
+  // Modbus 로 풀어 보일 줄: 프레임 구분이 Modbus RTU 이거나 CRC16 Modbus 가 맞을 때만
+  const showModbus = !!modbus && (framing.kind === "modbus-rtu" || modbus.crc_ok);
   const selFrame = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
   useEffect(() => {
     if (!selFrame || selFrame.dir === "ev") {
@@ -303,7 +354,10 @@ export default function App() {
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
-  const [repeating, setRepeating] = useState(false);
+  // 반복은 켠 순간의 내용을 얼려서 보낸다 — 입력을 고치는 중간값이 나가지 않게
+  const [repeatSpec, setRepeatSpec] = useState<{ spec: SendSpec; bytes: number[] } | null>(null);
+  const repeating = repeatSpec != null;
+  repeatingRef.current = repeating;
   useEffect(() => store("spec", spec), [spec]);
   useEffect(() => {
     let stale = false;
@@ -336,29 +390,34 @@ export default function App() {
         setError(null);
       } catch (e) {
         setError(String(e));
-        setRepeating(false);
+        if (repeatingRef.current) {
+          repeatingRef.current = false;
+          setRepeatSpec(null);
+          addEv(dict[langRef.current].repStopErr);
+        }
       } finally {
         inflight.current = false;
       }
     },
-    [sessionId],
+    [sessionId, addEv],
   );
 
   // ---- 인터락
   // 재연결 대기 중에는 세션은 있어도 보낼 수 없다
   const online = sessionId != null && status === "connected";
   // 반복 간격이 실제 송신 시간보다 짧으면 앞 송신이 끝나기 전에 쌓인다 → 최소 간격으로 올려 보낸다
-  const txMs = previewBytes ? serialTxMs(previewBytes.length, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits) : 0;
+  const repBytes = repeatSpec?.bytes ?? previewBytes;
+  const txMs = repBytes ? serialTxMs(repBytes.length, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits) : 0;
   const minRep = minRepeatMs(txMs);
   const effRepeat = Math.max(repeatMs, minRep);
   // 소프트웨어 흐름 제어에서 XON/XOFF 바이트는 데이터가 아니라 신호로 먹힌다
   const xonxoff = cfg.flow === "software" && !!previewBytes && hasXonXoff(previewBytes);
 
   useEffect(() => {
-    if (!repeating || !online) return;
-    const id = setInterval(() => doSend(spec), effRepeat);
+    if (!repeatSpec || !online) return;
+    const id = setInterval(() => doSend(repeatSpec.spec), effRepeat);
     return () => clearInterval(id);
-  }, [repeating, effRepeat, spec, online, doSend]);
+  }, [repeatSpec, effRepeat, online, doSend]);
 
   // ---- 명령 목록
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
@@ -371,7 +430,7 @@ export default function App() {
   const connected = sessionId != null;
   const statusKey = `status_${status}` as Key;
 
-  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, baseTs.current ?? framesRef.current[0]?.ts ?? ts);
   useExitGuard(sessionId != null || !!logPath, settings.confirmExit, lang, "PortDock Serial");
 
   return (
@@ -399,7 +458,15 @@ export default function App() {
         </div>
 
         <label data-tip={tip(lang, "ports")}>{t("ports")}</label>
-        <select value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
+        <select
+          value={cfg.port}
+          disabled={connected}
+          title={connected ? t("lockedHint") : ""}
+          onChange={(e) => {
+            setCfg({ ...cfg, port: e.target.value });
+            setPortNotice(null);
+          }}
+        >
           {ports.length === 0 && <option value="">{t("noPorts")}</option>}
           {ports.map((p) => (
             <option key={p.name} value={p.name}>
@@ -416,6 +483,7 @@ export default function App() {
             </div>
           ) : null;
         })()}
+        {portNotice && !connected && <div className="hint warn">{portNotice}</div>}
 
         <div className="grid2">
           <label data-tip={tip(lang, "baud")}>
@@ -489,14 +557,21 @@ export default function App() {
           {t("autoReconnect")}
         </label>
 
-        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
+        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={connecting || (!connected && !ports.some((p) => p.name === cfg.port))}>
           {connected ? t("disconnect") : t("connect")}
         </button>
         {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
-        <div className={`status s-${status}`}>
-          {t(statusKey)}
-          {statusMsg ? ` · ${statusMsg}` : ""}
-        </div>
+        {connectErr && !connected ? (
+          <div className="status s-failed" role="alert">
+            <b>{t("connectFailed")}</b> · {connectErr}
+            {/busy|in use|denied|사용 중|거부/i.test(connectErr) && !/another program|다른 프로그램/i.test(connectErr) && <div>{t("busyHint")}</div>}
+          </div>
+        ) : (
+          <div className={`status s-${status}`}>
+            {t(statusKey)}
+            {statusMsg ? ` · ${statusMsg}` : ""}
+          </div>
+        )}
 
         <hr />
         <label data-tip={tip(lang, "framing")}>
@@ -515,7 +590,16 @@ export default function App() {
                       ? { kind: "fixed", len: 8, gapMs: 100 }
                       : { kind: "modbus-rtu", baud: cfg.baud },
               );
-              if (k === "modbus-rtu") setRxCheck("crc16-modbus");
+              if (k === "modbus-rtu") {
+                if (rxCheck !== "crc16-modbus") {
+                  setRxAuto({ prev: rxCheck });
+                  setRxCheck("crc16-modbus");
+                }
+              } else if (rxAuto) {
+                // Modbus 를 고를 때 저절로 바꾼 것이면 되돌린다
+                if (rxCheck === "crc16-modbus") setRxCheck(rxAuto.prev);
+                setRxAuto(null);
+              }
             }}
           >
             <option value="gap">{t("fmGap")}</option>
@@ -527,8 +611,14 @@ export default function App() {
         {framing.kind === "terminator" && (
           <label data-tip={tip(lang, "terminatorHex")}>
             {t("terminatorHex")}
-            <input value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
-            {effectiveFraming.kind === "terminator" && effectiveFraming.bytes.length === 0 && <span className="interlock">{t("ilNoTerm")}</span>}
+            <input className={term.error ? "bad" : ""} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+            {term.error ? (
+              <span className="error">{term.error}</span>
+            ) : term.bytes.length === 0 ? (
+              <span className="interlock">{t("ilNoTerm")}</span>
+            ) : (
+              <span className="hint">{fill(t("termParsed"), { a: hex(term.bytes), n: term.bytes.length })}</span>
+            )}
           </label>
         )}
         {framing.kind === "fixed" && (
@@ -547,7 +637,14 @@ export default function App() {
           ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
         <label data-tip={tip(lang, "rxCheck")}>
           {t("rxCheck")}
-          <select title={t("tipRxCheck")} value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
+          <select
+            title={t("tipRxCheck")}
+            value={rxCheck ?? ""}
+            onChange={(e) => {
+              setRxCheck((e.target.value || null) as ChecksumKind | null);
+              setRxAuto(null);
+            }}
+          >
             <option value="">{t("none")}</option>
             {CHECKSUMS.map((c) => (
               <option key={c.kind} value={c.kind}>
@@ -556,7 +653,7 @@ export default function App() {
             ))}
           </select>
         </label>
-        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn" onClick={toggleLog} disabled={!connected}>
+        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFileSettings")} className="btn" onClick={toggleLog} disabled={!connected}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
         {logPath && <div className="hint ellipsis" title={logPath}>{logPath}</div>}
@@ -590,7 +687,7 @@ export default function App() {
 
         <div className="statusbar">
           <span className={`dot s-${status}`} />
-          <span className="mono">{connected ? summary({ ...cfg, port: livePort ?? cfg.port }) : t(statusKey)}</span>
+          <span className="mono">{connected ? summary({ ...cfg, port: livePort ?? cfg.port }, lang) : t(statusKey)}</span>
           {connected && (
             <>
               <span className={cfg.dtr ? "led on" : "led"}>DTR</span>
@@ -649,7 +746,17 @@ export default function App() {
 
         <div className="sendbar">
           <div className="sendrow">
-            <select value={spec.mode} onChange={(e) => setSpec({ ...spec, mode: e.target.value as TextMode })}>
+            <select
+              value={spec.mode}
+              onChange={async (e) => {
+                const mode = e.target.value as TextMode;
+                setSpec((s) => ({ ...s, mode }));
+                // HEX 에 쓰던 체크섬이 ASCII 명령에 그대로 붙어 나가지 않게 묻는다(반대도)
+                const ck = spec.checksum && CHECKSUMS.find((c) => c.kind === spec.checksum)?.label;
+                if (ck && (await ask(fill(t("askChecksumOff"), { a: ck, b: mode.toUpperCase() }), { title: "PortDock Serial", kind: "warning" })))
+                  setSpec((s) => ({ ...s, checksum: null }));
+              }}
+            >
               <option value="hex">HEX</option>
               <option value="ascii">ASCII</option>
             </select>
@@ -660,6 +767,11 @@ export default function App() {
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && online && sendable && doSend(spec)}
             />
+            {spec.mode === "ascii" && spec.checksum && (
+              <span className="ck-chip" title={t("ckChipTip")}>
+                {fill(t("ckChip"), { a: CHECKSUMS.find((c) => c.kind === spec.checksum)?.label ?? spec.checksum, n: ckLen(spec.checksum) })}
+              </span>
+            )}
             <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} data-tip={tip(lang, "checksum")}>
               <option value="">{t("checksum")}: {t("none")}</option>
               {CHECKSUMS.map((c) => (
@@ -679,21 +791,32 @@ export default function App() {
             </button>
           </div>
           <div className="sendrow sub">
-            {!online ? (
-              <span className="why">{connected ? t("ilOffline") : t("whyNotConnected")}</span>
-            ) : !sendable && !previewErr ? (
+            {!connected ? (
+              <span className="why">{t("whyNotConnected")}</span>
+            ) : online && !sendable && !previewErr ? (
               <span className="why">{t("whyEmpty")}</span>
             ) : null}
             <span className={previewErr ? "preview err" : "preview"}>
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
             <span className="grow" />
-            <label data-tip={tip(lang, "repeat")} className="inline">
-              <input type="checkbox" checked={repeating} disabled={!online} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
+            <label data-tip={tip(lang, "repeatSerial")} className="inline">
+              <input
+                type="checkbox"
+                checked={repeating}
+                disabled={!online || (!repeating && !sendable)}
+                onChange={(e) => setRepeatSpec(e.target.checked && previewBytes ? { spec, bytes: previewBytes } : null)}
+              />{" "}
+              {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
+            {repeatSpec && (
+              <span className="repeating mono" title={hex(repeatSpec.bytes)}>
+                {fill(t("repeatingAs"), { a: repeatSpec.bytes.length > 16 ? `${hex(repeatSpec.bytes.slice(0, 16))} …` : hex(repeatSpec.bytes) })}
+              </span>
+            )}
             <button className="btn small" onClick={addCommand} disabled={!sendable}>
-              + {t("commands")}
+              + {t("addCommand")}
             </button>
           </div>
           {connected && !online && <div className="interlock">{t("ilOffline")}</div>}
@@ -731,7 +854,7 @@ export default function App() {
           ))}
         </div>
 
-        <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
+        <h3 data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">
@@ -747,7 +870,8 @@ export default function App() {
                 <pre className="dump">{ascii(selFrame.bytes)}</pre>
               </>
             )}
-            {modbus && (
+            {modbus && !showModbus && <div className="hint">{t("notModbus")}</div>}
+            {showModbus && modbus && (
               <div className="modbus">
                 <div className="mbhead">
                   Modbus · {mbWord(modbus.kind, lang)} · {t("crc")} <b className={modbus.crc_ok ? "okc" : "failc"}>{modbus.crc_ok ? t("ok") : t("fail")}</b>

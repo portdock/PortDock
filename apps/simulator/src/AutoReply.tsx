@@ -32,15 +32,26 @@ export function AutoReply({
   // 말풍선 언어 — 화면 문구로 판단
   const lang: "ko" | "en" = t("arWhen") === "When" ? "en" : "ko";
   const [active, setActive] = useState<number | null>(null);
+  // 틀려서 빠진 규칙(번호 → 이유). 나머지 규칙은 그대로 동작한다
+  const [invalid, setInvalid] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const id = setTimeout(async () => {
       try {
-        setActive(await api.setRules(rules));
+        const r = await api.setRules(rules);
+        // 예전 백엔드는 숫자만 돌려준다
+        if (typeof r === "number") {
+          setActive(r);
+          setInvalid({});
+        } else {
+          setActive(r.active);
+          setInvalid(Object.fromEntries(r.errors.map((x) => [x.index, x.message])));
+        }
         setErr(null);
       } catch (e) {
         setErr(String(e));
         setActive(null);
+        setInvalid({});
       }
     }, 300);
     return () => clearTimeout(id);
@@ -64,7 +75,7 @@ export function AutoReply({
     <div className="ar">
       {rules.length === 0 && <div className="empty-guide">{t("noRules")}</div>}
       {rules.map((r, i) => (
-        <div key={i} className={r.enabled ? "arcard" : "arcard off"}>
+        <div key={i} className={`arcard${r.enabled ? "" : " off"}${invalid[i] ? " bad" : ""}`}>
           <div className="arrow">
             <input type="checkbox" checked={r.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} />
             <input className="arname" value={r.name} onChange={(e) => update(i, { name: e.target.value })} />
@@ -131,6 +142,7 @@ export function AutoReply({
             <NumInput className="num" min={0} max={600000} value={r.delayMs} onValue={(n) => update(i, { delayMs: n })} />
             <span className="arlbl">ms</span>
           </div>
+          {invalid[i] && <div className="arerr">{t("arInvalid").replace("{a}", invalid[i])}</div>}
         </div>
       ))}
       <div className="arrow">
@@ -138,6 +150,7 @@ export function AutoReply({
           + {t("arAdd")}
         </button>
         {active != null && <span className="hint ok">{t("arActive").replace("{n}", String(active))}</span>}
+        {Object.keys(invalid).length > 0 && <span className="hint warn">{t("arSkipped").replace("{n}", String(Object.keys(invalid).length))}</span>}
       </div>
       {shadow.by && shadow.names.length > 0 && (
         <div className="interlock">{t("ilShadow").replace("{a}", shadow.by).replace("{b}", shadow.names.join(", "))}</div>

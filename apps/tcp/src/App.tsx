@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ask, save } from "@tauri-apps/plugin-dialog";
-import { hexList, load, store, trimFrames } from "@shared/framing";
+import { load, parseTerminator, store, trimFrames } from "@shared/framing";
 import {
   api,
   ascii,
@@ -68,7 +68,9 @@ export default function App() {
   useEffect(() => {
     store("rxCheck", rxCheck);
   }, [rxCheck]);
-  const effFraming: FrameMode = framing.kind === "terminator" ? { ...framing, bytes: hexList(terminatorText) } : framing;
+  // 끝 문자 칸 해석 — 틀리면 bytes 가 비고 error 에 이유(화면에 빨갛게)
+  const term = parseTerminator(terminatorText, lang);
+  const effFraming: FrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
 
   // ---- 세션
   const [running, setRunning] = useState(false);
@@ -76,14 +78,23 @@ export default function App() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [local, setLocal] = useState<string | null>(null);
   const [peers, setPeers] = useState<Peer[]>([]);
-  const [target, setTarget] = useState<number | null>(null);
+  const peersRef = useRef<Peer[]>([]);
+  // 보낼 상대(null = 모두에게). 고른 상대가 끊겨도 «모두에게» 로 바꾸지 않고 주소와 함께 남긴다
+  const [target, setTarget] = useState<Peer | null>(null);
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const langRef = useRef(lang);
+  langRef.current = lang;
   const [error, setError] = useState<string | null>(null);
+  // 일부 상대에게만 보냈을 때 알림(오류는 아님)
+  const [sendNote, setSendNote] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
   useEffect(() => {
     if (error) noteError(error);
   }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
   const framesRef = useRef<Frame[]>([]);
+  const timeBase = useRef<number | null>(null);
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
   const seqRef = useRef(0);
   const screenBytes = useRef(0);
@@ -102,13 +113,22 @@ export default function App() {
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
-      setStatusMsg(e.message ?? (e.port || null));
+      // 백엔드가 준 설명(재접속 대기·멈춤의 마지막 실패 이유 등)을 먼저 보인다
+      setStatusMsg(e.message || e.port || null);
       if (e.state === "closed") setRunning(false);
       // 끊기면 반복을 끈다 — 다시 붙었을 때 저절로 보내지 않게
       if (e.state !== "connected" && e.state !== "listening") setRepeating(false);
     } else if (e.type === "peers") {
+      // 고른 상대가 방금 끊겼으면 반복을 멈추고 기록에 남긴다(다른 장비로 새지 않게)
+      const cur = targetRef.current;
+      if (cur && peersRef.current.some((p) => p.id === cur.id) && !e.peers.some((p) => p.id === cur.id) && repeatingRef.current) {
+        const note = dict[langRef.current].evTargetGone.replace("{a}", cur.addr);
+        framesRef.current.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+        setVersion((v) => v + 1);
+        setRepeating(false);
+      }
+      peersRef.current = e.peers;
       setPeers(e.peers);
-      setTarget((cur) => (cur != null && !e.peers.some((p) => p.id === cur) ? null : cur));
     } else {
       setError(e.message);
     }
@@ -146,6 +166,9 @@ export default function App() {
     setRunning(false);
     setStatus("closed");
     setPeers([]);
+    peersRef.current = [];
+    setTarget(null);
+    setSendNote(null);
     setLogPath(null);
   }
   async function toggleLog() {
@@ -200,6 +223,8 @@ export default function App() {
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
   const [repeating, setRepeating] = useState(false);
+  const repeatingRef = useRef(repeating);
+  repeatingRef.current = repeating;
   useEffect(() => {
     store("spec", spec);
     let stale = false;
@@ -220,18 +245,24 @@ export default function App() {
     };
   }, [spec]);
   const sendable = !!previewBytes && previewBytes.length > 0;
-  const canSend = running && peers.length > 0 && sendable;
+  // 고른 상대가 끊겼으면 보내지 않는다 — 말없이 «모두에게» 로 바뀌면 엉뚱한 장비로 나간다
+  const targetGone = !!target && !peers.some((p) => p.id === target.id);
+  // 같은 IP 로 다시 붙은 상대 — 저절로 바꾸지 않고 고르게 한다
+  const targetBack = targetGone && target ? peers.find((p) => p.addr.replace(/:\d+$/, "") === target.addr.replace(/:\d+$/, "")) : undefined;
+  const canSend = running && peers.length > 0 && sendable && !targetGone;
   // 클라이언트는 주소와 포트(1~65535)가 있어야 접속할 수 있다
   const startable = cfg.mode === "server" || (!!cfg.host.trim() && cfg.port > 0);
   // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
   const inflight = useRef(false);
   const doSend = useCallback(
     async (s: SendSpec) => {
-      if (inflight.current) return;
+      if (inflight.current || targetGone) return;
       inflight.current = true;
       try {
-        await api.send(target, s);
+        const r = await api.send(target?.id ?? null, s);
         setError(null);
+        // 일부 상대에게만 나갔으면 알린다(예: 3개 중 2개)
+        setSendNote(r && typeof r === "object" && r.sent < r.total ? t("partialSend").replace("{s}", String(r.sent)).replace("{t}", String(r.total)) : null);
       } catch (e) {
         setError(String(e));
         setRepeating(false);
@@ -239,7 +270,7 @@ export default function App() {
         inflight.current = false;
       }
     },
-    [target],
+    [target, targetGone, t],
   );
   useEffect(() => {
     if (!repeating || !running) return;
@@ -255,7 +286,10 @@ export default function App() {
   const sel = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
   const server = cfg.mode === "server";
 
-  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
+  // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
+  if (!framesRef.current.length) timeBase.current = null;
+  else if (timeBase.current === null) timeBase.current = framesRef.current[0].ts;
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock TCP");
 
   return (
@@ -301,7 +335,7 @@ export default function App() {
           {server ? t("bindHost") : t("host")}
           <input value={cfg.host} disabled={running} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
         </label>
-        <label data-tip={tip(lang, "port")}>
+        <label data-tip={tip(lang, "netPort")}>
           {t("port")}
           <NumInput min={0} max={65535} value={cfg.port} disabled={running} onValue={(n) => setCfg({ ...cfg, port: n })} />
         </label>
@@ -372,7 +406,14 @@ export default function App() {
         {framing.kind === "terminator" && (
           <label data-tip={tip(lang, "terminatorHex")}>
             {t("terminatorHex")}
-            <input value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+            <input className={term.error ? "bad" : undefined} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+            {term.error ? (
+              <span className="interlock">{term.error}</span>
+            ) : term.bytes.length === 0 ? (
+              <span className="interlock">{t("ilNoTerm")}</span>
+            ) : (
+              <span className="hint mono">{t("termParsed").replace("{a}", hex(term.bytes)).replace("{n}", String(term.bytes.length))}</span>
+            )}
           </label>
         )}
         {framing.kind === "fixed" && (
@@ -467,8 +508,19 @@ export default function App() {
         <div className="sendbar">
           <div className="sendrow">
             {server && (
-              <select value={target ?? ""} onChange={(e) => setTarget(e.target.value ? Number(e.target.value) : null)} data-tip={tip(lang, "target")}>
+              <select
+                className={targetGone ? "bad" : undefined}
+                value={target ? String(target.id) : ""}
+                onChange={(e) => setTarget(peers.find((p) => String(p.id) === e.target.value) ?? null)}
+                data-tip={tip(lang, "target")}
+              >
                 <option value="">{t("all")}</option>
+                {/* 끊긴 상대도 그대로 보여 준다 — 다른 걸 고를 때까지 보내기는 막힌다 */}
+                {targetGone && target && (
+                  <option value={String(target.id)}>
+                    {t("targetGone")} {target.addr}
+                  </option>
+                )}
                 {peers.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.addr}
@@ -514,6 +566,8 @@ export default function App() {
               <span className="why">{t("whyNotStarted")}</span>
             ) : peers.length === 0 ? (
               <span className="why">{t("whyNoPeers")}</span>
+            ) : targetGone ? (
+              <span className="why">{t("whyTargetGone")}</span>
             ) : !sendable && !previewErr ? (
               <span className="why">{t("whyEmpty")}</span>
             ) : null}
@@ -529,6 +583,15 @@ export default function App() {
               + {t("commands")}
             </button>
           </div>
+          {targetBack && (
+            <div className="interlock">
+              {t("targetBack").replace("{a}", targetBack.addr)}{" "}
+              <button className="btn small" onClick={() => setTarget(targetBack)}>
+                {t("useTarget")}
+              </button>
+            </div>
+          )}
+          {sendNote && <div className="interlock">{sendNote}</div>}
           {error && <div className="error">{error}</div>}
         </div>
       </main>
@@ -543,7 +606,7 @@ export default function App() {
           {commands.map((c, i) => (
             <div key={i} className="cmd" title={c.text}>
               <input className="cmdname" value={c.name} onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!running || peers.length === 0} title={t("send")}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!running || peers.length === 0 || targetGone} title={targetGone ? t("whyTargetGone") : t("send")}>
                 ▶
               </button>
               <button className="btn small ghost" data-tip={tip(lang, "edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>

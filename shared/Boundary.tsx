@@ -14,12 +14,13 @@ export class Boundary extends React.Component<{ children: React.ReactNode }, { e
   }
   render() {
     if (!this.state.err) return this.props.children;
-    // 화면 설정은 깨졌을 수 있으므로 저장값에서 언어만 읽는다
-    let lang: "ko" | "en" = "ko";
+    // 화면 설정은 깨졌을 수 있으므로 저장값에서 언어만 읽는다. 못 읽으면 윈도우 언어
+    let lang: "ko" | "en" = navigator.language?.toLowerCase().startsWith("ko") ? "ko" : "en";
     try {
-      lang = (JSON.parse(localStorage.getItem("settings") ?? "{}") as { lang?: string }).lang === "en" ? "en" : "ko";
+      const saved = (JSON.parse(localStorage.getItem("settings") ?? "{}") as { lang?: string }).lang;
+      if (saved === "ko" || saved === "en") lang = saved;
     } catch {
-      /* 기본 한국어 */
+      /* 윈도우 언어 그대로 */
     }
     const ko = lang === "ko";
     return (

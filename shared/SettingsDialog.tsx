@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { ask, open, save } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { NumInput } from "./NumInput";
 import { exportAll, importAll, LIMITS, type AutoReport, type Settings, type TimeFormat, type Theme } from "./settings";
-import { autoSendAvailable } from "./report";
+import { autoSendAvailable, type EnvInfo } from "./report";
+
+// 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
+const REPO = "https://github.com/juhak0308/PortDock";
+const LINKS = {
+  license: "https://www.gnu.org/licenses/gpl-3.0.html",
+  source: REPO,
+  site: "https://portdock.dev",
+  notices: `${REPO}/blob/main/THIRD_PARTY_NOTICES.txt`,
+  // 자동으로 인터넷에 묻지 않는다 — 누르면 최신 릴리스 페이지만 연다
+  latest: `${REPO}/releases/latest`,
+};
 
 const T = {
   ko: {
@@ -17,7 +30,7 @@ const T = {
     local: "시:분:초.밀리초",
     localDate: "날짜 + 시각",
     utc: "UTC",
-    elapsed: "첫 줄부터 지난 시간",
+    elapsed: "시작부터 지난 시간 (지우면 다시)",
     maxLines: "화면에 남길 줄 수",
     maxLinesHint: "넘치면 화면에서만 오래된 줄을 지웁니다(파일 로그는 그대로).",
     autoScroll: "새 줄이 오면 자동 스크롤",
@@ -41,6 +54,14 @@ const T = {
     noFolderWarn: "폴더를 고르지 않으면 자동 로그가 시작되지 않습니다.",
     close: "닫기",
     about: "정보",
+    copyright: "Copyright (C) 2026 Juhak",
+    gpl: "이 프로그램은 자유 소프트웨어이며 GNU GPL v3 에 따라 배포됩니다. 어떠한 보증도 없습니다.",
+    license: "라이선스 전문",
+    source: "소스 코드",
+    site: "홈페이지",
+    notices: "제3자 고지",
+    checkUpdate: "새 버전 확인",
+    checkUpdateHint: "최신 릴리스 페이지를 브라우저로 엽니다(자동으로 확인하지 않음).",
   },
   en: {
     title: "Settings",
@@ -54,7 +75,7 @@ const T = {
     local: "hh:mm:ss.ms",
     localDate: "Date + time",
     utc: "UTC",
-    elapsed: "Elapsed since first line",
+    elapsed: "Elapsed since start (Clear resets)",
     maxLines: "Lines kept on screen",
     maxLinesHint: "Older lines are dropped from the screen only (file logs keep everything).",
     autoScroll: "Auto-scroll on new lines",
@@ -78,6 +99,14 @@ const T = {
     noFolderWarn: "Automatic logging will not start until a folder is chosen.",
     close: "Close",
     about: "About",
+    copyright: "Copyright (C) 2026 Juhak",
+    gpl: "This program is free software, distributed under the GNU GPL v3. It comes with ABSOLUTELY NO WARRANTY.",
+    license: "License text",
+    source: "Source code",
+    site: "Website",
+    notices: "Third-party notices",
+    checkUpdate: "Check for updates",
+    checkUpdateHint: "Opens the latest release page in your browser (never checks automatically).",
   },
 };
 
@@ -105,6 +134,18 @@ export function SettingsDialog({
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
+  // 실제 실행 파일의 버전(Cargo) — 못 받으면 화면이 받은 version 을 쓴다
+  const [realVersion, setRealVersion] = useState(version);
+  useEffect(() => {
+    let alive = true;
+    invoke<EnvInfo>("report_env")
+      .then((e) => alive && e?.version && e.version !== "?" && setRealVersion(e.version))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const link = (url: string) => openUrl(url).catch((e) => setErr(String(e)));
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -228,8 +269,32 @@ export function SettingsDialog({
           </div>
           {err && <div className="error">{err}</div>}
           <hr />
+          <label>{t.about}</label>
           <div className="hint">
-            {app} {version} · GPL-3.0 · portdock.dev
+            <b>{app}</b> {realVersion}
+            <br />
+            {t.copyright}
+            <br />
+            {t.gpl}
+          </div>
+          <div className="row2">
+            <button className="btn small ghost" onClick={() => link(LINKS.license)}>
+              {t.license}
+            </button>
+            <button className="btn small ghost" onClick={() => link(LINKS.source)}>
+              {t.source}
+            </button>
+            <button className="btn small ghost" onClick={() => link(LINKS.site)}>
+              {t.site}
+            </button>
+            <button className="btn small ghost" onClick={() => link(LINKS.notices)}>
+              {t.notices}
+            </button>
+          </div>
+          <div className="row2">
+            <button className="btn small" onClick={() => link(LINKS.latest)} title={t.checkUpdateHint}>
+              {t.checkUpdate}
+            </button>
           </div>
         </div>
       </div>

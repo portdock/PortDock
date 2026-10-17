@@ -112,9 +112,14 @@ export const api = {
   readText: (path: string) => invoke<string>("read_text", { path }),
 };
 
-/** «COM3 · 9600 8N1 · flow none» */
-export function summary(c: SerialConfig) {
+const FLOW = {
+  ko: { none: "흐름 제어 없음", hardware: "RTS/CTS", software: "XON/XOFF" },
+  en: { none: "no flow control", hardware: "RTS/CTS", software: "XON/XOFF" },
+};
+
+/** «COM3 · 9600 8N1 · 흐름 제어 없음» */
+export function summary(c: SerialConfig, lang: "ko" | "en" = "en") {
   const p = c.parity === "odd" ? "O" : c.parity === "even" ? "E" : "N";
-  return `${c.port} · ${c.baud} ${c.dataBits}${p}${c.stopBits} · flow ${c.flow}`;
+  return `${c.port} · ${c.baud} ${c.dataBits}${p}${c.stopBits} · ${FLOW[lang][c.flow]}`;
 }
 

@@ -77,6 +77,24 @@ function parse(text: string, f: Format): number | null {
 
 const key = (id: number, t: Table) => `${id}:${t}`;
 
+/** 연결했던 장치 — COM 번호가 바뀌어도 같은 장치를 찾는 데 쓴다 */
+type PortId = { vid: number | null; pid: number | null; serial: string | null };
+
+/** 저장된 포트가 목록에 없으면 같은 장치(일련번호 → VID:PID)를, 없으면 첫 포트를 */
+function pickPort(ports: PortInfo[], id: PortId | null) {
+  const same =
+    id &&
+    ((id.serial && ports.find((p) => p.serial_number === id.serial && p.vid === id.vid && p.pid === id.pid)) ||
+      (id.vid != null && ports.find((p) => p.vid === id.vid && p.pid === id.pid)));
+  return (same || ports[0]).name;
+}
+
+/** 저장해 두는 표 값 — 슬레이브 → 표 → 주소 → 값. 0 이 아닌 칸만 */
+type SavedValues = Record<string, Partial<Record<Table, Record<string, number>>>>;
+const NO_FAULTS: Faults = { delayMs: 0, noResponse: false, forceException: 0, badCrc: false };
+/** 마스터가 쓸 수 있는 표 */
+const WRITABLE: Table[] = ["coils", "holding-registers"];
+
 export default function App() {
   const { settings, update, reset } = useSettings();
   const lang = settings.lang;
@@ -108,9 +126,6 @@ export default function App() {
   useEffect(() => {
     store("cfg", cfg);
   }, [cfg]);
-  useEffect(() => {
-    if (!cfg.port && ports.length) setCfg((c) => ({ ...c, port: ports[0].name }));
-  }, [ports, cfg.port]);
 
   const [status, setStatus] = useState<Status>("idle");
   const [connected, setConnected] = useState(false);
@@ -120,9 +135,21 @@ export default function App() {
     if (error) noteError(error);
   }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
+  // 연결 실패는 상태 칸에 빨갛게
+  const [connectErr, setConnectErr] = useState<string | null>(null);
+
+  // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 연결 중엔 건드리지 않는다
+  const [portNotice, setPortNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (connected || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    const next = pickPort(ports, load<PortId | null>("portId", null));
+    if (cfg.port) setPortNotice(dict[lang].portSwitched.replace("{a}", cfg.port).replace("{b}", next));
+    setCfg((c) => ({ ...c, port: next }));
+  }, [ports, cfg.port, connected, lang]);
 
   // ---- 통신 기록
   const traffic = useRef<Frame[]>([]);
+  const timeBase = useRef<number | null>(null);
   const [tick, setTick] = useState(0);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
@@ -131,7 +158,11 @@ export default function App() {
       setTick((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
-      if (e.state === "connected") setError(null);
+      if (e.state === "connected") {
+        setError(null);
+        // 다시 꽂아 COM 번호가 바뀌었으면 다음 연결도 새 번호로
+        setCfg((c) => (c.port === e.port ? c : { ...c, port: e.port }));
+      }
       if (e.state === "closed") {
         setConnected(false);
         setLogPath(null);
@@ -154,8 +185,10 @@ export default function App() {
   const [table, setTable] = useState<Table>(() => load("table", "holding-registers"));
   const [ranges, setRanges] = useState<Record<string, Range>>(() => load("ranges", {}));
   const [format, setFormat] = useState<Format>(() => load("format", "u16"));
-  const [faults, setFaults] = useState<Faults>(() => load("faults", { delayMs: 0, noResponse: false, forceException: 0, badCrc: false }));
+  // 장애 주입은 켤 때마다 꺼진 상태로 시작한다 — 모르고 켜 둔 채 정상 시험을 하지 않게
+  const [faults, setFaults] = useState<Faults>(NO_FAULTS);
   const [newId, setNewId] = useState("");
+  const [idErr, setIdErr] = useState<string | null>(null);
   const range = ranges[key(sel, table)] ?? { start: 0, count: 100 };
   const bits = TABLES.find((x) => x.id === table)!.bits;
 
@@ -174,30 +207,94 @@ export default function App() {
   useEffect(() => {
     store("format", format);
   }, [format]);
+
+  // ---- 표 값 저장 — 모든 슬레이브·표의 0 이 아닌 칸을 «tableValues» 하나에. 바뀌면 1초 뒤 한꺼번에 쓴다
+  const savedVals = useRef<SavedValues>({});
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushValues = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    store("tableValues", savedVals.current);
+  }, []);
+  const remember = useCallback(
+    (id: number, tb: Table, start: number, values: number[]) => {
+      const m = ((savedVals.current[id] ??= {})[tb] ??= {});
+      values.forEach((v, i) => {
+        if (v) m[start + i] = v;
+        else delete m[start + i];
+      });
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(flushValues, 1000);
+    },
+    [flushValues],
+  );
+  // 창을 닫기 직전 남은 것을 쓴다
   useEffect(() => {
-    store("faults", faults);
-  }, [faults]);
+    const onUnload = () => saveTimer.current && flushValues();
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [flushValues]);
 
   // 화면 설정 → 엔진. 처음 켤 때 저장해 둔 표 값도 되살린다.
   const [ready, setReady] = useState(false);
   useEffect(() => {
     (async () => {
+      try {
+        // 예전 판이 저장한 장애 설정은 지운다
+        localStorage.removeItem("faults");
+      } catch {
+        /* 저장이 막힌 환경 */
+      }
       await api.setSlaveIds(ids);
+      const stored = load<SavedValues | null>("tableValues", null);
+      const sv: SavedValues = stored ?? {};
       for (const id of ids)
         for (const tb of TABLES) {
           const r = ranges[key(id, tb.id)] ?? { start: 0, count: 100 };
           await api.setRange(id, tb.id, r.start, r.count);
-          const saved = load<{ start: number; values: number[] } | number[] | null>(`values:${key(id, tb.id)}`, null);
-          // 예전 판은 배열만 저장했다 — 그때는 시작 0 으로 본다
-          const sv = Array.isArray(saved) ? { start: 0, values: saved } : saved;
-          if (sv && Array.isArray(sv.values)) await api.setValues(id, tb.id, sv.start, sv.values.slice(0, 65536 - sv.start));
+          if (!stored) {
+            // 예전 판은 보이는 창만 «values:슬레이브:표» 로 저장했다(더 예전엔 배열만 — 시작 0)
+            const old = load<{ start: number; values: number[] } | number[] | null>(`values:${key(id, tb.id)}`, null);
+            const o = Array.isArray(old) ? { start: 0, values: old } : old;
+            if (o && Array.isArray(o.values)) {
+              const m = ((sv[id] ??= {})[tb.id] ??= {});
+              o.values.slice(0, 65536 - o.start).forEach((v, i) => v && (m[o.start + i] = v));
+            }
+          }
+          const m = sv[id]?.[tb.id];
+          const addrs = m ? Object.keys(m).map(Number).filter((a) => Number.isInteger(a) && a >= 0 && a < 65536) : [];
+          if (m && addrs.length) {
+            // 한 번에 보낸다 — 빈 칸은 0(새 표는 모두 0)
+            const lo = Math.min(...addrs);
+            const hi = Math.max(...addrs);
+            const arr = new Array<number>(hi - lo + 1).fill(0);
+            for (const a of addrs) arr[a - lo] = m[a] & 0xffff;
+            await api.setValues(id, tb.id, lo, arr);
+          }
         }
-      await api.setFaults(faults);
+      savedVals.current = sv;
+      if (!stored) {
+        store("tableValues", sv);
+        try {
+          for (const k of Object.keys(localStorage)) if (k.startsWith("values:")) localStorage.removeItem(k);
+        } catch {
+          /* 저장이 막힌 환경 */
+        }
+      }
+      await api.setFaults(NO_FAULTS);
       setReady(true);
     })().catch((e) => setError(String(e)));
     // 처음 한 번만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 지운 슬레이브의 값은 저장에서도 뺀다
+  useEffect(() => {
+    if (!ready) return;
+    const gone = Object.keys(savedVals.current).filter((k) => !ids.includes(Number(k)));
+    if (!gone.length) return;
+    for (const k of gone) delete savedVals.current[k];
+    flushValues();
+  }, [ids, ready, flushValues]);
   useEffect(() => {
     if (ready) api.setSlaveIds(ids).catch((e) => setError(String(e)));
   }, [ids, ready]);
@@ -227,7 +324,6 @@ export default function App() {
         // F18 강조 타이머는 하나만 — 연달아 쓰여도 앞 타이머가 새 강조를 지우지 않게
         if (flashTimer.current) clearTimeout(flashTimer.current);
         flashTimer.current = setTimeout(() => setFlash(new Set()), 1200);
-        store(`values:${key(sel, table)}`, { start: range.start, values: v });
       }
     }
     // F17 바뀐 게 없으면 다시 그리지 않는다(최대 2000칸)
@@ -247,20 +343,35 @@ export default function App() {
     return () => clearInterval(id);
   }, [refresh]);
 
+  // 마스터가 쓰면(통계의 쓰기 수가 바뀌면) 1초 뒤 모든 슬레이브의 쓸 수 있는 표 범위를 읽어 저장한다
+  const writes = stats?.writes;
+  useEffect(() => {
+    if (!ready || writes == null) return;
+    const timer = setTimeout(async () => {
+      for (const id of ids)
+        for (const tb of WRITABLE) {
+          const r = ranges[key(id, tb)] ?? { start: 0, count: 100 };
+          const v = await api.getValues(id, tb, r.start, r.count).catch(() => null);
+          if (v) remember(id, tb, r.start, v);
+        }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [writes, ready, ids, ranges, remember]);
+
   async function writeValue(i: number, v: number) {
     await api.setValues(sel, table, range.start + i, [v]);
     const next = values.slice();
     next[i] = v;
     prev.current.v = next;
     setValues(next);
-    store(`values:${key(sel, table)}`, { start: range.start, values: next });
+    remember(sel, table, range.start + i, [v]);
   }
 
   async function fill() {
     if (!(await ask(t("askFill"), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
     const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
     await api.setValues(sel, table, range.start, v);
-    store(`values:${key(sel, table)}`, { start: range.start, values: v });
+    remember(sel, table, range.start, v);
     refresh();
   }
 
@@ -293,6 +404,7 @@ export default function App() {
         if (!(await ask(msg, { title: "PortDock Modbus Slave", kind: "warning" }))) return;
       }
       await api.setValues(sel, table, body.start, body.values);
+      remember(sel, table, body.start, bits ? body.values.map((x) => (x ? 1 : 0)) : body.values);
       refresh();
     } catch (e) {
       setError(String(e));
@@ -305,16 +417,21 @@ export default function App() {
     if (connecting) return;
     setConnecting(true);
     setError(null);
+    setConnectErr(null);
+    setPortNotice(null);
     try {
       await api.open(cfg, onEvent);
       setConnected(true);
+      const p = ports.find((x) => x.name === cfg.port);
+      if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "modbus-slave");
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
       setStatus("connected");
     } catch (e) {
-      setError(String(e));
+      setConnectErr(String(e));
+      noteError(String(e));
     } finally {
       setConnecting(false);
     }
@@ -345,14 +462,22 @@ export default function App() {
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const path = await save({ defaultPath: `modbus-slave-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const path = await save({ title: t("logDlgTitle"), defaultPath: `modbus-slave-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
 
   function addId() {
-    const n = Number(newId);
-    if (!Number.isInteger(n) || n < 1 || n > 247 || ids.includes(n)) return;
+    const s = newId.trim();
+    if (!s) return;
+    const n = Number(s);
+    // 거절하면 칸을 빨갛게 하고 이유를 보인다
+    const why = !/^\d+$/.test(s) || n > 247 ? t("idRange") : n === 0 ? t("idZero") : ids.includes(n) ? t("idDup").replace("{a}", String(n)) : null;
+    if (why) {
+      setIdErr(why);
+      return;
+    }
+    setIdErr(null);
     setIds([...ids, n].sort((a, b) => a - b));
     setSel(n);
     setNewId("");
@@ -361,7 +486,10 @@ export default function App() {
   const statusKey = `status_${status}` as Key;
   const frames = traffic.current.slice(-300);
 
-  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, traffic.current[0]?.ts ?? ts);
+  // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
+  if (!traffic.current.length) timeBase.current = null;
+  else if (timeBase.current === null) timeBase.current = traffic.current[0].ts;
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(connected || !!logPath, settings.confirmExit, lang, "PortDock Modbus Slave");
 
   return (
@@ -395,7 +523,15 @@ export default function App() {
 
         <label data-tip={tip(lang, "port")}>
           {t("port")}
-          <select value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
+          <select
+            value={cfg.port}
+            disabled={connected}
+            title={connected ? t("lockedHint") : ""}
+            onChange={(e) => {
+              setCfg({ ...cfg, port: e.target.value });
+              setPortNotice(null);
+            }}
+          >
             {ports.length === 0 && <option value="">{t("noPorts")}</option>}
             {ports.map((p) => (
               <option key={p.name} value={p.name}>
@@ -404,6 +540,7 @@ export default function App() {
             ))}
           </select>
         </label>
+        {portNotice && !connected && <div className="hint warn">{portNotice}</div>}
         <div className="grid2">
           <label data-tip={tip(lang, "baud")}>
             {t("baud")}
@@ -437,11 +574,18 @@ export default function App() {
             </select>
           </label>
         </div>
-        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
+        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={connecting || (!connected && !ports.some((p) => p.name === cfg.port))}>
           {connected ? t("disconnect") : t("connect")}
         </button>
         {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
-        <div className={`status s-${status}`}>{t(statusKey)}</div>
+        {connectErr && !connected ? (
+          <div className="status s-failed" role="alert">
+            <b>{t("connectFailed")}</b> · {connectErr}
+            {/busy|in use|denied|사용 중|거부/i.test(connectErr) && !/another program|다른 프로그램/i.test(connectErr) && <div>{t("busyHint")}</div>}
+          </div>
+        ) : (
+          <div className={`status s-${status}`}>{t(statusKey)}</div>
+        )}
 
         <hr />
         <label data-tip={tip(lang, "slaves")}>{t("slaves")}</label>
@@ -470,11 +614,21 @@ export default function App() {
           ))}
         </div>
         <div className="row2">
-          <input value={newId} placeholder="1~247" onChange={(e) => setNewId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addId()} />
+          <input
+            className={idErr ? "bad" : ""}
+            value={newId}
+            placeholder="1~247"
+            onChange={(e) => {
+              setNewId(e.target.value);
+              setIdErr(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && addId()}
+          />
           <button data-tip={tip(lang, "addSlave")} className="btn small" onClick={addId}>
             {t("addSlave")}
           </button>
         </div>
+        {idErr && <div className="error">{idErr}</div>}
 
         <hr />
         <label data-tip={tip(lang, "faults")}>{t("faults")}</label>
@@ -574,7 +728,9 @@ export default function App() {
               </select>
             </label>
           )}
-          <span className="hint">{t("rangeHint")}</span>
+          <span className="hint warn range-warn">
+            ⚠ {t("rangeWarn")}. {t("rangeHint")}
+          </span>
           <span className="grow" />
           <button className="btn small" onClick={fill} data-tip={tip(lang, "fill")}>
             {t("fill")}

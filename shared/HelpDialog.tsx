@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { autoSendAvailable, ISSUES_URL, REPORT_EMAIL } from "./report";
 
 export interface HelpSection {
   title: string;
@@ -7,7 +8,28 @@ export interface HelpSection {
 }
 export type HelpDoc = Record<"ko" | "en", HelpSection[]>;
 
-/** 다섯 프로그램 공통 — 문제 보고 */
+/** 다섯 프로그램 공통 — 문제 보고. 받는 곳이 비어 숨은 기능은 말하지 않는다 */
+function reportHelp(lang: "ko" | "en"): HelpSection {
+  const auto = autoSendAvailable();
+  const ko = lang === "ko";
+  const ways = [
+    auto && (ko ? "«지금 바로 보내기»(인터넷 필요, 계정 필요 없음)" : "«Send now» (internet, no account needed)"),
+    REPORT_EMAIL && (ko ? "«이메일로 보내기»" : "«Send by email»"),
+    ISSUES_URL && (ko ? "«GitHub 이슈로 보내기»(공개됨)" : "«Open a GitHub issue» (public)"),
+    ko ? "«복사»" : "«Copy»",
+    ko ? "«파일로 저장»" : "«Save to file»",
+  ].filter(Boolean) as string[];
+  const ways2 = ko ? `${ways.join(", ")} 중에서 고릅니다.` : `Choose ${ways.slice(0, -1).join(", ")} or ${ways[ways.length - 1]}.`;
+  const h = REPORT_HELP[lang];
+  return {
+    title: h.title,
+    body: h.body
+      .map((l) => (l.startsWith("- «지금 바로 보내기»") || l.startsWith("- Choose «Send now»") ? `- ${ways2}${ko ? " 인터넷이 없는 PC 는 파일로 저장해 옮기세요." : " On an offline PC, save to a file and move it."}` : l))
+      // 자동 전송 받는 곳이 없으면 설정에도 그 항목이 없다
+      .filter((l) => auto || !l.startsWith("- ⚙")),
+  };
+}
+
 const REPORT_HELP: Record<"ko" | "en", HelpSection> = {
   ko: {
     title: "문제 보고(!)",
@@ -45,7 +67,7 @@ const UI = {
 /** 섹션 목록(왼쪽) + 본문(오른쪽). 찾기 칸으로 걸러 보고, Esc 로 닫는다 */
 export function HelpDialog({ doc, lang, app, onClose }: { doc: HelpDoc; lang: "ko" | "en"; app: string; onClose: () => void }) {
   const ui = UI[lang];
-  const sections = useMemo(() => [...doc[lang], REPORT_HELP[lang]], [doc, lang]);
+  const sections = useMemo(() => [...doc[lang], reportHelp(lang)], [doc, lang]);
   const [q, setQ] = useState("");
   const [cur, setCur] = useState(0);
   useEffect(() => {

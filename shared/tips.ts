@@ -5,6 +5,8 @@ const TIPS: Record<string, Tip> = {
   // ---- 연결
   ports: ["통신할 COM 포트. 장치 이름·USB 정보가 함께 나오고, 꽂으면 1.5초 안에 목록에 나타납니다.", "The COM port to use. Shows the device name and USB info; a newly plugged adapter appears within 1.5 s."],
   port: ["통신할 COM 포트(또는 TCP·UDP 포트 번호).", "The COM port (or the TCP/UDP port number)."],
+  // 네트워크 포트 번호 — TCP·UDP·Simulator 용(위 «port» 는 COM 포트 설명)
+  netPort: ["네트워크 포트 번호(1~65535). 접속할 때는 장비가 듣는 포트, 서버로 들을 때는 이 PC 의 포트입니다. 0 이면 운영체제가 빈 포트를 고릅니다.", "Network port number (1–65535): the device's port when connecting, or this PC's port when listening. 0 lets the OS pick a free port."],
   baud: ["통신 속도(bps). 장비 설정과 같아야 합니다. 목록에 없으면 숫자를 직접 넣으세요(연결 중에는 Enter 로 적용).", "Line speed in bps — must match the device. Type any value if it is not listed (while connected, press Enter to apply)."],
   dataBits: ["한 글자의 데이터 비트 수. 대부분 8.", "Data bits per character — usually 8."],
   parity: ["오류 검출용 패리티 비트. 장비가 쓰는 것과 같아야 합니다(대부분 없음, Modbus 는 짝수인 경우가 많음).", "Parity bit for error detection — must match the device (usually None; Modbus often uses Even)."],
@@ -19,8 +21,8 @@ const TIPS: Record<string, Tip> = {
 
   // ---- 프레임 구분·검사
   framing: ["받은 바이트를 어디서 끊어 한 줄로 볼지 정합니다. 장비 프로토콜에 맞추면 읽기 쉽고 체크섬 검사도 정확해집니다.", "How received bytes are split into lines. Matching the device protocol makes logs readable and checksum checks accurate."],
-  gapMs: ["이 시간(ms) 동안 아무것도 안 오면 한 줄로 끊습니다. USB 변환기는 16ms 단위로 넘겨서 그보다 짧으면 부정확할 수 있습니다.", "A line ends after this many ms of silence. USB adapters deliver in ~16 ms chunks, so shorter gaps may be inaccurate."],
-  terminatorHex: ["이 바이트(HEX)가 오면 줄을 끊습니다. 예: «0D 0A»(CR LF), «03»(ETX).", "A line ends when these bytes (HEX) arrive, e.g. «0D 0A» (CR LF) or «03» (ETX)."],
+  gapMs: ["조용한 시간: 이 시간(ms) 동안 아무것도 안 오면 한 줄로 끊습니다. USB 변환기는 16ms 단위로 넘겨서 그보다 짧으면 부정확할 수 있습니다.", "Idle gap: a line ends after this many ms of silence. USB adapters deliver in ~16 ms chunks, so shorter gaps may be inaccurate."],
+  terminatorHex: ["끝 문자: 이 바이트(HEX)가 오면 줄을 끊습니다. 예: «0D 0A»(CR LF), «03»(ETX). «0D0A» 처럼 붙여 쓰거나 CR·LF·CRLF·STX·ETX 이름도 됩니다. 어떻게 읽었는지 아래에 보입니다. 보낼 때 붙이는 «줄 끝 붙이기» 와는 별개입니다.", "Terminator: a line ends when these bytes (HEX) arrive, e.g. «0D 0A» (CR LF) or «03» (ETX). «0D0A» or names like CR, LF, CRLF, STX, ETX also work. How it was read is shown below. Separate from the «Line ending» added when sending."],
   length: ["이 바이트 수마다 한 줄로 끊습니다.", "Splits a line every this many bytes."],
   rxCheck: ["받은 줄 끝(끝 문자가 있으면 그 앞)의 체크섬을 검사해 «정상»·«틀림» 을 붙입니다.", "Checks the checksum at the end of each received line (before the terminator) and marks it OK or FAIL."],
 
@@ -30,15 +32,23 @@ const TIPS: Record<string, Tip> = {
   clear: ["화면의 기록만 지웁니다(파일 기록은 그대로).", "Clears the on-screen log only (file logs are kept)."],
   saveLog: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다.", "Saves the on-screen log to a text file."],
   saveView: ["지금 화면에 있는 기록을 텍스트 파일로 저장합니다.", "Saves the on-screen log to a text file."],
-  logToFile: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다. 첫 줄에 그때 설정이 기록됩니다.", "Appends all traffic and events to a file from now on. The first line records the current settings."],
+  logToFile: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다.", "Appends all traffic and events to a file from now on."],
+  // 첫 줄에 설정을 남기는 프로그램(시리얼)용
+  logToFileSettings: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다. 첫 줄에 그때 설정이 기록됩니다.", "Appends all traffic and events to a file from now on. The first line records the current settings."],
   stopLog: ["파일 기록을 멈춥니다.", "Stops file logging."],
-  detail: ["로그에서 누른 줄의 HEX·ASCII 전체와 Modbus 풀이를 보여 줍니다.", "Shows the full HEX/ASCII of the clicked line and its Modbus decoding."],
+  detail: ["로그에서 누른 줄의 HEX·ASCII 전체를 보여 줍니다.", "Shows the full HEX/ASCII of the clicked line."],
+  // Modbus 풀이가 있는 프로그램(시리얼)용
+  detailModbus: ["로그에서 누른 줄의 HEX·ASCII 전체와 Modbus 풀이를 보여 줍니다.", "Shows the full HEX/ASCII of the clicked line and its Modbus decoding."],
 
   // ---- 보내기
-  checksum: ["보낼 때 본문 뒤에 붙일 체크섬. 순서는 본문 → 체크섬 → 끝 문자입니다.", "Checksum appended to the body. Order: body → checksum → suffix."],
-  suffix: ["맨 끝에 붙일 끝 문자(CR, LF, CR LF).", "Line ending appended last (CR, LF, CR LF)."],
+  checksum: ["보낼 때 본문 뒤에 붙일 체크섬. 순서는 본문 → 체크섬 → 줄 끝입니다.", "Checksum appended to the body. Order: body → checksum → line ending."],
+  suffix: ["줄 끝 붙이기: 보낼 때 맨 끝에 붙일 CR, LF, CR LF. 받을 때 줄을 끊는 «끝 문자» 와는 별개입니다.", "Line ending appended last when sending (CR, LF, CR LF). Separate from the receive-side «Terminator»."],
   send: ["입력칸 내용을 보냅니다(Enter 도 됩니다). 실제로 나갈 바이트는 아래 «보낼 바이트» 에 미리 보입니다.", "Sends the input (Enter also works). The exact bytes are previewed below."],
-  repeat: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 송신 시간보다 짧으면 자동으로 늘리고, 끊기면 멈춥니다.", "Sends the same input every this many ms while checked. Raised automatically if shorter than the transmit time; stops on disconnect."],
+  repeat: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 앞 송신이 안 끝났으면 그 차례는 건너뛰고, 끊기면 멈춥니다.", "Sends the same input every this many ms while checked. A turn is skipped if the previous send is still running; stops on disconnect."],
+  // 시리얼용 — 송신 시간보다 짧은 간격을 자동으로 늘린다
+  repeatSerial: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 송신 시간보다 짧으면 자동으로 늘리고, 끊기면 멈춥니다.", "Sends the same input every this many ms while checked. Raised automatically if shorter than the transmit time; stops on disconnect."],
+  // Simulator 용 — 상대가 없으면 기다렸다가 이어서 보낸다
+  repeatSim: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 상대가 아직 없으면 그 차례는 건너뛰고 기다립니다. 체크를 끄거나 «멈춤» 을 눌러야 멈춥니다.", "Sends the same input every this many ms while checked. Turns are skipped while no peer is connected; only unchecking or Stop ends it."],
   commands: ["자주 쓰는 송신 내용을 저장해 두는 목록. ▶ 보내기, ✎ 입력칸으로, ✕ 지우기.", "Saved commands: ▶ send, ✎ load into the input, ✕ delete."],
   edit: ["이 명령을 입력칸으로 불러옵니다.", "Loads this command into the input."],
   delete: ["지웁니다(확인을 묻습니다).", "Deletes it (asks first)."],
@@ -51,7 +61,7 @@ const TIPS: Record<string, Tip> = {
   echo: ["받은 것을 보낸 쪽으로 그대로 돌려보냅니다. 상대도 에코면 끝없이 주고받으므로 1초에 200번을 넘으면 저절로 꺼집니다.", "Sends received data straight back. If the peer echoes too, it is turned off automatically above 200 per second."],
   peers: ["지금 이 서버에 붙어 있는 상대들. «끊기» 로 하나씩 끊을 수 있습니다.", "Peers connected to this server. «Kick» disconnects one."],
   kick: ["이 상대만 끊습니다.", "Disconnects only this peer."],
-  target: ["보낼 상대. «모두에게» 면 붙어 있는 전부에게 보냅니다.", "Who to send to. «All» sends to every connected peer."],
+  target: ["보낼 상대. «모두에게» 면 붙어 있는 전부에게 보냅니다. 고른 상대가 끊기면 «(끊김)» 으로 남고 보내기가 막힙니다(다른 장비로 새지 않게).", "Who to send to. «All» sends to every connected peer. If the chosen peer disconnects it stays as «(disconnected)» and sending is blocked, so nothing goes to another device."],
 
   // ---- UDP
   bindHost: ["받을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다.", "Local interface to receive on. 0.0.0.0 receives on all interfaces."],
@@ -74,8 +84,8 @@ const TIPS: Record<string, Tip> = {
   badCrc: ["응답의 CRC 를 일부러 틀리게 보냅니다(마스터 CRC 검사 시험).", "Sends replies with a wrong CRC (tests the master's CRC check)."],
   forceException: ["모든 요청에 이 예외 코드로 답합니다.", "Answers every request with this exception code."],
   stats: ["받은 요청·정상 응답·예외·무시 횟수.", "Counts of requests, OK replies, exceptions and ignored frames."],
-  start: ["표에서 볼(그리고 응답할) 시작 주소. 이 범위 밖을 읽으면 예외 02 로 답합니다.", "First address to show (and answer). Reads outside the range get exception 02."],
-  count: ["시작 주소부터 몇 칸을 쓸지. 화면에는 처음 2000칸까지 보입니다.", "How many addresses from the start. The screen shows up to 2000."],
+  start: ["표에서 볼(그리고 응답할) 시작 주소. 바꾸면 마스터가 읽을 수 있는 범위도 바뀝니다 — 범위 밖을 읽으면 예외 02 로 답합니다.", "First address to show (and answer). Changing it also changes what the master can read — reads outside get exception 02."],
+  count: ["시작 주소부터 몇 칸을 쓸지(마스터가 읽을 수 있는 범위). 화면에는 처음 2000칸까지 보입니다.", "How many addresses from the start (also the range the master can read). The screen shows up to 2000."],
   format: ["레지스터 값을 U16(0~65535)·S16(음수)·HEX·BIN 으로 보고 입력합니다.", "View and enter register values as U16, S16, HEX or BIN."],
   fill: ["보이는 칸을 0, 1, 2… 로 채웁니다(확인을 묻습니다).", "Fills the visible cells with 0, 1, 2… (asks first)."],
   exportTable: ["지금 표의 범위 전체를 JSON 파일로 저장합니다.", "Saves the whole range of this table to a JSON file."],
@@ -85,17 +95,19 @@ const TIPS: Record<string, Tip> = {
   // ---- Simulator
   transport: ["장비를 흉내 낼 연결 방식. 시리얼, TCP 서버(상대가 접속), TCP 클라이언트(상대에 접속), UDP.", "How the simulated device connects: Serial, TCP server, TCP client or UDP."],
   rules: ["받은 것이 패턴에 맞으면 정해 둔 응답을 보냅니다. 위에서부터 처음 맞는 규칙 하나만 답합니다.", "When a frame matches a pattern, the reply is sent. Only the first matching rule (top-down) replies."],
-  arWhen: ["이 패턴을 받으면. HEX 는 ??(1바이트)·**(0개 이상), ASCII 는 ?·* 를 씁니다.", "Pattern to match. HEX uses ?? (one byte) and ** (zero or more); ASCII uses ? and *."],
-  arExact: ["정확히: 줄 전체가 패턴과 같아야 합니다.", "Exact: the whole line must match."],
+  arWhen: ["이 패턴을 받으면. HEX 는 ??(1바이트)·**(0개 이상), ASCII 는 ?(1글자)·*(0개 이상)가 와일드카드입니다. «STATUS?» 처럼 ?·* 글자 자체를 맞추려면 \\x3F·\\x2A 로 쓰세요.", "Pattern to match. HEX wildcards: ?? (one byte), ** (zero or more); ASCII wildcards: ? (one char), * (zero or more). To match a literal ? or * (e.g. SCPI «STATUS?»), write \\x3F or \\x2A."],
+  arExact: ["정확히: 줄 전체가 패턴과 같아야 합니다. «끝 문자 떼고 비교» 가 켜져 있으면 끝 문자와 뒤쪽 CR·LF 는 빼고 비교합니다.", "Exact: the whole line must match. With «Ignore line ending when matching» on, the terminator and trailing CR/LF are removed first."],
   arContains: ["포함: 줄 안 어딘가에 패턴이 있으면 됩니다.", "Contains: the pattern may appear anywhere in the line."],
-  arReply: ["보낼 응답. 체크섬과 끝 문자를 고르면 자동으로 붙습니다.", "Reply to send; the chosen checksum and suffix are appended automatically."],
+  arReply: ["보낼 응답. 체크섬과 줄 끝을 고르면 자동으로 붙습니다.", "Reply to send; the chosen checksum and line ending are appended automatically."],
   arDelay: ["응답을 이만큼(ms) 늦게 보냅니다(실제 장비의 처리 시간 흉내).", "Delays the reply by this many ms (to mimic the device's processing time)."],
   arAdd: ["새 규칙을 맨 아래에 추가합니다.", "Adds a new rule at the bottom."],
   hits: ["이 규칙이 응답한 횟수.", "How many times this rule replied."],
   resetHits: ["응답 횟수를 0 으로 되돌립니다.", "Resets the reply counts."],
-  exportRules: ["규칙 전체와 프레임 구분을 파일로 저장합니다. 장비별 흉내 설정으로 나눠 쓸 수 있습니다.", "Saves all rules and the framing to a file — handy as a per-device profile."],
-  importRules: ["저장해 둔 규칙 묶음을 불러옵니다(지금 규칙은 바뀝니다).", "Loads a saved rule set (replaces the current rules)."],
-  unsolicited: ["장비가 요청 없이 먼저 보내는 것(상태 보고·하트비트)을 흉내 냅니다. 반복을 켜면 주기적으로 보냅니다.", "Mimics data the device sends on its own (status, heartbeat); enable repeat to send periodically."],
+  exportRules: ["규칙 전체와 연결 방식·주소·포트·프레임 구분·비교 옵션·«장비가 먼저 보내기» 설정을 한 파일로 저장합니다. 장비별 흉내 설정(프로필)으로 나눠 쓸 수 있습니다.", "Saves all rules plus transport, addresses/ports, framing, match options and the device-initiated message to one file — a per-device profile."],
+  importRules: ["저장해 둔 규칙 묶음(프로필)을 불러옵니다. 지금 규칙·설정을 바꾸기 전에 확인을 묻습니다. 실행 중에는 연결 설정은 빼고 불러옵니다.", "Loads a saved rule set (profile). Asks before replacing the current rules and settings; while running, connection settings are left unchanged."],
+  matchStrip: ["켜면 받은 줄 끝의 끝 문자와 뒤쪽 CR·LF 를 떼고 패턴과 비교합니다. 그래서 «STATUS?<CR><LF>» 가 «STATUS\\x3F» 에 «정확히» 맞습니다.", "When on, the terminator and trailing CR/LF are removed before matching, so «STATUS?<CR><LF>» exactly matches «STATUS\\x3F»."],
+  logNoMatch: ["켜면 어떤 규칙에도 맞지 않은 요청을 통신 기록에 «NO MATCH» 사건(EV)으로 남깁니다. 응답이 안 나가는 이유를 찾을 때 씁니다.", "When on, requests no rule matched are logged as a «NO MATCH» event (EV) — useful to find why no reply was sent."],
+  unsolicited: ["장비가 요청 없이 먼저 보내는 것(상태 보고·하트비트)을 흉내 냅니다. 반복을 켜면 주기적으로 보내고, 상대가 없을 때는 기다렸다가 이어서 보냅니다.", "Mimics data the device sends on its own (status, heartbeat); enable repeat to send periodically — it waits while no peer is connected."],
   traffic: ["주고받은 데이터와 사건(AUTO 규칙 이름 등).", "Traffic and events (e.g. AUTO with the rule name)."],
   moveUp: ["위로 — 먼저 검사됩니다.", "Move up — checked earlier."],
   moveDown: ["아래로.", "Move down."],

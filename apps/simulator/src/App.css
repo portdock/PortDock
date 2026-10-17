@@ -687,3 +687,12 @@ input.bad {
     display: inline-block;
   }
 }
+
+/* 틀려서 빠진 규칙 — 빨간 테두리와 이유 */
+.arcard.bad {
+  border-color: var(--fail);
+}
+.arcard .arerr {
+  font-size: 12px;
+  color: var(--fail);
+}

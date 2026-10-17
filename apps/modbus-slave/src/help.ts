@@ -32,7 +32,9 @@ export const help: HelpDoc = {
     {
       title: "연결 설정",
       body: [
-        "- «포트»: 마스터와 이어진 COM 포트. 연결 중에는 바꿀 수 없습니다.",
+        "- «포트»: 마스터와 이어진 COM 포트. 연결 중에는 포트만 바꿀 수 없고, 나머지 설정은 바로 적용됩니다.",
+        "- 저장해 둔 포트가 목록에 없으면 같은 장치(일련번호, 없으면 VID:PID)를 찾아 고르고, 없으면 첫 포트로 바꾼 뒤 «저장된 COM3 이(가) 없어 COM7 로 바꿨습니다» 처럼 알려 줍니다.",
+        "- 연결에 실패하면 상태 칸에 빨갛게 «연결 실패 · 이유» 가 나옵니다. 포트가 사용 중이면 다른 프로그램이 쓰고 있는지 확인하세요.",
         "- «속도(bps)»: 목록(1200~115200)에서 고르거나 숫자를 넣습니다.",
         "- «데이터 비트»: 8 또는 7. Modbus RTU 는 보통 8 입니다.",
         "- «패리티»: «없음»·«짝수»·«홀수». Modbus 규격 기본은 짝수지만 장비마다 다르니 마스터와 맞추세요.",
@@ -46,7 +48,7 @@ export const help: HelpDoc = {
       title: "슬레이브 주소",
       body: [
         "- 이 프로그램은 슬레이브 여러 개를 한꺼번에 흉내 낼 수 있습니다. 주소마다 표 4종을 따로 가집니다.",
-        "- 칸에 1~247 을 넣고 «추가»(또는 Enter)를 누르면 주소가 늘어납니다.",
+        "- 칸에 1~247 을 넣고 «추가»(또는 Enter)를 누르면 주소가 늘어납니다. 0(브로드캐스트), 248 이상, 이미 있는 주소는 칸이 빨개지고 이유가 나옵니다.",
         "- 주소 버튼을 누르면 그 슬레이브의 표를 봅니다. × 로 지웁니다(하나는 남아야 합니다).",
         "- 목록에 없는 주소로 온 요청에는 답하지 않고 «무시» 로 셉니다.",
       ],
@@ -66,7 +68,7 @@ export const help: HelpDoc = {
     {
       title: "시작 주소·개수·표시",
       body: [
-        "- «시작 주소»·«개수»: 이 슬레이브가 이 표에서 답할 주소 범위입니다. 기본은 0부터 100칸.",
+        "- «시작 주소»·«개수»: 이 슬레이브가 이 표에서 답할 주소 범위입니다. 기본은 0부터 100칸. 보는 범위만 바뀌는 것이 아니라 마스터가 읽고 쓸 수 있는 범위도 함께 바뀝니다.",
         "- 이 범위 밖을 읽거나 쓰면 예외 02(Illegal Data Address)로 답합니다. 마스터의 «주소 범위 오류» 처리를 시험할 때 씁니다.",
         "- 주소는 0부터 셉니다(프로토콜 주소). 장비 설명서가 40001 처럼 1부터 세면 1을 빼서 넣으세요.",
         "- 화면에는 최대 2000칸까지 보입니다. 범위가 더 커도 응답은 범위 전체로 합니다.",
@@ -74,7 +76,7 @@ export const help: HelpDoc = {
         "- 값 칸에 숫자를 넣고 Enter 를 누르거나 다른 곳을 누르면 반영됩니다. 형식에 맞지 않으면 빨갛게 보이고 원래 값으로 돌아갑니다. «0x» 를 붙이면 HEX 로 읽습니다.",
         "- 마스터가 값을 바꾸면 그 칸이 잠깐 강조되고, 마우스를 올리면 «마스터가 바꾼 값» 이 보입니다.",
         "- «채우기»: 보이는 범위를 0, 1, 2… 로 채웁니다(코일·입력 접점은 0, 1, 0, 1…). 읽기 시험용 값을 빨리 만들 때 씁니다.",
-        "- 표 값은 프로그램을 껐다 켜도 남아 있습니다.",
+        "- 표 값은 모든 슬레이브·모든 표에 대해(보이는 칸만이 아니라) 프로그램을 껐다 켜도 남아 있습니다. 직접 고친 값과 마스터가 쓴 값 모두, 바뀌고 약 1초 뒤 저장됩니다.",
       ],
     },
     {
@@ -103,7 +105,7 @@ export const help: HelpDoc = {
         "- «응답 안 함 (타임아웃 시험)»: 요청은 처리하지만 아무것도 보내지 않습니다. 마스터의 타임아웃·재시도·통신 끊김 알람을 시험합니다. 로그에 «NO-RESPONSE (fault)».",
         "- «예외로 답함»: 모든 요청에 고른 예외 코드(01·02·03·04·05·06·0A·0B)로 답합니다. 마스터가 예외 응답을 화면·알람으로 잘 보여 주는지 시험합니다.",
         "- «CRC 틀리게»: 응답(예외 응답 포함)의 CRC 를 일부러 틀리게 보냅니다. 마스터가 CRC 오류를 걸러 내고 다시 묻는지 시험합니다.",
-        "- 시험이 끝나면 모두 꺼 두세요. 설정은 다음에 켤 때도 남아 있습니다.",
+        "- 장애 주입은 저장되지 않습니다. 프로그램을 켤 때마다 모두 꺼진 상태로 시작합니다.",
       ],
     },
     {
@@ -133,7 +135,7 @@ export const help: HelpDoc = {
         "- IGNORED id 5 (not simulated): 목록에 없는 슬레이브 주소라 무시했습니다.",
         "- BUSY: 지연 응답을 보내기 전에 온 요청을 무시했습니다.",
         "- 자기가 보낸 응답이 그대로 되돌아오면(RS-485 에코 등) 다시 답하지 않습니다.",
-        "- «파일로 계속 저장»: 고른 파일에 모든 줄을 계속 덧붙입니다. 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
+        "- «파일로 계속 저장»: 고른 파일에 모든 줄을 계속 덧붙입니다(이미 있는 파일이면 뒤에 이어 씁니다). 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
         "- «지우기»: 화면의 통신 기록만 비웁니다.",
       ],
     },
@@ -143,7 +145,7 @@ export const help: HelpDoc = {
         "- «1초 이상 지연은 대부분의 마스터 타임아웃(보통 1초)보다 길어 «응답 없음» 으로 보입니다.»: 지연 시험이 아니라 무응답 시험이 되어 버릴 수 있습니다. 마스터 타임아웃보다 짧게 하려면 값을 줄이세요.",
         "- ««응답 안 함» 이 켜져 있어 예외 응답도 보내지 않습니다.»: 두 장애를 함께 켜면 무응답이 이깁니다. 예외를 시험하려면 «응답 안 함» 을 끄세요.",
         "- «⚠ 장애 주입 (시험용)»: 장애가 하나라도 켜져 있다는 표시입니다. 정상 통신 시험 전에 꺼 두세요.",
-        "- «이 범위 밖을 읽으면 예외 02 로 답합니다.»: 안내입니다. 마스터가 예외 02 를 받으면 «시작 주소»·«개수» 를 넓히세요.",
+        "- «⚠ 바꾸면 마스터가 읽을 수 있는 주소 범위도 바뀝니다. 이 범위 밖을 읽으면 예외 02 로 답합니다.»: «시작 주소»·«개수» 는 화면 범위이자 응답 범위입니다. 마스터가 예외 02 를 받으면 넓히세요.",
         "- 설정 창 «폴더를 고르지 않으면 자동 로그가 시작되지 않습니다.»: «연결하면 자동으로 파일 로그 시작» 을 켰다면 «고르기» 로 폴더를 정하세요.",
         "- 설정 창 «연결·기록 중에는 가져올 수 없습니다. 먼저 멈추세요.»: 먼저 «끊기»·«저장 멈춤» 을 하세요.",
       ],
@@ -154,7 +156,7 @@ export const help: HelpDoc = {
         "- «언어»: 한국어·English.",
         "- «테마»: «윈도우 설정 따름»·«밝게»·«어둡게».",
         "- «글자 크기(px)»: 11~18.",
-        "- «로그 시각 표시»: «시:분:초.밀리초», «날짜 + 시각», «UTC», «첫 줄부터 지난 시간». 화면 통신 기록에 적용됩니다(파일 로그는 늘 날짜 + 시각).",
+        "- «로그 시각 표시»: «시:분:초.밀리초», «날짜 + 시각», «UTC», «시작부터 지난 시간 (지우면 다시)». 화면 통신 기록에 적용됩니다(파일 로그는 늘 날짜 + 시각).",
         "- «화면에 남길 줄 수»: 1,000~1,000,000(기본 100,000). 넘치면 화면에서만 오래된 줄을 지웁니다.",
         "- «새 줄이 오면 자동 스크롤»: 통신 기록을 맨 아래로 따라갑니다(위로 올려 보는 중에는 따라가지 않습니다).",
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 연결할 때마다 «portdock-modbus-slave-날짜-시각.log» 에 저장합니다.",
@@ -218,7 +220,9 @@ export const help: HelpDoc = {
     {
       title: "Connection settings",
       body: [
-        "- «Port»: the COM port wired to the master. It cannot be changed while connected.",
+        "- «Port»: the COM port wired to the master. Only the port is locked while connected; other settings apply immediately.",
+        "- If the saved port is not in the list, the same device is picked (by serial number, else VID:PID), otherwise the first port, with a note such as «Saved COM3 not found — switched to COM7».",
+        "- If connecting fails, the status box turns red with «Connection failed · reason». For a busy port, check whether another program is using it.",
         "- «Baud rate»: pick from the list (1200 to 115200) or type a number.",
         "- «Data bits»: 8 or 7. Modbus RTU normally uses 8.",
         "- «Parity»: «None», «Even» or «Odd». The Modbus standard default is even, but devices differ, so match the master.",
@@ -232,7 +236,7 @@ export const help: HelpDoc = {
       title: "Slave IDs",
       body: [
         "- The program can simulate several slaves at once. Each ID has its own four tables.",
-        "- Enter 1–247 and click «Add» (or press Enter) to add an ID.",
+        "- Enter 1–247 and click «Add» (or press Enter) to add an ID. 0 (broadcast), 248 or more and duplicates turn the box red with the reason.",
         "- Click an ID button to view that slave's tables. Remove one with × (at least one must remain).",
         "- Requests to IDs not in the list are not answered and are counted as «Ignored».",
       ],
@@ -252,7 +256,7 @@ export const help: HelpDoc = {
     {
       title: "Start, count and format",
       body: [
-        "- «Start» and «Count»: the address range this slave answers in this table. Default is 100 cells from 0.",
+        "- «Start» and «Count»: the address range this slave answers in this table. Default is 100 cells from 0. Changing them changes not only the view but also the range the master can read and write.",
         "- Reads or writes outside this range get exception 02 (Illegal Data Address). Use it to test how the master handles address errors.",
         "- Addresses count from 0 (protocol addresses). If the device manual counts from 1 (like 40001), subtract 1.",
         "- Up to 2000 cells are shown on screen. Replies still cover the whole range.",
@@ -260,7 +264,7 @@ export const help: HelpDoc = {
         "- Type a value and press Enter or click elsewhere to apply it. Invalid input turns red and reverts. A «0x» prefix is read as HEX.",
         "- When the master changes a value, the cell is highlighted briefly and its tooltip reads «Changed by master».",
         "- «Fill»: fills the visible range with 0, 1, 2… (coils and discrete inputs get 0, 1, 0, 1…). Handy for quick read tests.",
-        "- Table values are kept when you restart the program.",
+        "- Table values for every slave and every table (not just the visible cells) are kept when you restart the program. Both your edits and values written by the master are saved about 1 s after they change.",
       ],
     },
     {
@@ -289,7 +293,7 @@ export const help: HelpDoc = {
         "- «Do not respond (timeout test)»: requests are processed but nothing is sent. Tests the master's timeout, retry and link-lost alarm. The log shows «NO-RESPONSE (fault)».",
         "- «Reply with exception»: every request is answered with the chosen exception code (01, 02, 03, 04, 05, 06, 0A, 0B). Tests whether the master shows exception replies properly.",
         "- «Corrupt CRC»: replies (including exception replies) are sent with a wrong CRC. Tests whether the master rejects CRC errors and asks again.",
-        "- Turn all faults off after testing. The settings are kept for next time.",
+        "- Fault settings are not saved. Every start begins with all faults off.",
       ],
     },
     {
@@ -319,7 +323,7 @@ export const help: HelpDoc = {
         "- IGNORED id 5 (not simulated): the slave ID is not in the list, so it was ignored.",
         "- BUSY: a request that arrived before a delayed reply was sent was ignored.",
         "- If our own reply comes straight back (RS-485 echo, etc.), it is not answered again.",
-        "- «Log to file»: appends every line to the chosen file. A line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
+        "- «Log to file»: appends every line to the chosen file (an existing file is appended to). A line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]».",
         "- «Clear»: empties the on-screen traffic only.",
       ],
     },
@@ -329,7 +333,7 @@ export const help: HelpDoc = {
         "- «Delays of 1 s or more exceed most master timeouts (typically 1 s) and look like no response.»: the delay test may turn into a no-response test. Lower the value to stay below the master timeout.",
         "- ««Do not respond» is on, so the exception reply is not sent either.»: with both faults on, no response wins. Turn «Do not respond» off to test exceptions.",
         "- «⚠ Fault injection (testing)»: at least one fault is on. Turn them off before normal communication tests.",
-        "- «Reads outside this range get exception 02.»: information. If the master receives exception 02, widen «Start»/«Count».",
+        "- «⚠ Changing this also changes the address range the master can read. Reads outside this range get exception 02.»: «Start»/«Count» set both the view and the answered range. If the master receives exception 02, widen them.",
         "- Settings: «Automatic logging will not start until a folder is chosen.»: you turned on «Start file logging on connect»; pick a folder with «Choose».",
         "- Settings: «Stop the connection and logging before importing.»: «Disconnect» and «Stop logging» first.",
       ],
@@ -340,7 +344,7 @@ export const help: HelpDoc = {
         "- «Language»: 한국어 or English.",
         "- «Theme»: «Follow Windows», «Light» or «Dark».",
         "- «Font size (px)»: 11 to 18.",
-        "- «Log timestamp»: «hh:mm:ss.ms», «Date + time», «UTC» or «Elapsed since first line». Applies to the traffic view (the file log always uses date + time).",
+        "- «Log timestamp»: «hh:mm:ss.ms», «Date + time», «UTC» or «Elapsed since start (Clear resets)». Applies to the traffic view (the file log always uses date + time).",
         "- «Lines kept on screen»: 1,000 to 1,000,000 (default 100,000). Older lines are dropped from the screen only.",
         "- «Auto-scroll on new lines»: follows the traffic to the bottom (not while you are scrolled up).",
         "- «Start file logging on connect»: with an «Auto-log folder» chosen, every connection logs to «portdock-modbus-slave-date-time.log».",

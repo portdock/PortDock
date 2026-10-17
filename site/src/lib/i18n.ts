@@ -29,8 +29,8 @@ export const UI = {
     whyTitle: "왜 PortDock 인가",
     why: [
       ["끊겨도 다시 붙습니다", "USB 변환기를 뽑았다 꽂아도 같은 장치를 찾아 다시 연결하고, 끊긴 시각을 기록합니다."],
-      ["한 줄이 한 메시지", "무응답 시간·끝 문자·고정 길이·Modbus RTU 로 프레임을 정확히 끊어, 이어 붙거나 쪼개진 데이터에 헷갈리지 않습니다."],
-      ["보내기 전에 보입니다", "체크섬·끝 문자까지 붙은 «실제로 나갈 바이트» 를 미리 보여 줍니다."],
+      ["한 줄이 한 메시지", "조용한 시간·끝 문자·고정 길이·Modbus RTU 로 프레임을 정확히 끊어, 이어 붙거나 쪼개진 데이터에 헷갈리지 않습니다."],
+      ["보내기 전에 보입니다", "체크섬·줄 끝까지 붙은 «실제로 나갈 바이트» 를 미리 보여 줍니다."],
       ["한국어·영어", "화면·오류·도움말 모두 두 언어. 마우스를 올리면 설명이 나옵니다."],
     ],
     ctaTitle: "PC 통신·장비 프로그램 개발이 필요하신가요?",
@@ -79,7 +79,7 @@ export const UI = {
     why: [
       ["It reconnects", "Unplug and replug a USB adapter: PortDock finds the same device again and logs when it dropped."],
       ["One line, one message", "Idle gap, terminator, fixed length or Modbus RTU framing — no more merged or split data."],
-      ["See before you send", "The exact bytes that will go out, including checksum and suffix, are shown as you type."],
+      ["See before you send", "The exact bytes that will go out, including checksum and line ending, are shown as you type."],
       ["Korean and English", "Screens, errors and help in both languages, with tooltips on every control."],
     ],
     ctaTitle: "Need PC software for your devices?",

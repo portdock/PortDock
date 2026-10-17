@@ -552,3 +552,41 @@ input.bad {
     background: rgba(0, 0, 0, 0.15);
   }
 }
+
+/* 연결 실패 — 상태 칸을 빨갛게 */
+.status.s-failed {
+  color: var(--fail);
+  border: 1px solid var(--fail);
+}
+/* ASCII 에 체크섬이 붙는다는 노란 표시 */
+.ck-chip {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: #fff3c4;
+  color: #6b4e00;
+  border: 1px solid #e6c34d;
+  white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ck-chip {
+    background: #3a3010;
+    color: #f5d66b;
+    border-color: #7a6420;
+  }
+}
+:root[data-theme="dark"] .ck-chip {
+  background: #3a3010;
+  color: #f5d66b;
+  border-color: #7a6420;
+}
+.repeating {
+  font-size: 11px;
+  color: var(--accent);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -19,13 +19,46 @@ export function frameModeToRust(m: FrameMode) {
   }
 }
 
-/** «0D 0A» → [13, 10] */
+/** 끝 문자 칸에 쓸 수 있는 이름 */
+const TERM_NAMES: Record<string, number[]> = {
+  CR: [13],
+  LF: [10],
+  CRLF: [13, 10],
+  NUL: [0],
+  STX: [2],
+  ETX: [3],
+  "\\R": [13],
+  "\\N": [10],
+  "\\R\\N": [13, 10],
+};
+
+/**
+ * 끝 문자 칸 해석 — 백엔드 parse_hex 와 같은 규칙(공백 , ; - 로 나눔, 0x 허용, 짝수 자리, «0D0A» 처럼 붙여 써도 됨)
+ * + 이름(CR LF CRLF NUL STX ETX \r \n). 틀리면 bytes 는 비우고 error 에 이유.
+ */
+export function parseTerminator(text: string, lang: "ko" | "en" = "ko"): { bytes: number[]; error: string | null } {
+  const ko = lang === "ko";
+  const bytes: number[] = [];
+  for (const token of text.split(/[\s,;-]+/)) {
+    if (!token) continue;
+    const named = TERM_NAMES[token.toUpperCase()];
+    if (named) {
+      bytes.push(...named);
+      continue;
+    }
+    const t = token.replace(/^(?:0x)+/, "").replace(/^(?:0X)+/, "");
+    if (!t) continue;
+    const bad = [...t].find((c) => !/[0-9a-fA-F]/.test(c));
+    if (bad) return { bytes: [], error: ko ? `HEX 가 아닌 글자: «${bad}»` : `Not a HEX digit: «${bad}»` };
+    if (t.length % 2) return { bytes: [], error: ko ? `HEX 자릿수가 홀수입니다: «${token}»` : `Odd number of HEX digits: «${token}»` };
+    for (let i = 0; i < t.length; i += 2) bytes.push(parseInt(t.slice(i, i + 2), 16));
+  }
+  return { bytes, error: null };
+}
+
+/** «0D 0A» → [13, 10]. 해석할 수 없으면 [] (예전 호출 호환 — 새 코드는 parseTerminator) */
 export function hexList(text: string) {
-  return text
-    .split(/[\s,]+/)
-    .filter(Boolean)
-    .map((h) => parseInt(h, 16))
-    .filter((n) => !Number.isNaN(n) && n >= 0 && n <= 255);
+  return parseTerminator(text).bytes;
 }
 
 export function load<T>(key: string, fallback: T): T {

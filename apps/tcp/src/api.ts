@@ -54,7 +54,8 @@ export const api = {
   stop: () => invoke<void>("stop"),
   setFraming: (framing: FrameMode, rxCheck: ChecksumKind | null) => invoke<void>("set_framing", { framing: frameModeToRust(framing), rxCheck }),
   setEcho: (on: boolean) => invoke<void>("set_echo", { on }),
-  send: (target: number | null, spec: SendSpec) => invoke<number>("send", { target, spec }),
+  /** sent < total 이면 일부 상대에게만 나갔다 */
+  send: (target: number | null, spec: SendSpec) => invoke<{ sent: number; total: number }>("send", { target, spec }),
   kick: (id: number) => invoke<void>("kick", { id }),
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
   setLog: (path: string | null) => invoke<void>("set_log", { path }),
