@@ -1,6 +1,6 @@
 // PortDock TCP 검증 — 이 PC 안에서 상대(서버·클라이언트)를 띄워 실제로 주고받는다
 import net from "node:net";
-import { By, check, choose, click, field, launch, placeholder, report, section, shot, sleep, text, type, waitText, button } from "./lib.mjs";
+import { By, check, checkLayout, choose, click, field, launch, placeholder, report, section, shot, sleep, text, type, waitText, button } from "./lib.mjs";
 
 function server() {
   const got = [];
@@ -32,6 +32,7 @@ try {
   const body = await text(d);
   check("C1 오류 화면 없음", !body.includes("TypeError") && !body.includes("is not"), "");
   check("C1 보내기 버튼 꺼짐", !(await (await button(d, "보내기")).isEnabled()));
+  await checkLayout(d, "tcp-C3-client");
 
   section("C2 언어 전환");
   await choose(await d.findElement(By.css("select.lang")), "English");
@@ -87,11 +88,12 @@ try {
   s.got.length = 0;
   const rep = await d.findElement(By.xpath("//label[contains(., '반복')]/input"));
   await type(await d.findElement(By.css("input.num")), "200");
+  check("C6 숫자 칸 지우고 다시 입력 = 200", (await (await d.findElement(By.css("input.num"))).getAttribute("value")) === "200");
   await rep.click();
   await sleep(1300);
   await rep.click();
   const n = s.got.length;
-  check("C11 200ms 반복 ≈ 5~7회", n >= 4 && n <= 8, `${n}번`);
+  check("C11 200ms 반복 ≈ 5~7회(한 번에 3바이트)", n % 3 === 0 && n / 3 >= 4 && n / 3 <= 8, `${n / 3}번`);
   await sleep(500);
   check("C11 끄면 멈춤", s.got.length === n);
 
@@ -103,7 +105,7 @@ try {
   s.got.length = 0;
   await (await d.findElement(By.xpath("//div[@class='cmd']//button[normalize-space(.)='▶']"))).click();
   await sleep(400);
-  check("C12 ▶ 로 보냄", hexs(s.got) === "AA C5 3D".replace(" C5 3D", "") || s.got.length > 0, hexs(s.got));
+  check("C12 ▶ 로 보냄(저장한 그대로: AA + CRC)", hexs(s.got).startsWith("AA ") && s.got.length === 3, hexs(s.got));
   await (await d.findElement(By.xpath("//div[@class='cmd']//button[normalize-space(.)='✕']"))).click();
   check("C12 삭제", (await d.findElements(By.css("input.cmdname"))).length === 0);
 
@@ -132,6 +134,7 @@ try {
   const a = await client(port);
   const b = await client(port);
   check("T2 접속 2개 목록", await waitText(d, "접속한 상대") && (await d.findElements(By.css(".peer"))).length === 2);
+  await checkLayout(d, "tcp-C3-server");
   await shot(d, "tcp-06-server-2peers");
   const sb = await d.findElement(By.css("input.sendtext"));
   await type(sb, "BB");
@@ -157,6 +160,7 @@ try {
   await (await d.findElements(By.xpath("//div[@class='peer']//button")))[0].click();
   await sleep(800);
   check("T2 끊기 → 1개 남음", (await d.findElements(By.css(".peer"))).length === 1);
+  check("T2 끊은 사유 = 사용자", await waitText(d, "disconnected by user", 2000));
   await shot(d, "tcp-07-server-kicked");
 
   section("T2 포트 사용 중");
@@ -173,12 +177,20 @@ try {
   a.c.destroy();
   b.c.destroy();
 
-  section("C3 창 크기");
-  await d.manage().window().setRect({ width: 900, height: 560 });
-  await sleep(500);
-  await shot(d, "tcp-09-min-size");
-  const scrollW = await d.executeScript("return document.documentElement.scrollWidth - document.documentElement.clientWidth");
-  check("C3 최소 크기에서 가로 스크롤 없음", scrollW <= 0, `넘침 ${scrollW}px`);
+  section("C3 좁은 창 ☰");
+  await d.manage().window().setRect({ width: 1000, height: 640 });
+  await sleep(400);
+  const right = await d.findElement(By.css("aside.right"));
+  check("C3 좁은 창에서 오른쪽 칸 숨김", !(await right.isDisplayed()));
+  await click(d, "☰ 명령 목록");
+  check("C3 ☰ 누르면 펼침", await right.isDisplayed());
+  await shot(d, "tcp-C3-drawer");
+  await click(d, "✕");
+  check("C3 ✕ 로 닫힘", !(await right.isDisplayed()));
+  await click(d, "☰ 명령 목록");
+  await d.findElement(By.css(".backdrop")).click();
+  await sleep(200);
+  check("C3 바깥 누르면 닫힘", !(await right.isDisplayed()));
 } catch (e) {
   check("실행 중 예외", false, String(e).slice(0, 300));
   await shot(d, "tcp-zz-exception").catch(() => {});

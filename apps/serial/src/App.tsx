@@ -5,7 +5,6 @@ import {
   api,
   ascii,
   CHECKSUMS,
-  clock,
   hex,
   type ChecksumKind,
   type Frame,
@@ -19,10 +18,14 @@ import {
   type TextMode,
   summary,
 } from "./api";
+import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { SettingsDialog } from "@shared/SettingsDialog";
+import { useExitGuard } from "@shared/exitGuard";
+import { NumInput } from "@shared/NumInput";
+import { hasXonXoff, minRepeatMs, serialTxMs } from "@shared/interlocks";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
-const MAX_FRAMES = 100_000;
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
 
 type Status = "idle" | "connected" | "disconnected" | "reconnecting" | "closed";
@@ -55,8 +58,16 @@ function portLabel(p: PortInfo) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>(() => load("lang", navigator.language.startsWith("ko") ? "ko" : "en"));
+  const { settings, update, reset } = useSettings();
+  const lang = settings.lang;
+  const setLang = (l: Lang) => update({ lang: l });
+  const [showSettings, setShowSettings] = useState(false);
+  // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
+  const maxLines = useRef(settings.maxLines);
+  maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
+  // 좁은 창에서 오른쪽 칸(명령 목록·상세)을 펼칠지
+  const [showRight, setShowRight] = useState(false);
 
   // ---- 포트 목록 (1.5초마다 갱신 — 꽂고 뽑는 것을 바로 보여 준다)
   const [ports, setPorts] = useState<PortInfo[]>([]);
@@ -117,7 +128,7 @@ export default function App() {
         arr.push(f);
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
-      if (arr.length > MAX_FRAMES) arr.splice(0, arr.length - MAX_FRAMES);
+      if (arr.length > maxLines.current) arr.splice(0, arr.length - maxLines.current);
       setVersion((v) => v + 1);
     } else if (e.type === "error") {
       setError(e.message);
@@ -166,6 +177,10 @@ export default function App() {
     try {
       await api.open(cfg, effectiveFraming, rxCheck, onEvent);
       setSessionId(cfg.port);
+      if (settings.autoLog && settings.logFolder) {
+        const p = autoLogPath(settings.logFolder, "serial");
+        await api.setLog(cfg.port, p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -200,7 +215,7 @@ export default function App() {
 
   // ---- 보기
   const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
-  const [autoscroll, setAutoscroll] = useState(true);
+  const [autoscroll, setAutoscroll] = useState(settings.autoScroll);
   const [selected, setSelected] = useState<number | null>(null);
   useEffect(() => store("view", view), [view]);
 
@@ -229,8 +244,8 @@ export default function App() {
     const text = framesRef.current
       .map((f) =>
         f.dir === "ev"
-          ? `${clock(f.ts)} EV ${f.note ?? ""}`
-          : `${clock(f.ts)} ${f.dir.toUpperCase()} ${hex(f.bytes)}${f.check === false ? " [CHECK FAIL]" : ""}`,
+          ? `${fmt(f.ts)} EV ${f.note ?? ""}`
+          : `${fmt(f.ts)} ${f.dir.toUpperCase()} ${hex(f.bytes)}${f.check === false ? " [CHECK FAIL]" : ""}`,
       )
       .join("\n");
     await api.writeText(path, text).catch((e: unknown) => setError(String(e)));
@@ -281,11 +296,21 @@ export default function App() {
     [sessionId],
   );
 
+  // ---- 인터락
+  // 재연결 대기 중에는 세션은 있어도 보낼 수 없다
+  const online = sessionId != null && status === "connected";
+  // 반복 간격이 실제 송신 시간보다 짧으면 앞 송신이 끝나기 전에 쌓인다 → 최소 간격으로 올려 보낸다
+  const txMs = previewBytes ? serialTxMs(previewBytes.length, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits) : 0;
+  const minRep = minRepeatMs(txMs);
+  const effRepeat = Math.max(repeatMs, minRep);
+  // 소프트웨어 흐름 제어에서 XON/XOFF 바이트는 데이터가 아니라 신호로 먹힌다
+  const xonxoff = cfg.flow === "software" && !!previewBytes && hasXonXoff(previewBytes);
+
   useEffect(() => {
-    if (!repeating || !sessionId) return;
-    const id = setInterval(() => doSend(spec), Math.max(10, repeatMs));
+    if (!repeating || !online) return;
+    const id = setInterval(() => doSend(spec), effRepeat);
     return () => clearInterval(id);
-  }, [repeating, repeatMs, spec, sessionId, doSend]);
+  }, [repeating, effRepeat, spec, online, doSend]);
 
   // ---- 명령 목록
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
@@ -298,11 +323,15 @@ export default function App() {
   const connected = sessionId != null;
   const statusKey = `status_${status}` as Key;
 
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
+  useExitGuard(sessionId != null || !!logPath, settings.confirmExit, lang, "PortDock Serial");
+
   return (
-    <div className="app">
+    <div className={showRight ? "app three show-right" : "app three"}>
       <aside className="side">
         <div className="brand">
           <span className="logo">PortDock</span>
+          <span className="brand-tools">
           <select className="lang" value={lang} onChange={(e) => {
             const l = e.target.value as Lang;
             setLang(l);
@@ -311,6 +340,10 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+            ⚙
+          </button>
+          </span>
         </div>
 
         <label>{t("ports")}</label>
@@ -335,11 +368,7 @@ export default function App() {
         <div className="grid2">
           <label>
             {t("baud")}
-            <input
-              list="bauds"
-              value={cfg.baud}
-              onChange={(e) => setCfg({ ...cfg, baud: Number(e.target.value) || 0 })}
-            />
+            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
               {BAUDS.map((b) => (
                 <option key={b} value={b} />
@@ -383,7 +412,14 @@ export default function App() {
             <input type="checkbox" checked={cfg.dtr} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
           </label>
           <label className="inline">
-            <input type="checkbox" checked={cfg.rts} onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })} /> RTS
+            <input
+              type="checkbox"
+              checked={cfg.rts}
+              disabled={cfg.flow === "hardware"}
+              title={cfg.flow === "hardware" ? t("ilRtsHw") : ""}
+              onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })}
+            />{" "}
+            RTS
           </label>
         </div>
         <label className="inline">
@@ -437,13 +473,13 @@ export default function App() {
         {framing.kind === "fixed" && (
           <label>
             {t("length")}
-            <input type="number" min={1} value={framing.len} onChange={(e) => setFraming({ ...framing, len: Number(e.target.value) || 1 })} />
+            <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
           </label>
         )}
         {framing.kind !== "modbus-rtu" && (
           <label>
             {t("gapMs")}
-            <input type="number" min={1} value={framing.gapMs} onChange={(e) => setFraming({ ...framing, gapMs: Number(e.target.value) || 1 })} />
+            <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
           </label>
         )}
         {((framing.kind !== "modbus-rtu" && framing.gapMs < 16) || framing.kind === "modbus-rtu") &&
@@ -486,6 +522,9 @@ export default function App() {
           <button className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
+          <button className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
+            ☰ {t("commands")}
+          </button>
         </div>
 
         <div className="statusbar">
@@ -518,7 +557,7 @@ export default function App() {
                     style={{ transform: `translateY(${r.start}px)` }}
                     onClick={() => setSelected(r.index)}
                   >
-                    <span className="ts">{clock(f.ts)}</span>
+                    <span className="ts">{fmt(f.ts)}</span>
                     <span className="dir">EV</span>
                     <span className="note">{f.note}</span>
                   </div>
@@ -533,7 +572,7 @@ export default function App() {
                     setAutoscroll(false);
                   }}
                 >
-                  <span className="ts">{clock(f.ts)}</span>
+                  <span className="ts">{fmt(f.ts)}</span>
                   <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
                   <span className="data">
                     {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
@@ -573,7 +612,7 @@ export default function App() {
               <option value="\n">LF</option>
               <option value="\r\n">CR LF</option>
             </select>
-            <button className="btn primary" onClick={() => doSend(spec)} disabled={!connected || !previewBytes}>
+            <button className="btn primary" onClick={() => doSend(spec)} disabled={!online || !previewBytes}>
               {t("send")}
             </button>
           </div>
@@ -583,18 +622,26 @@ export default function App() {
             </span>
             <span className="grow" />
             <label className="inline">
-              <input type="checkbox" checked={repeating} disabled={!connected} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
+              <input type="checkbox" checked={repeating} disabled={!online} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
-            <input className="num" type="number" min={10} value={repeatMs} onChange={(e) => setRepeatMs(Number(e.target.value) || 1000)} />
+            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             <button className="btn small" onClick={addCommand} disabled={!previewBytes}>
               + {t("commands")}
             </button>
           </div>
+          {connected && !online && <div className="interlock">{t("ilOffline")}</div>}
+          {repeating && repeatMs < minRep && <div className="interlock">{t("ilRepeat").replace("{a}", String(repeatMs)).replace("{b}", String(minRep))}</div>}
+          {xonxoff && <div className="interlock">{t("ilXon")}</div>}
+          {cfg.flow === "hardware" && <div className="hint">{t("ilRtsHw")}</div>}
           {error && <div className="error">{error}</div>}
         </div>
       </main>
 
+      {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)}>
+          ✕
+        </button>
         <h3>{t("commands")}</h3>
         <div className="cmds">
           {commands.map((c, i) => (
@@ -604,7 +651,7 @@ export default function App() {
                 value={c.name}
                 onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
               />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!connected}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!online}>
                 ▶
               </button>
               <button className="btn small ghost" onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
@@ -622,7 +669,7 @@ export default function App() {
         {selFrame && (
           <div className="detail">
             <div>
-              {selFrame.dir.toUpperCase()} · {clock(selFrame.ts)}
+              {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
               {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
             </div>
             {selFrame.dir === "ev" ? (
@@ -675,6 +722,18 @@ export default function App() {
           </div>
         )}
       </aside>
+      {showSettings && (
+        <SettingsDialog
+          app="PortDock Serial"
+          version="0.1.0"
+          settings={settings}
+          update={update}
+          reset={reset}
+          onClose={() => setShowSettings(false)}
+          writeText={api.writeText}
+          readText={api.readText}
+        />
+      )}
     </div>
   );
 }

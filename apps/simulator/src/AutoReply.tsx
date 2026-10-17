@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, CHECKSUMS, type AutoRule, type ChecksumKind, type TextMode } from "./api";
 import type { Key } from "./i18n";
+import { NumInput } from "@shared/NumInput";
+import { duplicateNames, shadowedRules } from "@shared/interlocks";
 
 const blank = (n: number): AutoRule => ({
   name: `rule ${n}`,
@@ -40,6 +42,9 @@ export function AutoReply({
     return () => clearTimeout(id);
   }, [rules]);
 
+  // 인터락: 무엇이든 맞는 규칙 아래는 영영 답하지 않음 · 같은 이름은 응답 횟수가 섞임
+  const shadow = shadowedRules(rules);
+  const dups = duplicateNames(rules);
   const update = (i: number, patch: Partial<AutoRule>) => setRules(rules.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => {
     const j = i + d;
@@ -116,7 +121,7 @@ export function AutoReply({
               <option value="\r\n">CR LF</option>
             </select>
             <span className="arlbl">{t("arDelay")}</span>
-            <input className="num" type="number" min={0} value={r.delayMs} onChange={(e) => update(i, { delayMs: Math.max(0, Number(e.target.value) || 0) })} />
+            <NumInput className="num" min={0} max={600000} value={r.delayMs} onValue={(n) => update(i, { delayMs: n })} />
             <span className="arlbl">ms</span>
           </div>
         </div>
@@ -127,6 +132,10 @@ export function AutoReply({
         </button>
         {active != null && <span className="hint ok">{t("arActive").replace("{n}", String(active))}</span>}
       </div>
+      {shadow.by && shadow.names.length > 0 && (
+        <div className="interlock">{t("ilShadow").replace("{a}", shadow.by).replace("{b}", shadow.names.join(", "))}</div>
+      )}
+      {dups.length > 0 && <div className="interlock">{t("ilDup").replace("{a}", dups.join(", "))}</div>}
       <div className="hint">{t("arHelp")}</div>
       {err && <div className="error">{err}</div>}
     </div>

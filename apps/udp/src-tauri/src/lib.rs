@@ -88,13 +88,19 @@ fn write_text(path: String, text: String) -> Result<(), String> {
     std::fs::write(&path, text).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 설정 가져오기 — 사용자가 열기 대화상자에서 고른 경로만
+#[tauri::command]
+fn read_text(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
-        .invoke_handler(tauri::generate_handler![start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log, write_text])
+        .invoke_handler(tauri::generate_handler![start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log, write_text, read_text])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

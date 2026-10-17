@@ -6,7 +6,6 @@ import {
   api,
   ascii,
   CHECKSUMS,
-  clock,
   hex,
   type ChecksumKind,
   type Frame,
@@ -17,10 +16,13 @@ import {
   type TcpConfig,
   type TextMode,
 } from "./api";
+import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { SettingsDialog } from "@shared/SettingsDialog";
+import { useExitGuard } from "@shared/exitGuard";
+import { NumInput } from "@shared/NumInput";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
-const MAX_FRAMES = 100_000;
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
 type ViewMode = "hex" | "ascii" | "both";
 interface Command extends SendSpec {
@@ -28,8 +30,16 @@ interface Command extends SendSpec {
 }
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>(() => load("lang", navigator.language.startsWith("ko") ? "ko" : "en"));
+  const { settings, update, reset } = useSettings();
+  const lang = settings.lang;
+  const setLang = (l: Lang) => update({ lang: l });
+  const [showSettings, setShowSettings] = useState(false);
+  // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
+  const maxLines = useRef(settings.maxLines);
+  maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
+  // 좁은 창에서 오른쪽 칸(명령 목록·상세)을 펼칠지
+  const [showRight, setShowRight] = useState(false);
 
   // ---- 설정
   const [cfg, setCfg] = useState<TcpConfig>(() =>
@@ -71,7 +81,7 @@ export default function App() {
         framesRef.current.push(f);
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
-      if (framesRef.current.length > MAX_FRAMES) framesRef.current.splice(0, framesRef.current.length - MAX_FRAMES);
+      if (framesRef.current.length > maxLines.current) framesRef.current.splice(0, framesRef.current.length - maxLines.current);
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
@@ -99,6 +109,10 @@ export default function App() {
       const l = await api.start(cfg, effFraming, rxCheck, onEvent);
       setLocal(l);
       setRunning(true);
+      if (settings.autoLog && settings.logFolder) {
+        const p = autoLogPath(settings.logFolder, "tcp");
+        await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -124,7 +138,7 @@ export default function App() {
 
   // ---- 보기
   const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
-  const [autoscroll, setAutoscroll] = useState(true);
+  const [autoscroll, setAutoscroll] = useState(settings.autoScroll);
   const [selected, setSelected] = useState<number | null>(null);
   useEffect(() => {
     store("view", view);
@@ -145,7 +159,7 @@ export default function App() {
     const path = await save({ defaultPath: "portdock-tcp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     const text = framesRef.current
-      .map((f) => (f.dir === "ev" ? `${clock(f.ts)} EV ${f.note ?? ""}` : `${clock(f.ts)} ${f.dir.toUpperCase()} [${f.peer ?? ""}] ${hex(f.bytes)}`))
+      .map((f) => (f.dir === "ev" ? `${fmt(f.ts)} EV ${f.note ?? ""}` : `${fmt(f.ts)} ${f.dir.toUpperCase()} [${f.peer ?? ""}] ${hex(f.bytes)}`))
       .join("\n");
     await api.writeText(path, text).catch((e) => setError(String(e)));
   }
@@ -196,13 +210,17 @@ export default function App() {
   const sel = selected != null ? frames[selected] : undefined;
   const server = cfg.mode === "server";
 
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
+  useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock TCP");
+
   return (
-    <div className="app">
+    <div className={showRight ? "app three show-right" : "app three"}>
       <aside className="side">
         <div className="brand">
           <span className="logo">
             PortDock <small>TCP</small>
           </span>
+          <span className="brand-tools">
           <select
             className="lang"
             value={lang}
@@ -214,6 +232,10 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+            ⚙
+          </button>
+          </span>
         </div>
 
         <label>
@@ -232,14 +254,7 @@ export default function App() {
         </label>
         <label>
           {t("port")}
-          <input
-            type="number"
-            min={0}
-            max={65535}
-            value={cfg.port}
-            disabled={running}
-            onChange={(e) => setCfg({ ...cfg, port: Math.min(65535, Math.max(0, Number(e.target.value) || 0)) })}
-          />
+          <NumInput min={0} max={65535} value={cfg.port} disabled={running} onValue={(n) => setCfg({ ...cfg, port: n })} />
         </label>
         <label className="inline">
           <input type="checkbox" checked={cfg.noDelay} disabled={running} onChange={(e) => setCfg({ ...cfg, noDelay: e.target.checked })} /> {t("noDelay")}
@@ -257,13 +272,7 @@ export default function App() {
             {cfg.autoReconnect && (
               <label>
                 {t("reconnectMs")}
-                <input
-                  type="number"
-                  min={200}
-                  value={cfg.reconnectMs}
-                  disabled={running}
-                  onChange={(e) => setCfg({ ...cfg, reconnectMs: Math.max(200, Number(e.target.value) || 2000) })}
-                />
+                <NumInput min={200} max={3600000} value={cfg.reconnectMs} disabled={running} onValue={(n) => setCfg({ ...cfg, reconnectMs: n })} />
               </label>
             )}
           </>
@@ -276,6 +285,7 @@ export default function App() {
           {local && status === "listening" ? ` · ${local}` : statusMsg ? ` · ${statusMsg}` : ""}
         </div>
         {server && <div className="hint">{t("firewallHint")}</div>}
+        {server && cfg.port === 0 && <div className="interlock">{t("ilPort0")}</div>}
 
         {server && running && (
           <>
@@ -318,13 +328,13 @@ export default function App() {
         {framing.kind === "fixed" && (
           <label>
             {t("length")}
-            <input type="number" min={1} value={framing.len} onChange={(e) => setFraming({ ...framing, len: Number(e.target.value) || 1 })} />
+            <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
           </label>
         )}
         {framing.kind !== "modbus-rtu" && (
           <label>
             {t("gapMs")}
-            <input type="number" min={1} value={framing.gapMs} onChange={(e) => setFraming({ ...framing, gapMs: Number(e.target.value) || 1 })} />
+            <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
           </label>
         )}
         <label>
@@ -364,6 +374,9 @@ export default function App() {
           <button className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
+          <button className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
+            ☰ {t("commands")}
+          </button>
         </div>
 
         <div className="log" ref={listRef}>
@@ -379,14 +392,14 @@ export default function App() {
               if (f.dir === "ev")
                 return (
                   <div key={r.key} className={cls} style={style} onClick={pick}>
-                    <span className="ts">{clock(f.ts)}</span>
+                    <span className="ts">{fmt(f.ts)}</span>
                     <span className="dir">EV</span>
                     <span className="note">{f.note}</span>
                   </div>
                 );
               return (
                 <div key={r.key} className={cls} style={style} onClick={pick}>
-                  <span className="ts">{clock(f.ts)}</span>
+                  <span className="ts">{fmt(f.ts)}</span>
                   <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
                   {server && <span className="peeraddr">{f.peer}</span>}
                   <span className="data">
@@ -453,7 +466,7 @@ export default function App() {
             <label className="inline">
               <input type="checkbox" checked={repeating} disabled={!canSend} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
-            <input className="num" type="number" min={10} value={repeatMs} onChange={(e) => setRepeatMs(Number(e.target.value) || 1000)} />
+            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!previewBytes}>
               + {t("commands")}
             </button>
@@ -462,7 +475,11 @@ export default function App() {
         </div>
       </main>
 
+      {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)}>
+          ✕
+        </button>
         <h3>{t("commands")}</h3>
         <div className="cmds">
           {commands.map((c, i) => (
@@ -485,7 +502,7 @@ export default function App() {
         {sel && (
           <div className="detail">
             <div>
-              {sel.dir.toUpperCase()} · {clock(sel.ts)}
+              {sel.dir.toUpperCase()} · {fmt(sel.ts)}
               {sel.peer ? ` · ${sel.peer}` : ""}
               {sel.dir !== "ev" && ` · ${sel.bytes.length} ${t("bytes")}`}
             </div>
@@ -500,6 +517,18 @@ export default function App() {
           </div>
         )}
       </aside>
+      {showSettings && (
+        <SettingsDialog
+          app="PortDock TCP"
+          version="0.1.0"
+          settings={settings}
+          update={update}
+          reset={reset}
+          onClose={() => setShowSettings(false)}
+          writeText={api.writeText}
+          readText={api.readText}
+        />
+      )}
     </div>
   );
 }

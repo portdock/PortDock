@@ -15,8 +15,8 @@
         "title": "PortDock UDP",
         "width": 1200,
         "height": 760,
-        "minWidth": 900,
-        "minHeight": 560
+        "minWidth": 1000,
+        "minHeight": 640
       }
     ],
     "security": {

@@ -107,6 +107,7 @@ export const api = {
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
   decodeModbus: (bytes: number[]) => invoke<ModbusInfo | null>("decode_modbus", { bytes }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
+  readText: (path: string) => invoke<string>("read_text", { path }),
 };
 
 /** «COM3 · 9600 8N1 · flow none» */

@@ -103,6 +103,12 @@ fn write_text(path: String, text: String) -> Result<(), String> {
     std::fs::write(&path, text).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 설정 가져오기 — 사용자가 열기 대화상자에서 고른 경로만
+#[tauri::command]
+fn read_text(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -120,7 +126,7 @@ pub fn run() {
             preview,
             decode_modbus,
             verify_checksum,
-            write_text
+            write_text, read_text
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

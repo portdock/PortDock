@@ -123,3 +123,43 @@ export function report(name) {
   for (const f of fail) console.log(`  ❌ [${f.section}] ${f.id} ${f.detail}`);
   return fail.length;
 }
+
+/** 보이는 버튼·입력·선택칸 중 화면 밖으로 나갔거나 찌그러진 것 */
+export async function layoutProblems(driver) {
+  return driver.executeScript(`
+    const out = [];
+    const W = innerWidth, H = innerHeight;
+    for (const el of document.querySelectorAll('button, input, select')) {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || el.offsetParent === null) continue;
+      if (el.type === 'checkbox') continue;
+      const r = el.getBoundingClientRect();
+      // 스크롤 영역 안에 있어 가려진 것은 제외(부모가 스크롤되는 경우)
+      let p = el.parentElement, scroller = false;
+      while (p) { const s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowY + s.overflowX) && p !== document.body) { scroller = true; break; } p = p.parentElement; }
+      const label = (el.innerText || el.value || el.placeholder || el.tagName).slice(0, 20);
+      if (!scroller && (r.right > W + 1 || r.left < -1)) out.push('화면 밖: ' + label);
+      const minW = el.tagName === 'SELECT' ? 60 : el.tagName === 'BUTTON' ? 24 : 40;
+      if (r.width < minW) out.push('너무 좁음(' + Math.round(r.width) + 'px): ' + label);
+      if (el.tagName === 'BUTTON' && r.height > 44) out.push('버튼 글자 줄바꿈: ' + label);
+    }
+    // 도구줄 글자가 세로로 쌓였는지
+    for (const el of document.querySelectorAll('.toolbar > span, .toolbar > label')) {
+      const r = el.getBoundingClientRect();
+      if (r.height > 40 && r.width < 60) out.push('세로로 쌓인 글자: ' + el.innerText.slice(0, 12));
+    }
+    return out;
+  `);
+}
+
+export async function checkLayout(driver, id, sizes = [[1200, 760], [1000, 640]]) {
+  for (const [w, h] of sizes) {
+    await driver.manage().window().setRect({ width: w, height: h });
+    await sleep(500);
+    const probs = await layoutProblems(driver);
+    check(`${id} ${w}×${h} 화면 깨짐 없음`, probs.length === 0, probs.slice(0, 6).join(" / "));
+    await shot(driver, `${id}-${w}x${h}`);
+  }
+  await driver.manage().window().setRect({ width: 1200, height: 760 });
+  await sleep(300);
+}

@@ -173,8 +173,12 @@ impl Shared {
             if self.stop.load(Ordering::SeqCst) {
                 break "closed".to_string();
             }
+            let user_closed = || !self.conns.lock().unwrap().contains_key(&id);
             match reader.read(&mut buf) {
+                // 사용자가 «끊기» 를 눌러 우리가 닫은 것인지 먼저 본다
+                Ok(0) if user_closed() => break "disconnected by user".to_string(),
                 Ok(0) => break "closed by peer".to_string(),
+                Err(_) if user_closed() => break "disconnected by user".to_string(),
                 Ok(n) => {
                     let frames = conn.framer.lock().unwrap().feed(&buf[..n], Instant::now());
                     self.push_rx(&conn, frames);

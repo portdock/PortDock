@@ -1,0 +1,107 @@
+/* PortDock 공용 — 설정에서 고른 테마·글자 크기, 설정 창. 각 앱 App.css 보다 우선한다. */
+
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5f6b78;
+  --line: #d9dee4;
+  --accent: #0b6e75;
+  --accent-ink: #ffffff;
+  --rx: #1d4ed8;
+  --tx: #0f7a3d;
+  --sel: #e6f2f3;
+  --ok: #0f7a3d;
+  --fail: #b42318;
+  --danger: #b42318;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #111418;
+  --panel: #181c21;
+  --ink: #e4e8ec;
+  --muted: #93a0ad;
+  --line: #2a3038;
+  --accent: #4fb3ba;
+  --accent-ink: #0b1215;
+  --rx: #7aa7ff;
+  --tx: #6ccf92;
+  --sel: #1f2c30;
+  --ok: #6ccf92;
+  --fail: #ff8a80;
+  --danger: #ff8a80;
+  color-scheme: dark;
+}
+
+html body {
+  font-size: var(--fs, 13px);
+}
+html .log,
+html .tlog,
+html .regs,
+html .dump {
+  font-size: calc(var(--fs, 13px) - 0.5px);
+}
+
+.brand-tools {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.icon-btn {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+.modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.modal-body .row2 {
+  display: flex;
+  gap: 6px;
+}
+.modal-body .row2 input {
+  flex: 1;
+}
+.interlock {
+  font-size: 12px;
+  color: var(--fail);
+  border-left: 3px solid var(--fail);
+  padding: 2px 8px;
+}

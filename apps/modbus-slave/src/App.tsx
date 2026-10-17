@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
-  clock,
   EXCEPTIONS,
   hex,
   TABLES,
@@ -14,6 +13,10 @@ import {
   type Stats,
   type Table,
 } from "./api";
+import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { SettingsDialog } from "@shared/SettingsDialog";
+import { useExitGuard } from "@shared/exitGuard";
+import { NumInput } from "@shared/NumInput";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -22,7 +25,6 @@ type Format = "u16" | "s16" | "hex" | "bin";
 type Range = { start: number; count: number };
 
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
-const MAX_TRAFFIC = 2000;
 const MAX_VIEW = 2000;
 
 function load<T>(key: string, fallback: T): T {
@@ -70,7 +72,13 @@ function parse(text: string, f: Format): number | null {
 const key = (id: number, t: Table) => `${id}:${t}`;
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>(() => load("lang", navigator.language.startsWith("ko") ? "ko" : "en"));
+  const { settings, update, reset } = useSettings();
+  const lang = settings.lang;
+  const setLang = (l: Lang) => update({ lang: l });
+  const [showSettings, setShowSettings] = useState(false);
+  // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
+  const maxLines = useRef(settings.maxLines);
+  maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
 
   // ---- 포트
@@ -106,7 +114,7 @@ export default function App() {
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       traffic.current.push(...e.frames);
-      if (traffic.current.length > MAX_TRAFFIC) traffic.current.splice(0, traffic.current.length - MAX_TRAFFIC);
+      if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
       setTick((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
@@ -255,6 +263,10 @@ export default function App() {
     try {
       await api.open(cfg, onEvent);
       setConnected(true);
+      if (settings.autoLog && settings.logFolder) {
+        const p = autoLogPath(settings.logFolder, "modbus-slave");
+        await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
+      }
       setStatus("connected");
     } catch (e) {
       setError(String(e));
@@ -297,6 +309,9 @@ export default function App() {
   const statusKey = `status_${status}` as Key;
   const frames = traffic.current.slice(-300);
 
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, traffic.current[0]?.ts ?? ts);
+  useExitGuard(connected || !!logPath, settings.confirmExit, lang, "PortDock Modbus Slave");
+
   return (
     <div className="app">
       <aside className="side">
@@ -304,6 +319,7 @@ export default function App() {
           <span className="logo">
             PortDock <small>Modbus Slave</small>
           </span>
+          <span className="brand-tools">
           <select
             className="lang"
             value={lang}
@@ -315,6 +331,10 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+            ⚙
+          </button>
+          </span>
         </div>
 
         <label>
@@ -331,7 +351,7 @@ export default function App() {
         <div className="grid2">
           <label>
             {t("baud")}
-            <input list="bauds" value={cfg.baud} onChange={(e) => setCfg({ ...cfg, baud: Number(e.target.value) || 0 })} />
+            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
               {BAUDS.map((b) => (
                 <option key={b} value={b} />
@@ -398,7 +418,7 @@ export default function App() {
         <label>{t("faults")}</label>
         <label>
           {t("delay")}
-          <input type="number" min={0} value={faults.delayMs} onChange={(e) => setFaults({ ...faults, delayMs: Math.max(0, Number(e.target.value) || 0) })} />
+          <NumInput min={0} max={600000} value={faults.delayMs} onValue={(n) => setFaults({ ...faults, delayMs: n })} />
         </label>
         <label className="inline">
           <input type="checkbox" checked={faults.noResponse} onChange={(e) => setFaults({ ...faults, noResponse: e.target.checked })} /> {t("noResponse")}
@@ -418,6 +438,8 @@ export default function App() {
           </select>
         </label>
         {(faults.delayMs > 0 || faults.noResponse || faults.badCrc || faults.forceException > 0) && <div className="hint warn">⚠ {t("faults")}</div>}
+        {faults.delayMs >= 1000 && <div className="interlock">{t("ilDelay")}</div>}
+        {faults.noResponse && faults.forceException > 0 && <div className="interlock">{t("ilNoRespWins")}</div>}
 
         <hr />
         <label>{t("stats")}</label>
@@ -461,26 +483,22 @@ export default function App() {
         <div className="toolbar">
           <label className="inline">
             {t("start")}
-            <input
+            <NumInput
               className="num"
-              type="number"
               min={0}
               max={65535}
               value={range.start}
-              onChange={(e) => setRanges({ ...ranges, [key(sel, table)]: { ...range, start: Math.min(65535, Math.max(0, Number(e.target.value) || 0)) } })}
+              onValue={(n) => setRanges({ ...ranges, [key(sel, table)]: { start: n, count: Math.min(range.count, 65536 - n) } })}
             />
           </label>
           <label className="inline">
             {t("count")}
-            <input
+            <NumInput
               className="num"
-              type="number"
               min={1}
-              max={65536}
+              max={65536 - range.start}
               value={range.count}
-              onChange={(e) =>
-                setRanges({ ...ranges, [key(sel, table)]: { ...range, count: Math.min(65536 - range.start, Math.max(1, Number(e.target.value) || 1)) } })
-              }
+              onValue={(n) => setRanges({ ...ranges, [key(sel, table)]: { ...range, count: n } })}
             />
           </label>
           {!bits && (
@@ -540,7 +558,7 @@ export default function App() {
           <div className="tlog" ref={tlogRef}>
             {frames.map((f, i) => (
               <div key={i} className={`trow ${f.dir}`}>
-                <span className="ts">{clock(f.ts)}</span>
+                <span className="ts">{fmt(f.ts)}</span>
                 <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
                 <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
                 {f.check === false && <span className="badge fail">CRC</span>}
@@ -550,6 +568,18 @@ export default function App() {
           {error && <div className="error">{error}</div>}
         </div>
       </main>
+      {showSettings && (
+        <SettingsDialog
+          app="PortDock Modbus Slave"
+          version="0.1.0"
+          settings={settings}
+          update={update}
+          reset={reset}
+          onClose={() => setShowSettings(false)}
+          writeText={api.writeText}
+          readText={api.readText}
+        />
+      )}
     </div>
   );
 }

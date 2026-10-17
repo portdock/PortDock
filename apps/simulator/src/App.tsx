@@ -4,7 +4,6 @@ import { hexList, load, store } from "@shared/framing";
 import {
   api,
   CHECKSUMS,
-  clock,
   hex,
   type AutoRule,
   type ChecksumKind,
@@ -16,11 +15,14 @@ import {
   type TextMode,
   type Transport,
 } from "./api";
+import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { SettingsDialog } from "@shared/SettingsDialog";
+import { useExitGuard } from "@shared/exitGuard";
+import { NumInput } from "@shared/NumInput";
 import { AutoReply } from "./AutoReply";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
-const MAX_TRAFFIC = 3000;
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
 
 interface Net {
@@ -31,7 +33,13 @@ interface Net {
 }
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>(() => load("lang", navigator.language.startsWith("ko") ? "ko" : "en"));
+  const { settings, update, reset } = useSettings();
+  const lang = settings.lang;
+  const setLang = (l: Lang) => update({ lang: l });
+  const [showSettings, setShowSettings] = useState(false);
+  // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
+  const maxLines = useRef(settings.maxLines);
+  maxLines.current = settings.maxLines;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
 
   // ---- 연결 방식과 설정
@@ -83,7 +91,7 @@ export default function App() {
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       traffic.current.push(...e.frames);
-      if (traffic.current.length > MAX_TRAFFIC) traffic.current.splice(0, traffic.current.length - MAX_TRAFFIC);
+      if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
       setTick((x) => x + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
@@ -128,6 +136,10 @@ export default function App() {
         );
       }
       setRunning(true);
+      if (settings.autoLog && settings.logFolder) {
+        const p = autoLogPath(settings.logFolder, "simulator");
+        await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -203,6 +215,9 @@ export default function App() {
   const frames = traffic.current.slice(-500);
   const net2 = transport !== "serial";
 
+  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, traffic.current[0]?.ts ?? ts);
+  useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock Simulator");
+
   return (
     <div className="app sim">
       <aside className="side">
@@ -210,6 +225,7 @@ export default function App() {
           <span className="logo">
             PortDock <small>Simulator</small>
           </span>
+          <span className="brand-tools">
           <select
             className="lang"
             value={lang}
@@ -221,6 +237,10 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
+            ⚙
+          </button>
+          </span>
         </div>
         <label>
           {t("transport")}
@@ -248,7 +268,7 @@ export default function App() {
             <div className="grid2">
               <label>
                 {t("baud")}
-                <input list="bauds" value={com.baud} disabled={running} onChange={(e) => setCom({ ...com, baud: Number(e.target.value) || 0 })} />
+                <NumInput list="bauds" min={50} max={20000000} value={com.baud} disabled={running} onValue={(n) => setCom({ ...com, baud: n })} />
                 <datalist id="bauds">
                   {BAUDS.map((b) => (
                     <option key={b} value={b} />
@@ -274,7 +294,7 @@ export default function App() {
             </label>
             <label>
               {transport === "udp" ? t("bindPort") : t("netPort")}
-              <input type="number" value={net.port} disabled={running} onChange={(e) => setNet({ ...net, port: Number(e.target.value) || 0 })} />
+              <NumInput min={0} max={65535} value={net.port} disabled={running} onValue={(n) => setNet({ ...net, port: n })} />
             </label>
           </div>
         )}
@@ -288,7 +308,7 @@ export default function App() {
               </label>
               <label>
                 {t("netPort")}
-                <input type="number" value={net.remotePort} disabled={running} onChange={(e) => setNet({ ...net, remotePort: Number(e.target.value) || 0 })} />
+                <NumInput min={0} max={65535} value={net.remotePort} disabled={running} onValue={(n) => setNet({ ...net, remotePort: n })} />
               </label>
             </div>
           </>
@@ -315,7 +335,7 @@ export default function App() {
             {(framing.kind === "gap" || framing.kind === "terminator") && (
               <label>
                 {t("gapMs")}
-                <input type="number" min={1} value={framing.gapMs} onChange={(e) => setFraming({ ...framing, gapMs: Number(e.target.value) || 1 })} />
+                <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
               </label>
             )}
           </>
@@ -381,7 +401,7 @@ export default function App() {
               <label className="inline">
                 <input type="checkbox" checked={repeating} disabled={!running} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
               </label>
-              <input className="num" type="number" min={10} value={repeatMs} onChange={(e) => setRepeatMs(Number(e.target.value) || 1000)} />
+              <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             </div>
             <div className="hint mono">{preview}</div>
           </div>
@@ -404,7 +424,7 @@ export default function App() {
           <div className="tlog" ref={tlog}>
             {frames.map((f, i) => (
               <div key={i} className={`trow ${f.dir}`}>
-                <span className="ts">{clock(f.ts)}</span>
+                <span className="ts">{fmt(f.ts)}</span>
                 <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
                 {net2 && f.dir !== "ev" && <span className="peeraddr">{f.peer}</span>}
                 <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
@@ -414,6 +434,18 @@ export default function App() {
           {error && <div className="error">{error}</div>}
         </div>
       </main>
+      {showSettings && (
+        <SettingsDialog
+          app="PortDock Simulator"
+          version="0.1.0"
+          settings={settings}
+          update={update}
+          reset={reset}
+          onClose={() => setShowSettings(false)}
+          writeText={api.writeText}
+          readText={api.readText}
+        />
+      )}
     </div>
   );
 }

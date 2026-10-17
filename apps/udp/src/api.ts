@@ -57,4 +57,5 @@ export const api = {
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
   setLog: (path: string | null) => invoke<void>("set_log", { path }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
+  readText: (path: string) => invoke<string>("read_text", { path }),
 };

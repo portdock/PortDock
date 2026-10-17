@@ -492,3 +492,63 @@ hr {
 .hint.ok {
   color: var(--ok);
 }
+
+input.bad {
+  border-color: var(--fail);
+}
+.sendrow select {
+  flex-shrink: 0;
+}
+
+/* ---- 좁은 창 대응 */
+.toolbar,
+.sendrow {
+  flex-wrap: wrap;
+}
+.toolbar > span,
+.toolbar > label,
+.toolbar > button,
+.sendrow > label,
+.sendrow > button {
+  white-space: nowrap;
+}
+.sendtext {
+  flex: 1 1 200px;
+}
+.narrow-only {
+  display: none;
+}
+@media (max-width: 1180px) {
+  .app.three {
+    grid-template-columns: 240px 1fr;
+  }
+  .app.three > aside.right {
+    display: none;
+  }
+  .app.three.show-right > aside.right {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 10;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  }
+  .narrow-only {
+    display: inline-block;
+  }
+}
+
+.close-right {
+  align-self: flex-end;
+}
+@media (max-width: 1180px) {
+  .backdrop.narrow-only {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+    background: rgba(0, 0, 0, 0.15);
+  }
+}
