@@ -76,7 +76,7 @@ fn resolve(host: &str, port: u16) -> Result<SocketAddr, String> {
         .to_socket_addrs()
         .map_err(|e| format!("{host}:{port}: {e}"))?
         .next()
-        .ok_or_else(|| format!("{host}:{port}: 주소를 찾지 못했습니다"))
+        .ok_or_else(|| crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")))
 }
 
 impl Shared {
@@ -138,8 +138,8 @@ impl Shared {
         if r.1 > ECHO_LIMIT {
             drop(r);
             self.echo.store(false, Ordering::SeqCst);
-            self.note(format!("ECHO OFF — 1초에 {ECHO_LIMIT}번을 넘었습니다(상대도 에코 중인지 확인)"));
-            self.events.send(SessionEvent::Error { message: format!("에코를 껐습니다: 1초에 {ECHO_LIMIT}번 초과") });
+            self.note(crate::tr!(format!("ECHO OFF — 1초에 {ECHO_LIMIT}번을 넘었습니다(상대도 에코 중인지 확인)"), format!("ECHO OFF — more than {ECHO_LIMIT} per second (is the peer echoing too?)")));
+            self.events.send(SessionEvent::Error { message: crate::tr!(format!("에코를 껐습니다: 1초에 {ECHO_LIMIT}번 초과"), format!("Echo turned off: over {ECHO_LIMIT} per second")) });
             return false;
         }
         true
@@ -206,12 +206,12 @@ impl UdpSession {
 
         let mut group = None;
         if !cfg.multicast_group.trim().is_empty() {
-            let g: Ipv4Addr = cfg.multicast_group.trim().parse().map_err(|_| format!("멀티캐스트 주소가 아닙니다: {}", cfg.multicast_group))?;
+            let g: Ipv4Addr = cfg.multicast_group.trim().parse().map_err(|_| crate::tr!(format!("멀티캐스트 주소가 아닙니다: {}", cfg.multicast_group), format!("Not a multicast address: {}", cfg.multicast_group)))?;
             if !g.is_multicast() {
-                return Err(format!("{g} 는 멀티캐스트 주소(224.0.0.0~239.255.255.255)가 아닙니다"));
+                return Err(crate::tr!(format!("{g} 는 멀티캐스트 주소(224.0.0.0~239.255.255.255)가 아닙니다"), format!("{g} is not a multicast address (224.0.0.0–239.255.255.255)")));
             }
-            let iface: Ipv4Addr = cfg.multicast_if.trim().parse().map_err(|_| format!("랜카드 주소가 아닙니다: {}", cfg.multicast_if))?;
-            socket.join_multicast_v4(&g, &iface).map_err(|e| format!("멀티캐스트 가입 {g}: {e}"))?;
+            let iface: Ipv4Addr = cfg.multicast_if.trim().parse().map_err(|_| crate::tr!(format!("랜카드 주소가 아닙니다: {}", cfg.multicast_if), format!("Not a network interface address: {}", cfg.multicast_if)))?;
+            socket.join_multicast_v4(&g, &iface).map_err(|e| crate::tr!(format!("멀티캐스트 가입 {g}: {e}"), format!("Multicast join {g}: {e}")))?;
             group = Some((g, iface));
         }
 
@@ -255,7 +255,7 @@ impl UdpSession {
                     Ok((n, from)) => s.on_datagram(buf[..n].to_vec(), from),
                     Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
                     // 윈도우: 보낸 곳에 아무도 없으면 다음 recv 가 ConnectionReset(ICMP port unreachable)
-                    Err(e) if e.kind() == ErrorKind::ConnectionReset => s.note("ICMP port unreachable (상대가 듣고 있지 않음)".into()),
+                    Err(e) if e.kind() == ErrorKind::ConnectionReset => s.note(crate::tr!("ICMP port unreachable (상대가 듣고 있지 않음)", "ICMP port unreachable (nobody is listening)").into()),
                     Err(e) => {
                         s.note(format!("RECV ERROR {e}"));
                         std::thread::sleep(Duration::from_millis(200));
@@ -302,9 +302,9 @@ impl UdpSession {
     /// to: None = 기본 대상, Some("last") = 마지막으로 보내온 쪽, 그 밖엔 «ip:port»
     pub fn send(&self, to: Option<&str>, bytes: &[u8]) -> Result<SocketAddr, String> {
         let dest = match to {
-            None => (*self.shared.remote.lock().unwrap()).ok_or("보낼 곳이 정해지지 않았습니다")?,
-            Some("last") => (*self.shared.last_sender.lock().unwrap()).ok_or("아직 받은 데이터가 없습니다")?,
-            Some(addr) => addr.parse().map_err(|_| format!("주소 형식이 틀립니다: {addr} (예: 192.168.0.10:5000)"))?,
+            None => (*self.shared.remote.lock().unwrap()).ok_or(crate::tr!("보낼 곳이 정해지지 않았습니다", "No destination is set"))?,
+            Some("last") => (*self.shared.last_sender.lock().unwrap()).ok_or(crate::tr!("아직 받은 데이터가 없습니다", "Nothing has been received yet"))?,
+            Some(addr) => addr.parse().map_err(|_| crate::tr!(format!("주소 형식이 틀립니다: {addr} (예: 192.168.0.10:5000)"), format!("Bad address: {addr} (e.g. 192.168.0.10:5000)")))?,
         };
         self.shared.send_to(bytes, dest)?;
         Ok(dest)
@@ -312,9 +312,9 @@ impl UdpSession {
 
     /// 무선 랜 등에서 끊긴 멀티캐스트 가입을 다시 한다
     pub fn rejoin(&self) -> Result<(), String> {
-        let (g, iface) = self.group.ok_or("멀티캐스트 그룹이 없습니다")?;
+        let (g, iface) = self.group.ok_or(crate::tr!("멀티캐스트 그룹이 없습니다", "No multicast group"))?;
         let _ = self.shared.socket.leave_multicast_v4(&g, &iface);
-        self.shared.socket.join_multicast_v4(&g, &iface).map_err(|e| format!("멀티캐스트 가입 {g}: {e}"))?;
+        self.shared.socket.join_multicast_v4(&g, &iface).map_err(|e| crate::tr!(format!("멀티캐스트 가입 {g}: {e}"), format!("Multicast join {g}: {e}")))?;
         self.shared.note(format!("REJOIN {g}"));
         Ok(())
     }

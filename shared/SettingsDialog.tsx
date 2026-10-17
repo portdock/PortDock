@@ -114,7 +114,7 @@ export function SettingsDialog({
     if (!path || Array.isArray(path)) return;
     if (!(await ask(t.importAsk, { title: app, kind: "warning" }))) return;
     try {
-      importAll(app, await readText(path));
+      importAll(app, await readText(path), settings.lang);
       location.reload();
     } catch (e) {
       setErr(String(e));

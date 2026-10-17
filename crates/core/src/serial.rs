@@ -261,7 +261,7 @@ impl Session {
         let port_name = cfg.port.clone();
         *cfg = SerialConfig { port: port_name, ..new };
         drop(cfg);
-        let later = if online { "" } else { " (다시 연결될 때 적용)" };
+        let later = if online { "" } else { crate::tr!(" (다시 연결될 때 적용)", " (applies on reconnect)") };
         note(&self.shared, format!("SET {}{later}", changes.join(", ")));
         Ok(())
     }
@@ -269,9 +269,9 @@ impl Session {
     /// 송신 큐에 넣는다. 실제로 나간 뒤 화면에 TX 줄이 찍힌다.
     pub fn send(&self, bytes: Vec<u8>) -> Result<(), String> {
         if self.shared.writer.lock().unwrap().is_none() {
-            return Err("포트가 끊겨 있습니다".into());
+            return Err(crate::tr!("포트가 끊겨 있습니다", "The port is disconnected").into());
         }
-        self.tx.as_ref().ok_or("세션이 닫혔습니다")?.send(bytes).map_err(|_| "세션이 닫혔습니다".to_string())
+        self.tx.as_ref().ok_or(crate::tr!("세션이 닫혔습니다", "The session is closed"))?.send(bytes).map_err(|_| crate::tr!("세션이 닫혔습니다", "The session is closed").to_string())
     }
 
     /// 수신·송신 프레임을 파일에 계속 덧붙인다. None 이면 멈춘다.
@@ -426,7 +426,7 @@ fn reader_loop(
         };
         // 일부 드라이버(블루투스 SPP 등)는 뽑혀도 TimedOut 만 낸다 → 목록 감시 스레드가 알려 준다
         if lost.is_none() && s.gone.swap(false, Ordering::SeqCst) {
-            lost = Some("장치가 목록에서 사라졌습니다".into());
+            lost = Some(crate::tr!("장치가 목록에서 사라졌습니다", "The device disappeared from the port list").into());
         }
         if let Some(msg) = lost {
             drain(&s, &replies);
@@ -513,7 +513,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
             }
             let mut w = s.writer.lock().unwrap();
             let Some(port) = w.as_mut() else {
-                error = Some("포트가 끊겨 있습니다".to_string());
+                error = Some(crate::tr!("포트가 끊겨 있습니다", "The port is disconnected").to_string());
                 break;
             };
             match port.write(&bytes[sent..]) {
@@ -527,7 +527,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
             drop(w);
             if sent < bytes.len() {
                 if Instant::now() >= deadline {
-                    error = Some(format!("송신 시간 초과 — {sent}/{} 바이트만 나감 (흐름 제어·CTS 확인)", bytes.len()));
+                    error = Some(crate::tr!(format!("송신 시간 초과 — {sent}/{} 바이트만 나감 (흐름 제어·CTS 확인)", bytes.len()), format!("Send timed out — only {sent}/{} bytes went out (check flow control / CTS)", bytes.len())));
                     break;
                 }
                 std::thread::sleep(Duration::from_millis(1));

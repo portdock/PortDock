@@ -106,8 +106,7 @@ try {
   await (await d.findElement(By.xpath("//div[@class='cmd']//button[normalize-space(.)='▶']"))).click();
   await sleep(400);
   check("C12 ▶ 로 보냄(저장한 그대로: AA + CRC)", hexs(s.got).startsWith("AA ") && s.got.length === 3, hexs(s.got));
-  await (await d.findElement(By.xpath("//div[@class='cmd']//button[normalize-space(.)='✕']"))).click();
-  check("C12 삭제", (await d.findElements(By.css("input.cmdname"))).length === 0);
+  // ✕ 는 확인 창(윈도우 기본 창)이 떠서 자동 조작이 안 된다 — 손으로 확인(test-plan C12)
 
   section("C8 로그");
   await click(d, "지우기");

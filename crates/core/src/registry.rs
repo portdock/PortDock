@@ -50,10 +50,10 @@ impl<T> Registry<T> {
         let open = self.open.lock().unwrap();
         let mut opening = self.opening.lock().unwrap();
         if open.contains_key(id) {
-            return Err(format!("{id} 는 이미 열려 있습니다"));
+            return Err(crate::tr!(format!("{id} 는 이미 열려 있습니다"), format!("{id} is already open")));
         }
         if !opening.insert(id.to_string()) {
-            return Err(format!("{id} 를 여는 중입니다"));
+            return Err(crate::tr!(format!("{id} 를 여는 중입니다"), format!("{id} is being opened")));
         }
         Ok(Opening { reg: self, id: id.to_string(), generation: self.next.fetch_add(1, Ordering::SeqCst), done: false })
     }
@@ -74,7 +74,7 @@ impl<T> Registry<T> {
 
     pub fn with<R>(&self, id: &str, f: impl FnOnce(&T) -> R) -> Result<R, String> {
         let open = self.open.lock().unwrap();
-        open.get(id).map(|(_, v)| f(v)).ok_or_else(|| "열려 있지 않습니다".to_string())
+        open.get(id).map(|(_, v)| f(v)).ok_or_else(|| crate::tr!("열려 있지 않습니다", "Not open").to_string())
     }
 
     pub fn ids(&self) -> Vec<String> {

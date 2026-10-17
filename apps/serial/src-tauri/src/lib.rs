@@ -1,5 +1,6 @@
 //! PortDock Serial — 시리얼(COM) 테스터. 통신·해석 로직은 portdock-core.
 
+use portdock_core::tr;
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
 use portdock_core::framer::FrameMode;
@@ -65,7 +66,7 @@ fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Resul
 fn send(sessions: State<Sessions>, id: String, spec: SendSpec) -> Result<Vec<u8>, String> {
     let bytes = build(&spec)?;
     if bytes.is_empty() {
-        return Err("보낼 바이트가 없습니다".into());
+        return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
     sessions.0.with(&id, |s| s.send(bytes.clone()))??;
     Ok(bytes)
@@ -99,6 +100,12 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
+#[tauri::command]
+fn set_lang(lang: String) {
+    portdock_core::i18n::set_lang(&lang);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -106,6 +113,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(Sessions::default())
         .invoke_handler(tauri::generate_handler![
+            set_lang,
             list_ports,
             open_session,
             close_session,

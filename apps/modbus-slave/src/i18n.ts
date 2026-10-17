@@ -1,5 +1,10 @@
 // 한국어 기본, 영어 병행
 const ko = {
+  helpTip: "도움말 (F1)",
+  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  askDelCmd: "«{a}» 명령을 지울까요?",
+  askFill: "보이는 칸을 0, 1, 2… 로 덮어쓸까요? 지금 값은 사라집니다.",
+  askDelSlave: "슬레이브 {a} 를 지울까요? 그 표의 값도 사라집니다.",
   port: "포트",
   noPorts: "연결된 포트가 없습니다",
   baud: "속도(bps)",
@@ -50,13 +55,17 @@ const ko = {
   status_reconnecting: "다시 꽂기를 기다리는 중",
   status_closed: "닫힘",
   fill: "채우기",
-  fillHint: "선택 범위를 0, 1, 2… 로 채움",
   delete: "삭제",
   badTableFile: "표 파일 형식이 틀립니다(start·values 0~65535 확인).",
   importOther: "파일의 대상(슬레이브/표 {a})이 지금 보는 것({b})과 다릅니다. 지금 표에 넣을까요?",
 };
 
 const en: typeof ko = {
+  helpTip: "Help (F1)",
+  lockedHint: "Locked while connected — disconnect to change",
+  askDelCmd: "Delete the command «{a}»?",
+  askFill: "Overwrite the visible cells with 0, 1, 2…? Current values are lost.",
+  askDelSlave: "Delete slave {a}? Its table values are lost too.",
   port: "Port",
   noPorts: "No ports found",
   baud: "Baud rate",
@@ -107,7 +116,6 @@ const en: typeof ko = {
   status_reconnecting: "Waiting for device",
   status_closed: "Closed",
   fill: "Fill",
-  fillHint: "Fill the range with 0, 1, 2…",
   delete: "Delete",
   badTableFile: "Invalid table file (check start and values 0–65535).",
   importOther: "The file targets slave/table {a}, but you are viewing {b}. Load it into the current table?",

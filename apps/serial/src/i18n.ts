@@ -1,5 +1,15 @@
 // 한국어 기본, 영어 병행. 새 문구는 두 언어를 함께 넣는다.
 const ko = {
+  helpTip: "도움말 (F1)",
+  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  askDelCmd: "«{a}» 명령을 지울까요?",
+  emptyGuide: "① 왼쪽에서 포트와 속도를 고르고 ② «연결» 을 누르세요.\n받은 데이터·보낸 데이터·사건(연결·설정 변경)이 여기에 시간순으로 나옵니다.\n처음이면 ? 또는 F1 로 도움말을 보세요.",
+  whyNotConnected: "먼저 연결하세요",
+  whyEmpty: "보낼 내용을 입력하세요",
+  tipFraming: "받은 바이트를 어디서 끊어 한 줄로 볼지 정합니다",
+  tipRxCheck: "받은 줄 끝(끝 문자 앞)의 체크섬이 맞는지 검사해 정상/틀림을 붙입니다",
+  tipRepeat: "켜 두면 이 간격마다 입력칸 내용을 보냅니다. 송신 시간보다 짧으면 자동으로 늘립니다",
+  tipAutoReconnect: "USB 를 뽑았다 다시 꽂으면 같은 장치를 찾아 다시 엽니다(COM 번호가 바뀌어도)",
   ports: "포트",
   noPorts: "연결된 포트가 없습니다",
   baud: "속도(bps)",
@@ -73,6 +83,16 @@ const ko = {
 };
 
 const en: typeof ko = {
+  helpTip: "Help (F1)",
+  lockedHint: "Locked while connected — disconnect to change",
+  askDelCmd: "Delete the command «{a}»?",
+  emptyGuide: "① Pick a port and baud rate on the left, then ② press «Connect».\nReceived data, sent data and events (connects, setting changes) appear here in time order.\nNew here? Press ? or F1 for help.",
+  whyNotConnected: "Connect first",
+  whyEmpty: "Type something to send",
+  tipFraming: "How received bytes are split into lines",
+  tipRxCheck: "Checks the checksum at the end of each received line (before the terminator) and marks it OK/FAIL",
+  tipRepeat: "Sends the input at this interval while checked. Raised automatically if shorter than the transmit time",
+  tipAutoReconnect: "When the USB adapter is unplugged and plugged back in, reopens the same device (even if the COM number changes)",
   ports: "Ports",
   noPorts: "No ports found",
   baud: "Baud rate",

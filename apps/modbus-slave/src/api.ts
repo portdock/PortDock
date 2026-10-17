@@ -60,15 +60,16 @@ export interface Stats {
   writes: number;
 }
 
-export const EXCEPTIONS: [number, string][] = [
-  [1, "01 Illegal Function"],
-  [2, "02 Illegal Data Address"],
-  [3, "03 Illegal Data Value"],
-  [4, "04 Server Device Failure"],
-  [5, "05 Acknowledge"],
-  [6, "06 Server Device Busy"],
-  [10, "0A Gateway Path Unavailable"],
-  [11, "0B Gateway Target Failed"],
+/** [코드, 영어 이름, 한국어 뜻] */
+export const EXCEPTIONS: [number, string, string][] = [
+  [1, "01 Illegal Function", "01 지원하지 않는 함수"],
+  [2, "02 Illegal Data Address", "02 없는 주소"],
+  [3, "03 Illegal Data Value", "03 잘못된 값"],
+  [4, "04 Server Device Failure", "04 장비 고장"],
+  [5, "05 Acknowledge", "05 받음(처리 중)"],
+  [6, "06 Server Device Busy", "06 장비 바쁨"],
+  [10, "0A Gateway Path Unavailable", "0A 게이트웨이 경로 없음"],
+  [11, "0B Gateway Target Failed", "0B 게이트웨이 대상 응답 없음"],
 ];
 
 export const api = {

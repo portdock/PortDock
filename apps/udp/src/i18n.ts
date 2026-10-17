@@ -1,5 +1,11 @@
 // 한국어 기본, 영어 병행
 const ko = {
+  helpTip: "도움말 (F1)",
+  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  askDelCmd: "«{a}» 명령을 지울까요?",
+  emptyGuide: "① 받을 포트와 보낼 곳을 넣고 ② «시작» 을 누르세요.\n받은 데이터그램이 보낸 쪽 주소와 함께 여기에 나옵니다. 도움말: ? 또는 F1",
+  whyNotStarted: "먼저 시작하세요",
+  whyEmpty: "보낼 내용을 입력하세요",
   local: "받는 쪽 (이 PC)",
   bindHost: "묶을 주소 (0.0.0.0 = 모든 랜카드)",
   bindPort: "받을 포트 (0 = 아무 포트)",
@@ -51,6 +57,12 @@ const ko = {
 };
 
 const en: typeof ko = {
+  helpTip: "Help (F1)",
+  lockedHint: "Locked while connected — disconnect to change",
+  askDelCmd: "Delete the command «{a}»?",
+  emptyGuide: "① Enter the listen port and destination, then ② press «Start».\nReceived datagrams appear here with the sender address. Help: ? or F1",
+  whyNotStarted: "Start first",
+  whyEmpty: "Type something to send",
   local: "Local (this PC)",
   bindHost: "Bind address (0.0.0.0 = all NICs)",
   bindPort: "Listen port (0 = any)",

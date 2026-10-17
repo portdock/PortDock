@@ -1,5 +1,6 @@
 //! PortDock UDP — 송수신·브로드캐스트·멀티캐스트·에코. 로직은 portdock-core.
 
+use portdock_core::tr;
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
 use portdock_core::event::SessionEvent;
@@ -17,7 +18,7 @@ const MAIN: &str = "main";
 #[tauri::command(async)]
 fn start(app: State<App>, config: UdpConfig, rx_check: Option<ChecksumKind>, on_event: Channel<SessionEvent>) -> Result<String, String> {
     let reg = app.0.clone();
-    let opening = reg.begin(MAIN).map_err(|_| "이미 시작돼 있거나 시작하는 중입니다".to_string())?;
+    let opening = reg.begin(MAIN).map_err(|_| tr!("이미 시작돼 있거나 시작하는 중입니다", "Already running or starting").to_string())?;
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
@@ -55,7 +56,7 @@ fn set_echo(app: State<App>, on: bool) -> Result<(), String> {
 fn send(app: State<App>, to: Option<String>, spec: SendSpec) -> Result<String, String> {
     let bytes = build(&spec)?;
     if bytes.is_empty() {
-        return Err("보낼 바이트가 없습니다".into());
+        return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
     app.0.with(MAIN, |s| s.send(to.as_deref(), &bytes).map(|a| a.to_string()))?
 }
@@ -87,13 +88,20 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
+#[tauri::command]
+fn set_lang(lang: String) {
+    portdock_core::i18n::set_lang(&lang);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
-        .invoke_handler(tauri::generate_handler![start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log, write_text, read_text])
+        .invoke_handler(tauri::generate_handler![
+            set_lang, start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log, write_text, read_text])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

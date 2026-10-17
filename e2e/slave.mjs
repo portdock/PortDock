@@ -40,10 +40,7 @@ try {
   await (await d.findElement(By.xpath("//span[contains(@class,'chip')]/button[contains(@class,'chip-btn') and normalize-space(.)='1']"))).click();
   await sleep(500);
   check("M1 주소마다 표가 따로", (await (await regInput(0)).getAttribute("value")) === "0");
-  // 17 삭제 → 1 남고 1 은 × 없음
-  await (await d.findElement(By.xpath("//span[contains(@class,'chip')][button[contains(@class,'chip-btn') and normalize-space(.)='17']]/button[contains(@class,'chip-x')]"))).click();
-  await sleep(300);
-  check("M1 삭제 → 1개, 마지막은 × 없음", (await d.findElements(By.css(".chip"))).length === 1 && (await d.findElements(By.css(".chip .chip-x"))).length === 0);
+  // 슬레이브 × 삭제는 확인 창이 떠서 손으로 확인(test-plan M1)
 
   section("M3 값 입력·표시 형식");
   await type(await regInput(5), "65535");
@@ -102,10 +99,11 @@ try {
   await type(start, "0");
   await sleep(500);
 
-  section("M4 채우기");
-  await click(d, "채우기");
-  await sleep(600);
-  check("M4 0,1,2…", (await (await regInput(42)).getAttribute("value")) === "42");
+  section("M3 값 하나 넣기(채우기는 확인 창이라 손으로)");
+  await type(await regInput(42), "42");
+  await (await regInput(42)).sendKeys(Key.ENTER);
+  await sleep(500);
+  check("M3 42번 칸 = 42", (await (await regInput(42)).getAttribute("value")) === "42");
 
   section("M6 장애 주입 경고");
   await (await d.findElement(By.xpath("//label[contains(., '응답 안 함')]/input"))).click();

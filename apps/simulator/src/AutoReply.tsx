@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { api, CHECKSUMS, type AutoRule, type ChecksumKind, type TextMode } from "./api";
 import type { Key } from "./i18n";
 import { NumInput } from "@shared/NumInput";
+import { tip } from "@shared/tips";
 import { duplicateNames, duplicatePatterns, shadowedRules } from "@shared/interlocks";
 
 const blank = (n: number): AutoRule => ({
@@ -27,6 +29,8 @@ export function AutoReply({
   t: (k: Key) => string;
 }) {
   const [err, setErr] = useState<string | null>(null);
+  // 말풍선 언어 — 화면 문구로 판단
+  const lang: "ko" | "en" = t("arWhen") === "When" ? "en" : "ko";
   const [active, setActive] = useState<number | null>(null);
 
   useEffect(() => {
@@ -58,31 +62,32 @@ export function AutoReply({
 
   return (
     <div className="ar">
+      {rules.length === 0 && <div className="empty-guide">{t("noRules")}</div>}
       {rules.map((r, i) => (
         <div key={i} className={r.enabled ? "arcard" : "arcard off"}>
           <div className="arrow">
             <input type="checkbox" checked={r.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} />
             <input className="arname" value={r.name} onChange={(e) => update(i, { name: e.target.value })} />
-            <span className="hits" title={t("hits")}>
+            <span className="hits" data-tip={tip(lang, "hits")}>
               {hits[r.name] ?? 0}
             </span>
-            <button className="btn small ghost" onClick={() => move(i, -1)} title={t("moveUp")} aria-label={t("moveUp")}>
+            <button data-tip={tip(lang, "moveUp")} className="btn small ghost" onClick={() => move(i, -1)} title={t("moveUp")} aria-label={t("moveUp")}>
               ↑
             </button>
-            <button className="btn small ghost" onClick={() => move(i, 1)} title={t("moveDown")} aria-label={t("moveDown")}>
+            <button data-tip={tip(lang, "moveDown")} className="btn small ghost" onClick={() => move(i, 1)} title={t("moveDown")} aria-label={t("moveDown")}>
               ↓
             </button>
-            <button className="btn small ghost" title={t("delete")} onClick={() => setRules(rules.filter((_, j) => j !== i))}>
+            <button className="btn small ghost" title={t("delete")} aria-label={t("delete")} onClick={async () => (await ask(t("askDelRule").replace("{a}", r.name), { title: "PortDock Simulator", kind: "warning" })) && setRules(rules.filter((_, j) => j !== i))}>
               ✕
             </button>
           </div>
           <div className="arrow">
-            <span className="arlbl">{t("arWhen")}</span>
+            <span className="arlbl" data-tip={tip(lang, "arWhen")}>{t("arWhen")}</span>
             <select value={r.patternMode} onChange={(e) => update(i, { patternMode: e.target.value as TextMode })}>
               <option value="hex">HEX</option>
               <option value="ascii">ASCII</option>
             </select>
-            <select value={r.kind} onChange={(e) => update(i, { kind: e.target.value as AutoRule["kind"] })}>
+            <select data-tip={tip(lang, r.kind === "exact" ? "arExact" : "arContains")} value={r.kind} onChange={(e) => update(i, { kind: e.target.value as AutoRule["kind"] })}>
               <option value="exact">{t("arExact")}</option>
               <option value="contains">{t("arContains")}</option>
             </select>
@@ -94,7 +99,7 @@ export function AutoReply({
             />
           </div>
           <div className="arrow">
-            <span className="arlbl">{t("arReply")}</span>
+            <span className="arlbl" data-tip={tip(lang, "arReply")}>{t("arReply")}</span>
             <select value={r.reply.mode} onChange={(e) => update(i, { reply: { ...r.reply, mode: e.target.value as TextMode } })}>
               <option value="hex">HEX</option>
               <option value="ascii">ASCII</option>
@@ -122,14 +127,14 @@ export function AutoReply({
               <option value="\n">LF</option>
               <option value="\r\n">CR LF</option>
             </select>
-            <span className="arlbl">{t("arDelay")}</span>
+            <span className="arlbl" data-tip={tip(lang, "arDelay")}>{t("arDelay")}</span>
             <NumInput className="num" min={0} max={600000} value={r.delayMs} onValue={(n) => update(i, { delayMs: n })} />
             <span className="arlbl">ms</span>
           </div>
         </div>
       ))}
       <div className="arrow">
-        <button className="btn small" onClick={() => setRules([...rules, blank(rules.length + 1)])}>
+        <button data-tip={tip(lang, "arAdd")} className="btn small" onClick={() => setRules([...rules, blank(rules.length + 1)])}>
           + {t("arAdd")}
         </button>
         {active != null && <span className="hint ok">{t("arActive").replace("{n}", String(active))}</span>}

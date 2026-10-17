@@ -13,6 +13,9 @@ import {
   type Stats,
   type Table,
 } from "./api";
+import { tip } from "@shared/tips";
+import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { help } from "./help";
 import { samePorts } from "@shared/framing";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
@@ -77,6 +80,9 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const openHelp = useCallback(() => setShowHelp(true), []);
+  useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
@@ -245,6 +251,7 @@ export default function App() {
   }
 
   async function fill() {
+    if (!(await ask(t("askFill"), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
     const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
     await api.setValues(sel, table, range.start, v);
     store(`values:${key(sel, table)}`, { start: range.start, values: v });
@@ -370,15 +377,18 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
+            ?
+          </button>
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
             ⚙
           </button>
           </span>
         </div>
 
-        <label>
+        <label data-tip={tip(lang, "port")}>
           {t("port")}
-          <select value={cfg.port} disabled={connected} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
+          <select value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
             {ports.length === 0 && <option value="">{t("noPorts")}</option>}
             {ports.map((p) => (
               <option key={p.name} value={p.name}>
@@ -388,7 +398,7 @@ export default function App() {
           </select>
         </label>
         <div className="grid2">
-          <label>
+          <label data-tip={tip(lang, "baud")}>
             {t("baud")}
             <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} commitOnBlur={connected} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
@@ -397,14 +407,14 @@ export default function App() {
               ))}
             </datalist>
           </label>
-          <label>
+          <label data-tip={tip(lang, "dataBits")}>
             {t("dataBits")}
             <select value={cfg.dataBits} onChange={(e) => setCfg({ ...cfg, dataBits: Number(e.target.value) })}>
               <option>8</option>
               <option>7</option>
             </select>
           </label>
-          <label>
+          <label data-tip={tip(lang, "parity")}>
             {t("parity")}
             <select value={cfg.parity} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
               <option value="none">{t("none")}</option>
@@ -412,7 +422,7 @@ export default function App() {
               <option value="odd">{t("odd")}</option>
             </select>
           </label>
-          <label>
+          <label data-tip={tip(lang, "stopBits")}>
             {t("stopBits")}
             <select value={cfg.stopBits} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
               <option value={1}>1</option>
@@ -420,13 +430,14 @@ export default function App() {
             </select>
           </label>
         </div>
-        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
+        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
           {connected ? t("disconnect") : t("connect")}
         </button>
+        {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         <div className={`status s-${status}`}>{t(statusKey)}</div>
 
         <hr />
-        <label>{t("slaves")}</label>
+        <label data-tip={tip(lang, "slaves")}>{t("slaves")}</label>
         <div className="chips">
           {ids.map((id) => (
             <span key={id} className={id === sel ? "chip on" : "chip"}>
@@ -438,7 +449,8 @@ export default function App() {
                   className="chip-x"
                   aria-label={`${t("delete")} ${id}`}
                   title={`${t("delete")} ${id}`}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!(await ask(t("askDelSlave").replace("{a}", String(id)), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
                     const rest = ids.filter((x) => x !== id);
                     setIds(rest);
                     if (sel === id) setSel(rest[0]);
@@ -452,30 +464,30 @@ export default function App() {
         </div>
         <div className="row2">
           <input value={newId} placeholder="1~247" onChange={(e) => setNewId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addId()} />
-          <button className="btn small" onClick={addId}>
+          <button data-tip={tip(lang, "addSlave")} className="btn small" onClick={addId}>
             {t("addSlave")}
           </button>
         </div>
 
         <hr />
-        <label>{t("faults")}</label>
-        <label>
+        <label data-tip={tip(lang, "faults")}>{t("faults")}</label>
+        <label data-tip={tip(lang, "delay")}>
           {t("delay")}
           <NumInput min={0} max={600000} value={faults.delayMs} onValue={(n) => setFaults({ ...faults, delayMs: n })} />
         </label>
-        <label className="inline">
+        <label data-tip={tip(lang, "noResponse")} className="inline">
           <input type="checkbox" checked={faults.noResponse} onChange={(e) => setFaults({ ...faults, noResponse: e.target.checked })} /> {t("noResponse")}
         </label>
-        <label className="inline">
+        <label data-tip={tip(lang, "badCrc")} className="inline">
           <input type="checkbox" checked={faults.badCrc} onChange={(e) => setFaults({ ...faults, badCrc: e.target.checked })} /> {t("badCrc")}
         </label>
-        <label>
+        <label data-tip={tip(lang, "forceException")}>
           {t("forceException")}
           <select value={faults.forceException} onChange={(e) => setFaults({ ...faults, forceException: Number(e.target.value) })}>
             <option value={0}>{t("none")}</option>
-            {EXCEPTIONS.map(([c, n]) => (
+            {EXCEPTIONS.map(([c, n, ko]) => (
               <option key={c} value={c}>
-                {n}
+                {lang === "ko" ? `${ko} (${n.slice(3)})` : n}
               </option>
             ))}
           </select>
@@ -485,7 +497,7 @@ export default function App() {
         {faults.noResponse && faults.forceException > 0 && <div className="interlock">{t("ilNoRespWins")}</div>}
 
         <hr />
-        <label>{t("stats")}</label>
+        <label data-tip={tip(lang, "stats")}>{t("stats")}</label>
         {stats && (
           <table className="stats">
             <tbody>
@@ -508,7 +520,7 @@ export default function App() {
             </tbody>
           </table>
         )}
-        <button className="btn small" onClick={() => api.resetStats()}>
+        <button data-tip={tip(lang, "reset")} className="btn small" onClick={() => api.resetStats()}>
           {t("reset")}
         </button>
       </aside>
@@ -524,7 +536,7 @@ export default function App() {
           <span className="hint">ID {sel}</span>
         </div>
         <div className="toolbar">
-          <label className="inline">
+          <label data-tip={tip(lang, "start")} className="inline">
             {t("start")}
             <NumInput
               className="num"
@@ -534,7 +546,7 @@ export default function App() {
               onValue={(n) => setRanges({ ...ranges, [key(sel, table)]: { start: n, count: Math.min(range.count, 65536 - n) } })}
             />
           </label>
-          <label className="inline">
+          <label data-tip={tip(lang, "count")} className="inline">
             {t("count")}
             <NumInput
               className="num"
@@ -545,7 +557,7 @@ export default function App() {
             />
           </label>
           {!bits && (
-            <label className="inline">
+            <label data-tip={tip(lang, "format")} className="inline">
               {t("format")}
               <select value={format} onChange={(e) => setFormat(e.target.value as Format)}>
                 <option value="u16">U16</option>
@@ -557,13 +569,13 @@ export default function App() {
           )}
           <span className="hint">{t("rangeHint")}</span>
           <span className="grow" />
-          <button className="btn small" onClick={fill} title={t("fillHint")}>
+          <button className="btn small" onClick={fill} data-tip={tip(lang, "fill")}>
             {t("fill")}
           </button>
-          <button className="btn small" onClick={exportTable}>
+          <button data-tip={tip(lang, "exportTable")} className="btn small" onClick={exportTable}>
             {t("exportTable")}
           </button>
-          <button className="btn small" onClick={importTable}>
+          <button data-tip={tip(lang, "importTable")} className="btn small" onClick={importTable}>
             {t("importTable")}
           </button>
         </div>
@@ -583,12 +595,12 @@ export default function App() {
 
         <div className="traffic">
           <div className="toolbar">
-            <b>{t("traffic")}</b>
+            <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
             <span className="grow" />
-            <button className="btn small" onClick={toggleLog} disabled={!connected}>
+            <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn small" onClick={toggleLog} disabled={!connected}>
               {logPath ? t("stopLog") : t("logToFile")}
             </button>
-            <button
+            <button data-tip={tip(lang, "clear")}
               className="btn small"
               onClick={() => {
                 traffic.current = [];
@@ -618,6 +630,7 @@ export default function App() {
           {error && <div className="error">{error}</div>}
         </div>
       </main>
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Modbus Slave" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Modbus Slave"

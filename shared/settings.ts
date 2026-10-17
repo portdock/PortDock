@@ -1,5 +1,6 @@
 // 다섯 프로그램 공통 설정 — 화면 쪽에서만 쓰는 값. 저장은 localStorage("settings").
 import { useCallback, useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
 
 export type Theme = "system" | "light" | "dark";
@@ -59,6 +60,10 @@ export function useSettings() {
   // 예전 판에서 따로 저장하던 언어도 이어받는다
   const [settings, setState] = useState<Settings>(() => sanitize({ lang: load("lang", DEFAULTS.lang), ...load<Partial<Settings>>("settings", {}) }));
   useEffect(() => {
+    // 백엔드 문구(오류·사건 줄)도 같은 언어로
+    invoke("set_lang", { lang: settings.lang }).catch(() => {});
+  }, [settings.lang]);
+  useEffect(() => {
     apply(settings);
     store("settings", settings);
     store("lang", settings.lang);
@@ -107,10 +112,10 @@ export function exportAll(app: string) {
 }
 
 /** 가져오기 — 다른 PortDock 도구의 파일이면 거절 */
-export function importAll(app: string, json: string) {
+export function importAll(app: string, json: string, lang: "ko" | "en" = "ko") {
   const body = JSON.parse(json) as { app?: string; data?: Record<string, unknown> };
-  if (!body || typeof body !== "object" || !body.data) throw new Error("PortDock 설정 파일이 아닙니다");
-  if (body.app !== app) throw new Error(`${body.app ?? "?"} 의 설정 파일입니다 (지금 프로그램: ${app})`);
+  if (!body || typeof body !== "object" || !body.data) throw new Error(lang === "ko" ? "PortDock 설정 파일이 아닙니다" : "Not a PortDock settings file");
+  if (body.app !== app) throw new Error(lang === "ko" ? `${body.app ?? "?"} 의 설정 파일입니다 (지금 프로그램: ${app})` : `This file belongs to ${body.app ?? "?"} (this program: ${app})`);
   localStorage.clear();
   for (const [k, v] of Object.entries(body.data)) localStorage.setItem(k, JSON.stringify(v));
 }

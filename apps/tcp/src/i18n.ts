@@ -1,5 +1,13 @@
 // 한국어 기본, 영어 병행
 const ko = {
+  helpTip: "도움말 (F1)",
+  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  askDelCmd: "«{a}» 명령을 지울까요?",
+  emptyGuide: "① 왼쪽에서 클라이언트(장비에 접속) 또는 서버(장비가 접속)를 고르고\n② 주소·포트를 넣고 «접속»/«듣기 시작» 을 누르세요.\n주고받은 데이터와 접속·끊김이 여기에 나옵니다. 도움말: ? 또는 F1",
+  whyNotStarted: "먼저 접속(또는 듣기 시작)하세요",
+  whyNoPeers: "아직 접속한 상대가 없습니다",
+  whyEmpty: "보낼 내용을 입력하세요",
+  tipFraming: "받은 바이트를 어디서 끊어 한 줄로 볼지 정합니다",
   mode: "방식",
   client: "클라이언트 (장비에 접속)",
   server: "서버 (장비가 접속)",
@@ -60,6 +68,14 @@ const ko = {
 };
 
 const en: typeof ko = {
+  helpTip: "Help (F1)",
+  lockedHint: "Locked while connected — disconnect to change",
+  askDelCmd: "Delete the command «{a}»?",
+  emptyGuide: "① Choose Client (connect to a device) or Server (a device connects) on the left,\n② enter the host/port and press «Connect» / «Start listening».\nTraffic and connects/disconnects appear here. Help: ? or F1",
+  whyNotStarted: "Connect (or start listening) first",
+  whyNoPeers: "No peer is connected yet",
+  whyEmpty: "Type something to send",
+  tipFraming: "How received bytes are split into lines",
   mode: "Mode",
   client: "Client (connect to device)",
   server: "Server (device connects)",

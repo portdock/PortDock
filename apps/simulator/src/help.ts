@@ -1,0 +1,273 @@
+// Simulator 도움말 — 화면 ? 버튼·F1 로 연다
+import type { HelpDoc } from "@shared/HelpDialog";
+
+export const help: HelpDoc = {
+  ko: [
+    {
+      title: "이 프로그램은",
+      body: [
+        "PortDock Simulator 는 PC 를 «가짜 장비» 로 만들어, 실제 장비 없이 상위 프로그램(마스터·HMI·검사 프로그램)을 시험하는 도구입니다.",
+        "받은 데이터가 규칙에 맞으면 정해 둔 응답을 돌려주고, 장비처럼 먼저 상태 보고·하트비트를 보낼 수도 있습니다.",
+        "시리얼(COM), TCP 서버, TCP 클라이언트, UDP 네 가지 방식으로 동작합니다.",
+      ],
+    },
+    {
+      title: "처음 쓰는 순서",
+      body: [
+        "- 1. 왼쪽 «연결 방식» 을 고르고 포트·주소를 넣습니다.",
+        "- 2. «+ 규칙 추가» 로 규칙을 만듭니다: «받으면» 패턴, «응답» 내용, 필요하면 체크섬·끝 문자·지연.",
+        "- 3. «시작» 을 누릅니다. 상위 프로그램에서 요청을 보내면 맞는 규칙이 응답하고, 아래 «통신 기록» 에 찍힙니다.",
+        "- 4. 규칙별 «응답한 횟수» 로 어떤 규칙이 몇 번 답했는지 확인합니다.",
+      ],
+    },
+    {
+      title: "화면 구성",
+      body: [
+        "- 왼쪽: «연결 방식», 포트·주소, «프레임 구분», «시작»/«멈춤», 상태, «파일로 계속 저장».",
+        "- 가운데 위: «응답 규칙» 카드들, «횟수 초기화», «규칙 묶음 저장»·«규칙 묶음 불러오기».",
+        "- 그 아래: «장비가 먼저 보내기» 줄.",
+        "- 맨 아래: «통신 기록»(시각·RX ◀ / TX ▶ / EV·상대 주소·내용), HEX/ASCII 전환, «지우기».",
+      ],
+    },
+    {
+      title: "연결 방식",
+      body: [
+        "- «시리얼(COM)»: «포트»·«속도(bps)»·«패리티» 를 고릅니다. 데이터 비트 8, 정지 비트 1, 흐름 제어 없음으로 엽니다. USB 를 뽑았다 꽂으면 저절로 다시 엽니다.",
+        "- «TCP 서버 (상대가 접속)»: «주소»(보통 0.0.0.0)와 «포트» 로 기다립니다. 상위 프로그램이 이 PC 로 접속하는 경우입니다. 받은 접속에 각각 응답합니다.",
+        "- «TCP 클라이언트 (상대에 접속)»: «보낼 곳» 의 주소·포트로 접속합니다. 상위 프로그램이 서버로 기다리는 경우입니다. 끊기면 다시 접속합니다.",
+        "- «UDP»: «받을 포트» 로 받고, 응답은 보낸 쪽으로 돌려줍니다. «보낼 곳» 은 장비가 먼저 보낼 때 아직 받은 것이 없으면 쓰입니다.",
+        "- 실행 중에는 연결 설정을 바꿀 수 없습니다(🔒). 멈추고 바꾸세요.",
+        "- 시리얼인데 포트가 없으면 «시작» 이 잠깁니다.",
+      ],
+    },
+    {
+      title: "프레임 구분",
+      body: [
+        "규칙은 «한 덩어리(프레임)» 단위로 비교합니다. 그래서 받은 바이트를 어디서 끊을지 정합니다(UDP 는 데이터그램 하나가 한 덩어리라 필요 없음).",
+        "- «무응답 시간»: «무응답(ms)» 동안 아무것도 안 오면 끊습니다. Modbus RTU 같은 바이너리 프로토콜에 맞습니다.",
+        "- «끝 문자»: «끝 문자(HEX)»(예: 0D 0A)가 오면 끊습니다. 끝 문자가 안 와도 «무응답(ms)» 이 지나면 내보냅니다. ASCII 명령에 맞습니다.",
+        "- 실행 중에 바꿔도 바로 적용됩니다.",
+      ],
+    },
+    {
+      title: "응답 규칙",
+      body: [
+        "카드 하나가 규칙 하나입니다. 위에서부터 차례로 비교해 처음 맞는 규칙 하나만 응답합니다. 맞는 규칙이 없으면 아무 응답도 하지 않습니다.",
+        "- 체크박스: 규칙 켜기·끄기. 끈 규칙은 건너뜁니다.",
+        "- 이름: 기록에 «AUTO 이름» 으로 남고 응답 횟수도 이름으로 셉니다. 이름이 겹치면 경고가 나옵니다.",
+        "- «받으면»: 패턴 방식(HEX/ASCII), «정확히»(프레임 전체가 같아야 함) 또는 «포함»(프레임 안 어딘가에 있으면 됨), 패턴.",
+        "- «응답»: 응답 방식(HEX/ASCII), 응답 내용, «체크섬», «끝 문자», «지연»(ms, 0~600000).",
+        "- 응답은 «내용 + 체크섬 + 끝 문자» 순으로 만듭니다. 체크섬은 응답 내용 전체로 계산합니다.",
+        "- ↑ «위로(먼저 검사)», ↓ «아래로», ✕ «삭제»(확인 창이 뜹니다).",
+        "- 규칙을 고치면 실행 중에도 바로 적용됩니다. 패턴이 틀리면 ««이름» 패턴 …» 오류가 나오고, 고칠 때까지 이전 규칙으로 동작합니다.",
+        "- 규칙은 프로그램을 껐다 켜도 남아 있습니다.",
+      ],
+    },
+    {
+      title: "와일드카드",
+      body: [
+        "- HEX: «??» = 아무 바이트 1개, «**» = 아무 바이트 0개 이상.",
+        "- ASCII: «?» = 아무 글자 1개, «*» = 0개 이상. «\\r»·«\\n»·«\\xNN» 도 씁니다.",
+        "- 예: «01 03 ?? ?? 00 01 **» = 주소 1·기능 03·아무 시작 주소·개수 1, 뒤의 CRC 는 무엇이든.",
+        "- 예: ASCII «포함» + «STATUS?» = 프레임 어디에든 STATUS 와 아무 글자 1개가 있으면.",
+        "- «**» 하나만 있는 규칙은 무엇이든 받습니다. 맨 아래에 두면 «그 밖의 모든 요청» 에 대한 기본 응답(예: NAK)이 됩니다.",
+      ],
+    },
+    {
+      title: "규칙 경고",
+      body: [
+        "- «무엇이든 받아서 아래 규칙은 응답하지 않습니다»: «**» 같은 규칙이 다른 규칙보다 위에 있습니다. ↓ 로 맨 아래로 옮기세요.",
+        "- «위 규칙과 패턴이 같아 응답하지 않는 규칙»: 같은 패턴이 위에 있어 아래 규칙은 영영 쓰이지 않습니다.",
+        "- «이름이 같은 규칙»: 응답 횟수가 합쳐져 구분이 안 됩니다. 이름을 바꾸세요.",
+      ],
+    },
+    {
+      title: "응답 횟수와 규칙 묶음",
+      body: [
+        "- 카드마다 «응답한 횟수» 가 나옵니다. «횟수 초기화» 로 0 으로 되돌립니다.",
+        "- «규칙 묶음 저장»: 지금 규칙 전체를 JSON 파일로 저장합니다. 장비·시험마다 묶음을 만들어 두세요.",
+        "- «규칙 묶음 불러오기»: 저장한 파일을 읽어 지금 규칙을 바꿉니다. 형식이 틀리면 «규칙 묶음 파일 형식이 틀립니다» 가 나오고 그대로 둡니다.",
+      ],
+    },
+    {
+      title: "장비가 먼저 보내기",
+      body: [
+        "장비가 요청 없이 보내는 상태 보고·하트비트·알람을 흉내 냅니다.",
+        "- HEX/ASCII, 내용, «체크섬», «끝 문자» 를 정하고 «보내기» 를 누릅니다. 아래에 실제로 나갈 바이트가 보입니다.",
+        "- «반복(ms)» 을 체크하면 정한 간격(10ms 이상)으로 계속 보냅니다. 멈추면 저절로 꺼집니다.",
+        "- 보내는 곳: 시리얼은 그 포트, TCP 서버는 접속한 모든 상대, TCP 클라이언트는 접속한 상대, UDP 는 마지막으로 보내온 쪽(없으면 «보낼 곳»).",
+        "- 시작 전에는 «보내기»·«반복» 이 잠깁니다.",
+      ],
+    },
+    {
+      title: "통신 기록",
+      body: [
+        "- RX ◀ 받은 것, TX ▶ 보낸 것(규칙 응답·먼저 보내기), EV 사건(시작·접속·끊김·«AUTO 규칙이름» 등).",
+        "- HEX/ASCII 버튼으로 보기 방식을 바꿉니다. 맨 아래에 있으면 새 줄을 따라 내려가고, 위로 올려 보면 멈춥니다.",
+        "- «파일로 계속 저장»: 시작한 뒤에 파일을 고르면 그때부터 모든 줄을 계속 씁니다. «저장 멈춤» 으로 끝냅니다.",
+      ],
+    },
+    {
+      title: "설정(⚙)",
+      body: [
+        "- «언어»·«테마»·«글자 크기»·«로그 시각 표시»·«화면에 남길 줄 수».",
+        "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 자동으로 저장합니다.",
+        "- «연결·기록 중에 창을 닫으려 하면 묻기».",
+        "- «설정 내보내기»·«설정 가져오기»: 화면 설정을 JSON 파일로 옮깁니다. 규칙은 «규칙 묶음 저장» 으로 따로 옮깁니다.",
+      ],
+    },
+    {
+      title: "단축키·팁",
+      body: [
+        "- F1 또는 ?: 이 도움말. Esc 로 닫습니다.",
+        "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
+        "- 같은 PC 에서 시험하려면: TCP 는 서버 127.0.0.1 로, 시리얼은 가상 COM 쌍(com0com 등)으로 상위 프로그램과 연결합니다.",
+        "- 응답 지연으로 상위 프로그램의 타임아웃 처리를, 일부러 틀린 응답으로 오류 처리를 시험할 수 있습니다.",
+      ],
+    },
+    {
+      title: "문제 해결",
+      body: [
+        "- 응답이 안 나감: 규칙이 켜져 있는지, 패턴 방식(HEX/ASCII)·«정확히/포함» 이 맞는지, 위에 «**» 규칙이 있는지 보세요. 통신 기록의 RX 줄과 패턴을 비교하세요.",
+        "- 요청이 둘로 쪼개지거나 합쳐짐: «프레임 구분» 과 «무응답(ms)» 을 조정하세요.",
+        "- 시리얼 포트가 안 열림: 다른 프로그램이 쓰고 있는지 확인하세요.",
+        "- TCP 서버에 접속이 안 됨: 윈도우 방화벽 허용, 포트, 상위 프로그램이 접속하는 IP 를 확인하세요.",
+        "- 프로그램이 안 열림: Microsoft Edge WebView2 가 필요합니다(윈도우 11 은 기본 포함).",
+      ],
+    },
+  ],
+  en: [
+    {
+      title: "About this program",
+      body: [
+        "PortDock Simulator turns the PC into a «fake device» so you can test host software (masters, HMIs, test programs) without the real hardware.",
+        "When received data matches a rule it sends the configured reply, and it can also send status reports or heartbeats on its own, like a device.",
+        "It works over Serial (COM), TCP server, TCP client and UDP.",
+      ],
+    },
+    {
+      title: "Getting started",
+      body: [
+        "- 1. Choose a «Transport» on the left and enter the port or address.",
+        "- 2. Add rules with «+ Add rule»: a «When» pattern, a «Reply», and optionally checksum, suffix and delay.",
+        "- 3. Press «Start». When the host sends a request the matching rule replies, and both show in «Traffic».",
+        "- 4. Check how often each rule replied in «Times replied».",
+      ],
+    },
+    {
+      title: "Layout",
+      body: [
+        "- Left: «Transport», port/address, «Framing», «Start»/«Stop», status, «Log to file».",
+        "- Top: «Reply rules» cards, «Reset counts», «Save rule set» / «Load rule set».",
+        "- Below: the «Device-initiated message» row.",
+        "- Bottom: «Traffic» (time, RX ◀ / TX ▶ / EV, peer address, data), HEX/ASCII toggle, «Clear».",
+      ],
+    },
+    {
+      title: "Transport",
+      body: [
+        "- «Serial (COM)»: choose «Port», «Baud rate» and «Parity». Opened as 8 data bits, 1 stop bit, no flow control. Unplugging and replugging USB reopens it automatically.",
+        "- «TCP server (peer connects)»: listens on «Host» (usually 0.0.0.0) and «Port» for the host software to connect. Each connection gets its own replies.",
+        "- «TCP client (connect to peer)»: connects to the «Send to» host and port when the host software is the server. It reconnects when disconnected.",
+        "- «UDP»: receives on «Listen port» and replies to the sender. «Send to» is used for device-initiated messages before anything has been received.",
+        "- Connection settings are locked (🔒) while running. Stop to change them.",
+        "- With Serial and no port, «Start» is disabled.",
+      ],
+    },
+    {
+      title: "Framing",
+      body: [
+        "Rules are compared against whole frames, so you choose where incoming bytes are split (UDP needs none: one datagram is one frame).",
+        "- «Idle gap»: split when nothing arrives for «Idle gap (ms)». Suits binary protocols such as Modbus RTU.",
+        "- «Terminator»: split when «Terminator (HEX)» (e.g. 0D 0A) arrives; pending bytes are also flushed after the idle gap. Suits ASCII commands.",
+        "- Changes apply immediately while running.",
+      ],
+    },
+    {
+      title: "Reply rules",
+      body: [
+        "Each card is a rule. Rules are checked top-down and only the first match replies. If none matches, nothing is sent.",
+        "- Checkbox: enable or disable the rule. Disabled rules are skipped.",
+        "- Name: logged as «AUTO name», and reply counts are kept by name. Duplicate names show a warning.",
+        "- «When»: pattern mode (HEX/ASCII), «exact» (whole frame must match) or «contains» (anywhere in the frame), and the pattern.",
+        "- «Reply»: reply mode (HEX/ASCII), content, «Checksum», «Suffix», «Delay» (ms, 0–600000).",
+        "- A reply is built as «content + checksum + suffix»; the checksum covers the whole content.",
+        "- ↑ «Move up (checked first)», ↓ «Move down», ✕ «Delete» (asks first).",
+        "- Edits apply immediately, even while running. An invalid pattern shows «Rule «name» pattern …» and the previous rules stay in effect until fixed.",
+        "- Rules are kept after restarting.",
+      ],
+    },
+    {
+      title: "Wildcards",
+      body: [
+        "- HEX: «??» = any one byte, «**» = zero or more bytes.",
+        "- ASCII: «?» = any one character, «*» = zero or more. «\\r», «\\n» and «\\xNN» work too.",
+        "- Example: «01 03 ?? ?? 00 01 **» = unit 1, function 03, any start address, count 1, any CRC.",
+        "- Example: ASCII «contains» + «STATUS?» = STATUS followed by any one character anywhere in the frame.",
+        "- A rule of just «**» matches everything. At the bottom it becomes the default reply (e.g. NAK) for everything else.",
+      ],
+    },
+    {
+      title: "Rule warnings",
+      body: [
+        "- «matches everything, so the rules below it never reply»: a rule like «**» sits above others. Move it to the bottom with ↓.",
+        "- «Same pattern as a rule above»: the lower rule can never be used.",
+        "- «Rules share a name»: their reply counts are merged. Rename one.",
+      ],
+    },
+    {
+      title: "Counts and rule sets",
+      body: [
+        "- Each card shows «Times replied». «Reset counts» sets them to 0.",
+        "- «Save rule set»: saves all rules as a JSON file. Keep one per device or test.",
+        "- «Load rule set»: replaces the rules with a saved file. An invalid file shows «Invalid rule set file.» and nothing changes.",
+      ],
+    },
+    {
+      title: "Device-initiated message",
+      body: [
+        "Imitates status reports, heartbeats or alarms that a device sends without a request.",
+        "- Choose HEX/ASCII, content, «Checksum» and «Suffix», then press «Send». The exact bytes are shown below.",
+        "- Check «Repeat (ms)» to send every interval (10 ms or more). It turns off when you stop.",
+        "- Destination: the serial port; all connected peers (TCP server); the server (TCP client); the last sender, or «Send to» if none (UDP).",
+        "- «Send» and «Repeat» are disabled until you start.",
+      ],
+    },
+    {
+      title: "Traffic",
+      body: [
+        "- RX ◀ received, TX ▶ sent (rule replies and device-initiated messages), EV events (start, connect, disconnect, «AUTO rule name», …).",
+        "- Toggle HEX/ASCII view. At the bottom the view follows new lines; scroll up to pause it.",
+        "- «Log to file»: after starting, pick a file to write every line from then on. «Stop logging» ends it.",
+      ],
+    },
+    {
+      title: "Settings (⚙)",
+      body: [
+        "- Language, theme, font size, timestamp format, line limit.",
+        "- «Start file log automatically»: with an auto-log folder, each start writes a log automatically.",
+        "- «Ask before closing while connected or logging».",
+        "- «Export settings» / «Import settings» move display settings as JSON. Move rules with «Save rule set».",
+      ],
+    },
+    {
+      title: "Shortcuts and tips",
+      body: [
+        "- F1 or ?: this help. Esc closes it.",
+        "- Hover over a field to see a tooltip.",
+        "- Testing on one PC: use a TCP server on 127.0.0.1, or a virtual COM pair (e.g. com0com) for serial.",
+        "- Use reply delays to test the host's timeouts, and deliberately wrong replies to test its error handling.",
+      ],
+    },
+    {
+      title: "Troubleshooting",
+      body: [
+        "- No reply: check the rule is enabled, the pattern mode (HEX/ASCII) and exact/contains, and that no «**» rule sits above it. Compare the RX line with the pattern.",
+        "- Requests split or merged: adjust «Framing» and «Idle gap (ms)».",
+        "- Serial port does not open: check whether another program is using it.",
+        "- Cannot connect to the TCP server: check the Windows Firewall prompt, the port, and the IP the host connects to.",
+        "- The program does not open: Microsoft Edge WebView2 is required (included in Windows 11).",
+      ],
+    },
+  ],
+};

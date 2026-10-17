@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { save } from "@tauri-apps/plugin-dialog";
+import { ask, save } from "@tauri-apps/plugin-dialog";
 import { load, store, trimFrames } from "@shared/framing";
 import {
   api,
@@ -15,6 +15,9 @@ import {
   type TextMode,
   type UdpConfig,
 } from "./api";
+import { tip } from "@shared/tips";
+import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { help } from "./help";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -34,6 +37,9 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const openHelp = useCallback(() => setShowHelp(true), []);
+  useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
@@ -268,6 +274,9 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
+            ?
+          </button>
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
             ⚙
           </button>
@@ -276,51 +285,52 @@ export default function App() {
 
         <label>{t("local")}</label>
         <div className="grid2">
-          <label>
+          <label data-tip={tip(lang, "bindHost")}>
             {t("bindHost").split(" (")[0]}
             <input value={cfg.bindHost} disabled={running} title={t("bindHost")} onChange={(e) => setCfg({ ...cfg, bindHost: e.target.value.trim() })} />
           </label>
-          <label>
+          <label data-tip={tip(lang, "bindPort")}>
             {t("bindPort").split(" (")[0]}
             <NumInput min={0} max={65535} value={cfg.bindPort} disabled={running} title={t("bindPort")} onValue={(n) => setCfg({ ...cfg, bindPort: n })} />
           </label>
         </div>
         <label>{t("remote")}</label>
         <div className="grid2">
-          <label>
+          <label data-tip={tip(lang, "remoteHost")}>
             {t("remoteHost")}
             <input value={cfg.remoteHost} onChange={(e) => setCfg({ ...cfg, remoteHost: e.target.value.trim() })} />
           </label>
-          <label>
+          <label data-tip={tip(lang, "remotePort")}>
             {t("remotePort")}
             <NumInput min={0} max={65535} value={cfg.remotePort} onValue={(n) => setCfg({ ...cfg, remotePort: n })} />
           </label>
         </div>
-        <label className="inline">
+        <label data-tip={tip(lang, "broadcast")} className="inline">
           <input type="checkbox" checked={cfg.broadcast} disabled={running} onChange={(e) => setCfg({ ...cfg, broadcast: e.target.checked })} /> {t("broadcast")}
         </label>
-        <label>
+        <label data-tip={tip(lang, "multicast")}>
           {t("multicast")}
           <input value={cfg.multicastGroup} disabled={running} placeholder="—" onChange={(e) => setCfg({ ...cfg, multicastGroup: e.target.value.trim() })} />
         </label>
         {cfg.multicastGroup && (
-          <label>
+          <label data-tip={tip(lang, "multicastIf")}>
             {t("multicastIf")}
             <input value={cfg.multicastIf} disabled={running} onChange={(e) => setCfg({ ...cfg, multicastIf: e.target.value.trim() })} />
           </label>
         )}
-        <label className="inline">
+        <label data-tip={tip(lang, "echo")} className="inline">
           <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
         </label>
-        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && !startable) || starting}>
+        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && !startable) || starting}>
           {running ? t("stop") : t("start")}
         </button>
+        {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
           {t(`status_${status}` as Key)}
           {running && local ? ` · ${local}` : ""}
         </div>
         {running && cfg.multicastGroup && (
-          <button className="btn small" onClick={() => api.rejoin().catch((e) => setError(String(e)))} title={t("rejoinHint")}>
+          <button data-tip={tip(lang, "rejoin")} className="btn small" onClick={() => api.rejoin().catch((e) => setError(String(e)))} title={t("rejoinHint")}>
             {t("rejoin")} {cfg.multicastGroup}
           </button>
         )}
@@ -328,12 +338,12 @@ export default function App() {
 
         {running && (
           <>
-            <label>{t("senders")}</label>
+            <label data-tip={tip(lang, "senders")}>{t("senders")}</label>
             {senders.length === 0 && <div className="hint">{t("noSenders")}</div>}
             {senders.map((p) => (
               <div key={p.addr} className="peer">
                 <span className="mono">{p.addr}</span>
-                <button className="btn small ghost" onClick={() => setTo(p.addr)}>
+                <button data-tip={tip(lang, "useAsRemote")} className="btn small ghost" onClick={() => setTo(p.addr)}>
                   {t("useAsRemote")}
                 </button>
               </div>
@@ -342,7 +352,7 @@ export default function App() {
         )}
 
         <hr />
-        <label>
+        <label data-tip={tip(lang, "rxCheck")}>
           {t("rxCheck")}
           <select value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
             <option value="">{t("none")}</option>
@@ -353,38 +363,39 @@ export default function App() {
             ))}
           </select>
         </label>
-        <button className="btn" onClick={toggleLog} disabled={!running}>
+        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
       </aside>
 
       <main className="main">
         <div className="toolbar">
-          <span>{t("view")}</span>
+          <span data-tip={tip(lang, "view")}>{t("view")}</span>
           {(["hex", "ascii", "both"] as ViewMode[]).map((v) => (
             <button key={v} className={view === v ? "seg on" : "seg"} onClick={() => setView(v)}>
               {v === "both" ? t("both") : v.toUpperCase()}
             </button>
           ))}
-          <label className="inline">
+          <label data-tip={tip(lang, "autoscroll")} className="inline">
             <input type="checkbox" checked={autoscroll} onChange={(e) => setAutoscroll(e.target.checked)} /> {t("autoscroll")}
           </label>
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
           </span>
-          <button className="btn small" onClick={saveView}>
+          <button data-tip={tip(lang, "saveView")} className="btn small" onClick={saveView}>
             {t("saveView")}
           </button>
-          <button className="btn small" onClick={clearLog}>
+          <button data-tip={tip(lang, "clear")} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
+          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
             ☰ {t("commands")}
           </button>
         </div>
 
         <div className="log" ref={listRef}>
+          {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = frames[r.index];
@@ -463,16 +474,17 @@ export default function App() {
               <option value="\n">LF</option>
               <option value="\r\n">CR LF</option>
             </select>
-            <button className="btn primary" onClick={() => doSend(spec)} disabled={!canSend}>
+            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!canSend}>
               {t("send")}
             </button>
           </div>
           <div className="sendrow sub">
+            {!running ? <span className="why">{t("whyNotStarted")}</span> : !sendable && !previewErr ? <span className="why">{t("whyEmpty")}</span> : null}
             <span className={previewErr ? "preview err" : "preview"}>
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
             <span className="grow" />
-            <label className="inline">
+            <label data-tip={tip(lang, "repeat")} className="inline">
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
@@ -499,16 +511,16 @@ export default function App() {
               <button className="btn small" onClick={() => doSend(c)} disabled={!running} title={t("send")}>
                 ▶
               </button>
-              <button className="btn small ghost" title={t("edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
+              <button className="btn small ghost" data-tip={tip(lang, "edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
                 ✎
               </button>
-              <button className="btn small ghost" onClick={() => setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
+              <button data-tip={tip(lang, "delete")} className="btn small ghost" onClick={async () => (await ask(t("askDelCmd").replace("{a}", c.name), { title: "PortDock", kind: "warning" })) && setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
                 ✕
               </button>
             </div>
           ))}
         </div>
-        <h3>{t("detail")}</h3>
+        <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!sel && <div className="hint">{t("selectFrame")}</div>}
         {sel && (
           <div className="detail">
@@ -528,6 +540,7 @@ export default function App() {
           </div>
         )}
       </aside>
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock UDP" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock UDP"

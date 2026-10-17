@@ -48,14 +48,14 @@ pub fn parse_hex(text: &str) -> Result<Vec<u8>, String> {
         }
         // 한글 등 비ASCII 를 바이트 단위로 자르면 글자 경계에서 터진다 — 먼저 거른다
         if let Some(c) = t.chars().find(|c| !c.is_ascii_hexdigit()) {
-            return Err(format!("HEX 가 아닌 글자: «{c}»"));
+            return Err(crate::tr!(format!("HEX 가 아닌 글자: «{c}»"), format!("Not a HEX digit: «{c}»")));
         }
         if t.len() % 2 != 0 {
-            return Err(format!("HEX 자릿수가 홀수입니다: «{token}»"));
+            return Err(crate::tr!(format!("HEX 자릿수가 홀수입니다: «{token}»"), format!("Odd number of HEX digits: «{token}»")));
         }
         for i in (0..t.len()).step_by(2) {
             let pair = &t[i..i + 2];
-            let b = u8::from_str_radix(pair, 16).map_err(|_| format!("HEX 가 아닌 글자: «{pair}»"))?;
+            let b = u8::from_str_radix(pair, 16).map_err(|_| crate::tr!(format!("HEX 가 아닌 글자: «{pair}»"), format!("Not a HEX digit: «{pair}»")))?;
             out.push(b);
         }
     }
@@ -81,11 +81,11 @@ pub fn parse_ascii(text: &str) -> Result<Vec<u8>, String> {
                 // 정확히 HEX 두 글자 — «\x+1»·«\xA» 같은 것은 오류
                 let s: String = [chars.next(), chars.next()].iter().flatten().collect();
                 if s.len() != 2 || !s.chars().all(|c| c.is_ascii_hexdigit()) {
-                    return Err(format!("잘못된 \\x 이스케이프: «\\x{s}» (HEX 두 자리)"));
+                    return Err(crate::tr!(format!("잘못된 \\x 이스케이프: «\\x{s}» (HEX 두 자리)"), format!("Bad \\x escape: «\\x{s}» (two HEX digits)")));
                 }
                 out.push(u8::from_str_radix(&s, 16).unwrap());
             }
-            Some(other) => return Err(format!("모르는 이스케이프: «\\{other}»")),
+            Some(other) => return Err(crate::tr!(format!("모르는 이스케이프: «\\{other}»"), format!("Unknown escape: «\\{other}»"))),
             None => out.push(b'\\'),
         }
     }

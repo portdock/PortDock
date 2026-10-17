@@ -16,6 +16,9 @@ import {
   type TextMode,
   type Transport,
 } from "./api";
+import { tip } from "@shared/tips";
+import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { help } from "./help";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -38,6 +41,9 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const openHelp = useCallback(() => setShowHelp(true), []);
+  useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
@@ -288,12 +294,15 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
+            ?
+          </button>
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
             ⚙
           </button>
           </span>
         </div>
-        <label>
+        <label data-tip={tip(lang, "transport")}>
           {t("transport")}
           <select value={transport} disabled={running} onChange={(e) => setTransport(e.target.value as Transport)}>
             <option value="serial">{t("serial")}</option>
@@ -305,7 +314,7 @@ export default function App() {
 
         {transport === "serial" && (
           <>
-            <label>
+            <label data-tip={tip(lang, "port")}>
               {t("port")}
               <select value={com.port} disabled={running} onChange={(e) => setCom({ ...com, port: e.target.value })}>
                 {ports.length === 0 && <option value="">{t("noPorts")}</option>}
@@ -317,7 +326,7 @@ export default function App() {
               </select>
             </label>
             <div className="grid2">
-              <label>
+              <label data-tip={tip(lang, "baud")}>
                 {t("baud")}
                 <NumInput list="bauds" min={50} max={20000000} value={com.baud} disabled={running} onValue={(n) => setCom({ ...com, baud: n })} />
                 <datalist id="bauds">
@@ -326,7 +335,7 @@ export default function App() {
                   ))}
                 </datalist>
               </label>
-              <label>
+              <label data-tip={tip(lang, "parity")}>
                 {t("parity")}
                 <select value={com.parity} disabled={running} onChange={(e) => setCom({ ...com, parity: e.target.value as "none" | "odd" | "even" })}>
                   <option value="none">{t("none")}</option>
@@ -339,7 +348,7 @@ export default function App() {
         )}
         {(transport === "tcp-server" || transport === "udp") && (
           <div className="grid2">
-            <label>
+            <label data-tip={tip(lang, "host")}>
               {t("host")}
               <input value={net.host} disabled={running} onChange={(e) => setNet({ ...net, host: e.target.value.trim() })} />
             </label>
@@ -367,7 +376,7 @@ export default function App() {
 
         {transport !== "udp" && (
           <>
-            <label>
+            <label data-tip={tip(lang, "framing")}>
               {t("framing")}
               <select
                 value={framing.kind}
@@ -378,13 +387,13 @@ export default function App() {
               </select>
             </label>
             {framing.kind === "terminator" && (
-              <label>
+              <label data-tip={tip(lang, "terminatorHex")}>
                 {t("terminatorHex")}
                 <input value={termText} onChange={(e) => setTermText(e.target.value)} />
               </label>
             )}
             {(framing.kind === "gap" || framing.kind === "terminator") && (
-              <label>
+              <label data-tip={tip(lang, "gapMs")}>
                 {t("gapMs")}
                 <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
               </label>
@@ -392,36 +401,37 @@ export default function App() {
           </>
         )}
 
-        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !com.port) || starting}>
+        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !com.port) || starting}>
           {running ? t("stop") : t("start")}
         </button>
+        {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
           {dict[lang][`status_${status}` as Key] ?? status}
           {statusMsg ? ` · ${statusMsg}` : ""}
         </div>
-        <button className="btn small" onClick={toggleLog} disabled={!running}>
+        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn small" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
       </aside>
 
       <main className="main">
         <div className="toolbar">
-          <b>{t("rules")}</b>
+          <b data-tip={tip(lang, "rules")}>{t("rules")}</b>
           <span className="grow" />
-          <button className="btn small" onClick={() => api.resetHits()}>
+          <button data-tip={tip(lang, "resetHits")} className="btn small" onClick={() => api.resetHits()}>
             {t("resetHits")}
           </button>
-          <button className="btn small" onClick={exportRules}>
+          <button data-tip={tip(lang, "exportRules")} className="btn small" onClick={exportRules}>
             {t("exportRules")}
           </button>
-          <button className="btn small" onClick={importRules}>
+          <button data-tip={tip(lang, "importRules")} className="btn small" onClick={importRules}>
             {t("importRules")}
           </button>
         </div>
         <div className="rules">
           <AutoReply rules={rules} setRules={setRules} hits={hits} t={t} />
           <div className="unsol">
-            <div className="arlbl">{t("unsolicited")}</div>
+            <div className="arlbl" data-tip={tip(lang, "unsolicited")}>{t("unsolicited")}</div>
             <div className="arrow">
               <select value={spec.mode} onChange={(e) => setSpec({ ...spec, mode: e.target.value as TextMode })}>
                 <option value="hex">HEX</option>
@@ -446,10 +456,10 @@ export default function App() {
                 <option value="\n">LF</option>
                 <option value="\r\n">CR LF</option>
               </select>
-              <button className="btn small primary" disabled={!running} onClick={() => api.send(spec).catch((e) => setError(String(e)))}>
+              <button data-tip={tip(lang, "send")} className="btn small primary" disabled={!running} onClick={() => api.send(spec).catch((e) => setError(String(e)))}>
                 {t("send")}
               </button>
-              <label className="inline">
+              <label data-tip={tip(lang, "repeat")} className="inline">
                 <input type="checkbox" checked={repeating} disabled={!running} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
               </label>
               <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
@@ -460,14 +470,14 @@ export default function App() {
 
         <div className="traffic">
           <div className="toolbar">
-            <b>{t("traffic")}</b>
+            <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
             {(["hex", "ascii"] as const).map((v) => (
               <button key={v} className={trafficView === v ? "seg on" : "seg"} onClick={() => setTrafficView(v)}>
                 {v.toUpperCase()}
               </button>
             ))}
             <span className="grow" />
-            <button
+            <button data-tip={tip(lang, "clear")}
               className="btn small"
               onClick={() => {
                 traffic.current = [];
@@ -497,6 +507,7 @@ export default function App() {
           {error && <div className="error">{error}</div>}
         </div>
       </main>
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Simulator" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Simulator"

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { save } from "@tauri-apps/plugin-dialog";
+import { ask, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
   ascii,
@@ -18,6 +18,10 @@ import {
   type TextMode,
   summary,
 } from "./api";
+import { tip } from "@shared/tips";
+import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { help } from "./help";
+import { mbFunc, mbWord } from "./mbwords";
 import { samePorts, trimFrames } from "@shared/framing";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
@@ -63,6 +67,9 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const openHelp = useCallback(() => setShowHelp(true), []);
+  useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
   const maxLines = useRef(settings.maxLines);
   maxLines.current = settings.maxLines;
@@ -375,14 +382,17 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
+            ?
+          </button>
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={lang === "ko" ? "설정" : "Settings"}>
             ⚙
           </button>
           </span>
         </div>
 
-        <label>{t("ports")}</label>
-        <select value={cfg.port} disabled={connected} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
+        <label data-tip={tip(lang, "ports")}>{t("ports")}</label>
+        <select value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
           {ports.length === 0 && <option value="">{t("noPorts")}</option>}
           {ports.map((p) => (
             <option key={p.name} value={p.name}>
@@ -401,7 +411,7 @@ export default function App() {
         })()}
 
         <div className="grid2">
-          <label>
+          <label data-tip={tip(lang, "baud")}>
             {t("baud")}
             <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} commitOnBlur={connected} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
@@ -410,7 +420,7 @@ export default function App() {
               ))}
             </datalist>
           </label>
-          <label>
+          <label data-tip={tip(lang, "dataBits")}>
             {t("dataBits")}
             <select value={cfg.dataBits} onChange={(e) => setCfg({ ...cfg, dataBits: Number(e.target.value) })}>
               {[5, 6, 7, 8].map((n) => (
@@ -418,7 +428,7 @@ export default function App() {
               ))}
             </select>
           </label>
-          <label>
+          <label data-tip={tip(lang, "parity")}>
             {t("parity")}
             <select value={cfg.parity} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
               <option value="none">{t("none")}</option>
@@ -426,7 +436,7 @@ export default function App() {
               <option value="even">{t("even")}</option>
             </select>
           </label>
-          <label>
+          <label data-tip={tip(lang, "stopBits")}>
             {t("stopBits")}
             <select value={cfg.stopBits} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
               <option value={1}>1</option>
@@ -434,7 +444,7 @@ export default function App() {
             </select>
           </label>
         </div>
-        <label>
+        <label data-tip={tip(lang, "flow")}>
           {t("flow")}
           <select
             value={cfg.flow}
@@ -463,7 +473,7 @@ export default function App() {
             RTS
           </label>
         </div>
-        <label className="inline">
+        <label data-tip={tip(lang, "autoReconnect")} className="inline">
           <input
             type="checkbox"
             checked={cfg.autoReconnect}
@@ -472,18 +482,20 @@ export default function App() {
           {t("autoReconnect")}
         </label>
 
-        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
+        <button data-tip={tip(lang, connected ? "disconnect" : "connect")} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
           {connected ? t("disconnect") : t("connect")}
         </button>
+        {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         <div className={`status s-${status}`}>
           {t(statusKey)}
           {statusMsg ? ` · ${statusMsg}` : ""}
         </div>
 
         <hr />
-        <label>
+        <label data-tip={tip(lang, "framing")}>
           {t("framing")}
           <select
+            title={t("tipFraming")}
             value={framing.kind}
             onChange={(e) => {
               const k = e.target.value as FrameMode["kind"];
@@ -506,29 +518,29 @@ export default function App() {
           </select>
         </label>
         {framing.kind === "terminator" && (
-          <label>
+          <label data-tip={tip(lang, "terminatorHex")}>
             {t("terminatorHex")}
             <input value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
             {effectiveFraming.kind === "terminator" && effectiveFraming.bytes.length === 0 && <span className="interlock">{t("ilNoTerm")}</span>}
           </label>
         )}
         {framing.kind === "fixed" && (
-          <label>
+          <label data-tip={tip(lang, "length")}>
             {t("length")}
             <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
           </label>
         )}
         {framing.kind !== "modbus-rtu" && (
-          <label>
+          <label data-tip={tip(lang, "gapMs")}>
             {t("gapMs")}
             <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
           </label>
         )}
         {((framing.kind !== "modbus-rtu" && framing.gapMs < 16) || framing.kind === "modbus-rtu") &&
           ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
-        <label>
+        <label data-tip={tip(lang, "rxCheck")}>
           {t("rxCheck")}
-          <select value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
+          <select title={t("tipRxCheck")} value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
             <option value="">{t("none")}</option>
             {CHECKSUMS.map((c) => (
               <option key={c.kind} value={c.kind}>
@@ -537,7 +549,7 @@ export default function App() {
             ))}
           </select>
         </label>
-        <button className="btn" onClick={toggleLog} disabled={!connected}>
+        <button data-tip={tip(lang, logPath ? "stopLog" : "logToFile")} className="btn" onClick={toggleLog} disabled={!connected}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
         {logPath && <div className="hint ellipsis" title={logPath}>{logPath}</div>}
@@ -545,26 +557,26 @@ export default function App() {
 
       <main className="main">
         <div className="toolbar">
-          <span>{t("view")}</span>
+          <span data-tip={tip(lang, "view")}>{t("view")}</span>
           {(["hex", "ascii", "both"] as ViewMode[]).map((v) => (
             <button key={v} className={view === v ? "seg on" : "seg"} onClick={() => setView(v)}>
               {v === "both" ? t("both") : v.toUpperCase()}
             </button>
           ))}
-          <label className="inline">
+          <label data-tip={tip(lang, "autoscroll")} className="inline">
             <input type="checkbox" checked={autoscroll} onChange={(e) => setAutoscroll(e.target.checked)} /> {t("autoscroll")}
           </label>
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
           </span>
-          <button className="btn small" onClick={saveView}>
+          <button data-tip={tip(lang, "saveLog")} className="btn small" onClick={saveView}>
             {t("saveLog")}
           </button>
-          <button className="btn small" onClick={clearLog}>
+          <button data-tip={tip(lang, "clear")} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
+          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} title={t("commands")}>
             ☰ {t("commands")}
           </button>
         </div>
@@ -578,7 +590,7 @@ export default function App() {
               <span className={cfg.rts ? "led on" : "led"}>RTS</span>
               <span className="sep" />
               {(["cts", "dsr", "ri", "cd"] as const).map((k) => (
-                <span key={k} className={lines?.[k] ? "led in on" : "led in"} title={t("inputLine")}>
+                <span key={k} className={lines?.[k] ? "led in on" : "led in"} data-tip={tip(lang, "inputLine")}>
                   {k.toUpperCase()}
                 </span>
               ))}
@@ -588,6 +600,7 @@ export default function App() {
         </div>
 
         <div className="log" ref={listRef}>
+          {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = frames[r.index];
@@ -640,7 +653,7 @@ export default function App() {
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && online && sendable && doSend(spec)}
             />
-            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} title={t("checksum")}>
+            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} data-tip={tip(lang, "checksum")}>
               <option value="">{t("checksum")}: {t("none")}</option>
               {CHECKSUMS.map((c) => (
                 <option key={c.kind} value={c.kind}>
@@ -648,22 +661,27 @@ export default function App() {
                 </option>
               ))}
             </select>
-            <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} title={t("suffix")}>
+            <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} data-tip={tip(lang, "suffix")}>
               <option value="">{t("suffix")}: {t("none")}</option>
               <option value="\r">CR</option>
               <option value="\n">LF</option>
               <option value="\r\n">CR LF</option>
             </select>
-            <button className="btn primary" onClick={() => doSend(spec)} disabled={!online || !sendable}>
+            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!online || !sendable}>
               {t("send")}
             </button>
           </div>
           <div className="sendrow sub">
+            {!online ? (
+              <span className="why">{connected ? t("ilOffline") : t("whyNotConnected")}</span>
+            ) : !sendable && !previewErr ? (
+              <span className="why">{t("whyEmpty")}</span>
+            ) : null}
             <span className={previewErr ? "preview err" : "preview"}>
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
             <span className="grow" />
-            <label className="inline">
+            <label data-tip={tip(lang, "repeat")} className="inline">
               <input type="checkbox" checked={repeating} disabled={!online} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
@@ -696,17 +714,17 @@ export default function App() {
               <button className="btn small" onClick={() => doSend(c)} disabled={!online} title={t("send")}>
                 ▶
               </button>
-              <button className="btn small ghost" title={t("edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
+              <button className="btn small ghost" data-tip={tip(lang, "edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
                 ✎
               </button>
-              <button className="btn small ghost" onClick={() => setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
+              <button data-tip={tip(lang, "delete")} className="btn small ghost" onClick={async () => (await ask(t("askDelCmd").replace("{a}", c.name), { title: "PortDock", kind: "warning" })) && setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
                 ✕
               </button>
             </div>
           ))}
         </div>
 
-        <h3>{t("detail")}</h3>
+        <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">
@@ -725,23 +743,23 @@ export default function App() {
             {modbus && (
               <div className="modbus">
                 <div className="mbhead">
-                  Modbus · {modbus.kind} · {t("crc")} <b className={modbus.crc_ok ? "okc" : "failc"}>{modbus.crc_ok ? t("ok") : t("fail")}</b>
+                  Modbus · {mbWord(modbus.kind, lang)} · {t("crc")} <b className={modbus.crc_ok ? "okc" : "failc"}>{modbus.crc_ok ? t("ok") : t("fail")}</b>
                 </div>
                 <table>
                   <tbody>
                     <tr>
-                      <td>slave</td>
+                      <td>{mbWord("slave", lang)}</td>
                       <td>{modbus.slave}</td>
                     </tr>
                     <tr>
-                      <td>function</td>
+                      <td>{mbWord("function", lang)}</td>
                       <td>
-                        0x{modbus.function.toString(16).toUpperCase().padStart(2, "0")} {modbus.function_name}
+                        0x{modbus.function.toString(16).toUpperCase().padStart(2, "0")} {mbFunc(modbus.function, modbus.function_name, lang)}
                       </td>
                     </tr>
                     {modbus.fields.map(([k, v]) => (
                       <tr key={k}>
-                        <td>{k}</td>
+                        <td>{mbWord(k, lang)}</td>
                         <td>{v}</td>
                       </tr>
                     ))}
@@ -764,6 +782,7 @@ export default function App() {
           </div>
         )}
       </aside>
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Serial" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Serial"

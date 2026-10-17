@@ -1,5 +1,10 @@
 // 한국어 기본, 영어 병행
 const ko = {
+  helpTip: "도움말 (F1)",
+  lockedHint: "연결 중에는 바꿀 수 없습니다 — 끊고 바꾸세요",
+  askDelCmd: "«{a}» 명령을 지울까요?",
+  askDelRule: "«{a}» 규칙을 지울까요?",
+  noRules: "아직 규칙이 없습니다. «+ 규칙 추가» 로 만들거나 «규칙 묶음 불러오기» 를 누르세요.\n예) 받으면 «01 03 ?? ?? 00 01 **» → 응답 «01 03 02 00 64» + CRC16 Modbus",
   transport: "연결 방식",
   serial: "시리얼(COM)",
   tcpServer: "TCP 서버 (상대가 접속)",
@@ -61,6 +66,11 @@ const ko = {
 };
 
 const en: typeof ko = {
+  helpTip: "Help (F1)",
+  lockedHint: "Locked while connected — disconnect to change",
+  askDelCmd: "Delete the command «{a}»?",
+  askDelRule: "Delete the rule «{a}»?",
+  noRules: "No rules yet. Use «+ Add rule» or «Load rule set».\nExample: when «01 03 ?? ?? 00 01 **» → reply «01 03 02 00 64» + CRC16 Modbus",
   transport: "Transport",
   serial: "Serial (COM)",
   tcpServer: "TCP server (peer connects)",

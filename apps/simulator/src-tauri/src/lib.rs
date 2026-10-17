@@ -1,5 +1,6 @@
 //! PortDock Simulator — 규칙(받으면 → 답하기)으로 아무 장비나 흉내. 시리얼·TCP·UDP 공통.
 
+use portdock_core::tr;
 use portdock_core::autoreply::{self, Rule, RuleSpec};
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
@@ -33,7 +34,7 @@ struct App {
 const MAIN: &str = "main";
 
 fn begin(app: &App) -> Result<Opening<'_, Sess>, String> {
-    app.sess.begin(MAIN).map_err(|_| "이미 시작돼 있거나 시작하는 중입니다".to_string())
+    app.sess.begin(MAIN).map_err(|_| tr!("이미 시작돼 있거나 시작하는 중입니다", "Already running or starting").to_string())
 }
 
 fn sink(app: &App, generation: u64, ch: Channel<SessionEvent>) -> EventSink {
@@ -119,7 +120,7 @@ fn reset_hits(app: State<App>) {
 fn send(app: State<App>, spec: SendSpec) -> Result<(), String> {
     let bytes = build(&spec)?;
     if bytes.is_empty() {
-        return Err("보낼 바이트가 없습니다".into());
+        return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
     app.sess.with(MAIN, |s| match s {
         Sess::Serial(s) => s.send(bytes),
@@ -153,6 +154,12 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
+#[tauri::command]
+fn set_lang(lang: String) {
+    portdock_core::i18n::set_lang(&lang);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -160,6 +167,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
+            set_lang,
             list_ports,
             start_serial,
             start_tcp,

@@ -84,7 +84,7 @@ fn parse_pattern(text: &str, mode: TextMode) -> Result<Vec<Tok>, String> {
         }
     }
     if toks.is_empty() {
-        return Err("패턴이 비어 있습니다".into());
+        return Err(crate::tr!("패턴이 비어 있습니다", "The pattern is empty").into());
     }
     Ok(toks)
 }
@@ -131,13 +131,13 @@ fn matches_at(toks: &[Tok], data: &[u8], anchored_end: bool) -> bool {
 
 impl Rule {
     pub fn compile(spec: &RuleSpec) -> Result<Self, String> {
-        let mut toks = parse_pattern(&spec.pattern, spec.pattern_mode).map_err(|e| format!("«{}» 패턴: {e}", spec.name))?;
+        let mut toks = parse_pattern(&spec.pattern, spec.pattern_mode).map_err(|e| crate::tr!(format!("«{}» 패턴: {e}", spec.name), format!("«{}» pattern: {e}", spec.name)))?;
         // 포함 = 앞뒤에 «0개 이상» 을 붙인 정확히 — 모든 시작 위치를 다시 훑지 않는다
         if spec.kind == MatchKind::Contains {
             toks.insert(0, Tok::Many);
             toks.push(Tok::Many);
         }
-        let reply = codec::build(&spec.reply).map_err(|e| format!("«{}» 응답: {e}", spec.name))?;
+        let reply = codec::build(&spec.reply).map_err(|e| crate::tr!(format!("«{}» 응답: {e}", spec.name), format!("«{}» reply: {e}", spec.name)))?;
         Ok(Self { name: spec.name.clone(), toks, reply, delay_ms: spec.delay_ms })
     }
 

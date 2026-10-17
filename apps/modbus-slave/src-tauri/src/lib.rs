@@ -1,6 +1,7 @@
 //! PortDock Modbus Slave — PC 가 Modbus RTU 장비인 척 답한다.
 //! 레지스터 표는 연결과 따로 살아 있어서, 연결 전에 값을 넣어 둘 수 있다.
 
+use portdock_core::tr;
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::framer::FrameMode;
 use portdock_core::modbus_slave::{Faults, Slave, TABLE_SIZE, Table};
@@ -51,7 +52,7 @@ fn responder(slave: Arc<Mutex<Slave>>, stats: Arc<Mutex<Stats>>) -> Responder {
         let delay_ms = sl.faults.delay_ms;
         if busy_until.is_some_and(|t| Instant::now() < t) {
             stats.lock().unwrap().ignored += 1;
-            return Reply { bytes: None, delay_ms: 0, note: Some("BUSY — 지연 응답을 보내기 전에 온 요청은 무시".into()) };
+            return Reply { bytes: None, delay_ms: 0, note: Some(tr!("BUSY — 지연 응답을 보내기 전에 온 요청은 무시", "BUSY — request ignored while a delayed reply is pending").into()) };
         }
         let (bytes, o) = sl.handle(frame);
         if bytes.is_some() && delay_ms > 0 {
@@ -90,7 +91,7 @@ fn responder(slave: Arc<Mutex<Slave>>, stats: Arc<Mutex<Stats>>) -> Responder {
 #[tauri::command(async)]
 fn open(app: State<App>, config: SerialConfig, on_event: Channel<SessionEvent>) -> Result<(), String> {
     let reg = app.sess.clone();
-    let opening = reg.begin(MAIN).map_err(|_| "이미 연결돼 있거나 여는 중입니다".to_string())?;
+    let opening = reg.begin(MAIN).map_err(|_| tr!("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting").to_string())?;
     let baud = config.baud;
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
         let _ = on_event.send(e);
@@ -132,10 +133,10 @@ fn set_faults(app: State<App>, faults: Faults) {
 #[tauri::command]
 fn set_slave_ids(app: State<App>, ids: Vec<u8>) -> Result<(), String> {
     if ids.is_empty() {
-        return Err("슬레이브 주소가 하나는 있어야 합니다".into());
+        return Err(tr!("슬레이브 주소가 하나는 있어야 합니다", "At least one slave ID is required").into());
     }
     if ids.iter().any(|&i| i == 0 || i > 247) {
-        return Err("슬레이브 주소는 1~247 입니다".into());
+        return Err(tr!("슬레이브 주소는 1~247 입니다", "Slave IDs must be 1–247").into());
     }
     let mut sl = app.slave.lock().unwrap();
     sl.models.retain(|k, _| ids.contains(k));
@@ -147,7 +148,7 @@ fn set_slave_ids(app: State<App>, ids: Vec<u8>) -> Result<(), String> {
 
 fn check_span(start: u32, count: u32) -> Result<(), String> {
     if count == 0 || start as usize + count as usize > TABLE_SIZE {
-        return Err(format!("주소 범위가 0~{} 를 벗어납니다", TABLE_SIZE - 1));
+        return Err(tr!(format!("주소 범위가 0~{} 를 벗어납니다", TABLE_SIZE - 1), format!("Address range is outside 0–{}", TABLE_SIZE - 1)));
     }
     Ok(())
 }
@@ -157,7 +158,7 @@ fn check_span(start: u32, count: u32) -> Result<(), String> {
 fn set_range(app: State<App>, id: u8, table: Table, start: u16, count: u32) -> Result<(), String> {
     check_span(start as u32, count)?;
     let mut sl = app.slave.lock().unwrap();
-    sl.models.get_mut(&id).ok_or("없는 슬레이브")?.ranges.insert(table, (start, count));
+    sl.models.get_mut(&id).ok_or(tr!("없는 슬레이브", "Unknown slave ID"))?.ranges.insert(table, (start, count));
     Ok(())
 }
 
@@ -165,7 +166,7 @@ fn set_range(app: State<App>, id: u8, table: Table, start: u16, count: u32) -> R
 fn get_values(app: State<App>, id: u8, table: Table, start: u32, count: u32) -> Result<Vec<u16>, String> {
     check_span(start, count)?;
     let sl = app.slave.lock().unwrap();
-    let m = sl.models.get(&id).ok_or("없는 슬레이브")?;
+    let m = sl.models.get(&id).ok_or(tr!("없는 슬레이브", "Unknown slave ID"))?;
     Ok(m.table(table)[start as usize..(start + count) as usize].to_vec())
 }
 
@@ -177,7 +178,7 @@ fn set_values(app: State<App>, id: u8, table: Table, start: u32, values: Vec<u16
     check_span(start, values.len() as u32)?;
     let bits = matches!(table, Table::Coils | Table::DiscreteInputs);
     let mut sl = app.slave.lock().unwrap();
-    let t = sl.models.get_mut(&id).ok_or("없는 슬레이브")?.table_mut(table);
+    let t = sl.models.get_mut(&id).ok_or(tr!("없는 슬레이브", "Unknown slave ID"))?.table_mut(table);
     for (i, v) in values.into_iter().enumerate() {
         t[start as usize + i] = if bits { (v != 0) as u16 } else { v };
     }
@@ -205,6 +206,12 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
+#[tauri::command]
+fn set_lang(lang: String) {
+    portdock_core::i18n::set_lang(&lang);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -212,6 +219,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
+            set_lang,
             list_ports,
             open,
             close,

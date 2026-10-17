@@ -92,7 +92,7 @@ fn resolve(host: &str, port: u16) -> Result<SocketAddr, String> {
         .to_socket_addrs()
         .map_err(|e| format!("{host}:{port}: {e}"))?
         .next()
-        .ok_or_else(|| format!("{host}:{port}: 주소를 찾지 못했습니다"))
+        .ok_or_else(|| crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")))
 }
 
 impl Shared {
@@ -199,8 +199,8 @@ impl Shared {
         if r.1 > ECHO_LIMIT {
             drop(r);
             self.echo.store(false, Ordering::SeqCst);
-            self.note(format!("ECHO OFF — 1초에 {ECHO_LIMIT}번을 넘었습니다(상대도 에코 중인지 확인)"));
-            self.events.send(SessionEvent::Error { message: format!("에코를 껐습니다: 1초에 {ECHO_LIMIT}번 초과") });
+            self.note(crate::tr!(format!("ECHO OFF — 1초에 {ECHO_LIMIT}번을 넘었습니다(상대도 에코 중인지 확인)"), format!("ECHO OFF — more than {ECHO_LIMIT} per second (is the peer echoing too?)")));
+            self.events.send(SessionEvent::Error { message: crate::tr!(format!("에코를 껐습니다: 1초에 {ECHO_LIMIT}번 초과"), format!("Echo turned off: over {ECHO_LIMIT} per second")) });
             return false;
         }
         true
@@ -215,7 +215,7 @@ impl Shared {
                 true
             }
             Err(e) => {
-                self.note(format!("SEND FAIL {} ({e}) — 연결을 닫습니다", conn.addr));
+                self.note(crate::tr!(format!("SEND FAIL {} ({e}) — 연결을 닫습니다", conn.addr), format!("SEND FAIL {} ({e}) — closing the connection", conn.addr)));
                 let _ = conn.writer.lock().unwrap().shutdown(Shutdown::Both);
                 false
             }
@@ -227,14 +227,14 @@ impl Shared {
         let mut buf = [0u8; 8192];
         let reason = loop {
             if self.stop.load(Ordering::SeqCst) {
-                break "closed".to_string();
+                break crate::tr!("닫음", "closed").to_string();
             }
             let user_closed = || !self.conns.lock().unwrap().contains_key(&id);
             match reader.read(&mut buf) {
                 // 사용자가 «끊기» 를 눌러 우리가 닫은 것인지 먼저 본다
-                Ok(0) if user_closed() => break "disconnected by user".to_string(),
-                Ok(0) => break "closed by peer".to_string(),
-                Err(_) if user_closed() => break "disconnected by user".to_string(),
+                Ok(0) if user_closed() => break crate::tr!("사용자가 끊음", "disconnected by user").to_string(),
+                Ok(0) => break crate::tr!("상대가 끊음", "closed by peer").to_string(),
+                Err(_) if user_closed() => break crate::tr!("사용자가 끊음", "disconnected by user").to_string(),
                 Ok(n) => {
                     let frames = conn.framer.lock().unwrap().feed(&buf[..n], Instant::now());
                     self.push_rx(&conn, frames);
@@ -248,7 +248,7 @@ impl Shared {
             }
             // 이 연결이 목록에서 빠졌으면(사용자가 끊음) 그만
             if !self.conns.lock().unwrap().contains_key(&id) {
-                break "disconnected by user".to_string();
+                break crate::tr!("사용자가 끊음", "disconnected by user").to_string();
             }
         };
         if let Some(f) = conn.framer.lock().unwrap().poll(Instant::now() + Duration::from_secs(3600)) {
@@ -278,7 +278,7 @@ impl TcpSession {
         events: EventSink,
     ) -> Result<Self, String> {
         if cfg.mode == TcpMode::Client && (cfg.host.trim().is_empty() || cfg.port == 0) {
-            return Err("접속할 주소와 포트(1~65535)를 넣어 주세요".into());
+            return Err(crate::tr!("접속할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to").into());
         }
         let shared = Arc::new(Shared {
             events,
@@ -325,7 +325,7 @@ impl TcpSession {
                         match listener.accept() {
                             Ok((stream, from)) => {
                                 if s.conns.lock().unwrap().len() >= MAX_CONNS {
-                                    s.note(format!("REJECT {from} — 최대 접속 수 {MAX_CONNS}"));
+                                    s.note(crate::tr!(format!("REJECT {from} — 최대 접속 수 {MAX_CONNS}"), format!("REJECT {from} — max {MAX_CONNS} connections")));
                                     let _ = stream.shutdown(Shutdown::Both);
                                     continue;
                                 }
@@ -396,7 +396,7 @@ impl TcpSession {
             }
         };
         if conns.is_empty() {
-            return Err("연결된 상대가 없습니다".into());
+            return Err(crate::tr!("연결된 상대가 없습니다", "No peer is connected").into());
         }
         let mut n = 0;
         for c in conns {

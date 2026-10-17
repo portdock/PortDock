@@ -6,6 +6,7 @@ pub mod checksum;
 pub mod codec;
 pub mod event;
 pub mod framer;
+pub mod i18n;
 pub mod modbus;
 pub mod modbus_slave;
 pub mod ports;
