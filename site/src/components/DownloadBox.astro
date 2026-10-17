@@ -1,0 +1,22 @@
+---
+// 내려받기 칸 — 이 칸 근처에는 광고를 두지 않는다(애드센스 정책: 다운로드 버튼과 오인 금지)
+import { RELEASES, latest, type Lang, type Tool } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  tool: Tool;
+}
+const { lang, tool } = Astro.props;
+const t = UI[lang];
+---
+
+<div class="card">
+  <h3>{t.dlTitle}</h3>
+  <div class="dl-list">
+    <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
+  </div>
+  <p class="note">{t.dlNote}</p>
+  <p class="note">{t.webview}</p>
+  <p class="note"><a href={RELEASES}>{t.dlAll} →</a> · <a href={url(lang, "download/#safe")}>{t.safeTitle}</a></p>
+</div>

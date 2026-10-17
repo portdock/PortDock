@@ -2,7 +2,8 @@
   "name": "portdock",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "site"
   ],
   "scripts": {
     "serial": "npm run tauri dev -w portdock-serial",
@@ -15,6 +16,8 @@
     "udp": "npm run tauri dev -w portdock-udp",
     "build:udp": "npm run tauri build -w portdock-udp",
     "simulator": "npm run tauri dev -w portdock-simulator",
-    "build:simulator": "npm run tauri build -w portdock-simulator"
+    "build:simulator": "npm run tauri build -w portdock-simulator",
+    "site": "npm run dev -w portdock-site",
+    "build:site": "npm run build -w portdock-site"
   }
 }

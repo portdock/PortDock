@@ -1,0 +1,141 @@
+---
+// 개발 문의 — Cloudflare Pages Function(/api/contact)이 Turnstile 확인 후 내 메일로 전달한다. 받는 주소는 화면에 나오지 않는다.
+import Base from "../layouts/Base.astro";
+import { REPO, type Lang } from "../data/tools";
+import { UI } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const L = ko
+  ? {
+      intro: "PC 쪽 통신·장비 프로그램 개발을 맡습니다. 무엇이 필요한지 적어 주시면 메일로 답드립니다.",
+      offers: ["시리얼(RS-232/485)·이더넷(TCP/UDP)·Modbus 장비 연동 프로그램", "검사·계측·로그 수집 프로그램 (C#·C++·Rust)", "오래된 프로그램 수정·이관 (VB6·MFC·옛 .NET → 최신 윈도우)", "PortDock 맞춤 기능·사내용 판"],
+      name: "이름",
+      email: "답장 받을 메일",
+      company: "회사 (선택)",
+      kind: "문의 종류",
+      kinds: ["개발 의뢰", "PortDock 맞춤 기능", "기타"],
+      message: "내용 — 장비·통신 방식·원하는 결과·일정을 적어 주세요",
+      send: "보내기",
+      sending: "보내는 중…",
+      ok: "보냈습니다. 확인하는 대로 답드리겠습니다.",
+      fail: "보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+      notReady: "문의 양식은 준비 중입니다. 그동안 GitHub 이슈로 남겨 주세요.",
+      bug: "프로그램 버그는 GitHub 이슈나 프로그램 안 «!» 문제 보고를 이용해 주세요.",
+      privacy: "보내신 내용은 답장에만 쓰고 다른 곳에 넘기지 않습니다.",
+    }
+  : {
+      intro: "I build PC-side communication and device software. Tell me what you need and I'll reply by email.",
+      offers: ["Serial (RS-232/485), Ethernet (TCP/UDP) and Modbus device integration", "Test, measurement and data-logging software (C#, C++, Rust)", "Maintenance and migration of legacy programs (VB6, MFC, old .NET → modern Windows)", "Custom PortDock features and in-house editions"],
+      name: "Name",
+      email: "Your email",
+      company: "Company (optional)",
+      kind: "Topic",
+      kinds: ["Project", "Custom PortDock feature", "Other"],
+      message: "Message — device, protocol, what you need, timeline",
+      send: "Send",
+      sending: "Sending…",
+      ok: "Sent. I'll get back to you soon.",
+      fail: "Could not send. Please try again later.",
+      notReady: "The contact form is not ready yet. Please open a GitHub issue meanwhile.",
+      bug: "For bugs, please use GitHub issues or the «!» problem report inside the program.",
+      privacy: "Your message is used only to reply and is never shared.",
+    };
+---
+
+<Base lang={lang} title={t.contact} path="contact/">
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{t.ctaTitle}</h1>
+      <p>{L.intro}</p>
+    </div>
+  </header>
+  <div class="wrap two" style="padding-top:28px">
+    <div>
+      {
+        siteKey ? (
+          <form class="f" id="contact" data-ok={L.ok} data-fail={L.fail} data-sending={L.sending} data-send={L.send}>
+            <div class="row">
+              <label class="fld">
+                {L.name}
+                <input name="name" required maxlength="80" autocomplete="name" />
+              </label>
+              <label class="fld">
+                {L.email}
+                <input name="email" type="email" required maxlength="120" autocomplete="email" />
+              </label>
+            </div>
+            <div class="row">
+              <label class="fld">
+                {L.company}
+                <input name="company" maxlength="120" autocomplete="organization" />
+              </label>
+              <label class="fld">
+                {L.kind}
+                <select name="kind">{L.kinds.map((k) => <option>{k}</option>)}</select>
+              </label>
+            </div>
+            <label class="fld">
+              {L.message}
+              <textarea name="message" rows="8" required maxlength="5000" />
+            </label>
+            {/* 사람이 아닌 것 걸러내기 — 숨은 칸에 값이 있으면 버린다 */}
+            <input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+            <input type="hidden" name="lang" value={lang} />
+            <div class="cf-turnstile" data-sitekey={siteKey} data-language={lang} />
+            <p class="note">{L.privacy}</p>
+            <div>
+              <button class="btn primary" type="submit">{L.send}</button>
+            </div>
+            <p id="contact-msg" role="status" />
+          </form>
+        ) : (
+          <p class="card">
+            {L.notReady} <a href={`${REPO}/issues`}>GitHub Issues →</a>
+          </p>
+        )
+      }
+      <p class="note">{L.bug}</p>
+    </div>
+    <aside class="side-box">
+      <div class="card">
+        <h3>{ko ? "맡는 일" : "What I do"}</h3>
+        <ul class="ticks">{L.offers.map((o) => <li>{o}</li>)}</ul>
+      </div>
+    </aside>
+  </div>
+  {siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />}
+  <script>
+    const form = document.getElementById("contact") as HTMLFormElement | null;
+    const msg = document.getElementById("contact-msg");
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector("button[type=submit]") as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = form.dataset.sending ?? "…";
+      try {
+        const r = await fetch("/api/contact", { method: "POST", body: new FormData(form) });
+        const ok = r.ok;
+        if (msg) {
+          msg.textContent = ok ? (form.dataset.ok ?? "OK") : (form.dataset.fail ?? "Failed");
+          msg.className = ok ? "okmsg" : "err";
+        }
+        if (ok) form.reset();
+      } catch {
+        if (msg) {
+          msg.textContent = form.dataset.fail ?? "Failed";
+          msg.className = "err";
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = form.dataset.send ?? "Send";
+        (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
+      }
+    });
+  </script>
+</Base>

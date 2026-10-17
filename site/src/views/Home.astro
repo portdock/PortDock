@@ -1,0 +1,84 @@
+---
+import Base from "../layouts/Base.astro";
+import { TOOLS, type Lang } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+---
+
+<Base lang={lang} title="PortDock" path="">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>{t.heroTitle}</h1>
+        <p class="sub">{t.heroSub}</p>
+        <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
+        <div class="btns">
+          <a class="btn primary" href={url(lang, "download/")}>{t.download}</a>
+          <a class="btn" href="#tools">{t.allTools}</a>
+        </div>
+      </div>
+      <!-- 통신 기록이 어떻게 보이는지 보여 주는 그림(실제 화면 캡처 아님) -->
+      <div class="term mono" role="img" aria-label={lang === "ko" ? "통신 기록 예시" : "Example traffic log"}>
+        <div class="head"><i></i><i></i><i></i></div>
+        <div><span class="t">09:41:07.112</span> <span class="ev">EV   CONNECT COM3 9600 8N1 (USB 0403:6001)</span></div>
+        <div><span class="t">09:41:08.530</span> <span class="tx">TX ▶ 01 03 00 00 00 0A C5 CD</span></div>
+        <div><span class="t">09:41:08.561</span> <span class="rx">RX ◀ 01 03 14 00 64 00 C8 … 3A 7F</span> <span class="ok">OK</span></div>
+        <div><span class="t">          </span> <span class="t">   ↳ {lang === "ko" ? "읽기 응답 · 주소 1 · 레지스터 10개" : "Read response · unit 1 · 10 registers"}</span></div>
+        <div><span class="t">09:41:12.004</span> <span class="ev">EV   {lang === "ko" ? "끊김 — USB 장치가 사라짐" : "DISCONNECTED — USB device removed"}</span></div>
+        <div><span class="t">09:41:13.871</span> <span class="ev">EV   {lang === "ko" ? "다시 연결 COM5 (같은 장치)" : "RECONNECTED COM5 (same device)"}</span></div>
+        <div><span class="t">09:41:14.020</span> <span class="tx">TX ▶ STATUS?\r\n</span></div>
+        <div><span class="t">09:41:14.046</span> <span class="rx">RX ◀ READY,24.8C\r\n</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tools">
+    <div class="wrap">
+      <h2>{t.allTools}</h2>
+      <div class="grid">
+        {
+          TOOLS.map((x) => (
+            <a class="card" href={url(lang, `${x.id}/`)}>
+              <h3>{x.name}</h3>
+              <p>{x.tagline[lang]}</p>
+              <span class="go">{t.more} →</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>{t.whyTitle}</h2>
+      <div class="grid">
+        {
+          t.why.map(([h, p]) => (
+            <div class="card">
+              <h3>{h}</h3>
+              <p>{p}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <h2>{t.ctaTitle}</h2>
+          <p>{t.ctaBody}</p>
+        </div>
+        <a class="btn" href={url(lang, "contact/")}>{t.ctaBtn}</a>
+      </div>
+    </div>
+  </section>
+</Base>

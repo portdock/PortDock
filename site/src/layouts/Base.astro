@@ -1,0 +1,124 @@
+---
+// 모든 페이지의 틀 — 머리줄·바닥글·언어 전환·검색엔진 태그(hreflang·OG)
+import "../styles/site.css";
+import { TOOLS, REPO, type Lang } from "../data/tools";
+import { UI, url, otherLang } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description?: string;
+  /** 언어를 뺀 경로 — 예: "serial/" */
+  path: string;
+  /** 광고를 둘 수 있는 페이지(웹 도구·가이드)만 true */
+  ads?: boolean;
+}
+const { lang, title, description, path, ads = false } = Astro.props;
+const t = UI[lang];
+const site = Astro.site!;
+const here = new URL(url(lang, path), site).href;
+const koUrl = new URL(url("ko", path), site).href;
+const enUrl = new URL(url("en", path), site).href;
+const desc = description ?? t.siteDesc;
+const fullTitle = title === "PortDock" ? "PortDock" : `${title} — PortDock`;
+// 배포 환경 변수(Cloudflare Pages): 비워 두면 해당 스크립트를 넣지 않는다
+const analyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
+const adsenseClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
+const naverVerify = import.meta.env.PUBLIC_NAVER_SITE_VERIFICATION;
+const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={here} />
+    <link rel="alternate" hreflang="ko" href={koUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={koUrl} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PortDock" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={here} />
+    <meta property="og:image" content={new URL("/og.png", site).href} />
+    <meta property="og:locale" content={lang === "ko" ? "ko_KR" : "en_US"} />
+    <meta name="theme-color" content="#0b6e75" />
+    {naverVerify && <meta name="naver-site-verification" content={naverVerify} />}
+    {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
+    {
+      ads && adsenseClient && (
+        <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`} crossorigin="anonymous" />
+      )
+    }
+  </head>
+  <body>
+    <a class="skip" href="#main">{lang === "ko" ? "본문으로" : "Skip to content"}</a>
+    <header class="top">
+      <div class="wrap bar">
+        <a class="brand" href={url(lang)}>
+          <img src="/favicon.svg" alt="" width="26" height="26" />
+          <span>PortDock</span>
+        </a>
+        <nav aria-label={t.tools}>
+          <details class="menu">
+            <summary>{t.tools}</summary>
+            <ul>
+              {
+                TOOLS.map((x) => (
+                  <li>
+                    <a href={url(lang, `${x.id}/`)}>
+                      <b>{x.name.replace("PortDock ", "")}</b>
+                      <small>{x.tagline[lang]}</small>
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </details>
+          <a href={url(lang, "tools/checksum/")}>{t.webTools}</a>
+          <a href={url(lang, "download/")}>{t.download}</a>
+          <a href={url(lang, "contact/")}>{t.contact}</a>
+          <a class="lang" href={url(otherLang(lang), path)} hreflang={otherLang(lang)} lang={otherLang(lang)}>{t.langName}</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="foot">
+      <div class="wrap cols">
+        <div>
+          <b>PortDock</b>
+          <p>{t.footerLine}</p>
+        </div>
+        <ul>
+          {
+            TOOLS.map((x) => (
+              <li>
+                <a href={url(lang, `${x.id}/`)}>{x.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+        <ul>
+          <li><a href={url(lang, "tools/checksum/")}>{t.webTools}</a></li>
+          <li><a href={url(lang, "download/")}>{t.download}</a></li>
+          <li><a href={url(lang, "contact/")}>{t.contact}</a></li>
+          <li><a href={url(lang, "privacy/")}>{t.privacy}</a></li>
+        </ul>
+        <ul>
+          <li><a href={REPO}>{t.source}</a></li>
+          <li><a href={`${REPO}/issues`}>{t.issues}</a></li>
+          <li><a href={`${REPO}/blob/main/LICENSE`}>{t.license} (GPL-3.0)</a></li>
+        </ul>
+      </div>
+    </footer>
+    {analyticsToken && <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: analyticsToken })} />}
+  </body>
+</html>

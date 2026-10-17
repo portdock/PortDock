@@ -1,0 +1,164 @@
+---
+// 웹 도구: CRC·체크섬 계산기 — PortDock 프로그램과 같은 계산(lib/checksum.ts = crates/core checksum.rs).
+// 광고는 이 페이지 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { CHECKSUMS } from "../lib/checksum";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = ko
+  ? {
+      title: "CRC·체크섬 계산기",
+      desc: "CRC16 Modbus·CCITT·XMODEM, CRC8, LRC, BCC(XOR), SUM8, SUM16 을 한 번에 계산합니다. HEX 와 ASCII(\\r \\n \\xNN) 입력, 붙일 순서까지 보여 줍니다.",
+      input: "데이터",
+      mode: "입력 방식",
+      kind: "종류",
+      value: "체크섬 (붙일 순서)",
+      frame: "본문 + 체크섬",
+      bytes: "바이트",
+      hexHelp: "예: 01 03 00 00 00 0A · 01030000000A · 0x01,0x03",
+      asciiHelp: "예: STATUS?\\r\\n · \\x02DATA\\x03",
+      howTitle: "계산 방식",
+      how: "모든 계산은 이 브라우저 안에서만 하고, 입력한 데이터는 어디에도 보내지 않습니다.",
+      appNote: "장비와 직접 주고받으며 체크섬을 붙이고 검사하려면",
+      appLink: "PortDock Serial",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["Modbus RTU CRC 는 왜 순서가 반대인가요?", "Modbus RTU 는 CRC16 의 낮은 바이트를 먼저 보냅니다. «01 03 00 00 00 0A» 의 CRC 는 0xCDC5 이고, 줄에는 «C5 CD» 로 붙습니다."],
+        ["CRC16 CCITT 값이 다른 계산기와 다릅니다", "CCITT 는 초기값에 따라 여러 변형이 있습니다. 여기 «CRC16 CCITT» 는 초기값 0xFFFF(CCITT-FALSE), «CRC16 XMODEM» 은 0x0000 입니다. Kermit 은 비트 순서가 반대인 다른 변형입니다."],
+        ["LRC 는 Modbus ASCII 의 LRC 와 같나요?", "같은 식(바이트 합의 2의 보수)을 원시 바이트에 적용합니다. Modbus ASCII 에서는 문자를 바이트로 바꾼 뒤 계산하세요."],
+      ],
+    }
+  : {
+      title: "CRC & Checksum Calculator",
+      desc: "Compute CRC16 Modbus/CCITT/XMODEM, CRC8, LRC, BCC (XOR), SUM8 and SUM16 at once. HEX or ASCII (\\r \\n \\xNN) input, shown in transmission byte order.",
+      input: "Data",
+      mode: "Input",
+      kind: "Type",
+      value: "Checksum (byte order)",
+      frame: "Body + checksum",
+      bytes: "bytes",
+      hexHelp: "e.g. 01 03 00 00 00 0A · 01030000000A · 0x01,0x03",
+      asciiHelp: "e.g. STATUS?\\r\\n · \\x02DATA\\x03",
+      howTitle: "Algorithms",
+      how: "Everything is computed in your browser; nothing you type is sent anywhere.",
+      appNote: "To append and verify checksums while talking to a device, use",
+      appLink: "PortDock Serial",
+      faqTitle: "FAQ",
+      faq: [
+        ["Why is the Modbus RTU CRC byte order reversed?", "Modbus RTU sends the low byte of the CRC16 first. The CRC of «01 03 00 00 00 0A» is 0xCDC5 and goes on the wire as «C5 CD»."],
+        ["My CRC16 CCITT differs from another calculator", "CCITT has variants by initial value. «CRC16 CCITT» here uses init 0xFFFF (CCITT-FALSE) and «CRC16 XMODEM» uses 0x0000. Kermit is a bit-reversed variant."],
+        ["Is LRC the same as Modbus ASCII LRC?", "Same formula (two's complement of the byte sum) applied to raw bytes. For Modbus ASCII, convert the characters to bytes first."],
+      ],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} description={L.desc} path="tools/checksum/" ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="calc" data-lang={lang} data-bytes={L.bytes} data-hex-help={L.hexHelp} data-ascii-help={L.asciiHelp}>
+      <div class="row">
+        <label class="fld" style="flex:0 0 160px">
+          {L.mode}
+          <select id="mode">
+            <option value="hex">HEX</option>
+            <option value="ascii">ASCII</option>
+          </select>
+        </label>
+        <label class="fld" style="flex:1 1 320px">
+          {L.input}
+          <input id="data" class="mono" value="01 03 00 00 00 0A" spellcheck="false" autocomplete="off" />
+          <span class="note" id="help">{L.hexHelp}</span>
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <p class="note" id="len"></p>
+      <table class="t">
+        <thead>
+          <tr><th>{L.kind}</th><th>{L.value}</th><th>{L.frame}</th></tr>
+        </thead>
+        <tbody>
+          {
+            CHECKSUMS.map((c) => (
+              <tr data-kind={c.kind}>
+                <td>
+                  <b>{c.label}</b>
+                  <br />
+                  <span class="note">{c[lang]}</span>
+                </td>
+                <td class="mono v" />
+                <td class="mono f" />
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+      <p class="note">{L.how}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "serial/")}>{L.appLink}</a>.
+      </p>
+    </section>
+  </div>
+  <script>
+    import { compute, hex, parseAscii, parseHex, type ChecksumKind, type Lang } from "../lib/checksum";
+    const root = document.getElementById("calc")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const mode = document.getElementById("mode") as HTMLSelectElement;
+    const data = document.getElementById("data") as HTMLInputElement;
+    const err = document.getElementById("err")!;
+    const len = document.getElementById("len")!;
+    const help = document.getElementById("help")!;
+    function run() {
+      let bytes: number[] = [];
+      try {
+        bytes = mode.value === "hex" ? parseHex(data.value, lang) : parseAscii(data.value, lang);
+        err.textContent = "";
+      } catch (e) {
+        err.textContent = (e as Error).message;
+      }
+      len.textContent = `${bytes.length} ${root.dataset.bytes}`;
+      for (const row of root.querySelectorAll<HTMLTableRowElement>("tr[data-kind]")) {
+        const c = compute(row.dataset.kind as ChecksumKind, bytes);
+        row.querySelector(".v")!.textContent = err.textContent ? "" : hex(c);
+        row.querySelector(".f")!.textContent = err.textContent ? "" : hex([...bytes, ...c]);
+      }
+    }
+    mode.addEventListener("change", () => {
+      help.textContent = (mode.value === "hex" ? root.dataset.hexHelp : root.dataset.asciiHelp) ?? "";
+      run();
+    });
+    data.addEventListener("input", run);
+    run();
+  </script>
+</Base>

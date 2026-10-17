@@ -1,0 +1,16 @@
+---
+// 광고 칸 — 웹 도구·가이드 페이지 본문 아래에만 둔다. 내려받기 버튼 근처 금지(애드센스 정책).
+// PUBLIC_ADSENSE_CLIENT·PUBLIC_ADSENSE_SLOT 이 없으면 아무것도 그리지 않는다.
+const client = import.meta.env.PUBLIC_ADSENSE_CLIENT;
+const slot = import.meta.env.PUBLIC_ADSENSE_SLOT;
+---
+
+{
+  client && slot && (
+    <aside class="ad" aria-label="advertisement">
+      <div class="ad-label">AD</div>
+      <ins class="adsbygoogle" style="display:block" data-ad-client={client} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
+      <script is:inline>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </aside>
+  )
+}

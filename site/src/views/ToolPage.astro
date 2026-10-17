@@ -1,0 +1,65 @@
+---
+import Base from "../layouts/Base.astro";
+import DownloadBox from "../components/DownloadBox.astro";
+import { type Lang, type Tool } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  tool: Tool;
+}
+const { lang, tool } = Astro.props;
+const t = UI[lang];
+// 소프트웨어 정보(검색 결과의 앱 표시용)
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: tool.name,
+  operatingSystem: "Windows 10, Windows 11",
+  applicationCategory: "DeveloperApplication",
+  description: tool.summary[lang],
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  license: "https://www.gnu.org/licenses/gpl-3.0.html",
+  inLanguage: ["ko", "en"],
+};
+---
+
+<Base lang={lang} title={tool.name} description={`${tool.tagline[lang]}. ${tool.summary[lang]}`} path={`${tool.id}/`}>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <div class="crumb"><a href={url(lang)}>PortDock</a> / {t.tools}</div>
+      <h1>{tool.name}</h1>
+      <p>{tool.summary[lang]}</p>
+    </div>
+  </header>
+  <div class="wrap two" style="padding-top:32px">
+    <div>
+      <section>
+        <h2>{t.whoTitle}</h2>
+        <ul class="ticks">{tool.who.map((w) => <li>{w[lang]}</li>)}</ul>
+      </section>
+      <section>
+        <h2>{t.featTitle}</h2>
+        <div class="grid">
+          {
+            tool.features.map((f) => (
+              <div class="card">
+                <h3>{f.title[lang]}</h3>
+                <p>{f.body[lang]}</p>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+      <section style="margin-top:28px">
+        <h2>{t.stepsTitle}</h2>
+        <ol class="steps">{tool.steps.map((s) => <li>{s[lang]}</li>)}</ol>
+        <p><a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.readDocs} →</a></p>
+      </section>
+    </div>
+    <aside class="side-box">
+      <DownloadBox lang={lang} tool={tool} />
+    </aside>
+  </div>
+</Base>

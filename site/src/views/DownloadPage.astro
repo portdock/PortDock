@@ -1,0 +1,57 @@
+---
+import Base from "../layouts/Base.astro";
+import { TOOLS, RELEASES, latest, type Lang } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+---
+
+<Base lang={lang} title={t.download} path="download/">
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{t.download}</h1>
+      <p>{t.dlNote}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:28px">
+    <table class="t">
+      <thead>
+        <tr><th>{t.tools}</th><th>{t.dlSetup}</th><th></th></tr>
+      </thead>
+      <tbody>
+        {
+          TOOLS.map((x) => (
+            <tr>
+              <td>
+                <a href={url(lang, `${x.id}/`)}><b>{x.name}</b></a>
+                <br />
+                <span class="note">{x.tagline[lang]}</span>
+              </td>
+              <td><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
+              <td><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+    <p class="note"><a href={RELEASES}>{t.dlAll} →</a></p>
+
+    <section class="prose" id="safe">
+      <h2>{t.safeTitle}</h2>
+      <ul>{t.safe.map((s) => <li>{s}</li>)}</ul>
+      <p class="note">{ko ? "파일 값 확인 예:" : "Hash check example:"}</p>
+      <pre class="result">Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256</pre>
+      <h2>{ko ? "필요한 것" : "Requirements"}</h2>
+      <ul>
+        <li>{ko ? "윈도우 10 또는 11, 64비트" : "Windows 10 or 11, 64-bit"}</li>
+        <li>{t.webview}</li>
+        <li>{ko ? "관리자 권한 없이 사용자 계정에 설치됩니다. 삭제는 «설정 → 앱» 에서." : "Installs per user without admin rights. Uninstall from «Settings → Apps»."}</li>
+      </ul>
+    </section>
+  </div>
+</Base>
