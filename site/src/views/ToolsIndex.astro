@@ -10,6 +10,7 @@ const { lang } = Astro.props;
 const ko = lang === "ko";
 const items = [
   { path: "tools/checksum/", ko: ["CRC·체크섬 계산기", "CRC16 Modbus·CCITT·XMODEM, CRC8, LRC, BCC, SUM8, SUM16 을 한 번에."], en: ["CRC & Checksum Calculator", "CRC16 Modbus/CCITT/XMODEM, CRC8, LRC, BCC, SUM8 and SUM16 at once."] },
+  { path: "tools/modbus/", ko: ["Modbus RTU 요청 만들기", "국번·함수·주소·개수 → CRC 까지 붙은 요청 바이트. 40001 표기 지원."], en: ["Modbus RTU Request Builder", "Slave, function, address, quantity → request bytes with CRC. Accepts 40001 notation."] },
   { path: "tools/hex-ascii/", ko: ["HEX ↔ ASCII 변환기", String.raw`바이트를 글자로, 글자를 바이트로. 제어 문자는 \r \n \xNN 으로.`], en: ["HEX ↔ ASCII Converter", String.raw`Bytes to text and back. Control characters as \r \n \xNN.`] },
 ];
 ---
