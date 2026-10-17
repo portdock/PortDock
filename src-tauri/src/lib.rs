@@ -39,12 +39,12 @@ fn build(spec: &SendSpec) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn open_session(
     sessions: State<Sessions>,
     config: SerialConfig,
@@ -62,7 +62,7 @@ fn open_session(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn close_session(sessions: State<Sessions>, id: String) {
     let s = sessions.0.lock().unwrap().remove(&id);
     if let Some(s) = s {
@@ -82,17 +82,17 @@ fn set_framing(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Result<(), String> {
     let map = sessions.0.lock().unwrap();
     map.get(&id).ok_or("세션이 없습니다")?.set_log(path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn send(sessions: State<Sessions>, id: String, spec: SendSpec) -> Result<Vec<u8>, String> {
     let bytes = build(&spec)?;
     let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.send(&bytes)?;
+    map.get(&id).ok_or("세션이 없습니다")?.send(bytes.clone())?;
     Ok(bytes)
 }
 

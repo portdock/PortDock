@@ -42,31 +42,49 @@ fn modbus_gap(baud: u32) -> Duration {
     Duration::from_micros(micros.max(3_000))
 }
 
+/// 끊김 없는 스트림에서 버퍼가 끝없이 커지지 않도록 이 길이에서 강제로 자른다
+pub const MAX_FRAME: usize = 16 * 1024;
+
+/// 확정된 프레임과 그 첫 바이트를 받은 시각
+pub type Cut = (Instant, Vec<u8>);
+
 pub struct Framer {
     mode: FrameMode,
     buf: Vec<u8>,
+    /// 지금 쌓는 프레임의 첫 바이트 시각
+    first_rx: Option<Instant>,
     last_rx: Option<Instant>,
 }
 
 impl Framer {
     pub fn new(mode: FrameMode) -> Self {
-        Self { mode, buf: Vec::new(), last_rx: None }
+        Self { mode, buf: Vec::new(), first_rx: None, last_rx: None }
     }
 
     pub fn set_mode(&mut self, mode: FrameMode) {
         self.mode = mode;
     }
 
+    fn take(&mut self) -> Cut {
+        let t = self.first_rx.take().unwrap_or_else(Instant::now);
+        (t, std::mem::take(&mut self.buf))
+    }
+
     /// 받은 바이트를 넣고, 확정된 프레임들을 돌려준다.
-    pub fn feed(&mut self, data: &[u8], now: Instant) -> Vec<Vec<u8>> {
+    pub fn feed(&mut self, data: &[u8], now: Instant) -> Vec<Cut> {
         let mut out = Vec::new();
         // 직전 바이트와 간격이 gap 을 넘었으면 이전 덩어리부터 내보낸다
         if let Some(t) = self.last_rx
-            && !self.buf.is_empty() && now.duration_since(t) >= self.mode.gap() {
-                out.push(std::mem::take(&mut self.buf));
-            }
+            && !self.buf.is_empty()
+            && now.duration_since(t) >= self.mode.gap()
+        {
+            out.push(self.take());
+        }
         self.last_rx = Some(now);
         for &b in data {
+            if self.buf.is_empty() {
+                self.first_rx = Some(now);
+            }
             self.buf.push(b);
             if let Some(frame) = self.try_cut() {
                 out.push(frame);
@@ -76,15 +94,12 @@ impl Framer {
     }
 
     /// 시간이 흘렀는지 확인해 무응답 시간이 지났으면 쌓인 것을 내보낸다.
-    pub fn poll(&mut self, now: Instant) -> Option<Vec<u8>> {
+    pub fn poll(&mut self, now: Instant) -> Option<Cut> {
         let t = self.last_rx?;
-        if !self.buf.is_empty() && now.duration_since(t) >= self.mode.gap() {
-            return Some(std::mem::take(&mut self.buf));
-        }
-        None
+        (!self.buf.is_empty() && now.duration_since(t) >= self.mode.gap()).then(|| self.take())
     }
 
-    fn try_cut(&mut self) -> Option<Vec<u8>> {
+    fn try_cut(&mut self) -> Option<Cut> {
         let cut = match &self.mode {
             FrameMode::Gap { .. } => None,
             FrameMode::Terminator { bytes, .. } => {
@@ -92,9 +107,13 @@ impl Framer {
             }
             FrameMode::Fixed { len, .. } => (*len > 0 && self.buf.len() >= *len).then_some(*len),
             FrameMode::ModbusRtu { .. } => modbus_expected_len(&self.buf).filter(|n| self.buf.len() >= *n),
-        }?;
+        }
+        .or((self.buf.len() >= MAX_FRAME).then_some(MAX_FRAME))?;
         let rest = self.buf.split_off(cut);
-        Some(std::mem::replace(&mut self.buf, rest))
+        let t = self.first_rx.unwrap_or_else(Instant::now);
+        // 남은 바이트가 있으면 같은 읽기에서 온 것이므로 같은 시각에서 시작한다
+        self.first_rx = (!rest.is_empty()).then_some(t);
+        Some((t, std::mem::replace(&mut self.buf, rest)))
     }
 }
 
@@ -117,32 +136,55 @@ mod tests {
         Instant::now()
     }
 
+    fn bytes(v: Vec<Cut>) -> Vec<Vec<u8>> {
+        v.into_iter().map(|c| c.1).collect()
+    }
+
+    #[test]
+    fn timestamp_is_first_byte() {
+        let start = t0();
+        let mut f = Framer::new(FrameMode::Gap { gap_ms: 10 });
+        f.feed(b"A", start);
+        f.feed(b"B", start + Duration::from_millis(5));
+        let (t, b) = f.poll(start + Duration::from_millis(20)).unwrap();
+        assert_eq!(t, start);
+        assert_eq!(b, b"AB".to_vec());
+    }
+
+    #[test]
+    fn endless_stream_is_capped() {
+        let mut f = Framer::new(FrameMode::Gap { gap_ms: 1000 });
+        let out = f.feed(&vec![0x55; MAX_FRAME * 2 + 3], t0());
+        assert_eq!(out.len(), 2);
+        assert!(out.iter().all(|c| c.1.len() == MAX_FRAME));
+    }
+
     #[test]
     fn gap_splits_on_silence() {
         let start = t0();
         let mut f = Framer::new(FrameMode::Gap { gap_ms: 10 });
         assert!(f.feed(b"AB", start).is_empty());
         assert!(f.feed(b"C", start + Duration::from_millis(5)).is_empty());
-        assert_eq!(f.poll(start + Duration::from_millis(9)), None);
-        assert_eq!(f.poll(start + Duration::from_millis(16)), Some(b"ABC".to_vec()));
+        assert!(f.poll(start + Duration::from_millis(9)).is_none());
+        assert_eq!(f.poll(start + Duration::from_millis(16)).map(|c| c.1), Some(b"ABC".to_vec()));
         // 다음 덩어리가 gap 뒤에 오면 앞 것이 먼저 나간다
         f.feed(b"X", start + Duration::from_millis(20));
         let out = f.feed(b"Y", start + Duration::from_millis(40));
-        assert_eq!(out, vec![b"X".to_vec()]);
+        assert_eq!(bytes(out), vec![b"X".to_vec()]);
     }
 
     #[test]
     fn terminator_cuts_immediately() {
         let mut f = Framer::new(FrameMode::Terminator { bytes: b"\r\n".to_vec(), gap_ms: 100 });
         let out = f.feed(b"OK\r\nERR\r\nPART", t0());
-        assert_eq!(out, vec![b"OK\r\n".to_vec(), b"ERR\r\n".to_vec()]);
+        assert_eq!(bytes(out), vec![b"OK\r\n".to_vec(), b"ERR\r\n".to_vec()]);
     }
 
     #[test]
     fn fixed_length() {
         let mut f = Framer::new(FrameMode::Fixed { len: 3, gap_ms: 100 });
         let out = f.feed(&[1, 2, 3, 4, 5, 6, 7], t0());
-        assert_eq!(out, vec![vec![1, 2, 3], vec![4, 5, 6]]);
+        assert_eq!(bytes(out), vec![vec![1, 2, 3], vec![4, 5, 6]]);
     }
 
     #[test]
@@ -153,8 +195,8 @@ mod tests {
         data.extend([0x01, 0x83, 0x02, 0xC0, 0xF1]);
         let out = f.feed(&data, t0());
         assert_eq!(out.len(), 2);
-        assert_eq!(out[0].len(), 8);
-        assert_eq!(out[1].len(), 5);
+        assert_eq!(out[0].1.len(), 8);
+        assert_eq!(out[1].1.len(), 5);
     }
 
     #[test]

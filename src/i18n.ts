@@ -52,6 +52,7 @@ const ko = {
   status_idle: "대기",
   values: "값",
   saveLog: "화면 내용 저장",
+  usbGapHint: "USB 변환기는 보통 16ms 단위로 데이터를 넘겨서, 16ms 보다 짧은 간격은 정확히 구분되지 않을 수 있습니다.",
 };
 
 const en: typeof ko = {
@@ -107,6 +108,7 @@ const en: typeof ko = {
   status_idle: "Idle",
   values: "Values",
   saveLog: "Save view",
+  usbGapHint: "USB adapters usually deliver data in ~16 ms chunks, so gaps shorter than 16 ms may not split reliably.",
 };
 
 export type Lang = "ko" | "en";

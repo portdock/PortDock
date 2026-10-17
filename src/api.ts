@@ -65,7 +65,8 @@ export type SessionEvent =
       state: "connected" | "disconnected" | "reconnecting" | "closed";
       port: string;
       message: string | null;
-    };
+    }
+  | { type: "error"; message: string };
 
 export interface SendSpec {
   text: string;

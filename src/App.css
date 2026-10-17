@@ -130,6 +130,9 @@ hr {
   color: var(--muted);
   font-size: 12px;
 }
+.hint.warn {
+  color: var(--fail);
+}
 .ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;

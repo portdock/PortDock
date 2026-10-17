@@ -116,6 +116,8 @@ export default function App() {
       }
       if (arr.length > MAX_FRAMES) arr.splice(0, arr.length - MAX_FRAMES);
       setVersion((v) => v + 1);
+    } else if (e.type === "error") {
+      setError(e.message);
     } else {
       setStatus(e.state);
       setStatusMsg(e.message);
@@ -426,6 +428,8 @@ export default function App() {
             <input type="number" min={1} value={framing.gapMs} onChange={(e) => setFraming({ ...framing, gapMs: Number(e.target.value) || 1 })} />
           </label>
         )}
+        {((framing.kind !== "modbus-rtu" && framing.gapMs < 16) || framing.kind === "modbus-rtu") &&
+          ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
         <label>
           {t("rxCheck")}
           <select value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
