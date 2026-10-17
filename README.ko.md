@@ -1,0 +1,87 @@
+# PortDock
+
+[English](README.md)
+
+윈도우에서 현장 하드웨어를 시험할 때 쓰는 무료 통신 도구 묶음. 프로그램마다 따로 작게 받아 쓰고, 속의 통신·해석 부품은 함께 씁니다.
+
+| 프로그램 | 하는 일 |
+|---|---|
+| **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬, Modbus RTU 풀이, 시각이 찍힌 시험 기록 |
+| **PortDock Modbus Slave** | Modbus RTU 장비 흉내 — 코일·레지스터를 표에서 바꾸고 마스터의 요청을 확인 |
+| **PortDock TCP** | TCP 클라이언트·서버 — 여러 접속, 에코, 자동 재접속 |
+| **PortDock UDP** | UDP 송수신 — 브로드캐스트, 멀티캐스트, 에코 |
+| **PortDock Simulator** | 규칙대로 답하는 가짜 장비(시리얼·TCP·UDP) — «이게 오면 이걸로 답하기» |
+
+홈페이지: <https://portdock.dev>
+
+## 내려받기
+
+**[GitHub Releases](https://github.com/juhak0308/PortDock/releases/latest)** 에서 받습니다. 파일 이름이 늘 같아서 아래 링크는 언제나 최신판을 가리킵니다.
+
+| 프로그램 | 설치판 | 휴대판 |
+|---|---|---|
+| Serial | [PortDock-Serial-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-setup.exe) | [PortDock-Serial-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-portable.zip) |
+| Modbus Slave | [PortDock-Modbus-Slave-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-setup.exe) | [PortDock-Modbus-Slave-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-portable.zip) |
+| TCP | [PortDock-TCP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
+| UDP | [PortDock-UDP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
+| Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
+
+윈도우 10·11, x64.
+
+### 설치판과 휴대판
+
+- **설치판**(`-setup.exe`) — 지금 사용자에게만 설치하므로 **관리자 권한이 필요 없습니다.** 시작 메뉴의 *PortDock* 폴더에 들어가고, 제거 프로그램이 함께 설치됩니다.
+- **휴대판**(`-portable.zip`) — 아무 곳(USB 메모리, 공유 폴더)에 풀고 exe 를 실행합니다. 아무것도 설치하지 않으며, 설정은 exe 옆 `portdock-data` 폴더에 남습니다. 그 폴더에 쓰기 권한이 있어야 합니다.
+
+### «Windows의 PC 보호» 경고
+
+아직 **코드 서명이 없어서**(SignPath 의 오픈소스 무료 서명 신청 예정) 처음 실행할 때 Microsoft Defender SmartScreen 경고가 뜰 수 있습니다. **추가 정보 → 실행** 을 누르세요. 그 전에 받은 파일이 올린 파일과 같은지 확인할 수 있습니다.
+
+```powershell
+Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
+```
+
+나온 값을 같은 릴리스에 붙은 `SHA256SUMS.txt` 와 비교합니다. 릴리스마다 파일별 VirusTotal 검사 링크도 적어 둡니다.
+
+### WebView2
+
+PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 11 에는 기본으로 들어 있고, 업데이트된 윈도우 10 에도 보통 있습니다.
+
+- 설치판은 WebView2 가 없으면 자동으로 받아 설치합니다(인터넷 필요).
+- **인터넷이 없는 PC**: 다른 PC 에서 <https://developer.microsoft.com/microsoft-edge/webview2/> 의 *Evergreen Standalone Installer* 를 받아 옮겨 먼저 설치한 뒤 PortDock 을 설치·실행하세요. 휴대판은 WebView2 를 스스로 설치하지 않습니다.
+
+### 데이터 위치
+
+| | 설정·명령 목록·규칙(WebView2 데이터) | 오류 보고서 |
+|---|---|---|
+| 설치판 | `%LOCALAPPDATA%\dev.portdock.<프로그램>` (예: `dev.portdock.serial`) | `%LOCALAPPDATA%\PortDock\reports\<프로그램>` |
+| 휴대판 | exe 옆 `portdock-data\` | `%LOCALAPPDATA%\PortDock\reports\<프로그램>` |
+
+설정 → *설정 내보내기* 로 모든 설정을 JSON 파일 하나로 저장해 다른 PC 로 옮길 수 있습니다. 로그 파일은 직접 고른 곳에 저장됩니다.
+
+## 소스에서 빌드
+
+필요한 것: 윈도우 10·11, [Node.js](https://nodejs.org/) 22 이상, [Rust](https://rustup.rs/)(stable, MSVC), Visual Studio Build Tools 의 «C++ 를 사용한 데스크톱 개발», WebView2.
+
+```powershell
+git clone https://github.com/juhak0308/PortDock
+cd PortDock
+npm install
+
+npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator 도 같음)
+npm run build:serial      # 설치판 → target\release\bundle\nsis\
+cargo test --workspace    # 테스트
+
+# 휴대판 빌드 (데이터를 exe 옆에)
+npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\portable.conf.json"
+```
+
+구성: `apps/<프로그램>`(각 프로그램의 화면과 Tauri 셸), `crates/core`(공용 Rust — 체크섬·HEX/ASCII·프레임 구분·Modbus·자동응답·세션), `shared/`(공용 화면), `site/`(portdock.dev). 릴리스 절차: [docs/release.md](docs/release.md).
+
+## 라이선스
+
+Copyright (C) 2026 Juhak
+
+PortDock 은 자유 소프트웨어이며 **GNU GPL v3** ([LICENSE](LICENSE)) 에 따라 배포·수정할 수 있습니다. 어떠한 보증도 없습니다.
+
+제3자 구성 요소와 그 라이선스는 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) 에 있으며, 이 파일은 모든 프로그램과 함께 배포됩니다.

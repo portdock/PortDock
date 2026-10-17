@@ -1,0 +1,161 @@
+# 릴리스 — `v*` 태그를 올리면 다섯 앱을 Windows 에서 빌드해 «초안(draft)» 릴리스에 올린다.
+# 사람이 초안을 확인(VirusTotal 링크·변경 내용 적기)한 뒤 «Publish» 를 눌러야 공개된다. 절차: docs/release.md
+#
+# 파일 이름은 버전 없이 고정한다 — https://github.com/juhak0308/PortDock/releases/latest/download/<이름> 이 늘 최신을 가리키게.
+#   PortDock-<App>-setup.exe     설치판(NSIS, 현재 사용자용 — 관리자 권한 필요 없음)
+#   PortDock-<App>-portable.zip  휴대판(exe + LICENSE + THIRD_PARTY_NOTICES.txt + 빈 portdock-data/)
+#   SHA256SUMS.txt               위 파일 모두의 SHA-256
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: # 시험 실행 — 이때는 릴리스를 만들지 않고 빌드 결과(artifact)만 남긴다
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build ${{ matrix.app }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { app: serial, asset: Serial }
+          - { app: modbus-slave, asset: Modbus-Slave }
+          - { app: tcp, asset: TCP }
+          - { app: udp, asset: UDP }
+          - { app: simulator, asset: Simulator }
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Rust (stable)
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.app }}
+
+      - name: npm ci
+        run: npm ci
+
+      - name: 태그와 앱 버전이 맞는지
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $conf = Get-Content "apps/${{ matrix.app }}/src-tauri/tauri.conf.json" -Raw | ConvertFrom-Json
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $ver = $conf.version
+          # version 이 Cargo.toml 경로를 가리키면 그 [package] version 을 읽는다
+          if ($ver -and $ver -notmatch '^\d') {
+            $toml = Get-Content (Join-Path "apps/${{ matrix.app }}/src-tauri" $ver) -Raw
+            if ($toml -match '(?m)^version\s*=\s*"([^"]+)"') { $ver = $Matches[1] }
+            elseif ($toml -match 'version\.workspace\s*=\s*true') { $ver = ((Get-Content Cargo.toml -Raw) -split '\[workspace\.package\]')[1] -replace '(?s).*?version\s*=\s*"([^"]+)".*','$1' }
+          }
+          if (-not $ver) { $ver = ((Get-Content Cargo.toml -Raw) -split '\[workspace\.package\]')[1] -replace '(?s).*?version\s*=\s*"([^"]+)".*','$1' }
+          if ($ver -ne $tag) { throw "app version $ver != tag $tag" }
+
+      - name: 제3자 고지 만들기
+        run: node tools/notices.mjs
+
+      # 1) 설치판 — 같은 target/release/<앱>.exe 를 휴대판 빌드가 덮어쓰므로 반드시 먼저
+      - name: 설치판 빌드 (NSIS)
+        working-directory: apps/${{ matrix.app }}
+        run: npx tauri build --ci --bundles nsis
+
+      # 서명 — SignPath(오픈소스 무료 인증서) 승인 뒤 켠다. 지금은 서명하지 않은 채 배포(사용자는 SmartScreen «추가 정보 → 실행»).
+      # - name: SignPath 서명 (설치판)
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+      #     project-slug: PortDock
+      #     signing-policy-slug: release-signing
+      #     artifact-configuration-slug: nsis
+      #     github-artifact-id: <업로드한 미서명 artifact id>
+      #     wait-for-completion: true
+      #     output-artifact-directory: signed
+
+      - name: 설치판 모으기
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw "NSIS 설치판을 찾지 못함" }
+          Copy-Item $setup.FullName "out/PortDock-${{ matrix.asset }}-setup.exe"
+
+      # 2) 휴대판 — 데이터(설정·WebView2 저장소)를 exe 옆 portdock-data 에 두도록 설정을 덮어써 다시 빌드
+      - name: 휴대판 빌드 (--no-bundle)
+        working-directory: apps/${{ matrix.app }}
+        run: npx tauri build --ci --no-bundle --config "${{ github.workspace }}/tools/portable.conf.json"
+
+      - name: 휴대판 zip
+        run: |
+          $stage = "stage/PortDock-${{ matrix.asset }}"
+          New-Item -ItemType Directory -Force "$stage/portdock-data" | Out-Null
+          # 빈 폴더도 zip 에 들어가게 안내 파일 하나
+          Set-Content -Encoding utf8 "$stage/portdock-data/README.txt" "PortDock portable data folder (settings, WebView2 data). Keep it next to the exe. / 휴대판 데이터 폴더 — exe 옆에 두세요."
+          Copy-Item "target/release/portdock-${{ matrix.app }}.exe" "$stage/PortDock ${{ matrix.asset }}.exe"
+          Copy-Item LICENSE "$stage/LICENSE.txt"
+          Copy-Item THIRD_PARTY_NOTICES.txt "$stage/THIRD_PARTY_NOTICES.txt"
+          Compress-Archive -Path "$stage/*" -DestinationPath "out/PortDock-${{ matrix.asset }}-portable.zip" -CompressionLevel Optimal
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portdock-${{ matrix.app }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: SHA256SUMS.txt
+        working-directory: dist
+        run: |
+          sha256sum PortDock-* | sort -k2 > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2.2.2
+        with:
+          draft: true
+          name: PortDock ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/PortDock-*-setup.exe
+            dist/PortDock-*-portable.zip
+            dist/SHA256SUMS.txt
+          body: |
+            ## 내려받기 / Download
+            | 프로그램 | 설치판 (Installer) | 휴대판 (Portable) |
+            |---|---|---|
+            | Serial | PortDock-Serial-setup.exe | PortDock-Serial-portable.zip |
+            | Modbus Slave | PortDock-Modbus-Slave-setup.exe | PortDock-Modbus-Slave-portable.zip |
+            | TCP | PortDock-TCP-setup.exe | PortDock-TCP-portable.zip |
+            | UDP | PortDock-UDP-setup.exe | PortDock-UDP-portable.zip |
+            | Simulator | PortDock-Simulator-setup.exe | PortDock-Simulator-portable.zip |
+
+            - 아직 코드 서명이 없어 Windows SmartScreen 경고가 뜹니다 → «추가 정보» → «실행». / Not code-signed yet: SmartScreen → "More info" → "Run anyway".
+            - 확인 / Verify: `Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256` 값을 SHA256SUMS.txt 와 비교.
+            - VirusTotal: <!-- 공개 전에 파일마다 검사 링크를 붙인다 -->
