@@ -126,6 +126,11 @@ impl Framer {
         (!self.buf.is_empty() && now.duration_since(t) >= self.mode.gap()).then(|| self.take())
     }
 
+    /// 무응답 시간과 상관없이 남은 미완성 바이트를 모두 내보낸다(닫기·끊김 직전)
+    pub fn flush(&mut self) -> Option<Cut> {
+        (!self.buf.is_empty()).then(|| self.take())
+    }
+
     fn try_cut(&mut self) -> Option<Cut> {
         let cut = match &self.mode {
             FrameMode::Gap { .. } => None,
@@ -288,6 +293,18 @@ mod tests {
     fn modbus_request_mode_serde_name() {
         let m: FrameMode = serde_json::from_str(r#"{"kind":"modbus-rtu-request","baud":9600}"#).unwrap();
         assert_eq!(m, FrameMode::ModbusRtuRequest { baud: 9600, min_gap_ms: 0 });
+    }
+
+    /// 닫을 때 남은 바이트는 무응답 시간이 아무리 길어도(설정 파일로 들어온 큰 값) 버리지 않는다
+    #[test]
+    fn flush_returns_rest_even_with_huge_gap() {
+        let start = t0();
+        let mut f = Framer::new(FrameMode::Gap { gap_ms: 5 * 3_600_000 });
+        assert!(f.feed(b"TAIL", start).is_empty());
+        // 예전 닫기 경로: poll(now + 1시간) — 무응답 시간이 1시간을 넘으면 아무것도 나오지 않았다
+        assert!(f.poll(start + Duration::from_secs(3600)).is_none());
+        assert_eq!(f.flush().map(|c| c.1), Some(b"TAIL".to_vec()));
+        assert!(f.flush().is_none());
     }
 
     #[test]

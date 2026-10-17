@@ -133,6 +133,11 @@ pub fn now_ms() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
 }
 
+/// 단조 시각(프레임 첫 바이트를 받은 순간) → 벽시계 ms. `(now_i, now_w)` 는 같은 순간에 잰 짝
+pub fn wall_ms(at: std::time::Instant, now_i: std::time::Instant, now_w: u64) -> u64 {
+    now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64)
+}
+
 /// «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]»
 pub fn log_line(f: &Frame) -> String {
     let t = chrono::DateTime::from_timestamp_millis(f.ts as i64)

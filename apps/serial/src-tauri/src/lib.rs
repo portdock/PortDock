@@ -89,13 +89,13 @@ fn verify_checksum(kind: ChecksumKind, bytes: Vec<u8>) -> Option<bool> {
 }
 
 /// 화면 내용 저장 — 사용자가 저장 대화상자에서 고른 경로만 받는다
-#[tauri::command]
+#[tauri::command(async)]
 fn write_text(path: String, text: String) -> Result<(), String> {
     std::fs::write(&path, text).map_err(|e| format!("{path}: {e}"))
 }
 
 /// 설정 가져오기 — 사용자가 열기 대화상자에서 고른 경로만
-#[tauri::command]
+#[tauri::command(async)]
 fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }

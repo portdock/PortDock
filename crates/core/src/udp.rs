@@ -105,8 +105,11 @@ impl Shared {
                 q.pop_front();
             }
         }
+        // 루프백·브로드캐스트는 send_to 안에서 수신 스레드가 깨어 RX 를 먼저 쌓을 수 있다 —
+        // 쌓는 자리를 쥔 채로 보내 TX 줄이 그 RX 보다 앞에 오게 한다(UDP 송신은 막히지 않는다)
+        let mut pending = self.pending.lock().unwrap();
         self.socket.send_to(bytes, to).map_err(|e| format!("{to}: {}", crate::oserr::net(&e)))?;
-        self.pending.lock().unwrap().push(Frame::data("tx", bytes.to_vec(), None, Some(to.to_string())));
+        pending.push(Frame::data("tx", bytes.to_vec(), None, Some(to.to_string())));
         Ok(())
     }
 
@@ -469,6 +472,40 @@ mod tests {
             }
         }
         got
+    }
+
+    /// 자기 포트로 보낸 것이 루프백으로 돌아와도 기록 순서는 TX → RX
+    #[test]
+    fn own_loopback_tx_logged_before_rx() {
+        let (s, rx) = sink();
+        let mut c = cfg(0, false);
+        c.bind_host = "0.0.0.0".into();
+        let u = UdpSession::start(c, None, None, s).unwrap();
+        let me = format!("127.0.0.1:{}", u.local_addr().port());
+        for i in 0..200u16 {
+            u.send(Some(&me), &i.to_be_bytes()).unwrap();
+        }
+        let mut seen_tx = std::collections::HashSet::new();
+        let mut rx_count = 0;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while rx_count < 200 && Instant::now() < deadline {
+            if let Ok(SessionEvent::Frames { frames }) = rx.recv_timeout(Duration::from_millis(100)) {
+                for f in frames {
+                    match f.dir {
+                        "tx" => {
+                            seen_tx.insert(f.bytes);
+                        }
+                        "rx" => {
+                            assert!(seen_tx.contains(&f.bytes), "RX {:?} logged before its TX", f.bytes);
+                            rx_count += 1;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        assert_eq!(rx_count, 200);
+        u.stop();
     }
 
     #[test]

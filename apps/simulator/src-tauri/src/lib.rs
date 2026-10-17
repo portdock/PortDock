@@ -175,12 +175,12 @@ fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
 }
 
 /// 규칙 묶음 저장·불러오기 — 사용자가 대화상자에서 고른 경로만
-#[tauri::command]
+#[tauri::command(async)]
 fn write_text(path: String, text: String) -> Result<(), String> {
     std::fs::write(&path, text).map_err(|e| format!("{path}: {e}"))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }

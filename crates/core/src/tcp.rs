@@ -167,7 +167,10 @@ impl Shared {
         }
         let check = *self.rx_check.lock().unwrap();
         let term = conn.framer.lock().unwrap().terminator().to_vec();
-        for (_, bytes) in frames {
+        // 시각은 첫 바이트를 받은 순간 — 끊은 순간(무응답 시간 뒤)이 아니다. 시리얼과 같은 기준
+        let (now_i, now_w) = (Instant::now(), crate::event::now_ms());
+        for (at, bytes) in frames {
+            let ts = crate::event::wall_ms(at, now_i, now_w);
             let c = check.and_then(|k| k.verify_before(&bytes, &term));
             // 방금 우리가 보낸 응답이 그대로 돌아온 것이면(상대가 에코) 다시 답하지 않는다
             let looped = {
@@ -183,7 +186,7 @@ impl Shared {
                 let out = r(&bytes);
                 reply = Some((out.bytes.unwrap_or_default(), out.delay_ms, out.note));
             }
-            self.pending.lock().unwrap().push(Frame::data("rx", bytes.clone(), c, Some(conn.addr.clone())));
+            self.pending.lock().unwrap().push(Frame { ts, ..Frame::data("rx", bytes.clone(), c, Some(conn.addr.clone())) });
             if self.server && self.echo.load(Ordering::SeqCst) && self.echo_allowed() {
                 self.write_to(conn, &bytes);
             }
@@ -272,7 +275,8 @@ impl Shared {
                 break crate::tr!("사용자가 끊음", "disconnected by user").to_string();
             }
         };
-        if let Some(f) = conn.framer.lock().unwrap().poll(Instant::now() + Duration::from_secs(3600)) {
+        let rest = conn.framer.lock().unwrap().flush();
+        if let Some(f) = rest {
             self.push_rx(&conn, vec![f]);
         }
         self.conns.lock().unwrap().remove(&id);
@@ -455,6 +459,26 @@ impl TcpSession {
     }
 }
 
+/// 접속 시도를 도우미 스레드에서 하고, 끝나거나 멈출 때까지 50ms 마다 본다. 멈추면 None
+/// (도우미는 남은 시도를 마치고 스스로 끝난다 — 그 사이 붙은 연결은 바로 버려진다)
+fn connect_stoppable(s: &Shared, host: &str, port: u16, target: &str) -> Option<Result<TcpStream, String>> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let (host, target2) = (host.to_string(), target.to_string());
+    std::thread::spawn(move || {
+        let _ = tx.send(resolve_all(&host, port).and_then(|a| connect_any(&a, &target2)));
+    });
+    loop {
+        match rx.recv_timeout(Duration::from_millis(50)) {
+            Ok(r) => return Some(r),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) if s.stop.load(Ordering::SeqCst) => return None,
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                return Some(Err(format!("{target}: {}", crate::tr!("접속 시도가 중단됐습니다", "connect attempt aborted"))));
+            }
+        }
+    }
+}
+
 fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
     // 끊긴·실패한 이유 — 다음 상태(재접속 대기·닫힘) 문구에 이어 붙여 덮어쓰지 않는다
     let mut last: Option<String> = None;
@@ -462,7 +486,8 @@ fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
         if s.stop.load(Ordering::SeqCst) {
             break;
         }
-        let attempt = resolve_all(&cfg.host, cfg.port).and_then(|a| connect_any(&a, &target));
+        // 이름 조회·접속(주소마다 최대 3초)은 따로 — 기다리는 동안 «멈춤» 을 누르면 바로 끝낸다
+        let Some(attempt) = connect_stoppable(&s, &cfg.host, cfg.port, &target) else { break };
         match attempt {
             Ok(stream) => {
                 if let Some((id, conn, reader)) = s.add(stream, cfg.no_delay) {
@@ -627,6 +652,34 @@ mod tests {
         assert_eq!(wait_frames(&srx, "rx", 1)[0].bytes, b"hi".to_vec());
         client.stop();
         server.stop();
+    }
+
+    /// RX 시각은 첫 바이트를 받은 순간 — 무응답 시간(여기선 300ms)만큼 늦게 찍히면 응답 시간 측정이 틀린다
+    #[test]
+    fn rx_timestamp_is_first_byte_not_cut_time() {
+        let (ssink, srx) = sink();
+        let server = TcpSession::start(cfg(TcpMode::Server, 0), FrameMode::Gap { gap_ms: 300 }, None, None, ssink).unwrap();
+        let port = server.local_addr().unwrap().port();
+        let mut raw = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        let sent_at = crate::event::now_ms();
+        raw.write_all(b"A").unwrap();
+        let got = wait_frames(&srx, "rx", 1);
+        let lag = got[0].ts.saturating_sub(sent_at);
+        assert!(lag < 150, "rx ts {lag}ms after send");
+        server.stop();
+    }
+
+    /// 접속 중(응답 없는 주소 — 3초 시간 초과)에 멈추면 곧바로 끝난다
+    #[test]
+    fn stop_while_connecting_is_prompt() {
+        let (csink, _crx) = sink();
+        let c = TcpConfig { host: "192.0.2.1".into(), ..cfg(TcpMode::Client, 9) };
+        let client = TcpSession::start(c, FrameMode::default(), None, None, csink).unwrap();
+        std::thread::sleep(Duration::from_millis(200));
+        let t = Instant::now();
+        client.stop();
+        assert!(t.elapsed() < Duration::from_millis(1000), "stop took {:?}", t.elapsed());
     }
 
     fn rule(pat: &str, reply: &str) -> crate::autoreply::Rule {

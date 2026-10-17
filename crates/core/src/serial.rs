@@ -76,6 +76,9 @@ struct Shared {
     last_reply: Mutex<Option<(Vec<u8>, Instant)>>,
     /// 목록 감시 스레드가 «장치가 목록에서 사라짐» 을 알리는 자리
     gone: AtomicBool,
+    /// 지금 열린 장치의 식별 — 재연결로 COM 번호가 바뀌면 읽기 스레드가 새것으로 바꾼다
+    /// (일련번호 없는 USB 는 식별에 포트 이름이 들어 있어, 옛것으로 감시하면 «사라짐» 으로 오인한다)
+    identity: Mutex<Identity>,
     stop: AtomicBool,
 }
 
@@ -134,14 +137,18 @@ struct Identity {
 
 impl Identity {
     fn of(name: &str) -> Self {
-        match ports::list().into_iter().find(|p| p.name == name) {
-            Some(p) => Self {
-                key: p.identity(),
-                vid_pid: p.vid.zip(p.pid),
-                has_serial: p.serial_number.as_deref().is_some_and(|s| !s.is_empty()),
-                listed: true,
-            },
+        match ports::list().iter().find(|p| p.name == name) {
+            Some(p) => Self::from_info(p),
             None => Self { key: name.to_string(), vid_pid: None, has_serial: false, listed: false },
+        }
+    }
+
+    fn from_info(p: &PortInfo) -> Self {
+        Self {
+            key: p.identity(),
+            vid_pid: p.vid.zip(p.pid),
+            has_serial: p.serial_number.as_deref().is_some_and(|s| !s.is_empty()),
+            listed: true,
         }
     }
 
@@ -196,6 +203,7 @@ impl Session {
             responder: Mutex::new(responder),
             last_reply: Mutex::new(None),
             gone: AtomicBool::new(false),
+            identity: Mutex::new(identity.clone()),
             stop: AtomicBool::new(false),
         });
         events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
@@ -210,8 +218,8 @@ impl Session {
         let writer = std::thread::spawn(move || writer_loop(rx, s, ev));
         // 포트 목록 조회(SetupAPI)는 수십~수백 ms 걸린다 — 읽기 스레드를 막지 않게 따로
         let watcher = identity.listed.then(|| {
-            let (s, id) = (shared.clone(), identity.clone());
-            std::thread::spawn(move || watch_loop(s, id))
+            let s = shared.clone();
+            std::thread::spawn(move || watch_loop(s))
         });
         let (s, replies) = (shared.clone(), tx.clone());
         let reader = std::thread::spawn(move || reader_loop(port, cfg, identity, s, events, replies));
@@ -386,7 +394,7 @@ fn status(events: &EventSink, state: &'static str, port: &str, message: Option<S
 fn reader_loop(
     port: Port,
     cfg: SerialConfig,
-    identity: Identity,
+    mut identity: Identity,
     s: Arc<Shared>,
     events: EventSink,
     replies: Sender<Vec<u8>>,
@@ -432,9 +440,10 @@ fn reader_loop(
             status(&events, "disconnected", &name, Some(msg.clone()));
             let before: Vec<String> = ports::list().into_iter().map(|p| p.name).collect();
             match reconnect(&identity, &before, &s, &events, &msg) {
-                Some((p, n)) => {
+                Some((p, n, id)) => {
                     note(&s, if n == name { format!("RECONNECT {n}") } else { format!("RECONNECT {name} → {n}") });
                     s.cfg.lock().unwrap().port = n.clone();
+                    identity = id;
                     port = Some(p);
                     name = n;
                     lines = None;
@@ -501,9 +510,12 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
         let deadline = Instant::now() + budget;
         let mut sent = 0;
         let mut error = None;
+        let mut stopping = false;
         while sent < bytes.len() {
+            // 닫는 중이면 그만 보내되, 이미 나간 만큼은 아래에서 TX 로 남긴다
             if s.stop.load(Ordering::SeqCst) {
-                return;
+                stopping = true;
+                break;
             }
             let mut w = s.writer.lock().unwrap();
             let Some(port) = w.as_mut() else {
@@ -514,7 +526,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
                 Ok(n) => sent += n,
                 Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => {}
                 Err(e) => {
-                    error = Some(e.to_string());
+                    error = Some(crate::oserr::serial_io(&e));
                     break;
                 }
             }
@@ -533,6 +545,9 @@ fn writer_loop(rx: Receiver<Vec<u8>>, s: Arc<Shared>, events: EventSink) {
         if let Some(message) = error {
             events.send(SessionEvent::Error { message });
         }
+        if stopping {
+            return;
+        }
     }
 }
 
@@ -547,7 +562,7 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
     let (now_i, now_w) = (Instant::now(), now_ms());
     let mut pending = s.pending.lock().unwrap();
     for (at, bytes) in frames {
-        let ts = now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64);
+        let ts = crate::event::wall_ms(at, now_i, now_w);
         let c = check.and_then(|k| k.verify_before(&bytes, &term));
         // 방금 우리가 보낸 응답이 그 직후 그대로 돌아온 것이면(루프백·에코) 답하지 않는다 — 무한 반복 방지.
         // 판정 창 = 응답 송신 시간 + 300ms. 한 번 쓰면 비운다
@@ -599,14 +614,14 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
 
 /// 프레임 구분기에 남은 미완성 바이트를 내보낸다(닫기·끊김 직전)
 fn drain(s: &Shared, replies: &Sender<Vec<u8>>) {
-    let tail = s.framer.lock().unwrap().poll(Instant::now() + Duration::from_secs(3600));
+    let tail = s.framer.lock().unwrap().flush();
     if let Some(f) = tail {
         push_rx(s, vec![f], replies);
     }
 }
 
 /// 1초마다 포트 목록에서 장치가 사라졌는지 본다(연결돼 있을 때만)
-fn watch_loop(s: Arc<Shared>, identity: Identity) {
+fn watch_loop(s: Arc<Shared>) {
     while !s.stop.load(Ordering::SeqCst) {
         for _ in 0..(WATCH.as_millis() / 50) {
             if s.stop.load(Ordering::SeqCst) {
@@ -615,7 +630,13 @@ fn watch_loop(s: Arc<Shared>, identity: Identity) {
             std::thread::sleep(Duration::from_millis(50));
         }
         let online = s.writer.lock().unwrap().is_some();
-        if online && !identity.present(&ports::list()) {
+        if !online {
+            continue;
+        }
+        let list = ports::list();
+        // 목록을 읽는 동안(수백 ms) 재연결로 식별이 바뀌었을 수 있어 읽은 뒤에 본다
+        let identity = s.identity.lock().unwrap().clone();
+        if identity.listed && !identity.present(&list) && s.writer.lock().unwrap().is_some() {
             s.gone.store(true, Ordering::SeqCst);
         }
     }
@@ -629,7 +650,7 @@ fn flush(s: &Shared, events: &EventSink) {
 /// 같은 장치가 다시 나타날 때까지 기다렸다가 연다. 사용자가 닫으면 None.
 /// 설정은 매 회차 다시 읽는다 — 기다리는 동안 사용자가 속도를 바꾸거나 자동 재연결을 끌 수 있다.
 /// 상태 문구에는 끊긴 이유(`reason`)를 이어 붙인다 — 다시 열기 실패가 생기면 그것으로 바꾼다
-fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventSink, reason: &str) -> Option<(Port, String)> {
+fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventSink, reason: &str) -> Option<(Port, String, Identity)> {
     let first = s.cfg.lock().unwrap().clone();
     if !first.auto_reconnect {
         status(events, "closed", &first.port, Some(closed_reason(reason)));
@@ -668,11 +689,14 @@ fn reconnect(identity: &Identity, before: &[String], s: &Shared, events: &EventS
             }
         };
         let Ok(w) = p.try_clone() else { continue };
+        let id = Identity::from_info(info);
+        // 식별을 먼저 바꾸고 나서 «연결됨» 으로 — 감시 스레드가 옛 식별로 «사라짐» 을 내지 않게
+        *s.identity.lock().unwrap() = id.clone();
         s.gone.store(false, Ordering::SeqCst);
         *s.writer.lock().unwrap() = Some(w);
         let msg = (c.port != cfg.port).then(|| format!("{} → {}", cfg.port, c.port));
         status(events, "connected", &c.port, msg);
-        return Some((p, c.port));
+        return Some((p, c.port, id));
     }
 }
 
@@ -742,5 +766,18 @@ mod tests {
         // 새로 생긴 것이 둘이면 어느 것인지 모르므로 기다린다
         let list2 = vec![usb("COM9", 0x1A86, 0x7523, None), usb("COM10", 0x1A86, 0x7523, None)];
         assert!(id.find(&list2, &before).is_none());
+    }
+
+    /// 일련번호 없는 USB 가 COM3 → COM9 로 다시 붙은 뒤, 목록 감시는 새 식별로 봐야 한다.
+    /// 옛 식별(«…@COM3»)로 보면 1초 뒤 «사라짐» → 끊김 → COM9 는 이미 `before` 에 있어 영영 재연결 대기
+    #[test]
+    fn identity_follows_reconnected_com_name() {
+        let old = Identity::from_info(&usb("COM3", 0x1A86, 0x7523, None));
+        let now = vec![usb("COM9", 0x1A86, 0x7523, None)];
+        let found = old.find(&now, &[]).unwrap();
+        assert!(!old.present(&now), "stale identity looks gone");
+        let new = Identity::from_info(found);
+        assert!(new.present(&now));
+        assert!(new.listed && !new.has_serial && new.vid_pid == Some((0x1A86, 0x7523)));
     }
 }
