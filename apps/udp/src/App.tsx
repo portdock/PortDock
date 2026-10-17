@@ -16,6 +16,8 @@ import {
   type UdpConfig,
 } from "./api";
 import { tip } from "@shared/tips";
+import { ReportButton } from "@shared/ReportDialog";
+import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
@@ -75,6 +77,10 @@ export default function App() {
   const [senders, setSenders] = useState<Peer[]>([]);
   const [to, setTo] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
+  useEffect(() => {
+    if (error) noteError(error);
+  }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
   const framesRef = useRef<Frame[]>([]);
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
@@ -274,6 +280,7 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <ReportButton app="PortDock UDP" lang={lang} frames={() => framesRef.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>

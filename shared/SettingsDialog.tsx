@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import { NumInput } from "./NumInput";
-import { exportAll, importAll, LIMITS, type Settings, type TimeFormat, type Theme } from "./settings";
+import { exportAll, importAll, LIMITS, type AutoReport, type Settings, type TimeFormat, type Theme } from "./settings";
+import { autoSendAvailable } from "./report";
 
 const T = {
   ko: {
@@ -25,6 +26,11 @@ const T = {
     choose: "고르기",
     noFolder: "폴더를 고르세요",
     confirmExit: "연결·기록 중에 창을 닫으려 하면 묻기",
+    autoReport: "오류 자동 전송",
+    arAsk: "오류로 꺼지면 묻기",
+    arOn: "묻지 않고 자동으로 보내기",
+    arOff: "보내지 않기",
+    autoReportHint: "프로그램 오류(예외·비정상 종료)의 원인과 프로그램·윈도우 버전만 개발자에게 보냅니다. 통신 내용·명령 목록·규칙·IP 는 보내지 않습니다. 인터넷이 없으면 다음에 다시 시도합니다.",
     backup: "설정 백업",
     exportAll: "설정 내보내기",
     importAll: "설정 가져오기",
@@ -57,6 +63,11 @@ const T = {
     choose: "Choose",
     noFolder: "Choose a folder",
     confirmExit: "Ask before closing while connected or logging",
+    autoReport: "Automatic error reports",
+    arAsk: "Ask after a crash",
+    arOn: "Send automatically",
+    arOff: "Never send",
+    autoReportHint: "Sends only the cause of program errors (exceptions, crashes) and the program/Windows version. Traffic, commands, rules and IP settings are never sent. Offline PCs retry next time.",
     backup: "Backup",
     exportAll: "Export settings",
     importAll: "Import settings",
@@ -189,6 +200,19 @@ export function SettingsDialog({
           <label className="inline">
             <input type="checkbox" checked={settings.confirmExit} onChange={(e) => update({ confirmExit: e.target.checked })} /> {t.confirmExit}
           </label>
+          {autoSendAvailable() && (
+            <>
+              <label>
+                {t.autoReport}
+                <select value={settings.autoReport} onChange={(e) => update({ autoReport: e.target.value as AutoReport })}>
+                  <option value="ask">{t.arAsk}</option>
+                  <option value="on">{t.arOn}</option>
+                  <option value="off">{t.arOff}</option>
+                </select>
+              </label>
+              <span className="hint">{t.autoReportHint}</span>
+            </>
+          )}
           <hr />
           <label>{t.backup}</label>
           <div className="row2">

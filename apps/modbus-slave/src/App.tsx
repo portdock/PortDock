@@ -14,6 +14,8 @@ import {
   type Table,
 } from "./api";
 import { tip } from "@shared/tips";
+import { ReportButton } from "@shared/ReportDialog";
+import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { samePorts } from "@shared/framing";
@@ -113,6 +115,10 @@ export default function App() {
   const [status, setStatus] = useState<Status>("idle");
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
+  useEffect(() => {
+    if (error) noteError(error);
+  }, [error]);
   const [logPath, setLogPath] = useState<string | null>(null);
 
   // ---- 통신 기록
@@ -377,6 +383,7 @@ export default function App() {
             <option value="ko">한국어</option>
             <option value="en">English</option>
           </select>
+          <ReportButton app="PortDock Modbus Slave" lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>

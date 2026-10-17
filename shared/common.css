@@ -228,3 +228,45 @@ html .dump {
   top: auto;
   bottom: -5px;
 }
+
+/* ---- 문제 보고 */
+.modal.report {
+  width: min(720px, calc(100vw - 32px));
+}
+.modal.report textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font: inherit;
+}
+.report-preview {
+  height: 220px;
+  font-size: 11px;
+  white-space: pre;
+}
+.report-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.row2.wrap {
+  flex-wrap: wrap;
+}
+.ok-msg {
+  font-size: 12px;
+  color: var(--ok);
+  word-break: break-all;
+}
+.icon-btn.alert {
+  color: #fff;
+  background: var(--fail);
+  border-color: var(--fail);
+}
+/* 머리줄 버튼(언어·!·?·⚙)이 좁은 칸에서 넘치지 않게 — 넘치면 다음 줄 오른쪽으로 */
+.brand {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.brand-tools {
+  margin-left: auto;
+}

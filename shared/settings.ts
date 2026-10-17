@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
 
 export type Theme = "system" | "light" | "dark";
+/** 오류 자동 전송 — ask: 오류로 꺼졌을 때 묻기, on: 묻지 않고 보내기, off: 보내지 않기 */
+export type AutoReport = "ask" | "on" | "off";
 export type TimeFormat = "local" | "local-date" | "utc" | "elapsed";
 
 export interface Settings {
@@ -21,6 +23,7 @@ export interface Settings {
   logFolder: string;
   /** 연결·기록 중에 창을 닫으려 하면 묻기 */
   confirmExit: boolean;
+  autoReport: AutoReport;
 }
 
 export const DEFAULTS: Settings = {
@@ -33,6 +36,7 @@ export const DEFAULTS: Settings = {
   autoLog: false,
   logFolder: "",
   confirmExit: true,
+  autoReport: "ask",
 };
 
 export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000] } as const;
@@ -43,6 +47,7 @@ function sanitize(s: Partial<Settings>): Settings {
   v.maxLines = Math.min(LIMITS.maxLines[1], Math.max(LIMITS.maxLines[0], Math.round(v.maxLines) || DEFAULTS.maxLines));
   if (!["system", "light", "dark"].includes(v.theme)) v.theme = "system";
   if (!["local", "local-date", "utc", "elapsed"].includes(v.timeFormat)) v.timeFormat = "local";
+  if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
   if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
   return v;
 }

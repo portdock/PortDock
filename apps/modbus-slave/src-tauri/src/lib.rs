@@ -212,14 +212,35 @@ fn set_lang(lang: String) {
     portdock_core::i18n::set_lang(&lang);
 }
 
+/// 문제 보고 — 지난번에 죽으며 남긴 기록(보낼지는 화면에서 사용자가 정한다)
+#[tauri::command]
+fn report_pending() -> Vec<portdock_core::report::CrashReport> {
+    portdock_core::report::pending()
+}
+
+#[tauri::command]
+fn report_dismiss(name: String) -> Result<(), String> {
+    portdock_core::report::dismiss(&name)
+}
+
+#[tauri::command]
+fn report_env() -> portdock_core::report::EnvInfo {
+    portdock_core::report::env_info()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    portdock_core::report::install("modbus-slave", env!("CARGO_PKG_VERSION"));
+    portdock_core::report::test_crash_if_asked();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
+            report_pending,
+            report_dismiss,
+            report_env,
             list_ports,
             open,
             close,
