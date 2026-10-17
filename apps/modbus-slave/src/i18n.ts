@@ -51,6 +51,9 @@ const ko = {
   status_closed: "닫힘",
   fill: "채우기",
   fillHint: "선택 범위를 0, 1, 2… 로 채움",
+  delete: "삭제",
+  badTableFile: "표 파일 형식이 틀립니다(start·values 0~65535 확인).",
+  importOther: "파일의 대상(슬레이브/표 {a})이 지금 보는 것({b})과 다릅니다. 지금 표에 넣을까요?",
 };
 
 const en: typeof ko = {
@@ -105,6 +108,9 @@ const en: typeof ko = {
   status_closed: "Closed",
   fill: "Fill",
   fillHint: "Fill the range with 0, 1, 2…",
+  delete: "Delete",
+  badTableFile: "Invalid table file (check start and values 0–65535).",
+  importOther: "The file targets slave/table {a}, but you are viewing {b}. Load it into the current table?",
 };
 
 export type Lang = "ko" | "en";

@@ -23,6 +23,8 @@ export interface Frame {
   check: boolean | null;
   note?: string;
   peer?: string;
+  /** 화면에서 붙이는 일련번호(선택 줄 유지용) */
+  seq?: number;
 }
 
 export interface Peer {

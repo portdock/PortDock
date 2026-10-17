@@ -671,3 +671,17 @@ input.bad {
     display: inline-block;
   }
 }
+
+.chip-btn,
+.chip-x {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+.chip-x {
+  margin-left: 6px;
+  color: var(--muted);
+}

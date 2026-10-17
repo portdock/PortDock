@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
   EXCEPTIONS,
@@ -13,6 +13,7 @@ import {
   type Stats,
   type Table,
 } from "./api";
+import { samePorts } from "@shared/framing";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -85,7 +86,7 @@ export default function App() {
   const [ports, setPorts] = useState<PortInfo[]>([]);
   useEffect(() => {
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts(p)).catch(() => {});
+    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -110,7 +111,7 @@ export default function App() {
 
   // ---- 통신 기록
   const traffic = useRef<Frame[]>([]);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       traffic.current.push(...e.frames);
@@ -118,6 +119,7 @@ export default function App() {
       setTick((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
+      if (e.state === "connected") setError(null);
       if (e.state === "closed") {
         setConnected(false);
         setLogPath(null);
@@ -128,10 +130,11 @@ export default function App() {
   }, []);
   // 기록 칸만 맨 아래로 — scrollIntoView 는 창 전체를 움직이고, 이 WebView 에선 Promise 를 돌려준다
   const tlogRef = useRef<HTMLDivElement>(null);
+  const atBottom = useRef(true);
   useEffect(() => {
     const el = tlogRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
+    if (el && atBottom.current && settings.autoScroll) el.scrollTop = el.scrollHeight;
+  }, [tick, settings.autoScroll]);
 
   // ---- 슬레이브·표 설정 (연결과 무관하게 살아 있다)
   const [ids, setIds] = useState<number[]>(() => load("ids", [1]));
@@ -172,8 +175,10 @@ export default function App() {
         for (const tb of TABLES) {
           const r = ranges[key(id, tb.id)] ?? { start: 0, count: 100 };
           await api.setRange(id, tb.id, r.start, r.count);
-          const saved = load<number[] | null>(`values:${key(id, tb.id)}`, null);
-          if (saved) await api.setValues(id, tb.id, r.start, saved.slice(0, r.count));
+          const saved = load<{ start: number; values: number[] } | number[] | null>(`values:${key(id, tb.id)}`, null);
+          // 예전 판은 배열만 저장했다 — 그때는 시작 0 으로 본다
+          const sv = Array.isArray(saved) ? { start: 0, values: saved } : saved;
+          if (sv && Array.isArray(sv.values)) await api.setValues(id, tb.id, sv.start, sv.values.slice(0, 65536 - sv.start));
         }
       await api.setFaults(faults);
       setReady(true);
@@ -196,6 +201,7 @@ export default function App() {
   const [flash, setFlash] = useState<Set<number>>(new Set());
   const [stats, setStats] = useState<Stats | null>(null);
   const prev = useRef<{ k: string; v: number[] }>({ k: "", v: [] });
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewCount = Math.min(range.count, MAX_VIEW);
   const refresh = useCallback(async () => {
     if (!ready || !ids.includes(sel)) return;
@@ -206,18 +212,25 @@ export default function App() {
       v.forEach((x, i) => x !== prev.current.v[i] && changed.add(i));
       if (changed.size) {
         setFlash(changed);
-        setTimeout(() => setFlash(new Set()), 1200);
-        store(`values:${key(sel, table)}`, v);
+        // F18 강조 타이머는 하나만 — 연달아 쓰여도 앞 타이머가 새 강조를 지우지 않게
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        flashTimer.current = setTimeout(() => setFlash(new Set()), 1200);
+        store(`values:${key(sel, table)}`, { start: range.start, values: v });
       }
     }
+    // F17 바뀐 게 없으면 다시 그리지 않는다(최대 2000칸)
+    const same = prev.current.k === k && v.length === prev.current.v.length && v.every((x, i) => x === prev.current.v[i]);
     prev.current = { k, v };
-    setValues(v);
+    if (!same) setValues(v);
   }, [ready, ids, sel, table, range.start, viewCount]);
   useEffect(() => {
     refresh().catch(() => {});
     const id = setInterval(() => {
       refresh().catch(() => {});
-      api.getStats().then(setStats).catch(() => {});
+      api
+        .getStats()
+        .then((s) => setStats((o) => (o && JSON.stringify(o) === JSON.stringify(s) ? o : s)))
+        .catch(() => {});
     }, 300);
     return () => clearInterval(id);
   }, [refresh]);
@@ -228,28 +241,44 @@ export default function App() {
     next[i] = v;
     prev.current.v = next;
     setValues(next);
-    store(`values:${key(sel, table)}`, next);
+    store(`values:${key(sel, table)}`, { start: range.start, values: next });
   }
 
   async function fill() {
     const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
     await api.setValues(sel, table, range.start, v);
-    store(`values:${key(sel, table)}`, v);
+    store(`values:${key(sel, table)}`, { start: range.start, values: v });
     refresh();
   }
 
   async function exportTable() {
     const path = await save({ defaultPath: `modbus-slave-${sel}-${table}.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
     if (!path) return;
-    const body = { slave: sel, table, start: range.start, values };
-    await api.writeText(path, JSON.stringify(body, null, 2)).catch((e) => setError(String(e)));
+    try {
+      const all = await api.getValues(sel, table, range.start, range.count);
+      const body = { app: "PortDock Modbus Slave", slave: sel, table, start: range.start, values: all };
+      await api.writeText(path, JSON.stringify(body, null, 2));
+    } catch (e) {
+      setError(String(e));
+    }
   }
 
   async function importTable() {
     const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }] });
     if (!path || Array.isArray(path)) return;
     try {
-      const body = JSON.parse(await api.readText(path)) as { start: number; values: number[] };
+      const body = JSON.parse(await api.readText(path)) as { slave?: number; table?: Table; start: number; values: number[] };
+      const ok =
+        Number.isInteger(body.start) &&
+        body.start >= 0 &&
+        Array.isArray(body.values) &&
+        body.start + body.values.length <= 65536 &&
+        body.values.every((v) => Number.isInteger(v) && v >= 0 && v <= 0xffff);
+      if (!ok) throw new Error(t("badTableFile"));
+      if ((body.slave != null && body.slave !== sel) || (body.table != null && body.table !== table)) {
+        const msg = t("importOther").replace("{a}", `${body.slave ?? "?"} / ${body.table ?? "?"}`).replace("{b}", `${sel} / ${table}`);
+        if (!(await ask(msg, { title: "PortDock Modbus Slave", kind: "warning" }))) return;
+      }
       await api.setValues(sel, table, body.start, body.values);
       refresh();
     } catch (e) {
@@ -258,7 +287,10 @@ export default function App() {
   }
 
   // ---- 연결
+  const [connecting, setConnecting] = useState(false);
   async function connect() {
+    if (connecting) return;
+    setConnecting(true);
     setError(null);
     try {
       await api.open(cfg, onEvent);
@@ -270,6 +302,8 @@ export default function App() {
       setStatus("connected");
     } catch (e) {
       setError(String(e));
+    } finally {
+      setConnecting(false);
     }
   }
   async function disconnect() {
@@ -288,8 +322,13 @@ export default function App() {
 
   async function toggleLog() {
     if (logPath) {
-      await api.setLog(null);
-      setLogPath(null);
+      try {
+        await api.setLog(null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLogPath(null);
+      }
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -351,7 +390,7 @@ export default function App() {
         <div className="grid2">
           <label>
             {t("baud")}
-            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} onValue={(n) => setCfg({ ...cfg, baud: n })} />
+            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} commitOnBlur={connected} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
               {BAUDS.map((b) => (
                 <option key={b} value={b} />
@@ -381,7 +420,7 @@ export default function App() {
             </select>
           </label>
         </div>
-        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port}>
+        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
           {connected ? t("disconnect") : t("connect")}
         </button>
         <div className={`status s-${status}`}>{t(statusKey)}</div>
@@ -390,19 +429,23 @@ export default function App() {
         <label>{t("slaves")}</label>
         <div className="chips">
           {ids.map((id) => (
-            <span key={id} className={id === sel ? "chip on" : "chip"} onClick={() => setSel(id)}>
-              {id}
+            <span key={id} className={id === sel ? "chip on" : "chip"}>
+              <button className="chip-btn" onClick={() => setSel(id)} aria-pressed={id === sel} title={`ID ${id}`}>
+                {id}
+              </button>
               {ids.length > 1 && (
-                <b
-                  onClick={(e) => {
-                    e.stopPropagation();
+                <button
+                  className="chip-x"
+                  aria-label={`${t("delete")} ${id}`}
+                  title={`${t("delete")} ${id}`}
+                  onClick={() => {
                     const rest = ids.filter((x) => x !== id);
                     setIds(rest);
                     if (sel === id) setSel(rest[0]);
                   }}
                 >
                   ×
-                </b>
+                </button>
               )}
             </span>
           ))}
@@ -555,7 +598,14 @@ export default function App() {
               {t("clear")}
             </button>
           </div>
-          <div className="tlog" ref={tlogRef}>
+          <div
+            className="tlog"
+            ref={tlogRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+            }}
+          >
             {frames.map((f, i) => (
               <div key={i} className={`trow ${f.dir}`}>
                 <span className="ts">{fmt(f.ts)}</span>
@@ -578,6 +628,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           writeText={api.writeText}
           readText={api.readText}
+          busy={connected || !!logPath}
         />
       )}
     </div>

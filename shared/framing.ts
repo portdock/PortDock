@@ -44,3 +44,22 @@ export function store(key: string, value: unknown) {
     /* 저장이 막힌 환경 — 무시 */
   }
 }
+
+/** 화면에 쌓아 둘 바이트 상한(줄 수 상한과 별개) — 큰 프레임이 많을 때 메모리 폭증을 막는다 */
+export const MAX_SCREEN_BYTES = 20_000_000;
+
+/** 줄 수·바이트 상한을 넘으면 앞에서부터 지운다. 지운 뒤 남은 바이트 수를 돌려준다 */
+export function trimFrames<T extends { bytes: number[] }>(arr: T[], maxLines: number, bytes: number) {
+  let n = 0;
+  while ((arr.length - n > maxLines || bytes > MAX_SCREEN_BYTES) && n < arr.length) {
+    bytes -= arr[n].bytes.length;
+    n++;
+  }
+  if (n) arr.splice(0, n);
+  return bytes;
+}
+
+/** 포트 목록이 그대로면 같은 배열을 돌려준다 — 1.5초 폴링마다 화면 전체를 다시 그리지 않게 */
+export function samePorts<T>(prev: T[], next: T[]) {
+  return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+}

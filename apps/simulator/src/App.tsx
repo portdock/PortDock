@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
-import { hexList, load, store } from "@shared/framing";
+import { hexList, load, store, samePorts } from "@shared/framing";
 import {
   api,
+  ascii,
   CHECKSUMS,
   hex,
   type AutoRule,
@@ -67,7 +68,7 @@ export default function App() {
   useEffect(() => {
     if (transport !== "serial") return;
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts(p)).catch(() => {});
+    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -87,7 +88,11 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
   const traffic = useRef<Frame[]>([]);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [trafficView, setTrafficView] = useState<"hex" | "ascii">(() => load("trafficView", "hex"));
+  useEffect(() => {
+    store("trafficView", trafficView);
+  }, [trafficView]);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       traffic.current.push(...e.frames);
@@ -101,17 +106,22 @@ export default function App() {
       setError(e.message);
     }
   }, []);
+  // 새 줄이 왔을 때, 사용자가 맨 아래에 있을 때만 따라 내려간다(응답 횟수 폴링으로 끌려가지 않게)
   const tlog = useRef<HTMLDivElement>(null);
+  const atBottom = useRef(true);
   useEffect(() => {
     const el = tlog.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
+    if (el && atBottom.current && settings.autoScroll) el.scrollTop = el.scrollHeight;
+  }, [tick, settings.autoScroll]);
   useEffect(() => {
     if (running && transport !== "udp") api.setFraming(effFraming).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, JSON.stringify(effFraming)]);
 
+  const [starting, setStarting] = useState(false);
   async function start() {
+    if (starting) return;
+    setStarting(true);
     setError(null);
     try {
       if (transport === "serial") {
@@ -142,18 +152,26 @@ export default function App() {
       }
     } catch (e) {
       setError(String(e));
+    } finally {
+      setStarting(false);
     }
   }
   async function stop() {
     await api.stop();
     setRunning(false);
+    setRepeating(false);
     setStatus("closed");
     setLogPath(null);
   }
   async function toggleLog() {
     if (logPath) {
-      await api.setLog(null);
-      setLogPath(null);
+      try {
+        await api.setLog(null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLogPath(null);
+      }
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -182,10 +200,27 @@ export default function App() {
     const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }] });
     if (!path || Array.isArray(path)) return;
     try {
-      const body = JSON.parse(await api.readText(path)) as { rules?: AutoRule[]; framing?: FrameMode };
-      if (!Array.isArray(body.rules)) throw new Error("rules 가 없는 파일입니다");
-      setRules(body.rules);
-      if (body.framing && body.framing.kind !== "modbus-rtu") {
+      const body = JSON.parse(await api.readText(path)) as { rules?: unknown[]; framing?: FrameMode };
+      if (!Array.isArray(body.rules)) throw new Error(t("badRules"));
+      const valid = (r: unknown): r is AutoRule => {
+        const x = r as AutoRule;
+        return (
+          !!x &&
+          typeof x.name === "string" &&
+          typeof x.enabled === "boolean" &&
+          typeof x.pattern === "string" &&
+          (x.patternMode === "hex" || x.patternMode === "ascii") &&
+          (x.kind === "exact" || x.kind === "contains") &&
+          !!x.reply &&
+          typeof x.reply.text === "string" &&
+          (x.reply.mode === "hex" || x.reply.mode === "ascii") &&
+          Number.isInteger(x.delayMs) &&
+          x.delayMs >= 0
+        );
+      };
+      if (!body.rules.every(valid)) throw new Error(t("badRules"));
+      setRules(body.rules.map((r) => ({ ...r, reply: { ...r.reply, checksum: r.reply.checksum ?? null, suffix: r.reply.suffix ?? "" } })));
+      if (body.framing && (body.framing.kind === "gap" || body.framing.kind === "terminator") && Number.isInteger(body.framing.gapMs)) {
         setFraming(body.framing);
         if (body.framing.kind === "terminator") setTermText(hex(body.framing.bytes));
       }
@@ -201,14 +236,30 @@ export default function App() {
   const [repeating, setRepeating] = useState(false);
   useEffect(() => {
     store("spec", spec);
+    let stale = false;
     api
       .preview(spec)
-      .then((b) => setPreview(`${hex(b)} (${b.length})`))
-      .catch((e) => setPreview(String(e)));
+      .then((b) => !stale && setPreview(`${hex(b)} (${b.length})`))
+      .catch((e) => !stale && setPreview(String(e)));
+    return () => {
+      stale = true;
+    };
   }, [spec]);
+  const inflight = useRef(false);
   useEffect(() => {
     if (!repeating || !running) return;
-    const id = setInterval(() => api.send(spec).catch((e) => setError(String(e))), Math.max(10, repeatMs));
+    const id = setInterval(async () => {
+      if (inflight.current) return;
+      inflight.current = true;
+      try {
+        await api.send(spec);
+      } catch (e) {
+        setError(String(e));
+        setRepeating(false);
+      } finally {
+        inflight.current = false;
+      }
+    }, Math.max(10, repeatMs));
     return () => clearInterval(id);
   }, [repeating, repeatMs, spec, running]);
 
@@ -341,7 +392,7 @@ export default function App() {
           </>
         )}
 
-        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={transport === "serial" && !com.port}>
+        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !com.port) || starting}>
           {running ? t("stop") : t("start")}
         </button>
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
@@ -410,6 +461,11 @@ export default function App() {
         <div className="traffic">
           <div className="toolbar">
             <b>{t("traffic")}</b>
+            {(["hex", "ascii"] as const).map((v) => (
+              <button key={v} className={trafficView === v ? "seg on" : "seg"} onClick={() => setTrafficView(v)}>
+                {v.toUpperCase()}
+              </button>
+            ))}
             <span className="grow" />
             <button
               className="btn small"
@@ -421,13 +477,20 @@ export default function App() {
               {t("clear")}
             </button>
           </div>
-          <div className="tlog" ref={tlog}>
+          <div
+            className="tlog"
+            ref={tlog}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+            }}
+          >
             {frames.map((f, i) => (
               <div key={i} className={`trow ${f.dir}`}>
                 <span className="ts">{fmt(f.ts)}</span>
                 <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
                 {net2 && f.dir !== "ev" && <span className="peeraddr">{f.peer}</span>}
-                <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
+                <span className="data">{f.dir === "ev" ? f.note : trafficView === "ascii" ? ascii(f.bytes) : hex(f.bytes)}</span>
               </div>
             ))}
           </div>
@@ -444,6 +507,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           writeText={api.writeText}
           readText={api.readText}
+          busy={running || !!logPath}
         />
       )}
     </div>

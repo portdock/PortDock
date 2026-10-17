@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, CHECKSUMS, type AutoRule, type ChecksumKind, type TextMode } from "./api";
 import type { Key } from "./i18n";
 import { NumInput } from "@shared/NumInput";
-import { duplicateNames, shadowedRules } from "@shared/interlocks";
+import { duplicateNames, duplicatePatterns, shadowedRules } from "@shared/interlocks";
 
 const blank = (n: number): AutoRule => ({
   name: `rule ${n}`,
@@ -45,6 +45,8 @@ export function AutoReply({
   // 인터락: 무엇이든 맞는 규칙 아래는 영영 답하지 않음 · 같은 이름은 응답 횟수가 섞임
   const shadow = shadowedRules(rules);
   const dups = duplicateNames(rules);
+  // 같은 패턴이 위에 있으면 아래 것은 답하지 않는다
+  const dupPat = duplicatePatterns(rules);
   const update = (i: number, patch: Partial<AutoRule>) => setRules(rules.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const move = (i: number, d: number) => {
     const j = i + d;
@@ -64,10 +66,10 @@ export function AutoReply({
             <span className="hits" title={t("hits")}>
               {hits[r.name] ?? 0}
             </span>
-            <button className="btn small ghost" onClick={() => move(i, -1)} title="↑">
+            <button className="btn small ghost" onClick={() => move(i, -1)} title={t("moveUp")} aria-label={t("moveUp")}>
               ↑
             </button>
-            <button className="btn small ghost" onClick={() => move(i, 1)} title="↓">
+            <button className="btn small ghost" onClick={() => move(i, 1)} title={t("moveDown")} aria-label={t("moveDown")}>
               ↓
             </button>
             <button className="btn small ghost" title={t("delete")} onClick={() => setRules(rules.filter((_, j) => j !== i))}>
@@ -136,6 +138,7 @@ export function AutoReply({
         <div className="interlock">{t("ilShadow").replace("{a}", shadow.by).replace("{b}", shadow.names.join(", "))}</div>
       )}
       {dups.length > 0 && <div className="interlock">{t("ilDup").replace("{a}", dups.join(", "))}</div>}
+      {dupPat.length > 0 && <div className="interlock">{t("ilDupPat").replace("{a}", dupPat.join(", "))}</div>}
       <div className="hint">{t("arHelp")}</div>
       {err && <div className="error">{err}</div>}
     </div>

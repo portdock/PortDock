@@ -12,6 +12,8 @@ export function useExitGuard(active: boolean, enabled: boolean, lang: "ko" | "en
   const cur = useRef({ active, enabled, lang, title });
   cur.current = { active, enabled, lang, title };
   useEffect(() => {
+    // 등록이 비동기라, 정리가 먼저 오면(개발 모드 이중 실행) 등록되는 즉시 해제한다 — 확인 창이 두 번 뜨지 않게
+    let cancelled = false;
     let unlisten: (() => void) | undefined;
     getCurrentWindow()
       .onCloseRequested(async (e) => {
@@ -20,8 +22,14 @@ export function useExitGuard(active: boolean, enabled: boolean, lang: "ko" | "en
         const ok = await ask(MSG[c.lang], { title: c.title, kind: "warning" });
         if (!ok) e.preventDefault();
       })
-      .then((u) => (unlisten = u))
+      .then((u) => {
+        if (cancelled) u();
+        else unlisten = u;
+      })
       .catch(() => {});
-    return () => unlisten?.();
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
   }, []);
 }

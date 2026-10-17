@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { save } from "@tauri-apps/plugin-dialog";
-import { load, store } from "@shared/framing";
+import { load, store, trimFrames } from "@shared/framing";
 import {
   api,
   ascii,
@@ -71,20 +71,27 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
   const framesRef = useRef<Frame[]>([]);
+  // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
+  const seqRef = useRef(0);
+  const screenBytes = useRef(0);
   const counters = useRef({ rx: 0, tx: 0 });
   const [version, setVersion] = useState(0);
 
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       for (const f of e.frames) {
+        f.seq = ++seqRef.current;
         framesRef.current.push(f);
+        screenBytes.current += f.bytes.length;
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
-      if (framesRef.current.length > maxLines.current) framesRef.current.splice(0, framesRef.current.length - maxLines.current);
+      screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
       if (e.state === "closed") setRunning(false);
+      // 끊기면 반복을 끈다 — 다시 붙었을 때 저절로 보내지 않게
+      if (e.state === "closed") setRepeating(false);
     } else if (e.type === "peers") {
       setSenders(e.peers);
     } else {
@@ -105,8 +112,12 @@ export default function App() {
     return () => clearTimeout(id);
   }, [running, cfg.remoteHost, cfg.remotePort]);
 
+  const [starting, setStarting] = useState(false);
   async function start() {
+    if (starting) return;
+    setStarting(true);
     setError(null);
+    setSenders([]);
     try {
       setLocal(await api.start(cfg, rxCheck, onEvent));
       setRunning(true);
@@ -114,21 +125,28 @@ export default function App() {
         const p = autoLogPath(settings.logFolder, "udp");
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
-      setSenders([]);
     } catch (e) {
       setError(String(e));
+    } finally {
+      setStarting(false);
     }
   }
   async function stop() {
     await api.stop();
     setRunning(false);
     setStatus("closed");
+    setTo("");
     setLogPath(null);
   }
   async function toggleLog() {
     if (logPath) {
-      await api.setLog(null);
-      setLogPath(null);
+      try {
+        await api.setLog(null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLogPath(null);
+      }
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -153,6 +171,7 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0 };
+    screenBytes.current = 0;
     setSelected(null);
     setVersion((v) => v + 1);
   }
@@ -173,29 +192,43 @@ export default function App() {
   const [repeating, setRepeating] = useState(false);
   useEffect(() => {
     store("spec", spec);
+    let stale = false;
     api
       .preview(spec)
       .then((b) => {
+        if (stale) return;
         setPreviewBytes(b);
         setPreviewErr(null);
       })
       .catch((e) => {
+        if (stale) return;
         setPreviewBytes(null);
         setPreviewErr(String(e));
       });
+    return () => {
+      stale = true;
+    };
   }, [spec]);
+  const sendable = !!previewBytes && previewBytes.length > 0;
   // 인터락: 기본 대상이 브로드캐스트 주소인데 허용이 꺼져 있으면 운영체제가 거절한다
   const bcastBlocked = to === "" && looksBroadcast(cfg.remoteHost) && !cfg.broadcast;
   const noRemote = to === "" && (!cfg.remoteHost || cfg.remotePort === 0);
-  const canSend = running && !!previewBytes && !bcastBlocked && !noRemote;
+  const canSend = running && sendable && !bcastBlocked && !noRemote;
+  const startable = true;
+  // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
+  const inflight = useRef(false);
   const doSend = useCallback(
     async (s: SendSpec) => {
+      if (inflight.current) return;
+      inflight.current = true;
       try {
         await api.send(to || null, s);
         setError(null);
       } catch (e) {
         setError(String(e));
         setRepeating(false);
+      } finally {
+        inflight.current = false;
       }
     },
     [to],
@@ -211,7 +244,7 @@ export default function App() {
     store("commands", commands);
   }, [commands]);
 
-  const sel = selected != null ? frames[selected] : undefined;
+  const sel = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
 
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock UDP");
@@ -279,7 +312,7 @@ export default function App() {
         <label className="inline">
           <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
         </label>
-        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start}>
+        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && !startable) || starting}>
           {running ? t("stop") : t("start")}
         </button>
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
@@ -355,10 +388,10 @@ export default function App() {
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = frames[r.index];
-              const cls = `row ${f.dir} ${selected === r.index ? "sel" : ""}`;
+              const cls = `row ${f.dir} ${selected === f.seq ? "sel" : ""}`;
               const style = { transform: `translateY(${r.start}px)` };
               const pick = () => {
-                setSelected(r.index);
+                setSelected(f.seq ?? null);
                 setAutoscroll(false);
               };
               if (f.dir === "ev")
@@ -410,7 +443,7 @@ export default function App() {
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 02 03 04" : "PING"}
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && canSend && doSend(spec)}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && canSend && doSend(spec)}
             />
             <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })}>
               <option value="">
@@ -440,7 +473,7 @@ export default function App() {
             </span>
             <span className="grow" />
             <label className="inline">
-              <input type="checkbox" checked={repeating} disabled={!canSend} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
+              <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!previewBytes}>
@@ -455,18 +488,18 @@ export default function App() {
 
       {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
-        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)}>
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)} title={t("close")}>
           ✕
         </button>
         <h3>{t("commands")}</h3>
         <div className="cmds">
           {commands.map((c, i) => (
-            <div key={i} className="cmd" onDoubleClick={() => canSend && doSend(c)} title={c.text}>
+            <div key={i} className="cmd" title={c.text}>
               <input className="cmdname" value={c.name} onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!running}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!running} title={t("send")}>
                 ▶
               </button>
-              <button className="btn small ghost" onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
+              <button className="btn small ghost" title={t("edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
                 ✎
               </button>
               <button className="btn small ghost" onClick={() => setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
@@ -505,6 +538,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           writeText={api.writeText}
           readText={api.readText}
+          busy={running || !!logPath}
         />
       )}
     </div>

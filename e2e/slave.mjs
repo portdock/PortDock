@@ -37,13 +37,13 @@ try {
   await type(await regInput(0), "1234");
   await (await regInput(0)).sendKeys(Key.ENTER);
   await sleep(500);
-  await (await d.findElement(By.xpath("//span[contains(@class,'chip') and starts-with(normalize-space(.),'1')]"))).click();
+  await (await d.findElement(By.xpath("//span[contains(@class,'chip')]/button[contains(@class,'chip-btn') and normalize-space(.)='1']"))).click();
   await sleep(500);
   check("M1 주소마다 표가 따로", (await (await regInput(0)).getAttribute("value")) === "0");
   // 17 삭제 → 1 남고 1 은 × 없음
-  await (await d.findElement(By.xpath("//span[contains(@class,'chip') and starts-with(normalize-space(.),'17')]/b"))).click();
+  await (await d.findElement(By.xpath("//span[contains(@class,'chip')][button[contains(@class,'chip-btn') and normalize-space(.)='17']]/button[contains(@class,'chip-x')]"))).click();
   await sleep(300);
-  check("M1 삭제 → 1개, 마지막은 × 없음", (await d.findElements(By.css(".chip"))).length === 1 && (await d.findElements(By.css(".chip b"))).length === 0);
+  check("M1 삭제 → 1개, 마지막은 × 없음", (await d.findElements(By.css(".chip"))).length === 1 && (await d.findElements(By.css(".chip .chip-x"))).length === 0);
 
   section("M3 값 입력·표시 형식");
   await type(await regInput(5), "65535");

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { save } from "@tauri-apps/plugin-dialog";
-import { hexList, load, store } from "@shared/framing";
+import { hexList, load, store, trimFrames } from "@shared/framing";
 import {
   api,
   ascii,
@@ -72,21 +72,28 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
   const framesRef = useRef<Frame[]>([]);
+  // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
+  const seqRef = useRef(0);
+  const screenBytes = useRef(0);
   const counters = useRef({ rx: 0, tx: 0 });
   const [version, setVersion] = useState(0);
 
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       for (const f of e.frames) {
+        f.seq = ++seqRef.current;
         framesRef.current.push(f);
+        screenBytes.current += f.bytes.length;
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
-      if (framesRef.current.length > maxLines.current) framesRef.current.splice(0, framesRef.current.length - maxLines.current);
+      screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
       setStatusMsg(e.message ?? (e.port || null));
       if (e.state === "closed") setRunning(false);
+      // 끊기면 반복을 끈다 — 다시 붙었을 때 저절로 보내지 않게
+      if (e.state !== "connected" && e.state !== "listening") setRepeating(false);
     } else if (e.type === "peers") {
       setPeers(e.peers);
       setTarget((cur) => (cur != null && !e.peers.some((p) => p.id === cur) ? null : cur));
@@ -103,7 +110,10 @@ export default function App() {
     if (running && cfg.mode === "server") api.setEcho(cfg.echo).catch(() => {});
   }, [running, cfg.echo, cfg.mode]);
 
+  const [starting, setStarting] = useState(false);
   async function start() {
+    if (starting) return;
+    setStarting(true);
     setError(null);
     try {
       const l = await api.start(cfg, effFraming, rxCheck, onEvent);
@@ -115,6 +125,8 @@ export default function App() {
       }
     } catch (e) {
       setError(String(e));
+    } finally {
+      setStarting(false);
     }
   }
   async function stop() {
@@ -126,8 +138,13 @@ export default function App() {
   }
   async function toggleLog() {
     if (logPath) {
-      await api.setLog(null);
-      setLogPath(null);
+      try {
+        await api.setLog(null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLogPath(null);
+      }
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -152,6 +169,7 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0 };
+    screenBytes.current = 0;
     setSelected(null);
     setVersion((v) => v + 1);
   }
@@ -172,26 +190,41 @@ export default function App() {
   const [repeating, setRepeating] = useState(false);
   useEffect(() => {
     store("spec", spec);
+    let stale = false;
     api
       .preview(spec)
       .then((b) => {
+        if (stale) return;
         setPreviewBytes(b);
         setPreviewErr(null);
       })
       .catch((e) => {
+        if (stale) return;
         setPreviewBytes(null);
         setPreviewErr(String(e));
       });
+    return () => {
+      stale = true;
+    };
   }, [spec]);
-  const canSend = running && peers.length > 0 && !!previewBytes;
+  const sendable = !!previewBytes && previewBytes.length > 0;
+  const canSend = running && peers.length > 0 && sendable;
+  // 클라이언트는 주소와 포트(1~65535)가 있어야 접속할 수 있다
+  const startable = cfg.mode === "server" || (!!cfg.host.trim() && cfg.port > 0);
+  // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
+  const inflight = useRef(false);
   const doSend = useCallback(
     async (s: SendSpec) => {
+      if (inflight.current) return;
+      inflight.current = true;
       try {
         await api.send(target, s);
         setError(null);
       } catch (e) {
         setError(String(e));
         setRepeating(false);
+      } finally {
+        inflight.current = false;
       }
     },
     [target],
@@ -207,7 +240,7 @@ export default function App() {
     store("commands", commands);
   }, [commands]);
 
-  const sel = selected != null ? frames[selected] : undefined;
+  const sel = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
   const server = cfg.mode === "server";
 
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, framesRef.current[0]?.ts ?? ts);
@@ -277,7 +310,7 @@ export default function App() {
             )}
           </>
         )}
-        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start}>
+        <button className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && !startable) || starting}>
           {running ? t("stop") : server ? t("listen") : t("connect")}
         </button>
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
@@ -294,7 +327,7 @@ export default function App() {
             {peers.map((p) => (
               <div key={p.id} className="peer">
                 <span className="mono">{p.addr}</span>
-                <button className="btn small ghost" onClick={() => api.kick(p.id)}>
+                <button className="btn small ghost" onClick={() => api.kick(p.id).catch((e) => setError(String(e)))}>
                   {t("kick")}
                 </button>
               </div>
@@ -383,10 +416,10 @@ export default function App() {
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = frames[r.index];
-              const cls = `row ${f.dir} ${selected === r.index ? "sel" : ""}`;
+              const cls = `row ${f.dir} ${selected === f.seq ? "sel" : ""}`;
               const style = { transform: `translateY(${r.start}px)` };
               const pick = () => {
-                setSelected(r.index);
+                setSelected(f.seq ?? null);
                 setAutoscroll(false);
               };
               if (f.dir === "ev")
@@ -434,7 +467,7 @@ export default function App() {
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "STATUS?"}
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && canSend && doSend(spec)}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && canSend && doSend(spec)}
             />
             <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })}>
               <option value="">
@@ -464,7 +497,7 @@ export default function App() {
             </span>
             <span className="grow" />
             <label className="inline">
-              <input type="checkbox" checked={repeating} disabled={!canSend} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
+              <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!previewBytes}>
@@ -477,18 +510,18 @@ export default function App() {
 
       {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
-        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)}>
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)} title={t("close")}>
           ✕
         </button>
         <h3>{t("commands")}</h3>
         <div className="cmds">
           {commands.map((c, i) => (
-            <div key={i} className="cmd" onDoubleClick={() => canSend && doSend(c)} title={c.text}>
+            <div key={i} className="cmd" title={c.text}>
               <input className="cmdname" value={c.name} onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!running || peers.length === 0}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!running || peers.length === 0} title={t("send")}>
                 ▶
               </button>
-              <button className="btn small ghost" onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
+              <button className="btn small ghost" title={t("edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
                 ✎
               </button>
               <button className="btn small ghost" onClick={() => setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
@@ -527,6 +560,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           writeText={api.writeText}
           readText={api.readText}
+          busy={running || !!logPath}
         />
       )}
     </div>

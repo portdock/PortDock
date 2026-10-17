@@ -63,6 +63,8 @@ try {
   await choose(sels[0], "HEX");
   await type(box, "123");
   check("C6 HEX 홀수 자리 오류", (await pv()).includes("홀수"), await pv());
+  await type(box, "가나");
+  check("R1 한글이 들어가도 꺼지지 않고 오류", (await pv()).includes("HEX 가 아닌 글자"), await pv());
   check("C6 +명령 목록 막힘", !(await (await button(d, "+ 명령 목록")).isEnabled()));
   await type(box, "AA BB");
 

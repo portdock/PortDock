@@ -110,7 +110,10 @@ fn open(cfg: &SerialConfig) -> Result<Port, String> {
         .open()
         .map_err(|e| format!("{}: {e}", cfg.port))?;
     let _ = p.write_data_terminal_ready(cfg.dtr);
-    let _ = p.write_request_to_send(cfg.rts);
+    // 하드웨어 흐름제어(RTS/CTS)면 RTS 는 드라이버 몫
+    if cfg.flow != "hardware" {
+        let _ = p.write_request_to_send(cfg.rts);
+    }
     Ok(p)
 }
 
@@ -373,7 +376,9 @@ fn apply(p: &mut dyn SerialPort, c: &SerialConfig) -> serialport::Result<()> {
         _ => FlowControl::None,
     })?;
     p.write_data_terminal_ready(c.dtr)?;
-    p.write_request_to_send(c.rts)?;
+    if c.flow != "hardware" {
+        p.write_request_to_send(c.rts)?;
+    }
     Ok(())
 }
 

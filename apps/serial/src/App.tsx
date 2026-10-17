@@ -18,6 +18,7 @@ import {
   type TextMode,
   summary,
 } from "./api";
+import { samePorts, trimFrames } from "@shared/framing";
 import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -73,7 +74,7 @@ export default function App() {
   const [ports, setPorts] = useState<PortInfo[]>([]);
   useEffect(() => {
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts(p)).catch(() => {});
+    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -118,6 +119,10 @@ export default function App() {
 
   // 프레임은 ref 에 쌓고 version 으로만 다시 그린다(대량 수신 시 배열 복사 방지)
   const framesRef = useRef<Frame[]>([]);
+  // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
+  const seqRef = useRef(0);
+  const screenBytes = useRef(0);
+  const [livePort, setLivePort] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const counters = useRef({ rx: 0, tx: 0 });
 
@@ -125,10 +130,12 @@ export default function App() {
     if (e.type === "frames") {
       const arr = framesRef.current;
       for (const f of e.frames) {
+        f.seq = ++seqRef.current;
         arr.push(f);
+        screenBytes.current += f.bytes.length;
         if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
       }
-      if (arr.length > maxLines.current) arr.splice(0, arr.length - maxLines.current);
+      screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
     } else if (e.type === "error") {
       setError(e.message);
@@ -137,7 +144,12 @@ export default function App() {
     } else {
       setStatus(e.state);
       setStatusMsg(e.message);
-      if (e.state === "connected") setSessionId((id) => id ?? e.port);
+      if (e.state === "connected") {
+        setSessionId((id) => id ?? e.port);
+        setLivePort(e.port);
+      }
+      // 끊기면 반복을 끈다 — 다시 연결됐을 때 저절로 다시 보내지 않게
+      if (e.state !== "connected") setRepeating(false);
       if (e.state === "closed") {
         setSessionId(null);
         setLogPath(null);
@@ -172,7 +184,10 @@ export default function App() {
     return () => clearTimeout(id);
   }, [sessionId, liveCfg]);
 
+  const [connecting, setConnecting] = useState(false);
   async function connect() {
+    if (connecting) return;
+    setConnecting(true);
     setError(null);
     try {
       await api.open(cfg, effectiveFraming, rxCheck, onEvent);
@@ -183,6 +198,8 @@ export default function App() {
       }
     } catch (e) {
       setError(String(e));
+    } finally {
+      setConnecting(false);
     }
   }
 
@@ -198,8 +215,13 @@ export default function App() {
   async function toggleLog() {
     if (!sessionId) return;
     if (logPath) {
-      await api.setLog(sessionId, null);
-      setLogPath(null);
+      try {
+        await api.setLog(sessionId, null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setLogPath(null);
+      }
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -222,6 +244,7 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0 };
+    screenBytes.current = 0;
     setSelected(null);
     setVersion((v) => v + 1);
   }
@@ -253,7 +276,7 @@ export default function App() {
 
   // ---- 상세(Modbus 풀이)
   const [modbus, setModbus] = useState<ModbusInfo | null>(null);
-  const selFrame = selected != null ? frames[selected] : undefined;
+  const selFrame = selected != null && frames.length ? frames[selected - (frames[0].seq ?? 0)] : undefined;
   useEffect(() => {
     if (!selFrame || selFrame.dir === "ev") {
       setModbus(null);
@@ -270,27 +293,39 @@ export default function App() {
   const [repeating, setRepeating] = useState(false);
   useEffect(() => store("spec", spec), [spec]);
   useEffect(() => {
+    let stale = false;
     api
       .preview(spec)
       .then((b) => {
+        if (stale) return;
         setPreviewBytes(b);
         setPreviewErr(null);
       })
       .catch((e) => {
+        if (stale) return;
         setPreviewBytes(null);
         setPreviewErr(String(e));
       });
+    return () => {
+      stale = true;
+    };
   }, [spec]);
+  // 0바이트는 보낼 것이 없다
+  const sendable = !!previewBytes && previewBytes.length > 0;
 
+  const inflight = useRef(false);
   const doSend = useCallback(
     async (s: SendSpec) => {
-      if (!sessionId) return;
+      if (!sessionId || inflight.current) return;
+      inflight.current = true;
       try {
         await api.send(sessionId, s);
         setError(null);
       } catch (e) {
         setError(String(e));
         setRepeating(false);
+      } finally {
+        inflight.current = false;
       }
     },
     [sessionId],
@@ -368,7 +403,7 @@ export default function App() {
         <div className="grid2">
           <label>
             {t("baud")}
-            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} onValue={(n) => setCfg({ ...cfg, baud: n })} />
+            <NumInput list="bauds" min={50} max={20000000} value={cfg.baud} commitOnBlur={connected} onValue={(n) => setCfg({ ...cfg, baud: n })} />
             <datalist id="bauds">
               {BAUDS.map((b) => (
                 <option key={b} value={b} />
@@ -401,7 +436,13 @@ export default function App() {
         </div>
         <label>
           {t("flow")}
-          <select value={cfg.flow} onChange={(e) => setCfg({ ...cfg, flow: e.target.value as SerialConfig["flow"] })}>
+          <select
+            value={cfg.flow}
+            onChange={(e) => {
+              const flow = e.target.value as SerialConfig["flow"];
+              setCfg({ ...cfg, flow, rts: flow === "hardware" ? false : cfg.rts });
+            }}
+          >
             <option value="none">{t("none")}</option>
             <option value="hardware">{t("hardware")}</option>
             <option value="software">{t("software")}</option>
@@ -431,7 +472,7 @@ export default function App() {
           {t("autoReconnect")}
         </label>
 
-        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port}>
+        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port || connecting}>
           {connected ? t("disconnect") : t("connect")}
         </button>
         <div className={`status s-${status}`}>
@@ -468,6 +509,7 @@ export default function App() {
           <label>
             {t("terminatorHex")}
             <input value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+            {effectiveFraming.kind === "terminator" && effectiveFraming.bytes.length === 0 && <span className="interlock">{t("ilNoTerm")}</span>}
           </label>
         )}
         {framing.kind === "fixed" && (
@@ -529,7 +571,7 @@ export default function App() {
 
         <div className="statusbar">
           <span className={`dot s-${status}`} />
-          <span className="mono">{connected ? summary(cfg) : t(statusKey)}</span>
+          <span className="mono">{connected ? summary({ ...cfg, port: livePort ?? cfg.port }) : t(statusKey)}</span>
           {connected && (
             <>
               <span className={cfg.dtr ? "led on" : "led"}>DTR</span>
@@ -553,9 +595,9 @@ export default function App() {
                 return (
                   <div
                     key={r.key}
-                    className={`row ev ${selected === r.index ? "sel" : ""}`}
+                    className={`row ev ${selected === f.seq ? "sel" : ""}`}
                     style={{ transform: `translateY(${r.start}px)` }}
-                    onClick={() => setSelected(r.index)}
+                    onClick={() => setSelected(f.seq ?? null)}
                   >
                     <span className="ts">{fmt(f.ts)}</span>
                     <span className="dir">EV</span>
@@ -565,10 +607,10 @@ export default function App() {
               return (
                 <div
                   key={r.key}
-                  className={`row ${f.dir} ${selected === r.index ? "sel" : ""}`}
+                  className={`row ${f.dir} ${selected === f.seq ? "sel" : ""}`}
                   style={{ transform: `translateY(${r.start}px)` }}
                   onClick={() => {
-                    setSelected(r.index);
+                    setSelected(f.seq ?? null);
                     setAutoscroll(false);
                   }}
                 >
@@ -596,7 +638,7 @@ export default function App() {
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "AT\\r\\n"}
               onChange={(e) => setSpec({ ...spec, text: e.target.value })}
-              onKeyDown={(e) => e.key === "Enter" && doSend(spec)}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && online && sendable && doSend(spec)}
             />
             <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} title={t("checksum")}>
               <option value="">{t("checksum")}: {t("none")}</option>
@@ -612,7 +654,7 @@ export default function App() {
               <option value="\n">LF</option>
               <option value="\r\n">CR LF</option>
             </select>
-            <button className="btn primary" onClick={() => doSend(spec)} disabled={!online || !previewBytes}>
+            <button className="btn primary" onClick={() => doSend(spec)} disabled={!online || !sendable}>
               {t("send")}
             </button>
           </div>
@@ -625,7 +667,7 @@ export default function App() {
               <input type="checkbox" checked={repeating} disabled={!online} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
-            <button className="btn small" onClick={addCommand} disabled={!previewBytes}>
+            <button className="btn small" onClick={addCommand} disabled={!sendable}>
               + {t("commands")}
             </button>
           </div>
@@ -639,22 +681,22 @@ export default function App() {
 
       {showRight && <div className="backdrop narrow-only" onClick={() => setShowRight(false)} />}
       <aside className="right">
-        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)}>
+        <button className="btn small narrow-only close-right" onClick={() => setShowRight(false)} title={t("close")}>
           ✕
         </button>
         <h3>{t("commands")}</h3>
         <div className="cmds">
           {commands.map((c, i) => (
-            <div key={i} className="cmd" onDoubleClick={() => doSend(c)} title={c.text}>
+            <div key={i} className="cmd" title={c.text}>
               <input
                 className="cmdname"
                 value={c.name}
                 onChange={(e) => setCommands(commands.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
               />
-              <button className="btn small" onClick={() => doSend(c)} disabled={!online}>
+              <button className="btn small" onClick={() => doSend(c)} disabled={!online} title={t("send")}>
                 ▶
               </button>
-              <button className="btn small ghost" onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
+              <button className="btn small ghost" title={t("edit")} onClick={() => setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix })}>
                 ✎
               </button>
               <button className="btn small ghost" onClick={() => setCommands(commands.filter((_, j) => j !== i))} title={t("delete")}>
@@ -732,6 +774,7 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           writeText={api.writeText}
           readText={api.readText}
+          busy={connected || !!logPath}
         />
       )}
     </div>

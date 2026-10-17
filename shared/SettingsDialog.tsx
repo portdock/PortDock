@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import { NumInput } from "./NumInput";
 import { exportAll, importAll, LIMITS, type Settings, type TimeFormat, type Theme } from "./settings";
@@ -31,6 +31,8 @@ const T = {
     reset: "기본값으로",
     resetAsk: "화면 설정을 기본값으로 되돌릴까요? (명령 목록·규칙은 그대로)",
     importAsk: "가져오면 지금 설정·명령 목록·규칙이 모두 바뀝니다. 계속할까요?",
+    importBusy: "연결·기록 중에는 가져올 수 없습니다. 먼저 멈추세요.",
+    noFolderWarn: "폴더를 고르지 않으면 자동 로그가 시작되지 않습니다.",
     close: "닫기",
     about: "정보",
   },
@@ -61,6 +63,8 @@ const T = {
     reset: "Reset to defaults",
     resetAsk: "Reset display settings to defaults? (commands and rules are kept)",
     importAsk: "Importing replaces all current settings, commands and rules. Continue?",
+    importBusy: "Stop the connection and logging before importing.",
+    noFolderWarn: "Automatic logging will not start until a folder is chosen.",
     close: "Close",
     about: "About",
   },
@@ -75,6 +79,7 @@ export function SettingsDialog({
   onClose,
   writeText,
   readText,
+  busy,
 }: {
   app: string;
   version: string;
@@ -84,9 +89,16 @@ export function SettingsDialog({
   onClose: () => void;
   writeText: (path: string, text: string) => Promise<void>;
   readText: (path: string) => Promise<string>;
+  /** 연결·기록 중 — 가져오기(새로 고침)를 하면 실행 중인 세션이 화면과 끊긴다 */
+  busy: boolean;
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function doExport() {
     const path = await save({ defaultPath: `${app.replace(/\s+/g, "-").toLowerCase()}-settings.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
@@ -94,6 +106,10 @@ export function SettingsDialog({
     await writeText(path, exportAll(app)).catch((e) => setErr(String(e)));
   }
   async function doImport() {
+    if (busy) {
+      setErr(t.importBusy);
+      return;
+    }
     const path = await open({ filters: [{ name: "JSON", extensions: ["json"] }] });
     if (!path || Array.isArray(path)) return;
     if (!(await ask(t.importAsk, { title: app, kind: "warning" }))) return;
@@ -169,6 +185,7 @@ export function SettingsDialog({
               </button>
             </div>
           )}
+          {settings.autoLog && !settings.logFolder && <div className="interlock">{t.noFolderWarn}</div>}
           <label className="inline">
             <input type="checkbox" checked={settings.confirmExit} onChange={(e) => update({ confirmExit: e.target.checked })} /> {t.confirmExit}
           </label>
@@ -178,7 +195,7 @@ export function SettingsDialog({
             <button className="btn small" onClick={doExport}>
               {t.exportAll}
             </button>
-            <button className="btn small" onClick={doImport}>
+            <button className="btn small" onClick={doImport} disabled={busy} title={busy ? t.importBusy : ""}>
               {t.importAll}
             </button>
             <button className="btn small" onClick={doReset}>

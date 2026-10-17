@@ -30,9 +30,37 @@ export interface RuleLike {
   kind: "exact" | "contains";
 }
 
+/**
+ * 사실상 모든 프레임에 맞는 패턴인지 — 와일드카드(?? ** ? *)만으로 되어 있고
+ * 정확히(exact)라면 «0개 이상» 이 하나라도 있을 때, 포함(contains)이면 «1개» 하나까지 포함
+ */
+export function matchesEverything(r: { pattern: string; kind: "exact" | "contains" }) {
+  const toks = r.pattern.trim().split(/\s+/).filter(Boolean);
+  const flat = r.pattern.replace(/\s+/g, "");
+  if (!flat) return false;
+  const onlyWild = toks.every((t) => /^(\?\?|\*\*)+$/.test(t)) || /^[?*]+$/.test(flat);
+  if (!onlyWild) return false;
+  if (flat.includes("*")) return true;
+  // ?? 나 ? 만 — 포함이면 1바이트 이상인 모든 프레임에 맞는다
+  return r.kind === "contains" && (flat === "??" || flat === "?");
+}
+
+/** 같은 패턴·같은 방식의 켜진 규칙이 둘 이상이면 아래 것은 답하지 않는다 */
+export function duplicatePatterns(rules: RuleLike[]) {
+  const seen = new Set<string>();
+  const dup: string[] = [];
+  for (const r of rules) {
+    if (!r.enabled) continue;
+    const k = `${r.kind}|${r.pattern.replace(/\s+/g, " ").trim().toUpperCase()}`;
+    if (seen.has(k)) dup.push(r.name);
+    seen.add(k);
+  }
+  return dup;
+}
+
 /** 무엇이든 맞는 규칙(** 또는 *)이 위에 있으면 그 아래 켜진 규칙은 절대 답하지 않는다 */
 export function shadowedRules(rules: RuleLike[]) {
-  const catchAll = (r: RuleLike) => r.enabled && /^\s*(\*\*|\*)\s*$/.test(r.pattern);
+  const catchAll = (r: RuleLike) => r.enabled && matchesEverything(r);
   const i = rules.findIndex(catchAll);
   if (i < 0) return { by: null as string | null, names: [] as string[] };
   return { by: rules[i].name, names: rules.slice(i + 1).filter((r) => r.enabled).map((r) => r.name) };
