@@ -85,6 +85,16 @@ export interface SendSpec {
   suffix: string;
 }
 
+export interface AutoRule {
+  name: string;
+  enabled: boolean;
+  pattern: string;
+  patternMode: TextMode;
+  kind: "exact" | "contains";
+  reply: SendSpec;
+  delayMs: number;
+}
+
 export interface ModbusInfo {
   slave: number;
   function: number;
@@ -119,6 +129,8 @@ export const api = {
   close: (id: string) => invoke<void>("close_session", { id }),
   setFraming: (id: string, framing: FrameMode, rxCheck: ChecksumKind | null) =>
     invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
+  setAutoReply: (id: string, rules: AutoRule[]) => invoke<number>("set_auto_reply", { id, rules }),
+  checkAutoReply: (rules: AutoRule[]) => invoke<number>("check_auto_reply", { rules }),
   reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
   setLog: (id: string, path: string | null) => invoke<void>("set_log", { id, path }),
   send: (id: string, spec: SendSpec) => invoke<number[]>("send", { id, spec }),

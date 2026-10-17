@@ -1,3 +1,4 @@
+mod autoreply;
 mod checksum;
 mod codec;
 mod framer;
@@ -6,7 +7,7 @@ mod ports;
 mod session;
 
 use checksum::ChecksumKind;
-use codec::TextMode;
+use codec::{SendSpec, build};
 use framer::FrameMode;
 use session::{SerialConfig, Session, SessionEvent};
 use std::collections::HashMap;
@@ -17,27 +18,6 @@ use tauri::State;
 #[derive(Default)]
 struct Sessions(Mutex<HashMap<String, Session>>);
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SendSpec {
-    text: String,
-    mode: TextMode,
-    checksum: Option<ChecksumKind>,
-    /// 체크섬 뒤에 붙일 끝 문자(ASCII 이스케이프, 예: "\\r\\n")
-    #[serde(default)]
-    suffix: String,
-}
-
-/// 보낼 바이트 = 본문 + 체크섬 + 끝 문자
-fn build(spec: &SendSpec) -> Result<Vec<u8>, String> {
-    let mut bytes = codec::parse(&spec.text, spec.mode)?;
-    if let Some(k) = spec.checksum {
-        let c = k.compute(&bytes);
-        bytes.extend(c);
-    }
-    bytes.extend(codec::parse_ascii(&spec.suffix)?);
-    Ok(bytes)
-}
 
 #[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
@@ -80,6 +60,22 @@ fn set_framing(
     let map = sessions.0.lock().unwrap();
     map.get(&id).ok_or("세션이 없습니다")?.set_framing(framing, rx_check);
     Ok(())
+}
+
+/// 자동응답 규칙 교체. 꺼진 규칙은 빼고, 잘못된 규칙이 있으면 이름과 함께 오류.
+#[tauri::command(async)]
+fn set_auto_reply(sessions: State<Sessions>, id: String, rules: Vec<autoreply::RuleSpec>) -> Result<usize, String> {
+    let compiled = autoreply::compile_all(&rules)?;
+    let n = compiled.len();
+    let map = sessions.0.lock().unwrap();
+    map.get(&id).ok_or("세션이 없습니다")?.set_auto_reply(compiled);
+    Ok(n)
+}
+
+/// 규칙 문법 검사만 (연결 전 편집 중에)
+#[tauri::command]
+fn check_auto_reply(rules: Vec<autoreply::RuleSpec>) -> Result<usize, String> {
+    autoreply::compile_all(&rules).map(|r| r.len())
 }
 
 /// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
@@ -137,6 +133,8 @@ pub fn run() {
             close_session,
             set_framing,
             reconfigure,
+            set_auto_reply,
+            check_auto_reply,
             set_log,
             send,
             preview,
@@ -151,6 +149,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use codec::TextMode;
 
     #[test]
     fn build_appends_checksum_then_suffix() {

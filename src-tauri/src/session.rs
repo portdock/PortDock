@@ -5,6 +5,7 @@
 //! 윈도우 serialport 는 읽기·쓰기가 같은 동기 핸들과 같은 timeout 을 쓴다(4.10 com.rs).
 //! 그래서 timeout 은 짧게(5ms) 두고, 쓰기 쪽에서 TimedOut 을 «아직 못 보냄» 으로 보고 이어 쓴다.
 
+use crate::autoreply::Rule;
 use crate::checksum::ChecksumKind;
 use crate::framer::{Cut, FrameMode, Framer};
 use crate::ports::{self, PortInfo};
@@ -84,6 +85,7 @@ struct Shared {
     writer: Mutex<Option<Port>>,
     pending: Mutex<Vec<Frame>>,
     log: Mutex<Option<BufWriter<File>>>,
+    rules: Mutex<Vec<Rule>>,
     stop: AtomicBool,
 }
 
@@ -180,6 +182,7 @@ impl Session {
             writer: Mutex::new(Some(writer_handle)),
             pending: Mutex::new(Vec::new()),
             log: Mutex::new(None),
+            rules: Mutex::new(Vec::new()),
             stop: AtomicBool::new(false),
         });
         let _ = events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
@@ -192,8 +195,8 @@ impl Session {
         let (tx, rx) = mpsc::channel::<Vec<u8>>();
         let (s, ev, baud) = (shared.clone(), events.clone(), cfg.baud);
         let writer = std::thread::spawn(move || writer_loop(rx, baud, s, ev));
-        let s = shared.clone();
-        let reader = std::thread::spawn(move || reader_loop(port, cfg, identity, s, events));
+        let (s, replies) = (shared.clone(), tx.clone());
+        let reader = std::thread::spawn(move || reader_loop(port, cfg, identity, s, events, replies));
         Ok(Self { shared, tx: Some(tx), reader: Some(reader), writer: Some(writer) })
     }
 
@@ -210,6 +213,12 @@ impl Session {
             note(&self.shared, format!("RXCHECK {}", rx_check.map_or("none", |k| k.name())));
             *rc = rx_check;
         }
+    }
+
+    pub fn set_auto_reply(&self, rules: Vec<Rule>) {
+        let names: Vec<String> = rules.iter().map(|r| r.name.clone()).collect();
+        *self.shared.rules.lock().unwrap() = rules;
+        note(&self.shared, if names.is_empty() { "AUTO-REPLY off".into() } else { format!("AUTO-REPLY {}", names.join(", ")) });
     }
 
     /// 연결을 끊지 않고 속도·패리티 등을 바꾼다. 바뀐 항목을 로그에 남긴다.
@@ -352,7 +361,14 @@ fn status(events: &Channel<SessionEvent>, state: &'static str, port: &str, messa
     let _ = events.send(SessionEvent::Status { state, port: port.to_string(), message });
 }
 
-fn reader_loop(port: Port, cfg: SerialConfig, identity: Identity, s: Arc<Shared>, events: Channel<SessionEvent>) {
+fn reader_loop(
+    port: Port,
+    cfg: SerialConfig,
+    identity: Identity,
+    s: Arc<Shared>,
+    events: Channel<SessionEvent>,
+    replies: Sender<Vec<u8>>,
+) {
     let mut port = Some(port);
     let mut name = cfg.port.clone();
     let mut buf = [0u8; 4096];
@@ -374,7 +390,7 @@ fn reader_loop(port: Port, cfg: SerialConfig, identity: Identity, s: Arc<Shared>
             Ok(0) => None,
             Ok(n) => {
                 let frames = s.framer.lock().unwrap().feed(&buf[..n], Instant::now());
-                push_rx(&s, frames);
+                push_rx(&s, frames, &replies);
                 None
             }
             Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => None,
@@ -435,8 +451,9 @@ fn reader_loop(port: Port, cfg: SerialConfig, identity: Identity, s: Arc<Shared>
                 }
             }
         }
-        if let Some(f) = s.framer.lock().unwrap().poll(Instant::now()) {
-            push_rx(&s, vec![f]);
+        let tail = s.framer.lock().unwrap().poll(Instant::now());
+        if let Some(f) = tail {
+            push_rx(&s, vec![f], &replies);
         }
         if last_flush.elapsed() >= BATCH {
             flush(&s, &events);
@@ -499,7 +516,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: Channel
     }
 }
 
-fn push_rx(s: &Shared, frames: Vec<Cut>) {
+fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
     if frames.is_empty() {
         return;
     }
@@ -510,7 +527,22 @@ fn push_rx(s: &Shared, frames: Vec<Cut>) {
     for (at, bytes) in frames {
         let ts = now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64);
         let c = check.and_then(|k| k.verify(&bytes));
+        // 규칙은 위에서부터 처음 맞는 하나만
+        // 받은 것이 그 규칙의 응답과 똑같으면(루프백·에코) 다시 답하지 않는다 — 무한 반복 방지
+        let hit = s.rules.lock().unwrap().iter().find(|r| r.reply != bytes && r.is_match(&bytes)).cloned();
         pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None });
+        if let Some(rule) = hit {
+            pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(format!("AUTO {}", rule.name)) });
+            if rule.delay_ms == 0 {
+                let _ = replies.send(rule.reply);
+            } else {
+                let tx = replies.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_millis(rule.delay_ms));
+                    let _ = tx.send(rule.reply);
+                });
+            }
+        }
     }
 }
 

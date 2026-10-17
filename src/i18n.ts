@@ -53,6 +53,15 @@ const ko = {
   values: "값",
   saveLog: "화면 내용 저장",
   inputLine: "입력 신호선 (장치 → PC)",
+  autoReply: "자동응답",
+  arWhen: "받으면",
+  arExact: "정확히",
+  arContains: "포함",
+  arReply: "응답",
+  arDelay: "지연",
+  arAdd: "규칙 추가",
+  arHelp: "HEX: ?? = 아무 1바이트, ** = 0개 이상. ASCII: ? = 아무 1글자, * = 0개 이상. 위에서부터 처음 맞는 규칙 하나만 답합니다.",
+  arActive: "규칙 {n}개 동작 중",
   usbGapHint: "USB 변환기는 보통 16ms 단위로 데이터를 넘겨서, 16ms 보다 짧은 간격은 정확히 구분되지 않을 수 있습니다.",
 };
 
@@ -110,6 +119,15 @@ const en: typeof ko = {
   values: "Values",
   saveLog: "Save view",
   inputLine: "Input line (device → PC)",
+  autoReply: "Auto reply",
+  arWhen: "When",
+  arExact: "exact",
+  arContains: "contains",
+  arReply: "Reply",
+  arDelay: "Delay",
+  arAdd: "Add rule",
+  arHelp: "HEX: ?? = any byte, ** = zero or more. ASCII: ? = any char, * = zero or more. The first matching rule (top-down) replies.",
+  arActive: "{n} rule(s) active",
   usbGapHint: "USB adapters usually deliver data in ~16 ms chunks, so gaps shorter than 16 ms may not split reliably.",
 };
 

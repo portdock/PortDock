@@ -10,6 +10,28 @@ pub enum TextMode {
     Ascii,
 }
 
+/// 보낼 것: 본문 + 체크섬 + 끝 문자
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendSpec {
+    pub text: String,
+    pub mode: TextMode,
+    pub checksum: Option<crate::checksum::ChecksumKind>,
+    /// 체크섬 뒤에 붙일 끝 문자(ASCII 이스케이프, 예: "\\r\\n")
+    #[serde(default)]
+    pub suffix: String,
+}
+
+pub fn build(spec: &SendSpec) -> Result<Vec<u8>, String> {
+    let mut bytes = parse(&spec.text, spec.mode)?;
+    if let Some(k) = spec.checksum {
+        let c = k.compute(&bytes);
+        bytes.extend(c);
+    }
+    bytes.extend(parse_ascii(&spec.suffix)?);
+    Ok(bytes)
+}
+
 pub fn parse(text: &str, mode: TextMode) -> Result<Vec<u8>, String> {
     match mode {
         TextMode::Hex => parse_hex(text),

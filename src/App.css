@@ -455,3 +455,40 @@ hr {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.ar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arcard {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.arcard.off {
+  opacity: 0.55;
+}
+.arrow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.arrow select {
+  width: auto;
+}
+.arname {
+  flex: 1;
+  font-weight: 600;
+}
+.arlbl {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.hint.ok {
+  color: var(--ok);
+}
