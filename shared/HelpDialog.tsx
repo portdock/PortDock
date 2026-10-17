@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { autoSendAvailable, ISSUES_URL, REPORT_EMAIL } from "./report";
+import { useRestoreFocus } from "./restoreFocus";
 
 export interface HelpSection {
   title: string;
@@ -70,6 +71,7 @@ export function HelpDialog({ doc, lang, app, onClose }: { doc: HelpDoc; lang: "k
   const sections = useMemo(() => [...doc[lang], reportHelp(lang)], [doc, lang]);
   const [q, setQ] = useState("");
   const [cur, setCur] = useState(0);
+  const back = useRestoreFocus<HTMLDivElement>();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -83,7 +85,7 @@ export function HelpDialog({ doc, lang, app, onClose }: { doc: HelpDoc; lang: "k
   const active = shown.find((x) => x.i === cur) ?? shown[0];
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="modal-back" ref={back} onClick={onClose}>
       <div className="modal help" role="dialog" aria-label={ui.title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <b>

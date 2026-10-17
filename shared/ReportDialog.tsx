@@ -21,6 +21,7 @@ import {
   type EnvInfo,
   type ReportFrame,
 } from "./report";
+import { useRestoreFocus } from "./restoreFocus";
 
 const LOG_LINES = 200;
 
@@ -133,6 +134,7 @@ export function ReportDialog({
   const [err, setErr] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const handled = useRef(false);
+  const back = useRestoreFocus<HTMLDivElement>();
   /** 덤프까지 올린 기록 — 닫을 때 지운다 */
   const uploaded = useRef(new Set<string>());
   // 열 때 한 번만 찍어 둔다 — 보는 동안 내용이 바뀌지 않게
@@ -231,7 +233,7 @@ export function ReportDialog({
   );
 
   return (
-    <div className="modal-back" onClick={close}>
+    <div className="modal-back" ref={back} onClick={close}>
       <div className="modal report" role="dialog" aria-label={u.title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <b>

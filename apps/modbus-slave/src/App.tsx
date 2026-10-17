@@ -128,6 +128,8 @@ export default function App() {
   }, [cfg]);
 
   const [status, setStatus] = useState<Status>("idle");
+  // 백엔드가 준 설명(재연결 대기·닫힌 이유) — Serial 과 같이 상태 옆에 보인다
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
@@ -158,6 +160,7 @@ export default function App() {
       setTick((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
+      setStatusMsg(e.message);
       if (e.state === "connected") {
         setError(null);
         // 다시 꽂아 COM 번호가 바뀌었으면 다음 연결도 새 번호로
@@ -359,7 +362,13 @@ export default function App() {
   }, [writes, ready, ids, ranges, remember]);
 
   async function writeValue(i: number, v: number) {
-    await api.setValues(sel, table, range.start + i, [v]);
+    // 실패하면 화면 값은 그대로 두고 이유를 보인다(다음 읽기에서 실제 값으로 돌아온다)
+    try {
+      await api.setValues(sel, table, range.start + i, [v]);
+    } catch (e) {
+      setError(String(e));
+      return;
+    }
     const next = values.slice();
     next[i] = v;
     prev.current.v = next;
@@ -370,7 +379,12 @@ export default function App() {
   async function fill() {
     if (!(await ask(t("askFill"), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
     const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
-    await api.setValues(sel, table, range.start, v);
+    try {
+      await api.setValues(sel, table, range.start, v);
+    } catch (e) {
+      setError(String(e));
+      return;
+    }
     remember(sel, table, range.start, v);
     refresh();
   }
@@ -419,6 +433,7 @@ export default function App() {
     setError(null);
     setConnectErr(null);
     setPortNotice(null);
+    setStatusMsg(null);
     try {
       await api.open(cfg, onEvent);
       setConnected(true);
@@ -440,6 +455,7 @@ export default function App() {
     await api.close();
     setConnected(false);
     setStatus("closed");
+    setStatusMsg(null);
     setLogPath(null);
   }
   useEffect(() => {
@@ -584,7 +600,10 @@ export default function App() {
             {/busy|in use|denied|사용 중|거부/i.test(connectErr) && !/another program|다른 프로그램/i.test(connectErr) && <div>{t("busyHint")}</div>}
           </div>
         ) : (
-          <div className={`status s-${status}`}>{t(statusKey)}</div>
+          <div className={`status s-${status}`}>
+            {t(statusKey)}
+            {statusMsg ? ` · ${statusMsg}` : ""}
+          </div>
         )}
 
         <hr />
@@ -831,7 +850,16 @@ function RegInput({ value, format, onCommit }: { value: number; format: Format; 
       onFocus={() => setEditing(true)}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
-      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+        // 표 칸처럼 Enter 로 반영하고 다음 칸(Shift+Enter 는 앞 칸)으로 — 마지막 칸이면 반영만
+        const all = [...document.querySelectorAll<HTMLInputElement>(".regs .regval")];
+        const next = all[all.indexOf(e.currentTarget) + (e.shiftKey ? -1 : 1)];
+        if (next) {
+          next.focus();
+          next.select();
+        } else commit();
+      }}
     />
   );
 }

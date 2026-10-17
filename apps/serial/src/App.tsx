@@ -366,6 +366,8 @@ export default function App() {
 
   // ---- 보내기
   const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "hex", checksum: null, suffix: "" }));
+  // 보내기 버튼·Modbus 요청 넣기 뒤 입력칸으로 돌아가 바로 이어 쓸 수 있게
+  const sendInput = useRef<HTMLInputElement>(null);
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
@@ -785,6 +787,7 @@ export default function App() {
               <option value="ascii">ASCII</option>
             </select>
             <input
+              ref={sendInput}
               className="sendtext"
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "AT\\r\\n"}
@@ -813,7 +816,10 @@ export default function App() {
               <option value="\n">{t("suffix")}: LF</option>
               <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
-            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!online || !sendable}>
+            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => {
+                doSend(spec);
+                sendInput.current?.focus();
+              }} disabled={!online || !sendable}>
               {t("send")}
             </button>
           </div>
@@ -946,6 +952,7 @@ export default function App() {
           onPut={(b) => {
             setSpec(mbSpec(b));
             setShowMb(false);
+            sendInput.current?.focus();
           }}
           onAdd={(name, b) => setCommands((c) => [...c, { ...mbSpec(b), name }])}
           onClose={() => setShowMb(false)}

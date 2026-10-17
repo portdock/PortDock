@@ -4,6 +4,7 @@ import { buildRequest, convertAddrText, MB_FUNCS, mbFuncInfo, type AddrMode, typ
 import { load, store } from "@shared/framing";
 import { NumInput } from "@shared/NumInput";
 import { tip } from "@shared/tips";
+import { useRestoreFocus } from "@shared/restoreFocus";
 import { hex } from "./api";
 import type { Lang } from "./i18n";
 
@@ -82,6 +83,7 @@ export function ModbusBuilder({
   const [form, setForm] = useState<MbForm>(() => load("mbForm", { slave: 1, fc: 3, addrText: "0", addrMode: "zero", qty: 10, valuesText: "" }));
   useEffect(() => store("mbForm", form), [form]);
   const [added, setAdded] = useState<string | null>(null);
+  const back = useRestoreFocus<HTMLDivElement>();
   const f = mbFuncInfo(form.fc) ?? MB_FUNCS[2];
   const r = useMemo(() => buildRequest(form, lang), [form, lang]);
   const set = (p: Partial<MbForm>) => {
@@ -112,7 +114,7 @@ export function ModbusBuilder({
   const name = () => `FC${fc2(f.code)} #${form.slave} @${r.addr ?? 0}${f.write ? (f.max === 1 ? `=${form.valuesText.trim()}` : ` ×${r.qty}`) : ` ×${r.qty}`}`;
 
   return (
-    <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-back" ref={back} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal mbuild" role="dialog" aria-label={t.title}>
         <div className="modal-head">
           <b>{t.title}</b>

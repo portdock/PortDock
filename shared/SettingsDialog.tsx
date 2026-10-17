@@ -5,6 +5,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { NumInput } from "./NumInput";
 import { exportAll, importAll, LIMITS, type AutoReport, type Settings, type TimeFormat, type Theme } from "./settings";
 import { autoSendAvailable, type EnvInfo } from "./report";
+import { useRestoreFocus } from "./restoreFocus";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
 const REPO = "https://github.com/juhak0308/PortDock";
@@ -134,6 +135,7 @@ export function SettingsDialog({
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
+  const back = useRestoreFocus<HTMLDivElement>();
   // 실제 실행 파일의 버전(Cargo) — 못 받으면 화면이 받은 version 을 쓴다
   const [realVersion, setRealVersion] = useState(version);
   useEffect(() => {
@@ -181,7 +183,7 @@ export function SettingsDialog({
   }
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="modal-back" ref={back} onClick={onClose}>
       <div className="modal" role="dialog" aria-label={t.title} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <b>{t.title}</b>

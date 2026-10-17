@@ -98,15 +98,17 @@ export default function App() {
       clearInterval(id);
     };
   }, [transport]);
-  useEffect(() => {
-    if (!com.port && ports.length) setCom((c) => ({ ...c, port: ports[0].name }));
-  }, [ports, com.port]);
   // 끝 문자 칸 해석 — 틀리면 bytes 가 비고 error 에 이유(화면에 빨갛게)
   const term = parseTerminator(termText, lang);
   const effFraming: FrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
 
   // ---- 실행
   const [running, setRunning] = useState(false);
+  // 저장된 포트가 목록에 없으면(다른 PC·USB 뺌) 화면에 보이는 첫 포트로 맞춘다 — 보이는 것과 다른 포트를 열지 않게. 실행 중엔 그대로
+  useEffect(() => {
+    if (running || !ports.length || ports.some((p) => p.name === com.port)) return;
+    setCom((c) => ({ ...c, port: ports[0].name }));
+  }, [ports, com.port, running]);
   const [status, setStatus] = useState("idle");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -313,6 +315,9 @@ export default function App() {
   // ---- 장비가 먼저 보내기
   const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "ascii", checksum: null, suffix: "\\r\\n" }));
   const [preview, setPreview] = useState<string>("");
+  // 보낼 바이트가 있는지 — 없으면 보내기를 끄고 이유를 보인다
+  const [sendable, setSendable] = useState(false);
+  const sendInput = useRef<HTMLInputElement>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
   const [repeating, setRepeating] = useState(false);
   // 반복 중 상대가 없어 건너뛰는 중인지
@@ -322,8 +327,16 @@ export default function App() {
     let stale = false;
     api
       .preview(spec)
-      .then((b) => !stale && setPreview(b.length ? `${t("willSend")}: ${hex(b)} (${b.length})` : ""))
-      .catch((e) => !stale && setPreview(String(e)));
+      .then((b) => {
+        if (stale) return;
+        setPreview(b.length ? `${t("willSend")}: ${hex(b)} (${b.length})` : "");
+        setSendable(b.length > 0);
+      })
+      .catch((e) => {
+        if (stale) return;
+        setPreview(String(e));
+        setSendable(false);
+      });
     return () => {
       stale = true;
     };
@@ -501,7 +514,7 @@ export default function App() {
           </>
         )}
 
-        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !com.port) || starting}>
+        <button data-tip={tip(lang, running ? "stop" : "run")} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={(!running && transport === "serial" && !ports.some((p) => p.name === com.port)) || starting}>
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -543,7 +556,15 @@ export default function App() {
                 <option value="hex">HEX</option>
                 <option value="ascii">ASCII</option>
               </select>
-              <input className="mono grow" value={spec.text} placeholder="STATUS OK" onChange={(e) => setSpec({ ...spec, text: e.target.value })} />
+              <input
+                ref={sendInput}
+                className="mono grow"
+                value={spec.text}
+                placeholder="STATUS OK"
+                onChange={(e) => setSpec({ ...spec, text: e.target.value })}
+                // 다른 프로그램처럼 Enter 로 보내기
+                onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && running && sendable && api.send(spec).catch((err) => setError(String(err)))}
+              />
               <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })}>
                 <option value="">
                   {t("checksum")}: {t("none")}
@@ -562,7 +583,15 @@ export default function App() {
                 <option value="\n">{t("suffix")}: LF</option>
                 <option value="\r\n">{t("suffix")}: CR LF</option>
               </select>
-              <button data-tip={tip(lang, "send")} className="btn small primary" disabled={!running} onClick={() => api.send(spec).catch((e) => setError(String(e)))}>
+              <button
+                data-tip={tip(lang, "send")}
+                className="btn small primary"
+                disabled={!running || !sendable}
+                onClick={() => {
+                  api.send(spec).catch((e) => setError(String(e)));
+                  sendInput.current?.focus();
+                }}
+              >
                 {t("send")}
               </button>
               <label data-tip={tip(lang, "repeatSim")} className="inline">
@@ -571,6 +600,8 @@ export default function App() {
               <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
             </div>
             <div className="hint mono">{preview}</div>
+            {/* 보내기가 꺼진 이유 */}
+            {!running ? <div className="hint">{t("whyNotStarted")}</div> : !sendable && !preview ? <div className="hint">{t("whyEmpty")}</div> : null}
             {repeating && running && waiting && <div className="hint warn">{t("waitingPeer")}</div>}
           </div>
         </div>

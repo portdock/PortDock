@@ -238,6 +238,8 @@ export default function App() {
   // ---- 보내기
   const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "ascii", checksum: null, suffix: "\\r\\n" }));
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
+  // 보내기 버튼 뒤 입력칸으로 돌아가 바로 이어 쓸 수 있게
+  const sendInput = useRef<HTMLInputElement>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
   const [repeating, setRepeating] = useState(false);
@@ -388,6 +390,8 @@ export default function App() {
         </div>
         {server && <div className="hint">{t("firewallHint")}</div>}
         {server && cfg.port === 0 && <div className="interlock">{t("ilPort0")}</div>}
+        {/* 접속 버튼이 꺼진 이유 */}
+        {!running && !startable && <div className="interlock">{t("ilClientAddr")}</div>}
 
         {server && running && (
           <>
@@ -555,6 +559,7 @@ export default function App() {
               <option value="ascii">ASCII</option>
             </select>
             <input
+              ref={sendInput}
               className="sendtext"
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "STATUS?"}
@@ -579,7 +584,10 @@ export default function App() {
               <option value="\n">{t("suffix")}: LF</option>
               <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
-            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => doSend(spec)} disabled={!canSend}>
+            <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => {
+                doSend(spec);
+                sendInput.current?.focus();
+              }} disabled={!canSend}>
               {t("send")}
             </button>
           </div>
@@ -601,7 +609,7 @@ export default function App() {
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
-            <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!previewBytes}>
+            <button className="btn small" onClick={() => setCommands([...commands, { ...spec, name: spec.text.slice(0, 24) || "cmd" }])} disabled={!sendable}>
               + {t("addCommand")}
             </button>
           </div>

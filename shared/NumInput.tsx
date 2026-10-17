@@ -27,6 +27,12 @@ export function NumInput({ value, onValue, min = 0, max = Number.MAX_SAFE_INTEGE
     return n >= min && n <= max ? n : null;
   };
   const bad = parse(text) == null;
+  // 칸을 벗어날 때·Enter 때 반영 — 틀린 값이면 원래 값으로
+  const commit = () => {
+    const n = parse(text);
+    if (n == null) setText(String(value));
+    else if (commitOnBlur && n !== value) onValue(n);
+  };
 
   return (
     <input
@@ -43,11 +49,13 @@ export function NumInput({ value, onValue, min = 0, max = Number.MAX_SAFE_INTEGE
       }}
       onBlur={() => {
         setFocused(false);
-        const n = parse(text);
-        if (n == null) setText(String(value));
-        else if (commitOnBlur && n !== value) onValue(n);
+        commit();
       }}
-      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+      // Enter 는 반영만 하고 포커스는 그대로 둔다 — 값을 이어서 고치거나 Tab 으로 넘어갈 수 있게
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.nativeEvent.isComposing) commit();
+        rest.onKeyDown?.(e);
+      }}
     />
   );
 }
