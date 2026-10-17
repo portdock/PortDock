@@ -1,0 +1,580 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
+import {
+  api,
+  clock,
+  EXCEPTIONS,
+  hex,
+  TABLES,
+  type Faults,
+  type Frame,
+  type PortInfo,
+  type SerialConfig,
+  type SessionEvent,
+  type Stats,
+  type Table,
+} from "./api";
+import { dict, type Key, type Lang } from "./i18n";
+import "./App.css";
+
+type Status = "idle" | "connected" | "disconnected" | "reconnecting" | "closed";
+type Format = "u16" | "s16" | "hex" | "bin";
+type Range = { start: number; count: number };
+
+const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
+const MAX_TRAFFIC = 2000;
+const MAX_VIEW = 2000;
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? (JSON.parse(v) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function store(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* 저장이 막힌 환경 — 무시 */
+  }
+}
+
+function show(v: number, f: Format) {
+  switch (f) {
+    case "s16":
+      return String(v > 0x7fff ? v - 0x10000 : v);
+    case "hex":
+      return v.toString(16).toUpperCase().padStart(4, "0");
+    case "bin":
+      return v.toString(2).padStart(16, "0").replace(/(.{4})(?!$)/g, "$1 ");
+    default:
+      return String(v);
+  }
+}
+
+function parse(text: string, f: Format): number | null {
+  const s = text.trim().replace(/\s+/g, "");
+  if (!s) return null;
+  let n: number;
+  if (f === "hex" || /^0x/i.test(s)) n = parseInt(s.replace(/^0x/i, ""), 16);
+  else if (f === "bin") n = parseInt(s, 2);
+  else n = Number(s);
+  if (!Number.isInteger(n)) return null;
+  if (n < 0 && n >= -0x8000) n += 0x10000;
+  return n >= 0 && n <= 0xffff ? n : null;
+}
+
+const key = (id: number, t: Table) => `${id}:${t}`;
+
+export default function App() {
+  const [lang, setLang] = useState<Lang>(() => load("lang", navigator.language.startsWith("ko") ? "ko" : "en"));
+  const t = useCallback((k: Key) => dict[lang][k], [lang]);
+
+  // ---- 포트
+  const [ports, setPorts] = useState<PortInfo[]>([]);
+  useEffect(() => {
+    let alive = true;
+    const tick = () => api.listPorts().then((p) => alive && setPorts(p)).catch(() => {});
+    tick();
+    const id = setInterval(tick, 1500);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+  const [cfg, setCfg] = useState<SerialConfig>(() =>
+    load("cfg", { port: "", baud: 9600, dataBits: 8, parity: "none", stopBits: 1, flow: "none", dtr: false, rts: false, autoReconnect: true }),
+  );
+  useEffect(() => {
+    store("cfg", cfg);
+  }, [cfg]);
+  useEffect(() => {
+    if (!cfg.port && ports.length) setCfg((c) => ({ ...c, port: ports[0].name }));
+  }, [ports, cfg.port]);
+
+  const [status, setStatus] = useState<Status>("idle");
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [logPath, setLogPath] = useState<string | null>(null);
+
+  // ---- 통신 기록
+  const traffic = useRef<Frame[]>([]);
+  const [, setTick] = useState(0);
+  const onEvent = useCallback((e: SessionEvent) => {
+    if (e.type === "frames") {
+      traffic.current.push(...e.frames);
+      if (traffic.current.length > MAX_TRAFFIC) traffic.current.splice(0, traffic.current.length - MAX_TRAFFIC);
+      setTick((v) => v + 1);
+    } else if (e.type === "status") {
+      setStatus(e.state);
+      if (e.state === "closed") {
+        setConnected(false);
+        setLogPath(null);
+      }
+    } else if (e.type === "error") {
+      setError(e.message);
+    }
+  }, []);
+  // 기록 칸만 맨 아래로 — scrollIntoView 는 창 전체를 움직이고, 이 WebView 에선 Promise 를 돌려준다
+  const tlogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = tlogRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  });
+
+  // ---- 슬레이브·표 설정 (연결과 무관하게 살아 있다)
+  const [ids, setIds] = useState<number[]>(() => load("ids", [1]));
+  const [sel, setSel] = useState<number>(() => load("sel", 1));
+  const [table, setTable] = useState<Table>(() => load("table", "holding-registers"));
+  const [ranges, setRanges] = useState<Record<string, Range>>(() => load("ranges", {}));
+  const [format, setFormat] = useState<Format>(() => load("format", "u16"));
+  const [faults, setFaults] = useState<Faults>(() => load("faults", { delayMs: 0, noResponse: false, forceException: 0, badCrc: false }));
+  const [newId, setNewId] = useState("");
+  const range = ranges[key(sel, table)] ?? { start: 0, count: 100 };
+  const bits = TABLES.find((x) => x.id === table)!.bits;
+
+  useEffect(() => {
+    store("ids", ids);
+  }, [ids]);
+  useEffect(() => {
+    store("sel", sel);
+  }, [sel]);
+  useEffect(() => {
+    store("table", table);
+  }, [table]);
+  useEffect(() => {
+    store("ranges", ranges);
+  }, [ranges]);
+  useEffect(() => {
+    store("format", format);
+  }, [format]);
+  useEffect(() => {
+    store("faults", faults);
+  }, [faults]);
+
+  // 화면 설정 → 엔진. 처음 켤 때 저장해 둔 표 값도 되살린다.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    (async () => {
+      await api.setSlaveIds(ids);
+      for (const id of ids)
+        for (const tb of TABLES) {
+          const r = ranges[key(id, tb.id)] ?? { start: 0, count: 100 };
+          await api.setRange(id, tb.id, r.start, r.count);
+          const saved = load<number[] | null>(`values:${key(id, tb.id)}`, null);
+          if (saved) await api.setValues(id, tb.id, r.start, saved.slice(0, r.count));
+        }
+      await api.setFaults(faults);
+      setReady(true);
+    })().catch((e) => setError(String(e)));
+    // 처음 한 번만
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (ready) api.setSlaveIds(ids).catch((e) => setError(String(e)));
+  }, [ids, ready]);
+  useEffect(() => {
+    if (ready) api.setFaults(faults).catch((e) => setError(String(e)));
+  }, [faults, ready]);
+  useEffect(() => {
+    if (ready) api.setRange(sel, table, range.start, range.count).catch((e) => setError(String(e)));
+  }, [ready, sel, table, range.start, range.count]);
+
+  // ---- 표 값: 0.3초마다 다시 읽고, 마스터가 바꾼 칸을 잠깐 표시한다
+  const [values, setValues] = useState<number[]>([]);
+  const [flash, setFlash] = useState<Set<number>>(new Set());
+  const [stats, setStats] = useState<Stats | null>(null);
+  const prev = useRef<{ k: string; v: number[] }>({ k: "", v: [] });
+  const viewCount = Math.min(range.count, MAX_VIEW);
+  const refresh = useCallback(async () => {
+    if (!ready || !ids.includes(sel)) return;
+    const v = await api.getValues(sel, table, range.start, viewCount);
+    const k = `${key(sel, table)}:${range.start}:${viewCount}`;
+    if (prev.current.k === k) {
+      const changed = new Set<number>();
+      v.forEach((x, i) => x !== prev.current.v[i] && changed.add(i));
+      if (changed.size) {
+        setFlash(changed);
+        setTimeout(() => setFlash(new Set()), 1200);
+        store(`values:${key(sel, table)}`, v);
+      }
+    }
+    prev.current = { k, v };
+    setValues(v);
+  }, [ready, ids, sel, table, range.start, viewCount]);
+  useEffect(() => {
+    refresh().catch(() => {});
+    const id = setInterval(() => {
+      refresh().catch(() => {});
+      api.getStats().then(setStats).catch(() => {});
+    }, 300);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  async function writeValue(i: number, v: number) {
+    await api.setValues(sel, table, range.start + i, [v]);
+    const next = values.slice();
+    next[i] = v;
+    prev.current.v = next;
+    setValues(next);
+    store(`values:${key(sel, table)}`, next);
+  }
+
+  async function fill() {
+    const v = Array.from({ length: viewCount }, (_, i) => (bits ? i % 2 : i));
+    await api.setValues(sel, table, range.start, v);
+    store(`values:${key(sel, table)}`, v);
+    refresh();
+  }
+
+  async function exportTable() {
+    const path = await save({ defaultPath: `modbus-slave-${sel}-${table}.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
+    if (!path) return;
+    const body = { slave: sel, table, start: range.start, values };
+    await api.writeText(path, JSON.stringify(body, null, 2)).catch((e) => setError(String(e)));
+  }
+
+  async function importTable() {
+    const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }] });
+    if (!path || Array.isArray(path)) return;
+    try {
+      const body = JSON.parse(await api.readText(path)) as { start: number; values: number[] };
+      await api.setValues(sel, table, body.start, body.values);
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  // ---- 연결
+  async function connect() {
+    setError(null);
+    try {
+      await api.open(cfg, onEvent);
+      setConnected(true);
+      setStatus("connected");
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+  async function disconnect() {
+    await api.close();
+    setConnected(false);
+    setStatus("closed");
+    setLogPath(null);
+  }
+  useEffect(() => {
+    if (!connected) return;
+    const id = setTimeout(() => api.reconfigure(cfg).catch((e) => setError(String(e))), 300);
+    return () => clearTimeout(id);
+    // 포트 이름은 연결 중 바꾸지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits]);
+
+  async function toggleLog() {
+    if (logPath) {
+      await api.setLog(null);
+      setLogPath(null);
+      return;
+    }
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const path = await save({ defaultPath: `modbus-slave-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    if (!path) return;
+    await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
+  }
+
+  function addId() {
+    const n = Number(newId);
+    if (!Number.isInteger(n) || n < 1 || n > 247 || ids.includes(n)) return;
+    setIds([...ids, n].sort((a, b) => a - b));
+    setSel(n);
+    setNewId("");
+  }
+
+  const statusKey = `status_${status}` as Key;
+  const frames = traffic.current.slice(-300);
+
+  return (
+    <div className="app">
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>Modbus Slave</small>
+          </span>
+          <select
+            className="lang"
+            value={lang}
+            onChange={(e) => {
+              setLang(e.target.value as Lang);
+              store("lang", e.target.value);
+            }}
+          >
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <label>
+          {t("port")}
+          <select value={cfg.port} disabled={connected} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
+            {ports.length === 0 && <option value="">{t("noPorts")}</option>}
+            {ports.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.product ?? p.manufacturer ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="grid2">
+          <label>
+            {t("baud")}
+            <input list="bauds" value={cfg.baud} onChange={(e) => setCfg({ ...cfg, baud: Number(e.target.value) || 0 })} />
+            <datalist id="bauds">
+              {BAUDS.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            {t("dataBits")}
+            <select value={cfg.dataBits} onChange={(e) => setCfg({ ...cfg, dataBits: Number(e.target.value) })}>
+              <option>8</option>
+              <option>7</option>
+            </select>
+          </label>
+          <label>
+            {t("parity")}
+            <select value={cfg.parity} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
+              <option value="none">{t("none")}</option>
+              <option value="even">{t("even")}</option>
+              <option value="odd">{t("odd")}</option>
+            </select>
+          </label>
+          <label>
+            {t("stopBits")}
+            <select value={cfg.stopBits} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+            </select>
+          </label>
+        </div>
+        <button className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={!cfg.port}>
+          {connected ? t("disconnect") : t("connect")}
+        </button>
+        <div className={`status s-${status}`}>{t(statusKey)}</div>
+
+        <hr />
+        <label>{t("slaves")}</label>
+        <div className="chips">
+          {ids.map((id) => (
+            <span key={id} className={id === sel ? "chip on" : "chip"} onClick={() => setSel(id)}>
+              {id}
+              {ids.length > 1 && (
+                <b
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rest = ids.filter((x) => x !== id);
+                    setIds(rest);
+                    if (sel === id) setSel(rest[0]);
+                  }}
+                >
+                  ×
+                </b>
+              )}
+            </span>
+          ))}
+        </div>
+        <div className="row2">
+          <input value={newId} placeholder="1~247" onChange={(e) => setNewId(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addId()} />
+          <button className="btn small" onClick={addId}>
+            {t("addSlave")}
+          </button>
+        </div>
+
+        <hr />
+        <label>{t("faults")}</label>
+        <label>
+          {t("delay")}
+          <input type="number" min={0} value={faults.delayMs} onChange={(e) => setFaults({ ...faults, delayMs: Math.max(0, Number(e.target.value) || 0) })} />
+        </label>
+        <label className="inline">
+          <input type="checkbox" checked={faults.noResponse} onChange={(e) => setFaults({ ...faults, noResponse: e.target.checked })} /> {t("noResponse")}
+        </label>
+        <label className="inline">
+          <input type="checkbox" checked={faults.badCrc} onChange={(e) => setFaults({ ...faults, badCrc: e.target.checked })} /> {t("badCrc")}
+        </label>
+        <label>
+          {t("forceException")}
+          <select value={faults.forceException} onChange={(e) => setFaults({ ...faults, forceException: Number(e.target.value) })}>
+            <option value={0}>{t("none")}</option>
+            {EXCEPTIONS.map(([c, n]) => (
+              <option key={c} value={c}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        {(faults.delayMs > 0 || faults.noResponse || faults.badCrc || faults.forceException > 0) && <div className="hint warn">⚠ {t("faults")}</div>}
+
+        <hr />
+        <label>{t("stats")}</label>
+        {stats && (
+          <table className="stats">
+            <tbody>
+              <tr>
+                <td>{t("requests")}</td>
+                <td>{stats.requests}</td>
+              </tr>
+              <tr>
+                <td>{t("ok")}</td>
+                <td>{stats.ok}</td>
+              </tr>
+              <tr>
+                <td>{t("exceptions")}</td>
+                <td>{stats.exceptions}</td>
+              </tr>
+              <tr>
+                <td>{t("ignored")}</td>
+                <td>{stats.ignored}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+        <button className="btn small" onClick={() => api.resetStats()}>
+          {t("reset")}
+        </button>
+      </aside>
+
+      <main className="main">
+        <div className="toolbar">
+          {TABLES.map((tb) => (
+            <button key={tb.id} className={table === tb.id ? "seg on" : "seg"} onClick={() => setTable(tb.id)} title={tb.fc}>
+              {t(tb.id)} <small>{tb.fc.split(" ")[0]}</small>
+            </button>
+          ))}
+          <span className="grow" />
+          <span className="hint">ID {sel}</span>
+        </div>
+        <div className="toolbar">
+          <label className="inline">
+            {t("start")}
+            <input
+              className="num"
+              type="number"
+              min={0}
+              max={65535}
+              value={range.start}
+              onChange={(e) => setRanges({ ...ranges, [key(sel, table)]: { ...range, start: Math.min(65535, Math.max(0, Number(e.target.value) || 0)) } })}
+            />
+          </label>
+          <label className="inline">
+            {t("count")}
+            <input
+              className="num"
+              type="number"
+              min={1}
+              max={65536}
+              value={range.count}
+              onChange={(e) =>
+                setRanges({ ...ranges, [key(sel, table)]: { ...range, count: Math.min(65536 - range.start, Math.max(1, Number(e.target.value) || 1)) } })
+              }
+            />
+          </label>
+          {!bits && (
+            <label className="inline">
+              {t("format")}
+              <select value={format} onChange={(e) => setFormat(e.target.value as Format)}>
+                <option value="u16">U16</option>
+                <option value="s16">S16</option>
+                <option value="hex">HEX</option>
+                <option value="bin">BIN</option>
+              </select>
+            </label>
+          )}
+          <span className="hint">{t("rangeHint")}</span>
+          <span className="grow" />
+          <button className="btn small" onClick={fill} title={t("fillHint")}>
+            {t("fill")}
+          </button>
+          <button className="btn small" onClick={exportTable}>
+            {t("exportTable")}
+          </button>
+          <button className="btn small" onClick={importTable}>
+            {t("importTable")}
+          </button>
+        </div>
+
+        <div className="regs">
+          {values.map((v, i) => (
+            <div key={`${table}:${range.start + i}`} className={flash.has(i) ? "reg flash" : "reg"} title={flash.has(i) ? t("writtenByMaster") : ""}>
+              <span className="addr">{range.start + i}</span>
+              {bits ? (
+                <input type="checkbox" checked={v !== 0} onChange={(e) => writeValue(i, e.target.checked ? 1 : 0)} />
+              ) : (
+                <RegInput value={v} format={format} onCommit={(n) => writeValue(i, n)} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="traffic">
+          <div className="toolbar">
+            <b>{t("traffic")}</b>
+            <span className="grow" />
+            <button className="btn small" onClick={toggleLog} disabled={!connected}>
+              {logPath ? t("stopLog") : t("logToFile")}
+            </button>
+            <button
+              className="btn small"
+              onClick={() => {
+                traffic.current = [];
+                setTick((x) => x + 1);
+              }}
+            >
+              {t("clear")}
+            </button>
+          </div>
+          <div className="tlog" ref={tlogRef}>
+            {frames.map((f, i) => (
+              <div key={i} className={`trow ${f.dir}`}>
+                <span className="ts">{clock(f.ts)}</span>
+                <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
+                <span className="data">{f.dir === "ev" ? f.note : hex(f.bytes)}</span>
+                {f.check === false && <span className="badge fail">CRC</span>}
+              </div>
+            ))}
+          </div>
+          {error && <div className="error">{error}</div>}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/** 레지스터 칸 — 입력 중엔 화면 갱신이 덮어쓰지 않게, 엔터·포커스 잃을 때 반영 */
+function RegInput({ value, format, onCommit }: { value: number; format: Format; onCommit: (n: number) => void }) {
+  const [text, setText] = useState(show(value, format));
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setText(show(value, format));
+  }, [value, format, editing]);
+  const commit = () => {
+    setEditing(false);
+    const n = parse(text, format);
+    if (n == null) setText(show(value, format));
+    else if (n !== value) onCommit(n);
+  };
+  return (
+    <input
+      className={parse(text, format) == null ? "regval bad" : "regval"}
+      value={text}
+      onFocus={() => setEditing(true)}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+    />
+  );
+}

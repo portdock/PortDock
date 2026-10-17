@@ -1,10 +1,14 @@
 {
   "name": "portdock",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "serial": "npm run tauri dev -w portdock-serial",
     "build:serial": "npm run tauri build -w portdock-serial",
-    "test": "cargo test --workspace"
+    "test": "cargo test --workspace",
+    "modbus-slave": "npm run tauri dev -w portdock-modbus-slave",
+    "build:modbus-slave": "npm run tauri build -w portdock-modbus-slave"
   }
 }

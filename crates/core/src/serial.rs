@@ -90,6 +90,17 @@ pub fn now_ms() -> u64 {
 
 type Port = Box<dyn SerialPort>;
 
+/// 받은 프레임에 답하는 쪽(Modbus 슬레이브 흉내 등)이 돌려주는 것
+pub struct Reply {
+    pub bytes: Option<Vec<u8>>,
+    pub delay_ms: u64,
+    /// 사건 줄로 남길 말
+    pub note: Option<String>,
+}
+
+/// 프로그램이 꽂는 응답기. 자동응답 규칙보다 먼저 불린다.
+pub type Responder = Box<dyn FnMut(&[u8]) -> Reply + Send>;
+
 struct Shared {
     /// 지금 적용된 설정 — 연결 중 변경·재연결에 쓴다
     cfg: Mutex<SerialConfig>,
@@ -100,6 +111,9 @@ struct Shared {
     pending: Mutex<Vec<Frame>>,
     log: Mutex<Option<BufWriter<File>>>,
     rules: Mutex<Vec<Rule>>,
+    responder: Mutex<Option<Responder>>,
+    /// 마지막으로 응답기·규칙이 보낸 것 — 루프백으로 되돌아오면 다시 답하지 않는다
+    last_reply: Mutex<Vec<u8>>,
     stop: AtomicBool,
 }
 
@@ -197,6 +211,8 @@ impl Session {
             pending: Mutex::new(Vec::new()),
             log: Mutex::new(None),
             rules: Mutex::new(Vec::new()),
+            responder: Mutex::new(None),
+            last_reply: Mutex::new(Vec::new()),
             stop: AtomicBool::new(false),
         });
         events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
@@ -227,6 +243,10 @@ impl Session {
             note(&self.shared, format!("RXCHECK {}", rx_check.map_or("none", |k| k.name())));
             *rc = rx_check;
         }
+    }
+
+    pub fn set_responder(&self, r: Option<Responder>) {
+        *self.shared.responder.lock().unwrap() = r;
     }
 
     pub fn set_auto_reply(&self, rules: Vec<Rule>) {
@@ -541,19 +561,37 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
     for (at, bytes) in frames {
         let ts = now_w.saturating_sub(now_i.saturating_duration_since(at).as_millis() as u64);
         let c = check.and_then(|k| k.verify(&bytes));
-        // 규칙은 위에서부터 처음 맞는 하나만
-        // 받은 것이 그 규칙의 응답과 똑같으면(루프백·에코) 다시 답하지 않는다 — 무한 반복 방지
-        let hit = s.rules.lock().unwrap().iter().find(|r| r.reply != bytes && r.is_match(&bytes)).cloned();
+        // 방금 우리가 보낸 응답이 루프백·에코로 돌아온 것이면 답하지 않는다 — 무한 반복 방지
+        let echo = *s.last_reply.lock().unwrap() == bytes;
+        let mut answer: Option<(Vec<u8>, u64, Option<String>)> = None;
+        if !echo {
+            if let Some(resp) = s.responder.lock().unwrap().as_mut() {
+                let r = resp(&bytes);
+                if r.bytes.is_some() || r.note.is_some() {
+                    answer = Some((r.bytes.unwrap_or_default(), r.delay_ms, r.note));
+                }
+            } else {
+                // 규칙은 위에서부터 처음 맞는 하나만
+                let hit = s.rules.lock().unwrap().iter().find(|r| r.reply != bytes && r.is_match(&bytes)).cloned();
+                answer = hit.map(|r| (r.reply, r.delay_ms, Some(format!("AUTO {}", r.name))));
+            }
+        }
         pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None });
-        if let Some(rule) = hit {
-            pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(format!("AUTO {}", rule.name)) });
-            if rule.delay_ms == 0 {
-                let _ = replies.send(rule.reply);
+        if let Some((reply, delay_ms, note)) = answer {
+            if let Some(n) = note {
+                pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(n) });
+            }
+            if reply.is_empty() {
+                continue;
+            }
+            *s.last_reply.lock().unwrap() = reply.clone();
+            if delay_ms == 0 {
+                let _ = replies.send(reply);
             } else {
                 let tx = replies.clone();
                 std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_millis(rule.delay_ms));
-                    let _ = tx.send(rule.reply);
+                    std::thread::sleep(Duration::from_millis(delay_ms));
+                    let _ = tx.send(reply);
                 });
             }
         }

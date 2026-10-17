@@ -1,0 +1,22 @@
+[package]
+name = "portdock-modbus-slave"
+description = "PortDock Modbus Slave — Modbus RTU 장비 흉내"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_modbus_slave_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
