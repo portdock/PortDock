@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 개발 문의 (외주·맞춤 기능) / Hire me
+    url: https://portdock.dev/contact/
+    about: PC 통신·장비 프로그램 개발 문의 / Custom development inquiries
+  - name: 사용법 / Docs
+    url: https://portdock.dev/
+    about: 도구별 사용법과 가이드 / Guides and documentation

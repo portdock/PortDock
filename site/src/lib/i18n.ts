@@ -43,6 +43,7 @@ export const UI = {
     dlTitle: "내려받기",
     dlSetup: "설치판 (.exe)",
     dlPortable: "포터블 (.zip)",
+    dlOffline: "오프라인 설치판",
     dlNote: "윈도우 10·11 (64비트). 처음 실행하면 «Windows의 PC 보호» 창이 뜰 수 있습니다 — 아래 «안전 확인» 을 보세요.",
     dlAll: "모든 버전·변경 내역",
     readDocs: "사용법 전체 보기",
@@ -56,7 +57,7 @@ export const UI = {
       "아직 코드 서명 전이라 «Windows의 PC 보호» 창이 뜰 수 있습니다. «추가 정보» → «실행» 을 누르면 됩니다. 서명은 준비 중입니다.",
       "프로그램은 통신 내용을 밖으로 보내지 않습니다. 오류 보고는 사용자가 허락할 때만 보냅니다.",
     ],
-    webview: "실행에 Microsoft Edge WebView2 가 필요합니다(윈도우 11 기본 포함). 인터넷이 없는 PC 는 Microsoft 의 WebView2 런타임 설치 파일을 먼저 설치해 주세요(WebView2 를 함께 넣은 판은 준비 중).",
+    webview: "실행에 Microsoft Edge WebView2 가 필요합니다(윈도우 11 기본 포함). 인터넷이 없는 PC 는 WebView2 를 함께 넣은 «오프라인 설치판» 을 받으세요.",
     footerLine: "PortDock — 현장 하드웨어 시험용 통신 도구. GPL-3.0.",
   },
   en: {
@@ -93,6 +94,7 @@ export const UI = {
     dlTitle: "Download",
     dlSetup: "Installer (.exe)",
     dlPortable: "Portable (.zip)",
+    dlOffline: "Offline installer",
     dlNote: "Windows 10 and 11 (64-bit). The first run may show a «Windows protected your PC» prompt — see «Is it safe?» below.",
     dlAll: "All versions and changelog",
     readDocs: "Read the full guide",
@@ -106,7 +108,7 @@ export const UI = {
       "Builds are not code-signed yet, so Windows may show «Windows protected your PC». Click «More info» → «Run anyway». Signing is in progress.",
       "The programs never send your traffic anywhere. Error reports are sent only with your permission.",
     ],
-    webview: "Requires Microsoft Edge WebView2 (included in Windows 11). On offline PCs, install Microsoft's WebView2 Runtime installer first (an edition with WebView2 bundled is in preparation).",
+    webview: "Requires Microsoft Edge WebView2 (included in Windows 11). For offline PCs, get the «offline installer» with WebView2 bundled.",
     footerLine: "PortDock — communication tools for hardware testing. GPL-3.0.",
   },
 } as const;

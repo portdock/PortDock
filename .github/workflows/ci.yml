@@ -1,0 +1,68 @@
+# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 다섯 앱 화면 빌드(타입 검사 포함), 공용 시험, 사이트 빌드, 제3자 고지 최신 여부.
+# 실제 장비가 필요한 실기 점검은 docs/test-plan.md, 화면 자동 조작 점검은 e2e/README.md (로컬).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 24: .ts 시험 파일을 그대로 돌린다(타입 지우기 기본)
+          node-version: 24
+          cache: npm
+
+      - name: Rust (stable + clippy)
+        run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: npm ci
+        run: npm ci
+
+      # 앱을 컴파일하려면 화면 빌드 결과(dist)가 있어야 한다 — 이 단계가 tsc 타입 검사도 겸한다
+      - name: 화면 빌드 (5개 앱, tsc + vite)
+        run: |
+          foreach ($a in "serial", "modbus-slave", "tcp", "udp", "simulator") {
+            npm run build -w "portdock-$a"
+            if ($LASTEXITCODE -ne 0) { throw "frontend build failed: $a" }
+          }
+
+      - name: 공용 화면 시험 (node --test)
+        run: node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts"
+
+      - name: Rust 정적 검사 (clippy, 경고 = 실패)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Rust 시험
+        run: cargo test --workspace
+
+      - name: 제3자 고지가 최신인지
+        run: node tools/notices.mjs --check
+
+      - name: 사이트 검사·빌드
+        run: |
+          npm run check -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "astro check failed" }
+          npm test -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "site test failed" }
+          npm run build -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "site build failed" }

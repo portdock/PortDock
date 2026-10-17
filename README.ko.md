@@ -48,7 +48,7 @@ Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
 PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 11 에는 기본으로 들어 있고, 업데이트된 윈도우 10 에도 보통 있습니다.
 
 - 설치판은 WebView2 가 없으면 자동으로 받아 설치합니다(인터넷 필요).
-- **인터넷이 없는 PC**: 다른 PC 에서 <https://developer.microsoft.com/microsoft-edge/webview2/> 의 *Evergreen Standalone Installer* 를 받아 옮겨 먼저 설치한 뒤 PortDock 을 설치·실행하세요. 휴대판은 WebView2 를 스스로 설치하지 않습니다.
+- **인터넷이 없는 PC**: WebView2 런타임을 함께 넣은 `PortDock-<App>-setup-offline.exe`(약 +130MB)를 쓰세요. 또는 다른 PC 에서 <https://developer.microsoft.com/microsoft-edge/webview2/> 의 *Evergreen Standalone Installer* 를 받아 옮겨 먼저 설치한 뒤 PortDock 을 설치·실행하세요. 휴대판은 WebView2 를 스스로 설치하지 않습니다.
 
 ### 데이터 위치
 

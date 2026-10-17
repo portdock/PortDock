@@ -48,7 +48,7 @@ Compare the result with `SHA256SUMS.txt` attached to the same release. Each rele
 PortDock uses Microsoft Edge WebView2 to draw its window. It is built into Windows 11 and is normally present on up-to-date Windows 10.
 
 - The installer downloads WebView2 automatically if it is missing (this needs internet).
-- **Offline PCs**: first install the *Evergreen Standalone Installer* from <https://developer.microsoft.com/microsoft-edge/webview2/> (download it on another PC and copy it over), then install or run PortDock. The portable edition never installs WebView2 by itself.
+- **Offline PCs**: use `PortDock-<App>-setup-offline.exe`, which bundles the WebView2 runtime (about +130 MB). Alternatively install the *Evergreen Standalone Installer* from <https://developer.microsoft.com/microsoft-edge/webview2/> (download it on another PC and copy it over), then install or run PortDock. The portable edition never installs WebView2 by itself.
 
 ### Where data is kept
 

@@ -3,6 +3,7 @@
 #
 # 파일 이름은 버전 없이 고정한다 — https://github.com/juhak0308/PortDock/releases/latest/download/<이름> 이 늘 최신을 가리키게.
 #   PortDock-<App>-setup.exe     설치판(NSIS, 현재 사용자용 — 관리자 권한 필요 없음)
+#   PortDock-<App>-setup-offline.exe  인터넷 없는 PC 용 설치판(WebView2 런타임 동봉, 약 +130MB)
 #   PortDock-<App>-portable.zip  휴대판(exe + LICENSE + THIRD_PARTY_NOTICES.txt + 빈 portdock-data/)
 #   SHA256SUMS.txt               위 파일 모두의 SHA-256
 name: release
@@ -96,6 +97,19 @@ jobs:
           if (-not $setup) { throw "NSIS 설치판을 찾지 못함" }
           Copy-Item $setup.FullName "out/PortDock-${{ matrix.asset }}-setup.exe"
 
+      # 1-2) 오프라인 설치판 — WebView2 가 없고 인터넷도 없는 공장 PC 용(런타임 설치 파일을 동봉)
+      - name: 오프라인 설치판 빌드 (NSIS + WebView2 동봉)
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          Remove-Item -Recurse -Force ../../target/release/bundle/nsis -ErrorAction SilentlyContinue
+          npx tauri build --ci --bundles nsis --config "${{ github.workspace }}/tools/offline.conf.json"
+
+      - name: 오프라인 설치판 모으기
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          if (-not $setup) { throw "오프라인 설치판을 찾지 못함" }
+          Copy-Item $setup.FullName "out/PortDock-${{ matrix.asset }}-setup-offline.exe"
+
       # 2) 휴대판 — 데이터(설정·WebView2 저장소)를 exe 옆 portdock-data 에 두도록 설정을 덮어써 다시 빌드
       - name: 휴대판 빌드 (--no-bundle)
         working-directory: apps/${{ matrix.app }}
@@ -144,6 +158,7 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dist/PortDock-*-setup.exe
+            dist/PortDock-*-setup-offline.exe
             dist/PortDock-*-portable.zip
             dist/SHA256SUMS.txt
           body: |
@@ -156,6 +171,7 @@ jobs:
             | UDP | PortDock-UDP-setup.exe | PortDock-UDP-portable.zip |
             | Simulator | PortDock-Simulator-setup.exe | PortDock-Simulator-portable.zip |
 
+            - 인터넷이 없는 PC(WebView2 없음): `PortDock-<App>-setup-offline.exe` 를 쓰세요(WebView2 런타임 동봉). / Offline PCs without WebView2: use `-setup-offline.exe`.
             - 아직 코드 서명이 없어 Windows SmartScreen 경고가 뜹니다 → «추가 정보» → «실행». / Not code-signed yet: SmartScreen → "More info" → "Run anyway".
             - 확인 / Verify: `Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256` 값을 SHA256SUMS.txt 와 비교.
             - VirusTotal: <!-- 공개 전에 파일마다 검사 링크를 붙인다 -->

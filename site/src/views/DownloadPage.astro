@@ -21,7 +21,7 @@ const ko = lang === "ko";
   <div class="wrap" style="padding-top:28px">
     <table class="t">
       <thead>
-        <tr><th>{t.tools}</th><th>{t.dlSetup}</th><th>{t.dlPortable}</th><th></th></tr>
+        <tr><th>{t.tools}</th><th>{t.dlSetup}</th><th>{t.dlOffline}</th><th>{t.dlPortable}</th><th></th></tr>
       </thead>
       <tbody>
         {
@@ -33,6 +33,7 @@ const ko = lang === "ko";
                 <span class="note">{x.tagline[lang]}</span>
               </td>
               <td><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
+              <td><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
               <td><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
               <td><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
             </tr>

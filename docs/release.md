@@ -9,6 +9,7 @@
 | 파일 | 내용 |
 |---|---|
 | `PortDock-<App>-setup.exe` | 설치판(NSIS, `currentUser` — 관리자 권한 없음, WebView2 부트스트래퍼 포함) |
+| `PortDock-<App>-setup-offline.exe` | 오프라인 설치판 — WebView2 런타임 동봉(`tools/offline.conf.json`, 약 +130MB). 인터넷 없는 공장 PC 용 |
 | `PortDock-<App>-portable.zip` | 휴대판: `PortDock <App>.exe` + `LICENSE.txt` + `THIRD_PARTY_NOTICES.txt` + `portdock-data/` |
 | `SHA256SUMS.txt` | 위 파일 모두의 SHA-256 |
 
@@ -88,3 +89,6 @@ Remove-Item Env:PORTDOCK_TEST_CRASH;  & ".\PortDock TCP.exe"   # «지난번에 
 - 실행 중에는 언제나 작업 관리자에 같은 이름의 프로세스가 둘 보이는 것이 정상(하나가 감시, 창 없음). 프로그램을 닫으면 둘 다 사라져야 한다.
 - 디버그 빌드는 panic 이 프로그램을 끄지 않는다(기록만). `native` 는 디버그에서도 꺼진다.
 - 덤프는 보통 수백 KB, 20 MB 를 넘으면 올리지 않는다. 보고는 최근 10건(.txt·.dmp 짝을 한 건)만 남긴다.
+
+## CI (push·PR 마다)
+`.github/workflows/ci.yml` — Windows 에서 다섯 앱 화면 빌드(tsc 포함) → 공용 시험(`node --test`) → `cargo clippy -D warnings` → `cargo test` → 제3자 고지 최신 여부 → 사이트 검사·시험·빌드. 이슈 양식: `.github/ISSUE_TEMPLATE/`(버그·기능 제안, 공개라 민감 데이터 금지 안내).
