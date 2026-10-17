@@ -1,25 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import type { ChecksumKind } from "@shared/format";
+export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 
-export type ChecksumKind =
-  | "crc16-modbus"
-  | "crc16-ccitt"
-  | "crc16-xmodem"
-  | "crc8"
-  | "lrc"
-  | "bcc"
-  | "sum8"
-  | "sum16";
-
-export const CHECKSUMS: { kind: ChecksumKind; label: string }[] = [
-  { kind: "crc16-modbus", label: "CRC16 Modbus" },
-  { kind: "crc16-ccitt", label: "CRC16 CCITT" },
-  { kind: "crc16-xmodem", label: "CRC16 XMODEM" },
-  { kind: "crc8", label: "CRC8" },
-  { kind: "lrc", label: "LRC" },
-  { kind: "bcc", label: "BCC (XOR)" },
-  { kind: "sum8", label: "SUM8" },
-  { kind: "sum16", label: "SUM16" },
-];
 
 export type TextMode = "hex" | "ascii";
 
@@ -85,16 +67,6 @@ export interface SendSpec {
   suffix: string;
 }
 
-export interface AutoRule {
-  name: string;
-  enabled: boolean;
-  pattern: string;
-  patternMode: TextMode;
-  kind: "exact" | "contains";
-  reply: SendSpec;
-  delayMs: number;
-}
-
 export interface ModbusInfo {
   slave: number;
   function: number;
@@ -129,8 +101,6 @@ export const api = {
   close: (id: string) => invoke<void>("close_session", { id }),
   setFraming: (id: string, framing: FrameMode, rxCheck: ChecksumKind | null) =>
     invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
-  setAutoReply: (id: string, rules: AutoRule[]) => invoke<number>("set_auto_reply", { id, rules }),
-  checkAutoReply: (rules: AutoRule[]) => invoke<number>("check_auto_reply", { rules }),
   reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
   setLog: (id: string, path: string | null) => invoke<void>("set_log", { id, path }),
   send: (id: string, spec: SendSpec) => invoke<number[]>("send", { id, spec }),
@@ -139,24 +109,9 @@ export const api = {
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
 };
 
-export const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
-
-/** 제어 문자는 <CR> <LF> <02> 처럼 보이게 */
-export function ascii(bytes: number[]) {
-  const names: Record<number, string> = { 0x0d: "<CR>", 0x0a: "<LF>", 0x09: "<TAB>", 0x02: "<STX>", 0x03: "<ETX>", 0x06: "<ACK>", 0x15: "<NAK>" };
-  return bytes
-    .map((b) => names[b] ?? (b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : `<${b.toString(16).toUpperCase().padStart(2, "0")}>`))
-    .join("");
-}
-
 /** «COM3 · 9600 8N1 · flow none» */
 export function summary(c: SerialConfig) {
   const p = c.parity === "odd" ? "O" : c.parity === "even" ? "E" : "N";
   return `${c.port} · ${c.baud} ${c.dataBits}${p}${c.stopBits} · flow ${c.flow}`;
 }
 
-export function clock(ts: number) {
-  const d = new Date(ts);
-  const p = (n: number, w = 2) => String(n).padStart(w, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
-}

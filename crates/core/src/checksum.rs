@@ -37,7 +37,7 @@ impl ChecksumKind {
         }
     }
 
-    pub fn len(self) -> usize {
+    pub fn width(self) -> usize {
         match self {
             Self::Crc16Modbus | Self::Crc16Ccitt | Self::Crc16Xmodem | Self::Sum16 => 2,
             Self::Crc8 | Self::Lrc | Self::Bcc | Self::Sum8 => 1,
@@ -64,7 +64,7 @@ impl ChecksumKind {
 
     /// 프레임 끝의 체크섬이 맞는지. 프레임이 체크섬보다 짧으면 None.
     pub fn verify(self, frame: &[u8]) -> Option<bool> {
-        let n = self.len();
+        let n = self.width();
         if frame.len() <= n {
             return None;
         }

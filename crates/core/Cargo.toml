@@ -1,0 +1,12 @@
+[package]
+name = "portdock-core"
+description = "PortDock 공용 부품 — 체크섬·변환·프레임 구분·Modbus·자동응답·시리얼 세션"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serialport = "4.10"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

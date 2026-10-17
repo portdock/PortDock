@@ -6,9 +6,10 @@
 //! 그래서 timeout 은 짧게(5ms) 두고, 쓰기 쪽에서 TimedOut 을 «아직 못 보냄» 으로 보고 이어 쓴다.
 
 use crate::autoreply::Rule;
+use crate::ports::PortInfo;
 use crate::checksum::ChecksumKind;
 use crate::framer::{Cut, FrameMode, Framer};
-use crate::ports::{self, PortInfo};
+use crate::ports;
 use serde::{Deserialize, Serialize};
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::fs::File;
@@ -18,7 +19,6 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tauri::ipc::Channel;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -68,6 +68,20 @@ pub enum SessionEvent {
     Error { message: String },
     /// 입력 신호선 상태
     Lines { cts: bool, dsr: bool, ri: bool, cd: bool },
+}
+
+/// 화면 쪽으로 사건을 넘기는 통로. 앱이 Tauri Channel 등을 감싸서 넘긴다.
+#[derive(Clone)]
+pub struct EventSink(Arc<dyn Fn(SessionEvent) + Send + Sync>);
+
+impl EventSink {
+    pub fn new(f: impl Fn(SessionEvent) + Send + Sync + 'static) -> Self {
+        Self(Arc::new(f))
+    }
+
+    pub fn send(&self, e: SessionEvent) {
+        (self.0)(e);
+    }
 }
 
 pub fn now_ms() -> u64 {
@@ -170,7 +184,7 @@ impl Session {
         cfg: SerialConfig,
         mode: FrameMode,
         rx_check: Option<ChecksumKind>,
-        events: Channel<SessionEvent>,
+        events: EventSink,
     ) -> Result<Self, String> {
         let port = open(&cfg)?;
         let identity = Identity::of(&cfg.port);
@@ -185,7 +199,7 @@ impl Session {
             rules: Mutex::new(Vec::new()),
             stop: AtomicBool::new(false),
         });
-        let _ = events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
+        events.send(SessionEvent::Status { state: "connected", port: cfg.port.clone(), message: None });
         note(&shared, format!("OPEN {}", describe(&cfg)));
         note(&shared, format!("FRAMING {}", describe_framing(shared.framer.lock().unwrap().mode())));
         if let Some(k) = rx_check {
@@ -357,8 +371,8 @@ fn apply(p: &mut dyn SerialPort, c: &SerialConfig) -> serialport::Result<()> {
 const BATCH: Duration = Duration::from_millis(50);
 const WATCH: Duration = Duration::from_secs(1);
 
-fn status(events: &Channel<SessionEvent>, state: &'static str, port: &str, message: Option<String>) {
-    let _ = events.send(SessionEvent::Status { state, port: port.to_string(), message });
+fn status(events: &EventSink, state: &'static str, port: &str, message: Option<String>) {
+    events.send(SessionEvent::Status { state, port: port.to_string(), message });
 }
 
 fn reader_loop(
@@ -366,7 +380,7 @@ fn reader_loop(
     cfg: SerialConfig,
     identity: Identity,
     s: Arc<Shared>,
-    events: Channel<SessionEvent>,
+    events: EventSink,
     replies: Sender<Vec<u8>>,
 ) {
     let mut port = Some(port);
@@ -447,7 +461,7 @@ fn reader_loop(
                         }
                     }
                     lines = Some(now);
-                    let _ = events.send(SessionEvent::Lines { cts: now[0], dsr: now[1], ri: now[2], cd: now[3] });
+                    events.send(SessionEvent::Lines { cts: now[0], dsr: now[1], ri: now[2], cd: now[3] });
                 }
             }
         }
@@ -464,7 +478,7 @@ fn reader_loop(
 
 /// 송신 큐. 부분 쓰기와 TimedOut 을 이어 쓰고, 정해진 시간 안에 못 보내면 오류를 알린다.
 /// FlushFileBuffers(flush) 는 흐름 제어로 막히면 끝없이 기다리므로 부르지 않는다.
-fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: Channel<SessionEvent>) {
+fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: EventSink) {
     loop {
         let bytes = match rx.recv_timeout(Duration::from_millis(200)) {
             Ok(b) => b,
@@ -511,7 +525,7 @@ fn writer_loop(rx: Receiver<Vec<u8>>, baud: u32, s: Arc<Shared>, events: Channel
             s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes[..sent].to_vec(), check: None, note: None });
         }
         if let Some(message) = error {
-            let _ = events.send(SessionEvent::Error { message });
+            events.send(SessionEvent::Error { message });
         }
     }
 }
@@ -546,7 +560,7 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &Sender<Vec<u8>>) {
     }
 }
 
-fn flush(s: &Shared, events: &Channel<SessionEvent>) {
+fn flush(s: &Shared, events: &EventSink) {
     let frames = std::mem::take(&mut *s.pending.lock().unwrap());
     if frames.is_empty() {
         return;
@@ -557,7 +571,7 @@ fn flush(s: &Shared, events: &Channel<SessionEvent>) {
         }
         let _ = log.flush();
     }
-    let _ = events.send(SessionEvent::Frames { frames });
+    events.send(SessionEvent::Frames { frames });
 }
 
 /// «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]»
@@ -583,7 +597,7 @@ fn reconnect(
     identity: &Identity,
     before: &[String],
     s: &Shared,
-    events: &Channel<SessionEvent>,
+    events: &EventSink,
 ) -> Option<(Port, String)> {
     if !cfg.auto_reconnect {
         status(events, "closed", &cfg.port, None);

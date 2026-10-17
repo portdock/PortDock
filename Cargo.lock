@@ -2621,13 +2621,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "portdock"
+name = "portdock-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
  "serde",
- "serde_json",
  "serialport",
+]
+
+[[package]]
+name = "portdock-serial"
+version = "0.1.0"
+dependencies = [
+ "portdock-core",
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

@@ -1,15 +1,10 @@
-mod autoreply;
-mod checksum;
-mod codec;
-mod framer;
-mod modbus;
-mod ports;
-mod session;
+//! PortDock Serial — 시리얼(COM) 테스터. 통신·해석 로직은 portdock-core.
 
-use checksum::ChecksumKind;
-use codec::{SendSpec, build};
-use framer::FrameMode;
-use session::{SerialConfig, Session, SessionEvent};
+use portdock_core::checksum::ChecksumKind;
+use portdock_core::codec::{SendSpec, build};
+use portdock_core::framer::FrameMode;
+use portdock_core::serial::{EventSink, SerialConfig, Session, SessionEvent};
+use portdock_core::{modbus, ports};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::ipc::Channel;
@@ -37,7 +32,10 @@ fn open_session(
         return Err(format!("{} 는 이미 열려 있습니다", config.port));
     }
     let id = config.port.clone();
-    let s = Session::start(config, framing, rx_check, on_event)?;
+    let sink = EventSink::new(move |e| {
+        let _ = on_event.send(e);
+    });
+    let s = Session::start(config, framing, rx_check, sink)?;
     map.insert(id, s);
     Ok(())
 }
@@ -60,22 +58,6 @@ fn set_framing(
     let map = sessions.0.lock().unwrap();
     map.get(&id).ok_or("세션이 없습니다")?.set_framing(framing, rx_check);
     Ok(())
-}
-
-/// 자동응답 규칙 교체. 꺼진 규칙은 빼고, 잘못된 규칙이 있으면 이름과 함께 오류.
-#[tauri::command(async)]
-fn set_auto_reply(sessions: State<Sessions>, id: String, rules: Vec<autoreply::RuleSpec>) -> Result<usize, String> {
-    let compiled = autoreply::compile_all(&rules)?;
-    let n = compiled.len();
-    let map = sessions.0.lock().unwrap();
-    map.get(&id).ok_or("세션이 없습니다")?.set_auto_reply(compiled);
-    Ok(n)
-}
-
-/// 규칙 문법 검사만 (연결 전 편집 중에)
-#[tauri::command]
-fn check_auto_reply(rules: Vec<autoreply::RuleSpec>) -> Result<usize, String> {
-    autoreply::compile_all(&rules).map(|r| r.len())
 }
 
 /// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
@@ -133,8 +115,6 @@ pub fn run() {
             close_session,
             set_framing,
             reconfigure,
-            set_auto_reply,
-            check_auto_reply,
             set_log,
             send,
             preview,
@@ -149,7 +129,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use codec::TextMode;
+    use portdock_core::codec::TextMode;
 
     #[test]
     fn build_appends_checksum_then_suffix() {

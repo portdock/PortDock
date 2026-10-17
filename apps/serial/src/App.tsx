@@ -7,7 +7,6 @@ import {
   CHECKSUMS,
   clock,
   hex,
-  type AutoRule,
   type ChecksumKind,
   type Frame,
   type FrameMode,
@@ -21,7 +20,6 @@ import {
   summary,
 } from "./api";
 import { dict, type Key, type Lang } from "./i18n";
-import { AutoReply } from "./AutoReply";
 import "./App.css";
 
 const MAX_FRAMES = 100_000;
@@ -288,10 +286,6 @@ export default function App() {
     const id = setInterval(() => doSend(spec), Math.max(10, repeatMs));
     return () => clearInterval(id);
   }, [repeating, repeatMs, spec, sessionId, doSend]);
-
-  // ---- 자동응답
-  const [rules, setRules] = useState<AutoRule[]>(() => load("autoRules", []));
-  useEffect(() => store("autoRules", rules), [rules]);
 
   // ---- 명령 목록
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
@@ -622,9 +616,6 @@ export default function App() {
             </div>
           ))}
         </div>
-
-        <h3>{t("autoReply")}</h3>
-        <AutoReply rules={rules} setRules={setRules} sessionId={sessionId} t={t} />
 
         <h3>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
