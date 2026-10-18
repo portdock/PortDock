@@ -17,6 +17,8 @@
     "build:udp": "npm run tauri build -w portdock-udp",
     "simulator": "npm run tauri dev -w portdock-simulator",
     "build:simulator": "npm run tauri build -w portdock-simulator",
+    "netscan": "npm run tauri dev -w portdock-netscan",
+    "build:netscan": "npm run tauri build -w portdock-netscan",
     "site": "npm run dev -w portdock-site",
     "build:site": "npm run build -w portdock-site"
   }

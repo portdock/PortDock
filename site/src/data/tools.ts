@@ -6,6 +6,7 @@ import { help as slaveHelp } from "../../../apps/modbus-slave/src/help";
 import { help as tcpHelp } from "../../../apps/tcp/src/help";
 import { help as udpHelp } from "../../../apps/udp/src/help";
 import { help as simHelp } from "../../../apps/simulator/src/help";
+import { help as netscanHelp } from "../../../apps/netscan/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -16,7 +17,7 @@ export const RELEASES = `${REPO}/releases`;
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -164,6 +165,34 @@ export const TOOLS: Tool[] = [
       { ko: "«시작» — 상위 프로그램에서 요청을 보내 보세요", en: "«Start» — send a request from your host software" },
     ],
     help: simHelp,
+  },
+  {
+    id: "netscan",
+    name: "PortDock Net Scan",
+    file: "PortDock-Net-Scan",
+    tagline: { ko: "산업 네트워크 장비 IP 찾기 — 산업 포트 판정·장기 핑", en: "Find devices on industrial networks — industrial ports, long-term ping" },
+    summary: {
+      ko: "랜카드 대역을 훑어 장비를 찾고, MAC 제조사와 열린 산업 포트(Modbus 502·MC·XGT·S7·EtherNet/IP·OPC UA 등)로 무슨 장비인지 알려 줍니다. 핑을 막아 둔 장비도 같은 대역이면 ARP 로 찾습니다.",
+      en: "Sweep a network card's subnet to find devices, and identify them by MAC vendor and open industrial ports (Modbus 502, MC, XGT, S7, EtherNet/IP, OPC UA …). Devices that block ping are still found via ARP on the same subnet.",
+    },
+    who: [
+      { ko: "새 장비의 IP 를 모르는 현장 엔지니어", en: "Field engineers who don't know a new device's IP" },
+      { ko: "장비망 상태를 밤새 지켜봐야 하는 분", en: "Anyone who must watch a device network overnight" },
+    ],
+    features: [
+      { title: { ko: "핑 + ARP 훑기", en: "Ping + ARP sweep" }, body: { ko: "같은 대역은 ARP 로 찾아 핑을 막은 장비도 보이고, 응답 시간·이름·«이 PC»·«게이트웨이» 를 표시합니다. 관리자 권한이 필요 없습니다.", en: "ARP on the same subnet finds devices that block ping; shows response time, name, this PC and gateway. No admin rights needed." } },
+      { title: { ko: "산업 포트 판정", en: "Industrial port check" }, body: { ko: "502·2004·5000번대·102·44818·4840 등 정해 둔 포트만 확인하고, Modbus 장비는 제조사·모델(FC 2B/0E)을 물어봅니다.", en: "Checks only a fixed list of industrial ports (502, 2004, 5000s, 102, 44818, 4840 …) and asks Modbus devices for vendor/model (FC 2B/0E)." } },
+      { title: { ko: "MAC 제조사", en: "MAC vendor" }, body: { ko: "IEEE 공개 목록을 내장해 인터넷 없이 제조사를 보여 줍니다.", en: "Embedded IEEE list shows the vendor without internet access." } },
+      { title: { ko: "장기 핑 감시", en: "Long-term ping monitor" }, body: { ko: "장비 여러 대의 손실·지연·끊긴 시각을 CSV 로 남기고, 끊기면 작업 표시줄을 깜빡입니다.", en: "Logs loss, latency and outages of several devices to CSV and flashes the taskbar on a drop." } },
+      { title: { ko: "새로 나타남·사라짐", en: "New / missing" }, body: { ko: "지난 찾기와 비교해 새로 나타난 장비와 사라진 장비를 표시합니다. 결과는 CSV 로 저장합니다.", en: "Compares with the previous scan to mark new and missing devices. Export to CSV." } },
+      { title: { ko: "Wake-on-LAN·웹 열기", en: "Wake-on-LAN, open web" }, body: { ko: "장비마다 웹 페이지 열기, IP·MAC 복사, 매직 패킷 보내기.", en: "Per device: open its web page, copy IP/MAC, send a magic packet." } },
+    ],
+    steps: [
+      { ko: "랜카드를 고르면 그 대역이 범위로 들어갑니다", en: "Pick a network card — its subnet becomes the range" },
+      { ko: "«찾기»(F4)", en: "«Scan» (F4)" },
+      { ko: "장비를 눌러 포트·제조사 확인, 필요하면 핑 감시에 추가", en: "Click a device to see ports and vendor; add it to the ping monitor if needed" },
+    ],
+    help: netscanHelp,
   },
 ];
 

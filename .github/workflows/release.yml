@@ -33,6 +33,7 @@ jobs:
           - { app: tcp, asset: TCP }
           - { app: udp, asset: UDP }
           - { app: simulator, asset: Simulator }
+          - { app: netscan, asset: Net-Scan }
     defaults:
       run:
         shell: pwsh
@@ -170,6 +171,7 @@ jobs:
             | TCP | PortDock-TCP-setup.exe | PortDock-TCP-portable.zip |
             | UDP | PortDock-UDP-setup.exe | PortDock-UDP-portable.zip |
             | Simulator | PortDock-Simulator-setup.exe | PortDock-Simulator-portable.zip |
+            | Net Scan | PortDock-Net-Scan-setup.exe | PortDock-Net-Scan-portable.zip |
 
             - 인터넷이 없는 PC(WebView2 없음): `PortDock-<App>-setup-offline.exe` 를 쓰세요(WebView2 런타임 동봉). / Offline PCs without WebView2: use `-setup-offline.exe`.
             - 아직 코드 서명이 없어 Windows SmartScreen 경고가 뜹니다 → «추가 정보» → «실행». / Not code-signed yet: SmartScreen → "More info" → "Run anyway".

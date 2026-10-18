@@ -1,0 +1,29 @@
+[package]
+name = "portdock-netscan"
+description = "PortDock Net Scan — 산업 네트워크 장비 IP 찾기·산업 포트 판정·장기 핑·WoL"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_netscan_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-window-state = "2"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+# 핑(IcmpSendEcho2)·ARP(SendARP)·랜카드 목록(GetAdaptersAddresses)·이름 찾기(GetNameInfoW) — 관리자 권한·드라이버 없이.
+# portdock-core 가 이미 쓰는 판(0.61)에 기능만 더한다
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_System_IO"] }

@@ -11,6 +11,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 | **PortDock TCP** | TCP client and server — multiple peers, echo, auto-reconnect |
 | **PortDock UDP** | UDP sender/receiver — broadcast, multicast, echo |
 | **PortDock Simulator** | Rule-based fake device over serial, TCP and UDP — "when this arrives, reply with that" |
+| **PortDock Net Scan** | Find devices on an industrial network: ping/ARP sweep, MAC vendor, industrial ports (Modbus 502, MC, XGT …), long-term ping monitor, Wake-on-LAN |
 
 Website: <https://portdock.dev>
 
@@ -25,6 +26,7 @@ Get the latest version from **[GitHub Releases](https://github.com/juhak0308/Por
 | TCP | [PortDock-TCP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
 | UDP | [PortDock-UDP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
 | Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
+| Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
 
 Windows 10/11, x64.
 

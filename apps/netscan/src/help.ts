@@ -1,0 +1,322 @@
+// Net Scan 도움말 — 화면 ? 버튼·F1 로 연다
+import type { HelpDoc } from "@shared/HelpDialog";
+import { settingsLines, windowLines } from "@shared/helpCommon";
+
+export const help: HelpDoc = {
+  ko: [
+    {
+      title: "이 프로그램은",
+      body: [
+        "PortDock Net Scan 은 공장·설비 네트워크에서 장비(PLC·HMI·인버터·계측기·게이트웨이)의 IP 를 찾는 도구입니다.",
+        "같은 대역은 ARP 로 묻기 때문에 핑을 막아 둔 장비도 찾고, MAC 주소로 제조사를 보여 줍니다. 찾은 장비마다 Modbus TCP·FEnet·SLMP·S7·EtherNet/IP·OPC UA 같은 산업 포트가 열려 있는지 확인합니다.",
+        "장비를 오래 핑해 끊김을 기록하는 «핑 감시», 꺼진 PC 를 깨우는 Wake-on-LAN 도 있습니다.",
+        "관리자 권한·드라이버 없이 동작합니다. 정해 둔 포트만 확인하며, 모든 포트를 두드리는 범용 포트 스캔은 하지 않습니다.",
+      ],
+    },
+    {
+      title: "처음 쓰는 순서",
+      body: [
+        "- 1. 왼쪽 «랜카드» 에서 장비가 꽂힌 랜카드를 고릅니다. 아래에 그 랜카드의 IP·게이트웨이·MAC 이 보입니다.",
+        "- 2. «찾을 범위» 가 그 랜카드의 대역(보통 192.168.x.0/24)으로 채워집니다. 필요하면 고칩니다.",
+        "- 3. «찾기»(F4)를 누릅니다. 찾은 장비가 가운데 표에 바로바로 나오고, 포트·이름 확인이 끝나면 «서비스» 칸이 채워집니다.",
+        "- 4. 표에서 장비를 누르면 아래 칸에서 웹 열기·IP 복사·«주소:포트» 복사·WoL·핑 감시에 추가를 할 수 있습니다.",
+      ],
+    },
+    {
+      title: "화면 구성",
+      body: [
+        "- 왼쪽: 랜카드, 찾을 범위, 찾는 방법(ARP·핑·기다림·동시에), 이름 찾기, 산업 포트 확인, «찾기»/«멈춤», 상태와 진행 막대.",
+        "- 가운데 위 탭: «찾은 장비»(결과 표)와 «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
+        "- «찾은 장비» 도구줄: 거르기 칸, «산업 포트 열린 것만», «새로 n»·«사라짐 n», «CSV 저장», «지우기».",
+        "- 표 아래 칸: 고른 장비의 정보와 할 일 버튼.",
+        ...windowLines("ko"),
+      ],
+    },
+    {
+      title: "랜카드와 찾을 범위",
+      body: [
+        "- 랜카드 목록에는 IPv4 주소가 있는 랜카드가 «이름 — IP/접두사» 로 나옵니다. 한 랜카드에 IP 가 여럿이면(임시로 더한 IP 등) 따로 나옵니다. 랜카드를 꽂거나 IP 를 바꿨으면 ↻ 로 다시 읽습니다.",
+        "- 랜카드를 고르면 범위가 그 대역으로 바뀝니다. 대역이 /24 보다 넓으면(예: /16) 그 랜카드 주소가 든 /24 만 넣습니다.",
+        "- 범위 쓰는 법: «192.168.0.0/24»(대역), «192.168.0.1-254»(끝 숫자만), «192.168.0.1-192.168.1.20»(처음~끝), «192.168.0.10»(하나). 쉼표로 여러 개를 함께 쓸 수 있습니다.",
+        "- 한 번에 4096개 주소까지 찾습니다. 넘으면 칸이 빨갛게 되고 «찾기» 가 잠깁니다.",
+        "- 범위가 랜카드 대역 밖이면 ARP 를 쓸 수 없어(라우터 너머) 핑으로만 찾고, MAC·제조사는 알 수 없습니다.",
+      ],
+    },
+    {
+      title: "찾는 방법 — ARP 와 핑",
+      body: [
+        "- ARP: 같은 대역의 주소마다 «이 IP 의 MAC 이 무엇이냐» 고 묻습니다. 장비의 방화벽이 핑을 막아도 네트워크에 붙어 있으면 답하므로 산업 장비 찾기에 가장 확실합니다. 표의 «응답» 칸에 «핑 없음» 이면 ARP 로만 찾은 장비입니다.",
+        "- 핑(ICMP): 라우터 너머 장비도 찾고 응답 시간(ms)을 잽니다. 같은 대역에서 ARP 가 실패한 주소는 핑을 보내지 않습니다(어차피 닿지 않아 시간만 듭니다).",
+        "- «핑 기다림(ms)»: 핑 하나를 기다리는 시간. 무선·느린 장비는 늘립니다.",
+        "- «동시에»: 한꺼번에 묻는 주소 수(기본 64). /24 는 보통 10~20초에 끝납니다.",
+        "- «이름 찾기»: 윈도우가 아는 방법(DNS·NetBIOS 등)으로 장비 이름을 찾습니다. 이름이 없는 장비가 많으면 끝나기까지 몇 초 더 걸립니다.",
+        "- 응답 시간 «<1» 은 1ms 보다 빠르다는 뜻입니다.",
+      ],
+    },
+    {
+      title: "산업 포트 확인",
+      body: [
+        "- 찾은 장비마다 «확인할 포트» 의 TCP 포트에 접속만 해 보고(데이터는 보내지 않음) 열린 것을 «서비스» 칩으로 보여 줍니다. 산업 포트는 진하게 표시됩니다.",
+        "- 기본 목록: 502 Modbus TCP · 2004 FEnet(LS XGT 이더넷) · 5000~5010 SLMP(MC 프로토콜) · 102 S7 · 44818 EtherNet/IP · 4840 OPC UA · 80/443 웹 · 23 텔넷 · 21 FTP · 1883 MQTT · 5025 SCPI.",
+        "- «확인할 포트» 는 «502, 5000-5010» 처럼 쉼표와 범위로 씁니다. 32개까지. «기본 목록으로» 로 되돌립니다.",
+        "- «포트 기다림(ms)»: 포트 하나의 접속을 기다리는 시간. 막힌 포트는 이 시간이 지나야 «닫힘» 으로 봅니다.",
+        "- 포트가 열려 있다고 그 프로토콜이 맞다는 보장은 없습니다(예: 5000 은 다른 용도로도 흔함). 칩에 마우스를 올리면 설명이 나옵니다.",
+        "- 일부 장비는 접속을 짧게 받았다 끊는 것만으로도 기록(로그)을 남깁니다. 운전 중인 설비에서는 범위를 좁혀 쓰세요.",
+      ],
+    },
+    {
+      title: "Modbus 장비 정보",
+      body: [
+        "- «Modbus 장비 정보 읽기 (502)» 를 켜면 502 가 열린 장비에 «Read Device Identification»(FC 2B/0E, 기본 등급)을 보냅니다. 유닛 1 로 묻고, 안 되면 255 로 묻습니다.",
+        "- 답하면 제조사·제품 코드·버전이 «서비스» 칸과 아래 칸에 나옵니다. 읽기 전용 요청이라 레지스터 값은 바뀌지 않습니다.",
+        "- 이 기능이 없는 장비(예외 01)도 많습니다. 아래 칸의 «Modbus 장비 정보 읽기» 로 언제든 다시 물을 수 있습니다.",
+      ],
+    },
+    {
+      title: "결과 표",
+      body: [
+        "- 머리글(IP·MAC·제조사·이름·응답·서비스)을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 거꾸로 정렬합니다. IP 는 숫자 순(192.168.0.2 가 192.168.0.10 보다 앞)입니다.",
+        "- 거르기 칸: IP·MAC·제조사·이름·서비스 이름·포트 번호 어디든 들어 있으면 보입니다. Ctrl+F 로 이 칸, Esc 로 지웁니다.",
+        "- «산업 포트 열린 것만»: 웹·텔넷·FTP 만 열린 장비(사무용 PC·프린터 등)를 숨깁니다.",
+        "- 표시: «이 PC», «게이트웨이», «새로»(지난번 같은 범위 찾기에 없던 장비), «사라짐»(지난번엔 있었는데 이번엔 없는 장비, 흐리게).",
+        "- «새로»·«사라짐» 은 같은 범위를 끝까지 찾았을 때만 비교합니다(멈춘 찾기는 남기지 않음). 범위 10개까지 기억합니다.",
+        "- MAC 칸 «—»: 라우터 너머 장비라 MAC 을 알 수 없습니다. «임의 MAC»: 휴대폰·가상 머신처럼 MAC 을 임의로 바꾼 장비라 제조사를 알 수 없습니다.",
+        "- «CSV 저장»(Ctrl+S): 지금 보이는 줄(거르기·정렬 그대로)을 엑셀에서 열 수 있는 CSV 로 저장합니다.",
+        "- 줄을 두 번 누르면 80 이 열린 장비의 웹 페이지를 엽니다.",
+      ],
+    },
+    {
+      title: "장비에서 할 일",
+      body: [
+        "- «웹 열기»: 기본 브라우저로 http://IP/ 를 엽니다(443 만 열렸으면 https). 장비의 설정 화면을 볼 때 씁니다.",
+        "- «IP 복사»·«MAC 복사».",
+        "- 서비스 칩(«Modbus 502 ⧉» 등)을 누르면 «IP:포트» 를 복사합니다. PortDock TCP·Modbus 프로그램의 주소 칸에 붙여 넣으세요.",
+        "- «WoL 깨우기»: 그 MAC 으로 매직 패킷을 고른 랜카드의 대역 브로드캐스트와 255.255.255.255 로(포트 9·7) 보냅니다. 장비의 BIOS·랜카드에서 WoL 이 켜져 있어야 하고, MAC 은 같은 대역에서 ARP 로 찾은 장비만 압니다.",
+        "- «핑 감시에 추가»: 그 IP 를 «핑 감시» 목록에 넣습니다.",
+      ],
+    },
+    {
+      title: "핑 감시",
+      body: [
+        "- 장비 IP(또는 이름)를 넣고 «추가», «간격(초)»·«기다림(ms)» 을 정한 뒤 «감시 시작». 장비마다 동시에 핑합니다(64대까지).",
+        "- 표: 상태(응답·끊김), 마지막 응답 시간, 보냄·잃음(%), 최소/평균/최대, 끊긴 횟수, 마지막 끊김 시각(끊겨 있는 동안은 지난 시간).",
+        "- «바뀐 기록»: 끊김과 다시 응답(얼마 동안 끊겼는지)을 새것부터 남깁니다.",
+        "- «끊기면 작업 표시줄 깜빡임»: 끊기는 순간 작업 표시줄의 이 프로그램 단추가 깜빡여 알려 줍니다.",
+        "- «CSV 기록»: 감시 중에 파일을 고르면 그때부터 한 바퀴마다 «time,host,ip,result,rtt_ms,event» 를 덧붙입니다. event 칸에는 바뀐 줄에만 down·up 이 적혀 엑셀에서 거르기 쉽습니다. 설정(⚙)의 «연결하면 자동으로 파일 로그 시작» 과 «자동 로그 폴더» 를 켜 두면 감시를 시작할 때마다 자동으로 기록합니다.",
+        "- 감시 중에는 목록·간격을 바꿀 수 없습니다. 멈추고 바꾸세요. «통계 지우기» 는 숫자만 0 으로 되돌립니다.",
+      ],
+    },
+    {
+      title: "내 PC 와 다른 대역 장비가 안 보일 때",
+      body: [
+        "공장 장비는 192.168.1.x·192.168.10.x 처럼 고정 IP 로 나오는 경우가 많습니다. PC 가 다른 대역이면 핑도 ARP 도 닿지 않아 «찾기» 에 나오지 않습니다.",
+        "- 장비 설명서·라벨에서 기본 IP 를 확인하세요. 모르면 장비를 PC 에 랜선 하나로 바로 꽂고(스위치 없이) 흔한 기본 대역(192.168.0.x, 192.168.1.x, 192.168.10.x 등)을 차례로 찾아봅니다.",
+        "- PC 에 그 대역의 IP 를 «임시로 하나 더» 넣으면 지금 네트워크를 끊지 않고도 닿습니다: 설정 → 네트워크 및 인터넷 → 이더넷 → IP 할당 «편집» → 수동 → IPv4 에 장비와 같은 대역의 비어 있는 주소(예: 장비가 192.168.1.10 이면 192.168.1.200, 서브넷 255.255.255.0). 또는 제어판 → 네트워크 연결 → 랜카드 속성 → IPv4 → 고급 → «IP 주소 추가». 이 일에는 관리자 권한이 필요합니다.",
+        "- 추가한 뒤 이 프로그램의 랜카드 ↻ 를 누르면 새 IP 가 목록에 따로 나옵니다. 그 항목을 고르고 찾으세요.",
+        "- 쓰고 나면 추가한 IP 를 지우세요(같은 주소를 쓰는 장비가 생기면 충돌합니다). 장비와 같은 IP 를 PC 에 넣지 마세요.",
+        "- DHCP 로 받는 장비가 공유기 없이 PC 에 바로 꽂히면 169.254.x.x(자동 사설 IP)를 씁니다. 이때는 랜카드 목록의 169.254 항목을 고르고 «192.168.0.0/24» 대신 장비 쪽 대역을 넣어 보세요(169.254.0.0/16 은 너무 넓어 그대로는 찾지 못합니다).",
+      ],
+    },
+    {
+      title: "방화벽·백신",
+      body: [
+        "- 장비가 핑을 막아도 같은 대역이면 ARP 로 찾습니다. 라우터 너머 장비가 핑을 막으면 찾을 수 없습니다.",
+        "- 윈도우 PC 는 기본 방화벽이 핑에 답하지 않아 «핑 없음» 으로 보이는 것이 정상입니다.",
+        "- 이 프로그램은 정해 둔 포트만 확인합니다. 회사 보안 장비가 «포트 스캔» 으로 볼 수 있으니 회사 네트워크에서는 담당자에게 먼저 알리세요.",
+        "- Wake-on-LAN 은 UDP 브로드캐스트를 보냅니다. 처음 보낼 때 윈도우 방화벽 창이 뜨지 않으며, 막는 곳은 보통 공유기·스위치 설정입니다.",
+      ],
+    },
+    {
+      title: "설정(⚙)",
+      body: [
+        "- «언어»·«테마»·«글자 크기».",
+        "- «로그 시각 표시»: 핑 감시의 시각 모양(«시작부터 지난 시간» 은 시:분:초로 보입니다).",
+        "- «연결하면 자동으로 파일 로그 시작»·«자동 로그 폴더»: 감시를 시작할 때마다 «portdock-netscan-ping-날짜-시각.csv» 에 기록합니다.",
+        "- «연결·기록 중에 창을 닫으려 하면 묻기»: 찾는 중이거나 감시 중에 창을 닫으면 묻습니다.",
+        "- «설정 내보내기»·«설정 가져오기»: 랜카드·범위·포트 목록·감시 목록과 화면 설정을 JSON 파일로 옮깁니다.",
+        ...settingsLines("ko"),
+      ],
+    },
+    {
+      title: "단축키·팁",
+      body: [
+        "- F4: 찾기·멈춤.",
+        "- Ctrl+S: 결과 CSV 저장. Ctrl+L: 결과 지우기. Ctrl+F: 거르기 칸으로(Esc 로 지움).",
+        "- 찾을 범위 칸에서 Enter: 찾기.",
+        "- F1 또는 ? 버튼: 이 도움말. Esc 로 닫습니다.",
+        "- 숫자 칸: ↑/↓ 1씩, Shift+↑/↓ 10씩, PageUp/PageDown 100씩.",
+        "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
+      ],
+    },
+    {
+      title: "문제 해결",
+      body: [
+        "- 아무것도 안 나옴: 랜카드를 맞게 골랐는지, 랜선·스위치 불이 들어오는지, 범위가 장비 대역인지 확인하세요. 대역이 다르면 위 «내 PC 와 다른 대역 장비가 안 보일 때».",
+        "- 무선 랜카드로 찾으면 공유기 설정에 따라 다른 무선 장비가 숨겨질 수 있습니다(무선 격리). 유선으로 찾으세요.",
+        "- 포트가 안 보임: «포트 기다림(ms)» 을 늘리세요. 장비가 접속 수를 제한(예: Modbus 접속 1개)하면 다른 프로그램이 붙어 있는 동안 닫혀 보일 수 있습니다.",
+        "- 이름이 비어 있음: 산업 장비는 DNS 이름이 없는 경우가 대부분입니다(정상).",
+        "- «IcmpCreateFile» 오류: 회사 보안 정책으로 ICMP 가 막힌 PC 입니다. 핑을 끄고 ARP 로만 찾으세요.",
+        "- 프로그램이 안 열림: Microsoft Edge WebView2 가 필요합니다(윈도우 11 은 기본 포함).",
+        "- 제조사 이름은 IEEE 공개 등록 목록(MA-L, 2026-10-18 받음)에서 찾습니다. 그 뒤에 등록된 MAC 은 비어 보일 수 있습니다.",
+      ],
+    },
+  ],
+  en: [
+    {
+      title: "About this program",
+      body: [
+        "PortDock Net Scan finds the IP addresses of devices (PLCs, HMIs, drives, instruments, gateways) on factory and machine networks.",
+        "On the same subnet it asks by ARP, so it finds devices even if they block ping, and shows the vendor from the MAC address. For each device it checks whether industrial ports such as Modbus TCP, FEnet, SLMP, S7, EtherNet/IP and OPC UA are open.",
+        "It also has a long-running «Ping monitor» that records drops, and Wake-on-LAN to wake PCs.",
+        "No admin rights or drivers are needed. Only the listed ports are checked — it never does a generic all-ports scan.",
+      ],
+    },
+    {
+      title: "Getting started",
+      body: [
+        "- 1. Under «Network adapter», pick the adapter the devices are connected to. Its IP, gateway and MAC are shown below.",
+        "- 2. «Range to scan» is filled with that adapter's subnet (usually 192.168.x.0/24). Edit it if needed.",
+        "- 3. Press «Scan» (F4). Devices appear in the table as they are found; «Services» fills in when the port and name checks finish.",
+        "- 4. Click a device to open its web page, copy its IP or «host:port», wake it or add it to the ping monitor from the panel below.",
+      ],
+    },
+    {
+      title: "Layout",
+      body: [
+        "- Left: adapter, range, discovery (ARP, ping, wait, parallel), name lookup, industrial ports, «Scan»/«Stop», status and progress bar.",
+        "- Tabs: «Devices» (results) and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
+        "- «Devices» toolbar: filter box, «Industrial ports only», «New n» / «Gone n», «Save CSV», «Clear».",
+        "- Below the table: details and actions for the selected device.",
+        ...windowLines("en"),
+      ],
+    },
+    {
+      title: "Adapter and range",
+      body: [
+        "- The adapter list shows adapters with an IPv4 address as «name — IP/prefix». An adapter with several IPs (e.g. a temporary extra IP) is listed once per IP. After plugging in an adapter or changing an IP, press ↻.",
+        "- Picking an adapter sets the range to its subnet. Subnets wider than /24 (e.g. /16) use only the /24 that contains the adapter's address.",
+        "- Range formats: «192.168.0.0/24» (subnet), «192.168.0.1-254» (last number), «192.168.0.1-192.168.1.20» (first–last), «192.168.0.10» (single). Separate several with commas.",
+        "- Up to 4096 addresses per scan. Above that the box turns red and «Scan» is disabled.",
+        "- If the range is outside the adapter's subnet, ARP cannot be used (behind a router): ping only, and MAC/vendor are unknown.",
+      ],
+    },
+    {
+      title: "Discovery — ARP and ping",
+      body: [
+        "- ARP asks «what is the MAC of this IP?» for every address on the same subnet. A device answers whenever it is connected, even if its firewall blocks ping — the most reliable way to find industrial devices. «no ping» in the «Reply» column means it was found by ARP only.",
+        "- Ping (ICMP) also finds devices behind a router and measures the reply time (ms). On the same subnet, addresses that fail ARP are not pinged (they cannot be reached anyway).",
+        "- «Ping wait (ms)»: how long to wait for each ping. Increase it for Wi-Fi or slow devices.",
+        "- «Parallel»: how many addresses are probed at once (default 64). A /24 usually finishes in 10–20 s.",
+        "- «Look up names»: device names via whatever Windows knows (DNS, NetBIOS, …). Devices without names add a few seconds at the end.",
+        "- A reply time of «<1» means faster than 1 ms.",
+      ],
+    },
+    {
+      title: "Industrial port check",
+      body: [
+        "- For each device it only opens a TCP connection to each port in «Ports to check» (no data is sent) and shows open ones as «Services» chips. Industrial ports are highlighted.",
+        "- Default list: 502 Modbus TCP · 2004 FEnet (LS XGT Ethernet) · 5000–5010 SLMP (MC protocol) · 102 S7 · 44818 EtherNet/IP · 4840 OPC UA · 80/443 web · 23 Telnet · 21 FTP · 1883 MQTT · 5025 SCPI.",
+        "- Write «Ports to check» with commas and ranges, e.g. «502, 5000-5010». Up to 32. «Default list» restores it.",
+        "- «Port wait (ms)»: how long to wait for each connection. A filtered port counts as closed after this time.",
+        "- An open port does not prove the protocol (5000, for example, is used for many things). Hover over a chip for a description.",
+        "- Some devices log even a brief connect/disconnect. On running machines, keep the range narrow.",
+      ],
+    },
+    {
+      title: "Modbus device ID",
+      body: [
+        "- With «Read Modbus device ID (502)» on, devices with 502 open get a «Read Device Identification» request (FC 2B/0E, basic level) — unit 1 first, then 255.",
+        "- If they answer, vendor, product code and revision appear in «Services» and in the panel below. It is a read-only request; no register is changed.",
+        "- Many devices do not support it (exception 01). «Read Modbus device ID» in the panel asks again at any time.",
+      ],
+    },
+    {
+      title: "Results table",
+      body: [
+        "- Click a header (IP, MAC, Vendor, Name, Reply, Services) to sort by it; click again to reverse. IPs sort numerically (192.168.0.2 before 192.168.0.10).",
+        "- Filter box: shows rows where IP, MAC, vendor, name, service name or port number contains the text. Ctrl+F focuses it, Esc clears it.",
+        "- «Industrial ports only» hides devices with only web/Telnet/FTP open (office PCs, printers, …).",
+        "- Marks: «this PC», «gateway», «new» (not found by the previous complete scan of the same range), «gone» (found last time but not now, dimmed).",
+        "- «new»/«gone» compare only complete scans of the same range (stopped scans are not kept). Up to 10 ranges are remembered.",
+        "- «—» in MAC: the device is behind a router, so its MAC is unknown. «random MAC»: a phone or VM using a randomized MAC; the vendor cannot be known.",
+        "- «Save CSV» (Ctrl+S) saves the rows as shown (filter and sort applied) as a CSV you can open in Excel.",
+        "- Double-click a row to open the web page of a device with port 80 open.",
+      ],
+    },
+    {
+      title: "Device actions",
+      body: [
+        "- «Open web page» opens http://IP/ in the default browser (https if only 443 is open) — for device configuration pages.",
+        "- «Copy IP», «Copy MAC».",
+        "- Click a service chip («Modbus 502 ⧉», …) to copy «IP:port» — paste it into the address box of PortDock TCP or Modbus.",
+        "- «Wake (WoL)» sends a magic packet for that MAC to the selected adapter's subnet broadcast and 255.255.255.255 (ports 9 and 7). WoL must be enabled in the target's BIOS/NIC, and the MAC is known only for devices found by ARP on the same subnet.",
+        "- «Add to ping monitor» adds the IP to the «Ping monitor» list.",
+      ],
+    },
+    {
+      title: "Ping monitor",
+      body: [
+        "- Enter an IP (or name), press «Add», set «Interval (s)» and «Wait (ms)», then «Start monitor». Hosts are pinged in parallel (up to 64).",
+        "- Table: state (up/down), last reply time, sent / lost (%), min/avg/max, drop count, last drop time (while down, how long it has been down).",
+        "- «Changes» lists drops and recoveries (with the outage length), newest first.",
+        "- «Flash the taskbar on drop» makes this program's taskbar button flash when a host drops.",
+        "- «CSV log»: while monitoring, pick a file to append «time,host,ip,result,rtt_ms,event» every round. The event column holds down/up only on change lines, easy to filter in Excel. With «Start file log automatically» and «Auto-log folder» in Settings (⚙), every monitor start logs automatically.",
+        "- The list and interval are locked while monitoring; stop to change them. «Reset stats» zeroes the numbers only.",
+      ],
+    },
+    {
+      title: "Devices on another subnet are not found",
+      body: [
+        "Factory devices often ship with fixed IPs such as 192.168.1.x or 192.168.10.x. If your PC is on another subnet, neither ping nor ARP reaches them and they do not appear.",
+        "- Check the default IP in the manual or on the label. If unknown, connect the device directly to the PC with one cable (no switch) and try common default subnets one by one (192.168.0.x, 192.168.1.x, 192.168.10.x, …).",
+        "- Adding a temporary extra IP on that subnet reaches it without dropping your current network: Settings → Network & internet → Ethernet → IP assignment «Edit» → Manual → IPv4 with a free address on the device's subnet (e.g. device 192.168.1.10 → PC 192.168.1.200, mask 255.255.255.0). Or Control Panel → Network Connections → adapter Properties → IPv4 → Advanced → «Add IP address». This needs admin rights.",
+        "- Then press ↻ next to the adapter here; the new IP appears as its own entry. Pick it and scan.",
+        "- Remove the extra IP afterwards (it conflicts if another device later uses it). Never give the PC the same IP as the device.",
+        "- A DHCP device plugged straight into the PC (no router) uses 169.254.x.x (link-local). Pick the 169.254 entry and enter the device's range instead (169.254.0.0/16 is too large to scan as a whole).",
+      ],
+    },
+    {
+      title: "Firewall and antivirus",
+      body: [
+        "- Devices that block ping are still found by ARP on the same subnet. Devices behind a router that block ping cannot be found.",
+        "- Windows PCs do not answer ping by default, so «no ping» is normal for them.",
+        "- Only the listed ports are checked, but corporate security systems may still flag it as a port scan — tell your IT team before using it on an office network.",
+        "- Wake-on-LAN sends a UDP broadcast. No Windows Firewall prompt appears; if it is blocked, it is usually by router/switch settings.",
+      ],
+    },
+    {
+      title: "Settings (⚙)",
+      body: [
+        "- Language, theme, font size.",
+        "- «Log timestamp»: time format in the ping monitor («elapsed» shows as clock time here).",
+        "- «Start file log automatically» and «Auto-log folder»: each monitor start writes «portdock-netscan-ping-date-time.csv».",
+        "- «Ask before closing while connected or logging»: asks if you close the window while scanning or monitoring.",
+        "- «Export settings» / «Import settings» move adapter, range, port list, monitor list and display settings as a JSON file.",
+        ...settingsLines("en"),
+      ],
+    },
+    {
+      title: "Shortcuts and tips",
+      body: [
+        "- F4: scan / stop.",
+        "- Ctrl+S: save results as CSV. Ctrl+L: clear results. Ctrl+F: focus the filter box (Esc clears it).",
+        "- Enter in the range box: scan.",
+        "- F1 or the ? button: this help. Close it with Esc.",
+        "- Number boxes: ↑/↓ by 1, Shift+↑/↓ by 10, PageUp/PageDown by 100.",
+        "- Hover over a field to see a tooltip.",
+      ],
+    },
+    {
+      title: "Troubleshooting",
+      body: [
+        "- Nothing found: check the adapter choice, cable and switch lights, and that the range is the devices' subnet. For another subnet see «Devices on another subnet are not found».",
+        "- Scanning over Wi-Fi may hide other wireless devices (client isolation on the access point). Use a wired adapter.",
+        "- Ports missing: increase «Port wait (ms)». Devices that limit connections (e.g. one Modbus client) may look closed while another program is connected.",
+        "- Empty names: most industrial devices have no DNS name (normal).",
+        "- «IcmpCreateFile» error: ICMP is blocked by company policy on this PC. Turn ping off and use ARP only.",
+        "- The program does not open: Microsoft Edge WebView2 is required (included in Windows 11).",
+        "- Vendor names come from the IEEE public registry (MA-L, retrieved 2026-10-18). MACs registered later may show no vendor.",
+      ],
+    },
+  ],
+};
