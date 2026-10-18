@@ -11,6 +11,7 @@ import { tip } from "./tips";
 import { useRestoreFocus } from "./restoreFocus";
 import type { Lang } from "./uiText";
 import "./modbus.css";
+import "./firstcard.css";
 
 const L = {
   ko: {
@@ -49,6 +50,9 @@ const L = {
     added: "명령 목록에 «{a}» 을(를) 추가했습니다",
     close: "닫기",
     bcast: "국번 0 은 모든 장비에 쓰고, 어느 장비도 답하지 않습니다.",
+    help: "처음이면:",
+    helpLink: "따라하기 보기",
+    helpTip: "도움말의 Modbus 따라하기 절을 엽니다(이 창은 닫힘)",
   },
   en: {
     title: "Build Modbus request",
@@ -85,6 +89,9 @@ const L = {
     added: "Added «{a}» to the command list",
     close: "Close",
     bcast: "Slave ID 0 writes to every device; none of them replies.",
+    help: "First time?",
+    helpLink: "Show walkthrough",
+    helpTip: "Opens the Modbus walkthrough in Help (this dialog closes)",
   },
 };
 
@@ -100,6 +107,7 @@ export function ModbusBuilder({
   onSend,
   canSend = true,
   sendWhy,
+  onHelp,
 }: {
   lang: Lang;
   /** rtu: 국번 + PDU(CRC 는 보내기 줄이) · tcp: MBAP + PDU */
@@ -114,6 +122,8 @@ export function ModbusBuilder({
   /** 지금 보낼 수 있는지(연결됨) — 아니면 «보내기» 를 막고 sendWhy 를 보인다 */
   canSend?: boolean;
   sendWhy?: string;
+  /** 창 아래 «따라하기 보기» — 도움말의 따라하기 절을 연다(넘기지 않으면 링크 없음) */
+  onHelp?: () => void;
 }) {
   const t = L[lang];
   const tcp = wire === "tcp";
@@ -298,6 +308,14 @@ export function ModbusBuilder({
               </button>
             )}
           </div>
+          {onHelp && (
+            <div className="first-links hint mb-help">
+              {t.help}
+              <button type="button" className="link-btn" onClick={onHelp} title={t.helpTip}>
+                {t.helpLink}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

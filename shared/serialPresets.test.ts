@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { applyPreset, isPresetId, presetDiff, PRESETS } from "./serialPresets.ts";
 import { isExampleName, serialExamples, tcpExamples, udpExamples } from "./examples.ts";
 
-// 첫 실행 상태(9600 8N1 · 조용한 시간 20ms · ASCII + CR LF)
+// 첫 실행 상태(9600 8N1 · 끊김 시간 20ms · ASCII + CR LF)
 const first = { baud: 9600, dataBits: 8, parity: "none", stopBits: 1, frameKind: "gap", gapMs: 20, terminatorText: "0D 0A", rxCheck: null, mode: "ascii", checksum: null, suffix: "\\r\\n" };
 
 test("첫 실행 값은 «일반» 그대로 — (바꿈) 없음", () => {
@@ -36,7 +36,7 @@ test("Modbus RTU 프리셋 — HEX + CRC16, Modbus 프레임·수신 CRC, 줄 �
   assert.deepEqual(presetDiff("modbus", m), []);
   // 짝수 패리티 장비로 고치면 (바꿈)
   assert.deepEqual(presetDiff("modbus", { ...m, parity: "even" }), ["parity"]);
-  // 프레임 구분을 바꾸면 그것만(조용한 시간은 Modbus 프리셋이 정하지 않는다)
+  // 프레임 구분을 바꾸면 그것만(끊김 시간은 Modbus 프리셋이 정하지 않는다)
   assert.deepEqual(presetDiff("modbus", { ...m, frameKind: "gap", gapMs: 20 }), ["frameKind"]);
 });
 

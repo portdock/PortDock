@@ -49,7 +49,7 @@ import { checksumDesc, checksumLabel, checksumToRust, crcProblem, setTextEncodin
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
-import { DeltaSelect, LiveStats } from "@shared/StatsBar";
+import { LiveStats, ViewOptions } from "@shared/StatsBar";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
@@ -693,7 +693,7 @@ export default function App() {
           <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
             <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
-          <DeltaSelect lang={lang} value={deltaMode} onChange={setDeltaMode} />
+          <ViewOptions lang={lang} delta={deltaMode} onDelta={setDeltaMode} />
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}

@@ -685,3 +685,35 @@ details.panel > summary .sum-note {
   position: relative;
   z-index: 1;
 }
+
+/* 도구줄 한 줄(10/18) — 1100 폭 이하에서 «☰ 명령·상세» 는 «☰» 만 */
+@media (max-width: 1100px) {
+  .narrow-only .nb-text {
+    display: none;
+  }
+}
+.file-log.on {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
+/* 연결 중 연결 설정 요약 한 줄 + [바꾸기](10/18) */
+.conn-sum {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ok) 8%, var(--panel));
+}
+.conn-sum .mono {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mb-rx-ask {
+  flex-wrap: wrap;
+}

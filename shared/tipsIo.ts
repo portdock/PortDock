@@ -20,8 +20,8 @@ export const IO_TIPS: Record<string, Tip> = {
     "Chunks: a fixed number of bytes at a time. Lines: split after LF, CR LF or CR and pause «between lines» (for devices that process one line at a time).",
   ],
   delta: [
-    "시각 옆 간격 열 — «직전 줄과 간격»: 바로 앞 RX·TX 줄부터 지난 시간, «응답 시간»: 마지막 TX 부터 이 RX 까지. 복사·화면 저장에도 들어갑니다.",
-    "Gap column next to the time — «Gap from previous line»: time since the previous RX/TX line; «Response time»: from the last TX to this RX. Included in copy and Save view.",
+    "시각 옆 시간 간격 열 — «직전 줄과 간격»: 바로 앞 RX·TX 줄부터 지난 시간, «응답 시간»: 마지막 TX 부터 이 RX 까지. 복사·화면 저장에도 들어갑니다.",
+    "Time gap column next to the time — «Gap from previous line»: time since the previous RX/TX line; «Response time»: from the last TX to this RX. Included in copy and Save view.",
   ],
   liveStats: [
     "최근 1초 받은·보낸 바이트/초, 프레임 수(지우기 뒤로), 마지막으로 받은 때. 10초 넘게 조용하면 빨갛게 바뀝니다.",

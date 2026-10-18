@@ -11,7 +11,7 @@ export interface PresetState {
   dataBits: number;
   parity: string;
   stopBits: number;
-  /** 프레임 구분 종류와(조용한 시간이면) ms */
+  /** 프레임 구분 종류와(끊김 시간이면) ms */
   frameKind: "gap" | "terminator" | "fixed" | "modbus-rtu";
   gapMs: number;
   /** 끝 문자 칸 글(끝 문자 구분일 때만 비교) */
@@ -26,7 +26,7 @@ export type PresetField = keyof PresetState;
 
 /** 프리셋마다 정하는 값. 빠진 칸(일반의 속도 등)은 건드리지 않는다 */
 export const PRESETS: Record<PresetId, Partial<PresetState>> = {
-  // 일반: 첫 실행 기본값과 같다 — 조용한 시간 20ms · 검사 없음 · ASCII · 줄 끝 CR LF. 속도는 장비마다 달라 두지 않는다
+  // 일반: 첫 실행 기본값과 같다 — 끊김 시간 20ms · 검사 없음 · ASCII · 줄 끝 CR LF. 속도는 장비마다 달라 두지 않는다
   general: { frameKind: "gap", gapMs: 20, rxCheck: null, mode: "ascii", checksum: null, suffix: "\\r\\n" },
   // AT 명령(모뎀·LTE·BLE·Wi-Fi 모듈): 115200 8N1 · 응답을 CR LF 로 끊음 · ASCII + CR LF
   at: { baud: 115200, dataBits: 8, parity: "none", stopBits: 1, frameKind: "terminator", terminatorText: "0D 0A", rxCheck: null, mode: "ascii", checksum: null, suffix: "\\r\\n" },
@@ -51,7 +51,7 @@ function normTerm(t: string) {
     .replace(/[\s,;-]/g, "");
 }
 
-/** 지금 값이 프리셋과 다른 칸 — 프리셋이 정하지 않는 칸은 보지 않는다. 조용한 시간은 조용한 시간 구분일 때만, 끝 문자 글은 끝 문자 구분일 때만 */
+/** 지금 값이 프리셋과 다른 칸 — 프리셋이 정하지 않는 칸은 보지 않는다. 끊김 시간은 끊김 시간 구분일 때만, 끝 문자 글은 끝 문자 구분일 때만 */
 export function presetDiff(id: PresetId, cur: PresetState): PresetField[] {
   const p = PRESETS[id];
   const out: PresetField[] = [];

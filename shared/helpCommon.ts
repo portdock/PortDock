@@ -146,18 +146,18 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
         },
     ko
       ? {
-          title: "간격 열·처리량·반복 횟수",
+          title: "시간 간격 열·처리량·반복 횟수",
           body: [
-            "- 도구줄 «간격 열 끔» 칸: «직전 줄과 간격» 은 바로 앞 RX·TX 줄부터 지난 시간(+12 ms), «응답 시간 (TX→RX)» 은 마지막으로 보낸 TX 부터 이 RX 까지의 시간입니다. 시각 옆 열에 나오고 줄 복사(Ctrl+C)·«화면 내용 저장» 에도 들어갑니다. 사건 줄(EV)은 비어 있습니다.",
+            "- 도구줄 «보기 설정» 의 «시간 간격 열»: «직전 줄과 간격» 은 바로 앞 RX·TX 줄부터 지난 시간(+12 ms), «응답 시간 (TX→RX)» 은 마지막으로 보낸 TX 부터 이 RX 까지의 시간입니다. 시각 옆 열에 나오고 줄 복사(Ctrl+C)·«화면 내용 저장» 에도 들어갑니다. 사건 줄(EV)은 비어 있습니다.",
             "- 시각은 1ms 단위입니다. USB 변환기·운영체제의 전달 지연(수 ms)이 섞여 있으니 장비의 정확한 응답 시간은 오실로스코프로 보세요.",
             "- 상태줄 오른쪽: «RX 1.2 KB/s · TX 0 B/s» 는 최근 1초 동안의 처리량, «프레임 120/30» 은 «지우기» 뒤로 받은·보낸 줄 수, «마지막 수신 3초 전» 은 마지막으로 받은 때입니다. 받는 중에 10초 넘게 조용하면 빨갛게 바뀝니다.",
             `- «반복(ms)» 옆 «번» 칸${f.serial ? "(반복을 켰거나 횟수를 정해 두었을 때만 보임 — 미리 정하려면 «⋯ 더보기»)" : ""}: 이 횟수만큼 보내고 저절로 멈춥니다(0 = 끌 때까지 계속). 옆에 «보냄 3/10» 처럼 보낸 수가 나오고, 다 보내면 «REPEAT 끝 (10번 보냄)» 사건 줄이 남습니다(화면에만).`,
           ],
         }
       : {
-          title: "Gap column, throughput and repeat count",
+          title: "Time gap column, throughput and repeat count",
           body: [
-            "- The «No gap column» box in the toolbar: «Gap from previous line» shows the time since the previous RX/TX line (+12 ms); «Response time (TX→RX)» the time from the last TX to this RX. It appears next to the time and is included in line copies (Ctrl+C) and «Save view». Event lines (EV) stay empty.",
+            "- «Time gap column» in the toolbar's «View options»: «Gap from previous line» shows the time since the previous RX/TX line (+12 ms); «Response time (TX→RX)» the time from the last TX to this RX. It appears next to the time and is included in line copies (Ctrl+C) and «Save view». Event lines (EV) stay empty.",
             "- Times have 1 ms resolution and include USB adapter / OS delivery delays (a few ms); use an oscilloscope for exact device timing.",
             "- Right side of the status line: «RX 1.2 KB/s · TX 0 B/s» is the throughput over the last second, «frames 120/30» the lines received/sent since «Clear», and «last RX 3 s ago» the time of the last reception. It turns red after 10 s of silence while running.",
             `- The «times» box next to «Repeat (ms)»${f.serial ? " (shown only while repeating or when a count is set — set it beforehand under «⋯ More»)" : ""}: repeat stops by itself after that many sends (0 = until turned off). «sent 3/10» shows progress, and «REPEAT done (10 sent)» is added as an event line (screen only).`,
@@ -263,8 +263,8 @@ export function ioLayoutLines(lang: Lang, f: { serial?: boolean; fileSend?: bool
   const ko = lang === "ko";
   return [
     ko
-      ? `- 도구줄에는 «간격 열» 칸(끔·직전 줄과 간격·응답 시간)${f.serial ? "과 «터미널» 보기 단추" : ""}가 있고, 상태줄 오른쪽에 처리량(RX·TX B/s)·프레임 수·«마지막 수신 n초 전» 이 나옵니다.`
-      : `- The toolbar has the «gap column» box (off / gap from previous line / response time)${f.serial ? " and the «Terminal» view button" : ""}; the right side of the status line shows throughput (RX/TX B/s), frame counts and «last RX n s ago».`,
+      ? `- 도구줄에는 «보기 설정»(시간 간격 열: 없음·직전 줄과 간격·응답 시간)${f.serial ? "과 «터미널» 보기 단추" : ""}가 있고, 상태줄 오른쪽에 처리량(RX·TX B/s)·프레임 수·«마지막 수신 n초 전» 이 나옵니다.`
+      : `- The toolbar has «View options» (time gap column: none / gap from previous line / response time)${f.serial ? " and the «Terminal» view button" : ""}; the right side of the status line shows throughput (RX/TX B/s), frame counts and «last RX n s ago».`,
     f.serial
       ? ko
         ? "- 보내기 줄 둘째 줄: «반복(ms)»·«번»(횟수 — 반복을 켰거나 정해 두었을 때만)·«+ 목록에 추가»·«⋯ 더보기»(문자 간(ms)·«Break»·ms·«파일 보내기…»·반복 횟수). 체크섬 옆 ⚙ 는 체크섬 옵션입니다."

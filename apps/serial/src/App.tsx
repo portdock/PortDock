@@ -51,7 +51,7 @@ import { checksumDesc, checksumLabel, checksumLen, checksumToRust, crcProblem, s
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
-import { DeltaSelect, LiveStats } from "@shared/StatsBar";
+import { LiveStats, ViewOptions } from "@shared/StatsBar";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace, type Progress } from "@shared/FileSend";
 import { TermBuffer } from "@shared/terminal";
@@ -178,6 +178,10 @@ export default function App() {
   const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
   useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
   const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
+  // 연결되면 연결 설정(용도·포트·속도·고급 연결·자동 재연결)을 «COM3 9600 8N1 [바꾸기]» 한 줄로 접는다(10/18).
+  // [바꾸기] 로 펼치면 지금처럼 바로 적용되고, 끊으면 다시 펼친 채로. «모두 펼치기» 면 늘 펼침
+  const [connEditSaved, setConnEditSaved] = useState(false);
+  const [connEdit, setConnEdit] = useFold(connEditSaved, setConnEditSaved, settings.expandAll);
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   /** 프레임 구분을 고를 때의 처음 값 */
@@ -193,7 +197,17 @@ export default function App() {
   useEffect(() => store("rxCheck", rxCheck), [rxCheck]);
   useEffect(() => store("rxCk", rxCk), [rxCk]);
   useEffect(() => store("rxAuto", rxAuto), [rxAuto]);
-  // «받기 설정»(프레임 구분·수신 체크섬) 접기 — 기본(조용한 시간 20ms·체크섬 없음)이 아니면 펼친 채 시작
+  // 요청 창으로 Modbus 를 보냈는데 받기가 Modbus 가 아니면 한 번만 묻는 알림줄 — [예] = 프레임 구분 Modbus RTU + 수신 CRC16 Modbus 검사
+  const [mbRxAsk, setMbRxAsk] = useState(false);
+  const acceptMbRx = () => {
+    setMbRxAsk(false);
+    if (framing.kind !== "modbus-rtu") setFraming({ kind: "modbus-rtu", baud: cfg.baud });
+    if (rxCheck !== "crc16-modbus") {
+      setRxAuto({ prev: rxCheck });
+      setRxCheck("crc16-modbus");
+    }
+  };
+  // «받기 설정»(프레임 구분·수신 체크섬) 접기 — 기본(끊김 시간 20ms·체크섬 없음)이 아니면 펼친 채 시작
   const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null;
   const [rxOpenSaved, setRxOpenSaved] = useState<boolean>(() => rxChanged || load("rxOpen", false));
   useEffect(() => store("rxOpen", rxOpenSaved), [rxOpenSaved]);
@@ -354,7 +368,7 @@ export default function App() {
     [addEv, trgCheck],
   );
 
-  // 끝 문자 칸 — 백엔드와 같은 규칙 + CR·LF 같은 이름. 틀리면 빈 끝 문자(조용한 시간만)
+  // 끝 문자 칸 — 백엔드와 같은 규칙 + CR·LF 같은 이름. 틀리면 빈 끝 문자(끊김 시간만)
   const term_ = useMemo(() => parseTerminator(terminatorText, lang), [terminatorText, lang]);
   const effectiveFraming = useMemo<FrameMode>(() => {
     if (framing.kind === "terminator") return { ...framing, bytes: term_.bytes };
@@ -772,6 +786,10 @@ export default function App() {
   const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "", ck: null });
 
   const connected = sessionId != null;
+  // 끊으면 연결 설정 요약(«바꾸기»)을 다시 펼친 채로
+  useEffect(() => {
+    if (!connected) setConnEditSaved(false);
+  }, [connected]);
   const statusKey = `status_${status}` as Key;
   const runDisabled = connecting || (!connected && !ports.some((p) => p.name === cfg.port));
 
@@ -804,7 +822,7 @@ export default function App() {
       .join(" · ") || t("advConnDefault");
   const rxSummary = [
     framing.kind === "gap"
-      ? `${t("fmGap")} ${framing.gapMs}ms`
+      ? `${t("fmGapShort")} ${framing.gapMs}ms`
       : framing.kind === "terminator"
         ? `${t("fmTerminator")} ${term_.bytes.length ? hex(term_.bytes) : "—"}`
         : framing.kind === "fixed"
@@ -840,6 +858,18 @@ export default function App() {
           </span>
         </div>
 
+        {connected && (
+          <div className="conn-sum">
+            <span className="mono" title={t("lockedHint")}>
+              {summary({ ...cfg, port: livePort ?? cfg.port }, lang)}
+            </span>
+            <button type="button" className="btn small conn-change" onClick={() => setConnEdit(!connEdit)} aria-expanded={connEdit} data-tip={tip(lang, "connChange")}>
+              {connEdit ? t("connFold") : t("connChange")}
+            </button>
+          </div>
+        )}
+        {(!connected || connEdit) && (
+        <>
         <label data-tip={tip(lang, "preset")}>{t("preset")}</label>
         <div className="preset-row">
           <select className="preset-sel" value={preset} onChange={(e) => pickPreset(e.target.value as PresetId)} aria-label={t("preset")}>
@@ -982,6 +1012,8 @@ export default function App() {
           />{" "}
           {t("autoReconnect")}
         </label>
+        </>
+        )}
 
         <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={runDisabled}>
           {connected ? t("disconnect") : t("connect")}
@@ -1076,10 +1108,6 @@ export default function App() {
           </label>
           {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
         </details>
-        <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFileSettings"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!connected}>
-          {logPath ? t("stopLog") : t("logToFile")}
-        </button>
-        {logPath && <div className="hint ellipsis" title={logPath}>{logPath}</div>}
       </aside>
 
       <main className="main">
@@ -1089,7 +1117,7 @@ export default function App() {
           </button>
         </NarrowBar>
         <div className="toolbar">
-          <span data-tip={tip(lang, "view")}>{t("view")}</span>
+          {/* 1000 폭에서 한 줄(10/18) — «보기» 글자는 빼고(말풍선은 단추에), 받은 바이트 수는 아래 상태줄로, 간격 열은 «보기 설정» 으로 */}
           {(["hex", "ascii", "both"] as ViewMode[]).map((v) => (
             <button
               key={v}
@@ -1099,6 +1127,7 @@ export default function App() {
                 setScreen("log");
               }}
               aria-pressed={screen === "log" && view === v}
+              data-tip={tip(lang, "view")}
             >
               {v === "both" ? t("both") : v.toUpperCase()}
             </button>
@@ -1109,20 +1138,28 @@ export default function App() {
           <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
             <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
-          {screen === "log" && <DeltaSelect lang={lang} value={deltaMode} onChange={setDeltaMode} />}
+          {screen === "log" && <ViewOptions lang={lang} delta={deltaMode} onDelta={setDeltaMode} />}
           <span className="grow" />
-          <span className="counter">
-            RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
-          </span>
           <FailCount lang={lang} n={counters.current.fail} filter={filter} />
+          {/* 파일로 계속 저장 — «화면 내용 저장» 옆(10/18 왼쪽 칸에서 옮김). 기록 중이면 «기록 멈춤» + 파일 경로 말풍선 */}
+          <button
+            data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFileSettings"), KEYS.fileLog)}
+            className={logPath ? "btn small file-log on" : "btn small file-log"}
+            onClick={toggleLog}
+            disabled={!connected}
+            title={logPath ?? undefined}
+          >
+            {logPath ? t("stopLog") : t("logToFile")}
+          </button>
           <button data-tip={withKey(tip(lang, "saveLog"), KEYS.save)} className="btn small" onClick={saveView}>
             {t("saveLog")}
           </button>
           <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button data-tip={tip(lang, "commandsDetail")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
-            ☰ {t("commandsDetail")}
+          {/* 1100 폭 이하에서는 «☰» 만(도구줄 한 줄) — 이름은 말풍선·aria-label */}
+          <button data-tip={tip(lang, "commandsDetail")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight} aria-label={t("commandsDetail")}>
+            ☰<span className="nb-text"> {t("commandsDetail")}</span>
           </button>
         </div>
 
@@ -1141,8 +1178,15 @@ export default function App() {
               ))}
             </>
           )}
-          {logPath && <span className="rec">● REC</span>}
+          {logPath && (
+            <span className="rec" title={logPath}>
+              ● REC
+            </span>
+          )}
           <span className="grow" />
+          <span className="counter">
+            RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
+          </span>
           <LiveStats meter={meter.current} lang={lang} active={online} />
         </div>
 
@@ -1384,6 +1428,17 @@ export default function App() {
               </button>
             </div>
           )}
+          {mbRxAsk && (
+            <div className="notice mb-rx-ask" role="status">
+              <span>{t("mbRxAsk")}</span>
+              <button type="button" className="btn small" onClick={acceptMbRx}>
+                {t("mbRxYes")}
+              </button>
+              <button type="button" className="btn small ghost" onClick={() => setMbRxAsk(false)} aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")}>
+                ✕
+              </button>
+            </div>
+          )}
           {connected && !online && <div className="interlock">{t("ilOffline")}</div>}
           {repeating && repeatMs < minRep && <div className="interlock">{t("ilRepeat").replace("{a}", String(repeatMs)).replace("{b}", String(minRep))}</div>}
           {xonxoff && <div className="interlock">{t("ilXon")}</div>}
@@ -1497,12 +1552,21 @@ export default function App() {
             void doSend(s).then((ok) => {
               if (!ok) return;
               history.remember({ text: s.text, mode: s.mode });
+              // 받기가 아직 Modbus 가 아니면 «받기도 Modbus 로 볼까요?» 를 한 번만(10/18)
+              if ((framing.kind !== "modbus-rtu" || rxCheck !== "crc16-modbus") && !load("mbRxAsked", false)) {
+                store("mbRxAsked", true);
+                setMbRxAsk(true);
+              }
               setShowMb(false);
               sendInput.current?.focus();
             });
           }}
           canSend={online}
           sendWhy={sendWhy}
+          onHelp={() => {
+            setShowMb(false);
+            setShowHelp("modbus");
+          }}
         />
       )}
       {showFile && (

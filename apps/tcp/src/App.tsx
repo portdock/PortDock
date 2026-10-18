@@ -45,7 +45,7 @@ import { checksumDesc, checksumLabel, checksumToRust, crcProblem, setTextEncodin
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
-import { DeltaSelect, LiveStats } from "@shared/StatsBar";
+import { LiveStats, ViewOptions } from "@shared/StatsBar";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace } from "@shared/FileSend";
 import { AutoReplySection } from "@shared/AutoReplySection";
@@ -130,7 +130,7 @@ export default function App() {
   const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
   useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
   const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
-  // «받기 설정»(프레임 구분·수신 체크섬·에코) — 기본(조용한 시간 20ms·검사 없음·에코 끔)이 아니면 펼친 채 시작
+  // «받기 설정»(프레임 구분·수신 체크섬·에코) — 기본(끊김 시간 20ms·검사 없음·에코 끔)이 아니면 펼친 채 시작
   const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null || (cfg.mode === "server" && cfg.echo);
   const [rxOpenSaved, setRxOpenSaved] = useState<boolean>(() => rxChanged || load("rxOpen", false));
   useEffect(() => store("rxOpen", rxOpenSaved), [rxOpenSaved]);
@@ -586,7 +586,7 @@ export default function App() {
     .join(" · ");
   const rxSummary = [
     framing.kind === "gap"
-      ? `${t("fmGap")} ${framing.gapMs}ms`
+      ? `${t("fmGapShort")} ${framing.gapMs}ms`
       : framing.kind === "terminator"
         ? `${t("fmTerminator")} ${term.bytes.length ? hex(term.bytes) : "—"}`
         : framing.kind === "fixed"
@@ -825,7 +825,7 @@ export default function App() {
           <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
             <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
-          <DeltaSelect lang={lang} value={deltaMode} onChange={setDeltaMode} />
+          <ViewOptions lang={lang} delta={deltaMode} onDelta={setDeltaMode} />
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
