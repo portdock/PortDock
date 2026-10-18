@@ -208,7 +208,13 @@ async function shot(app, label) {
 
 // 다 누르는 조합(full)은 접어 둔 칸을 펼친 채 띄운다 — «다 눌러 보기» 는 접힌 <details> 속을 누르지 못한다.
 // 화면만 훑는 조합(ko-dark·en-light)은 기본(접힘) 그대로 본다
-const PRE_OPEN = { 5201: { advConnOpen: true, rxOpen: true } };
+const PRE_OPEN = {
+  5201: { advConnOpen: true, rxOpen: true },
+  5203: { advConnOpen: true, rxOpen: true },
+  5204: { advConnOpen: true, rxOpen: true },
+  5205: { unsolOpen: true },
+  5207: { commOpen: true, statsOpen: true },
+};
 
 async function load(port, combo, extra = {}) {
   if (combo.full) extra = { ...(PRE_OPEN[port] ?? {}), ...extra };
@@ -232,7 +238,7 @@ async function fitWindow() {
 // 앱마다 다른 것
 const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger";
 /** 실행 중일 때 실행 버튼 글자 */
-const STOP_RE = /^(끊기|멈춤|Disconnect|Stop)$/;
+const STOP_RE = /^(끊기|멈춤|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
 async function runButton() {
@@ -652,6 +658,52 @@ async function runApp(app, port) {
         await sleep(200);
         await clickRun("mb-tcp: serial again", (s) => STOP_RE.test(s.btn ?? "") && /연결됨|Connected/.test(s.status ?? ""));
       }
+      // ---- (10/18) Simulator: 빈 화면 예제 3개 → SCPI(글자 그대로) → 와일드카드 켜면 알림줄 → [끄기] → «+ 규칙 추가» 는 ASCII 를 물려받음(와일드카드 끔)
+      //      → 통신 기록 RX 줄 오른쪽 버튼 «이 요청으로 규칙 만들기» → 카드 하나 더·응답 칸 포커스
+      if (app === "simulator") {
+        const ex = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const btns = [...document.querySelectorAll('.arexamples .btn')];
+          if (btns.length !== 3 || document.querySelectorAll('.arcard').length) return { n: btns.length, cards: document.querySelectorAll('.arcard').length };
+          document.querySelector('.arexamples .arex-scpi').click(); await w(900);
+          const card = document.querySelector('.arcard');
+          const wild = card.querySelector('.arwild input');
+          const r = { n: 3, pat: card.querySelector('.arpat').value, wild: wild ? wild.checked : null, ok: !!card.querySelector('.armore .hint.ok'), guide: !!document.querySelector('.arexamples') };
+          if (wild) { wild.click(); await w(); }
+          const note = card.querySelector('.arwild-note');
+          r.note = !!note;
+          if (note) { note.querySelector('.btn').click(); await w(); }
+          r.off = !card.querySelector('.arwild-note') && !!wild && !wild.checked;
+          [...document.querySelectorAll('.ar > .arrow .btn.small')][0].click(); await w();
+          const c2 = [...document.querySelectorAll('.arcard')][1];
+          r.inherit = c2 ? [...c2.querySelectorAll('select')].map((s) => s.value).slice(0, 2).join(',') : null;
+          r.suffix2 = c2 ? [...c2.querySelectorAll('select')].map((s) => s.value).pop() : null;
+          r.wild2 = c2 && c2.querySelector('.arwild input') ? c2.querySelector('.arwild input').checked : null;
+          return r;`);
+        if (ex.fatal) add("sim examples", "smoke-error", ex.fatal);
+        else if (ex.n !== 3 || ex.pat !== "*IDN?" || ex.wild !== false || !ex.ok || ex.guide || !ex.note || !ex.off || ex.inherit !== "ascii,exact" || ex.suffix2 !== "\\r\\n" || ex.wild2 !== false)
+          await conv("sim-examples", `예제 버튼·와일드카드·새 규칙 물려받기가 이상함: ${JSON.stringify(ex)}`);
+        if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-sim-examples`);
+        await verify("simulator examples / wildcard");
+        await blur();
+        await keys(Key.END);
+        const lr = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const row = [...document.querySelectorAll('.tlog .trow.rx')].pop();
+          if (!row) return { row: false };
+          const n = document.querySelectorAll('.arcard').length;
+          const rc = row.getBoundingClientRect();
+          row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: rc.left + 40, clientY: rc.top + 4 }));
+          await w();
+          const b = [...document.querySelectorAll('.log-menu button')].find((x) => /규칙 만들기|Make a rule/.test(x.textContent));
+          if (!b) { __sm.key(window, 'Escape'); return { row: true, item: false }; }
+          b.click(); await w(400);
+          return { row: true, item: true, n, n2: document.querySelectorAll('.arcard').length, focus: !!document.activeElement && document.activeElement.classList.contains('arreply'), toast: (document.querySelector('.toast') || {}).textContent || '' };`);
+        if (lr.fatal) add("sim rule from log", "smoke-error", lr.fatal);
+        else if (!lr.row || !lr.item || lr.n2 !== lr.n + 1 || !lr.focus) await conv("sim-rule-from-log", `«이 요청으로 규칙 만들기» 가 이상함: ${JSON.stringify(lr)}`);
+        await blur();
+        await verify("simulator rule from log");
+      }
       // ---- Simulator: 규칙 지우기 → 되돌리기
       if (app === "simulator") {
         await js("[...document.querySelectorAll('.ar > .arrow .btn.small')][0].click()");
@@ -725,6 +777,44 @@ async function runApp(app, port) {
           return { shown, fc, addr };`);
         if (plc.shown !== "40001" || plc.fc !== "4" || plc.addr !== "30001") await conv("mm-plc", `40001 표기가 이상함: ${JSON.stringify(plc)}`);
         await verify("mm plc");
+        // (10/18) 0 기준에 40001 → 그대로 읽되 노란 알림줄 → [PLC 표기로 바꾸기] → 주소 표기 PLC·시작 40001(0)
+        const pn = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const sel = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value=plc]'));
+          __sm.setVal(sel, 'zero'); await w();
+          let inp = document.querySelector('.main .toolbar .addr-in');
+          inp.focus(); __sm.setVal(inp, '40001'); __sm.key(inp, 'Enter'); inp.blur(); await w(350);
+          const note = document.querySelector('.plc-note');
+          const r = { note: !!note, text: note ? note.textContent : '', start0: document.querySelector('.main .toolbar .addr-in').value };
+          if (note) note.querySelector('.btn').click();
+          await w(350);
+          r.mode = sel.value; r.start = document.querySelector('.main .toolbar .addr-in').value; r.gone = !document.querySelector('.plc-note');
+          r.addr = (document.querySelector('.regs .reg .addr') || {}).textContent;
+          __sm.setVal(sel, 'zero'); await w();
+          return r;`);
+        if (pn.fatal) add("mm plc note", "smoke-error", pn.fatal);
+        else if (!pn.note || !/PLC/.test(pn.text) || pn.start0 !== "40001" || pn.mode !== "plc" || pn.start !== "40001" || !pn.gone || pn.addr !== "40001")
+          await conv("mm-plc-note", `0 기준 40001 알림줄·«PLC 표기로 바꾸기» 가 이상함: ${JSON.stringify(pn)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-mm-plc-note`);
+        // «표시» 끝 «형식 지정…» → 고른 칸의 형식 창, 고르기 값은 그대로
+        const fs = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const f = document.querySelector('.main .toolbar .fmt-sel');
+          if (!f) return { sel: false };
+          const before = f.value;
+          __sm.setVal(f, '__point'); await w(350);
+          const open = !!document.querySelector('.modal.cell-dlg');
+          const v = f.value;
+          const x = document.querySelector('.modal.cell-dlg .icon-btn') || [...document.querySelectorAll('.modal.cell-dlg .btn')].find((b) => /취소|Cancel/.test(b.textContent));
+          if (x) x.click();
+          await w();
+          return { sel: true, open, before, v, closed: !document.querySelector('.modal.cell-dlg') };`);
+        if (fs.fatal) add("mm typed", "smoke-error", fs.fatal);
+        else if (!fs.sel || !fs.open || fs.v !== fs.before || !fs.closed) await conv("mm-typed", `«형식 지정…» 이 형식 창을 열지 않음: ${JSON.stringify(fs)}`);
+        // 탭 배지: 빨강(.err-badge:not(.old))은 «지금 실패 중»(●) 탭에만
+        const bd = await js("return [...document.querySelectorAll('.tabs .tab')].filter((t) => t.querySelector('.err-badge:not(.old)') && !/●/.test(t.textContent)).length");
+        if (bd) await conv("mm-badge", `실패 중이 아닌 탭에 빨간 오류 배지 ${bd}개`);
+        await verify("mm plc note / typed");
         // 표 더하기 → 지우기 → 되돌리기
         const tabs0 = await js("return document.querySelectorAll('.tabs .tab').length");
         await js("[...document.querySelectorAll('.tabs .btn.small')][0].click()");
@@ -1146,6 +1236,10 @@ async function runApp(app, port) {
         await sleep(2500);
         const rows = await js("return { ab: [...document.querySelectorAll('.log .row.rx .dir')].some((e) => /A→B/.test(e.textContent)), ba: [...document.querySelectorAll('.log .row.tx .dir')].some((e) => /B→A/.test(e.textContent)), relay: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /RELAY .*⇄/.test(n.textContent)), pairs: document.querySelectorAll('aside .peer').length }");
         if (!rows.ab || !rows.ba || !rows.relay || !rows.pairs) await conv("relay", `중계 기록·쌍 표시가 이상함: ${JSON.stringify(rows)}`);
+        // (10/18) 듣는 방식의 실행 중 버튼은 «듣기 멈춤», 상대 주소는 줄임표(끊기 버튼은 왼쪽 칸 안)
+        const pe = await js(`const b = document.querySelector(${JSON.stringify(RUN_BTN)}); const side = document.querySelector('aside.side').getBoundingClientRect();
+          return { btn: b.textContent.trim(), peers: [...document.querySelectorAll('aside .peer')].map((p) => ({ ell: getComputedStyle(p.querySelector('.mono')).textOverflow, title: !!p.querySelector('.mono').title, kick: p.querySelector('.btn').getBoundingClientRect().right <= side.right + 1 })) };`);
+        if (!/^(듣기 멈춤|Stop listening)$/.test(pe.btn) || !pe.peers.length || pe.peers.some((p) => p.ell !== "ellipsis" || !p.title || !p.kick)) await conv("tcp-stop-peers", `«듣기 멈춤»·상대 줄임표가 이상함: ${JSON.stringify(pe)}`);
         // 줄을 눌러 MBAP 풀이
         const row = (await d.findElements(By.css(".log .row.tx"))).slice(-1)[0];
         if (row) {
@@ -1233,6 +1327,18 @@ async function runApp(app, port) {
         const want = combo.full ? [true, true] : [false, false];
         if (JSON.stringify(f.adv) !== JSON.stringify(want) || (!combo.full && f.notes.length !== 2)) await conv("serial-fold", `왼쪽 접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
       }
+      // (10/18) TCP·UDP·Simulator·Master 첫 실행: 왼쪽(Simulator 는 «장비가 먼저 보내기») 접기 상태·요약, TCP·UDP 로그 보기 «둘 다», UDP 보내기 ASCII
+      if (app === "tcp" || app === "udp" || app === "simulator" || app === "modbus-master") {
+        const f = await js(`const ds = [...document.querySelectorAll(${JSON.stringify(app === "simulator" ? "details.unsol" : "aside.side details.adv.panel")})];
+          const seg = document.querySelector('.main .toolbar .seg.on');
+          const sr = document.querySelector('.sendbar .sendrow'); const m = sr && [...sr.querySelectorAll('select')].find((x) => x.querySelector('option[value=ascii]'));
+          return { open: ds.map((x) => x.open), notes: ds.map((x) => (x.querySelector('.sum-note') || {}).textContent || ''), view: seg ? seg.textContent.trim() : null, mode: m ? m.value : null };`);
+        const n = app === "simulator" ? 1 : 2;
+        const want = Array(n).fill(!!combo.full);
+        if (JSON.stringify(f.open) !== JSON.stringify(want) || (!combo.full && f.notes.some((x) => !x))) await conv(`${app}-fold`, `접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
+        if ((app === "tcp" || app === "udp") && !/^(둘 다|Both)$/.test(f.view ?? "")) await conv("first-view", `첫 실행 로그 보기가 «둘 다» 가 아님: ${JSON.stringify(f.view)}`, false);
+        if (app === "udp" && f.mode !== "ascii") await conv("first-run", `UDP 첫 실행 보내기가 ASCII 가 아님: ${JSON.stringify(f.mode)}`, false);
+      }
       if (combo.full) await shot(app, `${combo.name}-loaded`);
       const idleBtn = s0.btn;
 
@@ -1299,6 +1405,10 @@ async function runApp(app, port) {
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
 
+      // TCP 클라이언트의 실행 중 버튼은 «끊기»
+      if (app === "tcp" && !/^(끊기|Disconnect)$/.test(runS?.btn ?? "")) await conv("tcp-stop-label", `클라이언트 실행 중 버튼이 «끊기» 가 아님: ${JSON.stringify(runS?.btn)}`, false);
+      // Simulator «장비가 먼저 보내기» 는 접혀 있을 수 있다(화면만 훑는 조합) — 펼친 뒤 보낸다
+      if (app === "simulator") await js("const x = document.querySelector('details.unsol'); if (x && !x.open) x.open = true;");
       // 보내기: 입력칸에 쓰고 Enter → 포커스 그대로 · 보내기 버튼 → 입력칸으로 돌아오는지
       const sendSel = app === "simulator" ? ".unsol input.mono" : ".sendtext";
       const inputs = await d.findElements(By.css(sendSel));
@@ -1326,6 +1436,27 @@ async function runApp(app, port) {
             if (!/input/.test(s.active)) add("send button", "ux-focus", `보내기 버튼을 누른 뒤 포커스가 입력칸으로 돌아오지 않음 (${s.active})`);
           }
         }
+      }
+
+      // (10/18) UDP: HEX 칸에 «hello» → 오류 옆 [ASCII 로 보내기] → ASCII 로 바뀌고 한 번 보냄
+      if (app === "udp" && combo.full) {
+        const r = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const sr = document.querySelector('.sendbar .sendrow'); const mode = [...sr.querySelectorAll('select')].find((x) => x.querySelector('option[value=ascii]'));
+          __sm.setVal(mode, 'hex'); await w();
+          __sm.setVal(document.querySelector('.sendtext'), 'hello'); await w(450);
+          const b = document.querySelector('.sendbar .as-ascii');
+          const label = b ? b.textContent.trim() : '';
+          const before = window.__pdMock.calls.filter((c) => c === 'send').length;
+          if (b) b.click();
+          await w(450);
+          const r = { btn: !!b, label, mode: mode.value, sent: window.__pdMock.calls.filter((c) => c === 'send').length - before, text: document.querySelector('.sendtext').value, gone: !document.querySelector('.sendbar .as-ascii') };
+          __sm.setVal(mode, 'hex'); await w();
+          __sm.setVal(document.querySelector('.sendtext'), ${JSON.stringify(VALID_TEXT.udp)}); await w();
+          return r;`);
+        if (r.fatal) add("udp as-ascii", "smoke-error", r.fatal);
+        else if (!r.btn || !/ASCII/.test(r.label) || r.mode !== "ascii" || r.sent !== 1 || r.text !== "hello" || !r.gone) await conv("udp-as-ascii", `HEX 오류 옆 [ASCII 로 보내기] 가 이상함: ${JSON.stringify(r)}`);
+        await verify("udp as-ascii");
       }
 
       // 편의성(10/17): 창 제목·따라가기·줄 고르기·Ctrl+C·우클릭 메뉴·단축키·명령 목록·숫자 칸·표기 바꾸기·되돌리기·항상 위

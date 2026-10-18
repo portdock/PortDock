@@ -139,6 +139,17 @@ export function parseAddr(text: string, mode: AddrMode, fc: Fc): { start: number
   return n >= 1 ? { start: n - 1, fc } : null;
 }
 
+/**
+ * 0·1 기준 칸에 넣은 수가 PLC 표기(40001·30001·10001·00001)로도 읽히는지 — 현장에서 가장 흔한 «40001 을 0 기준 칸에» 실수.
+ * 5~6자리이고 앞자리가 0·1·3·4 이며 PLC 로 읽히면 그 주소·함수를, 아니면 null. PLC 모드면 늘 null
+ */
+export function plcGuess(text: string, mode: AddrMode, fc: Fc): { start: number; fc: Fc } | null {
+  if (mode === "plc") return null;
+  const s = text.trim();
+  if (!/^\d{5,6}$/.test(s)) return null;
+  return parseAddr(s, "plc", fc);
+}
+
 // ------------------------------------------------------------------ 값 보기·쓰기 입력
 
 /** u16 하나를 표시 방식대로 */

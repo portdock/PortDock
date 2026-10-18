@@ -11,6 +11,7 @@ import {
   newTable,
   parse16,
   parseAddr,
+  plcGuess,
   parseInput,
   pushSample,
   sanitizeTables,
@@ -70,6 +71,14 @@ test("주소 표기 — 0·1 기준과 40001(앞자리로 함수 코드 고르�
   assert.equal(parseAddr("20001", "plc", 3), null, "2xxxx 는 없는 표");
   assert.deepEqual(parseAddr("15", "plc", 4), { start: 14, fc: 4 }, "짧은 수는 지금 표의 번호");
   assert.equal(parseAddr("abc", "plc", 3), null);
+  // 0·1 기준 칸에 넣은 40001·30001 — 그대로 읽되 «PLC 표기로 바꾸기» 안내용 판정
+  assert.deepEqual(plcGuess("40001", "zero", 3), { start: 0, fc: 3 });
+  assert.deepEqual(plcGuess(" 30010 ", "one", 3), { start: 9, fc: 4 }, "3xxxx → FC04 로");
+  assert.deepEqual(plcGuess("410000", "zero", 3), { start: 9999, fc: 3 }, "6자리도");
+  assert.equal(plcGuess("40001", "plc", 3), null, "이미 PLC 표기");
+  assert.equal(plcGuess("1000", "zero", 3), null, "4자리는 그냥 주소");
+  assert.equal(plcGuess("20001", "zero", 3), null, "2xxxx 는 없는 표");
+  assert.equal(plcGuess("40000", "zero", 3), null, "40000 은 PLC 로 못 읽음");
 });
 
 test("값 보기 — u16 표시 방식, 타입·순서, HEX·BIN 정수", () => {

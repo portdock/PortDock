@@ -262,27 +262,27 @@
 
 | # | 무엇 | 지금(파일:줄) | 다른 도구 | 고칠 방법 | 효과·크기 |
 |---|---|---|---|---|---|
-| 1 | Master: 0 기준에서 4xxxx·3xxxx 입력을 알아듣기 | 주소 40001 을 그대로 읽음 `apps/modbus-master/src/model.ts:130` | Modbus Poll «PLC Addresses (Base 1)», modpoll `-r` 1 기준 기본 | zero·one 모드에서 5~6자리이고 앞자리가 0·1·3·4 이면 노란 알림줄을 띄운다: «40001 은 PLC 표기로 보입니다 — [PLC 표기로 바꾸고 주소 0 으로] [그대로 40001]». 앞의 버튼은 `setAddrMode("plc")` + `parseAddr` PLC 분기를 재사용한다. 첫 검토 #7(Serial·TCP 요청 창)과 같은 문구를 쓴다 | 가장 흔한 사고 차단 · S |
-| 2 | Master: «표시» 고르기 끝에 «형식 지정…(32비트·float)» | 표시는 U16/S16/HEX/BIN 만, 형식은 오른쪽 버튼 `App.tsx:1103-1112`, `:690-694` | Modbus Poll 은 칸 선택 → Display 메뉴 | Slave 10/18 적용과 같게 한다. 마지막 항목을 고르면 고른 칸(없으면 첫 칸)의 `PointDialog` 를 연다. 칸 말풍선 대신 연결 뒤 첫 한 번 알림 «두 번 눌러 쓰기 · 오른쪽 버튼으로 형식» | float 찾기 실패 방지 · S |
-| 3 | TCP: 로그 보기 기본을 «둘 다» 로 | 보기 HEX, 보내기 ASCII `apps/tcp/src/App.tsx:286`, `:355` | Packet Sender 로그는 HEX·ASCII 를 함께 보여 준다 | 첫 실행 기본을 `"both"`(저장값이 있으면 그것). UDP `apps/udp/src/App.tsx:285` 도 같게 | 받은 글을 바로 읽음 −1클릭 · S |
-| 4 | UDP: 보내기 기본 ASCII + HEX 아닌 글자 길 안내 | HEX 기본 `apps/udp/src/App.tsx:354`, 오류만 표시 `:821-823` | Packet Sender Mixed ASCII, Hercules 텍스트 기본 | 첫 실행 기본을 TCP 와 같은 `{mode:"ascii"}`(줄 끝은 없음 유지). HEX 모드에서 글자가 들어오면 오류 옆에 [ASCII 로 보내기] 버튼(기존 `modeSwitch` 재사용) | 첫 보내기 −2클릭, 앱 사이 일관성 · S |
-| 5 | Simulator: 빈 화면 예시를 버튼으로 | 글로만 있음 `shared/autoReplyText.ts:6`, `AutoReplyPanel.tsx:338` | Docklight 예제 프로젝트(ModbusRtuCrc), Packet Sender 기본 패킷 | 빈 화면에 [Modbus RTU 03 응답 예] [SCPI *IDN? 예] [에코(받은 것 그대로)] 버튼. 누르면 규칙 하나를 채워 넣는다(SCPI 예는 ASCII·글자 그대로·CR LF) | 첫 규칙까지 결정 4→0 · S |
-| 6 | Simulator: ASCII 패턴 «글자 그대로 / 와일드카드» 고르기 | `?`·`*` 가 늘 와일드카드 `shared/autoReplyText.ts:19`, `AutoReplyPanel.tsx:369-384` | Packet Sender Exact Match 는 글자 그대로, Docklight 와일드카드는 오른쪽 클릭으로 넣는 `?`·`#` | 규칙에 `wild?: boolean` 을 두고 ASCII 새 규칙은 끔(글자 그대로)으로 한다. 켜면 지금과 같다. 저장된 옛 규칙은 `wild:true` 로 읽어 동작이 바뀌지 않게 한다. 패턴에 `?`·`*` 가 있고 와일드카드가 켜져 있으면 «SCPI 의 ?·* 는 글자 그대로 비교하려면 끄세요» 알림줄 | SCPI 오응답 차단 · M(백엔드 매칭 함께) |
-| 7 | Simulator: 통신 기록 줄 → 규칙 만들기 | 메뉴에 복사·다시 보내기뿐 `apps/simulator/src/App.tsx:704-720` | Packet Sender 는 로그 줄을 바로 패킷으로 저장 | RX·NO MATCH 줄 오른쪽 클릭에 «이 요청으로 규칙 만들기» 를 넣는다. HEX 패턴에 받은 바이트를 넣고 Modbus 프레임이면 끝 2바이트를 `**` 로 바꾼 뒤 응답 칸에 포커스. `logMenuItems` 에 `addRule?` 를 더한다 | 패턴 옮겨 적기 없앰 · S |
-| 8 | Simulator: 새 규칙 기본을 직전 규칙 방식으로 | 늘 HEX·정확히 `shared/autoReply.ts:74-82` | — | `blankRule` 에 직전 규칙(없으면 «장비가 먼저 보내기» 의 형식)의 patternMode·reply.mode·suffix 를 물려준다 | 텍스트 장비 규칙마다 −4클릭 · S |
-| 9 | TCP·UDP: 연결 설정 «고급» 접기 | Nagle·재접속·간격 `apps/tcp/src/App.tsx:640-660`, 브로드캐스트·멀티캐스트·에코 `apps/udp/src/App.tsx:560-588` | Hercules·Packet Sender 는 설정 창에 둔다 | 첫 검토 #1 과 같은 `<details className="adv">`. 기본값과 다르면 펼친 채 시작하고, 제목에 요약(«Nagle 끔 · 재접속 2초», «브로드캐스트 · 239.0.0.1»). 에코는 연결 설정 밖으로 빼서 «받기» 묶음에 둔다 | TCP −4, UDP −4 · S |
-| 10 | TCP·UDP: «받기 설정» 접기 | 프레임 구분·조용한 시간·수신 체크섬·파일 저장 `apps/tcp/src/App.tsx:690-758`, `apps/udp/src/App.tsx:620-640` | Docklight Options | 첫 검토 #2 와 같다. 제목에 «조용한 시간 20ms · 체크섬 없음» | −5 · S |
+| 1 | Master: 0 기준에서 4xxxx·3xxxx 입력을 알아듣기 | 주소 40001 을 그대로 읽음 `apps/modbus-master/src/model.ts:130` | Modbus Poll «PLC Addresses (Base 1)», modpoll `-r` 1 기준 기본 | zero·one 모드에서 5~6자리이고 앞자리가 0·1·3·4 이면 노란 알림줄을 띄운다: «40001 은 PLC 표기로 보입니다 — [PLC 표기로 바꾸고 주소 0 으로] [그대로 40001]». 앞의 버튼은 `setAddrMode("plc")` + `parseAddr` PLC 분기를 재사용한다. 첫 검토 #7(Serial·TCP 요청 창)과 같은 문구를 쓴다 | 가장 흔한 사고 차단 · S <br>**✅ 10/18 적용** — 0·1 기준 시작 칸에 5~6자리 0·1·3·4xxxx 를 넣으면 그대로 읽고 노란 알림줄 «PLC 표기라면 주소 0(FC03)» + [PLC 표기로 바꾸기](주소 표기 PLC·시작·함수 맞춤). 0 기준에서 65535 를 넘는 410000 은 오류 대신 같은 알림줄. `model.ts` `plcGuess` + 시험. 연결 뒤 첫 한 번 알림은 하지 않음 |
+| 2 | Master: «표시» 고르기 끝에 «형식 지정…(32비트·float)» | 표시는 U16/S16/HEX/BIN 만, 형식은 오른쪽 버튼 `App.tsx:1103-1112`, `:690-694` | Modbus Poll 은 칸 선택 → Display 메뉴 | Slave 10/18 적용과 같게 한다. 마지막 항목을 고르면 고른 칸(없으면 첫 칸)의 `PointDialog` 를 연다. 칸 말풍선 대신 연결 뒤 첫 한 번 알림 «두 번 눌러 쓰기 · 오른쪽 버튼으로 형식» | float 찾기 실패 방지 · S <br>**✅ 10/18 적용** — «표시» 끝 «형식 지정…(32비트·float·문자열)» — 고른 칸(없으면 첫 칸)의 형식 창을 열고 고르기 값은 그대로. 연결 뒤 첫 한 번 알림은 하지 않음 |
+| 3 | TCP: 로그 보기 기본을 «둘 다» 로 | 보기 HEX, 보내기 ASCII `apps/tcp/src/App.tsx:286`, `:355` | Packet Sender 로그는 HEX·ASCII 를 함께 보여 준다 | 첫 실행 기본을 `"both"`(저장값이 있으면 그것). UDP `apps/udp/src/App.tsx:285` 도 같게 | 받은 글을 바로 읽음 −1클릭 · S <br>**✅ 10/18 적용** — TCP·UDP 저장값이 없으면 «둘 다» |
+| 4 | UDP: 보내기 기본 ASCII + HEX 아닌 글자 길 안내 | HEX 기본 `apps/udp/src/App.tsx:354`, 오류만 표시 `:821-823` | Packet Sender Mixed ASCII, Hercules 텍스트 기본 | 첫 실행 기본을 TCP 와 같은 `{mode:"ascii"}`(줄 끝은 없음 유지). HEX 모드에서 글자가 들어오면 오류 옆에 [ASCII 로 보내기] 버튼(기존 `modeSwitch` 재사용) | 첫 보내기 −2클릭, 앱 사이 일관성 · S <br>**✅ 10/18 적용** — 저장값이 없으면 ASCII(줄 끝 없음). HEX 오류 옆 [ASCII 로 보내기] — 친 글 그대로 ASCII 로 바꾸고 보낼 수 있으면 바로 보냄(시작 전·보낼 곳 없음이면 [ASCII 로 바꾸기]) |
+| 5 | Simulator: 빈 화면 예시를 버튼으로 | 글로만 있음 `shared/autoReplyText.ts:6`, `AutoReplyPanel.tsx:338` | Docklight 예제 프로젝트(ModbusRtuCrc), Packet Sender 기본 패킷 | 빈 화면에 [Modbus RTU 03 응답 예] [SCPI *IDN? 예] [에코(받은 것 그대로)] 버튼. 누르면 규칙 하나를 채워 넣는다(SCPI 예는 ASCII·글자 그대로·CR LF) | 첫 규칙까지 결정 4→0 · S <br>**✅ 10/18 적용** — 빈 화면에 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코(받은 것 그대로)] — 누르면 규칙 하나 + «자세히»(예시 요청 미리보기) 펼침. 같은 칸을 쓰는 Serial·TCP·UDP 자동응답에도 나옴. SCPI 예는 #6 와일드카드 끔으로 «*IDN?» 그대로 |
+| 6 | Simulator: ASCII 패턴 «글자 그대로 / 와일드카드» 고르기 | `?`·`*` 가 늘 와일드카드 `shared/autoReplyText.ts:19`, `AutoReplyPanel.tsx:369-384` | Packet Sender Exact Match 는 글자 그대로, Docklight 와일드카드는 오른쪽 클릭으로 넣는 `?`·`#` | 규칙에 `wild?: boolean` 을 두고 ASCII 새 규칙은 끔(글자 그대로)으로 한다. 켜면 지금과 같다. 저장된 옛 규칙은 `wild:true` 로 읽어 동작이 바뀌지 않게 한다. 패턴에 `?`·`*` 가 있고 와일드카드가 켜져 있으면 «SCPI 의 ?·* 는 글자 그대로 비교하려면 끄세요» 알림줄 | SCPI 오응답 차단 · M(백엔드 매칭 함께) <br>**✅ 10/18 적용** — 규칙마다 «와일드카드» 체크(ASCII 일 때). 새 규칙·예제는 끔, 칸 없는 옛 규칙은 켜짐으로 읽어 동작 유지. 켠 규칙에 ?·* 가 있으면 알림줄 + [와일드카드 끄기]. core `RuleSpec.wild`(serde 기본 true)·cargo 시험, 인터락(무엇이든 맞음·같은 패턴)도 반영. Serial·TCP·UDP 자동응답도 같은 칸이라 함께 |
+| 7 | Simulator: 통신 기록 줄 → 규칙 만들기 | 메뉴에 복사·다시 보내기뿐 `apps/simulator/src/App.tsx:704-720` | Packet Sender 는 로그 줄을 바로 패킷으로 저장 | RX·NO MATCH 줄 오른쪽 클릭에 «이 요청으로 규칙 만들기» 를 넣는다. HEX 패턴에 받은 바이트를 넣고 Modbus 프레임이면 끝 2바이트를 `**` 로 바꾼 뒤 응답 칸에 포커스. `logMenuItems` 에 `addRule?` 를 더한다 | 패턴 옮겨 적기 없앰 · S <br>**✅ 10/18 적용** — RX 줄과 «NO MATCH» 줄(바로 앞 RX)의 오른쪽 버튼 «이 요청으로 규칙 만들기». 글자면 ASCII·글자 그대로(끝 CR LF 는 응답 줄 끝으로), Modbus RTU 면 CRC 자리 «**»·응답 CRC16 Modbus, Modbus TCP 면 트랜잭션 ID «?? ??». 무엇이든 맞는 규칙이 있으면 그 위에 넣고 응답 칸에 포커스 |
+| 8 | Simulator: 새 규칙 기본을 직전 규칙 방식으로 | 늘 HEX·정확히 `shared/autoReply.ts:74-82` | — | `blankRule` 에 직전 규칙(없으면 «장비가 먼저 보내기» 의 형식)의 patternMode·reply.mode·suffix 를 물려준다 | 텍스트 장비 규칙마다 −4클릭 · S <br>**✅ 10/18 적용** — 직전 규칙의 받기 HEX/ASCII·정확히/포함, 응답 HEX/ASCII·체크섬·줄 끝을 물려받음(와일드카드는 늘 끔). 규칙이 없을 때 «장비가 먼저 보내기» 형식을 따르는 것은 하지 않음 — 빈 화면은 예제 버튼으로 |
+| 9 | TCP·UDP: 연결 설정 «고급» 접기 | Nagle·재접속·간격 `apps/tcp/src/App.tsx:640-660`, 브로드캐스트·멀티캐스트·에코 `apps/udp/src/App.tsx:560-588` | Hercules·Packet Sender 는 설정 창에 둔다 | 첫 검토 #1 과 같은 `<details className="adv">`. 기본값과 다르면 펼친 채 시작하고, 제목에 요약(«Nagle 끔 · 재접속 2초», «브로드캐스트 · 239.0.0.1»). 에코는 연결 설정 밖으로 빼서 «받기» 묶음에 둔다 | TCP −4, UDP −4 · S <br>**✅ 10/18 적용** — TCP «고급 연결»(즉시 전송·재접속·간격), UDP «고급 연결»(브로드캐스트·멀티캐스트) 접기, 제목 요약(«Nagle 끔 · 재접속 2초», «브로드캐스트 · 239.0.0.1»), 기본값 아니면 펼침, 열림 상태 저장. 에코는 «받기 설정» 으로 |
+| 10 | TCP·UDP: «받기 설정» 접기 | 프레임 구분·조용한 시간·수신 체크섬·파일 저장 `apps/tcp/src/App.tsx:690-758`, `apps/udp/src/App.tsx:620-640` | Docklight Options | 첫 검토 #2 와 같다. 제목에 «조용한 시간 20ms · 체크섬 없음» | −5 · S <br>**✅ 10/18 적용** — TCP «받기 설정»(프레임 구분·끝 문자·조용한 시간·수신 체크섬·서버 에코), UDP «받기 설정»(수신 체크섬·에코) 접기, 제목 요약. «파일로 계속 저장» 은 왼쪽에 그대로 |
 | 11 | TCP: 방식을 탭(분할 버튼)으로 | 고르기 안에 숨음 `apps/tcp/src/App.tsx:601-613` | Hercules·sokit 탭, NetAssist 드롭다운 | 왼쪽 칸 맨 위에 [클라이언트 | 서버 | 중계] 분할 버튼을 두고, 방식마다 주소·포트를 따로 저장한다(`cfgByMode`). 바꿀 때 «주소 → 0.0.0.0» 을 조용히 바꾸지 않는다 | 방식 발견성, 주소 덮어쓰기 없음 · M |
 | 12 | TCP: 포트 502 면 Modbus TCP 로 제안 | 기본 502 + 조용한 시간 + STATUS? `apps/tcp/src/App.tsx:94`, `:96`, `:919` | — | 첫 실행 기본 포트를 비 Modbus 값(예: 5000)으로 바꾸거나, 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 알림줄 한 번: «Modbus TCP 로 보면 요청·응답이 풀이됩니다 — [바꾸기] [Modbus Master 열기]» | 기본값끼리 어긋남 해소 · S |
-| 13 | TCP: «멈춤» → «끊기»/«듣기 멈춤» | `apps/tcp/src/i18n.ts:32` | Hercules Connect↔Disconnect, Listen↔Close, NetAssist 连接↔断开 | 클라이언트 «끊기», 서버·중계 «듣기 멈춤». 영어 «Disconnect»/«Stop listening» | 말 일관성 · S |
-| 14 | TCP: 상대 목록 줄 넘침 | IPv6 주소가 «끊기» 를 밀어냄 `apps/tcp/src/App.tsx:679-686` | sokit «Connections» 목록 + Disconn·All | `.peer .mono` 에 `min-width:0; overflow:hidden; text-overflow:ellipsis` + title 로 전체 주소. «모두 끊기» 버튼 하나 추가 | 버튼 안 보임 해소 · S |
+| 13 | TCP: «멈춤» → «끊기»/«듣기 멈춤» | `apps/tcp/src/i18n.ts:32` | Hercules Connect↔Disconnect, Listen↔Close, NetAssist 连接↔断开 | 클라이언트 «끊기», 서버·중계 «듣기 멈춤». 영어 «Disconnect»/«Stop listening» | 말 일관성 · S <br>**✅ 10/18 적용** — 클라이언트 «끊기»/«Disconnect», 서버·중계 «듣기 멈춤»/«Stop listening»(`stopClient`·`stopListen`, 말풍선도) |
+| 14 | TCP: 상대 목록 줄 넘침 | IPv6 주소가 «끊기» 를 밀어냄 `apps/tcp/src/App.tsx:679-686` | sokit «Connections» 목록 + Disconn·All | `.peer .mono` 에 `min-width:0; overflow:hidden; text-overflow:ellipsis` + title 로 전체 주소. «모두 끊기» 버튼 하나 추가 | 버튼 안 보임 해소 · S <br>**✅ 10/18 적용** — `.peer .mono` 줄임표 + `title` 전체 주소, «끊기» 는 늘 보임. «모두 끊기» 는 하지 않음 |
 | 15 | TCP·UDP: 좁은 창에서 상세 보이기 | `apps/tcp/src/App.css:568-`, `apps/udp/src/App.css:568-` | — | 첫 검토 #9 와 같다(줄을 누르면 오른쪽 칸 열기, 버튼 이름 «☰ 명령·상세») | 1000 폭에서 «아무 일도 안 일어남» 해소 · S |
 | 16 | TCP·UDP: 보내기 둘째 줄 «⋯ 더보기» | `apps/tcp/src/App.tsx:947-990`, `apps/udp/src/App.tsx:813-838` | — | 첫 검토 #3 과 같다. Modbus…·문자 간·파일 보내기를 팝오버로, 횟수는 반복을 켰을 때만 보인다 | −4, 서버 모드 줄 넘침 해소 · S |
 | 17 | UDP: «기본 대상» → «보낼 곳» | `apps/udp/src/i18n.ts:44`, `App.tsx:762-775` | Hercules «Module IP / Port» | 보내기 고르기 첫 항목을 «보낼 곳 (192.168.0.10:5000)», 둘째를 «마지막으로 보내온 쪽» 으로. 왼쪽 칸 제목과 같은 말 | 이해도 · S |
 | 18 | Master: 첫 연결 방식 고르기 + 첫 화면 안내 | 시리얼 기본 `App.tsx:115-118`, 연결 전 안내 없음 `:768-769` | Modbus Poll F3 연결 창이 종류부터 묻는다 | 처음(저장값 없음)에는 값 칸 자리에 카드: «어떤 장비인가요? [Modbus TCP (이더넷)] [Modbus RTU (시리얼)] · 주소는 [0 기준] [PLC 40001]». 누르면 연결 방식·주소 표기를 정하고 주소 칸에 포커스. «다시 보지 않기» | 첫 읽기 결정 2→1, 주소 혼동 감소 · M |
-| 19 | Master: 왼쪽 고급 칸 접기 | 재시도·간격·0F·10·값 기록·통계 `App.tsx:893-906`, `:923-999` | Modbus Poll 은 연결 창·Setup 메뉴, OpenModScan 은 Setup 메뉴 | «통신 세부(기다림·재시도·간격·0F/10)» 와 «통계» 를 접기로 한다. 통계 제목에 «요청 n · 타임아웃 m». 값 기록은 표 도구줄의 CSV 옆으로 옮긴다. «한 칸도 0F·10 으로 쓰기» → «한 칸도 '여러 칸 쓰기' 명령(FC15·16)으로» | 첫 화면 약 −10 · S |
-| 20 | Master: 탭 오류 수를 «최근» 으로 | 누적 수가 남음 `App.tsx:1010`, `:1028-1032` | — | 탭 배지는 «지금 실패 중» 일 때만 빨강으로 하고, 성공으로 돌아오면 회색 누적 수(또는 지움). 누적은 통계에 둔다 | 고친 뒤에도 «문제 있음» 으로 보이는 것 해소 · S |
-| 21 | Simulator: «장비가 먼저 보내기» 접기 | 규칙 아래 늘 펼침 `apps/simulator/src/App.tsx:604-663` | — | «장비가 먼저 보내기(상태·하트비트)» 를 접기로 하고, 반복이 켜져 있으면 펼치고 제목에 «1000 ms 마다 보내는 중» | 규칙 칸 오해 감소, −8 · S |
+| 19 | Master: 왼쪽 고급 칸 접기 | 재시도·간격·0F·10·값 기록·통계 `App.tsx:893-906`, `:923-999` | Modbus Poll 은 연결 창·Setup 메뉴, OpenModScan 은 Setup 메뉴 | «통신 세부(기다림·재시도·간격·0F/10)» 와 «통계» 를 접기로 한다. 통계 제목에 «요청 n · 타임아웃 m». 값 기록은 표 도구줄의 CSV 옆으로 옮긴다. «한 칸도 0F·10 으로 쓰기» → «한 칸도 '여러 칸 쓰기' 명령(FC15·16)으로» | 첫 화면 약 −10 · S <br>**✅ 10/18 적용** — «통신 세부»(기다림·재시도·간격·여러 칸 쓰기)·«통계» 접기, 제목 요약(«요청 n · 오류 m», 오류 있으면 빨강), 통신 세부가 기본값 아니면 펼침. 문구 «한 칸도 «여러 칸 쓰기» 명령(FC15·16)으로». 값 기록 옮기기는 하지 않음 |
+| 20 | Master: 탭 오류 수를 «최근» 으로 | 누적 수가 남음 `App.tsx:1010`, `:1028-1032` | — | 탭 배지는 «지금 실패 중» 일 때만 빨강으로 하고, 성공으로 돌아오면 회색 누적 수(또는 지움). 누적은 통계에 둔다 | 고친 뒤에도 «문제 있음» 으로 보이는 것 해소 · S <br>**✅ 10/18 적용** — 빨간 배지는 지금 실패 중(●)일 때만, 정상으로 돌아오면 회색 누적 수(말풍선에 «통계 초기화로 지움») |
+| 21 | Simulator: «장비가 먼저 보내기» 접기 | 규칙 아래 늘 펼침 `apps/simulator/src/App.tsx:604-663` | — | «장비가 먼저 보내기(상태·하트비트)» 를 접기로 하고, 반복이 켜져 있으면 펼치고 제목에 «1000 ms 마다 보내는 중» | 규칙 칸 오해 감소, −8 · S <br>**✅ 10/18 적용** — «장비가 먼저 보내기» 접기(기본 접힘, 반복을 켜면 펼침, 열림 상태 저장), 접힌 제목에 내용 또는 «1000 ms 마다 보내는 중» |
 | 22 | TCP·UDP 자동응답과 Simulator 의 관계 알리기 | 같은 기능이 세 곳 `apps/tcp/src/App.tsx:1030`, `apps/udp/src/App.tsx:870` | — | TCP·UDP «자동응답» 접기 제목 옆에 «규칙이 많으면 Simulator» 한 줄. 규칙 묶음 저장 형식이 같다면 «Simulator 로 열기» 는 다음 판 | 앱 고르기 혼동 감소 · S |
 | 23 | Net Scan → Master 넘기기 | 없음 | — | 첫 검토 #25. Master 쪽은 실행 인자 `--tcp host:port --unit n` 을 받아 연결 방식·주소를 채운다(Rust 쪽 다음 판) | 앱 사이 이동 · M |
 | 24 | 네 앱 보내기 기본값 한 곳에서 | TCP ASCII·CR LF / UDP HEX / Simulator ASCII·CR LF / 규칙 HEX | — | `shared` 에 «처음 보내기 형식» 상수 하나를 두고 네 앱과 `blankRule` 이 같이 쓴다. 설정 창에 «처음 보내기 형식: 글자/HEX» | 일관성 · S |
@@ -293,39 +293,39 @@
 
 기능을 빼지 않고 옮기기·숨기기·기본값만 바꾼다. 다른 작업자가 고치는 `apps/serial`·`shared/ModbusBuilder`·`modbusBuild`·`tips` 는 피했다(#1 의 문구만 맞춘다).
 
-1. **Master 4xxxx 입력 알아듣기** (#1)
+1. **Master 4xxxx 입력 알아듣기** (#1) — **✅ 10/18 적용**: 0·1 기준 시작 칸에 5~6자리 0·1·3·4xxxx 를 넣으면 그대로 읽고 노란 알림줄 «PLC 표기라면 주소 0(FC03)» + [PLC 표기로 바꾸기](주소 표기 PLC·시작·함수 맞춤). 0 기준에서 65535 를 넘는 410000 은 오류 대신 같은 알림줄. `model.ts` `plcGuess` + 시험. 연결 뒤 첫 한 번 알림은 하지 않음
    - `apps/modbus-master/src/App.tsx:1073-1084` 의 `onCommit` 에서 zero/one 모드이고 `parseAddr(s, "plc", sel.fc)` 가 성공하면, 그대로 적용하되 알림줄 «40001 은 PLC 표기로 보입니다 — [PLC 표기로 바꾸기]» 를 띄운다.
    - 버튼은 `setAddrMode("plc")` + `patchTable({start, fc})`.
    - `model.test.ts` 에 경우 하나 추가(`parseAddr("40001","plc",3)` 는 이미 있음 — zero 에서 «PLC 로 보임» 판정 함수만 새로).
-2. **Master «표시» 에 «형식 지정…»** (#2)
+2. **Master «표시» 에 «형식 지정…»** (#2) — **✅ 10/18 적용**: «표시» 끝 «형식 지정…(32비트·float·문자열)» — 고른 칸(없으면 첫 칸)의 형식 창을 열고 고르기 값은 그대로. 연결 뒤 첫 한 번 알림은 하지 않음
    - `App.tsx:1106-1111` 고르기 끝에 `<option value="__point">형식 지정…(32비트·float·문자열)</option>`.
    - 고르면 `setPointAt(selAddr ?? sel.start)` 하고 값은 되돌린다. Slave 10/18 적용과 같은 문구를 쓴다.
-3. **TCP·UDP 로그 보기 기본 «둘 다»** (#3)
+3. **TCP·UDP 로그 보기 기본 «둘 다»** (#3) — **✅ 10/18 적용**: TCP·UDP 저장값이 없으면 «둘 다»
    - `apps/tcp/src/App.tsx:286`, `apps/udp/src/App.tsx:285` 의 `load("view", "hex")` → `"both"`.
-4. **UDP 보내기 기본 ASCII + [ASCII 로 보내기]** (#4)
+4. **UDP 보내기 기본 ASCII + [ASCII 로 보내기]** (#4) — **✅ 10/18 적용**: 저장값이 없으면 ASCII(줄 끝 없음). HEX 오류 옆 [ASCII 로 보내기] — 친 글 그대로 ASCII 로 바꾸고 보낼 수 있으면 바로 보냄(시작 전·보낼 곳 없음이면 [ASCII 로 바꾸기])
    - `apps/udp/src/App.tsx:354` 기본 `mode:"ascii"`, placeholder «PING» 그대로.
    - HEX 오류(`previewErr`)일 때 `.preview.err` 옆에 `modeSwitch.changeMode("ascii")` 버튼.
-5. **Simulator 빈 화면 예제 버튼 3개** (#5)
+5. **Simulator 빈 화면 예제 버튼 3개** (#5) — **✅ 10/18 적용**: 빈 화면에 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코(받은 것 그대로)] — 누르면 규칙 하나 + «자세히»(예시 요청 미리보기) 펼침. 같은 칸을 쓰는 Serial·TCP·UDP 자동응답에도 나옴. SCPI 예는 #6 와일드카드 끔으로 «*IDN?» 그대로
    - `shared/AutoReplyPanel.tsx:338` 의 `empty-guide` 아래에 버튼 세 개. 규칙은 `autoReply.ts` 에 `exampleRules` 로 둔다.
    - SCPI 예는 #6 전까지 패턴을 `\x2AIDN\x3F` 로 넣어 정확히 맞게 한다.
-6. **Simulator 기록 줄 → 규칙** (#7)
+6. **Simulator 기록 줄 → 규칙** (#7) — **✅ 10/18 적용**: RX 줄과 «NO MATCH» 줄(바로 앞 RX)의 오른쪽 버튼 «이 요청으로 규칙 만들기». 글자면 ASCII·글자 그대로(끝 CR LF 는 응답 줄 끝으로), Modbus RTU 면 CRC 자리 «**»·응답 CRC16 Modbus, Modbus TCP 면 트랜잭션 ID «?? ??». 무엇이든 맞는 규칙이 있으면 그 위에 넣고 응답 칸에 포커스
    - `shared/LogMenu.tsx` `logMenuItems` 에 `addRule?: (bytes)=>void`(RX 줄만)를 더한다.
    - `apps/simulator/src/App.tsx:710-719` 에서 넘겨 `setRules([...rules, {...blankRule(n), pattern: hex(b)}])`.
-7. **TCP·UDP «고급 연결»·«받기 설정» 접기** (#9·#10)
+7. **TCP·UDP «고급 연결»·«받기 설정» 접기** (#9·#10) — **✅ 10/18 적용**: TCP·UDP 왼쪽 «고급 연결»·«받기 설정» 접기(Serial 51a66c6 과 같은 모양·CSS, 요약·기본값 아니면 펼침·열림 저장)
    - TCP `App.tsx:640-660`, `690-758`, UDP `560-588`, `620-640` 을 `<details className="adv">` 로 묶는다.
    - 기본값과 다르면 펼침, 열림 상태 저장(첫 검토 #30).
    - 에코는 «받기 설정» 안으로 옮긴다.
-8. **TCP 버튼 이름 «끊기»/«듣기 멈춤» + 상대 목록 줄임표** (#13·#14)
+8. **TCP 버튼 이름 «끊기»/«듣기 멈춤» + 상대 목록 줄임표** (#13·#14) — **✅ 10/18 적용**: «끊기»/«듣기 멈춤», 상대 주소 줄임표
    - `apps/tcp/src/i18n.ts:32` 를 `stopClient`·`stopListen` 둘로 나눈다(`App.tsx:662`, `:764`).
    - `App.css` 의 `.peer .mono` 에 줄임표, `title={p.addr}`.
-9. **Master 왼쪽 «통신 세부»·«통계» 접기 + 탭 배지** (#19·#20)
+9. **Master 왼쪽 «통신 세부»·«통계» 접기 + 탭 배지** (#19·#20) — **✅ 10/18 적용**: «통신 세부»·«통계» 접기, 탭 배지는 실패 중일 때만 빨강
    - `App.tsx:893-906`·`923-928`, `950-999` 를 `<details className="adv">` 로 감싼다(Slave 와 같은 CSS).
    - 탭 배지는 `bad`(마지막 결과 실패)일 때만 빨강.
-10. **Simulator «장비가 먼저 보내기» 접기 + 새 규칙 방식 물려받기** (#21·#8)
+10. **Simulator «장비가 먼저 보내기» 접기 + 새 규칙 방식 물려받기** (#21·#8) — **✅ 10/18 적용**: «장비가 먼저 보내기» 접기, 새 규칙은 직전 규칙 방식 물려받기
     - `apps/simulator/src/App.tsx:604-663` 을 `<details>` 로, `open={repeating}`.
     - `AutoReplyPanel.tsx:330-334` 의 `add` 가 직전 규칙의 `patternMode`·`reply.mode`·`reply.suffix` 를 복사한다.
 
-다음 차례(M): #6 ASCII 와일드카드 고르기(백엔드 매칭과 함께), #18 Master 첫 실행 카드(첫 검토 #17 과 함께), #11 TCP 방식 탭, #23 Net Scan → Master.
+다음 차례(M): ~~#6 ASCII 와일드카드 고르기(백엔드 매칭과 함께)~~ **✅ 10/18 적용(위 #6)**, #18 Master 첫 실행 카드(첫 검토 #17 과 함께), #11 TCP 방식 탭, #23 Net Scan → Master.
 
 검증: 고친 뒤 `e2e/ui-preview/smoke.mjs` 를 돌린다. 접힌 칸은 «펼친 뒤 누르기» 단계가 필요하다(첫 검토 적용 기록 참고). 첫 화면 컨트롤 수 목표는 TCP 50→약 32, UDP 50→약 32, Master 52→약 40(값 칸 제외), Simulator 29 유지다.
 

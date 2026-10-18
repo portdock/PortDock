@@ -15,6 +15,7 @@ import {
   newTable,
   numValue,
   parseAddr,
+  plcGuess,
   pointRegs,
   pushSample,
   sanitizeTables,
@@ -155,6 +156,14 @@ export default function App() {
   useEffect(() => store("net", net), [net]);
   useEffect(() => store("timing", timing), [timing]);
   useEffect(() => store("forceMulti", forceMulti), [forceMulti]);
+  // 왼쪽 «통신 세부»(기다림·재시도·간격·여러 칸 쓰기)·«통계» 접기 — 기본값이 아니면 펼친 채 시작, 열림 상태는 기억
+  const commChanged = timing.timeoutMs !== 1000 || timing.retries !== 0 || timing.delayMs !== 20 || forceMulti;
+  const [commOpen, setCommOpen] = useState<boolean>(() => commChanged || load<boolean>("commOpen", false) === true);
+  useEffect(() => store("commOpen", commOpen), [commOpen]);
+  const [statsOpen, setStatsOpen] = useState<boolean>(() => load<boolean>("statsOpen", false) === true);
+  useEffect(() => store("statsOpen", statsOpen), [statsOpen]);
+  // 0·1 기준 시작 칸에 40001 같은 PLC 표기를 넣었을 때의 알림줄(그대로 적용하고 «PLC 표기로 바꾸기» 를 권한다)
+  const [plcNote, setPlcNote] = useState<{ id: number; text: string; start: number; fc: Fc } | null>(null);
   useEffect(() => store("addrMode", addrMode), [addrMode]);
   useEffect(() => store("tables", tables), [tables]);
   useEffect(() => store("selTable", sel.id), [sel.id]);
@@ -890,20 +899,34 @@ export default function App() {
             </label>
           </>
         )}
-        <div className="grid3 timing">
-          <label data-tip={tip(lang, "mmTimeout")}>
-            {t("timeout")}
-            <NumInput min={10} max={60000} value={timing.timeoutMs} onValue={(n) => setTiming({ ...timing, timeoutMs: n })} />
+        <details className="adv panel comm" open={commOpen} onToggle={(e) => setCommOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "mmComm")}>
+            <span className="sum-title">{t("commDetail")}</span>
+            {!commOpen && (
+              <span className="sum-note">
+                {fill(t("commSummary"), { a: timing.timeoutMs, b: timing.retries, c: timing.delayMs })}
+                {forceMulti ? ` · ${t("forceMultiShort")}` : ""}
+              </span>
+            )}
+          </summary>
+          <div className="grid3 timing">
+            <label data-tip={tip(lang, "mmTimeout")}>
+              {t("timeout")}
+              <NumInput min={10} max={60000} value={timing.timeoutMs} onValue={(n) => setTiming({ ...timing, timeoutMs: n })} />
+            </label>
+            <label data-tip={tip(lang, "mmRetries")}>
+              {t("retries")}
+              <NumInput min={0} max={10} value={timing.retries} onValue={(n) => setTiming({ ...timing, retries: n })} />
+            </label>
+            <label data-tip={tip(lang, "mmDelay")}>
+              {t("delay")}
+              <NumInput min={0} max={60000} value={timing.delayMs} onValue={(n) => setTiming({ ...timing, delayMs: n })} />
+            </label>
+          </div>
+          <label className="inline" data-tip={tip(lang, "mmForceMulti")}>
+            <input type="checkbox" checked={forceMulti} onChange={(e) => setForceMulti(e.target.checked)} /> {t("forceMulti")}
           </label>
-          <label data-tip={tip(lang, "mmRetries")}>
-            {t("retries")}
-            <NumInput min={0} max={10} value={timing.retries} onValue={(n) => setTiming({ ...timing, retries: n })} />
-          </label>
-          <label data-tip={tip(lang, "mmDelay")}>
-            {t("delay")}
-            <NumInput min={0} max={60000} value={timing.delayMs} onValue={(n) => setTiming({ ...timing, delayMs: n })} />
-          </label>
-        </div>
+        </details>
         <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={runDisabled}>
           {runLabel}
         </button>
@@ -922,9 +945,6 @@ export default function App() {
         )}
         <label className="inline" data-tip={withKey(tip(lang, "mmPauseAll"), "F8")}>
           <input type="checkbox" checked={paused} onChange={(e) => setPaused(e.target.checked)} /> {t("pauseAll")}
-        </label>
-        <label className="inline" data-tip={tip(lang, "mmForceMulti")}>
-          <input type="checkbox" checked={forceMulti} onChange={(e) => setForceMulti(e.target.checked)} /> {t("forceMulti")}
         </label>
         <button className="btn small" onClick={() => setShowScan(true)} data-tip={tip(lang, "mmScan")}>
           {t("scan")}
@@ -947,56 +967,68 @@ export default function App() {
         {vlog && <div className="hint ellipsis" title={vlog.path}>{fill(t("vlLines"), { n: vlog.lines, a: vlog.path.split(/[\\/]/).pop() ?? vlog.path })}</div>}
 
         <hr />
-        <label data-tip={tip(lang, "mmStats")}>{t("stats")}</label>
-        {total && (
-          <table className="stats">
-            <tbody>
-              <tr>
-                <td>{t("stReq")}</td>
-                <td>{total.requests}</td>
-              </tr>
-              <tr>
-                <td>{t("stOk")}</td>
-                <td>{total.ok}</td>
-              </tr>
-              <tr className={total.timeouts ? "warnrow" : ""}>
-                <td>{t("stTimeout")}</td>
-                <td>{total.timeouts}</td>
-              </tr>
-              <tr className={(transport === "tcp" ? total.bad : total.crc) ? "warnrow" : ""}>
-                <td>{transport === "tcp" ? `MBAP · ${t("stBad")}` : t("stCrc")}</td>
-                <td>{transport === "tcp" ? total.bad : total.crc}</td>
-              </tr>
-              <tr className={total.exceptions ? "warnrow" : ""}>
-                <td>{t("stExc")}</td>
-                <td>{total.exceptions}</td>
-              </tr>
-              {transport !== "tcp" && total.bad > 0 && (
-                <tr className="warnrow">
-                  <td>{t("stBad")}</td>
-                  <td>{total.bad}</td>
+        <details className="adv panel stats-fold" open={statsOpen} onToggle={(e) => setStatsOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "mmStats")}>
+            <span className="sum-title">{t("stats")}</span>
+            {!statsOpen &&
+              (total ? (
+                <span className={total.timeouts || total.exceptions || total.crc || total.bad ? "sum-note bad" : "sum-note"}>
+                  {fill(t("statsSummary"), { a: total.requests, b: total.timeouts + total.exceptions + total.crc + total.bad })}
+                </span>
+              ) : (
+                <span className="sum-note">{t("statsNone")}</span>
+              ))}
+          </summary>
+          {total && (
+            <table className="stats">
+              <tbody>
+                <tr>
+                  <td>{t("stReq")}</td>
+                  <td>{total.requests}</td>
                 </tr>
-              )}
-              {total.sendErrors > 0 && (
-                <tr className="warnrow">
-                  <td>{t("stSend")}</td>
-                  <td>{total.sendErrors}</td>
+                <tr>
+                  <td>{t("stOk")}</td>
+                  <td>{total.ok}</td>
                 </tr>
-              )}
-              <tr>
-                <td>
-                  {t("stAvg")} / {t("stMax")}
-                </td>
-                <td>
-                  {fmtMs(total.avgMs)} / {fmtMs(total.maxMs)} ms
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-        <button data-tip={tip(lang, "reset")} className="btn small" onClick={() => api.resetStats().catch(() => {})} disabled={!connected}>
-          {t("reset")}
-        </button>
+                <tr className={total.timeouts ? "warnrow" : ""}>
+                  <td>{t("stTimeout")}</td>
+                  <td>{total.timeouts}</td>
+                </tr>
+                <tr className={(transport === "tcp" ? total.bad : total.crc) ? "warnrow" : ""}>
+                  <td>{transport === "tcp" ? `MBAP · ${t("stBad")}` : t("stCrc")}</td>
+                  <td>{transport === "tcp" ? total.bad : total.crc}</td>
+                </tr>
+                <tr className={total.exceptions ? "warnrow" : ""}>
+                  <td>{t("stExc")}</td>
+                  <td>{total.exceptions}</td>
+                </tr>
+                {transport !== "tcp" && total.bad > 0 && (
+                  <tr className="warnrow">
+                    <td>{t("stBad")}</td>
+                    <td>{total.bad}</td>
+                  </tr>
+                )}
+                {total.sendErrors > 0 && (
+                  <tr className="warnrow">
+                    <td>{t("stSend")}</td>
+                    <td>{total.sendErrors}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td>
+                    {t("stAvg")} / {t("stMax")}
+                  </td>
+                  <td>
+                    {fmtMs(total.avgMs)} / {fmtMs(total.maxMs)} ms
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+          <button data-tip={tip(lang, "reset")} className="btn small" onClick={() => api.resetStats().catch(() => {})} disabled={!connected}>
+            {t("reset")}
+          </button>
+        </details>
       </aside>
 
       <main className="main">
@@ -1025,8 +1057,9 @@ export default function App() {
                   {!tb.enabled || tb.intervalMs === 0 ? "⏸ " : bad ? "● " : ""}
                   {tableLabel(tb, i, t("tableWord"))}
                   <small> {tb.unit}·{fcHex(tb.fc)}</small>
+                  {/* 빨강은 «지금 실패 중» 일 때만 — 고친 뒤에는 회색 누적 수(통계 «초기화» 로 지움) */}
                   {n > 0 && (
-                    <span className="err-badge" title={`${t("stTimeout")}·${t("stCrc")}·${t("stExc")}`}>
+                    <span className={bad ? "err-badge" : "err-badge old"} title={`${t(bad ? "badgeNow" : "badgeOld")} · ${t("stTimeout")}·${t("stCrc")}·${t("stExc")}`}>
                       {n > 999 ? "999+" : n}
                     </span>
                   )}
@@ -1072,7 +1105,11 @@ export default function App() {
               text={label(sel.start)}
               onCommit={(s) => {
                 const r = parseAddr(s, addrMode, sel.fc);
+                const guess = plcGuess(s, addrMode, sel.fc);
+                setPlcNote(guess ? { id: sel.id, text: s.trim(), ...guess } : null);
                 if (!r) {
+                  // 0 기준에서 65535 를 넘는 410000 같은 수 — 오류 대신 알림줄의 «PLC 표기로 바꾸기» 로
+                  if (guess) return false;
                   toast.show(fill(t("startBad"), { a: s }), { error: true });
                   return false;
                 }
@@ -1099,15 +1136,54 @@ export default function App() {
             {t("readOnce")}
           </button>
         </div>
+        {plcNote && plcNote.id === sel.id && addrMode !== "plc" && (
+          <div className="notice warn plc-note" role="status">
+            <span>
+              {fill(t("plcNote"), {
+                a: plcNote.text,
+                b: addrMode === "zero" ? t("amZero") : t("amOne"),
+                c: plcNote.start,
+                f: fcHex(plcNote.fc),
+              })}
+            </span>
+            <button
+              className="btn small"
+              onClick={() => {
+                setAddrMode("plc");
+                patchTable(sel.id, { start: plcNote.start, fc: plcNote.fc, qty: Math.min(sel.qty, maxQty(plcNote.fc), 65536 - plcNote.start) });
+                setPlcNote(null);
+              }}
+            >
+              {t("toPlc")}
+            </button>
+            <button className="btn small ghost" aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")} onClick={() => setPlcNote(null)}>
+              ✕
+            </button>
+          </div>
+        )}
         <div className="toolbar tview">
           {!bits && (
             <label className="inline" data-tip={tip(lang, "mmFormat")}>
               {t("format")}
-              <select value={sel.format} onChange={(e) => patchTable(sel.id, { format: e.target.value as Format })}>
+              <select
+                className="fmt-sel"
+                value={sel.format}
+                onChange={(e) => {
+                  if (e.target.value !== "__point") return patchTable(sel.id, { format: e.target.value as Format });
+                  // 표 전체 표시가 아니라 칸마다 정하는 형식(32비트·float·문자열) — 고른 칸(없으면 첫 칸)의 형식 창을 연다
+                  e.target.value = sel.format;
+                  const it = items.find((x) => x.addr === selAddr) ?? items[0];
+                  if (!it) return;
+                  toast.show(fill(t("fmtTypedNote"), { a: label(it.addr) }));
+                  setSelAddr(it.addr);
+                  setPointAt(it.addr);
+                }}
+              >
                 <option value="u16">U16</option>
                 <option value="s16">S16</option>
                 <option value="hex">HEX</option>
                 <option value="bin">BIN</option>
+                <option value="__point">{t("fmtTyped")}</option>
               </select>
             </label>
           )}
