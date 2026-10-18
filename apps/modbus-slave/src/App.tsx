@@ -52,7 +52,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { FirstCard } from "@shared/FirstCard";
 import { help } from "./help";
 import { samePorts } from "@shared/framing";
-import { autoLogPath, useSettings } from "@shared/settings";
+import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -282,15 +282,21 @@ export default function App() {
   // 장애 주입은 켤 때마다 꺼진 상태로 시작한다 — 모르고 켜 둔 채 정상 시험을 하지 않게
   const [faults, setFaults] = useState<Faults>(NO_FAULTS);
   const [fText, setFText] = useState({ ids: "", fcs: "", from: "", to: "" });
-  const [advOpen, setAdvOpen] = useState(false);
+  const [advOpenSaved, setAdvOpenSaved] = useState(false);
   const [newId, setNewId] = useState("");
   const [idErr, setIdErr] = useState<string | null>(null);
   const [cellDlg, setCellDlg] = useState<number | null>(null);
   // 마지막으로 고른(포커스가 간) 칸 — «표시 → 형식 지정…» 이 이 칸의 설정 창을 연다
   const [lastCell, setLastCell] = useState<number | null>(null);
   // 장애 주입·통계는 기본으로 접는다(열림 상태는 기억). 장애가 켜지면 펼친다
-  const [faultOpen, setFaultOpen] = useState<boolean>(() => load("faultOpen", false));
-  const [statsOpen, setStatsOpen] = useState<boolean>(() => load("statsOpen", false));
+  const [faultOpenSaved, setFaultOpenSaved] = useState<boolean>(() => load("faultOpen", false));
+  const [statsOpenSaved, setStatsOpenSaved] = useState<boolean>(() => load("statsOpen", false));
+  const [devOpenSaved, setDevOpenSaved] = useState(false);
+  // «모두 펼치기(전문가 화면)» 설정이면 펼친 채
+  const [advOpen, setAdvOpen] = useFold(advOpenSaved, setAdvOpenSaved, settings.expandAll);
+  const [faultOpen, setFaultOpen] = useFold(faultOpenSaved, setFaultOpenSaved, settings.expandAll);
+  const [statsOpen, setStatsOpen] = useFold(statsOpenSaved, setStatsOpenSaved, settings.expandAll);
+  const [devOpen, setDevOpen] = useFold(devOpenSaved, setDevOpenSaved, settings.expandAll);
   // 처음 쓰는 순서 카드(통신 기록 빈 자리) — «다시 보지 않기» 를 누르면 숨긴다
   const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
   // 범위 안내를 «알겠습니다» 로 닫은 범위 — 슬레이브:표 → «시작:개수»
@@ -311,8 +317,8 @@ export default function App() {
   usePersist("points", points);
   usePersist("sims", sims);
   usePersist("device", device);
-  usePersist("faultOpen", faultOpen);
-  usePersist("statsOpen", statsOpen);
+  usePersist("faultOpen", faultOpenSaved);
+  usePersist("statsOpen", statsOpenSaved);
   usePersist("firstHintDone", firstDone);
   usePersist("rangeAck", rangeAck);
 
@@ -1325,7 +1331,7 @@ export default function App() {
         {faults.noResponse && faults.forceException > 0 && <div className="interlock">{t("ilNoRespWins")}</div>}
 
         <hr />
-        <details className="adv">
+        <details className="adv" open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)}>
           <summary data-tip={tip(lang, "deviceId")}>{t("device")}</summary>
           {(
             [

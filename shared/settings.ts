@@ -35,6 +35,8 @@ export interface Settings {
   logFormat: LogFormat;
   logSplitMb: number;
   logSplitHours: number;
+  /** 모두 펼치기(전문가 화면) — 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계 등)을 늘 펼친 채 시작 */
+  expandAll: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -53,6 +55,7 @@ export const DEFAULTS: Settings = {
   logFormat: "hex",
   logSplitMb: 0,
   logSplitHours: 0,
+  expandAll: false,
 };
 
 export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000], logSplitMb: [0, 4096], logSplitHours: [0, 720] } as const;
@@ -66,6 +69,7 @@ function sanitize(s: Partial<Settings>): Settings {
   if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
   if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
   v.alwaysOnTop = v.alwaysOnTop === true;
+  v.expandAll = v.expandAll === true;
   if (!isEncoding(v.encoding)) v.encoding = "utf-8";
   if (!["hex", "ascii", "hex-ascii", "csv"].includes(v.logFormat)) v.logFormat = "hex";
   const clamp = (n: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, Math.round(Number(n)) || 0));
@@ -130,6 +134,20 @@ export function useSettings() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
   return { settings, update, reset };
+}
+
+/**
+ * 접기 칸 하나의 열림 상태 — 평소에는 칸마다 기억한 값(open·setOpen)을 쓰고,
+ * «모두 펼치기(전문가 화면)» 가 켜져 있으면 펼친 채 보인다. 그때 접은 칸은 이번 실행 동안만 접혀 있고
+ * 기억한 값은 건드리지 않는다(끄면 칸마다 기억한 상태로 돌아간다).
+ */
+export function useFold(open: boolean, setOpen: (v: boolean) => void, expandAll: boolean): [boolean, (v: boolean) => void] {
+  const [shut, setShut] = useState(false);
+  useEffect(() => {
+    if (!expandAll) setShut(false);
+  }, [expandAll]);
+  const setShown = useCallback((v: boolean) => setShut(!v), []);
+  return expandAll ? [!shut, setShown] : [open, setOpen];
 }
 
 const p2 = (n: number) => String(n).padStart(2, "0");

@@ -25,7 +25,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { mbFunc, mbWord } from "@shared/mbwords";
 import { parseTerminator, samePorts, trimFrames } from "@shared/framing";
-import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -175,8 +175,9 @@ export default function App() {
   const rs485On = cfg.rs485 !== "off" && cfg.flow !== "hardware";
   // 왼쪽 칸 «고급 연결»(흐름 제어·RS-485·DTR·RTS) — 대부분 안 쓰니 접는다. 기본값이 아니면 펼친 채 시작, 열림 상태는 기억
   const advConnChanged = cfg.flow !== "none" || rs485On || cfg.dtr || cfg.rts;
-  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
-  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
+  const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
+  const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   /** 프레임 구분을 고를 때의 처음 값 */
@@ -194,8 +195,9 @@ export default function App() {
   useEffect(() => store("rxAuto", rxAuto), [rxAuto]);
   // «받기 설정»(프레임 구분·수신 체크섬) 접기 — 기본(조용한 시간 20ms·체크섬 없음)이 아니면 펼친 채 시작
   const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null;
-  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
-  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
+  const [rxOpenSaved, setRxOpenSaved] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpenSaved), [rxOpenSaved]);
+  const [rxOpen, setRxOpen] = useFold(rxOpenSaved, setRxOpenSaved, settings.expandAll);
   // 백엔드로 보낼 수신 체크섬(옵션·범용 CRC 포함). 범용 CRC 매개변수가 틀리면 검사하지 않는다
   const rxWire = useMemo(() => {
     if (rxCheck === "crc" && (!rxCk?.crc || crcProblem(rxCk.crc))) return null;
@@ -1415,8 +1417,8 @@ export default function App() {
           examples={examples}
         />
 
-        <TriggerPanel lang={lang} trg={trg} toast={toast} />
-        <AutoReplySection lang={lang} toast={toast} />
+        <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
+        <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} />
 
         <h3 ref={detailHead} data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}

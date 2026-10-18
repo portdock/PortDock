@@ -88,8 +88,14 @@ export function commandLines(lang: Lang): string[] {
 /** 설정(⚙)에 새로 생긴 칸 */
 export function settingsLines(lang: Lang): string[] {
   return lang === "ko"
-    ? ["- «항상 위»: 이 창을 다른 창 위에 늘 보이게 합니다(머리줄 📌 과 같은 값)."]
-    : ["- «Always on top»: keeps this window above other windows (same as 📌 in the header)."];
+    ? [
+        "- «항상 위»: 이 창을 다른 창 위에 늘 보이게 합니다(머리줄 📌 과 같은 값).",
+        "- «모두 펼치기(전문가 화면)»: 평소 접어 두는 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법·트리거·자동응답 등)을 펼친 채 보입니다. 켜 둔 채 하나를 접으면 이번 실행 동안만 접힙니다. 끄면 칸마다 기억해 둔 열림 상태로 돌아갑니다.",
+      ]
+    : [
+        "- «Always on top»: keeps this window above other windows (same as 📌 in the header).",
+        "- «Expand all (expert view)»: shows the groups that are normally collapsed (advanced connection, receive settings, fault injection, statistics, scan options, triggers, auto-reply …) open. Folding one while it is on lasts only for this run. Turning it off returns each group to its remembered state.",
+      ];
 }
 
 /** 보내기 칸 HEX ↔ ASCII 바꾸기(Serial·TCP·UDP·Simulator) */

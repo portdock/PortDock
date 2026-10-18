@@ -19,7 +19,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -118,12 +118,14 @@ export default function App() {
   }, [rxCheck]);
   // 왼쪽 «고급 연결»(브로드캐스트·멀티캐스트) — 대부분 안 쓰니 접는다. 켜 둔 것이 있으면 펼친 채 시작, 열림 상태는 기억
   const advConnChanged = cfg.broadcast || !!cfg.multicastGroup || isMulticast(cfg.remoteHost);
-  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
-  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
+  const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
+  const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
   // «받기 설정»(수신 체크섬·에코) — 기본(검사 없음·에코 끔)이 아니면 펼친 채 시작
   const rxChanged = rxCheck != null || cfg.echo;
-  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
-  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
+  const [rxOpenSaved, setRxOpenSaved] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpenSaved), [rxOpenSaved]);
+  const [rxOpen, setRxOpen] = useFold(rxOpenSaved, setRxOpenSaved, settings.expandAll);
 
   // ---- 세션
   const [running, setRunning] = useState(false);
@@ -908,8 +910,8 @@ export default function App() {
           handle={cmdList}
           examples={udpExamples(lang) as Command[]}
         />
-        <TriggerPanel lang={lang} trg={trg} toast={toast} />
-        <AutoReplySection lang={lang} toast={toast} />
+        <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
+        <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} />
         <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (

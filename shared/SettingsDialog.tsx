@@ -39,6 +39,7 @@ const T = {
     maxLinesHint: "넘치면 화면에서만 오래된 줄을 지웁니다(파일 로그는 그대로).",
     autoScroll: "새 줄이 오면 자동 스크롤(위로 굴리면 멈춤)",
     alwaysOnTop: "항상 위 — 이 창을 다른 창 위에 늘 보이게(머리줄 📌)",
+    expandAll: "모두 펼치기(전문가 화면) — 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계 등)을 늘 펼쳐 보이기",
     autoLog: "연결하면 자동으로 파일 로그 시작",
     logFolder: "자동 로그 폴더",
     choose: "고르기",
@@ -85,6 +86,7 @@ const T = {
     maxLinesHint: "Older lines are dropped from the screen only (file logs keep everything).",
     autoScroll: "Auto-scroll on new lines (pauses when you scroll up)",
     alwaysOnTop: "Always on top — keep this window above others (📌 in the header)",
+    expandAll: "Expand all (expert view) — always show collapsed groups (advanced connection, receive settings, fault injection, statistics …) open",
     autoLog: "Start file logging on connect",
     logFolder: "Auto-log folder",
     choose: "Choose",
@@ -238,6 +240,9 @@ export function SettingsDialog({
           </label>
           <label className="inline">
             <input type="checkbox" checked={settings.alwaysOnTop} onChange={(e) => update({ alwaysOnTop: e.target.checked })} /> {t.alwaysOnTop}
+          </label>
+          <label className="inline expand-all" data-tip={tip(settings.lang, "expandAll")}>
+            <input type="checkbox" checked={settings.expandAll} onChange={(e) => update({ expandAll: e.target.checked })} /> {t.expandAll}
           </label>
           <label className="inline">
             <input type="checkbox" checked={settings.autoLog} onChange={(e) => update({ autoLog: e.target.checked })} /> {t.autoLog}

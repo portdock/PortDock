@@ -313,6 +313,9 @@ const TIPS: Record<string, Tip> = {
   mmScanAddrRange: ["찾을 주소 범위(0 기준, 끝 포함).", "Address range to probe (0-based, inclusive)."],
   mmScanFine: ["읽기에 실패한 덩어리를 한 칸씩 다시 읽어 정확한 경계를 찾습니다(요청이 늘어남).", "Re-reads failed blocks one address at a time to find exact edges (more requests)."],
   mmScanStart: ["찾기를 시작합니다. 결과에서 바로 표를 만들 수 있습니다.", "Starts the scan. You can create a table straight from a result."],
+
+  // ---- 쉽게 쓰기 2차(10/18)
+  expandAll: ["켜면 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법 등)을 펼친 채 보입니다. 하나씩 접을 수는 있고, 끄면 칸마다 기억한 열림 상태로 돌아갑니다.", "Shows collapsed groups (advanced connection, receive settings, fault injection, statistics, scan options …) open. You can still fold one; turning it off returns to each group's remembered state."],
 };
 
 export function tip(lang: "ko" | "en", key: string) {

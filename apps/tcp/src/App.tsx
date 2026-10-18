@@ -21,7 +21,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -127,12 +127,14 @@ export default function App() {
   const listening = cfg.mode !== "client";
   // 왼쪽 «고급 연결»(Nagle·재접속) — 대부분 기본값이라 접는다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작, 열림 상태는 기억
   const advConnChanged = !cfg.noDelay || (cfg.mode === "client" && (!cfg.autoReconnect || cfg.reconnectMs !== 2000));
-  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
-  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
+  const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
+  const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
   // «받기 설정»(프레임 구분·수신 체크섬·에코) — 기본(조용한 시간 20ms·검사 없음·에코 끔)이 아니면 펼친 채 시작
   const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null || (cfg.mode === "server" && cfg.echo);
-  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
-  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
+  const [rxOpenSaved, setRxOpenSaved] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpenSaved), [rxOpenSaved]);
+  const [rxOpen, setRxOpen] = useFold(rxOpenSaved, setRxOpenSaved, settings.expandAll);
   // 끝 문자 칸 해석 — 틀리면 bytes 가 비고 error 에 이유(화면에 빨갛게)
   const term = parseTerminator(terminatorText, lang);
   const effFraming: TcpFrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
@@ -1076,8 +1078,8 @@ export default function App() {
           handle={cmdList}
           examples={tcpExamples(framing.kind === "modbus-tcp", lang) as Command[]}
         />
-        <TriggerPanel lang={lang} trg={trg} toast={toast} />
-        <AutoReplySection lang={lang} toast={toast} inactiveNote={relay ? arRelayNote(lang) : null} />
+        <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
+        <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} inactiveNote={relay ? arRelayNote(lang) : null} />
         <h3 data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (

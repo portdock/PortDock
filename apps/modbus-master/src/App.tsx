@@ -47,7 +47,7 @@ import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { load, samePorts, store } from "@shared/framing";
-import { autoLogPath, useSettings } from "@shared/settings";
+import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -158,10 +158,12 @@ export default function App() {
   useEffect(() => store("forceMulti", forceMulti), [forceMulti]);
   // 왼쪽 «통신 세부»(기다림·재시도·간격·여러 칸 쓰기)·«통계» 접기 — 기본값이 아니면 펼친 채 시작, 열림 상태는 기억
   const commChanged = timing.timeoutMs !== 1000 || timing.retries !== 0 || timing.delayMs !== 20 || forceMulti;
-  const [commOpen, setCommOpen] = useState<boolean>(() => commChanged || load<boolean>("commOpen", false) === true);
-  useEffect(() => store("commOpen", commOpen), [commOpen]);
-  const [statsOpen, setStatsOpen] = useState<boolean>(() => load<boolean>("statsOpen", false) === true);
-  useEffect(() => store("statsOpen", statsOpen), [statsOpen]);
+  const [commOpenSaved, setCommOpenSaved] = useState<boolean>(() => commChanged || load<boolean>("commOpen", false) === true);
+  useEffect(() => store("commOpen", commOpenSaved), [commOpenSaved]);
+  const [commOpen, setCommOpen] = useFold(commOpenSaved, setCommOpenSaved, settings.expandAll);
+  const [statsOpenSaved, setStatsOpenSaved] = useState<boolean>(() => load<boolean>("statsOpen", false) === true);
+  useEffect(() => store("statsOpen", statsOpenSaved), [statsOpenSaved]);
+  const [statsOpen, setStatsOpen] = useFold(statsOpenSaved, setStatsOpenSaved, settings.expandAll);
   // 0·1 기준 시작 칸에 40001 같은 PLC 표기를 넣었을 때의 알림줄(그대로 적용하고 «PLC 표기로 바꾸기» 를 권한다)
   const [plcNote, setPlcNote] = useState<{ id: number; text: string; start: number; fc: Fc } | null>(null);
   useEffect(() => store("addrMode", addrMode), [addrMode]);

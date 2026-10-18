@@ -6,7 +6,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { FirstCard } from "@shared/FirstCard";
-import { useSettings } from "@shared/settings";
+import { useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -137,8 +137,9 @@ export default function App() {
   // «찾는 방법·포트» 는 기본값이 맞아 거의 안 건드린다 — 접어 두고 제목에 요약. 기본값과 다르거나 틀린 칸이 있으면 펼친 채로
   const advChanged = (["arp", "ping", "timeoutMs", "portsOn", "portsText", "portTimeoutMs", "names", "modbusId", "threads"] as const).some((k) => cfg[k] !== DEFAULT_CFG[k]);
   const advBad = (!cfg.ping && !cfg.arp) || (cfg.portsOn && !!portsParsed.error);
-  const [advOpen, setAdvOpen] = useState<boolean>(() => advChanged || load("advOpen", false));
-  useEffect(() => store("advOpen", advOpen), [advOpen]);
+  const [advOpenSaved, setAdvOpenSaved] = useState<boolean>(() => advChanged || load("advOpen", false));
+  useEffect(() => store("advOpen", advOpenSaved), [advOpenSaved]);
+  const [advOpen, setAdvOpen] = useFold(advOpenSaved, setAdvOpenSaved, settings.expandAll);
   useEffect(() => {
     if (advBad) setAdvOpen(true);
   }, [advBad]);

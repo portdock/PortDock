@@ -206,22 +206,13 @@ async function shot(app, label) {
   return f;
 }
 
-// 다 누르는 조합(full)은 접어 둔 칸을 펼친 채 띄운다 — «다 눌러 보기» 는 접힌 <details> 속을 누르지 못한다.
+// 다 누르는 조합(full)은 설정 «모두 펼치기(전문가 화면)» 를 켜고 띄운다 — «다 눌러 보기» 는 접힌 <details> 속을 누르지 못한다.
 // 화면만 훑는 조합(ko-dark·en-light)은 기본(접힘) 그대로 본다
-const PRE_OPEN = {
-  5201: { advConnOpen: true, rxOpen: true },
-  5203: { advConnOpen: true, rxOpen: true },
-  5204: { advConnOpen: true, rxOpen: true },
-  5205: { unsolOpen: true },
-  5207: { commOpen: true, statsOpen: true },
-};
-
 async function load(port, combo, extra = {}) {
-  if (combo.full) extra = { ...(PRE_OPEN[port] ?? {}), ...extra };
   await d.get(`http://localhost:${port}/`);
   await d.executeScript(
     `localStorage.clear(); localStorage.setItem('settings', JSON.stringify(arguments[0])); localStorage.setItem('lang', JSON.stringify(arguments[0].lang)); for (const [k, v] of Object.entries(arguments[1])) localStorage.setItem(k, JSON.stringify(v));`,
-    { lang: combo.lang, theme: combo.theme },
+    { lang: combo.lang, theme: combo.theme, expandAll: !!combo.full },
     extra,
   );
   await d.navigate().refresh();
@@ -1462,6 +1453,28 @@ async function runApp(app, port) {
       await fitWindow();
       await load(port, combo);
       const s0 = await verify("load");
+      // (10/18) 설정 «모두 펼치기(전문가 화면)»: full 조합은 접기(details·트리거·자동응답)가 모두 펼쳐지고, 나머지 조합은 모두 접힌 기본.
+      // 화면만 훑는 조합 하나(ko-dark)는 설정 창에서 켜고 끄며 바로 펼쳐지고 접히는지 본다
+      {
+        const folds = `return [...[...document.querySelectorAll('#root details')].map((x) => x.open), ...[...document.querySelectorAll('#root .trg-toggle')].map((x) => x.getAttribute('aria-expanded') === 'true')]`;
+        const f = await js(folds);
+        if (!f.length || f.some((x) => x !== !!combo.full)) await conv("expand-all", `접기 열림 상태가 «모두 펼치기 ${combo.full ? "켬" : "끔"}» 과 다름: ${JSON.stringify(f)}`);
+        if (combo.name === "ko-dark") {
+          const flip = async () => {
+            await js("[...document.querySelectorAll('.brand-tools button')].find((b) => b.textContent.trim() === '⚙').click()");
+            await sleep(250);
+            await js("document.querySelector('.modal .expand-all input').click()");
+            await sleep(150);
+            await js("document.querySelector('.modal-back .modal-head button').click()");
+            await sleep(250);
+            return js(folds);
+          };
+          const on = await flip();
+          const off = await flip();
+          if (on.some((x) => !x) || off.some((x) => x)) await conv("expand-all-toggle", `설정 «모두 펼치기» 를 켜고 꺼도 접기가 따라 바뀌지 않음: ${JSON.stringify({ on, off })}`);
+          await verify("expand-all toggle");
+        }
+      }
       // (10/18) Serial 첫 실행: 보내기 ASCII + 줄 끝 CR LF·placeholder «AT», 왼쪽 «고급 연결»·«받기 설정» 은 접힘(full 조합은 미리 펼쳐 둠)
       if (app === "serial") {
         const f = await js(`const sr = document.querySelector('.sendbar .sendrow'); const sels = [...sr.querySelectorAll('select')];

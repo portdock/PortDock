@@ -20,7 +20,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -381,8 +381,9 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 언어가 바뀌면 문구만 다시
   }, [spec, lang]);
   // «장비가 먼저 보내기» 접기 — 규칙 칸으로 오해하지 않게 기본 접힘. 반복을 켜면 펼치고, 열림 상태는 기억
-  const [unsolOpen, setUnsolOpen] = useState<boolean>(() => load("unsolOpen", false));
-  useEffect(() => store("unsolOpen", unsolOpen), [unsolOpen]);
+  const [unsolOpenSaved, setUnsolOpenSaved] = useState<boolean>(() => load("unsolOpen", false));
+  useEffect(() => store("unsolOpen", unsolOpenSaved), [unsolOpenSaved]);
+  const [unsolOpen, setUnsolOpen] = useFold(unsolOpenSaved, setUnsolOpenSaved, settings.expandAll);
   useEffect(() => {
     if (repeating) setUnsolOpen(true);
   }, [repeating]);

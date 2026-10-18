@@ -2,6 +2,7 @@
 // 규칙·켜기·비교 옵션·펼침은 localStorage 에 남는다. 켜져 있으면 머리에 «켜짐» 을 늘 보인다(모르고 답하는 일이 없게).
 import { useEffect, useState } from "react";
 import { load, store } from "./framing";
+import { useFold } from "./settings";
 import { tip } from "./tips";
 import type { ToastApi } from "./Toast";
 import type { Lang } from "./uiText";
@@ -16,14 +17,18 @@ export function AutoReplySection({
   toast,
   api = autoReplyApi,
   inactiveNote,
+  expandAll = false,
 }: {
   lang: Lang;
   toast: ToastApi;
   api?: AutoReplyApi;
   /** 지금 자동응답이 쓰이지 않는 이유(예: TCP 중계) — 있으면 칸 안에 보인다 */
   inactiveNote?: string | null;
+  /** 설정 «모두 펼치기» — 펼친 채 */
+  expandAll?: boolean;
 }) {
-  const [open, setOpen] = useState(() => load("autoReplyOpen", false));
+  const [openSaved, setOpenSaved] = useState(() => load("autoReplyOpen", false));
+  const [open, setOpen] = useFold(openSaved, setOpenSaved, expandAll);
   const [on, setOn] = useState(() => load("autoReplyOn", false));
   const [rules, setRulesState] = useState<AutoRule[]>(() => {
     const saved = load<unknown[]>("autoRules", []);
@@ -32,7 +37,7 @@ export function AutoReplySection({
   const [opts, setOpts] = useState<MatchOptions>(() => ({ stripTerminator: true, logNoMatch: true, ...load<Partial<MatchOptions>>("autoMatchOpts", {}) }));
   const [hits, setHits] = useState<Record<string, number>>({});
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => store("autoReplyOpen", open), [open]);
+  useEffect(() => store("autoReplyOpen", openSaved), [openSaved]);
   useEffect(() => store("autoRules", rules), [rules]);
   useEffect(() => store("autoMatchOpts", opts), [opts]);
   useEffect(() => {

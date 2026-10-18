@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow, UserAttentionType } from "@tauri-apps/api/window";
 import { load, store } from "./framing";
+import { useFold } from "./settings";
 import { compileAll, matchTriggers, newTrigger, sanitizeTriggers, TRIGGER_COLORS, type Trigger } from "./triggers";
 import type { ToastApi } from "./Toast";
 import { tip } from "./tips";
@@ -111,9 +112,10 @@ export function useTriggers(lang: Lang, actions: TriggerActions) {
 export type TriggersApi = ReturnType<typeof useTriggers>;
 
 /** 오른쪽 칸의 «트리거» — 접고 펼 수 있다 */
-export function TriggerPanel({ lang, trg, toast }: { lang: Lang; trg: TriggersApi; toast: ToastApi }) {
-  const [open, setOpen] = useState(() => load("triggersOpen", false));
-  useEffect(() => store("triggersOpen", open), [open]);
+export function TriggerPanel({ lang, trg, toast, expandAll = false }: { lang: Lang; trg: TriggersApi; toast: ToastApi; /** 설정 «모두 펼치기» */ expandAll?: boolean }) {
+  const [openSaved, setOpenSaved] = useState(() => load("triggersOpen", false));
+  useEffect(() => store("triggersOpen", openSaved), [openSaved]);
+  const [open, setOpen] = useFold(openSaved, setOpenSaved, expandAll);
   const { list, setList, hits, compiled } = trg;
   const total = Object.values(hits).reduce((a, b) => a + b, 0);
   const on = list.filter((t) => t.on).length;
