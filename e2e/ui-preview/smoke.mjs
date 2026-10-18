@@ -1630,6 +1630,30 @@ async function runApp(app, port) {
         if ((app === "tcp" || app === "udp") && !/^(둘 다|Both)$/.test(f.view ?? "")) await conv("first-view", `첫 실행 로그 보기가 «둘 다» 가 아님: ${JSON.stringify(f.view)}`, false);
         if (app === "udp" && f.mode !== "ascii") await conv("first-run", `UDP 첫 실행 보내기가 ASCII 가 아님: ${JSON.stringify(f.mode)}`, false);
       }
+      // (10/18) Net Scan 포트 칩: 기본은 12개 모두 켜짐 → MC/SLMP 끄면 칸 글에서 5000-5010 이 빠지고 «(바꿈)»·«기본 목록으로» → 다시 켜면 기본 글 그대로.
+      // «직접 입력…» 으로 8080 을 넣으면 칩 밖 포트 안내
+      if (app === "netscan" && combo.full) {
+        const r = await jsAsync(`
+          const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+          const chips = () => [...document.querySelectorAll('.port-chips .port-chip')];
+          const text = () => { const i = document.querySelector('aside details.adv input.mono'); return i ? i.value : null; };
+          const a = { n: chips().length, on: chips().filter((c) => c.classList.contains('on')).length };
+          if (!document.querySelector('aside details.adv input.mono')) { document.querySelector('.ports-custom-btn').click(); await w(); }
+          a.t0 = text();
+          chips().find((c) => c.textContent.includes('MC/SLMP')).click(); await w();
+          a.t1 = text(); a.def = !!document.querySelector('aside details.adv .btn.ghost');
+          chips().find((c) => c.textContent.includes('MC/SLMP')).click(); await w();
+          a.t2 = text();
+          __sm.setVal(document.querySelector('aside details.adv input.mono'), a.t2 + ', 8080'); await w();
+          a.extraOn = chips().filter((c) => c.classList.contains('on')).length;
+          __sm.setVal(document.querySelector('aside details.adv input.mono'), a.t0); await w();
+          return a;`);
+        if (r.fatal) add("ns port chips", "smoke-error", r.fatal);
+        else if (r.n !== 12 || r.on !== 12 || !r.t0 || /5000-5010/.test(r.t1 ?? "5000-5010") || !r.def || r.t2 !== r.t0 || r.extraOn !== 12) await conv("ns-port-chips", `포트 칩이 이상함: ${JSON.stringify(r)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-port-chips`);
+        await verify("ns port chips");
+        await load(port, combo);
+      }
       // (10/18) 첫 실행 카드·용도 프리셋·예시 넣기 — 끝나면 다시 첫 실행 상태로
       await firstRun();
       if (combo.full) await shot(app, `${combo.name}-loaded`);
@@ -1715,6 +1739,46 @@ async function runApp(app, port) {
         else if (!c.a.sum || !/\d+ \d[NOEMS]\d/.test(c.a.text) || c.a.preset !== !!combo.full || c.opened.preset === c.a.preset || c.opened.baud !== c.opened.preset || c.closed.preset !== c.a.preset)
           await conv("conn-summary", `연결 중 연결 설정 한 줄 요약·[바꾸기] 가 이상함: ${JSON.stringify(c)}`);
         await verify("serial conn summary");
+      }
+      // (10/18) Net Scan 결과 줄: Modbus 칩을 누르면 «IP:502» 복사, 줄 오른쪽 버튼 메뉴(웹 열기·IP 복사·IP:502 복사·…) → «IP:502 복사» · Esc 로 닫힘
+      if (app === "netscan" && combo.full) {
+        // 가짜 장비는 주소당 0.5초 — 두 주소(.10 Modbus·.11)만 찾아 빨리 끝낸 뒤 보고, 끝나면 처음 범위로 다시 찾기 시작해 둔다
+        await clickRun("ns stop for row menu", (s) => s.btn === idleBtn);
+        await js("__sm.setVal(document.querySelector('aside.side input.mono'), '192.168.0.10-192.168.0.11')");
+        await sleep(400);
+        await clickRun("ns scan two hosts", (s) => s.btn !== idleBtn);
+        const r = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          let chip = null;
+          for (let i = 0; i < 60 && !(chip = document.querySelector('.hosts .mb-copy')); i++) await w();
+          if (!chip) return { chip: false };
+          const ip = chip.closest('tr').querySelector('.ip-cell').firstChild.textContent;
+          window.__smoke.clip = null;
+          chip.click(); await w();
+          const a = { chip: true, ip, clip1: window.__smoke.clip, sel: chip.closest('tr').classList.contains('sel') };
+          window.__smoke.clip = null;
+          chip.closest('tr').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 300 })); await w();
+          const items = [...document.querySelectorAll('.log-menu button')];
+          a.items = items.map((b) => b.textContent.trim() + (b.disabled ? '(x)' : ''));
+          const it = items.find((b) => b.textContent.includes(':502'));
+          if (it) it.click();
+          await w();
+          a.clip2 = window.__smoke.clip; a.closed = !document.querySelector('.log-menu');
+          // 502 가 닫힌 장비는 «IP:502 복사» 가 흐림
+          const other = [...document.querySelectorAll('.hosts tbody tr')].find((tr) => !tr.querySelector('.mb-copy') && !tr.classList.contains('gone'));
+          if (other) {
+            other.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 300 })); await w();
+            a.otherDisabled = [...document.querySelectorAll('.log-menu button')].some((b) => b.textContent.includes(':502') && b.disabled);
+            __sm.key(window, 'Escape'); await w();
+            a.closed2 = !document.querySelector('.log-menu');
+          }
+          return a;`);
+        if (r.fatal) add("ns row menu", "smoke-error", r.fatal);
+        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-row-menu`);
+        await verify("ns row menu");
+        await load(port, combo);
+        await clickRun("ns scan again", (s) => s.btn !== idleBtn);
       }
       // TCP 클라이언트의 실행 중 버튼은 «끊기»
       if (app === "tcp" && !/^(끊기|Disconnect)$/.test(runS?.btn ?? "")) await conv("tcp-stop-label", `클라이언트 실행 중 버튼이 «끊기» 가 아님: ${JSON.stringify(runS?.btn)}`, false);

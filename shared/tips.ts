@@ -321,6 +321,8 @@ const TIPS: Record<string, Tip> = {
   // ---- 쉽게 쓰기 2차(10/18)
   expandAll: ["켜면 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법 등)을 펼친 채 보입니다. 하나씩 접을 수는 있고, 끄면 칸마다 기억한 열림 상태로 돌아갑니다.", "Shows collapsed groups (advanced connection, receive settings, fault injection, statistics, scan options …) open. You can still fold one; turning it off returns to each group's remembered state."],
   connChange: ["연결 중에는 연결 설정을 한 줄(포트·속도·데이터·패리티·정지)로 접어 둡니다. 펼치면 속도·패리티 등을 바로 바꿀 수 있습니다(포트는 끊은 뒤에). 끊으면 다시 펼쳐집니다.", "While connected, the connection settings fold into one line (port, baud, data, parity, stop). Expand to change baud, parity and so on immediately (the port only after disconnecting). They unfold again when you disconnect."],
+  nsPortChips: ["확인할 포트를 이름으로 고릅니다 — 누르면 켜고 끕니다(MC/SLMP 는 5000~5010 열한 개). 칩에 없는 포트는 아래 «직접 입력…» 으로. 32개까지.", "Pick the ports to check by name — click to toggle (MC/SLMP covers 5000–5010, eleven ports). Ports not on a chip go in «Enter manually…» below. Up to 32."],
+  nsRowMenu: ["줄을 누르면 아래에 할 일이 나옵니다. 오른쪽 버튼(또는 메뉴 키·Shift+F10)으로 웹 열기·IP 복사·IP:502 복사·Modbus 정보 읽기·핑 감시에 추가·WoL 메뉴. HTTP 가 열린 장비는 두 번 눌러 웹을 엽니다. 서비스의 Modbus 칩을 누르면 «IP:502» 를 복사합니다.", "Click a row to see actions below. Right-click (or the Menu key / Shift+F10) for open web page, copy IP, copy IP:502, read Modbus ID, add to ping monitor and WoL. Double-click opens the web page of a device with HTTP. Clicking a Modbus service chip copies «IP:502»."],
   viewOpts: ["가끔 바꾸는 보기 옵션 — 시각 옆 «시간 간격 열»(없음·직전 줄과 간격·응답 시간). 간격 열이 켜져 있으면 버튼이 강조됩니다.", "Occasional view options — the «Time gap column» next to the time (none, gap from previous line, response time). The button is highlighted while the column is on."],
 };
 

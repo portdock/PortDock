@@ -62,7 +62,7 @@ export const help: HelpDoc = {
       body: [
         "- 찾은 장비마다 «확인할 포트» 의 TCP 포트에 접속만 해 보고(데이터는 보내지 않음) 열린 것을 «서비스» 칩으로 보여 줍니다. 산업 포트는 진하게 표시됩니다.",
         "- 기본 목록: 502 Modbus TCP · 2004 FEnet(LS XGT 이더넷) · 5000~5010 SLMP(MC 프로토콜) · 102 S7 · 44818 EtherNet/IP · 4840 OPC UA · 80/443 웹 · 23 텔넷 · 21 FTP · 1883 MQTT · 5025 SCPI.",
-        "- «확인할 포트» 는 «502, 5000-5010» 처럼 쉼표와 범위로 씁니다. 32개까지. «기본 목록으로» 로 되돌립니다.",
+        "- «확인할 포트» 는 이름 칩으로 고릅니다: Modbus 502 · S7 102 · EtherNet/IP 44818 · MC/SLMP 5000–5010 · FEnet 2004 · OPC UA 4840 · MQTT 1883 · SCPI 5025 · HTTP 80 · HTTPS 443 · Telnet 23 · FTP 21. 누르면 켜고 끕니다. 칩에 없는 포트는 «직접 입력…» 을 펼쳐 «502, 8080, 9000-9003» 처럼 쉼표와 범위로 씁니다(직접 넣은 포트가 있으면 저절로 펼쳐짐). 32개까지. «기본 목록으로» 로 되돌립니다.",
         "- «포트 기다림(ms)»: 포트 하나의 접속을 기다리는 시간. 막힌 포트는 이 시간이 지나야 «닫힘» 으로 봅니다.",
         "- 포트가 열려 있다고 그 프로토콜이 맞다는 보장은 없습니다(예: 5000 은 다른 용도로도 흔함). 칩에 마우스를 올리면 설명이 나옵니다.",
         "- 일부 장비는 접속을 짧게 받았다 끊는 것만으로도 기록(로그)을 남깁니다. 운전 중인 설비에서는 범위를 좁혀 쓰세요.",
@@ -87,6 +87,8 @@ export const help: HelpDoc = {
         "- MAC 칸 «—»: 라우터 너머 장비라 MAC 을 알 수 없습니다. «임의 MAC»: 휴대폰·가상 머신처럼 MAC 을 임의로 바꾼 장비라 제조사를 알 수 없습니다.",
         "- «CSV 저장»(Ctrl+S): 지금 보이는 줄(거르기·정렬 그대로)을 엑셀에서 열 수 있는 CSV 로 저장합니다.",
         "- 줄을 두 번 누르면 80 이 열린 장비의 웹 페이지를 엽니다.",
+        "- 줄에서 오른쪽 버튼(또는 메뉴 키·Shift+F10): 웹 열기·IP 복사·«IP:502» 복사·MAC 복사·Modbus 장비 정보 읽기·핑 감시에 추가·WoL 깨우기 — 아래 줄의 버튼과 같습니다. 할 수 없는 것(502 가 닫힘, MAC 모름)은 흐리게 보입니다.",
+        "- 표의 «서비스» 에서 Modbus 칩을 누르면 «IP:502» 를 바로 복사합니다(Modbus Master·TCP 의 주소 칸에 붙여 넣기).",
       ],
     },
     {
@@ -224,7 +226,7 @@ export const help: HelpDoc = {
       body: [
         "- For each device it only opens a TCP connection to each port in «Ports to check» (no data is sent) and shows open ones as «Services» chips. Industrial ports are highlighted.",
         "- Default list: 502 Modbus TCP · 2004 FEnet (LS XGT Ethernet) · 5000–5010 SLMP (MC protocol) · 102 S7 · 44818 EtherNet/IP · 4840 OPC UA · 80/443 web · 23 Telnet · 21 FTP · 1883 MQTT · 5025 SCPI.",
-        "- Write «Ports to check» with commas and ranges, e.g. «502, 5000-5010». Up to 32. «Default list» restores it.",
+        "- Pick «Ports to check» with name chips: Modbus 502 · S7 102 · EtherNet/IP 44818 · MC/SLMP 5000–5010 · FEnet 2004 · OPC UA 4840 · MQTT 1883 · SCPI 5025 · HTTP 80 · HTTPS 443 · Telnet 23 · FTP 21; click to toggle. For ports without a chip, open «Enter manually…» and write commas and ranges such as «502, 8080, 9000-9003» (it opens by itself when such ports exist). Up to 32. «Default list» restores it.",
         "- «Port wait (ms)»: how long to wait for each connection. A filtered port counts as closed after this time.",
         "- An open port does not prove the protocol (5000, for example, is used for many things). Hover over a chip for a description.",
         "- Some devices log even a brief connect/disconnect. On running machines, keep the range narrow.",
@@ -249,6 +251,8 @@ export const help: HelpDoc = {
         "- «—» in MAC: the device is behind a router, so its MAC is unknown. «random MAC»: a phone or VM using a randomized MAC; the vendor cannot be known.",
         "- «Save CSV» (Ctrl+S) saves the rows as shown (filter and sort applied) as a CSV you can open in Excel.",
         "- Double-click a row to open the web page of a device with port 80 open.",
+        "- Right-click a row (or the Menu key / Shift+F10): open web page, copy IP, copy «IP:502», copy MAC, read Modbus device ID, add to ping monitor, Wake-on-LAN — the same as the buttons below. Items that cannot apply (502 closed, MAC unknown) are greyed out.",
+        "- Clicking the Modbus chip in the table's «Services» copies «IP:502» right away (paste into the address box of Modbus Master or TCP).",
       ],
     },
     {

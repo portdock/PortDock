@@ -89,3 +89,72 @@ export const stamp = () => {
   const p2 = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
 };
+
+/**
+ * 포트 칩(10/18) — 확인할 포트를 이름으로 고른다. 칩 하나가 SERVICES 한 줄(같은 포트 범위). 화면 순서는 흔히 찾는 것부터.
+ * «MC/SLMP» 처럼 칩 이름은 결과 칩(SERVICES.name)보다 조금 길게 풀어 쓴다
+ */
+export const PORT_CHIPS: { label: string; ports: [number, number] }[] = [
+  { label: "Modbus", ports: [502, 502] },
+  { label: "S7", ports: [102, 102] },
+  { label: "EtherNet/IP", ports: [44818, 44818] },
+  { label: "MC/SLMP", ports: [5000, 5010] },
+  { label: "FEnet", ports: [2004, 2004] },
+  { label: "OPC UA", ports: [4840, 4840] },
+  { label: "MQTT", ports: [1883, 1883] },
+  { label: "SCPI", ports: [5025, 5025] },
+  { label: "HTTP", ports: [80, 80] },
+  { label: "HTTPS", ports: [443, 443] },
+  { label: "Telnet", ports: [23, 23] },
+  { label: "FTP", ports: [21, 21] },
+];
+
+const span = (r: [number, number]) => Array.from({ length: r[1] - r[0] + 1 }, (_, i) => r[0] + i);
+/** 칩의 포트가 모두 들어 있는지 */
+export const chipOn = (ports: number[], r: [number, number]) => span(r).every((p) => ports.includes(p));
+/** 칩 글자 옆 포트 표시 «502», «5000–5010» */
+export const chipPorts = (r: [number, number]) => (r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`);
+
+/**
+ * 포트 목록 → 칸 글. 칩 하나에 다 들어 있는 것은 기본 목록(DEFAULT_PORTS)과 같은 순서로 «502, 2004, 5000-5010, …», 나머지(직접 넣은 포트)는 뒤에 작은 것부터(이어지면 범위로)
+ */
+export function formatPorts(ports: number[]): string {
+  const set = new Set(ports);
+  const order = DEFAULT_PORTS.split(/,\s*/).map((tok) => {
+    const [a, b] = tok.split("-").map(Number);
+    return [a, b ?? a] as [number, number];
+  });
+  const groups = [...order, ...PORT_CHIPS.map((c) => c.ports).filter((r) => !order.some((o) => o[0] === r[0] && o[1] === r[1]))];
+  const toks: string[] = [];
+  for (const r of groups) {
+    if (!chipOn([...set], r)) continue;
+    toks.push(r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`);
+    for (const p of span(r)) set.delete(p);
+  }
+  const rest = [...set].sort((a, b) => a - b);
+  for (let i = 0; i < rest.length; ) {
+    let j = i;
+    while (j + 1 < rest.length && rest[j + 1] === rest[j] + 1) j++;
+    toks.push(j - i >= 2 ? `${rest[i]}-${rest[j]}` : rest.slice(i, j + 1).join(", "));
+    i = j + 1;
+  }
+  return toks.join(", ");
+}
+
+/** 칩을 켜고 끈 뒤의 칸 글 — 칸이 틀려 있으면 null(칩을 못 누름) */
+export function togglePortChip(text: string, r: [number, number], on: boolean, lang: Lang): string | null {
+  const cur = parsePorts(text, lang);
+  if (cur.error) return null;
+  const set = new Set(cur.ports);
+  for (const p of span(r)) {
+    if (on) set.add(p);
+    else set.delete(p);
+  }
+  return formatPorts([...set]);
+}
+
+/** 칩 어느 것에도 속하지 않는(직접 넣은) 포트 */
+export const extraPorts = (ports: number[]) => ports.filter((p) => !PORT_CHIPS.some((c) => p >= c.ports[0] && p <= c.ports[1]));
+
+/** 두 포트 목록이 같은지(순서 무관) */
+export const samePortSet = (a: number[], b: number[]) => a.length === b.length && a.every((p) => b.includes(p));

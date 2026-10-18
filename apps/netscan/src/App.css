@@ -625,3 +625,36 @@ details.panel > summary .sum-note {
 .table-wrap > .first-card {
   margin: 24px auto;
 }
+
+/* ---- 포트 칩(이름으로 고르기)·Modbus 칩 복사(10/18) */
+.port-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+button.chip {
+  font: inherit;
+  cursor: pointer;
+}
+.port-chip {
+  font-size: calc(var(--fs, 13px) * 0.846);
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+.port-chip.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+.port-chip small {
+  opacity: 0.75;
+}
+.ports-custom-btn {
+  align-self: flex-start;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.chip.mb-copy:hover,
+.chip.mb-copy:focus-visible {
+  outline: 1px solid var(--accent);
+}

@@ -19,7 +19,8 @@ import { ui } from "@shared/uiText";
 import { api, type Host, type Nic, type NicAddr, type RangeInfo, type ScanEvent } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
-import { csvCell, DEFAULT_PORTS, defaultRange, ipNum, isIndustrial, parsePorts, sameSubnet, serviceLabel, serviceTip, stamp } from "./net";
+import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, sameSubnet, serviceLabel, serviceTip, stamp, togglePortChip } from "./net";
+import { LogMenu, type MenuItem } from "@shared/LogMenu";
 import { MonitorView, useMonitor } from "./Monitor";
 import "./App.css";
 
@@ -135,7 +136,15 @@ export default function App() {
   const outside = !!(sel && info && cfg.arp && !(sameSubnet(info.first, sel.addr.ip, sel.addr.prefix) && sameSubnet(info.last, sel.addr.ip, sel.addr.prefix)));
   const portsParsed = useMemo(() => parsePorts(cfg.portsText, lang), [cfg.portsText, lang]);
   // «찾는 방법·포트» 는 기본값이 맞아 거의 안 건드린다 — 접어 두고 제목에 요약. 기본값과 다르거나 틀린 칸이 있으면 펼친 채로
-  const advChanged = (["arp", "ping", "timeoutMs", "portsOn", "portsText", "portTimeoutMs", "names", "modbusId", "threads"] as const).some((k) => cfg[k] !== DEFAULT_CFG[k]);
+  const defaultPorts = useMemo(() => parsePorts(DEFAULT_PORTS, lang).ports, [lang]);
+  // 포트 칸은 글 모양이 아니라 포트 묶음으로 비교한다(칩을 껐다 켜면 순서가 바뀔 수 있다)
+  const portsIsDefault = !portsParsed.error && samePortSet(portsParsed.ports, defaultPorts);
+  const advChanged = (["arp", "ping", "timeoutMs", "portsOn", "portTimeoutMs", "names", "modbusId", "threads"] as const).some((k) => cfg[k] !== DEFAULT_CFG[k]) || !portsIsDefault;
+  // 포트 «직접 입력»(고급) — 칩에 없는 포트가 있거나 칸이 틀렸으면 펼친 채
+  const portsExtra = portsParsed.error ? [] : extraPorts(portsParsed.ports);
+  const [customOpenSaved, setCustomOpenSaved] = useState<boolean>(() => load("portsCustomOpen", false));
+  useEffect(() => store("portsCustomOpen", customOpenSaved), [customOpenSaved]);
+  const [customOpen, setCustomOpen] = useFold(customOpenSaved || portsExtra.length > 0 || !!portsParsed.error, setCustomOpenSaved, settings.expandAll);
   const advBad = (!cfg.ping && !cfg.arp) || (cfg.portsOn && !!portsParsed.error);
   const [advOpenSaved, setAdvOpenSaved] = useState<boolean>(() => advChanged || load("advOpen", false));
   useEffect(() => store("advOpen", advOpenSaved), [advOpenSaved]);
@@ -172,6 +181,8 @@ export default function App() {
   const [starting, setStarting] = useState(false);
   const scanning = phase === "scanning" || phase === "checking";
   const [selected, setSelected] = useState<string | null>(null);
+  // 결과 줄 오른쪽 버튼 메뉴(10/18) — 아래 줄의 버튼과 같은 일
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; ip: string } | null>(null);
 
   // 찾기가 끝났다는 표시 — 끝난 뒤 처리(지난번과 비교·기록)는 아래 효과에서
   const [rangeDone, setRangeDone] = useState<{ cancelled: boolean } | null>(null);
@@ -346,6 +357,30 @@ export default function App() {
       .catch((e) => toast.show(`${t("identNone")}: ${e}`, { error: true }))
       .finally(() => setIdentBusy(false));
   };
+
+  /** 결과 줄 오른쪽 버튼 메뉴 — 웹 열기·IP 복사·IP:502 복사·MAC 복사·Modbus 정보·감시에 추가·WoL(아래 줄 버튼과 같은 함수) */
+  const hostMenu = (h: Row): MenuItem[] => {
+    const https = h.ports.includes(443) && !h.ports.includes(80);
+    const mb = h.ports.includes(502);
+    return [
+      { label: https ? `${t("openWeb")} (https)` : t("openWeb"), run: () => void openWeb(h.ip, https ? 443 : 80, https), disabled: !!h.gone },
+      "sep",
+      { label: t("copyIp"), run: () => void copy(h.ip) },
+      { label: t("copyHostPort", { a: `${h.ip}:502` }), run: () => void copy(`${h.ip}:502`), disabled: !mb, title: mb ? t("hostPortHint") : t("no502") },
+      { label: t("copyMac"), run: () => h.mac && void copy(h.mac), disabled: !h.mac },
+      "sep",
+      { label: t("readIdent"), run: () => readIdent(h.ip), disabled: !mb || identBusy || !!h.gone, title: mb ? undefined : t("no502") },
+      {
+        label: t("toMonitor"),
+        run: () => {
+          if (mon.add(h.ip)) toast.show(`${h.ip} → ${t("tabMonitor")}`);
+        },
+        disabled: mon.running || mon.hosts.includes(h.ip),
+      },
+      { label: t("wol"), run: () => h.mac && void wake(h.mac), disabled: !h.mac || h.me, title: h.mac ? undefined : t("noMac") },
+    ];
+  };
+  const menuHost = rowMenu ? (hostsRef.current.get(rowMenu.ip) ?? allRows.find((r) => r.ip === rowMenu.ip)) : undefined;
 
   // ---- CSV
   async function exportCsv() {
@@ -547,17 +582,47 @@ export default function App() {
           </label>
           {cfg.portsOn && (
             <>
-              <label data-tip={tip(lang, "nsPortList")}>
+              <span className="label" data-tip={tip(lang, "nsPortChips")}>
                 {t("portList")}
-                <input className={portsParsed.error ? "bad mono" : "mono"} value={cfg.portsText} disabled={scanning} onChange={(e) => setCfg({ portsText: e.target.value })} />
-              </label>
+              </span>
+              <div className="port-chips" role="group" aria-label={t("portList")}>
+                {PORT_CHIPS.map((c) => {
+                  const on = !portsParsed.error && chipOn(portsParsed.ports, c.ports);
+                  return (
+                    <button
+                      key={c.label}
+                      type="button"
+                      className={on ? "chip port-chip on" : "chip port-chip"}
+                      aria-pressed={on}
+                      disabled={scanning || !!portsParsed.error}
+                      title={serviceTip(c.ports[0], lang)}
+                      onClick={() => {
+                        const next = togglePortChip(cfg.portsText, c.ports, !on, lang);
+                        if (next != null) setCfg({ portsText: next });
+                      }}
+                    >
+                      {c.label} <small className="mono">{chipPorts(c.ports)}</small>
+                    </button>
+                  );
+                })}
+              </div>
+              {!customOpen && portsExtra.length > 0 && <div className="hint">{t("portsExtra", { a: portsExtra.join(", ") })}</div>}
+              <button type="button" className="link-btn ports-custom-btn" onClick={() => setCustomOpen(!customOpen)} aria-expanded={customOpen} data-tip={tip(lang, "nsPortList")}>
+                {customOpen ? t("portsCustomHide") : t("portsCustom")}
+              </button>
+              {customOpen && (
+                <label data-tip={tip(lang, "nsPortList")}>
+                  {t("portListText")}
+                  <input className={portsParsed.error ? "bad mono" : "mono"} value={cfg.portsText} disabled={scanning} onChange={(e) => setCfg({ portsText: e.target.value })} />
+                </label>
+              )}
               {portsParsed.error ? <div className="hint warn">{portsParsed.error}</div> : null}
               <div className="range-row">
                 <label data-tip={tip(lang, "nsPortTimeout")} className="inline">
                   {t("portTimeout")}
                   <NumInput className="num" min={50} max={10000} value={cfg.portTimeoutMs} disabled={scanning} onValue={(v) => setCfg({ portTimeoutMs: v })} />
                 </label>
-                {cfg.portsText !== DEFAULT_PORTS && (
+                {!portsIsDefault && (
                   <button className="btn small ghost" disabled={scanning} onClick={() => setCfg({ portsText: DEFAULT_PORTS })} data-tip={tip(lang, "nsPortsDefault")}>
                     {t("portsDefault")}
                   </button>
@@ -650,8 +715,23 @@ export default function App() {
                         className={`${selected === h.ip ? "sel" : ""}${h.gone ? " gone" : ""}`}
                         onClick={() => setSelected(h.ip)}
                         onDoubleClick={() => !h.gone && h.ports.includes(80) && void openWeb(h.ip, 80, false)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setSelected(h.ip);
+                          setRowMenu({ x: e.clientX, y: e.clientY, ip: h.ip });
+                        }}
                         tabIndex={0}
-                        onKeyDown={(e) => e.key === "Enter" && setSelected(h.ip)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") setSelected(h.ip);
+                          // 메뉴 키·Shift+F10 — 줄 아래에 메뉴
+                          if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+                            e.preventDefault();
+                            const r = e.currentTarget.getBoundingClientRect();
+                            setSelected(h.ip);
+                            setRowMenu({ x: r.left + 40, y: r.bottom, ip: h.ip });
+                          }
+                        }}
+                        data-tip={tip(lang, "nsRowMenu")}
                       >
                         <td className="mono ip-cell">
                           {h.ip}
@@ -669,11 +749,28 @@ export default function App() {
                         <td className="mono num-cell">{h.gone ? "" : h.rtt == null ? <span className="muted">{h.arp ? t("arpOnly") : "—"}</span> : `${h.rtt < 1 ? t("under1") : h.rtt} ${t("ms")}`}</td>
                         <td className="chips">
                           {!h.done && !h.gone && <span className="muted">{t("checking")}</span>}
-                          {h.ports.map((p) => (
-                            <span key={p} className={isIndustrial(p) ? "chip svc ind" : "chip svc"} title={serviceTip(p, lang)}>
-                              {serviceLabel(p)}
-                            </span>
-                          ))}
+                          {h.ports.map((p) =>
+                            p === 502 && !h.gone ? (
+                              // Modbus 칩을 누르면 «IP:502» 복사(Modbus Master·TCP 의 주소 칸에 붙여 넣기)
+                              <button
+                                key={p}
+                                type="button"
+                                className="chip svc ind mb-copy"
+                                title={`${serviceTip(p, lang)} — ${t("mbChipTip", { a: `${h.ip}:502` })}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelected(h.ip);
+                                  void copy(`${h.ip}:502`);
+                                }}
+                              >
+                                {serviceLabel(p)} ⧉
+                              </button>
+                            ) : (
+                              <span key={p} className={isIndustrial(p) ? "chip svc ind" : "chip svc"} title={serviceTip(p, lang)}>
+                                {serviceLabel(p)}
+                              </span>
+                            ),
+                          )}
                           {h.modbus && (
                             <span className="chip svc ident" title={`${h.modbus.vendor} ${h.modbus.product} ${h.modbus.revision} (unit ${h.modbus.unit})`}>
                               {[h.modbus.vendor, h.modbus.product].filter(Boolean).join(" ")}
@@ -773,6 +870,7 @@ export default function App() {
           <MonitorView lang={lang} mon={mon} settings={settings} />
         )}
       </main>
+      {rowMenu && menuHost && <LogMenu x={rowMenu.x} y={rowMenu.y} label={rowMenu.ip} items={hostMenu(menuHost)} onClose={() => setRowMenu(null)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={scanning || mon.running} />}
       {toast.node}
