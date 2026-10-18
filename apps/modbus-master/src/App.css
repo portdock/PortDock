@@ -1,0 +1,1290 @@
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5f6b78;
+  --line: #d9dee4;
+  --accent: #0b6e75;
+  --accent-ink: #ffffff;
+  --rx: #1d4ed8;
+  --tx: #0f7a3d;
+  --sel: #e6f2f3;
+  --ok: #0f7a3d;
+  --fail: #b42318;
+  --danger: #b42318;
+  --mono: "Cascadia Mono", Consolas, "D2Coding", "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Segoe UI", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --panel: #181c21;
+    --ink: #e4e8ec;
+    --muted: #93a0ad;
+    --line: #2a3038;
+    --accent: #4fb3ba;
+    --accent-ink: #0b1215;
+    --rx: #7aa7ff;
+    --tx: #6ccf92;
+    --sel: #1f2c30;
+    --ok: #6ccf92;
+    --fail: #ff8a80;
+    --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 250px 1fr 280px;
+  height: 100%;
+}
+
+.side,
+.right {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.right {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-weight: 700;
+  font-size: calc(var(--fs, 13px) * 1.231);
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.lang {
+  width: auto;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.checks {
+  display: flex;
+  gap: 14px;
+}
+input,
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 7px;
+  min-width: 0;
+  width: 100%;
+}
+input[type="checkbox"] {
+  width: auto;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  margin: 4px 0;
+}
+.hint {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.hint.warn {
+  color: var(--fail);
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+.btn.small {
+  padding: 3px 8px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.status {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--bg);
+}
+.s-connected {
+  color: var(--ok);
+}
+.s-disconnected,
+.s-reconnecting {
+  color: var(--fail);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.seg {
+  font: inherit;
+  font-size: calc(var(--fs, 13px) * 0.923);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.seg.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.grow {
+  flex: 1;
+}
+.counter {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  font-variant-numeric: tabular-nums;
+}
+
+.log {
+  flex: 1;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.962);
+}
+.row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--row-h, 22px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.row:hover {
+  background: var(--sel);
+}
+.row.sel {
+  background: var(--sel);
+  outline: 1px solid var(--accent);
+}
+.ts {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.dir {
+  width: 36px;
+  font-weight: 600;
+}
+.row.rx .dir,
+.row.rx .hex {
+  color: var(--rx);
+}
+.row.tx .dir,
+.row.tx .hex {
+  color: var(--tx);
+}
+.data {
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.asc {
+  color: var(--ink);
+}
+.badge {
+  font-family: var(--sans);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  padding: 0 6px;
+  border-radius: 9px;
+  border: 1px solid currentColor;
+}
+.badge.ok {
+  color: var(--ok);
+}
+.badge.fail {
+  color: var(--fail);
+}
+
+.sendbar {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sendrow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sendrow select {
+  width: auto;
+}
+.sendtext {
+  flex: 1;
+  font-family: var(--mono);
+}
+.sendrow.sub {
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.preview {
+  font-family: var(--mono);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview.err,
+.error {
+  color: var(--fail);
+}
+.num {
+  width: 80px;
+}
+
+.right h3 {
+  margin: 6px 0 0;
+  font-size: calc(var(--fs, 13px) * 1.0);
+}
+.cmds {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cmd {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.cmdname {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.dump {
+  margin: 0;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: var(--bg);
+  border-radius: 5px;
+  padding: 6px;
+}
+.modbus table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--mono);
+}
+.modbus td {
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.modbus td:first-child {
+  color: var(--muted);
+  width: 40%;
+}
+.mbhead {
+  font-weight: 600;
+  margin: 4px 0;
+}
+.okc {
+  color: var(--ok);
+}
+.failc {
+  color: var(--fail);
+}
+.values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: var(--mono);
+}
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.mono {
+  font-family: var(--mono);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.dot.s-connected {
+  background: var(--ok);
+}
+.dot.s-disconnected,
+.dot.s-reconnecting {
+  background: var(--fail);
+}
+.led {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  padding: 0 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.led.on {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.led.in.on {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line);
+  margin: 0 2px;
+}
+.rec {
+  margin-left: auto;
+  color: var(--fail);
+  font-weight: 600;
+}
+.row.ev {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.row.ev .dir {
+  color: var(--accent);
+}
+.note {
+  font-family: var(--sans);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arcard {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.arcard.off {
+  opacity: 0.55;
+}
+.arrow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.arrow select {
+  width: auto;
+}
+.arname {
+  flex: 1;
+  font-weight: 600;
+}
+.arlbl {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: nowrap;
+}
+.hint.ok {
+  color: var(--ok);
+}
+
+/* ---- Modbus Slave */
+.app {
+  grid-template-columns: 250px 1fr;
+}
+.logo small {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  color: var(--muted);
+  font-weight: 500;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  font-family: var(--mono);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1px 9px;
+  cursor: pointer;
+}
+.chip.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.chip b {
+  margin-left: 6px;
+  color: var(--muted);
+}
+.row2 {
+  display: flex;
+  gap: 6px;
+}
+.stats {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.stats td:last-child {
+  text-align: right;
+  padding-left: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.regs {
+  flex: 1;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  gap: 4px;
+  padding: 10px;
+}
+.reg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 3px 6px;
+  background: var(--panel);
+  transition: background 0.4s;
+}
+.reg.flash {
+  background: color-mix(in srgb, var(--accent) 25%, var(--panel));
+  border-color: var(--accent);
+}
+.addr {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  width: 44px;
+  text-align: right;
+}
+.regval {
+  font-family: var(--mono);
+  padding: 2px 5px;
+}
+.regval.bad {
+  border-color: var(--fail);
+}
+.traffic {
+  height: 220px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+}
+.tlog {
+  flex: 1;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  padding: 0 10px;
+}
+.trow {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+.trow.rx .dir,
+.trow.rx .data {
+  color: var(--rx);
+}
+.trow.tx .dir,
+.trow.tx .data {
+  color: var(--tx);
+}
+.trow.ev .dir {
+  color: var(--accent);
+}
+.trow.ev .data {
+  font-family: var(--sans);
+}
+.hint.warn {
+  color: var(--fail);
+}
+
+.main {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+.regs {
+  min-height: 0;
+}
+.toolbar {
+  flex-wrap: wrap;
+}
+.btn {
+  white-space: nowrap;
+}
+
+input.bad {
+  border-color: var(--fail);
+}
+.sendrow select {
+  flex-shrink: 0;
+}
+
+/* ---- 좁은 창 대응 */
+.toolbar,
+.sendrow {
+  flex-wrap: wrap;
+}
+.toolbar > span,
+.toolbar > label,
+.toolbar > button,
+.sendrow > label,
+.sendrow > button {
+  white-space: nowrap;
+}
+.sendtext {
+  flex: 1 1 200px;
+}
+.narrow-only {
+  display: none;
+}
+@media (max-width: 1180px) {
+  .app.three {
+    grid-template-columns: 240px 1fr;
+  }
+  .app.three > aside.right {
+    display: none;
+  }
+  .app.three.show-right > aside.right {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 10;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  }
+  .narrow-only {
+    display: inline-block;
+  }
+}
+
+.chip-btn,
+.chip-x {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+.chip-x {
+  margin-left: 6px;
+  color: var(--muted);
+}
+
+/* 연결 실패 — 상태 칸을 빨갛게 */
+.status.s-failed {
+  color: var(--fail);
+  border: 1px solid var(--fail);
+}
+/* 시작 주소·개수를 바꾸면 응답 범위도 바뀐다는 경고 — 좁으면 줄을 바꾼다 */
+.range-warn {
+  white-space: normal;
+  min-width: 140px;
+  flex: 0 1 auto;
+}
+
+/* 최소 창에서도 표가 넉넉히 보이게 — 통신 기록은 창 높이에 맞춰 줄어든다 */
+.traffic {
+  height: clamp(120px, 26vh, 240px);
+}
+.regs {
+  min-height: 150px;
+}
+/* 범위 경고는 도구줄 버튼을 밀지 않게 맨 아래 한 줄로 */
+.range-warn {
+  order: 99;
+  flex-basis: 100%;
+  min-width: 0;
+}
+
+/* ---- Modbus TCP·장애 대상·장치 식별 (10/18) */
+.s-listening {
+  color: var(--ok);
+}
+.status .clients {
+  margin-top: 2px;
+  color: var(--muted);
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+details.adv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+details.adv > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  user-select: none;
+}
+details.adv[open] > summary {
+  margin-bottom: 6px;
+}
+details.adv > * + * {
+  margin-top: 6px;
+}
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.addr-range {
+  align-items: center;
+}
+.addr-range input {
+  flex: 1;
+  min-width: 0;
+}
+.stats tr.warnrow td {
+  color: var(--fail);
+}
+.perfc {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---- 레지스터 칸: 이름·형식 표시·자동 변화 표시·칸 설정 버튼 */
+.regs {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.reg {
+  min-width: 0;
+  gap: 4px;
+}
+.reg .regval {
+  flex: 1 1 52px;
+  min-width: 44px;
+}
+.reg .addr {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 36px;
+}
+.rname {
+  flex: 0 1 auto;
+  max-width: 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent);
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.rtype {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.77);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.simmark {
+  flex: 0 0 auto;
+  color: var(--accent);
+  cursor: help;
+}
+.cellcfg {
+  flex: 0 0 auto;
+  font: inherit;
+  line-height: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 2px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  /* 100칸마다 ⋯ 가 보이면 어지럽다 — 칸에 마우스를 올리거나 값 칸에 들어가면 보인다(오른쪽 버튼으로도 열림) */
+  visibility: hidden;
+}
+.reg:hover .cellcfg,
+.reg:focus-within .cellcfg,
+.rtable tr:hover .cellcfg,
+.rtable tr:focus-within .cellcfg {
+  visibility: visible;
+}
+.cellcfg:hover {
+  background: var(--sel);
+  color: var(--ink);
+}
+/* 목록 보기 — 주소 · 이름 · 형식 · 값 · 자동 변화 */
+.regs.list {
+  display: block;
+}
+.rtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.rtable th {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.rtable td {
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.rtable td.addr {
+  width: 1%;
+  white-space: nowrap;
+  text-align: left;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.rtable td.rname {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: inherit;
+}
+.rtable td.rtype {
+  width: 1%;
+}
+.rtable td.rval {
+  width: 26%;
+  min-width: 120px;
+}
+.rtable td.rval .regval {
+  width: 100%;
+}
+.rtable td.simcol {
+  color: var(--accent);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rtable tr.flash td {
+  background: color-mix(in srgb, var(--accent) 25%, var(--panel));
+}
+
+/* ---- 통신 기록: 가상 스크롤 줄 + Modbus 풀이 */
+.traffic {
+  height: clamp(170px, 36vh, 320px);
+}
+.segs {
+  display: inline-flex;
+  gap: 0;
+}
+.segs .seg {
+  border-radius: 0;
+}
+.segs .seg:first-child {
+  border-radius: 5px 0 0 5px;
+}
+.segs .seg:last-child {
+  border-radius: 0 5px 5px 0;
+  margin-left: -1px;
+}
+.traffic > .toolbar {
+  padding: 5px 10px;
+}
+.tlog {
+  padding: 0;
+  position: relative;
+}
+.tlog .trow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--row-h, 22px);
+  align-items: center;
+  padding: 0 10px;
+}
+.tlog .trow.hit {
+  background: color-mix(in srgb, #f5c400 22%, transparent);
+}
+.trow .dir {
+  flex: 0 0 auto;
+}
+.trow .ts {
+  flex: 0 0 auto;
+}
+.peeraddr {
+  flex: 0 0 auto;
+  color: var(--muted);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trow .sum {
+  flex: 0 1 auto;
+  max-width: 58%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+.trow .sum.bad {
+  color: var(--fail);
+}
+.trow.rx .data,
+.trow.tx .data {
+  opacity: 0.85;
+}
+.traffic-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 10px;
+  white-space: pre-line;
+  max-height: 30%;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+.traffic-error .btn {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* ---- 칸 설정 창 */
+.modal.cell-dlg {
+  width: min(480px, calc(100vw - 32px));
+}
+.cell-dlg .dlg-buttons {
+  align-items: center;
+  margin-top: 4px;
+}
+.cell-dlg .grid2,
+.cell-dlg .grid3 {
+  align-items: end;
+}
+
+/* ================================================================ Modbus Master */
+.side .timing {
+  align-items: end;
+}
+.side .timing label {
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.scan-note {
+  margin-top: 2px;
+  color: var(--accent);
+}
+/* ---- 표 탭 */
+.toolbar.tabs {
+  gap: 4px;
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--bg);
+  margin-bottom: -1px;
+}
+.tab.on {
+  background: var(--panel);
+  border-color: var(--accent);
+  border-bottom: 1px solid var(--panel);
+}
+.tab-btn,
+.tab-x {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.tab.on .tab-btn {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tab-btn small {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.tab-x {
+  padding: 4px 6px 4px 0;
+  color: var(--muted);
+}
+.err-badge {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--fail);
+  color: #fff;
+  font-size: calc(var(--fs, 13px) * 0.77);
+  font-family: var(--mono);
+  line-height: 16px;
+  text-align: center;
+}
+/* ---- 표 설정 줄 */
+.toolbar.tcfg,
+.toolbar.tview {
+  gap: 8px 12px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.toolbar.tview {
+  padding-top: 0;
+}
+.toolbar .num {
+  width: 76px;
+}
+.toolbar .tname {
+  width: 110px;
+}
+.toolbar .addr-in {
+  width: 80px;
+}
+.btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tstat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 3px 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  min-height: 26px;
+}
+.tstat .hint {
+  margin: 0;
+}
+.tstat-n {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.tstat-n .bad {
+  color: var(--fail);
+}
+/* ---- 값 칸 */
+.reg {
+  cursor: default;
+  user-select: none;
+  min-height: 28px;
+}
+.reg:focus-visible,
+.rtable tr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.reg.picked,
+.rtable tr.picked td {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.reg .rv {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reg .rv.bit {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 22px;
+  text-align: center;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.reg .rv.bit.on {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--panel);
+  font-weight: 600;
+}
+.trendmark {
+  flex: 0 0 auto;
+  font-size: calc(var(--fs, 13px) * 0.77);
+}
+.regs.stale .reg .rv,
+.regs.stale .rtable td.rval {
+  opacity: 0.45;
+}
+.rtable td.rval {
+  font-variant-numeric: tabular-nums;
+}
+.rtable td.rraw {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rtable tbody tr {
+  cursor: default;
+}
+/* ---- 추세 */
+.trend {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 4px 10px 6px;
+  max-height: 30vh;
+  overflow: auto;
+  flex: 0 0 auto;
+}
+.trend-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trend-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 2px 16px;
+}
+.trend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.trend-label {
+  flex: 1 1 90px;
+  min-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.spark {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+.trend-last {
+  flex: 0 0 auto;
+  min-width: 60px;
+  text-align: right;
+  font-weight: 600;
+}
+.trend-range {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.77);
+  white-space: nowrap;
+}
+/* ---- 쓰기·찾기 창 */
+.modal.write-dlg {
+  width: min(500px, calc(100vw - 32px));
+}
+.write-dlg .onoff .btn {
+  flex: 1;
+}
+.write-dlg .dlg-buttons,
+.scan-dlg .dlg-buttons {
+  align-items: center;
+  margin-top: 4px;
+}
+.wfc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 5px;
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.wbytes {
+  color: var(--tx);
+  overflow-wrap: anywhere;
+}
+.modal.scan-dlg {
+  width: min(620px, calc(100vw - 32px));
+}
+.scan-dlg .modal-body {
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+}
+.scan-dlg .grid3,
+.scan-dlg .grid2 {
+  align-items: end;
+}
+.scan-run {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.scan-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.scan-progress progress {
+  width: 140px;
+}
+.scan-list {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  max-height: 260px;
+  overflow: auto;
+}
+.scan-sum {
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.scan-list .rtable th {
+  top: 0;
+}
+.scan-list .rtable td.okc {
+  color: var(--ok);
+}
+.scan-list .rtable td.failc {
+  color: var(--fail);
+  white-space: normal;
+}
+/* 좁은 창: 표 설정이 두세 줄로 접힌다 */
+@media (max-width: 900px) {
+  .toolbar .num {
+    width: 64px;
+  }
+  .toolbar .tname {
+    width: 84px;
+  }
+  .traffic {
+    height: clamp(140px, 30vh, 260px);
+  }
+}
