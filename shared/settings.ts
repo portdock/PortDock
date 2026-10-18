@@ -2,11 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
+import { isEncoding, type Encoding } from "./format";
 
 export type Theme = "system" | "light" | "dark";
 /** 오류 자동 전송 — ask: 오류로 꺼졌을 때 묻기, on: 묻지 않고 보내기, off: 보내지 않기 */
 export type AutoReport = "ask" | "on" | "off";
 export type TimeFormat = "local" | "local-date" | "utc" | "elapsed";
+/** 파일 로그 한 줄 모양(백엔드 event::LogFormat) */
+export type LogFormat = "hex" | "ascii" | "hex-ascii" | "csv";
 
 export interface Settings {
   lang: "ko" | "en";
@@ -26,6 +29,12 @@ export interface Settings {
   autoReport: AutoReport;
   /** 창을 늘 다른 창 위에(머리줄 📌 과 같은 값) */
   alwaysOnTop: boolean;
+  /** 글자 보기·ASCII 송신 인코딩(Serial·TCP·UDP) */
+  encoding: Encoding;
+  /** 파일 로그 형식·나누기(Serial·TCP·UDP) — 다음 파일부터 */
+  logFormat: LogFormat;
+  logSplitMb: number;
+  logSplitHours: number;
 }
 
 export const DEFAULTS: Settings = {
@@ -40,9 +49,13 @@ export const DEFAULTS: Settings = {
   confirmExit: true,
   autoReport: "ask",
   alwaysOnTop: false,
+  encoding: "utf-8",
+  logFormat: "hex",
+  logSplitMb: 0,
+  logSplitHours: 0,
 };
 
-export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000] } as const;
+export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000], logSplitMb: [0, 4096], logSplitHours: [0, 720] } as const;
 
 function sanitize(s: Partial<Settings>): Settings {
   const v = { ...DEFAULTS, ...s };
@@ -53,6 +66,11 @@ function sanitize(s: Partial<Settings>): Settings {
   if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
   if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
   v.alwaysOnTop = v.alwaysOnTop === true;
+  if (!isEncoding(v.encoding)) v.encoding = "utf-8";
+  if (!["hex", "ascii", "hex-ascii", "csv"].includes(v.logFormat)) v.logFormat = "hex";
+  const clamp = (n: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, Math.round(Number(n)) || 0));
+  v.logSplitMb = clamp(v.logSplitMb, LIMITS.logSplitMb);
+  v.logSplitHours = clamp(v.logSplitHours, LIMITS.logSplitHours);
   return v;
 }
 
@@ -130,12 +148,18 @@ export function formatTime(ts: number, f: TimeFormat, base: number) {
   return f === "local-date" ? `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${t}` : t;
 }
 
+/** 백엔드 set_log_options 에 넘기는 값 */
+export const logOptionsOf = (s: Settings) => ({ format: s.logFormat, encoding: s.encoding, splitMb: s.logSplitMb, splitHours: s.logSplitHours });
+
+/** 파일 로그 확장자 — CSV 면 .csv */
+export const logExt = (s: Settings) => (s.logFormat === "csv" ? "csv" : "log");
+
 /** 자동 로그 파일 경로: 폴더\portdock-<도구>-<시각>.log */
-export function autoLogPath(folder: string, tool: string) {
+export function autoLogPath(folder: string, tool: string, ext = "log") {
   const d = new Date();
   const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
   const sep = folder.includes("/") && !folder.includes("\\") ? "/" : "\\";
-  return `${folder.replace(/[\\/]+$/, "")}${sep}portdock-${tool}-${stamp}.log`;
+  return `${folder.replace(/[\\/]+$/, "")}${sep}portdock-${tool}-${stamp}.${ext}`;
 }
 
 /** 이 프로그램의 화면 설정 전부(명령 목록·규칙 포함)를 JSON 으로 */

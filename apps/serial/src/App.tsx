@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { save } from "@tauri-apps/plugin-dialog";
 import {
   api,
   ascii,
-  CHECKSUMS,
   hex,
+  parityChar,
   type ChecksumKind,
   type Frame,
   type FrameMode,
@@ -25,13 +25,13 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
 import { mbFunc, mbWord } from "./mbwords";
 import { parseTerminator, samePorts, trimFrames } from "@shared/framing";
-import { autoLogPath, formatTime, rowHeight, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { hasXonXoff, minRepeatMs, serialTxMs } from "@shared/interlocks";
 import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
-import { screenText } from "@shared/logSearch";
+import { screenText, type LogFrame } from "@shared/logSearch";
 import { ModbusBuilder } from "./ModbusBuilder";
 import { useFollowTail } from "@shared/useFollowTail";
 import { FollowButton } from "@shared/FollowButton";
@@ -45,6 +45,16 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
+import { io } from "@shared/ioText";
+import { checksumDesc, checksumLen, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
+import { ChecksumPicker } from "@shared/ChecksumOptions";
+import { useSendHistory } from "@shared/sendHistory";
+import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
+import { DeltaSelect, LiveStats } from "@shared/StatsBar";
+import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
+import { FileSendDialog, JobBar, type FileJob, type Pace, type Progress } from "@shared/FileSend";
+import { TermBuffer } from "@shared/terminal";
+import { TerminalView } from "@shared/TerminalView";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -52,9 +62,12 @@ const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 4608
 
 type Status = "idle" | "connected" | "disconnected" | "reconnecting" | "closed";
 type ViewMode = "hex" | "ascii" | "both";
+/** 가운데 칸: 줄(프레임) 로그 또는 터미널 보기 */
+type Screen = "log" | "term";
 
 interface Command extends SendSpec {
   name: string;
+  key?: string | null;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -88,18 +101,34 @@ function pickPort(ports: PortInfo[], id: PortId | null) {
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
-/** 체크섬이 붙이는 바이트 수 */
-const ckLen = (k: ChecksumKind) => (k.startsWith("crc16") || k === "sum16" ? 2 : 1);
-
 function portLabel(p: PortInfo) {
   const desc = p.product ?? p.manufacturer;
   return desc ? `${p.name} — ${desc}` : p.name;
+}
+
+/** 예전 저장 값(rs485 없음·stopBits 2 외)도 받는다 */
+function loadCfg(): SerialConfig {
+  const c = load<Partial<SerialConfig>>("cfg", {});
+  return {
+    port: c.port ?? "",
+    baud: c.baud ?? 9600,
+    dataBits: c.dataBits ?? 8,
+    parity: (["none", "odd", "even", "mark", "space"] as const).includes(c.parity as never) ? c.parity! : "none",
+    stopBits: c.stopBits === 1.5 || c.stopBits === 2 ? c.stopBits : 1,
+    flow: c.flow ?? "none",
+    dtr: !!c.dtr,
+    rts: !!c.rts,
+    autoReconnect: c.autoReconnect ?? true,
+    rs485: c.rs485 === "driver" || c.rs485 === "software" ? c.rs485 : "off",
+  };
 }
 
 export default function App() {
   const { settings, update, reset } = useSettings();
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
+  // 글자 보기 인코딩 — 줄 그리기·복사·저장이 같은 값을 쓴다
+  setTextEncoding(settings.encoding);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const openHelp = useCallback(() => setShowHelp(true), []);
@@ -113,6 +142,11 @@ export default function App() {
   // 아주 좁은 창(900px 이하)에서 왼쪽 연결 설정 칸을 펼칠지
   const [showSide, setShowSide] = useState(false);
   const toast = useToast(lang);
+
+  // 파일 로그 형식·나누기·인코딩 — 다음 파일 기록부터
+  useEffect(() => {
+    api.setLogOptions(logOptionsOf(settings)).catch(() => {});
+  }, [settings]);
 
   // ---- 포트 목록 (1.5초마다 갱신 — 꽂고 뽑는 것을 바로 보여 준다)
   const [ports, setPorts] = useState<PortInfo[]>([]);
@@ -128,30 +162,26 @@ export default function App() {
   }, []);
 
   // ---- 연결 설정
-  const [cfg, setCfg] = useState<SerialConfig>(() =>
-    load("cfg", {
-      port: "",
-      baud: 9600,
-      dataBits: 8,
-      parity: "none",
-      stopBits: 1,
-      flow: "none",
-      dtr: false,
-      rts: false,
-      autoReconnect: true,
-    }),
-  );
+  const [cfg, setCfg] = useState<SerialConfig>(loadCfg);
   useEffect(() => store("cfg", cfg), [cfg]);
+  const rs485On = cfg.rs485 !== "off" && cfg.flow !== "hardware";
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
+  const [rxCk, setRxCk] = useState<CkOpts | null>(() => load("rxCk", null));
   // Modbus RTU 를 고를 때 수신 체크섬을 저절로 바꿨으면 그 전 값 — 다른 방식으로 돌아가면 되돌린다
   const [rxAuto, setRxAuto] = useState<{ prev: ChecksumKind | null } | null>(() => load("rxAuto", null));
   useEffect(() => store("framing", framing), [framing]);
   useEffect(() => store("terminatorText", terminatorText), [terminatorText]);
   useEffect(() => store("rxCheck", rxCheck), [rxCheck]);
+  useEffect(() => store("rxCk", rxCk), [rxCk]);
   useEffect(() => store("rxAuto", rxAuto), [rxAuto]);
+  // 백엔드로 보낼 수신 체크섬(옵션·범용 CRC 포함). 범용 CRC 매개변수가 틀리면 검사하지 않는다
+  const rxWire = useMemo(() => {
+    if (rxCheck === "crc" && (!rxCk?.crc || crcProblem(rxCk.crc))) return null;
+    return checksumToRust(rxCheck, rxCk);
+  }, [rxCheck, rxCk]);
 
   // ---- 세션
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -165,6 +195,8 @@ export default function App() {
   // 연결 실패는 상태 칸에 빨갛게
   const [connectErr, setConnectErr] = useState<string | null>(null);
   const [logPath, setLogPath] = useState<string | null>(null);
+  const logPathRef = useRef(logPath);
+  logPathRef.current = logPath;
   const [lines, setLines] = useState<Lines | null>(null);
 
   // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 연결 중엔 건드리지 않는다
@@ -184,11 +216,24 @@ export default function App() {
   const [livePort, setLivePort] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const counters = useRef({ rx: 0, tx: 0, fail: 0 });
+  // 처리량·마지막 수신, 간격 열, 터미널 보기
+  const meter = useRef(new Meter());
+  const deltaSt = useRef(newDeltaState());
+  const term = useRef(new TermBuffer(5000));
+  term.current.setEncoding(settings.encoding);
   // 경과 시간 기준 — 연결한 시각(«지우기» 하면 그때부터). 앞줄이 잘려도 바뀌지 않게
   const baseTs = useRef<number | null>(null);
   const langRef = useRef(lang);
   langRef.current = lang;
   const repeatingRef = useRef(false);
+  const fileJobRef = useRef<FileJob | null>(null);
+  // 진행 사건이 send_file 응답보다 먼저 올 수 있다(작은 파일은 끝까지) — 번호별 마지막 진행을 잡아 둔다
+  const lastProgress = useRef(new Map<number, Progress>());
+  const [fileJob, setFileJobState] = useState<FileJob | null>(null);
+  const setFileJob = (j: FileJob | null) => {
+    fileJobRef.current = j;
+    setFileJobState(j);
+  };
 
   /** 화면에서 만든 사건 줄(EV) — 파일 로그에는 남지 않는다 */
   const addEv = useCallback((note: string) => {
@@ -198,58 +243,102 @@ export default function App() {
     setVersion((v) => v + 1);
   }, []);
 
-  const onEvent = useCallback((e: SessionEvent) => {
-    if (e.type === "frames") {
-      const arr = framesRef.current;
-      for (const f of e.frames) {
-        f.seq = ++seqRef.current;
-        arr.push(f);
-        screenBytes.current += f.bytes.length;
-        if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
-        if (f.check === false) counters.current.fail++;
+  // ---- 트리거(받은 줄에 패턴이 오면 색·소리·반복/기록 멈춤·사건 줄·깜빡임)
+  const sessionRef = useRef<string | null>(null);
+  const trg = useTriggers(lang, {
+    addEv,
+    stopRepeat: () => {
+      if (!repeatingRef.current) return false;
+      repeatingRef.current = false;
+      setRepeatSpec(null);
+      return true;
+    },
+    stopLog: () => {
+      const id = sessionRef.current;
+      if (!logPathRef.current || !id) return false;
+      logPathRef.current = null;
+      setLogPath(null);
+      api.setLog(id, null).catch((e) => setError(String(e)));
+      return true;
+    },
+  });
+  const trgCheck = trg.check;
+
+  const onEvent = useCallback(
+    (e: SessionEvent) => {
+      if (e.type === "frames") {
+        const arr = framesRef.current;
+        const now = Date.now();
+        for (const f of e.frames) {
+          f.seq = ++seqRef.current;
+          stampDelta(deltaSt.current, f);
+          arr.push(f);
+          screenBytes.current += f.bytes.length;
+          if (f.dir !== "ev") {
+            counters.current[f.dir] += f.bytes.length;
+            meter.current.add(f.dir, f.bytes.length, now);
+          }
+          if (f.dir === "rx") {
+            term.current.feed(f.bytes);
+            trgCheck(f);
+          }
+          if (f.check === false) counters.current.fail++;
+        }
+        screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
+        setVersion((v) => v + 1);
+      } else if (e.type === "error") {
+        setError(e.message);
+      } else if (e.type === "lines") {
+        setLines({ cts: e.cts, dsr: e.dsr, ri: e.ri, cd: e.cd });
+      } else if (e.type === "progress") {
+        const { type: _t, ...p } = e;
+        void _t;
+        lastProgress.current.set(e.id, p);
+        if (lastProgress.current.size > 50) lastProgress.current.delete(lastProgress.current.keys().next().value!);
+        const j = fileJobRef.current;
+        if (j && j.id === e.id) setFileJob({ ...j, sent: e.sent, total: e.total, done: e.done, cancelled: e.cancelled, error: e.error });
+      } else {
+        setStatus(e.state);
+        setStatusMsg(e.message);
+        if (e.state === "connected") {
+          setSessionId((id) => id ?? e.port);
+          setLivePort(e.port);
+          // 다시 꽂아 COM 번호가 바뀌었으면 다음 연결도 새 번호로
+          setCfg((c) => (c.port === e.port ? c : { ...c, port: e.port }));
+        }
+        // 끊기면 반복을 끈다 — 다시 연결됐을 때 저절로 다시 보내지 않게. 이유는 사건 줄로 남긴다
+        if (e.state !== "connected" && repeatingRef.current) {
+          repeatingRef.current = false;
+          setRepeatSpec(null);
+          addEv(dict[langRef.current].repStopDisc);
+        }
+        if (e.state === "closed") {
+          setSessionId(null);
+          setLogPath(null);
+          setLines(null);
+          const j = fileJobRef.current;
+          if (j && !j.done) setFileJob({ ...j, done: true, cancelled: true });
+        }
       }
-      screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
-      setVersion((v) => v + 1);
-    } else if (e.type === "error") {
-      setError(e.message);
-    } else if (e.type === "lines") {
-      setLines({ cts: e.cts, dsr: e.dsr, ri: e.ri, cd: e.cd });
-    } else {
-      setStatus(e.state);
-      setStatusMsg(e.message);
-      if (e.state === "connected") {
-        setSessionId((id) => id ?? e.port);
-        setLivePort(e.port);
-        // 다시 꽂아 COM 번호가 바뀌었으면 다음 연결도 새 번호로
-        setCfg((c) => (c.port === e.port ? c : { ...c, port: e.port }));
-      }
-      // 끊기면 반복을 끈다 — 다시 연결됐을 때 저절로 다시 보내지 않게. 이유는 사건 줄로 남긴다
-      if (e.state !== "connected" && repeatingRef.current) {
-        repeatingRef.current = false;
-        setRepeatSpec(null);
-        addEv(dict[langRef.current].repStopDisc);
-      }
-      if (e.state === "closed") {
-        setSessionId(null);
-        setLogPath(null);
-        setLines(null);
-      }
-    }
-  }, [addEv]);
+    },
+    [addEv, trgCheck],
+  );
 
   // 끝 문자 칸 — 백엔드와 같은 규칙 + CR·LF 같은 이름. 틀리면 빈 끝 문자(조용한 시간만)
-  const term = useMemo(() => parseTerminator(terminatorText, lang), [terminatorText, lang]);
+  const term_ = useMemo(() => parseTerminator(terminatorText, lang), [terminatorText, lang]);
   const effectiveFraming = useMemo<FrameMode>(() => {
-    if (framing.kind === "terminator") return { ...framing, bytes: term.bytes };
+    if (framing.kind === "terminator") return { ...framing, bytes: term_.bytes };
     if (framing.kind === "modbus-rtu") return { kind: "modbus-rtu", baud: cfg.baud };
     return framing;
-  }, [framing, term, cfg.baud]);
+  }, [framing, term_, cfg.baud]);
 
+  const rxKey = JSON.stringify(rxWire);
   useEffect(() => {
-    if (sessionId) api.setFraming(sessionId, effectiveFraming, rxCheck).catch((e) => setError(String(e)));
-  }, [sessionId, effectiveFraming, rxCheck]);
+    if (sessionId) api.setFraming(sessionId, effectiveFraming, rxWire).catch((e) => setError(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, effectiveFraming, rxKey]);
 
-  const liveCfg = useMemo(() => ({ ...cfg }), [cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits, cfg.flow, cfg.dtr, cfg.rts, cfg.autoReconnect]); // eslint-disable-line react-hooks/exhaustive-deps
+  const liveCfg = useMemo(() => ({ ...cfg }), [cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits, cfg.flow, cfg.dtr, cfg.rts, cfg.autoReconnect, cfg.rs485]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sessionId) return;
     const id = setTimeout(() => {
@@ -266,13 +355,13 @@ export default function App() {
     setConnectErr(null);
     setPortNotice(null);
     try {
-      await api.open(cfg, effectiveFraming, rxCheck, onEvent);
+      await api.open(cfg, effectiveFraming, rxWire, onEvent);
       setSessionId(cfg.port);
       baseTs.current = Date.now();
       const p = ports.find((x) => x.name === cfg.port);
       if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
       if (settings.autoLog && settings.logFolder) {
-        const p = autoLogPath(settings.logFolder, "serial");
+        const p = autoLogPath(settings.logFolder, "serial", logExt(settings));
         await api.setLog(cfg.port, p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
@@ -291,6 +380,7 @@ export default function App() {
     setLogPath(null);
     setLines(null);
   }
+  sessionRef.current = sessionId;
 
   async function toggleLog() {
     if (!sessionId) return;
@@ -305,7 +395,8 @@ export default function App() {
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const path = await save({ title: t("logDlgTitle"), defaultPath: `portdock-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const ext = logExt(settings);
+    const path = await save({ title: t("logDlgTitle"), defaultPath: `portdock-${stamp}.${ext}`, filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
     if (!path) return;
     try {
       await api.setLog(sessionId, path);
@@ -318,6 +409,14 @@ export default function App() {
   // ---- 보기
   const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
   useEffect(() => store("view", view), [view]);
+  const [screen, setScreen] = useState<Screen>(() => load("screen", "log"));
+  useEffect(() => store("screen", screen), [screen]);
+  const [termColors, setTermColors] = useState(() => load("termColors", true));
+  useEffect(() => store("termColors", termColors), [termColors]);
+  const [deltaMode, setDeltaMode] = useState<DeltaMode>(() => load("delta", "off"));
+  useEffect(() => store("delta", deltaMode), [deltaMode]);
+  /** 복사·화면 저장에 넣을 간격 열 */
+  const col = deltaMode === "off" ? undefined : (f: LogFrame) => deltaText(deltaMode, f);
 
   const listRef = useRef<HTMLDivElement>(null);
   const frames = framesRef.current;
@@ -334,7 +433,7 @@ export default function App() {
     rows.measure();
   }, [settings.fontSize, rows]);
   // 따라가기 — 맨 아래에 있을 때만 새 줄을 따라간다(위로 굴리면 멈춤, «↓ 맨 아래로»·End 로 다시)
-  const follow = useFollowTail(listRef, settings.autoScroll, seqRef.current, `${version}:${filter.count}:${rows.getTotalSize()}`);
+  const follow = useFollowTail(listRef, settings.autoScroll, seqRef.current, `${version}:${filter.count}:${rows.getTotalSize()}:${screen}`);
   // 줄 고르기(누르기·Shift 범위·Ctrl 하나씩) — 누른 줄이 상세 칸에 나온다
   const sel = useLogSelection({ indexOfSeq: filter.indexOfSeq, seqAt: (i) => filter.at(i)?.seq });
   const selected = sel.primary;
@@ -347,6 +446,9 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0, fail: 0 };
+    meter.current.reset();
+    deltaSt.current = newDeltaState();
+    term.current.clear();
     screenBytes.current = 0;
     baseTs.current = Date.now();
     sel.clear();
@@ -366,12 +468,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filter, rows, sel.only, follow.pause],
   );
-  // Ctrl+C — 고른 줄을 «시각 방향 내용»(지금 보기대로)으로
+  // Ctrl+C — 고른 줄을 «시각 [간격] 방향 내용»(지금 보기대로)으로
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
   useCopyKey(
     () => {
+      if (screen !== "log") return null;
       const list = selectedFrames(sel, frameOf);
-      return list.length ? copyTextOf(list, "lines", view, fmt) : null;
+      return list.length ? copyTextOf(list, "lines", view, fmt, false, col) : null;
     },
     (ok) => onCopied(ok, sel.set.size),
   );
@@ -380,7 +483,7 @@ export default function App() {
     const path = await save({ defaultPath: "portdock-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
-    const text = screenText({ app: "PortDock Serial", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang });
+    const text = screenText({ app: "PortDock Serial", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, col });
     await api.writeText(path, text).catch((e: unknown) => setError(String(e)));
   }
 
@@ -404,6 +507,16 @@ export default function App() {
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
+  // 반복 횟수 한도(0 = 계속)와 이번 반복에서 보낸 수
+  const [repeatTimes, setRepeatTimes] = useState(() => load("repeatTimes", 0));
+  useEffect(() => store("repeatTimes", repeatTimes), [repeatTimes]);
+  const [repeatSent, setRepeatSent] = useState(0);
+  const repeatSentRef = useRef(0);
+  // 문자 간 지연(ms) — 모든 송신(보내기·명령·반복·다시 보내기)에
+  const [charDelay, setCharDelay] = useState(() => load("charDelay", 0));
+  useEffect(() => store("charDelay", charDelay), [charDelay]);
+  const [breakMs, setBreakMs] = useState(() => load("breakMs", 100));
+  useEffect(() => store("breakMs", breakMs), [breakMs]);
   // 반복은 켠 순간의 내용을 얼려서 보낸다 — 입력을 고치는 중간값이 나가지 않게
   const [repeatSpec, setRepeatSpec] = useState<{ spec: SendSpec; bytes: number[] } | null>(null);
   const repeating = repeatSpec != null;
@@ -411,8 +524,13 @@ export default function App() {
   useEffect(() => store("spec", spec), [spec]);
   useEffect(() => {
     let stale = false;
+    if (spec.checksum === "crc" && spec.ck?.crc && crcProblem(spec.ck.crc, lang)) {
+      setPreviewBytes(null);
+      setPreviewErr(crcProblem(spec.ck.crc, lang));
+      return;
+    }
     api
-      .preview(spec)
+      .preview(spec, settings.encoding)
       .then((b) => {
         if (stale) return;
         setPreviewBytes(b);
@@ -426,18 +544,23 @@ export default function App() {
     return () => {
       stale = true;
     };
-  }, [spec]);
+  }, [spec, settings.encoding, lang]);
   // 0바이트는 보낼 것이 없다
   const sendable = !!previewBytes && previewBytes.length > 0;
 
+  // ↑/↓ 이력 — 보낸 내용(모드 포함)을 다시 불러온다
+  const history = useSendHistory({ text: spec.text, mode: spec.mode }, useCallback((h) => setSpec((s) => ({ ...s, text: h.text, mode: h.mode })), []));
+
   const inflight = useRef(false);
+  /** 보내기 — 성공하면 true. 문자 간 지연이 있으면 백엔드가 천천히 보낸다 */
   const doSend = useCallback(
     async (s: SendSpec) => {
-      if (!sessionId || inflight.current) return;
+      if (!sessionId || inflight.current) return false;
       inflight.current = true;
       try {
-        await api.send(sessionId, s);
+        await api.send(sessionId, s, settings.encoding, charDelay);
         setError(null);
+        return true;
       } catch (e) {
         setError(String(e));
         if (repeatingRef.current) {
@@ -445,33 +568,72 @@ export default function App() {
           setRepeatSpec(null);
           addEv(dict[langRef.current].repStopErr);
         }
+        return false;
       } finally {
         inflight.current = false;
       }
     },
-    [sessionId, addEv],
+    [sessionId, addEv, settings.encoding, charDelay],
   );
+  /** 보내기 버튼·Enter — 이력에도 남긴다 */
+  const sendNow = () => {
+    if (!online || !sendable) return;
+    void doSend(spec).then((ok) => ok && history.remember({ text: spec.text, mode: spec.mode }));
+  };
 
   // ---- 인터락
   // 재연결 대기 중에는 세션은 있어도 보낼 수 없다
   const online = sessionId != null && status === "connected";
-  // 반복 간격이 실제 송신 시간보다 짧으면 앞 송신이 끝나기 전에 쌓인다 → 최소 간격으로 올려 보낸다
+  // 반복 간격이 실제 송신 시간(+ 문자 간 지연)보다 짧으면 앞 송신이 끝나기 전에 쌓인다 → 최소 간격으로 올려 보낸다
   const repBytes = repeatSpec?.bytes ?? previewBytes;
-  const txMs = repBytes ? serialTxMs(repBytes.length, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits) : 0;
+  const txMs = repBytes ? serialTxMs(repBytes.length, cfg.baud, cfg.dataBits, cfg.parity === "none" ? "none" : "odd", Math.ceil(cfg.stopBits)) + charDelay * repBytes.length : 0;
   const minRep = minRepeatMs(txMs);
   const effRepeat = Math.max(repeatMs, minRep);
   // 소프트웨어 흐름 제어에서 XON/XOFF 바이트는 데이터가 아니라 신호로 먹힌다
   const xonxoff = cfg.flow === "software" && !!previewBytes && hasXonXoff(previewBytes);
 
+  const startRepeat = (on: boolean) => {
+    repeatSentRef.current = 0;
+    setRepeatSent(0);
+    setRepeatSpec(on && previewBytes ? { spec, bytes: previewBytes } : null);
+  };
   useEffect(() => {
     if (!repeatSpec || !online) return;
-    const id = setInterval(() => doSend(repeatSpec.spec), effRepeat);
+    const id = setInterval(() => {
+      void doSend(repeatSpec.spec).then((ok) => {
+        if (!ok || !repeatingRef.current) return;
+        const n = ++repeatSentRef.current;
+        setRepeatSent(n);
+        if (repeatTimes > 0 && n >= repeatTimes) {
+          repeatingRef.current = false;
+          setRepeatSpec(null);
+          addEv(io(langRef.current, "repDone", { n }));
+        }
+      });
+    }, effRepeat);
     return () => clearInterval(id);
-  }, [repeatSpec, effRepeat, online, doSend]);
+  }, [repeatSpec, effRepeat, online, doSend, repeatTimes, addEv]);
+
+  // ---- 파일 보내기·Break
+  const [showFile, setShowFile] = useState(false);
+  async function startFile(path: string, name: string, pace: Pace) {
+    if (!sessionId) return;
+    const r = await api.sendFile(sessionId, path, pace);
+    // 진행 사건이 먼저 왔으면 그 값부터
+    const early = lastProgress.current.get(r.id);
+    setFileJob({ id: r.id, total: r.total, sent: 0, done: false, cancelled: false, ...early, name });
+  }
+  const cancelSend = () => {
+    if (sessionId) api.cancelSend(sessionId).catch((e) => setError(String(e)));
+  };
+  const sendBreak = () => {
+    if (sessionId) api.sendBreak(sessionId, breakMs).catch((e) => setError(String(e)));
+  };
+  const byteMs = serialTxMs(1, cfg.baud, cfg.dataBits, cfg.parity === "none" ? "none" : "odd", Math.ceil(cfg.stopBits));
 
   // ---- Modbus 요청 만들기 — HEX·CRC16 Modbus·줄 끝 없음으로 맞춘다(Modbus RTU 에는 줄 끝이 없다)
   const [showMb, setShowMb] = useState(false);
-  const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "" });
+  const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "", ck: null });
 
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
@@ -486,10 +648,10 @@ export default function App() {
     cmdList.current?.focusName(commands.length);
   }
   function addCommand() {
-    pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd" });
+    pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd", key: null });
   }
   /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
-  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
+  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "", ck: null });
 
   const connected = sessionId != null;
   const statusKey = `status_${status}` as Key;
@@ -508,9 +670,10 @@ export default function App() {
   ]);
 
   // ---- 창 제목: «COM3 115200 8N1 · 연결됨 ● REC — PortDock Serial»
-  const parityCh = cfg.parity === "odd" ? "O" : cfg.parity === "even" ? "E" : "N";
+  const parityCh = parityChar(cfg.parity);
   useWindowTitle(windowTitle("PortDock Serial", connected ? [`${livePort ?? cfg.port} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits}`, t(statusKey)] : [], !!logPath));
   const summaryLine = connected ? `${summary({ ...cfg, port: livePort ?? cfg.port }, lang)} · ${t(statusKey)}` : `${cfg.port || t("noPorts")} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits} · ${t(statusKey)}`;
+  const sendWhy = t(connected ? "ilOffline" : "whyNotConnected");
 
   return (
     <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
@@ -585,22 +748,27 @@ export default function App() {
               ))}
             </select>
           </label>
-          <label data-tip={tip(lang, "parity")}>
+          <label data-tip={tip(lang, "paritySerial")}>
             {t("parity")}
             <select value={cfg.parity} onChange={(e) => setCfg({ ...cfg, parity: e.target.value as SerialConfig["parity"] })}>
               <option value="none">{t("none")}</option>
               <option value="odd">{t("odd")}</option>
               <option value="even">{t("even")}</option>
+              <option value="mark">{io(lang, "mark")}</option>
+              <option value="space">{io(lang, "space")}</option>
             </select>
           </label>
-          <label data-tip={tip(lang, "stopBits")}>
+          <label data-tip={tip(lang, "stopBitsSerial")}>
             {t("stopBits")}
             <select value={cfg.stopBits} onChange={(e) => setCfg({ ...cfg, stopBits: Number(e.target.value) })}>
               <option value={1}>1</option>
+              <option value={1.5}>1.5</option>
               <option value={2}>2</option>
             </select>
           </label>
         </div>
+        {(cfg.parity === "mark" || cfg.parity === "space") && <div className="hint">{io(lang, "markSpaceHint")}</div>}
+        {cfg.stopBits === 1.5 && cfg.dataBits !== 5 && <div className="hint warn">{io(lang, "one5Hint")}</div>}
         <label data-tip={tip(lang, "flow")}>
           {t("flow")}
           <select
@@ -615,6 +783,20 @@ export default function App() {
             <option value="software">{t("software")}</option>
           </select>
         </label>
+        <label data-tip={tip(lang, "rs485")}>
+          {io(lang, "rs485")}
+          <select
+            value={cfg.flow === "hardware" ? "off" : cfg.rs485}
+            disabled={cfg.flow === "hardware"}
+            title={cfg.flow === "hardware" ? io(lang, "rs485Hw") : ""}
+            onChange={(e) => setCfg({ ...cfg, rs485: e.target.value as SerialConfig["rs485"], rts: e.target.value === "off" ? cfg.rts : false })}
+          >
+            <option value="off">{io(lang, "rs485Off")}</option>
+            <option value="driver">{io(lang, "rs485Driver")}</option>
+            <option value="software">{io(lang, "rs485Soft")}</option>
+          </select>
+        </label>
+        {rs485On && cfg.rs485 === "software" && <div className="hint warn">{io(lang, "rs485SoftWarn")}</div>}
         <div className="checks">
           <label className="inline">
             <input type="checkbox" checked={cfg.dtr} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
@@ -622,9 +804,9 @@ export default function App() {
           <label className="inline">
             <input
               type="checkbox"
-              checked={cfg.rts}
-              disabled={cfg.flow === "hardware"}
-              title={cfg.flow === "hardware" ? t("ilRtsHw") : ""}
+              checked={cfg.rts && !rs485On}
+              disabled={cfg.flow === "hardware" || rs485On}
+              title={cfg.flow === "hardware" ? t("ilRtsHw") : rs485On ? io(lang, "rs485Lock") : ""}
               onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })}
             />{" "}
             RTS
@@ -693,13 +875,13 @@ export default function App() {
         {framing.kind === "terminator" && (
           <label data-tip={tip(lang, "terminatorHex")}>
             {t("terminatorHex")}
-            <input className={term.error ? "bad" : ""} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
-            {term.error ? (
-              <span className="error">{term.error}</span>
-            ) : term.bytes.length === 0 ? (
+            <input className={term_.error ? "bad" : ""} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+            {term_.error ? (
+              <span className="error">{term_.error}</span>
+            ) : term_.bytes.length === 0 ? (
               <span className="interlock">{t("ilNoTerm")}</span>
             ) : (
-              <span className="hint">{fill(t("termParsed"), { a: hex(term.bytes), n: term.bytes.length })}</span>
+              <span className="hint">{fill(t("termParsed"), { a: hex(term_.bytes), n: term_.bytes.length })}</span>
             )}
           </label>
         )}
@@ -719,22 +901,21 @@ export default function App() {
           ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
         <label data-tip={tip(lang, "rxCheck")}>
           {t("rxCheck")}
-          <select
-            title={t("tipRxCheck")}
-            value={rxCheck ?? ""}
-            onChange={(e) => {
-              setRxCheck((e.target.value || null) as ChecksumKind | null);
+          <ChecksumPicker
+            lang={lang}
+            kind={rxCheck}
+            ck={rxCk}
+            rx
+            noneLabel={t("none")}
+            ariaLabel={t("rxCheck")}
+            onChange={(k, c) => {
+              setRxCheck(k);
+              setRxCk(c);
               setRxAuto(null);
             }}
-          >
-            <option value="">{t("none")}</option>
-            {CHECKSUMS.map((c) => (
-              <option key={c.kind} value={c.kind}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
+        {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFileSettings"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!connected}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -750,13 +931,25 @@ export default function App() {
         <div className="toolbar">
           <span data-tip={tip(lang, "view")}>{t("view")}</span>
           {(["hex", "ascii", "both"] as ViewMode[]).map((v) => (
-            <button key={v} className={view === v ? "seg on" : "seg"} onClick={() => setView(v)} aria-pressed={view === v}>
+            <button
+              key={v}
+              className={screen === "log" && view === v ? "seg on" : "seg"}
+              onClick={() => {
+                setView(v);
+                setScreen("log");
+              }}
+              aria-pressed={screen === "log" && view === v}
+            >
               {v === "both" ? t("both") : v.toUpperCase()}
             </button>
           ))}
+          <button className={screen === "term" ? "seg on" : "seg"} onClick={() => setScreen("term")} aria-pressed={screen === "term"} data-tip={tip(lang, "termView")}>
+            {io(lang, "termView")}
+          </button>
           <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
             <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
+          {screen === "log" && <DeltaSelect lang={lang} value={deltaMode} onChange={setDeltaMode} />}
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
@@ -779,7 +972,7 @@ export default function App() {
           {connected && (
             <>
               <span className={cfg.dtr ? "led on" : "led"}>DTR</span>
-              <span className={cfg.rts ? "led on" : "led"}>RTS</span>
+              <span className={cfg.rts && !rs485On ? "led on" : "led"}>RTS{rs485On ? " ⇄" : ""}</span>
               <span className="sep" />
               {(["cts", "dsr", "ri", "cd"] as const).map((k) => (
                 <span key={k} className={lines?.[k] ? "led in on" : "led in"} data-tip={tip(lang, "inputLine")}>
@@ -789,51 +982,63 @@ export default function App() {
             </>
           )}
           {logPath && <span className="rec">● REC</span>}
+          <span className="grow" />
+          <LiveStats meter={meter.current} lang={lang} active={online} />
         </div>
 
-        <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
+        {screen === "log" && <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />}
 
         <div className="log-wrap">
-          <div className="log" ref={listRef}>
-            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
-            <div style={{ height: rows.getTotalSize(), position: "relative" }}>
-              {rows.getVirtualItems().map((r) => {
-                const f = filter.at(r.index);
-                if (!f || f.seq == null) return null;
-                const seq = f.seq;
-                const cls = `row ${f.dir}${filter.isHit(seq) ? " hit" : ""}${sel.has(seq) ? " sel" : ""}${selected === seq ? " primary" : ""}`;
-                // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
-                const handlers = {
-                  onClick: (e: ReactMouseEvent) => sel.click(e, seq),
-                  onContextMenu: (e: ReactMouseEvent) => {
-                    e.preventDefault();
-                    sel.context(seq);
-                    setMenu({ x: e.clientX, y: e.clientY, seq });
-                  },
-                };
-                if (f.dir === "ev")
-                  return (
-                    <div key={r.key} className={cls} style={{ transform: `translateY(${r.start}px)` }} {...handlers}>
-                      <span className="ts">{fmt(f.ts)}</span>
-                      <span className="dir">EV</span>
-                      <span className="note">{f.note}</span>
-                    </div>
-                  );
-                return (
-                  <div key={r.key} className={cls} style={{ transform: `translateY(${r.start}px)` }} {...handlers}>
-                    <span className="ts">{fmt(f.ts)}</span>
-                    <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
-                    <span className="data">
-                      {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
-                      {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
-                    </span>
-                    {f.check != null && <span className={f.check ? "badge ok" : "badge fail"}>{f.check ? t("ok") : t("fail")}</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <FollowButton follow={follow} lang={lang} hidden={frames.length === 0} />
+          {screen === "term" ? (
+            <TerminalView term={term.current} lang={lang} colors={termColors} onColors={setTermColors} version={version} />
+          ) : (
+            <>
+              <div className="log" ref={listRef}>
+                {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+                <div style={{ height: rows.getTotalSize(), position: "relative" }}>
+                  {rows.getVirtualItems().map((r) => {
+                    const f = filter.at(r.index);
+                    if (!f || f.seq == null) return null;
+                    const seq = f.seq;
+                    const cls = `row ${f.dir}${filter.isHit(seq) ? " hit" : ""}${sel.has(seq) ? " sel" : ""}${selected === seq ? " primary" : ""}${f.mark ? " marked" : ""}`;
+                    const style = f.mark ? ({ transform: `translateY(${r.start}px)`, "--mark": f.mark } as CSSProperties) : { transform: `translateY(${r.start}px)` };
+                    // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
+                    const handlers = {
+                      onClick: (e: ReactMouseEvent) => sel.click(e, seq),
+                      onContextMenu: (e: ReactMouseEvent) => {
+                        e.preventDefault();
+                        sel.context(seq);
+                        setMenu({ x: e.clientX, y: e.clientY, seq });
+                      },
+                    };
+                    const dt = deltaMode !== "off" && <span className="dt">{deltaText(deltaMode, f)}</span>;
+                    if (f.dir === "ev")
+                      return (
+                        <div key={r.key} className={cls} style={style} {...handlers}>
+                          <span className="ts">{fmt(f.ts)}</span>
+                          {dt}
+                          <span className="dir">EV</span>
+                          <span className="note">{f.note}</span>
+                        </div>
+                      );
+                    return (
+                      <div key={r.key} className={cls} style={style} {...handlers}>
+                        <span className="ts">{fmt(f.ts)}</span>
+                        {dt}
+                        <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
+                        <span className="data">
+                          {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
+                          {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
+                        </span>
+                        {f.check != null && <span className={f.check ? "badge ok" : "badge fail"}>{f.check ? t("ok") : t("fail")}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <FollowButton follow={follow} lang={lang} hidden={frames.length === 0} />
+            </>
+          )}
         </div>
         {menu && (
           <LogMenu
@@ -847,10 +1052,11 @@ export default function App() {
               clicked: frameOf(menu.seq),
               view,
               fmt,
+              col,
               onCopied,
-              sendAgain: { run: (b) => void doSend(rawSpec(b)), enabled: online, why: t(connected ? "ilOffline" : "whyNotConnected") },
+              sendAgain: { run: (b) => void doSend(rawSpec(b)), enabled: online, why: sendWhy },
               addCommand: (b) => {
-                pushCommand({ ...rawSpec(b), name: hex(b).slice(0, 24) });
+                pushCommand({ ...rawSpec(b), name: hex(b).slice(0, 24), key: null });
                 toast.show(ui(lang, "addedCmds", { n: 1 }));
               },
               find: (b) => {
@@ -873,28 +1079,26 @@ export default function App() {
               className="sendtext"
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "AT\\r\\n"}
+              data-tip={tip(lang, "sendText")}
               onChange={(e) => {
                 setSpec({ ...spec, text: e.target.value });
                 modeSwitch.onEdit();
+                history.edited();
               }}
-              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && online && sendable && doSend(spec)}
+              onKeyDown={(e) => {
+                if (history.onKeyDown(e)) return;
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) sendNow();
+              }}
             />
             <button className="btn mb-open" data-tip={tip(lang, "modbusBuild")} onClick={() => setShowMb(true)}>
               {t("mbRequest")}
             </button>
             {spec.mode === "ascii" && spec.checksum && (
               <span className="ck-chip" title={t("ckChipTip")}>
-                {fill(t("ckChip"), { a: CHECKSUMS.find((c) => c.kind === spec.checksum)?.label ?? spec.checksum, n: ckLen(spec.checksum) })}
+                {fill(t("ckChip"), { a: checksumDesc(spec.checksum, spec.ck, lang), n: checksumLen(spec.checksum, spec.ck) })}
               </span>
             )}
-            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} data-tip={tip(lang, "checksum")}>
-              <option value="">{t("checksum")}: {t("none")}</option>
-              {CHECKSUMS.map((c) => (
-                <option key={c.kind} value={c.kind}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <ChecksumPicker lang={lang} kind={spec.checksum} ck={spec.ck} noneLabel={`${t("checksum")}: ${t("none")}`} tipKey="checksum" ariaLabel={t("checksum")} onChange={(k, c) => setSpec({ ...spec, checksum: k, ck: c })} />
             <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} data-tip={tip(lang, "suffix")}>
               <option value="">{t("suffix")}: {t("none")}</option>
               <option value="\r">{t("suffix")}: CR</option>
@@ -902,7 +1106,7 @@ export default function App() {
               <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
             <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => {
-                doSend(spec);
+                sendNow();
                 sendInput.current?.focus();
               }} disabled={!online || !sendable}>
               {t("send")}
@@ -919,24 +1123,39 @@ export default function App() {
             </span>
             <span className="grow" />
             <label data-tip={withKey(tip(lang, "repeatSerial"), KEYS.stopRepeat)} className="inline">
-              <input
-                type="checkbox"
-                checked={repeating}
-                disabled={!online || (!repeating && !sendable)}
-                onChange={(e) => setRepeatSpec(e.target.checked && previewBytes ? { spec, bytes: previewBytes } : null)}
-              />{" "}
-              {t("repeat")}
+              <input type="checkbox" checked={repeating} disabled={!online || (!repeating && !sendable)} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}
             </label>
-            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
+            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} aria-label={t("repeat")} />
+            <label className="inline" data-tip={tip(lang, "repeatTimes")}>
+              <NumInput className="num small-num" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
+            </label>
+            {(repeating || repeatSent > 0) && (
+              <span className="rep-count">{repeatTimes > 0 ? io(lang, "repeatSentOf", { n: repeatSent, m: repeatTimes }) : io(lang, "repeatSent", { n: repeatSent })}</span>
+            )}
             {repeatSpec && (
               <span className="repeating mono" title={hex(repeatSpec.bytes)}>
                 {fill(t("repeatingAs"), { a: repeatSpec.bytes.length > 16 ? `${hex(repeatSpec.bytes.slice(0, 16))} …` : hex(repeatSpec.bytes) })}
               </span>
             )}
-            <button className="btn small" onClick={addCommand} disabled={!sendable}>
+            <button className="btn small add-cmd" onClick={addCommand} disabled={!sendable}>
               + {t("addCommand")}
             </button>
+            <span className="send-tools">
+            <label className="inline" data-tip={tip(lang, "charDelay")}>
+              {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
+            </label>
+            <button className="btn small" onClick={sendBreak} disabled={!online} data-tip={online ? tip(lang, "breakBtn") : sendWhy}>
+              {io(lang, "breakBtn")}
+            </button>
+            <label className="inline" data-tip={tip(lang, "breakMs")}>
+              <NumInput className="num small-num" min={1} max={10000} value={breakMs} onValue={setBreakMs} aria-label={io(lang, "breakMs")} /> ms
+            </label>
+            <button className="btn small" onClick={() => setShowFile(true)} data-tip={tip(lang, "fileSend")}>
+              {io(lang, "fileSend")}…
+            </button>
+            </span>
           </div>
+          {fileJob && <JobBar lang={lang} job={fileJob} onCancel={cancelSend} onOpen={() => setShowFile(true)} />}
           {modeSwitch.node}
           {connected && !online && <div className="interlock">{t("ilOffline")}</div>}
           {repeating && repeatMs < minRep && <div className="interlock">{t("ilRepeat").replace("{a}", String(repeatMs)).replace("{b}", String(minRep))}</div>}
@@ -959,9 +1178,9 @@ export default function App() {
           setCommands={setCommands}
           onSend={(c) => void doSend(c)}
           canSend={online}
-          sendWhy={t(connected ? "ilOffline" : "whyNotConnected")}
+          sendWhy={sendWhy}
           onEdit={(c) => {
-            setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix });
+            setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix, ck: c.ck ?? null });
             sendInput.current?.focus();
           }}
           toast={toast}
@@ -969,6 +1188,8 @@ export default function App() {
           readText={api.readText}
           handle={cmdList}
         />
+
+        <TriggerPanel lang={lang} trg={trg} toast={toast} />
 
         <h3 data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
@@ -1037,8 +1258,21 @@ export default function App() {
             setShowMb(false);
             sendInput.current?.focus();
           }}
-          onAdd={(name, b) => setCommands((c) => [...c, { ...mbSpec(b), name }])}
+          onAdd={(name, b) => setCommands((c) => [...c, { ...mbSpec(b), name, key: null }])}
           onClose={() => setShowMb(false)}
+        />
+      )}
+      {showFile && (
+        <FileSendDialog
+          lang={lang}
+          job={fileJob}
+          canSend={online}
+          why={sendWhy}
+          byteMs={byteMs}
+          start={startFile}
+          cancel={cancelSend}
+          sizeOf={api.fileSize}
+          onClose={() => setShowFile(false)}
         />
       )}
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Serial" onClose={() => setShowHelp(false)} />}
@@ -1053,6 +1287,7 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           busy={connected || !!logPath}
+          ioOptions
         />
       )}
       {toast.node}

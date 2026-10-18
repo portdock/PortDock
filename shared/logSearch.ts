@@ -9,6 +9,12 @@ export interface LogFrame {
   note?: string;
   seq?: number;
   peer?: string | null;
+  /** 직전 RX·TX 와의 간격(ms) — shared/liveStats stampDelta */
+  gap?: number | null;
+  /** 마지막 TX → 이 RX(ms) */
+  rsp?: number | null;
+  /** 트리거가 칠한 색 */
+  mark?: string | null;
 }
 
 export type QueryMode = "auto" | "hex" | "text";
@@ -46,7 +52,8 @@ export function parseQuery(q: string, mode: QueryMode): Query | null {
     return { kind: "hex", bytes };
   }
   // 글자 찾기: 대소문자 무시. 바이트에서 바로 찾는다(줄마다 문자열을 만들지 않게)
-  const bytes = [...q].map((c) => c.charCodeAt(0) & 0xff).map(lowerByte);
+  // 한글 등 ASCII 밖 글자는 UTF-8 바이트로 찾는다(글자 인코딩이 CP949 인 줄은 HEX 로 찾아야 한다)
+  const bytes = /[^\x00-\x7f]/.test(q) ? [...new TextEncoder().encode(q)].map(lowerByte) : [...q].map((c) => c.charCodeAt(0) & 0xff).map(lowerByte);
   return { kind: "text", bytes, text: q.toLowerCase() };
 }
 
@@ -159,6 +166,8 @@ export function screenText(opts: {
   filterDesc: string | null;
   lang: "ko" | "en";
   peers?: boolean;
+  /** 시각 뒤에 넣을 열(간격·응답 시간) */
+  col?: (f: LogFrame) => string;
 }) {
   const { frames, view, mode, fmt, hex, ascii, lang } = opts;
   const ko = lang === "ko";
@@ -174,7 +183,7 @@ export function screenText(opts: {
         ? `전체 ${frames.length}줄`
         : `all ${frames.length} lines`
   }`;
-  const body = rows.map((f) => frameLine(f, mode, fmt, hex, ascii, opts.peers));
+  const body = rows.map((f) => frameLine(f, mode, fmt, hex, ascii, opts.peers, opts.col));
   return [head, ...body].join("\n");
 }
 
@@ -186,9 +195,12 @@ export function frameLine(
   hex: (b: number[]) => string,
   ascii: (b: number[]) => string,
   peers?: boolean,
+  col?: (f: LogFrame) => string,
 ) {
   const peer = peers ? ` [${f.peer ?? ""}]` : "";
-  if (f.dir === "ev") return `${fmt(f.ts)} EV${peer} ${f.note ?? ""}`;
+  // 간격 열은 줄이 맞게 너비를 고정(사건 줄은 빈칸)
+  const ts = col ? `${fmt(f.ts)} ${col(f).padStart(11)}` : fmt(f.ts);
+  if (f.dir === "ev") return `${ts} EV${peer} ${f.note ?? ""}`;
   const data = mode === "hex" ? hex(f.bytes) : mode === "ascii" ? ascii(f.bytes) : `${hex(f.bytes)} | ${ascii(f.bytes)}`;
-  return `${fmt(f.ts)} ${f.dir.toUpperCase()}${peer} ${data}${f.check === false ? " [CHECK FAIL]" : ""}`;
+  return `${ts} ${f.dir.toUpperCase()}${peer} ${data}${f.check === false ? " [CHECK FAIL]" : ""}`;
 }

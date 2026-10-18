@@ -9,7 +9,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -492,7 +492,7 @@ async function runApp(app, port) {
           const out = [];
           for (const v of ['01 03 00 00 00 0A', '01 06 00 01 00 03', '01 10 00 00']) {
             __sm.setVal(inp, v); await w();
-            const btn = [...document.querySelectorAll('.sendrow.sub .btn.small')].pop();
+            const btn = document.querySelector('.sendrow.sub .add-cmd') || [...document.querySelectorAll('.sendrow.sub .btn.small')].pop();
             btn.click(); await w(); await w();
             out.push(document.activeElement && document.activeElement.className + '=' + document.activeElement.value);
           }
@@ -564,6 +564,83 @@ async function runApp(app, port) {
         await sleep(400);
         if (!(await js("return [...document.querySelectorAll('.chip-btn')].some((b) => b.textContent === '2')"))) await conv("slave-undo", "되돌리기로 슬레이브가 돌아오지 않음");
         await verify("modbus-slave keys");
+
+        // ---- (10/18) Modbus Slave: 칸 설정(오른쪽 버튼) → F32·CDAB·이름·자동 변화 → 넓은 칸·◷·실수 입력·목록 보기·기본으로
+        await js("document.querySelectorAll('.regs .reg')[4].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 300, clientY: 300 }))");
+        await sleep(250);
+        if (!(await js("return !!document.querySelector('.modal.cell-dlg')"))) await conv("cell-dlg", "칸에서 오른쪽 버튼으로 «칸 설정» 이 열리지 않음");
+        else {
+          if (combo.name === "ko-light") await shot(app, `${combo.name}-cell-dlg`);
+          const r = await jsAsync(`
+            const w = () => new Promise((r) => setTimeout(r, 150));
+            const dlg = () => document.querySelector('.modal.cell-dlg');
+            __sm.setVal(dlg().querySelector('input'), 'Temp'); await w();
+            __sm.setVal(dlg().querySelector('select'), 'f32'); await w();
+            __sm.setVal(dlg().querySelectorAll('select')[1], 'CDAB'); await w();
+            __sm.setVal([...dlg().querySelectorAll('select')].find((s) => s.querySelector('option[value=sine]')), 'increment'); await w();
+            const shot = !!dlg().querySelector('.grid3');
+            dlg().querySelector('.btn.primary').click(); await w(); await w(); await w();
+            const c = document.querySelector('.regs .reg.wide');
+            return { open: !!dlg(), params: shot, wide: !!c, name: c && c.querySelector('.rname') && c.querySelector('.rname').textContent, sim: !!(c && c.querySelector('.simmark')), tag: c && c.querySelector('.rtype') && c.querySelector('.rtype').textContent };`);
+          if (r.open || !r.params || !r.wide || r.name !== "Temp" || !r.sim || r.tag !== "F32 CDAB") await conv("cell-dlg", `칸 설정 저장 결과가 이상함: ${JSON.stringify(r)}`);
+          const v = await jsAsync(`
+            const i = document.querySelector('.regs .reg.wide .regval');
+            i.focus(); __sm.setVal(i, '123.456'); __sm.key(i, 'Enter'); i.blur();
+            await new Promise((r) => setTimeout(r, 900));
+            const j = document.querySelector('.regs .reg.wide .regval');
+            return { v: j.value, bad: j.classList.contains('bad') };`);
+          if (v.v !== "123.456" || v.bad) await conv("cell-f32", `F32 칸에 123.456 을 넣었는데 ${JSON.stringify(v)}`);
+          if (combo.name === "ko-light") await shot(app, `${combo.name}-cell-typed`);
+          await js("[...document.querySelectorAll('.segs .seg')][1].click()");
+          await sleep(300);
+          const lv = await js("const tr = [...document.querySelectorAll('.rtable tbody tr')].find((x) => x.querySelector('.rname').textContent === 'Temp'); return tr ? [tr.querySelector('.rtype').textContent, tr.querySelector('.simcol').textContent] : null");
+          if (!lv || !/F32/.test(lv[0]) || !/◷/.test(lv[1])) await conv("list-view", `목록 보기에 이름·형식·자동 변화가 안 보임: ${JSON.stringify(lv)}`);
+          await verify("list view");
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-list-view`);
+          await js("[...document.querySelectorAll('.segs .seg')][0].click()");
+          await sleep(200);
+          await js("document.querySelector('.regs .reg.wide').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))");
+          await sleep(200);
+          await js("document.querySelector('.modal.cell-dlg .dlg-buttons .btn.small').click()");
+          await sleep(300);
+          if (await js("return !!document.querySelector('.regs .reg.wide') || !!document.querySelector('.modal.cell-dlg')")) await conv("cell-reset", "«기본으로» 뒤에도 넓은 칸이 남아 있음");
+          await verify("cell settings");
+        }
+
+        // ---- (10/18) CSV 가져오기: 틀린 줄이 있으면 행 번호와 함께 거절, 맞으면 알림
+        const importBtn = async () => {
+          await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /표 가져오기|Import table/.test(b.textContent)).click()");
+          await sleep(500);
+        };
+        await js("window.__pdMock.files.set(arguments[0], arguments[1]); window.__pdMock.dialog.open = arguments[0];", "C:\\mock\\bad.csv", "table,address,type,order,name,value\nhr,1,f33,,,1\nXX,2,u16,,,1\n");
+        await importBtn();
+        const errText = await js("return (document.querySelector('.traffic-error') || {}).textContent || ''");
+        if (!/2행|Row 2/.test(errText) || !/3행|Row 3/.test(errText)) await conv("csv-bad", `틀린 CSV 의 행 번호 오류가 안 보임: ${JSON.stringify(errText.slice(0, 200))}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-csv-error`);
+        await js("window.__pdMock.files.set(arguments[0], arguments[1]); window.__pdMock.dialog.open = arguments[0];", "C:\\mock\\ok.csv", "\uFEFFtable,address,type,order,name,value\r\nholding-registers,10,u32,CDAB,Count,70000\r\ncoils,3,bit,,Pump,1\r\n");
+        await importBtn();
+        const okToast = await js("return [(document.querySelector('.toast') || {}).textContent || '', !!document.querySelector('.traffic-error')]");
+        if (!/2줄|2 row/.test(okToast[0]) || okToast[1]) await conv("csv-ok", `맞는 CSV 를 가져왔는데 알림이 이상함: ${JSON.stringify(okToast)}`);
+        await js("window.__pdMock.dialog.open = null");
+        await verify("csv import");
+
+        // ---- (10/18) TCP 서버(Modbus TCP): 끊고 → 연결 방식 바꾸기 → 시작 → 듣는 중·클라이언트 수·풀이(#트랜잭션)·MBAP 장애 칸 → 멈춤 → 시리얼로 다시 연결
+        const setTransport = (v) => js("const s = [...document.querySelectorAll('aside.side select')].find((x) => x.querySelector('option[value=rtu-tcp]')); __sm.setVal(s, arguments[0]);", v);
+        await clickRun("mb-tcp: stop serial", (s) => !STOP_RE.test(s.btn ?? ""));
+        await setTransport("tcp");
+        await sleep(200);
+        await clickRun("mb-tcp: start", (s) => STOP_RE.test(s.btn ?? "") && /듣는|Listening/.test(s.status ?? ""));
+        await sleep(1800);
+        const tcpState = await js(
+          "return { clients: (document.querySelector('aside .status .clients') || {}).textContent || '', sum: [...document.querySelectorAll('.tlog .trow .sum')].map((e) => e.textContent).find((x) => x.startsWith('#')) || null, peer: !!document.querySelector('.tlog .trow .peeraddr'), mbap: [...document.querySelectorAll('aside label.inline')].some((l) => /MBAP/.test(l.textContent)), crc: [...document.querySelectorAll('aside label.inline')].some((l) => /CRC/.test(l.textContent)) }",
+        );
+        if (!/2/.test(tcpState.clients) || !tcpState.sum || !tcpState.peer || !tcpState.mbap || tcpState.crc) await conv("mb-tcp", `TCP 서버 화면이 이상함: ${JSON.stringify(tcpState)}`);
+        await verify("mb-tcp running");
+        if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-tcp-running`);
+        await clickRun("mb-tcp: stop", (s) => !STOP_RE.test(s.btn ?? ""));
+        await setTransport("serial");
+        await sleep(200);
+        await clickRun("mb-tcp: serial again", (s) => STOP_RE.test(s.btn ?? "") && /연결됨|Connected/.test(s.status ?? ""));
       }
       // ---- Simulator: 규칙 지우기 → 되돌리기
       if (app === "simulator") {
@@ -594,6 +671,161 @@ async function runApp(app, port) {
       }
       await blur();
       await verify("convenience end");
+    }
+
+    /** Serial·TCP·UDP 공통 기능(10/18) — 연결된 상태에서. 입력 이력·명령 단축키·간격 열·트리거·체크섬 옵션·반복 횟수·처리량,
+     *  Serial: Break·터미널 보기·파일 보내기, TCP: 파일 보내기 */
+    async function ioFeatures() {
+      if (app !== "serial" && app !== "tcp" && app !== "udp") return;
+      const snap = combo.name === "ko-light" || combo.name === "en-dark";
+      // ---- 입력 이력 ↑/↓ (고치던 글은 맨 아래에서 ↓ 로)
+      const inp = (await d.findElements(By.css(".sendtext")))[0];
+      await js(`const m = [...document.querySelectorAll('.sendbar .sendrow select')].find((s) => s.querySelector('option[value=ascii]')); __sm.setVal(m, 'hex');`);
+      await sleep(150);
+      for (const v of ["0A 0B", "0C 0D"]) {
+        await js(`__sm.setVal(document.querySelector('.sendtext'), ${JSON.stringify(v)})`);
+        await sleep(150);
+        await inp.click();
+        await keys(Key.ENTER);
+        await sleep(250);
+      }
+      await js(`__sm.setVal(document.querySelector('.sendtext'), '0E')`);
+      await sleep(100);
+      await inp.click();
+      const seq = [];
+      for (const k of [Key.ARROW_UP, Key.ARROW_UP, Key.ARROW_DOWN, Key.ARROW_DOWN]) {
+        await keys(k);
+        seq.push(await inp.getAttribute("value"));
+      }
+      if (JSON.stringify(seq) !== JSON.stringify(["0C 0D", "0A 0B", "0C 0D", "0E"])) await conv("history", `↑↑↓↓ 결과가 이상함: ${JSON.stringify(seq)} (기대 0C 0D, 0A 0B, 0C 0D, 0E)`);
+      await js(`__sm.setVal(document.querySelector('.sendtext'), ${JSON.stringify(VALID_TEXT[app] === "STATUS?" ? "01 02" : VALID_TEXT[app])})`);
+      await blur();
+
+      // ---- 오른쪽 칸 펼치기(좁은 창이면)
+      const nb = (await d.findElements(By.css(".toolbar .narrow-only")))[0];
+      if (nb && (await nb.isDisplayed())) await nb.click();
+      await sleep(200);
+      // ---- 명령 단축키: 첫 명령에 F7, 다른 명령에서는 F7 을 고를 수 없음, F7 로 보내기
+      const nCmd = await js("return document.querySelectorAll('.cmd').length");
+      if (nCmd < 2) await js(`for (let i = 0; i < 2; i++) { document.querySelector('.sendrow.sub .add-cmd').click(); }`);
+      await sleep(300);
+      await js(`__sm.setVal(document.querySelectorAll('.cmd-key')[0], 'F7')`);
+      await sleep(150);
+      const f7 = await js(`const o = [...document.querySelectorAll('.cmd-key')[1].options].find((x) => x.value === 'F7'); return { taken: o && o.disabled, chip: document.querySelectorAll('.cmd-key')[0].value };`);
+      if (!f7.taken || f7.chip !== "F7") await conv("hotkey", `단축키 겹침 막기·표시가 이상함: ${JSON.stringify(f7)}`);
+      await blur();
+      const s0 = await calls("send");
+      await keys(Key.F7);
+      await sleep(300);
+      if ((await calls("send")) !== s0 + 1) await conv("hotkey", "F7 로 명령이 보내지지 않음");
+      // ---- 트리거: 받은 줄에 오는 글자 → 색칠·사건 줄·횟수
+      const pat = { serial: "TEMP", tcp: "READY", udp: "PING" }[app];
+      const opened = await js("return !!document.querySelector('.trg-list')");
+      if (!opened) await js("document.querySelector('.trg-toggle').click()");
+      await sleep(100);
+      await js("[...document.querySelectorAll('.trg-head .btn')].pop().click()");
+      await sleep(200);
+      await js(`__sm.setVal(document.querySelector('.trg-pat'), ${JSON.stringify(pat)})`);
+      if (snap) await shot(app, `${combo.name}-triggers`);
+      // 오른쪽 칸을 닫고(좁은 창) 로그를 본다
+      const close = (await d.findElements(By.css(".close-right")))[0];
+      if (close && (await close.isDisplayed())) await close.click();
+      await sleep(2600);
+      const tr = await js(`return { marked: document.querySelectorAll('.log .row.marked').length, ev: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /TRIGGER/.test(n.textContent)), hits: (document.querySelector('.trg-total') || {}).textContent || '' };`);
+      if (!tr.marked || !tr.ev || !/\d/.test(tr.hits)) await conv("trigger", `트리거가 맞은 줄을 칠하거나 알리지 않음: ${JSON.stringify(tr)}`);
+      // ---- 간격 열: 응답 시간
+      await js(`__sm.setVal(document.querySelector('.delta-sel'), 'prev')`);
+      await sleep(400);
+      const dts = await js("return [...document.querySelectorAll('.log .row .dt')].map((e) => e.textContent).filter(Boolean).length");
+      if (!dts) await conv("delta", "«직전 줄과 간격» 을 골랐는데 간격 열이 비어 있음");
+      if (snap) await shot(app, `${combo.name}-delta-trigger`);
+      await js("window.__smoke.clip = null");
+      // 맨 첫 줄(지우기 바로 뒤)은 앞 줄이 없어 간격이 비어 있다 — 마지막 RX 줄로
+      const row = (await d.findElements(By.css(".log .row.rx"))).slice(-1)[0];
+      if (row) {
+        await row.click();
+        await blur();
+        await chord([Key.CONTROL], "c");
+        const clip = await js("return window.__smoke.clip");
+        if (!clip || !/ \+\d/.test(clip)) await conv("delta-copy", `간격 열이 줄 복사에 들어가지 않음: ${JSON.stringify(clip)}`);
+      }
+      await js(`__sm.setVal(document.querySelector('.delta-sel'), 'off')`);
+      // ---- 처리량
+      const ls = await js("return (document.querySelector('.live-stats') || {}).textContent || ''");
+      if (!/B\/s/.test(ls)) await conv("live-stats", `처리량 표시가 없음: «${ls}»`);
+      // ---- 체크섬 옵션: BCC + 앞 1바이트 빼고 → 미리보기가 달라진다
+      const ck = await jsAsync(`
+        const w = () => new Promise((r) => setTimeout(r, 200));
+        const sel = document.querySelector('.sendbar .ck-pick select');
+        __sm.setVal(document.querySelector('.sendtext'), '02 41 42 03'); await w();
+        __sm.setVal(sel, 'bcc'); await w();
+        const plain = document.querySelector('.sendbar .preview').textContent;
+        document.querySelector('.sendbar .ck-opt').click(); await w();
+        const dlg = !!document.querySelector('.modal.ck-dialog');
+        const nums = document.querySelectorAll('.modal.ck-dialog input.num, .modal.ck-dialog input');
+        __sm.setVal(nums[0], '1'); await w();
+        __sm.setVal(nums[1], '1'); await w();
+        __sm.key(window, 'Escape'); await w();
+        const opt = document.querySelector('.sendbar .preview').textContent;
+        const closed = !document.querySelector('.modal.ck-dialog');
+        __sm.setVal(sel, ''); await w();
+        return { plain, opt, dlg, closed };`);
+      if (!ck.dlg || !ck.closed) await conv("ck-options", `체크섬 옵션 창이 열리거나 Esc 로 닫히지 않음: ${JSON.stringify(ck)}`);
+      if (!/02 41 42 03 02/.test(ck.plain) || !/02 41 42 03 03/.test(ck.opt)) await conv("ck-options", `체크섬 범위·자리 옵션이 미리보기에 반영되지 않음: ${JSON.stringify(ck)}`);
+      await js(`__sm.setVal(document.querySelector('.sendtext'), ${JSON.stringify(VALID_TEXT[app] === "STATUS?" ? "01 02" : VALID_TEXT[app])})`);
+      // ---- 반복 횟수: 3번 보내고 멈춤
+      await js(`const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[0], '100'); __sm.setVal(n[1], '3');`);
+      await sleep(200);
+      const box = (await d.findElements(By.css(".sendrow.sub label.inline input[type=checkbox]")))[0];
+      if (box && (await box.isEnabled())) {
+        await box.click();
+        await sleep(1500);
+        const r = await js("return { on: document.querySelector('.sendrow.sub label.inline input[type=checkbox]').checked, n: (document.querySelector('.rep-count') || {}).textContent }");
+        if (r.on || !/3\/3/.test(r.n ?? "")) await conv("repeat-times", `3번 보내고 멈추지 않음: ${JSON.stringify(r)}`);
+      }
+      await js(`const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[1], '0');`);
+      // ---- Serial: Break · 터미널 보기
+      if (app === "serial") {
+        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => b.textContent.trim() === 'Break').click()");
+        await sleep(300);
+        // 맨 아래(새 줄)로 — 가상 목록은 보이는 줄만 그린다
+        await blur();
+        await keys(Key.END);
+        await sleep(300);
+        if (!(await js("return [...document.querySelectorAll('.log .row.ev .note')].some((n) => /BREAK 100ms/.test(n.textContent))"))) await conv("break", "Break 를 눌렀는데 «BREAK 100ms» 사건 줄이 없음");
+        await js("[...document.querySelectorAll('.toolbar .seg')].pop().click()");
+        await sleep(1600);
+        const t = await js("return { term: !!document.querySelector('.term'), lines: document.querySelectorAll('.term .term-line').length }");
+        if (!t.term || !t.lines) await conv("terminal", `터미널 보기가 비어 있음: ${JSON.stringify(t)}`);
+        if (snap) await shot(app, `${combo.name}-terminal`);
+        await verify("terminal view");
+        await js("document.querySelector('.toolbar .seg').click()");
+        await sleep(200);
+      }
+      // ---- 파일 보내기(Serial·TCP): 고르기 → 시작 → 진행 → 다 보냄
+      if (app === "serial" || app === "tcp") {
+        await mock("(window.__pdMock.dialog = { ...window.__pdMock.dialog, open: 'C:\\\\mock\\\\firmware.bin' }, true)");
+        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => /…$/.test(b.textContent.trim())).click()");
+        await sleep(250);
+        if (!(await js("return !!document.querySelector('.modal.file-dialog')"))) await conv("file-send", "«파일 보내기…» 로 창이 열리지 않음");
+        else {
+          await js("document.querySelector('.modal.file-dialog .row2 .btn').click()");
+          await sleep(250);
+          await js("document.querySelector('.modal.file-dialog .btn.primary').click()");
+          await sleep(500);
+          if (snap) await shot(app, `${combo.name}-file-sending`);
+          await sleep(1600);
+          const f = await js("return (document.querySelector('.modal.file-dialog .file-job') || {}).textContent || ''");
+          if (!/4,096|4096/.test(f) || !/다 보냈|Sent everything/.test(f)) await conv("file-send", `파일 보내기 진행이 끝나지 않음: «${f}»`);
+          await verify("file send");
+          await keys(Key.ESCAPE);
+          await sleep(200);
+          if (await js("return !!document.querySelector('.modal.file-dialog')")) await conv("file-send", "Esc 로 파일 보내기 창이 닫히지 않음");
+        }
+        await mock("(window.__pdMock.dialog = { ...window.__pdMock.dialog, open: null }, true)");
+      }
+      await blur();
+      await verify("io features");
     }
 
     /** 좁은 창(안쪽 760×600): 왼쪽 칸이 접히고 요약 줄·«⚙ 연결 설정» 이 보이며, 펼쳐도·연결해도 넘치지 않는지 */
@@ -689,7 +921,7 @@ async function runApp(app, port) {
       }
 
       // ---- 연결·시작
-      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/ }[app];
+      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
@@ -724,7 +956,10 @@ async function runApp(app, port) {
       }
 
       // 편의성(10/17): 창 제목·따라가기·줄 고르기·Ctrl+C·우클릭 메뉴·단축키·명령 목록·숫자 칸·표기 바꾸기·되돌리기·항상 위
-      if (combo.full) await convenience();
+      // Net Scan 은 통신 기록·명령 목록이 없어 편의성 점검(로그 따라가기 등)을 건너뛴다
+      if (combo.full && app !== "netscan") await convenience();
+      // Serial·TCP·UDP 공통 기능(이력·단축키·간격·트리거·체크섬 옵션·반복 횟수·Break·터미널·파일)
+      if (combo.full) await ioFeatures();
 
       // 연결 중 다 눌러 보기(실행 버튼은 빼고)
       if (combo.full) await pageExercise("running", "#root", { skip: RUN_BTN });

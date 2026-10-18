@@ -1,6 +1,6 @@
 // UDP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
-import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
+import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -29,9 +29,10 @@ export const help: HelpDoc = {
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·상대 주소·내용. UDP 는 데이터그램 하나가 곧 한 줄입니다(프레임 구분이 필요 없음).",
         "- 가운데 아래: 보내기 줄(대상, HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
-        "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 상대 주소·바이트 수·HEX·ASCII).",
+        "- 오른쪽: «명령 목록», «트리거», «상세»(로그 줄을 누르면 상대 주소·바이트 수·HEX·ASCII).",
         "- 창이 좁으면 오른쪽 칸이 숨고 «☰ 명령 목록» 버튼으로 펼칩니다.",
         ...windowLines("ko"),
+        ...ioLayoutLines("ko", {}),
       ],
     },
     {
@@ -64,7 +65,7 @@ export const help: HelpDoc = {
         "입력칸 왼쪽에서 HEX 또는 ASCII 를 고릅니다. 입력하는 동안 «보낼 바이트» 에 실제로 나갈 바이트가 보이고, 틀리면 이유가 나옵니다.",
         "- HEX: «01 03 0A», «01030A», «0x01,0x03,0x0A» 모두 같은 3바이트입니다. 두 자리씩이어야 합니다.",
         "- ASCII: 글자를 그대로 보냅니다. «\\r»(CR), «\\n»(LF), «\\t», «\\0», «\\\\», «\\xNN» 을 쓸 수 있습니다.",
-        "- «체크섬»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8, SUM16 중 하나를 붙입니다.",
+        "- «체크섬»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8, SUM16, CRC-32, CRC (사용자 정의) 중 하나를 붙입니다. 옆 ⚙ 로 계산 범위·자리·바이트 순서를 바꿉니다.",
         "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF. 붙는 순서는 «본문 + 체크섬 + 줄 끝» 입니다.",
         "- 한 번 보내기 = 데이터그램 하나입니다. 너무 크면(약 64KB 초과) 운영체제가 거절합니다.",
         "- 시작 전이거나 내용이 비면 «보내기» 가 잠기고 옆에 이유가 나옵니다. 보낼 곳이 없으면(«마지막으로 보내온 쪽» 인데 아직 받은 게 없음 등) 오류 문구가 나옵니다.",
@@ -94,6 +95,7 @@ export const help: HelpDoc = {
         "- EV 줄은 시작·멈춤·멀티캐스트 가입·에코 켜고 끄기·오류 같은 사건입니다.",
         "- «ICMP port unreachable»: 보낸 곳에서 아무도 듣고 있지 않다는 운영체제 알림입니다. 장비 포트와 전원을 확인하세요.",
         "- 화면에 남길 줄 수(기본 10만)를 넘으면 화면에서만 오래된 줄이 지워집니다. 파일 기록은 그대로입니다.",
+        ...ioEvLines("ko", {}),
         ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -112,7 +114,7 @@ export const help: HelpDoc = {
     {
       title: "저장과 상세",
       body: [
-        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
+        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 의 줄 모양은 보기와 상관없이 설정 «파일 로그 형식» 을 따릅니다 — 기본 HEX.)",
         "- «파일로 계속 저장»: 파일을 고르면 그때부터 오는 모든 줄을 계속 씁니다. 첫 줄에 설정이 적힙니다. «저장 멈춤» 으로 끝냅니다. 시작한 뒤에만 누를 수 있습니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 그 줄의 상대·바이트 수·HEX·ASCII 가 나옵니다.",
       ],
@@ -131,6 +133,7 @@ export const help: HelpDoc = {
       title: "단축키·팁",
       body: [
         ...shortcutLines("ko", { saveView: true, repeat: true, find: true, startStop: true }),
+        ...ioKeyLines("ko"),
         "- 입력칸에서 Enter: 보내기.",
         "- 칸에 마우스를 올리면 말풍선으로 설명이 나옵니다.",
         "- 장비가 어디로 보내는지 모르면: 받을 포트를 맞게 넣고 시작한 뒤 «보내온 상대» 를 보세요.",
@@ -173,9 +176,10 @@ export const help: HelpDoc = {
         "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
         "- Log: time, direction (RX ◀ / TX ▶ / EV), peer address, data. One datagram is one line (no framing needed).",
         "- Bottom: send row (target, HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
-        "- Right: «Commands» and «Detail» (click a log line to see peer, length, HEX, ASCII).",
+        "- Right: «Commands», «Triggers» and «Detail» (click a log line to see peer, length, HEX, ASCII).",
         "- In a narrow window the right pane hides; open it with «☰ Commands».",
         ...windowLines("en"),
+        ...ioLayoutLines("en", {}),
       ],
     },
     {
@@ -208,7 +212,7 @@ export const help: HelpDoc = {
         "Choose HEX or ASCII left of the input. «Bytes to send» shows the exact bytes while you type, or why the input is invalid.",
         "- HEX: «01 03 0A», «01030A» and «0x01,0x03,0x0A» are the same 3 bytes. Use two digits per byte.",
         "- ASCII: sent as typed. «\\r» (CR), «\\n» (LF), «\\t», «\\0», «\\\\» and «\\xNN» are supported.",
-        "- «Checksum»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8 or SUM16.",
+        "- «Checksum»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8, SUM16, CRC-32 or CRC (custom). ⚙ next to it changes the range, position and byte order.",
         "- «Line ending»: none, CR, LF or CR LF. The order is always «body + checksum + line ending».",
         "- One send = one datagram. The OS refuses datagrams larger than about 64 KB.",
         "- «Send» is disabled, with the reason shown, before starting or when the input is empty. With no destination (e.g. «Last sender» before anything arrived) an error message appears.",
@@ -238,6 +242,7 @@ export const help: HelpDoc = {
         "- EV lines are events: start, stop, multicast join, echo on/off, errors.",
         "- «ICMP port unreachable»: the OS reports that nobody listens at the destination. Check the device port and power.",
         "- Above the line limit (default 100,000) old lines are removed from the screen only; file logs are unaffected.",
+        ...ioEvLines("en", {}),
         ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -256,7 +261,7 @@ export const help: HelpDoc = {
     {
       title: "Saving and detail",
       body: [
-        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
+        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». (The line format of «Log to file» follows «File log format» in Settings regardless of the view — HEX by default.)",
         "- «Log to file»: writes every line from now on to a file, with the settings on the first line. «Stop logging» ends it. Available only while running.",
         "- Click a log line to see its peer, length, HEX and ASCII in «Detail».",
       ],
@@ -275,6 +280,7 @@ export const help: HelpDoc = {
       title: "Shortcuts and tips",
       body: [
         ...shortcutLines("en", { saveView: true, repeat: true, find: true, startStop: true }),
+        ...ioKeyLines("en"),
         "- Enter in the input: send.",
         "- Hover over a field to see a tooltip.",
         "- Not sure where the device sends? Start on the right listen port and watch «Senders».",
@@ -292,3 +298,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식) — «문제 해결» 앞에
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: false }));

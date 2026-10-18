@@ -2,7 +2,8 @@
 
 use portdock_core::tr;
 use portdock_core::checksum::ChecksumKind;
-use portdock_core::codec::{SendSpec, build};
+use portdock_core::codec::SendText;
+use portdock_core::event::LogOptions;
 use portdock_core::event::SessionEvent;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::udp::{UdpConfig, UdpSession};
@@ -53,8 +54,8 @@ fn set_echo(app: State<App>, on: bool) -> Result<(), String> {
 
 /// to: 없음 = 기본 대상, "last" = 마지막으로 보내온 쪽, 그 밖엔 «ip:port»
 #[tauri::command(async)]
-fn send(app: State<App>, to: Option<String>, spec: SendSpec) -> Result<String, String> {
-    let bytes = build(&spec)?;
+fn send(app: State<App>, to: Option<String>, spec: SendText) -> Result<String, String> {
+    let bytes = spec.build()?;
     if bytes.is_empty() {
         return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
@@ -67,8 +68,14 @@ fn rejoin(app: State<App>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn preview(spec: SendSpec) -> Result<Vec<u8>, String> {
-    build(&spec)
+fn preview(spec: SendText) -> Result<Vec<u8>, String> {
+    spec.build()
+}
+
+/// 파일 로그 형식·글자 인코딩·나누기 — 다음에 여는 로그 파일부터
+#[tauri::command]
+fn set_log_options(options: LogOptions) {
+    portdock_core::event::set_log_options(options);
 }
 
 #[tauri::command(async)]
@@ -156,7 +163,7 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env,
-            report_read_dump, start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log, write_text, read_text])
+            report_read_dump, start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log_options, set_log, write_text, read_text])
         .run(tauri::generate_context!());
     if let Err(e) = result {
         portdock_core::report::run_failed(&e.to_string());

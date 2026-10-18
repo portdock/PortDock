@@ -1,6 +1,6 @@
 // TCP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
-import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
+import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -29,9 +29,10 @@ export const help: HelpDoc = {
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·(서버면 상대 주소)·내용. 수신 체크섬 검사를 켜면 «정상»·«틀림» 이 붙습니다.",
         "- 가운데 아래: 보내기 줄((서버) «받는 쪽», HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
-        "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 그 줄의 상대 주소·바이트 수·HEX·ASCII).",
+        "- 오른쪽: «명령 목록», «트리거», «상세»(로그 줄을 누르면 그 줄의 상대 주소·바이트 수·HEX·ASCII).",
         "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
         ...windowLines("ko"),
+        ...ioLayoutLines("ko", { fileSend: true }),
       ],
     },
     {
@@ -80,9 +81,9 @@ export const help: HelpDoc = {
         "입력칸 왼쪽에서 HEX 또는 ASCII 를 고릅니다. 입력하는 동안 «보낼 바이트» 에 실제로 나갈 바이트와 개수가 보입니다. 입력이 틀리면 그 자리에 이유가 나옵니다.",
         "- HEX: «01 03 0A», «01030A», «0x01,0x03,0x0A» 모두 같은 3바이트입니다. 띄어쓰기·쉼표·세미콜론·하이픈으로 나눌 수 있습니다. 두 자리씩이어야 합니다.",
         "- ASCII: 글자를 그대로 보냅니다. 특수 문자는 «\\r»(CR), «\\n»(LF), «\\t»(탭), «\\0»(0x00), «\\\\»(역슬래시), «\\xNN»(HEX 두 자리 바이트, 예: «\\x02»)로 씁니다.",
-        "- «체크섬»: CRC16 Modbus(낮은 바이트 먼저), CRC16 CCITT·CRC16 XMODEM(높은 바이트 먼저), CRC8, LRC, BCC (XOR), SUM8, SUM16(높은 바이트 먼저) 중 하나를 붙입니다.",
+        "- «체크섬»: CRC16 Modbus(낮은 바이트 먼저), CRC16 CCITT·CRC16 XMODEM(높은 바이트 먼저), CRC8, LRC, BCC (XOR), SUM8, SUM16(높은 바이트 먼저), CRC-32(낮은 바이트 먼저), CRC (사용자 정의) 중 하나를 붙입니다. 옆 ⚙ 로 계산 범위·자리·바이트 순서를 바꿉니다.",
         "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF 중 하나를 맨 뒤에 붙입니다. 받을 때 줄을 끊는 «끝 문자» 와는 별개입니다.",
-        "- 붙는 순서는 언제나 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문 전체(첫 바이트부터)로 계산하고 줄 끝은 계산에 넣지 않습니다.",
+        "- 붙는 순서는 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 기본으로 본문 전체(첫 바이트부터)로 계산하고 줄 끝은 계산에 넣지 않습니다(⚙ 옵션으로 범위·자리를 바꿀 수 있음).",
         "- 예: «STATUS?» + CR LF, 또는 HEX «01 03 00 00 00 0A» + CRC16 Modbus → «01 03 00 00 00 0A C5 CD».",
         "- 보내기에 실패하면(2초 안에 못 씀 등) 그 접속은 믿을 수 없으므로 닫고 «SEND FAIL …» 을 남깁니다.",
         ...notationLines("ko"),
@@ -123,6 +124,7 @@ export const help: HelpDoc = {
         "- STOP LISTEN: 서버 듣기를 멈췄습니다.",
         "- ECHO ON / ECHO OFF: 에코를 켜거나 껐습니다. 초당 200번을 넘어 저절로 꺼지면 이유가 함께 붙습니다.",
         "- SEND FAIL 주소: 그 상대에게 보내지 못했습니다.",
+        ...ioEvLines("ko", { fileSend: true }),
         ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -142,11 +144,11 @@ export const help: HelpDoc = {
       title: "저장과 상세",
       body: [
         "- «파일로 계속 저장»: 실행 중에 누르면 고른 파일에 RX·TX·EV 를 계속 덧붙입니다. 다시 누르면(«저장 멈춤») 멈춥니다.",
-        "- 파일 한 줄 모양: «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]».",
-        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
+        "- 파일 한 줄 모양(HEX 형식): «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]». CSV 형식은 마지막 칸(peer)에 상대 주소가 들어갑니다.",
+        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 의 줄 모양은 보기와 상관없이 설정 «파일 로그 형식» 을 따릅니다 — 기본 HEX.)",
         "- «지우기»: 화면 로그와 RX·TX 바이트 수를 비웁니다. 파일 로그는 그대로입니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 시각·상대 주소·바이트 수·HEX·ASCII 가 나옵니다(따라가기는 그대로).",
-        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<STX>» 처럼, 그 밖은 «<1B>» 처럼 보입니다.",
+        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<STX>» 처럼, 그 밖은 «<1B>» 처럼 보입니다. 0x80 이상은 설정의 «글자 인코딩» 으로 읽습니다.",
       ],
     },
     {
@@ -179,6 +181,7 @@ export const help: HelpDoc = {
       title: "단축키·팁",
       body: [
         ...shortcutLines("ko", { saveView: true, repeat: true, find: true, startStop: true }),
+        ...ioKeyLines("ko"),
         "- 입력칸에서 Enter: 보내기(보낼 상대가 있을 때).",
         "- 창이 좁으면 «☰ 명령 목록» 으로 오른쪽 칸을 펼치고, ✕ 나 바깥을 눌러 닫습니다.",
         "- 장비가 클라이언트인지 서버인지 모르면, 장비 설정 화면에서 «서버 IP»(장비가 접속할 곳)를 넣는 칸이 있는지 보세요. 있으면 이 프로그램을 서버로 씁니다.",
@@ -226,9 +229,10 @@ export const help: HelpDoc = {
         "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
         "- Log: time, direction (RX ◀ / TX ▶ / EV), (server) peer address and data. With RX checksum verification on, lines get «OK» or «FAIL».",
         "- Bottom: the send row ((server) «To», HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
-        "- Right: «Commands» and «Detail» (click a log line to see its peer, byte count, HEX and ASCII).",
+        "- Right: «Commands», «Triggers» and «Detail» (click a log line to see its peer, byte count, HEX and ASCII).",
         "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
         ...windowLines("en"),
+        ...ioLayoutLines("en", { fileSend: true }),
       ],
     },
     {
@@ -277,9 +281,9 @@ export const help: HelpDoc = {
         "Choose HEX or ASCII left of the input. While you type, «Bytes to send» shows the exact bytes and count. If the input is invalid, the reason appears there instead.",
         "- HEX: «01 03 0A», «01030A» and «0x01,0x03,0x0A» are the same 3 bytes. Separate with spaces, commas, semicolons or hyphens. Two digits per byte.",
         "- ASCII: characters are sent as typed. Special characters: «\\r» (CR), «\\n» (LF), «\\t» (tab), «\\0» (0x00), «\\\\» (backslash), «\\xNN» (one byte in two HEX digits, e.g. «\\x02»).",
-        "- «Checksum»: CRC16 Modbus (low byte first), CRC16 CCITT and CRC16 XMODEM (high byte first), CRC8, LRC, BCC (XOR), SUM8, SUM16 (high byte first).",
+        "- «Checksum»: CRC16 Modbus (low byte first), CRC16 CCITT and CRC16 XMODEM (high byte first), CRC8, LRC, BCC (XOR), SUM8, SUM16 (high byte first), CRC-32 (low byte first) or CRC (custom). ⚙ next to it changes the range, position and byte order.",
         "- «Line ending»: «None», CR, LF or CR LF appended at the very end. Separate from the receive-side «Terminator».",
-        "- The order is always «body + checksum + line ending». The checksum covers the whole body from the first byte, not the line ending.",
+        "- The order is «body + checksum + line ending». By default the checksum covers the whole body from the first byte, not the line ending (⚙ options change the range and position).",
         "- Examples: «STATUS?» + CR LF, or HEX «01 03 00 00 00 0A» + CRC16 Modbus → «01 03 00 00 00 0A C5 CD».",
         "- If a write fails (e.g. not written within 2 s), that connection can no longer be trusted, so it is closed and «SEND FAIL …» is logged.",
         ...notationLines("en"),
@@ -320,6 +324,7 @@ export const help: HelpDoc = {
         "- STOP LISTEN: the server stopped listening.",
         "- ECHO ON / ECHO OFF: echo was turned on or off. When it turns off by itself above 200 per second, the reason is added.",
         "- SEND FAIL address: sending to that peer failed.",
+        ...ioEvLines("en", { fileSend: true }),
         ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -339,11 +344,11 @@ export const help: HelpDoc = {
       title: "Saving and detail",
       body: [
         "- «Log to file»: while running, appends RX, TX and EV to the chosen file. Click again («Stop logging») to stop.",
-        "- A file line looks like «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]».",
-        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
+        "- A file line (HEX format) looks like «2026-10-17 21:05:03.123 RX [192.168.0.10:502] 01 03 02 00 64 [OK]». In CSV the peer address goes in the last column (peer).",
+        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». (The line format of «Log to file» follows «File log format» in Settings regardless of the view — HEX by default.)",
         "- «Clear»: empties the screen log and RX/TX counts. The file log is not affected.",
         "- Clicking a log line shows time, peer, byte count, HEX and ASCII in «Detail» (following continues).",
-        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<STX>», others as «<1B>» and so on.",
+        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<STX>», others as «<1B>» and so on. Bytes 0x80 and up are read with «Text encoding» in Settings.",
       ],
     },
     {
@@ -376,6 +381,7 @@ export const help: HelpDoc = {
       title: "Shortcuts and tips",
       body: [
         ...shortcutLines("en", { saveView: true, repeat: true, find: true, startStop: true }),
+        ...ioKeyLines("en"),
         "- Enter in the input: send (when a peer is connected).",
         "- In a narrow window, open the right pane with «☰ Commands» and close it with ✕ or by clicking outside.",
         "- Not sure whether the device is a client or a server? If its settings have a «server IP» field (where the device connects to), use this program as the server.",
@@ -398,3 +404,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기) — «문제 해결» 앞에
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }));

@@ -2,7 +2,8 @@
 
 use portdock_core::tr;
 use portdock_core::checksum::ChecksumKind;
-use portdock_core::codec::{SendSpec, build};
+use portdock_core::codec::{Pace, SendText};
+use portdock_core::event::LogOptions;
 use portdock_core::framer::FrameMode;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session, SessionEvent};
@@ -62,20 +63,84 @@ fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Resul
     sessions.0.with(&id, |s| s.set_log(path))?
 }
 
+/// `pace` 에 문자 간 지연이 있으면 천천히 보내기(취소·진행 사건)로, 아니면 보통 송신
 #[tauri::command(async)]
-fn send(sessions: State<Sessions>, id: String, spec: SendSpec) -> Result<Vec<u8>, String> {
-    let bytes = build(&spec)?;
+fn send(sessions: State<Sessions>, id: String, spec: SendText, pace: Option<Pace>) -> Result<Vec<u8>, String> {
+    let bytes = spec.build()?;
     if bytes.is_empty() {
         return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
-    sessions.0.with(&id, |s| s.send(bytes.clone()))??;
+    match pace.filter(|p| p.char_delay_ms > 0) {
+        Some(p) => {
+            p.validate()?;
+            sessions.0.with(&id, |s| s.send_paced(bytes.clone(), Pace { by_line: false, chunk: 0, ..p }))??;
+        }
+        None => sessions.0.with(&id, |s| s.send(bytes.clone()))??,
+    }
     Ok(bytes)
 }
 
 /// 입력하는 동안 «실제로 나갈 바이트» 를 미리 보여 주기 위해
 #[tauri::command]
-fn preview(spec: SendSpec) -> Result<Vec<u8>, String> {
-    build(&spec)
+fn preview(spec: SendText) -> Result<Vec<u8>, String> {
+    spec.build()
+}
+
+/// 파일 보내기에 받는 최대 크기 — 천천히 보내면 몇 시간이 걸릴 수 있어 넉넉하되 끝이 있게
+const FILE_MAX: u64 = 32 * 1024 * 1024;
+
+#[derive(serde::Serialize)]
+struct FileJob {
+    id: u64,
+    total: u64,
+}
+
+/// 파일 그대로(바이트) 보내기 — 화면은 열기 대화상자에서 고른 경로만 넘긴다(D7 와 같은 약속)
+#[tauri::command(async)]
+fn send_file(sessions: State<Sessions>, id: String, path: String, pace: Pace) -> Result<FileJob, String> {
+    pace.validate()?;
+    let bytes = read_file_for_send(&path)?;
+    let total = bytes.len() as u64;
+    let job = sessions.0.with(&id, |s| s.send_paced(bytes, pace))??;
+    Ok(FileJob { id: job, total })
+}
+
+fn read_file_for_send(path: &str) -> Result<Vec<u8>, String> {
+    let meta = std::fs::metadata(path).map_err(|e| format!("{path}: {e}"))?;
+    if !meta.is_file() {
+        return Err(tr!(format!("{path}: 파일이 아닙니다"), format!("{path}: not a file")));
+    }
+    if meta.len() == 0 {
+        return Err(tr!(format!("{path}: 빈 파일입니다"), format!("{path}: the file is empty")));
+    }
+    if meta.len() > FILE_MAX {
+        return Err(tr!(format!("{path}: 32MB 보다 큰 파일은 보낼 수 없습니다"), format!("{path}: files larger than 32 MB cannot be sent")));
+    }
+    std::fs::read(path).map_err(|e| format!("{path}: {e}"))
+}
+
+/// 파일 크기 — 파일 보내기 창이 크기·예상 시간을 보이려고(열기 대화상자에서 고른 경로만)
+#[tauri::command(async)]
+fn file_size(path: String) -> Result<u64, String> {
+    std::fs::metadata(&path).map(|m| m.len()).map_err(|e| format!("{path}: {e}"))
+}
+
+/// 천천히 보내기(파일·문자 간 지연)를 모두 멈춘다
+#[tauri::command(async)]
+fn cancel_send(sessions: State<Sessions>, id: String) -> Result<(), String> {
+    sessions.0.with(&id, |s| s.cancel_send())
+}
+
+/// Break 신호(ms)
+#[tauri::command(async)]
+fn send_break(sessions: State<Sessions>, id: String, ms: u32) -> Result<(), String> {
+    sessions.0.with(&id, |s| s.send_break(ms))?
+}
+
+/// 파일 로그 형식·글자 인코딩·나누기 — 다음에 여는 로그 파일부터
+#[tauri::command]
+fn set_log_options(options: LogOptions) {
+    portdock_core::event::set_log_options(options);
 }
 
 #[tauri::command]
@@ -176,6 +241,11 @@ pub fn run() {
             reconfigure,
             set_log,
             send,
+            send_file,
+            file_size,
+            cancel_send,
+            send_break,
+            set_log_options,
             preview,
             decode_modbus,
             verify_checksum,
@@ -190,7 +260,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use portdock_core::codec::TextMode;
+    use portdock_core::codec::{SendSpec, TextMode, build};
 
     #[test]
     fn build_appends_checksum_then_suffix() {

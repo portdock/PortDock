@@ -1,6 +1,6 @@
 // Serial 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
-import { commandLines, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
+import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -30,9 +30,10 @@ export const help: HelpDoc = {
         "- 가운데 상태줄: 지금 설정 요약(예: «COM3 9600 8N1»), 출력 신호 DTR·RTS, 입력 신호 CTS·DSR·RI·CD 표시등, 파일 저장 중이면 «● REC».",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·내용. 수신 체크섬 검사를 켜면 줄 끝에 «정상»·«틀림» 이 붙습니다.",
         "- 가운데 아래: 보내기 줄(HEX/ASCII, 입력칸, «Modbus 요청», 체크섬, 줄 끝 붙이기, «보내기»)과 «보낼 바이트» 미리보기, «반복(ms)», «+ 목록에 추가».",
-        "- 오른쪽: «명령 목록» 과 «상세»(로그 줄을 누르면 그 줄의 HEX·ASCII 와 Modbus 풀이).",
+        "- 오른쪽: «명령 목록», «트리거», «상세»(로그 줄을 누르면 그 줄의 HEX·ASCII 와 Modbus 풀이).",
         "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
         ...windowLines("ko"),
+        ...ioLayoutLines("ko", { serial: true, fileSend: true }),
       ],
     },
     {
@@ -43,10 +44,11 @@ export const help: HelpDoc = {
         "- 연결에 실패하면 상태 칸에 빨갛게 «연결 실패 · 이유» 가 나옵니다. 포트가 사용 중이면 다른 프로그램이 쓰고 있는지 확인하세요.",
         "- «속도(bps)»: 통신 속도. 목록(1200~921600)에서 고르거나 직접 숫자를 넣습니다. 장비와 다르면 글자가 깨져 보입니다.",
         "- «데이터 비트»: 5·6·7·8 중 하나. 대부분 8 입니다.",
-        "- «패리티»: «없음»·«홀수»·«짝수». 장비 설정과 같아야 합니다.",
-        "- «정지 비트»: 1 또는 2.",
+        "- «패리티»: «없음»·«홀수»·«짝수»·«Mark (1)»·«Space (0)». 장비 설정과 같아야 합니다. Mark·Space 는 9비트 주소 방식 장비용으로, 윈도우 드라이버에 직접 설정합니다(일부 USB 변환기는 받지 않아 연결할 때 이유를 알려 줌).",
+        "- «정지 비트»: 1·1.5·2. 1.5 는 대개 데이터 비트 5 에서만 됩니다(아니면 노란 안내가 나오고, 드라이버가 거절하면 연결할 때 이유를 알려 줌).",
         "- «흐름 제어»: «없음», «하드웨어(RTS/CTS)», «소프트웨어(XON/XOFF)». 장비가 쓰지 않으면 «없음» 으로 둡니다.",
         "- DTR·RTS: PC 가 내보내는 출력 신호선입니다. 체크하면 켜집니다. 일부 보드는 DTR 이 바뀌면 리셋되니 주의하세요.",
+        "- «RS-485 송신 방향 (RTS)»: 반이중 RS-485 변환기의 송신기를 RTS 로 켜고 끕니다. «드라이버 토글» 은 윈도우 드라이버가 보내는 동안만 RTS 를 켜고(가장 정확), 드라이버가 받지 않으면 «프로그램 토글» 로 바뀌며 사건 줄에 이유가 남습니다. «프로그램 토글» 은 보내기 전에 RTS 를 켜고 마지막 바이트가 나갈 시간이 지나면 끕니다 — USB 변환기의 지연 때문에 늦게 꺼져 응답 앞부분을 놓칠 수 있습니다. 켜져 있으면 RTS 칸은 잠기고 상태줄에 «RTS ⇄» 가 보입니다. 자동 방향 전환 변환기는 «쓰지 않음». 하드웨어 흐름 제어와는 함께 쓸 수 없습니다.",
         "- 하드웨어 흐름 제어에서는 RTS 를 드라이버가 제어하므로 RTS 칸이 잠깁니다.",
         "- «다시 꽂으면 자동 연결»: 켜 두면 장치가 빠졌을 때 «다시 꽂기를 기다리는 중» 이 되고, 같은 장치가 다시 나타나면 저절로 엽니다. 끄면 빠지는 순간 닫힙니다.",
         "- 같은 장치는 USB 일련번호로 찾습니다. 일련번호가 없는 변환기(CH340 등)는 같은 VID:PID 로 새로 생긴 포트가 하나뿐일 때만 다시 엽니다.",
@@ -77,7 +79,7 @@ export const help: HelpDoc = {
         "- 예: «AT\\r\\n», «\\x02DATA\\x03».",
         "- «체크섬»: 본문 뒤에 붙일 체크섬을 고릅니다(아래 «체크섬 종류» 참고).",
         "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF 중 하나를 맨 뒤에 붙입니다.",
-        "- 붙는 순서는 언제나 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문만으로 계산하고, 줄 끝은 계산에 들어가지 않습니다.",
+        "- 붙는 순서는 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문만으로 계산하고, 줄 끝은 계산에 들어가지 않습니다(⚙ 옵션으로 범위·자리를 바꿀 수 있음).",
         "- ASCII 에 체크섬을 켜 두면 입력칸 옆에 노란 «+CRC16 Modbus 2바이트» 표시가 나옵니다.",
         "- 장비를 다시 꽂기를 기다리는 중에는 보낼 수 없습니다.",
         "- 송신이 너무 오래 걸리면(흐름 제어로 막힘 등) «송신 시간 초과 — n/m 바이트만 나감 (흐름 제어·CTS 확인)» 오류가 나옵니다.",
@@ -111,7 +113,9 @@ export const help: HelpDoc = {
         "- BCC (XOR): 모든 바이트를 XOR. 1바이트.",
         "- SUM8: 모든 바이트 합의 아래 8비트. 1바이트.",
         "- SUM16: 모든 바이트 합 16비트. 높은 바이트 먼저 2바이트.",
-        "체크섬은 입력한 본문 전체(첫 바이트부터)로 계산합니다. STX 같은 머리 바이트를 빼고 계산하는 장비라면 결과가 다를 수 있습니다.",
+        "- CRC-32: ISO-HDLC(zip·이더넷과 같은 것). 낮은 바이트 먼저 4바이트.",
+        "- CRC (사용자 정의): 너비·poly·init·refin·refout·xorout 을 직접 넣는 범용 CRC. 높은 바이트 먼저.",
+        "기본은 입력한 본문 전체(첫 바이트부터)로 계산해 맨 뒤에 붙입니다. STX 같은 머리를 빼거나 ETX 앞에 넣는 장비는 체크섬 옆 ⚙ 옵션을 쓰세요(«체크섬 옵션·CRC-32·범용 CRC» 절).",
       ],
     },
     {
@@ -149,6 +153,7 @@ export const help: HelpDoc = {
         "- CTS ON/OFF, DSR ON/OFF, RI ON/OFF, CD ON/OFF: 장비 쪽 입력 신호선이 바뀌었습니다(0.1초마다 확인).",
         "- LOG START: 파일 저장을 시작했습니다. 그때의 포트 설정이 함께 적혀 로그만 봐도 조건을 알 수 있습니다.",
         "- REPEAT 멈춤 (연결 끊김 / 보내기 오류): 반복 보내기가 꺼진 이유입니다. 이 줄은 화면에만 나오고 파일 로그에는 남지 않습니다.",
+        ...ioEvLines("ko", { serial: true, fileSend: true }),
         ...logHandlingLines("ko", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -168,12 +173,12 @@ export const help: HelpDoc = {
       title: "저장과 상세",
       body: [
         "- «파일로 계속 저장»: 고른 파일에 RX·TX·EV 를 계속 덧붙입니다. 이미 있는 파일을 고르면 지우지 않고 뒤에 이어 씁니다. 화면 줄 수 제한과 상관없이 모두 남습니다. 다시 누르면(«저장 멈춤») 멈춥니다.",
-        "- 파일 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». 사건 줄은 «… EV OPEN …».",
-        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 은 보기와 상관없이 늘 HEX 입니다.)",
+        "- 파일 한 줄 모양(HEX 형식): «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». 사건 줄은 «… EV OPEN …». ASCII·HEX + ASCII·CSV 형식은 «글자 인코딩·파일 로그 형식» 절을 보세요.",
+        "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 의 줄 모양은 보기와 상관없이 설정 «파일 로그 형식» 을 따릅니다 — 기본 HEX.)",
         "- «지우기»: 화면 로그와 RX·TX 바이트 수를 비웁니다. 파일 로그는 그대로입니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 그 줄의 바이트 수·HEX·ASCII 가 나옵니다(따라가기는 그대로).",
         "- 프레임 구분이 «Modbus RTU» 이거나 줄 끝의 CRC16 Modbus 가 맞으면 «상세» 에 Modbus 풀이(슬레이브 주소, 함수 코드, 시작 주소·개수 같은 항목, «값», CRC «정상»/«틀림»)가 함께 나옵니다. 그 밖의 줄은 «Modbus 로 볼 수 없음 (CRC 불일치)» 한 줄만 나옵니다.",
-        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», 그 밖은 «<1B>» 처럼 보입니다.",
+        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», 그 밖은 «<1B>» 처럼 보입니다. 0x80 이상은 설정의 «글자 인코딩»(UTF-8·CP949·Latin-1·ASCII)으로 읽고, 읽을 수 없으면 «<C7>» 처럼 보입니다.",
       ],
     },
     {
@@ -209,6 +214,7 @@ export const help: HelpDoc = {
       title: "단축키·팁",
       body: [
         ...shortcutLines("ko", { saveView: true, repeat: true, find: true }),
+        ...ioKeyLines("ko"),
         "- 입력칸에서 Enter: 보내기(연결돼 있고 보낼 바이트가 있을 때).",
         "- 창이 좁으면 «☰ 명령 목록» 으로 오른쪽 칸을 펼치고, ✕ 나 바깥을 눌러 닫습니다.",
         "- 연결 설정·프레임 구분·입력 내용·명령 목록은 다음에 켤 때 그대로 남아 있습니다.",
@@ -225,6 +231,8 @@ export const help: HelpDoc = {
         "- 체크섬이 «틀림»: 체크섬 종류가 맞는지, 프레임이 제대로 끊겼는지, 장비가 머리 바이트(STX 등)를 계산에서 빼는지 확인하세요. 끝 문자는 «끝 문자» 방식일 때만 떼고 검사합니다.",
         "- 송신 시간 초과: 흐름 제어 때문에 상대가 받지 않는 상태입니다. 흐름 제어를 «없음» 으로 하거나 CTS 표시등을 확인하세요.",
         "- 뽑았다 꽂았는데 다시 연결되지 않음: 일련번호 없는 변환기를 여러 개 꽂아 두면 어느 것인지 알 수 없어 기다립니다. «끊기» 후 포트를 골라 다시 연결하세요.",
+        "- «이 포트(드라이버)는 parity mark … 을(를) 받지 않습니다»: 그 변환기는 Mark·Space 패리티나 1.5 정지 비트를 지원하지 않습니다. 다른 변환기(FTDI 등)를 쓰거나 장비 설정을 바꾸세요.",
+        "- RS-485 로 보냈는데 응답 앞부분이 깨짐: «프로그램 토글» 이 RTS 를 늦게 끄는 것입니다. «드라이버 토글» 이나 자동 방향 전환 변환기를 쓰세요. 응답이 아예 없으면 A/B 배선과 종단 저항을 확인하세요.",
         "- 윈도우 7 은 지원하지 않습니다. 윈도우 10·11 을 쓰세요.",
         "- 프로그램이 열리지 않음: 화면 표시에 Microsoft Edge WebView2 가 필요합니다. 윈도우 11 에는 들어 있고, 설치 프로그램이 없으면 받아 설치합니다(인터넷 필요). 인터넷이 없는 PC 는 WebView2 런타임 설치 파일을 따로 받아 설치하세요.",
       ],
@@ -257,9 +265,10 @@ export const help: HelpDoc = {
         "- Status line: a summary of the current settings (e.g. «COM3 9600 8N1»), output lines DTR/RTS, input lines CTS/DSR/RI/CD, and «● REC» while logging to a file.",
         "- Log: time, direction (RX ◀ / TX ▶ / EV) and data. With RX checksum verification on, each line ends with «OK» or «FAIL».",
         "- Bottom: the send row (HEX/ASCII, input, «Modbus request», checksum, line ending, «Send»), the «Bytes to send» preview, «Repeat (ms)» and «+ Save to list».",
-        "- Right: «Commands» and «Detail» (click a log line to see its HEX, ASCII and Modbus decoding).",
+        "- Right: «Commands», «Triggers» and «Detail» (click a log line to see its HEX, ASCII and Modbus decoding).",
         "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
         ...windowLines("en"),
+        ...ioLayoutLines("en", { serial: true, fileSend: true }),
       ],
     },
     {
@@ -270,10 +279,11 @@ export const help: HelpDoc = {
         "- If connecting fails, the status box turns red with «Connection failed · reason». For a busy port, check whether another program is using it.",
         "- «Baud rate»: pick from the list (1200 to 921600) or type a number. If it does not match the device, characters look garbled.",
         "- «Data bits»: 5, 6, 7 or 8. Usually 8.",
-        "- «Parity»: «None», «Odd» or «Even». Must match the device.",
-        "- «Stop bits»: 1 or 2.",
+        "- «Parity»: «None», «Odd», «Even», «Mark (1)» or «Space (0)». Must match the device. Mark/Space are for 9-bit addressing devices and are set directly in the Windows driver (some USB adapters refuse them — connecting tells you why).",
+        "- «Stop bits»: 1, 1.5 or 2. 1.5 usually works only with 5 data bits (otherwise a yellow note appears; if the driver refuses, connecting tells you why).",
         "- «Flow control»: «None», «Hardware (RTS/CTS)» or «Software (XON/XOFF)». Leave it at «None» unless the device uses it.",
         "- DTR and RTS: output lines driven by the PC. Checked means on. Some boards reset when DTR changes.",
+        "- «RS-485 direction (RTS)»: switches a half-duplex RS-485 adapter's driver with RTS. «Driver toggle» lets the Windows driver raise RTS only while sending (most precise); if the driver refuses, it falls back to «Program toggle» and an event line says why. «Program toggle» raises RTS before sending and drops it once the last byte has had time to leave — USB adapter latency can drop it late and miss the start of the reply. While on, the RTS box is locked and the status line shows «RTS ⇄». Use «Off» for auto-direction adapters. Not available with hardware flow control.",
         "- With hardware flow control the driver controls RTS, so the RTS box is locked.",
         "- «Reconnect when plugged back in»: when on, an unplugged device shows «Waiting for device» and is reopened automatically when it comes back. When off, the port closes as soon as the device is lost.",
         "- The same device is found by its USB serial number. Adapters without one (CH340 etc.) are reopened only when exactly one new port with the same VID:PID appears.",
@@ -304,7 +314,7 @@ export const help: HelpDoc = {
         "- Examples: «AT\\r\\n», «\\x02DATA\\x03».",
         "- «Checksum»: the checksum appended after the body (see «Checksum types»).",
         "- «Line ending»: «None», CR, LF or CR LF appended at the very end.",
-        "- The order is always «body + checksum + line ending». The checksum covers the body only, not the line ending.",
+        "- The order is «body + checksum + line ending». The checksum covers the body only, not the line ending (⚙ options change the range and position).",
         "- With a checksum on in ASCII mode, a yellow «+CRC16 Modbus 2 bytes» chip appears next to the input.",
         "- You cannot send while waiting for the device to be plugged back in.",
         "- If sending takes too long (blocked by flow control, etc.), a «Send timed out — only n/m bytes went out (check flow control / CTS)» error appears.",
@@ -338,7 +348,9 @@ export const help: HelpDoc = {
         "- BCC (XOR): XOR of all bytes, 1 byte.",
         "- SUM8: low 8 bits of the byte sum, 1 byte.",
         "- SUM16: 16-bit byte sum, high byte first, 2 bytes.",
-        "The checksum is calculated over the whole body from the first byte. Devices that leave out a header byte such as STX will get a different result.",
+        "- CRC-32: ISO-HDLC (as in zip/Ethernet), 4 bytes, low byte first.",
+        "- CRC (custom): a generic CRC with your own width, poly, init, refin, refout and xorout, high byte first.",
+        "By default the checksum covers the whole body from the first byte and is appended at the end. For devices that leave out a header such as STX or put the checksum before ETX, use the ⚙ options next to the checksum (see «Checksum options, CRC-32 and custom CRC»).",
       ],
     },
     {
@@ -376,6 +388,7 @@ export const help: HelpDoc = {
         "- CTS ON/OFF, DSR ON/OFF, RI ON/OFF, CD ON/OFF: an input line from the device changed (checked every 0.1 s).",
         "- LOG START: file logging started. The port settings at that moment are written too, so the log alone shows the test conditions.",
         "- REPEAT stopped (disconnected / send error): why repeat sending turned off. This line is shown on screen only, not written to the file log.",
+        ...ioEvLines("en", { serial: true, fileSend: true }),
         ...logHandlingLines("en", { sendAgain: true, addCommand: true, find: true, checkbox: true }),
       ],
     },
@@ -395,12 +408,12 @@ export const help: HelpDoc = {
       title: "Saving and detail",
       body: [
         "- «Log to file»: appends RX, TX and EV to the chosen file continuously (an existing file is appended to, not overwritten), regardless of the screen line limit. Click again («Stop logging») to stop.",
-        "- A file line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». Event lines look like «… EV OPEN …».",
-        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». («Log to file» is always HEX regardless of the view.)",
+        "- A file line (HEX format) looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 [OK]». Event lines look like «… EV OPEN …». For the ASCII, HEX + ASCII and CSV formats see «Text encoding and file log format».",
+        "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». (The line format of «Log to file» follows «File log format» in Settings regardless of the view — HEX by default.)",
         "- «Clear»: empties the screen log and the RX/TX byte counts. The file log is not affected.",
         "- Clicking a log line shows its byte count, HEX and ASCII in «Detail» on the right (following continues).",
         "- If framing is «Modbus RTU» or the line ends with a valid CRC16 Modbus, «Detail» also shows the Modbus decoding (slave ID, function code, fields such as start address and count, «Values», CRC «OK»/«FAIL»). Other lines show just «Not a Modbus frame (CRC mismatch)».",
-        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», others as «<1B>» and so on.",
+        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», others as «<1B>» and so on. Bytes 0x80 and up are read with «Text encoding» in Settings (UTF-8, CP949, Latin-1, ASCII); unreadable ones show as «<C7>».",
       ],
     },
     {
@@ -436,6 +449,7 @@ export const help: HelpDoc = {
       title: "Shortcuts and tips",
       body: [
         ...shortcutLines("en", { saveView: true, repeat: true, find: true }),
+        ...ioKeyLines("en"),
         "- Enter in the input: send (when connected and there are bytes to send).",
         "- In a narrow window, open the right pane with «☰ Commands» and close it with ✕ or by clicking outside.",
         "- Connection settings, framing, the input and commands are kept for next time.",
@@ -452,9 +466,41 @@ export const help: HelpDoc = {
         "- Checksum «FAIL»: check the checksum type, whether frames are split correctly, and whether the device leaves a header byte (STX etc.) out of the calculation. The terminator is removed before checking only in «Terminator» mode.",
         "- Send timed out: flow control is holding the data back. Set flow control to «None» or check the CTS lamp.",
         "- No reconnect after replugging: with several adapters that have no serial number, the program cannot tell which is which and keeps waiting. «Disconnect», pick the port and connect again.",
+        "- «This port (driver) does not accept parity mark …»: the adapter does not support Mark/Space parity or 1.5 stop bits. Use another adapter (FTDI etc.) or change the device setting.",
+        "- RS-485: the start of the reply is garbled: «Program toggle» is dropping RTS late. Use «Driver toggle» or an auto-direction adapter. No reply at all: check A/B wiring and termination.",
         "- Windows 7 is not supported. Use Windows 10 or 11.",
         "- The program does not open: the screen needs Microsoft Edge WebView2. Windows 11 includes it; otherwise the installer downloads it (internet required). On an offline PC, download and install the WebView2 Runtime installer separately.",
       ],
     },
   ],
 };
+
+/** Serial 만 — Break·터미널 보기(10/18) */
+const SERIAL_EXTRA = {
+  ko: [
+    {
+      title: "Break·터미널 보기",
+      body: [
+        "- «Break»: TX 줄을 옆 칸의 시간(ms, 기본 100) 동안 0(스페이스)으로 붙잡는 신호를 보냅니다. LIN·DMX, 일부 장비의 «주의» 신호, 부트로더 진입에 씁니다. 앞서 넣은 송신이 다 나간 뒤에 보내고, 로그에 «BREAK 100ms» 가 남습니다.",
+        "- 도구줄 «터미널»: 받은 글자를 프레임 구분과 상관없이 이어 붙여 CR·LF 로 줄을 나누고(CR LF 는 한 번), ANSI 색(ESC [ … m)을 입혀 보입니다 — 리눅스 콘솔·부트 로그·AT 응답을 읽기 좋습니다. 긴 줄은 접어 보입니다.",
+        "- 터미널 보기의 «색 입히기 (ANSI)» 를 끄면 색 없이 글자만 보입니다. 커서 이동·화면 지우기 같은 다른 ESC 시퀀스는 버리고, 탭은 4칸, 백스페이스는 앞 글자를 지웁니다.",
+        "- 터미널 보기는 받은 것(RX)만 보입니다. 보낸 것·사건 줄은 «HEX»·«ASCII» 보기로 돌아가 보세요. 글자는 설정의 «글자 인코딩» 으로 읽고, 최근 5,000줄까지 남깁니다(«지우기» 로 비움).",
+      ],
+    },
+  ],
+  en: [
+    {
+      title: "Break and terminal view",
+      body: [
+        "- «Break»: holds the TX line at 0 (space) for the time in the box next to it (ms, default 100). Used for LIN/DMX, some devices' attention signal and bootloader entry. It goes out after earlier sends and is logged as «BREAK 100ms».",
+        "- «Terminal» in the toolbar: joins received text regardless of framing, starts new lines at CR/LF (CR LF counts once) and applies ANSI colors (ESC [ … m) — handy for Linux consoles, boot logs and AT replies. Long lines wrap.",
+        "- Turn off «ANSI colors» in the terminal view to see plain text. Other ESC sequences (cursor moves, screen clears) are dropped, tabs become 4 spaces and backspace removes the previous character.",
+        "- The terminal view shows received data (RX) only; switch back to «HEX»/«ASCII» to see sent data and event lines. Text is read with «Text encoding» in Settings, and the last 5,000 lines are kept («Clear» empties it).",
+      ],
+    },
+  ],
+};
+
+// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기) — «문제 해결» 앞에
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }), ...SERIAL_EXTRA[lang]);
+

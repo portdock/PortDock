@@ -1,7 +1,8 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import type { ChecksumKind } from "@shared/format";
+import { checksumToRust, type ChecksumKind, type CkOpts, type Encoding } from "@shared/format";
+import type { Pace, Progress } from "@shared/FileSend";
+import type { LogFormat } from "@shared/settings";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
-
 
 export type TextMode = "hex" | "ascii";
 
@@ -21,16 +22,22 @@ export interface PortInfo {
   product: string | null;
 }
 
+export type Rs485 = "off" | "driver" | "software";
+
 export interface SerialConfig {
   port: string;
   baud: number;
   dataBits: number;
-  parity: "none" | "odd" | "even";
+  /** mark·space 는 윈도우 DCB 로 직접 설정 */
+  parity: "none" | "odd" | "even" | "mark" | "space";
+  /** 1 · 1.5 · 2 */
   stopBits: number;
   flow: "none" | "hardware" | "software";
   dtr: boolean;
   rts: boolean;
   autoReconnect: boolean;
+  /** RS-485 송신 방향 제어(RTS) */
+  rs485: Rs485;
 }
 
 export interface Frame {
@@ -42,6 +49,11 @@ export interface Frame {
   note?: string;
   /** 화면에서 붙이는 일련번호(선택 줄 유지용) */
   seq?: number;
+  /** 화면에서 붙이는 간격·응답 시간(ms) */
+  gap?: number | null;
+  rsp?: number | null;
+  /** 트리거 색 */
+  mark?: string | null;
 }
 
 export interface Lines {
@@ -60,13 +72,16 @@ export type SessionEvent =
       message: string | null;
     }
   | { type: "error"; message: string }
-  | ({ type: "lines" } & Lines);
+  | ({ type: "lines" } & Lines)
+  | ({ type: "progress" } & Progress);
 
 export interface SendSpec {
   text: string;
   mode: TextMode;
   checksum: ChecksumKind | null;
   suffix: string;
+  /** 체크섬 자리 옵션·범용 CRC 매개변수 */
+  ck?: CkOpts | null;
 }
 
 export interface ModbusInfo {
@@ -77,6 +92,13 @@ export interface ModbusInfo {
   crc_ok: boolean;
   fields: [string, string][];
   values: number[];
+}
+
+export interface LogOptions {
+  format: LogFormat;
+  encoding: Encoding;
+  splitMb: number;
+  splitHours: number;
 }
 
 // Rust 의 serde 는 FrameMode 필드를 snake_case 로 받는다
@@ -93,20 +115,28 @@ function frameModeToRust(m: FrameMode) {
   }
 }
 
+/** 보낼 것 → 백엔드 codec::SendText(체크섬 옵션은 ChecksumKind::Spec 으로, 글자 인코딩 포함) */
+export const wireSpec = (s: SendSpec, encoding: Encoding) => ({ text: s.text, mode: s.mode, suffix: s.suffix, checksum: checksumToRust(s.checksum, s.ck), encoding });
+
 export const api = {
   listPorts: () => invoke<PortInfo[]>("list_ports"),
-  open: (config: SerialConfig, framing: FrameMode, rxCheck: ChecksumKind | null, onEvent: (e: SessionEvent) => void) => {
+  open: (config: SerialConfig, framing: FrameMode, rxCheck: unknown, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
     return invoke<void>("open_session", { config, framing: frameModeToRust(framing), rxCheck, onEvent: ch });
   },
   close: (id: string) => invoke<void>("close_session", { id }),
-  setFraming: (id: string, framing: FrameMode, rxCheck: ChecksumKind | null) =>
-    invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
+  setFraming: (id: string, framing: FrameMode, rxCheck: unknown) => invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
   reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
   setLog: (id: string, path: string | null) => invoke<void>("set_log", { id, path }),
-  send: (id: string, spec: SendSpec) => invoke<number[]>("send", { id, spec }),
-  preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
+  setLogOptions: (options: LogOptions) => invoke<void>("set_log_options", { options }),
+  send: (id: string, spec: SendSpec, encoding: Encoding, charDelayMs = 0) =>
+    invoke<number[]>("send", { id, spec: wireSpec(spec, encoding), pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null }),
+  preview: (spec: SendSpec, encoding: Encoding) => invoke<number[]>("preview", { spec: wireSpec(spec, encoding) }),
+  sendFile: (id: string, path: string, pace: Pace) => invoke<{ id: number; total: number }>("send_file", { id, path, pace }),
+  cancelSend: (id: string) => invoke<void>("cancel_send", { id }),
+  fileSize: (path: string) => invoke<number>("file_size", { path }),
+  sendBreak: (id: string, ms: number) => invoke<void>("send_break", { id, ms }),
   decodeModbus: (bytes: number[]) => invoke<ModbusInfo | null>("decode_modbus", { bytes }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
@@ -117,9 +147,10 @@ const FLOW = {
   en: { none: "no flow control", hardware: "RTS/CTS", software: "XON/XOFF" },
 };
 
-/** «COM3 · 9600 8N1 · 흐름 제어 없음» */
-export function summary(c: SerialConfig, lang: "ko" | "en" = "en") {
-  const p = c.parity === "odd" ? "O" : c.parity === "even" ? "E" : "N";
-  return `${c.port} · ${c.baud} ${c.dataBits}${p}${c.stopBits} · ${FLOW[lang][c.flow]}`;
-}
+export const parityChar = (p: SerialConfig["parity"]) => ({ odd: "O", even: "E", mark: "M", space: "S", none: "N" })[p] ?? "N";
 
+/** «COM3 · 9600 8N1 · 흐름 제어 없음» (+ « · RS-485») */
+export function summary(c: SerialConfig, lang: "ko" | "en" = "en") {
+  const rs = c.rs485 && c.rs485 !== "off" && c.flow !== "hardware" ? " · RS-485" : "";
+  return `${c.port} · ${c.baud} ${c.dataBits}${parityChar(c.parity)}${c.stopBits} · ${FLOW[lang][c.flow]}${rs}`;
+}

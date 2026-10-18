@@ -14,17 +14,17 @@
 - 배포: 관리자 권한 없는 설치판 + 휴대판, SHA256·VirusTotal 절차, 제3자 고지, 개인정보 방침(데스크톱 원격 측정 방침을 쓴 무료 도구 없음), 한국어
 
 ## 빈 곳 — 묶음별 우선순위
-크기: S(하루 안) · M(며칠) · L(일주일+). ★ = 현장 영향이 큰 것.
+크기: S(하루 안) · M(며칠) · L(일주일+). ★ = 현장 영향이 큰 것. ✅ = 넣음(10/18, 코드·단위 시험·미리보기 점검 — 실기 확인은 `docs/test-plan.md`).
 
 ### 1차 — v0.1(11/1) 전에 넣을 수 있는 작은 것
 | # | 무엇 | 앱 | 누가 가졌나 | 크기 |
 |---|---|---|---|---|
-| 1 ★ | 명령 단축키 F2–F12 · 입력 이력(↑↓) | Serial·TCP·UDP | Termite·Hercules·YAT·Bray | S |
-| 2 ★ | 직전 줄과의 간격(+12.3 ms)·TX→다음 RX 응답 시간 열 | Serial·TCP·UDP | YAT·Docklight | S |
-| 3 ★ | 글자 인코딩 UTF-8·CP949·Latin1(표시·송신) — 지금은 0x7F 이상이 `<XX>` | 전부 | YAT·LLCOM·COMTool | S~M |
+| 1 ★ | ✅ 명령 단축키 F2–F12(F4 제외) · 입력 이력(↑↓, 50개) — `shared/CommandList.tsx`·`sendHistory.ts` | Serial·TCP·UDP | Termite·Hercules·YAT·Bray | S |
+| 2 ★ | ✅ 직전 줄과의 간격(+12 ms)·TX→RX 응답 시간 열, 복사·화면 저장 포함 — `shared/liveStats.ts` | Serial·TCP·UDP | YAT·Docklight | S |
+| 3 ★ | ✅ 글자 인코딩 UTF-8·CP949·Latin1·ASCII(표시·송신·파일 로그) — `shared/format.ts`·core `codec.rs`(encoding_rs). Slave·Simulator 는 아직 | 전부 | YAT·LLCOM·COMTool | S~M |
 | 4 ★ | 이 PC IP·랜카드 목록에서 고르기(서버·멀티캐스트), 포트를 쥔 프로그램 표시 | TCP·UDP | Packet Sender | S |
-| 5 | 처리량(bytes/s)·«마지막 수신 후 n초»·반복 횟수 제한 | Serial·TCP·UDP | Packet Sender | S |
-| 6 | Break 송신 버튼 | Serial | PuTTY·YAT·Docklight | S |
+| 5 | ✅ 처리량(bytes/s)·프레임 수·«마지막 수신 n초 전»·반복 횟수 제한(보낸 수) | Serial·TCP·UDP | Packet Sender | S |
+| 6 | ✅ Break 송신 버튼(길이 ms, EV «BREAK 100ms») | Serial | PuTTY·YAT·Docklight | S |
 | 7 ★ | Slave 통신 기록 풀이(«id1 FC03 HR 0..9 → OK»)·줄 수 설정·찾기 재사용 | Modbus Slave | ModRSsim2·pyModSlave | S |
 | 8 | FC 16(마스크 쓰기)·17(읽기/쓰기)·2B/0E(장치 식별)·08/00(에코) | Modbus Slave | Witte | S |
 | 9 | GitHub: 이슈 양식·Discussions·FUNDING·push 마다 시험 돌리는 CI | 저장소 | Packet Sender·Tera Term | S |
@@ -39,11 +39,11 @@
 | 14 ★ | 값 자동 변화(증가·랜덤·사인·램프, 주기·읽을 때마다) | Modbus Slave | Witte·ModbusPal·pymodbus | M |
 | 15 ★ | 장애 대상 지정(ID·FC·주소)·N번째마다·확률·지연 범위 | Slave·Simulator | OPAL-RT·ModbusPal | S~M |
 | 16 ★ | Modbus TCP 풀이·요청 만들기를 TCP 앱에도 | TCP | 전용 도구 | M |
-| 17 | 파일 보내기 + 문자·줄 사이 지연 | Serial·TCP | RealTerm·Hercules·YAT | M |
-| 18 | 파일 로그 형식 ASCII·CSV, 시간·크기로 나누기 | 전부 | Docklight·RealTerm | S~M |
-| 19 | 트리거: 패턴이 오면 색·소리·반복/기록 멈춤·주석 | Serial·TCP·UDP | YAT·Docklight·SerialTool | M |
-| 20 | 체크섬 범위·위치·엔디언, CRC-32·범용 CRC | 전부 | Docklight·YAT(약 50종) | M |
-| 21 | Mark·Space 패리티, 1.5 정지 비트, RS-485 RTS 방향 제어 | Serial·Slave | PuTTY·Docklight·Witte | M |
+| 17 | ✅ 파일 보내기(덩어리·줄, 진행·취소) + 문자·줄 사이 지연, 보내기 줄 «문자 간(ms)» | Serial·TCP | RealTerm·Hercules·YAT | M |
+| 18 | ✅ 파일 로그 형식 HEX·ASCII·HEX+ASCII·CSV, 시간·크기로 나누기 — core `event.rs`. Slave·Simulator 는 설정 칸이 없어 HEX | 전부 | Docklight·RealTerm | S~M |
+| 19 | ✅ 트리거: 패턴이 오면 색·소리·반복/기록 멈춤·사건 줄·창 깜빡임, 맞은 횟수 — `shared/triggers.ts`·`TriggerPanel.tsx`(화면에서) | Serial·TCP·UDP | YAT·Docklight·SerialTool | M |
+| 20 | ✅ 체크섬 범위·위치·엔디언, CRC-32·범용 CRC(수신 검사도) — core `checksum.rs`·`shared/ChecksumOptions.tsx`. Simulator 규칙은 CRC-32 만 | 전부 | Docklight·YAT(약 50종) | M |
+| 21 | ✅ Serial: Mark·Space 패리티, 1.5 정지 비트(DCB 직접), RS-485 RTS 방향 제어(드라이버 토글 → 안 되면 프로그램 토글). Slave 화면은 아직 | Serial·Slave | PuTTY·Docklight·Witte | M |
 
 ### 3차 — 큰 기능
 | # | 무엇 | 크기 |
@@ -51,7 +51,7 @@
 | 22 ★ | TCP 중계·모니터(HMI↔PLC 사이에 끼워 엿보기) | M~L |
 | 23 ★ | 두 시리얼 포트 모니터(장치↔호스트) | L |
 | 24 | 시퀀스(보내기→기다리기→분기, 반복) | L |
-| 25 | 터미널(VT100/ANSI) 보기 — 리눅스 콘솔·부트 로그 | M |
+| 25 | ✅ 터미널 보기(CR/LF 줄, ANSI SGR 색, 줄 접기 — 커서 이동은 버림) — Serial, `shared/terminal.ts` | M |
 | 26 | 이름 붙은 프로필 여러 개, 명령 목록 페이지 | M |
 | 27 | 명령줄·자동화(헤드리스·종료 코드) | M |
 | 28 | 스크립트(샌드박스) · 그래프 · Modbus ASCII · TLS | L |

@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { save } from "@tauri-apps/plugin-dialog";
 import { load, parseTerminator, store, trimFrames } from "@shared/framing";
 import {
   api,
   ascii,
-  CHECKSUMS,
   hex,
   type ChecksumKind,
   type Frame,
@@ -21,12 +20,12 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, rowHeight, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
-import { screenText } from "@shared/logSearch";
+import { screenText, type LogFrame } from "@shared/logSearch";
 import { useFollowTail } from "@shared/useFollowTail";
 import { FollowButton } from "@shared/FollowButton";
 import { copyTextOf, selectedFrames, useCopyKey, useLogSelection } from "@shared/logCopy";
@@ -39,6 +38,14 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
+import { io } from "@shared/ioText";
+import { checksumDesc, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
+import { ChecksumPicker } from "@shared/ChecksumOptions";
+import { useSendHistory } from "@shared/sendHistory";
+import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
+import { DeltaSelect, LiveStats } from "@shared/StatsBar";
+import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
+import { FileSendDialog, JobBar, type FileJob, type Pace } from "@shared/FileSend";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -46,6 +53,7 @@ type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnectin
 type ViewMode = "hex" | "ascii" | "both";
 interface Command extends SendSpec {
   name: string;
+  key?: string | null;
 }
 
 export default function App() {
@@ -65,6 +73,12 @@ export default function App() {
   // 아주 좁은 창(900px 이하)에서 왼쪽 연결 설정 칸을 펼칠지
   const [showSide, setShowSide] = useState(false);
   const toast = useToast(lang);
+  // 글자 보기 인코딩 — 줄 그리기·복사·저장이 같은 값을 쓴다
+  setTextEncoding(settings.encoding);
+  // 파일 로그 형식·나누기·인코딩 — 다음 파일 기록부터
+  useEffect(() => {
+    api.setLogOptions(logOptionsOf(settings)).catch(() => {});
+  }, [settings]);
 
   // ---- 설정
   const [cfg, setCfg] = useState<TcpConfig>(() =>
@@ -73,6 +87,11 @@ export default function App() {
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
+  const [rxCk, setRxCk] = useState<CkOpts | null>(() => load("rxCk", null));
+  useEffect(() => store("rxCk", rxCk), [rxCk]);
+  // 백엔드로 보낼 수신 체크섬(옵션·범용 CRC 포함). 범용 CRC 매개변수가 틀리면 검사하지 않는다
+  const rxWire = useMemo(() => (rxCheck === "crc" && (!rxCk?.crc || crcProblem(rxCk.crc)) ? null : checksumToRust(rxCheck, rxCk)), [rxCheck, rxCk]);
+  const rxKey = JSON.stringify(rxWire);
   useEffect(() => {
     store("cfg", cfg);
   }, [cfg]);
@@ -109,7 +128,13 @@ export default function App() {
   useEffect(() => {
     if (error) noteError(error);
   }, [error]);
-  const [logPath, setLogPath] = useState<string | null>(null);
+  const logPathRef = useRef<string | null>(null);
+  const repeatOn = useRef(false);
+  const [logPath, setLogPathState] = useState<string | null>(null);
+  const setLogPath = (p: string | null) => {
+    logPathRef.current = p;
+    setLogPathState(p);
+  };
   const framesRef = useRef<Frame[]>([]);
   const timeBase = useRef<number | null>(null);
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
@@ -117,14 +142,49 @@ export default function App() {
   const screenBytes = useRef(0);
   const counters = useRef({ rx: 0, tx: 0, fail: 0 });
   const [version, setVersion] = useState(0);
+  // 처리량·마지막 수신, 간격 열
+  const meter = useRef(new Meter());
+  const deltaSt = useRef(newDeltaState());
+
+  /** 화면에서 만든 사건 줄(EV) — 파일 로그에는 남지 않는다 */
+  const addEv = useCallback((note: string) => {
+    framesRef.current.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+    screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
+    setVersion((v) => v + 1);
+  }, []);
+
+  // ---- 트리거(받은 줄에 패턴이 오면 색·소리·반복/기록 멈춤·사건 줄·깜빡임)
+  const trg = useTriggers(lang, {
+    addEv,
+    stopRepeat: () => {
+      if (!repeatOn.current) return false;
+      repeatOn.current = false;
+      setRepeating(false);
+      return true;
+    },
+    stopLog: () => {
+      if (!logPathRef.current) return false;
+      logPathRef.current = null;
+      setLogPath(null);
+      api.setLog(null).catch((e) => setError(String(e)));
+      return true;
+    },
+  });
+  const trgCheck = trg.check;
 
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
+      const now = Date.now();
       for (const f of e.frames) {
         f.seq = ++seqRef.current;
+        stampDelta(deltaSt.current, f);
         framesRef.current.push(f);
         screenBytes.current += f.bytes.length;
-        if (f.dir !== "ev") counters.current[f.dir] += f.bytes.length;
+        if (f.dir !== "ev") {
+          counters.current[f.dir] += f.bytes.length;
+          meter.current.add(f.dir, f.bytes.length, now);
+        }
+        if (f.dir === "rx") trgCheck(f);
         if (f.check === false) counters.current.fail++;
       }
       screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
@@ -139,10 +199,8 @@ export default function App() {
     } else if (e.type === "peers") {
       // 고른 상대가 방금 끊겼으면 반복을 멈추고 기록에 남긴다(다른 장비로 새지 않게)
       const cur = targetRef.current;
-      if (cur && peersRef.current.some((p) => p.id === cur.id) && !e.peers.some((p) => p.id === cur.id) && repeatingRef.current) {
-        const note = dict[langRef.current].evTargetGone.replace("{a}", cur.addr);
-        framesRef.current.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
-        setVersion((v) => v + 1);
+      if (cur && peersRef.current.some((p) => p.id === cur.id) && !e.peers.some((p) => p.id === cur.id) && repeatOn.current) {
+        addEv(dict[langRef.current].evTargetGone.replace("{a}", cur.addr));
         setRepeating(false);
       }
       peersRef.current = e.peers;
@@ -150,12 +208,12 @@ export default function App() {
     } else {
       setError(e.message);
     }
-  }, []);
+  }, [addEv, trgCheck]);
 
   useEffect(() => {
-    if (running) api.setFraming(effFraming, rxCheck).catch((e) => setError(String(e)));
+    if (running) api.setFraming(effFraming, rxWire).catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, JSON.stringify(effFraming), rxCheck]);
+  }, [running, JSON.stringify(effFraming), rxKey]);
   useEffect(() => {
     if (running && cfg.mode === "server") api.setEcho(cfg.echo).catch(() => {});
   }, [running, cfg.echo, cfg.mode]);
@@ -166,11 +224,11 @@ export default function App() {
     setStarting(true);
     setError(null);
     try {
-      const l = await api.start(cfg, effFraming, rxCheck, onEvent);
+      const l = await api.start(cfg, effFraming, rxWire, onEvent);
       setLocal(l);
       setRunning(true);
       if (settings.autoLog && settings.logFolder) {
-        const p = autoLogPath(settings.logFolder, "tcp");
+        const p = autoLogPath(settings.logFolder, "tcp", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
@@ -201,7 +259,8 @@ export default function App() {
       return;
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const path = await save({ defaultPath: `portdock-tcp-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const ext = logExt(settings);
+    const path = await save({ defaultPath: `portdock-tcp-${stamp}.${ext}`, filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
@@ -211,6 +270,12 @@ export default function App() {
   useEffect(() => {
     store("view", view);
   }, [view]);
+  const [deltaMode, setDeltaMode] = useState<DeltaMode>(() => load("delta", "off"));
+  useEffect(() => {
+    store("delta", deltaMode);
+  }, [deltaMode]);
+  /** 복사·화면 저장에 넣을 간격 열 */
+  const col = deltaMode === "off" ? undefined : (f: LogFrame) => deltaText(deltaMode, f);
   const frames = framesRef.current;
   const listRef = useRef<HTMLDivElement>(null);
   // 찾기·거르기 — 보기만 거른다(기록은 그대로)
@@ -244,6 +309,8 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0, fail: 0 };
+    meter.current.reset();
+    deltaSt.current = newDeltaState();
     screenBytes.current = 0;
     sel.clear();
     setMenu(null);
@@ -255,7 +322,7 @@ export default function App() {
   useCopyKey(
     () => {
       const list = selectedFrames(sel, frameOf);
-      return list.length ? copyTextOf(list, "lines", view, fmt, true) : null;
+      return list.length ? copyTextOf(list, "lines", view, fmt, true, col) : null;
     },
     (ok) => onCopied(ok, sel.set.size),
   );
@@ -263,7 +330,7 @@ export default function App() {
     const path = await save({ defaultPath: "portdock-tcp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
-    const text = screenText({ app: "PortDock TCP", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers: true });
+    const text = screenText({ app: "PortDock TCP", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers: true, col });
     await api.writeText(path, text).catch((e) => setError(String(e)));
   }
 
@@ -274,14 +341,38 @@ export default function App() {
   const sendInput = useRef<HTMLInputElement>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [repeatMs, setRepeatMs] = useState(1000);
-  const [repeating, setRepeating] = useState(false);
-  const repeatingRef = useRef(repeating);
-  repeatingRef.current = repeating;
+  const [repeating, setRepeatingState] = useState(false);
+  const setRepeating = (on: boolean) => {
+    repeatOn.current = on;
+    setRepeatingState(on);
+  };
+  // 반복 횟수 한도(0 = 계속)와 이번 반복에서 보낸 수
+  const [repeatTimes, setRepeatTimes] = useState(() => load("repeatTimes", 0));
+  useEffect(() => {
+    store("repeatTimes", repeatTimes);
+  }, [repeatTimes]);
+  const [repeatSent, setRepeatSent] = useState(0);
+  const repeatSentRef = useRef(0);
+  const startRepeat = (on: boolean) => {
+    repeatSentRef.current = 0;
+    setRepeatSent(0);
+    setRepeating(on);
+  };
+  // 문자 간 지연(ms) — 모든 송신에. TCP 는 한 바이트씩 따로 보낸다
+  const [charDelay, setCharDelay] = useState(() => load("charDelay", 0));
+  useEffect(() => {
+    store("charDelay", charDelay);
+  }, [charDelay]);
   useEffect(() => {
     store("spec", spec);
     let stale = false;
+    if (spec.checksum === "crc" && spec.ck?.crc && crcProblem(spec.ck.crc, lang)) {
+      setPreviewBytes(null);
+      setPreviewErr(crcProblem(spec.ck.crc, lang));
+      return;
+    }
     api
-      .preview(spec)
+      .preview(spec, settings.encoding)
       .then((b) => {
         if (stale) return;
         setPreviewBytes(b);
@@ -295,7 +386,7 @@ export default function App() {
     return () => {
       stale = true;
     };
-  }, [spec]);
+  }, [spec, settings.encoding, lang]);
   const sendable = !!previewBytes && previewBytes.length > 0;
   // 고른 상대가 끊겼으면 보내지 않는다 — 말없이 «모두에게» 로 바뀌면 엉뚱한 장비로 나간다
   const targetGone = !!target && !peers.some((p) => p.id === target.id);
@@ -306,29 +397,67 @@ export default function App() {
   const startable = cfg.mode === "server" || (!!cfg.host.trim() && cfg.port > 0);
   // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
   const inflight = useRef(false);
+  /** 보내기 — 성공하면 true */
   const doSend = useCallback(
     async (s: SendSpec) => {
-      if (inflight.current || targetGone) return;
+      if (inflight.current || targetGone) return false;
       inflight.current = true;
       try {
-        const r = await api.send(target?.id ?? null, s);
+        const r = await api.send(target?.id ?? null, s, settings.encoding, charDelay);
         setError(null);
         // 일부 상대에게만 나갔으면 알린다(예: 3개 중 2개)
         setSendNote(r && typeof r === "object" && r.sent < r.total ? t("partialSend").replace("{s}", String(r.sent)).replace("{t}", String(r.total)) : null);
+        return true;
       } catch (e) {
         setError(String(e));
         setRepeating(false);
+        return false;
       } finally {
         inflight.current = false;
       }
     },
-    [target, targetGone, t],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [target, targetGone, t, settings.encoding, charDelay],
   );
+  // 문자 간 지연이면 한 번 보내는 데 (바이트 수 × 지연)이 걸린다 — 그보다 짧은 간격은 건너뛰기만 한다
+  const effRepeat = Math.max(10, repeatMs, previewBytes ? charDelay * previewBytes.length + 10 : 10);
   useEffect(() => {
     if (!repeating || !running) return;
-    const id = setInterval(() => doSend(spec), Math.max(10, repeatMs));
+    const id = setInterval(() => {
+      void doSend(spec).then((ok) => {
+        if (!ok || !repeatOn.current) return;
+        const n = ++repeatSentRef.current;
+        setRepeatSent(n);
+        if (repeatTimes > 0 && n >= repeatTimes) {
+          setRepeating(false);
+          addEv(io(langRef.current, "repDone", { n }));
+        }
+      });
+    }, effRepeat);
     return () => clearInterval(id);
-  }, [repeating, repeatMs, spec, running, doSend]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeating, effRepeat, spec, running, doSend, repeatTimes, addEv]);
+  /** 보내기 버튼·Enter — 이력에도 남긴다 */
+  const sendNow = () => {
+    if (!canSend) return;
+    void doSend(spec).then((ok) => ok && history.remember({ text: spec.text, mode: spec.mode }));
+  };
+  // ↑/↓ 이력 — 보낸 내용(모드 포함)을 다시 불러온다
+  const history = useSendHistory({ text: spec.text, mode: spec.mode }, useCallback((h) => setSpec((s) => ({ ...s, text: h.text, mode: h.mode })), []));
+
+  // ---- 파일 보내기
+  const [showFile, setShowFile] = useState(false);
+  const [fileJob, setFileJob] = useState<FileJob | null>(null);
+  async function startFile(path: string, name: string, pace: Pace) {
+    let first: FileJob | null = null;
+    const r = await api.sendFile(target?.id ?? null, path, pace, (p) => {
+      // 시작 응답보다 진행이 먼저 올 수 있다
+      setFileJob((j) => (j && j.id === p.id ? { ...j, ...p } : { ...p, name }));
+    });
+    first = { id: r.id, total: r.total, sent: 0, done: false, cancelled: false, name };
+    setFileJob((j) => (j && j.id === r.id ? j : first));
+  }
+  const cancelSend = () => api.cancelSend().catch((e) => setError(String(e)));
 
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
@@ -344,7 +473,7 @@ export default function App() {
     cmdList.current?.focusName(commands.length);
   }
   /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
-  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
+  const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "", ck: null });
   // 명령(▶)·다시 보내기를 못 하는 이유
   const cmdWhy = !running ? t("whyNotStarted") : peers.length === 0 ? t("whyNoPeers") : targetGone ? t("whyTargetGone") : undefined;
 
@@ -364,7 +493,7 @@ export default function App() {
     { key: "l", ctrl: true, run: clearLog },
     { key: "s", ctrl: true, run: () => void saveView() },
     { key: "l", ctrl: true, shift: true, run: () => running && void toggleLog() },
-    { key: "Escape", inInput: false, run: () => repeatingRef.current && setRepeating(false) },
+    { key: "Escape", inInput: false, run: () => repeatOn.current && setRepeating(false) },
   ]);
 
   // ---- 창 제목: «서버 :5020 · 상대 2 — PortDock TCP» / «192.168.0.10:502 · 접속됨 — PortDock TCP»
@@ -523,15 +652,20 @@ export default function App() {
         )}
         <label data-tip={tip(lang, "rxCheck")}>
           {t("rxCheck")}
-          <select value={rxCheck ?? ""} onChange={(e) => setRxCheck((e.target.value || null) as ChecksumKind | null)}>
-            <option value="">{t("none")}</option>
-            {CHECKSUMS.map((c) => (
-              <option key={c.kind} value={c.kind}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <ChecksumPicker
+            lang={lang}
+            kind={rxCheck}
+            ck={rxCk}
+            rx
+            noneLabel={t("none")}
+            ariaLabel={t("rxCheck")}
+            onChange={(k, c) => {
+              setRxCheck(k);
+              setRxCk(c);
+            }}
+          />
         </label>
+        {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -553,6 +687,7 @@ export default function App() {
           <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">
             <input type="checkbox" checked={follow.following} onChange={(e) => (e.target.checked ? follow.resume() : follow.pause())} /> {t("autoscroll")}
           </label>
+          <DeltaSelect lang={lang} value={deltaMode} onChange={setDeltaMode} />
           <span className="grow" />
           <span className="counter">
             RX {counters.current.rx.toLocaleString()} · TX {counters.current.tx.toLocaleString()} {t("bytes")}
@@ -569,6 +704,14 @@ export default function App() {
           </button>
         </div>
 
+        <div className="statusbar">
+          <span className={`dot s-${status === "listening" ? "connected" : status}`} />
+          <span className="mono">{statusText}</span>
+          {logPath && <span className="rec">● REC</span>}
+          <span className="grow" />
+          <LiveStats meter={meter.current} lang={lang} active={running} />
+        </div>
+
         <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
 
         <div className="log-wrap">
@@ -579,8 +722,9 @@ export default function App() {
                 const f = filter.at(r.index);
                 if (!f || f.seq == null) return null;
                 const seq = f.seq;
-                const cls = `row ${f.dir}${filter.isHit(seq) ? " hit" : ""}${sel.has(seq) ? " sel" : ""}${selected === seq ? " primary" : ""}`;
-                const style = { transform: `translateY(${r.start}px)` };
+                const cls = `row ${f.dir}${filter.isHit(seq) ? " hit" : ""}${sel.has(seq) ? " sel" : ""}${selected === seq ? " primary" : ""}${f.mark ? " marked" : ""}`;
+                const style = f.mark ? ({ transform: `translateY(${r.start}px)`, "--mark": f.mark } as CSSProperties) : { transform: `translateY(${r.start}px)` };
+                const dt = deltaMode !== "off" && <span className="dt">{deltaText(deltaMode, f)}</span>;
                 // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
                 const handlers = {
                   onClick: (e: ReactMouseEvent) => sel.click(e, seq),
@@ -594,6 +738,7 @@ export default function App() {
                   return (
                     <div key={r.key} className={cls} style={style} {...handlers}>
                       <span className="ts">{fmt(f.ts)}</span>
+                      {dt}
                       <span className="dir">EV</span>
                       <span className="note">{f.note}</span>
                     </div>
@@ -601,6 +746,7 @@ export default function App() {
                 return (
                   <div key={r.key} className={cls} style={style} {...handlers}>
                     <span className="ts">{fmt(f.ts)}</span>
+                    {dt}
                     <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
                     {server && <span className="peeraddr">{f.peer}</span>}
                     <span className="data">
@@ -628,10 +774,11 @@ export default function App() {
               view,
               fmt,
               peers: true,
+              col,
               onCopied,
               sendAgain: { run: (b) => void doSend(rawSpec(b)), enabled: !cmdWhy, why: cmdWhy },
               addCommand: (b) => {
-                pushCommand({ ...rawSpec(b), name: hex(b).slice(0, 24) });
+                pushCommand({ ...rawSpec(b), name: hex(b).slice(0, 24), key: null });
                 toast.show(ui(lang, "addedCmds", { n: 1 }));
               },
               find: (b) => {
@@ -675,22 +822,18 @@ export default function App() {
               className="sendtext"
               value={spec.text}
               placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "STATUS?"}
+              data-tip={tip(lang, "sendText")}
               onChange={(e) => {
                 setSpec({ ...spec, text: e.target.value });
                 modeSwitch.onEdit();
+                history.edited();
               }}
-              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && canSend && doSend(spec)}
+              onKeyDown={(e) => {
+                if (history.onKeyDown(e)) return;
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) sendNow();
+              }}
             />
-            <select value={spec.checksum ?? ""} onChange={(e) => setSpec({ ...spec, checksum: (e.target.value || null) as ChecksumKind | null })} data-tip={tip(lang, "checksum")}>
-              <option value="">
-                {t("checksum")}: {t("none")}
-              </option>
-              {CHECKSUMS.map((c) => (
-                <option key={c.kind} value={c.kind}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <ChecksumPicker lang={lang} kind={spec.checksum} ck={spec.ck} noneLabel={`${t("checksum")}: ${t("none")}`} tipKey="checksum" ariaLabel={t("checksum")} onChange={(k, c) => setSpec({ ...spec, checksum: k, ck: c })} />
             <select value={spec.suffix} onChange={(e) => setSpec({ ...spec, suffix: e.target.value })} data-tip={tip(lang, "suffix")}>
               <option value="">
                 {t("suffix")}: {t("none")}
@@ -700,7 +843,7 @@ export default function App() {
               <option value="\r\n">{t("suffix")}: CR LF</option>
             </select>
             <button data-tip={tip(lang, "send")} className="btn primary" onClick={() => {
-                doSend(spec);
+                sendNow();
                 sendInput.current?.focus();
               }} disabled={!canSend}>
               {t("send")}
@@ -721,13 +864,28 @@ export default function App() {
             </span>
             <span className="grow" />
             <label data-tip={withKey(tip(lang, "repeat"), KEYS.stopRepeat)} className="inline">
-              <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => setRepeating(e.target.checked)} /> {t("repeat")}
+              <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}
             </label>
-            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} />
-            <button className="btn small" onClick={() => pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd" })} disabled={!sendable}>
+            <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} aria-label={t("repeat")} />
+            <label className="inline" data-tip={tip(lang, "repeatTimes")}>
+              <NumInput className="num small-num" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
+            </label>
+            {(repeating || repeatSent > 0) && (
+              <span className="rep-count">{repeatTimes > 0 ? io(lang, "repeatSentOf", { n: repeatSent, m: repeatTimes }) : io(lang, "repeatSent", { n: repeatSent })}</span>
+            )}
+            <button className="btn small add-cmd" onClick={() => pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd", key: null })} disabled={!sendable}>
               + {t("addCommand")}
             </button>
+            <span className="send-tools">
+            <label className="inline" data-tip={tip(lang, "charDelay")}>
+              {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
+            </label>
+            <button className="btn small" onClick={() => setShowFile(true)} data-tip={tip(lang, "fileSend")}>
+              {io(lang, "fileSend")}…
+            </button>
+            </span>
           </div>
+          {fileJob && <JobBar lang={lang} job={fileJob} onCancel={cancelSend} onOpen={() => setShowFile(true)} />}
           {modeSwitch.node}
           {targetBack && (
             <div className="interlock">
@@ -757,7 +915,7 @@ export default function App() {
           canSend={!cmdWhy}
           sendWhy={cmdWhy}
           onEdit={(c) => {
-            setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix });
+            setSpec({ text: c.text, mode: c.mode, checksum: c.checksum, suffix: c.suffix, ck: c.ck ?? null });
             sendInput.current?.focus();
           }}
           toast={toast}
@@ -765,6 +923,7 @@ export default function App() {
           readText={api.readText}
           handle={cmdList}
         />
+        <TriggerPanel lang={lang} trg={trg} toast={toast} />
         <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
@@ -797,6 +956,21 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           busy={running || !!logPath}
+          ioOptions
+        />
+      )}
+      {showFile && (
+        <FileSendDialog
+          lang={lang}
+          job={fileJob}
+          canSend={!cmdWhy}
+          why={cmdWhy}
+          byteMs={0}
+          target={target ? target.addr : peers.length > 1 ? t("all") : peers[0]?.addr}
+          start={startFile}
+          cancel={cancelSend}
+          sizeOf={api.fileSize}
+          onClose={() => setShowFile(false)}
         />
       )}
       {toast.node}

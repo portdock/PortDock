@@ -1,14 +1,14 @@
 // 보내기 칸 HEX ↔ ASCII 바꾸기 — 같은 바이트의 새 표기로 옮기고, 켜져 있는 체크섬은 확인 창 대신 알림줄로 알린다.
 // Serial·TCP·UDP·Simulator 공통.
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { CHECKSUMS, type ChecksumKind } from "./format";
+import { checksumLabel, checksumLen as lenOf, type ChecksumKind, type CkOpts } from "./format";
 import { convertNotation, type TextMode } from "./notation";
 import { ui, type Lang } from "./uiText";
 
-type Spec = { text: string; mode: TextMode; checksum: ChecksumKind | null; suffix: string };
+type Spec = { text: string; mode: TextMode; checksum: ChecksumKind | null; suffix: string; ck?: CkOpts | null };
 
 /** 체크섬이 붙이는 바이트 수 */
-export const checksumLen = (k: ChecksumKind) => (k.startsWith("crc16") || k === "sum16" ? 2 : 1);
+export const checksumLen = (k: ChecksumKind, ck?: CkOpts | null) => lenOf(k, ck);
 
 export function useModeSwitch<S extends Spec>(spec: S, setSpec: Dispatch<SetStateAction<S>>, lang: Lang) {
   // conv: 표기를 바꿨다는 안내(또는 못 바꾼 이유), ck: 바꿀 때 켜져 있던 체크섬
@@ -25,13 +25,13 @@ export function useModeSwitch<S extends Spec>(spec: S, setSpec: Dispatch<SetStat
   const onEdit = () => setNote((n) => (n && n.conv ? (n.ck ? { ...n, conv: null } : null) : n));
 
   const ckOn = !!note?.ck && spec.checksum === note.ck;
-  const label = note?.ck ? (CHECKSUMS.find((c) => c.kind === note.ck)?.label ?? note.ck) : "";
+  const label = note?.ck ? checksumLabel(note.ck, lang) : "";
   const node =
     note && (note.conv || ckOn) ? (
       <div className="mode-notes">
         {ckOn && (
           <div className="notice warn" role="status">
-            <span>{ui(lang, "ckStillOn", { a: label, b: spec.mode.toUpperCase(), n: checksumLen(note.ck!) })}</span>
+            <span>{ui(lang, "ckStillOn", { a: label, b: spec.mode.toUpperCase(), n: checksumLen(note.ck!, spec.ck) })}</span>
             <button
               type="button"
               className="btn small"

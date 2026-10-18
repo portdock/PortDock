@@ -46,8 +46,48 @@ function crc8(data) {
   return crc;
 }
 const sum = (d) => d.reduce((a, b) => a + b, 0);
+/** 범용 CRC(reveng 매개변수) — crates/core/src/checksum.rs CrcParams::compute 와 같은 계산 */
+function crcGeneric(p, data) {
+  const w = BigInt(p.width);
+  const mask = (1n << w) - 1n;
+  const top = 1n << (w - 1n);
+  const poly = BigInt(p.poly >>> 0);
+  const rev8 = (b) => parseInt(b.toString(2).padStart(8, "0").split("").reverse().join(""), 2);
+  let crc = BigInt(p.init >>> 0) & mask;
+  for (const b0 of data) {
+    const b = p.refin ? rev8(b0) : b0;
+    crc ^= BigInt(b) << (w - 8n);
+    for (let i = 0; i < 8; i++) crc = crc & top ? ((crc << 1n) ^ poly) & mask : (crc << 1n) & mask;
+  }
+  if (p.refout) crc = BigInt.asUintN(p.width, BigInt("0b" + (crc.toString(2).padStart(p.width, "0").split("").reverse().join("") || "0")));
+  const v = Number((crc ^ BigInt(p.xorout >>> 0)) & mask);
+  const out = [];
+  for (let i = p.width / 8 - 1; i >= 0; i--) out.push(Math.floor(v / 2 ** (8 * i)) & 0xff);
+  return out;
+}
+const CRC32 = { width: 32, poly: 0x04c11db7, init: 0xffffffff, refin: true, refout: true, xorout: 0xffffffff };
+/** 백엔드 ChecksumKind JSON(문자열 또는 {spec: {algo, skipHead, beforeEnd, swap}}) → { algo, head, tail, swap } */
+function ckSpec(kind) {
+  if (kind && typeof kind === "object" && kind.spec) {
+    const sp = kind.spec;
+    return { algo: sp.algo, head: sp.skipHead ?? 0, tail: sp.beforeEnd ?? 0, swap: !!sp.swap };
+  }
+  return { algo: kind, head: 0, tail: 0, swap: false };
+}
+const ckName = (kind) => {
+  const c = ckSpec(kind);
+  const a = typeof c.algo === "object" ? `crc${c.algo.crc.width}` : c.algo;
+  return `${a}${c.head ? ` skip ${c.head}` : ""}${c.tail ? ` before-end ${c.tail}` : ""}${c.swap ? " swap" : ""}`;
+};
 function compute(kind, data) {
+  if (kind && typeof kind === "object") {
+    const c = ckSpec(kind);
+    const out = typeof c.algo === "object" ? crcGeneric(c.algo.crc, data) : compute(c.algo, data);
+    return c.swap ? out.reverse() : out;
+  }
   switch (kind) {
+    case "crc32":
+      return crcGeneric(CRC32, data).reverse();
     case "crc16-modbus": {
       const c = crc16Modbus(data);
       return [c & 0xff, c >> 8];
@@ -72,14 +112,15 @@ function compute(kind, data) {
   }
   throw tr(`모르는 체크섬: ${kind}`, `Unknown checksum: ${kind}`);
 }
-/** 수신 검증 — 끝 바이트가 체크섬과 맞는지. 짧으면 null */
+/** 수신 검증 — 끝(끝에서 m 앞)의 바이트가 체크섬과 맞는지(앞 n 은 계산 밖). 짧으면 null */
 function verify(kind, bytes) {
   if (!kind) return null;
+  const { head, tail } = ckSpec(kind);
   const n = compute(kind, [0]).length;
-  if (bytes.length <= n) return null;
-  const body = bytes.slice(0, -n);
-  const c = compute(kind, body);
-  return c.every((x, i) => x === bytes[bytes.length - n + i]);
+  if (bytes.length <= head + n + tail) return null;
+  const at = bytes.length - tail - n;
+  const c = compute(kind, bytes.slice(head, at));
+  return c.every((x, i) => x === bytes[at + i]);
 }
 const withCrc = (b) => [...b, ...compute("crc16-modbus", b)];
 function parseHex(text) {
@@ -94,13 +135,18 @@ function parseHex(text) {
   }
   return out;
 }
-function parseAscii(text) {
+function parseAscii(text, encoding = "utf-8") {
   const out = [];
   const cs = [...text];
   for (let i = 0; i < cs.length; i++) {
     const c = cs[i];
     if (c !== "\\") {
-      out.push(...enc.encode(c));
+      const cp = c.codePointAt(0);
+      // 미리보기 흉내 — Latin-1·ASCII 는 범위 밖이면 오류, CP949 는 UTF-8 로 대신(실제는 encoding_rs)
+      if ((encoding === "latin1" && cp > 0xff) || (encoding === "ascii" && cp > 0x7f))
+        throw tr(`«${c}» (U+${cp.toString(16).toUpperCase().padStart(4, "0")}) 는 ${encoding === "ascii" ? "ASCII" : "Latin-1"} 로 보낼 수 없습니다 — 인코딩을 바꾸거나 \\xNN 으로 쓰세요`, `«${c}» cannot be sent as ${encoding === "ascii" ? "ASCII" : "Latin-1"}`);
+      if (encoding === "latin1" || encoding === "ascii") out.push(cp);
+      else out.push(...enc.encode(c));
       continue;
     }
     const n = cs[++i];
@@ -119,11 +165,17 @@ function parseAscii(text) {
   }
   return out;
 }
-/** codec::build — 본문 + 체크섬 + 끝 문자. 틀리면 문자열을 던진다 */
+/** codec::build — 본문 + 체크섬(자리 옵션: 앞 n 빼고 계산, 끝 m 앞에 넣기) + 끝 문자. 틀리면 문자열을 던진다 */
 function build(spec) {
-  const body = spec.mode === "hex" ? parseHex(spec.text ?? "") : parseAscii(spec.text ?? "");
-  const ck = spec.checksum ? compute(spec.checksum, body) : [];
-  return [...body, ...ck, ...parseAscii(spec.suffix ?? "")];
+  const body = spec.mode === "hex" ? parseHex(spec.text ?? "") : parseAscii(spec.text ?? "", spec.encoding);
+  let framed = body;
+  if (spec.checksum) {
+    const { head, tail } = ckSpec(spec.checksum);
+    if (head + tail > body.length) throw tr(`체크섬 범위: 본문 ${body.length}바이트에서 앞 ${head}·끝 ${tail}바이트를 뺄 수 없습니다`, `Checksum range: cannot leave out ${head}+${tail} bytes of a ${body.length}-byte body`);
+    const at = body.length - tail;
+    framed = [...body.slice(0, at), ...compute(spec.checksum, body.slice(head, at)), ...body.slice(at)];
+  }
+  return [...framed, ...parseAscii(spec.suffix ?? "")];
 }
 function buildOrFail(spec) {
   let b;
@@ -208,8 +260,9 @@ const peerList = () => S.peers.map((p) => ({ id: p.id, addr: p.addr }));
 
 // ---- 시리얼 (Serial · Modbus Slave · Simulator 시리얼)
 function describe(c) {
-  const p = c.parity === "odd" ? "O" : c.parity === "even" ? "E" : "N";
-  return `${c.port} ${c.baud} ${c.dataBits}${p}${c.stopBits} flow=${c.flow} DTR=${c.dtr ? 1 : 0} RTS=${c.rts ? 1 : 0}`;
+  const p = { odd: "O", even: "E", mark: "M", space: "S" }[c.parity] ?? "N";
+  const rs = c.rs485 && c.rs485 !== "off" && c.flow !== "hardware" ? ` RS485=${c.rs485}` : "";
+  return `${c.port} ${c.baud} ${c.dataBits}${p}${c.stopBits} flow=${c.flow} DTR=${c.dtr ? 1 : 0} RTS=${c.rts ? 1 : 0}${rs}`;
 }
 async function openSerial(kind, config, ch, extra = {}) {
   if (S) return fail(kind === "serial" ? `${config.port}: ${tr("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting")}` : ALREADY());
@@ -284,17 +337,23 @@ function framingNote(f) {
 }
 function diffCfg(a, b) {
   const out = [];
-  for (const k of ["baud", "dataBits", "parity", "stopBits", "flow", "dtr", "rts"]) if (a[k] !== b[k]) out.push(`${k} ${a[k]}→${b[k]}`);
+  for (const k of ["baud", "dataBits", "parity", "stopBits", "flow", "dtr", "rts", "rs485"]) if (a[k] !== b[k]) out.push(`${k} ${a[k]}→${b[k]}`);
   return out;
 }
 
-// ---- Modbus Slave 앱
+// ---- Modbus Slave 앱 (시리얼 RTU · TCP 서버 Modbus TCP / RTU over TCP)
+const newSlaveStats = () => ({ requests: 0, ok: 0, exceptions: 0, otherId: 0, badFrames: 0, busy: 0, noResponse: 0, broadcasts: 0, writes: 0, perFc: {}, ignored: 0 });
 const slave = {
   ids: [1],
   tables: new Map(), // "id:table" → Map(addr → value)
   ranges: new Map(),
-  faults: { delayMs: 0, noResponse: false, forceException: 0, badCrc: false },
-  stats: { requests: 0, ok: 0, exceptions: 0, ignored: 0, writes: 0 },
+  faults: { delayMs: 0, delayMaxMs: 0, noResponse: false, forceException: 0, badCrc: false, badMbapLen: false, target: null },
+  stats: newSlaveStats(),
+  options: { ignoreUnitId: false },
+  device: { vendor: "PortDock", productCode: "Modbus Slave", revision: "1.0" },
+  sims: new Map(), // "id:table" → [SimSpec]
+  style: { base: 0, plc: false },
+  tid: 0,
 };
 const tbl = (id, t) => {
   const k = `${id}:${t}`;
@@ -303,39 +362,106 @@ const tbl = (id, t) => {
 };
 const spanErr = (start, count) =>
   !Number.isInteger(start) || !Number.isInteger(count) || start < 0 || count <= 0 || start + count > 65536 ? tr("주소 범위가 0~65535 를 벗어납니다", "Address range is outside 0–65535") : null;
+/** 백엔드 Summarizer 흉내 — 주소 표기(0·1 기준, PLC)를 따른다 */
+const mbAddr = (prefix, a) => (slave.style.plc ? prefix + String(a + 1).padStart(a < 9999 ? 4 : 5, "0") : String(a + slave.style.base));
+const mbSpan = (prefix, a, n) => (n > 1 ? `${mbAddr(prefix, a)}..${mbAddr(prefix, a + n - 1)}` : mbAddr(prefix, a));
+/** MBAP 머리를 붙인다 */
+const mbap = (tid, unit, pdu) => [(tid >> 8) & 0xff, tid & 0xff, 0, 0, ((pdu.length + 1) >> 8) & 0xff, (pdu.length + 1) & 0xff, unit, ...pdu];
+/** 자동 변화(증가·감소·토글만 흉내) — 연결과 상관없이 돈다 */
+setInterval(() => {
+  for (const [k, list] of slave.sims) {
+    const [id, t] = k.split(":");
+    const m = tbl(Number(id), t);
+    for (const s of list) {
+      const v = m.get(s.addr) ?? 0;
+      if (s.sim.kind === "toggle") m.set(s.addr, v ? 0 : 1);
+      else if (s.valueType === "u16" && (s.sim.kind === "increment" || s.sim.kind === "decrement")) m.set(s.addr, (v + (s.sim.kind === "increment" ? 1 : 0xffff)) & 0xffff);
+    }
+  }
+}, 1000);
 function slaveTick() {
   const s = S;
   if (!s.online) return;
+  const tcp = s.kind === "slave-tcp";
+  if (tcp && !s.peers.length) return;
   s.seq++;
+  const mtcp = tcp && s.cfg.wire === "tcp";
+  const peer = tcp ? s.peers[s.seq % s.peers.length].addr : undefined;
+  const wire = (unit, pdu) => (mtcp ? mbap(slave.tid, unit, pdu) : withCrc([unit, ...pdu]));
+  const h = mtcp ? `#${slave.tid} ` : "";
+  slave.tid = (slave.tid + 1) & 0xffff;
+  // 가끔 목록에 없는 국번
+  if (s.seq % 7 === 0) {
+    frames({ ...data("rx", wire(9, [3, 0, 0, 0, 1]), mtcp ? null : true, peer), sum: `${h}id9 FC03 HR ${mbAddr("4", 0)} (1)` });
+    slave.stats.otherId++;
+    slave.stats.ignored++;
+    frames(ev(mtcp ? "IGNORED unit 9 (not simulated)" : "IGNORED id 9 (not simulated)"));
+    return;
+  }
   const id = slave.ids[s.seq % slave.ids.length];
   slave.stats.requests++;
   // 마스터 요청: 읽기 위주, 가끔 쓰기(FC06 — 4x 주소 3 을 1씩 올린다)
   const write = s.seq % 6 === 0;
-  const req = write ? withCrc([id, 6, 0, 3, 0, s.seq & 0xff]) : withCrc([id, 3, 0, 0, 0, 4]);
-  frames(data("rx", req, true));
+  const fc = write ? 6 : 3;
+  const fcKey = write ? "06" : "03";
+  slave.stats.perFc[fcKey] = (slave.stats.perFc[fcKey] ?? 0) + 1;
+  const reqPdu = write ? [6, 0, 3, 0, s.seq & 0xff] : [3, 0, 0, 0, 4];
+  const reqSum = write ? `${h}id${id} FC06 HR ${mbAddr("4", 3)} ← ${s.seq & 0xff}` : `${h}id${id} FC03 HR ${mbSpan("4", 0, 4)} (4)`;
+  frames({ ...data("rx", wire(id, reqPdu), mtcp ? null : true, peer), sum: reqSum });
   const f = slave.faults;
   if (f.noResponse) {
-    slave.stats.ignored++;
-    frames(ev(tr("NO RESPONSE (장애 주입)", "NO RESPONSE (fault injection)")));
+    slave.stats.noResponse++;
+    frames(ev(`NO-RESPONSE (fault) id ${id} fc ${fcKey}`));
     return;
   }
-  let resp;
+  let pdu;
+  let sum;
   if (f.forceException) {
     slave.stats.exceptions++;
-    resp = withCrc([id, write ? 0x86 : 0x83, f.forceException]);
+    pdu = [fc | 0x80, f.forceException];
+    sum = `${h}id${id} FC${fcKey} → ${tr(`예외 ${hex2(f.forceException)}`, `exception ${hex2(f.forceException)}`)}`;
   } else if (write) {
     tbl(id, "holding-registers").set(3, s.seq & 0xff);
     slave.stats.writes++;
     slave.stats.ok++;
-    resp = req;
+    pdu = reqPdu;
+    sum = `${h}id${id} FC06 HR ${mbAddr("4", 3)} → ${tr("정상", "OK")}`;
   } else {
     slave.stats.ok++;
     const m = tbl(id, "holding-registers");
-    const vals = [0, 1, 2, 3].flatMap((a) => [((m.get(a) ?? 0) >> 8) & 0xff, (m.get(a) ?? 0) & 0xff]);
-    resp = withCrc([id, 3, 8, ...vals]);
+    const regs = [0, 1, 2, 3].map((a) => m.get(a) ?? 0);
+    pdu = [3, 8, ...regs.flatMap((v) => [(v >> 8) & 0xff, v & 0xff])];
+    sum = `${h}id${id} FC03 HR ${mbSpan("4", 0, 4)} → ${tr("정상", "OK")}: ${regs.join(", ")}`;
   }
-  if (f.badCrc) resp[resp.length - 1] ^= 0xff;
-  later(Math.min(f.delayMs, 500), () => frames(data("tx", resp, null)));
+  const resp = wire(id, pdu);
+  if (f.badCrc && !mtcp) resp[resp.length - 1] ^= 0xff;
+  if (f.badMbapLen && mtcp) resp[5] = (resp[5] + 1) & 0xff;
+  const delay = f.delayMaxMs > f.delayMs ? f.delayMs + Math.floor(Math.random() * (f.delayMaxMs - f.delayMs + 1)) : f.delayMs;
+  if (f.delayMaxMs > f.delayMs) frames(ev(`DELAY ${delay} ms (fault)`));
+  if (f.forceException) frames(ev(`EXCEPTION ${hex2(f.forceException)} → id ${id} fc ${fcKey}`));
+  later(Math.min(delay, 500), () => frames({ ...data("tx", resp, null, peer), sum }));
+}
+/** TCP 서버로 시작 — 실제처럼 LISTEN, 상대 둘이 붙는다 */
+function slaveTcpStart(c, ch) {
+  if (S) return fail(tr("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting"));
+  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(tr(`${c.host}:${c.port}: 주소를 찾지 못했습니다`, `${c.host}:${c.port}: address not found`));
+  if (c.port === 445) return fail(inUse(`${c.host}:${c.port}`));
+  const local = `${c.host}:${c.port || 50502}`;
+  const s = newSession("slave-tcp", ch, { cfg: { ...c }, port: local, server: true, online: true });
+  slave.options.ignoreUnitId = !!c.ignoreUnitId;
+  later(10, () => {
+    frames(ev(`LISTEN ${local}`));
+    status("listening", local, null);
+  });
+  const join = (addr) => {
+    s.peers.push({ id: ++s.seq, addr });
+    frames(ev(`ACCEPT ${addr}`));
+    send({ type: "peers", peers: peerList() });
+  };
+  later(300, () => join("192.168.0.20:51234"));
+  later(900, () => join("192.168.0.21:50000"));
+  every(500, slaveTick);
+  return Promise.resolve(local);
 }
 
 // ---- TCP 앱
@@ -530,6 +656,9 @@ function simSerialTick() {
 
 // ---------------------------------------------------------------- 시험 도구용 손잡이
 const files = new Map();
+// 파일 보내기 흉내 — 4096바이트를 0.12초마다 512씩
+let fileSeq = 0;
+const fileJobs = [];
 window.__pdMock = {
   /** ask() 의 답(true = 예). save/open 이 돌려줄 경로(null = 취소) */
   dialog: { ask: false, save: null, open: null },
@@ -593,7 +722,7 @@ async function handle(cmd, a) {
     case "open_session": {
       const r = await openSerial("serial", a.config, a.onEvent, { rxCheck: a.rxCheck, framing: a.framing });
       if (S?.kind === "serial") {
-        frames(ev(framingNote(a.framing)), ...(a.rxCheck ? [ev(`RXCHECK ${a.rxCheck}`)] : []));
+        frames(ev(framingNote(a.framing)), ...(a.rxCheck ? [ev(`RXCHECK ${ckName(a.rxCheck)}`)] : []));
         S.lines = { cts: true, dsr: false, ri: false, cd: true };
         send({ type: "lines", ...S.lines });
         every(700, serialTick);
@@ -607,7 +736,7 @@ async function handle(cmd, a) {
       if (!S) return null; // 멈춘 직후 늦게 온 호출 — Simulator 는 실제로도 조용히 넘긴다
       // 실제처럼 바뀐 것만 사건 줄로
       if (JSON.stringify(S.framing) !== JSON.stringify(a.framing)) frames(ev(framingNote(a.framing)));
-      if ((S.rxCheck ?? null) !== (a.rxCheck ?? null)) frames(ev(`RXCHECK ${a.rxCheck ?? "none"}`));
+      if (JSON.stringify(S.rxCheck ?? null) !== JSON.stringify(a.rxCheck ?? null)) frames(ev(`RXCHECK ${a.rxCheck ? ckName(a.rxCheck) : "none"}`));
       S.framing = a.framing;
       S.rxCheck = a.rxCheck ?? null;
       return null;
@@ -618,6 +747,45 @@ async function handle(cmd, a) {
       if (d.length) frames(ev(`SET ${d.join(", ")}${S.online ? "" : tr(" (다시 연결될 때 적용)", " (applies on reconnect)")}`));
       return null;
     }
+    case "set_log_options":
+      window.__pdMock.logOptions = { ...a.options };
+      return null;
+    case "send_file": {
+      // Serial: {id, path, pace} → 진행은 세션 사건(progress) · TCP: {target, path, pace, onProgress} → 진행은 onProgress
+      if (!S) return fail(NO_SESSION());
+      if (!a.path) return fail(tr("파일을 고르세요", "Choose a file"));
+      if (/missing/i.test(a.path)) return fail(`${a.path}: ${tr("지정된 파일을 찾을 수 없습니다.", "The system cannot find the file specified.")} (os error 2)`);
+      const id = ++fileSeq;
+      const total = 4096;
+      const out = a.onProgress ? (p) => a.onProgress.onmessage?.(p) : (p) => send({ type: "progress", ...p });
+      const job = { id, sent: 0, total, cancelled: false };
+      fileJobs.push(job);
+      const step = () => {
+        if (!S) return;
+        if (job.cancelled) {
+          frames(ev(`SEND CANCELLED ${job.sent}/${total}`));
+          return out({ id, sent: job.sent, total, done: true, cancelled: true });
+        }
+        const n = Math.min(512, total - job.sent);
+        job.sent += n;
+        frames(data("tx", Array.from({ length: Math.min(n, 32) }, (_, i) => (i + job.sent) & 0xff), null, S.peers?.[0]?.addr));
+        out({ id, sent: job.sent, total, done: job.sent >= total, cancelled: false });
+        if (job.sent < total) later(Math.max(120, a.pace?.lineDelayMs ?? 0), step);
+      };
+      later(50, step);
+      return { id, total };
+    }
+    case "cancel_send":
+      for (const j of fileJobs) j.cancelled = true;
+      return null;
+    case "file_size":
+      return /missing/i.test(a.path) ? fail(`${a.path}: ${tr("지정된 파일을 찾을 수 없습니다.", "The system cannot find the file specified.")} (os error 2)`) : 4096;
+    case "send_break":
+      if (!S) return fail(NO_SESSION());
+      if (!S.online) return fail(tr("포트가 끊겨 있습니다", "The port is disconnected"));
+      if (!(a.ms >= 1 && a.ms <= 10000)) return fail(tr("Break 길이는 1~10000 ms 입니다", "Break duration must be 1–10000 ms"));
+      frames(ev(`BREAK ${a.ms}ms`));
+      return null;
     case "set_log":
       if (!S) return fail(NO_SESSION());
       if (a.path && /readonly|denied/i.test(a.path)) return fail(`${a.path}: ${tr("액세스가 거부되었습니다.", "Access is denied.")} (os error 5)`);
@@ -676,19 +844,45 @@ async function handle(cmd, a) {
     // ---- Modbus Slave
     case "open": {
       const r = await openSerial("slave", a.config, a.onEvent);
-      if (S?.kind === "slave") every(600, slaveTick);
+      if (S?.kind === "slave") {
+        slave.options.ignoreUnitId = false;
+        frames(ev(`FRAMING modbus-rtu-request @${a.config.baud} min gap 20ms`), ev("RXCHECK crc16-modbus"));
+        every(600, slaveTick);
+      }
       return r;
     }
+    case "open_tcp":
+      return slaveTcpStart(a.config, a.onEvent);
     case "close":
-      if (S) endSession(S.port);
+      if (S) endSession(S.port, S.kind === "slave-tcp" ? [...S.peers.map((p) => `CLOSE ${p.addr} (${tr("사용자가 끊음", "disconnected by user")})`), "STOP LISTEN"] : ["CLOSE"]);
       return null;
-    case "set_faults":
+    case "set_faults": {
+      const t = a.faults.target ?? {};
+      if ((t.probability ?? 100) > 100) return fail(tr("확률은 0~100% 입니다", "Probability is 0–100%"));
+      if (t.addrFrom != null && t.addrTo != null && t.addrFrom > t.addrTo) return fail(tr("주소 범위의 시작이 끝보다 큽니다", "The address range starts after it ends"));
       slave.faults = { ...a.faults };
+      return null;
+    }
+    case "set_options":
+      slave.options = { ...a.options };
+      return null;
+    case "set_device_id":
+      if ([a.device.vendor, a.device.productCode, a.device.revision].some((x) => enc.encode(x).length > 80)) return fail(tr("장치 식별이 80바이트를 넘습니다", "Device ID is longer than 80 bytes"));
+      slave.device = { ...a.device };
+      return null;
+    case "set_sims":
+      if (!slave.ids.includes(a.id)) return fail(tr("없는 슬레이브", "Unknown slave ID"));
+      if (a.sims.length) slave.sims.set(`${a.id}:${a.table}`, a.sims);
+      else slave.sims.delete(`${a.id}:${a.table}`);
+      return null;
+    case "set_addr_style":
+      slave.style = { base: a.style.base, plc: !!a.style.plc };
       return null;
     case "set_slave_ids":
       if (!a.ids?.length) return fail(tr("슬레이브 주소가 하나는 있어야 합니다", "At least one slave ID is required"));
       if (a.ids.some((x) => !Number.isInteger(x) || x < 1 || x > 247)) return fail(tr("슬레이브 주소는 1~247", "Slave IDs are 1–247"));
       slave.ids = [...a.ids];
+      for (const k of [...slave.sims.keys()]) if (!slave.ids.includes(Number(k.split(":")[0]))) slave.sims.delete(k);
       return null;
     case "set_range": {
       const e = spanErr(a.start, a.count);
@@ -712,9 +906,9 @@ async function handle(cmd, a) {
       return null;
     }
     case "get_stats":
-      return { ...slave.stats };
+      return JSON.parse(JSON.stringify(slave.stats));
     case "reset_stats":
-      slave.stats = { requests: 0, ok: 0, exceptions: 0, ignored: 0, writes: 0 };
+      slave.stats = newSlaveStats();
       return null;
 
     // ---- TCP · UDP (둘 다 «start» — 설정 모양으로 가린다)
@@ -791,7 +985,210 @@ mockIPC(
     const a = args ?? {};
     if (!cmd.startsWith("plugin:event") && !["get_values", "get_stats", "get_hits", "list_ports"].includes(cmd)) window.__pdMock.calls.push(cmd);
     if (window.__pdMock.calls.length > 2000) window.__pdMock.calls.splice(0, 1000);
-    return handle(cmd, a);
+    // Net Scan 명령은 맨 아래 따로 둔 부분이 받는다
+    return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
   },
   { shouldMockEvents: true },
 );
+
+// ================================================================ Net Scan (apps/netscan — 명령: apps/netscan/src-tauri/src/lib.rs)
+// 위 공용 세션(S)과 따로 논다. 범위의 주소를 0.5초에 하나씩 «찾는다»(/24 는 2분 남짓 — 다 눌러 보기 동안 계속 찾는 중이도록).
+// 일부러 실패하는 입력: 범위 4096개 초과, 감시 장비 «nohost»(찾지 못함), 감시 IP 끝이 .99(늘 시간 초과).
+const NETSCAN = new Set(["list_nics", "range_info", "scan_start", "scan_cancel", "modbus_ident", "wake", "open_web", "monitor_start", "monitor_stop", "monitor_set_log"]);
+const nsIp = (s) => {
+  const p = s.trim().split(".");
+  if (p.length !== 4 || !p.every((x) => /^\d{1,3}$/.test(x) && Number(x) <= 255)) throw `${tr("IP 주소가 아닙니다", "Not an IP address")}: «${s.trim()}»`;
+  return ((Number(p[0]) << 24) >>> 0) + (Number(p[1]) << 16) + (Number(p[2]) << 8) + Number(p[3]);
+};
+const nsStr = (n) => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
+/** range.rs 와 같은 규칙(간단히) → [[처음, 끝], …] */
+function nsSpans(text) {
+  const parts = text.split(/[,;\s]+/).filter(Boolean);
+  if (!parts.length) throw tr("찾을 범위가 비어 있습니다", "The range is empty");
+  return parts.map((p) => {
+    if (p.includes("/")) {
+      const [a, b] = p.split("/");
+      const pre = Number(b);
+      if (!/^\d+$/.test(b) || pre > 32) throw `${tr("접두사 길이는 0~32 입니다", "Prefix length must be 0–32")}: «${p}»`;
+      const mask = pre === 0 ? 0 : (0xffffffff << (32 - pre)) >>> 0;
+      const net = (nsIp(a) & mask) >>> 0;
+      const bc = (net | (~mask >>> 0)) >>> 0;
+      return pre >= 31 ? [net, bc] : [net + 1, bc - 1];
+    }
+    if (p.includes("-")) {
+      const [a, b] = p.split("-");
+      const f = nsIp(a);
+      let l;
+      if (b.includes(".")) l = nsIp(b);
+      else if (/^\d{1,3}$/.test(b) && Number(b) <= 255) l = ((f & 0xffffff00) >>> 0) + Number(b);
+      else throw `${tr("범위 끝은 0~255 숫자나 IP 주소입니다", "The range end must be 0–255 or an IP address")}: «${p}»`;
+      if (l < f) throw `${tr("범위의 끝이 시작보다 앞입니다", "The range ends before it starts")}: «${p}»`;
+      return [f, l];
+    }
+    const x = nsIp(p);
+    return [x, x];
+  });
+}
+function nsInfo(text) {
+  const s = nsSpans(text);
+  const count = s.reduce((n, [a, b]) => n + b - a + 1, 0);
+  return { count, first: nsStr(Math.min(...s.map((x) => x[0]))), last: nsStr(Math.max(...s.map((x) => x[1]))), tooMany: count > 4096 };
+}
+const nsNics = () => [
+  { id: "{A1}", name: tr("이더넷", "Ethernet"), desc: "Intel(R) Ethernet Connection I219-LM", addrs: [{ ip: "192.168.0.5", prefix: 24, mask: "255.255.255.0" }, { ip: "192.168.1.200", prefix: 24, mask: "255.255.255.0" }], gateway: "192.168.0.1", mac: "B4:2E:99:F6:AB:3D", up: true, wireless: false, vendor: "GIGA-BYTE" },
+  { id: "{B2}", name: "Wi-Fi", desc: "Killer(R) Wi-Fi 6 AX1650x", addrs: [{ ip: "10.0.0.23", prefix: 24, mask: "255.255.255.0" }], gateway: "10.0.0.1", mac: "50:E0:85:E3:47:39", up: true, wireless: true, vendor: "Intel Corporate" },
+  { id: "{C3}", name: tr("이더넷 2", "Ethernet 2"), desc: "Realtek USB GbE Family Controller", addrs: [{ ip: "169.254.12.7", prefix: 16, mask: "255.255.0.0" }], gateway: null, mac: "00:E0:4C:68:01:02", up: false, wireless: false, vendor: "REALTEK SEMICONDUCTOR" },
+];
+// 끝 숫자 → 장비(어느 대역이든 같은 끝 숫자에)
+const NS_DEVICES = {
+  1: { mac: "28:4E:E9:A9:62:7E", vendor: "mercury corperation", rtt: 1, ports: [80, 443], name: "router.local" },
+  5: { me: true, mac: "B4:2E:99:F6:AB:3D", vendor: "GIGA-BYTE", rtt: 0, ports: [] },
+  10: { mac: "00:1B:1B:12:34:56", vendor: "Siemens", rtt: 2, ports: [102, 80, 502], ident: { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" } },
+  11: { mac: "00:0B:29:0A:0B:0C", vendor: "LS Industrial Systems", rtt: null, ports: [2004, 80] },
+  20: { mac: "00:26:92:01:02:03", vendor: "Mitsubishi Electric", rtt: 3, ports: [5000, 5001, 5002] },
+  30: { mac: "00:00:BC:11:22:33", vendor: "Rockwell Automation", rtt: 4, ports: [44818, 4840, 80, 443] },
+  40: { mac: "00:30:DE:44:55:66", vendor: "WAGO Kontakttechnik GmbH & Co. KG, a very long vendor name", rtt: 6, ports: [502, 1883, 23] },
+  55: { mac: "00:01:C0:AA:BB:CC", vendor: "CompuLab", rtt: 12, ports: [5025, 21], name: "scope-lab-2.factory.example" },
+  77: { mac: "DA:A1:19:00:00:01", vendor: null, randomMac: true, rtt: 35, ports: [] },
+  100: { mac: "B4:2E:99:00:00:64", vendor: "GIGA-BYTE", rtt: null, ports: [], name: "DESKTOP-OFFICE1" },
+};
+let NS = null; // 지금 찾기 { ch, timer, cancelled, finished }
+let NSM = null; // 지금 감시 { ch, timer, log }
+function nsSend(ch, e) {
+  try {
+    ch?.onmessage?.(e);
+  } catch (err) {
+    window.__pdMock.errors.push(String(err?.stack ?? err));
+    setTimeout(() => {
+      throw err;
+    });
+  }
+}
+function nsScanStart(cfg, ch) {
+  if (NS && !NS.finished) return fail(tr("이미 찾는 중입니다", "A scan is already running"));
+  let info;
+  try {
+    info = nsInfo(cfg.range);
+  } catch (e) {
+    return fail(String(e));
+  }
+  if (info.tooMany) return fail(`${tr("한 번에 찾을 수 있는 주소 수를 넘었습니다 — 범위를 좁히세요", "Too many addresses for one scan — narrow the range")} (${info.count} > 4096)`);
+  if (!cfg.ping && !cfg.arp) return fail(tr("핑과 ARP 가운데 하나는 켜야 합니다", "Turn on ping or ARP (at least one)"));
+  const addrs = [];
+  for (const [a, b] of nsSpans(cfg.range)) for (let x = a; x <= b; x++) addrs.push(x);
+  const uniq = [...new Set(addrs)].sort((x, y) => x - y);
+  const t0 = now();
+  const job = { ch, cancelled: false, finished: false, found: [] };
+  NS = job;
+  const nic = cfg.nicIp ? nsIp(cfg.nicIp) : 0;
+  let i = 0;
+  const finish = () => {
+    clearInterval(job.timer);
+    const check = cfg.ports.length || cfg.names || cfg.modbusId;
+    const n = job.found.length;
+    let k = 0;
+    const done = () => {
+      job.finished = true;
+      nsSend(ch, { type: "done", found: n, total: uniq.length, ms: now() - t0, cancelled: job.cancelled });
+    };
+    if (!check || job.cancelled || !n) {
+      for (const h of job.found) nsSend(ch, { type: "host", host: { ...h.host, done: true } });
+      return done();
+    }
+    job.timer = setInterval(() => {
+      if (job.cancelled || k >= n) {
+        clearInterval(job.timer);
+        return done();
+      }
+      const { host, dev } = job.found[k++];
+      const ports = (dev.ports || []).filter((p) => cfg.ports.includes(p));
+      nsSend(ch, { type: "host", host: { ...host, ports, name: cfg.names ? (dev.name ?? null) : null, modbus: cfg.modbusId && ports.includes(502) ? (dev.ident ?? null) : null, done: true } });
+      nsSend(ch, { type: "progress", phase: "check", done: k, total: n, found: n });
+    }, 300);
+  };
+  job.timer = setInterval(() => {
+    if (job.cancelled || i >= uniq.length) return finish();
+    const ip = uniq[i++];
+    const d = NS_DEVICES[ip & 255];
+    const sameNet = (ip & 0xffffff00) >>> 0 === (nic & 0xffffff00) >>> 0;
+    const me = !!d?.me && ip === nic;
+    if (d && (!d.me || me)) {
+      const viaArp = cfg.arp && sameNet;
+      const rtt = cfg.ping ? d.rtt : null;
+      if (viaArp || rtt != null || me) {
+        const known = viaArp || me;
+        const host = { ip: nsStr(ip), mac: known ? d.mac : null, vendor: known ? d.vendor : null, randomMac: !!d.randomMac && known, rtt, arp: viaArp && !me, name: null, ports: [], modbus: null, me, done: false };
+        job.found.push({ host, dev: d });
+        nsSend(ch, { type: "host", host });
+      }
+    }
+    nsSend(ch, { type: "progress", phase: "find", done: i, total: uniq.length, found: job.found.length });
+  }, 500);
+  return uniq.length;
+}
+function nsMonitorStart(cfg, logPath, ch) {
+  if (!cfg.hosts.length) return fail(tr("감시할 장비를 추가하세요", "Add a host to monitor"));
+  const bad = cfg.hosts.filter((h) => unresolvable(h.trim()) || !hostOk(h.trim()));
+  if (bad.length) return fail(bad.map((h) => `${tr("주소를 찾지 못했습니다", "Address not found")}: «${h.trim()}»`).join(" · "));
+  if (NSM) clearInterval(NSM.timer);
+  const targets = cfg.hosts.map((h) => ({ host: h.trim(), ip: /^(\d{1,3}\.){3}\d{1,3}$/.test(h.trim()) ? h.trim() : "192.168.0.50" }));
+  const m = { ch, log: logPath ?? null, n: 0 };
+  NSM = m;
+  if (logPath) files.set(logPath, "time,host,ip,result,rtt_ms,event\n");
+  const tick = () => {
+    if (NSM !== m) return;
+    m.n++;
+    const samples = targets.map((t) => {
+      const last = Number(t.ip.split(".").pop());
+      const down = last === 99 || (last === 30 && m.n % 6 >= 4);
+      return { host: t.host, rtt: down ? null : 1 + ((m.n * 7 + last) % 9) };
+    });
+    nsSend(ch, { type: "tick", ts: now(), samples });
+    if (m.log) files.set(m.log, (files.get(m.log) ?? "") + samples.map((s) => `T,${s.host},,${s.rtt == null ? "timeout" : "ok"},${s.rtt ?? ""},`).join("\n") + "\n");
+  };
+  m.timer = setInterval(tick, Math.max(500, Math.min(cfg.intervalMs, 3000)));
+  setTimeout(tick, 50);
+  return targets;
+}
+async function netscan(cmd, a) {
+  switch (cmd) {
+    case "list_nics":
+      await sleep(120);
+      return nsNics();
+    case "range_info":
+      try {
+        return nsInfo(a.text);
+      } catch (e) {
+        return fail(String(e));
+      }
+    case "scan_start":
+      return nsScanStart(a.config, a.onEvent);
+    case "scan_cancel":
+      if (NS && !NS.finished) NS.cancelled = true;
+      return null;
+    case "modbus_ident":
+      await sleep(300);
+      if (a.ip.endsWith(".10")) return { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" };
+      return fail(`${tr("예외", "exception")} 01 (${tr("지원하지 않는 기능", "illegal function")})`);
+    case "wake": {
+      if (!/^([0-9a-f]{2}[:-]?){5}[0-9a-f]{2}$/i.test(a.mac.replace(/[.\s]/g, ""))) return fail(`${tr("MAC 주소 형식이 아닙니다", "Not a MAC address")}: «${a.mac}»`);
+      const bc = a.nicIp ? a.nicIp.replace(/\.\d+$/, ".255") : null;
+      return [...(bc ? [`${bc}:9`, `${bc}:7`] : []), "255.255.255.255:9", "255.255.255.255:7"];
+    }
+    case "open_web":
+      window.__pdMock.opened = `${a.https ? "https" : "http"}://${a.ip}${a.port && a.port !== 80 && a.port !== 443 ? `:${a.port}` : ""}/`;
+      return null;
+    case "monitor_start":
+      return nsMonitorStart(a.config, a.logPath, a.onEvent);
+    case "monitor_stop":
+      if (NSM) clearInterval(NSM.timer);
+      NSM = null;
+      return null;
+    case "monitor_set_log":
+      if (!NSM) return fail(tr("감시 중이 아닙니다", "Monitor is not running"));
+      NSM.log = a.path ?? null;
+      if (a.path && !files.has(a.path)) files.set(a.path, "time,host,ip,result,rtt_ms,event\n");
+      return null;
+  }
+  return null;
+}

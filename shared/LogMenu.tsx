@@ -104,6 +104,8 @@ export function logMenuItems(opts: {
   view: ViewMode;
   fmt: (ts: number) => string;
   peers?: boolean;
+  /** 시각 뒤 열(간격·응답 시간) — 줄 복사에 넣는다 */
+  col?: (f: LogFrame) => string;
   onCopied: (ok: boolean, n: number) => void;
   /** TX 줄의 바이트를 그대로 다시 보낸다 */
   sendAgain?: { run: (bytes: number[]) => void; enabled: boolean; why?: string };
@@ -115,7 +117,7 @@ export function logMenuItems(opts: {
   const n = frames.length;
   const copy = (kind: CopyKind) => () => {
     const list = kind === "lines" ? frames : data;
-    copyText(copyTextOf(frames, kind, view, fmt, peers)).then((ok) => opts.onCopied(ok, list.length));
+    copyText(copyTextOf(frames, kind, view, fmt, peers, opts.col)).then((ok) => opts.onCopied(ok, list.length));
   };
   const many = n > 1 ? ` · ${ui(lang, "nLines", { n })}` : "";
   const items: MenuItem[] = [

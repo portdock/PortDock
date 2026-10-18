@@ -3,7 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { ask, open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { NumInput } from "./NumInput";
-import { exportAll, importAll, LIMITS, type AutoReport, type Settings, type TimeFormat, type Theme } from "./settings";
+import { exportAll, importAll, LIMITS, type AutoReport, type LogFormat, type Settings, type TimeFormat, type Theme } from "./settings";
+import { ENCODINGS, type Encoding } from "./format";
+import { io } from "./ioText";
+import { tip } from "./tips";
 import { autoSendAvailable, type EnvInfo } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
 
@@ -123,6 +126,7 @@ export function SettingsDialog({
   writeText,
   readText,
   busy,
+  ioOptions,
 }: {
   app: string;
   version: string;
@@ -134,6 +138,8 @@ export function SettingsDialog({
   readText: (path: string) => Promise<string>;
   /** 연결·기록 중 — 가져오기(새로 고침)를 하면 실행 중인 세션이 화면과 끊긴다 */
   busy: boolean;
+  /** 글자 인코딩·파일 로그 형식·나누기 칸을 보일지(Serial·TCP·UDP) */
+  ioOptions?: boolean;
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
@@ -248,6 +254,43 @@ export function SettingsDialog({
           <label className="inline">
             <input type="checkbox" checked={settings.confirmExit} onChange={(e) => update({ confirmExit: e.target.checked })} /> {t.confirmExit}
           </label>
+          {ioOptions && (
+            <>
+              <hr />
+              <label>{io(settings.lang, "ioSection")}</label>
+              <label data-tip={tip(settings.lang, "encoding")}>
+                {io(settings.lang, "encoding")}
+                <select value={settings.encoding} onChange={(e) => update({ encoding: e.target.value as Encoding })}>
+                  {ENCODINGS.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="hint">{io(settings.lang, "encodingHint")}</span>
+              </label>
+              <label data-tip={tip(settings.lang, "logFormat")}>
+                {io(settings.lang, "logFormat")}
+                <select value={settings.logFormat} onChange={(e) => update({ logFormat: e.target.value as LogFormat })}>
+                  <option value="hex">{io(settings.lang, "fmtHex")}</option>
+                  <option value="ascii">{io(settings.lang, "fmtAscii")}</option>
+                  <option value="hex-ascii">{io(settings.lang, "fmtHexAscii")}</option>
+                  <option value="csv">{io(settings.lang, "fmtCsv")}</option>
+                </select>
+              </label>
+              <div className="grid2">
+                <label>
+                  {io(settings.lang, "splitMb")}
+                  <NumInput min={LIMITS.logSplitMb[0]} max={LIMITS.logSplitMb[1]} value={settings.logSplitMb} onValue={(n) => update({ logSplitMb: n })} />
+                </label>
+                <label>
+                  {io(settings.lang, "splitHours")}
+                  <NumInput min={LIMITS.logSplitHours[0]} max={LIMITS.logSplitHours[1]} value={settings.logSplitHours} onValue={(n) => update({ logSplitHours: n })} />
+                </label>
+              </div>
+              <span className="hint">{io(settings.lang, "logFmtHint")}</span>
+            </>
+          )}
           {autoSendAvailable() && (
             <>
               <label>

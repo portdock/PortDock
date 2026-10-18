@@ -38,8 +38,8 @@ export type CopyKind = "lines" | "hex" | "ascii" | "both" | "c";
  * 고른 줄을 글로. lines = «시각 방향 내용»(지금 보기대로, 화면 내용 저장과 같은 모양),
  * 나머지는 내용만(사건 줄 EV 는 뺀다) — 다른 프로그램·코드에 붙여 넣기 좋게.
  */
-export function copyTextOf(frames: LogFrame[], kind: CopyKind, view: ViewMode, fmt: (ts: number) => string, peers?: boolean) {
-  if (kind === "lines") return frames.map((f) => frameLine(f, view, fmt, hexOf, asciiOf, peers)).join("\r\n");
+export function copyTextOf(frames: LogFrame[], kind: CopyKind, view: ViewMode, fmt: (ts: number) => string, peers?: boolean, col?: (f: LogFrame) => string) {
+  if (kind === "lines") return frames.map((f) => frameLine(f, view, fmt, hexOf, (b) => asciiOf(b), peers, col)).join("\r\n");
   return frames
     .filter((f) => f.dir !== "ev")
     .map((f) => (kind === "hex" ? hexOf(f.bytes) : kind === "ascii" ? asciiOf(f.bytes) : kind === "both" ? `${hexOf(f.bytes)} | ${asciiOf(f.bytes)}` : cArray(f.bytes)))
