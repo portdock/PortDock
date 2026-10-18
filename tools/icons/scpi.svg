@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock SCPI (S? — 계측기에 묻는 쪽) — 배경: 앱 색, 흰 글자 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#be185d"/>
+  <g transform="translate(128 110) scale(0.88) translate(-128 -114)" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M148 66 C134 46 66 44 64 82 C62 116 148 108 148 146 C148 186 74 186 56 158"/>
+    <path d="M186 74 C188 52 224 52 224 76 C224 96 204 98 204 118"/>
+  </g>
+  <circle cx="179" cy="154" r="15" fill="#ffffff"/>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

@@ -28,7 +28,7 @@ node serial.mjs
 
 ## 화면 미리보기·캡처 (장비·Rust 없이, `ui-preview/`)
 백엔드 대신 가짜 응답(`ui-preview/mock.js`)을 넣고 화면만 브라우저에 띄운다. 글자 잘림·배치·테마·글자 크기를 빠르게 본다.
-1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207)
+1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208)
 2. `e2e` 폴더에서: `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/shots.mjs [앱]` → `shots/ui/*.png` + `probe.json`(잘린 칸 목록)
 - 경우: 최소 창(1000×640) 한국어 대기·연결, 영어, 넓은 창 어두운 테마, 글자 17px, 설정 창
 - 가짜 응답이라 상태 문구·사건 줄 내용은 실제와 다를 수 있다. 실제 동작 확인은 위 실기 점검으로.
@@ -58,3 +58,9 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 - 매 동작 뒤 확인: 잡히지 않은 예외·거부된 Promise·console.error, 화면 오류(Boundary), 창 밖으로 넘친 요소·가로 스크롤, 창보다 큰 대화상자, 글자가 잘린 버튼, 값이 목록에 없는 고르기.
 - 결과: 화면에 경우별 ✅/❌ 와 누른 횟수, `shots/smoke/<앱>.json`(같은 문제는 묶어 횟수·단계와 함께), 문제가 난 단계의 캡처 `shots/smoke/<앱>-*.png`. 문제가 있으면 종료 코드 1.
 - 가짜 백엔드라 «화면 쪽» 버그만 찾는다. 실제 통신·타이밍 문제는 위 실기 점검으로.
+
+## SCPI 화면 점검 (`ui-preview/smoke-scpi.mjs`, 10/19)
+SCPI 는 smoke.mjs 와 따로 점검한다. 서버 `APP=scpi PORT=5208 npx vite --config e2e/ui-preview/vite.config.mjs` 를 띄운 뒤 `e2e` 폴더에서 `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke-scpi.mjs` (`COMBO=ko-light` 로 한 경우만).
+- 가짜 계측기(mock.js SCPI 부분): `*IDN?` → `PORTDOCK,SCPI-SIM,0001,1.0`, `MEAS:VOLT:DC?`·`READ?` → 5 V 근처, `MEAS:RES?` → 9.9E37(넘침), `DATA?` → PNG 머리 300바이트 블록(`#3300`), `*OPC?` → 0.4초 뒤 1, 모르는 명령 → 오류 큐 -113(질의면 시간 초과), `SLOW?` 답 없음, `NOEND?` 줄 끝 없는 답, 주소 `10.0.0.99` 연결 시간 초과, 포트 445 거부, 시리얼 `COM9` 사용 중. 기다림은 0.9초까지만.
+- 하는 일(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» 절 → 연결 실패 안내 → 연결·`*IDN?` 장비 칸·창 제목 → 질의(자주 쓰는 명령 뜻) → 반복 측정 5번(표·통계·추세) → 좁은 창 760(요약 줄·명령 목록 열기) → 끊기. `ko-light`·`en-dark` 는 더해서 쓰기·시간 초과·오류 큐(-113 → 없음)·줄 끝 없는 답·블록 HEX·파일 저장·`*OPC?`·이력 ↑·명령 목록 예시·통신 기록 빨간 줄·CSV·넘침·F1·⚙.
+- 매 단계 뒤: 예외·화면 오류·창 밖 요소·잘린 버튼·빈 고르기. 결과 `shots/smoke/scpi.json` + `scpi-*.png`.

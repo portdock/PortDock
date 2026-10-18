@@ -12,6 +12,7 @@ pub mod modbus_master;
 pub mod modbus_slave;
 pub mod net;
 pub mod regmap;
+pub mod scpi;
 pub mod oserr;
 pub mod ports;
 pub mod registry;

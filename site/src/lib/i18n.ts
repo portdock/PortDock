@@ -10,7 +10,7 @@ export const otherLang = (lang: Lang): Lang => (lang === "ko" ? "en" : "ko");
 
 export const UI = {
   ko: {
-    siteDesc: "현장 하드웨어 시험용 무료 통신 도구 — 시리얼(COM)·Modbus·TCP·UDP·장비 시뮬레이터·네트워크 장비 찾기. 오픈소스, 광고·끼워팔기 없음.",
+    siteDesc: "현장 하드웨어 시험용 무료 통신 도구 — 시리얼(COM)·Modbus·TCP·UDP·장비 시뮬레이터·네트워크 장비 찾기·SCPI 계측기. 오픈소스, 광고·끼워팔기 없음.",
     tools: "도구",
     webTools: "웹 도구",
     guides: "가이드",
@@ -23,7 +23,7 @@ export const UI = {
     issues: "버그 신고",
     langName: "English",
     heroTitle: "현장 장비 시험을 위한\n작고 정확한 통신 도구",
-    heroSub: "시리얼(COM), Modbus, TCP, UDP, 장비 시뮬레이터, 네트워크 장비 찾기를 목적별 작은 프로그램으로. 무료·오픈소스(GPL-3.0), 윈도우 10·11.",
+    heroSub: "시리얼(COM), Modbus, TCP, UDP, 장비 시뮬레이터, 네트워크 장비 찾기, SCPI 계측기를 목적별 작은 프로그램으로. 무료·오픈소스(GPL-3.0), 윈도우 10·11.",
     trust: ["광고 없음", "끼워팔기 없음", "설치판·휴대판", "소스 공개"],
     allTools: "PortDock 도구",
     more: "자세히",
@@ -61,7 +61,7 @@ export const UI = {
     footerLine: "PortDock — 현장 하드웨어 시험용 통신 도구. GPL-3.0.",
   },
   en: {
-    siteDesc: "Free communication tools for hardware testing — serial (COM), Modbus, TCP, UDP, a device simulator and a network device finder. Open source, no ads, no bundles.",
+    siteDesc: "Free communication tools for hardware testing — serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder and an SCPI instrument terminal. Open source, no ads, no bundles.",
     tools: "Tools",
     webTools: "Web tools",
     guides: "Guides",
@@ -74,7 +74,7 @@ export const UI = {
     issues: "Report a bug",
     langName: "한국어",
     heroTitle: "Small, precise communication tools\nfor testing hardware",
-    heroSub: "Serial (COM), Modbus, TCP, UDP, a device simulator and a network device finder — one small program per job. Free and open source (GPL-3.0), Windows 10 and 11.",
+    heroSub: "Serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder and an SCPI instrument terminal — one small program per job. Free and open source (GPL-3.0), Windows 10 and 11.",
     trust: ["No ads", "No bundles", "Installer or portable", "Open source"],
     allTools: "PortDock tools",
     more: "Details",

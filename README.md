@@ -13,6 +13,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 | **PortDock Simulator** | Rule-based fake device over serial, TCP and UDP — "when this arrives, reply with that" |
 | **PortDock Net Scan** | Find devices on an industrial network: ping/ARP sweep, MAC vendor, industrial ports (Modbus 502, MC, XGT …), long-term ping monitor, Wake-on-LAN |
 | **PortDock Modbus Master** | Modbus RTU/TCP master (poll tool): several poll tables, typed values (U16–F64, strings, byte orders, 40001 notation), writes 05/06/0F/10, slave ID and address range scan, decoded traffic, statistics, CSV value log, trends |
+| **PortDock SCPI** | SCPI instrument terminal over LAN socket (5025) or RS-232, no VISA: query/write/read with response times, `*IDN?` identification, error queue draining, `*OPC?` waits, repeated numeric measurements (table, trend, CSV), block data (#…) with HEX preview and file save |
 
 Website: <https://portdock.dev>
 
@@ -29,6 +30,7 @@ Get the latest version from **[GitHub Releases](https://github.com/juhak0308/Por
 | Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
 | Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
 | Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
+| SCPI | [PortDock-SCPI-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
 
 Windows 10/11, x64.
 

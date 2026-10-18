@@ -1207,6 +1207,8 @@ mockIPC(
     if (window.__pdMock.calls.length > 2000) window.__pdMock.calls.splice(0, 1000);
     // Net Scan 명령은 맨 아래 따로 둔 부분이 받는다
     // Modbus Master 는 이름이 겹치는 명령(open·close …)이 있어 창 제목으로 가린다
+    // SCPI 도 이름이 겹치는 명령(open_tcp·close·query …)이 있어 창 제목으로 가린다
+    if (SCPI_CMDS.has(cmd) && isSCPI()) return scpi(cmd, a);
     if (MM_CMDS.has(cmd) && isMM()) return mmaster(cmd, a);
     return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
   },
@@ -1700,6 +1702,181 @@ async function mmaster(cmd, a) {
       if (!S) return fail(tr("연결돼 있지 않습니다", "Not connected"));
       if (a.path) files.set(a.path, files.get(a.path) ?? "");
       return null;
+    case "append_text":
+      files.set(a.path, (files.get(a.path) ?? "") + a.text);
+      return null;
+  }
+  return null;
+}
+
+// ================================================================ SCPI (apps/scpi — 명령: apps/scpi/src-tauri/src/lib.rs, 오류 모양: crates/core/src/scpi.rs ScpiError)
+// 창 제목이 «… PortDock SCPI» 일 때만 이 부분이 받는다(open_tcp·close 같은 이름이 다른 앱과 겹친다). 가짜 멀티미터 하나:
+// *IDN? → PORTDOCK,SCPI-SIM,0001,1.0 · MEAS:VOLT:DC?·READ?·FETC? → 5 V 근처 · MEAS:CURR:DC? · MEAS:RES? → 9.9E37(넘침)
+// DATA? → PNG 머리로 시작하는 300바이트 블록(#3300) · TEXT? → #15hello · *OPC? → 0.4초 뒤 1 · SYST:ERR? → 쌓인 오류, 없으면 +0
+// 일부러 실패: 모르는 명령 → 오류 큐 -113(질의면 답 없음 → 시간 초과), SLOW? → 답 없음, NOEND? → 줄 끝 없는 «1.23»,
+// 장비 주소 10.0.0.99 → 연결 시간 초과, nohost → 주소 못 찾음, 포트 445 → 거부, 시리얼 COM9 → 사용 중
+const SCPI_CMDS = new Set(["open_tcp", "open_serial", "close", "cancel", "set_term", "write_cmd", "read_reply", "query", "drain_errors", "save_block", "append_text"]);
+const isSCPI = () => /PortDock SCPI/.test(document.title);
+let SC = null;
+const scErr = (kind, message, partial) => Promise.reject(partial ? { kind, message, partial } : { kind, message });
+const scTermBytes = () => ({ lf: [10], crlf: [13, 10], cr: [13] })[SC?.term ?? "lf"] ?? [10];
+const scVolt = () => `+${(5 + (Math.random() - 0.5) * 0.002).toExponential(8).toUpperCase().replace("E+", "E+0")}`;
+const SC_KNOWN = /^(\*(RST|CLS|OPC|WAI|ESE|SRE|TRG|SAV|RCL)\b|CONF|OUTP|VOLT|CURR|SOUR|INIT|ABOR|DISP|SYST:PRES|STAT:PRES|TRIG|SENS|FUNC)/i;
+const notConn = () => scErr("not-connected", tr("연결돼 있지 않습니다", "Not connected"));
+/** 명령 하나 → 장비가 내보낼 응답 또는 null(답 없음) */
+function scDevice(cmd) {
+  const c = cmd.trim().toUpperCase();
+  const text = (t) => ({ bytes: ascii(t + "\n") });
+  if (c === "*IDN?") return text("PORTDOCK,SCPI-SIM,0001,1.0");
+  if (c === "*OPC?") return { ...text("1"), delay: 400 };
+  if (/^\*(ESR|STB|TST|OPT)\?$/.test(c)) return text("+0");
+  if (/^SYST(EM)?:ERR(OR)?(:NEXT)?\?$/.test(c)) return text(SC.errs.shift() ?? '+0,"No error"');
+  if (/^SYST(EM)?:VERS(ION)?\?$/.test(c)) return text("1999.0");
+  if (/^(MEAS(URE)?:VOLT(AGE)?(:DC)?\?|READ\?|FETC(H)?\?)/.test(c)) return text(scVolt());
+  if (/^MEAS(URE)?:CURR(ENT)?(:DC)?\?/.test(c)) return text("+1.23450000E-03");
+  if (/^MEAS(URE)?:RES(ISTANCE)?\?/.test(c)) return text("+9.90000000E+37");
+  if (c === "DATA?" || c === "HCOP:DATA?") {
+    const body = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...Array.from({ length: 292 }, (_, i) => (i * 7) & 255)];
+    return { bytes: [...ascii("#3300"), ...body, 10], block: { header: "#3300", data: body } };
+  }
+  if (c === "TEXT?") return { bytes: ascii("#15hello\n"), block: { header: "#15", data: ascii("hello") } };
+  if (c === "NOEND?") return { bytes: ascii("1.23"), noend: true };
+  if (c === "SLOW?") return null;
+  if (c === "*CLS") SC.errs = [];
+  if (SC_KNOWN.test(c) && !c.endsWith("?")) return null;
+  SC.errs.push('-113,"Undefined header"');
+  return null;
+}
+/** ms 동안 기다림 — 멈춤·끊기면 그 이유 */
+async function scWait(ms) {
+  const until = now() + ms;
+  while (now() < until) {
+    if (!SC) return "closed";
+    if (SC.cancel) {
+      SC.cancel = false;
+      return "cancelled";
+    }
+    await sleep(Math.min(20, until - now()));
+  }
+  return null;
+}
+function scReplyOut(r) {
+  if (r.block) {
+    const d = r.block.data;
+    const binary = !d.every((b) => (b >= 0x20 && b !== 0x7f) || b === 9 || b === 10 || b === 13);
+    return { kind: "block", text: binary ? "" : String.fromCharCode(...d), header: r.block.header, len: d.length, indefinite: false, binary, preview: d.slice(0, 1024), raw: r.bytes.slice(0, 4096), rawLen: r.bytes.length };
+  }
+  const t = String.fromCharCode(...r.bytes).replace(/\r?\n$/, "");
+  return { kind: "text", text: t, header: "", len: t.length, indefinite: false, binary: false, preview: [], raw: r.bytes, rawLen: r.bytes.length };
+}
+const scSent = (cmd) => [...ascii(cmd.replace(/[\r\n]+$/, "")), ...scTermBytes()];
+/** 답 하나 읽기 — 없으면 기다림 시간까지(가짜 장비는 0.9초까지만 — 화면 점검이 오래 걸리지 않게) */
+async function scRead(timeoutMs, sentAt) {
+  const t0 = now();
+  const stopped = () => scErr("cancelled", tr("멈췄습니다", "Stopped"));
+  for (;;) {
+    const r = SC?.out[0];
+    if (r && now() >= r.at) {
+      SC.out.shift();
+      if (r.noend) {
+        if ((await scWait(Math.min(timeoutMs, 900))) === "cancelled") return stopped();
+        return scErr("timeout", `${tr("응답이 끝나지 않았습니다 — 줄 끝(LF·CR)이 오지 않음", "The reply did not end — no line ending (LF/CR) arrived")} (${timeoutMs} ms)`, String.fromCharCode(...r.bytes));
+      }
+      const ms = Math.max(0.3, now() - sentAt) + Math.random();
+      return { ts: sentAt, rxTs: sentAt + Math.round(ms), sent: [], stale: 0, reply: scReplyOut(r), ms };
+    }
+    if (now() - t0 >= Math.min(timeoutMs, 900)) return scErr("timeout", `${tr("응답 없음 — 응답 기다림 시간을 넘었습니다", "No reply — the response timeout passed")} (${timeoutMs} ms)`);
+    const why = await scWait(20);
+    if (why === "closed") return scErr("closed", tr("장비가 연결을 끊었습니다", "The instrument closed the connection"));
+    if (why === "cancelled") return stopped();
+  }
+}
+function scSend(cmd) {
+  const r = scDevice(cmd);
+  if (r) SC.out.push({ ...r, at: now() + (r.delay ?? 3 + Math.random() * 10) });
+}
+async function scpi(cmd, a) {
+  switch (cmd) {
+    case "open_tcp": {
+      if (SC) return fail(tr("이미 연결돼 있습니다", "Already connected"));
+      const host = a.config.host.trim();
+      const port = a.config.port;
+      await sleep(150);
+      if (!host) return fail(tr("장비 주소(IP)를 넣으세요", "Enter the instrument address (IP)"));
+      if (host === "nohost") return fail(`${host}:${port}: ${tr("주소를 찾지 못했습니다", "Could not resolve the address")}`);
+      if (host === "10.0.0.99") {
+        await sleep(600);
+        return fail(`${host}:${port}: ${tr("응답 없음(시간 초과) — 주소·방화벽·케이블 확인", "No answer (timed out) — check address, firewall, cable")}`);
+      }
+      if (port === 445) return fail(`${host}:${port}: ${tr("연결 거부 — 상대가 그 포트에서 듣고 있지 않습니다", "Connection refused — nothing is listening on that port")}`);
+      SC = { term: a.config.term, errs: [], out: [], cancel: false };
+      return null;
+    }
+    case "open_serial": {
+      if (SC) return fail(tr("이미 연결돼 있습니다", "Already connected"));
+      const p = a.config.port;
+      if (p === "COM9") return fail(`${p}: ${tr("포트가 사용 중입니다 — 다른 프로그램(또는 다른 PortDock 창)이 열고 있는지 확인", "Port is busy — check whether another program (or another PortDock window) has it open")}`);
+      if (!listPorts().some((x) => x.name === p)) return fail(`${p}: ${tr("포트를 찾을 수 없습니다 — 케이블·드라이버·포트 이름 확인", "Port not found — check cable, driver and port name")}`);
+      SC = { term: a.config.term, errs: [], out: [], cancel: false };
+      return null;
+    }
+    case "close":
+      SC = null;
+      return null;
+    case "cancel":
+      if (SC) SC.cancel = true;
+      return null;
+    case "set_term":
+      if (!SC) return notConn();
+      SC.term = a.term;
+      return null;
+    case "write_cmd": {
+      if (!SC) return notConn();
+      if (!a.cmd.trim()) return scErr("invalid", tr("보낼 명령이 비어 있습니다", "The command is empty"));
+      const ts = now();
+      scSend(a.cmd);
+      return { ts, rxTs: 0, sent: scSent(a.cmd), stale: 0, reply: null, ms: 0 };
+    }
+    case "read_reply":
+      if (!SC) return notConn();
+      SC.cancel = false;
+      return scRead(a.timeoutMs, now());
+    case "query": {
+      if (!SC) return notConn();
+      if (!a.cmd.trim()) return scErr("invalid", tr("보낼 명령이 비어 있습니다", "The command is empty"));
+      SC.cancel = false;
+      const stale = SC.out.reduce((n, r) => n + r.bytes.length, 0);
+      SC.out = [];
+      const ts = now();
+      scSend(a.cmd);
+      const x = await scRead(a.timeoutMs, ts);
+      return { ...x, sent: scSent(a.cmd), stale };
+    }
+    case "drain_errors": {
+      if (!SC) return notConn();
+      const q = a.cmd || "SYST:ERR?";
+      const out = { errors: [], exchanges: [], complete: false };
+      for (let i = 0; i < (a.max ?? 50); i++) {
+        const ts = now();
+        scSend(q);
+        const x = { ...(await scRead(a.timeoutMs, ts)), sent: scSent(q), stale: 0 };
+        out.exchanges.push(x);
+        const m = /^\s*([+-]?\d+)\s*(?:,\s*"?(.*?)"?\s*)?$/.exec(x.reply.text);
+        if (!m) {
+          out.errors.push({ code: null, message: "", raw: x.reply.text });
+          return out;
+        }
+        if (Number(m[1]) === 0) {
+          out.complete = true;
+          return out;
+        }
+        out.errors.push({ code: Number(m[1]), message: m[2] ?? "", raw: x.reply.text });
+      }
+      return out;
+    }
+    case "save_block":
+      files.set(a.path, "<block 300 bytes>");
+      return 300;
     case "append_text":
       files.set(a.path, (files.get(a.path) ?? "") + a.text);
       return null;

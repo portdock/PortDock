@@ -8,6 +8,7 @@ import { help as udpHelp } from "../../../apps/udp/src/help";
 import { help as simHelp } from "../../../apps/simulator/src/help";
 import { help as netscanHelp } from "../../../apps/netscan/src/help";
 import { help as modbusMasterHelp } from "../../../apps/modbus-master/src/help";
+import { help as scpiHelp } from "../../../apps/scpi/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -18,7 +19,7 @@ export const RELEASES = `${REPO}/releases`;
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -222,6 +223,33 @@ export const TOOLS: Tool[] = [
       { ko: "칸을 두 번 눌러 쓰기, 오른쪽 버튼으로 이름·형식", en: "Double-click a cell to write; right-click for name and type" },
     ],
     help: modbusMasterHelp,
+  },
+  {
+    id: "scpi",
+    name: "PortDock SCPI",
+    file: "PortDock-SCPI",
+    tagline: { ko: "SCPI 계측기 터미널 — LAN 소켓·RS-232, VISA 없이", en: "SCPI instrument terminal — LAN socket and RS-232, no VISA" },
+    summary: {
+      ko: "전원 공급기·멀티미터·오실로스코프 같은 SCPI 계측기에 명령을 보내고 답을 봅니다. VISA 를 설치하지 않고 LAN 소켓(TCP 5025)이나 RS-232 로 붙어, *IDN? 으로 장비를 알아보고 오류 큐를 비우며, 숫자 응답을 반복 측정해 CSV 로 남깁니다.",
+      en: "Send commands to SCPI instruments such as power supplies, multimeters and oscilloscopes and read the answers. Connects over a LAN socket (TCP 5025) or RS-232 without installing VISA, identifies the instrument with *IDN?, drains the error queue and logs repeated numeric readings to CSV.",
+    },
+    who: [
+      { ko: "계측 자동화 프로그램을 만들기 전에 명령을 손으로 확인하는 개발자", en: "Developers checking commands by hand before writing test automation" },
+      { ko: "VISA 없는 PC 에서 계측기 상태를 빨리 보려는 현장 엔지니어", en: "Field engineers who need a quick look at an instrument on a PC without VISA" },
+    ],
+    features: [
+      { title: { ko: "VISA 없이 연결", en: "No VISA needed" }, body: { ko: "LAN 소켓(보통 5025)과 RS-232(속도·패리티·흐름 제어). 줄 끝 LF·CR LF·CR 을 고릅니다. VXI-11·HiSLIP·USBTMC 는 아직 하지 않습니다.", en: "LAN socket (usually 5025) and RS-232 (baud, parity, flow control) with LF, CR LF or CR line endings. VXI-11, HiSLIP and USBTMC are not supported yet." } },
+      { title: { ko: "질의·쓰기·읽기", en: "Query, write, read" }, body: { ko: "? 로 끝나면 질의, 아니면 쓰기. 응답 시간과 시간 초과, 줄 끝 없이 온 답까지 보여 줍니다. 명령 이력·명령 목록·자주 쓰는 명령 자동완성.", en: "Commands ending in ? are queried, others written. Response times, timeouts and replies without a line ending are shown. Command history, command list and completion for common commands." } },
+      { title: { ko: "식별·오류 큐·*OPC?", en: "ID, error queue, *OPC?" }, body: { ko: "*IDN? 을 제조사·모델·일련번호·펌웨어로 나누어 보이고, SYST:ERR? 를 0 이 나올 때까지 물어 쌓인 오류를 꺼냅니다. *RST·*CLS·*OPC? 기다림 버튼.", en: "*IDN? split into maker, model, serial and firmware; SYST:ERR? asked until 0 to list every queued error. Buttons for *RST, *CLS and waiting on *OPC?." } },
+      { title: { ko: "반복 측정", en: "Repeat measurement" }, body: { ko: "MEAS:VOLT:DC? 같은 질의를 주기·횟수대로 물어 값 표·추세·통계(최소·최대·평균·표준편차)를 보고 CSV 로 저장합니다.", en: "Repeat a query such as MEAS:VOLT:DC? at an interval for a count, with a value table, trend and statistics (min, max, mean, std dev), saved as CSV." } },
+      { title: { ko: "블록 데이터", en: "Block data" }, body: { ko: "IEEE 488.2 블록(#NXXXX…)은 길이 머리로 끝을 알아 바이너리 속 LF 에 끊기지 않습니다. HEX 미리보기와 파일 저장(화면 캡처 PNG 등).", en: "IEEE 488.2 blocks (#NXXXX…) are read by their length header, so LF bytes inside binary data do not cut them. HEX preview and save to file (e.g. PNG screenshots)." } },
+    ],
+    steps: [
+      { ko: "LAN 이면 장비 IP·포트 5025, 시리얼이면 포트·속도를 장비와 같게", en: "LAN: instrument IP and port 5025; serial: port and baud as on the instrument" },
+      { ko: "«연결»(F4) — *IDN? 으로 장비 이름이 나옵니다", en: "«Connect» (F4) — *IDN? shows the instrument's name" },
+      { ko: "명령을 넣고 Enter, 틀린 명령은 «오류 큐 비우기» 로 확인", en: "Type a command and press Enter; check mistakes with «Drain error queue»" },
+    ],
+    help: scpiHelp,
   },
 ];
 
