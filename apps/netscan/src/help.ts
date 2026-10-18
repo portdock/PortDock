@@ -20,12 +20,14 @@ export const help: HelpDoc = {
         "- 2. «찾을 범위» 가 그 랜카드의 대역(보통 192.168.x.0/24)으로 채워집니다. 필요하면 고칩니다.",
         "- 3. «찾기»(F4)를 누릅니다. 찾은 장비가 가운데 표에 바로바로 나오고, 포트·이름 확인이 끝나면 «서비스» 칸이 채워집니다.",
         "- 4. 표에서 장비를 누르면 아래 칸에서 웹 열기·IP 복사·«주소:포트» 복사·WoL·핑 감시에 추가를 할 수 있습니다.",
+        "- 처음 켜면 빈 결과 자리에 이 순서가 카드로 보입니다. «다시 보지 않기» 를 누르면 짧은 한 줄 안내로 바뀝니다.",
+        "- ARP·핑·기다림·포트 목록 같은 찾는 방법은 기본값이 대부분 맞아 왼쪽 «찾는 방법·포트 (고급)» 에 접혀 있습니다. 보통은 랜카드와 «찾기» 만 쓰면 됩니다.",
       ],
     },
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 랜카드, 찾을 범위, 찾는 방법(ARP·핑·기다림·동시에), 이름 찾기, 산업 포트 확인, «찾기»/«멈춤», 상태와 진행 막대.",
+        "- 왼쪽: 랜카드, 찾을 범위, «찾기»/«멈춤», 상태와 진행 막대. 그 아래 «찾는 방법·포트 (고급)» 은 접혀 있고 제목 옆에 지금 설정이 «ARP+핑 · 포트 22개 · Modbus 정보 · 이름» 처럼 요약됩니다. 기본값과 다르면 «(바꿈)» 이 붙고, 다음에 켤 때 펼친 채로 시작합니다. 제목을 누르면 ARP·핑·핑 기다림·동시에·이름 찾기·산업 포트 확인·확인할 포트·포트 기다림·Modbus 장비 정보 읽기가 펼쳐집니다(펼친 상태는 기억). 핑과 ARP 를 둘 다 끄거나 포트 목록이 틀리면 저절로 펼쳐집니다.",
         "- 가운데 위 탭: «찾은 장비»(결과 표)와 «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
         "- «찾은 장비» 도구줄: 거르기 칸, «산업 포트 열린 것만», «새로 n»·«사라짐 n», «CSV 저장», «지우기».",
         "- 표 아래 칸: 고른 장비의 정보와 할 일 버튼.",
@@ -45,6 +47,7 @@ export const help: HelpDoc = {
     {
       title: "찾는 방법 — ARP 와 핑",
       body: [
+        "- 아래 칸들은 왼쪽 «찾는 방법·포트 (고급)» 을 펼치면 보입니다.",
         "- ARP: 같은 대역의 주소마다 «이 IP 의 MAC 이 무엇이냐» 고 묻습니다. 장비의 방화벽이 핑을 막아도 네트워크에 붙어 있으면 답하므로 산업 장비 찾기에 가장 확실합니다. 표의 «응답» 칸에 «핑 없음» 이면 ARP 로만 찾은 장비입니다.",
         "- 핑(ICMP): 라우터 너머 장비도 찾고 응답 시간(ms)을 잽니다. 같은 대역에서 ARP 가 실패한 주소는 핑을 보내지 않습니다(어차피 닿지 않아 시간만 듭니다).",
         "- «핑 기다림(ms)»: 핑 하나를 기다리는 시간. 무선·느린 장비는 늘립니다.",
@@ -178,12 +181,14 @@ export const help: HelpDoc = {
         "- 2. «Range to scan» is filled with that adapter's subnet (usually 192.168.x.0/24). Edit it if needed.",
         "- 3. Press «Scan» (F4). Devices appear in the table as they are found; «Services» fills in when the port and name checks finish.",
         "- 4. Click a device to open its web page, copy its IP or «host:port», wake it or add it to the ping monitor from the panel below.",
+        "- On first start these steps appear as a card in the empty results area. «Don't show again» replaces it with a short one-line guide.",
+        "- Discovery settings such as ARP, ping, waits and the port list usually fit as they are, so they are collapsed under «Discovery & ports (advanced)» on the left. Normally you only need the adapter and «Scan».",
       ],
     },
     {
       title: "Layout",
       body: [
-        "- Left: adapter, range, discovery (ARP, ping, wait, parallel), name lookup, industrial ports, «Scan»/«Stop», status and progress bar.",
+        "- Left: adapter, range, «Scan»/«Stop», status and progress bar. Below them «Discovery & ports (advanced)» is collapsed, with the current settings summarized next to its title, e.g. «ARP+ping · 22 ports · Modbus ID · names». Non-default settings add «(changed)» and the section starts expanded next time. Click the title to show ARP, ping, ping wait, parallel, name lookup, industrial port check, ports to check, port wait and Modbus ID reading (the state is remembered). It expands by itself when both ping and ARP are off or the port list is invalid.",
         "- Tabs: «Devices» (results) and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
         "- «Devices» toolbar: filter box, «Industrial ports only», «New n» / «Gone n», «Save CSV», «Clear».",
         "- Below the table: details and actions for the selected device.",
@@ -203,6 +208,7 @@ export const help: HelpDoc = {
     {
       title: "Discovery — ARP and ping",
       body: [
+        "- These settings are under «Discovery & ports (advanced)» on the left; click its title to expand it.",
         "- ARP asks «what is the MAC of this IP?» for every address on the same subnet. A device answers whenever it is connected, even if its firewall blocks ping — the most reliable way to find industrial devices. «no ping» in the «Reply» column means it was found by ARP only.",
         "- Ping (ICMP) also finds devices behind a router and measures the reply time (ms). On the same subnet, addresses that fail ARP are not pinged (they cannot be reached anyway).",
         "- «Ping wait (ms)»: how long to wait for each ping. Increase it for Wi-Fi or slow devices.",

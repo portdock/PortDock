@@ -132,6 +132,25 @@ export default function App() {
   }, [cfg.range, lang]);
   const outside = !!(sel && info && cfg.arp && !(sameSubnet(info.first, sel.addr.ip, sel.addr.prefix) && sameSubnet(info.last, sel.addr.ip, sel.addr.prefix)));
   const portsParsed = useMemo(() => parsePorts(cfg.portsText, lang), [cfg.portsText, lang]);
+  // «찾는 방법·포트» 는 기본값이 맞아 거의 안 건드린다 — 접어 두고 제목에 요약. 기본값과 다르거나 틀린 칸이 있으면 펼친 채로
+  const advChanged = (["arp", "ping", "timeoutMs", "portsOn", "portsText", "portTimeoutMs", "names", "modbusId", "threads"] as const).some((k) => cfg[k] !== DEFAULT_CFG[k]);
+  const advBad = (!cfg.ping && !cfg.arp) || (cfg.portsOn && !!portsParsed.error);
+  const [advOpen, setAdvOpen] = useState<boolean>(() => advChanged || load("advOpen", false));
+  useEffect(() => store("advOpen", advOpen), [advOpen]);
+  useEffect(() => {
+    if (advBad) setAdvOpen(true);
+  }, [advBad]);
+  const advSummary = [
+    [cfg.arp && "ARP", cfg.ping && t("sumPing")].filter(Boolean).join("+") || "—",
+    cfg.portsOn ? t("sumPorts", { n: portsParsed.ports.length }) : t("sumNoPorts"),
+    cfg.portsOn && cfg.modbusId && t("sumModbus"),
+    cfg.names && t("sumNames"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  // 처음 쓰는 순서 카드(결과가 빈 자리) — «다시 보지 않기» 를 누르면 예전 한 줄 안내로
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
 
   // ---- 찾기
   const [phase, setPhase] = useState<Phase>("idle");
@@ -489,57 +508,64 @@ export default function App() {
         )}
 
         <hr />
-
-        <label>{t("method")}</label>
-        <label className="inline" data-tip={tip(lang, "nsArp")}>
-          <input type="checkbox" checked={cfg.arp} disabled={scanning} onChange={(e) => setCfg({ arp: e.target.checked })} /> {t("arp")}
-        </label>
-        <label className="inline" data-tip={tip(lang, "nsPing")}>
-          <input type="checkbox" checked={cfg.ping} disabled={scanning} onChange={(e) => setCfg({ ping: e.target.checked })} /> {t("ping")}
-        </label>
-        {!cfg.ping && !cfg.arp && <div className="interlock">{lang === "ko" ? "핑과 ARP 가운데 하나는 켜야 합니다" : "Turn on ping or ARP (at least one)"}</div>}
-        <div className="grid2">
-          <label data-tip={tip(lang, "nsTimeout")}>
-            {t("timeout")}
-            <NumInput min={100} max={10000} value={cfg.timeoutMs} disabled={scanning} onValue={(v) => setCfg({ timeoutMs: v })} />
+        <details className="adv panel" open={advOpen} onToggle={(e) => setAdvOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "nsAdv")}>
+            <span className="sum-title">{t("adv")}</span>
+            {!advOpen && (
+              <span className="sum-note">
+                {advSummary}
+                {advChanged ? ` ${t("sumChanged")}` : ""}
+              </span>
+            )}
+          </summary>
+          <label className="inline" data-tip={tip(lang, "nsArp")}>
+            <input type="checkbox" checked={cfg.arp} disabled={scanning} onChange={(e) => setCfg({ arp: e.target.checked })} /> {t("arp")}
           </label>
-          <label data-tip={tip(lang, "nsThreads")}>
-            {t("threads")}
-            <NumInput min={1} max={128} value={cfg.threads} disabled={scanning} onValue={(v) => setCfg({ threads: v })} />
+          <label className="inline" data-tip={tip(lang, "nsPing")}>
+            <input type="checkbox" checked={cfg.ping} disabled={scanning} onChange={(e) => setCfg({ ping: e.target.checked })} /> {t("ping")}
           </label>
-        </div>
-        <label className="inline" data-tip={tip(lang, "nsNames")}>
-          <input type="checkbox" checked={cfg.names} disabled={scanning} onChange={(e) => setCfg({ names: e.target.checked })} /> {t("names")}
-        </label>
-
-        <hr />
-        <label className="inline" data-tip={tip(lang, "nsPorts")}>
-          <input type="checkbox" checked={cfg.portsOn} disabled={scanning} onChange={(e) => setCfg({ portsOn: e.target.checked })} /> {t("ports")}
-        </label>
-        {cfg.portsOn && (
-          <>
-            <label data-tip={tip(lang, "nsPortList")}>
-              {t("portList")}
-              <input className={portsParsed.error ? "bad mono" : "mono"} value={cfg.portsText} disabled={scanning} onChange={(e) => setCfg({ portsText: e.target.value })} />
+          {!cfg.ping && !cfg.arp && <div className="interlock">{lang === "ko" ? "핑과 ARP 가운데 하나는 켜야 합니다" : "Turn on ping or ARP (at least one)"}</div>}
+          <div className="grid2">
+            <label data-tip={tip(lang, "nsTimeout")}>
+              {t("timeout")}
+              <NumInput min={100} max={10000} value={cfg.timeoutMs} disabled={scanning} onValue={(v) => setCfg({ timeoutMs: v })} />
             </label>
-            {portsParsed.error ? <div className="hint warn">{portsParsed.error}</div> : null}
-            <div className="range-row">
-              <label data-tip={tip(lang, "nsPortTimeout")} className="inline">
-                {t("portTimeout")}
-                <NumInput className="num" min={50} max={10000} value={cfg.portTimeoutMs} disabled={scanning} onValue={(v) => setCfg({ portTimeoutMs: v })} />
+            <label data-tip={tip(lang, "nsThreads")}>
+              {t("threads")}
+              <NumInput min={1} max={128} value={cfg.threads} disabled={scanning} onValue={(v) => setCfg({ threads: v })} />
+            </label>
+          </div>
+          <label className="inline" data-tip={tip(lang, "nsNames")}>
+            <input type="checkbox" checked={cfg.names} disabled={scanning} onChange={(e) => setCfg({ names: e.target.checked })} /> {t("names")}
+          </label>
+
+          <label className="inline" data-tip={tip(lang, "nsPorts")}>
+            <input type="checkbox" checked={cfg.portsOn} disabled={scanning} onChange={(e) => setCfg({ portsOn: e.target.checked })} /> {t("ports")}
+          </label>
+          {cfg.portsOn && (
+            <>
+              <label data-tip={tip(lang, "nsPortList")}>
+                {t("portList")}
+                <input className={portsParsed.error ? "bad mono" : "mono"} value={cfg.portsText} disabled={scanning} onChange={(e) => setCfg({ portsText: e.target.value })} />
               </label>
-              {cfg.portsText !== DEFAULT_PORTS && (
-                <button className="btn small ghost" disabled={scanning} onClick={() => setCfg({ portsText: DEFAULT_PORTS })} data-tip={tip(lang, "nsPortsDefault")}>
-                  {t("portsDefault")}
-                </button>
-              )}
-            </div>
-            <label className="inline" data-tip={tip(lang, "nsModbusId")}>
-              <input type="checkbox" checked={cfg.modbusId} disabled={scanning} onChange={(e) => setCfg({ modbusId: e.target.checked })} /> {t("modbusId")}
-            </label>
-          </>
-        )}
-
+              {portsParsed.error ? <div className="hint warn">{portsParsed.error}</div> : null}
+              <div className="range-row">
+                <label data-tip={tip(lang, "nsPortTimeout")} className="inline">
+                  {t("portTimeout")}
+                  <NumInput className="num" min={50} max={10000} value={cfg.portTimeoutMs} disabled={scanning} onValue={(v) => setCfg({ portTimeoutMs: v })} />
+                </label>
+                {cfg.portsText !== DEFAULT_PORTS && (
+                  <button className="btn small ghost" disabled={scanning} onClick={() => setCfg({ portsText: DEFAULT_PORTS })} data-tip={tip(lang, "nsPortsDefault")}>
+                    {t("portsDefault")}
+                  </button>
+                )}
+              </div>
+              <label className="inline" data-tip={tip(lang, "nsModbusId")}>
+                <input type="checkbox" checked={cfg.modbusId} disabled={scanning} onChange={(e) => setCfg({ modbusId: e.target.checked })} /> {t("modbusId")}
+              </label>
+            </>
+          )}
+        </details>
         <div className="hint">{t("firewallHint")}</div>
       </aside>
 
@@ -588,7 +614,24 @@ export default function App() {
             {error && <div className="error pad">{error}</div>}
             <div className="table-wrap">
               {allRows.length === 0 ? (
-                <div className="empty-guide">{t("emptyGuide")}</div>
+                firstDone ? (
+                  <div className="empty-guide">{t("emptyGuide")}</div>
+                ) : (
+                  <div className="first-card" role="note">
+                    <div className="first-head">
+                      <b>{t("firstTitle")}</b>
+                      <button className="btn small ghost" onClick={() => setFirstDone(true)}>
+                        {t("firstHide")}
+                      </button>
+                    </div>
+                    <ol>
+                      <li>{t("first1")}</li>
+                      <li>{t("first2")}</li>
+                      <li>{t("first3")}</li>
+                    </ol>
+                    <div className="hint">{t("firstAdv")}</div>
+                  </div>
+                )
               ) : rows.length === 0 ? (
                 <div className="empty-guide">{t("emptyFiltered")}</div>
               ) : (

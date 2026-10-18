@@ -602,3 +602,48 @@ button.chip:hover {
   white-space: nowrap;
   min-width: 0;
 }
+
+/* ---- 쉽게 쓰기 (10/18): 접은 «찾는 방법·포트», 처음 쓰는 순서 */
+/* 펼친 내용은 ::details-content 안에 들어가 flex gap 이 먹지 않는다 — 칸마다 위 여백으로 */
+details.adv > :not(summary) {
+  margin-top: 8px;
+}
+details.adv > summary {
+  cursor: pointer;
+  color: var(--muted);
+  user-select: none;
+}
+details.panel > summary .sum-title {
+  color: var(--ink);
+}
+details.panel > summary .sum-note {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  margin-left: 6px;
+}
+.first-card {
+  margin: 24px auto;
+  max-width: 560px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 14px 10px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.first-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.first-card ol {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}

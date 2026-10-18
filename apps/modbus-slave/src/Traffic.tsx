@@ -1,6 +1,6 @@
 // 통신 기록 칸 — 가상 스크롤(설정 «화면에 남길 줄 수» 까지), 찾기·거르기·따라가기·줄 고르기·복사는 다른 프로그램과 같다.
 // 따로 떼어 둔 까닭: 새 줄·굴림·따라가기로 자주 다시 그려지는데, 그때마다 레지스터 표(수백 칸)까지 다시 그리지 않게.
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { hex, type Frame } from "./api";
 import { tip } from "@shared/tips";
@@ -87,6 +87,7 @@ export function Traffic({
   error,
   onClearError,
   onCopied,
+  empty,
 }: {
   lang: Lang;
   settings: Pick<Settings, "fontSize" | "autoScroll" | "timeFormat">;
@@ -102,6 +103,8 @@ export function Traffic({
   error: string | null;
   onClearError: () => void;
   onCopied: (ok: boolean, n: number) => void;
+  /** 기록이 비었을 때 보일 안내(처음 쓰는 순서) */
+  empty?: ReactNode;
 }) {
   const t = (k: Key) => dict[lang][k];
   const [tick, setTick] = useState(0);
@@ -190,6 +193,7 @@ export function Traffic({
       <LogFilterBar lang={lang} filter={filter} selected={sel.primary} total={frames.length} onJump={jumpTo} />
       <div className="log-wrap">
         <div className="tlog" ref={tlogRef}>
+          {!frames.length && empty}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = filter.at(r.index);

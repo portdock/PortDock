@@ -284,6 +284,15 @@ export default function App() {
   const [newId, setNewId] = useState("");
   const [idErr, setIdErr] = useState<string | null>(null);
   const [cellDlg, setCellDlg] = useState<number | null>(null);
+  // 마지막으로 고른(포커스가 간) 칸 — «표시 → 형식 지정…» 이 이 칸의 설정 창을 연다
+  const [lastCell, setLastCell] = useState<number | null>(null);
+  // 장애 주입·통계는 기본으로 접는다(열림 상태는 기억). 장애가 켜지면 펼친다
+  const [faultOpen, setFaultOpen] = useState<boolean>(() => load("faultOpen", false));
+  const [statsOpen, setStatsOpen] = useState<boolean>(() => load("statsOpen", false));
+  // 처음 쓰는 순서 카드(통신 기록 빈 자리) — «다시 보지 않기» 를 누르면 숨긴다
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  // 범위 안내를 «알겠습니다» 로 닫은 범위 — 슬레이브:표 → «시작:개수»
+  const [rangeAck, setRangeAck] = useState<Record<string, string>>(() => load("rangeAck", {}));
   const range = ranges[key(selId, table)] ?? { start: 0, count: 100 };
   const bits = isBits(table);
   const base = addrBase(addrMode);
@@ -300,6 +309,10 @@ export default function App() {
   usePersist("points", points);
   usePersist("sims", sims);
   usePersist("device", device);
+  usePersist("faultOpen", faultOpen);
+  usePersist("statsOpen", statsOpen);
+  usePersist("firstHintDone", firstDone);
+  usePersist("rangeAck", rangeAck);
 
   // ---- 표 값 저장 — 모든 슬레이브·표의 0 이 아닌 칸을 «tableValues» 하나에. 바뀌면 1초 뒤 한꺼번에 쓴다
   const savedVals = useRef<SavedValues>({});
@@ -896,6 +909,29 @@ export default function App() {
   useEffect(() => {
     if (targeted) setAdvOpen(true);
   }, [targeted]);
+  useEffect(() => {
+    if (faultOn) setFaultOpen(true);
+  }, [faultOn]);
+  /** 접힌 장애 주입 제목 옆 — 켜진 것만 짧게 */
+  const faultList = [
+    faults.delayMs > 0 || faults.delayMaxMs > 0 ? `${faults.delayMs}${faults.delayMaxMs > faults.delayMs ? `–${faults.delayMaxMs}` : ""}ms` : "",
+    faults.noResponse ? t("noResponse").replace(/\s*\(.*\)$/, "") : "",
+    faults.badCrc ? t("badCrc") : "",
+    faults.badMbapLen ? t("badMbapLen") : "",
+    faults.forceException > 0 ? `${t("exceptions")} ${faults.forceException.toString(16).toUpperCase().padStart(2, "0")}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // ---- 응답 범위 — 기본(0부터 100칸)이면 회색 한 줄, 바꿨으면 노란 안내(«알겠습니다» 로 닫음)
+  const rangeK = key(selId, table);
+  const rangeSig = `${range.start}:${range.count}`;
+  const rangeChanged = range.start !== 0 || range.count !== 100;
+  const showRangeWarn = rangeChanged && rangeAck[rangeK] !== rangeSig;
+  const rangeNow = t("rangeNow")
+    .replace("{t}", t(`sh_${table}` as Key))
+    .replace("{a}", addrText(table, range.start, addrMode))
+    .replace("{b}", addrText(table, range.start + range.count - 1, addrMode));
 
   const statusKey = `status_${status}` as Key;
 
@@ -970,6 +1006,7 @@ export default function App() {
                   className={`reg${fl ? " flash" : ""}${it.span > 1 ? " wide" : ""}`}
                   style={it.span > 1 ? { gridColumn: `span ${it.span >= 4 ? 3 : 2}` } : undefined}
                   title={fl ? t("writtenByMaster") : name}
+                  onFocus={() => setLastCell(it.addr)}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setCellDlg(it.addr);
@@ -1010,6 +1047,7 @@ export default function App() {
                       key={`${table}:${it.addr}`}
                       className={fl ? "flash" : ""}
                       title={fl ? t("writtenByMaster") : ""}
+                      onFocus={() => setLastCell(it.addr)}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setCellDlg(it.addr);
@@ -1178,7 +1216,7 @@ export default function App() {
         <div className="chips">
           {ids.map((id) => (
             <span key={id} className={id === selId ? "chip on" : "chip"}>
-              <button className="chip-btn" onClick={() => setSel(id)} aria-pressed={id === selId} title={`ID ${id}`}>
+              <button className="chip-btn" onClick={() => setSel(id)} aria-pressed={id === selId} title={`${t("unitId")} ${id}`}>
                 {id}
               </button>
               {ids.length > 1 && (
@@ -1207,67 +1245,72 @@ export default function App() {
         {idErr && <div className="error">{idErr}</div>}
 
         <hr />
-        <label data-tip={tip(lang, "faults")}>{t("faults")}</label>
-        <label data-tip={tip(lang, "delay")}>
-          {t("delay")}
-          <NumInput min={0} max={600000} value={faults.delayMs} onValue={(n) => setFaults({ ...faults, delayMs: n })} />
-        </label>
-        <label data-tip={tip(lang, "noResponse")} className="inline">
-          <input type="checkbox" checked={faults.noResponse} onChange={(e) => setFaults({ ...faults, noResponse: e.target.checked })} /> {t("noResponse")}
-        </label>
-        {transport === "tcp" ? (
-          <label data-tip={tip(lang, "badMbapLen")} className="inline">
-            <input type="checkbox" checked={faults.badMbapLen} onChange={(e) => setFaults({ ...faults, badMbapLen: e.target.checked })} /> {t("badMbapLen")}
+        <details className={faultOn ? "adv panel on" : "adv panel"} open={faultOpen} onToggle={(e) => setFaultOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "faults")}>
+            <span className="sum-title">{faultOn ? t("faultsOn") : t("faults")}</span>
+            {!faultOpen && <span className="sum-note">{faultOn ? faultList : t("faultsOff")}</span>}
+          </summary>
+          <label data-tip={tip(lang, "delay")}>
+            {t("delay")}
+            <NumInput min={0} max={600000} value={faults.delayMs} onValue={(n) => setFaults({ ...faults, delayMs: n })} />
           </label>
-        ) : (
-          <label data-tip={tip(lang, "badCrc")} className="inline">
-            <input type="checkbox" checked={faults.badCrc} onChange={(e) => setFaults({ ...faults, badCrc: e.target.checked })} /> {t("badCrc")}
+          <label data-tip={tip(lang, "noResponse")} className="inline">
+            <input type="checkbox" checked={faults.noResponse} onChange={(e) => setFaults({ ...faults, noResponse: e.target.checked })} /> {t("noResponse")}
           </label>
-        )}
-        <label data-tip={tip(lang, "forceException")}>
-          {t("forceException")}
-          <select value={faults.forceException} onChange={(e) => setFaults({ ...faults, forceException: Number(e.target.value) })}>
-            <option value={0}>{t("none")}</option>
-            {EXCEPTIONS.map(([c, n, ko]) => (
-              <option key={c} value={c}>
-                {lang === "ko" ? `${ko} (${n.slice(3)})` : n}
-              </option>
-            ))}
-          </select>
-        </label>
-        <details className="adv" open={advOpen} onToggle={(e) => setAdvOpen((e.target as HTMLDetailsElement).open)}>
-          <summary data-tip={tip(lang, "faultAdv")}>{t("faultAdv")}</summary>
-          <label data-tip={tip(lang, "delayMax")}>
-            {t("delayMax")}
-            <NumInput min={0} max={600000} value={faults.delayMaxMs} onValue={(n) => setFaults({ ...faults, delayMaxMs: n })} />
-          </label>
-          <label data-tip={tip(lang, "faultIds")}>
-            {t("fIds")}
-            <input className={fErr.ids ? "bad" : ""} value={fText.ids} placeholder={t("fAll")} spellCheck={false} onChange={(e) => setTargetText("ids", e.target.value)} />
-          </label>
-          {fErr.ids && <div className="error">{fErr.ids}</div>}
-          <label data-tip={tip(lang, "faultFcs")}>
-            {t("fFcs")}
-            <input className={fErr.fcs ? "bad" : ""} value={fText.fcs} placeholder={t("fAll")} spellCheck={false} onChange={(e) => setTargetText("fcs", e.target.value)} />
-          </label>
-          {fErr.fcs && <div className="error">{fErr.fcs}</div>}
-          <label data-tip={tip(lang, "faultAddr")}>{t("fAddr")}</label>
-          <div className="row2 addr-range">
-            <input className={fErr.from || fErr.order ? "bad" : ""} value={fText.from} placeholder={t("fFrom")} inputMode="numeric" aria-label={`${t("fAddr")} — ${t("fFrom")}`} onChange={(e) => setTargetText("from", e.target.value)} />
-            <span>~</span>
-            <input className={fErr.to || fErr.order ? "bad" : ""} value={fText.to} placeholder={t("fTo")} inputMode="numeric" aria-label={`${t("fAddr")} — ${t("fTo")}`} onChange={(e) => setTargetText("to", e.target.value)} />
-          </div>
-          {(fErr.from || fErr.to || fErr.order) && <div className="error">{fErr.from || fErr.to || fErr.order}</div>}
-          <div className="grid2">
-            <label data-tip={tip(lang, "faultNth")}>
-              {t("fNth")}
-              <NumInput min={1} max={100000} value={Math.max(1, tg.everyNth)} onValue={(n) => setFaults({ ...faults, target: { ...tg, everyNth: n } })} />
+          {transport === "tcp" ? (
+            <label data-tip={tip(lang, "badMbapLen")} className="inline">
+              <input type="checkbox" checked={faults.badMbapLen} onChange={(e) => setFaults({ ...faults, badMbapLen: e.target.checked })} /> {t("badMbapLen")}
             </label>
-            <label data-tip={tip(lang, "faultProb")}>
-              {t("fProb")}
-              <NumInput min={0} max={100} value={tg.probability} onValue={(n) => setFaults({ ...faults, target: { ...tg, probability: n } })} />
+          ) : (
+            <label data-tip={tip(lang, "badCrc")} className="inline">
+              <input type="checkbox" checked={faults.badCrc} onChange={(e) => setFaults({ ...faults, badCrc: e.target.checked })} /> {t("badCrc")}
             </label>
-          </div>
+          )}
+          <label data-tip={tip(lang, "forceException")}>
+            {t("forceException")}
+            <select value={faults.forceException} onChange={(e) => setFaults({ ...faults, forceException: Number(e.target.value) })}>
+              <option value={0}>{t("none")}</option>
+              {EXCEPTIONS.map(([c, n, ko]) => (
+                <option key={c} value={c}>
+                  {lang === "ko" ? `${ko} (${n.slice(3)})` : n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <details className="adv" open={advOpen} onToggle={(e) => setAdvOpen((e.target as HTMLDetailsElement).open)}>
+            <summary data-tip={tip(lang, "faultAdv")}>{t("faultAdv")}</summary>
+            <label data-tip={tip(lang, "delayMax")}>
+              {t("delayMax")}
+              <NumInput min={0} max={600000} value={faults.delayMaxMs} onValue={(n) => setFaults({ ...faults, delayMaxMs: n })} />
+            </label>
+            <label data-tip={tip(lang, "faultIds")}>
+              {t("fIds")}
+              <input className={fErr.ids ? "bad" : ""} value={fText.ids} placeholder={t("fAll")} spellCheck={false} onChange={(e) => setTargetText("ids", e.target.value)} />
+            </label>
+            {fErr.ids && <div className="error">{fErr.ids}</div>}
+            <label data-tip={tip(lang, "faultFcs")}>
+              {t("fFcs")}
+              <input className={fErr.fcs ? "bad" : ""} value={fText.fcs} placeholder={t("fAll")} spellCheck={false} onChange={(e) => setTargetText("fcs", e.target.value)} />
+            </label>
+            {fErr.fcs && <div className="error">{fErr.fcs}</div>}
+            <label data-tip={tip(lang, "faultAddr")}>{t("fAddr")}</label>
+            <div className="row2 addr-range">
+              <input className={fErr.from || fErr.order ? "bad" : ""} value={fText.from} placeholder={t("fFrom")} inputMode="numeric" aria-label={`${t("fAddr")} — ${t("fFrom")}`} onChange={(e) => setTargetText("from", e.target.value)} />
+              <span>~</span>
+              <input className={fErr.to || fErr.order ? "bad" : ""} value={fText.to} placeholder={t("fTo")} inputMode="numeric" aria-label={`${t("fAddr")} — ${t("fTo")}`} onChange={(e) => setTargetText("to", e.target.value)} />
+            </div>
+            {(fErr.from || fErr.to || fErr.order) && <div className="error">{fErr.from || fErr.to || fErr.order}</div>}
+            <div className="grid2">
+              <label data-tip={tip(lang, "faultNth")}>
+                {t("fNth")}
+                <NumInput min={1} max={100000} value={Math.max(1, tg.everyNth)} onValue={(n) => setFaults({ ...faults, target: { ...tg, everyNth: n } })} />
+              </label>
+              <label data-tip={tip(lang, "faultProb")}>
+                {t("fProb")}
+                <NumInput min={0} max={100} value={tg.probability} onValue={(n) => setFaults({ ...faults, target: { ...tg, probability: n } })} />
+              </label>
+            </div>
+          </details>
         </details>
         {faultOn && (
           <div className="hint warn" role="status">
@@ -1298,63 +1341,72 @@ export default function App() {
         </details>
 
         <hr />
-        <label data-tip={tip(lang, "mbStats")}>{t("stats")}</label>
-        {stats && (
-          <table className="stats">
-            <tbody>
-              <tr>
-                <td>{t("stMine")}</td>
-                <td>{stats.requests}</td>
-              </tr>
-              <tr>
-                <td>{t("ok")}</td>
-                <td>{stats.ok}</td>
-              </tr>
-              <tr className={stats.exceptions ? "warnrow" : ""}>
-                <td>{t("exceptions")}</td>
-                <td>{stats.exceptions}</td>
-              </tr>
-              <tr>
-                <td>{t("stOther")}</td>
-                <td>{stats.otherId}</td>
-              </tr>
-              <tr className={stats.badFrames ? "warnrow" : ""}>
-                <td>{transport === "tcp" ? t("stMbap") : t("stCrc")}</td>
-                <td>{stats.badFrames}</td>
-              </tr>
-              <tr>
-                <td>{t("stWrites")}</td>
-                <td>{stats.writes}</td>
-              </tr>
-              {stats.busy > 0 && (
+        <details className="adv panel" open={statsOpen} onToggle={(e) => setStatsOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "mbStats")}>
+            <span className="sum-title">{t("stats")}</span>
+            {stats && (
+              <span className={stats.exceptions || stats.badFrames ? "sum-note bad" : "sum-note"}>
+                {t("statsSum").replace("{r}", String(stats.requests)).replace("{e}", String(stats.exceptions))}
+              </span>
+            )}
+          </summary>
+          {stats && (
+            <table className="stats">
+              <tbody>
                 <tr>
-                  <td>{t("stBusy")}</td>
-                  <td>{stats.busy}</td>
+                  <td>{t("stMine")}</td>
+                  <td>{stats.requests}</td>
                 </tr>
-              )}
-              {stats.noResponse > 0 && (
                 <tr>
-                  <td>{t("stNoResp")}</td>
-                  <td>{stats.noResponse}</td>
+                  <td>{t("ok")}</td>
+                  <td>{stats.ok}</td>
                 </tr>
-              )}
-              {stats.broadcasts > 0 && (
+                <tr className={stats.exceptions ? "warnrow" : ""}>
+                  <td>{t("exceptions")}</td>
+                  <td>{stats.exceptions}</td>
+                </tr>
                 <tr>
-                  <td>{t("stBroadcast")}</td>
-                  <td>{stats.broadcasts}</td>
+                  <td>{t("stOther")}</td>
+                  <td>{stats.otherId}</td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-        {perFc.length > 0 && (
-          <div className="perfc" data-tip={tip(lang, "mbStatsFc")}>
-            {t("stPerFc")}: {perFc.map(([fc, n]) => `FC${fc}×${n}`).join(" · ")}
-          </div>
-        )}
-        <button data-tip={tip(lang, "reset")} className="btn small" onClick={() => api.resetStats()}>
-          {t("reset")}
-        </button>
+                <tr className={stats.badFrames ? "warnrow" : ""}>
+                  <td>{transport === "tcp" ? t("stMbap") : t("stCrc")}</td>
+                  <td>{stats.badFrames}</td>
+                </tr>
+                <tr>
+                  <td>{t("stWrites")}</td>
+                  <td>{stats.writes}</td>
+                </tr>
+                {stats.busy > 0 && (
+                  <tr>
+                    <td>{t("stBusy")}</td>
+                    <td>{stats.busy}</td>
+                  </tr>
+                )}
+                {stats.noResponse > 0 && (
+                  <tr>
+                    <td>{t("stNoResp")}</td>
+                    <td>{stats.noResponse}</td>
+                  </tr>
+                )}
+                {stats.broadcasts > 0 && (
+                  <tr>
+                    <td>{t("stBroadcast")}</td>
+                    <td>{stats.broadcasts}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+          {perFc.length > 0 && (
+            <div className="perfc" data-tip={tip(lang, "mbStatsFc")}>
+              {t("stPerFc")}: {perFc.map(([fc, n]) => `FC${fc}×${n}`).join(" · ")}
+            </div>
+          )}
+          <button data-tip={tip(lang, "reset")} className="btn small" onClick={() => api.resetStats()}>
+            {t("reset")}
+          </button>
+        </details>
       </aside>
 
       <main className="main">
@@ -1369,7 +1421,9 @@ export default function App() {
               {t(tb.id)} <small>{tb.fc.split(" ")[0]}</small>
             </button>
           ))}
-          <span className="hint">ID {selId}</span>
+          <span className="hint">
+            {t("unitId")} {selId}
+          </span>
           <span className="grow" />
           <button className="btn small" onClick={fill} data-tip={tip(lang, "fill")}>
             {t("fill")}
@@ -1402,11 +1456,24 @@ export default function App() {
           {!bits && (
             <label data-tip={tip(lang, "format")} className="inline">
               {t("format")}
-              <select value={format} onChange={(e) => setFormat(e.target.value as Format)}>
+              <select
+                className="fmt-sel"
+                value={format}
+                onChange={(e) => {
+                  if (e.target.value !== "typed") return setFormat(e.target.value as Format);
+                  // 표 전체 표시가 아니라 칸마다 정하는 형식 — 고른 칸(없으면 첫 칸)의 칸 설정 창을 연다
+                  e.target.value = format;
+                  const it = items.find((x) => x.addr === lastCell) ?? items[0];
+                  if (!it) return;
+                  toast.show(t("fmtTypedNote").replace("{a}", addrText(table, it.addr, addrMode)));
+                  setCellDlg(it.addr);
+                }}
+              >
                 <option value="u16">U16</option>
                 <option value="s16">S16</option>
                 <option value="hex">HEX</option>
                 <option value="bin">BIN</option>
+                <option value="typed">{t("fmtTyped")}</option>
               </select>
             </label>
           )}
@@ -1425,9 +1492,20 @@ export default function App() {
               </button>
             ))}
           </span>
-          <span className="hint warn range-warn">
-            ⚠ {t("rangeWarn")}. {t("rangeHint")}
-          </span>
+          {showRangeWarn ? (
+            <div className="notice warn range-warn" role="status">
+              <span>
+                ⚠ {t("rangeWarn")} — {rangeNow}. {t("rangeHint")}
+              </span>
+              <button className="btn small" onClick={() => setRangeAck({ ...rangeAck, [rangeK]: rangeSig })}>
+                {t("gotIt")}
+              </button>
+            </div>
+          ) : (
+            <span className="hint range-now" data-tip={tip(lang, "mbStart")}>
+              {rangeNow}
+            </span>
+          )}
         </div>
 
         {regsView}
@@ -1446,6 +1524,24 @@ export default function App() {
           error={error}
           onClearError={clearError}
           onCopied={onCopied}
+          empty={
+            firstDone ? (
+              <div className="tlog-empty hint">{t("first3")}</div>
+            ) : (
+              <div className="tlog-empty first-card" role="note">
+                <div className="first-head">
+                  <b>{t("firstTitle")}</b>
+                  <button className="btn small ghost" onClick={() => setFirstDone(true)}>
+                    {t("firstHide")}
+                  </button>
+                </div>
+                <div className="first-steps">
+                  <span>① {t("first1")}</span> <span>② {t("first2")}</span> <span>③ {t("first3")}</span>
+                </div>
+                <div className="hint first-types">{t("firstTypes")}</div>
+              </div>
+            )
+          }
         />
       </main>
       {cellDlg != null && dlgItem && (

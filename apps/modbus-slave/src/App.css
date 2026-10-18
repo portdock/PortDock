@@ -812,14 +812,15 @@ details.adv > * + * {
   padding: 2px 3px;
   border-radius: 4px;
   cursor: pointer;
-  /* 100칸마다 ⋯ 가 보이면 어지럽다 — 칸에 마우스를 올리거나 값 칸에 들어가면 보인다(오른쪽 버튼으로도 열림) */
-  visibility: hidden;
+  /* 늘 보이되 옅게 — 숨기면 형식(F32 등)을 정하는 곳을 못 찾는다. 칸에 마우스를 올리거나 값 칸에 들어가면 진하게(오른쪽 버튼으로도 열림) */
+  opacity: 0.4;
 }
 .reg:hover .cellcfg,
 .reg:focus-within .cellcfg,
 .rtable tr:hover .cellcfg,
-.rtable tr:focus-within .cellcfg {
-  visibility: visible;
+.rtable tr:focus-within .cellcfg,
+.cellcfg:focus-visible {
+  opacity: 1;
 }
 .cellcfg:hover {
   background: var(--sel);
@@ -980,4 +981,70 @@ details.adv > * + * {
 .cell-dlg .grid2,
 .cell-dlg .grid3 {
   align-items: end;
+}
+
+/* ---- 쉽게 쓰기 (10/18): 접은 장애 주입·통계, 응답 범위 한 줄, 처음 쓰는 순서 */
+details.panel > summary .sum-title {
+  color: var(--ink);
+}
+details.panel > summary .sum-note {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  margin-left: 6px;
+}
+details.panel > summary .sum-note.bad,
+details.panel.on > summary .sum-title {
+  color: var(--fail);
+  font-weight: 600;
+}
+details.panel > .btn.small {
+  align-self: flex-start;
+}
+.range-now {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tlog-empty {
+  font-family: var(--sans);
+  margin: 14px auto;
+  max-width: 560px;
+  padding: 0 12px;
+  text-align: center;
+}
+.first-card {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 6px 12px 8px;
+  background: var(--panel);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.first-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.first-steps span {
+  margin-right: 10px;
+}
+/* 낮은 창에서는 통신 기록 칸이 작다 — 카드를 두 줄로 */
+@media (max-height: 700px) {
+  .tlog-empty {
+    margin: 6px auto;
+  }
+  .first-types {
+    display: none;
+  }
+}
+/* «표시» 의 마지막 항목(형식 지정…)이 길어도 고르기는 좁게 — 펼친 목록에는 다 보인다 */
+.fmt-sel {
+  width: 6.5em;
 }
