@@ -1308,3 +1308,35 @@ details.panel > summary .sum-note.bad {
   background: var(--line);
   color: var(--muted);
 }
+
+/* ---- 첫 실행 카드·값 기록 띄움 칸·통신 기록 높이(10/18) */
+.mm-first {
+  margin: 8px 10px 0;
+}
+.mm-first .btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.first-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.vlog-pop .segs {
+  align-self: flex-start;
+}
+.traffic.sized {
+  max-height: calc(100vh - 230px);
+  min-height: 90px;
+}
+/* 표 도구줄을 한 줄로 — 끝 항목(형식 지정…)이 길어도 «표시» 고르기는 좁게 */
+.tview .fmt-sel {
+  width: 6.5em;
+}
+.tview label > select:not(.fmt-sel) {
+  width: 7.5em;
+}
+.toolbar.tview {
+  column-gap: 8px;
+}

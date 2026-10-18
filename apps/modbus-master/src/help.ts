@@ -16,7 +16,9 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
+        "- 처음 켜면 값 칸 위에 «어떤 장비인가요?» 카드가 나옵니다. [Modbus TCP (이더넷)]·[Modbus RTU (시리얼)] 를 누르면 연결 방식이 맞춰지고 다음에 넣을 칸(장비 주소·포트)으로 갑니다. 주소 표기(0 기준·1 기준·PLC 40001)도 여기서 고릅니다. 연결하거나 «다시 보지 않기» 를 누르면 숨습니다. 처음 연결하면 «두 번 눌러 쓰기·오른쪽 버튼으로 형식» 알림이 한 번 나옵니다.",
         "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 포트·속도·패리티·정지 비트를 장비와 같게, TCP 면 장비 IP·포트(보통 502)를 넣습니다.",
         "- 2. «연결»(F4). 연결되면 표의 «주기» 마다 읽기 시작합니다.",
         "- 3. 가운데 위 표 설정에서 «국번(슬레이브 ID)», «함수», «시작», «개수» 를 장비 설명서대로 맞춥니다. 값 칸 위에 마지막 읽기 결과(✓ 시각·응답 시간 또는 ⚠ 이유)가 나옵니다.",
@@ -27,7 +29,7 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «찾기…», 값 기록(CSV), «통계 (전체)» 접기.",
+        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «찾기…», «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
         "- «통신 세부»·«통계» 는 평소 접혀 있고 제목 옆에 요약(«기다림 1000ms · 재시도 0 · 간격 20ms», «요청 n · 오류 m»)이 보입니다. 통신 세부가 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위: 표 탭(⏸ = 폴링 안 함, ● = 마지막 읽기 실패, 숫자 = 오류 누적 수 — 지금 실패 중이면 빨강, 아니면 회색), 표 설정(이름·국번·함수·시작·개수·주기·폴링·한 번 읽기), 보기 설정(표시·주소 표기·칸/목록·📈 추세·CSV).",
         "- 가운데: 값 칸. 지난 읽기와 달라진 칸은 잠깐 색이 바뀝니다. 마지막 읽기가 실패하면 칸이 흐려지고(앞 값) 이유가 위에 나옵니다.",
@@ -107,7 +109,7 @@ export const help: HelpDoc = {
         "- 통신 기록: 요청(TX)·응답(RX)의 HEX 와 풀이(«id1 FC03 HR 0..9 (10)», «→ 정상: 1, 2 …», 예외 이름), 타임아웃·브로드캐스트·보내기 실패는 사건(EV) 줄. 풀이가 빨가면 실패한 응답입니다.",
         ...logHandlingLines("ko", { find: true, checkbox: true }),
         "- «파일로 기록»(Ctrl+Shift+L): 주고받은 바이트를 시각과 함께 파일에 계속 남깁니다(설정의 자동 기록 폴더도 됨).",
-        "- 값 기록(CSV): «기록 시작…» 으로 파일을 고르면 time,table,address,name,value 를 «폴링마다» 또는 «바뀔 때만» 덧붙입니다. 값은 화면과 같은 글(형식·표시 그대로)이고 엑셀에서 바로 열립니다.",
+        "- 값 기록(CSV): 표 도구줄의 «값 기록 ▾» 에서 «폴링마다»/«바뀔 때만» 을 고르고 «기록 시작…» 으로 파일을 고르면 time,table,address,name,value 를 «폴링마다» 또는 «바뀔 때만» 덧붙입니다. 값은 화면과 같은 글(형식·표시 그대로)이고 엑셀에서 바로 열립니다.",
         "- 추세: 칸을 하나 누르고 «📈 추세» 를 누르면 아래에 값 변화가 선으로 그려집니다(6개까지, 최근 600개 값). 마지막·최소~최대가 옆에 나옵니다.",
       ],
     },
@@ -164,7 +166,9 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
+        "- On first start a «What kind of device?» card appears above the value cells. [Modbus TCP (Ethernet)] or [Modbus RTU (serial)] sets the connection type and moves to the next box to fill (device address or port). You can also pick the address notation (0-based, 1-based, PLC 40001) there. It hides once you connect or click «Don't show again». On the first connection a one-time notice explains double-click to write and right-click for types.",
         "- 1. Pick the «Connection» on the left. For serial, match the port, baud, parity and stop bits to the device; for TCP enter the device IP and port (usually 502).",
         "- 2. «Connect» (F4). Tables are read at their «Every (ms)» interval.",
         "- 3. In the table settings set «Slave ID», «Function», «Start» and «Count» from the device manual. The last read (✓ time and response time, or ⚠ the reason) shows above the cells.",
@@ -175,7 +179,7 @@ export const help: HelpDoc = {
     {
       title: "Layout",
       body: [
-        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», value log (CSV), the «Statistics (all)» section.",
+        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
         "- «Communication details» and «Statistics» are collapsed with a summary next to the title («timeout 1000 ms · retries 0 · delay 20 ms», «n requests · m errors»). Communication details start expanded when they differ from the defaults; the open state is remembered.",
         "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, Slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
         "- Middle: value cells. Cells that changed since the previous read flash briefly. If the last read failed, the cells are dimmed (previous values) and the reason is shown above.",
@@ -255,7 +259,7 @@ export const help: HelpDoc = {
         "- Traffic log: request (TX) and reply (RX) HEX with decoding («id1 FC03 HR 0..9 (10)», «→ OK: 1, 2 …», exception names); timeouts, broadcasts and send failures as event (EV) lines. Red decoding marks a failed reply.",
         ...logHandlingLines("en", { find: true, checkbox: true }),
         "- «Log to file» (Ctrl+Shift+L) keeps writing the bytes sent and received with timestamps (the auto-log folder in Settings works too).",
-        "- Value log (CSV): «Start log…» appends time,table,address,name,value «Every poll» or «On change». Values are written as shown (type and display) and open directly in Excel.",
+        "- Value log (CSV): in «Value log ▾» on the table toolbar, «Start log…» appends time,table,address,name,value «Every poll» or «On change». Values are written as shown (type and display) and open directly in Excel.",
         "- Trend: click a cell and press «📈 Trend» to draw its value below (up to 6, the latest 600 values), with last and min–max.",
       ],
     },

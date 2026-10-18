@@ -364,6 +364,29 @@ async function runApp(app, port) {
         await verify("preset");
         await load(port, combo);
       }
+      // (10/18) Master 첫 실행 카드: «어떤 장비인가요?» [Modbus TCP][Modbus RTU] → 연결 방식·다음 칸 포커스, 주소 표기, 도움말 링크, 연결하면 숨음
+      if (app === "modbus-master") {
+        const r = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const c = document.querySelector('.first-card');
+          if (!c) return { card: false };
+          const tr = () => [...document.querySelectorAll('aside.side select')].find((s) => s.querySelector('option[value=rtu-tcp]')).value;
+          const a = { card: true, picks: c.querySelectorAll('.first-picks button').length, links: c.querySelectorAll('.first-links .link-btn').length };
+          c.querySelector('.first-tcp').click(); await w();
+          a.tcp = tr(); a.focusTcp = document.activeElement && document.activeElement.closest('.grid2.net') ? true : false;
+          document.querySelector('.first-card .first-rtu').click(); await w();
+          a.rtu = tr(); a.focusRtu = document.activeElement && document.activeElement.classList.contains('port-sel');
+          const segs = [...document.querySelectorAll('.first-card .first-addr .seg')];
+          segs[2].click(); await w(150);
+          a.plc = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value=plc]')).value;
+          segs[0].click(); await w(150);
+          return a;`);
+        if (r.fatal) add("mm first card", "smoke-error", r.fatal);
+        else if (!r.card || r.picks !== 2 || !r.links || r.tcp !== "tcp" || !r.focusTcp || r.rtu !== "serial" || !r.focusRtu || r.plc !== "plc") await conv("mm-first-card", `Master 첫 실행 카드가 이상함: ${JSON.stringify(r)}`);
+        if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-first-card`);
+        await verify("mm first card");
+        await load(port, combo);
+      }
       // (10/18) Slave 첫 실행 카드: 주소 부르는 법(가운데 위 «주소 표기» 와 같은 값) · «예제 채우기»(보유 레지스터 0~9, 이름·F32 CDAB 23.5) · «CSV 가져오기…»
       if (app === "modbus-slave" && combo.full && card) {
         const r = await jsAsync(`
@@ -1012,11 +1035,19 @@ async function runApp(app, port) {
         await verify("mm csv");
         // 값 기록(CSV): 저장 경로를 주고 시작 → 1.5초 뒤 파일에 머리줄 + 값 줄
         await js("window.__pdMock.dialog.save = 'C:\\\\mock\\\\values.csv'");
-        await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /기록 시작|Start log/.test(b.textContent)).click()");
+        // (10/18) 값 기록은 표 도구줄 «값 기록 ▾» 띄움 칸 안(왼쪽 칸에는 없음)
+        if (await js("return [...document.querySelectorAll('aside .btn')].some((b) => /기록 시작|Start log/.test(b.textContent))")) await conv("mm-vlog-place", "값 기록 버튼이 아직 왼쪽 칸에 있음");
+        await js("document.querySelector('.main .toolbar .vlog-btn').click()");
+        await w(200);
+        await js("[...document.querySelectorAll('.vlog-pop .btn')].find((b) => /기록 시작|Start log/.test(b.textContent)).click()");
         await w(2300);
+        if (!(await js("return /●/.test(document.querySelector('.main .toolbar .vlog-btn').textContent) && !document.querySelector('.vlog-pop')"))) await conv("mm-vlog-btn", "값 기록 중인데 도구줄 버튼에 «●» 가 없거나 띄움 칸이 닫히지 않음");
         const vl = await js("const t = window.__pdMock.files.get('C:\\\\mock\\\\values.csv') || ''; return [t.split('\\r\\n').length, t.slice(0, 80)]");
         if (vl[0] < 3 || !/time,table,address,name,value/.test(vl[1])) await conv("mm-vlog", `값 기록 파일이 이상함: ${JSON.stringify(vl)}`);
-        await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /기록 멈춤|Stop log/.test(b.textContent)).click()");
+        await js("document.querySelector('.main .toolbar .vlog-btn').click()");
+        await w(200);
+        await js("[...document.querySelectorAll('.vlog-pop .btn')].find((b) => /기록 멈춤|Stop log/.test(b.textContent)).click()");
+        await w(200);
         await js("window.__pdMock.dialog.save = null");
         await verify("mm value log");
         // 국번 찾기 1~20: 1·2·17 이 답한다(17 은 예외 01) → 표 만들기
@@ -1740,6 +1771,7 @@ async function runApp(app, port) {
           await conv("conn-summary", `연결 중 연결 설정 한 줄 요약·[바꾸기] 가 이상함: ${JSON.stringify(c)}`);
         await verify("serial conn summary");
       }
+      if (app === "modbus-master" && (await js("return !!document.querySelector('.first-card')"))) await conv("mm-first-hide", "연결했는데 첫 실행 카드가 남아 있음");
       // (10/18) Net Scan 결과 줄: Modbus 칩을 누르면 «IP:502» 복사, 줄 오른쪽 버튼 메뉴(웹 열기·IP 복사·IP:502 복사·…) → «IP:502 복사» · Esc 로 닫힘
       if (app === "netscan" && combo.full) {
         // 가짜 장비는 주소당 0.5초 — 두 주소(.10 Modbus·.11)만 찾아 빨리 끝낸 뒤 보고, 끝나면 처음 범위로 다시 찾기 시작해 둔다

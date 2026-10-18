@@ -45,6 +45,9 @@ import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { FirstCard } from "@shared/FirstCard";
+import { Popover } from "@shared/Popover";
+import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { help } from "./help";
 import { load, samePorts, store } from "@shared/framing";
 import { autoLogPath, useFold, useSettings } from "@shared/settings";
@@ -104,7 +107,16 @@ export default function App() {
   const lang = settings.lang;
   const t = useCallback((k: Key) => dict[lang][k], [lang]);
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // true = 첫 절, 글자 = 그 id 의 절(첫 실행 카드의 도움말 링크)
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(연결 전 값 칸 위) — «다시 보지 않기» 또는 첫 연결 뒤 숨긴다(10/18)
+  const [firstDone, setFirstDone] = useState<boolean>(() => load<boolean>("firstHintDone", false) === true);
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
+  // 통신 기록 높이(끌어서 조절, 기억)
+  const [trafficH, setTrafficH] = useStoredHeight("trafficH");
+  // 값 기록(CSV) 띄움 칸 — 표 도구줄의 «값 기록» 버튼
+  const [vlogPop, setVlogPop] = useState(false);
+  const vlogBtn = useRef<HTMLButtonElement>(null);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   const maxLines = useRef(settings.maxLines);
@@ -399,6 +411,17 @@ export default function App() {
     return () => clearInterval(id);
   }, [connected]);
 
+  /** 첫 실행 카드 — 장비 종류를 고르면 연결 방식을 맞추고 다음에 넣을 칸(TCP 는 장비 주소, 시리얼은 포트)으로 */
+  function pickDevice(tr: Transport) {
+    setTransport(tr);
+    if (matchMedia("(max-width: 900px)").matches) setShowSide(true);
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(tr === "serial" ? "aside.side select.port-sel" : "aside.side .grid2.net input");
+      el?.focus();
+      if (el instanceof HTMLInputElement) el.select();
+    }, 50);
+  }
+
   // ---- 연결
   async function connect() {
     if (connecting) return;
@@ -418,6 +441,12 @@ export default function App() {
       }
       setStatus((s) => (s === "idle" || s === "closed" ? (transport === "serial" ? "connected" : "connecting") : s));
       setConnected(true);
+      setFirstDone(true);
+      // 첫 연결 한 번만 — 쓰기·형식 길 안내
+      if (!load<boolean>("firstConnectTip", false)) {
+        store("firstConnectTip", true);
+        toast.show(t("firstConnectTip"), { ms: 7000 });
+      }
       setStats(null);
       resultsRef.current = {};
       setResults({});
@@ -829,6 +858,7 @@ export default function App() {
             <label data-tip={tip(lang, "port")}>
               {t("port")}
               <select
+                className="port-sel"
                 value={cfg.port}
                 disabled={connected}
                 title={connected ? t("lockedHint") : ""}
@@ -952,21 +982,6 @@ export default function App() {
           {t("scan")}
         </button>
 
-        <hr />
-        <label data-tip={tip(lang, "mmValueLog")}>{t("valueLog")}</label>
-        <span className="segs" role="group" aria-label={t("valueLog")}>
-          {([false, true] as const).map((v) => (
-            <button key={String(v)} className={vlogMode === v ? "seg on" : "seg"} aria-pressed={vlogMode === v} onClick={() => setVlogMode(v)} data-tip={tip(lang, v ? "mmVlChange" : "mmVlEvery")}>
-              {v ? t("vlChange") : t("vlEvery")}
-            </button>
-          ))}
-        </span>
-        <div className="row2">
-          <button className={vlog ? "btn small danger" : "btn small"} onClick={toggleValueLog} data-tip={tip(lang, "mmValueLog")}>
-            {vlog ? t("vlStop") : t("vlStart")}
-          </button>
-        </div>
-        {vlog && <div className="hint ellipsis" title={vlog.path}>{fill(t("vlLines"), { n: vlog.lines, a: vlog.path.split(/[\\/]/).pop() ?? vlog.path })}</div>}
 
         <hr />
         <details className="adv panel stats-fold" open={statsOpen} onToggle={(e) => setStatsOpen((e.target as HTMLDetailsElement).open)}>
@@ -1208,6 +1223,42 @@ export default function App() {
             {t("trendAdd")}
           </button>
           <span className="grow" />
+          {/* 값 기록(CSV) — 왼쪽 칸에서 표 도구줄로(10/18). 기록 중이면 빨간 «● 값 기록 n줄» */}
+          <button
+            ref={vlogBtn}
+            className={vlog ? "btn small danger vlog-btn" : "btn small vlog-btn"}
+            onClick={() => setVlogPop((o) => !o)}
+            aria-expanded={vlogPop}
+            title={vlog?.path}
+            data-tip={tip(lang, "mmValueLog")}
+          >
+            {vlog ? fill(t("vlBtnOn"), { n: vlog.lines }) : t("vlBtn")} ▾
+          </button>
+          {vlogPop && (
+            <Popover anchor={vlogBtn.current} onClose={() => setVlogPop(false)} label={t("valueLog")} className="vlog-pop">
+              <b>{t("valueLog")}</b>
+              <span className="segs" role="group" aria-label={t("valueLog")}>
+                {([false, true] as const).map((v) => (
+                  <button key={String(v)} className={vlogMode === v ? "seg on" : "seg"} aria-pressed={vlogMode === v} onClick={() => setVlogMode(v)} data-tip={tip(lang, v ? "mmVlChange" : "mmVlEvery")}>
+                    {v ? t("vlChange") : t("vlEvery")}
+                  </button>
+                ))}
+              </span>
+              <div className="pop-row">
+                <button
+                  className={vlog ? "btn small danger" : "btn small primary"}
+                  onClick={() => {
+                    setVlogPop(false);
+                    void toggleValueLog();
+                  }}
+                  data-tip={tip(lang, "mmValueLog")}
+                >
+                  {vlog ? t("vlStop") : t("vlStart")}
+                </button>
+              </div>
+              {vlog && <div className="hint ellipsis" title={vlog.path}>{fill(t("vlLines"), { n: vlog.lines, a: vlog.path.split(/[\\/]/).pop() ?? vlog.path })}</div>}
+            </Popover>
+          )}
           <button className="btn small" onClick={exportTable} data-tip={withKey(tip(lang, "mmExportCsv"), KEYS.save)}>
             {t("exportCsv")}
           </button>
@@ -1245,11 +1296,37 @@ export default function App() {
           )}
         </div>
 
+        {!connected && !firstDone && (
+          <FirstCard lang={lang} className="mm-first" title={t("firstAsk")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstHelp") }]} onHelp={setShowHelp}>
+            <div className="first-picks">
+              <button type="button" className={transport === "tcp" ? "btn small first-tcp on" : "btn small first-tcp"} onClick={() => pickDevice("tcp")} data-tip={tip(lang, "mmFirstTcp")}>
+                {t("firstTcp")}
+              </button>
+              <button type="button" className={transport === "serial" ? "btn small first-rtu on" : "btn small first-rtu"} onClick={() => pickDevice("serial")} data-tip={tip(lang, "mmFirstRtu")}>
+                {t("firstRtu")}
+              </button>
+            </div>
+            <div className="first-addr" role="group" aria-label={t("addrMode")} data-tip={tip(lang, "mmAddrMode")}>
+              <span>{t("firstAddr")}</span>
+              <span className="segs">
+                {(["zero", "one", "plc"] as const).map((m) => (
+                  <button key={m} type="button" className={addrMode === m ? "seg on" : "seg"} aria-pressed={addrMode === m} onClick={() => setAddrMode(m)}>
+                    {t(m === "zero" ? "amZero" : m === "one" ? "amOne" : "amPlc")}
+                  </button>
+                ))}
+              </span>
+            </div>
+            <div className="hint">{t("firstHint")}</div>
+          </FirstCard>
+        )}
+
         {regsView}
 
         {trendItems.length > 0 && <Trend lang={lang} items={trendItems} version={trendVer} onRemove={(k) => setTrendKeys(trendKeys.filter((x) => x !== k))} onClear={() => setTrendKeys([])} />}
 
+        <Splitter lang={lang} onHeight={setTrafficH} />
         <Traffic
+          height={trafficH}
           lang={lang}
           settings={settings}
           traffic={traffic}
@@ -1306,7 +1383,7 @@ export default function App() {
           onClose={() => setShowScan(false)}
         />
       )}
-      {showHelp && <HelpDialog doc={help} lang={lang} app={APP} onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
       )}
