@@ -72,12 +72,14 @@ export function commandLines(lang: Lang): string[] {
     ? [
         "- 목록의 ▶ 는 바로 보내기(이름 칸에서 Enter·더블클릭도), ✎ 는 «입력칸으로 불러오기», ⧉ 는 복제, ✕ 는 지우기입니다. 지우면 5초 동안 아래 알림의 «되돌리기» 로 되살릴 수 있습니다(확인 창은 뜨지 않음).",
         "- 순서 바꾸기: 이름 왼쪽 ↑·↓, 또는 이름 칸에서 Alt+↑/↓.",
+        "- 목록이 비어 있으면 «예시 넣기» 로 자주 쓰는 명령 예시를 넣을 수 있습니다(이름 앞 «예:»). Serial 은 «용도» 에 맞춰 AT·ATI·AT+GMR 또는 Modbus FC03·FC04 읽기, TCP 는 *IDN?(SCPI)·HTTP 요청·Modbus TCP 읽기(프레임 구분이 Modbus TCP 면 Modbus TCP 읽기 둘), UDP 는 글자·*IDN?·HEX 하나씩입니다. 쓰기 명령은 넣지 않습니다.",
         "- «+ 목록에 추가» 를 누르면 새 명령의 이름 칸에 포커스가 가서 바로 이름을 고칠 수 있습니다. 로그 줄의 오른쪽 버튼 «명령 목록에 추가» 로 받은·보낸 바이트를 그대로(HEX, 체크섬·줄 끝 없이) 넣을 수도 있습니다.",
         "- «목록 내보내기»·«목록 가져오기»: 명령 목록만 JSON 파일로 옮깁니다(다른 PC·다른 PortDock 프로그램과 주고받기). 가져올 때 지금 목록이 있으면 «뒤에 추가»·«목록 바꾸기» 를 칸 안에서 고르고, 바꾼 뒤에도 «되돌리기» 할 수 있습니다.",
       ]
     : [
         "- In the list, ▶ sends (Enter or double-click in the name too), ✎ is «Load into the input», ⧉ duplicates and ✕ deletes. A deleted command can be restored with «Undo» in the notice for 5 seconds (no confirmation dialog).",
         "- Reorder with ↑/↓ left of the name, or Alt+↑/↓ in the name box.",
+        "- When the list is empty, «Add examples» puts in a few common example commands (names start with «e.g.»). Serial follows «Use»: AT, ATI, AT+GMR or Modbus FC03/FC04 reads; TCP adds *IDN? (SCPI), an HTTP request and a Modbus TCP read (two Modbus TCP reads when framing is Modbus TCP); UDP adds a text, *IDN? and a HEX example. No write commands are added.",
         "- After «+ Add to list» the new command's name box is focused so you can rename it right away. «Add to commands» in a log line's right-click menu adds those exact bytes (HEX, no checksum or line ending).",
         "- «Export list» / «Import list» move only the command list as a JSON file (to another PC or another PortDock program). When importing into a non-empty list, choose «Append» or «Replace list» in place; «Undo» works afterwards too.",
       ];

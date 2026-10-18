@@ -4,6 +4,8 @@ import { useRestoreFocus } from "./restoreFocus";
 
 export interface HelpSection {
   title: string;
+  /** 화면에서 이 절을 바로 열 때 쓰는 이름(예: «start» — 처음 쓰는 순서). 두 언어에 같은 id 를 단다 */
+  id?: string;
   /** 한 줄씩. «- » 로 시작하면 글머리표 */
   body: string[];
 }
@@ -65,12 +67,12 @@ const UI = {
   en: { title: "Help", search: "Search…", close: "Close", none: "No matches" },
 };
 
-/** 섹션 목록(왼쪽) + 본문(오른쪽). 찾기 칸으로 걸러 보고, Esc 로 닫는다 */
-export function HelpDialog({ doc, lang, app, onClose }: { doc: HelpDoc; lang: "ko" | "en"; app: string; onClose: () => void }) {
+/** 섹션 목록(왼쪽) + 본문(오른쪽). 찾기 칸으로 걸러 보고, Esc 로 닫는다. start 를 주면 그 id 의 절을 열고 시작한다 */
+export function HelpDialog({ doc, lang, app, onClose, start }: { doc: HelpDoc; lang: "ko" | "en"; app: string; onClose: () => void; start?: string | null }) {
   const ui = UI[lang];
   const sections = useMemo(() => [...doc[lang], reportHelp(lang)], [doc, lang]);
   const [q, setQ] = useState("");
-  const [cur, setCur] = useState(0);
+  const [cur, setCur] = useState(() => Math.max(0, start ? sections.findIndex((s) => s.id === start) : 0));
   const back = useRestoreFocus<HTMLDivElement>();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

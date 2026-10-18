@@ -621,29 +621,7 @@ details.panel > summary .sum-note {
   font-size: calc(var(--fs, 13px) * 0.846);
   margin-left: 6px;
 }
-.first-card {
+/* 카드 모양은 shared/firstcard.css — 여기서는 결과 칸 안 자리만 */
+.table-wrap > .first-card {
   margin: 24px auto;
-  max-width: 560px;
-  text-align: left;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 8px 14px 10px;
-  background: var(--panel);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.first-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.first-card ol {
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
 }

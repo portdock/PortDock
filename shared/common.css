@@ -541,6 +541,13 @@ html .row.sel.primary {
 .cmdlist .cmdname {
   min-width: 60px;
 }
+/* 빈 목록 안내 + «예시 넣기» */
+.cmd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
 .cmd-tools {
   display: flex;
   gap: 6px;

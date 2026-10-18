@@ -324,6 +324,72 @@ async function runApp(app, port) {
     /** Serial 은 좁은 창(≤1180)에서 줄을 누르면 오른쪽 칸(상세)이 열린다 — 다음 클릭이 가림막에 막히지 않게 닫는다. 열렸는지 돌려준다 */
     const closeRight = () => js("const open = !!document.querySelector('.app.show-right'); if (open) document.querySelector('.close-right').click(); return open;");
 
+    /** (10/18) 첫 실행 카드(Serial «무엇을 하나요?»·Slave·Net Scan «처음 쓰는 순서»)·도움말 절 링크·Serial 용도 프리셋·빈 명령 목록 «예시 넣기» */
+    async function firstRun() {
+      const card = await js(`const c = document.querySelector('.first-card'); return c && { title: (c.querySelector('.first-head b') || {}).textContent, picks: c.querySelectorAll('.first-picks button').length, links: [...c.querySelectorAll('.first-links .link-btn')].map((b) => b.textContent), hide: !!c.querySelector('.first-hide') };`);
+      if (app === "serial" || app === "modbus-slave" || app === "netscan") {
+        const want = { serial: 3, "modbus-slave": 1, netscan: 0 }[app];
+        if (!card || card.picks !== want || !card.links.length || !card.hide) await conv("first-card", `첫 실행 카드 모양이 이상함(고르기 ${want}개·도움말 링크·다시 보지 않기 기대): ${JSON.stringify(card)}`);
+        else {
+          // 도움말 링크 → 그 절이 열린 채로
+          const links = await d.findElements(By.css(".first-card .first-links .link-btn"));
+          await links[links.length - 1].click();
+          await sleep(250);
+          const h = await js("const a = document.querySelector('.modal.help .help-link.on'); return a && a.textContent");
+          const wantRe = app === "serial" ? /Modbus/ : /처음 쓰는 순서|Getting started/;
+          if (!h || !wantRe.test(h)) await conv("first-help", `카드의 도움말 링크로 연 절이 «${h}»`);
+          await keys(Key.ESCAPE);
+          await verify("first-card help");
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-first-card`);
+        }
+      }
+      if (app === "serial" && combo.full && card) {
+        // «Modbus 장비 값 읽기» → 용도 Modbus RTU·HEX + CRC16·줄 끝 없음·예시 2개(«예:»)·카드 사라짐
+        const r = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const sr = document.querySelector('.sendbar .sendrow'); const sels = [...sr.querySelectorAll('select')];
+          const now = () => ({ preset: document.querySelector('.preset-sel').value, opt: document.querySelector('.preset-sel').selectedOptions[0].textContent, again: !!document.querySelector('.preset-again'), mode: sels.find((x) => x.querySelector('option[value=ascii]')).value, suffix: sels[sels.length - 1].value, baud: document.querySelector('input[list=bauds]').value, names: [...document.querySelectorAll('.cmdname')].map((e) => e.value), card: !!document.querySelector('.log .first-card'), note: document.querySelector('.preset-note').textContent });
+          document.querySelector('.first-card .first-modbus').click(); await w(400);
+          const a = now();
+          const toast = (document.querySelector('.toast') || {}).textContent || '';
+          // 속도를 고치면 «(바꿈)» + ↺ → ↺ 로 되돌림
+          __sm.setVal(document.querySelector('input[list=bauds]'), '19200'); document.querySelector('input[list=bauds]').blur(); await w();
+          const b = now();
+          if (document.querySelector('.preset-again')) document.querySelector('.preset-again').click(); await w();
+          const c = now();
+          // 용도 고르기로 AT 명령
+          __sm.setVal(document.querySelector('.preset-sel'), 'at'); await w();
+          const e = now();
+          return { a, toast, b, c, e };`);
+        if (r.fatal) add("preset", "smoke-error", r.fatal);
+        else {
+          const ex = /^(예: |e\.g\. )/;
+          if (r.a.preset !== "modbus" || r.a.mode !== "hex" || r.a.suffix !== "" || r.a.baud !== "9600" || r.a.card || r.a.names.length !== 2 || !r.a.names.every((n) => ex.test(n)) || !r.toast) await conv("first-modbus", `«Modbus 장비 값 읽기» 결과가 이상함: ${JSON.stringify({ a: r.a, toast: r.toast })}`);
+          if (!/\((바꿈|changed)\)/.test(r.b.opt) || !r.b.again) await conv("preset-changed", `속도를 바꿨는데 «(바꿈)»·↺ 가 없음: ${JSON.stringify(r.b)}`);
+          if (r.c.baud !== "9600" || /\((바꿈|changed)\)/.test(r.c.opt) || r.c.again) await conv("preset-again", `↺ 로 프리셋 값이 돌아오지 않음: ${JSON.stringify(r.c)}`);
+          if (r.e.preset !== "at" || r.e.mode !== "ascii" || r.e.suffix !== "\\r\\n" || r.e.baud !== "115200" || /\((바꿈|changed)\)/.test(r.e.opt)) await conv("preset-at", `용도 «AT 명령» 결과가 이상함: ${JSON.stringify(r.e)}`);
+          if (combo.name === "ko-light") await shot(app, `${combo.name}-preset-at`);
+        }
+        await verify("preset");
+        await load(port, combo);
+      }
+      // 빈 명령 목록 «예시 넣기»(Serial·TCP·UDP) → 3개, 이름 앞 «예:» → ✕ 없이 알림의 되돌리기로 비움
+      if ((app === "serial" || app === "tcp" || app === "udp") && combo.full) {
+        const r = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const b = document.querySelector('.cmdlist .cmd-examples');
+          if (!b) return { btn: false };
+          b.click(); await w();
+          const names = [...document.querySelectorAll('.cmdname')].map((e) => e.value);
+          const gone = !document.querySelector('.cmdlist .cmd-examples');
+          const u = document.querySelector('.toast .toast-undo'); if (u) u.click(); await w();
+          return { btn: true, names, gone, undone: document.querySelectorAll('.cmdname').length === 0 && !!document.querySelector('.cmdlist .cmd-examples') };`);
+        if (r.fatal) add("cmd-examples", "smoke-error", r.fatal);
+        else if (!r.btn || r.names.length !== 3 || !r.names.every((n) => /^(예: |e\.g\. )/.test(n)) || !r.gone || !r.undone) await conv("cmd-examples", `빈 명령 목록 «예시 넣기» 가 이상함: ${JSON.stringify(r)}`);
+        await verify("cmd examples");
+      }
+    }
+
     /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
     async function convenience() {
       const simple = app === "modbus-slave" || app === "simulator" || app === "modbus-master";
@@ -1339,6 +1405,8 @@ async function runApp(app, port) {
         if ((app === "tcp" || app === "udp") && !/^(둘 다|Both)$/.test(f.view ?? "")) await conv("first-view", `첫 실행 로그 보기가 «둘 다» 가 아님: ${JSON.stringify(f.view)}`, false);
         if (app === "udp" && f.mode !== "ascii") await conv("first-run", `UDP 첫 실행 보내기가 ASCII 가 아님: ${JSON.stringify(f.mode)}`, false);
       }
+      // (10/18) 첫 실행 카드·용도 프리셋·예시 넣기 — 끝나면 다시 첫 실행 상태로
+      await firstRun();
       if (combo.full) await shot(app, `${combo.name}-loaded`);
       const idleBtn = s0.btn;
 

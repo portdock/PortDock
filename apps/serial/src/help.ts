@@ -15,7 +15,10 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
+        "- 처음 켜면 가운데 로그 자리에 «무엇을 하나요?» 카드가 나옵니다. «AT 명령 보내기»·«Modbus 장비 값 읽기» 를 누르면 왼쪽 «용도» 가 맞춰지고 예시 명령(이름 앞 «예:»)이 오른쪽 명령 목록에 들어갑니다. «그냥 보기» 는 «일반» 으로 두고 예시는 넣지 않습니다. «다시 보지 않기» 를 누르면 카드 대신 한 줄 안내가 나옵니다.",
+        "- 0. (선택) 왼쪽 맨 위 «용도» 에서 일반·AT 명령·Modbus RTU 장비·NMEA·GPS 를 고르면 속도·프레임 구분·보내기 형식이 그 용도에 맞춰집니다(«연결 설정» 절).",
         "- 1. 왼쪽 «포트» 에서 COM 포트를 고릅니다. 목록은 1.5초마다 새로 고쳐지므로 꽂으면 바로 나타납니다.",
         "- 2. «속도(bps)»·«데이터 비트»·«패리티»·«정지 비트» 를 장비 설명서와 똑같이 맞추고 «연결» 을 누릅니다.",
         "- 3. 아래 입력칸에 보낼 내용을 쓰고 «보내기» 를 누릅니다(Enter 도 됩니다). 받은 데이터는 가운데 로그에 RX ◀ 로, 보낸 것은 TX ▶ 로 찍힙니다.",
@@ -40,6 +43,8 @@ export const help: HelpDoc = {
     {
       title: "연결 설정",
       body: [
+        "- «용도»(포트 위): 무엇에 쓰는지 고르면 여러 칸을 한 번에 맞춥니다. «일반» = 조용한 시간 20ms·체크섬 검사 없음·ASCII + 줄 끝 CR LF(속도는 그대로). «AT 명령» = 115200 8N1·끝 문자 0D 0A 로 끊기·ASCII + CR LF. «Modbus RTU 장비» = 9600 8N1·프레임 구분 Modbus RTU·수신 CRC16 Modbus 검사·보내기 HEX + 체크섬 CRC16 Modbus·줄 끝 없음. «NMEA·GPS» = 9600 8N1(오래된 수신기는 4800 으로 고치세요)·끝 문자 0A(LF)로 끊기·ASCII + CR LF.",
+        "- 고른 뒤에도 각 칸은 그대로 고칠 수 있습니다. 프리셋과 달라지면 «AT 명령 (바꿈)» 처럼 붙고 아래에 다른 칸 이름이 나옵니다. 옆의 ↺ 는 프리셋 값으로 다시 맞춥니다. 보내기 형식(HEX/ASCII)이 바뀌면 입력칸은 비웁니다. 고른 용도는 기억합니다.",
         "- «포트»: 연결할 COM 포트. USB 장치는 아래에 «USB VID:PID · S/N 일련번호» 가 보입니다. 연결 중에는 포트만 바꿀 수 없고, 나머지 설정은 바로 적용됩니다.",
         "- 저장해 둔 포트가 목록에 없으면 같은 장치(일련번호, 없으면 VID:PID)를 찾아 고르고, 없으면 첫 포트로 바꾼 뒤 «저장된 COM3 이(가) 없어 COM7 로 바꿨습니다» 처럼 알려 줍니다. 다시 꽂아 COM 번호가 바뀌어도 다음 연결은 새 번호로 합니다.",
         "- 연결에 실패하면 상태 칸에 빨갛게 «연결 실패 · 이유» 가 나옵니다. 포트가 사용 중이면 다른 프로그램이 쓰고 있는지 확인하세요.",
@@ -92,6 +97,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Modbus 장비 값 읽기 따라하기",
+      id: "modbus",
       body: [
         "Modbus RTU 장비(온도 조절기·인버터·전력계 등)의 레지스터 값을 읽는 순서입니다. 예: 국번 1 장비의 보유 레지스터 40001 부터 10개.",
         "- 1. 장비 설명서에서 통신 설정(속도·패리티 — Modbus 는 «짝수» 가 흔함)과 국번, 읽을 주소를 확인하고 왼쪽 연결 설정을 맞춘 뒤 «연결» 합니다.",
@@ -253,7 +259,10 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
+        "- On first start a «What are you doing?» card appears in the log area. «Send AT commands» or «Read values from a Modbus device» sets «Use» on the left and adds example commands (names start with «e.g.») to the command list on the right. «Just watch» keeps «General» and adds no examples. «Don't show again» replaces the card with a one-line hint.",
+        "- 0. (Optional) Pick General, AT commands, Modbus RTU device or NMEA / GPS under «Use» at the top left to set the baud rate, framing and send format for that use (see «Connection settings»).",
         "- 1. Choose a COM port under «Ports» on the left. The list refreshes every 1.5 s, so a newly plugged device appears right away.",
         "- 2. Set «Baud rate», «Data bits», «Parity» and «Stop bits» exactly as in the device manual, then click «Connect».",
         "- 3. Type what to send in the input at the bottom and click «Send» (or press Enter). Received data appears in the log as RX ◀, sent data as TX ▶.",
@@ -278,6 +287,8 @@ export const help: HelpDoc = {
     {
       title: "Connection settings",
       body: [
+        "- «Use» (above the port): sets several fields at once for what you are doing. «General» = idle gap 20 ms, no checksum check, ASCII + CR LF line ending (baud unchanged). «AT commands» = 115200 8N1, split at terminator 0D 0A, ASCII + CR LF. «Modbus RTU device» = 9600 8N1, Modbus RTU framing, RX CRC16 Modbus check, send HEX + checksum CRC16 Modbus, no line ending. «NMEA / GPS» = 9600 8N1 (change to 4800 for older receivers), split at 0A (LF), ASCII + CR LF.",
+        "- Every field can still be changed afterwards. When something differs from the preset, «(changed)» is added (e.g. «AT commands (changed)») and the differing fields are listed below. ↺ next to it resets them to the preset. The input box is cleared when the send format (HEX/ASCII) changes. The chosen use is remembered.",
         "- «Ports»: the COM port to use. USB devices show «USB VID:PID · S/N serial number» below. Only the port is locked while connected; other settings apply immediately.",
         "- If the saved port is not in the list, the same device is picked (by serial number, else VID:PID), otherwise the first port, with a note such as «Saved COM3 not found — switched to COM7». If replugging changed the COM number, the next connection uses the new one.",
         "- If connecting fails, the status box turns red with «Connection failed · reason». For a busy port, check whether another program is using it.",
@@ -330,6 +341,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Walkthrough: read values from a Modbus device",
+      id: "modbus",
       body: [
         "How to read registers from a Modbus RTU device (temperature controller, drive, power meter …). Example: 10 holding registers from 40001 on slave 1.",
         "- 1. From the device manual, note the line settings (baud, parity — Modbus often uses «Even»), the slave ID and the address. Match the settings on the left and «Connect».",

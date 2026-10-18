@@ -37,6 +37,7 @@ import { copyTextOf, selectedFrames, useCopyKey, useLogSelection } from "@shared
 import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
 import { useToast } from "@shared/Toast";
 import { CommandList, type CommandListHandle } from "@shared/CommandList";
+import { udpExamples } from "@shared/examples";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
@@ -905,6 +906,7 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           handle={cmdList}
+          examples={udpExamples(lang) as Command[]}
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
         <AutoReplySection lang={lang} toast={toast} />

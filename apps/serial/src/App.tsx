@@ -57,6 +57,9 @@ import { FileSendDialog, JobBar, type FileJob, type Pace, type Progress } from "
 import { TermBuffer } from "@shared/terminal";
 import { TerminalView } from "@shared/TerminalView";
 import { Popover } from "@shared/Popover";
+import { FirstCard } from "@shared/FirstCard";
+import { applyPreset, isPresetId, PRESET_IDS, presetDiff, type PresetField, type PresetId, type PresetState } from "@shared/serialPresets";
+import { serialExamples } from "@shared/examples";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -132,7 +135,8 @@ export default function App() {
   // 글자 보기 인코딩 — 줄 그리기·복사·저장이 같은 값을 쓴다
   setTextEncoding(settings.encoding);
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // true = 첫 절, 글자 = 그 id 의 절(첫 실행 카드의 도움말 링크)
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -173,6 +177,9 @@ export default function App() {
   useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
+  /** 프레임 구분을 고를 때의 처음 값 */
+  const newFraming = (k: FrameMode["kind"], gapMs?: number): FrameMode =>
+    k === "gap" ? { kind: "gap", gapMs: gapMs ?? 20 } : k === "terminator" ? { kind: "terminator", bytes: [], gapMs: 100 } : k === "fixed" ? { kind: "fixed", len: 8, gapMs: 100 } : { kind: "modbus-rtu", baud: cfg.baud };
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
   const [rxCk, setRxCk] = useState<CkOpts | null>(() => load("rxCk", null));
@@ -687,6 +694,56 @@ export default function App() {
   function addCommand() {
     pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd", key: null });
   }
+
+  // ---- 용도 프리셋(포트 위) — 일반 / AT 명령 / Modbus RTU 장비 / NMEA·GPS. 고른 것을 기억하고, 칸을 고치면 «(바꿈)»
+  const [preset, setPreset] = useState<PresetId>(() => {
+    const v = load<unknown>("preset", "general");
+    return isPresetId(v) ? v : "general";
+  });
+  useEffect(() => store("preset", preset), [preset]);
+  const presetNow: PresetState = {
+    baud: cfg.baud,
+    dataBits: cfg.dataBits,
+    parity: cfg.parity,
+    stopBits: cfg.stopBits,
+    frameKind: framing.kind,
+    gapMs: framing.kind === "modbus-rtu" ? 0 : framing.gapMs,
+    terminatorText,
+    rxCheck,
+    mode: spec.mode,
+    checksum: spec.checksum,
+    suffix: spec.suffix,
+  };
+  const presetChanged = presetDiff(preset, presetNow);
+  const FIELD_KEY: Record<PresetField, Key> = { baud: "baud", dataBits: "dataBits", parity: "parity", stopBits: "stopBits", frameKind: "framing", gapMs: "gapMs", terminatorText: "terminatorHex", rxCheck: "rxCheck", mode: "sendMode", checksum: "checksum", suffix: "suffix" };
+  /** 프리셋 값으로 칸을 맞춘다 — 연결 중이면 속도 등은 바로 적용된다. 보내기 형식이 바뀌면 입력칸은 비운다(다른 표기의 글이 남지 않게) */
+  function pickPreset(id: PresetId) {
+    const n = applyPreset(id, presetNow);
+    setPreset(id);
+    setCfg((c) => ({ ...c, baud: n.baud, dataBits: n.dataBits, parity: n.parity as SerialConfig["parity"], stopBits: n.stopBits }));
+    if (n.frameKind !== framing.kind || (n.frameKind === "gap" && framing.kind === "gap" && n.gapMs !== framing.gapMs)) setFraming(newFraming(n.frameKind, n.gapMs));
+    setTerminatorText(n.terminatorText);
+    if (n.rxCheck !== rxCheck) {
+      setRxCheck(n.rxCheck as ChecksumKind | null);
+      setRxCk(null);
+    }
+    setRxAuto(null);
+    setSpec((x) => ({ ...x, mode: n.mode, checksum: n.checksum as ChecksumKind | null, ck: n.checksum === x.checksum ? x.ck : null, suffix: n.suffix, text: x.mode === n.mode ? x.text : "" }));
+  }
+  const examples = useMemo(() => serialExamples(preset, lang) as Command[], [preset, lang]);
+
+  // ---- 첫 실행 카드(빈 로그 자리) — «무엇을 하나요?» 를 고르면 프리셋 + 예시 명령. «다시 보지 않기» 면 예전 한 줄 안내
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
+  function startWith(id: PresetId) {
+    pickPreset(id);
+    setFirstDone(true);
+    // «그냥 보기» 는 예시를 넣지 않는다. 이미 같은 이름이 있으면 빼고 넣는다
+    const add = id === "general" ? [] : serialExamples(id, lang).filter((e) => !commands.some((c) => c.name === e.name));
+    if (add.length) setCommands((list) => [...list, ...(add as Command[])]);
+    toast.show(fill(t(add.length ? "firstPicked" : "firstPickedNone"), { a: t(`preset_${id}`), n: add.length }));
+  }
+
   /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
   const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "", ck: null });
 
@@ -758,6 +815,24 @@ export default function App() {
           <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
+
+        <label data-tip={tip(lang, "preset")}>{t("preset")}</label>
+        <div className="preset-row">
+          <select className="preset-sel" value={preset} onChange={(e) => pickPreset(e.target.value as PresetId)} aria-label={t("preset")}>
+            {PRESET_IDS.map((id) => (
+              <option key={id} value={id}>
+                {t(`preset_${id}`)}
+                {id === preset && presetChanged.length ? ` ${t("presetChanged")}` : ""}
+              </option>
+            ))}
+          </select>
+          {presetChanged.length > 0 && (
+            <button type="button" className="btn small preset-again" onClick={() => pickPreset(preset)} data-tip={tip(lang, "presetAgain")} aria-label={t("presetAgain")}>
+              ↺
+            </button>
+          )}
+        </div>
+        <div className="hint preset-note">{presetChanged.length ? fill(t("presetDiff"), { a: presetChanged.map((k) => t(FIELD_KEY[k])).join(" · ") }) : t(`presetDesc_${preset}`)}</div>
 
         <label data-tip={tip(lang, "ports")}>{t("ports")}</label>
         <select
@@ -913,15 +988,7 @@ export default function App() {
               value={framing.kind}
               onChange={(e) => {
                 const k = e.target.value as FrameMode["kind"];
-                setFraming(
-                  k === "gap"
-                    ? { kind: "gap", gapMs: 20 }
-                    : k === "terminator"
-                      ? { kind: "terminator", bytes: [], gapMs: 100 }
-                      : k === "fixed"
-                        ? { kind: "fixed", len: 8, gapMs: 100 }
-                        : { kind: "modbus-rtu", baud: cfg.baud },
-                );
+                setFraming(newFraming(k));
                 if (k === "modbus-rtu") {
                   if (rxCheck !== "crc16-modbus") {
                     setRxAuto({ prev: rxCheck });
@@ -1063,7 +1130,34 @@ export default function App() {
           ) : (
             <>
               <div className="log" ref={listRef}>
-                {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+                {frames.length === 0 &&
+                  (firstDone ? (
+                    <div className="empty-guide">{t("emptyGuide")}</div>
+                  ) : (
+                    <FirstCard
+                      lang={lang}
+                      title={t("firstAsk")}
+                      onHide={() => setFirstDone(true)}
+                      links={[
+                        { id: "start", label: t("firstHelpStart") },
+                        { id: "modbus", label: t("firstHelpModbus") },
+                      ]}
+                      onHelp={setShowHelp}
+                    >
+                      <div className="first-picks">
+                        <button type="button" className="btn small first-at" onClick={() => startWith("at")} data-tip={tip(lang, "firstAt")}>
+                          {t("firstAt")}
+                        </button>
+                        <button type="button" className="btn small first-modbus" onClick={() => startWith("modbus")} data-tip={tip(lang, "firstModbus")}>
+                          {t("firstModbus")}
+                        </button>
+                        <button type="button" className="btn small first-watch" onClick={() => startWith("general")} data-tip={tip(lang, "firstWatch")}>
+                          {t("firstWatch")}
+                        </button>
+                      </div>
+                      <div className="hint">{t("firstNote")}</div>
+                    </FirstCard>
+                  ))}
                 <div style={{ height: rows.getTotalSize(), position: "relative" }}>
                   {rows.getVirtualItems().map((r) => {
                     const f = filter.at(r.index);
@@ -1296,6 +1390,7 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           handle={cmdList}
+          examples={examples}
         />
 
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
@@ -1397,7 +1492,7 @@ export default function App() {
           onClose={() => setShowFile(false)}
         />
       )}
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Serial" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Serial" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Serial"

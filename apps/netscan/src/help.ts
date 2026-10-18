@@ -15,6 +15,7 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «랜카드» 에서 장비가 꽂힌 랜카드를 고릅니다. 아래에 그 랜카드의 IP·게이트웨이·MAC 이 보입니다.",
         "- 2. «찾을 범위» 가 그 랜카드의 대역(보통 192.168.x.0/24)으로 채워집니다. 필요하면 고칩니다.",
@@ -176,6 +177,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Under «Network adapter», pick the adapter the devices are connected to. Its IP, gateway and MAC are shown below.",
         "- 2. «Range to scan» is filled with that adapter's subnet (usually 192.168.x.0/24). Edit it if needed.",

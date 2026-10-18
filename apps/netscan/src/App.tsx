@@ -5,6 +5,7 @@ import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { FirstCard } from "@shared/FirstCard";
 import { useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
@@ -61,7 +62,8 @@ export default function App() {
   const setLang = (l: Lang) => update({ lang: l });
   const t = useCallback((k: Key, v?: Record<string, string | number>) => fill(dict[lang][k], v), [lang]);
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // true = 첫 절, 글자 = 그 id 의 절(첫 실행 카드의 도움말 링크)
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   const [showSide, setShowSide] = useState(false);
@@ -617,20 +619,14 @@ export default function App() {
                 firstDone ? (
                   <div className="empty-guide">{t("emptyGuide")}</div>
                 ) : (
-                  <div className="first-card" role="note">
-                    <div className="first-head">
-                      <b>{t("firstTitle")}</b>
-                      <button className="btn small ghost" onClick={() => setFirstDone(true)}>
-                        {t("firstHide")}
-                      </button>
-                    </div>
+                  <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
                     <ol>
                       <li>{t("first1")}</li>
                       <li>{t("first2")}</li>
                       <li>{t("first3")}</li>
                     </ol>
                     <div className="hint">{t("firstAdv")}</div>
-                  </div>
+                  </FirstCard>
                 )
               ) : rows.length === 0 ? (
                 <div className="empty-guide">{t("emptyFiltered")}</div>
@@ -776,7 +772,7 @@ export default function App() {
           <MonitorView lang={lang} mon={mon} settings={settings} />
         )}
       </main>
-      {showHelp && <HelpDialog doc={help} lang={lang} app={APP} onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={scanning || mon.running} />}
       {toast.node}
     </div>

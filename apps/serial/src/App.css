@@ -661,3 +661,27 @@ details.panel > summary .sum-note {
   font-size: calc(var(--fs, 13px) * 0.846);
   margin-left: 6px;
 }
+
+/* ---- 쉽게 쓰기 (10/18): 용도 프리셋·첫 실행 카드 */
+.preset-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.preset-sel {
+  flex: 1;
+  min-width: 0;
+}
+.preset-row .preset-again {
+  flex-shrink: 0;
+  padding: 3px 7px;
+}
+.preset-note {
+  overflow-wrap: anywhere;
+}
+/* 카드 모양은 shared/firstcard.css — 여기서는 빈 로그 자리만 */
+.log > .first-card {
+  margin: 24px auto;
+  position: relative;
+  z-index: 1;
+}

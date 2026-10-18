@@ -49,6 +49,7 @@ import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
+import { FirstCard } from "@shared/FirstCard";
 import { help } from "./help";
 import { samePorts } from "@shared/framing";
 import { autoLogPath, useSettings } from "@shared/settings";
@@ -160,7 +161,8 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // true = 첫 절, 글자 = 그 id 의 절(첫 실행 카드의 도움말 링크)
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -1528,18 +1530,17 @@ export default function App() {
             firstDone ? (
               <div className="tlog-empty hint">{t("first3")}</div>
             ) : (
-              <div className="tlog-empty first-card" role="note">
-                <div className="first-head">
-                  <b>{t("firstTitle")}</b>
-                  <button className="btn small ghost" onClick={() => setFirstDone(true)}>
-                    {t("firstHide")}
-                  </button>
-                </div>
+              <FirstCard lang={lang} className="tlog-empty" title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
                 <div className="first-steps">
                   <span>① {t("first1")}</span> <span>② {t("first2")}</span> <span>③ {t("first3")}</span>
                 </div>
                 <div className="hint first-types">{t("firstTypes")}</div>
-              </div>
+                <div className="first-picks">
+                  <button type="button" className="btn small" onClick={fill} data-tip={tip(lang, "fillExample")}>
+                    {t("fillExample")}
+                  </button>
+                </div>
+              </FirstCard>
             )
           }
         />
@@ -1557,7 +1558,7 @@ export default function App() {
           onClose={() => setCellDlg(null)}
         />
       )}
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Modbus Slave" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Modbus Slave" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Modbus Slave"

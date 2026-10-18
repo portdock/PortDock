@@ -1014,23 +1014,11 @@ details.panel > .btn.small {
   padding: 0 12px;
   text-align: center;
 }
-.first-card {
+/* 카드 모양은 shared/firstcard.css — 여기서는 통신 기록 칸 안 자리만 */
+.tlog-empty.first-card {
   text-align: left;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
   padding: 6px 12px 8px;
-  background: var(--panel);
-  color: var(--ink);
-  display: flex;
-  flex-direction: column;
   gap: 4px;
-}
-.first-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: space-between;
 }
 .first-steps span {
   margin-right: 10px;

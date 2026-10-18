@@ -98,6 +98,7 @@ export function CommandList<C extends Cmd>({
   writeText,
   readText,
   handle,
+  examples,
 }: {
   lang: Lang;
   /** 내보낸 파일 머리(프로그램 이름) */
@@ -114,6 +115,8 @@ export function CommandList<C extends Cmd>({
   writeText: (path: string, text: string) => Promise<void>;
   readText: (path: string) => Promise<string>;
   handle?: Ref<CommandListHandle>;
+  /** 빈 목록의 «예시 넣기» 가 넣을 명령(이름 앞 «예:»). 넘기지 않으면 버튼이 없다 */
+  examples?: C[];
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState<{ file: string; cmds: C[] } | null>(null);
@@ -225,7 +228,24 @@ export function CommandList<C extends Cmd>({
     <div className="cmdlist" ref={root}>
       <h3>{title}</h3>
       <div className="cmds">
-        {commands.length === 0 && <div className="hint">{ui(lang, "cmdEmpty")}</div>}
+        {commands.length === 0 && (
+          <div className="hint cmd-empty">
+            {ui(lang, "cmdEmpty")}
+            {examples && examples.length > 0 && (
+              <button
+                type="button"
+                className="btn small cmd-examples"
+                data-tip={ui(lang, "cmdExamplesTip")}
+                onClick={() => {
+                  setCommands(examples);
+                  toast.show(ui(lang, "addedExamples", { n: examples.length }), { undo: () => setCommands([]) });
+                }}
+              >
+                {ui(lang, "cmdExamples")}
+              </button>
+            )}
+          </div>
+        )}
         {commands.map((c, i) => (
           <div key={i} className="cmd" title={c.text}>
             <span className="cmd-move">

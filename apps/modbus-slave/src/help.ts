@@ -14,12 +14,13 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 «포트» 와 «속도(bps)»·«데이터 비트»·«패리티»·«정지 비트» 를 마스터와 똑같이, TCP 면 «묶을 주소»(보통 0.0.0.0)와 «포트»(보통 502)를 정합니다.",
         "- 2. «국번(슬레이브 주소)» 에 마스터가 부를 국번(기본 1)이 있는지 확인합니다. 없으면 1~247 을 넣고 «추가» 를 누릅니다. 이 도움말에서는 이 주소를 줄여 «국번» 이라고 부릅니다.",
         "- 3. 가운데 위에서 표(예: «보유 레지스터»)를 고르고, 칸에 값을 넣어 둡니다. 연결 전에 넣어 둬도 됩니다. 32비트 값·실수·이름이 필요하면 칸의 ⋯(또는 오른쪽 버튼)으로 «칸 설정» 을 엽니다. 위 «표시» 목록의 «형식 지정…» 도 고른 칸의 «칸 설정» 을 엽니다.",
         "- 4. «연결»(TCP 는 «시작»)을 누르면 마스터 요청이 오는 대로 바로 답합니다. 주고받은 내용과 풀이(«id1 FC03 HR 0..9 (10)»)는 아래 «통신 기록» 에 찍힙니다.",
-        "- 처음 켜면 비어 있는 «통신 기록» 자리에 이 순서가 카드로 보입니다. «다시 보지 않기» 를 누르면 숨고, 그 뒤로는 «마스터가 읽으면 여기 «통신 기록» 에 보입니다» 한 줄만 남습니다.",
+        "- 처음 켜면 비어 있는 «통신 기록» 자리에 이 순서가 카드로 보입니다. 카드의 «예제 채우기» 는 지금 표의 보이는 칸을 0, 1, 2… 로 채웁니다(위 «채우기» 와 같고 확인을 묻습니다) — 마스터로 읽으면 주소마다 값이 달라 주소가 밀렸는지 바로 보입니다. «다시 보지 않기» 를 누르면 숨고, 그 뒤로는 «마스터가 읽으면 여기 «통신 기록» 에 보입니다» 한 줄만 남습니다.",
       ],
     },
     {
@@ -277,12 +278,13 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Choose the «Connection» on the left. For serial, set «Port», «Baud rate», «Data bits», «Parity» and «Stop bits» exactly as on the master; for TCP, set the «Bind address» (usually 0.0.0.0) and «Port» (usually 502).",
         "- 2. Check that «Unit ID (slave address)» contains the ID the master polls (default 1). If not, enter 1–247 and click «Add». The rest of this help calls it simply «Unit ID».",
         "- 3. Pick a table at the top (e.g. «Holding registers») and enter values. You can do this before connecting. For 32-bit values, floats or names, open «Cell settings» with a cell's ⋯ (or right-click). The «Typed…» entry in the «Format» list also opens «Cell settings» for the selected cell.",
         "- 4. Click «Connect» («Start» for TCP). Master requests are answered at once. Traffic and its decode («id1 FC03 HR 0..9 (10)») appear in «Traffic» at the bottom.",
-        "- On first start these steps appear as a card in the empty «Traffic» area. «Don't show again» hides it; afterwards only the line «When the master reads, it shows up here in «Traffic»» remains.",
+        "- On first start these steps appear as a card in the empty «Traffic» area. The card's «Fill example values» fills the visible cells of this table with 0, 1, 2… (same as «Fill» above; asks first) — read from a master, each address gives a different value, so an off-by-one address shows at once. «Don't show again» hides it; afterwards only the line «When the master reads, it shows up here in «Traffic»» remains.",
       ],
     },
     {

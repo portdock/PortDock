@@ -70,6 +70,12 @@ const TIPS: Record<string, Tip> = {
   // Serial 좁은 창의 오른쪽 칸 펼치기
   commandsDetail: ["창이 좁으면 숨는 오른쪽 칸(명령 목록·트리거·자동응답·상세)을 펼칩니다. 로그 줄을 눌러도 펼쳐지고 «상세» 로 갑니다. ✕·바깥을 누르면 닫힙니다.", "Opens the right pane hidden in narrow windows (commands, triggers, auto reply, detail). Clicking a log line also opens it at «Detail». Close with ✕ or by clicking outside."],
   // Serial 왼쪽 칸 접기·보내기 «⋯ 더보기»(10/18)
+  // Serial 용도 프리셋·첫 실행 카드(10/18)
+  preset: ["무엇에 쓰는지 고르면 속도·프레임 구분·수신 체크섬·보내기 형식·줄 끝을 그 용도에 흔한 값으로 맞춥니다. 일반: 조용한 시간 20ms·ASCII+CR LF(속도 그대로). AT 명령: 115200·0D 0A 로 끊기·ASCII+CR LF. Modbus RTU: 9600 8N1·Modbus 프레임+CRC 검사·HEX+CRC16. NMEA·GPS: 9600·LF 로 끊기. 고른 뒤에도 칸은 그대로 고칠 수 있고, 고치면 «(바꿈)» 이 붙습니다.", "Pick what you are doing to set the baud rate, framing, RX checksum, send format and line ending to common values. General: idle gap 20 ms, ASCII + CR LF (baud unchanged). AT commands: 115200, split at 0D 0A, ASCII + CR LF. Modbus RTU: 9600 8N1, Modbus framing + CRC check, HEX + CRC16. NMEA/GPS: 9600, split at LF. You can still change any field afterwards; «(changed)» then appears."],
+  presetAgain: ["고친 칸을 고른 용도의 값으로 다시 맞춥니다.", "Resets the changed fields to the values of the selected use."],
+  firstAt: ["용도를 «AT 명령»(115200·ASCII+CR LF·0D 0A 로 끊기)으로 맞추고 AT·ATI·AT+GMR 예시를 명령 목록에 넣습니다.", "Sets «Use» to «AT commands» (115200, ASCII + CR LF, split at 0D 0A) and adds AT, ATI and AT+GMR examples to the command list."],
+  firstModbus: ["용도를 «Modbus RTU 장비»(9600 8N1·Modbus 프레임·CRC 검사·HEX+CRC16)로 맞추고 FC03·FC04 읽기 예시를 넣습니다. 장비 설명서의 속도·패리티·국번과 다르면 고치세요.", "Sets «Use» to «Modbus RTU device» (9600 8N1, Modbus framing, CRC check, HEX + CRC16) and adds FC03/FC04 read examples. Adjust the baud rate, parity and slave ID to the device manual."],
+  firstWatch: ["용도를 «일반» 으로 두고 받은 데이터만 봅니다(예시는 넣지 않음).", "Keeps «Use» at «General» to just watch incoming data (no examples added)."],
   serialAdvConn: ["흐름 제어·RS-485 송신 방향·DTR·RTS. 대부분 기본값(없음·끔)이라 접어 두고 제목에 지금 값을 요약합니다. 기본값이 아니면 펼친 채 시작합니다.", "Flow control, RS-485 direction, DTR and RTS. Usually left at the defaults (none/off), so it is collapsed with a summary; it starts expanded when something differs from the defaults."],
   // TCP·UDP 왼쪽 칸 접기(10/18)
   tcpAdvConn: ["즉시 전송(Nagle 끔)과 클라이언트의 자동 재접속·간격. 대부분 기본값이라 접어 두고 제목에 지금 값을 요약합니다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작합니다.", "Send immediately (Nagle off) and, for the client, automatic reconnect and its interval. Usually left at the defaults, so it is collapsed with a summary; it starts expanded when something differs (immediate send, reconnect every 2 s)."],
@@ -118,6 +124,7 @@ const TIPS: Record<string, Tip> = {
   count: ["시작 주소부터 몇 칸을 쓸지(마스터가 읽을 수 있는 범위). 화면에는 처음 2000칸까지 보입니다.", "How many addresses from the start (also the range the master can read). The screen shows up to 2000."],
   format: ["표 전체를 U16(0~65535)·S16(음수)·HEX·BIN 으로 보고 입력합니다. 실수(float)·32비트·문자열은 칸마다 정합니다 — 칸의 ⋯ 또는 오른쪽 버튼(이 목록의 «형식 지정…» 도 고른 칸의 설정을 엽니다).", "View and enter the whole table as U16, S16, HEX or BIN. Float, 32-bit and string are set per cell — the cell's ⋯ or right-click (the «Typed…» entry here opens the selected cell's settings)."],
   fill: ["보이는 칸을 0, 1, 2… 로 채웁니다(확인을 묻습니다).", "Fills the visible cells with 0, 1, 2… (asks first)."],
+  fillExample: ["처음 시험용으로 지금 표의 보이는 칸을 0, 1, 2… 로 채웁니다(위 «채우기» 와 같음, 확인을 묻습니다). 마스터로 읽으면 주소마다 다른 값이 와서 주소가 밀렸는지 바로 보입니다.", "For a first test, fills the visible cells of this table with 0, 1, 2… (same as «Fill» above; asks first). Reading them from a master gives a different value per address, so an off-by-one address shows at once."],
   exportTable: ["지금 표의 범위 전체를 JSON 파일로 저장합니다.", "Saves the whole range of this table to a JSON file."],
   importTable: ["JSON 파일의 값을 지금 표에 넣습니다. 다른 표의 파일이면 확인을 묻습니다.", "Loads values from a JSON file into this table; asks if the file is for another table."],
   reset: ["통계를 0 으로 되돌립니다.", "Resets the statistics."],
