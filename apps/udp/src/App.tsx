@@ -44,7 +44,7 @@ import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
-import { checksumDesc, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
+import { checksumDesc, checksumLabel, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
@@ -115,6 +115,14 @@ export default function App() {
   useEffect(() => {
     store("rxCheck", rxCheck);
   }, [rxCheck]);
+  // 왼쪽 «고급 연결»(브로드캐스트·멀티캐스트) — 대부분 안 쓰니 접는다. 켜 둔 것이 있으면 펼친 채 시작, 열림 상태는 기억
+  const advConnChanged = cfg.broadcast || !!cfg.multicastGroup || isMulticast(cfg.remoteHost);
+  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
+  // «받기 설정»(수신 체크섬·에코) — 기본(검사 없음·에코 끔)이 아니면 펼친 채 시작
+  const rxChanged = rxCheck != null || cfg.echo;
+  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
 
   // ---- 세션
   const [running, setRunning] = useState(false);
@@ -282,7 +290,8 @@ export default function App() {
   }
 
   // ---- 보기
-  const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
+  // 첫 실행(저장값 없음)은 HEX·ASCII 둘 다 — 보내기 기본이 ASCII 라 받은 글을 바로 읽게. 저장값이 있으면 그것
+  const [view, setView] = useState<ViewMode>(() => load("view", "both"));
   useEffect(() => {
     store("view", view);
   }, [view]);
@@ -351,7 +360,8 @@ export default function App() {
   }
 
   // ---- 보내기
-  const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "hex", checksum: null, suffix: "" }));
+  // 첫 실행(저장값 없음)은 TCP 와 같은 ASCII(줄 끝은 없음 — UDP 는 데이터그램 하나가 메시지). 저장값이 있으면 그것을 쓴다
+  const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "ascii", checksum: null, suffix: "" }));
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
   // 보내기 버튼 뒤 입력칸으로 돌아가 바로 이어 쓸 수 있게
   const sendInput = useRef<HTMLInputElement>(null);
@@ -455,6 +465,15 @@ export default function App() {
 
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
+  // HEX 칸에 글자(hello 등)를 쳐서 오류가 나면 — 친 글 그대로 ASCII 로 바꾸고, 보낼 수 있으면 바로 보낸다
+  const hexTypo = spec.mode === "hex" && !!previewErr && !!spec.text.trim();
+  const sendBlocked = !running || bcastBlocked || noRemote || remoteBlocked;
+  const asAscii = () => {
+    const s: SendSpec = { ...spec, mode: "ascii" };
+    setSpec(s);
+    if (!sendBlocked) void doSend(s).then((ok) => ok && history.remember({ text: s.text, mode: s.mode }));
+    sendInput.current?.focus();
+  };
 
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
   useEffect(() => {
@@ -493,6 +512,10 @@ export default function App() {
   const localPort = local?.match(/:(\d+)$/)?.[1] ?? String(cfg.bindPort);
   const statusText = t(`status_${status}` as Key);
   useWindowTitle(windowTitle("PortDock UDP", running ? [`:${localPort} ${statusText}`] : [], !!logPath));
+  // 접힌 제목에 보일 지금 값
+  const advConnSummary =
+    [cfg.broadcast ? t("bcastShort") : "", cfg.multicastGroup || (isMulticast(cfg.remoteHost) ? cfg.remoteHost : "")].filter(Boolean).join(" · ") || t("advConnDefault");
+  const rxSummary = [rxCheck ? checksumLabel(rxCheck, lang) : t("rxNoCheck"), cfg.echo ? t("echoShort") : ""].filter(Boolean).join(" · ");
   const summaryLine = `${cfg.bindHost}:${running ? localPort : cfg.bindPort} → ${cfg.remoteHost}:${cfg.remotePort} · ${statusText}`;
 
   return (
@@ -557,35 +580,38 @@ export default function App() {
             {t("ilRemoteFail").replace("{a}", applied ?? "—").replace("{e}", remoteErr)}
           </div>
         )}
-        <label data-tip={tip(lang, "broadcast")} className="inline">
-          <input type="checkbox" checked={cfg.broadcast} disabled={running} onChange={(e) => setCfg({ ...cfg, broadcast: e.target.checked })} /> {t("broadcast")}
-        </label>
-        <label data-tip={tip(lang, "multicast")}>
-          {t("multicast")}
-          <input value={cfg.multicastGroup} disabled={running} placeholder="—" onChange={(e) => setCfg({ ...cfg, multicastGroup: e.target.value.trim() })} />
-        </label>
-        {(cfg.multicastGroup || isMulticast(cfg.remoteHost)) && (
-          <>
-            <label data-tip={tip(lang, "multicastIf")}>
-              {t("multicastIf")}
-              <input value={cfg.multicastIf} disabled={running} list="udp-ifaces-mc" onChange={(e) => setCfg({ ...cfg, multicastIf: e.target.value.trim() })} />
-              <IfaceOptions id="udp-ifaces-mc" lang={lang} list={ifaces.list} />
-            </label>
-            {!running && ifaceProblem(lang, cfg.multicastIf, ifaces.list) && <div className="interlock">{ifaceProblem(lang, cfg.multicastIf, ifaces.list)}</div>}
-            <div className="grid2">
-              <label data-tip={tip(lang, "multicastTtl")}>
-                {t("multicastTtl")}
-                <NumInput min={1} max={255} value={cfg.multicastTtl ?? 1} disabled={running} onValue={(n) => setCfg({ ...cfg, multicastTtl: n })} />
+        <details className="adv panel" open={advConnOpen} onToggle={(e) => setAdvConnOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "udpAdvConn")}>
+            <span className="sum-title">{t("advConn")}</span>
+            {!advConnOpen && <span className="sum-note">{advConnSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "broadcast")} className="inline">
+            <input type="checkbox" checked={cfg.broadcast} disabled={running} onChange={(e) => setCfg({ ...cfg, broadcast: e.target.checked })} /> {t("broadcast")}
+          </label>
+          <label data-tip={tip(lang, "multicast")}>
+            {t("multicast")}
+            <input value={cfg.multicastGroup} disabled={running} placeholder="—" onChange={(e) => setCfg({ ...cfg, multicastGroup: e.target.value.trim() })} />
+          </label>
+          {(cfg.multicastGroup || isMulticast(cfg.remoteHost)) && (
+            <>
+              <label data-tip={tip(lang, "multicastIf")}>
+                {t("multicastIf")}
+                <input value={cfg.multicastIf} disabled={running} list="udp-ifaces-mc" onChange={(e) => setCfg({ ...cfg, multicastIf: e.target.value.trim() })} />
+                <IfaceOptions id="udp-ifaces-mc" lang={lang} list={ifaces.list} />
               </label>
-              <label data-tip={tip(lang, "multicastLoop")} className="inline mc-loop">
-                <input type="checkbox" checked={cfg.multicastLoop ?? true} disabled={running} onChange={(e) => setCfg({ ...cfg, multicastLoop: e.target.checked })} /> {t("multicastLoop")}
-              </label>
-            </div>
-          </>
-        )}
-        <label data-tip={tip(lang, "echo")} className="inline">
-          <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
-        </label>
+              {!running && ifaceProblem(lang, cfg.multicastIf, ifaces.list) && <div className="interlock">{ifaceProblem(lang, cfg.multicastIf, ifaces.list)}</div>}
+              <div className="grid2">
+                <label data-tip={tip(lang, "multicastTtl")}>
+                  {t("multicastTtl")}
+                  <NumInput min={1} max={255} value={cfg.multicastTtl ?? 1} disabled={running} onValue={(n) => setCfg({ ...cfg, multicastTtl: n })} />
+                </label>
+                <label data-tip={tip(lang, "multicastLoop")} className="inline mc-loop">
+                  <input type="checkbox" checked={cfg.multicastLoop ?? true} disabled={running} onChange={(e) => setCfg({ ...cfg, multicastLoop: e.target.checked })} /> {t("multicastLoop")}
+                </label>
+              </div>
+            </>
+          )}
+        </details>
         <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
           {running ? t("stop") : t("start")}
         </button>
@@ -618,22 +644,31 @@ export default function App() {
         )}
 
         <hr />
-        <label data-tip={tip(lang, "rxCheck")}>
-          {t("rxCheck")}
-          <ChecksumPicker
-            lang={lang}
-            kind={rxCheck}
-            ck={rxCk}
-            rx
-            noneLabel={t("none")}
-            ariaLabel={t("rxCheck")}
-            onChange={(k, c) => {
-              setRxCheck(k);
-              setRxCk(c);
-            }}
-          />
-        </label>
-        {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+        <details className="adv panel" open={rxOpen} onToggle={(e) => setRxOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "udpRx")}>
+            <span className="sum-title">{t("rxSettings")}</span>
+            {!rxOpen && <span className="sum-note">{rxSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "rxCheck")}>
+            {t("rxCheck")}
+            <ChecksumPicker
+              lang={lang}
+              kind={rxCheck}
+              ck={rxCk}
+              rx
+              noneLabel={t("none")}
+              ariaLabel={t("rxCheck")}
+              onChange={(k, c) => {
+                setRxCheck(k);
+                setRxCk(c);
+              }}
+            />
+          </label>
+          {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+          <label data-tip={tip(lang, "echo")} className="inline">
+            <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
+          </label>
+        </details>
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -821,6 +856,11 @@ export default function App() {
             <span className={previewErr ? "preview err" : "preview"}>
               {t("willSend")}: {previewErr ?? (previewBytes ? `${hex(previewBytes)} (${previewBytes.length})` : "")}
             </span>
+            {hexTypo && (
+              <button className="btn small as-ascii" data-tip={tip(lang, "asAscii")} onClick={asAscii}>
+                {t(sendBlocked ? "toAscii" : "sendAsAscii")}
+              </button>
+            )}
             <span className="grow" />
             <label data-tip={withKey(tip(lang, "repeat"), KEYS.stopRepeat)} className="inline">
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}

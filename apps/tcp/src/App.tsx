@@ -40,7 +40,7 @@ import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
-import { checksumDesc, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
+import { checksumDesc, checksumLabel, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
@@ -56,6 +56,7 @@ import { dict, type Key, type Lang } from "./i18n";
 import { ar } from "@shared/autoReplyText";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
+const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 import "./App.css";
 
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
@@ -121,6 +122,14 @@ export default function App() {
   // 듣는 방식(서버·중계)인지, 중계인지 — 상대 목록·받는 쪽 고르기·묶을 주소에 쓴다
   const relay = cfg.mode === "relay";
   const listening = cfg.mode !== "client";
+  // 왼쪽 «고급 연결»(Nagle·재접속) — 대부분 기본값이라 접는다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작, 열림 상태는 기억
+  const advConnChanged = !cfg.noDelay || (cfg.mode === "client" && (!cfg.autoReconnect || cfg.reconnectMs !== 2000));
+  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
+  // «받기 설정»(프레임 구분·수신 체크섬·에코) — 기본(조용한 시간 20ms·검사 없음·에코 끔)이 아니면 펼친 채 시작
+  const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null || (cfg.mode === "server" && cfg.echo);
+  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
   // 끝 문자 칸 해석 — 틀리면 bytes 가 비고 error 에 이유(화면에 빨갛게)
   const term = parseTerminator(terminatorText, lang);
   const effFraming: TcpFrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
@@ -283,7 +292,8 @@ export default function App() {
   }
 
   // ---- 보기
-  const [view, setView] = useState<ViewMode>(() => load("view", "hex"));
+  // 첫 실행(저장값 없음)은 HEX·ASCII 둘 다 — 보내기 기본이 ASCII 라 받은 글을 바로 읽게. 저장값이 있으면 그것
+  const [view, setView] = useState<ViewMode>(() => load("view", "both"));
   useEffect(() => {
     store("view", view);
   }, [view]);
@@ -561,6 +571,25 @@ export default function App() {
       !!logPath,
     ),
   );
+  // 접힌 제목에 보일 지금 값
+  const advConnSummary = [t(cfg.noDelay ? "nagleOff" : "nagleOn"), cfg.mode === "client" ? (cfg.autoReconnect ? fill(t("reconnShort"), { n: cfg.reconnectMs / 1000 }) : t("noReconn")) : ""]
+    .filter(Boolean)
+    .join(" · ");
+  const rxSummary = [
+    framing.kind === "gap"
+      ? `${t("fmGap")} ${framing.gapMs}ms`
+      : framing.kind === "terminator"
+        ? `${t("fmTerminator")} ${term.bytes.length ? hex(term.bytes) : "—"}`
+        : framing.kind === "fixed"
+          ? `${t("fmFixed")} ${framing.len}`
+          : t("fmModbusTcp"),
+    rxCheck ? checksumLabel(rxCheck, lang) : t("rxNoCheck"),
+    server && cfg.echo ? t("echoShort") : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  // 실행 중 버튼 — 클라이언트는 «끊기», 서버·중계는 «듣기 멈춤»
+  const stopLabel = t(listening ? "stopListen" : "stopClient");
   const summaryLine = listening
     ? `${t(relay ? "titleRelay" : "titleServer")} ${cfg.host}:${running ? localPort : cfg.port}${relay ? ` → ${relayTo.host}:${relayTo.port}` : ""} · ${statusText}${running ? ` · ${t("titlePeers").replace("{n}", String(peers.length))}` : ""}`
     : `${cfg.host}:${cfg.port} · ${statusText}`;
@@ -637,29 +666,29 @@ export default function App() {
             {!running && <div className="hint">{t("relayHint")}</div>}
           </>
         )}
-        <label data-tip={tip(lang, "noDelay")} className="inline">
-          <input type="checkbox" checked={cfg.noDelay} disabled={running} onChange={(e) => setCfg({ ...cfg, noDelay: e.target.checked })} /> {t("noDelay")}
-        </label>
-        {relay ? null : server ? (
-          <label data-tip={tip(lang, "echo")} className="inline">
-            <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
+        <details className="adv panel" open={advConnOpen} onToggle={(e) => setAdvConnOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "tcpAdvConn")}>
+            <span className="sum-title">{t("advConn")}</span>
+            {!advConnOpen && <span className="sum-note">{advConnSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "noDelay")} className="inline">
+            <input type="checkbox" checked={cfg.noDelay} disabled={running} onChange={(e) => setCfg({ ...cfg, noDelay: e.target.checked })} /> {t("noDelay")}
           </label>
-        ) : (
-          <>
+          {cfg.mode === "client" && (
             <label data-tip={tip(lang, "autoReconnect")} className="inline">
               <input type="checkbox" checked={cfg.autoReconnect} disabled={running} onChange={(e) => setCfg({ ...cfg, autoReconnect: e.target.checked })} />{" "}
               {t("autoReconnect")}
             </label>
-            {cfg.autoReconnect && (
-              <label data-tip={tip(lang, "reconnectMs")}>
-                {t("reconnectMs")}
-                <NumInput min={200} max={3600000} value={cfg.reconnectMs} disabled={running} onValue={(n) => setCfg({ ...cfg, reconnectMs: n })} />
-              </label>
-            )}
-          </>
-        )}
-        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
-          {running ? t("stop") : server ? t("listen") : t("connect")}
+          )}
+          {cfg.mode === "client" && cfg.autoReconnect && (
+            <label data-tip={tip(lang, "reconnectMs")}>
+              {t("reconnectMs")}
+              <NumInput min={200} max={3600000} value={cfg.reconnectMs} disabled={running} onValue={(n) => setCfg({ ...cfg, reconnectMs: n })} />
+            </label>
+          )}
+        </details>
+        <button data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
+          {running ? stopLabel : server ? t("listen") : t("connect")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         <div className={`status s-${status === "listening" ? "connected" : status}`}>
@@ -678,7 +707,9 @@ export default function App() {
             {peers.length === 0 && <div className="hint">{t("noPeers")}</div>}
             {peers.map((p) => (
               <div key={p.id} className="peer">
-                <span className="mono">{p.addr}</span>
+                <span className="mono" title={p.addr}>
+                  {p.addr}
+                </span>
                 <button data-tip={tip(lang, "kick")} className="btn small ghost" onClick={() => api.kick(p.id).catch((e) => setError(String(e)))}>
                   {t("kick")}
                 </button>
@@ -688,71 +719,82 @@ export default function App() {
         )}
 
         <hr />
-        <label data-tip={tip(lang, "framing")}>
-          {t("framing")}
-          <select
-            value={framing.kind}
-            onChange={(e) => {
-              const k = e.target.value;
-              setFraming(
-                k === "terminator"
-                  ? { kind: "terminator", bytes: [], gapMs: 100 }
-                  : k === "fixed"
-                    ? { kind: "fixed", len: 8, gapMs: 100 }
-                    : k === "modbus-tcp"
-                      ? { kind: "modbus-tcp", gapMs: 1000 }
-                      : { kind: "gap", gapMs: 20 },
-              );
-            }}
-          >
-            <option value="gap">{t("fmGap")}</option>
-            <option value="terminator">{t("fmTerminator")}</option>
-            <option value="fixed">{t("fmFixed")}</option>
-            <option value="modbus-tcp">{t("fmModbusTcp")}</option>
-          </select>
-        </label>
-        {framing.kind === "modbus-tcp" && <div className="hint">{t("fmMbapHint")}</div>}
-        {framing.kind === "terminator" && (
-          <label data-tip={tip(lang, "terminatorHex")}>
-            {t("terminatorHex")}
-            <input className={term.error ? "bad" : undefined} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
-            {term.error ? (
-              <span className="interlock">{term.error}</span>
-            ) : term.bytes.length === 0 ? (
-              <span className="interlock">{t("ilNoTerm")}</span>
-            ) : (
-              <span className="hint mono">{t("termParsed").replace("{a}", hex(term.bytes)).replace("{n}", String(term.bytes.length))}</span>
-            )}
+        <details className="adv panel" open={rxOpen} onToggle={(e) => setRxOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "tcpRx")}>
+            <span className="sum-title">{t("rxSettings")}</span>
+            {!rxOpen && <span className="sum-note">{rxSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "framing")}>
+            {t("framing")}
+            <select
+              value={framing.kind}
+              onChange={(e) => {
+                const k = e.target.value;
+                setFraming(
+                  k === "terminator"
+                    ? { kind: "terminator", bytes: [], gapMs: 100 }
+                    : k === "fixed"
+                      ? { kind: "fixed", len: 8, gapMs: 100 }
+                      : k === "modbus-tcp"
+                        ? { kind: "modbus-tcp", gapMs: 1000 }
+                        : { kind: "gap", gapMs: 20 },
+                );
+              }}
+            >
+              <option value="gap">{t("fmGap")}</option>
+              <option value="terminator">{t("fmTerminator")}</option>
+              <option value="fixed">{t("fmFixed")}</option>
+              <option value="modbus-tcp">{t("fmModbusTcp")}</option>
+            </select>
           </label>
-        )}
-        {framing.kind === "fixed" && (
-          <label data-tip={tip(lang, "length")}>
-            {t("length")}
-            <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
+          {framing.kind === "modbus-tcp" && <div className="hint">{t("fmMbapHint")}</div>}
+          {framing.kind === "terminator" && (
+            <label data-tip={tip(lang, "terminatorHex")}>
+              {t("terminatorHex")}
+              <input className={term.error ? "bad" : undefined} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+              {term.error ? (
+                <span className="interlock">{term.error}</span>
+              ) : term.bytes.length === 0 ? (
+                <span className="interlock">{t("ilNoTerm")}</span>
+              ) : (
+                <span className="hint mono">{t("termParsed").replace("{a}", hex(term.bytes)).replace("{n}", String(term.bytes.length))}</span>
+              )}
+            </label>
+          )}
+          {framing.kind === "fixed" && (
+            <label data-tip={tip(lang, "length")}>
+              {t("length")}
+              <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
+            </label>
+          )}
+          {framing.kind !== "modbus-rtu" && (
+            <label data-tip={tip(lang, "gapMs")}>
+              {t("gapMs")}
+              <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
+            </label>
+          )}
+          <label data-tip={tip(lang, "rxCheck")}>
+            {t("rxCheck")}
+            <ChecksumPicker
+              lang={lang}
+              kind={rxCheck}
+              ck={rxCk}
+              rx
+              noneLabel={t("none")}
+              ariaLabel={t("rxCheck")}
+              onChange={(k, c) => {
+                setRxCheck(k);
+                setRxCk(c);
+              }}
+            />
           </label>
-        )}
-        {framing.kind !== "modbus-rtu" && (
-          <label data-tip={tip(lang, "gapMs")}>
-            {t("gapMs")}
-            <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
-          </label>
-        )}
-        <label data-tip={tip(lang, "rxCheck")}>
-          {t("rxCheck")}
-          <ChecksumPicker
-            lang={lang}
-            kind={rxCheck}
-            ck={rxCk}
-            rx
-            noneLabel={t("none")}
-            ariaLabel={t("rxCheck")}
-            onChange={(k, c) => {
-              setRxCheck(k);
-              setRxCk(c);
-            }}
-          />
-        </label>
-        {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+          {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+          {server && (
+            <label data-tip={tip(lang, "echo")} className="inline">
+              <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
+            </label>
+          )}
+        </details>
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -760,8 +802,8 @@ export default function App() {
 
       <main className="main">
         <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
-          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
-            {running ? t("stop") : server ? t("listen") : t("connect")}
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)}>
+            {running ? stopLabel : server ? t("listen") : t("connect")}
           </button>
         </NarrowBar>
         <div className="toolbar">

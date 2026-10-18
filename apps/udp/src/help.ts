@@ -25,8 +25,9 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 받는 쪽·보낼 곳·옵션, «시작»/«멈춤», 상태, «보내온 상대» 목록, «수신 체크섬 검사», «파일로 계속 저장».",
-        "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다»), «자동 스크롤», 누적 바이트 수, «화면 내용 저장», «지우기».",
+        "- 왼쪽: 받는 쪽·보낼 곳, «고급 연결» 접기(브로드캐스트·멀티캐스트), «시작»/«멈춤», 상태, «보내온 상대» 목록, «받기 설정» 접기(수신 체크섬 검사·에코), «파일로 계속 저장».",
+        "- «고급 연결»·«받기 설정» 은 평소 접혀 있고 제목 옆에 지금 값(«브로드캐스트 · 239.0.0.1», «체크섬 검사 없음»)이 보입니다. 하나라도 켜 두었으면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
+        "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다» — 처음에는 «둘 다»), «자동 스크롤», 누적 바이트 수, «화면 내용 저장», «지우기».",
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·상대 주소·내용. UDP 는 데이터그램 하나가 곧 한 줄입니다(프레임 구분이 필요 없음).",
         "- 가운데 아래: 보내기 줄(대상, HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
@@ -56,14 +57,15 @@ export const help: HelpDoc = {
         "- «멀티캐스트 그룹»: 224.0.0.0~239.255.255.255 주소를 넣으면 시작할 때 그 그룹에 가입해 받습니다. 범위 밖이면 오류가 나옵니다.",
         "- «멀티캐스트 랜카드»: 가입할 랜카드의 IP. 0.0.0.0 이면 운영체제 기본.",
         "- «다시 가입»: 무선 랜이나 랜카드가 바뀌어 멀티캐스트 수신이 끊기면 눌러 보세요.",
-        "- «받은 것 보낸 쪽으로 돌려주기 (에코)»: 받은 데이터그램을 보낸 주소로 그대로 돌려줍니다. 실행 중에도 켜고 끌 수 있습니다.",
+        "- «받은 것 보낸 쪽으로 돌려주기 (에코)»(«받기 설정» 안): 받은 데이터그램을 보낸 주소로 그대로 돌려줍니다. 실행 중에도 켜고 끌 수 있습니다.",
         "- 에코는 1초에 200번을 넘으면 저절로 꺼집니다(상대도 에코하면 끝없이 주고받기 때문). «ECHO OFF …» 줄과 오류가 나옵니다. 자기 자신에게 온 것(브로드캐스트 되돌림)은 에코하지 않습니다.",
       ],
     },
     {
       title: "보내기",
       body: [
-        "입력칸 왼쪽에서 HEX 또는 ASCII 를 고릅니다. 입력하는 동안 «보낼 바이트» 에 실제로 나갈 바이트가 보이고, 틀리면 이유가 나옵니다.",
+        "입력칸 왼쪽에서 HEX 또는 ASCII 를 고릅니다(처음에는 ASCII). 입력하는 동안 «보낼 바이트» 에 실제로 나갈 바이트가 보이고, 틀리면 이유가 나옵니다.",
+        "- HEX 칸에 «hello» 처럼 글자를 쳐서 오류가 나면 옆에 [ASCII 로 보내기] 가 나옵니다. 누르면 친 글 그대로 ASCII 로 바꾸고 바로 보냅니다(아직 시작 전이거나 보낼 곳이 없으면 [ASCII 로 바꾸기] — 바꾸기만).",
         "- HEX: «01 03 0A», «01030A», «0x01,0x03,0x0A» 모두 같은 3바이트입니다. 두 자리씩이어야 합니다.",
         "- ASCII: 글자를 그대로 보냅니다. «\\r»(CR), «\\n»(LF), «\\t», «\\0», «\\\\», «\\xNN» 을 쓸 수 있습니다.",
         "- «체크섬»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8, SUM16, CRC-32, CRC (사용자 정의) 중 하나를 붙입니다. 옆 ⚙ 로 계산 범위·자리·바이트 순서를 바꿉니다.",
@@ -172,8 +174,9 @@ export const help: HelpDoc = {
     {
       title: "Layout",
       body: [
-        "- Left: local and destination settings, options, «Start»/«Stop», status, «Senders», «Verify RX checksum», «Log to file».",
-        "- Toolbar: «View» (HEX, ASCII, «Both»), «Auto-scroll», byte counters, «Save view», «Clear».",
+        "- Left: local and destination settings, the «Advanced connection» section (broadcast, multicast), «Start»/«Stop», status, «Senders», the «Receive settings» section (RX checksum check, echo), «Log to file».",
+        "- «Advanced connection» and «Receive settings» are collapsed with the current values next to the title («broadcast · 239.0.0.1», «No checksum check»). They start expanded when anything is set, and their open state is remembered.",
+        "- Toolbar: «View» (HEX, ASCII, «Both» — «Both» at first), «Auto-scroll», byte counters, «Save view», «Clear».",
         "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
         "- Log: time, direction (RX ◀ / TX ▶ / EV), peer address, data. One datagram is one line (no framing needed).",
         "- Bottom: send row (target, HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
@@ -203,14 +206,15 @@ export const help: HelpDoc = {
         "- «Multicast group»: an address in 224.0.0.0–239.255.255.255 is joined at start. Out-of-range addresses are rejected.",
         "- «Multicast NIC»: IP of the card to join on. 0.0.0.0 uses the OS default.",
         "- «Rejoin»: try it if multicast reception stops on Wi-Fi or after a network change.",
-        "- «Echo back to sender»: returns each datagram to its sender. Can be toggled while running.",
+        "- «Echo back to sender» (in «Receive settings»): returns each datagram to its sender. Can be toggled while running.",
         "- Echo turns itself off above 200 per second (two echoing peers would loop forever); an «ECHO OFF …» line and an error appear. Your own looped-back broadcasts are not echoed.",
       ],
     },
     {
       title: "Sending",
       body: [
-        "Choose HEX or ASCII left of the input. «Bytes to send» shows the exact bytes while you type, or why the input is invalid.",
+        "Choose HEX or ASCII left of the input (ASCII at first). «Bytes to send» shows the exact bytes while you type, or why the input is invalid.",
+        "- If letters such as «hello» are typed in HEX mode, [Send as ASCII] appears next to the error. It switches to ASCII keeping the text and sends it right away ([Switch to ASCII] — switch only — before starting or without a destination).",
         "- HEX: «01 03 0A», «01030A» and «0x01,0x03,0x0A» are the same 3 bytes. Use two digits per byte.",
         "- ASCII: sent as typed. «\\r» (CR), «\\n» (LF), «\\t», «\\0», «\\\\» and «\\xNN» are supported.",
         "- «Checksum»: CRC16 Modbus, CRC16 CCITT, CRC16 XMODEM, CRC8, LRC, BCC (XOR), SUM8, SUM16, CRC-32 or CRC (custom). ⚙ next to it changes the range, position and byte order.",
