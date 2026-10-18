@@ -1,7 +1,7 @@
 //! PortDock Simulator — 규칙(받으면 → 답하기)으로 아무 장비나 흉내. 시리얼·TCP·UDP 공통.
 
 use portdock_core::tr;
-use portdock_core::autoreply::{self, MatchOptions, Rule, RuleError, RuleSpec};
+use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
 use portdock_core::checksum::ChecksumKind;
 use portdock_core::codec::{SendSpec, build};
 use portdock_core::event::{EventSink, SessionEvent};
@@ -11,9 +11,8 @@ use portdock_core::registry::{Opening, Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session};
 use portdock_core::tcp::{TcpConfig, TcpSession};
 use portdock_core::udp::{UdpConfig, UdpSession};
-use serde::Serialize;
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::State;
 use tauri::ipc::Channel;
 
@@ -26,10 +25,8 @@ enum Sess {
 
 #[derive(Default)]
 struct App {
-    rules: Arc<Mutex<Vec<Rule>>>,
-    hits: Arc<Mutex<BTreeMap<String, u64>>>,
-    /// 맞춰 보기 옵션 + 지금 프레임 구분의 끝 문자(시작·set_framing 때 갱신)
-    opts: Arc<Mutex<MatchOptions>>,
+    /// 규칙·응답 횟수·맞춰 보기 옵션(끝 문자는 시작·set_framing 때 갱신) — Simulator 는 늘 켜짐
+    ar: AutoReply,
     /// 보관함 이름 "main". 시작 연타는 «여는 중» 으로 막히고, 스스로 닫히면 알아서 빠진다
     sess: Arc<Registry<Sess>>,
 }
@@ -52,8 +49,8 @@ fn list_ports() -> Vec<ports::PortInfo> {
 }
 
 fn responder(app: &App, framing: Option<&FrameMode>) -> portdock_core::serial::Responder {
-    app.opts.lock().unwrap().terminator = framing.map(|f| f.terminator().to_vec()).unwrap_or_default();
-    autoreply::responder_with(app.rules.clone(), app.hits.clone(), app.opts.clone())
+    app.ar.set_terminator(framing.map(|f| f.terminator()).unwrap_or_default());
+    app.ar.responder()
 }
 
 #[tauri::command(async)]
@@ -100,7 +97,7 @@ fn stop(app: State<App>) {
 fn set_framing(app: State<App>, framing: FrameMode) {
     let udp = app.sess.with(MAIN, |s| matches!(s, Sess::Udp(_))).unwrap_or(false);
     if !udp {
-        app.opts.lock().unwrap().terminator = framing.terminator().to_vec();
+        app.ar.set_terminator(framing.terminator());
     }
     let _ = app.sess.with(MAIN, |s| match s {
         Sess::Serial(s) => s.set_framing(framing, None::<ChecksumKind>),
@@ -109,41 +106,35 @@ fn set_framing(app: State<App>, framing: FrameMode) {
     });
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct RulesResult {
-    /// 지금 쓰이는 규칙 수
-    active: usize,
-    /// 건너뛴 규칙들 — index 는 넘겨받은 목록(꺼진 규칙 포함)의 순서(0부터)
-    errors: Vec<RuleError>,
-}
-
 /// 규칙 교체(꺼진 규칙은 빠짐). 규칙마다 따로 검사해 잘못된 것만 빼고 나머지는 바로 적용한다(실행 중에도).
 #[tauri::command]
 fn set_rules(app: State<App>, rules: Vec<RuleSpec>) -> RulesResult {
-    let (compiled, errors) = autoreply::compile_each(&rules);
-    let active = compiled.len();
-    *app.rules.lock().unwrap() = compiled;
-    RulesResult { active, errors }
+    app.ar.set_rules(&rules)
+}
+
+/// 규칙 하나를 예시 요청(규칙의 패턴 방식으로 적은 것)으로 미리 본다 — 맞는지·응답 바이트(템플릿 채움)
+#[tauri::command]
+fn preview_rule(app: State<App>, rule: RuleSpec, sample: String) -> Result<RulePreview, String> {
+    let opts = app.ar.opts.lock().unwrap().clone();
+    autoreply::preview(&rule, &sample, &opts)
 }
 
 /// 맞춰 보기 옵션. strip_terminator: 끝 문자(프레임 구분 설정)와 끝 CR·LF 를 떼고 맞춰 본다.
 /// log_no_match: 어느 규칙에도 안 맞으면 사건 줄 «NO MATCH». 기본은 둘 다 켬. 실행 중에도 바로 적용
 #[tauri::command]
 fn set_match_options(app: State<App>, strip_terminator: bool, log_no_match: bool) {
-    let mut o = app.opts.lock().unwrap();
-    o.strip_terminator = strip_terminator;
-    o.log_no_match = log_no_match;
+    app.ar.set_match_options(strip_terminator, log_no_match);
 }
 
 #[tauri::command]
 fn get_hits(app: State<App>) -> BTreeMap<String, u64> {
-    app.hits.lock().unwrap().clone()
+    app.ar.hits()
 }
 
+/// 응답 횟수(와 템플릿 {counter}·«차례로» 응답)를 처음부터
 #[tauri::command]
 fn reset_hits(app: State<App>) {
-    app.hits.lock().unwrap().clear();
+    app.ar.reset_hits();
 }
 
 /// 장비가 먼저 보내는 것(상태 보고·하트비트 등)
@@ -261,6 +252,7 @@ pub fn run() {
             stop,
             set_framing,
             set_rules,
+            preview_rule,
             set_match_options,
             get_hits,
             reset_hits,

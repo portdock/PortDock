@@ -19,7 +19,7 @@ export interface MbFunc {
   max: number;
 }
 
-// 한국어 이름은 apps/serial/src/mbwords.ts 의 풀이와 같다
+// 한국어 이름은 shared/mbwords.ts 의 풀이와 같다
 export const MB_FUNCS: MbFunc[] = [
   { code: 0x01, ko: "코일 읽기", en: "Read Coils", write: false, bit: true, prefix: "0", max: 2000 },
   { code: 0x02, ko: "입력 접점 읽기", en: "Read Discrete Inputs", write: false, bit: true, prefix: "1", max: 2000 },

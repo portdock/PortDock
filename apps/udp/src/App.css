@@ -605,3 +605,14 @@ input.bad {
   max-width: 210px;
   text-overflow: ellipsis;
 }
+
+/* 멀티캐스트 «이 PC 도 받기» — TTL 칸 옆에서 아래 줄에 맞춘다(긴 문구는 줄바꿈) */
+label.inline.mc-loop {
+  align-self: end;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+label.inline.mc-loop input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 2px;
+}

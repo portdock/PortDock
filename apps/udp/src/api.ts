@@ -13,6 +13,10 @@ export interface UdpConfig {
   broadcast: boolean;
   multicastGroup: string;
   multicastIf: string;
+  /** 멀티캐스트로 보낼 때 TTL(1 = 같은 망만) */
+  multicastTtl: number;
+  /** 보낸 멀티캐스트를 이 PC(같은 그룹 가입한 프로그램)도 받는지 */
+  multicastLoop: boolean;
   echo: boolean;
 }
 

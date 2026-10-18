@@ -8,11 +8,12 @@ import {
   hex,
   type ChecksumKind,
   type Frame,
-  type FrameMode,
   type Peer,
+  type RelayTarget,
   type SendSpec,
   type SessionEvent,
   type TcpConfig,
+  type TcpFrameMode,
   type TextMode,
 } from "./api";
 import { tip } from "@shared/tips";
@@ -46,7 +47,15 @@ import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@sh
 import { DeltaSelect, LiveStats } from "@shared/StatsBar";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace } from "@shared/FileSend";
+import { AutoReplySection } from "@shared/AutoReplySection";
+import { IfaceList, IfaceOptions, ifaceProblem, useInterfaces } from "@shared/NetIfaces";
+import { ModbusBuilder } from "@shared/ModbusBuilder";
+import { MbapDetail, type MbapInfo } from "@shared/MbapDetail";
+import { isMbap } from "@shared/mbap";
 import { dict, type Key, type Lang } from "./i18n";
+import { ar } from "@shared/autoReplyText";
+
+const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 import "./App.css";
 
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
@@ -84,7 +93,12 @@ export default function App() {
   const [cfg, setCfg] = useState<TcpConfig>(() =>
     load("cfg", { mode: "client", host: "192.168.0.10", port: 502, noDelay: true, autoReconnect: true, reconnectMs: 2000, echo: false }),
   );
-  const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
+  const [framing, setFraming] = useState<TcpFrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
+  // 중계(모니터)가 이어 줄 장비(B)
+  const [relayTo, setRelayTo] = useState<RelayTarget>(() => load("relayTo", { host: "192.168.0.10", port: 502 }));
+  useEffect(() => store("relayTo", relayTo), [relayTo]);
+  // 이 PC 의 랜카드 주소(서버·중계의 묶을 주소 고르기)
+  const ifaces = useInterfaces();
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
   const [rxCk, setRxCk] = useState<CkOpts | null>(() => load("rxCk", null));
@@ -104,9 +118,12 @@ export default function App() {
   useEffect(() => {
     store("rxCheck", rxCheck);
   }, [rxCheck]);
+  // 듣는 방식(서버·중계)인지, 중계인지 — 상대 목록·받는 쪽 고르기·묶을 주소에 쓴다
+  const relay = cfg.mode === "relay";
+  const listening = cfg.mode !== "client";
   // 끝 문자 칸 해석 — 틀리면 bytes 가 비고 error 에 이유(화면에 빨갛게)
   const term = parseTerminator(terminatorText, lang);
-  const effFraming: FrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
+  const effFraming: TcpFrameMode = framing.kind === "terminator" ? { ...framing, bytes: term.bytes } : framing;
 
   // ---- 세션
   const [running, setRunning] = useState(false);
@@ -224,7 +241,7 @@ export default function App() {
     setStarting(true);
     setError(null);
     try {
-      const l = await api.start(cfg, effFraming, rxWire, onEvent);
+      const l = await api.start(cfg, effFraming, rxWire, cfg.mode === "relay" ? { host: relayTo.host.trim(), port: relayTo.port } : null, onEvent);
       setLocal(l);
       setRunning(true);
       if (settings.autoLog && settings.logFolder) {
@@ -360,6 +377,15 @@ export default function App() {
   };
   // 문자 간 지연(ms) — 모든 송신에. TCP 는 한 바이트씩 따로 보낸다
   const [charDelay, setCharDelay] = useState(() => load("charDelay", 0));
+  // 중계: 끼워 넣을 쪽(A = 접속해 온 쪽, B = 장비)
+  const [side, setSide] = useState<"a" | "b">(() => load("relaySide", "a"));
+  useEffect(() => store("relaySide", side), [side]);
+  // Modbus TCP: 보낼 때마다 MBAP 트랜잭션 ID 를 1씩
+  const [mbapTid, setMbapTid] = useState(() => load("mbapTid", true));
+  useEffect(() => store("mbapTid", mbapTid), [mbapTid]);
+  // MBAP 트랜잭션 ID 자동 증가 — 프레임 구분이 Modbus TCP 일 때만
+  const mbapAuto = framing.kind === "modbus-tcp" && mbapTid;
+  const [showMb, setShowMb] = useState(false);
   useEffect(() => {
     store("charDelay", charDelay);
   }, [charDelay]);
@@ -393,8 +419,9 @@ export default function App() {
   // 같은 IP 로 다시 붙은 상대 — 저절로 바꾸지 않고 고르게 한다
   const targetBack = targetGone && target ? peers.find((p) => p.addr.replace(/:\d+$/, "") === target.addr.replace(/:\d+$/, "")) : undefined;
   const canSend = running && peers.length > 0 && sendable && !targetGone;
-  // 클라이언트는 주소와 포트(1~65535)가 있어야 접속할 수 있다
-  const startable = cfg.mode === "server" || (!!cfg.host.trim() && cfg.port > 0);
+  // 클라이언트는 주소와 포트(1~65535)가 있어야 접속할 수 있다 · 중계는 이어 줄 장비(B)도
+  const relayOk = !!relayTo.host.trim() && relayTo.port > 0;
+  const startable = cfg.mode === "server" || (relay ? relayOk : !!cfg.host.trim() && cfg.port > 0);
   // 앞 송신이 끝나기 전엔 반복의 이번 차례를 건너뛴다
   const inflight = useRef(false);
   /** 보내기 — 성공하면 true */
@@ -403,7 +430,7 @@ export default function App() {
       if (inflight.current || targetGone) return false;
       inflight.current = true;
       try {
-        const r = await api.send(target?.id ?? null, s, settings.encoding, charDelay);
+        const r = await api.send(target?.id ?? null, s, settings.encoding, charDelay, relay ? side : "a", mbapAuto);
         setError(null);
         // 일부 상대에게만 나갔으면 알린다(예: 3개 중 2개)
         setSendNote(r && typeof r === "object" && r.sent < r.total ? t("partialSend").replace("{s}", String(r.sent)).replace("{t}", String(r.total)) : null);
@@ -417,7 +444,7 @@ export default function App() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [target, targetGone, t, settings.encoding, charDelay],
+    [target, targetGone, t, settings.encoding, charDelay, relay, side, mbapAuto],
   );
   // 문자 간 지연이면 한 번 보내는 데 (바이트 수 × 지연)이 걸린다 — 그보다 짧은 간격은 건너뛰기만 한다
   const effRepeat = Math.max(10, repeatMs, previewBytes ? charDelay * previewBytes.length + 10 : 10);
@@ -453,7 +480,7 @@ export default function App() {
     const r = await api.sendFile(target?.id ?? null, path, pace, (p) => {
       // 시작 응답보다 진행이 먼저 올 수 있다
       setFileJob((j) => (j && j.id === p.id ? { ...j, ...p } : { ...p, name }));
-    });
+    }, relay ? side : "a");
     first = { id: r.id, total: r.total, sent: 0, done: false, cancelled: false, name };
     setFileJob((j) => (j && j.id === r.id ? j : first));
   }
@@ -474,11 +501,33 @@ export default function App() {
   }
   /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
   const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "", ck: null });
+  /** Modbus TCP 요청 — HEX·체크섬 없음·줄 끝 없음(MBAP 에는 CRC 가 없다) */
+  const mbSpec = rawSpec;
   // 명령(▶)·다시 보내기를 못 하는 이유
-  const cmdWhy = !running ? t("whyNotStarted") : peers.length === 0 ? t("whyNoPeers") : targetGone ? t("whyTargetGone") : undefined;
+  const cmdWhy = !running ? t("whyNotStarted") : peers.length === 0 ? t(relay ? "whyNoPairs" : "whyNoPeers") : targetGone ? t("whyTargetGone") : undefined;
 
   const selFrame = selected != null ? frameOf(selected) : undefined;
   const server = cfg.mode === "server";
+  // 상세 칸 Modbus TCP 풀이 — 프레임 구분이 Modbus TCP 이거나 MBAP 모양(프로토콜 0·길이 맞음)일 때
+  const [mbap, setMbap] = useState<MbapInfo | null>(null);
+  const selBytes = selFrame && selFrame.dir !== "ev" ? selFrame.bytes : null;
+  useEffect(() => {
+    const b = selBytes;
+    if (!b || !(framing.kind === "modbus-tcp" || isMbap(b))) {
+      setMbap(null);
+      return;
+    }
+    let stale = false;
+    api
+      .decodeMbap(b)
+      .then((m) => !stale && setMbap(m))
+      .catch(() => !stale && setMbap(null));
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, framing.kind, selBytes?.length]);
+  const dirLabel = (d: "rx" | "tx") => (relay ? t(d === "rx" ? "dirAB" : "dirBA") : d === "rx" ? "RX ◀" : "TX ▶");
 
   // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
   if (!framesRef.current.length) timeBase.current = null;
@@ -502,11 +551,19 @@ export default function App() {
   useWindowTitle(
     windowTitle(
       "PortDock TCP",
-      !running ? [] : server ? [`${t("titleServer")} :${localPort}`, t("titlePeers").replace("{n}", String(peers.length))] : [`${cfg.host}:${cfg.port}`, statusText],
+      !running
+        ? []
+        : relay
+          ? [`${t("titleRelay")} :${localPort} → ${relayTo.host}:${relayTo.port}`, t("titlePeers").replace("{n}", String(peers.length))]
+          : server
+            ? [`${t("titleServer")} :${localPort}`, t("titlePeers").replace("{n}", String(peers.length))]
+            : [`${cfg.host}:${cfg.port}`, statusText],
       !!logPath,
     ),
   );
-  const summaryLine = server ? `${t("titleServer")} ${cfg.host}:${running ? localPort : cfg.port} · ${statusText}${running ? ` · ${t("titlePeers").replace("{n}", String(peers.length))}` : ""}` : `${cfg.host}:${cfg.port} · ${statusText}`;
+  const summaryLine = listening
+    ? `${t(relay ? "titleRelay" : "titleServer")} ${cfg.host}:${running ? localPort : cfg.port}${relay ? ` → ${relayTo.host}:${relayTo.port}` : ""} · ${statusText}${running ? ` · ${t("titlePeers").replace("{n}", String(peers.length))}` : ""}`
+    : `${cfg.host}:${cfg.port} · ${statusText}`;
 
   return (
     <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
@@ -545,24 +602,45 @@ export default function App() {
           {t("mode")}
           <select value={cfg.mode} disabled={running} onChange={(e) => {
             const mode = e.target.value as TcpConfig["mode"];
-            setCfg({ ...cfg, mode, host: mode === "server" ? "0.0.0.0" : cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host });
+            const wasListening = cfg.mode !== "client";
+            const nowListening = mode !== "client";
+            setCfg({ ...cfg, mode, host: nowListening && !wasListening ? "0.0.0.0" : !nowListening && cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host });
           }}>
             <option value="client">{t("client")}</option>
             <option value="server">{t("server")}</option>
+            <option value="relay">{t("relay")}</option>
           </select>
         </label>
-        <label>
-          {server ? t("bindHost") : t("host")}
-          <input value={cfg.host} disabled={running} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
+        <label data-tip={tip(lang, listening ? "ifaces" : "host")}>
+          {relay ? t("relayListen") : server ? t("bindHost") : t("host")}
+          <input value={cfg.host} disabled={running} list={listening ? "tcp-ifaces" : undefined} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
+          {listening && <IfaceOptions id="tcp-ifaces" lang={lang} list={ifaces.list} />}
         </label>
         <label data-tip={tip(lang, "netPort")}>
           {t("port")}
           <NumInput min={0} max={65535} value={cfg.port} disabled={running} onValue={(n) => setCfg({ ...cfg, port: n })} />
         </label>
+        {listening && !running && ifaceProblem(lang, cfg.host, ifaces.list) && <div className="interlock">{ifaceProblem(lang, cfg.host, ifaces.list)}</div>}
+        {relay && (
+          <>
+            <label data-tip={tip(lang, "relayUpstream")}>{t("relayTo")}</label>
+            <div className="grid2">
+              <label data-tip={tip(lang, "relayUpstream")}>
+                {t("host")}
+                <input value={relayTo.host} disabled={running} onChange={(e) => setRelayTo({ ...relayTo, host: e.target.value.trim() })} />
+              </label>
+              <label data-tip={tip(lang, "netPort")}>
+                {t("port")}
+                <NumInput min={0} max={65535} value={relayTo.port} disabled={running} onValue={(n) => setRelayTo({ ...relayTo, port: n })} />
+              </label>
+            </div>
+            {!running && <div className="hint">{t("relayHint")}</div>}
+          </>
+        )}
         <label data-tip={tip(lang, "noDelay")} className="inline">
           <input type="checkbox" checked={cfg.noDelay} disabled={running} onChange={(e) => setCfg({ ...cfg, noDelay: e.target.checked })} /> {t("noDelay")}
         </label>
-        {server ? (
+        {relay ? null : server ? (
           <label data-tip={tip(lang, "echo")} className="inline">
             <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
           </label>
@@ -588,14 +666,15 @@ export default function App() {
           {t(`status_${status}` as Key)}
           {local && status === "listening" ? ` · ${local}` : statusMsg ? ` · ${statusMsg}` : ""}
         </div>
-        {server && <div className="hint">{t("firewallHint")}</div>}
-        {server && cfg.port === 0 && <div className="interlock">{t("ilPort0")}</div>}
+        {listening && <IfaceList lang={lang} list={ifaces.list} loaded={ifaces.loaded} refresh={ifaces.refresh} disabled={running} onPick={(ip) => setCfg({ ...cfg, host: ip })} />}
+        {listening && !running && <div className="hint">{t("firewallHint")}</div>}
+        {listening && cfg.port === 0 && <div className="interlock">{t("ilPort0")}</div>}
         {/* 접속 버튼이 꺼진 이유 */}
-        {!running && !startable && <div className="interlock">{t("ilClientAddr")}</div>}
+        {!running && !startable && <div className="interlock">{t(relay ? "ilRelayAddr" : "ilClientAddr")}</div>}
 
-        {server && running && (
+        {listening && running && (
           <>
-            <label data-tip={tip(lang, "peers")}>{t("peers")}</label>
+            <label data-tip={tip(lang, "peers")}>{t(relay ? "pairs" : "peers")}</label>
             {peers.length === 0 && <div className="hint">{t("noPeers")}</div>}
             {peers.map((p) => (
               <div key={p.id} className="peer">
@@ -616,15 +695,23 @@ export default function App() {
             onChange={(e) => {
               const k = e.target.value;
               setFraming(
-                k === "terminator" ? { kind: "terminator", bytes: [], gapMs: 100 } : k === "fixed" ? { kind: "fixed", len: 8, gapMs: 100 } : { kind: "gap", gapMs: 20 },
+                k === "terminator"
+                  ? { kind: "terminator", bytes: [], gapMs: 100 }
+                  : k === "fixed"
+                    ? { kind: "fixed", len: 8, gapMs: 100 }
+                    : k === "modbus-tcp"
+                      ? { kind: "modbus-tcp", gapMs: 1000 }
+                      : { kind: "gap", gapMs: 20 },
               );
             }}
           >
             <option value="gap">{t("fmGap")}</option>
             <option value="terminator">{t("fmTerminator")}</option>
             <option value="fixed">{t("fmFixed")}</option>
+            <option value="modbus-tcp">{t("fmModbusTcp")}</option>
           </select>
         </label>
+        {framing.kind === "modbus-tcp" && <div className="hint">{t("fmMbapHint")}</div>}
         {framing.kind === "terminator" && (
           <label data-tip={tip(lang, "terminatorHex")}>
             {t("terminatorHex")}
@@ -747,8 +834,10 @@ export default function App() {
                   <div key={r.key} className={cls} style={style} {...handlers}>
                     <span className="ts">{fmt(f.ts)}</span>
                     {dt}
-                    <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
-                    {server && <span className="peeraddr">{f.peer}</span>}
+                    <span className="dir" data-tip={relay ? tip(lang, "relayDir") : undefined}>
+                      {dirLabel(f.dir)}
+                    </span>
+                    {listening && <span className="peeraddr">{f.peer}</span>}
                     <span className="data">
                       {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
                       {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
@@ -791,7 +880,13 @@ export default function App() {
 
         <div className="sendbar">
           <div className="sendrow">
-            {server && (
+            {relay && (
+              <select className="target-sel" value={side} onChange={(e) => setSide(e.target.value as "a" | "b")} data-tip={tip(lang, "relaySide")} aria-label={tip(lang, "relaySide")}>
+                <option value="a">{t("sideA")}</option>
+                <option value="b">{t("sideB")}</option>
+              </select>
+            )}
+            {listening && (
               <select
                 className={targetGone ? "target-sel bad" : "target-sel"}
                 value={target ? String(target.id) : ""}
@@ -853,7 +948,7 @@ export default function App() {
             {!running ? (
               <span className="why">{t("whyNotStarted")}</span>
             ) : peers.length === 0 ? (
-              <span className="why">{t("whyNoPeers")}</span>
+              <span className="why">{t(relay ? "whyNoPairs" : "whyNoPeers")}</span>
             ) : targetGone ? (
               <span className="why">{t("whyTargetGone")}</span>
             ) : !sendable && !previewErr ? (
@@ -877,6 +972,14 @@ export default function App() {
               + {t("addCommand")}
             </button>
             <span className="send-tools">
+            {framing.kind === "modbus-tcp" && (
+              <label className="inline" data-tip={tip(lang, "mbapTid")}>
+                <input type="checkbox" checked={mbapTid} onChange={(e) => setMbapTid(e.target.checked)} /> {t("mbapTid")}
+              </label>
+            )}
+            <button className="btn small mb-open" data-tip={tip(lang, "modbusBuildTcp")} onClick={() => setShowMb(true)}>
+              {t("mbRequest")}
+            </button>
             <label className="inline" data-tip={tip(lang, "charDelay")}>
               {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
             </label>
@@ -924,13 +1027,15 @@ export default function App() {
           handle={cmdList}
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
-        <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
+        <AutoReplySection lang={lang} toast={toast} inactiveNote={relay ? arRelayNote(lang) : null} />
+        <h3 data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">
             <div>
               {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
               {selFrame.peer ? ` · ${selFrame.peer}` : ""}
+              {relay && selFrame.dir !== "ev" ? ` · ${dirLabel(selFrame.dir)}` : ""}
               {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
             </div>
             {selFrame.dir === "ev" ? (
@@ -941,9 +1046,23 @@ export default function App() {
                 <pre className="dump">{ascii(selFrame.bytes)}</pre>
               </>
             )}
+            {mbap && selFrame.dir !== "ev" && <MbapDetail lang={lang} info={mbap} />}
           </div>
         )}
       </aside>
+      {showMb && (
+        <ModbusBuilder
+          lang={lang}
+          wire="tcp"
+          onPut={(b) => {
+            setSpec(mbSpec(b));
+            setShowMb(false);
+            sendInput.current?.focus();
+          }}
+          onAdd={(name, b) => pushCommand({ ...mbSpec(b), name, key: null })}
+          onClose={() => setShowMb(false)}
+        />
+      )}
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock TCP" onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog

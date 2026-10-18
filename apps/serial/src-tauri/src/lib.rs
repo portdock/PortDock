@@ -7,14 +7,22 @@ use portdock_core::event::LogOptions;
 use portdock_core::framer::FrameMode;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session, SessionEvent};
+use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
 use portdock_core::{modbus, ports};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tauri::State;
 use tauri::ipc::Channel;
 
-/// 열린 포트들(포트 이름 → 세션). 스스로 닫힌 세션은 알아서 빠진다
-#[derive(Default)]
-struct Sessions(Arc<Registry<Session>>);
+/// 열린 포트들(포트 이름 → 세션). 스스로 닫힌 세션은 알아서 빠진다.
+/// .1 = 자동응답(화면의 «켜기» 로, 처음엔 꺼짐) — 여는 세션마다 응답기를 꽂는다
+struct Sessions(Arc<Registry<Session>>, AutoReply);
+
+impl Default for Sessions {
+    fn default() -> Self {
+        Self(Arc::default(), AutoReply::new(false))
+    }
+}
 
 #[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
@@ -35,7 +43,8 @@ fn open_session(
     let sink = auto_remove_sink(reg.clone(), config.port.clone(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
-    let s = Session::start(config, framing, rx_check, None, sink)?;
+    sessions.1.set_terminator(framing.terminator());
+    let s = Session::start(config, framing, rx_check, Some(sessions.1.responder()), sink)?;
     opening.finish(s);
     Ok(())
 }
@@ -49,7 +58,41 @@ fn close_session(sessions: State<Sessions>, id: String) {
 
 #[tauri::command(async)]
 fn set_framing(sessions: State<Sessions>, id: String, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
+    sessions.1.set_terminator(framing.terminator());
     sessions.0.with(&id, |s| s.set_framing(framing, rx_check))
+}
+
+// ---- 자동응답(Simulator 와 같은 규칙) — 세션은 늘 응답기를 꽂고, «켜기» 가 꺼져 있으면 지나간다
+
+#[tauri::command]
+fn set_rules(sessions: State<Sessions>, rules: Vec<RuleSpec>) -> RulesResult {
+    sessions.1.set_rules(&rules)
+}
+
+#[tauri::command]
+fn set_auto_reply(sessions: State<Sessions>, on: bool) {
+    sessions.1.set_enabled(on);
+}
+
+#[tauri::command]
+fn set_match_options(sessions: State<Sessions>, strip_terminator: bool, log_no_match: bool) {
+    sessions.1.set_match_options(strip_terminator, log_no_match);
+}
+
+#[tauri::command]
+fn get_hits(sessions: State<Sessions>) -> BTreeMap<String, u64> {
+    sessions.1.hits()
+}
+
+#[tauri::command]
+fn reset_hits(sessions: State<Sessions>) {
+    sessions.1.reset_hits();
+}
+
+#[tauri::command]
+fn preview_rule(sessions: State<Sessions>, rule: RuleSpec, sample: String) -> Result<RulePreview, String> {
+    let opts = sessions.1.opts.lock().unwrap().clone();
+    autoreply::preview(&rule, &sample, &opts)
 }
 
 /// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
@@ -249,7 +292,8 @@ pub fn run() {
             preview,
             decode_modbus,
             verify_checksum,
-            write_text, read_text
+            write_text, read_text,
+            set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule
         ])
         .run(tauri::generate_context!());
     if let Err(e) = result {

@@ -1,0 +1,140 @@
+/* 자동응답 규칙 카드 — Simulator(넓은 칸)·Serial·TCP·UDP 오른쪽 «자동응답»(좁은 칸, .compact) */
+.ar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.arcard {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--panel);
+  min-width: 0;
+}
+.arcard.off {
+  opacity: 0.55;
+}
+.arcard.bad {
+  border-color: var(--fail);
+}
+.arrow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+.arrow.wrap {
+  flex-wrap: wrap;
+}
+.arrow select {
+  width: auto;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.arrow .grow {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.arname {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.arlbl {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: nowrap;
+}
+b.arlbl {
+  color: var(--ink);
+}
+.ar .hits {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  color: var(--accent);
+  min-width: 28px;
+  text-align: right;
+}
+.ar .arins {
+  width: 58px;
+  max-width: 58px;
+}
+.arcard .arerr,
+.armore .arerr {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  color: var(--fail);
+  overflow-wrap: anywhere;
+}
+.armore {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 5px;
+  background: var(--bg);
+}
+.armore-btn {
+  padding-left: 2px;
+}
+.arbadge {
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.arpreview {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ar .hint.ok {
+  color: var(--ok);
+}
+.ar .hint.warn {
+  color: var(--fail);
+}
+.ar .empty-guide {
+  white-space: pre-line;
+}
+
+/* 좁은 칸 — 입력칸은 한 줄을 다 쓰고 나머지는 그 아래로 */
+.ar.compact .arrow .grow {
+  flex-basis: 100%;
+}
+.ar.compact .arcard {
+  padding: 5px 6px;
+  background: var(--bg);
+}
+.ar.compact .armore {
+  background: var(--panel);
+}
+.ar.compact .arins {
+  max-width: 58px;
+}
+.ar.compact .arrow select:not(.arins) {
+  max-width: 110px;
+}
+
+/* ---- Serial·TCP·UDP 오른쪽 «자동응답» 머리 */
+.ars-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ars-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.ars-on {
+  color: var(--ok);
+}

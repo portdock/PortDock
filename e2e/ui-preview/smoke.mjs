@@ -9,7 +9,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -313,7 +313,7 @@ async function runApp(app, port) {
 
     /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
     async function convenience() {
-      const simple = app === "modbus-slave" || app === "simulator";
+      const simple = app === "modbus-slave" || app === "simulator" || app === "modbus-master";
       const LOG = simple ? ".tlog" : ".log";
       const ROW = simple ? ".tlog .trow" : ".log .row";
       // ---- 창 제목
@@ -411,7 +411,7 @@ async function runApp(app, port) {
       await verify("shortcuts");
 
       // ---- 반복 보내기 → Esc 로 멈춤 (입력칸 밖에서)
-      if (app !== "modbus-slave") {
+      if (app !== "modbus-slave" && app !== "modbus-master") {
         const sendSel = app === "simulator" ? ".unsol input.mono" : ".sendtext";
         await js(`__sm.setVal(document.querySelector(${JSON.stringify(sendSel)}), ${JSON.stringify(VALID_TEXT[app])})`);
         await sleep(300);
@@ -425,7 +425,7 @@ async function runApp(app, port) {
       }
 
       // ---- 숫자 칸: ↑ +1, Shift+↑ +10, PageDown −100
-      const num = (await d.findElements(By.css(app === "simulator" ? ".unsol input.num" : app === "modbus-slave" ? ".main .toolbar input.num" : ".sendrow.sub input.num")))[app === "modbus-slave" ? 1 : 0];
+      const num = (await d.findElements(By.css(app === "simulator" ? ".unsol input.num" : app === "modbus-slave" || app === "modbus-master" ? ".main .toolbar input.num" : ".sendrow.sub input.num")))[app === "modbus-slave" ? 1 : 0];
       if (num) {
         const v0 = Number(await num.getAttribute("value"));
         await num.click();
@@ -438,7 +438,7 @@ async function runApp(app, port) {
         await blur();
       }
       // 속도 칸: ↑ 는 목록의 다음 값
-      if (app === "serial" || app === "modbus-slave") {
+      if (app === "serial" || app === "modbus-slave" || app === "modbus-master") {
         const baud = (await d.findElements(By.css("input[list=bauds]")))[0];
         if (baud) {
           await baud.click();
@@ -451,7 +451,7 @@ async function runApp(app, port) {
       }
 
       // ---- HEX ↔ ASCII: 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
-      if (app !== "modbus-slave") {
+      if (app !== "modbus-slave" && app !== "modbus-master") {
         const row = app === "simulator" ? ".unsol .arrow" : ".sendbar .sendrow";
         const r = await jsAsync(`
           const row = document.querySelector(${JSON.stringify(row)});
@@ -657,6 +657,117 @@ async function runApp(app, port) {
         await verify("simulator rules");
       }
 
+      // ---- (10/18) Modbus Master: 쓰기 창(두 번 누르기 → 미리보기 바이트 → 쓰기 → 알림·새 값), 칸 설정(F32 CDAB), 추세,
+      //      40001 표기, 표 더하기·지우기 → 되돌리기, CSV 불러오기, 값 기록(CSV), 국번 찾기
+      if (app === "modbus-master") {
+        const w = (ms) => sleep(ms);
+        // 쓰기: 첫 칸(보유 레지스터 0)을 두 번 눌러 1234 를 쓴다
+        await js("document.querySelectorAll('.regs .reg')[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))");
+        await w(300);
+        if (!(await js("return !!document.querySelector('.modal.write-dlg')"))) await conv("mm-write", "칸을 두 번 눌렀는데 쓰기 창이 열리지 않음");
+        else {
+          const r = await jsAsync(`
+            const dlg = document.querySelector('.modal.write-dlg');
+            const inp = [...dlg.querySelectorAll('input')].find((i) => i.type !== 'checkbox');
+            __sm.setVal(inp, '1234'); await new Promise((r) => setTimeout(r, 450));
+            const bytes = (dlg.querySelector('.wbytes') || {}).textContent || '';
+            dlg.querySelector('.dlg-buttons .btn.primary').click();
+            await new Promise((r) => setTimeout(r, 700));
+            return { bytes, open: !!document.querySelector('.modal.write-dlg'), toast: (document.querySelector('.toast') || {}).textContent || '', v: (document.querySelector('.regs .reg .rv') || {}).textContent };`);
+          if (!/01 06 00 00 04 D2/.test(r.bytes)) await conv("mm-write", `쓰기 미리보기 바이트가 이상함: ${JSON.stringify(r.bytes)}`);
+          if (r.open || !/썼습니다|Wrote/.test(r.toast) || r.v !== "1234") await conv("mm-write", `쓰기 결과가 이상함: ${JSON.stringify(r)}`);
+          if (combo.name === "ko-light") await shot(app, `${combo.name}-mm-written`);
+        }
+        await verify("mm write");
+        // 칸 설정: 주소 2 를 F32 CDAB «Temp» 로 → 넓은 칸 + 형식 표시
+        await js("document.querySelectorAll('.regs .reg')[2].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))");
+        await w(250);
+        const pr = await jsAsync(`
+          const dlg = document.querySelector('.modal.cell-dlg');
+          if (!dlg) return { open: false };
+          __sm.setVal(dlg.querySelector('input'), 'Temp'); await new Promise((r) => setTimeout(r, 120));
+          __sm.setVal(dlg.querySelectorAll('select')[0], 'f32'); await new Promise((r) => setTimeout(r, 120));
+          __sm.setVal(dlg.querySelectorAll('select')[1], 'CDAB'); await new Promise((r) => setTimeout(r, 120));
+          dlg.querySelector('.dlg-buttons .btn.primary').click(); await new Promise((r) => setTimeout(r, 300));
+          const c = document.querySelector('.regs .reg.wide');
+          return { open: true, closed: !document.querySelector('.modal.cell-dlg'), name: c && (c.querySelector('.rname') || {}).textContent, tag: c && (c.querySelector('.rtype') || {}).textContent };`);
+        if (!pr.open || !pr.closed || pr.name !== "Temp" || pr.tag !== "F32 CDAB") await conv("mm-point", `칸 설정 결과가 이상함: ${JSON.stringify(pr)}`);
+        // 추세: 넓은 칸을 고르고 📈 → 추세 줄
+        await js("document.querySelector('.regs .reg.wide').click()");
+        await w(150);
+        await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /추세|Trend/.test(b.textContent)).click()");
+        await w(1500);
+        if (!(await js("return document.querySelectorAll('.trend .trend-row').length === 1"))) await conv("mm-trend", "📈 추세를 눌렀는데 추세 줄이 없음");
+        if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-trend`);
+        await verify("mm point/trend");
+        // 40001 표기: 시작 칸이 40001, 30001 을 넣으면 함수가 04 로
+        const plc = await jsAsync(`
+          const sel = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value=plc]'));
+          __sm.setVal(sel, 'plc'); await new Promise((r) => setTimeout(r, 200));
+          const inp = document.querySelector('.main .toolbar .addr-in');
+          const shown = inp.value;
+          inp.focus(); __sm.setVal(inp, '30001'); __sm.key(inp, 'Enter'); inp.blur(); await new Promise((r) => setTimeout(r, 300));
+          const fc = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value="4"]')).value;
+          const addr = (document.querySelector('.regs .reg .addr') || {}).textContent;
+          const back = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value="4"]'));
+          __sm.setVal(back, '3'); await new Promise((r) => setTimeout(r, 100));
+          __sm.setVal(sel, 'zero'); await new Promise((r) => setTimeout(r, 200));
+          return { shown, fc, addr };`);
+        if (plc.shown !== "40001" || plc.fc !== "4" || plc.addr !== "30001") await conv("mm-plc", `40001 표기가 이상함: ${JSON.stringify(plc)}`);
+        await verify("mm plc");
+        // 표 더하기 → 지우기 → 되돌리기
+        const tabs0 = await js("return document.querySelectorAll('.tabs .tab').length");
+        await js("[...document.querySelectorAll('.tabs .btn.small')][0].click()");
+        await w(200);
+        const tabs1 = await js("return document.querySelectorAll('.tabs .tab').length");
+        await js("[...document.querySelectorAll('.tabs .tab')].pop().querySelector('.tab-x').click()");
+        await w(200);
+        const tabs2 = await js("return document.querySelectorAll('.tabs .tab').length");
+        await js("document.querySelector('.toast .toast-undo') && document.querySelector('.toast .toast-undo').click()");
+        await w(200);
+        const tabs3 = await js("return document.querySelectorAll('.tabs .tab').length");
+        if (tabs1 !== tabs0 + 1 || tabs2 !== tabs0 || tabs3 !== tabs0 + 1) await conv("mm-tables", `표 더하기·지우기·되돌리기: ${tabs0} → ${tabs1} → ${tabs2} → ${tabs3}`);
+        if (tabs3 > tabs0) {
+          await js("[...document.querySelectorAll('.tabs .tab')].pop().querySelector('.tab-x').click()");
+          await w(200);
+          await js("document.querySelector('.tabs .tab .tab-btn').click()");
+          await w(200);
+        }
+        await verify("mm tables");
+        // CSV 불러오기(Modbus Slave 레지스터 맵): 맞는 표(HR) 줄 2개, 다른 표 줄 1개
+        await js("window.__pdMock.files.set(arguments[0], arguments[1]); window.__pdMock.dialog.open = arguments[0];", "C:\\mock\\map.csv", "\uFEFFtable,address,type,order,name,value\r\nholding-registers,4,u32,DCBA,Count,70000\r\nholding-registers,6,s16,,Level,\r\ninput-registers,0,u16,,X,1\r\n");
+        await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /CSV 불러오기|Load CSV/.test(b.textContent)).click()");
+        await w(500);
+        const csv = await js("return [(document.querySelector('.toast') || {}).textContent || '', [...document.querySelectorAll('.regs .reg .rname')].map((e) => e.textContent)]");
+        if (!/2줄|2 row/.test(csv[0]) || !csv[1].includes("Count") || !csv[1].includes("Level")) await conv("mm-csv", `CSV 불러오기 결과가 이상함: ${JSON.stringify(csv)}`);
+        await js("window.__pdMock.dialog.open = null");
+        await verify("mm csv");
+        // 값 기록(CSV): 저장 경로를 주고 시작 → 1.5초 뒤 파일에 머리줄 + 값 줄
+        await js("window.__pdMock.dialog.save = 'C:\\\\mock\\\\values.csv'");
+        await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /기록 시작|Start log/.test(b.textContent)).click()");
+        await w(2300);
+        const vl = await js("const t = window.__pdMock.files.get('C:\\\\mock\\\\values.csv') || ''; return [t.split('\\r\\n').length, t.slice(0, 80)]");
+        if (vl[0] < 3 || !/time,table,address,name,value/.test(vl[1])) await conv("mm-vlog", `값 기록 파일이 이상함: ${JSON.stringify(vl)}`);
+        await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /기록 멈춤|Stop log/.test(b.textContent)).click()");
+        await js("window.__pdMock.dialog.save = null");
+        await verify("mm value log");
+        // 국번 찾기 1~20: 1·2·17 이 답한다(17 은 예외 01) → 표 만들기
+        await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /찾기|Scan/.test(b.textContent)).click()");
+        await w(300);
+        await js("const d = document.querySelector('.scan-dlg'); const ins = d.querySelectorAll('input'); __sm.setVal(ins[1], '20');");
+        await w(150);
+        await js("document.querySelector('.scan-dlg .scan-run .btn.primary').click()");
+        await w(1200);
+        const sc = await js("return { rows: [...document.querySelectorAll('.scan-dlg .rtable tbody tr')].map((r) => r.querySelector('td').textContent), done: !document.querySelector('.scan-dlg .scan-run .btn.danger') }");
+        if (sc.rows.join(",") !== "1,2,17" || !sc.done) await conv("mm-scan", `국번 찾기 결과가 이상함: ${JSON.stringify(sc)}`);
+        if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-scan`);
+        const tabsA = await js("return document.querySelectorAll('.tabs .tab').length");
+        await js("document.querySelector('.scan-dlg .rtable tbody tr .btn').click()");
+        await w(300);
+        if ((await js("return document.querySelectorAll('.tabs .tab').length")) !== tabsA + 1 || (await js("return !!document.querySelector('.scan-dlg')"))) await conv("mm-scan", "찾은 국번으로 표를 만들지 못함");
+        await verify("mm scan");
+      }
+
       // ---- 항상 위 📌
       const pin = (await d.findElements(By.css(".icon-btn.pin")))[0];
       if (!pin) await conv("pin", "📌 버튼이 없음", false);
@@ -805,7 +916,7 @@ async function runApp(app, port) {
       // ---- 파일 보내기(Serial·TCP): 고르기 → 시작 → 진행 → 다 보냄
       if (app === "serial" || app === "tcp") {
         await mock("(window.__pdMock.dialog = { ...window.__pdMock.dialog, open: 'C:\\\\mock\\\\firmware.bin' }, true)");
-        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => /…$/.test(b.textContent.trim())).click()");
+        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => /…$/.test(b.textContent.trim()) && !b.classList.contains('mb-open')).click()");
         await sleep(250);
         if (!(await js("return !!document.querySelector('.modal.file-dialog')"))) await conv("file-send", "«파일 보내기…» 로 창이 열리지 않음");
         else {
@@ -853,6 +964,181 @@ async function runApp(app, port) {
       await keys(Key.F4);
       await sleep(600);
       await fitWindow();
+    }
+
+    /** 기능 묶음 C(10/18) — 연결된 상태에서: Serial·TCP·UDP «자동응답»(규칙 추가·켜기·AUTO 줄·미리보기), Simulator 템플릿·장애 표시 */
+    async function waveC() {
+      const snap = combo.name === "ko-light" || combo.name === "en-dark";
+      if (app === "simulator") {
+        // 규칙 하나: 받으면 ASCII 포함 «READ», 응답 «{req 0..1} 00 {counter 2}» + 자세히(지연 범위·N번째·응답 둘) + 예시 요청
+        await js("[...document.querySelectorAll('.ar > .arrow .btn.small')][0].click()");
+        await sleep(200);
+        const r = await jsAsync(`
+          const w = () => new Promise((r) => setTimeout(r, 350));
+          const card = [...document.querySelectorAll('.arcard')].pop();
+          const sel = card.querySelectorAll('select');
+          __sm.setVal(sel[0], 'ascii'); await w();
+          __sm.setVal(card.querySelector('.arpat'), 'READ'); await w();
+          __sm.setVal(card.querySelectorAll('select')[1], 'contains'); await w();
+          __sm.setVal(card.querySelector('.arreply'), '{req 0..1} 00 {counter 2}'); await w();
+          card.querySelector('.armore-btn').click(); await w();
+          const nums = card.querySelectorAll('.armore input.num');
+          __sm.setVal(nums[1], '50'); await w();
+          __sm.setVal(nums[2], '3'); await w();
+          card.querySelector('.armore .btn.small:not(.ghost)').click(); await w();
+          __sm.setVal(card.querySelector('.arsample'), 'READ?'); await w(); await w();
+          return { pv: (card.querySelector('.arpreview') || {}).textContent || '', ok: (card.querySelector('.armore .hint.ok') || {}).textContent || '', badges: [...card.querySelectorAll('.arbadge')].map((b) => b.textContent), bad: card.classList.contains('bad') };`);
+        if (r.fatal) return add("sim template", "smoke-error", r.fatal);
+        if (!/52 45 00 00 00/.test(r.pv) || !r.ok || r.badges.length < 3 || r.bad) await conv("sim-template", `템플릿 미리보기·장애 표시가 이상함: ${JSON.stringify(r)}`);
+        if (snap) await shot(app, `${combo.name}-template-faults`);
+        await sleep(2500);
+        const auto = await js("return [...document.querySelectorAll('.tlog .trow.ev .data')].some((n) => /AUTO rule/.test(n.textContent))");
+        if (!auto) await conv("sim-auto", "규칙이 맞는 READ? 요청에 «AUTO» 줄이 없음");
+        await verify("simulator template rule");
+        return;
+      }
+      if (app !== "serial" && app !== "tcp" && app !== "udp") return;
+      const nb = (await d.findElements(By.css(".toolbar .narrow-only")))[0];
+      if (nb && (await nb.isDisplayed())) await nb.click();
+      await sleep(200);
+      const pat = { serial: "TEMP", tcp: "READY", udp: "PING" }[app];
+      const r = await jsAsync(`
+        const w = () => new Promise((r) => setTimeout(r, 350));
+        const panel = document.querySelector('.ars-panel');
+        if (!panel) return { none: true };
+        if (!panel.querySelector('.ar')) { panel.querySelector('.trg-toggle').click(); await w(); }
+        panel.querySelector('.ar > .arrow .btn.small').click(); await w();
+        const card = [...panel.querySelectorAll('.arcard')].pop();
+        __sm.setVal(card.querySelectorAll('select')[0], 'ascii'); await w();
+        __sm.setVal(card.querySelectorAll('select')[1], 'contains'); await w();
+        __sm.setVal(card.querySelector('.arpat'), ${JSON.stringify(pat)}); await w();
+        __sm.setVal(card.querySelector('.arreply'), '4F 4B {counter 2}'); await w();
+        card.querySelector('.armore-btn').click(); await w();
+        __sm.setVal(card.querySelector('.arsample'), ${JSON.stringify(pat + "1")}); await w(); await w();
+        const on = panel.querySelector('.trg-head input[type=checkbox]');
+        if (!on.checked) on.click();
+        await w();
+        return { pv: (card.querySelector('.arpreview') || {}).textContent || '', ok: !!card.querySelector('.armore .hint.ok'), green: !!panel.querySelector('.ars-on'), active: (panel.querySelector('.ar > .arrow .hint.ok') || {}).textContent || '' };`);
+      if (r.fatal) return add("auto reply", "smoke-error", r.fatal);
+      if (r.none) return conv("auto-reply", "오른쪽 칸에 «자동응답» 이 없음");
+      if (!/4F 4B 00 00/.test(r.pv) || !r.ok || !r.green || !/1/.test(r.active)) await conv("auto-reply", `자동응답 규칙·미리보기·켜기 표시가 이상함: ${JSON.stringify(r)}`);
+      if (snap) await shot(app, `${combo.name}-auto-reply`);
+      const close = (await d.findElements(By.css(".close-right")))[0];
+      if (close && (await close.isDisplayed())) await close.click();
+      await sleep(app === "serial" ? 3600 : 2600);
+      await blur();
+      await keys(Key.END);
+      await sleep(300);
+      const got = await js("return { auto: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /AUTO rule/.test(n.textContent)), tx: [...document.querySelectorAll('.log .row.tx .hex')].some((n) => /^4F 4B 00/.test(n.textContent)) }");
+      if (!got.auto || !got.tx) await conv("auto-reply-run", `켜 둔 자동응답이 답하지 않음: ${JSON.stringify(got)}`);
+      // 끄기 — 다른 점검(보낸 줄 수 등)에 섞이지 않게
+      if (nb && (await nb.isDisplayed())) await nb.click();
+      await sleep(200);
+      await js("const on = document.querySelector('.ars-panel .trg-head input[type=checkbox]'); if (on && on.checked) on.click();");
+      await sleep(200);
+      if (close && (await close.isDisplayed())) await close.click();
+      await verify("auto reply");
+    }
+
+    /** 기능 묶음 C — 멈춘 뒤 다시 열어서: TCP 중계·Modbus TCP·이 PC 주소, UDP 멀티캐스트 TTL·랜카드 */
+    async function waveCStopped() {
+      const snap = combo.name === "ko-light" || combo.name === "en-dark";
+      if (app === "tcp") {
+        // 이 PC 에 없는 주소 — 시작 전 경고, 시작하면 이 PC 주소 목록이 붙은 오류
+        await load(port, combo, { cfg: { mode: "server", host: "10.9.9.9", port: 5020, noDelay: true, autoReconnect: true, reconnectMs: 2000, echo: false } });
+        const warn = await js("return [...document.querySelectorAll('aside .interlock')].map((e) => e.textContent).join(' ')");
+        if (!/10\.9\.9\.9/.test(warn)) await conv("iface-warn", `이 PC 에 없는 주소인데 시작 전 경고가 없음: «${warn}»`);
+        const ifl = await js("return document.querySelectorAll('aside .ifaces button.iface').length");
+        if (ifl < 2) await conv("iface-list", `«이 PC 주소» 목록이 비었음 (${ifl})`);
+        await clickRun("listen non-local", (x) => !STOP_RE.test(x.btn ?? ""));
+        const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
+        if (!/192\.168\.0\.15/.test(err)) await conv("iface-error", `없는 주소 오류에 이 PC 주소가 붙지 않음: «${err}»`);
+        // 목록에서 눌러 고르기
+        await js("document.querySelector('aside .ifaces button.iface').click()");
+        await sleep(150);
+        if ((await js("return document.querySelector('aside.side input[list=tcp-ifaces]').value")) !== "192.168.0.15") await conv("iface-pick", "«이 PC 주소» 를 눌러도 묶을 주소가 바뀌지 않음");
+        if (snap) await shot(app, `${combo.name}-iface-list`);
+        // 중계 + Modbus TCP 프레임
+        await load(port, combo, {
+          cfg: { mode: "relay", host: "0.0.0.0", port: 5020, noDelay: true, autoReconnect: true, reconnectMs: 2000, echo: false },
+          relayTo: { host: "192.168.0.50", port: 502 },
+          framing: { kind: "modbus-tcp", gapMs: 1000 },
+        });
+        await clickRun("relay start", (x) => STOP_RE.test(x.btn ?? "") && /듣는|Listening/.test(x.status ?? ""));
+        await sleep(2500);
+        const rows = await js("return { ab: [...document.querySelectorAll('.log .row.rx .dir')].some((e) => /A→B/.test(e.textContent)), ba: [...document.querySelectorAll('.log .row.tx .dir')].some((e) => /B→A/.test(e.textContent)), relay: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /RELAY .*⇄/.test(n.textContent)), pairs: document.querySelectorAll('aside .peer').length }");
+        if (!rows.ab || !rows.ba || !rows.relay || !rows.pairs) await conv("relay", `중계 기록·쌍 표시가 이상함: ${JSON.stringify(rows)}`);
+        // 줄을 눌러 MBAP 풀이
+        const row = (await d.findElements(By.css(".log .row.tx"))).slice(-1)[0];
+        if (row) {
+          await row.click();
+          await sleep(400);
+          const nbr = (await d.findElements(By.css(".toolbar .narrow-only")))[0];
+          if (nbr && (await nbr.isDisplayed())) await nbr.click();
+          await sleep(300);
+          const mb = await js("return (document.querySelector('.right .modbus') || {}).textContent || ''");
+          if (!/Modbus TCP/.test(mb) || !/0x03|03/.test(mb)) await conv("mbap-detail", `MBAP 풀이가 상세 칸에 없음: «${mb.slice(0, 160)}»`);
+          if (snap) await shot(app, `${combo.name}-relay-mbap`);
+          const close = (await d.findElements(By.css(".close-right")))[0];
+          if (close && (await close.isDisplayed())) await close.click();
+        }
+        // B 쪽 끼워 넣기
+        await js("const s = document.querySelector('.sendbar .sendrow select.target-sel'); __sm.setVal(s, 'b');");
+        await js(`__sm.setVal(document.querySelector('.sendtext'), '01 02')`);
+        await sleep(300);
+        await js("document.querySelector('.sendbar .sendrow .btn.primary').click()");
+        await sleep(400);
+        await blur();
+        await keys(Key.END);
+        await sleep(300);
+        if (!(await js("return [...document.querySelectorAll('.log .row.ev .note')].some((n) => /INJECT → B/.test(n.textContent))"))) await conv("relay-inject", "B 쪽으로 보냈는데 «INJECT → B» 줄이 없음");
+        // Modbus TCP 요청 만들기 → 입력칸
+        await js("document.querySelector('.sendbar .mb-open').click()");
+        await sleep(300);
+        const mbp = await js("return (document.querySelector('.modal.mbuild .mb-preview code') || {}).textContent || ''");
+        if (!/^\d\d \d\d 00 00 00 06 01 03 /.test(mbp)) await conv("mb-build-tcp", `Modbus TCP 요청 미리보기가 MBAP 모양이 아님: «${mbp}»`);
+        if (snap) await shot(app, `${combo.name}-mb-build-tcp`);
+        await verify("modbus tcp builder");
+        await js("document.querySelector('.modal.mbuild .btn.primary').click()");
+        await sleep(300);
+        const st = await js("return document.querySelector('.sendtext').value");
+        if (!/00 00 00 06 01 03/.test(st)) await conv("mb-build-put", `«입력칸에 넣기» 뒤 보내기 칸: «${st}»`);
+        const tidBox = await js("return !!document.querySelector('.send-tools input[type=checkbox]')");
+        if (!tidBox) await conv("mbap-tid", "Modbus TCP 프레임인데 «트랜잭션 ID 자동 증가» 가 없음");
+        await clickRun("relay stop", (x) => !STOP_RE.test(x.btn ?? ""));
+      }
+      if (app === "udp") {
+        await load(port, combo, { cfg: { bindHost: "0.0.0.0", bindPort: 5000, remoteHost: "239.1.2.3", remotePort: 5000, broadcast: false, multicastGroup: "239.1.2.3", multicastIf: "10.10.1.23", multicastTtl: 4, multicastLoop: false, echo: false } });
+        const f = await js("return { ttl: !!document.querySelector('label.mc-loop'), list: document.querySelectorAll('#udp-ifaces-mc option').length }");
+        if (!f.ttl || f.list < 2) await conv("udp-mc", `멀티캐스트 TTL·랜카드 칸이 없음: ${JSON.stringify(f)}`);
+        if (snap) await shot(app, `${combo.name}-multicast`);
+        await clickRun("multicast start", (x) => STOP_RE.test(x.btn ?? ""));
+        await sleep(400);
+        const bind = await js("return [...document.querySelectorAll('.log .row.ev .note')].map((n) => n.textContent).find((t) => /^BIND/.test(t)) || ''");
+        if (!/if 10\.10\.1\.23/.test(bind) || !/ttl 4/.test(bind) || !/noloop/.test(bind)) await conv("udp-mc-bind", `BIND 줄에 랜카드·TTL·되돌려 받기가 없음: «${bind}»`);
+        await clickRun("multicast stop", (x) => !STOP_RE.test(x.btn ?? ""));
+      }
+      // 좁은 창(760×600)에서 오른쪽 «자동응답» 을 펼친 모양
+      if ((app === "serial" || app === "tcp" || app === "udp") && snap) {
+        await d.manage().window().setRect({ width: 760, height: 600 });
+        const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+        if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+        await load(port, combo, {
+          autoReplyOpen: true,
+          autoRules: [{ name: "modbus tcp", enabled: true, pattern: "?? ?? 00 00 00 06 ?? 03 **", patternMode: "hex", kind: "exact", reply: { text: "{req 0..1} 00 00 00 07 {req 6} 03 04 00 64 00 C8", mode: "hex", checksum: null, suffix: "" }, delayMs: 0, delayMaxMs: 40, dropEvery: 5, sample: "00 01 00 00 00 06 01 03 00 00 00 02" }],
+        });
+        await js("const b = document.querySelector('.toolbar .narrow-only'); b && b.click()");
+        await sleep(300);
+        await js("const b = document.querySelector('.ars-panel .armore-btn'); b && b.click()");
+        await sleep(700);
+        await js("const m = document.querySelector('.ars-panel .arpreview') || document.querySelector('.ars-panel .armore'); m && m.scrollIntoView({ block: 'end' })");
+        await sleep(200);
+        await verify("narrow auto reply");
+        await shot(app, `${combo.name}-narrow-760-auto-reply`);
+        await fitWindow();
+        // 열어 둔 오른쪽 칸·자동응답 저장값을 지우고 다음 점검으로
+        await load(port, combo);
+      }
     }
 
     try {
@@ -921,7 +1207,7 @@ async function runApp(app, port) {
       }
 
       // ---- 연결·시작
-      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/ }[app];
+      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
@@ -960,12 +1246,14 @@ async function runApp(app, port) {
       if (combo.full && app !== "netscan") await convenience();
       // Serial·TCP·UDP 공통 기능(이력·단축키·간격·트리거·체크섬 옵션·반복 횟수·Break·터미널·파일)
       if (combo.full) await ioFeatures();
+      // 기능 묶음 C(10/18): 자동응답(Serial·TCP·UDP)·템플릿·장애 흉내(Simulator)
+      if (combo.full) await waveC();
 
       // 연결 중 다 눌러 보기(실행 버튼은 빼고)
       if (combo.full) await pageExercise("running", "#root", { skip: RUN_BTN });
 
       // 장치 뽑힘 → 재연결
-      if ((app === "serial" || app === "modbus-slave") && (await mock("window.__pdMock.unplug()"))) {
+      if ((app === "serial" || app === "modbus-slave" || app === "modbus-master") && (await mock("window.__pdMock.unplug()"))) {
         await sleep(300);
         const s = await verify("unplug");
         if (!/기다리|Waiting|재연결|reconnect/i.test(s.status ?? "")) add("unplug", "state", `장치를 뽑았는데 상태가 «${s.status}»`, await shot(app, `${combo.name}-unplug`));
@@ -978,9 +1266,11 @@ async function runApp(app, port) {
       const stopS = await clickRun("stop", (s) => s.btn === idleBtn);
       void runS;
       void stopS;
+      // 기능 묶음 C: TCP 중계·Modbus TCP·이 PC 주소, UDP 멀티캐스트, 좁은 창 자동응답
+      if (combo.full) await waveCStopped();
 
       // ---- 오류 경우: 바쁜 포트·안 붙는 주소
-      if (app === "serial" || app === "modbus-slave") {
+      if (app === "serial" || app === "modbus-slave" || app === "modbus-master") {
         await d.executeScript(`const s = [...document.querySelectorAll('aside.side select')].find((x) => x.querySelector('option[value=COM9]')); const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; set.call(s, 'COM9'); s.dispatchEvent(new Event('change', { bubbles: true }));`);
         await sleep(100);
         const s = await clickRun("connect COM9 (busy)", (x) => /실패|failed/i.test(x.status ?? ""));
@@ -1023,7 +1313,7 @@ async function runApp(app, port) {
       }
 
       // ---- 저장해 둔 포트가 지금 목록에 없을 때(다른 PC·USB 뺌) — 빈 칸·눌리지 않는 버튼이 되지 않아야
-      if (app === "serial" || app === "modbus-slave" || app === "simulator") {
+      if (app === "serial" || app === "modbus-slave" || app === "simulator" || app === "modbus-master") {
         const saved = app === "simulator" ? { transport: "serial", com: { port: "COM8", baud: 9600, parity: "none" } } : { cfg: { port: "COM8", baud: 9600, dataBits: 8, parity: "none", stopBits: 1, flow: "none", dtr: false, rts: false, autoReconnect: true } };
         await load(port, combo, saved);
         await sleep(400);

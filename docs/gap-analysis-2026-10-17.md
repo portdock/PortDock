@@ -22,7 +22,7 @@
 | 1 ★ | ✅ 명령 단축키 F2–F12(F4 제외) · 입력 이력(↑↓, 50개) — `shared/CommandList.tsx`·`sendHistory.ts` | Serial·TCP·UDP | Termite·Hercules·YAT·Bray | S |
 | 2 ★ | ✅ 직전 줄과의 간격(+12 ms)·TX→RX 응답 시간 열, 복사·화면 저장 포함 — `shared/liveStats.ts` | Serial·TCP·UDP | YAT·Docklight | S |
 | 3 ★ | ✅ 글자 인코딩 UTF-8·CP949·Latin1·ASCII(표시·송신·파일 로그) — `shared/format.ts`·core `codec.rs`(encoding_rs). Slave·Simulator 는 아직 | 전부 | YAT·LLCOM·COMTool | S~M |
-| 4 ★ | 이 PC IP·랜카드 목록에서 고르기(서버·멀티캐스트), 포트를 쥔 프로그램 표시 | TCP·UDP | Packet Sender | S |
+| 4 ★ | ✅ 이 PC IP·랜카드 목록에서 고르기(서버·중계·UDP 받을 주소·멀티캐스트 랜카드, 없는 주소 경고), 바인드 실패에 «쥔 프로그램 (PID)»·이 PC 주소 목록 — core `net.rs`(GetAdaptersAddresses·GetExtendedTcp/UdpTable)·`shared/NetIfaces.tsx`. UDP 멀티캐스트 TTL·보내기 랜카드(IP_MULTICAST_IF)·되돌려 받기 | TCP·UDP | Packet Sender | S |
 | 5 | ✅ 처리량(bytes/s)·프레임 수·«마지막 수신 n초 전»·반복 횟수 제한(보낸 수) | Serial·TCP·UDP | Packet Sender | S |
 | 6 | ✅ Break 송신 버튼(길이 ms, EV «BREAK 100ms») | Serial | PuTTY·YAT·Docklight | S |
 | 7 ★ | Slave 통신 기록 풀이(«id1 FC03 HR 0..9 → OK»)·줄 수 설정·찾기 재사용 | Modbus Slave | ModRSsim2·pyModSlave | S |
@@ -34,11 +34,11 @@
 |---|---|---|---|---|
 | 10 ★★ | **Modbus TCP 슬레이브**(+ RTU over TCP, Unit ID 무시) — 길이 필드 프레임(MBAP) 일반형 | Modbus Slave | Witte·diagslave·ModRSsim2·ModbusPal 전부 | M |
 | 11 ★★ | **레지스터 타입 32/64비트·float·문자열 + 바이트 순서(ABCD/CDAB/BADC/DCBA) + 칸 이름 + CSV 가져오기/내보내기 + 주소 기준 0/1** | Modbus Slave | Witte(28형식)·modpoll | M |
-| 12 ★★ | **응답 템플릿**: 요청 바이트 되돌려 넣기(Modbus TCP 트랜잭션 ID 등)·카운터·랜덤·체크섬 범위/위치/엔디언 | Simulator | Docklight 는 스크립트로만, Packet Sender 매크로 | M |
-| 13 ★ | 자동응답을 Serial·TCP·UDP 에도(엔진은 이미 core 에 있음) | Serial·TCP·UDP | Packet Sender·Termite·YAT | M |
+| 12 ★★ | ✅ **응답 템플릿**: `{req 0..1}`(음수 = 끝에서)·`{counter 2 le}`·`{rand 0..100}`·`{time}`·`{unix}`·`{crc 종류 범위 swap}`, 예시 요청으로 미리보기 — core `autoreply.rs`·`shared/AutoReplyPanel.tsx`. 예전 응답 그대로 | Simulator | Docklight 는 스크립트로만, Packet Sender 매크로 | M |
+| 13 ★ | ✅ 자동응답을 Serial·TCP·UDP 에도 — 오른쪽 칸 «자동응답»(켜기·규칙·와일드카드·횟수·NO MATCH·템플릿·장애), `shared/AutoReplySection.tsx`. TCP 중계 중에는 쓰지 않음 | Serial·TCP·UDP | Packet Sender·Termite·YAT | M |
 | 14 ★ | 값 자동 변화(증가·랜덤·사인·램프, 주기·읽을 때마다) | Modbus Slave | Witte·ModbusPal·pymodbus | M |
-| 15 ★ | 장애 대상 지정(ID·FC·주소)·N번째마다·확률·지연 범위 | Slave·Simulator | OPAL-RT·ModbusPal | S~M |
-| 16 ★ | Modbus TCP 풀이·요청 만들기를 TCP 앱에도 | TCP | 전용 도구 | M |
+| 15 ★ | 장애 대상 지정(ID·FC·주소)·N번째마다·확률·지연 범위 — ✅ Simulator(규칙별 지연 범위·N번째마다·확률 무응답·응답 여러 개 차례/무작위, 씨앗 고정 시험). Slave 는 따로 | Slave·Simulator | OPAL-RT·ModbusPal | S~M |
+| 16 ★ | ✅ Modbus TCP 풀이·요청 만들기를 TCP 앱에도 — 프레임 구분 «Modbus TCP (MBAP 길이)», 상세 칸 MBAP+PDU 풀이(`tcp::decode_mbap`), «Modbus…» 요청 만들기(`shared/ModbusBuilder.tsx`, Serial 과 공용), 트랜잭션 ID 자동 증가 | TCP | 전용 도구 | M |
 | 17 | ✅ 파일 보내기(덩어리·줄, 진행·취소) + 문자·줄 사이 지연, 보내기 줄 «문자 간(ms)» | Serial·TCP | RealTerm·Hercules·YAT | M |
 | 18 | ✅ 파일 로그 형식 HEX·ASCII·HEX+ASCII·CSV, 시간·크기로 나누기 — core `event.rs`. Slave·Simulator 는 설정 칸이 없어 HEX | 전부 | Docklight·RealTerm | S~M |
 | 19 | ✅ 트리거: 패턴이 오면 색·소리·반복/기록 멈춤·사건 줄·창 깜빡임, 맞은 횟수 — `shared/triggers.ts`·`TriggerPanel.tsx`(화면에서) | Serial·TCP·UDP | YAT·Docklight·SerialTool | M |
@@ -48,7 +48,7 @@
 ### 3차 — 큰 기능
 | # | 무엇 | 크기 |
 |---|---|---|
-| 22 ★ | TCP 중계·모니터(HMI↔PLC 사이에 끼워 엿보기) | M~L |
+| 22 ★ | ✅ TCP 중계·모니터(HMI↔PLC 사이에 끼워 엿보기) — TCP 앱 방식 «중계», A→B·B→A 방향 기록·방향별 프레임 구분·A/B 쪽 끼워 넣기·한쪽이 끊으면 둘 다 닫기(`TcpSession::start_relay`) | M~L |
 | 23 ★ | 두 시리얼 포트 모니터(장치↔호스트) | L |
 | 24 | 시퀀스(보내기→기다리기→분기, 반복) | L |
 | 25 | ✅ 터미널 보기(CR/LF 줄, ANSI SGR 색, 줄 접기 — 커서 이동은 버림) — Serial, `shared/terminal.ts` | M |

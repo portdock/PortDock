@@ -2814,6 +2814,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-modbus-master"
+version = "0.1.0"
+dependencies = [
+ "portdock-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-window-state",
+]
+
+[[package]]
 name = "portdock-modbus-slave"
 version = "0.1.0"
 dependencies = [

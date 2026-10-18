@@ -6,13 +6,21 @@ use portdock_core::codec::SendText;
 use portdock_core::event::LogOptions;
 use portdock_core::event::SessionEvent;
 use portdock_core::registry::{Registry, auto_remove_sink};
+use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
 use portdock_core::udp::{UdpConfig, UdpSession};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tauri::State;
 use tauri::ipc::Channel;
 
-#[derive(Default)]
-struct App(Arc<Registry<UdpSession>>);
+/// .1 = 자동응답(화면의 «켜기» 로, 처음엔 꺼짐). UDP 는 데이터그램 하나가 프레임 — 끝 문자 없이 끝 CR·LF 만 뗀다
+struct App(Arc<Registry<UdpSession>>, AutoReply);
+
+impl Default for App {
+    fn default() -> Self {
+        Self(Arc::default(), AutoReply::new(false))
+    }
+}
 
 const MAIN: &str = "main";
 
@@ -23,7 +31,7 @@ fn start(app: State<App>, config: UdpConfig, rx_check: Option<ChecksumKind>, on_
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
-    let s = UdpSession::start(config, rx_check, None, sink)?;
+    let s = UdpSession::start(config, rx_check, Some(app.1.responder()), sink)?;
     let local = s.local_addr().to_string();
     opening.finish(s);
     Ok(local)
@@ -81,6 +89,45 @@ fn set_log_options(options: LogOptions) {
 #[tauri::command(async)]
 fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
     app.0.with(MAIN, |s| s.set_log(path))?
+}
+
+// ---- 자동응답(Simulator 와 같은 규칙) — 응답은 보낸 쪽으로
+
+#[tauri::command]
+fn set_rules(app: State<App>, rules: Vec<RuleSpec>) -> RulesResult {
+    app.1.set_rules(&rules)
+}
+
+#[tauri::command]
+fn set_auto_reply(app: State<App>, on: bool) {
+    app.1.set_enabled(on);
+}
+
+#[tauri::command]
+fn set_match_options(app: State<App>, strip_terminator: bool, log_no_match: bool) {
+    app.1.set_match_options(strip_terminator, log_no_match);
+}
+
+#[tauri::command]
+fn get_hits(app: State<App>) -> BTreeMap<String, u64> {
+    app.1.hits()
+}
+
+#[tauri::command]
+fn reset_hits(app: State<App>) {
+    app.1.reset_hits();
+}
+
+#[tauri::command]
+fn preview_rule(app: State<App>, rule: RuleSpec, sample: String) -> Result<RulePreview, String> {
+    let opts = app.1.opts.lock().unwrap().clone();
+    autoreply::preview(&rule, &sample, &opts)
+}
+
+/// 이 PC 의 랜카드 IPv4 목록(받을 주소·멀티캐스트 랜카드 고르기)
+#[tauri::command(async)]
+fn interfaces() -> Vec<portdock_core::net::Interface> {
+    portdock_core::net::interfaces()
 }
 
 /// 화면 내용 저장 — 화면은 저장 대화상자에서 고른 경로만 넘긴다
@@ -163,7 +210,9 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env,
-            report_read_dump, start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log_options, set_log, write_text, read_text])
+            report_read_dump, start, stop, set_remote, set_rx_check, set_echo, send, rejoin, preview, set_log_options, set_log, write_text, read_text,
+            set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule, interfaces
+        ])
         .run(tauri::generate_context!());
     if let Err(e) = result {
         portdock_core::report::run_failed(&e.to_string());

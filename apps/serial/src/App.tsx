@@ -23,7 +23,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { mbFunc, mbWord } from "./mbwords";
+import { mbFunc, mbWord } from "@shared/mbwords";
 import { parseTerminator, samePorts, trimFrames } from "@shared/framing";
 import { autoLogPath, formatTime, logExt, logOptionsOf, rowHeight, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
@@ -32,7 +32,8 @@ import { NumInput } from "@shared/NumInput";
 import { hasXonXoff, minRepeatMs, serialTxMs } from "@shared/interlocks";
 import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
 import { screenText, type LogFrame } from "@shared/logSearch";
-import { ModbusBuilder } from "./ModbusBuilder";
+import { ModbusBuilder } from "@shared/ModbusBuilder";
+import { AutoReplySection } from "@shared/AutoReplySection";
 import { useFollowTail } from "@shared/useFollowTail";
 import { FollowButton } from "@shared/FollowButton";
 import { copyTextOf, selectedFrames, useCopyKey, useLogSelection } from "@shared/logCopy";
@@ -1190,6 +1191,7 @@ export default function App() {
         />
 
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
+        <AutoReplySection lang={lang} toast={toast} />
 
         <h3 data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}

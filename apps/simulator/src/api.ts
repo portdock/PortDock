@@ -1,6 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { ChecksumKind } from "@shared/format";
 import { frameModeToRust, type FrameMode } from "@shared/framing";
+import { autoReplyApi } from "@shared/autoReplyApi";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 export type { FrameMode } from "@shared/framing";
 
@@ -14,25 +15,8 @@ export interface SendSpec {
   suffix: string;
 }
 
-export interface AutoRule {
-  name: string;
-  enabled: boolean;
-  pattern: string;
-  patternMode: TextMode;
-  kind: "exact" | "contains";
-  reply: SendSpec;
-  delayMs: number;
-}
-
-export interface MatchOptions {
-  stripTerminator: boolean;
-  logNoMatch: boolean;
-}
-
-export interface SetRulesResult {
-  active: number;
-  errors: { index: number; name: string; message: string }[];
-}
+// 규칙·맞춰 보기 옵션·규칙 명령은 Serial·TCP·UDP 와 같은 것 — shared/autoReply.ts
+export type { AutoRule, MatchOptions, SetRulesResult } from "@shared/autoReply";
 
 export interface PortInfo {
   name: string;
@@ -73,12 +57,10 @@ export const api = {
   startUdp: (config: object, onEvent: (e: SessionEvent) => void) => invoke<string>("start_udp", { config, onEvent: channel(onEvent) }),
   stop: () => invoke<void>("stop"),
   setFraming: (framing: FrameMode) => invoke<void>("set_framing", { framing: frameModeToRust(framing) }),
-  /** 맞는 규칙만 적용하고, 틀린 규칙은 건너뛴 채 이유를 돌려준다 */
-  setRules: (rules: AutoRule[]) => invoke<SetRulesResult>("set_rules", { rules }),
-  /** stripTerminator: 끝 문자·뒤쪽 CR LF 를 떼고 비교 · logNoMatch: 안 맞은 요청을 EV «NO MATCH» 로 */
-  setMatchOptions: (o: MatchOptions) => invoke<void>("set_match_options", { stripTerminator: o.stripTerminator, logNoMatch: o.logNoMatch }),
-  getHits: () => invoke<Record<string, number>>("get_hits"),
-  resetHits: () => invoke<void>("reset_hits"),
+  /** 규칙(set_rules·preview_rule)·횟수·비교 옵션은 autoReplyApi 로 */
+  setMatchOptions: autoReplyApi.setMatchOptions,
+  getHits: autoReplyApi.getHits,
+  resetHits: autoReplyApi.resetHits,
   send: (spec: SendSpec) => invoke<void>("send", { spec }),
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
   setLog: (path: string | null) => invoke<void>("set_log", { path }),

@@ -1,6 +1,7 @@
 // Simulator 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
 import { logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
+import { simAutoReplySections } from "@shared/helpAutoReply";
 
 export const help: HelpDoc = {
   ko: [
@@ -63,7 +64,8 @@ export const help: HelpDoc = {
         "- «끝 문자 떼고 비교»(기본 켬): 받은 프레임 끝의 끝 문자와 뒤쪽 CR·LF 를 떼고 비교합니다. 그래서 «정확히» 패턴에 줄 끝을 적지 않아도 됩니다. 끄면 받은 바이트 그대로 비교합니다.",
         "- «안 맞은 요청 기록(NO MATCH)»(기본 켬): 어떤 규칙에도 맞지 않은 요청을 통신 기록에 «NO MATCH» 사건(EV)으로 남깁니다.",
         "- «응답»: 응답 방식(HEX/ASCII), 응답 내용, «체크섬», «줄 끝 붙이기», «지연»(ms, 0~600000).",
-        "- 응답은 «내용 + 체크섬 + 줄 끝» 순으로 만듭니다. 체크섬은 응답 내용 전체로 계산합니다.",
+        "- 응답은 «내용 + 체크섬 + 줄 끝» 순으로 만듭니다. 체크섬은 응답 내용 전체로 계산합니다. 내용에 {req 0..1}·{counter}·{rand 0..9}·{time}·{crc …} 같은 자리를 쓰면 받을 때마다 채웁니다(아래 «응답 템플릿»).",
+        "- «▸ 자세히»: 지연 범위(흔들림)·N번째마다·확률로 무응답, 응답 여러 개 돌리기, 예시 요청으로 응답 미리보기(아래 «장애 흉내·응답 돌리기»).",
         "- ↑ «위로(먼저 검사)», ↓ «아래로», ✕ «삭제»(확인 창 대신 5초 동안 알림의 «되돌리기» 로 같은 자리에 되살림). 응답의 HEX↔ASCII 를 바꾸면 같은 바이트의 새 표기로 바뀝니다.",
         "- 규칙을 고치면 실행 중에도 바로 적용됩니다. 패턴·응답이 틀린 규칙은 카드가 빨갛게 되고 아래에 이유가 나오며, 그 규칙만 빠지고 나머지 규칙은 동작합니다(«틀린 규칙 N개는 빼고 동작합니다»).",
         "- 규칙은 프로그램을 껐다 켜도 남아 있습니다.",
@@ -206,7 +208,8 @@ export const help: HelpDoc = {
         "- «Ignore line ending when matching» (on by default): the terminator and trailing CR/LF are removed from the received frame before comparing, so «exact» patterns need no line ending. When off, the raw bytes are compared.",
         "- «Log unmatched requests (NO MATCH)» (on by default): a request no rule matched is logged as a «NO MATCH» event (EV).",
         "- «Reply»: reply mode (HEX/ASCII), content, «Checksum», «Line ending», «Delay» (ms, 0–600000).",
-        "- A reply is built as «content + checksum + line ending»; the checksum covers the whole content.",
+        "- A reply is built as «content + checksum + line ending»; the checksum covers the whole content. Fields such as {req 0..1}, {counter}, {rand 0..9}, {time}, {crc …} in the content are filled for every request (see «Reply templates»).",
+        "- «▸ More»: delay range (jitter), drop every Nth / by chance, rotating replies, and a reply preview from a sample request (see «Fault injection and rotating replies»).",
         "- ↑ «Move up (checked first)», ↓ «Move down», ✕ «Delete» (no dialog — «Undo» in the notice restores it in place for 5 seconds). Switching a reply between HEX and ASCII converts it to the same bytes.",
         "- Edits apply immediately, even while running. A rule with an invalid pattern or reply turns red with the reason below it; only that rule is skipped and the others stay active («N invalid rule(s) skipped»).",
         "- Rules are kept after restarting.",
@@ -290,3 +293,9 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// 응답 템플릿·장애 흉내(10/18) — «와일드카드» 다음에
+for (const lang of ["ko", "en"] as const) {
+  const at = help[lang].findIndex((x) => x.title === (lang === "ko" ? "와일드카드" : "Wildcards"));
+  help[lang].splice(at < 0 ? help[lang].length - 1 : at + 1, 0, ...simAutoReplySections(lang));
+}

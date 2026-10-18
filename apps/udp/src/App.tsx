@@ -24,6 +24,11 @@ import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { looksBroadcast } from "@shared/interlocks";
+import { AutoReplySection } from "@shared/AutoReplySection";
+import { IfaceList, IfaceOptions, ifaceProblem, useInterfaces } from "@shared/NetIfaces";
+
+/** 224.0.0.0~239.255.255.255 */
+const isMulticast = (h: string) => /^(22[4-9]|23\d)\.\d+\.\d+\.\d+$/.test(h.trim());
 import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
 import { screenText, type LogFrame } from "@shared/logSearch";
 import { useFollowTail } from "@shared/useFollowTail";
@@ -82,18 +87,22 @@ export default function App() {
   }, [settings]);
 
   // ---- 설정
-  const [cfg, setCfg] = useState<UdpConfig>(() =>
-    load("cfg", {
-      bindHost: "0.0.0.0",
-      bindPort: 5000,
-      remoteHost: "192.168.0.10",
-      remotePort: 5000,
-      broadcast: false,
-      multicastGroup: "",
-      multicastIf: "0.0.0.0",
-      echo: false,
-    }),
-  );
+  // 예전 저장값엔 새 칸(TTL·되돌려 받기)이 없다 — 기본값 위에 덮는다
+  const [cfg, setCfg] = useState<UdpConfig>(() => ({
+    bindHost: "0.0.0.0",
+    bindPort: 5000,
+    remoteHost: "192.168.0.10",
+    remotePort: 5000,
+    broadcast: false,
+    multicastGroup: "",
+    multicastIf: "0.0.0.0",
+    multicastTtl: 1,
+    multicastLoop: true,
+    echo: false,
+    ...load<Partial<UdpConfig>>("cfg", {}),
+  }));
+  // 이 PC 의 랜카드 주소(받을 주소·멀티캐스트 랜카드 고르기)
+  const ifaces = useInterfaces();
   const [rxCheck, setRxCheck] = useState<ChecksumKind | null>(() => load("rxCheck", null));
   const [rxCk, setRxCk] = useState<CkOpts | null>(() => load("rxCk", null));
   useEffect(() => store("rxCk", rxCk), [rxCk]);
@@ -523,13 +532,15 @@ export default function App() {
         <div className="grid2">
           <label data-tip={tip(lang, "bindHost")}>
             {t("bindHost").split(" (")[0]}
-            <input value={cfg.bindHost} disabled={running} title={t("bindHost")} onChange={(e) => setCfg({ ...cfg, bindHost: e.target.value.trim() })} />
+            <input value={cfg.bindHost} disabled={running} title={t("bindHost")} list="udp-ifaces" onChange={(e) => setCfg({ ...cfg, bindHost: e.target.value.trim() })} />
+            <IfaceOptions id="udp-ifaces" lang={lang} list={ifaces.list} />
           </label>
           <label data-tip={tip(lang, "bindPort")}>
             {t("bindPort").split(" (")[0]}
             <NumInput min={0} max={65535} value={cfg.bindPort} disabled={running} title={t("bindPort")} onValue={(n) => setCfg({ ...cfg, bindPort: n })} />
           </label>
         </div>
+        {!running && ifaceProblem(lang, cfg.bindHost, ifaces.list) && <div className="interlock">{ifaceProblem(lang, cfg.bindHost, ifaces.list)}</div>}
         <label>{t("remote")}</label>
         <div className="grid2">
           <label data-tip={tip(lang, "remoteHost")}>
@@ -553,11 +564,24 @@ export default function App() {
           {t("multicast")}
           <input value={cfg.multicastGroup} disabled={running} placeholder="—" onChange={(e) => setCfg({ ...cfg, multicastGroup: e.target.value.trim() })} />
         </label>
-        {cfg.multicastGroup && (
-          <label data-tip={tip(lang, "multicastIf")}>
-            {t("multicastIf")}
-            <input value={cfg.multicastIf} disabled={running} onChange={(e) => setCfg({ ...cfg, multicastIf: e.target.value.trim() })} />
-          </label>
+        {(cfg.multicastGroup || isMulticast(cfg.remoteHost)) && (
+          <>
+            <label data-tip={tip(lang, "multicastIf")}>
+              {t("multicastIf")}
+              <input value={cfg.multicastIf} disabled={running} list="udp-ifaces-mc" onChange={(e) => setCfg({ ...cfg, multicastIf: e.target.value.trim() })} />
+              <IfaceOptions id="udp-ifaces-mc" lang={lang} list={ifaces.list} />
+            </label>
+            {!running && ifaceProblem(lang, cfg.multicastIf, ifaces.list) && <div className="interlock">{ifaceProblem(lang, cfg.multicastIf, ifaces.list)}</div>}
+            <div className="grid2">
+              <label data-tip={tip(lang, "multicastTtl")}>
+                {t("multicastTtl")}
+                <NumInput min={1} max={255} value={cfg.multicastTtl ?? 1} disabled={running} onValue={(n) => setCfg({ ...cfg, multicastTtl: n })} />
+              </label>
+              <label data-tip={tip(lang, "multicastLoop")} className="inline mc-loop">
+                <input type="checkbox" checked={cfg.multicastLoop ?? true} disabled={running} onChange={(e) => setCfg({ ...cfg, multicastLoop: e.target.checked })} /> {t("multicastLoop")}
+              </label>
+            </div>
+          </>
         )}
         <label data-tip={tip(lang, "echo")} className="inline">
           <input type="checkbox" checked={cfg.echo} onChange={(e) => setCfg({ ...cfg, echo: e.target.checked })} /> {t("echo")}
@@ -575,7 +599,8 @@ export default function App() {
             {t("rejoin")} {cfg.multicastGroup}
           </button>
         )}
-        <div className="hint">{t("firewallHint")}</div>
+        <IfaceList lang={lang} list={ifaces.list} loaded={ifaces.loaded} refresh={ifaces.refresh} disabled={running} onPick={(ip) => setCfg({ ...cfg, bindHost: ip })} />
+        {!running && <div className="hint">{t("firewallHint")}</div>}
 
         {running && (
           <>
@@ -842,6 +867,7 @@ export default function App() {
           handle={cmdList}
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
+        <AutoReplySection lang={lang} toast={toast} />
         <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (

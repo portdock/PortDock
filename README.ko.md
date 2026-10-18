@@ -12,6 +12,7 @@
 | **PortDock UDP** | UDP 송수신 — 브로드캐스트, 멀티캐스트, 에코 |
 | **PortDock Simulator** | 규칙대로 답하는 가짜 장비(시리얼·TCP·UDP) — «이게 오면 이걸로 답하기» |
 | **PortDock Net Scan** | 산업 네트워크 장비 IP 찾기 — 핑·ARP 훑기, MAC 제조사, 산업 포트 판정(Modbus 502·MC·XGT 등), 장기 핑 감시, Wake-on-LAN |
+| **PortDock Modbus Master** | Modbus RTU·TCP 마스터(폴링) — 여러 폴링 표, 타입 값(U16~F64·문자열·바이트 순서·40001 표기), 05·06·0F·10 쓰기, 국번·주소 범위 찾기, 통신 풀이·통계, 값 CSV 기록, 추세 |
 
 홈페이지: <https://portdock.dev>
 
@@ -27,6 +28,7 @@
 | UDP | [PortDock-UDP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
 | Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
 | Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
+| Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
 
 윈도우 10·11, x64.
 

@@ -6,11 +6,9 @@ import {
   ascii,
   CHECKSUMS,
   hex,
-  type AutoRule,
   type ChecksumKind,
   type Frame,
   type FrameMode,
-  type MatchOptions,
   type PortInfo,
   type SendSpec,
   type SessionEvent,
@@ -26,7 +24,9 @@ import { autoLogPath, formatTime, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
-import { AutoReply } from "./AutoReply";
+import { AutoReplyPanel } from "@shared/AutoReplyPanel";
+import { normalizeRule, validRule, type AutoRule, type MatchOptions } from "@shared/autoReply";
+import { autoReplyApi } from "@shared/autoReplyApi";
 import { useSimpleLog } from "@shared/useSimpleLog";
 import { FollowButton } from "@shared/FollowButton";
 import { copyTextOf, selectedFrames, useCopyKey } from "@shared/logCopy";
@@ -242,7 +242,10 @@ export default function App() {
   }
 
   // ---- 규칙
-  const [rules, setRules] = useState<AutoRule[]>(() => load("rules", []));
+  const [rules, setRules] = useState<AutoRule[]>(() => {
+    const saved = load<unknown[]>("rules", []);
+    return Array.isArray(saved) ? saved.filter(validRule).map(normalizeRule) : [];
+  });
   const [hits, setHits] = useState<Record<string, number>>({});
   useEffect(() => {
     store("rules", rules);
@@ -274,27 +277,11 @@ export default function App() {
         unsolicited?: { spec?: Partial<SendSpec>; repeatMs?: number };
       };
       if (!Array.isArray(body.rules)) throw new Error(t("badRules"));
-      const valid = (r: unknown): r is AutoRule => {
-        const x = r as AutoRule;
-        return (
-          !!x &&
-          typeof x.name === "string" &&
-          typeof x.enabled === "boolean" &&
-          typeof x.pattern === "string" &&
-          (x.patternMode === "hex" || x.patternMode === "ascii") &&
-          (x.kind === "exact" || x.kind === "contains") &&
-          !!x.reply &&
-          typeof x.reply.text === "string" &&
-          (x.reply.mode === "hex" || x.reply.mode === "ascii") &&
-          Number.isInteger(x.delayMs) &&
-          x.delayMs >= 0
-        );
-      };
-      if (!body.rules.every(valid)) throw new Error(t("badRules"));
+      if (!body.rules.every(validRule)) throw new Error(t("badRules"));
       // 지금 규칙·설정을 덮어쓰기 전에 묻는다
       const name = path.split(/[\\/]/).pop() ?? path;
       if (!(await ask(t("askImport").replace("{n}", String(rules.length)).replace("{a}", name), { title: "PortDock Simulator", kind: "warning" }))) return;
-      setRules(body.rules.map((r) => ({ ...r, reply: { ...r.reply, checksum: r.reply.checksum ?? null, suffix: r.reply.suffix ?? "" } })));
+      setRules(body.rules.map(normalizeRule));
       if (body.framing && (body.framing.kind === "gap" || body.framing.kind === "terminator") && Number.isInteger(body.framing.gapMs)) {
         setFraming(body.framing);
         if (body.framing.kind === "terminator") setTermText(typeof body.termText === "string" ? body.termText : hex(body.framing.bytes));
@@ -613,7 +600,7 @@ export default function App() {
           </button>
         </div>
         <div className="rules">
-          <AutoReply rules={rules} setRules={setRules} hits={hits} t={t} toast={toast} />
+          <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={autoReplyApi} />
           <div className="unsol">
             <div className="arlbl" data-tip={tip(lang, "unsolicited")}>{t("unsolicited")}</div>
             <div className="arrow">

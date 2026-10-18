@@ -316,6 +316,7 @@ function serialTick() {
         ? [1, 3, 4, 0, 100, 0, 200, 0x00, 0x00] // CRC 가 틀린 응답
         : withCrc([1, 3, 20, ...Array.from({ length: 20 }, (_, i) => (i * 13 + s.seq) & 0xff)]);
   frames(data("rx", rx, verify(s.rxCheck, rx)));
+  autoReply(rx);
   if (s.seq % 4 === 0) {
     s.lines = { cts: !s.lines?.cts, dsr: true, ri: false, cd: s.seq % 8 === 0 };
     send({ type: "lines", ...s.lines });
@@ -465,7 +466,7 @@ function slaveTcpStart(c, ch) {
 }
 
 // ---- TCP 앱
-function tcpStart(config, framing, rxCheck, ch, sim = false) {
+function tcpStart(config, framing, rxCheck, ch, sim = false, upstream = null) {
   if (S) return fail(ALREADY());
   if (config.mode === "client") {
     if (!config.host.trim() || !(config.port > 0)) return fail(tr("접속할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to"));
@@ -494,10 +495,12 @@ function tcpStart(config, framing, rxCheck, ch, sim = false) {
     every(800, () => netRx());
     return Promise.resolve(null);
   }
-  // 서버
+  // 서버 · 중계
   if (!hostOk(config.host) || unresolvable(config.host)) return fail(tr(`${config.host}:${config.port}: 주소를 찾지 못했습니다`, `${config.host}:${config.port}: address not found`));
-  if (config.port === 445) return fail(inUse(`${config.host}:${config.port}`));
+  if (config.port === 445) return fail(inUse(`${config.host}:${config.port}`) + heldBy());
+  if (notLocal(config.host)) return fail(notHere(`${config.host}:${config.port}`));
   const local = `${config.host}:${config.port || 50123}`;
+  if (config.mode === "relay") return relayStart(config, upstream, rxCheck, framing, ch, local);
   const s = newSession(sim ? "sim-tcp" : "tcp", ch, { cfg: { ...config }, rxCheck, framing, port: local, server: true, failOnce: true });
   later(30, () => status("listening", local, null));
   const join = (addr) => {
@@ -512,6 +515,37 @@ function tcpStart(config, framing, rxCheck, ch, sim = false) {
   every(800, () => netRx());
   return Promise.resolve(local);
 }
+/** 중계(모니터): A 가 둘 붙고, A→B 요청과 B→A 응답이 번갈아 온다. B 가 nohost·10.0.0.99 면 RELAY FAIL */
+function relayStart(config, upstream, rxCheck, framing, ch, local) {
+  if (!upstream || !String(upstream.host ?? "").trim() || !(upstream.port > 0)) return fail(tr("이어 줄 장비(B)의 주소와 포트(1~65535)를 넣어 주세요", "Enter the device (B) host and port (1–65535) to relay to"));
+  const b = `${upstream.host.trim()}:${upstream.port}`;
+  const s = newSession("tcp", ch, { cfg: { ...config }, rxCheck, framing, port: local, server: true, relay: true, upstream: b });
+  later(10, () => frames(ev(`RELAY LISTEN ${local} → ${b}`)));
+  later(30, () => status("listening", local, null));
+  const join = (addr) => {
+    if (unresolvable(upstream.host) || upstream.host === "10.0.0.99") {
+      frames(ev(tr(`RELAY FAIL ${addr} → ${b}: 응답 없음(시간 초과) — A 쪽 접속을 닫습니다`, `RELAY FAIL ${addr} → ${b}: no answer (timed out) — closing the A side`)));
+      return;
+    }
+    s.online = true;
+    s.peers.push({ id: ++s.seq, addr });
+    frames(ev(`RELAY ${addr} ⇄ ${b}`));
+    send({ type: "peers", peers: peerList() });
+  };
+  later(400, () => join("192.168.0.20:51234"));
+  later(1200, () => join("192.168.0.21:50000"));
+  every(700, () => {
+    if (!s.peers.length) return;
+    s.tick = (s.tick ?? 0) + 1;
+    const p = s.peers[s.tick % s.peers.length];
+    const tid = s.tick & 0xffff;
+    const req = [tid >> 8, tid & 0xff, 0, 0, 0, 6, 1, 3, 0, 0, 0, 2];
+    const rsp = [tid >> 8, tid & 0xff, 0, 0, 0, 7, 1, 3, 4, 0, 100 + (s.tick % 50), 0, 200];
+    frames(data("rx", req, verify(s.rxCheck, req), p.addr));
+    later(40, () => frames(data("tx", rsp, verify(s.rxCheck, rsp), p.addr)));
+  });
+  return Promise.resolve(local);
+}
 function netRx() {
   const s = S;
   if (!s.peers.length) return;
@@ -520,7 +554,10 @@ function netRx() {
   const rx = s.tick % 4 === 0 ? withCrc([1, 3, 4, 0, 10, 0, 20]) : ascii(`READY,TEMP=24.8C,SEQ=${s.tick}\r\n`);
   frames(data("rx", rx, verify(s.rxCheck, rx), p.addr));
   if (s.kind.startsWith("sim")) simReply(rx, p.addr);
-  else if (s.cfg?.echo) frames(data("tx", rx, null, p.addr));
+  else {
+    if (s.cfg?.echo) frames(data("tx", rx, null, p.addr));
+    autoReply(rx, p.addr);
+  }
 }
 function kick(id) {
   const s = S;
@@ -537,7 +574,13 @@ function kick(id) {
 function udpStart(config, rxCheck, ch, sim = false) {
   if (S) return fail(ALREADY());
   if (!hostOk(config.bindHost) || unresolvable(config.bindHost)) return fail(tr(`${config.bindHost}:${config.bindPort}: 주소를 찾지 못했습니다`, `${config.bindHost}:${config.bindPort}: address not found`));
-  if (config.bindPort === 445) return fail(inUse(`${config.bindHost}:${config.bindPort}`));
+  if (config.bindPort === 445) return fail(inUse(`${config.bindHost}:${config.bindPort}`) + heldBy());
+  if (notLocal(config.bindHost)) return fail(notHere(`${config.bindHost}:${config.bindPort}`));
+  const mif = (config.multicastIf ?? "0.0.0.0").trim() || "0.0.0.0";
+  if (!/^\d+\.\d+\.\d+\.\d+$/.test(mif)) return fail(tr(`랜카드 주소가 아닙니다: ${mif}`, `Not a network interface address: ${mif}`));
+  if (notLocal(mif)) return fail(tr(`${mif} 는 이 PC 의 랜카드 주소가 아닙니다.`, `${mif} is not an address of this PC.`));
+  const ttl = config.multicastTtl ?? 1;
+  if (!(ttl >= 1 && ttl <= 255)) return fail(tr("멀티캐스트 TTL 은 1~255 입니다", "Multicast TTL must be 1–255"));
   const g = (config.multicastGroup ?? "").trim();
   if (g) {
     const m = g.match(/^(\d+)\.\d+\.\d+\.\d+$/);
@@ -547,7 +590,7 @@ function udpStart(config, rxCheck, ch, sim = false) {
   const local = `${config.bindHost}:${config.bindPort || 50124}`;
   const s = newSession(sim ? "sim-udp" : "udp", ch, { cfg: { ...config }, rxCheck, port: local, online: true, remote: `${config.remoteHost}:${config.remotePort}`, seen: [] });
   later(10, () => {
-    frames(ev(`BIND ${local}`));
+    frames(ev(`BIND ${local}${g ? ` multicast ${g}` : ""}${mif !== "0.0.0.0" ? ` if ${mif}` : ""}${ttl !== 1 ? ` ttl ${ttl}` : ""}${config.multicastLoop === false ? " noloop" : ""}`));
     status("listening", local, null);
   });
   every(900, () => {
@@ -562,7 +605,10 @@ function udpStart(config, rxCheck, ch, sim = false) {
     const rx = s.tick % 2 ? ascii(`PING ${s.tick}`) : [0x02, 0x10, 0x20, 0x03, 0x33];
     frames(data("rx", rx, verify(s.rxCheck, rx), from));
     if (sim) simReply(rx, from);
-    else if (s.cfg.echo) frames(data("tx", rx, null, from));
+    else {
+      if (s.cfg.echo) frames(data("tx", rx, null, from));
+      autoReply(rx, from);
+    }
   });
   return Promise.resolve(local);
 }
@@ -591,8 +637,91 @@ function udpSend(to, spec) {
   return Promise.resolve(dest);
 }
 
-// ---- Simulator 앱(규칙 응답)
-const sim = { rules: [], hits: {}, opts: { stripTerminator: true, logNoMatch: true } };
+// ---- 자동응답(Simulator 규칙 + Serial·TCP·UDP «자동응답») — core autoreply.rs 흉내
+// enabled: Serial·TCP·UDP 의 «켜기»(set_auto_reply). Simulator 는 늘 응답한다
+const sim = { rules: [], hits: {}, matched: {}, opts: { stripTerminator: true, logNoMatch: true }, enabled: false };
+const PLACE = /\{(req|counter|rand|time|unix|crc)(?: ([^}]*))?\}/g;
+/** «a..b»·«a» → [처음, 끝] (끝 포함, 음수는 끝에서) */
+function span(text, len) {
+  const [a, b] = text.includes("..") ? text.split("..") : [text, text];
+  const at = (x, d) => (x === "" ? d : Number(x) < 0 ? len + Number(x) : Number(x));
+  const lo = at(a, 0);
+  const hi = at(b, len - 1);
+  if (!(lo >= 0 && hi < len && lo <= hi) || Number.isNaN(lo + hi)) throw tr(`범위 ${text} 가 길이 ${len} 바이트를 벗어납니다`, `range ${text} is outside the ${len}-byte length`);
+  return [lo, hi + 1];
+}
+const putNum = (v, size, le, dec) => {
+  if (dec) return ascii(String(v));
+  const out = [];
+  for (let i = size - 1; i >= 0; i--) out.push(Math.floor(v / 2 ** (8 * i)) & 0xff);
+  return le ? out.reverse() : out;
+};
+/** 응답 템플릿 → 바이트(요청·횟수로 채움). 틀리면 문자열을 던진다 */
+function renderTpl(spec, req, counter = 0) {
+  const body = [];
+  const crcs = [];
+  let last = 0;
+  const lit = (t) => body.push(...(spec.mode === "hex" ? parseHex(t) : parseAscii(t)));
+  for (const m of (spec.text ?? "").matchAll(PLACE)) {
+    lit(spec.text.slice(last, m.index));
+    last = m.index + m[0].length;
+    const w = (m[2] ?? "").trim().split(/\s+/).filter(Boolean);
+    const size = Number(w.find((x) => /^[1248]$/.test(x)) ?? 0);
+    const le = w.includes("le");
+    const dec = w.includes("dec");
+    if (m[1] === "req") {
+      const [a, b] = span(w[0] ?? "..", req.length);
+      body.push(...req.slice(a, b));
+    } else if (m[1] === "counter") body.push(...putNum(counter, size || 1, le, dec));
+    else if (m[1] === "rand") {
+      const [lo, hi] = (w[0] ?? "0..255").split("..").map(Number);
+      const v = lo + Math.floor(Math.random() * (hi - lo + 1));
+      body.push(...putNum(v, size || (hi < 256 ? 1 : hi < 65536 ? 2 : 4), le, dec));
+    } else if (m[1] === "time") body.push(...ascii(new Date().toTimeString().slice(0, 8)));
+    else if (m[1] === "unix") body.push(...ascii(String(w[0] === "ms" ? Date.now() : Math.floor(Date.now() / 1000))));
+    else crcs.push({ at: body.length, kind: w[0], range: w.find((x) => x.includes("..")), swap: w.includes("swap") });
+  }
+  lit((spec.text ?? "").slice(last));
+  const sums = crcs.map((c) => {
+    const [a, b] = c.range ? span(c.range, body.length) : [0, c.at];
+    if (b <= a) throw tr("{crc} 앞에 계산할 바이트가 없습니다", "{crc} has no bytes before it");
+    const v = compute(c.kind === "modbus" ? "crc16-modbus" : c.kind, body.slice(a, b));
+    return { at: c.at, v: c.swap ? [...v].reverse() : v };
+  });
+  for (const x of sums.reverse()) body.splice(x.at, 0, ...x.v);
+  return build({ text: body.map(hex2).join(" "), mode: "hex", checksum: spec.checksum, suffix: spec.suffix });
+}
+/** 이 PC 랜카드(core net.rs interfaces 모양) */
+const IFACES = [
+  { name: tr("이더넷", "Ethernet"), description: "Intel(R) Ethernet Connection I219-LM", ipv4: "192.168.0.15", prefix: 24, mask: "255.255.255.0", gateway: "192.168.0.1", up: true, loopback: false },
+  { name: tr("이더넷 2 (장비망)", "Ethernet 2 (machines)"), description: "ASIX AX88179 USB 3.0 to Gigabit Ethernet Adapter", ipv4: "10.10.1.23", prefix: 16, mask: "255.255.0.0", up: true, loopback: false },
+  { name: "Loopback Pseudo-Interface 1", description: "Software Loopback Interface 1", ipv4: "127.0.0.1", prefix: 8, mask: "255.0.0.0", up: true, loopback: true },
+  { name: "Wi-Fi", description: "Intel(R) Wi-Fi 6 AX201 160MHz", ipv4: "169.254.33.7", prefix: 16, mask: "255.255.0.0", up: false, loopback: false },
+];
+/** 이 PC 에 없는 주소(0.0.0.0·127.x·이름은 통과) */
+const notLocal = (h) => /^\d+\.\d+\.\d+\.\d+$/.test(h) && h !== "0.0.0.0" && !h.startsWith("127.") && !IFACES.some((i) => i.ipv4 === h);
+const notHere = (addr) =>
+  `${addr}: ${tr("이 PC 에 없는 주소입니다(랜카드 주소 확인)", "Address not available on this PC (check the network adapter address)")} (os error 10049) — ${tr("이 PC 주소: 192.168.0.15 (이더넷), 10.10.1.23 (이더넷 2) · 0.0.0.0 = 모든 랜카드", "This PC: 192.168.0.15 (Ethernet), 10.10.1.23 (Ethernet 2) · 0.0.0.0 = all adapters")}`;
+const heldBy = () => tr(" — 쥔 프로그램: System (PID 4)", " — held by System (PID 4)");
+/** core tcp.rs decode_mbap 흉내 */
+function decodeMbap(b) {
+  if (b.length < 8 || b[2] !== 0 || b[3] !== 0) return null;
+  const length = (b[4] << 8) | b[5];
+  const unit = b[6];
+  const fn = b[7];
+  const names = { 1: "Read Coils", 2: "Read Discrete Inputs", 3: "Read Holding Registers", 4: "Read Input Registers", 5: "Write Single Coil", 6: "Write Single Register", 15: "Write Multiple Coils", 16: "Write Multiple Registers" };
+  const name = names[fn & 0x7f] ?? "Unknown";
+  let modbus;
+  if (fn & 0x80) modbus = { slave: unit, function: fn, function_name: name, kind: "exception", crc_ok: true, fields: [["exception", `0x${hex2(b[8] ?? 0)}`]], values: [] };
+  else if (b.length === 12 && fn <= 6) modbus = { slave: unit, function: fn, function_name: name, kind: "request", crc_ok: true, fields: [["start", String((b[8] << 8) | b[9])], ["quantity", String((b[10] << 8) | b[11])]], values: [] };
+  else {
+    const vals = [];
+    for (let i = 9; i + 1 < b.length; i += 2) vals.push((b[i] << 8) | b[i + 1]);
+    modbus = { slave: unit, function: fn, function_name: name, kind: "response", crc_ok: true, fields: [["byte count", String(b[8] ?? 0)]], values: vals };
+  }
+  const summary = modbus.kind === "request" ? `id${unit} FC${hex2(fn)} HR ${modbus.fields[0][1]}.. (${modbus.fields[1][1]})` : `id${unit} FC${hex2(fn & 0x7f)} ${tr("정상", "OK")}`;
+  return { transaction: (b[0] << 8) | b[1], protocol: 0, length, unit, lengthOk: length === b.length - 6, modbus, summary };
+}
 /** 규칙 패턴 → [바이트 | null(??) | "*"(**)] */
 function compilePattern(r) {
   if (r.patternMode === "hex") {
@@ -621,30 +750,41 @@ function matchAt(pat, bytes, pi = 0, bi = 0) {
   if (bi >= bytes.length) return false;
   return (pat[pi] === null || pat[pi] === bytes[bi]) && matchAt(pat, bytes, pi + 1, bi + 1);
 }
+function ruleMatches(r, req) {
+  try {
+    const pat = compilePattern(r);
+    return r.kind === "exact" ? matchAt(pat, req) : matchAt(["*", ...pat, "*"], req);
+  } catch {
+    return false;
+  }
+}
 function simReply(rx, peer) {
   let req = rx;
   if (sim.opts.stripTerminator) while (req.length && (req[req.length - 1] === 13 || req[req.length - 1] === 10)) req = req.slice(0, -1);
   for (const r of sim.rules) {
-    let ok = false;
-    try {
-      const pat = compilePattern(r);
-      ok = r.kind === "exact" ? matchAt(pat, req) : matchAt(["*", ...pat, "*"], req);
-    } catch {
-      continue;
-    }
-    if (!ok) continue;
+    if (!ruleMatches(r, req)) continue;
+    const m = (sim.matched[r.name] = (sim.matched[r.name] ?? 0) + 1);
+    if (r.dropEvery > 0 && m % r.dropEvery === 0) return frames(ev(tr(`DROP ${r.name} — ${r.dropEvery}번째마다 무응답`, `DROP ${r.name} — every ${r.dropEvery}th request unanswered`)));
+    if (r.dropPct > 0 && Math.random() * 100 < r.dropPct) return frames(ev(tr(`DROP ${r.name} — 확률 ${r.dropPct}%`, `DROP ${r.name} — ${r.dropPct}% chance`)));
+    const all = [r.reply, ...(r.moreReplies ?? [])];
+    const count = sim.hits[r.name] ?? 0;
+    const pick = all.length < 2 ? 0 : r.replyOrder === "random" ? Math.floor(Math.random() * all.length) : count % all.length;
     let bytes;
     try {
-      bytes = build(r.reply);
-    } catch {
-      continue;
+      bytes = renderTpl(all[pick], rx, count);
+    } catch (e) {
+      return frames(ev(`AUTO ${r.name} — ${e}`));
     }
-    sim.hits[r.name] = (sim.hits[r.name] ?? 0) + 1;
-    later(Math.min(r.delayMs, 300), () => frames(data("tx", bytes, null, peer)));
+    sim.hits[r.name] = count + 1;
+    const delay = (r.delayMaxMs ?? 0) > r.delayMs ? r.delayMs + Math.floor(Math.random() * (r.delayMaxMs - r.delayMs + 1)) : r.delayMs;
+    frames(ev(`AUTO ${r.name}${all.length > 1 ? ` [${pick + 1}/${all.length}]` : ""}${(r.delayMaxMs ?? 0) > r.delayMs ? ` +${delay}ms` : ""}`));
+    later(Math.min(delay, 300), () => frames(data("tx", bytes, null, peer)));
     return;
   }
-  if (sim.opts.logNoMatch) frames(ev(`NO MATCH ${req.length} B`));
+  if (sim.opts.logNoMatch && sim.rules.length) frames(ev("NO MATCH"));
 }
+/** Serial·TCP·UDP — «켜기» 일 때만 */
+const autoReply = (rx, peer) => sim.enabled && simReply(rx, peer);
 function simSerialTick() {
   const s = S;
   if (!s.online) return;
@@ -805,7 +945,23 @@ async function handle(cmd, a) {
       }
       if (S.kind === "sim-udp") return udpSend(null, a.spec).then(() => null);
       // TCP · Simulator TCP
-      if (!S.peers.length) return fail(tr("연결된 상대가 없습니다", "No peer is connected"));
+      if (!S.peers.length) return fail(S.relay ? tr("이어진 중계 쌍이 없습니다", "No relayed pair is connected") : tr("연결된 상대가 없습니다", "No peer is connected"));
+      if (a.mbapTid && b.bytes.length >= 8 && b.bytes[2] === 0 && b.bytes[3] === 0 && ((b.bytes[4] << 8) | b.bytes[5]) === b.bytes.length - 6) {
+        S.tid = ((S.tid ?? 0) + 1) & 0xffff;
+        b.bytes[0] = S.tid >> 8;
+        b.bytes[1] = S.tid & 0xff;
+      }
+      if (S.relay) {
+        const pairs = a.target != null ? S.peers.filter((x) => x.id === a.target) : S.peers;
+        if (!pairs.length) return fail(tr("그 상대는 이미 끊겼습니다", "That peer is already gone"));
+        const toB = a.side === "b";
+        if (!toB) frames(ev(tr(`INJECT → A (${b.bytes.length}바이트)`, `INJECT → A (${b.bytes.length} bytes)`)));
+        for (const p of pairs) {
+          if (toB) frames(ev(tr(`INJECT → B ${S.upstream} (${b.bytes.length}바이트)`, `INJECT → B ${S.upstream} (${b.bytes.length} bytes)`)));
+          frames(data(toB ? "rx" : "tx", b.bytes, null, p.addr));
+        }
+        return { sent: pairs.length, total: pairs.length };
+      }
       if ("target" in a && a.target != null) {
         const p = S.peers.find((x) => x.id === a.target);
         if (!p) return fail(tr("그 상대는 이미 끊겼습니다", "That peer is already gone"));
@@ -913,7 +1069,7 @@ async function handle(cmd, a) {
 
     // ---- TCP · UDP (둘 다 «start» — 설정 모양으로 가린다)
     case "start":
-      return "mode" in a.config ? tcpStart(a.config, a.framing, a.rxCheck, a.onEvent) : udpStart(a.config, a.rxCheck, a.onEvent);
+      return "mode" in a.config ? tcpStart(a.config, a.framing, a.rxCheck, a.onEvent, false, a.upstream) : udpStart(a.config, a.rxCheck, a.onEvent);
     case "stop":
       if (S) endSession(S.port, S.peers.length ? S.peers.map((p) => `CLOSE ${p.addr} (${tr("사용자가 끊음", "disconnected by user")})`) : ["CLOSE"]);
       return null;
@@ -957,7 +1113,8 @@ async function handle(cmd, a) {
         try {
           if (!r.pattern.trim()) throw tr("패턴이 비어 있습니다", "The pattern is empty");
           compilePattern(r);
-          build(r.reply);
+          for (const x of [r.reply, ...(r.moreReplies ?? [])]) renderTpl(x, Array(260).fill(0));
+          if ((r.dropPct ?? 0) > 100) throw tr("버릴 확률은 0~100% 입니다", "Drop probability must be 0–100%");
           active.push(r);
         } catch (e) {
           errors.push({ index, name: r.name, message: String(e) });
@@ -974,6 +1131,35 @@ async function handle(cmd, a) {
     case "reset_hits":
       sim.hits = {};
       return null;
+    case "set_auto_reply":
+      sim.enabled = !!a.on;
+      return null;
+    case "preview_rule": {
+      const r = a.rule;
+      let request;
+      try {
+        if (!r.pattern.trim()) throw tr("패턴이 비어 있습니다", "The pattern is empty");
+        compilePattern(r);
+        request = r.patternMode === "hex" ? parseHex(a.sample ?? "") : parseAscii(a.sample ?? "");
+      } catch (e) {
+        return fail(String(e));
+      }
+      let core = request;
+      if (sim.opts.stripTerminator) while (core.length && (core[core.length - 1] === 13 || core[core.length - 1] === 10)) core = core.slice(0, -1);
+      const replies = [r.reply, ...(r.moreReplies ?? [])].map((x) => {
+        try {
+          return { bytes: renderTpl(x, request, 0) };
+        } catch (e) {
+          return { error: String(e) };
+        }
+      });
+      const dynamic = [r.reply, ...(r.moreReplies ?? [])].some((x) => /\{(req|counter|rand|time|unix)\b/.test(x.text));
+      return { request, matches: request.length ? ruleMatches(r, core) || ruleMatches(r, request) : null, replies, dynamic };
+    }
+    case "interfaces":
+      return IFACES.map((i) => ({ ...i }));
+    case "decode_mbap":
+      return decodeMbap(a.bytes);
   }
   // 창 관련(plugin:window|·plugin:event|) 등은 조용히 넘긴다
   if (!cmd.startsWith("plugin:")) console.warn(`[mock] 모르는 명령: ${cmd}`);
@@ -986,6 +1172,8 @@ mockIPC(
     if (!cmd.startsWith("plugin:event") && !["get_values", "get_stats", "get_hits", "list_ports"].includes(cmd)) window.__pdMock.calls.push(cmd);
     if (window.__pdMock.calls.length > 2000) window.__pdMock.calls.splice(0, 1000);
     // Net Scan 명령은 맨 아래 따로 둔 부분이 받는다
+    // Modbus Master 는 이름이 겹치는 명령(open·close …)이 있어 창 제목으로 가린다
+    if (MM_CMDS.has(cmd) && isMM()) return mmaster(cmd, a);
     return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
   },
   { shouldMockEvents: true },
@@ -1188,6 +1376,298 @@ async function netscan(cmd, a) {
       if (!NSM) return fail(tr("감시 중이 아닙니다", "Monitor is not running"));
       NSM.log = a.path ?? null;
       if (a.path && !files.has(a.path)) files.set(a.path, "time,host,ip,result,rtt_ms,event\n");
+      return null;
+  }
+  return null;
+}
+
+// ================================================================ Modbus Master (apps/modbus-master — 명령: apps/modbus-master/src-tauri/src/lib.rs)
+// 창 제목이 «… PortDock Modbus Master» 일 때만 이 부분이 받는다(open·close 같은 이름이 다른 앱과 겹친다).
+// 가짜 장비: 국번 1·2 는 모든 표의 0~199 에 답하고(밖은 예외 02), 17 은 늘 예외 01, 나머지는 무응답(타임아웃).
+// 입력 레지스터 0 = 카운터, 1 = 사인, 보유 레지스터 10~11 = F32(CDAB) 온도, 코일 0 = 깜빡임.
+const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "preview_write", "scan_ids", "scan_addrs", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
+const isMM = () => /Modbus Master/.test(document.title);
+const mmNewStats = () => ({ requests: 0, ok: 0, exceptions: 0, timeouts: 0, crc: 0, bad: 0, sendErrors: 0, avgMs: 0, maxMs: 0, lastMs: 0, _sum: 0, _n: 0 });
+const MMD = { coils: new Array(200).fill(0), discrete: Array.from({ length: 200 }, (_, i) => (i % 3 === 0 ? 1 : 0)), holding: Array.from({ length: 200 }, (_, i) => i * 10), input: new Array(200).fill(0) };
+let MMS = null; // { wire, tables, timing, paused, style, next: {}, tid, stats: {total, tables}, scan, t0 }
+function mmF32Cdab(v) {
+  const dv = new DataView(new ArrayBuffer(4));
+  dv.setFloat32(0, v);
+  return [dv.getUint16(2), dv.getUint16(0)];
+}
+function mmSimTick() {
+  const t = (now() - (MMS?.t0 ?? now())) / 1000;
+  MMD.input[0] = (MMD.input[0] + 1) & 0xffff;
+  MMD.input[1] = Math.round(1000 + 500 * Math.sin(t / 2)) & 0xffff;
+  [MMD.holding[10], MMD.holding[11]] = mmF32Cdab(21.5 + Math.sin(t / 3) * 2);
+  MMD.coils[0] = Math.floor(t) % 2;
+}
+const MM_TB = { 1: ["CO", "0", MMD.coils], 2: ["DI", "1", MMD.discrete], 3: ["HR", "4", MMD.holding], 4: ["IR", "3", MMD.input] };
+const mmAddr = (fc, a) => (MMS?.style?.plc ? MM_TB[[5, 15].includes(fc) ? 1 : [6, 16].includes(fc) ? 3 : fc][1] + String(a + 1).padStart(a < 9999 ? 4 : 5, "0") : String(a + (MMS?.style?.base ?? 0)));
+const mmSpan = (fc, a, n) => (n > 1 ? `${mmAddr(fc, a)}..${mmAddr(fc, a + n - 1)}` : mmAddr(fc, a));
+const mmTbl = (fc) => MM_TB[[5, 15].includes(fc) ? 1 : [6, 16].includes(fc) ? 3 : fc][0];
+const mmFrame = (unit, pdu) => (MMS.wire === "tcp" ? mbap(MMS.tid, unit, pdu) : withCrc([unit, ...pdu]));
+const mmList = (v, max = 8) => v.slice(0, max).join(", ") + (v.length > max ? ", …" : "");
+const MM_EXC = { 1: ["지원하지 않는 함수", "Illegal Function"], 2: ["없는 주소", "Illegal Data Address"] };
+const mmExcText = (c) => tr(`예외 0${c} ${MM_EXC[c][0]} (${MM_EXC[c][1]})`, `exception 0${c} ${MM_EXC[c][1]}`);
+/** 요청 하나 — { lines, outcome, rttMs } */
+function mmTransact(unit, fc, start, qtyOrVals, table, timeoutMs = MMS.timing.timeoutMs) {
+  MMS.tid = (MMS.tid + 1) & 0xffff;
+  const ts = now();
+  const write = [5, 6, 15, 16].includes(fc);
+  const qty = write ? (fc === 5 || fc === 6 ? 1 : qtyOrVals.length) : qtyOrVals;
+  let pdu;
+  if (fc === 5) pdu = [5, start >> 8, start & 255, qtyOrVals[0] ? 0xff : 0, 0];
+  else if (fc === 6) pdu = [6, start >> 8, start & 255, qtyOrVals[0] >> 8, qtyOrVals[0] & 255];
+  else if (fc === 15) {
+    const bytes = new Array(Math.ceil(qty / 8)).fill(0);
+    qtyOrVals.forEach((b, i) => b && (bytes[i >> 3] |= 1 << (i & 7)));
+    pdu = [15, start >> 8, start & 255, qty >> 8, qty & 255, bytes.length, ...bytes];
+  } else if (fc === 16) pdu = [16, start >> 8, start & 255, qty >> 8, qty & 255, qty * 2, ...qtyOrVals.flatMap((v) => [v >> 8, v & 255])];
+  else pdu = [fc, start >> 8, start & 255, qty >> 8, qty & 255];
+  const head = MMS.wire === "tcp" ? `#${MMS.tid} ` : "";
+  const what = write ? `${mmTbl(fc)} ${mmSpan(fc, start, qty)} ← ${mmList(fc === 5 ? [qtyOrVals[0] ? "ON" : "OFF"] : qtyOrVals)}` : `${mmTbl(fc)} ${mmSpan(fc, start, qty)} (${qty})`;
+  const req = mmFrame(unit, pdu);
+  const lines = [{ ts, dir: "tx", bytes: req, check: null, sum: `${head}id${unit} FC${hex2(fc)} ${what}`, table }];
+  if (!S?.online) {
+    const why = tr("포트가 끊겨 있습니다", "The port is disconnected");
+    return { lines: [{ ts, dir: "ev", bytes: [], check: null, note: `SEND FAIL ${why}`, table }], outcome: { result: "send-error", why }, rttMs: 0, ts };
+  }
+  if (unit !== 1 && unit !== 2 && unit !== 17) {
+    lines.push({ ts: ts + timeoutMs, dir: "ev", bytes: [], check: null, note: `TIMEOUT ${timeoutMs} ms · id${unit}`, table });
+    return { lines, outcome: { result: "timeout" }, rttMs: 0, ts };
+  }
+  const rtt = 3 + Math.round(Math.random() * 9);
+  const reply = (rpdu, sum, outcome) => {
+    lines.push({ ts: ts + rtt, dir: "rx", bytes: mmFrame(unit, rpdu), check: MMS.wire === "tcp" ? null : true, sum: `${head}id${unit} FC${hex2(fc)} ${mmTbl(fc)} ${mmSpan(fc, start, qty)} → ${sum} · ${rtt} ms`, table });
+    return { lines, outcome, rttMs: rtt, ts };
+  };
+  if (unit === 17) return reply([fc | 0x80, 1], mmExcText(1), { result: "exception", code: 1 });
+  if (start + qty > 200) return reply([fc | 0x80, 2], mmExcText(2), { result: "exception", code: 2 });
+  const ok = tr("정상", "OK");
+  if (write) {
+    const arr = fc === 5 || fc === 15 ? MMD.coils : MMD.holding;
+    (fc === 5 ? [qtyOrVals[0] ? 1 : 0] : qtyOrVals).forEach((v, i) => (arr[start + i] = fc === 15 || fc === 5 ? (v ? 1 : 0) : v & 0xffff));
+    return reply(fc === 5 || fc === 6 ? pdu : pdu.slice(0, 5), ok, { result: "ok", values: [] });
+  }
+  const vals = MM_TB[fc][2].slice(start, start + qty);
+  const data = fc <= 2 ? (() => {
+    const b = new Array(Math.ceil(qty / 8)).fill(0);
+    vals.forEach((v, i) => v && (b[i >> 3] |= 1 << (i & 7)));
+    return b;
+  })() : vals.flatMap((v) => [v >> 8, v & 255]);
+  return reply([fc, data.length, ...data], `${ok}: ${mmList(vals, fc <= 2 ? 16 : 8)}`, { result: "ok", values: vals });
+}
+function mmCount(table, o, rtt) {
+  for (const st of [MMS.stats.total, ...(table != null ? [(MMS.stats.tables[String(table)] ??= mmNewStats())] : [])]) {
+    st.requests++;
+    if (o.result === "ok" || o.result === "broadcast") st.ok++;
+    else if (o.result === "exception") st.exceptions++;
+    else if (o.result === "timeout") st.timeouts++;
+    else if (o.result === "send-error") st.sendErrors++;
+    else st.bad++;
+    if (rtt > 0) {
+      st._sum += rtt;
+      st._n++;
+      st.avgMs = st._sum / st._n;
+      st.maxMs = Math.max(st.maxMs, rtt);
+      st.lastMs = rtt;
+    }
+  }
+}
+function mmPoll(t, batch) {
+  const r = mmTransact(t.unit, t.fc, t.start, t.qty, t.id);
+  mmCount(t.id, r.outcome, r.rttMs);
+  batch.lines.push(...r.lines);
+  batch.polls.push({ table: t.id, ts: r.ts, outcome: r.outcome, rttMs: r.rttMs, tries: 1 });
+}
+function mmTick() {
+  if (!MMS || MMS.scan) return;
+  mmSimTick();
+  const batch = { type: "batch", lines: [], polls: [] };
+  const n = now();
+  if (!MMS.paused)
+    for (const t of MMS.tables) {
+      if (!t.enabled || !t.intervalMs) continue;
+      // 가짜라 너무 빨리 돌지 않게 0.3초보다 짧은 주기는 0.3초로
+      if ((MMS.next[t.id] ?? 0) > n) continue;
+      MMS.next[t.id] = n + Math.max(300, t.intervalMs);
+      mmPoll(t, batch);
+    }
+  if (batch.lines.length || batch.polls.length) send(batch);
+}
+function mmStart(ch, wire, setup, extra) {
+  MMS = { wire, tables: setup.tables, timing: setup.timing, paused: setup.paused, style: setup.style, next: {}, tid: 0, stats: { total: mmNewStats(), tables: {} }, scan: null, t0: now(), ...extra };
+  every(100, mmTick);
+}
+function mmStatsOut() {
+  const strip = (s) => {
+    const { _sum, _n, ...rest } = s;
+    void _sum;
+    void _n;
+    return rest;
+  };
+  if (!MMS) return { total: strip(mmNewStats()), tables: {} };
+  return { total: strip(MMS.stats.total), tables: Object.fromEntries(Object.entries(MMS.stats.tables).map(([k, v]) => [k, strip(v)])) };
+}
+function mmScanRun(kind, cfg) {
+  const s = S;
+  const units = kind === "ids" ? Array.from({ length: cfg.to - cfg.from + 1 }, (_, i) => cfg.from + i) : null;
+  const total = kind === "ids" ? units.length : cfg.to - cfg.from + 1;
+  let i = 0;
+  let found = 0;
+  const ranges = [];
+  MMS.scan = { cancelled: false };
+  const job = MMS.scan;
+  const finish = (stopped = null) => {
+    clearInterval(job.timer);
+    if (MMS && MMS.scan === job) MMS.scan = null;
+    if (S === s) send({ type: "scan-done", kind, found, cancelled: job.cancelled, stopped });
+  };
+  job.timer = setInterval(() => {
+    if (S !== s || !MMS) return clearInterval(job.timer);
+    if (job.cancelled) return finish();
+    const batch = { type: "batch", lines: [], polls: [] };
+    if (kind === "ids") {
+      // 한 번에 4개씩
+      for (let k = 0; k < 4 && i < units.length; k++, i++) {
+        const r = mmTransact(units[i], cfg.fc, cfg.addr, 1, undefined, cfg.timeoutMs);
+        mmCount(null, r.outcome, r.rttMs);
+        batch.lines.push(...r.lines);
+        if (r.outcome.result !== "timeout" && r.outcome.result !== "send-error") {
+          found++;
+          send({ type: "scan-hit", unit: units[i], outcome: r.outcome, rttMs: r.rttMs });
+        }
+      }
+      send(batch);
+      send({ type: "scan-progress", done: i, total });
+      if (i >= units.length) finish();
+      return;
+    }
+    // 주소: 덩어리 하나씩
+    const a = cfg.from + i;
+    const n = Math.min(cfg.block, cfg.to - a + 1);
+    const r = mmTransact(cfg.unit, cfg.fc, a, n, undefined, cfg.timeoutMs);
+    mmCount(null, r.outcome, r.rttMs);
+    batch.lines.push(...r.lines);
+    send(batch);
+    i += n;
+    if (r.outcome.result === "ok") {
+      const last = ranges[ranges.length - 1];
+      if (last && last[1] + 1 >= a) last[1] = a + n - 1;
+      else ranges.push([a, a + n - 1]);
+      found += n;
+      send({ type: "scan-ranges", ranges: ranges.map((x) => [...x]) });
+    }
+    send({ type: "scan-progress", done: Math.min(i, total), total });
+    if (r.outcome.result === "exception" && r.outcome.code === 1) return finish(mmExcText(1));
+    if (r.outcome.result === "timeout") return finish(tr("세 번 이어서 응답이 없어 멈췄습니다 — 국번·통신 설정을 확인하세요", "Stopped after three requests in a row got no valid reply — check the slave ID and line settings"));
+    if (a + n > 199 || i >= total) finish();
+  }, 60);
+}
+async function mmaster(cmd, a) {
+  switch (cmd) {
+    case "open": {
+      const r = await openSerial("modbus-master", a.config, a.onEvent);
+      if (S?.kind === "modbus-master") mmStart(a.onEvent, "rtu", a.setup);
+      return r;
+    }
+    case "open_tcp": {
+      if (S) return fail(tr("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting"));
+      if (!a.config.host || unresolvable(a.config.host)) return fail(`${a.config.host}:${a.config.port}: ${tr("주소를 찾지 못했습니다", "address not found")}`);
+      const s = newSession("modbus-master", a.onEvent, { port: `${a.config.host}:${a.config.port}` });
+      mmStart(a.onEvent, a.config.wire, a.setup);
+      later(250, () => {
+        s.online = true;
+        frames(ev(`CONNECT ${s.port}`));
+        status("connected", s.port, null);
+      });
+      return null;
+    }
+    case "close":
+      if (MMS?.scan) MMS.scan.cancelled = true;
+      if (S) endSession(S.port);
+      MMS = null;
+      return null;
+    case "reconfigure":
+      if (!S) return fail(NO_SESSION());
+      return null;
+    case "set_tables":
+      if (MMS) MMS.tables = a.tables;
+      return null;
+    case "set_timing":
+      if (a.timing.timeoutMs < 10 || a.timing.timeoutMs > 60000) return fail(tr("응답 기다림은 10~60000 ms 입니다", "Response timeout must be 10–60000 ms"));
+      if (MMS) MMS.timing = a.timing;
+      return null;
+    case "set_addr_style":
+      if (MMS) MMS.style = a.style;
+      return null;
+    case "set_paused":
+      if (MMS) MMS.paused = a.paused;
+      return null;
+    case "read_once": {
+      if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      const t = MMS.tables.find((x) => x.id === a.table);
+      if (t) {
+        const batch = { type: "batch", lines: [], polls: [] };
+        mmPoll(t, batch);
+        setTimeout(() => send(batch), 30);
+      }
+      return null;
+    }
+    case "preview_write":
+    case "write": {
+      const q = a.req;
+      if (!q.values.length || q.values.length > (q.bits ? 1968 : 123)) return fail(tr(`한 번에 1~${q.bits ? 1968 : 123}개까지 씁니다 (지금 ${q.values.length})`, `1–${q.bits ? 1968 : 123} items per write (now ${q.values.length})`));
+      if (q.start + q.values.length > 65536) return fail(tr("주소 끝을 넘습니다", "Runs past 65535"));
+      const multi = q.values.length > 1 || q.forceMulti;
+      const fc = q.bits ? (multi ? 15 : 5) : multi ? 16 : 6;
+      if (cmd === "preview_write") {
+        let pdu;
+        if (fc === 5) pdu = [5, q.start >> 8, q.start & 255, q.values[0] ? 0xff : 0, 0];
+        else if (fc === 6) pdu = [6, q.start >> 8, q.start & 255, q.values[0] >> 8, q.values[0] & 255];
+        else if (fc === 15) {
+          const b = new Array(Math.ceil(q.values.length / 8)).fill(0);
+          q.values.forEach((v, i) => v && (b[i >> 3] |= 1 << (i & 7)));
+          pdu = [15, q.start >> 8, q.start & 255, 0, q.values.length, b.length, ...b];
+        } else pdu = [16, q.start >> 8, q.start & 255, 0, q.values.length, q.values.length * 2, ...q.values.flatMap((v) => [v >> 8, v & 255])];
+        return a.wire === "tcp" ? mbap(0, q.unit, pdu) : withCrc([q.unit, ...pdu]);
+      }
+      if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      const r = mmTransact(q.unit, fc, q.start, fc === 5 || fc === 6 ? [q.values[0]] : q.values, a.table);
+      mmCount(a.table, r.outcome, r.rttMs);
+      setTimeout(() => {
+        send({ type: "batch", lines: r.lines, polls: [] });
+        send({ type: "write", token: a.token, table: a.table, outcome: r.outcome, rttMs: r.rttMs });
+        const t = MMS?.tables.find((x) => x.id === a.table);
+        if (t && r.outcome.result === "ok") {
+          const batch = { type: "batch", lines: [], polls: [] };
+          mmPoll(t, batch);
+          send(batch);
+        }
+      }, 40);
+      return null;
+    }
+    case "scan_ids":
+    case "scan_addrs":
+      if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      if (MMS.scan) return fail(tr("이미 찾는 중입니다", "A scan is already running"));
+      mmScanRun(cmd === "scan_ids" ? "ids" : "addrs", a.config);
+      return null;
+    case "scan_cancel":
+      if (MMS?.scan) MMS.scan.cancelled = true;
+      return null;
+    case "get_stats":
+      return mmStatsOut();
+    case "reset_stats":
+      if (MMS) MMS.stats = { total: mmNewStats(), tables: {} };
+      return null;
+    case "set_log":
+      if (!S) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      if (a.path) files.set(a.path, files.get(a.path) ?? "");
+      return null;
+    case "append_text":
+      files.set(a.path, (files.get(a.path) ?? "") + a.text);
       return null;
   }
   return null;

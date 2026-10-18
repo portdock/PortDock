@@ -7,17 +7,25 @@ use portdock_core::event::LogOptions;
 use portdock_core::event::SessionEvent;
 use portdock_core::framer::FrameMode;
 use portdock_core::registry::{Registry, auto_remove_sink};
-use portdock_core::tcp::{TcpConfig, TcpSession};
+use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
+use portdock_core::tcp::{MbapInfo, RelayTarget, TcpConfig, TcpMode, TcpSession};
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tauri::State;
 use tauri::ipc::Channel;
 
-/// 세션은 하나 — 보관함 이름 "main". 스스로 닫히면(접속 실패·자동 재접속 꺼짐) 알아서 빠진다
-#[derive(Default)]
-struct App(Arc<Registry<TcpSession>>, Arc<Cancel>);
+/// 세션은 하나 — 보관함 이름 "main". 스스로 닫히면(접속 실패·자동 재접속 꺼짐) 알아서 빠진다.
+/// .2 = 자동응답(화면의 «켜기» 로, 처음엔 꺼짐) · .3 = Modbus TCP 트랜잭션 ID(보낼 때마다 1씩)
+struct App(Arc<Registry<TcpSession>>, Arc<Cancel>, AutoReply, AtomicU16);
+
+impl Default for App {
+    fn default() -> Self {
+        Self(Arc::default(), Arc::default(), AutoReply::new(false), AtomicU16::new(1))
+    }
+}
 
 const MAIN: &str = "main";
 
@@ -27,6 +35,7 @@ fn start(
     config: TcpConfig,
     framing: FrameMode,
     rx_check: Option<ChecksumKind>,
+    upstream: Option<RelayTarget>,
     on_event: Channel<SessionEvent>,
 ) -> Result<Option<String>, String> {
     let reg = app.0.clone();
@@ -34,7 +43,14 @@ fn start(
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, move |e| {
         let _ = on_event.send(e);
     });
-    let s = TcpSession::start(config, framing, rx_check, None, sink)?;
+    // 중계(모드 relay + upstream)는 자동응답 없이 그대로 잇는다
+    let s = if config.mode == TcpMode::Relay {
+        let up = upstream.ok_or_else(|| tr!("이어 줄 장비(B)의 주소와 포트를 넣어 주세요", "Enter the device (B) host and port").to_string())?;
+        TcpSession::start_relay(config, up, framing, rx_check, sink)?
+    } else {
+        app.2.set_terminator(framing.terminator());
+        TcpSession::start(config, framing, rx_check, Some(app.2.responder()), sink)?
+    };
     let local = s.local_addr().map(|a| a.to_string());
     opening.finish(s);
     Ok(local)
@@ -49,6 +65,7 @@ fn stop(app: State<App>) {
 
 #[tauri::command(async)]
 fn set_framing(app: State<App>, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
+    app.2.set_terminator(framing.terminator());
     app.0.with(MAIN, |s| s.set_framing(framing, rx_check))
 }
 
@@ -66,16 +83,28 @@ struct SendResult {
     total: usize,
 }
 
+/// 한 번 보내기 — 중계면 `upstream` 이 B 쪽(아니면 A 쪽)
+fn send_once(s: &TcpSession, target: Option<u64>, upstream: bool, bytes: &[u8]) -> Result<(usize, usize), String> {
+    if upstream && s.is_relay() { s.send_upstream(target, bytes) } else { s.send(target, bytes) }
+}
+
 /// target 이 없으면 붙어 있는 모두에게. 실패한 연결은 «SEND FAIL» 사건 줄을 남기고 닫힌다.
-/// `pace` 에 문자 간 지연이 있으면 한 바이트씩 따로 보낸다(그동안 이 명령은 돌아오지 않는다 — 화면은 끝까지 기다림)
+/// `pace` 에 문자 간 지연이 있으면 한 바이트씩 따로 보낸다(그동안 이 명령은 돌아오지 않는다 — 화면은 끝까지 기다림).
+/// `side`: 중계에서 "b" 면 위쪽 장비(B)로 끼워 넣기, 아니면 A 쪽. `mbap_tid`: 보낼 바이트가 MBAP 이면
+/// 트랜잭션 ID 를 1씩 늘려 넣는다(Modbus TCP 요청을 반복해도 응답과 짝이 맞게)
 #[tauri::command(async)]
-fn send(app: State<App>, target: Option<u64>, spec: SendText, pace: Option<Pace>) -> Result<SendResult, String> {
-    let bytes = spec.build()?;
+fn send(app: State<App>, target: Option<u64>, spec: SendText, pace: Option<Pace>, side: Option<String>, mbap_tid: Option<bool>) -> Result<SendResult, String> {
+    let mut bytes = spec.build()?;
     if bytes.is_empty() {
         return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
+    if mbap_tid == Some(true) {
+        let tid = app.3.fetch_add(1, Ordering::SeqCst);
+        portdock_core::tcp::mbap_set_tid(&mut bytes, tid);
+    }
+    let up = side.as_deref() == Some("b");
     let Some(p) = pace.filter(|p| p.char_delay_ms > 0) else {
-        let (sent, total) = app.0.with(MAIN, |s| s.send(target, &bytes))??;
+        let (sent, total) = app.0.with(MAIN, |s| send_once(s, target, up, &bytes))??;
         return Ok(SendResult { sent, total });
     };
     p.validate()?;
@@ -86,7 +115,7 @@ fn send(app: State<App>, target: Option<u64>, spec: SendText, pace: Option<Pace>
         if i > 0 && nap(p.char_delay_ms, &cancel, job) {
             break;
         }
-        last = app.0.with(MAIN, |s| s.send(target, std::slice::from_ref(b)))??;
+        last = app.0.with(MAIN, |s| send_once(s, target, up, std::slice::from_ref(b)))??;
         if last.0 == 0 {
             break;
         }
@@ -138,8 +167,9 @@ const FILE_MAX: u64 = 32 * 1024 * 1024;
 
 /// 파일 그대로(바이트) 보내기 — 화면은 열기 대화상자에서 고른 경로만 넘긴다(D7 와 같은 약속).
 /// 조각(줄·덩어리)마다 TcpSession::send 로 보내고, 진행은 `on_progress` 로. 보내는 동안 상대가 끊기면 멈춘다
+/// `side`: 중계에서 "b" 면 장비(B) 쪽으로
 #[tauri::command(async)]
-fn send_file(app: State<App>, target: Option<u64>, path: String, pace: Pace, on_progress: Channel<FileProgress>) -> Result<FileJob, String> {
+fn send_file(app: State<App>, target: Option<u64>, path: String, pace: Pace, side: Option<String>, on_progress: Channel<FileProgress>) -> Result<FileJob, String> {
     pace.validate()?;
     let meta = std::fs::metadata(&path).map_err(|e| format!("{path}: {e}"))?;
     if !meta.is_file() {
@@ -162,7 +192,8 @@ fn send_file(app: State<App>, target: Option<u64>, path: String, pace: Pace, on_
             let _ = on_progress.send(FileProgress { id, sent, total, done, cancelled, error });
         };
         report(0, false, false, None);
-        let (sent, cancelled, error) = send_pieces(&bytes, pace, &cancel, id, |part| match reg.with(MAIN, |s| s.send(target, part)) {
+        let up = side.as_deref() == Some("b");
+        let (sent, cancelled, error) = send_pieces(&bytes, pace, &cancel, id, |part| match reg.with(MAIN, |s| send_once(s, target, up, part)) {
             Ok(Ok((n, _))) if n > 0 => Ok(()),
             Ok(Ok(_)) => Err(tr!("보낼 상대가 없습니다", "No peer to send to").to_string()),
             Ok(Err(e)) | Err(e) => Err(e),
@@ -251,6 +282,51 @@ fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
     app.0.with(MAIN, |s| s.set_log(path))?
 }
 
+// ---- 자동응답(Simulator 와 같은 규칙) — 세션은 늘 응답기를 꽂고, «켜기» 가 꺼져 있으면 지나간다
+
+#[tauri::command]
+fn set_rules(app: State<App>, rules: Vec<RuleSpec>) -> RulesResult {
+    app.2.set_rules(&rules)
+}
+
+#[tauri::command]
+fn set_auto_reply(app: State<App>, on: bool) {
+    app.2.set_enabled(on);
+}
+
+#[tauri::command]
+fn set_match_options(app: State<App>, strip_terminator: bool, log_no_match: bool) {
+    app.2.set_match_options(strip_terminator, log_no_match);
+}
+
+#[tauri::command]
+fn get_hits(app: State<App>) -> BTreeMap<String, u64> {
+    app.2.hits()
+}
+
+#[tauri::command]
+fn reset_hits(app: State<App>) {
+    app.2.reset_hits();
+}
+
+#[tauri::command]
+fn preview_rule(app: State<App>, rule: RuleSpec, sample: String) -> Result<RulePreview, String> {
+    let opts = app.2.opts.lock().unwrap().clone();
+    autoreply::preview(&rule, &sample, &opts)
+}
+
+/// 이 PC 의 랜카드 IPv4 목록(서버 주소 고르기)
+#[tauri::command(async)]
+fn interfaces() -> Vec<portdock_core::net::Interface> {
+    portdock_core::net::interfaces()
+}
+
+/// Modbus TCP(MBAP) 풀이 — 상세 칸
+#[tauri::command]
+fn decode_mbap(bytes: Vec<u8>) -> Option<MbapInfo> {
+    portdock_core::tcp::decode_mbap(&bytes)
+}
+
 /// 화면 내용 저장 — 화면은 저장 대화상자에서 고른 경로만 넘긴다
 #[tauri::command(async)]
 fn write_text(path: String, text: String) -> Result<(), String> {
@@ -331,7 +407,8 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env,
-            report_read_dump, start, stop, set_framing, set_echo, send, send_file, file_size, cancel_send, set_log_options, kick, preview, set_log, write_text, read_text])
+            report_read_dump, start, stop, set_framing, set_echo, send, send_file, file_size, cancel_send, set_log_options, kick, preview, set_log, write_text, read_text,
+            set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule, interfaces, decode_mbap])
         .run(tauri::generate_context!());
     if let Err(e) = result {
         portdock_core::report::run_failed(&e.to_string());

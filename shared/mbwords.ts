@@ -1,4 +1,5 @@
-import { MB_FUNCS } from "@shared/modbusBuild";
+// Modbus 풀이 문구(한국어) — Serial·TCP 상세 칸이 함께 쓴다(예전 apps/serial/src/mbwords.ts).
+import { MB_FUNCS } from "./modbusBuild";
 // Modbus 풀이(백엔드는 영어 키로 준다)를 화면 언어로
 const KO: Record<string, string> = {
   slave: "국번(슬레이브)",

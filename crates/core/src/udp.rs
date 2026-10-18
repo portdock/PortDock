@@ -27,15 +27,27 @@ pub struct UdpConfig {
     /// 가입할 멀티캐스트 그룹(예: 239.0.0.1). 비우면 안 함
     #[serde(default)]
     pub multicast_group: String,
-    /// 멀티캐스트에 쓸 랜카드 주소(0.0.0.0 = 기본)
+    /// 멀티캐스트에 쓸 랜카드 주소(0.0.0.0 = 기본) — 가입과 보내기(IP_MULTICAST_IF) 둘 다
     #[serde(default = "any")]
     pub multicast_if: String,
+    /// 멀티캐스트로 보낼 때 TTL(지나갈 수 있는 라우터 수, 1 = 같은 망만)
+    #[serde(default = "one")]
+    pub multicast_ttl: u32,
+    /// 멀티캐스트로 보낸 것을 이 PC(같은 그룹에 가입한 프로그램)도 받는지
+    #[serde(default = "yes")]
+    pub multicast_loop: bool,
     #[serde(default)]
     pub echo: bool,
 }
 
 fn any() -> String {
     "0.0.0.0".into()
+}
+fn one() -> u32 {
+    1
+}
+fn yes() -> bool {
+    true
 }
 
 struct Shared {
@@ -225,18 +237,39 @@ impl Drop for UdpSession {
 impl UdpSession {
     pub fn start(cfg: UdpConfig, rx_check: Option<ChecksumKind>, responder: Option<Responder>, events: EventSink) -> Result<Self, String> {
         let bind = resolve(&cfg.bind_host, cfg.bind_port)?;
-        let socket = UdpSocket::bind(bind).map_err(|e| format!("{bind}: {}", crate::oserr::net(&e)))?;
+        let socket = UdpSocket::bind(bind).map_err(|e| crate::net::bind_error(&e, bind, true))?;
         let local = socket.local_addr().map_err(|e| e.to_string())?;
         socket.set_read_timeout(Some(Duration::from_millis(50))).map_err(|e| e.to_string())?;
         socket.set_broadcast(cfg.broadcast).map_err(|e| format!("broadcast: {e}"))?;
 
+        // 멀티캐스트 랜카드(가입·보내기)·TTL·되돌려 받기 — 그룹에 가입하지 않고 보내기만 할 때도 쓴다
+        let if_text = cfg.multicast_if.trim();
+        let iface: Ipv4Addr = if if_text.is_empty() {
+            Ipv4Addr::UNSPECIFIED
+        } else {
+            if_text.parse().map_err(|_| crate::tr!(format!("랜카드 주소가 아닙니다: {if_text}"), format!("Not a network interface address: {if_text}")))?
+        };
+        if !iface.is_unspecified() && !crate::net::is_local_address(&iface.to_string()) {
+            let h = crate::net::address_hint();
+            return Err(crate::tr!(format!("{iface} 는 이 PC 의 랜카드 주소가 아닙니다. {h}"), format!("{iface} is not an address of this PC. {h}")).trim_end().to_string());
+        }
+        if cfg.multicast_ttl == 0 || cfg.multicast_ttl > 255 {
+            return Err(crate::tr!("멀티캐스트 TTL 은 1~255 입니다", "Multicast TTL must be 1–255").into());
+        }
+        {
+            let sr = socket2::SockRef::from(&socket);
+            if !iface.is_unspecified() {
+                sr.set_multicast_if_v4(&iface).map_err(|e| crate::tr!(format!("멀티캐스트 랜카드 {iface}: {e}"), format!("Multicast interface {iface}: {e}")))?;
+            }
+            sr.set_multicast_ttl_v4(cfg.multicast_ttl).map_err(|e| format!("multicast TTL: {e}"))?;
+            sr.set_multicast_loop_v4(cfg.multicast_loop).map_err(|e| format!("multicast loop: {e}"))?;
+        }
         let mut group = None;
         if !cfg.multicast_group.trim().is_empty() {
             let g: Ipv4Addr = cfg.multicast_group.trim().parse().map_err(|_| crate::tr!(format!("멀티캐스트 주소가 아닙니다: {}", cfg.multicast_group), format!("Not a multicast address: {}", cfg.multicast_group)))?;
             if !g.is_multicast() {
                 return Err(crate::tr!(format!("{g} 는 멀티캐스트 주소(224.0.0.0~239.255.255.255)가 아닙니다"), format!("{g} is not a multicast address (224.0.0.0–239.255.255.255)")));
             }
-            let iface: Ipv4Addr = cfg.multicast_if.trim().parse().map_err(|_| crate::tr!(format!("랜카드 주소가 아닙니다: {}", cfg.multicast_if), format!("Not a network interface address: {}", cfg.multicast_if)))?;
             socket.join_multicast_v4(&g, &iface).map_err(|e| crate::tr!(format!("멀티캐스트 가입 {g}: {e}"), format!("Multicast join {g}: {e}")))?;
             group = Some((g, iface));
         }
@@ -266,10 +299,13 @@ impl UdpSession {
             stop: AtomicBool::new(false),
         });
         shared.note(format!(
-            "BIND {local}{}{}{}",
+            "BIND {local}{}{}{}{}{}{}",
             remote.map(|r| format!(" → {r}")).unwrap_or_default(),
             if cfg.broadcast { " broadcast" } else { "" },
-            group.map(|(g, _)| format!(" multicast {g}")).unwrap_or_default()
+            group.map(|(g, _)| format!(" multicast {g}")).unwrap_or_default(),
+            if iface.is_unspecified() { String::new() } else { format!(" if {iface}") },
+            if cfg.multicast_ttl != 1 { format!(" ttl {}", cfg.multicast_ttl) } else { String::new() },
+            if cfg.multicast_loop { "" } else { " noloop" },
         ));
         shared.events.send(SessionEvent::Status { state: "listening", port: local.to_string(), message: None });
 
@@ -396,6 +432,8 @@ mod tests {
             broadcast: false,
             multicast_group: String::new(),
             multicast_if: any(),
+            multicast_ttl: 1,
+            multicast_loop: true,
             echo,
         }
     }
@@ -525,5 +563,53 @@ mod tests {
         assert!(u.send(Some("last"), &[1]).is_err());
         assert!(u.send(Some("nonsense"), &[1]).is_err());
         u.stop();
+    }
+
+    #[test]
+    fn multicast_options_apply_and_validate() {
+        let (s, _) = sink();
+        let mut c = cfg(0, false);
+        c.multicast_ttl = 4;
+        c.multicast_loop = false;
+        c.multicast_if = "127.0.0.1".into();
+        let u = UdpSession::start(c.clone(), None, None, s).unwrap();
+        let sr = socket2::SockRef::from(&u.shared.socket);
+        assert_eq!(sr.multicast_ttl_v4().unwrap(), 4);
+        assert!(!sr.multicast_loop_v4().unwrap());
+        assert_eq!(sr.multicast_if_v4().unwrap(), Ipv4Addr::LOCALHOST);
+        u.stop();
+        for (ttl, iface) in [(0, "0.0.0.0"), (256, "0.0.0.0"), (1, "not-ip"), (1, "203.0.113.77")] {
+            let (s, _) = sink();
+            let mut bad = c.clone();
+            bad.multicast_ttl = ttl;
+            bad.multicast_if = iface.into();
+            if iface == "203.0.113.77" && crate::net::interfaces().is_empty() {
+                continue; // 랜카드 목록을 못 읽는 환경에선 막지 않는다
+            }
+            assert!(UdpSession::start(bad, None, None, s).is_err(), "ttl {ttl} if {iface}");
+        }
+    }
+
+    /// 예전 설정(JSON)에 새 칸이 없어도 읽고 기본값(TTL 1, 되돌려 받기)
+    #[test]
+    fn old_config_json_defaults() {
+        let c: UdpConfig = serde_json_lite();
+        assert_eq!((c.multicast_ttl, c.multicast_loop, c.multicast_if.as_str()), (1, true, "0.0.0.0"));
+    }
+
+    fn serde_json_lite() -> UdpConfig {
+        serde_json::from_str(r#"{"bindHost":"0.0.0.0","bindPort":0,"remoteHost":"","remotePort":0}"#).unwrap()
+    }
+
+    #[test]
+    fn bind_in_use_names_owner() {
+        let held = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let mut c = cfg(0, false);
+        c.bind_port = held.local_addr().unwrap().port();
+        let (s, _) = sink();
+        let err = UdpSession::start(c, None, None, s).err().unwrap();
+        if cfg!(windows) && crate::net::port_owner(held.local_addr().unwrap().port(), true).is_some() {
+            assert!(err.contains(&std::process::id().to_string()), "{err}");
+        }
     }
 }

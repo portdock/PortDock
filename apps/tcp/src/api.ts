@@ -1,6 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { checksumToRust, type ChecksumKind, type CkOpts, type Encoding } from "@shared/format";
 import { frameModeToRust, type FrameMode } from "@shared/framing";
+import type { MbapInfo } from "@shared/MbapDetail";
 import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
@@ -9,13 +10,29 @@ export type { FrameMode } from "@shared/framing";
 export type TextMode = "hex" | "ascii";
 
 export interface TcpConfig {
-  mode: "client" | "server";
+  /** relay = 중계(모니터): host:port 에서 듣고 접속마다 위쪽 장비(RelayTarget)로 잇는다 */
+  mode: "client" | "server" | "relay";
   host: string;
   port: number;
   noDelay: boolean;
   autoReconnect: boolean;
   reconnectMs: number;
   echo: boolean;
+}
+
+/** 중계가 이어 줄 장비(B) */
+export interface RelayTarget {
+  host: string;
+  port: number;
+}
+
+/** TCP 의 프레임 구분 — 공용 방식 + Modbus TCP(MBAP 길이 칸) */
+export type TcpFrameMode = FrameMode | { kind: "modbus-tcp"; gapMs: number };
+
+/** Rust FrameMode — Modbus TCP 는 길이 칸 방식(core framer::FrameMode::modbus_tcp 와 같은 값) */
+export function tcpFrameToRust(m: TcpFrameMode) {
+  if (m.kind === "modbus-tcp") return { kind: "length-field", offset: 4, size: 2, adjust: 6, max: 260, gap_ms: m.gapMs };
+  return frameModeToRust(m);
 }
 
 export interface Frame {
@@ -65,22 +82,30 @@ export interface LogOptions {
 export const wireSpec = (s: SendSpec, encoding: Encoding) => ({ text: s.text, mode: s.mode, suffix: s.suffix, checksum: checksumToRust(s.checksum, s.ck), encoding });
 
 export const api = {
-  start: (config: TcpConfig, framing: FrameMode, rxCheck: unknown, onEvent: (e: SessionEvent) => void) => {
+  start: (config: TcpConfig, framing: TcpFrameMode, rxCheck: unknown, upstream: RelayTarget | null, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<string | null>("start", { config, framing: frameModeToRust(framing), rxCheck, onEvent: ch });
+    return invoke<string | null>("start", { config, framing: tcpFrameToRust(framing), rxCheck, upstream, onEvent: ch });
   },
   stop: () => invoke<void>("stop"),
-  setFraming: (framing: FrameMode, rxCheck: unknown) => invoke<void>("set_framing", { framing: frameModeToRust(framing), rxCheck }),
+  setFraming: (framing: TcpFrameMode, rxCheck: unknown) => invoke<void>("set_framing", { framing: tcpFrameToRust(framing), rxCheck }),
   setEcho: (on: boolean) => invoke<void>("set_echo", { on }),
-  /** sent < total 이면 일부 상대에게만 나갔다. 문자 간 지연이 있으면 다 보낼 때까지 돌아오지 않는다 */
-  send: (target: number | null, spec: SendSpec, encoding: Encoding, charDelayMs = 0) =>
-    invoke<{ sent: number; total: number }>("send", { target, spec: wireSpec(spec, encoding), pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null }),
+  /** sent < total 이면 일부 상대에게만 나갔다. 문자 간 지연이 있으면 다 보낼 때까지 돌아오지 않는다.
+   *  side: 중계에서 "b" = 장비(B) 쪽으로 끼워 넣기 · mbapTid: MBAP 이면 트랜잭션 ID 를 1씩 늘려 넣기 */
+  send: (target: number | null, spec: SendSpec, encoding: Encoding, charDelayMs = 0, side: "a" | "b" = "a", mbapTid = false) =>
+    invoke<{ sent: number; total: number }>("send", {
+      target,
+      spec: wireSpec(spec, encoding),
+      pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null,
+      side,
+      mbapTid,
+    }),
+  decodeMbap: (bytes: number[]) => invoke<MbapInfo | null>("decode_mbap", { bytes }),
   /** 파일 보내기 — 진행은 onProgress 로 */
-  sendFile: (target: number | null, path: string, pace: Pace, onProgress: (p: Progress) => void) => {
+  sendFile: (target: number | null, path: string, pace: Pace, onProgress: (p: Progress) => void, side: "a" | "b" = "a") => {
     const ch = new Channel<Progress>();
     ch.onmessage = onProgress;
-    return invoke<{ id: number; total: number }>("send_file", { target, path, pace, onProgress: ch });
+    return invoke<{ id: number; total: number }>("send_file", { target, path, pace, side, onProgress: ch });
   },
   cancelSend: () => invoke<void>("cancel_send"),
   fileSize: (path: string) => invoke<number>("file_size", { path }),

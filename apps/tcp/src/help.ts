@@ -1,5 +1,6 @@
 // TCP 도움말 — 화면 ? 버튼·F1 로 연다
-import type { HelpDoc } from "@shared/HelpDialog";
+import type { HelpDoc, HelpSection } from "@shared/HelpDialog";
+import { ioAutoReplySections } from "@shared/helpAutoReply";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -38,7 +39,7 @@ export const help: HelpDoc = {
     {
       title: "연결 설정",
       body: [
-        "- «방식»: «클라이언트 (장비에 접속)» 또는 «서버 (장비가 접속)». 실행 중에는 바꿀 수 없습니다.",
+        "- «방식»: «클라이언트 (장비에 접속)», «서버 (장비가 접속)», 또는 «중계 (모니터)»(아래 «중계(모니터)»). 실행 중에는 바꿀 수 없습니다.",
         "- «주소»(클라이언트): 접속할 장비의 IP 주소나 이름. 예: «192.168.0.10».",
         "- «묶을 주소 (0.0.0.0 = 모든 랜카드)»(서버): 어느 랜카드로 접속을 받을지. 보통 0.0.0.0 으로 둡니다. 특정 랜카드만 쓰려면 그 PC 쪽 IP 를 넣습니다.",
         "- «포트»: 클라이언트는 장비의 포트(예: Modbus TCP 502), 서버는 기다릴 포트. 서버에서 0 이면 운영체제가 빈 포트를 고릅니다.",
@@ -238,7 +239,7 @@ export const help: HelpDoc = {
     {
       title: "Connection settings",
       body: [
-        "- «Mode»: «Client (connect to device)» or «Server (device connects)». Cannot be changed while running.",
+        "- «Mode»: «Client (connect to device)», «Server (device connects)», or «Relay (monitor)» (see «Relay (monitor)» below). It cannot change while running.",
         "- «Host» (client): IP address or name of the device, e.g. «192.168.0.10».",
         "- «Bind address (0.0.0.0 = all NICs)» (server): which network card accepts connections. Usually 0.0.0.0. To use one card only, enter this PC's IP on that card.",
         "- «Port»: for a client, the device's port (e.g. 502 for Modbus TCP); for a server, the port to listen on. A server port of 0 lets the OS pick a free port.",
@@ -405,5 +406,79 @@ export const help: HelpDoc = {
   ],
 };
 
-// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기) — «문제 해결» 앞에
-for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }));
+
+/** TCP 만 — 중계(모니터)·Modbus TCP·이 PC 주소(10/18) */
+const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
+  ko: [
+    {
+      title: "중계(모니터) — HMI ⇄ PLC 사이 엿보기",
+      body: [
+        "«방식» 의 «중계 (모니터 — A ⇄ 이 PC ⇄ B)» 는 이 PC 를 두 장비 사이에 끼웁니다. A(예: HMI·SCADA)가 B(예: PLC) 대신 이 PC 에 접속하면, 접속마다 B 로 새로 이어 주고 오가는 것을 모두 기록합니다.",
+        "- 1. «A 가 접속할 이 PC 주소»(보통 0.0.0.0)와 «포트»(예: 502), «이어 줄 장비 (B)» 의 주소·포트(PLC 의 IP·502)를 넣고 «듣기 시작».",
+        "- 2. A 의 접속 대상 IP 를 이 PC 주소로 바꿉니다(왼쪽 «이 PC 주소» 에서 확인). 접속이 오면 «RELAY A주소 ⇄ B주소» 줄이 남고 «이어진 쌍» 에 A 주소가 보입니다.",
+        "- 기록의 방향: «A→B ▶» 는 A 가 B 로 보낸 것(파일 로그·복사에서는 RX), «◀ B→A» 는 B 의 응답(TX). 상대 칸은 A 의 주소. 방향마다 프레임 구분기를 따로 써서 한쪽이 쪼개 보내도 섞이지 않습니다.",
+        "- 데이터는 받는 즉시 그대로 넘깁니다(프레임 구분·체크섬 검사는 기록에만 쓰고 넘기는 바이트는 바꾸지 않음). 자동응답·에코는 쓰지 않습니다.",
+        "- 한쪽이 끊으면 다른 쪽도 닫고 «CLOSE A ⇄ B (B 쪽이 끊음)» 처럼 먼저 끊은 쪽을 남깁니다. 다시 잇지 않습니다 — A 가 다시 접속하면 새 쌍이 생깁니다. B 에 접속하지 못하면 «RELAY FAIL …» 을 남기고 A 를 닫습니다.",
+        "- 끼워 넣기: 보내기 줄 맨 왼쪽에서 «A 쪽으로»/«B 쪽으로» 를 고르고 보냅니다(받는 쪽으로 특정 쌍도 고를 수 있음). 끼워 넣은 것은 «INJECT → A/B» 사건 줄 다음에 그 방향으로 기록됩니다. 실제 장비에 명령이 들어가므로 조심하세요.",
+        "- 상대 옆 «끊기» 는 그 쌍(A·B 둘 다)을 닫습니다.",
+      ],
+    },
+    {
+      title: "Modbus TCP",
+      body: [
+        "- «프레임 구분» 의 «Modbus TCP (MBAP 길이)»: MBAP 머리의 길이 칸으로 요청·응답을 하나씩 끊습니다. 둘이 붙어 와도·쪼개져 와도 한 줄씩 나옵니다. 길이 칸이 이상하면(260바이트 초과 등) «조용한 시간(ms)»(기본 1000)으로 끊습니다.",
+        "- 상세 칸: 고른 줄이 MBAP 모양이면 «Modbus TCP · 요청/응답» 아래 트랜잭션 ID·길이 칸(틀리면 빨갛게)·유닛 ID·함수·주소·개수·값을 풀어 보입니다. 맨 위 한 줄 요약 «id1 FC03 HR 0..9 (10)».",
+        "- 보내기 줄의 «Modbus…»: 유닛 ID·함수·주소(0 기준/PLC 표기)·개수(또는 값)로 MBAP 머리까지 붙은 요청을 만듭니다. «입력칸에 넣기» 는 보내기 줄을 HEX·체크섬 없음·줄 끝 없음으로 맞춥니다(Modbus TCP 에는 CRC 가 없음). «목록에 추가» 로 명령 목록에.",
+        "- «MBAP 트랜잭션 ID 자동 증가»(프레임 구분이 Modbus TCP 일 때 보임, 기본 켬): 보낼 때마다 앞 2바이트를 1씩 늘려 넣습니다 — 반복·명령 목록·다시 보내기 모두. 보낼 바이트가 MBAP 모양이 아니면 그대로 보냅니다.",
+        "- 장비 흉내가 필요하면 오른쪽 «자동응답» 에 «{req 0..1} 00 00 00 05 {req 6} 03 02 00 64» 처럼 트랜잭션·유닛 ID 를 돌려주는 규칙을 쓰세요(아래 «응답 템플릿»).",
+      ],
+    },
+    {
+      title: "이 PC 주소(랜카드)",
+      body: [
+        "- 서버·중계의 «묶을 주소» 칸을 누르면 이 PC 의 랜카드 주소(연결 안 된 것은 «연결 안 됨»)와 0.0.0.0(모든 랜카드)을 고를 수 있습니다. 직접 적어도 됩니다.",
+        "- 왼쪽 «이 PC 주소» 에 연결된 랜카드의 IPv4/접두사·이름이 나옵니다. 누르면 그 주소로 묶고, 마우스를 올리면 설명·넷마스크·게이트웨이가 보입니다. ↻ 로 다시 읽습니다(케이블을 꽂은 뒤 등).",
+        "- 이 PC 에 없는 주소를 적으면 시작 전에 알려 줍니다. 시작하다 «이 PC 에 없는 주소» 로 실패하면 오류 문구 끝에 이 PC 주소 목록이 붙습니다.",
+        "- «포트가 이미 사용 중» 으로 실패하면 그 포트를 쥔 프로그램 이름과 PID 를 함께 보여 줍니다(관리자 권한 없이 — 시스템 프로그램은 PID 만).",
+      ],
+    },
+  ],
+  en: [
+    {
+      title: "Relay (monitor) — watch HMI ⇄ PLC",
+      body: [
+        "«Relay (monitor — A ⇄ this PC ⇄ B)» in «Mode» puts this PC between two devices. When A (e.g. an HMI/SCADA) connects to this PC instead of B (e.g. a PLC), each connection gets its own link to B and everything in between is logged.",
+        "- 1. Enter «This PC address for A to connect to» (usually 0.0.0.0) and «Port» (e.g. 502), and the «Device to relay to (B)» host and port (the PLC's IP, 502). Press «Start listening».",
+        "- 2. Change A's target IP to this PC (see «This PC» on the left). On connect, «RELAY A-address ⇄ B-address» is logged and A's address appears under «Relayed pairs».",
+        "- Directions: «A→B ▶» is what A sent to B (RX in file logs and copies), «◀ B→A» is B's answer (TX). The peer column is A's address. Each direction has its own framer, so a split on one side never mixes with the other.",
+        "- Data is forwarded the moment it arrives (framing and checksum checks only affect the log, never the forwarded bytes). Auto reply and echo are not used.",
+        "- When either side closes, the other is closed too and the first side is logged, e.g. «CLOSE A ⇄ B (B side closed)». There is no reconnect — when A connects again a new pair is made. If B cannot be reached, «RELAY FAIL …» is logged and A is closed.",
+        "- Injecting: pick «To A» or «To B» at the far left of the send bar and send (a specific pair can be chosen in «To»). Injected data is logged in that direction after an «INJECT → A/B» event. It reaches real equipment — be careful.",
+        "- «Kick» next to a pair closes that pair (both A and B).",
+      ],
+    },
+    {
+      title: "Modbus TCP",
+      body: [
+        "- «Modbus TCP (MBAP length)» in «Framing» splits each request/response by the MBAP length field — even when two arrive together or one arrives in pieces. If the length field is implausible (over 260 bytes etc.) the «Idle gap (ms)» (default 1000) splits instead.",
+        "- Detail pane: if the selected line is MBAP-shaped it shows transaction ID, length field (red if wrong), unit ID, function, address, quantity and values under «Modbus TCP · request/response», with a one-line summary «id1 FC03 HR 0..9 (10)».",
+        "- «Modbus…» in the send bar builds a request with the MBAP header from unit ID, function, address (0-based/PLC notation) and quantity (or values). «Put in input» sets the send bar to HEX, no checksum, no line ending (Modbus TCP has no CRC). «Save to list» adds it to the commands.",
+        "- «Auto MBAP transaction ID» (shown with Modbus TCP framing, on by default) puts an incrementing ID into the first 2 bytes of every send — repeat, commands and send-again included. Data that is not MBAP-shaped is sent unchanged.",
+        "- To imitate a device, add an auto-reply rule that echoes the transaction and unit IDs, e.g. «{req 0..1} 00 00 00 05 {req 6} 03 02 00 64» (see «Reply templates»).",
+      ],
+    },
+    {
+      title: "This PC's addresses (adapters)",
+      body: [
+        "- Click the server/relay «Bind address» to pick one of this PC's adapter addresses (disconnected ones say «not connected») or 0.0.0.0 (all adapters). You can also type one.",
+        "- «This PC» on the left lists connected adapters as IPv4/prefix and name. Click one to bind to it; hover for the description, netmask and gateway. ↻ reloads the list (e.g. after plugging a cable).",
+        "- An address that is not on this PC is flagged before you start. If starting fails with «address not available», the error ends with this PC's addresses.",
+        "- If it fails with «port already in use», the program holding the port and its PID are shown (no admin rights needed — system processes show the PID only).",
+      ],
+    },
+  ],
+};
+
+// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기)
+// + 중계·Modbus TCP·이 PC 주소 + 자동응답 — «문제 해결» 앞에
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }), ...TCP_EXTRA[lang], ...ioAutoReplySections(lang));

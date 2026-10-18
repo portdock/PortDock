@@ -7,6 +7,7 @@ import { help as tcpHelp } from "../../../apps/tcp/src/help";
 import { help as udpHelp } from "../../../apps/udp/src/help";
 import { help as simHelp } from "../../../apps/simulator/src/help";
 import { help as netscanHelp } from "../../../apps/netscan/src/help";
+import { help as modbusMasterHelp } from "../../../apps/modbus-master/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -17,7 +18,7 @@ export const RELEASES = `${REPO}/releases`;
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -193,6 +194,34 @@ export const TOOLS: Tool[] = [
       { ko: "장비를 눌러 포트·제조사 확인, 필요하면 핑 감시에 추가", en: "Click a device to see ports and vendor; add it to the ping monitor if needed" },
     ],
     help: netscanHelp,
+  },
+  {
+    id: "modbus-master",
+    name: "PortDock Modbus Master",
+    file: "PortDock-Modbus-Master",
+    tagline: { ko: "Modbus RTU·TCP 마스터(폴링) — 타입 값·쓰기·국번 찾기", en: "Modbus RTU/TCP master (poll tool) — typed values, writes, ID scan" },
+    summary: {
+      ko: "PLC·HMI 대신 Modbus 장비에 먼저 묻습니다. 여러 표를 국번·함수·주소·주기별로 읽고, F32·U32·문자열과 바이트 순서·40001 표기로 보며, 칸을 두 번 눌러 씁니다. 요청·응답 HEX 풀이와 통계, 값 CSV 기록이 있습니다.",
+      en: "Ask Modbus devices for data in place of a PLC or HMI. Poll several tables by slave ID, function, address and interval, view F32/U32/strings with byte orders and 40001 notation, and double-click a cell to write. Decoded request/response HEX, statistics and CSV value logging included.",
+    },
+    who: [
+      { ko: "새 인버터·계측기의 Modbus 맵을 확인하는 현장 엔지니어", en: "Field engineers checking a new drive's or meter's Modbus map" },
+      { ko: "슬레이브 장비 펌웨어를 시험하는 개발자", en: "Developers testing slave device firmware" },
+    ],
+    features: [
+      { title: { ko: "여러 폴링 표", en: "Several poll tables" }, body: { ko: "표마다 국번·함수(01~04)·시작·개수·주기를 따로 두고, 탭에 오류 수가 보입니다. 시리얼 RTU·Modbus TCP·RTU over TCP.", en: "Each table has its own slave ID, function (01–04), start, count and interval, with an error count on its tab. Serial RTU, Modbus TCP and RTU over TCP." } },
+      { title: { ko: "타입 값·바이트 순서", en: "Typed values and byte order" }, body: { ko: "U16·S16·U32·S32·F32·F64·문자열을 ABCD·CDAB·BADC·DCBA 로, HEX·BIN·40001 표기까지. Modbus Slave 와 같은 CSV 레지스터 맵을 주고받습니다.", en: "U16 to F64 and strings in ABCD/CDAB/BADC/DCBA, HEX/BIN and 40001 notation. Shares the CSV register map format with Modbus Slave." } },
+      { title: { ko: "쓰기 미리보기", en: "Writes with preview" }, body: { ko: "칸을 두 번 눌러 05·06·0F·10 으로 쓰고, 보낼 바이트를 미리 봅니다. «늘 0F/10» 선택도 있습니다.", en: "Double-click to write with 05/06/0F/10 and preview the exact bytes. An «always 0F/10» option is included." } },
+      { title: { ko: "국번·주소 찾기", en: "ID and address scan" }, body: { ko: "1~247 중 답하는 국번과 읽히는 주소 범위를 찾아 바로 표로 만듭니다.", en: "Find which IDs (1–247) answer and which address ranges are readable, then turn them into tables." } },
+      { title: { ko: "타임아웃·재시도·통계", en: "Timeouts, retries, statistics" }, body: { ko: "응답 기다림·재시도·요청 간격을 정하고, 표마다 요청·정상·타임아웃·CRC·예외와 응답 시간을 셉니다. 예외는 한국어로 풀어 줍니다.", en: "Set timeout, retries and delay; count requests, OK, timeouts, CRC errors and exceptions with response times per table. Exceptions are explained." } },
+      { title: { ko: "값 기록·추세", en: "Value log and trends" }, body: { ko: "값을 폴링마다 또는 바뀔 때만 CSV 로 남기고, 고른 칸의 변화를 작은 그림으로 봅니다.", en: "Log values to CSV on every poll or on change, and watch chosen cells as small trend lines." } },
+    ],
+    steps: [
+      { ko: "연결 방식·포트(또는 IP)를 장비와 같게", en: "Match the connection and port (or IP) to the device" },
+      { ko: "«연결»(F4) 후 국번·함수·시작·개수를 설명서대로", en: "«Connect» (F4), then set slave ID, function, start and count from the manual" },
+      { ko: "칸을 두 번 눌러 쓰기, 오른쪽 버튼으로 이름·형식", en: "Double-click a cell to write; right-click for name and type" },
+    ],
+    help: modbusMasterHelp,
   },
 ];
 

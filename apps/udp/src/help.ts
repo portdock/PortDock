@@ -1,5 +1,6 @@
 // UDP 도움말 — 화면 ? 버튼·F1 로 연다
-import type { HelpDoc } from "@shared/HelpDialog";
+import type { HelpDoc, HelpSection } from "@shared/HelpDialog";
+import { ioAutoReplySections } from "@shared/helpAutoReply";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -299,5 +300,36 @@ export const help: HelpDoc = {
   ],
 };
 
-// Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식) — «문제 해결» 앞에
-for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: false }));
+
+/** UDP 만 — 이 PC 주소·멀티캐스트 랜카드·TTL(10/18) */
+const UDP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
+  ko: [
+    {
+      title: "이 PC 주소·멀티캐스트 랜카드·TTL",
+      body: [
+        "- «묶을 주소» 칸을 누르면 이 PC 의 랜카드 주소와 0.0.0.0(모든 랜카드)을 고를 수 있습니다. 왼쪽 «이 PC 주소» 에서 눌러도 됩니다(↻ 다시 읽기). 이 PC 에 없는 주소면 시작 전에 알려 줍니다.",
+        "- 멀티캐스트 그룹을 넣거나 «보낼 곳» 이 멀티캐스트 주소(224~239.x.x.x)면 아래 칸이 나옵니다.",
+        "- «멀티캐스트 랜카드»: 그룹 가입과 멀티캐스트 보내기에 쓸 랜카드(목록에서 고름). 0.0.0.0 이면 윈도우가 고릅니다 — 랜카드가 여러 개(사내망 + 장비망)면 꼭 장비 쪽을 고르세요.",
+        "- «멀티캐스트 TTL»(1~255, 기본 1): 멀티캐스트가 지나갈 수 있는 라우터 수. 1 이면 같은 망 안에서만.",
+        "- «보낸 멀티캐스트를 이 PC 도 받기»(기본 켬): 끄면 이 PC 에서 같은 그룹에 가입한 프로그램(이 창 포함)이 우리가 보낸 것을 받지 않습니다.",
+        "- 시작하면 사건 줄 «BIND … multicast 239.0.0.1 if 192.168.0.10 ttl 4 noloop» 처럼 실제 설정이 남습니다. «포트가 이미 사용 중» 이면 그 포트를 쥔 프로그램·PID 를 함께 보여 줍니다.",
+      ],
+    },
+  ],
+  en: [
+    {
+      title: "This PC's addresses, multicast NIC, TTL",
+      body: [
+        "- Click «Bind address» to pick one of this PC's adapter addresses or 0.0.0.0 (all adapters), or click one under «This PC» on the left (↻ reloads). An address that is not on this PC is flagged before you start.",
+        "- When a multicast group is set or «Default destination» is a multicast address (224–239.x.x.x), more fields appear.",
+        "- «Multicast NIC»: the adapter used to join the group and to send multicast (pick from the list). 0.0.0.0 lets Windows choose — with several adapters (office + machine network) pick the machine side.",
+        "- «Multicast TTL» (1–255, default 1): how many routers multicast may cross. 1 = this network only.",
+        "- «Receive our own multicast on this PC» (on by default): when off, programs on this PC that joined the group (this window included) do not receive what we send.",
+        "- On start the event line shows the real setup, e.g. «BIND … multicast 239.0.0.1 if 192.168.0.10 ttl 4 noloop». If the port is already in use, the program and PID holding it are shown.",
+      ],
+    },
+  ],
+};
+
+// Serial·TCP·UDP 공통 기능 + 이 PC 주소·멀티캐스트 + 자동응답 — «문제 해결» 앞에
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: false }), ...UDP_EXTRA[lang], ...ioAutoReplySections(lang));
