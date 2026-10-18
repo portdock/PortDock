@@ -28,7 +28,7 @@ node serial.mjs
 
 ## 화면 미리보기·캡처 (장비·Rust 없이, `ui-preview/`)
 백엔드 대신 가짜 응답(`ui-preview/mock.js`)을 넣고 화면만 브라우저에 띄운다. 글자 잘림·배치·테마·글자 크기를 빠르게 본다.
-1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205)
+1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207)
 2. `e2e` 폴더에서: `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/shots.mjs [앱]` → `shots/ui/*.png` + `probe.json`(잘린 칸 목록)
 - 경우: 최소 창(1000×640) 한국어 대기·연결, 영어, 넓은 창 어두운 테마, 글자 17px, 설정 창
 - 가짜 응답이라 상태 문구·사건 줄 내용은 실제와 다를 수 있다. 실제 동작 확인은 위 실기 점검으로.

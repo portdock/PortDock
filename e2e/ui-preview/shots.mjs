@@ -1,10 +1,10 @@
-// 화면 점검: 다섯 앱을 크기·언어·테마·글자 크기별로 캡처 + 잘린 글자 찾기(미리보기 서버 5201~5205 가 떠 있어야 함)
+// 화면 점검: 일곱 앱을 크기·언어·테마·글자 크기별로 캡처 + 잘린 글자 찾기(미리보기 서버 5201~5207 가 떠 있어야 함)
 import { Builder } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
 import fs from "node:fs";
 const OUT = process.env.OUT ?? "shots/ui";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207 };
 const only = process.argv[2];
 const opts = new edge.Options().addArguments("--headless=new", "--hide-scrollbars", "--force-device-scale-factor=1");
 const d = await new Builder().forBrowser("MicrosoftEdge").setEdgeOptions(opts).setEdgeService(new edge.ServiceBuilder(process.env.EDGEDRIVER)).build();
