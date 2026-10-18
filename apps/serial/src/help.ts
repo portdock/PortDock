@@ -25,14 +25,14 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 포트와 연결 설정, «연결»·«끊기» 버튼, 연결 상태, «프레임 구분», «수신 체크섬 검사», «파일로 계속 저장».",
+        "- 왼쪽: 포트·속도·데이터 비트·패리티·정지 비트, 접힌 «고급 연결»(흐름 제어·RS-485·DTR·RTS), «연결»·«끊기» 버튼, 연결 상태, 접힌 «받기 설정»(프레임 구분·수신 체크섬 검사), «파일로 계속 저장». 접힌 제목에는 지금 값이 요약되고, 기본값과 다르면 펼친 채 시작합니다. 열고 닫은 상태는 기억합니다.",
         "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다»), «자동 스크롤», RX·TX 누적 바이트 수, «화면 내용 저장», «지우기».",
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
         "- 가운데 상태줄: 지금 설정 요약(예: «COM3 9600 8N1»), 출력 신호 DTR·RTS, 입력 신호 CTS·DSR·RI·CD 표시등, 파일 저장 중이면 «● REC».",
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·내용. 수신 체크섬 검사를 켜면 줄 끝에 «정상»·«틀림» 이 붙습니다.",
-        "- 가운데 아래: 보내기 줄(HEX/ASCII, 입력칸, «Modbus 요청», 체크섬, 줄 끝 붙이기, «보내기»)과 «보낼 바이트» 미리보기, «반복(ms)», «+ 목록에 추가».",
+        "- 가운데 아래: 보내기 줄(HEX/ASCII, 입력칸, «Modbus 요청», 체크섬, 줄 끝 붙이기, «보내기»)과 «보낼 바이트» 미리보기, «반복(ms)», «+ 목록에 추가», «⋯ 더보기».",
         "- 오른쪽: «명령 목록», «트리거», «상세»(로그 줄을 누르면 그 줄의 HEX·ASCII 와 Modbus 풀이).",
-        "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
+        "- 창이 좁으면(1180px 이하) 오른쪽 칸이 숨고, 도구줄의 «☰ 명령·상세» 버튼으로 펼칩니다. 로그 줄을 누르면 저절로 펼쳐져 «상세» 가 보입니다(Shift·Ctrl 로 여러 줄을 고를 때는 펼치지 않음).",
         ...windowLines("ko"),
         ...ioLayoutLines("ko", { serial: true, fileSend: true }),
       ],
@@ -47,6 +47,7 @@ export const help: HelpDoc = {
         "- «데이터 비트»: 5·6·7·8 중 하나. 대부분 8 입니다.",
         "- «패리티»: «없음»·«홀수»·«짝수»·«Mark (1)»·«Space (0)». 장비 설정과 같아야 합니다. Mark·Space 는 9비트 주소 방식 장비용으로, 윈도우 드라이버에 직접 설정합니다(일부 USB 변환기는 받지 않아 연결할 때 이유를 알려 줌).",
         "- «정지 비트»: 1·1.5·2. 1.5 는 대개 데이터 비트 5 에서만 됩니다(아니면 노란 안내가 나오고, 드라이버가 거절하면 연결할 때 이유를 알려 줌).",
+        "- «고급 연결»(접기): 흐름 제어·RS-485 송신 방향·DTR·RTS 가 들어 있습니다. 접힌 제목에 «RTS/CTS · DTR» 처럼 켜진 것이 보이고, 모두 기본이면 «흐름 제어 없음 · DTR·RTS 끔» 입니다.",
         "- «흐름 제어»: «없음», «하드웨어(RTS/CTS)», «소프트웨어(XON/XOFF)». 장비가 쓰지 않으면 «없음» 으로 둡니다.",
         "- DTR·RTS: PC 가 내보내는 출력 신호선입니다. 체크하면 켜집니다. 일부 보드는 DTR 이 바뀌면 리셋되니 주의하세요.",
         "- «RS-485 송신 방향 (RTS)»: 반이중 RS-485 변환기의 송신기를 RTS 로 켜고 끕니다. «드라이버 토글» 은 윈도우 드라이버가 보내는 동안만 RTS 를 켜고(가장 정확), 드라이버가 받지 않으면 «프로그램 토글» 로 바뀌며 사건 줄에 이유가 남습니다. «프로그램 토글» 은 보내기 전에 RTS 를 켜고 마지막 바이트가 나갈 시간이 지나면 끕니다 — USB 변환기의 지연 때문에 늦게 꺼져 응답 앞부분을 놓칠 수 있습니다. 켜져 있으면 RTS 칸은 잠기고 상태줄에 «RTS ⇄» 가 보입니다. 자동 방향 전환 변환기는 «쓰지 않음». 하드웨어 흐름 제어와는 함께 쓸 수 없습니다.",
@@ -60,6 +61,7 @@ export const help: HelpDoc = {
       title: "프레임 구분",
       body: [
         "시리얼은 바이트가 이어서 들어오므로, 어디서 한 줄(프레임)을 끊을지 정해야 합니다. 모든 방식에서 «조용한 시간(ms)» 동안 아무것도 안 오면 쌓인 것을 내보냅니다.",
+        "- 프레임 구분과 «수신 체크섬 검사» 는 왼쪽 «받기 설정» 접기 안에 있습니다. 접힌 제목에 «조용한 시간 20ms · 체크섬 검사 없음» 처럼 지금 값이 보입니다.",
         "- «조용한 시간»: 정해 둔 시간(기본 20ms) 동안 아무것도 안 오면 끊습니다. 대부분 이것으로 충분합니다.",
         "- «끝 문자»: «끝 문자(HEX)» 에 적은 바이트(예: «0D 0A», «03»)가 오면 바로 끊습니다. 끝 문자도 그 줄에 포함됩니다.",
         "- «끝 문자(HEX)» 는 보내기 HEX 와 같은 규칙입니다(«0D 0A»·«0D0A»·«0x0D,0x0A»). 이름 CR·LF·CRLF·NUL·STX·ETX·\\r·\\n 도 됩니다. 칸 아래에 «해석: 0D 0A (2바이트)» 처럼 실제 바이트가 보이고, 틀리면 빨간 이유가 나옵니다.",
@@ -79,7 +81,8 @@ export const help: HelpDoc = {
         "- ASCII: 글자를 그대로 보냅니다. 특수 문자는 «\\r»(CR), «\\n»(LF), «\\t»(탭), «\\0»(0x00), «\\\\»(역슬래시), «\\xNN»(HEX 두 자리 바이트, 예: «\\x02»)로 씁니다.",
         "- 예: «AT\\r\\n», «\\x02DATA\\x03».",
         "- «체크섬»: 본문 뒤에 붙일 체크섬을 고릅니다(아래 «체크섬 종류» 참고).",
-        "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF 중 하나를 맨 뒤에 붙입니다.",
+        "- «줄 끝 붙이기»: «없음»·CR·LF·CR LF 중 하나를 맨 뒤에 붙입니다. 처음 켜면(저장값이 없을 때) ASCII + CR LF 로 시작해 «AT» 만 쓰고 Enter 하면 됩니다.",
+        "- ASCII 입력이 줄 끝 글자로 끝나는데 «줄 끝 붙이기» 도 켜져 있으면 «줄 끝이 두 번 붙습니다» 알림줄이 나옵니다. «줄 끝 끄기» 를 누르거나 입력의 줄 끝 글자를 지우세요.",
         "- 붙는 순서는 «본문 + 체크섬 + 줄 끝» 입니다. 체크섬은 본문만으로 계산하고, 줄 끝은 계산에 들어가지 않습니다(⚙ 옵션으로 범위·자리를 바꿀 수 있음).",
         "- ASCII 에 체크섬을 켜 두면 입력칸 옆에 노란 «+CRC16 Modbus 2바이트» 표시가 나옵니다.",
         "- 장비를 다시 꽂기를 기다리는 중에는 보낼 수 없습니다.",
@@ -94,9 +97,9 @@ export const help: HelpDoc = {
         "- 1. 장비 설명서에서 통신 설정(속도·패리티 — Modbus 는 «짝수» 가 흔함)과 국번, 읽을 주소를 확인하고 왼쪽 연결 설정을 맞춘 뒤 «연결» 합니다.",
         "- 2. 왼쪽 «프레임 구분» 을 «Modbus RTU» 로 고릅니다. «수신 체크섬 검사» 가 저절로 CRC16 Modbus 가 됩니다.",
         "- 3. 보내기 줄의 «Modbus 요청» 을 누릅니다. «국번» 1, «함수» 03 보유 레지스터 읽기, 시작 주소 표기를 «4xxxx 표기» 로 하고 40001, «개수» 10 을 넣습니다.",
-        "- 4. 주소 아래에 «40001 → 0 기준 0 (0x0000)» 처럼 실제로 보낼 주소가 나옵니다. 설명서가 «주소 0»·«0x0000» 처럼 쓰면 «0 기준» 을 고르고 그 숫자를 그대로 넣습니다. 값이 한 칸씩 밀려 나오면 이 표기부터 의심하세요.",
-        "- 5. 미리보기가 «01 03 00 00 00 0A» 이면 «입력칸에 넣기». 보내기 줄이 HEX·«CRC16 Modbus»·줄 끝 없음으로 맞춰지고 «보낼 바이트» 에 «01 03 00 00 00 0A C5 CD» 가 보입니다.",
-        "- 6. «보내기» 를 누르면 응답(RX)이 옵니다. 응답 줄을 누르면 오른쪽 «상세» 에 «값» [0]~[9] 가 나옵니다. 함수 코드에 0x80 이 더해진 예외 응답이면 주소·개수가 장비 범위 안인지 확인하세요. 응답이 없으면 국번·속도·패리티·배선(A/B)을 확인하세요.",
+        "- 4. 주소 아래에 «40001 → 0 기준 0 (0x0000)» 처럼 실제로 보낼 주소가 나옵니다. 설명서가 «주소 0»·«0x0000» 처럼 쓰면 «0 기준» 을 고르고 그 숫자를 그대로 넣습니다. 값이 한 칸씩 밀려 나오면 이 표기부터 의심하세요. «0 기준» 칸에 40001·30001 처럼 넣으면 노란 안내가 나오고 «4xxxx 표기로 바꾸기» 로 바로 고칠 수 있습니다.",
+        "- 5. 미리보기가 «01 03 00 00 00 0A» 이면 «보내기»(또는 창 안에서 Enter). CRC16 Modbus 를 붙인 «01 03 00 00 00 0A C5 CD» 가 바로 나가고 창이 닫힙니다. 연결 전이면 «먼저 연결하세요» 로 막힙니다. 보내기 줄에 넣어 고쳐 보내려면 «입력칸에 넣기»(HEX·«CRC16 Modbus»·줄 끝 없음으로 맞춰짐).",
+        "- 6. 응답(RX)이 옵니다. 응답 줄을 누르면 오른쪽 «상세» 에 «값» [0]~[9] 가 나옵니다. 함수 코드에 0x80 이 더해진 예외 응답이면 주소·개수가 장비 범위 안인지 확인하세요. 응답이 없으면 국번·속도·패리티·배선(A/B)을 확인하세요.",
         "- 자주 읽는 요청은 «목록에 추가» 로 명령 목록에 넣고, «반복(ms)» 으로 주기적으로 읽을 수 있습니다.",
         "- 주소 표기: 00001~ 코일(FC01·05·0F), 10001~ 입력 접점(FC02), 30001~ 입력 레지스터(FC04), 40001~ 보유 레지스터(FC03·06·10). 9999 를 넘는 주소는 400001 처럼 6자리로 씁니다. 함수와 앞자리가 맞지 않으면 이유를 알려 줍니다.",
         "- 개수 한도(규격): 코일·입력 접점 읽기 2000, 레지스터 읽기 125, 여러 코일 쓰기 1968, 여러 레지스터 쓰기 123. 국번 0 은 쓰기 함수에서만 쓸 수 있고(모든 장비에 쓰기), 응답이 없습니다.",
@@ -217,7 +220,7 @@ export const help: HelpDoc = {
         ...shortcutLines("ko", { saveView: true, repeat: true, find: true }),
         ...ioKeyLines("ko"),
         "- 입력칸에서 Enter: 보내기(연결돼 있고 보낼 바이트가 있을 때).",
-        "- 창이 좁으면 «☰ 명령 목록» 으로 오른쪽 칸을 펼치고, ✕ 나 바깥을 눌러 닫습니다.",
+        "- 창이 좁으면 «☰ 명령·상세» 로 오른쪽 칸을 펼치고(로그 줄을 눌러도 펼쳐짐), ✕ 나 바깥을 눌러 닫습니다.",
         "- 연결 설정·프레임 구분·입력 내용·명령 목록은 다음에 켤 때 그대로 남아 있습니다.",
       ],
     },
@@ -260,14 +263,14 @@ export const help: HelpDoc = {
     {
       title: "Screen layout",
       body: [
-        "- Left: port and connection settings, «Connect»/«Disconnect», connection status, «Framing», «Verify RX checksum», «Log to file».",
+        "- Left: port, baud rate, data bits, parity, stop bits, the collapsed «Advanced connection» (flow control, RS-485, DTR, RTS), «Connect»/«Disconnect», connection status, the collapsed «Receive settings» (framing, RX checksum check) and «Log to file». Collapsed titles summarize the current values; a group starts expanded when it differs from the defaults, and open/closed is remembered.",
         "- Top toolbar: «View» (HEX, ASCII, «Both»), «Auto-scroll», total RX/TX bytes, «Save view», «Clear».",
         "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
         "- Status line: a summary of the current settings (e.g. «COM3 9600 8N1»), output lines DTR/RTS, input lines CTS/DSR/RI/CD, and «● REC» while logging to a file.",
         "- Log: time, direction (RX ◀ / TX ▶ / EV) and data. With RX checksum verification on, each line ends with «OK» or «FAIL».",
-        "- Bottom: the send row (HEX/ASCII, input, «Modbus request», checksum, line ending, «Send»), the «Bytes to send» preview, «Repeat (ms)» and «+ Save to list».",
+        "- Bottom: the send row (HEX/ASCII, input, «Modbus request», checksum, line ending, «Send»), the «Bytes to send» preview, «Repeat (ms)», «+ Save to list» and «⋯ More».",
         "- Right: «Commands», «Triggers» and «Detail» (click a log line to see its HEX, ASCII and Modbus decoding).",
-        "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
+        "- In a narrow window (1180 px or less) the right pane is hidden; open it with «☰ Commands · Detail» in the toolbar. Clicking a log line opens it at «Detail» (not when Shift/Ctrl-selecting several lines).",
         ...windowLines("en"),
         ...ioLayoutLines("en", { serial: true, fileSend: true }),
       ],
@@ -282,6 +285,7 @@ export const help: HelpDoc = {
         "- «Data bits»: 5, 6, 7 or 8. Usually 8.",
         "- «Parity»: «None», «Odd», «Even», «Mark (1)» or «Space (0)». Must match the device. Mark/Space are for 9-bit addressing devices and are set directly in the Windows driver (some USB adapters refuse them — connecting tells you why).",
         "- «Stop bits»: 1, 1.5 or 2. 1.5 usually works only with 5 data bits (otherwise a yellow note appears; if the driver refuses, connecting tells you why).",
+        "- «Advanced connection» (collapsed): flow control, RS-485 direction, DTR and RTS. The collapsed title lists what is on, e.g. «RTS/CTS · DTR», or «No flow control · DTR/RTS off» at the defaults.",
         "- «Flow control»: «None», «Hardware (RTS/CTS)» or «Software (XON/XOFF)». Leave it at «None» unless the device uses it.",
         "- DTR and RTS: output lines driven by the PC. Checked means on. Some boards reset when DTR changes.",
         "- «RS-485 direction (RTS)»: switches a half-duplex RS-485 adapter's driver with RTS. «Driver toggle» lets the Windows driver raise RTS only while sending (most precise); if the driver refuses, it falls back to «Program toggle» and an event line says why. «Program toggle» raises RTS before sending and drops it once the last byte has had time to leave — USB adapter latency can drop it late and miss the start of the reply. While on, the RTS box is locked and the status line shows «RTS ⇄». Use «Off» for auto-direction adapters. Not available with hardware flow control.",
@@ -295,6 +299,7 @@ export const help: HelpDoc = {
       title: "Framing",
       body: [
         "Serial data arrives as a continuous byte stream, so you choose where one line (frame) ends. In every mode, whatever has arrived is released after «Idle gap (ms)» of silence.",
+        "- Framing and «Verify RX checksum» are inside the «Receive settings» group on the left; its collapsed title shows the current values, e.g. «Idle gap 20ms · No checksum check».",
         "- «Idle gap»: split after the set time (default 20 ms) of silence. Enough in most cases.",
         "- «Terminator»: split as soon as the bytes in «Terminator (HEX)» arrive (e.g. «0D 0A», «03»). The terminator stays in the line.",
         "- «Terminator (HEX)» follows the same rules as HEX sending («0D 0A», «0D0A», «0x0D,0x0A») and also accepts the names CR, LF, CRLF, NUL, STX, ETX, \\r and \\n. The parsed bytes appear below it, e.g. «Parsed: 0D 0A (2 bytes)»; errors appear in red.",
@@ -314,7 +319,8 @@ export const help: HelpDoc = {
         "- ASCII: characters are sent as typed. Special characters: «\\r» (CR), «\\n» (LF), «\\t» (tab), «\\0» (0x00), «\\\\» (backslash), «\\xNN» (one byte in two HEX digits, e.g. «\\x02»).",
         "- Examples: «AT\\r\\n», «\\x02DATA\\x03».",
         "- «Checksum»: the checksum appended after the body (see «Checksum types»).",
-        "- «Line ending»: «None», CR, LF or CR LF appended at the very end.",
+        "- «Line ending»: «None», CR, LF or CR LF appended at the very end. On first start (nothing saved yet) the send bar starts as ASCII + CR LF, so you just type «AT» and press Enter.",
+        "- If the ASCII input already ends with a line-ending escape while «Line ending» is on too, a notice says «The line ending is added twice». Click «Turn line ending off» or remove the escape from the input.",
         "- The order is «body + checksum + line ending». The checksum covers the body only, not the line ending (⚙ options change the range and position).",
         "- With a checksum on in ASCII mode, a yellow «+CRC16 Modbus 2 bytes» chip appears next to the input.",
         "- You cannot send while waiting for the device to be plugged back in.",
@@ -329,9 +335,9 @@ export const help: HelpDoc = {
         "- 1. From the device manual, note the line settings (baud, parity — Modbus often uses «Even»), the slave ID and the address. Match the settings on the left and «Connect».",
         "- 2. Set «Framing» on the left to «Modbus RTU». «Verify RX checksum» switches to CRC16 Modbus automatically.",
         "- 3. Click «Modbus request» in the send bar. Slave ID 1, function 03 Read Holding Registers, address notation «4xxxx notation», address 40001, quantity 10.",
-        "- 4. Below the address you see the address actually sent, e.g. «40001 → 0-based 0 (0x0000)». If the manual says «address 0» or «0x0000», choose «0-based» and type that number. If values come back shifted by one, suspect this notation first.",
-        "- 5. When the preview shows «01 03 00 00 00 0A», click «Put in input». The send bar switches to HEX, «CRC16 Modbus», no line ending, and «Bytes to send» shows «01 03 00 00 00 0A C5 CD».",
-        "- 6. Click «Send»; the reply (RX) arrives. Click it to see «Values» [0]–[9] in «Detail». An exception reply (function code + 0x80) means the address or quantity is outside the device's range. No reply: check slave ID, baud, parity and wiring (A/B).",
+        "- 4. Below the address you see the address actually sent, e.g. «40001 → 0-based 0 (0x0000)». If the manual says «address 0» or «0x0000», choose «0-based» and type that number. If values come back shifted by one, suspect this notation first. Typing 40001 or 30001 into the «0-based» box shows a yellow notice with «Switch to 4xxxx notation».",
+        "- 5. When the preview shows «01 03 00 00 00 0A», click «Send» (or press Enter in the dialog). «01 03 00 00 00 0A C5 CD» goes out with CRC16 Modbus and the dialog closes; before connecting it is blocked with «Connect first». To edit it in the send bar first, use «Put in input» (sets HEX, «CRC16 Modbus», no line ending).",
+        "- 6. The reply (RX) arrives. Click it to see «Values» [0]–[9] in «Detail». An exception reply (function code + 0x80) means the address or quantity is outside the device's range. No reply: check slave ID, baud, parity and wiring (A/B).",
         "- Save frequent requests with «Save to list», and use «Repeat (ms)» to poll them.",
         "- Address notation: 00001… coils (FC01/05/0F), 10001… discrete inputs (FC02), 30001… input registers (FC04), 40001… holding registers (FC03/06/10). Above 9999 use 6 digits such as 400001. A mismatched leading digit is explained.",
         "- Quantity limits (protocol): read coils/inputs 2000, read registers 125, write multiple coils 1968, write multiple registers 123. Slave 0 is allowed only for writes (broadcast to every device) and gets no reply.",
@@ -452,7 +458,7 @@ export const help: HelpDoc = {
         ...shortcutLines("en", { saveView: true, repeat: true, find: true }),
         ...ioKeyLines("en"),
         "- Enter in the input: send (when connected and there are bytes to send).",
-        "- In a narrow window, open the right pane with «☰ Commands» and close it with ✕ or by clicking outside.",
+        "- In a narrow window, open the right pane with «☰ Commands · Detail» (clicking a log line opens it too) and close it with ✕ or by clicking outside.",
         "- Connection settings, framing, the input and commands are kept for next time.",
       ],
     },
@@ -482,7 +488,7 @@ const SERIAL_EXTRA = {
     {
       title: "Break·터미널 보기",
       body: [
-        "- «Break»: TX 줄을 옆 칸의 시간(ms, 기본 100) 동안 0(스페이스)으로 붙잡는 신호를 보냅니다. LIN·DMX, 일부 장비의 «주의» 신호, 부트로더 진입에 씁니다. 앞서 넣은 송신이 다 나간 뒤에 보내고, 로그에 «BREAK 100ms» 가 남습니다.",
+        "- «Break»(보내기 줄 «⋯ 더보기» 안): TX 줄을 옆 칸의 시간(ms, 기본 100) 동안 0(스페이스)으로 붙잡는 신호를 보냅니다. LIN·DMX, 일부 장비의 «주의» 신호, 부트로더 진입에 씁니다. 앞서 넣은 송신이 다 나간 뒤에 보내고, 로그에 «BREAK 100ms» 가 남습니다.",
         "- 도구줄 «터미널»: 받은 글자를 프레임 구분과 상관없이 이어 붙여 CR·LF 로 줄을 나누고(CR LF 는 한 번), ANSI 색(ESC [ … m)을 입혀 보입니다 — 리눅스 콘솔·부트 로그·AT 응답을 읽기 좋습니다. 긴 줄은 접어 보입니다.",
         "- 터미널 보기의 «색 입히기 (ANSI)» 를 끄면 색 없이 글자만 보입니다. 커서 이동·화면 지우기 같은 다른 ESC 시퀀스는 버리고, 탭은 4칸, 백스페이스는 앞 글자를 지웁니다.",
         "- 터미널 보기는 받은 것(RX)만 보입니다. 보낸 것·사건 줄은 «HEX»·«ASCII» 보기로 돌아가 보세요. 글자는 설정의 «글자 인코딩» 으로 읽고, 최근 5,000줄까지 남깁니다(«지우기» 로 비움).",
@@ -493,7 +499,7 @@ const SERIAL_EXTRA = {
     {
       title: "Break and terminal view",
       body: [
-        "- «Break»: holds the TX line at 0 (space) for the time in the box next to it (ms, default 100). Used for LIN/DMX, some devices' attention signal and bootloader entry. It goes out after earlier sends and is logged as «BREAK 100ms».",
+        "- «Break» (in «⋯ More» on the send bar): holds the TX line at 0 (space) for the time in the box next to it (ms, default 100). Used for LIN/DMX, some devices' attention signal and bootloader entry. It goes out after earlier sends and is logged as «BREAK 100ms».",
         "- «Terminal» in the toolbar: joins received text regardless of framing, starts new lines at CR/LF (CR LF counts once) and applies ANSI colors (ESC [ … m) — handy for Linux consoles, boot logs and AT replies. Long lines wrap.",
         "- Turn off «ANSI colors» in the terminal view to see plain text. Other ESC sequences (cursor moves, screen clears) are dropped, tabs become 4 spaces and backspace removes the previous character.",
         "- The terminal view shows received data (RX) only; switch back to «HEX»/«ASCII» to see sent data and event lines. Text is read with «Text encoding» in Settings, and the last 5,000 lines are kept («Clear» empties it).",
@@ -503,5 +509,5 @@ const SERIAL_EXTRA = {
 };
 
 // Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기) — «문제 해결» 앞에
-for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }), ...SERIAL_EXTRA[lang], ...ioAutoReplySections(lang));
+for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true, serial: true }), ...SERIAL_EXTRA[lang], ...ioAutoReplySections(lang));
 

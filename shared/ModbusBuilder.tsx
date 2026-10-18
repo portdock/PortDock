@@ -1,5 +1,6 @@
 // «Modbus 요청 만들기» — 국번(유닛 ID)·함수·주소·개수(값)로 요청 바이트를 만든다. Serial(RTU)·TCP(Modbus TCP) 공통.
 // RTU: CRC 는 보내기 줄의 체크섬(CRC16 Modbus)이 붙인다. TCP: MBAP 머리(트랜잭션·프로토콜 0·길이·유닛)를 붙이고 CRC 는 없다.
+// onSend 를 넘기면(Serial) «보내기» 가 기본 버튼·Enter 가 되고 «입력칸에 넣기»·«목록에 추가» 는 보조. 안 넘기면 «입력칸에 넣기» 가 기본.
 import { useEffect, useMemo, useState } from "react";
 import { buildRequest, convertAddrText, MB_FUNCS, mbFuncInfo, type AddrMode, type MbForm } from "./modbusBuild";
 import { buildTcpRequest } from "./mbap";
@@ -39,6 +40,9 @@ const L = {
     crcNote: "+ CRC16 Modbus 2바이트는 보내기 줄이 붙입니다",
     tcpNote: "Modbus TCP 에는 CRC 가 없습니다 — 체크섬 없이 그대로 나갑니다",
     put: "입력칸에 넣기",
+    send: "보내기",
+    sendTip: "이 요청을 바로 보냅니다(HEX·CRC16 Modbus 자동·줄 끝 없음). 창 안에서 Enter 도 같습니다",
+    toPlc: "{a} 표기로 바꾸기",
     putTip: "보내기 줄을 HEX·체크섬 CRC16 Modbus·줄 끝 없음으로 맞추고 이 바이트를 넣습니다",
     putTipTcp: "보내기 줄을 HEX·체크섬 없음·줄 끝 없음으로 맞추고 이 바이트를 넣습니다",
     add: "목록에 추가",
@@ -73,6 +77,9 @@ const L = {
     crcNote: "+ 2-byte CRC16 Modbus is appended by the send bar",
     tcpNote: "Modbus TCP has no CRC — sent as is, without a checksum",
     put: "Put in input",
+    send: "Send",
+    sendTip: "Sends this request now (HEX, CRC16 Modbus added, no line ending). Enter in this dialog does the same",
+    toPlc: "Switch to {a} notation",
     putTip: "Sets the send bar to HEX, checksum CRC16 Modbus, no line ending, and fills in these bytes",
     putTipTcp: "Sets the send bar to HEX, no checksum, no line ending, and fills in these bytes",
     add: "Save to list",
@@ -91,6 +98,9 @@ export function ModbusBuilder({
   onPut,
   onAdd,
   onClose,
+  onSend,
+  canSend = true,
+  sendWhy,
 }: {
   lang: Lang;
   /** rtu: 국번 + PDU(CRC 는 보내기 줄이) · tcp: MBAP + PDU */
@@ -100,6 +110,11 @@ export function ModbusBuilder({
   /** 명령 목록에 이름과 함께 */
   onAdd: (name: string, bytes: number[]) => void;
   onClose: () => void;
+  /** 바로 보내기(RTU: CRC 앞 바이트). 넘기지 않으면 «보내기» 버튼이 없다 */
+  onSend?: (bytes: number[]) => void;
+  /** 지금 보낼 수 있는지(연결됨) — 아니면 «보내기» 를 막고 sendWhy 를 보인다 */
+  canSend?: boolean;
+  sendWhy?: string;
 }) {
   const t = L[lang];
   const tcp = wire === "tcp";
@@ -129,6 +144,15 @@ export function ModbusBuilder({
   const setMode = (mode: AddrMode) =>
     set({ addrMode: mode, addrText: convertAddrText(form.addrText, { fc: form.fc, mode: form.addrMode }, { fc: form.fc, mode }) });
 
+  // Enter = 보내기. 숫자 칸은 Enter 때 값을 반영하므로, 반영된 다음 그림에서 보낸다
+  const [sendAsked, setSendAsked] = useState(false);
+  const sendOk = !!onSend && canSend && !!r.bytes;
+  useEffect(() => {
+    if (!sendAsked) return;
+    setSendAsked(false);
+    if (sendOk && r.bytes) onSend!(r.bytes);
+  }, [sendAsked, sendOk, r.bytes, onSend]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -141,7 +165,15 @@ export function ModbusBuilder({
 
   return (
     <div className="modal-back" ref={back} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal mbuild" role="dialog" aria-label={tcp ? t.titleTcp : t.title}>
+      <div
+        className="modal mbuild"
+        role="dialog"
+        aria-label={tcp ? t.titleTcp : t.title}
+        onKeyDown={(e) => {
+          const tag = (e.target as HTMLElement).tagName;
+          if (onSend && e.key === "Enter" && !e.nativeEvent.isComposing && tag !== "BUTTON" && tag !== "SELECT") setSendAsked(true);
+        }}
+      >
         <div className="modal-head">
           <b>{tcp ? t.titleTcp : t.title}</b>
           <button className="icon-btn" onClick={onClose} title={t.close} aria-label={t.close}>
@@ -223,7 +255,17 @@ export function ModbusBuilder({
             )}
           </div>
 
-          {r.note && <div className="hint">{r.note}</div>}
+          {r.note &&
+            (r.plcGuess ? (
+              <div className="hint warn mb-plc">
+                <span>{r.note}</span>
+                <button className="btn small" onClick={() => set({ addrMode: "plc" })}>
+                  {t.toPlc.replace("{a}", `${f.prefix}xxxx`)}
+                </button>
+              </div>
+            ) : (
+              <div className="hint">{r.note}</div>
+            ))}
           {r.error ? <div className="interlock">{r.error}</div> : !tcp && form.slave === 0 && <div className="hint warn">{t.bcast}</div>}
 
           <div className="mb-preview">
@@ -234,6 +276,7 @@ export function ModbusBuilder({
 
           <div className="row2 mb-actions">
             {added && <span className="hint ok">{added}</span>}
+            {onSend && !canSend && sendWhy && <span className="why">{sendWhy}</span>}
             <span className="grow" />
             <button
               className="btn"
@@ -247,9 +290,14 @@ export function ModbusBuilder({
             >
               + {t.add}
             </button>
-            <button className="btn primary" disabled={!r.bytes} title={tcp ? t.putTipTcp : t.putTip} onClick={() => r.bytes && onPut(r.bytes)}>
+            <button className={onSend ? "btn" : "btn primary"} disabled={!r.bytes} title={tcp ? t.putTipTcp : t.putTip} onClick={() => r.bytes && onPut(r.bytes)}>
               {t.put}
             </button>
+            {onSend && (
+              <button className="btn primary mb-send" disabled={!sendOk} title={canSend ? t.sendTip : sendWhy} onClick={() => r.bytes && onSend(r.bytes)}>
+                {t.send}
+              </button>
+            )}
           </div>
         </div>
       </div>

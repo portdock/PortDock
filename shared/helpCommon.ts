@@ -107,6 +107,8 @@ export function notationLines(lang: Lang): string[] {
 export interface IoHelp {
   /** 파일 보내기·문자 간 지연(Serial·TCP) */
   fileSend?: boolean;
+  /** Serial — 문자 간·Break·파일 보내기·(반복이 꺼져 있을 때) 횟수가 «⋯ 더보기» 안에 있다 */
+  serial?: boolean;
 }
 
 export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: string[] }[] {
@@ -141,7 +143,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
             "- 도구줄 «간격 열 끔» 칸: «직전 줄과 간격» 은 바로 앞 RX·TX 줄부터 지난 시간(+12 ms), «응답 시간 (TX→RX)» 은 마지막으로 보낸 TX 부터 이 RX 까지의 시간입니다. 시각 옆 열에 나오고 줄 복사(Ctrl+C)·«화면 내용 저장» 에도 들어갑니다. 사건 줄(EV)은 비어 있습니다.",
             "- 시각은 1ms 단위입니다. USB 변환기·운영체제의 전달 지연(수 ms)이 섞여 있으니 장비의 정확한 응답 시간은 오실로스코프로 보세요.",
             "- 상태줄 오른쪽: «RX 1.2 KB/s · TX 0 B/s» 는 최근 1초 동안의 처리량, «프레임 120/30» 은 «지우기» 뒤로 받은·보낸 줄 수, «마지막 수신 3초 전» 은 마지막으로 받은 때입니다. 받는 중에 10초 넘게 조용하면 빨갛게 바뀝니다.",
-            "- «반복(ms)» 옆 «번» 칸: 이 횟수만큼 보내고 저절로 멈춥니다(0 = 끌 때까지 계속). 옆에 «보냄 3/10» 처럼 보낸 수가 나오고, 다 보내면 «REPEAT 끝 (10번 보냄)» 사건 줄이 남습니다(화면에만).",
+            `- «반복(ms)» 옆 «번» 칸${f.serial ? "(반복을 켰거나 횟수를 정해 두었을 때만 보임 — 미리 정하려면 «⋯ 더보기»)" : ""}: 이 횟수만큼 보내고 저절로 멈춥니다(0 = 끌 때까지 계속). 옆에 «보냄 3/10» 처럼 보낸 수가 나오고, 다 보내면 «REPEAT 끝 (10번 보냄)» 사건 줄이 남습니다(화면에만).`,
           ],
         }
       : {
@@ -150,7 +152,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
             "- The «No gap column» box in the toolbar: «Gap from previous line» shows the time since the previous RX/TX line (+12 ms); «Response time (TX→RX)» the time from the last TX to this RX. It appears next to the time and is included in line copies (Ctrl+C) and «Save view». Event lines (EV) stay empty.",
             "- Times have 1 ms resolution and include USB adapter / OS delivery delays (a few ms); use an oscilloscope for exact device timing.",
             "- Right side of the status line: «RX 1.2 KB/s · TX 0 B/s» is the throughput over the last second, «frames 120/30» the lines received/sent since «Clear», and «last RX 3 s ago» the time of the last reception. It turns red after 10 s of silence while running.",
-            "- The «times» box next to «Repeat (ms)»: repeat stops by itself after that many sends (0 = until turned off). «sent 3/10» shows progress, and «REPEAT done (10 sent)» is added as an event line (screen only).",
+            `- The «times» box next to «Repeat (ms)»${f.serial ? " (shown only while repeating or when a count is set — set it beforehand under «⋯ More»)" : ""}: repeat stops by itself after that many sends (0 = until turned off). «sent 3/10» shows progress, and «REPEAT done (10 sent)» is added as an event line (screen only).`,
           ],
         },
     ko
@@ -227,8 +229,8 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
         ? {
             title: "파일 보내기·문자 간 지연",
             body: [
-              "- 보내기 줄 «문자 간(ms)»: 모든 송신(보내기·반복·명령·다시 보내기)에서 바이트 사이에 이만큼 쉽니다. 버퍼가 작아 글자를 놓치는 느린 장비용입니다. 0 이면 한꺼번에.",
-              "- «파일 보내기…»: 파일을 고르고(열기 대화상자) 바이트 그대로 보냅니다 — 체크섬·줄 끝을 붙이지 않습니다. 최대 32MB.",
+              `- 보내기 줄${f.serial ? " «⋯ 더보기» 의" : ""} «문자 간(ms)»: 모든 송신(보내기·반복·명령·다시 보내기)에서 바이트 사이에 이만큼 쉽니다. 버퍼가 작아 글자를 놓치는 느린 장비용입니다. 0 이면 한꺼번에.${f.serial ? " 0 이 아니면 «⋯ 더보기» 버튼에 «문자 간 n ms» 가 보입니다." : ""}`,
+              `- «파일 보내기…»${f.serial ? "(«⋯ 더보기» 안)" : ""}: 파일을 고르고(열기 대화상자) 바이트 그대로 보냅니다 — 체크섬·줄 끝을 붙이지 않습니다. 최대 32MB.`,
               "- «나누기»: «덩어리» 는 정한 크기(기본 256바이트)씩, «줄 단위» 는 LF·CR LF·홀로 CR 뒤에서 끊어 줄마다 보냅니다. «문자 간 지연» 은 바이트 사이, «줄·덩어리 사이 지연» 은 줄(덩어리) 사이에 쉬는 시간입니다.",
               "- 보내는 동안 진행 막대와 «보내는 중 45% (1,843/4,096 바이트)» 가 대화상자와 보내기 줄 아래에 나오고, 로그에는 줄·덩어리마다 TX 줄이 찍힙니다. «보내기 취소» 로 그 자리에서 멈추면 «SEND CANCELLED 1843/4096» 사건 줄이 남습니다. 연결이 끊기면 멈춥니다.",
               "- 대화상자를 닫아도 보내기는 계속됩니다. 파일을 고르면 크기와 예상 시간(속도·지연으로 계산)이 나옵니다.",
@@ -237,8 +239,8 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
         : {
             title: "Send file and character delay",
             body: [
-              "- «Char delay (ms)» in the send bar: pauses this long between bytes for every send (Send, repeat, commands, Send again) — for slow devices with small buffers. 0 sends everything at once.",
-              "- «Send file…»: choose a file (open dialog) and send it byte for byte — no checksum or line ending is added. Up to 32 MB.",
+              `- «Char delay (ms)» in the send bar${f.serial ? "'s «⋯ More»" : ""}: pauses this long between bytes for every send (Send, repeat, commands, Send again) — for slow devices with small buffers. 0 sends everything at once.${f.serial ? " When it is not 0, the «⋯ More» button shows «char delay n ms»." : ""}`,
+              `- «Send file…»${f.serial ? " (in «⋯ More»)" : ""}: choose a file (open dialog) and send it byte for byte — no checksum or line ending is added. Up to 32 MB.`,
               "- «Split»: «Chunks» sends a fixed size (256 bytes by default) at a time; «Lines» splits after LF, CR LF or a lone CR and sends line by line. «Delay between characters» pauses between bytes, «Delay between lines/chunks» between lines (chunks).",
               "- While sending, a progress bar and «Sending 45% (1,843/4,096 bytes)» appear in the dialog and under the send bar, and the log shows a TX line per line/chunk. «Cancel sending» stops right there and logs «SEND CANCELLED 1843/4096». A disconnect stops it too.",
               "- Closing the dialog does not stop sending. After choosing a file, its size and an estimated time (from speed and delays) are shown.",
@@ -255,7 +257,11 @@ export function ioLayoutLines(lang: Lang, f: { serial?: boolean; fileSend?: bool
     ko
       ? `- 도구줄에는 «간격 열» 칸(끔·직전 줄과 간격·응답 시간)${f.serial ? "과 «터미널» 보기 단추" : ""}가 있고, 상태줄 오른쪽에 처리량(RX·TX B/s)·프레임 수·«마지막 수신 n초 전» 이 나옵니다.`
       : `- The toolbar has the «gap column» box (off / gap from previous line / response time)${f.serial ? " and the «Terminal» view button" : ""}; the right side of the status line shows throughput (RX/TX B/s), frame counts and «last RX n s ago».`,
-    ko
+    f.serial
+      ? ko
+        ? "- 보내기 줄 둘째 줄: «반복(ms)»·«번»(횟수 — 반복을 켰거나 정해 두었을 때만)·«+ 목록에 추가»·«⋯ 더보기»(문자 간(ms)·«Break»·ms·«파일 보내기…»·반복 횟수). 체크섬 옆 ⚙ 는 체크섬 옵션입니다."
+        : "- Second send row: «Repeat (ms)», «times» (only while repeating or when set), «+ Save to list» and «⋯ More» (Char delay (ms), «Break» and its ms, «Send file…», repeat count). ⚙ next to the checksum opens checksum options."
+      : ko
       ? `- 보내기 줄 둘째 줄: «반복(ms)»·«번»(횟수)·«+ 목록에 추가»${f.fileSend ? `·«문자 간(ms)»${f.serial ? "·«Break»" : ""}·«파일 보내기…»` : ""}. 체크섬 옆 ⚙ 는 체크섬 옵션입니다.`
       : `- Second send row: «Repeat (ms)», «times», «+ Save to list»${f.fileSend ? `, «Char delay (ms)»${f.serial ? ", «Break»" : ""} and «Send file…»` : ""}. ⚙ next to the checksum opens checksum options.`,
     ko ? "- 오른쪽 칸 «명령 목록» 아래에 «트리거» 가 있습니다(▸ 를 눌러 펼침)." : "- «Triggers» sits below «Commands» in the right pane (click ▸ to expand).",

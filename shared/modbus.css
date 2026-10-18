@@ -77,3 +77,14 @@
   gap: 4px 10px;
   font-family: var(--mono);
 }
+/* 0 기준 칸에 40001 같은 수 — 노란 안내 + «4xxxx 표기로 바꾸기» */
+.mb-plc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mb-plc > span {
+  flex: 1 1 260px;
+  min-width: 0;
+}

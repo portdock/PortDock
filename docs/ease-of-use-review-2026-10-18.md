@@ -182,15 +182,15 @@
 
 | # | 쉽게 만드는 변경 | 지금(file:line) | 다른 도구는(근거) | 구체적 방법 | 효과·크기 |
 |---|---|---|---|---|---|
-| 1 | Serial: 왼쪽 «고급 연결» 접기 | RS-485·DTR/RTS·흐름 제어가 늘 보임 `apps/serial/src/App.tsx:773-815` | CoolTerm·Modbus Poll 은 Options/Advanced 창에 둔다 | 흐름 제어·RS-485·DTR·RTS 를 `<details className="adv">` 로 묶는다(Slave 의 고급 접기와 같은 방식)<br>기본값과 다르면 접힌 제목에 요약(«RS-485 드라이버 · DTR») 표시, 열림 상태는 저장 | 첫 화면 −4, 프레임 구분이 접힌 아래에서 위로 올라옴 · S |
-| 2 | Serial: «받기 설정» 접기 | 프레임 구분·조용한 시간·수신 체크섬·파일 기록 `App.tsx:841-923` | Docklight 는 Options 에 둔다 | «받기» 접기 하나로 묶는다. 제목에 지금 값(«조용한 시간 20ms · 체크섬 없음»)<br>«파일로 계속 저장» 은 위 도구 막대의 «화면 내용 저장» 옆으로 옮긴다 | −5 · S |
-| 3 | Serial: 보내기 둘째 줄 «더보기 ▾» | 반복·횟수·문자 간·Break·ms·파일 보내기가 한 줄 `App.tsx:1116-1157` | COMTool 은 기능을 그룹으로 나누고, Serial Studio 는 콘솔 도구를 따로 묶는다 | `.send-tools`(문자 간·Break·ms·파일 보내기)를 «⋯ 더보기» 팝오버로 옮긴다<br>반복 체크와 ms 는 남긴다. 횟수는 반복을 켰을 때만 보인다 | −5, 단위 혼동이 없어짐 · S |
+| 1 | Serial: 왼쪽 «고급 연결» 접기 | RS-485·DTR/RTS·흐름 제어가 늘 보임 `apps/serial/src/App.tsx:773-815` | CoolTerm·Modbus Poll 은 Options/Advanced 창에 둔다 | 흐름 제어·RS-485·DTR·RTS 를 `<details className="adv">` 로 묶는다(Slave 의 고급 접기와 같은 방식)<br>기본값과 다르면 접힌 제목에 요약(«RS-485 드라이버 · DTR») 표시, 열림 상태는 저장 | 첫 화면 −4, 프레임 구분이 접힌 아래에서 위로 올라옴 · S <br>**✅ 10/18 적용** — «고급 연결» 접기(흐름 제어·RS-485·DTR·RTS), 접힌 제목에 «RTS/CTS · DTR» 식 요약(기본이면 «흐름 제어 없음 · DTR·RTS 끔»), 기본값이 아니면 펼침, 열림 상태 저장 |
+| 2 | Serial: «받기 설정» 접기 | 프레임 구분·조용한 시간·수신 체크섬·파일 기록 `App.tsx:841-923` | Docklight 는 Options 에 둔다 | «받기» 접기 하나로 묶는다. 제목에 지금 값(«조용한 시간 20ms · 체크섬 없음»)<br>«파일로 계속 저장» 은 위 도구 막대의 «화면 내용 저장» 옆으로 옮긴다 | −5 · S <br>**✅ 10/18 적용** — «받기 설정» 접기(프레임 구분·조용한 시간·끝 문자·수신 체크섬), 제목 요약 «조용한 시간 20ms · 체크섬 검사 없음». «파일로 계속 저장» 은 왼쪽에 그대로 둠 |
+| 3 | Serial: 보내기 둘째 줄 «더보기 ▾» | 반복·횟수·문자 간·Break·ms·파일 보내기가 한 줄 `App.tsx:1116-1157` | COMTool 은 기능을 그룹으로 나누고, Serial Studio 는 콘솔 도구를 따로 묶는다 | `.send-tools`(문자 간·Break·ms·파일 보내기)를 «⋯ 더보기» 팝오버로 옮긴다<br>반복 체크와 ms 는 남긴다. 횟수는 반복을 켰을 때만 보인다 | −5, 단위 혼동이 없어짐 · S <br>**✅ 10/18 적용** — «⋯ 더보기» 팝오버(문자 간·Break·ms·파일 보내기…, 반복이 꺼져 있으면 반복 횟수), Esc·바깥 누르기로 닫힘. 문자 간 지연이 켜져 있으면 버튼에 표시. 횟수 칸은 반복 중이거나 횟수>0 일 때만 줄에 |
 | 4 | Serial: 연결 프리셋 고르기 | 없음 | Docklight 예제 프로젝트(AT 9600 8N1, ModbusRtuCrc), Serial Studio «작동 방식» | 포트 위에 «용도» 고르기: 일반 / AT 명령 / Modbus RTU 장비 / NMEA·GPS<br>- AT 명령: ASCII·줄 끝 CR LF·줄 끝 기준 프레임(0D 0A)·115200<br>- Modbus RTU: Modbus 프레임·수신 CRC·보내기 HEX + CRC16·9600 8N1<br>- NMEA: ASCII·LF 프레임·4800/9600<br>고른 뒤에도 각 칸은 그대로 고칠 수 있다(«일반(바꿈)» 표시) | 첫 작업 결정 3→1 · M |
-| 5 | Serial: 보내기 형식 기본값 | 기본 HEX `App.tsx:505` | COMTool·CoolTerm·LLCOM 은 텍스트가 기본 | 첫 실행 기본을 ASCII + 줄 끝 CR LF 로(또는 #4 의 «용도» 를 따름)<br>저장된 값이 있으면 그것을 쓴다 | AT 작업 −4클릭 · S |
-| 6 | Serial: Modbus 요청 창에서 바로 보내기 | «입력칸에 넣기» 만 있음 `shared/ModbusBuilder.tsx:263` | Modbus Poll 은 F8 정의 → 바로 폴링 | «보내기(Enter)» 를 기본 버튼으로 두고 «입력칸에 넣기» 는 보조로<br>Enter = 보내기, 연결 전이면 «먼저 연결하세요» 로 막는다 | −1클릭, 흐름이 자연스러움 · S |
-| 7 | 0 기준 칸에 4xxxx 를 넣으면 알려 주기 | 경고 없이 주소 40001 을 읽음 `shared/modbusBuild.ts:119-123` | Modbus Poll 은 문서에 «40001 = 주소 0» 을 밝히고 «PLC Addresses (Base 1)» 체크를 둔다 | zero 모드에서 값이 FC 에 맞는 앞자리(3·4)이고 30001~49999 범위면 노란 안내를 띄운다: «40001 표기라면 주소 0 입니다 — [4xxxx 표기로 바꾸기]»<br>Serial·TCP·Simulator 공통 | 흔한 사고 하나 차단 · S |
+| 5 | Serial: 보내기 형식 기본값 | 기본 HEX `App.tsx:505` | COMTool·CoolTerm·LLCOM 은 텍스트가 기본 | 첫 실행 기본을 ASCII + 줄 끝 CR LF 로(또는 #4 의 «용도» 를 따름)<br>저장된 값이 있으면 그것을 쓴다 | AT 작업 −4클릭 · S <br>**✅ 10/18 적용** — 저장값이 없을 때 ASCII + 줄 끝 CR LF, placeholder «AT» |
+| 6 | Serial: Modbus 요청 창에서 바로 보내기 | «입력칸에 넣기» 만 있음 `shared/ModbusBuilder.tsx:263` | Modbus Poll 은 F8 정의 → 바로 폴링 | «보내기(Enter)» 를 기본 버튼으로 두고 «입력칸에 넣기» 는 보조로<br>Enter = 보내기, 연결 전이면 «먼저 연결하세요» 로 막는다 | −1클릭, 흐름이 자연스러움 · S <br>**✅ 10/18 적용** — `ModbusBuilder` 에 선택적 `onSend`·`canSend`. Serial 은 «보내기»(창 안 Enter)가 기본, 보내면 창이 닫히고 입력 이력에 남음. 연결 전이면 막고 «먼저 연결하세요». TCP 는 넘기지 않아 지금과 같음 |
+| 7 | 0 기준 칸에 4xxxx 를 넣으면 알려 주기 | 경고 없이 주소 40001 을 읽음 `shared/modbusBuild.ts:119-123` | Modbus Poll 은 문서에 «40001 = 주소 0» 을 밝히고 «PLC Addresses (Base 1)» 체크를 둔다 | zero 모드에서 값이 FC 에 맞는 앞자리(3·4)이고 30001~49999 범위면 노란 안내를 띄운다: «40001 표기라면 주소 0 입니다 — [4xxxx 표기로 바꾸기]»<br>Serial·TCP·Simulator 공통 | 흔한 사고 하나 차단 · S <br>**✅ 10/18 적용** — `parseAddr` 가 0 기준 칸의 함수에 맞는 5자리 3xxxx·4xxxx 에 note+`plcGuess`(오류 아님, 적힌 대로 보냄). 요청 창에 노란 안내 + «4xxxx 표기로 바꾸기». Serial·TCP 요청 창 공통 |
 | 8 | Serial: Modbus 응답을 요청과 짝지어 보여 주기 | 응답 줄을 찾아 눌러야 하고 값은 `[i]` 10진만 `App.tsx:1238-1248` | Modbus Poll·OpenModScan 은 주소가 붙은 값 표 | 요청 창으로 보낸 요청(국번·FC·시작·개수)을 기억했다가, 다음에 CRC 가 맞는 같은 국번·FC 응답이 오면 상세를 자동으로 열고 «40001 = 1812 (0x0714)» 로 보여 준다<br>U16/S16/HEX/F32(ABCD·CDAB) 고르기는 `shared/mbwords.ts` 를 재사용 | Modbus 작업 −1클릭, 값을 해석하는 시간이 줄어듦 · M |
-| 9 | Serial: 좁은 창에서 상세 보이기 | 1180 이하면 오른쪽 칸이 «☰ 명령 목록» 뒤 `apps/serial/src/App.css:521-546`, `App.tsx:965` | — | 좁은 폭에서 줄을 누르면 오른쪽 칸을 열거나, 로그 아래에 «상세» 띠(접기)를 둔다<br>버튼 이름은 «☰ 명령·상세» 로 | 1000 폭 사용자의 «아무 일도 안 일어남» 해소 · S |
+| 9 | Serial: 좁은 창에서 상세 보이기 | 1180 이하면 오른쪽 칸이 «☰ 명령 목록» 뒤 `apps/serial/src/App.css:521-546`, `App.tsx:965` | — | 좁은 폭에서 줄을 누르면 오른쪽 칸을 열거나, 로그 아래에 «상세» 띠(접기)를 둔다<br>버튼 이름은 «☰ 명령·상세» 로 | 1000 폭 사용자의 «아무 일도 안 일어남» 해소 · S <br>**✅ 10/18 적용** — 1180 이하에서 줄을 누르면(Shift·Ctrl 아님) 오른쪽 칸을 열고 «상세» 로 굴림. 버튼 «☰ 명령·상세» |
 | 10 | Slave: 늘 떠 있는 빨간 경고 없애기 | `apps/modbus-slave/src/App.tsx:1428-1430` | — | 시작 주소·개수를 **바꿀 때만**(값이 기본과 다를 때나 칸에 포커스가 있을 때) 노란 안내로<br>평소에는 «응답 범위 0~99» 처럼 회색 요약 | 첫인상이 «오류» 에서 «정상» 으로 · S <br>**✅ 10/18 적용** — 바꿨을 때만 노란 알림줄(«알겠습니다» 로 닫음, 범위별 기억), 평소 회색 «응답 범위: HR 0–99» |
 | 11 | Slave: 장애 주입 기본으로 접기 | `App.tsx:1209-1237` 이 늘 펼쳐짐 | Witte 도 오류 흉내는 메뉴 안에 둔다(문서 확인 못 함) | 장애 주입 전체를 `<details>` 로 묶는다. 켜져 있으면 제목을 «⚠ 장애 주입 켜짐» 빨강으로 하고 펼친다(`faultOn` 재사용) | 첫 화면 −5 · S <br>**✅ 10/18 적용** — 접힌 제목에 «꺼짐»/켜진 장애 목록, 켜지면 빨간 «⚠ 장애 주입 켜짐» + 펼침, 아래 ⚠ 표시는 그대로 |
 | 12 | Slave: 통계 접기 | `App.tsx:1300-1357` | — | «통계» 를 접기로 하고 제목에 «요청 n · 예외 m»(예외가 있으면 강조) | −8줄 · S <br>**✅ 10/18 적용** |
@@ -200,7 +200,7 @@
 | 16 | 이름 맞추기 | «국번»(Serial 요청 창), «슬레이브 주소»(Slave), «ID 1»(Slave 도구 막대) `shared/modbusBuild.ts`, `apps/modbus-slave/src/i18n.ts` | Modbus Poll 은 어디서나 «Slave ID» | 한국어 «국번(슬레이브 ID)», 영어 «Slave ID» 로 통일. «조용한 시간» → «끊김 시간(조용한 간격)», «간격 열 끔» → «시간 간격 열: 없음» | 일관성 · S <br>**◐ 10/18 Slave 만 적용** — 한국어 «국번(슬레이브 주소)» 한 번, 나머지 «국번». 영어는 «Unit ID (slave address)» 한 번, 나머지 «Unit ID». Serial·shared 쪽 문구는 아직 |
 | 17 | 첫 실행 빠른 시작 카드 | 빈 화면 안내 한 줄 `apps/serial/src/i18n.ts:6` | Angry IP 의 첫 실행 시작 안내, Docklight 환영 화면 | 빈 로그 자리에 카드: «무엇을 하나요? [AT 명령 보내기] [Modbus 장비 값 읽기] [그냥 보기]»<br>누르면 #4 프리셋 적용 + 예시 명령 2~3개를 명령 목록에 넣는다. «다시 보지 않기», 도움말 «처음 쓰는 순서» 링크<br>Slave: [보유 레지스터 예제 채우기] [CSV 가져오기] | 첫 5분 결정을 거의 0으로 · M <br>**◐ 10/18 Slave·Net Scan 은 «처음 쓰는 순서» 카드만**(빈 통신 기록·빈 결과 자리, «다시 보지 않기»). 예제 채우기·CSV 버튼은 아직 |
 | 18 | 예시 명령(빈 명령 목록) | 빈 목록 안내만 `shared/CommandList.tsx:228` | Packet Sender 기본 패킷, LLCOM 예제 스크립트 | 빈 목록에 «예시 넣기» 버튼: AT·ATI·AT+GMR / Modbus 03 0×10 / *IDN?. 사용자 명령과 섞이지 않게 이름에 «예:» | 발견성 · S |
-| 19 | 줄 끝이 두 번 붙는 것 막기 | `\r\n` 과 «줄 끝 CR LF» 가 겹침 `App.tsx:1103-1108` | COMTool 은 CRLF 체크와 Escape 를 분리 | 입력이 `\r\n`·`\n` 으로 끝나고 줄 끝도 켜져 있으면 알림줄: «줄 끝이 두 번 붙습니다 — [줄 끝 끄기]»(기존 `modeSwitch` 알림줄 재사용) | 오류 예방 · S |
+| 19 | 줄 끝이 두 번 붙는 것 막기 | `\r\n` 과 «줄 끝 CR LF» 가 겹침 `App.tsx:1103-1108` | COMTool 은 CRLF 체크와 Escape 를 분리 | 입력이 `\r\n`·`\n` 으로 끝나고 줄 끝도 켜져 있으면 알림줄: «줄 끝이 두 번 붙습니다 — [줄 끝 끄기]»(기존 `modeSwitch` 알림줄 재사용) | 오류 예방 · S <br>**✅ 10/18 적용** — ASCII 입력이 `\r\n`·`\n`·`\r` 로 끝나고 줄 끝도 켜져 있으면 알림줄 «줄 끝이 두 번 붙습니다 — [줄 끝 끄기] ✕» |
 | 20 | Serial: 도구 막대 정리 | 보기 4 + 자동 스크롤 + 간격 열 + 저장 + 지우기가 두 줄로 넘침 `App.tsx:932-968` | — | «간격 열» 을 보기 설정(톱니)이나 로그 우클릭 메뉴로 옮긴다. 1000 폭에서 한 줄이 되게 | −1, 줄 넘김 해소 · S |
 | 21 | Serial: 연결 줄 요약 + 바꾸기 | 연결 뒤에도 왼쪽 칸 전체가 보임 | CoolTerm 은 도구 막대만 남긴다 | 연결되면 연결 설정을 «COM3 9600 8N1 [바꾸기]» 한 줄로 접고, 받기 설정과 명령을 위로 올린다(속도 등은 연결 중에도 바로 적용되니 펼치면 그대로 동작) | 화면 정리 · M |
 | 22 | Net Scan: «찾는 방법» 접기 | `apps/netscan/src/App.tsx:491-540` | Angry IP 는 Preferences, Advanced IP Scanner 는 Options | «찾는 방법·포트» 를 접기로 묶고 제목에 «ARP+핑 · 산업 포트 14 · Modbus 정보» 요약. 기본값과 다르면 «(바꿈)» | 첫 화면 −9 · S <br>**✅ 10/18 적용** — «찾는 방법·포트 (고급)», 요약 예: «ARP+핑 · 포트 22개 · Modbus 정보 · 이름». 핑·ARP 둘 다 끔·틀린 포트 목록이면 저절로 펼침 |
@@ -230,26 +230,26 @@
 3. **Slave ⋯ 늘 보이기** (#13) — ✅ 적용
    - `apps/modbus-slave/src/App.css:805-821` 에서 `visibility:hidden` 을 `opacity:.35` 로 바꾸고, hover·포커스 때 1.
    - `tip(lang,"format")` 말풍선 끝에 «실수·32비트: 칸의 ⋯ 또는 우클릭» (`help.ts`/tips).
-4. **0 기준 칸 4xxxx 안내** (#7)
+4. **0 기준 칸 4xxxx 안내** (#7) — ✅ 적용
    - `shared/modbusBuild.ts` `parseAddr` 의 zero 분기에서 `note` 를 돌려준다(오류가 아니다).
    - `shared/ModbusBuilder.tsx` 가 note 와 «4xxxx 표기로 바꾸기» 버튼을 보여 준다.
    - `modbusBuild.test.ts` 에 경우 하나 추가.
-5. **Modbus 요청 창에 «보내기»** (#6)
+5. **Modbus 요청 창에 «보내기»** (#6) — ✅ 적용
    - `ModbusBuilder` 에 선택적 `onSend?: (bytes)=>void` 와 `canSend` 를 넘긴다.
    - Serial `App.tsx:1256-1265` 에서 `doSend(mbSpec(b))`. 기본 버튼은 «보내기», 보조 버튼은 «입력칸에 넣기»·«목록에 추가».
    - TCP·Simulator 는 넘기지 않으면 지금과 같다.
-6. **Serial 왼쪽 칸 두 묶음 접기** (#1·#2)
+6. **Serial 왼쪽 칸 두 묶음 접기** (#1·#2) — ✅ 적용
    - `App.tsx:773-815`(흐름·RS-485·DTR·RTS)를 «고급 연결» 로, `841-919`(프레임·수신 체크섬)를 «받기 설정» 으로 묶는다. 제목에 요약을 붙인다.
    - 기본값이 아니면 펼친 채로 시작한다(`cfg.flow!=="none"||rs485On||cfg.dtr||cfg.rts`).
    - 열림 상태는 `store()` 로 저장(#30).
-7. **Serial 보내기 줄 «⋯ 더보기»** (#3)
+7. **Serial 보내기 줄 «⋯ 더보기»** (#3) — ✅ 적용
    - `App.tsx:1144-1157` 의 `.send-tools` 를 작은 팝오버로 옮긴다(`LogMenu` 와 같은 위치 계산, Esc 로 닫기).
    - 횟수 칸은 `repeating||repeatTimes>0` 일 때만 보인다.
    - smoke.mjs 의 Break·파일 보내기 단계는 팝오버를 연 뒤 누르도록 고친다.
-8. **Serial 좁은 창 상세** (#9)
+8. **Serial 좁은 창 상세** (#9) — ✅ 적용
    - `selected` 가 바뀌면 `if (matchMedia("(max-width:1180px)").matches) setShowRight(true)`.
    - 버튼 문구를 `commands` → `commandsDetail`(«명령·상세»)로.
-9. **첫 실행 기본값 + 줄 끝 중복 알림** (#5·#19)
+9. **첫 실행 기본값 + 줄 끝 중복 알림** (#5·#19) — ✅ 적용
    - `App.tsx:505` 의 기본값을 `{mode:"ascii", suffix:"\r\n"}` 로(저장값이 없을 때만).
    - placeholder 는 «AT» 로.
    - `modeSwitch` 알림줄에 «줄 끝 두 번» 경우를 추가.
@@ -273,6 +273,13 @@
 - 캡처: `after-*.png`(첫 실행 1200·1000 × ko·en, 장애 켬+범위 바꿈, 장애 접힘, 형식 지정…, Net Scan 고급 펼침·바꿈 표시)
 - smoke(포트 5221·5226 로 띄운 사본): 두 앱 4조합 모두 통과. 접기를 펼친 상태(faultOpen·statsOpen·advOpen=true)로도 ko-light 통과.
 - `e2e/ui-preview/smoke.mjs` 는 고치지 않았다: 접힌 칸(장애 주입·통계·찾는 방법)은 기본 «다 눌러 보기» 에서 빠진다. «펼친 뒤 누르기» 단계를 넣어야 한다.
+
+### 적용 기록 — Serial · 요청 창 공통 (10/18)
+
+- 바꾼 곳: `shared/{modbusBuild.ts,modbusBuild.test.ts,ModbusBuilder.tsx,modbus.css,Popover.tsx,io.css,tips.ts,helpCommon.ts}`, `apps/serial/src/{App.tsx,App.css,i18n.ts,help.ts}`, `e2e/ui-preview/smoke.mjs`
+- 기능은 빼지 않았다. 접기·팝오버·기본값·안내만 바꿨다.
+- smoke: full 조합(ko-light·en-dark)은 접기를 펼친 채(`advConnOpen`·`rxOpen`) 띄워 «다 눌러 보기» 가 속까지 누른다. 나머지 조합은 접힌 기본 상태를 확인한다. Break·파일 보내기·반복 횟수는 «⋯ 더보기» 를 연 뒤 누른다. 좁은 창에서 줄을 누르면 오른쪽 칸이 열리는지 보고 닫은 뒤 다음 단계로 간다. 첫 실행 기본값, 줄 끝 두 번 알림줄, 요청 창 4xxxx 안내 → 바꾸기 → «보내기» 단계를 더했다.
+- 남은 것: #2 의 «파일로 계속 저장» 을 도구 막대로 옮기기(도구 막대가 1000 폭에서 이미 넘쳐 #20 과 함께), TCP 요청 창 «보내기»(트랜잭션 ID 자동 증가와 맞춰야 함).
 
 ## 6. PortDock 이 이미 더 쉬운 점
 

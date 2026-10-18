@@ -283,3 +283,34 @@ input.trg-color {
   font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--muted);
 }
+
+/* ---- 작은 띄움 칸(Popover) — Serial 보내기 줄 «⋯ 더보기»(문자 간·Break·파일 보내기·반복 횟수) */
+.popover {
+  position: fixed;
+  z-index: 120;
+  max-width: min(360px, calc(100vw - 8px));
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.popover .pop-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.popover .pop-row > label,
+.popover .pop-row > button {
+  white-space: nowrap;
+}
+.more-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}

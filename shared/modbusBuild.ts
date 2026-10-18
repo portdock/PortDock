@@ -74,6 +74,7 @@ const M = {
     addrPrefix: "«{a}» 은(는) {b} 표기입니다. 이 함수는 {c} 를 씁니다.",
     addrBadPrefix: "앞자리 {a} 는 Modbus 표기에 없습니다(0 코일, 1 입력 접점, 3 입력 레지스터, 4 보유 레지스터).",
     addrPlcNote: "{a} → 0 기준 {b} (0x{c})",
+    addrLooksPlc: "«{a}» 은(는) {p}xxxx 표기처럼 보입니다. 지금은 0 기준 주소 {a}(0x{c})를 읽습니다 — {p}xxxx 표기라면 주소 {b} 입니다.",
     qty: "개수는 1~{a} 입니다(규격 한도).",
     overflow: "끝 주소가 65535 를 넘습니다(시작 {a} + 개수 {b}).",
     valEmpty: "쓸 값을 넣으세요.",
@@ -96,6 +97,7 @@ const M = {
     addrPrefix: "«{a}» is {b} notation. This function uses {c}.",
     addrBadPrefix: "Leading digit {a} is not Modbus notation (0 coil, 1 discrete input, 3 input register, 4 holding register).",
     addrPlcNote: "{a} → 0-based {b} (0x{c})",
+    addrLooksPlc: "«{a}» looks like {p}xxxx notation. As typed it reads 0-based address {a} (0x{c}) — in {p}xxxx notation it is address {b}.",
     qty: "Quantity is 1–{a} (protocol limit).",
     overflow: "End address exceeds 65535 (start {a} + quantity {b}).",
     valEmpty: "Enter the value(s) to write.",
@@ -110,8 +112,11 @@ const M = {
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
-/** 주소 칸 해석. plc 면 함수에 맞는 앞자리(0·1·3·4)인지도 본다 */
-export function parseAddr(text: string, fc: number, mode: AddrMode, lang: MbLang = "ko"): { addr: number | null; error: string | null; note: string | null } {
+/**
+ * 주소 칸 해석. plc 면 함수에 맞는 앞자리(0·1·3·4)인지도 본다.
+ * zero 인데 함수에 맞는 앞자리의 5자리(30001~39999·40001~49999)면 오류가 아니라 안내(note + plcGuess) — 현장에서 가장 흔한 «40001 을 0 기준 칸에» 실수
+ */
+export function parseAddr(text: string, fc: number, mode: AddrMode, lang: MbLang = "ko"): { addr: number | null; error: string | null; note: string | null; plcGuess?: boolean } {
   const m = M[lang];
   const t = text.trim().replace(/[\s_]/g, "");
   const bad = (error: string) => ({ addr: null, error, note: null });
@@ -120,6 +125,11 @@ export function parseAddr(text: string, fc: number, mode: AddrMode, lang: MbLang
     const n = /^0x[0-9a-f]+$/i.test(t) ? parseInt(t.slice(2), 16) : /^\d+$/.test(t) ? Number(t) : NaN;
     if (Number.isNaN(n)) return bad(m.addrNum);
     if (n > 0xffff) return bad(m.addrZero);
+    const f = mbFuncInfo(fc);
+    if (f && (f.prefix === "3" || f.prefix === "4") && /^\d{5}$/.test(t) && t[0] === f.prefix && Number(t.slice(1)) >= 1) {
+      const note = fill(m.addrLooksPlc, { a: t, p: f.prefix, b: Number(t.slice(1)) - 1, c: n.toString(16).toUpperCase().padStart(4, "0") });
+      return { addr: n, error: null, note, plcGuess: true };
+    }
     return { addr: n, error: null, note: null };
   }
   if (!/^\d+$/.test(t)) return bad(m.addrNum);
@@ -196,8 +206,10 @@ export interface MbResult {
   /** CRC 앞까지의 요청 바이트(국번 + PDU). 틀렸으면 null */
   bytes: number[] | null;
   error: string | null;
-  /** 주소 풀이(PLC 표기일 때) */
+  /** 주소 풀이(PLC 표기일 때) 또는 0 기준 칸에 넣은 PLC 표기 같은 수의 안내 */
   note: string | null;
+  /** note 가 «0 기준 칸에 4xxxx·3xxxx» 안내인지 — 화면이 «4xxxx 표기로 바꾸기» 를 붙인다 */
+  plcGuess?: boolean;
   /** 실제 시작 주소(0 기준)와 개수 — 이름 짓기에 쓴다 */
   addr: number | null;
   qty: number;
@@ -214,17 +226,18 @@ export function buildRequest(form: MbForm, lang: MbLang = "ko"): MbResult {
   const a = parseAddr(form.addrText, form.fc, form.addrMode, lang);
   if (a.addr == null) return out(a.error);
   const addr = a.addr;
+  const hint = { note: a.note, plcGuess: a.plcGuess };
   let qty = form.qty;
   let values: number[] = [];
   if (f.write) {
     const v = parseValues(form.valuesText, form.fc, lang);
-    if (!v.values) return out(v.error, { note: a.note, addr });
+    if (!v.values) return out(v.error, { ...hint, addr });
     values = v.values;
     qty = values.length;
   } else if (!Number.isInteger(qty) || qty < 1 || qty > f.max) {
-    return out(fill(m.qty, { a: f.max }), { note: a.note, addr });
+    return out(fill(m.qty, { a: f.max }), { ...hint, addr });
   }
-  if (addr + qty - 1 > 0xffff) return out(fill(m.overflow, { a: addr, b: qty }), { note: a.note, addr, qty });
+  if (addr + qty - 1 > 0xffff) return out(fill(m.overflow, { a: addr, b: qty }), { ...hint, addr, qty });
   const s = form.slave;
   const bytes =
     f.code === 0x05
@@ -236,5 +249,5 @@ export function buildRequest(form: MbForm, lang: MbLang = "ko"): MbResult {
           : f.code === 0x10
             ? writeRegsReq(s, addr, values)
             : readReq(s, f.code, addr, qty);
-  return { bytes, error: null, note: a.note, addr, qty };
+  return { bytes, error: null, ...hint, addr, qty };
 }

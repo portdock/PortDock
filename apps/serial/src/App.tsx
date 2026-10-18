@@ -47,7 +47,7 @@ import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
-import { checksumDesc, checksumLen, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
+import { checksumDesc, checksumLabel, checksumLen, checksumToRust, crcProblem, setTextEncoding, type CkOpts } from "@shared/format";
 import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
@@ -56,6 +56,7 @@ import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace, type Progress } from "@shared/FileSend";
 import { TermBuffer } from "@shared/terminal";
 import { TerminalView } from "@shared/TerminalView";
+import { Popover } from "@shared/Popover";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -166,6 +167,10 @@ export default function App() {
   const [cfg, setCfg] = useState<SerialConfig>(loadCfg);
   useEffect(() => store("cfg", cfg), [cfg]);
   const rs485On = cfg.rs485 !== "off" && cfg.flow !== "hardware";
+  // 왼쪽 칸 «고급 연결»(흐름 제어·RS-485·DTR·RTS) — 대부분 안 쓰니 접는다. 기본값이 아니면 펼친 채 시작, 열림 상태는 기억
+  const advConnChanged = cfg.flow !== "none" || rs485On || cfg.dtr || cfg.rts;
+  const [advConnOpen, setAdvConnOpen] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
+  useEffect(() => store("advConnOpen", advConnOpen), [advConnOpen]);
 
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   const [terminatorText, setTerminatorText] = useState(() => load("terminatorText", "0D 0A"));
@@ -178,6 +183,10 @@ export default function App() {
   useEffect(() => store("rxCheck", rxCheck), [rxCheck]);
   useEffect(() => store("rxCk", rxCk), [rxCk]);
   useEffect(() => store("rxAuto", rxAuto), [rxAuto]);
+  // «받기 설정»(프레임 구분·수신 체크섬) 접기 — 기본(조용한 시간 20ms·체크섬 없음)이 아니면 펼친 채 시작
+  const rxChanged = !(framing.kind === "gap" && framing.gapMs === 20) || rxCheck != null;
+  const [rxOpen, setRxOpen] = useState<boolean>(() => rxChanged || load("rxOpen", false));
+  useEffect(() => store("rxOpen", rxOpen), [rxOpen]);
   // 백엔드로 보낼 수신 체크섬(옵션·범용 CRC 포함). 범용 CRC 매개변수가 틀리면 검사하지 않는다
   const rxWire = useMemo(() => {
     if (rxCheck === "crc" && (!rxCk?.crc || crcProblem(rxCk.crc))) return null;
@@ -443,6 +452,13 @@ export default function App() {
     return f && f.seq === seq ? f : undefined;
   };
   const [menu, setMenu] = useState<MenuAt>(null);
+  // 좁은 창(1180px 이하)은 오른쪽 칸이 숨어 있다 — 줄을 누르면 펼치고 «상세» 로 굴려 «아무 일도 안 일어남» 이 없게
+  const detailHead = useRef<HTMLHeadingElement>(null);
+  const openDetail = () => {
+    if (!matchMedia("(max-width: 1180px)").matches) return;
+    setShowRight(true);
+    requestAnimationFrame(() => detailHead.current?.scrollIntoView({ block: "start" }));
+  };
 
   function clearLog() {
     framesRef.current = [];
@@ -502,7 +518,8 @@ export default function App() {
   }, [selFrame]);
 
   // ---- 보내기
-  const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "hex", checksum: null, suffix: "" }));
+  // 첫 실행(저장값 없음)은 AT·SCPI·NMEA 처럼 글자 명령이 흔해 ASCII + 줄 끝 CR LF 로 시작한다. 저장값이 있으면 그것을 쓴다
+  const [spec, setSpec] = useState<SendSpec>(() => load("spec", { text: "", mode: "ascii", checksum: null, suffix: "\\r\\n" }));
   // 보내기 버튼·Modbus 요청 넣기 뒤 입력칸으로 돌아가 바로 이어 쓸 수 있게
   const sendInput = useRef<HTMLInputElement>(null);
   const [previewBytes, setPreviewBytes] = useState<number[] | null>(null);
@@ -632,12 +649,31 @@ export default function App() {
   };
   const byteMs = serialTxMs(1, cfg.baud, cfg.dataBits, cfg.parity === "none" ? "none" : "odd", Math.ceil(cfg.stopBits));
 
+  // ---- 보내기 둘째 줄 «⋯ 더보기» — times: 연 순간 줄에 횟수 칸이 없었으면 팝오버에 둔다
+  const [moreOpen, setMoreOpen] = useState<{ times: boolean } | null>(null);
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(null), []);
+  // 횟수 칸은 반복을 켰거나 횟수를 정해 둔 때만 줄에 보인다(«반복 1000» 과 «Break 100 ms» 가 섞여 보이지 않게)
+  const timesInRow = repeating || repeatTimes > 0;
+  const repeatTimesBox = (
+    <label className="inline" data-tip={tip(lang, "repeatTimes")}>
+      <NumInput className="num small-num rep-times" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
+    </label>
+  );
+
   // ---- Modbus 요청 만들기 — HEX·CRC16 Modbus·줄 끝 없음으로 맞춘다(Modbus RTU 에는 줄 끝이 없다)
   const [showMb, setShowMb] = useState(false);
   const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "", ck: null });
 
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
+  // ASCII 입력이 \r\n·\n·\r 로 끝나는데 «줄 끝 붙이기» 도 켜져 있으면 줄 끝이 두 번 나간다 — 알림줄(✕ 는 그 입력·줄 끝일 때만 숨김)
+  const typedEnd = spec.mode === "ascii" ? (/\\r\\n$|\\n$|\\r$/.exec(spec.text.trimEnd())?.[0] ?? null) : null;
+  const [dupHidden, setDupHidden] = useState<string | null>(null);
+  const dupKey = `${spec.text}|${spec.suffix}`;
+  const dupSuffix = !!typedEnd && spec.suffix !== "" && dupHidden !== dupKey;
+  // 줄 끝 값은 이스케이프 글자 그대로(«\r\n» 4글자) — 고르기의 value 와 같다
+  const suffixName = (v: string) => (v === "\\r" ? "CR" : v === "\\n" ? "LF" : "CR LF");
 
   // ---- 명령 목록
   const [commands, setCommands] = useState<Command[]>(() => load("commands", []));
@@ -675,6 +711,26 @@ export default function App() {
   useWindowTitle(windowTitle("PortDock Serial", connected ? [`${livePort ?? cfg.port} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits}`, t(statusKey)] : [], !!logPath));
   const summaryLine = connected ? `${summary({ ...cfg, port: livePort ?? cfg.port }, lang)} · ${t(statusKey)}` : `${cfg.port || t("noPorts")} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits} · ${t(statusKey)}`;
   const sendWhy = t(connected ? "ilOffline" : "whyNotConnected");
+  // 접힌 제목에 보일 지금 값 — 기본값이면 짧게
+  const advConnSummary =
+    [
+      cfg.flow === "hardware" ? "RTS/CTS" : cfg.flow === "software" ? "XON/XOFF" : "",
+      rs485On ? t(cfg.rs485 === "driver" ? "rs485DriverShort" : "rs485SoftShort") : "",
+      cfg.dtr ? "DTR" : "",
+      cfg.rts && !rs485On && cfg.flow !== "hardware" ? "RTS" : "",
+    ]
+      .filter(Boolean)
+      .join(" · ") || t("advConnDefault");
+  const rxSummary = [
+    framing.kind === "gap"
+      ? `${t("fmGap")} ${framing.gapMs}ms`
+      : framing.kind === "terminator"
+        ? `${t("fmTerminator")} ${term_.bytes.length ? hex(term_.bytes) : "—"}`
+        : framing.kind === "fixed"
+          ? `${t("fmFixed")} ${framing.len}`
+          : t("fmModbus"),
+    rxCheck ? checksumLabel(rxCheck, lang) : t("rxNoCheck"),
+  ].join(" · ");
 
   return (
     <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
@@ -770,49 +826,55 @@ export default function App() {
         </div>
         {(cfg.parity === "mark" || cfg.parity === "space") && <div className="hint">{io(lang, "markSpaceHint")}</div>}
         {cfg.stopBits === 1.5 && cfg.dataBits !== 5 && <div className="hint warn">{io(lang, "one5Hint")}</div>}
-        <label data-tip={tip(lang, "flow")}>
-          {t("flow")}
-          <select
-            value={cfg.flow}
-            onChange={(e) => {
-              const flow = e.target.value as SerialConfig["flow"];
-              setCfg({ ...cfg, flow, rts: flow === "hardware" ? false : cfg.rts });
-            }}
-          >
-            <option value="none">{t("none")}</option>
-            <option value="hardware">{t("hardware")}</option>
-            <option value="software">{t("software")}</option>
-          </select>
-        </label>
-        <label data-tip={tip(lang, "rs485")}>
-          {io(lang, "rs485")}
-          <select
-            value={cfg.flow === "hardware" ? "off" : cfg.rs485}
-            disabled={cfg.flow === "hardware"}
-            title={cfg.flow === "hardware" ? io(lang, "rs485Hw") : ""}
-            onChange={(e) => setCfg({ ...cfg, rs485: e.target.value as SerialConfig["rs485"], rts: e.target.value === "off" ? cfg.rts : false })}
-          >
-            <option value="off">{io(lang, "rs485Off")}</option>
-            <option value="driver">{io(lang, "rs485Driver")}</option>
-            <option value="software">{io(lang, "rs485Soft")}</option>
-          </select>
-        </label>
-        {rs485On && cfg.rs485 === "software" && <div className="hint warn">{io(lang, "rs485SoftWarn")}</div>}
-        <div className="checks">
-          <label className="inline">
-            <input type="checkbox" checked={cfg.dtr} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
+        <details className="adv panel" open={advConnOpen} onToggle={(e) => setAdvConnOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "serialAdvConn")}>
+            <span className="sum-title">{t("advConn")}</span>
+            {!advConnOpen && <span className="sum-note">{advConnSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "flow")}>
+            {t("flow")}
+            <select
+              value={cfg.flow}
+              onChange={(e) => {
+                const flow = e.target.value as SerialConfig["flow"];
+                setCfg({ ...cfg, flow, rts: flow === "hardware" ? false : cfg.rts });
+              }}
+            >
+              <option value="none">{t("none")}</option>
+              <option value="hardware">{t("hardware")}</option>
+              <option value="software">{t("software")}</option>
+            </select>
           </label>
-          <label className="inline">
-            <input
-              type="checkbox"
-              checked={cfg.rts && !rs485On}
-              disabled={cfg.flow === "hardware" || rs485On}
-              title={cfg.flow === "hardware" ? t("ilRtsHw") : rs485On ? io(lang, "rs485Lock") : ""}
-              onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })}
-            />{" "}
-            RTS
+          <label data-tip={tip(lang, "rs485")}>
+            {io(lang, "rs485")}
+            <select
+              value={cfg.flow === "hardware" ? "off" : cfg.rs485}
+              disabled={cfg.flow === "hardware"}
+              title={cfg.flow === "hardware" ? io(lang, "rs485Hw") : ""}
+              onChange={(e) => setCfg({ ...cfg, rs485: e.target.value as SerialConfig["rs485"], rts: e.target.value === "off" ? cfg.rts : false })}
+            >
+              <option value="off">{io(lang, "rs485Off")}</option>
+              <option value="driver">{io(lang, "rs485Driver")}</option>
+              <option value="software">{io(lang, "rs485Soft")}</option>
+            </select>
           </label>
-        </div>
+          {rs485On && cfg.rs485 === "software" && <div className="hint warn">{io(lang, "rs485SoftWarn")}</div>}
+          <div className="checks">
+            <label className="inline">
+              <input type="checkbox" checked={cfg.dtr} onChange={(e) => setCfg({ ...cfg, dtr: e.target.checked })} /> DTR
+            </label>
+            <label className="inline">
+              <input
+                type="checkbox"
+                checked={cfg.rts && !rs485On}
+                disabled={cfg.flow === "hardware" || rs485On}
+                title={cfg.flow === "hardware" ? t("ilRtsHw") : rs485On ? io(lang, "rs485Lock") : ""}
+                onChange={(e) => setCfg({ ...cfg, rts: e.target.checked })}
+              />{" "}
+              RTS
+            </label>
+          </div>
+        </details>
         <label data-tip={tip(lang, "autoReconnect")} className="inline">
           <input
             type="checkbox"
@@ -839,84 +901,90 @@ export default function App() {
         )}
 
         <hr />
-        <label data-tip={tip(lang, "framing")}>
-          {t("framing")}
-          <select
-            title={t("tipFraming")}
-            value={framing.kind}
-            onChange={(e) => {
-              const k = e.target.value as FrameMode["kind"];
-              setFraming(
-                k === "gap"
-                  ? { kind: "gap", gapMs: 20 }
-                  : k === "terminator"
-                    ? { kind: "terminator", bytes: [], gapMs: 100 }
-                    : k === "fixed"
-                      ? { kind: "fixed", len: 8, gapMs: 100 }
-                      : { kind: "modbus-rtu", baud: cfg.baud },
-              );
-              if (k === "modbus-rtu") {
-                if (rxCheck !== "crc16-modbus") {
-                  setRxAuto({ prev: rxCheck });
-                  setRxCheck("crc16-modbus");
+        <details className="adv panel" open={rxOpen} onToggle={(e) => setRxOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "serialRx")}>
+            <span className="sum-title">{t("rxSettings")}</span>
+            {!rxOpen && <span className="sum-note">{rxSummary}</span>}
+          </summary>
+          <label data-tip={tip(lang, "framing")}>
+            {t("framing")}
+            <select
+              title={t("tipFraming")}
+              value={framing.kind}
+              onChange={(e) => {
+                const k = e.target.value as FrameMode["kind"];
+                setFraming(
+                  k === "gap"
+                    ? { kind: "gap", gapMs: 20 }
+                    : k === "terminator"
+                      ? { kind: "terminator", bytes: [], gapMs: 100 }
+                      : k === "fixed"
+                        ? { kind: "fixed", len: 8, gapMs: 100 }
+                        : { kind: "modbus-rtu", baud: cfg.baud },
+                );
+                if (k === "modbus-rtu") {
+                  if (rxCheck !== "crc16-modbus") {
+                    setRxAuto({ prev: rxCheck });
+                    setRxCheck("crc16-modbus");
+                  }
+                } else if (rxAuto) {
+                  // Modbus 를 고를 때 저절로 바꾼 것이면 되돌린다
+                  if (rxCheck === "crc16-modbus") setRxCheck(rxAuto.prev);
+                  setRxAuto(null);
                 }
-              } else if (rxAuto) {
-                // Modbus 를 고를 때 저절로 바꾼 것이면 되돌린다
-                if (rxCheck === "crc16-modbus") setRxCheck(rxAuto.prev);
+              }}
+            >
+              <option value="gap">{t("fmGap")}</option>
+              <option value="terminator">{t("fmTerminator")}</option>
+              <option value="fixed">{t("fmFixed")}</option>
+              <option value="modbus-rtu">{t("fmModbus")}</option>
+            </select>
+          </label>
+          {framing.kind === "terminator" && (
+            <label data-tip={tip(lang, "terminatorHex")}>
+              {t("terminatorHex")}
+              <input className={term_.error ? "bad" : ""} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
+              {term_.error ? (
+                <span className="error">{term_.error}</span>
+              ) : term_.bytes.length === 0 ? (
+                <span className="interlock">{t("ilNoTerm")}</span>
+              ) : (
+                <span className="hint">{fill(t("termParsed"), { a: hex(term_.bytes), n: term_.bytes.length })}</span>
+              )}
+            </label>
+          )}
+          {framing.kind === "fixed" && (
+            <label data-tip={tip(lang, "length")}>
+              {t("length")}
+              <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
+            </label>
+          )}
+          {framing.kind !== "modbus-rtu" && (
+            <label data-tip={tip(lang, "gapMs")}>
+              {t("gapMs")}
+              <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
+            </label>
+          )}
+          {((framing.kind !== "modbus-rtu" && framing.gapMs < 16) || framing.kind === "modbus-rtu") &&
+            ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
+          <label data-tip={tip(lang, "rxCheck")}>
+            {t("rxCheck")}
+            <ChecksumPicker
+              lang={lang}
+              kind={rxCheck}
+              ck={rxCk}
+              rx
+              noneLabel={t("none")}
+              ariaLabel={t("rxCheck")}
+              onChange={(k, c) => {
+                setRxCheck(k);
+                setRxCk(c);
                 setRxAuto(null);
-              }
-            }}
-          >
-            <option value="gap">{t("fmGap")}</option>
-            <option value="terminator">{t("fmTerminator")}</option>
-            <option value="fixed">{t("fmFixed")}</option>
-            <option value="modbus-rtu">{t("fmModbus")}</option>
-          </select>
-        </label>
-        {framing.kind === "terminator" && (
-          <label data-tip={tip(lang, "terminatorHex")}>
-            {t("terminatorHex")}
-            <input className={term_.error ? "bad" : ""} value={terminatorText} onChange={(e) => setTerminatorText(e.target.value)} placeholder="0D 0A" />
-            {term_.error ? (
-              <span className="error">{term_.error}</span>
-            ) : term_.bytes.length === 0 ? (
-              <span className="interlock">{t("ilNoTerm")}</span>
-            ) : (
-              <span className="hint">{fill(t("termParsed"), { a: hex(term_.bytes), n: term_.bytes.length })}</span>
-            )}
+              }}
+            />
           </label>
-        )}
-        {framing.kind === "fixed" && (
-          <label data-tip={tip(lang, "length")}>
-            {t("length")}
-            <NumInput min={1} max={65536} value={framing.len} onValue={(n) => setFraming({ ...framing, len: n })} />
-          </label>
-        )}
-        {framing.kind !== "modbus-rtu" && (
-          <label data-tip={tip(lang, "gapMs")}>
-            {t("gapMs")}
-            <NumInput min={1} max={60000} value={framing.gapMs} onValue={(n) => setFraming({ ...framing, gapMs: n })} />
-          </label>
-        )}
-        {((framing.kind !== "modbus-rtu" && framing.gapMs < 16) || framing.kind === "modbus-rtu") &&
-          ports.find((p) => p.name === cfg.port)?.kind === "usb" && <div className="hint warn">{t("usbGapHint")}</div>}
-        <label data-tip={tip(lang, "rxCheck")}>
-          {t("rxCheck")}
-          <ChecksumPicker
-            lang={lang}
-            kind={rxCheck}
-            ck={rxCk}
-            rx
-            noneLabel={t("none")}
-            ariaLabel={t("rxCheck")}
-            onChange={(k, c) => {
-              setRxCheck(k);
-              setRxCk(c);
-              setRxAuto(null);
-            }}
-          />
-        </label>
-        {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+          {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+        </details>
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFileSettings"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!connected}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -962,8 +1030,8 @@ export default function App() {
           <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
-            ☰ {t("commands")}
+          <button data-tip={tip(lang, "commandsDetail")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
+            ☰ {t("commandsDetail")}
           </button>
         </div>
 
@@ -1005,7 +1073,10 @@ export default function App() {
                     const style = f.mark ? ({ transform: `translateY(${r.start}px)`, "--mark": f.mark } as CSSProperties) : { transform: `translateY(${r.start}px)` };
                     // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
                     const handlers = {
-                      onClick: (e: ReactMouseEvent) => sel.click(e, seq),
+                      onClick: (e: ReactMouseEvent) => {
+                        sel.click(e, seq);
+                        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) openDetail();
+                      },
                       onContextMenu: (e: ReactMouseEvent) => {
                         e.preventDefault();
                         sel.context(seq);
@@ -1079,7 +1150,7 @@ export default function App() {
               ref={sendInput}
               className="sendtext"
               value={spec.text}
-              placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : "AT\\r\\n"}
+              placeholder={spec.mode === "hex" ? "01 03 00 00 00 0A" : spec.suffix ? "AT" : "AT\\r\\n"}
               data-tip={tip(lang, "sendText")}
               onChange={(e) => {
                 setSpec({ ...spec, text: e.target.value });
@@ -1127,9 +1198,7 @@ export default function App() {
               <input type="checkbox" checked={repeating} disabled={!online || (!repeating && !sendable)} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} aria-label={t("repeat")} />
-            <label className="inline" data-tip={tip(lang, "repeatTimes")}>
-              <NumInput className="num small-num" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
-            </label>
+            {timesInRow && repeatTimesBox}
             {(repeating || repeatSent > 0) && (
               <span className="rep-count">{repeatTimes > 0 ? io(lang, "repeatSentOf", { n: repeatSent, m: repeatTimes }) : io(lang, "repeatSent", { n: repeatSent })}</span>
             )}
@@ -1141,23 +1210,62 @@ export default function App() {
             <button className="btn small add-cmd" onClick={addCommand} disabled={!sendable}>
               + {t("addCommand")}
             </button>
-            <span className="send-tools">
-            <label className="inline" data-tip={tip(lang, "charDelay")}>
-              {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
-            </label>
-            <button className="btn small" onClick={sendBreak} disabled={!online} data-tip={online ? tip(lang, "breakBtn") : sendWhy}>
-              {io(lang, "breakBtn")}
+            {/* 문자 간·Break·파일 보내기(가끔 쓰는 것)는 «⋯ 더보기» 팝오버로. 문자 간 지연이 켜져 있으면 버튼에 보인다(모든 송신에 걸리므로) */}
+            <button
+              ref={moreBtn}
+              className={charDelay > 0 ? "btn small more-btn on" : "btn small more-btn"}
+              onClick={() => setMoreOpen((o) => (o ? null : { times: !timesInRow }))}
+              aria-expanded={!!moreOpen}
+              data-tip={tip(lang, "sendMore")}
+            >
+              ⋯ {t("more")}
+              {charDelay > 0 ? ` · ${fill(t("moreDelay"), { n: charDelay })}` : ""}
             </button>
-            <label className="inline" data-tip={tip(lang, "breakMs")}>
-              <NumInput className="num small-num" min={1} max={10000} value={breakMs} onValue={setBreakMs} aria-label={io(lang, "breakMs")} /> ms
-            </label>
-            <button className="btn small" onClick={() => setShowFile(true)} data-tip={tip(lang, "fileSend")}>
-              {io(lang, "fileSend")}…
-            </button>
-            </span>
           </div>
+          {moreOpen && (
+            <Popover anchor={moreBtn.current} onClose={closeMore} label={t("more")} className="more-pop">
+              <div className="pop-row">
+                <label className="inline" data-tip={tip(lang, "charDelay")}>
+                  {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
+                </label>
+              </div>
+              <div className="pop-row">
+                <button className="btn small" onClick={sendBreak} disabled={!online} data-tip={online ? tip(lang, "breakBtn") : sendWhy}>
+                  {io(lang, "breakBtn")}
+                </button>
+                <label className="inline" data-tip={tip(lang, "breakMs")}>
+                  <NumInput className="num small-num" min={1} max={10000} value={breakMs} onValue={setBreakMs} aria-label={io(lang, "breakMs")} /> ms
+                </label>
+              </div>
+              <div className="pop-row">
+                <button
+                  className="btn small"
+                  onClick={() => {
+                    setMoreOpen(null);
+                    setShowFile(true);
+                  }}
+                  data-tip={tip(lang, "fileSend")}
+                >
+                  {io(lang, "fileSend")}…
+                </button>
+              </div>
+              {/* 반복 횟수 — 줄에 안 보일 때(반복 꺼짐·0)도 미리 정할 수 있게. 열 때 정해 두어 입력 중에 칸이 옮겨 가지 않는다 */}
+              {moreOpen.times && <div className="pop-row">{repeatTimesBox}</div>}
+            </Popover>
+          )}
           {fileJob && <JobBar lang={lang} job={fileJob} onCancel={cancelSend} onOpen={() => setShowFile(true)} />}
           {modeSwitch.node}
+          {dupSuffix && (
+            <div className="notice warn dup-suffix" role="status">
+              <span>{fill(t("dupSuffix"), { a: typedEnd!, b: suffixName(spec.suffix) })}</span>
+              <button type="button" className="btn small" onClick={() => setSpec({ ...spec, suffix: "" })}>
+                {t("dupSuffixOff")}
+              </button>
+              <button type="button" className="btn small ghost" onClick={() => setDupHidden(dupKey)} aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")}>
+                ✕
+              </button>
+            </div>
+          )}
           {connected && !online && <div className="interlock">{t("ilOffline")}</div>}
           {repeating && repeatMs < minRep && <div className="interlock">{t("ilRepeat").replace("{a}", String(repeatMs)).replace("{b}", String(minRep))}</div>}
           {xonxoff && <div className="interlock">{t("ilXon")}</div>}
@@ -1193,7 +1301,7 @@ export default function App() {
         <TriggerPanel lang={lang} trg={trg} toast={toast} />
         <AutoReplySection lang={lang} toast={toast} />
 
-        <h3 data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
+        <h3 ref={detailHead} data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">
@@ -1262,6 +1370,18 @@ export default function App() {
           }}
           onAdd={(name, b) => setCommands((c) => [...c, { ...mbSpec(b), name, key: null }])}
           onClose={() => setShowMb(false)}
+          // 바로 보내기 — 보낸 뒤 창을 닫아 응답 줄이 보이게 하고, 입력칸 이력에도 남긴다(↑ 로 다시)
+          onSend={(b) => {
+            const s = mbSpec(b);
+            void doSend(s).then((ok) => {
+              if (!ok) return;
+              history.remember({ text: s.text, mode: s.mode });
+              setShowMb(false);
+              sendInput.current?.focus();
+            });
+          }}
+          canSend={online}
+          sendWhy={sendWhy}
         />
       )}
       {showFile && (

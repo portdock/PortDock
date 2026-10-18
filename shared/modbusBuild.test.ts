@@ -94,3 +94,27 @@ test("값 칸 해석", () => {
   assert.notEqual(parseValues("1 x", 16).error, null);
   assert.notEqual(parseValues("", 16).error, null);
 });
+
+test("0 기준 칸에 4xxxx·3xxxx — 오류가 아니라 안내", () => {
+  const a = parseAddr("40001", 3, "zero", "en");
+  assert.equal(a.addr, 40001);
+  assert.equal(a.error, null);
+  assert.equal(a.plcGuess, true);
+  assert.match(a.note, /4xxxx/);
+  assert.match(a.note, /address 0\b/);
+  assert.match(a.note, /0x9C41/);
+  // 함수에 맞는 앞자리만: FC04 의 30010 → 9, FC03 의 30001·FC01 의 40001 은 안내 없음
+  assert.match(parseAddr("30010", 4, "zero", "en").note, /address 9\b/);
+  assert.equal(parseAddr("30001", 3, "zero").note, null);
+  assert.equal(parseAddr("40001", 1, "zero").note, null);
+  // 5자리가 아니거나 뒷자리 0000 이면 안내 없음
+  assert.equal(parseAddr("4000", 3, "zero").note, null);
+  assert.equal(parseAddr("40000", 3, "zero").note, null);
+  assert.equal(parseAddr("0x9C41", 3, "zero").note, null);
+  // 요청은 그대로 만들어지고(적힌 대로 0x9C41) 안내가 따라온다
+  const r = req({ fc: 3, addrText: "40001", qty: 10 });
+  assert.equal(hex(r.bytes), "01 03 9C 41 00 0A");
+  assert.equal(r.plcGuess, true);
+  // PLC 표기로 바꾸면 같은 글자가 주소 0
+  assert.equal(hex(req({ fc: 3, addrText: "40001", addrMode: "plc", qty: 10 }).bytes), "01 03 00 00 00 0A");
+});

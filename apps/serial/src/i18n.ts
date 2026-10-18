@@ -93,6 +93,18 @@ const ko = {
   repeatingAs: "반복 중: {a}",
   logDlgTitle: "파일로 계속 저장 — 기존 파일이면 뒤에 이어 씁니다",
   mbRequest: "Modbus 요청",
+  // 쉽게 쓰기(10/18): 왼쪽 접기·«⋯ 더보기»·좁은 창 상세·줄 끝 두 번
+  advConn: "고급 연결",
+  advConnDefault: "흐름 제어 없음 · DTR·RTS 끔",
+  rs485DriverShort: "RS-485 드라이버",
+  rs485SoftShort: "RS-485 프로그램",
+  rxSettings: "받기 설정",
+  rxNoCheck: "체크섬 검사 없음",
+  more: "더보기",
+  moreDelay: "문자 간 {n}ms",
+  commandsDetail: "명령·상세",
+  dupSuffix: "줄 끝이 두 번 붙습니다 — 입력이 «{a}» 로 끝나고 «줄 끝 붙이기: {b}» 도 켜져 있습니다.",
+  dupSuffixOff: "줄 끝 끄기",
 };
 
 const en: typeof ko = {
@@ -189,6 +201,17 @@ const en: typeof ko = {
   repeatingAs: "Repeating: {a}",
   logDlgTitle: "Log to file — an existing file is appended to",
   mbRequest: "Modbus request",
+  advConn: "Advanced connection",
+  advConnDefault: "No flow control · DTR/RTS off",
+  rs485DriverShort: "RS-485 driver",
+  rs485SoftShort: "RS-485 program",
+  rxSettings: "Receive settings",
+  rxNoCheck: "No checksum check",
+  more: "More",
+  moreDelay: "char delay {n} ms",
+  commandsDetail: "Commands · Detail",
+  dupSuffix: "The line ending is added twice — the input ends with «{a}» and «Line ending: {b}» is on too.",
+  dupSuffixOff: "Turn line ending off",
 };
 
 export type Lang = "ko" | "en";

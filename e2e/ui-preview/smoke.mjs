@@ -206,7 +206,12 @@ async function shot(app, label) {
   return f;
 }
 
+// 다 누르는 조합(full)은 접어 둔 칸을 펼친 채 띄운다 — «다 눌러 보기» 는 접힌 <details> 속을 누르지 못한다.
+// 화면만 훑는 조합(ko-dark·en-light)은 기본(접힘) 그대로 본다
+const PRE_OPEN = { 5201: { advConnOpen: true, rxOpen: true } };
+
 async function load(port, combo, extra = {}) {
+  if (combo.full) extra = { ...(PRE_OPEN[port] ?? {}), ...extra };
   await d.get(`http://localhost:${port}/`);
   await d.executeScript(
     `localStorage.clear(); localStorage.setItem('settings', JSON.stringify(arguments[0])); localStorage.setItem('lang', JSON.stringify(arguments[0].lang)); for (const [k, v] of Object.entries(arguments[1])) localStorage.setItem(k, JSON.stringify(v));`,
@@ -310,6 +315,8 @@ async function runApp(app, port) {
       await sleep(250);
     };
     const calls = (name) => js(`return window.__pdMock.calls.filter((c) => c === ${JSON.stringify(name)}).length`);
+    /** Serial 은 좁은 창(≤1180)에서 줄을 누르면 오른쪽 칸(상세)이 열린다 — 다음 클릭이 가림막에 막히지 않게 닫는다. 열렸는지 돌려준다 */
+    const closeRight = () => js("const open = !!document.querySelector('.app.show-right'); if (open) document.querySelector('.close-right').click(); return open;");
 
     /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
     async function convenience() {
@@ -339,6 +346,8 @@ async function runApp(app, port) {
         const rows = await d.findElements(By.css(ROW));
         if (rows.length >= 4) {
           await rows[1].click();
+          if (app === "serial" && !(await closeRight())) await conv("narrow-detail", "좁은 창에서 줄을 눌렀는데 오른쪽 칸(상세)이 열리지 않음");
+          await sleep(100);
           await d.actions().keyDown(Key.SHIFT).click(rows[3]).keyUp(Key.SHIFT).perform();
           await sleep(150);
           const nSel = await js(`return document.querySelectorAll('${ROW}.sel').length`);
@@ -385,6 +394,7 @@ async function runApp(app, port) {
           await sleep(1500);
           const s4 = await js(`const el = document.querySelector('${LOG}'); return { gap: el.scrollHeight - el.scrollTop - el.clientHeight, btn: !!document.querySelector('.follow-btn') };`);
           if (s4.btn || s4.gap > 30) await conv("follow-click", "따라가는 중에 줄을 눌렀더니 따라가기가 꺼짐");
+          await closeRight();
         }
       }
       await verify("follow/select/menu");
@@ -859,6 +869,7 @@ async function runApp(app, port) {
         await chord([Key.CONTROL], "c");
         const clip = await js("return window.__smoke.clip");
         if (!clip || !/ \+\d/.test(clip)) await conv("delta-copy", `간격 열이 줄 복사에 들어가지 않음: ${JSON.stringify(clip)}`);
+        await closeRight();
       }
       await js(`__sm.setVal(document.querySelector('.delta-sel'), 'off')`);
       // ---- 처리량
@@ -885,7 +896,22 @@ async function runApp(app, port) {
       if (!/02 41 42 03 02/.test(ck.plain) || !/02 41 42 03 03/.test(ck.opt)) await conv("ck-options", `체크섬 범위·자리 옵션이 미리보기에 반영되지 않음: ${JSON.stringify(ck)}`);
       await js(`__sm.setVal(document.querySelector('.sendtext'), ${JSON.stringify(VALID_TEXT[app] === "STATUS?" ? "01 02" : VALID_TEXT[app])})`);
       // ---- 반복 횟수: 3번 보내고 멈춤
-      await js(`const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[0], '100'); __sm.setVal(n[1], '3');`);
+      if (app === "serial") {
+        // Serial: 횟수 칸은 반복을 켰거나 횟수>0 일 때만 줄에 — 꺼져 있으면 «⋯ 더보기» 에서 정한다
+        const r = await jsAsync(`
+          const w = () => new Promise((r) => setTimeout(r, 200));
+          const inRow = !!document.querySelector('.sendrow.sub .rep-times');
+          __sm.setVal(document.querySelector('.sendrow.sub input.num'), '100');
+          document.querySelector('.sendrow.sub .more-btn').click(); await w();
+          const pop = document.querySelector('.more-pop');
+          const t = pop && pop.querySelector('.rep-times');
+          if (t) __sm.setVal(t, '3');
+          await w();
+          const nowInRow = !!document.querySelector('.sendrow.sub .rep-times');
+          __sm.key(window, 'Escape'); await w();
+          return { inRow, pop: !!pop, inPop: !!t, nowInRow, closed: !document.querySelector('.more-pop') };`);
+        if (r.inRow || !r.pop || !r.inPop || !r.nowInRow || !r.closed) await conv("more-times", `«⋯ 더보기» 의 반복 횟수·Esc 닫기가 이상함: ${JSON.stringify(r)}`);
+      } else await js(`const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[0], '100'); __sm.setVal(n[1], '3');`);
       await sleep(200);
       const box = (await d.findElements(By.css(".sendrow.sub label.inline input[type=checkbox]")))[0];
       if (box && (await box.isEnabled())) {
@@ -894,11 +920,58 @@ async function runApp(app, port) {
         const r = await js("return { on: document.querySelector('.sendrow.sub label.inline input[type=checkbox]').checked, n: (document.querySelector('.rep-count') || {}).textContent }");
         if (r.on || !/3\/3/.test(r.n ?? "")) await conv("repeat-times", `3번 보내고 멈추지 않음: ${JSON.stringify(r)}`);
       }
-      await js(`const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[1], '0');`);
+      await js(app === "serial" ? `__sm.setVal(document.querySelector('.sendrow.sub .rep-times'), '0')` : `const n = document.querySelectorAll('.sendrow.sub input.num'); __sm.setVal(n[1], '0');`);
+      await sleep(150);
+      if (app === "serial" && (await js("return !!document.querySelector('.sendrow.sub .rep-times')"))) await conv("more-times", "반복이 꺼지고 횟수 0 인데 횟수 칸이 줄에 남아 있음");
+      // ---- (10/18) Serial: 줄 끝 두 번 알림줄 → «줄 끝 끄기», Modbus 요청 창 0 기준 40001 안내 → 4xxxx 로 바꾸기 → «보내기»
+      if (app === "serial") {
+        const r = await jsAsync(`
+          const w = () => new Promise((r) => setTimeout(r, 200));
+          const sr = document.querySelector('.sendbar .sendrow'); const sels = [...sr.querySelectorAll('select')];
+          const mode = sels.find((x) => x.querySelector('option[value=ascii]')); const suf = sels[sels.length - 1];
+          __sm.setVal(mode, 'ascii'); await w();
+          __sm.setVal(suf, '\\\\r\\\\n'); await w();
+          __sm.setVal(document.querySelector('.sendtext'), 'AT\\\\r\\\\n'); await w();
+          const dup = document.querySelector('.dup-suffix');
+          const dupText = dup ? dup.textContent : '';
+          if (dup) dup.querySelector('.btn').click();
+          await w();
+          return { dup: !!dup, dupText, suffix: suf.value, gone: !document.querySelector('.dup-suffix') };`);
+        if (r.fatal) add("dup suffix", "smoke-error", r.fatal);
+        else if (!r.dup || r.suffix !== "" || !r.gone) await conv("dup-suffix", `줄 끝 두 번 알림줄·«줄 끝 끄기» 가 이상함: ${JSON.stringify(r)}`);
+        const s0 = await calls("send");
+        const m = await jsAsync(`
+          const w = () => new Promise((r) => setTimeout(r, 250));
+          document.querySelector('.sendbar .mb-open').click(); await w();
+          const dlg = () => document.querySelector('.modal.mbuild');
+          if (!dlg()) return { open: false };
+          const seg = [...dlg().querySelectorAll('.mb-addrmode .seg')];
+          seg[0].click(); await w();
+          __sm.setVal(dlg().querySelector('.mb-grid input.mono'), '40001'); await w();
+          const plc = dlg().querySelector('.mb-plc');
+          const note = plc ? plc.textContent : '';
+          if (plc) plc.querySelector('.btn').click();
+          await w();
+          const code = dlg().querySelector('.mb-preview code').textContent;
+          const send = dlg().querySelector('.mb-send');
+          const primary = send && send.classList.contains('primary') && !send.disabled;
+          if (send) send.click();
+          await w(); await w();
+          return { open: true, plc: !!plc, note, code, primary, closed: !dlg() };`);
+        if (m.fatal) add("mb send", "smoke-error", m.fatal);
+        else if (!m.open || !m.plc || !/4xxxx/.test(m.note) || m.code !== "01 03 00 00 00 0A" || !m.primary || !m.closed) await conv("mb-send", `Modbus 요청 창의 4xxxx 안내·바꾸기·«보내기» 가 이상함: ${JSON.stringify(m)}`);
+        if ((await calls("send")) !== s0 + 1) await conv("mb-send", "Modbus 요청 창 «보내기» 로 보내지지 않음");
+        await verify("serial dup-suffix / modbus send");
+      }
       // ---- Serial: Break · 터미널 보기
       if (app === "serial") {
-        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => b.textContent.trim() === 'Break').click()");
+        // Break 는 «⋯ 더보기» 안 — 열고 누른 뒤 Esc 로 닫는다
+        await js("document.querySelector('.sendrow.sub .more-btn').click()");
+        await sleep(200);
+        await js("[...document.querySelectorAll('.more-pop .btn')].find((b) => b.textContent.trim() === 'Break').click()");
         await sleep(300);
+        await js("__sm.key(window, 'Escape')");
+        await sleep(150);
         // 맨 아래(새 줄)로 — 가상 목록은 보이는 줄만 그린다
         await blur();
         await keys(Key.END);
@@ -916,7 +989,12 @@ async function runApp(app, port) {
       // ---- 파일 보내기(Serial·TCP): 고르기 → 시작 → 진행 → 다 보냄
       if (app === "serial" || app === "tcp") {
         await mock("(window.__pdMock.dialog = { ...window.__pdMock.dialog, open: 'C:\\\\mock\\\\firmware.bin' }, true)");
-        await js("[...document.querySelectorAll('.sendrow.sub .btn')].find((b) => /…$/.test(b.textContent.trim()) && !b.classList.contains('mb-open')).click()");
+        // Serial 은 «⋯ 더보기» 안(누르면 팝오버는 닫히고 창이 열린다)
+        if (app === "serial") {
+          await js("document.querySelector('.sendrow.sub .more-btn').click()");
+          await sleep(200);
+        }
+        await js(`[...document.querySelectorAll(${JSON.stringify(app === "serial" ? ".more-pop .btn" : ".sendrow.sub .btn")})].find((b) => /…$/.test(b.textContent.trim()) && !b.classList.contains('mb-open')).click()`);
         await sleep(250);
         if (!(await js("return !!document.querySelector('.modal.file-dialog')"))) await conv("file-send", "«파일 보내기…» 로 창이 열리지 않음");
         else {
@@ -1146,6 +1224,15 @@ async function runApp(app, port) {
       await fitWindow();
       await load(port, combo);
       const s0 = await verify("load");
+      // (10/18) Serial 첫 실행: 보내기 ASCII + 줄 끝 CR LF·placeholder «AT», 왼쪽 «고급 연결»·«받기 설정» 은 접힘(full 조합은 미리 펼쳐 둠)
+      if (app === "serial") {
+        const f = await js(`const sr = document.querySelector('.sendbar .sendrow'); const sels = [...sr.querySelectorAll('select')];
+          return { mode: sels.find((x) => x.querySelector('option[value=ascii]')).value, suffix: sels[sels.length - 1].value, ph: document.querySelector('.sendtext').placeholder,
+            adv: [...document.querySelectorAll('aside.side details.adv')].map((x) => x.open), notes: [...document.querySelectorAll('aside.side details.adv .sum-note')].map((x) => x.textContent) };`);
+        if (f.mode !== "ascii" || f.suffix !== "\\r\\n" || f.ph !== "AT") await conv("first-run", `첫 실행 보내기 기본값이 ASCII·CR LF·«AT» 가 아님: ${JSON.stringify(f)}`, false);
+        const want = combo.full ? [true, true] : [false, false];
+        if (JSON.stringify(f.adv) !== JSON.stringify(want) || (!combo.full && f.notes.length !== 2)) await conv("serial-fold", `왼쪽 접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
+      }
       if (combo.full) await shot(app, `${combo.name}-loaded`);
       const idleBtn = s0.btn;
 

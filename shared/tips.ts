@@ -45,8 +45,8 @@ const TIPS: Record<string, Tip> = {
   filterOff: ["찾기·거르기를 모두 끄고 전체 기록을 봅니다(Esc 두 번).", "Turns off find and all filters (Esc twice)."],
   failCount: ["«지우기» 뒤로 체크섬이 틀린 줄 수(틀린 줄이 있을 때만 보임). 누르면 «틀림만» 을 켜고 끕니다.", "Lines with a failed checksum since the last Clear (shown only when there are any). Click to toggle «FAIL only»."],
   // ---- Modbus 요청 만들기(시리얼)
-  modbusBuild: ["국번·함수·주소·개수(또는 값)를 고르면 Modbus RTU 요청을 만들어 줍니다. 입력칸에 넣으면 HEX 와 «CRC16 Modbus» 가 함께 맞춰집니다.", "Builds a Modbus RTU request from slave ID, function, address and quantity (or values). «Put in input» sets HEX mode and the «CRC16 Modbus» checksum."],
-  mbAddrMode: ["«0 기준» 은 통신에 실제로 들어가는 주소(0~65535). «PLC 표기» 는 설명서에 흔한 40001·30001·10001·00001 식 — 40001 이 0 기준 0 입니다.", "«0-based» is the address actually sent (0–65535). «PLC notation» is the manual-style 40001/30001/10001/00001 — 40001 is 0-based 0."],
+  modbusBuild: ["국번·함수·주소·개수(또는 값)를 고르면 Modbus RTU 요청을 만들어 줍니다. «보내기»(창 안 Enter)는 CRC16 Modbus 를 붙여 바로 보내고, «입력칸에 넣기» 는 보내기 줄을 HEX·«CRC16 Modbus» 로 맞춰 넣기만 합니다.", "Builds a Modbus RTU request from slave ID, function, address and quantity (or values). «Send» (Enter in the dialog) sends it right away with CRC16 Modbus; «Put in input» only fills the send bar, set to HEX and «CRC16 Modbus»."],
+  mbAddrMode: ["«0 기준» 은 통신에 실제로 들어가는 주소(0~65535). «PLC 표기» 는 설명서에 흔한 40001·30001·10001·00001 식 — 40001 이 0 기준 0 입니다. 0 기준 칸에 40001 처럼 넣으면 노란 안내와 «4xxxx 표기로 바꾸기» 가 나옵니다.", "«0-based» is the address actually sent (0–65535). «PLC notation» is the manual-style 40001/30001/10001/00001 — 40001 is 0-based 0. Typing something like 40001 in the 0-based box shows a yellow notice with «Switch to 4xxxx notation»."],
   logToFile: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다.", "Appends all traffic and events to a file from now on."],
   // 첫 줄에 설정을 남기는 프로그램(시리얼)용
   logToFileSettings: ["지금부터 모든 송수신·사건을 파일에 계속 덧붙여 남깁니다. 첫 줄에 그때 설정이 기록됩니다.", "Appends all traffic and events to a file from now on. The first line records the current settings."],
@@ -64,6 +64,12 @@ const TIPS: Record<string, Tip> = {
   repeatSerial: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 송신 시간보다 짧으면 자동으로 늘리고, 끊기면 멈춥니다.", "Sends the same input every this many ms while checked. Raised automatically if shorter than the transmit time; stops on disconnect."],
   // Simulator 용 — 상대가 없으면 기다렸다가 이어서 보낸다
   repeatSim: ["켜 두면 이 간격(ms)마다 같은 내용을 보냅니다. 상대가 아직 없으면 그 차례는 건너뛰고 기다립니다. 체크를 끄거나 «멈춤» 을 눌러야 멈춥니다.", "Sends the same input every this many ms while checked. Turns are skipped while no peer is connected; only unchecking or Stop ends it."],
+  // Serial 좁은 창의 오른쪽 칸 펼치기
+  commandsDetail: ["창이 좁으면 숨는 오른쪽 칸(명령 목록·트리거·자동응답·상세)을 펼칩니다. 로그 줄을 눌러도 펼쳐지고 «상세» 로 갑니다. ✕·바깥을 누르면 닫힙니다.", "Opens the right pane hidden in narrow windows (commands, triggers, auto reply, detail). Clicking a log line also opens it at «Detail». Close with ✕ or by clicking outside."],
+  // Serial 왼쪽 칸 접기·보내기 «⋯ 더보기»(10/18)
+  serialAdvConn: ["흐름 제어·RS-485 송신 방향·DTR·RTS. 대부분 기본값(없음·끔)이라 접어 두고 제목에 지금 값을 요약합니다. 기본값이 아니면 펼친 채 시작합니다.", "Flow control, RS-485 direction, DTR and RTS. Usually left at the defaults (none/off), so it is collapsed with a summary; it starts expanded when something differs from the defaults."],
+  serialRx: ["받은 바이트를 줄로 끊는 방법(프레임 구분·조용한 시간·끝 문자)과 수신 체크섬 검사. 접힌 제목에 지금 값이 보이고, 기본값(조용한 시간 20ms·검사 없음)이 아니면 펼친 채 시작합니다.", "How received bytes are split into lines (framing, idle gap, terminator) and the RX checksum check. The collapsed title shows the current values; it starts expanded when they differ from the defaults (idle gap 20 ms, no check)."],
+  sendMore: ["가끔 쓰는 보내기 도구: 문자 간 지연, Break 와 길이(ms), 파일 보내기…, (반복이 꺼져 있으면) 반복 횟수. 문자 간 지연이 켜져 있으면 버튼에 보입니다. Esc·바깥을 누르면 닫힙니다.", "Less-used send tools: character delay, Break and its length (ms), Send file…, and (while repeat is off) the repeat count. A character delay in effect is shown on the button. Esc or clicking outside closes it."],
   commands: ["자주 쓰는 송신 내용을 저장해 두는 목록. ▶ 보내기(이름 칸 Enter·더블클릭도), ✎ 입력칸으로, ⧉ 복제, ↑↓·Alt+↑↓ 순서, ✕ 지우기(5초 안에 되돌리기).", "Saved commands: ▶ send (Enter or double-click in the name too), ✎ load into the input, ⧉ duplicate, ↑↓ / Alt+↑↓ reorder, ✕ delete (undo within 5 s)."],
   edit: ["이 명령을 입력칸으로 불러옵니다.", "Loads this command into the input."],
   delete: ["지웁니다 — 5초 안에 알림의 «되돌리기» 로 되살릴 수 있습니다.", "Deletes it — click «Undo» in the notice within 5 s to restore."],
