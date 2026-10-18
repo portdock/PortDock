@@ -24,8 +24,8 @@ export interface MbapInfo {
 }
 
 const L = {
-  ko: { tid: "트랜잭션 ID", len: "길이 칸", lenBad: "길이 칸이 실제 길이와 다름", unit: "유닛 ID", values: "값", head: "Modbus TCP" },
-  en: { tid: "Transaction ID", len: "Length field", lenBad: "length field does not match", unit: "Unit ID", values: "Values", head: "Modbus TCP" },
+  ko: { tid: "트랜잭션 ID", len: "길이 칸", lenBad: "길이 칸이 실제 길이와 다름", unit: "국번(Unit ID)", values: "값", head: "Modbus TCP" },
+  en: { tid: "Transaction ID", len: "Length field", lenBad: "length field does not match", unit: "Unit ID (Slave ID)", values: "Values", head: "Modbus TCP" },
 };
 
 export function MbapDetail({ lang, info }: { lang: Lang; info: MbapInfo }) {

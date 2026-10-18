@@ -1,4 +1,4 @@
-// «Modbus 요청 만들기» — 국번(유닛 ID)·함수·주소·개수(값)로 요청 바이트를 만든다. Serial(RTU)·TCP(Modbus TCP) 공통.
+// «Modbus 요청 만들기» — 국번(TCP 는 MBAP 의 Unit ID 칸)·함수·주소·개수(값)로 요청 바이트를 만든다. Serial(RTU)·TCP(Modbus TCP) 공통.
 // RTU: CRC 는 보내기 줄의 체크섬(CRC16 Modbus)이 붙인다. TCP: MBAP 머리(트랜잭션·프로토콜 0·길이·유닛)를 붙이고 CRC 는 없다.
 // onSend 를 넘기면(Serial) «보내기» 가 기본 버튼·Enter 가 되고 «입력칸에 넣기»·«목록에 추가» 는 보조. 안 넘기면 «입력칸에 넣기» 가 기본.
 import { useEffect, useMemo, useState } from "react";
@@ -16,10 +16,10 @@ const L = {
   ko: {
     title: "Modbus 요청 만들기",
     titleTcp: "Modbus TCP 요청 만들기",
-    slave: "국번",
-    unit: "유닛 ID",
+    // 창 안에서 처음 나오는 이름이라 «국번(슬레이브 ID)» 로 풀어 쓴다(RTU·TCP 같은 이름 — TCP 는 MBAP 의 Unit ID 칸에 들어간다)
+    slave: "국번(슬레이브 ID)",
     slaveHint: "1~247 (쓰기는 0 = 모두에게, 응답 없음)",
-    unitHint: "0~255 — 장비 설명서의 Unit ID(대개 1, 게이트웨이 뒤 RTU 장비면 그 국번, 무시하는 장비는 아무 값)",
+    unitHint: "0~255 — MBAP 의 Unit ID 칸에 들어갑니다. 대개 1, 게이트웨이 뒤 RTU 장비면 그 국번, 국번을 보지 않는 장비는 아무 값",
     tid: "트랜잭션 ID",
     tidHint: "0~65535 — 응답이 같은 값을 돌려줍니다. 보내기 줄의 «트랜잭션 ID 자동 증가» 가 켜져 있으면 보낼 때마다 바뀝니다",
     func: "함수",
@@ -54,9 +54,8 @@ const L = {
     title: "Build Modbus request",
     titleTcp: "Build Modbus TCP request",
     slave: "Slave ID",
-    unit: "Unit ID",
     slaveHint: "1–247 (writes: 0 = broadcast, no reply)",
-    unitHint: "0–255 — the device's Unit ID (usually 1; the RTU slave ID behind a gateway; any value if the device ignores it)",
+    unitHint: "0–255 — goes into the MBAP Unit ID field. Usually 1; the RTU Slave ID behind a gateway; any value if the device ignores it",
     tid: "Transaction ID",
     tidHint: "0–65535 — the response echoes it. With «Auto transaction ID» on in the send bar it changes on every send",
     func: "Function",
@@ -85,7 +84,7 @@ const L = {
     add: "Save to list",
     added: "Added «{a}» to the command list",
     close: "Close",
-    bcast: "Slave 0 writes to every device; none of them replies.",
+    bcast: "Slave ID 0 writes to every device; none of them replies.",
   },
 };
 
@@ -192,7 +191,7 @@ export function ModbusBuilder({
               </>
             )}
             <label>
-              {tcp ? t.unit : t.slave}
+              {t.slave}
               <NumInput min={0} max={tcp ? 255 : 247} value={form.slave} onValue={(n) => set({ slave: n })} />
             </label>
             <span className="hint">{tcp ? t.unitHint : t.slaveHint}</span>

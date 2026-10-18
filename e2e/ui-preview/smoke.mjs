@@ -373,6 +373,7 @@ async function runApp(app, port) {
         await verify("preset");
         await load(port, combo);
       }
+      await terms();
       // 빈 명령 목록 «예시 넣기»(Serial·TCP·UDP) → 3개, 이름 앞 «예:» → ✕ 없이 알림의 되돌리기로 비움
       if ((app === "serial" || app === "tcp" || app === "udp") && combo.full) {
         const r = await jsAsync(`
@@ -388,6 +389,28 @@ async function runApp(app, port) {
         else if (!r.btn || r.names.length !== 3 || !r.names.every((n) => /^(예: |e\.g\. )/.test(n)) || !r.gone || !r.undone) await conv("cmd-examples", `빈 명령 목록 «예시 넣기» 가 이상함: ${JSON.stringify(r)}`);
         await verify("cmd examples");
       }
+    }
+
+    /** (10/18) 용어: 한국어 «국번(슬레이브 ID)» 한 번 + «국번», 영어 «Slave ID». 옛 이름(슬레이브 주소·유닛 ID·Unit ID (slave address))이 화면에 없어야 */
+    async function terms() {
+      if (!["serial", "tcp", "modbus-slave", "modbus-master"].includes(app)) return;
+      const r = await jsAsync(`
+        const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+        let label = null;
+        if (${JSON.stringify(app)} === 'serial' || ${JSON.stringify(app)} === 'tcp') {
+          document.querySelector('.sendbar .mb-open').click(); await w();
+          const l = document.querySelector('.modal.mbuild .mb-grid label:nth-of-type(' + (${JSON.stringify(app)} === 'tcp' ? 2 : 1) + ')');
+          label = l ? l.firstChild.textContent.trim() : null;
+        }
+        const text = document.body.innerText;
+        if (label != null) { __sm.key(window, 'Escape'); await w(); }
+        return { label, old: (text.match(/슬레이브 주소|유닛 ID|Unit ID \\(slave address\\)|slave address/) || [null])[0], ko: text.includes('국번(슬레이브 ID)'), en: /Slave ID/.test(text) };`);
+      if (r.fatal) return add("terms", "smoke-error", r.fatal);
+      const want = combo.lang === "ko" ? "국번(슬레이브 ID)" : "Slave ID";
+      if (r.old) await conv("terms", `옛 이름 «${r.old}» 이(가) 화면에 남아 있음`);
+      if ((app === "serial" || app === "tcp") && r.label !== want) await conv("terms", `Modbus 요청 창의 국번 칸 이름이 «${r.label}» (기대 «${want}»)`);
+      if ((app === "modbus-slave" || app === "modbus-master") && !(combo.lang === "ko" ? r.ko : r.en)) await conv("terms", `화면에 «${want}» 가 없음`);
+      await verify("terms");
     }
 
     /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
@@ -1122,10 +1145,12 @@ async function runApp(app, port) {
         const pr = await jsAsync(`
           const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
           await w(700);
-          const sel = document.querySelector('.log .row.primary');
+          // 고른 줄은 로그가 굴러가 화면 밖(그려지지 않음)일 수 있다 — 상세 머리(«RX · 시각 …»)로 본다
+          const head = document.querySelector('.right .detail > div');
+          const selRx = !!head && head.textContent.startsWith('RX ');
           const pd = () => document.querySelector('.right .mb-paired');
           const rows = () => [...document.querySelectorAll('.right .mb-paired-table tr')].map((tr) => [...tr.children].map((td) => td.textContent).join(' '));
-          const a = { selRx: !!sel && sel.classList.contains('rx'), paired: !!pd(), head: pd() ? pd().querySelector('.mb-paired-req').textContent : '', rows: rows() };
+          const a = { selRx, paired: !!pd(), head: pd() ? pd().querySelector('.mb-paired-req').textContent : '', rows: rows() };
           const fmt = pd() && pd().querySelector('.mb-paired-tools select');
           if (fmt) { __sm.setVal(fmt, 'f32abcd'); await w(); }
           a.f32 = rows();

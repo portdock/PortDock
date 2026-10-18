@@ -8,7 +8,7 @@ export const help: HelpDoc = {
       title: "이 프로그램은",
       body: [
         "PortDock Modbus Master 는 Modbus 장비(PLC·인버터·계측기·센서·HMI 대신 시험할 장비)에 먼저 묻는 «마스터(폴링 도구)» 입니다. 시리얼 RTU 와 Modbus TCP, RTU over TCP 를 씁니다.",
-        "- 표(탭) 여러 개를 각각 다른 국번·함수(01·02·03·04)·주소·주기로 읽습니다.",
+        "- 표(탭) 여러 개를 각각 다른 국번(슬레이브 ID)·함수(01·02·03·04)·주소·주기로 읽습니다.",
         "- 값은 U16·S16·U32·S32·F32·F64·문자열, 워드·바이트 순서(ABCD·CDAB·BADC·DCBA), HEX·BIN 으로 보고, 칸마다 이름을 붙입니다.",
         "- 칸을 두 번 눌러 씁니다(05·06·0F·10). 국번 찾기·주소 범위 찾기, 요청·응답 HEX 와 풀이, 표마다 통계, 값 CSV 기록, 추세 그림이 있습니다.",
         "- 무료(GPL-3.0)이고 화면은 한국어·영어입니다.",
@@ -19,7 +19,7 @@ export const help: HelpDoc = {
       body: [
         "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 포트·속도·패리티·정지 비트를 장비와 같게, TCP 면 장비 IP·포트(보통 502)를 넣습니다.",
         "- 2. «연결»(F4). 연결되면 표의 «주기» 마다 읽기 시작합니다.",
-        "- 3. 가운데 위 표 설정에서 «국번», «함수», «시작», «개수» 를 장비 설명서대로 맞춥니다. 값 칸 위에 마지막 읽기 결과(✓ 시각·응답 시간 또는 ⚠ 이유)가 나옵니다.",
+        "- 3. 가운데 위 표 설정에서 «국번(슬레이브 ID)», «함수», «시작», «개수» 를 장비 설명서대로 맞춥니다. 값 칸 위에 마지막 읽기 결과(✓ 시각·응답 시간 또는 ⚠ 이유)가 나옵니다.",
         "- 4. 다른 영역도 보려면 «+ 표» 로 표를 더합니다. 탭의 숫자는 그 표의 오류(타임아웃·CRC·예외) 누적 수입니다 — 지금 실패 중이면 빨강, 다시 정상으로 읽히면 회색(통계 «초기화» 로 지움).",
         "- 5. 값을 바꾸려면 칸을 두 번 누릅니다(코일·보유 레지스터 표만).",
       ],
@@ -156,7 +156,7 @@ export const help: HelpDoc = {
       title: "About",
       body: [
         "PortDock Modbus Master is a Modbus «master» (poll tool) that asks devices — PLCs, drives, meters, sensors — for data, instead of an HMI. It speaks serial RTU, Modbus TCP and RTU over TCP.",
-        "- Several tables (tabs), each with its own slave ID, function (01/02/03/04), addresses and poll interval.",
+        "- Several tables (tabs), each with its own Slave ID, function (01/02/03/04), addresses and poll interval.",
         "- Values as U16, S16, U32, S32, F32, F64 or strings with word/byte order (ABCD, CDAB, BADC, DCBA), HEX/BIN, and a name per address.",
         "- Double-click a cell to write (05/06/0F/10). Slave ID and address range scans, request/response HEX with decoding, per-table statistics, CSV value logging and trend lines.",
         "- Free (GPL-3.0), Korean and English UI.",
@@ -177,7 +177,7 @@ export const help: HelpDoc = {
       body: [
         "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», value log (CSV), the «Statistics (all)» section.",
         "- «Communication details» and «Statistics» are collapsed with a summary next to the title («timeout 1000 ms · retries 0 · delay 20 ms», «n requests · m errors»). Communication details start expanded when they differ from the defaults; the open state is remembered.",
-        "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
+        "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, Slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
         "- Middle: value cells. Cells that changed since the previous read flash briefly. If the last read failed, the cells are dimmed (previous values) and the reason is shown above.",
         "- Bottom: trends (when added) and the traffic log.",
         ...windowLines("en"),
@@ -234,12 +234,12 @@ export const help: HelpDoc = {
         "- Exception 02 Illegal Data Address: start/count outside the device's range. Check 0/1-based numbering and try a smaller count.",
         "- Exception 03 Illegal Data Value: the count or written value is outside what the device accepts.",
         "- Exception 04 device failure · 06 busy · 0A/0B gateway (no path / target did not respond).",
-        "- Timeout: wrong slave ID, baud/parity mismatch, A/B swapped or the device is off. No RX at all in the traffic log points to wiring/settings; RX with CRC errors points to baud, parity or noise.",
-        "- Malformed: the slave ID, function code or byte count differs from the request, or the reply was cut short — e.g. another master on the line or a non-conforming device.",
+        "- Timeout: wrong Slave ID, baud/parity mismatch, A/B swapped or the device is off. No RX at all in the traffic log points to wiring/settings; RX with CRC errors points to baud, parity or noise.",
+        "- Malformed: the Slave ID, function code or byte count differs from the request, or the reply was cut short — e.g. another master on the line or a non-conforming device.",
       ],
     },
     {
-      title: "Scan — slave IDs and address ranges",
+      title: "Scan — Slave IDs and address ranges",
       body: [
         "- «Slave ID scan» in «Scan…»: reads one address with the chosen function from every ID and lists the IDs that answer. An exception still counts as «a device is there». It takes timeout (200 ms default) × number of IDs.",
         "- «Address range scan»: reads From–To in blocks and collects the readable ranges. A block that fails is re-checked one address at a time (turn off to skip whole blocks). It stops on exception 01 or three silent requests in a row.",
@@ -290,7 +290,7 @@ export const help: HelpDoc = {
     {
       title: "Troubleshooting",
       body: [
-        "- Every request times out: check the slave ID, baud/parity/stop bits, A/B wiring, termination and the device's «Modbus RTU slave» setting. For TCP check IP, port and firewall, and whether the device already has the maximum number of masters connected.",
+        "- Every request times out: check the Slave ID, baud/parity/stop bits, A/B wiring, termination and the device's «Modbus RTU slave» setting. For TCP check IP, port and firewall, and whether the device already has the maximum number of masters connected.",
         "- Occasional timeouts: raise «Delay between polls» and set «Retries» to 1–2. USB adapters can deliver replies late — raise «Response timeout».",
         "- Frequent CRC errors: check baud/parity, noise (shielding, grounding) and other masters on the line.",
         "- Odd values: check the type and byte order («Value types and byte order») and 0/1-based numbering («40001 notation»).",

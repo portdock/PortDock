@@ -2,7 +2,7 @@
 import { MB_FUNCS } from "./modbusBuild";
 // Modbus 풀이(백엔드는 영어 키로 준다)를 화면 언어로
 const KO: Record<string, string> = {
-  slave: "국번(슬레이브)",
+  slave: "국번",
   function: "함수",
   start: "시작 주소",
   quantity: "개수",
@@ -20,8 +20,11 @@ const KO: Record<string, string> = {
   unknown: "알 수 없음",
 };
 
+// 영어는 백엔드 키 그대로 — 국번만 «Slave ID» 로 맞춘다(용어 통일 10/18)
+const EN: Record<string, string> = { slave: "Slave ID" };
+
 export function mbWord(k: string, lang: "ko" | "en") {
-  return lang === "ko" ? (KO[k] ?? k) : k;
+  return lang === "ko" ? (KO[k] ?? k) : (EN[k] ?? k);
 }
 
 // 함수 이름은 «Modbus 요청 만들기» 와 같은 표(shared/modbusBuild.ts)에서 — 0x17 만 따로

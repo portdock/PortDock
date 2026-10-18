@@ -71,7 +71,7 @@ export const help: HelpDoc = {
     {
       title: "Modbus 장비 정보",
       body: [
-        "- «Modbus 장비 정보 읽기 (502)» 를 켜면 502 가 열린 장비에 «Read Device Identification»(FC 2B/0E, 기본 등급)을 보냅니다. 유닛 1 로 묻고, 안 되면 255 로 묻습니다.",
+        "- «Modbus 장비 정보 읽기 (502)» 를 켜면 502 가 열린 장비에 «Read Device Identification»(FC 2B/0E, 기본 등급)을 보냅니다. 국번(슬레이브 ID) 1 로 묻고, 안 되면 255 로 묻습니다.",
         "- 답하면 제조사·제품 코드·버전이 «서비스» 칸과 아래 칸에 나옵니다. 읽기 전용 요청이라 레지스터 값은 바뀌지 않습니다.",
         "- 이 기능이 없는 장비(예외 01)도 많습니다. 아래 칸의 «Modbus 장비 정보 읽기» 로 언제든 다시 물을 수 있습니다.",
       ],
@@ -233,7 +233,7 @@ export const help: HelpDoc = {
     {
       title: "Modbus device ID",
       body: [
-        "- With «Read Modbus device ID (502)» on, devices with 502 open get a «Read Device Identification» request (FC 2B/0E, basic level) — unit 1 first, then 255.",
+        "- With «Read Modbus device ID (502)» on, devices with 502 open get a «Read Device Identification» request (FC 2B/0E, basic level) — Slave ID 1 first, then 255.",
         "- If they answer, vendor, product code and revision appear in «Services» and in the panel below. It is a read-only request; no register is changed.",
         "- Many devices do not support it (exception 01). «Read Modbus device ID» in the panel asks again at any time.",
       ],

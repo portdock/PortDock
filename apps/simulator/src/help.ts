@@ -228,7 +228,7 @@ export const help: HelpDoc = {
         "- ASCII: set per rule with the «Wildcards» checkbox. Off (the default for new rules) compares ? and * literally — SCPI «*IDN?» matches only «*IDN?», not «XIDN!».",
         "- On: «?» = any one character, «*» = zero or more. To match a literal ? or * while on, write «\\x3F» (?) or «\\x2A» (*). A rule with wildcards on and ? or * in its pattern shows a yellow notice with [Turn wildcards off].",
         "- Rules saved before this checkbox existed (before 10/18) load with wildcards on, so they behave as before. «\\r», «\\n» and «\\xNN» escapes work either way.",
-        "- Example: «01 03 ?? ?? 00 01 **» = unit 1, function 03, any start address, count 1, any CRC.",
+        "- Example: «01 03 ?? ?? 00 01 **» = Slave ID 1, function 03, any start address, count 1, any CRC.",
         "- Example: ASCII «contains» + «STATUS?» — with wildcards off it needs the text «STATUS?»; with them on, «STATUS» followed by any one character (not necessarily a question mark).",
         "- A rule of just «**» matches everything. At the bottom it becomes the default reply (e.g. NAK) for everything else.",
       ],

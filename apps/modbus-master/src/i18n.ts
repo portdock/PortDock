@@ -117,7 +117,7 @@ const ko = {
   delTable: "지우기",
   deletedTable: "«{a}» 를 지웠습니다",
   tableName: "표 이름",
-  unit: "국번",
+  unit: "국번(슬레이브 ID)",
   fc: "함수",
   fc1: "01 코일",
   fc2: "02 입력 접점",

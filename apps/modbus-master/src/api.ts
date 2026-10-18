@@ -140,7 +140,7 @@ export const EXCEPTIONS: Record<number, [string, string, string]> = {
   5: ["Acknowledge", "받음(처리 중) — 오래 걸리는 일을 받아 처리하는 중입니다", "accepted, still processing a long operation"],
   6: ["Server Device Busy", "장비 바쁨 — 잠시 뒤 다시 보내세요(요청 간격을 늘려 보세요)", "busy — retry later (try a longer delay between polls)"],
   8: ["Memory Parity Error", "메모리 패리티 오류", "memory parity error on the device"],
-  10: ["Gateway Path Unavailable", "게이트웨이 경로 없음 — 게이트웨이의 국번·경로 설정을 확인하세요", "the gateway has no path to this unit — check the gateway's routing/unit IDs"],
+  10: ["Gateway Path Unavailable", "게이트웨이 경로 없음 — 게이트웨이의 국번·경로 설정을 확인하세요", "the gateway has no path to this Slave ID — check the gateway's routing/unit IDs"],
   11: ["Gateway Target Failed to Respond", "게이트웨이 대상 응답 없음 — 게이트웨이 뒤 장비가 답하지 않습니다", "the device behind the gateway did not answer"],
 };
 
@@ -153,7 +153,7 @@ export function outcomeText(o: Outcome, lang: "ko" | "en"): string {
     case "broadcast":
       return ko ? "브로드캐스트(응답 없음)" : "Broadcast (no reply)";
     case "timeout":
-      return ko ? "응답 없음(타임아웃) — 국번·통신 설정·배선·응답 기다림을 확인하세요" : "No response (timeout) — check the slave ID, line settings, wiring and timeout";
+      return ko ? "응답 없음(타임아웃) — 국번·통신 설정·배선·응답 기다림을 확인하세요" : "No response (timeout) — check the Slave ID, line settings, wiring and timeout";
     case "exception": {
       const e = EXCEPTIONS[o.code];
       const code = o.code.toString(16).toUpperCase().padStart(2, "0");

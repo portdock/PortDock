@@ -38,7 +38,7 @@ export const GUIDES: Guide[] = [
           table: {
             head: ["바이트", "뜻"],
             rows: [
-              ["01", "슬레이브 주소(국번) 1"],
+              ["01", "국번(슬레이브 ID) 1"],
               ["03", "함수 03 — 보유 레지스터 읽기"],
               ["00 00", "시작 주소 0 (높은 바이트 먼저)"],
               ["00 02", "개수 2"],
@@ -91,7 +91,7 @@ export const GUIDES: Guide[] = [
           table: {
             head: ["Bytes", "Meaning"],
             rows: [
-              ["01", "Slave address 1"],
+              ["01", "Slave ID 1"],
               ["03", "Function 03 — read holding registers"],
               ["00 00", "Start address 0 (high byte first)"],
               ["00 02", "Quantity 2"],

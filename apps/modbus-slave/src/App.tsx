@@ -784,7 +784,7 @@ export default function App() {
     // 포트 이름은 연결 중 바꾸지 않는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, cfg.baud, cfg.dataBits, cfg.parity, cfg.stopBits]);
-  // «Unit ID 무시» 는 연결 중에도 바로
+  // «국번 무시»(MBAP Unit ID) 는 연결 중에도 바로
   useEffect(() => {
     if (connected && tcp) api.setOptions({ ignoreUnitId: net.ignoreUnitId }).catch((e) => setError(String(e)));
   }, [connected, tcp, net.ignoreUnitId]);

@@ -87,7 +87,7 @@ const M = {
   },
   en: {
     slave: "Slave ID is 1–247 (0 = broadcast for write functions — no reply).",
-    slaveRead: "Read functions cannot use slave 0 (broadcast) — no reply would come. Use 1–247.",
+    slaveRead: "Read functions cannot use Slave ID 0 (broadcast) — no reply would come. Use 1–247.",
     func: "Unsupported function.",
     addrEmpty: "Enter an address.",
     addrNum: "Address must be a number (decimal; 0x hex is allowed for 0-based).",
