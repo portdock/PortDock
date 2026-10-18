@@ -1118,6 +1118,59 @@ async function runApp(app, port) {
         else if (!m.open || !m.plc || !/4xxxx/.test(m.note) || m.code !== "01 03 00 00 00 0A" || !m.primary || !m.closed) await conv("mb-send", `Modbus 요청 창의 4xxxx 안내·바꾸기·«보내기» 가 이상함: ${JSON.stringify(m)}`);
         if ((await calls("send")) !== s0 + 1) await conv("mb-send", "Modbus 요청 창 «보내기» 로 보내지지 않음");
         await verify("serial dup-suffix / modbus send");
+        // (10/18) 요청 창으로 보낸 요청과 응답 짝짓기 — 응답 줄이 저절로 골라지고 상세에 «40001 = 값 (0x….)» 10줄, F32 면 5줄. 주소 41001(=1000) 은 예외 02
+        const pr = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          await w(700);
+          const sel = document.querySelector('.log .row.primary');
+          const pd = () => document.querySelector('.right .mb-paired');
+          const rows = () => [...document.querySelectorAll('.right .mb-paired-table tr')].map((tr) => [...tr.children].map((td) => td.textContent).join(' '));
+          const a = { selRx: !!sel && sel.classList.contains('rx'), paired: !!pd(), head: pd() ? pd().querySelector('.mb-paired-req').textContent : '', rows: rows() };
+          const fmt = pd() && pd().querySelector('.mb-paired-tools select');
+          if (fmt) { __sm.setVal(fmt, 'f32abcd'); await w(); }
+          a.f32 = rows();
+          if (fmt) { __sm.setVal(fmt, 'u16'); await w(); }
+          // 예외: 요청 창에서 41001 → 보내기
+          document.querySelector('.sendbar .mb-open').click(); await w();
+          const dlg = document.querySelector('.modal.mbuild');
+          __sm.setVal(dlg.querySelector('.mb-grid input.mono'), '41001'); await w();
+          dlg.querySelector('.mb-send').click(); await w(800);
+          a.exc = (document.querySelector('.right .mb-paired-exc') || {}).textContent || '';
+          return a;`);
+        if (pr.fatal) add("mb pair", "smoke-error", pr.fatal);
+        else if (!pr.selRx || !pr.paired || pr.rows.length !== 10 || !/^40001 = \d+ \(0x[0-9A-F]{4}\)$/.test(pr.rows[0]) || !/^40010 /.test(pr.rows[9]) || pr.f32.length !== 5 || !/^40001–40002 = /.test(pr.f32[0]) || !/02 /.test(pr.exc))
+          await conv("mb-pair", `요청 창으로 보낸 요청과 응답 짝짓기가 이상함: ${JSON.stringify(pr)}`);
+        if (combo.name === "ko-light" || combo.name === "en-dark") {
+          // 좁은 창이라 상세는 오른쪽 칸 안 — 펼쳐 찍고 닫는다
+          await js("const b = document.querySelector('.toolbar .narrow-only'); b && b.click()");
+          await sleep(300);
+          await js("const e = document.querySelector('.right .mb-paired'); e && e.scrollIntoView({ block: 'start' })");
+          await sleep(200);
+          await shot(app, `${combo.name}-mb-pair`);
+          await closeRight();
+        }
+        await verify("serial modbus pair");
+      }
+      // (10/18) TCP: Modbus TCP 요청(MBAP)을 보내면 가짜 장비가 같은 트랜잭션 ID 로 답한다 → 응답 줄을 누르면 상세에 짝지은 값
+      if (app === "tcp") {
+        const pr = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const sr = document.querySelector('.sendbar .sendrow'); const sels = [...sr.querySelectorAll('select')];
+          const mode = sels.find((x) => x.querySelector('option[value=ascii]'));
+          __sm.setVal(mode, 'hex'); await w();
+          const ck = sels.find((x) => x.querySelector('option[value=crc16-modbus]')); if (ck) { __sm.setVal(ck, ''); await w(); }
+          const suf = sels.find((x) => x.querySelector('option[value=""]') && /CR LF/.test(x.textContent)); if (suf) { __sm.setVal(suf, ''); await w(); }
+          __sm.setVal(document.querySelector('.sendtext'), '00 2A 00 00 00 06 01 03 00 00 00 04'); await w();
+          document.querySelector('.sendbar .sendrow .btn.primary').click(); await w(700);
+          const rx = [...document.querySelectorAll('.log .row.rx')].filter((r) => /00 2A 00 00 00 0B 01 03 08/.test(r.textContent)).pop();
+          if (!rx) return { rx: false, rows: [...document.querySelectorAll('.log .row')].slice(-4).map((r) => r.textContent) };
+          rx.click(); await w();
+          const pd = document.querySelector('.right .mb-paired');
+          return { rx: true, paired: !!pd, head: pd ? pd.querySelector('.mbhead').textContent : '', rows: [...document.querySelectorAll('.right .mb-paired-table tr')].map((tr) => tr.textContent) };`);
+        if (pr.fatal) add("tcp mb pair", "smoke-error", pr.fatal);
+        else if (!pr.rx || !pr.paired || !/42/.test(pr.head) || pr.rows.length !== 4 || !/1812 \(0x0714\)/.test(pr.rows[0])) await conv("tcp-mb-pair", `Modbus TCP 응답 짝짓기가 이상함: ${JSON.stringify(pr)}`);
+        await closeRight();
+        await verify("tcp modbus pair");
       }
       // ---- Serial: Break · 터미널 보기
       if (app === "serial") {

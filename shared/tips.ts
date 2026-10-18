@@ -56,6 +56,9 @@ const TIPS: Record<string, Tip> = {
   stopLog: ["파일 기록을 멈춥니다.", "Stops file logging."],
   detail: ["로그에서 누른 줄의 HEX·ASCII 전체를 보여 줍니다.", "Shows the full HEX/ASCII of the clicked line."],
   // Modbus 풀이가 있는 프로그램(시리얼)용
+  // 상세의 «요청과 짝»(10/18, Serial·TCP)
+  mbPaired: ["고른 응답 줄을 바로 앞 요청(반대 방향, TCP 는 같은 트랜잭션 ID)과 짝지어 «40001 = 1812 (0x0714)» 처럼 주소 붙은 값으로 보입니다. 국번·함수·바이트 수가 맞고 CRC 가 맞을 때만(같은 요청의 두 번째 응답은 짝 없음). 예외 응답은 예외 이름을 보입니다.", "Pairs the selected reply with the request just before it (opposite direction; for TCP the same transaction ID) and shows values with addresses, e.g. «40001 = 1812 (0x0714)». Only when slave ID, function and byte count match and the CRC is good (a second reply to the same request is not paired). Exception replies show the exception name."],
+  mbValFmt: ["값 형식: U16(0~65535), S16(음수), HEX, F32 ABCD(두 칸을 큰 쪽 먼저 — Modbus 기본), F32 CDAB(두 칸의 순서를 바꿈). F32 는 두 주소를 한 줄로 보이고, 개수가 홀수면 남는 칸은 U16 입니다.", "Value format: U16 (0–65535), S16 (signed), HEX, F32 ABCD (two registers, high word first — Modbus default), F32 CDAB (word-swapped). F32 shows two addresses per line; with an odd count the last register is shown as U16."],
   detailModbus: ["로그에서 누른 줄의 HEX·ASCII 전체와 Modbus 풀이를 보여 줍니다.", "Shows the full HEX/ASCII of the clicked line and its Modbus decoding."],
 
   // ---- 보내기

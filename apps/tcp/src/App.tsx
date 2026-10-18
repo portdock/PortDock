@@ -53,6 +53,8 @@ import { IfaceList, IfaceOptions, ifaceProblem, useInterfaces } from "@shared/Ne
 import { ModbusBuilder } from "@shared/ModbusBuilder";
 import { MbapDetail, type MbapInfo } from "@shared/MbapDetail";
 import { isMbap } from "@shared/mbap";
+import { MbValues } from "@shared/MbValues";
+import { pairInLog, type AddrNotation } from "@shared/mbPair";
 import { dict, type Key, type Lang } from "./i18n";
 import { ar } from "@shared/autoReplyText";
 
@@ -522,6 +524,10 @@ export default function App() {
   // 상세 칸 Modbus TCP 풀이 — 프레임 구분이 Modbus TCP 이거나 MBAP 모양(프로토콜 0·길이 맞음)일 때
   const [mbap, setMbap] = useState<MbapInfo | null>(null);
   const selBytes = selFrame && selFrame.dir !== "ev" ? selFrame.bytes : null;
+  // 상세의 «요청과 짝» — MBAP 응답이면 같은 상대·같은 트랜잭션 ID 의 요청과 짝지어 주소 붙은 값으로. 주소 표기는 «Modbus TCP 요청» 창이 쓰던 것
+  const selIdx = selFrame && frames.length ? (selFrame.seq ?? 0) - (frames[0].seq ?? 0) : -1;
+  const paired = useMemo(() => (selBytes && (framing.kind === "modbus-tcp" || isMbap(selBytes)) ? pairInLog(framesRef.current, selIdx, "tcp") : null), [selBytes, selIdx, framing.kind]);
+  const mbNotation = useMemo<AddrNotation>(() => (load<{ addrMode?: string }>("mbForm", {}).addrMode === "plc" ? "plc" : "zero"), [showMb]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const b = selBytes;
     if (!b || !(framing.kind === "modbus-tcp" || isMbap(b))) {
@@ -1091,6 +1097,7 @@ export default function App() {
               </>
             )}
             {mbap && selFrame.dir !== "ev" && <MbapDetail lang={lang} info={mbap} />}
+            {paired && <MbValues lang={lang} paired={paired} notation={mbNotation} />}
           </div>
         )}
       </aside>

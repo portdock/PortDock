@@ -432,6 +432,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       body: [
         "- «프레임 구분» 의 «Modbus TCP (MBAP 길이)»: MBAP 머리의 길이 칸으로 요청·응답을 하나씩 끊습니다. 둘이 붙어 와도·쪼개져 와도 한 줄씩 나옵니다. 길이 칸이 이상하면(260바이트 초과 등) «조용한 시간(ms)»(기본 1000)으로 끊습니다.",
         "- 상세 칸: 고른 줄이 MBAP 모양이면 «Modbus TCP · 요청/응답» 아래 트랜잭션 ID·길이 칸(틀리면 빨갛게)·유닛 ID·함수·주소·개수·값을 풀어 보입니다. 맨 위 한 줄 요약 «id1 FC03 HR 0..9 (10)».",
+        "- «요청과 짝»: 고른 줄이 응답이면 같은 상대·같은 트랜잭션 ID 의 요청(반대 방향 — 중계에서는 HMI 쪽 RX 요청)을 거슬러 찾아 «40001 = 1812 (0x0714)» 같은 주소 붙은 값 표를 보입니다. U16·S16·HEX·F32 ABCD·F32 CDAB 와 주소 표기(0 기준/4xxxx)를 고를 수 있고, 예외 응답은 «예외 02 없는 주소 (Illegal Data Address)» 처럼 이름이 나옵니다. 국번·함수·바이트 수가 맞을 때만 짝짓습니다.",
         "- 보내기 줄의 «Modbus…»: 유닛 ID·함수·주소(0 기준/PLC 표기)·개수(또는 값)로 MBAP 머리까지 붙은 요청을 만듭니다. «입력칸에 넣기» 는 보내기 줄을 HEX·체크섬 없음·줄 끝 없음으로 맞춥니다(Modbus TCP 에는 CRC 가 없음). «목록에 추가» 로 명령 목록에.",
         "- «MBAP 트랜잭션 ID 자동 증가»(프레임 구분이 Modbus TCP 일 때 보임, 기본 켬): 보낼 때마다 앞 2바이트를 1씩 늘려 넣습니다 — 반복·명령 목록·다시 보내기 모두. 보낼 바이트가 MBAP 모양이 아니면 그대로 보냅니다.",
         "- 장비 흉내가 필요하면 오른쪽 «자동응답» 에 «{req 0..1} 00 00 00 05 {req 6} 03 02 00 64» 처럼 트랜잭션·유닛 ID 를 돌려주는 규칙을 쓰세요(아래 «응답 템플릿»).",
@@ -466,6 +467,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       body: [
         "- «Modbus TCP (MBAP length)» in «Framing» splits each request/response by the MBAP length field — even when two arrive together or one arrives in pieces. If the length field is implausible (over 260 bytes etc.) the «Idle gap (ms)» (default 1000) splits instead.",
         "- Detail pane: if the selected line is MBAP-shaped it shows transaction ID, length field (red if wrong), unit ID, function, address, quantity and values under «Modbus TCP · request/response», with a one-line summary «id1 FC03 HR 0..9 (10)».",
+        "- «Paired with request»: if the selected line is a reply, the request from the same peer with the same transaction ID (opposite direction — in relay mode the RX request from the HMI side) is looked up and a value table with addresses such as «40001 = 1812 (0x0714)» is shown. Choose U16, S16, HEX, F32 ABCD, F32 CDAB and the address notation (0-based/4xxxx); exception replies show their name, e.g. «Exception 02 Illegal Data Address». It pairs only when slave ID, function and byte count match.",
         "- «Modbus…» in the send bar builds a request with the MBAP header from unit ID, function, address (0-based/PLC notation) and quantity (or values). «Put in input» sets the send bar to HEX, no checksum, no line ending (Modbus TCP has no CRC). «Save to list» adds it to the commands.",
         "- «Auto MBAP transaction ID» (shown with Modbus TCP framing, on by default) puts an incrementing ID into the first 2 bytes of every send — repeat, commands and send-again included. Data that is not MBAP-shaped is sent unchanged.",
         "- To imitate a device, add an auto-reply rule that echoes the transaction and unit IDs, e.g. «{req 0..1} 00 00 00 05 {req 6} 03 02 00 64» (see «Reply templates»).",

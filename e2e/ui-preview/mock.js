@@ -123,6 +123,24 @@ function verify(kind, bytes) {
   return c.every((x, i) => x === bytes[at + i]);
 }
 const withCrc = (b) => [...b, ...compute("crc16-modbus", b)];
+/** 가짜 장비의 Modbus 읽기 응답(국번 + PDU, CRC·MBAP 없이) — 요청 PDU(01~04)가 아니면 null.
+ *  레지스터: 0 = 1812(0x0714), 1 = 0xFFFF(-1), 2·3 = 40 48 F5 C3(F32 3.14), 그 밖은 주소×10. 비트: 주소가 3의 배수면 ON. 주소 1000 이상은 예외 02 */
+function mbReadReply(p) {
+  if (p.length !== 6 || p[1] < 1 || p[1] > 4) return null;
+  const [unit, fc] = p;
+  const addr = (p[2] << 8) | p[3];
+  const qty = (p[4] << 8) | p[5];
+  if (addr >= 1000) return [unit, fc | 0x80, 2];
+  if (fc <= 2) {
+    const out = new Array(Math.ceil(qty / 8)).fill(0);
+    for (let i = 0; i < qty; i++) if ((addr + i) % 3 === 0) out[i >> 3] |= 1 << (i & 7);
+    return [unit, fc, out.length, ...out];
+  }
+  const reg = (a) => (a === 0 ? 0x0714 : a === 1 ? 0xffff : a === 2 ? 0x4048 : a === 3 ? 0xf5c3 : (a * 10) & 0xffff);
+  const out = [];
+  for (let i = 0; i < qty; i++) out.push(reg(addr + i) >> 8, reg(addr + i) & 0xff);
+  return [unit, fc, out.length, ...out];
+}
 function parseHex(text) {
   const out = [];
   for (const token of text.split(/[\s,;-]+/)) {
@@ -942,7 +960,10 @@ async function handle(cmd, a) {
       if (S.kind === "serial" || S.kind === "sim-serial") {
         if (!S.online) return fail(tr("포트가 끊겨 있습니다", "The port is disconnected"));
         frames(data("tx", b.bytes, null));
-        if (S.kind === "serial") later(60, () => frames(data("rx", withCrc([1, 3, 2, 0, 42]), verify(S.rxCheck, withCrc([1, 3, 2, 0, 42])))));
+        // Modbus RTU 읽기 요청(CRC 맞음)이면 그 요청에 맞는 응답, 아니면 늘 같은 짧은 응답
+        const mb = b.bytes.length === 8 && verify("crc16-modbus", b.bytes) === true ? mbReadReply(b.bytes.slice(0, 6)) : null;
+        const reply = withCrc(mb ?? [1, 3, 2, 0, 42]);
+        if (S.kind === "serial") later(60, () => frames(data("rx", reply, verify(S.rxCheck, reply))));
         return S.kind === "serial" ? b.bytes : null;
       }
       if (S.kind === "sim-udp") return udpSend(null, a.spec).then(() => null);
@@ -964,10 +985,20 @@ async function handle(cmd, a) {
         }
         return { sent: pairs.length, total: pairs.length };
       }
+      // Modbus TCP 읽기 요청이면 상대(가짜 장비)가 같은 트랜잭션 ID 로 답한다
+      const mbTcp = (to) => {
+        const q = b.bytes;
+        if (!(q.length === 12 && q[2] === 0 && q[3] === 0 && ((q[4] << 8) | q[5]) === 6)) return;
+        const r = mbReadReply(q.slice(6));
+        if (!r) return;
+        const reply = [q[0], q[1], 0, 0, (r.length >> 8) & 0xff, r.length & 0xff, ...r];
+        later(60, () => frames(data("rx", reply, null, to)));
+      };
       if ("target" in a && a.target != null) {
         const p = S.peers.find((x) => x.id === a.target);
         if (!p) return fail(tr("그 상대는 이미 끊겼습니다", "That peer is already gone"));
         frames(data("tx", b.bytes, null, p.addr));
+        mbTcp(p.addr);
         return { sent: 1, total: 1 };
       }
       const total = S.peers.length;
@@ -982,6 +1013,7 @@ async function handle(cmd, a) {
         send({ type: "peers", peers: peerList() });
       }
       frames(...S.peers.map((p) => data("tx", b.bytes, null, p.addr)));
+      if (S.kind === "tcp" && S.peers.length) mbTcp(S.peers[0].addr);
       return S.kind === "tcp" ? { sent, total } : null;
     }
     case "decode_modbus": {

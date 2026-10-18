@@ -60,6 +60,8 @@ import { Popover } from "@shared/Popover";
 import { FirstCard } from "@shared/FirstCard";
 import { applyPreset, isPresetId, PRESET_IDS, presetDiff, type PresetField, type PresetId, type PresetState } from "@shared/serialPresets";
 import { serialExamples } from "@shared/examples";
+import { MbValues } from "@shared/MbValues";
+import { pairInLog, rtuCrcOk, type AddrNotation } from "@shared/mbPair";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -281,6 +283,10 @@ export default function App() {
   });
   const trgCheck = trg.check;
 
+  // «Modbus 요청» 창으로 보낸 요청(국번·함수)을 기억했다가, CRC 가 맞는 같은 국번·함수 응답이 오면 그 줄을 골라 상세에 값이 바로 보이게
+  const mbAwait = useRef<{ unit: number; fc: number; until: number } | null>(null);
+  const mbPick = useRef<number | null>(null);
+
   const onEvent = useCallback(
     (e: SessionEvent) => {
       if (e.type === "frames") {
@@ -298,6 +304,11 @@ export default function App() {
           if (f.dir === "rx") {
             term.current.feed(f.bytes);
             trgCheck(f);
+            const w = mbAwait.current;
+            if (w && (now > w.until || (f.bytes[0] === w.unit && (f.bytes[1] & 0x7f) === w.fc && rtuCrcOk(f.bytes)))) {
+              if (now <= w.until) mbPick.current = f.seq;
+              mbAwait.current = null;
+            }
           }
           if (f.check === false) counters.current.fail++;
         }
@@ -671,6 +682,17 @@ export default function App() {
   // ---- Modbus 요청 만들기 — HEX·CRC16 Modbus·줄 끝 없음으로 맞춘다(Modbus RTU 에는 줄 끝이 없다)
   const [showMb, setShowMb] = useState(false);
   const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "", ck: null });
+  // 상세의 «요청과 짝» — 고른 줄을 응답으로 보고 바로 앞 요청(TX)과 짝지어 «40001 = 1812 (0x0714)». 주소 표기는 «Modbus 요청» 창이 쓰던 것
+  const selIdx = selFrame && frames.length ? (selFrame.seq ?? 0) - (frames[0].seq ?? 0) : -1;
+  const paired = useMemo(() => (selFrame && selFrame.dir !== "ev" ? pairInLog(framesRef.current, selIdx, "rtu") : null), [selFrame, selIdx]);
+  const mbNotation = useMemo<AddrNotation>(() => (load<{ addrMode?: string }>("mbForm", {}).addrMode === "plc" ? "plc" : "zero"), [showMb]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 기억한 요청의 응답이 오면 그 줄을 고른다(따라가기는 그대로)
+  useEffect(() => {
+    if (mbPick.current == null) return;
+    sel.only(mbPick.current);
+    mbPick.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
 
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
@@ -1438,7 +1460,7 @@ export default function App() {
                     ))}
                   </tbody>
                 </table>
-                {modbus.values.length > 0 && (
+                {!paired && modbus.values.length > 0 && (
                   <>
                     <div className="mbhead">{t("values")}</div>
                     <div className="values">
@@ -1452,6 +1474,7 @@ export default function App() {
                 )}
               </div>
             )}
+            {paired && <MbValues lang={lang} paired={paired} notation={mbNotation} />}
           </div>
         )}
       </aside>
@@ -1468,6 +1491,7 @@ export default function App() {
           // 바로 보내기 — 보낸 뒤 창을 닫아 응답 줄이 보이게 하고, 입력칸 이력에도 남긴다(↑ 로 다시)
           onSend={(b) => {
             const s = mbSpec(b);
+            mbAwait.current = { unit: b[0], fc: b[1], until: Date.now() + 5000 };
             void doSend(s).then((ok) => {
               if (!ok) return;
               history.remember({ text: s.text, mode: s.mode });
