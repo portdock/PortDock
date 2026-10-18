@@ -9,6 +9,7 @@ import { help as simHelp } from "../../../apps/simulator/src/help";
 import { help as netscanHelp } from "../../../apps/netscan/src/help";
 import { help as modbusMasterHelp } from "../../../apps/modbus-master/src/help";
 import { help as scpiHelp } from "../../../apps/scpi/src/help";
+import { help as plotHelp } from "../../../apps/plot/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -19,7 +20,7 @@ export const RELEASES = `${REPO}/releases`;
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -250,6 +251,33 @@ export const TOOLS: Tool[] = [
       { ko: "명령을 넣고 Enter, 틀린 명령은 «오류 큐 비우기» 로 확인", en: "Type a command and press Enter; check mistakes with «Drain error queue»" },
     ],
     help: scpiHelp,
+  },
+  {
+    id: "plot",
+    name: "PortDock Plot",
+    file: "PortDock-Plot",
+    tagline: { ko: "시리얼·TCP·UDP 숫자를 실시간 그래프로", en: "Live graphs of numbers from serial, TCP and UDP" },
+    summary: {
+      ko: "Arduino·센서·장비가 보내는 숫자를 바로 그래프로 봅니다. 쉼표·빈칸 글자 줄, Arduino 식 «이름:값», 바이너리 프레임을 읽고, 채널마다 색·축을 정해 멈추고 확대하며 두 점의 차이를 잽니다. 받는 동안 CSV 로 기록합니다.",
+      en: "See the numbers an Arduino, sensor or device sends as a live graph. Reads comma/space text, Arduino-style «name:value» and binary frames, with per-channel colors and axes, pause, zoom and two-point deltas, and records CSV while receiving.",
+    },
+    who: [
+      { ko: "센서·보드 값을 눈으로 확인하며 펌웨어를 맞추는 개발자", en: "Developers tuning firmware while watching sensor or board values" },
+      { ko: "장비 출력을 오래 기록해 이상 구간을 찾는 현장 엔지니어", en: "Field engineers logging device output for hours to find anomalies" },
+    ],
+    features: [
+      { title: { ko: "시리얼·TCP·UDP", en: "Serial, TCP, UDP" }, body: { ko: "COM 포트(속도·8N1·DTR), 장비에 접속하는 TCP 클라이언트, UDP 받기(멀티캐스트 포함). 뽑혔다 꽂히면 다시 연결합니다.", en: "COM ports (baud, 8N1, DTR), a TCP client that connects to the device, and UDP receive (multicast too). Reconnects after unplug/replug." } },
+      { title: { ko: "글자 줄·이름:값·바이너리", en: "Text, name:value, binary" }, body: { ko: "쉼표·빈칸·탭·세미콜론 자동, temp:23.1 hum:40 같은 이름 붙은 값, 첫 줄 머리글, 시작 바이트·u8~f64·엔디언·체크섬 프레임. 해석 실패 줄은 이유와 함께 빨갛게.", en: "Comma, space, tab or semicolon detected automatically, named values like temp:23.1 hum:40, header lines, and frames with start bytes, u8–f64, endianness and checksum. Failed lines show in red with the reason." } },
+      { title: { ko: "보고 재기", en: "View and measure" }, body: { ko: "채널 32개·왼쪽/오른쪽 축, 최근 N점·N초, Y 자동·고정, 멈춤(받기는 계속), 커서 값, 측정점 두 개의 Δt·Δ값, 휠 확대·끌어 옮기기.", en: "Up to 32 channels on left/right axes, last N points or seconds, auto/fixed Y, pause (keeps receiving), cursor readout, Δt and Δvalue between two markers, wheel zoom and drag to pan." } },
+      { title: { ko: "버티는 그리기", en: "Keeps up" }, body: { ko: "숫자 해석은 Rust 에서, 그리기는 화면 한 번에 한 번(canvas)·픽셀마다 최소·최대만 — 초당 수천 줄이 와도 뾰족한 값을 잃지 않습니다.", en: "Parsing runs in Rust; drawing happens once per frame on a canvas with min/max per pixel — thousands of rows per second without losing spikes." } },
+      { title: { ko: "기록·저장", en: "Record and save" }, body: { ko: "받는 동안 모든 값을 CSV 로(엑셀 한글 그대로), 지금 보이는 범위 CSV, 그래프 PNG. 표에 최근·최소·최대·평균.", en: "Every value to CSV while receiving (Excel-friendly), the visible range as CSV, the graph as PNG. Table of last, min, max and mean." } },
+    ],
+    steps: [
+      { ko: "장비가 한 줄에 숫자를 보내게(예: 23.1,40 또는 temp:23.1 hum:40)", en: "Have the device print numbers per line (e.g. 23.1,40 or temp:23.1 hum:40)" },
+      { ko: "받는 곳(시리얼 포트·속도, TCP, UDP)을 고르고 «받기 시작»(F4)", en: "Pick the source (serial port and baud, TCP, UDP) and «Start» (F4)" },
+      { ko: "그래프를 눌러 측정점, «● CSV 기록» 으로 남기기", en: "Click the graph to measure; «● Record CSV» to keep it" },
+    ],
+    help: plotHelp,
   },
 ];
 

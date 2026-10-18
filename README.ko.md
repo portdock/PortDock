@@ -14,6 +14,7 @@
 | **PortDock Net Scan** | 산업 네트워크 장비 IP 찾기 — 핑·ARP 훑기, MAC 제조사, 산업 포트 판정(Modbus 502·MC·XGT 등), 장기 핑 감시, Wake-on-LAN |
 | **PortDock Modbus Master** | Modbus RTU·TCP 마스터(폴링) — 여러 폴링 표, 타입 값(U16~F64·문자열·바이트 순서·40001 표기), 05·06·0F·10 쓰기, 국번·주소 범위 찾기, 통신 풀이·통계, 값 CSV 기록, 추세 |
 | **PortDock SCPI** | SCPI 계측기 터미널 — LAN 소켓(5025)·RS-232, VISA 없이. 질의·쓰기·읽기와 응답 시간, `*IDN?` 식별, 오류 큐 비우기, `*OPC?` 기다림, 숫자 반복 측정(값 표·추세·CSV), 블록 데이터(#…) HEX 미리보기·파일 저장 |
+| **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭 글자 줄, Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
 
 홈페이지: <https://portdock.dev>
 
@@ -31,6 +32,7 @@
 | Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
 | Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
 | SCPI | [PortDock-SCPI-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
+| Plot | [PortDock-Plot-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 
 윈도우 10·11, x64.
 

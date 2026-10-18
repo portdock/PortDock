@@ -1,9 +1,9 @@
 //! PortDock Simulator — 규칙(받으면 → 답하기)으로 아무 장비나 흉내. 시리얼·TCP·UDP 공통.
 
 use portdock_core::tr;
-use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
+use portdock_core::autoreply::{self, AutoReply, Fill, Rng, RulePreview, RuleSpec, RulesResult, Template};
 use portdock_core::checksum::ChecksumKind;
-use portdock_core::codec::{SendSpec, build};
+use portdock_core::codec::SendSpec;
 use portdock_core::event::{EventSink, SessionEvent};
 use portdock_core::framer::FrameMode;
 use portdock_core::ports;
@@ -29,12 +29,30 @@ struct App {
     ar: AutoReply,
     /// 보관함 이름 "main". 시작 연타는 «여는 중» 으로 막히고, 스스로 닫히면 알아서 빠진다
     sess: Arc<Registry<Sess>>,
+    /// «장비가 먼저 보내기» 의 템플릿 채움 — {counter} 는 보낸 횟수(시작마다 0부터), {rand} 는 이 난수
+    push: std::sync::Mutex<(u64, Option<Rng>)>,
+}
+
+/// «장비가 먼저 보내기» 바이트 — 응답 규칙과 같은 템플릿({counter}·{rand}·{time}·{unix}·{crc …}, {req} 는 요청이 없어 쓸 수 없음)
+fn build_push(app: &App, spec: &SendSpec, count: bool) -> Result<Vec<u8>, String> {
+    let t = Template::parse(spec)?;
+    let mut g = app.push.lock().unwrap_or_else(|e| e.into_inner());
+    let counter = g.0;
+    let rng = g.1.get_or_insert_with(Rng::from_time);
+    let out = t.render(&mut Fill { request: &[], counter, rng })?;
+    if count {
+        g.0 += 1;
+    }
+    Ok(out)
 }
 
 const MAIN: &str = "main";
 
 fn begin(app: &App) -> Result<Opening<'_, Sess>, String> {
-    app.sess.begin(MAIN).map_err(|_| tr!("이미 시작돼 있거나 시작하는 중입니다", "Already running or starting").to_string())
+    let o = app.sess.begin(MAIN).map_err(|_| tr!("이미 시작돼 있거나 시작하는 중입니다", "Already running or starting").to_string())?;
+    // 시작마다 «장비가 먼저 보내기» 의 {counter} 를 0 부터
+    app.push.lock().unwrap_or_else(|e| e.into_inner()).0 = 0;
+    Ok(o)
 }
 
 fn sink(app: &App, generation: u64, ch: Channel<SessionEvent>) -> EventSink {
@@ -140,7 +158,7 @@ fn reset_hits(app: State<App>) {
 /// 장비가 먼저 보내는 것(상태 보고·하트비트 등)
 #[tauri::command(async)]
 fn send(app: State<App>, spec: SendSpec) -> Result<(), String> {
-    let bytes = build(&spec)?;
+    let bytes = build_push(&app, &spec, true)?;
     if bytes.is_empty() {
         return Err(tr!("보낼 바이트가 없습니다", "Nothing to send").into());
     }
@@ -152,8 +170,8 @@ fn send(app: State<App>, spec: SendSpec) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn preview(spec: SendSpec) -> Result<Vec<u8>, String> {
-    build(&spec)
+fn preview(app: State<App>, spec: SendSpec) -> Result<Vec<u8>, String> {
+    build_push(&app, &spec, false)
 }
 
 #[tauri::command(async)]

@@ -1208,6 +1208,8 @@ mockIPC(
     // Net Scan 명령은 맨 아래 따로 둔 부분이 받는다
     // Modbus Master 는 이름이 겹치는 명령(open·close …)이 있어 창 제목으로 가린다
     // SCPI 도 이름이 겹치는 명령(open_tcp·close·query …)이 있어 창 제목으로 가린다
+    // Plot 명령은 이름이 plot_ 으로 시작해 겹치지 않는다(write_bytes 도 Plot 만 쓴다)
+    if (PLOT_CMDS.has(cmd)) return plot(cmd, a);
     if (SCPI_CMDS.has(cmd) && isSCPI()) return scpi(cmd, a);
     if (MM_CMDS.has(cmd) && isMM()) return mmaster(cmd, a);
     return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
@@ -1883,3 +1885,120 @@ async function scpi(cmd, a) {
   }
   return null;
 }
+
+// ================================================================ Plot (apps/plot — 명령: apps/plot/src-tauri/src/lib.rs, 사건: 그 파일의 PlotEvent)
+// 위 공용 세션(S)과 따로 논다. 가짜 장비가 0.05초마다 10줄(200 Hz)을 보낸다: 첫 묶음에 머리글 «sin,cos,noise», 그다음
+// 사인파(±10, 0.5 Hz)·코사인(20±5, 0.2 Hz)·잡음(±1) CSV 줄. 3초마다 해석 실패 줄 «ERR? overflow»(빨강·이유).
+// 해석은 Rust 몫이라 여기서는 만든 숫자를 그대로 넘긴다(바이너리 형식이면 원시 줄만 HEX 로).
+// 일부러 실패: 시리얼 COM9 사용 중, TCP 주소 10.0.0.99 → 시작은 되고 «다시 연결하는 중», UDP 포트 445 → 묶기 실패,
+// 기록 경로에 «readonly» → 쓰기 거부. window.__pdMock.plot 으로 상태를 본다.
+const PLOT_CMDS = new Set(["plot_start", "plot_stop", "plot_set_format", "plot_record", "write_bytes"]);
+let PL = null;
+const plSend = (e) => {
+  try {
+    PL?.ch?.onmessage?.(e);
+  } catch (err) {
+    window.__pdMock.errors.push(String(err?.stack ?? err));
+  }
+};
+const plNoise = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.7;
+function plTick() {
+  if (!PL) return;
+  const n = 10;
+  const now = Date.now();
+  const t = [];
+  const rows = [];
+  const raw = [];
+  let bad = 0;
+  let bytes = 0;
+  for (let k = 0; k < n; k++) {
+    const ts = now - (n - 1 - k) * 5;
+    const s = (PL.k++ * 5) / 1000;
+    const row = [Number((10 * Math.sin(2 * Math.PI * 0.5 * s)).toFixed(3)), Number((20 + 5 * Math.cos(2 * Math.PI * 0.2 * s)).toFixed(3)), Number(plNoise().toFixed(3))];
+    t.push(ts);
+    rows.push(row);
+    const text = PL.format?.kind === "binary" ? ["AA", "55", ...row.flatMap((v) => [hex2(Math.round(v * 100) & 255), hex2((Math.round(v * 100) >> 8) & 255)])].join(" ") : row.join(",");
+    bytes += text.length + 2;
+    raw.push({ ts, text, ok: true });
+  }
+  PL.ticks++;
+  if (PL.ticks % 60 === 0) {
+    bad++;
+    raw.push({ ts: now, text: "ERR? overflow", ok: false, why: tr("숫자가 없습니다: «ERR? overflow»", "No numbers: «ERR? overflow»") });
+  }
+  if (PL.rec) {
+    PL.rec.rows += rows.length;
+    files.set(PL.rec.path, files.get(PL.rec.path) + rows.map((r, i) => `${new Date(t[i]).toISOString()},${((t[i] - PL.rec.t0) / 1000).toFixed(3)},${r.join(",")}`).join("\r\n") + "\r\n");
+  }
+  const names = PL.names ? undefined : ["sin", "cos", "noise"];
+  PL.names = true;
+  plSend({ type: "data", t, rows, ...(names ? { names } : {}), raw: raw.slice(-40), bad, bytes, dropped: 0, ...(PL.rec ? { recRows: PL.rec.rows } : {}) });
+}
+async function plot(cmd, a) {
+  switch (cmd) {
+    case "plot_start": {
+      if (PL) return fail(tr("이미 받는 중입니다", "Already receiving"));
+      const src = a.source;
+      await sleep(80);
+      let desc;
+      let st;
+      if (src.kind === "serial") {
+        const p = src.config.port;
+        if (p === "COM9") return fail(busyPort(p));
+        if (!listPorts().some((x) => x.name === p)) return fail(notFound(p));
+        desc = `${p} ${src.config.baud} ${src.config.dataBits}N${src.config.stopBits}`;
+        st = { type: "status", state: "connected", port: p, message: null };
+      } else if (src.kind === "tcp") {
+        if (!src.host.trim() || !src.port) return fail(tr("장비 주소와 포트(1~65535)를 넣어 주세요", "Enter the device address and port (1–65535)"));
+        desc = `TCP ${src.host}:${src.port}`;
+        st =
+          src.host === "10.0.0.99"
+            ? { type: "status", state: "reconnecting", port: `${src.host}:${src.port}`, message: tr("재접속 대기 · 마지막 실패: 응답 없음(시간 초과)", "Waiting to reconnect · last failure: timed out") }
+            : { type: "status", state: "connected", port: `${src.host}:${src.port}`, message: null };
+      } else {
+        if (src.port === 445) return fail(inUse(`${src.host}:${src.port}`));
+        desc = `UDP ${src.host}:${src.port}`;
+        st = { type: "status", state: "listening", port: `${src.host}:${src.port}`, message: null };
+      }
+      PL = { ch: a.onEvent, format: a.format, k: 0, ticks: 0, names: false, rec: null, timer: 0, source: src };
+      setTimeout(() => {
+        plSend(st);
+        plSend({ type: "data", t: [], rows: [], raw: [{ ts: Date.now(), text: `OPEN ${desc}`, ok: true, ev: true }], bad: 0, bytes: 0, dropped: 0 });
+        if (st.state !== "reconnecting" && PL) PL.timer = setInterval(plTick, 50);
+      }, 10);
+      return desc;
+    }
+    case "plot_stop": {
+      const p = PL;
+      if (!p) return null;
+      clearInterval(p.timer);
+      PL = null;
+      setTimeout(() => {
+        try {
+          p.ch?.onmessage?.({ type: "status", state: "closed", port: "", message: null });
+        } catch {
+          /* 화면이 이미 닫힘 */
+        }
+      }, 20);
+      return null;
+    }
+    case "plot_set_format":
+      if (a.format.kind === "binary" && !(a.format.channels >= 1 && a.format.channels <= 32)) return fail(tr("채널 수는 1~32 입니다", "Channels must be 1–32"));
+      if (PL) {
+        PL.format = a.format;
+        PL.names = false;
+      }
+      return null;
+    case "plot_record":
+      if (!PL) return fail(tr("받는 중일 때만 기록할 수 있습니다", "Recording works only while receiving"));
+      if (a.path && /readonly|denied/i.test(a.path)) return fail(`${a.path}: ${tr("액세스가 거부되었습니다.", "Access is denied.")} (os error 5)`);
+      PL.rec = a.path ? { path: a.path, rows: 0, t0: Date.now() } : null;
+      if (a.path) files.set(a.path, `\uFEFFtime,elapsed_s,${a.names.join(",")}\r\n`);
+      return null;
+    case "write_bytes":
+      files.set(a.path, `<png ${a.data.length} bytes${a.data[0] === 0x89 && a.data[1] === 0x50 ? " PNG" : ""}>`);
+      return null;
+  }
+  return null;
+}
+window.__pdMock.plot = () => (PL ? { format: PL.format, rec: PL.rec, ticks: PL.ticks } : null);

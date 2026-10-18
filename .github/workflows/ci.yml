@@ -41,7 +41,7 @@ jobs:
       # 앱을 컴파일하려면 화면 빌드 결과(dist)가 있어야 한다 — 이 단계가 tsc 타입 검사도 겸한다
       - name: 화면 빌드 (모든 앱, tsc + vite)
         run: |
-          foreach ($a in "serial", "modbus-slave", "modbus-master", "tcp", "udp", "simulator", "netscan", "scpi") {
+          foreach ($a in "serial", "modbus-slave", "modbus-master", "tcp", "udp", "simulator", "netscan", "scpi", "plot") {
             npm run build -w "portdock-$a"
             if ($LASTEXITCODE -ne 0) { throw "frontend build failed: $a" }
           }

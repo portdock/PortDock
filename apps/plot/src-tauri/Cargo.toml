@@ -1,0 +1,25 @@
+[package]
+name = "portdock-plot"
+description = "PortDock Plot — 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_plot_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-window-state = "2"
+# CSV 기록의 로컬 시각 — core 가 이미 쓰는 판(새 의존성 아님)
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

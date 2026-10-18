@@ -14,6 +14,7 @@ pub mod net;
 pub mod regmap;
 pub mod scpi;
 pub mod oserr;
+pub mod plot;
 pub mod ports;
 pub mod registry;
 pub mod report;

@@ -23,6 +23,8 @@
     "build:modbus-master": "npm run tauri build -w portdock-modbus-master",
     "scpi": "npm run tauri dev -w portdock-scpi",
     "build:scpi": "npm run tauri build -w portdock-scpi",
+    "plot": "npm run tauri dev -w portdock-plot",
+    "build:plot": "npm run tauri build -w portdock-plot",
     "site": "npm run dev -w portdock-site",
     "build:site": "npm run build -w portdock-site"
   }

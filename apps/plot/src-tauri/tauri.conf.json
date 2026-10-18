@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PortDock Plot",
+  "version": "0.1.0",
+  "identifier": "dev.portdock.plot",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PortDock Plot",
+        "width": 1240,
+        "height": 800,
+        "minWidth": 760,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "PortDock",
+    "copyright": "Copyright (C) 2026 Juhak",
+    "homepage": "https://portdock.dev",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../../../LICENSE",
+    "shortDescription": "Live plotter for numbers from serial, TCP and UDP",
+    "longDescription": "PortDock Plot draws numbers arriving over serial, a TCP client connection or UDP as a live graph: comma/space/tab/semicolon text, Arduino-style name:value pairs, header names and fixed binary frames (start bytes, u8–f64, endianness, checksum), several channels on left and right axes, time or point windows, pause, cursor readout, two-point deltas, zoom and pan, a statistics table, CSV recording while receiving, and CSV/PNG export of the view.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Korean"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "PortDock",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

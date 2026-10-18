@@ -106,6 +106,7 @@ export const help: HelpDoc = {
       body: [
         "장비가 요청 없이 보내는 상태 보고·하트비트·알람을 흉내 냅니다. 응답 규칙과는 따로이며, 규칙 칸으로 오해하지 않게 평소에는 접혀 있습니다(접힌 제목에 지금 내용, 반복 중이면 «1000 ms 마다 보내는 중»). 반복을 켜면 저절로 펼쳐지고, 열고 닫은 상태는 기억합니다.",
         "- HEX/ASCII, 내용, «체크섬», «줄 끝 붙이기» 를 정하고 «보내기» 를 누릅니다. 아래에 실제로 나갈 바이트가 보입니다.",
+        "- 내용에 응답 템플릿을 쓸 수 있습니다(10/19): {counter dec} 는 보낸 횟수(시작할 때마다 0부터), {rand 0..100 dec} 는 무작위 값, {time}·{unix ms} 는 시각, {crc …} 는 체크섬 — 보낼 때마다 새로 채웁니다(«응답 템플릿» 절, {req} 는 요청이 없어 못 씀). 아래 «보낼 바이트» 는 예시 값입니다. 예) «{rand 20..25 dec}.{rand 0..9 dec},{counter dec}» + 줄 끝 CR LF + 반복 100ms → PortDock Plot 으로 그래프.",
         "- «반복(ms)» 을 체크하면 정한 간격(10ms 이상)으로 계속 보냅니다. 상대가 아직 없거나 끊겼으면 그 차례만 건너뛰고 «상대를 기다리는 중» 을 보이며, 상대가 붙으면 이어서 보냅니다. 체크를 끄거나 «멈춤» 을 눌러야 꺼집니다.",
         "- 보내는 곳: 시리얼은 그 포트, TCP 서버는 접속한 모든 상대, TCP 클라이언트는 접속한 상대, UDP 는 마지막으로 보내온 쪽(없으면 «보낼 곳»).",
         "- 시작 전에는 «보내기»·«반복» 이 잠깁니다.",
@@ -254,6 +255,7 @@ export const help: HelpDoc = {
       body: [
         "Imitates status reports, heartbeats or alarms that a device sends without a request. It is separate from the reply rules and stays collapsed so it is not mistaken for one (the collapsed title shows the content, or «sending every 1000 ms» while repeating). Turning on repeat opens it; its open state is remembered.",
         "- Choose HEX/ASCII, content, «Checksum» and «Line ending», then press «Send». The exact bytes are shown below.",
+        "- The content may use reply templates (10/19): {counter dec} is the send count (from 0 at each start), {rand 0..100 dec} a random value, {time} / {unix ms} the time, {crc …} a checksum — filled anew on every send (see «Reply templates»; {req} is unavailable as there is no request). «Will send» below shows sample values. Example: «{rand 20..25 dec}.{rand 0..9 dec},{counter dec}» + line ending CR LF + repeat 100 ms → graph it in PortDock Plot.",
         "- Check «Repeat (ms)» to send every interval (10 ms or more). While no peer is connected, turns are skipped with «Waiting for a peer» and sending resumes when one connects. Only unchecking it or «Stop» turns it off.",
         "- Destination: the serial port; all connected peers (TCP server); the server (TCP client); the last sender, or «Send to» if none (UDP).",
         "- «Send» and «Repeat» are disabled until you start.",

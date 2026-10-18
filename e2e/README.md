@@ -28,7 +28,7 @@ node serial.mjs
 
 ## 화면 미리보기·캡처 (장비·Rust 없이, `ui-preview/`)
 백엔드 대신 가짜 응답(`ui-preview/mock.js`)을 넣고 화면만 브라우저에 띄운다. 글자 잘림·배치·테마·글자 크기를 빠르게 본다.
-1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208)
+1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208, plot 5209)
 2. `e2e` 폴더에서: `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/shots.mjs [앱]` → `shots/ui/*.png` + `probe.json`(잘린 칸 목록)
 - 경우: 최소 창(1000×640) 한국어 대기·연결, 영어, 넓은 창 어두운 테마, 글자 17px, 설정 창
 - 가짜 응답이라 상태 문구·사건 줄 내용은 실제와 다를 수 있다. 실제 동작 확인은 위 실기 점검으로.
@@ -65,3 +65,9 @@ SCPI 는 smoke.mjs 와 따로 점검한다. 서버 `APP=scpi PORT=5208 npx vite 
 - 가짜 계측기(mock.js SCPI 부분): `*IDN?` → `PORTDOCK,SCPI-SIM,0001,1.0`, `MEAS:VOLT:DC?`·`READ?` → 5 V 근처, `MEAS:RES?` → 9.9E37(넘침), `DATA?` → PNG 머리 300바이트 블록(`#3300`), `*OPC?` → 0.4초 뒤 1, 모르는 명령 → 오류 큐 -113(질의면 시간 초과), `SLOW?` 답 없음, `NOEND?` 줄 끝 없는 답, 주소 `10.0.0.99` 연결 시간 초과, 포트 445 거부, 시리얼 `COM9` 사용 중. 기다림은 0.9초까지만.
 - 하는 일(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» 절 → 연결 실패 안내 → 연결·`*IDN?` 장비 칸·창 제목 → 질의(자주 쓰는 명령 뜻) → 반복 측정 5번(표·통계·추세) → 좁은 창 760(요약 줄·명령 목록 열기) → 끊기. `ko-light`·`en-dark` 는 더해서 쓰기·시간 초과·오류 큐(-113 → 없음)·줄 끝 없는 답·블록 HEX·파일 저장·`*OPC?`·이력 ↑·명령 목록 예시·통신 기록 빨간 줄·CSV·넘침·F1·⚙.
 - 매 단계 뒤: 예외·화면 오류·창 밖 요소·잘린 버튼·빈 고르기. 결과 `shots/smoke/scpi.json` + `scpi-*.png`.
+
+## Plot 화면 점검 (`ui-preview/smoke-plot.mjs`, 10/19)
+Plot 도 smoke.mjs 와 따로 점검한다. 서버 `APP=plot PORT=5209 npx vite --config e2e/ui-preview/vite.config.mjs` 를 띄운 뒤 `e2e` 폴더에서 `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke-plot.mjs` (`COMBO=ko-light` 로 한 경우만).
+- 가짜 장비(mock.js Plot 부분): 받기 시작하면 0.05초마다 10줄(200 Hz) — 머리글 `sin,cos,noise` 다음 사인파(±10)·코사인(20±5)·잡음 CSV 값, 3초마다 해석 실패 줄 `ERR? overflow`. 시리얼 `COM9` 사용 중, TCP `10.0.0.99` 는 «다시 연결하는 중»(값 없음), UDP 포트 445 묶기 실패, 기록 경로에 `readonly` 면 거부. 해석은 Rust 몫이라 가짜 백엔드는 만든 숫자를 그대로 넘긴다.
+- 하는 일(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» → 시작 실패(COM9) 안내 → COM3 받기·채널 표(sin·cos·noise)·**그래프가 실제로 그려졌는지(canvas 에서 첫 채널 색 점 수)**·창 제목·받은 양 → 원시 수신의 빨간 실패 줄 → 그래프 두 번 눌러 측정점 A·B(Δt·Δn·채널 Δ) → 좁은 창 760 → 멈추기·지우기. `ko-light`·`en-dark` 는 더해서 멈춤(+n)·실시간, 휠 확대(저절로 멈춤)·두 번 누르기(실시간, 측정점 그대로), 오른쪽 축·숨기기·이름 바꾸기, Y 고정, 최근 초, CSV 기록 파일(머리 줄·줄 수), 화면 CSV, PNG, 바이너리 형식(틀린 시작 바이트 알림·프레임 길이), F1·⚙.
+- 매 단계 뒤: 예외·화면 오류·창 밖 요소·잘린 버튼·빈 고르기. 결과 `shots/smoke/plot.json` + `plot-*.png`.

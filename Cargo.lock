@@ -2858,6 +2858,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-plot"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "portdock-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-window-state",
+]
+
+[[package]]
 name = "portdock-scpi"
 version = "0.1.0"
 dependencies = [
