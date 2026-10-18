@@ -23,6 +23,21 @@ pub enum FrameMode {
         #[serde(default)]
         min_gap_ms: u64,
     },
+    /// 머리의 길이 칸으로 끊기(Modbus TCP 의 MBAP 등). 길이 칸은 `offset` 에서 `size`(1·2·4)바이트,
+    /// 빅 엔디언. 프레임 전체 길이 = 길이 값 + `adjust`. `max` 를 넘거나 머리보다 짧은 길이면
+    /// 믿을 수 없으므로 길이로 끊지 않고 무응답 시간(`gap_ms`)에 맡긴다.
+    LengthField {
+        offset: usize,
+        size: u8,
+        adjust: i64,
+        max: usize,
+        #[serde(default = "default_length_gap")]
+        gap_ms: u64,
+    },
+}
+
+fn default_length_gap() -> u64 {
+    1_000
 }
 
 impl Default for FrameMode {
@@ -39,7 +54,14 @@ impl FrameMode {
             }
             Self::ModbusRtu { baud } => modbus_gap(*baud),
             Self::ModbusRtuRequest { baud, min_gap_ms } => modbus_gap(*baud).max(Duration::from_millis(*min_gap_ms)),
+            Self::LengthField { gap_ms, .. } => Duration::from_millis((*gap_ms).max(1)),
         }
+    }
+
+    /// Modbus TCP 요청·응답(MBAP 7바이트 머리: 트랜잭션 2 · 프로토콜 2 · 길이 2 · 유닛 1).
+    /// 길이 칸(4번째부터 2바이트)은 유닛 ID 부터 센다 → 전체 = 길이 + 6. ADU 최대 260.
+    pub fn modbus_tcp() -> Self {
+        Self::LengthField { offset: 4, size: 2, adjust: 6, max: 260, gap_ms: default_length_gap() }
     }
 
     /// 끝 문자 방식이면 그 바이트들, 아니면 빈 것
@@ -140,6 +162,9 @@ impl Framer {
             FrameMode::Fixed { len, .. } => (*len > 0 && self.buf.len() >= *len).then_some(*len),
             FrameMode::ModbusRtu { .. } => modbus_expected_len(&self.buf).filter(|n| self.buf.len() >= *n),
             FrameMode::ModbusRtuRequest { .. } => modbus_request_len(&self.buf).filter(|n| self.buf.len() >= *n),
+            FrameMode::LengthField { offset, size, adjust, max, .. } => {
+                length_field_len(&self.buf, *offset, *size, *adjust, *max).filter(|n| self.buf.len() >= *n)
+            }
         }
         .or((self.buf.len() >= MAX_FRAME).then_some(MAX_FRAME))?;
         let rest = self.buf.split_off(cut);
@@ -161,14 +186,31 @@ pub fn modbus_expected_len(buf: &[u8]) -> Option<usize> {
     matches!(func, 0x05 | 0x06).then_some(8)
 }
 
-/// 마스터가 보내는 요청의 길이(CRC 포함). 0F·10 은 바이트 수(7번째)가 와야 안다.
+/// 마스터가 보내는 요청의 길이(CRC 포함). 0F·10 은 바이트 수(7번째), 17 은 바이트 수(11번째)가
+/// 와야 안다. 08 은 하위 함수 00(되돌려 보내기) 모양(데이터 2바이트), 2B 는 0E(장치 식별) 모양.
 /// 모르는 함수 코드는 None — 무응답 시간에 맡긴다.
 pub fn modbus_request_len(buf: &[u8]) -> Option<usize> {
     match *buf.get(1)? {
-        0x01..=0x06 => Some(8),
+        0x01..=0x06 | 0x08 => Some(8),
         0x0F | 0x10 => Some(9 + *buf.get(6)? as usize),
+        0x16 => Some(10),
+        0x17 => Some(13 + *buf.get(10)? as usize),
+        0x2B => Some(7),
         _ => None,
     }
+}
+
+/// 길이 칸 방식의 프레임 길이. 길이 칸이 다 오기 전이거나 믿을 수 없는 값이면 None
+pub fn length_field_len(buf: &[u8], offset: usize, size: u8, adjust: i64, max: usize) -> Option<usize> {
+    let size = size as usize;
+    if !matches!(size, 1 | 2 | 4) {
+        return None;
+    }
+    let field = buf.get(offset..offset + size)?;
+    let value = field.iter().fold(0u64, |a, &b| (a << 8) | b as u64) as i64;
+    let total = value.checked_add(adjust)?;
+    let total = usize::try_from(total).ok()?;
+    (total >= offset + size && total <= max.min(MAX_FRAME)).then_some(total)
 }
 
 #[cfg(test)]
@@ -279,7 +321,7 @@ mod tests {
         let start = t0();
         let mut f = Framer::new(req_mode(20));
         // 모르는 함수 코드 — 무응답 시간으로
-        assert!(f.feed(&[0x01, 0x2B, 0x0E, 0x01], start).is_empty());
+        assert!(f.feed(&[0x01, 0x41, 0x0E, 0x01], start).is_empty());
         assert!(f.poll(start + Duration::from_millis(19)).is_none());
         assert_eq!(f.poll(start + Duration::from_millis(21)).map(|c| c.1.len()), Some(4));
         // 반쪽만 오고 오래 조용하면(마스터가 포기) 그대로 내보낸다
@@ -287,6 +329,69 @@ mod tests {
         assert_eq!(f.poll(start + Duration::from_millis(130)).map(|c| c.1.len()), Some(3));
         // 3.5 문자 쪽이 더 길면 그것(1200bps ≈ 32ms)
         assert!(FrameMode::ModbusRtuRequest { baud: 1200, min_gap_ms: 20 }.gap() > Duration::from_millis(30));
+    }
+
+    #[test]
+    fn modbus_request_new_functions() {
+        // 16 마스크 쓰기 = 10, 08/00 되돌려 보내기 = 8, 2B/0E 장치 식별 = 7
+        assert_eq!(modbus_request_len(&[1, 0x16]), Some(10));
+        assert_eq!(modbus_request_len(&[1, 0x08]), Some(8));
+        assert_eq!(modbus_request_len(&[1, 0x2B]), Some(7));
+        // 17 읽기/쓰기: 바이트 수(11번째)가 와야 안다 — 쓰기 2칸이면 13 + 4
+        let req = [0x01, 0x17, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00, 0x02, 0x04, 0x00, 0x01, 0x00, 0x02, 0xAA, 0xBB];
+        assert_eq!(modbus_request_len(&req[..10]), None);
+        assert_eq!(modbus_request_len(&req[..11]), Some(17));
+        // USB 로 쪼개져 와도 길이가 차면 바로
+        let start = t0();
+        let mut f = Framer::new(req_mode(20));
+        assert!(f.feed(&req[..6], start).is_empty());
+        assert_eq!(bytes(f.feed(&req[6..], start + Duration::from_millis(16))), vec![req.to_vec()]);
+        // 16 과 2B 가 붙어 와도 나뉜다
+        let mut two = vec![0x01, 0x16, 0x00, 0x04, 0x00, 0xF2, 0x00, 0x25, 0x66, 0xE7];
+        two.extend([0x01, 0x2B, 0x0E, 0x01, 0x00, 0x70, 0x77]);
+        let out = f.feed(&two, start + Duration::from_secs(1));
+        assert_eq!(out.iter().map(|c| c.1.len()).collect::<Vec<_>>(), vec![10, 7]);
+    }
+
+    /// Modbus TCP 요청 하나(트랜잭션 tid, 유닛 1, FC03 0번부터 n개)
+    fn mbap(tid: u16, n: u8) -> Vec<u8> {
+        let t = tid.to_be_bytes();
+        vec![t[0], t[1], 0, 0, 0, 6, 1, 3, 0, 0, 0, n]
+    }
+
+    #[test]
+    fn length_field_split_and_merged() {
+        let start = t0();
+        let mut f = Framer::new(FrameMode::modbus_tcp());
+        // 쪼개져 오면 기다렸다가 다 모이면 바로(무응답 시간과 상관없이)
+        let a = mbap(1, 10);
+        assert!(f.feed(&a[..3], start).is_empty());
+        assert!(f.feed(&a[3..7], start + Duration::from_millis(5)).is_empty());
+        assert!(f.poll(start + Duration::from_millis(50)).is_none());
+        assert_eq!(bytes(f.feed(&a[7..], start + Duration::from_millis(60))), vec![a.clone()]);
+        // 두 요청이 한 덩어리로 붙어 와도 나뉘고, 세 번째의 앞부분은 남는다
+        let (b, c) = (mbap(2, 1), mbap(3, 2));
+        let mut merged = [a.clone(), b.clone()].concat();
+        merged.extend(&c[..4]);
+        assert_eq!(bytes(f.feed(&merged, start + Duration::from_millis(100))), vec![a, b]);
+        assert_eq!(bytes(f.feed(&c[4..], start + Duration::from_millis(110))), vec![c]);
+        // 길이 값이 최대(260)를 넘으면 길이로 끊지 않고 무응답 시간에 맡긴다
+        let junk = [0, 9, 0, 0, 0xFF, 0xFF, 1, 3];
+        assert!(f.feed(&junk, start + Duration::from_millis(200)).is_empty());
+        assert_eq!(f.poll(start + Duration::from_millis(1300)).map(|c| c.1), Some(junk.to_vec()));
+    }
+
+    #[test]
+    fn length_field_sizes() {
+        // 1바이트 길이 칸(머리 2바이트 뒤 데이터), 4바이트 길이 칸
+        assert_eq!(length_field_len(&[0xAA, 3], 1, 1, 2, 100), Some(5));
+        assert_eq!(length_field_len(&[0, 0, 1, 0, 0], 0, 4, 4, 1000), Some(260));
+        // 머리보다 짧은 길이·잘못된 크기·아직 덜 옴
+        assert_eq!(length_field_len(&[0, 0, 0, 0, 0, 0], 4, 2, 0, 260), None);
+        assert_eq!(length_field_len(&[0, 0, 0, 0, 0, 6], 4, 3, 6, 260), None);
+        assert_eq!(length_field_len(&[0, 0, 0, 0, 0], 4, 2, 6, 260), None);
+        let m: FrameMode = serde_json::from_str(r#"{"kind":"length-field","offset":4,"size":2,"adjust":6,"max":260}"#).unwrap();
+        assert_eq!(m, FrameMode::modbus_tcp());
     }
 
     #[test]

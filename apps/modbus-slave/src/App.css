@@ -711,3 +711,273 @@ input.bad {
   flex-basis: 100%;
   min-width: 0;
 }
+
+/* ---- Modbus TCP·장애 대상·장치 식별 (10/18) */
+.s-listening {
+  color: var(--ok);
+}
+.status .clients {
+  margin-top: 2px;
+  color: var(--muted);
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+details.adv {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+details.adv > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  user-select: none;
+}
+details.adv[open] > summary {
+  margin-bottom: 6px;
+}
+details.adv > * + * {
+  margin-top: 6px;
+}
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.addr-range {
+  align-items: center;
+}
+.addr-range input {
+  flex: 1;
+  min-width: 0;
+}
+.stats tr.warnrow td {
+  color: var(--fail);
+}
+.perfc {
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---- 레지스터 칸: 이름·형식 표시·자동 변화 표시·칸 설정 버튼 */
+.regs {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.reg {
+  min-width: 0;
+  gap: 4px;
+}
+.reg .regval {
+  flex: 1 1 52px;
+  min-width: 44px;
+}
+.reg .addr {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 36px;
+}
+.rname {
+  flex: 0 1 auto;
+  max-width: 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent);
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.rtype {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.77);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.simmark {
+  flex: 0 0 auto;
+  color: var(--accent);
+  cursor: help;
+}
+.cellcfg {
+  flex: 0 0 auto;
+  font: inherit;
+  line-height: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 2px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  /* 100칸마다 ⋯ 가 보이면 어지럽다 — 칸에 마우스를 올리거나 값 칸에 들어가면 보인다(오른쪽 버튼으로도 열림) */
+  visibility: hidden;
+}
+.reg:hover .cellcfg,
+.reg:focus-within .cellcfg,
+.rtable tr:hover .cellcfg,
+.rtable tr:focus-within .cellcfg {
+  visibility: visible;
+}
+.cellcfg:hover {
+  background: var(--sel);
+  color: var(--ink);
+}
+/* 목록 보기 — 주소 · 이름 · 형식 · 값 · 자동 변화 */
+.regs.list {
+  display: block;
+}
+.rtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.rtable th {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.rtable td {
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.rtable td.addr {
+  width: 1%;
+  white-space: nowrap;
+  text-align: left;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.rtable td.rname {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: inherit;
+}
+.rtable td.rtype {
+  width: 1%;
+}
+.rtable td.rval {
+  width: 26%;
+  min-width: 120px;
+}
+.rtable td.rval .regval {
+  width: 100%;
+}
+.rtable td.simcol {
+  color: var(--accent);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rtable tr.flash td {
+  background: color-mix(in srgb, var(--accent) 25%, var(--panel));
+}
+
+/* ---- 통신 기록: 가상 스크롤 줄 + Modbus 풀이 */
+.traffic {
+  height: clamp(170px, 36vh, 320px);
+}
+.segs {
+  display: inline-flex;
+  gap: 0;
+}
+.segs .seg {
+  border-radius: 0;
+}
+.segs .seg:first-child {
+  border-radius: 5px 0 0 5px;
+}
+.segs .seg:last-child {
+  border-radius: 0 5px 5px 0;
+  margin-left: -1px;
+}
+.traffic > .toolbar {
+  padding: 5px 10px;
+}
+.tlog {
+  padding: 0;
+  position: relative;
+}
+.tlog .trow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--row-h, 22px);
+  align-items: center;
+  padding: 0 10px;
+}
+.tlog .trow.hit {
+  background: color-mix(in srgb, #f5c400 22%, transparent);
+}
+.trow .dir {
+  flex: 0 0 auto;
+}
+.trow .ts {
+  flex: 0 0 auto;
+}
+.peeraddr {
+  flex: 0 0 auto;
+  color: var(--muted);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trow .sum {
+  flex: 0 1 auto;
+  max-width: 58%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+.trow .sum.bad {
+  color: var(--fail);
+}
+.trow.rx .data,
+.trow.tx .data {
+  opacity: 0.85;
+}
+.traffic-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 10px;
+  white-space: pre-line;
+  max-height: 30%;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+.traffic-error .btn {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* ---- 칸 설정 창 */
+.modal.cell-dlg {
+  width: min(480px, calc(100vw - 32px));
+}
+.cell-dlg .dlg-buttons {
+  align-items: center;
+  margin-top: 4px;
+}
+.cell-dlg .grid2,
+.cell-dlg .grid3 {
+  align-items: end;
+}
