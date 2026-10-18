@@ -88,7 +88,10 @@ export function Traffic({
   error,
   onClearError,
   onCopied,
+  height,
 }: {
+  /** 끌어서 정한 높이(px) — 없으면 CSS 기본 */
+  height?: number | null;
   lang: Lang;
   settings: Pick<Settings, "fontSize" | "autoScroll" | "timeFormat">;
   traffic: MutableRefObject<Frame[]>;
@@ -170,7 +173,7 @@ export function Traffic({
   );
 
   return (
-    <div className="traffic">
+    <div className={height ? "traffic sized" : "traffic"} style={height ? { height } : undefined}>
       <div className="toolbar">
         <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
         <label data-tip={withKey(ui(lang, "autoscrollTip"), KEYS.end)} className="inline">

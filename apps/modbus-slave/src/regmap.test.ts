@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   addrText,
+  bulkPoints,
   decodeValue,
   encodeValue,
   formatValue,
@@ -193,4 +194,24 @@ test("자동 변화 — 백엔드 모양·검사·설명", () => {
   assert.equal(simCheck({ ...s, periodMs: 0 }, "en"), null);
   assert.equal(simSummary({ ...defaultSim(0, false), periodMs: 0 }, "en"), "Increment +1 (0~100, wraps) · on every read");
   assert.equal(simSummary(s, "ko"), "사인 20 ± 5 / 2000ms · 200ms 마다");
+});
+
+test("여러 칸 형식 한 번에 — 두 칸씩 묶고, 걸친 옛 점은 지우고, 이름은 이어받고, 남는 칸은 보통 칸", () => {
+  const old = [
+    { addr: 2, type: "u16", order: "ABCD", name: "Temp" },
+    { addr: 8, type: "f32", order: "ABCD", name: "Over" },
+    { addr: 20, type: "s16", order: "ABCD", name: "" },
+  ];
+  const r = bulkPoints(old, 0, 8, "f32", "CDAB");
+  assert.equal(r.made, 4);
+  assert.equal(r.left, 1);
+  assert.deepEqual(r.points.map((p) => `${p.addr}:${p.type}:${p.order}:${p.name}`), ["0:f32:CDAB:", "2:f32:CDAB:Temp", "4:f32:CDAB:", "6:f32:CDAB:", "8:u16:ABCD:Over", "20:s16:ABCD:"]);
+  // 칸에 맞게 보이는지(layout) — 0~7 은 2칸 묶음 넷, 8 은 보통 칸
+  assert.deepEqual(layout(0, 9, r.points).map((it) => it.span), [2, 2, 2, 2, 1]);
+  // U16 ABCD 로 되돌리면 이름 없는 점은 사라지고 이름만 남는다
+  const back = bulkPoints(r.points, 0, 7, "u16", "ABCD");
+  assert.deepEqual(back.points.map((p) => `${p.addr}:${p.type}:${p.name}`), ["2:u16:Temp", "8:u16:Over", "20:s16:"]);
+  assert.equal(back.made, 8);
+  // 64비트는 네 칸씩
+  assert.deepEqual([bulkPoints([], 10, 17, "f64", "ABCD").made, bulkPoints([], 10, 17, "f64", "ABCD").left], [2, 0]);
 });

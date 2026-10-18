@@ -18,8 +18,11 @@ import {
   type Transport,
 } from "./api";
 import {
+  BULK_TYPES,
+  ORDERS,
   TABLE_IDS,
   addrBase,
+  bulkPoints,
   addrText,
   decodeValue,
   encodeValue,
@@ -38,6 +41,7 @@ import {
   toCsv,
   type AddrMode,
   type Item,
+  type Order,
   type Point,
   type SimCfg,
   type SimSpec,
@@ -61,6 +65,7 @@ import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { ui } from "@shared/uiText";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
@@ -299,6 +304,11 @@ export default function App() {
   const [devOpen, setDevOpen] = useFold(devOpenSaved, setDevOpenSaved, settings.expandAll);
   // 처음 쓰는 순서 카드(통신 기록 빈 자리) — «다시 보지 않기» 를 누르면 숨긴다
   const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  // Shift+클릭으로 고른 칸 범위(주소, 끝 포함) — 형식을 한 번에 정한다(10/18). 앞끝은 마지막으로 고른 칸
+  const [picked, setPicked] = useState<{ lo: number; hi: number } | null>(null);
+  const [bulkFmt, setBulkFmt] = useState<{ type: VType; order: Order }>(() => load("bulkFmt", { type: "f32", order: "ABCD" }));
+  // 통신 기록 높이(끌어서 조절, 기억) — 없으면 CSS 기본
+  const [trafficH, setTrafficH] = useStoredHeight("trafficH");
   // 범위 안내를 «알겠습니다» 로 닫은 범위 — 슬레이브:표 → «시작:개수»
   const [rangeAck, setRangeAck] = useState<Record<string, string>>(() => load("rangeAck", {}));
   const range = ranges[key(selId, table)] ?? { start: 0, count: 100 };
@@ -321,6 +331,9 @@ export default function App() {
   usePersist("statsOpen", statsOpenSaved);
   usePersist("firstHintDone", firstDone);
   usePersist("rangeAck", rangeAck);
+  usePersist("bulkFmt", bulkFmt);
+  // 다른 슬레이브·표·범위로 가면 고른 칸을 푼다
+  useEffect(() => setPicked(null), [selId, table, range.start, range.count]);
 
   // ---- 표 값 저장 — 모든 슬레이브·표의 0 이 아닌 칸을 «tableValues» 하나에. 바뀌면 1초 뒤 한꺼번에 쓴다
   const savedVals = useRef<SavedValues>({});
@@ -606,6 +619,59 @@ export default function App() {
     }
     remember(selId, table, range.start, v);
     refresh();
+  }
+
+  /**
+   * 첫 실행 카드 «예제 채우기»(10/18) — 지금 국번의 보유 레지스터 0~9 에 시험 값과 이름·형식 예.
+   * 0~7 = 1~8(0 «상태»·1 «설정값»), 8~9 = F32 CDAB 23.5 «온도». 그 자리에 값이 있으면 묻는다. 응답 범위가 0~9 를 안 덮으면 기본(0부터 100칸)으로
+   */
+  async function fillExample() {
+    const tb: Table = "holding-registers";
+    const k = key(selId, tb);
+    const cur = await api.getValues(selId, tb, 0, 10).catch(() => null);
+    if (cur && cur.some((v) => v !== 0) && !(await ask(t("askExample"), { title: "PortDock Modbus Slave", kind: "warning" }))) return;
+    const regs = [1, 2, 3, 4, 5, 6, 7, 8, ...encodeValue(23.5, "f32", "CDAB")];
+    try {
+      const r = ranges[k] ?? { start: 0, count: 100 };
+      if (r.start > 0 || r.start + r.count < 10) setRanges({ ...ranges, [k]: { start: 0, count: 100 } });
+      await api.setValues(selId, tb, 0, regs);
+    } catch (e) {
+      setError(String(e));
+      return;
+    }
+    remember(selId, tb, 0, regs);
+    setPoints((o) => ({
+      ...o,
+      [k]: mergePoints(o[k], [
+        { addr: 0, type: "u16", order: "ABCD", name: t("exStatus") },
+        { addr: 1, type: "u16", order: "ABCD", name: t("exSetpoint") },
+        { addr: 8, type: "f32", order: "CDAB", name: t("exTemp") },
+      ]),
+    }));
+    setTable(tb);
+    toast.show(t("exampleDone").replace("{a}", addrText(tb, 0, addrMode)).replace("{b}", addrText(tb, 8, addrMode)));
+    refresh();
+  }
+
+  /** Shift+클릭 범위 고르기 — 앞끝(마지막으로 고른 칸)부터 누른 칸까지. 묶인 칸(32비트 등)은 통째로 */
+  function pickTo(it: Item) {
+    const anchor = items.find((x) => lastCell != null && x.addr <= lastCell && lastCell < x.addr + x.span) ?? it;
+    setPicked({ lo: Math.min(anchor.addr, it.addr), hi: Math.max(anchor.addr + anchor.span - 1, it.addr + it.span - 1) });
+  }
+  /** 고른 칸에 형식 한 번에 — 형식의 칸 수씩 묶는다 */
+  function applyBulk() {
+    if (!picked) return;
+    const k = key(selId, table);
+    const r = bulkPoints(pts, picked.lo, picked.hi, bulkFmt.type, bulkFmt.order);
+    setPoints((o) => ({ ...o, [k]: r.points }));
+    const fmt = `${bulkFmt.type.toUpperCase()}${bulkFmt.order !== "ABCD" ? ` ${bulkFmt.order}` : ""}`;
+    const msg = t("bulkDone")
+      .replace("{a}", addrText(table, picked.lo, addrMode))
+      .replace("{b}", addrText(table, picked.hi, addrMode))
+      .replace("{f}", fmt)
+      .replace("{n}", String(r.made));
+    toast.show(r.left ? `${msg} · ${t("bulkLeft").replace("{n}", String(r.left))}` : msg);
+    setPicked(null);
   }
 
   /** 칸 설정 창의 결과 — 기본 모양이면 점을 지우고, 자동 변화가 없으면 그것도 지운다 */
@@ -1011,10 +1077,18 @@ export default function App() {
               return (
                 <div
                   key={`${table}:${it.addr}`}
-                  className={`reg${fl ? " flash" : ""}${it.span > 1 ? " wide" : ""}`}
+                  className={`reg${fl ? " flash" : ""}${it.span > 1 ? " wide" : ""}${picked && it.addr >= picked.lo && it.addr <= picked.hi ? " picked" : ""}`}
                   style={it.span > 1 ? { gridColumn: `span ${it.span >= 4 ? 3 : 2}` } : undefined}
                   title={fl ? t("writtenByMaster") : name}
                   onFocus={() => setLastCell(it.addr)}
+                  onMouseDown={(e) => {
+                    if (bits) return;
+                    if (e.shiftKey) {
+                      // 범위 고르기 — 입력칸으로 포커스·글자 고르기가 가지 않게
+                      e.preventDefault();
+                      pickTo(it);
+                    } else if (picked) setPicked(null);
+                  }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setCellDlg(it.addr);
@@ -1053,9 +1127,16 @@ export default function App() {
                   return (
                     <tr
                       key={`${table}:${it.addr}`}
-                      className={fl ? "flash" : ""}
+                      className={`${fl ? "flash" : ""}${picked && it.addr >= picked.lo && it.addr <= picked.hi ? " picked" : ""}`}
                       title={fl ? t("writtenByMaster") : ""}
                       onFocus={() => setLastCell(it.addr)}
+                      onMouseDown={(e) => {
+                        if (bits) return;
+                        if (e.shiftKey) {
+                          e.preventDefault();
+                          pickTo(it);
+                        } else if (picked) setPicked(null);
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setCellDlg(it.addr);
@@ -1079,7 +1160,7 @@ export default function App() {
         </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, values, flash, format, addrMode, regView, tableSims, pts, lang, bits, table, selId, range.start, range.count, toast.show],
+    [items, values, flash, format, addrMode, regView, tableSims, pts, lang, bits, table, selId, range.start, range.count, toast.show, picked, lastCell],
   );
 
   return (
@@ -1471,6 +1552,8 @@ export default function App() {
                   if (e.target.value !== "typed") return setFormat(e.target.value as Format);
                   // 표 전체 표시가 아니라 칸마다 정하는 형식 — 고른 칸(없으면 첫 칸)의 칸 설정 창을 연다
                   e.target.value = format;
+                  // Shift+클릭으로 여러 칸을 골라 두었으면 그 줄의 형식 고르기로
+                  if (picked) return document.querySelector<HTMLSelectElement>(".bulk-bar select")?.focus();
                   const it = items.find((x) => x.addr === lastCell) ?? items[0];
                   if (!it) return;
                   toast.show(t("fmtTypedNote").replace("{a}", addrText(table, it.addr, addrMode)));
@@ -1516,9 +1599,48 @@ export default function App() {
           )}
         </div>
 
+        {picked && !bits && (
+          <div className="toolbar bulk-bar" role="group" aria-label={t("bulkTitle")}>
+            <b>
+              {t("bulkPicked")
+                .replace("{n}", String(picked.hi - picked.lo + 1))
+                .replace("{a}", addrText(table, picked.lo, addrMode))
+                .replace("{b}", addrText(table, picked.hi, addrMode))}
+            </b>
+            <label className="inline" data-tip={tip(lang, "bulkFmt")}>
+              {t("bulkType")}
+              <select value={bulkFmt.type} onChange={(e) => setBulkFmt({ ...bulkFmt, type: e.target.value as VType })}>
+                {BULK_TYPES.map((ty) => (
+                  <option key={ty} value={ty}>
+                    {ty.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="inline" data-tip={tip(lang, "bulkOrder")}>
+              {t("bulkOrder")}
+              <select value={bulkFmt.order} onChange={(e) => setBulkFmt({ ...bulkFmt, order: e.target.value as Order })}>
+                {ORDERS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn small primary bulk-apply" onClick={applyBulk} data-tip={tip(lang, "bulkApply")}>
+              {t("bulkApply")}
+            </button>
+            <button className="btn small ghost bulk-clear" onClick={() => setPicked(null)}>
+              {t("bulkClear")}
+            </button>
+          </div>
+        )}
+
         {regsView}
 
+        <Splitter lang={lang} onHeight={setTrafficH} />
         <Traffic
+          height={trafficH}
           lang={lang}
           settings={settings}
           traffic={traffic}
@@ -1541,10 +1663,25 @@ export default function App() {
                   <span>① {t("first1")}</span> <span>② {t("first2")}</span> <span>③ {t("first3")}</span>
                 </div>
                 <div className="hint first-types">{t("firstTypes")}</div>
+                <div className="first-row">
+                <div className="first-addr" role="group" aria-label={t("firstAddrAsk")} data-tip={tip(lang, "addrMode")}>
+                  <span>{t("firstAddrAsk")}</span>
+                  <span className="segs">
+                    {(["zero", "one", "plc"] as const).map((m) => (
+                      <button key={m} type="button" className={addrMode === m ? "seg on" : "seg"} aria-pressed={addrMode === m} onClick={() => setAddrMode(m)}>
+                        {t(m === "zero" ? "firstAddrZero" : m === "one" ? "firstAddrOne" : "firstAddrPlc")}
+                      </button>
+                    ))}
+                  </span>
+                </div>
                 <div className="first-picks">
-                  <button type="button" className="btn small" onClick={fill} data-tip={tip(lang, "fillExample")}>
+                  <button type="button" className="btn small first-example" onClick={fillExample} data-tip={tip(lang, "fillExample")}>
                     {t("fillExample")}
                   </button>
+                  <button type="button" className="btn small first-csv" onClick={importTable} data-tip={tip(lang, "firstCsv")}>
+                    {t("firstCsv")}
+                  </button>
+                </div>
                 </div>
               </FirstCard>
             )

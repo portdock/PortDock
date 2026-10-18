@@ -1036,3 +1036,37 @@ details.panel > .btn.small {
 .fmt-sel {
   width: 6.5em;
 }
+
+/* ---- 여러 칸 형식(Shift+클릭 범위)·첫 실행 주소 표기·통신 기록 높이(10/18) */
+.reg.picked,
+.rtable tr.picked td {
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  border-color: var(--accent);
+}
+.bulk-bar {
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+.first-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+/* 끌어서 정한 높이 — 창을 줄여도 표가 남게 */
+.traffic.sized {
+  max-height: calc(100vh - 230px);
+  min-height: 90px;
+}
+.first-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+/* 기본 높이 — 첫 실행 카드가 있을 때만 카드가 들어갈 만큼, 평소에는 표를 더 보이게(1000×640 에서 한 줄 더) */
+.traffic {
+  height: clamp(150px, 30vh, 320px);
+}
+.traffic:has(.first-card) {
+  height: clamp(220px, 41vh, 320px);
+}

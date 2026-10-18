@@ -319,7 +319,7 @@ async function runApp(app, port) {
     async function firstRun() {
       const card = await js(`const c = document.querySelector('.first-card'); return c && { title: (c.querySelector('.first-head b') || {}).textContent, picks: c.querySelectorAll('.first-picks button').length, links: [...c.querySelectorAll('.first-links .link-btn')].map((b) => b.textContent), hide: !!c.querySelector('.first-hide') };`);
       if (app === "serial" || app === "modbus-slave" || app === "netscan") {
-        const want = { serial: 3, "modbus-slave": 1, netscan: 0 }[app];
+        const want = { serial: 3, "modbus-slave": 2, netscan: 0 }[app];
         if (!card || card.picks !== want || !card.links.length || !card.hide) await conv("first-card", `첫 실행 카드 모양이 이상함(고르기 ${want}개·도움말 링크·다시 보지 않기 기대): ${JSON.stringify(card)}`);
         else {
           // 도움말 링크 → 그 절이 열린 채로
@@ -362,6 +362,37 @@ async function runApp(app, port) {
           if (combo.name === "ko-light") await shot(app, `${combo.name}-preset-at`);
         }
         await verify("preset");
+        await load(port, combo);
+      }
+      // (10/18) Slave 첫 실행 카드: 주소 부르는 법(가운데 위 «주소 표기» 와 같은 값) · «예제 채우기»(보유 레지스터 0~9, 이름·F32 CDAB 23.5) · «CSV 가져오기…»
+      if (app === "modbus-slave" && combo.full && card) {
+        const r = await jsAsync(`
+          const w = (ms = 300) => new Promise((r) => setTimeout(r, ms));
+          const mode = () => [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value=plc]')).value;
+          const segs = [...document.querySelectorAll('.first-card .first-addr .seg')];
+          segs[2].click(); await w(200);
+          const plc = mode();
+          segs[0].click(); await w(200);
+          const zero = mode();
+          document.querySelector('.first-card .first-example').click(); await w(900);
+          const cells = [...document.querySelectorAll('.regs .reg')];
+          const wide = document.querySelector('.regs .reg.wide');
+          const a = { segs: segs.length, plc, zero, toast: (document.querySelector('.toast') || {}).textContent || '', v0: cells[0] && cells[0].querySelector('.regval').value, v7: cells[7] && cells[7].querySelector('.regval').value,
+            n0: cells[0] && (cells[0].querySelector('.rname') || {}).textContent, wide: wide && { tag: wide.querySelector('.rtype').textContent, v: wide.querySelector('.regval').value, name: (wide.querySelector('.rname') || {}).textContent } };
+          return a;`);
+        if (r.fatal) add("slave first card", "smoke-error", r.fatal);
+        else if (r.segs !== 3 || r.plc !== "plc" || r.zero !== "zero" || !r.toast || r.v0 !== "1" || r.v7 !== "8" || !/상태|Status/.test(r.n0 ?? "") || !r.wide || r.wide.tag !== "F32 CDAB" || r.wide.v !== "23.5" || !/온도|Temperature/.test(r.wide.name ?? ""))
+          await conv("slave-example", `첫 실행 카드 주소 표기·«예제 채우기» 결과가 이상함: ${JSON.stringify(r)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-example`);
+        await verify("slave example");
+        await load(port, combo);
+        await js("window.__pdMock.files.set(arguments[0], arguments[1]); window.__pdMock.dialog.open = arguments[0];", "C:\\mock\\first.csv", "table,address,type,order,name,value\r\nholding-registers,0,f32,CDAB,Temp,1.5\r\n");
+        await js("document.querySelector('.first-card .first-csv').click()");
+        await sleep(600);
+        const c = await js("return [(document.querySelector('.toast') || {}).textContent || '', !!document.querySelector('.traffic-error'), (document.querySelector('.regs .reg.wide .rtype') || {}).textContent || '']");
+        if (!/1줄|1 row/.test(c[0]) || c[1] || c[2] !== "F32 CDAB") await conv("slave-first-csv", `첫 실행 카드 «CSV 가져오기…» 결과가 이상함: ${JSON.stringify(c)}`);
+        await js("window.__pdMock.dialog.open = null");
+        await verify("slave first csv");
         await load(port, combo);
       }
       await terms();
@@ -720,6 +751,63 @@ async function runApp(app, port) {
         await js("window.__pdMock.dialog.open = null");
         await verify("csv import");
 
+        // ---- (10/18) 여러 칸 형식 한 번에: 칸 0 을 고르고 칸 7 을 Shift+클릭 → 8칸 고름 → F32 CDAB 한 번에 → 넓은 칸 4개 → U16 ABCD 로 되돌림
+        const bulk = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const regs = () => [...document.querySelectorAll('.regs .reg')];
+          const shiftTo = (el) => el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, shiftKey: true }));
+          // 앞 CSV 단계가 만든 넓은 칸(주소 10 U32)은 그대로 — 그 수를 기준으로
+          const base = document.querySelectorAll('.regs .reg.wide').length;
+          const i0 = regs()[0].querySelector('.regval'); i0.focus(); await w(100); i0.blur();
+          shiftTo(regs()[7]); await w();
+          const a = { base, picked: document.querySelectorAll('.regs .reg.picked').length, bar: (document.querySelector('.bulk-bar b') || {}).textContent || '' };
+          const bar = document.querySelector('.bulk-bar');
+          if (!bar) return a;
+          const sels = bar.querySelectorAll('select');
+          __sm.setVal(sels[0], 'f32'); __sm.setVal(sels[1], 'CDAB'); await w(100);
+          bar.querySelector('.bulk-apply').click(); await w(500);
+          a.tags = [...document.querySelectorAll('.regs .reg.wide .rtype')].map((e) => e.textContent).filter((x) => x.startsWith('F32'));
+          a.toast = (document.querySelector('.toast') || {}).textContent || '';
+          a.gone = !document.querySelector('.bulk-bar');
+          // 되돌리기: 0 ~ 6(넓은 칸 넷째) 다시 고르고 U16 ABCD
+          const j0 = regs()[0].querySelector('.regval'); j0.focus(); await w(100); j0.blur();
+          shiftTo(regs()[3]); await w();
+          const b2 = document.querySelector('.bulk-bar');
+          a.picked2 = document.querySelectorAll('.regs .reg.picked').length;
+          if (b2) { __sm.setVal(b2.querySelectorAll('select')[0], 'u16'); __sm.setVal(b2.querySelectorAll('select')[1], 'ABCD'); await w(100); b2.querySelector('.bulk-apply').click(); await w(500); }
+          a.after = document.querySelectorAll('.regs .reg.wide').length - base;
+          // 보통 클릭으로 풀리는지
+          shiftTo(regs()[2]); await w();
+          regs()[5].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); await w();
+          a.cleared = !document.querySelector('.bulk-bar') && !document.querySelector('.regs .reg.picked');
+          return a;`);
+        if (bulk.fatal) add("slave bulk", "smoke-error", bulk.fatal);
+        else if (bulk.picked !== 8 || !/8/.test(bulk.bar) || (bulk.tags || []).length !== 4 || !bulk.tags.every((x) => x === "F32 CDAB") || !bulk.toast || !bulk.gone || bulk.picked2 !== 4 || bulk.after !== 0 || !bulk.cleared)
+          await conv("slave-bulk", `여러 칸 형식 한 번에(Shift+클릭) 가 이상함: ${JSON.stringify(bulk)}`);
+        await verify("slave bulk format");
+
+        // ---- (10/18) 통신 기록 높이: 막대를 위로 60px 끌면 높이가 늘고 기억, 두 번 누르면 처음대로, ↑ 키로 20px
+        {
+          const sp = (await d.findElements(By.css(".splitter")))[0];
+          const th = () => js("return [document.querySelector('.traffic').offsetHeight, localStorage.getItem('trafficH')]");
+          const [h0] = await th();
+          await d.actions({ async: true }).move({ origin: sp }).press().move({ origin: sp, y: -60 }).release().perform();
+          await sleep(250);
+          const [h1, s1] = await th();
+          await d.actions({ async: true }).doubleClick(sp).perform();
+          await sleep(250);
+          const [h2, s2] = await th();
+          await js("document.querySelector('.splitter').focus()");
+          await keys(Key.ARROW_UP);
+          const [h3] = await th();
+          await keys(Key.ENTER);
+          const [h4, s4] = await th();
+          if (!sp || Math.abs(h1 - h0 - 60) > 8 || Number(s1) !== h1 || Math.abs(h2 - h0) > 2 || s2 !== "null" || Math.abs(h3 - h0 - 20) > 3 || Math.abs(h4 - h0) > 2 || s4 !== "null")
+            await conv("slave-split", `통신 기록 높이 막대가 이상함: ${JSON.stringify({ h0, h1, s1, h2, s2, h3, h4, s4 })}`);
+          await blur();
+          await verify("slave splitter");
+        }
+
         // ---- (10/18) TCP 서버(Modbus TCP): 끊고 → 연결 방식 바꾸기 → 시작 → 듣는 중·클라이언트 수·풀이(#트랜잭션)·MBAP 장애 칸 → 멈춤 → 시리얼로 다시 연결
         const setTransport = (v) => js("const s = [...document.querySelectorAll('aside.side select')].find((x) => x.querySelector('option[value=rtu-tcp]')); __sm.setVal(s, arguments[0]);", v);
         await clickRun("mb-tcp: stop serial", (s) => !STOP_RE.test(s.btn ?? ""));
@@ -1025,7 +1113,12 @@ async function runApp(app, port) {
       const tr = await js(`return { marked: document.querySelectorAll('.log .row.marked').length, ev: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /TRIGGER/.test(n.textContent)), hits: (document.querySelector('.trg-total') || {}).textContent || '' };`);
       if (!tr.marked || !tr.ev || !/\d/.test(tr.hits)) await conv("trigger", `트리거가 맞은 줄을 칠하거나 알리지 않음: ${JSON.stringify(tr)}`);
       // ---- 간격 열: 응답 시간
-      await js(`__sm.setVal(document.querySelector('.delta-sel'), 'prev')`);
+      // 시간 간격 열은 도구줄 «보기 설정 ▾» 띄움 칸 안(10/18)
+      await js(`document.querySelector('.main .toolbar .view-opt-btn').click()`);
+      await sleep(150);
+      await js(`__sm.setVal(document.querySelector('.view-pop .delta-sel'), 'prev'); __sm.key(window, 'Escape')`);
+      await sleep(150);
+      if (!(await js("return !document.querySelector('.view-pop') && document.querySelector('.main .toolbar .view-opt-btn').classList.contains('on')"))) await conv("view-opts", "«보기 설정» 이 Esc 로 닫히지 않거나 간격 열이 켜졌는데 버튼이 강조되지 않음");
       await sleep(400);
       const dts = await js("return [...document.querySelectorAll('.log .row .dt')].map((e) => e.textContent).filter(Boolean).length");
       if (!dts) await conv("delta", "«직전 줄과 간격» 을 골랐는데 간격 열이 비어 있음");
@@ -1041,7 +1134,10 @@ async function runApp(app, port) {
         if (!clip || !/ \+\d/.test(clip)) await conv("delta-copy", `간격 열이 줄 복사에 들어가지 않음: ${JSON.stringify(clip)}`);
         await closeRight();
       }
-      await js(`__sm.setVal(document.querySelector('.delta-sel'), 'off')`);
+      await js(`document.querySelector('.main .toolbar .view-opt-btn').click()`);
+      await sleep(150);
+      await js(`__sm.setVal(document.querySelector('.view-pop .delta-sel'), 'off'); __sm.key(window, 'Escape')`);
+      await sleep(150);
       // ---- 처리량
       const ls = await js("return (document.querySelector('.live-stats') || {}).textContent || ''");
       if (!/B\/s/.test(ls)) await conv("live-stats", `처리량 표시가 없음: «${ls}»`);
@@ -1166,6 +1262,39 @@ async function runApp(app, port) {
           await closeRight();
         }
         await verify("serial modbus pair");
+        // (10/18) 요청 창으로 Modbus 를 보냈는데 받기가 Modbus 가 아니면 «받기도 Modbus 로 볼까요?» 한 번 → [예] = 프레임 구분 Modbus RTU + 수신 CRC16 Modbus.
+        // 요청 창 아래 «따라하기 보기» → 요청 창은 닫히고 도움말이 Modbus 따라하기 절로
+        const q = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const frameSel = () => [...document.querySelectorAll('aside.side select')].find((s) => s.querySelector('option[value=modbus-rtu]'));
+          const rxSel = () => [...document.querySelectorAll('aside.side details select')].find((s) => s.querySelector('option[value=crc16-modbus]'));
+          const n = document.querySelector('.sendbar .mb-rx-ask');
+          const a = { ask: !!n, frameBefore: frameSel().value };
+          if (n) n.querySelector('.btn').click();
+          await w();
+          a.gone = !document.querySelector('.sendbar .mb-rx-ask'); a.frame = frameSel().value; a.rx = rxSel() ? rxSel().value : null;
+          // 다시 보내도 또 묻지 않는다
+          document.querySelector('.sendbar .mb-open').click(); await w();
+          document.querySelector('.modal.mbuild .mb-send').click(); await w(500);
+          a.again = !!document.querySelector('.sendbar .mb-rx-ask');
+          document.querySelector('.sendbar .mb-open').click(); await w();
+          const link = document.querySelector('.modal.mbuild .mb-help .link-btn');
+          a.link = !!link;
+          if (link) link.click();
+          await w();
+          a.mbClosed = !document.querySelector('.modal.mbuild');
+          const on = document.querySelector('.modal.help .help-link.on'); a.help = on ? on.textContent : null;
+          __sm.key(window, 'Escape'); await w();
+          // 다음 점검을 위해 받기를 처음(끊김 시간)으로 — Modbus 를 고를 때 저절로 바꾼 체크섬도 되돌아간다
+          __sm.setVal(frameSel(), 'gap'); await w();
+          a.rxAfter = rxSel() ? rxSel().value : null;
+          return a;`);
+        if (q.fatal) add("mb rx ask", "smoke-error", q.fatal);
+        else {
+          if (!q.ask || q.frameBefore === "modbus-rtu" || !q.gone || q.frame !== "modbus-rtu" || q.rx !== "crc16-modbus" || q.again || q.rxAfter !== "") await conv("mb-rx-ask", `«받기도 Modbus 로 볼까요?» 알림줄이 이상함: ${JSON.stringify(q)}`);
+          if (!q.link || !q.mbClosed || !/Modbus/.test(q.help ?? "")) await conv("mb-help-link", `요청 창 «따라하기 보기» 가 도움말 Modbus 절을 열지 않음: ${JSON.stringify(q)}`);
+        }
+        await verify("serial modbus rx ask / help link");
       }
       // (10/18) TCP: Modbus TCP 요청(MBAP)을 보내면 가짜 장비가 같은 트랜잭션 ID 로 답한다 → 응답 줄을 누르면 상세에 짝지은 값
       if (app === "tcp") {
@@ -1483,6 +1612,11 @@ async function runApp(app, port) {
         if (f.mode !== "ascii" || f.suffix !== "\\r\\n" || f.ph !== "AT") await conv("first-run", `첫 실행 보내기 기본값이 ASCII·CR LF·«AT» 가 아님: ${JSON.stringify(f)}`, false);
         const want = combo.full ? [true, true] : [false, false];
         if (JSON.stringify(f.adv) !== JSON.stringify(want) || (!combo.full && f.notes.length !== 2)) await conv("serial-fold", `왼쪽 접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
+        // (10/18) 도구줄 한 줄(최소 창): 간격 열은 «보기 설정 ▾» 안, «파일로 계속 저장» 은 도구줄(왼쪽 칸에는 없음)
+        const tb = await js(`const tb = document.querySelector('.main .toolbar');
+          const mids = [...tb.children].filter((e) => __sm.vis(e) && !e.classList.contains('grow')).map((e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
+          return { spread: Math.round(Math.max(...mids) - Math.min(...mids)), file: !!tb.querySelector('.file-log'), side: !!document.querySelector('aside.side .file-log'), delta: !!tb.querySelector('.delta-sel'), view: !!tb.querySelector('.view-opt-btn') };`);
+        if (tb.spread > 12 || !tb.file || tb.side || tb.delta || !tb.view) await conv("serial-toolbar", `도구줄이 한 줄이 아니거나 칸 자리가 이상함: ${JSON.stringify(tb)}`);
       }
       // (10/18) TCP·UDP·Simulator·Master 첫 실행: 왼쪽(Simulator 는 «장비가 먼저 보내기») 접기 상태·요약, TCP·UDP 로그 보기 «둘 다», UDP 보내기 ASCII
       if (app === "tcp" || app === "udp" || app === "simulator" || app === "modbus-master") {
@@ -1564,6 +1698,24 @@ async function runApp(app, port) {
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
 
+      // (10/18) Serial: 연결되면 연결 설정이 «COM… 9600 8N1 [바꾸기]» 한 줄로 접힌다(«모두 펼치기» 면 펼친 채). [바꾸기] 로 펼치고 [접기] 로 다시
+      if (app === "serial") {
+        const c = await jsAsync(`
+          const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+          const now = () => ({ sum: !!document.querySelector('aside.side .conn-sum'), text: (document.querySelector('aside.side .conn-sum .mono') || {}).textContent || '', preset: !!document.querySelector('aside.side .preset-sel'), baud: !!document.querySelector('aside.side input[list=bauds]') });
+          const a = now();
+          const b = document.querySelector('aside.side .conn-change');
+          if (b) b.click();
+          await w();
+          const opened = now();
+          if (b) b.click();
+          await w();
+          return { a, opened, closed: now() };`);
+        if (c.fatal) add("conn summary", "smoke-error", c.fatal);
+        else if (!c.a.sum || !/\d+ \d[NOEMS]\d/.test(c.a.text) || c.a.preset !== !!combo.full || c.opened.preset === c.a.preset || c.opened.baud !== c.opened.preset || c.closed.preset !== c.a.preset)
+          await conv("conn-summary", `연결 중 연결 설정 한 줄 요약·[바꾸기] 가 이상함: ${JSON.stringify(c)}`);
+        await verify("serial conn summary");
+      }
       // TCP 클라이언트의 실행 중 버튼은 «끊기»
       if (app === "tcp" && !/^(끊기|Disconnect)$/.test(runS?.btn ?? "")) await conv("tcp-stop-label", `클라이언트 실행 중 버튼이 «끊기» 가 아님: ${JSON.stringify(runS?.btn)}`, false);
       // Simulator «장비가 먼저 보내기» 는 접혀 있을 수 있다(화면만 훑는 조합) — 펼친 뒤 보낸다

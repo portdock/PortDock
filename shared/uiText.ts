@@ -75,6 +75,8 @@ const ko = {
   keyEnd: "로그 맨 아래로 — 다시 따라가기",
   keyCopy: "고른 로그 줄 복사(시각·방향·내용, 지금 보기대로)",
   keySelect: "로그 줄 누르기: 고르기 · Shift+누르기: 범위 · Ctrl+누르기: 하나씩 더하기/빼기 · 오른쪽 버튼: 복사·다시 보내기 메뉴",
+  // ---- 위아래 칸 사이 높이 조절(Modbus Slave·Master 통신 기록)
+  splitLog: "통신 기록 높이 — 끌어서 조절, 두 번 누르면 처음대로(↑·↓ 키도 됨)",
 };
 
 const en: typeof ko = {
@@ -143,6 +145,7 @@ const en: typeof ko = {
   keyEnd: "Jump to the latest line — follow again",
   keyCopy: "Copy the selected log lines (time, direction, data in the current view)",
   keySelect: "Click a log line to select · Shift+click: range · Ctrl+click: add/remove · Right-click: copy / send again menu",
+  splitLog: "Traffic height — drag to resize, double-click to reset (↑/↓ keys too)",
 };
 
 export const UI = { ko, en };

@@ -674,3 +674,33 @@ export function mergePoints(old: Point[] | undefined, add: Point[], clearAt: num
   const keep = (old ?? []).filter((q) => !clear.has(q.addr) && !add.some((p) => q.addr < p.addr + pointRegs(p) && p.addr < q.addr + pointRegs(q)));
   return [...keep, ...add].sort((a, b) => a.addr - b.addr);
 }
+
+/** 여러 칸을 한 번에 정할 수 있는 형식(문자열은 길이가 칸마다 달라 빼고, 비트 표는 형식이 없다) */
+export const BULK_TYPES: VType[] = ["u16", "s16", "u32", "s32", "f32", "f64"];
+
+/**
+ * 고른 칸 lo..hi(끝 포함)를 한 형식으로 — 형식의 칸 수(32비트 2칸·64비트 4칸)씩 앞에서부터 묶어 점을 만든다(Shift+클릭 범위, 10/18).
+ * - 고른 범위에 걸친 옛 점은 모두 지운다(범위 밖으로 삐져나온 32비트 점 포함). 묶음 시작 주소에 있던 이름은 이어받는다.
+ * - 끝에 묶음이 모자라 남는 칸(left)은 보통 칸으로 둔다(이름이 있었으면 이름만 남긴다).
+ * - U16 ABCD 처럼 기본 모양이 되는 점은 만들지 않는다(isPlainPoint).
+ */
+export function bulkPoints(old: Point[] | undefined, lo: number, hi: number, type: VType, order: Order): { points: Point[]; made: number; left: number } {
+  const n = regsOf(type);
+  const list = old ?? [];
+  const touched = list.filter((q) => q.addr <= hi && q.addr + pointRegs(q) - 1 >= lo);
+  const nameAt = new Map(touched.filter((q) => q.name.trim()).map((q) => [q.addr, q.name] as const));
+  const add: Point[] = [];
+  let a = lo;
+  let made = 0;
+  for (; a + n - 1 <= hi; a += n, made++) {
+    const p: Point = { addr: a, type, order, name: nameAt.get(a) ?? "" };
+    if (!isPlainPoint(p)) add.push(p);
+  }
+  const left = hi - a + 1;
+  for (; a <= hi; a++) {
+    const nm = nameAt.get(a);
+    if (nm) add.push({ addr: a, type: "u16", order: "ABCD", name: nm });
+  }
+  const keep = list.filter((q) => !touched.includes(q));
+  return { points: [...keep, ...add].sort((x, y) => x.addr - y.addr), made, left };
+}

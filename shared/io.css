@@ -314,3 +314,40 @@ input.trg-color {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ---- 도구줄 «보기 설정»(시간 간격 열 등) — 간격 열이 켜져 있으면 강조 */
+.view-opt-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.view-pop .pop-row {
+  white-space: nowrap;
+}
+
+/* ---- 위아래 칸 높이 조절 막대(Splitter) — Modbus Slave·Master 통신 기록 위 */
+.splitter {
+  flex: 0 0 6px;
+  cursor: row-resize;
+  background: var(--line);
+  opacity: 0.55;
+  touch-action: none;
+  position: relative;
+}
+.splitter::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 36px;
+  height: 2px;
+  margin-left: -18px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+.splitter:hover,
+.splitter:focus-visible,
+.splitter.dragging {
+  opacity: 1;
+  background: var(--accent);
+  outline: none;
+}

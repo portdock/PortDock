@@ -20,7 +20,7 @@ export const help: HelpDoc = {
         "- 2. «국번(슬레이브 ID)» 에 마스터가 부를 국번(기본 1)이 있는지 확인합니다. 없으면 1~247 을 넣고 «추가» 를 누릅니다. 이 도움말에서는 줄여 «국번» 이라고 부릅니다.",
         "- 3. 가운데 위에서 표(예: «보유 레지스터»)를 고르고, 칸에 값을 넣어 둡니다. 연결 전에 넣어 둬도 됩니다. 32비트 값·실수·이름이 필요하면 칸의 ⋯(또는 오른쪽 버튼)으로 «칸 설정» 을 엽니다. 위 «표시» 목록의 «형식 지정…» 도 고른 칸의 «칸 설정» 을 엽니다.",
         "- 4. «연결»(TCP 는 «시작»)을 누르면 마스터 요청이 오는 대로 바로 답합니다. 주고받은 내용과 풀이(«id1 FC03 HR 0..9 (10)»)는 아래 «통신 기록» 에 찍힙니다.",
-        "- 처음 켜면 비어 있는 «통신 기록» 자리에 이 순서가 카드로 보입니다. 카드의 «예제 채우기» 는 지금 표의 보이는 칸을 0, 1, 2… 로 채웁니다(위 «채우기» 와 같고 확인을 묻습니다) — 마스터로 읽으면 주소마다 값이 달라 주소가 밀렸는지 바로 보입니다. «다시 보지 않기» 를 누르면 숨고, 그 뒤로는 «마스터가 읽으면 여기 «통신 기록» 에 보입니다» 한 줄만 남습니다.",
+        "- 처음 켜면 비어 있는 «통신 기록» 자리에 이 순서가 카드로 보입니다. 카드에서 주소 부르는 법(0 기준·1 기준·40001)을 바로 고르고(가운데 위 «주소 표기» 와 같은 값), «예제 채우기» 를 누르면 지금 국번의 보유 레지스터 0~7 에 1~8, 8~9 에 F32 CDAB 23.5 가 들어가고 이름(상태·설정값·온도)과 형식도 붙습니다(그 자리에 값이 있으면 먼저 묻습니다) — 마스터로 읽으면 주소가 밀렸는지·워드 순서가 맞는지 바로 보입니다. «CSV 가져오기…» 는 엑셀로 만든 레지스터 맵(«표 내보내기·가져오기» 절)을 바로 읽습니다. «다시 보지 않기» 를 누르면 숨고, 그 뒤로는 «마스터가 읽으면 여기 «통신 기록» 에 보입니다» 한 줄만 남습니다.",
       ],
     },
     {
@@ -30,6 +30,7 @@ export const help: HelpDoc = {
         "- 가운데 위: 표 4종 버튼, 지금 보는 국번(«국번 1»), «채우기»·«표 내보내기»·«표 가져오기». 그 아래 «시작 주소»·«개수»·«표시»·«주소 표기», «칸»·«목록» 보기 버튼과 회색 «응답 범위: HR 0–99» 한 줄.",
         "- 가운데: 레지스터 표. «칸» 보기는 바둑판(주소 · 이름 · 값 · 형식 · ◷ · ⋯), «목록» 보기는 한 줄에 주소·이름·형식·값·자동 변화.",
         "- 아래: «통신 기록»(RX ◀ 요청, TX ▶ 응답, EV 사건)과 찾기·거르기 줄, «파일로 계속 저장»·«지우기».",
+        "- 표와 통신 기록 사이의 막대를 위아래로 끌면 통신 기록 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로, 막대에 포커스를 두고 ↑·↓ 도 됨). 처음 높이는 작은 창(1000×640)에서 표가 넉넉히 보이게 잡혀 있습니다.",
         ...windowLines("ko"),
       ],
     },
@@ -114,6 +115,7 @@ export const help: HelpDoc = {
         "- 다른 형식 칸과 겹치게 정하면 «주소 … 의 칸과 겹칩니다» 가 나옵니다. 그 칸을 먼저 «기본으로» 되돌리세요.",
         "- «기본으로»: 이름·형식·자동 변화를 지우고 보통 U16 칸으로 되돌립니다. 레지스터 값은 그대로입니다.",
         "- 보는 범위의 끝에 걸쳐 잘리는 형식 칸은 레지스터 하나씩 보입니다(범위를 넓히면 묶여 보입니다).",
+        "- 여러 칸 한 번에: 칸 하나를 누른 뒤 다른 칸을 Shift+클릭하면 그 사이가 골라지고(파랗게), 표 위에 «n칸 고름 — 형식·순서·[한 번에 정하기]» 줄이 나옵니다. 32비트(U32·S32·F32)는 두 칸씩, F64 는 네 칸씩 앞에서부터 묶고, 끝에 묶음이 모자라는 칸은 그대로 둡니다. 범위에 걸친 옛 형식은 지워지고 묶음 첫 칸의 이름은 남습니다. 값은 바뀌지 않습니다(같은 레지스터를 새 형식으로 읽음). 보통 클릭이나 «고르기 풀기» 로 풉니다.",
       ],
     },
     {
@@ -284,7 +286,7 @@ export const help: HelpDoc = {
         "- 2. Check that «Slave ID» contains the ID the master polls (default 1). If not, enter 1–247 and click «Add».",
         "- 3. Pick a table at the top (e.g. «Holding registers») and enter values. You can do this before connecting. For 32-bit values, floats or names, open «Cell settings» with a cell's ⋯ (or right-click). The «Typed…» entry in the «Format» list also opens «Cell settings» for the selected cell.",
         "- 4. Click «Connect» («Start» for TCP). Master requests are answered at once. Traffic and its decode («id1 FC03 HR 0..9 (10)») appear in «Traffic» at the bottom.",
-        "- On first start these steps appear as a card in the empty «Traffic» area. The card's «Fill example values» fills the visible cells of this table with 0, 1, 2… (same as «Fill» above; asks first) — read from a master, each address gives a different value, so an off-by-one address shows at once. «Don't show again» hides it; afterwards only the line «When the master reads, it shows up here in «Traffic»» remains.",
+        "- On first start these steps appear as a card in the empty «Traffic» area. On the card you can pick how addresses are numbered (0-based, 1-based, 40001 — same as «Addresses» at the top). «Fill example values» puts 1–8 into holding registers 0–7 and F32 CDAB 23.5 into 8–9 of this Slave ID, with names (Status, Setpoint, Temperature) and types (asks first if those registers hold values) — read from a master, you see at once whether addresses are shifted and the word order matches. «Import CSV…» reads a register map made in Excel (see «Export and import tables»). «Don't show again» hides it; afterwards only the line «When the master reads, it shows up here in «Traffic»» remains.",
       ],
     },
     {
@@ -294,6 +296,7 @@ export const help: HelpDoc = {
         "- Top: the four table buttons, the Slave ID being viewed («Slave ID 1»), «Fill», «Export table», «Import table». Below them «Start», «Count», «Format», «Addresses», the «Grid»/«List» view buttons and a grey «Answered range: HR 0–99» line.",
         "- Middle: the register table. «Grid» view shows compact cells (address · name · value · type · ◷ · ⋯); «List» view shows one row each with address, name, type, value and simulation.",
         "- Bottom: «Traffic» (RX ◀ requests, TX ▶ replies, EV events) with the find/filter bar, «Log to file» and «Clear».",
+        "- Drag the bar between the table and «Traffic» up or down to change the traffic height; it is remembered (double-click to reset; with the bar focused, ↑/↓ work too). The default leaves plenty of table visible in a small 1000×640 window.",
         ...windowLines("en"),
       ],
     },
@@ -378,6 +381,7 @@ export const help: HelpDoc = {
         "- Overlapping another typed cell gives «Overlaps the cell at …». Reset that cell to default first.",
         "- «Reset to default»: clears the name, type and simulation and returns to a plain U16 cell. The register values are kept.",
         "- A typed cell cut off by the end of the visible range is shown one register at a time (widen the range to see it grouped).",
+        "- Many cells at once: click one cell, then Shift+click another to select the range (highlighted); a bar «n cells selected — Type, Order, [Apply to all]» appears above the table. 32-bit types (U32, S32, F32) group two registers each and F64 four, from the start; cells left over at the end stay as they are. Old types overlapping the range are removed and a name on a group's first cell is kept. Values do not change (the same registers are read in the new type). A plain click or «Clear selection» clears it.",
       ],
     },
     {
