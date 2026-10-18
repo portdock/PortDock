@@ -46,7 +46,8 @@ node serial.mjs
 EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke.mjs [앱]      (예: node ui-preview/smoke.mjs tcp)
 COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경우만 빨리)
 ```
-- 경우: 최소 창 안쪽 984×601 에서 한국어·영어 × 밝게·어둡게. `ko-light`·`en-dark` 는 전부 누르고, `ko-dark`·`en-light` 는 열기·대화상자·연결·멈춤만.
+- 경우: 최소 창 안쪽 984×601 에서 한국어·영어 × 밝게·어둡게. `ko-light`·`en-dark` 는 설정 «모두 펼치기(전문가 화면)» 를 켠 채 띄워 접기 속까지 전부 누르고, `ko-dark`·`en-light` 는 접힌 기본 그대로 열기·대화상자·연결·멈춤만(`ko-dark` 는 설정 창에서 «모두 펼치기» 를 켜고 끄며 접기가 따라 바뀌는지도 본다).
+- 쉽게 쓰기 2차(10/18): Serial 도구 막대 한 줄·«보기 설정 ▾»·연결 요약 [바꾸기]·«받기도 Modbus 로» 알림줄·요청 창 «따라하기 보기», Slave 첫 실행 카드(주소 표기·예제 채우기·CSV)·Shift+클릭 여러 칸 형식·통신 기록 높이 막대, Net Scan 포트 칩·결과 줄 오른쪽 버튼 메뉴·Modbus 칩 «IP:502» 복사(두 주소만 찾아 빨리), Master 첫 실행 카드·«값 기록 ▾», TCP 방식 탭·모두 끊기·502 알림줄, TCP·UDP «⋯ 더보기»·좁은 창 줄 누르기 → 상세.
 - 하는 일: 모든 버튼·고르기(항목마다)·체크(두 번)·입력칸(빈칸·0·음수·아주 큰 수·영문·한글·Enter)을 멈춘 상태와 연결한 상태에서 건드린다. 새로 뜬 창도 그 안을 눌러 본 뒤 Esc·✕ 로 닫는다. 확인 창은 «아니오» 로 한 번, «예»·저장 경로가 있는 채로 한 번.
 - 따로 보는 것: ?·F1 도움말 → Esc, ⚙ 설정 → ✕, ! 문제 보고 → Esc 뒤 포커스가 제자리로 돌아오는지 · 연결/시작 뒤 2초 안에 «연결 중» 이 풀리는지 · 입력칸 Enter·보내기 버튼(누른 뒤 입력칸으로 돌아오는지) · 장치 뽑힘→재연결 · 바쁜 포트·안 붙는 주소 오류 · 저장해 둔 포트가 없어졌을 때.
 - 편의성(10/17, `ko-light`·`en-dark`): 창 제목 · 로그 따라가기(위로 굴리면 멈춤·«↓ 맨 아래로»·End·줄을 눌러도 안 꺼짐) · 누르기/Shift/Ctrl 고르기와 Ctrl+C · 우클릭 메뉴(C 배열 복사·Esc) · 단축키(Ctrl+L·Ctrl+S·Ctrl+Shift+L·F4·Esc 반복 멈춤) · 숫자 칸 ↑/Shift+↑/PageDown·속도 목록 · HEX↔ASCII 표기 바꾸기·체크섬 알림줄 · 명령 목록(추가 뒤 이름 칸 포커스·↓·Alt+↑·Enter 보내기·복제·지우기→되돌리기) · Slave 레지스터 칸 ↓↑·Esc·여러 값 붙여넣기·슬레이브 되돌리기 · Simulator 규칙 되돌리기 · 📌. 복사한 글은 `navigator.clipboard.writeText` 를 가로채 `__smoke.clip` 에서 본다.
