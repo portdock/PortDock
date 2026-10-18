@@ -111,6 +111,11 @@ export function logMenuItems(opts: {
   sendAgain?: { run: (bytes: number[]) => void; enabled: boolean; why?: string };
   addCommand?: (bytes: number[]) => void;
   find?: (bytes: number[]) => void;
+  /**
+   * Simulator «이 요청으로 규칙 만들기» — bytes 는 부르는 쪽이 정한다(RX 줄은 그 바이트, NO MATCH 사건 줄은 바로 앞 RX).
+   * bytes 가 없으면(TX 줄 등) 항목이 빠진다
+   */
+  addRule?: { run: (bytes: number[]) => void; bytes: number[] | null };
 }): MenuItem[] {
   const { lang, frames, clicked, view, fmt, peers } = opts;
   const data = frames.filter((f) => f.dir !== "ev");
@@ -134,6 +139,8 @@ export function logMenuItems(opts: {
     extra.push({ label: `${ui(lang, "sendAgain")} — ${short(bytes)}`, run: () => opts.sendAgain!.run(bytes), disabled: !opts.sendAgain.enabled, title: opts.sendAgain.enabled ? undefined : opts.sendAgain.why });
   if (opts.addCommand && bytes) extra.push({ label: ui(lang, "addToCommands"), run: () => opts.addCommand!(bytes) });
   if (opts.find && bytes) extra.push({ label: ui(lang, "findThis"), run: () => opts.find!(bytes) });
+  const ruleBytes = opts.addRule?.bytes;
+  if (opts.addRule && ruleBytes?.length) extra.unshift({ label: `${ui(lang, "ruleFromThis")} — ${short(ruleBytes)}`, run: () => opts.addRule!.run(ruleBytes) });
   return extra.length ? [...items, "sep", ...extra] : items;
 }
 

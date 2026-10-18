@@ -160,7 +160,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
           title: "트리거",
           body: [
             "오른쪽 칸 «트리거» 를 펼쳐 «+ 트리거» 로 만듭니다. 받은 줄(RX)에 패턴이 들어 있으면 고른 동작을 합니다.",
-            "- 패턴 — HEX: «01 03 ?? **»(?? = 아무 1바이트, ** = 0바이트 이상). ASCII: «ALARM*» 처럼(? = 아무 1바이트, * = 0바이트 이상, \\r \\n \\xNN 이스케이프, 글자 ? 는 \\x3F). 줄 안 어디에든 있으면 맞고, 대소문자를 가립니다. 자동응답 규칙과 같은 규칙입니다.",
+            "- 패턴 — HEX: «01 03 ?? **»(?? = 아무 1바이트, ** = 0바이트 이상). ASCII: «ALARM*» 처럼(? = 아무 1바이트, * = 0바이트 이상, \\r \\n \\xNN 이스케이프, 글자 ? 는 \\x3F). 줄 안 어디에든 있으면 맞고, 대소문자를 가립니다. 자동응답 규칙에서 «와일드카드» 를 켠 것과 같은 규칙입니다.",
             "- 동작: «색칠»(색을 고를 수 있음) · «소리»(짧은 삐 소리) · «반복 멈춤» · «기록 멈춤»(파일로 계속 저장을 끔) · «사건 줄»(«TRIGGER «이름»» EV 줄) · «깜빡임»(창이 뒤에 있으면 작업 표시줄이 깜빡임). 반복·기록을 멈추면 «— 반복 멈춤» 처럼 사건 줄에 함께 남습니다.",
             "- 줄마다 맞은 횟수가 «3번» 처럼, 머리에 모두 합친 «맞은 횟수 n» 이 나옵니다. «횟수 지우기» 로 0 부터. 체크를 끄면 그 트리거만 쉽니다. 지우면 5초 동안 «되돌리기» 할 수 있습니다.",
             "- 트리거는 화면에서만 동작합니다(색·사건 줄은 화면 기록, 파일 로그에는 남지 않음). 목록은 프로그램을 껐다 켜도 남습니다.",
@@ -170,7 +170,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
           title: "Triggers",
           body: [
             "Open «Triggers» in the right pane and click «+ Trigger». When a received line (RX) contains the pattern, the chosen actions run.",
-            "- Pattern — HEX: «01 03 ?? **» (?? = any byte, ** = zero or more bytes). ASCII: e.g. «ALARM*» (? = any byte, * = zero or more, \\r \\n \\xNN escapes, a literal ? is \\x3F). Matches anywhere in the line, case-sensitive — the same rules as auto-reply rules.",
+            "- Pattern — HEX: «01 03 ?? **» (?? = any byte, ** = zero or more bytes). ASCII: e.g. «ALARM*» (? = any byte, * = zero or more, \\r \\n \\xNN escapes, a literal ? is \\x3F). Matches anywhere in the line, case-sensitive — the same rules as an auto-reply rule with «Wildcards» on.",
             "- Actions: «Color» (pick a color) · «Beep» · «Stop repeat» · «Stop log» (turns off Log to file) · «Event line» (an EV line «TRIGGER «name»») · «Flash» (flashes the taskbar when the window is in the background). Stopping repeat or logging is noted in the event line too.",
             "- Each trigger shows its hit count (e.g. «3×»), the header the total. «Reset counts» starts again from 0. Unchecking pauses one trigger; deleting can be undone for 5 seconds.",
             "- Triggers run on screen only (colors and event lines are not written to the file log). The list is kept across restarts.",

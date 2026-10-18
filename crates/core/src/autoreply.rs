@@ -75,6 +75,14 @@ pub struct RuleSpec {
     pub more_replies: Vec<SendSpec>,
     #[serde(default)]
     pub reply_order: ReplyOrder,
+    /// ASCII 패턴에서 `?`(아무 1글자)·`*`(0개 이상)를 와일드카드로 읽을지. 끄면 글자 그대로 비교한다
+    /// (SCPI `*IDN?` 가 `XIDN!` 에 맞지 않게). 칸이 없는 예전 규칙은 켜짐(예전 동작). HEX 의 `??`·`**` 는 늘 와일드카드
+    #[serde(default = "wild_default")]
+    pub wild: bool,
+}
+
+fn wild_default() -> bool {
+    true
 }
 
 // ---------------------------------------------------------------- 응답 템플릿
@@ -433,7 +441,7 @@ pub struct Rule {
     order: ReplyOrder,
 }
 
-fn parse_pattern(text: &str, mode: TextMode) -> Result<Vec<Tok>, String> {
+fn parse_pattern(text: &str, mode: TextMode, wild: bool) -> Result<Vec<Tok>, String> {
     let mut toks = Vec::new();
     match mode {
         TextMode::Hex => {
@@ -456,6 +464,7 @@ fn parse_pattern(text: &str, mode: TextMode) -> Result<Vec<Tok>, String> {
             };
             for c in text.chars() {
                 match c {
+                    _ if !wild => lit.push(c),
                     '?' => {
                         flush(&mut lit, &mut toks)?;
                         toks.push(Tok::Any);
@@ -526,7 +535,7 @@ impl Rule {
 
     /// 오류 문구에 규칙 이름을 붙이지 않는다(규칙별 오류 목록용)
     fn compile_unnamed(spec: &RuleSpec) -> Result<Self, String> {
-        let mut toks = parse_pattern(&spec.pattern, spec.pattern_mode).map_err(|e| crate::tr!(format!("패턴: {e}"), format!("pattern: {e}")))?;
+        let mut toks = parse_pattern(&spec.pattern, spec.pattern_mode, spec.wild).map_err(|e| crate::tr!(format!("패턴: {e}"), format!("pattern: {e}")))?;
         // 포함 = 앞뒤에 «0개 이상» 을 붙인 정확히 — 모든 시작 위치를 다시 훑지 않는다
         if spec.kind == MatchKind::Contains {
             toks.insert(0, Tok::Many);
@@ -866,6 +875,7 @@ mod tests {
             drop_pct: 0.0,
             more_replies: vec![],
             reply_order: ReplyOrder::Sequence,
+            wild: true,
         })
         .unwrap()
     }
@@ -895,6 +905,40 @@ mod tests {
     }
 
     #[test]
+    fn ascii_wildcards_off_compares_literally() {
+        let lit = |pattern: &str, kind: MatchKind| {
+            let mut s = spec("scpi", true, pattern, TextMode::Ascii, "PORTDOCK,SIM,1");
+            s.kind = kind;
+            s.wild = false;
+            Rule::compile(&s).unwrap()
+        };
+        // 와일드카드 끔: SCPI 의 * · ? 는 글자 그대로
+        let idn = lit("*IDN?", MatchKind::Exact);
+        assert!(idn.is_match(b"*IDN?"));
+        assert!(!idn.is_match(b"XIDN!"));
+        assert!(!idn.is_match(b"*IDN?\r\n"));
+        // 이스케이프는 그대로 풀린다
+        assert!(lit("*IDN?\\r\\n", MatchKind::Exact).is_match(b"*IDN?\r\n"));
+        let meas = lit("MEAS:VOLT?", MatchKind::Contains);
+        assert!(meas.is_match(b">MEAS:VOLT?\r"));
+        assert!(!meas.is_match(b"MEAS:VOLTX"));
+        // 켜면 예전과 같다(`*IDN?` 가 `XIDN!` 에도 맞는다)
+        let mut w = spec("w", true, "*IDN?", TextMode::Ascii, "x");
+        assert!(w.wild);
+        assert!(Rule::compile(&w).unwrap().is_match(b"XIDN!"));
+        // HEX 의 ?? · ** 는 칸과 상관없이 와일드카드
+        w = spec("h", true, "01 ?? **", TextMode::Hex, "02");
+        w.wild = false;
+        assert!(Rule::compile(&w).unwrap().is_match(&[1, 9, 9, 9]));
+        // 칸이 없는 예전 JSON 은 켜짐, 새 JSON 은 읽은 대로
+        let old: RuleSpec = serde_json::from_str(r#"{"name":"a","enabled":true,"pattern":"A?","patternMode":"ascii","kind":"exact","reply":{"text":"B","mode":"ascii","checksum":null,"suffix":""},"delayMs":0}"#).unwrap();
+        assert!(old.wild);
+        let new: RuleSpec = serde_json::from_str(r#"{"name":"a","enabled":true,"pattern":"A?","patternMode":"ascii","kind":"exact","reply":{"text":"B","mode":"ascii","checksum":null,"suffix":""},"delayMs":0,"wild":false}"#).unwrap();
+        let r = Rule::compile(&new).unwrap();
+        assert!(r.is_match(b"A?") && !r.is_match(b"AB"));
+    }
+
+    #[test]
     fn reply_gets_checksum() {
         let r = Rule::compile(&RuleSpec {
             name: "modbus".into(),
@@ -914,6 +958,7 @@ mod tests {
             drop_pct: 0.0,
             more_replies: vec![],
             reply_order: ReplyOrder::Sequence,
+            wild: true,
         })
         .unwrap();
         assert_eq!(r.reply.len(), 7);
@@ -935,6 +980,7 @@ mod tests {
             drop_pct: 0.0,
             more_replies: vec![],
             reply_order: ReplyOrder::Sequence,
+            wild: true,
         })
         .unwrap_err();
         assert!(err.contains("깨진 규칙"));
@@ -954,6 +1000,7 @@ mod tests {
             drop_pct: 0.0,
             more_replies: vec![],
             reply_order: ReplyOrder::Sequence,
+            wild: true,
         }
     }
 

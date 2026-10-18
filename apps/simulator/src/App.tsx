@@ -25,7 +25,8 @@ import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { AutoReplyPanel } from "@shared/AutoReplyPanel";
-import { normalizeRule, validRule, type AutoRule, type MatchOptions } from "@shared/autoReply";
+import { normalizeRule, ruleFromRequest, validRule, type AutoRule, type MatchOptions } from "@shared/autoReply";
+import { matchesEverything } from "@shared/interlocks";
 import { autoReplyApi } from "@shared/autoReplyApi";
 import { useSimpleLog } from "@shared/useSimpleLog";
 import { FollowButton } from "@shared/FollowButton";
@@ -53,6 +54,8 @@ interface Net {
 }
 
 type Com = { port: string; baud: number; parity: "none" | "odd" | "even" };
+
+const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
 /** 상대가 아직 없어서 못 보낸 경우 — 반복은 끄지 않고 이번 차례만 건너뛴다 */
 const NO_PEER = /연결된 상대가 없|상대가 없|끊겨 있|No peer|not connected|disconnected/i;
@@ -254,6 +257,33 @@ export default function App() {
     const id = setInterval(() => api.getHits().then(setHits).catch(() => {}), 500);
     return () => clearInterval(id);
   }, []);
+  /**
+   * 통신 기록 줄 → 새 규칙(오른쪽 버튼 «이 요청으로 규칙 만들기»). 무엇이든 맞는 규칙(에코 등)이 있으면 그 위에 넣어
+   * 새 규칙이 가려지지 않게 하고, 응답 칸에 포커스
+   */
+  const ruleFromLog = (b: number[]) => {
+    const catchAll = rules.findIndex((r) => r.enabled && matchesEverything(r));
+    const at = catchAll < 0 ? rules.length : catchAll;
+    const r = ruleFromRequest(b, rules.length + 1);
+    setRules([...rules.slice(0, at), r, ...rules.slice(at)]);
+    toast.show(fill(t("ruleMade"), { a: r.name }));
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLInputElement>(`.arcard[data-i="${at}"] .arreply`);
+      el?.scrollIntoView({ block: "nearest" });
+      el?.focus();
+    });
+  };
+  /** 규칙으로 만들 바이트 — RX 줄은 그 바이트, «NO MATCH» 사건 줄은 바로 앞(20줄 안)의 RX */
+  const ruleBytesOf = (seq: number): number[] | null => {
+    const list = traffic.current;
+    const i = list.findIndex((f) => f.seq === seq);
+    const f = list[i];
+    if (!f) return null;
+    if (f.dir === "rx") return f.bytes;
+    if (f.dir === "ev" && /^NO MATCH/.test(f.note ?? ""))
+      for (let j = i - 1; j >= 0 && j >= i - 20; j--) if (list[j].dir === "rx" && (!f.peer || list[j].peer === f.peer)) return list[j].bytes;
+    return null;
+  };
   async function exportRules() {
     const path = await save({ defaultPath: "portdock-rules.json", filters: [{ name: "JSON", extensions: ["json"] }] });
     if (!path) return;
@@ -350,6 +380,12 @@ export default function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 언어가 바뀌면 문구만 다시
   }, [spec, lang]);
+  // «장비가 먼저 보내기» 접기 — 규칙 칸으로 오해하지 않게 기본 접힘. 반복을 켜면 펼치고, 열림 상태는 기억
+  const [unsolOpen, setUnsolOpen] = useState<boolean>(() => load("unsolOpen", false));
+  useEffect(() => store("unsolOpen", unsolOpen), [unsolOpen]);
+  useEffect(() => {
+    if (repeating) setUnsolOpen(true);
+  }, [repeating]);
   const inflight = useRef(false);
   useEffect(() => {
     if (!repeating || !running) return;
@@ -601,8 +637,19 @@ export default function App() {
         </div>
         <div className="rules">
           <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={autoReplyApi} />
-          <div className="unsol">
-            <div className="arlbl" data-tip={tip(lang, "unsolicited")}>{t("unsolicited")}</div>
+          <details className="unsol adv panel" open={unsolOpen} onToggle={(e) => setUnsolOpen((e.target as HTMLDetailsElement).open)}>
+            <summary data-tip={tip(lang, "unsolicited")}>
+              <span className="sum-title">{t("unsolicited")}</span>
+              {!unsolOpen && (
+                <span className="sum-note">
+                  {repeating && running
+                    ? fill(t("unsolRepeating"), { n: repeatMs })
+                    : spec.text
+                      ? `${spec.mode.toUpperCase()} ${spec.text.length > 24 ? `${spec.text.slice(0, 24)}…` : spec.text}`
+                      : t("unsolNone")}
+                </span>
+              )}
+            </summary>
             <div className="arrow">
               {/* 바꾸면 같은 바이트의 새 표기로 옮기고, 켜진 체크섬은 아래 알림줄로 */}
               <select value={spec.mode} onChange={(e) => modeSwitch.changeMode(e.target.value as TextMode)} data-tip={ui(lang, "sendModeTip")} aria-label="HEX / ASCII">
@@ -660,7 +707,7 @@ export default function App() {
             {/* 보내기가 꺼진 이유 */}
             {!running ? <div className="hint">{t("whyNotStarted")}</div> : !sendable && !preview ? <div className="hint">{t("whyEmpty")}</div> : null}
             {repeating && running && waiting && <div className="hint warn">{t("waitingPeer")}</div>}
-          </div>
+          </details>
         </div>
 
         <div className="traffic">
@@ -716,6 +763,7 @@ export default function App() {
                 peers: net2,
                 onCopied,
                 sendAgain: { run: (b) => void api.send(rawSpec(b)).catch((e) => setError(String(e))), enabled: running, why: t("whyNotStarted") },
+                addRule: { run: ruleFromLog, bytes: ruleBytesOf(menu.seq) },
               })}
             />
           )}

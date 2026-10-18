@@ -104,6 +104,31 @@ b.arlbl {
 .ar .empty-guide {
   white-space: pre-line;
 }
+/* 빈 화면 예제 버튼(10/18) */
+.arexamples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  white-space: normal;
+}
+/* ASCII «와일드카드» 체크와 «?·* 를 와일드카드로 읽음 — [끄기]» 알림줄 */
+.arwild {
+  white-space: nowrap;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.arwild-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.arwild-note > span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
 
 /* 좁은 칸 — 입력칸은 한 줄을 다 쓰고 나머지는 그 아래로 */
 .ar.compact .arrow .grow {

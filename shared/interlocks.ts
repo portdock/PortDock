@@ -28,13 +28,18 @@ export interface RuleLike {
   enabled: boolean;
   pattern: string;
   kind: "exact" | "contains";
+  patternMode?: "hex" | "ascii";
+  /** ASCII 의 ?·* 를 와일드카드로(없으면 켜짐) */
+  wild?: boolean;
 }
 
 /**
  * 사실상 모든 프레임에 맞는 패턴인지 — 와일드카드(?? ** ? *)만으로 되어 있고
  * 정확히(exact)라면 «0개 이상» 이 하나라도 있을 때, 포함(contains)이면 «1개» 하나까지 포함
  */
-export function matchesEverything(r: { pattern: string; kind: "exact" | "contains" }) {
+export function matchesEverything(r: { pattern: string; kind: "exact" | "contains"; patternMode?: "hex" | "ascii"; wild?: boolean }) {
+  // ASCII 와일드카드를 끈 규칙의 ?·* 는 글자 그대로 — 무엇이든 맞지 않는다
+  if (r.patternMode === "ascii" && r.wild === false) return false;
   const toks = r.pattern.trim().split(/\s+/).filter(Boolean);
   const flat = r.pattern.replace(/\s+/g, "");
   if (!flat) return false;
@@ -51,7 +56,7 @@ export function duplicatePatterns(rules: RuleLike[]) {
   const dup: string[] = [];
   for (const r of rules) {
     if (!r.enabled) continue;
-    const k = `${r.kind}|${r.pattern.replace(/\s+/g, " ").trim().toUpperCase()}`;
+    const k = `${r.kind}|${r.patternMode === "ascii" && r.wild === false ? "lit" : "wild"}|${r.pattern.replace(/\s+/g, " ").trim().toUpperCase()}`;
     if (seen.has(k)) dup.push(r.name);
     seen.add(k);
   }

@@ -3,7 +3,14 @@ import type { Lang } from "./uiText";
 
 const ko = {
   // ---- 규칙 카드
-  noRules: "아직 규칙이 없습니다. «+ 규칙 추가» 로 만드세요.\n예) 받으면 «01 03 ?? ?? 00 01 **» → 응답 «01 03 02 00 64» + CRC16 Modbus",
+  noRules: "아직 규칙이 없습니다. «+ 규칙 추가» 로 만들거나 아래 예제로 시작하세요.",
+  examples: "예제:",
+  exModbus: "Modbus RTU 03 응답",
+  exScpi: "SCPI *IDN? 응답",
+  exEcho: "에코(받은 것 그대로)",
+  wild: "와일드카드",
+  wildOn: "? 는 아무 1글자, * 는 0개 이상으로 읽습니다. SCPI 의 *IDN? 처럼 글자 그대로 비교하려면 끄세요.",
+  wildOff: "와일드카드 끄기",
   when: "받으면",
   exact: "정확히",
   contains: "포함",
@@ -16,7 +23,7 @@ const ko = {
   ilShadow: "«{a}» 규칙이 무엇이든 받아서, 그 아래 규칙({b})은 응답하지 않습니다. ↑↓ 로 아래로 옮기세요.",
   ilDup: "이름이 같은 규칙이 있어 응답 횟수가 섞입니다: {a}",
   ilDupPat: "위 규칙과 패턴이 같아 응답하지 않는 규칙: {a}",
-  help: "HEX: ?? = 아무 1바이트, ** = 0개 이상. ASCII: ? = 아무 1글자, * = 0개 이상(와일드카드). ?·* 글자 자체는 \\x3F·\\x2A 로 씁니다. 위에서부터 처음 맞는 규칙 하나만 답합니다(↑↓ 로 순서 변경). 응답에는 {req 0..1}·{counter}·{rand 0..9}·{time}·{crc …} 같은 자리를 쓸 수 있습니다(«자리 넣기»).",
+  help: "HEX: ?? = 아무 1바이트, ** = 0개 이상. ASCII 는 글자 그대로 비교하고, «와일드카드» 를 켠 규칙만 ? = 아무 1글자, * = 0개 이상입니다(켠 채 ?·* 글자 자체는 \\x3F·\\x2A). 위에서부터 처음 맞는 규칙 하나만 답합니다(↑↓ 로 순서 변경). 응답에는 {req 0..1}·{counter}·{rand 0..9}·{time}·{crc …} 같은 자리를 쓸 수 있습니다(«자리 넣기»).",
   moveUp: "위로(먼저 검사)",
   moveDown: "아래로",
   delete: "삭제",
@@ -78,7 +85,14 @@ const ko = {
 };
 
 const en: typeof ko = {
-  noRules: "No rules yet. Use «+ Add rule».\nExample: when «01 03 ?? ?? 00 01 **» → reply «01 03 02 00 64» + CRC16 Modbus",
+  noRules: "No rules yet. Use «+ Add rule» or start from an example below.",
+  examples: "Examples:",
+  exModbus: "Modbus RTU 03 reply",
+  exScpi: "SCPI *IDN? reply",
+  exEcho: "Echo (send back as received)",
+  wild: "Wildcards",
+  wildOn: "? reads as any one character and * as zero or more. Turn wildcards off to compare literally, as SCPI *IDN? needs.",
+  wildOff: "Turn wildcards off",
   when: "When",
   exact: "exact",
   contains: "contains",
@@ -91,7 +105,7 @@ const en: typeof ko = {
   ilShadow: "Rule «{a}» matches everything, so the rules below it ({b}) never reply. Move it down with ↑↓.",
   ilDup: "Rules share a name, so their reply counts mix: {a}",
   ilDupPat: "Same pattern as a rule above, so it never replies: {a}",
-  help: "HEX: ?? = any byte, ** = zero or more. ASCII: ? = any char, * = zero or more (wildcards). Write a literal ? or * as \\x3F / \\x2A. The first matching rule (top-down) replies — reorder with ↑↓. Replies can contain fields such as {req 0..1}, {counter}, {rand 0..9}, {time}, {crc …} («Insert field»).",
+  help: "HEX: ?? = any byte, ** = zero or more. ASCII compares literally; only rules with «Wildcards» on read ? = any char, * = zero or more (then write a literal ? or * as \\x3F / \\x2A). The first matching rule (top-down) replies — reorder with ↑↓. Replies can contain fields such as {req 0..1}, {counter}, {rand 0..9}, {time}, {crc …} («Insert field»).",
   moveUp: "Move up (checked first)",
   moveDown: "Move down",
   delete: "Delete",

@@ -1066,6 +1066,7 @@ mod tests {
             drop_pct: 0.0,
             more_replies: vec![],
             reply_order: crate::autoreply::ReplyOrder::Sequence,
+            wild: true,
         })
         .unwrap()
     }

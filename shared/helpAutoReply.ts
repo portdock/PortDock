@@ -73,7 +73,9 @@ function panelSection(lang: Lang): HelpSection {
         body: [
           "오른쪽 칸 «▸ 자동응답» 은 Simulator 와 같은 규칙으로 받은 줄에 답합니다 — 장비 흉내를 따로 띄우지 않고 이 창에서 바로.",
           "- 머리의 «켜기» 로 켜고 끕니다(켜면 초록색). 꺼도 규칙은 남아 있고, 켜면 바로 답합니다. 규칙·켜기·비교 옵션은 껐다 켜도 남습니다.",
-          "- 규칙: «받으면» 패턴(HEX/ASCII, «정확히»/«포함», 와일드카드 ??·** / ?·*) → «응답»(체크섬·줄 끝·지연). 위에서부터 처음 맞는 하나만 답하고, 응답마다 통신 기록에 «AUTO 이름» 이 남습니다.",
+          "- 규칙: «받으면» 패턴(HEX/ASCII, «정확히»/«포함», HEX 와일드카드 ??·**) → «응답»(체크섬·줄 끝·지연). 위에서부터 처음 맞는 하나만 답하고, 응답마다 통신 기록에 «AUTO 이름» 이 남습니다.",
+          "- ASCII 패턴은 글자 그대로 비교합니다(새 규칙 기본 — SCPI «*IDN?» 를 그대로). 규칙의 «와일드카드» 를 켜면 ? = 아무 1글자, * = 0개 이상입니다. 10/18 이전에 저장한 규칙은 켜진 채로 읽어 동작이 바뀌지 않습니다.",
+          "- 규칙이 없으면 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코] 예제 버튼으로 시작합니다. 새 규칙은 바로 위 규칙의 방식(HEX/ASCII·정확히/포함·응답 형식·줄 끝)을 물려받습니다.",
           "- «끝 문자 떼고 비교»: 받은 줄 끝의 끝 문자(프레임 구분)와 CR·LF 를 떼고 비교합니다. «안 맞은 요청 기록(NO MATCH)»: 어느 규칙에도 안 맞으면 «NO MATCH — closest: 이름» 을 남깁니다.",
           "- 응답은 받은 상대에게 갑니다(TCP 서버는 그 접속, UDP 는 보낸 쪽 주소). 우리가 보낸 응답이 그대로 되돌아오면 다시 답하지 않아 끝없는 주고받기를 막습니다.",
           "- 카드 위 숫자는 응답한 횟수, «횟수 초기화» 로 0. 틀린 규칙은 빨갛게 되고 그것만 빠집니다.",
@@ -84,7 +86,9 @@ function panelSection(lang: Lang): HelpSection {
         body: [
           "«▸ Auto reply» in the right pane answers received lines with the same rules as Simulator — no separate device simulator needed.",
           "- «On» in its header turns it on or off (green when on). Rules are kept while off and reply as soon as it is on. Rules, the switch and match options survive restarts.",
-          "- A rule: «When» pattern (HEX/ASCII, «exact»/«contains», wildcards ??/** or ?/*) → «Reply» (checksum, line ending, delay). The first matching rule replies, and every reply is logged as «AUTO name».",
+          "- A rule: «When» pattern (HEX/ASCII, «exact»/«contains», HEX wildcards ??/**) → «Reply» (checksum, line ending, delay). The first matching rule replies, and every reply is logged as «AUTO name».",
+          "- ASCII patterns compare literally (the default for new rules — SCPI «*IDN?» as is). Turn on a rule's «Wildcards» to make ? any one character and * zero or more. Rules saved before 10/18 load with it on, so they behave as before.",
+          "- With no rules, the [Modbus RTU 03 reply] [SCPI *IDN? reply] [Echo] example buttons give you a start. A new rule takes the format of the rule above it (HEX/ASCII, exact/contains, reply format, line ending).",
           "- «Ignore line ending when matching» strips the framing terminator and CR/LF before comparing. «Log unmatched requests (NO MATCH)» logs «NO MATCH — closest: name» when no rule matches.",
           "- Replies go back to the sender (TCP server: that connection; UDP: the sender's address). If our own reply comes straight back, it is not answered again, so endless ping-pong cannot start.",
           "- The number on each card is its reply count; «Reset counts» sets it to 0. An invalid rule turns red and only that rule is skipped.",

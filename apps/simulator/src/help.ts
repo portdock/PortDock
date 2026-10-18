@@ -17,7 +17,7 @@ export const help: HelpDoc = {
       title: "처음 쓰는 순서",
       body: [
         "- 1. 왼쪽 «연결 방식» 을 고르고 포트·주소를 넣습니다.",
-        "- 2. «+ 규칙 추가» 로 규칙을 만듭니다: «받으면» 패턴, «응답» 내용, 필요하면 체크섬·줄 끝·지연.",
+        "- 2. «+ 규칙 추가» 로 규칙을 만듭니다: «받으면» 패턴, «응답» 내용, 필요하면 체크섬·줄 끝·지연. 규칙이 하나도 없으면 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코(받은 것 그대로)] 예제 버튼으로 시작할 수 있습니다.",
         "- 3. «시작» 을 누릅니다. 상위 프로그램에서 요청을 보내면 맞는 규칙이 응답하고, 아래 «통신 기록» 에 찍힙니다.",
         "- 4. 규칙별 «응답한 횟수» 로 어떤 규칙이 몇 번 답했는지 확인합니다.",
       ],
@@ -27,7 +27,7 @@ export const help: HelpDoc = {
       body: [
         "- 왼쪽: «연결 방식», 포트·주소, «프레임 구분», «시작»/«멈춤», 상태, «파일로 계속 저장».",
         "- 가운데 위: «응답 규칙» 카드들, «끝 문자 떼고 비교»·«안 맞은 요청 기록(NO MATCH)», «횟수 초기화», «규칙 묶음 저장»·«규칙 묶음 불러오기».",
-        "- 그 아래: «장비가 먼저 보내기» 줄.",
+        "- 그 아래: «장비가 먼저 보내기» 접기(평소 접힘, 반복을 켜면 펼쳐짐).",
         "- 맨 아래: «통신 기록»(시각·RX ◀ / TX ▶ / EV·상대 주소·내용), HEX/ASCII 전환, «지우기».",
         ...windowLines("ko"),
       ],
@@ -60,7 +60,9 @@ export const help: HelpDoc = {
         "카드 하나가 규칙 하나입니다. 위에서부터 차례로 비교해 처음 맞는 규칙 하나만 응답합니다. 맞는 규칙이 없으면 아무 응답도 하지 않습니다.",
         "- 체크박스: 규칙 켜기·끄기. 끈 규칙은 건너뜁니다.",
         "- 이름: 기록에 «AUTO 이름» 으로 남고 응답 횟수도 이름으로 셉니다. 이름이 겹치면 경고가 나옵니다.",
-        "- «받으면»: 패턴 방식(HEX/ASCII), «정확히»(프레임 전체가 같아야 함) 또는 «포함»(프레임 안 어딘가에 있으면 됨), 패턴.",
+        "- «받으면»: 패턴 방식(HEX/ASCII), «정확히»(프레임 전체가 같아야 함) 또는 «포함»(프레임 안 어딘가에 있으면 됨), 패턴. ASCII 면 «와일드카드» 체크가 붙습니다(아래 «와일드카드»).",
+        "- 새 규칙(«+ 규칙 추가»)은 바로 위 규칙의 방식 — 받기 HEX/ASCII·정확히/포함, 응답 HEX/ASCII·체크섬·줄 끝 — 을 물려받습니다. 와일드카드는 늘 꺼진 채 시작합니다.",
+        "- 통신 기록의 RX 줄(또는 «NO MATCH» 줄)을 오른쪽 버튼으로 누르고 «이 요청으로 규칙 만들기» 를 고르면 그 바이트로 규칙을 만들고 응답 칸으로 갑니다. 글자면 ASCII·글자 그대로(끝 CR·LF 는 빼고 응답 줄 끝으로), Modbus RTU 면 CRC 자리를 «**» 로 하고 응답 체크섬을 CRC16 Modbus 로, Modbus TCP 면 트랜잭션 ID 를 «?? ??» 로 둡니다. «**» 같은 무엇이든 받는 규칙이 있으면 그 위에 넣습니다.",
         "- «끝 문자 떼고 비교»(기본 켬): 받은 프레임 끝의 끝 문자와 뒤쪽 CR·LF 를 떼고 비교합니다. 그래서 «정확히» 패턴에 줄 끝을 적지 않아도 됩니다. 끄면 받은 바이트 그대로 비교합니다.",
         "- «안 맞은 요청 기록(NO MATCH)»(기본 켬): 어떤 규칙에도 맞지 않은 요청을 통신 기록에 «NO MATCH» 사건(EV)으로 남깁니다.",
         "- «응답»: 응답 방식(HEX/ASCII), 응답 내용, «체크섬», «줄 끝 붙이기», «지연»(ms, 0~600000).",
@@ -75,10 +77,11 @@ export const help: HelpDoc = {
       title: "와일드카드",
       body: [
         "- HEX: «??» = 아무 바이트 1개, «**» = 아무 바이트 0개 이상.",
-        "- ASCII: «?» = 아무 글자 1개, «*» = 0개 이상. «\\r»·«\\n»·«\\xNN» 도 씁니다.",
-        "- ASCII 에서 ? 와 * 는 와일드카드입니다. SCPI 처럼 ?·* 글자 자체를 맞추려면 «\\x3F»(?)·«\\x2A»(*) 로 쓰세요. 예: «*IDN?» → «\\x2AIDN\\x3F».",
+        "- ASCII 는 규칙마다 «와일드카드» 체크로 정합니다. 끄면(새 규칙의 기본) ?·* 도 글자 그대로 비교합니다 — SCPI «*IDN?» 를 그대로 쓰면 «*IDN?» 에만 맞고 «XIDN!» 에는 맞지 않습니다.",
+        "- 켜면 «?» = 아무 글자 1개, «*» = 0개 이상입니다. 켠 채 ?·* 글자 자체를 맞추려면 «\\x3F»(?)·«\\x2A»(*) 로 쓰세요. 켠 규칙의 패턴에 ?·* 가 있으면 노란 알림줄과 [와일드카드 끄기] 가 나옵니다.",
+        "- 이 체크가 생기기 전(10/18 이전)에 저장한 규칙은 켜진 채로 읽어 동작이 바뀌지 않습니다. «\\r»·«\\n»·«\\xNN» 이스케이프는 어느 쪽이든 씁니다.",
         "- 예: «01 03 ?? ?? 00 01 **» = 주소 1·기능 03·아무 시작 주소·개수 1, 뒤의 CRC 는 무엇이든.",
-        "- 예: ASCII «포함» + «STATUS?» = 프레임 어디에든 «STATUS» 다음에 아무 글자 1개가 있으면(물음표가 아니어도 맞음). 물음표까지 맞추려면 «STATUS\\x3F».",
+        "- 예: ASCII «포함» + «STATUS?» — 와일드카드를 끄면 «STATUS?» 글자가 있을 때만, 켜면 «STATUS» 다음에 아무 글자 1개가 있으면(물음표가 아니어도) 맞습니다.",
         "- «**» 하나만 있는 규칙은 무엇이든 받습니다. 맨 아래에 두면 «그 밖의 모든 요청» 에 대한 기본 응답(예: NAK)이 됩니다.",
       ],
     },
@@ -101,7 +104,7 @@ export const help: HelpDoc = {
     {
       title: "장비가 먼저 보내기",
       body: [
-        "장비가 요청 없이 보내는 상태 보고·하트비트·알람을 흉내 냅니다.",
+        "장비가 요청 없이 보내는 상태 보고·하트비트·알람을 흉내 냅니다. 응답 규칙과는 따로이며, 규칙 칸으로 오해하지 않게 평소에는 접혀 있습니다(접힌 제목에 지금 내용, 반복 중이면 «1000 ms 마다 보내는 중»). 반복을 켜면 저절로 펼쳐지고, 열고 닫은 상태는 기억합니다.",
         "- HEX/ASCII, 내용, «체크섬», «줄 끝 붙이기» 를 정하고 «보내기» 를 누릅니다. 아래에 실제로 나갈 바이트가 보입니다.",
         "- «반복(ms)» 을 체크하면 정한 간격(10ms 이상)으로 계속 보냅니다. 상대가 아직 없거나 끊겼으면 그 차례만 건너뛰고 «상대를 기다리는 중» 을 보이며, 상대가 붙으면 이어서 보냅니다. 체크를 끄거나 «멈춤» 을 눌러야 꺼집니다.",
         "- 보내는 곳: 시리얼은 그 포트, TCP 서버는 접속한 모든 상대, TCP 클라이언트는 접속한 상대, UDP 는 마지막으로 보내온 쪽(없으면 «보낼 곳»).",
@@ -113,6 +116,7 @@ export const help: HelpDoc = {
       title: "통신 기록",
       body: [
         "- RX ◀ 받은 것, TX ▶ 보낸 것(규칙 응답·먼저 보내기), EV 사건(시작·접속·끊김·«AUTO 규칙이름» 등).",
+        "- RX 줄·«NO MATCH» 줄의 오른쪽 버튼 메뉴 «이 요청으로 규칙 만들기» 로 받은 요청을 옮겨 적지 않고 규칙을 만듭니다(위 «응답 규칙»).",
         "- HEX/ASCII 버튼으로 보기 방식을 바꿉니다. 맨 아래에 있으면 새 줄을 따라 내려가고, 위로 올려 보면 멈춥니다.",
         "- «파일로 계속 저장»: 시작한 뒤에 파일을 고르면 그때부터 모든 줄을 계속 씁니다. «저장 멈춤» 으로 끝냅니다.",
         ...logHandlingLines("ko", { sendAgain: true }),
@@ -140,7 +144,7 @@ export const help: HelpDoc = {
     {
       title: "문제 해결",
       body: [
-        "- 응답이 안 나감: 규칙이 켜져 있는지, 패턴 방식(HEX/ASCII)·«정확히/포함» 이 맞는지, 위에 «**» 규칙이 있는지 보세요. 통신 기록의 RX 줄과 패턴을 비교하세요. «안 맞은 요청 기록» 을 켜 두면 안 맞은 요청마다 «NO MATCH» 줄이 남습니다. SCPI 의 ?·* 는 «\\x3F»·«\\x2A» 로 쓰세요.",
+        "- 응답이 안 나감: 규칙이 켜져 있는지, 패턴 방식(HEX/ASCII)·«정확히/포함» 이 맞는지, 위에 «**» 규칙이 있는지 보세요. 통신 기록의 RX 줄과 패턴을 비교하세요. «안 맞은 요청 기록» 을 켜 두면 안 맞은 요청마다 «NO MATCH» 줄이 남고, 그 줄의 오른쪽 버튼으로 바로 규칙을 만들 수 있습니다. 엉뚱한 요청에 답하면 ASCII 규칙의 «와일드카드» 가 켜져 있지 않은지 보세요.",
         "- 요청이 둘로 쪼개지거나 합쳐짐: «프레임 구분» 과 «조용한 시간(ms)» 을 조정하세요.",
         "- 시리얼 포트가 안 열림: 다른 프로그램이 쓰고 있는지 확인하세요.",
         "- TCP 서버에 접속이 안 됨: 윈도우 방화벽 허용, 포트, 상위 프로그램이 접속하는 IP 를 확인하세요.",
@@ -161,7 +165,7 @@ export const help: HelpDoc = {
       title: "Getting started",
       body: [
         "- 1. Choose a «Transport» on the left and enter the port or address.",
-        "- 2. Add rules with «+ Add rule»: a «When» pattern, a «Reply», and optionally checksum, line ending and delay.",
+        "- 2. Add rules with «+ Add rule»: a «When» pattern, a «Reply», and optionally checksum, line ending and delay. With no rules yet, the [Modbus RTU 03 reply] [SCPI *IDN? reply] [Echo] example buttons give you a start.",
         "- 3. Press «Start». When the host sends a request the matching rule replies, and both show in «Traffic».",
         "- 4. Check how often each rule replied in «Times replied».",
       ],
@@ -171,7 +175,7 @@ export const help: HelpDoc = {
       body: [
         "- Left: «Transport», port/address, «Framing», «Start»/«Stop», status, «Log to file».",
         "- Top: «Reply rules» cards, «Ignore line ending when matching» / «Log unmatched requests (NO MATCH)», «Reset counts», «Save rule set» / «Load rule set».",
-        "- Below: the «Device-initiated message» row.",
+        "- Below: the «Device-initiated message» section (collapsed; opens when repeat is on).",
         "- Bottom: «Traffic» (time, RX ◀ / TX ▶ / EV, peer address, data), HEX/ASCII toggle, «Clear».",
         ...windowLines("en"),
       ],
@@ -204,7 +208,9 @@ export const help: HelpDoc = {
         "Each card is a rule. Rules are checked top-down and only the first match replies. If none matches, nothing is sent.",
         "- Checkbox: enable or disable the rule. Disabled rules are skipped.",
         "- Name: logged as «AUTO name», and reply counts are kept by name. Duplicate names show a warning.",
-        "- «When»: pattern mode (HEX/ASCII), «exact» (whole frame must match) or «contains» (anywhere in the frame), and the pattern.",
+        "- «When»: pattern mode (HEX/ASCII), «exact» (whole frame must match) or «contains» (anywhere in the frame), and the pattern. ASCII rules get a «Wildcards» checkbox (see «Wildcards»).",
+        "- A new rule («+ Add rule») takes the format of the rule above it — match HEX/ASCII and exact/contains, reply HEX/ASCII, checksum and line ending. Wildcards always start off.",
+        "- Right-click an RX line (or a «NO MATCH» line) in Traffic and choose «Make a rule from this request» to create a rule from those bytes and jump to its reply. Text becomes an ASCII literal pattern (trailing CR/LF moves to the reply line ending); Modbus RTU gets «**» for the CRC and a CRC16 Modbus reply checksum; Modbus TCP gets «?? ??» for the transaction ID. If a catch-all rule such as «**» exists, the new rule goes above it.",
         "- «Ignore line ending when matching» (on by default): the terminator and trailing CR/LF are removed from the received frame before comparing, so «exact» patterns need no line ending. When off, the raw bytes are compared.",
         "- «Log unmatched requests (NO MATCH)» (on by default): a request no rule matched is logged as a «NO MATCH» event (EV).",
         "- «Reply»: reply mode (HEX/ASCII), content, «Checksum», «Line ending», «Delay» (ms, 0–600000).",
@@ -219,10 +225,11 @@ export const help: HelpDoc = {
       title: "Wildcards",
       body: [
         "- HEX: «??» = any one byte, «**» = zero or more bytes.",
-        "- ASCII: «?» = any one character, «*» = zero or more. «\\r», «\\n» and «\\xNN» work too.",
-        "- In ASCII, ? and * are wildcards. To match a literal ? or * (as in SCPI), write «\\x3F» (?) or «\\x2A» (*). Example: «*IDN?» → «\\x2AIDN\\x3F».",
+        "- ASCII: set per rule with the «Wildcards» checkbox. Off (the default for new rules) compares ? and * literally — SCPI «*IDN?» matches only «*IDN?», not «XIDN!».",
+        "- On: «?» = any one character, «*» = zero or more. To match a literal ? or * while on, write «\\x3F» (?) or «\\x2A» (*). A rule with wildcards on and ? or * in its pattern shows a yellow notice with [Turn wildcards off].",
+        "- Rules saved before this checkbox existed (before 10/18) load with wildcards on, so they behave as before. «\\r», «\\n» and «\\xNN» escapes work either way.",
         "- Example: «01 03 ?? ?? 00 01 **» = unit 1, function 03, any start address, count 1, any CRC.",
-        "- Example: ASCII «contains» + «STATUS?» = «STATUS» followed by any one character anywhere in the frame (not necessarily a question mark). To require the question mark, use «STATUS\\x3F».",
+        "- Example: ASCII «contains» + «STATUS?» — with wildcards off it needs the text «STATUS?»; with them on, «STATUS» followed by any one character (not necessarily a question mark).",
         "- A rule of just «**» matches everything. At the bottom it becomes the default reply (e.g. NAK) for everything else.",
       ],
     },
@@ -245,7 +252,7 @@ export const help: HelpDoc = {
     {
       title: "Device-initiated message",
       body: [
-        "Imitates status reports, heartbeats or alarms that a device sends without a request.",
+        "Imitates status reports, heartbeats or alarms that a device sends without a request. It is separate from the reply rules and stays collapsed so it is not mistaken for one (the collapsed title shows the content, or «sending every 1000 ms» while repeating). Turning on repeat opens it; its open state is remembered.",
         "- Choose HEX/ASCII, content, «Checksum» and «Line ending», then press «Send». The exact bytes are shown below.",
         "- Check «Repeat (ms)» to send every interval (10 ms or more). While no peer is connected, turns are skipped with «Waiting for a peer» and sending resumes when one connects. Only unchecking it or «Stop» turns it off.",
         "- Destination: the serial port; all connected peers (TCP server); the server (TCP client); the last sender, or «Send to» if none (UDP).",
@@ -257,6 +264,7 @@ export const help: HelpDoc = {
       title: "Traffic",
       body: [
         "- RX ◀ received, TX ▶ sent (rule replies and device-initiated messages), EV events (start, connect, disconnect, «AUTO rule name», …).",
+        "- «Make a rule from this request» in the right-click menu of an RX or «NO MATCH» line creates a rule without retyping the request (see «Reply rules»).",
         "- Toggle HEX/ASCII view. At the bottom the view follows new lines; scroll up to pause it.",
         "- «Log to file»: after starting, pick a file to write every line from then on. «Stop logging» ends it.",
         ...logHandlingLines("en", { sendAgain: true }),
@@ -284,7 +292,7 @@ export const help: HelpDoc = {
     {
       title: "Troubleshooting",
       body: [
-        "- No reply: check the rule is enabled, the pattern mode (HEX/ASCII) and exact/contains, and that no «**» rule sits above it. Compare the RX line with the pattern. With «Log unmatched requests» on, each unmatched request leaves a «NO MATCH» line. Write SCPI ? and * as «\\x3F» / «\\x2A».",
+        "- No reply: check the rule is enabled, the pattern mode (HEX/ASCII) and exact/contains, and that no «**» rule sits above it. Compare the RX line with the pattern. With «Log unmatched requests» on, each unmatched request leaves a «NO MATCH» line, and right-clicking it makes a rule. If a rule answers the wrong requests, check whether «Wildcards» is on for an ASCII rule.",
         "- Requests split or merged: adjust «Framing» and «Idle gap (ms)».",
         "- Serial port does not open: check whether another program is using it.",
         "- Cannot connect to the TCP server: check the Windows Firewall prompt, the port, and the IP the host connects to.",

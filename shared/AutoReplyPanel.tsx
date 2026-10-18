@@ -9,7 +9,7 @@ import { convertNotation } from "./notation";
 import type { ToastApi } from "./Toast";
 import { ui, type Lang } from "./uiText";
 import { ar, INSERTS } from "./autoReplyText";
-import { blankRule, faultSummary, type AutoRule, type ReplySpec, type RulePreview, type TextMode } from "./autoReply";
+import { blankRule, exampleRule, faultSummary, wildChars, type AutoRule, type ExampleKind, type ReplySpec, type RulePreview, type TextMode } from "./autoReply";
 import type { AutoReplyApi } from "./autoReplyApi";
 import "./autoreply.css";
 
@@ -327,15 +327,37 @@ export function AutoReplyPanel({
     setRules(next);
     setOpen((o) => ({ ...o, [i]: !!o[j], [j]: !!o[i] }));
   };
+  // 새 규칙은 직전 규칙의 방식(HEX/ASCII·정확히/포함·응답 형식·줄 끝)을 물려받는다
   const add = () => {
-    setRules([...rules, blankRule(rules.length + 1)]);
+    setRules([...rules, blankRule(rules.length + 1, rules[rules.length - 1])]);
     const i = rules.length;
     requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`.arcard[data-i="${i}"] .arpat`)?.focus());
+  };
+  /** 빈 화면 예제 — 규칙 하나를 채워 넣고 «자세히»(예시 요청 미리보기)를 펼친다 */
+  const addExample = (k: ExampleKind) => {
+    setRules([...rules, exampleRule(k)]);
+    setOpen({ [rules.length]: true });
   };
 
   return (
     <div className={compact ? "ar compact" : "ar"}>
-      {rules.length === 0 && <div className="empty-guide">{ar(lang, "noRules")}</div>}
+      {rules.length === 0 && (
+        <div className="empty-guide">
+          {ar(lang, "noRules")}
+          <div className="arexamples" data-tip={tip(lang, "arExamples")}>
+            <span className="arlbl">{ar(lang, "examples")}</span>
+            <button type="button" className="btn small arex-modbus" onClick={() => addExample("modbus")}>
+              {ar(lang, "exModbus")}
+            </button>
+            <button type="button" className="btn small arex-scpi" onClick={() => addExample("scpi")}>
+              {ar(lang, "exScpi")}
+            </button>
+            <button type="button" className="btn small arex-echo" onClick={() => addExample("echo")}>
+              {ar(lang, "exEcho")}
+            </button>
+          </div>
+        </div>
+      )}
       {rules.map((r, i) => {
         const f = faultSummary(r);
         const badges = [
@@ -379,10 +401,23 @@ export function AutoReplyPanel({
                 value={r.pattern}
                 spellCheck={false}
                 aria-label={ar(lang, "when")}
-                placeholder={r.patternMode === "hex" ? "01 03 ?? ?? 00 0A **" : "READ?*\\r"}
+                placeholder={r.patternMode === "hex" ? "01 03 ?? ?? 00 0A **" : (r.wild ?? true) ? "READ?*" : "*IDN?"}
                 onChange={(e) => update(i, { pattern: e.target.value })}
               />
+              {r.patternMode === "ascii" && (
+                <label className="inline arwild" data-tip={tip(lang, "arWild")}>
+                  <input type="checkbox" checked={r.wild ?? true} onChange={(e) => update(i, { wild: e.target.checked })} /> {ar(lang, "wild")}
+                </label>
+              )}
             </div>
+            {wildChars(r) && (
+              <div className="hint warn arwild-note">
+                <span>{ar(lang, "wildOn")}</span>
+                <button type="button" className="btn small" onClick={() => update(i, { wild: false })}>
+                  {ar(lang, "wildOff")}
+                </button>
+              </div>
+            )}
             <ReplyRow
               lang={lang}
               spec={r.reply}

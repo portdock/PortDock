@@ -733,6 +733,8 @@ function compilePattern(r) {
     }
     return out;
   }
+  // 와일드카드를 끈 ASCII 규칙(core wild:false)은 ?·* 도 글자 그대로. 칸이 없으면 켜짐(예전 규칙)
+  if (r.wild === false) return parseAscii(r.pattern);
   const out = [];
   const parts = r.pattern.split("*");
   parts.forEach((p, i) => {
