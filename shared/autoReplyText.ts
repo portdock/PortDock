@@ -73,6 +73,7 @@ const ko = {
   badgeReplies: "응답 {n}개 {a}",
   // ---- Serial·TCP·UDP 의 «자동응답» 칸
   section: "자동응답",
+  simNote: "이 칸은 이 연결에 곁들이는 간단한 자동응답입니다. 규칙이 많거나 장비 흉내(시리얼·TCP 서버/클라이언트·UDP, 먼저 보내기·장애 흉내)가 목적이면 PortDock Simulator 가 편합니다 — 규칙 칸 모양은 같습니다.",
   on: "켜기",
   offNote: "꺼져 있습니다 — 규칙은 남아 있고, 켜면 바로 답합니다.",
   onNote: "켜져 있습니다 — 받은 줄이 규칙에 맞으면 응답을 보냅니다(통신 기록에 «AUTO 이름»).",
@@ -152,6 +153,7 @@ const en: typeof ko = {
   badgePct: "drop {p}%",
   badgeReplies: "{n} replies {a}",
   section: "Auto reply",
+  simNote: "This is a simple auto reply riding on this connection. For many rules or for emulating a device (serial, TCP server/client, UDP, unsolicited sends, fault emulation), PortDock Simulator is easier — the rule cards look the same.",
   on: "On",
   offNote: "Off — rules are kept and reply as soon as you turn it on.",
   onNote: "On — a received line that matches a rule gets the reply (logged as «AUTO name»).",

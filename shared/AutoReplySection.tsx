@@ -105,6 +105,7 @@ export function AutoReplySection({
             )}
           </div>
           <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={api} compact />
+          <div className="hint ars-sim">{ar(lang, "simNote")}</div>
         </>
       )}
       {err && <div className="error">{err}</div>}

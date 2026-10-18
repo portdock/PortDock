@@ -32,7 +32,8 @@ export const help: HelpDoc = {
         "- 가운데 로그: 시각·방향(RX ◀ / TX ▶ / EV)·(서버면 상대 주소)·내용. 수신 체크섬 검사를 켜면 «정상»·«틀림» 이 붙습니다.",
         "- 가운데 아래: 보내기 줄((서버) «받는 쪽», HEX/ASCII, 입력칸, 체크섬, 줄 끝 붙이기, «보내기»), «보낼 바이트», «반복(ms)», «+ 목록에 추가».",
         "- 오른쪽: «명령 목록», «트리거», «상세»(로그 줄을 누르면 그 줄의 상대 주소·바이트 수·HEX·ASCII).",
-        "- 창이 좁으면 오른쪽 칸이 숨고, 도구줄의 «☰ 명령 목록» 버튼으로 펼칩니다.",
+        "- 창이 좁으면(1180px 이하) 오른쪽 칸이 숨고, 도구줄의 «☰ 명령·상세»(1100px 이하에서는 «☰») 버튼으로 펼칩니다. 로그 줄을 누르면 저절로 펼쳐져 «상세» 가 보입니다(Shift·Ctrl 로 여러 줄을 고를 때는 펼치지 않음).",
+        "- 보내기 둘째 줄의 «⋯ 더보기»: 문자 간 지연·파일 보내기…·(반복이 꺼져 있으면) 반복 횟수. 반복 횟수 칸은 반복을 켰거나 횟수를 정했을 때만 줄에 보입니다.",
         ...windowLines("ko"),
         ...ioLayoutLines("ko", { fileSend: true }),
       ],
@@ -40,7 +41,7 @@ export const help: HelpDoc = {
     {
       title: "연결 설정",
       body: [
-        "- «방식»: «클라이언트 (장비에 접속)», «서버 (장비가 접속)», 또는 «중계 (모니터)»(아래 «중계(모니터)»). 실행 중에는 바꿀 수 없습니다.",
+        "- «방식»: 위의 탭 [클라이언트 | 서버 | 중계] — 클라이언트(장비에 접속), 서버(장비가 접속), 중계(모니터, 아래 «중계(모니터)»). 방식마다 주소·포트를 따로 기억하므로 탭을 바꿔도 다른 방식의 주소(예: 클라이언트의 장비 IP)를 0.0.0.0 으로 덮어쓰지 않습니다. 실행 중에는 바꿀 수 없습니다.",
         "- «주소»(클라이언트): 접속할 장비의 IP 주소나 이름. 예: «192.168.0.10».",
         "- «묶을 주소 (0.0.0.0 = 모든 랜카드)»(서버): 어느 랜카드로 접속을 받을지. 보통 0.0.0.0 으로 둡니다. 특정 랜카드만 쓰려면 그 PC 쪽 IP 를 넣습니다.",
         "- «포트»: 클라이언트는 장비의 포트(예: Modbus TCP 502), 서버는 기다릴 포트. 서버에서 0 이면 운영체제가 빈 포트를 고릅니다.",
@@ -48,6 +49,7 @@ export const help: HelpDoc = {
         "- «끊기면 자동 재접속»(클라이언트): 접속이 끊기거나 실패하면 «재접속 간격(ms)»(200 이상, 기본 2000)마다 다시 시도합니다. 끄면 한 번 끊기면 멈춥니다. 한 번의 접속 시도는 3초까지 기다립니다.",
         "- «받은 것 그대로 돌려주기 (에코)»(서버, «받기 설정» 안): 받은 데이터를 보낸 상대에게 그대로 돌려줍니다. 실행 중에도 켜고 끌 수 있습니다.",
         "- 실행 중 버튼은 클라이언트면 «끊기», 서버·중계면 «듣기 멈춤» 입니다(F4 도 같음).",
+        "- 클라이언트로 502 포트에 접속했는데 프레임 구분이 «Modbus TCP» 가 아니면 «Modbus TCP 로 보기» 알림줄이 한 번 나옵니다. 누르면 요청·응답이 하나씩 끊기고 상세에 풀이가 나옵니다.",
         "- 에코는 1초에 200번을 넘으면 저절로 꺼집니다(상대도 에코하면 끝없이 주고받기 때문). 이때 «ECHO OFF …» 줄과 오류 문구가 나옵니다.",
         "- 서버는 최대 64개 접속을 받습니다. 넘으면 거절하고 «REJECT …» 를 남깁니다.",
         "- 실행 중에는 방식·주소·포트·즉시 전송·재접속 설정이 잠깁니다(🔒). 에코·프레임 구분·수신 체크섬 검사는 실행 중에 바꿔도 바로 적용됩니다.",
@@ -57,7 +59,7 @@ export const help: HelpDoc = {
     {
       title: "접속한 상대(서버)",
       body: [
-        "- 서버로 듣는 중이면 왼쪽 «접속한 상대» 에 붙어 있는 장비 주소가 보입니다. 아직 없으면 «아직 없음».",
+        "- 서버로 듣는 중이면 왼쪽 «접속한 상대» 에 붙어 있는 장비 주소가 보입니다. 아직 없으면 «아직 없음». 둘 이상이면 «모두 끊기 (n)» 로 한 번에 끊습니다(듣기는 계속).",
         "- 상대 옆 «끊기» 를 누르면 그 접속만 끊습니다. 주소가 길면(IPv6) 줄임표로 줄이고 마우스를 올리면 전체가 보입니다 — «끊기» 는 늘 보입니다.",
         "- 보내기 줄 왼쪽 «받는 쪽» 에서 «모두에게» 또는 특정 상대를 고릅니다.",
         "- 보낼 상대가 하나도 없으면 «보내기» 가 잠깁니다.",
@@ -76,6 +78,18 @@ export const help: HelpDoc = {
         "- «고정 길이»: «길이» 바이트마다 끊습니다.",
         "- 끊김 없이 계속 들어오는 데이터는 16KB 마다 강제로 끊습니다.",
         "- 실행 중에 바꿔도 바로 적용됩니다.",
+      ],
+    },
+    {
+      title: "Modbus TCP 장비 값 읽기 따라하기",
+      id: "modbus",
+      body: [
+        "Modbus TCP 장비(PLC·인버터·전력계·게이트웨이)의 레지스터를 한 번 읽어 보는 순서입니다. 값을 계속 읽고 표로 보려면 PortDock Modbus Master 가 더 편합니다.",
+        "- 1. 탭 «클라이언트», 주소에 장비 IP, 포트 502 → «접속». 처음이면 «Modbus TCP 로 보기» 알림줄이 나옵니다 — 누르면 프레임 구분이 «Modbus TCP (MBAP 길이)» 가 됩니다.",
+        "- 2. 보내기 줄의 «Modbus…» 로 요청 창을 엽니다. 국번(슬레이브 ID) 1, 함수 03, 시작 주소(40001 표기면 «4xxxx 표기»), 개수 10.",
+        "- 3. «입력칸에 넣기» → 보내기 줄이 HEX·체크섬 없음·줄 끝 없음으로 맞춰지고 MBAP 머리(트랜잭션 ID)가 붙은 요청이 들어갑니다. «보내기».",
+        "- 4. 응답 줄을 누르면 «상세» 에 MBAP 풀이와 «40001 = 1812 (0x0714)» 처럼 요청과 짝지은 값이 나옵니다(같은 트랜잭션 ID). 예외면 이름(예: 02 없는 주소)이 나옵니다.",
+        "- 응답이 없으면 IP·포트·국번(게이트웨이 뒤 RTU 장비면 그 국번)을 확인하세요.",
       ],
     },
     {
@@ -234,7 +248,8 @@ export const help: HelpDoc = {
         "- Log: time, direction (RX ◀ / TX ▶ / EV), (server) peer address and data. With RX checksum verification on, lines get «OK» or «FAIL».",
         "- Bottom: the send row ((server) «To», HEX/ASCII, input, checksum, line ending, «Send»), «Bytes to send», «Repeat (ms)», «+ Save to list».",
         "- Right: «Commands», «Triggers» and «Detail» (click a log line to see its peer, byte count, HEX and ASCII).",
-        "- In a narrow window the right pane is hidden; open it with the «☰ Commands» button in the toolbar.",
+        "- In a narrow window (1180 px or less) the right pane is hidden; open it with «☰ Commands · Detail» in the toolbar (just «☰» at 1100 px or less). Clicking a log line opens it at «Detail» (not when Shift/Ctrl-selecting several lines).",
+        "- «⋯ More» on the second send row: character delay, Send file… and (with repeat off) the repeat count. The repeat count shows in the row only while repeat is on or a count is set.",
         ...windowLines("en"),
         ...ioLayoutLines("en", { fileSend: true }),
       ],
@@ -242,7 +257,7 @@ export const help: HelpDoc = {
     {
       title: "Connection settings",
       body: [
-        "- «Mode»: «Client (connect to device)», «Server (device connects)», or «Relay (monitor)» (see «Relay (monitor)» below). It cannot change while running.",
+        "- «Mode»: the tabs [Client | Server | Relay] — client (connect to the device), server (the device connects) or relay (monitor, see «Relay (monitor)» below). Each mode remembers its own address and port, so switching tabs never overwrites another mode's address (e.g. the client's device IP) with 0.0.0.0. It cannot change while running.",
         "- «Host» (client): IP address or name of the device, e.g. «192.168.0.10».",
         "- «Bind address (0.0.0.0 = all NICs)» (server): which network card accepts connections. Usually 0.0.0.0. To use one card only, enter this PC's IP on that card.",
         "- «Port»: for a client, the device's port (e.g. 502 for Modbus TCP); for a server, the port to listen on. A server port of 0 lets the OS pick a free port.",
@@ -250,6 +265,7 @@ export const help: HelpDoc = {
         "- «Reconnect automatically» (client): if the connection drops or fails, it retries every «Reconnect interval (ms)» (200 or more, default 2000). When off, it stops after the first drop. Each connect attempt waits up to 3 s.",
         "- «Echo received data» (server, in «Receive settings»): sends received data straight back to the sender. Can be toggled while running.",
         "- While running, the button reads «Disconnect» for a client and «Stop listening» for server/relay (F4 does the same).",
+        "- When a client connects to port 502 but framing is not «Modbus TCP», a one-time «View as Modbus TCP» notice appears. Clicking it splits each request/response into one line with decoding in Detail.",
         "- Echo turns itself off above 200 times per second (two echoing sides would bounce forever). An «ECHO OFF …» line and an error message appear.",
         "- The server accepts up to 64 connections. Further ones are refused with «REJECT …».",
         "- While running, mode, host, port, no-delay and reconnect settings are locked (🔒). Echo, framing and the RX checksum check apply immediately when changed.",
@@ -260,6 +276,7 @@ export const help: HelpDoc = {
       title: "Connected peers (server)",
       body: [
         "- While listening, «Connected peers» on the left shows the attached devices, or «None yet».",
+        "- With two or more peers, «Disconnect all (n)» closes them all at once (listening continues).",
         "- «Kick» next to a peer closes that connection only. Long addresses (IPv6) are shortened with an ellipsis (hover for the full one) so «Kick» stays visible.",
         "- «To» at the left of the send row selects «All» or one peer.",
         "- With no peer connected, «Send» is disabled.",
@@ -278,6 +295,18 @@ export const help: HelpDoc = {
         "- «Fixed length»: split every «Length» bytes.",
         "- An endless stream without gaps is split every 16 KB.",
         "- Changes apply immediately while running.",
+      ],
+    },
+    {
+      title: "Reading a Modbus TCP device — walkthrough",
+      id: "modbus",
+      body: [
+        "Steps to read registers from a Modbus TCP device (PLC, drive, meter, gateway) once. To keep reading values in a table, PortDock Modbus Master is easier.",
+        "- 1. Tab «Client», the device IP as address, port 502 → «Connect». The first time, a «View as Modbus TCP» notice appears — it sets framing to «Modbus TCP (MBAP length)».",
+        "- 2. Open the request dialog with «Modbus…» in the send bar. Slave ID 1, function 03, start address («4xxxx notation» for 40001 style), quantity 10.",
+        "- 3. «Put in input» sets the send bar to HEX, no checksum, no line ending and fills in the request with its MBAP header (transaction ID). «Send».",
+        "- 4. Click the reply line: «Detail» shows the MBAP decoding and values paired with the request such as «40001 = 1812 (0x0714)» (same transaction ID). Exceptions show their name (e.g. 02 Illegal Data Address).",
+        "- No reply: check the IP, port and Slave ID (behind a gateway, the RTU device's Slave ID).",
       ],
     },
     {

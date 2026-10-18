@@ -79,6 +79,7 @@ function panelSection(lang: Lang): HelpSection {
           "- «끝 문자 떼고 비교»: 받은 줄 끝의 끝 문자(프레임 구분)와 CR·LF 를 떼고 비교합니다. «안 맞은 요청 기록(NO MATCH)»: 어느 규칙에도 안 맞으면 «NO MATCH — closest: 이름» 을 남깁니다.",
           "- 응답은 받은 상대에게 갑니다(TCP 서버는 그 접속, UDP 는 보낸 쪽 주소). 우리가 보낸 응답이 그대로 되돌아오면 다시 답하지 않아 끝없는 주고받기를 막습니다.",
           "- 카드 위 숫자는 응답한 횟수, «횟수 초기화» 로 0. 틀린 규칙은 빨갛게 되고 그것만 빠집니다.",
+          "- 이 칸은 연결에 곁들이는 간단한 자동응답입니다. 규칙이 많거나 장비 흉내(먼저 보내기·장애 흉내 포함)가 목적이면 PortDock Simulator 를 쓰세요 — 칸 아래에도 이 안내가 있습니다.",
         ],
       }
     : {
@@ -92,6 +93,7 @@ function panelSection(lang: Lang): HelpSection {
           "- «Ignore line ending when matching» strips the framing terminator and CR/LF before comparing. «Log unmatched requests (NO MATCH)» logs «NO MATCH — closest: name» when no rule matches.",
           "- Replies go back to the sender (TCP server: that connection; UDP: the sender's address). If our own reply comes straight back, it is not answered again, so endless ping-pong cannot start.",
           "- The number on each card is its reply count; «Reset counts» sets it to 0. An invalid rule turns red and only that rule is skipped.",
+          "- This is a simple auto reply riding on the connection. For many rules or device emulation (unsolicited sends and fault emulation included) use PortDock Simulator — a note under the panel says so too.",
         ],
       };
 }

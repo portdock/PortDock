@@ -50,6 +50,7 @@ import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
 import { LiveStats, ViewOptions } from "@shared/StatsBar";
+import { Popover } from "@shared/Popover";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
@@ -133,7 +134,7 @@ export default function App() {
   const [local, setLocal] = useState<string | null>(null);
   const [senders, setSenders] = useState<Peer[]>([]);
   const [to, setTo] = useState<string>("");
-  // 실제로 적용된 기본 대상(«주소:포트»). 실행 중 바꾸기가 실패하면 이전 값 그대로 남고 remoteErr 에 이유
+  // 실제로 적용된 보낼 곳(«주소:포트»). 실행 중 바꾸기가 실패하면 이전 값 그대로 남고 remoteErr 에 이유
   const [applied, setApplied] = useState<string | null>(null);
   const [remoteErr, setRemoteErr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -221,7 +222,7 @@ export default function App() {
   useEffect(() => {
     if (running) api.setEcho(cfg.echo).catch(() => {});
   }, [running, cfg.echo]);
-  // 실행 중 기본 대상 바꾸기
+  // 실행 중 보낼 곳 바꾸기
   useEffect(() => {
     if (!running || !cfg.remoteHost || !cfg.remotePort) return;
     const want = `${cfg.remoteHost}:${cfg.remotePort}`;
@@ -318,6 +319,16 @@ export default function App() {
   // 줄 고르기(누르기·Shift 범위·Ctrl 하나씩) — 누른 줄이 상세 칸에 나온다
   const sel = useLogSelection({ indexOfSeq: filter.indexOfSeq, seqAt: (i) => filter.at(i)?.seq });
   const selected = sel.primary;
+  const [moreOpen, setMoreOpen] = useState<{ times: boolean } | null>(null);
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(null), []);
+  // 좁은 창(1180px 이하)은 오른쪽 칸이 숨어 있다 — 줄을 누르면 펼치고 «상세» 로 굴린다(Serial 과 같게, 10/18)
+  const detailHead = useRef<HTMLHeadingElement>(null);
+  const openDetail = () => {
+    if (!matchMedia("(max-width: 1180px)").matches) return;
+    setShowRight(true);
+    requestAnimationFrame(() => detailHead.current?.scrollIntoView({ block: "start" }));
+  };
   const frameOf = (seq: number) => {
     const f = frames.length ? frames[seq - (frames[0].seq ?? 0)] : undefined;
     return f && f.seq === seq ? f : undefined;
@@ -377,6 +388,13 @@ export default function App() {
   };
   // 반복 횟수 한도(0 = 계속)와 이번 반복에서 보낸 수
   const [repeatTimes, setRepeatTimes] = useState(() => load("repeatTimes", 0));
+  // 횟수 칸은 반복을 켰거나 횟수를 정해 둔 때만 줄에(나머지는 «⋯ 더보기»)
+  const timesInRow = repeating || repeatTimes > 0;
+  const repeatTimesBox = (
+    <label className="inline" data-tip={tip(lang, "repeatTimes")}>
+      <NumInput className="num small-num rep-times" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
+    </label>
+  );
   useEffect(() => {
     store("repeatTimes", repeatTimes);
   }, [repeatTimes]);
@@ -412,10 +430,10 @@ export default function App() {
     };
   }, [spec, settings.encoding, lang]);
   const sendable = !!previewBytes && previewBytes.length > 0;
-  // 인터락: 기본 대상이 브로드캐스트 주소인데 허용이 꺼져 있으면 운영체제가 거절한다
+  // 인터락: 보낼 곳이 브로드캐스트 주소인데 허용이 꺼져 있으면 운영체제가 거절한다
   const bcastBlocked = to === "" && looksBroadcast(cfg.remoteHost) && !cfg.broadcast;
   const noRemote = to === "" && (!cfg.remoteHost || cfg.remotePort === 0);
-  // 기본 대상 칸이 실제 적용된 값과 다르면(바꾸기 실패·적용 대기) 기본 대상으로는 보내지 않는다 — 이전 주소로 새지 않게
+  // 보낼 곳 칸이 실제 적용된 값과 다르면(바꾸기 실패·적용 대기) 보낼 곳으로는 보내지 않는다 — 이전 주소로 새지 않게
   const remotePending = running && applied !== `${cfg.remoteHost}:${cfg.remotePort}`;
   const remoteBlocked = to === "" && remotePending;
   const canSend = running && sendable && !bcastBlocked && !noRemote && !remoteBlocked;
@@ -705,8 +723,8 @@ export default function App() {
           <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
-            ☰ {t("commands")}
+          <button data-tip={tip(lang, "commandsDetail")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight} aria-label={t("commandsDetail")}>
+            ☰<span className="nb-text"> {t("commandsDetail")}</span>
           </button>
         </div>
 
@@ -733,7 +751,10 @@ export default function App() {
                 const dt = deltaMode !== "off" && <span className="dt">{deltaText(deltaMode, f)}</span>;
                 // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
                 const handlers = {
-                  onClick: (e: ReactMouseEvent) => sel.click(e, seq),
+                  onClick: (e: ReactMouseEvent) => {
+                    sel.click(e, seq);
+                    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) openDetail();
+                  },
                   onContextMenu: (e: ReactMouseEvent) => {
                     e.preventDefault();
                     sel.context(seq);
@@ -869,16 +890,25 @@ export default function App() {
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} aria-label={t("repeat")} />
-            <label className="inline" data-tip={tip(lang, "repeatTimes")}>
-              <NumInput className="num small-num" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
-            </label>
+            {timesInRow && repeatTimesBox}
             {(repeating || repeatSent > 0) && (
               <span className="rep-count">{repeatTimes > 0 ? io(lang, "repeatSentOf", { n: repeatSent, m: repeatTimes }) : io(lang, "repeatSent", { n: repeatSent })}</span>
             )}
             <button className="btn small add-cmd" onClick={() => pushCommand({ ...spec, name: spec.text.slice(0, 24) || "cmd", key: null })} disabled={!sendable}>
               + {t("addCommand")}
             </button>
+            {/* 반복이 꺼져 있으면 횟수는 «⋯ 더보기» 에서(10/18, Serial·TCP 와 같게) */}
+            {!timesInRow && (
+              <button ref={moreBtn} className="btn small more-btn" onClick={() => setMoreOpen((o) => (o ? null : { times: true }))} aria-expanded={!!moreOpen} data-tip={tip(lang, "sendMoreUdp")}>
+                ⋯ {t("more")}
+              </button>
+            )}
           </div>
+          {moreOpen && (
+            <Popover anchor={moreBtn.current} onClose={closeMore} label={t("more")} className="more-pop">
+              <div className="pop-row">{repeatTimesBox}</div>
+            </Popover>
+          )}
           {modeSwitch.node}
           {bcastBlocked && <div className="interlock">{t("ilBcast")}</div>}
           {noRemote && running && <div className="interlock">{t("ilNoRemote")}</div>}
@@ -912,7 +942,7 @@ export default function App() {
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
         <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} />
-        <h3 data-tip={tip(lang, "detail")}>{t("detail")}</h3>
+        <h3 ref={detailHead} data-tip={tip(lang, "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">

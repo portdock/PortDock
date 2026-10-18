@@ -46,6 +46,7 @@ import { ChecksumPicker } from "@shared/ChecksumOptions";
 import { useSendHistory } from "@shared/sendHistory";
 import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@shared/liveStats";
 import { LiveStats, ViewOptions } from "@shared/StatsBar";
+import { Popover } from "@shared/Popover";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace } from "@shared/FileSend";
 import { AutoReplySection } from "@shared/AutoReplySection";
@@ -74,7 +75,8 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // true = 첫 절, 글자 = 그 id 의 절(요청 창 «따라하기 보기»)
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -123,6 +125,16 @@ export default function App() {
     store("rxCheck", rxCheck);
   }, [rxCheck]);
   // 듣는 방식(서버·중계)인지, 중계인지 — 상대 목록·받는 쪽 고르기·묶을 주소에 쓴다
+  // 방식마다 따로 기억한 주소·포트 — 탭을 바꿔도 다른 방식의 주소를 덮어쓰지 않는다
+  const [byMode, setByMode] = useState<Partial<Record<TcpConfig["mode"], { host: string; port: number }>>>(() => load("cfgByMode", {}));
+  useEffect(() => store("cfgByMode", byMode), [byMode]);
+  function pickMode(mode: TcpConfig["mode"]) {
+    if (mode === cfg.mode || running) return;
+    const saved = { ...byMode, [cfg.mode]: { host: cfg.host, port: cfg.port } };
+    setByMode(saved);
+    const next = saved[mode] ?? { host: mode === "client" ? (cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host) : "0.0.0.0", port: cfg.port };
+    setCfg({ ...cfg, mode, host: next.host, port: next.port });
+  }
   const relay = cfg.mode === "relay";
   const listening = cfg.mode !== "client";
   // 왼쪽 «고급 연결»(Nagle·재접속) — 대부분 기본값이라 접는다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작, 열림 상태는 기억
@@ -322,6 +334,29 @@ export default function App() {
   // 줄 고르기(누르기·Shift 범위·Ctrl 하나씩) — 누른 줄이 상세 칸에 나온다
   const sel = useLogSelection({ indexOfSeq: filter.indexOfSeq, seqAt: (i) => filter.at(i)?.seq });
   const selected = sel.primary;
+  // 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 한 번만 «Modbus TCP 로 볼까요?»(18b #12)
+  const [mb502, setMb502] = useState(false);
+  useEffect(() => {
+    if (!running || cfg.mode !== "client" || cfg.port !== 502 || framing.kind === "modbus-tcp" || load("mb502Asked", false)) return;
+    store("mb502Asked", true);
+    setMb502(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+  const acceptMb502 = () => {
+    setMb502(false);
+    setFraming({ kind: "modbus-tcp", gapMs: 1000 });
+  };
+  // ---- 보내기 둘째 줄 «⋯ 더보기» — times: 연 순간 줄에 횟수 칸이 없었으면 팝오버에 둔다
+  const [moreOpen, setMoreOpen] = useState<{ times: boolean } | null>(null);
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(null), []);
+  // 좁은 창(1180px 이하)은 오른쪽 칸이 숨어 있다 — 줄을 누르면 펼치고 «상세» 로 굴린다(Serial 과 같게, 10/18)
+  const detailHead = useRef<HTMLHeadingElement>(null);
+  const openDetail = () => {
+    if (!matchMedia("(max-width: 1180px)").matches) return;
+    setShowRight(true);
+    requestAnimationFrame(() => detailHead.current?.scrollIntoView({ block: "start" }));
+  };
   const frameOf = (seq: number) => {
     const f = frames.length ? frames[seq - (frames[0].seq ?? 0)] : undefined;
     return f && f.seq === seq ? f : undefined;
@@ -380,6 +415,13 @@ export default function App() {
   };
   // 반복 횟수 한도(0 = 계속)와 이번 반복에서 보낸 수
   const [repeatTimes, setRepeatTimes] = useState(() => load("repeatTimes", 0));
+  // 횟수 칸은 반복을 켰거나 횟수를 정해 둔 때만 줄에(나머지는 «⋯ 더보기»)
+  const timesInRow = repeating || repeatTimes > 0;
+  const repeatTimesBox = (
+    <label className="inline" data-tip={tip(lang, "repeatTimes")}>
+      <NumInput className="num small-num rep-times" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
+    </label>
+  );
   useEffect(() => {
     store("repeatTimes", repeatTimes);
   }, [repeatTimes]);
@@ -636,19 +678,17 @@ export default function App() {
           </span>
         </div>
 
-        <label data-tip={tip(lang, "mode")}>
+        {/* 방식은 탭(분할 버튼)으로 — 방식마다 주소·포트를 따로 기억한다(10/18, Hercules·sokit 처럼) */}
+        <span className="label" data-tip={tip(lang, "mode")}>
           {t("mode")}
-          <select value={cfg.mode} disabled={running} onChange={(e) => {
-            const mode = e.target.value as TcpConfig["mode"];
-            const wasListening = cfg.mode !== "client";
-            const nowListening = mode !== "client";
-            setCfg({ ...cfg, mode, host: nowListening && !wasListening ? "0.0.0.0" : !nowListening && cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host });
-          }}>
-            <option value="client">{t("client")}</option>
-            <option value="server">{t("server")}</option>
-            <option value="relay">{t("relay")}</option>
-          </select>
-        </label>
+        </span>
+        <div className="segs mode-tabs" role="tablist" aria-label={t("mode")}>
+          {(["client", "server", "relay"] as const).map((m) => (
+            <button key={m} type="button" role="tab" aria-selected={cfg.mode === m} className={cfg.mode === m ? "seg on" : "seg"} disabled={running && cfg.mode !== m} title={running ? t("lockedHint") : t(m)} onClick={() => pickMode(m)}>
+              {t(`tab_${m}` as Key)}
+            </button>
+          ))}
+        </div>
         <label data-tip={tip(lang, listening ? "ifaces" : "host")}>
           {relay ? t("relayListen") : server ? t("bindHost") : t("host")}
           <input value={cfg.host} disabled={running} list={listening ? "tcp-ifaces" : undefined} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
@@ -714,6 +754,11 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "peers")}>{t(relay ? "pairs" : "peers")}</label>
             {peers.length === 0 && <div className="hint">{t("noPeers")}</div>}
+            {peers.length > 1 && (
+              <button className="btn small ghost kick-all" data-tip={tip(lang, "kickAll")} onClick={() => void Promise.all(peers.map((p) => api.kick(p.id))).catch((e) => setError(String(e)))}>
+                {fill(t("kickAll"), { n: peers.length })}
+              </button>
+            )}
             {peers.map((p) => (
               <div key={p.id} className="peer">
                 <span className="mono" title={p.addr}>
@@ -837,8 +882,8 @@ export default function App() {
           <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearLog}>
             {t("clear")}
           </button>
-          <button data-tip={tip(lang, "commands")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight}>
-            ☰ {t("commands")}
+          <button data-tip={tip(lang, "commandsDetail")} className="btn small narrow-only" onClick={() => setShowRight(!showRight)} aria-expanded={showRight} aria-label={t("commandsDetail")}>
+            ☰<span className="nb-text"> {t("commandsDetail")}</span>
           </button>
         </div>
 
@@ -865,7 +910,10 @@ export default function App() {
                 const dt = deltaMode !== "off" && <span className="dt">{deltaText(deltaMode, f)}</span>;
                 // 누르기·Shift·Ctrl 로 고르고, 오른쪽 버튼은 복사·다시 보내기 메뉴. 누른다고 따라가기가 꺼지지는 않는다
                 const handlers = {
-                  onClick: (e: ReactMouseEvent) => sel.click(e, seq),
+                  onClick: (e: ReactMouseEvent) => {
+                    sel.click(e, seq);
+                    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) openDetail();
+                  },
                   onContextMenu: (e: ReactMouseEvent) => {
                     e.preventDefault();
                     sel.context(seq);
@@ -1013,9 +1061,7 @@ export default function App() {
               <input type="checkbox" checked={repeating} disabled={!canSend && !repeating} onChange={(e) => startRepeat(e.target.checked)} /> {t("repeat")}
             </label>
             <NumInput className="num" min={10} max={3600000} value={repeatMs} onValue={setRepeatMs} aria-label={t("repeat")} />
-            <label className="inline" data-tip={tip(lang, "repeatTimes")}>
-              <NumInput className="num small-num" min={0} max={1000000} value={repeatTimes} onValue={setRepeatTimes} aria-label={io(lang, "repeatTimes")} /> {io(lang, "repeatTimes")}
-            </label>
+            {timesInRow && repeatTimesBox}
             {(repeating || repeatSent > 0) && (
               <span className="rep-count">{repeatTimes > 0 ? io(lang, "repeatSentOf", { n: repeatSent, m: repeatTimes }) : io(lang, "repeatSent", { n: repeatSent })}</span>
             )}
@@ -1031,15 +1077,53 @@ export default function App() {
             <button className="btn small mb-open" data-tip={tip(lang, "modbusBuildTcp")} onClick={() => setShowMb(true)}>
               {t("mbRequest")}
             </button>
-            <label className="inline" data-tip={tip(lang, "charDelay")}>
-              {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
-            </label>
-            <button className="btn small" onClick={() => setShowFile(true)} data-tip={tip(lang, "fileSend")}>
-              {io(lang, "fileSend")}…
-            </button>
             </span>
+            {/* 문자 간 지연·파일 보내기·(반복이 꺼져 있으면) 횟수는 «⋯ 더보기» 로(10/18, Serial 과 같게) */}
+            <button
+              ref={moreBtn}
+              className={charDelay > 0 ? "btn small more-btn on" : "btn small more-btn"}
+              onClick={() => setMoreOpen((o) => (o ? null : { times: !timesInRow }))}
+              aria-expanded={!!moreOpen}
+              data-tip={tip(lang, "sendMoreNet")}
+            >
+              ⋯ {t("more")}
+              {charDelay > 0 ? ` · ${fill(t("moreDelay"), { n: charDelay })}` : ""}
+            </button>
           </div>
+          {moreOpen && (
+            <Popover anchor={moreBtn.current} onClose={closeMore} label={t("more")} className="more-pop">
+              <div className="pop-row">
+                <label className="inline" data-tip={tip(lang, "charDelay")}>
+                  {io(lang, "charDelay")} <NumInput className="num small-num" min={0} max={10000} value={charDelay} onValue={setCharDelay} aria-label={io(lang, "charDelay")} />
+                </label>
+              </div>
+              <div className="pop-row">
+                <button
+                  className="btn small"
+                  onClick={() => {
+                    setMoreOpen(null);
+                    setShowFile(true);
+                  }}
+                  data-tip={tip(lang, "fileSend")}
+                >
+                  {io(lang, "fileSend")}…
+                </button>
+              </div>
+              {moreOpen.times && <div className="pop-row">{repeatTimesBox}</div>}
+            </Popover>
+          )}
           {fileJob && <JobBar lang={lang} job={fileJob} onCancel={cancelSend} onOpen={() => setShowFile(true)} />}
+          {mb502 && (
+            <div className="notice mb502" role="status">
+              <span>{t("mb502")}</span>
+              <button type="button" className="btn small" onClick={acceptMb502}>
+                {t("mb502Yes")}
+              </button>
+              <button type="button" className="btn small ghost" onClick={() => setMb502(false)} aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")}>
+                ✕
+              </button>
+            </div>
+          )}
           {modeSwitch.node}
           {targetBack && (
             <div className="interlock">
@@ -1080,7 +1164,7 @@ export default function App() {
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
         <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} inactiveNote={relay ? arRelayNote(lang) : null} />
-        <h3 data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>{t("detail")}</h3>
+        <h3 ref={detailHead} data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>{t("detail")}</h3>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
           <div className="detail">
@@ -1114,9 +1198,13 @@ export default function App() {
           }}
           onAdd={(name, b) => pushCommand({ ...mbSpec(b), name, key: null })}
           onClose={() => setShowMb(false)}
+          onHelp={() => {
+            setShowMb(false);
+            setShowHelp("modbus");
+          }}
         />
       )}
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock TCP" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock TCP" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock TCP"
