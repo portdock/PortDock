@@ -32,7 +32,7 @@ export const GUIDES: Guide[] = [
     slug: "modbus-rtu-frame",
     date: "2026-10-17",
     tools: ["serial", "modbus-master", "modbus-slave"],
-    related: ["usb-serial-latency"],
+    related: ["modbus-address-notation", "modbus-no-response", "usb-serial-latency"],
     webTools: ["tools/modbus/", "tools/checksum/"],
     devices: true,
     title: { ko: "Modbus RTU 프레임 읽는 법 — 요청·응답·예외·CRC", en: "Reading Modbus RTU frames — request, response, exception, CRC" },
@@ -154,7 +154,7 @@ export const GUIDES: Guide[] = [
     slug: "usb-serial-latency",
     date: "2026-10-17",
     tools: ["modbus-slave", "serial", "modbus-master"],
-    related: ["modbus-rtu-frame", "rs485-wiring"],
+    related: ["modbus-no-response", "modbus-rtu-frame", "rs485-wiring"],
     seoTitle: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지는 이유 — PortDock", en: "USB-Serial Adapter Latency: Split Frames, Late Replies — PortDock" },
     title: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지고 응답이 늦는 이유", en: "USB-serial adapter latency — why frames split and replies arrive late" },
     desc: {
@@ -186,7 +186,7 @@ export const GUIDES: Guide[] = [
     slug: "rs485-wiring",
     date: "2026-10-17",
     tools: ["serial", "modbus-master"],
-    related: ["usb-serial-latency", "modbus-rtu-frame"],
+    related: ["modbus-no-response", "usb-serial-latency", "modbus-rtu-frame"],
     seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
     title: { ko: "RS-485 배선 점검 — 응답이 없거나 깨질 때 먼저 볼 다섯 가지", en: "RS-485 wiring checks — five things to look at when replies are missing or garbled" },
     desc: {
@@ -249,6 +249,300 @@ export const GUIDES: Guide[] = [
         },
         { h: "Direction control in half duplex" },
         { p: "Two-wire RS-485 sends and receives on the same pair, so the transmitter must be enabled only while sending. Most current USB adapters do this automatically; older ones switch direction with the RTS line, and the software must toggle RTS at exactly the right moment. If the start of replies is cut off, suspect this." },
+      ],
+    },
+  },
+  // 근거: apps/modbus-master/src/help.ts «예외와 오류 읽는 법»·«타임아웃·재시도»·«문제 해결», apps/netscan/src/help.ts(502·Unit ID 1→255·접속 수),
+  // apps/tcp/src/help.ts(방화벽), data/devices/*.json 의 comm·notes(출하 통신값·쪽 번호)
+  {
+    slug: "modbus-no-response",
+    date: "2026-10-19",
+    tools: ["modbus-master", "modbus-slave", "netscan"],
+    related: ["rs485-wiring", "modbus-address-notation", "usb-serial-latency"],
+    webTools: ["tools/modbus/", "tools/checksum/"],
+    devices: true,
+    title: { ko: "Modbus 응답이 없을 때 — 점검 순서 (RTU·TCP)", en: "No reply from a Modbus device — a checklist for RTU and TCP" },
+    seoTitle: { ko: "Modbus 응답 없음·타임아웃 점검 순서 (RTU·TCP) — PortDock", en: "Modbus Timeout or No Response: Checklist (RTU/TCP) — PortDock" },
+    desc: {
+      ko: "타임아웃만 날 때 무엇부터 볼까. 통신 기록에 무엇이 돌아오는지로 범위를 좁히고 국번·속도·패리티·배선, IP·포트·Unit ID, 장비 쪽 Modbus 설정 순서로 확인합니다.",
+      en: "Every request times out? Narrow it down by what comes back, then check slave ID, baud, parity, wiring, IP, port, unit ID and the device's Modbus settings.",
+    },
+    body: {
+      ko: [
+        { p: "마스터가 요청을 보냈는데 아무것도 오지 않으면 화면에는 «타임아웃» 한 줄만 남습니다. 원인은 배선부터 장비 설정까지 여러 층에 있으므로, 통신 기록을 보고 범위부터 좁히는 것이 빠릅니다. 아래 순서는 PortDock Modbus Master 도움말의 문제 해결 항목과, 이 사이트의 장비 레지스터 맵을 만들며 매뉴얼에서 확인한 사례를 묶은 것입니다." },
+        { h: "0. 먼저: 무엇이라도 돌아오는가" },
+        {
+          table: {
+            head: ["통신 기록", "뜻", "볼 곳"],
+            rows: [
+              ["TX 만 있고 RX 가 전혀 없음", "장비가 요청을 못 알아들었거나, 자기 것이 아니라고 봄", "1 ~ 5"],
+              ["RX 는 오는데 CRC 오류", "바이트는 오가지만 깨짐", "2(속도·패리티), RS-485 배선"],
+              ["보낸 바이트가 그대로 돌아옴", "2선식 RS-485 변환기의 에코", "변환기 설정(PortDock Modbus Master 는 에코를 알아서 건너뜀)"],
+              ["예외 응답(함수 + 0x80)", "통신은 정상, 요청 내용이 장비와 안 맞음", "6"],
+              ["가끔만 타임아웃", "타이밍·잡음", "7"],
+            ],
+          },
+        },
+        { h: "1. 국번(슬레이브 ID)" },
+        { p: "요청의 첫 바이트가 장비 국번과 다르면 장비는 오류도 없이 조용히 무시합니다. 장비 설정 메뉴의 국번을 확인하고, 모르면 국번을 차례로 물어봅니다(PortDock Modbus Master «찾기… → 국번 찾기», 국번마다 기다림 기본 200 ms — 예외로 답해도 «장비 있음» 으로 봅니다). 국번 0 은 브로드캐스트라서 장비가 받아도 답하지 않습니다." },
+        { h: "2. 속도·데이터 비트·패리티·정지 비트" },
+        { p: "하나라도 다르면 장비가 바이트를 제대로 읽지 못해 답하지 않거나, 답이 와도 CRC 가 틀립니다. 출하값은 장비마다 다릅니다. 이 사이트의 장비 10종만 봐도 9600 bps 가 많지만 LS ELECTRIC GIMAC1000 은 38400 bps, 루텍 Accura 3300E·2300 은 짝수 패리티, 오토닉스 TK·TX·MT4W 는 정지 비트 2 가 출하값입니다." },
+        { p: "Modbus 시리얼 규격은 짝수 패리티를 기본으로 하고 패리티를 쓰지 않으면 정지 비트 2 를 쓰도록 정하지만, 8N1 로 출하되는 장비도 많습니다. 규격이 아니라 장비 매뉴얼 값을 따르세요. 장비 페이지 맨 위 «통신 기본값» 표에 매뉴얼 쪽 번호와 함께 정리해 두었습니다." },
+        { h: "3. 배선과 변환기 (RTU)" },
+        {
+          ul: [
+            "A/B 극성을 바꿔 꽂아 봅니다. 극성이 반대여도 장비는 망가지지 않습니다. 종단·바이어스·접지는 RS-485 배선 점검 글을 보세요.",
+            "2선식 변환기의 방향 제어(자동 또는 RTS)가 맞는지 봅니다. 응답의 앞부분이 잘리면 이쪽입니다.",
+            "다른 프로그램(다른 마스터·터미널)이 같은 COM 포트를 열고 있으면 포트를 열 수 없습니다.",
+            "같은 선에 다른 마스터(PLC·HMI)가 붙어 있으면 요청이 섞여 CRC 오류나 «모양 틀림» 이 생깁니다. 시험하는 동안에는 떼어 둡니다.",
+          ],
+        },
+        { h: "4. 장비 쪽 Modbus 설정" },
+        { p: "통신 포트가 있어도 출하 때 Modbus 가 아닌 프로토콜로 맞춰진 장비가 있습니다. 예를 들어 한영넉스 VX 는 공장 초기값이 PC Link 이고, Modbus RTU 로 쓰려면 프로토콜 설정(PRS)을 3 으로 바꿔야 합니다(매뉴얼 p.103~104). LS ELECTRIC LSLV-S100 은 통신 그룹 CM.01~CM.04 에 국번·프로토콜·속도·데이터 형식이 있고 출하값은 국번 1, Modbus-RTU, 9600 bps, 8N1 입니다(매뉴얼 p.281). 설정 메뉴의 이름과 위치는 장비 페이지의 «통신 기본값» 아래 메모에 쪽 번호와 함께 있습니다." },
+        { h: "5. Modbus TCP 라면" },
+        {
+          ul: [
+            "IP·포트(보통 502)와 대역: PC 와 장비가 같은 대역에 있어야 합니다. PortDock Net Scan 은 대역을 훑어 502 가 열린 장비를 보여 주고 «IP:502» 를 복사해 줍니다.",
+            "접속은 되는데 답이 없으면 Unit ID(국번): 게이트웨이 뒤의 RTU 장비라면 그 장비의 국번을 넣습니다. 장비가 직접 Modbus TCP 를 말할 때 어떤 Unit ID 를 받는지는 장비마다 다릅니다 — PortDock Net Scan 의 장비 정보 읽기는 1 로 묻고 안 되면 255 로 묻습니다.",
+            "접속 수 제한: 장비가 이미 HMI·SCADA 같은 다른 마스터와 연결돼 있으면 새 접속을 받지 않거나 포트가 닫힌 것처럼 보일 수 있습니다.",
+            "게이트웨이가 예외 0A(경로 없음)·0B(대상 응답 없음)를 돌려주면 TCP 구간은 정상이고 게이트웨이 뒤 시리얼 쪽 문제입니다 — 1~3 으로 돌아갑니다.",
+            "PC 가 서버(슬레이브 흉내) 쪽이면 처음 열 때 윈도우 방화벽 허용 창이 뜰 수 있습니다. 허용하지 않으면 다른 장비가 접속하지 못합니다.",
+          ],
+        },
+        { h: "6. 예외 응답이 온다면" },
+        {
+          table: {
+            head: ["예외", "뜻", "흔한 원인"],
+            rows: [
+              ["01", "지원하지 않는 함수", "장비에 없는 함수 코드. 예: 루텍 Accura 3300E 는 03·06·16 만 지원"],
+              ["02", "없는 주소", "0 기준과 1 기준·40001 표기 혼동, 개수가 범위를 넘음, 사이에 빈 주소"],
+              ["03", "잘못된 값", "개수가 한도를 넘음(규격상 레지스터 읽기 125개, 장비가 더 적은 경우도 있음), 쓴 값이 범위 밖"],
+              ["04", "장비 내부 오류", "장비 상태·매뉴얼의 오류 항목 확인"],
+              ["06", "장비 바쁨", "요청 간격을 늘림"],
+            ],
+          },
+        },
+        { p: "읽기는 되는데 쓰기만 예외가 난다면 장비의 쓰기 잠금을 봅니다. 한영넉스 LC 는 통신 쓰기 금지(CWP)가 출하 때 ON 이라, 앞판에서 OFF 로 바꾸기 전까지 쓰기 요청에 예외로 답합니다(매뉴얼 p.31·p.34). 한 번에 읽는 개수도 장비마다 한도가 따로 있습니다 — LS ELECTRIC GIMAC1000 은 124개, 한영넉스 VX 는 FC03 으로 31개까지입니다." },
+        { h: "7. 가끔만 타임아웃이 난다면" },
+        {
+          ul: [
+            "응답 기다림(타임아웃)을 넉넉히: 9600 bps 에서 125 레지스터 응답은 전송에만 약 270 ms 가 걸립니다. 게이트웨이·무선 구간은 더 깁니다.",
+            "요청 간격: 장비가 연달아 오는 요청을 놓치면 앞 응답과 다음 요청 사이를 띄웁니다. RS-485 에 여러 장비가 있으면 20~50 ms 가 무난합니다.",
+            "USB-시리얼 변환기는 데이터를 몇 ms 단위로 묶어 넘겨 응답이 늦게 도착할 수 있습니다 — 변환기 지연 글을 보세요.",
+            "재시도 1~2 회. 예외 응답은 다시 보내도 같으므로 재시도 대상이 아닙니다.",
+          ],
+        },
+        { h: "장비 없이 마스터부터 확인하기" },
+        { p: "마스터 프로그램 쪽이 의심되면 실제 장비 대신 PortDock Modbus Slave 를 상대로 붙여 봅니다. 같은 PC 라면 Slave 를 Modbus TCP 서버(포트 502 또는 1502)로 켜고 마스터를 127.0.0.1 로 연결합니다. Slave 의 장애 주입(응답 지연·무응답·예외·CRC 틀림)으로 마스터가 타임아웃·재시도를 어떻게 처리하는지도 미리 볼 수 있습니다." },
+      ],
+      en: [
+        { p: "When a master sends a request and nothing comes back, all you see is «timeout». The cause can sit anywhere from the wiring to the device configuration, so the fastest route is to narrow it down from the traffic log first. This checklist combines the troubleshooting notes in the PortDock Modbus Master help with cases found in device manuals while building this site's register maps." },
+        { h: "0. First: does anything come back?" },
+        {
+          table: {
+            head: ["Traffic log", "Meaning", "Go to"],
+            rows: [
+              ["Only TX, no RX at all", "The device did not understand the request or thinks it is not addressed to it", "1 – 5"],
+              ["RX arrives but fails the CRC", "Bytes flow but get corrupted", "2 (baud, parity), RS-485 wiring"],
+              ["My own bytes come straight back", "Echo from a two-wire RS-485 adapter", "Adapter setting (PortDock Modbus Master skips the echo itself)"],
+              ["Exception reply (function + 0x80)", "Communication works; the request does not fit the device", "6"],
+              ["Occasional timeouts only", "Timing or noise", "7"],
+            ],
+          },
+        },
+        { h: "1. Slave ID" },
+        { p: "If the first byte of the request does not match the device's slave ID, the device ignores it silently — no error comes back. Check the ID in the device menu; if you do not know it, ask each ID in turn (PortDock Modbus Master «Scan… → Slave ID scan», 200 ms wait per ID by default; an exception reply also counts as «device present»). ID 0 is broadcast: devices act on it but never reply." },
+        { h: "2. Baud rate, data bits, parity, stop bits" },
+        { p: "If any of these differ, the device cannot read the bytes and stays silent, or its reply fails the CRC. Factory defaults vary: among the ten devices on this site most use 9600 bps, but the LS ELECTRIC GIMAC1000 ships at 38400 bps, the Rootech Accura 3300E and 2300 use even parity, and the Autonics TK, TX and MT4W use two stop bits." },
+        { p: "The Modbus serial specification makes even parity the default and asks for two stop bits when no parity is used, yet many devices ship as 8N1. Follow the device manual, not the specification. Each device page lists its defaults at the top, with manual page numbers." },
+        { h: "3. Wiring and adapter (RTU)" },
+        {
+          ul: [
+            "Swap A and B. Reversed polarity does not damage anything. For termination, biasing and ground see the RS-485 wiring guide.",
+            "Check the direction control of a two-wire adapter (automatic or RTS). If the start of replies is cut off, look here.",
+            "If another program (another master, a terminal) has the COM port open, the port cannot be opened.",
+            "Another master (PLC, HMI) on the same line mixes requests and causes CRC errors or malformed replies. Disconnect it while testing.",
+          ],
+        },
+        { h: "4. Modbus settings on the device" },
+        { p: "Some devices have a communication port that ships set to a protocol other than Modbus. The Hanyoung Nux VX, for example, defaults to PC Link; to use Modbus RTU set the protocol (PRS) to 3 (manual p.103–104). The LS ELECTRIC LSLV-S100 keeps slave ID, protocol, baud and data format in CM.01–CM.04, shipping as ID 1, Modbus-RTU, 9600 bps, 8N1 (manual p.281). Each device page notes where these settings live, with page numbers." },
+        { h: "5. For Modbus TCP" },
+        {
+          ul: [
+            "IP, port (usually 502) and subnet: the PC and the device must be on the same subnet. PortDock Net Scan sweeps a subnet, shows devices with port 502 open and copies «IP:502» for you.",
+            "Connected but no reply: check the unit ID. Behind a gateway, use the slave ID of the RTU device. Which unit ID a native Modbus TCP device accepts differs by device — PortDock Net Scan's device ID read tries 1 first, then 255.",
+            "Connection limits: a device already connected to another master such as an HMI or SCADA may refuse new connections or look as if the port were closed.",
+            "Gateway exceptions 0A (path unavailable) or 0B (target failed to respond) mean the TCP side works and the problem is on the serial side behind the gateway — go back to 1–3.",
+            "If the PC is the server (simulating a slave), Windows may ask for firewall permission on first use. Without it other devices cannot connect.",
+          ],
+        },
+        { h: "6. If you get an exception" },
+        {
+          table: {
+            head: ["Code", "Meaning", "Common causes"],
+            rows: [
+              ["01", "Illegal function", "Function code the device lacks, e.g. the Rootech Accura 3300E supports only 03, 06 and 16"],
+              ["02", "Illegal data address", "0-based vs 1-based vs 40001 confusion, quantity past the end, gaps in the map"],
+              ["03", "Illegal data value", "Quantity over the limit (125 registers per read in the spec, some devices allow fewer), value out of range"],
+              ["04", "Slave device failure", "Check the device status and the manual's error list"],
+              ["06", "Slave device busy", "Increase the delay between requests"],
+            ],
+          },
+        },
+        { p: "If reads work but writes fail with an exception, look for a write lock. The Hanyoung Nux LC ships with communication write protection (CWP) ON and answers write requests with an exception until it is switched OFF on the front panel (manual p.31, p.34). Per-request limits also differ: 124 registers on the LS ELECTRIC GIMAC1000, 31 with FC03 on the Hanyoung Nux VX." },
+        { h: "7. If timeouts happen only now and then" },
+        {
+          ul: [
+            "Allow enough response time: at 9600 bps a 125-register reply takes about 270 ms on the wire alone. Gateways and radio links add more.",
+            "Delay between requests: if the device misses back-to-back requests, leave a gap after each reply. 20–50 ms works well with several devices on RS-485.",
+            "USB-serial adapters hand data over in chunks of a few milliseconds, so replies can arrive late — see the adapter latency guide.",
+            "Retry once or twice. Exception replies are not retried; they would only repeat.",
+          ],
+        },
+        { h: "Check the master without the device" },
+        { p: "If you suspect the master software, test it against PortDock Modbus Slave instead of the real device. On the same PC, start Slave as a Modbus TCP server (port 502 or 1502) and connect the master to 127.0.0.1. Slave's fault injection (delay, no reply, exception, bad CRC) shows how the master handles timeouts and retries before you go on site." },
+      ],
+    },
+  },
+  // 근거: shared/modbusBuild.ts(parseAddr·plcText — 5자리·6자리, 앞자리 검사), apps/modbus-master/src/help.ts «40001 표기»,
+  // data/devices/*.json 의 manualAddress·address·comm.notes(장비별 표기와 프레임 예 쪽 번호)
+  {
+    slug: "modbus-address-notation",
+    date: "2026-10-19",
+    tools: ["modbus-master", "modbus-slave", "serial"],
+    related: ["modbus-rtu-frame", "modbus-no-response"],
+    webTools: ["tools/modbus/"],
+    devices: true,
+    title: { ko: "Modbus 주소 0 기준 vs 40001 표기 — 매뉴얼 주소를 통신 주소로", en: "Modbus addresses: 0-based vs 40001 notation — from manual to wire" },
+    seoTitle: { ko: "Modbus 주소 40001 vs 0 기준 — 매뉴얼 주소 읽는 법 — PortDock", en: "Modbus Address 40001 vs 0-Based: Reading the Manual — PortDock" },
+    desc: {
+      ko: "같은 첫 레지스터를 매뉴얼마다 0, 1, 40001, 400001, 0h0001 로 적습니다. 국산 장비 매뉴얼의 실제 표기로 통신 주소(0 기준) 구하는 법과 값이 한 칸 밀릴 때 볼 것.",
+      en: "The same first register is written 0, 1, 40001, 400001 or 0h0001 depending on the manual. How to get the 0-based wire address, with real manual examples.",
+    },
+    body: {
+      ko: [
+        { p: "Modbus 요청 프레임에 실리는 주소는 언제나 0~65535 의 0 기준 수입니다. 이 글에서는 이것을 «통신 주소» 라고 부릅니다. 그런데 장비 매뉴얼과 PLC·HMI 프로그램은 같은 주소를 여러 방식으로 적습니다. 표기를 잘못 읽으면 값이 한 칸씩 밀리거나 예외 02(없는 주소)가 납니다." },
+        { h: "표기 세 가지" },
+        {
+          table: {
+            head: ["표기", "첫 보유 레지스터", "통신 주소 구하기"],
+            rows: [
+              ["0 기준", "0 (0x0000)", "그대로"],
+              ["1 기준(레지스터 번호)", "1", "번호 − 1"],
+              ["PLC 표기 5자리", "40001", "뒤 네 자리 − 1 (앞자리는 표)"],
+              ["PLC 표기 6자리", "400001", "뒤 다섯 자리 − 1 (앞자리는 표)"],
+            ],
+          },
+        },
+        { h: "앞자리는 «어느 표» 라는 뜻" },
+        {
+          table: {
+            head: ["앞자리", "표", "읽기 함수", "쓰기 함수"],
+            rows: [
+              ["0xxxx", "코일", "01", "05 · 0F"],
+              ["1xxxx", "입력 접점", "02", "— (읽기 전용)"],
+              ["3xxxx", "입력 레지스터", "04", "— (읽기 전용)"],
+              ["4xxxx", "보유 레지스터", "03", "06 · 10"],
+            ],
+          },
+        },
+        { p: "앞자리는 프레임에 실리지 않습니다. 함수 코드가 표를 정하고, 주소는 그 표 안의 0 기준 번호입니다. 그래서 30001 과 40001 은 둘 다 통신 주소 0 이지만 보내는 함수가 다릅니다(04 와 03). 5자리 표기는 9999 번째까지만 적을 수 있어 그 뒤는 6자리로 씁니다 — 410000 은 보유 레지스터 통신 주소 9999 입니다." },
+        { h: "실제 매뉴얼은 이렇게 적습니다" },
+        { p: "이 사이트에 정리한 국산 장비의 매뉴얼에서 확인한 첫 항목들입니다. 각 장비 페이지의 레지스터 표에 «매뉴얼 주소» 와 «통신 주소» 가 나란히 있습니다." },
+        {
+          table: {
+            head: ["장비", "매뉴얼 표기", "통신 주소", "읽는 법"],
+            rows: [
+              ["LS ELECTRIC GIMAC1000", "30001", "0", "PLC 표기. 맵에 0 기준 ADDRESS 칸도 함께 있음"],
+              ["한영넉스 LC", "30104 (0067)", "103", "PLC 번호 + 괄호 속 16진 통신 주소"],
+              ["오토닉스 TK", "301001 (03E8)", "1000", "6자리 참조 번호 + 괄호 속 16진 통신 주소"],
+              ["루텍 Accura 3300E", "10000", "9999", "1 기준 레지스터 번호(번호 − 1)"],
+              ["LS ELECTRIC LSLV-S100", "0h0001", "0", "16진 번호. 매뉴얼 통신 예에서 시작 주소를 «주소 − 1» 로 보냄"],
+              ["한영넉스 VX", "D-register 0 / Address 1", "0", "D-register 열이 0 기준, Address 열은 1 기준"],
+            ],
+          },
+        },
+        { p: "16진으로 적혀 있다고 0 기준이라는 보장은 없습니다(위의 0h0001). 매뉴얼에 프레임 예가 있으면 예의 시작 주소 바이트와 맵의 숫자를 비교하는 것이 가장 확실합니다. 위 장비들 대부분도 그렇게 확인했고, 근거 쪽 번호는 장비 페이지의 메모에 있습니다." },
+        { h: "값이 한 칸 밀려 보일 때" },
+        {
+          ul: [
+            "읽은 값이 기대한 값의 바로 옆 칸이면 0 기준과 1 기준이 섞인 것입니다. 시작 주소를 1 줄이거나 늘려 봅니다.",
+            "예외 02(없는 주소)는 표기 혼동이나 범위 초과입니다. 맵 사이에 빈 주소가 있으면 예외 02 를 돌려주는 장비가 많으므로, 이어진 칸끼리만 묶어 읽습니다.",
+            "0 기준 칸에 40001 을 그대로 넣으면 통신 주소 40001 을 읽습니다 — 대개 예외 02 가 납니다.",
+            "32비트 값(U32·F32)만 엉뚱하면 주소보다 워드 순서(ABCD·CDAB)를 먼저 의심합니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: «주소 표기» 를 0 기준·1 기준·PLC(40001) 중에서 고르면 칸·시작 칸·통신 기록 풀이가 모두 그 표기로 나옵니다. 실제로 보내는 주소는 같습니다.",
+            "0 기준·1 기준인데 시작 칸에 40001·30001 같은 수를 넣으면 넣은 그대로 읽되, «PLC 표기라면 주소 0(FC03)» 알림과 [PLC 표기로 바꾸기] 버튼이 나옵니다.",
+            "PLC 표기에서 30001 처럼 앞자리가 다른 주소를 넣으면 함수도 그 표(04)로 바뀝니다.",
+            "웹 도구 «Modbus RTU 요청 만들기» 는 0 기준과 PLC 표기를 받아 CRC 까지 붙은 요청 바이트를 만듭니다. 설치 없이 바로 확인할 수 있습니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "The address inside a Modbus request frame is always a 0-based number from 0 to 65535 — this guide calls it the «wire address». Device manuals and PLC or HMI software, however, write the same address in several ways. Misreading the notation shifts values by one or triggers exception 02 (illegal data address)." },
+        { h: "Three notations" },
+        {
+          table: {
+            head: ["Notation", "First holding register", "Wire address"],
+            rows: [
+              ["0-based", "0 (0x0000)", "as is"],
+              ["1-based (register number)", "1", "number − 1"],
+              ["PLC notation, 5 digits", "40001", "last four digits − 1 (first digit = table)"],
+              ["PLC notation, 6 digits", "400001", "last five digits − 1 (first digit = table)"],
+            ],
+          },
+        },
+        { h: "The first digit names the table" },
+        {
+          table: {
+            head: ["Prefix", "Table", "Read function", "Write function"],
+            rows: [
+              ["0xxxx", "Coils", "01", "05 · 0F"],
+              ["1xxxx", "Discrete inputs", "02", "— (read only)"],
+              ["3xxxx", "Input registers", "04", "— (read only)"],
+              ["4xxxx", "Holding registers", "03", "06 · 10"],
+            ],
+          },
+        },
+        { p: "The prefix never goes on the wire. The function code selects the table and the address is the 0-based index inside it, so 30001 and 40001 are both wire address 0 — sent with different functions (04 and 03). Five digits only reach the 9999th entry; beyond that six digits are used, so 410000 is holding register wire address 9999." },
+        { h: "How real manuals write it" },
+        { p: "First entries from the manuals of the devices on this site. Each device page shows «Manual» and «Wire» addresses side by side." },
+        {
+          table: {
+            head: ["Device", "Manual", "Wire", "How to read it"],
+            rows: [
+              ["LS ELECTRIC GIMAC1000", "30001", "0", "PLC notation; the map also has a 0-based ADDRESS column"],
+              ["Hanyoung Nux LC", "30104 (0067)", "103", "PLC number plus the hex wire address in brackets"],
+              ["Autonics TK", "301001 (03E8)", "1000", "Six-digit reference plus the hex wire address in brackets"],
+              ["Rootech Accura 3300E", "10000", "9999", "1-based register number (number − 1)"],
+              ["LS ELECTRIC LSLV-S100", "0h0001", "0", "Hex number; the manual's frame example sends «address − 1»"],
+              ["Hanyoung Nux VX", "D-register 0 / Address 1", "0", "D-register column is 0-based, Address column 1-based"],
+            ],
+          },
+        },
+        { p: "A hex address is not necessarily 0-based (see 0h0001 above). If the manual has a frame example, compare its start-address bytes with the map — that is the most reliable check, and how most of the devices above were verified. The page references are in each device page's notes." },
+        { h: "When values look shifted by one" },
+        {
+          ul: [
+            "If you read the value you expected from the neighbouring register, 0-based and 1-based are mixed up. Move the start address by one.",
+            "Exception 02 means a notation mix-up or reading past the end. Many devices also return 02 for gaps in the map, so read contiguous blocks only.",
+            "Typing 40001 into a 0-based field reads wire address 40001 — usually exception 02.",
+            "If only 32-bit values (U32, F32) look wrong, suspect the word order (ABCD, CDAB) before the address.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master: set «Addresses» — 0-based, 1-based or PLC (40001) — and cells, the start field and the decoded log all use it. The address sent is the same.",
+            "With 0-based or 1-based selected, typing 40001 or 30001 reads exactly that, but a yellow notice says «in PLC notation it is address 0 (FC03)» with a [Switch to PLC notation] button.",
+            "In PLC notation, typing an address with another prefix such as 30001 switches the function to that table (04).",
+            "The «Modbus RTU Request Builder» web tool accepts 0-based and PLC notation and builds the request bytes with CRC — no install needed.",
+          ],
+        },
       ],
     },
   },
