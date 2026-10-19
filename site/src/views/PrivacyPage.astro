@@ -3,6 +3,7 @@
 import Base from "../layouts/Base.astro";
 import { type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
 
 interface Props {
   lang: Lang;
@@ -51,7 +52,7 @@ const updated = "2026-10-17";
           </ul>
           <h2>4. 문의</h2>
           <p>
-            개인정보 관련 문의·삭제 요청은 <a href={url(lang, "contact/")}>문의 양식</a>으로 보내 주세요.
+            개인정보 관련 문의·삭제 요청은 <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 또는 <a href={url(lang, "contact/")}>문의 페이지</a>로 보내 주세요.
           </p>
         </>
       ) : (
@@ -83,7 +84,7 @@ const updated = "2026-10-17";
           </ul>
           <h2>4. Contact</h2>
           <p>
-            For privacy questions or deletion requests, use the <a href={url(lang, "contact/")}>contact form</a>.
+            For privacy questions or deletion requests, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> or use the <a href={url(lang, "contact/")}>contact page</a>.
           </p>
         </>
       )

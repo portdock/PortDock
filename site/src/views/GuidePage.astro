@@ -17,6 +17,9 @@ const ld = {
   "@context": "https://schema.org",
   "@type": "TechArticle",
   headline: guide.title[lang],
+  // 사이트 주소(빌드 변수 SITE_URL)를 따른다
+  url: new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href,
+  image: new URL(lang === "ko" ? "/og.png" : "/og-en.png", Astro.site).href,
   description: guide.desc[lang],
   datePublished: guide.date,
   inLanguage: lang,

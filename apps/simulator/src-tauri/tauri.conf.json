@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Rule-based fake device over serial, TCP and UDP",
     "longDescription": "PortDock Simulator imitates almost any device with rules over serial, TCP or UDP: when a matching message arrives, it replies automatically.",
     "icon": [

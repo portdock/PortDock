@@ -664,3 +664,48 @@ table.t td.mono {
 .guide pre.result {
   white-space: pre-wrap;
 }
+
+/* 문의 — 메일 주소 줄(주소 + 복사 단추) */
+.mail-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.mail-card .mail-line {
+  margin-top: 14px;
+  font-size: 17px;
+}
+.mail-line a {
+  overflow-wrap: anywhere;
+}
+.sub-h {
+  font-size: 16px;
+  margin: 24px 0 6px;
+}
+ul.links {
+  margin: 0;
+  padding-left: 18px;
+}
+ul.links li {
+  margin: 4px 0;
+}
+
+/* 코드 서명 정책 — 아직 적용 전임을 눈에 띄게 */
+.status {
+  border-left: 4px solid var(--ev);
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0 18px;
+}
+.status b {
+  color: var(--ev);
+}
+.attrib {
+  font-size: 17px;
+}
+.btn.tight {
+  padding: 5px 12px;
+  font-size: 14px;
+}

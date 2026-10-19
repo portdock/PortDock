@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Device IP finder for industrial networks",
     "longDescription": "PortDock Net Scan finds devices on an industrial network by ping and ARP, shows MAC vendors, checks industrial ports (Modbus TCP, FEnet, SLMP, S7, EtherNet/IP, OPC UA), monitors hosts with long-running ping and sends Wake-on-LAN.",
     "icon": [

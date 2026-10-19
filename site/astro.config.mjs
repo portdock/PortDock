@@ -3,8 +3,13 @@ import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import { fileURLToPath } from "node:url";
 
+// 사이트 주소 — canonical·hreflang·sitemap·robots.txt·og:url·og:image·JSON-LD 가 모두 이 값을 따른다.
+// 도메인 전에는 Cloudflare Pages 빌드 변수 SITE_URL=https://portdock.pages.dev 로 빌드한다(site/README.md).
+const SITE_URL = (process.env.SITE_URL || "https://portdock.dev").trim().replace(/\/+$/, "");
+if (!/^https?:\/\/[^/]+$/.test(SITE_URL)) throw new Error(`SITE_URL 은 «https://호스트» 꼴이어야 합니다: ${SITE_URL}`);
+
 export default defineConfig({
-  site: "https://portdock.dev",
+  site: SITE_URL,
   trailingSlash: "always",
   i18n: {
     defaultLocale: "ko",

@@ -8,10 +8,11 @@ import { ENCODINGS, type Encoding } from "./format";
 import { io } from "./ioText";
 import { tip } from "./tips";
 import { autoSendAvailable, type EnvInfo } from "./report";
+import { REPO_URL, SPONSOR_URL } from "./links";
 import { useRestoreFocus } from "./restoreFocus";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
-const REPO = "https://github.com/portdock/PortDock";
+const REPO = REPO_URL;
 const LINKS = {
   license: "https://www.gnu.org/licenses/gpl-3.0.html",
   source: REPO,
@@ -19,6 +20,8 @@ const LINKS = {
   notices: `${REPO}/blob/main/THIRD_PARTY_NOTICES.txt`,
   // 자동으로 인터넷에 묻지 않는다 — 누르면 최신 릴리스 페이지만 연다
   latest: `${REPO}/releases/latest`,
+  // 비어 있으면 «후원» 단추를 숨긴다(links.ts — 값을 넣으면 opener 권한에도 더할 것)
+  sponsor: SPONSOR_URL,
 };
 
 const T = {
@@ -66,6 +69,7 @@ const T = {
     source: "소스 코드",
     site: "홈페이지",
     notices: "제3자 고지",
+    sponsor: "후원",
     checkUpdate: "새 버전 확인",
     checkUpdateHint: "최신 릴리스 페이지를 브라우저로 엽니다(자동으로 확인하지 않음).",
   },
@@ -113,6 +117,7 @@ const T = {
     source: "Source code",
     site: "Website",
     notices: "Third-party notices",
+    sponsor: "Sponsor",
     checkUpdate: "Check for updates",
     checkUpdateHint: "Opens the latest release page in your browser (never checks automatically).",
   },
@@ -345,6 +350,11 @@ export function SettingsDialog({
             <button className="btn small ghost" onClick={() => link(LINKS.notices)}>
               {t.notices}
             </button>
+            {LINKS.sponsor && (
+              <button className="btn small ghost" onClick={() => link(LINKS.sponsor)}>
+                {t.sponsor}
+              </button>
+            )}
           </div>
           <div className="row2">
             <button className="btn small" onClick={() => link(LINKS.latest)} title={t.checkUpdateHint}>

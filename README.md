@@ -86,6 +86,18 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 
 Layout: `apps/<tool>` (each tool's window and Tauri shell), `crates/core` (shared Rust: checksums, HEX/ASCII, framing, Modbus, auto-reply, sessions), `shared/` (shared UI), `site/` (portdock.dev). Release procedure: [docs/release.md](docs/release.md).
 
+## Code signing policy
+
+> **Status: application planned / applies after approval.** PortDock has not been approved by SignPath Foundation yet, and current releases are **not signed**. The statement below applies to releases made after approval.
+
+(planned) Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+
+- **What is signed**: only PortDock's own programs, built by GitHub Actions ([release.yml](.github/workflows/release.yml)) from this repository. Every release is approved manually before signing.
+- **Team roles** — PortDock currently has a single maintainer who holds every role ([portdock organisation members](https://github.com/orgs/portdock/people)):
+  - Committers and reviewers (Authors, Reviewers): the maintainer — pull requests from others are reviewed before merging
+  - Approvers: the maintainer
+- **Privacy**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. Device traffic goes only where you point it; error reports go to Sentry only when you press send in the «!» report window or set *Automatic error reports* to *Send automatically* (default: *Ask after a crash*). If WebView2 is missing, the online installer downloads it from Microsoft. Details: [privacy policy](https://portdock.dev/privacy/) · [Sentry privacy policy](https://sentry.io/privacy/) · [Microsoft privacy statement](https://privacy.microsoft.com/privacystatement) (WebView2). The installer shows this notice on its license page.
+
 ## License
 
 Copyright (C) 2026 Juhak

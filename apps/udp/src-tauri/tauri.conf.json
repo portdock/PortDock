@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "UDP sender/receiver with broadcast, multicast and echo",
     "longDescription": "PortDock UDP sends and receives UDP datagrams, including broadcast and multicast, with HEX/ASCII views and timestamped test logs.",
     "icon": [

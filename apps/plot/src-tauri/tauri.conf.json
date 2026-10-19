@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Live plotter for numbers from serial, TCP and UDP",
     "longDescription": "PortDock Plot draws numbers arriving over serial, a TCP client connection or UDP as a live graph: comma/space/tab/semicolon text, Arduino-style name:value pairs, header names and fixed binary frames (start bytes, u8–f64, endianness, checksum), several channels on left and right axes, time or point windows, pause, cursor readout, two-point deltas, zoom and pan, a statistics table, CSV recording while receiving, and CSV/PNG export of the view.",
     "icon": [

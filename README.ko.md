@@ -86,6 +86,18 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 
 구성: `apps/<프로그램>`(각 프로그램의 화면과 Tauri 셸), `crates/core`(공용 Rust — 체크섬·HEX/ASCII·프레임 구분·Modbus·자동응답·세션), `shared/`(공용 화면), `site/`(portdock.dev). 릴리스 절차: [docs/release.md](docs/release.md).
 
+## Code signing policy (코드 서명 정책)
+
+> **상태: 신청 예정 / 승인 후 적용.** 아직 SignPath Foundation 의 승인을 받지 않았고, 지금 릴리스는 **서명되지 않았습니다.** 아래 내용은 승인된 뒤의 릴리스부터 적용됩니다.
+
+(신청 예정) Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+
+- **서명하는 것**: 이 저장소의 소스로 GitHub Actions([release.yml](.github/workflows/release.yml))가 빌드한 PortDock 프로그램만. 릴리스마다 사람이 승인해야 서명됩니다.
+- **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다([portdock 조직 구성원](https://github.com/orgs/portdock/people)):
+  - 작성자·검토자(Authors, Reviewers): 메인테이너 — 다른 사람의 풀 리퀘스트는 반영 전에 검토
+  - 승인자(Approvers): 메인테이너
+- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
+
 ## 라이선스
 
 Copyright (C) 2026 Juhak

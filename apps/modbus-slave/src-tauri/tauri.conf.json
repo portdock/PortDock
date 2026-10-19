@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Modbus RTU slave simulator with register tables",
     "longDescription": "PortDock Modbus Slave imitates a Modbus RTU device: edit coils and registers in a table and watch the requests from a master.",
     "icon": [

@@ -49,6 +49,7 @@ jobs:
       - name: 공용 화면 시험 (node --test)
         run: node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts"
 
+
       - name: Rust 정적 검사 (clippy, 경고 = 실패)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
@@ -57,6 +58,9 @@ jobs:
 
       - name: 제3자 고지가 최신인지
         run: node tools/notices.mjs --check
+
+      - name: 설치 프로그램 사용권 화면(개인정보 안내 + GPL)이 최신인지
+        run: node tools/installer-license.mjs --check
 
       - name: 사이트 검사·빌드
         run: |

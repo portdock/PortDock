@@ -2,10 +2,11 @@
 // 몰래 보내지 않는다: 공장 PC 는 인터넷이 없거나 통신 내용이 회사 기밀인 경우가 많다.
 import { invoke } from "@tauri-apps/api/core";
 import { hex } from "./format";
+import { CONTACT_EMAIL, REPO_URL } from "./links";
 
 /** 받는 곳 — 비워 두면 그 버튼은 숨는다 */
-export const REPORT_EMAIL = "portdock.contact@gmail.com"; // 도메인이 생기면 contact@portdock.dev(Email Routing → 이 메일)로 바꾼다
-export const ISSUES_URL = "https://github.com/portdock/PortDock/issues/new";
+export const REPORT_EMAIL = CONTACT_EMAIL; // 값은 links.ts 한 곳에서
+export const ISSUES_URL = `${REPO_URL}/issues/new`;
 /**
  * 자동 전송 받는 곳 — Sentry 프로젝트의 DSN(https://<key>@<host>/<project>).
  * 비워 두면 자동 전송·«지금 보내기» 가 숨는다. 이 값은 공개돼도 되는 값이다(보내기만 가능).

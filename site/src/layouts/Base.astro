@@ -3,6 +3,7 @@
 import "../styles/site.css";
 import { TOOLS, REPO, type Lang } from "../data/tools";
 import { UI, url, otherLang } from "../lib/i18n";
+import { SPONSOR_URL } from "@shared/links";
 
 interface Props {
   lang: Lang;
@@ -21,6 +22,8 @@ const koUrl = new URL(url("ko", path), site).href;
 const enUrl = new URL(url("en", path), site).href;
 const desc = description ?? t.siteDesc;
 const fullTitle = title === "PortDock" ? "PortDock" : `${title} — PortDock`;
+// 공유 미리보기 그림 — 언어별(만드는 법: site/og/make.mjs)
+const ogImage = new URL(lang === "ko" ? "/og.png" : "/og-en.png", site).href;
 // 배포 환경 변수(Cloudflare Pages): 비워 두면 해당 스크립트를 넣지 않는다
 const analyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
 const adsenseClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
@@ -46,8 +49,12 @@ const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={desc} />
     <meta property="og:url" content={here} />
-    <meta property="og:image" content={new URL("/og.png", site).href} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t.siteDesc} />
     <meta property="og:locale" content={lang === "ko" ? "ko_KR" : "en_US"} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0b6e75" />
     {naverVerify && <meta name="naver-site-verification" content={naverVerify} />}
     {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
@@ -113,11 +120,13 @@ const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
           <li><a href={url(lang, "download/")}>{t.download}</a></li>
           <li><a href={url(lang, "contact/")}>{t.contact}</a></li>
           <li><a href={url(lang, "privacy/")}>{t.privacy}</a></li>
+          <li><a href={url(lang, "code-signing/")}>{t.codeSigning}</a></li>
         </ul>
         <ul>
           <li><a href={REPO}>{t.source}</a></li>
           <li><a href={`${REPO}/issues`}>{t.issues}</a></li>
           <li><a href={`${REPO}/blob/main/LICENSE`}>{t.license} (GPL-3.0)</a></li>
+          {SPONSOR_URL && <li><a href={SPONSOR_URL}>{t.sponsor}</a></li>}
         </ul>
       </div>
     </footer>

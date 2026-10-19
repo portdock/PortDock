@@ -1,8 +1,12 @@
 ---
-// 개발 문의 — Cloudflare Pages Function(/api/contact)이 Turnstile 확인 후 내 메일로 전달한다. 받는 주소는 화면에 나오지 않는다.
+// 개발 문의 — 두 모드:
+//  · 빌드 변수 PUBLIC_TURNSTILE_SITE_KEY 가 있으면 양식(Cloudflare Pages Function /api/contact 가 Turnstile 확인 후 메일로 전달)
+//  · 없으면(도메인·메일 함수 준비 전) 양식 대신 메일 주소 복사·GitHub 이슈·Discussions 안내
+// 어느 쪽이든 아래에 연락 메일(shared/links.ts 의 CONTACT_EMAIL)을 함께 보여 준다.
 import Base from "../layouts/Base.astro";
 import { REPO, type Lang } from "../data/tools";
 import { UI } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
 
 interface Props {
   lang: Lang;
@@ -25,7 +29,14 @@ const L = ko
       sending: "보내는 중…",
       ok: "보냈습니다. 확인하는 대로 답드리겠습니다.",
       fail: "보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
-      notReady: "문의 양식은 준비 중입니다. 그동안 GitHub 이슈로 남겨 주세요.",
+      noForm: "아래 메일로 보내 주세요. 장비·통신 방식·원하는 결과·일정을 적어 주시면 확인하는 대로 답드립니다.",
+      mailTitle: "메일로 문의",
+      orMail: "양식 대신 메일로 보내셔도 됩니다:",
+      copy: "주소 복사",
+      copied: "복사했습니다",
+      public: "공개로 남겨도 되는 질문·제안",
+      issues: "GitHub 이슈 — 버그·기능 요청",
+      discussions: "GitHub Discussions — 사용법 질문·아이디어",
       bug: "프로그램 버그는 GitHub 이슈나 프로그램 안 «!» 문제 보고를 이용해 주세요.",
       privacy: "보내신 내용은 답장에만 쓰고 다른 곳에 넘기지 않습니다.",
     }
@@ -42,7 +53,14 @@ const L = ko
       sending: "Sending…",
       ok: "Sent. I'll get back to you soon.",
       fail: "Could not send. Please try again later.",
-      notReady: "The contact form is not ready yet. Please open a GitHub issue meanwhile.",
+      noForm: "Please email me at the address below. Describe the device, protocol, what you need and your timeline, and I'll reply as soon as I can.",
+      mailTitle: "Email",
+      orMail: "You can also email me instead of using the form:",
+      copy: "Copy address",
+      copied: "Copied",
+      public: "Questions and ideas that can be public",
+      issues: "GitHub Issues — bugs and feature requests",
+      discussions: "GitHub Discussions — usage questions and ideas",
       bug: "For bugs, please use GitHub issues or the «!» problem report inside the program.",
       privacy: "Your message is used only to reply and is never shared.",
     };
@@ -95,11 +113,29 @@ const L = ko
             <p id="contact-msg" role="status" />
           </form>
         ) : (
-          <p class="card">
-            {L.notReady} <a href={`${REPO}/issues`}>GitHub Issues →</a>
+          <div class="card mail-card">
+            <h3>{L.mailTitle}</h3>
+            <p>{L.noForm}</p>
+            <p class="mail-line">
+              <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+              <button class="btn" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
+            </p>
+          </div>
+        )
+      }
+      {
+        siteKey && (
+          <p class="note mail-line">
+            {L.orMail} <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+            <button class="btn tight" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
           </p>
         )
       }
+      <h3 class="sub-h">{L.public}</h3>
+      <ul class="links">
+        <li><a href={`${REPO}/issues`}>{L.issues} →</a></li>
+        <li><a href={`${REPO}/discussions`}>{L.discussions} →</a></li>
+      </ul>
       <p class="note">{L.bug}</p>
     </div>
     <aside class="side-box">
@@ -111,6 +147,20 @@ const L = ko
   </div>
   {siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />}
   <script>
+    // 메일 주소 복사 — 클립보드를 못 쓰면(권한·옛 브라우저) 주소를 선택해 둔다
+    for (const b of document.querySelectorAll<HTMLButtonElement>("button[data-copy]")) {
+      const label = b.textContent;
+      b.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(b.dataset.copy ?? "");
+          b.textContent = b.dataset.done ?? "OK";
+          setTimeout(() => (b.textContent = label), 1500);
+        } catch {
+          const a = b.parentElement?.querySelector("a");
+          if (a) getSelection()?.selectAllChildren(a);
+        }
+      });
+    }
     const form = document.getElementById("contact") as HTMLFormElement | null;
     const msg = document.getElementById("contact-msg");
     form?.addEventListener("submit", async (e) => {

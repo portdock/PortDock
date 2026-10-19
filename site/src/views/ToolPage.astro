@@ -15,6 +15,9 @@ const ld = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: tool.name,
+  // 사이트 주소(빌드 변수 SITE_URL)를 따른다
+  url: new URL(url(lang, `${tool.id}/`), Astro.site).href,
+  downloadUrl: new URL(url(lang, "download/"), Astro.site).href,
   operatingSystem: "Windows 10, Windows 11",
   applicationCategory: "DeveloperApplication",
   description: tool.summary[lang],

@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "SCPI instrument terminal (LAN socket / RS-232)",
     "longDescription": "PortDock SCPI talks to SCPI test instruments (power supplies, multimeters, oscilloscopes) over a LAN raw socket (TCP 5025) or RS-232 without VISA: write, query and read with response times, *IDN? identification, error queue draining, *OPC? waits, repeated numeric measurements with a trend and CSV export, and IEEE 488.2 binary blocks with HEX preview and file save.",
     "icon": [

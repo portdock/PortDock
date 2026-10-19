@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Serial (COM) terminal with signal lines and auto-reconnect",
     "longDescription": "PortDock Serial exchanges data with RS-232, RS-485 and USB serial devices, decodes Modbus RTU, verifies checksums and keeps timestamped test logs. It reconnects to the same device after a USB replug.",
     "icon": [
