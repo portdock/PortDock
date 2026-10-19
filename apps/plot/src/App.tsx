@@ -3,7 +3,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { api, type PlotEvent, type PortInfo, type RawLine, type SerialConfig, type Source, type Transport } from "./api";
 import { channelColor, channelName, clock, CK_SIZE, csvOf, fmtNum, frameLen, MAX_CHANNELS, NUM_SIZE, parseHex, Ring, stats, type CkKind, type Format, type NumKind, type Sep, type XMode } from "./model";
 import { Plot, type ChannelView, type PlotHandle, type YAxis } from "./Plot";
-import { tip } from "./tips";
+import { tip } from "@shared/tips";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
 import { ReportButton } from "@shared/ReportDialog";

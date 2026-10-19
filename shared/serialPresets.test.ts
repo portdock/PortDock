@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { applyPreset, isPresetId, presetDiff, PRESETS } from "./serialPresets.ts";
-import { isExampleName, serialExamples, tcpExamples, udpExamples } from "./examples.ts";
+import { isExampleName, scpiExamples, serialExamples, tcpExamples, udpExamples } from "./examples.ts";
 
 // 첫 실행 상태(9600 8N1 · 끊김 시간 20ms · ASCII + CR LF)
 const first = { baud: 9600, dataBits: 8, parity: "none", stopBits: 1, frameKind: "gap", gapMs: 20, terminatorText: "0D 0A", rxCheck: null, mode: "ascii", checksum: null, suffix: "\\r\\n" };
@@ -68,6 +68,10 @@ test("예시 명령 — 이름 앞 «예:», Modbus 는 요청 창과 같은 바
   assert.equal(t[0].checksum, null);
   assert.ok(tcpExamples(false, "en").some((c) => c.text === "*IDN?"));
   assert.equal(udpExamples("ko").length, 3);
+  // SCPI — 질의만(? 로 끝남), 줄 끝은 연결 설정이 붙인다
+  const sc = scpiExamples("en");
+  assert.deepEqual(sc.map((c) => c.text), ["*IDN?", "MEAS:VOLT:DC?", "SYST:ERR?"]);
+  assert.ok(sc.every((c) => isExampleName(c.name) && c.text.endsWith("?") && c.suffix === "" && c.mode === "ascii"));
   // 쓰기 예시는 넣지 않는다(모르고 눌러도 장비 값이 바뀌지 않게)
   const fcOf = (c, at) => parseInt(c.text.split(" ")[at], 16);
   for (const c of [...serialExamples("general", "ko"), ...serialExamples("modbus", "ko")].filter((c) => c.mode === "hex")) assert.ok([3, 4].includes(fcOf(c, 1)), c.text);

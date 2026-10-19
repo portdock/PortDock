@@ -53,3 +53,13 @@ export function tcpExamples(modbusTcp: boolean, lang: Lang): ExampleCmd[] {
 export function udpExamples(lang: Lang): ExampleCmd[] {
   return [ex(lang, lang === "ko" ? "글자 hello" : "text hello", "hello", "ascii", null, ""), idn(lang, "\\n"), ex(lang, lang === "ko" ? "HEX 01 02 03 04" : "HEX 01 02 03 04", "01 02 03 04", "hex", null, "")];
 }
+
+/** SCPI — 질의만(*IDN?·MEAS:VOLT:DC?·SYST:ERR?). 줄 끝은 연결 설정의 «줄 끝» 이 붙이므로 비워 둔다. 모르고 눌러도 장비 설정이 바뀌지 않게 쓰기(*RST 등)는 넣지 않는다 */
+export function scpiExamples(lang: Lang): ExampleCmd[] {
+  const ko = lang === "ko";
+  return [
+    ex(lang, ko ? "*IDN? (장비 이름)" : "*IDN? (instrument ID)", "*IDN?", "ascii", null, ""),
+    ex(lang, ko ? "MEAS:VOLT:DC? (DC 전압)" : "MEAS:VOLT:DC? (DC voltage)", "MEAS:VOLT:DC?", "ascii", null, ""),
+    ex(lang, ko ? "SYST:ERR? (오류 하나)" : "SYST:ERR? (one error)", "SYST:ERR?", "ascii", null, ""),
+  ];
+}

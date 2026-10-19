@@ -1,6 +1,6 @@
 // Plot 도움말 — 화면 ? 버튼·F1 로 연다(사이트 도구 소개에도 쓴다)
 import type { HelpDoc } from "@shared/HelpDialog";
-import { settingsLines, windowLines } from "@shared/helpCommon";
+import { settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
   ko: [
@@ -127,13 +127,7 @@ export const help: HelpDoc = {
     },
     {
       title: "단축키",
-      body: [
-        "- F4: 받기 시작·멈추기.",
-        "- Space: 그래프 멈춤·이어 보기(입력칸·버튼 밖에서). End: 실시간으로.",
-        "- Esc: 측정점 지우기(입력칸 밖에서).",
-        "- Ctrl+S: 화면 CSV 저장. Ctrl+Shift+L: CSV 기록 켜기·끄기. Ctrl+L: 지우기.",
-        "- F1 또는 ? 버튼: 이 도움말. 대화상자가 열려 있거나 한글을 조합하는 중에는 단축키가 동작하지 않습니다.",
-      ],
+      body: shortcutLines("ko", { startStop: true, graph: true }),
     },
     {
       title: "문제 해결",
@@ -268,13 +262,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Shortcuts",
-      body: [
-        "- F4: start / stop receiving.",
-        "- Space: pause / resume the graph (outside text boxes and buttons). End: back to live.",
-        "- Esc: clear markers (outside text boxes).",
-        "- Ctrl+S: save view CSV. Ctrl+Shift+L: start / stop CSV recording. Ctrl+L: clear.",
-        "- F1 or the ? button: this help. Shortcuts are ignored while a dialog is open or while composing Korean text.",
-      ],
+      body: shortcutLines("en", { startStop: true, graph: true }),
     },
     {
       title: "Troubleshooting",

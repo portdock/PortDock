@@ -1,4 +1,4 @@
-// 도움말 공통 줄 — 다섯 프로그램의 «단축키·팁»·로그 다루기 설명을 같은 말로. 각 앱 help.ts 가 불러 쓴다.
+// 도움말 공통 줄 — 모든 프로그램의 «단축키·팁»·로그 다루기 설명을 같은 말로. 각 앱 help.ts 가 불러 쓴다.
 import { KEYS } from "./shortcuts";
 
 type Lang = "ko" | "en";
@@ -13,11 +13,14 @@ export interface HelpFeatures {
   find?: boolean;
   /** 연결 단어 — Serial·Slave 는 «연결·끊기», 나머지는 «시작·멈춤» */
   startStop?: boolean;
+  /** 그래프 앱(Plot) — 로그 대신 그래프: Space 멈춤·End 실시간·Esc 측정점 지우기, Ctrl+S 는 화면 CSV, Ctrl+Shift+L 은 CSV 기록 */
+  graph?: boolean;
 }
 
 /** «단축키» 줄 — 글머리표(«- ») 로 시작 */
 export function shortcutLines(lang: Lang, f: HelpFeatures): string[] {
   const ko = lang === "ko";
+  if (f.graph) return graphShortcutLines(lang, f);
   const lines = [
     ko ? `- ${KEYS.connect}: ${f.startStop ? "시작·멈춤" : "연결·끊기"}(왼쪽 버튼과 같음).` : `- ${KEYS.connect}: ${f.startStop ? "start / stop" : "connect / disconnect"} (same as the button on the left).`,
     ko ? `- ${KEYS.clear}: 화면 기록 지우기(파일 로그는 그대로).` : `- ${KEYS.clear}: clear the on-screen log (file logs are kept).`,
@@ -32,6 +35,32 @@ export function shortcutLines(lang: Lang, f: HelpFeatures): string[] {
     ko ? "- 대화상자·우클릭 메뉴가 열려 있거나 한글을 조합하는 중에는 단축키가 동작하지 않습니다." : "- Shortcuts are ignored while a dialog or the right-click menu is open, or while composing Korean text.",
   ];
   return lines.filter(Boolean) as string[];
+}
+
+/** 그래프 앱(Plot)의 «단축키» 줄 — 같은 키(F4·Ctrl+L·Ctrl+S·Ctrl+Shift+L·End·Esc)를 그래프에 맞는 말로 */
+function graphShortcutLines(lang: Lang, f: HelpFeatures): string[] {
+  const ko = lang === "ko";
+  return ko
+    ? [
+        `- ${KEYS.connect}: ${f.startStop ? "받기 시작·멈추기" : "연결·끊기"}(왼쪽 버튼과 같음).`,
+        "- Space: 그래프 멈춤·이어 보기(입력칸·버튼 밖에서 — 받기와 CSV 기록은 계속).",
+        `- ${KEYS.end}: 실시간 보기로(확대·옮기기를 버림). 그래프를 두 번 눌러도 같습니다.`,
+        `- ${KEYS.stopRepeat}: 측정점 A·B 지우기(입력칸 밖에서).`,
+        `- ${KEYS.save}: 화면 CSV 저장(보이는 범위만). ${KEYS.fileLog}: CSV 기록 켜기·끄기. ${KEYS.clear}: 지우기(버퍼·그래프·원시 줄·측정점, 기록 파일은 그대로).`,
+        "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다.",
+        "- 숫자 칸: ↑/↓ 1씩, Shift+↑/↓ 10씩, PageUp/PageDown 100씩, 칸을 누른 뒤 마우스 휠. 속도 칸은 ↑/↓ 로 목록의 다음·앞 속도.",
+        "- 대화상자가 열려 있거나 한글을 조합하는 중에는 단축키가 동작하지 않습니다.",
+      ]
+    : [
+        `- ${KEYS.connect}: ${f.startStop ? "start / stop receiving" : "connect / disconnect"} (same as the button on the left).`,
+        "- Space: pause / resume the graph (outside text boxes and buttons — receiving and CSV recording continue).",
+        `- ${KEYS.end}: back to the live view (drops zoom and pan). Double-clicking the graph does the same.`,
+        `- ${KEYS.stopRepeat}: clear markers A and B (outside text boxes).`,
+        `- ${KEYS.save}: save view CSV (visible range only). ${KEYS.fileLog}: start / stop CSV recording. ${KEYS.clear}: clear (buffer, graph, raw lines and markers; a recording file is kept).`,
+        "- F1 or the ? button: this help. Close it with Esc.",
+        "- Number boxes: ↑/↓ by 1, Shift+↑/↓ by 10, PageUp/PageDown by 100, or the mouse wheel once the box is focused. The baud box steps through the listed rates.",
+        "- Shortcuts are ignored while a dialog is open or while composing Korean text.",
+      ];
 }
 
 /** 로그 따라가기·줄 고르기·우클릭 메뉴 설명 */

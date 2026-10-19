@@ -4,14 +4,14 @@ import { api, asScpiError, hex, isFatal, type ErrEntry, type ExchangeOut, type N
 import { blockExt, clampInt, COMMON, findCommon, fmtNum, hexDump, isQuery, parseIdn, parseNumber, sampleStats, samplesCsv, shortForm, showBytes, stamp, type Idn, type Sample } from "./model";
 import { Traffic, type Frame, type TrafficHandle } from "./Traffic";
 import { Chart } from "./Chart";
-import { tip } from "./tips";
+import { tip } from "@shared/tips";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
 import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { load, samePorts, store } from "@shared/framing";
-import { autoLogPath, formatTime, useSettings } from "@shared/settings";
+import { autoLogPath, formatTime, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -22,6 +22,7 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { FirstCard } from "@shared/FirstCard";
 import { CommandList, type Cmd } from "@shared/CommandList";
+import { scpiExamples } from "@shared/examples";
 import { useSendHistory } from "@shared/sendHistory";
 import { screenText } from "@shared/logSearch";
 import { copyText } from "@shared/logCopy";
@@ -75,15 +76,6 @@ function cleanCommands(v: unknown): Cmd[] {
   return v.filter((c): c is Cmd => !!c && typeof c === "object" && typeof c.text === "string" && typeof c.name === "string").map((c) => ({ ...c, mode: "ascii", checksum: null, suffix: "" }));
 }
 
-/** 빈 명령 목록의 «예시 넣기» — 읽기만(모르고 눌러도 장비 설정이 바뀌지 않게) */
-function examples(lang: Lang): Cmd[] {
-  const p = lang === "ko" ? "예: " : "e.g. ";
-  const ex = (name: string, text: string): Cmd => ({ name: p + name, text, mode: "ascii", checksum: null, suffix: "", ck: null, key: null });
-  return lang === "ko"
-    ? [ex("*IDN? (장비 이름)", "*IDN?"), ex("MEAS:VOLT:DC? (DC 전압)", "MEAS:VOLT:DC?"), ex("SYST:ERR? (오류 하나)", "SYST:ERR?")]
-    : [ex("*IDN? (instrument ID)", "*IDN?"), ex("MEAS:VOLT:DC? (DC voltage)", "MEAS:VOLT:DC?"), ex("SYST:ERR? (one error)", "SYST:ERR?")];
-}
-
 /** 사건 줄 — bad 면 빨갛게(시간 초과·끊김). 체크섬 실패(check=false)와는 다르다 */
 const ev = (note: string, bad = false): Frame => ({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, bad });
 
@@ -115,14 +107,16 @@ export default function App() {
   });
   const [autoIdn, setAutoIdn] = useState<boolean>(() => load<boolean>("autoIdn", true) !== false);
   const commChanged = timing.timeoutMs !== 3000 || timing.opcMs !== 30000 || !autoIdn;
-  const [commOpen, setCommOpen] = useState<boolean>(() => commChanged || load<boolean>("commOpen", false) === true);
+  const [commOpenSaved, setCommOpenSaved] = useState<boolean>(() => commChanged || load<boolean>("commOpen", false) === true);
   useEffect(() => store("transport", transport), [transport]);
   useEffect(() => store("net", net), [net]);
   useEffect(() => store("cfg", cfg), [cfg]);
   useEffect(() => store("term", term), [term]);
   useEffect(() => store("timing", timing), [timing]);
   useEffect(() => store("autoIdn", autoIdn), [autoIdn]);
-  useEffect(() => store("commOpen", commOpen), [commOpen]);
+  useEffect(() => store("commOpen", commOpenSaved), [commOpenSaved]);
+  // 설정 «모두 펼치기» 면 펼친 채(켠 채 접으면 이번 실행만) — 다른 앱과 같은 shared useFold
+  const [commOpen, setCommOpen] = useFold(commOpenSaved, setCommOpenSaved, settings.expandAll);
   const timingRef = useRef(timing);
   timingRef.current = timing;
   const termRef = useRef(term);
@@ -813,10 +807,10 @@ export default function App() {
             <option value="cr">{t("termCr")}</option>
           </select>
         </label>
-        <details className="adv panel comm" open={commOpen || settings.expandAll} onToggle={(e) => setCommOpen((e.target as HTMLDetailsElement).open)}>
+        <details className="adv panel comm" open={commOpen} onToggle={(e) => setCommOpen((e.target as HTMLDetailsElement).open)}>
           <summary data-tip={tip(lang, "scComm")}>
             <span className="sum-title">{t("commDetail")}</span>
-            {!(commOpen || settings.expandAll) && <span className="sum-note">{fill(t("commSummary"), { a: timing.timeoutMs, b: Math.round(timing.opcMs / 1000) })}</span>}
+            {!commOpen && <span className="sum-note">{fill(t("commSummary"), { a: timing.timeoutMs, b: Math.round(timing.opcMs / 1000) })}</span>}
           </summary>
           <div className="grid2">
             <label data-tip={tip(lang, "scTimeout")}>
@@ -1095,7 +1089,7 @@ export default function App() {
           toast={toast}
           writeText={api.writeText}
           readText={api.readText}
-          examples={examples(lang)}
+          examples={scpiExamples(lang)}
         />
       </aside>
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}

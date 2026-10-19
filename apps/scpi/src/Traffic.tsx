@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { hex } from "./api";
-import { tip } from "./tips";
+import { tip } from "@shared/tips";
 import { showBytes } from "./model";
 import type { LogFrame } from "@shared/logSearch";
 import { formatTime, rowHeight, type Settings } from "@shared/settings";
