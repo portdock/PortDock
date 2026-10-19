@@ -929,9 +929,15 @@
     {
       "title": "Accura 3300E Communication Guide [Korean]",
       "publisher": "Rootech Inc.",
-      "edition": "Revision 2.11, 2026-05-12",
+      "edition": {
+        "ko": "Revision 2.11, 2026-05-12",
+        "en": "Revision 2.11, 2026-05-12"
+      },
       "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1468&no=0",
-      "pages": "p.12-13 함수 코드, p.18-19 맵 개요·형식, p.22-23, p.28, p.32-36 계측, p.45-46 주소·엔디언",
+      "pages": {
+        "ko": "p.12-13 함수 코드, p.18-19 맵 개요·형식, p.22-23, p.28, p.32-36 계측, p.45-46 주소·엔디언",
+        "en": "pp.12-13 function codes, pp.18-19 map overview and formats, pp.22-23, p.28, pp.32-36 measurements, pp.45-46 addresses and endianness"
+      },
       "checked": "2026-10-19"
     }
   ]

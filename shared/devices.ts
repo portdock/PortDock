@@ -49,9 +49,11 @@ export interface DevComm {
 export interface DevSource {
   title: string;
   publisher?: string;
-  edition?: string;
+  /** 판·개정 — 한·영(영어 화면에 en) */
+  edition?: Text;
   url: string;
-  pages?: string;
+  /** 레지스터 맵이 있는 쪽 — 한·영 */
+  pages?: Text;
   checked: string;
 }
 
@@ -98,6 +100,18 @@ export function pointName(r: DevRegister, lang: Lang): string {
   const sc = scaleText(r.scale);
   const u = [sc && `×${sc}`, r.unit].filter(Boolean).join(" ");
   return (u ? `${r.name[lang]} (${u})` : r.name[lang]).slice(0, 80);
+}
+
+/**
+ * 근거 쪽·표(ref) 글 — 데이터는 «p.21 표 2.1.1», «인쇄 p.21 (PDF p.22)» 처럼 쪽 번호와 «표»·«인쇄» 두 낱말만 쓴다
+ * (tools/devices-check.mjs 가 그 밖의 한글을 막는다 — 같은 낱말 표가 거기에도 있다). 영어 화면에서는 두 낱말만 바꾼다.
+ */
+export const REF_WORDS_EN: [string, string][] = [
+  ["인쇄", "printed"],
+  ["표", "Table"],
+];
+export function refText(ref: string, lang: Lang): string {
+  return lang === "ko" ? ref : REF_WORDS_EN.reduce((s, [ko, en]) => s.split(ko).join(en), ref);
 }
 
 export const deviceName = (d: Device, lang: Lang) => `${d.manufacturer[lang]} ${d.model}`;

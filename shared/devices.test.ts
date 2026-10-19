@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { commLine, devRegs, exampleRaw, matchDevice, pointName, pollGroups, readFc, serialDefaults, slaveRows, tableSpans, type Device, type DevRegister } from "./devices.ts";
+import { commLine, devRegs, exampleRaw, matchDevice, pointName, pollGroups, readFc, refText, serialDefaults, slaveRows, tableSpans, type Device, type DevRegister } from "./devices.ts";
 import { encodeValue, decodeValue } from "../apps/modbus-slave/src/regmap.ts";
 
 const t = (ko: string, en = ko) => ({ ko, en });
@@ -20,6 +20,12 @@ const dev = (registers: DevRegister[], comm: Partial<Device["comm"]> = {}): Devi
   comm: { addressing: "zero", ...comm },
   registers,
   sources: [{ title: "x", url: "https://example.com", checked: "2026-10-19" }],
+});
+
+test("근거 쪽(ref) — 영어 화면에서 «표»·«인쇄» 만 바꾼다", () => {
+  assert.equal(refText("인쇄 p.21 표 2.1.1 (PDF p.22)", "ko"), "인쇄 p.21 표 2.1.1 (PDF p.22)");
+  assert.equal(refText("인쇄 p.21 표 2.1.1 (PDF p.22)", "en"), "printed p.21 Table 2.1.1 (PDF p.22)");
+  assert.equal(refText("p.93 (PDF 94) G.SV", "en"), "p.93 (PDF 94) G.SV");
 });
 
 test("이름에 배율·단위", () => {

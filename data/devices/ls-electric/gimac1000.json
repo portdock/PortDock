@@ -776,17 +776,29 @@
     {
       "title": "GIMAC1000 MODBUS MAP",
       "publisher": "LS ELECTRIC",
-      "edition": "Tech Data EN 2024-02 (파일명 [GIMAC1000] Modbus Map_Tech Data_EN_202402.pdf, 등록 2024-04-02)",
+      "edition": {
+        "ko": "Tech Data EN 2024-02 (파일명 [GIMAC1000] Modbus Map_Tech Data_EN_202402.pdf, 등록 2024-04-02)",
+        "en": "Tech Data EN 2024-02 (file name [GIMAC1000] Modbus Map_Tech Data_EN_202402.pdf, posted 2024-04-02)"
+      },
       "url": "https://www.ls-electric.com/ko/cat/HPDT/%5BGIMAC1000%5D%20Modbus%20Map_Tech%20Data_EN_202402.pdf",
-      "pages": "PDF p.1-8 맵·형식, p.12-16 RTU, p.17-21 TCP (인쇄 쪽 번호 없음)",
+      "pages": {
+        "ko": "PDF p.1-8 맵·형식, p.12-16 RTU, p.17-21 TCP (인쇄 쪽 번호 없음)",
+        "en": "PDF pp.1-8 map and formats, pp.12-16 RTU, pp.17-21 TCP (no printed page numbers)"
+      },
       "checked": "2026-10-19"
     },
     {
       "title": "Digital Power Measuring Device GIMAC1000 User's Manual",
       "publisher": "LS ELECTRIC",
-      "edition": "EN 2023-03 (파일명 [GIMAC1000] User Manual EN_Manual_EN_202303.pdf)",
+      "edition": {
+        "ko": "EN 2023-03 (파일명 [GIMAC1000] User Manual EN_Manual_EN_202303.pdf)",
+        "en": "EN 2023-03 (file name [GIMAC1000] User Manual EN_Manual_EN_202303.pdf)"
+      },
       "url": "https://www.ls-electric.com/ko/cat/HPDT/%5BGIMAC1000%5D%20User%20Manual%20EN_Manual_EN_202303.pdf",
-      "pages": "p.33 Table6 설정 메뉴(출하값), p.41-42 통신 속도·SWAP",
+      "pages": {
+        "ko": "p.33 Table6 설정 메뉴(출하값), p.41-42 통신 속도·SWAP",
+        "en": "p.33 Table 6 setup menu (factory values), pp.41-42 baud rate and SWAP"
+      },
       "checked": "2026-10-19"
     }
   ]

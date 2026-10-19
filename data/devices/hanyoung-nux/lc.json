@@ -1023,9 +1023,15 @@
     {
       "title": "LC SERIES USER MANUAL",
       "publisher": "HANYOUNG NUX",
-      "edition": "MD0901E260602_U (파일명 LC_user_en_260720)",
+      "edition": {
+        "ko": "MD0901E260602_U (파일명 LC_user_en_260720)",
+        "en": "MD0901E260602_U (file name LC_user_en_260720)"
+      },
       "url": "https://www.hanyoungnux.com/data/main_view.php?down=1699(LC_user_en_260720).pdf&file_name=LC.pdf",
-      "pages": "p.12 사양, p.30~41 통신 (PDF 쪽 = 인쇄 쪽 - 2)",
+      "pages": {
+        "ko": "p.12 사양, p.30~41 통신 (PDF 쪽 = 인쇄 쪽 - 2)",
+        "en": "p.12 specifications, pp.30-41 communication (PDF page = printed page - 2)"
+      },
       "checked": "2026-10-19"
     }
   ]

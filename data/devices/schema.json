@@ -15,7 +15,7 @@
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "manufacturer": { "$ref": "#/$defs/text" },
-    "model": { "description": "모델 이름(매뉴얼 표기)", "type": "string", "minLength": 1 },
+    "model": { "description": "모델 이름(매뉴얼 표기, 한·영 공통이라 한글 없이)", "type": "string", "minLength": 1 },
     "models": {
       "description": "같은 맵을 쓰는 형번·시리즈(있으면)",
       "type": "array",
@@ -147,7 +147,7 @@
           }
         },
         "description": { "$ref": "#/$defs/text" },
-        "ref": { "description": "근거 쪽·표 번호(예 «p.7-4 표 7.2»)", "type": "string" },
+        "ref": { "description": "근거 쪽·표 번호(예 «p.7-4 표 7.2», «인쇄 p.21 (PDF p.22)»). 한글은 «표»·«인쇄» 만 — 영어 화면에서 Table·printed 로 바꾼다. 설명은 description 에", "type": "string" },
         "source": { "description": "sources 배열의 몇 번째 출처인지(0 기준, 없으면 0)", "type": "integer", "minimum": 0 }
       }
     },
@@ -158,9 +158,9 @@
       "properties": {
         "title": { "description": "문서 이름(매뉴얼 표지 그대로)", "type": "string", "minLength": 1 },
         "publisher": { "type": "string" },
-        "edition": { "description": "판·개정 번호·발행일", "type": "string" },
+        "edition": { "description": "판·개정 번호·발행일(한·영 — 영어 페이지·영어 화면에 en 이 나온다)", "$ref": "#/$defs/text" },
         "url": { "description": "제조사가 문서를 내려 주는 주소", "type": "string", "pattern": "^https?://" },
-        "pages": { "description": "레지스터 맵이 있는 쪽·표", "type": "string" },
+        "pages": { "description": "레지스터 맵이 있는 쪽·표(한·영)", "$ref": "#/$defs/text" },
         "checked": { "description": "직접 열어 확인한 날(YYYY-MM-DD)", "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
       }
     }

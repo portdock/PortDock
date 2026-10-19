@@ -189,8 +189,8 @@ export function DeviceDialog({
                     <span key={i}>
                       {i > 0 && " · "}
                       {s.title}
-                      {s.edition ? ` (${s.edition})` : ""}
-                      {s.pages ? `, ${s.pages}` : ""}
+                      {s.edition ? ` (${s.edition[lang]})` : ""}
+                      {s.pages ? `, ${s.pages[lang]}` : ""}
                     </span>
                   ))}
                 </div>

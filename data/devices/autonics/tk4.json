@@ -447,7 +447,7 @@
         "min": 0,
         "max": 100
       },
-      "ref": "p.28 표 2.4.1 (MV 모니터/수동 제어 그룹)",
+      "ref": "p.28 표 2.4.1",
       "source": 0
     },
     {
@@ -1241,17 +1241,29 @@
     {
       "title": "TK Series Simultaneous Heating&Cooling Output PID Temperature Controllers Communication Manual MCT-TKC1-V2.2-EN",
       "publisher": "Autonics",
-      "edition": "MCT-TKC1-V2.2-EN (PDF 작성 2026-02-11)",
+      "edition": {
+        "ko": "MCT-TKC1-V2.2-EN (PDF 작성 2026-02-11)",
+        "en": "MCT-TKC1-V2.2-EN (PDF created 2026-02-11)"
+      },
       "url": "https://www.autonics.com/glb/common/download/522980",
-      "pages": "pp.21-41 (인쇄 쪽 = PDF 쪽)",
+      "pages": {
+        "ko": "pp.21-41 (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.21-41 (printed page = PDF page)"
+      },
       "checked": "2026-10-19"
     },
     {
       "title": "TK Series Simultaneous Heating&Cooling Output PID Temperature Controllers User Manual MCT-TKU1-V3.6-EN",
       "publisher": "Autonics",
-      "edition": "MCT-TKU1-V3.6-EN (PDF 작성 2026-06-15)",
+      "edition": {
+        "ko": "MCT-TKU1-V3.6-EN (PDF 작성 2026-06-15)",
+        "en": "MCT-TKU1-V3.6-EN (PDF created 2026-06-15)"
+      },
       "url": "https://www.autonics.com/glb/common/download/525784",
-      "pages": "pp.18-19 주문 정보, p.27 통신 인터페이스",
+      "pages": {
+        "ko": "pp.18-19 주문 정보, p.27 통신 인터페이스",
+        "en": "pp.18-19 ordering information, p.27 Communication Interface"
+      },
       "checked": "2026-10-19"
     }
   ]

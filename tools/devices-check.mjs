@@ -11,6 +11,8 @@
 //  - 주소 범위(시작 + 칸 수 ≤ 65536), 같은 표 안에서 주소 중복·형식별 칸 수 겹침(u32·f32 는 2칸, f64 4칸, string 은 len/2)
 //  - 표와 형식(비트 표는 bit, 레지스터 표는 bit 아님), 표와 함수 코드, 읽기/쓰기와 함수 코드
 //  - 출처 필수·출처 번호·확인일, string 의 len, bit·string 에 배율 금지
+//  - 영어 글(모든 «en» 칸)에 한글이 섞이지 않았는지 — 영어 페이지·영어 화면에 그대로 나간다.
+//    한·영 공통 칸(model·models)도 한글 없이, ref 는 «표»·«인쇄» 만(영어 화면에서 shared/devices.ts refText 가 바꾼다)
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -104,6 +106,24 @@ const TABLE_FC = {
 const READ_FC = new Set([1, 2, 3, 4]);
 const WRITE_FC = new Set([5, 6, 15, 16]);
 
+const HANGUL = /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]/;
+
+/** shared/devices.ts REF_WORDS_EN 과 같은 표 — ref 의 영어 표시 */
+const REF_WORDS_EN = [
+  ["인쇄", "printed"],
+  ["표", "Table"],
+];
+export const refEn = (ref) => REF_WORDS_EN.reduce((s, [ko, en]) => s.split(ko).join(en), ref);
+
+/** 한글이 든 «en» 칸의 위치들(예 «sources/0/pages/en») */
+export function hangulInEn(v, at = "") {
+  if (Array.isArray(v)) return v.flatMap((x, i) => hangulInEn(x, `${at}/${i}`));
+  if (v === null || typeof v !== "object") return [];
+  return Object.entries(v).flatMap(([k, x]) =>
+    k === "en" && typeof x === "string" ? (HANGUL.test(x) ? [`${at}/en`.slice(1)] : []) : hangulInEn(x, `${at}/${k}`),
+  );
+}
+
 /** 장비 하나의 뜻 검사. rel 은 data/devices 기준 경로(예 «ls-electric/ig5a.json») */
 export function checkDevice(dev, rel, today = new Date().toISOString().slice(0, 10)) {
   const errs = [];
@@ -114,6 +134,11 @@ export function checkDevice(dev, rel, today = new Date().toISOString().slice(0, 
   for (const [i, s] of (dev.sources ?? []).entries()) {
     if (s.checked > today) errs.push(`sources/${i}: 확인일 ${s.checked} 이 미래`);
   }
+  for (const at of hangulInEn(dev)) errs.push(`${at}: 영어(en) 글에 한글이 있음`);
+  for (const [i, m] of [dev.model, ...(dev.models ?? [])].entries())
+    if (typeof m === "string" && HANGUL.test(m)) errs.push(`${i ? `models/${i - 1}` : "model"}: 한·영 공통 칸에 한글 «${m}»`);
+  for (const [i, r] of (dev.registers ?? []).entries())
+    if (r.ref && HANGUL.test(refEn(r.ref))) errs.push(`registers/${i}/ref: «표»·«인쇄» 밖의 한글 «${r.ref}» — 설명은 description 에`);
   const used = new Map(); // "표:주소" → 레지스터 번호
   for (const [i, r] of (dev.registers ?? []).entries()) {
     const at = `registers/${i} (${r.table} ${r.address} ${r.name?.ko ?? ""})`;

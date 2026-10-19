@@ -870,17 +870,29 @@
     {
       "title": "User Manual for Communication 4-Digit Multi Panel Meters MT Series MCT-MTC1-V1.7-EN",
       "publisher": "Autonics",
-      "edition": "MCT-MTC1-V1.7-EN (2024-11-26)",
+      "edition": {
+        "ko": "MCT-MTC1-V1.7-EN (2024-11-26)",
+        "en": "MCT-MTC1-V1.7-EN (2024-11-26)"
+      },
       "url": "https://www.autonics.com/glb/common/download/510417",
-      "pages": "인쇄 pp.21-23 (PDF pp.22-24) 매핑 표, 인쇄 p.31 (PDF p.32) 공장 기본값",
+      "pages": {
+        "ko": "인쇄 pp.21-23 (PDF pp.22-24) 매핑 표, 인쇄 p.31 (PDF p.32) 공장 기본값",
+        "en": "printed pp.21-23 (PDF pp.22-24) mapping table, printed p.31 (PDF p.32) factory defaults"
+      },
       "checked": "2026-10-19"
     },
     {
       "title": "4-Digit Multi Panel Meters MT4W Series PRODUCT MANUAL TCD220015AI",
       "publisher": "Autonics",
-      "edition": "MT4W_EN_TCD220015AI_20260629",
+      "edition": {
+        "ko": "MT4W_EN_TCD220015AI_20260629",
+        "en": "MT4W_EN_TCD220015AI_20260629"
+      },
       "url": "https://www.autonics.com/glb/common/download/525959",
-      "pages": "p.2 주문 정보, p.3 Communication Interface",
+      "pages": {
+        "ko": "p.2 주문 정보, p.3 Communication Interface",
+        "en": "p.2 ordering information, p.3 Communication Interface"
+      },
       "checked": "2026-10-19"
     }
   ]

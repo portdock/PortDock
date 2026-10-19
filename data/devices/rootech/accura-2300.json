@@ -10,7 +10,7 @@
   "models": [
     "Accura 2300",
     "Accura 2300S",
-    "Accura 2350-3P (모듈)"
+    "Accura 2350-3P"
   ],
   "kind": "power-meter",
   "title": {
@@ -1061,9 +1061,15 @@
     {
       "title": "Accura 2300[S]/2350 Communication Guide",
       "publisher": "Rootech Inc.",
-      "edition": "Rev 2.50, 2026-06-23 (파일명 Accura_2300[S]_2350_Communication_Guide_Rev2_50_Korean_260623.pdf)",
+      "edition": {
+        "ko": "Rev 2.50, 2026-06-23 (파일명 Accura_2300[S]_2350_Communication_Guide_Rev2_50_Korean_260623.pdf)",
+        "en": "Rev 2.50, 2026-06-23 (file name Accura_2300[S]_2350_Communication_Guide_Rev2_50_Korean_260623.pdf)"
+      },
       "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1474&no=0",
-      "pages": "p.14-19 프로토콜·함수 코드, p.28-30 맵 요약·형식, p.34, p.38, p.85, p.105-112 계측",
+      "pages": {
+        "ko": "p.14-19 프로토콜·함수 코드, p.28-30 맵 요약·형식, p.34, p.38, p.85, p.105-112 계측",
+        "en": "pp.14-19 protocol and function codes, pp.28-30 map summary and formats, p.34, p.38, p.85, pp.105-112 measurements"
+      },
       "checked": "2026-10-19"
     }
   ]

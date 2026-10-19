@@ -1150,17 +1150,29 @@
     {
       "title": "TX Series Communication Manual MCT-TXC1-V1.7_EN",
       "publisher": "Autonics",
-      "edition": "MCT-TXC1-V1.7_EN (PDF 작성 2026-07-10)",
+      "edition": {
+        "ko": "MCT-TXC1-V1.7_EN (PDF 작성 2026-07-10)",
+        "en": "MCT-TXC1-V1.7_EN (PDF created 2026-07-10)"
+      },
       "url": "https://www.autonics.com/glb/common/download/526426",
-      "pages": "pp.23-34 (인쇄 쪽 = PDF 쪽)",
+      "pages": {
+        "ko": "pp.23-34 (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.23-34 (printed page = PDF page)"
+      },
       "checked": "2026-10-19"
     },
     {
       "title": "LCD PID Temperature Controllers TX Series PRODUCT MANUAL TCD250010AE",
       "publisher": "Autonics",
-      "edition": "TX_EN_TCD250010AE_20260715",
+      "edition": {
+        "ko": "TX_EN_TCD250010AE_20260715",
+        "en": "TX_EN_TCD250010AE_20260715"
+      },
       "url": "https://www.autonics.com/glb/common/download/526424",
-      "pages": "p.2 주문 정보·Communication Interface",
+      "pages": {
+        "ko": "p.2 주문 정보·Communication Interface",
+        "en": "p.2 ordering information, Communication Interface"
+      },
       "checked": "2026-10-19"
     }
   ]

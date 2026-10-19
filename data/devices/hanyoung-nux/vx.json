@@ -724,10 +724,10 @@
         16
       ],
       "description": {
-        "ko": "소수점은 DP-P(예 DP-P=1 이면 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H.",
-        "en": "Decimals per DP-P (e.g. DP-P=1: 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H."
+        "ko": "소수점은 DP-P(예 DP-P=1 이면 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H. 프레임 예는 p.30~36.",
+        "en": "Decimals per DP-P (e.g. DP-P=1: 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H. Frame examples on pp.30-36."
       },
-      "ref": "p.93 (PDF 94) G.SV; 프레임 예 p.30~36"
+      "ref": "p.93 (PDF 94) G.SV"
     },
     {
       "table": "holding-registers",
@@ -1071,7 +1071,11 @@
         "min": 0,
         "max": 99
       },
-      "ref": "p.103 (PDF 104) G.COM; 단위 ms 는 p.10"
+      "description": {
+        "ko": "단위 ms 는 p.10 통신 파라미터.",
+        "en": "Unit (ms) from p.10 communication parameters."
+      },
+      "ref": "p.103 (PDF 104) G.COM"
     },
     {
       "table": "holding-registers",
@@ -1235,9 +1239,15 @@
     {
       "title": "통신 설명서 VX Series",
       "publisher": "HANYOUNG NUX",
-      "edition": "December 18, 2024",
+      "edition": {
+        "ko": "December 18, 2024",
+        "en": "December 18, 2024"
+      },
       "url": "https://www.hanyoungnux.co.kr/data/main.php?down=1121(VX_comm_user_241218).pdf&file_name=VX_comm_user_241218.pdf",
-      "pages": "p.10 통신 파라미터, p.25~38 MODBUS, p.90~114 통신 맵 (PDF 쪽 = 인쇄 쪽 + 1)",
+      "pages": {
+        "ko": "p.10 통신 파라미터, p.25~38 MODBUS, p.90~114 통신 맵 (PDF 쪽 = 인쇄 쪽 + 1)",
+        "en": "p.10 communication parameters, pp.25-38 MODBUS, pp.90-114 communication map (PDF page = printed page + 1)"
+      },
       "checked": "2026-10-19"
     }
   ]

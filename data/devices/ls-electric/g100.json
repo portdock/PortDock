@@ -1331,9 +1331,15 @@
     {
       "title": "G100(C) User Manual (G100(C)_User Manual_EN_V4.04_261001.pdf) — LSLV-G100",
       "publisher": "LS ELECTRIC",
-      "edition": "4th Edition (Revision History 2024.08, p.398); 파일 V4.04, 2026-10-01",
+      "edition": {
+        "ko": "4th Edition (Revision History 2024.08, p.398); 파일 V4.04, 2026-10-01",
+        "en": "4th Edition (Revision History 2024.08, p.398); file V4.04, 2026-10-01"
+      },
       "url": "https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/17908426583480/G100%28C%29_User%20Manual_EN_V4.04_261001.pdf",
-      "pages": "7장 RS-485 p.240~269 (PDF 254~283)",
+      "pages": {
+        "ko": "7장 RS-485 p.240~269 (PDF 254~283)",
+        "en": "chapter 7 RS-485 pp.240-269 (PDF 254-283)"
+      },
       "checked": "2026-10-19"
     }
   ]

@@ -5,7 +5,7 @@ import AdSlot from "../components/AdSlot.astro";
 import { toolById, type Lang } from "../data/tools";
 import { CC_BY, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
 import { url } from "../lib/i18n";
-import { KIND_TEXT, devRegs, type Device, type DevRegister } from "@shared/devices";
+import { KIND_TEXT, devRegs, refText, type Device, type DevRegister } from "@shared/devices";
 import "../styles/devices.css";
 
 interface Props {
@@ -144,7 +144,7 @@ const ld = {
                   )}
                   {!!r.values?.length && <div>{r.values.map((v) => `${v.value} = ${v[lang]}`).join(" · ")}</div>}
                   {!!r.bits?.length && <div>{r.bits.map((b) => `b${b.bit} ${b[lang]}`).join(" · ")}</div>}
-                  {r.ref && <div class="note">{r.ref}</div>}
+                  {r.ref && <div class="note">{refText(r.ref, lang)}</div>}
                 </td>
               </tr>
             ))
@@ -188,8 +188,8 @@ const ld = {
           <li>
             <a href={s.url} rel="nofollow noopener">{s.title}</a>
             {s.publisher ? ` — ${s.publisher}` : ""}
-            {s.edition ? `, ${s.edition}` : ""}
-            {s.pages ? ` · ${s.pages}` : ""} · {L(`확인 ${s.checked}`, `checked ${s.checked}`)}
+            {s.edition ? `, ${s.edition[lang]}` : ""}
+            {s.pages ? ` · ${s.pages[lang]}` : ""} · {L(`확인 ${s.checked}`, `checked ${s.checked}`)}
           </li>
         ))
       }

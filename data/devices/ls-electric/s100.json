@@ -1361,9 +1361,15 @@
     {
       "title": "S100 User Manual (S100_Manual_English_V4.3.pdf) — LSLV-S100",
       "publisher": "LS ELECTRIC",
-      "edition": "19th Edition, 2026.09 (Revision History p.474); 파일 V4.3",
+      "edition": {
+        "ko": "19th Edition, 2026.09 (Revision History p.474); 파일 V4.3",
+        "en": "19th Edition, 2026.09 (Revision History p.474); file V4.3"
+      },
       "url": "https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/17912520084750/S100_Manual_English_V4.3.pdf",
-      "pages": "7장 RS-485 p.279~306 (PDF 293~320), CM 그룹 p.346 (PDF 360)",
+      "pages": {
+        "ko": "7장 RS-485 p.279~306 (PDF 293~320), CM 그룹 p.346 (PDF 360)",
+        "en": "chapter 7 RS-485 pp.279-306 (PDF 293-320), CM group p.346 (PDF 360)"
+      },
       "checked": "2026-10-19"
     }
   ]

@@ -1,7 +1,7 @@
 // node --test tools/devices-check.test.mjs
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkAll, checkDevice, loadSchema, modbusSchemaExpr, regsOf, toModbusSchemaYaml, validateSchema } from "./devices-check.mjs";
+import { checkAll, checkDevice, loadSchema, refEn, modbusSchemaExpr, regsOf, toModbusSchemaYaml, validateSchema } from "./devices-check.mjs";
 
 const schema = loadSchema();
 const t = (ko, en = ko) => ({ ko, en });
@@ -20,7 +20,7 @@ function sample(regs) {
     sources: [{ title: "매뉴얼", url: "https://example.com/m.pdf", checked: "2026-10-19" }],
   };
 }
-const reg = (o) => ({ table: "holding-registers", address: 0, manualAddress: "0x0000", type: "u16", name: t("값"), access: "r", fc: [3], ...o });
+const reg = (o) => ({ table: "holding-registers", address: 0, manualAddress: "0x0000", type: "u16", name: t("값", "Value"), access: "r", fc: [3], ...o });
 
 test("저장소의 모든 장비 맵이 검사를 통과한다", () => {
   const { devices, errors } = checkAll();
@@ -68,6 +68,29 @@ test("표·형식·함수 코드·읽기쓰기", () => {
   const old = sample([reg({})]);
   old.sources[0].checked = "2999-01-01";
   assert.match(checkDevice(old, "maker/model.json").join(), /미래/);
+});
+
+test("출처의 판·쪽은 한·영 글 — 문자열 하나는 안 됨, 영어 글에 한글이 있으면 오류", () => {
+  const dev = sample([reg({})]);
+  dev.sources[0] = { ...dev.sources[0], edition: t("판 2 (PDF 작성 2026-01-01)", "Ed. 2 (PDF created 2026-01-01)"), pages: t("pp.3-5 통신 맵", "pp.3-5 comm map") };
+  assert.deepEqual(validateSchema(dev, schema), []);
+  assert.deepEqual(checkDevice(dev, "maker/model.json"), []);
+  const flat = sample([reg({})]);
+  flat.sources[0].pages = "pp.3-5 통신 맵";
+  assert.match(validateSchema(flat, schema).join(), /sources\/0\/pages/);
+  const mixed = sample([reg({ name: t("값", "값 value") })]);
+  mixed.sources[0].pages = t("pp.3-5 통신 맵", "pp.3-5 통신 맵");
+  const es = checkDevice(mixed, "maker/model.json").join("\n");
+  assert.match(es, /registers\/0\/name\/en: 영어\(en\) 글에 한글/);
+  assert.match(es, /sources\/0\/pages\/en/);
+});
+
+test("ref 는 «표»·«인쇄» 밖의 한글 금지, model·models 는 한글 금지", () => {
+  const c = (o, m) => checkDevice({ ...sample([reg(o)]), ...m }, "maker/model.json").join("\n");
+  assert.equal(c({ ref: "인쇄 p.21 표 2.1.1 (PDF p.22)" }), "");
+  assert.equal(refEn("인쇄 p.21 표 2.1.1 (PDF p.22)"), "printed p.21 Table 2.1.1 (PDF p.22)");
+  assert.match(c({ ref: "p.28 표 2.4.1 (모니터 그룹)" }), /registers\/0\/ref/);
+  assert.match(c({}, { models: ["A-1", "B-2 (모듈)"] }), /models\/1/);
 });
 
 test("칸 수는 Modbus Slave 와 같다", () => {
