@@ -13,7 +13,7 @@
 | `PortDock-<App>-portable.zip` | 휴대판: `PortDock <App>.exe` + `LICENSE.txt` + `THIRD_PARTY_NOTICES.txt` + `portdock-data/` |
 | `SHA256SUMS.txt` | 위 파일 모두의 SHA-256 |
 
-`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator`. 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
+`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
 
 ## 설치판과 휴대판의 차이
 
@@ -46,6 +46,7 @@
    - 설치판 하나를 깨끗한 PC(또는 Windows Sandbox)에서 설치 → 실행 → 설정 «정보» 의 버전 확인 → 제거.
    - 휴대판 zip 을 풀어 실행 → `portdock-data` 에 `EBWebView` 폴더가 생기는지 확인.
    - 파일마다 <https://www.virustotal.com/> 에 올리고, 결과 링크를 릴리스 본문의 «VirusTotal» 줄에 붙인다.
+   - 탐지가 하나라도 있으면(서명 없는 새 exe 는 오탐이 잦다) Publish 전에 Microsoft Defender 에 오탐으로 제출한다(<https://www.microsoft.com/wdsi/filesubmission>, «소프트웨어 개발자»). 판정이 바뀌면 VirusTotal 을 다시 돌려 링크를 바꾼다. winget 은 Defender·다중 백신 검사에 걸리면 거부하고, Chocolatey 는 VirusTotal 탐지 수로 반려·사람 검토를 가르므로, 패키지 관리자 등록은 이 단계가 깨끗해진 뒤에 한다.
    - 변경 내용을 다듬는다(자동 생성된 노트 위에 한국어·영어 요약).
 7. **Publish** — 공개 후 `https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe` 가 새 파일을 받는지 확인. 앱의 «새 버전 확인» 버튼은 `/releases/latest` 페이지를 연다(자동 확인 없음).
 
@@ -60,7 +61,7 @@
 
 ## 아이콘
 
-원본은 `tools/icons/*.svg`(앱마다 색과 글자: S 청록 `#0b6e75`, M 남색 `#4338ca`, T 파랑 `#1d4ed8`, U 보라 `#7c3aed`, Σ 호박색 `#b45309`; `portdock.svg` 는 글자 없는 기본 마크). 바꾸면:
+원본은 `tools/icons/*.svg`(앱마다 색과 글자: S 청록 `#0b6e75`(Serial), M 남색 `#4338ca`(Modbus Slave), T 파랑 `#1d4ed8`(TCP), U 보라 `#7c3aed`(UDP), Σ 호박색 `#b45309`(Simulator), N 초록 `#15803d`(Net Scan), M▶ 짙은 남색 `#3730a3`(Modbus Master), S? 자홍 `#be185d`(SCPI), 값 선 빨강 `#b91c1c`(Plot); `portdock.svg` 는 글자 없는 기본 마크). 바꾸면:
 
 ```powershell
 npx tauri icon tools/icons/serial.svg -o apps/serial/src-tauri/icons
