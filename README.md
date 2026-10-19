@@ -6,15 +6,15 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 
 | Tool | What it does |
 |---|---|
-| **PortDock Serial** | Serial (COM) terminal — RS-232/RS-485/USB serial, signal lines (DTR/RTS/CTS/DSR/RI/CD), auto-reconnect after a USB replug, framing, checksums, Modbus RTU decoding, timestamped test logs |
-| **PortDock Modbus Slave** | Modbus RTU slave simulator — edit coils and registers in a table and watch the master's requests |
-| **PortDock TCP** | TCP client and server — multiple peers, echo, auto-reconnect |
+| **PortDock Serial** | Serial (COM) terminal — RS-232/RS-485/USB serial, signal lines (DTR/RTS/CTS/DSR/RI/CD), auto-reconnect after a USB replug, framing, checksums (nine types plus custom CRC), Modbus RTU decoding and request builder, auto-reply, timestamped test logs |
+| **PortDock Modbus Slave** | Modbus slave simulator over serial RTU, Modbus TCP or RTU over TCP — coil and register tables (32-bit, float and string cells), value simulation, fault injection, built-in device profiles, CSV register maps, and the master's requests as they arrive |
+| **PortDock TCP** | TCP client, server and relay (monitor) — multiple peers, echo, auto-reconnect, Modbus TCP framing |
 | **PortDock UDP** | UDP sender/receiver — broadcast, multicast, echo |
 | **PortDock Simulator** | Rule-based fake device over serial, TCP and UDP — "when this arrives, reply with that" |
 | **PortDock Net Scan** | Find devices on an industrial network: ping/ARP sweep, MAC vendor, industrial ports (Modbus 502, MC, XGT …), long-term ping monitor, Wake-on-LAN |
-| **PortDock Modbus Master** | Modbus RTU/TCP master (poll tool): several poll tables, typed values (U16–F64, strings, byte orders, 40001 notation), writes 05/06/0F/10, slave ID and address range scan, decoded traffic, statistics, CSV value log, trends |
+| **PortDock Modbus Master** | Modbus RTU/TCP master (poll tool): several poll tables, typed values (U16–F64, strings, byte orders, 40001 notation), writes 05/06/0F/10, slave ID and address range scan, built-in device profiles, decoded traffic, statistics, CSV value log, trends |
 | **PortDock SCPI** | SCPI instrument terminal over LAN socket (5025) or RS-232, no VISA: query/write/read with response times, `*IDN?` identification, error queue draining, `*OPC?` waits, repeated numeric measurements (table, trend, CSV), block data (#…) with HEX preview and file save |
-| **PortDock Plot** | Live plotter for numbers from serial, TCP or UDP: CSV/space/tab text, Arduino-style `name:value`, header names, binary frames (start bytes, u8–f64, endianness, checksum); up to 32 channels on left/right axes, pause, cursor, two-point Δt/Δvalue, zoom; statistics, CSV recording while receiving, CSV/PNG export |
+| **PortDock Plot** | Live plotter for numbers from serial, TCP or UDP: comma/space/tab/semicolon text (auto-detected), Arduino-style `name:value`, header names, binary frames (start bytes, u8–f64, endianness, checksum); up to 32 channels on left/right axes, pause, cursor, two-point Δt/Δvalue, zoom; statistics, CSV recording while receiving, CSV/PNG export |
 
 Website: <https://portdock.dev>
 
@@ -76,7 +76,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator)
+npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator, netscan, modbus-master, scpi, plot)
 npm run build:serial      # installer → target\release\bundle\nsis\
 cargo test --workspace    # tests
 

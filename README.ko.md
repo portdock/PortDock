@@ -6,15 +6,15 @@
 
 | 프로그램 | 하는 일 |
 |---|---|
-| **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬, Modbus RTU 풀이, 시각이 찍힌 시험 기록 |
-| **PortDock Modbus Slave** | Modbus RTU 장비 흉내 — 코일·레지스터를 표에서 바꾸고 마스터의 요청을 확인 |
-| **PortDock TCP** | TCP 클라이언트·서버 — 여러 접속, 에코, 자동 재접속 |
+| **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬(9종 + 사용자 정의 CRC), Modbus RTU 풀이·요청 만들기, 자동응답, 시각이 찍힌 시험 기록 |
+| **PortDock Modbus Slave** | Modbus 슬레이브 장비 흉내(시리얼 RTU·Modbus TCP·RTU over TCP) — 코일·레지스터 표(32비트·실수·문자열 칸), 값 자동 변화, 장애 주입, 내장 장비 프로필, CSV 레지스터 맵, 마스터의 요청 확인 |
+| **PortDock TCP** | TCP 클라이언트·서버·중계(모니터) — 여러 접속, 에코, 자동 재접속, Modbus TCP 프레임 구분 |
 | **PortDock UDP** | UDP 송수신 — 브로드캐스트, 멀티캐스트, 에코 |
 | **PortDock Simulator** | 규칙대로 답하는 가짜 장비(시리얼·TCP·UDP) — «이게 오면 이걸로 답하기» |
 | **PortDock Net Scan** | 산업 네트워크 장비 IP 찾기 — 핑·ARP 훑기, MAC 제조사, 산업 포트 판정(Modbus 502·MC·XGT 등), 장기 핑 감시, Wake-on-LAN |
-| **PortDock Modbus Master** | Modbus RTU·TCP 마스터(폴링) — 여러 폴링 표, 타입 값(U16~F64·문자열·바이트 순서·40001 표기), 05·06·0F·10 쓰기, 국번·주소 범위 찾기, 통신 풀이·통계, 값 CSV 기록, 추세 |
+| **PortDock Modbus Master** | Modbus RTU·TCP 마스터(폴링) — 여러 폴링 표, 타입 값(U16~F64·문자열·바이트 순서·40001 표기), 05·06·0F·10 쓰기, 국번·주소 범위 찾기, 내장 장비 프로필, 통신 풀이·통계, 값 CSV 기록, 추세 |
 | **PortDock SCPI** | SCPI 계측기 터미널 — LAN 소켓(5025)·RS-232, VISA 없이. 질의·쓰기·읽기와 응답 시간, `*IDN?` 식별, 오류 큐 비우기, `*OPC?` 기다림, 숫자 반복 측정(값 표·추세·CSV), 블록 데이터(#…) HEX 미리보기·파일 저장 |
-| **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭 글자 줄, Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
+| **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭·세미콜론 글자 줄(자동 감지), Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
 
 홈페이지: <https://portdock.dev>
 
@@ -76,7 +76,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator 도 같음)
+npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot 도 같음)
 npm run build:serial      # 설치판 → target\release\bundle\nsis\
 cargo test --workspace    # 테스트
 

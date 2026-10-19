@@ -9,7 +9,7 @@ export const help: HelpDoc = {
       title: "이 프로그램은",
       body: [
         "PortDock TCP 는 이더넷(TCP/IP)으로 장비와 데이터를 주고받는 시험 도구입니다.",
-        "PC 가 장비에 접속하는 «클라이언트», 장비가 PC 에 접속하는 «서버» 두 방식을 모두 씁니다.",
+        "PC 가 장비에 접속하는 «클라이언트», 장비가 PC 에 접속하는 «서버», 둘 사이에 끼어 양쪽 통신을 기록하는 «중계(모니터)» 세 방식을 씁니다.",
         "받은 데이터를 HEX·ASCII 로 보여 주고, 체크섬을 붙여 보내고, 시험 기록을 파일로 남깁니다.",
       ],
     },
@@ -225,7 +225,7 @@ export const help: HelpDoc = {
       title: "About this program",
       body: [
         "PortDock TCP is a test tool for exchanging data with a device over Ethernet (TCP/IP).",
-        "It works both as a «client» (the PC connects to the device) and as a «server» (the device connects to the PC).",
+        "It works as a «client» (the PC connects to the device), a «server» (the device connects to the PC) or a «relay» (monitor — sits between two sides and logs both directions).",
         "It shows received data as HEX and ASCII, sends data with a checksum and keeps test logs in a file.",
       ],
     },
