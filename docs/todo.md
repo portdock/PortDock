@@ -16,7 +16,7 @@
 ## 사용자가 직접 해야 하는 것 (무료)
 - GitHub 공개 저장소 `juhak0308/PortDock` 만들기 → Claude 가 올림
 - Cloudflare 가입 · Pages 연결 · Email Routing · Turnstile (`site/README.md`)
-- 문의 받을 전용 메일 정하기
+- ~~문의 받을 전용 메일 정하기~~ ✅ `portdock.contact@gmail.com`(10/19) — `shared/report.ts` REPORT_EMAIL. 도메인 뒤 `contact@portdock.dev` → 이 메일로 전달(Email Routing CONTACT_TO)
 - Sentry 가입(조직 만들 때 EU, IP 저장 끄기, DPA 동의, 오픈소스 후원 신청) → DSN 을 `shared/report.ts` 에
 - SignPath Foundation 무료 서명 신청
 - Google Search Console · 네이버 서치어드바이저 등록
