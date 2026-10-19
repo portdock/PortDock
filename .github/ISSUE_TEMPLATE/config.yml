@@ -6,3 +6,6 @@ contact_links:
   - name: 사용법 / Docs
     url: https://portdock.dev/
     about: 도구별 사용법과 가이드 / Guides and documentation
+  - name: 보안 취약점 (비공개 신고) / Security vulnerability (private report)
+    url: https://github.com/portdock/PortDock/blob/main/SECURITY.md
+    about: 공개 이슈로 올리지 말고 SECURITY.md 의 방법으로 / Please do not open a public issue — see SECURITY.md
