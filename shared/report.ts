@@ -11,7 +11,7 @@ export const ISSUES_URL = "https://github.com/portdock/PortDock/issues/new";
  * 비워 두면 자동 전송·«지금 보내기» 가 숨는다. 이 값은 공개돼도 되는 값이다(보내기만 가능).
  * Sentry 프로젝트 설정에서 «Prevent Storing of IP Addresses» 를 켠다.
  */
-export const SENTRY_DSN = "";
+export const SENTRY_DSN = "https://545bae3280087d8d56adfd2a2f72d139@o4512280157945856.ingest.de.sentry.io/4512280163123280"; // 조직 portdock(EU), 프로젝트 portdock
 
 export interface CrashReport {
   /** 보고 글 파일 이름(.txt) — 지우면 짝인 .dmp 도 함께 지워진다 */
