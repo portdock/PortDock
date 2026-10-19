@@ -1,5 +1,10 @@
 # PortDock
 
+[![CI](https://github.com/portdock/PortDock/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/portdock/PortDock/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/portdock/PortDock?include_prereleases&sort=semver&label=release)](https://github.com/portdock/PortDock/releases)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)
+
 [한국어](README.ko.md)
 
 Free communication tools for testing field hardware on Windows. Each tool is a separate, small download; they share the same communication and decoding core.
@@ -66,6 +71,10 @@ PortDock uses Microsoft Edge WebView2 to draw its window. It is built into Windo
 | Portable | `portdock-data\` next to the exe | `%LOCALAPPDATA%\PortDock\reports\<tool>` |
 
 Settings → *Export settings* saves everything to one JSON file you can move to another PC. Log files go wherever you choose.
+
+## Checks
+
+Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all nine apps, 99 Node tests (`shared/`, apps, tools), the device register map check (10 devices, 368 registers), `cargo clippy` with warnings as errors, 218 Rust tests (216 run, 2 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Build from source
 

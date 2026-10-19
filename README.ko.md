@@ -1,5 +1,10 @@
 # PortDock
 
+[![CI](https://github.com/portdock/PortDock/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/portdock/PortDock/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/portdock/PortDock?include_prereleases&sort=semver&label=release)](https://github.com/portdock/PortDock/releases)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)
+
 [English](README.md)
 
 윈도우에서 현장 하드웨어를 시험할 때 쓰는 무료 통신 도구 묶음. 프로그램마다 따로 작게 받아 쓰고, 속의 통신·해석 부품은 함께 씁니다.
@@ -66,6 +71,10 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 | 휴대판 | exe 옆 `portdock-data\` | `%LOCALAPPDATA%\PortDock\reports\<프로그램>` |
 
 설정 → *설정 내보내기* 로 모든 설정을 JSON 파일 하나로 저장해 다른 PC 로 옮길 수 있습니다. 로그 파일은 직접 고른 곳에 저장됩니다.
+
+## 검사
+
+push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 아홉 앱의 화면 빌드·타입 검사, Node 시험 99개(`shared/`·앱·도구), 장비 레지스터 맵 검사(10종·레지스터 368개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 218개(216개 실행, 2개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 소스에서 빌드
 
