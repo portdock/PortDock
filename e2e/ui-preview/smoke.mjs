@@ -111,9 +111,9 @@ async function exercise(root, opts = {}) {
       if (!open.length) return;
       const m = open[open.length - 1];
       if (opts.depth == null || opts.depth < 1) {
-        // 새로 뜬 창 속도 한 번 눌러 본다
+        // 새로 뜬 창 속도 한 번 눌러 본다(«모두 펼치기» 로 화면 요소가 많아 한 번 검사가 느리다 — 창마다 40초)
         const label = (m.querySelector('[role=dialog],[role=alertdialog]') || m).getAttribute('aria-label') || 'modal';
-        findings.push(...(await exercise(m, { ...opts, scope: 'modal', depth: (opts.depth || 0) + 1, skip: (opts.skip ? opts.skip + ',' : '') + '.modal-head button', budgetMs: 20000 })).map((f) => ({ ...f, step: '[' + label + '] ' + f.step })));
+        findings.push(...(await exercise(m, { ...opts, scope: 'modal', depth: (opts.depth || 0) + 1, skip: (opts.skip ? opts.skip + ',' : '') + '.modal-head button', budgetMs: 40000 })).map((f) => ({ ...f, step: '[' + label + '] ' + f.step })));
       }
       if (!m.isConnected) continue;
       key(window, 'Escape');
@@ -1441,6 +1441,9 @@ async function runApp(app, port) {
           __sm.setVal(sel[0], 'ascii'); await w();
           __sm.setVal(card.querySelector('.arpat'), 'READ'); await w();
           __sm.setVal(card.querySelectorAll('select')[1], 'contains'); await w();
+          // 새 규칙은 직전 규칙의 응답 형식을 물려받는다 — 앞 단계가 만든 규칙에 따라 ASCII 일 수 있어 HEX 로 정한다
+          const replyMode = [...card.querySelectorAll('select')].filter((s) => s.querySelector('option[value=hex]'))[1];
+          if (replyMode) { __sm.setVal(replyMode, 'hex'); await w(); }
           __sm.setVal(card.querySelector('.arreply'), '{req 0..1} 00 {counter 2}'); await w();
           card.querySelector('.armore-btn').click(); await w();
           const nums = card.querySelectorAll('.armore input.num');

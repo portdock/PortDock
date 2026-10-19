@@ -199,7 +199,9 @@ html .dump {
 .tip {
   position: fixed;
   z-index: 100;
-  max-width: 320px;
+  /* 창 가장자리에서도 좁아지지 않게 — 너비는 글에 맞추고(최대 320px), 넘치면 TipLayer 가 옆으로 민다 */
+  width: max-content;
+  max-width: min(320px, calc(100vw - 16px));
   transform: translateX(-50%);
   background: var(--ink);
   color: var(--panel);
@@ -214,7 +216,7 @@ html .dump {
 .tip::before {
   content: "";
   position: absolute;
-  left: 50%;
+  left: calc(50% + var(--tip-shift, 0px));
   top: -5px;
   transform: translateX(-50%) rotate(45deg);
   width: 10px;

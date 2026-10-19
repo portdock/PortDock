@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * 말풍선 설명 — 앱에 한 번만 둔다(main.tsx).
@@ -8,6 +8,17 @@ import { useEffect, useRef, useState } from "react";
  */
 export function TipLayer() {
   const [tip, setTip] = useState<{ text: string; x: number; y: number; above: boolean } | null>(null);
+  // 창 가장자리 단추(예: 좁은 창의 «☰»)의 말풍선이 창 밖으로 나가지 않게 — 그린 뒤 재서 옆으로 민다(꼬리는 단추 쪽에 그대로)
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [shift, setShift] = useState(0);
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!el) return setShift(0);
+    el.style.marginLeft = "0px";
+    const r = el.getBoundingClientRect();
+    const d = r.right > innerWidth - 4 ? innerWidth - 4 - r.right : r.left < 4 ? 4 - r.left : 0;
+    setShift(Math.round(d));
+  }, [tip]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // cur: 말풍선을 띄울(띄운) 요소, held: title 을 치워 둔 요소(마우스가 올라가 있는 동안)
   const cur = useRef<Element | null>(null);
@@ -101,7 +112,7 @@ export function TipLayer() {
 
   if (!tip) return null;
   return (
-    <div className={tip.above ? "tip above" : "tip"} style={{ left: tip.x, top: tip.y }} role="tooltip">
+    <div ref={tipRef} className={tip.above ? "tip above" : "tip"} style={{ left: tip.x, top: tip.y, marginLeft: shift, ["--tip-shift" as string]: `${-shift}px` }} role="tooltip">
       {tip.text}
     </div>
   );
