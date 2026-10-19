@@ -4,6 +4,7 @@
 //  · 없으면(도메인·메일 함수 준비 전) 양식 대신 메일 주소 복사·GitHub 이슈·Discussions 안내
 // 어느 쪽이든 아래에 연락 메일(shared/links.ts 의 CONTACT_EMAIL)을 함께 보여 준다.
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { REPO, type Lang } from "../data/tools";
 import { UI } from "../lib/i18n";
 import { CONTACT_EMAIL } from "@shared/links";
@@ -66,9 +67,17 @@ const L = ko
     };
 ---
 
-<Base lang={lang} title={t.contact} path="contact/">
+<Base
+  lang={lang}
+  title={t.contact}
+  description={ko
+    ? "PC 통신·장비 프로그램 개발 문의: 시리얼·이더넷·Modbus 장비 연동, 검사·계측 프로그램, 오래된 프로그램 수정·이관. 메일로 답합니다."
+    : "Contract development: serial, Ethernet and Modbus device integration, test and measurement software, legacy program migration. Replies by email."}
+  path="contact/"
+>
   <header class="page-head">
     <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.contact, path: "contact/" }]} />
       <h1>{t.ctaTitle}</h1>
       <p>{L.intro}</p>
     </div>
@@ -114,7 +123,7 @@ const L = ko
           </form>
         ) : (
           <div class="card mail-card">
-            <h3>{L.mailTitle}</h3>
+            <h2>{L.mailTitle}</h2>
             <p>{L.noForm}</p>
             <p class="mail-line">
               <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
@@ -131,7 +140,7 @@ const L = ko
           </p>
         )
       }
-      <h3 class="sub-h">{L.public}</h3>
+      <h2 class="sub-h">{L.public}</h2>
       <ul class="links">
         <li><a href={`${REPO}/issues`}>{L.issues} →</a></li>
         <li><a href={`${REPO}/discussions`}>{L.discussions} →</a></li>

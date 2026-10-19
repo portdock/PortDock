@@ -11,6 +11,8 @@ if (!/^https?:\/\/[^/]+$/.test(SITE_URL)) throw new Error(`SITE_URL 은 «https:
 export default defineConfig({
   site: SITE_URL,
   trailingSlash: "always",
+  // 스타일(약 9KB)을 페이지마다 넣는다 — 첫 화면을 막는 CSS 요청이 없어진다(Lighthouse render-blocking)
+  build: { inlineStylesheets: "always" },
   i18n: {
     defaultLocale: "ko",
     locales: ["ko", "en"],

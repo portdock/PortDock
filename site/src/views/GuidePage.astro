@@ -1,9 +1,12 @@
 ---
-// 가이드 글 — 본문 아래에만 광고(AdSlot). 이어지는 도구로 안내한다.
+// 가이드 글 — 본문 아래에만 광고(AdSlot). 이어지는 도구·가이드·웹 도구·장비 레지스터 맵으로 안내한다.
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
-import { toolById, type Lang } from "../data/tools";
-import type { Guide } from "../data/guides";
+import Crumbs from "../components/Crumbs.astro";
+import { toolById, REPO, type Lang } from "../data/tools";
+import { GUIDES, type Guide } from "../data/guides";
+import { webToolByPath } from "../data/webTools";
+import { DEVICES } from "../data/devices";
 import { url } from "../lib/i18n";
 
 interface Props {
@@ -12,26 +15,33 @@ interface Props {
 }
 const { lang, guide } = Astro.props;
 const ko = lang === "ko";
-const tool = toolById(guide.tool);
+const tools = guide.tools.map(toolById);
+const related = guide.related.map((s) => GUIDES.find((g) => g.slug === s)!);
+const webTools = (guide.webTools ?? []).map(webToolByPath);
+const here = new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href;
 const ld = {
   "@context": "https://schema.org",
   "@type": "TechArticle",
   headline: guide.title[lang],
   // 사이트 주소(빌드 변수 SITE_URL)를 따른다
-  url: new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href,
+  url: here,
+  mainEntityOfPage: here,
   image: new URL(lang === "ko" ? "/og.png" : "/og-en.png", Astro.site).href,
   description: guide.desc[lang],
   datePublished: guide.date,
+  dateModified: guide.date,
   inLanguage: lang,
-  author: { "@type": "Person", name: "Juhak" },
+  author: { "@type": "Person", name: "Juhak", url: REPO },
+  publisher: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
+  about: tools.map((t) => ({ "@type": "SoftwareApplication", name: t.name, applicationCategory: "DeveloperApplication", operatingSystem: "Windows" })),
 };
 ---
 
-<Base lang={lang} title={guide.title[lang]} description={guide.desc[lang]} path={`guides/${guide.slug}/`} ads>
+<Base lang={lang} title={guide.title[lang]} seoTitle={guide.seoTitle?.[lang]} description={guide.desc[lang]} path={`guides/${guide.slug}/`} ads ogType="article">
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <div class="crumb"><a href={url(lang)}>PortDock</a> / <a href={url(lang, "guides/")}>{ko ? "가이드" : "Guides"}</a></div>
+      <Crumbs lang={lang} items={[{ name: ko ? "가이드" : "Guides", path: "guides/" }, { name: guide.title[lang], path: `guides/${guide.slug}/` }]} />
       <h1>{guide.title[lang]}</h1>
       <p>{guide.desc[lang]}</p>
     </div>
@@ -57,10 +67,48 @@ const ld = {
   </article>
   <div class="wrap">
     <AdSlot />
-    <div class="card">
-      <h3>{tool.name}</h3>
-      <p>{tool.tagline[lang]}</p>
-      <a class="go" href={url(lang, `${tool.id}/`)}>{ko ? "도구 보기" : "See the tool"} →</a>
-    </div>
+    <section class="related">
+      <h2>{ko ? "이 글과 이어지는 도구" : "Tools for this"}</h2>
+      <div class="grid">
+        {
+          tools.map((t) => (
+            <a class="card" href={url(lang, `${t.id}/`)}>
+              <h3>{t.name}</h3>
+              <p>{t.tagline[lang]}</p>
+              <span class="go">{ko ? "도구 보기" : "See the tool"} →</span>
+            </a>
+          ))
+        }
+      </div>
+      <p class="note">
+        <a href={url(lang, "download/")}>{ko ? "모든 도구 내려받기(무료, 윈도우 10·11)" : "Download all tools (free, Windows 10/11)"} →</a>
+      </p>
+    </section>
+    <section class="related">
+      <h2>{ko ? "이어 읽기" : "Read next"}</h2>
+      <ul class="links">
+        {
+          related.map((g) => (
+            <li>
+              <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+            </li>
+          ))
+        }
+        {
+          webTools.map((w) => (
+            <li>
+              <a href={url(lang, w.path)}>{w.name[lang]}</a> — {ko ? "웹 도구, 설치 없이" : "web tool, no install"}
+            </li>
+          ))
+        }
+        {
+          guide.devices && (
+            <li>
+              <a href={url(lang, "devices/")}>{ko ? `국산 장비 Modbus 레지스터 맵 ${DEVICES.length}종` : `Modbus register maps for ${DEVICES.length} Korean devices`}</a>
+            </li>
+          )
+        }
+      </ul>
+    </section>
   </div>
 </Base>

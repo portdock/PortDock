@@ -2,6 +2,8 @@
 // 웹 도구: Modbus RTU 요청 만들기 — PortDock Serial 의 «Modbus 요청» 과 같은 코드(shared/modbusBuild.ts) + CRC(lib/checksum.ts).
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
 import { MB_FUNCS } from "@shared/modbusBuild";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
@@ -52,9 +54,10 @@ const L = ko
     };
 ---
 
-<Base lang={lang} title={L.title} description={L.desc} path="tools/modbus/" ads>
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus RTU 요청 만들기 — CRC 포함 계산기 — PortDock" : "Modbus RTU Request Builder with CRC (Online) — PortDock"} description={L.desc} path="tools/modbus/" ads>
   <header class="page-head">
     <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/modbus/" }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -112,6 +115,7 @@ const L = ko
         {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
       </p>
     </section>
+    <WebToolLinks lang={lang} path="tools/modbus/" />
   </div>
   <style>
     .seg-row {

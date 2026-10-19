@@ -1,7 +1,9 @@
 ---
 // 사용법 — 앱 안 도움말(apps/<도구>/src/help.ts)을 그대로 보여 준다. 앱을 고치면 사이트도 같이 바뀐다.
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { type Lang, type Tool } from "../data/tools";
+import { GUIDES } from "../data/guides";
 import { UI, url } from "../lib/i18n";
 
 interface Props {
@@ -25,12 +27,23 @@ function blocks(lines: string[]) {
   return out;
 }
 const id = (i: number) => `s${i + 1}`;
+const ko = lang === "ko";
+const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
+// 검색 결과 설명 — 도움말 목차 앞부분으로(페이지마다 다르게). 첫 절 «이 프로그램은» 은 빼고, 검색 결과 너비(약 160칸, 한글 2칸)에 들어가는 만큼
+const width = (s: string) => [...s].reduce((n, c) => n + (/[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af]/.test(c) ? 2 : 1), 0);
+const descOf = (topics: string[]) =>
+  ko
+    ? `${tool.name} 사용법(앱 도움말 F1 과 같음): ${topics.join(", ")} 등 ${sections.length}개 항목.`
+    : `${tool.name} manual (same as the in-app help, F1): ${topics.join(", ")} and more — ${sections.length} sections.`;
+const topics: string[] = [];
+for (const s of sections.slice(1, 6)) if (width(descOf([...topics, s.title])) <= 160) topics.push(s.title);
+const desc = descOf(topics);
 ---
 
-<Base lang={lang} title={`${tool.name} ${t.docsOf}`} description={`${tool.name} — ${tool.tagline[lang]}`} path={`${tool.id}/docs/`}>
+<Base lang={lang} title={`${tool.name} ${t.docsOf}`} description={desc} path={`${tool.id}/docs/`}>
   <header class="page-head">
     <div class="wrap">
-      <div class="crumb"><a href={url(lang)}>PortDock</a> / <a href={url(lang, `${tool.id}/`)}>{tool.name}</a> / {t.docsOf}</div>
+      <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }, { name: t.docsOf, path: `${tool.id}/docs/` }]} />
       <h1>{tool.name} {t.docsOf}</h1>
       <p>{tool.tagline[lang]}</p>
     </div>
@@ -40,6 +53,20 @@ const id = (i: number) => `s${i + 1}`;
       <b>{t.toc}</b>
       <ol>{sections.map((s, i) => <li><a href={`#${id(i)}`}>{s.title}</a></li>)}</ol>
       <p><a href={url(lang, `${tool.id}/`)}>← {t.backToTool}</a></p>
+      {
+        guides.length > 0 && (
+          <>
+            <b>{ko ? "관련 가이드" : "Related guides"}</b>
+            <ul>
+              {guides.map((g) => (
+                <li>
+                  <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
     </nav>
     <article>
       {

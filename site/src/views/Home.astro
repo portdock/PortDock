@@ -1,16 +1,52 @@
 ---
 import Base from "../layouts/Base.astro";
-import { TOOLS, type Lang } from "../data/tools";
+import { TOOLS, REPO, type Lang } from "../data/tools";
+import { GUIDES } from "../data/guides";
+import { DEVICES } from "../data/devices";
 import { UI, url } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
 
 interface Props {
   lang: Lang;
 }
 const { lang } = Astro.props;
 const t = UI[lang];
+const ko = lang === "ko";
+const home = new URL(url(lang), Astro.site).href;
+const root = new URL("/", Astro.site).href;
+// 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
+const ld = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "PortDock",
+    url: home,
+    inLanguage: lang,
+    description: t.siteDesc,
+    publisher: { "@type": "Organization", name: "PortDock", url: root },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "PortDock",
+    url: root,
+    logo: new URL("/favicon.svg", Astro.site).href,
+    email: CONTACT_EMAIL,
+    sameAs: [REPO],
+  },
+];
 ---
 
-<Base lang={lang} title="PortDock" path="">
+<Base
+  lang={lang}
+  title="PortDock"
+  seoTitle={ko ? "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램" : "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows"}
+  description={ko
+    ? "시리얼 통신 프로그램, Modbus 마스터·슬레이브 시뮬레이터, TCP·UDP, SCPI, 실시간 그래프까지 목적별 무료 윈도우 도구 9종. 오픈소스, 광고 없음."
+    : "Nine free Windows tools for hardware testing: serial terminal, Modbus master and slave simulator, TCP, UDP, SCPI and a live plotter. Open source, no ads."}
+  path=""
+>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <section class="hero">
     <div class="wrap">
       <div>
@@ -67,6 +103,27 @@ const t = UI[lang];
             </div>
           ))
         }
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>{ko ? "가이드와 장비 레지스터 맵" : "Guides and device register maps"}</h2>
+      <div class="grid">
+        {
+          GUIDES.map((g) => (
+            <a class="card" href={url(lang, `guides/${g.slug}/`)}>
+              <h3>{g.title[lang]}</h3>
+              <span class="go">{ko ? "읽기" : "Read"} →</span>
+            </a>
+          ))
+        }
+        <a class="card" href={url(lang, "devices/")}>
+          <h3>{ko ? `국산 장비 Modbus 레지스터 맵 ${DEVICES.length}종` : `Modbus register maps for ${DEVICES.length} Korean devices`}</h3>
+          <p>{ko ? "인버터·온도 조절기·전력 미터 — 매뉴얼 출처, JSON" : "Inverters, temperature controllers, power meters — sources, JSON"}</p>
+          <span class="go">{t.more} →</span>
+        </a>
       </div>
     </div>
   </section>

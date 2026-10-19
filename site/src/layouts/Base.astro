@@ -13,15 +13,21 @@ interface Props {
   path: string;
   /** 광고를 둘 수 있는 페이지(웹 도구·가이드)만 true */
   ads?: boolean;
+  /** 검색 결과에 보일 제목을 통째로 — 없으면 «title — PortDock» (site/SEO.md 의 검색어 표 참고) */
+  seoTitle?: string;
+  /** 검색엔진 색인에서 뺀다(404) */
+  noindex?: boolean;
+  /** og:type — 가이드 글은 article */
+  ogType?: "website" | "article";
 }
-const { lang, title, description, path, ads = false } = Astro.props;
+const { lang, title, description, path, ads = false, seoTitle, noindex = false, ogType = "website" } = Astro.props;
 const t = UI[lang];
 const site = Astro.site!;
 const here = new URL(url(lang, path), site).href;
 const koUrl = new URL(url("ko", path), site).href;
 const enUrl = new URL(url("en", path), site).href;
 const desc = description ?? t.siteDesc;
-const fullTitle = title === "PortDock" ? "PortDock" : `${title} — PortDock`;
+const fullTitle = seoTitle ?? (title === "PortDock" ? "PortDock" : `${title} — PortDock`);
 // 공유 미리보기 그림 — 언어별(만드는 법: site/og/make.mjs)
 const ogImage = new URL(lang === "ko" ? "/og.png" : "/og-en.png", site).href;
 // 배포 환경 변수(Cloudflare Pages): 비워 두면 해당 스크립트를 넣지 않는다
@@ -38,13 +44,21 @@ const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
-    <link rel="canonical" href={here} />
-    <link rel="alternate" hreflang="ko" href={koUrl} />
-    <link rel="alternate" hreflang="en" href={enUrl} />
-    <link rel="alternate" hreflang="x-default" href={koUrl} />
+    {
+      noindex ? (
+        <meta name="robots" content="noindex" />
+      ) : (
+        <>
+          <link rel="canonical" href={here} />
+          <link rel="alternate" hreflang="ko" href={koUrl} />
+          <link rel="alternate" hreflang="en" href={enUrl} />
+          <link rel="alternate" hreflang="x-default" href={koUrl} />
+        </>
+      )
+    }
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="PortDock" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={desc} />

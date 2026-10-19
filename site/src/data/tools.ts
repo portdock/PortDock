@@ -25,12 +25,16 @@ export interface Tool {
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
   tagline: L;
+  /** 검색 결과용 제목·설명 — 사람들이 치는 검색어(site/SEO.md)를 앞에, 길이는 tools/site-check.mjs 가 검사 */
+  seo: { title: L; desc: L };
   summary: L;
   /** 이런 분께 */
   who: L[];
   features: { title: L; body: L }[];
   /** 빠른 시작 */
   steps: L[];
+  /** 비슷한 도구 — 사실만(이름·무료/상용/오픈소스 여부). 남의 제품을 깎지 않고, 검색 제목에는 넣지 않는다(site/SEO.md) */
+  similar?: L;
   help: HelpDoc;
 }
 
@@ -40,6 +44,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Serial",
     file: "PortDock-Serial",
     tagline: { ko: "시리얼(COM) 송수신·신호선·자동 재연결", en: "Serial (COM) terminal with signal lines and auto-reconnect" },
+    seo: {
+      title: { ko: "PortDock Serial — 무료 시리얼 통신 프로그램 (RS232·RS485)", en: "PortDock Serial — Free Serial Terminal for Windows (RS-232/485)" },
+      desc: {
+        ko: "RS232·RS485·USB 시리얼(COM) 장비와 HEX·ASCII 로 주고받는 무료 윈도우 프로그램. USB 재연결, 체크섬 9종, Modbus RTU 풀이, 시각 기록.",
+        en: "Free Windows serial terminal for RS-232, RS-485 and USB COM ports: HEX/ASCII, auto-reconnect, nine checksums, Modbus RTU decoding, timestamped logs.",
+      },
+    },
     summary: {
       ko: "RS-232·RS-485·USB 시리얼 장비와 데이터를 주고받고, 시험 내용을 시각과 함께 남깁니다. USB 변환기를 뽑았다 꽂아도 같은 장치를 찾아 다시 연결합니다.",
       en: "Exchange data with RS-232, RS-485 and USB serial devices and keep a timestamped test log. Unplug and replug a USB adapter and it reconnects to the same device.",
@@ -63,6 +74,10 @@ export const TOOLS: Tool[] = [
       { ko: "HEX 또는 ASCII 로 입력, 필요하면 체크섬·줄 끝(CR·LF) 선택", en: "Type HEX or ASCII; add a checksum or line ending if needed" },
       { ko: "«보내기» — 받은 것은 RX ◀, 보낸 것은 TX ▶", en: "«Send» — received lines show as RX ◀, sent as TX ▶" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 Tera Term·PuTTY(오픈소스 터미널) 등이 있습니다. PortDock Serial 은 USB 재연결, 프레임 구분, 체크섬 검사, Modbus RTU 풀이처럼 장비 시험에 쓰는 기능을 한 화면에 모았습니다.",
+      en: "Similar tools include Tera Term and PuTTY (open-source terminals). PortDock Serial puts device-testing features — USB reconnect, framing, checksum checks, Modbus RTU decoding — on one screen.",
+    },
     help: serialHelp,
   },
   {
@@ -70,6 +85,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Modbus Slave",
     file: "PortDock-Modbus-Slave",
     tagline: { ko: "Modbus 장비 흉내(RTU·TCP) — 레지스터 표·장애 주입", en: "Modbus slave simulator (RTU and TCP) with register tables and fault injection" },
+    seo: {
+      title: { ko: "PortDock Modbus Slave — 무료 Modbus 슬레이브 시뮬레이터", en: "PortDock Modbus Slave — Free Modbus Slave Simulator (RTU/TCP)" },
+      desc: {
+        ko: "PC 를 Modbus RTU·TCP 슬레이브로 만들어 장비 없이 PLC·HMI·마스터를 시험하는 무료 시뮬레이터. 레지스터 표, 장애 주입, 국산 장비 흉내.",
+        en: "Free Modbus RTU/TCP slave simulator for Windows: test a PLC, HMI or master without the device, with register tables, fault injection and device profiles.",
+      },
+    },
     summary: {
       ko: "PC 를 Modbus 슬레이브(시리얼 RTU, 또는 Modbus TCP·RTU over TCP 서버)로 만들어, 실제 장비 없이 마스터(PLC·HMI·상위 프로그램)를 시험합니다. 일부러 늦게·틀리게 답하게 해서 오류 처리도 확인합니다.",
       en: "Turns the PC into a Modbus slave (serial RTU, or a Modbus TCP or RTU over TCP server) so you can test a master (PLC, HMI, host software) without the real device — including deliberate delays and errors.",
@@ -91,6 +113,10 @@ export const TOOLS: Tool[] = [
       { ko: "표를 고르고 시작 주소·개수를 정한 뒤 값을 입력", en: "Choose a table, set start and count, enter values" },
       { ko: "«연결»(TCP 는 «시작») — 마스터의 요청에 표 값으로 답합니다", en: "«Connect» («Start» for TCP) — master requests are answered from the table" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 상용 Modbus Slave(Witte Software), 오픈소스 ModRSsim2 등이 있습니다. PortDock Modbus Slave 는 무료(GPL-3.0)이고 시간 제한이 없습니다.",
+      en: "Similar tools include the commercial Modbus Slave (Witte Software) and the open-source ModRSsim2. PortDock Modbus Slave is free (GPL-3.0) with no time limit.",
+    },
     help: slaveHelp,
   },
   {
@@ -98,6 +124,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock TCP",
     file: "PortDock-TCP",
     tagline: { ko: "TCP 클라이언트·서버·중계 — 여러 접속·에코·자동 재접속", en: "TCP client, server and relay with multiple peers, echo and auto-reconnect" },
+    seo: {
+      title: { ko: "PortDock TCP — 무료 TCP 소켓 테스트 프로그램 (클라이언트·서버)", en: "PortDock TCP — Free TCP Client, Server and Relay Test Tool" },
+      desc: {
+        ko: "이더넷 장비와 TCP 로 주고받는 무료 소켓 테스트 프로그램. 클라이언트·서버(여러 접속)·중계 모드, 에코, 자동 재접속, Modbus TCP 프레임 구분.",
+        en: "Free TCP socket test tool for Windows: client, multi-peer server and relay (monitor) modes, echo, auto-reconnect and Modbus TCP framing.",
+      },
+    },
     summary: {
       ko: "이더넷 장비에 접속하거나(클라이언트), 장비가 PC 로 접속하게(서버) 해서 데이터를 주고받습니다. 서버는 여러 접속을 받아 상대별·모두에게 보낼 수 있고, 중계는 두 장비 사이에 끼어 양쪽 통신을 기록합니다.",
       en: "Connect to an Ethernet device (client) or let devices connect to the PC (server). The server accepts several peers and can send to one or all; the relay sits between two devices and logs both directions.",
@@ -118,6 +151,10 @@ export const TOOLS: Tool[] = [
       { ko: "«접속» 또는 «듣기 시작»", en: "«Connect» or «Start listening»" },
       { ko: "보낼 내용을 입력하고 «보내기»", en: "Type and «Send»" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 Hercules SETUP utility(HW-group, 무료) 등이 있습니다.",
+      en: "Similar tools include the Hercules SETUP utility (HW-group, freeware).",
+    },
     help: tcpHelp,
   },
   {
@@ -125,6 +162,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock UDP",
     file: "PortDock-UDP",
     tagline: { ko: "UDP 송수신 — 브로드캐스트·멀티캐스트·에코", en: "UDP sender/receiver with broadcast, multicast and echo" },
+    seo: {
+      title: { ko: "PortDock UDP — 무료 UDP 송수신 테스트 프로그램", en: "PortDock UDP — Free UDP Sender/Receiver (Broadcast, Multicast)" },
+      desc: {
+        ko: "UDP 데이터그램을 받고 보내는 무료 테스트 프로그램. 브로드캐스트·멀티캐스트 장비 시험, 보낸 쪽으로 답하기, 에코, 시각 기록.",
+        en: "Free UDP test tool for Windows: receive and send datagrams, broadcast and multicast, reply to the last sender, echo and timestamped logs.",
+      },
+    },
     summary: {
       ko: "정한 포트로 데이터그램을 받고, 정한 곳이나 마지막으로 보내온 쪽으로 답합니다. 브로드캐스트·멀티캐스트 장비 시험에 맞습니다.",
       en: "Receive datagrams on a port and reply to a fixed destination or the last sender. Built for broadcast and multicast devices.",
@@ -150,6 +194,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Simulator",
     file: "PortDock-Simulator",
     tagline: { ko: "규칙대로 답하는 가짜 장비 — 시리얼·TCP·UDP", en: "Rule-based fake device over serial, TCP and UDP" },
+    seo: {
+      title: { ko: "PortDock Simulator — 무료 장비 시뮬레이터 (시리얼·TCP·UDP)", en: "PortDock Simulator — Free Device Simulator for Serial, TCP, UDP" },
+      desc: {
+        ko: "«이걸 받으면 이렇게 답한다» 규칙으로 시리얼·TCP·UDP 장비를 흉내 내는 무료 프로그램. 장비 없이 상위 프로그램 개발, 지연·무응답 시험.",
+        en: "Free rule-based device simulator: «when this arrives, reply that» over serial, TCP and UDP. Build host software without hardware; test delays and lost replies.",
+      },
+    },
     summary: {
       ko: "«이걸 받으면 → 이렇게 답한다» 규칙으로 아무 장비나 흉내 냅니다. 장비 없이 상위 프로그램을 개발하고, 지연·무응답(N번째마다·확률)·응답 바꿔 가며 보내기로 예외 처리를 시험합니다.",
       en: "Imitate any device with «when this arrives → reply that» rules. Develop host software without hardware and test error handling with delays, dropped replies (every Nth or by chance) and rotating replies.",
@@ -176,6 +227,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Net Scan",
     file: "PortDock-Net-Scan",
     tagline: { ko: "산업 네트워크 장비 IP 찾기 — 산업 포트 판정·장기 핑", en: "Find devices on industrial networks — industrial ports, long-term ping" },
+    seo: {
+      title: { ko: "PortDock Net Scan — 무료 산업 네트워크 IP 스캐너 (장비 찾기)", en: "PortDock Net Scan — Free IP Scanner for Industrial Networks" },
+      desc: {
+        ko: "같은 대역의 PLC·HMI·장비 IP 를 찾는 무료 스캐너. 핑·ARP, MAC 제조사, Modbus 502·MC·XGT·S7 등 산업 포트 판정, 장기 핑 감시.",
+        en: "Free IP scanner for industrial networks: ping and ARP sweep, MAC vendor, industrial ports (Modbus 502, MC, XGT, S7 …), long-term ping monitor.",
+      },
+    },
     summary: {
       ko: "랜카드 대역을 훑어 장비를 찾고, MAC 제조사와 열린 산업 포트(Modbus 502·MC·XGT·S7·EtherNet/IP·OPC UA 등)로 무슨 장비인지 알려 줍니다. 핑을 막아 둔 장비도 같은 대역이면 ARP 로 찾습니다.",
       en: "Sweep a network card's subnet to find devices, and identify them by MAC vendor and open industrial ports (Modbus 502, MC, XGT, S7, EtherNet/IP, OPC UA …). Devices that block ping are still found via ARP on the same subnet.",
@@ -197,6 +255,10 @@ export const TOOLS: Tool[] = [
       { ko: "«찾기»(F4)", en: "«Scan» (F4)" },
       { ko: "표의 서비스·제조사 열을 확인하고, 장비를 눌러 웹 열기·IP 복사·WoL·«핑 감시에 추가»", en: "Check the services and vendor columns; click a device to open its web page, copy its IP, wake it or «Add to ping monitor»" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 Angry IP Scanner(오픈소스), Advanced IP Scanner(무료) 등이 있습니다. PortDock Net Scan 은 산업 포트(Modbus 502·MC·XGT·S7 등) 판정과 장기 핑 감시를 더했습니다.",
+      en: "Similar tools include Angry IP Scanner (open source) and Advanced IP Scanner (freeware). PortDock Net Scan adds industrial port checks (Modbus 502, MC, XGT, S7 …) and long-term ping monitoring.",
+    },
     help: netscanHelp,
   },
   {
@@ -204,6 +266,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Modbus Master",
     file: "PortDock-Modbus-Master",
     tagline: { ko: "Modbus RTU·TCP 마스터(폴링) — 타입 값·쓰기·국번 찾기", en: "Modbus RTU/TCP master (poll tool) — typed values, writes, Slave ID scan" },
+    seo: {
+      title: { ko: "PortDock Modbus Master — 무료 Modbus 마스터·테스트 프로그램", en: "PortDock Modbus Master — Free Modbus RTU/TCP Test Tool" },
+      desc: {
+        ko: "Modbus RTU·TCP 장비를 읽고 쓰는 무료 마스터(폴링) 프로그램. 여러 표, F32·U32·바이트 순서, 40001 표기, 국번 찾기, 통계, CSV 기록.",
+        en: "Free Modbus RTU/TCP master (poll tool) for Windows: multiple poll tables, F32/U32 and byte orders, 40001 notation, writes, Slave ID scan, CSV logs.",
+      },
+    },
     summary: {
       ko: "PLC·HMI 대신 Modbus 장비에 먼저 묻습니다. 여러 표를 국번·함수·주소·주기별로 읽고, F32·U32·문자열과 바이트 순서·40001 표기로 보며, 칸을 두 번 눌러 씁니다. 요청·응답 HEX 풀이와 통계, 값 CSV 기록이 있습니다.",
       en: "Ask Modbus devices for data in place of a PLC or HMI. Poll several tables by Slave ID, function, address and interval, view F32/U32/strings with byte orders and 40001 notation, and double-click a cell to write. Decoded request/response HEX, statistics and CSV value logging included.",
@@ -226,6 +295,10 @@ export const TOOLS: Tool[] = [
       { ko: "«연결»(F4) 후 국번·함수·시작·개수를 설명서대로", en: "«Connect» (F4), then set Slave ID, function, start and count from the manual" },
       { ko: "칸을 두 번 눌러 쓰기, 오른쪽 버튼으로 이름·형식", en: "Double-click a cell to write; right-click for name and type" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 상용 Modbus Poll(Witte Software), 오픈소스 QModMaster 등이 있습니다. PortDock Modbus Master 는 무료(GPL-3.0)이고 시간 제한이 없습니다.",
+      en: "Similar tools include the commercial Modbus Poll (Witte Software) and the open-source QModMaster. PortDock Modbus Master is free (GPL-3.0) with no time limit.",
+    },
     help: modbusMasterHelp,
   },
   {
@@ -233,6 +306,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock SCPI",
     file: "PortDock-SCPI",
     tagline: { ko: "SCPI 계측기 터미널 — LAN 소켓·RS-232, VISA 없이", en: "SCPI instrument terminal — LAN socket and RS-232, no VISA" },
+    seo: {
+      title: { ko: "PortDock SCPI — 무료 SCPI 계측기 터미널 (VISA 없이)", en: "PortDock SCPI — Free SCPI Terminal (LAN Socket, RS-232, No VISA)" },
+      desc: {
+        ko: "VISA 설치 없이 LAN 소켓(5025)·RS-232 로 SCPI 계측기에 명령을 보내는 무료 터미널. *IDN?, 오류 큐, 반복 측정, CSV 저장.",
+        en: "Free SCPI instrument terminal over LAN socket (5025) or RS-232 without VISA: *IDN?, error queue, *OPC? waits, repeated measurements to CSV.",
+      },
+    },
     summary: {
       ko: "전원 공급기·멀티미터·오실로스코프 같은 SCPI 계측기에 명령을 보내고 답을 봅니다. VISA 를 설치하지 않고 LAN 소켓(TCP 5025)이나 RS-232 로 붙어, *IDN? 으로 장비를 알아보고 오류 큐를 비우며, 숫자 응답을 반복 측정해 CSV 로 남깁니다.",
       en: "Send commands to SCPI instruments such as power supplies, multimeters and oscilloscopes and read the answers. Connects over a LAN socket (TCP 5025) or RS-232 without installing VISA, identifies the instrument with *IDN?, drains the error queue and logs repeated numeric readings to CSV.",
@@ -253,6 +333,10 @@ export const TOOLS: Tool[] = [
       { ko: "«연결»(F4) — *IDN? 으로 장비 이름이 나옵니다", en: "«Connect» (F4) — *IDN? shows the instrument's name" },
       { ko: "명령을 넣고 Enter, 틀린 명령은 «오류 큐 비우기» 로 확인", en: "Type a command and press Enter; check mistakes with «Drain error queue»" },
     ],
+    similar: {
+      ko: "계측기 제조사의 VISA 기반 도구(NI MAX, Keysight Connection Expert 등)로도 명령을 보낼 수 있습니다. PortDock SCPI 는 VISA 를 설치하지 않은 PC 에서 LAN 소켓·RS-232 로 바로 붙습니다.",
+      en: "VISA-based vendor tools (NI MAX, Keysight Connection Expert …) can also send commands. PortDock SCPI connects over a LAN socket or RS-232 on PCs without VISA.",
+    },
     help: scpiHelp,
   },
   {
@@ -260,6 +344,13 @@ export const TOOLS: Tool[] = [
     name: "PortDock Plot",
     file: "PortDock-Plot",
     tagline: { ko: "시리얼·TCP·UDP 숫자를 실시간 그래프로", en: "Live graphs of numbers from serial, TCP and UDP" },
+    seo: {
+      title: { ko: "PortDock Plot — 무료 시리얼 플로터 (실시간 그래프·CSV)", en: "PortDock Plot — Free Serial Plotter for Live Graphs and CSV" },
+      desc: {
+        ko: "시리얼·TCP·UDP 로 오는 숫자를 실시간 그래프로 보는 무료 플로터. Arduino 식 이름:값, 바이너리 프레임, 채널 32개, CSV 기록.",
+        en: "Free live plotter for numbers from serial, TCP or UDP: Arduino-style name:value, binary frames, up to 32 channels, cursors and CSV recording.",
+      },
+    },
     summary: {
       ko: "Arduino·센서·장비가 보내는 숫자를 바로 그래프로 봅니다. 쉼표·빈칸·탭·세미콜론 글자 줄, Arduino 식 «이름:값», 바이너리 프레임을 읽고, 채널마다 색·축을 정해 멈추고 확대하며 두 점의 차이를 잽니다. 받는 동안 CSV 로 기록합니다.",
       en: "See the numbers an Arduino, sensor or device sends as a live graph. Reads comma/space/tab/semicolon text, Arduino-style «name:value» and binary frames, with per-channel colors and axes, pause, zoom and two-point deltas, and records CSV while receiving.",
@@ -280,6 +371,10 @@ export const TOOLS: Tool[] = [
       { ko: "받는 곳(시리얼 포트·속도, TCP, UDP)을 고르고 «받기 시작»(F4)", en: "Pick the source (serial port and baud, TCP, UDP) and «Start» (F4)" },
       { ko: "그래프를 눌러 측정점, «● CSV 기록» 으로 남기기", en: "Click the graph to measure; «● Record CSV» to keep it" },
     ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 Arduino IDE 의 시리얼 플로터, 오픈소스 SerialPlot 등이 있습니다. PortDock Plot 은 TCP·UDP 입력, 바이너리 프레임, 받는 동안 CSV 기록을 함께 합니다.",
+      en: "Similar tools include the Arduino IDE Serial Plotter and the open-source SerialPlot. PortDock Plot also takes TCP and UDP input, binary frames, and records CSV while receiving.",
+    },
     help: plotHelp,
   },
 ];

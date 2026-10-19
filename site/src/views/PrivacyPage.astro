@@ -1,6 +1,7 @@
 ---
 // 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 import { CONTACT_EMAIL } from "@shared/links";
@@ -14,9 +15,17 @@ const ko = lang === "ko";
 const updated = "2026-10-17";
 ---
 
-<Base lang={lang} title={t.privacy} path="privacy/">
+<Base
+  lang={lang}
+  title={t.privacy}
+  description={ko
+    ? "PortDock 프로그램은 통신 내용을 밖으로 보내지 않고, 오류 보고는 허락할 때만 보냅니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리 방식과 위탁처."
+    : "PortDock programs never send your traffic; error reports go out only with your permission. How the site handles analytics, ad cookies and the contact form."}
+  path="privacy/"
+>
   <header class="page-head">
     <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.privacy, path: "privacy/" }]} />
       <h1>{t.privacy}</h1>
       <p>{ko ? `시행일 ${updated}` : `Effective ${updated}`}</p>
     </div>

@@ -1,6 +1,8 @@
 ---
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
+import { WEB_TOOLS } from "../data/webTools";
 import { url } from "../lib/i18n";
 
 interface Props {
@@ -8,26 +10,31 @@ interface Props {
 }
 const { lang } = Astro.props;
 const ko = lang === "ko";
-const items = [
-  { path: "tools/checksum/", ko: ["CRC·체크섬 계산기", "CRC16 Modbus·CCITT·XMODEM, CRC8, LRC, BCC, SUM8, SUM16 을 한 번에."], en: ["CRC & Checksum Calculator", "CRC16 Modbus/CCITT/XMODEM, CRC8, LRC, BCC, SUM8 and SUM16 at once."] },
-  { path: "tools/modbus/", ko: ["Modbus RTU 요청 만들기", "국번·함수·주소·개수 → CRC 까지 붙은 요청 바이트. 40001 표기 지원."], en: ["Modbus RTU Request Builder", "Slave ID, function, address, quantity → request bytes with CRC. Accepts 40001 notation."] },
-  { path: "tools/hex-ascii/", ko: ["HEX ↔ ASCII 변환기", String.raw`바이트를 글자로, 글자를 바이트로. 제어 문자는 \r \n \xNN 으로.`], en: ["HEX ↔ ASCII Converter", String.raw`Bytes to text and back. Control characters as \r \n \xNN.`] },
-];
+const name = ko ? "웹 도구" : "Web tools";
 ---
 
-<Base lang={lang} title={ko ? "웹 도구" : "Web tools"} description={ko ? "설치 없이 브라우저에서 쓰는 통신 계산 도구." : "Communication calculators that run in your browser."} path="tools/">
+<Base
+  lang={lang}
+  title={name}
+  seoTitle={ko ? "온라인 CRC·Modbus·HEX 계산기 (설치 없이) — PortDock" : "Online CRC, Modbus and HEX Calculators — PortDock"}
+  description={ko
+    ? "설치 없이 브라우저에서 쓰는 통신 계산기: CRC16 Modbus·체크섬 계산, CRC 붙은 Modbus RTU 요청 만들기, HEX↔ASCII 변환. 입력은 어디에도 보내지 않습니다."
+    : "Communication calculators that run in your browser: CRC16 Modbus and other checksums, Modbus RTU requests with CRC, HEX to ASCII. Nothing leaves the page."}
+  path="tools/"
+>
   <header class="page-head">
     <div class="wrap">
-      <h1>{ko ? "웹 도구" : "Web tools"}</h1>
+      <Crumbs lang={lang} items={[{ name, path: "tools/" }]} />
+      <h1>{name}</h1>
       <p>{ko ? "설치 없이 브라우저에서 바로 씁니다. 입력한 데이터는 어디에도 보내지 않습니다." : "Run right in your browser. Nothing you type is sent anywhere."}</p>
     </div>
   </header>
   <div class="wrap grid" style="padding-top:24px">
     {
-      items.map((x) => (
+      WEB_TOOLS.map((x) => (
         <a class="card" href={url(lang, x.path)}>
-          <h3>{x[lang][0]}</h3>
-          <p>{x[lang][1]}</p>
+          <h2>{x.name[lang]}</h2>
+          <p>{x.blurb[lang]}</p>
           <span class="go">{ko ? "열기" : "Open"} →</span>
         </a>
       ))

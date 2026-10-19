@@ -2,6 +2,8 @@
 // 웹 도구: HEX ↔ ASCII 변환 — 한쪽을 고치면 다른 쪽이 바뀐다. PortDock 프로그램과 같은 규칙(lib/checksum.ts).
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
 
@@ -47,9 +49,10 @@ const CTRL: [string, string, string][] = [
 ];
 ---
 
-<Base lang={lang} title={L.title} description={L.desc} path="tools/hex-ascii/" ads>
+<Base lang={lang} title={L.title} seoTitle={ko ? "HEX ↔ ASCII 변환기 — 제어 문자 표시 — PortDock" : "HEX to ASCII Converter with Control Codes — PortDock"} description={L.desc} path="tools/hex-ascii/" ads>
   <header class="page-head">
     <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/hex-ascii/" }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -85,6 +88,7 @@ const CTRL: [string, string, string][] = [
         {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
       </p>
     </section>
+    <WebToolLinks lang={lang} path="tools/hex-ascii/" />
   </div>
   <script>
     import { hex, parseAscii, parseHex, toEscaped, type Lang } from "../lib/checksum";

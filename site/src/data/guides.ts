@@ -1,5 +1,5 @@
 // 가이드 글 — 검색으로 들어오는 현장 질문에 답한다. 예시 바이트·CRC 는 lib/checksum.ts 로 계산해 확인한 값만 쓴다.
-import type { Lang } from "./tools";
+import type { Lang, Tool } from "./tools";
 
 /** 본문 덩어리: 문단 · 소제목 · 목록 · 코드(바이트) · 표 */
 export type Block =
@@ -12,9 +12,17 @@ export type Block =
 export interface Guide {
   slug: string;
   date: string;
-  /** 이 글과 이어지는 도구(id) */
-  tool: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator";
+  /** 이 글과 이어지는 도구(id) — 첫째가 대표. 도구 페이지 «관련 가이드» 도 이 값으로 고른다 */
+  tools: Tool["id"][];
+  /** 이어 읽을 가이드(slug) */
+  related: string[];
+  /** 이어지는 웹 도구(언어를 뺀 경로, 예: "tools/modbus/") */
+  webTools?: string[];
+  /** 장비 레지스터 맵(/devices/)으로 잇는다 — Modbus 글 */
+  devices?: boolean;
   title: Record<Lang, string>;
+  /** 검색 결과 제목(«— PortDock» 까지 통째로) — 본문 제목이 길 때만 */
+  seoTitle?: Partial<Record<Lang, string>>;
   desc: Record<Lang, string>;
   body: Record<Lang, Block[]>;
 }
@@ -23,8 +31,12 @@ export const GUIDES: Guide[] = [
   {
     slug: "modbus-rtu-frame",
     date: "2026-10-17",
-    tool: "serial",
+    tools: ["serial", "modbus-master", "modbus-slave"],
+    related: ["usb-serial-latency"],
+    webTools: ["tools/modbus/", "tools/checksum/"],
+    devices: true,
     title: { ko: "Modbus RTU 프레임 읽는 법 — 요청·응답·예외·CRC", en: "Reading Modbus RTU frames — request, response, exception, CRC" },
+    seoTitle: { en: "Modbus RTU Frame Explained: Request, Response, CRC — PortDock" },
     desc: {
       ko: "«01 03 00 00 00 02 C4 0B» 한 줄을 바이트 하나씩 풀어 봅니다. 주소·함수·시작 주소·개수·CRC 순서와 예외 응답, 40001 표기까지.",
       en: "Decode «01 03 00 00 00 02 C4 0B» byte by byte: address, function, start, quantity, CRC, exception replies and the 40001 notation.",
@@ -141,11 +153,13 @@ export const GUIDES: Guide[] = [
   {
     slug: "usb-serial-latency",
     date: "2026-10-17",
-    tool: "modbus-slave",
+    tools: ["modbus-slave", "serial", "modbus-master"],
+    related: ["modbus-rtu-frame", "rs485-wiring"],
+    seoTitle: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지는 이유 — PortDock", en: "USB-Serial Adapter Latency: Split Frames, Late Replies — PortDock" },
     title: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지고 응답이 늦는 이유", en: "USB-serial adapter latency — why frames split and replies arrive late" },
     desc: {
       ko: "USB 변환기는 받은 바이트를 바로 넘기지 않고 묶어서 보냅니다. FTDI 의 Latency Timer 16 ms 가 Modbus RTU 프레임 구분과 응답 시간에 주는 영향과 대처법.",
-      en: "USB adapters batch received bytes instead of passing them on immediately. How the FTDI 16 ms latency timer affects Modbus RTU framing and response times, and what to do.",
+      en: "USB adapters batch received bytes instead of passing them on at once. How the FTDI 16 ms latency timer affects Modbus RTU framing and replies, and what to do.",
     },
     body: {
       ko: [
@@ -171,7 +185,9 @@ export const GUIDES: Guide[] = [
   {
     slug: "rs485-wiring",
     date: "2026-10-17",
-    tool: "serial",
+    tools: ["serial", "modbus-master"],
+    related: ["usb-serial-latency", "modbus-rtu-frame"],
+    seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
     title: { ko: "RS-485 배선 점검 — 응답이 없거나 깨질 때 먼저 볼 다섯 가지", en: "RS-485 wiring checks — five things to look at when replies are missing or garbled" },
     desc: {
       ko: "A/B 극성, 종단 저항, 바이어스, 공통 접지, 배선 모양. 프로그램을 의심하기 전에 확인할 RS-485 배선 문제와 증상.",

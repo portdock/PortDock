@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { GUIDES } from "../data/guides";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
@@ -9,12 +10,22 @@ interface Props {
 }
 const { lang } = Astro.props;
 const ko = lang === "ko";
+const name = ko ? "가이드" : "Guides";
 ---
 
-<Base lang={lang} title={ko ? "가이드" : "Guides"} description={ko ? "현장 통신 문제를 바이트 단위로 풀어 보는 글." : "Field communication problems, explained byte by byte."} path="guides/">
+<Base
+  lang={lang}
+  title={name}
+  seoTitle={ko ? "Modbus·RS485·시리얼 통신 문제 해결 가이드 — PortDock" : "Modbus, RS-485 and Serial Troubleshooting Guides — PortDock"}
+  description={ko
+    ? "Modbus 응답 없음, 40001 주소 표기, RTU 프레임과 CRC, RS485 배선, USB 변환기 지연처럼 현장에서 자주 막히는 통신 문제를 바이트 단위로 풀어 봅니다."
+    : "Field communication problems explained byte by byte: Modbus timeouts, 40001 addressing, RTU frames and CRC, RS-485 wiring and USB-serial adapter latency."}
+  path="guides/"
+>
   <header class="page-head">
     <div class="wrap">
-      <h1>{ko ? "가이드" : "Guides"}</h1>
+      <Crumbs lang={lang} items={[{ name, path: "guides/" }]} />
+      <h1>{name}</h1>
       <p>{ko ? "현장에서 자주 막히는 통신 문제를 바이트 단위로 풀어 봅니다." : "Common field communication problems, explained byte by byte."}</p>
     </div>
   </header>
@@ -22,7 +33,7 @@ const ko = lang === "ko";
     {
       GUIDES.map((g) => (
         <a class="card" href={url(lang, `guides/${g.slug}/`)}>
-          <h3>{g.title[lang]}</h3>
+          <h2>{g.title[lang]}</h2>
           <p>{g.desc[lang]}</p>
           <span class="go">{ko ? "읽기" : "Read"} →</span>
         </a>

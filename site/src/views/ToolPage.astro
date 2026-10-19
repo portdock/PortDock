@@ -1,7 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
 import DownloadBox from "../components/DownloadBox.astro";
-import { type Lang, type Tool } from "../data/tools";
+import Crumbs from "../components/Crumbs.astro";
+import { REPO, type Lang, type Tool } from "../data/tools";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { DEVICES, devPath } from "../data/devices";
 import { UI, url } from "../lib/i18n";
 
 interface Props {
@@ -10,7 +14,20 @@ interface Props {
 }
 const { lang, tool } = Astro.props;
 const t = UI[lang];
-// 소프트웨어 정보(검색 결과의 앱 표시용)
+const ko = lang === "ko";
+// 이 도구를 다루는 가이드, 이 도구와 같이 쓰는 웹 도구, Modbus 도구면 장비 레지스터 맵
+const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
+const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
+  serial: ["tools/checksum/", "tools/modbus/", "tools/hex-ascii/"],
+  "modbus-master": ["tools/modbus/", "tools/checksum/"],
+  "modbus-slave": ["tools/modbus/", "tools/checksum/"],
+  tcp: ["tools/hex-ascii/"],
+  udp: ["tools/hex-ascii/"],
+  simulator: ["tools/checksum/", "tools/hex-ascii/"],
+};
+const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));
+const devices = tool.id === "modbus-master" || tool.id === "modbus-slave" ? DEVICES : [];
+// 소프트웨어 정보(검색 결과의 앱 표시용). Google 리치 결과는 평점·리뷰가 있어야 하지만 지어 넣지 않는다(name·offers·category 만)
 const ld = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -22,16 +39,21 @@ const ld = {
   applicationCategory: "DeveloperApplication",
   description: tool.summary[lang],
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  isAccessibleForFree: true,
   license: "https://www.gnu.org/licenses/gpl-3.0.html",
   inLanguage: ["ko", "en"],
+  softwareHelp: { "@type": "CreativeWork", url: new URL(url(lang, `${tool.id}/docs/`), Astro.site).href },
+  featureList: tool.features.map((f) => f.title[lang]),
+  publisher: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
+  sameAs: REPO,
 };
 ---
 
-<Base lang={lang} title={tool.name} description={`${tool.tagline[lang]}. ${tool.summary[lang]}`} path={`${tool.id}/`}>
+<Base lang={lang} title={tool.name} seoTitle={tool.seo.title[lang]} description={tool.seo.desc[lang]} path={`${tool.id}/`}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <div class="crumb"><a href={url(lang)}>PortDock</a> / {t.tools}</div>
+      <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }]} />
       <h1>{tool.name}</h1>
       <p>{tool.summary[lang]}</p>
     </div>
@@ -60,6 +82,63 @@ const ld = {
         <ol class="steps">{tool.steps.map((s) => <li>{s[lang]}</li>)}</ol>
         <p><a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.readDocs} →</a></p>
       </section>
+      {
+        tool.similar && (
+          <section class="related">
+            <h2>{ko ? "비슷한 도구" : "Similar tools"}</h2>
+            <p>{tool.similar[lang]}</p>
+          </section>
+        )
+      }
+      {
+        guides.length > 0 && (
+          <section class="related">
+            <h2>{ko ? "관련 가이드" : "Related guides"}</h2>
+            <ul class="links">
+              {guides.map((g) => (
+                <li>
+                  <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      {
+        devices.length > 0 && (
+          <section class="related">
+            <h2>{ko ? "내장 장비 프로필 — 레지스터 맵" : "Built-in device profiles — register maps"}</h2>
+            <p class="note">
+              {ko
+                ? "아래 장비는 프로그램에 프로필로 들어 있고, 사이트에서 레지스터 표·JSON 으로도 볼 수 있습니다."
+                : "These devices are built in as profiles; their register tables and JSON are also on this site."}
+            </p>
+            <ul class="links cols">
+              {devices.map((d) => (
+                <li>
+                  <a href={url(lang, devPath(d))}>
+                    {d.manufacturer[lang]} {d.model}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      {
+        webTools.length > 0 && (
+          <section class="related">
+            <h2>{ko ? "설치 없이 쓰는 웹 도구" : "Web tools, no install"}</h2>
+            <ul class="links">
+              {webTools.map((w) => (
+                <li>
+                  <a href={url(lang, w.path)}>{w.name[lang]}</a> — {w.blurb[lang]}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
     </div>
     <aside class="side-box">
       <DownloadBox lang={lang} tool={tool} />

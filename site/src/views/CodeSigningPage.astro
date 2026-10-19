@@ -3,6 +3,7 @@
 // 아직 신청 전이라 상태 표시를 둔다: 승인되면 status 를 "active" 로 바꾸고 날짜를 적는다(거짓 귀속 문구가 되지 않게).
 // 귀속 문구는 조건이 정한 영어 문장을 그대로 쓴다(번역하지 않는다).
 import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { REPO, type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 import { ORG_PEOPLE_URL } from "@shared/links";
@@ -20,9 +21,17 @@ const SIGNPATH_ORG = "https://signpath.org";
 const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
 ---
 
-<Base lang={lang} title={t.codeSigning} path="code-signing/">
+<Base
+  lang={lang}
+  title={t.codeSigning}
+  description={ko
+    ? "PortDock 배포 파일의 코드 서명 정책: SignPath Foundation 무료 서명 신청 상태, 서명 범위(이 저장소에서 GitHub Actions 로 빌드한 파일만)와 팀 역할."
+    : "Code signing policy for PortDock releases: SignPath Foundation status, what is signed (only files GitHub Actions builds from this repository) and team roles."}
+  path="code-signing/"
+>
   <header class="page-head">
     <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.codeSigning, path: "code-signing/" }]} />
       <h1>Code signing policy{ko && " — 코드 서명 정책"}</h1>
       <p>{ko ? "PortDock 프로그램 배포 파일의 코드 서명을 누가, 어떻게 하는지 적습니다." : "Who signs PortDock release files, and how."}</p>
     </div>

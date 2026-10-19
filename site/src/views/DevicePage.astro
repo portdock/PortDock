@@ -2,8 +2,10 @@
 // 장비 한 종의 Modbus 레지스터 맵 — 통신 기본값·레지스터 표·PortDock 으로 읽기·JSON·출처. 본문 아래에만 광고(AdSlot, 가이드와 같은 정책).
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
 import { toolById, type Lang } from "../data/tools";
-import { CC_BY, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
+import { GUIDES } from "../data/guides";
+import { CC_BY, DEVICES, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
 import { url } from "../lib/i18n";
 import { KIND_TEXT, devRegs, refText, type Device, type DevRegister } from "@shared/devices";
 import "../styles/devices.css";
@@ -18,10 +20,15 @@ const L = (ko_: string, en: string) => (ko ? ko_ : en);
 const maker = dev.manufacturer[lang];
 const name = `${maker} ${dev.model}`;
 const title = L(`${name} Modbus 레지스터 맵`, `${name} Modbus register map`);
+// 검색 결과 제목 — «<제조사> <모델> 모드버스 주소» 로 찾는 사람이 많아 «주소» 를 넣는다(site/SEO.md)
+const seoTitle = L(`${name} Modbus 주소·레지스터 맵 — PortDock`, `${name} Modbus Register Map & Addresses — PortDock`);
 const desc = L(
-  `${name}(${KIND_TEXT[dev.kind].ko}) Modbus 주소·형식·단위·배율과 통신 기본값 ${dev.registers.length}개 항목 — 제조사 매뉴얼 출처, JSON 내려받기, PortDock 으로 바로 읽기.`,
-  `${name} (${KIND_TEXT[dev.kind].en}) Modbus addresses, types, units, scaling and default settings — ${dev.registers.length} entries with manual references, JSON download, read it with PortDock.`,
+  `${name}(${KIND_TEXT[dev.kind].ko}) Modbus(모드버스) 통신 주소·형식·단위·배율 ${dev.registers.length}개와 통신 기본값. 매뉴얼 쪽 번호 출처, JSON, PortDock 으로 바로 읽기.`,
+  `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit and scale, default settings, manual page references and JSON.`,
 );
+// 같은 종류 장비(다른 제조사 포함)·Modbus 가이드
+const sameKind = DEVICES.filter((d) => d.kind === dev.kind && d.id !== dev.id);
+const guides = GUIDES.filter((g) => g.devices);
 const master = toolById("modbus-master");
 const slave = toolById("modbus-slave");
 const here = new URL(url(lang, devPath(dev)), Astro.site).href;
@@ -69,11 +76,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={title} description={desc} path={devPath(dev)} ads>
+<Base lang={lang} title={title} seoTitle={seoTitle} description={desc} path={devPath(dev)} ads>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <div class="crumb"><a href={url(lang)}>PortDock</a> / <a href={url(lang, "devices/")}>{L("장비", "Devices")}</a> / {maker}</div>
+      <Crumbs lang={lang} items={[{ name: L("장비", "Devices"), path: "devices/" }, { name, path: devPath(dev) }]} />
       <h1>{title}</h1>
       <p>{dev.summary?.[lang] ?? dev.title[lang]} · {KIND_TEXT[dev.kind][lang]}{dev.models?.length ? ` · ${dev.models.join(", ")}` : ""}</p>
     </div>
@@ -197,10 +204,45 @@ const ld = {
   </article>
   <div class="wrap">
     <AdSlot />
-    <div class="card">
-      <h3>{master.name}</h3>
-      <p>{master.tagline[lang]}</p>
-      <a class="go" href={url(lang, `${master.id}/`)}>{L("도구 보기", "See the tool")} →</a>
-    </div>
+    {
+      sameKind.length > 0 && (
+        <section class="related">
+          <h2>{L(`같은 종류 장비 — ${KIND_TEXT[dev.kind].ko}`, `Other ${KIND_TEXT[dev.kind].en} maps`)}</h2>
+          <ul class="links cols">
+            {sameKind.map((d) => (
+              <li>
+                <a href={url(lang, devPath(d))}>
+                  {d.manufacturer[lang]} {d.model}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="note"><a href={url(lang, "devices/")}>{L("모든 장비 레지스터 맵", "All device register maps")} →</a></p>
+        </section>
+      )
+    }
+    <section class="related">
+      <h2>{L("Modbus 가이드", "Modbus guides")}</h2>
+      <ul class="links">
+        {guides.map((g) => (
+          <li>
+            <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+    <section class="related">
+      <h2>{L("이 장비를 시험하는 도구", "Tools to test this device")}</h2>
+      <div class="grid">
+        {[master, slave].map((t) => (
+          <a class="card" href={url(lang, `${t.id}/`)}>
+            <h3>{t.name}</h3>
+            <p>{t.tagline[lang]}</p>
+            <span class="go">{L("도구 보기", "See the tool")} →</span>
+          </a>
+        ))}
+      </div>
+      <p class="note"><a href={url(lang, "download/")}>{L("무료로 내려받기(윈도우 10·11)", "Download free (Windows 10/11)")} →</a></p>
+    </section>
   </div>
 </Base>
