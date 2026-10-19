@@ -7,7 +7,8 @@ export type Block =
   | { h: string }
   | { ul: string[] }
   | { code: string }
-  | { table: { head: string[]; rows: string[][] } };
+  /** 표 — 첫 칸은 바이트·코드라 고정폭 글꼴, 글로 된 첫 칸이면 plain */
+  | { table: { head: string[]; rows: string[][]; plain?: boolean } };
 
 export interface Guide {
   slug: string;
@@ -209,6 +210,7 @@ export const GUIDES: Guide[] = [
         { h: "증상으로 찾기" },
         {
           table: {
+            plain: true,
             head: ["증상", "먼저 볼 것"],
             rows: [
               ["응답이 전혀 없음", "A/B 극성, 국번·속도·패리티, 변환기 방향 제어"],
@@ -237,6 +239,7 @@ export const GUIDES: Guide[] = [
         { h: "Find it by symptom" },
         {
           table: {
+            plain: true,
             head: ["Symptom", "Check first"],
             rows: [
               ["No reply at all", "A/B polarity, address, baud rate, parity, adapter direction control"],
@@ -273,6 +276,7 @@ export const GUIDES: Guide[] = [
         { h: "0. 먼저: 무엇이라도 돌아오는가" },
         {
           table: {
+            plain: true,
             head: ["통신 기록", "뜻", "볼 곳"],
             rows: [
               ["TX 만 있고 RX 가 전혀 없음", "장비가 요청을 못 알아들었거나, 자기 것이 아니라고 봄", "1 ~ 5"],
@@ -340,6 +344,7 @@ export const GUIDES: Guide[] = [
         { h: "0. First: does anything come back?" },
         {
           table: {
+            plain: true,
             head: ["Traffic log", "Meaning", "Go to"],
             rows: [
               ["Only TX, no RX at all", "The device did not understand the request or thinks it is not addressed to it", "1 – 5"],
@@ -425,6 +430,7 @@ export const GUIDES: Guide[] = [
         { h: "표기 세 가지" },
         {
           table: {
+            plain: true,
             head: ["표기", "첫 보유 레지스터", "통신 주소 구하기"],
             rows: [
               ["0 기준", "0 (0x0000)", "그대로"],
@@ -451,6 +457,7 @@ export const GUIDES: Guide[] = [
         { p: "이 사이트에 정리한 국산 장비의 매뉴얼에서 확인한 첫 항목들입니다. 각 장비 페이지의 레지스터 표에 «매뉴얼 주소» 와 «통신 주소» 가 나란히 있습니다." },
         {
           table: {
+            plain: true,
             head: ["장비", "매뉴얼 표기", "통신 주소", "읽는 법"],
             rows: [
               ["LS ELECTRIC GIMAC1000", "30001", "0", "PLC 표기. 맵에 0 기준 ADDRESS 칸도 함께 있음"],
@@ -487,6 +494,7 @@ export const GUIDES: Guide[] = [
         { h: "Three notations" },
         {
           table: {
+            plain: true,
             head: ["Notation", "First holding register", "Wire address"],
             rows: [
               ["0-based", "0 (0x0000)", "as is"],
@@ -513,6 +521,7 @@ export const GUIDES: Guide[] = [
         { p: "First entries from the manuals of the devices on this site. Each device page shows «Manual» and «Wire» addresses side by side." },
         {
           table: {
+            plain: true,
             head: ["Device", "Manual", "Wire", "How to read it"],
             rows: [
               ["LS ELECTRIC GIMAC1000", "30001", "0", "PLC notation; the map also has a 0-based ADDRESS column"],

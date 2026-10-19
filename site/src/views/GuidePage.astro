@@ -57,7 +57,7 @@ const ld = {
           <div class="tbl">
             <table class="t">
               <thead><tr>{b.table.head.map((h) => <th>{h}</th>)}</tr></thead>
-              <tbody>{b.table.rows.map((r) => <tr>{r.map((c, i) => <td class={i === 0 ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
+              <tbody>{b.table.rows.map((r) => <tr>{r.map((c, i) => <td class={i === 0 && !b.table.plain ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
             </table>
           </div>
         ),
