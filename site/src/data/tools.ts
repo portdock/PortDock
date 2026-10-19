@@ -14,7 +14,7 @@ import { help as plotHelp } from "../../../apps/plot/src/help";
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
 
-export const REPO = "https://github.com/juhak0308/PortDock";
+export const REPO = "https://github.com/portdock/PortDock";
 export const RELEASES = `${REPO}/releases`;
 /** 릴리스 파일 이름은 버전 없이 고정한다 — /releases/latest/download/<이름> 이 늘 최신을 가리키게(릴리스 작업에서 이름을 맞춘다) */
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;

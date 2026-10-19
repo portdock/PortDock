@@ -20,19 +20,19 @@ Website: <https://portdock.dev>
 
 ## Download
 
-Get the latest version from **[GitHub Releases](https://github.com/juhak0308/PortDock/releases/latest)**. File names never change, so these links always point to the newest release:
+Get the latest version from **[GitHub Releases](https://github.com/portdock/PortDock/releases/latest)**. File names never change, so these links always point to the newest release:
 
 | Tool | Installer | Portable |
 |---|---|---|
-| Serial | [PortDock-Serial-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-setup.exe) | [PortDock-Serial-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-portable.zip) |
-| Modbus Slave | [PortDock-Modbus-Slave-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-setup.exe) | [PortDock-Modbus-Slave-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-portable.zip) |
-| TCP | [PortDock-TCP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
-| UDP | [PortDock-UDP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
-| Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
-| Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
-| Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
-| SCPI | [PortDock-SCPI-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
-| Plot | [PortDock-Plot-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
+| Serial | [PortDock-Serial-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe) | [PortDock-Serial-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-portable.zip) |
+| Modbus Slave | [PortDock-Modbus-Slave-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Slave-setup.exe) | [PortDock-Modbus-Slave-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Slave-portable.zip) |
+| TCP | [PortDock-TCP-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
+| UDP | [PortDock-UDP-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
+| Simulator | [PortDock-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
+| Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
+| Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
+| SCPI | [PortDock-SCPI-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
+| Plot | [PortDock-Plot-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 
 Windows 10/11, x64.
 
@@ -72,7 +72,7 @@ Settings → *Export settings* saves everything to one JSON file you can move to
 Requirements: Windows 10/11, [Node.js](https://nodejs.org/) 22+, [Rust](https://rustup.rs/) (stable, MSVC), Visual Studio Build Tools with "Desktop development with C++", WebView2.
 
 ```powershell
-git clone https://github.com/juhak0308/PortDock
+git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 

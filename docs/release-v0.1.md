@@ -3,7 +3,7 @@
 입사(11/2) 전에 «이미 공개된 내 저작물» 임을 남기는 것이 목적이다. 공개 저장소의 커밋 기록·릴리스 날짜가 그 근거가 된다. 저작권 등록은 아래 «저작권 등록» 절의 판단을 먼저 본다.
 
 ## 1. 사용자 (월요일~)
-- [ ] GitHub `juhak0308/PortDock` **공개** 저장소 생성 → 이 PC 저장소 올리기(Claude)
+- [ ] GitHub `portdock/PortDock` **공개** 저장소 생성 → 이 PC 저장소 올리기(Claude)
 - [ ] Cloudflare 가입 · `portdock.dev` 등록 · Pages 연결 (`site/README.md` 순서)
 - [ ] 문의 받을 메일(전용 주소) · Sentry 가입(조직 만들 때 **EU**, IP 저장 끄기, DPA 동의, 오픈소스 후원 신청)
 - [ ] SignPath Foundation 무료 서명 신청(승인까지 시간이 걸린다 — 일찍)

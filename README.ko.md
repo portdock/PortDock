@@ -20,19 +20,19 @@
 
 ## 내려받기
 
-**[GitHub Releases](https://github.com/juhak0308/PortDock/releases/latest)** 에서 받습니다. 파일 이름이 늘 같아서 아래 링크는 언제나 최신판을 가리킵니다.
+**[GitHub Releases](https://github.com/portdock/PortDock/releases/latest)** 에서 받습니다. 파일 이름이 늘 같아서 아래 링크는 언제나 최신판을 가리킵니다.
 
 | 프로그램 | 설치판 | 휴대판 |
 |---|---|---|
-| Serial | [PortDock-Serial-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-setup.exe) | [PortDock-Serial-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-portable.zip) |
-| Modbus Slave | [PortDock-Modbus-Slave-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-setup.exe) | [PortDock-Modbus-Slave-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Slave-portable.zip) |
-| TCP | [PortDock-TCP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
-| UDP | [PortDock-UDP-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
-| Simulator | [PortDock-Simulator-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
-| Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
-| Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
-| SCPI | [PortDock-SCPI-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
-| Plot | [PortDock-Plot-setup.exe](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
+| Serial | [PortDock-Serial-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe) | [PortDock-Serial-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-portable.zip) |
+| Modbus Slave | [PortDock-Modbus-Slave-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Slave-setup.exe) | [PortDock-Modbus-Slave-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Slave-portable.zip) |
+| TCP | [PortDock-TCP-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-TCP-setup.exe) | [PortDock-TCP-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-TCP-portable.zip) |
+| UDP | [PortDock-UDP-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-UDP-setup.exe) | [PortDock-UDP-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-UDP-portable.zip) |
+| Simulator | [PortDock-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Simulator-setup.exe) | [PortDock-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Simulator-portable.zip) |
+| Net Scan | [PortDock-Net-Scan-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Net-Scan-setup.exe) | [PortDock-Net-Scan-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Net-Scan-portable.zip) |
+| Modbus Master | [PortDock-Modbus-Master-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Master-setup.exe) | [PortDock-Modbus-Master-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Modbus-Master-portable.zip) |
+| SCPI | [PortDock-SCPI-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
+| Plot | [PortDock-Plot-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 
 윈도우 10·11, x64.
 
@@ -72,7 +72,7 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 필요한 것: 윈도우 10·11, [Node.js](https://nodejs.org/) 22 이상, [Rust](https://rustup.rs/)(stable, MSVC), Visual Studio Build Tools 의 «C++ 를 사용한 데스크톱 개발», WebView2.
 
 ```powershell
-git clone https://github.com/juhak0308/PortDock
+git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 

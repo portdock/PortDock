@@ -4,7 +4,7 @@
 
 ## 올라가는 파일
 
-이름에 버전을 넣지 않는다 — `https://github.com/juhak0308/PortDock/releases/latest/download/<이름>` 이 늘 최신을 가리키게(홈페이지 `site/src/data/tools.ts` 의 `file` 과 같은 이름).
+이름에 버전을 넣지 않는다 — `https://github.com/portdock/PortDock/releases/latest/download/<이름>` 이 늘 최신을 가리키게(홈페이지 `site/src/data/tools.ts` 의 `file` 과 같은 이름).
 
 | 파일 | 내용 |
 |---|---|
@@ -47,7 +47,7 @@
    - 휴대판 zip 을 풀어 실행 → `portdock-data` 에 `EBWebView` 폴더가 생기는지 확인.
    - 파일마다 <https://www.virustotal.com/> 에 올리고, 결과 링크를 릴리스 본문의 «VirusTotal» 줄에 붙인다.
    - 변경 내용을 다듬는다(자동 생성된 노트 위에 한국어·영어 요약).
-7. **Publish** — 공개 후 `https://github.com/juhak0308/PortDock/releases/latest/download/PortDock-Serial-setup.exe` 가 새 파일을 받는지 확인. 앱의 «새 버전 확인» 버튼은 `/releases/latest` 페이지를 연다(자동 확인 없음).
+7. **Publish** — 공개 후 `https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe` 가 새 파일을 받는지 확인. 앱의 «새 버전 확인» 버튼은 `/releases/latest` 페이지를 연다(자동 확인 없음).
 
 ## 코드 서명 (예정)
 

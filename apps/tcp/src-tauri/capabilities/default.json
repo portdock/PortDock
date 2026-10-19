@@ -19,10 +19,10 @@
       "identifier": "opener:allow-open-url",
       "allow": [
         {
-          "url": "https://github.com/juhak0308/PortDock"
+          "url": "https://github.com/portdock/PortDock"
         },
         {
-          "url": "https://github.com/juhak0308/PortDock/*"
+          "url": "https://github.com/portdock/PortDock/*"
         },
         {
           "url": "https://portdock.dev"

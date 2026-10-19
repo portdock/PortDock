@@ -5,7 +5,7 @@ import { hex } from "./format";
 
 /** 받는 곳 — 비워 두면 그 버튼은 숨는다 */
 export const REPORT_EMAIL = "portdock.contact@gmail.com"; // 도메인이 생기면 contact@portdock.dev(Email Routing → 이 메일)로 바꾼다
-export const ISSUES_URL = "https://github.com/juhak0308/PortDock/issues/new";
+export const ISSUES_URL = "https://github.com/portdock/PortDock/issues/new";
 /**
  * 자동 전송 받는 곳 — Sentry 프로젝트의 DSN(https://<key>@<host>/<project>).
  * 비워 두면 자동 전송·«지금 보내기» 가 숨는다. 이 값은 공개돼도 되는 값이다(보내기만 가능).

@@ -11,7 +11,7 @@ import { autoSendAvailable, type EnvInfo } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
-const REPO = "https://github.com/juhak0308/PortDock";
+const REPO = "https://github.com/portdock/PortDock";
 const LINKS = {
   license: "https://www.gnu.org/licenses/gpl-3.0.html",
   source: REPO,
