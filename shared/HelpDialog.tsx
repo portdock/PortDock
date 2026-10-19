@@ -11,7 +11,7 @@ export interface HelpSection {
 }
 export type HelpDoc = Record<"ko" | "en", HelpSection[]>;
 
-/** 다섯 프로그램 공통 — 문제 보고. 받는 곳이 비어 숨은 기능은 말하지 않는다 */
+/** 모든 프로그램 공통 — 문제 보고. 받는 곳이 비어 숨은 기능은 말하지 않는다 */
 function reportHelp(lang: "ko" | "en"): HelpSection {
   const auto = autoSendAvailable();
   const ko = lang === "ko";

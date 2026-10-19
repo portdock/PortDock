@@ -15,7 +15,7 @@
 - [ ] 화면: `e2e/ui-preview` 캡처로 글자 잘림 확인(실행 없이)
 
 ## 3. 릴리스
-- [ ] 다섯 앱 버전 `0.1.0` 확인(`tauri.conf.json` · `Cargo.toml` workspace · 각 `package.json`)
+- [ ] 아홉 앱 버전 `0.1.0` 확인(`tauri.conf.json` · `Cargo.toml` workspace · 각 `package.json`)
 - [ ] `node tools/notices.mjs --check` (제3자 고지 최신)
 - [ ] 태그 `v0.1.0` → 초안 릴리스 확인 → 본문(아래) · VirusTotal 링크 → 공개
 - [ ] 사이트 내려받기 링크(`/releases/latest/download/PortDock-<App>-setup.exe`)가 실제 파일로 이어지는지

@@ -1,6 +1,6 @@
 # 릴리스 절차
 
-다섯 프로그램을 한 번에, 같은 버전으로 낸다. 빌드·업로드는 GitHub Actions(`.github/workflows/release.yml`)가 하고, 사람은 버전을 올리고 태그를 달고, 초안을 확인해 공개한다.
+모든 프로그램(9개)을 한 번에, 같은 버전으로 낸다. 빌드·업로드는 GitHub Actions(`.github/workflows/release.yml`)가 하고, 사람은 버전을 올리고 태그를 달고, 초안을 확인해 공개한다.
 
 ## 올라가는 파일
 
@@ -27,13 +27,13 @@
 
 ## 순서
 
-1. **버전 올리기** — 다섯 `apps/*/src-tauri/tauri.conf.json` 의 `version`, 루트 `Cargo.toml` 의 `[workspace.package] version`, `apps/*/package.json` 의 `version` 을 같은 값으로. (워크플로가 태그와 `tauri.conf.json` 버전이 다르면 멈춘다.)
+1. **버전 올리기** — 모든 `apps/*/src-tauri/tauri.conf.json`(9개) 의 `version`, 루트 `Cargo.toml` 의 `[workspace.package] version`, `apps/*/package.json` 의 `version` 을 같은 값으로. (워크플로가 태그와 `tauri.conf.json` 버전이 다르면 멈춘다.)
 2. **제3자 고지 새로 만들기** — 의존성이 바뀌었으면 결과가 달라진다.
    ```powershell
    node tools/notices.mjs          # THIRD_PARTY_NOTICES.txt 다시 만들기
    node tools/notices.mjs --check  # 최신인지만 확인(다르면 종료 코드 1)
    ```
-   `cargo metadata` 로 다섯 앱의 일반 의존성(Windows x64)을, `apps/*/package.json` 의 dependencies 를 재귀로 모은다. 라이선스 종류마다 본문 한 벌, 패키지마다 저작권 줄. 워크플로도 빌드 전에 다시 만든다(`bundle.resources` 로 설치 폴더에 `LICENSE`·`THIRD_PARTY_NOTICES.txt` 가 들어가므로 이 파일이 없으면 빌드가 실패한다).
+   `cargo metadata` 로 모든 앱의 일반 의존성(Windows x64)을, `apps/*/package.json` 의 dependencies 를 재귀로 모은다. 라이선스 종류마다 본문 한 벌, 패키지마다 저작권 줄. 워크플로도 빌드 전에 다시 만든다(`bundle.resources` 로 설치 폴더에 `LICENSE`·`THIRD_PARTY_NOTICES.txt` 가 들어가므로 이 파일이 없으면 빌드가 실패한다).
 3. **로컬 확인** — `cargo test --workspace`, 각 앱 폴더에서 `npx tsc --noEmit -p .`
 4. **커밋 → 태그**
    ```powershell
@@ -41,7 +41,7 @@
    git tag v0.2.0
    git push origin main v0.2.0
    ```
-5. **Actions 확인** — `release` 워크플로가 다섯 앱을 병렬로 빌드하고 «초안(draft)» 릴리스를 만든다. (태그 없이 시험하려면 Actions 화면에서 *Run workflow* — 빌드 결과만 artifact 로 남고 릴리스는 만들지 않는다.)
+5. **Actions 확인** — `release` 워크플로가 모든 앱(9개)을 병렬로 빌드하고 «초안(draft)» 릴리스를 만든다. (태그 없이 시험하려면 Actions 화면에서 *Run workflow* — 빌드 결과만 artifact 로 남고 릴리스는 만들지 않는다.)
 6. **초안 검사**
    - 설치판 하나를 깨끗한 PC(또는 Windows Sandbox)에서 설치 → 실행 → 설정 «정보» 의 버전 확인 → 제거.
    - 휴대판 zip 을 풀어 실행 → `portdock-data` 에 `EBWebView` 폴더가 생기는지 확인.
@@ -91,4 +91,4 @@ Remove-Item Env:PORTDOCK_TEST_CRASH;  & ".\PortDock TCP.exe"   # «지난번에 
 - 덤프는 보통 수백 KB, 20 MB 를 넘으면 올리지 않는다. 보고는 최근 10건(.txt·.dmp 짝을 한 건)만 남긴다.
 
 ## CI (push·PR 마다)
-`.github/workflows/ci.yml` — Windows 에서 다섯 앱 화면 빌드(tsc 포함) → 공용 시험(`node --test`) → `cargo clippy -D warnings` → `cargo test` → 제3자 고지 최신 여부 → 사이트 검사·시험·빌드. 이슈 양식: `.github/ISSUE_TEMPLATE/`(버그·기능 제안, 공개라 민감 데이터 금지 안내).
+`.github/workflows/ci.yml` — Windows 에서 모든 앱 화면 빌드(tsc 포함) → 공용 시험(`node --test`) → `cargo clippy -D warnings` → `cargo test` → 제3자 고지 최신 여부 → 사이트 검사·시험·빌드. 이슈 양식: `.github/ISSUE_TEMPLATE/`(버그·기능 제안, 공개라 민감 데이터 금지 안내).

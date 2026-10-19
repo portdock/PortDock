@@ -38,7 +38,7 @@
 | C27 | Simulator FC06 (N-H2) | 규칙 «01 06 ?? ?? ?? ?? **» → 응답 = 요청 앞 6바이트 + CRC → 마스터가 정상 응답 받음 |
 | C28 | 쪼개진 Modbus 요청 (S3) | USB 변환기 9600bps 에서 FC10 4레지스터 쓰기 → «무시» 오르지 않고 정상 응답 |
 | C29 | TCP 받는 쪽 끊김 (N-H3) | 상대 3개 중 A 를 고른 뒤 A 끊기 → «(끊김)» 표시·보내기 잠김, 다른 장비로 안 나감 |
-| C30 | 아이콘·설치기 | 다섯 앱 아이콘이 서로 다름, 설치기 한국어·라이선스 화면·시작 메뉴 «PortDock» 폴더, «앱 및 기능» 게시자 PortDock |
+| C30 | 아이콘·설치기 | 아홉 앱 아이콘이 서로 다름, 설치기 한국어·라이선스 화면·시작 메뉴 «PortDock» 폴더, «앱 및 기능» 게시자 PortDock |
 | C31 | 정보·CSP | ⚙ 아래 정보(버전·저작권·GPL·링크), 개발자 도구 콘솔에 CSP 위반 없음 |
 | C32 | 휴대판 | zip 풀어 실행 → `portdock-data` 에 설정(EBWebView)·보고 폴더가 생김, 다른 PC 로 옮겨도 설정 유지 |
 | C33 | WebView2 없음 | WebView2 없는 PC(또는 가상 머신)에서 실행 → 한국어·영어 안내 창, 오류 보고 안 남음 |
@@ -47,11 +47,11 @@
 | C36 | Modbus 요청·로그 찾기 | Serial «Modbus 요청» → 40001×10 → 입력칸에 넣기 → 보낼 바이트 `01 03 00 00 00 0A C5 CD` · Ctrl+F «01 03» → 노란 줄·▲▼ 이동·«찾은 줄만»·«틀림만» · 화면 내용 저장이 보기 방식·거른 줄을 따름 |
 | C37 | (10/18) 바인드 실패 — 포트 쥔 프로그램 (TCP·UDP) | 준비: 노트북 1대. 순서: ① TCP 앱 서버로 5000 듣기 → 두 번째 TCP 앱도 서버 5000 시작 ② UDP 앱 받기 5001 → 두 번째 UDP 앱도 5001 ③ TCP 서버 주소에 이 PC 에 없는 `10.99.99.99` 를 넣고 시작. 기대: ①② 오류 문구 끝에 «— 쥔 프로그램: <exe 이름> (PID n)» 이 붙고, 그 PID 가 작업 관리자 «세부 정보» 의 PID 와 같음(관리자 권한 프로그램이 쥐었으면 «PID n» 만 나와도 통과) ③ 시작 전에 ««10.99.99.99» 는 이 PC 의 주소가 아닙니다» 알림이 보이고, 시작하면 오류 끝에 이 PC 주소 목록이 붙음 |
 | C38 | (10/18) 이 PC 주소 목록 (TCP 서버·중계, UDP) | 준비: 유선 랜 + 무선이 있는 노트북. 순서: 왼쪽 «이 PC 주소» 확인 → 주소 하나 누르기 → 랜선 뽑기 → ↻(다시 읽기) → 그 주소를 그대로 둔 채 보기. 기대: 연결된 랜카드의 `주소/접두사` 와 이름만 보임(127.0.0.1 은 목록에 없음), 마우스를 올리면 설명·마스크·게이트웨이, 누르면 주소 칸에 들어감, 랜선을 뽑고 다시 읽으면 목록에서 빠지고 주소 칸 아래 «… 랜카드(…)가 연결돼 있지 않습니다» 또는(윈도우가 주소를 거뒀으면) «… 는 이 PC 의 주소가 아닙니다» 알림, 주소 칸 고르기 목록 맨 앞에 «0.0.0.0 모든 랜카드», `ipconfig` 결과와 같음, 실행 중에는 눌러도 안 바뀜 |
-| C39 | (10/18) 새 앱 Modbus Master 설치판·휴대판 | 준비: 릴리스 `PortDock-Modbus-Master-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘이 다른 여섯 앱과 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Modbus Master», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 방식·표가 남음, 오프라인 설치판은 인터넷 끊고도 설치됨 |
+| C39 | (10/18) 새 앱 Modbus Master 설치판·휴대판 | 준비: 릴리스 `PortDock-Modbus-Master-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Modbus Master», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 방식·표가 남음, 오프라인 설치판은 인터넷 끊고도 설치됨 |
 | C40 | (10/18) Modbus Master 오류 보고 | 준비: Modbus Master 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시(C23 은 DSN 넣은 뒤). 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\modbus-master\`(휴대판은 `portdock-data` 안), «지난번에 오류로 꺼졌습니다» + «!» 빨강, 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Modbus Master |
-| C41 | (10/19) 새 앱 SCPI 설치판·휴대판 | 준비: 릴리스 `PortDock-SCPI-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(분홍 «S?»)이 다른 일곱 앱과 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock SCPI», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 설정·명령 목록·반복 측정 설정이 남음 |
+| C41 | (10/19) 새 앱 SCPI 설치판·휴대판 | 준비: 릴리스 `PortDock-SCPI-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(분홍 «S?»)이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock SCPI», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 설정·명령 목록·반복 측정 설정이 남음 |
 | C42 | (10/19) SCPI 오류 보고 | 준비: SCPI 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\scpi\`(휴대판은 `portdock-data` 안), 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 SCPI |
-| C43 | (10/19) 새 앱 Plot 설치판·휴대판 | 준비: 릴리스 `PortDock-Plot-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(빨강 바탕 흰 파형)이 다른 여덟 앱과 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Plot», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 받는 곳·해석·보기·채널 이름과 색이 남음 |
+| C43 | (10/19) 새 앱 Plot 설치판·휴대판 | 준비: 릴리스 `PortDock-Plot-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(빨강 바탕 흰 파형)이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Plot», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 받는 곳·해석·보기·채널 이름과 색이 남음 |
 | C44 | (10/19) Plot 오류 보고 | 준비: Plot 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\plot\`(휴대판은 `portdock-data` 안), 시작 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Plot·원시 수신 줄이 기록으로 들어감 |
 
 ## ① Serial

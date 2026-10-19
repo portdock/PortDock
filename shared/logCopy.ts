@@ -1,4 +1,4 @@
-// 로그 줄 고르기(누르기·Shift 범위·Ctrl 하나씩)와 복사 — 다섯 프로그램 공통.
+// 로그 줄 고르기(누르기·Shift 범위·Ctrl 하나씩)와 복사 — 모든 프로그램 공통.
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { ascii as asciiOf, hex as hexOf } from "./format";
 import { frameLine, type LogFrame, type ViewMode } from "./logSearch";
