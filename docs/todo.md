@@ -17,7 +17,7 @@
 - ~~GitHub 공개 저장소 만들기~~ ✅ https://github.com/portdock/PortDock (10/19, 조직 portdock, 커밋 작성자 PortDock <portdock.contact@gmail.com>)
 - Cloudflare 가입 · Pages 연결 · Email Routing · Turnstile (`site/README.md`)
 - ~~문의 받을 전용 메일 정하기~~ ✅ `portdock.contact@gmail.com`(10/19) — `shared/report.ts` REPORT_EMAIL. 도메인 뒤 `contact@portdock.dev` → 이 메일로 전달(Email Routing CONTACT_TO)
-- ~~Sentry 가입~~ ✅ (10/19) 조직 portdock(EU), DSN `shared/report.ts`, IP 저장 끔·가림 강제·Enhanced Privacy·공유/JS 가져오기/가입 요청 끔, DPA 5.1.0 서명, 데이터 제품 개선 사용 끔. 남음: **오픈소스 후원 신청**(sentry.io/for/open-source), 2단계 인증(선택)
+- ~~Sentry 가입~~ ✅ (10/19) 조직 portdock(EU), DSN `shared/report.ts`, IP 저장 끔·가림 강제·Enhanced Privacy·공유/JS 가져오기/가입 요청 끔, DPA 5.1.0 서명, 데이터 제품 개선 사용 끔. 오픈소스 후원 신청함(10/19, OSI Approved·GPL-3.0, 결과 메일 대기 — 거절되면 첫 릴리스 뒤 재신청). 남음: 2단계 인증(선택)
 - SignPath Foundation 무료 서명 신청
 - Google Search Console · 네이버 서치어드바이저 등록
 - winget 등록(첫 릴리스 뒤)
