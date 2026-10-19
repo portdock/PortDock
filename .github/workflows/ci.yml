@@ -1,4 +1,4 @@
-# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 모든 앱(9개) 화면 빌드(타입 검사 포함), 공용 시험, 장비 레지스터 맵 검사, 사이트 빌드, 제3자 고지 최신 여부.
+# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 모든 앱(9개) 화면 빌드(타입 검사 포함), 공용 시험, 장비 레지스터 맵 검사, 사이트 빌드·검색 태그 검사, 제3자 고지 최신 여부.
 # 실제 장비가 필요한 실기 점검은 docs/test-plan.md, 화면 자동 조작 점검은 e2e/README.md (로컬).
 name: ci
 
@@ -72,3 +72,5 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "site test failed" }
           npm run build -w portdock-site
           if ($LASTEXITCODE -ne 0) { throw "site build failed" }
+          node tools/site-check.mjs site/dist
+          if ($LASTEXITCODE -ne 0) { throw "site check failed (title, description, JSON-LD, links, sitemap)" }
