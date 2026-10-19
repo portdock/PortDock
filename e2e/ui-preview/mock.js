@@ -4,6 +4,18 @@
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 mockWindows("main");
 
+// ---- 바깥 네트워크 막기 — 미리보기·smoke 가 오류 자동 전송(Sentry, shared/report.ts)이나 다른 주소로 실제 요청을 보내지 않게.
+// 같은 서버(vite) 말고는 모두 여기서 받아 «보낸 셈» 으로 200 을 돌려주고 window.__pdMock.net 에 남긴다(vite.config 의 CSP 가 한 번 더 막는다).
+const net = [];
+const realFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url, location.href);
+  if (url.origin === location.origin) return realFetch(input, init);
+  net.push({ url: url.origin + url.pathname, method: init?.method ?? "GET" });
+  return Promise.resolve(new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } }));
+};
+if (navigator.sendBeacon) navigator.sendBeacon = (u) => (net.push({ url: String(u), method: "BEACON" }), true);
+
 // ---------------------------------------------------------------- 공통
 let lang = (() => {
   try {
@@ -825,6 +837,8 @@ window.__pdMock = {
   calls: [],
   errors: [],
   files,
+  /** 막아 둔 바깥 요청(오류 자동 전송 등) — 실제로는 나가지 않는다 */
+  net,
   get session() {
     return S ? { kind: S.kind, online: S.online, peers: S.peers.length } : null;
   },

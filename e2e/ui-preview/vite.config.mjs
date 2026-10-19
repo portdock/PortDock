@@ -14,6 +14,12 @@ export default defineConfig({
   root: path.join(repo, "apps", app),
   plugins: [react(), { name: "portdock-mock", transformIndexHtml: (h) => h.replace("<head>", `<head><script type="module" src="/@fs/${mock}"></script>`) }],
   resolve: { alias: { "@shared": path.join(repo, "shared") } },
-  server: { port: Number(process.env.PORT ?? 5201), strictPort: true, fs: { allow: [repo] } },
+  // CSP connect-src: mock.js 가 fetch 를 가로채지 못해도 바깥(Sentry 등)으로는 나가지 못하게 — 같은 서버와 HMR 웹소켓만
+  server: {
+    port: Number(process.env.PORT ?? 5201),
+    strictPort: true,
+    fs: { allow: [repo] },
+    headers: { "Content-Security-Policy": "connect-src 'self' ws://localhost:* ws://127.0.0.1:*" },
+  },
   logLevel: "error",
 });

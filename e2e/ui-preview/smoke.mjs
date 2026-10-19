@@ -1,6 +1,8 @@
-// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 다섯 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
+// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 아홉 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
 // 예외·화면 오류(Boundary)·창 밖으로 넘친 요소·풀리지 않는 «연결 중»·대화상자 닫은 뒤 포커스 잃음을 찾는다.
-// 사용: (저장소 루트에서 서버 5201~5205 를 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
+// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209
+// SCPI·Plot 의 앱별 단계(가짜 계측기 질의·블록·반복 측정 / 그래프 그려짐·측정점·CSV 기록 …)도 이 공통 흐름 안에서 한다(10/19, 옛 smoke-scpi·smoke-plot).
+// 사용: (저장소 루트에서 서버 5201~5209 를 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
 // 결과: shots/smoke/<앱>.json (+ 문제가 난 단계의 캡처 shots/smoke/<앱>-*.png)
 import { Builder, By, Key } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
@@ -9,7 +11,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -28,6 +30,8 @@ const HOOK = `
 window.__smoke = { errors: [] };
 addEventListener('error', (e) => window.__smoke.errors.push('onerror: ' + (e.error && e.error.stack || e.message)));
 addEventListener('unhandledrejection', (e) => window.__smoke.errors.push('unhandledrejection: ' + (e.reason && e.reason.stack || e.reason)));
+// 바깥 요청이 mock.js 의 가로채기를 빠져나가 CSP(vite.config)에 막히면 오류로 — 실제 Sentry 등으로 나갈 뻔한 것
+addEventListener('securitypolicyviolation', (e) => window.__smoke.errors.push('CSP blocked (바깥 요청이 가로채기를 빠져나감): ' + e.blockedURI));
 const __ce = console.error;
 console.error = function (...a) { window.__smoke.errors.push('console.error: ' + a.map((x) => x && x.stack || String(x)).join(' ').slice(0, 600)); return __ce.apply(console, a); };
 // 복사(Ctrl+C·우클릭 메뉴)한 글을 잡아 둔다 — 헤드리스에서는 클립보드를 읽을 수 없다
@@ -54,7 +58,7 @@ function overflow() {
   const w = W();
   if (document.documentElement.scrollWidth > w + 1) out.push('page horizontal scroll ' + document.documentElement.scrollWidth + '>' + w);
   for (const e of document.querySelectorAll('#root *, .modal-back *')) {
-    if (e.closest('.log, .tlog, svg, datalist, option, .regs, .help-text, pre, .report-preview')) continue;
+    if (e.closest('.log, .tlog, svg, datalist, option, .regs, .help-text, pre, .report-preview, .mtable-wrap, .ctable-wrap, .rawlog')) continue;
     const r = e.getBoundingClientRect();
     if (!r.width || !r.height || r.right <= w + 1) continue;
     let clipped = false;
@@ -229,7 +233,7 @@ async function fitWindow() {
 // 앱마다 다른 것
 const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger";
 /** 실행 중일 때 실행 버튼 글자 */
-const STOP_RE = /^(끊기|멈춤|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
+const STOP_RE = /^(끊기|멈춤|멈추기|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
 async function runButton() {
@@ -315,8 +319,230 @@ async function runApp(app, port) {
     /** Serial 은 좁은 창(≤1180)에서 줄을 누르면 오른쪽 칸(상세)이 열린다 — 다음 클릭이 가림막에 막히지 않게 닫는다. 열렸는지 돌려준다 */
     const closeRight = () => js("const open = !!document.querySelector('.app.show-right'); if (open) document.querySelector('.close-right').click(); return open;");
 
+    // ---- (10/19) SCPI·Plot 앱별 단계 — 옛 smoke-scpi.mjs·smoke-plot.mjs 를 공통 흐름에 합쳤다
+    const ko = combo.lang === "ko";
+    /** 조건(페이지에서 도는 JS, return 값)이 참이 될 때까지(최대 ms). 안 되면 «expect» 로 기록 */
+    async function expectJs(step, code, ms = 3000, ...args) {
+      const t0 = Date.now();
+      let v;
+      do {
+        v = await d.executeScript(code, ...args);
+        if (v) break;
+        await sleep(100);
+      } while (Date.now() - t0 < ms);
+      if (!v) add(step, "expect", code, await shot(app, `${combo.name}-${step}`));
+      else actions.checks = (actions.checks ?? 0) + 1;
+      await verify(step);
+      return v;
+    }
+    /** 고른 칸 중 글자가 맞는(또는 text 가 없으면 첫) 요소를 누른다 */
+    const clickText = (sel, text) =>
+      d.executeScript(
+        `const want = arguments[1];
+         const el = [...document.querySelectorAll(arguments[0])].find((e) => !want || e.textContent.trim() === want || e.textContent.includes(want));
+         if (!el) return false; el.click(); return true;`,
+        sel,
+        text ?? null,
+      );
+    /** 입력칸에 실제 키로 쓰기(필요하면 Enter) */
+    const typeInto = async (sel, text, enter = true) => {
+      const el = await d.findElement(By.css(sel));
+      await d.executeScript("arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", el);
+      await el.sendKeys(text);
+      if (enter) await el.sendKeys(Key.ENTER);
+    };
+    /** 고르기·입력칸 값 바꾸기(React 가 받게). nth 번째 */
+    const setIn = (sel, value, nth = 0) =>
+      d.executeScript(
+        `const el = document.querySelectorAll(arguments[0])[arguments[2]]; if (!el) return false;
+         const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+         Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, arguments[1]);
+         el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+         if (el.tagName !== 'SELECT') { el.dispatchEvent(new Event('change', { bubbles: true })); el.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); }
+         return true;`,
+        sel,
+        value,
+        nth,
+      );
+    /** 좁은 창(760×600)으로 줄였다가(다시 불러오지 않고) 돌아온다 — 실행 중 화면이 접히는지 */
+    async function narrowLive(extra) {
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await sleep(400);
+      await expectJs("narrow live", "return getComputedStyle(document.querySelector('.narrow-bar')).display !== 'none' && getComputedStyle(document.querySelector('aside.side')).display === 'none'");
+      if (combo.full) await shot(app, `${combo.name}-narrow-760-live`);
+      if (extra) await extra();
+      await fitWindow();
+      await sleep(200);
+    }
+
+    /** SCPI·Plot 첫 실행 카드(링크 둘)와 도움말 «Simulator 로 따라하기» 절 */
+    async function tutorialCard() {
+      const card = app === "plot" ? ".plot-first" : ".first-card";
+      await expectJs("first card", `return !!document.querySelector('${card}') && document.querySelectorAll('.first-links .link-btn').length === 2`);
+      await clickText(".first-links .link-btn", ko ? "Simulator 로 따라하기" : "Try it with Simulator");
+      const mark = app === "plot" ? "\\{counter dec\\}" : "PORTDOCK,SIM,1";
+      await expectJs("help tutorial", `const m = document.querySelector('.modal-back'); return !!m && /${ko ? "Simulator 로 따라하기" : "Try it with Simulator"}/.test(m.textContent) && /${mark}/.test(m.textContent)`);
+      if (combo.full) await shot(app, `${combo.name}-help-tutorial`);
+      await keys(Key.ESCAPE);
+      await expectJs("help tutorial closed", "return !document.querySelector('.modal-back')");
+    }
+
+    /** SCPI — 연결된 상태에서: *IDN? 장비 칸·창 제목·질의·(full) 쓰기·시간 초과·오류 큐·줄 끝 없는 답·블록·*OPC?·이력·예시·통신 기록 → 반복 측정 → 좁은 창 */
+    async function scpiRun() {
+      await expectJs("scpi idn", "return /PORTDOCK/.test((document.querySelector('table.idn') || {}).textContent || '') && /SCPI-SIM/.test(document.querySelector('table.idn').textContent)");
+      await expectJs("scpi title", "return /:5025 · PORTDOCK SCPI-SIM — PortDock SCPI/.test(document.title)");
+      await typeInto(".cmd-input", "meas:volt:dc?", false);
+      await expectJs("scpi known hint", `return /MEAS:VOLT:DC\\?/.test(document.querySelector('.cmd-hint').textContent) && /${ko ? "DC 전압" : "DC voltage"}/.test(document.querySelector('.cmd-hint').textContent)`);
+      await (await d.findElement(By.css(".cmd-input"))).sendKeys(Key.ENTER);
+      await expectJs("scpi query", "return /\\+(5\\.0|4\\.99)\\d+E\\+00/.test((document.querySelector('.last-text') || {}).textContent || '') && / ms/.test(document.querySelector('.last').textContent)");
+      if (combo.full) {
+        await typeInto(".cmd-input", "*RST");
+        await expectJs("scpi write", `return /${ko ? "보냄" : "Sent"}/.test(document.querySelector('.last').textContent)`);
+        // 모르는 질의 → 시간 초과 안내 → 오류 큐 비우기에 -113 → 다시 비우면 «오류 없음»
+        await typeInto(".cmd-input", "BOGUS?");
+        await expectJs("scpi timeout", `return /${ko ? "응답 없음" : "No reply"}/.test(document.querySelector('.last').textContent)`, 3000);
+        await clickText(".quick button", ko ? "오류 큐 비우기" : "Drain error queue");
+        await expectJs("scpi errors", "return /-113 Undefined header/.test((document.querySelector('.err-list') || {}).textContent || '')");
+        await clickText(".quick button", ko ? "오류 큐 비우기" : "Drain error queue");
+        await expectJs("scpi errors none", `return /${ko ? "오류 없음" : "No errors"}/.test(document.querySelector('aside.side').textContent)`);
+        await typeInto(".cmd-input", "NOEND?");
+        await expectJs("scpi no line end", "return /1\\.23/.test((document.querySelector('.last-partial') || {}).textContent || '')", 3000);
+        // 블록 — HEX 미리보기 + 파일 저장
+        await typeInto(".cmd-input", "DATA?");
+        await expectJs("scpi block", "return /#3300/.test((document.querySelector('.block-info') || {}).textContent || '') && /89 50 4E 47/.test((document.querySelector('.hexdump') || {}).textContent || '')");
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-block`);
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\shot.png'");
+        await clickText(".block-info button");
+        await expectJs("scpi block saved", "return window.__pdMock.files.has('C:\\\\tmp\\\\shot.png')");
+        await d.executeScript("window.__pdMock.dialog.save = null");
+        await clickText(".quick button", ko ? "*OPC? 기다림" : "Wait *OPC?");
+        await expectJs("scpi opc", "return /\\*OPC\\? → 1/.test(document.body.textContent)", 3000);
+        await (await d.findElement(By.css(".cmd-input"))).click();
+        await keys(Key.ARROW_UP);
+        await expectJs("scpi history", "return document.querySelector('.cmd-input').value === 'DATA?'");
+        await clickText(".cmdlist .cmd-examples");
+        await expectJs("scpi examples", "return document.querySelectorAll('.cmdlist .cmd').length === 3");
+        await clickText(".lower-tabs .seg", ko ? "통신 기록" : "Traffic");
+        await expectJs("scpi traffic", "return document.querySelectorAll('.tlog .trow.tx').length > 3 && document.querySelectorAll('.tlog .trow.rx').length > 3 && document.querySelectorAll('.tlog .trow.ev.bad').length >= 1");
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-traffic`);
+      }
+      // 반복 측정 5번 → 표·통계·추세
+      await clickText(".lower-tabs .seg", ko ? "반복 측정" : "Repeat measurement");
+      await sleep(150);
+      await setIn(".mbar input.num", "100", 0);
+      await setIn(".mbar input.num", "5", 1);
+      await blur();
+      await sleep(200);
+      await clickText(".mbar button.primary");
+      await expectJs("scpi measure", "return document.querySelectorAll('.mtable tbody tr').length === 5 && /(값 5개|5 values)/.test(document.querySelector('.mstat').textContent) && !!document.querySelector('.chart canvas')", 5000);
+      if (combo.full) await shot(app, `${combo.name}-measure`);
+      if (combo.full) {
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\m.csv'");
+        await clickText(".mbar button", ko ? "CSV 저장" : "Save CSV");
+        await expectJs("scpi csv", "const f = window.__pdMock.files.get('C:\\\\tmp\\\\m.csv'); return !!f && f.split('\\r\\n').length === 8 && /^\\uFEFF# MEAS:VOLT:DC\\?/.test(f)");
+        await d.executeScript("window.__pdMock.dialog.save = null");
+        await typeInto(".meas-cmd", "MEAS:RES?", false);
+        await clickText(".mbar button.primary");
+        await expectJs("scpi overload", "return /\\+OVLD/.test(document.querySelector('.mtable').textContent)", 5000);
+      }
+      // 좁은 창: 왼쪽·오른쪽 칸 접힘, «명령 목록» 으로 오른쪽 칸
+      await narrowLive(async () => {
+        await clickText(".narrow-only", ko ? "명령 목록" : "Commands");
+        await expectJs("scpi narrow commands", "return getComputedStyle(document.querySelector('aside.right')).display !== 'none'");
+        if (combo.full) await shot(app, `${combo.name}-narrow-commands`);
+        await d.executeScript("const b = document.querySelector('.close-right'); b && b.click();");
+        await sleep(150);
+      });
+    }
+
+    // 그래프에 첫 채널 색(model.ts PALETTE 의 1번) 점이 몇 개인지 — 그려졌는지 보는 기준
+    const INK = `
+      const c = document.querySelector('.plot-canvas'); if (!c) return -1;
+      const [R, G, B] = arguments[0] ? [0x39, 0x87, 0xe5] : [0x2a, 0x78, 0xd6];
+      const px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < px.length; i += 4) if (Math.abs(px[i] - R) + Math.abs(px[i + 1] - G) + Math.abs(px[i + 2] - B) < 60) n++;
+      return n;`;
+
+    /** Plot — 받는 중에: 채널 표·그래프가 실제로 그려졌는지·창 제목·받은 양·원시 수신 실패 줄·측정점 A·B·(full) 멈춤·휠·축·Y 고정·최근 초·CSV 기록·화면 CSV·PNG·바이너리 → 좁은 창 */
+    async function plotRun() {
+      const dark = combo.theme === "dark";
+      await expectJs("plot channels", "const rows = document.querySelectorAll('.ctable tbody tr'); return rows.length === 3 && [...rows].map((r) => r.querySelector('.ch-name').placeholder).join() === 'sin,cos,noise'", 4000);
+      let ink = 0;
+      for (let k = 0; k < 20 && !(ink > 150); k++, await sleep(150)) ink = await d.executeScript(INK, dark);
+      if (!(ink > 150)) add("plot drawn", "expect", `첫 채널 색 점 ${ink}개(150 이하) — 그래프가 그려지지 않음`, await shot(app, `${combo.name}-plot-drawn`));
+      await expectJs("plot title", `return /COM3 115200 · ${ko ? "받는 중" : "Receiving"} — PortDock Plot/.test(document.title)`);
+      await expectJs("plot counts", "return /\\d/.test(document.querySelector('.counts').textContent) && !/^0/.test(document.querySelector('.counts span').textContent.trim())");
+      if (combo.full) await shot(app, `${combo.name}-plotting`);
+      // 원시 수신 — 해석 실패 줄(3초마다)
+      await clickText(".lower-tabs .seg", ko ? "원시 수신" : "Raw input");
+      await expectJs("plot raw fail", "return document.querySelectorAll('.rawlog .rrow').length > 10 && /ERR\\? overflow/.test((document.querySelector('.rawlog .rrow.fail') || {}).textContent || '')", 4500);
+      await clickText(".lower-tabs .seg", ko ? "채널" : "Channels");
+      // 측정점 A·B (그래프 두 번 누르기)
+      const cv = await d.findElement(By.css(".plot-canvas"));
+      const rect = await d.executeScript("const r = document.querySelector('.plot-canvas').getBoundingClientRect(); return [r.width, r.height];");
+      await d.actions().move({ origin: cv, x: Math.round(-rect[0] / 4), y: 0 }).click().perform();
+      await sleep(150);
+      await d.actions().move({ origin: cv, x: Math.round(rect[0] / 4), y: 0 }).click().perform();
+      await expectJs("plot markers", "const t = document.querySelector('.measure-bar').textContent; return /Δt/.test(t) && /Δn/.test(t) && /sin Δ/.test(t)");
+      if (combo.full) {
+        // 멈춤 → 받기는 계속(+n) → 실시간
+        await clickText(".plotbar button", ko ? "⏸ 멈춤" : "⏸ Pause");
+        await expectJs("plot paused", `return /${ko ? "멈춤 — 받기는 계속" : "Paused — still receiving"}/.test(document.querySelector('.notes').textContent)`);
+        await expectJs("plot paused count", "return /\\(\\+\\d/.test(document.querySelector('.notes').textContent)", 2000);
+        await clickText(".plotbar button", ko ? "▶ 실시간" : "▶ Live");
+        await expectJs("plot live", "return !document.querySelector('.notes') || !/⏸/.test(document.querySelector('.notes').textContent)");
+        // 휠 확대 → 저절로 멈춤, 두 번 누르기로 실시간(측정점은 그대로)
+        await d.executeScript("const c = document.querySelector('.plot-canvas'); const r = c.getBoundingClientRect(); c.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));");
+        await expectJs("plot wheel zoom", "return !!document.querySelector('.notes') && /⏸/.test(document.querySelector('.notes').textContent)");
+        await d.actions().doubleClick(cv).perform();
+        await expectJs("plot dblclick live", "return (!document.querySelector('.notes') || !/⏸/.test(document.querySelector('.notes').textContent)) && /Δn [1-9]/.test(document.querySelector('.measure-bar').textContent)");
+        // 채널: cos 를 오른쪽 축 → «Y 오른쪽», noise 숨기기, sin 이름 바꾸기
+        await setIn(".ctable tbody tr:nth-child(2) select", "R");
+        await expectJs("plot right axis", `return [...document.querySelectorAll('.plotbar .ygroup')].length === 2 && /${ko ? "Y 오른쪽" : "Y right"}/.test(document.querySelector('.plotbar').textContent)`);
+        await d.executeScript("document.querySelector('.ctable tbody tr:nth-child(3) input[type=checkbox]').click();");
+        await expectJs("plot hide", "return document.querySelector('.ctable tbody tr:nth-child(3)').classList.contains('off')");
+        await setIn(".ctable .ch-name", ko ? "전압" : "Volt");
+        await expectJs("plot rename", `return document.querySelector('.ctable .ch-name').value === '${ko ? "전압" : "Volt"}'`);
+        await setIn(".plotbar .ygroup select", "fixed");
+        await expectJs("plot y fixed", "return document.querySelectorAll('.plotbar .ygroup input').length === 2");
+        await setIn(".plotbar select.win-mode", "time");
+        await expectJs("plot time axis", `return document.querySelector('.plotbar select.win-mode').value === 'time' && document.querySelector('.plotbar input.num').getAttribute('aria-label') === '${ko ? "최근 초" : "Last seconds"}'`);
+        await sleep(400);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-styled`);
+        // CSV 기록 → 멈춤
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\rec.csv'");
+        await clickText(".plotbar button", ko ? "● CSV 기록" : "● Record CSV");
+        await expectJs("plot recording", `return /${ko ? "기록 중" : "Recording"}/.test((document.querySelector('.notes .rec') || {}).textContent || '') && / ● REC — PortDock Plot/.test(document.title)`);
+        await sleep(600);
+        await clickText(".plotbar button", ko ? "■ 기록 멈춤" : "■ Stop recording");
+        await expectJs("plot record file", `const f = window.__pdMock.files.get('C:\\\\tmp\\\\rec.csv'); return !!f && f.startsWith('\\uFEFFtime,elapsed_s,${ko ? "전압" : "Volt"},cos,noise') && f.split('\\r\\n').length > 20`);
+        // 화면 CSV·PNG
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\view.csv'");
+        await clickText(".plotbar button", ko ? "화면 CSV" : "View CSV");
+        await expectJs("plot view csv", "const f = window.__pdMock.files.get('C:\\\\tmp\\\\view.csv'); return !!f && /^\\uFEFFtime,elapsed_s,index,/.test(f) && f.split('\\r\\n').length > 10");
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\g.png'");
+        await clickText(".plotbar button", "PNG");
+        await expectJs("plot png", "return / PNG>$/.test(window.__pdMock.files.get('C:\\\\tmp\\\\g.png') || '')");
+        await d.executeScript("window.__pdMock.dialog.save = null");
+        // 바이너리 형식 — 틀린 시작 바이트 알림, 프레임 길이
+        await setIn("aside.side select.fmt-kind", "binary");
+        await expectJs("plot binary", "return /= /.test((document.querySelector('.frame-len') || {}).textContent || '')");
+        await setIn("aside.side input.sync-in", "ZZ");
+        await expectJs("plot sync bad", "return /HEX/.test((document.querySelector('aside .interlock') || {}).textContent || '')");
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-binary`);
+        await setIn("aside.side input.sync-in", "AA 55");
+        await setIn("aside.side select.fmt-kind", "text");
+        await blur();
+      }
+      await narrowLive();
+    }
+
     /** (10/18) 첫 실행 카드(Serial «무엇을 하나요?»·Slave·Net Scan «처음 쓰는 순서»)·도움말 절 링크·Serial 용도 프리셋·빈 명령 목록 «예시 넣기» */
     async function firstRun() {
+      if (app === "scpi" || app === "plot") await tutorialCard();
       const card = await js(`const c = document.querySelector('.first-card'); return c && { title: (c.querySelector('.first-head b') || {}).textContent, picks: c.querySelectorAll('.first-picks button').length, links: [...c.querySelectorAll('.first-links .link-btn')].map((b) => b.textContent), hide: !!c.querySelector('.first-hide') };`);
       if (app === "serial" || app === "modbus-slave" || app === "netscan") {
         const want = { serial: 3, "modbus-slave": 2, netscan: 0 }[app];
@@ -1755,6 +1981,9 @@ async function runApp(app, port) {
         await sleep(250);
         await verify("report open");
         if (combo.full) await pageExercise("report", ".modal-back", { scope: "modal", depth: 1, skip: ".modal-head button" });
+        // (10/19) 오류 자동 전송(Sentry DSN 있음) — «지금 바로 보내기» 를 눌렀으면 그 요청은 가짜 백엔드가 가로챘어야 한다(실제로 나가지 않음)
+        if (combo.full && (await js("return !!window.__pdMock && window.__pdMock.net.length === 0 && !!document.querySelector('.modal-back') && /지금 바로 보내기|Send now/.test(document.querySelector('.modal-back').textContent)")))
+          add("report send intercepted", "expect", "«지금 바로 보내기» 를 눌렀는데 가로챈 전송 요청이 없음");
         await d.actions().sendKeys(Key.ESCAPE).perform();
         await sleep(200);
         if (await js("return !!document.querySelector('.modal-back')")) add("report Esc", "dialog", "Esc 로 문제 보고가 닫히지 않음");
@@ -1769,7 +1998,7 @@ async function runApp(app, port) {
       }
 
       // ---- 연결·시작
-      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/ }[app];
+      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
@@ -1793,6 +2022,9 @@ async function runApp(app, port) {
         await verify("serial conn summary");
       }
       if (app === "modbus-master" && (await js("return !!document.querySelector('.first-card')"))) await conv("mm-first-hide", "연결했는데 첫 실행 카드가 남아 있음");
+      // (10/19) SCPI·Plot 앱별 단계(옛 smoke-scpi·smoke-plot)
+      if (app === "scpi") await scpiRun();
+      if (app === "plot") await plotRun();
       // (10/18) TCP: 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 «Modbus TCP 로 보기» 알림줄 한 번(첫 실행 상태라 이번이 처음)
       if (app === "tcp" && !(await js("return !!document.querySelector('.sendbar .mb502')"))) await conv("tcp-502", "502 로 접속했는데 «Modbus TCP 로 보기» 알림줄이 없음");
       // (10/18) Net Scan 결과 줄: Modbus 칩을 누르면 «IP:502» 복사, 줄 오른쪽 버튼 메뉴(웹 열기·IP 복사·IP:502 복사·…) → «IP:502 복사» · Esc 로 닫힘
@@ -1891,7 +2123,8 @@ async function runApp(app, port) {
 
       // 편의성(10/17): 창 제목·따라가기·줄 고르기·Ctrl+C·우클릭 메뉴·단축키·명령 목록·숫자 칸·표기 바꾸기·되돌리기·항상 위
       // Net Scan 은 통신 기록·명령 목록이 없어 편의성 점검(로그 따라가기 등)을 건너뛴다
-      if (combo.full && app !== "netscan") await convenience();
+      // SCPI·Plot 도 건너뛴다 — 앱별 단계(scpiRun·plotRun)가 그 앱의 편의 기능을 본다
+      if (combo.full && !["netscan", "scpi", "plot"].includes(app)) await convenience();
       // Serial·TCP·UDP 공통 기능(이력·단축키·간격·트리거·체크섬 옵션·반복 횟수·Break·터미널·파일)
       if (combo.full) await ioFeatures();
       // 기능 묶음 C(10/18): 자동응답(Serial·TCP·UDP)·템플릿·장애 흉내(Simulator)
@@ -1912,6 +2145,12 @@ async function runApp(app, port) {
 
       // 멈춤·끊기
       const stopS = await clickRun("stop", (s) => s.btn === idleBtn);
+      if (app === "scpi") await expectJs("scpi disconnected", "return /끊음|Disconnected/.test(document.querySelector('aside .status').textContent)");
+      if (app === "plot") {
+        await expectJs("plot stopped", `return /${ko ? "멈춤" : "Stopped"}/.test(document.querySelector('aside .status').textContent)`);
+        await clickText(".plotbar button", ko ? "지우기" : "Clear");
+        await expectJs("plot cleared", "return document.querySelector('.counts span').textContent.trim().startsWith('0') || /^(값 0줄|0 rows)/.test(document.querySelector('.counts span').textContent.trim())");
+      }
       void runS;
       void stopS;
       // 기능 묶음 C: TCP 중계·Modbus TCP·이 PC 주소, UDP 멀티캐스트, 좁은 창 자동응답
@@ -1938,6 +2177,17 @@ async function runApp(app, port) {
         await clickRun("bind busy port", (x) => x.btn === idleBtn);
         const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
         if (!/사용 중|in use/.test(err)) add("bind busy port", "state", "포트 사용 중 오류가 안 보임", await shot(app, `${combo.name}-busy`));
+      }
+      // (10/19) SCPI: 안 붙는 주소(10.0.0.99) → «연결 실패» 안내. Plot: 사용 중 포트(COM9) → «시작 실패» + 다른 프로그램 안내
+      if (app === "scpi") {
+        await load(port, combo, { net: { host: "10.0.0.99", port: 5025 } });
+        await clickText(RUN_BTN);
+        await expectJs("scpi connect timeout", "return /연결 실패|Connection failed/.test((document.querySelector('aside .status') || {}).textContent || '')", 3000);
+      }
+      if (app === "plot") {
+        await load(port, combo, { cfg: { port: "COM9" } });
+        await clickText(RUN_BTN);
+        await expectJs("plot start busy", "const t = (document.querySelector('aside .status') || {}).textContent || ''; return /시작 실패|Start failed/.test(t) && /다른 프로그램|Another program/.test(t)");
       }
       if (app === "simulator") {
         await load(port, combo, { transport: "tcp-server", net: { host: "0.0.0.0", port: 445, remoteHost: "192.168.0.10", remotePort: 5000 } });

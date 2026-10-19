@@ -9,7 +9,7 @@
 4. Edge WebDriver: 그 PC 의 WebView2 버전과 **같은 번호**로 받는다
    - 버전 보기: `reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv`
    - 받기: `https://msedgedriver.microsoft.com/<버전>/edgedriver_win64.zip` → 아무 폴더에 풀기(예: `C:\tools\edgedriver\msedgedriver.exe`)
-5. 프로그램 빌드: 루트에서 `npm run build:serial` 등 다섯 개(또는 `npx tauri build -w portdock-<도구> -- --no-bundle`)
+5. 프로그램 빌드: 아래 실기 점검이 있는 다섯 앱(serial·modbus-slave·tcp·udp·simulator)을 루트에서 `npm run build:<도구>`(또는 `npx tauri build -w portdock-<도구> -- --no-bundle`)
 
 ## 실행
 ```
@@ -41,7 +41,7 @@ node serial.mjs
 - 시험용 손잡이 `window.__pdMock`: `dialog = { ask, save, open }`(확인 창 답·저장/열기 경로, 기본 «아니오»·취소), `unplug()`(장치 뽑힘 → 자동 재연결이면 1.5초 뒤 다시), `plug(true)`(블루투스 COM7 꽂기), `error(msg)`, `calls`·`files`.
 
 ## 다 눌러 보기 점검 (`ui-preview/smoke.mjs`)
-미리보기 서버 다섯 개(위 1번)를 띄운 뒤 `e2e` 폴더에서:
+미리보기 서버 아홉 개(위 1번, 5201~5209)를 띄운 뒤 `e2e` 폴더에서:
 ```
 EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke.mjs [앱]      (예: node ui-preview/smoke.mjs tcp)
 COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경우만 빨리)
@@ -60,14 +60,15 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 - 결과: 화면에 경우별 ✅/❌ 와 누른 횟수, `shots/smoke/<앱>.json`(같은 문제는 묶어 횟수·단계와 함께), 문제가 난 단계의 캡처 `shots/smoke/<앱>-*.png`. 문제가 있으면 종료 코드 1.
 - 가짜 백엔드라 «화면 쪽» 버그만 찾는다. 실제 통신·타이밍 문제는 위 실기 점검으로.
 
-## SCPI 화면 점검 (`ui-preview/smoke-scpi.mjs`, 10/19)
-SCPI 는 smoke.mjs 와 따로 점검한다. 서버 `APP=scpi PORT=5208 npx vite --config e2e/ui-preview/vite.config.mjs` 를 띄운 뒤 `e2e` 폴더에서 `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke-scpi.mjs` (`COMBO=ko-light` 로 한 경우만).
-- 가짜 계측기(mock.js SCPI 부분): `*IDN?` → `PORTDOCK,SCPI-SIM,0001,1.0`, `MEAS:VOLT:DC?`·`READ?` → 5 V 근처, `MEAS:RES?` → 9.9E37(넘침), `DATA?` → PNG 머리 300바이트 블록(`#3300`), `*OPC?` → 0.4초 뒤 1, 모르는 명령 → 오류 큐 -113(질의면 시간 초과), `SLOW?` 답 없음, `NOEND?` 줄 끝 없는 답, 주소 `10.0.0.99` 연결 시간 초과, 포트 445 거부, 시리얼 `COM9` 사용 중. 기다림은 0.9초까지만.
-- 하는 일(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» 절 → 연결 실패 안내 → 연결·`*IDN?` 장비 칸·창 제목 → 질의(자주 쓰는 명령 뜻) → 반복 측정 5번(표·통계·추세) → 좁은 창 760(요약 줄·명령 목록 열기) → 끊기. `ko-light`·`en-dark` 는 더해서 쓰기·시간 초과·오류 큐(-113 → 없음)·줄 끝 없는 답·블록 HEX·파일 저장·`*OPC?`·이력 ↑·명령 목록 예시·통신 기록 빨간 줄·CSV·넘침·F1·⚙.
-- 매 단계 뒤: 예외·화면 오류·창 밖 요소·잘린 버튼·빈 고르기. 결과 `shots/smoke/scpi.json` + `scpi-*.png`.
+### SCPI·Plot 앱별 단계 (10/19 — 옛 `smoke-scpi.mjs`·`smoke-plot.mjs` 를 smoke.mjs 공통 흐름에 합침)
+`node ui-preview/smoke.mjs scpi` · `node ui-preview/smoke.mjs plot`. 공통 흐름(첫 실행·도움말·⚙·문제 보고·다 눌러 보기·연결·좁은 창·멈춤, `ko-light`·`en-dark` 는 «모두 펼치기» 켠 채) 안에서 아래를 더 한다.
+- SCPI 가짜 계측기(mock.js SCPI 부분): `*IDN?` → `PORTDOCK,SCPI-SIM,0001,1.0`, `MEAS:VOLT:DC?`·`READ?` → 5 V 근처, `MEAS:RES?` → 9.9E37(넘침), `DATA?` → PNG 머리 300바이트 블록(`#3300`), `*OPC?` → 0.4초 뒤 1, 모르는 명령 → 오류 큐 -113(질의면 시간 초과), `SLOW?` 답 없음, `NOEND?` 줄 끝 없는 답, 주소 `10.0.0.99` 연결 시간 초과, 포트 445 거부, 시리얼 `COM9` 사용 중. 기다림은 0.9초까지만.
+- SCPI(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» 절 → 연결·`*IDN?` 장비 칸·창 제목 → 질의(자주 쓰는 명령 뜻) → 반복 측정 5번(표·통계·추세) → 좁은 창 760(명령 목록 열기) → 끊기 → 연결 실패(10.0.0.99) 안내. `ko-light`·`en-dark` 는 더해서 쓰기·시간 초과·오류 큐(-113 → 없음)·줄 끝 없는 답·블록 HEX·파일 저장·`*OPC?`·이력 ↑·명령 목록 예시·통신 기록 빨간 줄·CSV·넘침.
+- Plot 가짜 장비(mock.js Plot 부분): 받기 시작하면 0.05초마다 10줄(200 Hz) — 머리글 `sin,cos,noise` 다음 사인파(±10)·코사인(20±5)·잡음 CSV 값, 3초마다 해석 실패 줄 `ERR? overflow`. 시리얼 `COM9` 사용 중, TCP `10.0.0.99` 는 «다시 연결하는 중»(값 없음), UDP 포트 445 묶기 실패, 기록 경로에 `readonly` 면 거부. 해석은 Rust 몫이라 가짜 백엔드는 만든 숫자를 그대로 넘긴다.
+- Plot(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» → COM3 받기·채널 표(sin·cos·noise)·**그래프가 실제로 그려졌는지(canvas 에서 첫 채널 색 점 수)**·창 제목·받은 양 → 원시 수신의 빨간 실패 줄 → 그래프 두 번 눌러 측정점 A·B(Δt·Δn·채널 Δ) → 좁은 창 760 → 멈추기·지우기 → 시작 실패(COM9) 안내. `ko-light`·`en-dark` 는 더해서 멈춤(+n)·실시간, 휠 확대(저절로 멈춤)·두 번 누르기(실시간, 측정점 그대로), 오른쪽 축·숨기기·이름 바꾸기, Y 고정, 최근 초, CSV 기록 파일(머리 줄·줄 수), 화면 CSV, PNG, 바이너리 형식(틀린 시작 바이트 알림·프레임 길이).
+- 결과는 다른 앱과 같이 `shots/smoke/scpi.json`·`plot.json` + 캡처.
 
-## Plot 화면 점검 (`ui-preview/smoke-plot.mjs`, 10/19)
-Plot 도 smoke.mjs 와 따로 점검한다. 서버 `APP=plot PORT=5209 npx vite --config e2e/ui-preview/vite.config.mjs` 를 띄운 뒤 `e2e` 폴더에서 `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke-plot.mjs` (`COMBO=ko-light` 로 한 경우만).
-- 가짜 장비(mock.js Plot 부분): 받기 시작하면 0.05초마다 10줄(200 Hz) — 머리글 `sin,cos,noise` 다음 사인파(±10)·코사인(20±5)·잡음 CSV 값, 3초마다 해석 실패 줄 `ERR? overflow`. 시리얼 `COM9` 사용 중, TCP `10.0.0.99` 는 «다시 연결하는 중»(값 없음), UDP 포트 445 묶기 실패, 기록 경로에 `readonly` 면 거부. 해석은 Rust 몫이라 가짜 백엔드는 만든 숫자를 그대로 넘긴다.
-- 하는 일(네 경우): 첫 실행 카드와 도움말 «Simulator 로 따라하기» → 시작 실패(COM9) 안내 → COM3 받기·채널 표(sin·cos·noise)·**그래프가 실제로 그려졌는지(canvas 에서 첫 채널 색 점 수)**·창 제목·받은 양 → 원시 수신의 빨간 실패 줄 → 그래프 두 번 눌러 측정점 A·B(Δt·Δn·채널 Δ) → 좁은 창 760 → 멈추기·지우기. `ko-light`·`en-dark` 는 더해서 멈춤(+n)·실시간, 휠 확대(저절로 멈춤)·두 번 누르기(실시간, 측정점 그대로), 오른쪽 축·숨기기·이름 바꾸기, Y 고정, 최근 초, CSV 기록 파일(머리 줄·줄 수), 화면 CSV, PNG, 바이너리 형식(틀린 시작 바이트 알림·프레임 길이), F1·⚙.
-- 매 단계 뒤: 예외·화면 오류·창 밖 요소·잘린 버튼·빈 고르기. 결과 `shots/smoke/plot.json` + `plot-*.png`.
+### 바깥 네트워크 막기 (10/19)
+오류 자동 전송(Sentry DSN, `shared/report.ts`)이 켜져 있어 문제 보고 창에 «지금 바로 보내기» 가 보인다. 미리보기·smoke 가 실제로 보내지 않게:
+- `mock.js` 가 `fetch`·`sendBeacon` 을 가로채 같은 서버(vite) 말고는 보내지 않고 200 으로 답한 뒤 `window.__pdMock.net` 에 남긴다.
+- `vite.config.mjs` 가 `Content-Security-Policy: connect-src 'self' ws://localhost:*` 를 붙여, 가로채기를 빠져나간 요청도 브라우저가 막는다. smoke 는 이렇게 막힌 요청(`securitypolicyviolation`)을 오류로 센다.
