@@ -32,7 +32,7 @@
     "copyright": "Copyright (C) 2026 Juhak",
     "homepage": "https://portdock.dev",
     "license": "GPL-3.0-only",
-    "licenseFile": "../../../LICENSE",
+    "licenseFile": "../../../tools/installer-license.txt",
     "shortDescription": "Modbus RTU/TCP master (poll) test tool",
     "longDescription": "PortDock Modbus Master polls Modbus RTU and Modbus TCP devices (FC 01–04) in several tables with typed values (U16–F64, strings, byte orders), writes with FC 05/06/0F/10, scans for slave IDs and readable address ranges, shows decoded traffic with statistics and logs values to CSV.",
     "icon": [

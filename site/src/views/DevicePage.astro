@@ -1,0 +1,206 @@
+---
+// 장비 한 종의 Modbus 레지스터 맵 — 통신 기본값·레지스터 표·PortDock 으로 읽기·JSON·출처. 본문 아래에만 광고(AdSlot, 가이드와 같은 정책).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { toolById, type Lang } from "../data/tools";
+import { CC_BY, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
+import { url } from "../lib/i18n";
+import { KIND_TEXT, devRegs, type Device, type DevRegister } from "@shared/devices";
+import "../styles/devices.css";
+
+interface Props {
+  lang: Lang;
+  dev: Device;
+}
+const { lang, dev } = Astro.props;
+const ko = lang === "ko";
+const L = (ko_: string, en: string) => (ko ? ko_ : en);
+const maker = dev.manufacturer[lang];
+const name = `${maker} ${dev.model}`;
+const title = L(`${name} Modbus 레지스터 맵`, `${name} Modbus register map`);
+const desc = L(
+  `${name}(${KIND_TEXT[dev.kind].ko}) Modbus 주소·형식·단위·배율과 통신 기본값 ${dev.registers.length}개 항목 — 제조사 매뉴얼 출처, JSON 내려받기, PortDock 으로 바로 읽기.`,
+  `${name} (${KIND_TEXT[dev.kind].en}) Modbus addresses, types, units, scaling and default settings — ${dev.registers.length} entries with manual references, JSON download, read it with PortDock.`,
+);
+const master = toolById("modbus-master");
+const slave = toolById("modbus-slave");
+const here = new URL(url(lang, devPath(dev)), Astro.site).href;
+const siteJson = new URL(`/devices/${dev.id}.json`, Astro.site).href;
+
+const TABLE_SHORT: Record<DevRegister["table"], string> = { coils: "CO", "discrete-inputs": "DI", "input-registers": "IR", "holding-registers": "HR" };
+const hex = (n: number) => "0x" + n.toString(16).toUpperCase().padStart(4, "0");
+const parityText = { none: L("없음", "None"), even: L("짝수", "Even"), odd: L("홀수", "Odd") };
+const addrText = { zero: L("통신 주소 그대로(0 기준)", "Wire address as is (0-based)"), one: L("1 기준 번호(통신 주소 + 1)", "1-based numbers (wire address + 1)"), plc: L("40001·30001 꼴(통신 주소 + 1, 앞자리가 표)", "40001/30001 style (wire address + 1, first digit = table)") };
+const typeText = (r: DevRegister) => {
+  const order = r.order ?? dev.comm.order;
+  const t = r.type === "string" ? `STRING(${r.len})` : r.type.toUpperCase();
+  return devRegs(r) > 1 && r.type !== "string" && order ? `${t} ${order}` : t;
+};
+const scaleText = (r: DevRegister) => [r.scale != null && r.scale !== 1 ? `×${r.scale}` : "", r.unit ?? ""].filter(Boolean).join(" ");
+const fcText = (r: DevRegister) => r.fc.map((f) => f.toString(16).toUpperCase().padStart(2, "0")).join("·");
+const accessText = { r: "R", rw: "R/W", w: "W" };
+
+const c = dev.comm;
+const commRows: [string, string][] = [];
+commRows.push([L("형태", "Protocol"), dev.protocols.map((p) => ({ rtu: "Modbus RTU", ascii: "Modbus ASCII", tcp: "Modbus TCP" })[p]).join(", ")]);
+if (c.baud) commRows.push([L("속도(출하)", "Baud (factory)"), `${c.baud} bps${c.bauds?.length ? ` — ${L("고를 수 있음", "options")}: ${c.bauds.join(", ")}` : ""}`]);
+if (c.dataBits || c.parity || c.stopBits)
+  commRows.push([L("데이터·패리티·정지", "Data · parity · stop"), [c.dataBits ?? "—", c.parity ? parityText[c.parity] : "—", c.stopBits ?? "—"].join(" · ")]);
+if (c.unit != null) commRows.push([L("국번(출하)", "Slave ID (factory)"), `${c.unit}${c.unitRange ? ` (${c.unitRange[0]}~${c.unitRange[1]})` : ""}`]);
+if (c.tcpPort) commRows.push([L("TCP 포트", "TCP port"), String(c.tcpPort)]);
+if (c.order) commRows.push([L("32비트 순서", "32-bit order"), c.order]);
+if (c.maxRegisters) commRows.push([L("한 번에 최대", "Max per request"), L(`${c.maxRegisters} 레지스터`, `${c.maxRegisters} registers`)]);
+commRows.push([L("매뉴얼 주소 표기", "Manual address style"), addrText[c.addressing]]);
+
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: title,
+  description: desc,
+  url: here,
+  inLanguage: lang,
+  license: CC_BY,
+  isAccessibleForFree: true,
+  creator: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
+  isBasedOn: dev.sources.map((s) => s.url),
+  dateModified: dev.sources.map((s) => s.checked).sort().pop(),
+  distribution: [{ "@type": "DataDownload", encodingFormat: "application/json", contentUrl: rawUrl(dev) }],
+  keywords: ["Modbus", "register map", dev.manufacturer.en, dev.model, KIND_TEXT[dev.kind].en],
+};
+---
+
+<Base lang={lang} title={title} description={desc} path={devPath(dev)} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <div class="crumb"><a href={url(lang)}>PortDock</a> / <a href={url(lang, "devices/")}>{L("장비", "Devices")}</a> / {maker}</div>
+      <h1>{title}</h1>
+      <p>{dev.summary?.[lang] ?? dev.title[lang]} · {KIND_TEXT[dev.kind][lang]}{dev.models?.length ? ` · ${dev.models.join(", ")}` : ""}</p>
+    </div>
+  </header>
+  <article class="wrap prose dev-page" style="padding-top:20px">
+    <p class="dev-caution">
+      {
+        L(
+          "제조사 매뉴얼에서 사실 정보(주소·형식·단위·배율)만 옮겨 정리한 비공식 자료입니다. 제조사와 관계없고, 펌웨어·형번에 따라 다를 수 있습니다. 쓰기(운전 명령·설정 변경) 전에 반드시 장비 매뉴얼로 확인하세요.",
+          "An unofficial summary of facts (addresses, types, units, scaling) from the maker's manual. Not affiliated with the maker; values can differ by firmware or model. Always check the device manual before writing (run commands, settings).",
+        )
+      }
+    </p>
+
+    <h2>{L("통신 기본값", "Default communication")}</h2>
+    <div class="tbl">
+      <table class="t">
+        <tbody>{commRows.map(([k, v]) => <tr><th>{k}</th><td>{v}</td></tr>)}</tbody>
+      </table>
+    </div>
+    {!!c.notes?.length && <ul>{c.notes.map((n) => <li>{n[lang]}</li>)}</ul>}
+
+    <h2>{L("레지스터", "Registers")} ({dev.registers.length})</h2>
+    <p class="note">
+      {
+        L(
+          "«통신 주소» 는 요청 프레임에 실리는 0 기준 주소입니다(PortDock 의 «0 기준» 표기). 값 = 원시 값 × 배율. 표: HR 보유 레지스터, IR 입력 레지스터, CO 코일, DI 입력 접점. 함수 코드는 16진.",
+          "«Wire» is the 0-based address in the request frame (PortDock's «0-based» notation). Value = raw × scale. Table: HR holding register, IR input register, CO coil, DI discrete input. Function codes in hex.",
+        )
+      }
+    </p>
+    <div class="tbl">
+      <table class="t dev-regs">
+        <thead>
+          <tr>
+            <th>{L("매뉴얼 주소", "Manual")}</th>
+            <th>{L("통신 주소", "Wire")}</th>
+            <th>{L("표", "Table")}</th>
+            <th>{L("이름", "Name")}</th>
+            <th>{L("형식", "Type")}</th>
+            <th>{L("단위·배율", "Unit · scale")}</th>
+            <th>R/W</th>
+            <th>FC</th>
+            <th>{L("설명", "Details")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            dev.registers.map((r) => (
+              <tr>
+                <td class="mono">{r.manualAddress}</td>
+                <td class="mono">
+                  {r.address} <small>({hex(r.address)})</small>
+                </td>
+                <td class="mono">{TABLE_SHORT[r.table]}</td>
+                <td>{r.name[lang]}</td>
+                <td class="mono">{typeText(r)}</td>
+                <td class="mono">{scaleText(r)}</td>
+                <td class="mono">{accessText[r.access]}</td>
+                <td class="mono">{fcText(r)}</td>
+                <td class="dev-desc">
+                  {r.description && <div>{r.description[lang]}</div>}
+                  {r.range && (
+                    <div>
+                      {L("범위", "Range")} {r.range.min ?? "…"} ~ {r.range.max ?? "…"}
+                      {r.unit ? ` ${r.unit}` : ""}
+                    </div>
+                  )}
+                  {!!r.values?.length && <div>{r.values.map((v) => `${v.value} = ${v[lang]}`).join(" · ")}</div>}
+                  {!!r.bits?.length && <div>{r.bits.map((b) => `b${b.bit} ${b[lang]}`).join(" · ")}</div>}
+                  {r.ref && <div class="note">{r.ref}</div>}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    {!!dev.notes?.length && (
+      <>
+        <h2>{L("주의", "Notes")}</h2>
+        <ul>{dev.notes.map((n) => <li>{n[lang]}</li>)}</ul>
+      </>
+    )}
+
+    <h2>{L("PortDock 으로 바로 읽기", "Read it with PortDock")}</h2>
+    <ol>
+      <li>
+        {L("무료 ", "Install the free ")}<a href={url(lang, `${master.id}/`)}>{master.name}</a>{L(" 를 설치하고 장비와 같은 통신 설정으로 연결합니다.", " and connect with the device's settings.")}
+      </li>
+      <li>{L("가운데 표 도구줄의 «장비 프로필…» 에서 이 장비를 고르고 «불러오기» — 폴링 표·칸 이름·형식·국번이 채워집니다(통신 기본값도 맞출 수 있음).", "On the table toolbar, «Device profile…» → pick this device → «Load». Polling tables, names, types and the Slave ID are filled in (optionally the serial settings too).")}</li>
+      <li>{L("칸 이름에 단위·배율(예 «×0.01 Hz»)이 붙습니다. 화면 값은 원시 값이므로 배율을 곱해 읽습니다.", "Names carry the unit and scale (e.g. «×0.01 Hz»). Values on screen are raw — multiply by the scale.")}</li>
+      <li>
+        {L("장비 없이 프로그램을 시험하려면 ", "To test your program without the device, ")}<a href={url(lang, `${slave.id}/`)}>{slave.name}</a>{L(" 의 «장비 흉내…» 로 같은 맵(예시 값)을 띄웁니다.", "'s «Emulate device…» serves the same map with example values.")}
+      </li>
+    </ol>
+
+    <h2>{L("JSON 내려받기", "Download JSON")}</h2>
+    <ul>
+      <li><a href={rawUrl(dev)}>{dev.id}.json</a> {L("(GitHub 원본)", "(GitHub raw)")} · <a href={siteJson}>{L("이 사이트 사본", "copy on this site")}</a> · <a href={sourceUrl(dev)}>{L("고친 이력", "history")}</a></li>
+      <li><a href={SCHEMA_URL}>schema.json</a> — {L("형식 설명(JSON Schema). table·address(0 기준)·type·order 는 PortDock CSV 와 같습니다.", "format (JSON Schema). table, address (0-based), type and order match the PortDock CSV.")}</li>
+      <li>
+        {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a>{L(" — 쓰실 때 «PortDock 장비 레지스터 맵» 과 이 주소를 밝혀 주세요. ", " — please credit «PortDock device register maps» with a link. ")}<a href={LICENSE_URL}>LICENSE</a>
+      </li>
+      <li>{L("틀린 곳을 찾으면 GitHub 이슈로 알려 주세요(쪽 번호와 함께).", "Found a mistake? Please open a GitHub issue with the manual page.")}</li>
+    </ul>
+
+    <h2>{L("출처", "Sources")}</h2>
+    <ul>
+      {
+        dev.sources.map((s) => (
+          <li>
+            <a href={s.url} rel="nofollow noopener">{s.title}</a>
+            {s.publisher ? ` — ${s.publisher}` : ""}
+            {s.edition ? `, ${s.edition}` : ""}
+            {s.pages ? ` · ${s.pages}` : ""} · {L(`확인 ${s.checked}`, `checked ${s.checked}`)}
+          </li>
+        ))
+      }
+    </ul>
+  </article>
+  <div class="wrap">
+    <AdSlot />
+    <div class="card">
+      <h3>{master.name}</h3>
+      <p>{master.tagline[lang]}</p>
+      <a class="go" href={url(lang, `${master.id}/`)}>{L("도구 보기", "See the tool")} →</a>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,48 @@
+/* 장비 레지스터 맵 페이지(/devices/) */
+.dev-caution {
+  border-left: 4px solid var(--accent);
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 15px;
+}
+table.t.dev-regs {
+  font-size: 14px;
+}
+table.t.dev-regs th,
+table.t.dev-regs td {
+  padding: 6px 5px;
+}
+table.t.dev-regs small {
+  color: var(--muted);
+}
+.dev-desc {
+  min-width: 200px;
+  font-size: 13px;
+}
+.dev-desc .note {
+  font-size: 12px;
+}
+.dev-kind {
+  margin-bottom: 28px;
+}
+.dev-kind h2 {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.dev-about {
+  margin: 12px 0 32px;
+}
+.dev-about code {
+  overflow-wrap: anywhere;
+}
+/* 레지스터 표는 칸이 많아 글 폭(780px)보다 넓게 — 이름 칸이 한 글자씩 꺾이지 않게 */
+.prose.dev-page {
+  max-width: 1100px;
+}
+table.t.dev-regs td:nth-child(4) {
+  min-width: 9em;
+}
+table.t.dev-regs th {
+  white-space: nowrap;
+}

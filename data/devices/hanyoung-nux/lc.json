@@ -1,0 +1,1032 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "hanyoung-nux/lc",
+  "manufacturer": {
+    "ko": "한영넉스",
+    "en": "Hanyoung Nux"
+  },
+  "model": "LC Series",
+  "models": [
+    "LC1",
+    "LC3",
+    "LC4",
+    "LC6",
+    "LC7"
+  ],
+  "kind": "other",
+  "title": {
+    "ko": "한영넉스 LC 시리즈 LCD 카운터/타이머",
+    "en": "Hanyoung Nux LC series LCD counter/timer"
+  },
+  "summary": {
+    "ko": "RS485 Modbus RTU(형번 보조출력 자리 'C' 통신형). 코일·입력 상태·입력 레지스터·홀딩 레지스터를 모두 쓴다. 쓰기 금지(CWP)가 초기값 ON.",
+    "en": "RS485 Modbus RTU (models with auxiliary-output code 'C'). Uses coils, discrete inputs, input and holding registers. Write inhibit (CWP) is ON by default."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "plc",
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      127
+    ],
+    "notes": [
+      {
+        "ko": "매뉴얼은 «40001 (0000)» 처럼 PLC 번호와 괄호 속 16진 통신 주소를 함께 적는다. 통신선 주소 = 괄호 값. 근거: p.32(PDF 30) FC01 예가 시작 주소 0x0000 으로 코일 00001~00005 를 읽음, p.35~41(PDF 33~39) 맵.",
+        "en": "The manual writes '40001 (0000)': PLC number plus hex wire address in brackets. Wire address = bracket value. Evidence: FC01 example p.32 (PDF 30) reads coils 00001-00005 from 0x0000; map p.35-41 (PDF 33-39)."
+      },
+      {
+        "ko": "초기값: 국번 1, 9600 bps, 패리티 없음, 응답 대기 20 ms, 통신 쓰기 금지 ON (p.31, PDF 29). 스톱 1 비트 고정, 데이터 8 비트 (p.12, PDF 10).",
+        "en": "Defaults: station 1, 9600 bps, no parity, response wait 20 ms, communication write inhibit ON (p.31, PDF 29). Stop bit fixed 1, data 8 bits (p.12, PDF 10)."
+      },
+      {
+        "ko": "통신 쓰기 금지(CWP)가 ON 이면 쓰기 요청에 예외 응답을 돌려준다 — 쓰려면 앞판에서 CWP 를 OFF 로 바꾼다(p.31·p.34).",
+        "en": "With write inhibit (CWP) ON, writes get an exception reply — turn CWP OFF on the front panel first (p.31, p.34)."
+      },
+      {
+        "ko": "지원 함수 코드: 01·02·03·04·05·06·16 (p.30). 응답 데이터 개수 표기: FC03 «n = 1~16», FC04 «n = 1~13», FC16 «n = 1~16» (p.33~34).",
+        "en": "Supported FCs: 01, 02, 03, 04, 05, 06, 16 (p.30). Data count shown as FC03 'n = 1-16', FC04 'n = 1-13', FC16 'n = 1-16' (p.33-34)."
+      },
+      {
+        "ko": "응답 대기 최소값은 속도마다 다르다: 2400 bps 16 ms, 4800 bps 8 ms, 9600 이상 5 ms (p.31).",
+        "en": "Minimum response wait depends on speed: 2400 bps 16 ms, 4800 bps 8 ms, 9600+ 5 ms (p.31)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "00001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "리셋 입력",
+        "en": "Reset input"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "description": {
+        "ko": "FC05 로 1 을 보낼 때는 FF00 으로 보낸다.",
+        "en": "When writing 1 with FC05, send FF00."
+      },
+      "ref": "p.35 (PDF 33) 표 1 Func 01H/05H"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "00002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "배치 리셋 입력",
+        "en": "Batch reset input"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "description": {
+        "ko": "FC05 로 1 을 보낼 때는 FF00.",
+        "en": "Send FF00 for 1 with FC05."
+      },
+      "ref": "p.35 (PDF 33) 표 1"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "00003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "OUT1 출력",
+        "en": "OUT1 output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.35 (PDF 33) 표 1"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "00004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "OUT2 출력",
+        "en": "OUT2 output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.35 (PDF 33) 표 1"
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "00005 (0004)",
+      "type": "bit",
+      "name": {
+        "ko": "배치 출력",
+        "en": "Batch output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.35 (PDF 33) 표 1"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "10001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "리셋 단자 입력",
+        "en": "Reset terminal input"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "p.35 (PDF 33) 표 2 Func 02H"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "10002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "배치 리셋 단자 입력",
+        "en": "Batch reset terminal input"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "p.35 (PDF 33) 표 2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 2,
+      "manualAddress": "10003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "CP1 입력",
+        "en": "CP1 input"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "p.35 (PDF 33) 표 2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 3,
+      "manualAddress": "10004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "CP2 입력",
+        "en": "CP2 input"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "p.35 (PDF 33) 표 2"
+    },
+    {
+      "table": "input-registers",
+      "address": 103,
+      "manualAddress": "30104 (0067)",
+      "type": "u16",
+      "name": {
+        "ko": "펌웨어 버전",
+        "en": "Firmware version"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.36 (PDF 34) 표 3 Product Information"
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "31001 (03E8)",
+      "type": "u16",
+      "name": {
+        "ko": "LED 표시 상태",
+        "en": "LED display status"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 3,
+          "ko": "CWP LED",
+          "en": "CWP LED"
+        },
+        {
+          "bit": 4,
+          "ko": "RST LED",
+          "en": "RST LED"
+        },
+        {
+          "bit": 5,
+          "ko": "INH LED",
+          "en": "INH LED"
+        },
+        {
+          "bit": 6,
+          "ko": "STA LED",
+          "en": "STA LED"
+        },
+        {
+          "bit": 7,
+          "ko": "BATCH OUT LED",
+          "en": "BATCH OUT LED"
+        },
+        {
+          "bit": 8,
+          "ko": "OUT2 LED",
+          "en": "OUT2 LED"
+        },
+        {
+          "bit": 9,
+          "ko": "OUT1 LED",
+          "en": "OUT1 LED"
+        },
+        {
+          "bit": 10,
+          "ko": "BATCH LED",
+          "en": "BATCH LED"
+        },
+        {
+          "bit": 11,
+          "ko": "LOCK LED",
+          "en": "LOCK LED"
+        },
+        {
+          "bit": 12,
+          "ko": "SET1 LED",
+          "en": "SET1 LED"
+        },
+        {
+          "bit": 13,
+          "ko": "SET2 LED",
+          "en": "SET2 LED"
+        },
+        {
+          "bit": 14,
+          "ko": "TIM LED",
+          "en": "TIM LED"
+        }
+      ],
+      "description": {
+        "ko": "비트 0 = 꺼짐, 1 = 켜짐.",
+        "en": "Bit 0 = off, 1 = on."
+      },
+      "ref": "p.36 (PDF 34) 표 3 Product Monitoring"
+    },
+    {
+      "table": "input-registers",
+      "address": 1005,
+      "manualAddress": "31006 (03ED)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치",
+        "en": "Decimal point"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "카운터: 0·1 = 소수점 없음, 2 = 소수 2자리, 3 = 3자리, 4 = 4자리(6자리 형만), 5 = 5자리(6자리 형만). 타이머: 시간 범위 코드 0 u.01s, 1 u.1s, 2 u1s, 3 u1m, 4 u1h, 5 d.01s, 6 d.1s, 7 d1s, 8 d1m, 9 d1h.",
+        "en": "Counter: 0/1 = none, 2 = 2 decimals, 3 = 3, 4 = 4 (6-digit only), 5 = 5 (6-digit only). Timer: time-range code 0 u.01s, 1 u.1s, 2 u1s, 3 u1m, 4 u1h, 5 d.01s, 6 d.1s, 7 d1s, 8 d1m, 9 d1h."
+      },
+      "ref": "p.36 (PDF 34) 표 3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1012,
+      "manualAddress": "31013 (03F4)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 논리",
+        "en": "Input logic"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NPN",
+          "en": "NPN"
+        },
+        {
+          "value": 1,
+          "ko": "PNP",
+          "en": "PNP"
+        }
+      ],
+      "ref": "p.37 (PDF 35) 표 3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "40051 (0032)",
+      "type": "u16",
+      "name": {
+        "ko": "동작 모드",
+        "en": "Operation mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "카운터",
+          "en": "Counter"
+        },
+        {
+          "value": 1,
+          "ko": "배치 카운터",
+          "en": "Batch counter"
+        },
+        {
+          "value": 2,
+          "ko": "타이머",
+          "en": "Timer"
+        },
+        {
+          "value": 3,
+          "ko": "트윈 타이머",
+          "en": "Twin timer"
+        },
+        {
+          "value": 4,
+          "ko": "배치 타이머",
+          "en": "Batch timer"
+        }
+      ],
+      "ref": "p.38 (PDF 36) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "40052 (0033)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터 입력 모드",
+        "en": "Counter input mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "U-A",
+          "en": "U-A"
+        },
+        {
+          "value": 1,
+          "ko": "U-B",
+          "en": "U-B"
+        },
+        {
+          "value": 2,
+          "ko": "U-AB",
+          "en": "U-AB"
+        },
+        {
+          "value": 3,
+          "ko": "D-A",
+          "en": "D-A"
+        },
+        {
+          "value": 4,
+          "ko": "D-B",
+          "en": "D-B"
+        },
+        {
+          "value": 5,
+          "ko": "D-AB",
+          "en": "D-AB"
+        },
+        {
+          "value": 6,
+          "ko": "UD-A",
+          "en": "UD-A"
+        },
+        {
+          "value": 7,
+          "ko": "UD-B",
+          "en": "UD-B"
+        },
+        {
+          "value": 8,
+          "ko": "UD-C",
+          "en": "UD-C"
+        },
+        {
+          "value": 9,
+          "ko": "UD-D",
+          "en": "UD-D"
+        },
+        {
+          "value": 10,
+          "ko": "UD-E",
+          "en": "UD-E"
+        },
+        {
+          "value": 11,
+          "ko": "UD-F",
+          "en": "UD-F"
+        }
+      ],
+      "ref": "p.38 (PDF 36) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "40054 (0035)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터 출력 모드",
+        "en": "Counter output mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "N",
+          "en": "N"
+        },
+        {
+          "value": 1,
+          "ko": "F",
+          "en": "F"
+        },
+        {
+          "value": 2,
+          "ko": "C",
+          "en": "C"
+        },
+        {
+          "value": 3,
+          "ko": "R",
+          "en": "R"
+        },
+        {
+          "value": 4,
+          "ko": "K",
+          "en": "K"
+        },
+        {
+          "value": 5,
+          "ko": "P",
+          "en": "P"
+        },
+        {
+          "value": 6,
+          "ko": "Q",
+          "en": "Q"
+        },
+        {
+          "value": 7,
+          "ko": "A",
+          "en": "A"
+        }
+      ],
+      "ref": "p.38 (PDF 36) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 54,
+      "manualAddress": "40055 (0036)",
+      "type": "u16",
+      "name": {
+        "ko": "최대 계수 속도",
+        "en": "Max counting speed"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1 cps",
+          "en": "1 cps"
+        },
+        {
+          "value": 1,
+          "ko": "30 cps",
+          "en": "30 cps"
+        },
+        {
+          "value": 2,
+          "ko": "1 kcps",
+          "en": "1 kcps"
+        },
+        {
+          "value": 3,
+          "ko": "10 kcps",
+          "en": "10 kcps"
+        }
+      ],
+      "ref": "p.39 (PDF 37) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 56,
+      "manualAddress": "40057 (0038)",
+      "type": "u16",
+      "name": {
+        "ko": "OUT1 출력 시간",
+        "en": "OUT1 output time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 99.99
+      },
+      "description": {
+        "ko": "0 = 유지(Hold).",
+        "en": "0 = hold."
+      },
+      "ref": "p.39 (PDF 37) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 57,
+      "manualAddress": "40058 (0039)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터 소수점",
+        "en": "Counter decimal point"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 5
+      },
+      "description": {
+        "ko": "0 = 없음, 1~5 = 소수 1~5자리(4·5 는 6자리 형만).",
+        "en": "0 = none, 1-5 = 1-5 decimals (4 and 5 on 6-digit models only)."
+      },
+      "ref": "p.39 (PDF 37) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64,
+      "manualAddress": "40065 (0040)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터 백업",
+        "en": "Counter backup"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "지움",
+          "en": "Clear"
+        },
+        {
+          "value": 1,
+          "ko": "저장",
+          "en": "Save"
+        }
+      ],
+      "ref": "p.39 (PDF 37) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65,
+      "manualAddress": "40066 (0041)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터 키 잠금",
+        "en": "Counter lock"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "Lock-off",
+          "en": "Lock-off"
+        },
+        {
+          "value": 1,
+          "ko": "Lock-on",
+          "en": "Lock-on"
+        },
+        {
+          "value": 2,
+          "ko": "Lock-set",
+          "en": "Lock-set"
+        },
+        {
+          "value": 3,
+          "ko": "Lock-reset",
+          "en": "Lock-reset"
+        }
+      ],
+      "ref": "p.39 (PDF 37) 표 4 Counter Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 101,
+      "manualAddress": "40102 (0065)",
+      "type": "u16",
+      "name": {
+        "ko": "타이머 시간 범위",
+        "en": "Timer range"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "u.01s",
+          "en": "u.01s"
+        },
+        {
+          "value": 1,
+          "ko": "u.1s",
+          "en": "u.1s"
+        },
+        {
+          "value": 2,
+          "ko": "u1s",
+          "en": "u1s"
+        },
+        {
+          "value": 3,
+          "ko": "u1m",
+          "en": "u1m"
+        },
+        {
+          "value": 4,
+          "ko": "u1h",
+          "en": "u1h"
+        },
+        {
+          "value": 5,
+          "ko": "d.01s",
+          "en": "d.01s"
+        },
+        {
+          "value": 6,
+          "ko": "d.1s",
+          "en": "d.1s"
+        },
+        {
+          "value": 7,
+          "ko": "d1s",
+          "en": "d1s"
+        },
+        {
+          "value": 8,
+          "ko": "d1m",
+          "en": "d1m"
+        },
+        {
+          "value": 9,
+          "ko": "d1h",
+          "en": "d1h"
+        }
+      ],
+      "ref": "p.41 (PDF 39) 표 4 Timer Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "40103 (0066)",
+      "type": "u16",
+      "name": {
+        "ko": "타이머 진법",
+        "en": "Timer scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "10진",
+          "en": "Decimal"
+        },
+        {
+          "value": 1,
+          "ko": "60진",
+          "en": "Sexagesimal"
+        }
+      ],
+      "ref": "p.41 (PDF 39) 표 4 Timer Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "40104 (0067)",
+      "type": "u16",
+      "name": {
+        "ko": "타이머 출력 모드",
+        "en": "Timer output mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 16
+      },
+      "description": {
+        "ko": "타이머: 0 pond, 1 sond, 2 sofd, 3 sint, 4 sadd, 5 s.ond, 6 s.on1, 7 s.int, 8 s.flk, 9 s.fr, 10 s.fp, 11 s.fq. 트윈 타이머: 12 tw-pond, 13 tw-pofd, 14 tw-poft, 15 tw-s.ond, 16 tw-s.ofd (매뉴얼은 A~F·10 을 16진으로 적음).",
+        "en": "Timer: 0 pond, 1 sond, 2 sofd, 3 sint, 4 sadd, 5 s.ond, 6 s.on1, 7 s.int, 8 s.flk, 9 s.fr, 10 s.fp, 11 s.fq. Twin timer: 12 tw-pond, 13 tw-pofd, 14 tw-poft, 15 tw-s.ond, 16 tw-s.ofd (manual writes A-F and 10 in hex)."
+      },
+      "ref": "p.40 (PDF 38) 표 4 Timer Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 106,
+      "manualAddress": "40107 (006A)",
+      "type": "u16",
+      "name": {
+        "ko": "타이머 OUT 출력 시간",
+        "en": "Timer OUT output time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 99.99
+      },
+      "description": {
+        "ko": "0 = 유지(Hold).",
+        "en": "0 = hold."
+      },
+      "ref": "p.40 (PDF 38) 표 4 Timer Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 150,
+      "manualAddress": "40151 (0096)",
+      "type": "u16",
+      "name": {
+        "ko": "국번",
+        "en": "Station address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 127
+      },
+      "description": {
+        "ko": "매뉴얼 표기 1~7F(16진).",
+        "en": "Manual shows 1-7F (hex)."
+      },
+      "ref": "p.40 (PDF 38) 표 4 Communication Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 151,
+      "manualAddress": "40152 (0097)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400",
+          "en": "2400"
+        },
+        {
+          "value": 1,
+          "ko": "4800",
+          "en": "4800"
+        },
+        {
+          "value": 2,
+          "ko": "9600",
+          "en": "9600"
+        },
+        {
+          "value": 3,
+          "ko": "19200",
+          "en": "19200"
+        },
+        {
+          "value": 4,
+          "ko": "38400",
+          "en": "38400"
+        }
+      ],
+      "ref": "p.40 (PDF 38) 표 4 Communication Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 152,
+      "manualAddress": "40153 (0098)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "홀수",
+          "en": "Odd"
+        },
+        {
+          "value": 2,
+          "ko": "짝수",
+          "en": "Even"
+        }
+      ],
+      "ref": "p.40 (PDF 38) 표 4 Communication Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 154,
+      "manualAddress": "40155 (009A)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간",
+        "en": "Response wait time"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "p.40 (PDF 38) 표 4 Communication Setting"
+    },
+    {
+      "table": "holding-registers",
+      "address": 155,
+      "manualAddress": "40156 (009B)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기 금지",
+        "en": "Communication write inhibit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "켬",
+          "en": "On"
+        }
+      ],
+      "description": {
+        "ko": "켜져 있으면 통신 쓰기가 거부된다(초기값 ON, p.31).",
+        "en": "When on, communication writes are rejected (default ON, p.31)."
+      },
+      "ref": "p.40 (PDF 38) 표 4 Communication Setting"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "32비트 값(배치 PV·PV·SV1·SV2·배치 SV)은 연속 레지스터 2개를 쓰지만 매뉴얼에 상·하위 워드 순서가 적혀 있지 않다. order 를 넣지 않았으니 실제 기기로 확인하고 쓴다.",
+      "en": "32-bit values (batch PV, PV, SV1, SV2, batch SV) span two registers, but the manual does not state word order. No order given — verify on a device."
+    },
+    {
+      "ko": "통신 기능은 형번의 보조 출력 자리가 'C'(RS485 MODBUS-RTU)인 모델만 있다(선택 가이드 p.10~11).",
+      "en": "Communication is only on models whose auxiliary-output code is 'C' (selection guide p.10-11)."
+    },
+    {
+      "ko": "32비트 값(31002 배치 현재값, 31004 현재값(PV), 40001 설정값 2 (SV2), 40003 설정값 1 (SV1), 40005 배치 설정값)은 매뉴얼에 워드 순서가 없어 넣지 않았다 — 실기로 순서를 확인한 뒤 쓴다.",
+      "en": "32-bit values (31002 Batch PV, 31004 Present value (PV), 40001 Set value 2 (SV2), 40003 Set value 1 (SV1), 40005 Batch SV) are left out because the manual does not state the word order — confirm it on a real unit first."
+    }
+  ],
+  "sources": [
+    {
+      "title": "LC SERIES USER MANUAL",
+      "publisher": "HANYOUNG NUX",
+      "edition": "MD0901E260602_U (파일명 LC_user_en_260720)",
+      "url": "https://www.hanyoungnux.com/data/main_view.php?down=1699(LC_user_en_260720).pdf&file_name=LC.pdf",
+      "pages": "p.12 사양, p.30~41 통신 (PDF 쪽 = 인쇄 쪽 - 2)",
+      "checked": "2026-10-19"
+    }
+  ]
+}

@@ -54,6 +54,8 @@ import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
+import { DeviceDialog, JOIN_GAP, type DeviceApplyOpts } from "@shared/DeviceDialog";
+import { deviceName, pollGroups, serialDefaults, type Device } from "@shared/devices";
 import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
@@ -647,6 +649,32 @@ export default function App() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  // ---- 장비 프로필(내장 레지스터 맵) — 함수 코드별로 이어진 칸을 표 하나로, 국번은 장비 기본값
+  const [showDevice, setShowDevice] = useState(false);
+  function applyDevice(d: Device, o: DeviceApplyOpts) {
+    const groups = pollGroups(d, lang, o.joinGaps ? JOIN_GAP : 0);
+    if (!groups.length) return;
+    let list = tables;
+    const added: PollTable[] = [];
+    for (const g of groups) {
+      const nt = newTable(list, { name: g.name, unit: d.comm.unit ?? 1, fc: g.fc, start: g.start, qty: g.qty, points: isBitFc(g.fc) ? [] : g.points });
+      list = [...list, nt];
+      added.push(nt);
+    }
+    setTables(list);
+    setSelId(added[0].id);
+    setSelAddr(null);
+    setShowDevice(false);
+    const msgs = [fill(t("devLoaded"), { a: deviceName(d, lang), n: added.length })];
+    const sd = serialDefaults(d);
+    if (o.comm && Object.keys(sd).length) {
+      const next = { ...cfg, ...sd };
+      setCfg(next);
+      msgs.push(fill(t("devCommSet"), { a: `${next.baud} ${next.dataBits}${next.parity === "odd" ? "O" : next.parity === "even" ? "E" : "N"}${next.stopBits}` }));
+    }
+    toast.show(msgs.join(" · "), { ms: 6000 });
   }
 
   // ---- 추세
@@ -1265,6 +1293,9 @@ export default function App() {
           <button className="btn small" onClick={importTable} data-tip={tip(lang, "mmImportCsv")}>
             {t("importCsv")}
           </button>
+          <button className="btn small" onClick={() => setShowDevice(true)} data-tip={tip(lang, "mmDevice")}>
+            {t("devProfile")}
+          </button>
         </div>
         <div className="tstat">
           {lastLine}
@@ -1383,6 +1414,7 @@ export default function App() {
           onClose={() => setShowScan(false)}
         />
       )}
+      {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />

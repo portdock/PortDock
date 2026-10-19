@@ -1,4 +1,4 @@
-# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 모든 앱(9개) 화면 빌드(타입 검사 포함), 공용 시험, 사이트 빌드, 제3자 고지 최신 여부.
+# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 모든 앱(9개) 화면 빌드(타입 검사 포함), 공용 시험, 장비 레지스터 맵 검사, 사이트 빌드, 제3자 고지 최신 여부.
 # 실제 장비가 필요한 실기 점검은 docs/test-plan.md, 화면 자동 조작 점검은 e2e/README.md (로컬).
 name: ci
 
@@ -47,8 +47,10 @@ jobs:
           }
 
       - name: 공용 화면 시험 (node --test)
-        run: node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts"
+        run: node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"
 
+      - name: 장비 레지스터 맵 검사 (data/devices)
+        run: node tools/devices-check.mjs
 
       - name: Rust 정적 검사 (clippy, 경고 = 실패)
         run: cargo clippy --workspace --all-targets -- -D warnings

@@ -1,0 +1,793 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "ls-electric/gimac1000",
+  "manufacturer": {
+    "ko": "LS ELECTRIC",
+    "en": "LS ELECTRIC"
+  },
+  "model": "GIMAC1000",
+  "kind": "power-meter",
+  "title": {
+    "ko": "LS ELECTRIC GIMAC1000 디지털 전력 계측장치",
+    "en": "LS ELECTRIC GIMAC1000 digital power measuring device"
+  },
+  "summary": {
+    "ko": "계측값은 input register(FC04)에 Float32(실제 단위), 장치 정보는 holding register(FC03) 문자열, 리셋은 coil(FC05). 32비트 워드 순서는 Swap 설정에 따라 바뀐다.",
+    "en": "Measurements in input registers (FC04) as Float32 engineering units, device info as strings in holding registers (FC03), resets as coils (FC05). 32-bit word order depends on the Swap setting."
+  },
+  "protocols": [
+    "rtu",
+    "tcp"
+  ],
+  "comm": {
+    "baud": 38400,
+    "bauds": [
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 124,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "맵은 REGISTER(30001·40001 꼴)와 ADDRESS(0 기준) 칸을 함께 적는다 — address 는 ADDRESS 칸 그대로 (map p.1, p.6). 예: 30001 ↔ 0, 40038 ↔ 37, coil 1 ↔ 0 (map p.15 프레임 예).",
+        "en": "Map gives both REGISTER (30001/40001 style) and ADDRESS (0-based) columns; address here is the ADDRESS column (map p.1, p.6). E.g. 30001 ↔ 0, 40038 ↔ 37, coil 1 ↔ 0 (map p.15 frame examples)."
+      },
+      {
+        "ko": "출하값: 국번 1, 38400 bps (map p.6 41008·41009, 사용설명서 p.33 Table6). 패리티 없음만 지원, 1 start + 8 data + 1 stop (map p.12).",
+        "en": "Defaults: unit 1, 38400 bps (map p.6 41008/41009, user manual p.33 Table 6). Only no parity supported, 1 start + 8 data + 1 stop (map p.12)."
+      },
+      {
+        "ko": "워드 순서: Swap NO = 상위 워드 먼저(ABCD, 100.0 → 42 C8 00 00), Swap YES = 워드 바꿈(CDAB, 00 00 42 C8) (사용설명서 p.42). 출하 Swap 값은 문서끼리 다르다 — 맵 p.6(41009)은 1(NO), 사용설명서 p.33·p.42 는 YES(On). 그래서 order 를 적지 않았다 — 31008 상위 바이트(1=끔, 2=켬)를 읽거나 장치 'S' 설정으로 확인.",
+        "en": "Word order: Swap NO = high word first (ABCD, 100.0 → 42 C8 00 00); Swap YES = word-swapped (CDAB, 00 00 42 C8) (user manual p.42). Factory default conflicts: map p.6 (41009) says 1 (NO), user manual p.33/p.42 says YES (On). So order is left out — read 31008 high byte (1 = off, 2 = on) or check the 'S' setting."
+      },
+      {
+        "ko": "Ethernet(TCP)은 별도 'TCP SWAP' 설정(출하 On)이 있다 (사용설명서 p.33, 맵 p.6 41022). TCP 포트 번호는 문서에 없다.",
+        "en": "Ethernet (TCP) has a separate 'TCP SWAP' setting (default On) (user manual p.33, map p.6 41022). TCP port number is not stated."
+      },
+      {
+        "ko": "한 번에 최대 124 레지스터(03h·04h), 연속 주소에서만 (map p.16).",
+        "en": "Up to 124 registers per read (03h/04h), contiguous only (map p.16)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "1",
+      "type": "bit",
+      "name": {
+        "ko": "유효전력량 리셋",
+        "en": "Wh reset"
+      },
+      "access": "w",
+      "fc": [
+        5
+      ],
+      "description": {
+        "ko": "ON(0xFF00) 만 쓸 수 있음 (F001)",
+        "en": "Only ON (0xFF00) accepted (F001)"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "coils",
+      "address": 2000,
+      "manualAddress": "2001",
+      "type": "bit",
+      "name": {
+        "ko": "전체 데이터 리셋",
+        "en": "All data reset"
+      },
+      "access": "w",
+      "fc": [
+        5
+      ],
+      "description": {
+        "ko": "ON(0xFF00) 만 쓸 수 있음 (F001)",
+        "en": "Only ON (0xFF00) accepted (F001)"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "30001",
+      "type": "f32",
+      "name": {
+        "ko": "평균 전압",
+        "en": "Average voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "30003",
+      "type": "f32",
+      "name": {
+        "ko": "평균 전류",
+        "en": "Average current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "30005",
+      "type": "f32",
+      "name": {
+        "ko": "A상 전류",
+        "en": "Phase A current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "30007",
+      "type": "f32",
+      "name": {
+        "ko": "B상 전류",
+        "en": "Phase B current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 8,
+      "manualAddress": "30009",
+      "type": "f32",
+      "name": {
+        "ko": "C상 전류",
+        "en": "Phase C current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 10,
+      "manualAddress": "30011",
+      "type": "f32",
+      "name": {
+        "ko": "A-N 상전압",
+        "en": "Voltage A-N"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "30013",
+      "type": "f32",
+      "name": {
+        "ko": "B-N 상전압",
+        "en": "Voltage B-N"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "30015",
+      "type": "f32",
+      "name": {
+        "ko": "C-N 상전압",
+        "en": "Voltage C-N"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "30017",
+      "type": "f32",
+      "name": {
+        "ko": "A-B 선간전압",
+        "en": "Voltage A-B"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 18,
+      "manualAddress": "30019",
+      "type": "f32",
+      "name": {
+        "ko": "B-C 선간전압",
+        "en": "Voltage B-C"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 20,
+      "manualAddress": "30021",
+      "type": "f32",
+      "name": {
+        "ko": "C-A 선간전압",
+        "en": "Voltage C-A"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 22,
+      "manualAddress": "30023",
+      "type": "f32",
+      "name": {
+        "ko": "역률",
+        "en": "Power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "음수 = 진상(Lead)",
+        "en": "Negative means lead"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 24,
+      "manualAddress": "30025",
+      "type": "f32",
+      "name": {
+        "ko": "총 유효전력",
+        "en": "Total active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 26,
+      "manualAddress": "30027",
+      "type": "f32",
+      "name": {
+        "ko": "총 무효전력",
+        "en": "Total reactive power"
+      },
+      "unit": "Var",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 28,
+      "manualAddress": "30029",
+      "type": "f32",
+      "name": {
+        "ko": "총 피상전력",
+        "en": "Total apparent power"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 30,
+      "manualAddress": "30031",
+      "type": "f32",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 32,
+      "manualAddress": "30033",
+      "type": "f32",
+      "name": {
+        "ko": "유효전력량",
+        "en": "Active energy"
+      },
+      "unit": "Wh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "Giga 카운터(30531)를 더해 읽어야 한다고만 적혀 있음 — 더하는 배율은 매뉴얼에 없음",
+        "en": "Manual says to add the Giga counter (30531); its weight is not stated"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 34,
+      "manualAddress": "30035",
+      "type": "f32",
+      "name": {
+        "ko": "무효전력량",
+        "en": "Reactive energy"
+      },
+      "unit": "Varh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "Giga 카운터(30532)를 더해 읽음 — 배율 명시 없음",
+        "en": "Add Giga counter (30532); weight not stated"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 36,
+      "manualAddress": "30037",
+      "type": "f32",
+      "name": {
+        "ko": "피상전력량",
+        "en": "Apparent energy"
+      },
+      "unit": "VAh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "Giga 카운터(30533)를 더해 읽음 — 배율 명시 없음",
+        "en": "Add Giga counter (30533); weight not stated"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 44,
+      "manualAddress": "30045",
+      "type": "f32",
+      "name": {
+        "ko": "역방향 유효전력량",
+        "en": "Reverse active energy"
+      },
+      "unit": "Wh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만. Giga 카운터(30534)를 더해 읽음",
+        "en": "EX model only. Add Giga counter (30534)"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 48,
+      "manualAddress": "30049",
+      "type": "f32",
+      "name": {
+        "ko": "A상 유효전력",
+        "en": "Phase A active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만 지원",
+        "en": "EX model only"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 50,
+      "manualAddress": "30051",
+      "type": "f32",
+      "name": {
+        "ko": "B상 유효전력",
+        "en": "Phase B active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만 지원",
+        "en": "EX model only"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 52,
+      "manualAddress": "30053",
+      "type": "f32",
+      "name": {
+        "ko": "C상 유효전력",
+        "en": "Phase C active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만 지원",
+        "en": "EX model only"
+      },
+      "ref": "map p.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 78,
+      "manualAddress": "30079",
+      "type": "f32",
+      "name": {
+        "ko": "A상 역률",
+        "en": "Phase A power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만. 음수 = 진상",
+        "en": "EX model only. Negative = lead"
+      },
+      "ref": "map p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 80,
+      "manualAddress": "30081",
+      "type": "f32",
+      "name": {
+        "ko": "B상 역률",
+        "en": "Phase B power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만. 음수 = 진상",
+        "en": "EX model only. Negative = lead"
+      },
+      "ref": "map p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 82,
+      "manualAddress": "30083",
+      "type": "f32",
+      "name": {
+        "ko": "C상 역률",
+        "en": "Phase C power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만. 음수 = 진상",
+        "en": "EX model only. Negative = lead"
+      },
+      "ref": "map p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 110,
+      "manualAddress": "30111",
+      "type": "f32",
+      "name": {
+        "ko": "전력 디맨드",
+        "en": "Power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "EX 모델만 지원",
+        "en": "EX model only"
+      },
+      "ref": "map p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 530,
+      "manualAddress": "30531",
+      "type": "u16",
+      "name": {
+        "ko": "유효전력량 Giga 카운터",
+        "en": "Active energy Giga counter"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "범위 0-999",
+        "en": "Range 0-999"
+      },
+      "ref": "map p.5"
+    },
+    {
+      "table": "input-registers",
+      "address": 531,
+      "manualAddress": "30532",
+      "type": "u16",
+      "name": {
+        "ko": "무효전력량 Giga 카운터",
+        "en": "Reactive energy Giga counter"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "범위 0-999",
+        "en": "Range 0-999"
+      },
+      "ref": "map p.6"
+    },
+    {
+      "table": "input-registers",
+      "address": 532,
+      "manualAddress": "30533",
+      "type": "u16",
+      "name": {
+        "ko": "피상전력량 Giga 카운터",
+        "en": "Apparent energy Giga counter"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "범위 0-999",
+        "en": "Range 0-999"
+      },
+      "ref": "map p.6"
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "31001",
+      "type": "u16",
+      "name": {
+        "ko": "결선 방식",
+        "en": "Wiring connection"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "1P2W",
+          "en": "1P2W"
+        },
+        {
+          "value": 2,
+          "ko": "1P3W",
+          "en": "1P3W"
+        },
+        {
+          "value": 3,
+          "ko": "3P3W 오픈 델타",
+          "en": "3P3W open delta"
+        },
+        {
+          "value": 4,
+          "ko": "3P3W Y",
+          "en": "3P3W Y"
+        },
+        {
+          "value": 5,
+          "ko": "3P4W",
+          "en": "3P4W"
+        }
+      ],
+      "ref": "map p.6, p.7 F219"
+    },
+    {
+      "table": "input-registers",
+      "address": 1007,
+      "manualAddress": "31008",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 속도·Swap 설정",
+        "en": "RS-485 speed / swap"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "상위 바이트 = Swap(1 사용 안 함, 2 사용), 하위 바이트 = 속도(1 9600, 2 19200, 3 38400). Swap 이 켜져 있으면 32비트 값의 워드 순서가 바뀐다",
+        "en": "High byte = swap (1 disabled, 2 enabled); low byte = baud (1 9600, 2 19200, 3 38400). With swap enabled 32-bit words are exchanged"
+      },
+      "ref": "map p.6, p.7 F218"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "40001",
+      "type": "string",
+      "len": 32,
+      "name": {
+        "ko": "제조사 이름",
+        "en": "Manufacturer name"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "\"LSELECTRIC\". 40000 번대는 Swap 적용 안 됨",
+        "en": "\"LSELECTRIC\". Swap not applied to 4xxxx"
+      },
+      "ref": "map p.6"
+    },
+    {
+      "table": "holding-registers",
+      "address": 37,
+      "manualAddress": "40038",
+      "type": "string",
+      "len": 32,
+      "name": {
+        "ko": "제품 이름",
+        "en": "Product name"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "\"GIMAC1000\"",
+        "en": "\"GIMAC1000\""
+      },
+      "ref": "map p.6"
+    },
+    {
+      "table": "holding-registers",
+      "address": 75,
+      "manualAddress": "40076",
+      "type": "string",
+      "len": 10,
+      "name": {
+        "ko": "소프트웨어 버전",
+        "en": "Software version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "예 \"01.00.00\"",
+        "en": "e.g. \"01.00.00\""
+      },
+      "ref": "map p.6"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "모든 계측값은 PT/CT 비가 반영된 실제 단위의 Float32(F004) — 단위는 W·var·VA·Wh(k 아님)에 주의.",
+      "en": "Measurements are Float32 (F004) in engineering units after PT/CT ratio; note units are W, var, VA, Wh (not k-)."
+    },
+    {
+      "ko": "상별 전력·상별 역률·디맨드 등 일부는 EX 모델만 지원 (map Remark 칸).",
+      "en": "Per-phase power/PF, demand etc. are EX model only (map Remark column)."
+    },
+    {
+      "ko": "맵에 함수 코드 칸은 없다 — 표 종류(3xxxx=FC04, 4xxxx=FC03, F001 리셋=FC05 ON 만)는 map p.15-16 프레임 예와 F001 설명(p.7)으로 판단했다.",
+      "en": "The map has no function-code column; FC per table (3xxxx = FC04, 4xxxx = FC03, F001 resets = FC05 ON only) follows the frame examples (map p.15-16) and F001 (p.7)."
+    },
+    {
+      "ko": "map p.6 의 31001-31010 과 41001-41023 설정값은 R 로만 표기 — 통신으로 설정을 쓰는 방법은 이 맵에 없다.",
+      "en": "Settings at 31001-31010 and 41001-41023 are marked R only (map p.6); writing settings over Modbus is not described."
+    }
+  ],
+  "sources": [
+    {
+      "title": "GIMAC1000 MODBUS MAP",
+      "publisher": "LS ELECTRIC",
+      "edition": "Tech Data EN 2024-02 (파일명 [GIMAC1000] Modbus Map_Tech Data_EN_202402.pdf, 등록 2024-04-02)",
+      "url": "https://www.ls-electric.com/ko/cat/HPDT/%5BGIMAC1000%5D%20Modbus%20Map_Tech%20Data_EN_202402.pdf",
+      "pages": "PDF p.1-8 맵·형식, p.12-16 RTU, p.17-21 TCP (인쇄 쪽 번호 없음)",
+      "checked": "2026-10-19"
+    },
+    {
+      "title": "Digital Power Measuring Device GIMAC1000 User's Manual",
+      "publisher": "LS ELECTRIC",
+      "edition": "EN 2023-03 (파일명 [GIMAC1000] User Manual EN_Manual_EN_202303.pdf)",
+      "url": "https://www.ls-electric.com/ko/cat/HPDT/%5BGIMAC1000%5D%20User%20Manual%20EN_Manual_EN_202303.pdf",
+      "pages": "p.33 Table6 설정 메뉴(출하값), p.41-42 통신 속도·SWAP",
+      "checked": "2026-10-19"
+    }
+  ]
+}

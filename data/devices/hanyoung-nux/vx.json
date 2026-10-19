@@ -1,0 +1,1244 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "hanyoung-nux/vx",
+  "manufacturer": {
+    "ko": "한영넉스",
+    "en": "Hanyoung Nux"
+  },
+  "model": "VX Series",
+  "models": [
+    "VX2",
+    "VX4",
+    "VX7",
+    "VX9"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "한영넉스 VX 시리즈 온도 조절기",
+    "en": "Hanyoung Nux VX series temperature controller"
+  },
+  "summary": {
+    "ko": "RS485 2선식. Modbus RTU/ASCII 에서 D-레지스터를 FC 03/06/16 으로 읽고 쓴다. 온도 값의 소수점은 DP-P 에 따른다.",
+    "en": "RS485 2-wire. Modbus RTU/ASCII access to D-registers with FC 03/06/16. Temperature decimals follow DP-P."
+  },
+  "protocols": [
+    "rtu",
+    "ascii"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      4800,
+      9600,
+      14400,
+      19200,
+      38400,
+      57600
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "maxRegisters": 31,
+    "notes": [
+      {
+        "ko": "통신선 주소 = 매뉴얼 맵의 «D-register» 열(0 기준). 같은 표의 «Address» 열은 1 큰 1 기준 번호다. 근거: p.30~36(PDF 31~37) 프레임 예에서 SV-1(D-register 103)을 0x0067 로 보냄, p.93(PDF 94) 맵에서 SV-1 = Address 104 / D-register 103.",
+        "en": "Wire address = the map's 'D-register' column (0-based). The 'Address' column is 1-based (one higher). Evidence: frame examples p.30-36 (PDF 31-37) send SV-1 (D-register 103) as 0x0067; map p.93 (PDF 94) lists SV-1 as Address 104 / D-register 103."
+      },
+      {
+        "ko": "공장 초기값: 프로토콜 PRS = 0(PC Link STD) — Modbus RTU 로 쓰려면 PRS 를 3 으로 바꿔야 한다. 속도 9600(BPS=1), 패리티 없음, 스톱 1, 데이터 8, 주소 1, 응답 지연 0 (p.103~104, PDF 104~105 G.COM 초기값 열).",
+        "en": "Factory defaults: protocol PRS = 0 (PC Link STD) — set PRS = 3 for Modbus RTU. 9600 bps (BPS=1), no parity, 1 stop, 8 data, address 1, response delay 0 (p.103-104, PDF 104-105, G.COM default column)."
+      },
+      {
+        "ko": "FC 03 은 한 번에 최대 31개, FC 16 은 최대 32개(p.29·p.35). FC 08(루프백 진단)도 지원. 주소 0 은 브로드캐스트(응답 없음). Modbus ASCII 는 7비트, RTU 는 8비트로 동작(p.28).",
+        "en": "FC 03 reads up to 31 registers, FC 16 writes up to 32 (p.29, p.35). FC 08 loopback diagnostics also supported. Address 0 = broadcast (no reply). ASCII runs 7-bit, RTU 8-bit (p.28)."
+      },
+      {
+        "ko": "p.38 에는 LS·미쓰비시 PLC 에서 «D 를 4 로 바꿔 40103» 처럼 쓰라는 설명이 있다. 이는 PLC 쪽 표기 안내이고, 통신선 주소는 위 프레임 예를 따른다.",
+        "en": "p.38 tells LS/Mitsubishi PLC users to write D0103 as 40103. That is a host-side notation hint; the wire address follows the frame examples above."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "D-register 0 (0000h) / Address 1",
+      "type": "s16",
+      "name": {
+        "ko": "현재 온도(PV)",
+        "en": "Present value (PV)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "CPV. 소수점은 DP-P(D3·D904)에 따른다 — 입력 종류에 따라 달라지므로 scale 없음. 표시 범위 EU -5.0~105.0 %.",
+        "en": "CPV. Decimal places follow DP-P (D3/D904), which depends on input type, so no fixed scale. Range EU -5.0 to 105.0 %."
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "D-register 1 (0001h) / Address 2",
+      "type": "s16",
+      "name": {
+        "ko": "현재 설정 온도(SV)",
+        "en": "Current set value (SV)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "CSV. 소수점은 DP-P 에 따른다. 범위 SV-L~SV-H.",
+        "en": "CSV. Decimals follow DP-P. Range SV-L to SV-H."
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "D-register 2 (0002h) / Address 3",
+      "type": "s16",
+      "name": {
+        "ko": "최종 설정 온도",
+        "en": "Target SV (final)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "TSV. 소수점은 DP-P 에 따른다.",
+        "en": "TSV. Decimals follow DP-P."
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "D-register 3 (0003h) / Address 4",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치",
+        "en": "Decimal point position"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 3
+      },
+      "description": {
+        "ko": "DP-P(읽기용). 온도 값 레지스터의 소수 자릿수. 설정은 D904.",
+        "en": "DP-P (read copy). Number of decimals for temperature values. Set via D904."
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "D-register 4 (0004h) / Address 5",
+      "type": "u16",
+      "name": {
+        "ko": "단위",
+        "en": "Unit"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        },
+        {
+          "value": 2,
+          "ko": "%",
+          "en": "%"
+        },
+        {
+          "value": 3,
+          "ko": "무단위",
+          "en": "none"
+        }
+      ],
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "D-register 5 (0005h) / Address 6",
+      "type": "s16",
+      "name": {
+        "ko": "출력량(MV)",
+        "en": "Output (MV)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -5.0,
+        "max": 105.0
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "D-register 6 (0006h) / Address 7",
+      "type": "s16",
+      "name": {
+        "ko": "가열 출력량",
+        "en": "Heating output (OUT1)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "일반형 -5.0~105.0 %, 가열/냉각형 0.0~105.0 %.",
+        "en": "Standard: -5.0 to 105.0 %; heat/cool type: 0.0 to 105.0 %."
+      },
+      "ref": "p.90 (PDF 91) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "D-register 9 (0009h) / Address 10",
+      "type": "u16",
+      "name": {
+        "ko": "현재 SV 번호",
+        "en": "Active SV number"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 1,
+        "max": 4
+      },
+      "description": {
+        "ko": "1~3: SV-1~SV-3, 4: SV-4(리모트 사용 시 REM 포함).",
+        "en": "1-3: SV-1 to SV-3; 4: SV-4 (includes REM when remote enabled)."
+      },
+      "ref": "p.91 (PDF 92) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "D-register 10 (000Ah) / Address 11",
+      "type": "u16",
+      "name": {
+        "ko": "현재 상태",
+        "en": "Status (NOW_STS)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "0 정지(모니터링) / 1 운전",
+          "en": "0 stop (monitor) / 1 run"
+        },
+        {
+          "bit": 1,
+          "ko": "1 오토튜닝 중",
+          "en": "1 auto-tuning"
+        },
+        {
+          "bit": 2,
+          "ko": "0 자동 출력 / 1 수동 출력",
+          "en": "0 auto output / 1 manual output"
+        },
+        {
+          "bit": 3,
+          "ko": "0 SV 번호 사용 / 1 리모트(REM) 사용",
+          "en": "0 SV.NO / 1 remote (REM)"
+        },
+        {
+          "bit": 4,
+          "ko": "1 램프 사용",
+          "en": "1 ramp in use"
+        },
+        {
+          "bit": 5,
+          "ko": "0 가열 제어 / 1 가열·냉각 제어",
+          "en": "0 heating / 1 heat-cool"
+        },
+        {
+          "bit": 7,
+          "ko": "1 잠금 설정",
+          "en": "1 locked"
+        }
+      ],
+      "ref": "p.91 (PDF 92), p.112 (PDF 113) 6.3 BIT Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "D-register 11 (000Bh) / Address 12",
+      "type": "u16",
+      "name": {
+        "ko": "에러 상태",
+        "en": "Error status (ERR_STS)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 5,
+          "ko": "PV -OVER",
+          "en": "PV under-range (-OVER)"
+        },
+        {
+          "bit": 6,
+          "ko": "PV +OVER",
+          "en": "PV over-range (+OVER)"
+        },
+        {
+          "bit": 7,
+          "ko": "번아웃(단선)",
+          "en": "Burn-out"
+        },
+        {
+          "bit": 8,
+          "ko": "통신 오류",
+          "en": "Communication error"
+        },
+        {
+          "bit": 9,
+          "ko": "오토튜닝 오류",
+          "en": "Auto-tuning error"
+        },
+        {
+          "bit": 10,
+          "ko": "RJC 오류",
+          "en": "RJC error"
+        },
+        {
+          "bit": 11,
+          "ko": "교정 오류",
+          "en": "Calibration error"
+        },
+        {
+          "bit": 12,
+          "ko": "ADC 오류",
+          "en": "ADC error"
+        },
+        {
+          "bit": 13,
+          "ko": "EEPROM 오류",
+          "en": "EEPROM error"
+        },
+        {
+          "bit": 14,
+          "ko": "옵션 코드 오류",
+          "en": "Option code error"
+        },
+        {
+          "bit": 15,
+          "ko": "시스템 코드 오류",
+          "en": "System code error"
+        }
+      ],
+      "ref": "p.91 (PDF 92), p.113 (PDF 114)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "D-register 12 (000Ch) / Address 13",
+      "type": "u16",
+      "name": {
+        "ko": "보조 출력 상태",
+        "en": "Sub output status (SUB_STS)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "SUB1 출력",
+          "en": "SUB1 on"
+        },
+        {
+          "bit": 1,
+          "ko": "SUB2 출력",
+          "en": "SUB2 on"
+        },
+        {
+          "bit": 2,
+          "ko": "SUB3 출력",
+          "en": "SUB3 on"
+        },
+        {
+          "bit": 3,
+          "ko": "SUB4 출력",
+          "en": "SUB4 on"
+        }
+      ],
+      "ref": "p.91 (PDF 92), p.113 (PDF 114)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "D-register 13 (000Dh) / Address 14",
+      "type": "u16",
+      "name": {
+        "ko": "경보 상태",
+        "en": "Alarm status (ALM_STS)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "경보 1",
+          "en": "Alarm 1"
+        },
+        {
+          "bit": 1,
+          "ko": "경보 2",
+          "en": "Alarm 2"
+        },
+        {
+          "bit": 2,
+          "ko": "경보 3",
+          "en": "Alarm 3"
+        },
+        {
+          "bit": 3,
+          "ko": "경보 4",
+          "en": "Alarm 4"
+        },
+        {
+          "bit": 9,
+          "ko": "루프 단선 경보(LBA)",
+          "en": "Loop break alarm (LBA)"
+        },
+        {
+          "bit": 10,
+          "ko": "히터 단선 경보(HBA)",
+          "en": "Heater break alarm (HBA)"
+        }
+      ],
+      "ref": "p.91 (PDF 92), p.114 (PDF 115)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "D-register 14 (000Eh) / Address 15",
+      "type": "u16",
+      "name": {
+        "ko": "DI 상태",
+        "en": "Digital input status (DI_STS)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DI1 입력",
+          "en": "DI1 on"
+        },
+        {
+          "bit": 1,
+          "ko": "DI2 입력",
+          "en": "DI2 on"
+        },
+        {
+          "bit": 2,
+          "ko": "DI3 입력",
+          "en": "DI3 on"
+        },
+        {
+          "bit": 3,
+          "ko": "DI4 입력",
+          "en": "DI4 on"
+        }
+      ],
+      "ref": "p.91 (PDF 92), p.114 (PDF 115)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "D-register 15 (000Fh) / Address 16",
+      "type": "u16",
+      "name": {
+        "ko": "CT1 전류",
+        "en": "CT1 current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0.0,
+        "max": 55.0
+      },
+      "ref": "p.91 (PDF 92) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "D-register 17 (0011h) / Address 18",
+      "type": "u16",
+      "name": {
+        "ko": "운전/정지 상태",
+        "en": "Run/stop state"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 1,
+          "ko": "운전",
+          "en": "Run"
+        }
+      ],
+      "ref": "p.91 (PDF 92) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 31,
+      "manualAddress": "D-register 31 (001Fh) / Address 32",
+      "type": "u16",
+      "name": {
+        "ko": "자동/수동 전환",
+        "en": "Auto/manual select"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "자동 출력",
+          "en": "Auto"
+        },
+        {
+          "value": 1,
+          "ko": "수동 출력",
+          "en": "Manual"
+        }
+      ],
+      "ref": "p.91 (PDF 92) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 32,
+      "manualAddress": "D-register 32 (0020h) / Address 33",
+      "type": "s16",
+      "name": {
+        "ko": "수동 출력량 입력",
+        "en": "Manual MV input"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -5.0,
+        "max": 105.0
+      },
+      "description": {
+        "ko": "원시 값 -50~1050. (매뉴얼 괄호 안 범위는 «-50.0~105.0 %» 로 적혀 있어 원시 값과 어긋남 — 원시 값 기준으로 적음.)",
+        "en": "Raw -50 to 1050. (The manual's bracketed range reads '-50.0 to 105.0 %', inconsistent with the raw range; raw range used.)"
+      },
+      "ref": "p.92 (PDF 93) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 33,
+      "manualAddress": "D-register 33 (0021h) / Address 34",
+      "type": "u16",
+      "name": {
+        "ko": "운전/정지 명령",
+        "en": "Run/stop command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 1,
+          "ko": "운전",
+          "en": "Run"
+        }
+      ],
+      "ref": "p.92 (PDF 93) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 45,
+      "manualAddress": "D-register 45 (002Dh) / Address 46",
+      "type": "u16",
+      "name": {
+        "ko": "펌웨어 버전",
+        "en": "Firmware version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "맵의 소수점 열이 2 — 소수 둘째 자리까지로 읽는 것으로 보임(예시 값은 매뉴얼에 없음).",
+        "en": "Map decimal column is 2 (two decimals implied; no example given)."
+      },
+      "ref": "p.92 (PDF 93) 6.1 Process"
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "D-register 100 (0064h) / Address 101",
+      "type": "u16",
+      "name": {
+        "ko": "SV 번호 선택",
+        "en": "SV number select"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 4
+      },
+      "ref": "p.93 (PDF 94) G.SV"
+    },
+    {
+      "table": "holding-registers",
+      "address": 101,
+      "manualAddress": "D-register 101 (0065h) / Address 102",
+      "type": "s16",
+      "name": {
+        "ko": "SV 상한",
+        "en": "SV high limit (SV-H)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P. EU 0.0~100.0 %, SV-L < SV-H.",
+        "en": "Decimals per DP-P. EU 0.0-100.0 %, SV-L < SV-H."
+      },
+      "ref": "p.93 (PDF 94) G.SV"
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "D-register 102 (0066h) / Address 103",
+      "type": "s16",
+      "name": {
+        "ko": "SV 하한",
+        "en": "SV low limit (SV-L)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P.",
+        "en": "Decimals per DP-P."
+      },
+      "ref": "p.93 (PDF 94) G.SV"
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "D-register 103 (0067h) / Address 104",
+      "type": "s16",
+      "name": {
+        "ko": "설정값 1 (SV-1)",
+        "en": "Set value 1 (SV-1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P(예 DP-P=1 이면 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H.",
+        "en": "Decimals per DP-P (e.g. DP-P=1: 1000 → 100.0). SV-L ≤ SV-1 ≤ SV-H."
+      },
+      "ref": "p.93 (PDF 94) G.SV; 프레임 예 p.30~36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 104,
+      "manualAddress": "D-register 104 (0068h) / Address 105",
+      "type": "s16",
+      "name": {
+        "ko": "설정값 2 (SV-2)",
+        "en": "Set value 2 (SV-2)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P.",
+        "en": "Decimals per DP-P."
+      },
+      "ref": "p.93 (PDF 94) G.SV"
+    },
+    {
+      "table": "holding-registers",
+      "address": 207,
+      "manualAddress": "D-register 207 (00CFh) / Address 208",
+      "type": "u16",
+      "name": {
+        "ko": "오토튜닝",
+        "en": "Auto-tuning"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "켬(실행)",
+          "en": "On (start)"
+        }
+      ],
+      "ref": "p.94 (PDF 95) G.CTL"
+    },
+    {
+      "table": "holding-registers",
+      "address": 210,
+      "manualAddress": "D-register 210 (00D2h) / Address 211",
+      "type": "s16",
+      "name": {
+        "ko": "비례대 1 (가열)",
+        "en": "Proportional band 1 (heat)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "1.P. 온도 단위 값이며 소수점은 DP-P. EUS 0.0~100.0 %, 초기 EUS 5.0 %.",
+        "en": "1.P. In engineering units, decimals per DP-P. EUS 0.0-100.0 %, default EUS 5.0 %."
+      },
+      "ref": "p.94 (PDF 95) G.CTL"
+    },
+    {
+      "table": "holding-registers",
+      "address": 211,
+      "manualAddress": "D-register 211 (00D3h) / Address 212",
+      "type": "u16",
+      "name": {
+        "ko": "적분 시간 1 (가열)",
+        "en": "Integral time 1 (heat)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 6000
+      },
+      "description": {
+        "ko": "0 = 끔. 초기 240.",
+        "en": "0 = off. Default 240."
+      },
+      "ref": "p.94 (PDF 95) G.CTL"
+    },
+    {
+      "table": "holding-registers",
+      "address": 212,
+      "manualAddress": "D-register 212 (00D4h) / Address 213",
+      "type": "u16",
+      "name": {
+        "ko": "미분 시간 1 (가열)",
+        "en": "Derivative time 1 (heat)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 6000
+      },
+      "description": {
+        "ko": "0 = 끔. 초기 60.",
+        "en": "0 = off. Default 60."
+      },
+      "ref": "p.94 (PDF 95) G.CTL"
+    },
+    {
+      "table": "holding-registers",
+      "address": 300,
+      "manualAddress": "D-register 300 (012Ch) / Address 301",
+      "type": "u16",
+      "name": {
+        "ko": "경보 1 종류",
+        "en": "Alarm 1 type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 13
+      },
+      "description": {
+        "ko": "0 = 끔, 1~13 경보 종류(제품 사용설명서 참조). 초기 3.",
+        "en": "0 = off, 1-13 alarm types (see product manual). Default 3."
+      },
+      "ref": "p.97 (PDF 98) G.ALM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 301,
+      "manualAddress": "D-register 301 (012Dh) / Address 302",
+      "type": "s16",
+      "name": {
+        "ko": "경보 1 설정값",
+        "en": "Alarm 1 set value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P. 절대 경보 EU 0.0~100.0 %, 편차 경보 EUS 0.0~100.0 %.",
+        "en": "Decimals per DP-P. Absolute: EU 0.0-100.0 %; deviation: EUS 0.0-100.0 %."
+      },
+      "ref": "p.97 (PDF 98) G.ALM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 600,
+      "manualAddress": "D-register 600 (0258h) / Address 601",
+      "type": "u16",
+      "name": {
+        "ko": "통신 프로토콜",
+        "en": "Protocol (PRS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "PC Link STD (초기값)",
+          "en": "PC Link STD (default)"
+        },
+        {
+          "value": 1,
+          "ko": "PC Link SUM",
+          "en": "PC Link with sum"
+        },
+        {
+          "value": 2,
+          "ko": "Modbus ASCII",
+          "en": "Modbus ASCII"
+        },
+        {
+          "value": 3,
+          "ko": "Modbus RTU",
+          "en": "Modbus RTU"
+        },
+        {
+          "value": 4,
+          "ko": "MC4 (MC 프로토콜 형식 4)",
+          "en": "MC4"
+        },
+        {
+          "value": 5,
+          "ko": "XGT",
+          "en": "XGT"
+        }
+      ],
+      "ref": "p.103 (PDF 104) G.COM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 601,
+      "manualAddress": "D-register 601 (0259h) / Address 602",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate (BPS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "4800",
+          "en": "4800"
+        },
+        {
+          "value": 1,
+          "ko": "9600 (초기값)",
+          "en": "9600 (default)"
+        },
+        {
+          "value": 2,
+          "ko": "14400",
+          "en": "14400"
+        },
+        {
+          "value": 3,
+          "ko": "19200",
+          "en": "19200"
+        },
+        {
+          "value": 4,
+          "ko": "38400",
+          "en": "38400"
+        },
+        {
+          "value": 5,
+          "ko": "57600",
+          "en": "57600"
+        }
+      ],
+      "ref": "p.103 (PDF 104) G.COM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 602,
+      "manualAddress": "D-register 602 (025Ah) / Address 603",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음 (초기값)",
+          "en": "None (default)"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "Even"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "Odd"
+        }
+      ],
+      "ref": "p.103 (PDF 104) G.COM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 605,
+      "manualAddress": "D-register 605 (025Dh) / Address 606",
+      "type": "u16",
+      "name": {
+        "ko": "국번(기기 주소)",
+        "en": "Device address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 99
+      },
+      "ref": "p.103 (PDF 104) G.COM"
+    },
+    {
+      "table": "holding-registers",
+      "address": 606,
+      "manualAddress": "D-register 606 (025Eh) / Address 607",
+      "type": "u16",
+      "name": {
+        "ko": "응답 지연 시간",
+        "en": "Response delay"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 99
+      },
+      "ref": "p.103 (PDF 104) G.COM; 단위 ms 는 p.10"
+    },
+    {
+      "table": "holding-registers",
+      "address": 701,
+      "manualAddress": "D-register 701 (02BDh) / Address 702",
+      "type": "u16",
+      "name": {
+        "ko": "전원 ON 후 동작",
+        "en": "Power-on operation"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 1,
+          "ko": "운전 (초기값)",
+          "en": "Run (default)"
+        }
+      ],
+      "ref": "p.105 (PDF 106) G.SET"
+    },
+    {
+      "table": "holding-registers",
+      "address": 900,
+      "manualAddress": "D-register 900 (0384h) / Address 901",
+      "type": "u16",
+      "name": {
+        "ko": "입력 종류",
+        "en": "Input type (INP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 34
+      },
+      "description": {
+        "ko": "초기 1(K0). 번호별 센서는 제품 사용설명서의 입력 종류 표 참조(통신 설명서엔 표 없음).",
+        "en": "Default 1 (K0). Sensor list per code is in the product manual (not in the comm manual)."
+      },
+      "ref": "p.107 (PDF 108) G.IN"
+    },
+    {
+      "table": "holding-registers",
+      "address": 901,
+      "manualAddress": "D-register 901 (0385h) / Address 902",
+      "type": "u16",
+      "name": {
+        "ko": "단위 선택",
+        "en": "Unit select"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃ (초기값)",
+          "en": "°C (default)"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        },
+        {
+          "value": 2,
+          "ko": "%",
+          "en": "%"
+        },
+        {
+          "value": 3,
+          "ko": "무단위",
+          "en": "none"
+        }
+      ],
+      "description": {
+        "ko": "TC·RTD 입력은 ℃·℉ 만.",
+        "en": "TC/RTD inputs: °C/°F only."
+      },
+      "ref": "p.107 (PDF 108) G.IN"
+    },
+    {
+      "table": "holding-registers",
+      "address": 904,
+      "manualAddress": "D-register 904 (0388h) / Address 905",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치 선택",
+        "en": "Decimal point select (DP-P)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3
+      },
+      "description": {
+        "ko": "TC·RTD 는 0~1 이고 읽기만 가능, DC 전류·전압 입력은 0~3. 초기 1.",
+        "en": "TC/RTD: 0-1, read-only; DC current/voltage: 0-3. Default 1."
+      },
+      "ref": "p.107 (PDF 108) G.IN"
+    },
+    {
+      "table": "holding-registers",
+      "address": 909,
+      "manualAddress": "D-register 909 (038Dh) / Address 910",
+      "type": "s16",
+      "name": {
+        "ko": "PV 보정(바이어스)",
+        "en": "PV bias"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 DP-P. EUS -100.0~100.0 %.",
+        "en": "Decimals per DP-P. EUS -100.0 to 100.0 %."
+      },
+      "ref": "p.108 (PDF 109) G.IN"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "온도 계열 값(PV·SV·경보값·비례대·바이어스 등)은 부호 있는 16비트 정수에 DP-P 자릿수만큼 소수점을 붙여 읽는다(p.30 예: 0xFC18 = -1000 → -100.0). DP-P 는 입력 종류에 따라 달라지므로 scale 을 고정하지 않았다.",
+      "en": "Temperature-type values are signed 16-bit integers with DP-P decimals (p.30 example: 0xFC18 = -1000 → -100.0). DP-P depends on input type, so no fixed scale."
+    },
+    {
+      "ko": "LOCK(D703) 설명의 «32~34, 703 번지» 는 Address 열(1 기준) 번호로 보인다 — 통신선 주소로는 31~33, 702.",
+      "en": "LOCK (D703) text cites '32-34, 703', which match the 1-based Address column (wire 31-33, 702)."
+    },
+    {
+      "ko": "I 레지스터(p.111)는 PC LINK 명령용이며 Modbus 함수 코드(03/06/08/16)는 D 레지스터만 다룬다.",
+      "en": "I-registers (p.111) are for PC LINK commands; Modbus FCs (03/06/08/16) cover D-registers only."
+    }
+  ],
+  "sources": [
+    {
+      "title": "통신 설명서 VX Series",
+      "publisher": "HANYOUNG NUX",
+      "edition": "December 18, 2024",
+      "url": "https://www.hanyoungnux.co.kr/data/main.php?down=1121(VX_comm_user_241218).pdf&file_name=VX_comm_user_241218.pdf",
+      "pages": "p.10 통신 파라미터, p.25~38 MODBUS, p.90~114 통신 맵 (PDF 쪽 = 인쇄 쪽 + 1)",
+      "checked": "2026-10-19"
+    }
+  ]
+}

@@ -1057,6 +1057,23 @@ async function runApp(app, port) {
           await verify("slave splitter");
         }
 
+        // ---- (10/19) 장비 흉내: 창 → 장비 고르기 → 불러오기 → 알림·이름 붙은 칸
+        {
+          await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /장비 흉내|Emulate device/.test(b.textContent)).click()");
+          await sleep(300);
+          const ok = await js("const d = document.querySelector('.modal.dev-dlg'); return d ? { items: d.querySelectorAll('.dev-item').length, rows: d.querySelectorAll('.dev-regs tbody tr').length, plan: (d.querySelector('.dev-plan') || {}).textContent || '' } : null");
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-device`);
+          if (!ok || ok.items < 1 || ok.rows < 1 || !/국번|Slave ID/.test(ok.plan)) await conv("slave-device", `장비 흉내 창이 이상함: ${JSON.stringify(ok)}`);
+          else {
+            await js("document.querySelector('.modal.dev-dlg .dlg-buttons .btn.primary').click()");
+            await sleep(700);
+            const r = await js("return { open: !!document.querySelector('.modal.dev-dlg'), toast: (document.querySelector('.toast') || {}).textContent || '', err: !!document.querySelector('.traffic-error'), names: [...document.querySelectorAll('.regs .reg .rname')].map((e) => e.textContent).filter(Boolean).length }");
+            if (r.open || r.err || !/레지스터 \d+개를 국번|Loaded \d+ registers/.test(r.toast) || r.names < 1) await conv("slave-device", `장비 흉내 결과가 이상함: ${JSON.stringify(r)}`);
+            if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-device-loaded`);
+          }
+          await verify("slave device emulation");
+        }
+
         // ---- (10/18) TCP 서버(Modbus TCP): 끊고 → 연결 방식 바꾸기 → 시작 → 듣는 중·클라이언트 수·풀이(#트랜잭션)·MBAP 장애 칸 → 멈춤 → 시리얼로 다시 연결
         const setTransport = (v) => js("const s = [...document.querySelectorAll('aside.side select')].find((x) => x.querySelector('option[value=rtu-tcp]')); __sm.setVal(s, arguments[0]);", v);
         await clickRun("mb-tcp: stop serial", (s) => !STOP_RE.test(s.btn ?? ""));
@@ -1291,6 +1308,45 @@ async function runApp(app, port) {
         await w(300);
         if ((await js("return document.querySelectorAll('.tabs .tab').length")) !== tabsA + 1 || (await js("return !!document.querySelector('.scan-dlg')"))) await conv("mm-scan", "찾은 국번으로 표를 만들지 못함");
         await verify("mm scan");
+        // (10/19) 장비 프로필: 창 → 목록·레지스터 표·주의 문구 → 찾기 → 불러오기 → 안내한 수만큼 표가 더해지고 이름에 단위가 붙는다 → 더한 표 지우기
+        {
+          const tabsB = await js("return document.querySelectorAll('.tabs .tab').length");
+          await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /장비 프로필|Device profile/.test(b.textContent)).click()");
+          await w(300);
+          const dv = await jsAsync(`
+            const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+            const dlg = document.querySelector('.modal.dev-dlg');
+            if (!dlg) return { open: false };
+            const r = { open: true, items: dlg.querySelectorAll('.dev-item').length, rows: dlg.querySelectorAll('.dev-regs tbody tr').length, caution: !!dlg.querySelector('.dev-caution'), src: (dlg.querySelector('.dev-src') || {}).textContent || '' };
+            const inp = dlg.querySelector('.dev-search');
+            __sm.setVal(inp, 'zzzz-none'); await w(150);
+            r.none = dlg.querySelectorAll('.dev-item').length;
+            __sm.setVal(inp, ''); await w(150);
+            const items = [...dlg.querySelectorAll('.dev-item')];
+            items[items.length - 1].click(); await w(150);
+            r.on = (dlg.querySelector('.dev-item.on b') || {}).textContent || '';
+            const plan = (dlg.querySelector('.dev-plan') || {}).textContent || '';
+            r.plan = plan;
+            r.n = Number((plan.match(/(?:폴링 표|Adds) (\\d+)/) || [])[1] || 0);
+            return r;`);
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-device`);
+          if (!dv.open || dv.items < 1 || dv.rows < 1 || !dv.caution || !dv.src || dv.none !== 0 || !dv.on || dv.n < 1) await conv("mm-device", `장비 프로필 창이 이상함: ${JSON.stringify(dv)}`);
+          else {
+            await js("document.querySelector('.modal.dev-dlg .dlg-buttons .btn.primary').click()");
+            await w(400);
+            const after = await js("return { tabs: document.querySelectorAll('.tabs .tab').length, open: !!document.querySelector('.modal.dev-dlg'), toast: (document.querySelector('.toast') || {}).textContent || '', names: [...document.querySelectorAll('.regs .reg .rname')].map((e) => e.textContent) }");
+            if (after.open || after.tabs !== tabsB + dv.n || !/표 \d+개를 더했습니다|Added \d+ table/.test(after.toast) || !after.names.length)
+              await conv("mm-device", `장비 프로필 불러오기 결과가 이상함: ${JSON.stringify({ n: dv.n, tabsB, ...after })}`);
+            if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-device-loaded`);
+            for (let i = 0; i < dv.n; i++) {
+              await js("[...document.querySelectorAll('.tabs .tab')].pop().querySelector('.tab-x').click()");
+              await w(120);
+            }
+            await js("document.querySelector('.tabs .tab .tab-btn').click()");
+            await w(200);
+          }
+          await verify("mm device profile");
+        }
       }
 
       // ---- 항상 위 📌

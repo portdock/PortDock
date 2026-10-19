@@ -1,0 +1,1070 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "rootech/accura-2300",
+  "manufacturer": {
+    "ko": "루텍",
+    "en": "Rootech"
+  },
+  "model": "Accura 2300[S]",
+  "models": [
+    "Accura 2300",
+    "Accura 2300S",
+    "Accura 2350-3P (모듈)"
+  ],
+  "kind": "power-meter",
+  "title": {
+    "ko": "루텍 Accura 2300[S] 전압 측정·통신 본체 + Accura 2350 전류 모듈",
+    "en": "Rootech Accura 2300[S] main unit with Accura 2350 current modules"
+  },
+  "summary": {
+    "ko": "2300[S] 가 전압을 재고 내부 통신으로 붙은 Accura 2350 모듈(ID 0-39)의 전류·전력을 모아 Modbus TCP/RTU 로 내준다. 계측값은 PR(private read) — 11044 를 먼저 읽어 가져온 뒤 읽는다.",
+    "en": "The 2300[S] measures voltage and collects current/power from up to 40 Accura 2350 modules (ID 0-39), served over Modbus TCP/RTU. Measurement registers are private-read: read 11044 first to fetch."
+  },
+  "protocols": [
+    "rtu",
+    "tcp"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      115200
+    ],
+    "parity": "even",
+    "stopBits": 1,
+    "tcpPort": 502,
+    "order": "ABCD",
+    "maxRegisters": 125,
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "매뉴얼은 레지스터 번호(1 기준) — 통신 주소 = 번호 − 1 (p.17, p.19, p.28).",
+        "en": "Manual uses 1-based register numbers; wire address = number − 1 (p.17, p.19, p.28)."
+      },
+      {
+        "ko": "32비트는 상위 워드가 낮은 주소 (p.30 Data Types).",
+        "en": "32-bit values: high word at lower address (p.30 Data Types)."
+      },
+      {
+        "ko": "RS-485 출하값 9600 bps·짝수·정지 1비트 (p.85). 국번 범위 0-247, Default 0 으로 적혀 있어 출하 국번은 비워 둠.",
+        "en": "RS-485 defaults 9600 bps, even, 1 stop bit (p.85). Address range 0-247 with 'Default: 0', so factory unit ID is left out."
+      },
+      {
+        "ko": "Modbus TCP 포트 502 (p.14). TCP Unit ID 는 1 로 고정 (p.17). 동시 접속 16개(TCP 15, RTU 1) (p.18).",
+        "en": "Modbus TCP port 502 (p.14). TCP unit ID fixed at 1 (p.17). 16 concurrent connections (15 TCP, 1 RTU) (p.18)."
+      },
+      {
+        "ko": "함수 코드 03·06·16 과 사용자 정의 101(65h, 멀티 블록 읽기, TCP 전용) (p.17). 읽기 수량 표준 1-125, 장치는 250 까지 허용하나 128 이상은 byte count 넘침 (p.19).",
+        "en": "FC 03, 06, 16 plus user-defined 101 (65h, multi-block read, TCP only) (p.17). Read quantity standard 1-125; device allows up to 250 but byte count overflows from 128 (p.19)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "1",
+      "type": "u16",
+      "name": {
+        "ko": "제품 ID",
+        "en": "Product ID"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "2300",
+        "en": "2300"
+      },
+      "ref": "p.34 System Information for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "2",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "일련번호",
+        "en": "Serial number"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.34 System Information for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "15",
+      "type": "u16",
+      "name": {
+        "ko": "응용 소프트웨어 버전",
+        "en": "Application version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.34 System Information for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "17",
+      "type": "u16",
+      "name": {
+        "ko": "Modbus 맵 버전",
+        "en": "Modbus map version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.34 System Information for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 699,
+      "manualAddress": "700",
+      "type": "u16",
+      "name": {
+        "ko": "원격 설정 잠금",
+        "en": "Remote setup lock"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "잠금 해제",
+          "en": "Unlocked"
+        },
+        {
+          "value": 1,
+          "ko": "잠금 (출하값)",
+          "en": "Locked (default)"
+        }
+      ],
+      "description": {
+        "ko": "2300, 0, 700, 1 을 차례로 쓰면 해제. 접속마다 따로 해제해야 함",
+        "en": "Write 2300, 0, 700, 1 in sequence to unlock; per connection"
+      },
+      "ref": "p.38 Remote Setup Unlock"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1483,
+      "manualAddress": "1484",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 국번",
+        "en": "RS-485 device address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "범위 0-247. 1483 접근 레지스터로 가져오기/적용(1 쓰기)",
+        "en": "Range 0-247. Fetch/apply via access register 1483 (write 1)"
+      },
+      "ref": "p.85 Modbus Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1484,
+      "manualAddress": "1485",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 통신 속도",
+        "en": "RS-485 baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1200",
+          "en": "1200"
+        },
+        {
+          "value": 1,
+          "ko": "2400",
+          "en": "2400"
+        },
+        {
+          "value": 2,
+          "ko": "4800",
+          "en": "4800"
+        },
+        {
+          "value": 3,
+          "ko": "9600 (출하값)",
+          "en": "9600 (default)"
+        },
+        {
+          "value": 4,
+          "ko": "19200",
+          "en": "19200"
+        },
+        {
+          "value": 5,
+          "ko": "38400",
+          "en": "38400"
+        },
+        {
+          "value": 6,
+          "ko": "57600",
+          "en": "57600"
+        },
+        {
+          "value": 7,
+          "ko": "115200",
+          "en": "115200"
+        }
+      ],
+      "ref": "p.85 Modbus Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1485,
+      "manualAddress": "1486",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 패리티",
+        "en": "RS-485 parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "홀수",
+          "en": "Odd"
+        },
+        {
+          "value": 2,
+          "ko": "짝수 (출하값)",
+          "en": "Even (default)"
+        }
+      ],
+      "ref": "p.85 Modbus Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1486,
+      "manualAddress": "1487",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 정지 비트",
+        "en": "RS-485 stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트 (출하값)",
+          "en": "1 stop bit (default)"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 stop bits"
+        }
+      ],
+      "ref": "p.85 Modbus Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11000,
+      "manualAddress": "11001",
+      "type": "u16",
+      "name": {
+        "ko": "집계 구간 선택",
+        "en": "Aggregation selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.5초 데이터",
+          "en": "0.5 s data"
+        },
+        {
+          "value": 1,
+          "ko": "1초 (출하값)",
+          "en": "1 s (default)"
+        },
+        {
+          "value": 2,
+          "ko": "5초",
+          "en": "5 s"
+        },
+        {
+          "value": 3,
+          "ko": "1분",
+          "en": "1 min"
+        },
+        {
+          "value": 4,
+          "ko": "5분",
+          "en": "5 min"
+        },
+        {
+          "value": 5,
+          "ko": "1시간",
+          "en": "1 h"
+        },
+        {
+          "value": 6,
+          "ko": "6시간",
+          "en": "6 h"
+        }
+      ],
+      "description": {
+        "ko": "11-15·200-202 등 다른 값도 있음 (p.105)",
+        "en": "Other values (11-15, 200-202) exist (p.105)"
+      },
+      "ref": "p.105 Measurement Map Summary"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11043,
+      "manualAddress": "11044",
+      "type": "u16",
+      "name": {
+        "ko": "계측 데이터 접근(fetch)",
+        "en": "Measurement access (fetch)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "읽으면 선택한 버퍼의 데이터가 11045-32300 으로 옮겨지고 그 버퍼 번호를 돌려준다. FFFFh = 버퍼 번호가 유효하지 않음",
+        "en": "Reading fetches the selected buffer into 11045-32300 and returns its index; FFFFh = invalid buffer index"
+      },
+      "ref": "p.105 Measurement Map Summary"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11044,
+      "manualAddress": "11045",
+      "type": "u16",
+      "name": {
+        "ko": "2300 전압 데이터 유효성",
+        "en": "2300 voltage data validity"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "가져오지 못함",
+          "en": "Not fetched"
+        },
+        {
+          "value": 1,
+          "ko": "정상",
+          "en": "Fetched"
+        }
+      ],
+      "ref": "p.106"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11045,
+      "manualAddress": "11046",
+      "type": "u16",
+      "name": {
+        "ko": "모듈 ID 0 데이터 유효성",
+        "en": "Module ID 0 data validity"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "삼상 모듈 정상",
+          "en": "3-phase module OK"
+        },
+        {
+          "value": 1,
+          "ko": "단상 모듈 정상",
+          "en": "1-phase module OK"
+        },
+        {
+          "value": 65535,
+          "ko": "가져오지 못했거나 모듈 없음",
+          "en": "Not fetched or no module"
+        }
+      ],
+      "description": {
+        "ko": "다른 모듈 종류 값(3, 7, 2001 등)은 p.106",
+        "en": "Other module type codes (3, 7, 2001…) on p.106"
+      },
+      "ref": "p.106"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11100,
+      "manualAddress": "11101",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 상전압",
+        "en": "Voltage Van"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11102,
+      "manualAddress": "11103",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 상전압",
+        "en": "Voltage Vbn"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11104,
+      "manualAddress": "11105",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 상전압",
+        "en": "Voltage Vcn"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11106,
+      "manualAddress": "11107",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average L-N voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11108,
+      "manualAddress": "11109",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "AB 선간전압",
+        "en": "Voltage Vab"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11110,
+      "manualAddress": "11111",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "BC 선간전압",
+        "en": "Voltage Vbc"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11112,
+      "manualAddress": "11113",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "CA 선간전압",
+        "en": "Voltage Vca"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11114,
+      "manualAddress": "11115",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 선간전압",
+        "en": "Average L-L voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11150,
+      "manualAddress": "11151",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11152,
+      "manualAddress": "11153",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "2300 후면 온도",
+        "en": "2300 rear temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.108-109 Measurement Data for Accura 2300[S]"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11200,
+      "manualAddress": "11201",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 전류",
+        "en": "Module 0 current Ia"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 0"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11202,
+      "manualAddress": "11203",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 전류",
+        "en": "Module 0 current Ib"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11204,
+      "manualAddress": "11205",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 전류",
+        "en": "Module 0 current Ic"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11206,
+      "manualAddress": "11207",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 평균 전류",
+        "en": "Module 0 current Iavg"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 6"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11260,
+      "manualAddress": "11261",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 유효전력",
+        "en": "Module 0 active power Pa"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 60"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11262,
+      "manualAddress": "11263",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 유효전력",
+        "en": "Module 0 active power Pb"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 62"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11264,
+      "manualAddress": "11265",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 유효전력",
+        "en": "Module 0 active power Pc"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 64"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11266,
+      "manualAddress": "11267",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 유효전력",
+        "en": "Module 0 total active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 66"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11274,
+      "manualAddress": "11275",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 무효전력",
+        "en": "Module 0 total reactive power"
+      },
+      "unit": "kVAR",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 74"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11282,
+      "manualAddress": "11283",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 피상전력",
+        "en": "Module 0 total apparent power"
+      },
+      "unit": "kVA",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 82"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11286,
+      "manualAddress": "11287",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 수전 유효전력량",
+        "en": "Module 0 received kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 86"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11288,
+      "manualAddress": "11289",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 송전 유효전력량",
+        "en": "Module 0 delivered kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 88"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11294,
+      "manualAddress": "11295",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 양의 무효전력량",
+        "en": "Module 0 received kVARh"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 94"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11296,
+      "manualAddress": "11297",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 음의 무효전력량",
+        "en": "Module 0 delivered kVARh"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 96"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11302,
+      "manualAddress": "11303",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 피상전력량",
+        "en": "Module 0 kVAh"
+      },
+      "unit": "kVAh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 102"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11310,
+      "manualAddress": "11311",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 유효전력 디맨드",
+        "en": "Module 0 total demand kW"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 110"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11324,
+      "manualAddress": "11325",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 역률",
+        "en": "Module 0 PF A"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 124"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11326,
+      "manualAddress": "11327",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 역률",
+        "en": "Module 0 PF B"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 126"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11328,
+      "manualAddress": "11329",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 역률",
+        "en": "Module 0 PF C"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11330,
+      "manualAddress": "11331",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 역률",
+        "en": "Module 0 total PF"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (Accura 2350-3P, 3P 결선 모드). ID n 은 주소에 150×n 을 더한다",
+        "en": "Module ID 0 (Accura 2350-3P, 3P wiring mode). For ID n add 150×n"
+      },
+      "ref": "p.110-112 Detailed Data for Accura 2350-3P (3P Mode), ID 0 = 11201 + offset offset 130"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "계측 레지스터(11045-32300)는 PR 속성 — 접속마다 따로 있는 공간이라 11044 를 읽어 데이터를 가져온 뒤 읽어야 값이 채워진다 (p.32, p.105).",
+      "en": "Measurement registers (11045-32300) are private-read: per-connection space, filled only after reading 11044 (p.32, p.105)."
+    },
+    {
+      "ko": "2350 모듈 데이터는 ID 0 이 11201 에서 시작하고 모듈마다 150 칸 (p.110). 여기 적은 모듈 레지스터는 2350-3P 를 3P(또는 1P2F) 결선으로 쓸 때의 표 — 다른 결선·모듈 종류는 표가 다르다.",
+      "en": "2350 module data starts at 11201 for ID 0, 150 registers per module (p.110). Module registers here follow the 2350-3P table for 3P (or 1P2F) wiring; other wiring/module types use different tables."
+    },
+    {
+      "ko": "값은 실제 단위 Float32(V·A·kW…), 전력량은 Int32 kWh 등 — PT/CT 배율을 따로 곱하지 않는다.",
+      "en": "Values are Float32 in engineering units; energies Int32 kWh etc. No separate PT/CT scaling."
+    },
+    {
+      "ko": "원격 설정은 기본 잠금 — 쓰기 전에 700 에 2300→0→700→1 을 써서 해제 (p.38). 직렬 설정은 1483 접근 레지스터로 가져오기/적용 (p.85).",
+      "en": "Remote setup is locked by default; unlock by writing 2300→0→700→1 to 700 before writes (p.38). Serial settings are fetched/applied via access register 1483 (p.85)."
+    },
+    {
+      "ko": "역률 유효성(오프셋 132-135)과 진상·지상(136-139)은 별도 레지스터 (p.112).",
+      "en": "PF validity (offset 132-135) and lead/lag (136-139) are separate registers (p.112)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Accura 2300[S]/2350 Communication Guide",
+      "publisher": "Rootech Inc.",
+      "edition": "Rev 2.50, 2026-06-23 (파일명 Accura_2300[S]_2350_Communication_Guide_Rev2_50_Korean_260623.pdf)",
+      "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1474&no=0",
+      "pages": "p.14-19 프로토콜·함수 코드, p.28-30 맵 요약·형식, p.34, p.38, p.85, p.105-112 계측",
+      "checked": "2026-10-19"
+    }
+  ]
+}

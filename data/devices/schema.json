@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/portdock/PortDock/main/data/devices/schema.json",
+  "title": "PortDock 장비 Modbus 레지스터 맵 (device register map)",
+  "description": "장비 하나의 Modbus 레지스터 맵. 주소(address)는 늘 통신선에 실리는 0 기준 주소이고, 매뉴얼이 적은 모양은 manualAddress 에 그대로 둔다. table·type·order 이름은 PortDock Modbus Slave/Master 의 CSV(table,address,type,order,name,value)와 같다. 사실 정보만 담고, 사용 전 장비 매뉴얼로 확인한다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "manufacturer", "model", "kind", "title", "protocols", "comm", "registers", "sources"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": {
+      "description": "«제조사/모델» 꼴 — 파일 경로 data/devices/<id>.json 과 같다",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "manufacturer": { "$ref": "#/$defs/text" },
+    "model": { "description": "모델 이름(매뉴얼 표기)", "type": "string", "minLength": 1 },
+    "models": {
+      "description": "같은 맵을 쓰는 형번·시리즈(있으면)",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "kind": {
+      "description": "장비 종류",
+      "enum": ["inverter", "power-meter", "temperature-controller", "panel-meter", "servo-drive", "sensor", "other"]
+    },
+    "title": { "$ref": "#/$defs/text" },
+    "summary": { "$ref": "#/$defs/text" },
+    "protocols": {
+      "description": "매뉴얼이 지원한다고 적은 Modbus 형태",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["rtu", "ascii", "tcp"] }
+    },
+    "comm": { "$ref": "#/$defs/comm" },
+    "registers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/register" }
+    },
+    "notes": {
+      "description": "장비 전체에 대한 주의(우리 말로)",
+      "type": "array",
+      "items": { "$ref": "#/$defs/text" }
+    },
+    "sources": {
+      "description": "출처 — 제조사 공식 매뉴얼만. 하나 이상",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "text": {
+      "description": "한·영 글",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ko", "en"],
+      "properties": {
+        "ko": { "type": "string", "minLength": 1 },
+        "en": { "type": "string", "minLength": 1 }
+      }
+    },
+    "table": {
+      "description": "Modbus 표 — PortDock CSV 의 table 칸과 같은 이름. modbus-schema(nielsbasjes) 의 coil·discrete-input·input-register·holding-register 와 1:1",
+      "enum": ["coils", "discrete-inputs", "input-registers", "holding-registers"]
+    },
+    "order": {
+      "description": "바이트 A(최상위)…를 레지스터에 놓는 모양. ABCD = 빅 엔디언(Modbus 기본), CDAB = 워드 바꿈, BADC = 바이트 바꿈, DCBA = 둘 다",
+      "enum": ["ABCD", "CDAB", "BADC", "DCBA"]
+    },
+    "comm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["addressing"],
+      "properties": {
+        "baud": { "description": "공장 출하 통신 속도(bps)", "type": "integer", "minimum": 300, "maximum": 1000000 },
+        "bauds": { "description": "고를 수 있는 속도", "type": "array", "items": { "type": "integer", "minimum": 300, "maximum": 1000000 } },
+        "dataBits": { "enum": [7, 8] },
+        "parity": { "enum": ["none", "even", "odd"] },
+        "stopBits": { "enum": [1, 2] },
+        "unit": { "description": "공장 출하 국번(슬레이브 주소)", "type": "integer", "minimum": 0, "maximum": 255 },
+        "unitRange": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "tcpPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "order": { "$ref": "#/$defs/order", "description": "32비트 값의 기본 워드·바이트 순서(레지스터마다 다르면 레지스터 쪽이 이긴다)" },
+        "maxRegisters": { "description": "한 번에 읽을 수 있는 최대 레지스터 수(매뉴얼에 있으면)", "type": "integer", "minimum": 1, "maximum": 125 },
+        "addressing": {
+          "description": "매뉴얼이 주소를 적는 방식 — zero: 통신 주소 그대로(0 기준, 16진 포함), one: 1 기준 번호, plc: 40001·30001 꼴",
+          "enum": ["zero", "one", "plc"]
+        },
+        "notes": { "type": "array", "items": { "$ref": "#/$defs/text" } }
+      }
+    },
+    "register": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table", "address", "manualAddress", "type", "name", "access", "fc"],
+      "properties": {
+        "table": { "$ref": "#/$defs/table" },
+        "address": { "description": "통신선 주소(0 기준, 0~65535)", "type": "integer", "minimum": 0, "maximum": 65535 },
+        "manualAddress": { "description": "매뉴얼이 적은 그대로(예 «0x0005», «40006», «0301h»)", "type": "string", "minLength": 1 },
+        "type": { "description": "값 형식 — PortDock 타입 이름. string 은 len(바이트) 필요", "enum": ["bit", "u16", "s16", "u32", "s32", "f32", "f64", "string"] },
+        "order": { "$ref": "#/$defs/order" },
+        "len": { "description": "문자열 길이(바이트)", "type": "integer", "minimum": 1, "maximum": 250 },
+        "name": { "$ref": "#/$defs/text" },
+        "unit": { "description": "단위(Hz·A·V·kW·kWh·℃·% 등). 없으면 생략", "type": "string", "minLength": 1 },
+        "scale": { "description": "실제 값 = 원시 값 × scale (예 0.01 Hz 단위면 0.01). 없으면 1", "type": "number", "exclusiveMinimum": 0 },
+        "access": { "description": "r = 읽기만, rw = 읽기·쓰기, w = 쓰기만", "enum": ["r", "rw", "w"] },
+        "fc": {
+          "description": "매뉴얼이 이 주소에 허용한 함수 코드",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": [1, 2, 3, 4, 5, 6, 15, 16] }
+        },
+        "range": {
+          "description": "허용 범위(원시 값이 아니라 단위가 붙은 실제 값)",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "min": { "type": "number" }, "max": { "type": "number" } }
+        },
+        "values": {
+          "description": "값의 뜻(열거)",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "ko", "en"],
+            "properties": { "value": { "type": "integer" }, "ko": { "type": "string" }, "en": { "type": "string" } }
+          }
+        },
+        "bits": {
+          "description": "비트별 뜻(0 = 최하위 비트)",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bit", "ko", "en"],
+            "properties": { "bit": { "type": "integer", "minimum": 0, "maximum": 63 }, "ko": { "type": "string" }, "en": { "type": "string" } }
+          }
+        },
+        "description": { "$ref": "#/$defs/text" },
+        "ref": { "description": "근거 쪽·표 번호(예 «p.7-4 표 7.2»)", "type": "string" },
+        "source": { "description": "sources 배열의 몇 번째 출처인지(0 기준, 없으면 0)", "type": "integer", "minimum": 0 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "url", "checked"],
+      "properties": {
+        "title": { "description": "문서 이름(매뉴얼 표지 그대로)", "type": "string", "minLength": 1 },
+        "publisher": { "type": "string" },
+        "edition": { "description": "판·개정 번호·발행일", "type": "string" },
+        "url": { "description": "제조사가 문서를 내려 주는 주소", "type": "string", "pattern": "^https?://" },
+        "pages": { "description": "레지스터 맵이 있는 쪽·표", "type": "string" },
+        "checked": { "description": "직접 열어 확인한 날(YYYY-MM-DD)", "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+      }
+    }
+  }
+}

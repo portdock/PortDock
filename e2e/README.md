@@ -55,6 +55,7 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 - 첫 실행(10/18): Serial «무엇을 하나요?»·Slave·Net Scan «처음 쓰는 순서» 카드 모양과 도움말 링크(그 절로 열리는지, 네 경우 모두). `ko-light`·`en-dark` 는 Serial «Modbus 장비 값 읽기» → 용도·보내기 형식·예시 2개 → 속도를 고쳐 «(바꿈)»·↺ → 용도 «AT 명령», Serial·TCP·UDP 빈 명령 목록 «예시 넣기» → 되돌리기. 캡처 `<앱>-*-first-card`·`serial-*-preset-at`.
 - 용어(10/18, 네 경우 모두): Serial·TCP 요청 창 국번 칸 이름이 «국번(슬레이브 ID)»/«Slave ID», Slave·Master 화면에 그 이름이 있고, 옛 이름(슬레이브 주소·유닛 ID·Unit ID (slave address))이 화면에 없는지.
 - Modbus 응답 짝짓기(10/18, `ko-light`·`en-dark`): Serial 요청 창 «보내기» 뒤 응답 줄이 저절로 골라지고 상세 «요청과 짝» 에 «40001 = 값 (0x….)» 10줄·F32 ABCD 5줄, 41001(가짜 장비의 1000 이상)은 예외 02 이름. TCP 는 MBAP 요청(트랜잭션 42)을 보내 응답 줄을 누르면 «트랜잭션 42» 짝·값 4줄. 가짜 백엔드는 RTU·MBAP 읽기 요청에 맞는 응답을 돌려준다(0 = 1812, 1 = 0xFFFF, 2·3 = F32 3.14, 그 밖 주소×10, 1000 이상 예외 02). 캡처 `serial-*-mb-pair`.
+- 장비 프로필(10/19, `ko-light`·`en-dark`): Master «장비 프로필…» 창(목록·레지스터 표·주의 문구·출처, 찾기 «zzzz» → 0개) → 마지막 장비 «불러오기» → 창에 안내한 수만큼 표가 더해지고 칸 이름이 붙는지, 더한 표는 다시 지운다. Slave «장비 흉내…» → 불러오기 → «레지스터 n개를 국번 …» 알림·이름 붙은 칸. 캡처 `modbus-master-*-mm-device*`·`modbus-slave-*-slave-device*`.
 - 좁은 창(네 경우 모두): 안쪽 760×600 에서 왼쪽 칸이 접히고 요약 줄이 보이는지, «⚙ 연결 설정» 으로 펼쳐도·연결해도 넘치지 않는지. 캡처 `<앱>-*-narrow-760-*.png`.
 - 매 동작 뒤 확인: 잡히지 않은 예외·거부된 Promise·console.error, 화면 오류(Boundary), 창 밖으로 넘친 요소·가로 스크롤, 창보다 큰 대화상자, 글자가 잘린 버튼, 값이 목록에 없는 고르기.
 - 결과: 화면에 경우별 ✅/❌ 와 누른 횟수, `shots/smoke/<앱>.json`(같은 문제는 묶어 횟수·단계와 함께), 문제가 난 단계의 캡처 `shots/smoke/<앱>-*.png`. 문제가 있으면 종료 코드 1.

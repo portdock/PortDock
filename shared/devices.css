@@ -1,0 +1,98 @@
+/* 장비 프로필 창(shared/DeviceDialog.tsx) — Modbus Master·Slave 공통 */
+.modal.dev-dlg {
+  width: min(860px, calc(100vw - 32px));
+}
+.dev-dlg .dev-search {
+  width: 100%;
+  box-sizing: border-box;
+}
+.dev-split {
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
+.dev-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(360px, calc(100vh - 330px));
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.dev-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.dev-item.on {
+  background: var(--sel);
+  color: var(--accent);
+}
+.dev-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.dev-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.dev-regs {
+  max-height: min(250px, calc(100vh - 430px));
+  min-height: 80px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.dev-regs table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.dev-regs th,
+.dev-regs td {
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.dev-regs td:nth-child(2) {
+  white-space: normal;
+}
+.dev-regs th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+.dev-src,
+.dev-plan {
+  overflow-wrap: anywhere;
+}
+.dev-notes ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.dev-dlg label.dev-opt {
+  align-items: flex-start;
+}
+@media (max-width: 700px) {
+  .dev-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dev-list {
+    max-height: 120px;
+  }
+}

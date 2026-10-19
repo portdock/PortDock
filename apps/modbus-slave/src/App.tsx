@@ -60,6 +60,8 @@ import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
+import { DeviceDialog, type DeviceApplyOpts } from "@shared/DeviceDialog";
+import { deviceName, serialDefaults, slaveRows, tableSpans, type Device } from "@shared/devices";
 import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
@@ -758,6 +760,54 @@ export default function App() {
     setPoints(nextPoints);
     const msg = t("csvDone").replace("{n}", String(r.rows.length)).replace("{a}", counts.join(" · "));
     toast.show(outside ? `${msg}. ${t("rangeCut").replace("{n}", String(outside))}` : msg, outside ? { ms: 6000 } : {});
+  }
+
+  /**
+   * 장비 흉내(내장 레지스터 맵) — 지금 국번의 표마다 이름·형식과 예시 값을 넣는다(CSV 가져오기와 같은 길).
+   * 응답 범위가 장비 주소를 다 덮지 않으면 덮도록 넓힌다
+   */
+  const [showDevice, setShowDevice] = useState(false);
+  async function applyDevice(d: Device, o: DeviceApplyOpts) {
+    setShowDevice(false);
+    try {
+      const rows = slaveRows(d, lang);
+      const nextRanges = { ...ranges };
+      for (const [tb, sp] of tableSpans(d)) {
+        const k = key(selId, tb);
+        const rg = ranges[k] ?? { start: 0, count: 100 };
+        if (sp.start < rg.start || sp.end > rg.start + rg.count) {
+          const start = Math.min(rg.start, sp.start);
+          nextRanges[k] = { start, count: Math.min(65536 - start, Math.max(rg.start + rg.count, sp.end) - start) };
+          // 엔진에는 고른 표의 범위만 저절로 가므로 여기서 바로 넣는다
+          await api.setRange(selId, tb, nextRanges[k].start, nextRanges[k].count);
+        }
+      }
+      setRanges(nextRanges);
+      const nextPoints = { ...points };
+      for (const tb of new Set(rows.map((r) => r.table))) {
+        const list = rows.filter((r) => r.table === tb);
+        const regs = new Map<number, number>();
+        for (const r of list) encodeValue(r.value, r.type, r.order, r.len).forEach((v, i) => regs.set(r.address + i, v));
+        await writeSparse(tb, regs);
+        const k = key(selId, tb);
+        nextPoints[k] = mergePoints(points[k], list.map((r) => ({ addr: r.address, type: r.type, order: r.order, name: r.name, ...(r.type === "string" ? { len: r.len } : {}) })));
+      }
+      setPoints(nextPoints);
+      const first = rows.find((r) => r.table === table) ?? rows[0];
+      if (first && first.table !== table) setTable(first.table);
+      const msgs = [t("devLoaded").replace("{a}", deviceName(d, lang)).replace("{n}", String(rows.length)).replace("{u}", String(selId))];
+      const sd = serialDefaults(d);
+      if (o.comm && Object.keys(sd).length) {
+        const next = { ...cfg, ...sd };
+        setCfg(next);
+        msgs.push(t("devCommSet").replace("{a}", `${next.baud} ${next.dataBits}${next.parity === "odd" ? "O" : next.parity === "even" ? "E" : "N"}${next.stopBits}`));
+      }
+      toast.show(msgs.join(" · "), { ms: 6000 });
+      setError(null);
+      refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   async function importJson(text: string) {
@@ -1523,6 +1573,9 @@ export default function App() {
           <button data-tip={tip(lang, "mbImport")} className="btn small" onClick={importTable}>
             {t("importTable")}
           </button>
+          <button data-tip={tip(lang, "mbDevice")} className="btn small" onClick={() => setShowDevice(true)}>
+            {t("devEmulate")}
+          </button>
         </div>
         <div className="toolbar">
           <label data-tip={tip(lang, "mbStart")} className="inline">
@@ -1701,6 +1754,7 @@ export default function App() {
           onClose={() => setCellDlg(null)}
         />
       )}
+      {showDevice && <DeviceDialog lang={lang} mode="slave" unit={selId} onApply={(d, o) => void applyDevice(d, o)} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Modbus Slave" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
