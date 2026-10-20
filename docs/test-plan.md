@@ -30,7 +30,7 @@
 | C19 | 말풍선 | 칸·버튼에 마우스를 0.35초 올리면 설명이 뜸, 화면 밖으로 안 나감(아래쪽은 위로), 누르거나 스크롤하면 사라짐, 언어 따라 바뀜, 윈도우 기본 설명과 겹치지 않음 |
 | C20 | 문제 보고 창 | «!» → 설명 입력, 넣을 내용 체크에 따라 미리보기가 바뀜, 통신 기록 켜면 경고, 복사·파일로 저장(.md) 내용 = 미리보기, Esc·✕ 로 닫힘, 언어 따라 바뀜 |
 | C21 | 오류 모으기 | 연결 실패 등 화면 오류가 «이번 실행의 오류» 에 쌓임(같은 오류는 ×횟수) |
-| C22 | 비정상 종료 (손으로) | 환경 변수 `PORTDOCK_TEST_CRASH=1` 로 실행 → 3초 뒤 꺼짐(디버그 빌드는 안 꺼지고 기록만) → `%LOCALAPPDATA%\PortDock\reports\<프로그램>\crash-*.txt` 생김 → 변수 없이 다시 켜면 «지난번에 오류로 꺼졌습니다» + «!» 빨강 → 지우기·나중에·보고서 보기 각각 |
+| C22 | 비정상 종료 (손으로) | 환경 변수 `PORTDOCK_TEST_CRASH=1` 로 실행 → 3초 뒤 꺼짐(디버그 빌드는 안 꺼지고 기록만) → `%LOCALAPPDATA%\dev.portdock.<프로그램>\reports\crash-*.txt`(휴대판은 `portdock-data\reports\<프로그램>`) 생김 → 변수 없이 다시 켜면 «지난번에 오류로 꺼졌습니다» + «!» 빨강 → 지우기·나중에·보고서 보기 각각 |
 | C23 | 자동 전송 (DSN 넣은 뒤) | ⚙ «오류 자동 전송» 보임, «지금 바로 보내기» → Sentry 에 첨부(report.txt)와 함께 도착, «자동» 이면 다음 실행 때 묻지 않고 보내고 crash 파일 지워짐, 인터넷 끊고 하면 파일이 남고 다음에 다시 |
 | C24 | 머리줄 | 언어·!·?·⚙ 가 좁은 창(최소 크기)에서도 잘리지 않음 |
 | C25 | 포트 바뀜 (S1) | 쓰던 USB 변환기를 다른 구멍에 → 같은 장치(일련번호·VID:PID)로 자동 선택 + «저장된 COMx 가 없어 COMy 로» 안내, 연결 성공 (Serial·Slave) |
@@ -48,11 +48,11 @@
 | C37 | (10/18) 바인드 실패 — 포트 쥔 프로그램 (TCP·UDP) | 준비: 노트북 1대. 순서: ① TCP 앱 서버로 5000 듣기 → 두 번째 TCP 앱도 서버 5000 시작 ② UDP 앱 받기 5001 → 두 번째 UDP 앱도 5001 ③ TCP 서버 주소에 이 PC 에 없는 `10.99.99.99` 를 넣고 시작. 기대: ①② 오류 문구 끝에 «— 쥔 프로그램: <exe 이름> (PID n)» 이 붙고, 그 PID 가 작업 관리자 «세부 정보» 의 PID 와 같음(관리자 권한 프로그램이 쥐었으면 «PID n» 만 나와도 통과) ③ 시작 전에 ««10.99.99.99» 는 이 PC 의 주소가 아닙니다» 알림이 보이고, 시작하면 오류 끝에 이 PC 주소 목록이 붙음 |
 | C38 | (10/18) 이 PC 주소 목록 (TCP 서버·중계, UDP) | 준비: 유선 랜 + 무선이 있는 노트북. 순서: 왼쪽 «이 PC 주소» 확인 → 주소 하나 누르기 → 랜선 뽑기 → ↻(다시 읽기) → 그 주소를 그대로 둔 채 보기. 기대: 연결된 랜카드의 `주소/접두사` 와 이름만 보임(127.0.0.1 은 목록에 없음), 마우스를 올리면 설명·마스크·게이트웨이, 누르면 주소 칸에 들어감, 랜선을 뽑고 다시 읽으면 목록에서 빠지고 주소 칸 아래 «… 랜카드(…)가 연결돼 있지 않습니다» 또는(윈도우가 주소를 거뒀으면) «… 는 이 PC 의 주소가 아닙니다» 알림, 주소 칸 고르기 목록 맨 앞에 «0.0.0.0 모든 랜카드», `ipconfig` 결과와 같음, 실행 중에는 눌러도 안 바뀜 |
 | C39 | (10/18) 새 앱 Modbus Master 설치판·휴대판 | 준비: 릴리스 `PortDock-Modbus-Master-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Modbus Master», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 방식·표가 남음, 오프라인 설치판은 인터넷 끊고도 설치됨 |
-| C40 | (10/18) Modbus Master 오류 보고 | 준비: Modbus Master 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시(C23 은 DSN 넣은 뒤). 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\modbus-master\`(휴대판은 `portdock-data` 안), «지난번에 오류로 꺼졌습니다» + «!» 빨강, 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Modbus Master |
+| C40 | (10/18) Modbus Master 오류 보고 | 준비: Modbus Master 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시(C23 은 DSN 넣은 뒤). 기대: 보고 폴더가 `%LOCALAPPDATA%\dev.portdock.modbus-master\reports\`(휴대판은 `portdock-data` 안), «지난번에 오류로 꺼졌습니다» + «!» 빨강, 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Modbus Master |
 | C41 | (10/19) 새 앱 SCPI 설치판·휴대판 | 준비: 릴리스 `PortDock-SCPI-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(분홍 «S?»)이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock SCPI», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 연결 설정·명령 목록·반복 측정 설정이 남음 |
-| C42 | (10/19) SCPI 오류 보고 | 준비: SCPI 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\scpi\`(휴대판은 `portdock-data` 안), 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 SCPI |
+| C42 | (10/19) SCPI 오류 보고 | 준비: SCPI 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\dev.portdock.scpi\reports\`(휴대판은 `portdock-data` 안), 연결 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 SCPI |
 | C43 | (10/19) 새 앱 Plot 설치판·휴대판 | 준비: 릴리스 `PortDock-Plot-setup.exe`·`-setup-offline.exe`·`-portable.zip`. 순서: C30·C32·C33 을 이 앱으로 다시. 기대: 아이콘(빨강 바탕 흰 파형)이 다른 앱과 모두 다름, 시작 메뉴 «PortDock» 폴더에 «PortDock Plot», 「앱 및 기능」 게시자 PortDock, 휴대판은 `portdock-data` 에 설정이 생기고 다른 PC 로 옮겨도 받는 곳·해석·보기·채널 이름과 색이 남음 |
-| C44 | (10/19) Plot 오류 보고 | 준비: Plot 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\PortDock\reports\plot\`(휴대판은 `portdock-data` 안), 시작 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Plot·원시 수신 줄이 기록으로 들어감 |
+| C44 | (10/19) Plot 오류 보고 | 준비: Plot 설치판. 순서: C20·C21·C22·C34·C35 를 이 앱으로 다시. 기대: 보고 폴더가 `%LOCALAPPDATA%\dev.portdock.plot\reports\`(휴대판은 `portdock-data` 안), 시작 실패가 «이번 실행의 오류» 에 쌓이고, 보고서 미리보기에 앱 이름이 Plot·원시 수신 줄이 기록으로 들어감 |
 
 ## ① Serial
 | # | 항목 | 장비 |

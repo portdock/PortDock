@@ -23,7 +23,7 @@
 - 휴대판: `tauri build --no-bundle --config tools/portable.conf.json` — `app.appDirectoriesOverride: "./portdock-data"` 를 덮어쓴다.
   Tauri 2.12(tauri-utils 2.10)의 이 설정은 `app_*_dir` 경로(설정·데이터·캐시·로그)와 **WebView2 데이터 폴더**를 exe 기준 상대 경로로 옮긴다 → localStorage 에 있는 설정이 exe 옆에 남는다.
   상대 경로는 exe 폴더에 쓰기 권한이 있어야 하므로 설치판 설정에는 넣지 않는다.
-- 주의: 오류 보고서(`crates/core/src/report.rs`)는 지금 `%LOCALAPPDATA%\PortDock\reports` 를 직접 쓰므로 휴대판에서도 그곳에 남는다.
+- 오류 보고서(`crates/core/src/report.rs` `reports_dir`): 설치판 `%LOCALAPPDATA%\dev.portdock.<app>\reports`(제거 때 «앱 데이터 삭제» 로 함께 지워짐), 휴대판은 exe 옆 `portdock-data\reports\<app>`.
 
 ## 순서
 

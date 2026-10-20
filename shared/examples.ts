@@ -1,5 +1,5 @@
 // 예시 명령 — 빈 명령 목록의 «예시 넣기»·Serial 첫 실행 카드가 넣는다. 사용자 명령과 섞이지 않게 이름 앞에 «예:»(e.g.).
-// 화면 없이 값만 — node --test shared/examples.test.ts. Modbus 바이트는 «Modbus 요청 만들기» 와 같은 함수로 만든다.
+// 화면 없이 값만 — node --test shared/serialPresets.test.ts(예시 시험이 함께 있음). Modbus 바이트는 «Modbus 요청 만들기» 와 같은 함수로 만든다.
 import { readReq } from "./modbusBuild.ts";
 import { mbapWrap } from "./mbap.ts";
 import type { PresetId } from "./serialPresets.ts";
