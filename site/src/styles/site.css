@@ -699,6 +699,23 @@ table.t td.mono {
 .guide pre.result {
   white-space: pre-wrap;
 }
+/* 가이드 설명 그림 — SVG 는 흰 바탕으로 고정돼 있어 어두운 테마에서도 테두리만 맞춘다 */
+.guide .fig {
+  margin: 12px 0 20px;
+}
+.guide .fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.guide .fig figcaption {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 6px;
+}
 
 /* 문의 — 메일 주소 줄(주소 + 복사 단추) */
 .mail-line {

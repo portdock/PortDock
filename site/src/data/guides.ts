@@ -1,14 +1,16 @@
 // 가이드 글 — 검색으로 들어오는 현장 질문에 답한다. 예시 바이트·CRC 는 lib/checksum.ts 로 계산해 확인한 값만 쓴다.
 import type { Lang, Tool } from "./tools";
 
-/** 본문 덩어리: 문단 · 소제목 · 목록 · 코드(바이트) · 표 */
+/** 본문 덩어리: 문단 · 소제목 · 목록 · 코드(바이트) · 표 · 그림 */
 export type Block =
   | { p: string }
   | { h: string }
   | { ul: string[] }
   | { code: string }
   /** 표 — 첫 칸은 바이트·코드라 고정폭 글꼴, 글로 된 첫 칸이면 plain */
-  | { table: { head: string[]; rows: string[][]; plain?: boolean } };
+  | { table: { head: string[]; rows: string[][]; plain?: boolean } }
+  /** 설명 그림 — public/img/guides/ 의 손으로 그린 SVG(언어별 파일), w·h 는 viewBox 크기 */
+  | { fig: { src: string; w: number; h: number; alt: string; cap: string } };
 
 export interface Guide {
   slug: string;
@@ -73,6 +75,7 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
+        { fig: { src: "/img/guides/modbus-rtu-frame.ko.svg", w: 780, h: 310, alt: "Modbus RTU 요청 01 03 00 00 00 02 C4 0B 와 응답 01 03 04 00 64 00 C8 BA 7A 를 국번·함수·시작 주소·개수·바이트 수·레지스터 값·CRC 칸으로 나눈 바이트 띠 그림", cap: "요청과 응답을 바이트 칸으로 나눈 그림. CRC16 은 국번부터 마지막 데이터까지 계산하고 낮은 바이트를 먼저 붙입니다." } },
         { h: "예외 응답" },
         { p: "요청을 처리할 수 없으면 슬레이브는 함수 번호에 0x80 을 더하고 예외 코드를 붙여 답합니다. 아래는 «없는 주소(02)» 입니다." },
         { code: "01 83 02 C0 F1" },
@@ -126,6 +129,7 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
+        { fig: { src: "/img/guides/modbus-rtu-frame.en.svg", w: 780, h: 310, alt: "Byte-strip diagram of the Modbus RTU request 01 03 00 00 00 02 C4 0B and response 01 03 04 00 64 00 C8 BA 7A, split into slave ID, function, start address, quantity, byte count, register values and CRC", cap: "The request and response split into byte fields. CRC16 covers the slave ID through the last data byte and is sent low byte first." } },
         { h: "Exception replies" },
         { p: "When a request cannot be served, the slave adds 0x80 to the function code and appends an exception code. This one is «illegal data address (02)»." },
         { code: "01 83 02 C0 F1" },
@@ -201,12 +205,14 @@ export const GUIDES: Guide[] = [
         { p: "선 이름이 제조사마다 다릅니다. A/B, D+/D−, Data+/Data− 가 섞여 쓰이고, 어떤 회사의 A 가 다른 회사의 B 인 경우도 흔합니다. 응답이 전혀 없으면 두 선을 바꿔 꽂아 보는 것이 가장 빠른 확인입니다. 극성이 반대여도 장비가 망가지지는 않습니다." },
         { h: "2. 종단 저항 (120 Ω)" },
         { p: "선로 양 끝 두 곳에만 120 Ω 저항을 둡니다. 중간 장비마다 달거나 하나도 없으면 신호가 반사돼 긴 선·빠른 속도에서 바이트가 깨집니다. 짧은 선(수 m)·느린 속도(9600 bps)에서는 없어도 동작하는 경우가 많아, 나중에 선을 늘리면서 문제가 생기기도 합니다." },
+        { fig: { src: "/img/guides/rs485-bus.ko.svg", w: 780, h: 345, alt: "마스터 하나와 슬레이브 세 대를 A·B·GND 세 선으로 차례로 이은 2선식 RS-485 버스, 선로 양 끝의 A–B 사이에 120 Ω 종단 저항", cap: "2선식 RS-485 버스. 장비를 A·B·GND 로 차례로 잇고, 종단 저항 120 Ω 은 선로 양 끝 두 곳에만 둡니다." } },
         { h: "3. 바이어스(Fail-safe)" },
         { p: "아무도 보내지 않을 때 선로가 떠 있으면 수신기가 잡음을 데이터로 읽어 엉뚱한 바이트(흔히 00·FF)가 들어옵니다. 마스터 쪽이나 변환기에 바이어스 저항(풀업·풀다운)이 있는지 확인합니다. 많은 USB-RS485 변환기는 스위치나 점퍼로 켭니다." },
         { h: "4. 공통 접지(GND)" },
         { p: "«두 선이면 된다» 고 하지만, 장비끼리 접지 전위가 다르면 수신기 허용 범위를 넘어 통신이 끊기거나 장비가 상할 수 있습니다. 세 번째 선(신호 접지)을 함께 연결하는 것이 안전합니다." },
         { h: "5. 배선 모양: 한 줄로 이어 가기" },
         { p: "RS-485 는 장비를 한 줄로 차례로 잇는(데이지 체인) 방식이 기본입니다. 한 점에서 여러 갈래로 뻗는 별(스타) 모양이나 긴 가지선은 반사를 만듭니다. 표준 송수신기 기준으로 한 선로에 32대(단위 부하)까지, 길이는 느린 속도에서 약 1200 m 까지가 일반적인 기준입니다." },
+        { fig: { src: "/img/guides/rs485-topology.ko.svg", w: 780, h: 290, alt: "RS-485 배선 모양 비교: 양 끝을 종단한 데이지 체인은 올바름, 한 점에서 뻗는 스타 배선과 긴 가지선은 잘못된 예", cap: "올바른 데이지 체인과 반사를 만드는 두 가지 잘못된 배선 — 스타(별) 모양과 긴 가지선." } },
         { h: "증상으로 찾기" },
         {
           table: {
@@ -230,12 +236,14 @@ export const GUIDES: Guide[] = [
         { p: "Wire names differ by vendor: A/B, D+/D−, Data+/Data−, and one vendor's A is often another's B. If nothing answers at all, swapping the two wires is the fastest test. Reversed polarity does not damage the devices." },
         { h: "2. Termination (120 Ω)" },
         { p: "Put a 120 Ω resistor at the two physical ends of the line only. One at every device, or none at all, causes reflections that corrupt bytes on long lines and at high speeds. Short runs (a few metres) at 9600 bps often work without it, so problems may appear only after the cable is extended." },
+        { fig: { src: "/img/guides/rs485-bus.en.svg", w: 780, h: 345, alt: "Two-wire RS-485 bus: one master and three slaves chained on A, B and GND, with 120 Ω termination resistors across A–B at both ends of the line", cap: "A two-wire RS-485 bus. Devices are chained on A, B and GND; the 120 Ω terminators sit at the two ends of the line only." } },
         { h: "3. Biasing (fail-safe)" },
         { p: "When nobody transmits, a floating line lets receivers read noise as data, producing stray bytes (often 00 or FF). Check that the master or the adapter provides bias resistors (pull-up/pull-down). Many USB-RS485 adapters enable them with a switch or jumper." },
         { h: "4. Common ground" },
         { p: "«Two wires are enough» is a common belief, but if the devices' ground potentials differ, the receivers' common-mode range can be exceeded, breaking communication or even damaging devices. Connecting a third wire for signal ground is the safe choice." },
         { h: "5. Topology: daisy chain" },
         { p: "RS-485 expects devices to be chained one after another. Star wiring or long stubs create reflections. With standard transceivers the usual limits are 32 devices (unit loads) per line and about 1200 m at low speeds." },
+        { fig: { src: "/img/guides/rs485-topology.en.svg", w: 780, h: 290, alt: "RS-485 topologies compared: a daisy chain terminated at both ends is correct; star wiring from one point and a long stub are wrong", cap: "The correct daisy chain and two layouts that cause reflections — a star and a long stub." } },
         { h: "Find it by symptom" },
         {
           table: {
@@ -574,6 +582,7 @@ export const GUIDES: Guide[] = [
     body: {
       ko: [
         { p: "Modbus 요청에서 국번(RTU) 또는 MBAP 머리(TCP) 바로 뒤의 한 바이트가 함수 코드입니다. 함수 코드가 «어느 표를 읽을지·쓸지» 를 정하고, 주소는 그 표 안의 0 기준 번호입니다. 공개 함수 코드 가운데 레지스터·코일을 다루는 것은 아래 9개입니다. 한도는 Modbus Application Protocol Specification V1.1b3 의 값입니다." },
+        { fig: { src: "/img/guides/modbus-rtu-vs-tcp.ko.svg", w: 780, h: 300, alt: "같은 요청을 Modbus RTU 와 TCP 로 비교: RTU 는 국번 01 + PDU 03 00 00 00 02 + CRC C4 0B, TCP 는 MBAP 머리 7바이트(트랜잭션 ID 00 01·프로토콜 ID 00 00·길이 00 06·Unit ID 01) + 같은 PDU, CRC 없음", cap: "같은 «보유 레지스터 0 부터 2개 읽기» 요청. PDU(함수 코드 + 데이터)는 같고, RTU 는 국번과 CRC 를, TCP 는 MBAP 머리를 붙입니다." } },
         {
           table: {
             head: ["코드", "이름", "표", "한 번에 최대"],
@@ -625,6 +634,7 @@ export const GUIDES: Guide[] = [
       ],
       en: [
         { p: "The function code is the byte right after the slave ID (RTU) or the MBAP header (TCP). It selects which table to read or write; the address is a 0-based index inside that table. Of the public function codes, these nine handle registers and coils. Limits are from the Modbus Application Protocol Specification V1.1b3." },
+        { fig: { src: "/img/guides/modbus-rtu-vs-tcp.en.svg", w: 780, h: 300, alt: "The same request in Modbus RTU and TCP: RTU is slave ID 01 + PDU 03 00 00 00 02 + CRC C4 0B; TCP is a 7-byte MBAP header (transaction ID 00 01, protocol ID 00 00, length 00 06, unit ID 01) + the same PDU, with no CRC", cap: "One «read 2 holding registers from 0» request. The PDU (function code + data) is identical; RTU adds the slave ID and CRC, TCP adds the MBAP header." } },
         {
           table: {
             head: ["Code", "Name", "Table", "Max per request"],
@@ -987,6 +997,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "거리와 속도는 동시에 최대로 쓸 수 없습니다. 1200 m 는 느린 속도에서, 높은 속도는 짧은 선로에서 나오는 값입니다." },
+        { fig: { src: "/img/guides/serial-topologies.ko.svg", w: 780, h: 480, alt: "RS-232 는 TxD·RxD 를 엇갈리고 GND 를 잇는 1:1 연결, RS-422 는 송신기 하나가 차동 쌍으로 수신기 최대 10개에 보내고 먼 끝을 종단, RS-485 는 여러 송수신기가 한 쌍을 함께 쓰고 양 끝을 120 Ω 으로 종단하는 그림", cap: "세 방식의 연결 모양. RS-232 는 1:1, RS-422 는 송신기 하나에 수신기 여럿, RS-485 는 여러 장비가 한 쌍을 함께 씁니다." } },
         { h: "RS-232: 가까운 1:1" },
         { p: "송신(TxD)·수신(RxD)·접지(GND) 세 선이 기본이고, 신호는 GND 에 대한 전압입니다(송신 쪽 ±5~15 V, 수신 쪽은 +3 V 위·−3 V 아래로 판정). PC 의 COM 포트나 장비의 설정용 포트처럼 가까운 1:1 연결에 씁니다. 두 장비가 모두 같은 쪽(DTE)이면 TxD 와 RxD 를 엇갈려 잇는 널 모뎀 케이블이 필요합니다. 응답이 전혀 없으면 송수신 선이 엇갈렸는지부터 봅니다." },
         { h: "RS-485: 여러 장비를 한 줄로" },
@@ -1043,6 +1054,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "Distance and speed cannot both be at their maximum. 1200 m applies at low speeds; high speeds need short lines." },
+        { fig: { src: "/img/guides/serial-topologies.en.svg", w: 780, h: 480, alt: "RS-232 point-to-point with TxD and RxD crossed and GND joined; RS-422 with one driver sending on a differential pair to up to 10 receivers, terminated at the far end; RS-485 with several transceivers sharing one pair, 120 Ω at both ends", cap: "How each standard connects: RS-232 point-to-point, RS-422 one driver to several receivers, RS-485 many devices sharing one pair." } },
         { h: "RS-232: short point-to-point" },
         { p: "Transmit (TxD), receive (RxD) and ground (GND) are the basic three wires, and signals are voltages relative to GND (±5 to 15 V at the driver; the receiver decides above +3 V or below −3 V). It suits short point-to-point links such as a PC COM port or a device's configuration port. Two devices of the same kind (DTE) need a null-modem cable that crosses TxD and RxD. If nothing answers at all, check whether transmit and receive are crossed correctly." },
         { h: "RS-485: many devices on one line" },
@@ -1130,6 +1142,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "배선에서 먼저 볼 것은 «누가 루프 전원을 대는가» 입니다. 2선식 전송기는 스스로 전류를 만들지 못하므로 루프 어딘가에 전원이 있어야 합니다. 받는 쪽 입력이 전원을 대는 입력인지, 전원 없이 전류만 재는 입력인지 매뉴얼에서 확인합니다. 2선식 전송기를 전원 없는 입력에 물리면 루프에 전원이 하나도 없고, 4선식(능동 출력) 전송기를 전원을 대는 입력에 물리면 전원이 둘이 됩니다." },
+        { fig: { src: "/img/guides/4-20ma-wiring.ko.svg", w: 780, h: 535, alt: "2선식: 루프 전원 + → 전송기 → 입력 카드의 250 Ω → 전원 − 로 도는 직렬 루프. 4선식: 전송기에 따로 전원을 주고, 전송기 출력 +OUT·−OUT 이 입력 카드의 250 Ω 으로 전류를 보냄. 250 Ω 양단은 1–5 V", cap: "2선식은 루프 전원 하나가 전송기와 입력을 직렬로 돌고, 4선식은 전송기가 따로 전원을 받아 전류를 스스로 냅니다. 250 Ω 양단은 4–20 mA 에서 1–5 V." } },
         { h: "루프 전압이 모자라면" },
         { p: "2선식 루프의 전원 전압은 «전송기가 동작에 필요한 최소 전압 + 20 mA × 루프 저항(받는 쪽 입력 저항 + 선 저항 + 중간 표시기)» 보다 커야 합니다. 모자라면 상한 근처에서 전류가 더 오르지 못하고 멈춥니다. 예를 들어 입력 저항 250 Ω 에 20 mA 가 흐르면 그 저항에서만 5 V 가 떨어집니다. 전송기의 최소 전압은 전송기 매뉴얼에 있습니다." },
         { h: "고장 신호: NAMUR NE 43" },
@@ -1200,6 +1213,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "The first wiring question is «who powers the loop?». A 2-wire transmitter cannot drive current on its own, so the loop needs a supply somewhere. Check in the manual whether the receiving input supplies power or only measures current. A 2-wire transmitter on an unpowered input leaves the loop with no supply at all; a 4-wire (active) transmitter on a powered input puts two sources in the loop." },
+        { fig: { src: "/img/guides/4-20ma-wiring.en.svg", w: 780, h: 535, alt: "2-wire: a series loop from the loop supply + through the transmitter and the input card's 250 Ω back to supply −. 4-wire: the transmitter has its own power and drives current from +OUT/−OUT into the input's 250 Ω. 1–5 V across 250 Ω", cap: "In a 2-wire loop one supply drives the transmitter and the input in series; a 4-wire transmitter has its own power and drives the current itself. 4–20 mA gives 1–5 V across 250 Ω." } },
         { h: "When the loop voltage is too low" },
         { p: "In a 2-wire loop the supply must exceed «the transmitter's minimum operating voltage + 20 mA × loop resistance (input resistance + wire resistance + any indicators)». If it does not, the current stops rising near the top of the range. For example, 20 mA through a 250 Ω input drops 5 V across that resistor alone. The transmitter's minimum voltage is in its manual." },
         { h: "Failure signals: NAMUR NE 43" },
@@ -1287,6 +1301,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "2선식에서 왕복 선 저항이 1 Ω 이면 Pt100 은 0 °C 에서 약 2.6 °C, Pt1000 은 약 0.26 °C 높게 읽습니다. 선이 길고 가늘수록 저항이 커지므로 2선식은 짧은 배선이나 Pt1000 에 맞습니다. 3선식은 세 선의 길이·굵기·접속 저항이 같아야 상쇄되므로, 단자 하나가 헐겁거나 중간에 굵기가 다른 선으로 이으면 오차가 남습니다. 더 정확해야 하면 4선식을 씁니다." },
+        { fig: { src: "/img/guides/pt100-wiring.ko.svg", w: 780, h: 330, alt: "Pt100 결선 세 가지: 2선식은 왕복 선 저항 2·RL 이 더해지고, 3선식은 셋째 선으로 선 저항을 재서 빼며, 4선식은 전류 선 I+·I− 와 전압 선 V+·V− 가 따로라 선 저항의 영향이 거의 없음", cap: "Pt100 의 2·3·4선식. RL 은 각 선의 저항입니다 — 2선식은 그대로 더해지고, 3선식은 세 선이 같을 때 상쇄되고, 4선식은 전압 선에 전류가 거의 흐르지 않습니다." } },
         { p: "받는 쪽(온도 조절기·변환기 입력)이 어떤 결선을 받는지가 먼저입니다. 3선식 입력에 2선식 센서를 물릴 때는 입력 매뉴얼의 단자 연결 방법을 따릅니다." },
         { h: "허용차 등급 (IEC 60751)" },
         { p: "IEC 60751 은 센서 자체의 허용차를 등급으로 나눕니다. A 급은 ±(0.15 + 0.002·|t|) °C, B 급은 ±(0.3 + 0.005·|t|) °C 로, 0 °C 에서 ±0.15 °C·±0.3 °C, 100 °C 에서 ±0.35 °C·±0.8 °C 입니다. 이보다 엄격한 AA 급과 느슨한 C 급도 있습니다. 등급마다 허용차가 유효한 온도 범위가 있고 권선형과 박막형이 다르니 센서 데이터시트를 확인합니다. 등급은 센서의 오차이고, 2선식 선 저항 오차는 그 위에 더해집니다." },
@@ -1318,6 +1333,7 @@ export const GUIDES: Guide[] = [
         },
         { h: "냉접점 보정" },
         { p: "열전대의 mV 는 측정 끝과 입력 단자(냉접점)의 온도 차에 따른 값입니다. NIST 표는 냉접점 0 °C 기준이라, 입력 장치가 단자 온도를 재서 그만큼을 더해 줍니다. 예: K 형으로 300 °C 를 잴 때 단자가 25 °C 면 측정 mV 는 11.208 mV 입니다. 이것을 냉접점 0 °C 로 보고 표에서 찾으면 약 275.8 °C — 약 24 °C 낮게 읽습니다." },
+        { fig: { src: "/img/guides/thermocouple-cjc.ko.svg", w: 780, h: 320, alt: "K 형 열전대: 측정 접점 300 °C, 보상 도선, 입력 단자(냉접점) 25 °C, 단자에서 재는 전압 11.208 mV. 냉접점 보정을 켜면 300 °C, 없으면 약 275.8 °C 로 읽음", cap: "냉접점 보정. 단자가 25 °C 면 300 °C 의 K 형 열전대에서 11.208 mV 만 잡히므로, 입력 장치가 단자 온도 몫을 더해야 300 °C 가 됩니다." } },
         {
           ul: [
             "늘 실온쯤만큼 낮게(또는 높게) 읽으면: 냉접점 보정이 꺼졌거나 두 번 들어간 경우입니다.",
@@ -1364,6 +1380,7 @@ export const GUIDES: Guide[] = [
           },
         },
         { p: "With 1 Ω of total lead resistance on a 2-wire connection, a Pt100 reads about 2.6 °C high at 0 °C and a Pt1000 about 0.26 °C. Longer and thinner leads have more resistance, so 2-wire suits short runs or Pt1000. 3-wire cancels only when the three leads match in length, gauge and contact resistance; a loose terminal or a splice to a different gauge leaves an error. For higher accuracy use 4-wire." },
+        { fig: { src: "/img/guides/pt100-wiring.en.svg", w: 780, h: 330, alt: "Three Pt100 connections: 2-wire adds the round-trip lead resistance 2·RL; 3-wire measures lead resistance on a third wire and subtracts it; 4-wire uses separate current leads I+/I− and sense leads V+/V−, so lead resistance has almost no effect", cap: "Pt100 2-, 3- and 4-wire. RL is each lead's resistance — added directly in 2-wire, cancelled in 3-wire when all three match, and carrying almost no current on the 4-wire sense leads." } },
         { p: "Start from what the receiving input (temperature controller, transmitter) accepts. To connect a 2-wire sensor to a 3-wire input, follow the terminal instructions in the input's manual." },
         { h: "Tolerance classes (IEC 60751)" },
         { p: "IEC 60751 grades the sensor's own tolerance. Class A is ±(0.15 + 0.002·|t|) °C and class B ±(0.3 + 0.005·|t|) °C — ±0.15 °C and ±0.3 °C at 0 °C, ±0.35 °C and ±0.8 °C at 100 °C. A tighter class AA and a looser class C also exist. Each class is valid over its own temperature range, different for wire-wound and thin-film elements, so check the sensor datasheet. The class covers the sensor; 2-wire lead error comes on top." },
@@ -1395,6 +1412,7 @@ export const GUIDES: Guide[] = [
         },
         { h: "Cold-junction compensation" },
         { p: "A thermocouple's mV depends on the temperature difference between the measuring tip and the input terminals (the cold junction). NIST tables assume a 0 °C cold junction, so the instrument measures its terminal temperature and adds the corresponding voltage. Example: measuring 300 °C with type K and terminals at 25 °C gives 11.208 mV. Looking that up as if the cold junction were 0 °C gives about 275.8 °C — some 24 °C low." },
+        { fig: { src: "/img/guides/thermocouple-cjc.en.svg", w: 780, h: 320, alt: "Type K thermocouple: measuring junction at 300 °C, extension cable, input terminals (cold junction) at 25 °C, 11.208 mV measured at the terminals. With cold-junction compensation it reads 300 °C, without it about 275.8 °C", cap: "Cold-junction compensation. With terminals at 25 °C a type K thermocouple at 300 °C produces only 11.208 mV there, so the instrument must add the terminals' share to read 300 °C." } },
         {
           ul: [
             "Reads consistently low (or high) by about room temperature: compensation is off or applied twice.",

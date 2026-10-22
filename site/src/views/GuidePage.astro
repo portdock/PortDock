@@ -53,6 +53,12 @@ const ld = {
         : "h" in b ? <h2>{b.h}</h2>
         : "ul" in b ? <ul>{b.ul.map((x) => <li>{x}</li>)}</ul>
         : "code" in b ? <pre class="result">{b.code}</pre>
+        : "fig" in b ? (
+          <figure class="fig">
+            <img src={b.fig.src} width={b.fig.w} height={b.fig.h} alt={b.fig.alt} loading="lazy" decoding="async" />
+            <figcaption>{b.fig.cap}</figcaption>
+          </figure>
+        )
         : (
           <div class="tbl">
             <table class="t">

@@ -34,7 +34,7 @@ const ogImage = new URL(lang === "ko" ? "/og.png" : "/og-en.png", site).href;
 const analyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
 const adsenseClient = ADSENSE_CLIENT;
 const naverVerify = import.meta.env.PUBLIC_NAVER_SITE_VERIFICATION;
-const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION || "Ou5LSmDQdGQwykHcdQmPRAEAq0GfLKa8nsOWjnFhE8w"; // Search Console(https://portdock.dev/ 속성, portdock.contact) — 지우지 않는다
 import { ADSENSE_CLIENT } from "../lib/ads";
 ---
 
