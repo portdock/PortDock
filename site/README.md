@@ -26,7 +26,7 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
 4. **Email Routing** 켜기 → 받을 내 메일 주소 검증 → `contact@portdock.dev` 같은 주소를 그 메일로 전달.
 5. **Turnstile** 위젯 만들기(도메인 portdock.dev) → 사이트 키·비밀 키.
 6. Pages → 설정 → 변수:
-   - 빌드(공개): `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_CF_ANALYTICS_TOKEN`(Web Analytics), 나중에 `PUBLIC_ADSENSE_CLIENT`·`PUBLIC_ADSENSE_SLOT`, `PUBLIC_NAVER_SITE_VERIFICATION`, `PUBLIC_GOOGLE_SITE_VERIFICATION`
+   - 빌드(공개): `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_CF_ANALYTICS_TOKEN`(Web Analytics), 나중에 `PUBLIC_ADSENSE_SLOT`(게시자 ID 는 `src/lib/ads.ts` 에 넣어 둠 — 10/22, 소유 확인 meta·`public/ads.txt` 포함), `PUBLIC_NAVER_SITE_VERIFICATION`, `PUBLIC_GOOGLE_SITE_VERIFICATION`
    - 함수(비밀): `TURNSTILE_SECRET`, `CONTACT_TO`(검증한 내 메일), `CONTACT_FROM`(예: contact@portdock.dev)
    - 바인딩: send_email, 이름 `EMAIL`, 허용 수신 주소 = `CONTACT_TO`
 7. **Google Search Console**·**네이버 서치어드바이저**에 사이트 등록 → 확인 값을 위 변수에 → `<SITE_URL>/sitemap-index.xml` 제출(pages.dev 단계에서도 등록할 수 있다).

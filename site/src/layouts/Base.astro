@@ -32,9 +32,10 @@ const fullTitle = seoTitle ?? (title === "PortDock" ? "PortDock" : `${title} —
 const ogImage = new URL(lang === "ko" ? "/og.png" : "/og-en.png", site).href;
 // 배포 환경 변수(Cloudflare Pages): 비워 두면 해당 스크립트를 넣지 않는다
 const analyticsToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
-const adsenseClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
+const adsenseClient = ADSENSE_CLIENT;
 const naverVerify = import.meta.env.PUBLIC_NAVER_SITE_VERIFICATION;
 const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+import { ADSENSE_CLIENT } from "../lib/ads";
 ---
 
 <!doctype html>
@@ -74,6 +75,8 @@ const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
     <meta name="theme-color" content="#0b6e75" />
     {naverVerify && <meta name="naver-site-verification" content={naverVerify} />}
     {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
+    {/* 애드센스 사이트 소유 확인 — 광고 스크립트 없이 모든 페이지에 */}
+    <meta name="google-adsense-account" content={adsenseClient} />
     {
       ads && adsenseClient && (
         <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`} crossorigin="anonymous" />
