@@ -9,8 +9,8 @@
 | 애드센스 검토 결과 기다리기(메일 portdock.contact@gmail.com) | 사용자 | 10/22 검토 요청함. 게시자 `ca-pub-2423716169041955`, 소유 확인 meta·`/ads.txt` 배포됨 |
 | 승인 뒤 광고 단위 만들기 → 번호를 Claude 에게 | 사용자 | 대기 |
 | 광고 단위 번호를 `PUBLIC_ADSENSE_SLOT`(또는 `site/src/lib/ads.ts`)에 넣고 배포, 광고 나오는지 확인 | Claude | 승인 뒤 |
-| Google Search Console — `https://portdock.dev/` 속성(메타 태그 확인) → sitemap 제출 | Claude(Chrome) | 진행 중(10/22) |
-| Bing Webmaster Tools — «Google Search Console 에서 가져오기» | 사용자 | 안 함 |
+| Google Search Console — `https://portdock.dev/` 속성(portdock.contact, 메타 태그 확인 — `Base.astro` 의 값 지우지 말 것) → sitemap 제출 | Claude(Chrome) | ✅ 10/22 확인·sitemap 제출. 색인은 며칠~몇 주 |
+| Bing Webmaster Tools — «Google Search Console 에서 가져오기»(Google 권한 허용·Microsoft 로그인이 필요해 사용자) | 사용자 | 안 함 |
 | 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 (Chrome 확장에서 네이버 접속이 막혀 Claude 가 못 함) | 사용자 | 안 함 |
 | 네이버 확인 태그를 사이트에 넣고 배포 → 사용자가 «소유 확인» | Claude | 태그 받은 뒤 |
 | Cloudflare Web Analytics 켜기(Pages → portdock → 메트릭) — 방문자 수 보기 | 사용자 | 선택 |
