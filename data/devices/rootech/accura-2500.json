@@ -1,0 +1,1350 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "rootech/accura-2500",
+  "manufacturer": {
+    "ko": "루텍",
+    "en": "Rootech"
+  },
+  "model": "Accura 2500",
+  "models": [
+    "Accura 2500M",
+    "Accura 2500D",
+    "Accura 2550"
+  ],
+  "kind": "power-meter",
+  "title": {
+    "ko": "루텍 Accura 2500M 분전반 통합 모듈 + Accura 2550 계측 모듈 (AC)",
+    "en": "Rootech Accura 2500M panel integration module with Accura 2550 measurement modules (AC)"
+  },
+  "summary": {
+    "ko": "2500M 이 분전반 인입 전압을 재고 내부 통신으로 붙은 Accura 2550 모듈(ID 0-39)의 전류·전력·전력량을 모아 Modbus RTU/TCP 로 내준다. 계측값은 9911 을 읽어 가져온(fetch) 뒤 읽는다.",
+    "en": "The 2500M measures panel voltage and collects current/power/energy from up to 40 Accura 2550 modules (ID 0-39), served over Modbus RTU/TCP. Read 9911 to fetch before reading measurements."
+  },
+  "protocols": [
+    "rtu",
+    "tcp"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      115200
+    ],
+    "parity": "even",
+    "stopBits": 1,
+    "tcpPort": 502,
+    "order": "ABCD",
+    "maxRegisters": 125,
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "매뉴얼은 레지스터 번호(1 기준) — 통신 주소 = 번호 − 1. 예: 10001 은 2710h 로 보낸다 (p.16, p.234, p.243).",
+        "en": "Manual uses 1-based register numbers; wire address = number − 1, e.g. 10001 is sent as 2710h (p.16, p.234, p.243)."
+      },
+      {
+        "ko": "32비트는 상위 워드가 낮은 주소(Big-endian) (p.18, p.244).",
+        "en": "32-bit values: high word at lower address (big-endian) (p.18, p.244)."
+      },
+      {
+        "ko": "RS-485 출하값 9600 bps·짝수 패리티·정지 1비트, 국번 범위 0-247 에 Default 0 으로 적혀 있어 출하 국번은 비워 둠 (p.40). 패리티 코드는 0 None·1 Odd·2 Even.",
+        "en": "RS-485 defaults 9600 bps, even parity, 1 stop bit; address range 0-247 with default 0, so factory unit ID is left out (p.40). Parity codes: 0 none, 1 odd, 2 even."
+      },
+      {
+        "ko": "함수 코드 03·06·16, 사용자 정의 101(65h, TCP 전용). 읽기 수량 표준 1-125(장치는 250 까지 허용하나 128 이상은 byte count 넘침). Modbus TCP 포트 502, Unit ID 1 고정, 동시 접속 20(TCP 19, RTU 1) (p.230-234).",
+        "en": "FC 03, 06, 16 plus user-defined 101 (65h, TCP only). Read quantity 1-125 (device allows 250, byte count overflows from 128). Modbus TCP port 502, unit ID fixed at 1, 20 connections (19 TCP, 1 RTU) (p.230-234)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "1",
+      "type": "u16",
+      "name": {
+        "ko": "제품 ID",
+        "en": "Product ID"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Accura 2500M = 2500",
+        "en": "Accura 2500M = 2500"
+      },
+      "ref": "p.19 Main System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "3",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "일련번호",
+        "en": "Serial number"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.19 Main System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "8",
+      "type": "u16",
+      "name": {
+        "ko": "소프트웨어 주 버전",
+        "en": "Major application version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.19 Main System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "9",
+      "type": "u16",
+      "name": {
+        "ko": "소프트웨어 부 버전",
+        "en": "Minor application version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.19 Main System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "10",
+      "type": "u16",
+      "name": {
+        "ko": "소프트웨어 개정 버전",
+        "en": "Application revised version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.19 Main System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2900,
+      "manualAddress": "2901",
+      "type": "u16",
+      "name": {
+        "ko": "원격 설정 잠금",
+        "en": "Remote setup lock"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "잠금 해제",
+          "en": "Unlocked"
+        },
+        {
+          "value": 1,
+          "ko": "잠금",
+          "en": "Locked"
+        }
+      ],
+      "description": {
+        "ko": "2300 → 0 → 700 → 1 을 차례로 쓰면 해제, 아무 값이나 쓰면 잠금. 접속마다 따로, 전원을 끄면 다시 잠김.",
+        "en": "Write 2300 → 0 → 700 → 1 to unlock; any other write locks. Per connection; relocks at power-off."
+      },
+      "ref": "p.30 Remote Setup Unlock"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3700,
+      "manualAddress": "3701",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 설정 접근",
+        "en": "Access for RS-485 setup"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "읽으면 장치 설정을 3702~3705 로 가져온다(성공 시 Bit 15 = 1). 1 을 쓰면 3702~3705 값을 장치에 적용.",
+        "en": "Read fetches device settings into 3702-3705 (bit 15 = 1 on success); write 1 to apply 3702-3705."
+      },
+      "ref": "p.40 RS-485 Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3701,
+      "manualAddress": "3702",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 국번",
+        "en": "RS-485 device address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 247
+      },
+      "ref": "p.40 RS-485 Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3702,
+      "manualAddress": "3703",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 통신 속도",
+        "en": "RS-485 bit rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        },
+        {
+          "value": 1,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 2,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 3,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 4,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 5,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 6,
+          "ko": "57600 bps",
+          "en": "57600 bps"
+        },
+        {
+          "value": 7,
+          "ko": "115200 bps",
+          "en": "115200 bps"
+        }
+      ],
+      "ref": "p.40 RS-485 Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3703,
+      "manualAddress": "3704",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 패리티",
+        "en": "RS-485 parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "홀수",
+          "en": "Odd"
+        },
+        {
+          "value": 2,
+          "ko": "짝수",
+          "en": "Even"
+        }
+      ],
+      "ref": "p.40 RS-485 Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3704,
+      "manualAddress": "3705",
+      "type": "u16",
+      "name": {
+        "ko": "RS-485 정지 비트",
+        "en": "RS-485 stop bit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트",
+          "en": "1 stop bit"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 stop bits"
+        }
+      ],
+      "ref": "p.40 RS-485 Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9900,
+      "manualAddress": "9901",
+      "type": "u16",
+      "name": {
+        "ko": "Aggregation 선택",
+        "en": "Aggregation selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.2초",
+          "en": "0.2 s"
+        },
+        {
+          "value": 1,
+          "ko": "고정 1 (1초)",
+          "en": "Fixed 1 (1 s)"
+        },
+        {
+          "value": 2,
+          "ko": "고정 2 (5초)",
+          "en": "Fixed 2 (5 s)"
+        },
+        {
+          "value": 3,
+          "ko": "고정 3 (1분)",
+          "en": "Fixed 3 (1 min)"
+        },
+        {
+          "value": 4,
+          "ko": "고정 4 (5분)",
+          "en": "Fixed 4 (5 min)"
+        },
+        {
+          "value": 5,
+          "ko": "고정 5 (1시간)",
+          "en": "Fixed 5 (1 h)"
+        },
+        {
+          "value": 6,
+          "ko": "고정 6 (6시간)",
+          "en": "Fixed 6 (6 h)"
+        },
+        {
+          "value": 11,
+          "ko": "사용자 11",
+          "en": "User-defined 11"
+        },
+        {
+          "value": 12,
+          "ko": "사용자 12",
+          "en": "User-defined 12"
+        },
+        {
+          "value": 13,
+          "ko": "사용자 13",
+          "en": "User-defined 13"
+        },
+        {
+          "value": 14,
+          "ko": "사용자 14",
+          "en": "User-defined 14"
+        },
+        {
+          "value": 15,
+          "ko": "사용자 15",
+          "en": "User-defined 15"
+        },
+        {
+          "value": 255,
+          "ko": "Max/Min (리셋 이후)",
+          "en": "Max/Min since reset"
+        }
+      ],
+      "ref": "p.98 Aggregation Selection & Data Fetch"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9903,
+      "manualAddress": "9904",
+      "type": "u16",
+      "name": {
+        "ko": "Index 선택",
+        "en": "Index selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.98 Aggregation Selection & Data Fetch"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9905,
+      "manualAddress": "9906",
+      "type": "u16",
+      "name": {
+        "ko": "최신 index",
+        "en": "Newest index"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.98 Aggregation Selection & Data Fetch"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9910,
+      "manualAddress": "9911",
+      "type": "u16",
+      "name": {
+        "ko": "데이터 가져오기(fetch)",
+        "en": "Data fetch"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "실패",
+          "en": "Fetch failed"
+        },
+        {
+          "value": 1,
+          "ko": "성공",
+          "en": "Fetch succeeded"
+        }
+      ],
+      "description": {
+        "ko": "읽으면 선택한 index 의 aggregation 데이터를 가져와 계측 영역(9914~)에 채운다. 9902 기본 모드(1)는 최신 index 로 바꾼 뒤 가져온다.",
+        "en": "Reading fetches the selected index into the measurement area (9914-). Default index update mode 9902 = 1 switches to the newest index first."
+      },
+      "ref": "p.98 Aggregation Selection & Data Fetch"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9929,
+      "manualAddress": "9930",
+      "type": "u16",
+      "name": {
+        "ko": "2500M 전압 데이터 유효성",
+        "en": "Validity of 2500M voltage data"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "유효하지 않음",
+          "en": "Invalid"
+        },
+        {
+          "value": 1,
+          "ko": "2500M (AC 모드)",
+          "en": "2500M (AC mode)"
+        }
+      ],
+      "ref": "p.99 Measurement Header"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9930,
+      "manualAddress": "9931",
+      "type": "u16",
+      "name": {
+        "ko": "모듈 ID 0 데이터 형식·유효성",
+        "en": "Module ID 0 data type & validity"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Bit 15-8 모듈 형식(0 무효, 3 CM[Z]-1P, 4 CM[Z]-3P·CMM[Z]-3P·CMZ-3P4W, 5 CMS-1P3F, 6 CMS-1P2F, 7 CMS-3P4W, 8 CMS-2P, 10 IO, 11 TEMP, 12 GW, 13 DCM, 14 SAL, 16 VOL, 17 GWM, 19 VOC), Bit 7-4 세부 속성, Bit 3-0 동작 모드. ID 1~39 는 9932~9970.",
+        "en": "Bits 15-8 module type (0 invalid, 3 CM[Z]-1P, 4 CM[Z]-3P/CMM[Z]-3P/CMZ-3P4W, 5 CMS-1P3F, 6 CMS-1P2F, 7 CMS-3P4W, 8 CMS-2P, 10 IO, 11 TEMP, 12 GW, 13 DCM, 14 SAL, 16 VOL, 17 GWM, 19 VOC), bits 7-4 sub-type, bits 3-0 mode. IDs 1-39 at 9932-9970."
+      },
+      "ref": "p.99-100 Measurement Header"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10000,
+      "manualAddress": "10001",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 상전압",
+        "en": "Voltage Van"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10002,
+      "manualAddress": "10003",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 상전압",
+        "en": "Voltage Vbn"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10004,
+      "manualAddress": "10005",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 상전압",
+        "en": "Voltage Vcn"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10006,
+      "manualAddress": "10007",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average L-N voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10010,
+      "manualAddress": "10011",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "AB 선간전압",
+        "en": "Voltage Vab"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10012,
+      "manualAddress": "10013",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "BC 선간전압",
+        "en": "Voltage Vbc"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10014,
+      "manualAddress": "10015",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "CA 선간전압",
+        "en": "Voltage Vca"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10016,
+      "manualAddress": "10017",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 선간전압",
+        "en": "Average L-L voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10036,
+      "manualAddress": "10037",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10038,
+      "manualAddress": "10039",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 전압 THD",
+        "en": "Voltage THD A"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10040,
+      "manualAddress": "10041",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 전압 THD",
+        "en": "Voltage THD B"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10042,
+      "manualAddress": "10043",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 전압 THD",
+        "en": "Voltage THD C"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10050,
+      "manualAddress": "10051",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "상전압 불평형률",
+        "en": "Voltage unbalance"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101 Main Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10500,
+      "manualAddress": "10501",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 전류",
+        "en": "Module 0 current Ia"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 0"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10502,
+      "manualAddress": "10503",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 전류",
+        "en": "Module 0 current Ib"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10504,
+      "manualAddress": "10505",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 전류",
+        "en": "Module 0 current Ic"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10506,
+      "manualAddress": "10507",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 평균 전류",
+        "en": "Module 0 average current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 6"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10520,
+      "manualAddress": "10521",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 유효전력",
+        "en": "Module 0 active power Pa"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 20"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10522,
+      "manualAddress": "10523",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 유효전력",
+        "en": "Module 0 active power Pb"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 22"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10524,
+      "manualAddress": "10525",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 유효전력",
+        "en": "Module 0 active power Pc"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 24"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10526,
+      "manualAddress": "10527",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 유효전력",
+        "en": "Module 0 total active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 26"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10534,
+      "manualAddress": "10535",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 무효전력",
+        "en": "Module 0 total reactive power"
+      },
+      "unit": "kVAR",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10542,
+      "manualAddress": "10543",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 피상전력",
+        "en": "Module 0 total apparent power"
+      },
+      "unit": "kVA",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 42"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10544,
+      "manualAddress": "10545",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 A상 역률",
+        "en": "Module 0 PF A"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 44"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10546,
+      "manualAddress": "10547",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 B상 역률",
+        "en": "Module 0 PF B"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 46"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10548,
+      "manualAddress": "10549",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 C상 역률",
+        "en": "Module 0 PF C"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 48"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10550,
+      "manualAddress": "10551",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 역률",
+        "en": "Module 0 total PF"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 50"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10600,
+      "manualAddress": "10601",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 누설전류",
+        "en": "Module 0 leakage current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 100"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10768,
+      "manualAddress": "10769",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 총 전력 디맨드",
+        "en": "Module 0 total demand power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 268"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10599,
+      "manualAddress": "10600",
+      "type": "u16",
+      "name": {
+        "ko": "모듈0 총 역률 위상각 상태",
+        "en": "Module 0 total PF angle status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "진상",
+          "en": "Lead PF"
+        },
+        {
+          "value": 2,
+          "ko": "지상",
+          "en": "Lag PF"
+        },
+        {
+          "value": 3,
+          "ko": "무효(피상전력 0)",
+          "en": "Invalid (apparent power 0)"
+        }
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 99"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10774,
+      "manualAddress": "10775",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 수전 유효전력량",
+        "en": "Module 0 received active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 274"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10776,
+      "manualAddress": "10777",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 송전 유효전력량",
+        "en": "Module 0 delivered active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 276"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10790,
+      "manualAddress": "10791",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 양의 무효전력량",
+        "en": "Module 0 positive reactive energy"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 290"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10792,
+      "manualAddress": "10793",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 음의 무효전력량",
+        "en": "Module 0 negative reactive energy"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 292"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10798,
+      "manualAddress": "10799",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "모듈0 피상전력량",
+        "en": "Module 0 apparent energy"
+      },
+      "unit": "kVAh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모듈 ID 0 (CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 표). ID N 은 주소에 500×N 을 더한다 (p.103).",
+        "en": "Module ID 0 (CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table). For ID N add 500×N (p.103)."
+      },
+      "ref": "p.103-106 3-Phase Measurement Data, ID 0 = 10501 + offset offset 298"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65525,
+      "manualAddress": "65526",
+      "type": "u16",
+      "name": {
+        "ko": "주소 시험값 (4142h)",
+        "en": "Modbus test address (4142h)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "주소·엔디언 점검용 상수. 65527 부터 2워드를 읽어 43 44 45 46h 가 오면 주소가 맞다.",
+        "en": "Constant for address/endian checks: reading 2 words from 65527 should return 43 44 45 46h."
+      },
+      "ref": "p.244 Modbus Test Address"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65526,
+      "manualAddress": "65527",
+      "type": "u16",
+      "name": {
+        "ko": "주소 시험값 (4344h)",
+        "en": "Modbus test address (4344h)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "주소·엔디언 점검용 상수. 65527 부터 2워드를 읽어 43 44 45 46h 가 오면 주소가 맞다.",
+        "en": "Constant for address/endian checks: reading 2 words from 65527 should return 43 44 45 46h."
+      },
+      "ref": "p.244 Modbus Test Address"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65527,
+      "manualAddress": "65528",
+      "type": "u16",
+      "name": {
+        "ko": "주소 시험값 (4546h)",
+        "en": "Modbus test address (4546h)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "주소·엔디언 점검용 상수. 65527 부터 2워드를 읽어 43 44 45 46h 가 오면 주소가 맞다.",
+        "en": "Constant for address/endian checks: reading 2 words from 65527 should return 43 44 45 46h."
+      },
+      "ref": "p.244 Modbus Test Address"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65528,
+      "manualAddress": "65529",
+      "type": "u16",
+      "name": {
+        "ko": "주소 시험값 (4748h)",
+        "en": "Modbus test address (4748h)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "주소·엔디언 점검용 상수. 65527 부터 2워드를 읽어 43 44 45 46h 가 오면 주소가 맞다.",
+        "en": "Constant for address/endian checks: reading 2 words from 65527 should return 43 44 45 46h."
+      },
+      "ref": "p.244 Modbus Test Address"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "계측값은 aggregation 버퍼에 있다 — 9901 로 구간(기본 1초)을 고르고 9911 을 읽어 가져온 뒤 10001~ 을 읽는다. 선택·index 는 접속마다 따로 (p.95-98, p.233).",
+      "en": "Measurements live in aggregation buffers: select the interval with 9901 (default 1 s), read 9911 to fetch, then read 10001-. Selection/index are per connection (p.95-98, p.233)."
+    },
+    {
+      "ko": "2550 모듈 데이터는 ID 0 이 10501 에서 시작하고 모듈마다 500 칸 (p.103). 여기 적은 모듈 레지스터는 CM[Z]-3P·CMS-3P4W·CMM[Z]-3P 3상 표 — 1P·1P3F·2P·DCM 등 다른 모듈은 표가 다르다. 9931 로 모듈 형식을 먼저 확인.",
+      "en": "2550 module data starts at 10501 for ID 0, 500 registers per module (p.103). Module registers here follow the 3-phase CM[Z]-3P / CMS-3P4W / CMM[Z]-3P table; other module types use different tables. Check the type in 9931 first."
+    },
+    {
+      "ko": "값은 실제 단위 Float32(V·A·kW…), 전력량은 Int32 kWh 등. 전력량 단위는 Locale > Energy Unit 설정으로 바뀔 수 있다 (p.103).",
+      "en": "Values are Float32 in engineering units; energies Int32 kWh etc. The energy unit can change with the Locale > Energy Unit setting (p.103)."
+    },
+    {
+      "ko": "원격 설정은 기본 잠금 — 쓰기 전에 2901 에 2300→0→700→1 을 써서 해제 (p.30, p.246). 직렬 설정은 3701 접근 레지스터로 가져오기/적용 (p.40).",
+      "en": "Remote setup is locked by default; unlock by writing 2300→0→700→1 to 2901 (p.30, p.246). Serial settings are fetched/applied via access register 3701 (p.40)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Accura 2500/2550 Communication Guide [AC]",
+      "publisher": "Rootech Inc.",
+      "edition": {
+        "ko": "Rev 2.00, 2026-08-14 (파일명 Accura_2500_2550_AC_Communication Guide_Rev2_00_Korean_260814.pdf)",
+        "en": "Rev 2.00, 2026-08-14 (file name Accura_2500_2550_AC_Communication Guide_Rev2_00_Korean_260814.pdf)"
+      },
+      "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1480&no=0",
+      "pages": {
+        "ko": "p.16-19 맵 요약·형식·시스템 정보, p.30, p.40, p.95-106 계측, p.230-235 프로토콜, p.243-246 주소·엔디언",
+        "en": "pp.16-19 map summary, formats, system info, p.30, p.40, pp.95-106 measurements, pp.230-235 protocol, pp.243-246 addressing and endian"
+      },
+      "checked": "2026-10-22"
+    }
+  ]
+}

@@ -14,7 +14,7 @@
 | 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 (Chrome 확장에서 네이버 접속이 막혀 Claude 가 못 함) | 사용자 | 안 함 |
 | 네이버 확인 태그를 사이트에 넣고 배포 → 사용자가 «소유 확인» | Claude | 태그 받은 뒤 |
 | Cloudflare Web Analytics 켜기(Pages → portdock → 메트릭) — 방문자 수 보기 | 사용자 | 선택 |
-| 장비 레지스터 맵 10종 추가(공식 매뉴얼 확인값만) → 검사·커밋 | Claude | 진행 중(LS M100 부터) |
+| 장비 레지스터 맵 10종 추가(공식 매뉴얼 확인값만) | Claude | ✅ 10/22 — 20종·841개. 매뉴얼 오류로 뺀 후보: LS iG5A·iS7·S300, 한영넉스 NX·TPR-2F·NP200, 미쓰비시 FR-E800 등 |
 | 현장 사진 찍기 — 직접 산 부품·집 장비만(회사 현장·고객사 설비 금지): RS-485 단자, USB-시리얼 변환기, 4–20mA 결선, Pt100 3선식, 인버터 통신 단자 | 사용자 | 안 함 |
 | 받은 사진을 가이드·장비 페이지에 넣기(자르기·설명·alt) | Claude | 사진 받은 뒤 |
 | 같은 사진을 Adobe Stock 에 올리기(작가 몫 33%) | 사용자 | 선택 |
@@ -64,4 +64,4 @@ GeekNews Show GN(한 번) → 다음 날 OKKY 피드백 → 첫 주말부터 네
 | USB-RS485 변환기 2개(FTDI·CH340) | 재연결·지연 시험(C25·C28) | 소액 | 보류 |
 
 ## 끝난 것 (10/19~22)
-GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 넘겨줌) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편 · 장비 맵 10종 · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.
+GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 넘겨줌) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편 · 장비 맵 20종 · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.

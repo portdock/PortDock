@@ -1,0 +1,1447 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/kn-2000w",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "KN-2000W",
+  "models": [
+    "KN-2□4□W",
+    "KN-2□5□W"
+  ],
+  "kind": "panel-meter",
+  "title": {
+    "ko": "오토닉스 KN-2000W 1채널 디지털 온도 지시계 (통신 출력 모델)",
+    "en": "Autonics KN-2000W 1-channel digital temperature indicator (communication models)"
+  },
+  "summary": {
+    "ko": "열전대·RTD·아날로그 입력 지시계. 옵션 출력 4(통신)·5(PV 전송+통신) 모델이 RS485 Modbus RTU. 입력 접점(경보·단위 표시등), 입력 레지스터(현재값·소수점·상태), 보유 레지스터(입력·스케일·경보·통신 설정)를 담았다.",
+    "en": "Thermocouple/RTD/analog indicator; option output 4 (communication) and 5 (PV transmission + communication) models have RS485 Modbus RTU. Covers discrete inputs (alarm/unit indicators), input registers (PV, decimal point, status) and holding registers (input, scale, alarm, comm settings)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "notes": [
+      {
+        "ko": "통신 사양(p.2 «Communication Interface»): Modbus RTU, 최대 31대, 9600 bps 기본, 데이터 8비트·패리티 없음·정지 1비트 고정. 국번 파라미터 2-29 Adrr 기본 01, 범위 01~99 (p.4).",
+        "en": "Comm spec (p.2): Modbus RTU, up to 31 units, 9600 bps default, 8 data bits, no parity, 1 stop bit (fixed). Address parameter 2-29 Adrr default 01, range 01-99 (p.4)."
+      },
+      {
+        "ko": "매뉴얼은 «400001 (0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 프레임 주소로 썼다(p.4). 프레임 예시는 없다.",
+        "en": "Manual writes «400001 (0000)»: 1-based reference plus hex comm address; first entries are (0000), so the parenthesized value is the 0-based wire address (p.4). No frame example is given."
+      },
+      {
+        "ko": "함수 코드: 입력 접점 02, 입력 레지스터 04, 보유 레지스터 03·06·16 (p.4).",
+        "en": "Function codes: discrete inputs 02, input registers 04, holding registers 03/06/16 (p.4)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "100001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "AL1 표시등",
+        "en": "AL1 indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "100002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "AL2 표시등",
+        "en": "AL2 indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 2,
+      "manualAddress": "100003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "AL3 표시등",
+        "en": "AL3 indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 3,
+      "manualAddress": "100004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "AL4 표시등",
+        "en": "AL4 indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 4,
+      "manualAddress": "100005 (0004)",
+      "type": "bit",
+      "name": {
+        "ko": "℉ 표시등",
+        "en": "°F indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 5,
+      "manualAddress": "100006 (0005)",
+      "type": "bit",
+      "name": {
+        "ko": "℃ 표시등",
+        "en": "°C indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 6,
+      "manualAddress": "100007 (0006)",
+      "type": "bit",
+      "name": {
+        "ko": "% 표시등",
+        "en": "% indicator"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "300001 (0000)",
+      "type": "s16",
+      "name": {
+        "ko": "현재값",
+        "en": "Present value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": -19999,
+        "max": 19999
+      },
+      "description": {
+        "ko": "소수점 위치는 300003 을 따른다.",
+        "en": "Decimal point per 300003."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "input-registers",
+      "address": 1,
+      "manualAddress": "300002 (0001)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 사양",
+        "en": "Input specification"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "코드표는 매뉴얼 «Input specification parameter setting/output value» 참조.",
+        "en": "See the manual's input specification code table."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "300003 (0002)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치",
+        "en": "Decimal point"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 4,
+          "ko": ".0000",
+          "en": ".0000"
+        },
+        {
+          "value": 3,
+          "ko": "0.000",
+          "en": "0.000"
+        },
+        {
+          "value": 2,
+          "ko": "0.00",
+          "en": "0.00"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        },
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        }
+      ],
+      "description": {
+        "ko": "아날로그 입력일 때(2-1 입력 사양: Analog)",
+        "en": "For analog input (2-1 input specification: analog)"
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "input-registers",
+      "address": 3,
+      "manualAddress": "300004 (0003)",
+      "type": "u16",
+      "name": {
+        "ko": "PWM 출력",
+        "en": "PWM OUT"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 20000
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "300005 (0004)",
+      "type": "u16",
+      "name": {
+        "ko": "표시·경보 상태 비트",
+        "en": "Indicator / alarm status bits"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "AL1 표시등",
+          "en": "AL1 indicator"
+        },
+        {
+          "bit": 1,
+          "ko": "AL2 표시등",
+          "en": "AL2 indicator"
+        },
+        {
+          "bit": 2,
+          "ko": "AL3 표시등",
+          "en": "AL3 indicator"
+        },
+        {
+          "bit": 3,
+          "ko": "AL4 표시등",
+          "en": "AL4 indicator"
+        },
+        {
+          "bit": 4,
+          "ko": "℉ 표시등",
+          "en": "°F indicator"
+        },
+        {
+          "bit": 5,
+          "ko": "℃ 표시등",
+          "en": "°C indicator"
+        },
+        {
+          "bit": 6,
+          "ko": "% 표시등",
+          "en": "% indicator"
+        }
+      ],
+      "description": {
+        "ko": "표는 위에서부터 X(MSB)·%·℃·℉·AL4·AL3·AL2·AL1(LSB) 순서 — 최하위 비트를 AL1 로 놓고 차례로 매겼다.",
+        "en": "Table lists X (MSB), %, °C, °F, AL4, AL3, AL2, AL1 (LSB); bits numbered from AL1 at the LSB."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001 (0000)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 사양",
+        "en": "Input specification"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "설정 범위는 프로그램 모드의 같은 파라미터와 같다(p.4).",
+        "en": "Same setting range as the program-mode parameter (p.4)."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "400002 (0001)",
+      "type": "u16",
+      "name": {
+        "ko": "온도 단위",
+        "en": "Temperature unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "400003 (0002)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 단위",
+        "en": "Display unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        },
+        {
+          "value": 2,
+          "ko": "%",
+          "en": "%"
+        },
+        {
+          "value": 3,
+          "ko": "없음(OFF)",
+          "en": "OFF"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "400004 (0003)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 상한",
+        "en": "High limit input"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "설정 범위는 프로그램 모드의 같은 파라미터와 같다(p.4).",
+        "en": "Same setting range as the program-mode parameter (p.4)."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "400005 (0004)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 하한",
+        "en": "Low limit input"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "설정 범위는 프로그램 모드의 같은 파라미터와 같다(p.4).",
+        "en": "Same setting range as the program-mode parameter (p.4)."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "400006 (0005)",
+      "type": "s16",
+      "name": {
+        "ko": "스케일 상한",
+        "en": "High limit scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -19999,
+        "max": 19999
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "400007 (0006)",
+      "type": "s16",
+      "name": {
+        "ko": "스케일 하한",
+        "en": "Low limit scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -19999,
+        "max": 19999
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "400008 (0007)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 보정",
+        "en": "Input correction"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -999,
+        "max": 999
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "400009 (0008)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 디지털 필터",
+        "en": "Input digital filter"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 16
+      },
+      "description": {
+        "ko": "01 = OFF",
+        "en": "01 = OFF"
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "400010 (0009)",
+      "type": "u16",
+      "name": {
+        "ko": "AL1 경보 동작",
+        "en": "AL1 alarm operation"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "절대값 상한 경보",
+          "en": "Absolute high limit alarm"
+        },
+        {
+          "value": 2,
+          "ko": "절대값 하한 경보",
+          "en": "Absolute low limit alarm"
+        },
+        {
+          "value": 3,
+          "ko": "센서 단선 경보",
+          "en": "Sensor break alarm"
+        },
+        {
+          "value": 4,
+          "ko": "경보 없음",
+          "en": "No alarm"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "400011 (000A)",
+      "type": "u16",
+      "name": {
+        "ko": "AL2 경보 동작",
+        "en": "AL2 alarm operation"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "절대값 상한 경보",
+          "en": "Absolute high limit alarm"
+        },
+        {
+          "value": 2,
+          "ko": "절대값 하한 경보",
+          "en": "Absolute low limit alarm"
+        },
+        {
+          "value": 3,
+          "ko": "센서 단선 경보",
+          "en": "Sensor break alarm"
+        },
+        {
+          "value": 4,
+          "ko": "경보 없음",
+          "en": "No alarm"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "400012 (000B)",
+      "type": "u16",
+      "name": {
+        "ko": "AL3 경보 동작",
+        "en": "AL3 alarm operation"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "절대값 상한 경보",
+          "en": "Absolute high limit alarm"
+        },
+        {
+          "value": 2,
+          "ko": "절대값 하한 경보",
+          "en": "Absolute low limit alarm"
+        },
+        {
+          "value": 3,
+          "ko": "센서 단선 경보",
+          "en": "Sensor break alarm"
+        },
+        {
+          "value": 4,
+          "ko": "경보 없음",
+          "en": "No alarm"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "400013 (000C)",
+      "type": "u16",
+      "name": {
+        "ko": "AL4 경보 동작",
+        "en": "AL4 alarm operation"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "절대값 상한 경보",
+          "en": "Absolute high limit alarm"
+        },
+        {
+          "value": 2,
+          "ko": "절대값 하한 경보",
+          "en": "Absolute low limit alarm"
+        },
+        {
+          "value": 3,
+          "ko": "센서 단선 경보",
+          "en": "Sensor break alarm"
+        },
+        {
+          "value": 4,
+          "ko": "경보 없음",
+          "en": "No alarm"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "400014 (000D)",
+      "type": "u16",
+      "name": {
+        "ko": "AL1 경보 옵션",
+        "en": "AL1 alarm option"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 10,
+          "ko": "표준 경보",
+          "en": "Standard alarm"
+        },
+        {
+          "value": 11,
+          "ko": "경보 래치",
+          "en": "Alarm latch"
+        },
+        {
+          "value": 12,
+          "ko": "대기 시퀀스",
+          "en": "Standby sequence"
+        },
+        {
+          "value": 13,
+          "ko": "경보 래치+대기 시퀀스",
+          "en": "Alarm latch and standby sequence"
+        },
+        {
+          "value": 14,
+          "ko": "경보 없음(설정 불가)",
+          "en": "No alarm (not settable)"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "400015 (000E)",
+      "type": "u16",
+      "name": {
+        "ko": "AL2 경보 옵션",
+        "en": "AL2 alarm option"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 10,
+          "ko": "표준 경보",
+          "en": "Standard alarm"
+        },
+        {
+          "value": 11,
+          "ko": "경보 래치",
+          "en": "Alarm latch"
+        },
+        {
+          "value": 12,
+          "ko": "대기 시퀀스",
+          "en": "Standby sequence"
+        },
+        {
+          "value": 13,
+          "ko": "경보 래치+대기 시퀀스",
+          "en": "Alarm latch and standby sequence"
+        },
+        {
+          "value": 14,
+          "ko": "경보 없음(설정 불가)",
+          "en": "No alarm (not settable)"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "400016 (000F)",
+      "type": "u16",
+      "name": {
+        "ko": "AL3 경보 옵션",
+        "en": "AL3 alarm option"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 10,
+          "ko": "표준 경보",
+          "en": "Standard alarm"
+        },
+        {
+          "value": 11,
+          "ko": "경보 래치",
+          "en": "Alarm latch"
+        },
+        {
+          "value": 12,
+          "ko": "대기 시퀀스",
+          "en": "Standby sequence"
+        },
+        {
+          "value": 13,
+          "ko": "경보 래치+대기 시퀀스",
+          "en": "Alarm latch and standby sequence"
+        },
+        {
+          "value": 14,
+          "ko": "경보 없음(설정 불가)",
+          "en": "No alarm (not settable)"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "400017 (0010)",
+      "type": "u16",
+      "name": {
+        "ko": "AL4 경보 옵션",
+        "en": "AL4 alarm option"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 10,
+          "ko": "표준 경보",
+          "en": "Standard alarm"
+        },
+        {
+          "value": 11,
+          "ko": "경보 래치",
+          "en": "Alarm latch"
+        },
+        {
+          "value": 12,
+          "ko": "대기 시퀀스",
+          "en": "Standby sequence"
+        },
+        {
+          "value": 13,
+          "ko": "경보 래치+대기 시퀀스",
+          "en": "Alarm latch and standby sequence"
+        },
+        {
+          "value": 14,
+          "ko": "경보 없음(설정 불가)",
+          "en": "No alarm (not settable)"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "400018 (0011)",
+      "type": "u16",
+      "name": {
+        "ko": "경보 출력 히스테리시스",
+        "en": "Alarm output hysteresis"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 999
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "400019 (0012)",
+      "type": "s16",
+      "name": {
+        "ko": "20 mA 출력 스케일",
+        "en": "20 mA output scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "설정 범위는 프로그램 모드의 같은 파라미터와 같다(p.4).",
+        "en": "Same setting range as the program-mode parameter (p.4)."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 19,
+      "manualAddress": "400020 (0013)",
+      "type": "s16",
+      "name": {
+        "ko": "4 mA 출력 스케일",
+        "en": "4 mA output scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "설정 범위는 프로그램 모드의 같은 파라미터와 같다(p.4).",
+        "en": "Same setting range as the program-mode parameter (p.4)."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "400021 (0014)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치",
+        "en": "Decimal point"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 4,
+          "ko": ".0000",
+          "en": ".0000"
+        },
+        {
+          "value": 3,
+          "ko": "0.000",
+          "en": "0.000"
+        },
+        {
+          "value": 2,
+          "ko": "0.00",
+          "en": "0.00"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        },
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 21,
+      "manualAddress": "400022 (0015)",
+      "type": "u16",
+      "name": {
+        "ko": "입력·전송 출력 확장",
+        "en": "Input and transmission output extension"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0%",
+          "en": "0%"
+        },
+        {
+          "value": 1,
+          "ko": "5%",
+          "en": "5%"
+        },
+        {
+          "value": 2,
+          "ko": "10%",
+          "en": "10%"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 22,
+      "manualAddress": "400023 (0016)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 단자 기능",
+        "en": "Digital input terminal"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "경보 리셋",
+          "en": "Alarm reset"
+        },
+        {
+          "value": 1,
+          "ko": "홀드",
+          "en": "Hold"
+        },
+        {
+          "value": 2,
+          "ko": "영점 조정",
+          "en": "Zero-point adjustment"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 23,
+      "manualAddress": "400024 (0017)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 키 기능",
+        "en": "Digital input key"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "경보 리셋",
+          "en": "Alarm reset"
+        },
+        {
+          "value": 1,
+          "ko": "홀드",
+          "en": "Hold"
+        },
+        {
+          "value": 2,
+          "ko": "영점 조정",
+          "en": "Zero-point adjustment"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 24,
+      "manualAddress": "400025 (0018)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 특수 기능",
+        "en": "Input special function"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "선형",
+          "en": "Linear"
+        },
+        {
+          "value": 1,
+          "ko": "제곱근",
+          "en": "Root"
+        },
+        {
+          "value": 2,
+          "ko": "제곱",
+          "en": "Square"
+        },
+        {
+          "value": 3,
+          "ko": "2단 함수",
+          "en": "Two unit function"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 25,
+      "manualAddress": "400026 (0019)",
+      "type": "u16",
+      "name": {
+        "ko": "센서 단선 경보 출력",
+        "en": "Sensor break alarm output"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "ON",
+          "en": "ON"
+        },
+        {
+          "value": 1,
+          "ko": "OFF",
+          "en": "OFF"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 26,
+      "manualAddress": "400027 (001A)",
+      "type": "u16",
+      "name": {
+        "ko": "잠금",
+        "en": "Lock"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "LOCK1",
+          "en": "LOCK1"
+        },
+        {
+          "value": 2,
+          "ko": "LOCK2",
+          "en": "LOCK2"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 27,
+      "manualAddress": "400028 (001B)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 색",
+        "en": "Display color"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "빨강",
+          "en": "Red"
+        },
+        {
+          "value": 1,
+          "ko": "초록",
+          "en": "Green"
+        },
+        {
+          "value": 2,
+          "ko": "노랑",
+          "en": "Yellow"
+        },
+        {
+          "value": 3,
+          "ko": "빨강-초록",
+          "en": "Red-Green"
+        },
+        {
+          "value": 4,
+          "ko": "초록-빨강",
+          "en": "Green-Red"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 32,
+      "manualAddress": "400033 (0020)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 국번",
+        "en": "Comm. address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 99
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 33,
+      "manualAddress": "400034 (0021)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Comm. speed"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 1,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 2,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 3,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 4,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        }
+      ],
+      "description": {
+        "ko": "매뉴얼 표기 «0: 192000» 은 통신 사양표(1,200~19,200 bps)로 보아 19200 의 오기로 보고 19200 으로 적었다.",
+        "en": "The manual prints '0: 192000'; given the spec table (1,200-19,200 bps) it is read as 19200."
+      },
+      "ref": "p.4 «Communication Parameter Setting»"
+    },
+    {
+      "table": "holding-registers",
+      "address": 34,
+      "manualAddress": "400035 (0022)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기",
+        "en": "Comm. write"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "금지",
+          "en": "Disable"
+        },
+        {
+          "value": 1,
+          "ko": "허용",
+          "en": "Enable"
+        }
+      ],
+      "ref": "p.4 «Communication Parameter Setting»"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS485 는 옵션 출력 코드 4(통신)·5(PV 전송+통신) 모델만(p.2 주문 정보). models 의 첫 □ 는 경보 출력(0·2·4), 둘째 □ 는 전원(0: 100-240 VAC, 1: 24 VDC).",
+      "en": "RS485 only on option output code 4 (communication) and 5 (PV transmission + communication) (p.2). First □ = alarm outputs (0/2/4), second □ = power (0: 100-240 VAC, 1: 24 VDC)."
+    },
+    {
+      "ko": "보유 레지스터 400029~400032(001C~001F)는 AL1~AL4 표시 색(0 빨강, 1 초록, 2 노랑) (p.4).",
+      "en": "Holding 400029-400032 (001C-001F) are AL1-AL4 display colors (0 red, 1 green, 2 yellow) (p.4)."
+    },
+    {
+      "ko": "각 보유 레지스터는 프로그램 모드 파라미터와 같은 조건에서만 유효하다(예: 스케일은 아날로그 입력일 때) (p.4).",
+      "en": "Each holding register is valid under the same conditions as its program-mode parameter (e.g. scale only for analog input) (p.4)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "1-Channel Digital Temperature Indicators KN-2000W Series PRODUCT MANUAL TCD210154AH",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "KN-2000W_EN_TCD210154AH_20260515 (PDF 작성 2026-05-15)",
+        "en": "KN-2000W_EN_TCD210154AH_20260515 (PDF created 2026-05-15)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/525039",
+      "pages": {
+        "ko": "p.2 주문 정보·통신 사양, p.4 프로그램 모드·통신 파라미터 표",
+        "en": "p.2 ordering and comm spec, p.4 program mode and communication parameter tables"
+      },
+      "checked": "2026-10-22"
+    }
+  ]
+}

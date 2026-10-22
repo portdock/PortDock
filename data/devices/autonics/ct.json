@@ -1,0 +1,1341 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/ct",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "CT Series",
+  "models": [
+    "CT4□-□□T",
+    "CT6□-□□T"
+  ],
+  "kind": "other",
+  "title": {
+    "ko": "오토닉스 CT 시리즈 카운터/타이머 (RS485 통신 모델)",
+    "en": "Autonics CT Series counter/timer (RS485 communication models)"
+  },
+  "summary": {
+    "ko": "프리셋 카운터·타이머. 형번 끝이 T 인 통신 모델이 RS485 Modbus RTU. 코일(리셋·출력), 입력 접점(단자 입력), 입력 레지스터(현재값·프리셋·표시 상태), 보유 레지스터(프리셋·카운터 설정·통신 설정)를 담았다.",
+    "en": "Preset counter/timer; models ending in T have RS485 Modbus RTU. Covers coils (reset, outputs), discrete inputs (terminal inputs), input registers (present value, presets, indicators) and holding registers (presets, counter settings, comm)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 2,
+    "unit": 1,
+    "unitRange": [
+      1,
+      127
+    ],
+    "order": "CDAB",
+    "notes": [
+      {
+        "ko": "통신 사양·기본값: 제품 매뉴얼 TCD220014AC «Communication Interface»·통신 파라미터 표 — 9600 bps 기본, 데이터 8비트 고정, 패리티 None 기본, 정지 2비트 기본, 응답 대기 20 ms, 국번 001(1~127), 최대 31대.",
+        "en": "Comm spec/defaults from product manual TCD220014AC: 9600 bps, 8 data bits fixed, parity none, 2 stop bits, response wait 20 ms, address 001 (1-127), up to 31 units."
+      },
+      {
+        "ko": "매뉴얼은 «400001 (0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 프레임 주소로 썼다(통신 매뉴얼 pp.21-27). 1.1 절 프레임 예시는 바이트 자리만 있고 숫자 예는 없다.",
+        "en": "Manual writes «400001 (0000)»: 1-based reference plus hex comm address; first entries are (0000), so the parenthesized value is the 0-based wire address (pp.21-27). Frame examples show layout only."
+      },
+      {
+        "ko": "2워드 값은 낮은 주소가 하위 워드(예: 301004 하위, 301005 상위) — order CDAB (p.24).",
+        "en": "2-word values put the low word at the lower address (e.g. 301004 low, 301005 high), i.e. CDAB (p.24)."
+      },
+      {
+        "ko": "브로드캐스트 명령을 지원하지 않는다(통신 매뉴얼 p.v).",
+        "en": "Broadcast is not supported (comm manual p.v)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "000001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "리셋",
+        "en": "Reset"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "FC05 로 ON(FF00h) 을 쓰면 리셋.",
+        "en": "Write ON (FF00h) with FC05 to reset."
+      },
+      "ref": "p.21 2.1"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "000002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "OUT2 출력",
+        "en": "OUT2 output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.1"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "000003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "OUT1 출력",
+        "en": "OUT1 output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.1"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "000004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "BATCH 출력",
+        "en": "BATCH output"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "BATCH 출력 모델",
+        "en": "BATCH output models"
+      },
+      "ref": "p.21 2.1"
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "000005 (0004)",
+      "type": "bit",
+      "name": {
+        "ko": "BATCH 리셋",
+        "en": "BATCH reset"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "BATCH 출력 모델. FC05 로 ON(FF00h) 을 쓰면 리셋.",
+        "en": "BATCH output models; write ON (FF00h) with FC05 to reset."
+      },
+      "ref": "p.21 2.1"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "100001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "INA 입력",
+        "en": "INA input status"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "100002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "INB 입력",
+        "en": "INB input status"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 2,
+      "manualAddress": "100003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "INHIBIT 입력",
+        "en": "INHIBIT input status"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 3,
+      "manualAddress": "100004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "RESET 입력",
+        "en": "RESET input status"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.2"
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 4,
+      "manualAddress": "100005 (0004)",
+      "type": "bit",
+      "name": {
+        "ko": "BATCH RESET 입력",
+        "en": "BATCH RESET input status"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.21 2.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "301001 (03E8)",
+      "type": "u16",
+      "name": {
+        "ko": "표시등 상태 비트",
+        "en": "LED display status bits"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 5,
+          "ko": "BA.O",
+          "en": "BA.O"
+        },
+        {
+          "bit": 6,
+          "ko": "OUT2",
+          "en": "OUT2"
+        },
+        {
+          "bit": 7,
+          "ko": "OUT1",
+          "en": "OUT1"
+        },
+        {
+          "bit": 10,
+          "ko": "BA.S",
+          "en": "BA.S"
+        },
+        {
+          "bit": 11,
+          "ko": "LOCK",
+          "en": "LOCK"
+        },
+        {
+          "bit": 12,
+          "ko": "PRESET2",
+          "en": "PRESET2"
+        },
+        {
+          "bit": 13,
+          "ko": "PRESET1",
+          "en": "PRESET1"
+        },
+        {
+          "bit": 14,
+          "ko": "TMR",
+          "en": "TMR"
+        },
+        {
+          "bit": 15,
+          "ko": "CNT",
+          "en": "CNT"
+        }
+      ],
+      "description": {
+        "ko": "비트 형식은 p.24 표.",
+        "en": "Bit layout per the table on p.24."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1001,
+      "manualAddress": "301002 (03E9)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "BATCH 카운터 현재값",
+        "en": "BATCH counter present value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 999999
+      },
+      "description": {
+        "ko": "BATCH 출력 모델. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "BATCH output models. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1003,
+      "manualAddress": "301004 (03EB)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "카운터/타이머 현재값",
+        "en": "Counter/timer present value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "카운터: 6자리형 -99999~999999, 4자리형 -999~9999 / 타이머: 시간 설정 범위 안. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "Counter: 6-digit -99999..999999, 4-digit -999..9999 / timer: within time range. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1005,
+      "manualAddress": "301006 (03ED)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 단위",
+        "en": "Display unit"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "카운터: 표시값 소수점(400058), 타이머: 시간 범위(400102).",
+        "en": "Counter: decimal point of display value (400058); timer: time range (400102)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1006,
+      "manualAddress": "301007 (03EE)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PRESET2 설정값",
+        "en": "PRESET2 setting value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "카운터: 6자리형 -99999~999999, 4자리형 -999~9999 / 타이머: 시간 설정 범위 안. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "Counter: 6-digit -99999..999999, 4-digit -999..9999 / timer: within time range. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1008,
+      "manualAddress": "301009 (03F0)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PRESET1 설정값",
+        "en": "PRESET1 setting value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "카운터: 6자리형 -99999~999999, 4자리형 -999~9999 / 타이머: 시간 설정 범위 안. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "Counter: 6-digit -99999..999999, 4-digit -999..9999 / timer: within time range. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1010,
+      "manualAddress": "301011 (03F2)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "BATCH 카운터 설정값",
+        "en": "BATCH counter setting value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 999999
+      },
+      "description": {
+        "ko": "2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "input-registers",
+      "address": 1012,
+      "manualAddress": "301013 (03F4)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 로직",
+        "en": "Input logic"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NPN",
+          "en": "NPN"
+        },
+        {
+          "value": 1,
+          "ko": "PNP",
+          "en": "PNP"
+        }
+      ],
+      "ref": "p.23 2.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001 (0000)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PRESET2 설정값",
+        "en": "PRESET2 setting value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "카운터: 6자리형 0~999999, 4자리형 0~9999 / 타이머: 시간 설정 범위 안. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "Counter: 6-digit 0..999999, 4-digit 0..9999 / timer: within time range. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.24 2.5"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "400003 (0002)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PRESET1 설정값",
+        "en": "PRESET1 setting value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "카운터: 6자리형 0~999999, 4자리형 0~9999 / 타이머: 시간 설정 범위 안. 2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "Counter: 6-digit 0..999999, 4-digit 0..9999 / timer: within time range. 2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.24 2.5"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "400005 (0004)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "BATCH 카운터 설정값",
+        "en": "BATCH counter setting value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999999
+      },
+      "description": {
+        "ko": "2워드 값 — 낮은 주소가 하위 워드(p.24).",
+        "en": "2-word value; lower address holds the low word (p.24)."
+      },
+      "ref": "p.24 2.5"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "400051 (0032)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터/타이머 선택",
+        "en": "Counter/Timer [C-T]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "카운터(COUN)",
+          "en": "Counter (COUN)"
+        },
+        {
+          "value": 1,
+          "ko": "타이머(TIME)",
+          "en": "Timer (TIME)"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "400052 (0033)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 모드",
+        "en": "Input mode [IN]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "UP",
+          "en": "UP"
+        },
+        {
+          "value": 1,
+          "ko": "UP-1",
+          "en": "UP-1"
+        },
+        {
+          "value": 2,
+          "ko": "UP-2",
+          "en": "UP-2"
+        },
+        {
+          "value": 3,
+          "ko": "DN",
+          "en": "DN"
+        },
+        {
+          "value": 4,
+          "ko": "DN-1",
+          "en": "DN-1"
+        },
+        {
+          "value": 5,
+          "ko": "DN-2",
+          "en": "DN-2"
+        },
+        {
+          "value": 6,
+          "ko": "UD-A",
+          "en": "UD-A"
+        },
+        {
+          "value": 7,
+          "ko": "UD-B",
+          "en": "UD-B"
+        },
+        {
+          "value": 8,
+          "ko": "UD-C",
+          "en": "UD-C"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 52,
+      "manualAddress": "400053 (0034)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 모드 (표시기형)",
+        "en": "Indication mode (indicator)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "TOTAL",
+          "en": "TOTAL"
+        },
+        {
+          "value": 1,
+          "ko": "HOLD",
+          "en": "HOLD"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "400054 (0035)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 모드",
+        "en": "Output mode [OUTM]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "F",
+          "en": "F"
+        },
+        {
+          "value": 1,
+          "ko": "N",
+          "en": "N"
+        },
+        {
+          "value": 2,
+          "ko": "C",
+          "en": "C"
+        },
+        {
+          "value": 3,
+          "ko": "R",
+          "en": "R"
+        },
+        {
+          "value": 4,
+          "ko": "K",
+          "en": "K"
+        },
+        {
+          "value": 5,
+          "ko": "P",
+          "en": "P"
+        },
+        {
+          "value": 6,
+          "ko": "Q",
+          "en": "Q"
+        },
+        {
+          "value": 7,
+          "ko": "A",
+          "en": "A"
+        },
+        {
+          "value": 8,
+          "ko": "S",
+          "en": "S"
+        },
+        {
+          "value": 9,
+          "ko": "T",
+          "en": "T"
+        },
+        {
+          "value": 10,
+          "ko": "D",
+          "en": "D"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 54,
+      "manualAddress": "400055 (0036)",
+      "type": "u16",
+      "name": {
+        "ko": "최고 계수 속도",
+        "en": "Max. counting speed [CPS]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1 cps",
+          "en": "1 cps"
+        },
+        {
+          "value": 1,
+          "ko": "30 cps",
+          "en": "30 cps"
+        },
+        {
+          "value": 2,
+          "ko": "1k cps",
+          "en": "1k cps"
+        },
+        {
+          "value": 3,
+          "ko": "5k cps",
+          "en": "5k cps"
+        },
+        {
+          "value": 4,
+          "ko": "10k cps",
+          "en": "10k cps"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 55,
+      "manualAddress": "400056 (0037)",
+      "type": "u16",
+      "name": {
+        "ko": "OUT2 출력 시간",
+        "en": "OUT2 output time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.01,
+        "max": 99.99
+      },
+      "description": {
+        "ko": "단위 ×10 ms (0.01~99.99 s)",
+        "en": "Unit ×10 ms (0.01-99.99 s)"
+      },
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 56,
+      "manualAddress": "400057 (0038)",
+      "type": "u16",
+      "name": {
+        "ko": "OUT1 출력 시간",
+        "en": "OUT1 output time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.01,
+        "max": 99.99
+      },
+      "description": {
+        "ko": "단위 ×10 ms (0.01~99.99 s)",
+        "en": "Unit ×10 ms (0.01-99.99 s)"
+      },
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 57,
+      "manualAddress": "400058 (0039)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점",
+        "en": "Decimal point [DP]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "------",
+          "en": "------"
+        },
+        {
+          "value": 1,
+          "ko": "-----.-",
+          "en": "-----.-"
+        },
+        {
+          "value": 2,
+          "ko": "----.--",
+          "en": "----.--"
+        },
+        {
+          "value": 3,
+          "ko": "---.---",
+          "en": "---.---"
+        },
+        {
+          "value": 4,
+          "ko": "--.----",
+          "en": "--.----"
+        },
+        {
+          "value": 5,
+          "ko": "-.-----",
+          "en": "-.-----"
+        }
+      ],
+      "description": {
+        "ko": "6자리형 표기. 4자리형: 0 ----, 1 ---.-, 2 --.--, 3 -.---",
+        "en": "6-digit notation; 4-digit: 0 ----, 1 ---.-, 2 --.--, 3 -.---"
+      },
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 58,
+      "manualAddress": "400059 (003A)",
+      "type": "u16",
+      "name": {
+        "ko": "최소 리셋 시간",
+        "en": "Min. reset time [RST]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1 ms",
+          "en": "1 ms"
+        },
+        {
+          "value": 1,
+          "ko": "20 ms",
+          "en": "20 ms"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64,
+      "manualAddress": "400065 (0040)",
+      "type": "u16",
+      "name": {
+        "ko": "메모리 보호",
+        "en": "Memory protection [DATA]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "CLR",
+          "en": "CLR"
+        },
+        {
+          "value": 1,
+          "ko": "REC",
+          "en": "REC"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65,
+      "manualAddress": "400066 (0041)",
+      "type": "u16",
+      "name": {
+        "ko": "키 잠금",
+        "en": "Lock key [LOCK]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "LOFF",
+          "en": "LOFF"
+        },
+        {
+          "value": 1,
+          "ko": "LOC1",
+          "en": "LOC1"
+        },
+        {
+          "value": 2,
+          "ko": "LOC2",
+          "en": "LOC2"
+        },
+        {
+          "value": 3,
+          "ko": "LOC3",
+          "en": "LOC3"
+        }
+      ],
+      "ref": "p.25 2.6.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "400101 (0064)",
+      "type": "u16",
+      "name": {
+        "ko": "카운터/타이머 선택(타이머 그룹)",
+        "en": "Counter/Timer [C-T] (timer group)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "카운터(COUN)",
+          "en": "Counter (COUN)"
+        },
+        {
+          "value": 1,
+          "ko": "타이머(TIME)",
+          "en": "Timer (TIME)"
+        }
+      ],
+      "ref": "p.26 2.6.2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 150,
+      "manualAddress": "400151 (0096)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 국번",
+        "en": "Comm. address [ADDR]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 127
+      },
+      "ref": "p.27 2.6.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 151,
+      "manualAddress": "400152 (0097)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Comm. speed [BPS]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 3,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 4,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "p.27 2.6.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 152,
+      "manualAddress": "400153 (0098)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Comm. parity bit [PRTY]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "NONE"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "EVEN"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "ODD"
+        }
+      ],
+      "ref": "p.27 2.6.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 153,
+      "manualAddress": "400154 (0099)",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트",
+        "en": "Comm. stop bit [STP]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 bits"
+        }
+      ],
+      "ref": "p.27 2.6.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 154,
+      "manualAddress": "400155 (009A)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간",
+        "en": "Response waiting time [RSWT]"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "p.27 2.6.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 155,
+      "manualAddress": "400156 (009B)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기 허용",
+        "en": "Comm. writing [COMW]"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "허용",
+          "en": "ENA"
+        },
+        {
+          "value": 1,
+          "ko": "금지",
+          "en": "DISA"
+        }
+      ],
+      "ref": "p.27 2.6.3"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS485 는 ⑤ 통신 코드 T 모델만(제품 매뉴얼 주문 정보: CT ①자리 ②크기 - ③출력 ④전원 ⑤T). models 의 □ 는 크기(S·Y·M)·출력(1P·2P·I)·전원(2·4) — 모든 조합이 있는 것은 아니다.",
+      "en": "RS485 only on models with communication code T (ordering: CT ① digits ② size - ③ output ④ power ⑤ T). In models, □ = size (S/Y/M), output (1P/2P/I), power (2/4); not all combinations exist."
+    },
+    {
+      "ko": "카운터 그룹(2.6.1)·타이머 그룹(2.6.2) 값을 FC06·16 으로 바꾸면 화면에 COMW·RST 가 3초 깜박이고 현재값이 리셋된다. 프리셋·통신 그룹은 현재값 유지 (p.27).",
+      "en": "Changing counter/timer group values via FC06/16 flashes COMW/RST for 3 s and resets the present value; preset/comm group changes keep it (p.27)."
+    },
+    {
+      "ko": "2워드 프리셋(400001~400006)은 매뉴얼 표에 03/06/16 이 적혀 있지만 06 은 한 워드만 쓰므로 여기선 03·16 만 적었다.",
+      "en": "The 2-word presets (400001-400006) list 03/06/16, but 06 writes one word only, so only 03/16 are listed here."
+    },
+    {
+      "ko": "PLC·그래픽 패널과 연결할 때는 FC16 보다 FC06 을 권장(p.18).",
+      "en": "FC06 is recommended over FC16 for PLCs/graphic panels (p.18)."
+    },
+    {
+      "ko": "타이머 그룹(400101~400110)의 시간 범위·출력 모드 코드는 자리수(4·6)에 따라 다르다 — 여기선 C-T 만 넣었다 (p.26).",
+      "en": "Timer group (400101-400110) time range/output mode codes depend on 4/6-digit type; only C-T is included (p.26)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "User Manual for Communication Counters/Timers CT Series MCC-CTC1-V1.3-EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCC-CTC1-V1.3-EN (2025-08-05)",
+        "en": "MCC-CTC1-V1.3-EN (2025-08-05)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/517949",
+      "pages": {
+        "ko": "pp.21-27 매핑 표 (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.21-27 mapping table (printed page = PDF page)"
+      },
+      "checked": "2026-10-22"
+    },
+    {
+      "title": "Counters / Timers CT Series PRODUCT MANUAL TCD220014AC",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "CT_EN_TCD220014AC_20240228",
+        "en": "CT_EN_TCD220014AC_20240228"
+      },
+      "url": "https://www.autonics.com/glb/common/download/506384",
+      "pages": {
+        "ko": "p.2 주문 정보, 사양 «Communication Interface», 통신 파라미터 표",
+        "en": "p.2 ordering information, 'Communication Interface' spec, communication parameter table"
+      },
+      "checked": "2026-10-22"
+    }
+  ]
+}
