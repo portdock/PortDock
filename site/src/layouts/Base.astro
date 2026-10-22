@@ -42,6 +42,8 @@ const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* 옛 무료 주소(portdock.pages.dev)로 들어오면 같은 쪽의 정식 주소로 — 배포 미리보기(<id>.portdock.pages.dev)는 그대로 둔다 */}
+    <script is:inline>if(location.hostname==="portdock.pages.dev")location.replace("https://portdock.dev"+location.pathname+location.search+location.hash)</script>
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
     {

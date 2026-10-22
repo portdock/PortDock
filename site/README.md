@@ -21,7 +21,7 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
 
 ## 도메인을 산 뒤 (portdock.dev)
 1. Cloudflare **Registrar 에서 portdock.dev 등록**(연 약 $12) → Pages → 사용자 지정 도메인 `portdock.dev`.
-2. 빌드 변수 `SITE_URL` 을 지우거나 `https://portdock.dev` 로 → 다시 배포. (pages.dev → portdock.dev 넘겨주기는 Bulk Redirects 또는 `_redirects` 로 — 검색엔진이 옛 주소를 잊게)
+2. 빌드 변수 `SITE_URL` 을 지우거나 `https://portdock.dev` 로 → 다시 배포. ✅ 10/22. pages.dev 쪽은 canonical 이 portdock.dev 를 가리키고, `layouts/Base.astro` 머리의 한 줄 스크립트가 `portdock.pages.dev` 로 들어온 방문자를 같은 쪽의 portdock.dev 로 보낸다(배포 미리보기 주소는 그대로)
 3. 앱 안 링크(apps/*/src-tauri/tauri.conf.json `homepage`, capabilities opener 허용, README, `.github/ISSUE_TEMPLATE/config.yml`, `tools/installer-license.mjs` 의 개인정보처리방침 주소)는 이미 portdock.dev 다. 도메인을 사지 않기로 하면 이것들을 pages.dev 로 바꾼다.
 4. **Email Routing** 켜기 → 받을 내 메일 주소 검증 → `contact@portdock.dev` 같은 주소를 그 메일로 전달.
 5. **Turnstile** 위젯 만들기(도메인 portdock.dev) → 사이트 키·비밀 키.
