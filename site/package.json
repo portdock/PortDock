@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
-    "test": "node --test src/lib/checksum.test.ts"
+    "test": "node --test src/lib/*.test.ts"
   },
   "dependencies": {
     "astro": "7.4.0",
