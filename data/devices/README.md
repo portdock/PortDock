@@ -35,6 +35,10 @@ node tools/devices-check.mjs --modbus-schema ls-electric/ig5a > ig5a.yaml
 ```
 (`BADC`·`DCBA` 처럼 바이트를 바꾸는 순서는 건너뛰고 주석으로 남깁니다.)
 
+## 한 번에 받기
+- 사이트: [all.json](https://portdock.dev/devices/all.json)(전체) · [registers.csv](https://portdock.dev/devices/registers.csv)(레지스터 한 줄씩) · [llms-full.txt](https://portdock.dev/llms-full.txt)(AI 용 전체 표)
+- 데이터셋 묶음(Hugging Face·Kaggle 용 README·CSV·JSONL·LICENSE): `node tools/devices-export.mjs [출력 폴더]`
+
 ## 새 장비 넣기
 1. 제조사 공식 매뉴얼 PDF 를 직접 열어 확인한다. 블로그·대리점 요약·기억은 근거로 쓰지 않는다. 확인 못 한 항목은 넣지 않는다.
 2. 매뉴얼이 적은 주소가 통신 주소(0 기준)인지 1 기준(40001)인지 매뉴얼의 프레임 예시로 확인하고, `address` 는 늘 0 기준으로 적는다.

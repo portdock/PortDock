@@ -20,6 +20,9 @@
 | 같은 사진을 Adobe Stock 에 올리기(작가 몫 33%) | 사용자 | 선택 |
 | 가이드에 직접 그린 배선도·결선도 SVG 넣기 | Claude | ✅ 10/22 8장(한·영), 생성기 `site/figs/make.mjs` |
 | 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 계속 |
+| AI 가 쓰는 데이터: `/devices/all.json`·`registers.csv`·`/llms-full.txt` | Claude | ✅ 10/22 |
+| Hugging Face 계정(portdock.contact) → 데이터셋 저장소 `portdock/modbus-register-maps` 만들기 → `node tools/devices-export.mjs` 결과 폴더를 올리기(Claude 가 Chrome 으로 올릴 수 있음) · Kaggle 도 같은 묶음 | 사용자(계정) · Claude(올리기) | 안 함 |
+| Cloudflare → portdock.dev → 보안 → 봇(또는 «AI Crawl Control»)에서 AI 크롤러 차단이 꺼져 있는지 확인 — 켜져 있으면 AI 가 데이터를 못 가져감 | 사용자 | 안 함 |
 
 ## 2. v0.1 릴리스 — 준비되면 공개
 | 할 일 | 누가 | 상태 |
