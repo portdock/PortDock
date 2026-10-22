@@ -1,0 +1,353 @@
+---
+// 웹 도구: Modbus 프레임 해석기 — RTU·TCP 바이트를 붙여 넣으면 풀어 준다(lib/modbusDecode.ts = crates/core modbus.rs decode 와 같은 규칙).
+// 광고는 이 페이지 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { crc16Modbus, hex } from "../lib/checksum";
+import { EXCEPTIONS } from "../lib/modbusDecode";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/modbus-decoder/";
+const rtu = (b: number[]) => {
+  const c = crc16Modbus(b);
+  return hex([...b, c & 0xff, c >> 8]);
+};
+const L = ko
+  ? {
+      title: "Modbus 프레임 해석기",
+      desc: "Modbus RTU·TCP 프레임의 HEX 를 붙여 넣으면 국번·함수·주소·값·CRC 와 MBAP 머리, 예외 코드까지 풀어 줍니다. 레지스터 값은 10진·HEX·40001 표기 표로 보여 줍니다.",
+      input: "프레임 바이트 (HEX)",
+      help: "예: 01 03 00 00 00 0A C5 CD · 01030000000AC5CD · 0x01,0x03 — 프레임 하나씩",
+      mode: "형식",
+      auto: "자동 판별",
+      start: "응답 값의 시작 주소 (0 기준, 선택)",
+      startHelp: "응답에는 주소가 없습니다. 짝 요청의 시작 주소를 넣으면 표에 주소가 붙습니다.",
+      examples: "예시",
+      ex: ["03 요청", "03 응답", "예외 응답", "TCP 요청", "10 요청", "01 애매함"],
+      how: "모든 풀이는 이 브라우저 안에서만 하고, 붙여 넣은 바이트는 어디에도 보내지 않습니다.",
+      faqTitle: "자주 묻는 것",
+      exTitle: "예외 코드",
+      exCols: ["코드", "이름", "뜻"],
+      exSrc: "Modbus Application Protocol Specification V1.1b3 7장 기준. 07·09 는 이 판에 정의되지 않았습니다.",
+      srcTitle: "근거",
+      faq: [
+        ["RTU 와 TCP 는 어떻게 가리나요?", "끝 2바이트가 CRC16 Modbus 와 맞으면 RTU 로, 앞 7바이트의 프로토콜 ID 가 0 이고 길이 칸이 뒤에 오는 바이트 수와 같으면 Modbus TCP 로 봅니다. 둘 다 아니면 CRC 가 틀린 RTU 로 풀고, 올바른 CRC 를 함께 보여 줍니다. 형식은 직접 고를 수도 있습니다."],
+        ["왜 요청과 응답 두 해석이 나오나요?", "프레임 안에는 방향 표시가 없어서 길이와 바이트 수로 가립니다. 함수 01·02 에서 바이트 수가 3 인 응답은 요청과 길이가 같고(RTU 8바이트), 함수 17 도 모양이 둘 다 맞을 수 있습니다. 이럴 때는 두 해석을 다 보여 주니 앞뒤 프레임으로 고르세요. 함수 05·06 의 정상 응답은 요청을 그대로 되돌립니다."],
+        ["주소 0 과 40001 은 무엇이 다른가요?", "프레임에 실리는 주소는 0 기준입니다. 40001 은 «보유 레지스터 4xxxx 의 1번째» 를 뜻하는 표기라서 프레임에는 00 00 으로 실립니다. 코일은 0xxxx, 입력 접점은 1xxxx, 입력 레지스터는 3xxxx 입니다."],
+        ["코일 응답 끝에 0 이 더 붙어 있습니다", "비트 값은 바이트 단위로 보내고 마지막 바이트의 남는 비트는 0 으로 채웁니다. 요청한 개수만큼만 읽으세요."],
+      ],
+      appNote: "장비와 주고받는 통신을 줄마다 풀어 보려면",
+      guide: "Modbus RTU 프레임 읽는 법",
+      guide2: "Modbus 주소 표기(0 기준·40001)",
+    }
+  : {
+      title: "Modbus Frame Decoder",
+      desc: "Paste a Modbus RTU or TCP frame in HEX to decode slave ID, function, values, CRC, MBAP header and exception codes. Registers shown as decimal, HEX and 40001.",
+      input: "Frame bytes (HEX)",
+      help: "e.g. 01 03 00 00 00 0A C5 CD · 01030000000AC5CD · 0x01,0x03 — one frame at a time",
+      mode: "Format",
+      auto: "Auto-detect",
+      start: "Start address of response values (0-based, optional)",
+      startHelp: "A response carries no address. Enter the start address from the matching request to label the table.",
+      examples: "Examples",
+      ex: ["03 request", "03 response", "Exception", "TCP request", "10 request", "01 ambiguous"],
+      how: "Everything is decoded in your browser; the bytes you paste are not sent anywhere.",
+      faqTitle: "FAQ",
+      exTitle: "Exception codes",
+      exCols: ["Code", "Name", "Meaning"],
+      exSrc: "From chapter 7 of the Modbus Application Protocol Specification V1.1b3. Codes 07 and 09 are not defined in that edition.",
+      srcTitle: "References",
+      faq: [
+        ["How does it tell RTU from TCP?", "If the last two bytes match the CRC16 Modbus it reads RTU; if the protocol ID in the first 7 bytes is 0 and the length field equals the bytes that follow, it reads Modbus TCP. If neither fits it reads RTU with a bad CRC and shows the correct CRC. You can also pick the format yourself."],
+        ["Why do I get both a request and a response?", "A frame carries no direction, so the length and byte count decide. A function 01/02 response with byte count 3 has the same length as a request (8 bytes on RTU), and function 17 can fit both layouts too. Both readings are shown; use the frames around it to choose. A normal 05/06 response echoes the request."],
+        ["What is the difference between address 0 and 40001?", "The address in the frame is 0-based. 40001 is notation for «the 1st holding register (4xxxx)», sent as 00 00. Coils are 0xxxx, discrete inputs 1xxxx and input registers 3xxxx."],
+        ["My coil response has extra zeros at the end", "Bits are sent in whole bytes and unused bits in the last byte are padded with 0. Read only as many as you requested."],
+      ],
+      appNote: "To decode live traffic line by line while talking to a device, use",
+      guide: "Reading Modbus RTU frames",
+      guide2: "Modbus address notation (0-based vs 40001)",
+    };
+const EXAMPLES = [
+  rtu([0x01, 0x03, 0x00, 0x00, 0x00, 0x0a]),
+  rtu([0x01, 0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]),
+  rtu([0x01, 0x83, 0x02]),
+  hex([0x00, 0x07, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 0x00, 0x00, 0x00, 0x02]),
+  rtu([0x01, 0x10, 0x00, 0x01, 0x00, 0x02, 0x04, 0x00, 0x0a, 0x01, 0x02]),
+  rtu([0x01, 0x01, 0x03, 0xff, 0x00, 0x01]),
+];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 프레임 해석기 — RTU·TCP HEX 풀이 (온라인) — PortDock" : "Modbus Frame Decoder: RTU & TCP Hex Parser (Online) — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="dec" data-lang={lang}>
+      <label class="fld">
+        {L.input}
+        <textarea id="data" class="mono" rows="3" spellcheck="false" autocomplete="off">{EXAMPLES[0]}</textarea>
+        <span class="note">{L.help}</span>
+      </label>
+      <div class="row">
+        <label class="fld" style="flex:0 1 200px">
+          {L.mode}
+          <select id="mode">
+            <option value="auto">{L.auto}</option>
+            <option value="rtu">Modbus RTU</option>
+            <option value="tcp">Modbus TCP</option>
+          </select>
+        </label>
+        <label class="fld" style="flex:1 1 300px">
+          {L.start}
+          <input id="start" class="mono" inputmode="numeric" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.startHelp}</span>
+        </label>
+      </div>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {L.ex.map((name, i) => <button type="button" class="btn tight" data-ex={EXAMPLES[i]}>{name}</button>)}
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div id="out" aria-live="polite"></div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.exTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.exCols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              Object.entries(EXCEPTIONS).map(([code, e]) => (
+                <tr>
+                  <td class="mono">{Number(code).toString(16).toUpperCase().padStart(2, "0")}</td>
+                  <td>{e.name}</td>
+                  <td>{e[lang]}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.exSrc}</p>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        <li>Modbus Application Protocol Specification V1.1b3 — {ko ? "함수 코드·요청/응답 모양·개수 한도·예외 코드" : "function codes, request/response layouts, quantity limits, exception codes"}</li>
+        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {ko ? "RTU 프레임·국번(0 브로드캐스트, 1~247)·CRC" : "RTU framing, addresses (0 broadcast, 1–247), CRC"}</li>
+        <li>Modbus Messaging on TCP/IP Implementation Guide V1.0b — {ko ? "MBAP 머리(트랜잭션·프로토콜·길이·유닛 ID)" : "MBAP header (transaction, protocol, length, unit ID)"}</li>
+      </ul>
+      <p>
+        {ko ? "바이트 하나하나의 풀이는 가이드 " : "For a byte-by-byte walkthrough see "}
+        <a href={url(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{ko ? ", 주소 표기는 " : "; for addresses see "}
+        <a href={url(lang, "guides/modbus-address-notation/")}>{L.guide2}</a>{ko ? " 를 보세요." : "."}
+      </p>
+      <p>
+        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+      </p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .scroll {
+      overflow-x: auto;
+    }
+    #out :global(.mbd-sum) {
+      margin: 0 0 8px;
+    }
+    #out :global(.mbd-ok) {
+      color: var(--tx);
+      font-weight: 600;
+    }
+    #out :global(.mbd-bad) {
+      color: #b42318;
+      font-weight: 600;
+    }
+    #out :global(.mbd-read) {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    #out :global(.mbd-read h2) {
+      font-size: 17px;
+      margin: 0 0 6px;
+    }
+    #out :global(.mbd-read h3) {
+      font-size: 15px;
+      margin: 12px 0 4px;
+    }
+    #out :global(.mbd-issues) {
+      color: #b42318;
+      font-size: 14px;
+      margin: 6px 0 0;
+      padding-left: 20px;
+    }
+    #out :global(.scroll) {
+      overflow-x: auto;
+    }
+  </style>
+  <script>
+    import { parseHex, hex, type Lang } from "../lib/checksum";
+    import { decodeFrame, tableRows, isBitSpace, type Field, type Table, type WireMode } from "../lib/modbusDecode";
+    const form = document.getElementById("dec") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const ko = lang === "ko";
+    const t = (k: string, e: string) => (ko ? k : e);
+    const data = document.getElementById("data") as HTMLTextAreaElement;
+    const mode = document.getElementById("mode") as HTMLSelectElement;
+    const start = document.getElementById("start") as HTMLInputElement;
+    const err = document.getElementById("err")!;
+    const out = document.getElementById("out")!;
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    function table(head: string[], rows: string[][], mono: number[] = []) {
+      const box = el("div", "scroll");
+      const tb = el("table", "t");
+      const tr = el("tr");
+      for (const h of head) tr.append(el("th", "", h));
+      tb.append(el("thead"));
+      tb.tHead!.append(tr);
+      const body = el("tbody");
+      for (const r of rows) {
+        const row = el("tr");
+        r.forEach((c, i) => row.append(el("td", mono.includes(i) ? "mono" : "", c)));
+        body.append(row);
+      }
+      tb.append(body);
+      box.append(tb);
+      return box;
+    }
+    const fieldTable = (fs: Field[]) =>
+      table(
+        [t("항목", "Field"), t("바이트", "Bytes"), t("값", "Value")],
+        fs.map((f) => [f.name, f.raw, f.value]),
+        [1],
+      );
+    function valueTable(tb: Table, given: number | null) {
+      const s = tb.start ?? given;
+      const rows = tableRows(tb, s);
+      const bit = isBitSpace(tb.space);
+      const head = bit ? ["#", t("주소(0 기준)", "Address (0-based)"), t("PLC 표기", "PLC notation"), t("값", "Value")] : ["#", t("주소(0 기준)", "Address (0-based)"), t("PLC 표기", "PLC notation"), t("10진", "Decimal"), t("부호 있음", "Signed"), "HEX"];
+      return table(
+        head,
+        rows.map((r) => (bit ? [String(r.i), r.zero, r.plc, `${r.dec} ${r.hex}`] : [String(r.i), r.zero, r.plc, String(r.dec), String(r.signed), r.hex])),
+        bit ? [1, 2] : [1, 2, 3, 4, 5],
+      );
+    }
+
+    function run() {
+      out.replaceChildren();
+      err.textContent = "";
+      let bytes: number[];
+      try {
+        bytes = parseHex(data.value, lang);
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        return;
+      }
+      if (!bytes.length) return;
+      const st = start.value.trim();
+      let given: number | null = null;
+      if (st) {
+        const n = /^0x[0-9a-f]+$/i.test(st) ? parseInt(st, 16) : /^\d+$/.test(st) ? Number(st) : NaN;
+        if (!(n >= 0 && n <= 0xffff)) {
+          err.textContent = t("시작 주소는 0~65535 숫자입니다", "Start address must be a number from 0 to 65535");
+          return;
+        }
+        given = n;
+      }
+      let d;
+      try {
+        d = decodeFrame(bytes, mode.value as WireMode, lang);
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        return;
+      }
+      const sum = el("p", "mbd-sum");
+      sum.append(el("b", "", `${d.wire === "rtu" ? "Modbus RTU" : "Modbus TCP"} · ${bytes.length} ${t("바이트", "bytes")} · ${t("함수", "function")} ${hex([d.fc])} ${d.fname}`));
+      sum.append(el("br"), el("span", "note", d.why));
+      out.append(sum, fieldTable(d.header));
+      if (d.crc) {
+        const p = el("p", "mbd-sum");
+        p.append(el("span", d.crc.ok ? "mbd-ok" : "mbd-bad", d.crc.ok ? t("CRC 맞음", "CRC OK") : t("CRC 틀림", "CRC mismatch")));
+        p.append(document.createTextNode(` — ${t("받은 값", "received")} ${hex(d.crc.got)} · ${t("올바른 값", "correct")} ${hex(d.crc.want)} ${t("(낮은 바이트 먼저)", "(low byte first)")}`));
+        out.append(p);
+      }
+      if (d.notes.length) {
+        const ul = el("ul", "mbd-issues");
+        for (const n of d.notes) ul.append(el("li", "", n));
+        out.append(ul);
+      }
+      if (d.readings.length > 1) out.append(el("p", "note", t("모양이 요청·응답 둘 다 맞습니다 — 두 해석을 다 보여 줍니다.", "The layout fits both a request and a response — both readings are shown.")));
+      for (const r of d.readings) {
+        const box = el("section", "mbd-read");
+        box.append(el("h2", "", r.title), fieldTable(r.fields));
+        if (r.issues.length) {
+          const ul = el("ul", "mbd-issues");
+          for (const i of r.issues) ul.append(el("li", "", i));
+          box.append(ul);
+        }
+        for (const tb of r.tables) {
+          if (!tb.values.length) continue;
+          box.append(el("h3", "", tb.caption), valueTable(tb, given));
+        }
+        out.append(box);
+      }
+    }
+    for (const b of form.querySelectorAll<HTMLButtonElement>("button[data-ex]")) {
+      b.addEventListener("click", () => {
+        data.value = b.dataset.ex ?? "";
+        mode.value = "auto";
+        start.value = "";
+        run();
+      });
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

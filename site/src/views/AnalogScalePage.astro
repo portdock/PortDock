@@ -1,0 +1,376 @@
+---
+// 웹 도구: 4–20mA 환산 계산기 — 전류·전압 ↔ 공학값 ↔ % ↔ PLC 아날로그 카운트(lib/analogScale.ts).
+// 프리셋 숫자는 제조사 공식 문서에서 확인한 것만 넣고, 출처를 아래 표에 적는다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { COUNT_PRESETS, SIGNALS } from "../lib/analogScale";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/4-20ma/";
+const L = ko
+  ? {
+      title: "4–20mA 환산 계산기",
+      desc: "4–20mA·0–10V 신호를 공학값·%·PLC 아날로그 카운트(0–27648, 0–32000 등)로 서로 환산합니다. 4·8·12·16·20mA 환산표와 NE 43 범위 경고도 보여 줍니다.",
+      signal: "신호 종류",
+      engLo: "공학값 하한",
+      engHi: "공학값 상한",
+      unit: "단위",
+      unitPh: "예: bar, ℃, m³/h",
+      preset: "카운트 범위",
+      custom: "직접 입력",
+      cLo: "카운트 하한",
+      cHi: "카운트 상한",
+      sig: "신호",
+      eng: "공학값",
+      pct: "%",
+      count: "카운트",
+      tableNote: "0·25·50·75·100 % 지점. 카운트는 정수로 반올림해 보여 줍니다.",
+      how: "네 칸 중 어느 것을 고쳐도 나머지가 바뀝니다. 범위 밖 값도 같은 직선으로 늘려 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      formulaTitle: "환산 식",
+      formula: [
+        "비율 r = (신호 − 신호 하한) ÷ (신호 상한 − 신호 하한)   · 4–20 mA 면 r = (mA − 4) ÷ 16",
+        "공학값 = 공학값 하한 + r × (공학값 상한 − 공학값 하한)",
+        "% = r × 100",
+        "카운트 = 카운트 하한 + r × (카운트 상한 − 카운트 하한)",
+      ],
+      formulaNote: "예: 0~10 bar 압력 전송기가 12 mA 를 내면 r = 0.5 → 5 bar, 50 %, 0~27648 카운트로는 13824 입니다.",
+      presetTitle: "카운트 프리셋과 출처",
+      presetIntro: "같은 4~20 mA 라도 PLC 아날로그 입력 모듈과 데이터 형식 설정에 따라 카운트 범위가 다릅니다. 아래는 제조사 문서에서 확인한 값이고, 실제 값은 쓰는 모듈의 매뉴얼로 확인하세요. 목록에 없으면 «직접 입력» 을 고르면 됩니다.",
+      thPreset: "프리셋",
+      thRange: "범위",
+      thSrc: "출처",
+      ne43Title: "NE 43 범위 경고",
+      ne43: "NAMUR 권고 NE 43 은 4~20 mA 전송기가 측정값으로 3.8~20.5 mA 를 쓰고, 고장은 3.6 mA 이하나 21 mA 이상으로 알리도록 정합니다. 신호가 «4–20 mA» 일 때 이 경계로 상태를 보여 줍니다. 전송기마다 고장 출력값(예: 3.6 mA, 21.6 mA)은 설정으로 바뀔 수 있으니 장비 매뉴얼을 함께 보세요.",
+      ne43Src: "근거",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["4 mA 가 왜 0 % 인가요?", "4~20 mA 는 0 % 에서도 전류가 흐르는 «라이브 제로» 신호입니다. 전류가 0 이면 값이 0 인지 선이 끊겼는지 구분할 수 없으므로, 4 mA 를 0 % 로 두고 그보다 크게 떨어지면 단선으로 봅니다. 1~5 V 도 같은 이유로 1 V 를 0 % 로 씁니다."],
+        ["PLC 에 들어온 카운트가 계산값과 조금 다릅니다", "모듈의 분해능·필터·보정 때문에 몇 카운트 차이는 흔합니다. 크게 다르면 모듈의 입력 범위 설정(4~20 mA 인지 0~20 mA 인지)과 데이터 형식(원시·공학 단위·PID 용 등)을 먼저 확인하세요."],
+        ["카운트에서 공학값을 바로 구하려면?", "카운트 칸에 PLC 값을 넣으면 공학값·전류·% 가 나옵니다. 식으로는 공학값 = 하한 + (카운트 − 카운트 하한) ÷ (카운트 상한 − 카운트 하한) × (상한 − 하한) 입니다."],
+      ],
+      appNote: "센서 값을 시리얼·Modbus 로 읽어 그래프로 보려면",
+    }
+  : {
+      title: "4–20 mA Scaling Calculator",
+      desc: "Convert 4–20 mA, 0–20 mA, 0–10 V and 1–5 V signals to engineering units, percent and PLC analog counts (0–27648, 0–32000…), with a 4/8/12/16/20 mA table.",
+      signal: "Signal type",
+      engLo: "Engineering low",
+      engHi: "Engineering high",
+      unit: "Unit",
+      unitPh: "e.g. bar, °C, m³/h",
+      preset: "Count range",
+      custom: "Custom",
+      cLo: "Count low",
+      cHi: "Count high",
+      sig: "Signal",
+      eng: "Engineering value",
+      pct: "%",
+      count: "Count",
+      tableNote: "0, 25, 50, 75 and 100 % points. Counts are rounded to integers.",
+      how: "Edit any of the four fields and the others follow. Values outside the range are extrapolated on the same line. Everything runs in your browser; nothing you type is sent anywhere.",
+      formulaTitle: "Formulas",
+      formula: [
+        "Ratio r = (signal − signal low) ÷ (signal high − signal low)   · for 4–20 mA, r = (mA − 4) ÷ 16",
+        "Engineering value = eng. low + r × (eng. high − eng. low)",
+        "% = r × 100",
+        "Count = count low + r × (count high − count low)",
+      ],
+      formulaNote: "Example: a 0–10 bar pressure transmitter at 12 mA gives r = 0.5 → 5 bar, 50 %, and 13824 on a 0–27648 count range.",
+      presetTitle: "Count presets and sources",
+      presetIntro: "Even for 4–20 mA the count range depends on the PLC analog input module and its data format setting. The values below come from the manufacturers' documents; check the manual of your module for the actual values. If yours is not listed, choose «Custom».",
+      thPreset: "Preset",
+      thRange: "Range",
+      thSrc: "Source",
+      ne43Title: "NE 43 range warnings",
+      ne43: "NAMUR recommendation NE 43 has 4–20 mA transmitters use 3.8–20.5 mA for measurement values and signal a failure at 3.6 mA or below or 21 mA or above. When the signal type is «4–20 mA» the status uses these limits. A transmitter's failure output (for example 3.6 mA or 21.6 mA) is often configurable, so check its manual too.",
+      ne43Src: "References",
+      faqTitle: "FAQ",
+      faq: [
+        ["Why is 4 mA zero percent?", "4–20 mA is a «live zero» signal: current flows even at 0 %. With 0 mA you could not tell a zero reading from a broken wire, so 4 mA is 0 % and a current well below it means an open loop. 1–5 V uses 1 V as 0 % for the same reason."],
+        ["The count in my PLC differs slightly from the calculator", "A few counts of difference from resolution, filtering and calibration are normal. If it is far off, check the module's input range setting (4–20 mA or 0–20 mA) and data format (raw, engineering units, scaled for PID, etc.) first."],
+        ["How do I get the engineering value from a count?", "Type the PLC value in the Count field to get the engineering value, current and percent. As a formula: value = low + (count − count low) ÷ (count high − count low) × (high − low)."],
+      ],
+      appNote: "To read sensor values over serial or Modbus and plot them live, use",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SIG_LABEL: Record<string, string> = { "4-20mA": "4–20 mA", "0-20mA": "0–20 mA", "0-10V": "0–10 V", "1-5V": "1–5 V" };
+const NE43_REFS = [
+  { name: "Vaisala PR-33 — Default mA output value", href: "https://docs.vaisala.com/r/M212411EN-B/en-US/GUID-E40476FD-D92F-4BE2-ABBD-CF64B0D2D65A" },
+  { name: "Endress+Hauser RMA42 Operating Instructions (BA00287R)", href: "https://portal.endress.com/wa001/dla/5000557/8076/000/08/BA00287REN_0516.pdf" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "4–20mA 환산 계산기 — 전류·공학값·%·PLC 카운트 — PortDock" : "4–20 mA Scaling Calculator: mA, %, Engineering Units — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="as" data-lang={lang} data-presets={JSON.stringify(COUNT_PRESETS.map((p) => ({ id: p.id, ranges: p.ranges, note: p[lang] })))}>
+      <div class="row">
+        <label class="fld">
+          {L.signal}
+          <select id="signal">
+            {SIGNALS.map((s) => <option value={s.kind} selected={s.kind === "4-20mA"}>{SIG_LABEL[s.kind]}</option>)}
+          </select>
+        </label>
+        <label class="fld">
+          {L.engLo}
+          <input id="engLo" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.engHi}
+          <input id="engHi" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.unit}
+          <input id="unit" value="bar" placeholder={L.unitPh} spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld" style="flex:2 1 300px">
+          {L.preset}
+          <select id="preset">
+            <option value="custom">{L.custom}</option>
+            {COUNT_PRESETS.map((p) => <option value={p.id} selected={p.id === "s7"}>{p.label}</option>)}
+          </select>
+        </label>
+        <label class="fld">
+          {L.cLo}
+          <input id="cLo" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.cHi}
+          <input id="cHi" class="mono" value="27648" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <p class="note" id="pnote"></p>
+      <div class="result vals" aria-live="polite">
+        <div class="row">
+          <label class="fld">
+            <span>{L.sig} (<span id="sigUnit">mA</span>)</span>
+            <input id="v-sig" class="mono" value="12" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          </label>
+          <label class="fld">
+            <span>{L.eng} <span id="engUnit"></span></span>
+            <input id="v-eng" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          </label>
+          <label class="fld">
+            {L.pct}
+            <input id="v-pct" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          </label>
+          <label class="fld">
+            {L.count}
+            <input id="v-count" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          </label>
+        </div>
+        <p class="st" id="status"></p>
+        <p class="st" id="cstatus"></p>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl">
+        <table class="t" id="tbl">
+          <thead>
+            <tr><th>{L.sig} (<span class="tu-sig">mA</span>)</th><th>{L.eng} <span class="tu-eng"></span></th><th>%</th><th>{L.count}</th></tr>
+          </thead>
+          <tbody>
+            {
+              [0, 1, 2, 3, 4].map((i) => (
+                <tr data-i={i}>
+                  <td class="mono" />
+                  <td class="mono" />
+                  <td class="mono" />
+                  <td class="mono" />
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.tableNote}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.formulaTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.formulaNote}</p>
+
+      <h2>{L.presetTitle}</h2>
+      <p>{L.presetIntro}</p>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr><th>{L.thPreset}</th><th>{L.thRange}</th><th>{L.thSrc}</th></tr></thead>
+          <tbody>
+            {
+              COUNT_PRESETS.map((p) => (
+                <tr>
+                  <td>{p.label}</td>
+                  <td>{p[lang]}</td>
+                  <td>
+                    <a href={p.url} rel="noopener" target="_blank">{p.src}</a>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h2>{L.ne43Title}</h2>
+      <p>{L.ne43}</p>
+      <p class="note">
+        {L.ne43Src}:{" "}
+        {
+          NE43_REFS.map((r, i) => (
+            <>
+              {i > 0 && " · "}
+              <a href={r.href} rel="noopener" target="_blank">{r.name}</a>
+            </>
+          ))
+        }
+      </p>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "plot/")}>PortDock Plot</a>.
+      </p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .vals .row {
+      align-items: flex-end;
+    }
+    .st {
+      margin: 0;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .st:empty {
+      display: none;
+    }
+    .st.ok {
+      color: var(--muted);
+    }
+    .st.warn {
+      color: #b54708;
+      font-weight: 600;
+    }
+    .st.fault {
+      color: #b42318;
+      font-weight: 600;
+    }
+  </style>
+  <script>
+    import { convert, countStatus, fmt, num, signalOf, signalStatus, table, type CountRange, type Field, type Lang, type Scale, type SignalKind } from "../lib/analogScale";
+    const form = document.getElementById("as") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const presets = JSON.parse(form.dataset.presets ?? "[]") as { id: string; ranges: Partial<Record<SignalKind, CountRange>>; note: string }[];
+    const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as T;
+    const sigSel = $<HTMLSelectElement>("signal");
+    const preSel = $<HTMLSelectElement>("preset");
+    const FIELDS: Field[] = ["sig", "eng", "pct", "count"];
+    let last: Field = "sig";
+
+    const rangeOf = () => presets.find((p) => p.id === preSel.value)?.ranges[sigSel.value as SignalKind];
+    function setStatus(el: HTMLElement, s: { level: string; ko: string; en: string } | null) {
+      el.className = "st" + (s ? " " + s.level : "");
+      el.textContent = s ? s[lang] : "";
+    }
+    /** 신호에 맞는 프리셋만 고를 수 있게 하고, 고른 프리셋의 범위를 카운트 칸에 넣는다 */
+    function syncPreset() {
+      const k = sigSel.value as SignalKind;
+      for (const o of preSel.options) if (o.value !== "custom") o.disabled = !presets.find((p) => p.id === o.value)?.ranges[k];
+      if (preSel.selectedOptions[0]?.disabled) preSel.value = "custom";
+      const r = rangeOf();
+      if (r) {
+        $("cLo").value = String(r.lo);
+        $("cHi").value = String(r.hi);
+      }
+      $("pnote").textContent = presets.find((p) => p.id === preSel.value)?.note ?? "";
+    }
+    function run() {
+      const k = sigSel.value as SignalKind;
+      const g = signalOf(k);
+      const unit = $("unit").value.trim();
+      $("sigUnit").textContent = g.unit;
+      $("engUnit").textContent = unit ? `(${unit})` : "";
+      for (const e of document.querySelectorAll(".tu-sig")) e.textContent = g.unit;
+      for (const e of document.querySelectorAll(".tu-eng")) e.textContent = unit ? `(${unit})` : "";
+      const s: Scale = { signal: k, engLo: num($("engLo").value), engHi: num($("engHi").value), countLo: num($("cLo").value), countHi: num($("cHi").value) };
+      const err = $("err");
+      try {
+        const v = convert(s, last, num($(`v-${last}`).value), lang);
+        err.textContent = "";
+        for (const f of FIELDS) if (f !== last) $(`v-${f}`).value = f === "count" ? String(Math.round(v.count)) : fmt(v[f]);
+        setStatus($("status"), signalStatus(k, v.sig));
+        setStatus($("cstatus"), countStatus(rangeOf(), v.count));
+        const rows = table(s);
+        document.querySelectorAll<HTMLTableRowElement>("#tbl tr[data-i]").forEach((tr, i) => {
+          const r = rows[i];
+          const c = tr.cells;
+          c[0].textContent = fmt(r.sig);
+          c[1].textContent = fmt(r.eng);
+          c[2].textContent = fmt(r.pct);
+          c[3].textContent = String(Math.round(r.count));
+        });
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        setStatus($("status"), null);
+        setStatus($("cstatus"), null);
+      }
+    }
+    for (const f of FIELDS)
+      $(`v-${f}`).addEventListener("input", () => {
+        last = f;
+        run();
+      });
+    for (const id of ["engLo", "engHi", "unit"]) $(id).addEventListener("input", run);
+    for (const id of ["cLo", "cHi"])
+      $(id).addEventListener("input", () => {
+        preSel.value = "custom";
+        $("pnote").textContent = "";
+        run();
+      });
+    sigSel.addEventListener("change", () => {
+      // 신호를 바꾸면 % 를 그대로 두고 나머지를 다시 계산한다
+      if (last === "sig") last = "pct";
+      syncPreset();
+      run();
+    });
+    preSel.addEventListener("change", () => {
+      syncPreset();
+      run();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    syncPreset();
+    run();
+  </script>
+</Base>

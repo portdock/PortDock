@@ -1,0 +1,571 @@
+---
+// 웹 도구: 웹 시리얼 터미널 — Web Serial API(WICG 명세)로 브라우저에서 COM 포트를 연다. 순수 계산은 lib/webSerial.ts, 체크섬은 lib/checksum.ts.
+// 입력·받은 바이트는 어디로도 보내지 않는다(포트와 이 브라우저 사이에서만). 광고는 본문 아래 AdSlot 하나.
+// 지원 브라우저 서술은 MDN browser-compat-data(api.Serial) 기준 — 2026-10 확인.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { CHECKSUMS } from "../lib/checksum";
+import { BAUDS } from "../lib/webSerial";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/web-serial/";
+const L = ko
+  ? {
+      title: "웹 시리얼 터미널",
+      desc: "Web Serial 을 지원하는 브라우저(Chrome·Edge 등)에서 COM 포트를 열어 장비와 주고받습니다. HEX·ASCII 보기, 시각 표시, 체크섬·끝 문자 붙이기, 로그 저장.",
+      noSupport: "이 브라우저에서는 Web Serial API 를 쓸 수 없습니다. 데스크톱 Chrome·Edge 같은 지원 브라우저에서 https 주소로 열어 주세요. 브라우저 없이 쓰려면",
+      appLink: "PortDock Serial(무료, 윈도우)",
+      baud: "보레이트",
+      dataBits: "데이터 비트",
+      parity: "패리티",
+      pNone: "없음 (N)",
+      pEven: "짝수 (E)",
+      pOdd: "홀수 (O)",
+      stopBits: "정지 비트",
+      flow: "흐름 제어",
+      fNone: "없음",
+      fHw: "하드웨어 (RTS/CTS)",
+      connect: "포트 고르고 연결",
+      disconnect: "끊기",
+      idle: "연결 안 됨",
+      view: "받기 보기",
+      split: "줄 나누기",
+      sLf: "LF(0A) 마다",
+      sIdle: "20ms 쉼마다",
+      time: "시각 표시",
+      clear: "로그 지우기",
+      save: "텍스트로 저장",
+      sendMode: "보내기 형식",
+      sendData: "보낼 데이터",
+      checksum: "체크섬 붙이기",
+      none: "없음",
+      eol: "끝 문자",
+      eNone: "없음",
+      send: "보내기",
+      bytes: "바이트",
+      how: "보낼 때는 «본문 + 체크섬 + 끝 문자» 순서로 붙입니다(체크섬은 본문으로만 계산). 받은 것도 보낸 것도 이 브라우저와 포트 사이에서만 오가고, 어디로도 올리지 않습니다.",
+      howTitle: "쓰는 법",
+      steps: [
+        "보레이트·데이터 비트·패리티·정지 비트·흐름 제어를 장비 설명서에 맞춥니다(대부분 9600 또는 115200, 8N1, 흐름 제어 없음).",
+        "«포트 고르고 연결» 을 누르면 브라우저가 포트 목록 창을 띄웁니다. 웹 페이지는 사용자가 고른 포트만 열 수 있습니다.",
+        "받은 바이트는 «LF 마다» 또는 «20ms 쉼마다» 한 줄로 묶어 보여 줍니다. 글자로 주고받는 장비는 LF, Modbus RTU 처럼 프레임 단위 장비는 쉼이 읽기 좋습니다.",
+        "HEX 는 «01 03 00 00 00 0A» 처럼, ASCII 는 «AT\\r\\n», «\\x02DATA\\x03» 처럼 넣습니다(CRC·체크섬 계산기와 같은 규칙).",
+      ],
+      browserTitle: "되는 브라우저",
+      browser:
+        "MDN 호환표(api.Serial) 기준: Chrome·Edge 89 이상, Firefox 151 이상(데스크톱), Android Chrome 148 이상(138~147 은 블루투스 RFCOMM 직렬 포트만). Safari·iOS·Android Firefox·Android WebView 는 지원하지 않습니다. 명세상 https(보안 컨텍스트)에서만 열리고, 포트는 사용자가 고를 때만 열 수 있습니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["포트 목록에 COM 포트가 안 보입니다", "장치 관리자에서 포트가 보이는지, USB-시리얼 변환기 드라이버가 깔렸는지 먼저 보세요. 다른 프로그램이 그 포트를 열고 있으면 연결에 실패합니다."],
+        ["글자가 깨져서 보입니다", "보레이트·데이터 비트·패리티·정지 비트가 장비와 하나라도 다르면 깨진 바이트가 들어옵니다. 설정을 다시 맞추고 연결하세요. 프레이밍·패리티 오류는 로그에 알림으로 남습니다."],
+        ["USB 를 뽑으면 어떻게 되나요?", "읽기가 끊기거나 포트의 disconnect 이벤트가 오면 «끊김» 을 로그에 적고 연결을 닫습니다. 다시 꽂은 뒤 «포트 고르고 연결» 을 누르세요."],
+      ],
+      appNote: "여러 포트를 동시에 보거나, 수신 체크섬 검사·Modbus RTU 풀이·USB 재연결이 필요하면",
+      ev: {
+        open: "연결",
+        close: "끊음",
+        lost: "끊김 — 포트가 사라졌거나 읽기에 실패했습니다",
+        cancel: "포트를 고르지 않았습니다",
+        openFail: "열기 실패",
+        busy: "다른 프로그램이 쓰고 있거나 설정을 받지 않는 포트일 수 있습니다",
+        rxErr: "받기 오류",
+        txErr: "보내기 실패",
+        saved: "저장",
+      },
+    }
+  : {
+      title: "Web Serial Terminal",
+      desc: "Open a COM port from a browser that supports Web Serial (Chrome, Edge and others) and talk to a device. HEX/ASCII view, timestamps, checksum and line endings.",
+      noSupport: "The Web Serial API is not available in this browser. Open this page over https in a supporting browser such as desktop Chrome or Edge. To work without a browser, use",
+      appLink: "PortDock Serial (free, Windows)",
+      baud: "Baud rate",
+      dataBits: "Data bits",
+      parity: "Parity",
+      pNone: "None (N)",
+      pEven: "Even (E)",
+      pOdd: "Odd (O)",
+      stopBits: "Stop bits",
+      flow: "Flow control",
+      fNone: "None",
+      fHw: "Hardware (RTS/CTS)",
+      connect: "Choose port & connect",
+      disconnect: "Disconnect",
+      idle: "Not connected",
+      view: "Receive view",
+      split: "Split lines",
+      sLf: "At each LF (0A)",
+      sIdle: "After 20 ms idle",
+      time: "Timestamps",
+      clear: "Clear log",
+      save: "Save as text",
+      sendMode: "Send as",
+      sendData: "Data to send",
+      checksum: "Append checksum",
+      none: "None",
+      eol: "Line ending",
+      eNone: "None",
+      send: "Send",
+      bytes: "bytes",
+      how: "Outgoing bytes are built as «body + checksum + line ending» (the checksum covers the body only). Data only travels between this browser and the port; nothing is uploaded.",
+      howTitle: "How to use",
+      steps: [
+        "Match baud rate, data bits, parity, stop bits and flow control to the device manual (usually 9600 or 115200, 8N1, no flow control).",
+        "«Choose port & connect» opens the browser's port picker. A web page can only open a port that you pick.",
+        "Received bytes are grouped into lines «at each LF» or «after 20 ms idle». LF suits text devices; idle suits frame-based devices such as Modbus RTU.",
+        "Enter HEX as «01 03 00 00 00 0A» and ASCII as «AT\\r\\n» or «\\x02DATA\\x03» (same rules as the CRC & checksum calculator).",
+      ],
+      browserTitle: "Supported browsers",
+      browser:
+        "Per the MDN compatibility data (api.Serial): Chrome and Edge 89+, Firefox 151+ (desktop), Chrome for Android 148+ (138–147 only Bluetooth RFCOMM serial ports). Safari, iOS, Firefox for Android and Android WebView are not supported. The specification limits it to secure (https) pages, and a port opens only after you pick it.",
+      faqTitle: "FAQ",
+      faq: [
+        ["My COM port is not in the list", "Check that the port shows up in Device Manager and that the USB-serial adapter driver is installed. If another program has the port open, connecting fails."],
+        ["I see garbage characters", "If baud rate, data bits, parity or stop bits differ from the device in any way, you get corrupted bytes. Fix the settings and reconnect. Framing and parity errors are noted in the log."],
+        ["What happens when I unplug the USB cable?", "When reading fails or the port fires its disconnect event, the log shows «disconnected» and the port is closed. Plug it back in and press «Choose port & connect»."],
+      ],
+      appNote: "To watch several ports at once, verify received checksums, decode Modbus RTU or reconnect USB automatically, use",
+      ev: {
+        open: "connected",
+        close: "closed",
+        lost: "disconnected — the port went away or reading failed",
+        cancel: "No port was chosen",
+        openFail: "Could not open",
+        busy: "another program may be using it, or the port rejected the settings",
+        rxErr: "receive error",
+        txErr: "send failed",
+        saved: "saved",
+      },
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ ...L.ev, bytes: L.bytes, idle: L.idle });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "웹 시리얼 터미널 — 브라우저에서 COM 포트 열기 — PortDock" : "Web Serial Terminal: Open a COM Port in Your Browser — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="ws" data-lang={lang} data-msg={msgs}>
+      <p class="err" id="nosup" hidden>
+        {L.noSupport} <a href={url(lang, "serial/")}>{L.appLink}</a>.
+      </p>
+      <div class="row" id="cfg">
+        <label class="fld">
+          {L.baud}
+          <input id="baud" class="mono" list="bauds" value="9600" inputmode="numeric" spellcheck="false" autocomplete="off" />
+          <datalist id="bauds">{BAUDS.map((b) => <option value={String(b)} />)}</datalist>
+        </label>
+        <label class="fld">
+          {L.dataBits}
+          <select id="dataBits"><option value="8" selected>8</option><option value="7">7</option></select>
+        </label>
+        <label class="fld">
+          {L.parity}
+          <select id="parity">
+            <option value="none" selected>{L.pNone}</option>
+            <option value="even">{L.pEven}</option>
+            <option value="odd">{L.pOdd}</option>
+          </select>
+        </label>
+        <label class="fld">
+          {L.stopBits}
+          <select id="stopBits"><option value="1" selected>1</option><option value="2">2</option></select>
+        </label>
+        <label class="fld">
+          {L.flow}
+          <select id="flow">
+            <option value="none" selected>{L.fNone}</option>
+            <option value="hardware">{L.fHw}</option>
+          </select>
+        </label>
+      </div>
+      <div class="ws-bar">
+        <button type="button" class="btn primary" id="connect">{L.connect}</button>
+        <button type="button" class="btn" id="disconnect" disabled>{L.disconnect}</button>
+        <span class="note" id="status" aria-live="polite">{L.idle}</span>
+      </div>
+      <p class="err" id="cfgErr" role="alert"></p>
+
+      <div class="ws-bar">
+        <label class="ws-inline">
+          {L.view}
+          <select id="view"><option value="ascii" selected>ASCII</option><option value="hex">HEX</option></select>
+        </label>
+        <label class="ws-inline">
+          {L.split}
+          <select id="split"><option value="lf" selected>{L.sLf}</option><option value="idle">{L.sIdle}</option></select>
+        </label>
+        <label class="ws-inline"><input type="checkbox" id="time" checked /> {L.time}</label>
+        <span class="ws-gap"></span>
+        <button type="button" class="btn tight" id="clear">{L.clear}</button>
+        <button type="button" class="btn tight" id="save">{L.save}</button>
+      </div>
+      <div id="log" class="ws-log mono" role="log" aria-live="polite" tabindex="0"></div>
+
+      <form class="ws-send" id="sendForm">
+        <div class="row">
+          <label class="fld" style="flex:0 0 120px">
+            {L.sendMode}
+            <select id="sendMode"><option value="ascii" selected>ASCII</option><option value="hex">HEX</option></select>
+          </label>
+          <label class="fld" style="flex:3 1 320px">
+            {L.sendData}
+            <input id="sendData" class="mono" spellcheck="false" autocomplete="off" />
+          </label>
+        </div>
+        <div class="row">
+          <label class="fld">
+            {L.checksum}
+            <select id="checksum">
+              <option value="none" selected>{L.none}</option>
+              {CHECKSUMS.map((c) => <option value={c.kind}>{c.label}</option>)}
+            </select>
+          </label>
+          <label class="fld">
+            {L.eol}
+            <select id="eol">
+              <option value="none">{L.eNone}</option>
+              <option value="cr">CR (\r)</option>
+              <option value="lf">LF (\n)</option>
+              <option value="crlf" selected>CR LF (\r\n)</option>
+            </select>
+          </label>
+          <div class="fld ws-sendbtn">
+            <button type="submit" class="btn primary" id="send" disabled>{L.send}</button>
+          </div>
+        </div>
+        <p class="note mono" id="txPrev"></p>
+        <p class="err" id="txErr" role="alert"></p>
+      </form>
+      <p class="note">{L.how}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.browserTitle}</h2>
+      <p>{L.browser}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
+      </p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ws-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+    }
+    .ws-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .ws-gap {
+      flex: 1 1 auto;
+    }
+    .ws-log {
+      height: 340px;
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .ws-log :global(.rx) {
+      color: #8fb6ff;
+    }
+    .ws-log :global(.tx) {
+      color: #7ddc9f;
+    }
+    .ws-log :global(.ev) {
+      color: #e0b25a;
+    }
+    .ws-send {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ws-sendbtn {
+      justify-content: flex-end;
+    }
+    #status.on {
+      color: var(--tx);
+      font-weight: 600;
+    }
+  </style>
+  <script>
+    import { buildTx, formatEntry, logFileName, logToText, optionsLabel, portOptions, RxFramer, trimLog, type Entry, type Eol, type SendMode, type Split, type View } from "../lib/webSerial";
+    import { hex, type ChecksumKind, type Lang } from "../lib/checksum";
+
+    // Web Serial 의 필요한 만큼만(WICG 명세) — TypeScript 기본 DOM 타입에는 아직 없다
+    interface SerialPortLike extends EventTarget {
+      open(o: { baudRate: number; dataBits?: number; stopBits?: number; parity?: string; flowControl?: string }): Promise<void>;
+      close(): Promise<void>;
+      readonly readable: ReadableStream<Uint8Array> | null;
+      readonly writable: WritableStream<Uint8Array> | null;
+      getInfo(): { usbVendorId?: number; usbProductId?: number };
+    }
+    interface SerialLike extends EventTarget {
+      requestPort(o?: object): Promise<SerialPortLike>;
+    }
+
+    const root = document.getElementById("ws")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const logEl = $<HTMLDivElement>("log");
+    const statusEl = $("status");
+    const connectBtn = $<HTMLButtonElement>("connect");
+    const discBtn = $<HTMLButtonElement>("disconnect");
+    const sendBtn = $<HTMLButtonElement>("send");
+    const cfgInputs = ["baud", "dataBits", "parity", "stopBits", "flow"].map((id) => $<HTMLInputElement | HTMLSelectElement>(id));
+    const viewSel = $<HTMLSelectElement>("view");
+    const splitSel = $<HTMLSelectElement>("split");
+    const timeChk = $<HTMLInputElement>("time");
+    const sendMode = $<HTMLSelectElement>("sendMode");
+    const sendData = $<HTMLInputElement>("sendData");
+    const checksumSel = $<HTMLSelectElement>("checksum");
+    const eolSel = $<HTMLSelectElement>("eol");
+    const txPrev = $("txPrev");
+    const txErr = $("txErr");
+
+    const serial: SerialLike | undefined = window.isSecureContext ? (navigator as unknown as { serial?: SerialLike }).serial : undefined;
+    if (!serial) {
+      $("nosup").hidden = false;
+      connectBtn.disabled = true;
+    }
+
+    // ---- 로그
+    const MAX = 5000;
+    const entries: Entry[] = [];
+    const view = () => viewSel.value as View;
+    function lineEl(e: Entry) {
+      const d = document.createElement("div");
+      d.className = e.dir;
+      d.textContent = formatEntry(e, view(), timeChk.checked);
+      return d;
+    }
+    function add(list: Entry[]) {
+      if (!list.length) return;
+      const stick = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 24;
+      entries.push(...list);
+      trimLog(entries, MAX);
+      const frag = document.createDocumentFragment();
+      for (const e of list) frag.append(lineEl(e));
+      logEl.append(frag);
+      while (logEl.childElementCount > entries.length) logEl.firstElementChild!.remove();
+      if (stick) logEl.scrollTop = logEl.scrollHeight;
+    }
+    const note = (text: string) => add([{ dir: "ev", t: Date.now(), bytes: [], text }]);
+    function rerender() {
+      logEl.replaceChildren(...entries.map(lineEl));
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    viewSel.addEventListener("change", rerender);
+    timeChk.addEventListener("change", rerender);
+    $("clear").addEventListener("click", () => {
+      entries.length = 0;
+      logEl.replaceChildren();
+    });
+    $("save").addEventListener("click", () => {
+      const now = Date.now();
+      const blob = new Blob([logToText(entries, view(), timeChk.checked)], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = logFileName(now);
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+
+    // ---- 받은 바이트 묶기
+    const framer = new RxFramer(splitSel.value as Split);
+    splitSel.addEventListener("change", () => {
+      add(framer.flush());
+      framer.split = splitSel.value as Split;
+    });
+    let tick = 0;
+
+    // ---- 연결 상태
+    let port: SerialPortLike | null = null;
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    let reading: Promise<void> | null = null;
+    let closing = false;
+    let label = "";
+
+    function setUi(on: boolean) {
+      connectBtn.disabled = on || !serial;
+      discBtn.disabled = !on;
+      sendBtn.disabled = !on;
+      for (const i of cfgInputs) i.disabled = on;
+      statusEl.textContent = on ? `${M.open}: ${label}` : M.idle;
+      statusEl.classList.toggle("on", on);
+    }
+
+    // 명세: 이 오류들은 읽기를 계속할 수 있다(readable 이 새로 생긴다). 나머지(NetworkError 등)는 포트를 잃은 것
+    const SOFT = new Set(["BreakError", "BufferOverrunError", "FramingError", "ParityError"]);
+    async function readLoop(p: SerialPortLike) {
+      while (p.readable && !closing) {
+        reader = p.readable.getReader();
+        try {
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) add(framer.push(value, Date.now()));
+          }
+        } catch (e) {
+          const name = (e as DOMException).name;
+          add(framer.flush());
+          if (SOFT.has(name)) note(`${M.rxErr}: ${name}`);
+          else break;
+        } finally {
+          reader.releaseLock();
+          reader = null;
+        }
+      }
+    }
+
+    async function finish(lost: boolean) {
+      const p = port;
+      if (!p) return;
+      port = null;
+      clearInterval(tick);
+      add(framer.flush());
+      try {
+        await p.close();
+      } catch {
+        /* 이미 사라진 포트 */
+      }
+      p.removeEventListener("disconnect", onLost);
+      note(lost ? M.lost : M.close);
+      setUi(false);
+    }
+    const onLost = () => {
+      if (!closing) void finish(true);
+    };
+
+    connectBtn.addEventListener("click", async () => {
+      if (!serial) return;
+      const cfgErr = $("cfgErr");
+      let opts;
+      try {
+        opts = portOptions({ baud: cfgInputs[0].value, dataBits: cfgInputs[1].value, parity: cfgInputs[2].value, stopBits: cfgInputs[3].value, flow: cfgInputs[4].value }, lang);
+        cfgErr.textContent = "";
+      } catch (e) {
+        cfgErr.textContent = (e as Error).message;
+        return;
+      }
+      let p: SerialPortLike;
+      try {
+        p = await serial.requestPort(); // 사용자가 고른 포트만(명세: 사용자 동작 필요)
+      } catch {
+        cfgErr.textContent = M.cancel;
+        return;
+      }
+      try {
+        await p.open(opts);
+      } catch (e) {
+        cfgErr.textContent = `${M.openFail}: ${(e as Error).message || (e as DOMException).name} — ${M.busy}`;
+        return;
+      }
+      const info = p.getInfo();
+      const h4 = (n?: number) => (n ?? 0).toString(16).toUpperCase().padStart(4, "0");
+      label = optionsLabel(opts) + (info.usbVendorId !== undefined ? ` · USB ${h4(info.usbVendorId)}:${h4(info.usbProductId)}` : "");
+      port = p;
+      closing = false;
+      p.addEventListener("disconnect", onLost);
+      setUi(true);
+      note(`${M.open} ${label}`);
+      tick = window.setInterval(() => {
+        if (framer.due(Date.now())) add(framer.flush());
+      }, 10);
+      reading = readLoop(p);
+      await reading;
+      reading = null;
+      // 사용자가 끊지 않았는데 읽기가 끝났다 → 끊김
+      if (!closing && port === p) await finish(true);
+    });
+
+    discBtn.addEventListener("click", async () => {
+      if (!port) return;
+      closing = true;
+      try {
+        await reader?.cancel();
+      } catch {
+        /* 무시 */
+      }
+      await reading;
+      await finish(false);
+      closing = false;
+    });
+
+    // ---- 보내기
+    function tx(): number[] | null {
+      try {
+        const b = buildTx(sendData.value, sendMode.value as SendMode, checksumSel.value as ChecksumKind | "none", eolSel.value as Eol, lang);
+        txErr.textContent = "";
+        txPrev.textContent = b.length ? `${hex(b)} (${b.length} ${M.bytes})` : "";
+        return b;
+      } catch (e) {
+        txErr.textContent = (e as Error).message;
+        txPrev.textContent = "";
+        return null;
+      }
+    }
+    for (const el of [sendData, sendMode, checksumSel, eolSel]) el.addEventListener("input", tx);
+    let sending = false;
+    $("sendForm").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const b = tx();
+      if (!b || !b.length || !port?.writable || sending) return;
+      sending = true;
+      const w = port.writable.getWriter();
+      try {
+        await w.write(new Uint8Array(b));
+        add([{ dir: "tx", t: Date.now(), bytes: b }]);
+      } catch (e) {
+        note(`${M.txErr}: ${(e as Error).message || (e as DOMException).name}`);
+      } finally {
+        w.releaseLock();
+        sending = false;
+      }
+    });
+    tx();
+  </script>
+</Base>

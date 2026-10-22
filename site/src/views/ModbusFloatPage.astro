@@ -1,0 +1,328 @@
+---
+// 웹 도구: Modbus 실수 변환기 — 레지스터 2·4개 ↔ IEEE 754 float32·float64·정수, 바이트 순서 네 가지를 한 표로(lib/modbusFloat.ts).
+// 광고는 이 페이지 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { ORDERS } from "../lib/modbusFloat";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = ko
+  ? {
+      title: "Modbus 실수 변환기",
+      desc: "Modbus 레지스터 2개·4개를 IEEE 754 float32·float64 와 int32·uint32 로 풀고, 실수를 레지스터 값으로 바꿉니다. ABCD·CDAB·BADC·DCBA 네 순서를 한 표로 비교합니다.",
+      decodeTitle: "레지스터 → 값",
+      encodeTitle: "값 → 레지스터",
+      mode: "입력 방식",
+      dec: "10진",
+      regs: "레지스터 값 (주소 순서대로 2개 또는 4개)",
+      hexHelp: "예: 41C8 0000 · 41C80000 · 0x41C8,0x0000",
+      decHelp: "예: 16840 0 · 음수(-32768~-1)는 2의 보수로",
+      order: "순서",
+      bytes: "값 바이트 (높은 바이트 먼저)",
+      type: "형식",
+      value: "값",
+      valueHelp: "예: 25 · -12.5 · 1e-3 · NaN · Infinity",
+      regHex: "레지스터 (HEX)",
+      regDec: "레지스터 (10진)",
+      pick: "장비 화면이나 매뉴얼에 나온 값과 같은 줄이 그 장비의 순서입니다.",
+      how: "계산은 이 브라우저 안에서만 하고, 입력한 값은 어디로도 보내지 않습니다.",
+      whyTitle: "순서가 장비마다 다른 이유",
+      why: [
+        "Modbus 규격은 레지스터 하나를 16비트로, 그 안의 두 바이트는 높은 바이트 먼저 보내도록만 정합니다(Modbus Application Protocol Specification V1.1b3, 4.2 절). 32비트·64비트 값을 레지스터 여러 개에 어떤 순서로 나눠 싣는지는 규격에 없습니다.",
+        "그래서 높은 워드를 앞 주소에 두는 장비(ABCD)와 낮은 워드를 앞 주소에 두는 장비(CDAB)가 함께 쓰이고, 레지스터 안 바이트까지 뒤집는 장비(BADC·DCBA)도 있습니다. 같은 제조사라도 모델이나 설정에 따라 다를 수 있습니다.",
+      ],
+      manualTitle: "매뉴얼에서 확인하는 법",
+      manual: [
+        "통신 매뉴얼의 레지스터 표에서 형식(Float, REAL, 32-bit floating point)과 «word order», «byte order», «high word first», «swap» 같은 말을 찾습니다.",
+        "순서를 설정 메뉴에서 고르는 장비도 있습니다. 통신 설정 항목을 함께 보세요.",
+        "적혀 있지 않으면 화면에 보이는 온도·전압처럼 아는 값을 읽어 위 표에서 그 값이 나오는 줄을 고릅니다. 0 이나 정수는 여러 순서에서 비슷해 보일 수 있으니 소수점이 있는 값으로 확인하세요.",
+      ],
+      addrPre: "32비트 값은 이어진 두 주소를 한 번에 읽어야 합니다(개수 2). 주소가 한 칸 밀리면 다른 값의 절반이 섞이니",
+      addrGuide: "40001 표기와 0 기준 주소",
+      addrPost: "도 확인하세요. 읽기 요청 바이트는",
+      reqTool: "Modbus RTU 요청 만들기",
+      reqPost: "로 만들 수 있습니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["41C8 0000 은 얼마인가요?", "ABCD 순서로 읽으면 25.0 입니다. IEEE 754 binary32 는 부호 1비트, 지수 8비트(바이어스 127), 가수 23비트입니다. 0x41C80000 은 부호 0, 지수 131(2⁴), 가수 1.5625 라서 1.5625 × 16 = 25 가 됩니다."],
+        ["값이 아주 작거나(1E-38 근처) 엄청 큰 수로 나옵니다", "순서가 틀렸을 때 흔히 보이는 모양입니다. 표의 다른 줄을 보세요. 어느 줄도 맞지 않으면 시작 주소가 한 칸 어긋나지 않았는지 확인하세요."],
+        ["float64(double)는 어떻게 읽나요?", "레지스터 4개를 넣으면 float64·int64·uint64 로 풉니다. 같은 규칙을 64비트에 적용해 CDAB 는 레지스터 네 개의 순서를 거꾸로, BADC 는 레지스터마다 바이트를 바꿉니다. 다른 배치를 쓰는 장비도 있을 수 있으니 매뉴얼을 확인하세요."],
+        ["NaN 이나 Infinity 가 나옵니다", "IEEE 754 에서 지수 비트가 모두 1 이면 가수가 0 일 때 무한대, 아니면 NaN 입니다. 순서가 틀렸거나 장비가 일부러 보낸 값일 수 있으니 매뉴얼에서 오류 값 규칙을 보세요."],
+      ],
+      appNote: "장비에서 레지스터를 직접 읽어 보려면",
+    }
+  : {
+      title: "Modbus Float Converter",
+      desc: "Decode 2 or 4 Modbus registers as IEEE 754 float32/float64 or int32/uint32, and back. Compare ABCD, CDAB, BADC and DCBA byte orders in one table.",
+      decodeTitle: "Registers → value",
+      encodeTitle: "Value → registers",
+      mode: "Input",
+      dec: "Decimal",
+      regs: "Register values (2 or 4, in address order)",
+      hexHelp: "e.g. 41C8 0000 · 41C80000 · 0x41C8,0x0000",
+      decHelp: "e.g. 16840 0 · negatives (-32768 to -1) as two's complement",
+      order: "Order",
+      bytes: "Value bytes (most significant first)",
+      type: "Type",
+      value: "Value",
+      valueHelp: "e.g. 25 · -12.5 · 1e-3 · NaN · Infinity",
+      regHex: "Registers (HEX)",
+      regDec: "Registers (decimal)",
+      pick: "The row that matches the value on the device display or in the manual is the device's order.",
+      how: "Everything is computed in your browser; nothing you type is sent anywhere.",
+      whyTitle: "Why the order differs between devices",
+      why: [
+        "The Modbus specification only defines a register as 16 bits sent high byte first (Modbus Application Protocol Specification V1.1b3, section 4.2). It does not say how a 32-bit or 64-bit value is split across several registers.",
+        "So some devices put the high word at the lower address (ABCD), others put the low word first (CDAB), and some also swap the bytes inside each register (BADC, DCBA). It can vary by model or setting even from the same maker.",
+      ],
+      manualTitle: "Finding it in the manual",
+      manual: [
+        "In the register table of the communication manual, look for the data type (Float, REAL, 32-bit floating point) and words such as \"word order\", \"byte order\", \"high word first\" or \"swap\".",
+        "Some devices let you choose the order in a setup menu. Check the communication settings too.",
+        "If it is not documented, read a value you already know, such as a temperature or voltage on the display, and pick the row above that shows it. Zero and whole numbers can look similar in several orders, so confirm with a value that has decimals.",
+      ],
+      addrPre: "A 32-bit value must be read as two consecutive addresses in one request (quantity 2). If the address is off by one you get half of another value, so check",
+      addrGuide: "40001 notation vs 0-based addresses",
+      addrPost: "as well. You can build the read request with the",
+      reqTool: "Modbus RTU Request Builder",
+      reqPost: ".",
+      faqTitle: "FAQ",
+      faq: [
+        ["What is 41C8 0000?", "Read as ABCD it is 25.0. IEEE 754 binary32 has 1 sign bit, 8 exponent bits (bias 127) and 23 fraction bits. 0x41C80000 has sign 0, exponent 131 (2⁴) and significand 1.5625, so 1.5625 × 16 = 25."],
+        ["I get tiny (around 1E-38) or huge numbers", "That is a typical sign of the wrong order. Look at the other rows. If no row makes sense, check that the start address is not off by one."],
+        ["How do I read a float64 (double)?", "Enter four registers to decode float64, int64 and uint64. The same rules are applied to 64 bits: CDAB reverses the order of all four registers and BADC swaps the bytes in each register. Some devices may use another layout, so check the manual."],
+        ["I get NaN or Infinity", "In IEEE 754, an exponent with all bits set means infinity when the fraction is zero and NaN otherwise. Either the order is wrong or the device sent it on purpose; see the manual for its error-value rules."],
+      ],
+      appNote: "To read the registers from a device directly, use",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 실수(float) 변환기 — 레지스터 바이트 순서 — PortDock" : "Modbus Float Converter — Registers ↔ IEEE 754 — PortDock"} description={L.desc} path="tools/modbus-float/" ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/modbus-float/" }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="mf" data-lang={lang} data-hex-help={L.hexHelp} data-dec-help={L.decHelp}>
+      <h2 class="mf-h">{L.decodeTitle}</h2>
+      <div class="row">
+        <label class="fld" style="flex:0 0 160px">
+          {L.mode}
+          <select id="mode">
+            <option value="hex">HEX</option>
+            <option value="dec">{L.dec}</option>
+          </select>
+        </label>
+        <label class="fld" style="flex:1 1 320px">
+          {L.regs}
+          <input id="regs" class="mono" value="41C8 0000" spellcheck="false" autocomplete="off" />
+          <span class="note" id="help">{L.hexHelp}</span>
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="mf-scroll">
+        <table class="t" aria-live="polite">
+          <thead>
+            <tr><th>{L.order}</th><th>{L.bytes}</th><th class="h-f">float32</th><th class="h-i">int32</th><th class="h-u">uint32</th></tr>
+          </thead>
+          <tbody>
+            {
+              ORDERS.map((o) => (
+                <tr data-order={o.order}>
+                  <td>
+                    <b class="mono">{o.order}</b>
+                    <br />
+                    <span class="note">{o[lang]}</span>
+                  </td>
+                  <td class="mono b" />
+                  <td class="mono f" />
+                  <td class="mono i" />
+                  <td class="mono u" />
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.pick}</p>
+
+      <h2 class="mf-h">{L.encodeTitle}</h2>
+      <div class="row">
+        <label class="fld" style="flex:0 0 160px">
+          {L.type}
+          <select id="type">
+            <option value="float32">float32</option>
+            <option value="float64">float64 (double)</option>
+            <option value="int32">int32</option>
+            <option value="uint32">uint32</option>
+            <option value="int64">int64</option>
+            <option value="uint64">uint64</option>
+          </select>
+        </label>
+        <label class="fld" style="flex:1 1 320px">
+          {L.value}
+          <input id="val" class="mono" value="25" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.valueHelp}</span>
+        </label>
+      </div>
+      <p class="err" id="err2" role="alert"></p>
+      <div class="mf-scroll">
+        <table class="t" aria-live="polite">
+          <thead>
+            <tr><th>{L.order}</th><th>{L.regHex}</th><th>{L.regDec}</th></tr>
+          </thead>
+          <tbody>
+            {
+              ORDERS.map((o) => (
+                <tr data-enc={o.order}>
+                  <td>
+                    <b class="mono">{o.order}</b>
+                    <br />
+                    <span class="note">{o[lang]}</span>
+                  </td>
+                  <td class="mono h" />
+                  <td class="mono d" />
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.whyTitle}</h2>
+      {L.why.map((p) => <p>{p}</p>)}
+      <h2>{L.manualTitle}</h2>
+      <ul>
+        {L.manual.map((p) => <li>{p}</li>)}
+      </ul>
+      <p>
+        {L.addrPre} <a href={url(lang, "guides/modbus-address-notation/")}>{L.addrGuide}</a> {L.addrPost} <a href={url(lang, "tools/modbus/")}>{L.reqTool}</a>{L.reqPost}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+      </p>
+    </section>
+    <WebToolLinks lang={lang} path="tools/modbus-float/" />
+  </div>
+  <style>
+    .mf-h {
+      font-size: 17px;
+      margin: 8px 0 12px;
+    }
+    .mf-h:not(:first-child) {
+      margin-top: 28px;
+    }
+    .mf-scroll {
+      overflow-x: auto;
+    }
+    .mf-scroll td {
+      white-space: nowrap;
+    }
+  </style>
+  <script>
+    import { ORDERS, decodeRegisters, encodeRegisters, formatFloat, parseRegisters, regDec, regHex, regsToBytes, reorder, type Lang, type ValueType } from "../lib/modbusFloat";
+    const root = document.getElementById("mf")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const mode = $<HTMLSelectElement>("mode");
+    const regs = $<HTMLInputElement>("regs");
+    const type = $<HTMLSelectElement>("type");
+    const val = $<HTMLInputElement>("val");
+    const hexBytes = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+
+    function decode() {
+      const err = $("err");
+      let r: number[] = [];
+      try {
+        r = parseRegisters(regs.value, mode.value as "hex" | "dec", lang);
+        err.textContent = "";
+      } catch (e) {
+        err.textContent = (e as Error).message;
+      }
+      const bits = r.length === 4 ? "64" : "32";
+      root.querySelector(".h-f")!.textContent = `float${bits}`;
+      root.querySelector(".h-i")!.textContent = `int${bits}`;
+      root.querySelector(".h-u")!.textContent = `uint${bits}`;
+      for (const row of root.querySelectorAll<HTMLTableRowElement>("tr[data-order]")) {
+        const set = (c: string, t: string) => (row.querySelector(c)!.textContent = t);
+        if (!r.length) {
+          for (const c of [".b", ".f", ".i", ".u"]) set(c, "");
+          continue;
+        }
+        const o = row.dataset.order as (typeof ORDERS)[number]["order"];
+        const d = decodeRegisters(r, o);
+        set(".b", hexBytes(reorder(regsToBytes(r), o)));
+        set(".f", formatFloat(d.float, r.length === 4 ? 8 : 4));
+        set(".i", d.int.toString());
+        set(".u", d.uint.toString());
+      }
+    }
+
+    function encode() {
+      const err = $("err2");
+      const rows = root.querySelectorAll<HTMLTableRowElement>("tr[data-enc]");
+      try {
+        for (const row of rows) {
+          const r = encodeRegisters(val.value, type.value as ValueType, row.dataset.enc as (typeof ORDERS)[number]["order"], lang);
+          row.querySelector(".h")!.textContent = regHex(r);
+          row.querySelector(".d")!.textContent = regDec(r);
+        }
+        err.textContent = "";
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        for (const row of rows) {
+          row.querySelector(".h")!.textContent = "";
+          row.querySelector(".d")!.textContent = "";
+        }
+      }
+    }
+
+    mode.addEventListener("change", () => {
+      // 바꾼 방식으로 지금 값을 다시 적는다
+      try {
+        const r = parseRegisters(regs.value, mode.value === "hex" ? "dec" : "hex", lang);
+        regs.value = mode.value === "hex" ? regHex(r) : regDec(r);
+      } catch {
+        /* 못 읽으면 그대로 둔다 */
+      }
+      $("help").textContent = (mode.value === "hex" ? root.dataset.hexHelp : root.dataset.decHelp) ?? "";
+      decode();
+    });
+    regs.addEventListener("input", decode);
+    type.addEventListener("change", encode);
+    val.addEventListener("input", encode);
+    decode();
+    encode();
+  </script>
+</Base>

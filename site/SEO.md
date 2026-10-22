@@ -33,6 +33,11 @@
 | CRC16 계산기, 모드버스 CRC 계산 | `/tools/checksum/` | «CRC16 Modbus·체크섬 계산기 (온라인)» |
 | 모드버스 요청 만들기, modbus 프레임 생성 | `/tools/modbus/` | «Modbus RTU 요청 만들기 — CRC 포함 계산기» |
 | HEX ASCII 변환 | `/tools/hex-ascii/` | «HEX ↔ ASCII 변환기 — 제어 문자 표시» |
+| 모드버스 프레임 해석, modbus 패킷 분석, 모드버스 예외 코드 | `/tools/modbus-decoder/` | «Modbus 프레임 해석기 — RTU·TCP HEX 풀이 (온라인)» |
+| 모드버스 float 변환, modbus 실수 변환, 레지스터 float 변환, 워드 스왑 | `/tools/modbus-float/` | «Modbus 실수(float) 변환기 — 레지스터 바이트 순서», 설명에 «IEEE 754 float32·float64», «ABCD·CDAB·BADC·DCBA» |
+| 웹 시리얼 터미널, 브라우저 시리얼 통신, web serial | `/tools/web-serial/` | «웹 시리얼 터미널 — 브라우저에서 COM 포트 열기» |
+| 4-20mA 환산, 4-20mA 계산기, 아날로그 입력 스케일링 | `/tools/4-20ma/` | «4–20mA 환산 계산기 — 전류·공학값·%·PLC 카운트» |
+| PT100 저항표, 측온저항체 온도 환산, 열전대 mV 온도 변환, K타입 열전대 표 | `/tools/temperature/` | «Pt100·열전대 온도 환산 — 저항·mV 계산기·표» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -54,6 +59,11 @@
 | ftdi latency timer modbus | `/en/guides/usb-serial-latency/` | «USB-Serial Adapter Latency: Split Frames, Late Replies» |
 | crc16 modbus calculator | `/en/tools/checksum/` | «CRC16 Modbus & Checksum Calculator Online» |
 | modbus rtu request builder | `/en/tools/modbus/` | «Modbus RTU Request Builder with CRC (Online)» |
+| modbus frame decoder, modbus tcp packet parser, modbus exception codes | `/en/tools/modbus-decoder/` | «Modbus Frame Decoder: RTU & TCP Hex Parser (Online)» |
+| modbus float converter, modbus registers to float, ieee 754 word swap | `/en/tools/modbus-float/` | «Modbus Float Converter — Registers ↔ IEEE 754», description «float32/float64», «ABCD, CDAB, BADC and DCBA byte orders» |
+| web serial terminal, browser serial terminal, web serial api | `/en/tools/web-serial/` | «Web Serial Terminal: Open a COM Port in Your Browser» |
+| 4-20ma calculator, 4-20 ma scaling, analog input scaling | `/en/tools/4-20ma/` | «4–20 mA Scaling Calculator: mA, %, Engineering Units» |
+| pt100 calculator, rtd resistance table, thermocouple mv to temperature, type k table | `/en/tools/temperature/` | «Pt100 & Thermocouple Calculator: Ω, mV ↔ °C» |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
