@@ -9,16 +9,16 @@
 | 애드센스 검토 결과 기다리기(메일 portdock.contact@gmail.com) | 사용자 | 10/22 검토 요청함. 게시자 `ca-pub-2423716169041955`, 소유 확인 meta·`/ads.txt` 배포됨 |
 | 승인 뒤 광고 단위 만들기 → 번호를 Claude 에게 | 사용자 | 대기 |
 | 광고 단위 번호를 `PUBLIC_ADSENSE_SLOT`(또는 `site/src/lib/ads.ts`)에 넣고 배포, 광고 나오는지 확인 | Claude | 승인 뒤 |
-| Google Search Console — 도메인 속성 `portdock.dev`(Cloudflare 자동 확인) → sitemap `https://portdock.dev/sitemap-index.xml` 제출 | 사용자 | 안 함 |
+| Google Search Console — `https://portdock.dev/` 속성(메타 태그 확인) → sitemap 제출 | Claude(Chrome) | 진행 중(10/22) |
 | Bing Webmaster Tools — «Google Search Console 에서 가져오기» | 사용자 | 안 함 |
-| 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 | 사용자 | 안 함 |
+| 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 (Chrome 확장에서 네이버 접속이 막혀 Claude 가 못 함) | 사용자 | 안 함 |
 | 네이버 확인 태그를 사이트에 넣고 배포 → 사용자가 «소유 확인» | Claude | 태그 받은 뒤 |
 | Cloudflare Web Analytics 켜기(Pages → portdock → 메트릭) — 방문자 수 보기 | 사용자 | 선택 |
 | 장비 레지스터 맵 10종 추가(공식 매뉴얼 확인값만) → 검사·커밋 | Claude | 진행 중(LS M100 부터) |
 | 현장 사진 찍기 — 직접 산 부품·집 장비만(회사 현장·고객사 설비 금지): RS-485 단자, USB-시리얼 변환기, 4–20mA 결선, Pt100 3선식, 인버터 통신 단자 | 사용자 | 안 함 |
 | 받은 사진을 가이드·장비 페이지에 넣기(자르기·설명·alt) | Claude | 사진 받은 뒤 |
 | 같은 사진을 Adobe Stock 에 올리기(작가 몫 33%) | 사용자 | 선택 |
-| 가이드에 직접 그린 배선도·결선도 SVG 넣기 | Claude | 사용자 결정 대기 |
+| 가이드에 직접 그린 배선도·결선도 SVG 넣기 | Claude | ✅ 10/22 8장(한·영), 생성기 `site/figs/make.mjs` |
 | 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 계속 |
 
 ## 2. v0.1 릴리스 — 준비되면 공개
@@ -27,7 +27,7 @@
 | 릴리스 시험 빌드(`release.yml` 수동 실행) | Claude | ✅ 10/22 9앱 성공, 결과물 27개·SHA256 확인 |
 | Defender 검사 | Claude | ✅ 10/22 위협 없음(공개 직전 최신 정의로 한 번 더) |
 | VirusTotal | Claude | ✅ 10/22 휴대판 9개 0탐지, 설치판 9개 SecureAge 1곳, **Modbus Master 설치판만 CrowdStrike Falcon(grayware 60%) 추가** |
-| CrowdStrike 오탐 신고(Modbus Master 설치판) | 사용자(제출) · Claude(자료 준비) | 안 함 |
+| CrowdStrike 오탐 신고(Modbus Master 설치판) — 창구·문안 `docs/false-positive.md` | 사용자(메일 보내기) · Claude(자료 준비 ✅) | 실제 릴리스 빌드 뒤 다시 검사하고, 남아 있으면 보냄 |
 | SignPath Foundation 무료 서명 신청 여부 결정(권장: Net Scan 제외) | 사용자 | 결정 대기 |
 | 태그 `v0.1.0` → 초안 릴리스 → 본문(VirusTotal 링크) → `site/src/data/tools.ts` 의 `RELEASED` 를 `true` 로 → Publish | Claude · Publish 는 사용자 확인 | 대기 |
 | 사이트 내려받기 버튼이 실제 파일로 이어지는지 확인 | Claude | 공개 뒤 |
