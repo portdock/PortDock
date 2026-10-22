@@ -250,6 +250,11 @@ kbd,
   font-weight: 400;
   opacity: 0.85;
 }
+.btn.soon {
+  cursor: default;
+  color: var(--muted);
+  border-style: dashed;
+}
 
 /* 통신 기록 모양 그림(실제 화면 캡처 아님) */
 .term {

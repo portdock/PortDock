@@ -18,6 +18,8 @@ export const REPO = "https://github.com/portdock/PortDock";
 export const RELEASES = `${REPO}/releases`;
 /** 릴리스 파일 이름은 버전 없이 고정한다 — /releases/latest/download/<이름> 이 늘 최신을 가리키게(릴리스 작업에서 이름을 맞춘다) */
 export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
+/** 첫 릴리스를 공개하기 전에는 false — 내려받기 버튼 자리에 «공개 준비 중» 을 보인다(없는 파일로 가는 404 를 막는다). 공개하면 true 로(docs/release.md 7) */
+export const RELEASED = false;
 
 export interface Tool {
   id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot";
