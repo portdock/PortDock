@@ -1,0 +1,282 @@
+---
+// 웹 도구: 모터 전류 계산기 — 출력(kW·HP)·전압·효율·역률 → 전류·입력 전력·kVA, 명판 값으로 효율 확인, 정격 토크(lib/motor.ts).
+// 식은 ABB Technical guide No. 7(입력 = √3·U·I·cos φ, 효율 = 출력 ÷ 입력). 효율·역률은 명판·카탈로그 값을 넣게 하고 기본값은 예시라고 밝힌다.
+// 차단기·전선은 KEC 212.4.1(IB ≤ In ≤ IZ, I2 ≤ 1.45 IZ)과 KEC 232.5(허용 전류는 KS C IEC 60364-5-52 부속서 B)만 적는다 — 허용 전류표 수치는 원문 확인 전이라 싣지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/motor-current/";
+const L = ko
+  ? {
+      title: "모터 전류 계산기 (kW → A)",
+      desc: "3상·단상·직류 모터의 출력(kW·HP)·전압·효율·역률로 정격 전류와 입력 전력·kVA 를 계산하고, 명판의 전류로 효율을 거꾸로 확인합니다. 정격 토크까지.",
+      phase: "전원",
+      p3: "3상(선간 전압)",
+      p1: "단상",
+      dc: "직류",
+      pw: "출력(축 출력)",
+      pu: "출력 단위",
+      v: "전압(V)",
+      eff: "효율(%)",
+      pf: "역률 cos φ",
+      rpm: "정격 회전수(r/min, 토크 계산용)",
+      res: "결과",
+      k: { amps: "전류", input: "입력(유효) 전력", kva: "피상 전력", kvar: "무효 전력", loss: "모터 손실", torque: "정격 토크" },
+      example: "기본값(7.5 kW, 380 V, 효율 90 %, 역률 0.85, 1760 r/min)은 예시입니다. 효율·역률은 모터 명판이나 카탈로그의 정격 부하 값을 넣으세요. 명판에 정격 전류가 있으면 그 값이 우선입니다.",
+      chkTitle: "명판 값으로 효율 확인",
+      chkNote: "명판의 출력·전압·전류·역률을 넣으면 효율이 나옵니다. 위 계산의 효율 칸을 모를 때 씁니다.",
+      amps: "명판 전류(A)",
+      effOut: "효율",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "3상: I = P ÷ (√3 × V × η × cos φ)",
+        "단상: I = P ÷ (V × η × cos φ)",
+        "직류: I = P ÷ (V × η)",
+        "입력 전력 = P ÷ η,   피상 전력 kVA = 입력 kW ÷ cos φ",
+        "효율 η = P ÷ (√3 × V × I × cos φ)   (명판 값으로)",
+        "토크 N·m = P(W) ÷ (2π × r/min ÷ 60) ≈ 9549 × kW ÷ r/min",
+      ],
+      fNote: "P 는 명판의 정격 출력 — 전기를 얼마나 먹는지가 아니라 축에서 내는 기계 출력입니다. 그래서 효율로 나눠 입력 전력을 구하고, 역률로 나눠 피상 전력을 구한 뒤 전압으로 전류를 냅니다. V 는 3상이면 선간 전압(380 V 등)입니다.",
+      whyTitle: "계산값이 명판 전류와 다른 이유",
+      why: [
+        "효율·역률은 모터 크기·극수·효율 등급마다 다르고, 같은 모터도 부하가 줄면 둘 다 떨어집니다. 가볍게 걸린 모터의 실제 전류는 «출력 비율» 만큼 줄지 않습니다.",
+        "명판 값에도 허용차가 있습니다. ABB Motor guide 는 IEC 60034-1 에 따라 효율 −15 %(1−η)(150 kW 이하), 역률 −1/6 (1−cos φ) 같은 허용차를 적습니다.",
+        "전압이 명판보다 낮으면 같은 출력에서 전류가 늘어납니다. 그래서 차단기·전선·과부하 계전기 설정은 계산값이 아니라 명판의 정격 전류(FLA)로 합니다.",
+      ],
+      startTitle: "기동 전류",
+      start: [
+        "직입(DOL) 기동은 정격 전류의 몇 배가 흐르고, 투입 순간의 과도 전류 최댓값은 기동 전류(실효값)의 약 2.5배까지 될 수 있습니다(ABB Motor guide §4.5). 정확한 배수는 카탈로그의 IS/IN(기동 전류 ÷ 정격 전류) 값을 봅니다.",
+        "Y-Δ 기동은 기동 전류를 직입의 약 30 %, 기동 토크를 약 25 % 로 줄입니다.",
+        "인버터로 기동하면 기동 전류는 정격의 0.5~1배, 최대 1.5배 정도입니다.",
+      ],
+      cbTitle: "차단기·전선 고르기의 기본 조건 (KEC)",
+      cb: [
+        "KEC 212.4.1 은 과부하 보호에 두 조건을 둡니다: IB ≤ In ≤ IZ, 그리고 I2 ≤ 1.45 × IZ. IB 는 회로의 설계 전류(모터라면 정격 전류), In 은 보호 장치의 정격 전류(조정형은 설정값), IZ 는 전선의 허용 전류, I2 는 보호 장치가 규약 시간 안에 확실히 동작하는 전류입니다.",
+        "IZ(허용 전류)는 KEC 232.5.2 에 따라 KS C IEC 60364-5-52 부속서 B 의 표에서 공사 방법·절연물·도체 수로 고르고 주위 온도·묶음 보정을 합니다. 절연물 최고 허용 온도는 PVC 70 °C, XLPE·EPR 90 °C(KEC 표 232.5-1)입니다.",
+        "이 페이지는 허용 전류표 수치를 싣지 않습니다. 원문(KS C IEC 60364-5-52 부속서 B)을 확인하지 못했기 때문입니다. 표는 원문이나 케이블 제조사 자료에서 확인하세요.",
+        "길이가 길면 허용 전류와 별개로 전압 강하도 봐야 합니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["7.5 kW 3상 380 V 모터 전류는?", "효율 90 %·역률 0.85 로 두면 7500 ÷ (1.732 × 380 × 0.9 × 0.85) ≈ 14.9 A 입니다. 효율·역률이 다르면 바뀌므로 명판의 정격 전류를 우선합니다."],
+        ["kW 를 A 로 바꾸는 간단한 식이 있나요?", "3상이면 I = kW × 1000 ÷ (1.732 × V × 효율 × 역률) 입니다. 효율·역률을 모르고 «kW 당 몇 A» 로 외우는 값은 모터마다 달라 대략값일 뿐입니다."],
+        ["명판의 효율이 맞는지 확인하려면?", "«명판 값으로 효율 확인» 에 출력·전압·전류·역률을 넣습니다. ABB 기술 문서의 예(37 kW, 380 V, 71 A, cos φ 0.85)는 효율 약 0.931 이 나옵니다."],
+        ["HP 모터도 되나요?", "출력 단위를 hp(550 ft·lbf/s ≈ 0.7457 kW)나 PS(미터 마력 ≈ 0.7355 kW)로 바꾸면 됩니다."],
+      ],
+      srcTitle: "출처",
+      vdNote: "전선 길이에 따른 전압 강하는",
+      vdLink: "전압 강하·전선 굵기 계산기",
+    }
+  : {
+      title: "Motor Current Calculator (kW to Amps)",
+      desc: "Motor current, input power and kVA from output (kW or HP), voltage, efficiency and power factor — three-phase, single-phase or DC. Nameplate efficiency, torque.",
+      phase: "Supply",
+      p3: "Three-phase (line-to-line)",
+      p1: "Single-phase",
+      dc: "DC",
+      pw: "Output (shaft power)",
+      pu: "Output unit",
+      v: "Voltage (V)",
+      eff: "Efficiency (%)",
+      pf: "Power factor cos φ",
+      rpm: "Rated speed (r/min, for torque)",
+      res: "Results",
+      k: { amps: "Current", input: "Input (real) power", kva: "Apparent power", kvar: "Reactive power", loss: "Motor losses", torque: "Rated torque" },
+      example: "The defaults (7.5 kW, 380 V, 90 % efficiency, 0.85 power factor, 1760 r/min) are an example. Enter the rated-load efficiency and power factor from the nameplate or catalogue. If the nameplate lists a rated current, that value comes first.",
+      chkTitle: "Check efficiency from the nameplate",
+      chkNote: "Enter nameplate output, voltage, current and power factor to get the efficiency — useful when you do not know the efficiency above.",
+      amps: "Nameplate current (A)",
+      effOut: "Efficiency",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Three-phase: I = P ÷ (√3 × V × η × cos φ)",
+        "Single-phase: I = P ÷ (V × η × cos φ)",
+        "DC: I = P ÷ (V × η)",
+        "Input power = P ÷ η,   apparent power kVA = input kW ÷ cos φ",
+        "Efficiency η = P ÷ (√3 × V × I × cos φ)   (from the nameplate)",
+        "Torque N·m = P (W) ÷ (2π × r/min ÷ 60) ≈ 9549 × kW ÷ r/min",
+      ],
+      fNote: "P is the rated output on the nameplate — the mechanical power at the shaft, not what the motor draws. Divide by efficiency for input power, by power factor for apparent power, then by voltage for current. For three-phase, V is the line-to-line voltage.",
+      whyTitle: "Why the result differs from the nameplate current",
+      why: [
+        "Efficiency and power factor vary with size, poles and efficiency class, and both drop at part load, so the current of a lightly loaded motor does not fall in proportion to its load.",
+        "Nameplate values have tolerances too. ABB's Motor guide lists, after IEC 60034-1, −15 % of (1−η) for efficiency (up to 150 kW) and −1/6 of (1−cos φ) for power factor.",
+        "Below nameplate voltage, the same output takes more current. That is why breakers, cables and overload relays are set from the nameplate full-load current, not from a calculation.",
+      ],
+      startTitle: "Starting current",
+      start: [
+        "Direct-on-line starting draws several times the rated current, and the first transient peak can reach about 2.5 times the (rms) starting current (ABB Motor guide §4.5). Take the exact ratio from the catalogue's IS/IN.",
+        "Star-delta starting reduces the starting current to about 30 % of DOL and the starting torque to about 25 %.",
+        "Starting through a drive keeps the current at 0.5–1 times rated, 1.5 times at most.",
+      ],
+      cbTitle: "The basic breaker and cable rule (Korean KEC, from IEC 60364)",
+      cb: [
+        "KEC 212.4.1 sets two conditions for overload protection: IB ≤ In ≤ IZ and I2 ≤ 1.45 × IZ. IB is the design current (the motor's rated current), In the protective device's rated or set current, IZ the cable's current-carrying capacity, and I2 the current that ensures the device operates within the conventional time.",
+        "IZ is taken from the tables in Annex B of IEC 60364-5-52 (KS C IEC 60364-5-52 in Korea, per KEC 232.5.2) by installation method, insulation and loaded conductors, then corrected for ambient temperature and grouping. Maximum conductor temperatures: PVC 70 °C, XLPE/EPR 90 °C (KEC Table 232.5-1).",
+        "This page does not reproduce current-carrying capacity tables, because we could not check the original Annex B. Use the standard itself or the cable maker's data.",
+        "For long runs, check voltage drop as well — it is separate from current-carrying capacity.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What current does a 7.5 kW, 380 V three-phase motor draw?", "With 90 % efficiency and 0.85 power factor: 7500 ÷ (1.732 × 380 × 0.9 × 0.85) ≈ 14.9 A. Different efficiency or power factor changes it, so the nameplate current comes first."],
+        ["Is there a quick kW to amps formula?", "Three-phase: I = kW × 1000 ÷ (1.732 × V × efficiency × power factor). «Amps per kW» rules of thumb vary between motors and are only rough."],
+        ["How do I check the nameplate efficiency?", "Enter output, voltage, current and power factor under «Check efficiency from the nameplate». ABB's worked example (37 kW, 380 V, 71 A, cos φ 0.85) gives about 0.931."],
+        ["Does it work for HP motors?", "Set the output unit to hp (550 ft·lbf/s ≈ 0.7457 kW) or PS (metric, ≈ 0.7355 kW)."],
+      ],
+      srcTitle: "Sources",
+      vdNote: "For voltage drop over the cable length, use the",
+      vdLink: "Voltage Drop & Wire Size Calculator",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "ABB, Technical guide No. 7 — Dimensioning of a drive system (3AFE64362569 Rev D), «Induction (AC) motor»: eq. 3.13–3.16, examples 3.3–3.4", href: "https://library.e.abb.com/public/e555e5106a3c44e882f48b75a44f6807/Technical_guide_No_7_3AFE64362569_RevD_EN_lowres.pdf" },
+  { name: "ABB, Low voltage motors — Motor guide (2019): §3.8 Tolerances, §4 Power factor, §4.5 Starting", href: "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf" },
+  { name: ko ? "한국전기설비규정(KEC), 공고 제2025-227호 — 212.4.1, 232.5" : "Korea Electro-technical Code (KEC), notice 2025-227 — 212.4.1, 232.5", href: "https://www.law.go.kr/admRulSc.do?menuId=5&query=%ED%95%9C%EA%B5%AD%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B7%9C%EC%A0%95" },
+];
+const fig = `/img/guides/motor-current-chain.${lang}.svg`;
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "모터 전류 계산기 — 3상 kW → A·효율·역률 — PortDock" : "Motor Current Calculator: kW to Amps, 3-Phase, HP — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="mc">
+      <div class="row">
+        <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option><option value="dc">{L.dc}</option></select></label>
+        <label class="fld">{L.pw}<input id="p" class="mono" value="7.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pu}<select id="pu"><option value="kW" selected>kW</option><option value="hp">hp (550 ft·lbf/s)</option><option value="PS">PS</option><option value="W">W</option></select></label>
+        <label class="fld">{L.v}<input id="v" class="mono" value="380" list="volts" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="volts"><option value="220" /><option value="380" /><option value="400" /><option value="440" /><option value="460" /><option value="24" /></datalist>
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.eff}<input id="eff" class="mono" value="90" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf}<input id="pf" class="mono" value="0.85" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.rpm}<input id="rpm" class="mono" value="1760" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+
+      <h2>{L.chkTitle}</h2>
+      <p class="note">{L.chkNote}</p>
+      <div class="row">
+        <label class="fld">{L.pw} (kW)<input id="ckw" class="mono" value="37" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.v}<input id="cv" class="mono" value="380" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.amps}<input id="ca" class="mono" value="71" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf}<input id="cpf" class="mono" value="0.85" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="result mono" id="cout" aria-live="polite"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <figure class="fig">
+        <img src={fig} width="780" height="250" alt={ko ? "모터 전류 계산 흐름: 명판 출력 7.5 kW 를 효율 0.9 로 나눠 입력 8.33 kW, 역률 0.85 로 나눠 9.80 kVA, √3 × 380 V 로 나눠 14.9 A" : "Motor current chain: 7.5 kW output ÷ efficiency 0.9 = 8.33 kW input ÷ power factor 0.85 = 9.80 kVA ÷ (√3 × 380 V) = 14.9 A"} loading="lazy" decoding="async" />
+        <figcaption>{ko ? "축 출력에서 효율·역률·전압 순으로 나눠 전류를 얻습니다(3상 7.5 kW 예)." : "From shaft output, divide by efficiency, power factor and voltage to get the current (three-phase 7.5 kW example)."}</figcaption>
+      </figure>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.whyTitle}</h2>
+      <ul>{L.why.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.startTitle}</h2>
+      <ul>{L.start.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.cbTitle}</h2>
+      <ul>{L.cb.map((x) => <li>{x}</li>)}</ul>
+      <p>
+        {L.vdNote} <a href={url(lang, "tools/voltage-drop/")}>{L.vdLink}</a>.
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { efficiencyFrom, motorCurrent, torqueNm, type Phase } from "../lib/motor";
+    import { convert } from "../lib/units";
+    const form = document.getElementById("mc") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 2) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const ko = document.documentElement.lang === "ko";
+    function run() {
+      const phase = $<HTMLSelectElement>("ph").value as Phase;
+      $("pf").disabled = phase === "dc";
+      $("cpf").disabled = phase === "dc";
+      try {
+        const kw = convert("power", num("p"), $<HTMLSelectElement>("pu").value, "kW");
+        const r = motorCurrent({ phase, kw, volts: num("v"), eff: num("eff") / 100, pf: num("pf") });
+        set("amps", `${fx(r.amps)} A`);
+        set("input", `${fx(r.inputKw, 3)} kW`);
+        set("kva", `${fx(r.kva, 3)} kVA`);
+        set("kvar", `${fx(r.kvar, 3)} kvar`);
+        set("loss", `${fx(r.lossKw, 3)} kW`);
+        const rpm = num("rpm");
+        set("torque", rpm > 0 ? `${fx(torqueNm(kw, rpm))} N·m (${fx(torqueNm(kw, rpm) / 9.80665)} kgf·m)` : "—");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 전압은 0 보다 크고, 효율은 0~100 %, 역률은 0~1" : "Check the numbers — voltage above 0, efficiency 0–100 %, power factor 0–1";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+      try {
+        const e = efficiencyFrom({ phase, kw: num("ckw"), volts: num("cv"), amps: num("ca"), pf: num("cpf") });
+        if (!Number.isFinite(e)) throw new Error();
+        $("cout").textContent = `${ko ? "효율" : "Efficiency"} η = ${fx(e * 100, 1)} %${e > 1 ? (ko ? " — 100 % 를 넘음: 값 확인" : " — above 100 %: check the values") : ""}`;
+      } catch {
+        $("cout").textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

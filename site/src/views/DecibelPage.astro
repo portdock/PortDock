@@ -1,0 +1,252 @@
+---
+// 웹 도구: dB·dBm 변환기 — dBm·dBW·mW·W ↔ dBµV·dBV·dBu·V(저항 기준), 비 ↔ dB(lib/decibel.ts).
+// 정의는 ITU-R V.574-5(dBm = 1 mW, dBW = 1 W, dBu = 0.775 V·600 Ω), SI 브로슈어 표 8(데시벨). 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { LEVEL_UNITS, dbToAmp, dbToPower, levels } from "../lib/decibel";
+import { fmt } from "../lib/units";
+import { type Lang } from "../data/tools";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/db/";
+const L = ko
+  ? {
+      title: "dB·dBm 변환기",
+      desc: "dBm ↔ mW·W, dBW, 그리고 저항(50·75·600 Ω)을 기준으로 dBµV·dBV·dBu·전압까지 바꾸고, 전력 비·전압 비를 dB 로, dB 를 비로 계산합니다. 무선 RSSI·케이블 손실 확인용.",
+      lvTitle: "레벨 변환",
+      val: "값",
+      unit: "단위",
+      ohm: "저항(Ω) — 전압 ↔ 전력 환산 기준",
+      res: "모든 단위로",
+      rTitle: "비 ↔ dB",
+      kind: "비의 종류",
+      pr: "전력 비(10 lg)",
+      vr: "전압·전류 비(20 lg)",
+      ratio: "비(뒤 ÷ 앞)",
+      db: "dB",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "전력 비: dB = 10 × lg(P2 ÷ P1)",
+        "전압·전류 비(같은 저항): dB = 20 × lg(U2 ÷ U1)",
+        "dBm = 10 × lg(P ÷ 1 mW),   dBW = 10 × lg(P ÷ 1 W) = dBm − 30",
+        "dBµV = 20 × lg(U ÷ 1 µV),   dBV = 20 × lg(U ÷ 1 V) = dBµV − 120",
+        "dBu = 20 × lg(U ÷ 0.775 V)   (600 Ω 에서 1 mW 가 되는 전압)",
+        "전압 ↔ 전력: P = U² ÷ R   →   dBµV = dBm + 10 × lg(R × 1 mW) + 120  (50 Ω: +107.0, 75 Ω: +108.8)",
+      ],
+      fNote: "dB 는 원래 «전력» 의 비입니다. 전압·전류는 전력이 그 제곱에 비례하므로 20 을 곱합니다 — 그래서 같은 저항에서 전압 2배 = 전력 4배 = 6.02 dB 입니다. dBm·dBW 처럼 기준값이 붙은 것은 비가 아니라 절대 레벨이고, dBm 과 dBµV 를 오가려면 저항을 알아야 합니다. dBu 의 기준 0.775 V 는 600 Ω 에서 1 mW 가 되는 √0.6 V ≈ 0.7746 V 를 반올림한 값이라, 이 계산기는 √0.6 V 로 계산합니다.",
+      useTitle: "현장에서 보는 dB",
+      use: [
+        "무선 모듈·게이트웨이의 RSSI(수신 세기)는 보통 dBm 으로 나옵니다. −50 dBm 은 10 nW, −90 dBm 은 1 pW 로, 40 dB 차이는 전력 1만 배입니다. 수신 감도(예: −110 dBm)와 RSSI 의 차이가 여유입니다.",
+        "케이블·커넥터 손실, 분배기, 증폭기 이득은 dB 로 더하고 뺍니다: +20 dB 증폭 − 6 dB 케이블 − 3 dB 분배 = +11 dB.",
+        "−3 dB 는 전력 절반(0.501), −6 dB 는 전압 절반(0.501)입니다. 필터의 «−3 dB 차단 주파수» 는 전력이 절반이 되는 곳입니다.",
+        "EMC 시험의 전도 방해 한도는 dBµV, 방사 한도는 dBµV/m 로 적습니다(50 Ω 측정이면 0 dBm ≈ 107 dBµV).",
+      ],
+      tTitle: "dBm ↔ 전력 표",
+      tHead: ["dBm", "전력", "50 Ω 전압(rms)", "dBµV (50 Ω)"],
+      t2Title: "dB ↔ 비 표",
+      t2Head: ["dB", "전력 비", "전압 비"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["0 dBm 은 몇 와트인가요?", "1 mW(0.001 W)입니다. 10 dBm = 10 mW, 20 dBm = 100 mW, 30 dBm = 1 W 입니다. −30 dBm 은 1 µW 입니다."],
+        ["dBm 과 dBµV 는 어떻게 바꾸나요?", "저항이 필요합니다. 50 Ω 이면 dBµV = dBm + 107(정확히 106.99), 75 Ω 이면 +108.75 입니다. 예: −60 dBm(50 Ω) ≈ 47 dBµV."],
+        ["dB 계산에 10 과 20 중 무엇을 곱하나요?", "전력 비면 10, 전압·전류 비면 20 입니다. 둘이 같은 저항에 걸린 경우에만 두 dB 값이 같아집니다."],
+        ["dBV 와 dBu 의 차이는?", "기준 전압이 1 V 와 0.775 V 로 달라 같은 전압에서 dBu 가 약 2.2 dB 큽니다(0 dBV ≈ +2.2 dBu)."],
+      ],
+      srcTitle: "출처",
+    }
+  : {
+      title: "dB & dBm Converter",
+      desc: "Convert dBm ↔ mW and W, dBW, and for 50, 75 or 600 Ω dBµV, dBV, dBu and volts; power or voltage ratios ↔ dB. For RSSI and cable loss.",
+      lvTitle: "Level conversion",
+      val: "Value",
+      unit: "Unit",
+      ohm: "Impedance (Ω) — for voltage ↔ power",
+      res: "In every unit",
+      rTitle: "Ratio ↔ dB",
+      kind: "Ratio of",
+      pr: "power (10 lg)",
+      vr: "voltage or current (20 lg)",
+      ratio: "Ratio (after ÷ before)",
+      db: "dB",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Power ratio: dB = 10 × lg(P2 ÷ P1)",
+        "Voltage or current ratio (same impedance): dB = 20 × lg(U2 ÷ U1)",
+        "dBm = 10 × lg(P ÷ 1 mW),   dBW = 10 × lg(P ÷ 1 W) = dBm − 30",
+        "dBµV = 20 × lg(U ÷ 1 µV),   dBV = 20 × lg(U ÷ 1 V) = dBµV − 120",
+        "dBu = 20 × lg(U ÷ 0.775 V)   (the voltage giving 1 mW in 600 Ω)",
+        "Voltage ↔ power: P = U² ÷ R   →   dBµV = dBm + 10 × lg(R × 1 mW) + 120  (50 Ω: +107.0, 75 Ω: +108.8)",
+      ],
+      fNote: "A decibel is a ratio of powers. Voltage and current enter squared, hence the 20 — twice the voltage across the same resistance is four times the power, 6.02 dB. dBm and dBW carry a reference, so they are absolute levels, and moving between dBm and dBµV needs the impedance. The 0.775 V dBu reference is √0.6 V ≈ 0.7746 V (1 mW in 600 Ω) rounded; this calculator uses √0.6 V.",
+      useTitle: "Where dB shows up on site",
+      use: [
+        "Radio modules and gateways report RSSI in dBm. −50 dBm is 10 nW and −90 dBm is 1 pW; 40 dB is a factor of 10 000 in power. The gap between receiver sensitivity (say −110 dBm) and RSSI is your margin.",
+        "Cable and connector losses, splitters and amplifier gains add and subtract in dB: +20 dB amplifier − 6 dB cable − 3 dB splitter = +11 dB.",
+        "−3 dB is half the power (0.501); −6 dB is half the voltage (0.501). A filter's «−3 dB cut-off» is where the power halves.",
+        "EMC conducted-emission limits are written in dBµV and radiated limits in dBµV/m (with a 50 Ω receiver, 0 dBm ≈ 107 dBµV).",
+      ],
+      tTitle: "dBm ↔ power",
+      tHead: ["dBm", "Power", "Voltage in 50 Ω (rms)", "dBµV (50 Ω)"],
+      t2Title: "dB ↔ ratio",
+      t2Head: ["dB", "Power ratio", "Voltage ratio"],
+      faqTitle: "FAQ",
+      faq: [
+        ["How many watts is 0 dBm?", "1 mW (0.001 W). 10 dBm = 10 mW, 20 dBm = 100 mW, 30 dBm = 1 W; −30 dBm is 1 µW."],
+        ["How do I convert dBm to dBµV?", "You need the impedance. In 50 Ω, dBµV = dBm + 107 (106.99 exactly); in 75 Ω, + 108.75. Example: −60 dBm in 50 Ω ≈ 47 dBµV."],
+        ["Do I multiply by 10 or 20?", "10 for power ratios, 20 for voltage or current ratios. The two dB figures agree only when both are across the same impedance."],
+        ["What is the difference between dBV and dBu?", "The references are 1 V and 0.775 V, so dBu reads about 2.2 dB higher for the same voltage (0 dBV ≈ +2.2 dBu)."],
+      ],
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "ITU-R Recommendation V.574-5 (2015) — Use of the decibel and the neper in telecommunications (§1, §4, §6.1, §6.5, §8)", href: "https://www.itu.int/rec/R-REC-V.574-5-201508-I/en" },
+  { name: "BIPM, The International System of Units (SI Brochure), 9th edition — Table 8 and note (m): neper, bel, decibel", href: "https://www.bipm.org/en/publications/si-brochure" },
+];
+const pw = (w: number) => (w >= 1 ? `${fmt(w, 4)} W` : w >= 1e-3 ? `${fmt(w * 1e3, 4)} mW` : w >= 1e-6 ? `${fmt(w * 1e6, 4)} µW` : w >= 1e-9 ? `${fmt(w * 1e9, 4)} nW` : `${fmt(w * 1e12, 4)} pW`);
+const vv = (v: number) => (v >= 1 ? `${fmt(v, 4)} V` : v >= 1e-3 ? `${fmt(v * 1e3, 4)} mV` : `${fmt(v * 1e6, 4)} µV`);
+const tRows = [40, 30, 20, 10, 0, -10, -30, -50, -70, -90, -110].map((d) => {
+  const l = levels(1e-3 * dbToPower(d), 50);
+  return [`${d > 0 ? "+" : ""}${d}`, pw(l.W), vv(l.V), l.dBuV.toFixed(2)];
+});
+const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+" : ""}${d}`, fmt(dbToPower(d), 4), fmt(dbToAmp(d), 4)]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "dB·dBm 변환기 — dBm mW W·dBµV·dBu·전압 비 — PortDock" : "dBm to mW, Watts & dBµV Converter (dB Calculator) — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="db">
+      <h2>{L.lvTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.val}<input id="v" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.unit}<select id="u">{LEVEL_UNITS.map((u) => <option value={u.id} selected={u.id === "dBm"}>{u.sym}</option>)}</select></label>
+        <label class="fld">{L.ohm}<input id="ohm" class="mono" value="50" list="ohms" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="ohms"><option value="50" /><option value="75" /><option value="600" /></datalist>
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{LEVEL_UNITS.map((u) => <tr><td>{u.sym}</td><td class="mono" data-k={u.id}></td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.rTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.kind}<select id="rk"><option value="p" selected>{L.pr}</option><option value="v">{L.vr}</option></select></label>
+        <label class="fld">{L.ratio}<input id="ratio" class="mono" value="2" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.db}<input id="dbv" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="rerr" role="alert"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.useTitle}</h2>
+      <ul>{L.use.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.t2Title}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.t2Head.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{t2Rows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { ampDb, dbToAmp, dbToPower, levels, powerDb, toWatts, type LevelUnit } from "../lib/decibel";
+    import { fmt } from "../lib/units";
+    const form = document.getElementById("db") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const ko = document.documentElement.lang === "ko";
+    function level() {
+      const cells = form.querySelectorAll<HTMLElement>("td[data-k]");
+      try {
+        const w = toWatts(num("v"), $<HTMLSelectElement>("u").value as LevelUnit, num("ohm"));
+        const l = levels(w, num("ohm"));
+        for (const td of cells) {
+          const x = l[td.dataset.k as LevelUnit];
+          td.textContent = Number.isFinite(x) ? fmt(x, 6) : "−∞";
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 저항은 0 보다 크고, mW·W·V 는 0 이상" : "Check the numbers — impedance above 0; mW, W and V 0 or more";
+        for (const td of cells) td.textContent = "";
+      }
+    }
+    function fromRatio() {
+      try {
+        const r = num("ratio");
+        $("dbv").value = fmt($<HTMLSelectElement>("rk").value === "p" ? powerDb(r) : ampDb(r), 6);
+        $("rerr").textContent = "";
+      } catch {
+        $("rerr").textContent = ko ? "비는 0 보다 커야 합니다" : "The ratio must be greater than 0";
+        $("dbv").value = "";
+      }
+    }
+    function fromDb() {
+      const d = num("dbv");
+      if (!Number.isFinite(d)) return;
+      $("ratio").value = fmt($<HTMLSelectElement>("rk").value === "p" ? dbToPower(d) : dbToAmp(d), 6);
+      $("rerr").textContent = "";
+    }
+    for (const id of ["v", "u", "ohm"]) {
+      $(id).addEventListener("input", level);
+      $(id).addEventListener("change", level);
+    }
+    $("ratio").addEventListener("input", fromRatio);
+    $("rk").addEventListener("change", fromRatio);
+    $("dbv").addEventListener("input", fromDb);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    level();
+    fromRatio();
+  </script>
+</Base>

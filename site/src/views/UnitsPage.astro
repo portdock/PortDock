@@ -1,0 +1,243 @@
+---
+// 웹 도구: 산업 단위 변환기 — 유량·토크·전력(kW·HP)·온도를 한 값에서 모든 단위로(lib/units.ts). 압력은 따로(PressurePage).
+// 계수는 정의값에서 곱해 만들고 NIST SP 811 부록 B 값과 시험으로 맞춘다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { UNITS, convert, fmt } from "../lib/units";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/units/";
+const QTY = ["flow", "torque", "power", "temperature"] as const;
+const L = ko
+  ? {
+      title: "산업 단위 변환기 — 유량·토크·전력·온도",
+      desc: "현장에서 섞여 쓰는 단위를 한 번에 바꿉니다: 유량 m³/h·L/min·gpm, 토크 N·m·kgf·cm·lbf·ft, 전력 kW·마력(HP·PS)·kcal/h·냉동톤, 온도 °C·°F·K.",
+      qty: "양",
+      q: { flow: "유량(부피)", torque: "토크", power: "전력·마력", temperature: "온도" },
+      val: "값",
+      unit: "단위",
+      diff: "온도 «차이» 로 환산(예: 10 °C 오름 = 18 °F 오름)",
+      res: "모든 단위로",
+      press: "압력(bar·psi·kPa·mmH₂O)은",
+      pressLink: "압력 단위 변환기",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "정의와 계수",
+      formula: [
+        "1 L = 1 dm³ = 0.001 m³,   1 m³/h = 16.667 L/min",
+        "미국 갤런 = 231 in³ = 3.785 411 784 L,   영국 갤런 = 4.546 09 L",
+        "1 kgf = 9.806 65 N,   1 lbf = 0.453 592 37 kg × 9.806 65 m/s² ≈ 4.448 222 N",
+        "1 kgf·m = 9.806 65 N·m,   1 lbf·ft ≈ 1.355 818 N·m",
+        "1 hp = 550 ft·lbf/s ≈ 745.70 W,   1 PS = 75 kgf·m/s = 735.498 75 W",
+        "1 kcal/h = 4186.8 J ÷ 3600 s = 1.163 W,   1 냉동톤(미국) = 12 000 Btu/h ≈ 3516.85 W",
+        "°F = °C × 9/5 + 32,   K = °C + 273.15,   °R = K × 9/5",
+      ],
+      fNote: "마력은 두 가지가 섞여 쓰입니다. 영국·미국 마력(hp, 550 ft·lbf/s ≈ 0.7457 kW)과 미터 마력(PS·CV, 75 kgf·m/s ≈ 0.7355 kW)은 약 1.4 % 다릅니다. kcal 는 국제 칼로리(4.1868 J) 기준입니다. 냉동톤은 나라마다 정의가 달라 여기서는 미국 냉동톤(12 000 Btu/h)만 다룹니다.",
+      hpTitle: "kW ↔ 마력 계산표 (모터 출력 크기)",
+      hpHead: ["kW", "hp (550 ft·lbf/s)", "PS (미터 마력)"],
+      hpNote: "계산값입니다. 모터 정격은 kW 계열과 마력 계열이 따로 있어 명판의 «HP» 가 이 표의 값과 소수점까지 같지는 않습니다.",
+      flTitle: "유량 계산표",
+      tqTitle: "토크 계산표",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["1 kW 는 몇 마력인가요?", "영국·미국 마력으로 약 1.341 hp, 미터 마력으로 약 1.360 PS 입니다. 거꾸로 1 hp ≈ 0.7457 kW, 1 PS ≈ 0.7355 kW 입니다."],
+        ["kgf·cm 와 N·m 는 어떻게 바꾸나요?", "1 kgf·cm = 0.098 066 5 N·m 이므로 N·m 값에 약 10.197 을 곱하면 kgf·cm 입니다. 예: 1.27 N·m ≈ 12.95 kgf·cm."],
+        ["m³/h 와 L/min 은?", "1 m³/h = 1000 L ÷ 60 min ≈ 16.667 L/min 입니다. 펌프 60 L/min 은 3.6 m³/h 입니다."],
+        ["Nm³/h(노멀) 도 바꿀 수 있나요?", "아니요. Nm³/h 는 «기준 온도·압력으로 환산한 기체 부피» 라서 m³/h 로 바꾸려면 실제 온도·압력과 그 Nm³ 의 기준 조건이 필요합니다. 기준 조건은 업계·제조사마다 다르니 유량계 사양서에서 확인합니다."],
+      ],
+      srcTitle: "출처",
+    }
+  : {
+      title: "Industrial Unit Converter — Flow, Torque, Power, Temperature",
+      desc: "Units that get mixed on site: flow m³/h, L/min, gpm; torque N·m, kgf·cm, lbf·ft; power kW, horsepower (hp, PS), kcal/h, refrigeration tons; °C, °F, K.",
+      qty: "Quantity",
+      q: { flow: "Flow (volume)", torque: "Torque", power: "Power / horsepower", temperature: "Temperature" },
+      val: "Value",
+      unit: "Unit",
+      diff: "Convert as a temperature «difference» (a 10 °C rise = an 18 °F rise)",
+      res: "In every unit",
+      press: "For pressure (bar, psi, kPa, mmH₂O) use the",
+      pressLink: "Pressure Unit Converter",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Definitions and factors",
+      formula: [
+        "1 L = 1 dm³ = 0.001 m³,   1 m³/h = 16.667 L/min",
+        "US gallon = 231 in³ = 3.785 411 784 L,   imperial gallon = 4.546 09 L",
+        "1 kgf = 9.806 65 N,   1 lbf = 0.453 592 37 kg × 9.806 65 m/s² ≈ 4.448 222 N",
+        "1 kgf·m = 9.806 65 N·m,   1 lbf·ft ≈ 1.355 818 N·m",
+        "1 hp = 550 ft·lbf/s ≈ 745.70 W,   1 PS = 75 kgf·m/s = 735.498 75 W",
+        "1 kcal/h = 4186.8 J ÷ 3600 s = 1.163 W,   1 ton of refrigeration = 12 000 Btu/h ≈ 3516.85 W",
+        "°F = °C × 9/5 + 32,   K = °C + 273.15,   °R = K × 9/5",
+      ],
+      fNote: "Two horsepowers are in use: imperial/US horsepower (hp, 550 ft·lbf/s ≈ 0.7457 kW) and metric horsepower (PS, CV, 75 kgf·m/s ≈ 0.7355 kW), about 1.4 % apart. kcal uses the international calorie (4.1868 J). Refrigeration tons differ between countries; only the US ton (12 000 Btu/h) is used here.",
+      hpTitle: "kW ↔ horsepower (motor sizes, calculated)",
+      hpHead: ["kW", "hp (550 ft·lbf/s)", "PS (metric)"],
+      hpNote: "Calculated values. Motor ratings come in separate kW and horsepower series, so a nameplate «HP» does not match this table to the decimal.",
+      flTitle: "Flow table",
+      tqTitle: "Torque table",
+      faqTitle: "FAQ",
+      faq: [
+        ["How many horsepower is 1 kW?", "About 1.341 hp (imperial/US) or 1.360 PS (metric). Conversely, 1 hp ≈ 0.7457 kW and 1 PS ≈ 0.7355 kW."],
+        ["How do I convert kgf·cm to N·m?", "1 kgf·cm = 0.098 066 5 N·m, so multiply N·m by about 10.197 to get kgf·cm. Example: 1.27 N·m ≈ 12.95 kgf·cm."],
+        ["m³/h to L/min?", "1 m³/h = 1000 L ÷ 60 min ≈ 16.667 L/min. A 60 L/min pump moves 3.6 m³/h."],
+        ["Can it convert Nm³/h (normal)?", "No. Nm³/h is a gas volume referred to standard temperature and pressure, so converting to m³/h needs the actual temperature and pressure and the reference conditions of that Nm³, which differ between industries and makers — check the flowmeter specification."],
+      ],
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "NIST SP 811 (2008) Guide for the Use of the International System of Units — Appendix B.8, B.9", href: "https://www.nist.gov/pml/special-publication-811" },
+  { name: "BIPM, The International System of Units (SI Brochure), 9th edition — Table 8 (litre, minute, hour), §2.3.1 (degree Celsius)", href: "https://www.bipm.org/en/publications/si-brochure" },
+];
+const KW = [0.4, 0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55, 75];
+const hpRows = KW.map((k) => [String(k), fmt(convert("power", k, "kW", "hp"), 4), fmt(convert("power", k, "kW", "PS"), 4)]);
+const FLOW_COLS = ["m3h", "Lmin", "Ls", "gpmUS", "cfm"];
+const fsym = (id: string) => UNITS.flow.find((u) => u.id === id)!.sym;
+const flowRows = [1, 5, 10, 50, 100].map((v) => FLOW_COLS.map((c) => fmt(convert("flow", v, "m3h", c), 5)));
+const TQ_COLS = ["Nm", "kgfcm", "kgfm", "lbfft", "lbfin"];
+const tsym = (id: string) => UNITS.torque.find((u) => u.id === id)!.sym;
+const tqRows = [0.1, 1, 10, 100].map((v) => TQ_COLS.map((c) => fmt(convert("torque", v, "Nm", c), 5)));
+const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id: u.id, sym: u.sym, name: u.name[lang] }))]));
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "단위 변환기 — 유량·토크·kW 마력·온도 (산업용) — PortDock" : "Unit Converter: Flow, Torque, kW to HP, Temperature — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="uc" data-units={JSON.stringify(unitData)}>
+      <div class="row">
+        <label class="fld">{L.qty}<select id="q">{QTY.map((q) => <option value={q} selected={q === "power"}>{L.q[q]}</option>)}</select></label>
+        <label class="fld">{L.val}<input id="v" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.unit}<select id="u"></select></label>
+      </div>
+      <label class="note" id="diffRow" hidden><input type="checkbox" id="diff" style="width:auto" /> {L.diff}</label>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody id="out"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.press} <a href={url(lang, "tools/pressure/")}>{L.pressLink}</a>.</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+
+      <h2>{L.hpTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.hpHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{hpRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.hpNote}</p>
+
+      <h2>{L.flTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{FLOW_COLS.map((c) => <th>{fsym(c)}</th>)}</tr></thead>
+          <tbody>{flowRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.tqTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{TQ_COLS.map((c) => <th>{tsym(c)}</th>)}</tr></thead>
+          <tbody>{tqRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { convert, fmt, type Qty } from "../lib/units";
+    const form = document.getElementById("uc") as HTMLFormElement;
+    const U = JSON.parse(form.dataset.units ?? "{}") as Record<string, { id: string; sym: string; name: string }[]>;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const ko = document.documentElement.lang === "ko";
+    const DEF: Record<string, string> = { flow: "m3h", torque: "Nm", power: "kW", temperature: "C" };
+    function fillUnits() {
+      const q = $<HTMLSelectElement>("q").value;
+      const sel = $<HTMLSelectElement>("u");
+      sel.textContent = "";
+      for (const u of U[q]) sel.append(new Option(`${u.sym} — ${u.name}`, u.id, false, u.id === DEF[q]));
+      $("diffRow").hidden = q !== "temperature";
+      const out = $("out");
+      out.textContent = "";
+      for (const u of U[q]) {
+        const tr = document.createElement("tr");
+        const a = document.createElement("td");
+        a.textContent = `${u.sym} `;
+        const n = document.createElement("span");
+        n.className = "note";
+        n.textContent = u.name;
+        a.append(n);
+        const b = document.createElement("td");
+        b.className = "mono";
+        b.dataset.k = u.id;
+        tr.append(a, b);
+        out.append(tr);
+      }
+    }
+    function run() {
+      const q = $<HTMLSelectElement>("q").value as Qty;
+      const s = $("v").value.trim().replace(",", ".");
+      const v = s === "" ? NaN : Number(s);
+      const from = $<HTMLSelectElement>("u").value;
+      const diff = q === "temperature" && $("diff").checked;
+      const cells = form.querySelectorAll<HTMLElement>("td[data-k]");
+      try {
+        for (const td of cells) td.textContent = fmt(convert(q, v, from, td.dataset.k!, diff), 7);
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = q === "temperature" ? (ko ? "숫자를 확인하세요 — 절대 영도(−273.15 °C)보다 낮을 수 없습니다" : "Check the number — it cannot be below absolute zero (−273.15 °C)") : ko ? "숫자를 확인하세요" : "Check the number";
+        for (const td of cells) td.textContent = "";
+      }
+    }
+    $<HTMLSelectElement>("q").addEventListener("change", () => {
+      fillUnits();
+      run();
+    });
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    fillUnits();
+    run();
+  </script>
+</Base>

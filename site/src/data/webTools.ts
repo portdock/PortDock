@@ -16,7 +16,12 @@ export interface WebTool {
     | "tools/rs485/"
     | "tools/loop-load/"
     | "tools/voltage-drop/"
-    | "tools/subnet/";
+    | "tools/subnet/"
+    | "tools/pressure/"
+    | "tools/units/"
+    | "tools/motor-current/"
+    | "tools/motor-speed/"
+    | "tools/db/";
   name: L;
   blurb: L;
 }
@@ -86,6 +91,31 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/subnet/",
     name: { ko: "IP 서브넷 계산기", en: "IP Subnet Calculator" },
     blurb: { ko: "주소·마스크(/24) → 네트워크·브로드캐스트·범위. PC 와 PLC 가 양쪽 마스크로 같은 대역인지 판정.", en: "Address and mask (/24) → network, broadcast, range. Checks both masks: are the PC and PLC on the same subnet?" },
+  },
+  {
+    path: "tools/pressure/",
+    name: { ko: "압력 단위 변환기", en: "Pressure Unit Converter" },
+    blurb: { ko: "bar·psi·kPa·MPa·kgf/cm²·mmH₂O·mmHg 를 한 번에. 게이지 ↔ 절대, 센서 범위의 4–20mA 환산표.", en: "bar, psi, kPa, MPa, kgf/cm², mmH₂O, mmHg at once. Gauge ↔ absolute, sensor range with a 4–20 mA table." },
+  },
+  {
+    path: "tools/units/",
+    name: { ko: "산업 단위 변환기", en: "Industrial Unit Converter" },
+    blurb: { ko: "유량 m³/h·L/min·gpm, 토크 N·m·kgf·cm·lbf·ft, 전력 kW·HP·PS·kcal/h, 온도 °C·°F·K.", en: "Flow m³/h, L/min, gpm; torque N·m, kgf·cm, lbf·ft; power kW, HP, PS, kcal/h; °C, °F, K." },
+  },
+  {
+    path: "tools/motor-current/",
+    name: { ko: "모터 전류 계산기", en: "Motor Current Calculator" },
+    blurb: { ko: "3상·단상·직류 kW(HP) → A, 입력 전력·kVA·토크. 명판 값으로 효율 확인, 차단기·전선 기본 조건.", en: "Three-phase, single-phase or DC kW (HP) → amps, input power, kVA, torque. Efficiency from the nameplate." },
+  },
+  {
+    path: "tools/motor-speed/",
+    name: { ko: "인버터 주파수 ↔ 모터 회전수", en: "VFD Frequency ↔ Motor RPM" },
+    blurb: { ko: "Hz·극수 → 동기 속도, 명판 회전수로 슬립, 감속비 출력 회전수, 원하는 rpm 에 필요한 Hz.", en: "Hz and poles → synchronous speed, slip from the nameplate, gearbox output, Hz for a target rpm." },
+  },
+  {
+    path: "tools/db/",
+    name: { ko: "dB·dBm 변환기", en: "dB & dBm Converter" },
+    blurb: { ko: "dBm ↔ mW·W, 50·75·600 Ω 기준 dBµV·dBV·dBu·전압, 전력 비·전압 비 ↔ dB.", en: "dBm ↔ mW and W, dBµV, dBV, dBu and volts for 50/75/600 Ω, power or voltage ratio ↔ dB." },
   },
 ];
 

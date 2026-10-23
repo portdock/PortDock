@@ -1,0 +1,250 @@
+---
+// 웹 도구: 인버터 주파수 ↔ 모터 회전수 계산기 — 극수·명판 슬립·감속비(lib/motor.ts).
+// 동기 속도 = 120 f ÷ 극수(ABB), 정격 슬립(Hz) = f − n × p ÷ 120(YASKAWA A1000 E2-02). 슬립 회전수를 그대로 두는 회전수는 «근삿값» 이라고 밝힌다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { POLES, syncRpm } from "../lib/motor";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/motor-speed/";
+const L = ko
+  ? {
+      title: "인버터 주파수 ↔ 모터 회전수 계산기",
+      desc: "인버터 주파수(Hz)·극수로 동기 속도를, 명판 회전수로 슬립을 구해 실제 회전수(근삿값)와 감속기 출력 회전수, 원하는 rpm 에 필요한 Hz 를 계산합니다.",
+      hz: "출력 주파수(Hz)",
+      poles: "극수",
+      rHz: "명판 정격 주파수(Hz)",
+      rRpm: "명판 정격 회전수(r/min)",
+      ratio: "감속비(1 = 직결)",
+      res: "결과",
+      k: { ns: "동기 속도", slip: "정격 슬립(명판)", n: "회전수(근삿값, 슬립 회전수 유지)", out: "감속기 출력 회전수(근삿값)" },
+      tgt: "원하는 출력축 회전수(r/min)",
+      tgtOut: "필요한 출력 주파수",
+      guess: "명판 회전수로 본 극수",
+      example: "기본값(60 Hz 4극 1750 r/min, 30 Hz, 감속비 10)은 예시입니다. 극수와 정격 회전수는 모터 명판에서 확인하세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "동기 속도 ns(r/min) = 120 × f ÷ 극수",
+        "슬립 s = (ns − n) ÷ ns,   슬립 회전수 = ns − n",
+        "정격 슬립(Hz) = 정격 주파수 − 정격 회전수 × 극수 ÷ 120",
+        "f 에서의 회전수 ≈ 120 × f ÷ 극수 − 정격 슬립 회전수   (근사)",
+        "필요 주파수 ≈ (원하는 rpm × 감속비 + 슬립 회전수) × 극수 ÷ 120",
+      ],
+      fNote: "유도 전동기는 동기 속도보다 조금 느리게 돕니다(슬립). 60 Hz 4극의 동기 속도는 1800 r/min 이지만 명판 정격 회전수는 1750 r/min 처럼 낮고, 이 차이 50 r/min 이 정격 부하의 슬립입니다. 정격 슬립을 Hz 로 바꾼 값(60 − 1750 × 4 ÷ 120 ≈ 1.67 Hz)은 인버터의 «정격 슬립» 파라미터에 넣는 값과 같은 꼴입니다(예: YASKAWA A1000 E2-02).",
+      apxTitle: "«근삿값» 인 이유",
+      apx: [
+        "기저 주파수(보통 정격 주파수) 아래에서 V/f 를 일정하게 운전하면 같은 토크에서 슬립 회전수가 거의 같다고 보고 계산합니다. 그래서 30 Hz 4극은 동기 900 r/min 에서 50 r/min 을 뺀 약 850 r/min 이 됩니다.",
+        "실제 슬립은 부하 토크에 비례하듯 변합니다. 부하가 가벼우면 동기 속도에 더 가깝고, 무거우면 더 느립니다.",
+        "인버터의 슬립 보상·벡터 제어를 켜면 인버터가 슬립만큼 주파수를 올려 지령 회전수에 가깝게 맞춥니다. 이때는 동기 속도 쪽이 실제에 더 가깝습니다.",
+        "명판 회전수에도 허용차가 있습니다. ABB Motor guide 는 IEC 60034-1 에 따라 슬립 허용차를 ±20 %(1 kW 이상), ±30 %(1 kW 미만)로 적습니다.",
+      ],
+      tTitle: "극수별 동기 속도 (r/min)",
+      tHead: ["극수", "50 Hz", "60 Hz", "10 Hz", "30 Hz", "90 Hz"],
+      dispTitle: "인버터 화면의 rpm 표시",
+      disp: "인버터는 출력 주파수를 극수 설정으로 rpm 으로 바꿔 보여 줄 수 있습니다. LS S300 은 DRV-32(Hz/rpm Select)를 1 로 하면 rpm 단위가 되고 그 값은 극수 설정(MOT1, 2-25, 4극 기준)에 따라 달라집니다. YASKAWA A1000 은 o1-03 = 2 이면 최대 출력 주파수와 모터 극수(E2-04)로 계산한 r/min 단위입니다. 극수 설정이 실제 모터와 다르면 rpm 표시도 틀립니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["60 Hz 4극 모터는 몇 rpm 인가요?", "동기 속도는 120 × 60 ÷ 4 = 1800 r/min 이고, 실제 정격 회전수는 슬립만큼 낮아 명판에는 1800 보다 작은 값(예: 1750 r/min)이 적힙니다. 50 Hz 면 동기 1500 r/min 입니다."],
+        ["인버터 30 Hz 면 회전수가 절반인가요?", "동기 속도는 정확히 절반(4극 900 r/min)입니다. 실제 회전수는 슬립 회전수를 빼야 해서 정격 부하라면 절반보다 조금 더 낮습니다(1750 r/min 명판이면 약 850 r/min)."],
+        ["원하는 rpm 에 맞추려면 몇 Hz 를 넣나요?", "«원하는 출력축 회전수» 에 rpm 을 넣으면 감속비와 슬립을 더해 필요한 주파수가 나옵니다. 슬립 보상을 쓰면 슬립 몫 없이 동기 속도 기준으로 맞춥니다."],
+        ["극수를 모르면?", "명판의 정격 주파수와 정격 회전수로 추정할 수 있습니다. 정격 회전수보다 조금 큰 동기 속도를 찾으면 됩니다(60 Hz 에서 3500대 → 2극, 1700대 → 4극, 1100대 → 6극)."],
+      ],
+      srcTitle: "출처",
+      mcNote: "모터 정격 전류·토크는",
+      mcLink: "모터 전류 계산기",
+    }
+  : {
+      title: "VFD Frequency ↔ Motor RPM Calculator",
+      desc: "Synchronous speed from drive Hz and poles, slip from the nameplate, approximate actual and gearbox output speed, and the Hz needed for a target rpm.",
+      hz: "Output frequency (Hz)",
+      poles: "Poles",
+      rHz: "Nameplate rated frequency (Hz)",
+      rRpm: "Nameplate rated speed (r/min)",
+      ratio: "Gear ratio (1 = direct)",
+      res: "Results",
+      k: { ns: "Synchronous speed", slip: "Rated slip (nameplate)", n: "Speed (approx., same slip rpm)", out: "Gearbox output speed (approx.)" },
+      tgt: "Target output shaft speed (r/min)",
+      tgtOut: "Required output frequency",
+      guess: "Poles implied by the nameplate speed",
+      example: "The defaults (60 Hz, 4 poles, 1750 r/min, 30 Hz, ratio 10) are an example. Take the poles and rated speed from the motor nameplate.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Synchronous speed ns (r/min) = 120 × f ÷ poles",
+        "Slip s = (ns − n) ÷ ns,   slip speed = ns − n",
+        "Rated slip (Hz) = rated frequency − rated speed × poles ÷ 120",
+        "Speed at f ≈ 120 × f ÷ poles − rated slip speed   (approximation)",
+        "Required frequency ≈ (target rpm × gear ratio + slip speed) × poles ÷ 120",
+      ],
+      fNote: "An induction motor runs slightly slower than synchronous speed (slip). A 4-pole motor at 60 Hz has a synchronous speed of 1800 r/min, but its nameplate says something like 1750 r/min — the 50 r/min difference is the slip at rated load. Expressed in hertz (60 − 1750 × 4 ÷ 120 ≈ 1.67 Hz) it has the same form as a drive's «rated slip» parameter (e.g. YASKAWA A1000 E2-02).",
+      apxTitle: "Why «approximate»",
+      apx: [
+        "Below base frequency with constant V/f, the slip speed at a given torque is taken as nearly unchanged. So 30 Hz on a 4-pole motor gives a 900 r/min synchronous speed minus 50 r/min, about 850 r/min.",
+        "Real slip changes with load torque: closer to synchronous speed when lightly loaded, slower when heavily loaded.",
+        "With slip compensation or vector control, the drive raises the frequency by the slip to hold the commanded speed, so the synchronous figure is closer to reality.",
+        "Nameplate speed has a tolerance too. ABB's Motor guide gives, after IEC 60034-1, a slip tolerance of ±20 % (1 kW and above) and ±30 % (below 1 kW).",
+      ],
+      tTitle: "Synchronous speed by poles (r/min)",
+      tHead: ["Poles", "50 Hz", "60 Hz", "10 Hz", "30 Hz", "90 Hz"],
+      dispTitle: "The rpm shown on the drive",
+      disp: "Drives can display output frequency converted to rpm using the pole setting. On the LS S300, DRV-32 (Hz/rpm Select) = 1 switches to rpm, and the value depends on the pole number setting (MOT1, 2-25; 4-pole basis). On the YASKAWA A1000, o1-03 = 2 shows r/min calculated from the maximum output frequency and the number of motor poles (E2-04). If the pole setting does not match the motor, the rpm display is wrong.",
+      faqTitle: "FAQ",
+      faq: [
+        ["What rpm is a 4-pole motor at 60 Hz?", "Synchronous speed is 120 × 60 ÷ 4 = 1800 r/min; the actual rated speed is lower by the slip, so the nameplate shows a smaller figure (e.g. 1750 r/min). At 50 Hz the synchronous speed is 1500 r/min."],
+        ["Does 30 Hz halve the speed?", "The synchronous speed is exactly half (900 r/min for 4 poles). The real speed is lower by the slip speed, so at rated load it is a little under half (about 850 r/min for a 1750 r/min nameplate)."],
+        ["What frequency gives the rpm I want?", "Enter the rpm in «Target output shaft speed»; gear ratio and slip are added to give the frequency. With slip compensation, set it from synchronous speed without the slip."],
+        ["What if I do not know the number of poles?", "Estimate it from the nameplate rated frequency and speed: find the synchronous speed just above the rated speed (at 60 Hz, 3500s → 2 poles, 1700s → 4 poles, 1100s → 6 poles)."],
+      ],
+      srcTitle: "Sources",
+      mcNote: "For the motor's rated current and torque, use the",
+      mcLink: "Motor Current Calculator",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "ABB, Low voltage motors — Motor guide (2019): §3.8 Tolerances, §9.3 Speed (synchronous speed = frequency × 120 ÷ poles)", href: "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf" },
+  { name: "ABB, Technical guide No. 7 (3AFE64362569 Rev D): eq. 3.1–3.2 (slip, synchronous speed), Fig. 3.2", href: "https://library.e.abb.com/public/e555e5106a3c44e882f48b75a44f6807/Technical_guide_No_7_3AFE64362569_RevD_EN_lowres.pdf" },
+  { name: "YASKAWA AC Drive A1000 Technical Manual (SIEP C710616 41H): E2-02 Motor Rated Slip, o1-03", href: "https://www.yaskawa.com/" },
+  { name: "LS ELECTRIC LSLV-S300 User's Manual: 5.1.2.3 Changing Unit of Speed (DRV-32), Formula 16", href: "https://www.ls-electric.com/" },
+];
+const rows = POLES.map((p) => [p, ...[50, 60, 10, 30, 90].map((f) => syncRpm(f, p))]);
+const fig = `/img/guides/motor-slip.${lang}.svg`;
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "인버터 주파수 ↔ 모터 회전수 계산기 — 극수·슬립 — PortDock" : "VFD Hz to RPM Calculator: Poles, Slip, Gear Ratio — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ms">
+      <div class="row">
+        <label class="fld">{L.rHz}<select id="rhz"><option value="60" selected>60 Hz</option><option value="50">50 Hz</option></select></label>
+        <label class="fld">{L.rRpm}<input id="rrpm" class="mono" value="1750" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.poles}<select id="poles">{POLES.map((p) => <option value={p} selected={p === 4}>{p}</option>)}</select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.hz}<input id="hz" class="mono" value="30" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ratio}<input id="ratio" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <p class="note" id="guess"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["ns", "slip", "n", "out"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <div class="row">
+        <label class="fld">{L.tgt}<input id="tgt" class="mono" value="150" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="result mono" id="tout" aria-live="polite"></p>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <figure class="fig">
+        <img src={fig} width="780" height="280" alt={ko ? "60 Hz 4극 모터: 동기 속도 1800 r/min, 정격 회전수 1750 r/min, 차이 50 r/min 이 슬립. 30 Hz 에서는 동기 900 r/min, 같은 슬립을 빼면 약 850 r/min" : "4-pole motor at 60 Hz: synchronous 1800 r/min, rated 1750 r/min, the 50 r/min difference is slip. At 30 Hz: synchronous 900 r/min, about 850 r/min with the same slip"} loading="lazy" decoding="async" />
+        <figcaption>{ko ? "주파수를 바꾸면 동기 속도가 비례해 바뀌고, 실제 회전수는 슬립만큼 낮습니다." : "Synchronous speed scales with frequency; the actual speed is lower by the slip."}</figcaption>
+      </figure>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.apxTitle}</h2>
+      <ul>{L.apx.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.dispTitle}</h2>
+      <p>{L.disp}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { guessPoles, hzFor, ratedSlip, speedAt } from "../lib/motor";
+    const form = document.getElementById("ms") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 1) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const ko = document.documentElement.lang === "ko";
+    function run() {
+      const rhz = Number($<HTMLSelectElement>("rhz").value);
+      const rrpm = num("rrpm");
+      const poles = Number($<HTMLSelectElement>("poles").value);
+      const g = Number.isFinite(rrpm) ? guessPoles(rhz, rrpm) : undefined;
+      $("guess").textContent = g !== undefined ? `${ko ? "명판 회전수로 본 극수" : "Poles implied by the nameplate speed"}: ${g}${g !== poles ? (ko ? " — 고른 극수와 다름" : " — differs from the selected poles") : ""}` : "";
+      try {
+        const s = ratedSlip(rhz, rrpm, poles);
+        const hz = num("hz");
+        const ratio = num("ratio");
+        const r = speedAt(hz, poles, s.rpm, ratio);
+        set("ns", `${fx(r.ns)} r/min`);
+        set("slip", `${fx(s.rpm)} r/min · ${fx(s.s * 100, 2)} % · ${fx(s.hz, 2)} Hz`);
+        set("n", `${fx(r.n)} r/min`);
+        set("out", `${fx(r.out, 2)} r/min (${ko ? "동기 기준" : "synchronous"} ${fx(r.outSync, 2)})`);
+        $("err").textContent = "";
+        const t = num("tgt");
+        if (Number.isFinite(t) && t >= 0) {
+          const need = hzFor(t, poles, s.rpm, ratio);
+          const sync = hzFor(t, poles, 0, ratio);
+          $("tout").textContent = `${ko ? "필요한 출력 주파수" : "Required output frequency"} ≈ ${fx(need, 2)} Hz (${ko ? "슬립 보상 시" : "with slip compensation"} ${fx(sync, 2)} Hz)`;
+        } else $("tout").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 정격 회전수는 0 보다 크고 동기 속도 이하, 감속비는 0 보다 커야 합니다" : "Check the numbers — rated speed above 0 and not above synchronous speed, gear ratio above 0";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+        $("tout").textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

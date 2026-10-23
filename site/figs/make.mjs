@@ -445,6 +445,114 @@ figs["subnet-and"] = (t) => {
   return [W, H, b];
 };
 
+// 13. 게이지 압력과 절대 압력 — 같은 눈금 위에 두 기준(완전 진공 0, 대기압 0)
+figs["pressure-gauge-abs"] = (t) => {
+  const W = 780, H = 330;
+  let b = "";
+  const ATM = 1.01325, x0 = 70, x1 = 730, max = 7;
+  const X = (abs) => x0 + ((x1 - x0) * abs) / max;
+  const y = 150;
+  // 진공 구간 · 대기압 위 구간
+  b += R(X(0), y - 14, X(ATM) - X(0), 28, { rx: 2, f: "#eef2ff", c: "#c7d2fe" });
+  b += R(X(ATM), y - 14, X(max) - X(ATM), 28, { rx: 2, f: "#fff7ed", c: "#fed7aa" });
+  b += T((X(0) + X(ATM)) / 2, y - 22, t.vac, { a: "middle", s: 12, c: CB, b: 1 });
+  b += T((X(ATM) + X(max)) / 2, y - 22, t.over, { a: "middle", s: 12, c: CA, b: 1 });
+  // 위: 절대 눈금
+  b += T(x0 - 10, 50, t.absAxis, { s: 13, b: 1 });
+  b += L(x0, 80, x1, 80, INK, 1.5);
+  for (let a = 0; a <= max; a++) b += L(X(a), 74, X(a), 86, INK, 1.5) + T(X(a), 70, String(a), { a: "middle", s: 12, m: 1 });
+  // 아래: 게이지 눈금
+  b += L(X(0), 230, x1, 230, INK, 1.5);
+  for (let g = -1; g <= 5; g++) b += L(X(g + ATM), 224, X(g + ATM), 236, INK, 1.5) + T(X(g + ATM), 252, String(g), { a: "middle", s: 12, m: 1 });
+  b += T(x0 - 10, 274, t.gAxis, { s: 13, b: 1 });
+  // 기준선(점선) — 설명은 아래 범례로
+  b += L(X(0), 86, X(0), 224, CB, 2, "5 4") + L(X(ATM), 86, X(ATM), 224, OK, 2, "5 4");
+  // 예시 점
+  b += dot(X(ATM + 5), y, NG, 5) + L(X(ATM + 5), y + 14, X(ATM + 5), 200, NG, 1.5) + T(X(ATM + 5) - 8, 204, "5 bar g = 6.013 bar a", { a: "end", s: 12, c: NG, m: 1 });
+  b += dot(X(ATM - 0.5), y, NG, 5) + P(`M${X(ATM - 0.5)} ${y + 14} V200 H${X(ATM) + 14}`, NG, 1.5) + T(X(ATM) + 18, 204, "−0.5 bar g = 0.513 bar a", { s: 12, c: NG, m: 1 });
+  // 범례
+  b += L(x0 + 200, 266, x0 + 230, 266, CB, 2, "5 4") + T(x0 + 238, 270, t.zeroAbs, { s: 12, c: CB, b: 1 });
+  b += L(x0 + 420, 266, x0 + 450, 266, OK, 2, "5 4") + T(x0 + 458, 270, t.zeroG, { s: 12, c: OK, b: 1 });
+  b += T(W / 2, 312, t.foot, { a: "middle", s: 11, c: MUTED });
+  return [W, H, b];
+};
+
+// 14. 모터 전류 계산 흐름 — 출력 → ÷η → 입력 → ÷cos φ → kVA → ÷(√3·V) → A
+figs["motor-current-chain"] = (t) => {
+  const W = 780, H = 250;
+  let b = "";
+  const boxes = [
+    [t.out, "7.5 kW"],
+    [t.inp, "8.33 kW"],
+    [t.app, "9.80 kVA"],
+    [t.cur, "14.9 A"],
+  ];
+  const ops = ["÷ η 0.9", "÷ cos φ 0.85", "÷ √3·380 V"];
+  const bw = 120, gap = (W - 40 - bw * 4) / 3;
+  boxes.forEach(([n, v], i) => {
+    const x = 20 + i * (bw + gap);
+    b += R(x, 70, bw, 80, { f: i === 3 ? "#ecf8f0" : BOXF, c: i === 3 ? OK : LINE });
+    b += T(x + bw / 2, 100, n, { a: "middle", s: 13, b: 1 }) + T(x + bw / 2, 132, v, { a: "middle", s: 17, b: 1, m: 1, c: i === 3 ? OK : INK });
+    if (i < 3) {
+      const ax = x + bw + 6, bx = x + bw + gap - 6;
+      b += L(ax, 110, bx - 2, 110, CB, 2) + arrowR(bx, 110, CB);
+      b += T((ax + bx) / 2, 98, ops[i], { a: "middle", s: 12, c: CB, b: 1 });
+    }
+  });
+  b += T(20, 40, t.head, { s: 14, b: 1 });
+  b += T(20, 190, t.n1, { s: 12, c: MUTED });
+  b += T(20, 212, t.n2, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
+// 15. 동기 속도와 슬립 — 60 Hz·30 Hz, 4극, 슬립 50 r/min
+figs["motor-slip"] = (t) => {
+  const W = 780, H = 280;
+  let b = "";
+  const x0 = 90, x1 = 750, max = 2000;
+  const X = (n) => x0 + ((x1 - x0) * n) / max;
+  b += L(x0, 236, x1, 236, INK, 1.5);
+  for (let n = 0; n <= max; n += 250) b += L(X(n), 232, X(n), 240, INK, 1.2) + T(X(n), 256, String(n), { a: "middle", s: 11, m: 1, c: MUTED });
+  b += T(x1, 274, "r/min", { a: "end", s: 12, c: MUTED });
+  const rows = [
+    [60, 1800, 1750, 64],
+    [30, 900, 850, 150],
+  ];
+  for (const [hz, ns, n, y] of rows) {
+    b += T(20, y + 23, `${hz} Hz`, { s: 15, b: 1, m: 1 });
+    b += R(X(0), y, X(n) - X(0), 36, { rx: 3, f: "#e0ecff", c: CB });
+    b += R(X(n), y, X(ns) - X(n), 36, { rx: 0, f: "#fde8e8", c: NG });
+    b += T(X(n) - 8, y + 23, `${t.actual} ≈ ${n}`, { a: "end", s: 13, b: 1, c: CB });
+    b += L(X(ns), y - 8, X(ns), y + 44, INK, 2) + T(X(ns) + 6, y + 14, `${t.sync} ${ns}`, { s: 12, b: 1 });
+    b += P(`M${X(n)} ${y + 46} V${y + 52} H${X(ns)} V${y + 46}`, NG, 1.5) + T(X(ns) + 6, y + 56, `${t.slip} 50`, { s: 12, c: NG, b: 1 });
+  }
+  b += T(20, 30, t.head, { s: 13, b: 1 });
+  return [W, H, b];
+};
+
+// 16. 과부하 보호 협조 — IB ≤ In ≤ IZ, I2 ≤ 1.45 IZ (KEC 212.4.1), 값 없는 눈금
+figs["overload-coordination"] = (t) => {
+  const W = 780, H = 210;
+  let b = "";
+  const y = 120, x0 = 40, x1 = 740;
+  b += L(x0, y, x1 - 4, y, INK, 2) + arrowR(x1, y);
+  b += T(x1, y + 58, t.axis, { a: "end", s: 12, c: MUTED });
+  const marks = [
+    [120, "IB", t.ib, CB],
+    [280, "In", t.in, CA],
+    [430, "IZ", t.iz, OK],
+    [615, "1.45 × IZ", t.i2, NG],
+  ];
+  for (const [x, s, d, c] of marks) {
+    b += L(x, y - 10, x, y + 10, c, 3) + T(x, y - 18, s, { a: "middle", s: 15, b: 1, c, m: 1 });
+    if (d) b += T(x, y + 32, d, { a: "middle", s: 12, c: MUTED });
+  }
+  b += T(200, y - 18, "≤", { a: "middle", s: 16, b: 1 }) + T(355, y - 18, "≤", { a: "middle", s: 16, b: 1 });
+  b += T(x0, 36, t.head, { s: 14, b: 1 });
+  b += T(x0, 58, t.sub, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
 const L10N = {
   "rs485-bus": {
     ko: { title: "RS-485 2선식 버스 배선", master: "마스터", slave: "슬레이브", busNote1: "A·B·GND 를 장비마다 차례로 잇고, 선로 양 끝 두 곳에만 120 Ω 종단 저항", busNote2: "표준 송수신기 32대(단위 부하)까지 · 느린 속도에서 약 1200 m" },
@@ -493,6 +601,22 @@ const L10N = {
   "subnet-and": {
     ko: { title: "서브넷 판정 — 주소 AND 마스크 = 네트워크 주소", addr: "주소", mask: "마스크", net: "네트워크", same: "네트워크 주소가 같음 → 바로 통신", diff: "네트워크 주소가 다름 → 게이트웨이 필요" },
     en: { title: "Subnet check — address AND mask = network address", addr: "Address", mask: "Mask", net: "Network", same: "Same network → talk directly", diff: "Different network → needs a gateway" },
+  },
+  "pressure-gauge-abs": {
+    ko: { title: "게이지 압력과 절대 압력", absAxis: "절대 압력 (bar a)", gAxis: "게이지 압력 (bar g)", vac: "진공", over: "대기압보다 높음", zeroAbs: "완전 진공 = 0 bar a", zeroG: "대기압 101.325 kPa = 0 bar g", foot: "표준 대기압 기준. 실제 대기압은 고도·날씨에 따라 다르고, 그만큼 두 눈금의 차이가 바뀝니다." },
+    en: { title: "Gauge pressure and absolute pressure", absAxis: "Absolute (bar a)", gAxis: "Gauge (bar g)", vac: "vacuum", over: "above atmosphere", zeroAbs: "perfect vacuum = 0 bar a", zeroG: "atmosphere 101.325 kPa = 0 bar g", foot: "Standard atmosphere shown. Real atmospheric pressure varies with altitude and weather, shifting the scales by that much." },
+  },
+  "motor-current-chain": {
+    ko: { title: "모터 전류 계산 흐름 (3상 7.5 kW, 380 V)", head: "명판 출력에서 전류까지", out: "출력(축)", inp: "입력 전력", app: "피상 전력", cur: "선 전류", n1: "효율 0.9·역률 0.85 는 예시 — 실제 값은 명판·카탈로그에서", n2: "명판에 정격 전류가 있으면 그 값이 우선" },
+    en: { title: "Motor current chain (three-phase 7.5 kW, 380 V)", head: "From nameplate output to current", out: "Output (shaft)", inp: "Input power", app: "Apparent power", cur: "Line current", n1: "Efficiency 0.9 and power factor 0.85 are examples — use nameplate or catalogue values", n2: "If the nameplate lists a rated current, that value comes first" },
+  },
+  "motor-slip": {
+    ko: { title: "동기 속도와 슬립 (4극, 정격 1750 r/min)", head: "4극: 동기 속도 = 120 × f ÷ 4, 실제 회전수는 슬립만큼 낮음 (슬립 회전수 유지 근사)", actual: "실제", sync: "동기", slip: "슬립" },
+    en: { title: "Synchronous speed and slip (4 poles, rated 1750 r/min)", head: "4 poles: synchronous = 120 × f ÷ 4; actual lower by the slip (same slip rpm, approx.)", actual: "actual", sync: "sync", slip: "slip" },
+  },
+  "overload-coordination": {
+    ko: { title: "과부하 보호 협조 조건 (KEC 212.4.1)", head: "IB ≤ In ≤ IZ  그리고  I2 ≤ 1.45 × IZ", sub: "KEC 212.4.1 도체와 과부하 보호장치 사이의 협조", axis: "전류 →", ib: "설계 전류(모터 정격)", in: "보호 장치 정격·설정", iz: "전선 허용 전류", i2: "I2(확실히 동작하는 전류)는 이 값 이하" },
+    en: { title: "Overload protection coordination (KEC 212.4.1, from IEC 60364)", head: "IB ≤ In ≤ IZ  and  I2 ≤ 1.45 × IZ", sub: "Coordination between conductors and overload protective devices", axis: "current →", ib: "design current (motor FLA)", in: "device rating / setting", iz: "cable capacity", i2: "I2 (ensured operation) at most this" },
   },
 };
 
