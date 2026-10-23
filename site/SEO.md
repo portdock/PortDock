@@ -61,6 +61,14 @@
 | 모터 정격전류 계산법, 모터 차단기 선정(방법)·용량, 차단기 선정 및 전선 굵기, 허용전류 | `/guides/motor-current-breaker-cable/` | «모터 정격 전류 계산(kW→A)과 차단기·전선 기초», 설명에 «KEC 212.4.1», «IB ≤ In ≤ IZ» |
 | 게이지압력 절대압력(차이·변환), kg/cm2 bar 차이, 압력 단위 변환 | `/guides/pressure-units/` | «압력 단위 변환과 센서 범위 설정 (bar·psi·kPa·kgf/cm²)» |
 | 인버터 주파수 설정·변경, 모터 회전수 계산방법, 모터 슬립 계산, 인버터 hz rpm | `/guides/vfd-frequency-rpm/` | «인버터 주파수 ↔ 모터 회전수 (극수·슬립·rpm 표시)» |
+| 아스키코드표(2진수·16진수·특수문자), 제어문자(종류), 아스키 코드 변환, ascii 제어문자 | `/tools/ascii/` | «ASCII 코드표·제어 문자표 (STX·ETX·ACK·CR·LF)» |
+| 16진수 10진수 변환(기), 2의 보수 계산기·변환, bcd 변환(기), 그레이코드 변환, 엔디안 변환, 리틀엔디안 빅엔디안 변환 | `/tools/integer/` | «정수·진수 변환기 — HEX·10진·2의 보수·BCD·엔디언» |
+| 보레이트 계산, (uart 보율 — 한국어 자동완성 없음) | `/tools/uart-baud/` | «UART 보율 오차 계산기 — MCU 클럭·UBRR·분주비» |
+| can 통신 속도 (설정·계산), can 샘플 포인트 | `/tools/can-bit-timing/` | «CAN 비트 타이밍 계산기 — 샘플 포인트·TQ·프리스케일러» |
+| ntc 계산기·계산식, ntc 서미스터 온도 계산, ntc 온도 테이블 계산, 서미스터 온도 계산 | `/tools/ntc/` + 가이드 `ntc-thermistor-temperature` | «NTC 서미스터 계산기 — 온도·저항·B값·Steinhart–Hart», 가이드 «NTC 서미스터 온도 계산 — B값·Steinhart–Hart·ADC» |
+| 엔코더 펄스 (계산), 엔코더 분해능 (계산·체배), 엔코더 rpm 계산 | `/tools/encoder/` | «엔코더 펄스 ↔ rpm 계산기 — PPR·체배·응답 주파수» |
+| 모드버스 에러코드, modbus 에러 코드 | `/guides/modbus-exception-codes/` | «Modbus 예외 코드(에러 코드) 01·02·03·04 원인» |
+| rs232 케이블 결선(도), rs232 크로스 케이블 (핀맵), 널모뎀 케이블, db9 핀맵 | `/guides/rs232-db9-null-modem/` | «RS232 DB9 핀배치·크로스(널 모뎀) 케이블 결선도» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -110,9 +118,17 @@
 | motor full load current formula, kw to amps 3 phase motor | `/en/guides/motor-current-breaker-cable/` | «Motor Full Load Current (kW to A), Breakers, Cables» |
 | gauge vs absolute pressure (transmitter, sensor), pressure transmitter units | `/en/guides/pressure-units/` | «Pressure Units: bar, psi, kPa, kgf/cm², Gauge vs Abs» |
 | vfd frequency to rpm, motor hz to rpm formula, vfd frequency vs rpm | `/en/guides/vfd-frequency-rpm/` | «VFD Hz to RPM: Poles, Slip and the RPM Display» |
+| ascii table (hex), ascii code table, ascii control characters | `/en/tools/ascii/` | «ASCII Table with Control Characters (Hex, STX, CR, LF)» |
+| hex to decimal (converter), two's complement calculator, hex to signed int, bcd converter, gray code converter, endian converter | `/en/tools/integer/` | «Hex to Decimal: Signed, Two's Complement, BCD, Endian» |
+| uart baud rate calculator, uart baud rate error (calculator, tolerance), avr/atmega uart baud rate calculator | `/en/tools/uart-baud/` | «UART Baud Rate Error Calculator: MCU Clock, UBRR» |
+| can bit timing calculator, can sample point (calculation), can bus bit timing | `/en/tools/can-bit-timing/` | «CAN Bit Timing Calculator: Sample Point, TQ, Prescaler» |
+| ntc thermistor calculator, steinhart hart calculator, thermistor beta value calculator, ntc thermistor equation | `/en/tools/ntc/` + guide | «NTC Thermistor Calculator: Beta, Steinhart–Hart, ADC» |
+| encoder pulses to rpm, how to calculate rpm from encoder pulses, encoder ppr calculation | `/en/tools/encoder/` | «Encoder Pulses to RPM Calculator: PPR, ×4, Frequency» |
+| modbus exception codes (list), modbus error codes (table), modbus exception code 2/3/4/11 | `/en/guides/modbus-exception-codes/` | «Modbus Exception Codes 01, 02, 03, 04, 0B Explained» |
+| rs232 pinout (db9), db9 pinout rs232, null modem cable pinout (db9) | `/en/guides/rs232-db9-null-modem/` | «RS-232 DB9 Pinout & Null Modem Cable Wiring» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
-검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다.
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
 | 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
 |---|---|---|---|---|
 | 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
@@ -127,6 +143,24 @@
 | 11 | dbm 변환(기)·dbm 계산기(구글), dbm 계산(네이버), dbm to mw·dbm to watts·dbm to dbuv(구글) | `/tools/db/` | ITU-R V.574-5 정의. 무선 RSSI·케이블 손실 쪽. 범용 사이트가 많아 우선순위는 낮았음 | ✅ 10/23 |
 | 12 | 저항 컬러코드(네이버·구글 자동완성 있음) | 없음 | 산업 현장보다 전자 취미 쪽, 범용 사이트가 많음 | 보류 |
 | 9 | 옴의 법칙·전력 계산기 | 없음 | 범용 사이트가 이미 많음 — 낮음 | 보류 |
+| 13 | 아스키코드표(2진수·16진수·특수문자)·제어문자(종류)·아스키 코드 변환(네이버·구글), ascii table hex·ascii code table(구글) | `/tools/ascii/` | 범용 표는 많지만 «시리얼 프레임에서 보는 제어 문자(STX·ETX·ACK·NAK·ENQ·XON·XOFF)의 쓰임» 과 HEX↔ASCII 도구 연결로 차별. RFC 20 §2·§4.1, XON·XOFF = DC1·DC3 은 Text-Terminal-HOWTO §11 | ✅ 10/23 |
+| 14 | 16진수 10진수 변환(기)·2의 보수 계산기·bcd 변환(기)·그레이코드 변환·엔디안 변환(구글·네이버), hex to signed int·two's complement calculator·endian converter·bcd converter(구글) | `/tools/integer/` | 범용 진법 변환기와 달리 «레지스터 음수(INT16)·BCD·그레이 코드·ABCD/CDAB» 를 한 화면에. 실수(float)는 기존 변환기 몫이라 겹치지 않게 정수만. 정의식, Modbus 규격 §4.2 | ✅ 10/23 |
+| 15 | uart baud rate calculator·uart baud rate error (calculator·tolerance)·stm32/avr uart baud rate calculator(구글). 한국어 «보레이트 계산» 은 구글만, «uart 보율»·«보레이트 오차» 는 자동완성 없음 | `/tools/uart-baud/` | ATmega328P 데이터시트 표 19-1·19-2·19-3·19-11·19-12 수치를 시험으로 재현(16 MHz 115.2k → UBRR 8, −3.5 %), 수신 허용 범위 식(§19.8.3). STM32 등 다른 칩은 매뉴얼을 확인하지 않아 이름을 넣지 않고 «소수 비트» 로 일반화 | ✅ 10/23 |
+| 16 | can bit timing calculator·can sample point (calculation)·can bus bit timing(구글). 한국어 «can 통신 속도(설정·계산)» 는 구글만, «can 비트 타이밍» 은 자동완성 없음 | `/tools/can-bit-timing/` | NXP AN1798 Rev. 4 표 1·식 (8)~(11)·예제 1·2 를 시험으로, Microchip SAM9X60 §50.7.4.1. CiA 의 권장 샘플 포인트 표는 원문(CiA 301)을 확인하지 못해 수치를 넣지 않음 — 목표값은 사용자가 넣음. CAN FD 데이터 구간은 뺌 | ✅ 10/23 |
+| 17 | ntc 계산기·계산식, ntc 서미스터 온도 계산·온도 테이블, 서미스터 온도 계산(구글), ntc thermistor calculator·steinhart hart calculator·thermistor beta value calculator(구글) | `/tools/ntc/` + 가이드 `ntc-thermistor-temperature` | B 식·Steinhart–Hart·분압·ADC·자기 발열을 한 페이지에. TDK NTC 기술 자료(2018-01) §3.1·§3.2.3, Steinhart & Hart(1968), ATmega328P §23.7. Pt100 도구·가이드와 연결 | ✅ 10/23 |
+| 18 | 엔코더 펄스(계산)·엔코더 분해능(계산·체배)·엔코더 rpm 계산(구글·네이버), encoder pulses to rpm·how to calculate rpm from encoder pulses(구글) | `/tools/encoder/` | 정의식(rpm × PPR ÷ 60, 체배). 오토닉스 데이터시트 식(최대 응답 회전수 = 응답 주파수 ÷ 분해능 × 60)은 대리점 사본으로만 봐 출처로 달지 않음 — 정의식으로 계산 | ✅ 10/23 |
+| 19 | modbus exception codes (list·2·3·4·11)·modbus error codes (table)(구글), 모드버스 에러코드·modbus 에러 코드(구글). 기존엔 해석기·응답 없음 글에 흩어져 있었음 | 가이드 `modbus-exception-codes` | 규격 V1.1b3 §6 상태도의 검사 순서(01 → 03 → 02 → 04)와 함수별 개수 한도, §7 «96 + 5» 예, CRC 는 lib 로 계산 | ✅ 10/23 |
+| 20 | rs232 pinout (db9)·db9 pinout rs232·null modem cable pinout(구글), rs232 케이블 결선(도)·rs232 크로스 케이블(핀맵)(네이버·구글), 널모뎀 케이블·db9 핀맵(구글) | 가이드 `rs232-db9-null-modem` | TLDP Serial-HOWTO §19(DB9·DB25 핀), Text-Terminal-HOWTO §12(표준 널 모뎀 결선). TIA-574 원문은 유료라 인용하지 않음. 그림(make.mjs `db9-null-modem`) | ✅ 10/23 |
+| 21 | 그레이코드 변환(기·방법)(구글·네이버), gray code converter(구글) | `/tools/integer/` 에 합침 | 절대형 엔코더 출력 — 엔코더 도구와 서로 연결 | ✅ 10/23 (14 에 포함) |
+| 22 | 전압 분배 계산기(네이버·구글), 분압 저항 계산(기)(구글), voltage divider calculator(구글) | 없음 | 정의식. NTC 도구에 분압이 일부 있음 — 저항 E 계열·부하 전류까지 넣으면 따로 낼 만함 | 다음 — 중 |
+| 23 | adc 계산(기)·adc 분해능 (계산)·lsb 계산(구글), adc resolution calculator(구글) | 없음 | LSB·코드 ↔ 전압은 NTC 도구에 있음. 4–20mA 환산(PLC 카운트)과 묶어 «아날로그 입력 분해능» 으로 내면 고유함 | 다음 — 중 |
+| 24 | rc 시정수 (계산기)·차단주파수 계산기·rc 필터 계산기(구글), rc time constant calculator·low pass filter calculator(구글) | 없음 | τ = RC, fc = 1/(2πRC) 정의식. 범용 사이트가 많음 | 다음 — 낮음 |
+| 25 | 3상 전력 계산(기)·kva 계산(기)·kva kw 변환(계산기)·역률 계산(네이버·구글), kva to amps (3 phase)(구글) | 없음 | 모터 전류 계산기와 겹침 — 따로 페이지보다 그 도구에 kVA ↔ A 칸을 더하는 쪽 | 다음 — 기존 도구 확장 |
+| 26 | 콘덴서 용량 계산(기)·역률 개선 콘덴서 용량 계산(구글) | 없음 | Qc = P(tanφ1 − tanφ2) 정의식은 확인 가능하나 설비 설계 쪽이라 독자층과 거리 | 다음 — 낮음 |
+| 27 | 전자기어비 계산(기)·서보 전자기어비 계산(구글), electronic gear ratio calculator(구글) | 없음 | 제조사마다 파라미터 이름·식이 달라 매뉴얼 원문을 제조사별로 확인해야 함 — 10/23 확인 안 함 | 보류, 매뉴얼 확인 뒤 |
+| 28 | ethernet ip basics·profinet basics·how does profinet work(구글), ethercat 원리(구글) | 없음 | PortDock 도구가 다루지 않는 프로토콜이고 ODVA·PI 원문 확인이 필요. 일반 소개 글은 이미 많음 | 보류 |
+| 29 | 변압기 용량 계산(서·식·공식)(구글) | 없음 | 수용률·부하율 같은 설계 가정에 따라 값이 달라 표준 수치로 확정할 수 없음 | 뺌 |
+| 30 | pwm 듀티 비 계산(구글, 하나뿐) | 없음 | 자동완성이 거의 없음 | 뺌 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
@@ -134,7 +168,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 10종.
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485, Modbus Master → 통신 시간·서브넷·모터 회전수, TCP·UDP·Net Scan → 서브넷).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더).
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류, 패널 미터 → 압력 단위). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 9개·가이드 전부·장비 목록.
 
