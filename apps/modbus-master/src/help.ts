@@ -74,7 +74,7 @@ export const help: HelpDoc = {
     {
       title: "타임아웃·재시도·요청 간격",
       body: [
-        "- «응답 기다림(ms)»: 요청을 보낸 뒤 응답이 다 올 때까지 기다리는 시간. 넘으면 «타임아웃». 시리얼 9600bps 에서 125 레지스터 응답은 전송에만 약 270ms 가 걸리므로 넉넉히(기본 1000ms) 둡니다. 게이트웨이·무선은 더 깁니다.",
+        "- «응답 기다림(ms)»: 요청을 보낸 뒤 응답이 다 올 때까지 기다리는 시간. 넘으면 «타임아웃». 시리얼 9600bps 에서 125 레지스터 응답(255바이트 × 11비트)은 전송에만 약 290ms 가 걸리므로 넉넉히(기본 1000ms) 둡니다. 게이트웨이·무선은 더 깁니다.",
         "- «재시도»: 타임아웃·CRC 오류·모양 틀린 응답이면 그만큼 다시 보냅니다. 예외 응답은 다시 보내도 같아서 재시도하지 않습니다. 재시도도 «요청» 통계에 셉니다.",
         "- «요청 간격(ms)»: 앞 응답을 받은 뒤 다음 요청까지 쉬는 시간. 장비가 연달아 오는 요청을 놓치거나(타임아웃이 띄엄띄엄) 예외 06(바쁨)이 나오면 늘립니다. RS-485 에 여러 장비가 있으면 20~50ms 가 무난합니다.",
         "- 표의 «주기(ms)»: 그 표를 얼마마다 읽을지. 0 이면 «한 번 읽기»(F6)로만 읽습니다. 버스는 하나라 여러 표는 차례로 읽고, 장비가 느려 주기를 넘기면 밀린 것을 몰아서 읽지 않고 다음 차례부터 이어 갑니다.",
@@ -225,7 +225,7 @@ export const help: HelpDoc = {
     {
       title: "Timeout, retries and delay",
       body: [
-        "- «Response timeout (ms)»: how long to wait for the whole reply. At 9600 bps a 125-register reply takes about 270 ms just to transmit, so keep it generous (1000 ms default). Gateways and radio links need more.",
+        "- «Response timeout (ms)»: how long to wait for the whole reply. At 9600 bps a 125-register reply (255 bytes × 11 bits) takes about 290 ms just to transmit, so keep it generous (1000 ms default). Gateways and radio links need more.",
         "- «Retries»: resend after a timeout, CRC error or malformed reply. Exceptions are not retried (the answer would be the same). Retries count as requests in the statistics.",
         "- «Delay between polls (ms)»: pause after a reply before the next request. Increase it if the device misses back-to-back requests (scattered timeouts) or answers exception 06 (busy). 20–50 ms suits RS-485 lines with several devices.",
         "- A table's «Every (ms)»: how often it is read; 0 = only with «Read once» (F6). There is one bus, so tables are read in turn; if the device is too slow for the interval, missed polls are not bunched up.",

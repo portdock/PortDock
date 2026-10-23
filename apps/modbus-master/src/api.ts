@@ -141,7 +141,7 @@ export const EXCEPTIONS: Record<number, [string, string, string]> = {
   6: ["Server Device Busy", "장비 바쁨 — 잠시 뒤 다시 보내세요(요청 간격을 늘려 보세요)", "busy — retry later (try a longer delay between polls)"],
   8: ["Memory Parity Error", "메모리 패리티 오류", "memory parity error on the device"],
   10: ["Gateway Path Unavailable", "게이트웨이 경로 없음 — 게이트웨이의 국번·경로 설정을 확인하세요", "the gateway has no path to this Slave ID — check the gateway's routing/unit IDs"],
-  11: ["Gateway Target Failed to Respond", "게이트웨이 대상 응답 없음 — 게이트웨이 뒤 장비가 답하지 않습니다", "the device behind the gateway did not answer"],
+  11: ["Gateway Target Device Failed to Respond", "게이트웨이 대상 응답 없음 — 게이트웨이 뒤 장비가 답하지 않습니다", "the device behind the gateway did not answer"],
 };
 
 /** 결과를 사람이 읽는 한 줄로 — 예외는 뜻과 할 일까지 */
