@@ -1,0 +1,1442 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "ls-electric/s300",
+  "manufacturer": {
+    "ko": "LS일렉트릭",
+    "en": "LS ELECTRIC"
+  },
+  "model": "LSLV-S300",
+  "models": [
+    "S300"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "LS일렉트릭 S300 인버터 (내장 RS-485)",
+    "en": "LS ELECTRIC S300 AC drive (built-in RS-485)"
+  },
+  "summary": {
+    "ko": "내장 RS-485 Modbus-RTU. 확장 공통 영역의 모니터링(0300h~)·제어(0380h~)·트립(0400h~) 영역을 담았다. INTC-06 출하값(1)에서는 프레임 주소 = 매뉴얼 주소 − 1.",
+    "en": "Built-in RS-485 Modbus-RTU. Covers the expansion common area: monitoring (0300h-), control (0380h-) and trip (0400h-). With INTC-06 at its default (1), frame address = manual address - 1."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      250
+    ],
+    "maxRegisters": 16,
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: INTC-06(Modbus Addr Mode) 출하값 1(Yes)에서는 프레임 주소 = 매뉴얼 통신 주소 − 1. 근거: p.454(PDF 488) 예 — 01 03 03 12 00 01 로 읽으면 0311h(출력 주파수, 응답 1770h = 60.00 Hz)가 온다. p.510(PDF 544) FC16 예 — 0383h(가속 시간)에 쓸 때 시작 주소 0382h. INTC-06 = 0(No) 이면 매뉴얼 주소 그대로이므로 address 에 1 을 더해 쓴다.",
+        "en": "Addressing: with INTC-06 (Modbus Addr Mode) at its default 1 (Yes), frame address = manual address - 1. Evidence: p.454 (PDF 488) — request 01 03 03 12 00 01 returns 0311h (output frequency, reply 1770h = 60.00 Hz); p.510 (PDF 544) FC16 example writes 0383h (accel time) with start address 0382h. With INTC-06 = 0 (No) the manual address is used as-is, so add 1 to address."
+      },
+      {
+        "ko": "p.454 의 INTC-06 = 0 예는 0312h 를 «출력 전류 1.0 A» 라고 적지만, 확장 공통 영역 표(p.465)에서 0312h 는 출력 rpm, 출력 전류는 0310h 다 — 매뉴얼 안에서 어긋나는 곳(영문판 p.456 도 같음). 출하값(1) 예와 FC16 예는 표와 맞는다.",
+        "en": "The INTC-06 = 0 example on p.454 labels 0312h as 'output current 1.0 A', but the table (p.465) lists 0312h as output rpm and 0310h as output current - an inconsistency (same in the English manual p.456). The default-mode example and the FC16 example agree with the table."
+      },
+      {
+        "ko": "초기값: INTC-01 국번 1(1~250), INTC-02 0 Modbus RTU, INTC-03 3 = 9600 bps, INTC-04 0 = D8/PN/S1(8N1·8N2·8E1·8O1 선택), INTC-05 응답 지연 5 ms, INTC-06 1 (p.452~454, PDF 486~488).",
+        "en": "Defaults: INTC-01 ID 1 (1-250), INTC-02 0 Modbus RTU, INTC-03 3 = 9600 bps, INTC-04 0 = D8/PN/S1 (8N1/8N2/8E1/8O1), INTC-05 response delay 5 ms, INTC-06 1 (p.452-454, PDF 486-488)."
+      },
+      {
+        "ko": "INTC-03 설정 6 은 «56000bps» 로, 통신 규격표(p.450, PDF 484)에는 57,600 bps 로 적혀 있어 bauds 에서 뺐다.",
+        "en": "INTC-03 setting 6 reads '56000bps' while the spec table (p.450, PDF 484) lists 57,600 bps, so it is left out of bauds."
+      },
+      {
+        "ko": "함수 코드 03·04(같게 처리)·06·16, 한 번에 최대 16개. 예외 코드 01·02·03·06·14(Write-Protection) (p.505~509, PDF 539~543). 최대 31대.",
+        "en": "Function codes 03/04 (handled the same), 06, 16; up to 16 registers per request. Exception codes 01/02/03/06/14 (write protection) (p.505-509, PDF 539-543). Up to 31 drives."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 767,
+      "manualAddress": "0300h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 모델",
+        "en": "Inverter model"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 17,
+          "ko": "S300 (0011h)",
+          "en": "S300 (0011h)"
+        }
+      ],
+      "ref": "p.462 (PDF 496)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 768,
+      "manualAddress": "0301h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 용량(비트 부호)",
+        "en": "Inverter capacity (bit-coded)"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "B15~B14 단위(0 W, 1 kW, 2 MW), B13~B4 정수부, B3~B0 소수부. 예: 1.5 kW = 4015h, 7.5 kW = 4075h, 400 W = 1900h.",
+        "en": "B15-B14 unit (0 W, 1 kW, 2 MW), B13-B4 integer part, B3-B0 fraction. e.g. 1.5 kW = 4015h, 7.5 kW = 4075h, 400 W = 1900h."
+      },
+      "ref": "p.462 (PDF 496)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 769,
+      "manualAddress": "0302h",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전압·전원·냉각 방식",
+        "en": "Input voltage / phase / cooling"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 561,
+          "ko": "200V급 3상 강냉식",
+          "en": "200 V class, 3-phase, forced cooling"
+        },
+        {
+          "value": 1073,
+          "ko": "400V급 3상 강냉식",
+          "en": "400 V class, 3-phase, forced cooling"
+        }
+      ],
+      "ref": "p.463 (PDF 497)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 770,
+      "manualAddress": "0303h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 S/W 버전",
+        "en": "Inverter S/W version"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "16진: 0066h = Version 1.00(매뉴얼 예)",
+        "en": "Hex: 0066h = version 1.00 (manual example)"
+      },
+      "ref": "p.463 (PDF 497)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 772,
+      "manualAddress": "0305h",
+      "type": "u16",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operating state"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "B15~B12: 0 트립, 2 경보, 4 운전 비활성, 8 정상. B7~B4: 1 속도 검색, 2 가속, 3 정속, 4 감속, 5 감속 정지, 6 H/W 과전류 억제, 7 S/W 과전류 억제, 8 드웰 운전. B3~B0: 0 정지, 1 정방향, 2 역방향, 3 DC 운전.",
+        "en": "B15-B12: 0 trip, 2 warning, 4 run disabled, 8 normal. B7-B4: 1 speed search, 2 accelerating, 3 steady, 4 decelerating, 5 decel to stop, 6 H/W overcurrent suppression, 7 S/W overcurrent suppression, 8 dwell. B3-B0: 0 stop, 1 forward, 2 reverse, 3 DC operation."
+      },
+      "ref": "p.463 (PDF 497)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 773,
+      "manualAddress": "0306h",
+      "type": "u16",
+      "name": {
+        "ko": "운전·주파수 지령 소스",
+        "en": "Run / frequency command source"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "B15~B8 운전 지령 소스: 0 Smart Operator, 1 통신 옵션, 3 내장 RS485, 4 단자대, 5 USB. B7~B0 주파수 지령 소스: 0 Smart Operator 속도, 1 Smart Operator 토크, 2~4 업/다운, 5 AI1, 6 AI2, 7 AI3, 9 펄스, 10 내장 RS485, 11 통신 옵션, 13 조그, 14 PID, 15 USB, 25 다단속.",
+        "en": "B15-B8 run source: 0 Smart Operator, 1 comm option, 3 built-in RS485, 4 terminal, 5 USB. B7-B0 frequency source: 0 Smart Operator speed, 1 Smart Operator torque, 2-4 up/down, 5 AI1, 6 AI2, 7 AI3, 9 pulse, 10 built-in RS485, 11 comm option, 13 jog, 14 PID, 15 USB, 25 multi-step."
+      },
+      "ref": "p.464 (PDF 498)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 783,
+      "manualAddress": "0310h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 784,
+      "manualAddress": "0311h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 787,
+      "manualAddress": "0314h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "scale": 1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 788,
+      "manualAddress": "0315h",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압",
+        "en": "DC link voltage"
+      },
+      "unit": "V",
+      "scale": 1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 789,
+      "manualAddress": "0316h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 파워",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 790,
+      "manualAddress": "0317h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 토크",
+        "en": "Output torque"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.465 (PDF 499)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 799,
+      "manualAddress": "0320h",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 상태",
+        "en": "Digital input status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DI1",
+          "en": "DI1"
+        },
+        {
+          "bit": 1,
+          "ko": "DI2",
+          "en": "DI2"
+        },
+        {
+          "bit": 2,
+          "ko": "DI3",
+          "en": "DI3"
+        },
+        {
+          "bit": 3,
+          "ko": "DI4",
+          "en": "DI4"
+        },
+        {
+          "bit": 4,
+          "ko": "DI5",
+          "en": "DI5"
+        },
+        {
+          "bit": 5,
+          "ko": "DI6",
+          "en": "DI6"
+        },
+        {
+          "bit": 6,
+          "ko": "DI7",
+          "en": "DI7"
+        },
+        {
+          "bit": 7,
+          "ko": "DI8",
+          "en": "DI8"
+        }
+      ],
+      "ref": "p.466~467 (PDF 500~501)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 800,
+      "manualAddress": "0321h",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 출력 상태",
+        "en": "Digital output status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DO1",
+          "en": "DO1"
+        },
+        {
+          "bit": 1,
+          "ko": "DO2",
+          "en": "DO2"
+        },
+        {
+          "bit": 2,
+          "ko": "DO3",
+          "en": "DO3"
+        }
+      ],
+      "ref": "p.467 (PDF 501)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 803,
+      "manualAddress": "0324h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 1 (V1, I1)",
+        "en": "Analog input 1 (V1, I1)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.468 (PDF 502)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 804,
+      "manualAddress": "0325h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 2 (V2, I2)",
+        "en": "Analog input 2 (V2, I2)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.468 (PDF 502)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 805,
+      "manualAddress": "0326h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 3 (V3, I3)",
+        "en": "Analog input 3 (V3, I3)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.468 (PDF 502)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 807,
+      "manualAddress": "0328h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 출력 1",
+        "en": "Analog output 1"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.468 (PDF 502)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 812,
+      "manualAddress": "032Dh",
+      "type": "u16",
+      "name": {
+        "ko": "온도(NTC)",
+        "en": "Temperature (NTC)"
+      },
+      "unit": "℃",
+      "scale": 1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.468 (PDF 502)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 813,
+      "manualAddress": "032Eh",
+      "type": "u16",
+      "name": {
+        "ko": "전력 소비량(kWh 자리)",
+        "en": "Energy consumption (kWh part)"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "032Fh(MWh 자리)와 함께 읽는다. 스케일 칸은 «-».",
+        "en": "Read together with 032Fh (MWh part). Scale cell is '-'."
+      },
+      "ref": "p.469 (PDF 503)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 814,
+      "manualAddress": "032Fh",
+      "type": "u16",
+      "name": {
+        "ko": "전력 소비량(MWh 자리)",
+        "en": "Energy consumption (MWh part)"
+      },
+      "unit": "MWh",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.469 (PDF 503)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 895,
+      "manualAddress": "0380h",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령",
+        "en": "Frequency command"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.471 (PDF 505)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 896,
+      "manualAddress": "0381h",
+      "type": "u16",
+      "name": {
+        "ko": "rpm 지령",
+        "en": "Speed command (rpm)"
+      },
+      "unit": "rpm",
+      "scale": 1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.471 (PDF 505)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 897,
+      "manualAddress": "0382h",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령",
+        "en": "Run command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "운전",
+          "en": "Run"
+        },
+        {
+          "bit": 1,
+          "ko": "방향(0 역방향, 1 정방향)",
+          "en": "Direction (0 reverse, 1 forward)"
+        },
+        {
+          "bit": 2,
+          "ko": "트립 리셋",
+          "en": "Trip reset"
+        },
+        {
+          "bit": 3,
+          "ko": "프리 런 정지",
+          "en": "Free-run stop"
+        }
+      ],
+      "ref": "p.471 (PDF 505)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 898,
+      "manualAddress": "0383h",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간",
+        "en": "Acceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.471 (PDF 505)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 899,
+      "manualAddress": "0384h",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간",
+        "en": "Deceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.471 (PDF 505)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 900,
+      "manualAddress": "0385h",
+      "type": "u16",
+      "name": {
+        "ko": "가상 디지털 입력 제어",
+        "en": "Virtual digital input control"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "Virtual DI1",
+          "en": "Virtual DI1"
+        },
+        {
+          "bit": 1,
+          "ko": "Virtual DI2",
+          "en": "Virtual DI2"
+        },
+        {
+          "bit": 2,
+          "ko": "Virtual DI3",
+          "en": "Virtual DI3"
+        },
+        {
+          "bit": 3,
+          "ko": "Virtual DI4",
+          "en": "Virtual DI4"
+        },
+        {
+          "bit": 4,
+          "ko": "Virtual DI5",
+          "en": "Virtual DI5"
+        },
+        {
+          "bit": 5,
+          "ko": "Virtual DI6",
+          "en": "Virtual DI6"
+        },
+        {
+          "bit": 6,
+          "ko": "Virtual DI7",
+          "en": "Virtual DI7"
+        },
+        {
+          "bit": 7,
+          "ko": "Virtual DI8",
+          "en": "Virtual DI8"
+        },
+        {
+          "bit": 8,
+          "ko": "Virtual DI9",
+          "en": "Virtual DI9"
+        },
+        {
+          "bit": 9,
+          "ko": "Virtual DI10",
+          "en": "Virtual DI10"
+        },
+        {
+          "bit": 10,
+          "ko": "Virtual DI11",
+          "en": "Virtual DI11"
+        },
+        {
+          "bit": 11,
+          "ko": "Virtual DI12",
+          "en": "Virtual DI12"
+        },
+        {
+          "bit": 12,
+          "ko": "Virtual DI13",
+          "en": "Virtual DI13"
+        },
+        {
+          "bit": 13,
+          "ko": "Virtual DI14",
+          "en": "Virtual DI14"
+        },
+        {
+          "bit": 14,
+          "ko": "Virtual DI15",
+          "en": "Virtual DI15"
+        },
+        {
+          "bit": 15,
+          "ko": "Virtual DI16",
+          "en": "Virtual DI16"
+        }
+      ],
+      "description": {
+        "ko": "비트마다 0 Off, 1 On.",
+        "en": "Per bit: 0 Off, 1 On."
+      },
+      "ref": "p.472 (PDF 506)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 903,
+      "manualAddress": "0388h",
+      "type": "u16",
+      "name": {
+        "ko": "PID 레퍼런스",
+        "en": "PID reference"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.473 (PDF 507)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 904,
+      "manualAddress": "0389h",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백값",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.473 (PDF 507)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 911,
+      "manualAddress": "0390h",
+      "type": "u16",
+      "name": {
+        "ko": "토크 지령",
+        "en": "Torque command"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.473 (PDF 507)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1023,
+      "manualAddress": "0400h",
+      "type": "u16",
+      "name": {
+        "ko": "현재 트립 1 인덱스",
+        "en": "Current trip 1 index"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "ADC Offset",
+          "en": "ADC Offset"
+        },
+        {
+          "value": 1,
+          "ko": "Watchdog",
+          "en": "Watchdog"
+        },
+        {
+          "value": 2,
+          "ko": "Gate Power Loss",
+          "en": "Gate Power Loss"
+        },
+        {
+          "value": 3,
+          "ko": "Main OS Error",
+          "en": "Main OS Error"
+        },
+        {
+          "value": 4,
+          "ko": "Over Load",
+          "en": "Over Load"
+        },
+        {
+          "value": 5,
+          "ko": "Under Load",
+          "en": "Under Load"
+        },
+        {
+          "value": 6,
+          "ko": "Inverter Over Load",
+          "en": "Inverter Over Load"
+        },
+        {
+          "value": 7,
+          "ko": "E-Thermal",
+          "en": "E-Thermal"
+        },
+        {
+          "value": 8,
+          "ko": "Ground Fault",
+          "en": "Ground Fault"
+        },
+        {
+          "value": 9,
+          "ko": "Out Phase U Open",
+          "en": "Out Phase U Open"
+        },
+        {
+          "value": 10,
+          "ko": "In Phase Open",
+          "en": "In Phase Open"
+        },
+        {
+          "value": 11,
+          "ko": "Over Speed",
+          "en": "Over Speed"
+        },
+        {
+          "value": 12,
+          "ko": "Speed Deviation",
+          "en": "Speed Deviation"
+        },
+        {
+          "value": 13,
+          "ko": "Drv Over Heat",
+          "en": "Drv Over Heat"
+        },
+        {
+          "value": 14,
+          "ko": "NTC Open",
+          "en": "NTC Open"
+        },
+        {
+          "value": 15,
+          "ko": "NTC Short",
+          "en": "NTC Short"
+        },
+        {
+          "value": 16,
+          "ko": "Over Current",
+          "en": "Over Current"
+        },
+        {
+          "value": 17,
+          "ko": "Over Voltage",
+          "en": "Over Voltage"
+        },
+        {
+          "value": 18,
+          "ko": "IO Board",
+          "en": "IO Board"
+        },
+        {
+          "value": 19,
+          "ko": "BX",
+          "en": "BX"
+        },
+        {
+          "value": 20,
+          "ko": "Mechanical Brake",
+          "en": "Mechanical Brake"
+        },
+        {
+          "value": 21,
+          "ko": "External 1",
+          "en": "External 1"
+        },
+        {
+          "value": 22,
+          "ko": "External 2",
+          "en": "External 2"
+        },
+        {
+          "value": 23,
+          "ko": "External 3",
+          "en": "External 3"
+        },
+        {
+          "value": 24,
+          "ko": "External 4",
+          "en": "External 4"
+        },
+        {
+          "value": 25,
+          "ko": "Arm Short",
+          "en": "Arm Short"
+        },
+        {
+          "value": 26,
+          "ko": "Fuse Open",
+          "en": "Fuse Open"
+        },
+        {
+          "value": 27,
+          "ko": "Encoder",
+          "en": "Encoder"
+        },
+        {
+          "value": 28,
+          "ko": "Encoder No Connection",
+          "en": "Encoder No Connection"
+        },
+        {
+          "value": 29,
+          "ko": "Encoder Wrong Dir",
+          "en": "Encoder Wrong Dir"
+        },
+        {
+          "value": 30,
+          "ko": "Motor Over Heat",
+          "en": "Motor Over Heat"
+        },
+        {
+          "value": 31,
+          "ko": "Main Fan Fault",
+          "en": "Main Fan Fault"
+        },
+        {
+          "value": 32,
+          "ko": "Parameter Write",
+          "en": "Parameter Write"
+        },
+        {
+          "value": 33,
+          "ko": "Pre PID Fail",
+          "en": "Pre PID Fail"
+        },
+        {
+          "value": 34,
+          "ko": "No Motor",
+          "en": "No Motor"
+        },
+        {
+          "value": 35,
+          "ko": "Option 1",
+          "en": "Option 1"
+        },
+        {
+          "value": 36,
+          "ko": "Option 2",
+          "en": "Option 2"
+        },
+        {
+          "value": 37,
+          "ko": "Option 3",
+          "en": "Option 3"
+        },
+        {
+          "value": 38,
+          "ko": "Low Voltage",
+          "en": "Low Voltage"
+        },
+        {
+          "value": 39,
+          "ko": "Lost Sensor",
+          "en": "Lost Sensor"
+        },
+        {
+          "value": 40,
+          "ko": "Lost Int Comm",
+          "en": "Lost Int Comm"
+        },
+        {
+          "value": 41,
+          "ko": "Lost Opt Comm",
+          "en": "Lost Opt Comm"
+        },
+        {
+          "value": 42,
+          "ko": "Lost Keypad",
+          "en": "Lost Keypad"
+        },
+        {
+          "value": 43,
+          "ko": "Lost USB",
+          "en": "Lost USB"
+        },
+        {
+          "value": 44,
+          "ko": "Lost AI 1",
+          "en": "Lost AI 1"
+        },
+        {
+          "value": 45,
+          "ko": "Lost AI 2",
+          "en": "Lost AI 2"
+        },
+        {
+          "value": 46,
+          "ko": "Lost AI 3",
+          "en": "Lost AI 3"
+        },
+        {
+          "value": 47,
+          "ko": "Lost AI 4",
+          "en": "Lost AI 4"
+        },
+        {
+          "value": 48,
+          "ko": "Lost Ext AI 1",
+          "en": "Lost Ext AI 1"
+        },
+        {
+          "value": 49,
+          "ko": "Lost Ext AI 2",
+          "en": "Lost Ext AI 2"
+        },
+        {
+          "value": 50,
+          "ko": "Lost Ext AI 3",
+          "en": "Lost Ext AI 3"
+        },
+        {
+          "value": 51,
+          "ko": "Lost Ext AI 4",
+          "en": "Lost Ext AI 4"
+        },
+        {
+          "value": 52,
+          "ko": "STO Feedback A",
+          "en": "STO Feedback A"
+        },
+        {
+          "value": 53,
+          "ko": "STO Feedback B",
+          "en": "STO Feedback B"
+        },
+        {
+          "value": 54,
+          "ko": "STO P24 Fault",
+          "en": "STO P24 Fault"
+        },
+        {
+          "value": 55,
+          "ko": "STO P5 Fault",
+          "en": "STO P5 Fault"
+        },
+        {
+          "value": 56,
+          "ko": "Aux Fan Fault",
+          "en": "Aux Fan Fault"
+        },
+        {
+          "value": 57,
+          "ko": "Control Fan Fault",
+          "en": "Control Fan Fault"
+        },
+        {
+          "value": 58,
+          "ko": "Data Storage",
+          "en": "Data Storage"
+        },
+        {
+          "value": 59,
+          "ko": "Precharge Fail",
+          "en": "Precharge Fail"
+        },
+        {
+          "value": 60,
+          "ko": "H/W OCS Fail",
+          "en": "H/W OCS Fail"
+        },
+        {
+          "value": 61,
+          "ko": "TR Tune Fail",
+          "en": "TR Tune Fail"
+        },
+        {
+          "value": 62,
+          "ko": "RS Tune Fail",
+          "en": "RS Tune Fail"
+        },
+        {
+          "value": 63,
+          "ko": "SLS Tune Fail",
+          "en": "SLS Tune Fail"
+        },
+        {
+          "value": 64,
+          "ko": "LS Tune Fail",
+          "en": "LS Tune Fail"
+        },
+        {
+          "value": 65,
+          "ko": "IF Tune Fail",
+          "en": "IF Tune Fail"
+        },
+        {
+          "value": 66,
+          "ko": "MC Fault",
+          "en": "MC Fault"
+        },
+        {
+          "value": 67,
+          "ko": "Reserved",
+          "en": "Reserved"
+        },
+        {
+          "value": 68,
+          "ko": "Lost P24V",
+          "en": "Lost P24V"
+        },
+        {
+          "value": 69,
+          "ko": "Out Phase V Open",
+          "en": "Out Phase V Open"
+        },
+        {
+          "value": 70,
+          "ko": "Out Phase W Open",
+          "en": "Out Phase W Open"
+        },
+        {
+          "value": 71,
+          "ko": "Reset/Restart Fail",
+          "en": "Reset/Restart Fail"
+        },
+        {
+          "value": 72,
+          "ko": "Outline Short",
+          "en": "Outline Short"
+        },
+        {
+          "value": 73,
+          "ko": "KEB Safety Stop",
+          "en": "KEB Safety Stop"
+        },
+        {
+          "value": 74,
+          "ko": "System Error-1",
+          "en": "System Error-1"
+        },
+        {
+          "value": 75,
+          "ko": "Br Release Invalid",
+          "en": "Br Release Invalid"
+        },
+        {
+          "value": 76,
+          "ko": "Br Releasing Fail",
+          "en": "Br Releasing Fail"
+        },
+        {
+          "value": 77,
+          "ko": "Br Engaging Fail",
+          "en": "Br Engaging Fail"
+        },
+        {
+          "value": 78,
+          "ko": "Main Cap Diag Fail",
+          "en": "Main Cap Diag Fail"
+        },
+        {
+          "value": 79,
+          "ko": "Encoder Tuning Err",
+          "en": "Encoder Tuning Err"
+        },
+        {
+          "value": 80,
+          "ko": "Pole Pos Detect F",
+          "en": "Pole Pos Detect F"
+        },
+        {
+          "value": 81,
+          "ko": "Pos Max Track Err",
+          "en": "Pos Max Track Err"
+        },
+        {
+          "value": 82,
+          "ko": "Pos Tar Bound Err",
+          "en": "Pos Tar Bound Err"
+        },
+        {
+          "value": 83,
+          "ko": "Pos SW Limit High",
+          "en": "Pos SW Limit High"
+        },
+        {
+          "value": 84,
+          "ko": "Pos SW Limit Low",
+          "en": "Pos SW Limit Low"
+        },
+        {
+          "value": 85,
+          "ko": "Pos HW Limit High",
+          "en": "Pos HW Limit High"
+        },
+        {
+          "value": 86,
+          "ko": "Pos HW Limit Low",
+          "en": "Pos HW Limit Low"
+        },
+        {
+          "value": 87,
+          "ko": "Pos Multi Sync F",
+          "en": "Pos Multi Sync F"
+        },
+        {
+          "value": 88,
+          "ko": "Cur Pos Overf Err",
+          "en": "Cur Pos Overf Err"
+        },
+        {
+          "value": 89,
+          "ko": "Power Index Error",
+          "en": "Power Index Error"
+        },
+        {
+          "value": 90,
+          "ko": "CAN Bus Error",
+          "en": "CAN Bus Error"
+        },
+        {
+          "value": 91,
+          "ko": "Prevent Cmd Trip",
+          "en": "Prevent Cmd Trip"
+        },
+        {
+          "value": 92,
+          "ko": "WebBreak Trip",
+          "en": "WebBreak Trip"
+        },
+        {
+          "value": 93,
+          "ko": "Ambient Sensor Flt",
+          "en": "Ambient Sensor Flt"
+        },
+        {
+          "value": 94,
+          "ko": "Ambient Over Heat",
+          "en": "Ambient Over Heat"
+        },
+        {
+          "value": 95,
+          "ko": "Ambient Under Heat",
+          "en": "Ambient Under Heat"
+        },
+        {
+          "value": 96,
+          "ko": "Ana In Lvl Detect",
+          "en": "Ana In Lvl Detect"
+        },
+        {
+          "value": 97,
+          "ko": "RP Wire Error",
+          "en": "RP Wire Error"
+        },
+        {
+          "value": 65535,
+          "ko": "없음(FFFFh)",
+          "en": "None (FFFFh)"
+        }
+      ],
+      "description": {
+        "ko": "트립 모드 영역(읽기 전용).",
+        "en": "Trip mode area (read-only)."
+      },
+      "ref": "p.477~480 (PDF 511~514)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1024,
+      "manualAddress": "0401h",
+      "type": "u16",
+      "name": {
+        "ko": "현재 트립 2 인덱스",
+        "en": "Current trip 2 index"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "값의 뜻은 0400h 와 같다.",
+        "en": "Same codes as 0400h."
+      },
+      "ref": "p.480 (PDF 514)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1030,
+      "manualAddress": "0407h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 직전 인버터 상태",
+        "en": "Drive state before trip"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 1,
+          "ko": "0속 운전",
+          "en": "Zero-speed run"
+        },
+        {
+          "value": 2,
+          "ko": "가속 운전",
+          "en": "Accelerating"
+        },
+        {
+          "value": 3,
+          "ko": "감속 운전",
+          "en": "Decelerating"
+        },
+        {
+          "value": 4,
+          "ko": "정속 운전",
+          "en": "Steady speed"
+        },
+        {
+          "value": 5,
+          "ko": "토크 운전",
+          "en": "Torque run"
+        }
+      ],
+      "ref": "p.481 (PDF 515)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "통신으로 운전·주파수를 주려면 DRV-10 = 4(Internal Comm.), DRV-11 = 6(Internal Comm.) (p.455, PDF 489).",
+      "en": "Set DRV-10 = 4 (Internal Comm.) and DRV-11 = 6 (Internal Comm.) to command over RS-485 (p.455, PDF 489)."
+    },
+    {
+      "ko": "매뉴얼 표에는 R/W 칸이 없다. 0300h~ 은 «모니터링 영역», 0380h~ 은 «인버터 제어 영역», 0400h~ 은 «트립 모드 영역(읽기 전용)» 이라는 절 이름에 따라 r·rw·r 로 두었다.",
+      "en": "The manual's tables have no R/W column. Access follows the section titles: 0300h- 'monitoring area' (r), 0380h- 'inverter control area' (rw), 0400h- 'trip mode area (read-only)' (r)."
+    },
+    {
+      "ko": "스케일 칸이 «-»·«0» 으로 적힌 항목(목표값 030Ah~030Fh, 출력 rpm 0312h, 누적 시간 0340h~ 등)과 R/W 칸 없는 호환 공통 영역(0000h~)은 넣지 않았다.",
+      "en": "Entries whose scale cell is '-' or '0' (target values 030Ah-030Fh, output rpm 0312h, run-time counters 0340h- etc.) and the compatible common area (0000h-, no R/W column) are omitted."
+    }
+  ],
+  "sources": [
+    {
+      "title": "LSLV-S300 Series 사용 설명서 (S300_User Manual_Standard_V1.9_260903_KR.pdf)",
+      "publisher": "LS ELECTRIC",
+      "edition": {
+        "ko": "V1.9, 2026-09-03 (개정 이력 p.820)",
+        "en": "V1.9, 2026-09-03 (revision history p.820)"
+      },
+      "url": "https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/17889361069280/S300_User%20Manual_Standard_V1.9_260903_KR.pdf",
+      "pages": {
+        "ko": "10장 통신 기능 p.450~481 (PDF 484~515), 통신 예 p.510 (PDF 544)",
+        "en": "chapter 10 communication pp.450-481 (PDF 484-515), example p.510 (PDF 544)"
+      },
+      "checked": "2026-10-23"
+    },
+    {
+      "title": "LSLV-S300 Series User Manual (S300_User Manual_Standard_V1.8_260903_EN.pdf)",
+      "publisher": "LS ELECTRIC",
+      "edition": {
+        "ko": "영문 V1.8, 2026-09-03",
+        "en": "English V1.8, 2026-09-03"
+      },
+      "url": "https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/17889364652080/S300_User%20Manual_Standard_V1.8_260903_EN.pdf",
+      "pages": {
+        "ko": "INTC-06 예 p.456 (PDF 490), 확장 공통 영역 p.464~ (PDF 498~), FC16 예 p.512 (PDF 546) — 국문판과 대조용",
+        "en": "INTC-06 example p.456 (PDF 490), expansion common area p.464- (PDF 498-), FC16 example p.512 (PDF 546) - cross-check"
+      },
+      "checked": "2026-10-23"
+    }
+  ]
+}
