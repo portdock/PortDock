@@ -181,7 +181,7 @@
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
 - 가이드 → 이어지는 도구(`tools`)·이어 읽을 가이드(`related`)·웹 도구(`webTools`)·장비 목록(`devices`)·내려받기.
-- 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 10종.
+- 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
 - 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC).

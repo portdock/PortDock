@@ -1,6 +1,7 @@
 // 가이드 글 — 검색으로 들어오는 현장 질문에 답한다. 예시 바이트·CRC 는 lib/checksum.ts 로 계산해 확인한 값만 쓴다.
 import type { Lang, Tool } from "./tools";
 import type { Device } from "@shared/devices";
+import { DEVICES } from "./devices";
 
 /** 본문 덩어리: 문단 · 소제목 · 목록 · 코드(바이트) · 표 · 그림 */
 export type Block =
@@ -95,7 +96,7 @@ export const GUIDES: Guide[] = [
             rows: [
               ["9600", "1.15 ms", "4.0 ms", "9.2 ms"],
               ["19200", "0.57 ms", "2.0 ms", "4.6 ms"],
-              ["38400", "0.29 ms", "1.0 ms", "2.3 ms"],
+              ["38400", "0.29 ms", "1.0 ms (규격 권장 1.75 ms)", "2.3 ms"],
               ["115200", "0.10 ms", "0.33 ms (규격 권장 1.75 ms)", "0.8 ms"],
             ],
           },
@@ -149,7 +150,7 @@ export const GUIDES: Guide[] = [
             rows: [
               ["9600", "1.15 ms", "4.0 ms", "9.2 ms"],
               ["19200", "0.57 ms", "2.0 ms", "4.6 ms"],
-              ["38400", "0.29 ms", "1.0 ms", "2.3 ms"],
+              ["38400", "0.29 ms", "1.0 ms (spec recommends 1.75 ms)", "2.3 ms"],
               ["115200", "0.10 ms", "0.33 ms (spec recommends 1.75 ms)", "0.8 ms"],
             ],
           },
@@ -303,7 +304,7 @@ export const GUIDES: Guide[] = [
         { h: "1. 국번(슬레이브 ID)" },
         { p: "요청의 첫 바이트가 장비 국번과 다르면 장비는 오류도 없이 조용히 무시합니다. 장비 설정 메뉴의 국번을 확인하고, 모르면 국번을 차례로 물어봅니다(PortDock Modbus Master «찾기… → 국번 찾기», 국번마다 기다림 기본 200 ms — 예외로 답해도 «장비 있음» 으로 봅니다). 국번 0 은 브로드캐스트라서 장비가 받아도 답하지 않습니다." },
         { h: "2. 속도·데이터 비트·패리티·정지 비트" },
-        { p: "하나라도 다르면 장비가 바이트를 제대로 읽지 못해 답하지 않거나, 답이 와도 CRC 가 틀립니다. 출하값은 장비마다 다릅니다. 이 사이트의 장비 10종만 봐도 9600 bps 가 많지만 LS ELECTRIC GIMAC1000 은 38400 bps, 루텍 Accura 3300E·2300 은 짝수 패리티, 오토닉스 TK·TX·MT4W 는 정지 비트 2 가 출하값입니다." },
+        { p: `하나라도 다르면 장비가 바이트를 제대로 읽지 못해 답하지 않거나, 답이 와도 CRC 가 틀립니다. 출하값은 장비마다 다릅니다. 이 사이트의 장비 ${DEVICES.length}종만 봐도 9600 bps 가 많지만 LS ELECTRIC GIMAC1000 은 38400 bps, 루텍 Accura 3300E·2300 은 짝수 패리티, 오토닉스 TK·TX·MT4W 는 정지 비트 2 가 출하값입니다.` },
         { p: "Modbus 시리얼 규격은 짝수 패리티를 기본으로 하고 패리티를 쓰지 않으면 정지 비트 2 를 쓰도록 정하지만, 8N1 로 출하되는 장비도 많습니다. 규격이 아니라 장비 매뉴얼 값을 따르세요. 장비 페이지 맨 위 «통신 기본값» 표에 매뉴얼 쪽 번호와 함께 정리해 두었습니다." },
         { h: "3. 배선과 변환기 (RTU)" },
         {
@@ -343,7 +344,7 @@ export const GUIDES: Guide[] = [
         { h: "7. 가끔만 타임아웃이 난다면" },
         {
           ul: [
-            "응답 기다림(타임아웃)을 넉넉히: 9600 bps 에서 125 레지스터 응답은 전송에만 약 270 ms 가 걸립니다. 게이트웨이·무선 구간은 더 깁니다.",
+            "응답 기다림(타임아웃)을 넉넉히: 9600 bps 에서 125 레지스터 응답(255바이트 × 11비트)은 전송에만 약 290 ms 가 걸립니다. 게이트웨이·무선 구간은 더 깁니다.",
             "요청 간격: 장비가 연달아 오는 요청을 놓치면 앞 응답과 다음 요청 사이를 띄웁니다. RS-485 에 여러 장비가 있으면 20~50 ms 가 무난합니다.",
             "USB-시리얼 변환기는 데이터를 몇 ms 단위로 묶어 넘겨 응답이 늦게 도착할 수 있습니다 — 변환기 지연 글을 보세요.",
             "재시도 1~2 회. 예외 응답은 다시 보내도 같으므로 재시도 대상이 아닙니다.",
@@ -371,7 +372,7 @@ export const GUIDES: Guide[] = [
         { h: "1. Slave ID" },
         { p: "If the first byte of the request does not match the device's slave ID, the device ignores it silently — no error comes back. Check the ID in the device menu; if you do not know it, ask each ID in turn (PortDock Modbus Master «Scan… → Slave ID scan», 200 ms wait per ID by default; an exception reply also counts as «device present»). ID 0 is broadcast: devices act on it but never reply." },
         { h: "2. Baud rate, data bits, parity, stop bits" },
-        { p: "If any of these differ, the device cannot read the bytes and stays silent, or its reply fails the CRC. Factory defaults vary: among the ten devices on this site most use 9600 bps, but the LS ELECTRIC GIMAC1000 ships at 38400 bps, the Rootech Accura 3300E and 2300 use even parity, and the Autonics TK, TX and MT4W use two stop bits." },
+        { p: `If any of these differ, the device cannot read the bytes and stays silent, or its reply fails the CRC. Factory defaults vary: among the ${DEVICES.length} devices on this site most use 9600 bps, but the LS ELECTRIC GIMAC1000 ships at 38400 bps, the Rootech Accura 3300E and 2300 use even parity, and the Autonics TK, TX and MT4W use two stop bits.` },
         { p: "The Modbus serial specification makes even parity the default and asks for two stop bits when no parity is used, yet many devices ship as 8N1. Follow the device manual, not the specification. Each device page lists its defaults at the top, with manual page numbers." },
         { h: "3. Wiring and adapter (RTU)" },
         {
@@ -411,7 +412,7 @@ export const GUIDES: Guide[] = [
         { h: "7. If timeouts happen only now and then" },
         {
           ul: [
-            "Allow enough response time: at 9600 bps a 125-register reply takes about 270 ms on the wire alone. Gateways and radio links add more.",
+            "Allow enough response time: at 9600 bps a 125-register reply (255 bytes × 11 bits) takes about 290 ms on the wire alone. Gateways and radio links add more.",
             "Delay between requests: if the device misses back-to-back requests, leave a gap after each reply. 20–50 ms works well with several devices on RS-485.",
             "USB-serial adapters hand data over in chunks of a few milliseconds, so replies can arrive late — see the adapter latency guide.",
             "Retry once or twice. Exception replies are not retried; they would only repeat.",
@@ -1818,7 +1819,7 @@ export const GUIDES: Guide[] = [
     webTools: ["tools/rs485/", "tools/serial-timing/"],
     devices: true,
     title: { ko: "RS485 종단·바이어스 저항 값 정하기 — 120 Ω, 560 Ω, 200 mV", en: "Choosing RS-485 termination and bias resistor values — 120 Ω, 560 Ω, 200 mV" },
-    seoTitle: { ko: "RS485 종단·바이어스 저항 값 정하기 (120Ω·560Ω) — PortDock", en: "RS-485 Termination & Bias Resistor Values: 120 Ω, 560 Ω — PortDock" },
+    seoTitle: { ko: "RS485 종단·바이어스 저항 값 정하기 (120Ω·560Ω) — PortDock", en: "RS-485 Termination and Bias Resistors: 120 Ω, 560 Ω — PortDock" },
     desc: {
       ko: "종단·바이어스(페일세이프) 저항을 몇 Ω 으로 어디에 — Modbus 규격(150 Ω·450~650 Ω)과 수신기 문턱 200 mV 로 계산해 쓰레기 바이트를 없앱니다.",
       en: "Termination and bias (failsafe) resistor values from the Modbus rules (150 Ω, 450–650 Ω) and the 200 mV receiver threshold — stop garbage bytes between frames.",
@@ -2412,7 +2413,7 @@ export const GUIDES: Guide[] = [
         { p: "04 는 장비 안의 처리 오류이므로 장비 상태 표시와 매뉴얼의 오류 항목을 봅니다. 06(바쁨)은 같은 요청을 나중에 다시 보내면 되는 경우로, 요청을 너무 촘촘히 보낼 때 나기도 합니다 — 요청 간격을 늘립니다. 그 밖의 예외는 다시 보내도 같은 답이 오므로 재시도 대상이 아닙니다." },
         { h: "0A·0B: 게이트웨이 뒤 문제" },
         { p: "Modbus TCP ↔ RTU 게이트웨이가 0A·0B 를 돌려주면 PC 와 게이트웨이 사이(TCP)는 정상입니다. 0B 는 게이트웨이 뒤 시리얼 장비가 답하지 않은 것이므로 Unit ID(= 시리얼 국번)·속도·패리티·RS-485 배선을 봅니다. 0A 는 게이트웨이의 포트·경로 설정을 봅니다." },
-        { h: "실제 장비에서 본 예" },
+        { h: "매뉴얼에 나온 장비별 예" },
         {
           ul: [
             "01: 루텍 Accura 3300E 는 함수 03·06·16 만 지원합니다 — 그 밖의 함수(예: 04)는 이 장비에게 «지원하지 않는 함수» 입니다.",
@@ -2509,10 +2510,10 @@ export const GUIDES: Guide[] = [
         { h: "03: values — what the specification does and does not say" },
         { p: "The specification defines 03 as «a fault in the structure of the remainder of a complex request, such as that the implied length is incorrect», and adds that it «specifically does NOT mean that a data item submitted for storage in a register has a value outside the expectation of the application program». Whether a device rejects an out-of-range write with 03, ignores it or clamps it is in its manual." },
         { h: "04 and 06: device state" },
-        { p: "04 is an internal processing error — check the device's status display and the error section of its manual. 06 (busy) means retry the same request later; it also appears when requests come too close together, so increase the polling interval. Other exceptions return the same answer on retry, so they are not worth retrying." },
+        { p: "04 is an internal processing error — check the device's status display and the error section of its manual. 06 (busy) means retry the same request later; it also appears when requests come too close together, so increase the delay between requests. Other exceptions return the same answer on retry, so they are not worth retrying." },
         { h: "0A and 0B: behind a gateway" },
         { p: "If a Modbus TCP ↔ RTU gateway returns 0A or 0B, the TCP link from the PC to the gateway works. 0B means the serial device behind it did not answer — check the unit ID (= serial slave ID), baud rate, parity and RS-485 wiring. 0A points to the gateway's port and routing settings." },
-        { h: "Seen on real devices" },
+        { h: "Examples from device manuals" },
         {
           ul: [
             "01: the Rootech Accura 3300E supports only functions 03, 06 and 16 — any other (e.g. 04) is an «illegal function» for it.",
