@@ -22,7 +22,9 @@ const maker = dev.manufacturer[lang];
 const name = `${maker} ${dev.model}`;
 const title = L(`${name} Modbus 레지스터 맵`, `${name} Modbus register map`);
 // 검색 결과 제목 — «<제조사> <모델> 모드버스 주소» 로 찾는 사람이 많아 «주소» 를 넣는다(site/SEO.md)
-const seoTitle = L(`${name} Modbus 주소·레지스터 맵 — PortDock`, `${name} Modbus Register Map & Addresses — PortDock`);
+// 영어 제목이 검색 결과에서 잘리지 않게(66칸) — 제조사 이름이 긴 장비는 «& Addresses» 를 뺀다
+const enTitle = `${name} Modbus Register Map & Addresses — PortDock`;
+const seoTitle = L(`${name} Modbus 주소·레지스터 맵 — PortDock`, enTitle.length > 66 ? `${name} Modbus Register Map — PortDock` : enTitle);
 const desc = L(
   `${name}(${KIND_TEXT[dev.kind].ko}) Modbus(모드버스) 통신 주소·형식·단위·배율 ${dev.registers.length}개와 통신 기본값. 매뉴얼 쪽 번호 출처, JSON, PortDock 으로 바로 읽기.`,
   `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit and scale, default settings, manual page references and JSON.`,
