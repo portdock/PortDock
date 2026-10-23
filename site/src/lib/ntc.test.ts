@@ -39,6 +39,31 @@ test("Steinhart–Hart 는 B 식이 만든 점도 잘 따라간다(가운데 온
   assert.throws(() => shFit([[0, 1], [1, 1], [2, 3]]));
 });
 
+test("Steinhart–Hart: c < 0(판별식 음수)이어도 shR 이 NaN 이 아니라 세 점을 되돌린다", () => {
+  const pts: [number, number][] = [
+    [0, 30000],
+    [25, 10000],
+    [50, 4000],
+  ];
+  const sh = shFit(pts);
+  assert.ok(sh.c < 0, `c = ${sh.c}`);
+  near(shR(sh, 25), 10000, 1e-3);
+  for (const [t, r] of pts) near(shR(sh, t), r, r * 1e-9);
+  for (const t of [10, 40]) near(shT(sh, shR(sh, t)), t, 1e-9);
+});
+
+test("Steinhart–Hart: 풀리지 않는 온도는 RangeError(NaN·Infinity 를 돌려주지 않음)", () => {
+  const sh = { a: 1e-3, b: 2e-4, c: -1e-6 };
+  assert.throws(() => shR(sh, -273.15), RangeError);
+  for (const t of [-100, -40, 125, 300]) {
+    try {
+      assert.ok(Number.isFinite(shR(sh, t)));
+    } catch (e) {
+      assert.ok(e instanceof RangeError);
+    }
+  }
+});
+
 test("분압과 되찾기: 3.3 V, 위 10 kΩ, 아래 NTC 10 kΩ → 1.65 V", () => {
   near(divider(3.3, 10000, 10000), 1.65, 1e-12);
   near(ntcFromV(3.3, 10000, 1.65, false), 10000, 1e-9);

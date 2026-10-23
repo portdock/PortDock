@@ -54,12 +54,34 @@ export function shT({ a, b, c }: SH, r: number): number {
   const L = Math.log(r);
   return 1 / (a + b * L + c * L ** 3) - K0;
 }
-/** Steinhart–Hart: 온도(°C) → 저항 — c·x³ + b·x + (a − 1/T) = 0 을 카르다노 식으로 */
+/**
+ * Steinhart–Hart: 온도(°C) → 저항 — c·x³ + b·x + (a − 1/T) = 0 (x = ln R) 을 푼다.
+ * 판별식이 0 이상이면 카르다노 식, 음수(c < 0 일 때 생길 수 있음 — 실근 셋)면 B 식처럼 c 를 뺀 근 x₀ = (1/T − a) ÷ b 에서
+ * 뉴턴법으로 shT 를 거꾸로 풀어 그 근 가까이의 실근을 고른다. 마지막에 뉴턴법으로 다듬고, 기울기(b + 3c·x²)가 0 이하인 곳
+ * (온도가 저항에 대해 한쪽으로만 변하지 않는 구간)이거나 값이 유한하지 않으면 RangeError.
+ */
 export function shR({ a, b, c }: SH, tC: number): number {
-  const y = (a - 1 / k(tC)) / c;
-  const x = Math.sqrt((b / (3 * c)) ** 3 + (y / 2) ** 2);
-  const L = Math.cbrt(x - y / 2) - Math.cbrt(x + y / 2);
-  return Math.exp(L);
+  if (!(k(tC) > 0)) throw new RangeError("T");
+  const Y = 1 / k(tC);
+  const f = (x: number) => a + b * x + c * x ** 3 - Y;
+  const df = (x: number) => b + 3 * c * x * x;
+  let x: number;
+  const y = (a - Y) / c;
+  const d = (b / (3 * c)) ** 3 + (y / 2) ** 2;
+  if (c !== 0 && d >= 0) {
+    const q = Math.sqrt(d);
+    x = Math.cbrt(q - y / 2) - Math.cbrt(q + y / 2);
+  } else x = (Y - a) / b;
+  for (let i = 0; i < 50 && Number.isFinite(x); i++) {
+    const g = df(x);
+    if (!(g > 0)) break;
+    const dx = f(x) / g;
+    x -= dx;
+    if (Math.abs(dx) < 1e-14 * Math.max(1, Math.abs(x))) break;
+  }
+  const r = Math.exp(x);
+  if (!Number.isFinite(x) || !(df(x) > 0) || !(Math.abs(f(x)) <= 1e-9 * Y) || !Number.isFinite(r) || !(r > 0)) throw new RangeError("sh");
+  return r;
 }
 
 /** 분압: 전원 vs, 위쪽 저항 top, 아래쪽 저항 bottom → 가운데 전압 */

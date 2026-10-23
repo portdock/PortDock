@@ -310,10 +310,15 @@ const inp = (id: string, v: string) => ({ id, v });
           set("tc", `${fx(T(ntcFromV(vs, rf, v, top)), 2)} °C`);
         } else set("tc", "");
         for (let tt = -40; tt <= 125; tt += tt < 0 || tt >= 100 ? 10 : 5) {
-          const rn = R(tt);
+          // Steinhart–Hart 는 세 점 밖에서 풀리지 않는 온도가 있을 수 있다 — 그 줄만 «—»
+          let rn = NaN;
+          try {
+            rn = R(tt);
+          } catch {}
           const tr = document.createElement("tr");
-          const cells = [String(tt), fx(rn, 1)];
-          if (okDiv) {
+          const cells = [String(tt), Number.isFinite(rn) ? fx(rn, 1) : "—"];
+          if (!Number.isFinite(rn)) cells.push("", "");
+          else if (okDiv) {
             const v = vOf(rn);
             cells.push(fx(v, 4), String(adcCode(v, vref, bits)));
           } else cells.push("", "");
