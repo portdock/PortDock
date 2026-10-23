@@ -5,7 +5,7 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
 - 개발: `npm run dev -w portdock-site` · 빌드: `npm run build:site` (→ `site/dist`) · 검사: `npx astro check` · 계산기 시험: `npm test -w portdock-site`
 - 사용법 페이지는 앱의 `apps/<도구>/src/help.ts` 를 그대로 읽는다 — 앱 도움말을 고치면 사이트도 바뀐다.
 - 도구 소개 문구·내려받기 파일 이름: `src/data/tools.ts`. 릴리스 파일 이름은 버전 없이 `PortDock-<App>-setup.exe` 로 고정(릴리스 작업과 맞출 것).
-- 광고는 `AdSlot` 을 둔 페이지(웹 도구·가이드)에만. 내려받기·도구 소개 페이지에는 두지 않는다(애드센스 정책 + «광고 없음» 약속).
+- 광고는 `AdSlot` 을 둔 페이지(웹 도구·가이드·장비별 레지스터 맵)에만. 내려받기·도구 소개 페이지에는 두지 않는다(애드센스 정책 + «광고 없음» 약속).
 - 사이트 주소는 빌드 변수 **`SITE_URL`**(기본 `https://portdock.dev`). canonical·hreflang·sitemap·`robots.txt`(`src/pages/robots.txt.ts`)·og:url·og:image·JSON-LD 가 모두 이 값을 따른다.
   시험: `SITE_URL=https://portdock.pages.dev npm run build -w portdock-site` 뒤 `dist/robots.txt`·`dist/sitemap-index.xml` 확인.
 - 연락 메일·후원 주소·저장소 주소는 `shared/links.ts` 한 곳(앱과 함께 읽는다). `SPONSOR_URL` 이 비면 푸터·내려받기 페이지의 «후원» 이 숨는다.

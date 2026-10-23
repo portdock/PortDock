@@ -12,7 +12,7 @@ interface Props {
 const { lang } = Astro.props;
 const t = UI[lang];
 const ko = lang === "ko";
-const updated = "2026-10-17";
+const updated = "2026-10-23";
 ---
 
 <Base
@@ -47,16 +47,16 @@ const updated = "2026-10-17";
           <ul>
             <li><b>방문 통계</b>: Cloudflare Web Analytics 로 페이지 방문 수를 셉니다. 쿠키를 쓰지 않고 개인을 알아보는 정보를 모으지 않습니다.</li>
             <li>
-              <b>광고</b>: 웹 도구·가이드 페이지에는 Google AdSense 광고가 나올 수 있습니다. Google 과 협력사는 쿠키를 써서 이전 방문을 바탕으로 광고를 보여 줄 수 있습니다.
+              <b>광고</b>: 웹 도구·가이드·장비 레지스터 맵(장비별) 페이지에는 Google AdSense 광고가 나올 수 있습니다. Google 과 협력사는 쿠키를 써서 이전 방문을 바탕으로 광고를 보여 줄 수 있습니다.
               맞춤 광고는 <a href="https://adssettings.google.com">Google 광고 설정</a>에서 끌 수 있고, 자세한 내용은{" "}
-              <a href="https://policies.google.com/technologies/ads">Google 광고 정책</a>에 있습니다. 내려받기·도구 소개 페이지에는 광고를 두지 않습니다.
+              <a href="https://policies.google.com/technologies/ads">Google 광고 정책</a>에 있습니다. 내려받기·도구 소개·사용법 페이지에는 광고를 두지 않습니다.
             </li>
-            <li><b>개발 문의</b>: 이름·메일·회사·내용은 답장에만 쓰고, 답이 끝나면 1년 안에 지웁니다. 스팸 방지를 위해 Cloudflare Turnstile 을 씁니다.</li>
+            <li><b>문의 양식</b>: 이름·메일·내용은 답장에만 쓰고, 답이 끝나면 1년 안에 지웁니다. 스팸 방지를 위해 Cloudflare Turnstile 을 씁니다.</li>
           </ul>
           <h2>3. 처리를 맡기는 곳과 국외 이전</h2>
           <ul>
             <li>Cloudflare, Inc.(미국) — 사이트 호스팅·방문 통계·스팸 방지·문의 메일 전달</li>
-            <li>Google LLC(미국) — 광고(웹 도구·가이드 페이지)</li>
+            <li>Google LLC(미국) — 광고(웹 도구·가이드·장비 레지스터 맵 페이지)</li>
             <li>Functional Software, Inc.(Sentry, 미국 법인·EU 데이터 센터) — 프로그램 오류 보고(사용자가 허락한 경우)</li>
           </ul>
           <h2>4. 문의</h2>
@@ -79,16 +79,16 @@ const updated = "2026-10-17";
           <ul>
             <li><b>Analytics</b>: Cloudflare Web Analytics counts page views without cookies or personal identifiers.</li>
             <li>
-              <b>Ads</b>: Web-tool and guide pages may show Google AdSense ads. Google and its partners may use cookies to serve ads based on prior visits. You can opt out of
+              <b>Ads</b>: Web-tool, guide and per-device register map pages may show Google AdSense ads. Google and its partners may use cookies to serve ads based on prior visits. You can opt out of
               personalised ads in <a href="https://adssettings.google.com">Google Ad Settings</a>; see <a href="https://policies.google.com/technologies/ads">Google's ad policies</a>.
-              Download and product pages carry no ads.
+              Download, product and documentation pages carry no ads.
             </li>
-            <li><b>Contact form</b>: your name, email, company and message are used only to reply and deleted within a year. Cloudflare Turnstile is used against spam.</li>
+            <li><b>Contact form</b>: your name, email and message are used only to reply and deleted within a year. Cloudflare Turnstile is used against spam.</li>
           </ul>
           <h2>3. Processors and international transfer</h2>
           <ul>
             <li>Cloudflare, Inc. (USA) — hosting, analytics, spam protection, contact mail delivery</li>
-            <li>Google LLC (USA) — ads on web-tool and guide pages</li>
+            <li>Google LLC (USA) — ads on web-tool, guide and device register map pages</li>
             <li>Functional Software, Inc. (Sentry; US entity, EU data region) — program error reports (only with your permission)</li>
           </ul>
           <h2>4. Contact</h2>
