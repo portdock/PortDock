@@ -1,7 +1,7 @@
 // 데시벨 — ITU-R V.574-5 정의(dBm = 1 mW, dBW = 1 W, dBu = 600 Ω 에서 1 mW 인 전압), 잘 알려진 대응값
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DBU_REF, NP_DB, ampDb, chain, dbToAmp, dbToPower, dbmToDbuvOffset, levels, powerDb, toWatts } from "./decibel.ts";
+import { DBU_REF, NP_DB, ampDb, chain, dbToAmp, dbToPower, dbmToDbuvOffset, infText, levels, powerDb, toWatts } from "./decibel.ts";
 
 const near = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
 
@@ -57,4 +57,13 @@ test("전압 입력 → 전력: 1 V rms 를 50 Ω 에 → 20 mW ≈ 13.01 dBm, 0
 
 test("직렬 합: +20 dB 증폭, −6 dB 케이블, −3 dB 분배 = +11 dB", () => {
   near(chain([20, -6, -3]), 11);
+});
+
+test("무한대 표시: 0 W 는 «−∞», 넘친 값은 «+∞»(−∞ 로 잘못 나오지 않게), 너무 큰 레벨 입력은 거부", () => {
+  assert.equal(infText(levels(0, 50).dBm), "−∞");
+  assert.equal(infText(Infinity), "+∞");
+  assert.equal(infText(12.5), undefined);
+  assert.equal(infText(dbToPower(4000)), "+∞");
+  assert.throws(() => toWatts(4000, "dBm", 50), RangeError);
+  assert.equal(infText(levels(1e300, 1e300).dBuV), "+∞");
 });

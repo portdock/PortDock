@@ -12,14 +12,16 @@ const pos = (...xs: number[]) => {
   if (!xs.every((x) => x > 0 && Number.isFinite(x))) throw new RangeError("input");
 };
 
-/** 한 상의 출력 주파수(Hz) */
+/** 한 상의 출력 주파수(Hz) — 역회전(음수 rpm)도 주파수는 같으므로 크기로 낸다 */
 export const pulseHz = (rpm: number, ppr: number) => {
   pos(ppr);
-  return (rpm * ppr) / 60;
+  if (!Number.isFinite(rpm)) throw new RangeError("rpm");
+  return (Math.abs(rpm) * ppr) / 60;
 };
-/** 출력 주파수 → rpm */
+/** 출력 주파수 → rpm (주파수는 0 이상) */
 export const rpmFromHz = (hz: number, ppr: number) => {
   pos(ppr);
+  if (!(hz >= 0) || !Number.isFinite(hz)) throw new RangeError("hz");
   return (hz * 60) / ppr;
 };
 /** 카운트 속도(카운트/s) — 체배 반영 */

@@ -242,7 +242,7 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
           const m = maxRpm(fmax, ppr);
           set("max", `${fx(m, 1)} rpm`);
           if (Number.isFinite(rpm)) {
-            const ok = rpm <= m;
+            const ok = Math.abs(rpm) <= m; // 역회전(음수)도 같은 주파수
             vd.className = `verdict ${ok ? "ok" : "fault"}`;
             vd.textContent = ok
               ? ko ? `${fx(rpm, 1)} rpm 은 최대 응답 주파수 안(한 상 ${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)})` : `${fx(rpm, 1)} rpm is within the response frequency (${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)} per channel)`

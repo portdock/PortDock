@@ -39,8 +39,14 @@ export const LEVEL_UNITS: { id: LevelUnit; sym: string; kind: "power" | "voltage
   { id: "uV", sym: "µV (rms)", kind: "voltage" },
 ];
 
-/** 레벨 하나 → 전력 W (전압이면 저항 ohms 에 걸린 전력 P = V² ÷ R) */
+/** 레벨 하나 → 전력 W (전압이면 저항 ohms 에 걸린 전력 P = V² ÷ R). 너무 커서 W 가 무한대가 되면 RangeError */
 export function toWatts(v: number, u: LevelUnit, ohms: number) {
+  const w = toWattsRaw(v, u, ohms);
+  if (!Number.isFinite(w)) throw new RangeError("overflow");
+  return w;
+}
+
+function toWattsRaw(v: number, u: LevelUnit, ohms: number) {
   if (!Number.isFinite(v)) throw new RangeError("value");
   if (!(ohms > 0)) throw new RangeError("ohms");
   const volts = (x: number) => {
@@ -90,6 +96,9 @@ export function levels(watts: number, ohms: number): Record<LevelUnit, number> {
     uV: V * 1e6,
   };
 }
+
+/** 표시용 — 0 W 의 dB 는 «−∞», 넘쳐서 +∞ 면 «+∞», 유한하면 undefined(숫자로 적는다) */
+export const infText = (x: number) => (x === -Infinity ? "−∞" : x === Infinity ? "+∞" : undefined);
 
 /** dBm → dBµV 로 더하는 값 (저항 R): 10 lg(R × 1 mW) + 120 — 50 Ω 이면 약 107 */
 export const dbmToDbuvOffset = (ohms: number) => 10 * Math.log10(ohms * 1e-3) + 120;

@@ -26,3 +26,11 @@ test("분해능: 1000 PPR 4체배 → 0.09°, 리드 10 mm → 0.0025 mm", () =>
   assert.equal(absPositions(17), 131072);
   assert.throws(() => pulseHz(100, 0));
 });
+
+test("음수 rpm(역회전)도 주파수는 같은 크기, 주파수는 음수 거부", () => {
+  assert.equal(pulseHz(-1800, 1000), 30000);
+  assert.equal(countRate(-1800, 1000, 4), 120000);
+  assert.throws(() => pulseHz(NaN, 1000), RangeError);
+  assert.throws(() => rpmFromHz(-1, 1000), RangeError);
+  assert.equal(rpmFromHz(30000, 1000), 1800);
+});

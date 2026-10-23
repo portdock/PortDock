@@ -58,3 +58,12 @@ test("잘못된 입력", () => {
   assert.throws(() => resistance("cu", 10, 0));
   assert.throws(() => voltageDrop({ system: "dc", volts: 0, amps: 1, lengthM: 1, areaMm2: 1, material: "cu", tempC: 20 }));
 });
+
+test("저항률이 0 이하가 되는 온도는 거부(구리 −234.5 °C 아래, 알루미늄 약 −228 °C 아래)", () => {
+  assert.throws(() => rho("cu", -235), RangeError);
+  assert.throws(() => resistance("cu", 100, 1.5, -300), RangeError);
+  assert.throws(() => rho("al", -230), RangeError);
+  assert.throws(() => rho("cu", NaN), RangeError);
+  assert.ok(rho("cu", -234) > 0);
+  assert.ok(rho("al", -200) > 0);
+});

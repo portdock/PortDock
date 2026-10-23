@@ -81,3 +81,23 @@ test("주파수별 회전수(슬립 회전수 그대로 근사)·감속비·필�
   near(hzFor(85, 4, 50, 10), 30);
   near(hzFor(1800, 4), 60);
 });
+
+test("효율 역계산: 역률이 0 이하·1 초과이거나 출력이 음수면 거부(직류는 역률을 보지 않음)", () => {
+  const base = { phase: "3" as const, kw: 37, volts: 380, amps: 71, pf: 0.85 };
+  assert.throws(() => efficiencyFrom({ ...base, pf: -0.85 }), RangeError);
+  assert.throws(() => efficiencyFrom({ ...base, pf: 0 }), RangeError);
+  assert.throws(() => efficiencyFrom({ ...base, pf: 1.2 }), RangeError);
+  assert.throws(() => efficiencyFrom({ ...base, kw: -1 }), RangeError);
+  assert.ok(efficiencyFrom({ phase: "dc", kw: 1, volts: 24, amps: 50, pf: -1 }) > 0);
+});
+
+test("극수 추정: 동기 속도 그대로 적힌 명판(50 Hz 1500 r/min)도 4극, 슬립 있는 값도 그대로", () => {
+  assert.equal(guessPoles(50, 1500), 4);
+  assert.equal(guessPoles(50, 1450), 4);
+  assert.equal(guessPoles(60, 1800), 4);
+  assert.equal(guessPoles(50, 3000), 2);
+  assert.equal(guessPoles(50, 1000), 6);
+  assert.equal(guessPoles(50, 1501), 2);
+  assert.equal(guessPoles(50, 0), undefined);
+  assert.equal(guessPoles(50, 3100), undefined);
+});

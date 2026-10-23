@@ -11,8 +11,15 @@ export type Material = "cu" | "al";
 export const RHO20: Record<Material, number> = { cu: 1 / 58, al: 0.028264 };
 export const ALPHA20: Record<Material, number> = { cu: 0.00393, al: 0.00403 };
 
-/** 온도 T(°C) 에서 저항률 Ω·mm²/m */
-export const rho = (m: Material, tempC = 20) => RHO20[m] * (1 + ALPHA20[m] * (tempC - 20));
+/**
+ * 온도 T(°C) 에서 저항률 Ω·mm²/m — 직선 근사라 1 + α(T − 20) 이 0 이하가 되는 온도
+ * (구리 약 −234.5 °C, 알루미늄 약 −228 °C 아래)에서는 저항이 0·음수가 되므로 RangeError
+ */
+export const rho = (m: Material, tempC = 20) => {
+  const f = 1 + ALPHA20[m] * (tempC - 20);
+  if (!Number.isFinite(tempC) || !(f > 0)) throw new RangeError("temp");
+  return RHO20[m] * f;
+};
 
 /** 도체 한 가닥 저항 Ω (길이 m, 단면적 mm²) */
 export function resistance(m: Material, lengthM: number, areaMm2: number, tempC = 20) {

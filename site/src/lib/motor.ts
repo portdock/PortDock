@@ -64,6 +64,8 @@ export function motorOutputKw(x: Omit<CurrentInput, "kw"> & { amps: number }) {
 /** 명판 전압·전류·역률·출력 → 효율 (ABB Technical guide No. 7 예제 3.4 꼴) */
 export function efficiencyFrom(x: { phase: Phase; kw: number; volts: number; amps: number; pf: number }) {
   if (!(x.volts > 0 && x.amps > 0)) throw new RangeError("volts/amps");
+  if (!(x.kw >= 0)) throw new RangeError("kw");
+  if (x.phase !== "dc" && !(x.pf > 0 && x.pf <= 1)) throw new RangeError("pf");
   const pf = x.phase === "dc" ? 1 : x.pf;
   return (x.kw * 1000) / (k(x.phase) * x.volts * x.amps * pf);
 }
@@ -104,9 +106,13 @@ export function ratedSlip(hz: number, rpm: number, poles: number): Slip {
   return { ns, rpm: ns - rpm, s: (ns - rpm) / ns, hz: hz - (rpm * poles) / 120 };
 }
 
-/** 명판에서 극수 추정 — 정격 회전수보다 큰 동기 속도 가운데 가장 가까운 것 */
+/**
+ * 명판에서 극수 추정 — 정격 회전수 이상인 동기 속도 가운데 가장 가까운 것.
+ * 유도 전동기는 슬립만큼 동기 속도보다 느리고(50 Hz 1450 r/min → 4극), 동기 속도 그대로 적힌 명판(50 Hz 1500 r/min — 동기 전동기·반올림)도 같은 극수(4극)로 본다.
+ */
 export function guessPoles(hz: number, rpm: number) {
-  for (let p = 2; p <= 48; p += 2) if (syncRpm(hz, p) > rpm && syncRpm(hz, p + 2) <= rpm) return p;
+  if (!(hz > 0) || !(rpm > 0)) return undefined;
+  for (let p = 2; p <= 48; p += 2) if (syncRpm(hz, p) >= rpm && syncRpm(hz, p + 2) < rpm) return p;
   return undefined;
 }
 
