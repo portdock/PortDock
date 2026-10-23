@@ -117,7 +117,7 @@ async function exercise(root, opts = {}) {
       if (opts.depth == null || opts.depth < 1) {
         // 새로 뜬 창 속도 한 번 눌러 본다(«모두 펼치기» 로 화면 요소가 많아 한 번 검사가 느리다 — 창마다 40초)
         const label = (m.querySelector('[role=dialog],[role=alertdialog]') || m).getAttribute('aria-label') || 'modal';
-        findings.push(...(await exercise(m, { ...opts, scope: 'modal', depth: (opts.depth || 0) + 1, skip: (opts.skip ? opts.skip + ',' : '') + '.modal-head button', budgetMs: 40000 })).map((f) => ({ ...f, step: '[' + label + '] ' + f.step })));
+        findings.push(...(await exercise(m, { ...opts, scope: 'modal', depth: (opts.depth || 0) + 1, skip: (opts.skip ? opts.skip + ',' : '') + '.modal-head button', budgetMs: opts.modalBudgetMs || 40000 })).map((f) => ({ ...f, step: '[' + label + '] ' + f.step })));
       }
       if (!m.isConnected) continue;
       key(window, 'Escape');
@@ -197,7 +197,8 @@ const d = await new Builder()
   .setEdgeOptions(new edge.Options().addArguments("--headless=new", "--hide-scrollbars", "--force-device-scale-factor=1", "--lang=ko-KR"))
   .setEdgeService(new edge.ServiceBuilder(driverPath))
   .build();
-await d.manage().setTimeouts({ script: 240000 });
+// 다 눌러 보기 한 번(본 화면 한도 + 그 안에서 뜬 창들) 이 이 안에 끝나야 한다 — TCP 한도(BUDGET)에 맞춰 넉넉히
+await d.manage().setTimeouts({ script: 480000 });
 await d.sendDevToolsCommand("Page.addScriptToEvaluateOnNewDocument", { source: HOOK });
 
 const js = (code, ...args) => d.executeScript(LIB + ";" + code, ...args);
@@ -233,6 +234,9 @@ async function fitWindow() {
 // 앱마다 다른 것
 const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger";
 /** 실행 중일 때 실행 버튼 글자 */
+/** 다 눌러 보기 시간 한도(ms) — 기본 본 화면 90초·뜬 창 40초. TCP 는 방식 탭·자동응답·중계·명령 목록까지 «모두 펼치기» 요소가 가장 많아
+ *  90초 안에 idle·running 을 다 못 눌렀다(10/23, 361·471번) — 두 배로 */
+const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 } };
 const STOP_RE = /^(끊기|멈춤|멈추기|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
@@ -271,7 +275,7 @@ async function runApp(app, port) {
       return s;
     }
     async function pageExercise(label, scopeSel, opts = {}) {
-      const r = await jsAsync(`return await __sm.exercise(document.querySelector(${JSON.stringify(scopeSel)}) || document, ${JSON.stringify({ scope: "main", ...opts })});`);
+      const r = await jsAsync(`return await __sm.exercise(document.querySelector(${JSON.stringify(scopeSel)}) || document, ${JSON.stringify({ scope: "main", ...(BUDGET[app] || {}), ...opts })});`);
       if (r && r.fatal) return add(label, "smoke-error", r.fatal);
       if (r.length) {
         const f = await shot(app, `${combo.name}-${label}`);
@@ -293,6 +297,8 @@ async function runApp(app, port) {
       return s;
     }
     async function clickRun(step, want) {
+      // 좁은 창(≤1180, smoke 기본 984)에서 줄·«명령 목록» 을 누르면 오른쪽 서랍과 덮개(.backdrop)가 열린 채 남는다 — 사람처럼 닫고 누른다
+      await closeRight();
       const b = await runButton();
       if (!b) return add(step, "smoke-error", "실행 버튼을 못 찾음");
       await b.click();
@@ -1437,10 +1443,10 @@ async function runApp(app, port) {
       if (!dts) await conv("delta", "«직전 줄과 간격» 을 골랐는데 간격 열이 비어 있음");
       if (snap) await shot(app, `${combo.name}-delta-trigger`);
       await js("window.__smoke.clip = null");
-      // 맨 첫 줄(지우기 바로 뒤)은 앞 줄이 없어 간격이 비어 있다 — 마지막 RX 줄로
-      const row = (await d.findElements(By.css(".log .row.rx"))).slice(-1)[0];
+      // 맨 첫 줄(지우기 바로 뒤)은 앞 줄이 없어 간격이 비어 있다 — 마지막 RX 줄로.
+      // 기록은 가상 목록이라 줄이 계속 오면 같은 요소가 다른 줄(간격 없는 EV TRIGGER 줄)로 바뀐다 — 찾기와 누르기를 한 번에(10/23)
+      const row = await js("const r = [...document.querySelectorAll('.log .row.rx')].slice(-1)[0]; if (r) r.click(); return !!r;");
       if (row) {
-        await row.click();
         await blur();
         await chord([Key.CONTROL], "c");
         const clip = await js("return window.__smoke.clip");
