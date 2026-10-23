@@ -5,6 +5,7 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { toolById, type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
+import { webToolByPath } from "../data/webTools";
 import { CC_BY, DEVICES, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
 import { url } from "../lib/i18n";
 import { KIND_TEXT, devRegs, refText, type Device, type DevRegister } from "@shared/devices";
@@ -28,7 +29,10 @@ const desc = L(
 );
 // 같은 종류 장비(다른 제조사 포함)·Modbus 가이드
 const sameKind = DEVICES.filter((d) => d.kind === dev.kind && d.id !== dev.id);
-const guides = GUIDES.filter((g) => g.devices);
+const guides = GUIDES.filter((g) => g.devices && !g.deviceKinds?.length);
+// 이 장비 종류를 다루는 글(예: 인버터 → 주파수·회전수, 모터 전류)과 그 글의 웹 도구
+const kindGuides = GUIDES.filter((g) => g.deviceKinds?.includes(dev.kind));
+const kindWebTools = [...new Set(kindGuides.flatMap((g) => g.webTools ?? []))].map(webToolByPath);
 const master = toolById("modbus-master");
 const slave = toolById("modbus-slave");
 const here = new URL(url(lang, devPath(dev)), Astro.site).href;
@@ -218,6 +222,25 @@ const ld = {
             ))}
           </ul>
           <p class="note"><a href={url(lang, "devices/")}>{L("모든 장비 레지스터 맵", "All device register maps")} →</a></p>
+        </section>
+      )
+    }
+    {
+      kindGuides.length > 0 && (
+        <section class="related">
+          <h2>{L(`${KIND_TEXT[dev.kind].ko} 가이드·계산기`, `${KIND_TEXT[dev.kind].en} guides and calculators`)}</h2>
+          <ul class="links">
+            {kindGuides.map((g) => (
+              <li>
+                <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+              </li>
+            ))}
+            {kindWebTools.map((w) => (
+              <li>
+                <a href={url(lang, w.path)}>{w.name[lang]}</a> — {L("웹 도구", "web tool")}
+              </li>
+            ))}
+          </ul>
         </section>
       )
     }

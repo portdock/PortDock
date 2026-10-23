@@ -1,5 +1,6 @@
 // 가이드 글 — 검색으로 들어오는 현장 질문에 답한다. 예시 바이트·CRC 는 lib/checksum.ts 로 계산해 확인한 값만 쓴다.
 import type { Lang, Tool } from "./tools";
+import type { Device } from "@shared/devices";
 
 /** 본문 덩어리: 문단 · 소제목 · 목록 · 코드(바이트) · 표 · 그림 */
 export type Block =
@@ -23,6 +24,8 @@ export interface Guide {
   webTools?: string[];
   /** 장비 레지스터 맵(/devices/)으로 잇는다 — Modbus 글 */
   devices?: boolean;
+  /** 이 종류의 장비 페이지와 서로 잇는다(예: 인버터 글 ↔ 인버터 장비 맵) */
+  deviceKinds?: Device["kind"][];
   title: Record<Lang, string>;
   /** 검색 결과 제목(«— PortDock» 까지 통째로) — 본문 제목이 길 때만 */
   seoTitle?: Partial<Record<Lang, string>>;
@@ -1103,7 +1106,7 @@ export const GUIDES: Guide[] = [
     slug: "4-20ma-loop",
     date: "2026-10-22",
     tools: ["modbus-master", "plot"],
-    related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order"],
+    related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order", "pressure-units"],
     webTools: ["tools/4-20ma/", "tools/loop-load/"],
     title: { ko: "4–20mA 신호 기초와 고장 찾기 — 2선식·4선식·라이브 제로·단선 판정", en: "4–20 mA basics and troubleshooting — 2-wire, 4-wire, live zero, open loop" },
     seoTitle: { ko: "4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선) — PortDock", en: "4–20 mA Loop Basics & Troubleshooting (2-Wire, 4-Wire) — PortDock" },
@@ -1712,7 +1715,7 @@ export const GUIDES: Guide[] = [
     slug: "24v-voltage-drop",
     date: "2026-10-23",
     tools: ["modbus-master", "serial"],
-    related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination"],
+    related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable"],
     webTools: ["tools/voltage-drop/", "tools/loop-load/"],
     title: { ko: "24V DC 전압 강하 — 멀리 있는 센서·통신 장비의 전선 굵기 고르기", en: "24 V DC voltage drop — choosing wire size for remote sensors and devices" },
     seoTitle: { ko: "24V DC 전압 강하 계산과 전선 굵기 고르기 — PortDock", en: "24 V DC Voltage Drop: Choosing Wire Size (mm², AWG) — PortDock" },
@@ -1918,6 +1921,393 @@ export const GUIDES: Guide[] = [
             "«RS-485 Termination & Bias Calculator» web tool: enter supply, pull-up, pull-down and termination type to get the idle voltage against 200 mV, resistor power, the largest bias resistors that still reach 200 mV, and a rough length limit per baud rate.",
             "Serial: leave reception on without sending and any garbage bytes between frames show up in HEX. Compare with bias on and off.",
             "Modbus Master counts CRC errors per table, so compare the counts over the same period before and after changing termination or bias.",
+          ],
+        },
+      ],
+    },
+  },
+  // 근거: ABB Technical guide No. 7(3AFE64362569 Rev D) 식 3.13~3.16·예제 3.4, ABB Motor guide(2019) §3.8 허용차·§4.5 기동,
+  // KEC(공고 제2025-227호) 212.4.1(IB ≤ In ≤ IZ, I2 ≤ 1.45 IZ)·232.5.1(표 232.5-1)·232.5.2(허용 전류는 KS C IEC 60364-5-52 부속서 B).
+  // 허용 전류표 수치는 원문(KS C IEC 60364-5-52)을 확인하지 못해 싣지 않는다. 계산은 site/src/lib/motor.ts.
+  {
+    slug: "motor-current-breaker-cable",
+    date: "2026-10-23",
+    tools: ["modbus-master"],
+    related: ["vfd-frequency-rpm", "24v-voltage-drop", "pressure-units"],
+    webTools: ["tools/motor-current/", "tools/voltage-drop/", "tools/units/"],
+    deviceKinds: ["inverter", "power-meter"],
+    title: { ko: "모터 정격 전류 읽기와 차단기·전선 고르기 기초 (kW → A)", en: "Motor rated current, breakers and cables — the basics (kW to amps)" },
+    seoTitle: { ko: "모터 정격 전류 계산(kW→A)과 차단기·전선 기초 — PortDock", en: "Motor Full Load Current (kW to A), Breakers, Cables — PortDock" },
+    desc: {
+      ko: "명판 kW 로 정격 전류를 계산하는 식, 계산값이 명판 전류와 다른 이유, 기동 전류, KEC 212.4.1 의 IB ≤ In ≤ IZ 조건까지 — 허용 전류표는 원문에서.",
+      en: "The kW-to-amps formula for motors, why it differs from the nameplate current, starting current, and the IB ≤ In ≤ IZ rule for breakers and cables.",
+    },
+    body: {
+      ko: [
+        { p: "모터 명판의 kW(또는 HP)는 모터가 먹는 전력이 아니라 축에서 내는 기계 출력입니다. 그래서 출력만으로는 전류가 나오지 않고, 효율과 역률을 함께 알아야 합니다. 차단기·전선·과부하 계전기를 고를 때 쓰는 값은 결국 명판의 정격 전류이고, 계산은 명판이 없거나 값을 확인할 때 씁니다." },
+        { h: "계산식" },
+        { code: "3상:  I = P ÷ (√3 × V × η × cos φ)\n단상: I = P ÷ (V × η × cos φ)\n직류: I = P ÷ (V × η)\n  P: 정격 출력(W), V: 전압(3상은 선간), η: 효율, cos φ: 역률" },
+        { p: "식은 «입력 전력 = √3 × V × I × cos φ» 와 «효율 = 출력 ÷ 입력» 을 합친 것입니다(ABB Technical guide No. 7 식 3.15·3.16). 거꾸로 명판의 출력·전압·전류·역률로 효율을 확인할 수 있습니다. ABB 문서의 예(37 kW, 380 V, 71 A, cos φ 0.85)는 효율 약 0.931 이 나옵니다." },
+        { fig: { src: "/img/guides/motor-current-chain.ko.svg", w: 780, h: 250, alt: "모터 전류 계산 흐름: 출력 7.5 kW 를 효율 0.9 로 나눠 입력 8.33 kW, 역률 0.85 로 나눠 9.80 kVA, √3 × 380 V 로 나눠 선 전류 14.9 A", cap: "축 출력에서 효율·역률·전압 순으로 나눠 전류를 얻습니다. 효율·역률 값은 예시입니다." } },
+        { h: "효율·역률에 따라 얼마나 달라지나 (3상 7.5 kW)" },
+        {
+          table: {
+            head: ["전압", "효율", "역률", "전류"],
+            rows: [
+              ["380 V", "0.90", "0.85", "14.90 A"],
+              ["380 V", "0.87", "0.82", "15.97 A"],
+              ["380 V", "0.92", "0.87", "14.24 A"],
+              ["380 V", "0.90", "0.75", "16.88 A"],
+              ["220 V", "0.90", "0.85", "25.73 A"],
+              ["440 V", "0.90", "0.85", "12.86 A"],
+            ],
+          },
+        },
+        { p: "같은 7.5 kW 라도 효율·역률이 몇 % 다르면 전류가 1~2 A 달라집니다. 효율·역률은 모터 크기·극수·효율 등급마다 다르므로, «kW 당 몇 A» 로 외운 값은 대략값일 뿐입니다." },
+        { h: "계산값보다 명판 전류를 믿는 이유" },
+        {
+          ul: [
+            "부분 부하: 부하가 줄면 효율과 역률이 함께 떨어져, 가볍게 걸린 모터의 전류는 출력 비율만큼 줄지 않습니다.",
+            "허용차: ABB Motor guide 는 IEC 60034-1 에 따라 명판 효율은 −15 %(1−η)(150 kW 이하), 역률은 −1/6 (1−cos φ) 까지 벗어날 수 있다고 적습니다.",
+            "전압: 전압이 명판보다 낮으면 같은 출력에 전류가 늘어납니다. ABB 문서는 IEC 60034-1 에 따른 전원 허용차를 전압 ±5 %, 주파수 ±2 % 로 적습니다.",
+          ],
+        },
+        { h: "기동 전류" },
+        {
+          ul: [
+            "직입(DOL) 기동은 정격 전류의 몇 배가 흐릅니다. 정확한 배수는 카탈로그의 IS/IN(기동 전류 ÷ 정격 전류)에서 봅니다.",
+            "투입 순간에는 과도 전류가 겹쳐 최댓값이 기동 전류(실효값)의 약 2.5배까지 될 수 있고 곧 줄어듭니다(ABB Motor guide §4.5).",
+            "Y-Δ 기동은 기동 전류를 직입의 약 30 %, 기동 토크를 약 25 % 로 줄입니다. 인버터 기동은 정격의 0.5~1배, 최대 1.5배 정도입니다.",
+            "그래서 모터 회로의 차단기는 정격 전류만이 아니라 기동 전류에도 트립하지 않는 특성으로 고르고, 과부하 보호는 따로(과부하 계전기·인버터 전자 서멀) 맞춥니다.",
+          ],
+        },
+        { h: "차단기·전선: KEC 212.4.1 의 두 조건" },
+        { fig: { src: "/img/guides/overload-coordination.ko.svg", w: 780, h: 210, alt: "전류 눈금 위에 IB(설계 전류) ≤ In(보호 장치 정격) ≤ IZ(전선 허용 전류) 순서와, I2(보호 장치가 확실히 동작하는 전류)가 1.45 × IZ 이하여야 함을 나타낸 그림", cap: "설계 전류 ≤ 보호 장치 정격 ≤ 전선 허용 전류, 그리고 보호 장치가 확실히 동작하는 전류 ≤ 1.45 × 허용 전류." } },
+        { code: "IB ≤ In ≤ IZ        (식 212.4-1)\nI2 ≤ 1.45 × IZ      (식 212.4-2)\n  IB: 회로의 설계 전류      In: 보호 장치의 정격 전류(조정형은 설정값)\n  IZ: 케이블의 허용 전류    I2: 보호 장치가 규약 시간 안에 유효하게 동작하는 것을 보장하는 전류" },
+        { p: "모터 한 대 회로라면 IB 는 모터의 정격 전류입니다. In 은 IB 이상이어야 정상 운전에서 트립하지 않고, IZ 이하여야 전선을 보호합니다. I2 는 보호 장치 제조사가 주거나 제품 표준에 있는 값입니다(KEC 212.4.1 주 2)." },
+        { h: "허용 전류 IZ 는 어디서" },
+        {
+          ul: [
+            "KEC 232.5.2 는 허용 전류를 KS C IEC 60364-5-52 «부속서 B(허용전류)» 의 표에서, «부속서 A(공사방법)» 를 참고해 고르고 필요한 보정 계수(주위 온도·묶음)를 적용하라고 합니다.",
+            "표의 바탕이 되는 절연물 최고 허용 온도는 PVC 70 °C, XLPE·EPR 90 °C 입니다(KEC 표 232.5-1). 같은 굵기라도 절연물·공사 방법·통전 도체 수·주위 온도에 따라 허용 전류가 크게 다릅니다.",
+            "이 글은 허용 전류표 수치를 싣지 않습니다. 원문(KS C IEC 60364-5-52 부속서 B)을 확인하지 못했기 때문입니다. 표는 원문이나 케이블 제조사 자료에서 확인하세요.",
+            "거리가 길면 허용 전류를 만족해도 전압 강하가 커질 수 있으니 따로 계산합니다.",
+          ],
+        },
+        { h: "운전 중 전류는 통신으로 확인" },
+        { p: "인버터는 출력 전류를, 전력 미터는 잰 전류를 Modbus 레지스터로 내줍니다. 인버터의 예로 LS S300 은 0x0310(출력 전류, 0.1 A 단위), YASKAWA A1000 은 0026H(출력 전류, 배율은 형번별)입니다. 명판 정격 전류와 운전 중 전류를 함께 보면 모터가 얼마나 걸려 있는지 알 수 있습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «모터 전류 계산기»: 3상·단상·직류, kW·HP 로 전류·입력 전력·kVA·토크를 계산하고, 명판 값으로 효율을 거꾸로 확인합니다.",
+            "웹 도구 «전압 강하·전선 굵기 계산기»: 전선 길이에 따른 전압 강하를 봅니다.",
+            "Modbus Master: 장비 레지스터 맵을 불러와 인버터·전력 미터의 출력 전류를 표로 읽고, 파일로 기록할 수 있습니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "The kW (or HP) on a motor nameplate is the mechanical output at the shaft, not the power the motor draws. Output alone does not give the current — you also need efficiency and power factor. Breakers, cables and overload relays are set from the nameplate rated current; the calculation is for when there is no nameplate or to check one." },
+        { h: "Formulas" },
+        { code: "Three-phase:  I = P ÷ (√3 × V × η × cos φ)\nSingle-phase: I = P ÷ (V × η × cos φ)\nDC:           I = P ÷ (V × η)\n  P: rated output (W), V: voltage (line-to-line for three-phase), η: efficiency, cos φ: power factor" },
+        { p: "This combines «input power = √3 × V × I × cos φ» with «efficiency = output ÷ input» (ABB Technical guide No. 7, eq. 3.15 and 3.16). Turned around, nameplate output, voltage, current and power factor give the efficiency; ABB's example (37 kW, 380 V, 71 A, cos φ 0.85) works out to about 0.931." },
+        { fig: { src: "/img/guides/motor-current-chain.en.svg", w: 780, h: 250, alt: "Motor current chain: 7.5 kW output ÷ efficiency 0.9 = 8.33 kW input ÷ power factor 0.85 = 9.80 kVA ÷ (√3 × 380 V) = 14.9 A line current", cap: "Divide shaft output by efficiency, power factor and voltage to get the current. The efficiency and power factor are examples." } },
+        { h: "How much efficiency and power factor matter (three-phase 7.5 kW)" },
+        {
+          table: {
+            head: ["Voltage", "Efficiency", "Power factor", "Current"],
+            rows: [
+              ["380 V", "0.90", "0.85", "14.90 A"],
+              ["380 V", "0.87", "0.82", "15.97 A"],
+              ["380 V", "0.92", "0.87", "14.24 A"],
+              ["380 V", "0.90", "0.75", "16.88 A"],
+              ["220 V", "0.90", "0.85", "25.73 A"],
+              ["440 V", "0.90", "0.85", "12.86 A"],
+            ],
+          },
+        },
+        { p: "A few percent of efficiency or power factor moves the current of the same 7.5 kW motor by 1–2 A. Both vary with size, poles and efficiency class, so «amps per kW» rules of thumb are only rough." },
+        { h: "Why trust the nameplate over the calculation" },
+        {
+          ul: [
+            "Part load: efficiency and power factor both drop at light load, so the current does not fall in proportion to the load.",
+            "Tolerances: ABB's Motor guide lists, after IEC 60034-1, −15 % of (1−η) for efficiency (up to 150 kW) and −1/6 of (1−cos φ) for power factor.",
+            "Voltage: below nameplate voltage the same output takes more current. ABB quotes the IEC 60034-1 supply tolerance as ±5 % voltage and ±2 % frequency.",
+          ],
+        },
+        { h: "Starting current" },
+        {
+          ul: [
+            "Direct-on-line starting draws several times the rated current; take the exact ratio from the catalogue's IS/IN.",
+            "At switch-on a transient adds on top, and the peak can reach about 2.5 times the (rms) starting current before it decays (ABB Motor guide §4.5).",
+            "Star-delta starting cuts the starting current to about 30 % of DOL and the starting torque to about 25 %. Starting through a drive keeps the current at 0.5–1 times rated, 1.5 times at most.",
+            "So a motor circuit breaker is chosen not to trip on the starting current, and overload protection is set separately (overload relay or the drive's electronic thermal).",
+          ],
+        },
+        { h: "Breakers and cables: the two conditions" },
+        { fig: { src: "/img/guides/overload-coordination.en.svg", w: 780, h: 210, alt: "Current scale showing IB (design current) ≤ In (device rating) ≤ IZ (cable capacity), and I2 (current ensuring operation) no more than 1.45 × IZ", cap: "Design current ≤ device rating ≤ cable capacity, and the current that ensures operation ≤ 1.45 × cable capacity." } },
+        { code: "IB ≤ In ≤ IZ\nI2 ≤ 1.45 × IZ\n  IB: design current of the circuit   In: rated current of the protective device (setting, if adjustable)\n  IZ: current-carrying capacity       I2: current ensuring effective operation within the conventional time" },
+        { p: "These are the overload coordination conditions of IEC 60364-4-43, as adopted in the Korean code (KEC 212.4.1). For a single motor, IB is the motor's rated current. In must be at least IB so normal running does not trip, and no more than IZ so the cable is protected. I2 comes from the device maker or its product standard." },
+        { h: "Where IZ comes from" },
+        {
+          ul: [
+            "Current-carrying capacity is taken from the tables in Annex B of IEC 60364-5-52 (KS C IEC 60364-5-52 in Korea, KEC 232.5.2), using Annex A for the installation method and applying correction factors for ambient temperature and grouping.",
+            "The tables are based on maximum conductor temperatures of 70 °C for PVC and 90 °C for XLPE/EPR (KEC Table 232.5-1). The same size carries very different currents depending on insulation, installation method, loaded conductors and ambient temperature.",
+            "This guide does not reproduce the tables, because we could not check the original Annex B. Use the standard itself or the cable maker's data.",
+            "On long runs a cable can meet IZ and still drop too much voltage, so check voltage drop separately.",
+          ],
+        },
+        { h: "Read the running current over the bus" },
+        { p: "Drives publish their output current, and power meters the current they measure, as Modbus registers — for example 0x0310 on the LS S300 (output current, 0.1 A units) and 0026H on the YASKAWA A1000 (output current, scaling depends on the model). Comparing the running current with the nameplate tells you how loaded the motor is." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Motor Current Calculator» web tool: three-phase, single-phase or DC, kW or HP → current, input power, kVA and torque, plus efficiency from nameplate values.",
+            "«Voltage Drop & Wire Size Calculator» web tool: voltage drop over the cable length.",
+            "Modbus Master: load a device register map and read a drive's or power meter's output current in a table, with logging to file.",
+          ],
+        },
+      ],
+    },
+  },
+  // 근거: NIST SP 811 부록 B.8(psi·kgf/cm²·mmH2O·inH2O·mmHg·atm), SI 브로슈어 표 8(bar). 계산은 site/src/lib/units.ts.
+  {
+    slug: "pressure-units",
+    date: "2026-10-23",
+    tools: ["modbus-master", "plot"],
+    related: ["4-20ma-loop", "modbus-float-word-order", "motor-current-breaker-cable"],
+    webTools: ["tools/pressure/", "tools/4-20ma/", "tools/units/"],
+    deviceKinds: ["panel-meter"],
+    title: { ko: "압력 센서 단위 혼동 — bar·psi·kPa·kgf/cm²·mmH2O, 게이지와 절대", en: "Pressure sensor unit mix-ups — bar, psi, kPa, kgf/cm², mmH2O, gauge vs absolute" },
+    seoTitle: { ko: "압력 단위 변환과 센서 범위 설정 (bar·psi·kPa·kgf/cm²) — PortDock", en: "Pressure Units: bar, psi, kPa, kgf/cm², Gauge vs Abs — PortDock" },
+    desc: {
+      ko: "압력 값이 2 %, 1 bar, 또는 14.5배 틀릴 때 — kgf/cm² 와 bar, 게이지와 절대, mmH₂O·kPa, psi 를 바로잡고 4–20mA 범위를 PLC 에 맞게 넣습니다.",
+      en: "Pressure off by 2 %, by 1 bar, or by a factor of 14.5? Sort out kgf/cm² vs bar, gauge vs absolute, mmH₂O vs kPa and psi, and set the 4–20 mA range in the PLC.",
+    },
+    body: {
+      ko: [
+        { p: "압력은 현장마다 쓰는 단위가 다릅니다. 오래된 압력계는 kgf/cm², 수입 장비는 psi, 전송기 사양서는 kPa·MPa, 송풍기·덕트는 mmH₂O, 진공은 mbar·Torr 를 씁니다. 숫자가 «조금» 또는 «크게» 틀릴 때는 계산보다 단위부터 의심하는 편이 빠릅니다. 틀린 크기로 원인을 짐작할 수 있습니다." },
+        { h: "틀린 크기로 보는 원인" },
+        {
+          table: {
+            plain: true,
+            head: ["증상", "흔한 원인"],
+            rows: [
+              ["약 2 % 차이", "kgf/cm² 와 bar 를 같은 것으로 봄 — 1 kgf/cm² = 0.980 665 bar"],
+              ["약 1 bar(101 kPa) 차이", "게이지(bar g)와 절대(bar a) 혼동 — 둘의 차이가 대기압"],
+              ["약 14.5배", "psi 와 bar 혼동 — 1 bar ≈ 14.504 psi"],
+              ["약 6.9배", "psi 와 kPa 혼동 — 1 psi ≈ 6.895 kPa"],
+              ["10배·1000배", "kPa·MPa·bar 접두어 — 1 MPa = 10 bar = 1000 kPa"],
+              ["약 102배", "kPa 와 mmH₂O 혼동 — 1 kPa ≈ 101.97 mmH₂O"],
+            ],
+          },
+        },
+        { h: "kgf/cm² 는 bar 가 아니다" },
+        { p: "1 kgf/cm² 는 1 kg 이 표준 중력(9.806 65 m/s²)에서 누르는 힘을 1 cm² 로 나눈 98 066.5 Pa 이고, 1 bar 는 100 000 Pa 입니다. 둘은 약 2 % 다릅니다. 7 kgf/cm² 는 약 6.86 bar 이고, 1.6 MPa 는 약 16.3 kgf/cm² 입니다. 도면·오래된 압력계의 «kg» 를 bar 칸에 그대로 옮기면 이만큼 어긋납니다." },
+        { h: "게이지 압력과 절대 압력" },
+        { fig: { src: "/img/guides/pressure-gauge-abs.ko.svg", w: 780, h: 330, alt: "압력 눈금: 완전 진공이 절대 압력 0, 대기압 101.325 kPa 가 게이지 압력 0. 5 bar g 는 약 6.013 bar a, −0.5 bar g 는 약 0.513 bar a", cap: "게이지 압력은 대기압에서, 절대 압력은 완전 진공에서 잽니다. 표준 대기압으로 그렸습니다." } },
+        { p: "게이지 압력(bar g, psig)은 그 자리 대기압을 0 으로, 절대 압력(bar a, psia)은 완전 진공을 0 으로 잽니다. 절대 = 게이지 + 대기압입니다. 표준 대기압 101.325 kPa 로 보면 5 bar g 는 약 6.013 bar a 입니다. 대부분의 공정 압력 전송기는 게이지형이고, 진공·증기·기체 계산에는 절대 압력이 필요할 때가 많습니다. 사양서의 «G» «A» «gauge» «absolute» 를 확인하고, 단위 뒤에 g·a 를 붙여 적어 두면 혼동이 줄어듭니다." },
+        { p: "차압 전송기(필터 앞뒤, 오리피스 유량계)의 값은 두 점의 차이라 게이지·절대 어느 쪽도 아닙니다." },
+        { h: "mmH₂O·mmHg 는 «관용» 값" },
+        { p: "수주 1 mm(mmH₂O)는 물 1000 kg/m³ 과 표준 중력으로 정한 9.806 65 Pa, 수은주 1 mm(mmHg)는 수은 13 595.1 kg/m³ 로 정한 약 133.3224 Pa 입니다. 실제 물기둥은 물 온도에 따라 조금 달라, NIST SP 811 은 inH₂O 를 39.2 °F 물로 249.082 Pa, 60 °F 로 248.84 Pa 로 따로 적습니다. 송풍기 정압 250 mmH₂O 는 약 2.45 kPa 입니다." },
+        { h: "센서 범위를 PLC 에 넣을 때" },
+        { p: "4–20mA 압력 전송기는 «범위 하한 = 4 mA, 상한 = 20 mA» 입니다. PLC 에 공학 단위로 넣을 때는 전송기에 설정된 범위와 단위를 그대로 옮기거나, 원하는 단위로 범위만 바꿔 넣습니다. 예: 0–10 bar 전송기를 psi 로 보려면 0–145.04 psi 로 넣습니다." },
+        {
+          table: {
+            head: ["전류", "0–10 bar", "psi", "kPa", "kgf/cm²"],
+            rows: [
+              ["4 mA", "0", "0", "0", "0"],
+              ["8 mA", "2.5", "36.26", "250", "2.549"],
+              ["12 mA", "5", "72.52", "500", "5.099"],
+              ["16 mA", "7.5", "108.8", "750", "7.648"],
+              ["20 mA", "10", "145.04", "1000", "10.197"],
+            ],
+          },
+        },
+        { p: "범위가 «−1–9 bar» 처럼 음수에서 시작하는 복합(진공 포함) 전송기도 같은 식으로 4 mA 가 하한입니다. 단위를 바꿀 때 하한·상한을 함께 바꿔야 하고, 게이지형 범위를 절대 압력으로 바꾸려면 두 값에 대기압을 더합니다." },
+        { h: "통신으로 읽는 압력 값" },
+        { p: "Modbus 로 압력을 읽을 때는 레지스터 값에 배율(예: 0.01)이 붙거나, 32비트 실수(float)로 두 레지스터에 나뉘어 있는 경우가 많습니다. 장비 매뉴얼에서 단위·배율·워드 순서를 확인합니다. 단위를 장비에서 바꿀 수 있는 패널 미터·전송기는 단위 설정 레지스터를 함께 읽어 두면 화면과 통신 값의 단위가 어긋나는 일을 막을 수 있습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «압력 단위 변환기»: 한 값을 bar·psi·kPa·MPa·kgf/cm²·mmH₂O·mmHg 등 모든 단위로, 게이지 ↔ 절대, 센서 범위의 4–20mA 환산표를 만듭니다.",
+            "웹 도구 «4–20mA 환산 계산기»: 전류 ↔ 공학값 ↔ % ↔ PLC 카운트를 바꿉니다.",
+            "Modbus Master 는 레지스터를 형식(정수·float)과 워드 순서대로 풀어 보여 주고(장비 프로필은 칸 이름에 단위·배율을 적음), PortDock Plot 은 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 그립니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Every site uses its own pressure units: old gauges in kgf/cm², imported machines in psi, transmitter datasheets in kPa or MPa, fans and ducts in mmH₂O (or inH₂O), vacuum in mbar or Torr. When a reading is «slightly» or «badly» off, suspect the units before the maths — the size of the error often tells you which mix-up it is." },
+        { h: "What the size of the error suggests" },
+        {
+          table: {
+            plain: true,
+            head: ["Symptom", "Usual cause"],
+            rows: [
+              ["About 2 % off", "kgf/cm² treated as bar — 1 kgf/cm² = 0.980 665 bar"],
+              ["About 1 bar (101 kPa) off", "Gauge (bar g) vs absolute (bar a) — they differ by atmospheric pressure"],
+              ["About 14.5 times", "psi vs bar — 1 bar ≈ 14.504 psi"],
+              ["About 6.9 times", "psi vs kPa — 1 psi ≈ 6.895 kPa"],
+              ["10 or 1000 times", "kPa, MPa and bar prefixes — 1 MPa = 10 bar = 1000 kPa"],
+              ["About 102 times", "kPa vs mmH₂O — 1 kPa ≈ 101.97 mmH₂O"],
+            ],
+          },
+        },
+        { h: "kgf/cm² is not a bar" },
+        { p: "1 kgf/cm² is the force of 1 kg under standard gravity (9.806 65 m/s²) over 1 cm², i.e. 98 066.5 Pa; 1 bar is 100 000 Pa. They are about 2 % apart: 7 kgf/cm² is about 6.86 bar and 1.6 MPa is about 16.3 kgf/cm². Copying the «kg» of a drawing or old gauge straight into a bar field is off by that much." },
+        { h: "Gauge versus absolute" },
+        { fig: { src: "/img/guides/pressure-gauge-abs.en.svg", w: 780, h: 330, alt: "Pressure scale: perfect vacuum is 0 absolute, atmosphere at 101.325 kPa is 0 gauge. 5 bar g is about 6.013 bar a, −0.5 bar g about 0.513 bar a", cap: "Gauge pressure is measured from the atmosphere, absolute pressure from a perfect vacuum. Drawn with the standard atmosphere." } },
+        { p: "Gauge pressure (bar g, psig) takes the local atmosphere as zero; absolute pressure (bar a, psia) takes a perfect vacuum as zero. Absolute = gauge + atmospheric. With the standard 101.325 kPa, 5 bar g is about 6.013 bar a. Most process pressure transmitters are gauge types, while vacuum, steam and gas calculations often need absolute pressure. Check the «G», «A», «gauge» or «absolute» in the datasheet, and write g or a after the unit to avoid mix-ups." },
+        { p: "A differential pressure transmitter (across a filter, an orifice flowmeter) reads the difference between two points — neither gauge nor absolute." },
+        { h: "mmH₂O and mmHg are conventional values" },
+        { p: "One millimetre of water (mmH₂O) is defined with water at 1000 kg/m³ and standard gravity: 9.806 65 Pa. One millimetre of mercury (mmHg) uses 13 595.1 kg/m³: about 133.3224 Pa. A real water column varies slightly with temperature — NIST SP 811 lists inH₂O at 39.2 °F as 249.082 Pa and at 60 °F as 248.84 Pa, against 249.0889 Pa conventional. A fan static pressure of 250 mmH₂O is about 2.45 kPa." },
+        { h: "Putting the sensor range into the PLC" },
+        { p: "A 4–20 mA pressure transmitter maps «range low = 4 mA, range high = 20 mA». In the PLC, either copy the transmitter's range and unit as they are or convert just the range into the unit you want. Example: to show a 0–10 bar transmitter in psi, enter 0–145.04 psi." },
+        {
+          table: {
+            head: ["Current", "0–10 bar", "psi", "kPa", "kgf/cm²"],
+            rows: [
+              ["4 mA", "0", "0", "0", "0"],
+              ["8 mA", "2.5", "36.26", "250", "2.549"],
+              ["12 mA", "5", "72.52", "500", "5.099"],
+              ["16 mA", "7.5", "108.8", "750", "7.648"],
+              ["20 mA", "10", "145.04", "1000", "10.197"],
+            ],
+          },
+        },
+        { p: "Compound (vacuum and pressure) transmitters with a range such as −1–9 bar work the same way, with 4 mA at the low end. Convert both ends when changing units, and add atmospheric pressure to both to turn a gauge range into absolute." },
+        { h: "Pressure read over Modbus" },
+        { p: "Pressure registers often carry a scale (such as 0.01) or a 32-bit float split across two registers. Check the unit, scale and word order in the device manual. For panel meters and transmitters whose unit can be changed on the device, also read the unit-setting register so the display and the bus value cannot drift apart." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Pressure Unit Converter» web tool: one value in bar, psi, kPa, MPa, kgf/cm², mmH₂O, mmHg and more; gauge ↔ absolute; a 4–20 mA table for a sensor range.",
+            "«4–20 mA Scaling Calculator» web tool: current ↔ engineering units ↔ % ↔ PLC counts.",
+            "Modbus Master decodes registers by type (integer or float) and word order (device profiles put the unit and scale in the column name), and PortDock Plot graphs numbers arriving over serial, TCP or UDP live.",
+          ],
+        },
+      ],
+    },
+  },
+  // 근거: ABB Motor guide(2019) §9.3 동기 속도·§3.8 슬립 허용차, ABB Technical guide No. 7 식 3.1·3.2, YASKAWA A1000 Technical Manual(SIEP C710616 41H)
+  // E2-02·o1-03·Modbus 0024H, LS S300 사용 설명서 5.1.2.3(DRV-32)·식 16·Modbus 0x0311. 장비 주소는 data/devices 의 확인값. 계산은 site/src/lib/motor.ts.
+  {
+    slug: "vfd-frequency-rpm",
+    date: "2026-10-23",
+    tools: ["modbus-master"],
+    related: ["motor-current-breaker-cable", "modbus-address-notation", "modbus-function-codes"],
+    webTools: ["tools/motor-speed/", "tools/motor-current/"],
+    devices: true,
+    deviceKinds: ["inverter"],
+    title: { ko: "인버터 주파수와 모터 회전수 — 60 Hz 가 1800 rpm 이 아닌 이유", en: "Drive frequency and motor speed — why 60 Hz is not 1800 rpm" },
+    seoTitle: { ko: "인버터 주파수 ↔ 모터 회전수 (극수·슬립·rpm 표시) — PortDock", en: "VFD Hz to RPM: Poles, Slip and the RPM Display — PortDock" },
+    desc: {
+      ko: "인버터 Hz 와 모터 rpm 의 관계 — 동기 속도 120f/P, 슬립, 감속비, 인버터 화면의 rpm 표시와 극수 설정, Modbus 로 출력 주파수 읽기까지.",
+      en: "How drive Hz maps to motor rpm — synchronous speed 120f/P, slip, gear ratio, the rpm display and pole setting, and output frequency over Modbus.",
+    },
+    body: {
+      ko: [
+        { p: "인버터는 모터에 주는 전원의 주파수를 바꿔 속도를 바꿉니다. 주파수와 회전수는 비례하지만, 유도 전동기는 «동기 속도» 보다 조금 느리게 돌기 때문에 60 Hz 4극 모터가 1800 rpm 으로 돌지는 않습니다. 계산·표시·통신 값이 서로 맞지 않을 때 확인할 것을 정리합니다." },
+        { h: "동기 속도: 120 × f ÷ 극수" },
+        { code: "ns(r/min) = 120 × f ÷ 극수\n  4극, 60 Hz → 1800 r/min\n  4극, 50 Hz → 1500 r/min\n  2극, 60 Hz → 3600 r/min   6극, 60 Hz → 1200 r/min" },
+        { p: "120 은 «60 초 × 2(극 한 쌍)» 입니다. 극수는 명판에 직접 적혀 있지 않은 경우가 많지만, 정격 회전수보다 조금 큰 동기 속도를 찾으면 알 수 있습니다. 60 Hz 에서 1750 r/min 이면 4극, 3500 r/min 대면 2극, 1160 r/min 이면 6극입니다." },
+        { h: "슬립: 실제 회전수가 낮은 이유" },
+        { fig: { src: "/img/guides/motor-slip.ko.svg", w: 780, h: 280, alt: "4극 모터: 60 Hz 에서 동기 1800 r/min, 실제 약 1750 r/min, 차이 50 r/min 이 슬립. 30 Hz 에서 동기 900 r/min, 실제 약 850 r/min", cap: "주파수를 반으로 줄이면 동기 속도도 반이 되고, 실제 회전수는 슬립만큼 낮습니다(같은 토크에서 슬립 회전수가 같다고 본 근사)." } },
+        { p: "유도 전동기는 회전자가 회전 자기장보다 느리게 돌아야 토크가 생깁니다. 이 차이가 슬립이고, 명판의 정격 회전수(예: 1750 r/min)는 정격 부하에서의 회전수입니다. 슬립 = (1800 − 1750) ÷ 1800 ≈ 2.8 %, 슬립 주파수 = 60 − 1750 × 4 ÷ 120 ≈ 1.67 Hz 입니다. YASKAWA A1000 은 이 식(E2-02 = f − n × p ÷ 120)으로 «모터 정격 슬립» 파라미터를 계산하라고 적고, 범용 모터라면 0.5~3 Hz 를 기준으로 듭니다." },
+        { p: "명판 회전수에도 허용차가 있습니다. ABB Motor guide 는 IEC 60034-1 에 따라 슬립 허용차를 ±20 %(1 kW 이상), ±30 %(1 kW 미만)로 적습니다." },
+        { h: "주파수를 바꿀 때 회전수" },
+        {
+          table: {
+            head: ["출력 주파수", "동기 속도(4극)", "회전수(정격 슬립 50 r/min 유지, 근사)"],
+            rows: [
+              ["60 Hz", "1800", "1750"],
+              ["45 Hz", "1350", "1300"],
+              ["30 Hz", "900", "850"],
+              ["15 Hz", "450", "400"],
+            ],
+          },
+        },
+        { p: "기저 주파수 아래에서 V/f 를 일정하게 운전하면, 같은 토크에서 슬립 회전수가 거의 같다고 보고 계산할 수 있습니다. 그래서 저속일수록 슬립이 «비율로» 커집니다. 실제 슬립은 부하에 따라 달라지고, 인버터의 슬립 보상이나 벡터 제어를 쓰면 인버터가 그만큼 주파수를 올려 동기 속도 기준의 지령 회전수에 가깝게 맞춥니다." },
+        { h: "감속기가 있으면" },
+        { p: "감속비 10 이면 출력축 회전수는 모터 회전수의 1/10 입니다. 출력축 150 r/min 이 필요하면 모터는 1500 r/min, 4극이면 동기 주파수 50 Hz 에 슬립 몫(50 r/min ≈ 1.67 Hz)을 더해 약 51.7 Hz 가 됩니다. 슬립 보상을 쓰면 50 Hz 로 맞춥니다." },
+        { h: "인버터 화면의 rpm 은 극수 설정으로 환산한 값" },
+        {
+          ul: [
+            "LS S300 은 DRV-32(Hz/rpm Select)를 1(rpm Display)로 하면 속도 관련 값이 rpm 으로 바뀝니다. 매뉴얼은 이 rpm 값이 4극 모터 기준이며 극수 설정(MOT1, 2-25)에 따라 달라진다고 적습니다. 같은 매뉴얼의 식 16 은 Hz = rpm × 극수 ÷ 120 입니다.",
+            "YASKAWA A1000 은 o1-03 = 2 이면 최대 출력 주파수와 모터 극수(E2-04)로 계산한 r/min 단위로 표시합니다.",
+            "극수 설정이 실제 모터와 다르면 rpm 표시가 배로 틀립니다(4극 모터를 2극으로 두면 2배). rpm 이 이상하면 극수 파라미터부터 봅니다.",
+          ],
+        },
+        { h: "Modbus 로 출력 주파수 읽기" },
+        {
+          table: {
+            head: ["장비", "출력 주파수 주소", "단위"],
+            rows: [
+              ["LS S300", "0x0311", "0.01 Hz"],
+              ["LS S100", "0h000A", "0.01 Hz"],
+              ["YASKAWA A1000", "0024H", "o1-03 설정에 따름"],
+            ],
+          },
+        },
+        { p: "주소는 PortDock 장비 레지스터 맵의 매뉴얼 표기입니다. 읽은 값을 rpm 으로 보려면 주파수 × 120 ÷ 극수(동기 속도)로 바꾸고, 실제 회전수가 필요하면 슬립을 빼거나 인코더·회전수 모니터 값을 씁니다. YASKAWA 처럼 표시 단위 설정이 통신 값에도 적용되는 장비는 설정을 함께 확인합니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «인버터 주파수 ↔ 모터 회전수»: Hz·극수 → 동기 속도, 명판 회전수로 슬립, 감속비 출력 회전수, 원하는 rpm 에 필요한 Hz 를 계산합니다.",
+            "웹 도구 «모터 전류 계산기»: 정격 출력·전압·효율·역률로 전류와 정격 토크를 봅니다.",
+            "Modbus Master: 인버터 장비 맵(LS S100·S300·G100·M100·H100, YASKAWA A1000·V1000)을 불러와 출력 주파수·전류를 표로 읽습니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "A drive changes motor speed by changing the frequency it supplies. Speed is proportional to frequency, but an induction motor runs a little below «synchronous speed», so a 4-pole motor at 60 Hz does not turn at 1800 rpm. Here is what to check when the calculation, the display and the bus value disagree." },
+        { h: "Synchronous speed: 120 × f ÷ poles" },
+        { code: "ns (r/min) = 120 × f ÷ poles\n  4 poles, 60 Hz → 1800 r/min\n  4 poles, 50 Hz → 1500 r/min\n  2 poles, 60 Hz → 3600 r/min   6 poles, 60 Hz → 1200 r/min" },
+        { p: "The 120 is «60 seconds × 2 (poles per pair)». Nameplates often omit the pole count, but the synchronous speed just above the rated speed gives it away: 1750 r/min at 60 Hz is 4 poles, 3500-something is 2 poles, 1160 is 6 poles." },
+        { h: "Slip: why the real speed is lower" },
+        { fig: { src: "/img/guides/motor-slip.en.svg", w: 780, h: 280, alt: "4-pole motor: synchronous 1800 r/min and actual about 1750 r/min at 60 Hz, the 50 r/min difference is slip; at 30 Hz synchronous 900 r/min and actual about 850 r/min", cap: "Halving the frequency halves the synchronous speed; the actual speed is lower by the slip (approximation: same slip rpm at the same torque)." } },
+        { p: "An induction motor's rotor must turn slower than the rotating field to produce torque. The difference is slip, and the nameplate rated speed (say 1750 r/min) is the speed at rated load. Slip = (1800 − 1750) ÷ 1800 ≈ 2.8 %; slip frequency = 60 − 1750 × 4 ÷ 120 ≈ 1.67 Hz. The YASKAWA A1000 manual uses exactly this formula (E2-02 = f − n × p ÷ 120) for its «motor rated slip» parameter and gives 0.5–3 Hz as a guideline for general-purpose motors." },
+        { p: "Nameplate speed has a tolerance too: ABB's Motor guide gives, after IEC 60034-1, ±20 % on slip for 1 kW and above and ±30 % below 1 kW." },
+        { h: "Speed at other frequencies" },
+        {
+          table: {
+            head: ["Output frequency", "Synchronous (4 poles)", "Speed (rated slip 50 r/min kept, approx.)"],
+            rows: [
+              ["60 Hz", "1800", "1750"],
+              ["45 Hz", "1350", "1300"],
+              ["30 Hz", "900", "850"],
+              ["15 Hz", "450", "400"],
+            ],
+          },
+        },
+        { p: "Below base frequency with constant V/f, the slip speed at a given torque can be taken as roughly unchanged, so slip grows as a percentage at low speed. Real slip varies with load, and with slip compensation or vector control the drive raises the frequency by the slip to track a speed command based on synchronous speed." },
+        { h: "With a gearbox" },
+        { p: "A 10:1 reducer turns the output shaft at one tenth of motor speed. For 150 r/min at the output the motor needs 1500 r/min: on 4 poles that is 50 Hz synchronous plus the slip (50 r/min ≈ 1.67 Hz), about 51.7 Hz — or 50 Hz with slip compensation." },
+        { h: "The rpm on the drive display comes from the pole setting" },
+        {
+          ul: [
+            "On the LS S300, setting DRV-32 (Hz/rpm Select) to 1 (rpm Display) switches speed values to rpm. The manual notes the rpm values assume a 4-pole motor and change with the pole number setting (MOT1, 2-25); its formula 16 is Hz = rpm × poles ÷ 120.",
+            "On the YASKAWA A1000, o1-03 = 2 shows r/min calculated from the maximum output frequency and the number of motor poles (E2-04).",
+            "A wrong pole setting makes the rpm display wrong by a whole factor (a 4-pole motor set as 2 poles reads double). If the rpm looks odd, check the pole parameter first.",
+          ],
+        },
+        { h: "Reading output frequency over Modbus" },
+        {
+          table: {
+            head: ["Device", "Output frequency address", "Unit"],
+            rows: [
+              ["LS S300", "0x0311", "0.01 Hz"],
+              ["LS S100", "0h000A", "0.01 Hz"],
+              ["YASKAWA A1000", "0024H", "set by o1-03"],
+            ],
+          },
+        },
+        { p: "Addresses are as printed in the manuals, from PortDock's device register maps. To show the value in rpm, multiply by 120 and divide by the poles (synchronous speed); for the true speed, subtract the slip or use an encoder or speed monitor value. On drives like the YASKAWA where the display unit setting also applies to the bus value, check that setting too." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«VFD Frequency ↔ Motor RPM» web tool: Hz and poles → synchronous speed, slip from the nameplate, gearbox output speed, and the Hz needed for a target rpm.",
+            "«Motor Current Calculator» web tool: current and rated torque from output, voltage, efficiency and power factor.",
+            "Modbus Master: load the drive register maps (LS S100, S300, G100, M100, H100, YASKAWA A1000, V1000) and read output frequency and current in a table.",
           ],
         },
       ],

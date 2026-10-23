@@ -6,7 +6,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { toolById, REPO, type Lang } from "../data/tools";
 import { GUIDES, type Guide } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
-import { DEVICES } from "../data/devices";
+import { DEVICES, devPath } from "../data/devices";
 import { url } from "../lib/i18n";
 
 interface Props {
@@ -18,6 +18,8 @@ const ko = lang === "ko";
 const tools = guide.tools.map(toolById);
 const related = guide.related.map((s) => GUIDES.find((g) => g.slug === s)!);
 const webTools = (guide.webTools ?? []).map(webToolByPath);
+// 이 글과 같은 종류의 장비 레지스터 맵(예: 인버터 글 → 인버터 장비)
+const kindDevices = DEVICES.filter((d) => guide.deviceKinds?.includes(d.kind));
 const here = new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href;
 const ld = {
   "@context": "https://schema.org",
@@ -104,6 +106,13 @@ const ld = {
           webTools.map((w) => (
             <li>
               <a href={url(lang, w.path)}>{w.name[lang]}</a> — {ko ? "웹 도구, 설치 없이" : "web tool, no install"}
+            </li>
+          ))
+        }
+        {
+          kindDevices.map((d) => (
+            <li>
+              <a href={url(lang, devPath(d))}>{ko ? `${d.manufacturer.ko} ${d.model} Modbus 레지스터 맵` : `${d.manufacturer.en} ${d.model} Modbus register map`}</a>
             </li>
           ))
         }
