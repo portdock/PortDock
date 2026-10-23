@@ -47,7 +47,7 @@ pub fn exception_name(code: u8) -> &'static str {
         0x06 => "Server Device Busy",
         0x08 => "Memory Parity Error",
         0x0A => "Gateway Path Unavailable",
-        0x0B => "Gateway Target Failed to Respond",
+        0x0B => "Gateway Target Device Failed to Respond",
         _ => "Unknown",
     }
 }
