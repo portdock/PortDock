@@ -252,7 +252,7 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
-    import { burden, ratio, ratioError, toPrimary, toSecondary } from "../lib/ct";
+    import { burden, loadPct, ratio, ratioError, toPrimary, toSecondary } from "../lib/ct";
     const ko = document.documentElement.lang === "ko";
     const form = document.getElementById("ct") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
@@ -277,7 +277,7 @@ const ld = {
         if (Number.isNaN(ip)) clear(["sec", "load"]);
         else {
           set("sec", `${p4(toSecondary(ip, ipn, isn))} A`);
-          set("load", `${p4((ip / ipn) * 100)} %`);
+          set("load", `${p4(loadPct(ip, ipn))} %`);
         }
         const is = num("is");
         set("pri", Number.isNaN(is) ? "" : `${p4(toPrimary(is, ipn, isn))} A`);

@@ -1,7 +1,7 @@
 // 변류기(CT) 비·부담 — ABB Instrument Transformers Application Guide(1VAP420003-TG) 예·표와 정의식
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { burden, leadOhm, ohmForRating, ratio, ratioError, rcf, toPrimary, toSecondary, va, vaToOhm } from "./ct.ts";
+import { burden, leadOhm, loadPct, ohmForRating, ratio, ratioError, rcf, toPrimary, toSecondary, va, vaToOhm } from "./ct.ts";
 
 const near = (a: number, b: number, eps: number) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
 
@@ -79,4 +79,11 @@ test("가이드·그림 예: 200/5, 2.5 mm², 계기 1 VA, 정격 5 VA — 편�
   const c = burden(1, 30, 2.5, 1, 0, 5);
   near(c.totalVa, 1.414, 1e-3);
   near(c.pctOfRated!, 28.28, 1e-2);
+});
+
+test("정격 1차 대비 %: 200/5 에 150 A → 75 %, 넘치면(1e307 A ÷ 1 A) RangeError(«Infinity %» 막음)", () => {
+  near(loadPct(150, 200), 75, 1e-12);
+  near(loadPct(0, 200), 0, 0);
+  assert.throws(() => loadPct(1e307, 1), RangeError);
+  for (const [ip, ipn] of [[-1, 200], [NaN, 200], [150, 0], [150, NaN], [Infinity, 200]]) assert.throws(() => loadPct(ip, ipn), RangeError, `${ip}/${ipn}`);
 });

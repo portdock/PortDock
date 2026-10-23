@@ -28,6 +28,11 @@ export function toSecondary(ip: number, ipn: number, isn: number): number {
   if (!(ip >= 0) || !Number.isFinite(ip)) throw new RangeError("I");
   return fin(ip / ratio(ipn, isn));
 }
+/** 1차 전류가 정격 1차의 몇 % 인지 — 넘치면(1e307 A 같은 입력) «Infinity %» 로 찍히지 않게 거절 */
+export function loadPct(ip: number, ipn: number): number {
+  if (!(ip >= 0) || !Number.isFinite(ip) || !pos(ipn)) throw new RangeError("I");
+  return fin((ip / ipn) * 100);
+}
 /** 2차 전류 → 1차 전류 */
 export function toPrimary(is: number, ipn: number, isn: number): number {
   if (!(is >= 0) || !Number.isFinite(is)) throw new RangeError("I");

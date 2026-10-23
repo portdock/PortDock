@@ -1,7 +1,7 @@
 // 합성 저항(직렬·병렬) — 정의식과 표준 값 조합
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bestCombos, parallel, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "./resistors.ts";
+import { bestCombos, parallel, parallelCurrents, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "./resistors.ts";
 import { E_BASE } from "./divider.ts";
 
 const near = (a: number, b: number, eps: number) => assert.ok(Math.abs(a - b) <= eps, `${a} ≠ ${b}`);
@@ -83,4 +83,15 @@ test("값 읽기: 4.7k·4k7·2M2·0R47·470·10 kΩ, m(밀리)은 거절", () =>
   near(parseOhm("k1"), 100, 1e-9);
   for (const bad of ["", "abc", "1m", "4.7k7", "1e999", "-1k"]) assert.ok(Number.isNaN(parseOhm(bad)), bad);
   assert.deepEqual(parseOhms("10k, 4k7  2.2k;100"), [10e3, 4700, 2200, 100]);
+});
+
+test("병렬 전류: 24 V 에 1k·2k·4k → 42 mA(24·12·6 mA), 넘치거나 전압이 0·음수·NaN 이면 RangeError(«Infinity A» 막음)", () => {
+  const c = parallelCurrents(24, [1e3, 2e3, 4e3]);
+  near(c.total, 0.042, 1e-12);
+  near(c.each[0], 0.024, 1e-12);
+  near(c.each[1], 0.012, 1e-12);
+  near(c.each[2], 0.006, 1e-12);
+  assert.throws(() => parallelCurrents(1e307, [0.001]), RangeError);
+  assert.throws(() => parallelCurrents(1e307, [1e3, 0.001]), RangeError);
+  for (const v of [0, -1, NaN, Infinity]) assert.throws(() => parallelCurrents(v, [1e3]), RangeError, String(v));
 });

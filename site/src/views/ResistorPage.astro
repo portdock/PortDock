@@ -234,7 +234,7 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
-    import { bestCombos, parallel, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "../lib/resistors";
+    import { bestCombos, parallel, parallelCurrents, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "../lib/resistors";
     import { nearestE, type ESeries } from "../lib/divider";
     const ko = document.documentElement.lang === "ko";
     const form = document.getElementById("rp") as HTMLFormElement;
@@ -257,7 +257,17 @@ const ld = {
         set("share", rs.length > 1 ? parallelShares(rs).map((s) => `${p4(s * 100)} %`).join(" / ") : "100 %");
         const vs = $("v").value.trim().replace(",", ".");
         const V = vs === "" ? NaN : Number(vs);
-        set("pv", V > 0 && Number.isFinite(V) ? `${amp(V / P)} (${rs.map((r) => amp(V / r)).join(" + ")})` : "");
+        let pv = "";
+        try {
+          // 전압칸이 비었거나 전류가 넘치면(1e307 V ÷ 0.001 Ω) 이 칸만 비운다 — «Infinity A» 를 찍지 않게
+          if (!Number.isNaN(V)) {
+            const c = parallelCurrents(V, rs);
+            pv = `${amp(c.total)} (${c.each.map(amp).join(" + ")})`;
+          }
+        } catch {
+          pv = "";
+        }
+        set("pv", pv);
         $("err").textContent = "";
       } catch {
         $("err").textContent = ko ? "저항 값을 확인하세요 — 0 보다 큰 값을 빈칸이나 쉼표로 나눠 넣습니다(예: 10k 4k7)" : "Check the values — numbers above 0 separated by spaces or commas (e.g. 10k 4k7)";

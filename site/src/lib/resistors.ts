@@ -31,6 +31,13 @@ export function parallelShares(rs: number[]): number[] {
   return rs.map((r) => rt / r);
 }
 
+/** 전압 v 를 병렬 저항들에 걸 때 전체·저항별 전류(A) — 넘치면(1e307 V ÷ 0.001 Ω 같은 입력) «Infinity A» 로 찍히지 않게 거절 */
+export function parallelCurrents(v: number, rs: number[]): { total: number; each: number[] } {
+  if (!ok(v)) throw new RangeError("V");
+  const total = fin(v / parallel(rs));
+  return { total, each: rs.map((r) => fin(v / r)) };
+}
+
 /** r 에 병렬로 붙여 target 이 되는 저항 — r 이 target 보다 커야 한다 */
 export function parallelPartner(r: number, target: number): number {
   if (!ok(r) || !ok(target) || !(r > target)) throw new RangeError("R");
