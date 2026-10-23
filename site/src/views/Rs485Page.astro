@@ -303,7 +303,7 @@ const SRC = [
         v2.className = "verdict " + (inR ? "ok" : "warn");
         v2.textContent = inR ? T.inRange : T.outRange;
       } catch {
-        err.textContent = ko ? "숫자를 확인하세요 — 저항·전압은 0 이상, 보율은 0 보다 커야 합니다" : "Check the numbers — resistances and voltage 0 or more, baud above 0";
+        err.textContent = ko ? "숫자를 확인하세요 — 저항과 보율은 0 보다 크고, 전압은 0 이상이어야 합니다" : "Check the numbers — resistances and baud above 0, voltage 0 or more";
         v1.textContent = "";
         v2.textContent = "";
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";

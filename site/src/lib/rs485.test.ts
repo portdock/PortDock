@@ -44,3 +44,14 @@ test("길이: 9600 bps → 1200 m, 115200 bps → 약 868 m, 가지선 20 m·40/
   assert.equal(maxStub(4), 10);
   near(termPowerDriven(2, 120), 4 / 120);
 });
+
+test("저항이 0 이하이면 RangeError(화면에 NaN·Infinity 가 나오지 않게)", () => {
+  const base = { vcc: 5, rUp: 560, rDown: 560, ends: ["r", "r"] as ["r", "r"], rTerm: 120 };
+  for (const k of ["rUp", "rDown", "rTerm"] as const) {
+    assert.throws(() => bias({ ...base, [k]: 0 }), RangeError, k);
+    assert.throws(() => bias({ ...base, [k]: -10 }), RangeError, k);
+  }
+  assert.throws(() => bias({ ...base, vcc: -1 }), RangeError);
+  assert.throws(() => bias({ ...base, rUp: NaN }), RangeError);
+  for (const v of Object.values(bias({ ...base, vcc: 0 }))) assert.ok(typeof v === "boolean" || Number.isFinite(v));
+});

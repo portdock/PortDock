@@ -38,7 +38,9 @@ export interface BiasResult {
 export const THRESHOLD = 0.2;
 
 export function bias(x: BiasInput): BiasResult {
-  for (const v of [x.vcc, x.rUp, x.rDown, x.rTerm]) if (!Number.isFinite(v) || v < 0) throw new RangeError("value");
+  // 전압은 0 이상, 저항은 0 보다 커야 한다 — 0 Ω 이면 0 ÷ 0(NaN)·무한 전류가 화면에 나온다
+  if (!Number.isFinite(x.vcc) || x.vcc < 0) throw new RangeError("vcc");
+  for (const v of [x.rUp, x.rDown, x.rTerm]) if (!Number.isFinite(v) || !(v > 0)) throw new RangeError("resistance");
   const dc = x.ends.filter((e) => e === "r").length;
   const rLine = dc === 0 ? Infinity : x.rTerm / dc;
   if (rLine === Infinity) {
