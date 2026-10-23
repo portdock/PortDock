@@ -9,6 +9,7 @@
 | 애드센스 검토 결과 기다리기(메일 portdock.contact@gmail.com) | 사용자 | 10/22 검토 요청함. 게시자 `ca-pub-2423716169041955`, 소유 확인 meta·`/ads.txt` 배포됨 |
 | 승인 뒤 광고 단위 만들기 → 번호를 Claude 에게 | 사용자 | 대기 |
 | 광고 단위 번호를 `PUBLIC_ADSENSE_SLOT`(또는 `site/src/lib/ads.ts`)에 넣고 배포, 광고 나오는지 확인 | Claude | 승인 뒤 |
+| 애드센스 지급 — 수익이 쌓인 뒤에(사용자 10/23 결정, 미뤄도 수익은 계정에 쌓임): ① 수익 $10 즈음 결제 프로필(계정 유형 개인 · 수취인 = 은행 예금주와 같은 실명 · 우편 받는 집 주소 · 휴대폰 인증) → ② 종이 우편 PIN(2~4주) 입력 → ③ $100 전에 은행 계좌 등록 → ④ $100 넘은 다음 달 지급. 미국 세금 양식(개인은 보통 W-8BEN)을 요구하면 화면을 Claude 에게. 광고 수입은 다음 해 5월 종합소득세 신고 대상일 수 있음 | 사용자 | 수익 생긴 뒤 |
 | Google Search Console — `https://portdock.dev/` 속성(portdock.contact, 메타 태그 확인 — `Base.astro` 의 값 지우지 말 것) → sitemap 제출 | Claude(Chrome) | ✅ 10/22 확인·sitemap 제출. 색인은 며칠~몇 주 |
 | Bing Webmaster Tools — «Google Search Console 에서 가져오기»(Google 권한 허용·Microsoft 로그인이 필요해 사용자) | 사용자 | 안 함 |
 | 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 (Chrome 확장에서 네이버 접속이 막혀 Claude 가 못 함) | 사용자 | 안 함 |
