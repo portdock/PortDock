@@ -1,0 +1,263 @@
+---
+// 웹 도구: 엔코더 펄스 ↔ rpm — PPR·체배·출력 주파수·카운트 속도·최대 응답 주파수(lib/encoder.ts, 정의식).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { MULTS, pulseHz } from "../lib/encoder";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/encoder/";
+const L = ko
+  ? {
+      title: "엔코더 펄스 ↔ rpm 계산기",
+      desc: "엔코더 PPR·체배(1·2·4)로 회전수 ↔ 출력 주파수·카운트 속도, 센 카운트로 rpm, 최대 응답 주파수로 최대 rpm, 1카운트 각도·이동 거리를 계산합니다.",
+      ppr: "분해능 PPR (한 바퀴 펄스, 한 상)",
+      mult: "체배",
+      multOpt: ["×1 (A 상 상승 에지)", "×2 (A 상 양쪽 에지)", "×4 (A·B 상 모든 에지)"],
+      rpm: "회전수 (rpm)",
+      cnt: "센 카운트",
+      gate: "센 시간 (ms)",
+      fmax: "최대 응답 주파수 (kHz) — 엔코더 또는 카운터 입력 중 낮은 쪽",
+      lead: "한 바퀴 이동량 (mm, 볼스크류 리드 등 — 선택)",
+      res: "결과",
+      k: { hz: "한 상 출력 주파수", rate: "카운트 속도 (체배 반영)", rev: "한 바퀴 카운트", deg: "1카운트 각도", mm: "1카운트 이동량", c2r: "센 카운트의 회전수", max: "최대 응답 주파수로 본 최대 rpm" },
+      tTitle: "PPR 별 한 상 출력 주파수 (kHz)",
+      tHead: ["PPR", "1000 rpm", "1800 rpm", "3000 rpm", "6000 rpm"],
+      example: "기본값(1000 PPR, ×4, 1800 rpm, 100 ms 에 12 000 카운트, 100 kHz)은 예시입니다. PPR·최대 응답 주파수는 엔코더 데이터시트, 카운터 입력의 최대 주파수는 PLC·카운터 매뉴얼에서 확인하세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "한 상 출력 주파수 f(Hz) = rpm × PPR ÷ 60",
+        "카운트 속도 = f × 체배,   한 바퀴 카운트 = PPR × 체배",
+        "rpm = 센 카운트 ÷ (PPR × 체배) ÷ 센 시간(s) × 60",
+        "최대 rpm = 최대 응답 주파수 × 60 ÷ PPR",
+        "1카운트 각도 = 360° ÷ (PPR × 체배),   1카운트 이동량 = 한 바퀴 이동량 ÷ (PPR × 체배)",
+      ],
+      mTitle: "체배(×1·×2·×4)",
+      m: [
+        "증분형 엔코더의 A 상과 B 상은 90° 어긋난 펄스입니다. 한 상의 상승 에지만 세면 한 바퀴에 PPR 개(×1), 그 상의 상승·하강 에지를 모두 세면 2배, 두 상의 에지를 모두 세면 4배 카운트가 됩니다. B 상이 A 상보다 앞서는지 뒤서는지로 방향을 압니다.",
+        "체배를 올리면 분해능은 좋아지지만 카운터가 받아야 하는 에지 수도 늘어납니다. 카운터의 «최대 입력 주파수» 가 한 상 주파수 기준인지, 체배 뒤 카운트 속도 기준인지는 PLC·카운터 매뉴얼마다 표기가 다르므로 확인합니다.",
+      ],
+      lTitle: "최대 응답 주파수와 최대 rpm",
+      l: "엔코더 데이터시트의 «최대 응답 주파수» 는 출력이 따라갈 수 있는 펄스 주파수입니다. PPR 이 높을수록 같은 rpm 에서 주파수가 높아지므로, 최대 rpm = 최대 응답 주파수 × 60 ÷ PPR 을 기계적 허용 회전수와 함께 보고 둘 중 낮은 값을 넘지 않게 고릅니다. 받는 쪽(PLC 고속 카운터·인버터 PG 카드 등)의 최대 입력 주파수도 같은 식으로 확인합니다.",
+      sTitle: "rpm 을 재는 두 방법",
+      s: [
+        "주기 안의 카운트 세기(이 계산기의 «센 카운트»): 일정 시간 동안 센 카운트로 rpm 을 냅니다. 저속에서는 시간 안에 들어오는 카운트가 적어 1카운트 차이가 큰 오차가 됩니다 — 예: 1000 PPR ×4, 100 ms 에서 1카운트 = 0.15 rpm.",
+        "펄스 간격 재기: 펄스와 펄스 사이 시간을 재는 방법은 저속에 유리하고 고속에 불리합니다. 어느 방식인지는 카운터·드라이브 매뉴얼에 있습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["1000 PPR 엔코더가 1800 rpm 이면 몇 kHz 인가요?", "한 상 출력은 1800 × 1000 ÷ 60 = 30 kHz 입니다. 4체배로 세면 카운트 속도는 초당 120 000 카운트입니다."],
+        ["PPR 과 CPR 은 다른가요?", "PPR 은 한 상의 한 바퀴 펄스 수, CPR(카운트)은 체배를 반영한 한 바퀴 카운트로 쓰는 경우가 많습니다. 제조사마다 쓰는 말이 다르므로 데이터시트의 정의를 확인합니다."],
+        ["절대형 엔코더의 분해능은?", "n비트 절대형은 한 바퀴를 2^n 위치로 나눕니다(17비트 = 131 072). 출력이 그레이 코드면 2진으로 바꿔 읽습니다."],
+        ["인버터 주파수로 회전수를 알 수 있나요?", "동기 속도는 120 × f ÷ 극수지만 실제 회전수는 슬립만큼 낮습니다. 정확한 회전수가 필요하면 엔코더 값을 씁니다 — 인버터 주파수 ↔ 회전수 계산기를 보세요."],
+      ],
+      srcTitle: "근거",
+      src: "모든 값은 정의식(1분 = 60 초, 한 바퀴 = 360°)으로 계산합니다. 최대 응답 주파수·기계적 허용 회전수·카운터 입력 한도는 쓰는 제품의 데이터시트 값을 넣으세요.",
+      msNote: "인버터 주파수와 모터 회전수 관계는",
+      msLink: "인버터 주파수 ↔ 모터 회전수",
+      icNote: "그레이 코드 출력을 2진으로 바꾸려면",
+      icLink: "정수·진수 변환기",
+    }
+  : {
+      title: "Encoder Pulses ↔ RPM Calculator",
+      desc: "Encoder PPR and ×1/×2/×4 decoding → output frequency and count rate, rpm from counted pulses, max rpm from response frequency, angle per count.",
+      ppr: "Resolution PPR (pulses per revolution, one channel)",
+      mult: "Decoding",
+      multOpt: ["×1 (A rising edges)", "×2 (both A edges)", "×4 (all A and B edges)"],
+      rpm: "Speed (rpm)",
+      cnt: "Counted pulses",
+      gate: "Counting time (ms)",
+      fmax: "Max response frequency (kHz) — the lower of encoder and counter input",
+      lead: "Travel per revolution (mm, e.g. ball screw lead — optional)",
+      res: "Results",
+      k: { hz: "Output frequency per channel", rate: "Count rate (with decoding)", rev: "Counts per revolution", deg: "Angle per count", mm: "Travel per count", c2r: "Speed from the counted pulses", max: "Max rpm from the response frequency" },
+      tTitle: "Output frequency per channel by PPR (kHz)",
+      tHead: ["PPR", "1000 rpm", "1800 rpm", "3000 rpm", "6000 rpm"],
+      example: "The defaults (1000 PPR, ×4, 1800 rpm, 12,000 counts in 100 ms, 100 kHz) are an example. Take PPR and maximum response frequency from the encoder datasheet and the counter input limit from the PLC or counter manual.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Output frequency per channel f (Hz) = rpm × PPR ÷ 60",
+        "Count rate = f × decoding,   counts per revolution = PPR × decoding",
+        "rpm = counts ÷ (PPR × decoding) ÷ counting time (s) × 60",
+        "Max rpm = max response frequency × 60 ÷ PPR",
+        "Angle per count = 360° ÷ (PPR × decoding),   travel per count = travel per revolution ÷ (PPR × decoding)",
+      ],
+      mTitle: "Decoding (×1, ×2, ×4)",
+      m: [
+        "An incremental encoder's A and B channels are pulse trains 90° apart. Counting only rising edges of one channel gives PPR counts per revolution (×1); both edges of that channel give twice as many; all edges of both channels give four times. Whether B leads or lags A gives the direction.",
+        "Higher decoding improves resolution but raises the edge rate the counter must handle. PLC and counter manuals differ on whether their «maximum input frequency» means per-channel frequency or the decoded count rate — check which.",
+      ],
+      lTitle: "Max response frequency and max rpm",
+      l: "An encoder datasheet's «maximum response frequency» is the pulse frequency its output can follow. Higher PPR means a higher frequency at the same rpm, so compare max rpm = max response frequency × 60 ÷ PPR with the mechanical speed limit and stay under the lower one. Check the receiving side (PLC high-speed counter, drive PG card…) the same way.",
+      sTitle: "Two ways to measure rpm",
+      s: [
+        "Counting pulses in a fixed time (this calculator's «counted pulses»): fewer counts arrive at low speed, so one count is a large error — e.g. 1000 PPR ×4 over 100 ms, one count = 0.15 rpm.",
+        "Timing the interval between pulses suits low speeds and struggles at high speeds. The counter or drive manual says which method it uses.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What frequency is a 1000 PPR encoder at 1800 rpm?", "Each channel outputs 1800 × 1000 ÷ 60 = 30 kHz. With ×4 decoding the count rate is 120,000 counts per second."],
+        ["Are PPR and CPR different?", "PPR is usually pulses per revolution on one channel; CPR (counts) often means counts per revolution after decoding. Vendors use the terms differently, so check the datasheet definition."],
+        ["What about absolute encoders?", "An n-bit absolute encoder divides one turn into 2^n positions (17 bits = 131,072). If the output is Gray code, convert it to binary first."],
+        ["Can I get speed from the drive frequency?", "Synchronous speed is 120 × f ÷ poles, but the real speed is lower by the slip. For the true speed use an encoder — see the VFD frequency ↔ rpm calculator."],
+      ],
+      srcTitle: "Basis",
+      src: "Everything is computed from definitions (1 minute = 60 s, one turn = 360°). Enter the maximum response frequency, mechanical speed limit and counter input limit from your products' datasheets.",
+      msNote: "For drive frequency and motor speed, use",
+      msLink: "VFD Frequency ↔ Motor RPM",
+      icNote: "To convert Gray code output to binary, use the",
+      icLink: "Integer & Base Converter",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const PPRS = [100, 360, 500, 1000, 1024, 2048, 2500, 5000];
+const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseHz(r, p) / 1000).toFixed(3))]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "엔코더 펄스 ↔ rpm 계산기 — PPR·체배·응답 주파수 — PortDock" : "Encoder Pulses to RPM Calculator: PPR, ×4, Frequency — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="en">
+      <div class="row">
+        <label class="fld">{L.ppr}<input id="ppr" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.mult}<select id="mult">{MULTS.map((m, i) => <option value={m} selected={m === 4}>{L.multOpt[i]}</option>)}</select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.rpm}<input id="rpm" class="mono" value="1800" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.cnt}<input id="cnt" class="mono" value="12000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.gate}<input id="gate" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.fmax}<input id="fmax" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.lead}<input id="lead" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["hz", "rate", "rev", "deg", "mm", "c2r", "max"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="vd"></p>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.mTitle}</h2>
+      <ul>{L.m.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.lTitle}</h2>
+      <p>{L.l}</p>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.sTitle}</h2>
+      <ul>{L.s.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.msNote} <a href={url(lang, "tools/motor-speed/")}>{L.msLink}</a>. {L.icNote} <a href={url(lang, "tools/integer/")}>{L.icLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { countRate, degPerCount, distPerCount, maxRpm, pulseHz, rpmFromCounts } from "../lib/encoder";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("en") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d: number) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const hz = (x: number) => (x >= 1e6 ? `${fx(x / 1e6, 4)} MHz` : x >= 1e3 ? `${fx(x / 1e3, 4)} kHz` : `${fx(x, 3)} Hz`);
+    function run() {
+      const vd = $("vd");
+      vd.textContent = "";
+      vd.className = "verdict";
+      try {
+        const ppr = num("ppr");
+        const mult = Number($<HTMLSelectElement>("mult").value);
+        const rpm = num("rpm");
+        set("rev", String(ppr * mult));
+        set("deg", `${fx(degPerCount(ppr, mult), 6)}°`);
+        const lead = num("lead");
+        set("mm", Number.isFinite(lead) && lead > 0 ? `${fx(distPerCount(lead, ppr, mult) * 1000, 4)} µm` : "");
+        if (Number.isFinite(rpm)) {
+          set("hz", hz(pulseHz(rpm, ppr)));
+          set("rate", `${fx(countRate(rpm, ppr, mult), 2)} /s`);
+        } else {
+          set("hz", "");
+          set("rate", "");
+        }
+        const cnt = num("cnt");
+        const gate = num("gate");
+        set("c2r", Number.isFinite(cnt) && gate > 0 ? `${fx(rpmFromCounts(cnt, ppr, mult, gate / 1000), 3)} rpm (${ko ? "1카운트" : "1 count"} = ${fx(rpmFromCounts(1, ppr, mult, gate / 1000), 4)} rpm)` : "");
+        const fmax = num("fmax") * 1000;
+        if (fmax > 0) {
+          const m = maxRpm(fmax, ppr);
+          set("max", `${fx(m, 1)} rpm`);
+          if (Number.isFinite(rpm)) {
+            const ok = rpm <= m;
+            vd.className = `verdict ${ok ? "ok" : "fault"}`;
+            vd.textContent = ok
+              ? ko ? `${fx(rpm, 1)} rpm 은 최대 응답 주파수 안(한 상 ${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)})` : `${fx(rpm, 1)} rpm is within the response frequency (${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)} per channel)`
+              : ko ? `${fx(rpm, 1)} rpm 은 최대 응답 주파수를 넘습니다(한 상 ${hz(pulseHz(rpm, ppr))} > ${hz(fmax)}) — PPR 을 낮추거나 더 빠른 입력이 필요합니다` : `${fx(rpm, 1)} rpm exceeds the response frequency (${hz(pulseHz(rpm, ppr))} > ${hz(fmax)} per channel) — lower the PPR or use a faster input`;
+          }
+        } else set("max", "");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — PPR 은 0 보다 커야 합니다" : "Check the numbers — PPR must be above 0";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

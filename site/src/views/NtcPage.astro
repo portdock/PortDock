@@ -1,0 +1,336 @@
+---
+// 웹 도구: NTC 서미스터 계산기 — B 정수·Steinhart–Hart 로 저항 ↔ 온도, 분압·ADC, 온도표, 자기 발열(lib/ntc.ts).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/ntc/";
+const L = ko
+  ? {
+      title: "NTC 서미스터 계산기",
+      desc: "NTC 서미스터 저항 ↔ 온도를 B 정수 식·Steinhart–Hart 식으로 계산하고 분압 전압·ADC 값, 온도표, 자기 발열까지 봅니다(예: 10k B3950).",
+      model: "식",
+      models: ["B 정수 (R25·B 값)", "Steinhart–Hart (세 점)"],
+      r0: "정격 저항 R (Ω)",
+      t0: "정격 온도 (°C)",
+      b: "B 값 (K)",
+      pts: "세 점 (온도 °C, 저항 Ω) — 데이터시트 R/T 표에서",
+      t: "온도 (°C)",
+      r: "또는 저항 (Ω) → 온도",
+      divT: "분압 회로·ADC",
+      vs: "분압 전원 (V)",
+      fixed: "고정 저항 (Ω)",
+      place: "NTC 위치",
+      places: ["아래쪽 (GND 쪽)", "위쪽 (전원 쪽)"],
+      bits: "ADC 비트",
+      vref: "ADC 기준 전압 (V)",
+      dth: "발산 계수 δth (mW/K, 데이터시트)",
+      code: "또는 ADC 값 → 온도",
+      res: "결과",
+      k: { r: "그 온도의 저항", tr: "입력 저항의 온도", coef: "Steinhart–Hart 계수 A · B · C", v: "분압 전압", adc: "ADC 값", lsb: "1 LSB 전압 · 그 온도에서 1 LSB 당 온도", p: "NTC 소비 전력 · 자기 발열", tc: "ADC 값의 온도" },
+      tTitle: "온도표",
+      tHead: ["°C", "저항 (Ω)", "분압 전압 (V)", "ADC 값"],
+      example: "기본값(10 kΩ, 25 °C, B 3950 K, 3.3 V, 고정 10 kΩ, 12비트, δth 1.5 mW/K)은 예시입니다. 정격 저항·B 값(B25/50·B25/85·B25/100 중 어느 것인지)·발산 계수는 쓰는 서미스터의 데이터시트에서 확인하세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "B 정수 식: R(T) = R0 × exp(B × (1/T − 1/T0)),   T·T0 는 K (= °C + 273.15)",
+        "B 값 = ln(R1/R2) ÷ (1/T1 − 1/T2)   — B25/100 이면 25 °C 와 100 °C 의 저항으로",
+        "Steinhart–Hart: 1/T = A + B·ln R + C·(ln R)³",
+        "분압(NTC 아래): V = 전원 × R_NTC ÷ (R_고정 + R_NTC)",
+        "ADC 값 = V ÷ V_REF × 2^비트 (내림),   자기 발열 ΔT = P ÷ δth,  P = V_NTC² ÷ R_NTC",
+      ],
+      whichTitle: "B 식과 Steinhart–Hart 중 무엇을 쓰나",
+      which: [
+        "B 식은 두 숫자(R25·B)만 있으면 되지만, TDK 기술 자료는 이 식이 «정격 온도 근처의 좁은 범위에서만 충분히 정확하다» 고 적습니다. 같은 서미스터라도 B25/50 과 B25/100 값이 다른 이유입니다.",
+        "넓은 범위가 필요하면 데이터시트의 R/T 표에서 쓰려는 범위의 양 끝과 가운데 세 점을 골라 Steinhart–Hart 계수를 구합니다. 세 점에서는 표와 정확히 맞고, 그 사이는 B 식보다 표에 가깝게 따라갑니다.",
+        "가장 정확한 것은 제조사의 R/T 표 자체입니다. 이 계산기의 결과는 그 표를 근사한 값입니다.",
+      ],
+      divTitle: "분압 회로와 ADC",
+      div: [
+        "고정 저항을 측정하려는 온도 범위 가운데의 NTC 저항과 비슷하게 고르면 그 근처에서 전압 변화가 큽니다(10 kΩ NTC 를 25 °C 근처에서 쓰면 10 kΩ).",
+        "ADC 기준 전압과 분압 전원이 같은 전원이면(비율 측정) 전원이 흔들려도 ADC 값은 그대로라 유리합니다.",
+        "ATmega328P 데이터시트는 10비트 ADC 를 ADC = V_IN × 1024 ÷ V_REF 로 적고, 0x3FF 가 «V_REF − 1 LSB» 라고 씁니다. 다른 MCU 도 대개 같은 꼴이지만 칩 데이터시트로 확인합니다.",
+        "측정 전류가 크면 NTC 가 스스로 데워져 높게 읽습니다. 결과의 «자기 발열» 이 측정 정밀도에 비해 크면 전원 전압을 낮추거나 고정 저항을 키웁니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["10k NTC B3950 은 0 °C 에서 몇 Ω 인가요?", "B 식으로 약 33.6 kΩ, 50 °C 에서 약 3.6 kΩ 입니다. 실제 값은 데이터시트의 R/T 표와 조금 다를 수 있습니다."],
+        ["B25/85 와 B25/100 은 무엇이 다른가요?", "B 값을 정한 두 온도입니다. 같은 서미스터라도 두 값이 조금 다르고, 계산에 쓰는 범위에 가까운 쪽을 쓰는 것이 낫습니다."],
+        ["ADC 값으로 온도를 구하려면?", "«또는 ADC 값 → 온도» 칸에 넣으면 분압 회로를 거꾸로 풀어 NTC 저항을 구한 뒤 고른 식으로 온도를 냅니다."],
+        ["산업용 온도 조절기의 NTC 입력도 같은 식인가요?", "저항 ↔ 온도 관계는 같지만, 입력이 어떤 R/T 곡선(예: 특정 B 값)을 가정하는지는 기기 매뉴얼에 있습니다. 맞지 않는 곡선의 서미스터를 달면 온도가 어긋납니다."],
+      ],
+      srcTitle: "출처",
+      tNote: "Pt100·열전대 온도 환산은",
+      tLink: "Pt100·열전대 온도 환산",
+    }
+  : {
+      title: "NTC Thermistor Calculator",
+      desc: "NTC thermistor resistance ↔ temperature by B (beta) value or Steinhart–Hart, with divider voltage, ADC counts, a table and self-heating (e.g. 10k B3950).",
+      model: "Equation",
+      models: ["B value (R25, B)", "Steinhart–Hart (three points)"],
+      r0: "Rated resistance R (Ω)",
+      t0: "Rated temperature (°C)",
+      b: "B value (K)",
+      pts: "Three points (temperature °C, resistance Ω) — from the datasheet R/T table",
+      t: "Temperature (°C)",
+      r: "Or resistance (Ω) → temperature",
+      divT: "Divider and ADC",
+      vs: "Divider supply (V)",
+      fixed: "Fixed resistor (Ω)",
+      place: "NTC position",
+      places: ["Bottom (to GND)", "Top (to supply)"],
+      bits: "ADC bits",
+      vref: "ADC reference (V)",
+      dth: "Dissipation factor δth (mW/K, datasheet)",
+      code: "Or ADC count → temperature",
+      res: "Results",
+      k: { r: "Resistance at that temperature", tr: "Temperature of the entered resistance", coef: "Steinhart–Hart coefficients A · B · C", v: "Divider voltage", adc: "ADC count", lsb: "1 LSB voltage · °C per LSB at that temperature", p: "NTC power · self-heating", tc: "Temperature of the ADC count" },
+      tTitle: "Temperature table",
+      tHead: ["°C", "Resistance (Ω)", "Divider (V)", "ADC count"],
+      example: "The defaults (10 kΩ, 25 °C, B 3950 K, 3.3 V, 10 kΩ fixed, 12 bits, δth 1.5 mW/K) are an example. Take rated resistance, B value (B25/50, B25/85 or B25/100?) and dissipation factor from your thermistor's datasheet.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "B equation: R(T) = R0 × exp(B × (1/T − 1/T0)),   T and T0 in K (= °C + 273.15)",
+        "B value = ln(R1/R2) ÷ (1/T1 − 1/T2)   — for B25/100, the resistances at 25 °C and 100 °C",
+        "Steinhart–Hart: 1/T = A + B·ln R + C·(ln R)³",
+        "Divider (NTC at bottom): V = supply × R_NTC ÷ (R_fixed + R_NTC)",
+        "ADC count = V ÷ V_REF × 2^bits (rounded down),   self-heating ΔT = P ÷ δth,  P = V_NTC² ÷ R_NTC",
+      ],
+      whichTitle: "B equation or Steinhart–Hart?",
+      which: [
+        "The B equation needs only two numbers (R25 and B), but TDK's technical information says it is accurate enough «only for a restricted range around the rated temperature». That is why the same part lists different B25/50 and B25/100 values.",
+        "For a wide range, pick three points from the datasheet R/T table — both ends and the middle of your range — and fit Steinhart–Hart. It matches the table exactly at those points and follows it more closely than the B equation in between.",
+        "The manufacturer's R/T table itself is the most accurate. This calculator approximates it.",
+      ],
+      divTitle: "Divider and ADC",
+      div: [
+        "Choose the fixed resistor close to the NTC's resistance in the middle of the range you measure; the voltage then changes most there (10 kΩ for a 10 kΩ NTC used around 25 °C).",
+        "If the ADC reference and the divider share the same supply (ratiometric), supply variations cancel out of the ADC count.",
+        "The ATmega328P datasheet gives the 10-bit ADC as ADC = V_IN × 1024 ÷ V_REF, with 0x3FF meaning «V_REF minus one LSB». Most MCUs are similar, but check your chip's datasheet.",
+        "A large measuring current heats the NTC itself, so it reads high. If the «self-heating» result is large compared with the accuracy you need, lower the supply or raise the fixed resistor.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is a 10k B3950 NTC at 0 °C?", "About 33.6 kΩ by the B equation, and about 3.6 kΩ at 50 °C. The datasheet R/T table may differ slightly."],
+        ["What is the difference between B25/85 and B25/100?", "The two temperatures used to define B. They differ slightly for the same part; use the one closer to your working range."],
+        ["How do I get temperature from an ADC reading?", "Enter it in «Or ADC count → temperature»; the divider is solved backwards for the NTC resistance, then converted with the chosen equation."],
+        ["Do industrial controllers with NTC inputs use the same math?", "The resistance–temperature relation is the same, but which R/T curve (e.g. a given B value) the input assumes is in the instrument manual. A thermistor with a different curve reads wrong."],
+      ],
+      srcTitle: "Sources",
+      tNote: "For Pt100 and thermocouples, use the",
+      tLink: "Pt100 & Thermocouple Converter",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "TDK (EPCOS), NTC thermistors — General technical information (2018-01): §3.1.1 formula 1, §3.1.2 B value, §3.2.3 dissipation factor", href: "https://www.tdk-electronics.tdk.com/download/531116/19643b7ea798d7c4670141a88cd993f9/pdf-general-technical-information.pdf" },
+  { name: "J. S. Steinhart, S. R. Hart, «Calibration curves for thermistors», Deep-Sea Research 15(4), 1968, pp. 497–503", href: "https://doi.org/10.1016/0011-7471(68)90057-0" },
+  { name: "Microchip, ATmega328P datasheet (7810D, 01/2015): §23.7 ADC Conversion Result", href: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf" },
+];
+const inp = (id: string, v: string) => ({ id, v });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "NTC 서미스터 계산기 — 온도·저항·B값·Steinhart–Hart — PortDock" : "NTC Thermistor Calculator: Beta, Steinhart–Hart, ADC — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="nt">
+      <label class="fld">{L.model}<select id="model"><option value="b" selected>{L.models[0]}</option><option value="sh">{L.models[1]}</option></select></label>
+      <div class="row" id="bRow">
+        <label class="fld">{L.r0}<input id="r0" class="mono" value="10000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.t0}<input id="t0" class="mono" value="25" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.b}<input id="b" class="mono" value="3950" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div id="shRow" hidden>
+        <p class="note">{L.pts}</p>
+        {
+          [inp("p1", "0, 33620"), inp("p2", "25, 10000"), inp("p3", "50, 3588")].map((p) => (
+            <div class="row">
+              <input id={p.id} class="mono" value={p.v} spellcheck="false" autocomplete="off" aria-label={L.pts} />
+            </div>
+          ))
+        }
+      </div>
+      <div class="row">
+        <label class="fld">{L.t}<input id="t" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.r}<input id="r" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="note"><b>{L.divT}</b></p>
+      <div class="row">
+        <label class="fld">{L.vs}<input id="vs" class="mono" value="3.3" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.fixed}<input id="rf" class="mono" value="10000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.place}<select id="pos"><option value="bottom" selected>{L.places[0]}</option><option value="top">{L.places[1]}</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.bits}<select id="bits">{[8, 10, 12, 14, 16, 24].map((n) => <option value={n} selected={n === 12}>{n}</option>)}</select></label>
+        <label class="fld">{L.vref}<input id="vref" class="mono" value="3.3" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.dth}<input id="dth" class="mono" value="1.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.code}<input id="code" class="mono" value="" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["r", "tr", "coef", "v", "adc", "lsb", "p", "tc"] as const).map((id) => <tr data-row={id}><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <div class="tbl">
+        <table class="t">
+          <caption class="note" style="text-align:left">{L.tTitle}</caption>
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.whichTitle}</h2>
+      <ul>{L.which.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.divTitle}</h2>
+      <ul>{L.div.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.tNote} <a href={url(lang, "tools/temperature/")}>{L.tLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { adcCode, betaR, betaT, divider, lsb, ntcFromV, selfHeat, shFit, shR, shT, type SH } from "../lib/ntc";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("nt") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const row = (k: string, show: boolean) => {
+      const tr = form.querySelector<HTMLElement>(`tr[data-row="${k}"]`);
+      if (tr) tr.hidden = !show;
+    };
+    const fx = (x: number, d: number) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const ohm = (r: number) => (r >= 1e6 ? `${fx(r / 1e6, 4)} MΩ` : r >= 1e3 ? `${fx(r / 1e3, 4)} kΩ` : `${fx(r, 2)} Ω`);
+    const pt = (id: string): [number, number] => {
+      const m = $(id).value.split(/[,;\s]+/).filter(Boolean).map(Number);
+      if (m.length !== 2 || !m.every(Number.isFinite)) throw new RangeError("pt");
+      return [m[0], m[1]];
+    };
+    function run() {
+      const sh = $<HTMLSelectElement>("model").value === "sh";
+      $("bRow").hidden = sh;
+      $("shRow").hidden = !sh;
+      row("coef", sh);
+      const tb = $("tb");
+      tb.replaceChildren();
+      try {
+        let R: (t: number) => number;
+        let T: (r: number) => number;
+        if (sh) {
+          const c: SH = shFit([pt("p1"), pt("p2"), pt("p3")]);
+          R = (t) => shR(c, t);
+          T = (r) => shT(c, r);
+          set("coef", `${c.a.toExponential(6)} · ${c.b.toExponential(6)} · ${c.c.toExponential(6)}`);
+        } else {
+          const r0 = num("r0"), t0 = num("t0"), b = num("b");
+          R = (t) => betaR(r0, b, t0, t);
+          T = (r) => betaT(r0, b, t0, r);
+          R(t0);
+        }
+        const vs = num("vs"), rf = num("rf"), bits = Number($<HTMLSelectElement>("bits").value), vref = num("vref"), dth = num("dth");
+        const top = $<HTMLSelectElement>("pos").value === "top";
+        const vOf = (rn: number) => (top ? divider(vs, rn, rf) : divider(vs, rf, rn));
+        const okDiv = vs > 0 && rf > 0 && vref > 0;
+        const t = num("t");
+        if (Number.isFinite(t)) {
+          const rn = R(t);
+          set("r", ohm(rn));
+          if (okDiv) {
+            const v = vOf(rn);
+            const code = adcCode(v, vref, bits);
+            set("v", `${fx(v, 4)} V`);
+            set("adc", `${code} / ${2 ** bits - 1}`);
+            const dv = Math.abs(vOf(R(t + 0.5)) - vOf(R(t - 0.5)));
+            set("lsb", `${fx(lsb(vref, bits) * 1000, 4)} mV · ${dv > 0 ? fx(lsb(vref, bits) / dv, 4) : "—"} °C`);
+            const vn = top ? vs - v : v;
+            set("p", dth > 0 ? `${fx(((vn * vn) / rn) * 1000, 4)} mW · ${fx(selfHeat(vn, rn, dth), 3)} K` : `${fx(((vn * vn) / rn) * 1000, 4)} mW`);
+          }
+        } else for (const k of ["r", "v", "adc", "lsb", "p"]) set(k, "");
+        const r = num("r");
+        set("tr", Number.isFinite(r) && r > 0 ? `${fx(T(r), 2)} °C` : "");
+        const code = num("code");
+        if (okDiv && Number.isFinite(code) && code > 0 && code < 2 ** bits) {
+          const v = ((code + 0.5) / 2 ** bits) * vref;
+          set("tc", `${fx(T(ntcFromV(vs, rf, v, top)), 2)} °C`);
+        } else set("tc", "");
+        for (let tt = -40; tt <= 125; tt += tt < 0 || tt >= 100 ? 10 : 5) {
+          const rn = R(tt);
+          const tr = document.createElement("tr");
+          const cells = [String(tt), fx(rn, 1)];
+          if (okDiv) {
+            const v = vOf(rn);
+            cells.push(fx(v, 4), String(adcCode(v, vref, bits)));
+          } else cells.push("", "");
+          for (const c of cells) {
+            const td = document.createElement("td");
+            td.className = "mono";
+            td.textContent = c;
+            tr.append(td);
+          }
+          tb.append(tr);
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 저항·B 값은 0 보다 크고, 세 점은 «온도, 저항» 꼴로 서로 달라야 합니다" : "Check the numbers — resistances and B above 0; three points as «temperature, resistance», all different";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

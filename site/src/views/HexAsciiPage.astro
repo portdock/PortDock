@@ -87,6 +87,9 @@ const CTRL: [string, string, string][] = [
       <p>
         {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
       </p>
+      <p>
+        {ko ? "0~127 전체 코드와 제어 문자 이름은" : "For all codes 0–127 and control character names, see the"} <a href={url(lang, "tools/ascii/")}>{ko ? "ASCII 코드표" : "ASCII Table"}</a>{ko ? " 에 있습니다." : "."}
+      </p>
     </section>
     <WebToolLinks lang={lang} path="tools/hex-ascii/" />
   </div>

@@ -1,0 +1,266 @@
+---
+// 웹 도구: CAN 비트 타이밍 계산기 — 클럭·비트 속도·샘플 포인트 → 프리스케일러·구간 조합과 클럭 허용 오차(lib/canTiming.ts, NXP AN1798).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { BITRATES } from "../lib/canTiming";
+import { type Lang } from "../data/tools";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/can-bit-timing/";
+const L = ko
+  ? {
+      title: "CAN 비트 타이밍 계산기",
+      desc: "CAN 클럭·비트 속도·목표 샘플 포인트로 프리스케일러, TQ 수, PROP_SEG·PHASE_SEG1·PHASE_SEG2·SJW 조합을 찾고 조합마다 클럭 허용 오차를 계산합니다(고전 CAN).",
+      clk: "CAN 클럭 (MHz)",
+      rate: "비트 속도 (bit/s)",
+      sp: "목표 샘플 포인트 (%)",
+      brp: "프리스케일러 최대",
+      maxErr: "허용 속도 오차 (%)",
+      delayT: "PROP_SEG 최소값 (선택) — 왕복 지연으로",
+      len: "버스 길이 (m)",
+      nsm: "선로 지연 (ns/m)",
+      xcvr: "송신기 + 수신기 지연 (ns)",
+      head: ["BRP", "TQ", "TQ 수", "PROP", "PS1", "PS2", "SJW", "TSEG1 · TSEG2", "샘플 포인트", "속도 오차", "클럭 허용 오차"],
+      none: "조건에 맞는 조합이 없습니다 — 프리스케일러 최대·허용 속도 오차를 늘리거나 클럭을 바꿔 보세요.",
+      more: (n: number) => `조합 ${n}개 중 샘플 포인트가 가까운 순으로 15개`,
+      example: "기본값(8 MHz, 125 kbit/s, 87.5 %)은 예시입니다. 샘플 포인트는 상위 규격(CANopen 등)이나 네트워크 설계 문서가 정한 값을 넣고, 같은 버스의 노드는 같은 비트 시간으로 맞춥니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "비트 하나의 구조",
+      figAlt: "CAN 비트 하나를 16 TQ 로 나눈 그림: SYNC 1, PROP_SEG 5, PHASE_SEG1 8, PHASE_SEG2 2 TQ, 샘플 포인트는 PHASE_SEG1 끝으로 87.5 %",
+      figCap: "8 MHz ÷ 프리스케일러 4 = TQ 500 ns, 16 TQ = 8 µs = 125 kbit/s. 샘플 포인트는 PHASE_SEG1 의 끝입니다.",
+      formula: [
+        "TQ = 프리스케일러(BRP) ÷ CAN 클럭",
+        "비트 시간 = (1 + PROP_SEG + PHASE_SEG1 + PHASE_SEG2) × TQ,   비트 속도 = 1 ÷ 비트 시간",
+        "샘플 포인트 = (1 + PROP_SEG + PHASE_SEG1) ÷ 전체 TQ 수",
+        "클럭 허용 오차 Δf < SJW ÷ (20 × 전체 TQ)  그리고  Δf < min(PS1, PS2) ÷ (2 × (13 × 전체 TQ − PS2))",
+      ],
+      rTitle: "구간 규칙",
+      rules: [
+        "SYNC_SEG 는 1 TQ 로 고정, PROP_SEG 1~8 TQ, PHASE_SEG1 1~8 TQ, 한 비트는 8~25 TQ (AN1798 표 1).",
+        "PHASE_SEG2 는 정보 처리 시간(IPT, 2 TQ) 이상. Microchip 문서는 PHASE_SEG1 이하로, AN1798 표 1 은 MAX(IPT, PHASE_SEG1) 로 적습니다 — 이 계산기는 «IPT ≤ PHASE_SEG2 ≤ MAX(IPT, PHASE_SEG1)» 로 검사합니다.",
+        "SJW(재동기 점프 폭)는 1 이상, 4 와 PHASE_SEG1 이하. 이 계산기는 AN1798 4단계대로 min(4, PHASE_SEG1) 을 씁니다.",
+        "레지스터에는 보통 TSEG1(= PROP_SEG + PHASE_SEG1)·TSEG2(= PHASE_SEG2)·BRP·SJW 를 넣는데, «값 − 1» 로 넣는지는 칩마다 다릅니다. 칩 매뉴얼의 비트 타이밍 레지스터 설명을 따르세요.",
+      ],
+      tTitle: "클럭 허용 오차란",
+      tol: [
+        "노드마다 클럭이 조금씩 다르므로, 재동기 사이에 쌓이는 위상 오차를 SJW 와 위상 구간이 흡수해야 합니다. AN1798 식 (10)은 비트 채우기로 보장되는 10비트, 식 (11)은 오류 플래그 뒤 13비트 동안의 조건입니다.",
+        "두 식 중 작은 값이 그 조합에서 허용되는 클럭 오차(±)입니다. AN1798 예제 2(8 MHz, 125 kbit/s)는 16 TQ(PS1·PS2 6)일 때 1.25 %, 8 TQ(PS1·PS2 3)일 때 1.485 % 로, TQ 수가 적은 쪽이 오히려 여유가 큽니다.",
+        "샘플 포인트를 뒤로 미루면(PHASE_SEG2 를 줄이면) 긴 버스의 전파 지연에는 유리하지만 식 (11)의 허용 오차는 줄어듭니다.",
+      ],
+      pTitle: "PROP_SEG 와 버스 길이",
+      prop: "PROP_SEG 는 버스 양 끝 노드 사이 왕복 지연을 덮어야 합니다: t = 2 × (선로 지연 + 송신기 지연 + 수신기 지연), PROP_SEG ≥ 올림(t ÷ TQ). AN1798 예제는 선로 5 ns/m, 트랜시버 150 ns 를 씁니다 — 실제 값은 케이블·트랜시버 데이터시트에서 가져옵니다. 칸을 비워 두면 PROP_SEG 는 1 TQ 이상이면 됩니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["샘플 포인트 87.5 % 는 어떻게 나오나요?", "16 TQ 에서 PHASE_SEG2 를 2 TQ 로 두면 (16 − 2) ÷ 16 = 87.5 % 입니다. 8 TQ 라면 PHASE_SEG2 가 1 TQ 여야 해서 IPT(2 TQ) 규칙 때문에 87.5 % 를 만들 수 없고 최대 75 % 입니다."],
+        ["조합이 하나도 안 나오면?", "클럭이 비트 속도의 정수배(프리스케일러 × TQ 수)로 나누어떨어지지 않는 경우입니다. 허용 속도 오차를 조금 주거나, CAN 클럭을 바꾸거나, 프리스케일러 최대를 칩에 맞게 늘립니다."],
+        ["TQ 수는 많을수록 좋은가요?", "샘플 포인트를 잘게 고를 수 있지만 클럭 허용 오차가 늘 커지지는 않습니다. 결과 표의 «클럭 허용 오차» 열과 실제 발진기 정밀도(수정 발진기·내부 RC 등)를 비교합니다."],
+        ["CAN FD 의 데이터 구간도 되나요?", "이 계산기는 고전 CAN(CAN 2.0) 규칙으로 계산합니다. CAN FD 데이터 구간은 다른 범위와 송신기 지연 보상이 있어 칩 매뉴얼을 따릅니다."],
+      ],
+      srcTitle: "출처",
+    }
+  : {
+      title: "CAN Bit Timing Calculator",
+      desc: "From CAN clock, bit rate and sample point, find the prescaler, time quanta, PROP_SEG, PHASE_SEG1/2 and SJW, with each one's oscillator tolerance.",
+      clk: "CAN clock (MHz)",
+      rate: "Bit rate (bit/s)",
+      sp: "Target sample point (%)",
+      brp: "Maximum prescaler",
+      maxErr: "Allowed bit rate error (%)",
+      delayT: "Minimum PROP_SEG (optional) from round-trip delay",
+      len: "Bus length (m)",
+      nsm: "Cable delay (ns/m)",
+      xcvr: "Transmitter + receiver delay (ns)",
+      head: ["BRP", "TQ", "TQ/bit", "PROP", "PS1", "PS2", "SJW", "TSEG1 · TSEG2", "Sample point", "Rate error", "Osc. tolerance"],
+      none: "No combination fits — raise the maximum prescaler or allowed rate error, or change the clock.",
+      more: (n: number) => `15 of ${n} combinations, closest sample point first`,
+      example: "The defaults (8 MHz, 125 kbit/s, 87.5 %) are an example. Use the sample point set by the higher-layer specification (CANopen etc.) or your network design, and give every node on the bus the same bit time.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Inside one bit",
+      figAlt: "One CAN bit split into 16 TQ: SYNC 1, PROP_SEG 5, PHASE_SEG1 8, PHASE_SEG2 2; the sample point at the end of PHASE_SEG1 is 87.5 %",
+      figCap: "8 MHz ÷ prescaler 4 = 500 ns TQ; 16 TQ = 8 µs = 125 kbit/s. The sample point is the end of PHASE_SEG1.",
+      formula: [
+        "TQ = prescaler (BRP) ÷ CAN clock",
+        "Bit time = (1 + PROP_SEG + PHASE_SEG1 + PHASE_SEG2) × TQ,   bit rate = 1 ÷ bit time",
+        "Sample point = (1 + PROP_SEG + PHASE_SEG1) ÷ total TQ",
+        "Oscillator tolerance Δf < SJW ÷ (20 × total TQ)  and  Δf < min(PS1, PS2) ÷ (2 × (13 × total TQ − PS2))",
+      ],
+      rTitle: "Segment rules",
+      rules: [
+        "SYNC_SEG is fixed at 1 TQ, PROP_SEG 1–8 TQ, PHASE_SEG1 1–8 TQ, and a bit is 8–25 TQ (AN1798 table 1).",
+        "PHASE_SEG2 is at least the information processing time (IPT, 2 TQ). Microchip's documentation limits it to PHASE_SEG1; AN1798 table 1 gives MAX(IPT, PHASE_SEG1). This calculator checks «IPT ≤ PHASE_SEG2 ≤ MAX(IPT, PHASE_SEG1)».",
+        "SJW (resynchronisation jump width) is at least 1 and at most 4 and PHASE_SEG1. This calculator uses min(4, PHASE_SEG1), as in AN1798 step 5.",
+        "Registers usually take TSEG1 (= PROP_SEG + PHASE_SEG1), TSEG2 (= PHASE_SEG2), BRP and SJW; whether you write «value − 1» depends on the chip. Follow its bit timing register description.",
+      ],
+      tTitle: "What the oscillator tolerance means",
+      tol: [
+        "Every node's clock is slightly different, so SJW and the phase segments must absorb the phase error that builds up between resynchronisations. AN1798 equation (10) covers the 10 bits guaranteed by bit stuffing; equation (11) the 13 bits after an error flag.",
+        "The smaller of the two is the clock error (±) the combination tolerates. In AN1798 example 2 (8 MHz, 125 kbit/s) 16 TQ with PS1 = PS2 = 6 allows 1.25 %, while 8 TQ with PS1 = PS2 = 3 allows 1.485 % — fewer quanta, more margin.",
+        "A later sample point (shorter PHASE_SEG2) helps with propagation delay on long buses but lowers the equation (11) tolerance.",
+      ],
+      pTitle: "PROP_SEG and bus length",
+      prop: "PROP_SEG must cover the round-trip delay between nodes at opposite ends: t = 2 × (cable delay + transmitter delay + receiver delay), PROP_SEG ≥ roundup(t ÷ TQ). AN1798's example uses 5 ns/m cable and 150 ns transceiver delay — take real values from your cable and transceiver datasheets. Leave the fields empty and PROP_SEG only needs to be at least 1 TQ.",
+      faqTitle: "FAQ",
+      faq: [
+        ["How do I get an 87.5 % sample point?", "With 16 TQ and PHASE_SEG2 = 2 TQ: (16 − 2) ÷ 16 = 87.5 %. With 8 TQ you would need PHASE_SEG2 = 1 TQ, which the IPT (2 TQ) rule forbids, so the most is 75 %."],
+        ["Why are there no results?", "The clock does not divide into the bit rate as prescaler × TQ count. Allow a small rate error, change the CAN clock, or raise the maximum prescaler to what your chip supports."],
+        ["Are more time quanta better?", "They allow finer sample point steps, but do not always increase the oscillator tolerance. Compare the «Osc. tolerance» column with your oscillator's real accuracy (crystal, internal RC…)."],
+        ["Does it handle the CAN FD data phase?", "No — it uses classic CAN (CAN 2.0) rules. The CAN FD data phase has other ranges and transmitter delay compensation; follow the chip manual."],
+      ],
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "NXP (Freescale), AN1798 Rev. 4 «CAN Bit Timing Requirements»: §2.1 table 1, §2.4, §3 eq. (8)–(11), §4 steps and examples 1–2", href: "https://www.nxp.com/docs/en/application-note/AN1798.pdf" },
+  { name: "Microchip, SAM9X60 datasheet §50.7.4.1 «CAN Bit Timing Configuration»", href: "https://onlinedocs.microchip.com/oxy/GUID-4D282FC5-82FC-4934-8BAD-D4A5D8422E6C-en-US-7/GUID-8FAD80F3-8BD3-4A27-A2EB-736FC7248AD4.html" },
+];
+const fig = `/img/guides/can-bit-timing.${lang}.svg`;
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "CAN 비트 타이밍 계산기 — 샘플 포인트·TQ·프리스케일러 — PortDock" : "CAN Bit Timing Calculator: Sample Point, TQ, Prescaler — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ct">
+      <div class="row">
+        <label class="fld">{L.clk}<input id="clk" class="mono" value="8" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.rate}<input id="rate" class="mono" value="125000" list="rates" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <datalist id="rates">{BITRATES.map((b) => <option value={b} />)}</datalist>
+        <label class="fld">{L.sp}<input id="sp" class="mono" value="87.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.brp}<input id="brp" class="mono" value="1024" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.maxErr}<input id="me" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="note">{L.delayT}</p>
+      <div class="row">
+        <label class="fld">{L.len}<input id="len" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.nsm}<input id="nsm" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.xcvr}<input id="xc" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <p class="note" id="cnt" aria-live="polite"></p>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.head.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <figure class="fig">
+        <img src={fig} width="780" height="250" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
+      </figure>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.rTitle}</h2>
+      <ul>{L.rules.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <ul>{L.tol.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.pTitle}</h2>
+      <p>{L.prop}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { searchTimings } from "../lib/canTiming";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ct") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const fx = (x: number, d: number) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    function run() {
+      const tb = $("tb");
+      tb.replaceChildren();
+      $("cnt").textContent = "";
+      try {
+        const len = num("len");
+        const xc = num("xc");
+        const delay = Number.isFinite(len) || Number.isFinite(xc);
+        const brpMax = Math.floor(num("brp"));
+        if (!(brpMax >= 1 && brpMax <= 65536)) throw new RangeError("brp");
+        const r = searchTimings({
+          clockHz: num("clk") * 1e6,
+          bitrate: num("rate"),
+          sp: num("sp") / 100,
+          brpMax,
+          maxErr: Math.abs(num("me") || 0) / 100,
+          busNs: delay ? (Number.isFinite(len) ? len : 0) * (Number.isFinite(num("nsm")) ? num("nsm") : 0) : undefined,
+          xcvrNs: delay ? (Number.isFinite(xc) ? xc : 0) : undefined,
+        });
+        $("err").textContent = "";
+        if (!r.length) {
+          $("cnt").textContent = ko ? "조건에 맞는 조합이 없습니다 — 프리스케일러 최대·허용 속도 오차를 늘리거나 클럭을 바꿔 보세요." : "No combination fits — raise the maximum prescaler or allowed rate error, or change the clock.";
+          return;
+        }
+        $("cnt").textContent = r.length > 15 ? (ko ? `조합 ${r.length}개 중 샘플 포인트가 가까운 순으로 15개` : `15 of ${r.length} combinations, closest sample point first`) : "";
+        for (const t of r.slice(0, 15)) {
+          const tr = document.createElement("tr");
+          for (const c of [
+            String(t.brp),
+            `${fx(t.tq * 1e9, 2)} ns`,
+            String(t.ntq),
+            String(t.prop),
+            String(t.ps1),
+            String(t.ps2),
+            String(t.sjw),
+            `${t.prop + t.ps1} · ${t.ps2}`,
+            `${fx(t.sp * 100, 2)} %`,
+            `${fx(t.err * 100, 3)} %`,
+            `±${fx(t.tol * 100, 3)} %`,
+          ]) {
+            const td = document.createElement("td");
+            td.className = "mono";
+            td.textContent = c;
+            tr.append(td);
+          }
+          tb.append(tr);
+        }
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 클럭·비트 속도는 0 보다 크고, 샘플 포인트는 0~100 %, 프리스케일러 최대는 1 이상" : "Check the numbers — clock and bit rate above 0, sample point 0–100 %, maximum prescaler at least 1";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

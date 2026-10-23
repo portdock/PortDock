@@ -21,7 +21,13 @@ export interface WebTool {
     | "tools/units/"
     | "tools/motor-current/"
     | "tools/motor-speed/"
-    | "tools/db/";
+    | "tools/db/"
+    | "tools/ascii/"
+    | "tools/integer/"
+    | "tools/uart-baud/"
+    | "tools/can-bit-timing/"
+    | "tools/ntc/"
+    | "tools/encoder/";
   name: L;
   blurb: L;
 }
@@ -116,6 +122,36 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/db/",
     name: { ko: "dB·dBm 변환기", en: "dB & dBm Converter" },
     blurb: { ko: "dBm ↔ mW·W, 50·75·600 Ω 기준 dBµV·dBV·dBu·전압, 전력 비·전압 비 ↔ dB.", en: "dBm ↔ mW and W, dBµV, dBV, dBu and volts for 50/75/600 Ω, power or voltage ratio ↔ dB." },
+  },
+  {
+    path: "tools/ascii/",
+    name: { ko: "ASCII 코드표·제어 문자", en: "ASCII Table & Control Characters" },
+    blurb: { ko: "0~127 의 10진·HEX·2진·글자, STX·ETX·ACK·NAK·CR·LF 같은 제어 문자의 이름·캐럿 표기·쓰임.", en: "0–127 in decimal, hex, binary and text, with names, caret notation and uses of STX, ETX, ACK, NAK, CR, LF." },
+  },
+  {
+    path: "tools/integer/",
+    name: { ko: "정수·진수 변환기", en: "Integer & Base Converter" },
+    blurb: { ko: "HEX·10진·2진 ↔ 8·16·32비트, 부호 있는 값(2의 보수), BCD, 그레이 코드, 레지스터 바이트 순서.", en: "Hex, decimal, binary ↔ 8/16/32-bit, signed (two's complement), BCD, Gray code, register byte orders." },
+  },
+  {
+    path: "tools/uart-baud/",
+    name: { ko: "UART 보율 오차 계산기", en: "UART Baud Rate Error Calculator" },
+    blurb: { ko: "MCU 클럭·오버샘플링 → 분주비(UBRR)·실제 보율·오차 %, 수신 허용 범위, 표준 보율 표.", en: "MCU clock and oversampling → divisor (UBRR), actual baud and error %, receiver tolerance, standard baud table." },
+  },
+  {
+    path: "tools/can-bit-timing/",
+    name: { ko: "CAN 비트 타이밍 계산기", en: "CAN Bit Timing Calculator" },
+    blurb: { ko: "CAN 클럭·비트 속도·샘플 포인트 → 프리스케일러·TQ·PROP·PHASE_SEG1·2·SJW 조합, 클럭 허용 오차.", en: "CAN clock, bit rate and sample point → prescaler, TQ, PROP, PHASE_SEG1/2 and SJW, with oscillator tolerance." },
+  },
+  {
+    path: "tools/ntc/",
+    name: { ko: "NTC 서미스터 계산기", en: "NTC Thermistor Calculator" },
+    blurb: { ko: "B 정수·Steinhart–Hart 로 저항 ↔ 온도, 분압 전압·ADC 값, 온도표, 자기 발열.", en: "Resistance ↔ temperature by B value or Steinhart–Hart, divider voltage and ADC counts, table, self-heating." },
+  },
+  {
+    path: "tools/encoder/",
+    name: { ko: "엔코더 펄스 ↔ rpm 계산기", en: "Encoder Pulses ↔ RPM Calculator" },
+    blurb: { ko: "PPR·체배 → 출력 주파수·카운트 속도, 카운트로 rpm, 응답 주파수로 최대 rpm, 1카운트 각도·거리.", en: "PPR and ×1/×2/×4 → output frequency and count rate, rpm from counts, max rpm, angle and distance per count." },
   },
 ];
 

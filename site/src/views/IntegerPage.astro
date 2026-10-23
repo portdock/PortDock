@@ -1,0 +1,218 @@
+---
+// 웹 도구: 정수·진수 변환기 — HEX·10진·2진·BCD 입력 → 부호 없는·있는 값, BCD·그레이 코드, 바이트 순서(lib/intConv.ts).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/integer/";
+const L = ko
+  ? {
+      title: "정수·진수 변환기",
+      desc: "HEX·10진·2진 값을 8·16·32비트로 바꿉니다. 부호 있는 값(2의 보수), BCD, 그레이 코드, Modbus 레지스터 바이트 순서(ABCD·CDAB 등)까지 한 화면에서.",
+      width: "비트 수",
+      mode: "입력 형식",
+      modes: { hex: "HEX (16진)", dec: "10진 (음수는 2의 보수)", bin: "2진", bcd: "10진 → BCD 로" },
+      val: "값",
+      res: "결과",
+      k: { u: "부호 없는 10진", s: "부호 있는 10진 (2의 보수)", hex: "HEX", bin: "2진", bcd: "BCD 로 읽으면", gray: "2진 → 그레이 코드", ungray: "그레이 코드 → 2진" },
+      notBcd: "BCD 아님 (9 를 넘는 자리)",
+      ordTitle: "바이트 순서",
+      ordHead: ["순서", "보낼 때", "입력을 이 순서로 받았다면 (부호 없음 / 있음)"],
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      sTitle: "2의 보수 — 음수가 65535 로 보일 때",
+      s: [
+        "레지스터 하나는 16비트라 0~65535 를 담습니다. 장비가 음수를 보내면 맨 위 비트가 1인 값이 오고, 이것을 «부호 있는 16비트» 로 읽으면 음수가 됩니다: 값 − 65536.",
+        "예: FFFF = 65535 = −1, FE0C = 65036 = −500. 매뉴얼의 자료형 칸이 INT16(signed)인지 UINT16(unsigned)인지 보고 읽는 쪽을 맞춥니다.",
+        "32비트는 같은 방식으로 값 − 4294967296 입니다. 레지스터 두 개를 어떤 순서로 붙이는지는 아래 «바이트 순서» 표를 봅니다.",
+      ],
+      bTitle: "BCD — 16진 표시가 그대로 10진처럼 보이는 값",
+      b: [
+        "BCD 는 10진 한 자리를 4비트(0~9)로 담습니다. 1234 는 0x1234 가 되고, 10진으로 읽으면 4660 으로 보입니다. 시각·카운터 값이나 일부 PLC 명령이 BCD 를 씁니다.",
+        "어느 4비트라도 A~F 이면 BCD 가 아닙니다. 16비트에는 0~9999, 32비트에는 0~99999999 를 담습니다.",
+      ],
+      gTitle: "그레이 코드",
+      g: "이웃한 값끼리 비트 하나만 바뀌는 부호입니다(g = b XOR (b ≫ 1)). 0~7 은 000·001·011·010·110·111·101·100 입니다. 절대형 엔코더의 출력 형식으로 쓰이므로, 엔코더 매뉴얼이 그레이 코드 출력이라고 하면 «그레이 코드 → 2진» 값을 위치로 씁니다.",
+      oTitle: "바이트 순서 표 읽기",
+      o: "«보낼 때» 는 이 값을 그 순서로 보낼 때의 바이트입니다. A 는 값의 가장 높은 바이트입니다. Modbus 레지스터 하나 안에서는 높은 바이트가 먼저 오지만(규격 §4.2), 32비트 값을 레지스터 두 개에 싣는 순서는 장비가 정합니다. 받은 바이트를 그대로 HEX 로 넣고 «이 순서로 받았다면» 열에서 매뉴얼의 예시 값과 맞는 줄을 찾으면 그 장비의 순서입니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["HEX FFFF 는 10진 몇인가요?", "부호 없는 16비트로 읽으면 65535, 부호 있는 16비트(2의 보수)로 읽으면 −1 입니다. 장비 자료형에 따라 다릅니다."],
+        ["음수를 HEX 로 바꾸려면?", "입력 형식을 «10진» 으로 두고 −500 처럼 넣으면 고른 비트 수의 2의 보수 HEX(16비트면 FE0C)가 나옵니다."],
+        ["BCD 와 HEX 는 무엇이 다른가요?", "HEX 는 값을 16진으로 적은 것이고, BCD 는 10진 자리를 4비트씩 담은 것입니다. 값 1234 는 HEX 로 04D2, BCD 로 1234(0x1234)입니다."],
+        ["float(실수)는요?", "32·64비트 실수(IEEE 754)는 Modbus 실수 변환기에서 네 바이트 순서를 함께 볼 수 있습니다."],
+      ],
+      srcTitle: "출처",
+      fNote: "레지스터 두·네 개를 float32·float64 로 읽으려면",
+      fLink: "Modbus 실수 변환기",
+    }
+  : {
+      title: "Integer & Base Converter",
+      desc: "Convert hex, decimal and binary at 8, 16 or 32 bits: signed (two's complement), BCD, Gray code and Modbus register byte orders (ABCD, CDAB…).",
+      width: "Bits",
+      mode: "Input format",
+      modes: { hex: "Hex", dec: "Decimal (negative = two's complement)", bin: "Binary", bcd: "Decimal → BCD" },
+      val: "Value",
+      res: "Results",
+      k: { u: "Unsigned decimal", s: "Signed decimal (two's complement)", hex: "Hex", bin: "Binary", bcd: "Read as BCD", gray: "Binary → Gray code", ungray: "Gray code → binary" },
+      notBcd: "not BCD (a digit above 9)",
+      ordTitle: "Byte order",
+      ordHead: ["Order", "Sent as", "If the input arrived in this order (unsigned / signed)"],
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      sTitle: "Two's complement — when a negative number shows as 65535",
+      s: [
+        "A register holds 16 bits, 0–65535. A device sending a negative number sets the top bit; read as «signed 16-bit» it becomes value − 65536.",
+        "For example FFFF = 65535 = −1 and FE0C = 65036 = −500. Check whether the manual's data type is INT16 (signed) or UINT16 (unsigned).",
+        "32-bit values work the same way: value − 4294967296. Which register comes first is shown in the byte order table.",
+      ],
+      bTitle: "BCD — hex that reads like decimal",
+      b: [
+        "BCD stores each decimal digit in 4 bits (0–9). 1234 becomes 0x1234, which reads as 4660 in decimal. Clock and counter values and some PLC instructions use BCD.",
+        "Any nibble from A to F means it is not BCD. 16 bits hold 0–9999, 32 bits hold 0–99999999.",
+      ],
+      gTitle: "Gray code",
+      g: "A code where neighbouring values differ in one bit (g = b XOR (b ≫ 1)). 0–7 are 000, 001, 011, 010, 110, 111, 101, 100. Absolute encoders use it as an output format; if the encoder manual says Gray code output, use the «Gray code → binary» value as the position.",
+      oTitle: "Reading the byte order table",
+      o: "«Sent as» shows the bytes when this value is sent in that order. A is the most significant byte. Within one Modbus register the high byte comes first (specification §4.2), but the order of two registers in a 32-bit value is up to the device. Enter the received bytes as hex and find the row in «if they arrived in this order» that matches the manual's example — that is the device's order.",
+      faqTitle: "FAQ",
+      faq: [
+        ["What is hex FFFF in decimal?", "65535 as unsigned 16-bit, −1 as signed 16-bit (two's complement). It depends on the device's data type."],
+        ["How do I convert a negative number to hex?", "Set the input format to «Decimal» and type e.g. −500; you get the two's complement hex for the chosen width (FE0C at 16 bits)."],
+        ["How is BCD different from hex?", "Hex writes the value in base 16; BCD stores each decimal digit in 4 bits. The value 1234 is 04D2 in hex and 1234 (0x1234) in BCD."],
+        ["What about floats?", "For 32- and 64-bit IEEE 754 values, the Modbus Float Converter shows all four byte orders."],
+      ],
+      srcTitle: "Sources",
+      fNote: "To read two or four registers as float32 or float64, use the",
+      fLink: "Modbus Float Converter",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [{ name: "MODBUS Application Protocol Specification V1.1b3 (2012): §4.2 Data Encoding (big-endian within a register)", href: "https://www.modbus.org/modbus-specifications" }];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "정수·진수 변환기 — HEX·10진·2의 보수·BCD·엔디언 — PortDock" : "Hex to Decimal: Signed, Two's Complement, BCD, Endian — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ic">
+      <div class="row">
+        <label class="fld">{L.mode}<select id="mode">{(["hex", "dec", "bin", "bcd"] as const).map((m) => <option value={m}>{L.modes[m]}</option>)}</select></label>
+        <label class="fld">{L.width}<select id="w"><option value="8">8</option><option value="16" selected>16</option><option value="32">32</option></select></label>
+      </div>
+      <label class="fld">{L.val}<input id="v" class="mono" value="FE0C" spellcheck="false" autocomplete="off" /></label>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["u", "s", "hex", "bin", "bcd", "gray", "ungray"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <div class="tbl">
+        <table class="t">
+          <caption class="note" style="text-align:left">{L.ordTitle}</caption>
+          <thead><tr>{L.ordHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="ord"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.sTitle}</h2>
+      <ul>{L.s.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.bTitle}</h2>
+      <ul>{L.b.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.gTitle}</h2>
+      <p>{L.g}</p>
+      <h2>{L.oTitle}</h2>
+      <p>{L.o}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.fNote} <a href={url(lang, "tools/modbus-float/")}>{L.fLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { ORDERS, bytesOf, fromWire, parseBits, signed, toWire, view, type InMode, type Width } from "../lib/intConv";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ic") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const h2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");
+    const hexW = (n: number, w: number) => n.toString(16).toUpperCase().padStart(w / 4, "0");
+    function run() {
+      const w = Number($<HTMLSelectElement>("w").value) as Width;
+      const mode = $<HTMLSelectElement>("mode").value as InMode;
+      const tb = $("ord");
+      tb.replaceChildren();
+      try {
+        const bits = parseBits($("v").value, mode, w, ko ? "ko" : "en");
+        const v = view(bits, w);
+        set("u", String(v.unsigned));
+        set("s", String(v.signed));
+        set("hex", `0x${v.hex}`);
+        set("bin", v.bin);
+        set("bcd", v.bcd !== undefined ? String(v.bcd) : ko ? "BCD 아님 (9 를 넘는 자리)" : "not BCD (a digit above 9)");
+        set("gray", `0x${hexW(v.gray, w)}`);
+        set("ungray", `0x${hexW(v.grayDecoded, w)} = ${v.grayDecoded}`);
+        $("err").textContent = "";
+        if (w === 8) return;
+        const wire = bytesOf(bits, w);
+        for (const o of ORDERS[w]) {
+          const r = fromWire(wire, o);
+          const tr = document.createElement("tr");
+          for (const [txt, mono] of [
+            [o, true],
+            [toWire(bits, w, o).map(h2).join(" "), true],
+            [`0x${hexW(r, w)} = ${r} / ${signed(r, w)}`, true],
+          ] as [string, boolean][]) {
+            const td = document.createElement("td");
+            if (mono) td.className = "mono";
+            td.textContent = txt;
+            tr.append(td);
+          }
+          tb.append(tr);
+        }
+      } catch (e) {
+        $("err").textContent = (e as Error).message;
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

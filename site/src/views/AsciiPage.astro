@@ -1,0 +1,177 @@
+---
+// 웹 도구: ASCII 코드표·제어 문자 — 표는 빌드 때 lib/ascii.ts(RFC 20)로 만들고, 찾기 칸은 브라우저에서 줄을 거른다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { ASCII, bin7, hex2, isControl } from "../lib/ascii";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/ascii/";
+const L = ko
+  ? {
+      title: "ASCII 코드표·제어 문자",
+      desc: "ASCII 0~127 의 10진·HEX·2진 값과 글자, STX·ETX·ACK·NAK·ENQ·CR·LF·XON·XOFF 같은 제어 문자의 이름과 캐럿·이스케이프 표기를 한 표로. 시리얼 통신 프레임 읽기용.",
+      find: "찾기 (글자·10진·HEX·약어·이름 — 예: A, 13, 0x0D, STX, 줄 바꿈)",
+      count: (n: number) => `${n}개 보임`,
+      head: ["10진", "HEX", "2진", "글자·약어", "이름", "표기"],
+      how: "찾기 칸은 이 브라우저 안에서만 표를 거릅니다. 입력한 값은 어디에도 보내지 않습니다.",
+      useTitle: "시리얼 통신에서 자주 보는 제어 문자",
+      useHead: ["HEX", "약어", "흔한 쓰임"],
+      uses: [
+        ["02 · 03", "STX · ETX", "프레임의 시작·끝 표시. 장비 고유 프로토콜이 «STX 본문 ETX 체크섬» 꼴로 많이 씁니다(체크섬이 STX 를 포함하는지는 매뉴얼마다 다름)."],
+        ["05", "ENQ", "«응답해 달라» 는 요청 바이트로 쓰는 프로토콜이 있습니다."],
+        ["06 · 15", "ACK · NAK", "받았음·못 받았음(다시 보내 달라) 응답."],
+        ["0D · 0A", "CR · LF", "줄 끝. 장비마다 CR 만, LF 만, CR LF 를 다르게 기대합니다 — 명령이 안 먹으면 줄 끝부터 맞춥니다."],
+        ["11 · 13", "DC1 · DC3", "소프트웨어 흐름 제어 XON(다시 보내)·XOFF(멈춰). 이 방식을 쓰면 데이터에 11·13 이 그대로 들어가면 안 됩니다."],
+        ["1B", "ESC", "터미널 제어 시퀀스(ESC [ …)의 시작."],
+        ["00", "NUL", "빈 바이트. 문자열 끝 표시로 쓰는 장비도 있습니다."],
+      ],
+      noteTitle: "128~255 와 한글",
+      note: [
+        "ASCII 는 7비트(0~127)까지입니다. 128~255 는 코드 페이지(ISO 8859-1, CP949 등)마다 다른 글자라 이 표에 넣지 않았습니다.",
+        "한글은 한 글자가 여러 바이트입니다 — UTF-8 은 3바이트, CP949(EUC-KR 확장)는 2바이트. 같은 한글이 장비와 PC 에서 깨져 보이면 인코딩이 다른 것입니다.",
+        "캐럿 표기 ^M 은 Ctrl+M 과 같은 코드(0x0D)이고, 이스케이프 \\r 은 C 같은 언어의 문자열 표기입니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["CR 과 LF 는 몇 번인가요?", "CR(캐리지 리턴)은 13(0x0D), LF(줄 바꿈)는 10(0x0A)입니다. 윈도우 텍스트 파일의 줄 끝은 CR LF(0D 0A) 두 바이트입니다."],
+        ["숫자 '0' 과 값 0 은 다른가요?", "다릅니다. 글자 '0' 은 48(0x30), 값 0 은 NUL(0x00)입니다. 장비가 숫자를 ASCII 로 보내면 '1' '2' '3' 은 31 32 33 으로 옵니다."],
+        ["대문자와 소문자는 얼마나 차이 나나요?", "32(0x20)입니다. 'A' 는 65(0x41), 'a' 는 97(0x61) 로 비트 하나(0x20)만 다릅니다."],
+        ["DEL(0x7F)도 제어 문자인가요?", "RFC 20 은 DEL 을 제어 문자 목록에 두면서 «엄밀히는 제어 문자가 아니다» 라고 주를 답니다. 이 표에서는 제어 문자로 함께 표시합니다."],
+      ],
+      srcTitle: "출처",
+      hexNote: "바이트를 글자로 바꾸거나 글자를 바이트로 바꾸려면",
+      hexLink: "HEX ↔ ASCII 변환기",
+    }
+  : {
+      title: "ASCII Table & Control Characters",
+      desc: "ASCII 0–127 in decimal, hex, binary and text, with names, caret and escape notation for control characters like STX, ETX, ACK, NAK, CR, LF, XON and XOFF.",
+      find: "Find (character, decimal, hex, abbreviation or name — e.g. A, 13, 0x0D, STX, line feed)",
+      count: (n: number) => `${n} shown`,
+      head: ["Dec", "Hex", "Binary", "Char / abbr.", "Name", "Notation"],
+      how: "The find box only filters the table in your browser. Nothing you type is sent anywhere.",
+      useTitle: "Control characters you meet on serial links",
+      useHead: ["Hex", "Abbr.", "Common use"],
+      uses: [
+        ["02 · 03", "STX · ETX", "Mark the start and end of a frame. Many vendor protocols use «STX text ETX checksum» (whether the checksum covers STX varies by manual)."],
+        ["05", "ENQ", "Some protocols send it as a «please reply» request."],
+        ["06 · 15", "ACK · NAK", "Received / not received (send again)."],
+        ["0D · 0A", "CR · LF", "Line endings. Devices expect CR, LF or CR LF — if commands are ignored, match the line ending first."],
+        ["11 · 13", "DC1 · DC3", "Software flow control XON (resume) and XOFF (stop). With it enabled, raw 11 and 13 bytes must not appear in the data."],
+        ["1B", "ESC", "Starts terminal control sequences (ESC [ …)."],
+        ["00", "NUL", "Empty byte; some devices use it to end a string."],
+      ],
+      noteTitle: "128–255 and non-Latin text",
+      note: [
+        "ASCII stops at 7 bits (0–127). Bytes 128–255 depend on the code page (ISO 8859-1, CP949 and others), so they are not in this table.",
+        "Korean, Chinese and Japanese characters take several bytes — 3 in UTF-8, 2 in CP949 for Korean. Garbled text between a device and a PC usually means different encodings.",
+        "Caret notation ^M is the code Ctrl+M produces (0x0D); the escape \\r is how C-like languages write it in strings.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What are CR and LF?", "CR (carriage return) is 13 (0x0D) and LF (line feed) is 10 (0x0A). Windows text files end lines with CR LF (0D 0A)."],
+        ["Is the character '0' the same as the value 0?", "No. The character '0' is 48 (0x30); the value 0 is NUL (0x00). A device sending numbers as ASCII sends '1' '2' '3' as 31 32 33."],
+        ["How far apart are upper and lower case?", "32 (0x20). 'A' is 65 (0x41) and 'a' is 97 (0x61) — they differ in one bit."],
+        ["Is DEL (0x7F) a control character?", "RFC 20 lists DEL with the control characters but notes that «in the strict sense, DEL is not a control character». This table marks it with the controls."],
+      ],
+      srcTitle: "Sources",
+      hexNote: "To turn bytes into text or text into bytes, use the",
+      hexLink: "HEX ↔ ASCII Converter",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "RFC 20, ASCII format for Network Interchange (1969): §2 code table, §4.1 control characters, §4.2 SP", href: "https://www.rfc-editor.org/rfc/rfc20" },
+  { name: "The Linux Documentation Project, Text-Terminal-HOWTO §11 Flow Control (DC1 = Xon, DC3 = Xoff)", href: "https://tldp.org/HOWTO/Text-Terminal-HOWTO-11.html" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "ASCII 코드표·제어 문자표 (STX·ETX·ACK·CR·LF) — PortDock" : "ASCII Table with Control Characters (Hex, STX, CR, LF) — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="as">
+      <label class="fld">{L.find}<input id="q" class="mono" spellcheck="false" autocomplete="off" /></label>
+      <p class="note" id="cnt" aria-live="polite"></p>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.head.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>
+            {
+              ASCII.map((r) => (
+                <tr data-c={r.code}>
+                  <td class="mono">{r.code}</td>
+                  <td class="mono">{hex2(r.code)}</td>
+                  <td class="mono">{bin7(r.code)}</td>
+                  <td class="mono">{isControl(r.code) || r.code === 32 ? <b>{r.sym}</b> : r.sym}</td>
+                  <td>{r.name ? (ko ? `${r.ko} — ${r.name}` : r.name) : ""}</td>
+                  <td class="mono">{[r.caret, r.esc].filter(Boolean).join("  ")}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.useTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.useHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{L.uses.map(([h, s, u]) => <tr><td class="mono">{h}</td><td class="mono">{s}</td><td>{u}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.noteTitle}</h2>
+      <ul>{L.note.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.hexNote} <a href={url(lang, "tools/hex-ascii/")}>{L.hexLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { filterAscii } from "../lib/ascii";
+    const q = document.getElementById("q") as HTMLInputElement;
+    const cnt = document.getElementById("cnt")!;
+    const rows = [...document.querySelectorAll<HTMLTableRowElement>("#as tr[data-c]")];
+    const ko = document.documentElement.lang === "ko";
+    function run() {
+      const keep = new Set(filterAscii(q.value).map((r) => r.code));
+      for (const tr of rows) tr.hidden = !keep.has(Number(tr.dataset.c));
+      cnt.textContent = q.value.trim() ? (ko ? `${keep.size}개 보임` : `${keep.size} shown`) : "";
+    }
+    q.addEventListener("input", run);
+    document.getElementById("as")!.addEventListener("submit", (e) => e.preventDefault());
+  </script>
+</Base>

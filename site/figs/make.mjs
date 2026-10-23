@@ -553,6 +553,51 @@ figs["overload-coordination"] = (t) => {
   return [W, H, b];
 };
 
+// CAN 비트 한 개 — 16 TQ, SYNC 1 · PROP 5 · PHASE_SEG1 8 · PHASE_SEG2 2, 샘플 포인트 87.5 % (8 MHz, 프리스케일러 4 → 125 kbit/s)
+figs["can-bit-timing"] = (t) => {
+  const W = 780, H = 250;
+  let b = "";
+  const x0 = 40, q = 43, y = 70, h = 44;
+  const segs = [[t.sync, 1, "#e5e7eb"], ["PROP_SEG", 5, "#dbeafe"], ["PHASE_SEG1", 8, "#dcfce7"], ["PHASE_SEG2", 2, "#fee2e2"]];
+  let i = 0;
+  for (const [name, n, f] of segs) {
+    for (let k = 0; k < n; k++) b += R(x0 + (i + k) * q, y, q, h, { rx: 0, f, c: LINE, w: 1 });
+    b += T(x0 + (i + n / 2) * q, y - 10, name, { a: "middle", s: 12, b: 1, m: 1 });
+    b += T(x0 + (i + n / 2) * q, y + h / 2 + 5, `${n} TQ`, { a: "middle", s: 12 });
+    i += n;
+  }
+  const sx = x0 + 14 * q;
+  b += L(sx, y - 26, sx, y + h + 16, NG, 2.5) + T(sx, y + h + 34, t.sp, { a: "middle", s: 13, b: 1, c: NG });
+  b += L(x0, y + h + 52, x0 + 16 * q, y + h + 52, MUTED, 1.5) + L(x0, y + h + 46, x0, y + h + 58, MUTED, 1.5) + L(x0 + 16 * q, y + h + 46, x0 + 16 * q, y + h + 58, MUTED, 1.5);
+  b += T(x0 + 8 * q, y + h + 72, t.bit, { a: "middle", s: 13 });
+  b += T(x0, 236, t.foot, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
+// DB9 널 모뎀 결선 — 두 DTE 를 잇는 «표준» 7선 연결(Text-Terminal-HOWTO §12)
+figs["db9-null-modem"] = (t) => {
+  const W = 780, H = 430;
+  let b = "";
+  const xl = 250, xr = 530, y0 = 82, dy = 30;
+  const names = ["DCD", "RxD", "TxD", "DTR", "GND", "DSR", "RTS", "CTS", "RI"];
+  b += R(xl - 190, 40, 200, 320, { f: "#fff" }) + R(xr - 10, 40, 200, 320, { f: "#fff" });
+  b += T(xl - 90, 64, t.left, { a: "middle", b: 1, s: 14 }) + T(xr + 90, 64, t.right, { a: "middle", b: 1, s: 14 });
+  const py = (p) => y0 + (p - 1) * dy + 14;
+  for (let p = 1; p <= 9; p++) {
+    b += T(xl - 20, py(p) + 5, String(p), { a: "end", s: 13, b: 1, m: 1 }) + T(xl - 50, py(p) + 5, names[p - 1], { a: "end", s: 13, m: 1 });
+    b += T(xr + 20, py(p) + 5, String(p), { s: 13, b: 1, m: 1 }) + T(xr + 50, py(p) + 5, names[p - 1], { s: 13, m: 1 });
+    b += dot(xl, py(p)) + dot(xr, py(p));
+  }
+  const W2 = (a, c, col, w = 2.5, dash) => L(xl, py(a), xr, py(c), col, w, dash);
+  b += W2(3, 2, CA) + W2(2, 3, CB) + W2(5, 5, CG, 3);
+  b += W2(7, 8, MUTED, 2, "6 4") + W2(8, 7, MUTED, 2, "6 4");
+  b += W2(4, 6, MUTED, 1.5, "2 4") + W2(4, 1, MUTED, 1.5, "2 4") + W2(6, 4, MUTED, 1.5, "2 4") + W2(1, 4, MUTED, 1.5, "2 4");
+  b += L(40, 386, 80, 386, CA, 2.5) + T(88, 391, t.k3, { s: 12 });
+  b += L(400, 386, 440, 386, MUTED, 2, "6 4") + T(448, 391, t.kRts, { s: 12 });
+  b += L(40, 412, 80, 412, MUTED, 1.5, "2 4") + T(88, 417, t.kDtr, { s: 12 });
+  return [W, H, b];
+};
+
 const L10N = {
   "rs485-bus": {
     ko: { title: "RS-485 2선식 버스 배선", master: "마스터", slave: "슬레이브", busNote1: "A·B·GND 를 장비마다 차례로 잇고, 선로 양 끝 두 곳에만 120 Ω 종단 저항", busNote2: "표준 송수신기 32대(단위 부하)까지 · 느린 속도에서 약 1200 m" },
@@ -617,6 +662,14 @@ const L10N = {
   "overload-coordination": {
     ko: { title: "과부하 보호 협조 조건 (KEC 212.4.1)", head: "IB ≤ In ≤ IZ  그리고  I2 ≤ 1.45 × IZ", sub: "KEC 212.4.1 도체와 과부하 보호장치 사이의 협조", axis: "전류 →", ib: "설계 전류(모터 정격)", in: "보호 장치 정격·설정", iz: "전선 허용 전류", i2: "I2(확실히 동작하는 전류)는 이 값 이하" },
     en: { title: "Overload protection coordination (KEC 212.4.1, from IEC 60364)", head: "IB ≤ In ≤ IZ  and  I2 ≤ 1.45 × IZ", sub: "Coordination between conductors and overload protective devices", axis: "current →", ib: "design current (motor FLA)", in: "device rating / setting", iz: "cable capacity", i2: "I2 (ensured operation) at most this" },
+  },
+  "can-bit-timing": {
+    ko: { title: "CAN 비트 한 개의 구간 (16 TQ, 샘플 포인트 87.5 %)", sync: "SYNC", sp: "샘플 포인트 = (1 + 5 + 8) ÷ 16 = 87.5 %", bit: "비트 시간 = 16 TQ (8 MHz ÷ 프리스케일러 4 → TQ 500 ns → 8 µs = 125 kbit/s)", foot: "PHASE_SEG2 는 2 TQ(IPT) 이상. 다른 노드와 어긋난 만큼 PHASE_SEG1 을 늘리거나 PHASE_SEG2 를 줄여 맞춘다(최대 SJW)." },
+    en: { title: "Segments of one CAN bit (16 TQ, 87.5 % sample point)", sync: "SYNC", sp: "Sample point = (1 + 5 + 8) ÷ 16 = 87.5 %", bit: "Bit time = 16 TQ (8 MHz ÷ prescaler 4 → TQ 500 ns → 8 µs = 125 kbit/s)", foot: "PHASE_SEG2 is at least 2 TQ (IPT). Resync lengthens PHASE_SEG1 or shortens PHASE_SEG2 by up to SJW." },
+  },
+  "db9-null-modem": {
+    ko: { title: "DB9 널 모뎀(크로스) 결선", left: "PC (DTE)", right: "상대 장비 (DTE)", k3: "기본 3선: TxD ↔ RxD 엇갈림, GND 끼리", kRts: "RTS ↔ CTS (하드웨어 흐름 제어)", kDtr: "DTR → DSR·DCD (모뎀 제어 신호, 장비가 볼 때만)" },
+    en: { title: "DB9 null-modem (crossover) wiring", left: "PC (DTE)", right: "Other device (DTE)", k3: "Minimum 3 wires: TxD ↔ RxD crossed, GND to GND", kRts: "RTS ↔ CTS (hardware flow control)", kDtr: "DTR → DSR and DCD (modem control, only if the device checks them)" },
   },
 };
 

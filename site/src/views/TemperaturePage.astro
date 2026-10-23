@@ -240,6 +240,9 @@ const ld = {
       <p>
         {ko ? "온도 조절기·변환기의 값을 Modbus 로 읽어 보려면" : "To read temperature controllers or transmitters over Modbus, use"} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
       </p>
+      <p>
+        {ko ? "NTC 서미스터(B 값·Steinhart–Hart)는" : "For NTC thermistors (B value, Steinhart–Hart), use the"} <a href={url(lang, "tools/ntc/")}>{ko ? "NTC 서미스터 계산기" : "NTC Thermistor Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
     </section>
     <WebToolLinks lang={lang} path={PATH} />
   </div>
