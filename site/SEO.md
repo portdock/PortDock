@@ -53,6 +53,14 @@
 | 서브넷 마스크 설정, PLC IP 설정, PLC 핑 안됨, 같은 대역 | `/guides/plc-ip-subnet/` | «PLC IP 서브넷 마스크 설정 — 같은 대역 판정» |
 | 24V 전압강하, 전선 굵기 선정, 센서 전원 전압 강하 | `/guides/24v-voltage-drop/` | «24V DC 전압 강하 계산과 전선 굵기 고르기» |
 | RS485 종단 저항 값, RS485 바이어스 저항 값, 페일세이프 | `/guides/rs485-bias-termination/` | «RS485 종단·바이어스 저항 값 정하기 (120Ω·560Ω)» |
+| 압력 단위 변환(기·계산기), 압력 단위 변환 psi·mpa bar·kgf cm2, psi bar 변환, kpa bar 변환, mmh2o kpa, kg/cm2 bar 차이 | `/tools/pressure/` | «압력 단위 변환기 — bar·psi·kPa·kgf/cm²·mmH2O», 설명에 «게이지 압력과 절대 압력», «4–20mA 환산표» |
+| 단위 변환기, 유량 단위 변환, 토크 단위 변환(기), 마력 kw 변환, kw hp 변환 | `/tools/units/` | «단위 변환기 — 유량·토크·kW 마력·온도 (산업용)» |
+| 모터 전류 계산(기), 모터 정격전류 계산(기)·공식, 3상 전류 계산(기)·계산법, 3상 모터 전류 계산 | `/tools/motor-current/` | «모터 전류 계산기 — 3상 kW → A·효율·역률» |
+| 모터 회전수 계산, rpm 계산(기), 인버터 rpm 계산, 동기속도 계산, 모터 극수 회전수, 모터 슬립 계산 | `/tools/motor-speed/` | «인버터 주파수 ↔ 모터 회전수 계산기 — 극수·슬립» |
+| dbm 변환(기), dbm 계산(기), db dbm 변환, mw dbm 변환, dbuv dbm 변환 | `/tools/db/` | «dB·dBm 변환기 — dBm mW W·dBµV·dBu·전압 비» |
+| 모터 정격전류 계산법, 모터 차단기 선정(방법)·용량, 차단기 선정 및 전선 굵기, 허용전류 | `/guides/motor-current-breaker-cable/` | «모터 정격 전류 계산(kW→A)과 차단기·전선 기초», 설명에 «KEC 212.4.1», «IB ≤ In ≤ IZ» |
+| 게이지압력 절대압력(차이·변환), kg/cm2 bar 차이, 압력 단위 변환 | `/guides/pressure-units/` | «압력 단위 변환과 센서 범위 설정 (bar·psi·kPa·kgf/cm²)» |
+| 인버터 주파수 설정·변경, 모터 회전수 계산방법, 모터 슬립 계산, 인버터 hz rpm | `/guides/vfd-frequency-rpm/` | «인버터 주파수 ↔ 모터 회전수 (극수·슬립·rpm 표시)» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -94,9 +102,17 @@
 | plc subnet mask, plc ip address, same subnet | `/en/guides/plc-ip-subnet/` | «PLC IP Address & Subnet Mask: Same Subnet Check» |
 | 24v voltage drop, 24vdc voltage drop calculator, 24v voltage drop distance | `/en/guides/24v-voltage-drop/` | «24 V DC Voltage Drop: Choosing Wire Size (mm², AWG)» |
 | rs485 bias resistor value, rs485 failsafe bias resistors, rs485 termination | `/en/guides/rs485-bias-termination/` | «RS-485 Termination & Bias Resistor Values: 120 Ω, 560 Ω» |
+| psi to bar, pressure unit converter, mmh2o to pa, inh2o to pa, kgf/cm2 to bar | `/en/tools/pressure/` | «Pressure Unit Converter: bar, psi, kPa, kgf/cm², mmH2O» |
+| kw to hp, torque unit converter (nm to kgf cm, lb ft to nm), flow rate unit converter | `/en/tools/units/` | «Unit Converter: Flow, Torque, kW to HP, Temperature» |
+| motor current calculator (from kw, 3 phase), kw to amps 3 phase, motor full load current | `/en/tools/motor-current/` | «Motor Current Calculator: kW to Amps, 3-Phase, HP» |
+| vfd hz to rpm (calculator), hz to rpm, rpm to hz, synchronous speed calculator, motor slip calculator | `/en/tools/motor-speed/` | «VFD Hz to RPM Calculator: Poles, Slip, Gear Ratio» |
+| dbm to mw, dbm to watts, db calculator, dbm to dbuv | `/en/tools/db/` | «dBm to mW, Watts & dBµV Converter (dB Calculator)» |
+| motor full load current formula, kw to amps 3 phase motor | `/en/guides/motor-current-breaker-cable/` | «Motor Full Load Current (kW to A), Breakers, Cables» |
+| gauge vs absolute pressure (transmitter, sensor), pressure transmitter units | `/en/guides/pressure-units/` | «Pressure Units: bar, psi, kPa, kgf/cm², Gauge vs Abs» |
+| vfd frequency to rpm, motor hz to rpm formula, vfd frequency vs rpm | `/en/guides/vfd-frequency-rpm/` | «VFD Hz to RPM: Poles, Slip and the RPM Display» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
-검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 에 아래 표의 1~5 를 만들었다.
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다.
 | 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
 |---|---|---|---|---|
 | 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
@@ -104,9 +120,12 @@
 | 3 | modbus timeout calculator·modbus timeout settings·modbus polling interval·modbus rtu 3.5 character time(구글), 보레이트(네이버) | `/tools/serial-timing/` + 가이드 `modbus-rtu-timeout-polling` | 규격 §2.4.1·§2.5.1.1 수치를 계산기로. 한국어 «모드버스 타임아웃» 은 자동완성 없음 | ✅ 10/23 |
 | 4 | rs485 bias resistor calculator·rs485 bias resistor value·rs485 cable length vs baud rate(구글) | `/tools/rs485/` + 가이드 `rs485-bias-termination` | Modbus 규격 §3.4 + TI SLLA070D. 한국어 «rs485 바이어스» 는 자동완성 없음 | ✅ 10/23 |
 | 5 | 4 20ma load resistor·4 20ma loop resistance·4 20ma loop power supply(구글) | `/tools/loop-load/` | 옴의 법칙만, 전송기 값은 매뉴얼에서. 한국어는 자동완성 없음 | ✅ 10/23 |
-| 6 | 압력·유량 단위 변환(bar·psi·kPa·m³/h) | 없음 | 범용 단위 변환 사이트가 많아 고유함이 약함 — 만든다면 «계기 범위 환산(4–20mA 와 함께)» 처럼 묶어서 | 후보 |
-| 7 | 전선 허용 전류(«전선 굵기 허용 전류», «전선 굵기 sq 표») | 없음 | 수요는 보이지만 KEC·IEC 60364-5-52 표를 원문으로 확인해야 함(포설 방법별) | 후보, 원문 확인 뒤 |
-| 8 | 모터 전류 계산(kW → A) | 없음 | 효율·역률이 모터마다 달라 «명판 값 입력» 꼴로만 | 후보 |
+| 6 | 압력 단위 변환(기·계산기)·psi bar 변환·mmh2o kpa(네이버·구글), 유량·토크 단위 변환(기)·마력 kw(네이버·구글), psi to bar·pressure unit converter·kw to hp·torque unit converter(구글) | `/tools/pressure/`·`/tools/units/` + 가이드 `pressure-units` | 범용 변환기는 많아 «센서 범위의 4–20mA 환산표»·«게이지 ↔ 절대»·kgf/cm²·관용 mmH₂O 로 차별. 계수는 정의값에서 곱하고 NIST SP 811 B.8 값과 시험 | ✅ 10/23 |
+| 7 | 전선 허용전류(표·계산), 허용전류표, 2.5sq 허용전류(네이버·구글), wire ampacity chart mm2(구글) | 없음 | KEC 232.5.2 는 허용 전류를 KS C IEC 60364-5-52 부속서 B 의 표로 넘김 — KEC 본문(법제처 공고 제2025-227호 PDF)엔 표가 없고, KS·IEC 원문은 유료라 확인 못 함(10/23). 모터 가이드에는 KEC 212.4.1 협조 조건과 표 232.5-1(절연물 허용 온도)까지만 | 보류, 원문 확인 뒤 |
+| 8 | 모터 전류 계산(기)·모터 정격전류 계산(기)·3상 전류 계산(기)·모터 차단기 선정(구글·네이버), motor current calculator·kw to amps 3 phase(구글) | `/tools/motor-current/` + 가이드 `motor-current-breaker-cable` | 효율·역률은 명판 값 입력, 기본값은 예시라고 밝힘. ABB Technical guide No. 7 식·예제 3.4 를 시험으로 | ✅ 10/23 |
+| 10 | 모터 회전수 계산·rpm 계산(기)·인버터 rpm 계산(구글), vfd hz to rpm·hz to rpm·synchronous speed calculator(구글). 한국어 «인버터 주파수 회전수» 는 자동완성 없음 | `/tools/motor-speed/` + 가이드 `vfd-frequency-rpm` | 슬립(YASKAWA E2-02 식)·감속비·인버터 rpm 표시(극수 설정)·Modbus 출력 주파수 주소까지 — 인버터 장비 맵과 서로 연결 | ✅ 10/23 |
+| 11 | dbm 변환(기)·dbm 계산기(구글), dbm 계산(네이버), dbm to mw·dbm to watts·dbm to dbuv(구글) | `/tools/db/` | ITU-R V.574-5 정의. 무선 RSSI·케이블 손실 쪽. 범용 사이트가 많아 우선순위는 낮았음 | ✅ 10/23 |
+| 12 | 저항 컬러코드(네이버·구글 자동완성 있음) | 없음 | 산업 현장보다 전자 취미 쪽, 범용 사이트가 많음 | 보류 |
 | 9 | 옴의 법칙·전력 계산기 | 없음 | 범용 사이트가 이미 많음 — 낮음 | 보류 |
 
 ## 내부 링크
@@ -115,7 +134,8 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 10종.
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485, Modbus → 통신 시간·서브넷, TCP·UDP·Net Scan → 서브넷).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485, Modbus Master → 통신 시간·서브넷·모터 회전수, TCP·UDP·Net Scan → 서브넷).
+- 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류, 패널 미터 → 압력 단위). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 9개·가이드 전부·장비 목록.
 
 ## 등록 (사용자 할 일, 근거 `C:\dev\review\2026-10-19_PortDock_홍보\10_검색등록_수요.md`)

@@ -21,7 +21,7 @@
 | 받은 사진을 가이드·장비 페이지에 넣기(자르기·설명·alt) | Claude | 사진 받은 뒤 |
 | 같은 사진을 Adobe Stock 에 올리기(작가 몫 33%) | 사용자 | 선택 |
 | 가이드에 직접 그린 배선도·결선도 SVG 넣기 | Claude | ✅ 10/22 8장(한·영), 생성기 `site/figs/make.mjs` |
-| 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 10/23 웹 도구 5종(통신 시간·RS-485 바이어스·4–20mA 루프 부하·전압 강하·서브넷)·가이드 4편 추가 → 웹 도구 13종·가이드 15편. 다음 후보는 SEO.md «다음 후보» 표(허용 전류는 KEC 원문 확인 뒤) |
+| 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 10/23 오전 웹 도구 5종·가이드 4편, 오후 웹 도구 5종(압력 단위·산업 단위·모터 전류·인버터 주파수↔회전수·dB/dBm)·가이드 3편(모터 정격 전류와 차단기·전선, 압력 단위 혼동, 인버터 주파수와 회전수) → 웹 도구 18종·가이드 18편. 허용 전류 도구는 뺌 — KEC 232.5.2 가 KS C IEC 60364-5-52 부속서 B 표로 넘기는데 원문(유료)을 확인 못 함. 다음 후보는 SEO.md «다음 후보» 표 |
 | AI 가 쓰는 데이터: `/devices/all.json`·`registers.csv`·`/llms-full.txt` | Claude | ✅ 10/22 |
 | Hugging Face 계정(portdock.contact) → 데이터셋 저장소 `portdock/modbus-register-maps` 만들기 → `node tools/devices-export.mjs` 결과 폴더를 올리기(Claude 가 Chrome 으로 올릴 수 있음) · Kaggle 도 같은 묶음 | 사용자(계정) · Claude(올리기) | 안 함 |
 | Cloudflare → portdock.dev → 보안 → 봇(또는 «AI Crawl Control»)에서 AI 크롤러 차단이 꺼져 있는지 확인 — 켜져 있으면 AI 가 데이터를 못 가져감 | 사용자 | 안 함 |
