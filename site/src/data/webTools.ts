@@ -11,7 +11,12 @@ export interface WebTool {
     | "tools/modbus-float/"
     | "tools/web-serial/"
     | "tools/4-20ma/"
-    | "tools/temperature/";
+    | "tools/temperature/"
+    | "tools/serial-timing/"
+    | "tools/rs485/"
+    | "tools/loop-load/"
+    | "tools/voltage-drop/"
+    | "tools/subnet/";
   name: L;
   blurb: L;
 }
@@ -56,6 +61,31 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/temperature/",
     name: { ko: "Pt100·열전대 온도 환산", en: "Pt100 & Thermocouple Converter" },
     blurb: { ko: "Pt100·Pt1000 저항, K·J·T·E·N·R·S·B 열전대 mV ↔ 온도. 냉접점 보정·온도표.", en: "Pt100/Pt1000 resistance and type K, J, T, E, N, R, S, B thermocouple mV ↔ °C. Cold junction, tables." },
+  },
+  {
+    path: "tools/serial-timing/",
+    name: { ko: "시리얼 통신 시간 계산기", en: "Serial Timing Calculator" },
+    blurb: { ko: "보율·패리티 → 문자 시간, Modbus RTU 3.5문자(t3.5)·1.5문자, 요청·응답 시간, 폴링 주기·타임아웃 하한.", en: "Baud and parity → character time, Modbus RTU t3.5/t1.5, request/response time, polling cycle, minimum timeout." },
+  },
+  {
+    path: "tools/rs485/",
+    name: { ko: "RS-485 종단·바이어스 계산기", en: "RS-485 Termination & Bias Calculator" },
+    blurb: { ko: "풀업·풀다운과 120·150 Ω 종단 → 유휴 차동 전압(200 mV 문턱), 저항 전력, 보율별 길이 한계.", en: "Pull-up/down with 120/150 Ω termination → idle voltage vs the 200 mV threshold, resistor power, length vs baud." },
+  },
+  {
+    path: "tools/loop-load/",
+    name: { ko: "4–20mA 루프 부하 계산기", en: "4–20 mA Loop Load Calculator" },
+    blurb: { ko: "루프 전원·전송기 최소 전압·250 Ω·선 저항 → 남는 전압, 최대 부하 저항, 최대 케이블 거리.", en: "Loop supply, transmitter minimum, 250 Ω and cable → voltage margin, maximum load and cable length." },
+  },
+  {
+    path: "tools/voltage-drop/",
+    name: { ko: "전압 강하·전선 굵기 계산기", en: "Voltage Drop & Wire Size Calculator" },
+    blurb: { ko: "직류·단상·3상, mm²·AWG, 구리·알루미늄 → 전압 강하·강하율, 허용 강하율에 맞는 굵기와 거리.", en: "DC, single- and three-phase, mm² or AWG, copper or aluminium → drop and %, size and length for an allowed drop." },
+  },
+  {
+    path: "tools/subnet/",
+    name: { ko: "IP 서브넷 계산기", en: "IP Subnet Calculator" },
+    blurb: { ko: "주소·마스크(/24) → 네트워크·브로드캐스트·범위. PC 와 PLC 가 양쪽 마스크로 같은 대역인지 판정.", en: "Address and mask (/24) → network, broadcast, range. Checks both masks: are the PC and PLC on the same subnet?" },
   },
 ];
 

@@ -322,6 +322,129 @@ figs["modbus-rtu-vs-tcp"] = (t) => {
   return [W, H, b];
 };
 
+// 9. 4–20 mA 루프 전압 몫 — 24 V 를 전송기·선·250 Ω 이 나눠 쓴다 (20 mA, 0.75 mm² 편도 1 km ≈ 왕복 46 Ω)
+figs["4-20ma-budget"] = (t) => {
+  const W = 780, H = 300;
+  let b = "";
+  const yT = 50, yB = 160, xL = 70, xR = 700;
+  // 루프 선
+  b += L(xL, yT, xR, yT) + L(xL, yB, xR, yB);
+  // 전원(왼쪽 세로)
+  b += L(xL, yT, xL, 85) + L(xL, 125, xL, yB) + L(xL - 18, 85, xL + 18, 85, INK, 3) + L(xL - 10, 95, xL + 10, 95, INK, 3) + L(xL - 18, 115, xL + 18, 115, INK, 3) + L(xL - 10, 125, xL + 10, 125, INK, 3);
+  b += T(xL - 26, 90, "+", { a: "end", b: 1 }) + T(xL - 26, 128, "−", { a: "end", b: 1 }) + T(xL + 26, 110, "24 V", { b: 1, s: 15 });
+  // 전송기
+  b += R(170, yT - 22, 150, 44, { f: "#fff" }) + T(245, yT + 5, t.tx, { a: "middle", b: 1, s: 14 });
+  b += T(245, yT + 42, "18.1 V", { a: "middle", b: 1, s: 14, c: CB });
+  // 선 저항(위·아래)
+  b += resH(380, 500, yT, CA) + T(440, yT - 16, t.wire, { a: "middle", s: 12, c: CA }) + resH(380, 500, yB, CA) + T(440, yB + 26, t.wire, { a: "middle", s: 12, c: CA });
+  b += T(440, yT + 30, "≈ 0.9 V", { a: "middle", b: 1, s: 13, c: CA });
+  // 입력 저항(오른쪽 세로)
+  b += resV(xR, yT, yB) + T(xR + 14, 100, "250 Ω", { b: 1, s: 14 }) + T(xR + 14, 120, "5 V", { b: 1, s: 14, c: CG });
+  b += T(xR - 14, yB + 26, t.input, { a: "end", s: 12, c: MUTED });
+  // 전류 화살표
+  b += arrowR(150, yT, OK) + T(150, yT - 12, "20 mA", { a: "middle", s: 12, b: 1, c: OK });
+  // 전압 막대
+  const x0 = 50, bw = 680, y = 222, h = 30, k = bw / 24;
+  const seg = [[18.08, CB, t.txShare], [0.92, CA, ""], [5, CG, "250 Ω · 5 V"]];
+  let x = x0;
+  for (const [v, c, s] of seg) {
+    b += `<rect x="${x}" y="${y}" width="${v * k}" height="${h}" fill="${c}" opacity="0.85"/>`;
+    if (s) b += T(x + (v * k) / 2, y + 20, s, { a: "middle", s: 13, b: 1, c: "#fff" });
+    x += v * k;
+  }
+  const cx = x0 + 18.08 * k + (0.92 * k) / 2;
+  b += L(cx, y - 2, cx, y - 14, CA, 1.5) + T(cx, y - 18, t.wireShare, { a: "middle", s: 12, b: 1, c: CA });
+  b += T(x0, y + h + 22, t.bar, { s: 13, c: MUTED });
+  b += T(x0 + bw, y + h + 22, "24 V", { a: "end", s: 13, b: 1 });
+  return [W, H, b];
+};
+
+// 10. RS-485 바이어스 — B 풀업, A 풀다운, 양 끝 종단이 바이어스 전류의 길
+figs["rs485-bias"] = (t) => {
+  const W = 780, H = 300;
+  let b = "";
+  const yB = 120, yA = 190, x1 = 130, x2 = 740, xb = 320;
+  b += L(x1, yB, x2, yB, CB, 3) + L(x1, yA, x2, yA, CA, 3);
+  b += T(x2 - 4, yB - 10, "B (D1)", { a: "end", b: 1, s: 13, c: CB }) + T(x2 - 4, yA + 22, "A (D0)", { a: "end", b: 1, s: 13, c: CA });
+  // 종단 두 개
+  b += resV(x1 + 20, yB, yA) + dot(x1 + 20, yB, CB) + dot(x1 + 20, yA, CA) + T(x1 + 6, 160, t.term, { a: "end", s: 12, b: 1 });
+  b += resV(x2 - 40, yB, yA) + dot(x2 - 40, yB, CB) + dot(x2 - 40, yA, CA) + T(x2 - 54, 160, t.term, { a: "end", s: 12, b: 1 });
+  // 바이어스
+  b += T(xb, 28, "5 V", { a: "middle", b: 1, s: 14 }) + L(xb - 14, 34, xb + 14, 34, INK, 3);
+  b += resV(xb, 34, yB) + dot(xb, yB, CB) + T(xb + 14, 80, t.up, { s: 12, b: 1 });
+  b += resV(xb, yA, 262) + dot(xb, yA, CA) + T(xb + 14, 232, t.down, { s: 12, b: 1 });
+  b += L(xb - 14, 262, xb + 14, 262, INK, 3) + L(xb - 9, 268, xb + 9, 268, INK, 2) + L(xb - 4, 274, xb + 4, 274, INK, 2) + T(xb, 292, t.gnd, { a: "middle", s: 12, c: MUTED });
+  // 전류 길(점선)
+  b += P(`M${xb - 22} 60 V${yB + 12} H${x1 + 32} V${yA - 12} H${xb - 22} V240`, OK, 2, "none", "6 4") + arrowL(x1 + 40, yB + 12, OK);
+  b += T(x1 + 70, yB + 32, t.path, { s: 12, b: 1, c: OK });
+  // 계산
+  b += R(470, 222, 296, 64, { f: "#fff" });
+  b += T(482, 246, t.calc1, { s: 13, b: 1 }) + T(482, 270, t.calc2, { s: 13, m: 1 });
+  return [W, H, b];
+};
+
+// 11. Modbus RTU 거래 시간선 — 9600 bps 8E1, FC03 10개, 슬레이브 처리 10 ms
+figs["modbus-rtu-timing"] = (t) => {
+  const W = 780, H = 230;
+  let b = "";
+  const c = (11 / 9600) * 1000, t35 = 3.5 * c, req = 8 * c, res = 25 * c, proc = 10;
+  const total = t35 + req + proc + res + t35;
+  const x0 = 30, k = 720 / total, y = 80, h = 44;
+  const seg = [
+    [t35, "#eef0f3", "t3.5"],
+    [req, "#e0ecff", t.req],
+    [proc, "#fff7e6", t.proc],
+    [res, "#e3f4e8", t.res],
+    [t35, "#eef0f3", "t3.5"],
+  ];
+  let x = x0;
+  const xs = [];
+  for (const [v, f, s] of seg) {
+    b += R(x, y, v * k - 2, h, { rx: 3, f });
+    b += T(x + (v * k) / 2, y + 20, s, { a: "middle", s: 12, b: 1 });
+    b += T(x + (v * k) / 2, y + 36, `${v.toFixed(1)} ms`, { a: "middle", s: 11, c: MUTED, m: 1 });
+    xs.push(x);
+    x += v * k;
+  }
+  xs.push(x);
+  b += T(x0, 40, t.master, { s: 13, b: 1, c: CB }) + P(`M${xs[1]} 50 V${y - 6}`, CB, 1.5) + T(xs[1] + 6, 62, t.sendReq, { s: 12, c: CB });
+  b += T(xs[3], 40, t.slave, { s: 13, b: 1, c: OK }) + P(`M${xs[3]} 50 V${y - 6}`, OK, 1.5) + T(xs[3] + 6, 62, t.sendRes, { s: 12, c: OK });
+  // 타임아웃 하한 괄호(요청 끝 ~ 응답 끝)
+  const tb = y + h + 18;
+  b += P(`M${xs[2]} ${tb - 6} V${tb} H${xs[4] - 2} V${tb - 6}`, NG, 1.5) + T((xs[2] + xs[4]) / 2, tb + 18, t.timeout, { a: "middle", s: 12, b: 1, c: NG });
+  b += T(x0, 210, t.foot, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
+// 12. 서브넷 — 주소 AND 마스크 = 네트워크, 양쪽 비교
+figs["subnet-and"] = (t) => {
+  const W = 780, H = 290;
+  let b = "";
+  const bin = (s) => s.split(".").map((o) => Number(o).toString(2).padStart(8, "0")).join(".");
+  const xl = 30, xb = 300;
+  const rows = [
+    [t.addr, "192.168.1.10", bin("192.168.1.10"), INK],
+    [t.mask, "255.255.255.0 (/24)", bin("255.255.255.0"), CB],
+    [t.net, "192.168.1.0", bin("192.168.1.0"), OK],
+  ];
+  rows.forEach(([n, d, bits, c], i) => {
+    const y = 50 + i * 36;
+    b += T(xl, y, n, { s: 13, b: 1, c }) + T(xl + 90, y, d, { s: 13, m: 1, c });
+    b += T(xb, y, bits, { s: 14, m: 1, c });
+  });
+  b += L(xb, 104, 740, 104, INK, 1.5) + T(xb - 12, 98, "AND", { a: "end", s: 11, b: 1, c: MUTED });
+  // 비교
+  b += R(20, 160, 360, 110, { f: "#ecf8f0", c: OK }) + okMark(42, 184);
+  b += T(60, 189, t.same, { s: 13, b: 1 });
+  b += T(40, 218, "PC  192.168.1.200/24 → 192.168.1.0", { s: 13, m: 1 });
+  b += T(40, 242, "PLC 192.168.1.10/24  → 192.168.1.0", { s: 13, m: 1 });
+  b += R(400, 160, 360, 110, { f: "#fdeeee", c: NG }) + ngMark(422, 184);
+  b += T(440, 189, t.diff, { s: 13, b: 1 });
+  b += T(420, 218, "PC  192.168.0.200/24 → 192.168.0.0", { s: 13, m: 1 });
+  b += T(420, 242, "PLC 192.168.1.10/24  → 192.168.1.0", { s: 13, m: 1 });
+  return [W, H, b];
+};
+
 const L10N = {
   "rs485-bus": {
     ko: { title: "RS-485 2선식 버스 배선", master: "마스터", slave: "슬레이브", busNote1: "A·B·GND 를 장비마다 차례로 잇고, 선로 양 끝 두 곳에만 120 Ω 종단 저항", busNote2: "표준 송수신기 32대(단위 부하)까지 · 느린 속도에서 약 1200 m" },
@@ -354,6 +477,22 @@ const L10N = {
   "modbus-rtu-vs-tcp": {
     ko: { title: "Modbus RTU 와 TCP 요청 비교", id: "국번", fc: "함수 코드", mbap: "MBAP 머리 · 7바이트", trans: "트랜잭션 ID", proto: "프로토콜 ID", len: "길이", noCrc: "CRC 없음", same: "같은 PDU", same2: "함수 03 · 주소 0 · 개수 2" },
     en: { title: "Modbus RTU and TCP requests compared", id: "Slave ID", fc: "Function code", mbap: "MBAP header · 7 bytes", trans: "Transaction ID", proto: "Protocol ID", len: "Length", noCrc: "No CRC", same: "Same PDU", same2: "FC 03 · address 0 · qty 2" },
+  },
+  "4-20ma-budget": {
+    ko: { title: "4–20 mA 루프 전압 몫 (24 V, 20 mA)", tx: "2선식 전송기", wire: "선 저항", input: "입력 저항", txShare: "전송기에 남는 전압 18.1 V", wireShare: "선 0.9 V", bar: "전원 24 V = 전송기 + 선 + 입력 저항" },
+    en: { title: "Voltage shares in a 4–20 mA loop (24 V, 20 mA)", tx: "2-wire transmitter", wire: "cable", input: "input resistor", txShare: "Left for the transmitter 18.1 V", wireShare: "cable 0.9 V", bar: "Supply 24 V = transmitter + cable + input resistor" },
+  },
+  "rs485-bias": {
+    ko: { title: "RS-485 바이어스(페일세이프) 저항과 종단", term: "종단 120 Ω", up: "풀업 560 Ω", down: "풀다운 560 Ω", gnd: "공통(GND)", path: "바이어스 전류", calc1: "유휴 B − A = 5 V × 60 Ω ÷ 1180 Ω", calc2: "≈ 254 mV ≥ 200 mV" },
+    en: { title: "RS-485 bias (failsafe) resistors and termination", term: "120 Ω term.", up: "pull-up 560 Ω", down: "pull-down 560 Ω", gnd: "common (GND)", path: "bias current", calc1: "Idle B − A = 5 V × 60 Ω ÷ 1180 Ω", calc2: "≈ 254 mV ≥ 200 mV" },
+  },
+  "modbus-rtu-timing": {
+    ko: { title: "Modbus RTU 거래 하나의 시간 (9600 bps 8E1, FC03 10개)", req: "요청 8 B", proc: "슬레이브 처리", res: "응답 25 B", master: "마스터", slave: "슬레이브", sendReq: "요청 보냄", sendRes: "응답 보냄", timeout: "응답 타임아웃은 적어도 이 구간보다 길게", foot: "슬레이브 처리 10 ms 는 예시 — 실제 값은 장비마다 다릅니다" },
+    en: { title: "One Modbus RTU transaction over time (9600 bps 8E1, FC03 ×10)", req: "request 8 B", proc: "slave processing", res: "response 25 B", master: "Master", slave: "Slave", sendReq: "sends request", sendRes: "sends response", timeout: "the response timeout must be longer than this", foot: "10 ms slave processing is an example — real devices differ" },
+  },
+  "subnet-and": {
+    ko: { title: "서브넷 판정 — 주소 AND 마스크 = 네트워크 주소", addr: "주소", mask: "마스크", net: "네트워크", same: "네트워크 주소가 같음 → 바로 통신", diff: "네트워크 주소가 다름 → 게이트웨이 필요" },
+    en: { title: "Subnet check — address AND mask = network address", addr: "Address", mask: "Mask", net: "Network", same: "Same network → talk directly", diff: "Different network → needs a gateway" },
   },
 };
 

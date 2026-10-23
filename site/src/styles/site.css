@@ -603,6 +603,42 @@ table.t td {
 table.t td.mono {
   white-space: nowrap;
 }
+/* 계산기 판정 줄 — ok·warn·fault (엔지니어 계산기 공통) */
+p.verdict {
+  margin: 0;
+  font-size: 14px;
+}
+p.verdict:empty {
+  display: none;
+}
+p.verdict.ok {
+  color: var(--tx);
+  font-weight: 600;
+}
+p.verdict.warn {
+  color: #b54708;
+  font-weight: 600;
+}
+p.verdict.fault {
+  color: #b42318;
+  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  p.verdict.warn {
+    color: #f5a35c;
+  }
+  p.verdict.fault {
+    color: #f97066;
+  }
+}
+/* 계산 결과 표 — 왼쪽 이름, 오른쪽 값 */
+table.kv td:first-child {
+  color: var(--muted);
+  width: 45%;
+}
+table.kv td:last-child {
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
 
 /* 광고 칸 — 웹 도구·가이드 페이지에만, 내려받기 버튼과 멀리 */
 .ad {
@@ -700,10 +736,12 @@ table.t td.mono {
   white-space: pre-wrap;
 }
 /* 가이드 설명 그림 — SVG 는 흰 바탕으로 고정돼 있어 어두운 테마에서도 테두리만 맞춘다 */
-.guide .fig {
+.guide .fig,
+.prose .fig {
   margin: 12px 0 20px;
 }
-.guide .fig img {
+.guide .fig img,
+.prose .fig img {
   display: block;
   width: 100%;
   height: auto;
@@ -711,7 +749,8 @@ table.t td.mono {
   border-radius: 10px;
   background: #fff;
 }
-.guide .fig figcaption {
+.guide .fig figcaption,
+.prose .fig figcaption {
   color: var(--muted);
   font-size: 14px;
   margin-top: 6px;
