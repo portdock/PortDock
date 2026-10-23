@@ -201,19 +201,24 @@ export function tcEmf(type: TcType, t: number, lang: Lang = "ko"): number {
   return emfRaw(type, t);
 }
 
+/** NIST 표는 mV 를 소수 셋째 자리(µV)로 반올림해 싣는다 — 표 끝값(예: T형 400 °C = 20.872 mV)이 기준 함수 값을 반올림 폭만큼 넘어도 받는다 */
+export const TC_EMF_TOL = 0.0005;
+
+const tcRangeError = (type: TcType, lo: number, hi: number, lang: Lang, what: { ko: string; en: string }) => {
+  const [a, b] = tcInvTempRange(type);
+  return new Error(
+    msg(
+      lang,
+      `${type}형 ${what.ko} 범위(${lo.toFixed(3)}~${hi.toFixed(3)} mV, ${a}~${b} °C) 밖입니다`,
+      `Outside the type ${type} ${what.en} range (${lo.toFixed(3)} to ${hi.toFixed(3)} mV, ${a} to ${b} °C)`,
+    ),
+  );
+};
+
 /** 열기전력(mV, 냉접점 0 °C 기준) → 온도(°C) */
 export function tcTemperature(type: TcType, e: number, lang: Lang = "ko"): number {
   const [lo, hi] = tcEmfRange(type);
-  if (!Number.isFinite(e) || e < lo || e > hi) {
-    const [a, b] = tcInvTempRange(type);
-    throw new Error(
-      msg(
-        lang,
-        `${type}형 mV → 온도 범위(${lo.toFixed(3)}~${hi.toFixed(3)} mV, ${a}~${b} °C) 밖입니다`,
-        `Outside the type ${type} mV-to-temperature range (${lo.toFixed(3)} to ${hi.toFixed(3)} mV, ${a} to ${b} °C)`,
-      ),
-    );
-  }
+  if (!Number.isFinite(e) || e < lo - TC_EMF_TOL || e > hi + TC_EMF_TOL) throw tcRangeError(type, lo, hi, lang, { ko: "mV → 온도", en: "mV-to-temperature" });
   const v = TC[type].inv;
   const inv = v.find((x) => e <= x.eHi) ?? v[v.length - 1];
   const [tLo, tHi] = tcInvTempRange(type);
@@ -234,7 +239,13 @@ export function tcTemperature(type: TcType, e: number, lang: Lang = "ko"): numbe
 
 /** 측정 mV(냉접점 tCj °C) → 온도. E(t) = E측정 + E(tCj) */
 export function tcFromMeasured(type: TcType, eMeasured: number, tCj: number, lang: Lang = "ko"): number {
-  return tcTemperature(type, eMeasured + tcEmf(type, tCj, lang), lang);
+  const eCj = tcEmf(type, tCj, lang);
+  // 범위 오류는 사용자가 넣은 «측정 mV» 기준으로 알린다(냉접점 보정을 더한 값이 아니라)
+  const [lo, hi] = tcEmfRange(type);
+  const e = eMeasured + eCj;
+  if (!Number.isFinite(e) || e < lo - TC_EMF_TOL || e > hi + TC_EMF_TOL)
+    throw tcRangeError(type, lo - eCj, hi - eCj, lang, { ko: `측정 mV(냉접점 ${tCj} °C)`, en: `measured mV (cold junction ${tCj} °C)` });
+  return tcTemperature(type, e, lang);
 }
 
 /** 온도 → 냉접점 tCj °C 에서 측정될 mV. E측정 = E(t) − E(tCj) */
