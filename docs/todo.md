@@ -1,4 +1,4 @@
-# 할 일 — 남은 것 전부 (2026-10-22 갱신)
+# 할 일 — 남은 것 전부 (2026-10-23 갱신)
 
 방향(10/22 사용자): 외주·문의는 뒤로, **사이트 광고 수익(애드센스) 위주**. 릴리스는 날짜 고정 없이 «준비되면 바로 공개». 실기 점검은 우선순위 뒤로(대신 «실제 장비에서 검증» 류 문구는 쓰지 않는다).
 누가 하는지: **사용자** = 계정·결제·로그인·촬영이 필요한 것, **Claude** = 코드·문서·검사로 되는 것.
@@ -14,6 +14,7 @@
 | Bing Webmaster Tools — «Google Search Console 에서 가져오기»(Google 권한 허용·Microsoft 로그인이 필요해 사용자) | 사용자 | 안 함 |
 | 네이버 서치어드바이저 — 사이트 등록 → «HTML 태그» 값을 Claude 에게 (Chrome 확장에서 네이버 접속이 막혀 Claude 가 못 함) | 사용자 | 안 함 |
 | 네이버 확인 태그를 사이트에 넣고 배포 → 사용자가 «소유 확인» | Claude | 태그 받은 뒤 |
+| 옛 주소 `portdock.pages.dev` → `portdock.dev` **301** — Cloudflare 대시보드 → (계정) Bulk Redirects → 목록 만들기: Source `portdock.pages.dev`, Target `https://portdock.dev`, Status **301**, «Preserve query string»·«Subpath matching»·«Preserve path suffix» 켜기, **«Include subdomains» 는 끄기**(켜면 배포 미리보기 `<id>.portdock.pages.dev` 까지 넘어감) → 그 목록으로 Bulk Redirect 규칙 만들기. 확인: `curl -sI https://portdock.pages.dev/ads.txt` 가 `301` 과 `location: https://portdock.dev/ads.txt` | 사용자 | 안 함 — 지금은 페이지 머리 스크립트(`location.replace`)로만 넘김: 검색 로봇·`ads.txt`·json·txt 에는 안 걸림 |
 | Cloudflare Web Analytics 켜기(Pages → portdock → 메트릭) — 방문자 수 보기 | 사용자 | 선택 |
 | 장비 레지스터 맵 추가(공식 매뉴얼 확인값만, 주소 기준은 숫자 프레임 예로 확인한 것만) | Claude | ✅ 10/23 — 31종·1258개(+LS S300, 한영넉스 LM, 루텍 Accura 3500·3700, 야스카와 A1000·V1000, 미쓰비시 FR-E700·FR-D700·FR-E800·FR-A800·FR-F800). 뺀 후보: 델타 MS300(deltaww.com 최신판 2026-04-17 내려받기가 Cloudflare 사람 확인에 막힘, delta-emea 는 deltaww.com 으로 넘어가 다른 공식 경로 없음 — 2017판만 확인돼 보류), LS iS7·iG5A·iE5·iC5(Modbus 숫자 프레임 예 없음), GIMAC-V(단위 칸 빔·SWAP 출하값 없음), 한영넉스 NX·NP200(통신 사양서 본문 0x012C ↔ 예시 0x012D 어긋남)·TPR-2F(예시 주소가 맵의 빈 칸·CRC 오타)·MC9(맵이 xlsx 뿐), 오토닉스 MP5·DPU·SPR·PSM·KN-1000B 등(예시에 숫자 없음)·TZ(자체 ASCII), 코노텍(Float 모드 비표준 4바이트 프레임) |
 | 장비 맵 다음 후보 — 델타 MS300(초안 `C:\dev\review\2026-10-23_장비맵_초안\ms300.json` — 사용자가 deltaww.com 에서 최신판 PDF 를 받아 주면 대조)·VFD-E·C2000(같은 사람 확인), 야스카와 GA500(매뉴얼 로그인 필요), 미쓰비시 FR-D800·FR-A700·FR-F700 | Claude | 다음에 |
@@ -70,4 +71,4 @@ GeekNews Show GN(한 번) → 다음 날 OKKY 피드백 → 첫 주말부터 네
 | USB-RS485 변환기 2개(FTDI·CH340) | 재연결·지연 시험(C25·C28) | 소액 | 보류 |
 
 ## 끝난 것 (10/19~22)
-GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 넘겨줌) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편(10/23 → 13종·15편) · 장비 맵 20종(10/23 → 31종) · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.
+GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 HTML 페이지만 스크립트로 넘김 — 301 은 위 1절 Bulk Redirect) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편(10/23 → 29종·23편) · 장비 맵 20종(10/23 → 31종·1258개) · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.

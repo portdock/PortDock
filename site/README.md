@@ -21,7 +21,9 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
 
 ## 도메인을 산 뒤 (portdock.dev)
 1. Cloudflare **Registrar 에서 portdock.dev 등록**(연 약 $12) → Pages → 사용자 지정 도메인 `portdock.dev`.
-2. 빌드 변수 `SITE_URL` 을 지우거나 `https://portdock.dev` 로 → 다시 배포. ✅ 10/22. pages.dev 쪽은 canonical 이 portdock.dev 를 가리키고, `layouts/Base.astro` 머리의 한 줄 스크립트가 `portdock.pages.dev` 로 들어온 방문자를 같은 쪽의 portdock.dev 로 보낸다(배포 미리보기 주소는 그대로)
+2. 빌드 변수 `SITE_URL` 을 지우거나 `https://portdock.dev` 로 → 다시 배포. ✅ 10/22. pages.dev 쪽은 canonical 이 portdock.dev 를 가리키고, `layouts/Base.astro` 머리의 한 줄 스크립트가 `portdock.pages.dev` 로 들어온 방문자를 같은 쪽의 portdock.dev 로 보낸다(배포 미리보기 주소는 그대로). **이건 HTTP 301 이 아니다** — 검색 로봇·`ads.txt`·json·txt 같은 정적 파일은 넘어가지 않는다.
+   - 301 은 **Bulk Redirects** 로(Cloudflare 문서 «Redirecting *.pages.dev to a Custom Domain»): 목록 Source `portdock.pages.dev` → Target `https://portdock.dev`, 301, Preserve query string·Subpath matching·Preserve path suffix 켜고 **Include subdomains 는 끈다**(미리보기 `<id>.portdock.pages.dev` 를 남기려고) → 규칙 만들기. 순서는 `docs/todo.md` 1절.
+   - Pages Functions `functions/_middleware.ts` 로 하지 않는 이유: 루트 미들웨어는 정적 파일 앞에서도 돌아(문서 «Middleware») portdock.dev 의 **모든 요청**이 Functions 호출이 된다 — 정적 요청은 무료·무제한이지만 Functions 요청은 무료 플랜 하루 100,000 건 한도(문서 «Pricing»)에 들어가, 광고 수익용 방문이 한도를 먹는다.
 3. 앱 안 링크(apps/*/src-tauri/tauri.conf.json `homepage`, capabilities opener 허용, README, `.github/ISSUE_TEMPLATE/config.yml`, `tools/installer-license.mjs` 의 개인정보처리방침 주소)는 이미 portdock.dev 다. 도메인을 사지 않기로 하면 이것들을 pages.dev 로 바꾼다.
 4. **Email Routing** 켜기 → 받을 내 메일 주소 검증 → `contact@portdock.dev` 같은 주소를 그 메일로 전달.
 5. **Turnstile** 위젯 만들기(도메인 portdock.dev) → 사이트 키·비밀 키.

@@ -4,7 +4,7 @@
 
 ## 1. 사용자 (월요일~)
 - [x] GitHub `portdock/PortDock` **공개** 저장소 생성 → 이 PC 저장소 올리기(Claude)
-- [ ] Cloudflare 가입 · Pages 연결 ✅(10/22, portdock.pages.dev) · `portdock.dev` 등록(결정 대기) (`site/README.md` 순서)
+- [x] Cloudflare 가입 · Pages 연결 ✅(10/22, portdock.pages.dev) · `portdock.dev` 구입·연결 ✅(10/22, 만료 2027-10-22) (`site/README.md` 순서). 남은 것: 옛 pages.dev 301(Bulk Redirect, `docs/todo.md` 1절)
 - [x] 문의 받을 메일(portdock.contact@gmail.com) · Sentry 가입(EU, IP 저장 끔, DPA 동의) · 오픈소스 후원 승인(10/19, Sponsored Business)
 - [ ] SignPath Foundation 무료 서명 신청(승인까지 시간이 걸린다 — 일찍)
 
