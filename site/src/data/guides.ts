@@ -2804,4 +2804,271 @@ export const GUIDES: Guide[] = [
       ],
     },
   },
+  // 아날로그 입력 스케일링 — Microchip AN693(DS00693A: LSb = VREF/2^N, ±½ LSb, 이득 오차는 디지털로 보정 쉬움), ATmega328P §23.6.1·§23.7,
+  // 수치는 lib/adc 로 계산(4–20 mA·150 Ω·3.3 V·12비트·0–10 bar). PLC 카운트는 4-20ma-loop 글과 같은 출처(S7-1500 표 3-4, MELSEC iQ-R).
+  // Plot 은 채널 배율·오프셋이 없음(apps/plot/src/help.ts «범위 밖»), Modbus Master 화면 값은 원시 값(apps/modbus-master/src/help.ts),
+  // MT4W 측정값·소수점 위치는 data/devices/autonics/mt4w.json.
+  {
+    slug: "analog-input-scaling",
+    date: "2026-10-23",
+    tools: ["plot", "modbus-master"],
+    related: ["4-20ma-loop", "ntc-thermistor-temperature", "pressure-units"],
+    webTools: ["tools/adc/", "tools/4-20ma/", "tools/voltage-divider/", "tools/rc-filter/"],
+    deviceKinds: ["panel-meter"],
+    title: { ko: "아날로그 입력 스케일링 — ADC 원시값을 bar·°C 같은 공학값으로", en: "Analog input scaling — turning raw ADC counts into bar, °C and other units" },
+    seoTitle: { ko: "아날로그 입력 스케일링 — ADC 값 → 공학값 환산 — PortDock", en: "Analog Input Scaling: ADC Counts to Engineering Units — PortDock" },
+    desc: {
+      ko: "4–20mA·0–10V 센서 신호를 션트 저항·분압으로 ADC 에 넣고, 원시 코드를 직선 비례로 공학값으로 바꾸는 법. 1카운트의 크기, 상한 잘림, 단선 판정, PLC 카운트까지.",
+      en: "Feed 4–20 mA or 0–10 V signals into an ADC through a shunt or divider and scale raw counts linearly to engineering units: count size, clipping, open loop.",
+    },
+    body: {
+      ko: [
+        { p: "압력 전송기·온도 변환기 같은 센서는 값을 4–20 mA 나 0–10 V 로 내보냅니다. 이것을 MCU 의 ADC, PLC 아날로그 입력 모듈, 패널 미터가 숫자로 바꾸고, 그 숫자를 다시 bar·°C 로 되돌리는 것이 «스케일링» 입니다. 단계는 늘 같습니다: 신호 → ADC 입력 전압 → ADC 코드 → 공학값. 각 단계가 일차식이라 양 끝 두 점만 알면 됩니다." },
+        { fig: { src: "/img/guides/adc-scaling.ko.svg", w: 780, h: 250, alt: "4–20 mA 가 150 Ω 션트에서 0.6–3.0 V 가 되고, 12비트 3.3 V ADC 에서 1 LSB 0.806 mV 로 나눠 코드 745–3724, 직선 비례로 0–10 bar 가 되는 흐름", cap: "4–20 mA 압력 전송기(0–10 bar)를 150 Ω 션트와 12비트 3.3 V ADC 로 읽는 예. 쓰는 코드는 4096 단계가 아니라 약 2979 개입니다." } },
+        { h: "1. 신호를 ADC 입력 전압으로" },
+        { p: "전류 신호는 션트 저항 하나로 전압이 됩니다(V = I × R). 0–10 V 같은 전압 신호는 ADC 기준 전압보다 크면 분압으로 줄입니다. 어느 쪽이든 상한 신호의 전압이 기준 전압보다 조금 낮게 고르는 것이 요점입니다." },
+        {
+          table: {
+            head: ["션트 저항", "4 mA", "20 mA", "기준 전압", "결과"],
+            rows: [
+              ["150 Ω", "0.6 V", "3.0 V", "3.3 V", "위로 약 9 % 여유 — 코드 끝(4095)은 약 22 mA"],
+              ["165 Ω", "0.66 V", "3.3 V", "3.3 V", "20 mA 가 정확히 풀스케일 — 그 위는 잘림"],
+              ["250 Ω", "1 V", "5 V", "5 V", "20 mA 가 정확히 풀스케일 — 그 위는 잘림"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "상한에 여유가 없으면 20 mA 를 조금만 넘는 값도 코드 끝에 붙어, «딱 상한» 과 «상한 초과» 를 구별할 수 없습니다. 0–10 V 를 3.3 V ADC 로 받을 때는 분압비 0.3(10 V → 3.0 V)처럼 같은 여유를 둡니다. 분압 저항의 표준 값은 분압 저항 계산기로 고릅니다." },
+        { h: "2. 전압을 코드로" },
+        { code: "1 LSB = V_REF ÷ 2^N                     (Microchip AN693)\n코드  = ⌊V_IN × 2^N ÷ V_REF⌋, 최댓값 2^N − 1   (ATmega328P §23.7 을 N비트로)\n\n12비트, 3.3 V → 1 LSB = 0.806 mV\n0.6 V → 744.7,  3.0 V → 3723.6      ← 쓰는 코드 약 2979 개" },
+        { p: "12비트라고 4096 단계를 모두 쓰지는 않습니다. 4 mA 아래(0~0.6 V)와 20 mA 위(3.0~3.3 V)를 빼면 약 2979 개이고, 0–10 bar 라면 1카운트는 약 0.0034 bar 입니다. 이것이 이 회로의 실제 분해능입니다. Microchip AN693 은 이상적인 변환기도 양자화 오차가 최대 ±½ LSB 이고, 실제 변환기는 오프셋·이득 오차와 비직선성(DNL·INL)이 더해진다고 설명합니다 — 1 LSB 는 «구별할 수 있는 단계» 이지 정확도가 아닙니다." },
+        { h: "3. 코드를 공학값으로 — 두 점 직선" },
+        { code: "공학값 = 하한 + (코드 − 코드_하한) ÷ (코드_상한 − 코드_하한) × (상한 − 하한)\n\n코드 2234 → 0 + (2234 − 744.7) ÷ (3723.6 − 744.7) × 10 = 5.00 bar   (12 mA)" },
+        {
+          table: {
+            head: ["코드", "신호", "공학값 (0–10 bar)"],
+            rows: [
+              ["0", "0 mA", "−2.50 bar (단선·전원 없음)"],
+              ["745", "4.00 mA", "0.00 bar"],
+              ["1489", "8.00 mA", "2.50 bar"],
+              ["2234", "12.00 mA", "5.00 bar"],
+              ["2979", "16.00 mA", "7.50 bar"],
+              ["3724", "20.00 mA", "10.00 bar"],
+              ["4095", "22.0 mA", "11.25 bar (코드 끝)"],
+            ],
+          },
+        },
+        {
+          ul: [
+            "코드_하한·상한은 소수 그대로 둡니다(744.7, 3723.6). 반올림하면 끝 값이 조금씩 어긋납니다.",
+            "정수만 쓰는 MCU 에서는 0.01 bar 단위 정수로 계산하는 식으로 곱셈을 먼저, 나눗셈을 나중에 합니다. 정수 나눗셈은 소수를 버리므로 나눗셈을 먼저 하면 0 이 되기 쉽습니다.",
+            "션트·기준 전압의 오차와 ADC 의 오프셋·이득 오차는 위 식의 «코드_하한·상한» 을 두 점에서 정한 값으로 바꾸면 함께 보정됩니다. AN693 도 이득 오차는 디지털로 쉽게 보정된다고 적습니다.",
+          ],
+        },
+        { h: "4. 범위 밖과 단선" },
+        { p: "4–20 mA 는 0 이 아니라 4 mA 에서 시작하므로, 하한보다 한참 낮은 값(위 표의 코드 0 근처)은 «0 bar» 가 아니라 단선이나 전송기 전원 문제입니다. 상한 위 값도 «측정 범위 밖» 으로 따로 보여 주는 편이 좋습니다. 어디부터를 고장으로 볼지(NAMUR NE 43 경계 등)는 4–20mA 환산 계산기에 정리돼 있습니다." },
+        { h: "5. 노이즈와 입력 필터" },
+        { p: "ATmega328P 데이터시트(§23.6.1)는 ADC 가 출력 임피던스 약 10 kΩ 이하의 신호에 맞춰져 있고, 나이퀴스트 주파수(f_ADC/2)보다 높은 성분은 입력 전에 저역 필터로 없애라고 권합니다. 션트 전압에 RC 필터를 두면 τ = R × C 만큼 응답이 늦어지므로, 필요한 응답 속도와 함께 RC 시정수 계산기로 고릅니다. 소프트웨어에서 여러 번 읽어 평균하는 방법도 흔합니다." },
+        { h: "장비가 이미 바꿔서 주는 값" },
+        {
+          ul: [
+            "PLC 아날로그 입력 모듈은 비트·기준 전압 대신 정해진 범위의 정수를 냅니다 — SIMATIC S7-1500 은 하한~상한을 0~27648, MELSEC iQ-R 은 0~32000(각 제조사 매뉴얼). 이때도 3단계의 두 점 직선을 그 범위로 씁니다.",
+            "Modbus 장비는 소수점 없는 정수를 주고 배율이나 소수점 위치를 따로 정하는 경우가 많습니다. 예를 들어 오토닉스 MT4W 패널 미터의 측정값은 정수로 오고, 소수점 위치는 다른 입력 레지스터에 있습니다(PortDock 장비 맵).",
+            "PortDock Modbus Master 화면의 값은 원시 값입니다. 장비 프로필을 고르면 칸 이름에 «(×0.01 Hz)» 처럼 배율이 붙으므로 그만큼 곱해 읽습니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «ADC 분해능·스케일링 계산기»: 비트·기준 전압·션트(또는 분압비)·공학값 범위를 넣으면 1카운트의 값, 코드 ↔ 공학값, 상한 잘림을 보여 줍니다.",
+            "웹 도구 «4–20mA 환산 계산기»: PLC 카운트(0–27648 등)와 NE 43 경계. «분압 저항 계산기» 와 «RC 시정수 계산기» 는 입력 회로 값 고르기에.",
+            "Plot: 채널마다 배율을 거는 기능은 없으므로, MCU 가 환산한 값을 «press:5.00» 처럼 보내면 바로 bar 로 그려집니다. 원시 코드를 보내면 코드 그대로 그려지니 계산기로 대조합니다.",
+            "Modbus Master: 장비 프로필로 패널 미터·온도 지시계 칸을 채우고, 원시 값에 배율·소수점을 적용해 읽습니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Pressure transmitters, temperature converters and similar sensors output their value as 4–20 mA or 0–10 V. An MCU ADC, a PLC analog input module or a panel meter turns that into a number, and «scaling» turns the number back into bar or °C. The steps are always the same: signal → ADC input voltage → ADC code → engineering value. Every step is linear, so two end points are all you need." },
+        { fig: { src: "/img/guides/adc-scaling.en.svg", w: 780, h: 250, alt: "4–20 mA becomes 0.6–3.0 V across a 150 Ω shunt, divided by the 0.806 mV LSB of a 12-bit 3.3 V ADC gives codes 745–3724, then linear scaling to 0–10 bar", cap: "Reading a 4–20 mA, 0–10 bar pressure transmitter with a 150 Ω shunt and a 12-bit 3.3 V ADC. About 2979 codes are in use, not 4096." } },
+        { h: "1. Signal to ADC input voltage" },
+        { p: "A current signal becomes a voltage across one shunt resistor (V = I × R). A voltage signal such as 0–10 V is reduced with a divider when it exceeds the ADC reference. Either way, the point is to put the top of the signal a little below the reference." },
+        {
+          table: {
+            head: ["Shunt", "4 mA", "20 mA", "Reference", "Result"],
+            rows: [
+              ["150 Ω", "0.6 V", "3.0 V", "3.3 V", "About 9 % headroom — the top code (4095) is about 22 mA"],
+              ["165 Ω", "0.66 V", "3.3 V", "3.3 V", "20 mA is exactly full scale — anything above clips"],
+              ["250 Ω", "1 V", "5 V", "5 V", "20 mA is exactly full scale — anything above clips"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "Without headroom, a reading just above 20 mA sticks at the top code and you cannot tell «exactly full» from «over range». For 0–10 V into a 3.3 V ADC, leave the same room with a ratio of 0.3 (10 V → 3.0 V). Pick standard divider resistors with the voltage divider calculator." },
+        { h: "2. Voltage to code" },
+        { code: "1 LSB = V_REF ÷ 2^N                     (Microchip AN693)\ncode  = ⌊V_IN × 2^N ÷ V_REF⌋, max 2^N − 1     (ATmega328P §23.7, N bits)\n\n12 bits, 3.3 V → 1 LSB = 0.806 mV\n0.6 V → 744.7,  3.0 V → 3723.6      ← about 2979 codes in use" },
+        { p: "A 12-bit ADC does not use all 4096 steps here. Without the range below 4 mA (0–0.6 V) and above 20 mA (3.0–3.3 V) about 2979 codes remain, so for 0–10 bar one count is about 0.0034 bar — the real resolution of this circuit. Microchip's AN693 notes that even an ideal converter has up to ±½ LSB of quantization error, and real converters add offset and gain errors and non-linearity (DNL, INL): 1 LSB is the step you can resolve, not the accuracy." },
+        { h: "3. Code to engineering value — a two-point line" },
+        { code: "value = low + (code − code_low) ÷ (code_high − code_low) × (high − low)\n\ncode 2234 → 0 + (2234 − 744.7) ÷ (3723.6 − 744.7) × 10 = 5.00 bar   (12 mA)" },
+        {
+          table: {
+            head: ["Code", "Signal", "Value (0–10 bar)"],
+            rows: [
+              ["0", "0 mA", "−2.50 bar (open loop or no power)"],
+              ["745", "4.00 mA", "0.00 bar"],
+              ["1489", "8.00 mA", "2.50 bar"],
+              ["2234", "12.00 mA", "5.00 bar"],
+              ["2979", "16.00 mA", "7.50 bar"],
+              ["3724", "20.00 mA", "10.00 bar"],
+              ["4095", "22.0 mA", "11.25 bar (top code)"],
+            ],
+          },
+        },
+        {
+          ul: [
+            "Keep code_low and code_high as decimals (744.7, 3723.6); rounding them shifts the end values slightly.",
+            "On an integer-only MCU, compute in integer units such as 0.01 bar and multiply before dividing. Integer division drops the fraction, so dividing first tends to give 0.",
+            "Shunt and reference tolerances and the ADC's offset and gain errors are all corrected when code_low and code_high come from two known points. AN693 also notes that gain error is easily compensated digitally.",
+          ],
+        },
+        { h: "4. Out of range and open loop" },
+        { p: "4–20 mA starts at 4 mA, not 0, so a reading far below the low end (near code 0 above) is not «0 bar» but an open loop or a transmitter supply problem. Showing values above the top as «out of range» separately is also good practice. Where faults begin (NAMUR NE 43 limits and so on) is summarized in the 4–20 mA scaling calculator." },
+        { h: "5. Noise and the input filter" },
+        { p: "The ATmega328P datasheet (§23.6.1) says its ADC is optimized for sources of about 10 kΩ output impedance or less, and advises removing components above the Nyquist frequency (f_ADC/2) with a low-pass filter. An RC filter on the shunt voltage delays the response by τ = R × C, so choose it with the RC time constant calculator against the response you need. Averaging several readings in software is also common." },
+        { h: "Values the device has already scaled" },
+        {
+          ul: [
+            "PLC analog input modules output a fixed integer range instead of bits and reference: SIMATIC S7-1500 maps low–high to 0–27648 and MELSEC iQ-R to 0–32000 (per the makers' manuals). Use the same two-point line with that range.",
+            "Modbus devices often send integers without a decimal point and define the scale or decimal position separately. The Autonics MT4W panel meter, for example, sends its reading as an integer with the decimal position in another input register (PortDock device map).",
+            "PortDock Modbus Master shows raw values. Picking a device profile puts the scale in the register name, such as «(×0.01 Hz)», so multiply by it when reading.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«ADC Resolution & Scaling Calculator» web tool: enter bits, reference, shunt (or divider ratio) and engineering range to see the value per count, code ↔ value and clipping.",
+            "«4–20 mA Scaling Calculator» for PLC counts (0–27648…) and NE 43 limits; the voltage divider and RC time constant calculators for choosing input parts.",
+            "Plot has no per-channel scale, so have the MCU send the scaled value as «press:5.00» and it plots in bar directly. If it sends raw codes, they are plotted as codes — check them with the calculator.",
+            "Modbus Master: fill panel meter and temperature indicator registers from a device profile and apply the scale or decimal position to the raw values.",
+          ],
+        },
+      ],
+    },
+  },
+  // 역률과 콘덴서 기초 — ABB Motor guide(2019) §4.10(역률 정의, 0.7~0.9, 부분 부하 표 4.8, 보상 주의, 표 4.7·C 식), ABB TG7 식 3.15.
+  // 수치는 lib/power 로 계산. GIMAC1000 역률 f32·음수 = 진상, Accura 2300 총 역률 f32 는 data/devices 의 장비 맵.
+  // 전력 회사 역률 요금 기준(국내 약관)은 원문 확인 전이라 수치를 싣지 않는다.
+  {
+    slug: "power-factor-capacitor",
+    date: "2026-10-23",
+    tools: ["modbus-master"],
+    related: ["motor-current-breaker-cable", "vfd-frequency-rpm", "modbus-float-word-order"],
+    webTools: ["tools/pf-capacitor/", "tools/three-phase-power/", "tools/motor-current/"],
+    deviceKinds: ["power-meter"],
+    title: { ko: "역률과 역률 개선 콘덴서 기초 — kW·kVA·kvar 와 콘덴서 용량", en: "Power factor and correction capacitors — kW, kVA, kvar and capacitor sizing" },
+    seoTitle: { ko: "역률과 역률 개선 콘덴서 — kW·kVA·kvar·용량 계산 — PortDock", en: "Power Factor & Correction Capacitors: kW, kVA, kvar — PortDock" },
+    desc: {
+      ko: "역률이 무엇이고 낮으면 왜 전류가 커지는지, 콘덴서 용량(kvar) = kW × (tan φ1 − tan φ2) 계산과 µF 환산, 모터에 직접 달 때 주의, 전력 미터에서 역률 읽기까지.",
+      en: "What power factor is and why a low one raises current, sizing capacitors as kvar = kW × (tan φ1 − tan φ2) and in µF, cautions at motors, and reading meters.",
+    },
+    body: {
+      ko: [
+        { p: "전력 미터나 설비 자료에서 «역률 0.85» 같은 숫자를 봅니다. 역률은 같은 일을 하는 데 전류가 얼마나 더 흐르는지를 나타냅니다. 역률이 무엇인지, 콘덴서로 어떻게 올리는지, 용량은 어떻게 계산하는지를 정리합니다." },
+        { h: "kW·kvar·kVA 와 역률" },
+        {
+          ul: [
+            "유효 전력 P(kW): 열·회전처럼 실제 일로 바뀌는 전력.",
+            "무효 전력 Q(kvar): 모터를 자화하는 데 쓰이며 오가기만 하고 일로 바뀌지 않는 전력.",
+            "피상 전력 S(kVA): 둘을 합한 크기, 3상이면 √3 × 선간 전압 × 전류. S = √(P² + Q²).",
+            "역률 cos φ = P ÷ S. ABB Motor guide 는 유효 전력(kW)과 피상 전력(kVA)의 비를 역률이라 부르고, P 와 Q 가 함께 S 를 이룬다고 설명합니다.",
+          ],
+        },
+        { p: "전선·차단기·변압기는 전류로 정해지므로 같은 kW 라도 역률이 낮으면 더 큰 설비가 필요합니다. 100 kW 를 3상 400 V 에서 쓰면 역률 1 에서 144 A, 0.8 에서 180 A, 0.75 에서 192 A 입니다." },
+        { h: "모터의 역률" },
+        { p: "ABB Motor guide(§4.10)에 따르면 모터의 역률은 보통 0.7~0.9 이고, 작은 모터일수록 낮고 큰 모터일수록 높습니다. 부하가 줄면 역률도 떨어집니다 — 같은 문서의 표에서 정격 역률 0.85 인 모터는 3/4 부하에서 0.81, 1/2 부하에서 0.72, 1/4 부하에서 0.54 입니다. 그래서 모터가 많은 설비는 전체 역률이 낮아지고, ABB 는 전력 회사가 설비의 역률을 높이라고 요구하기도 한다고 적습니다." },
+        { h: "콘덴서로 역률 올리기" },
+        { fig: { src: "/img/guides/power-triangle.ko.svg", w: 780, h: 330, alt: "유효 전력 100 kW 를 밑변으로 한 전력 삼각형: 개선 전 무효 전력 88.2 kvar·피상 전력 133.3 kVA, 콘덴서 55.3 kvar 로 무효 전력이 32.9 kvar 로 줄어 피상 전력 105.3 kVA", cap: "100 kW 부하를 역률 0.75 에서 0.95 로. 콘덴서가 무효 전력만 55.3 kvar 줄이고 유효 전력은 그대로입니다." } },
+        { p: "콘덴서는 모터와 반대 방향의 무효 전력을 내므로, 병렬로 달면 전원에서 가져오는 무효 전력이 줄어듭니다. ABB Motor guide 도 «무효 전력을 흡수하는 콘덴서를 전원에 이어 역률을 높인다» 고 적습니다. 유효 전력은 그대로이고 피상 전력·전류만 줄어듭니다." },
+        { code: "Qc (kvar) = P (kW) × (tan φ1 − tan φ2)\ntan φ = √(1 − cos²φ) ÷ cos φ\n\n100 kW, 0.75 → 0.95:  tan φ1 = 0.882, tan φ2 = 0.329\nQc = 100 × 0.553 = 55.3 kvar\n선 전류(3상 400 V): 192.5 A → 151.9 A" },
+        { p: "ABB Motor guide 표 4.7 은 이 tan φ1 − tan φ2 를 «상수 K» 로 표로 줍니다(보상 전 0.50~0.90 → 보상 후 0.80·0.85·0.90·0.95). 모터에 달 때는 Q = K × P ÷ η 로, 축 출력 P 를 효율 η 로 나눈 입력 전력에 K 를 곱합니다." },
+        { h: "kvar 를 µF 로" },
+        { code: "콘덴서 하나: C = Q × 1000 ÷ (2π × f × U²)   [F]   (Q 는 그 콘덴서의 kvar, U 는 그 콘덴서에 걸린 전압)\n\n3상 Δ 결선: 콘덴서 3개, 각각 Qc ÷ 3, U = 선간 전압\n3상 Y 결선: 콘덴서 3개, 각각 Qc ÷ 3, U = 선간 전압 ÷ √3  → Δ 의 3배 용량\n\n55.3 kvar, 400 V, 50 Hz, Δ: 18.4 kvar → 약 367 µF × 3" },
+        { p: "ABB Motor guide 는 50 Hz 에서 C = 3.2 × 10⁶ × Q ÷ U² 를 적습니다. 3.2 × 10⁶ 은 10⁹ ÷ (2π × 50) ≈ 3.18 × 10⁶ 을 반올림한 것으로, Q 를 kvar·U 를 V 로 넣으면 µF 가 나옵니다. 같은 콘덴서는 60 Hz 에서 kvar 가 50 Hz 의 1.2배가 되므로 주파수를 꼭 맞춥니다." },
+        { h: "모터에 직접 달 때 주의 (ABB Motor guide §4.10)" },
+        {
+          ul: [
+            "과보상하면 유도 전동기가 자기 여자되어 발전기처럼 돌 수 있으므로, 모터의 무부하 전류를 넘게 보상하지 않는 것이 보통입니다.",
+            "콘덴서를 권선의 한 상에만 병렬로 달면 Y-Δ 기동이 어렵거나 안 될 수 있습니다.",
+            "권선이 따로인 2단 속도 모터는 쓰지 않는 권선의 콘덴서가 회로에 남아 있지 않게 합니다.",
+          ],
+        },
+        { h: "지상·진상과 목표 역률" },
+        { p: "모터처럼 전류가 전압보다 늦는 상태를 지상(lag), 콘덴서가 너무 많아 전류가 앞서는 상태를 진상(lead)이라 합니다. 목표를 1.0 에 가깝게 잡을수록 필요한 kvar 가 빠르게 늘고, 부하가 줄었을 때 진상이 되기 쉽습니다. 부하가 바뀌는 설비는 여러 단을 켜고 끄는 자동 역률 조정 장치를 쓰는 경우가 많습니다. 전력 회사의 역률 기준·요금 조항은 계약마다 다르므로 계약서·공급 약관을 확인합니다(이 글은 약관 원문을 확인하지 않아 수치를 싣지 않습니다)." },
+        { h: "전력 미터에서 역률 읽기" },
+        {
+          ul: [
+            "디지털 전력 미터는 역률·무효 전력·피상 전력을 Modbus 레지스터로 줍니다. LS ELECTRIC GIMAC1000 은 역률을 32비트 실수(f32)로 주고 음수를 진상으로 표시하며, 루텍 Accura 2300 도 상별·총 역률을 f32 로 줍니다(PortDock 장비 맵).",
+            "32비트 실수는 레지스터 2개에 걸쳐 오므로 워드 순서가 맞아야 합니다. 값이 엉뚱하면 실수 워드 순서 글을 보세요.",
+            "역률이 음수로 보인다고 고장은 아닙니다 — 장비마다 진상을 부호로 나타내는 규칙이 매뉴얼에 있습니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «역률 개선 콘덴서 계산기»: kW·지금 역률·목표 역률 → 필요한 kvar, Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류. 달 콘덴서 kvar 로 개선 뒤 역률과 과보상도 봅니다.",
+            "웹 도구 «3상 전력 계산기»: 전압과 A·kW·kVA 중 하나, 역률로 나머지를 계산하고, kW·kVA 로 역률을 구합니다. 모터 출력에서 전류를 낼 때는 «모터 전류 계산기».",
+            "Modbus Master: 전력 미터 장비 프로필로 역률·무효 전력 칸을 채워 폴링하고, 추세로 부하에 따른 역률 변화를 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Power meters and plant data show numbers like «power factor 0.85». Power factor tells you how much extra current flows for the same work. Here is what it is, how capacitors raise it and how to size them." },
+        { h: "kW, kvar, kVA and power factor" },
+        {
+          ul: [
+            "Real power P (kW): power that becomes work, such as heat or rotation.",
+            "Reactive power Q (kvar): power that magnetizes a motor and flows back and forth without doing work.",
+            "Apparent power S (kVA): their combined size; for three-phase, √3 × line voltage × current. S = √(P² + Q²).",
+            "Power factor cos φ = P ÷ S. ABB's Motor guide calls the ratio of real power (kW) to apparent power (kVA) the power factor, with P and Q together making up S.",
+          ],
+        },
+        { p: "Cables, breakers and transformers are sized by current, so the same kW at a lower power factor needs bigger equipment. 100 kW at 400 V three-phase is 144 A at power factor 1, 180 A at 0.8 and 192 A at 0.75." },
+        { h: "Motor power factor" },
+        { p: "According to ABB's Motor guide (§4.10), motor power factor is usually between 0.7 and 0.9, lower for small motors and higher for large ones. It also falls with load: in the same guide's table a motor rated at 0.85 has 0.81 at 3/4 load, 0.72 at 1/2 and 0.54 at 1/4. Installations with many motors therefore have a lower overall power factor, and ABB notes that power suppliers sometimes require it to be raised." },
+        { h: "Raising the power factor with capacitors" },
+        { fig: { src: "/img/guides/power-triangle.en.svg", w: 780, h: 330, alt: "Power triangle on a 100 kW base: before correction 88.2 kvar reactive and 133.3 kVA apparent; a 55.3 kvar capacitor reduces reactive power to 32.9 kvar and apparent power to 105.3 kVA", cap: "A 100 kW load from 0.75 to 0.95. The capacitor removes 55.3 kvar of reactive power; real power is unchanged." } },
+        { p: "A capacitor supplies reactive power opposite to a motor's, so connecting it in parallel reduces the reactive power drawn from the supply. ABB's Motor guide likewise describes raising the power factor by «connecting capacitors to the supply which absorb reactive power». Real power stays the same; only apparent power and current fall." },
+        { code: "Qc (kvar) = P (kW) × (tan φ1 − tan φ2)\ntan φ = √(1 − cos²φ) ÷ cos φ\n\n100 kW, 0.75 → 0.95:  tan φ1 = 0.882, tan φ2 = 0.329\nQc = 100 × 0.553 = 55.3 kvar\nLine current (three-phase 400 V): 192.5 A → 151.9 A" },
+        { p: "ABB Motor guide Table 4.7 tabulates tan φ1 − tan φ2 as a «constant K» (uncompensated 0.50–0.90 → compensated 0.80, 0.85, 0.90, 0.95). For a motor it uses Q = K × P ÷ η: the shaft output P divided by efficiency η gives the input power, multiplied by K." },
+        { h: "kvar to µF" },
+        { code: "One capacitor: C = Q × 1000 ÷ (2π × f × U²)   [F]   (Q its kvar, U the voltage across it)\n\nThree-phase delta: 3 capacitors, Qc ÷ 3 each, U = line voltage\nThree-phase star:  3 capacitors, Qc ÷ 3 each, U = line voltage ÷ √3  → 3× the capacitance\n\n55.3 kvar, 400 V, 50 Hz, delta: 18.4 kvar → about 367 µF × 3" },
+        { p: "ABB's Motor guide gives C = 3.2 × 10⁶ × Q ÷ U² at 50 Hz. 3.2 × 10⁶ is 10⁹ ÷ (2π × 50) ≈ 3.18 × 10⁶ rounded; with Q in kvar and U in volts the result is in µF. The same capacitor gives 1.2 times the kvar at 60 Hz as at 50 Hz, so match the frequency." },
+        { h: "Cautions at the motor (ABB Motor guide §4.10)" },
+        {
+          ul: [
+            "Over-compensation can make an induction motor self-excite and run as a generator, so it is normal practice not to compensate for more than the motor's no-load current.",
+            "Capacitors connected in parallel with single phases of the winding can make star-delta starting difficult or impossible.",
+            "On a two-speed motor with separate windings, capacitors should not remain in circuit on the unused winding.",
+          ],
+        },
+        { h: "Lagging, leading and the target" },
+        { p: "With current behind voltage, as in a motor, the power factor is lagging; with too much capacitance the current leads. The closer the target is to 1.0, the faster the kvar grows and the easier it is to go leading when the load drops. Plants with varying load often use automatic correction that switches several steps. Utility requirements and tariffs differ by contract, so check your supply agreement (we have not checked the original terms, so no figures here)." },
+        { h: "Reading power factor from a meter" },
+        {
+          ul: [
+            "Digital power meters give power factor, reactive and apparent power as Modbus registers. The LS ELECTRIC GIMAC1000 sends power factor as a 32-bit float (f32) with negative meaning leading, and the Rootech Accura 2300 gives per-phase and total power factor as f32 (PortDock device maps).",
+            "A 32-bit float spans two registers, so the word order must match. If values look wrong, see the float word order guide.",
+            "A negative power factor is not a fault — each manual states how its device signs leading values.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Power Factor Correction Capacitor Calculator» web tool: kW, present and target power factor → kvar needed, µF per capacitor in delta or star, current before and after; also the power factor after a given kvar and over-compensation.",
+            "«Three-Phase Power Calculator» web tool: from voltage, one of amps, kW or kVA, and power factor, get the rest; power factor from kW and kVA. For current from motor output, use the «Motor Current Calculator».",
+            "Modbus Master: poll power factor and reactive power from a power meter device profile and watch how they change with load in the trend view.",
+          ],
+        },
+      ],
+    },
+  },
 ];

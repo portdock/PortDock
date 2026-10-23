@@ -598,6 +598,54 @@ figs["db9-null-modem"] = (t) => {
   return [W, H, b];
 };
 
+// 19. 아날로그 입력 스케일링 — 4–20 mA → 150 Ω → 0.6–3.0 V → 12비트 3.3 V 코드 → 0–10 bar
+figs["adc-scaling"] = (t) => {
+  const W = 780, H = 250;
+  let b = "";
+  const boxes = [
+    [t.sig, "4 ~ 20 mA"],
+    [t.volt, "0.6 ~ 3.0 V"],
+    [t.code, "745 ~ 3724"],
+    [t.eng, "0 ~ 10 bar"],
+  ];
+  const ops = ["× 150 Ω", "÷ 0.806 mV", t.lin];
+  const bw = 130, gap = (W - 40 - bw * 4) / 3;
+  boxes.forEach(([n, v], i) => {
+    const x = 20 + i * (bw + gap);
+    b += R(x, 70, bw, 80, { f: i === 3 ? "#ecf8f0" : BOXF, c: i === 3 ? OK : LINE });
+    b += T(x + bw / 2, 100, n, { a: "middle", s: 13, b: 1 }) + T(x + bw / 2, 132, v, { a: "middle", s: 16, b: 1, m: 1, c: i === 3 ? OK : INK });
+    if (i < 3) {
+      const ax = x + bw + 6, bx = x + bw + gap - 6;
+      b += L(ax, 110, bx - 2, 110, CB, 2) + arrowR(bx, 110, CB);
+      b += T((ax + bx) / 2, 98, ops[i], { a: "middle", s: 12, c: CB, b: 1 });
+    }
+  });
+  b += T(20, 40, t.head, { s: 14, b: 1 });
+  b += T(20, 190, t.n1, { s: 12, c: MUTED });
+  b += T(20, 212, t.n2, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
+// 20. 전력 삼각형과 역률 개선 — 100 kW, cos φ 0.75 → 0.95 (Q 88.2 → 32.9 kvar, 콘덴서 55.3 kvar)
+figs["power-triangle"] = (t) => {
+  const W = 780, H = 330;
+  let b = "";
+  const x0 = 60, y0 = 290, k = 2.5; // 1 kW·kvar = 2.5 px
+  const xP = x0 + 100 * k, y1 = y0 - 88.19 * k, y2 = y0 - 32.87 * k;
+  b += L(x0, y0, xP, y0, INK, 3) + T((x0 + xP) / 2, y0 + 22, t.p, { a: "middle", s: 13, b: 1 });
+  b += L(x0, y0, xP, y1, NG, 2.5) + L(xP, y0, xP, y1, NG, 2.5);
+  b += L(x0, y0, xP, y2, OK, 3) + L(xP, y0, xP, y2, OK, 3);
+  b += P(`M${xP + 10} ${y1} H${xP + 20} V${y2} H${xP + 10}`, CB, 1.5) + T(xP + 28, (y1 + y2) / 2 + 5, t.qc, { s: 13, b: 1, c: CB });
+  b += T(xP + 28, y1 + 5, t.q1, { s: 12, c: NG });
+  b += T(xP + 28, (y2 + y0) / 2 + 5, t.q2, { s: 12, c: OK });
+  const lx = 520;
+  b += L(lx, 150, lx + 36, 150, NG, 2.5) + T(lx + 44, 155, t.s1, { s: 13, b: 1, c: NG });
+  b += L(lx, 180, lx + 36, 180, OK, 3) + T(lx + 44, 185, t.s2, { s: 13, b: 1, c: OK });
+  b += T(20, 30, t.head, { s: 14, b: 1 });
+  b += T(20, 52, t.sub, { s: 12, c: MUTED });
+  return [W, H, b];
+};
+
 const L10N = {
   "rs485-bus": {
     ko: { title: "RS-485 2선식 버스 배선", master: "마스터", slave: "슬레이브", busNote1: "A·B·GND 를 장비마다 차례로 잇고, 선로 양 끝 두 곳에만 120 Ω 종단 저항", busNote2: "표준 송수신기 32대(단위 부하)까지 · 느린 속도에서 약 1200 m" },
@@ -670,6 +718,14 @@ const L10N = {
   "db9-null-modem": {
     ko: { title: "DB9 널 모뎀(크로스) 결선", left: "PC (DTE)", right: "상대 장비 (DTE)", k3: "기본 3선: TxD ↔ RxD 엇갈림, GND 끼리", kRts: "RTS ↔ CTS (하드웨어 흐름 제어)", kDtr: "DTR → DSR·DCD (모뎀 제어 신호, 장비가 볼 때만)" },
     en: { title: "DB9 null-modem (crossover) wiring", left: "PC (DTE)", right: "Other device (DTE)", k3: "Minimum 3 wires: TxD ↔ RxD crossed, GND to GND", kRts: "RTS ↔ CTS (hardware flow control)", kDtr: "DTR → DSR and DCD (modem control, only if the device checks them)" },
+  },
+  "adc-scaling": {
+    ko: { title: "아날로그 입력 스케일링 (4–20 mA, 150 Ω, 12비트 3.3 V, 0–10 bar)", head: "신호에서 공학값까지", sig: "전류 신호", volt: "ADC 입력 전압", code: "ADC 코드", eng: "공학값", lin: "직선 비례", n1: "쓰는 코드는 약 2979 개 → 1카운트 ≈ 0.0034 bar (12비트 4096 단계 전부가 아님)", n2: "션트 150 Ω·기준 3.3 V 는 예시 — 상한 3.0 V 위에 여유를 남긴 값" },
+    en: { title: "Analog input scaling (4–20 mA, 150 Ω, 12-bit 3.3 V, 0–10 bar)", head: "From signal to engineering units", sig: "Current signal", volt: "ADC input", code: "ADC code", eng: "Engineering", lin: "linear", n1: "About 2979 codes in use → one count ≈ 0.0034 bar (not all 4096 steps of 12 bits)", n2: "150 Ω and a 3.3 V reference are an example — the 3.0 V top leaves headroom" },
+  },
+  "power-triangle": {
+    ko: { title: "전력 삼각형과 역률 개선 (100 kW, cos φ 0.75 → 0.95)", head: "콘덴서는 무효 전력 Q 만 줄이고 유효 전력 P 는 그대로", sub: "피상 전력 S = √(P² + Q²) 가 줄어 같은 일에 전류가 줄어듭니다", p: "유효 전력 P = 100 kW", s1: "개선 전 S 133.3 kVA", s2: "개선 후 S 105.3 kVA", qc: "콘덴서 Qc 55.3 kvar", q1: "Q 88.2 kvar", q2: "Q 32.9 kvar" },
+    en: { title: "Power triangle and power factor correction (100 kW, cos φ 0.75 → 0.95)", head: "Capacitors reduce only the reactive power Q; the real power P stays", sub: "Apparent power S = √(P² + Q²) falls, so the same work takes less current", p: "Real power P = 100 kW", s1: "Before S 133.3 kVA", s2: "After S 105.3 kVA", qc: "Capacitor Qc 55.3 kvar", q1: "Q 88.2 kvar", q2: "Q 32.9 kvar" },
   },
 };
 
