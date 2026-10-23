@@ -74,7 +74,7 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 
 ## 검사
 
-push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 아홉 앱의 화면 빌드·타입 검사, Node 시험 99개(`shared/`·앱·도구), 장비 레지스터 맵 검사(37종·레지스터 1453개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 218개(216개 실행, 2개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
+push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 아홉 앱의 화면 빌드·타입 검사, Node 시험 99개(`shared/`·앱·도구), 장비 레지스터 맵 검사(37종·레지스터 1456개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 218개(216개 실행, 2개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 소스에서 빌드
 

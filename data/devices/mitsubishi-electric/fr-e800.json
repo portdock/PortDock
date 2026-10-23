@@ -683,24 +683,6 @@
     },
     {
       "table": "holding-registers",
-      "address": 224,
-      "manualAddress": "40225",
-      "type": "u16",
-      "name": {
-        "ko": "누적 전력량",
-        "en": "Cumulative energy"
-      },
-      "unit": "kWh",
-      "scale": 0.01,
-      "access": "r",
-      "fc": [
-        3
-      ],
-      "ref": "p.396 (PDF 397)",
-      "source": 1
-    },
-    {
-      "table": "holding-registers",
       "address": 236,
       "manualAddress": "40237",
       "type": "u16",
@@ -754,6 +736,51 @@
         3
       ],
       "ref": "p.397 (PDF 398)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 276,
+      "manualAddress": "40277",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "32비트 누적 전력량(kWh)",
+        "en": "32-bit cumulative energy (kWh)"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "40277 = 하위 16비트, 40278 = 상위 16비트(워드 바꿈 CDAB)",
+        "en": "40277 = lower 16 bits, 40278 = upper 16 bits (word swap, CDAB)"
+      },
+      "ref": "p.398 (PDF 399)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 278,
+      "manualAddress": "40279",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "32비트 누적 전력량(0.01 kWh)",
+        "en": "32-bit cumulative energy (0.01 kWh)"
+      },
+      "unit": "kWh",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "40279 = 하위 16비트, 40280 = 상위 16비트(워드 바꿈 CDAB)",
+        "en": "40279 = lower 16 bits, 40280 = upper 16 bits (word swap, CDAB)"
+      },
+      "ref": "p.398 (PDF 399)",
       "source": 1
     },
     {
@@ -876,6 +903,10 @@
     {
       "ko": "비트 뜻은 표준 모델 기준. 제조 시기에 따라 사양이 다를 수 있다(기능 매뉴얼 p.399 NOTE).",
       "en": "Bit meanings are for the standard model. Specifications may differ by date of manufacture (Function manual p.399 NOTE)."
+    },
+    {
+      "ko": "누적 전력량 40225 는 뺐다 — 모니터 항목표의 Modbus 칸은 0.01 kWh 인데, 같은 매뉴얼의 누적 전력 절(p.402 (PDF 403))은 통신으로 읽을 때 1 kWh 단위(Pr.170 에 따라 0~9999 또는 0~65535 kWh)로 적어 서로 다르다. 단위가 표에 분명한 32비트 누적 전력량(40277~40280)을 대신 넣었다.",
+      "en": "Cumulative energy 40225 is left out: the Modbus column of the monitor list says 0.01 kWh, but the cumulative power section of the same manual (p.402 (PDF 403)) gives 1 kWh increments via communication (0-9999 or 0-65535 kWh by Pr.170). The 32-bit cumulative energy registers (40277-40280), whose units are explicit, are included instead."
     }
   ],
   "sources": [
@@ -902,8 +933,8 @@
       },
       "url": "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600868eng/ib0600868engu.pdf",
       "pages": {
-        "ko": "Pr.52 모니터 항목표 p.395~399 (PDF 396~400), Pr.7·Pr.21 p.302 (PDF 303)",
-        "en": "Pr.52 monitor item list pp.395-399 (PDF 396-400), Pr.7/Pr.21 p.302 (PDF 303)"
+        "ko": "Pr.52 모니터 항목표 p.395~399 (PDF 396~400), Pr.7·Pr.21 p.302 (PDF 303), 누적 전력 p.402 (PDF 403)",
+        "en": "Pr.52 monitor item list pp.395-399 (PDF 396-400), Pr.7/Pr.21 p.302 (PDF 303), cumulative power p.402 (PDF 403)"
       },
       "checked": "2026-10-23"
     }

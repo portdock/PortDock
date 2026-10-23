@@ -718,28 +718,6 @@
     },
     {
       "table": "holding-registers",
-      "address": 224,
-      "manualAddress": "40225",
-      "type": "u16",
-      "name": {
-        "ko": "누적 전력량",
-        "en": "Cumulative energy"
-      },
-      "unit": "kWh",
-      "scale": 0.01,
-      "access": "r",
-      "fc": [
-        3
-      ],
-      "description": {
-        "ko": "0.01 단위는 FR-F820-02330(55K)·FR-F840-01160(55K) 이하, 그보다 큰 용량은 0.1 단위",
-        "en": "0.01 increments for FR-F820-02330 (55K) / FR-F840-01160 (55K) or lower; 0.1 for larger capacities"
-      },
-      "ref": "p.310 (PDF 311)",
-      "source": 0
-    },
-    {
-      "table": "holding-registers",
       "address": 260,
       "manualAddress": "40261",
       "type": "u16",
@@ -772,6 +750,51 @@
         3
       ],
       "ref": "p.311 (PDF 312)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 276,
+      "manualAddress": "40277",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "32비트 누적 전력량(kWh)",
+        "en": "32-bit cumulative energy (kWh)"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "40277 = 하위 16비트, 40278 = 상위 16비트(워드 바꿈 CDAB)",
+        "en": "40277 = lower 16 bits, 40278 = upper 16 bits (word swap, CDAB)"
+      },
+      "ref": "p.312 (PDF 313)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 278,
+      "manualAddress": "40279",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "32비트 누적 전력량(0.01 kWh)",
+        "en": "32-bit cumulative energy (0.01 kWh)"
+      },
+      "unit": "kWh",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "40279 = 하위 16비트, 40280 = 상위 16비트(워드 바꿈 CDAB). 0.01 kWh 는 FR-F820-02330(55K)·FR-F840-01160(55K) 이하, 그보다 큰 용량은 0.1 kWh",
+        "en": "40279 = lower 16 bits, 40280 = upper 16 bits (word swap, CDAB). 0.01 kWh for FR-F820-02330(55K) / FR-F840-01160(55K) or lower; 0.1 kWh for larger capacities"
+      },
+      "ref": "p.312 (PDF 313)",
       "source": 0
     },
     {
@@ -913,8 +936,12 @@
       "en": "Monitor registers (40201-) are taken from the 'MODBUS RTU' column of the monitor item list. Negative indication (○) in that table is not available over Modbus RTU, so all are listed as unsigned 16-bit."
     },
     {
-      "ko": "전류·전력·전력량 배율은 FR-F820-02330(55K)·FR-F840-01160(55K) 이하 기준(scale 0.01). 그보다 큰 용량은 0.1 단위다.",
-      "en": "Current, power and energy scales are for FR-F820-02330 (55K) / FR-F840-01160 (55K) or lower (scale 0.01); larger capacities use 0.1 increments."
+      "ko": "전류·전력 배율은 FR-F820-02330(55K)·FR-F840-01160(55K) 이하 기준(scale 0.01). 그보다 큰 용량은 0.1 단위다.",
+      "en": "Current and power scales are for FR-F820-02330 (55K) / FR-F840-01160 (55K) or lower (scale 0.01); larger capacities use 0.1 increments."
+    },
+    {
+      "ko": "누적 전력량 40225 는 뺐다 — 모니터 항목표의 Modbus 칸은 0.01 kWh 인데, 같은 매뉴얼의 누적 전력 절(p.315 (PDF 316))은 통신으로 읽을 때 1 kWh 단위(Pr.170 에 따라 0~9999 또는 0~65535 kWh)로 적어 서로 다르다. 단위가 표에 분명한 32비트 누적 전력량(40277~40280)을 대신 넣었다.",
+      "en": "Cumulative energy 40225 is left out: the Modbus column of the monitor list says 0.01 kWh, but the cumulative power section of the same manual (p.315 (PDF 316)) gives 1 kWh increments via communication (0-9999 or 0-65535 kWh by Pr.170). The 32-bit cumulative energy registers (40277-40280), whose units are explicit, are included instead."
     }
   ],
   "sources": [
@@ -927,8 +954,8 @@
       },
       "url": "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600547eng/ib0600547engg.pdf",
       "pages": {
-        "ko": "Modbus RTU p.527 (PDF 528)~p.538 (PDF 539), 표시 단위(Pr.37·Pr.144) p.308 (PDF 309), 모니터 항목표 p.310-313 (PDF 311-314), Pr.7·Pr.21 p.229 (PDF 230)",
-        "en": "Modbus RTU p.527 (PDF 528) to p.538 (PDF 539), indication increments (Pr.37/Pr.144) p.308 (PDF 309), monitor item list pp.310-313 (PDF 311-314), Pr.7/Pr.21 p.229 (PDF 230)"
+        "ko": "Modbus RTU p.527 (PDF 528)~p.538 (PDF 539), 표시 단위(Pr.37·Pr.144) p.308 (PDF 309), 모니터 항목표 p.310-313 (PDF 311-314), Pr.7·Pr.21 p.229 (PDF 230), 누적 전력 p.315 (PDF 316)",
+        "en": "Modbus RTU p.527 (PDF 528) to p.538 (PDF 539), indication increments (Pr.37/Pr.144) p.308 (PDF 309), monitor item list pp.310-313 (PDF 311-314), Pr.7/Pr.21 p.229 (PDF 230), cumulative power p.315 (PDF 316)"
       },
       "checked": "2026-10-23"
     }
