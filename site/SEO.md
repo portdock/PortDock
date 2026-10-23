@@ -69,6 +69,11 @@
 | 엔코더 펄스 (계산), 엔코더 분해능 (계산·체배), 엔코더 rpm 계산 | `/tools/encoder/` | «엔코더 펄스 ↔ rpm 계산기 — PPR·체배·응답 주파수» |
 | 모드버스 에러코드, modbus 에러 코드 | `/guides/modbus-exception-codes/` | «Modbus 예외 코드(에러 코드) 01·02·03·04 원인» |
 | rs232 케이블 결선(도), rs232 크로스 케이블 (핀맵), 널모뎀 케이블, db9 핀맵 | `/guides/rs232-db9-null-modem/` | «RS232 DB9 핀배치·크로스(널 모뎀) 케이블 결선도» |
+| 전압 분배 계산기, 분압 저항 계산(기) | `/tools/voltage-divider/` | «분압 저항 계산기 — E12·E24·E96 표준값·부하» |
+| adc 계산(기), adc 분해능 (계산), lsb 계산 | `/tools/adc/` + 가이드 `analog-input-scaling` | «ADC 분해능 계산기 — LSB·4–20mA·0–10V 스케일링», 가이드 «아날로그 입력 스케일링 — ADC 값 → 공학값 환산» |
+| rc 시정수 (계산기), 차단주파수 계산기, rc 필터 계산기 | `/tools/rc-filter/` | «RC 시정수·차단 주파수 계산기 — 저역 필터» |
+| 3상 전력 계산(기), kva 계산(기), kva kw 변환, 역률 계산 | `/tools/three-phase-power/` | «3상 전력 계산기 — kVA·kW·kvar·전류·역률» |
+| 콘덴서 용량 계산(기), 역률 개선 콘덴서 용량 계산, 역률 개선 (공식·원리·콘덴서 용량) | `/tools/pf-capacitor/` + 가이드 `power-factor-capacitor` | «역률 개선 콘덴서 용량 계산기 — kvar·µF·Δ/Y», 가이드 «역률과 역률 개선 콘덴서 — kW·kVA·kvar·용량 계산» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -126,9 +131,14 @@
 | encoder pulses to rpm, how to calculate rpm from encoder pulses, encoder ppr calculation | `/en/tools/encoder/` | «Encoder Pulses to RPM Calculator: PPR, ×4, Frequency» |
 | modbus exception codes (list), modbus error codes (table), modbus exception code 2/3/4/11 | `/en/guides/modbus-exception-codes/` | «Modbus Exception Codes 01, 02, 03, 04, 0B Explained» |
 | rs232 pinout (db9), db9 pinout rs232, null modem cable pinout (db9) | `/en/guides/rs232-db9-null-modem/` | «RS-232 DB9 Pinout & Null Modem Cable Wiring» |
+| voltage divider calculator, e96 resistor values, standard resistor values | `/en/tools/voltage-divider/` | «Voltage Divider Calculator: E12, E24, E96 Resistors» |
+| adc resolution calculator, adc lsb calculator, analog input scaling (formula·calculator·in plc) | `/en/tools/adc/` + guide `analog-input-scaling` | «ADC Resolution Calculator: LSB, 4–20 mA, 0–10 V Scaling», guide «Analog Input Scaling: ADC Counts to Engineering Units» |
+| rc time constant calculator, low pass filter calculator, rc cutoff frequency | `/en/tools/rc-filter/` | «RC Time Constant & Low-Pass Cut-off Calculator» |
+| kva to amps (3 phase), three phase power calculator, kva to kw, power factor calculator | `/en/tools/three-phase-power/` | «Three-Phase Power Calculator: kVA, kW, kvar, Amps» |
+| power factor correction capacitor calculator, kvar to uf (calculator), capacitor kvar calculation | `/en/tools/pf-capacitor/` + guide `power-factor-capacitor` | «Power Factor Correction Capacitor Calculator: kvar, µF», guide «Power Factor & Correction Capacitors: kW, kVA, kvar» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
-검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
 | 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
 |---|---|---|---|---|
 | 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
@@ -152,15 +162,21 @@
 | 19 | modbus exception codes (list·2·3·4·11)·modbus error codes (table)(구글), 모드버스 에러코드·modbus 에러 코드(구글). 기존엔 해석기·응답 없음 글에 흩어져 있었음 | 가이드 `modbus-exception-codes` | 규격 V1.1b3 §6 상태도의 검사 순서(01 → 03 → 02 → 04)와 함수별 개수 한도, §7 «96 + 5» 예, CRC 는 lib 로 계산 | ✅ 10/23 |
 | 20 | rs232 pinout (db9)·db9 pinout rs232·null modem cable pinout(구글), rs232 케이블 결선(도)·rs232 크로스 케이블(핀맵)(네이버·구글), 널모뎀 케이블·db9 핀맵(구글) | 가이드 `rs232-db9-null-modem` | TLDP Serial-HOWTO §19(DB9·DB25 핀), Text-Terminal-HOWTO §12(표준 널 모뎀 결선). TIA-574 원문은 유료라 인용하지 않음. 그림(make.mjs `db9-null-modem`) | ✅ 10/23 |
 | 21 | 그레이코드 변환(기·방법)(구글·네이버), gray code converter(구글) | `/tools/integer/` 에 합침 | 절대형 엔코더 출력 — 엔코더 도구와 서로 연결 | ✅ 10/23 (14 에 포함) |
-| 22 | 전압 분배 계산기(네이버·구글), 분압 저항 계산(기)(구글), voltage divider calculator(구글) | 없음 | 정의식. NTC 도구에 분압이 일부 있음 — 저항 E 계열·부하 전류까지 넣으면 따로 낼 만함 | 다음 — 중 |
-| 23 | adc 계산(기)·adc 분해능 (계산)·lsb 계산(구글), adc resolution calculator(구글) | 없음 | LSB·코드 ↔ 전압은 NTC 도구에 있음. 4–20mA 환산(PLC 카운트)과 묶어 «아날로그 입력 분해능» 으로 내면 고유함 | 다음 — 중 |
-| 24 | rc 시정수 (계산기)·차단주파수 계산기·rc 필터 계산기(구글), rc time constant calculator·low pass filter calculator(구글) | 없음 | τ = RC, fc = 1/(2πRC) 정의식. 범용 사이트가 많음 | 다음 — 낮음 |
-| 25 | 3상 전력 계산(기)·kva 계산(기)·kva kw 변환(계산기)·역률 계산(네이버·구글), kva to amps (3 phase)(구글) | 없음 | 모터 전류 계산기와 겹침 — 따로 페이지보다 그 도구에 kVA ↔ A 칸을 더하는 쪽 | 다음 — 기존 도구 확장 |
-| 26 | 콘덴서 용량 계산(기)·역률 개선 콘덴서 용량 계산(구글) | 없음 | Qc = P(tanφ1 − tanφ2) 정의식은 확인 가능하나 설비 설계 쪽이라 독자층과 거리 | 다음 — 낮음 |
+| 22 | 전압 분배 계산기(네이버·구글), 분압 저항 계산(기)(구글), voltage divider calculator(구글) | `/tools/voltage-divider/` | 분압·부하·출력 저항·허용차 + E12·E24·E96 표준 값 조합(같은 비는 하나만). 값은 Vishay 28372(IEC 60063 표)에서 옮기고 E96 = 10^(i/96) 반올림, E24 의 계산값과 다른 8개를 시험으로 확인. 계열별 허용차(±10·5·1 %)는 그 표에 없어 싣지 않음. ADC 입력 임피던스는 ATmega328P §23.6.1 | ✅ 10/23 |
+| 23 | adc 계산(기)·adc 분해능 (계산)·lsb 계산(구글), adc resolution calculator(구글) | `/tools/adc/` + 가이드 `analog-input-scaling` | LSB·양자화 실효값·SNR·ENOB 는 Microchip AN693(DS00693A) 식 2·3·5와 «4.096 V 12비트 = 1 mV» 예, 코드 식은 ATmega328P §23.7. 4–20mA(션트)·0–10V(분압) → 공학값, 상한 잘림 경고. PLC 카운트는 기존 4–20mA 도구로 연결. 그림(make.mjs `adc-scaling`). Analog Devices MT-001 은 내려받기가 끝나지 않아 인용 안 함 | ✅ 10/23 |
+| 24 | rc 시정수 (계산기)·차단주파수 계산기·rc 필터 계산기(구글), rc time constant calculator·low pass filter calculator(구글) | `/tools/rc-filter/` | 정의식(τ = RC, fc = 1/(2πRC), 1차 이득·위상, 상승 시간 τ·ln 9) + ADC 앞 저역 필터 권고(ATmega328P §23.6.1). E12·E24 가까운 값. TI «Analog Engineer's Pocket Reference» 는 로그인이 필요해 쓰지 않음 | ✅ 10/23 |
+| 25 | 3상 전력 계산(기)·kva 계산(기)·kva kw 변환(계산기)·역률 계산(네이버·구글), kva to amps (3 phase)(구글) | `/tools/three-phase-power/` | 모터 전류 계산기(축 출력·효율 → A)와 겹치지 않게 «전기 쪽» 값(A·kW·kVA·kvar·역률)만 다루는 별도 페이지로, 서로 링크. ABB TG7 식 3.15·예제 3.4 명판, ABB Motor guide §4.10 | ✅ 10/23 |
+| 26 | 콘덴서 용량 계산(기)·역률 개선 콘덴서 용량 계산(구글), kvar to uf (calculator·formula)(구글) | `/tools/pf-capacitor/` + 가이드 `power-factor-capacitor` | ABB Motor guide(2019) §4.10 표 4.7(K = tan φ1 − tan φ2, 146칸 모두 ±0.0011 안에서 재현 — 시험엔 표본)·C = 3.2·10⁶·Q/U²(50 Hz, ≈ 10⁹/(2π·50) 반올림)·보상 주의(무부하 전류 이하, Y-Δ). 한전 등 역률 요금 기준은 약관 원문을 확인하지 않아 싣지 않음. 인버터 출력 쪽 콘덴서 금지 같은 문구도 원문을 이번에 확인하지 않아 뺌. ABB 기술 응용 문서 8호(역률 개선)는 내려받기가 막혀(403) 못 씀. 그림(`power-triangle`) | ✅ 10/23 |
 | 27 | 전자기어비 계산(기)·서보 전자기어비 계산(구글), electronic gear ratio calculator(구글) | 없음 | 제조사마다 파라미터 이름·식이 달라 매뉴얼 원문을 제조사별로 확인해야 함 — 10/23 확인 안 함 | 보류, 매뉴얼 확인 뒤 |
 | 28 | ethernet ip basics·profinet basics·how does profinet work(구글), ethercat 원리(구글) | 없음 | PortDock 도구가 다루지 않는 프로토콜이고 ODVA·PI 원문 확인이 필요. 일반 소개 글은 이미 많음 | 보류 |
 | 29 | 변압기 용량 계산(서·식·공식)(구글) | 없음 | 수용률·부하율 같은 설계 가정에 따라 값이 달라 표준 수치로 확정할 수 없음 | 뺌 |
 | 30 | pwm 듀티 비 계산(구글, 하나뿐) | 없음 | 자동완성이 거의 없음 | 뺌 |
+| 31 | 저항 병렬 계산(기·식·법)(구글), parallel resistor calculator (standard values·reverse)(구글) | 없음 | 정의식. 분압 저항 계산기에 «두 표준 값 병렬로 원하는 값 만들기» 를 더하면 겹치지 않음 | 다음 — 중 |
+| 32 | led 저항 계산(기)·아두이노 led 저항 계산(구글), led resistor calculator (5v·12v)(구글) | 없음 | 옴의 법칙 + LED 순방향 전압·전류는 데이터시트 값 입력. 전자 취미 쪽이라 독자층과 거리 | 다음 — 낮음 |
+| 33 | ct 비 계산·ct 비 오차 계산(구글), ct ratio calculator·ct ratio error calculator(구글) | 없음 | 전력 미터 장비 맵(GIMAC1000·Accura)의 CT 비 설정과 연결할 수 있음. CT 정확도 등급 수치는 IEC 61869-2 원문(유료) 확인이 필요 — 비율 환산만이면 정의식 | 다음 — 중, 출처 확인 뒤 |
+| 34 | op amp gain calculator (non inverting·inverting·differential)(구글), 한국어 «opamp 증폭률 계산» 은 자동완성 없음 | 없음 | 정의식(1 + Rf/Rg 등). 4–20mA·센서 입력 회로와 이어지지만 영어 검색만 보임 | 다음 — 낮음 |
+| 35 | 콘덴서 리액턴스(구글, 하나뿐), capacitive reactance calculator (to capacitance)(구글) | 없음 | Xc = 1/(2πfC) 정의식 — 역률 콘덴서·RC 도구에 칸으로 더하는 쪽 | 다음 — 기존 도구 확장 |
+| 36 | lc 필터 계산기·lc 필터 차단 주파수 계산기(구글) | 없음 | f = 1/(2π√(LC)) 정의식. 범용 사이트가 많음 | 다음 — 낮음 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
@@ -168,8 +184,8 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 10종.
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더).
-- 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류, 패널 미터 → 압력 단위). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC).
+- 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 9개·가이드 전부·장비 목록.
 
 ## 등록 (사용자 할 일, 근거 `C:\dev\review\2026-10-19_PortDock_홍보\10_검색등록_수요.md`)
