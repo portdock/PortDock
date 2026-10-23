@@ -33,7 +33,6 @@ export async function onRequestPost({ request, env }: Ctx) {
 
   const name = clip(form.get("name"), 80);
   const email = clip(form.get("email"), 120);
-  const company = clip(form.get("company"), 120);
   const kind = clip(form.get("kind"), 60);
   const message = clip(form.get("message"), 5000);
   const lang = clip(form.get("lang"), 2);
@@ -48,7 +47,7 @@ export async function onRequestPost({ request, env }: Ctx) {
   const v = (await verify.json().catch(() => ({ success: false }))) as { success: boolean };
   if (!v.success) return json(403, { error: "verification failed" });
 
-  const text = [`이름/Name: ${name}`, `메일/Email: ${email}`, `회사/Company: ${company || "-"}`, `종류/Topic: ${kind}`, `언어/Lang: ${lang}`, "", message].join("\n");
+  const text = [`이름/Name: ${name}`, `메일/Email: ${email}`, `종류/Topic: ${kind}`, `언어/Lang: ${lang}`, "", message].join("\n");
   try {
     await env.EMAIL.send({ to: env.CONTACT_TO, from: env.CONTACT_FROM, subject: `[PortDock 문의] ${kind} — ${name}`, text });
   } catch {
