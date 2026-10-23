@@ -1,7 +1,10 @@
-// llms.txt — AI 가 PortDock 과 장비 레지스터 맵 데이터셋을 찾게 하는 짧은 안내(https://llmstxt.org 꼴). 주소는 빌드 변수 SITE_URL 을 따른다
+// llms.txt — AI 가 PortDock 과 장비 레지스터 맵 데이터셋·웹 도구·가이드를 찾게 하는 짧은 안내(https://llmstxt.org 꼴). 주소는 빌드 변수 SITE_URL 을 따른다.
+// 목록은 data/ 의 DEVICES·TOOLS·WEB_TOOLS·GUIDES 에서 만든다 — 새 웹 도구·가이드를 더하면 저절로 들어간다.
 import type { APIRoute } from "astro";
 import { CC_BY, DEVICES, SCHEMA_URL, rawUrl } from "../data/devices";
 import { TOOLS, REPO } from "../data/tools";
+import { WEB_TOOLS } from "../data/webTools";
+import { GUIDES } from "../data/guides";
 import { url } from "../lib/i18n";
 
 export const GET: APIRoute = ({ site }) => {
@@ -27,10 +30,19 @@ export const GET: APIRoute = ({ site }) => {
     "",
     ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}`),
     "",
+    "## Web tools (browser calculators, nothing is sent anywhere)",
+    "",
+    `- [All web tools](${abs(url("en", "tools/"))})`,
+    ...WEB_TOOLS.map((w) => `- [${w.name.en}](${abs(url("en", w.path))}): ${w.blurb.en}`),
+    "",
+    "## Guides",
+    "",
+    `- [All guides](${abs(url("en", "guides/"))})`,
+    ...GUIDES.map((g) => `- [${g.title.en}](${abs(url("en", `guides/${g.slug}/`))}): ${g.desc.en}`),
+    "",
     "## Optional",
     "",
     `- [Source code](${REPO})`,
-    `- [Guides](${abs(url("en", "guides/"))})`,
     "",
   ];
   return new Response(lines.join("\n"), { headers: { "Content-Type": "text/plain; charset=utf-8" } });
