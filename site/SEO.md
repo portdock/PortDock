@@ -136,9 +136,13 @@
 | rc time constant calculator, low pass filter calculator, rc cutoff frequency | `/en/tools/rc-filter/` | «RC Time Constant & Low-Pass Cut-off Calculator» |
 | kva to amps (3 phase), three phase power calculator, kva to kw, power factor calculator | `/en/tools/three-phase-power/` | «Three-Phase Power Calculator: kVA, kW, kvar, Amps» |
 | power factor correction capacitor calculator, kvar to uf (calculator), capacitor kvar calculation | `/en/tools/pf-capacitor/` + guide `power-factor-capacitor` | «Power Factor Correction Capacitor Calculator: kvar, µF», guide «Power Factor & Correction Capacitors: kW, kVA, kvar» |
+| parallel resistor calculator, series and parallel resistor calculator, resistor combination (standard values) | `/en/tools/parallel-resistor/` + guide `resistor-series-parallel` | «Parallel & Series Resistor Calculator (E12, E24, E96)», guide «Resistors in Series & Parallel: Formulas, E12/E24 Pairs» |
+| ct ratio calculator, ct burden calculation (formula), ct va burden calculation | `/en/tools/ct-ratio/` + guide `ct-ratio-burden` | «CT Ratio & Burden Calculator: Secondary Current, VA», guide «CT Ratio & CT Burden: Secondary Current, Leads, Meters» |
+| capacitive reactance calculator, inductive reactance calculator, lc resonant frequency calculator | `/en/tools/reactance/` | «Reactance Calculator: Xc, XL & LC Resonance» |
+| led resistor calculator, 24v led resistor (calculator), led series resistor | `/en/tools/led-resistor/` | «LED Resistor Calculator: 5 V, 12 V, 24 V, Series LEDs» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
-검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
 | 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
 |---|---|---|---|---|
 | 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
@@ -171,12 +175,14 @@
 | 28 | ethernet ip basics·profinet basics·how does profinet work(구글), ethercat 원리(구글) | 없음 | PortDock 도구가 다루지 않는 프로토콜이고 ODVA·PI 원문 확인이 필요. 일반 소개 글은 이미 많음 | 보류 |
 | 29 | 변압기 용량 계산(서·식·공식)(구글) | 없음 | 수용률·부하율 같은 설계 가정에 따라 값이 달라 표준 수치로 확정할 수 없음 | 뺌 |
 | 30 | pwm 듀티 비 계산(구글, 하나뿐) | 없음 | 자동완성이 거의 없음 | 뺌 |
-| 31 | 저항 병렬 계산(기·식·법)(구글), parallel resistor calculator (standard values·reverse)(구글) | 없음 | 정의식. 분압 저항 계산기에 «두 표준 값 병렬로 원하는 값 만들기» 를 더하면 겹치지 않음 | 다음 — 중 |
-| 32 | led 저항 계산(기)·아두이노 led 저항 계산(구글), led resistor calculator (5v·12v)(구글) | 없음 | 옴의 법칙 + LED 순방향 전압·전류는 데이터시트 값 입력. 전자 취미 쪽이라 독자층과 거리 | 다음 — 낮음 |
-| 33 | ct 비 계산·ct 비 오차 계산(구글), ct ratio calculator·ct ratio error calculator(구글) | 없음 | 전력 미터 장비 맵(GIMAC1000·Accura)의 CT 비 설정과 연결할 수 있음. CT 정확도 등급 수치는 IEC 61869-2 원문(유료) 확인이 필요 — 비율 환산만이면 정의식 | 다음 — 중, 출처 확인 뒤 |
+| 31 | 저항 병렬 계산(기·식·법)·저항 병렬 공식·합성저항 계산(기)(구글·네이버), parallel resistor calculator (standard values·reverse)(구글) | `/tools/parallel-resistor/` + 가이드 `resistor-series-parallel` | 분압 도구(비)와 겹치지 않게 «저항 하나의 값» 만 — 직렬·병렬 합성, 병렬 전류 몫, 짝 저항, E12·E24·E96 두 개 조합(오차순), 4k7 표기 읽기. 정의식, 표준 값은 Vishay 28372 | ✅ 10/23 |
+| 32 | led 저항 계산(기)·led 저항 값 계산기·led 직렬 저항 계산(구글·네이버), 24v led resistor (calculator)·led resistor calculator(구글) | `/tools/led-resistor/` | 자동완성이 강해(«led 저항 계산기», «24v led resistor calculator») 만듦. 24 V 표시등 쪽으로 — 저항 전력이 LED 의 10배 넘는 점. Vf·If 는 데이터시트 입력, 색별 «보통 값» 은 출처 없이 싣지 않음 | ✅ 10/23 |
+| 33 | ct 비 계산·ct비 계산·ct비 선정·ct 부담 (계산)·ct 정격 부담(구글), ct burden calculation (formula)·ct ratio calculator(구글) | `/tools/ct-ratio/` + 가이드 `ct-ratio-burden` | ABB Instrument Transformers Application Guide(1VAP420003-TG, 2004 Rev. A) p.4·5·6·10·12·13·26 — 1~5 A 출력, RCF(20.2:1 → 1.01), IEEE C57.13 표준 부담 B-0.1~B-1.8 재현, 2차 개방. 전력 미터 장비 맵(GIMAC1000·Accura «PT/CT 반영 값») ↔ 가이드 연결. IEC 61869-2 등급별 오차 한도·표준 1차 정격 계열은 원문 미확인이라 뺌 | ✅ 10/23 |
 | 34 | op amp gain calculator (non inverting·inverting·differential)(구글), 한국어 «opamp 증폭률 계산» 은 자동완성 없음 | 없음 | 정의식(1 + Rf/Rg 등). 4–20mA·센서 입력 회로와 이어지지만 영어 검색만 보임 | 다음 — 낮음 |
-| 35 | 콘덴서 리액턴스(구글, 하나뿐), capacitive reactance calculator (to capacitance)(구글) | 없음 | Xc = 1/(2πfC) 정의식 — 역률 콘덴서·RC 도구에 칸으로 더하는 쪽 | 다음 — 기존 도구 확장 |
-| 36 | lc 필터 계산기·lc 필터 차단 주파수 계산기(구글) | 없음 | f = 1/(2π√(LC)) 정의식. 범용 사이트가 많음 | 다음 — 낮음 |
+| 35 | 리액턴스 계산(기)·용량성 리액턴스 (공식·계산)·유도성 리액턴스(공식)(구글·네이버), capacitive·inductive reactance calculator(구글) | `/tools/reactance/` | RC 도구(시정수·1차 필터)에 칸을 더하지 않고 별도 페이지로 — 검색어가 «리액턴스» 자체라서. Xc·XL·원하는 X 에 맞는 C·L·콘덴서 전류·kvar(역률 콘덴서 예와 같은 값 시험). 정의식 | ✅ 10/23 |
+| 36 | 공진 주파수 계산(기)·lc 공진 주파수 계산(기)(구글·네이버), lc resonant frequency calculator(구글), lc 필터 계산기(구글) | `/tools/reactance/` 에 합침 | f0 = 1/(2π√(LC))·Z0 = √(L/C). 별도 «LC 필터» 페이지는 부하·감쇠에 따라 모양이 달라 정의식만으로는 얇아 뺌 | ✅ 10/23 (35 에 포함) |
+| 37 | 실린더 추력 계산(기·엑셀)·공압 실린더 추력 (계산·표)(구글), pneumatic cylinder force calculator (smc·in kg)(구글) | 없음 | 자동완성이 강하고 산업 현장 쪽. 이론 출력 = 압력 × 피스톤 면적(로드 쪽은 로드 면적 뺌) 정의식이지만, 제조사 이론 출력 표(SMC 등)로 시험하려 했으나 공식 카탈로그 PDF(cdn.smcworld.com)가 내려받기를 막아 제3자 사본만 확인(10/23). 부하율 권장값도 원문 확인 필요 | 다음 — 높음, 원문 확인 뒤 |
+| 38 | kwh 계산·kwh 당 전기요금(구글) | 없음 | 전력량(kW × h)은 정의식이지만 «요금» 은 약관 단가 원문 확인이 필요 — 수치 없이 만들면 얇음 | 보류 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
