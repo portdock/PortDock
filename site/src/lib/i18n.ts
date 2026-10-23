@@ -10,7 +10,7 @@ export const otherLang = (lang: Lang): Lang => (lang === "ko" ? "en" : "ko");
 
 export const UI = {
   ko: {
-    siteDesc: "현장 하드웨어 시험용 무료 통신 도구 — 시리얼(COM)·Modbus·TCP·UDP·장비 시뮬레이터·네트워크 장비 찾기·SCPI 계측기·실시간 그래프. 오픈소스, 광고·끼워팔기 없음.",
+    siteDesc: "현장 하드웨어 시험용 무료 통신 도구 — 시리얼(COM)·Modbus·TCP·UDP·장비 시뮬레이터·네트워크 장비 찾기·SCPI 계측기·실시간 그래프. 오픈소스, 프로그램에 광고·끼워팔기 없음.",
     tools: "도구",
     webTools: "웹 도구",
     guides: "가이드",
@@ -28,7 +28,7 @@ export const UI = {
     langName: "English",
     heroTitle: "현장 장비 시험을 위한\n작고 정확한 통신 도구",
     heroSub: "시리얼(COM), Modbus, TCP, UDP, 장비 시뮬레이터, 네트워크 장비 찾기, SCPI 계측기, 실시간 그래프를 목적별 작은 프로그램으로. 무료·오픈소스(GPL-3.0), 윈도우 10·11.",
-    trust: ["광고 없음", "끼워팔기 없음", "설치판·휴대판", "소스 공개"],
+    trust: ["프로그램에 광고 없음", "끼워팔기 없음", "설치판·휴대판", "소스 공개"],
     allTools: "PortDock 도구",
     more: "자세히",
     whyTitle: "왜 PortDock 인가",
@@ -67,7 +67,7 @@ export const UI = {
     footerLine: "PortDock — 현장 하드웨어 시험용 통신 도구. GPL-3.0.",
   },
   en: {
-    siteDesc: "Free communication tools for hardware testing — serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder, an SCPI instrument terminal and a live plotter. Open source, no ads, no bundles.",
+    siteDesc: "Free communication tools for hardware testing — serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder, an SCPI instrument terminal and a live plotter. Open source; no ads or bundles in the apps.",
     tools: "Tools",
     webTools: "Web tools",
     guides: "Guides",
@@ -84,7 +84,7 @@ export const UI = {
     langName: "한국어",
     heroTitle: "Small, precise communication tools\nfor testing hardware",
     heroSub: "Serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder, an SCPI instrument terminal and a live plotter — one small program per job. Free and open source (GPL-3.0), Windows 10 and 11.",
-    trust: ["No ads", "No bundles", "Installer or portable", "Open source"],
+    trust: ["No ads in the apps", "No bundles", "Installer or portable", "Open source"],
     allTools: "PortDock tools",
     more: "Details",
     whyTitle: "Why PortDock",
