@@ -38,12 +38,12 @@
     "addressing": "one",
     "notes": [
       {
-        "ko": "매뉴얼은 레지스터 번호(1 기준)로 적는다 — 통신 주소 = 번호 − 1 (p.12, p.18, p.45 예: 11030 → 2B15h).",
-        "en": "Manual lists 1-based register numbers; wire address = number − 1 (p.12, p.18, p.45 example: 11030 → 2B15h)."
+        "ko": "매뉴얼은 레지스터 번호(1 기준)로 적는다 — 통신 주소 = 번호 − 1 (p.12, p.18, p.44 예: 11030 → 2B15h).",
+        "en": "Manual lists 1-based register numbers; wire address = number − 1 (p.12, p.18, p.44 example: 11030 → 2B15h)."
       },
       {
-        "ko": "32비트(UInt32/Int32/Float32)는 상위 워드가 낮은 주소 — Big-Endian (p.19, p.45 예: 380.2 = 43BEh 1999h).",
-        "en": "32-bit values: high word at lower address, big-endian (p.19, p.45 example: 380.2 = 43BEh 1999h)."
+        "ko": "32비트(UInt32/Int32/Float32)는 상위 워드가 낮은 주소 — Big-Endian (p.19, p.44 예: 380.2 = 43BEh 1999h).",
+        "en": "32-bit values: high word at lower address, big-endian (p.19, p.44 example: 380.2 = 43BEh 1999h)."
       },
       {
         "ko": "출하값 9600 bps·짝수 패리티·정지 1비트·Modbus RTU (p.28). 국번은 범위 1-247 인데 같은 쪽에 Default 0 으로 적혀 있어 출하 국번은 비워 둠 — 장치 화면에서 확인.",
@@ -347,7 +347,7 @@
         "ko": "11011-15209 데이터의 유효성",
         "en": "Validity of data in 11011-15209"
       },
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -364,7 +364,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -381,7 +381,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -398,7 +398,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -415,7 +415,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -432,7 +432,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -449,7 +449,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -466,7 +466,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -483,7 +483,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -500,7 +500,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -517,7 +517,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -534,7 +534,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -551,7 +551,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -568,7 +568,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -585,7 +585,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -602,7 +602,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -619,7 +619,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -636,7 +636,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -653,7 +653,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -669,7 +669,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -685,7 +685,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -701,7 +701,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -717,7 +717,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -749,7 +749,7 @@
           "en": "Lag"
         }
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -766,7 +766,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -783,7 +783,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -800,7 +800,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -817,7 +817,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -834,7 +834,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -851,7 +851,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -868,7 +868,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -885,7 +885,7 @@
       "fc": [
         3
       ],
-      "ref": "p.32-36 Measurement Data"
+      "ref": "p.32-35 Measurement Data"
     },
     {
       "table": "holding-registers",
@@ -904,13 +904,13 @@
         "ko": "65526-65529 에 4142h, 4344h, 4546h, 4748h 상수. 65527 부터 2워드 읽어 43 44 45 46h 가 나오면 주소·순서 정상",
         "en": "Constants 4142h, 4344h, 4546h, 4748h at 65526-65529; reading 2 words from 65527 should give 43 44 45 46h"
       },
-      "ref": "p.46 Modbus Test Address"
+      "ref": "p.45 Modbus Test Register Address"
     }
   ],
   "notes": [
     {
-      "ko": "계측표(p.32-36)에는 속성 칸이 없다 — 계측값은 읽기 전용(FC03)으로 적었다.",
-      "en": "Measurement table (p.32-36) has no attribute column; measurement values are listed as read-only (FC03)."
+      "ko": "계측표(p.32-35)에는 속성 칸이 없다 — 계측값은 읽기 전용(FC03)으로 적었다.",
+      "en": "Measurement table (p.32-35) has no attribute column; measurement values are listed as read-only (FC03)."
     },
     {
       "ko": "계측값은 1초마다 갱신. 11010-12197 을 여러 패킷으로 읽을 때 주소가 줄어드는 패킷에서만 전체를 다시 가져온다(동시성) (p.32).",
@@ -923,6 +923,10 @@
     {
       "ko": "직렬 설정(10251-10254)은 PRW — 10250 을 읽어 가져오고, 값을 쓴 뒤 10250 에 1 을 써야 적용된다 (p.28).",
       "en": "Serial settings (10251-10254) are PRW: read 10250 to fetch, write values, then write 1 to 10250 to apply (p.28)."
+    },
+    {
+      "ko": "Rev 2.12(2026-10-22)를 Rev 2.11 과 대조했다 — 이 파일에 넣은 레지스터의 번호·형식·단위·읽기/쓰기는 그대로다. 새 판의 변경은 계측표 이름 표기·오타(11078 단위 칸 kWh 추가 등)와 시스템 정보 10017~10018 항목 이름, 쪽 번호(계측 p.32-35, 3장 p.44-45)다.",
+      "en": "Rev 2.12 (2026-10-22) was compared with Rev 2.11: register numbers, types, units and access for the registers in this file are unchanged. The new edition fixes measurement-table names and typos (e.g. kWh added to the 11078 unit column), renames system-information items 10017-10018, and shifts pages (measurements pp.32-35, chapter 3 pp.44-45)."
     }
   ],
   "sources": [
@@ -930,15 +934,15 @@
       "title": "Accura 3300E Communication Guide [Korean]",
       "publisher": "Rootech Inc.",
       "edition": {
-        "ko": "Revision 2.11, 2026-05-12",
-        "en": "Revision 2.11, 2026-05-12"
+        "ko": "Revision 2.12, 2026-10-22",
+        "en": "Revision 2.12, 2026-10-22"
       },
-      "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1468&no=0",
+      "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1499&no=0",
       "pages": {
-        "ko": "p.12-13 함수 코드, p.18-19 맵 개요·형식, p.22-23, p.28, p.32-36 계측, p.45-46 주소·엔디언",
-        "en": "pp.12-13 function codes, pp.18-19 map overview and formats, pp.22-23, p.28, pp.32-36 measurements, pp.45-46 addresses and endianness"
+        "ko": "p.12-13 함수 코드, p.18-19 맵 개요·형식, p.22-23, p.28, p.32-35 계측, p.44-45 주소·엔디언",
+        "en": "pp.12-13 function codes, pp.18-19 map overview and formats, pp.22-23, p.28, pp.32-35 measurements, pp.44-45 addresses and endianness"
       },
-      "checked": "2026-10-19"
+      "checked": "2026-10-23"
     }
   ]
 }
