@@ -19,7 +19,7 @@
 | 받은 사진을 가이드·장비 페이지에 넣기(자르기·설명·alt) | Claude | 사진 받은 뒤 |
 | 같은 사진을 Adobe Stock 에 올리기(작가 몫 33%) | 사용자 | 선택 |
 | 가이드에 직접 그린 배선도·결선도 SVG 넣기 | Claude | ✅ 10/22 8장(한·영), 생성기 `site/figs/make.mjs` |
-| 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 계속 |
+| 웹 도구·가이드 더 늘리기(검색어 표 `site/SEO.md` 기준) | Claude | 10/23 웹 도구 5종(통신 시간·RS-485 바이어스·4–20mA 루프 부하·전압 강하·서브넷)·가이드 4편 추가 → 웹 도구 13종·가이드 15편. 다음 후보는 SEO.md «다음 후보» 표(허용 전류는 KEC 원문 확인 뒤) |
 | AI 가 쓰는 데이터: `/devices/all.json`·`registers.csv`·`/llms-full.txt` | Claude | ✅ 10/22 |
 | Hugging Face 계정(portdock.contact) → 데이터셋 저장소 `portdock/modbus-register-maps` 만들기 → `node tools/devices-export.mjs` 결과 폴더를 올리기(Claude 가 Chrome 으로 올릴 수 있음) · Kaggle 도 같은 묶음 | 사용자(계정) · Claude(올리기) | 안 함 |
 | Cloudflare → portdock.dev → 보안 → 봇(또는 «AI Crawl Control»)에서 AI 크롤러 차단이 꺼져 있는지 확인 — 켜져 있으면 AI 가 데이터를 못 가져감 | 사용자 | 안 함 |
@@ -67,4 +67,4 @@ GeekNews Show GN(한 번) → 다음 날 OKKY 피드백 → 첫 주말부터 네
 | USB-RS485 변환기 2개(FTDI·CH340) | 재연결·지연 시험(C25·C28) | 소액 | 보류 |
 
 ## 끝난 것 (10/19~22)
-GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 넘겨줌) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편 · 장비 맵 20종 · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.
+GitHub 공개 저장소·CI · Sentry(후원 승인) · 오류 보고 메일 · Cloudflare Pages → `portdock.dev`(옛 pages.dev 는 넘겨줌) · Discussions·비공개 취약점 신고·About/topics · 웹 도구 8종 · 가이드 11편(10/23 → 13종·15편) · 장비 맵 20종 · 릴리스 전 «공개 준비 중» 버튼 · 애드센스 검토 요청.

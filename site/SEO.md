@@ -44,6 +44,15 @@
 | 웹 시리얼 터미널, 브라우저 시리얼 통신, web serial | `/tools/web-serial/` | «웹 시리얼 터미널 — 브라우저에서 COM 포트 열기» |
 | 4-20mA 환산, 4-20mA 계산기, 아날로그 입력 스케일링 | `/tools/4-20ma/` | «4–20mA 환산 계산기 — 전류·공학값·%·PLC 카운트» |
 | PT100 저항표, 측온저항체 온도 환산, 열전대 mV 온도 변환, K타입 열전대 표 | `/tools/temperature/` | «Pt100·열전대 온도 환산 — 저항·mV 계산기·표» |
+| 보레이트, 모드버스 3.5문자, modbus 타임아웃 계산, 폴링 주기 | `/tools/serial-timing/` | «시리얼 통신 시간 계산기 — 보율·Modbus 3.5문자·폴링» |
+| RS485 종단 저항, RS485 바이어스 저항, RS485 거리 | `/tools/rs485/` | «RS485 종단·바이어스 저항 계산기 (120Ω·페일세이프)», 설명에 «200 mV» |
+| 4-20mA 부하저항, 4-20mA 루프 전원, 250옴 | `/tools/loop-load/` | «4–20mA 루프 부하 계산기 — 전원 전압·250Ω·케이블 거리» |
+| 전압강하 계산, 전선 굵기 계산법, dc 전압강하, AWG mm2 변환 | `/tools/voltage-drop/` | «전압 강하 계산기 — 전선 굵기(mm²·AWG)·24V DC» |
+| 서브넷 계산기, 서브넷 마스크 계산, IP대역 계산방법, PLC IP 대역 | `/tools/subnet/` | «IP 서브넷 계산기 — 마스크·대역·PLC 와 PC 같은 대역 확인» |
+| 모드버스 타임아웃 설정, modbus 폴링 주기, 3.5문자 시간 | `/guides/modbus-rtu-timeout-polling/` | «Modbus RTU 타임아웃·폴링 주기 설정 (3.5문자 계산)» |
+| 서브넷 마스크 설정, PLC IP 설정, PLC 핑 안됨, 같은 대역 | `/guides/plc-ip-subnet/` | «PLC IP 서브넷 마스크 설정 — 같은 대역 판정» |
+| 24V 전압강하, 전선 굵기 선정, 센서 전원 전압 강하 | `/guides/24v-voltage-drop/` | «24V DC 전압 강하 계산과 전선 굵기 고르기» |
+| RS485 종단 저항 값, RS485 바이어스 저항 값, 페일세이프 | `/guides/rs485-bias-termination/` | «RS485 종단·바이어스 저항 값 정하기 (120Ω·560Ω)» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -76,6 +85,29 @@
 | web serial terminal, browser serial terminal, web serial api | `/en/tools/web-serial/` | «Web Serial Terminal: Open a COM Port in Your Browser» |
 | 4-20ma calculator, 4-20 ma scaling, analog input scaling | `/en/tools/4-20ma/` | «4–20 mA Scaling Calculator: mA, %, Engineering Units» |
 | pt100 calculator, rtd resistance table, thermocouple mv to temperature, type k table | `/en/tools/temperature/` | «Pt100 & Thermocouple Calculator: Ω, mV ↔ °C» |
+| baud rate calculator, modbus 3.5 character time, modbus timeout calculator | `/en/tools/serial-timing/` | «Serial Timing Calculator: Baud, Modbus t3.5, Polling» |
+| rs485 bias resistor calculator, rs485 termination, rs485 cable length vs baud rate | `/en/tools/rs485/` | «RS-485 Bias & Termination Resistor Calculator», description «200 mV receiver threshold» |
+| 4-20ma load resistor, 4-20ma loop resistance, 4-20ma loop power supply | `/en/tools/loop-load/` | «4–20 mA Loop Load Calculator: Supply, 250 Ω, Cable» |
+| voltage drop calculator, 24v voltage drop calculator, voltage drop calculator mm2, wire gauge to mm | `/en/tools/voltage-drop/` | «Voltage Drop Calculator: Wire Size mm² & AWG, 24 V DC» |
+| subnet calculator, plc subnet mask, same subnet | `/en/tools/subnet/` | «IP Subnet Calculator: Mask, Range, PLC & PC Subnet» |
+| modbus timeout settings, modbus polling interval, modbus rtu 3.5 character time | `/en/guides/modbus-rtu-timeout-polling/` | «Modbus RTU Timeout & Polling Interval: t3.5 Explained» |
+| plc subnet mask, plc ip address, same subnet | `/en/guides/plc-ip-subnet/` | «PLC IP Address & Subnet Mask: Same Subnet Check» |
+| 24v voltage drop, 24vdc voltage drop calculator, 24v voltage drop distance | `/en/guides/24v-voltage-drop/` | «24 V DC Voltage Drop: Choosing Wire Size (mm², AWG)» |
+| rs485 bias resistor value, rs485 failsafe bias resistors, rs485 termination | `/en/guides/rs485-bias-termination/` | «RS-485 Termination & Bias Resistor Values: 120 Ω, 560 Ω» |
+
+## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 에 아래 표의 1~5 를 만들었다.
+| 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
+|---|---|---|---|---|
+| 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
+| 2 | 전압강하 계산·전압강하 공식·전선 굵기 계산법·dc전압강하(네이버), 24v voltage drop calculator·voltage drop calculator mm2(구글) | `/tools/voltage-drop/` + 가이드 `24v-voltage-drop` | 24 V DC·mm²·AWG 함께, 국내 식(35.6·30.8)과의 관계. IEC 60028·60889, ASTM B258 | ✅ 10/23 |
+| 3 | modbus timeout calculator·modbus timeout settings·modbus polling interval·modbus rtu 3.5 character time(구글), 보레이트(네이버) | `/tools/serial-timing/` + 가이드 `modbus-rtu-timeout-polling` | 규격 §2.4.1·§2.5.1.1 수치를 계산기로. 한국어 «모드버스 타임아웃» 은 자동완성 없음 | ✅ 10/23 |
+| 4 | rs485 bias resistor calculator·rs485 bias resistor value·rs485 cable length vs baud rate(구글) | `/tools/rs485/` + 가이드 `rs485-bias-termination` | Modbus 규격 §3.4 + TI SLLA070D. 한국어 «rs485 바이어스» 는 자동완성 없음 | ✅ 10/23 |
+| 5 | 4 20ma load resistor·4 20ma loop resistance·4 20ma loop power supply(구글) | `/tools/loop-load/` | 옴의 법칙만, 전송기 값은 매뉴얼에서. 한국어는 자동완성 없음 | ✅ 10/23 |
+| 6 | 압력·유량 단위 변환(bar·psi·kPa·m³/h) | 없음 | 범용 단위 변환 사이트가 많아 고유함이 약함 — 만든다면 «계기 범위 환산(4–20mA 와 함께)» 처럼 묶어서 | 후보 |
+| 7 | 전선 허용 전류(«전선 굵기 허용 전류», «전선 굵기 sq 표») | 없음 | 수요는 보이지만 KEC·IEC 60364-5-52 표를 원문으로 확인해야 함(포설 방법별) | 후보, 원문 확인 뒤 |
+| 8 | 모터 전류 계산(kW → A) | 없음 | 효율·역률이 모터마다 달라 «명판 값 입력» 꼴로만 | 후보 |
+| 9 | 옴의 법칙·전력 계산기 | 없음 | 범용 사이트가 이미 많음 — 낮음 | 보류 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
@@ -83,7 +115,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 10종.
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기.
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485, Modbus → 통신 시간·서브넷, TCP·UDP·Net Scan → 서브넷).
 - 첫 화면 → 도구 9개·가이드 전부·장비 목록.
 
 ## 등록 (사용자 할 일, 근거 `C:\dev\review\2026-10-19_PortDock_홍보\10_검색등록_수요.md`)
