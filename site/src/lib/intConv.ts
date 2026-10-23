@@ -126,7 +126,8 @@ export function view(bits: number, w: Width): IntView {
     hex: toHex(bits, w),
     bin: toBin(bits, w),
     bcd: bcdDecode(bits, w),
-    gray: toGray(bits) & mask(w),
-    grayDecoded: fromGray(bits) & mask(w),
+    // & 는 결과를 부호 있는 32비트로 만들므로 >>> 0 으로 부호 없는 값에 되돌린다(32비트 맨 위 비트가 1일 때 음수가 되던 문제)
+    gray: (toGray(bits) & mask(w)) >>> 0,
+    grayDecoded: (fromGray(bits) & mask(w)) >>> 0,
   };
 }

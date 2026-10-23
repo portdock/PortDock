@@ -68,3 +68,11 @@ test("한 번에 보기", () => {
   assert.equal(v.bcd, undefined);
   assert.equal(view(0x0500, 16).bcd, 500);
 });
+
+test("32비트 그레이 코드는 부호 없는 값(맨 위 비트가 1이어도 음수가 아님)", () => {
+  const v = view(0x80000000, 32);
+  assert.equal(v.gray, 0xc0000000);
+  assert.equal(v.grayDecoded, 0xffffffff);
+  assert.equal(view(0xffffffff, 32).gray, 0x80000000);
+  assert.ok(view(0xc0000000, 32).grayDecoded >= 0);
+});
