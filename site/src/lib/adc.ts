@@ -19,7 +19,7 @@ export const SIGS = [
 
 /** 1 LSB(V) */
 export function lsb(vref: number, bits: number): number {
-  if (!(vref > 0) || !Number.isInteger(bits) || bits < 1 || bits > 32) throw new RangeError("adc");
+  if (!(vref > 0) || !Number.isFinite(vref) || !Number.isInteger(bits) || bits < 1 || bits > 32) throw new RangeError("adc");
   return vref / 2 ** bits;
 }
 /** 코드 개수 2^N */
@@ -27,6 +27,7 @@ export const codes = (bits: number) => 2 ** bits;
 
 /** 전압 → 코드(내림, 0 ~ 2^N − 1 로 자름) */
 export function toCode(v: number, vref: number, bits: number): number {
+  if (!Number.isFinite(v)) throw new RangeError("v");
   const full = 2 ** bits;
   return Math.min(full - 1, Math.max(0, Math.floor((v / lsb(vref, bits)) + 1e-9)));
 }
@@ -70,16 +71,17 @@ export interface ScaleOut {
   engPerCount: number;
   /** 1카운트의 신호값(mA 또는 V) */
   sigPerCount: number;
-  /** 상한 전압이 기준 전압 이상 → 상한 근처가 잘림 */
+  /** 상한 전압이 맨 위 코드 구간(Vref − 1 LSB 이상)에 들어감 → 그보다 큰 신호(넘침)와 구별되지 않음 — 상한 근처가 잘림 */
   clipped: boolean;
   /** 상한에서 쓰지 않고 남는 범위 %(풀스케일 대비) */
   headroom: number;
 }
 
 export function scale(x: ScaleIn): ScaleOut {
-  if (!(x.k > 0)) throw new RangeError("k");
-  if (!(x.sigHi > x.sigLo)) throw new RangeError("sig");
-  if (x.engHi === x.engLo) throw new RangeError("eng");
+  if (!(x.k > 0) || !Number.isFinite(x.k)) throw new RangeError("k");
+  if (!(x.sigHi > x.sigLo) || !Number.isFinite(x.sigLo) || !Number.isFinite(x.sigHi)) throw new RangeError("sig");
+  // 빈칸(NaN)·아주 큰 수(Infinity)는 NaN 끼리 «다름» 으로 통과해 화면에 NaN 이 찍혔다(10/23)
+  if (!Number.isFinite(x.engLo) || !Number.isFinite(x.engHi) || x.engHi === x.engLo) throw new RangeError("eng");
   const q = lsb(x.vref, x.bits);
   const vLo = sigToV(x, x.sigLo);
   const vHi = sigToV(x, x.sigHi);

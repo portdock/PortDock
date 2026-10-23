@@ -37,3 +37,17 @@ test("R·C 풀기는 fc 식의 거꾸로", () => {
   near(fc(10e3, cFor(50, 10e3)), 50, 1e-9);
   near(fc(rFor(1000, 1e-6), 1e-6), 1000, 1e-9);
 });
+
+test("경계값: 0·음수·빈칸(NaN)·아주 큰 수는 거절, Infinity 가 화면에 찍히지 않게", () => {
+  for (const [r, c] of [[0, 1e-6], [-1, 1e-6], [NaN, 1e-6], [Infinity, 1e-6], [1e3, Infinity], [1e300, 1e300]]) assert.throws(() => tau(r, c), `${r}·${c}`);
+  assert.throws(() => cFor(0, 1e3));
+  assert.throws(() => cFor(Infinity, 1e3));
+  assert.throws(() => rFor(1, NaN));
+  assert.throws(() => fAtGain(1, 100));
+  assert.throws(() => timeTo(-0.1, 1));
+  near(timeTo(0, 1), 0, 0);
+  near(charge(0, 1), 0, 0);
+  near(discharge(0, 1), 1, 0);
+  // 아주 작은 값도 정의식 그대로
+  near(fc(1, 1e-12), 1 / (2 * Math.PI * 1e-12), 1e-3);
+});

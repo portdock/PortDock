@@ -62,3 +62,31 @@ test("0–10 V 를 분압 0.3 으로 받아 3.3 V 12비트: 0–3 V, 3723.6 카�
   near(s.sigPerCount, 10 / s.cHi, 1e-15);
   assert.throws(() => scale({ ...loop, sigHi: 4 }));
 });
+
+test("경계값: 빈칸(NaN)·아주 큰 수·0·음수는 거절 — 화면에 NaN·Infinity 가 찍히지 않게(10/23)", () => {
+  assert.throws(() => lsb(Infinity, 12));
+  assert.throws(() => lsb(-5, 12));
+  assert.throws(() => lsb(5, 12.5));
+  assert.throws(() => lsb(5, 33));
+  near(lsb(5, 32), 5 / 2 ** 32, 1e-24);
+  assert.throws(() => toCode(NaN, 5, 10));
+  assert.equal(toCode(1e12, 5, 10), 1023);
+  assert.equal(toCode(0, 5, 10), 0);
+  assert.throws(() => scale({ ...loop, engLo: NaN }));
+  assert.throws(() => scale({ ...loop, engHi: Infinity }));
+  assert.throws(() => scale({ ...loop, k: Infinity }));
+  assert.throws(() => scale({ ...loop, k: 0 }));
+  assert.throws(() => scale({ ...loop, k: -150 }));
+  // 공학값이 거꾸로(상한 < 하한)인 것은 허용 — 1카운트 값이 음수
+  assert.ok(scale({ ...loop, engLo: 10, engHi: 0 }).engPerCount < 0);
+});
+
+test("잘림 판단: 상한이 맨 위 코드 구간(Vref − 1 LSB 이상)에 들어가면 잘림", () => {
+  const q = lsb(5, 10);
+  // 전압 신호 0–5 V 를 배율 k 로: 상한 전압 = 5k
+  const at = (vHi: number) => scale({ sigLo: 0, sigHi: 5, k: vHi / 5, current: false, engLo: 0, engHi: 1, vref: 5, bits: 10 }).clipped;
+  assert.equal(at(5 - 2 * q), false);
+  assert.equal(at(5 - q), false);
+  assert.equal(at(5 - q / 2), true);
+  assert.equal(at(5), true);
+});

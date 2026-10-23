@@ -76,3 +76,42 @@ test("허용차: 1 % 저항 두 개면 같은 값 분압(1/2)이 약 ±1 % 흔�
   near(lo, 4.95, 1e-9);
   near(hi, 5.05, 1e-9);
 });
+
+test("가장 가까운 값·위아래 값은 크기 제한 없이(10/23 — 옛 판은 0.1 Ω ~ 100 MΩ 밖이면 끝값)", () => {
+  // RC 도구가 아주 낮은 차단 주파수에서 R 을 수백 MΩ·수 TΩ 로 풀 때
+  assert.equal(nearestE(1.6e14, "E24"), 1.6e14);
+  assert.equal(nearestE(4.6e11, "E12"), 4.7e11);
+  assert.equal(nearestE(0.0047, "E12"), 0.0047);
+  assert.equal(nearestE(3.4e-3, "E96"), 3.4e-3);
+  assert.deepEqual(bracketE(5e9, "E24"), [4.7e9, 5.1e9]);
+  assert.deepEqual(bracketE(0.05, "E12"), [0.047, 0.056]);
+  // 경계: decade 끝(1, 10, 100 …)과 계열 마지막 값(82·91·976) 근처
+  assert.equal(nearestE(9.6, "E24"), 10);
+  assert.equal(nearestE(990, "E96"), 1000);
+  assert.deepEqual(bracketE(95, "E24"), [91, 100]);
+  for (const bad of [0, -1, NaN, Infinity]) {
+    assert.throws(() => nearestE(bad, "E12"));
+    assert.throws(() => bracketE(bad, "E12"));
+  }
+});
+
+test("경계값: 빈칸(NaN)·아주 큰 수·음수·허용차 100 % 는 NaN·Infinity 를 내지 않고 거절", () => {
+  assert.throws(() => divOut(NaN, 10e3, 10e3));
+  assert.throws(() => divOut(Infinity, 10e3, 10e3));
+  assert.throws(() => divOut(10, Infinity, 10e3));
+  assert.throws(() => divOut(10, 10e3, 0));
+  assert.throws(() => divOut(10, -1, 10e3));
+  near(divOut(10, 10e3, 10e3, Infinity).vout, 5, 1e-12);
+  near(divOut(-10, 10e3, 10e3).vout, -5, 1e-12);
+  near(divOut(0, 10e3, 10e3).vout, 0, 0);
+  assert.throws(() => solveR2(Infinity, 3, 1e3));
+  assert.throws(() => solveR2(10, -1, 1e3));
+  assert.throws(() => bestPairs(10, 3.3, "E12", Infinity));
+  assert.throws(() => bestPairs(NaN, 3.3, "E12"));
+  assert.throws(() => tolRange(10, 10e3, 10e3, 100));
+  assert.throws(() => tolRange(10, 10e3, 10e3, -1));
+  assert.deepEqual(tolRange(10, 10e3, 10e3, 0), [5, 5]);
+  // 비가 아주 작으면 합계 범위 안 조합이 없다 — 빈 목록(화면은 따로 안내)
+  assert.deepEqual(bestPairs(1000, 0.001, "E12", 10e3), []);
+  for (const p of bestPairs(1e6, 5e5, "E96", 1e9)) assert.ok(Number.isFinite(p.vout));
+});

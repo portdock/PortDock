@@ -21,12 +21,15 @@ export const E_BASE: Record<ESeries, number[]> = {
 
 const clean = (x: number) => Number(x.toPrecision(12));
 
-/** 1 Ω ~ 10 MΩ 사이의 그 계열 값(오름차순) */
+const fin = (x: number) => Number.isFinite(x);
+
+/** min ~ max 사이의 그 계열 값(오름차순, 기본 1 Ω ~ 10 MΩ) — decade 는 범위에 맞춰 펼친다 */
 export function eValues(s: ESeries, min = 1, max = 10e6): number[] {
+  if (!(min > 0) || !fin(max) || !(max >= min)) throw new RangeError("E");
   const base = E_BASE[s];
   const scale = s === "E96" ? 100 : 10;
   const out: number[] = [];
-  for (let d = -1; d <= 7; d++) {
+  for (let d = Math.floor(Math.log10(min)) - 1; d <= Math.ceil(Math.log10(max)); d++) {
     for (const b of base) {
       const v = clean((b / scale) * 10 ** d);
       if (v >= min && v <= max) out.push(v);
@@ -35,12 +38,13 @@ export function eValues(s: ESeries, min = 1, max = 10e6): number[] {
   return out;
 }
 
-/** 가장 가까운 표준 값(비율 기준 — 로그 거리) */
+/** 가장 가까운 표준 값(비율 기준 — 로그 거리). 크기 제한 없음(옛 판은 0.1 Ω ~ 100 MΩ 밖이면 끝값을 돌려줬다, 10/23) */
 export function nearestE(x: number, s: ESeries): number {
-  if (!(x > 0)) throw new RangeError("R");
+  if (!(x > 0) || !fin(x)) throw new RangeError("R");
   let best = NaN;
   let bd = Infinity;
-  for (const v of eValues(s, 0.1, 1e8)) {
+  // 계열 안 이웃 값의 비는 1.25 이하 — x 의 ½ ~ 2배 안에 위·아래 이웃이 반드시 있다
+  for (const v of eValues(s, x / 2, x * 2)) {
     const d = Math.abs(Math.log(v / x));
     if (d < bd) {
       bd = d;
@@ -52,7 +56,8 @@ export function nearestE(x: number, s: ESeries): number {
 
 /** x 바로 아래·바로 위의 표준 값 */
 export function bracketE(x: number, s: ESeries): [number, number] {
-  const vs = eValues(s, 0.1, 1e8);
+  if (!(x > 0) || !fin(x)) throw new RangeError("R");
+  const vs = eValues(s, x / 2, x * 2);
   let lo = vs[0];
   let hi = vs[vs.length - 1];
   for (const v of vs) {
@@ -70,7 +75,7 @@ export const par = (a: number, b: number) => (a * b) / (a + b);
 
 /** 분압 출력: R1 위(입력 쪽), R2 아래(GND 쪽), 부하 rl(Ω, 없으면 Infinity) */
 export function divOut(vin: number, r1: number, r2: number, rl = Infinity) {
-  if (!(r1 > 0) || !(r2 > 0) || !(rl > 0)) throw new RangeError("R");
+  if (!fin(vin) || !(r1 > 0) || !(r2 > 0) || !fin(r1) || !fin(r2) || !(rl > 0)) throw new RangeError("R");
   const r2e = Number.isFinite(rl) ? par(r2, rl) : r2;
   const vout = (vin * r2e) / (r1 + r2e);
   const i = vin / (r1 + r2e);
@@ -90,12 +95,12 @@ export function divOut(vin: number, r1: number, r2: number, rl = Infinity) {
 
 /** 원하는 출력이 되는 R2 (R1 을 정했을 때, 부하 없음) */
 export function solveR2(vin: number, vout: number, r1: number): number {
-  if (!(vout > 0 && vout < vin) || !(r1 > 0)) throw new RangeError("V");
+  if (!(vout > 0 && vout < vin) || !fin(vin) || !(r1 > 0) || !fin(r1)) throw new RangeError("V");
   return (r1 * vout) / (vin - vout);
 }
 /** 원하는 출력이 되는 R1 (R2 를 정했을 때) */
 export function solveR1(vin: number, vout: number, r2: number): number {
-  if (!(vout > 0 && vout < vin) || !(r2 > 0)) throw new RangeError("V");
+  if (!(vout > 0 && vout < vin) || !fin(vin) || !(r2 > 0) || !fin(r2)) throw new RangeError("V");
   return (r2 * (vin - vout)) / vout;
 }
 
@@ -112,8 +117,8 @@ export interface Pair {
  * 합계 저항(R1 + R2)이 rTotal 의 1/3 ~ 3배인 것만, 오차가 작은 순, 같으면 합계가 rTotal 에 가까운 순. 비가 같은 조합은 하나만.
  */
 export function bestPairs(vin: number, vout: number, s: ESeries, rTotal = 10e3, n = 5): Pair[] {
-  if (!(vout > 0 && vout < vin)) throw new RangeError("V");
-  if (!(rTotal > 0)) throw new RangeError("R");
+  if (!(vout > 0 && vout < vin) || !fin(vin)) throw new RangeError("V");
+  if (!(rTotal > 0) || !fin(rTotal)) throw new RangeError("R");
   const target = vout / vin;
   const seen = new Set<string>();
   const out: (Pair & { d: number })[] = [];
@@ -140,8 +145,9 @@ export function bestPairs(vin: number, vout: number, s: ESeries, rTotal = 10e3, 
   return uniq.slice(0, n).map(({ d: _d, ...p }) => p);
 }
 
-/** 저항 허용차(±tol %)로 본 출력의 최솟값·최댓값(부하 없음) — 두 저항이 반대로 어긋날 때가 끝 */
+/** 저항 허용차(±tol %, 0 이상 100 미만)로 본 출력의 최솟값·최댓값(부하 없음) — 두 저항이 반대로 어긋날 때가 끝 */
 export function tolRange(vin: number, r1: number, r2: number, tolPct: number): [number, number] {
+  if (!(tolPct >= 0 && tolPct < 100)) throw new RangeError("tol");
   const k = tolPct / 100;
   const lo = divOut(vin, r1 * (1 + k), r2 * (1 - k)).vout;
   const hi = divOut(vin, r1 * (1 - k), r2 * (1 + k)).vout;

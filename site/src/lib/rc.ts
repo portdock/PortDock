@@ -7,18 +7,21 @@
 /** 시정수(s) */
 export function tau(r: number, c: number): number {
   if (!(r > 0) || !(c > 0)) throw new RangeError("RC");
-  return r * c;
+  const t = r * c;
+  // 아주 큰 값(1e999 = Infinity)·넘침은 «Infinity s» 로 찍히지 않게 거절(10/23)
+  if (!Number.isFinite(t) || !(t > 0)) throw new RangeError("RC");
+  return t;
 }
 /** 차단 주파수(Hz) */
 export const fc = (r: number, c: number) => 1 / (2 * Math.PI * tau(r, c));
 /** fc·R → C */
 export function cFor(f: number, r: number): number {
-  if (!(f > 0) || !(r > 0)) throw new RangeError("f");
+  if (!(f > 0) || !(r > 0) || !Number.isFinite(f * r)) throw new RangeError("f");
   return 1 / (2 * Math.PI * f * r);
 }
 /** fc·C → R */
 export function rFor(f: number, c: number): number {
-  if (!(f > 0) || !(c > 0)) throw new RangeError("f");
+  if (!(f > 0) || !(c > 0) || !Number.isFinite(f * c)) throw new RangeError("f");
   return 1 / (2 * Math.PI * f * c);
 }
 /** 충전 비율(0~1) — t 초 뒤 */

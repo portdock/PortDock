@@ -256,7 +256,8 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
           }
           tbody.append(tr);
         }
-        $("err").textContent = "";
+        // 비가 아주 작거나 크면(예: 1000 V → 1 mV) 합계 범위 안에 조합이 없다 — 빈 표만 남기지 않는다(10/23)
+        $("err").textContent = ps.length ? "" : ko ? "이 합계 저항 범위(⅓ ~ 3배)에서는 맞는 조합이 없습니다 — 합계 저항이나 전압을 바꿔 보세요" : "No pair fits this total-resistance range (⅓ to 3×) — change the total or the voltages";
       } catch {
         $("err").textContent = ko ? "숫자를 확인하세요 — 출력은 0 보다 크고 입력보다 작아야 합니다" : "Check the numbers — the output must be above 0 and below the input";
       }
@@ -277,14 +278,15 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
         set("i", amp(r.current));
         set("p", `${watt(r.p1)} / ${watt(r.p2)}`);
         set("rout", ohm(r.rout));
+        // 허용차는 0 이상 100 미만만 — 100 % 이상이면 그 칸만 비운다(옛 판은 저항 오류로 표 전체를 지웠다, 10/23)
         const tol = num("tol");
-        if (tol >= 0) {
+        if (tol >= 0 && tol < 100) {
           const [lo, hi] = tolRange(vin, r1, r2, tol);
           set("tol", `${fx(lo, 4)} ~ ${fx(hi, 4)} V`);
         } else set("tol", "");
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "저항 값을 확인하세요 — 0 보다 커야 합니다" : "Check the resistor values — they must be above 0";
+        $("err2").textContent = ko ? "입력 전압과 저항 값을 확인하세요 — 저항은 0 보다 커야 합니다" : "Check the input voltage and resistor values — resistors must be above 0";
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

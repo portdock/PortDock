@@ -31,8 +31,10 @@ function pfOk(pf: number) {
   if (!(pf > 0 && pf <= 1)) throw new RangeError("pf");
 }
 function vOk(v: number) {
-  if (!(v > 0)) throw new RangeError("V");
+  if (!(v > 0) || !Number.isFinite(v)) throw new RangeError("V");
 }
+/** 0 이상 유한한 값 — 아주 큰 수(Infinity)가 «Infinity kW» 로 찍히지 않게(10/23) */
+const nonNeg = (x: number) => x >= 0 && Number.isFinite(x);
 
 const out = (phase: Ph, volts: number, kva: number, pf: number): PowerOut => {
   const kw = kva * pf;
@@ -43,31 +45,31 @@ const out = (phase: Ph, volts: number, kva: number, pf: number): PowerOut => {
 export function fromAmps(phase: Ph, volts: number, amps: number, pf: number): PowerOut {
   vOk(volts);
   pfOk(pf);
-  if (!(amps >= 0)) throw new RangeError("A");
+  if (!nonNeg(amps)) throw new RangeError("A");
   return out(phase, volts, (kp(phase) * volts * amps) / 1000, pf);
 }
 /** 전압·유효 kW·역률 → 전류 등 */
 export function fromKw(phase: Ph, volts: number, kw: number, pf: number): PowerOut {
   vOk(volts);
   pfOk(pf);
-  if (!(kw >= 0)) throw new RangeError("kW");
+  if (!nonNeg(kw)) throw new RangeError("kW");
   return out(phase, volts, kw / pf, pf);
 }
 /** 전압·피상 kVA·역률 → 전류 등 */
 export function fromKva(phase: Ph, volts: number, kva: number, pf: number): PowerOut {
   vOk(volts);
   pfOk(pf);
-  if (!(kva >= 0)) throw new RangeError("kVA");
+  if (!nonNeg(kva)) throw new RangeError("kVA");
   return out(phase, volts, kva, pf);
 }
 /** kW·kVA → 역률 */
 export function pfFromKwKva(kw: number, kva: number): number {
-  if (!(kva > 0) || !(kw >= 0) || kw > kva) throw new RangeError("kVA");
+  if (!(kva > 0) || !Number.isFinite(kva) || !(kw >= 0) || kw > kva) throw new RangeError("kVA");
   return kw / kva;
 }
 /** kW·kvar → 역률 */
 export function pfFromKwKvar(kw: number, kvar: number): number {
-  if (!(kw > 0) || !(kvar >= 0)) throw new RangeError("kW");
+  if (!(kw > 0) || !Number.isFinite(kw) || !nonNeg(kvar)) throw new RangeError("kW");
   return kw / Math.hypot(kw, kvar);
 }
 
@@ -116,7 +118,7 @@ export interface CapOut {
 
 /** 콘덴서 하나: kvar·전압·주파수 → µF */
 export function capUf(qKvar: number, u: number, hz: number): number {
-  if (!(u > 0) || !(hz > 0) || !(qKvar >= 0)) throw new RangeError("cap");
+  if (!(u > 0) || !Number.isFinite(u) || !(hz > 0) || !Number.isFinite(hz) || !nonNeg(qKvar)) throw new RangeError("cap");
   return ((qKvar * 1000) / (2 * Math.PI * hz * u * u)) * 1e6;
 }
 /** 콘덴서 하나: µF·전압·주파수 → kvar */
@@ -124,7 +126,7 @@ export const capKvar = (uf: number, u: number, hz: number) => (2 * Math.PI * hz 
 
 export function capacitor(x: CapIn): CapOut {
   vOk(x.volts);
-  if (!(x.kw > 0)) throw new RangeError("kW");
+  if (!(x.kw > 0) || !Number.isFinite(x.kw)) throw new RangeError("kW");
   const k = kFactor(x.pf1, x.pf2);
   const qc = x.kw * k;
   const three = x.phase === "3";
@@ -145,7 +147,7 @@ export function capacitor(x: CapIn): CapOut {
 /** 콘덴서 kvar 를 정했을 때 개선 뒤 역률 */
 export function pfAfter(kw: number, pf1: number, qc: number): number {
   pfOk(pf1);
-  if (!(kw > 0)) throw new RangeError("kW");
+  if (!(kw > 0) || !Number.isFinite(kw) || !Number.isFinite(qc)) throw new RangeError("kW");
   const q = kw * tanOf(pf1) - qc;
   return kw / Math.hypot(kw, q);
 }
