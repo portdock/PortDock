@@ -1,0 +1,911 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "mitsubishi-electric/fr-e800",
+  "manufacturer": {
+    "ko": "미쓰비시전기",
+    "en": "Mitsubishi Electric"
+  },
+  "model": "FR-E800",
+  "kind": "inverter",
+  "title": {
+    "ko": "미쓰비시전기 FR-E800 인버터 (PU 커넥터 Modbus RTU)",
+    "en": "Mitsubishi Electric FR-E800 inverter (PU connector Modbus RTU)"
+  },
+  "summary": {
+    "ko": "PU 커넥터(RS-485) Modbus RTU. 홀딩 레지스터 40001~ 꼴: 시스템 변수 40002~, 모니터 40201~(Pr.52 모니터 코드 2), 고장 이력 40501~40510, 파라미터 41000+번호, 형명 44001~",
+    "en": "PU connector (RS-485) Modbus RTU. Holding registers in 40001 form: system variables 40002-, monitors 40201- (Pr.52 monitor code 2), fault history 40501-40510, parameters 41000 + number, model name 44001-"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 125,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "주소 체계: 통신 매뉴얼 읽기 예(p.261 (PDF 262))는 11 03 03 EB 00 03 77 2B 로 41004~41006(Pr.4~6)을 읽고, 쓰기 예는 05 06 00 0D 17 70 17 99 로 40014 에 60 Hz 를 쓴다. FC10 예(p.263 (PDF 264))는 19 10 03 EE 00 02 04 00 05 00 0A 86 3D 로 41007·41008 에 쓴다. 프레임 주소 = 매뉴얼 번호 − 40001. CRC 도 계산값과 맞다.",
+        "en": "Addressing: the read example in the communication manual (p.261 (PDF 262)) sends 11 03 03 EB 00 03 77 2B to read 41004-41006 (Pr.4-6); the write example 05 06 00 0D 17 70 17 99 writes 60 Hz to 40014; the FC10 example (p.263 (PDF 264)) 19 10 03 EE 00 02 04 00 05 00 0A 86 3D writes 41007 and 41008. Frame address = manual number - 40001. CRCs match calculation."
+      },
+      {
+        "ko": "Modbus RTU 로 쓰려면 Pr.549 = 1(초기값 0 = 미쓰비시 프로토콜). Pr.117 국번 초기값 0 은 브로드캐스트라 응답이 없으니 1~247 로 바꾼다. Pr.118 초기값 192 = 19200 bps, Pr.120 초기값 2 = 짝수 패리티·정지 1비트(Pr.119 정지 비트는 Pr.120 = 0 일 때만), 데이터 8비트 고정. 설정을 바꾼 뒤에는 인버터를 리셋해야 적용된다 (p.257~258 (PDF 258~259)).",
+        "en": "To use Modbus RTU set Pr.549 = 1 (default 0 = Mitsubishi protocol). Pr.117 station default 0 is broadcast (no reply), so set 1-247. Pr.118 default 192 = 19200 bps, Pr.120 default 2 = even parity, 1 stop bit (Pr.119 stop bits apply only when Pr.120 = 0), 8 data bits fixed. Reset the inverter after changing these (pp.257-258 (PDF 258-259))."
+      },
+      {
+        "ko": "함수 코드 03·06·08·10·46. 한 번에 125개까지 읽기·쓰기. 통신 옵션이 달려 있고 Pr.550 = 9999(초기값)이면 PU 커넥터의 운전 명령은 무효.",
+        "en": "Function codes 03, 06, 08, 10, 46. Up to 125 registers per read/write. With a communication option installed and Pr.550 = 9999 (initial), operation commands from the PU connector are invalid."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "40002",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 리셋",
+        "en": "Inverter reset"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "description": {
+        "ko": "아무 값이나 쓴다. 리셋 명령에는 응답이 없다",
+        "en": "Write any value. No reply to the reset command"
+      },
+      "ref": "p.265 (PDF 266)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "40009",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 / 제어 입력 명령",
+        "en": "Inverter status / control input command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "쓰기: 정지 / 읽기: RUN(운전 중)",
+          "en": "Write: stop / Read: RUN (running)"
+        },
+        {
+          "bit": 1,
+          "ko": "쓰기: 정회전 / 읽기: 정회전 중",
+          "en": "Write: forward rotation / Read: forward running"
+        },
+        {
+          "bit": 2,
+          "ko": "쓰기: 역회전 / 읽기: 역회전 중",
+          "en": "Write: reverse rotation / Read: reverse running"
+        },
+        {
+          "bit": 3,
+          "ko": "쓰기: RH(고속) / 읽기: 주파수 도달",
+          "en": "Write: RH (high speed) / Read: up to frequency"
+        },
+        {
+          "bit": 4,
+          "ko": "쓰기: RM(중속) / 읽기: 과부하 경보",
+          "en": "Write: RM (middle speed) / Read: overload warning"
+        },
+        {
+          "bit": 5,
+          "ko": "쓰기: RL(저속)",
+          "en": "Write: RL (low speed)"
+        },
+        {
+          "bit": 6,
+          "ko": "쓰기: JOG 운전 선택 2 / 읽기: FU(출력 주파수 검출)",
+          "en": "Write: JOG operation selection 2 / Read: FU (output frequency detection)"
+        },
+        {
+          "bit": 7,
+          "ko": "쓰기: 제2 기능 선택 / 읽기: ABC(고장)",
+          "en": "Write: second function selection / Read: ABC (fault)"
+        },
+        {
+          "bit": 8,
+          "ko": "쓰기: 단자 4 입력 선택 / 읽기: ABC2(기능 없음)",
+          "en": "Write: terminal 4 input selection / Read: ABC2 (no function)"
+        },
+        {
+          "bit": 9,
+          "ko": "읽기: 안전 모니터 출력 2",
+          "en": "Read: safety monitor output 2"
+        },
+        {
+          "bit": 10,
+          "ko": "쓰기: MRS(출력 정지)",
+          "en": "Write: MRS (output stop)"
+        },
+        {
+          "bit": 11,
+          "ko": "읽기: 위치 결정 완료",
+          "en": "Read: in-position"
+        },
+        {
+          "bit": 12,
+          "ko": "쓰기: RES(리셋) / 읽기: 위치 지령 운전 중",
+          "en": "Write: RES (reset) / Read: during position command operation"
+        },
+        {
+          "bit": 13,
+          "ko": "읽기: 원점 복귀 완료",
+          "en": "Read: home position return completed"
+        },
+        {
+          "bit": 14,
+          "ko": "읽기: 원점 복귀 실패",
+          "en": "Read: home position return failure"
+        },
+        {
+          "bit": 15,
+          "ko": "읽기: 고장 발생",
+          "en": "Read: fault occurrence"
+        }
+      ],
+      "description": {
+        "ko": "쓰면 제어 입력, 읽으면 인버터 상태. 괄호 안 신호는 초기 할당 — 입력은 Pr.180~189, 출력은 Pr.190~197 에 따라 바뀐다",
+        "en": "Write = control input, read = inverter status. Signals in brackets are initial assignments; inputs change with Pr.180-189, outputs with Pr.190-197"
+      },
+      "ref": "p.265 (PDF 266)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "40010",
+      "type": "u16",
+      "name": {
+        "ko": "운전 모드 / 인버터 설정",
+        "en": "Operation mode / inverter setting"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "EXT",
+          "en": "EXT"
+        },
+        {
+          "value": 1,
+          "ko": "PU",
+          "en": "PU"
+        },
+        {
+          "value": 2,
+          "ko": "EXT JOG",
+          "en": "EXT JOG"
+        },
+        {
+          "value": 3,
+          "ko": "PU JOG",
+          "en": "PU JOG"
+        },
+        {
+          "value": 4,
+          "ko": "NET",
+          "en": "NET"
+        },
+        {
+          "value": 5,
+          "ko": "PU+EXT",
+          "en": "PU+EXT"
+        }
+      ],
+      "description": {
+        "ko": "값은 읽은 운전 모드. 쓰기 값: 0010h = EXT, 0011h = PU(Pr.79·Pr.340 에 따라), 0014h = NET",
+        "en": "Values are the read mode. Write: 0010h = EXT, 0011h = PU (depending on Pr.79/Pr.340), 0014h = NET"
+      },
+      "ref": "p.266 (PDF 267)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "40014",
+      "type": "u16",
+      "name": {
+        "ko": "설정 주파수(RAM)",
+        "en": "Set frequency (RAM)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "Pr.37·Pr.53 으로 회전 속도(기계 속도) 표시로 바꿀 수 있다. 매뉴얼 FC06 예: 60 Hz = 1770h",
+        "en": "Can be switched to speed (machine speed) display with Pr.37/Pr.53. Manual FC06 example: 60 Hz = 1770h"
+      },
+      "ref": "p.265 (PDF 266)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "40015",
+      "type": "u16",
+      "name": {
+        "ko": "설정 주파수(EEPROM)",
+        "en": "Set frequency (EEPROM)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "p.265 (PDF 266)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 200,
+      "manualAddress": "40201",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Pr.53 설정에 따라 단위가 바뀐다",
+        "en": "Increment changes with Pr.53"
+      },
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 201,
+      "manualAddress": "40202",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 202,
+      "manualAddress": "40203",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 204,
+      "manualAddress": "40205",
+      "type": "u16",
+      "name": {
+        "ko": "설정 주파수",
+        "en": "Set frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Pr.53 설정에 따라 단위가 바뀐다",
+        "en": "Increment changes with Pr.53"
+      },
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 205,
+      "manualAddress": "40206",
+      "type": "u16",
+      "name": {
+        "ko": "운전 속도",
+        "en": "Operation speed"
+      },
+      "unit": "r/min",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Pr.53 설정에 따라 단위가 바뀐다",
+        "en": "Increment changes with Pr.53"
+      },
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 206,
+      "manualAddress": "40207",
+      "type": "u16",
+      "name": {
+        "ko": "모터 토크",
+        "en": "Motor torque"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 207,
+      "manualAddress": "40208",
+      "type": "u16",
+      "name": {
+        "ko": "컨버터 출력 전압",
+        "en": "Converter output voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 208,
+      "manualAddress": "40209",
+      "type": "u16",
+      "name": {
+        "ko": "회생 제동 사용률",
+        "en": "Regenerative brake duty"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 209,
+      "manualAddress": "40210",
+      "type": "u16",
+      "name": {
+        "ko": "전자 서멀 부하율",
+        "en": "Electronic thermal O/L relay load factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 210,
+      "manualAddress": "40211",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류 피크값",
+        "en": "Output current peak value"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 211,
+      "manualAddress": "40212",
+      "type": "u16",
+      "name": {
+        "ko": "컨버터 출력 전압 피크값",
+        "en": "Converter output voltage peak value"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 212,
+      "manualAddress": "40213",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전력",
+        "en": "Input power"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 213,
+      "manualAddress": "40214",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.395 (PDF 396)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 214,
+      "manualAddress": "40215",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 상태",
+        "en": "Input terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "STF",
+          "en": "STF"
+        },
+        {
+          "bit": 1,
+          "ko": "STR",
+          "en": "STR"
+        },
+        {
+          "bit": 4,
+          "ko": "RL",
+          "en": "RL"
+        },
+        {
+          "bit": 5,
+          "ko": "RM",
+          "en": "RM"
+        },
+        {
+          "bit": 6,
+          "ko": "RH",
+          "en": "RH"
+        },
+        {
+          "bit": 8,
+          "ko": "MRS",
+          "en": "MRS"
+        },
+        {
+          "bit": 10,
+          "ko": "RES",
+          "en": "RES"
+        }
+      ],
+      "description": {
+        "ko": "표준 모델 기준 비트(이더넷·IP67·안전 통신·CC-Link 모델과 FR-A8AC 장착 시는 다르다)",
+        "en": "Bits for the standard model (Ethernet, IP67, safety communication and CC-Link models, and with FR-A8AC, differ)"
+      },
+      "ref": "p.397, p.399 (PDF 398, 400)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 215,
+      "manualAddress": "40216",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 상태",
+        "en": "Output terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "bit": 4,
+          "ko": "FU",
+          "en": "FU"
+        },
+        {
+          "bit": 5,
+          "ko": "ABC",
+          "en": "ABC"
+        },
+        {
+          "bit": 7,
+          "ko": "SO",
+          "en": "SO"
+        }
+      ],
+      "description": {
+        "ko": "표준 모델 기준 비트. FR-E8TR·FR-E8TE7 장착 시 SO 는 늘 OFF",
+        "en": "Bits for the standard model. SO is always OFF with FR-E8TR or FR-E8TE7 installed"
+      },
+      "ref": "p.397, p.399 (PDF 398, 400)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 219,
+      "manualAddress": "40220",
+      "type": "u16",
+      "name": {
+        "ko": "누적 통전 시간",
+        "en": "Cumulative energization time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "0~65535 시간 누적 후 0 부터 다시(넘친 횟수는 Pr.563)",
+        "en": "Accumulates 0-65535 h, then restarts from 0 (overflow count in Pr.563)"
+      },
+      "ref": "p.396 (PDF 397)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 222,
+      "manualAddress": "40223",
+      "type": "u16",
+      "name": {
+        "ko": "실 운전 시간",
+        "en": "Actual operation time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "0~65535 시간 누적 후 0 부터 다시(넘친 횟수는 Pr.564)",
+        "en": "Accumulates 0-65535 h, then restarts from 0 (overflow count in Pr.564)"
+      },
+      "ref": "p.396 (PDF 397)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 223,
+      "manualAddress": "40224",
+      "type": "u16",
+      "name": {
+        "ko": "모터 부하율",
+        "en": "Motor load factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.396 (PDF 397)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 224,
+      "manualAddress": "40225",
+      "type": "u16",
+      "name": {
+        "ko": "누적 전력량",
+        "en": "Cumulative energy"
+      },
+      "unit": "kWh",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.396 (PDF 397)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 236,
+      "manualAddress": "40237",
+      "type": "u16",
+      "name": {
+        "ko": "방열판 온도",
+        "en": "Heat sink temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "FR-E820-0175(3.7K)·FR-E840-0060(2.2K)·FR-E846-0060(2.2K) 이상만, 그 밖에는 늘 0",
+        "en": "Only FR-E820-0175 (3.7K), FR-E840-0060 (2.2K), FR-E846-0060 (2.2K) and larger; otherwise always 0"
+      },
+      "ref": "p.396 (PDF 397)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 260,
+      "manualAddress": "40261",
+      "type": "u16",
+      "name": {
+        "ko": "모터 서멀 부하율",
+        "en": "Motor thermal load factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.397 (PDF 398)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 261,
+      "manualAddress": "40262",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 서멀 부하율",
+        "en": "Inverter thermal load factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.397 (PDF 398)",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 500,
+      "manualAddress": "40501",
+      "type": "u16",
+      "name": {
+        "ko": "고장 이력 1(최신)",
+        "en": "Fault record 1 (latest)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "하위 바이트가 고장 코드(00xxh, 코드 뜻은 유지보수 매뉴얼). 아무 값이나 쓰면 고장 이력 전체 삭제",
+        "en": "Low byte is the fault code (00xxh; meanings in the Maintenance manual). Writing any value clears the whole fault history"
+      },
+      "ref": "p.267 (PDF 268)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 501,
+      "manualAddress": "40502",
+      "type": "u16",
+      "name": {
+        "ko": "고장 이력 2",
+        "en": "Fault record 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "40510(고장 이력 10)까지 같은 형식",
+        "en": "Same format up to 40510 (fault record 10)"
+      },
+      "ref": "p.267 (PDF 268)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1006,
+      "manualAddress": "41007",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간(Pr.7)",
+        "en": "Acceleration time (Pr.7)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "파라미터 번호 + 41000 = 레지스터. 0.1 s 단위는 Pr.21 = 0(초기값)일 때 — Pr.21 = 1 이면 0.01 s. 매뉴얼 FC10 예: 0.5 s = 0005h",
+        "en": "Register = parameter number + 41000. 0.1 s units with Pr.21 = 0 (initial); 0.01 s with Pr.21 = 1. Manual FC10 example: 0.5 s = 0005h"
+      },
+      "ref": "p.263 (PDF 264)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1007,
+      "manualAddress": "41008",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간(Pr.8)",
+        "en": "Deceleration time (Pr.8)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "0.1 s 단위는 Pr.21 = 0(초기값)일 때 — Pr.21 = 1 이면 0.01 s. 매뉴얼 FC10 예: 1 s = 000Ah",
+        "en": "0.1 s units with Pr.21 = 0 (initial); 0.01 s with Pr.21 = 1. Manual FC10 example: 1 s = 000Ah"
+      },
+      "ref": "p.263 (PDF 264)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4000,
+      "manualAddress": "44001",
+      "type": "string",
+      "name": {
+        "ko": "형명",
+        "en": "Model name"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "len": 20,
+      "description": {
+        "ko": "ASCII 20자(44001~44010), 빈칸은 20h. 예 FR-E820-1 → 46h 52h 2Dh 45h …",
+        "en": "ASCII, 20 characters (44001-44010), blanks are 20h. Example FR-E820-1 → 46h 52h 2Dh 45h ..."
+      },
+      "ref": "p.267 (PDF 268)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "모니터 레지스터(40201~)는 기능 매뉴얼 Pr.52 모니터 항목표의 «모니터 코드 2» 칸에서 옮겼다. 그 표의 음수 표시(○)는 RS-485(Modbus RTU) 통신에서는 쓸 수 없어 모두 부호 없는 16비트로 적었다.",
+      "en": "Monitor registers (40201-) are taken from the 'monitor code 2' column of the Pr.52 monitor item list in the Function manual. Negative indication (○) in that table is not available over RS-485 (Modbus RTU), so all are listed as unsigned 16-bit."
+    },
+    {
+      "ko": "비트 뜻은 표준 모델 기준. 제조 시기에 따라 사양이 다를 수 있다(기능 매뉴얼 p.399 NOTE).",
+      "en": "Bit meanings are for the standard model. Specifications may differ by date of manufacture (Function manual p.399 NOTE)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "FR-E800 Instruction Manual (Communication)",
+      "publisher": "Mitsubishi Electric Corporation",
+      "edition": {
+        "ko": "IB(NA)-0600871ENG-S",
+        "en": "IB(NA)-0600871ENG-S"
+      },
+      "url": "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600871eng/ib0600871engs.pdf",
+      "pages": {
+        "ko": "3.5 MODBUS RTU p.257 (PDF 258)~p.267 (PDF 268)",
+        "en": "3.5 MODBUS RTU p.257 (PDF 258) to p.267 (PDF 268)"
+      },
+      "checked": "2026-10-23"
+    },
+    {
+      "title": "FR-E800 Instruction Manual (Function)",
+      "publisher": "Mitsubishi Electric Corporation",
+      "edition": {
+        "ko": "IB(NA)-0600868ENG-U",
+        "en": "IB(NA)-0600868ENG-U"
+      },
+      "url": "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600868eng/ib0600868engu.pdf",
+      "pages": {
+        "ko": "Pr.52 모니터 항목표 p.395~399 (PDF 396~400), Pr.7·Pr.21 p.302 (PDF 303)",
+        "en": "Pr.52 monitor item list pp.395-399 (PDF 396-400), Pr.7/Pr.21 p.302 (PDF 303)"
+      },
+      "checked": "2026-10-23"
+    }
+  ]
+}
