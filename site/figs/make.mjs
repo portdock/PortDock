@@ -646,6 +646,41 @@ figs["power-triangle"] = (t) => {
   return [W, H, b];
 };
 
+// CT 2차 회로 부담 — 1차 선이 CT 를 지나고, 2차 S1·S2 에서 왕복 선 → 계기. 숫자는 lib/ct(burden(5, 10, 2.5, 1, 0, 5))로 계산한 값
+figs["ct-burden"] = (t) => {
+  const W = 780, H = 350;
+  let b = "";
+  // 1차 도체
+  b += L(30, 80, 400, 80, INK, 4) + arrowR(400, 80) + T(40, 66, t.pri, { s: 13, b: 1 });
+  // CT(고리)
+  b += `<ellipse cx="200" cy="80" rx="22" ry="34" fill="none" stroke="${CB}" stroke-width="5"/>`;
+  b += T(240, 66, t.ct, { s: 13, b: 1, c: CB });
+  // 2차 단자
+  const s1 = 186, s2 = 214, yT = 130;
+  b += L(s1, 112, s1, yT, CB, 2) + L(s2, 112, s2, yT, CB, 2) + dot(s1, yT, CB) + dot(s2, yT, CB);
+  b += T(s1 - 8, yT + 4, "S1", { a: "end", s: 12, c: CB, b: 1 }) + T(s2 + 8, yT + 4, "S2", { s: 12, c: CB, b: 1 });
+  // 왕복 선
+  const yA = 170, yB = 250, xM = 560;
+  b += P(`M${s1} ${yT} V${yA} H${xM}`, CA, 2.5) + P(`M${s2} ${yT} V${yB} H${xM}`, CA, 2.5);
+  b += resH(300, 420, yA, CA, 40) + resH(300, 420, yB, CA, 40);
+  b += T(360, yA - 14, t.lead1, { a: "middle", s: 12, c: CA });
+  b += T(360, yB + 24, t.lead1, { a: "middle", s: 12, c: CA });
+  b += T(360, (yA + yB) / 2 + 5, t.lead2, { a: "middle", s: 13, b: 1, c: CA });
+  // 접지(2차 한쪽)
+  const gx = 250;
+  b += dot(gx, yB, INK) + L(gx, yB, gx, yB + 22) + L(gx - 12, yB + 22, gx + 12, yB + 22) + L(gx - 7, yB + 27, gx + 7, yB + 27) + L(gx - 3, yB + 32, gx + 3, yB + 32);
+  b += T(gx, yB + 50, t.gnd, { a: "middle", s: 11, c: MUTED });
+  // 계기
+  b += R(xM, 140, 180, 140);
+  b += T(xM + 90, 175, t.meter, { a: "middle", s: 14, b: 1 }) + T(xM + 90, 200, t.meter2, { a: "middle", s: 12, c: MUTED });
+  b += resV(xM + 90, 215, 268, INK);
+  // 합계
+  b += T(20, 30, t.head, { s: 14, b: 1 });
+  b += T(W - 20, 312, t.total, { a: "end", s: 13, b: 1, c: OK });
+  b += T(W - 20, 334, t.open, { a: "end", s: 12, b: 1, c: NG });
+  return [W, H, b];
+};
+
 const L10N = {
   "rs485-bus": {
     ko: { title: "RS-485 2선식 버스 배선", master: "마스터", slave: "슬레이브", busNote1: "A·B·GND 를 장비마다 차례로 잇고, 선로 양 끝 두 곳에만 120 Ω 종단 저항", busNote2: "표준 송수신기 32대(단위 부하)까지 · 느린 속도에서 약 1200 m" },
@@ -726,6 +761,10 @@ const L10N = {
   "power-triangle": {
     ko: { title: "전력 삼각형과 역률 개선 (100 kW, cos φ 0.75 → 0.95)", head: "콘덴서는 무효 전력 Q 만 줄이고 유효 전력 P 는 그대로", sub: "피상 전력 S = √(P² + Q²) 가 줄어 같은 일에 전류가 줄어듭니다", p: "유효 전력 P = 100 kW", s1: "개선 전 S 133.3 kVA", s2: "개선 후 S 105.3 kVA", qc: "콘덴서 Qc 55.3 kvar", q1: "Q 88.2 kvar", q2: "Q 32.9 kvar" },
     en: { title: "Power triangle and power factor correction (100 kW, cos φ 0.75 → 0.95)", head: "Capacitors reduce only the reactive power Q; the real power P stays", sub: "Apparent power S = √(P² + Q²) falls, so the same work takes less current", p: "Real power P = 100 kW", s1: "Before S 133.3 kVA", s2: "After S 105.3 kVA", qc: "Capacitor Qc 55.3 kvar", q1: "Q 88.2 kvar", q2: "Q 32.9 kvar" },
+  },
+  "ct-burden": {
+    ko: { title: "CT 2차 회로의 부담 (200/5 A, 편도 10 m, 2.5 mm²)", pri: "1차 전류", ct: "CT 200/5 — 1차 200 A 에서 2차 5 A", lead1: "편도 10 m · 2.5 mm²", lead2: "왕복 0.138 Ω → 5 A 에서 3.45 VA", gnd: "2차 한쪽 접지", meter: "계기 전류 입력", meter2: "1 VA ÷ 5² = 0.04 Ω", head: "CT 가 보는 부담 = 왕복 선 + 계기 입력 (+ 단자)", total: "합계 0.178 Ω × 5² = 4.45 VA → 정격 5 VA 의 89 %", open: "전류가 흐를 때 2차를 열지 않기 — 높은 전압 펄스" },
+    en: { title: "Burden on a CT secondary (200/5 A, 10 m one way, 2.5 mm²)", pri: "Primary current", ct: "CT 200/5 — 200 A primary gives 5 A", lead1: "10 m one way · 2.5 mm²", lead2: "Round trip 0.138 Ω → 3.45 VA at 5 A", gnd: "one side grounded", meter: "Meter current input", meter2: "1 VA ÷ 5² = 0.04 Ω", head: "Burden on the CT = round-trip leads + meter input (+ terminals)", total: "Total 0.178 Ω × 5² = 4.45 VA → 89 % of a 5 VA rating", open: "Never open the secondary under current — high voltage peaks" },
   },
 };
 

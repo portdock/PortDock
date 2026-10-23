@@ -3072,4 +3072,253 @@ export const GUIDES: Guide[] = [
       ],
     },
   },
+  // CT 비·부담 — ABB «Instrument Transformers Technical Information and Application Guide»(1VAP420003-TG, 2004 Rev. A)
+  // p.4(보통 출력 1~5 A)·p.5(직렬, 2차 접지)·p.6(다중 비 600:5)·p.10(RCF)·p.12(IEEE 등급 0.3·0.6·1.2)·p.13(표준 부담)·p.26(2차 개방).
+  // 숫자는 lib/ct 로 계산(ct.test.ts «가이드·그림 예»). IEC 61869-2 의 등급별 오차 한도는 원문 미확인이라 싣지 않는다.
+  {
+    slug: "ct-ratio-burden",
+    date: "2026-10-23",
+    tools: ["modbus-master"],
+    related: ["power-factor-capacitor", "motor-current-breaker-cable", "modbus-float-word-order"],
+    webTools: ["tools/ct-ratio/", "tools/three-phase-power/", "tools/voltage-drop/"],
+    deviceKinds: ["power-meter"],
+    title: { ko: "CT 비·2차 전류·부담 기초 — 전력 미터 CT 설정과 배선 거리", en: "CT ratio, secondary current and burden — power meter CT settings and wiring distance" },
+    seoTitle: { ko: "CT 비·CT 부담 계산 — 2차 전류·선 굵기·전력 미터 설정 — PortDock", en: "CT Ratio & CT Burden: Secondary Current, Leads, Meters — PortDock" },
+    desc: {
+      ko: "CT 비 200/5 의 뜻과 2차 전류 환산, 계기·왕복 선의 부담(VA = I²R) 계산, 1 A·5 A 2차 차이, 비 오차(RCF), 2차 개방 금지, 전력 미터 CT 설정.",
+      en: "What a 200/5 CT ratio means, burden from meter and leads (VA = I²R), 1 A vs 5 A secondaries, ratio error (RCF), open secondaries and meter CT settings.",
+    },
+    body: {
+      ko: [
+        { p: "전력 미터·전류계는 수백 A 를 직접 받지 않고 변류기(CT)를 거쳐 작은 2차 전류로 잽니다. 미터를 달거나 Modbus 로 전류 값을 읽을 때 «CT 비 설정», «CT 부담» 이 나옵니다. 계산은 단순하지만 배선 거리에 따라 결과가 크게 달라집니다." },
+        { h: "CT 가 하는 일" },
+        { p: "ABB 의 계기용 변성기 가이드(1VAP420003-TG)는 CT 를 «선로에 직렬로 들어가 선 전류를 계기·계전기에 맞는 표준 5 A 로 바꾸는 것» 으로 설명하고(p.5), CT 의 보통 출력을 1~5 A 로 적습니다(p.4). 2차 회로는 계기 쪽 전압을 안전하게 두려고 접지합니다(p.5)." },
+        { h: "CT 비와 2차 전류" },
+        { code: "CT 비 = 1차 정격 ÷ 2차 정격\n200/5 → 40\n\n2차 전류 = 1차 전류 ÷ 40\n1차 150 A → 2차 3.75 A\n1차 200 A → 2차 5 A\n2차 4 A (계기에서 잼) → 1차 160 A" },
+        { p: "탭이 여럿인 다중 비 CT 도 있습니다. ABB 가이드의 예(p.6)는 600:5 다중 비 CT 로, 2차 단자 조합(X1-X2, X2-X3 …)에 따라 50:5 ~ 600:5 를 고릅니다. 이때는 어느 단자에 이었는지가 곧 CT 비이므로 명판의 결선표를 확인합니다." },
+        { h: "전력 미터의 CT 비 설정" },
+        {
+          ul: [
+            "미터에 CT 1차·2차 정격(예: 200, 5)을 넣으면 미터가 2차 전류에 CT 비를 곱한 실제 전류·전력을 보여 줍니다. 설정이 CT 와 다르면 전류·전력·전력량이 모두 그 비만큼 어긋납니다.",
+            "LS ELECTRIC GIMAC1000 장비 맵은 «모든 계측값이 PT/CT 비가 반영된 실제 단위의 Float32» 이고, 루텍 Accura 2300 도 «PT/CT 배율을 따로 곱하지 않는다» 고 적혀 있습니다(PortDock 장비 맵, 각 매뉴얼 근거). Modbus 로 읽은 값에 CT 비를 다시 곱하지 않습니다.",
+            "평소 부하가 CT 정격 1차의 몇 % 인지 봅니다. 200/5 CT 에 20 A 부하면 2차 0.5 A(10 %)로, 계기 범위의 아래쪽에서 읽게 됩니다.",
+          ],
+        },
+        { h: "부담(burden) — CT 가 미는 2차 회로" },
+        { fig: { src: "/img/guides/ct-burden.ko.svg", w: 780, h: 350, alt: "1차 도체가 CT 를 지나고, CT 2차 S1·S2 에서 편도 10 m 2.5 mm² 선이 왕복으로 계기 전류 입력에 이어진 그림. 왕복 0.138 Ω 이 5 A 에서 3.45 VA, 계기 1 VA(0.04 Ω)를 더해 합계 4.45 VA 로 정격 5 VA 의 89 %", cap: "200/5 A CT, 편도 10 m·2.5 mm² 구리, 계기 1 VA. 선이 계기보다 더 큰 부담이 됩니다." } },
+        { p: "부담은 CT 2차에 이어진 임피던스 전체입니다(ABB p.13). CT 의 비 오차·위상 오차는 이 부담에 따라 달라지므로, CT 명판의 정격 부담(VA) 안에서 씁니다. 저항 성분만 보면 계산은 옴의 법칙입니다." },
+        { code: "부담 VA = (정격 2차 전류)² × (왕복 선 저항 + 계기 입력 저항 + 단자 등)\n계기 입력 Ω = 계기 부담 VA ÷ (정격 2차 전류)²\n왕복 선 저항 = (2 × 편도 길이) ÷ (58 × 단면적)   (구리 20 °C, Ω)\n\n200/5, 편도 10 m, 2.5 mm², 계기 1 VA:\n  선 0.138 Ω → 3.45 VA,  계기 0.04 Ω → 1 VA\n  합계 0.178 Ω → 4.45 VA  (정격 5 VA 의 89 %)\n같은 조건, 편도 30 m:  11.34 VA  (227 % — 정격 초과)" },
+        { p: "계기의 VA 는 계기 사양서의 «전류 입력 부담» 값을 씁니다. 위 계산은 저항 성분만 더한 것이고, 계기 입력에 리액턴스가 있으면 실제 임피던스는 조금 다릅니다." },
+        { h: "1 A 와 5 A 2차" },
+        {
+          table: {
+            head: ["선(구리 2.5 mm²) 편도", "왕복 Ω", "5 A 2차 선 부담", "1 A 2차 선 부담"],
+            rows: [
+              ["10 m", "0.138", "3.45 VA", "0.138 VA"],
+              ["30 m", "0.414", "10.34 VA", "0.414 VA"],
+              ["50 m", "0.690", "17.24 VA", "0.690 VA"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "같은 선이면 선 부담(I²R)은 1 A 2차가 5 A 의 1/25 입니다. 편도 30 m 에서 5 A CT 는 선만으로 10 VA 를 넘지만, 1 A CT 는 계기 1 VA 를 더해도 약 1.41 VA 입니다. 배선이 길면 선을 굵게 하거나, 계기를 CT 가까이 두거나, 1 A 2차 CT 와 1 A 입력 계기를 씁니다. 계기가 어느 2차 전류를 받는지 먼저 확인합니다." },
+        { h: "표준 부담 표 (IEEE C57.13)" },
+        { p: "ABB 가이드(p.13)는 IEEE C57.13 의 5 A 2차 계량용 표준 부담을 B-0.1(0.1 Ω, 2.5 VA), B-0.2(0.2 Ω, 5.0 VA), B-0.5(0.5 Ω, 12.5 VA), B-0.9(0.9 Ω, 22.5 VA), B-1.8(1.8 Ω, 45 VA)로 줍니다(역률 0.9, 60 Hz). 5 A 가 아닌 CT 는 옴 값에 (5 ÷ 정격 전류)² 를 곱하고 정격 전류에서 VA 는 그대로입니다 — 1 A CT 에서 2.5 VA 는 2.5 Ω 입니다. IEC 쪽 정격 부담 표기와 정확도 등급별 오차 한도는 IEC 61869-2 원문을 확인하지 않아 이 글에 싣지 않습니다." },
+        { h: "비 오차와 정확도 등급" },
+        { p: "명판의 비는 «표시 비» 이고, 실제 비는 그보다 조금 크거나 작습니다. ABB 가이드(p.10)는 그 차이를 비 보정 계수 RCF = 실제 비 ÷ 표시 비 로 정의합니다. 실제 20.2 : 1, 표시 20 : 1 이면 RCF 1.01, 비 오차 1 % 이고, RCF 가 1 보다 크면 계기는 낮게 읽으므로 읽은 값에 RCF 를 곱합니다." },
+        { p: "같은 가이드(p.12)에 따르면 IEEE C57.13 은 계량용 CT 에 0.3·0.6·1.2 등급을 두고, 0.6·1.2 등급은 0.3 등급의 두 배·네 배 오차를 허용합니다. 정격 전류의 10 % 에서는 100 % 에서의 두 배 오차를 허용하고, 이 한도는 정해진 부담에서뿐 아니라 부담 0 에서도 지켜야 합니다. 등급은 정해진 부담 조건에서의 값이므로, 실제 부담이 정격을 넘으면 등급을 기대할 수 없습니다." },
+        { h: "2차를 열지 않기" },
+        { p: "ABB 가이드(p.26): CT 2차가 전류가 흐르는 채로 열리면 1차 전류가 모두 여자 회로로 흘러 2차 단자에 아주 높은 전압이 생깁니다. 실효값은 철심 포화로 제한돼 전압계로는 위험해 보이지 않을 수 있지만, 전류가 0 을 지날 때마다 매우 높은 전압 펄스가 생겨 절연을 깨고 사람에게 위험합니다. 가이드는 2차 개방을 «심각한 사고» 로 보라고 하고, 큰 CT 에서 개방될 수 있으면 보호 회로를 2차 단자에 늘 이어 두라고 적습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «CT 비·2차 전류·부담 계산기»: CT 비로 1차 ↔ 2차 전류, 정격 1차 대비 %, 왕복 선 저항 + 계기 VA → 전체 부담과 정격 대비 %, 잰 전류로 RCF.",
+            "웹 도구 «3상 전력 계산기»: 미터에서 읽은 전압·전류·역률로 kVA·kW·kvar 를 확인합니다. 선 굵기별 저항은 «전압 강하·전선 굵기 계산기».",
+            "Modbus Master: 전력 미터 장비 프로필(GIMAC1000·Accura 등)로 상별 전류를 폴링해 CT 비 설정이 맞는지(실제 부하와 비슷한지) 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Power meters and ammeters do not take hundreds of amps directly; they measure a small secondary current through a current transformer (CT). Installing a meter or reading current over Modbus brings up «CT ratio settings» and «CT burden». The arithmetic is simple, but wiring distance changes the result a lot." },
+        { h: "What a CT does" },
+        { p: "ABB's instrument transformer guide (1VAP420003-TG) describes a CT as connected in series with the line to transform the line current to the standard 5 A suitable for meters and relays (p.5), and gives typical CT outputs of 1–5 A (p.4). The secondary circuit is grounded to keep the voltage at the meters safe (p.5)." },
+        { h: "CT ratio and secondary current" },
+        { code: "CT ratio = rated primary ÷ rated secondary\n200/5 → 40\n\nSecondary = primary ÷ 40\n150 A primary → 3.75 A secondary\n200 A primary → 5 A secondary\n4 A measured at the meter → 160 A primary" },
+        { p: "Some CTs have several taps. ABB's example (p.6) is a 600:5 multi-ratio CT where the pair of secondary terminals (X1-X2, X2-X3 …) selects 50:5 to 600:5. The terminals you wired are the ratio, so check the nameplate connection table." },
+        { h: "Setting the CT ratio on a power meter" },
+        {
+          ul: [
+            "Enter the CT's rated primary and secondary (e.g. 200 and 5) and the meter multiplies the secondary current by the ratio to show real current and power. If the setting does not match the CT, current, power and energy are all off by that ratio.",
+            "The LS ELECTRIC GIMAC1000 device map notes that all measurements are Float32 in engineering units with the PT/CT ratio applied, and the Rootech Accura 2300 map says no separate PT/CT scaling is needed (PortDock device maps, from each manual). Do not multiply Modbus values by the CT ratio again.",
+            "Check what percentage of the CT's rated primary your normal load is. A 20 A load on a 200/5 CT gives 0.5 A secondary (10 %), at the bottom of the meter's range.",
+          ],
+        },
+        { h: "Burden — the circuit the CT drives" },
+        { fig: { src: "/img/guides/ct-burden.en.svg", w: 780, h: 350, alt: "The primary conductor passes through a CT; from secondary terminals S1 and S2, 10 m one-way 2.5 mm² leads run to the meter current input and back. The 0.138 Ω round trip is 3.45 VA at 5 A; with the meter's 1 VA (0.04 Ω) the total is 4.45 VA, 89 % of a 5 VA rating", cap: "A 200/5 A CT, 10 m one way of 2.5 mm² copper, a 1 VA meter. The leads are a bigger burden than the meter." } },
+        { p: "The burden is the whole impedance connected to the CT secondary (ABB p.13). A CT's ratio and phase errors depend on it, so keep within the rated burden (VA) on the nameplate. Looking at the resistive part only, it is Ohm's law." },
+        { code: "Burden VA = (rated secondary current)² × (round-trip leads + meter input + terminals)\nMeter input Ω = meter burden VA ÷ (rated secondary current)²\nRound-trip leads = (2 × one-way length) ÷ (58 × area)   (copper at 20 °C, Ω)\n\n200/5, 10 m one way, 2.5 mm², meter 1 VA:\n  leads 0.138 Ω → 3.45 VA,  meter 0.04 Ω → 1 VA\n  total 0.178 Ω → 4.45 VA  (89 % of 5 VA)\nSame, 30 m one way:  11.34 VA  (227 % — over the rating)" },
+        { p: "Take the meter's VA from its datasheet («current input burden»). The calculation adds resistance only; if the meter input has reactance, the real impedance differs slightly." },
+        { h: "1 A and 5 A secondaries" },
+        {
+          table: {
+            head: ["Leads (copper 2.5 mm²) one way", "Round-trip Ω", "Lead burden, 5 A secondary", "Lead burden, 1 A secondary"],
+            rows: [
+              ["10 m", "0.138", "3.45 VA", "0.138 VA"],
+              ["30 m", "0.414", "10.34 VA", "0.414 VA"],
+              ["50 m", "0.690", "17.24 VA", "0.690 VA"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "On the same wire, lead burden (I²R) with a 1 A secondary is 1/25 of 5 A. At 30 m one way a 5 A CT passes 10 VA on the leads alone, while a 1 A CT with a 1 VA meter is about 1.41 VA in total. For long runs, use thicker wire, move the meter closer, or use a 1 A secondary CT with a 1 A meter input. Check which secondary current your meter takes first." },
+        { h: "Standard burdens (IEEE C57.13)" },
+        { p: "ABB's guide (p.13) lists the IEEE C57.13 metering burdens for 5 A secondaries: B-0.1 (0.1 Ω, 2.5 VA), B-0.2 (0.2 Ω, 5.0 VA), B-0.5 (0.5 Ω, 12.5 VA), B-0.9 (0.9 Ω, 22.5 VA) and B-1.8 (1.8 Ω, 45 VA), at power factor 0.9 and 60 Hz. For a CT not rated 5 A, multiply the ohms by (5 ÷ rated current)²; the VA at rated current stays the same — 2.5 VA on a 1 A CT is 2.5 Ω. IEC rated-burden notation and accuracy-class error limits are not covered here: we have not checked the IEC 61869-2 text." },
+        { h: "Ratio error and accuracy classes" },
+        { p: "The nameplate ratio is the «marked ratio»; the actual ratio is slightly higher or lower. ABB's guide (p.10) defines the difference as the ratio correction factor RCF = actual ratio ÷ marked ratio. An actual 20.2 : 1 against a marked 20 : 1 is RCF 1.01, a 1 % ratio error; with RCF above 1 the meter reads low, so multiply readings by the RCF." },
+        { p: "According to the same guide (p.12), IEEE C57.13 has metering classes 0.3, 0.6 and 1.2 for CTs, the 0.6 and 1.2 classes allowing twice and four times the error of 0.3. Twice the error is permitted at 10 % of rated current as at 100 %, and the limits apply at the specified burden and also at zero burden. A class holds under its burden conditions; if the actual burden exceeds the rating, do not expect the class." },
+        { h: "Never open the secondary" },
+        { p: "ABB's guide (p.26): if a CT secondary is opened while current flows, all the primary current flows through the exciting branch and a high voltage appears at the secondary terminals. The RMS value is limited by core saturation and may not look dangerous on a voltmeter, but each current zero produces very high voltage peaks that can break down insulation and are dangerous to people. The guide says an open secondary should be considered a serious accident and, where larger CTs may be opened, a protective circuit should be permanently connected to the secondary terminals." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«CT Ratio & Burden Calculator» web tool: primary ↔ secondary current by ratio, percentage of rated primary, round-trip leads + meter VA → total burden against the rating, and RCF from measured currents.",
+            "«Three-Phase Power Calculator» web tool: check kVA, kW and kvar from the voltage, current and power factor the meter reports. For wire resistance by size, use the «Voltage Drop & Wire Size Calculator».",
+            "Modbus Master: poll per-phase current from a power meter device profile (GIMAC1000, Accura and others) to see whether the CT ratio setting gives plausible load currents.",
+          ],
+        },
+      ],
+    },
+  },
+  // 합성 저항 — 정의식. 숫자는 lib/resistors·lib/led 로 계산(resistors.test.ts·led.test.ts), 표준 값은 Vishay 28372(IEC 60063 표).
+  {
+    slug: "resistor-series-parallel",
+    date: "2026-10-23",
+    tools: ["serial"],
+    related: ["rs485-bias-termination", "analog-input-scaling", "ntc-thermistor-temperature"],
+    webTools: ["tools/parallel-resistor/", "tools/led-resistor/", "tools/voltage-divider/"],
+    title: { ko: "저항 직렬·병렬 합성 — 공식, 전류·전력 나눔, 표준 값으로 원하는 저항 만들기", en: "Resistors in series and parallel — formulas, current and power sharing, making values from standard resistors" },
+    seoTitle: { ko: "저항 병렬·직렬 계산 — 합성저항 공식과 표준 값 조합 — PortDock", en: "Resistors in Series & Parallel: Formulas, E12/E24 Pairs — PortDock" },
+    desc: {
+      ko: "합성 저항 공식(직렬 합, 병렬 역수의 합), 병렬 전류·전력 나눔, E12·E24·E96 두 개로 없는 값 만들기, 허용차, 종단 저항 겹침과 LED 저항 예.",
+      en: "Series and parallel formulas, current and power sharing, making missing values from two E12/E24/E96 resistors, tolerance, terminators and LED resistors.",
+    },
+    body: {
+      ko: [
+        { p: "회로도에 필요한 값이 저항 계열에 없거나, 종단 저항이 두 곳에서 켜져 값이 반으로 보이거나, 저항 하나가 너무 뜨거울 때 — 모두 직렬·병렬 합성으로 설명됩니다. 공식은 두 줄이지만 전류·전력이 어떻게 나뉘는지까지 보면 현장에서 쓸 곳이 많습니다." },
+        { h: "직렬: 더한다" },
+        { code: "R = R1 + R2 + … + Rn\n1 kΩ + 2.2 kΩ = 3.2 kΩ" },
+        { p: "직렬은 모든 저항에 같은 전류가 흐르고 전압이 저항 크기에 비례해 나뉩니다. 합성 값은 가장 큰 저항보다 항상 큽니다. 전력도 저항에 비례하므로(P = I²R) 큰 저항이 더 뜨거워집니다." },
+        { h: "병렬: 역수를 더한다" },
+        { code: "1/R = 1/R1 + 1/R2 + … + 1/Rn\n두 개:   R = R1 × R2 ÷ (R1 + R2)\n같은 값 n 개:   R ÷ n\n\n10 kΩ ∥ 4.7 kΩ = 47 000 000 ÷ 14 700 ≈ 3.197 kΩ\n10 kΩ ∥ 10 kΩ = 5 kΩ\n10 kΩ ∥ 1 MΩ ≈ 9.90 kΩ (−1 %)" },
+        { p: "병렬은 모든 저항에 같은 전압이 걸리고 전류가 저항에 반비례해 나뉩니다. 합성 값은 가장 작은 저항보다 항상 작습니다. 큰 저항을 병렬로 붙이면 값이 조금만 줄어 미세 조정에 쓸 수 있습니다." },
+        { h: "병렬에서 전류·전력이 나뉘는 방식" },
+        {
+          table: {
+            head: ["24 V 에 병렬", "전류", "전력"],
+            rows: [
+              ["1 kΩ", "24 mA", "576 mW"],
+              ["2 kΩ", "12 mA", "288 mW"],
+              ["4 kΩ", "6 mA", "144 mW"],
+              ["합성 571.4 Ω", "42 mA", "1008 mW"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "작은 저항이 전류와 전력을 가장 많이 받습니다. 전력을 나누려고 저항을 병렬로 둘 때는 같은 값을 쓰면 n 개가 1/n 씩 고르게 나눕니다. 값이 다르면 가장 작은 저항의 정격 전력부터 확인합니다." },
+        { h: "표준 값 두 개로 원하는 값 만들기" },
+        { p: "저항은 E12(한 decade 에 12개)·E24(24개)·E96(96개) 같은 계열 값으로 팝니다(Vishay 문서 28372 의 IEC 60063 표). 필요한 값이 계열에 없으면 두 개를 직렬이나 병렬로 이어 맞춥니다. 짝은 공식을 거꾸로 풀면 나옵니다." },
+        { code: "직렬 짝:  R2 = Rt − R1          (R1 < Rt)\n병렬 짝:  R2 = R1 × Rt ÷ (R1 − Rt)   (R1 > Rt)\n\n10 kΩ 에 무엇을 병렬로 붙이면 6 kΩ?  10k × 6k ÷ 4k = 15 kΩ\nE12 로 정확히:  5 kΩ = 10k ∥ 10k,   3.3 kΩ = 1.8k + 1.5k" },
+        {
+          table: {
+            head: ["6.04 kΩ 만들기", "조합", "합성 값", "오차"],
+            rows: [
+              ["E12", "6.8k ∥ 56k", "6.064 kΩ", "+0.39 %"],
+              ["E24", "6.2k ∥ 240k", "6.044 kΩ", "+0.06 %"],
+              ["E96", "3.24k + 2.8k", "6.04 kΩ", "0 %"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "6.04 kΩ 은 E96 값입니다. E24 두 개만으로도 0.1 % 안에 맞출 수 있지만, 그 정도 정밀도가 필요하면 보통은 E96 저항 하나가 더 간단합니다. 비율이 중요한 분압은 저항 값이 아니라 비를 맞추는 분압 저항 계산기의 조합을 씁니다." },
+        { h: "허용차는 어떻게 되나" },
+        { p: "두 저항이 같은 허용차(예: ±5 %)이고 둘 다 같은 방향 끝까지 어긋나면, 직렬 합(R1 + R2)과 병렬 합(R1R2 ÷ (R1 + R2)) 모두 같은 비율(±5 %)만큼 어긋납니다 — 두 값에 같은 배수를 곱하면 합성 값에도 그 배수가 곱해지기 때문입니다. 조합으로 공칭 값을 맞춰도 허용차는 줄지 않으므로, 오차가 중요하면 허용차가 작은 저항을 고릅니다." },
+        { h: "현장에서 보는 예" },
+        {
+          ul: [
+            "RS-485 종단: 장비 내장 120 Ω 종단과 바깥 120 Ω 이 같은 끝에서 둘 다 켜지면 그 끝은 120 ∥ 120 = 60 Ω 입니다. 선로 양 끝에 하나씩 바르게 단 종단도 A-B 사이(전원을 끈 상태)에서는 60 Ω 으로 재지므로, 재어 본 값과 함께 장비 수와 내장 종단 설정을 확인합니다.",
+            "4–20 mA 입력 저항: 250 Ω 이 없을 때 1 kΩ 네 개를 병렬로(250 Ω), 또는 E24 의 120 Ω + 130 Ω 을 직렬로 만듭니다.",
+            "LED 전류 제한 저항: R = (전원 − Vf) ÷ 전류. 24 V, Vf 2 V, 10 mA 면 2.2 kΩ 이고 저항 전력은 0.22 W 로 LED(20 mW)의 10배가 넘습니다. 1/4 W 저항이면 여유가 거의 없으므로 정격이 큰 저항을 쓰거나 두 개를 직렬로 나눕니다.",
+          ],
+        },
+        { h: "4k7·2M2 표기" },
+        { p: "회로도·부품 목록에서는 단위 글자를 소수점 자리에 써서 4k7(4.7 kΩ), 2M2(2.2 MΩ), 0R47(0.47 Ω)처럼 적기도 합니다. PortDock 합성 저항 계산기는 이 표기도 그대로 읽습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «합성 저항 계산기 (직렬·병렬)»: 여러 값의 직렬·병렬 합성, 병렬 전류 몫과 전류, 짝 저항, E12·E24·E96 두 개 조합(오차순).",
+            "웹 도구 «LED 저항 계산기»: 전원·Vf·전류·직렬 개수 → 저항·전력, 표준 값으로 바꿨을 때 전류.",
+            "웹 도구 «분압 저항 계산기»: 비를 맞추는 R1·R2 표준 값 조합, 부하·허용차.",
+          ],
+        },
+      ],
+      en: [
+        { p: "A value your schematic needs is not in the series, a bus reads half the termination you expected, a resistor runs too hot — all of these come down to series and parallel combinations. The formulas are two lines, but how current and power divide is where they become useful." },
+        { h: "Series: add" },
+        { code: "R = R1 + R2 + … + Rn\n1 kΩ + 2.2 kΩ = 3.2 kΩ" },
+        { p: "In series the same current flows through every resistor and the voltage divides in proportion to resistance. The total is always above the largest resistor. Power is also proportional to resistance (P = I²R), so the larger one runs hotter." },
+        { h: "Parallel: add reciprocals" },
+        { code: "1/R = 1/R1 + 1/R2 + … + 1/Rn\nTwo:   R = R1 × R2 ÷ (R1 + R2)\nn equal values:   R ÷ n\n\n10 kΩ ∥ 4.7 kΩ = 47,000,000 ÷ 14,700 ≈ 3.197 kΩ\n10 kΩ ∥ 10 kΩ = 5 kΩ\n10 kΩ ∥ 1 MΩ ≈ 9.90 kΩ (−1 %)" },
+        { p: "In parallel every resistor sees the same voltage and current divides in inverse proportion to resistance. The total is always below the smallest resistor. A large resistor in parallel lowers the value only slightly, which is handy for trimming." },
+        { h: "How current and power divide in parallel" },
+        {
+          table: {
+            head: ["In parallel on 24 V", "Current", "Power"],
+            rows: [
+              ["1 kΩ", "24 mA", "576 mW"],
+              ["2 kΩ", "12 mA", "288 mW"],
+              ["4 kΩ", "6 mA", "144 mW"],
+              ["Total 571.4 Ω", "42 mA", "1008 mW"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "The smallest resistor takes the most current and power. To share power, use equal values: n of them each take 1/n. With different values, check the power rating of the smallest one first." },
+        { h: "Making a value from two standard resistors" },
+        { p: "Resistors come in series values such as E12 (12 per decade), E24 (24) and E96 (96) — the IEC 60063 tables in Vishay document 28372. If the value you need is not in the series, join two in series or parallel. The partner comes from solving the formula backwards." },
+        { code: "Series partner:    R2 = Rt − R1          (R1 < Rt)\nParallel partner:  R2 = R1 × Rt ÷ (R1 − Rt)   (R1 > Rt)\n\nWhat in parallel with 10 kΩ gives 6 kΩ?  10k × 6k ÷ 4k = 15 kΩ\nExact from E12:  5 kΩ = 10k ∥ 10k,   3.3 kΩ = 1.8k + 1.5k" },
+        {
+          table: {
+            head: ["Making 6.04 kΩ", "Combination", "Value", "Error"],
+            rows: [
+              ["E12", "6.8k ∥ 56k", "6.064 kΩ", "+0.39 %"],
+              ["E24", "6.2k ∥ 240k", "6.044 kΩ", "+0.06 %"],
+              ["E96", "3.24k + 2.8k", "6.04 kΩ", "0 %"],
+            ],
+            plain: true,
+          },
+        },
+        { p: "6.04 kΩ is an E96 value. Two E24 resistors get within 0.1 %, but if you need that precision a single E96 part is usually simpler. For a divider where the ratio matters, use the Voltage Divider Calculator's pairs, which match the ratio rather than one value." },
+        { h: "What happens to tolerance" },
+        { p: "If two resistors have the same tolerance (say ±5 %) and both drift fully the same way, the series sum (R1 + R2) and the parallel value (R1R2 ÷ (R1 + R2)) both move by the same ±5 % — scaling both values by the same factor scales the result by that factor. Combining values hits the nominal value but does not shrink the tolerance, so if accuracy matters choose tighter-tolerance resistors." },
+        { h: "Examples in the field" },
+        {
+          ul: [
+            "RS-485 termination: with a device's built-in 120 Ω terminator and an external 120 Ω both on at the same end, that end is 120 ∥ 120 = 60 Ω. Correct termination, one at each end of the line, also measures 60 Ω across A-B (power off), so check the reading together with the number of devices and their built-in termination settings.",
+            "4–20 mA input resistor: without a 250 Ω part, use four 1 kΩ in parallel (250 Ω) or the E24 values 120 Ω + 130 Ω in series.",
+            "LED current-limiting resistor: R = (supply − Vf) ÷ current. At 24 V, Vf 2 V and 10 mA that is 2.2 kΩ dissipating 0.22 W, over ten times the LED's 20 mW. A 1/4 W part leaves almost no margin, so use a higher rating or split it into two in series.",
+          ],
+        },
+        { h: "4k7 and 2M2 notation" },
+        { p: "Schematics and parts lists often put the unit letter where the decimal point goes: 4k7 (4.7 kΩ), 2M2 (2.2 MΩ), 0R47 (0.47 Ω). PortDock's resistor calculator reads this notation directly." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Parallel & Series Resistor Calculator» web tool: series and parallel totals, current share and currents, the partner value, and E12/E24/E96 pairs by error.",
+            "«LED Resistor Calculator» web tool: supply, Vf, current and LEDs in series → resistor and power, current with a standard value.",
+            "«Voltage Divider Calculator» web tool: standard R1/R2 pairs for a ratio, with load and tolerance.",
+          ],
+        },
+      ],
+    },
+  },
 ];
