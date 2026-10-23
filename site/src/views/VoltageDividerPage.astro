@@ -69,6 +69,8 @@ const L = ko
       adcLink: "ADC 분해능·스케일링 계산기",
       ntcNote: "NTC 서미스터 분압은",
       ntcLink: "NTC 서미스터 계산기",
+      rpNote: "비가 아니라 저항 하나의 값을 두 개로 맞추려면",
+      rpLink: "합성 저항 계산기 (직렬·병렬)",
       srcTitle: "출처",
     }
   : {
@@ -124,6 +126,8 @@ const L = ko
       adcLink: "ADC Resolution & Scaling Calculator",
       ntcNote: "For NTC thermistor dividers, use the",
       ntcLink: "NTC Thermistor Calculator",
+      rpNote: "To make one resistance value from two resistors (rather than a ratio), use the",
+      rpLink: "Parallel & Series Resistor Calculator",
       srcTitle: "Sources",
     };
 const ld = {
@@ -212,7 +216,7 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
         ))
       }
       <p>
-        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.ntcNote} <a href={url(lang, "tools/ntc/")}>{L.ntcLink}</a>.
+        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.ntcNote} <a href={url(lang, "tools/ntc/")}>{L.ntcLink}</a>. {L.rpNote} <a href={url(lang, "tools/parallel-resistor/")}>{L.rpLink}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

@@ -64,6 +64,8 @@ const L = ko
       mcLink: "모터 전류 계산기",
       pcNote: "역률을 콘덴서로 올리려면",
       pcLink: "역률 개선 콘덴서 계산기",
+      ctNote: "전력 미터의 CT 비·2차 전류·부담은",
+      ctLink: "CT 비·2차 전류·부담 계산기",
       srcTitle: "출처",
     }
   : {
@@ -113,6 +115,8 @@ const L = ko
       mcLink: "Motor Current Calculator",
       pcNote: "To raise the power factor with capacitors, use the",
       pcLink: "Power Factor Correction Capacitor Calculator",
+      ctNote: "For a power meter's CT ratio, secondary current and burden, use the",
+      ctLink: "CT Ratio & Burden Calculator",
       srcTitle: "Sources",
     };
 const ld = {
@@ -195,7 +199,7 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
         ))
       }
       <p>
-        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>.
+        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>. {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

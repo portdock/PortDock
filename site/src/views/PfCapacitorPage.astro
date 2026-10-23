@@ -73,6 +73,8 @@ const L = ko
       pwLink: "3상 전력 계산기",
       mcNote: "모터 정격 전류는",
       mcLink: "모터 전류 계산기",
+      xNote: "콘덴서 하나의 리액턴스·전류는",
+      xLink: "리액턴스·LC 공진 계산기",
       srcTitle: "출처",
     }
   : {
@@ -130,6 +132,8 @@ const L = ko
       pwLink: "Three-Phase Power Calculator",
       mcNote: "For a motor's rated current, use the",
       mcLink: "Motor Current Calculator",
+      xNote: "For one capacitor's reactance and current, use the",
+      xLink: "Reactance & LC Resonance Calculator",
       srcTitle: "Sources",
     };
 const ld = {
@@ -215,7 +219,7 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
         ))
       }
       <p>
-        {L.pwNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pwLink}</a>. {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>.
+        {L.pwNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pwLink}</a>. {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

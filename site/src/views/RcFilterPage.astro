@@ -61,6 +61,8 @@ const L = ko
       adcLink: "ADC 분해능·스케일링 계산기",
       dNote: "저항 표준 값은",
       dLink: "분압 저항 계산기",
+      xNote: "주파수별 콘덴서 리액턴스와 LC 공진은",
+      xLink: "리액턴스·LC 공진 계산기",
       srcTitle: "근거",
       src: "τ·충전 곡선·차단 주파수·감쇠·위상은 정의식(회로 이론)으로 계산합니다. ADC 입력 필터 권고는 Microchip ATmega328P 데이터시트(7810D) §23.6.1 Analog Input Circuitry 를 따랐습니다. 실제 부품 값의 허용차는 각 데이터시트를 보세요.",
     }
@@ -109,6 +111,8 @@ const L = ko
       adcLink: "ADC Resolution & Scaling Calculator",
       dNote: "For standard resistor values, use the",
       dLink: "Voltage Divider Calculator",
+      xNote: "For capacitor reactance at a frequency and LC resonance, use the",
+      xLink: "Reactance & LC Resonance Calculator",
       srcTitle: "Basis",
       src: "τ, the charge curve, cut-off, attenuation and phase are computed from circuit definitions. The ADC input filter advice follows Microchip's ATmega328P datasheet (7810D) §23.6.1 Analog Input Circuitry. Check component tolerances in their datasheets.",
     };
@@ -179,7 +183,7 @@ const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).to
         ))
       }
       <p>
-        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>.
+        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>

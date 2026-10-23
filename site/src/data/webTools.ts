@@ -32,7 +32,11 @@ export interface WebTool {
     | "tools/adc/"
     | "tools/rc-filter/"
     | "tools/three-phase-power/"
-    | "tools/pf-capacitor/";
+    | "tools/pf-capacitor/"
+    | "tools/ct-ratio/"
+    | "tools/parallel-resistor/"
+    | "tools/reactance/"
+    | "tools/led-resistor/";
   name: L;
   blurb: L;
 }
@@ -182,6 +186,26 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/pf-capacitor/",
     name: { ko: "역률 개선 콘덴서 계산기", en: "Power Factor Correction Capacitor Calculator" },
     blurb: { ko: "kW·지금 역률·목표 역률 → 필요한 kvar, Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류.", en: "kW, present and target power factor → kvar needed, µF per capacitor in delta or star, current before and after." },
+  },
+  {
+    path: "tools/ct-ratio/",
+    name: { ko: "CT 비·2차 전류·부담 계산기", en: "CT Ratio & Burden Calculator" },
+    blurb: { ko: "CT 비로 1차 ↔ 2차 전류, 왕복 선 저항 + 계기 VA → 전체 부담(VA·Ω)과 정격 대비 %, 비 보정 계수.", en: "Primary ↔ secondary current by CT ratio, round-trip leads + meter VA → total burden (VA, Ω) vs rating, ratio correction factor." },
+  },
+  {
+    path: "tools/parallel-resistor/",
+    name: { ko: "합성 저항 계산기 (직렬·병렬)", en: "Parallel & Series Resistor Calculator" },
+    blurb: { ko: "여러 저항의 직렬·병렬 합성, 병렬 전류 몫, 원하는 값을 만드는 짝, E12·E24·E96 두 개 조합.", en: "Series and parallel totals, current sharing, the partner for a target value, and E12/E24/E96 pairs." },
+  },
+  {
+    path: "tools/reactance/",
+    name: { ko: "리액턴스·LC 공진 계산기", en: "Reactance & LC Resonance Calculator" },
+    blurb: { ko: "주파수에서 Xc·XL, 원하는 X 에 맞는 C·L, LC 공진 주파수·특성 임피던스, 콘덴서 전류·kvar.", en: "Xc and XL at a frequency, C or L for a target X, LC resonant frequency and impedance, capacitor current and kvar." },
+  },
+  {
+    path: "tools/led-resistor/",
+    name: { ko: "LED 저항 계산기", en: "LED Resistor Calculator" },
+    blurb: { ko: "전원·Vf·전류·직렬 개수 → 저항·전력, E12·E24 표준 값으로 바꿨을 때 전류. 5·12·24 V 표시등.", en: "Supply, Vf, current and LEDs in series → resistor and power, current with an E12/E24 value. 5, 12, 24 V indicators." },
   },
 ];
 

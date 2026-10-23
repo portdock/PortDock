@@ -1,0 +1,244 @@
+---
+// 웹 도구: 리액턴스·LC 공진 — Xc·XL, 원하는 X 에 맞는 C·L, LC 공진 주파수·특성 임피던스, 콘덴서 전류·무효 전력(lib/reactance.ts).
+// 모두 정의식. RC 도구(시정수·1차 필터)와 겹치지 않게 «주파수에서의 리액턴스·공진» 만 다룬다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { xc } from "../lib/reactance";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/reactance/";
+const ohmS = (r: number) => (r >= 1e6 ? `${+(r / 1e6).toPrecision(4)} MΩ` : r >= 1e3 ? `${+(r / 1e3).toPrecision(4)} kΩ` : `${+r.toPrecision(4)} Ω`);
+const caps: [string, number][] = [["100 nF", 100e-9], ["1 µF", 1e-6], ["10 µF", 10e-6], ["100 µF", 100e-6], ["1000 µF", 1e-3]];
+const xRows = caps.map(([n, c]) => [n, ohmS(xc(50, c)), ohmS(xc(60, c)), ohmS(xc(1000, c))]);
+const L = ko
+  ? {
+      title: "리액턴스·LC 공진 계산기",
+      desc: "주파수에서 용량성 리액턴스 Xc·유도성 리액턴스 XL, 원하는 리액턴스에 맞는 C·L, LC 공진 주파수와 특성 임피던스, 콘덴서 전류·무효 전력을 계산합니다.",
+      f: "주파수 f (Hz)",
+      c: "콘덴서 C",
+      l: "인덕터 L",
+      u: "콘덴서 전압 U (V, 실효값) — 전류·무효 전력",
+      x: "원하는 리액턴스 X (Ω) — C·L 풀기",
+      res: "결과",
+      k: { xc: "용량성 리액턴스 Xc = 1 ÷ (2π f C)", xl: "유도성 리액턴스 XL = 2π f L", f0: "LC 공진 주파수 f0", z0: "특성 임피던스 √(L/C)", ic: "U 에서 콘덴서 전류 / 무효 전력", cx: "이 f 에서 X 가 되는 C", lx: "이 f 에서 X 가 되는 L" },
+      example: "기본값(50 Hz, 100 µF, 10 mH)은 예시입니다. 실제 부품은 허용차·온도·전압·주파수에 따라 값이 바뀌고, 코일은 저항 성분도 있습니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "Xc = 1 ÷ (2π × f × C)          — 주파수가 높을수록 작아짐",
+        "XL = 2π × f × L                 — 주파수가 높을수록 커짐",
+        "f0 = 1 ÷ (2π × √(L × C))       — 이 주파수에서 Xc = XL",
+        "Z0 = √(L ÷ C)",
+        "콘덴서 전류 I = U ÷ Xc,   무효 전력 Q = U² ÷ Xc = 2π f C U²",
+      ],
+      tTitle: "콘덴서 용량별 Xc",
+      tHead: ["C", "50 Hz", "60 Hz", "1 kHz"],
+      rTitle: "읽는 법",
+      r: [
+        "콘덴서는 주파수가 높을수록 전류를 잘 통하고(Xc 감소), 코일은 주파수가 높을수록 막습니다(XL 증가). 직류(0 Hz)에서 콘덴서는 끊긴 것, 이상적인 코일은 이어진 것과 같습니다.",
+        "같은 콘덴서라도 60 Hz 에서는 Xc 가 50 Hz 의 5/6 이라 전류·무효 전력이 1.2배가 됩니다.",
+        "공진 주파수에서는 Xc 와 XL 이 같아 서로 상쇄됩니다. 직렬 LC 는 그 주파수에서 임피던스가 가장 작고, 병렬 LC 는 가장 큽니다(이상적인 부품 기준).",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      uu: [
+        "역률 개선 콘덴서: 콘덴서 하나의 µF 와 걸리는 전압으로 전류·kvar 를 확인합니다. 400 V·50 Hz 에서 약 367 µF 면 약 18.4 kvar 입니다(역률 개선 콘덴서 계산기의 예와 같은 값).",
+        "LC 저역 필터(전원 노이즈 필터 등)의 꺾이는 주파수를 f0 로 어림합니다. 실제 필터는 부하 저항·부품의 저항 성분에 따라 모양이 바뀝니다.",
+        "인버터·모터 쪽 리액터처럼 «몇 Ω» 으로 볼 때는 운전 주파수에서의 XL 을 봅니다 — 주파수가 바뀌면 리액턴스도 바뀝니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["용량성 리액턴스 공식은?", "Xc = 1 ÷ (2π f C) 입니다. 100 µF 는 50 Hz 에서 1 ÷ (2π × 50 × 0.0001) ≈ 31.8 Ω, 60 Hz 에서 약 26.5 Ω 입니다."],
+        ["유도성 리액턴스 공식은?", "XL = 2π f L 입니다. 10 mH 는 50 Hz 에서 약 3.14 Ω, 1 kHz 에서 약 62.8 Ω 입니다."],
+        ["LC 공진 주파수는 어떻게 구하나요?", "f0 = 1 ÷ (2π √(LC)) 입니다. 10 µH 와 100 nF 면 약 159 kHz 이고, 이때 Xc 와 XL 이 모두 10 Ω 으로 같습니다."],
+        ["리액턴스와 저항은 어떻게 더하나요?", "직렬 R 과 X 의 크기는 √(R² + X²) 입니다(위상이 90° 다르므로 그냥 더하지 않음). 이 계산기는 리액턴스만 보여 줍니다."],
+      ],
+      rcNote: "RC 시정수·1차 저역 필터 차단 주파수는",
+      rcLink: "RC 시정수·차단 주파수 계산기",
+      pfNote: "역률 개선 콘덴서 용량(kvar → µF)은",
+      pfLink: "역률 개선 콘덴서 계산기",
+      srcTitle: "근거",
+      src: "Xc·XL·공진 주파수·특성 임피던스·콘덴서 전류와 무효 전력은 모두 교류 회로의 정의식으로 계산합니다. 부품의 허용차·등가 직렬 저항은 각 데이터시트를 보세요.",
+    }
+  : {
+      title: "Reactance & LC Resonance Calculator",
+      desc: "Capacitive reactance Xc and inductive reactance XL at a frequency, C or L for a target reactance, LC resonant frequency, and capacitor current and kvar.",
+      f: "Frequency f (Hz)",
+      c: "Capacitor C",
+      l: "Inductor L",
+      u: "Capacitor voltage U (V rms) — current and reactive power",
+      x: "Target reactance X (Ω) — solve C or L",
+      res: "Results",
+      k: { xc: "Capacitive reactance Xc = 1 ÷ (2π f C)", xl: "Inductive reactance XL = 2π f L", f0: "LC resonant frequency f0", z0: "Characteristic impedance √(L/C)", ic: "Capacitor current / reactive power at U", cx: "C for X at this f", lx: "L for X at this f" },
+      example: "The defaults (50 Hz, 100 µF, 10 mH) are an example. Real parts change with tolerance, temperature, voltage and frequency, and inductors also have resistance.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Xc = 1 ÷ (2π × f × C)          — falls as frequency rises",
+        "XL = 2π × f × L                 — rises with frequency",
+        "f0 = 1 ÷ (2π × √(L × C))       — where Xc = XL",
+        "Z0 = √(L ÷ C)",
+        "Capacitor current I = U ÷ Xc,   reactive power Q = U² ÷ Xc = 2π f C U²",
+      ],
+      tTitle: "Xc by capacitance",
+      tHead: ["C", "50 Hz", "60 Hz", "1 kHz"],
+      rTitle: "How to read it",
+      r: [
+        "A capacitor passes current more easily as frequency rises (Xc falls); an inductor blocks it more (XL rises). At DC (0 Hz) a capacitor is an open circuit and an ideal inductor a short.",
+        "The same capacitor at 60 Hz has 5/6 of its 50 Hz reactance, so 1.2 times the current and reactive power.",
+        "At resonance Xc equals XL and they cancel. A series LC has its lowest impedance there and a parallel LC its highest (ideal parts).",
+      ],
+      uTitle: "Where it is used",
+      uu: [
+        "Power factor capacitors: check one capacitor's current and kvar from its µF and voltage. About 367 µF at 400 V, 50 Hz is about 18.4 kvar (the same example as the Power Factor Correction Capacitor Calculator).",
+        "Estimate the corner of an LC low-pass filter (e.g. a supply noise filter) from f0. Real filters change shape with the load and the parts' resistance.",
+        "For reactors on drives or motors quoted in ohms, look at XL at the operating frequency — the reactance changes with frequency.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the capacitive reactance formula?", "Xc = 1 ÷ (2π f C). 100 µF at 50 Hz is 1 ÷ (2π × 50 × 0.0001) ≈ 31.8 Ω, and about 26.5 Ω at 60 Hz."],
+        ["What is the inductive reactance formula?", "XL = 2π f L. 10 mH is about 3.14 Ω at 50 Hz and about 62.8 Ω at 1 kHz."],
+        ["How do I find the LC resonant frequency?", "f0 = 1 ÷ (2π √(LC)). 10 µH with 100 nF gives about 159 kHz, where Xc and XL are both 10 Ω."],
+        ["How do reactance and resistance add?", "For R and X in series the magnitude is √(R² + X²) — they are 90° apart, so they do not simply add. This calculator shows reactance only."],
+      ],
+      rcNote: "For the RC time constant and first-order low-pass cut-off, use the",
+      rcLink: "RC Time Constant & Cut-off Calculator",
+      pfNote: "For power factor capacitor sizing (kvar → µF), use the",
+      pfLink: "Power Factor Correction Capacitor Calculator",
+      srcTitle: "Basis",
+      src: "Xc, XL, resonant frequency, characteristic impedance, capacitor current and reactive power are all computed from AC circuit definitions. Check part tolerances and equivalent series resistance in their datasheets.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "리액턴스 계산기 — 용량성·유도성, LC 공진 주파수 — PortDock" : "Reactance Calculator: Xc, XL & LC Resonance — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="xr">
+      <div class="row">
+        <label class="fld">{L.f}<input id="f" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.c}<input id="c" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">&nbsp;<select id="cu" aria-label="C unit"><option value="1e-12">pF</option><option value="1e-9">nF</option><option value="1e-6" selected>µF</option><option value="1e-3">mF</option></select></label>
+        <label class="fld">{L.l}<input id="l" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">&nbsp;<select id="lu" aria-label="L unit"><option value="1e-9">nH</option><option value="1e-6">µH</option><option value="1e-3" selected>mH</option><option value="1">H</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.u}<input id="u" class="mono" value="230" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.x}<input id="x" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{xRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.rTitle}</h2>
+      <ul>{L.r.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.uu.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>. {L.pfNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pfLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { capLoad, cForXc, f0, lForXl, xc, xl, z0 } from "../lib/reactance";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("xr") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const ohm = (r: number) => (r >= 1e6 ? `${p4(r / 1e6)} MΩ` : r >= 1e3 ? `${p4(r / 1e3)} kΩ` : r >= 1 ? `${p4(r)} Ω` : `${p4(r * 1e3)} mΩ`);
+    const hz = (f: number) => (f >= 1e6 ? `${p4(f / 1e6)} MHz` : f >= 1e3 ? `${p4(f / 1e3)} kHz` : `${p4(f)} Hz`);
+    const farad = (c: number) => (c >= 1e-3 ? `${p4(c * 1e3)} mF` : c >= 1e-6 ? `${p4(c * 1e6)} µF` : c >= 1e-9 ? `${p4(c * 1e9)} nF` : `${p4(c * 1e12)} pF`);
+    const henry = (l: number) => (l >= 1 ? `${p4(l)} H` : l >= 1e-3 ? `${p4(l * 1e3)} mH` : l >= 1e-6 ? `${p4(l * 1e6)} µH` : `${p4(l * 1e9)} nH`);
+    const amp = (i: number) => (i >= 1 ? `${p4(i)} A` : `${p4(i * 1e3)} mA`);
+    const vars = (q: number) => (q >= 1e3 ? `${p4(q / 1e3)} kvar` : `${p4(q)} var`);
+    // 칸마다 따로 — 하나가 비거나 틀려도 다른 결과는 남긴다. 숫자가 이상하면 그 칸만 비우고 안내
+    function run() {
+      const f = num("f");
+      const C = num("c") * Number($<HTMLSelectElement>("cu").value);
+      const Lh = num("l") * Number($<HTMLSelectElement>("lu").value);
+      const U = num("u");
+      const X = num("x");
+      let bad = false;
+      const tryset = (k: string, fn: () => string, optional = false) => {
+        try {
+          set(k, fn());
+        } catch {
+          set(k, "");
+          if (!optional) bad = true;
+        }
+      };
+      tryset("xc", () => ohm(xc(f, C)));
+      tryset("xl", () => ohm(xl(f, Lh)));
+      tryset("f0", () => hz(f0(Lh, C)));
+      tryset("z0", () => ohm(z0(Lh, C)));
+      tryset("ic", () => {
+        const r = capLoad(U, f, C);
+        return `${amp(r.amps)} / ${vars(r.vars)}`;
+      }, Number.isNaN(U));
+      tryset("cx", () => farad(cForXc(f, X)), Number.isNaN(X));
+      tryset("lx", () => henry(lForXl(f, X)), Number.isNaN(X));
+      $("err").textContent = bad ? (ko ? "숫자를 확인하세요 — 주파수·C·L·U·X 는 0 보다 큰 값" : "Check the numbers — f, C, L, U and X must be above 0") : "";
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

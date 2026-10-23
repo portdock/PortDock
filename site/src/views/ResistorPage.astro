@@ -1,0 +1,310 @@
+---
+// 웹 도구: 합성 저항(직렬·병렬) — 여러 값의 직렬·병렬 합성, 원하는 값을 만드는 짝, E12·E24·E96 두 개 조합(lib/resistors.ts).
+// 모두 정의식. 표준 값 표는 lib/divider(Vishay 28372). 분압 계산기(비율)와 겹치지 않게 «한 저항 값 만들기» 만 다룬다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { bestCombos, parallel } from "../lib/resistors";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/parallel-resistor/";
+const ohmS = (r: number) => (r >= 1e6 ? `${+(r / 1e6).toPrecision(4)} MΩ` : r >= 1e3 ? `${+(r / 1e3).toPrecision(4)} kΩ` : `${+r.toPrecision(4)} Ω`);
+// 정적 예시 표 — 같은 값 n 개 병렬은 R ÷ n, 자주 쓰는 두 값 병렬
+const exRows = [
+  [10e3, 10e3],
+  [10e3, 4.7e3],
+  [1e3, 1e3, 1e3],
+  [120, 120],
+  [100e3, 10e3],
+].map((rs) => [rs.map(ohmS).join(" ∥ "), ohmS(parallel(rs))]);
+const ex6k = bestCombos(6040, "E24", "both", 3).map((c) => [c.mode === "series" ? `${ohmS(c.a)} + ${ohmS(c.b)}` : `${ohmS(c.a)} ∥ ${ohmS(c.b)}`, ohmS(c.value), `${c.err >= 0 ? "+" : ""}${c.err.toFixed(2)} %`]);
+const L = ko
+  ? {
+      title: "합성 저항 계산기 (직렬·병렬)",
+      desc: "저항 여러 개의 직렬·병렬 합성 저항, 병렬 전류 몫, 원하는 값을 만드는 짝 저항, E12·E24·E96 표준 값 두 개로 원하는 저항을 만드는 조합을 계산합니다.",
+      list: "저항 값들 — 빈칸·쉼표로 나눔 (예: 10k 4k7 2.2k, 단위 없으면 Ω)",
+      res: "결과",
+      k: { ser: "직렬 합성", par: "병렬 합성", share: "병렬 전류 몫", pv: "병렬 전류 (V 에서)" },
+      v: "걸리는 전압 V (병렬 전류 계산용)",
+      want: "만들 저항 값",
+      ser: "계열",
+      mode: "방식",
+      modes: { both: "직렬·병렬 모두", parallel: "병렬만", series: "직렬만" },
+      combos: "표준 값 두 개 조합 (오차가 작은 순)",
+      cHead: ["조합", "합성 값", "오차"],
+      single: "표준 값 하나로는",
+      partner: "첫 값(R1)에 붙일 짝",
+      pk: { pp: "병렬로 붙일 저항 (R1 > 목표일 때)", sp: "직렬로 붙일 저항 (R1 < 목표일 때)" },
+      example: "기본값은 예시입니다. 실제 합성 값은 각 저항의 허용차만큼 어긋납니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "직렬: R = R1 + R2 + … + Rn          (같은 전류, 전압이 나뉨)",
+        "병렬: 1/R = 1/R1 + 1/R2 + … + 1/Rn   (같은 전압, 전류가 나뉨)",
+        "두 개 병렬: R = R1 × R2 ÷ (R1 + R2),   같은 값 n 개 병렬: R ÷ n",
+        "병렬 전류 몫: Ik ÷ I = R ÷ Rk          (작은 저항으로 더 많이)",
+        "짝 찾기: 병렬 R2 = R1 × Rt ÷ (R1 − Rt),   직렬 R2 = Rt − R1",
+      ],
+      eTitle: "자주 보는 병렬 값",
+      eHead: ["병렬", "합성 값"],
+      cTitle: "6.04 kΩ 을 E24 두 개로 만들면",
+      cNote: "E96 에만 있는 6.04 kΩ 을 E24 두 개로 만든 상위 3개입니다(이 페이지의 계산 그대로).",
+      lTitle: "읽는 법",
+      l: [
+        "병렬 합성 값은 가장 작은 저항보다 항상 작고, 직렬 합성 값은 가장 큰 저항보다 항상 큽니다. 그래서 병렬은 «줄이기», 직렬은 «늘리기» 에 씁니다.",
+        "병렬에서 큰 저항은 전체 값을 조금만 바꿉니다. 10 kΩ 에 1 MΩ 을 병렬로 붙이면 약 9.90 kΩ(−1 %)으로, 미세 조정에 씁니다.",
+        "전력은 각 저항이 따로 나눠 받습니다. 직렬은 같은 전류라 큰 저항이, 병렬은 같은 전압이라 작은 저항이 전력을 더 많이 받습니다(P = I²R, P = V²/R).",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "필요한 값이 계열에 없을 때(예: 분압·전류 감지·ADC 기준) 두 개를 이어 맞춥니다. 비율이 중요한 분압은 분압 저항 계산기의 조합을 쓰는 편이 바로 맞습니다.",
+        "RS-485 종단 120 Ω 을 장비 내장 종단과 바깥 저항이 둘 다 켜지면 120 ∥ 120 = 60 Ω 이 됩니다 — 종단이 겹쳤는지 볼 때 이 값을 씁니다.",
+        "션트 저항·전류 제한 저항의 전력을 나누려고 같은 값 여러 개를 병렬로 둘 때, 합성 값은 R ÷ n, 각 저항의 전력은 전체의 1/n 입니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["저항 두 개 병렬 공식은?", "R = R1 × R2 ÷ (R1 + R2) 입니다. 10 kΩ 과 4.7 kΩ 이면 47 000 000 ÷ 14 700 ≈ 3.197 kΩ 입니다. 세 개 이상은 역수를 더해 다시 역수를 취합니다."],
+        ["같은 저항 두 개를 병렬로 하면?", "절반이 됩니다(10 kΩ ∥ 10 kΩ = 5 kΩ). 같은 값 n 개면 R ÷ n 입니다."],
+        ["표준 값에 없는 저항은 어떻게 만드나요?", "두 표준 값을 직렬 또는 병렬로 이어 맞춥니다. 위 «표준 값 두 개 조합» 이 E12·E24·E96 에서 오차가 작은 순으로 보여 줍니다. 한 개 표준 값으로 이미 충분히 가까우면 그쪽이 간단합니다."],
+        ["4k7·2M2 같은 표기는?", "단위 글자가 소수점 자리에 오는 표기입니다. 4k7 = 4.7 kΩ, 2M2 = 2.2 MΩ, 0R47 = 0.47 Ω. 이 계산기는 그 표기도 읽습니다."],
+      ],
+      dNote: "분압 비를 맞추는 조합은",
+      dLink: "분압 저항 계산기",
+      ledNote: "LED 전류 제한 저항은",
+      ledLink: "LED 저항 계산기",
+      srcTitle: "근거",
+      src: "직렬·병렬 합성과 짝 찾기는 정의식(옴의 법칙·키르히호프 법칙)으로 계산합니다. E12·E24·E96 표준 값은 Vishay 문서 28372(IEC 60063 의 표)에서 옮긴 값을 분압 저항 계산기와 함께 씁니다.",
+    }
+  : {
+      title: "Parallel & Series Resistor Calculator",
+      desc: "Total resistance in series and parallel, current sharing, the partner resistor for a target value, and E12/E24/E96 pairs for values not in the series.",
+      list: "Resistor values — separated by spaces or commas (e.g. 10k 4k7 2.2k; no unit = Ω)",
+      res: "Results",
+      k: { ser: "Series total", par: "Parallel total", share: "Parallel current share", pv: "Parallel current at V" },
+      v: "Applied voltage V (for parallel current)",
+      want: "Target resistance",
+      ser: "Series",
+      mode: "Mode",
+      modes: { both: "Series and parallel", parallel: "Parallel only", series: "Series only" },
+      combos: "Two standard values (smallest error first)",
+      cHead: ["Combination", "Value", "Error"],
+      single: "With one standard value",
+      partner: "Partner for the first value (R1)",
+      pk: { pp: "Resistor in parallel (when R1 > target)", sp: "Resistor in series (when R1 < target)" },
+      example: "The defaults are an example. Real totals are off by the resistors' tolerances.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Series:   R = R1 + R2 + … + Rn          (same current, voltage divides)",
+        "Parallel: 1/R = 1/R1 + 1/R2 + … + 1/Rn   (same voltage, current divides)",
+        "Two in parallel: R = R1 × R2 ÷ (R1 + R2);   n equal values: R ÷ n",
+        "Current share in parallel: Ik ÷ I = R ÷ Rk   (more through the smaller)",
+        "Partner: parallel R2 = R1 × Rt ÷ (R1 − Rt);   series R2 = Rt − R1",
+      ],
+      eTitle: "Common parallel values",
+      eHead: ["Parallel", "Total"],
+      cTitle: "6.04 kΩ from two E24 values",
+      cNote: "The top three ways to make 6.04 kΩ (an E96 value) from two E24 values, computed by this page.",
+      lTitle: "How to read it",
+      l: [
+        "A parallel total is always below the smallest resistor and a series total above the largest, so parallel is for going down and series for going up.",
+        "In parallel a large resistor changes the total only a little: 1 MΩ across 10 kΩ gives about 9.90 kΩ (−1 %), useful for trimming.",
+        "Each resistor takes its own share of power. In series (same current) the larger one dissipates more; in parallel (same voltage) the smaller one does (P = I²R, P = V²/R).",
+      ],
+      uTitle: "Where it is used",
+      u: [
+        "When the value you need is not in the series (dividers, current sensing, ADC references), join two. For a divider where the ratio matters, the Voltage Divider Calculator's pairs fit directly.",
+        "If a device's built-in 120 Ω RS-485 terminator and an external one are both on, you get 120 ∥ 120 = 60 Ω — the value to look for when terminations overlap.",
+        "To share power in a shunt or current-limiting resistor, use n equal values in parallel: the total is R ÷ n and each takes 1/n of the power.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the formula for two resistors in parallel?", "R = R1 × R2 ÷ (R1 + R2). For 10 kΩ and 4.7 kΩ: 47,000,000 ÷ 14,700 ≈ 3.197 kΩ. For three or more, add the reciprocals and take the reciprocal."],
+        ["What do two equal resistors in parallel give?", "Half the value (10 kΩ ∥ 10 kΩ = 5 kΩ). n equal values give R ÷ n."],
+        ["How do I make a value that is not a standard value?", "Join two standard values in series or parallel. «Two standard values» above lists E12, E24 or E96 pairs by error. If one standard value is already close enough, that is simpler."],
+        ["What do 4k7 and 2M2 mean?", "The unit letter stands where the decimal point goes: 4k7 = 4.7 kΩ, 2M2 = 2.2 MΩ, 0R47 = 0.47 Ω. This calculator reads that notation too."],
+      ],
+      dNote: "For pairs that set a divider ratio, use the",
+      dLink: "Voltage Divider Calculator",
+      ledNote: "For an LED current-limiting resistor, use the",
+      ledLink: "LED Resistor Calculator",
+      srcTitle: "Basis",
+      src: "Series and parallel totals and the partner value are computed from circuit definitions (Ohm's and Kirchhoff's laws). E12, E24 and E96 values come from Vishay document 28372 (the IEC 60063 tables), shared with the Voltage Divider Calculator.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "합성 저항 계산기 — 저항 병렬·직렬 계산 — PortDock" : "Parallel & Series Resistor Calculator (E12, E24, E96) — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="rp">
+      <div class="row">
+        <label class="fld" style="flex:2 1 320px">{L.list}<input id="rs" class="mono" value="10k 4k7" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.v}<input id="v" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.want}</h2>
+      <div class="row">
+        <label class="fld">{L.want}<input id="t" class="mono" value="6.04k" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ser}<select id="ser"><option value="E12">E12</option><option value="E24" selected>E24</option><option value="E96">E96</option></select></label>
+        <label class="fld">{L.mode}<select id="mode"><option value="both" selected>{L.modes.both}</option><option value="parallel">{L.modes.parallel}</option><option value="series">{L.modes.series}</option></select></label>
+      </div>
+      <p class="err" id="err2" role="alert"></p>
+      <p class="note" id="single"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t">
+          <caption class="note" style="text-align:left">{L.combos}</caption>
+          <thead><tr>{L.cHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="combos"></tbody>
+        </table>
+      </div>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.partner}</caption>
+          <tbody>{Object.entries(L.pk).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.eTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.eHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{exRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.cTitle}</h2>
+      <p>{L.cNote}</p>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.cHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{ex6k.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.ledNote} <a href={url(lang, "tools/led-resistor/")}>{L.ledLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { bestCombos, parallel, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "../lib/resistors";
+    import { nearestE, type ESeries } from "../lib/divider";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("rp") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const ohm = (r: number) => (r >= 1e6 ? `${p4(r / 1e6)} MΩ` : r >= 1e3 ? `${p4(r / 1e3)} kΩ` : `${p4(r)} Ω`);
+    const amp = (i: number) => (i >= 1 ? `${p4(i)} A` : i >= 1e-3 ? `${p4(i * 1e3)} mA` : `${p4(i * 1e6)} µA`);
+    function run() {
+      // 1) 합성
+      try {
+        const rs = parseOhms($("rs").value);
+        const S = series(rs);
+        const P = parallel(rs);
+        set("ser", ohm(S));
+        set("par", ohm(P));
+        set("share", rs.length > 1 ? parallelShares(rs).map((s) => `${p4(s * 100)} %`).join(" / ") : "100 %");
+        const vs = $("v").value.trim().replace(",", ".");
+        const V = vs === "" ? NaN : Number(vs);
+        set("pv", V > 0 && Number.isFinite(V) ? `${amp(V / P)} (${rs.map((r) => amp(V / r)).join(" + ")})` : "");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "저항 값을 확인하세요 — 0 보다 큰 값을 빈칸이나 쉼표로 나눠 넣습니다(예: 10k 4k7)" : "Check the values — numbers above 0 separated by spaces or commas (e.g. 10k 4k7)";
+        for (const k of ["ser", "par", "share", "pv"]) set(k, "");
+      }
+      // 2) 만들기
+      const tbody = $("combos");
+      tbody.textContent = "";
+      try {
+        const t = parseOhm($("t").value);
+        const s = $<HTMLSelectElement>("ser").value as ESeries;
+        const cs = bestCombos(t, s, $<HTMLSelectElement>("mode").value as "both" | "series" | "parallel", 6);
+        for (const c of cs) {
+          const tr = document.createElement("tr");
+          for (const v of [c.mode === "series" ? `${ohm(c.a)} + ${ohm(c.b)}` : `${ohm(c.a)} ∥ ${ohm(c.b)}`, ohm(c.value), `${c.err >= 0 ? "+" : ""}${c.err.toFixed(2)} %`]) {
+            const td = document.createElement("td");
+            td.className = "mono";
+            td.textContent = v;
+            tr.append(td);
+          }
+          tbody.append(tr);
+        }
+        const one = nearestE(t, s);
+        const e1 = ((one - t) / t) * 100;
+        $("single").textContent = `${ko ? "표준 값 하나로는" : "With one standard value"}: ${ohm(one)} (${e1 >= 0 ? "+" : ""}${e1.toFixed(2)} %)`;
+        const r1 = parseOhms($("rs").value)[0];
+        try {
+          set("pp", ohm(parallelPartner(r1, t)));
+        } catch {
+          set("pp", "—");
+        }
+        try {
+          set("sp", ohm(seriesPartner(r1, t)));
+        } catch {
+          set("sp", "—");
+        }
+        $("err2").textContent = "";
+      } catch {
+        $("err2").textContent = ko ? "만들 저항 값을 확인하세요 — 0 보다 큰 값(예: 6.04k)" : "Check the target — a value above 0 (e.g. 6.04k)";
+        $("single").textContent = "";
+        set("pp", "");
+        set("sp", "");
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>
