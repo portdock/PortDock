@@ -215,6 +215,9 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
       <p>
         {L.vdNote} <a href={url(lang, "tools/voltage-drop/")}>{L.vdLink}</a>.
       </p>
+      <p>
+        {ko ? "측정한 kW·kVA·전류·역률을 서로 바꾸려면" : "To convert measured kW, kVA, amps and power factor, use the"} <a href={url(lang, "tools/three-phase-power/")}>{ko ? "3상 전력 계산기" : "Three-Phase Power Calculator"}</a>{ko ? ", 역률을 콘덴서로 올리려면 " : "; to raise the power factor with capacitors, the "}<a href={url(lang, "tools/pf-capacitor/")}>{ko ? "역률 개선 콘덴서 계산기" : "Power Factor Correction Capacitor Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (

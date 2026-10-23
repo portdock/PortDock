@@ -261,6 +261,9 @@ const NE43_REFS = [
       <p>
         {L.appNote} <a href={url(lang, "plot/")}>PortDock Plot</a>.
       </p>
+      <p>
+        {ko ? "MCU ADC 로 직접 받을 때(비트·기준 전압·션트 저항)는" : "To read the signal with an MCU ADC directly (bits, reference, shunt), use the"} <a href={url(lang, "tools/adc/")}>{ko ? "ADC 분해능·스케일링 계산기" : "ADC Resolution & Scaling Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
     </section>
     <WebToolLinks lang={lang} path={PATH} />
   </div>

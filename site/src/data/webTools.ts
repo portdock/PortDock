@@ -27,7 +27,12 @@ export interface WebTool {
     | "tools/uart-baud/"
     | "tools/can-bit-timing/"
     | "tools/ntc/"
-    | "tools/encoder/";
+    | "tools/encoder/"
+    | "tools/voltage-divider/"
+    | "tools/adc/"
+    | "tools/rc-filter/"
+    | "tools/three-phase-power/"
+    | "tools/pf-capacitor/";
   name: L;
   blurb: L;
 }
@@ -152,6 +157,31 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/encoder/",
     name: { ko: "엔코더 펄스 ↔ rpm 계산기", en: "Encoder Pulses ↔ RPM Calculator" },
     blurb: { ko: "PPR·체배 → 출력 주파수·카운트 속도, 카운트로 rpm, 응답 주파수로 최대 rpm, 1카운트 각도·거리.", en: "PPR and ×1/×2/×4 → output frequency and count rate, rpm from counts, max rpm, angle and distance per count." },
+  },
+  {
+    path: "tools/voltage-divider/",
+    name: { ko: "분압 저항 계산기", en: "Voltage Divider Calculator" },
+    blurb: { ko: "입력·출력 전압 → R1·R2, E12·E24·E96 표준 값 조합(오차순), 부하·전류·전력·출력 저항·허용차.", en: "Vin and Vout → R1 and R2, closest E12/E24/E96 pairs, load, current, power, output impedance, tolerance." },
+  },
+  {
+    path: "tools/adc/",
+    name: { ko: "ADC 분해능·스케일링 계산기", en: "ADC Resolution & Scaling Calculator" },
+    blurb: { ko: "비트·기준 전압 → 1 LSB·코드 ↔ 전압, 4–20mA(션트)·0–10V(분압) → 공학값, 1카운트의 값.", en: "Bits and reference → 1 LSB and code ↔ volts; 4–20 mA (shunt) or 0–10 V (divider) → engineering units per count." },
+  },
+  {
+    path: "tools/rc-filter/",
+    name: { ko: "RC 시정수·차단 주파수 계산기", en: "RC Time Constant & Cut-off Calculator" },
+    blurb: { ko: "R·C → τ, 충전 63 %·99 % 시간, 1차 저역 필터 차단 주파수·감쇠·위상, fc 에 맞는 R·C.", en: "R and C → τ, time to 63 % and 99 %, first-order low-pass cut-off, attenuation and phase, R or C for fc." },
+  },
+  {
+    path: "tools/three-phase-power/",
+    name: { ko: "3상 전력 계산기", en: "Three-Phase Power Calculator" },
+    blurb: { ko: "전압 + A·kW·kVA 중 하나 + 역률 → kVA·kW·kvar·전류, kW·kVA 로 역률, kVA ↔ A 표.", en: "Voltage plus amps, kW or kVA and power factor → kVA, kW, kvar and amps; power factor from kW and kVA." },
+  },
+  {
+    path: "tools/pf-capacitor/",
+    name: { ko: "역률 개선 콘덴서 계산기", en: "Power Factor Correction Capacitor Calculator" },
+    blurb: { ko: "kW·지금 역률·목표 역률 → 필요한 kvar, Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류.", en: "kW, present and target power factor → kvar needed, µF per capacitor in delta or star, current before and after." },
   },
 ];
 

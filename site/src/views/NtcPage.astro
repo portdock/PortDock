@@ -227,6 +227,9 @@ const inp = (id: string, v: string) => ({ id, v });
       <p>
         {L.tNote} <a href={url(lang, "tools/temperature/")}>{L.tLink}</a>.
       </p>
+      <p>
+        {ko ? "고정 저항을 표준 값으로 고르려면" : "To pick the fixed resistor from standard values, use the"} <a href={url(lang, "tools/voltage-divider/")}>{ko ? "분압 저항 계산기" : "Voltage Divider Calculator"}</a>{ko ? ", ADC 1카운트의 크기는 " : "; for the size of one ADC count, the "}<a href={url(lang, "tools/adc/")}>{ko ? "ADC 분해능 계산기" : "ADC Resolution Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
     </section>

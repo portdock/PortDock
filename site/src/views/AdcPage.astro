@@ -1,0 +1,307 @@
+---
+// 웹 도구: ADC 분해능·스케일링 — 비트·기준 전압 → LSB·코드, 4–20mA(션트)·0–10V(분압) → 공학값/카운트(lib/adc.ts).
+// 근거: Microchip AN693(DS00693A) LSb·양자화 오차·SNR·ENOB, ATmega328P §23.7(코드 식)·§23.6.1(입력 임피던스·저역 필터).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { SIGS, lsb, snrIdeal } from "../lib/adc";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/adc/";
+const L = ko
+  ? {
+      title: "ADC 분해능·스케일링 계산기",
+      desc: "ADC 비트 수와 기준 전압으로 1 LSB·코드 ↔ 전압을 계산하고, 4–20mA(션트 저항)·0–10V(분압) 입력을 공학값으로 환산해 1카운트가 몇 bar·°C 인지 보여 줍니다.",
+      aTitle: "ADC",
+      bits: "분해능 (비트)",
+      vref: "기준 전압 V_REF (V)",
+      vin: "입력 전압 (V) → 코드",
+      code: "원시 코드 (ADC 값)",
+      sTitle: "신호 → 공학값",
+      sig: "입력 신호",
+      kc: "션트 저항 (Ω)",
+      kv: "분압비 Vadc ÷ Vin (1 = 그대로)",
+      elo: "공학값 하한",
+      ehi: "공학값 상한",
+      unit: "단위",
+      res: "결과",
+      k: { lsb: "1 LSB", n: "코드 수 / 최댓값", q: "양자화 오차 실효값 (LSB ÷ √12)", snr: "이상적인 최대 SNR", vc: "입력 전압의 코드", cv: "원시 코드의 전압", vr: "신호 범위의 ADC 전압", cr: "신호 범위의 코드 (이상적인 위치)", span: "쓰는 코드 수", epc: "1카운트의 공학값", spc: "1카운트의 신호값", eng: "원시 코드 → 공학값", sigv: "원시 코드 → 신호" },
+      example: "기본값(12비트, 3.3 V, 4–20 mA 를 150 Ω 로 받아 0–10 bar)은 예시입니다. 실제 기준 전압·션트 저항의 오차, ADC 의 오프셋·이득 오차는 데이터시트에서 확인하고 필요하면 두 점(하한·상한)으로 보정합니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "1 LSB = V_REF ÷ 2^N          (Microchip AN693)",
+        "코드 = ⌊V_IN × 2^N ÷ V_REF⌋, 최댓값 2^N − 1          (ATmega328P §23.7 을 N비트로)",
+        "V = 코드 × V_REF ÷ 2^N",
+        "전류 신호: V = I × R_션트,   전압 신호: V = Vin × 분압비",
+        "공학값 = 하한 + (코드 − 코드_하한) ÷ (코드_상한 − 코드_하한) × (상한 − 하한)",
+        "양자화 오차 실효값 = 1 LSB ÷ √12,   최대 SNR = 6.02 × N + 1.76 dB,   ENOB = (SINAD − 1.76) ÷ 6.02",
+      ],
+      rTitle: "분해능은 «쓰는 코드 수» 로 본다",
+      r: [
+        "12비트 ADC 라도 신호가 풀스케일 전체를 쓰지 않으면 실제 분해능은 줄어듭니다. 4–20 mA 를 150 Ω 로 받으면 0.6~3.0 V 라 3.3 V 기준에서 쓰는 코드는 약 2979 개, 0–10 bar 면 1카운트가 약 0.0034 bar 입니다.",
+        "4 mA 아래(0.6 V 아래)도 코드가 남아 있어 단선(0 mA)·하한 밑 값을 구별할 수 있고, 상한 위 여유(3.0~3.3 V)는 20 mA 를 조금 넘는 값을 잘리지 않게 받습니다.",
+        "션트를 250 Ω 로 바꾸고 5 V 기준을 쓰면 20 mA = 5 V 가 정확히 풀스케일이라, 20 mA 를 조금만 넘어도 코드가 끝(2^N − 1)에 붙습니다. 계산기의 «상한이 잘림» 경고가 이 경우입니다.",
+      ],
+      eTitle: "분해능과 정확도는 다르다",
+      e: [
+        "1 LSB 는 «구별할 수 있는 가장 작은 단계» 일 뿐, 그만큼 정확하다는 뜻은 아닙니다. AN693 은 이상적인 변환기도 양자화 오차가 최대 ±½ LSB 이고, 실제 변환기에는 오프셋·이득 오차와 DNL·INL(비직선성)이 더해진다고 설명합니다.",
+        "6.02N + 1.76 dB 는 풀스케일 사인파를 0 ~ fs/2 대역에서 잴 때의 이론 최댓값입니다. 데이터시트의 SINAD 를 넣어 구한 ENOB 가 실제로 쓸 수 있는 비트 수에 가깝습니다.",
+        "기준 전압의 오차는 모든 코드에 비율로 들어갑니다. 비율 측정(센서 전원과 기준 전압을 같은 전원으로)이 아니면 기준 전압의 정확도·온도 변화도 봅니다.",
+      ],
+      iTitle: "입력 회로",
+      i: [
+        "ATmega328P 데이터시트(§23.6.1)는 ADC 가 출력 임피던스 약 10 kΩ 이하의 신호에 맞춰져 있다고 적고, 나이퀴스트 주파수(f_ADC/2)보다 높은 성분은 입력 전에 저역 필터로 없애라고 권합니다. RC 필터의 차단 주파수는 RC 시정수 계산기로 고릅니다.",
+        "0–10 V 를 3.3 V ADC 로 받을 때 분압비 0.3 이면 10 V → 3.0 V 로 위쪽 여유가 남습니다. 저항 값은 분압 저항 계산기에서 표준 값으로 고릅니다.",
+      ],
+      tTitle: "비트별 1 LSB",
+      tHead: ["비트", "코드 수", "3.3 V", "5 V", "10 V", "최대 SNR"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["12비트 ADC 의 분해능은?", "4096 단계입니다. 3.3 V 기준이면 1 LSB = 3.3 ÷ 4096 ≈ 0.806 mV, 5 V 기준이면 약 1.22 mV 입니다."],
+        ["ADC 값을 실제 압력·온도로 바꾸려면?", "신호 하한·상한에서의 코드를 구한 뒤 직선 비례로 바꿉니다: 공학값 = 하한 + (코드 − 코드_하한) ÷ (코드_상한 − 코드_하한) × (상한 − 하한). 위 계산기의 «원시 코드 → 공학값» 이 이 식입니다."],
+        ["PLC 아날로그 입력 모듈의 값(0–27648, 0–32000)도 되나요?", "그건 모듈이 이미 환산해서 내는 값이라 비트·기준 전압 대신 그 범위를 씁니다. 4–20mA 환산 계산기에 S7·MELSEC 등 문서로 확인한 범위가 있습니다."],
+        ["4–20 mA 를 받을 션트 저항은 몇 Ω 인가요?", "20 mA × R 가 ADC 기준 전압보다 조금 낮게 고릅니다(3.3 V 면 150 Ω → 3.0 V). 루프 전원에서 션트가 차지하는 전압도 함께 봐야 하므로 4–20mA 루프 부하 계산기로 확인합니다."],
+      ],
+      aNote: "PLC 카운트(0–27648 등)·NE 43 경계는",
+      aLink: "4–20mA 환산 계산기",
+      dNote: "분압 저항은",
+      dLink: "분압 저항 계산기",
+      rcNote: "입력 필터는",
+      rcLink: "RC 시정수·차단 주파수 계산기",
+      srcTitle: "출처",
+    }
+  : {
+      title: "ADC Resolution & Scaling Calculator",
+      desc: "ADC bits and reference → 1 LSB and code ↔ voltage. Scale 4–20 mA (shunt) or 0–10 V (divider) inputs to engineering units and see what a count is worth.",
+      aTitle: "ADC",
+      bits: "Resolution (bits)",
+      vref: "Reference voltage V_REF (V)",
+      vin: "Input voltage (V) → code",
+      code: "Raw code (ADC value)",
+      sTitle: "Signal → engineering units",
+      sig: "Input signal",
+      kc: "Shunt resistor (Ω)",
+      kv: "Divider ratio Vadc ÷ Vin (1 = direct)",
+      elo: "Engineering low",
+      ehi: "Engineering high",
+      unit: "Unit",
+      res: "Results",
+      k: { lsb: "1 LSB", n: "Number of codes / maximum", q: "RMS quantization error (LSB ÷ √12)", snr: "Ideal maximum SNR", vc: "Code for the input voltage", cv: "Voltage of the raw code", vr: "ADC voltage over the signal range", cr: "Codes over the signal range (ideal)", span: "Codes in use", epc: "Engineering value per count", spc: "Signal per count", eng: "Raw code → engineering value", sigv: "Raw code → signal" },
+      example: "The defaults (12 bits, 3.3 V, 4–20 mA into 150 Ω as 0–10 bar) are an example. Check reference and shunt tolerances and the ADC's offset and gain errors in the datasheets, and calibrate at two points (low and high) if needed.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "1 LSB = V_REF ÷ 2^N          (Microchip AN693)",
+        "code = ⌊V_IN × 2^N ÷ V_REF⌋, maximum 2^N − 1          (ATmega328P §23.7, generalized to N bits)",
+        "V = code × V_REF ÷ 2^N",
+        "Current signal: V = I × R_shunt,   voltage signal: V = Vin × divider ratio",
+        "value = low + (code − code_low) ÷ (code_high − code_low) × (high − low)",
+        "RMS quantization error = 1 LSB ÷ √12,   max SNR = 6.02 × N + 1.76 dB,   ENOB = (SINAD − 1.76) ÷ 6.02",
+      ],
+      rTitle: "Resolution is the number of codes you actually use",
+      r: [
+        "A 12-bit ADC loses resolution when the signal does not span full scale. 4–20 mA into 150 Ω is 0.6–3.0 V, which uses about 2979 codes of a 3.3 V reference; for 0–10 bar one count is about 0.0034 bar.",
+        "Codes below 4 mA (below 0.6 V) let you tell a broken loop (0 mA) or under-range apart, and the room above (3.0–3.3 V) takes readings slightly over 20 mA without clipping.",
+        "With 250 Ω and a 5 V reference, 20 mA = 5 V is exactly full scale, so anything just above 20 mA sticks at the top code (2^N − 1). The calculator's «top clipped» warning is this case.",
+      ],
+      eTitle: "Resolution is not accuracy",
+      e: [
+        "1 LSB is the smallest step you can tell apart, not the accuracy. AN693 explains that even an ideal converter has up to ±½ LSB quantization error, and real converters add offset and gain errors plus DNL and INL (non-linearity).",
+        "6.02N + 1.76 dB is the theoretical maximum for a full-scale sine wave measured over 0 to fs/2. The ENOB computed from the datasheet SINAD is closer to the bits you can really use.",
+        "Reference voltage error scales every code. Unless the measurement is ratiometric (sensor supply and reference from the same source), check the reference's accuracy and drift.",
+      ],
+      iTitle: "Input circuit",
+      i: [
+        "The ATmega328P datasheet (§23.6.1) says its ADC is optimized for sources with an output impedance of about 10 kΩ or less, and advises removing components above the Nyquist frequency (f_ADC/2) with a low-pass filter. Pick the RC filter's cut-off with the RC time constant calculator.",
+        "To read 0–10 V on a 3.3 V ADC, a divider ratio of 0.3 maps 10 V to 3.0 V with headroom. Choose standard resistor values in the voltage divider calculator.",
+      ],
+      tTitle: "1 LSB by resolution",
+      tHead: ["Bits", "Codes", "3.3 V", "5 V", "10 V", "Max SNR"],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the resolution of a 12-bit ADC?", "4096 steps. With a 3.3 V reference 1 LSB = 3.3 ÷ 4096 ≈ 0.806 mV; with 5 V about 1.22 mV."],
+        ["How do I turn ADC counts into pressure or temperature?", "Find the codes at the signal's low and high ends, then scale linearly: value = low + (code − code_low) ÷ (code_high − code_low) × (high − low). That is «Raw code → engineering value» above."],
+        ["Does this work for PLC analog input values (0–27648, 0–32000)?", "Those are already scaled by the module, so use that range instead of bits and reference. The 4–20 mA scaling calculator has the ranges we checked in S7, MELSEC and other manuals."],
+        ["Which shunt resistor should I use for 4–20 mA?", "Pick one so that 20 mA × R sits a little below the ADC reference (150 Ω → 3.0 V for 3.3 V). The shunt also takes voltage from the loop supply, so check the loop with the 4–20 mA loop load calculator."],
+      ],
+      aNote: "For PLC counts (0–27648…) and NE 43 limits, use the",
+      aLink: "4–20 mA Scaling Calculator",
+      dNote: "For divider resistors, use the",
+      dLink: "Voltage Divider Calculator",
+      rcNote: "For the input filter, use the",
+      rcLink: "RC Time Constant & Cut-off Calculator",
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "Microchip, AN693 Understanding A/D Converter Performance Specifications (DS00693A, 2000): code width and LSb, quantization error, eq. 2, 3, 5", href: "https://ww1.microchip.com/downloads/en/AppNotes/00693a.pdf" },
+  { name: "Microchip, ATmega328P datasheet (7810D, 01/2015): §23.6.1 Analog Input Circuitry, §23.7 ADC Conversion Result", href: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf" },
+];
+const mv = (v: number) => (v >= 1e-3 ? `${+(v * 1e3).toPrecision(4)} mV` : `${+(v * 1e6).toPrecision(4)} µV`);
+const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleString("en-US"), mv(lsb(3.3, b)), mv(lsb(5, b)), mv(lsb(10, b)), `${snrIdeal(b).toFixed(2)} dB`]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "ADC 분해능 계산기 — LSB·4–20mA·0–10V 스케일링 — PortDock" : "ADC Resolution Calculator: LSB, 4–20 mA, 0–10 V Scaling — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ad" data-kc={L.kc} data-kv={L.kv}>
+      <h2>{L.aTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.bits}<input id="bits" class="mono" value="12" list="bitlist" inputmode="numeric" spellcheck="false" autocomplete="off" />
+          <datalist id="bitlist"><option value="8" /><option value="10" /><option value="12" /><option value="14" /><option value="16" /><option value="24" /></datalist>
+        </label>
+        <label class="fld">{L.vref}<input id="vref" class="mono" value="3.3" list="vrefs" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="vrefs"><option value="1.1" /><option value="2.048" /><option value="2.5" /><option value="3.3" /><option value="4.096" /><option value="5" /></datalist>
+        </label>
+        <label class="fld">{L.vin}<input id="vin" class="mono" value="1.65" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.code}<input id="code" class="mono" value="2234" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <h2>{L.sTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.sig}<select id="sig">{SIGS.map((s, i) => <option value={i} selected={i === 0}>{s.id.replace("-", "–")}</option>)}</select></label>
+        <label class="fld"><span id="klab">{L.kc}</span><input id="k" class="mono" value="150" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.elo}<input id="elo" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ehi}<input id="ehi" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.unit}<input id="unit" value="bar" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="vd"></p>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.rTitle}</h2>
+      <ul>{L.r.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.eTitle}</h2>
+      <ul>{L.e.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.iTitle}</h2>
+      <ul>{L.i.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.aNote} <a href={url(lang, "tools/4-20ma/")}>{L.aLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { SIGS, codeToEng, codeToSig, codes, lsb, qRms, scale, snrIdeal, toCode, toVolt, type ScaleIn } from "../lib/adc";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ad") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d: number) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const sig = (x: number) => (Math.abs(x) >= 100 ? fx(x, 2) : Math.abs(x) >= 1 ? fx(x, 4) : x === 0 ? "0" : String(+x.toPrecision(4)));
+    const volt = (v: number) => (Math.abs(v) >= 1 ? `${fx(v, 4)} V` : Math.abs(v) >= 1e-3 ? `${fx(v * 1e3, 4)} mV` : `${fx(v * 1e6, 3)} µV`);
+    let lastSig = 0;
+    function run() {
+      const vd = $("vd");
+      vd.textContent = "";
+      vd.className = "verdict";
+      const si = Number($<HTMLSelectElement>("sig").value);
+      const s = SIGS[si];
+      $("klab").textContent = (s.cur ? form.dataset.kc : form.dataset.kv) ?? "";
+      if (si !== lastSig) {
+        // 신호를 바꾸면 배율 기본값도 바꾼다(전류 150 Ω, 0–10 V 는 0.3, 5 V 신호는 0.6 — 3.3 V 기준에서 상한 3.0 V)
+        $("k").value = s.cur ? "150" : s.id === "0-10V" ? "0.3" : "0.6";
+        lastSig = si;
+      }
+      const u = $("unit").value.trim();
+      const eu = (x: number) => `${sig(x)}${u ? ` ${u}` : ""}`;
+      try {
+        const bits = num("bits");
+        const vref = num("vref");
+        const q = lsb(vref, bits);
+        set("lsb", volt(q));
+        set("n", `${codes(bits).toLocaleString("en-US")} / ${(codes(bits) - 1).toLocaleString("en-US")}`);
+        set("q", volt(qRms(vref, bits)));
+        set("snr", `${fx(snrIdeal(bits), 2)} dB`);
+        const vin = num("vin");
+        set("vc", Number.isFinite(vin) ? String(toCode(vin, vref, bits)) : "");
+        const code = num("code");
+        set("cv", Number.isFinite(code) ? volt(toVolt(code, vref, bits)) : "");
+        const x: ScaleIn = { sigLo: s.lo, sigHi: s.hi, k: num("k"), current: s.cur, engLo: num("elo"), engHi: num("ehi"), vref, bits };
+        const r = scale(x);
+        const su = s.cur ? "mA" : "V";
+        set("vr", `${volt(r.vLo)} ~ ${volt(r.vHi)}`);
+        set("cr", `${fx(r.cLo, 1)} ~ ${fx(r.cHi, 1)}`);
+        set("span", fx(r.span, 1));
+        set("epc", eu(r.engPerCount));
+        set("spc", `${sig(r.sigPerCount)} ${su}`);
+        set("eng", Number.isFinite(code) ? eu(codeToEng(x, code)) : "");
+        set("sigv", Number.isFinite(code) ? `${sig(codeToSig(x, code))} ${su}` : "");
+        if (r.clipped) {
+          vd.className = "verdict fault";
+          vd.textContent = ko ? `상한이 잘림 — ${s.hi} ${su} 가 ${volt(r.vHi)} 로 기준 전압 끝에 닿습니다. 션트·분압비를 줄이거나 기준 전압을 올리세요` : `Top clipped — ${s.hi} ${su} gives ${volt(r.vHi)}, at the reference limit. Lower the shunt or ratio, or raise the reference`;
+        } else {
+          vd.className = "verdict ok";
+          vd.textContent = ko ? `상한 ${volt(r.vHi)} — 기준 전압의 ${fx(r.headroom, 1)} % 가 여유로 남습니다` : `High end ${volt(r.vHi)} — ${fx(r.headroom, 1)} % of the reference left as headroom`;
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 비트는 1~32 정수, 기준 전압·배율은 0 보다 크고, 공학값 하한·상한은 달라야 합니다" : "Check the numbers — bits 1–32 (integer), reference and scale above 0, engineering low and high must differ";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

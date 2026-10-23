@@ -25,7 +25,7 @@ const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
   udp: ["tools/hex-ascii/", "tools/subnet/"],
   netscan: ["tools/subnet/"],
   simulator: ["tools/checksum/", "tools/hex-ascii/", "tools/ascii/"],
-  plot: ["tools/ntc/", "tools/encoder/"],
+  plot: ["tools/ntc/", "tools/encoder/", "tools/adc/"],
 };
 const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));
 const devices = tool.id === "modbus-master" || tool.id === "modbus-slave" ? DEVICES : [];
