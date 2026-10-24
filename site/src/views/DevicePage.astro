@@ -23,11 +23,17 @@ const name = `${maker} ${dev.model}`;
 const title = L(`${name} Modbus 레지스터 맵`, `${name} Modbus register map`);
 // 검색 결과 제목 — «<제조사> <모델> 모드버스 주소» 로 찾는 사람이 많아 «주소» 를 넣는다(site/SEO.md)
 // 영어 제목이 검색 결과에서 잘리지 않게(66칸) — 제조사 이름이 긴 장비는 «& Addresses» 를 뺀다
-const enTitle = `${name} Modbus Register Map & Addresses — PortDock`;
-const seoTitle = L(`${name} Modbus 주소·레지스터 맵 — PortDock`, enTitle.length > 66 ? `${name} Modbus Register Map — PortDock` : enTitle);
+// 모델 이름이 아주 긴 장비(예: FRENIC-Mini/Eco/Multi/MEGA)는 한 단계 더 줄인다 — 칸 세기는 tools/site-check.mjs 와 같다
+const cols = (s: string) => [...s].reduce((n, c) => n + (/[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c) ? 2 : 1), 0);
+const fit = (...xs: string[]) => xs.find((x) => cols(x) <= 66) ?? xs[xs.length - 1];
+const seoTitle = L(
+  fit(`${name} Modbus 주소·레지스터 맵 — PortDock`, `${name} Modbus 레지스터 맵 — PortDock`),
+  fit(`${name} Modbus Register Map & Addresses — PortDock`, `${name} Modbus Register Map — PortDock`, `${dev.model} Modbus Register Map — PortDock`),
+);
+const descEn = `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit and scale, default settings, manual page references and JSON.`;
 const desc = L(
   `${name}(${KIND_TEXT[dev.kind].ko}) Modbus(모드버스) 통신 주소·형식·단위·배율 ${dev.registers.length}개와 통신 기본값. 매뉴얼 쪽 번호 출처, JSON, PortDock 으로 바로 읽기.`,
-  `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit and scale, default settings, manual page references and JSON.`,
+  cols(descEn) <= 160 ? descEn : `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit, scale, defaults, manual pages and JSON.`,
 );
 // 같은 종류 장비(다른 제조사 포함)·Modbus 가이드
 const sameKind = DEVICES.filter((d) => d.kind === dev.kind && d.id !== dev.id);
