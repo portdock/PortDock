@@ -242,7 +242,7 @@ const ld = {
         ))
       }
       <p>
-        {L.pNote} <a href={url(lang, "tools/pressure/")}>{L.pLink}</a>. {L.gNote} <a href={url(lang, "guides/pneumatic-cylinder-force/")}>{L.gLink}</a>.
+        {L.pNote} <a href={url(lang, "tools/pressure/")}>{L.pLink}</a>. {L.gNote} <a href={url(lang, "guides/pneumatic-cylinder-force/")}>{L.gLink}</a>. {ko ? "그 실린더가 쓰는 압축 공기 양은" : "For the compressed air it uses, see the"} <a href={url(lang, "tools/air-consumption/")}>{ko ? "공압 실린더 공기 소비량 계산기" : "Pneumatic Cylinder Air Consumption Calculator"}</a>{ko ? ", 진공 패드로 집는 힘은" : "; for gripping with vacuum pads, the"} <a href={url(lang, "tools/vacuum-pad/")}>{ko ? "진공 패드 흡착력 계산기" : "Vacuum Pad Lifting Force Calculator"}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>

@@ -40,7 +40,10 @@ export interface WebTool {
     | "tools/cylinder-force/"
     | "tools/ball-screw/"
     | "tools/heater-power/"
-    | "tools/op-amp-gain/";
+    | "tools/op-amp-gain/"
+    | "tools/vacuum-pad/"
+    | "tools/air-consumption/"
+    | "tools/timing-belt/";
   name: L;
   blurb: L;
 }
@@ -230,6 +233,21 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/op-amp-gain/",
     name: { ko: "op amp 증폭률 계산기", en: "Op Amp Gain Calculator" },
     blurb: { ko: "비반전·반전·차동 이득과 dB, 출력 전압, 개루프 이득 오차, 대역폭, 원하는 이득의 표준 저항.", en: "Non-inverting, inverting and differential gain, dB, output voltage, open-loop gain error, bandwidth and standard resistors for a target gain." },
+  },
+  {
+    path: "tools/vacuum-pad/",
+    name: { ko: "진공 패드 흡착력 계산기", en: "Vacuum Pad Lifting Force Calculator" },
+    blurb: { ko: "패드 지름·진공압·안전율 → 흡착력(N·kgf), 필요한 진공압·패드 지름, 배관 용적과 흡착 응답 시간.", en: "Pad diameter, vacuum and safety factor → lifting force (N, kgf), vacuum or pad size needed, pipe volume and response time." },
+  },
+  {
+    path: "tools/air-consumption/",
+    name: { ko: "공압 실린더 공기 소비량 계산기", en: "Pneumatic Cylinder Air Consumption Calculator" },
+    blurb: { ko: "보어·행정·압력·배관 → 한 사이클 공기 소비량(L ANR), 분당 소비량, 필요 공기량, 컴프레서 용량 기준.", en: "Bore, stroke, pressure and tubing → air per cycle (L ANR), per minute, required air flow and a compressor guide." },
+  },
+  {
+    path: "tools/timing-belt/",
+    name: { ko: "타이밍 벨트 길이·축간 거리 계산기", en: "Timing Belt Length & Center Distance Calculator" },
+    blurb: { ko: "피치·풀리 잇수·축간 거리 → 벨트 길이·잇수, 벨트 → 축간 거리. 피치원 지름, 감긴 각, 맞물린 이, 벨트 속도.", en: "Pitch, pulley teeth and center distance → belt length and teeth, or belt → center distance. Pitch diameter, wrap, teeth in mesh, speed." },
   },
 ];
 

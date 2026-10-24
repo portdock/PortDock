@@ -256,7 +256,7 @@ const FIELDS = [
         ))
       }
       <p>
-        {L.sNote} <a href={url(lang, "tools/motor-speed/")}>{L.sLink}</a>. {L.eNote} <a href={url(lang, "tools/encoder/")}>{L.eLink}</a>. {L.gNote} <a href={url(lang, "guides/ball-screw-torque-motor/")}>{L.gLink}</a>.
+        {L.sNote} <a href={url(lang, "tools/motor-speed/")}>{L.sLink}</a>. {L.eNote} <a href={url(lang, "tools/encoder/")}>{L.eLink}</a>. {L.gNote} <a href={url(lang, "guides/ball-screw-torque-motor/")}>{L.gLink}</a>. {ko ? "모터와 나사축 사이를 타이밍 벨트로 감속하면" : "If a timing belt reduces between motor and screw, use the"} <a href={url(lang, "tools/timing-belt/")}>{ko ? "타이밍 벨트 길이·축간 거리 계산기" : "Timing Belt Length & Center Distance Calculator"}</a>{ko ? "로 벨트를 고릅니다." : " to pick the belt."}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
