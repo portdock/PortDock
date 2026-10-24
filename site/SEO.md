@@ -74,6 +74,10 @@
 | rc 시정수 (계산기), 차단주파수 계산기, rc 필터 계산기 | `/tools/rc-filter/` | «RC 시정수·차단 주파수 계산기 — 저역 필터» |
 | 3상 전력 계산(기), kva 계산(기), kva kw 변환, 역률 계산 | `/tools/three-phase-power/` | «3상 전력 계산기 — kVA·kW·kvar·전류·역률» |
 | 콘덴서 용량 계산(기), 역률 개선 콘덴서 용량 계산, 역률 개선 (공식·원리·콘덴서 용량) | `/tools/pf-capacitor/` + 가이드 `power-factor-capacitor` | «역률 개선 콘덴서 용량 계산기 — kvar·µF·Δ/Y», 가이드 «역률과 역률 개선 콘덴서 — kW·kVA·kvar·용량 계산» |
+| 실린더 추력 계산(기·엑셀·공식), 실린더 추력 표, 공압 실린더 추력 | `/tools/cylinder-force/` + 가이드 `pneumatic-cylinder-force` | «공압 실린더 추력 계산기 — 보어·압력별 출력 N·kgf», 가이드 «실린더 추력 계산 — 공압 실린더 출력 공식·부하율·보어» |
+| 볼스크류 토크 계산, 볼스크류 모터 토크 계산, 볼스크류 수직 토크 계산, 볼스크류 추력 계산(식) | `/tools/ball-screw/` + 가이드 `ball-screw-torque-motor` | «볼스크류 토크 계산기 — 추력·모터 회전수·실효 토크», 가이드 «볼스크류 토크 계산 — 수평·수직 축 하중과 서보 모터 선정» |
+| 히터 용량 계산(기·식·엑셀), 3상 히터 용량 계산, 전기 히터 용량 계산, 히터 용량 계산방법 | `/tools/heater-power/` | «히터 용량 계산기 — kW·가열 시간·3상 히터 전류» |
+| op amp 증폭률 계산, opamp 증폭회로 계산, op amp 증폭도 | `/tools/op-amp-gain/` | «op amp 증폭률 계산기 — 비반전·반전·차동 이득·dB» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -140,9 +144,13 @@
 | ct ratio calculator, ct burden calculation (formula), ct va burden calculation | `/en/tools/ct-ratio/` + guide `ct-ratio-burden` | «CT Ratio & Burden Calculator: Secondary Current, VA», guide «CT Ratio & CT Burden: Secondary Current, Leads, Meters» |
 | capacitive reactance calculator, inductive reactance calculator, lc resonant frequency calculator | `/en/tools/reactance/` | «Reactance Calculator: Xc, XL & LC Resonance» |
 | led resistor calculator, 24v led resistor (calculator), led series resistor | `/en/tools/led-resistor/` | «LED Resistor Calculator: 5 V, 12 V, 24 V, Series LEDs» |
+| pneumatic cylinder force calculator (in kg·smc·metric), pneumatic cylinder force calculation formula, pneumatic cylinder force chart | `/en/tools/cylinder-force/` + guide `pneumatic-cylinder-force` | «Pneumatic Cylinder Force Calculator: Bore, MPa, kgf», guide «Pneumatic Cylinder Force: Formula, Load Factor, Bore» |
+| ball screw torque calculator, ball screw torque formula, ball screw torque to force (calculator), ball screw calculator | `/en/tools/ball-screw/` + guide `ball-screw-torque-motor` | «Ball Screw Torque Calculator: Thrust, Motor RPM, RMS», guide «Ball Screw Torque Calculation: Axial Load, Servo Sizing» |
+| heater kw calculation (formula), electric heater kw calculation, 3 phase heater kw calculation | `/en/tools/heater-power/` | «Heater kW Calculator: Heat-up Time, Flow, 3-Phase Amps» |
+| op amp gain calculator, op amp gain equation, op amp gain circuit | `/en/tools/op-amp-gain/` | «Op Amp Gain Calculator: Non-inverting, Inverting, dB» |
 
-## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23)
-검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다.
+## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
+검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다.
 | 순위 | 검색어(자동완성 확인) | 페이지 | 고유함·근거 | 상태 |
 |---|---|---|---|---|
 | 1 | 서브넷 계산기·서브넷 마스크 계산·IP대역 계산방법(네이버), subnet calculator·plc subnet mask(구글) | `/tools/subnet/` + 가이드 `plc-ip-subnet` | 범용 계산기는 많지만 «PC·장비 양쪽 마스크로 따로 판정(한쪽 통신)» 은 드묾. RFC 4632·1918·3021·3927 | ✅ 10/23 |
@@ -178,11 +186,14 @@
 | 31 | 저항 병렬 계산(기·식·법)·저항 병렬 공식·합성저항 계산(기)(구글·네이버), parallel resistor calculator (standard values·reverse)(구글) | `/tools/parallel-resistor/` + 가이드 `resistor-series-parallel` | 분압 도구(비)와 겹치지 않게 «저항 하나의 값» 만 — 직렬·병렬 합성, 병렬 전류 몫, 짝 저항, E12·E24·E96 두 개 조합(오차순), 4k7 표기 읽기. 정의식, 표준 값은 Vishay 28372 | ✅ 10/23 |
 | 32 | led 저항 계산(기)·led 저항 값 계산기·led 직렬 저항 계산(구글·네이버), 24v led resistor (calculator)·led resistor calculator(구글) | `/tools/led-resistor/` | 자동완성이 강해(«led 저항 계산기», «24v led resistor calculator») 만듦. 24 V 표시등 쪽으로 — 저항 전력이 LED 의 10배 넘는 점. Vf·If 는 데이터시트 입력, 색별 «보통 값» 은 출처 없이 싣지 않음 | ✅ 10/23 |
 | 33 | ct 비 계산·ct비 계산·ct비 선정·ct 부담 (계산)·ct 정격 부담(구글), ct burden calculation (formula)·ct ratio calculator(구글) | `/tools/ct-ratio/` + 가이드 `ct-ratio-burden` | ABB Instrument Transformers Application Guide(1VAP420003-TG, 2004 Rev. A) p.4·5·6·10·12·13·26 — 1~5 A 출력, RCF(20.2:1 → 1.01), IEEE C57.13 표준 부담 B-0.1~B-1.8 재현, 2차 개방. 전력 미터 장비 맵(GIMAC1000·Accura «PT/CT 반영 값») ↔ 가이드 연결. IEC 61869-2 등급별 오차 한도·표준 1차 정격 계열은 원문 미확인이라 뺌 | ✅ 10/23 |
-| 34 | op amp gain calculator (non inverting·inverting·differential)(구글), 한국어 «opamp 증폭률 계산» 은 자동완성 없음 | 없음 | 정의식(1 + Rf/Rg 등). 4–20mA·센서 입력 회로와 이어지지만 영어 검색만 보임 | 다음 — 낮음 |
+| 34 | op amp gain calculator (non inverting·inverting·differential)·op amp gain equation(구글), op amp 증폭률 계산·opamp 증폭회로 계산(구글 hl=ko — 10/24 다시 보니 자동완성 있음) | `/tools/op-amp-gain/` | TI «Handbook of Operational Amplifier Applications»(SBOA092B) 식과 그림 30 예(δ ≈ 0.0013 → −9.987)를 시험으로. 대역폭 ≈ GBW ÷ 잡음 이득(그림 40·41). 4–20mA·센서 입력·ADC 도구와 연결 | ✅ 10/24 |
 | 35 | 리액턴스 계산(기)·용량성 리액턴스 (공식·계산)·유도성 리액턴스(공식)(구글·네이버), capacitive·inductive reactance calculator(구글) | `/tools/reactance/` | RC 도구(시정수·1차 필터)에 칸을 더하지 않고 별도 페이지로 — 검색어가 «리액턴스» 자체라서. Xc·XL·원하는 X 에 맞는 C·L·콘덴서 전류·kvar(역률 콘덴서 예와 같은 값 시험). 정의식 | ✅ 10/23 |
 | 36 | 공진 주파수 계산(기)·lc 공진 주파수 계산(기)(구글·네이버), lc resonant frequency calculator(구글), lc 필터 계산기(구글) | `/tools/reactance/` 에 합침 | f0 = 1/(2π√(LC))·Z0 = √(L/C). 별도 «LC 필터» 페이지는 부하·감쇠에 따라 모양이 달라 정의식만으로는 얇아 뺌 | ✅ 10/23 (35 에 포함) |
-| 37 | 실린더 추력 계산(기·엑셀)·공압 실린더 추력 (계산·표)(구글), pneumatic cylinder force calculator (smc·in kg)(구글) | 없음 | 자동완성이 강하고 산업 현장 쪽. 이론 출력 = 압력 × 피스톤 면적(로드 쪽은 로드 면적 뺌) 정의식이지만, 제조사 이론 출력 표(SMC 등)로 시험하려 했으나 공식 카탈로그 PDF(cdn.smcworld.com)가 내려받기를 막아 제3자 사본만 확인(10/23). 부하율 권장값도 원문 확인 필요 | 다음 — 높음, 원문 확인 뒤 |
+| 37 | 실린더 추력 계산(기·엑셀)·공압 실린더 추력 (계산·표)(구글), pneumatic cylinder force calculator (smc·in kg)(구글) | `/tools/cylinder-force/` + 가이드 `pneumatic-cylinder-force` | 10/23 엔 SMC 카탈로그 PDF(cdn.smcworld.com) 내려받기가 막혔으나, 10/24 SMC «Best Pneumatics» 기술 자료(ca01.smcworld.com, Model Selection·Data 1·3)를 받아 식·부하율(정적 0.7·동적 0.5·가이드 1)·Data 3 표·선정 예제 1~3 을 시험으로 재현, CLQ 카탈로그(content2.smcetech.com) 표도. CS2X 설명서 표는 줄마다 반올림이 달라 뺌 | ✅ 10/24 |
 | 38 | kwh 계산·kwh 당 전기요금(구글) | 없음 | 전력량(kW × h)은 정의식이지만 «요금» 은 약관 단가 원문 확인이 필요 — 수치 없이 만들면 얇음 | 보류 |
+| 39 | 볼스크류 토크 계산·볼스크류 모터 토크 계산·볼스크류 수직 토크 계산·볼스크류 추력 계산(식)(구글 hl=ko), ball screw torque calculator·ball screw torque formula·ball screw torque to force(구글) | `/tools/ball-screw/` + 가이드 `ball-screw-torque-motor` | THK 종합 카탈로그 515-1E(tech.thk.com) A15 식 18~29·45~49·52·53 과 B15 선정 예제 두 개(수평 Trms 1,305·수직 743 N·mm)를 1 % 안쪽으로 재현 | ✅ 10/24 |
+| 40 | 히터 용량 계산(기·식·엑셀)·3상 히터 용량 계산·전기 히터 용량 계산(구글 hl=ko), 히터 용량 계산방법(네이버), heater kw calculation (formula)·3 phase heater kw calculation(구글) | `/tools/heater-power/` | 히터 제조사 Tempco «Engineering Data» 16-2·16-5·16-6·16-9·16-10 — 물 5 gal/min 예(44 kW)·순환 히터 유량표·탱크 물 표·전류표·전압별 출력을 SI 계산으로 재현. 물질별 비열 표는 싣지 않음(물·기름 평균만 Tempco 값) | ✅ 10/24 |
+| 41 | 배관 유속·관경, 펌프 동력(구글) | 없음 | 정의식(v = Q/A, P = ρgQH/η)이지만 숫자 예가 있는 제조사 원문을 못 찾음(Grundfos·KSB 웹 문서에 식·예 없음, 10/24) | 보류, 원문 확인 뒤 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
