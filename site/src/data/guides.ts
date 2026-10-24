@@ -3073,6 +3073,8 @@ export const GUIDES: Guide[] = [
     },
   },
   // CT 비·부담 — ABB «Instrument Transformers Technical Information and Application Guide»(1VAP420003-TG, 2004 Rev. A)
+  // 원문 https://library.e.abb.com/public/e2462bd7f816437ac1256f9a007629cf/ITTechInfoAppGuide.pdf (ABB Library, 10/24 쪽·수치 재확인).
+  // 본문 Block 에는 링크 칸이 없어, 원문 링크는 이 글이 잇는 CT 계산기 페이지 «근거» 에 둔다.
   // p.4(보통 출력 1~5 A)·p.5(직렬, 2차 접지)·p.6(다중 비 600:5)·p.10(RCF)·p.12(IEEE 등급 0.3·0.6·1.2)·p.13(표준 부담)·p.26(2차 개방).
   // 숫자는 lib/ct 로 계산(ct.test.ts «가이드·그림 예»). IEC 61869-2 의 등급별 오차 한도는 원문 미확인이라 싣지 않는다.
   {
