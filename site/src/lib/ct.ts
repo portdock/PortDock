@@ -1,6 +1,8 @@
 // 변류기(CT) 비·2차 전류·부담 — 웹 도구 «CT 비·2차 전류·부담 계산기».
 // 근거:
 //   ABB «Instrument Transformers — Technical Information and Application Guide»(1VAP420003-TG, December 2004 Rev. A)
+//     원문 https://library.e.abb.com/public/e2462bd7f816437ac1256f9a007629cf/ITTechInfoAppGuide.pdf
+//     (ABB Library 문서 ID 1VAP420003-TG 로 내려받으면 이 주소, 10/24 — 아래 쪽 번호·수치 모두 이 PDF 에서 다시 확인)
 //     p.4  CT 의 보통 출력 1~5 A
 //     p.5  CT 는 선로에 직렬로 들어가 선 전류를 5 A 로 바꾼다, 2차 회로는 접지
 //     p.10 명판 «marked ratio» 와 실제 비의 차 — 비 보정 계수 RCF = 실제 비 ÷ 표시 비(예: 20.2 : 1 → RCF 1.01, 비 오차 1 %),

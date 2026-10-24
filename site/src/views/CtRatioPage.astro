@@ -21,6 +21,8 @@ const leadRows = [1.5, 2.5, 4].flatMap((a) => [5, 10, 20, 50].map((m) => {
   const r = leadOhm(m, a);
   return [`${a} mm²`, `${m} m`, r.toFixed(3), va(5, r).toFixed(2), va(1, r).toFixed(3)];
 }));
+// 원문: ABB Library 의 1VAP420003-TG(문서 ID 로 내려받으면 이 주소로 감, 10/24 확인 — 끝 쪽에 «1VAP420003-TG December 2004 Rev. A»)
+const ABB_IT_GUIDE = "https://library.e.abb.com/public/e2462bd7f816437ac1256f9a007629cf/ITTechInfoAppGuide.pdf";
 const L = ko
   ? {
       title: "CT 비·2차 전류·부담 계산기",
@@ -82,6 +84,7 @@ const L = ko
       gNote: "CT 비 설정·부담·2차 개방을 정리한 글:",
       gLink: "CT 비·2차 전류·부담 기초",
       srcTitle: "근거",
+      srcLink: "ABB 가이드 원문 PDF (ABB Library)",
       src: "CT 비·RCF·표준 부담·2차 개방 주의는 ABB «Instrument Transformers — Technical Information and Application Guide»(1VAP420003-TG, December 2004 Rev. A) p.4·5·10·13·26 을 따랐습니다. VA = I²R 은 정의식, 구리 저항률은 IEC 60028(1/58 Ω·mm²/m, 0.00393 /°C)로 전압 강하 계산기와 같습니다. 계기 입력 부담은 각 계기 사양서를 보세요.",
     }
   : {
@@ -144,6 +147,7 @@ const L = ko
       gNote: "Guide on CT ratio settings, burden and open secondaries:",
       gLink: "CT ratio, secondary current and burden basics",
       srcTitle: "Basis",
+      srcLink: "ABB guide PDF (ABB Library)",
       src: "CT ratio, RCF, standard burdens and the open-secondary warning follow ABB «Instrument Transformers — Technical Information and Application Guide» (1VAP420003-TG, December 2004 Rev. A) pp.4, 5, 10, 13, 26. VA = I²R is a definition; copper resistivity follows IEC 60028 (1/58 Ω·mm²/m, 0.00393 /°C) as in the voltage drop calculator. Meter input burdens come from each meter's datasheet.",
     };
 const ld = {
@@ -248,6 +252,7 @@ const ld = {
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
+      <p><a href={ABB_IT_GUIDE} rel="noopener">{L.srcLink}</a></p>
     </section>
     <WebToolLinks lang={lang} path={PATH} />
   </div>
