@@ -1,0 +1,1565 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "omron/e5cn",
+  "manufacturer": {
+    "ko": "오므론",
+    "en": "OMRON"
+  },
+  "model": "E5CN",
+  "models": [
+    "E5CN",
+    "E5AN",
+    "E5EN",
+    "E5GN"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "오므론 E5CN 계열 온도 조절기 기본형 (RS-485 Modbus RTU)",
+    "en": "OMRON E5CN series basic temperature controller (RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "E5□N 기본형(E5CN·E5AN·E5EN·E5GN) 통신 모델. 2바이트 모드 주소(2000h~): PV·상태·SP·경보값·PID·입력 종류, 운전 명령은 0000h 에 FC06",
+    "en": "E5□N basic type (E5CN, E5AN, E5EN, E5GN) communication models. Two-byte mode addresses (2000h-): PV, status, SP, alarm values, PID, input type; operation commands via FC06 to 0000h"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 2,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "maxRegisters": 106,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 읽기 예 2바이트 모드(5-11 (PDF 91))는 01 03 20 00 00 01 8F CA 로 PV(2000h)를 읽고 01 03 02 03 E8 B8 FA(100.0 ℃)를 받는다. 쓰기 예(5-13 (PDF 93))는 01 10 21 05 00 02 04 03 E8 FC 18 66 BB 로 2105h·2106h 에 1000·−1000 을 쓰고(응답 01 10 21 05 00 02 5B F5), 운전 명령 예(5-16 (PDF 96))는 01 06 00 00 01 01 49 9A(STOP). 4바이트 모드 예(01 03 00 00 00 02 C4 0B → 01 03 04 00 00 03 E8 FA 8D, 01 10 01 0A 00 04 08 … 8D E9 → 01 10 01 0A 00 04 E0 34)까지 모두 CRC 가 계산값과 같다. 매뉴얼 주소 = 프레임 주소(0 기준).",
+        "en": "Addressing: the two-byte mode read example (5-11 (PDF 91)) sends 01 03 20 00 00 01 8F CA to read PV (2000h) and gets 01 03 02 03 E8 B8 FA (100.0 °C). The write example (5-13 (PDF 93)) 01 10 21 05 00 02 04 03 E8 FC 18 66 BB writes 1000/-1000 to 2105h/2106h (response 01 10 21 05 00 02 5B F5); the operation command example (5-16 (PDF 96)) is 01 06 00 00 01 01 49 9A (stop). All CRCs, including the four-byte mode examples (01 03 00 00 00 02 C4 0B -> 01 03 04 00 00 03 E8 FA 8D; 01 10 01 0A 00 04 08 ... 8D E9 -> 01 10 01 0A 00 04 E0 34), match calculation. Manual address = frame address (0-based)."
+      },
+      {
+        "ko": "출하 프로토콜은 CompoWay/F — 통신 설정 레벨에서 psel 을 mod 로 바꾸고 리셋해야 Modbus 로 동작한다. 출하값: 국번 1, 9.6 kbps, 데이터 7비트, 정지 2비트, 짝수 패리티 (1-7 (PDF 21)). Modbus 는 데이터 8비트여야 하므로 len 을 8 로 바꾼다.",
+        "en": "Factory protocol is CompoWay/F: set psel to mod in the communications setting level and reset. Defaults: unit 1, 9.6 kbps, 7 data bits, 2 stop bits, even parity (1-7 (PDF 21)). Modbus requires 8 data bits, so set len to 8."
+      },
+      {
+        "ko": "함수 코드 03·06·08·10. 2바이트 모드(이 표)는 한 번에 106개 읽기·104개 쓰기. 4바이트 모드는 0000h~ 의 다른 주소(값 하나 = 2워드)를 쓴다. 파라미터를 쓰려면 먼저 «통신 쓰기» 를 ON(운전 명령 0001h)으로.",
+        "en": "Function codes 03, 06, 08, 10. Two-byte mode (this table): up to 106 read / 104 write per request. Four-byte mode uses different addresses from 0000h (two words per value). Turn Communications Writing ON first (operation command 0001h) to write parameters."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "ko": "값은 소수점 없는 정수다(예 100.0 → 1000). PV·SP·경보값의 소수점 자리는 입력 종류·소수점 설정을 따르므로 scale 을 넣지 않았다. 불감대·히스테리시스·대기 폭도 모델(열전대·측온 저항체 0.1, 아날로그 0.01)에 따라 배율이 달라 넣지 않았다.",
+      "en": "Values are integers without decimal point (e.g. 100.0 → 1000). PV, SP and alarm decimal places follow the input type / decimal point setting, so no scale is given. Dead band, hysteresis and wait band are also left out because their scale depends on the model (0.1 for TC/Pt, 0.01 for analog)."
+    },
+    {
+      "ko": "RS-485 통신 기능이 있는 형번만 해당(E5AN·E5EN·E5GN 은 RS-232C 형번도 있음). 출력·경보·히터 전류 항목은 형번(옵션)에 따라 없을 수 있다. 고급형 E5CN-H 등은 다른 매뉴얼(H159).",
+      "en": "Only models with communications (E5AN/E5EN/E5GN also have RS-232C models). Output, alarm and heater current items depend on model options. Advanced types such as E5CN-H use a different manual (H159)."
+    }
+  ],
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "0000",
+      "type": "u16",
+      "name": {
+        "ko": "운전 명령",
+        "en": "Operation command"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "통신 쓰기 OFF",
+          "en": "Communications writing OFF"
+        },
+        {
+          "value": 1,
+          "ko": "통신 쓰기 ON",
+          "en": "Communications writing ON"
+        },
+        {
+          "value": 256,
+          "ko": "RUN",
+          "en": "Run"
+        },
+        {
+          "value": 257,
+          "ko": "STOP",
+          "en": "Stop"
+        },
+        {
+          "value": 512,
+          "ko": "다단 SP 0",
+          "en": "Multi-SP set point 0"
+        },
+        {
+          "value": 513,
+          "ko": "다단 SP 1",
+          "en": "Multi-SP set point 1"
+        },
+        {
+          "value": 514,
+          "ko": "다단 SP 2",
+          "en": "Multi-SP set point 2"
+        },
+        {
+          "value": 515,
+          "ko": "다단 SP 3",
+          "en": "Multi-SP set point 3"
+        },
+        {
+          "value": 768,
+          "ko": "AT 취소",
+          "en": "AT cancel"
+        },
+        {
+          "value": 769,
+          "ko": "100% AT 실행",
+          "en": "100% AT execute"
+        },
+        {
+          "value": 770,
+          "ko": "40% AT 실행",
+          "en": "40% AT execute"
+        },
+        {
+          "value": 1024,
+          "ko": "백업 모드(EEPROM 에도 씀)",
+          "en": "Backup mode (also writes EEPROM)"
+        },
+        {
+          "value": 1025,
+          "ko": "RAM 쓰기 모드",
+          "en": "RAM write mode"
+        },
+        {
+          "value": 1280,
+          "ko": "RAM 데이터 저장",
+          "en": "Save RAM data"
+        },
+        {
+          "value": 1536,
+          "ko": "소프트웨어 리셋",
+          "en": "Software reset"
+        },
+        {
+          "value": 1792,
+          "ko": "설정 영역 1 로 이동",
+          "en": "Move to setup area 1"
+        },
+        {
+          "value": 2048,
+          "ko": "보호 레벨로 이동",
+          "en": "Move to protect level"
+        },
+        {
+          "value": 2304,
+          "ko": "자동 모드",
+          "en": "Automatic mode"
+        },
+        {
+          "value": 2305,
+          "ko": "수동 모드",
+          "en": "Manual mode"
+        },
+        {
+          "value": 2816,
+          "ko": "파라미터 초기화",
+          "en": "Parameter initialization"
+        },
+        {
+          "value": 3072,
+          "ko": "경보 1 래치 해제",
+          "en": "Alarm 1 latch cancel"
+        },
+        {
+          "value": 3073,
+          "ko": "경보 2 래치 해제",
+          "en": "Alarm 2 latch cancel"
+        },
+        {
+          "value": 3074,
+          "ko": "경보 3 래치 해제",
+          "en": "Alarm 3 latch cancel"
+        },
+        {
+          "value": 3075,
+          "ko": "HB 경보 래치 해제",
+          "en": "HB alarm latch cancel"
+        },
+        {
+          "value": 3076,
+          "ko": "HS 경보 래치 해제",
+          "en": "HS alarm latch cancel"
+        },
+        {
+          "value": 3077,
+          "ko": "OC 경보 래치 해제",
+          "en": "OC alarm latch cancel"
+        },
+        {
+          "value": 3087,
+          "ko": "모든 경보 래치 해제",
+          "en": "All alarm latch cancel"
+        },
+        {
+          "value": 3584,
+          "ko": "정·역동작 반전 안 함",
+          "en": "Direct/reverse not inverted"
+        },
+        {
+          "value": 3585,
+          "ko": "정·역동작 반전",
+          "en": "Direct/reverse inverted"
+        },
+        {
+          "value": 4352,
+          "ko": "프로그램 리셋",
+          "en": "Program reset"
+        },
+        {
+          "value": 4353,
+          "ko": "프로그램 시작",
+          "en": "Program start"
+        }
+      ],
+      "description": {
+        "ko": "FC06 전용(주소 0000 또는 FFFF). 쓰기 값 = 명령 코드(상위 바이트) + 관련 정보(하위 바이트). 매뉴얼 예: 01 06 00 00 01 01 49 9A(STOP). 명령은 통신 쓰기 설정과 관계없이 받는다",
+        "en": "FC06 only (address 0000 or FFFF). Write value = command code (high byte) + related information (low byte). Manual example: 01 06 00 00 01 01 49 9A (stop). Accepted regardless of the Communications Writing setting"
+      },
+      "ref": "5-14~5-16 (PDF 94-96)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8192,
+      "manualAddress": "2000",
+      "type": "s16",
+      "name": {
+        "ko": "PV(현재값)",
+        "en": "PV (process value)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "소수점 없는 정수, 예 100.0 ℃ = 03E8h(매뉴얼 읽기 예)",
+        "en": "Integer without decimal point, e.g. 100.0 °C = 03E8h (manual read example)"
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8193,
+      "manualAddress": "2001",
+      "type": "u16",
+      "name": {
+        "ko": "상태(하위 16비트)",
+        "en": "Status (lower 16 bits)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "히터 과전류(CT1)",
+          "en": "Heater overcurrent (CT1)"
+        },
+        {
+          "bit": 1,
+          "ko": "히터 전류 유지(CT1)",
+          "en": "Heater current hold (CT1)"
+        },
+        {
+          "bit": 2,
+          "ko": "A/D 변환기 오류",
+          "en": "A/D converter error"
+        },
+        {
+          "bit": 3,
+          "ko": "HS 경보(CT1)",
+          "en": "HS alarm (CT1)"
+        },
+        {
+          "bit": 5,
+          "ko": "표시 범위 초과",
+          "en": "Display range exceeded"
+        },
+        {
+          "bit": 6,
+          "ko": "입력 오류",
+          "en": "Input error"
+        },
+        {
+          "bit": 8,
+          "ko": "제어 출력(가열)",
+          "en": "Control output (heating)"
+        },
+        {
+          "bit": 9,
+          "ko": "제어 출력(냉각)",
+          "en": "Control output (cooling)"
+        },
+        {
+          "bit": 10,
+          "ko": "HB 경보(CT1)",
+          "en": "HB (heater burnout) alarm (CT1)"
+        },
+        {
+          "bit": 11,
+          "ko": "HB 경보(CT2)",
+          "en": "HB (heater burnout) alarm (CT2)"
+        },
+        {
+          "bit": 12,
+          "ko": "경보 1",
+          "en": "Alarm 1"
+        },
+        {
+          "bit": 13,
+          "ko": "경보 2",
+          "en": "Alarm 2"
+        },
+        {
+          "bit": 14,
+          "ko": "경보 3",
+          "en": "Alarm 3"
+        },
+        {
+          "bit": 15,
+          "ko": "프로그램 종료 출력",
+          "en": "Program end output"
+        }
+      ],
+      "description": {
+        "ko": "1 = 발생/ON",
+        "en": "1 = generated/ON"
+      },
+      "ref": "6-2, 6-20 (PDF 104, 122)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8194,
+      "manualAddress": "2002",
+      "type": "s16",
+      "name": {
+        "ko": "내부 SP",
+        "en": "Internal set point"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8195,
+      "manualAddress": "2003",
+      "type": "u16",
+      "name": {
+        "ko": "히터 전류 1 모니터",
+        "en": "Heater current 1 value monitor"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 55
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8196,
+      "manualAddress": "2004",
+      "type": "s16",
+      "name": {
+        "ko": "MV 모니터(가열)",
+        "en": "MV monitor (heating)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "표준 −5.0~105.0, 가열·냉각 0.0~105.0",
+        "en": "Standard -5.0 to 105.0, heating/cooling 0.0 to 105.0"
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8197,
+      "manualAddress": "2005",
+      "type": "u16",
+      "name": {
+        "ko": "MV 모니터(냉각)",
+        "en": "MV monitor (cooling)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 105
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8451,
+      "manualAddress": "2103",
+      "type": "s16",
+      "name": {
+        "ko": "SP(목표값)",
+        "en": "Set point"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-2 (PDF 104)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8452,
+      "manualAddress": "2104",
+      "type": "s16",
+      "name": {
+        "ko": "경보값 1",
+        "en": "Alarm value 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8453,
+      "manualAddress": "2105",
+      "type": "s16",
+      "name": {
+        "ko": "경보 상한값 1",
+        "en": "Alarm value upper limit 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8454,
+      "manualAddress": "2106",
+      "type": "s16",
+      "name": {
+        "ko": "경보 하한값 1",
+        "en": "Alarm value lower limit 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8455,
+      "manualAddress": "2107",
+      "type": "s16",
+      "name": {
+        "ko": "경보값 2",
+        "en": "Alarm value 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8456,
+      "manualAddress": "2108",
+      "type": "s16",
+      "name": {
+        "ko": "경보 상한값 2",
+        "en": "Alarm value upper limit 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 8457,
+      "manualAddress": "2109",
+      "type": "s16",
+      "name": {
+        "ko": "경보 하한값 2",
+        "en": "Alarm value lower limit 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~9999. 소수점은 입력 설정을 따른다",
+        "en": "-1999 to 9999. Decimal point follows the input setting"
+      },
+      "ref": "6-2~6-3 (PDF 104-105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9220,
+      "manualAddress": "2404",
+      "type": "u16",
+      "name": {
+        "ko": "다단 SP 번호 모니터",
+        "en": "Multi-SP monitor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 3
+      },
+      "ref": "6-3 (PDF 105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9223,
+      "manualAddress": "2407",
+      "type": "u16",
+      "name": {
+        "ko": "상태(상위 16비트)",
+        "en": "Status (upper 16 bits)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "이벤트 입력 1",
+          "en": "Event input 1"
+        },
+        {
+          "bit": 1,
+          "ko": "이벤트 입력 2",
+          "en": "Event input 2"
+        },
+        {
+          "bit": 2,
+          "ko": "이벤트 입력 3",
+          "en": "Event input 3"
+        },
+        {
+          "bit": 3,
+          "ko": "이벤트 입력 4",
+          "en": "Event input 4"
+        },
+        {
+          "bit": 4,
+          "ko": "쓰기 모드(1 = RAM 쓰기)",
+          "en": "Write mode (1 = RAM write)"
+        },
+        {
+          "bit": 5,
+          "ko": "EEPROM(1 = RAM ≠ EEPROM)",
+          "en": "EEPROM (1 = RAM ≠ EEPROM)"
+        },
+        {
+          "bit": 6,
+          "ko": "설정 영역(1 = 영역 1)",
+          "en": "Setup area (1 = area 1)"
+        },
+        {
+          "bit": 7,
+          "ko": "AT 실행 중",
+          "en": "AT execution in progress"
+        },
+        {
+          "bit": 8,
+          "ko": "RUN/STOP(1 = STOP)",
+          "en": "RUN/STOP (1 = stop)"
+        },
+        {
+          "bit": 9,
+          "ko": "통신 쓰기 ON",
+          "en": "Communications writing ON"
+        },
+        {
+          "bit": 10,
+          "ko": "수동 모드",
+          "en": "Manual mode"
+        },
+        {
+          "bit": 11,
+          "ko": "프로그램 시작",
+          "en": "Program start"
+        },
+        {
+          "bit": 12,
+          "ko": "히터 과전류(CT2)",
+          "en": "Heater overcurrent (CT2)"
+        },
+        {
+          "bit": 13,
+          "ko": "히터 전류 유지(CT2)",
+          "en": "Heater current hold (CT2)"
+        },
+        {
+          "bit": 15,
+          "ko": "HS 경보(CT2)",
+          "en": "HS alarm (CT2)"
+        }
+      ],
+      "description": {
+        "ko": "32비트 상태의 비트 16~31 을 비트 0~15 로 읽는다",
+        "en": "Bits 16-31 of the 32-bit status, read as bits 0-15"
+      },
+      "ref": "6-3, 6-20 (PDF 105, 122)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9232,
+      "manualAddress": "2410",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 모니터",
+        "en": "Decimal point monitor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 3
+      },
+      "description": {
+        "ko": "소수점 아래 자릿수",
+        "en": "Number of decimal places"
+      },
+      "ref": "6-3 (PDF 105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9472,
+      "manualAddress": "2500",
+      "type": "u16",
+      "name": {
+        "ko": "운전/조정 보호",
+        "en": "Operation/adjustment protect"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "제한 없음",
+          "en": "No restrictions"
+        },
+        {
+          "value": 1,
+          "ko": "조정 레벨 이동 금지",
+          "en": "Move to adjustment level prohibited"
+        },
+        {
+          "value": 2,
+          "ko": "PV·PV/SP 만 표시·변경",
+          "en": "Only PV and PV/SP displayed and changeable"
+        },
+        {
+          "value": 3,
+          "ko": "PV·PV/SP 만 표시",
+          "en": "Only PV and PV/SP displayed"
+        }
+      ],
+      "ref": "6-3 (PDF 105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9473,
+      "manualAddress": "2501",
+      "type": "u16",
+      "name": {
+        "ko": "초기 설정/통신 보호",
+        "en": "Initial setting/communications protect"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "이동 허용(고급 기능 표시)",
+          "en": "Move allowed (advanced function level displayed)"
+        },
+        {
+          "value": 1,
+          "ko": "이동 허용(고급 기능 표시 안 함)",
+          "en": "Move allowed (advanced function level not displayed)"
+        },
+        {
+          "value": 2,
+          "ko": "이동 금지",
+          "en": "Move prohibited"
+        }
+      ],
+      "ref": "6-3 (PDF 105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9474,
+      "manualAddress": "2502",
+      "type": "u16",
+      "name": {
+        "ko": "설정 변경 보호",
+        "en": "Setting change protect"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF(앞면 변경 허용)",
+          "en": "OFF (changes on display allowed)"
+        },
+        {
+          "value": 1,
+          "ko": "ON(앞면 변경 금지)",
+          "en": "ON (changes on display prohibited)"
+        }
+      ],
+      "ref": "6-3 (PDF 105)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9728,
+      "manualAddress": "2600",
+      "type": "s16",
+      "name": {
+        "ko": "수동 MV",
+        "en": "Manual MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "표준 −5.0~105.0, 가열·냉각 −105.0~105.0",
+        "en": "Standard -5.0 to 105.0, heating/cooling -105.0 to 105.0"
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9984,
+      "manualAddress": "2700",
+      "type": "u16",
+      "name": {
+        "ko": "냉각 계수",
+        "en": "Cooling coefficient"
+      },
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.01,
+        "max": 99.99
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9989,
+      "manualAddress": "2705",
+      "type": "u16",
+      "name": {
+        "ko": "수동 리셋값",
+        "en": "Manual reset value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9992,
+      "manualAddress": "2708",
+      "type": "u16",
+      "name": {
+        "ko": "제어 주기(가열)",
+        "en": "Control period (heating)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "0 = 0.5 s, 1~99 = 1~99 s. 초기 설정 레벨(설정 영역 1)",
+        "en": "0 = 0.5 s, 1-99 = 1-99 s. Initial setting level (setup area 1)"
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9993,
+      "manualAddress": "2709",
+      "type": "u16",
+      "name": {
+        "ko": "제어 주기(냉각)",
+        "en": "Control period (cooling)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "0 = 0.5 s, 1~99 = 1~99 s. 초기 설정 레벨(설정 영역 1)",
+        "en": "0 = 0.5 s, 1-99 = 1-99 s. Initial setting level (setup area 1)"
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10012,
+      "manualAddress": "271C",
+      "type": "u16",
+      "name": {
+        "ko": "누설 전류 1 모니터",
+        "en": "Leakage current 1 monitor"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 55
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10020,
+      "manualAddress": "2724",
+      "type": "u16",
+      "name": {
+        "ko": "히터 전류 2 모니터",
+        "en": "Heater current 2 value monitor"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 55
+      },
+      "ref": "6-5 (PDF 107)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10022,
+      "manualAddress": "2726",
+      "type": "u16",
+      "name": {
+        "ko": "누설 전류 2 모니터",
+        "en": "Leakage current 2 monitor"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 55
+      },
+      "ref": "6-5 (PDF 107)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10024,
+      "manualAddress": "2728",
+      "type": "u16",
+      "name": {
+        "ko": "소크 남은 시간",
+        "en": "Soak time remain"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "6-5 (PDF 107)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10011,
+      "manualAddress": "271B",
+      "type": "u16",
+      "name": {
+        "ko": "히터 단선 검출 1",
+        "en": "Heater burnout detection 1"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "ref": "6-4 (PDF 106)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10021,
+      "manualAddress": "2725",
+      "type": "u16",
+      "name": {
+        "ko": "히터 단선 검출 2",
+        "en": "Heater burnout detection 2"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "ref": "6-5 (PDF 107)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10496,
+      "manualAddress": "2900",
+      "type": "s16",
+      "name": {
+        "ko": "다단 SP 0",
+        "en": "Multi-SP SP 0"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10510,
+      "manualAddress": "290E",
+      "type": "s16",
+      "name": {
+        "ko": "다단 SP 1",
+        "en": "Multi-SP SP 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10524,
+      "manualAddress": "291C",
+      "type": "s16",
+      "name": {
+        "ko": "다단 SP 2",
+        "en": "Multi-SP SP 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10538,
+      "manualAddress": "292A",
+      "type": "s16",
+      "name": {
+        "ko": "다단 SP 3",
+        "en": "Multi-SP SP 3"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 없는 정수 — 소수점 자리는 2410(소수점 모니터)·입력 종류에 따른다",
+        "en": "Integer without decimal point; decimal places follow 2410 (decimal point monitor) / input type"
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10752,
+      "manualAddress": "2A00",
+      "type": "u16",
+      "name": {
+        "ko": "비례대",
+        "en": "Proportional band"
+      },
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 999.9
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10753,
+      "manualAddress": "2A01",
+      "type": "u16",
+      "name": {
+        "ko": "적분 시간",
+        "en": "Integral time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3999
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10754,
+      "manualAddress": "2A02",
+      "type": "u16",
+      "name": {
+        "ko": "미분 시간",
+        "en": "Derivative time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "RT OFF 이면 0~3999(1 s), RT ON 이면 0.0~999.9(0.1 s)",
+        "en": "0-3999 (1 s) with RT OFF, 0.0-999.9 (0.1 s) with RT ON"
+      },
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10757,
+      "manualAddress": "2A05",
+      "type": "s16",
+      "name": {
+        "ko": "MV 상한",
+        "en": "MV upper limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 10758,
+      "manualAddress": "2A06",
+      "type": "s16",
+      "name": {
+        "ko": "MV 하한",
+        "en": "MV lower limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "6-6 (PDF 108)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 11264,
+      "manualAddress": "2C00",
+      "type": "u16",
+      "name": {
+        "ko": "입력 종류(열전대·측온 저항체 모델)",
+        "en": "Input type (TC/Pt multi-input models)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "Pt −200~850 ℃",
+          "en": "Pt -200 to 850 °C"
+        },
+        {
+          "value": 1,
+          "ko": "Pt −199.9~500.0 ℃",
+          "en": "Pt -199.9 to 500.0 °C"
+        },
+        {
+          "value": 2,
+          "ko": "Pt 0.0~100.0 ℃",
+          "en": "Pt 0.0 to 100.0 °C"
+        },
+        {
+          "value": 3,
+          "ko": "JPt −199.9~500.0 ℃",
+          "en": "JPt -199.9 to 500.0 °C"
+        },
+        {
+          "value": 4,
+          "ko": "JPt 0.0~100.0 ℃",
+          "en": "JPt 0.0 to 100.0 °C"
+        },
+        {
+          "value": 5,
+          "ko": "K −200~1300 ℃",
+          "en": "K -200 to 1300 °C"
+        },
+        {
+          "value": 6,
+          "ko": "K −20.0~500.0 ℃",
+          "en": "K -20.0 to 500.0 °C"
+        },
+        {
+          "value": 7,
+          "ko": "J −100~850 ℃",
+          "en": "J -100 to 850 °C"
+        },
+        {
+          "value": 8,
+          "ko": "J −20.0~400.0 ℃",
+          "en": "J -20.0 to 400.0 °C"
+        },
+        {
+          "value": 9,
+          "ko": "T −200~400 ℃",
+          "en": "T -200 to 400 °C"
+        },
+        {
+          "value": 10,
+          "ko": "T −199.9~400.0 ℃",
+          "en": "T -199.9 to 400.0 °C"
+        },
+        {
+          "value": 11,
+          "ko": "E −200~600 ℃",
+          "en": "E -200 to 600 °C"
+        },
+        {
+          "value": 12,
+          "ko": "L −100~850 ℃",
+          "en": "L -100 to 850 °C"
+        },
+        {
+          "value": 13,
+          "ko": "U −200~400 ℃",
+          "en": "U -200 to 400 °C"
+        },
+        {
+          "value": 14,
+          "ko": "U −199.9~400.0 ℃",
+          "en": "U -199.9 to 400.0 °C"
+        },
+        {
+          "value": 15,
+          "ko": "N −200~1300 ℃",
+          "en": "N -200 to 1300 °C"
+        },
+        {
+          "value": 16,
+          "ko": "R 0~1700 ℃",
+          "en": "R 0 to 1700 °C"
+        },
+        {
+          "value": 17,
+          "ko": "S 0~1700 ℃",
+          "en": "S 0 to 1700 °C"
+        },
+        {
+          "value": 18,
+          "ko": "B 100~1800 ℃",
+          "en": "B 100 to 1800 °C"
+        },
+        {
+          "value": 19,
+          "ko": "적외선 센서 K 140 ℉/60 ℃",
+          "en": "Infrared sensor K 140 °F/60 °C"
+        },
+        {
+          "value": 20,
+          "ko": "적외선 센서 K 240 ℉/120 ℃",
+          "en": "Infrared sensor K 240 °F/120 °C"
+        },
+        {
+          "value": 21,
+          "ko": "적외선 센서 K 280 ℉/140 ℃",
+          "en": "Infrared sensor K 280 °F/140 °C"
+        },
+        {
+          "value": 22,
+          "ko": "적외선 센서 K 440 ℉/220 ℃",
+          "en": "Infrared sensor K 440 °F/220 °C"
+        },
+        {
+          "value": 23,
+          "ko": "0~50 mV",
+          "en": "0 to 50 mV"
+        },
+        {
+          "value": 24,
+          "ko": "W 0~2300 ℃",
+          "en": "W 0 to 2300 °C"
+        },
+        {
+          "value": 25,
+          "ko": "PL II 0~1300 ℃",
+          "en": "PL II 0 to 1300 °C"
+        }
+      ],
+      "description": {
+        "ko": "아날로그 입력 모델은 0 = 4~20 mA, 1 = 0~20 mA, 2 = 1~5 V, 3 = 0~5 V, 4 = 0~10 V. 초기 설정 레벨 — 쓰려면 설정 영역 1 로 이동(운전 명령 0700h). ℉ 범위는 매뉴얼 표",
+        "en": "Analog input models: 0 = 4-20 mA, 1 = 0-20 mA, 2 = 1-5 V, 3 = 0-5 V, 4 = 0-10 V. Initial setting level: move to setup area 1 (operation command 0700h) to write. °F ranges in the manual table"
+      },
+      "ref": "6-7 (PDF 109)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 11265,
+      "manualAddress": "2C01",
+      "type": "u16",
+      "name": {
+        "ko": "온도 단위",
+        "en": "Temperature unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "6-7 (PDF 109)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 11273,
+      "manualAddress": "2C09",
+      "type": "s16",
+      "name": {
+        "ko": "스케일링 하한",
+        "en": "Scaling lower limit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "−1999~스케일링 상한 −1(아날로그 입력)",
+        "en": "-1999 to scaling upper limit - 1 (analog input)"
+      },
+      "ref": "6-7 (PDF 109)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 11275,
+      "manualAddress": "2C0B",
+      "type": "s16",
+      "name": {
+        "ko": "스케일링 상한",
+        "en": "Scaling upper limit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "스케일링 하한 +1~9999(아날로그 입력)",
+        "en": "Scaling lower limit + 1 to 9999 (analog input)"
+      },
+      "ref": "6-7 (PDF 109)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 11276,
+      "manualAddress": "2C0C",
+      "type": "u16",
+      "name": {
+        "ko": "소수점",
+        "en": "Decimal point"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "열전대·측온 저항체 모델 0~1, 아날로그 입력 모델 0~3",
+        "en": "0-1 for TC/Pt models, 0-3 for analog input models"
+      },
+      "ref": "6-7 (PDF 109)",
+      "source": 0
+    }
+  ],
+  "sources": [
+    {
+      "title": "E5CN/E5AN/E5EN/E5GN Digital Temperature Controllers Communications Manual Basic Type",
+      "publisher": "OMRON Corporation",
+      "edition": {
+        "ko": "Cat. No. H158-E1-02",
+        "en": "Cat. No. H158-E1-02"
+      },
+      "url": "https://files.omron.eu/downloads/latest/manual/en/h158_e5_n_communications_manual_en.pdf",
+      "pages": {
+        "ko": "통신 설정 1-7 (PDF 21), Modbus 절차 5-1~5-19 (PDF 81-99), 변수 표 6-2~6-7 (PDF 104-109), 상태 6-17~6-20 (PDF 119-122)",
+        "en": "Communications settings 1-7 (PDF 21), Modbus procedure 5-1 to 5-19 (PDF 81-99), variable list 6-2 to 6-7 (PDF 104-109), status 6-17 to 6-20 (PDF 119-122)"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}
