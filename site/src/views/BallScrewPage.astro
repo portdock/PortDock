@@ -1,0 +1,328 @@
+---
+// 웹 도구: 볼스크류 축 하중·구동 토크·모터 회전수·실효 토크 (lib/ballscrew.ts).
+// THK 종합 카탈로그 515-1E 의 식(A15)과 선정 예제 두 개(B15 수평 고속 이송·수직 반송)를 시험으로 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { ballScrew, holdTorque, kgcm2, rmsTorque, type ScrewIn } from "../lib/ballscrew";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/ball-screw/";
+// THK 예제 두 개를 이 계산기로 다시 계산한 표
+const H: ScrewIn = { mount: "horizontal", m: 80, mu: 0.003, f: 15, v: 1, t1: 0.15, ph: 40, eta: 0.9, a: 1, js: kgcm2(1.476), jm: 1e-3, tp: 0 };
+const V: ScrewIn = { mount: "vertical", m: 50, mu: 0.003, f: 20, v: 0.3, t1: 0.2, ph: 10, eta: 0.9, a: 1, js: kgcm2(0.312), jm: 5e-5, tp: 0 };
+const h = ballScrew(H);
+const v = ballScrew(V);
+const hRms = rmsTorque([[h.tk[0], 0.15], [h.tt[0], 0.85], [h.tg[0], 0.15], [0, 2.6]]);
+const ts = holdTorque(40, 20, 10, 0.9);
+const vRms = rmsTorque([[v.tk[0], 0.2], [v.tt[0], 1.8], [v.tg[0], 0.2], [v.tk[1], 0.2], [v.tt[1], 1.8], [v.tg[1], 0.2], [ts, 7.6]]);
+const r0 = (x: number) => Math.round(x).toLocaleString("en-US");
+const exRows = [
+  [ko ? "축 하중 최대 Famax" : "Max axial load Famax", `${r0(h.famax)} N`, `${r0(v.famax)} N`, "550 / 585 N"],
+  [ko ? "모터 회전수" : "Motor speed", `${r0(h.nm)} min⁻¹`, `${r0(v.nm)} min⁻¹`, "1,500 / 1,800"],
+  [ko ? "모터 축 부하 관성 J" : "Load inertia at motor J", `${(h.j * 1e3).toFixed(2)}×10⁻³ kg·m²`, `${(v.j * 1e4).toFixed(2)}×10⁻⁴ kg·m²`, "3.39×10⁻³ / 1.58×10⁻⁴"],
+  [ko ? "등속 토크" : "Uniform-speed torque", `${r0(h.tt[0])} N·mm`, `${r0(v.tt[0])} / ${r0(v.tt[1])} N·mm`, "120 / 900·830"],
+  [ko ? "가속 중 토크(최대)" : "Torque while accelerating (peak)", `${r0(h.tk[0])} N·mm`, `${r0(v.tk[0])} N·mm`, "4,730 / 1,100"],
+  [ko ? "실효 토크 Trms" : "RMS torque Trms", `${r0(hRms)} N·mm`, `${r0(vRms)} N·mm`, "1,305 / 743"],
+];
+const L = ko
+  ? {
+      title: "볼스크류 토크·모터 선정 계산기",
+      desc: "질량·속도·가속 시간·리드로 볼스크류 축 하중, 모터 회전수, 등속·가속·감속 토크, 부하 관성, 실효 토크를 계산합니다. 수평·수직, 감속비, THK 식과 예제.",
+      mount: "설치",
+      mounts: [["horizontal", "수평"], ["vertical", "수직"]],
+      m: "옮기는 질량 m (kg)",
+      mu: "안내면 마찰 계수 μ",
+      f: "안내면 저항(무부하) f (N)",
+      v: "최고 속도 V (m/s)",
+      t1: "가속·감속 시간 t1 (s)",
+      t2: "등속 시간 t2 (s)",
+      t4: "정지 시간 t4 (s)",
+      ph: "리드 Ph (mm)",
+      eta: "볼스크류 효율 η",
+      n: "감속비 (모터 n 바퀴 : 나사 1 바퀴)",
+      js: "나사축 관성 JS (kg·cm²)",
+      jm: "모터 관성 Jm (kg·cm²)",
+      tp: "예압 토크 (N·m, 없으면 0)",
+      nr: "모터 정격 회전수 (min⁻¹)",
+      res: "결과",
+      k: {
+        alpha: "가속도 α = V ÷ t1",
+        fa: "축 하중 Fa — 가속 · 등속 · 감속 (앞·위로)",
+        fb: "축 하중 Fa — 가속 · 등속 · 감속 (뒤·아래로)",
+        nm: "모터 최고 회전수 NM / 정격",
+        lead: "정격 회전수로 V 를 내는 최소 리드",
+        j: "모터 축에서 본 부하 관성 J / 모터 관성 대비",
+        t3: "가속 토크 T3 = (J + Jm) × ω′",
+        tt: "등속 토크 (앞·위 / 뒤·아래)",
+        tk: "가속 중 토크 (앞·위 / 뒤·아래)",
+        tg: "감속 중 토크 (앞·위 / 뒤·아래)",
+        ts: "정지 중 버티는 토크 (수직)",
+        tmax: "최대 토크",
+        rms: "실효 토크 Trms (한 사이클)",
+      },
+      example: "기본값은 THK 카탈로그의 «수평 고속 이송» 예제(테이블 60 + 공작물 20 kg, 1 m/s, 리드 40 mm, 직결)입니다. 나사축 관성은 카탈로그 치수표의 «kg·cm²/mm» 값에 나사 길이를 곱해 넣습니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식 (THK 카탈로그)",
+      formula: [
+        "수평: Fa = μ·m·g + f ± m·α (앞으로 가속 +, 감속 −; 뒤로 가면 부호 반대)",
+        "수직: 올라갈 때 Fa = m·g + f ± m·α,  내려갈 때 Fa = m·g − f ∓ m·α",
+        "등속 토크 T1 = Fa × Ph ÷ (2π × η) × A   (A = 1 ÷ 감속비)",
+        "모터 회전수 NM = V × 1000 × 60 ÷ Ph ÷ A",
+        "J = m × (Ph ÷ 2π)² × A² × 10⁻⁶ + JS × A²,   ω′ = 2π × NM ÷ (60 × t1)",
+        "가속 토크 T3 = (J + Jm) × ω′,  가속 중 = 등속 + T3,  감속 중 = 등속 − T3",
+        "실효 토크 Trms = √(Σ T² × t ÷ Σ t)",
+      ],
+      exTitle: "THK 선정 예제를 이 계산기로 (수평 고속 이송 / 수직 반송)",
+      exHead: ["항목", "수평 예제", "수직 예제", "카탈로그 값 (수평 / 수직)"],
+      exNote: "수평: 80 kg, μ 0.003, f 15 N, 1 m/s, 가속 0.15 s, 리드 40, 나사축 1.476 kg·cm², 모터 1×10⁻³ kg·m², 사이클 0.15·0.85·0.15·2.6 s. 수직: 50 kg(정지 중 40 kg), f 20 N, 0.3 m/s, 가속 0.2 s, 리드 10, 나사축 0.312 kg·cm², 모터 5×10⁻⁵ kg·m², 사이클 0.2·1.8·0.2 s 왕복 + 정지 7.6 s. 카탈로그는 g 와 중간값(각가속도 1,047 → 1,050 등)을 반올림해 적어 1 % 안쪽으로 다릅니다.",
+      lTitle: "읽는 법",
+      l: [
+        "최대 토크(대개 가속 중)는 서보 모터의 순간 최대 토크 안에, 실효 토크는 정격 토크 안에 있어야 합니다(THK 예제의 판단 기준).",
+        "수직 축은 내려갈 때 무게가 나사를 돌리려 하므로, 내려가며 멈출 때(감속) 토크가 커지고 정지 중에도 무게를 버티는 토크가 듭니다. 브레이크 달린 모터를 쓰는 이유입니다.",
+        "부하 관성 J 와 모터 관성의 비는 모터 제조사마다 권하는 값이 다릅니다. THK 예제는 «보통 모터 관성이 부하 관성의 1/10 이상» 이라고 적고 제조사마다 다르다고 덧붙입니다.",
+        "리드를 크게 하면 같은 속도에서 모터 회전수가 낮아지지만, 같은 힘에 드는 토크와 부하 관성(리드²)은 커집니다.",
+        "효율 0.9 는 THK 가 볼스크류에 주는 0.9~0.95 의 낮은 쪽입니다. 지지 베어링·오일 실 마찰(기타 토크)은 넣지 않았으니 여유를 둡니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["볼스크류 토크 공식은?", "축 하중 Fa(N) × 리드 Ph(mm) ÷ (2π × 효율 η) 가 등속 중 토크(N·mm)입니다. THK 수직 예제는 510 N × 10 mm ÷ (2π × 0.9) ≈ 900 N·mm(0.9 N·m)입니다. 가속 중에는 관성 토크 (J + Jm) × 각가속도를 더합니다."],
+        ["볼스크류 추력은 토크로 어떻게 구하나?", "식을 뒤집으면 추력 Fa = 2π × η × T ÷ Ph 입니다. 1 N·m(1000 N·mm), 리드 10 mm, 효율 0.9 면 약 565 N 입니다."],
+        ["필요한 모터 회전수는?", "NM = 속도(m/s) × 60 000 ÷ 리드(mm) 입니다. 1 m/s 에 리드 20 mm 면 3,000 min⁻¹, 리드 40 mm 면 1,500 min⁻¹ 입니다."],
+        ["수직 축은 왜 토크가 다르나?", "올라갈 때는 무게 + 저항을, 내려갈 때는 무게 − 저항을 나사가 받습니다. 내려가는 중 감속하면 무게와 관성이 같은 방향이라 토크가 커집니다(THK 수직 예제 1,030 N·mm)."],
+      ],
+      sNote: "모터 회전수를 인버터 주파수로 바꾸려면",
+      sLink: "인버터 주파수 ↔ 회전수 계산기",
+      eNote: "엔코더 펄스와 rpm 은",
+      eLink: "엔코더 펄스 ↔ rpm 계산기",
+      gNote: "식의 뜻과 THK 예제를 차례로 따라가려면",
+      gLink: "볼스크류 토크와 서보 모터 고르기 가이드",
+      srcTitle: "근거",
+      src: "식은 THK 종합 카탈로그 «Ball Screw»(515-1E) A15 «Calculating the Axial Load»(식 18~29)·«Considering the Rotational Torque»(식 45~49)·«Considering the Driving Motor»(식 52·53), 두 예제는 B15 «Example Ball Screw Selections»(THK 기술 자료 사이트 PDF)에서 옮겼고, 이 계산기가 그 값을 1 % 안쪽으로 다시 내는지 시험으로 확인했습니다. g = 9.806 65 m/s². 나사축·모터 관성, 허용 회전수·좌굴 하중 같은 다른 검토는 각 카탈로그를 보세요.",
+    }
+  : {
+      title: "Ball Screw Torque & Motor Sizing Calculator",
+      desc: "Ball screw axial load, motor speed, accel and steady torque, load inertia and RMS torque from mass, speed and lead. Horizontal or vertical, THK formula.",
+      mount: "Mounting",
+      mounts: [["horizontal", "Horizontal"], ["vertical", "Vertical"]],
+      m: "Moving mass m (kg)",
+      mu: "Guide friction coefficient μ",
+      f: "Guide resistance (no load) f (N)",
+      v: "Maximum speed V (m/s)",
+      t1: "Accel / decel time t1 (s)",
+      t2: "Constant-speed time t2 (s)",
+      t4: "Dwell time t4 (s)",
+      ph: "Lead Ph (mm)",
+      eta: "Ball screw efficiency η",
+      n: "Gear ratio (motor n turns : screw 1 turn)",
+      js: "Screw shaft inertia JS (kg·cm²)",
+      jm: "Motor inertia Jm (kg·cm²)",
+      tp: "Preload torque (N·m, 0 if none)",
+      nr: "Motor rated speed (min⁻¹)",
+      res: "Results",
+      k: {
+        alpha: "Acceleration α = V ÷ t1",
+        fa: "Axial load Fa — accel · constant · decel (forward / up)",
+        fb: "Axial load Fa — accel · constant · decel (back / down)",
+        nm: "Max motor speed NM / rated",
+        lead: "Minimum lead to reach V at rated speed",
+        j: "Load inertia at the motor J / ratio to motor inertia",
+        t3: "Acceleration torque T3 = (J + Jm) × ω′",
+        tt: "Constant-speed torque (forward·up / back·down)",
+        tk: "Torque while accelerating (forward·up / back·down)",
+        tg: "Torque while decelerating (forward·up / back·down)",
+        ts: "Holding torque at rest (vertical)",
+        tmax: "Peak torque",
+        rms: "RMS torque Trms (one cycle)",
+      },
+      example: "The defaults are THK's «high-speed transfer equipment» example (60 kg table + 20 kg work, 1 m/s, 40 mm lead, direct drive). For screw shaft inertia, multiply the catalogue's «kg·cm²/mm» value by the screw length.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas (THK catalogue)",
+      formula: [
+        "Horizontal: Fa = μ·m·g + f ± m·α (+ accelerating forward, − decelerating; signs flip going back)",
+        "Vertical: going up Fa = m·g + f ± m·α,  going down Fa = m·g − f ∓ m·α",
+        "Constant-speed torque T1 = Fa × Ph ÷ (2π × η) × A   (A = 1 ÷ gear ratio)",
+        "Motor speed NM = V × 1000 × 60 ÷ Ph ÷ A",
+        "J = m × (Ph ÷ 2π)² × A² × 10⁻⁶ + JS × A²,   ω′ = 2π × NM ÷ (60 × t1)",
+        "Acceleration torque T3 = (J + Jm) × ω′, accelerating = constant + T3, decelerating = constant − T3",
+        "RMS torque Trms = √(Σ T² × t ÷ Σ t)",
+      ],
+      exTitle: "THK selection examples with this calculator (high-speed transfer / vertical conveyance)",
+      exHead: ["Item", "Horizontal example", "Vertical example", "Catalogue (horizontal / vertical)"],
+      exNote: "Horizontal: 80 kg, μ 0.003, f 15 N, 1 m/s, 0.15 s acceleration, 40 mm lead, screw 1.476 kg·cm², motor 1×10⁻³ kg·m², cycle 0.15·0.85·0.15·2.6 s. Vertical: 50 kg (40 kg at rest), f 20 N, 0.3 m/s, 0.2 s acceleration, 10 mm lead, screw 0.312 kg·cm², motor 5×10⁻⁵ kg·m², cycle 0.2·1.8·0.2 s up and down + 7.6 s dwell. The catalogue rounds g and intermediate values (angular acceleration 1,047 → 1,050 and so on), so results differ by less than 1 %.",
+      lTitle: "How to read it",
+      l: [
+        "The peak torque (usually while accelerating) must be within the servo motor's instantaneous maximum torque, and the RMS torque within its rated torque (the criteria in THK's examples).",
+        "On a vertical axis the weight tries to turn the screw on the way down, so stopping on the way down (decelerating) needs more torque, and holding at rest needs torque too. That is why brake motors are used.",
+        "Recommended load-to-motor inertia ratios differ by motor maker. THK's example says the motor inertia normally needs to be at least one tenth of the load inertia, adding that the value varies by manufacturer.",
+        "A longer lead lowers motor speed for the same travel speed, but raises the torque for the same force and the load inertia (lead²).",
+        "Efficiency 0.9 is the low end of THK's 0.9–0.95 for ball screws. Support bearing and oil seal friction (other torque) is not included, so leave margin.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the ball screw torque formula?", "Axial load Fa (N) × lead Ph (mm) ÷ (2π × efficiency η) gives the constant-speed torque in N·mm. THK's vertical example: 510 N × 10 mm ÷ (2π × 0.9) ≈ 900 N·mm (0.9 N·m). While accelerating, add the inertia torque (J + Jm) × angular acceleration."],
+        ["How do I get ball screw thrust from torque?", "Rearranged: thrust Fa = 2π × η × T ÷ Ph. 1 N·m (1000 N·mm) with a 10 mm lead and efficiency 0.9 gives about 565 N."],
+        ["What motor speed do I need?", "NM = speed (m/s) × 60 000 ÷ lead (mm). 1 m/s with a 20 mm lead is 3,000 min⁻¹; with 40 mm it is 1,500 min⁻¹."],
+        ["Why is a vertical axis different?", "Going up the screw carries weight + resistance; going down, weight − resistance. Decelerating on the way down, weight and inertia act together and torque rises (1,030 N·mm in THK's vertical example)."],
+      ],
+      sNote: "To convert motor speed to drive frequency, use the",
+      sLink: "VFD Hz ↔ RPM Calculator",
+      eNote: "For encoder pulses and rpm, use the",
+      eLink: "Encoder Pulses ↔ RPM Calculator",
+      gNote: "To follow the formulas and THK's examples step by step, see the guide",
+      gLink: "Ball screw torque and servo motor sizing",
+      srcTitle: "Basis",
+      src: "Formulas are from THK's general catalogue «Ball Screw» (515-1E) A15 «Calculating the Axial Load» (equations 18–29), «Considering the Rotational Torque» (45–49) and «Considering the Driving Motor» (52, 53); the two examples are B15 «Example Ball Screw Selections» (PDFs on THK's technical site). Tests check that this calculator reproduces their values within 1 %. g = 9.806 65 m/s². For screw and motor inertia, permissible speed, buckling load and other checks, see each catalogue.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const fld = (id: string, label: string, val: string, mode = "decimal") => ({ id, label, val, mode });
+const FIELDS = [
+  fld("m", L.m, "80"),
+  fld("mu", L.mu, "0.003"),
+  fld("f", L.f, "15"),
+  fld("v", L.v, "1"),
+  fld("t1", L.t1, "0.15"),
+  fld("t2", L.t2, "0.85"),
+  fld("t4", L.t4, "2.6"),
+  fld("ph", L.ph, "40"),
+  fld("eta", L.eta, "0.9"),
+  fld("n", L.n, "1"),
+  fld("js", L.js, "1.476"),
+  fld("jm", L.jm, "10"),
+  fld("tp", L.tp, "0"),
+  fld("nr", L.nr, "3000", "numeric"),
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "볼스크류 토크 계산기 — 추력·모터 회전수·실효 토크 — PortDock" : "Ball Screw Torque Calculator: Thrust, Motor RPM, RMS — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="bs">
+      <div class="row">
+        <label class="fld">{L.mount}<select id="mount">{L.mounts.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
+        {FIELDS.map((x) => <label class="fld">{x.label}<input id={x.id} class="mono" value={x.val} inputmode={x.mode as "decimal"} spellcheck="false" autocomplete="off" /></label>)}
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.exTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.exHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{exRows.map((r) => <tr>{r.map((c, i) => <td class={i ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.exNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.sNote} <a href={url(lang, "tools/motor-speed/")}>{L.sLink}</a>. {L.eNote} <a href={url(lang, "tools/encoder/")}>{L.eLink}</a>. {L.gNote} <a href={url(lang, "guides/ball-screw-torque-motor/")}>{L.gLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { ballScrew, holdTorque, kgcm2, minLead, rmsTorque, type Mount } from "../lib/ballscrew";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("bs") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => (Math.abs(x) >= 1e5 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(4)));
+    // N·mm → «0.123 N·m (123 N·mm)»
+    const nm = (t: number) => `${p4(t / 1000)} N·m (${p4(t)} N·mm)`;
+    const nm2 = (a: number, b: number) => `${p4(a / 1000)} / ${p4(b / 1000)} N·m`;
+    const sci = (x: number) => (x === 0 ? "0" : x.toExponential(3).replace(/e([+-])(\d+)/, (_m, s, d) => `×10${s === "-" ? "⁻" : ""}${[...d].map((c) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[+c]).join("")}`));
+    function run() {
+      try {
+        const mount = $<HTMLSelectElement>("mount").value as Mount;
+        const ratio = num("n");
+        const a = 1 / ratio;
+        const p = { mount, m: num("m"), mu: num("mu"), f: num("f"), v: num("v"), t1: num("t1"), ph: num("ph"), eta: num("eta"), a, js: kgcm2(num("js")), jm: kgcm2(num("jm")), tp: num("tp") * 1000 };
+        const t2 = num("t2");
+        const t4 = num("t4");
+        const nr = num("nr");
+        if (!(ratio > 0) || !Number.isFinite(a) || !(t2 >= 0) || !(t4 >= 0) || !Number.isFinite(t2 + t4) || !(nr > 0) || !Number.isFinite(nr)) throw new RangeError("in");
+        const o = ballScrew(p);
+        const n0 = (x: number) => p4(x);
+        set("alpha", `${p4(o.alpha)} m/s²`);
+        set("fa", `${n0(o.fa[0])} · ${n0(o.fa[1])} · ${n0(o.fa[2])} N`);
+        set("fb", `${n0(o.fa[3])} · ${n0(o.fa[4])} · ${n0(o.fa[5])} N`);
+        set("nm", `${p4(o.nm)} / ${p4(nr)} min⁻¹${o.nm > nr ? (ko ? " — 정격 초과" : " — above rated") : ""}`);
+        set("lead", `${p4(minLead(p.v, nr, a))} mm`);
+        set("j", `${sci(o.j)} kg·m² / ${p.jm > 0 ? `${p4(o.j / p.jm)} ×` : "—"}`);
+        set("t3", nm(o.t3));
+        set("tt", nm2(o.tt[0], o.tt[1]));
+        set("tk", nm2(o.tk[0], o.tk[1]));
+        set("tg", nm2(o.tg[0], o.tg[1]));
+        const ts = mount === "vertical" ? holdTorque(p.m, p.f, p.ph, p.eta, a) + p.tp : 0;
+        set("ts", mount === "vertical" ? nm(ts) : "—");
+        const all = [...o.tk, ...o.tg, ...o.tt].map(Math.abs);
+        set("tmax", nm(Math.max(...all)));
+        const seg: [number, number][] =
+          mount === "horizontal"
+            ? [[o.tk[0], p.t1], [o.tt[0], t2], [o.tg[0], p.t1], [0, t4]]
+            : [[o.tk[0], p.t1], [o.tt[0], t2], [o.tg[0], p.t1], [o.tk[1], p.t1], [o.tt[1], t2], [o.tg[1], p.t1], [ts, t4]];
+        set("rms", nm(rmsTorque(seg)));
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko
+          ? "숫자를 확인하세요 — 질량·속도·가속 시간·리드·감속비·정격 회전수는 0 보다 크고, 효율은 0~1, 마찰 계수 0~1, 나머지는 0 이상"
+          : "Check the numbers — mass, speed, acceleration time, lead, gear ratio and rated speed above 0, efficiency 0–1, friction coefficient 0–1, the rest 0 or more";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

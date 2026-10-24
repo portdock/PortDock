@@ -193,7 +193,7 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
         {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>.
       </p>
       <p>
-        {ko ? "엔코더로 실제 회전수를 재려면" : "To measure the real speed with an encoder, use the"} <a href={url(lang, "tools/encoder/")}>{ko ? "엔코더 펄스 ↔ rpm 계산기" : "Encoder Pulses ↔ RPM Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+        {ko ? "엔코더로 실제 회전수를 재려면" : "To measure the real speed with an encoder, use the"} <a href={url(lang, "tools/encoder/")}>{ko ? "엔코더 펄스 ↔ rpm 계산기" : "Encoder Pulses ↔ RPM Calculator"}</a>{ko ? " 를 쓰세요." : "."} {ko ? "볼스크류 이송 속도에 필요한 모터 회전수·토크는" : "For the motor speed and torque a ball screw axis needs, use the"} <a href={url(lang, "tools/ball-screw/")}>{ko ? "볼스크류 토크·모터 선정 계산기" : "Ball Screw Torque & Motor Sizing Calculator"}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

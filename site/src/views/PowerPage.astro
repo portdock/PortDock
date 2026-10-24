@@ -199,7 +199,7 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
         ))
       }
       <p>
-        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>. {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>.
+        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>. {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>. {ko ? "히터 용량(kW)과 히터 전류는" : "For heater kW and heater current, use the"} <a href={url(lang, "tools/heater-power/")}>{ko ? "히터 용량 계산기" : "Heater Power Calculator"}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

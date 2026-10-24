@@ -36,7 +36,11 @@ export interface WebTool {
     | "tools/ct-ratio/"
     | "tools/parallel-resistor/"
     | "tools/reactance/"
-    | "tools/led-resistor/";
+    | "tools/led-resistor/"
+    | "tools/cylinder-force/"
+    | "tools/ball-screw/"
+    | "tools/heater-power/"
+    | "tools/op-amp-gain/";
   name: L;
   blurb: L;
 }
@@ -206,6 +210,26 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/led-resistor/",
     name: { ko: "LED 저항 계산기", en: "LED Resistor Calculator" },
     blurb: { ko: "전원·Vf·전류·직렬 개수 → 저항·전력, E12·E24 표준 값으로 바꿨을 때 전류. 5·12·24 V 표시등.", en: "Supply, Vf, current and LEDs in series → resistor and power, current with an E12/E24 value. 5, 12, 24 V indicators." },
+  },
+  {
+    path: "tools/cylinder-force/",
+    name: { ko: "공압 실린더 추력 계산기", en: "Pneumatic Cylinder Force Calculator" },
+    blurb: { ko: "보어·로드·압력 → 미는 쪽·당기는 쪽 이론 출력(N·kgf), 필요한 힘·부하율로 SMC 표의 보어 고르기.", en: "Bore, rod and pressure → extend and retract output (N, kgf); pick a bore from SMC's table for a force and load factor." },
+  },
+  {
+    path: "tools/ball-screw/",
+    name: { ko: "볼스크류 토크·모터 선정 계산기", en: "Ball Screw Torque & Motor Sizing Calculator" },
+    blurb: { ko: "질량·속도·가속 시간·리드 → 축 하중, 모터 회전수, 가속·등속·감속 토크, 부하 관성, 실효 토크. 수평·수직.", en: "Mass, speed, acceleration time and lead → axial load, motor speed, accel/constant/decel torque, load inertia, RMS torque. Horizontal or vertical." },
+  },
+  {
+    path: "tools/heater-power/",
+    name: { ko: "히터 용량 계산기 (kW·전류)", en: "Heater Power Calculator (kW, Amps)" },
+    blurb: { ko: "질량·비열·온도 상승·시간 → 히터 kW, 흐르는 유체 kW, 단상·3상 전류와 전압이 다를 때 출력.", en: "Mass, specific heat, temperature rise and time → heater kW, kW for flowing fluids, single/three-phase amps and output at other voltages." },
+  },
+  {
+    path: "tools/op-amp-gain/",
+    name: { ko: "op amp 증폭률 계산기", en: "Op Amp Gain Calculator" },
+    blurb: { ko: "비반전·반전·차동 이득과 dB, 출력 전압, 개루프 이득 오차, 대역폭, 원하는 이득의 표준 저항.", en: "Non-inverting, inverting and differential gain, dB, output voltage, open-loop gain error, bandwidth and standard resistors for a target gain." },
   },
 ];
 

@@ -223,7 +223,7 @@ const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleStr
         ))
       }
       <p>
-        {L.aNote} <a href={url(lang, "tools/4-20ma/")}>{L.aLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>.
+        {L.aNote} <a href={url(lang, "tools/4-20ma/")}>{L.aLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>. {ko ? "작은 신호를 ADC 범위로 키우는 증폭기는" : "To amplify a small signal to the ADC range, use the"} <a href={url(lang, "tools/op-amp-gain/")}>{ko ? "op amp 증폭률 계산기" : "Op Amp Gain Calculator"}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>

@@ -1,0 +1,384 @@
+---
+// 웹 도구: 히터 용량(kW)·가열 시간·흐르는 유체·히터 전류 (lib/heater.ts).
+// Tempco «Engineering Data» 16-2·16-5·16-6·16-9·16-10 의 식·예·표를 SI 계산으로 시험에서 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import { btuLbFToKJ, heatUpKw, heaterCurrent, lbPerGalToKgPerL } from "../lib/heater";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/heater-power/";
+const CP_W = btuLbFToKJ(1); // 물 1.0 Btu/lb·°F (Tempco)
+const RHO_W = lbPerGalToKgPerL(8.34); // 물 8.34 lb/gal (Tempco)
+const k2 = (x: number) => (x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.toFixed(2));
+// 물 L 를 1시간에 ΔT 만큼 — 안전율 없이(kW)
+const tRows = [50, 100, 200, 500, 1000].map((l) => [`${l} L`, ...[10, 20, 40, 60].map((dt) => k2(heatUpKw(l * RHO_W, CP_W, dt, 1)))]);
+// 전류 표 — 단상 220 V, 3상 380·440 V
+const iRows = [1, 3, 6, 10, 20, 30].map((kw) => [`${kw} kW`, ...[[220, 1], [380, 3], [440, 3]].map(([v, ph]) => heaterCurrent(kw * 1000, v, ph as 1 | 3).toFixed(1))]);
+const L = ko
+  ? {
+      title: "히터 용량 계산기 (kW·가열 시간·전류)",
+      desc: "질량·비열·온도 상승·가열 시간으로 히터 용량(kW)을 계산하고, 흐르는 물·기름을 데우는 kW, 단상·3상 히터 전류와 전압이 다를 때의 출력까지 봅니다.",
+      sys: "단위",
+      syss: [["si", "SI (kg·kJ/kg·K·°C·L/min)"], ["us", "미국 (lb·Btu/lb·°F·°F·gal/min)"]],
+      s1: "탱크·물체 데우기",
+      mass: { si: "질량 (kg — 물은 L ≈ kg)", us: "무게 (lb)" },
+      cp: { si: "비열 (kJ/kg·K)", us: "비열 (Btu/lb·°F)" },
+      preset: "비열 예",
+      presets: [["", "직접 입력"], ["water", "물 (Tempco 1.0 Btu/lb·°F)"], ["oil", "기름 평균 (Tempco 0.45 Btu/lb·°F)"]],
+      dt: { si: "온도 상승 ΔT (°C)", us: "온도 상승 ΔT (°F)" },
+      h: "가열 시간 (h)",
+      sf: "안전율 (×)",
+      have: "가진 히터 (kW, 시간 계산용)",
+      k1: { kwh: "필요한 열량 (안전율 없이)", kw: "히터 용량 (안전율 없이)", kwsf: "히터 용량 × 안전율", t: "가진 히터로 걸리는 시간 (손실 없이)" },
+      s2: "흐르는 유체 데우기 (순환·배관 히터)",
+      flow: { si: "유량 (L/min)", us: "유량 (gal/min)" },
+      rho: { si: "밀도 (kg/L)", us: "밀도 (lb/gal)" },
+      k2: { m: "질량 유량", kw: "히터 용량 (안전율 없이)", kwsf: "히터 용량 × 안전율" },
+      s3: "히터 전류·전압",
+      pw: "히터 정격 (kW)",
+      vv: "정격 전압 (V)",
+      ph: "상",
+      phs: [["1", "단상"], ["3", "3상 (선간 전압, 평형)"]],
+      va: "실제 걸리는 전압 (V)",
+      k3: { i: "정격 전류", pa: "실제 전압에서의 출력 (V² 비례)", ia: "실제 전압에서의 전류" },
+      example: "기본값(물 200 kg 을 40 °C 올리기, 1시간, 안전율 1.2)은 예시입니다. 비열·밀도는 데우는 물질의 자료를 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "열량 kWh = 질량(kg) × 비열(kJ/kg·K) × ΔT(K) ÷ 3600",
+        "히터 kW = 열량 kWh ÷ 가열 시간(h) × 안전율",
+        "흐르는 유체 kW = 유량(kg/s) × 비열 × ΔT × 안전율   (L/min × 밀도 ÷ 60 = kg/s)",
+        "미국 단위(Tempco): W = lb × Btu/lb·°F × °F ÷ (3.412 × h),  kW = gal/min × 60 × lb/gal × 비열 × °F ÷ 3412",
+        "전류: 단상 A = W ÷ V,  3상 A = W ÷ (√3 × V)",
+        "다른 전압의 출력 = 정격 W × (실제 V ÷ 정격 V)²",
+      ],
+      sfTitle: "안전율 (Tempco)",
+      sfText: "Tempco 는 계산에 안전율을 더하라고 하고, 꼼꼼히 계산한 작은 장치는 10 %, 보통은 20 %, 모르는 조건이 많은 큰 장치는 25~35 % 를 적습니다. 흐르는 유체는 관·자켓의 열 손실, 전압 변동, 히터 출력 허용차를 위해 20 % 를 권합니다. 가열 중·운전 중의 표면 손실(열린 수면, 보온 안 된 벽)은 이 계산에 들어 있지 않습니다 — 손실이 큰 장치는 따로 더합니다.",
+      tTitle: "물을 1시간에 데우는 kW (안전율 없이)",
+      tHead: ["물", "ΔT 10 °C", "20 °C", "40 °C", "60 °C"],
+      tNote: "물의 비열 1.0 Btu/lb·°F(4.187 kJ/kg·K)·밀도 8.34 lb/gal(0.999 kg/L)은 Tempco 자료의 값입니다. 2시간이면 절반, 안전율 1.2 면 1.2배입니다.",
+      iTitle: "히터 전류 (역률 1, 평형 3상)",
+      iHead: ["히터", "단상 220 V", "3상 380 V", "3상 440 V"],
+      iNote: "히터는 저항 부하라 W = V × A(단상)로 계산합니다. 3상은 세 상이 같은 저항일 때(평형)의 선 전류입니다.",
+      lTitle: "읽는 법",
+      l: [
+        "가열 시간을 짧게 잡을수록 용량이 커집니다. 30분에 데우려면 1시간의 두 배입니다.",
+        "탱크·용기·안에 든 부품도 같이 데워집니다. Tempco 는 물질, 용기, 안에 든 부품을 따로 계산해 더하라고 적습니다(같은 식, 각각의 무게·비열).",
+        "녹이거나 끓이는 경우(잠열)는 이 계산에 없습니다. 물을 증기로 만드는 데는 온도를 올리는 것과 별도로 큰 열이 듭니다.",
+        "240 V 히터를 220 V 에 쓰면 출력이 (220/240)² ≈ 84 % 로 줄어듭니다. 높은 전압에 쓰면 출력이 늘어 히터 수명이 줄 수 있습니다(Tempco 16-9).",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["히터 용량 계산 공식은?", "kW = 질량(kg) × 비열(kJ/kg·K) × 온도 상승(°C) ÷ (3600 × 가열 시간 h) 에 안전율을 곱합니다. 물 200 kg 을 1시간에 40 °C 올리면 200 × 4.187 × 40 ÷ 3600 ≈ 9.3 kW, 안전율 1.2 면 약 11.2 kW 입니다."],
+        ["물 100 L 를 데우는 데 몇 kW?", "1시간에 40 °C 올리려면 약 4.65 kW(안전율 없이)입니다. 위 표에서 L 와 ΔT 로 찾고, 시간이 2시간이면 절반으로 봅니다."],
+        ["3상 히터 전류는?", "A = W ÷ (√3 × 선간 전압) 입니다. 10 kW 를 3상 380 V 에 쓰면 약 15.2 A, 단상 220 V 면 약 45.5 A 입니다."],
+        ["흐르는 물을 데우는 히터 용량은?", "kW = 유량(kg/s) × 비열 × 온도 상승 입니다. Tempco 예: 물 5 gal/min(약 18.9 L/min)을 50 → 100 °F(27.8 °C) 올리면 안전율 20 % 포함 44 kW 입니다."],
+      ],
+      cNote: "히터 전선 굵기와 전압 강하는",
+      cLink: "전압 강하·전선 굵기 계산기",
+      tNote2: "온도 센서 값은",
+      tLink: "열전대·Pt100 온도 변환기",
+      gNote: "3상 전력·전류 관계는",
+      gLink: "3상 전력 계산기",
+      srcTitle: "근거",
+      src: "식·안전율·예는 히터 제조사 Tempco 의 «Engineering Data»(tempco.com 카탈로그 16-2 가열 열량, 16-5 물 가열 표, 16-6 액체·기체 kW 와 물 5 gal/min 예·순환 히터 유량표, 16-9 전압별 출력, 16-10 단상·3상 전류표)에서 옮겼고, 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 1 Btu/lb·°F = 4.1868 kJ/kg·K, 1 kWh = 3412.14 Btu(NIST SP 811). 물질별 비열·밀도는 그 물질의 자료를, 히터 전류·차단기·전선은 전기 설비 기준과 히터 사양을 보세요.",
+    }
+  : {
+      title: "Heater Power Calculator (kW, Heat-up Time, Amps)",
+      desc: "Heater kW from mass, specific heat, temperature rise and heat-up time, kW for flowing water or oil, single- and three-phase current, output at other voltages.",
+      sys: "Units",
+      syss: [["si", "SI (kg, kJ/kg·K, °C, L/min)"], ["us", "US (lb, Btu/lb·°F, °F, gal/min)"]],
+      s1: "Heating a tank or part",
+      mass: { si: "Mass (kg — water: L ≈ kg)", us: "Weight (lb)" },
+      cp: { si: "Specific heat (kJ/kg·K)", us: "Specific heat (Btu/lb·°F)" },
+      preset: "Specific heat preset",
+      presets: [["", "Enter manually"], ["water", "Water (Tempco 1.0 Btu/lb·°F)"], ["oil", "Oil, average (Tempco 0.45 Btu/lb·°F)"]],
+      dt: { si: "Temperature rise ΔT (°C)", us: "Temperature rise ΔT (°F)" },
+      h: "Heat-up time (h)",
+      sf: "Safety factor (×)",
+      have: "Heater you have (kW, for time)",
+      k1: { kwh: "Heat needed (no safety factor)", kw: "Heater power (no safety factor)", kwsf: "Heater power × safety factor", t: "Time with the heater you have (no losses)" },
+      s2: "Heating a flowing fluid (circulation / inline heater)",
+      flow: { si: "Flow (L/min)", us: "Flow (gal/min)" },
+      rho: { si: "Density (kg/L)", us: "Density (lb/gal)" },
+      k2: { m: "Mass flow", kw: "Heater power (no safety factor)", kwsf: "Heater power × safety factor" },
+      s3: "Heater current and voltage",
+      pw: "Heater rating (kW)",
+      vv: "Rated voltage (V)",
+      ph: "Phase",
+      phs: [["1", "Single-phase"], ["3", "Three-phase (line voltage, balanced)"]],
+      va: "Applied voltage (V)",
+      k3: { i: "Rated current", pa: "Output at the applied voltage (∝ V²)", ia: "Current at the applied voltage" },
+      example: "The defaults (200 kg of water raised 40 °C in 1 hour, safety factor 1.2) are an example. Enter the specific heat and density of the material you heat.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Heat kWh = mass (kg) × specific heat (kJ/kg·K) × ΔT (K) ÷ 3600",
+        "Heater kW = heat kWh ÷ heat-up time (h) × safety factor",
+        "Flowing fluid kW = flow (kg/s) × specific heat × ΔT × safety factor   (L/min × density ÷ 60 = kg/s)",
+        "US units (Tempco): W = lb × Btu/lb·°F × °F ÷ (3.412 × h),  kW = gal/min × 60 × lb/gal × sp. heat × °F ÷ 3412",
+        "Current: single-phase A = W ÷ V,  three-phase A = W ÷ (√3 × V)",
+        "Output at another voltage = rated W × (applied V ÷ rated V)²",
+      ],
+      sfTitle: "Safety factor (Tempco)",
+      sfText: "Tempco says to add a safety factor: 10 % for small, closely calculated systems, 20 % as the common figure, and 25–35 % for larger systems with many unknowns. For flowing fluids it recommends 20 % for heat losses to jacket and piping, voltage variation and wattage tolerance. Surface losses during heat-up and operation (open liquid surfaces, uninsulated walls) are not in this calculation — add them for systems with large losses.",
+      tTitle: "kW to heat water in 1 hour (no safety factor)",
+      tHead: ["Water", "ΔT 10 °C", "20 °C", "40 °C", "60 °C"],
+      tNote: "Water specific heat 1.0 Btu/lb·°F (4.187 kJ/kg·K) and density 8.34 lb/gal (0.999 kg/L) are Tempco's figures. Two hours halves the kW; safety factor 1.2 multiplies it by 1.2.",
+      iTitle: "Heater current (power factor 1, balanced three-phase)",
+      iHead: ["Heater", "1-phase 220 V", "3-phase 380 V", "3-phase 440 V"],
+      iNote: "Heaters are resistive, so W = V × A (single-phase). Three-phase values are line currents with equal resistance on each phase (balanced).",
+      lTitle: "How to read it",
+      l: [
+        "The shorter the heat-up time, the bigger the heater. Heating in 30 minutes takes twice the kW of 1 hour.",
+        "The tank, container and parts inside heat up too. Tempco calculates the material, the container and the hardware separately and adds them (same formula, each with its own weight and specific heat).",
+        "Melting or boiling (latent heat) is not in this calculation. Turning water into steam takes a lot of heat on top of raising its temperature.",
+        "A 240 V heater on 220 V gives (220/240)² ≈ 84 % of its rating. On a higher voltage the output rises and heater life can suffer (Tempco 16-9).",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the heater kW formula?", "kW = mass (kg) × specific heat (kJ/kg·K) × temperature rise (°C) ÷ (3600 × heat-up hours), times a safety factor. Raising 200 kg of water 40 °C in 1 hour: 200 × 4.187 × 40 ÷ 3600 ≈ 9.3 kW, about 11.2 kW with a 1.2 safety factor."],
+        ["How many kW to heat 100 gallons of water?", "Tempco's water table (10 % safety factor included) gives 26.9 kW to raise 100 gallons by 100 °F in one hour. Its equation 2 is kW = gallons × °F ÷ (372 × hours)."],
+        ["What is the current of a three-phase heater?", "A = W ÷ (√3 × line voltage). 10 kW on 480 V three-phase is about 12.0 A; on 240 V three-phase about 24.1 A, and on 240 V single-phase 41.7 A (Tempco's table)."],
+        ["How do I size a heater for flowing water?", "kW = flow (kg/s) × specific heat × temperature rise. Tempco's example: 5 gal/min of water from 50 to 100 °F with a 20 % safety factor needs 44 kW."],
+      ],
+      cNote: "For heater cable size and voltage drop, use the",
+      cLink: "Voltage Drop & Wire Size Calculator",
+      tNote2: "For temperature sensor values, use the",
+      tLink: "Thermocouple & Pt100 Converter",
+      gNote: "For three-phase power and current, use the",
+      gLink: "Three-Phase Power Calculator",
+      srcTitle: "Basis",
+      src: "Formulas, safety factors and examples are from heater maker Tempco's «Engineering Data» (tempco.com catalogue pages 16-2 heat requirements, 16-5 water heating table, 16-6 liquids and gases with the 5 gal/min water example and circulation heater flow chart, 16-9 wattage at other voltages, 16-10 single- and three-phase amperage table). Tests check that this calculator reproduces them. 1 Btu/lb·°F = 4.1868 kJ/kg·K and 1 kWh = 3412.14 Btu (NIST SP 811). Use your material's own specific heat and density, and electrical codes and the heater's specification for current, breakers and wiring.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "히터 용량 계산기 — kW·가열 시간·3상 히터 전류 — PortDock" : "Heater kW Calculator: Heat-up Time, Flow, 3-Phase Amps — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ht">
+      <div class="row">
+        <label class="fld">{L.sys}<select id="sys">{L.syss.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
+      </div>
+      <h2>{L.s1}</h2>
+      <div class="row">
+        <label class="fld"><span data-si={L.mass.si} data-us={L.mass.us}>{L.mass.si}</span><input id="mass" class="mono" value="200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.preset}<select id="preset">{L.presets.map(([v, s]) => <option value={v} selected={v === "water"}>{s}</option>)}</select></label>
+        <label class="fld"><span data-si={L.cp.si} data-us={L.cp.us}>{L.cp.si}</span><input id="cp" class="mono" value="4.1868" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld"><span data-si={L.dt.si} data-us={L.dt.us}>{L.dt.si}</span><input id="dt" class="mono" value="40" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.h}<input id="h" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.sf}<input id="sf" class="mono" value="1.2" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.have}<input id="have" class="mono" value="6" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err1" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k1).map(([id, name]) => <tr><td>{name}</td><td data-k1={id}></td></tr>)}</tbody></table>
+      </div>
+      <h2>{L.s2}</h2>
+      <div class="row">
+        <label class="fld"><span data-si={L.flow.si} data-us={L.flow.us}>{L.flow.si}</span><input id="flow" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld"><span data-si={L.rho.si} data-us={L.rho.us}>{L.rho.si}</span><input id="rho" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld"><span data-si={L.dt.si} data-us={L.dt.us}>{L.dt.si}</span><input id="dt2" class="mono" value="30" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="note">{ko ? "비열·안전율은 위 칸 값을 씁니다." : "Specific heat and safety factor come from the fields above."}</p>
+      <p class="err" id="err2" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k2).map(([id, name]) => <tr><td>{name}</td><td data-k2={id}></td></tr>)}</tbody></table>
+      </div>
+      <h2>{L.s3}</h2>
+      <div class="row">
+        <label class="fld">{L.pw}<input id="pw" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.vv}<input id="vv" class="mono" value="380" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ph}<select id="ph">{L.phs.map(([v, s]) => <option value={v} selected={v === "3"}>{s}</option>)}</select></label>
+        <label class="fld">{L.va}<input id="va" class="mono" value="380" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err3" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k3).map(([id, name]) => <tr><td>{name}</td><td data-k3={id}></td></tr>)}</tbody></table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.sfTitle}</h2>
+      <p>{L.sfText}</p>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.iTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.iHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{iRows.map((r) => <tr>{r.map((c, i) => <td class="mono">{i ? `${c} A` : c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.iNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.cNote} <a href={url(lang, "tools/voltage-drop/")}>{L.cLink}</a>. {L.gNote} <a href={url(lang, "tools/three-phase-power/")}>{L.gLink}</a>. {L.tNote2} <a href={url(lang, "tools/temperature/")}>{L.tLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { btuLbFToKJ, dFtoK, flowKw, galToL, heatKwh, heatUpHours, heatUpKw, heaterCurrent, lbPerGalToKgPerL, lbToKg, lpmToKgs, wattsAt, type Phase } from "../lib/heater";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ht") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (attr: string, k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[${attr}="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const clear = (attr: string) => {
+      for (const td of form.querySelectorAll<HTMLElement>(`td[${attr}]`)) td.textContent = "";
+    };
+    const p4 = (x: number) => (Math.abs(x) >= 1e5 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(4)));
+    const kw = (x: number) => (x >= 1 ? `${p4(x)} kW` : `${p4(x * 1000)} W`);
+    // 물 1.0 · 기름 평균 0.45 Btu/lb·°F (Tempco)
+    const PRE: Record<string, number> = { water: 1, oil: 0.45 };
+    let sys = "si";
+    function relabel() {
+      for (const s of form.querySelectorAll<HTMLElement>("span[data-si]")) s.textContent = (sys === "us" ? s.dataset.us : s.dataset.si) ?? "";
+    }
+    function applyPreset() {
+      const p = $<HTMLSelectElement>("preset").value;
+      if (!(p in PRE)) return;
+      $("cp").value = String(sys === "us" ? PRE[p] : +btuLbFToKJ(PRE[p]).toFixed(4));
+    }
+    // 입력을 SI(kg·kJ/kg·K·K·kg/L·L/min)로
+    const kgOf = (v: number) => (sys === "us" ? lbToKg(v) : v);
+    const cpOf = (v: number) => (sys === "us" ? btuLbFToKJ(v) : v);
+    const dtOf = (v: number) => (sys === "us" ? dFtoK(v) : v);
+    const rhoOf = (v: number) => (sys === "us" ? lbPerGalToKgPerL(v) : v);
+    const lpmOf = (v: number) => (sys === "us" ? galToL(v) : v);
+    function run() {
+      const cp = cpOf(num("cp"));
+      const sf = num("sf");
+      try {
+        const m = kgOf(num("mass"));
+        const dt = dtOf(num("dt"));
+        const h = num("h");
+        set("data-k1", "kwh", `${p4(heatKwh(m, cp, dt))} kWh`);
+        set("data-k1", "kw", kw(heatUpKw(m, cp, dt, h)));
+        set("data-k1", "kwsf", kw(heatUpKw(m, cp, dt, h, sf)));
+        const have = num("have");
+        const t = heatUpHours(m, cp, dt, have);
+        set("data-k1", "t", t >= 1 ? `${p4(t)} h` : `${p4(t * 60)} min`);
+        $("err1").textContent = "";
+      } catch {
+        $("err1").textContent = ko ? "숫자를 확인하세요 — 질량·비열·온도 상승·시간·가진 히터는 0 보다 크고, 안전율은 1~10" : "Check the numbers — mass, specific heat, temperature rise, time and heater above 0, safety factor 1–10";
+        clear("data-k1");
+      }
+      try {
+        const ms = lpmToKgs(lpmOf(num("flow")), rhoOf(num("rho")));
+        const dt = dtOf(num("dt2"));
+        set("data-k2", "m", `${p4(ms * 60)} kg/min`);
+        set("data-k2", "kw", kw(flowKw(ms, cp, dt)));
+        set("data-k2", "kwsf", kw(flowKw(ms, cp, dt, sf)));
+        $("err2").textContent = "";
+      } catch {
+        $("err2").textContent = ko ? "숫자를 확인하세요 — 유량·밀도·온도 상승과 위의 비열은 0 보다 크고, 안전율은 1~10" : "Check the numbers — flow, density, temperature rise and the specific heat above must be above 0, safety factor 1–10";
+        clear("data-k2");
+      }
+      try {
+        const w = num("pw") * 1000;
+        const v = num("vv");
+        const ph = Number($<HTMLSelectElement>("ph").value) as Phase;
+        const va = num("va");
+        set("data-k3", "i", `${p4(heaterCurrent(w, v, ph))} A`);
+        const wa = wattsAt(w, v, va);
+        set("data-k3", "pa", `${kw(wa / 1000)} (${p4((wa / w) * 100)} %)`);
+        set("data-k3", "ia", `${p4(heaterCurrent(wa, va, ph))} A`);
+        $("err3").textContent = "";
+      } catch {
+        $("err3").textContent = ko ? "숫자를 확인하세요 — 정격·전압은 0 보다 커야 합니다" : "Check the numbers — rating and voltages must be above 0";
+        clear("data-k3");
+      }
+    }
+    // 단위를 바꾸면 이미 넣은 값도 같은 양으로 바꿔 둔다(빈칸·잘못된 값은 그대로)
+    function convertInputs(to: string) {
+      const kgPerLb = lbToKg(1);
+      const lPerGal = galToL(1);
+      const rhoF = lbPerGalToKgPerL(1); // 1 lb/gal → kg/L
+      const cpF = btuLbFToKJ(1);
+      const conv: [string, number][] = [
+        ["mass", kgPerLb],
+        ["cp", cpF],
+        ["dt", 5 / 9],
+        ["dt2", 5 / 9],
+        ["flow", lPerGal],
+        ["rho", rhoF],
+      ];
+      for (const [id, f] of conv) {
+        const v = num(id);
+        if (!Number.isFinite(v)) continue;
+        const x = to === "us" ? v / f : v * f;
+        $(id).value = String(+x.toPrecision(5));
+      }
+    }
+    $<HTMLSelectElement>("sys").addEventListener("change", () => {
+      const to = $<HTMLSelectElement>("sys").value;
+      if (to === sys) return;
+      const keep = $<HTMLSelectElement>("preset").value;
+      convertInputs(to);
+      sys = to;
+      relabel();
+      $<HTMLSelectElement>("preset").value = keep;
+      applyPreset();
+    });
+    $<HTMLSelectElement>("preset").addEventListener("change", applyPreset);
+    $("cp").addEventListener("input", () => {
+      $<HTMLSelectElement>("preset").value = "";
+    });
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

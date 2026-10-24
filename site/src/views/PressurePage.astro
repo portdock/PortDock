@@ -210,7 +210,7 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
         ))
       }
       <p>
-        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>.
+        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>. {ko ? "공압 실린더가 그 압력에서 내는 힘은" : "For the force a pneumatic cylinder delivers at that pressure, use the"} <a href={url(lang, "tools/cylinder-force/")}>{ko ? "공압 실린더 추력 계산기" : "Pneumatic Cylinder Force Calculator"}</a>.
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
