@@ -64,6 +64,10 @@
       "en": "Acceleration ACC (9001) and deceleration dEC (9002) are not included: the variables manual (p.39) gives a 0.1 s unit (factory 30 = 3 s, depending on Inr), while the Modbus manual examples (p.12, p.14) call W9001 = 16#000D «ACC = 13 s» and 20/30 «20 s/30 s», so the scaling disagrees."
     },
     {
+      "ko": "가상 아날로그 입력 AIV1 은 넣지 않았다 — 변수 매뉴얼에 단위 % 만 있고 배율(1 % 당 값)이 적혀 있지 않다.",
+      "en": "The virtual analog input AIV1 is not included: the variables manual gives only the unit % without a scale (value per 1 %)."
+    },
+    {
       "ko": "CMD 로 운전하려면 접근 수준 LAC = L3 에서 제어 채널을 Modbus 로 정하고 상태 기계(0006h → 0007h → 000Fh)를 따른다. L1·L2 에서는 전원 투입 때 바로 «운전 가능» 이 된다 (p.11).",
       "en": "To run by CMD set access level LAC = L3, select Modbus as the control channel and follow the state machine (0006h -> 0007h -> 000Fh). In L1/L2 the drive goes to «Operation enabled» at power up (p.11)."
     }
