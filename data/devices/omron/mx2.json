@@ -1,0 +1,2426 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "omron/mx2",
+  "manufacturer": {
+    "ko": "오므론",
+    "en": "OMRON"
+  },
+  "model": "MX2",
+  "models": [
+    "3G3MX2"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "오므론 MX2 인버터 (내장 RS-485 Modbus RTU)",
+    "en": "OMRON MX2 inverter (built-in RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "내장 RS-485 Modbus RTU. 코일 0001h~(운전·입력·상태), 보유 레지스터 0001h~(지령·트립 이력), 1001h~(d 모니터), 1103h~(F·A·C 파라미터). 매뉴얼 번호 − 1 = 프레임 주소",
+    "en": "Built-in RS-485 Modbus RTU. Coils from 0001h (run, inputs, status), holding registers from 0001h (commands, trip history), 1001h (d monitors), 1103h (F/A/C parameters). Manual number - 1 = frame address"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 16,
+    "order": "ABCD",
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼의 코일·레지스터 번호는 1 기준이고 «프레임 주소는 번호보다 1 작다» (p.302~309 주석). 예: 코일 읽기(p.302) 08 01 00 06 00 05 1C 91 → 코일 0007h~(입력 [1]~), 코일 쓰기(p.304) 08 05 00 00 FF 00 8C A3 → 코일 0001h(운전 지령), 레지스터 읽기(p.303) 01 03 00 11 00 06 95 CD → 0012h(트립 모니터 1 요인)~, FC17 예(p.309) 01 17 10 00 00 02 00 00 00 02 04 00 00 13 88 F4 86 → 1001h(d001) 읽기·0001h(F001)에 5000 쓰기. 이 프레임과 코일 읽기 응답(08 01 01 05 92 17)·코일 여러 개 쓰기(08 0F 00 06 00 05 02 17 00 83 EA, 응답 … 75 50)·FC17 응답(01 17 04 00 00 13 88 F4 71)의 CRC 는 계산값과 같다. 레지스터 읽기 응답의 CRC 는 AF 6D 로 적혀 있으나 계산값은 B4 7A — 주소와는 무관.",
+        "en": "Addressing: coil and register numbers in the manual are 1-based and «the address on the Modbus line is 1 less than the number» (notes, pp.302-309). Examples: read coils (p.302) 08 01 00 06 00 05 1C 91 → coils from 0007h (input [1]); write coil (p.304) 08 05 00 00 FF 00 8C A3 → coil 0001h (run command); read registers (p.303) 01 03 00 11 00 06 95 CD → from 0012h (fault monitor 1 factor); FC17 (p.309) 01 17 10 00 00 02 00 00 00 02 04 00 00 13 88 F4 86 → read 1001h (d001), write 5000 to 0001h (F001). CRCs of these frames and of the coil read response (08 01 01 05 92 17), write coils (08 0F 00 06 00 05 02 17 00 83 EA, response ... 75 50) and FC17 response (01 17 04 00 00 13 88 F4 71) match calculation. The register read response CRC is printed AF 6D but computes to B4 7A; this does not affect addressing."
+      },
+      {
+        "ko": "함수 코드 01h·03h·05h·06h·08h·0Fh·10h·17h(읽기·쓰기 함께). 레지스터는 한 번에 16개, 코일은 32개까지 (p.299). 02h·04h 없음 — 읽기 전용 상태도 코일(01h)로 읽는다.",
+        "en": "Function codes 01h, 03h, 05h, 06h, 08h, 0Fh, 10h and 17h (read/write). Up to 16 registers or 32 coils per message (p.299). No 02h/04h; read-only status is read as coils (01h)."
+      },
+      {
+        "ko": "출하값: C071 05 = 9600 bps, C072 국번 1, C074 00 = 패리티 없음, C075 1 = 정지 1비트 (p.366). 바꾼 뒤 전원을 다시 넣거나 RS 단자를 켰다 끈다 (p.297). 종단 200 Ω 은 DIP 스위치로 (p.296).",
+        "en": "Defaults: C071 05 = 9600 bps, C072 station 1, C074 00 = no parity, C075 1 = 1 stop bit (p.366). After changing, cycle power or toggle the RS terminal (p.297). The 200 Ω termination is set by DIP switch (p.296)."
+      },
+      {
+        "ko": "32비트 값은 (high) 번호가 앞, (low) 번호가 뒤 — 상위 워드 먼저(ABCD). P400(빅/리틀 엔디언 선택)은 자유 매핑(P200 = 01)에 쓰는 값.",
+        "en": "32-bit values have the (high) number first and the (low) number next, i.e. high word first (ABCD). P400 (big/little endian) applies to free mapping (P200 = 01)."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "ko": "쪽 번호는 인쇄 쪽(PDF 쪽 = 인쇄 + 26).",
+      "en": "Page numbers are printed pages (PDF page = printed + 26)."
+    },
+    {
+      "ko": "통신으로 운전·주파수를 주려면 A002 = 03, A001 = 03 (p.297).",
+      "en": "To run and set frequency by communication set A002 = 03 and A001 = 03 (p.297)."
+    },
+    {
+      "ko": "트립 모니터의 주파수(0014h·0015h)·전류(0016h)는 넣지 않았다 — 표(p.319)는 0.01 Hz 32비트·0.01 A 인데, 같은 매뉴얼의 읽기 예(p.303)는 0014h = 0063h 를 9.9 Hz(0.1 Hz 단위, 상위 워드 자리), 0016h = 001Eh 를 3.0 A(0.1 A 단위)로 적어 어긋난다. 같은 이유로 트립 2~6 의 주파수·전류도 뺐다.",
+      "en": "Fault monitor frequency (0014h/0015h) and current (0016h) are not included: the table (p.319) gives 32-bit 0.01 Hz and 0.01 A, but the read example in the same manual (p.303) shows 0014h = 0063h as 9.9 Hz (0.1 Hz units, in the high word) and 0016h = 001Eh as 3.0 A (0.1 A units). Frequency and current of trips 2-6 are left out for the same reason."
+    },
+    {
+      "ko": "가속 시간 1(F002)은 넣지 않았다 — 표(p.324)는 1103h·1104h 인데 FC10 예(p.308)는 «1014h·1015h» 에 쓴다(프레임 10 13). 다단속 0(A020)도 표(p.324)는 1216h·1217h, 0.01 Hz 인데 FC06 예(p.305)는 «1029h», 0.1 Hz 로 적어 뺐다. 출력 전류 1003h(d002)는 한 칸(16비트)인데 범위가 0~999900 이라 넣지 않았다.",
+      "en": "Acceleration time 1 (F002) is not included: the table (p.324) gives 1103h/1104h but the FC10 example (p.308) writes «1014h/1015h» (frame 10 13). Multi-speed 0 (A020) is also left out: the table (p.324) gives 1216h/1217h at 0.01 Hz but the FC06 example (p.305) says «1029h» at 0.1 Hz. Output current 1003h (d002) is a single 16-bit register with a range of 0-999900, so it is left out."
+    },
+    {
+      "ko": "통신으로 쓴 값은 RAM 에만 있다. 남기려면 0900h 에 1 을 쓰거나(ENTER), 쓰기 바로 전에 0902h 에 1 을 쓴다 (p.311).",
+      "en": "Values written by communication are in RAM only. To keep them write 1 to 0900h (ENTER), or write 1 to 0902h just before a write (p.311)."
+    }
+  ],
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "0001h",
+      "type": "bit",
+      "name": {
+        "ko": "운전 지령",
+        "en": "Operation command"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = 운전, 0 = 정지. A002 = 03 일 때 유효",
+        "en": "1 = run, 0 = stop. Valid when A002 = 03"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "0002h",
+      "type": "bit",
+      "name": {
+        "ko": "회전 방향 지령",
+        "en": "Rotation direction command"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = 역회전, 0 = 정회전. A002 = 03 일 때 유효",
+        "en": "1 = reverse, 0 = forward. Valid when A002 = 03"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "0003h",
+      "type": "bit",
+      "name": {
+        "ko": "외부 트립(EXT)",
+        "en": "External trip (EXT)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = 트립",
+        "en": "1 = trip"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "0004h",
+      "type": "bit",
+      "name": {
+        "ko": "트립 리셋(RS)",
+        "en": "Trip reset (RS)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = 리셋",
+        "en": "1 = reset"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "0007h",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [1]",
+        "en": "Intelligent input terminal [1]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 7,
+      "manualAddress": "0008h",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [2]",
+        "en": "Intelligent input terminal [2]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 8,
+      "manualAddress": "0009h",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [3]",
+        "en": "Intelligent input terminal [3]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 9,
+      "manualAddress": "000Ah",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [4]",
+        "en": "Intelligent input terminal [4]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 10,
+      "manualAddress": "000Bh",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [5]",
+        "en": "Intelligent input terminal [5]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 11,
+      "manualAddress": "000Ch",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [6]",
+        "en": "Intelligent input terminal [6]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 12,
+      "manualAddress": "000Dh",
+      "type": "bit",
+      "name": {
+        "ko": "다기능 입력 단자 [7]",
+        "en": "Intelligent input terminal [7]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. 제어 단자대의 입력이 코일보다 우선",
+        "en": "1 = ON. The terminal block input has priority over the coil"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 14,
+      "manualAddress": "000Fh",
+      "type": "bit",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operation status"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 운전, 0 = 정지(d003 와 연동)",
+        "en": "1 = run, 0 = stop (interlocked to d003)"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 15,
+      "manualAddress": "0010h",
+      "type": "bit",
+      "name": {
+        "ko": "회전 방향",
+        "en": "Rotation direction"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 역회전, 0 = 정회전(d003 와 연동)",
+        "en": "1 = reverse, 0 = forward (interlocked to d003)"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 16,
+      "manualAddress": "0011h",
+      "type": "bit",
+      "name": {
+        "ko": "인버터 준비",
+        "en": "Inverter ready"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 준비, 0 = 준비 안 됨",
+        "en": "1 = ready, 0 = not ready"
+      },
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 18,
+      "manualAddress": "0013h",
+      "type": "bit",
+      "name": {
+        "ko": "RUN(운전 중)",
+        "en": "RUN (running)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 19,
+      "manualAddress": "0014h",
+      "type": "bit",
+      "name": {
+        "ko": "FA1(정속 도달)",
+        "en": "FA1 (constant-speed reached)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 20,
+      "manualAddress": "0015h",
+      "type": "bit",
+      "name": {
+        "ko": "FA2(설정 주파수 이상)",
+        "en": "FA2 (set frequency overreached)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 21,
+      "manualAddress": "0016h",
+      "type": "bit",
+      "name": {
+        "ko": "OL(과부하 예고 1)",
+        "en": "OL (overload advance notice 1)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 23,
+      "manualAddress": "0018h",
+      "type": "bit",
+      "name": {
+        "ko": "AL(알람 신호)",
+        "en": "AL (alarm signal)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 25,
+      "manualAddress": "001Ah",
+      "type": "bit",
+      "name": {
+        "ko": "OTQ(과토크)",
+        "en": "OTQ (over-torque)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 27,
+      "manualAddress": "001Ch",
+      "type": "bit",
+      "name": {
+        "ko": "UV(저전압)",
+        "en": "UV (undervoltage)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 39,
+      "manualAddress": "0028h",
+      "type": "bit",
+      "name": {
+        "ko": "ZS(0 Hz 검출)",
+        "en": "ZS (0 Hz detection signal)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.316",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 57,
+      "manualAddress": "003Ah",
+      "type": "bit",
+      "name": {
+        "ko": "WAC(콘덴서 수명 경고)",
+        "en": "WAC (capacitor life warning)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 58,
+      "manualAddress": "003Bh",
+      "type": "bit",
+      "name": {
+        "ko": "WAF(냉각팬 속도 저하)",
+        "en": "WAF (cooling-fan speed drop)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 68,
+      "manualAddress": "0045h",
+      "type": "bit",
+      "name": {
+        "ko": "IRDY(인버터 준비)",
+        "en": "IRDY (inverter ready)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 69,
+      "manualAddress": "0046h",
+      "type": "bit",
+      "name": {
+        "ko": "FWR(정회전 중)",
+        "en": "FWR (forward rotation)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 70,
+      "manualAddress": "0047h",
+      "type": "bit",
+      "name": {
+        "ko": "RVR(역회전 중)",
+        "en": "RVR (reverse rotation)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 71,
+      "manualAddress": "0048h",
+      "type": "bit",
+      "name": {
+        "ko": "MJA(중고장)",
+        "en": "MJA (major failure)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 72,
+      "manualAddress": "0049h",
+      "type": "bit",
+      "name": {
+        "ko": "데이터 쓰는 중",
+        "en": "Data writing in progress"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 쓰는 중(ENTER 진행 확인용), 0 = 정상",
+        "en": "1 = writing in progress (use to watch ENTER), 0 = normal"
+      },
+      "ref": "p.317, p.311",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 73,
+      "manualAddress": "004Ah",
+      "type": "bit",
+      "name": {
+        "ko": "CRC 오류",
+        "en": "CRC error"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오류 검출. 오류 리셋 지령까지 남는다",
+        "en": "1 = error detected. Kept until an error reset command"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 74,
+      "manualAddress": "004Bh",
+      "type": "bit",
+      "name": {
+        "ko": "오버런",
+        "en": "Overrun"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오류 검출. 오류 리셋 지령까지 남는다",
+        "en": "1 = error detected. Kept until an error reset command"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 75,
+      "manualAddress": "004Ch",
+      "type": "bit",
+      "name": {
+        "ko": "프레이밍 오류",
+        "en": "Framing error"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오류 검출. 오류 리셋 지령까지 남는다",
+        "en": "1 = error detected. Kept until an error reset command"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 76,
+      "manualAddress": "004Dh",
+      "type": "bit",
+      "name": {
+        "ko": "패리티 오류",
+        "en": "Parity error"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오류 검출. 오류 리셋 지령까지 남는다",
+        "en": "1 = error detected. Kept until an error reset command"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 77,
+      "manualAddress": "004Eh",
+      "type": "bit",
+      "name": {
+        "ko": "합계 검사 오류",
+        "en": "Sum check error"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오류 검출. 오류 리셋 지령까지 남는다",
+        "en": "1 = error detected. Kept until an error reset command"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 83,
+      "manualAddress": "0054h",
+      "type": "bit",
+      "name": {
+        "ko": "FREF(주파수 지령 소스)",
+        "en": "FREF (FQ command source)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오퍼레이터, 0 = 그 밖",
+        "en": "1 = operator, 0 = others"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 84,
+      "manualAddress": "0055h",
+      "type": "bit",
+      "name": {
+        "ko": "REF(운전 지령 소스)",
+        "en": "REF (RUN command source)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = 오퍼레이터, 0 = 그 밖",
+        "en": "1 = operator, 0 = others"
+      },
+      "ref": "p.317",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "0001h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "출력 주파수 설정/모니터(F001)",
+        "en": "Output frequency setting/monitor (F001)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 400
+      },
+      "description": {
+        "ko": "0001h 상위·0002h 하위. 쓰기는 A001 = 03 일 때 유효. FC17 예(p.309)가 시작 00 00 에 00 00 13 88(50.00 Hz)을 쓴다",
+        "en": "0001h high, 0002h low. Writing is valid when A001 = 03. The FC17 example (p.309) writes 00 00 13 88 (50.00 Hz) at start 00 00"
+      },
+      "ref": "p.318, p.309",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "0003h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 A",
+        "en": "Inverter status A"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "초기 상태",
+          "en": "Initial status"
+        },
+        {
+          "value": 2,
+          "ko": "정지 중",
+          "en": "Stopping"
+        },
+        {
+          "value": 3,
+          "ko": "운전 중",
+          "en": "Running"
+        },
+        {
+          "value": 4,
+          "ko": "프리런 정지",
+          "en": "Free-run stop"
+        },
+        {
+          "value": 5,
+          "ko": "조그",
+          "en": "Jogging"
+        },
+        {
+          "value": 6,
+          "ko": "직류 제동",
+          "en": "DC braking"
+        },
+        {
+          "value": 7,
+          "ko": "재시도",
+          "en": "Retrying"
+        },
+        {
+          "value": 8,
+          "ko": "트립",
+          "en": "Tripping"
+        },
+        {
+          "value": 9,
+          "ko": "저전압(UV)",
+          "en": "Undervoltage (UV)"
+        }
+      ],
+      "ref": "p.318",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "0004h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 B",
+        "en": "Inverter status B"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지 중",
+          "en": "Stopping"
+        },
+        {
+          "value": 1,
+          "ko": "운전 중",
+          "en": "Running"
+        },
+        {
+          "value": 2,
+          "ko": "트립",
+          "en": "Tripping"
+        }
+      ],
+      "ref": "p.318",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "0005h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 C",
+        "en": "Inverter status C"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "정지 중",
+          "en": "Stopping"
+        },
+        {
+          "value": 2,
+          "ko": "감속 중",
+          "en": "Decelerating"
+        },
+        {
+          "value": 3,
+          "ko": "정속 운전",
+          "en": "Constant-speed operation"
+        },
+        {
+          "value": 4,
+          "ko": "가속 중",
+          "en": "Accelerating"
+        },
+        {
+          "value": 5,
+          "ko": "정회전",
+          "en": "Forward rotation"
+        },
+        {
+          "value": 6,
+          "ko": "역회전",
+          "en": "Reverse rotation"
+        },
+        {
+          "value": 7,
+          "ko": "정→역 전환 중",
+          "en": "Switching from forward to reverse"
+        },
+        {
+          "value": 8,
+          "ko": "역→정 전환 중",
+          "en": "Switching from reverse to forward"
+        },
+        {
+          "value": 9,
+          "ko": "정회전 시동",
+          "en": "Starting forward"
+        },
+        {
+          "value": 10,
+          "ko": "역회전 시동",
+          "en": "Starting reverse"
+        }
+      ],
+      "ref": "p.318",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "0006h",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.318",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "0011h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 횟수(d080)",
+        "en": "Fault frequency monitor (d080)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "트립이 일어난 횟수 0~65535",
+        "en": "Number of trips 0-65535"
+      },
+      "ref": "p.319",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "0012h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 모니터 1 요인(d081)",
+        "en": "Fault monitor 1 factor (d081)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "트립 없음",
+          "en": "No trip factor"
+        },
+        {
+          "value": 1,
+          "ko": "정속 중 과전류",
+          "en": "Over-current at constant speed"
+        },
+        {
+          "value": 2,
+          "ko": "감속 중 과전류",
+          "en": "Over-current during deceleration"
+        },
+        {
+          "value": 3,
+          "ko": "가속 중 과전류",
+          "en": "Over-current during acceleration"
+        },
+        {
+          "value": 4,
+          "ko": "그 밖의 과전류",
+          "en": "Over-current during other conditions"
+        },
+        {
+          "value": 5,
+          "ko": "과부하 보호",
+          "en": "Overload protection"
+        },
+        {
+          "value": 6,
+          "ko": "제동 저항 과부하",
+          "en": "Braking resistor overload protection"
+        },
+        {
+          "value": 7,
+          "ko": "과전압 보호",
+          "en": "Overvoltage protection"
+        },
+        {
+          "value": 8,
+          "ko": "EEPROM 오류",
+          "en": "EEPROM error"
+        },
+        {
+          "value": 9,
+          "ko": "저전압 보호",
+          "en": "Undervoltage protection"
+        },
+        {
+          "value": 10,
+          "ko": "전류 검출 오류",
+          "en": "Current detection error"
+        },
+        {
+          "value": 11,
+          "ko": "CPU 오류",
+          "en": "CPU error"
+        },
+        {
+          "value": 12,
+          "ko": "외부 트립",
+          "en": "External trip"
+        },
+        {
+          "value": 13,
+          "ko": "USP 오류",
+          "en": "USP error"
+        },
+        {
+          "value": 14,
+          "ko": "지락 보호",
+          "en": "Ground-fault protection"
+        },
+        {
+          "value": 15,
+          "ko": "입력 과전압 보호",
+          "en": "Input overvoltage protection"
+        },
+        {
+          "value": 21,
+          "ko": "인버터 열 트립",
+          "en": "Inverter thermal trip"
+        },
+        {
+          "value": 22,
+          "ko": "CPU 오류",
+          "en": "CPU error"
+        },
+        {
+          "value": 25,
+          "ko": "주회로 오류",
+          "en": "Main circuit error"
+        },
+        {
+          "value": 30,
+          "ko": "드라이버 오류",
+          "en": "Driver error"
+        },
+        {
+          "value": 35,
+          "ko": "서미스터 오류",
+          "en": "Thermistor error"
+        },
+        {
+          "value": 36,
+          "ko": "제동 오류",
+          "en": "Braking error"
+        },
+        {
+          "value": 37,
+          "ko": "안전 정지",
+          "en": "Safe Stop"
+        },
+        {
+          "value": 38,
+          "ko": "저속 과부하 보호",
+          "en": "Low-speed overload protection"
+        },
+        {
+          "value": 40,
+          "ko": "오퍼레이터 연결",
+          "en": "Operator connection"
+        },
+        {
+          "value": 41,
+          "ko": "Modbus 통신 오류",
+          "en": "Modbus communication error"
+        },
+        {
+          "value": 43,
+          "ko": "EzSQ 오류(잘못된 명령)",
+          "en": "Easy sequence error (invalid instruction)"
+        },
+        {
+          "value": 44,
+          "ko": "EzSQ 오류(중첩 횟수)",
+          "en": "Easy sequence error (invalid nesting count)"
+        },
+        {
+          "value": 45,
+          "ko": "EzSQ 실행 오류 1",
+          "en": "Easy sequence execution error 1"
+        },
+        {
+          "value": 80,
+          "ko": "엔코더 단선",
+          "en": "Encoder disconnection"
+        },
+        {
+          "value": 81,
+          "ko": "과속도",
+          "en": "Excessive speed"
+        },
+        {
+          "value": 83,
+          "ko": "위치 제어 범위 트립",
+          "en": "Position control range trip"
+        }
+      ],
+      "description": {
+        "ko": "가장 최근 트립. 50~59 = EzSQ 사용자 트립 0~9, 60~69 = 옵션 오류 0~9. 트립 2~6 은 001Ch·0026h·0030h·003Ah·0044h 부터 같은 꼴",
+        "en": "Latest trip. 50-59 = EzSQ user trip 0-9, 60-69 = option error 0-9. Trips 2-6 follow the same layout from 001Ch, 0026h, 0030h, 003Ah, 0044h"
+      },
+      "ref": "p.319, p.321",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "0013h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 모니터 1 인버터 상태",
+        "en": "Fault monitor 1 inverter status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "리셋 중",
+          "en": "Resetting"
+        },
+        {
+          "value": 1,
+          "ko": "정지 중",
+          "en": "Stopping"
+        },
+        {
+          "value": 2,
+          "ko": "감속 중",
+          "en": "Decelerating"
+        },
+        {
+          "value": 3,
+          "ko": "정속 운전",
+          "en": "Constant-speed operation"
+        },
+        {
+          "value": 4,
+          "ko": "가속 중",
+          "en": "Accelerating"
+        },
+        {
+          "value": 5,
+          "ko": "0 Hz 운전",
+          "en": "Operating at zero frequency"
+        },
+        {
+          "value": 6,
+          "ko": "시동 중",
+          "en": "Starting"
+        },
+        {
+          "value": 7,
+          "ko": "직류 제동",
+          "en": "DC braking"
+        },
+        {
+          "value": 8,
+          "ko": "과부하 제한",
+          "en": "Overload restricted"
+        }
+      ],
+      "ref": "p.319, p.321",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 22,
+      "manualAddress": "0017h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 모니터 1 직류 전압",
+        "en": "Fault monitor 1 DC voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "트립 때 직류 입력 전압",
+        "en": "DC input voltage at tripping"
+      },
+      "ref": "p.319",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 23,
+      "manualAddress": "0018h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "트립 모니터 1 누적 운전 시간",
+        "en": "Fault monitor 1 cumulative running time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "트립 때 누적 운전 시간. 0018h 상위·0019h 하위",
+        "en": "Cumulative running time at tripping. 0018h high, 0019h low"
+      },
+      "ref": "p.319",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 25,
+      "manualAddress": "001Ah",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "트립 모니터 1 누적 전원 시간",
+        "en": "Fault monitor 1 cumulative power-on time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "트립 때 누적 전원 투입 시간. 001Ah 상위·001Bh 하위",
+        "en": "Cumulative power-on time at tripping. 001Ah high, 001Bh low"
+      },
+      "ref": "p.319",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 77,
+      "manualAddress": "004Eh",
+      "type": "u16",
+      "name": {
+        "ko": "경고 코드(d090)",
+        "en": "Warning code (d090)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 385
+      },
+      "ref": "p.320",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2303,
+      "manualAddress": "0900h",
+      "type": "u16",
+      "name": {
+        "ko": "EEPROM 쓰기(ENTER)",
+        "en": "Writing to EEPROM (ENTER)"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "모터 상수 재계산",
+          "en": "Motor constant recalculation"
+        },
+        {
+          "value": 1,
+          "ko": "모든 데이터를 EEPROM 에 저장",
+          "en": "Save all data in EEPROM"
+        }
+      ],
+      "description": {
+        "ko": "그 밖의 값 = 모터 상수 재계산 + 저장. 통신으로 쓴 값은 RAM 에만 있어 전원을 끄면 사라진다. 진행은 코일 0049h 로 본다. EEPROM 수명 약 10만 회",
+        "en": "Other values = recalculation and save. Values written by communication stay in RAM and are lost at power off. Watch coil 0049h for progress. EEPROM life about 100,000 writes"
+      },
+      "ref": "p.320, p.311",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2305,
+      "manualAddress": "0902h",
+      "type": "u16",
+      "name": {
+        "ko": "EEPROM 쓰기 모드",
+        "en": "EEPROM write mode"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "무효",
+          "en": "Invalid"
+        },
+        {
+          "value": 1,
+          "ko": "유효",
+          "en": "Valid"
+        }
+      ],
+      "description": {
+        "ko": "1 을 쓰면 바로 다음 06h 쓰기 한 번만 RAM·EEPROM 에 함께 쓴다",
+        "en": "Writing 1 makes only the next 06h write go to both RAM and EEPROM"
+      },
+      "ref": "p.320, p.311",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4096,
+      "manualAddress": "1001h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "출력 주파수 모니터(d001)",
+        "en": "Output frequency monitor (d001)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "1001h 상위·1002h 하위",
+        "en": "1001h high, 1002h low"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4099,
+      "manualAddress": "1004h",
+      "type": "u16",
+      "name": {
+        "ko": "회전 방향 모니터(d003)",
+        "en": "Rotation direction monitor (d003)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stopping"
+        },
+        {
+          "value": 1,
+          "ko": "정회전",
+          "en": "Forward rotation"
+        },
+        {
+          "value": 2,
+          "ko": "역회전",
+          "en": "Reverse rotation"
+        }
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4102,
+      "manualAddress": "1007h",
+      "type": "u16",
+      "name": {
+        "ko": "다기능 입력 모니터(d005)",
+        "en": "Multi-function input monitor (d005)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "단자 1",
+          "en": "Terminal 1"
+        },
+        {
+          "bit": 1,
+          "ko": "단자 2",
+          "en": "Terminal 2"
+        },
+        {
+          "bit": 2,
+          "ko": "단자 3",
+          "en": "Terminal 3"
+        },
+        {
+          "bit": 3,
+          "ko": "단자 4",
+          "en": "Terminal 4"
+        },
+        {
+          "bit": 4,
+          "ko": "단자 5",
+          "en": "Terminal 5"
+        },
+        {
+          "bit": 5,
+          "ko": "단자 6",
+          "en": "Terminal 6"
+        },
+        {
+          "bit": 6,
+          "ko": "단자 7",
+          "en": "Terminal 7"
+        }
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4103,
+      "manualAddress": "1008h",
+      "type": "u16",
+      "name": {
+        "ko": "다기능 출력 모니터(d006)",
+        "en": "Multi-function output monitor (d006)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "단자 11",
+          "en": "Terminal 11"
+        },
+        {
+          "bit": 1,
+          "ko": "단자 12",
+          "en": "Terminal 12"
+        },
+        {
+          "bit": 2,
+          "ko": "릴레이 단자",
+          "en": "Relay terminal"
+        }
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4106,
+      "manualAddress": "100Bh",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "실주파수 모니터(d008)",
+        "en": "Real frequency monitor (d008)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100Bh 상위·100Ch 하위. -40000~+40000",
+        "en": "100Bh high, 100Ch low. -40000 to +40000"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4111,
+      "manualAddress": "1010h",
+      "type": "s16",
+      "name": {
+        "ko": "출력 토크 모니터(d012)",
+        "en": "Output torque monitor (d012)"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "-200~+200",
+        "en": "-200 to +200"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4112,
+      "manualAddress": "1011h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압 모니터(d013)",
+        "en": "Output voltage monitor (d013)"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4113,
+      "manualAddress": "1012h",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전력 모니터(d014)",
+        "en": "Input power monitor (d014)"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4116,
+      "manualAddress": "1015h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "누적 운전 시간(d016)",
+        "en": "Total RUN time (d016)"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "1015h 상위·1016h 하위",
+        "en": "1015h high, 1016h low"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4118,
+      "manualAddress": "1017h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "누적 전원 시간(d017)",
+        "en": "Power ON time monitor (d017)"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "1017h 상위·1018h 하위",
+        "en": "1017h high, 1018h low"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4120,
+      "manualAddress": "1019h",
+      "type": "s16",
+      "name": {
+        "ko": "방열핀 온도(d018)",
+        "en": "Fin temperature monitor (d018)"
+      },
+      "unit": "°C",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "-200~1500(-20.0~150.0 °C)",
+        "en": "-200 to 1500 (-20.0 to 150.0 °C)"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4124,
+      "manualAddress": "101Dh",
+      "type": "u16",
+      "name": {
+        "ko": "수명 진단 모니터(d022)",
+        "en": "Life assessment monitor (d022)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "주회로 기판 콘덴서",
+          "en": "Capacitor on main circuit board"
+        },
+        {
+          "bit": 1,
+          "ko": "냉각팬",
+          "en": "Cooling fan"
+        }
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4133,
+      "manualAddress": "1026h",
+      "type": "u16",
+      "name": {
+        "ko": "직류 전압 모니터(d102)",
+        "en": "DC voltage monitor (d102)"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4134,
+      "manualAddress": "1027h",
+      "type": "u16",
+      "name": {
+        "ko": "회생 제동 부하율(d103)",
+        "en": "Regenerative braking load rate (d103)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4135,
+      "manualAddress": "1028h",
+      "type": "u16",
+      "name": {
+        "ko": "전자 서멀 모니터(d104)",
+        "en": "Electronic thermal monitor (d104)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% 를 넘으면 E05 트립",
+        "en": "Trips E05 above 100%"
+      },
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4182,
+      "manualAddress": "1057h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 모드(d060)",
+        "en": "Inverter mode (d060)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "IM CT",
+          "en": "IM CT"
+        },
+        {
+          "value": 1,
+          "ko": "IM VT",
+          "en": "IM VT"
+        }
+      ],
+      "ref": "p.322",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4184,
+      "manualAddress": "1059h",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령 소스 모니터(d062)",
+        "en": "Frequency source monitor (d062)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "오퍼레이터",
+          "en": "Operator"
+        },
+        {
+          "value": 1,
+          "ko": "다단속 1",
+          "en": "Multi-speed 1"
+        },
+        {
+          "value": 2,
+          "ko": "다단속 2",
+          "en": "Multi-speed 2"
+        },
+        {
+          "value": 3,
+          "ko": "다단속 3",
+          "en": "Multi-speed 3"
+        },
+        {
+          "value": 4,
+          "ko": "다단속 4",
+          "en": "Multi-speed 4"
+        },
+        {
+          "value": 5,
+          "ko": "다단속 5",
+          "en": "Multi-speed 5"
+        },
+        {
+          "value": 6,
+          "ko": "다단속 6",
+          "en": "Multi-speed 6"
+        },
+        {
+          "value": 7,
+          "ko": "다단속 7",
+          "en": "Multi-speed 7"
+        },
+        {
+          "value": 8,
+          "ko": "다단속 8",
+          "en": "Multi-speed 8"
+        },
+        {
+          "value": 9,
+          "ko": "다단속 9",
+          "en": "Multi-speed 9"
+        },
+        {
+          "value": 10,
+          "ko": "다단속 10",
+          "en": "Multi-speed 10"
+        },
+        {
+          "value": 11,
+          "ko": "다단속 11",
+          "en": "Multi-speed 11"
+        },
+        {
+          "value": 12,
+          "ko": "다단속 12",
+          "en": "Multi-speed 12"
+        },
+        {
+          "value": 13,
+          "ko": "다단속 13",
+          "en": "Multi-speed 13"
+        },
+        {
+          "value": 14,
+          "ko": "다단속 14",
+          "en": "Multi-speed 14"
+        },
+        {
+          "value": 15,
+          "ko": "다단속 15",
+          "en": "Multi-speed 15"
+        },
+        {
+          "value": 16,
+          "ko": "조그 주파수",
+          "en": "Jog frequency"
+        },
+        {
+          "value": 18,
+          "ko": "Modbus",
+          "en": "Modbus network"
+        },
+        {
+          "value": 19,
+          "ko": "옵션",
+          "en": "Option"
+        },
+        {
+          "value": 21,
+          "ko": "볼륨",
+          "en": "Potentiometer"
+        },
+        {
+          "value": 22,
+          "ko": "펄스열",
+          "en": "Pulse train"
+        },
+        {
+          "value": 23,
+          "ko": "연산 기능 출력",
+          "en": "Calculated function output"
+        },
+        {
+          "value": 24,
+          "ko": "EzSQ",
+          "en": "EzSQ (Drive Programming)"
+        },
+        {
+          "value": 25,
+          "ko": "[O] 입력",
+          "en": "[O] input"
+        },
+        {
+          "value": 26,
+          "ko": "[OI] 입력",
+          "en": "[OI] input"
+        },
+        {
+          "value": 27,
+          "ko": "[O] + [OI]",
+          "en": "[O] + [OI]"
+        }
+      ],
+      "ref": "p.323",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4185,
+      "manualAddress": "105Ah",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령 소스 모니터(d063)",
+        "en": "Run source monitor (d063)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "단자",
+          "en": "Terminal"
+        },
+        {
+          "value": 2,
+          "ko": "오퍼레이터",
+          "en": "Operator"
+        },
+        {
+          "value": 3,
+          "ko": "Modbus",
+          "en": "Modbus network"
+        },
+        {
+          "value": 4,
+          "ko": "옵션",
+          "en": "Option"
+        }
+      ],
+      "ref": "p.323",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4256,
+      "manualAddress": "10A1h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 O 모니터(d130)",
+        "en": "Analog input O monitor (d130)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 1023
+      },
+      "ref": "p.323",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4257,
+      "manualAddress": "10A2h",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 OI 모니터(d131)",
+        "en": "Analog input OI monitor (d131)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 1023
+      },
+      "ref": "p.323",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4356,
+      "manualAddress": "1105h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "감속 시간 1(F003)",
+        "en": "Deceleration time 1 (F003)"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3600
+      },
+      "description": {
+        "ko": "1105h 상위·1106h 하위",
+        "en": "1105h high, 1106h low"
+      },
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4358,
+      "manualAddress": "1107h",
+      "type": "u16",
+      "name": {
+        "ko": "오퍼레이터 회전 방향(F004)",
+        "en": "Operator rotation direction (F004)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정회전",
+          "en": "Forward"
+        },
+        {
+          "value": 1,
+          "ko": "역회전",
+          "en": "Reverse"
+        }
+      ],
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4608,
+      "manualAddress": "1201h",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령 선택(A001)",
+        "en": "Frequency reference selection (A001)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "디지털 오퍼레이터",
+          "en": "Digital operator"
+        },
+        {
+          "value": 1,
+          "ko": "단자",
+          "en": "Terminal"
+        },
+        {
+          "value": 2,
+          "ko": "오퍼레이터",
+          "en": "Operator"
+        },
+        {
+          "value": 3,
+          "ko": "Modbus 통신",
+          "en": "Modbus communication"
+        },
+        {
+          "value": 4,
+          "ko": "옵션",
+          "en": "Option"
+        },
+        {
+          "value": 6,
+          "ko": "펄스열 주파수",
+          "en": "Pulse train frequency"
+        },
+        {
+          "value": 7,
+          "ko": "드라이브 프로그래밍",
+          "en": "Drive programming"
+        },
+        {
+          "value": 10,
+          "ko": "연산 기능 결과",
+          "en": "Operation function result"
+        }
+      ],
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4609,
+      "manualAddress": "1202h",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령 선택(A002)",
+        "en": "Run command selection (A002)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "단자",
+          "en": "Terminal"
+        },
+        {
+          "value": 2,
+          "ko": "오퍼레이터",
+          "en": "Operator"
+        },
+        {
+          "value": 3,
+          "ko": "Modbus 통신",
+          "en": "Modbus communication"
+        },
+        {
+          "value": 4,
+          "ko": "옵션",
+          "en": "Option"
+        }
+      ],
+      "description": {
+        "ko": "바꾼 뒤 40 ms 이상 지나서 운전 지령을 준다",
+        "en": "Wait 40 ms or longer after changing before giving a run command"
+      },
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4610,
+      "manualAddress": "1203h",
+      "type": "u16",
+      "name": {
+        "ko": "기저 주파수(A003)",
+        "en": "Base frequency (A003)"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "300~최고 주파수",
+        "en": "300 to maximum frequency"
+      },
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4611,
+      "manualAddress": "1204h",
+      "type": "u16",
+      "name": {
+        "ko": "최고 주파수(A004)",
+        "en": "Maximum frequency (A004)"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 30,
+        "max": 400
+      },
+      "ref": "p.324",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 5194,
+      "manualAddress": "144Bh",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도(C071)",
+        "en": "Communication speed (C071)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 3,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 4,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 5,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 6,
+          "ko": "19.2 kbps",
+          "en": "19.2 kbps"
+        },
+        {
+          "value": 7,
+          "ko": "38.4 kbps",
+          "en": "38.4 kbps"
+        },
+        {
+          "value": 8,
+          "ko": "57.6 kbps",
+          "en": "57.6 kbps"
+        },
+        {
+          "value": 9,
+          "ko": "76.8 kbps",
+          "en": "76.8 kbps"
+        },
+        {
+          "value": 10,
+          "ko": "115.2 kbps",
+          "en": "115.2 kbps"
+        }
+      ],
+      "description": {
+        "ko": "출하값 05. 바꾼 뒤 전원 재투입(또는 RS 단자 ON/OFF)",
+        "en": "Default 05. Reboot (or toggle the RS terminal) after changing"
+      },
+      "ref": "p.334, p.366",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 5195,
+      "manualAddress": "144Ch",
+      "type": "u16",
+      "name": {
+        "ko": "국번(C072)",
+        "en": "Station number (C072)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하값 1",
+        "en": "Default 1"
+      },
+      "ref": "p.334, p.366",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 5197,
+      "manualAddress": "144Eh",
+      "type": "u16",
+      "name": {
+        "ko": "패리티(C074)",
+        "en": "Parity (C074)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "Even"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "Odd"
+        }
+      ],
+      "description": {
+        "ko": "출하값 00",
+        "en": "Default 00"
+      },
+      "ref": "p.334, p.366",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 5198,
+      "manualAddress": "144Fh",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트(C075)",
+        "en": "Stop bits (C075)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "1 비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 2,
+          "ko": "2 비트",
+          "en": "2 bits"
+        }
+      ],
+      "description": {
+        "ko": "출하값 1",
+        "en": "Default 1"
+      },
+      "ref": "p.334, p.366",
+      "source": 0
+    }
+  ],
+  "sources": [
+    {
+      "title": "OMRON MX2 User's Manual (Cat. No. I570-E2-02F)",
+      "publisher": "OMRON Corporation",
+      "edition": {
+        "ko": "Cat. No. I570-E2-02F (개정 이력 02 = 2013년 1월, PDF 수정일 2022-09-09)",
+        "en": "Cat. No. I570-E2-02F (revision 02 = January 2013, PDF modified 2022-09-09)"
+      },
+      "url": "https://files.omron.eu/downloads/latest/manual/en/i570_mx2_users_manual_en.pdf",
+      "pages": {
+        "ko": "부록 B Modbus 통신 인쇄 p.295~334(PDF 321~360), 기본값 표 p.366, d 모니터 3장",
+        "en": "Appendix B Modbus communications printed pp.295-334 (PDF 321-360), defaults p.366, d monitors chapter 3"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}
