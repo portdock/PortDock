@@ -20,6 +20,15 @@
 - [ ] `node tools/notices.mjs --check` (제3자 고지 최신)
 - [ ] 태그 `v0.1.0` → 초안 릴리스 확인 → 본문(아래) · VirusTotal 링크 → 공개
 - [ ] 사이트 내려받기 링크(`/releases/latest/download/PortDock-<App>-setup.exe`)가 실제 파일로 이어지는지
+- [ ] winget·Scoop 매니페스트 만들기(공개 뒤 — 릴리스의 `SHA256SUMS.txt` 로 버전 주소·해시를 채움, 결과는 `dist-packages/`, 저장소엔 안 올라감):
+  ```powershell
+  node tools/winget.mjs --version 0.1.0 --date 2026-11-01   # → dist-packages/winget/manifests/p/PortDock/<App>/0.1.0/ (패키지 9개 × 4파일)
+  node tools/scoop.mjs  --version 0.1.0                     # → dist-packages/scoop/bucket/portdock-<app>.json (휴대판 zip 기준 9개)
+  # 공개 전 초안 단계라면 초안의 SHA256SUMS.txt 를 받아 --sums SHA256SUMS.txt 로
+  winget validate dist-packages/winget/manifests/p/PortDock/Serial/0.1.0   # 패키지마다
+  ```
+  - winget: 패키지 ID `PortDock.<App>`(Serial·ModbusSlave·TCP·UDP·Simulator·NetScan·ModbusMaster·SCPI·Plot), NSIS 무인 설치 `/S`, 사용자 범위. winget-pkgs 는 **PR 하나에 패키지 버전 하나** → PR 9개. 제출 전 Windows Sandbox 시험(`.\Tools\SandboxTest.ps1 <폴더>`), VirusTotal·Defender 가 깨끗한 뒤에(2절). 제출은 사용자 확인 뒤
+  - Scoop: 자체 bucket 저장소(예: `portdock/scoop-bucket`)의 `bucket/` 에 넣으면 `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial`. `checkver`·`autoupdate` 가 있어 다음 버전은 `scoop`의 자동 갱신(또는 다시 이 명령)으로
 - [ ] Google Search Console · 네이버 서치어드바이저 등록, sitemap 제출
 
 ## 4. 릴리스 본문 초안 (v0.1.0)

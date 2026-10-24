@@ -49,6 +49,7 @@
    - 탐지가 하나라도 있으면(서명 없는 새 exe 는 오탐이 잦다) Publish 전에 Microsoft Defender 에 오탐으로 제출한다(<https://www.microsoft.com/wdsi/filesubmission>, «소프트웨어 개발자»). 판정이 바뀌면 VirusTotal 을 다시 돌려 링크를 바꾼다. winget 은 Defender·다중 백신 검사에 걸리면 거부하고, Chocolatey 는 VirusTotal 탐지 수로 반려·사람 검토를 가르므로, 패키지 관리자 등록은 이 단계가 깨끗해진 뒤에 한다.
    - 변경 내용을 다듬는다(자동 생성된 노트 위에 한국어·영어 요약).
 7. **Publish** — 첫 공개라면 먼저 `site/src/data/tools.ts` 의 `RELEASED` 를 `true` 로 바꿔 푸시(사이트 내려받기 버튼이 «공개 준비 중» 에서 진짜 링크로). 공개 후 `https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe` 가 새 파일을 받는지 확인. 앱의 «새 버전 확인» 버튼은 `/releases/latest` 페이지를 연다(자동 확인 없음).
+8. **패키지 관리자** — 공개 뒤 `node tools/winget.mjs --version <버전>` · `node tools/scoop.mjs --version <버전>` 으로 매니페스트를 만든다(릴리스의 `SHA256SUMS.txt` 를 받아 버전이 든 주소·해시를 채움, 결과 `dist-packages/`). winget 은 winget-pkgs 에 패키지마다 PR, Scoop 은 bucket 저장소에 커밋. 형식·정책 메모는 두 스크립트 머리 주석, 시험은 `tools/packages.test.mjs`.
 
 ## 코드 서명 (예정)
 
