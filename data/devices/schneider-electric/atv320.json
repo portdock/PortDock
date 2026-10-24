@@ -1,0 +1,1058 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "schneider-electric/atv320",
+  "manufacturer": {
+    "ko": "슈나이더 일렉트릭",
+    "en": "Schneider Electric"
+  },
+  "model": "ATV320",
+  "models": [
+    "Altivar Machine 320"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "슈나이더 일렉트릭 Altivar Machine 320 (ATV320) 인버터 (Modbus RTU)",
+    "en": "Schneider Electric Altivar Machine 320 (ATV320) drive (Modbus RTU)"
+  },
+  "summary": {
+    "ko": "내장 Modbus RTU. 논리 주소 = 프레임 주소: 통신 설정 6001~6005, 가감속 시간 9001·9002, 통신 스캐너 12701~12768(출하 상태 입력 ETA·RFRD, 출력 CMD·LFRD)",
+    "en": "Embedded Modbus RTU. Logical address = frame address: communication settings 6001-6005, acceleration/deceleration time 9001/9002, communication scanner 12701-12768 (factory: inputs ETA and RFRD, outputs CMD and LFRD)"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 63,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼 읽기 예(p.19)는 02 03 0C 1E 00 04 27 6C 로 W3102~W3105 를 읽고 02 03 08 00 28 02 58 01 F4 00 00 52 B0 을 받는다(매뉴얼 표에는 개수가 «004» 로 한 자리 빠져 있음). 쓰기 예는 02 06 23 29 00 0D 92 70 (W9001, p.19), FC16 예는 02 10 23 29 00 02 04 00 14 00 1E 73 A4 → 02 10 23 29 00 02 9B B7 (p.20). 매뉴얼 번호 = 프레임 주소(0 기준). CRC 모두 계산값과 맞다.",
+        "en": "Addressing: the read example (p.19) sends 02 03 0C 1E 00 04 27 6C to read W3102-W3105 and gets 02 03 08 00 28 02 58 01 F4 00 00 52 B0 (the manual table prints the count as «004», one digit short). The write example is 02 06 23 29 00 0D 92 70 (W9001, p.19) and the FC16 example 02 10 23 29 00 02 04 00 14 00 1E 73 A4 -> 02 10 23 29 00 02 9B B7 (p.20). Manual number = frame address (0-based). All CRCs match calculation."
+      },
+      {
+        "ko": "출하값: Add = OFF(국번 없음 — 응답하려면 1~247 로), tbr 19.2 kbps, tFO 8E1, tto 10 s (p.32-33). 8O1·8E1·8N1·8N2 와 4.8~38.4 kbps 를 고를 수 있다. 바꾼 통신 설정은 전원을 다시 켜야 반영된다 (p.31).",
+        "en": "Factory settings: Add = OFF (no address assigned; set 1-247 to get replies), tbr 19.2 kbps, tFO 8E1, tto 10 s (pp.32-33). 8O1/8E1/8N1/8N2 and 4.8-38.4 kbps selectable. Changed communication settings take effect after a power cycle (p.31)."
+      },
+      {
+        "ko": "함수 코드 03(최대 63워드)·06·16(최대 61워드)·23(읽기 20·쓰기 20워드)·43/14(장치 식별)·08 (p.18).",
+        "en": "Function codes 03 (up to 63 words), 06, 16 (up to 61 words), 23 (20 read + 20 write words), 43/14 (device identification) and 08 (p.18)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 3102,
+      "manualAddress": "3102",
+      "type": "u16",
+      "name": {
+        "ko": "SFr 스위칭 주파수",
+        "en": "SFr switching frequency"
+      },
+      "unit": "kHz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "매뉴얼 읽기 예: 4 kHz = 0028h",
+        "en": "Manual read example: 4 kHz = 0028h"
+      },
+      "ref": "p.19",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3103,
+      "manualAddress": "3103",
+      "type": "u16",
+      "name": {
+        "ko": "tFr 최대 출력 주파수",
+        "en": "tFr maximum output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "매뉴얼 읽기 예: 60 Hz = 0258h",
+        "en": "Manual read example: 60 Hz = 0258h"
+      },
+      "ref": "p.19",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3104,
+      "manualAddress": "3104",
+      "type": "u16",
+      "name": {
+        "ko": "HSP 고속",
+        "en": "HSP high speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "매뉴얼 읽기 예: 50 Hz = 01F4h",
+        "en": "Manual read example: 50 Hz = 01F4h"
+      },
+      "ref": "p.19",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3105,
+      "manualAddress": "3105",
+      "type": "u16",
+      "name": {
+        "ko": "LSP 저속",
+        "en": "LSP low speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "매뉴얼 읽기 예: 0 Hz = 0000h",
+        "en": "Manual read example: 0 Hz = 0000h"
+      },
+      "ref": "p.19",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6001,
+      "manualAddress": "6001",
+      "type": "u16",
+      "name": {
+        "ko": "Add Modbus 국번",
+        "en": "Add Modbus address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 247
+      },
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF — 국번 없음(출하값)",
+          "en": "OFF: no address assigned (factory setting)"
+        }
+      ],
+      "description": {
+        "ko": "1~247. 바꾼 통신 설정은 전원을 다시 켠 뒤 반영",
+        "en": "1-247. Changed communication settings take effect after a power cycle"
+      },
+      "ref": "p.31, p.32",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6003,
+      "manualAddress": "6003",
+      "type": "u16",
+      "name": {
+        "ko": "tbr Modbus 통신 속도",
+        "en": "tbr Modbus baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 24,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 28,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 32,
+          "ko": "19200 bps(출하값)",
+          "en": "19200 bps (factory setting)"
+        },
+        {
+          "value": 36,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "p.32",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6004,
+      "manualAddress": "6004",
+      "type": "u16",
+      "name": {
+        "ko": "tFO Modbus 데이터 형식",
+        "en": "tFO Modbus data format"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 2,
+          "ko": "8O1",
+          "en": "8O1"
+        },
+        {
+          "value": 3,
+          "ko": "8E1(출하값)",
+          "en": "8E1 (factory setting)"
+        },
+        {
+          "value": 4,
+          "ko": "8N1",
+          "en": "8N1"
+        },
+        {
+          "value": 5,
+          "ko": "8N2",
+          "en": "8N2"
+        }
+      ],
+      "ref": "p.32",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6005,
+      "manualAddress": "6005",
+      "type": "u16",
+      "name": {
+        "ko": "tto Modbus 타임아웃",
+        "en": "tto Modbus timeout"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 30
+      },
+      "description": {
+        "ko": "출하값 10 s. 시간 안에 요청이 없으면 SLF1 고장",
+        "en": "Factory setting 10 s. SLF1 fault if no request arrives within the time"
+      },
+      "ref": "p.33, p.80",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6010,
+      "manualAddress": "6010",
+      "type": "u16",
+      "name": {
+        "ko": "M1EC Modbus CRC 오류 수",
+        "en": "M1EC Modbus CRC error count"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "65535 에서 멈춘다",
+        "en": "Stops at 65535"
+      },
+      "ref": "p.74",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 6011,
+      "manualAddress": "6011",
+      "type": "u16",
+      "name": {
+        "ko": "M1Ct Modbus 받은 프레임 수",
+        "en": "M1Ct Modbus frames received"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "맞는·틀린 프레임 모두 센다. 65535 다음 0",
+        "en": "Counts correct and incorrect frames. Wraps from 65535 to 0"
+      },
+      "ref": "p.74",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9001,
+      "manualAddress": "9001",
+      "type": "u16",
+      "name": {
+        "ko": "ACC 가속 시간",
+        "en": "ACC acceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "매뉴얼 쓰기 예: 1.3 s = 000Dh(FC06), 2 s = 20(FC16)",
+        "en": "Manual write examples: 1.3 s = 000Dh (FC06), 2 s = 20 (FC16)"
+      },
+      "ref": "p.19, p.20",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9002,
+      "manualAddress": "9002",
+      "type": "u16",
+      "name": {
+        "ko": "DEC 감속 시간",
+        "en": "DEC deceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "매뉴얼 쓰기 예: 3 s = 30(FC16)",
+        "en": "Manual write example: 3 s = 30 (FC16)"
+      },
+      "ref": "p.20",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12701,
+      "manualAddress": "12701",
+      "type": "u16",
+      "name": {
+        "ko": "nMA1 입력 1번째 말의 원본 주소",
+        "en": "nMA1 Source address of the 1st input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 ETA(상태 워드)",
+        "en": "Factory setting ETA (status word)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12702,
+      "manualAddress": "12702",
+      "type": "u16",
+      "name": {
+        "ko": "nMA2 입력 2번째 말의 원본 주소",
+        "en": "nMA2 Source address of the 2nd input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 RFRD(출력 속도)",
+        "en": "Factory setting RFRD (output speed)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12703,
+      "manualAddress": "12703",
+      "type": "u16",
+      "name": {
+        "ko": "nMA3 입력 3번째 말의 원본 주소",
+        "en": "nMA3 Source address of the 3rd input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12704,
+      "manualAddress": "12704",
+      "type": "u16",
+      "name": {
+        "ko": "nMA4 입력 4번째 말의 원본 주소",
+        "en": "nMA4 Source address of the 4th input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12705,
+      "manualAddress": "12705",
+      "type": "u16",
+      "name": {
+        "ko": "nMA5 입력 5번째 말의 원본 주소",
+        "en": "nMA5 Source address of the 5th input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12706,
+      "manualAddress": "12706",
+      "type": "u16",
+      "name": {
+        "ko": "nMA6 입력 6번째 말의 원본 주소",
+        "en": "nMA6 Source address of the 6th input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12707,
+      "manualAddress": "12707",
+      "type": "u16",
+      "name": {
+        "ko": "nMA7 입력 7번째 말의 원본 주소",
+        "en": "nMA7 Source address of the 7th input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12708,
+      "manualAddress": "12708",
+      "type": "u16",
+      "name": {
+        "ko": "nMA8 입력 8번째 말의 원본 주소",
+        "en": "nMA8 Source address of the 8th input word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.34",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12721,
+      "manualAddress": "12721",
+      "type": "u16",
+      "name": {
+        "ko": "nCA1 출력 1번째 말의 대상 주소",
+        "en": "nCA1 Destination address of the 1st output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 CMD(명령 워드)",
+        "en": "Factory setting CMD (command word)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12722,
+      "manualAddress": "12722",
+      "type": "u16",
+      "name": {
+        "ko": "nCA2 출력 2번째 말의 대상 주소",
+        "en": "nCA2 Destination address of the 2nd output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 LFRD(속도 목표)",
+        "en": "Factory setting LFRD (speed target)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12723,
+      "manualAddress": "12723",
+      "type": "u16",
+      "name": {
+        "ko": "nCA3 출력 3번째 말의 대상 주소",
+        "en": "nCA3 Destination address of the 3rd output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12724,
+      "manualAddress": "12724",
+      "type": "u16",
+      "name": {
+        "ko": "nCA4 출력 4번째 말의 대상 주소",
+        "en": "nCA4 Destination address of the 4th output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12725,
+      "manualAddress": "12725",
+      "type": "u16",
+      "name": {
+        "ko": "nCA5 출력 5번째 말의 대상 주소",
+        "en": "nCA5 Destination address of the 5th output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12726,
+      "manualAddress": "12726",
+      "type": "u16",
+      "name": {
+        "ko": "nCA6 출력 6번째 말의 대상 주소",
+        "en": "nCA6 Destination address of the 6th output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12727,
+      "manualAddress": "12727",
+      "type": "u16",
+      "name": {
+        "ko": "nCA7 출력 7번째 말의 대상 주소",
+        "en": "nCA7 Destination address of the 7th output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12728,
+      "manualAddress": "12728",
+      "type": "u16",
+      "name": {
+        "ko": "nCA8 출력 8번째 말의 대상 주소",
+        "en": "nCA8 Destination address of the 8th output word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하값 0(없음)",
+        "en": "Factory setting 0 (none)"
+      },
+      "ref": "p.35",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12741,
+      "manualAddress": "12741",
+      "type": "u16",
+      "name": {
+        "ko": "nM1 입력 1번째 말 값",
+        "en": "nM1 value of input word 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하 상태 ETA(상태 워드) 값. nMA1 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Factory: ETA (status word) value. Value at the address in nMA1. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12742,
+      "manualAddress": "12742",
+      "type": "u16",
+      "name": {
+        "ko": "nM2 입력 2번째 말 값",
+        "en": "nM2 value of input word 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하 상태 RFRD(출력 속도) 값. nMA2 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Factory: RFRD (output speed) value. Value at the address in nMA2. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12743,
+      "manualAddress": "12743",
+      "type": "u16",
+      "name": {
+        "ko": "nM3 입력 3번째 말 값",
+        "en": "nM3 value of input word 3"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA3 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA3. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12744,
+      "manualAddress": "12744",
+      "type": "u16",
+      "name": {
+        "ko": "nM4 입력 4번째 말 값",
+        "en": "nM4 value of input word 4"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA4 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA4. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12745,
+      "manualAddress": "12745",
+      "type": "u16",
+      "name": {
+        "ko": "nM5 입력 5번째 말 값",
+        "en": "nM5 value of input word 5"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA5 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA5. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12746,
+      "manualAddress": "12746",
+      "type": "u16",
+      "name": {
+        "ko": "nM6 입력 6번째 말 값",
+        "en": "nM6 value of input word 6"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA6 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA6. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12747,
+      "manualAddress": "12747",
+      "type": "u16",
+      "name": {
+        "ko": "nM7 입력 7번째 말 값",
+        "en": "nM7 value of input word 7"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA7 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA7. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12748,
+      "manualAddress": "12748",
+      "type": "u16",
+      "name": {
+        "ko": "nM8 입력 8번째 말 값",
+        "en": "nM8 value of input word 8"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "nMA8 이 가리키는 값. 매뉴얼 응용 예는 12741 부터 4개를 읽는다",
+        "en": "Value at the address in nMA8. The manual application example reads 4 words from 12741"
+      },
+      "ref": "p.36, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12761,
+      "manualAddress": "12761",
+      "type": "u16",
+      "name": {
+        "ko": "nC1 출력 1번째 말 값",
+        "en": "nC1 value of output word 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "출하 상태 CMD(명령 워드) 로 간다. nCA1 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Factory: goes to CMD (command word). Written to the address in nCA1. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12762,
+      "manualAddress": "12762",
+      "type": "u16",
+      "name": {
+        "ko": "nC2 출력 2번째 말 값",
+        "en": "nC2 value of output word 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "출하 상태 LFRD(속도 목표) 로 간다. nCA2 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Factory: goes to LFRD (speed target). Written to the address in nCA2. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12763,
+      "manualAddress": "12763",
+      "type": "u16",
+      "name": {
+        "ko": "nC3 출력 3번째 말 값",
+        "en": "nC3 value of output word 3"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA3 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA3. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12764,
+      "manualAddress": "12764",
+      "type": "u16",
+      "name": {
+        "ko": "nC4 출력 4번째 말 값",
+        "en": "nC4 value of output word 4"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA4 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA4. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12765,
+      "manualAddress": "12765",
+      "type": "u16",
+      "name": {
+        "ko": "nC5 출력 5번째 말 값",
+        "en": "nC5 value of output word 5"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA5 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA5. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12766,
+      "manualAddress": "12766",
+      "type": "u16",
+      "name": {
+        "ko": "nC6 출력 6번째 말 값",
+        "en": "nC6 value of output word 6"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA6 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA6. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12767,
+      "manualAddress": "12767",
+      "type": "u16",
+      "name": {
+        "ko": "nC7 출력 7번째 말 값",
+        "en": "nC7 value of output word 7"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA7 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA7. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12768,
+      "manualAddress": "12768",
+      "type": "u16",
+      "name": {
+        "ko": "nC8 출력 8번째 말 값",
+        "en": "nC8 value of output word 8"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "nCA8 이 가리키는 곳에 쓰인다. 매뉴얼 응용 예는 12761 부터 4개를 FC23(17h)으로 쓴다",
+        "en": "Written to the address in nCA8. The manual application example writes 4 words from 12761 with FC23 (17h)"
+      },
+      "ref": "p.37, p.63",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "이 매뉴얼에 주소와 단위·값이 나온 레지스터만 넣었다. 명령 워드 CMD·상태 워드 ETA·속도(LFRD·RFRD)의 Modbus 주소는 이 매뉴얼에 없어(통신 스캐너 출하 배정으로만 나옴) 따로 넣지 않았다 — 출하 상태 그대로면 nC1·nC2(12761·12762)로 CMD·LFRD 를 쓰고 nM1·nM2(12741·12742)로 ETA·RFRD 를 읽는다. 나머지 파라미터 주소는 통신 파라미터 엑셀(NVE41316)에 있어 넣지 않았다.",
+      "en": "Only registers whose address and unit/values are in this manual are included. The Modbus addresses of the command word CMD, status word ETA and speeds (LFRD, RFRD) are not in this manual (they appear only as communication scanner factory assignments), so they are not listed separately; with factory settings, write CMD and LFRD through nC1/nC2 (12761/12762) and read ETA and RFRD through nM1/nM2 (12741/12742). Other parameter addresses are in the communication parameters spreadsheet (NVE41316) and are left out."
+    },
+    {
+      "ko": "매뉴얼은 통신 설정(6001~6005)만 «읽기/쓰기 파라미터» 라고 적어, 그 밖에 쓰기가 예로 확인된 9001·9002·nC1~8 말고는 읽기(r)로 적었다(nMA·nCA 는 설정 메뉴에서 바꾸는 값).",
+      "en": "The manual states read/write access only for the communication settings (6001-6005), so apart from 9001/9002 and nC1-8 (writes shown in examples) everything is listed as read (r); nMA/nCA are set from the menus."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Altivar Machine 320 Variable Speed Drives for Synchronous and Asynchronous Motors Modbus Serial Link Manual",
+      "publisher": "Schneider Electric",
+      "edition": {
+        "ko": "NVE41308.01 04/2016",
+        "en": "NVE41308.01 04/2016"
+      },
+      "url": "https://download.se.com/files?p_Doc_Ref=NVE41308&p_enDocType=User+guide&p_File_Name=ATV320_Modbus_manual_EN_NVE41308_01.pdf",
+      "pages": {
+        "ko": "Modbus 함수·예 p.18-20, 통신 설정 p.31-33, 통신 스캐너 p.34-37, 응용 예 p.63, Modbus 진단 p.74",
+        "en": "Modbus functions and examples pp.18-20, communication settings pp.31-33, communication scanner pp.34-37, application example p.63, Modbus diagnostics p.74"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}
