@@ -16,7 +16,7 @@ const EDGE = ["C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "C
 if (!EDGE) throw new Error("Microsoft Edge 를 찾지 못했습니다");
 
 // 도구 이름은 site/src/data/tools.ts 의 순서·이름과 맞춘다
-const TOOLS = ["Serial", "Modbus Slave", "Modbus Master", "TCP", "UDP", "Simulator", "Net Scan", "SCPI", "Plot"];
+const TOOLS = ["Serial", "Modbus Slave", "Modbus Master", "TCP", "UDP", "Simulator", "Net Scan", "SCPI", "Plot", "Port Inspector"];
 const TEXT = {
   ko: { file: "og.png", lang: "ko", title: "현장 장비 시험을 위한<br>작고 정확한 통신 도구", tail: "무료 · 오픈소스(GPL-3.0) · 광고 없음 · 윈도우 10·11" },
   en: { file: "og-en.png", lang: "en", title: "Small, precise communication tools<br>for testing hardware", tail: "Free · Open source (GPL-3.0) · No ads · Windows 10 & 11" },

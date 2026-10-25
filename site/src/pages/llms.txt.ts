@@ -12,7 +12,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     "# PortDock",
     "",
-    "> Free, open-source (GPL-3.0) Windows tools for field hardware testing: serial (COM), Modbus RTU/TCP master and slave, TCP, UDP, device simulator, network scan, SCPI instruments and live plotting. This site also publishes an open dataset of Modbus register maps for Korean industrial devices (CC BY 4.0).",
+    "> Free, open-source (GPL-3.0) Windows tools for field hardware testing: serial (COM), Modbus RTU/TCP master and slave, TCP, UDP, device simulator, network scan, SCPI instruments, live plotting and a read-only COM port inspector. This site also publishes an open dataset of Modbus register maps for Korean industrial devices (CC BY 4.0).",
     "",
     "## Device register maps (dataset)",
     "",

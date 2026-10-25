@@ -162,7 +162,7 @@ export const GUIDES: Guide[] = [
   {
     slug: "usb-serial-latency",
     date: "2026-10-17",
-    tools: ["modbus-slave", "serial", "modbus-master"],
+    tools: ["port-inspector", "serial", "modbus-master"],
     related: ["modbus-no-response", "modbus-rtu-frame", "rs485-wiring", "modbus-rtu-timeout-polling"],
     webTools: ["tools/serial-timing/", "tools/uart-baud/"],
     seoTitle: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지는 이유 — PortDock", en: "USB-Serial Adapter Latency: Split Frames, Late Replies — PortDock" },
@@ -195,7 +195,7 @@ export const GUIDES: Guide[] = [
   {
     slug: "rs485-wiring",
     date: "2026-10-17",
-    tools: ["serial", "modbus-master"],
+    tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs232-rs422-rs485", "rs485-bias-termination", "modbus-no-response", "usb-serial-latency", "modbus-rtu-frame"],
     webTools: ["tools/rs485/"],
     seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
@@ -274,7 +274,7 @@ export const GUIDES: Guide[] = [
   {
     slug: "modbus-no-response",
     date: "2026-10-19",
-    tools: ["modbus-master", "modbus-slave", "netscan"],
+    tools: ["modbus-master", "port-inspector", "netscan"],
     related: ["modbus-tcp-connection", "rs485-wiring", "modbus-address-notation", "usb-serial-latency", "modbus-rtu-timeout-polling", "modbus-exception-codes"],
     webTools: ["tools/modbus/", "tools/checksum/", "tools/serial-timing/"],
     devices: true,
@@ -1814,7 +1814,7 @@ export const GUIDES: Guide[] = [
   {
     slug: "rs485-bias-termination",
     date: "2026-10-23",
-    tools: ["serial", "modbus-master"],
+    tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs485-wiring", "rs232-rs422-rs485", "modbus-no-response", "modbus-rtu-timeout-polling"],
     webTools: ["tools/rs485/", "tools/serial-timing/"],
     devices: true,
@@ -2538,7 +2538,7 @@ export const GUIDES: Guide[] = [
     //   PortDock Serial 의 신호선 표시·흐름 제어는 apps/serial/src/help.ts. 전압·거리는 rs232-rs422-rs485 글(TI SLLA067C).
     slug: "rs232-db9-null-modem",
     date: "2026-10-23",
-    tools: ["serial"],
+    tools: ["serial", "port-inspector"],
     related: ["rs232-rs422-rs485", "usb-serial-latency", "rs485-wiring"],
     webTools: ["tools/ascii/", "tools/uart-baud/", "tools/web-serial/"],
     title: { ko: "RS-232 DB9 핀 배치와 크로스(널 모뎀) 케이블 결선", en: "RS-232 DB9 pinout and null-modem (crossover) cable wiring" },

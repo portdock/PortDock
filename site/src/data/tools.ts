@@ -10,6 +10,7 @@ import { help as netscanHelp } from "../../../apps/netscan/src/help";
 import { help as modbusMasterHelp } from "../../../apps/modbus-master/src/help";
 import { help as scpiHelp } from "../../../apps/scpi/src/help";
 import { help as plotHelp } from "../../../apps/plot/src/help";
+import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -22,7 +23,7 @@ export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 export const RELEASED = false;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -378,6 +379,46 @@ export const TOOLS: Tool[] = [
       en: "Similar tools include the Arduino IDE Serial Plotter and the open-source SerialPlot. PortDock Plot also takes TCP and UDP input, binary frames, and records CSV while receiving.",
     },
     help: plotHelp,
+  },
+  {
+    id: "port-inspector",
+    name: "PortDock Port Inspector",
+    file: "PortDock-Port-Inspector",
+    tagline: { ko: "COM 포트 드라이버·문제 코드·절전 읽기와 연결 시험", en: "Read-only COM port inspector with a loopback test" },
+    seo: {
+      title: { ko: "PortDock Port Inspector — 무료 COM 포트 점검 (USB 시리얼)", en: "PortDock Port Inspector — Free COM Port Inspector (USB Serial)" },
+      desc: {
+        ko: "USB 시리얼 드라이버·장치 관리자 문제 코드·FTDI 지연·유령 COM 번호를 관리자 권한 없이 읽는 무료 윈도우 도구. 루프백 연결 시험, 설정은 바꾸지 않음.",
+        en: "Free Windows COM port inspector: USB serial driver, Device Manager problem code, FTDI latency, ghost COM numbers. Read-only, no admin rights, loopback test.",
+      },
+    },
+    summary: {
+      ko: "COM 포트 하나를 고르면 장치 관리자·이벤트 뷰어·레지스트리를 따로 뒤져야 보이는 것을 한 화면에 모읍니다: 드라이버, 문제 코드와 뜻, USB 칩, FTDI 지연 타이머 같은 장치 설정, USB 절전, 최근 연결 기록, COM 번호 예약. 관리자 권한 없이 읽기만 하고, TX 와 RX 를 이어 두면 속도마다 왕복 시간을 잽니다.",
+      en: "Pick a COM port and see in one place what you would otherwise dig out of Device Manager, Event Viewer and the registry: the driver, problem code and its meaning, USB chip, device settings such as the FTDI latency timer, USB power saving, recent plug history and COM number reservations. It only reads, without admin rights, and with TX tied to RX it measures the round trip at each baud rate.",
+    },
+    who: [
+      { ko: "USB-시리얼 변환기가 안 잡히거나 가끔 끊기는 현장 엔지니어", en: "Field engineers whose USB-serial adapter is not detected or drops now and then" },
+      { ko: "Modbus RTU 응답이 늦게 보이는 까닭을 찾는 분(FTDI 지연 타이머)", en: "Anyone looking for why Modbus RTU replies seem late (FTDI latency timer)" },
+      { ko: "문의·이슈에 PC 쪽 포트 정보를 붙여야 하는 분", en: "Anyone who needs to attach PC-side port details to a support request or issue" },
+    ],
+    features: [
+      { title: { ko: "장치·드라이버·문제 코드", en: "Device, driver, problem code" }, body: { ko: "이름·COM 번호·위치·인스턴스 ID·제조사, 드라이버 제공자·버전·날짜·INF·서비스, 상태와 장치 관리자 문제 코드의 뜻·해 볼 것, 마지막 연결·분리 시각.", en: "Name, COM number, location, instance ID and manufacturer; driver provider, version, date, INF and service; status and the Device Manager problem code with its meaning and what to try; last plug-in and removal." } },
+      { title: { ko: "USB 칩·장치 설정", en: "USB chip and device settings" }, body: { ko: "VID/PID 표로 본 칩 이름(FTDI·Prolific PL2303·WCH CH34x·Silicon Labs CP210x 등), Windows 포트 기본값, 드라이버가 둔 Device Parameters — FTDI 지연 타이머(LatencyTimer)는 뜻을 풀어 줍니다.", en: "Chip name from a VID/PID table (FTDI, Prolific PL2303, WCH CH34x, Silicon Labs CP210x …), the Windows port default and the driver's Device Parameters, with the FTDI latency timer (LatencyTimer) explained." } },
+      { title: { ko: "절전·연결 기록", en: "Power saving and history" }, body: { ko: "전원 옵션의 USB 선택적 절전, 이 장치와 위 USB 장치의 «컴퓨터가 이 장치를 끌 수 있음», 이벤트 로그의 연결·드라이버 기록(7·30·90일).", en: "USB selective suspend from the power options, «Allow the computer to turn off this device» for the device and the USB devices above it, and plug and driver events from the event logs (7, 30 or 90 days)." } },
+      { title: { ko: "COM 번호 예약", en: "COM number reservations" }, body: { ko: "Windows 가 예약해 둔 번호(ComDB), 지금 없는 장치가 쥔 번호, 주인 없는 번호, 여러 장치가 쥔 번호 — 새 변환기가 COM15 처럼 높은 번호를 받는 까닭을 봅니다.", en: "Numbers Windows keeps reserved (ComDB), numbers held by devices not connected now, orphan numbers and numbers held by more than one device — why a new adapter ends up on COM15." } },
+      { title: { ko: "연결 시험", en: "Connection test" }, body: { ko: "TX–RX 루프백으로 속도마다 같음·잃음·바뀐 바이트와 1바이트 왕복 ms(중앙값·최대), 드라이버 오류 표시(ClearCommError). 2선 RS-485 변환기의 에코 여부도 알려 줍니다.", en: "A TX–RX loopback per baud rate: bytes same, lost and changed, 1-byte round trip in ms (median and max) and driver error flags (ClearCommError). It also tells whether a 2-wire RS-485 adapter echoes." } },
+      { title: { ko: "읽기만, 결과는 그대로", en: "Read-only, plain results" }, body: { ko: "설정·드라이버를 바꾸지 않습니다(고치는 법은 도움말). 카드마다 «문제 없음(읽은 범위)·볼 것·문제 있음·읽지 못함», A/B 뒤바뀜·종단·바이어스·접지처럼 PC 가 볼 수 없는 것은 늘 따로 적고, 텍스트·JSON 으로 내보낼 때 사용자 폴더 경로는 가립니다.", en: "It never changes settings or drivers (the help explains manual fixes). Each card is marked «No issue found (in what was read) / Worth a look / Problem / Could not read»; what the PC cannot see — A/B swap, termination, bias, ground — is always listed; text and JSON exports mask user folder paths." } },
+    ],
+    steps: [
+      { ko: "왼쪽 «COM 포트» 목록에서 포트를 누르기", en: "Click a port in the «COM ports» list on the left" },
+      { ko: "카드의 결과와 까닭을 보고, 필요하면 도움말의 고치는 법대로 Windows 에서 직접 바꾸기", en: "Read each card's result and reason; if needed, change things yourself in Windows as the help explains" },
+      { ko: "TX·RX 를 이어 «연결 시험», 문의에는 «텍스트 복사» 로 결과 붙이기", en: "Tie TX to RX for the «Connection test»; use «Copy text» to attach the result to a question" },
+    ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 Windows 장치 관리자, NirSoft 의 USBDeview(무료), Uwe Sieber 의 USB Device Tree Viewer(무료), FTDI 칩용 FT_PROG(무료) 등이 있습니다. PortDock Port Inspector 는 COM 포트 하나를 기준으로 드라이버·문제 코드·절전·연결 기록·COM 번호 예약을 한 화면에 모으고, 루프백 연결 시험을 함께 합니다.",
+      en: "Similar tools include Windows Device Manager, NirSoft USBDeview (freeware), Uwe Sieber's USB Device Tree Viewer (freeware) and FTDI's FT_PROG for FTDI chips (free). PortDock Port Inspector gathers the driver, problem code, power saving, plug history and COM number reservations for one COM port in one place, and adds a loopback connection test.",
+    },
+    help: portInspectorHelp,
   },
 ];
 

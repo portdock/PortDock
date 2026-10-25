@@ -23,6 +23,7 @@
 | IP 스캐너, PLC IP 찾기, 산업용 네트워크 스캔 | `/netscan/` | «무료 산업 네트워크 IP 스캐너 (장비 찾기)», «Modbus 502·MC·XGT·S7» |
 | SCPI 프로그램, 계측기 통신 프로그램, VISA 없이 | `/scpi/` | «무료 SCPI 계측기 터미널 (VISA 없이)» |
 | 시리얼 플로터, 시리얼 그래프, 아두이노 그래프 | `/plot/` | «무료 시리얼 플로터 (실시간 그래프·CSV)», «Arduino 식 이름:값» |
+| COM 포트 점검, USB 시리얼 드라이버 확인, 유령 COM 포트, FTDI 지연 | `/port-inspector/` | «무료 COM 포트 점검 (USB 시리얼)», «장치 관리자 문제 코드·FTDI 지연·유령 COM 번호» |
 | <제조사> <모델> 모드버스 주소 (예: LS S100 모드버스 주소, 오토닉스 TK 모드버스) | `/devices/<제조사>/<모델>/` | «<제조사> <모델> Modbus 주소·레지스터 맵», 설명에 «Modbus(모드버스) 통신 주소» |
 | 인버터 모드버스 주소, 온도 조절기 모드버스 | `/devices/` | «국산 장비 Modbus 주소표 — 인버터·온도 조절기·전력 미터» |
 | 모드버스 응답 없음, modbus 타임아웃 | `/guides/modbus-no-response/` | «Modbus 응답 없음·타임아웃 점검 순서 (RTU·TCP)» |
@@ -94,6 +95,7 @@
 | industrial ip scanner, find plc ip | `/en/netscan/` | «Free IP Scanner for Industrial Networks» |
 | scpi terminal, scpi without visa | `/en/scpi/` | «Free SCPI Terminal (LAN Socket, RS-232, No VISA)» |
 | serial plotter, arduino serial plotter alternative | `/en/plot/` | «Free Serial Plotter for Live Graphs and CSV» |
+| COM port inspector, usb serial driver check, ghost com ports, ftdi latency | `/en/port-inspector/` | «Free COM Port Inspector (USB Serial)», «Device Manager problem code, FTDI latency, ghost COM numbers» |
 | <maker> <model> modbus register map | `/en/devices/<maker>/<model>/` | «<maker> <model> Modbus Register Map & Addresses» |
 | modbus timeout, modbus no response | `/en/guides/modbus-no-response/` | «Modbus Timeout or No Response: Checklist (RTU/TCP)» |
 | modbus 40001 address, modbus 0 based vs 1 based | `/en/guides/modbus-address-notation/` | «Modbus Address 40001 vs 0-Based: Reading the Manual» |
@@ -213,9 +215,9 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율).
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
-- 첫 화면 → 도구 9개·가이드 전부·장비 목록.
+- 첫 화면 → 도구 10개·가이드 전부·장비 목록.
 
 ## 등록 (근거는 비공개 검토 문서)
 - Google Search Console: URL 접두어 속성 → 메타 태그 값을 빌드 변수 `PUBLIC_GOOGLE_SITE_VERIFICATION` 에 → `<SITE_URL>/sitemap-index.xml` 제출.
