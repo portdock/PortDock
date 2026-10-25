@@ -1,0 +1,179 @@
+/* 포트 점검(Port Inspector·Serial «연결 점검…») 공용 모양 — 결과 표시 점·연결 시험 표·볼 수 없는 것 상자 */
+.lv {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.lv::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.lv-ok {
+  color: var(--ok, #0f7a3d);
+}
+.lv-ok::before {
+  background: var(--ok, #0f7a3d);
+}
+.lv-look {
+  color: #a16207;
+}
+.lv-look::before {
+  background: #d4a017;
+}
+.lv-problem {
+  color: var(--fail, #b42318);
+}
+.lv-problem::before {
+  background: var(--fail, #b42318);
+}
+.lv-unread {
+  color: var(--muted);
+}
+:root[data-theme="dark"] .lv-look {
+  color: #f3c34f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lv-look {
+    color: #f3c34f;
+  }
+}
+
+.loop-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.loop-modes,
+.loop-bauds,
+.loop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.loop-panel label.inline {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink);
+}
+.loop-panel select {
+  width: auto;
+}
+.chip-check {
+  font-family: var(--mono);
+}
+.loop-panel .link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+.loop-sure {
+  padding: 6px 8px;
+}
+.loop-error {
+  color: var(--fail, #b42318);
+  white-space: pre-wrap;
+}
+.loop-error .hint {
+  color: var(--muted);
+  margin-top: 3px;
+}
+.loop-panel table.loop-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.loop-panel table.loop-table th,
+.loop-panel table.loop-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.loop-panel table.loop-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.loop-echo {
+  padding: 4px 0;
+}
+
+.cannot-see {
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cannot-see ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.guide-links a {
+  color: var(--accent);
+}
+
+/* Serial «연결 점검…» 대화상자 */
+.modal.portcheck-dialog {
+  width: min(760px, calc(100vw - 32px));
+}
+.portcheck-dialog .pc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.portcheck-dialog h4 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(var(--fs, 13px) * 1);
+}
+.kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.loop-panel input[type="radio"],
+.loop-panel input[type="checkbox"] {
+  width: auto;
+}
+.loop-panel table.loop-table th,
+.loop-panel table.loop-table td {
+  white-space: normal;
+}
+.loop-panel table.loop-table td.mono {
+  white-space: nowrap;
+}
+.portcheck-dialog .card-notes {
+  margin: 0;
+  padding-left: 18px;
+}

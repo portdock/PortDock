@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock Port Inspector (돋보기 — 포트를 들여다봄) — 배경: 앱 색(청회색), 흰 고리·손잡이 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#475569"/>
+  <circle cx="112" cy="104" r="48" fill="none" stroke="#ffffff" stroke-width="26"/>
+  <line x1="148" y1="140" x2="190" y2="182" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

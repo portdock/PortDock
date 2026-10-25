@@ -1,0 +1,821 @@
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5f6b78;
+  --line: #d9dee4;
+  --accent: #0b6e75;
+  --accent-ink: #ffffff;
+  --rx: #1d4ed8;
+  --tx: #0f7a3d;
+  --sel: #e6f2f3;
+  --ok: #0f7a3d;
+  --fail: #b42318;
+  --danger: #b42318;
+  --mono: "Cascadia Mono", Consolas, "D2Coding", "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Segoe UI", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --panel: #181c21;
+    --ink: #e4e8ec;
+    --muted: #93a0ad;
+    --line: #2a3038;
+    --accent: #4fb3ba;
+    --accent-ink: #0b1215;
+    --rx: #7aa7ff;
+    --tx: #6ccf92;
+    --sel: #1f2c30;
+    --ok: #6ccf92;
+    --fail: #ff8a80;
+    --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+}
+
+/* PortDock Port Inspector — 기본 모양은 다른 PortDock 앱과 같다(Net Scan 의 App.css 를 바탕으로) */
+.app {
+  display: grid;
+  grid-template-columns: 250px 1fr 280px;
+  height: 100%;
+}
+
+.side,
+.right {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.right {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-weight: 700;
+  font-size: calc(var(--fs, 13px) * 1.231);
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.lang {
+  width: auto;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.checks {
+  display: flex;
+  gap: 14px;
+}
+input,
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 7px;
+  min-width: 0;
+  width: 100%;
+}
+input[type="checkbox"] {
+  width: auto;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  margin: 4px 0;
+}
+.hint {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.hint.warn {
+  color: var(--fail);
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+.btn.small {
+  padding: 3px 8px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.status {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--bg);
+}
+.s-connected {
+  color: var(--ok);
+}
+.s-disconnected,
+.s-reconnecting {
+  color: var(--fail);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.seg {
+  font: inherit;
+  font-size: calc(var(--fs, 13px) * 0.923);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.seg.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.grow {
+  flex: 1;
+}
+.counter {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  font-variant-numeric: tabular-nums;
+}
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  min-width: 0;
+}
+.mono {
+  font-family: var(--mono);
+}
+.muted {
+  color: var(--muted);
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.dot.s-connected {
+  background: var(--ok);
+}
+.dot.s-disconnected {
+  background: var(--fail);
+}
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line);
+  margin: 0 2px;
+}
+.rec {
+  color: var(--fail);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.logo small {
+  font-weight: 600;
+  color: var(--muted);
+}
+.main {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+.btn {
+  white-space: nowrap;
+}
+input.bad {
+  border-color: var(--fail);
+}
+.error {
+  color: var(--fail);
+}
+.error.pad {
+  padding: 6px 10px;
+}
+.toolbar {
+  flex-wrap: wrap;
+}
+.toolbar > span,
+.toolbar > label,
+.toolbar > button {
+  white-space: nowrap;
+}
+.num {
+  width: 76px;
+}
+
+/* ---- 두 칸(왼쪽 포트 목록 + 가운데 카드) */
+.app {
+  grid-template-columns: 270px minmax(0, 1fr);
+}
+.row-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.row-inline > select,
+.row-inline > input {
+  flex: 1;
+}
+.nic-info {
+  margin-top: -4px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.range-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: -4px;
+}
+.range-row .btn {
+  flex-shrink: 0;
+}
+.range-row label.inline {
+  color: var(--muted);
+}
+.progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s;
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 6px 10px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.tab {
+  font: inherit;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 5px 12px;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.tab.on {
+  color: var(--ink);
+  background: var(--bg);
+  border-color: var(--line);
+  font-weight: 600;
+}
+.tab-n {
+  margin-left: 6px;
+  font-size: calc(var(--fs, 13px) * 0.85);
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--sel);
+  color: var(--accent);
+}
+.tab-n.ok {
+  color: var(--ok);
+  background: transparent;
+}
+.tab-n.bad {
+  color: #fff;
+  background: var(--fail);
+}
+.tabs .rec {
+  margin: 0 0 6px auto;
+}
+
+/* 결과 표 */
+.filter {
+  width: 260px;
+  max-width: 100%;
+}
+.table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+}
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--fs, 13px) * 0.962);
+}
+table.grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0;
+  white-space: nowrap;
+}
+table.grid.mon-grid th {
+  padding: 5px 8px;
+}
+.th-btn {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 5px 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.th-btn:hover {
+  color: var(--ink);
+}
+table.grid td {
+  padding: 4px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+table.hosts tbody tr {
+  cursor: default;
+}
+table.grid tbody tr:hover {
+  background: color-mix(in srgb, var(--sel) 60%, transparent);
+}
+table.grid tbody tr.sel {
+  background: var(--sel);
+}
+table.grid tbody tr.gone td {
+  opacity: 0.55;
+}
+table.grid tbody tr.down {
+  background: color-mix(in srgb, var(--fail) 10%, transparent);
+}
+.ellipsis-cell {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.num-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.bad-text {
+  color: var(--fail);
+}
+.chips {
+  white-space: normal !important;
+  min-width: 230px;
+}
+.chip {
+  display: inline-block;
+  font-size: calc(var(--fs, 13px) * 0.85);
+  line-height: 1.5;
+  padding: 0 7px;
+  margin: 1px 4px 1px 0;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip.svc.ind {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.chip.svc.ident {
+  border-style: dashed;
+  color: var(--ink);
+}
+.chip.new {
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 600;
+}
+.chip.gone {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+button.chip {
+  font-family: inherit;
+  cursor: pointer;
+}
+button.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.mark {
+  margin-left: 6px;
+  font-family: var(--sans);
+  font-size: calc(var(--fs, 13px) * 0.8);
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--sel);
+  color: var(--accent);
+}
+.mark.new {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+  font-weight: 600;
+}
+.mark.gone {
+  background: color-mix(in srgb, var(--fail) 14%, transparent);
+  color: var(--fail);
+}
+.mark.gw {
+  color: var(--muted);
+}
+
+/* 고른 장비 */
+.detail-bar {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 40%;
+  overflow: auto;
+}
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.detail-actions,
+.detail-ports {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ident {
+  font-size: calc(var(--fs, 13px) * 0.923);
+  overflow-wrap: anywhere;
+}
+
+/* 핑 감시 */
+.monitor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mon-host {
+  width: 200px;
+}
+.mon-events {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 6px 10px;
+  max-height: 32%;
+  min-height: 70px;
+  overflow: auto;
+}
+.mon-events h3 {
+  margin: 0 0 4px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+  color: var(--muted);
+}
+.mon-events ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.mon-events li.down {
+  color: var(--fail);
+}
+.mon-events li.up {
+  color: var(--ok);
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ---- 쉽게 쓰기 (10/18): 접은 «찾는 방법·포트», 처음 쓰는 순서 */
+/* 펼친 내용은 ::details-content 안에 들어가 flex gap 이 먹지 않는다 — 칸마다 위 여백으로 */
+details.adv > :not(summary) {
+  margin-top: 8px;
+}
+details.adv > summary {
+  cursor: pointer;
+  color: var(--muted);
+  user-select: none;
+}
+details.panel > summary .sum-title {
+  color: var(--ink);
+}
+details.panel > summary .sum-note {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.846);
+  margin-left: 6px;
+}
+/* 카드 모양은 shared/firstcard.css — 여기서는 결과 칸 안 자리만 */
+.table-wrap > .first-card {
+  margin: 24px auto;
+}
+
+/* ---- 포트 칩(이름으로 고르기)·Modbus 칩 복사(10/18) */
+.port-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+button.chip {
+  font: inherit;
+  cursor: pointer;
+}
+.port-chip {
+  font-size: calc(var(--fs, 13px) * 0.846);
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+.port-chip.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+.port-chip small {
+  opacity: 0.75;
+}
+.ports-custom-btn {
+  align-self: flex-start;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.chip.mb-copy:hover,
+.chip.mb-copy:focus-visible {
+  outline: 1px solid var(--accent);
+}
+
+/* ---- Port Inspector: 포트 목록·카드 */
+.ports-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ports-head .label {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.port-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 60px;
+  max-height: 55vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px;
+  background: var(--bg);
+}
+.port-item {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 5px 6px;
+  cursor: pointer;
+}
+.port-item:hover {
+  background: var(--panel);
+}
+.port-item.sel {
+  background: var(--sel);
+  border-color: var(--accent);
+}
+.port-item.absent .pi-name,
+.port-item.absent .pi-port {
+  color: var(--muted);
+}
+.pi-port {
+  font-weight: 600;
+}
+.pi-tags {
+  display: flex;
+  gap: 4px;
+}
+.tag {
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.sel-title {
+  font-size: calc(var(--fs, 13px) * 1.08);
+}
+.cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pad {
+  padding: 8px 2px;
+}
+details.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+}
+details.card > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  cursor: pointer;
+  list-style-position: inside;
+}
+details.card > summary .card-title {
+  font-weight: 600;
+}
+details.card[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.card-notes {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+.kv {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 14px;
+  margin: 0;
+}
+.kv-row {
+  display: contents;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.id-line .btn {
+  padding: 0 5px;
+}
+.sub-title {
+  font-weight: 600;
+  margin-top: 4px;
+}
+table.grid.params td,
+table.grid.events td,
+table.grid.nics td {
+  vertical-align: top;
+}
+table.grid.params tr.noted td:first-child {
+  font-weight: 600;
+}
+table.grid.events tr.ev-problem td,
+table.grid.events tr.ev-delete td {
+  color: var(--fail);
+}
+.ev-msg {
+  max-width: 520px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nowrap {
+  white-space: nowrap;
+}
+ul.plain {
+  margin: 0;
+  padding-left: 18px;
+}
+.cards > .first-card {
+  align-self: center;
+  margin-top: 24px;
+}

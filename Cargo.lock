@@ -2873,6 +2873,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-port-inspector"
+version = "0.1.0"
+dependencies = [
+ "portdock-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-window-state",
+]
+
+[[package]]
 name = "portdock-scpi"
 version = "0.1.0"
 dependencies = [

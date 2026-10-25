@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PortDock Port Inspector",
+  "version": "0.1.0",
+  "identifier": "dev.portdock.port-inspector",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PortDock Port Inspector",
+        "width": 1200,
+        "height": 780,
+        "minWidth": 760,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "PortDock",
+    "copyright": "Copyright (C) 2026 PortDock",
+    "homepage": "https://portdock.dev",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../../../tools/installer-license.txt",
+    "shortDescription": "Read-only COM port inspector and loopback tester",
+    "longDescription": "PortDock Port Inspector shows, for one COM port, the device and driver (provider, version, date, INF), the Device Manager problem code with what it means, the USB chip from VID/PID, device settings such as the FTDI latency timer, Windows port defaults, USB power saving, recent plug and driver events, and COM number reservations — read-only, without administrator rights. With TX and RX tied together it measures round-trip bytes and milliseconds per baud rate, and it tells whether a 2-wire RS-485 adapter echoes what it sends.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Korean"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "PortDock",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

@@ -433,6 +433,23 @@ const TIPS: Record<string, Tip> = {
   plStats: ["최근 값과 지금 보이는 범위의 최소·최대·평균(빈 값 제외).", "The latest value and the min, max and mean over the visible range (blanks excluded)."],
   plRaw: ["받은 줄 그대로(최근 것). 해석에 실패한 줄은 빨강과 이유, 연결·끊김 같은 사건은 회색.", "Received lines as is (latest). Failed lines show in red with the reason; events such as connect/disconnect in gray."],
   plCounts: ["받은 값 줄 수·해석 실패 수·초당 줄 수·받은 바이트(«지우기» 뒤로).", "Value rows, failed lines, rows per second and bytes received (since «Clear»)."],
+  // ---- Port Inspector — 읽기만 한다(관리자 권한 없이)
+  portCheck: ["고른 포트의 장치·드라이버·문제 코드·지연 타이머·절전을 읽고(관리자 권한 없이), TX·RX 루프백·2선 RS-485 에코를 잽니다. 시험은 연결을 끊은 뒤에.", "Reads the chosen port's device, driver, problem code, latency timer and power saving (no admin rights), and runs a TX–RX loopback or 2-wire RS-485 echo test. Disconnect before testing."],
+  piPorts: ["COM 포트 장치 목록. 지금 연결된 것이 먼저, COM 번호순입니다. 빨간 번호는 장치 관리자 문제 코드입니다.", "COM port devices — connected first, by COM number. A red number is a Device Manager problem code."],
+  piReload: ["목록·고른 포트·연결 기록을 다시 읽습니다. 변환기를 꽂거나 뺀 뒤에 누릅니다.", "Reads the list, the chosen port and its history again. Press after plugging or unplugging an adapter."],
+  piHidden: ["지금 꽂혀 있지 않은 장치(예전에 꽂았던 변환기·숨은 장치)도 목록에 보입니다. 장치 관리자의 «숨겨진 장치 표시» 와 같습니다.", "Also lists devices not plugged in now (adapters used earlier, hidden devices) — like «Show hidden devices» in Device Manager."],
+  piCopyText: ["카드별 결과와 읽은 값을 글로 복사합니다 — 문제 보고·문의에 붙이기 좋게. 사용자 폴더 경로는 «~» 로 가립니다.", "Copies each card's result and the values read as text — handy for problem reports. User folder paths are masked as «~»."],
+  piCopyJson: ["읽은 값 전부를 JSON 으로 복사합니다.", "Copies every value read as JSON."],
+  piSave: ["결과를 파일로 저장합니다(.txt 는 글, .json 은 JSON).", "Saves the result to a file (.txt as text, .json as JSON)."],
+  piCardDevice: ["장치·드라이버(제공자·버전·날짜·INF)·문제 코드와 뜻·VID/PID 로 본 칩·마지막 연결/분리 시각.", "Device and driver (provider, version, date, INF), problem code and meaning, chip from VID/PID, last plug-in/removal times."],
+  piCardSettings: ["Windows 포트 기본값과 드라이버가 장치마다 둔 값(Device Parameters — FTDI 지연 타이머 등).", "The Windows port default and the values the driver stores per device (Device Parameters — FTDI latency timer …)."],
+  piCardPower: ["전원 옵션의 USB 선택적 절전과, 장치·위 USB 장치의 «전원 절약을 위해 끌 수 있음».", "USB selective suspend from power options, and «allow the computer to turn off this device» for the device and the USB devices above it."],
+  piCardHistory: ["이 장치의 PnP 이벤트(연결·드라이버 설치·삭제·시작 문제) — 이벤트 로그에서 기간만큼.", "PnP events for this device (plug-in, driver install, removal, start problems) from the event logs for the chosen period."],
+  piCardCom: ["Windows 가 예약해 둔 COM 번호(ComDB)와 실제 장치를 견줍니다 — 주인 없는 번호·겹친 번호.", "Compares the COM numbers Windows has reserved (ComDB) with real devices — orphan and duplicate numbers."],
+  piCardLoop: ["TX·RX 를 이어 바이트 왕복을 재거나, 2선 RS-485 변환기의 에코를 봅니다. 선·버스에서 장비를 뗀 뒤에 합니다.", "Measures byte round trips with TX tied to RX, or checks a 2-wire RS-485 adapter for echo. Disconnect devices from the line first."],
+  piCardNics: ["이 PC 랜카드의 링크 속도·이중·IPv4·게이트웨이.", "Link speed, duplex, IPv4 and gateway of this PC's network adapters."],
+  piDays: ["이벤트 로그에서 찾아볼 기간.", "How far back to search the event logs."],
+  piCannot: ["PC 가 읽을 수 없는 것 — 결과와 상관없이 따로 확인합니다.", "What the PC cannot read — check it separately whatever the results say."],
 };
 
 export function tip(lang: "ko" | "en", key: string) {

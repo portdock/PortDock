@@ -1,0 +1,23 @@
+[package]
+name = "portdock-port-inspector"
+description = "PortDock Port Inspector — COM 포트의 장치·드라이버·문제 코드·설정·절전·연결 기록을 관리자 권한 없이 읽고 루프백·에코를 재는 도구"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_port_inspector_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-window-state = "2"
