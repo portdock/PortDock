@@ -2,6 +2,8 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { checksumToRust, type ChecksumKind, type CkOpts, type Encoding } from "@shared/format";
 import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
+import type { LoopConfig, LoopEvent, PortReport } from "@shared/portinfo";
+import type { PortCheckApi } from "@shared/PortCheckDialog";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 
 export type TextMode = "hex" | "ascii";
@@ -140,6 +142,17 @@ export const api = {
   decodeModbus: (bytes: number[]) => invoke<ModbusInfo | null>("decode_modbus", { bytes }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
+};
+
+/** «연결 점검…»(shared/PortCheckDialog) — 장치 읽기·연결 시험 */
+export const checkApi: PortCheckApi = {
+  report: (id: string) => invoke<PortReport>("pi_report", { id }),
+  start: (config: LoopConfig, onEvent: (e: LoopEvent) => void) => {
+    const ch = new Channel<LoopEvent>();
+    ch.onmessage = onEvent;
+    return invoke<void>("loop_start", { config, onEvent: ch });
+  },
+  cancel: () => invoke<void>("loop_cancel"),
 };
 
 const FLOW = {

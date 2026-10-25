@@ -501,6 +501,16 @@ export const help: HelpDoc = {
 const SERIAL_EXTRA = {
   ko: [
     {
+      title: "연결 점검…",
+      id: "portcheck",
+      body: [
+        "- 왼쪽 «포트» 아래 «연결 점검…» 은 고른 포트의 장치 이름·VID:PID·칩·드라이버(제공자·버전·날짜·서비스 이름)·장치 관리자 문제 코드와 해 볼 것·FTDI 지연 타이머·USB 절전 설정을 관리자 권한 없이 읽어 «문제 없음(읽은 범위) / 볼 것 / 문제 있음» 으로 보입니다. 아무것도 바꾸지 않습니다.",
+        "- 연결 시험: TX·RX 를 이어 두면(DB9 2–3번) 속도마다 바이트가 그대로 돌아오는지와 1바이트 왕복 시간(ms)을 재고, 2선 RS-485 변환기는 보낸 것을 되받는지(에코)를 봅니다. 시험은 포트를 따로 열므로 연결을 끊은 뒤에 하고, 시작 전에 «선·버스에서 장비를 떼었나» 를 한 번 더 묻습니다.",
+        "- 다른 프로그램이 포트를 쓰는 중이면 «사용 중» 과 함께, Process Explorer «Find Handle» 로 쥔 프로그램을 찾는 법이 나옵니다.",
+        "- A/B 뒤바뀜·종단·바이어스·접지는 PC 가 볼 수 없어 늘 따로 적고 가이드 링크를 붙입니다. 연결 기록·COM 번호 예약·숨은 장치까지 보려면 PortDock Port Inspector 를 씁니다.",
+      ],
+    },
+    {
       title: "Break·터미널 보기",
       body: [
         "- «Break»(보내기 줄 «⋯ 더보기» 안): TX 줄을 옆 칸의 시간(ms, 기본 100) 동안 0(스페이스)으로 붙잡는 신호를 보냅니다. LIN·DMX, 일부 장비의 «주의» 신호, 부트로더 진입에 씁니다. 앞서 넣은 송신이 다 나간 뒤에 보내고, 로그에 «BREAK 100ms» 가 남습니다.",
@@ -521,6 +531,16 @@ const SERIAL_EXTRA = {
     },
   ],
   en: [
+    {
+      title: "Check connection…",
+      id: "portcheck",
+      body: [
+        "- «Check connection…» under «Ports» on the left reads the chosen port's device name, VID:PID, chip, driver (provider, version, date, service name), Device Manager problem code and what to try, FTDI latency timer and USB power saving — without administrator rights — and marks them «No issue found (in what was read) / Worth a look / Problem». Nothing is changed.",
+        "- Connection test: with TX tied to RX (DB9 pins 2–3) it checks that bytes come back unchanged at each speed and measures the 1-byte round trip (ms); for a 2-wire RS-485 adapter it checks whether it receives what it sends (echo). The test opens the port itself, so disconnect first; before starting it asks once more whether devices are off the line/bus.",
+        "- If another program has the port open you get «busy» plus how to find that program with «Find Handle» in Process Explorer.",
+        "- A/B swaps, termination, bias and ground cannot be seen from the PC, so they are always listed with guide links. For history, COM number reservations and hidden devices use PortDock Port Inspector.",
+      ],
+    },
     {
       title: "Break and terminal view",
       body: [

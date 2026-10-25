@@ -29,6 +29,45 @@ fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
 }
 
+/// «연결 점검…» — 포트 하나의 장치·드라이버·설정·절전 읽기(Port Inspector 와 같은 코어, 읽기만)
+#[tauri::command(async)]
+fn pi_report(id: String) -> Result<portdock_core::portinfo::PortReport, String> {
+    portdock_core::portinfo::report(&id)
+}
+
+/// «연결 점검…» 연결 시험(루프백·에코) — 하나만 돈다. 포트를 따로 열므로 연결 중인 포트는 화면이 막는다
+#[tauri::command(async)]
+fn loop_start(test: State<LoopTest>, config: portdock_core::loopback::LoopConfig, on_event: Channel<portdock_core::loopback::LoopEvent>) -> Result<(), String> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let cancel = {
+        let mut g = test.0.lock().unwrap_or_else(|e| e.into_inner());
+        if g.as_ref().is_some_and(|c| !c.load(Ordering::SeqCst)) {
+            return Err(tr!("이미 시험 중입니다", "A test is already running").into());
+        }
+        let c = Arc::new(AtomicBool::new(false));
+        *g = Some(c.clone());
+        c
+    };
+    std::thread::spawn(move || {
+        portdock_core::loopback::run(&config, &cancel, &mut |e| {
+            let _ = on_event.send(e);
+        });
+        cancel.store(true, Ordering::SeqCst);
+    });
+    Ok(())
+}
+
+#[tauri::command]
+fn loop_cancel(test: State<LoopTest>) {
+    if let Some(c) = test.0.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
+        c.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+/// 돌고 있는 연결 시험의 취소 표시
+#[derive(Default)]
+struct LoopTest(std::sync::Mutex<Option<Arc<std::sync::atomic::AtomicBool>>>);
+
 /// 여는 동안(블루투스 COM 은 수 초) 다른 명령을 막지 않는다
 #[tauri::command(async)]
 fn open_session(
@@ -271,7 +310,11 @@ pub fn run() {
             Ok(())
         })
         .manage(Sessions::default())
+        .manage(LoopTest::default())
         .invoke_handler(tauri::generate_handler![
+            pi_report,
+            loop_start,
+            loop_cancel,
             set_lang,
             report_pending,
             report_dismiss,

@@ -6,6 +6,7 @@ import {
   ascii,
   hex,
   parityChar,
+  checkApi,
   type ChecksumKind,
   type Frame,
   type FrameMode,
@@ -54,6 +55,7 @@ import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@sh
 import { LiveStats, ViewOptions } from "@shared/StatsBar";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { FileSendDialog, JobBar, type FileJob, type Pace, type Progress } from "@shared/FileSend";
+import { PortCheckDialog } from "@shared/PortCheckDialog";
 import { TermBuffer } from "@shared/terminal";
 import { TerminalView } from "@shared/TerminalView";
 import { Popover } from "@shared/Popover";
@@ -652,6 +654,8 @@ export default function App() {
 
   // ---- 파일 보내기·Break
   const [showFile, setShowFile] = useState(false);
+  // «연결 점검…»(shared/PortCheckDialog) — 고른 포트의 장치 정보·연결 시험
+  const [showCheck, setShowCheck] = useState(false);
   async function startFile(path: string, name: string, pace: Pace) {
     if (!sessionId) return;
     const r = await api.sendFile(sessionId, path, pace);
@@ -889,15 +893,22 @@ export default function App() {
             </option>
           ))}
         </select>
-        {(() => {
-          const p = ports.find((x) => x.name === cfg.port);
-          return p?.vid != null ? (
-            <div className="hint">
-              USB {p.vid.toString(16).toUpperCase().padStart(4, "0")}:{p.pid?.toString(16).toUpperCase().padStart(4, "0")}
-              {p.serial_number ? ` · S/N ${p.serial_number}` : ""}
-            </div>
-          ) : null;
-        })()}
+        <div className="port-info-row">
+          {(() => {
+            const p = ports.find((x) => x.name === cfg.port);
+            return p?.vid != null ? (
+              <span className="hint">
+                USB {p.vid.toString(16).toUpperCase().padStart(4, "0")}:{p.pid?.toString(16).toUpperCase().padStart(4, "0")}
+                {p.serial_number ? ` · S/N ${p.serial_number}` : ""}
+              </span>
+            ) : (
+              <span />
+            )
+          })()}
+          <button type="button" className="btn small ghost port-check-btn" disabled={!cfg.port} onClick={() => setShowCheck(true)} data-tip={tip(lang, "portCheck")}>
+            {t("portCheck")}
+          </button>
+        </div>
         {portNotice && !connected && <div className="hint warn">{portNotice}</div>}
 
         <div className="grid2">
@@ -1553,6 +1564,7 @@ export default function App() {
           }}
         />
       )}
+      {showCheck && cfg.port && <PortCheckDialog lang={lang} app="PortDock Serial" port={cfg.port} connected={connected} api={checkApi} onClose={() => setShowCheck(false)} />}
       {showFile && (
         <FileSendDialog
           lang={lang}

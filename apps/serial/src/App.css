@@ -717,3 +717,15 @@ details.panel > summary .sum-note {
 .mb-rx-ask {
   flex-wrap: wrap;
 }
+
+/* 포트 아래 줄 — USB VID:PID 와 «연결 점검…» */
+.port-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: -2px;
+}
+.port-check-btn {
+  white-space: nowrap;
+}
