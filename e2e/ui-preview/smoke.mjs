@@ -1996,6 +1996,24 @@ async function runApp(app, port) {
       await sleep(150);
       await clickText(".loop-actions .btn.danger");
       await expectJs("loop cancelled", "return !document.querySelector('.loop-actions .btn.danger') && document.querySelectorAll('.loop-table tbody tr').length < 5", 3000);
+      // (10/26) 시험 중 다른 포트를 고르면 앞 시험을 멈추고, 앞 포트 결과가 새 포트 표에 들어오지 않는다
+      await startLoop("loop switch");
+      await sleep(150);
+      await pick("COM3");
+      await expectJs("loop switch stops", `return !document.querySelector('.loop-actions .btn.danger') && window.__pdMock.loop()?.done === true && window.__pdMock.loop()?.cancel === true && !/${ko ? "시험 중" : "testing"}/.test(document.title)`, 3000);
+      await sleep(300);
+      await expectJs("loop switch no rows", "return document.querySelectorAll('.loop-table tbody tr').length === 0");
+      // (10/26) 늦게 온 앞 포트 읽기 값이 새로 고른 포트를 덮지 않는다(COM5 를 700ms 늦게 → 곧바로 COM3)
+      await d.executeScript("window.__pdMock.piDelay = { COM5: 700 };");
+      await pick("COM5");
+      await sleep(30);
+      await pick("COM3");
+      await sleep(1100);
+      await d.executeScript("window.__pdMock.piDelay = {};");
+      await expectJs("stale report", "return /CH340/.test((document.querySelector('details.card-device') || {}).textContent || '') && !/FTDI/.test((document.querySelector('details.card-device') || {}).textContent || '')");
+      await pick("COM5");
+      await expectJs("back to COM5", "return /FTDI/.test((document.querySelector('details.card-device') || {}).textContent || '')", 3000);
+      await js("document.querySelectorAll('details.card').forEach((x) => (x.open = true))");
 
       // ---- 복사·저장 — «볼 수 없는 것» 이 늘 들어가고 금지 낱말이 없다
       await js("window.__smoke.clip = null");

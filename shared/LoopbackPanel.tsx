@@ -110,14 +110,38 @@ export function LoopbackPanel({
   const [busy, setBusy] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
+  // 지금 시험의 번호 — 포트를 바꾸거나 닫은 뒤 늦게 온 앞 시험의 사건은 버린다
+  const runRef = useRef(0);
+  const runningRef = useRef(running);
+  runningRef.current = running;
+  const apiRef = useRef(api);
+  apiRef.current = api;
+  const onRunningRef = useRef(onRunning);
+  onRunningRef.current = onRunning;
   useEffect(() => onState?.(state), [state, onState]);
   useEffect(() => onRunning?.(running), [running, onRunning]);
-  // 포트를 바꾸면 결과를 지운다
+  // 포트를 바꾸면 결과를 지우고, 돌던 시험은 멈춘다(앞 포트 결과가 새 포트 표에 들어오지 않게)
   useEffect(() => {
     setState({ results: [], echo: null, error: null });
     setBusy(false);
     setAsking(false);
+    if (runningRef.current) {
+      runRef.current++;
+      void apiRef.current.cancel().catch(() => {});
+      setRunning(false);
+      setProgress(null);
+    }
   }, [port]);
+  // 패널이 사라지면(다른 포트를 골라 카드가 바뀜·대화상자 닫힘) 돌던 시험을 멈추고 «시험 중» 을 푼다
+  useEffect(
+    () => () => {
+      if (!runningRef.current) return;
+      runRef.current++;
+      void apiRef.current.cancel().catch(() => {});
+      onRunningRef.current?.(false);
+    },
+    [],
+  );
 
   const list = [...LOOP_BAUDS, ...MORE_BAUDS].sort((a, b) => a - b);
   const shown = showMore ? list : LOOP_BAUDS;
@@ -131,7 +155,9 @@ export function LoopbackPanel({
     setBusy(false);
     setProgress(null);
     setState({ results: [], echo: null, error: null });
+    const id = ++runRef.current;
     const onEvent = (e: LoopEvent) => {
+      if (id !== runRef.current) return;
       if (e.type === "progress") setProgress({ baud: e.baud, pct: e.total ? Math.round((e.done / e.total) * 100) : 0 });
       else if (e.type === "baud") setState((s) => ({ ...s, results: [...s.results, e.result] }));
       else if (e.type === "echo") setState((s) => ({ ...s, echo: e.result }));
@@ -146,6 +172,7 @@ export function LoopbackPanel({
     try {
       await api.start({ port, mode, bauds: mode === "echo" ? [echoBaud] : bauds }, onEvent);
     } catch (e) {
+      if (id !== runRef.current) return;
       setState((s) => ({ ...s, error: String(e) }));
       setRunning(false);
     }

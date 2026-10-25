@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { load, store } from "@shared/framing";
@@ -141,9 +141,14 @@ export default function App() {
     if (reportErr) noteError(reportErr);
   }, [reportErr]);
 
+  // 읽기 요청 번호 — 늦게 온 앞 포트의 값이 새로 고른 포트를 덮지 않게
+  const reportSeq = useRef(0);
+  const eventsSeq = useRef(0);
   const readPort = useCallback(() => {
+    const seq = ++reportSeq.current;
     if (!sel) {
       setReport(null);
+      setReading(false);
       return;
     }
     setReading(true);
@@ -153,12 +158,17 @@ export default function App() {
     setReport((old) => (old && entryKey(old.entry) === key ? old : null));
     api
       .report(key)
-      .then(setReport)
+      .then((r) => {
+        if (seq === reportSeq.current) setReport(r);
+      })
       .catch((e) => {
+        if (seq !== reportSeq.current) return;
         setReport(null);
         setReportErr(String(e));
       })
-      .finally(() => setReading(false));
+      .finally(() => {
+        if (seq === reportSeq.current) setReading(false);
+      });
     api
       .comNumbers()
       .then(setCom)
@@ -168,16 +178,25 @@ export default function App() {
 
   // 이벤트 로그는 따로(몇 초 걸릴 수 있다)
   const readEvents = useCallback(() => {
+    const seq = ++eventsSeq.current;
     if (!sel?.instanceId) {
       setEvents(null);
+      setEvLoading(false);
       return;
     }
     setEvLoading(true);
+    const mine = () => seq === eventsSeq.current;
     api
       .events(sel.instanceId, days)
-      .then(setEvents)
-      .catch((e) => setEvents({ events: [], days, errors: [String(e)] }))
-      .finally(() => setEvLoading(false));
+      .then((ev) => {
+        if (mine()) setEvents(ev);
+      })
+      .catch((e) => {
+        if (mine()) setEvents({ events: [], days, errors: [String(e)] });
+      })
+      .finally(() => {
+        if (mine()) setEvLoading(false);
+      });
   }, [sel, days]);
   useEffect(readEvents, [readEvents]);
 

@@ -210,7 +210,8 @@ fn loop_baud(link: &mut dyn Link, cfg: &LoopConfig, baud: u32, cancel: &AtomicBo
     let _ = link.flags();
     let bytes = cfg.bytes.clamp(CHUNK, 65_536);
     let data = pattern(baud, bytes);
-    let total = bytes + cfg.pings;
+    let pings = cfg.pings.min(1_000);
+    let total = bytes + pings;
     let mut got = Vec::with_capacity(bytes);
     let mut nothing_back = false;
     let mut sent = 0;
@@ -238,7 +239,7 @@ fn loop_baud(link: &mut dyn Link, cfg: &LoopConfig, baud: u32, cancel: &AtomicBo
     let mut ping_lost = 0;
     if !nothing_back {
         link.clear();
-        for i in 0..cfg.pings {
+        for i in 0..pings {
             if cancel.load(Ordering::SeqCst) {
                 return Ok(None);
             }

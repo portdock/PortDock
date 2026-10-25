@@ -71,6 +71,7 @@ export const TOOLS: Tool[] = [
       { title: { ko: "Modbus RTU 풀이", en: "Modbus RTU decoding" }, body: { ko: "요청·응답·예외를 주소·기능·값으로 풀어 보여 줍니다.", en: "Decodes requests, responses and exceptions into address, function and values." } },
       { title: { ko: "신호선", en: "Signal lines" }, body: { ko: "DTR·RTS 를 켜고 끄고, CTS·DSR·RI·CD 변화를 표시등과 기록으로 보여 줍니다.", en: "Toggle DTR/RTS and watch CTS/DSR/RI/CD on indicators and in the log." } },
       { title: { ko: "시험 기록", en: "Test logs" }, body: { ko: "밀리초 시각, 명령 목록, 반복 보내기, 밤새 파일로 계속 저장.", en: "Millisecond timestamps, a command list, repeat sending and continuous logging to file." } },
+      { title: { ko: "연결 점검…", en: "Check connection…" }, body: { ko: "고른 포트의 장치·드라이버·문제 코드·FTDI 지연 타이머·USB 절전을 관리자 권한 없이 읽고, 루프백·2선 RS-485 에코 시험을 합니다. 아무것도 바꾸지 않습니다.", en: "Reads the chosen port's device, driver, problem code, FTDI latency timer and USB power saving without administrator rights, and runs a loopback or 2-wire RS-485 echo test. Nothing is changed." } },
     ],
     steps: [
       { ko: "포트·속도·패리티를 고르고 «연결»", en: "Pick the port, baud rate and parity, then «Connect»" },

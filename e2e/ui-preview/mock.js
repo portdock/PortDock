@@ -2074,7 +2074,8 @@ async function pinsp(cmd, a) {
       await sleep(60);
       return PI_DEV.filter((d) => a.hidden || d.present).map(piEntry);
     case "pi_report": {
-      await sleep(80);
+      // 시험이 포트마다 늦게 답하게 할 수 있다(__pdMock.piDelay = { COM5: 700 }) — 늦게 온 앞 포트 값이 덮지 않는지
+      await sleep(80 + (window.__pdMock.piDelay?.[a.id] ?? window.__pdMock.piDelay?.[piFind(a.id)?.port] ?? 0));
       const d = piFind(a.id);
       return d ? piReport(d) : fail(tr(`장치를 찾을 수 없습니다: ${a.id}`, `Device not found: ${a.id}`));
     }
