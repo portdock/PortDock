@@ -125,9 +125,12 @@ fn run(inner: Arc<(Mutex<State>, Condvar)>) {
         }
         g.heap.pop();
         if let Some(job) = g.jobs.remove(&id) {
-            // 일감은 잠금 밖에서 — 일감이 다시 예약해도 막히지 않게
+            // 일감은 잠금 밖에서 — 일감이 다시 예약해도 막히지 않게.
+            // 일감이 패닉해도 스레드는 살아 다음 일감을 부른다 — 그냥 죽으면 running 이 true 로 남아
+            // 새 스레드를 만들지 않으니 뒤의 예약이 영영 불리지 않는다.
+            // (릴리스 빌드는 panic = "abort" 라 패닉이 곧 프로세스 종료다 — 이 보호는 디버그·테스트 빌드용)
             drop(g);
-            job();
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(job));
             g = m.lock().unwrap_or_else(|e| e.into_inner());
         }
     }
@@ -162,6 +165,17 @@ mod tests {
         assert_eq!(d.pending(), 0);
         // 닫힌 뒤 예약은 조용히 버린다
         assert_eq!(d.schedule(Duration::ZERO, || panic!("closed")), Ok(()));
+    }
+
+    /// 일감 하나가 패닉해도 예약 스레드가 살아 다음 일감을 부른다
+    #[test]
+    fn survives_a_panicking_job() {
+        let d = Delayer::new();
+        let (tx, rx) = mpsc::channel();
+        d.schedule(Duration::ZERO, || panic!("일감 패닉(시험)")).unwrap();
+        d.schedule(Duration::from_millis(20), move || tx.send(1).unwrap()).unwrap();
+        assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap(), 1);
+        assert!(d.inner.0.lock().unwrap().running);
     }
 
     /// 놀던 스레드가 끝난 뒤에도 다시 예약하면 돈다
