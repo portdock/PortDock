@@ -28,7 +28,7 @@ node serial.mjs
 
 ## 화면 미리보기·캡처 (장비·Rust 없이, `ui-preview/`)
 백엔드 대신 가짜 응답(`ui-preview/mock.js`)을 넣고 화면만 브라우저에 띄운다. 글자 잘림·배치·테마·글자 크기를 빠르게 본다.
-1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208, plot 5209)
+1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208, plot 5209, port-inspector 5210)
 2. `e2e` 폴더에서: `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/shots.mjs [앱]` → `shots/ui/*.png` + `probe.json`(잘린 칸 목록)
 - 경우: 최소 창(1000×640) 한국어 대기·연결, 영어, 넓은 창 어두운 테마, 글자 17px, 설정 창
 - 가짜 응답이라 상태 문구·사건 줄 내용은 실제와 다를 수 있다. 실제 동작 확인은 위 실기 점검으로.
@@ -41,7 +41,7 @@ node serial.mjs
 - 시험용 손잡이 `window.__pdMock`: `dialog = { ask, save, open }`(확인 창 답·저장/열기 경로, 기본 «아니오»·취소), `unplug()`(장치 뽑힘 → 자동 재연결이면 1.5초 뒤 다시), `plug(true)`(블루투스 COM7 꽂기), `error(msg)`, `calls`·`files`.
 
 ## 다 눌러 보기 점검 (`ui-preview/smoke.mjs`)
-미리보기 서버 아홉 개(위 1번, 5201~5209)를 띄운 뒤 `e2e` 폴더에서:
+미리보기 서버 열 개(위 1번, 5201~5210)를 띄운 뒤 `e2e` 폴더에서:
 ```
 EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke.mjs [앱]      (예: node ui-preview/smoke.mjs tcp)
 COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경우만 빨리)
@@ -61,6 +61,12 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 - 매 동작 뒤 확인: 잡히지 않은 예외·거부된 Promise·console.error, 화면 오류(Boundary), 창 밖으로 넘친 요소·가로 스크롤, 창보다 큰 대화상자, 글자가 잘린 버튼, 값이 목록에 없는 고르기.
 - 결과: 화면에 경우별 ✅/❌ 와 누른 횟수, `shots/smoke/<앱>.json`(같은 문제는 묶어 횟수·단계와 함께), 문제가 난 단계의 캡처 `shots/smoke/<앱>-*.png`. 문제가 있으면 종료 코드 1.
 - 가짜 백엔드라 «화면 쪽» 버그만 찾는다. 실제 통신·타이밍 문제는 위 실기 점검으로.
+
+### Port Inspector·Serial «연결 점검…» (10/25)
+`node ui-preview/smoke.mjs port-inspector`. Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 `inspectorFlow()` 를 돈다.
+- 가짜 장치(mock.js «Port Inspector» 부분): COM3 CH340(문제 없음) · COM5 FTDI(지연 타이머 16ms·절전 켜짐 → «볼 것», 3일 전 하루 세 번 다시 연결) · COM1 내장 포트(루프백에서 아무것도 돌아오지 않음) · COM9 Prolific(문제 코드 10, 시험하면 «사용 중») · 숨은 COM12(지금 없음). ComDB 예약 1·3·4·5·9·12·17(주인 없음 4·17), 랜카드 셋(1 Gbps 전이중·10 Mbps 반이중·연결 안 됨).
+- 네 경우 모두: 첫 실행 카드·도움말 링크, ?·⚙·!·F1 창(닫은 뒤 포커스), COM5 카드 결과(장치 문제 없음·설정/절전/기록 «볼 것»)·창 제목·지연 타이머 풀이·이벤트·기간 7일·COM 번호·«PC 가 볼 수 없는 것»(가이드 링크 5개)·랜카드, 루프백(묻고 시작 → 속도 5개 «볼 것»)·에코·시험 중 멈춤, 텍스트·JSON 복사(금지 낱말 없음)·JSON 저장, COM9 문제 코드·«사용 중» + Find Handle 안내, COM1 «돌아오지 않음», 숨은 장치(COM12 시험 막힘·이유), 화면 전체 금지 낱말(진단·검증 …) 없음, F4, 좁은 창(고르면 왼쪽 칸 닫힘). `ko-light`·`en-dark` 는 포트를 고른 상태에서 다 눌러 보기도.
+- Serial(네 경우): 끊긴 상태에서 «연결 점검…» → 장치 요약 결과 3개 이상·루프백 5개 → Esc(포커스 제자리), 연결 중에는 시험이 막히고 «연결을 끊은 뒤» 이유(연결 설정이 한 줄로 접혀 있으면 [바꾸기] 로 펼쳐서).
 
 ### SCPI·Plot 앱별 단계 (10/19 — 옛 `smoke-scpi.mjs`·`smoke-plot.mjs` 를 smoke.mjs 공통 흐름에 합침)
 `node ui-preview/smoke.mjs scpi` · `node ui-preview/smoke.mjs plot`. 공통 흐름(첫 실행·도움말·⚙·문제 보고·다 눌러 보기·연결·좁은 창·멈춤, `ko-light`·`en-dark` 는 «모두 펼치기» 켠 채) 안에서 아래를 더 한다.

@@ -1,8 +1,9 @@
-// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 아홉 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
+// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 열 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
 // 예외·화면 오류(Boundary)·창 밖으로 넘친 요소·풀리지 않는 «연결 중»·대화상자 닫은 뒤 포커스 잃음을 찾는다.
-// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209
+// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209 · port-inspector 5210
+// Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 inspectorFlow 를 돈다(10/25).
 // SCPI·Plot 의 앱별 단계(가짜 계측기 질의·블록·반복 측정 / 그래프 그려짐·측정점·CSV 기록 …)도 이 공통 흐름 안에서 한다(10/19, 옛 smoke-scpi·smoke-plot).
-// 사용: (저장소 루트에서 서버 5201~5209 를 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
+// 사용: (저장소 루트에서 서버 5201~5210 을 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
 // 결과: shots/smoke/<앱>.json (+ 문제가 난 단계의 캡처 shots/smoke/<앱>-*.png)
 import { Builder, By, Key } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
@@ -11,7 +12,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -1900,7 +1901,193 @@ async function runApp(app, port) {
       }
     }
 
+    /** (10/25) Port Inspector — 실행 버튼이 없는 읽기 앱이라 따로 돈다: 첫 실행 카드·대화상자 → 포트 고르기·카드 결과 →
+     *  기록·COM 번호·랜카드 → 연결 시험(루프백·에코·사용 중·돌아오지 않음) → 숨은 장치 → 복사·저장 → 다 눌러 보기 → 좁은 창.
+     *  가짜 장치는 mock.js «Port Inspector» 부분(COM5 FTDI = 볼 것, COM9 문제 코드 10·사용 중, COM1 루프백 안 돌아옴, 숨은 COM12) */
+    async function inspectorFlow() {
+      const BAN = /진단|정상 판정|검증|diagnos|verif/i;
+      await load(port, combo);
+      await fitWindow();
+      await load(port, combo);
+      await verify("load");
+      // 첫 실행 카드 + 도움말 링크(«처음 쓰는 순서» 절)
+      const card = await js(`const c = document.querySelector('.first-card'); return c && { links: c.querySelectorAll('.first-links .link-btn').length, hide: !!c.querySelector('.first-hide') }`);
+      if (!card || !card.links || !card.hide) await conv("first-card", `첫 실행 카드가 이상함: ${JSON.stringify(card)}`);
+      else {
+        await js("[...document.querySelectorAll('.first-card .first-links .link-btn')].pop().click()");
+        await sleep(250);
+        const h = await js("const a = document.querySelector('.modal.help .help-link.on'); return a && a.textContent");
+        if (!h || !/처음 쓰는 순서|Getting started/.test(h)) await conv("first-help", `카드의 도움말 링크로 연 절이 «${h}»`);
+        await keys(Key.ESCAPE);
+        await verify("first-card help");
+        if (combo.full) await shot(app, `${combo.name}-first-card`);
+      }
+      // 대화상자: ? → Esc, F1 → Esc, ⚙ → ✕, ! → Esc (포커스 제자리)
+      for (const [label, open, close] of [
+        ["help", "?", "esc"],
+        ["settings", "⚙", "x"],
+        ["report", "!", "esc"],
+      ]) {
+        const ok = await js(`const b = [...document.querySelectorAll('.brand-tools button')].find((x) => x.textContent.trim() === ${JSON.stringify(open)}); if (b) { b.focus(); b.click(); } return !!b;`);
+        if (!ok) {
+          add(label, "dialog", `«${open}» 버튼이 없음`);
+          continue;
+        }
+        await sleep(250);
+        if (!(await js("return !!document.querySelector('.modal-back')"))) add(label, "dialog", `«${open}» 로 창이 열리지 않음`);
+        if (combo.full) await pageExercise(label, ".modal-back", { scope: "modal", depth: 1, skip: ".modal-head button" });
+        if (close === "x") await js("const x = document.querySelector('.modal-back .modal-head button'); x && x.click()");
+        else await keys(Key.ESCAPE);
+        await sleep(200);
+        if (await js("return !!document.querySelector('.modal-back')")) add(label, "dialog", `${label} 창이 닫히지 않음`);
+        await verify(`${label} close`, { expectFocus: true });
+      }
+      await blur();
+      await keys(Key.F1);
+      if (!(await js("return !!document.querySelector('.modal.help')"))) add("F1", "dialog", "F1 로 도움말이 열리지 않음");
+      await keys(Key.ESCAPE);
+      await verify("help F1 → Esc");
+
+      // ---- 포트 고르기: COM5(FTDI) — 장치 문제 없음·설정 볼 것(지연 16ms)·절전 볼 것 → 전체 «볼 것»
+      const pick = (com) => js(`const b = [...document.querySelectorAll('.port-item')].find((x) => x.querySelector('.pi-port').textContent.trim() === ${JSON.stringify(com)}); if (b) b.click(); return !!b;`);
+      if (!(await pick("COM5"))) add("pick COM5", "expect", "목록에 COM5 가 없음");
+      await expectJs("cards", "return document.querySelectorAll('details.card').length === 7");
+      await expectJs("com5 verdicts", `const lv = (id) => (document.querySelector('details.card-' + id + ' > summary .lv') || {}).className || '';
+        return /lv-ok/.test(lv('device')) && /lv-look/.test(lv('settings')) && /lv-look/.test(lv('power')) && /lv-look/.test(document.querySelector('.toolbar .lv').className)`);
+      await expectJs("com5 title", `return /^COM5 · USB Serial Port · ${ko ? "볼 것" : "Worth a look"} — PortDock Port Inspector$/.test(document.title)`);
+      // 카드는 내용 자체라 기본으로 펼쳐 둔다(«모두 펼치기» 와 상관없이)
+      await expectJs("cards open", "return [...document.querySelectorAll('details.card')].every((x) => x.open)");
+      // 접힌 기본(화면만 훑는 조합)이면 카드를 펼쳐 둔다
+      await js("document.querySelectorAll('details.card').forEach((x) => (x.open = true))");
+      await sleep(200);
+      await expectJs("latency note", `return /LatencyTimer/.test(document.querySelector('details.card-settings').textContent) && /${ko ? "지연 타이머 16ms" : "Latency timer 16 ms"}/.test(document.querySelector('details.card-settings').textContent)`);
+      await expectJs("events", "return document.querySelectorAll('details.card-history table.events tr').length >= 3", 4000);
+      // 하루에 세 번 다시 연결(가짜 기록) → 기록 «볼 것»
+      await expectJs("history look", "return /lv-look/.test(document.querySelector('details.card-history > summary .lv').className)");
+      await expectJs("com numbers", "return /COM4, COM17/.test(document.querySelector('details.card-com').textContent)");
+      await expectJs("cannot see", `const c = document.querySelector('.cannot-see'); return !!c && /A\\/B/.test(c.textContent) && c.querySelectorAll('.guide-links a').length === 5`);
+      if (combo.full) await shot(app, `${combo.name}-com5`);
+      // 기록 기간 7일 → 3일 전 몰린 연결이 빠진다
+      await setIn("details.card-history select", "7");
+      await expectJs("events 7 days", "return document.querySelectorAll('details.card-history table.events tr').length >= 2 && !document.querySelector('details.card-history tr.ev-install')", 4000);
+      await setIn("details.card-history select", "30");
+      // 랜카드
+      await clickText("details.card-nics .btn", ko ? "랜카드 읽기" : "Read adapters");
+      await expectJs("nics", `const t = document.querySelector('details.card-nics table.nics'); return !!t && t.querySelectorAll('tr').length === 3 && /${ko ? "반이중" : "half duplex"}/.test(t.textContent) && /1 Gbps/.test(t.textContent)`);
+
+      // ---- 연결 시험: 루프백(묻고 시작) → 속도 5개 «볼 것»(왕복 16ms)
+      const startLoop = async (step) => {
+        await clickText(".loop-panel .loop-actions .btn.primary", ko ? "시험 시작" : "Start test");
+        await expectJs(`${step} ask`, "return !!document.querySelector('.loop-sure')");
+        await clickText(".loop-sure .btn.primary");
+      };
+      await startLoop("loop COM5");
+      await expectJs("loop running title", `return /${ko ? "시험 중" : "testing"}/.test(document.title)`, 1500);
+      await expectJs("loop COM5 rows", "return document.querySelectorAll('.loop-table tbody tr').length === 5 && [...document.querySelectorAll('.loop-table tbody .lv')].every((x) => /lv-look/.test(x.className)) && !document.querySelector('.loop-actions .btn.danger')", 6000);
+      if (combo.full) await shot(app, `${combo.name}-loop`);
+      // 에코
+      await js("[...document.querySelectorAll('.loop-modes input[type=radio]')][1].click()");
+      await sleep(150);
+      await startLoop("echo COM5");
+      await expectJs("echo COM5", "const e = document.querySelector('.loop-echo'); return !!e && /lv-look/.test(e.querySelector('.lv').className)", 3000);
+      await js("[...document.querySelectorAll('.loop-modes input[type=radio]')][0].click()");
+      // 시험 중 멈춤
+      await startLoop("loop cancel");
+      await sleep(150);
+      await clickText(".loop-actions .btn.danger");
+      await expectJs("loop cancelled", "return !document.querySelector('.loop-actions .btn.danger') && document.querySelectorAll('.loop-table tbody tr').length < 5", 3000);
+
+      // ---- 복사·저장 — «볼 수 없는 것» 이 늘 들어가고 금지 낱말이 없다
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "텍스트 복사" : "Copy text");
+      await expectJs("copy text", `const c = window.__smoke.clip || ''; return /${ko ? "PC 가 볼 수 없는 것" : "What the PC cannot see"}/.test(c) && /LatencyTimer = 16/.test(c) && !${BAN}.test(c)`);
+      await clickText(".toolbar .btn", ko ? "JSON 복사" : "Copy JSON");
+      await expectJs("copy json", "try { const j = JSON.parse(window.__smoke.clip || ''); return j.report.entry.port === 'COM5' && Array.isArray(j.loop); } catch { return false; }");
+      await d.executeScript(`window.__pdMock.dialog = { ask: false, save: 'C:\\\\mock\\\\pi.json', open: null };`);
+      await clickText(".toolbar .btn", ko ? "저장…" : "Save…");
+      await expectJs("save json", "const f = window.__pdMock.files.get('C:\\\\mock\\\\pi.json'); try { return !!f && JSON.parse(f).report.entry.port === 'COM5'; } catch { return false; }");
+      await d.executeScript(`window.__pdMock.dialog = { ask: false, save: null, open: null };`);
+
+      // ---- COM9: 문제 코드 10 → «문제 있음», 시험하면 «사용 중» + Process Explorer 안내
+      await pick("COM9");
+      await expectJs("com9 problem", `return /lv-problem/.test((document.querySelector('details.card-device > summary .lv') || {}).className || '') && /10 — /.test(document.querySelector('details.card-device').textContent) && /Prolific/.test(document.querySelector('details.card-device .card-notes')?.textContent || '')`);
+      await js("document.querySelectorAll('details.card').forEach((x) => (x.open = true))");
+      await startLoop("loop COM9");
+      await expectJs("loop busy", "const e = document.querySelector('.loop-error'); return !!e && /Find Handle/.test(e.textContent) && /Ser2pl/.test(e.textContent)", 3000);
+      if (combo.full) await shot(app, `${combo.name}-com9-busy`);
+      // COM1: 아무것도 돌아오지 않음 → «문제 있음»
+      await pick("COM1");
+      await expectJs("com1 cards", "return /COM1/.test(document.querySelector('.toolbar .sel-title').textContent) && /ACPI/.test((document.querySelector('details.card-device') || {}).textContent || '')");
+      await js("document.querySelectorAll('details.card').forEach((x) => (x.open = true))");
+      await js("[...document.querySelectorAll('.loop-bauds input')].slice(1).forEach((x) => x.checked && x.click())");
+      await startLoop("loop COM1");
+      await expectJs("loop nothing back", "const r = document.querySelectorAll('.loop-table tbody tr'); return r.length === 1 && /lv-problem/.test(r[0].querySelector('.lv').className)", 3000);
+      // 숨은 장치 보기 → COM12(지금 없음) — 시험은 막히고 이유가 보인다
+      await js("const c = document.querySelector('aside.side label.inline input[type=checkbox]'); c && c.click()");
+      await expectJs("hidden list", "return [...document.querySelectorAll('.port-item.absent')].some((b) => /COM12/.test(b.textContent))");
+      await pick("COM12");
+      await expectJs("hidden device", `return /lv-look/.test((document.querySelector('details.card-device > summary .lv') || {}).className || '') && document.querySelector('.loop-actions .btn.primary').disabled && /${ko ? "시험할 수 없습니다" : "cannot be tested"}/.test(document.querySelector('.loop-actions').textContent)`);
+      // 화면 어디에도 금지 낱말이 없다
+      await expectJs("wording", `return !${BAN}.test(document.body.innerText)`);
+      // F4 다시 읽기
+      await blur();
+      await keys(Key.F4);
+      await sleep(300);
+      await verify("F4 refresh");
+
+      // ---- 다 눌러 보기(포트를 고른 상태)
+      if (combo.full) {
+        await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000", firstHintDone: true });
+        await sleep(600);
+        await d.executeScript(`window.__pdMock.dialog = { ask: true, save: 'C:\\\\mock\\\\pi.txt', open: null };`);
+        await pageExercise("selected", "#root");
+        await load(port, combo);
+      }
+      // ---- 좁은 창: 왼쪽 칸이 접히고 요약 줄 + «다시 읽기»
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000" });
+      await sleep(500);
+      await expectJs("narrow", "return getComputedStyle(document.querySelector('.narrow-bar')).display !== 'none' && getComputedStyle(document.querySelector('aside.side')).display === 'none' && /COM5/.test(document.querySelector('.narrow-bar').textContent)");
+      await js("document.querySelector('.narrow-bar .side-toggle').click()");
+      await sleep(250);
+      await expectJs("narrow side", "const s = document.querySelector('aside.side'); const r = s.getBoundingClientRect(); return getComputedStyle(s).display !== 'none' && r.width > 200 && r.right <= innerWidth");
+      // 목록에서 고르면 왼쪽 칸이 닫힌다
+      await pick("COM3");
+      await expectJs("narrow pick closes side", "return getComputedStyle(document.querySelector('aside.side')).display === 'none' && /COM3/.test(document.querySelector('.narrow-bar').textContent)");
+      await shot(app, `${combo.name}-narrow-760`);
+      await fitWindow();
+    }
+
+    /** (10/25) Serial «연결 점검…» — 끊긴 상태: 장치 요약·루프백 5개 → Esc 로 닫히고 포커스 제자리. 연결 중: 시험이 막히고 이유 */
+    async function serialPortCheck(connectedNow) {
+      await closeRight();
+      // 연결 중에는 연결 설정이 한 줄 요약으로 접힌다(«모두 펼치기» 끔) — [바꾸기] 로 펼친 뒤
+      const folded = await js("const c = document.querySelector('aside.side .conn-change'); if (c && !document.querySelector('.port-check-btn')) { c.click(); return true; } return false;");
+      if (folded) await sleep(250);
+      const ok = await js("const b = document.querySelector('.port-check-btn'); if (b) { b.focus(); b.click(); } return !!b");
+      if (!ok) return add("port check", "expect", "«연결 점검…» 단추가 없음: " + (await js("return [...document.querySelectorAll('aside.side > *')].map((e) => e.className).join('|') + ' / modal=' + !!document.querySelector('.modal-back')")));
+      await expectJs("port check open", `const m = document.querySelector('.modal.portcheck-dialog'); return !!m && /COM\\d+/.test(m.querySelector('.modal-head').textContent) && m.querySelectorAll('.pc-section .lv').length >= 3`);
+      if (connectedNow) {
+        await expectJs("port check locked", `const m = document.querySelector('.portcheck-dialog'); return m.querySelector('.loop-actions .btn.primary').disabled && /${ko ? "연결을 끊은 뒤" : "Disconnect first"}/.test(m.textContent)`);
+      } else {
+        await clickText(".portcheck-dialog .loop-actions .btn.primary");
+        await expectJs("port check ask", "return !!document.querySelector('.portcheck-dialog .loop-sure')");
+        await clickText(".portcheck-dialog .loop-sure .btn.primary");
+        await expectJs("port check loop", "return document.querySelectorAll('.portcheck-dialog .loop-table tbody tr').length === 5", 6000);
+        if (combo.full) await shot(app, `${combo.name}-port-check`);
+        if (combo.full) await pageExercise("port check", ".modal-back", { scope: "modal", depth: 1, skip: ".modal-head button" });
+      }
+      await keys(Key.ESCAPE);
+      await expectJs("port check closed", "return !document.querySelector('.portcheck-dialog')");
+      await verify("port check Esc", { expectFocus: true });
+      if (folded) await js("const c = document.querySelector('aside.side .conn-change'); c && c.click()");
+    }
+
     try {
+      if (app === "port-inspector") await inspectorFlow();
+      else {
       await load(port, combo);
       await fitWindow();
       await load(port, combo);
@@ -2059,6 +2246,9 @@ async function runApp(app, port) {
         await load(port, combo);
       }
 
+      // (10/25) Serial «연결 점검…»(끊긴 상태 — 장치 요약·루프백)
+      if (app === "serial") await serialPortCheck(false);
+
       // ---- 연결·시작
       const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
@@ -2083,6 +2273,8 @@ async function runApp(app, port) {
           await conv("conn-summary", `연결 중 연결 설정 한 줄 요약·[바꾸기] 가 이상함: ${JSON.stringify(c)}`);
         await verify("serial conn summary");
       }
+      // (10/25) Serial «연결 점검…» 연결 중 — 시험이 막히고 이유
+      if (app === "serial") await serialPortCheck(true);
       if (app === "modbus-master" && (await js("return !!document.querySelector('.first-card')"))) await conv("mm-first-hide", "연결했는데 첫 실행 카드가 남아 있음");
       // (10/19) SCPI·Plot 앱별 단계(옛 smoke-scpi·smoke-plot)
       if (app === "scpi") await scpiRun();
@@ -2306,6 +2498,7 @@ async function runApp(app, port) {
 
       // ---- 좁은 창(화면 반쪽 맞춤 등): 안쪽 760×600
       await narrow();
+      }
     } catch (e) {
       add("runner", "smoke-error", e && e.stack ? e.stack : e);
       try {

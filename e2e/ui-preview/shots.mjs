@@ -1,10 +1,10 @@
-// 화면 점검: 아홉 앱을 크기·언어·테마·글자 크기별로 캡처 + 잘린 글자 찾기(미리보기 서버 5201~5209 가 떠 있어야 함)
+// 화면 점검: 열 앱을 크기·언어·테마·글자 크기별로 캡처 + 잘린 글자 찾기(미리보기 서버 5201~5210 이 떠 있어야 함)
 import { Builder } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
 import fs from "node:fs";
 const OUT = process.env.OUT ?? "shots/ui";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210 };
 const only = process.argv[2];
 const opts = new edge.Options().addArguments("--headless=new", "--hide-scrollbars", "--force-device-scale-factor=1");
 const d = await new Builder().forBrowser("MicrosoftEdge").setEdgeOptions(opts).setEdgeService(new edge.ServiceBuilder(process.env.EDGEDRIVER)).build();
@@ -34,6 +34,8 @@ async function setup(port, w, h, settings) {
 }
 async function connect() {
   await d.executeScript(`const b=[...document.querySelectorAll('aside button.btn.primary, .side button.btn.primary')][0]; b && b.click();`);
+  // Port Inspector 는 실행 버튼 대신 포트(COM5)를 고른다
+  await d.executeScript(`const p=[...document.querySelectorAll('.port-item')].find((x)=>/COM5/.test(x.textContent)); p && p.click();`);
   await sleep(900);
 }
 const report = {};

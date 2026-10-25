@@ -1224,6 +1224,8 @@ mockIPC(
     // SCPI 도 이름이 겹치는 명령(open_tcp·close·query …)이 있어 창 제목으로 가린다
     // Plot 명령은 이름이 plot_ 으로 시작해 겹치지 않는다(write_bytes 도 Plot 만 쓴다)
     if (PLOT_CMDS.has(cmd)) return plot(cmd, a);
+    // Port Inspector·Serial «연결 점검…» 명령은 pi_·loop_ 으로 시작해 겹치지 않는다
+    if (PI_CMDS.has(cmd)) return pinsp(cmd, a);
     if (SCPI_CMDS.has(cmd) && isSCPI()) return scpi(cmd, a);
     if (MM_CMDS.has(cmd) && isMM()) return mmaster(cmd, a);
     return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
@@ -2016,3 +2018,136 @@ async function plot(cmd, a) {
   return null;
 }
 window.__pdMock.plot = () => (PL ? { format: PL.format, rec: PL.rec, ticks: PL.ticks } : null);
+
+// ================================================================ Port Inspector (apps/port-inspector — 명령: apps/port-inspector/src-tauri/src/lib.rs,
+// 모양: crates/core/src/portinfo·loopback.rs). Serial «연결 점검…» 도 pi_report·loop_start 를 쓴다.
+// 가짜 장치: COM3 CH340(문제 없음) · COM5 FTDI(지연 16ms·절전 켜짐 → 볼 것) · COM1 내장 포트 · COM9 Prolific(문제 코드 10, 시험하면 «사용 중»)
+// · 숨은 COM12 Prolific(지금 없음). 루프백: COM5 왕복 ≈16ms, COM3 ≈2ms, COM1 은 아무것도 돌아오지 않음. 에코: COM1 말고는 에코 있음.
+const PI_CMDS = new Set(["pi_list", "pi_report", "pi_com_numbers", "pi_events", "pi_nics", "loop_start", "loop_cancel"]);
+const piT = (ko, en) => ({ ko, en });
+const PI_DEV = [
+  { port: "COM1", name: "통신 포트(COM1)", instanceId: "ACPI\\PNP0501\\0", present: true, vid: null, pid: null, problem: null, class: "Ports", svc: "Serial", provider: "Microsoft", ver: "10.0.26100.1", inf: "msports.inf", chip: null },
+  { port: "COM3", name: "USB-SERIAL CH340 (COM3)", instanceId: "USB\\VID_1A86&PID_7523\\5&2A1B3C&0&2", present: true, vid: 0x1a86, pid: 0x7523, problem: null, class: "Ports", svc: "CH341SER_A64", provider: "wch.cn", ver: "3.9.2024.9", inf: "oem42.inf", chip: { vendor: "WCH (Nanjing Qinheng)", chip: "CH340 / CH341", clue: false } },
+  { port: "COM5", name: "USB Serial Port (COM5)", instanceId: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000", present: true, vid: 0x0403, pid: 0x6001, problem: null, class: "Ports", svc: "FTSER2K", provider: "FTDI", ver: "2.12.36.4", inf: "oem7.inf", chip: { vendor: "FTDI", chip: "FT232R / FT232BM / FT245R", clue: false } },
+  { port: "COM9", name: "Prolific USB-to-Serial Comm Port (COM9)", instanceId: "USB\\VID_067B&PID_2303\\6&1F2E3D&0&1", present: true, vid: 0x067b, pid: 0x2303, problem: 10, class: "Ports", svc: "Ser2pl", provider: "Prolific", ver: "3.9.6.2", inf: "oem51.inf", chip: { vendor: "Prolific", chip: "PL2303 (HX/HXD/TA/RA …)", clue: false, note: piT("PL2303 옛 리비전(HXA·XA)은 단종…", "Old PL2303 revisions (HXA, XA) are discontinued…") } },
+  { port: "COM12", name: "Prolific USB-to-Serial Comm Port (COM12)", instanceId: "USB\\VID_067B&PID_2303\\6&99AA&0&4", present: false, vid: 0x067b, pid: 0x2303, problem: null, class: "Ports", svc: "Ser2pl", provider: "Prolific", ver: "3.9.6.2", inf: "oem51.inf", chip: { vendor: "Prolific", chip: "PL2303 (HX/HXD/TA/RA …)", clue: false } },
+];
+const piEntry = (d) => ({ port: d.port, name: d.name, instanceId: d.instanceId, present: d.present, vid: d.vid, pid: d.pid, problem: d.problem, class: d.class });
+const piFind = (id) => PI_DEV.find((d) => d.instanceId === id || d.port === id);
+const DAY = 86_400_000;
+function piReport(d) {
+  const ftdi = d.port === "COM5";
+  return {
+    entry: piEntry(d),
+    readAt: now(),
+    description: d.name.replace(/ \(COM\d+\)$/, ""),
+    busDescription: ftdi ? "FT232R USB UART" : d.vid ? "USB-Serial Controller" : null,
+    manufacturer: d.provider,
+    location: d.vid ? "Port_#0002.Hub_#0001" : null,
+    hardwareIds: d.vid ? [`USB\\VID_${hex2(d.vid >> 8)}${hex2(d.vid & 255)}&PID_${hex2(d.pid >> 8)}${hex2(d.pid & 255)}`] : ["ACPI\\PNP0501"],
+    chip: d.chip,
+    driver: { provider: d.provider, version: d.ver, date: now() - 400 * DAY, inf: d.inf, service: d.svc },
+    status: {
+      present: d.present,
+      started: d.present && !d.problem,
+      problem: d.problem ? { code: 10, meaning: piT("장치를 시작할 수 없습니다.", "This device cannot start."), action: piT("다른 USB 포트에 꽂고 제조사 드라이버를 다시 설치합니다.", "Plug it into another USB port and reinstall the vendor driver.") } : null,
+      disabled: false,
+    },
+    lastArrival: now() - 2 * 3_600_000,
+    lastRemoval: d.present ? now() - 3 * 3_600_000 : now() - 20 * DAY,
+    firstInstall: now() - 300 * DAY,
+    ancestors: d.vid ? [{ instanceId: ftdi ? "USB\\VID_0403&PID_6001\\A10KQ2XZ" : "USB\\ROOT_HUB30\\4&1", name: ftdi ? "USB Serial Converter" : "USB 루트 허브(USB 3.0)", service: ftdi ? "FTDIBUS" : "USBHUB3" }] : [],
+    params: [
+      ...(ftdi ? [{ name: "LatencyTimer", value: "16", kind: "dword", num: 16, note: piT("FTDI 지연 타이머(ms). 기본값 16 …", "FTDI latency timer (ms). Default 16 …") }, { name: "MinReadTimeout", value: "0", kind: "dword", num: 0 }] : []),
+      { name: "PortName", value: d.port, kind: "string", note: piT("이 장치에 붙은 COM 이름", "The COM name assigned to this device") },
+    ],
+    portDefault: d.port === "COM1" ? "9600,n,8,1" : null,
+    ...(d.port === "COM1" ? { portDefaultNote: piT("9600 bps · 패리티 없음 · 8 비트 · 정지 1", "9600 bps · no parity · 8 data bits · 1 stop") } : {}),
+    power: { usbSuspendAc: ftdi, usbSuspendDc: true, devices: d.vid ? [{ instanceId: d.instanceId, name: d.name, canTurnOff: ftdi, own: true }] : [] },
+    errors: [],
+  };
+}
+let PIL = null;
+async function pinsp(cmd, a) {
+  switch (cmd) {
+    case "pi_list":
+      await sleep(60);
+      return PI_DEV.filter((d) => a.hidden || d.present).map(piEntry);
+    case "pi_report": {
+      await sleep(80);
+      const d = piFind(a.id);
+      return d ? piReport(d) : fail(tr(`장치를 찾을 수 없습니다: ${a.id}`, `Device not found: ${a.id}`));
+    }
+    case "pi_com_numbers":
+      return { comdbFound: true, reserved: [1, 3, 4, 5, 9, 12, 17], present: [1, 3, 5, 9], hidden: [[12, "Prolific USB-to-Serial Comm Port (COM12)"]], orphan: [4, 17], shared: [], serialcomm: ["COM1", "COM3", "COM5", "COM9"], errors: [] };
+    case "pi_events": {
+      await sleep(150);
+      const d = piFind(a.instanceId);
+      if (!d) return { events: [], days: a.days, errors: [] };
+      const started = tr("장치가 시작되었습니다.", "Device started.");
+      const ev = (ago, id, kind, msg) => ({ time: now() - ago, id, provider: "Microsoft-Windows-Kernel-PnP", kind, level: kind === "problem" ? 3 : 4, message: `${d.instanceId} ${msg}`, device: d.instanceId });
+      const list = [ev(2 * 3_600_000, 410, "start", started), ev(DAY, 410, "start", started), ev(40 * DAY, 400, "install", tr("장치가 구성되었습니다.", "Device configured."))];
+      if (d.port === "COM5") for (let i = 0; i < 3; i++) list.push(ev(3 * DAY + i * 600_000, 410, "start", started));
+      if (d.problem) list.push(ev(3_000_000, 411, "problem", tr("장치를 시작하는 동안 문제가 발생했습니다.", "Device had a problem starting.")));
+      return { events: list.filter((e) => now() - e.time <= a.days * DAY).sort((x, y) => y.time - x.time), days: a.days, errors: [] };
+    }
+    case "pi_nics":
+      await sleep(100);
+      return {
+        nics: [
+          { name: "이더넷", description: "Intel(R) Ethernet Connection I219-V", up: true, speed: 1e9, fullDuplex: true, ipv4: ["192.168.0.10/24"], gateway: "192.168.0.1" },
+          { name: "이더넷 2", description: "USB 10/100 LAN", up: true, speed: 1e7, fullDuplex: false, ipv4: ["10.0.0.5/24"], gateway: null },
+          { name: "Wi-Fi", description: "Wireless Adapter", up: false, speed: null, fullDuplex: null, ipv4: [], gateway: null },
+        ],
+        errors: [],
+      };
+    case "loop_start": {
+      if (PIL && !PIL.done) return fail(tr("이미 시험 중입니다", "A test is already running"));
+      const c = a.config;
+      const ch = a.onEvent;
+      const out = (e) => {
+        try {
+          ch?.onmessage?.(e);
+        } catch (err) {
+          window.__pdMock.errors.push(String(err?.stack ?? err));
+        }
+      };
+      PIL = { cancel: false, done: false, config: c };
+      const me = PIL;
+      const flags = { read: true, frame: false, parity: false, overrun: false, rxOver: false, break: false };
+      (async () => {
+        const t0 = now();
+        if (c.port === "COM9") {
+          await sleep(50);
+          out({ type: "error", message: busyPort("COM9"), busy: true });
+        } else if (c.mode === "echo") {
+          await sleep(200);
+          const back = c.port !== "COM1";
+          out({ type: "echo", result: { baud: c.bauds[0], sent: 15, received: back ? 15 : 0, echoed: back, partial: false, firstMs: back ? 3.2 : null, flags } });
+        } else {
+          for (const b of c.bauds) {
+            for (let p = 25; p <= 100; p += 25) {
+              if (me.cancel) break;
+              await sleep(60);
+              out({ type: "progress", baud: b, done: Math.round(p * 2.76), total: 276 });
+            }
+            if (me.cancel) break;
+            if (c.port === "COM1") out({ type: "baud", result: { baud: b, sent: 32, received: 0, same: 0, changed: 0, lost: 32, extra: 0, rtt: null, flags, nothingBack: true } });
+            else {
+              const m = c.port === "COM5" ? 16.4 : 2.1;
+              out({ type: "baud", result: { baud: b, sent: 256, received: 256, same: 256, changed: 0, lost: 0, extra: 0, rtt: { samples: 20, lost: 0, min: m - 0.6, median: m, max: m + 1.3 }, flags, nothingBack: false } });
+            }
+          }
+        }
+        me.done = true;
+        out({ type: "done", cancelled: me.cancel, ms: now() - t0 });
+      })();
+      return null;
+    }
+    case "loop_cancel":
+      if (PIL) PIL.cancel = true;
+      return null;
+  }
+  return null;
+}
+window.__pdMock.loop = () => (PIL ? { config: PIL.config, done: PIL.done, cancel: PIL.cancel } : null);

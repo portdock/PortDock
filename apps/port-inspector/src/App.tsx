@@ -148,8 +148,11 @@ export default function App() {
     }
     setReading(true);
     setReportErr(null);
+    // 다른 포트로 바꿨으면 앞 포트의 값을 지운다(다시 읽기면 새 값이 올 때까지 그대로)
+    const key = entryKey(sel);
+    setReport((old) => (old && entryKey(old.entry) === key ? old : null));
     api
-      .report(entryKey(sel))
+      .report(key)
       .then(setReport)
       .catch((e) => {
         setReport(null);
