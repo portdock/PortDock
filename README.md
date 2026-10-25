@@ -52,13 +52,13 @@ With [Scoop](https://scoop.sh) (portable edition): `scoop bucket add portdock ht
 
 ### "Windows protected your PC"
 
-The builds are **not code-signed yet** (an application to SignPath's free open-source signing is planned), so Microsoft Defender SmartScreen may warn on first run. Click **More info → Run anyway**. Before you do, you can check that the file is the one we published:
+The builds are **not code-signed yet** (we have applied for SignPath Foundation's free open-source code signing), so Microsoft Defender SmartScreen may warn on first run. Click **More info → Run anyway**. Before you do, you can check that the file is the one we published:
 
 ```powershell
 Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
 ```
 
-Compare the result with `SHA256SUMS.txt` attached to the same release. Each release also lists a VirusTotal scan link for every file.
+Compare the result with `SHA256SUMS.txt` attached to the same release. Each release notes also include the Microsoft Defender scan result.
 
 ### WebView2
 
