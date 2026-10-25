@@ -1,0 +1,90 @@
+---
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { TOOLS, RELEASED, REPO, RELEASES, latest, type Lang } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+import { SPONSOR_URL } from "@shared/links";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+---
+
+<Base
+  lang={lang}
+  title={t.download}
+  seoTitle={ko ? "내려받기 — 무료 통신 테스트 도구 9종 (윈도우) — PortDock" : "Download — Nine Free Hardware Test Tools for Windows — PortDock"}
+  description={ko
+    ? "시리얼·Modbus 마스터/슬레이브·TCP·UDP·시뮬레이터·Net Scan·SCPI·Plot 9개 도구의 설치판·오프라인 설치판·휴대판. 무료, 윈도우 10·11."
+    : "Installer, offline installer and portable zip for nine tools: Serial, Modbus Master/Slave, TCP, UDP, Simulator, Net Scan, SCPI, Plot. Free, Windows 10/11."}
+  path="download/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.download, path: "download/" }]} />
+      <h1>{t.download}</h1>
+      <p>{t.dlNote}</p>
+      {!RELEASED && <p><b>{t.dlSoon}</b> — {t.dlSoonNote} <a href={REPO}>GitHub →</a></p>}
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:28px">
+    <table class="t">
+      <thead>
+        <tr><th>{t.tools}</th><th>{t.dlSetup}</th><th>{t.dlOffline}</th><th>{t.dlPortable}</th><th>{t.docs}</th></tr>
+      </thead>
+      <tbody>
+        {
+          TOOLS.map((x) => (
+            <tr>
+              <td>
+                <a href={url(lang, `${x.id}/`)}><b>{x.name}</b></a>
+                <br />
+                <span class="note">{x.tagline[lang]}</span>
+              </td>
+              {RELEASED ? (
+                <>
+                  <td><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
+                </>
+              ) : (
+                <td colspan="3"><span class="note">{t.dlSoon}</span></td>
+              )}
+              <td><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+    <p class="note"><a href={RELEASES}>{t.dlAll} →</a></p>
+
+    <section class="prose" id="safe">
+      <h2>{t.safeTitle}</h2>
+      <ul>{t.safe.map((s) => <li>{s}</li>)}</ul>
+      <p class="note">{ko ? "파일 값 확인 예:" : "Hash check example:"}</p>
+      <pre class="result">Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256</pre>
+      <p><a href={url(lang, "code-signing/")}>{t.codeSigning} →</a></p>
+      <h2>{ko ? "필요한 것" : "Requirements"}</h2>
+      <ul>
+        <li>{ko ? "윈도우 10 또는 11, 64비트" : "Windows 10 or 11, 64-bit"}</li>
+        <li>{t.webview}</li>
+        <li>{ko ? "설치판: 관리자 권한 없이 사용자 계정에 설치됩니다. 삭제는 «설정 → 앱» 에서." : "Installer: installs per user without admin rights. Uninstall from «Settings → Apps»."}</li>
+        <li>{ko ? "휴대판: zip 을 풀어 exe 를 실행합니다. 설정·기록은 exe 옆 portdock-data 폴더에 남아 USB 로 옮겨 쓸 수 있습니다. 같은 폴더에 두고 쓰면 방화벽 허용을 다시 묻지 않습니다." : "Portable: unzip and run the exe. Settings and reports stay in the portdock-data folder next to it, so you can carry it on a USB stick. Keep it in the same folder to avoid repeated firewall prompts."}</li>
+      </ul>
+      {
+        SPONSOR_URL && (
+          <>
+            <h2>{t.sponsor}</h2>
+            <p>
+              {ko ? "PortDock 은 무료입니다. 도움이 되셨다면 " : "PortDock is free. If it helps you, "}
+              <a href={SPONSOR_URL}>{ko ? "후원으로 개발을 도와주세요" : "please consider sponsoring its development"} →</a>
+            </p>
+          </>
+        )
+      }
+    </section>
+  </div>
+</Base>

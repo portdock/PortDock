@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = ["crates/core", "apps/serial/src-tauri", "apps/modbus-slave/src-tauri", "apps/tcp/src-tauri", "apps/udp/src-tauri", "apps/simulator/src-tauri", "apps/netscan/src-tauri", "apps/modbus-master/src-tauri", "apps/scpi/src-tauri", "apps/plot/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+authors = ["PortDock"]
+
+# 앱 크기 최적화 — https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

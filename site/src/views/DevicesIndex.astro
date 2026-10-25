@@ -1,0 +1,75 @@
+---
+// 장비 레지스터 맵 목록 — 종류별 묶음, 데이터셋 안내(JSON·스키마·라이선스)
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { type Lang } from "../data/tools";
+import { CC_BY, DEVICES, LICENSE_URL, RAW, SCHEMA_URL, devPath } from "../data/devices";
+import { url } from "../lib/i18n";
+import { KIND_TEXT, type Device } from "@shared/devices";
+import "../styles/devices.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = (k: string, e: string) => (ko ? k : e);
+const kinds = [...new Set(DEVICES.map((d) => d.kind))] as Device["kind"][];
+const title = L("국산 장비 Modbus 레지스터 맵", "Modbus register maps for Korean devices");
+const desc = L(
+  `국산 인버터·온도 조절기·전력 미터 ${DEVICES.length}종의 Modbus 주소·형식·단위·배율과 통신 기본값. 제조사 매뉴얼 출처, JSON(CC BY 4.0), PortDock 에서 바로 불러오기.`,
+  `Modbus addresses, types, units, scaling and defaults for ${DEVICES.length} Korean inverters, temperature controllers and power meters — manual references, JSON (CC BY 4.0).`,
+);
+---
+
+<Base
+  lang={lang}
+  title={title}
+  seoTitle={L("국산 장비 Modbus 주소표 — 인버터·온도 조절기·전력 미터 — PortDock", "Modbus Register Maps: Korean Inverters, Meters — PortDock")}
+  description={desc}
+  path="devices/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: L("장비", "Devices"), path: "devices/" }]} />
+      <h1>{title}</h1>
+      <p>{desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    {
+      kinds.map((k) => (
+        <section class="dev-kind">
+          <h2>{KIND_TEXT[k][lang]}</h2>
+          <div class="grid">
+            {DEVICES.filter((d) => d.kind === k).map((d) => (
+              <a class="card" href={url(lang, devPath(d))}>
+                <h3>
+                  {d.manufacturer[lang]} {d.model}
+                </h3>
+                <p>{d.summary?.[lang] ?? d.title[lang]}</p>
+                <span class="go">
+                  {L(`레지스터 ${d.registers.length}개`, `${d.registers.length} registers`)} →
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+    <section class="prose dev-about">
+      <h2>{L("이 자료에 대해", "About this dataset")}</h2>
+      <ul>
+        <li>{L("제조사가 공개한 매뉴얼에서 주소·형식·단위·배율·읽기/쓰기 같은 사실만 옮겼고, 장비마다 문서 이름·판·쪽과 확인일을 붙였습니다. 매뉴얼에서 확인하지 못한 항목은 넣지 않았습니다.", "Only facts (address, type, unit, scale, read/write) taken from manuals the makers publish, each with document title, edition, page and the date checked. Anything not confirmed in a manual is left out.")}</li>
+        <li>{L("제조사와 관계없는 비공식 자료입니다. 펌웨어·형번에 따라 다를 수 있으니 쓰기 전에 장비 매뉴얼로 확인하세요.", "Unofficial and not affiliated with the makers. Values can differ by firmware or model — check the device manual before writing.")}</li>
+        <li>
+          {L("JSON: ", "JSON: ")}<code>{RAW}/&lt;{L("제조사", "maker")}&gt;/&lt;{L("모델", "model")}&gt;.json</code> · <a href={SCHEMA_URL}>schema.json</a> · <a href="/devices/index.json">index.json</a> · <a href="/llms.txt">llms.txt</a>
+        </li>
+        <li>
+          {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a> (<a href={LICENSE_URL}>LICENSE</a>){L(" — 출처를 밝히면 자유롭게 쓸 수 있습니다.", " — free to use with attribution.")}
+        </li>
+        <li>{L("PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 흉내…» 에 같은 데이터가 들어 있습니다.", "The same data is built into PortDock Modbus Master («Device profile…») and Modbus Slave («Emulate device…»).")}</li>
+      </ul>
+    </section>
+  </div>
+</Base>

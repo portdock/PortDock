@@ -1,0 +1,305 @@
+---
+// 웹 도구: op amp 이득(비반전·반전·차동)·dB·유한 개루프 이득·대역폭·표준 저항 (lib/opamp.ts).
+// TI «Handbook of Operational Amplifier Applications»(SBOA092B)의 식과 그림 30 예(−9.987)를 시험으로 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { bandwidth, db, idealGain } from "../lib/opamp";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/op-amp-gain/";
+const ohm = (r: number) => (r >= 1e6 ? `${r / 1e6}M` : r >= 1e3 ? `${r / 1e3}k` : `${r}`);
+const hz = (f: number) => (f >= 1e6 ? `${+(f / 1e6).toPrecision(3)} MHz` : f >= 1e3 ? `${+(f / 1e3).toPrecision(3)} kHz` : `${+f.toPrecision(3)} Hz`);
+// 흔한 E12 짝 — 이득·dB·GBW 1 MHz 에서 대역폭
+const pairs: [string, number, number][] = [
+  ["noninv", 10e3, 10e3],
+  ["noninv", 22e3, 10e3],
+  ["noninv", 47e3, 10e3],
+  ["noninv", 100e3, 10e3],
+  ["noninv", 1e6, 10e3],
+  ["inv", 10e3, 10e3],
+  ["inv", 100e3, 10e3],
+  ["inv", 1e6, 10e3],
+];
+const tRows = pairs.map(([t, rf, rg]) => {
+  const g = idealGain(t as "noninv" | "inv", rf, rg);
+  return [t === "noninv" ? (ko ? "비반전" : "Non-inverting") : ko ? "반전" : "Inverting", `${ohm(rf)} / ${ohm(rg)}`, `${+g.toPrecision(4)}`, `${db(g).toFixed(1)} dB`, hz(bandwidth(1e6, rf, rg))];
+});
+const L = ko
+  ? {
+      title: "op amp 증폭률 계산기 (비반전·반전·차동)",
+      desc: "Rf·Rg 로 op amp 비반전·반전·차동 증폭기의 이득·dB·출력 전압을 계산하고, 개루프 이득에 의한 오차, 대역폭, 원하는 이득의 표준 저항 값까지 봅니다.",
+      topo: "회로",
+      topos: [["noninv", "비반전 (1 + Rf/Rg)"], ["inv", "반전 (−Rf/Rin)"], ["diff", "차동 (Rf/Rin × (E2 − E1))"]],
+      rf: "Rf 되먹임 저항 (Ω, 4k7 꼴 가능)",
+      rg: "Rg·Rin 입력 쪽 저항 (Ω)",
+      vin: "입력 전압 Vin·E2 (V)",
+      e1: "E1 (V, 차동만)",
+      a: "개루프 이득 A (dB, 데이터시트)",
+      gbw: "이득 대역폭 곱 GBW (MHz)",
+      res: "결과",
+      k: { g: "이상 이득", db: "dB (20 log|G|)", ng: "잡음 이득 1 + Rf/Rg", vo: "출력 전압 (이상)", real: "개루프 이득 A 에서 이득 / 오차", bw: "폐루프 대역폭 ≈ GBW ÷ 잡음 이득", pin: "입력 핀 전압 (차동: E2 × Rf/(Rin + Rf))" },
+      s2: "원하는 이득에 맞는 표준 저항",
+      tg: "원하는 이득 |G|",
+      ser: "표준 값 계열",
+      k2: { rf: "필요한 Rf (지금 Rg 기준)", e: "가장 가까운 표준 값", ge: "그때 이득 / 목표와 차이" },
+      example: "기본값(비반전, Rf 100 kΩ·Rg 10 kΩ, A 100 dB, GBW 1 MHz)은 예시입니다. 개루프 이득·GBW 는 쓰는 op amp 의 데이터시트 값을 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "비반전: Vout = (1 + Rf/Rg) × Vin",
+        "반전: Vout = −(Rf/Rin) × Vin",
+        "차동(위아래 Rf·Rin 같음): Vout = (Rf/Rin) × (E2 − E1)",
+        "가산(반전): Vout = −Rf × (E1/R1 + E2/R2 + …)",
+        "dB = 20 × log10|G|   (10배 = 20 dB, 100배 = 40 dB)",
+        "개루프 이득 A 에서: G ≈ 이상 이득 ÷ (1 + 잡음 이득 ÷ A)",
+        "폐루프 대역폭 ≈ GBW ÷ (1 + Rf/Rg)",
+      ],
+      tTitle: "자주 쓰는 E12 저항 짝 (GBW 1 MHz)",
+      tHead: ["회로", "Rf / Rg", "이득", "dB", "대역폭"],
+      tNote: "반전 증폭기도 대역폭은 «잡음 이득» 1 + Rf/Rin 으로 나눕니다 — 이득 −1 반전은 잡음 이득 2 라 팔로어(이득 1)의 절반입니다(TI 핸드북 그림 40·41).",
+      tiTitle: "개루프 이득이 유한할 때 (TI 핸드북 그림 30 예)",
+      tiText: "TI 핸드북은 개루프 이득 A 10 000, 입력 임피던스 50 kΩ, 출력 임피던스 100 Ω 인 op amp 로 ZI 10 kΩ·ZO 100 kΩ 반전 증폭기(이상 이득 −10)를 만들고 부하 10 kΩ 을 달면, 오차 항 δ ≈ 0.0013 으로 실제 이득이 −9.987(0.13 % 차이)이라고 계산합니다. 이 오차는 되먹임 저항을 조금 맞추면 없앨 수 있고, 그 뒤 A 가 10 % 바뀌어도 이득은 0.02 % 보다 덜 변한다고 적습니다. 위 계산기는 입력 임피던스 ∞·출력 임피던스 0 으로 본 같은 식(δ = 잡음 이득 ÷ A)입니다.",
+      lTitle: "읽는 법",
+      l: [
+        "비반전 증폭기의 이득은 1 보다 작아질 수 없습니다. 1 보다 작게 줄이려면 앞에 분압 저항을 두거나 반전 증폭기를 씁니다.",
+        "차동 증폭기는 위아래 저항 비가 같아야 공통 모드 전압이 지워집니다. 저항 허용차만큼 비가 어긋나면 공통 모드가 출력에 남습니다.",
+        "op amp 입력 핀은 공통 모드 범위 안에 있어야 합니다. 차동 증폭기는 입력 핀이 E2 × Rf/(Rin + Rf) 에 있으니 이 값도 확인합니다(TI 핸드북 p.25).",
+        "출력은 전원 전압 근처에서 잘립니다. 계산된 출력이 전원 범위를 넘으면 데이터시트의 출력 전압 범위를 봅니다.",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "열전대·로드셀·션트 저항처럼 mV 단위 신호를 ADC·PLC 아날로그 입력 범위로 키울 때(비반전·차동).",
+        "4–20 mA 수신 저항의 전압을 0–10 V 나 0–3.3 V 로 맞출 때.",
+        "두 점의 전압 차(브리지 출력)만 키우고 공통 전압은 지울 때(차동).",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["op amp 증폭률 공식은?", "비반전은 1 + Rf/Rg, 반전은 −Rf/Rin 입니다. Rf 100 kΩ·Rg 10 kΩ 이면 비반전 11배(20.8 dB), 반전 −10배(20 dB)입니다."],
+        ["반전과 비반전의 차이는?", "반전은 출력 부호가 뒤집히고 입력 임피던스가 Rin 입니다. 비반전은 부호가 그대로이고 입력 임피던스가 매우 높아 센서 출력을 거의 끌어내리지 않습니다."],
+        ["dB 로 바꾸려면?", "20 × log10(이득) 입니다. 10배 = 20 dB, 100배 = 40 dB, 1000배 = 60 dB."],
+        ["이득을 크게 하면 대역폭은?", "대역폭 ≈ GBW ÷ 잡음 이득 입니다. GBW 1 MHz op amp 로 비반전 101배를 만들면 약 9.9 kHz 까지 평탄합니다. 더 넓은 대역이 필요하면 GBW 가 큰 op amp 를 쓰거나 두 단으로 나눕니다."],
+      ],
+      aNote: "증폭한 전압을 ADC 값으로 바꾸려면",
+      aLink: "ADC 분해능 계산기",
+      rNote: "두 저항으로 원하는 값을 만들려면",
+      rLink: "합성 저항 계산기",
+      srcTitle: "근거",
+      src: "식은 Texas Instruments «Handbook of Operational Amplifier Applications»(SBOA092B) p.15·17·18(비반전·반전), p.23~25(가산·차동), p.27~28(그림 30 — 유한 이득 예 −9.987), p.31(dB), p.36~37(그림 40·41 — 대역폭)에서 옮겼고, 이 계산기가 그 예를 다시 내는지 시험으로 확인했습니다. 표준 저항 값은 Vishay 28372(IEC 60063 표). 개루프 이득·GBW·공통 모드 범위는 쓰는 op amp 의 데이터시트를 보세요.",
+    }
+  : {
+      title: "Op Amp Gain Calculator (Non-inverting, Inverting, Differential)",
+      desc: "Op amp gain, dB and output for non-inverting, inverting and differential circuits from Rf and Rg, with open-loop gain error, bandwidth and E-series pairs.",
+      topo: "Circuit",
+      topos: [["noninv", "Non-inverting (1 + Rf/Rg)"], ["inv", "Inverting (−Rf/Rin)"], ["diff", "Differential (Rf/Rin × (E2 − E1))"]],
+      rf: "Rf feedback resistor (Ω, 4k7 notation OK)",
+      rg: "Rg / Rin input-side resistor (Ω)",
+      vin: "Input voltage Vin / E2 (V)",
+      e1: "E1 (V, differential only)",
+      a: "Open-loop gain A (dB, datasheet)",
+      gbw: "Gain-bandwidth product GBW (MHz)",
+      res: "Results",
+      k: { g: "Ideal gain", db: "dB (20 log|G|)", ng: "Noise gain 1 + Rf/Rg", vo: "Output voltage (ideal)", real: "Gain at open-loop gain A / error", bw: "Closed-loop bandwidth ≈ GBW ÷ noise gain", pin: "Input pin voltage (differential: E2 × Rf/(Rin + Rf))" },
+      s2: "Standard resistors for a target gain",
+      tg: "Target gain |G|",
+      ser: "Standard series",
+      k2: { rf: "Rf needed (with the Rg above)", e: "Nearest standard value", ge: "Gain with it / difference from target" },
+      example: "The defaults (non-inverting, Rf 100 kΩ, Rg 10 kΩ, A 100 dB, GBW 1 MHz) are an example. Enter open-loop gain and GBW from your op amp's datasheet.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Non-inverting: Vout = (1 + Rf/Rg) × Vin",
+        "Inverting: Vout = −(Rf/Rin) × Vin",
+        "Differential (matched Rf, Rin top and bottom): Vout = (Rf/Rin) × (E2 − E1)",
+        "Summing (inverting): Vout = −Rf × (E1/R1 + E2/R2 + …)",
+        "dB = 20 × log10|G|   (×10 = 20 dB, ×100 = 40 dB)",
+        "With open-loop gain A: G ≈ ideal gain ÷ (1 + noise gain ÷ A)",
+        "Closed-loop bandwidth ≈ GBW ÷ (1 + Rf/Rg)",
+      ],
+      tTitle: "Common E12 resistor pairs (GBW 1 MHz)",
+      tHead: ["Circuit", "Rf / Rg", "Gain", "dB", "Bandwidth"],
+      tNote: "Inverting amplifiers also divide GBW by the noise gain 1 + Rf/Rin — a gain −1 inverter has noise gain 2, so half the bandwidth of a follower (gain 1) (TI handbook figures 40 and 41).",
+      tiTitle: "Finite open-loop gain (TI handbook figure 30 example)",
+      tiText: "TI's handbook takes an op amp with open-loop gain A = 10,000, 50 kΩ input impedance and 100 Ω output impedance, builds an inverting amplifier with ZI = 10 kΩ and ZO = 100 kΩ (ideal gain −10) driving 10 kΩ, and finds an error term δ ≈ 0.0013, so the real gain is −9.987 (0.13 % off). It notes the error can be trimmed out with the feedback resistor, after which a 10 % change in A moves the gain by less than 0.02 %. The calculator above uses the same expression with infinite input and zero output impedance (δ = noise gain ÷ A).",
+      lTitle: "How to read it",
+      l: [
+        "A non-inverting amplifier cannot have gain below 1. To attenuate, put a divider in front or use an inverting stage.",
+        "A differential amplifier cancels common-mode voltage only if the top and bottom resistor ratios match. A mismatch within resistor tolerance leaves some common mode in the output.",
+        "The op amp's input pins must stay within the common-mode range. In a differential amplifier they sit at E2 × Rf/(Rin + Rf); check that too (TI handbook p.25).",
+        "The output clips near the supply rails. If the calculated output is beyond the supply, check the datasheet's output swing.",
+      ],
+      uTitle: "Where it is used",
+      u: [
+        "Amplifying mV-level signals from thermocouples, load cells or shunt resistors to an ADC or PLC analog input range (non-inverting, differential).",
+        "Scaling the voltage across a 4–20 mA receiver resistor to 0–10 V or 0–3.3 V.",
+        "Amplifying only the difference between two points (a bridge output) while rejecting the common voltage (differential).",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the op amp gain formula?", "Non-inverting: 1 + Rf/Rg; inverting: −Rf/Rin. With Rf = 100 kΩ and Rg = 10 kΩ, non-inverting gain is 11 (20.8 dB) and inverting −10 (20 dB)."],
+        ["Inverting vs non-inverting?", "An inverting amplifier flips the sign and has an input impedance of Rin. A non-inverting amplifier keeps the sign and has very high input impedance, so it barely loads a sensor."],
+        ["How do I convert gain to dB?", "20 × log10(gain). ×10 = 20 dB, ×100 = 40 dB, ×1000 = 60 dB."],
+        ["What happens to bandwidth at high gain?", "Bandwidth ≈ GBW ÷ noise gain. A 1 MHz GBW op amp at a non-inverting gain of 101 is flat to about 9.9 kHz. For more bandwidth use a higher-GBW op amp or split the gain into two stages."],
+      ],
+      aNote: "To turn the amplified voltage into ADC counts, use the",
+      aLink: "ADC Resolution Calculator",
+      rNote: "To make a value from two resistors, use the",
+      rLink: "Parallel & Series Resistor Calculator",
+      srcTitle: "Basis",
+      src: "Formulas are from Texas Instruments' «Handbook of Operational Amplifier Applications» (SBOA092B) pp.15, 17, 18 (non-inverting, inverting), pp.23–25 (summing, differential), pp.27–28 (figure 30 — finite-gain example −9.987), p.31 (dB) and pp.36–37 (figures 40, 41 — bandwidth). Tests check that this calculator reproduces its example. Standard resistor values: Vishay 28372 (IEC 60063 tables). For open-loop gain, GBW and common-mode range, check your op amp's datasheet.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "op amp 증폭률 계산기 — 비반전·반전·차동 이득·dB — PortDock" : "Op Amp Gain Calculator: Non-inverting, Inverting, dB — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="oa">
+      <div class="row">
+        <label class="fld">{L.topo}<select id="topo">{L.topos.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
+        <label class="fld">{L.rf}<input id="rf" class="mono" value="100k" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.rg}<input id="rg" class="mono" value="10k" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.vin}<input id="vin" class="mono" value="0.2" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.e1}<input id="e1" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.a}<input id="a" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.gbw}<input id="gbw" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.s2}</h2>
+      <div class="row">
+        <label class="fld">{L.tg}<input id="tg" class="mono" value="25" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ser}<select id="ser"><option value="E12">E12</option><option value="E24" selected>E24</option><option value="E96">E96</option></select></label>
+      </div>
+      <p class="err" id="err2" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k2).map(([id, name]) => <tr><td>{name}</td><td data-k2={id}></td></tr>)}</tbody></table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c, i) => <td class={i ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.tiTitle}</h2>
+      <p>{L.tiText}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.aNote} <a href={url(lang, "tools/adc/")}>{L.aLink}</a>. {L.rNote} <a href={url(lang, "tools/parallel-resistor/")}>{L.rLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { bandwidth, db, diffPinVoltage, idealGain, noiseGain, realGain, rfFor, vout, type Topology } from "../lib/opamp";
+    import { parseOhm } from "../lib/resistors";
+    import type { ESeries } from "../lib/divider";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("oa") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (attr: string, k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[${attr}="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const clear = (attr: string) => {
+      for (const td of form.querySelectorAll<HTMLElement>(`td[${attr}]`)) td.textContent = "";
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const ohm = (r: number) => (r >= 1e6 ? `${p4(r / 1e6)} MΩ` : r >= 1e3 ? `${p4(r / 1e3)} kΩ` : `${p4(r)} Ω`);
+    const hz = (f: number) => (f >= 1e6 ? `${p4(f / 1e6)} MHz` : f >= 1e3 ? `${p4(f / 1e3)} kHz` : `${p4(f)} Hz`);
+    const volt = (v: number) => (Math.abs(v) >= 1 || v === 0 ? `${p4(v)} V` : `${p4(v * 1000)} mV`);
+    function run() {
+      const t = $<HTMLSelectElement>("topo").value as Topology;
+      const rg = parseOhm($("rg").value);
+      try {
+        const rf = parseOhm($("rf").value);
+        const g = idealGain(t, rf, rg);
+        const ng = noiseGain(rf, rg);
+        const aDb = num("a");
+        const a = 10 ** (aDb / 20);
+        const gbw = num("gbw") * 1e6;
+        set("data-k", "g", `${p4(g)} V/V`);
+        set("data-k", "db", `${db(g).toFixed(2)} dB`);
+        set("data-k", "ng", p4(ng));
+        set("data-k", "vo", volt(vout(t, rf, rg, num("vin"), t === "diff" ? num("e1") : 0)));
+        const r = realGain(t, rf, rg, a);
+        set("data-k", "real", `${String(+r.toPrecision(6))} / ${p4((r / g - 1) * 100)} %`);
+        set("data-k", "bw", hz(bandwidth(gbw, rf, rg)));
+        set("data-k", "pin", t === "diff" ? volt(diffPinVoltage(rf, rg, num("vin"))) : t === "noninv" ? volt(num("vin")) : "0 V");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — Rf·Rg 는 0 보다 큰 저항(예 10k, 4k7), 전압은 숫자, 개루프 이득·GBW 는 0 보다 커야 합니다" : "Check the numbers — Rf and Rg are resistances above 0 (e.g. 10k, 4k7), voltages numeric, open-loop gain and GBW above 0";
+        clear("data-k");
+      }
+      try {
+        const target = num("tg");
+        const o = rfFor(t, target, rg, $<HTMLSelectElement>("ser").value as ESeries);
+        set("data-k2", "rf", ohm(o.rf));
+        set("data-k2", "e", ohm(o.e));
+        set("data-k2", "ge", `${p4(o.gain)} / ${p4((o.gain / target - 1) * 100)} %`);
+        $("err2").textContent = "";
+      } catch {
+        $("err2").textContent = ko ? "목표 이득은 0 보다 커야 하고(비반전은 1 보다 커야 함), 위 Rg 가 맞아야 합니다" : "Target gain must be above 0 (above 1 for non-inverting) and Rg above must be valid";
+        clear("data-k2");
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

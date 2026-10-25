@@ -1,0 +1,320 @@
+---
+// 웹 도구: 진공 패드 흡착력·필요 진공압·패드 지름, 배관 용적·흡입 유량·흡착 응답 시간 (lib/vacuum.ts).
+// SMC «Vacuum Equipment Model Selection»(p.878·880 식과 이론 흡착력 표, A33·A34 식, p.891 선정 예, p.892 그래프 예)을 시험으로 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { SMC_PADS, liftForce, padArea } from "../lib/vacuum";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/vacuum-pad/";
+const p3 = (x: number) => (x >= 100 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(3)));
+// 흔한 패드의 이론 흡착력(안전율 없음)과 수평 4·수직 8 로 나눈 값 — −60 kPa(이젝터 기준), −80 kPa
+const tRows = [10, 20, 32, 40, 50, 63, 80, 100].map((d) => {
+  const s = padArea(d);
+  return [`ø${d}`, p3(s), p3(liftForce(60, s)), p3(liftForce(60, s, 4)), p3(liftForce(60, s, 8)), p3(liftForce(80, s))];
+});
+const L = ko
+  ? {
+      title: "진공 패드 흡착력 계산기",
+      desc: "패드 지름·진공압·안전율로 진공 패드의 흡착력(N·kgf)을 계산하고, 공작물에 필요한 진공압·패드 지름, 배관 용적과 흡착 응답 시간까지 SMC 식으로 봅니다.",
+      s1: "흡착력",
+      d: "패드 지름 (mm)",
+      n: "패드 수",
+      p: "진공압 (−kPa, 크기만)",
+      t: "안전율 t",
+      ts: [["4", "4 — 수평 흡착 (SMC 하한)"], ["8", "8 — 수직 흡착 (SMC 하한)"], ["1", "1 — 이론 흡착력"]],
+      m: "공작물 질량 (kg)",
+      res: "결과",
+      k: { s: "패드 하나의 면적 S", th: "이론 흡착력 P × S × 0.1 × 패드 수", w: "흡착력 (안전율로 나눔)", wk: "공작물 무게 (× 9.806 65)", ok: "판정", pNeed: "이 패드로 필요한 진공압", dNeed: "이 진공압으로 필요한 패드 지름 / SMC 표" },
+      s2: "흡착 응답 시간과 이젝터 흡입 유량",
+      id: "배관 내경 (mm)",
+      len: "배관 길이 (m, 밸브·이젝터 ~ 패드)",
+      tt: "목표 응답 시간 T1 (ms)",
+      leak: "누설량 QL (L/min(ANR), 없으면 0)",
+      qe: "이젝터 최대 흡입 유량 (L/min(ANR))",
+      c: "배관 컨덕턴스 C (dm³/(s·bar), 모르면 비움)",
+      k2: { v: "배관 용적 V = π/4 × D² × L ÷ 1000", q: "목표 시간에 필요한 평균 흡입 유량 Q", qmax: "고를 이젝터의 최대 흡입 유량 (Q × 2~3)", q1: "이 이젝터의 평균 흡입 유량 Q1 (최대의 1/2~1/3)", q2: "배관 최대 유량 Q2 = C × 55.5", t1: "응답 시간 T1 (최종 진공압의 63 %)", t2: "T2 = 3 × T1 (95 %)" },
+      example: "기본값(ø40 패드 1개, −60 kPa, 안전율 4, 1.5 kg / 내경 4 mm·1 m, 300 ms, 이젝터 20 L/min)은 예시입니다. 실제 진공압은 흡착이 끝나 안정된 값을, 이젝터 유량은 쓰는 이젝터의 카탈로그 값을 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식 (SMC)",
+      formula: [
+        "흡착력 W(N) = P(kPa) × S(cm²) × 0.1 × 1/t",
+        "S = π/4 × (패드 지름 cm)²,   t 수평 4 이상 · 수직 8 이상",
+        "필요한 진공압 P = W × t ÷ (S × 0.1)",
+        "배관 용적 V(L) = π/4 × D(mm)² × L(m) ÷ 1000",
+        "평균 흡입 유량 Q = V × 60 ÷ T1 + QL,   이젝터 최대 흡입 유량 = (2~3) × Q",
+        "응답 시간 T1 = V × 60 ÷ Q,   T2 = 3 × T1,   Q = Q1·Q2 중 작은 값",
+        "Q1 = 이젝터 최대 흡입 유량 × (1/2~1/3),   Q2 = C × 55.5,   누설량 QL = 55.5 × CL",
+      ],
+      tTitle: "패드 지름별 흡착력 (N, 계산값)",
+      tHead: ["패드", "면적 cm²", "−60 kPa 이론", "−60 kPa 수평 (÷4)", "−60 kPa 수직 (÷8)", "−80 kPa 이론"],
+      tNote: "SMC 이론 흡착력 표는 같은 식을 쓰되 끝자리를 버리거나 반올림해 적어(예: ø40 −60 kPa 75 N) 이 표와 끝자리가 조금 다를 수 있습니다. 이 계산기가 SMC 표와 끝자리 하나 안쪽으로 맞는지 시험으로 확인했습니다.",
+      exTitle: "SMC 선정 예 (같은 값이 나오는지 시험으로 확인)",
+      ex: [
+        "반도체 칩 1 g(0.0098 N)을 ø4 패드(0.13 cm²) 하나로 수평 흡착, 안전율 4: P = 0.0098 × 4 ÷ (0.13 × 0.1) = 3.0 kPa → −3.0 kPa 이상이면 듭니다.",
+        "내경 2 mm·1 m 배관: V = π/4 × 2² × 1 ÷ 1000 = 0.0031 L. 응답 300 ms 면 Q = 0.0031 × 60 ÷ 0.3 = 0.62 L/min, 이젝터 최대 흡입 유량은 1.24~1.86 L/min 이상.",
+        "최대 5 L/min 이젝터: Q1 = 5 × 1/3 ≈ 1.7, 배관 C 0.22 → Q2 = 12.2 L/min. 작은 쪽 1.7 로 T1 = 0.0031 × 60 ÷ 1.7 = 0.109 s(109 ms).",
+      ],
+      lTitle: "읽는 법",
+      l: [
+        "진공압을 두 배로 하면 흡착력도 두 배, 패드 지름을 두 배로 하면 네 배입니다. SMC 는 진공압을 지나치게 높이면 패드가 빨리 닳고 응답이 늦어진다고 적으니, 지름·개수로 힘을 맞추는 쪽이 낫습니다.",
+        "이론 흡착력은 정지 상태의 값입니다. 옮길 때의 가속도·바람·충격, 패드가 약한 옆 방향 힘과 모멘트는 안전율로 덮습니다 — 그래서 수평 4, 수직 8 이상입니다.",
+        "통기성이 있거나 표면이 거친 공작물은 공기가 새어 진공압이 떨어집니다. 계산에는 떨어진 뒤의 진공압을 넣고, 새는 양은 누설량 QL 로 더합니다.",
+        "이젝터의 평균 흡입 유량은 최대값의 1/2~1/3 이라 응답 시간은 범위로 나옵니다. 느린 쪽(1/3)으로 맞추면 여유가 생깁니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["진공 패드 흡착력 공식은?", "SMC 식은 W(N) = P(kPa) × S(cm²) × 0.1 × 1/t 입니다. ø40 패드(12.57 cm²)에 −60 kPa 면 이론 흡착력 75.4 N, 수평 안전율 4 로 나누면 18.8 N(약 1.9 kg)입니다."],
+        ["안전율은 얼마로 하나요?", "SMC 는 수평 흡착(패드가 아래를 보고 듦) 4 이상, 수직 흡착(옆면을 잡고 듦) 8 이상을 적습니다. 수직 흡착은 되도록 피하라고 합니다."],
+        ["−60 kPa 은 어디서 나온 값인가요?", "SMC 는 이젝터를 쓸 때 진공압을 대략 −60 kPa 로 보라고 적습니다. 흡착 후 안정된 진공압보다 낮게 잡아야 합니다."],
+        ["흡착 시간(응답 시간)은 어떻게 계산하나요?", "T1 = 배관 용적 V × 60 ÷ 평균 흡입 유량 Q 로 최종 진공압의 63 % 까지, 95 % 까지는 그 3배입니다. 배관이 길고 굵을수록 V 가 커져 느려집니다."],
+      ],
+      cNote: "패드를 움직이는 실린더의 힘은",
+      cLink: "공압 실린더 추력 계산기",
+      aNote: "진공 이젝터·실린더가 쓰는 압축 공기 양은",
+      aLink: "공압 실린더 공기 소비량 계산기",
+      gNote: "패드·이젝터 고르는 순서는",
+      gLink: "진공 패드 흡착력과 이젝터 고르기 가이드",
+      srcTitle: "근거",
+      src: "식과 예는 SMC «Vacuum Equipment Model Selection»(SMC 공식 사이트 PDF) — 4-P0878-883(p.878 예, p.880 흡착력 식·안전율·이론 흡착력 표), 6-4-p0033-vacuum(A33 §3 이젝터 유량 식, §4 누설량), 6-4-p0034-vacuum(A34 §5 응답 시간 식), 4-P0891(p.891 반도체 칩 선정 예), 4-P0892(p.892 배관 용적 그래프 예)에서 옮겼고, 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 이젝터 유량·배관 컨덕턴스는 쓰는 제품의 카탈로그 값을 보세요.",
+    }
+  : {
+      title: "Vacuum Pad Lifting Force Calculator",
+      desc: "Vacuum pad lifting force (N, kgf) from pad diameter, vacuum and safety factor; vacuum or pad size for a load; pipe volume and response time (SMC).",
+      s1: "Lifting force",
+      d: "Pad diameter (mm)",
+      n: "Number of pads",
+      p: "Vacuum (−kPa, magnitude)",
+      t: "Safety factor t",
+      ts: [["4", "4 — horizontal lifting (SMC minimum)"], ["8", "8 — vertical lifting (SMC minimum)"], ["1", "1 — theoretical force"]],
+      m: "Workpiece mass (kg)",
+      res: "Results",
+      k: { s: "Area S of one pad", th: "Theoretical force P × S × 0.1 × pads", w: "Lifting force (÷ safety factor)", wk: "Workpiece weight (× 9.806 65)", ok: "Verdict", pNeed: "Vacuum needed with this pad", dNeed: "Pad diameter needed at this vacuum / SMC size" },
+      s2: "Adsorption response time and ejector suction flow",
+      id: "Pipe inside diameter (mm)",
+      len: "Pipe length (m, valve/ejector to pad)",
+      tt: "Target response time T1 (ms)",
+      leak: "Leakage QL (L/min (ANR), 0 if none)",
+      qe: "Ejector max. suction flow (L/min (ANR))",
+      c: "Pipe conductance C (dm³/(s·bar), blank if unknown)",
+      k2: { v: "Pipe volume V = π/4 × D² × L ÷ 1000", q: "Average suction flow Q for the target time", qmax: "Ejector max. suction flow to choose (Q × 2–3)", q1: "Average suction flow Q1 of this ejector (1/2–1/3 of max.)", q2: "Pipe max. flow Q2 = C × 55.5", t1: "Response time T1 (63 % of final vacuum)", t2: "T2 = 3 × T1 (95 %)" },
+      example: "The defaults (one ø40 pad, −60 kPa, safety factor 4, 1.5 kg / 4 mm ID × 1 m, 300 ms, 20 L/min ejector) are an example. Enter the stable vacuum after adsorption and your ejector's catalogue flow.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas (SMC)",
+      formula: [
+        "Lifting force W (N) = P (kPa) × S (cm²) × 0.1 × 1/t",
+        "S = π/4 × (pad diameter in cm)²,   t ≥ 4 horizontal, ≥ 8 vertical",
+        "Vacuum needed P = W × t ÷ (S × 0.1)",
+        "Pipe volume V (L) = π/4 × D (mm)² × L (m) ÷ 1000",
+        "Average suction flow Q = V × 60 ÷ T1 + QL,   ejector max. suction flow = (2–3) × Q",
+        "Response time T1 = V × 60 ÷ Q,   T2 = 3 × T1,   Q = smaller of Q1 and Q2",
+        "Q1 = ejector max. suction flow × (1/2–1/3),   Q2 = C × 55.5,   leakage QL = 55.5 × CL",
+      ],
+      tTitle: "Lifting force by pad diameter (N, calculated)",
+      tHead: ["Pad", "Area cm²", "−60 kPa theoretical", "−60 kPa horizontal (÷4)", "−60 kPa vertical (÷8)", "−80 kPa theoretical"],
+      tNote: "SMC's theoretical lifting force table uses the same formula but truncates or rounds the last digit (e.g. ø40 at −60 kPa: 75 N), so the last digit may differ from this table. Tests check that this calculator matches SMC's table within one last digit.",
+      exTitle: "SMC selection example (checked by tests to give the same values)",
+      ex: [
+        "A 1 g semiconductor chip (0.0098 N) lifted horizontally by one ø4 pad (0.13 cm²), safety factor 4: P = 0.0098 × 4 ÷ (0.13 × 0.1) = 3.0 kPa → −3.0 kPa or more lifts it.",
+        "2 mm ID × 1 m pipe: V = π/4 × 2² × 1 ÷ 1000 = 0.0031 L. For 300 ms, Q = 0.0031 × 60 ÷ 0.3 = 0.62 L/min, so the ejector's max. suction flow should be 1.24–1.86 L/min or more.",
+        "A 5 L/min ejector: Q1 = 5 × 1/3 ≈ 1.7; pipe C = 0.22 → Q2 = 12.2 L/min. With the smaller 1.7, T1 = 0.0031 × 60 ÷ 1.7 = 0.109 s (109 ms).",
+      ],
+      lTitle: "How to read it",
+      l: [
+        "Doubling the vacuum doubles the force; doubling the pad diameter quadruples it. SMC notes that excessive vacuum wears pads faster and slows response, so match the force with pad size and count instead.",
+        "Theoretical force is a static value. Acceleration, air flow and impact while moving, plus the side forces and moments pads resist poorly, are covered by the safety factor — hence 4 horizontal and 8 vertical.",
+        "Porous or rough workpieces leak air and lower the vacuum. Calculate with the lowered vacuum, and add the leak as QL.",
+        "An ejector's average suction flow is 1/2–1/3 of its maximum, so response time comes out as a range. Designing to the slower end (1/3) leaves margin.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the vacuum pad lifting force formula?", "SMC's formula is W (N) = P (kPa) × S (cm²) × 0.1 × 1/t. A ø40 pad (12.57 cm²) at −60 kPa has a theoretical force of 75.4 N; divided by a horizontal safety factor of 4, 18.8 N (about 1.9 kg)."],
+        ["What safety factor should I use?", "SMC gives 4 or more for horizontal lifting (pad facing down) and 8 or more for vertical lifting (gripping a side face), and says vertical lifting should be avoided where possible."],
+        ["Where does −60 kPa come from?", "SMC says the vacuum with an ejector is about −60 kPa as a guide. Use a value below the stable vacuum after adsorption."],
+        ["How do I calculate adsorption (response) time?", "T1 = pipe volume V × 60 ÷ average suction flow Q gives the time to 63 % of the final vacuum; 95 % takes three times that. Longer, larger pipes mean more volume and a slower response."],
+      ],
+      cNote: "For the force of the cylinder moving the pad, use the",
+      cLink: "Pneumatic Cylinder Force Calculator",
+      aNote: "For the compressed air used by cylinders, use the",
+      aLink: "Pneumatic Cylinder Air Consumption Calculator",
+      gNote: "For how to choose pads and an ejector, see the guide",
+      gLink: "Vacuum pad lifting force and choosing an ejector",
+      srcTitle: "Basis",
+      src: "Formulas and examples are from SMC's «Vacuum Equipment Model Selection» (PDFs on SMC's official site) — 4-P0878-883 (p.878 example; p.880 lifting force formula, safety factors and theoretical lifting force table), 6-4-p0033-vacuum (A33 §3 ejector flow formulas, §4 leakage), 6-4-p0034-vacuum (A34 §5 response time formulas), 4-P0891 (p.891 semiconductor chip example) and 4-P0892 (p.892 pipe volume graph example). Tests check that this calculator reproduces those values. For ejector flow and pipe conductance, use your product's catalogue.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "진공 패드 흡착력 계산기 — 패드 지름·진공압·안전율 — PortDock" : "Vacuum Pad Lifting Force Calculator: Suction Cup Size — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="vac">
+      <h2 style="margin-top:0">{L.s1}</h2>
+      <div class="row">
+        <label class="fld">{L.d}<input id="d" class="mono" value="40" inputmode="decimal" spellcheck="false" autocomplete="off" list="pads" /></label>
+        <label class="fld">{L.n}<input id="n" class="mono" value="1" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.p}<input id="p" class="mono" value="60" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.t}<select id="t">{L.ts.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
+        <label class="fld">{L.m}<input id="m" class="mono" value="1.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <datalist id="pads">{SMC_PADS.map((d) => <option value={d} />)}</datalist>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.s2}</h2>
+      <div class="row">
+        <label class="fld">{L.id}<input id="id" class="mono" value="4" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.len}<input id="len" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.tt}<input id="tt" class="mono" value="300" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.leak}<input id="leak" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.qe}<input id="qe" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.c}<input id="c" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err2" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k2).map(([id, name]) => <tr><td>{name}</td><td data-k2={id}></td></tr>)}</tbody></table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.exTitle}</h2>
+      <ul>{L.ex.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.cNote} <a href={url(lang, "tools/cylinder-force/")}>{L.cLink}</a>. {L.aNote} <a href={url(lang, "tools/air-consumption/")}>{L.aLink}</a>. {L.gNote} <a href={url(lang, "guides/vacuum-pad-lifting-force/")}>{L.gLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { conductanceFlow, flowForTime, kgToN, liftForce, padArea, pickPad, pipeVolume, requiredPad, requiredVacuum, responseTime } from "../lib/vacuum";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("vac") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    // 진공압은 «−60» 처럼 부호를 붙여 넣어도 크기로 읽는다
+    const vac = () => {
+      const s = $("p").value.trim().replace(",", ".").replace(/^[−-]/, "");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (attr: string, k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[${attr}="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const clear = (attr: string) => {
+      for (const td of form.querySelectorAll<HTMLElement>(`td[${attr}]`)) td.textContent = "";
+    };
+    const p4 = (x: number) => (Math.abs(x) >= 1e5 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(4)));
+    const nk = (f: number) => `${p4(f)} N (${p4(f / 9.80665)} kgf)`;
+    function run() {
+      try {
+        const d = num("d");
+        const n = num("n");
+        const p = vac();
+        const t = Number($<HTMLSelectElement>("t").value);
+        const s = padArea(d);
+        const th = liftForce(p, s, 1, n);
+        const w = liftForce(p, s, t, n);
+        set("data-k", "s", `${p4(s)} cm²`);
+        set("data-k", "th", nk(th));
+        set("data-k", "w", nk(w));
+        const mv = $("m").value.trim();
+        if (mv === "") {
+          for (const k of ["wk", "ok", "pNeed", "dNeed"]) set("data-k", k, "");
+        } else {
+          const wk = kgToN(num("m"));
+          set("data-k", "wk", nk(wk));
+          set("data-k", "ok", w >= wk ? (ko ? `듦 — 흡착력이 무게의 ${p4(w / wk)}배` : `Lifts — force is ${p4(w / wk)} × the weight`) : ko ? `모자람 — 흡착력이 무게의 ${p4(w / wk)}배` : `Not enough — force is ${p4(w / wk)} × the weight`);
+          const pn = requiredVacuum(wk, s, t, n);
+          set("data-k", "pNeed", pn < 101.325 ? `−${p4(pn)} kPa` : ko ? `−${p4(pn)} kPa — 대기압(101.3 kPa)을 넘어 이 패드로는 못 듦` : `−${p4(pn)} kPa — beyond atmospheric (101.3 kPa), this pad cannot lift it`);
+          const r = requiredPad(wk, p, t, n);
+          const pick = pickPad(r.d);
+          set("data-k", "dNeed", `ø${p4(r.d)} mm / ${pick ? `ø${pick}` : ko ? "표의 ø340 보다 큼 — 패드 수를 늘림" : "larger than ø340 — add pads"}`);
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 지름·질량은 0 보다 크고, 패드 수는 1 이상의 정수, 진공압은 0 보다 크고 101.3 kPa(대기압)보다 작아야 합니다" : "Check the numbers — diameter and mass above 0, pads a whole number 1 or more, vacuum above 0 and below 101.3 kPa (atmospheric)";
+        clear("data-k");
+      }
+      try {
+        const v = pipeVolume(num("id"), num("len"));
+        const lk = $("leak").value.trim() === "" ? 0 : num("leak");
+        const f = flowForTime(v, num("tt") / 1000, lk);
+        set("data-k2", "v", `${p4(v)} L`);
+        set("data-k2", "q", `${p4(f.q)} L/min (ANR)`);
+        set("data-k2", "qmax", `${p4(f.qmaxLo)} ~ ${p4(f.qmaxHi)} L/min (ANR)`);
+        const qe = num("qe");
+        const cs = $("c").value.trim();
+        const q2 = cs === "" ? undefined : conductanceFlow(num("c"));
+        const fast = responseTime(v, qe / 2, q2);
+        const slow = responseTime(v, qe / 3, q2);
+        set("data-k2", "q1", `${p4(qe / 3)} ~ ${p4(qe / 2)} L/min (ANR)`);
+        set("data-k2", "q2", q2 === undefined ? (ko ? "C 를 넣으면 계산" : "Enter C to calculate") : `${p4(q2)} L/min (ANR)`);
+        set("data-k2", "t1", `${p4(fast.t1 * 1000)} ~ ${p4(slow.t1 * 1000)} ms`);
+        set("data-k2", "t2", `${p4(fast.t2 * 1000)} ~ ${p4(slow.t2 * 1000)} ms`);
+        $("err2").textContent = "";
+      } catch {
+        $("err2").textContent = ko ? "숫자를 확인하세요 — 내경·길이·목표 시간·이젝터 유량·C 는 0 보다 크고, 누설량은 0 이상이어야 합니다" : "Check the numbers — ID, length, target time, ejector flow and C above 0, leakage 0 or more";
+        clear("data-k2");
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

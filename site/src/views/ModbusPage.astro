@@ -1,0 +1,193 @@
+---
+// 웹 도구: Modbus RTU 요청 만들기 — PortDock Serial 의 «Modbus 요청» 과 같은 코드(shared/modbusBuild.ts) + CRC(lib/checksum.ts).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { MB_FUNCS } from "@shared/modbusBuild";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = ko
+  ? {
+      title: "Modbus RTU 요청 만들기",
+      desc: "국번·함수·주소·개수를 넣으면 CRC 까지 붙은 Modbus RTU 요청 바이트를 만들어 줍니다. 40001 같은 PLC 표기도 바로 넣을 수 있습니다.",
+      slave: "국번(슬레이브 ID)",
+      fc: "함수",
+      addr: "시작 주소",
+      zero: "0 기준",
+      plc: "4xxxx 표기",
+      qty: "개수",
+      values: "값 (쉼표·띄어쓰기로 구분, 0x 가능)",
+      coilVals: "값 (1/0 또는 ON/OFF)",
+      req: "요청 (CRC 포함)",
+      reqLen: "바이트",
+      resp: "정상 응답 길이",
+      how: "CRC16 Modbus 는 낮은 바이트를 먼저 붙입니다. 계산은 이 브라우저 안에서만 합니다.",
+      faqTitle: "읽는 법",
+      appNote: "만든 요청을 장비에 바로 보내 보려면",
+      guide: "Modbus RTU 프레임 읽는 법",
+    }
+  : {
+      title: "Modbus RTU Request Builder",
+      desc: "Enter Slave ID, function, address and quantity to get a complete Modbus RTU request including CRC. PLC notation such as 40001 works too.",
+      slave: "Slave ID",
+      fc: "Function",
+      addr: "Start address",
+      zero: "0-based",
+      plc: "4xxxx notation",
+      qty: "Quantity",
+      values: "Values (comma or space separated, 0x allowed)",
+      coilVals: "Values (1/0 or ON/OFF)",
+      req: "Request (with CRC)",
+      reqLen: "bytes",
+      resp: "Normal response length",
+      how: "CRC16 Modbus is appended low byte first. Everything runs in your browser.",
+      faqTitle: "How to read it",
+      appNote: "To send it to a device right away, use",
+      guide: "Reading Modbus RTU frames",
+    };
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus RTU 요청 만들기 — CRC 포함 계산기 — PortDock" : "Modbus RTU Request Builder with CRC (Online) — PortDock"} description={L.desc} path="tools/modbus/" ads>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/modbus/" }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="mb" data-lang={lang} data-bytes={L.reqLen} data-values={L.values} data-coilvals={L.coilVals} data-qty={L.qty}>
+      <div class="row">
+        <label class="fld">
+          {L.slave}
+          <input id="slave" type="number" min="0" max="247" value="1" />
+        </label>
+        <label class="fld" style="flex:2 1 260px">
+          {L.fc}
+          <select id="fc">
+            {MB_FUNCS.map((f) => <option value={f.code} selected={f.code === 3}>{f.code.toString(16).toUpperCase().padStart(2, "0")} — {f[lang]}</option>)}
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld">
+          {L.addr}
+          <input id="addr" class="mono" value="0" spellcheck="false" autocomplete="off" />
+        </label>
+        <div class="fld">
+          &nbsp;
+          <div class="seg-row" role="group" aria-label={L.addr}>
+            <button type="button" class="btn seg on" data-mode="zero">{L.zero}</button>
+            <button type="button" class="btn seg" data-mode="plc">{L.plc}</button>
+          </div>
+        </div>
+      </div>
+      <label class="fld" id="qtyBox">
+        <span id="qtyLabel">{L.qty}</span>
+        <input id="qty" class="mono" value="10" spellcheck="false" autocomplete="off" />
+      </label>
+      <p class="note" id="note"></p>
+      <p class="err" id="err" role="alert"></p>
+      <div class="result" aria-live="polite">
+        <div class="note">{L.req}</div>
+        <div id="out" style="font-size:18px"></div>
+        <div class="note" id="meta"></div>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      <p>
+        {ko ? "자세한 바이트 풀이는 가이드 " : "For a byte-by-byte walkthrough see "}
+        <a href={url(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{ko ? " 를 보세요." : "."}
+      </p>
+      <p>
+        {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path="tools/modbus/" />
+  </div>
+  <style>
+    .seg-row {
+      display: flex;
+      gap: 6px;
+    }
+    .btn.seg.on {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+  <script>
+    import { buildRequest, convertAddrText, mbFuncInfo, type AddrMode, type MbLang } from "@shared/modbusBuild";
+    import { compute, hex } from "../lib/checksum";
+    const form = document.getElementById("mb") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as MbLang;
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+    const fcSel = document.getElementById("fc") as HTMLSelectElement;
+    let mode: AddrMode = "zero";
+    let lastFc = Number(fcSel.value);
+    /** 정상 응답 길이 — 읽기: 3 + 바이트 수 + 2, 쓰기: 8 */
+    function respLen(fc: number, qty: number) {
+      const f = mbFuncInfo(fc);
+      if (!f) return 0;
+      if (f.write) return 8;
+      const n = f.bit ? Math.ceil(qty / 8) : qty * 2;
+      return 3 + n + 2;
+    }
+    function run() {
+      const fc = Number(fcSel.value);
+      const f = mbFuncInfo(fc)!;
+      ($("qtyLabel") as unknown as HTMLElement).textContent = f.write ? (f.bit ? form.dataset.coilvals! : form.dataset.values!) : form.dataset.qty!;
+      const r = buildRequest(
+        { slave: Number($("slave").value), fc, addrText: $("addr").value, addrMode: mode, qty: Number($("qty").value), valuesText: $("qty").value },
+        lang,
+      );
+      document.getElementById("note")!.textContent = r.note ?? "";
+      document.getElementById("err")!.textContent = r.error ?? "";
+      const out = document.getElementById("out")!;
+      const meta = document.getElementById("meta")!;
+      if (!r.bytes) {
+        out.textContent = "";
+        meta.textContent = "";
+        return;
+      }
+      const full = [...r.bytes, ...compute("crc16-modbus", r.bytes)];
+      out.textContent = hex(full);
+      const rl = Number($("slave").value) === 0 ? 0 : respLen(fc, r.qty);
+      meta.textContent = `${full.length} ${form.dataset.bytes}` + (rl ? ` · ${lang === "ko" ? "정상 응답" : "normal response"} ${rl} ${form.dataset.bytes}` : "");
+    }
+    fcSel.addEventListener("change", () => {
+      const fc = Number(fcSel.value);
+      $("addr").value = convertAddrText($("addr").value, { fc: lastFc, mode }, { fc, mode });
+      const was = mbFuncInfo(lastFc)!;
+      const now = mbFuncInfo(fc)!;
+      if (was.write !== now.write) $("qty").value = now.write ? (now.bit ? "1" : "100") : "10";
+      lastFc = fc;
+      run();
+    });
+    for (const b of document.querySelectorAll<HTMLButtonElement>("button[data-mode]")) {
+      b.addEventListener("click", () => {
+        const next = b.dataset.mode as AddrMode;
+        $("addr").value = convertAddrText($("addr").value, { fc: lastFc, mode }, { fc: lastFc, mode: next });
+        mode = next;
+        for (const x of document.querySelectorAll("button[data-mode]")) x.classList.toggle("on", x === b);
+        run();
+      });
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

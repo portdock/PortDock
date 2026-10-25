@@ -1,0 +1,82 @@
+# 검사 — push·PR 마다 Windows 에서 Rust 시험·정적 검사, 모든 앱(9개) 화면 빌드(타입 검사 포함), 공용 시험, 장비 레지스터 맵 검사, 사이트 빌드·검색 태그 검사, 제3자 고지 최신 여부, 개인 정보(개인 경로·메일·실명·개인 계획) 검사.
+# 실제 장비가 필요한 실기 점검은 docs/test-plan.md, 화면 자동 조작 점검은 e2e/README.md (로컬).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 24: .ts 시험 파일을 그대로 돌린다(타입 지우기 기본)
+          node-version: 24
+          cache: npm
+
+      - name: Rust (stable + clippy)
+        run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: npm ci
+        run: npm ci
+
+      # 앱을 컴파일하려면 화면 빌드 결과(dist)가 있어야 한다 — 이 단계가 tsc 타입 검사도 겸한다
+      - name: 화면 빌드 (모든 앱, tsc + vite)
+        run: |
+          foreach ($a in "serial", "modbus-slave", "modbus-master", "tcp", "udp", "simulator", "netscan", "scpi", "plot") {
+            npm run build -w "portdock-$a"
+            if ($LASTEXITCODE -ne 0) { throw "frontend build failed: $a" }
+          }
+
+      - name: 공용 화면 시험 (node --test)
+        run: node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"
+
+      - name: 장비 레지스터 맵 검사 (data/devices)
+        run: node tools/devices-check.mjs
+
+      - name: Rust 정적 검사 (clippy, 경고 = 실패)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Rust 시험
+        run: cargo test --workspace
+
+      - name: 제3자 고지가 최신인지
+        run: node tools/notices.mjs --check
+
+      - name: 설치 프로그램 사용권 화면(개인정보 안내 + GPL)이 최신인지
+        run: node tools/installer-license.mjs --check
+
+      - name: 사이트 검사·빌드
+        run: |
+          npm run check -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "astro check failed" }
+          npm test -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "site test failed" }
+          npm run build -w portdock-site
+          if ($LASTEXITCODE -ne 0) { throw "site build failed" }
+          node tools/site-check.mjs site/dist
+          if ($LASTEXITCODE -ne 0) { throw "site check failed (title, description, JSON-LD, links, sitemap)" }
+
+      - name: 개인 정보 검사 (공개 파일 + 사이트 빌드 결과)
+        # 구체적인 개인 낱말은 저장소 Secret 에서 읽는다(포크 PR 에서는 비어 있어 일반 규칙만)
+        env:
+          PORTDOCK_PRIVATE_TERMS: ${{ secrets.PORTDOCK_PRIVATE_TERMS }}
+        run: node tools/privacy-check.mjs site/dist

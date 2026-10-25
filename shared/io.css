@@ -1,0 +1,353 @@
+/* Serial·TCP·UDP 공통 기능 — 체크섬 옵션·트리거·파일 보내기·처리량·명령 단축키·터미널 보기·간격 열 */
+
+/* ---- 체크섬 고르기 + ⚙ */
+.ck-pick {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.ck-pick select {
+  width: auto;
+  min-width: 0;
+}
+.side .ck-pick {
+  display: flex;
+}
+.side .ck-pick select {
+  flex: 1;
+}
+.btn.ck-opt {
+  padding: 3px 6px;
+  flex-shrink: 0;
+}
+.btn.ck-opt.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.modal.ck-dialog {
+  width: min(440px, calc(100vw - 32px));
+}
+.ck-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.ck-seg {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+}
+.ck-seg.dim {
+  color: var(--muted);
+  border-style: dashed;
+}
+.ck-seg.ck {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.ck-sub {
+  font-size: calc(var(--fs, 13px) * 0.962);
+}
+.ck-grid,
+.file-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* ---- 명령 목록 단축키 */
+select.cmd-key {
+  width: auto;
+  flex-shrink: 0;
+  padding: 2px 2px;
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--muted);
+  max-width: 54px;
+}
+select.cmd-key.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- 처리량·마지막 수신 */
+.statusbar {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.statusbar > .mono {
+  white-space: nowrap;
+}
+.live-stats {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 2px 8px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.live-stats .on {
+  color: var(--ink);
+}
+.live-stats .quiet {
+  color: var(--fail);
+}
+select.delta-sel {
+  width: auto;
+  padding: 2px 4px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+
+/* ---- 간격 열·트리거 색 */
+.row .dt {
+  color: var(--muted);
+  min-width: 78px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.row.marked {
+  box-shadow: inset 4px 0 0 var(--mark);
+  background: color-mix(in srgb, var(--mark) 18%, transparent);
+}
+.row.marked.sel {
+  background: color-mix(in srgb, var(--mark) 28%, var(--sel));
+}
+
+/* ---- 트리거 칸 */
+.trg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trg-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.trg-toggle {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trg-count,
+.trg-total {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.trg-total {
+  color: var(--accent);
+}
+.trg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+}
+.trg.off {
+  opacity: 0.6;
+}
+.trg-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.trg-row select {
+  width: auto;
+  flex-shrink: 0;
+}
+.trg-name {
+  flex: 1;
+  min-width: 0;
+}
+.trg-hits {
+  font-size: calc(var(--fs, 13px) * 0.846);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.trg-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.trg-acts label.inline {
+  gap: 3px;
+}
+input.trg-color {
+  width: 26px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* ---- 파일 보내기 */
+.modal.file-dialog {
+  width: min(500px, calc(100vw - 32px));
+}
+.file-job {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(var(--fs, 13px) * 0.923);
+  min-width: 0;
+}
+.file-job progress {
+  width: 120px;
+  flex-shrink: 0;
+}
+.file-job-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-job.warn .file-job-text {
+  color: var(--fail);
+}
+
+/* ---- 보내기 줄 작은 칸(문자 간 지연·반복 횟수·Break) — 도구 묶음은 줄이 모자라면 통째로 넘어간다 */
+.send-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.send-tools > label,
+.send-tools > button {
+  white-space: nowrap;
+}
+.num.small-num {
+  width: 64px;
+}
+.rep-count {
+  color: var(--accent);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- 터미널 보기 */
+.term {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.962);
+  padding: 6px 10px;
+  background: var(--bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.term-line {
+  min-height: 1.45em;
+}
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  color: var(--muted);
+}
+
+/* ---- 작은 띄움 칸(Popover) — Serial 보내기 줄 «⋯ 더보기»(문자 간·Break·파일 보내기·반복 횟수) */
+.popover {
+  position: fixed;
+  z-index: 120;
+  max-width: min(360px, calc(100vw - 8px));
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.popover .pop-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.popover .pop-row > label,
+.popover .pop-row > button {
+  white-space: nowrap;
+}
+.more-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- 도구줄 «보기 설정»(시간 간격 열 등) — 간격 열이 켜져 있으면 강조 */
+.view-opt-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.view-pop .pop-row {
+  white-space: nowrap;
+}
+
+/* ---- 위아래 칸 높이 조절 막대(Splitter) — Modbus Slave·Master 통신 기록 위 */
+.splitter {
+  flex: 0 0 6px;
+  cursor: row-resize;
+  background: var(--line);
+  opacity: 0.55;
+  touch-action: none;
+  position: relative;
+}
+.splitter::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 36px;
+  height: 2px;
+  margin-left: -18px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+.splitter:hover,
+.splitter:focus-visible,
+.splitter.dragging {
+  opacity: 1;
+  background: var(--accent);
+  outline: none;
+}

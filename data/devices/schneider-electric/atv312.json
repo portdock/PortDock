@@ -1,0 +1,2130 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "schneider-electric/atv312",
+  "manufacturer": {
+    "ko": "슈나이더 일렉트릭",
+    "en": "Schneider Electric"
+  },
+  "model": "ATV312",
+  "models": [
+    "Altivar 312"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "슈나이더 일렉트릭 Altivar 312 (ATV312) 인버터 (RJ45 Modbus RTU)",
+    "en": "Schneider Electric Altivar 312 (ATV312) drive (RJ45 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "RJ45 포트 Modbus RTU. 논리 주소(10진) = 프레임 주소: 명령 CMD 8501·주파수 기준 LFr 8502, 상태 ETA 3201·출력 주파수 rFr 3202, 고장 7121~, 통신 설정 6001~6005",
+    "en": "RJ45 port Modbus RTU. Logical address (decimal) = frame address: command CMD 8501, frequency reference LFr 8502, status ETA 3201, output frequency rFr 3202, faults from 7121, communication settings 6001-6005"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      4800,
+      9600,
+      19200
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 29,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: Modbus 매뉴얼 BBV52816 의 읽기 예(p.12)는 02 03 0C 1E 00 04 27 6C 로 W3102~W3105(16#0C1E~)를 읽고 02 03 08 00 28 02 58 01 F4 00 00 52 B0 을 받으며(SFr 4 kHz·tFr 60 Hz·HSP 50 Hz·LSP 0 — 변수 매뉴얼의 0.1 kHz·0.1 Hz 단위와 맞다), 쓰기 예(p.12)는 02 06 23 29 00 0D 92 70 (W9001 = 16#2329). 매뉴얼 번호(10진) = 프레임 주소. 이 세 프레임과 장치 식별 요청(02 2B 0E 01 00 34 77)의 CRC 는 계산값과 같다. FC16 예(p.14)의 CRC 는 51 7F·8F ED 로 적혀 있으나 계산값은 73 A4·9B B7 — 주소와는 무관.",
+        "en": "Addressing: the read example in Modbus manual BBV52816 (p.12) sends 02 03 0C 1E 00 04 27 6C to read W3102-W3105 (16#0C1E-) and gets 02 03 08 00 28 02 58 01 F4 00 00 52 B0 (SFr 4 kHz, tFr 60 Hz, HSP 50 Hz, LSP 0, matching the 0.1 kHz / 0.1 Hz units in the variables manual); the write example (p.12) is 02 06 23 29 00 0D 92 70 (W9001 = 16#2329). Manual number (decimal) = frame address. CRCs of these three frames and of the identification request (02 2B 0E 01 00 34 77) match calculation. The FC16 example (p.14) prints CRCs 51 7F and 8F ED but they compute to 73 A4 and 9B B7; this does not affect addressing."
+      },
+      {
+        "ko": "출하값: Add 1(1~247), tbr 19.2 kbps(4.8·9.6·19.2), tFO 8E1(8O1·8E1·8N1·8N2), ttO 10 s (BBV52816 p.9·p.11). 원격 표시기는 19.2 kbps·8E1 에서만 쓴다.",
+        "en": "Factory settings: Add 1 (1-247), tbr 19.2 kbps (4.8/9.6/19.2), tFO 8E1 (8O1/8E1/8N1/8N2), ttO 10 s (BBV52816 p.9, p.11). The remote display terminal needs 19.2 kbps and 8E1."
+      },
+      {
+        "ko": "함수 코드 03(최대 29워드)·06·16(최대 27워드)·43(장치 식별) (BBV52816 p.12).",
+        "en": "Function codes 03 (up to 29 words), 06, 16 (up to 27 words) and 43 (identification) (BBV52816 p.12)."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "ko": "레지스터 주소·단위·읽기/쓰기는 통신 변수 매뉴얼 BBV51701(쪽 번호는 이 매뉴얼). R/WS(정지 중에만 쓰기)는 rw 로 적고 설명에 남겼다.",
+      "en": "Register addresses, units and read/write come from the communication variables manual BBV51701 (page numbers refer to it). R/WS (write only while stopped) is listed as rw and noted in the description."
+    },
+    {
+      "ko": "가속 ACC(9001)·감속 dEC(9002)는 넣지 않았다 — 변수 매뉴얼(p.39)은 단위 0.1 s(출하값 30 = 3 s, Inr 에 따라 바뀜)인데 Modbus 매뉴얼의 예(p.12·p.14)는 W9001 = 16#000D 를 «ACC = 13 s», 20·30 을 «20 s·30 s» 로 적어 배율이 어긋난다.",
+      "en": "Acceleration ACC (9001) and deceleration dEC (9002) are not included: the variables manual (p.39) gives a 0.1 s unit (factory 30 = 3 s, depending on Inr), while the Modbus manual examples (p.12, p.14) call W9001 = 16#000D «ACC = 13 s» and 20/30 «20 s/30 s», so the scaling disagrees."
+    },
+    {
+      "ko": "가상 아날로그 입력 AIV1 은 넣지 않았다 — 변수 매뉴얼에 단위 % 만 있고 배율(1 % 당 값)이 적혀 있지 않다.",
+      "en": "The virtual analog input AIV1 is not included: the variables manual gives only the unit % without a scale (value per 1 %)."
+    },
+    {
+      "ko": "CMD 로 운전하려면 접근 수준 LAC = L3 에서 제어 채널을 Modbus 로 정하고 상태 기계(0006h → 0007h → 000Fh)를 따른다. L1·L2 에서는 전원 투입 때 바로 «운전 가능» 이 된다 (p.11).",
+      "en": "To run by CMD set access level LAC = L3, select Modbus as the control channel and follow the state machine (0006h -> 0007h -> 000Fh). In L1/L2 the drive goes to «Operation enabled» at power up (p.11)."
+    }
+  ],
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 3102,
+      "manualAddress": "3102",
+      "type": "u16",
+      "name": {
+        "ko": "SFr 스위칭 주파수",
+        "en": "SFr switching frequency"
+      },
+      "unit": "kHz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 2,
+        "max": 16
+      },
+      "description": {
+        "ko": "출하값 40(4 kHz)",
+        "en": "Factory setting 40 (4 kHz)"
+      },
+      "ref": "p.31",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3103,
+      "manualAddress": "3103",
+      "type": "u16",
+      "name": {
+        "ko": "tFr 최대 출력 주파수",
+        "en": "tFr maximum output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 10,
+        "max": 500
+      },
+      "description": {
+        "ko": "출하값 600(bFr = 50) / 720(bFr = 60). 정지 중에만 쓸 수 있다(R/WS)",
+        "en": "Factory setting 600 (bFr = 50) / 720 (bFr = 60). Writable only while stopped (R/WS)"
+      },
+      "ref": "p.31",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3104,
+      "manualAddress": "3104",
+      "type": "u16",
+      "name": {
+        "ko": "HSP 고속",
+        "en": "HSP high speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "최대 기준일 때 모터 주파수. 출하값 500(bFr = 50) / 600(bFr = 60), 범위 LSP~tFr",
+        "en": "Motor frequency at max. reference. Factory 500 (bFr = 50) / 600 (bFr = 60), range LSP to tFr"
+      },
+      "ref": "p.27",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3105,
+      "manualAddress": "3105",
+      "type": "u16",
+      "name": {
+        "ko": "LSP 저속",
+        "en": "LSP low speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "최소 기준일 때 모터 주파수. 출하값 0, 범위 0~HSP",
+        "en": "Motor frequency at min. reference. Factory 0, range 0 to HSP"
+      },
+      "ref": "p.27",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3201,
+      "manualAddress": "3201",
+      "type": "u16",
+      "name": {
+        "ko": "ETA 상태 워드",
+        "en": "ETA status word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "스위치 온 준비",
+          "en": "Ready to switch on"
+        },
+        {
+          "bit": 1,
+          "ko": "스위치 온",
+          "en": "Switched on"
+        },
+        {
+          "bit": 2,
+          "ko": "운전 가능",
+          "en": "Operation enabled"
+        },
+        {
+          "bit": 3,
+          "ko": "고장 검출(FAI)",
+          "en": "Malfunction, detected fault (FAI)"
+        },
+        {
+          "bit": 4,
+          "ko": "전압 차단(늘 0)",
+          "en": "Voltage disabled (always 0)"
+        },
+        {
+          "bit": 5,
+          "ko": "퀵 스톱(0 에서 동작)",
+          "en": "Quick stop (active at 0)"
+        },
+        {
+          "bit": 6,
+          "ko": "스위치 온 불가",
+          "en": "Switch on disabled"
+        },
+        {
+          "bit": 7,
+          "ko": "알람 있음",
+          "en": "Alarm present"
+        },
+        {
+          "bit": 9,
+          "ko": "1 = 강제 로컬 아님(0 = FLO 중)",
+          "en": "1 = no forced local mode (0 = FLO in progress)"
+        },
+        {
+          "bit": 10,
+          "ko": "기준 도달",
+          "en": "Reference reached"
+        },
+        {
+          "bit": 11,
+          "ko": "LFRD 기준 초과(< LSP 또는 > HSP)",
+          "en": "LFRD reference exceeded (< LSP or > HSP)"
+        },
+        {
+          "bit": 14,
+          "ko": "STOP 키로 정지",
+          "en": "Stop imposed by STOP key"
+        },
+        {
+          "bit": 15,
+          "ko": "역회전(출력 주파수)",
+          "en": "Reverse rotation (output frequency)"
+        }
+      ],
+      "description": {
+        "ko": "값 예: 0627h 정회전·속도 도달, 8627h 역회전·속도 도달, 0227h 정회전 가감속 중 (p.10)",
+        "en": "Examples: 0627h forward, speed reached; 8627h reverse, speed reached; 0227h forward, ACC or DEC (p.10)"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3202,
+      "manualAddress": "3202",
+      "type": "s16",
+      "name": {
+        "ko": "rFr 출력 주파수",
+        "en": "rFr output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "CMI 비트 9 = 0(출하) 일 때 0.1 Hz. 비트 9 = 1 이면 32767 = 600 Hz",
+        "en": "0.1 Hz when CMI bit 9 = 0 (factory). With bit 9 = 1, 32767 = 600 Hz"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3203,
+      "manualAddress": "3203",
+      "type": "u16",
+      "name": {
+        "ko": "FrH 램프 전 주파수 기준",
+        "en": "FrH frequency reference before ramp"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3204,
+      "manualAddress": "3204",
+      "type": "u16",
+      "name": {
+        "ko": "LCr 모터 전류",
+        "en": "LCr motor current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3205,
+      "manualAddress": "3205",
+      "type": "u16",
+      "name": {
+        "ko": "Otr 모터 토크",
+        "en": "Otr motor torque"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% = 모터 정격 토크",
+        "en": "100% = nominal motor torque"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3206,
+      "manualAddress": "3206",
+      "type": "u16",
+      "name": {
+        "ko": "ETI 확장 상태 워드",
+        "en": "ETI extended status word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "파라미터 쓰기 불가(EEPROM 저장 중)",
+          "en": "Write parameters not authorized (saving to EEPROM)"
+        },
+        {
+          "bit": 1,
+          "ko": "파라미터 정합성 검사",
+          "en": "Parameter consistency check"
+        },
+        {
+          "bit": 2,
+          "ko": "고장 리셋 가능",
+          "en": "Fault state reset authorized"
+        },
+        {
+          "bit": 4,
+          "ko": "모터 운전 중",
+          "en": "Motor running"
+        },
+        {
+          "bit": 5,
+          "ko": "직류 제동 중",
+          "en": "DC injection"
+        },
+        {
+          "bit": 6,
+          "ko": "과도 상태",
+          "en": "Drive in transient state"
+        },
+        {
+          "bit": 7,
+          "ko": "모터 열 과부하 알람",
+          "en": "Motor thermal overload alarm"
+        },
+        {
+          "bit": 8,
+          "ko": "과도 제동 알람",
+          "en": "Alarm if excessive braking"
+        },
+        {
+          "bit": 9,
+          "ko": "가속 중",
+          "en": "Drive accelerating"
+        },
+        {
+          "bit": 10,
+          "ko": "감속 중",
+          "en": "Drive decelerating"
+        },
+        {
+          "bit": 11,
+          "ko": "전류 제한 알람",
+          "en": "Current limit alarm"
+        },
+        {
+          "bit": 12,
+          "ko": "고속 정지 중",
+          "en": "Fast stop in progress"
+        },
+        {
+          "bit": 13,
+          "ko": "제어 채널 비트 a(14·13: 00 단자·키패드, 01 원격 표시기, 10 Modbus, 11 CANopen)",
+          "en": "Control channel bit a (14/13: 00 terminals/keypad, 01 remote display, 10 Modbus, 11 CANopen)"
+        },
+        {
+          "bit": 14,
+          "ko": "제어 채널 비트 b",
+          "en": "Control channel bit b"
+        },
+        {
+          "bit": 15,
+          "ko": "역회전 요청(기준)",
+          "en": "Reverse rotation requested (reference)"
+        }
+      ],
+      "ref": "p.22",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3207,
+      "manualAddress": "3207",
+      "type": "u16",
+      "name": {
+        "ko": "ULn 전원 전압",
+        "en": "ULn line voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "직류 버스로 구한 전원 전압",
+        "en": "Line voltage via the DC bus"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3209,
+      "manualAddress": "3209",
+      "type": "u16",
+      "name": {
+        "ko": "tHd 드라이브 열 상태",
+        "en": "tHd drive thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% = 정격, 118% = OHF 문턱",
+        "en": "100% = nominal, 118% = OHF threshold"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3210,
+      "manualAddress": "3210",
+      "type": "u16",
+      "name": {
+        "ko": "TDM 드라이브 최대 열 상태",
+        "en": "TDM max. drive thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "전원을 끄면 0",
+        "en": "Reset to zero at power down"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3211,
+      "manualAddress": "3211",
+      "type": "u16",
+      "name": {
+        "ko": "OPr 모터 출력",
+        "en": "OPr motor power"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% = 모터 정격 출력",
+        "en": "100% = nominal motor power"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3231,
+      "manualAddress": "3231",
+      "type": "u16",
+      "name": {
+        "ko": "rtH 운전 시간",
+        "en": "rtH operating time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모터에 전원이 들어간 누적 시간. rPr 로 0",
+        "en": "Total time the motor has been powered up. Reset by rPr"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3250,
+      "manualAddress": "3250",
+      "type": "u16",
+      "name": {
+        "ko": "LRS1 확장 상태 워드 1",
+        "en": "LRS1 extended status word 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "드라이브 고장",
+          "en": "Drive detected fault"
+        },
+        {
+          "bit": 2,
+          "ko": "모터 운전 중",
+          "en": "Motor running"
+        },
+        {
+          "bit": 4,
+          "ko": "주파수 문턱(Ftd) 도달",
+          "en": "Frequency threshold (Ftd) reached"
+        },
+        {
+          "bit": 5,
+          "ko": "고속 도달",
+          "en": "High speed reached"
+        },
+        {
+          "bit": 6,
+          "ko": "전류 문턱(Ctd) 도달",
+          "en": "Current threshold (Ctd) reached"
+        },
+        {
+          "bit": 7,
+          "ko": "속도 기준 도달",
+          "en": "Speed reference reached"
+        },
+        {
+          "bit": 8,
+          "ko": "모터 열 과부하 알람",
+          "en": "Motor thermal overload alarm"
+        },
+        {
+          "bit": 9,
+          "ko": "브레이크 제어 중(해제)",
+          "en": "Brake control in progress (released)"
+        },
+        {
+          "bit": 12,
+          "ko": "4~20 mA 손실",
+          "en": "Loss of 4-20 mA"
+        },
+        {
+          "bit": 14,
+          "ko": "드라이브 열 과부하 알람",
+          "en": "Drive thermal overload alarm"
+        }
+      ],
+      "ref": "p.22",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3252,
+      "manualAddress": "3252",
+      "type": "u16",
+      "name": {
+        "ko": "LRS3 확장 상태 워드 3",
+        "en": "LRS3 extended status word 3"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "기준이 Fr2",
+          "en": "Reference given by Fr2"
+        },
+        {
+          "bit": 1,
+          "ko": "명령이 Fr2·Cd2",
+          "en": "Command given by Fr2 or Cd2"
+        },
+        {
+          "bit": 2,
+          "ko": "ACC2·DEC2 사용",
+          "en": "ACC2 and DEC2 used"
+        },
+        {
+          "bit": 3,
+          "ko": "CL2 로 전류 제한",
+          "en": "CL2 used for current limiting"
+        },
+        {
+          "bit": 11,
+          "ko": "모터 1 사용",
+          "en": "Motor 1 is used"
+        },
+        {
+          "bit": 12,
+          "ko": "모터 2 사용",
+          "en": "Motor 2 is used"
+        }
+      ],
+      "ref": "p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5240,
+      "manualAddress": "5240",
+      "type": "u16",
+      "name": {
+        "ko": "IOLR 논리 입출력 값",
+        "en": "IOLR value of logic I/O"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "LI1 입력",
+          "en": "Logic input LI1"
+        },
+        {
+          "bit": 1,
+          "ko": "LI2 입력",
+          "en": "Logic input LI2"
+        },
+        {
+          "bit": 2,
+          "ko": "LI3 입력",
+          "en": "Logic input LI3"
+        },
+        {
+          "bit": 3,
+          "ko": "LI4 입력",
+          "en": "Logic input LI4"
+        },
+        {
+          "bit": 4,
+          "ko": "LI5 입력",
+          "en": "Logic input LI5"
+        },
+        {
+          "bit": 5,
+          "ko": "LI6 입력",
+          "en": "Logic input LI6"
+        },
+        {
+          "bit": 7,
+          "ko": "키패드 있음",
+          "en": "Keypad present"
+        },
+        {
+          "bit": 8,
+          "ko": "R1 릴레이 출력",
+          "en": "R1 relay output"
+        },
+        {
+          "bit": 9,
+          "ko": "R2 릴레이 출력",
+          "en": "R2 relay output"
+        },
+        {
+          "bit": 10,
+          "ko": "LO 논리 출력",
+          "en": "LO logic output"
+        },
+        {
+          "bit": 14,
+          "ko": "0 = AOC/AOV 논리 출력, 1 = 아날로그 출력",
+          "en": "0 = AOC/AOV logic output, 1 = analog output"
+        }
+      ],
+      "description": {
+        "ko": "비트 8~10 만 쓸 수 있고, 그 출력이 기능에 배정되지 않았을 때만",
+        "en": "Only bits 8-10 are writable, and only when that output is not assigned"
+      },
+      "ref": "p.20, p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5242,
+      "manualAddress": "5242",
+      "type": "u16",
+      "name": {
+        "ko": "AI1C 아날로그 입력 AI1",
+        "en": "AI1C analog input AI1"
+      },
+      "unit": "mV",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 10000
+      },
+      "ref": "p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5243,
+      "manualAddress": "5243",
+      "type": "s16",
+      "name": {
+        "ko": "AI2C 아날로그 입력 AI2",
+        "en": "AI2C analog input AI2"
+      },
+      "unit": "mV",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -10000,
+        "max": 10000
+      },
+      "ref": "p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5244,
+      "manualAddress": "5244",
+      "type": "u16",
+      "name": {
+        "ko": "AI3C 아날로그 입력 AI3",
+        "en": "AI3C analog input AI3"
+      },
+      "unit": "µA",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 20000
+      },
+      "ref": "p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5261,
+      "manualAddress": "5261",
+      "type": "u16",
+      "name": {
+        "ko": "AO1R 아날로그 출력 값",
+        "en": "AO1R analog output value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 10000
+      },
+      "description": {
+        "ko": "10000 = 10 V(AO1t = 10U) 또는 20 mA(OA·4A). dO 가 배정되지 않았을 때만 쓸 수 있다",
+        "en": "10000 = 10 V (AO1t = 10U) or 20 mA (OA/4A). Writable only when dO is not assigned"
+      },
+      "ref": "p.20, p.23",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 6001,
+      "manualAddress": "6001",
+      "type": "u16",
+      "name": {
+        "ko": "Add Modbus 국번",
+        "en": "Add Modbus drive address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하값 1. 정지 중에만 쓸 수 있다(R/WS)",
+        "en": "Factory setting 1. Writable only while stopped (R/WS)"
+      },
+      "ref": "p.55",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 6003,
+      "manualAddress": "6003",
+      "type": "u16",
+      "name": {
+        "ko": "tbr Modbus 통신 속도",
+        "en": "tbr Modbus transmission speed"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 24,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 28,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 32,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        }
+      ],
+      "description": {
+        "ko": "출하값 32. 원격 표시기는 19200 bps 에서만. 정지 중에만 쓸 수 있다(R/WS)",
+        "en": "Factory setting 32. The remote display terminal works only at 19200 bps. Writable only while stopped (R/WS)"
+      },
+      "ref": "p.55",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 6004,
+      "manualAddress": "6004",
+      "type": "u16",
+      "name": {
+        "ko": "tFO Modbus 통신 형식",
+        "en": "tFO Modbus communication format"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 2,
+          "ko": "8O1",
+          "en": "8O1"
+        },
+        {
+          "value": 3,
+          "ko": "8E1",
+          "en": "8E1"
+        },
+        {
+          "value": 4,
+          "ko": "8N1",
+          "en": "8N1"
+        },
+        {
+          "value": 5,
+          "ko": "8N2",
+          "en": "8N2"
+        }
+      ],
+      "description": {
+        "ko": "출하값 3(8E1). 원격 표시기는 8E1 에서만. 정지 중에만 쓸 수 있다(R/WS)",
+        "en": "Factory setting 3 (8E1). The remote display terminal works only with 8E1. Writable only while stopped (R/WS)"
+      },
+      "ref": "p.55",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 6005,
+      "manualAddress": "6005",
+      "type": "u16",
+      "name": {
+        "ko": "ttO Modbus 타임아웃",
+        "en": "ttO Modbus time-out"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 10
+      },
+      "description": {
+        "ko": "출하값 100(10 s). 정지 중에만 쓸 수 있다(R/WS)",
+        "en": "Factory setting 100 (10 s). Writable only while stopped (R/WS)"
+      },
+      "ref": "p.55",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7121,
+      "manualAddress": "7121",
+      "type": "u16",
+      "name": {
+        "ko": "LFt 마지막 고장",
+        "en": "LFt last detected fault"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "nOF 고장 기록 없음",
+          "en": "nOF: no fault code saved"
+        },
+        {
+          "value": 3,
+          "ko": "CFF 설정 오류",
+          "en": "CFF: incorrect configuration"
+        },
+        {
+          "value": 4,
+          "ko": "CFI 잘못된 설정",
+          "en": "CFI: invalid configuration"
+        },
+        {
+          "value": 5,
+          "ko": "SLF Modbus 통신 끊김",
+          "en": "SLF: Modbus communication interruption"
+        },
+        {
+          "value": 6,
+          "ko": "ILF 내부 통신 끊김",
+          "en": "ILF: internal communication interruption"
+        },
+        {
+          "value": 7,
+          "ko": "CnF 통신 옵션 카드",
+          "en": "CnF: communication option card"
+        },
+        {
+          "value": 8,
+          "ko": "EPF 외부 고장",
+          "en": "EPF: external fault"
+        },
+        {
+          "value": 9,
+          "ko": "OCF 과전류",
+          "en": "OCF: overcurrent"
+        },
+        {
+          "value": 10,
+          "ko": "CrF 콘덴서 예비 충전",
+          "en": "CrF: capacitor pre-charge"
+        },
+        {
+          "value": 13,
+          "ko": "LFF 4~20 mA 손실",
+          "en": "LFF: 4-20 mA loss"
+        },
+        {
+          "value": 16,
+          "ko": "OHF 드라이브 과열",
+          "en": "OHF: drive overheating"
+        },
+        {
+          "value": 17,
+          "ko": "OLF 모터 과부하",
+          "en": "OLF: motor overload"
+        },
+        {
+          "value": 18,
+          "ko": "ObF 직류 버스 과전압",
+          "en": "ObF: DC bus overvoltage"
+        },
+        {
+          "value": 19,
+          "ko": "OSF 전원 과전압",
+          "en": "OSF: line supply overvoltage"
+        },
+        {
+          "value": 20,
+          "ko": "OPF 모터 결상",
+          "en": "OPF: motor phase loss"
+        },
+        {
+          "value": 21,
+          "ko": "PHF 전원 결상",
+          "en": "PHF: line phase loss"
+        },
+        {
+          "value": 22,
+          "ko": "USF 전원 저전압",
+          "en": "USF: line supply undervoltage"
+        },
+        {
+          "value": 23,
+          "ko": "SCF 모터 단락(상간)",
+          "en": "SCF: motor short-circuit (phase to phase)"
+        },
+        {
+          "value": 24,
+          "ko": "SOF 모터 과속",
+          "en": "SOF: motor overspeed"
+        },
+        {
+          "value": 25,
+          "ko": "tnF 오토 튜닝 실패",
+          "en": "tnF: auto-tuning unsuccessful"
+        },
+        {
+          "value": 26,
+          "ko": "IF1 알 수 없는 정격",
+          "en": "IF1: unknown rating"
+        },
+        {
+          "value": 27,
+          "ko": "IF2 MMI 카드",
+          "en": "IF2: MMI card"
+        },
+        {
+          "value": 28,
+          "ko": "IF3 MMI 통신",
+          "en": "IF3: MMI communication"
+        },
+        {
+          "value": 29,
+          "ko": "IF4 산업용 EEPROM",
+          "en": "IF4: industrial EEPROM"
+        },
+        {
+          "value": 30,
+          "ko": "EEF EEPROM 메모리",
+          "en": "EEF: EEPROM memory"
+        },
+        {
+          "value": 31,
+          "ko": "SCF 임박 단락",
+          "en": "SCF: impeding short-circuit"
+        },
+        {
+          "value": 32,
+          "ko": "SCF 모터 지락",
+          "en": "SCF: motor short-circuit (to ground)"
+        },
+        {
+          "value": 33,
+          "ko": "OPF 모터 3상 결상",
+          "en": "OPF: motor phase loss, 3 phases"
+        },
+        {
+          "value": 34,
+          "ko": "COF 통신 끊김(CANopen)",
+          "en": "COF: communication interruption (CANopen)"
+        },
+        {
+          "value": 35,
+          "ko": "bLF 브레이크 제어",
+          "en": "bLF: brake control"
+        },
+        {
+          "value": 36,
+          "ko": "OCF 파워 모듈(ATV312·D15·)",
+          "en": "OCF: power module (ATV312·D15·)"
+        },
+        {
+          "value": 55,
+          "ko": "SCF 전원 투입 시 파워 모듈·모터 단락",
+          "en": "SCF: power module or motor short-circuit at power up"
+        }
+      ],
+      "description": {
+        "ko": "원인이 없어지거나 전원을 다시 넣어도 남는다",
+        "en": "Kept after the cause disappears and after power cycling"
+      },
+      "ref": "p.24",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7201,
+      "manualAddress": "7201",
+      "type": "u16",
+      "name": {
+        "ko": "DP1 지난 고장 1",
+        "en": "DP1 past detected fault 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "nOF 고장 기록 없음",
+          "en": "nOF: no fault code saved"
+        },
+        {
+          "value": 3,
+          "ko": "CFF 설정 오류",
+          "en": "CFF: incorrect configuration"
+        },
+        {
+          "value": 4,
+          "ko": "CFI 잘못된 설정",
+          "en": "CFI: invalid configuration"
+        },
+        {
+          "value": 5,
+          "ko": "SLF Modbus 통신 끊김",
+          "en": "SLF: Modbus communication interruption"
+        },
+        {
+          "value": 6,
+          "ko": "ILF 내부 통신 끊김",
+          "en": "ILF: internal communication interruption"
+        },
+        {
+          "value": 7,
+          "ko": "CnF 통신 옵션 카드",
+          "en": "CnF: communication option card"
+        },
+        {
+          "value": 8,
+          "ko": "EPF 외부 고장",
+          "en": "EPF: external fault"
+        },
+        {
+          "value": 9,
+          "ko": "OCF 과전류",
+          "en": "OCF: overcurrent"
+        },
+        {
+          "value": 10,
+          "ko": "CrF 콘덴서 예비 충전",
+          "en": "CrF: capacitor pre-charge"
+        },
+        {
+          "value": 13,
+          "ko": "LFF 4~20 mA 손실",
+          "en": "LFF: 4-20 mA loss"
+        },
+        {
+          "value": 16,
+          "ko": "OHF 드라이브 과열",
+          "en": "OHF: drive overheating"
+        },
+        {
+          "value": 17,
+          "ko": "OLF 모터 과부하",
+          "en": "OLF: motor overload"
+        },
+        {
+          "value": 18,
+          "ko": "ObF 직류 버스 과전압",
+          "en": "ObF: DC bus overvoltage"
+        },
+        {
+          "value": 19,
+          "ko": "OSF 전원 과전압",
+          "en": "OSF: line supply overvoltage"
+        },
+        {
+          "value": 20,
+          "ko": "OPF 모터 결상",
+          "en": "OPF: motor phase loss"
+        },
+        {
+          "value": 21,
+          "ko": "PHF 전원 결상",
+          "en": "PHF: line phase loss"
+        },
+        {
+          "value": 22,
+          "ko": "USF 전원 저전압",
+          "en": "USF: line supply undervoltage"
+        },
+        {
+          "value": 23,
+          "ko": "SCF 모터 단락(상간)",
+          "en": "SCF: motor short-circuit (phase to phase)"
+        },
+        {
+          "value": 24,
+          "ko": "SOF 모터 과속",
+          "en": "SOF: motor overspeed"
+        },
+        {
+          "value": 25,
+          "ko": "tnF 오토 튜닝 실패",
+          "en": "tnF: auto-tuning unsuccessful"
+        },
+        {
+          "value": 26,
+          "ko": "IF1 알 수 없는 정격",
+          "en": "IF1: unknown rating"
+        },
+        {
+          "value": 27,
+          "ko": "IF2 MMI 카드",
+          "en": "IF2: MMI card"
+        },
+        {
+          "value": 28,
+          "ko": "IF3 MMI 통신",
+          "en": "IF3: MMI communication"
+        },
+        {
+          "value": 29,
+          "ko": "IF4 산업용 EEPROM",
+          "en": "IF4: industrial EEPROM"
+        },
+        {
+          "value": 30,
+          "ko": "EEF EEPROM 메모리",
+          "en": "EEF: EEPROM memory"
+        },
+        {
+          "value": 31,
+          "ko": "SCF 임박 단락",
+          "en": "SCF: impeding short-circuit"
+        },
+        {
+          "value": 32,
+          "ko": "SCF 모터 지락",
+          "en": "SCF: motor short-circuit (to ground)"
+        },
+        {
+          "value": 33,
+          "ko": "OPF 모터 3상 결상",
+          "en": "OPF: motor phase loss, 3 phases"
+        },
+        {
+          "value": 34,
+          "ko": "COF 통신 끊김(CANopen)",
+          "en": "COF: communication interruption (CANopen)"
+        },
+        {
+          "value": 35,
+          "ko": "bLF 브레이크 제어",
+          "en": "bLF: brake control"
+        },
+        {
+          "value": 36,
+          "ko": "OCF 파워 모듈(ATV312·D15·)",
+          "en": "OCF: power module (ATV312·D15·)"
+        },
+        {
+          "value": 55,
+          "ko": "SCF 전원 투입 시 파워 모듈·모터 단락",
+          "en": "SCF: power module or motor short-circuit at power up"
+        }
+      ],
+      "description": {
+        "ko": "LFt 와 같은 코드",
+        "en": "Same codes as LFt"
+      },
+      "ref": "p.24",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7202,
+      "manualAddress": "7202",
+      "type": "u16",
+      "name": {
+        "ko": "DP2 지난 고장 2",
+        "en": "DP2 past detected fault 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "nOF 고장 기록 없음",
+          "en": "nOF: no fault code saved"
+        },
+        {
+          "value": 3,
+          "ko": "CFF 설정 오류",
+          "en": "CFF: incorrect configuration"
+        },
+        {
+          "value": 4,
+          "ko": "CFI 잘못된 설정",
+          "en": "CFI: invalid configuration"
+        },
+        {
+          "value": 5,
+          "ko": "SLF Modbus 통신 끊김",
+          "en": "SLF: Modbus communication interruption"
+        },
+        {
+          "value": 6,
+          "ko": "ILF 내부 통신 끊김",
+          "en": "ILF: internal communication interruption"
+        },
+        {
+          "value": 7,
+          "ko": "CnF 통신 옵션 카드",
+          "en": "CnF: communication option card"
+        },
+        {
+          "value": 8,
+          "ko": "EPF 외부 고장",
+          "en": "EPF: external fault"
+        },
+        {
+          "value": 9,
+          "ko": "OCF 과전류",
+          "en": "OCF: overcurrent"
+        },
+        {
+          "value": 10,
+          "ko": "CrF 콘덴서 예비 충전",
+          "en": "CrF: capacitor pre-charge"
+        },
+        {
+          "value": 13,
+          "ko": "LFF 4~20 mA 손실",
+          "en": "LFF: 4-20 mA loss"
+        },
+        {
+          "value": 16,
+          "ko": "OHF 드라이브 과열",
+          "en": "OHF: drive overheating"
+        },
+        {
+          "value": 17,
+          "ko": "OLF 모터 과부하",
+          "en": "OLF: motor overload"
+        },
+        {
+          "value": 18,
+          "ko": "ObF 직류 버스 과전압",
+          "en": "ObF: DC bus overvoltage"
+        },
+        {
+          "value": 19,
+          "ko": "OSF 전원 과전압",
+          "en": "OSF: line supply overvoltage"
+        },
+        {
+          "value": 20,
+          "ko": "OPF 모터 결상",
+          "en": "OPF: motor phase loss"
+        },
+        {
+          "value": 21,
+          "ko": "PHF 전원 결상",
+          "en": "PHF: line phase loss"
+        },
+        {
+          "value": 22,
+          "ko": "USF 전원 저전압",
+          "en": "USF: line supply undervoltage"
+        },
+        {
+          "value": 23,
+          "ko": "SCF 모터 단락(상간)",
+          "en": "SCF: motor short-circuit (phase to phase)"
+        },
+        {
+          "value": 24,
+          "ko": "SOF 모터 과속",
+          "en": "SOF: motor overspeed"
+        },
+        {
+          "value": 25,
+          "ko": "tnF 오토 튜닝 실패",
+          "en": "tnF: auto-tuning unsuccessful"
+        },
+        {
+          "value": 26,
+          "ko": "IF1 알 수 없는 정격",
+          "en": "IF1: unknown rating"
+        },
+        {
+          "value": 27,
+          "ko": "IF2 MMI 카드",
+          "en": "IF2: MMI card"
+        },
+        {
+          "value": 28,
+          "ko": "IF3 MMI 통신",
+          "en": "IF3: MMI communication"
+        },
+        {
+          "value": 29,
+          "ko": "IF4 산업용 EEPROM",
+          "en": "IF4: industrial EEPROM"
+        },
+        {
+          "value": 30,
+          "ko": "EEF EEPROM 메모리",
+          "en": "EEF: EEPROM memory"
+        },
+        {
+          "value": 31,
+          "ko": "SCF 임박 단락",
+          "en": "SCF: impeding short-circuit"
+        },
+        {
+          "value": 32,
+          "ko": "SCF 모터 지락",
+          "en": "SCF: motor short-circuit (to ground)"
+        },
+        {
+          "value": 33,
+          "ko": "OPF 모터 3상 결상",
+          "en": "OPF: motor phase loss, 3 phases"
+        },
+        {
+          "value": 34,
+          "ko": "COF 통신 끊김(CANopen)",
+          "en": "COF: communication interruption (CANopen)"
+        },
+        {
+          "value": 35,
+          "ko": "bLF 브레이크 제어",
+          "en": "bLF: brake control"
+        },
+        {
+          "value": 36,
+          "ko": "OCF 파워 모듈(ATV312·D15·)",
+          "en": "OCF: power module (ATV312·D15·)"
+        },
+        {
+          "value": 55,
+          "ko": "SCF 전원 투입 시 파워 모듈·모터 단락",
+          "en": "SCF: power module or motor short-circuit at power up"
+        }
+      ],
+      "description": {
+        "ko": "LFt 와 같은 코드",
+        "en": "Same codes as LFt"
+      },
+      "ref": "p.24",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7203,
+      "manualAddress": "7203",
+      "type": "u16",
+      "name": {
+        "ko": "DP3 지난 고장 3",
+        "en": "DP3 past detected fault 3"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "nOF 고장 기록 없음",
+          "en": "nOF: no fault code saved"
+        },
+        {
+          "value": 3,
+          "ko": "CFF 설정 오류",
+          "en": "CFF: incorrect configuration"
+        },
+        {
+          "value": 4,
+          "ko": "CFI 잘못된 설정",
+          "en": "CFI: invalid configuration"
+        },
+        {
+          "value": 5,
+          "ko": "SLF Modbus 통신 끊김",
+          "en": "SLF: Modbus communication interruption"
+        },
+        {
+          "value": 6,
+          "ko": "ILF 내부 통신 끊김",
+          "en": "ILF: internal communication interruption"
+        },
+        {
+          "value": 7,
+          "ko": "CnF 통신 옵션 카드",
+          "en": "CnF: communication option card"
+        },
+        {
+          "value": 8,
+          "ko": "EPF 외부 고장",
+          "en": "EPF: external fault"
+        },
+        {
+          "value": 9,
+          "ko": "OCF 과전류",
+          "en": "OCF: overcurrent"
+        },
+        {
+          "value": 10,
+          "ko": "CrF 콘덴서 예비 충전",
+          "en": "CrF: capacitor pre-charge"
+        },
+        {
+          "value": 13,
+          "ko": "LFF 4~20 mA 손실",
+          "en": "LFF: 4-20 mA loss"
+        },
+        {
+          "value": 16,
+          "ko": "OHF 드라이브 과열",
+          "en": "OHF: drive overheating"
+        },
+        {
+          "value": 17,
+          "ko": "OLF 모터 과부하",
+          "en": "OLF: motor overload"
+        },
+        {
+          "value": 18,
+          "ko": "ObF 직류 버스 과전압",
+          "en": "ObF: DC bus overvoltage"
+        },
+        {
+          "value": 19,
+          "ko": "OSF 전원 과전압",
+          "en": "OSF: line supply overvoltage"
+        },
+        {
+          "value": 20,
+          "ko": "OPF 모터 결상",
+          "en": "OPF: motor phase loss"
+        },
+        {
+          "value": 21,
+          "ko": "PHF 전원 결상",
+          "en": "PHF: line phase loss"
+        },
+        {
+          "value": 22,
+          "ko": "USF 전원 저전압",
+          "en": "USF: line supply undervoltage"
+        },
+        {
+          "value": 23,
+          "ko": "SCF 모터 단락(상간)",
+          "en": "SCF: motor short-circuit (phase to phase)"
+        },
+        {
+          "value": 24,
+          "ko": "SOF 모터 과속",
+          "en": "SOF: motor overspeed"
+        },
+        {
+          "value": 25,
+          "ko": "tnF 오토 튜닝 실패",
+          "en": "tnF: auto-tuning unsuccessful"
+        },
+        {
+          "value": 26,
+          "ko": "IF1 알 수 없는 정격",
+          "en": "IF1: unknown rating"
+        },
+        {
+          "value": 27,
+          "ko": "IF2 MMI 카드",
+          "en": "IF2: MMI card"
+        },
+        {
+          "value": 28,
+          "ko": "IF3 MMI 통신",
+          "en": "IF3: MMI communication"
+        },
+        {
+          "value": 29,
+          "ko": "IF4 산업용 EEPROM",
+          "en": "IF4: industrial EEPROM"
+        },
+        {
+          "value": 30,
+          "ko": "EEF EEPROM 메모리",
+          "en": "EEF: EEPROM memory"
+        },
+        {
+          "value": 31,
+          "ko": "SCF 임박 단락",
+          "en": "SCF: impeding short-circuit"
+        },
+        {
+          "value": 32,
+          "ko": "SCF 모터 지락",
+          "en": "SCF: motor short-circuit (to ground)"
+        },
+        {
+          "value": 33,
+          "ko": "OPF 모터 3상 결상",
+          "en": "OPF: motor phase loss, 3 phases"
+        },
+        {
+          "value": 34,
+          "ko": "COF 통신 끊김(CANopen)",
+          "en": "COF: communication interruption (CANopen)"
+        },
+        {
+          "value": 35,
+          "ko": "bLF 브레이크 제어",
+          "en": "bLF: brake control"
+        },
+        {
+          "value": 36,
+          "ko": "OCF 파워 모듈(ATV312·D15·)",
+          "en": "OCF: power module (ATV312·D15·)"
+        },
+        {
+          "value": 55,
+          "ko": "SCF 전원 투입 시 파워 모듈·모터 단락",
+          "en": "SCF: power module or motor short-circuit at power up"
+        }
+      ],
+      "description": {
+        "ko": "LFt 와 같은 코드",
+        "en": "Same codes as LFt"
+      },
+      "ref": "p.24",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7204,
+      "manualAddress": "7204",
+      "type": "u16",
+      "name": {
+        "ko": "DP4 지난 고장 4",
+        "en": "DP4 past detected fault 4"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "nOF 고장 기록 없음",
+          "en": "nOF: no fault code saved"
+        },
+        {
+          "value": 3,
+          "ko": "CFF 설정 오류",
+          "en": "CFF: incorrect configuration"
+        },
+        {
+          "value": 4,
+          "ko": "CFI 잘못된 설정",
+          "en": "CFI: invalid configuration"
+        },
+        {
+          "value": 5,
+          "ko": "SLF Modbus 통신 끊김",
+          "en": "SLF: Modbus communication interruption"
+        },
+        {
+          "value": 6,
+          "ko": "ILF 내부 통신 끊김",
+          "en": "ILF: internal communication interruption"
+        },
+        {
+          "value": 7,
+          "ko": "CnF 통신 옵션 카드",
+          "en": "CnF: communication option card"
+        },
+        {
+          "value": 8,
+          "ko": "EPF 외부 고장",
+          "en": "EPF: external fault"
+        },
+        {
+          "value": 9,
+          "ko": "OCF 과전류",
+          "en": "OCF: overcurrent"
+        },
+        {
+          "value": 10,
+          "ko": "CrF 콘덴서 예비 충전",
+          "en": "CrF: capacitor pre-charge"
+        },
+        {
+          "value": 13,
+          "ko": "LFF 4~20 mA 손실",
+          "en": "LFF: 4-20 mA loss"
+        },
+        {
+          "value": 16,
+          "ko": "OHF 드라이브 과열",
+          "en": "OHF: drive overheating"
+        },
+        {
+          "value": 17,
+          "ko": "OLF 모터 과부하",
+          "en": "OLF: motor overload"
+        },
+        {
+          "value": 18,
+          "ko": "ObF 직류 버스 과전압",
+          "en": "ObF: DC bus overvoltage"
+        },
+        {
+          "value": 19,
+          "ko": "OSF 전원 과전압",
+          "en": "OSF: line supply overvoltage"
+        },
+        {
+          "value": 20,
+          "ko": "OPF 모터 결상",
+          "en": "OPF: motor phase loss"
+        },
+        {
+          "value": 21,
+          "ko": "PHF 전원 결상",
+          "en": "PHF: line phase loss"
+        },
+        {
+          "value": 22,
+          "ko": "USF 전원 저전압",
+          "en": "USF: line supply undervoltage"
+        },
+        {
+          "value": 23,
+          "ko": "SCF 모터 단락(상간)",
+          "en": "SCF: motor short-circuit (phase to phase)"
+        },
+        {
+          "value": 24,
+          "ko": "SOF 모터 과속",
+          "en": "SOF: motor overspeed"
+        },
+        {
+          "value": 25,
+          "ko": "tnF 오토 튜닝 실패",
+          "en": "tnF: auto-tuning unsuccessful"
+        },
+        {
+          "value": 26,
+          "ko": "IF1 알 수 없는 정격",
+          "en": "IF1: unknown rating"
+        },
+        {
+          "value": 27,
+          "ko": "IF2 MMI 카드",
+          "en": "IF2: MMI card"
+        },
+        {
+          "value": 28,
+          "ko": "IF3 MMI 통신",
+          "en": "IF3: MMI communication"
+        },
+        {
+          "value": 29,
+          "ko": "IF4 산업용 EEPROM",
+          "en": "IF4: industrial EEPROM"
+        },
+        {
+          "value": 30,
+          "ko": "EEF EEPROM 메모리",
+          "en": "EEF: EEPROM memory"
+        },
+        {
+          "value": 31,
+          "ko": "SCF 임박 단락",
+          "en": "SCF: impeding short-circuit"
+        },
+        {
+          "value": 32,
+          "ko": "SCF 모터 지락",
+          "en": "SCF: motor short-circuit (to ground)"
+        },
+        {
+          "value": 33,
+          "ko": "OPF 모터 3상 결상",
+          "en": "OPF: motor phase loss, 3 phases"
+        },
+        {
+          "value": 34,
+          "ko": "COF 통신 끊김(CANopen)",
+          "en": "COF: communication interruption (CANopen)"
+        },
+        {
+          "value": 35,
+          "ko": "bLF 브레이크 제어",
+          "en": "bLF: brake control"
+        },
+        {
+          "value": 36,
+          "ko": "OCF 파워 모듈(ATV312·D15·)",
+          "en": "OCF: power module (ATV312·D15·)"
+        },
+        {
+          "value": 55,
+          "ko": "SCF 전원 투입 시 파워 모듈·모터 단락",
+          "en": "SCF: power module or motor short-circuit at power up"
+        }
+      ],
+      "description": {
+        "ko": "LFt 와 같은 코드",
+        "en": "Same codes as LFt"
+      },
+      "ref": "p.24",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8501,
+      "manualAddress": "8501",
+      "type": "u16",
+      "name": {
+        "ko": "CMD 명령 워드",
+        "en": "CMD control word"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "스위치 온(1)",
+          "en": "Switch on (1)"
+        },
+        {
+          "bit": 1,
+          "ko": "전압 차단(0 에서 동작)",
+          "en": "Disable voltage (active at 0)"
+        },
+        {
+          "bit": 2,
+          "ko": "퀵 스톱(0 에서 동작)",
+          "en": "Quick stop (active at 0)"
+        },
+        {
+          "bit": 3,
+          "ko": "운전 가능(1)",
+          "en": "Enable operation (1)"
+        },
+        {
+          "bit": 7,
+          "ko": "고장 리셋(0→1)",
+          "en": "Fault state reset (0 -> 1)"
+        },
+        {
+          "bit": 11,
+          "ko": "역방향 지령",
+          "en": "Reverse direction command"
+        },
+        {
+          "bit": 12,
+          "ko": "Stt 에 따른 정지",
+          "en": "Stop according to Stt"
+        },
+        {
+          "bit": 13,
+          "ko": "직류 제동 정지(LAC = L1·L2)",
+          "en": "DC injection stop (LAC = L1/L2)"
+        },
+        {
+          "bit": 14,
+          "ko": "고속 정지(LAC = L1·L2)",
+          "en": "Fast stop (LAC = L1/L2)"
+        }
+      ],
+      "description": {
+        "ko": "값 예: 0006h 셧다운, 0007h 스위치 온, 000Fh 정방향 운전, 080Fh 역방향, 100Fh 정지, 0000h 전압 차단, 0002h 퀵 스톱, 0080h 고장 리셋 (p.10, p.12). LAC = L3 이면 비트 11~15 를 다른 기능에 배정할 수 있다",
+        "en": "Examples: 0006h shutdown, 0007h switch on, 000Fh forward, 080Fh reverse, 100Fh stop, 0000h disable voltage, 0002h quick stop, 0080h fault reset (p.10, p.12). With LAC = L3 bits 11-15 can be assigned to other functions"
+      },
+      "ref": "p.19",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8502,
+      "manualAddress": "8502",
+      "type": "s16",
+      "name": {
+        "ko": "LFr 버스 주파수 기준",
+        "en": "LFr frequency reference via the bus"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "CMI 비트 9 = 0(출하) 일 때 0.1 Hz. 비트 9 = 1 이면 32767 = 600 Hz",
+        "en": "0.1 Hz when CMI bit 9 = 0 (factory). With bit 9 = 1, 32767 = 600 Hz"
+      },
+      "ref": "p.19",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8503,
+      "manualAddress": "8503",
+      "type": "u16",
+      "name": {
+        "ko": "PISP 버스 PI 기준",
+        "en": "PISP PI regulator reference via the bus"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.19",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8504,
+      "manualAddress": "8504",
+      "type": "u16",
+      "name": {
+        "ko": "CMI 확장 명령 워드",
+        "en": "CMI extended control word"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "출하 설정 불러오기(정지 중)",
+          "en": "Recall factory settings (at standstill)"
+        },
+        {
+          "bit": 1,
+          "ko": "EEPROM 에 저장",
+          "en": "Save configuration to EEPROM"
+        },
+        {
+          "bit": 3,
+          "ko": "외부 고장",
+          "en": "External fault"
+        },
+        {
+          "bit": 4,
+          "ko": "램프 전환",
+          "en": "Ramp switching command"
+        },
+        {
+          "bit": 9,
+          "ko": "고분해능(32767 = 600 Hz)",
+          "en": "High resolution (32767 = 600 Hz)"
+        },
+        {
+          "bit": 13,
+          "ko": "정지 중 잠금",
+          "en": "Drive locked on standstill"
+        },
+        {
+          "bit": 14,
+          "ko": "Modbus 통신 감시 끔(NTO)",
+          "en": "No Modbus communication monitoring (NTO)"
+        },
+        {
+          "bit": 15,
+          "ko": "정합성 검사 안 함 + 정지 중 잠금",
+          "en": "No parameter consistency check + locked on standstill"
+        }
+      ],
+      "description": {
+        "ko": "비트 0·1 은 처리되면 0 으로 돌아간다. EEPROM 쓰기 수명 100만 회",
+        "en": "Bits 0 and 1 reset to 0 automatically. EEPROM life 1,000,000 writes"
+      },
+      "ref": "p.20",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 9630,
+      "manualAddress": "9630",
+      "type": "u16",
+      "name": {
+        "ko": "tHr 모터 열 상태",
+        "en": "tHr motor thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% = 정격, 118% = OLF 문턱",
+        "en": "100% = nominal, 118% = OLF threshold"
+      },
+      "ref": "p.21",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 12002,
+      "manualAddress": "12002",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "USPL·USPH 고객 단위 모터 속도",
+        "en": "USPL/USPH motor speed in customer units"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "12002 하위·12003 상위 워드. rFr × SdS",
+        "en": "12002 low word, 12003 high word. rFr × SdS"
+      },
+      "ref": "p.22",
+      "source": 1
+    }
+  ],
+  "sources": [
+    {
+      "title": "Altivar 312 Modbus Communication Manual",
+      "publisher": "Schneider Electric",
+      "edition": {
+        "ko": "BBV52816 04/2009",
+        "en": "BBV52816 04/2009"
+      },
+      "url": "https://download.schneider-electric.com/files?p_Doc_Ref=BBV52816",
+      "pages": {
+        "ko": "통신 설정 p.9·p.11, Modbus 함수·예 p.12~14",
+        "en": "Communication settings p.9, p.11; Modbus functions and examples pp.12-14"
+      },
+      "checked": "2026-10-24"
+    },
+    {
+      "title": "Altivar 312 Communication Variables Manual",
+      "publisher": "Schneider Electric",
+      "edition": {
+        "ko": "BBV51701 06/2009",
+        "en": "BBV51701 06/2009"
+      },
+      "url": "https://download.schneider-electric.com/files?p_Doc_Ref=BBV51701",
+      "pages": {
+        "ko": "상태 기계 p.10~13, 제어 변수 p.19~20, 감시 변수 p.21~25, 설정 변수 p.27~56",
+        "en": "State machine pp.10-13, control variables pp.19-20, monitoring variables pp.21-25, configuration variables pp.27-56"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}

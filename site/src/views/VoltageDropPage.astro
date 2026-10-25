@@ -1,0 +1,326 @@
+---
+// 웹 도구: 전압 강하·전선 굵기 계산기 — 직류·단상·3상, 구리·알루미늄, 온도 보정, mm²·AWG (lib/wire.ts).
+// 선 저항만 센다(리액턴스 무시). 저항률·온도 계수는 IEC 60028·60889, AWG 는 ASTM B258. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { AWGS, IEC_SIZES, awg, awgName, resistance } from "../lib/wire";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/voltage-drop/";
+const f3 = (x: number) => (x >= 100 ? x.toFixed(1) : x >= 10 ? x.toFixed(2) : x.toFixed(3));
+const L = ko
+  ? {
+      title: "전압 강하·전선 굵기 계산기",
+      desc: "직류 24 V 센서 전원부터 단상·3상까지, 전류·거리·전선 굵기(mm²·AWG)로 전압 강하와 강하율을 계산하고 허용 강하율에 맞는 최소 굵기와 최대 거리를 찾습니다.",
+      sys: "회로",
+      dc: "직류(2선)",
+      p1: "단상 교류(2선)",
+      p3: "3상 교류(3선, 선간)",
+      v: "전원 전압(V)",
+      i: "전류(A)",
+      len: "편도 거리(m)",
+      size: "전선 굵기",
+      custom: "직접 입력(mm²)",
+      area: "단면적(mm²)",
+      mat: "도체",
+      cu: "구리",
+      al: "알루미늄",
+      temp: "도체 온도(°C)",
+      target: "허용 강하율(%)",
+      res: "결과",
+      k: {
+        r1: "한 가닥 저항",
+        drop: "전압 강하",
+        pct: "강하율",
+        load: "부하 쪽 전압",
+        loss: "선 손실 전력",
+        need: "허용 강하율에 필요한 최소 단면적",
+        max: "이 굵기로 갈 수 있는 최대 편도 거리",
+      },
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      over: "허용 강하율을 넘습니다",
+      under: "허용 강하율 안",
+      none: "IEC 계열에서 맞는 굵기 없음",
+      fTitle: "계산식",
+      formula: [
+        "한 가닥 저항 R = ρ × L ÷ A   (ρ: 저항률 Ω·mm²/m, L: 편도 m, A: mm²)",
+        "직류·단상 2선: ΔV = 2 × I × R   (가는 선 + 오는 선)",
+        "3상 3선(평형, 선간 전압): ΔV = √3 × I × R",
+        "온도 보정: ρ(T) = ρ20 × (1 + α × (T − 20))",
+        "강하율 = ΔV ÷ 전원 전압 × 100",
+      ],
+      fNote: "구리 ρ20 = 1/58 ≈ 0.01724 Ω·mm²/m, α = 0.00393 /°C(IEC 60028). 알루미늄 ρ20 = 0.028264, α = 0.00403(IEC 60889). 국내 교재의 e = 35.6·L·I ÷ (1000·A)(단상·직류), e = 30.8·L·I ÷ (1000·A)(3상 3선)는 같은 식에 도전율 97 % 구리(ρ ≈ 0.01778)를 넣어 상수로 줄인 것입니다 — 그래서 이 계산기(ρ = 1/58)보다 약 3 % 크게 나옵니다.",
+      limitTitle: "이 계산이 다루지 않는 것",
+      limits: [
+        "리액턴스·역률: 선 저항만 셉니다. 굵은 교류 케이블은 리액턴스 몫이 커져 실제 강하가 이보다 클 수 있습니다.",
+        "허용 전류: 전선 굵기는 전압 강하와 별개로 허용 전류(포설 방법·주위 온도·묶음 수에 따름)도 만족해야 합니다. 허용 전류표는 KEC·IEC 60364-5-52 같은 그 나라 규정을 따릅니다.",
+        "실제 케이블 저항: IEC 60228 은 도체 등급(단선·연선·가요선)별 최대 저항을 따로 정하고, 연선·주석 도금선은 같은 mm² 라도 조금 높습니다. 정확한 값은 케이블 제조사 자료를 봅니다.",
+        "허용 강하율 기준: 몇 % 까지 괜찮은지는 부하(장비의 입력 전압 범위)와 그 나라 규정이 정합니다. 24 V 장비라면 장비 매뉴얼의 최소 입력 전압과 «부하 쪽 전압» 을 비교하는 것이 가장 확실합니다.",
+      ],
+      mmTitle: "mm² 별 저항 (구리, 20 °C, 계산값)",
+      mmHead: ["단면적", "Ω/km (한 가닥)", "왕복 1 A·100 m 당 강하"],
+      awgTitle: "AWG ↔ mm² 환산 (ASTM B258)",
+      awgHead: ["AWG", "지름 mm", "단면적 mm²", "Ω/km (구리 20 °C)"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["24 V DC 를 50 m 보내면 얼마나 떨어지나요?", "2 A 를 1.5 mm² 구리선으로 편도 50 m 보내면 왕복 100 m 저항이 약 1.15 Ω 이라 약 2.3 V(9.6 %)가 떨어져 부하 쪽은 약 21.7 V 입니다. 2.5 mm² 면 약 1.38 V(5.7 %)입니다."],
+        ["거리는 왕복으로 넣나요, 편도로 넣나요?", "편도(전원에서 부하까지 케이블 길이)를 넣습니다. 직류·단상은 계산 안에서 가는 선과 오는 선 두 가닥을 곱합니다."],
+        ["AWG 와 mm² 는 어떻게 바꾸나요?", "ASTM B258 식 d = 0.127 × 92^((36 − AWG) ÷ 39) mm 로 지름을 구하고 단면적 = π ÷ 4 × d² 입니다. 18 AWG ≈ 0.82 mm², 16 AWG ≈ 1.31 mm², 14 AWG ≈ 2.08 mm² 입니다."],
+      ],
+      appNote: "4–20mA 루프처럼 전원 전압이 빠듯한 신호 배선은",
+      appLink: "4–20mA 루프 부하 계산기",
+      appNote2: "로 전송기 쪽 전압까지 확인합니다.",
+    }
+  : {
+      title: "Voltage Drop & Wire Size Calculator",
+      desc: "Voltage drop and % for DC (24 V supplies), single- and three-phase from current, distance and wire size (mm² or AWG), plus minimum size and maximum length.",
+      sys: "Circuit",
+      dc: "DC (2-wire)",
+      p1: "Single-phase AC (2-wire)",
+      p3: "Three-phase AC (3-wire, line-to-line)",
+      v: "Supply voltage (V)",
+      i: "Current (A)",
+      len: "One-way length (m)",
+      size: "Wire size",
+      custom: "Custom (mm²)",
+      area: "Cross-section (mm²)",
+      mat: "Conductor",
+      cu: "Copper",
+      al: "Aluminium",
+      temp: "Conductor temperature (°C)",
+      target: "Allowed drop (%)",
+      res: "Results",
+      k: {
+        r1: "Resistance of one conductor",
+        drop: "Voltage drop",
+        pct: "Percent drop",
+        load: "Voltage at the load",
+        loss: "Power lost in the cable",
+        need: "Minimum cross-section for the allowed drop",
+        max: "Maximum one-way length with this size",
+      },
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      over: "Exceeds the allowed drop",
+      under: "Within the allowed drop",
+      none: "No IEC size large enough",
+      fTitle: "Formulas",
+      formula: [
+        "Conductor resistance R = ρ × L ÷ A   (ρ: resistivity Ω·mm²/m, L: one-way m, A: mm²)",
+        "DC and single-phase 2-wire: ΔV = 2 × I × R   (out and back)",
+        "Three-phase 3-wire (balanced, line-to-line): ΔV = √3 × I × R",
+        "Temperature: ρ(T) = ρ20 × (1 + α × (T − 20))",
+        "Percent drop = ΔV ÷ supply voltage × 100",
+      ],
+      fNote: "Copper ρ20 = 1/58 ≈ 0.01724 Ω·mm²/m, α = 0.00393 /°C (IEC 60028). Aluminium ρ20 = 0.028264, α = 0.00403 (IEC 60889). Resistance per length scales with ρ, so the same formulas work in feet once you convert lengths to metres.",
+      limitTitle: "What this does not cover",
+      limits: [
+        "Reactance and power factor: only conductor resistance is counted. For large AC cables the reactive part grows and the real drop can be higher.",
+        "Ampacity: a wire must also carry the current safely, which depends on installation method, ambient temperature and grouping. Use your local code's tables (NEC, IEC 60364-5-52, …).",
+        "Real cable resistance: IEC 60228 sets maximum resistance per conductor class (solid, stranded, flexible); stranded and tinned conductors are slightly higher for the same mm². Check the cable maker's data for exact values.",
+        "How much drop is acceptable: that depends on the load's input voltage range and local rules. For 24 V devices, comparing «Voltage at the load» with the device's minimum input voltage is the surest check.",
+      ],
+      mmTitle: "Resistance by mm² (copper, 20 °C, calculated)",
+      mmHead: ["Cross-section", "Ω/km (one conductor)", "Drop per 1 A per 100 m (out and back)"],
+      awgTitle: "AWG ↔ mm² (ASTM B258)",
+      awgHead: ["AWG", "Diameter mm", "Area mm²", "Ω/km (copper 20 °C)"],
+      faqTitle: "FAQ",
+      faq: [
+        ["How much does 24 V DC drop over 50 m?", "2 A over 1.5 mm² copper, 50 m one way: the 100 m loop is about 1.15 Ω, so about 2.3 V (9.6 %) is lost and the load sees about 21.7 V. With 2.5 mm² it is about 1.38 V (5.7 %)."],
+        ["Do I enter the round-trip or one-way length?", "One way — the cable length from supply to load. For DC and single-phase the calculation counts both conductors itself."],
+        ["How do AWG and mm² convert?", "ASTM B258: d = 0.127 × 92^((36 − AWG) ÷ 39) mm and area = π ÷ 4 × d². 18 AWG ≈ 0.82 mm², 16 AWG ≈ 1.31 mm², 14 AWG ≈ 2.08 mm²."],
+      ],
+      appNote: "For signal wiring with a tight supply budget, such as 4–20 mA loops, use the",
+      appLink: "4–20 mA Loop Load Calculator",
+      appNote2: "to check the voltage left at the transmitter.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const mmRows = IEC_SIZES.map((a) => ({ a, r: resistance("cu", 1000, a), d: 2 * resistance("cu", 100, a) }));
+const awgRows = AWGS.map((n) => {
+  const w = awg(n);
+  return { n: awgName(n), d: w.d, a: w.area, r: resistance("cu", 1000, w.area) };
+});
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "전압 강하 계산기 — 전선 굵기(mm²·AWG)·24V DC — PortDock" : "Voltage Drop Calculator: Wire Size mm² & AWG, 24 V DC — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="vd" data-t={JSON.stringify({ over: L.over, under: L.under, none: L.none })}>
+      <div class="row">
+        <label class="fld">
+          {L.sys}
+          <select id="sys"><option value="dc" selected>{L.dc}</option><option value="1ph">{L.p1}</option><option value="3ph">{L.p3}</option></select>
+        </label>
+        <label class="fld">
+          {L.v}
+          <input id="v" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.i}
+          <input id="i" class="mono" value="2" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.len}
+          <input id="len" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld">
+          {L.size}
+          <select id="size">
+            <optgroup label="mm² (IEC 60228)">{IEC_SIZES.map((a) => <option value={a} selected={a === 1.5}>{a} mm²</option>)}</optgroup>
+            <optgroup label="AWG">{AWGS.map((n) => <option value={awg(n).area}>{awgName(n)} ({awg(n).area.toFixed(3)} mm²)</option>)}</optgroup>
+            <option value="custom">{L.custom}</option>
+          </select>
+        </label>
+        <label class="fld">
+          {L.area}
+          <input id="area" class="mono" value="1.5" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.mat}
+          <select id="mat"><option value="cu" selected>{L.cu}</option><option value="al">{L.al}</option></select>
+        </label>
+        <label class="fld">
+          {L.temp}
+          <input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.target}
+          <input id="target" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
+
+      <h2>{L.mmTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.mmHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{mmRows.map((r) => <tr><td class="mono">{r.a} mm²</td><td class="mono">{f3(r.r)}</td><td class="mono">{f3(r.d)} V</td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.awgTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.awgHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{awgRows.map((r) => <tr><td class="mono">{r.n}</td><td class="mono">{r.d.toFixed(3)}</td><td class="mono">{r.a.toFixed(3)}</td><td class="mono">{f3(r.r)}</td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "tools/loop-load/")}>{L.appLink}</a>{" "}{L.appNote2}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { awgName, maxLength, minArea, nextAwg, nextIec, voltageDrop, type Material, type System } from "../lib/wire";
+    const form = document.getElementById("vd") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { over: string; under: string; none: string };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim();
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 3) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const ko = document.documentElement.lang === "ko";
+    function run() {
+      const err = $("err");
+      const verdict = $("verdict");
+      try {
+        const base = { system: $<HTMLSelectElement>("sys").value as System, volts: num("v"), amps: num("i"), material: $<HTMLSelectElement>("mat").value as Material, tempC: num("temp") };
+        const lengthM = num("len");
+        const areaMm2 = num("area");
+        const pct = num("target");
+        if ([base.volts, base.amps, base.tempC, lengthM, areaMm2, pct].some((x) => !Number.isFinite(x))) throw new Error();
+        const r = voltageDrop({ ...base, lengthM, areaMm2 });
+        const need = minArea({ ...base, lengthM }, pct);
+        const iec = nextIec(need);
+        const aw = nextAwg(need);
+        const max = maxLength({ ...base, areaMm2 }, pct);
+        err.textContent = "";
+        set("r1", `${fx(r.r1, 4)} Ω`);
+        set("drop", `${fx(r.drop)} V`);
+        set("pct", `${fx(r.pct, 2)} %`);
+        set("load", `${fx(r.atLoad)} V`);
+        set("loss", `${fx(r.loss, 2)} W`);
+        set("need", `${fx(need)} mm² → ${iec !== undefined ? `${iec} mm²` : T.none}${aw !== undefined ? ` · ${awgName(aw)}` : ""}`);
+        set("max", Number.isFinite(max) ? `${fx(max, 1)} m` : "∞");
+        verdict.className = "verdict " + (r.pct > pct ? "fault" : "ok");
+        verdict.textContent = `${r.pct > pct ? T.over : T.under} (${fx(r.pct, 2)} % / ${fx(pct, 2)} %)`;
+      } catch {
+        err.textContent = ko ? "숫자를 확인하세요 — 전압·단면적·허용 강하율은 0 보다 커야 합니다" : "Check the numbers — voltage, cross-section and allowed drop must be greater than 0";
+        verdict.textContent = "";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    $<HTMLSelectElement>("size").addEventListener("change", () => {
+      const v = $<HTMLSelectElement>("size").value;
+      if (v !== "custom") $("area").value = fx(Number(v), 4);
+      run();
+    });
+    $("area").addEventListener("input", () => {
+      $<HTMLSelectElement>("size").value = "custom";
+    });
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

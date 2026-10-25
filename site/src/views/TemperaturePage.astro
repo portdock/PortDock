@@ -1,0 +1,401 @@
+---
+// 웹 도구: Pt100·열전대 온도 환산 — 측온저항체(IEC 60751)와 열전대(NIST ITS-90)의 온도 ↔ 저항·mV, 냉접점 보정, 표 만들기(lib/temperature.ts).
+// 광고는 이 페이지 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { RTD_R0, RTD_T_MAX, RTD_T_MIN, TC_TYPES, tcInvTempRange, tcTempRange } from "../lib/temperature";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/temperature/";
+const L = ko
+  ? {
+      title: "Pt100·열전대 온도 환산",
+      desc: "Pt100·Pt1000 저항과 K·J·T·E·N·R·S·B 열전대 mV 를 온도와 서로 바꿉니다. IEC 60751·NIST ITS-90 식, 냉접점 보정, 온도표 생성까지 브라우저에서.",
+      rtdTitle: "측온저항체 (RTD)",
+      sensor: "센서",
+      temp: "온도 (°C)",
+      res: "저항 (Ω)",
+      tcTitle: "열전대",
+      type: "형",
+      cj: "냉접점 온도 (°C)",
+      emf: "측정 전압 (mV)",
+      emf0: "열기전력 (0 °C 기준)",
+      range: "범위",
+      rtdNote: `α = 0.00385, ${RTD_T_MIN}~${RTD_T_MAX} °C`,
+      tcNote: "온도 → mV 는 아래 «범위» 전체, mV → 온도는 NIST 역함수 범위 안에서만 계산합니다.",
+      tableTitle: "온도표",
+      step: "간격 (°C)",
+      tableNote: "열전대 표는 냉접점 0 °C 기준입니다(NIST 표와 같음).",
+      how: "모든 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다. 범위 밖 값은 계산하지 않고 알려 줍니다.",
+      srcTitle: "식과 출처",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        [
+          "냉접점 보정은 어떻게 하나요?",
+          "열전대가 내는 전압은 측정단과 냉접점(단자) 온도 차에 따릅니다. 측정 mV 에 냉접점 온도의 열기전력 E(냉접점)을 더한 값을 온도로 바꿉니다: E(t) = E측정 + E(냉접점). 거꾸로 온도에서 측정될 전압은 E(t) − E(냉접점)입니다.",
+        ],
+        [
+          "Pt100 과 Pt1000 은 무엇이 다른가요?",
+          "0 °C 에서의 저항(R0)이 100 Ω, 1000 Ω 으로 다를 뿐 같은 식(α = 0.00385)을 씁니다. 같은 온도에서 Pt1000 의 저항은 Pt100 의 10배입니다.",
+        ],
+        [
+          "mV → 온도의 범위가 온도 → mV 보다 좁은 이유는?",
+          "NIST 는 온도 → mV 기준 함수의 역함수를 구간별 근사식으로 냅니다. 이 도구는 그 근사식이 덮는 구간에서만 mV → 온도를 계산합니다. 예: K형 -200~1372 °C, B형 250~1820 °C.",
+        ],
+      ],
+    }
+  : {
+      title: "Pt100 & Thermocouple Converter",
+      desc: "Convert Pt100/Pt1000 resistance and type K, J, T, E, N, R, S, B thermocouple mV to temperature and back. IEC 60751 and NIST ITS-90, with cold junction.",
+      rtdTitle: "Resistance thermometer (RTD)",
+      sensor: "Sensor",
+      temp: "Temperature (°C)",
+      res: "Resistance (Ω)",
+      tcTitle: "Thermocouple",
+      type: "Type",
+      cj: "Cold junction (°C)",
+      emf: "Measured voltage (mV)",
+      emf0: "EMF (0 °C reference)",
+      range: "Range",
+      rtdNote: `α = 0.00385, ${RTD_T_MIN} to ${RTD_T_MAX} °C`,
+      tcNote: "Temperature → mV works over the full «Range»; mV → temperature only within the NIST inverse-function range.",
+      tableTitle: "Temperature table",
+      step: "Step (°C)",
+      tableNote: "Thermocouple tables use a 0 °C cold junction, as in the NIST tables.",
+      how: "Everything is computed in your browser; nothing you type is sent anywhere. Values out of range are reported, not computed.",
+      srcTitle: "Equations and sources",
+      faqTitle: "FAQ",
+      faq: [
+        [
+          "How does cold junction compensation work?",
+          "A thermocouple's voltage depends on the difference between the measuring junction and the cold junction (terminals). Add the cold junction's EMF to the measured mV and convert: E(t) = E measured + E(cold junction). The other way, the expected reading is E(t) − E(cold junction).",
+        ],
+        [
+          "What is the difference between Pt100 and Pt1000?",
+          "Only the resistance at 0 °C (R0): 100 Ω or 1000 Ω. Both use the same equation (α = 0.00385), so at any temperature a Pt1000 reads ten times a Pt100.",
+        ],
+        [
+          "Why is the mV → temperature range narrower?",
+          "NIST publishes the inverse of the temperature → mV reference function as piecewise approximations. This tool converts mV → temperature only where those approximations apply, e.g. type K −200 to 1372 °C, type B 250 to 1820 °C.",
+        ],
+      ],
+    };
+const tcRanges = Object.fromEntries(TC_TYPES.map((t) => [t, { ref: tcTempRange(t), inv: tcInvTempRange(t) }]));
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base
+  lang={lang}
+  title={L.title}
+  seoTitle={ko ? "Pt100·열전대 온도 환산 — 저항·mV 계산기·표 — PortDock" : "Pt100 & Thermocouple Calculator: Ω, mV ↔ °C — PortDock"}
+  description={L.desc}
+  path={PATH}
+  ads
+>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="temp" data-lang={lang} data-ranges={JSON.stringify(tcRanges)} data-range={L.range}>
+      <h2>{L.rtdTitle}</h2>
+      <div class="row">
+        <label class="fld" style="flex:0 0 160px">
+          {L.sensor}
+          <select id="r0">
+            {RTD_R0.map((r) => <option value={r}>Pt{r}</option>)}
+          </select>
+        </label>
+        <label class="fld">
+          {L.temp}
+          <input id="rt" class="mono" inputmode="decimal" value="100" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.res}
+          <input id="rr" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <p class="err" id="rerr" role="alert"></p>
+      <p class="note">{L.rtdNote}</p>
+
+      <h2>{L.tcTitle}</h2>
+      <div class="row">
+        <label class="fld" style="flex:0 0 160px">
+          {L.type}
+          <select id="ty">
+            {TC_TYPES.map((t) => <option value={t}>{ko ? `${t}형` : `Type ${t}`}</option>)}
+          </select>
+        </label>
+        <label class="fld">
+          {L.cj}
+          <input id="cj" class="mono" inputmode="decimal" value="0" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.temp}
+          <input id="tt" class="mono" inputmode="decimal" value="100" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.emf}
+          <input id="te" class="mono" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <p class="err" id="terr" role="alert"></p>
+      <p class="note"><span id="tinfo"></span></p>
+      <p class="note">{L.tcNote}</p>
+      <p class="note">{L.how}</p>
+    </div>
+
+    <div class="calc card" id="tbl" style="margin-top:16px">
+      <h2>{L.tableTitle}</h2>
+      <div class="row">
+        <label class="fld">
+          {L.sensor}
+          <select id="ts">
+            {RTD_R0.map((r) => <option value={`pt${r}`}>Pt{r}</option>)}
+            {TC_TYPES.map((t) => <option value={t} selected={t === "K"}>{ko ? `${t}형 열전대` : `Type ${t} thermocouple`}</option>)}
+          </select>
+        </label>
+        <label class="fld">
+          {L.step}
+          <select id="st">
+            {[10, 20, 50, 100].map((s) => <option value={s} selected={s === 50}>{s}</option>)}
+          </select>
+        </label>
+      </div>
+      <div class="tscroll">
+        <table class="t">
+          <thead><tr><th>°C</th><th id="th"></th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.tableNote}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.srcTitle}</h2>
+      {
+        ko ? (
+          <>
+            <p>
+              측온저항체: IEC 60751 의 Callendar–Van Dusen 식. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (0 °C 이상은 C = 0). 0 °C 이상의 저항 → 온도는 2차식의 근, 0 °C 아래는 반복 계산으로 풉니다.
+            </p>
+            <p>
+              열전대: NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175)가 공개한 기준 함수 E = Σ cᵢ·tⁱ (K형은 0 °C 위에 a₀·exp(a₁·(t − a₂)²) 를 더함)와 역함수 계수를{" "}
+              <a href="https://its90.nist.gov/ThermoDownloads" rel="noopener">its90.nist.gov</a> 의 형별 파일에서 그대로 옮겼습니다. mV → 온도는 역함수로 첫 값을 잡은 뒤 기준 함수에 맞춰 다듬습니다. 이 도구의 온도 → mV 는 NIST 표(0.001 mV) 전부와 같은 값을 냅니다.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              RTD: the Callendar–Van Dusen equation of IEC 60751. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (C = 0 at or above 0 °C). Resistance → temperature uses the quadratic root at or above 0 °C and iteration below.
+            </p>
+            <p>
+              Thermocouples: the reference functions E = Σ cᵢ·tⁱ (type K adds a₀·exp(a₁·(t − a₂)²) above 0 °C) and inverse coefficients published in the NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175), copied from the per-type files at{" "}
+              <a href="https://its90.nist.gov/ThermoDownloads" rel="noopener">its90.nist.gov</a>. mV → temperature starts from the inverse function and is refined against the reference function. Temperature → mV here matches every entry of the NIST tables (0.001 mV).
+            </p>
+          </>
+        )
+      }
+      <table class="t">
+        <thead><tr><th>{L.type}</th><th>{ko ? "온도 → mV" : "Temperature → mV"}</th><th>{ko ? "mV → 온도" : "mV → temperature"}</th></tr></thead>
+        <tbody>
+          {
+            TC_TYPES.map((t) => (
+              <tr>
+                <td>{t}</td>
+                <td class="mono">{tcRanges[t].ref[0]} ~ {tcRanges[t].ref[1]} °C</td>
+                <td class="mono">{tcRanges[t].inv[0]} ~ {tcRanges[t].inv[1]} °C</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {ko ? "온도 조절기·변환기의 값을 Modbus 로 읽어 보려면" : "To read temperature controllers or transmitters over Modbus, use"} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+      </p>
+      <p>
+        {ko ? "NTC 서미스터(B 값·Steinhart–Hart)는" : "For NTC thermistors (B value, Steinhart–Hart), use the"} <a href={url(lang, "tools/ntc/")}>{ko ? "NTC 서미스터 계산기" : "NTC Thermistor Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .calc h2 {
+      font-size: 18px;
+      margin: 4px 0 0;
+    }
+    .tscroll {
+      max-height: 480px;
+      overflow: auto;
+    }
+    .tscroll thead th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+    }
+  </style>
+  <script>
+    import { fixed as fmt, rtdResistance, rtdTemperature, steps, tcEmf, tcFromMeasured, tcMeasured, tcTempRange, RTD_T_MAX, RTD_T_MIN, type Lang, type TcType } from "../lib/temperature";
+    const root = document.getElementById("temp")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const ko = lang === "ko";
+    const ranges = JSON.parse(root.dataset.ranges ?? "{}") as Record<TcType, { ref: [number, number]; inv: [number, number] }>;
+    const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as T;
+    /** 숫자 읽기 — 쉼표 소수점도 받는다 */
+    function num(el: HTMLInputElement): number {
+      const s = el.value.trim().replace(",", ".");
+      const v = s === "" ? NaN : Number(s);
+      if (!Number.isFinite(v)) throw new Error(ko ? `숫자가 아닙니다: «${el.value}»` : `Not a number: «${el.value}»`);
+      return v;
+    }
+
+
+    // ---- 측온저항체
+    const r0 = $<HTMLSelectElement>("r0");
+    const rt = $("rt");
+    const rr = $("rr");
+    const rerr = $("rerr");
+    function rtdFromT() {
+      try {
+        rr.value = fmt(rtdResistance(num(rt), Number(r0.value), lang), 3);
+        rerr.textContent = "";
+      } catch (e) {
+        rerr.textContent = (e as Error).message;
+      }
+    }
+    function rtdFromR() {
+      try {
+        rt.value = fmt(rtdTemperature(num(rr), Number(r0.value), lang), 2);
+        rerr.textContent = "";
+      } catch (e) {
+        rerr.textContent = (e as Error).message;
+      }
+    }
+    let lastRtd: "t" | "r" = "t";
+    rt.addEventListener("input", () => {
+      lastRtd = "t";
+      rtdFromT();
+    });
+    rr.addEventListener("input", () => {
+      lastRtd = "r";
+      rtdFromR();
+    });
+    r0.addEventListener("change", () => {
+      if (lastRtd === "t") rtdFromT();
+      else rtdFromR();
+      ts.value = `pt${r0.value}`;
+      table();
+    });
+
+    // ---- 열전대
+    const ty = $<HTMLSelectElement>("ty");
+    const cj = $("cj");
+    const tt = $("tt");
+    const te = $("te");
+    const terr = $("terr");
+    const tinfo = $<HTMLElement>("tinfo");
+    function info() {
+      const t = ty.value as TcType;
+      const r = ranges[t];
+      let e0 = "";
+      try {
+        const c = num(cj);
+        e0 = ` · E(${fmt(c, 1)} °C) = ${fmt(tcEmf(t, c, lang), 3)} mV`;
+      } catch {
+        /* 냉접점 오류는 계산 쪽에서 알린다 */
+      }
+      tinfo.textContent = `${root.dataset.range}: ${r.ref[0]} ~ ${r.ref[1]} °C (mV → °C: ${r.inv[0]} ~ ${r.inv[1]} °C)${e0}`;
+    }
+    function tcFromT() {
+      try {
+        te.value = fmt(tcMeasured(ty.value as TcType, num(tt), num(cj), lang), 3);
+        terr.textContent = "";
+      } catch (e) {
+        terr.textContent = (e as Error).message;
+      }
+      info();
+    }
+    function tcFromE() {
+      try {
+        tt.value = fmt(tcFromMeasured(ty.value as TcType, num(te), num(cj), lang), 2);
+        terr.textContent = "";
+      } catch (e) {
+        terr.textContent = (e as Error).message;
+      }
+      info();
+    }
+    let lastTc: "t" | "e" = "t";
+    tt.addEventListener("input", () => {
+      lastTc = "t";
+      tcFromT();
+    });
+    te.addEventListener("input", () => {
+      lastTc = "e";
+      tcFromE();
+    });
+    cj.addEventListener("input", () => (lastTc === "t" ? tcFromT() : tcFromE()));
+    ty.addEventListener("change", () => {
+      if (lastTc === "t") tcFromT();
+      else tcFromE();
+      ts.value = ty.value;
+      table();
+    });
+
+    // ---- 표
+    const ts = $<HTMLSelectElement>("ts");
+    const st = $<HTMLSelectElement>("st");
+    const th = $<HTMLElement>("th");
+    const tb = $<HTMLElement>("tb");
+    function table() {
+      const s = ts.value;
+      const step = Number(st.value);
+      const rows: string[] = [];
+      if (s.startsWith("pt")) {
+        const R0 = Number(s.slice(2));
+        th.textContent = `Pt${R0} (Ω)`;
+        for (const t of steps(RTD_T_MIN, RTD_T_MAX, step)) rows.push(`<tr><td class="mono">${t}</td><td class="mono">${fmt(rtdResistance(t, R0), 3)}</td></tr>`);
+      } else {
+        const t0 = s as TcType;
+        th.textContent = ko ? `${t0}형 (mV)` : `Type ${t0} (mV)`;
+        const [lo, hi] = tcTempRange(t0);
+        for (const t of steps(lo, hi, step)) rows.push(`<tr><td class="mono">${t}</td><td class="mono">${fmt(tcEmf(t0, t), 3)}</td></tr>`);
+      }
+      tb.innerHTML = rows.join("");
+    }
+    ts.addEventListener("change", table);
+    st.addEventListener("change", table);
+
+    rtdFromT();
+    tcFromT();
+    table();
+  </script>
+</Base>

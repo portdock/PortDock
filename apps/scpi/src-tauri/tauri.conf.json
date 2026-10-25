@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PortDock SCPI",
+  "version": "0.1.0",
+  "identifier": "dev.portdock.scpi",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PortDock SCPI",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "PortDock",
+    "copyright": "Copyright (C) 2026 PortDock",
+    "homepage": "https://portdock.dev",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../../../tools/installer-license.txt",
+    "shortDescription": "SCPI instrument terminal (LAN socket / RS-232)",
+    "longDescription": "PortDock SCPI talks to SCPI test instruments (power supplies, multimeters, oscilloscopes) over a LAN raw socket (TCP 5025) or RS-232 without VISA: write, query and read with response times, *IDN? identification, error queue draining, *OPC? waits, repeated numeric measurements with a trend and CSV export, and IEEE 488.2 binary blocks with HEX preview and file save.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Korean"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "PortDock",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

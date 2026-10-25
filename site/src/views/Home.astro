@@ -1,0 +1,142 @@
+---
+import Base from "../layouts/Base.astro";
+import { TOOLS, REPO, type Lang } from "../data/tools";
+import { GUIDES } from "../data/guides";
+import { DEVICES } from "../data/devices";
+import { UI, url } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+const home = new URL(url(lang), Astro.site).href;
+const root = new URL("/", Astro.site).href;
+// 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
+const ld = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "PortDock",
+    url: home,
+    inLanguage: lang,
+    description: t.siteDesc,
+    publisher: { "@type": "Organization", name: "PortDock", url: root },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "PortDock",
+    url: root,
+    logo: new URL("/favicon.svg", Astro.site).href,
+    email: CONTACT_EMAIL,
+    sameAs: [REPO],
+  },
+];
+---
+
+<Base
+  lang={lang}
+  title="PortDock"
+  seoTitle={ko ? "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램" : "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows"}
+  description={ko
+    ? "시리얼 통신 프로그램, Modbus 마스터·슬레이브 시뮬레이터, TCP·UDP, SCPI, 실시간 그래프까지 목적별 무료 윈도우 도구 9종. 오픈소스, 프로그램에 광고 없음."
+    : "Nine free Windows tools for hardware testing: serial terminal, Modbus master and slave simulator, TCP, UDP, SCPI, live plotter. Open source, no ads in the apps."}
+  path=""
+>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>{t.heroTitle}</h1>
+        <p class="sub">{t.heroSub}</p>
+        <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
+        <div class="btns">
+          <a class="btn primary" href={url(lang, "download/")}>{t.download}</a>
+          <a class="btn" href="#tools">{t.allTools}</a>
+        </div>
+      </div>
+      <!-- 통신 기록이 어떻게 보이는지 보여 주는 그림(실제 화면 캡처 아님). 사건 줄 문구는 crates/core/src/serial.rs 의 note(OPEN·LOST·RECONNECT),
+           바이트는 실제 CRC16 값, ↳ 줄은 RX 줄을 눌렀을 때 «상세» 칸의 «요청과 짝»(shared/MbValues.tsx)을 옮긴 것 -->
+      <div class="term mono" role="img" aria-label={lang === "ko" ? "통신 기록 예시" : "Example traffic log"}>
+        <div class="head"><i></i><i></i><i></i></div>
+        <div><span class="t">09:41:07.112</span> <span class="ev">EV   OPEN COM3 9600 8N1 flow=none DTR=0 RTS=0</span></div>
+        <div><span class="t">09:41:08.530</span> <span class="tx">TX ▶ 01 03 00 00 00 0A C5 CD</span></div>
+        <div><span class="t">09:41:08.561</span> <span class="rx">RX ◀ 01 03 14 00 64 00 C8 … 03 E8 DB 70</span> <span class="ok">{lang === "ko" ? "정상" : "OK"}</span></div>
+        <div><span class="t">          </span> <span class="t">   ↳ {lang === "ko" ? "요청과 짝: 국번 1 · FC03 · 0~9 (10개)" : "Paired with request: Slave ID 1 · FC03 · 0~9 (10)"}</span></div>
+        <div><span class="t">09:41:12.004</span> <span class="ev">EV   LOST {lang === "ko" ? "장치가 목록에서 사라졌습니다" : "The device disappeared from the port list"}</span></div>
+        <div><span class="t">09:41:13.871</span> <span class="ev">EV   RECONNECT COM3 → COM5</span></div>
+        <div><span class="t">09:41:14.020</span> <span class="tx">TX ▶ STATUS?&lt;CR&gt;&lt;LF&gt;</span></div>
+        <div><span class="t">09:41:14.046</span> <span class="rx">RX ◀ READY,24.8C&lt;CR&gt;&lt;LF&gt;</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tools">
+    <div class="wrap">
+      <h2>{t.allTools}</h2>
+      <div class="grid">
+        {
+          TOOLS.map((x) => (
+            <a class="card" href={url(lang, `${x.id}/`)}>
+              <h3>{x.name}</h3>
+              <p>{x.tagline[lang]}</p>
+              <span class="go">{t.more} →</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>{t.whyTitle}</h2>
+      <div class="grid">
+        {
+          t.why.map(([h, p]) => (
+            <div class="card">
+              <h3>{h}</h3>
+              <p>{p}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>{ko ? "가이드와 장비 레지스터 맵" : "Guides and device register maps"}</h2>
+      <div class="grid">
+        {
+          GUIDES.map((g) => (
+            <a class="card" href={url(lang, `guides/${g.slug}/`)}>
+              <h3>{g.title[lang]}</h3>
+              <span class="go">{ko ? "읽기" : "Read"} →</span>
+            </a>
+          ))
+        }
+        <a class="card" href={url(lang, "devices/")}>
+          <h3>{ko ? `국산 장비 Modbus 레지스터 맵 ${DEVICES.length}종` : `Modbus register maps for ${DEVICES.length} Korean devices`}</h3>
+          <p>{ko ? "인버터·온도 조절기·전력 미터 — 매뉴얼 출처, JSON" : "Inverters, temperature controllers, power meters — sources, JSON"}</p>
+          <span class="go">{t.more} →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <h2>{t.ctaTitle}</h2>
+          <p>{t.ctaBody}</p>
+        </div>
+        <a class="btn" href={url(lang, "contact/")}>{t.ctaBtn}</a>
+      </div>
+    </div>
+  </section>
+</Base>

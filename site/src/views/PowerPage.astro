@@ -1,0 +1,262 @@
+---
+// 웹 도구: 3상·단상 전력 계산기 — 전압 + (A·kW·kVA 중 하나) + 역률 → A·kW·kVA·kvar, kW·kVA·kvar 로 역률(lib/power.ts).
+// 모터 출력(축 출력)·효율에서 전류를 내는 것은 모터 전류 계산기 몫이라 여기선 전기 쪽 값만 다룬다(겹치지 않게).
+// 근거: ABB Technical guide No. 7 식 3.15(P = √3·U·I·cos φ), ABB Motor guide(2019) §4.10(역률 = kW ÷ kVA, P·Q·S 삼각형).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { fromKva } from "../lib/power";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/three-phase-power/";
+const L = ko
+  ? {
+      title: "3상 전력 계산기 (kVA·kW·kvar·A·역률)",
+      desc: "3상·단상 전압과 전류·kW·kVA 중 하나, 역률로 피상·유효·무효 전력과 전류를 계산합니다. kW 와 kVA(또는 kvar)로 역률 구하기, 전압별 kVA ↔ A 표까지.",
+      phase: "전원",
+      p3: "3상 (선간 전압)",
+      p1: "단상",
+      v: "전압 (V)",
+      known: "아는 값",
+      opt: { a: "전류 (A)", kw: "유효 전력 (kW)", kva: "피상 전력 (kVA)" },
+      x: "값",
+      pf: "역률 cos φ",
+      res: "결과",
+      k: { amps: "선 전류", kva: "피상 전력 S", kw: "유효 전력 P", kvar: "무효 전력 Q", deg: "위상각 φ" },
+      pfTitle: "역률 구하기",
+      pkw: "유효 전력 (kW)",
+      pkva: "피상 전력 (kVA)",
+      pkvar: "또는 무효 전력 (kvar)",
+      example: "기본값(3상 380 V, 30 A, 역률 0.85)은 예시입니다. 실제 역률은 부하에 따라 바뀌므로 전력 미터·명판 값을 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "3상: S = √3 × V × I,   단상: S = V × I          (V 는 3상이면 선간 전압)",
+        "P = S × cos φ,   Q = S × sin φ = √(S² − P²)",
+        "역률 cos φ = P ÷ S = P ÷ √(P² + Q²)",
+        "I = S ÷ (√3 × V)   (3상),   I = S ÷ V   (단상)",
+      ],
+      sTitle: "kVA·kW·kvar 는 무엇이 다른가",
+      s: [
+        "유효 전력 P(kW)는 실제로 일(열·회전)로 바뀌는 전력, 무효 전력 Q(kvar)는 모터의 자화처럼 오가기만 하고 일로 바뀌지 않는 전력, 피상 전력 S(kVA)는 둘을 합한 크기로 전압 × 전류입니다. ABB Motor guide 는 P 와 Q 가 함께 S 를 이루고, kW 와 kVA 의 비를 역률이라 부른다고 설명합니다.",
+        "전선·차단기·변압기는 전류로 정해지므로 kW 가 아니라 kVA(또는 A)로 봅니다. 같은 kW 라도 역률이 낮으면 전류가 커집니다 — 100 kW 를 400 V 에서 쓰면 역률 1 일 때 144 A, 0.8 일 때 180 A 입니다.",
+        "역률을 높이는 방법(콘덴서)은 역률 개선 콘덴서 계산기에서 볼 수 있습니다.",
+      ],
+      tTitle: "kVA ↔ 전류 (3상, 역률과 무관)",
+      tHead: ["kVA", "220 V", "380 V", "400 V", "440 V"],
+      mTitle: "모터라면",
+      m: "모터 명판의 kW 는 축 출력이라 전기 입력은 효율만큼 더 큽니다. 출력 kW 에서 전류를 구할 때는 효율까지 넣는 모터 전류 계산기를 쓰세요. 이 계산기는 전력 미터나 측정값처럼 «전기 쪽» kW·kVA·A 를 서로 바꿉니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["kVA 를 kW 로 바꾸려면?", "kW = kVA × 역률입니다. 역률 0.8 이면 100 kVA 는 80 kW 입니다. 역률을 모르면 kVA 만으로 kW 를 정할 수 없습니다."],
+        ["3상 380 V 에서 1 kVA 는 몇 A 인가요?", "1000 ÷ (1.732 × 380) ≈ 1.52 A 입니다. kVA ↔ 전류 관계에는 역률이 들어가지 않습니다."],
+        ["kW 와 A 로 역률을 알 수 있나요?", "전압도 알면 됩니다: 역률 = kW × 1000 ÷ (√3 × V × I). 위 «역률 구하기» 에 kW 와 kVA(= √3 × V × I ÷ 1000)를 넣어도 같습니다."],
+        ["단상 220 V 에서 2.2 kVA 는?", "2200 ÷ 220 = 10 A 입니다(전원을 «단상» 으로)."],
+      ],
+      mcNote: "모터 출력(kW·HP)·효율로 전류를 구하려면",
+      mcLink: "모터 전류 계산기",
+      pcNote: "역률을 콘덴서로 올리려면",
+      pcLink: "역률 개선 콘덴서 계산기",
+      ctNote: "전력 미터의 CT 비·2차 전류·부담은",
+      ctLink: "CT 비·2차 전류·부담 계산기",
+      srcTitle: "출처",
+    }
+  : {
+      title: "Three-Phase Power Calculator (kVA, kW, kvar, A, PF)",
+      desc: "Three- or single-phase: from voltage, one of amps, kW or kVA, and power factor, get apparent, real and reactive power and current. Power factor from kW and kVA.",
+      phase: "Supply",
+      p3: "Three-phase (line-to-line)",
+      p1: "Single-phase",
+      v: "Voltage (V)",
+      known: "Known value",
+      opt: { a: "Current (A)", kw: "Real power (kW)", kva: "Apparent power (kVA)" },
+      x: "Value",
+      pf: "Power factor cos φ",
+      res: "Results",
+      k: { amps: "Line current", kva: "Apparent power S", kw: "Real power P", kvar: "Reactive power Q", deg: "Phase angle φ" },
+      pfTitle: "Find the power factor",
+      pkw: "Real power (kW)",
+      pkva: "Apparent power (kVA)",
+      pkvar: "or reactive power (kvar)",
+      example: "The defaults (three-phase 380 V, 30 A, power factor 0.85) are an example. Real power factor changes with load, so enter meter or nameplate values.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Three-phase: S = √3 × V × I,   single-phase: S = V × I          (V line-to-line for three-phase)",
+        "P = S × cos φ,   Q = S × sin φ = √(S² − P²)",
+        "Power factor cos φ = P ÷ S = P ÷ √(P² + Q²)",
+        "I = S ÷ (√3 × V)   (three-phase),   I = S ÷ V   (single-phase)",
+      ],
+      sTitle: "kVA, kW and kvar",
+      s: [
+        "Real power P (kW) turns into work (heat, rotation); reactive power Q (kvar), such as a motor's magnetization, flows back and forth without doing work; apparent power S (kVA) is their combined size, voltage × current. ABB's Motor guide describes P and Q together making up S, and calls the ratio of kW to kVA the power factor.",
+        "Cables, breakers and transformers are sized by current, so look at kVA (or amps), not kW. The same kW at a lower power factor needs more current: 100 kW at 400 V is 144 A at power factor 1 and 180 A at 0.8.",
+        "To raise the power factor with capacitors, see the power factor correction capacitor calculator.",
+      ],
+      tTitle: "kVA ↔ current (three-phase, independent of power factor)",
+      tHead: ["kVA", "220 V", "380 V", "400 V", "440 V"],
+      mTitle: "For motors",
+      m: "A motor nameplate's kW is shaft output; the electrical input is larger by the efficiency. To get current from output kW, use the motor current calculator, which includes efficiency. This calculator converts electrical-side kW, kVA and amps, such as meter readings.",
+      faqTitle: "FAQ",
+      faq: [
+        ["How do I convert kVA to kW?", "kW = kVA × power factor. At 0.8, 100 kVA is 80 kW. Without the power factor, kVA alone does not give kW."],
+        ["How many amps is 1 kVA at 380 V three-phase?", "1000 ÷ (1.732 × 380) ≈ 1.52 A. The kVA-to-current relation does not involve the power factor."],
+        ["Can I get the power factor from kW and amps?", "With the voltage, yes: power factor = kW × 1000 ÷ (√3 × V × I). Entering kW and kVA (= √3 × V × I ÷ 1000) under «Find the power factor» gives the same."],
+        ["What is 2.2 kVA at 220 V single-phase?", "2200 ÷ 220 = 10 A (set the supply to single-phase)."],
+      ],
+      mcNote: "To get current from motor output (kW, HP) and efficiency, use the",
+      mcLink: "Motor Current Calculator",
+      pcNote: "To raise the power factor with capacitors, use the",
+      pcLink: "Power Factor Correction Capacitor Calculator",
+      ctNote: "For a power meter's CT ratio, secondary current and burden, use the",
+      ctLink: "CT Ratio & Burden Calculator",
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "ABB, Technical guide No. 7 — Dimensioning of a drive system (3AFE64362569 Rev D): eq. 3.15 (P = √3 · U · I · cos φ)", href: "https://library.e.abb.com/public/e555e5106a3c44e882f48b75a44f6807/Technical_guide_No_7_3AFE64362569_RevD_EN_lowres.pdf" },
+  { name: "ABB, Low voltage motors — Motor guide (2019): §4.10 Power factor", href: "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf" },
+];
+const KVAS = [1, 5, 10, 30, 50, 100, 300, 500, 1000];
+const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => fromKva("3", v, k, 1).amps.toFixed(k < 10 ? 2 : 1))]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "3상 전력 계산기 — kVA·kW·kvar·전류·역률 — PortDock" : "Three-Phase Power Calculator: kVA, kW, kvar, Amps — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="pw">
+      <div class="row">
+        <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option></select></label>
+        <label class="fld">{L.v}<input id="v" class="mono" value="380" list="volts" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="volts"><option value="220" /><option value="380" /><option value="400" /><option value="440" /><option value="460" /><option value="690" /></datalist>
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.known}<select id="kn">{Object.entries(L.opt).map(([id, n]) => <option value={id} selected={id === "a"}>{n}</option>)}</select></label>
+        <label class="fld">{L.x}<input id="x" class="mono" value="30" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf}<input id="pf" class="mono" value="0.85" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+
+      <h2>{L.pfTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.pkw}<input id="qkw" class="mono" value="80" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pkva}<input id="qkva" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pkvar}<input id="qkvar" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="result mono" id="pout" aria-live="polite"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.sTitle}</h2>
+      <ul>{L.s.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.mTitle}</h2>
+      <p>{L.m}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>. {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>. {ko ? "히터 용량(kW)과 히터 전류는" : "For heater kW and heater current, use the"} <a href={url(lang, "tools/heater-power/")}>{ko ? "히터 용량 계산기" : "Heater Power Calculator"}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { fromAmps, fromKva, fromKw, pfFromKwKva, pfFromKwKvar, type Ph } from "../lib/power";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("pw") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 3) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    function run() {
+      try {
+        const ph = $<HTMLSelectElement>("ph").value as Ph;
+        const v = num("v");
+        const pf = num("pf");
+        const x = num("x");
+        const kn = $<HTMLSelectElement>("kn").value;
+        const r = kn === "a" ? fromAmps(ph, v, x, pf) : kn === "kw" ? fromKw(ph, v, x, pf) : fromKva(ph, v, x, pf);
+        set("amps", `${fx(r.amps, 2)} A`);
+        set("kva", `${fx(r.kva)} kVA`);
+        set("kw", `${fx(r.kw)} kW`);
+        set("kvar", `${fx(r.kvar)} kvar`);
+        set("deg", `${fx(r.deg, 2)}°`);
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 전압은 0 보다 크고, 역률은 0 초과 1 이하입니다" : "Check the numbers — voltage above 0, power factor above 0 and at most 1";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+      const out = $("pout");
+      try {
+        const kw = num("qkw");
+        const kvar = num("qkvar");
+        const pf = Number.isFinite(kvar) ? pfFromKwKvar(kw, kvar) : pfFromKwKva(kw, num("qkva"));
+        const s = Number.isFinite(kvar) ? Math.hypot(kw, kvar) : num("qkva");
+        out.textContent = `${ko ? "역률" : "Power factor"} ${fx(pf, 4)} (φ ${fx((Math.acos(pf) * 180) / Math.PI, 2)}°)  ·  S ${fx(s)} kVA  ·  Q ${fx(Math.sqrt(Math.max(0, s * s - kw * kw)))} kvar`;
+      } catch {
+        out.textContent = ko ? "kW 는 0 보다 크고 kVA 이하여야 합니다" : "kW must be above 0 and not above kVA";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

@@ -1,0 +1,33 @@
+---
+// 내려받기 칸 — 이 칸 근처에는 광고를 두지 않는다(애드센스 정책: 다운로드 버튼과 오인 금지)
+import { RELEASED, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  tool: Tool;
+}
+const { lang, tool } = Astro.props;
+const t = UI[lang];
+---
+
+<div class="card">
+  <h3>{t.dlTitle}</h3>
+  {
+    RELEASED ? (
+      <div class="dl-list">
+        <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
+        <a class="btn" href={latest(`${tool.file}-setup-offline.exe`)}>{t.dlOffline} <small>{lang === "ko" ? "WebView2 포함" : "WebView2 bundled"}</small></a>
+        <a class="btn" href={latest(`${tool.file}-portable.zip`)}>{t.dlPortable} <small>{lang === "ko" ? "설치 없이" : "no install"}</small></a>
+      </div>
+    ) : (
+      <>
+        <div class="dl-list"><span class="btn soon" aria-disabled="true">{t.dlSoon}</span></div>
+        <p class="note">{t.dlSoonNote} <a href={REPO}>GitHub →</a></p>
+      </>
+    )
+  }
+  <p class="note">{t.dlNote}</p>
+  <p class="note">{t.webview}</p>
+  <p class="note"><a href={RELEASES}>{t.dlAll} →</a> · <a href={url(lang, "download/#safe")}>{t.safeTitle}</a> · <a href={url(lang, "code-signing/")}>{t.codeSigning}</a></p>
+</div>

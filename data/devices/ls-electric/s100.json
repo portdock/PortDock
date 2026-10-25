@@ -1,0 +1,1376 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "ls-electric/s100",
+  "manufacturer": {
+    "ko": "LS일렉트릭",
+    "en": "LS ELECTRIC"
+  },
+  "model": "LSLV-S100",
+  "models": [
+    "S100"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "LS일렉트릭 S100 인버터 (내장 RS-485)",
+    "en": "LS ELECTRIC S100 AC drive (built-in RS-485)"
+  },
+  "summary": {
+    "ko": "내장 RS-485 Modbus-RTU. iS5·iP5A·iV5·iG5A 호환 공통 영역(0h0000~)과 S100 확장 공통 영역(0h0300~)",
+    "en": "Built-in RS-485 Modbus-RTU. Compatible common area (0h0000-) and S100 expansion common area (0h0300-)"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      250
+    ],
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼 Modbus-RTU 통신 예(p.295, PDF 309)에서 통신 주소 0x1103 에 쓸 때 프레임 시작 주소를 0x1102(«Starting Address -1»)로 보낸다. 그래서 address = 매뉴얼 주소 - 1 로 적었다. 예는 파라미터 영역 하나뿐이고, 이 규칙대로면 0h0000(인버터 모델)은 -1 이 되어 표현할 수 없어 뺐다. 공통 영역에도 같은 규칙이 맞는지 실기로 확인 권장.",
+        "en": "Addressing: the manual's Modbus-RTU example (p.295, PDF 309) sends starting address 0x1102 for comm address 0x1103 ('Starting Address -1'), so address = manual address - 1. The example is from the parameter area only; under this rule 0h0000 (model) maps to -1 and is omitted. Verify on hardware for the common area."
+      },
+      {
+        "ko": "초기값: CM.01 국번 1(1~250), CM.02 프로토콜 0 Modbus-RTU, CM.03 속도 3=9600bps, CM.04 0=D8/PN/S1(8N1). p.281 (PDF 295), p.346 (PDF 360).",
+        "en": "Defaults: CM.01 ID 1 (1-250), CM.02 0 Modbus-RTU, CM.03 3 = 9600 bps, CM.04 0 = D8/PN/S1. p.281 (PDF 295), p.346 (PDF 360)."
+      },
+      {
+        "ko": "CM.03 설정 6 은 매뉴얼 표에 56000bps 로, 7.1 규격표(p.279)에는 57,600bps 로 적혀 있어 bauds 에서 뺐다. CM.04 는 8N1·8N2·8E1·8O1 (p.281).",
+        "en": "CM.03 setting 6 reads 56000 bps in the CM table but 57,600 bps in the spec table (p.279), so it is left out of bauds. CM.04 offers 8N1/8N2/8E1/8O1 (p.281)."
+      },
+      {
+        "ko": "함수 코드 03·04·06·16 지원 (p.292~294, PDF 306~308).",
+        "en": "Function codes 03, 04, 06, 16 supported (p.292-294, PDF 306-308)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "0h0001",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 용량",
+        "en": "Inverter capacity"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.75kW",
+          "en": "0.75kW"
+        },
+        {
+          "value": 1,
+          "ko": "1.5kW",
+          "en": "1.5kW"
+        },
+        {
+          "value": 2,
+          "ko": "2.2kW",
+          "en": "2.2kW"
+        },
+        {
+          "value": 3,
+          "ko": "3.7kW",
+          "en": "3.7kW"
+        },
+        {
+          "value": 4,
+          "ko": "5.5kW",
+          "en": "5.5kW"
+        },
+        {
+          "value": 5,
+          "ko": "7.5kW",
+          "en": "7.5kW"
+        },
+        {
+          "value": 6,
+          "ko": "11kW",
+          "en": "11kW"
+        },
+        {
+          "value": 7,
+          "ko": "15kW",
+          "en": "15kW"
+        },
+        {
+          "value": 8,
+          "ko": "18.5kW",
+          "en": "18.5kW"
+        },
+        {
+          "value": 9,
+          "ko": "22kW",
+          "en": "22kW"
+        },
+        {
+          "value": 10,
+          "ko": "30kW",
+          "en": "30kW"
+        },
+        {
+          "value": 11,
+          "ko": "37kW",
+          "en": "37kW"
+        },
+        {
+          "value": 12,
+          "ko": "45kW",
+          "en": "45kW"
+        },
+        {
+          "value": 13,
+          "ko": "55kW",
+          "en": "55kW"
+        },
+        {
+          "value": 14,
+          "ko": "75kW",
+          "en": "75kW"
+        },
+        {
+          "value": 256,
+          "ko": "0.4kW",
+          "en": "0.4kW"
+        },
+        {
+          "value": 257,
+          "ko": "1.1kW",
+          "en": "1.1kW"
+        },
+        {
+          "value": 258,
+          "ko": "3.0kW",
+          "en": "3.0kW"
+        },
+        {
+          "value": 259,
+          "ko": "4.0kW",
+          "en": "4.0kW"
+        }
+      ],
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "0h0002",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전압 등급",
+        "en": "Input voltage class"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "220V 제품",
+          "en": "220V product"
+        },
+        {
+          "value": 1,
+          "ko": "440V 제품",
+          "en": "440V product"
+        }
+      ],
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "0h0003",
+      "type": "u16",
+      "name": {
+        "ko": "S/W 버전",
+        "en": "S/W version"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "16진: 0x0100 = 버전 1.00",
+        "en": "Hex: 0x0100 = version 1.00"
+      },
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "0h0005",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령",
+        "en": "Frequency command"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "0h0006",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령",
+        "en": "Operation command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "정지(S)",
+          "en": "Stop (S)"
+        },
+        {
+          "bit": 1,
+          "ko": "정방향 운전(F)",
+          "en": "Forward run (F)"
+        },
+        {
+          "bit": 2,
+          "ko": "역방향 운전(R)",
+          "en": "Reverse run (R)"
+        },
+        {
+          "bit": 3,
+          "ko": "쓰기: 트립 리셋(0→1) / 읽기: 트립 상태",
+          "en": "W: trip reset (0->1) / R: trip status"
+        },
+        {
+          "bit": 4,
+          "ko": "비상 정지",
+          "en": "Emergency stop"
+        }
+      ],
+      "description": {
+        "ko": "B5~B15 는 읽기 전용: B6~B8 운전 지령 소스(0 키패드, 1 Fx/Rx-1, 2 Fx/Rx-2, 3 내장 485, 4 통신 옵션), B9~B14 주파수 지령 소스(0 키패드 주파수, 1 키패드 토크, 2~16 단자대 다단속, 17 Up, 18 Down, 19 STEADY, 22 V1, 24 V2, 25 I2, 27 내장 485, 28 통신 옵션, 30 JOG, 31 PID)",
+        "en": "B5-B15 read-only: B6-B8 run command source (0 keypad, 1 Fx/Rx-1, 2 Fx/Rx-2, 3 built-in 485, 4 comm option), B9-B14 frequency source (0 keypad freq, 1 keypad torque, 2-16 multi-step, 17 up, 18 down, 19 steady, 22 V1, 24 V2, 25 I2, 27 built-in 485, 28 comm option, 30 jog, 31 PID)"
+      },
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "0h0007",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간",
+        "en": "Acceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "0h0008",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간",
+        "en": "Deceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.296 (PDF 310)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "0h0009",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "0h000A",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "0h000B",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "0h000C",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압",
+        "en": "DC link voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "0h000D",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "0h000E",
+      "type": "u16",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operation status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "정지",
+          "en": "Stopped"
+        },
+        {
+          "bit": 1,
+          "ko": "정방향 운전 중",
+          "en": "Running forward"
+        },
+        {
+          "bit": 2,
+          "ko": "역방향 운전 중",
+          "en": "Running reverse"
+        },
+        {
+          "bit": 3,
+          "ko": "고장 트립",
+          "en": "Fault trip"
+        },
+        {
+          "bit": 4,
+          "ko": "가속 중",
+          "en": "Accelerating"
+        },
+        {
+          "bit": 5,
+          "ko": "감속 중",
+          "en": "Decelerating"
+        },
+        {
+          "bit": 6,
+          "ko": "속도 도달",
+          "en": "Speed reached"
+        },
+        {
+          "bit": 7,
+          "ko": "직류 제동",
+          "en": "DC braking"
+        },
+        {
+          "bit": 8,
+          "ko": "정지 중",
+          "en": "Drive stopping"
+        },
+        {
+          "bit": 9,
+          "ko": "조그 모드",
+          "en": "Jog mode"
+        },
+        {
+          "bit": 10,
+          "ko": "브레이크 개방 신호",
+          "en": "Brake release signal"
+        },
+        {
+          "bit": 11,
+          "ko": "정방향 운전 지령",
+          "en": "Forward run command"
+        },
+        {
+          "bit": 12,
+          "ko": "역방향 운전 지령",
+          "en": "Reverse run command"
+        },
+        {
+          "bit": 13,
+          "ko": "운전 지령이 통신(내장·옵션)",
+          "en": "Run command source is communication"
+        },
+        {
+          "bit": 14,
+          "ko": "주파수 지령이 통신(내장·옵션)",
+          "en": "Frequency command source is communication"
+        }
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "0h000F",
+      "type": "u16",
+      "name": {
+        "ko": "고장 트립 정보",
+        "en": "Fault trip information"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "래치형 트립",
+          "en": "Latch type trip"
+        },
+        {
+          "bit": 3,
+          "ko": "레벨형 트립",
+          "en": "Level type trip"
+        },
+        {
+          "bit": 10,
+          "ko": "H/W 진단 트립",
+          "en": "H/W diagnosis trip"
+        }
+      ],
+      "ref": "p.297 (PDF 311)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "0h0010",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 상태",
+        "en": "Input terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "P1",
+          "en": "P1"
+        },
+        {
+          "bit": 1,
+          "ko": "P2",
+          "en": "P2"
+        },
+        {
+          "bit": 2,
+          "ko": "P3",
+          "en": "P3"
+        },
+        {
+          "bit": 3,
+          "ko": "P4",
+          "en": "P4"
+        },
+        {
+          "bit": 4,
+          "ko": "P5",
+          "en": "P5"
+        },
+        {
+          "bit": 5,
+          "ko": "P6",
+          "en": "P6"
+        },
+        {
+          "bit": 6,
+          "ko": "P7",
+          "en": "P7"
+        }
+      ],
+      "ref": "p.298 (PDF 312)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "0h0011",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 상태",
+        "en": "Output terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "릴레이 1",
+          "en": "Relay 1"
+        },
+        {
+          "bit": 1,
+          "ko": "Q1",
+          "en": "Q1"
+        }
+      ],
+      "ref": "p.298 (PDF 312)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 768,
+      "manualAddress": "0h0301",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 용량(확장)",
+        "en": "Inverter capacity (ext.)"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 6400,
+          "ko": "0.4kW",
+          "en": "0.4kW"
+        },
+        {
+          "value": 12800,
+          "ko": "0.75kW",
+          "en": "0.75kW"
+        },
+        {
+          "value": 16401,
+          "ko": "1.1kW",
+          "en": "1.1kW"
+        },
+        {
+          "value": 16405,
+          "ko": "1.5kW",
+          "en": "1.5kW"
+        },
+        {
+          "value": 16418,
+          "ko": "2.2kW",
+          "en": "2.2kW"
+        },
+        {
+          "value": 16432,
+          "ko": "3.0kW",
+          "en": "3.0kW"
+        },
+        {
+          "value": 16439,
+          "ko": "3.7kW",
+          "en": "3.7kW"
+        },
+        {
+          "value": 16448,
+          "ko": "4.0kW",
+          "en": "4.0kW"
+        },
+        {
+          "value": 16469,
+          "ko": "5.5kW",
+          "en": "5.5kW"
+        },
+        {
+          "value": 16501,
+          "ko": "7.5kW",
+          "en": "7.5kW"
+        },
+        {
+          "value": 16560,
+          "ko": "11kW",
+          "en": "11kW"
+        },
+        {
+          "value": 16624,
+          "ko": "15kW",
+          "en": "15kW"
+        },
+        {
+          "value": 16677,
+          "ko": "18.5kW",
+          "en": "18.5kW"
+        },
+        {
+          "value": 16736,
+          "ko": "22kW",
+          "en": "22kW"
+        },
+        {
+          "value": 16864,
+          "ko": "30kW",
+          "en": "30kW"
+        },
+        {
+          "value": 16976,
+          "ko": "37kW",
+          "en": "37kW"
+        },
+        {
+          "value": 17104,
+          "ko": "45kW",
+          "en": "45kW"
+        },
+        {
+          "value": 17264,
+          "ko": "55kW",
+          "en": "55kW"
+        },
+        {
+          "value": 17584,
+          "ko": "75kW",
+          "en": "75kW"
+        }
+      ],
+      "ref": "p.299 (PDF 313)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 772,
+      "manualAddress": "0h0305",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 운전 상태",
+        "en": "Inverter operation state"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "B15~B12: 0 정상, 4 경고, 8 고장 / B7~B4: 1 속도 탐색, 2 가속, 3 정속, 4 감속, 5 감속 정지, 6 H/W OCS, 7 S/W OCS, 8 드웰 / B3~B0: 0 정지, 1 정방향, 2 역방향, 3 DC 운전",
+        "en": "B15-B12: 0 normal, 4 warning, 8 fault / B7-B4: 1 speed search, 2 accel, 3 steady, 4 decel, 5 decel to stop, 6 H/W OCS, 7 S/W OCS, 8 dwell / B3-B0: 0 stop, 1 forward, 2 reverse, 3 DC operation"
+      },
+      "ref": "p.299 (PDF 313)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 773,
+      "manualAddress": "0h0306",
+      "type": "u16",
+      "name": {
+        "ko": "운전·주파수 지령 소스",
+        "en": "Run / frequency command source"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "B15~B8 운전 지령: 0 키패드, 1 통신 옵션, 2 사용자 시퀀스, 3 내장 485, 4 단자대 / B7~B0 주파수 지령: 0 키패드 속도, 1 키패드 토크, 2~4 Up/Down, 5 V1, 7 V2, 8 I2, 9 펄스, 10 내장 485, 11 통신 옵션, 12 사용자 시퀀스, 13 Jog, 14 PID, 25~39 다단속",
+        "en": "B15-B8 run source: 0 keypad, 1 comm option, 2 user sequence, 3 built-in 485, 4 terminal / B7-B0 freq source: 0 keypad speed, 1 keypad torque, 2-4 up/down, 5 V1, 7 V2, 8 I2, 9 pulse, 10 built-in 485, 11 comm option, 12 user sequence, 13 jog, 14 PID, 25-39 multi-step"
+      },
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 783,
+      "manualAddress": "0h0310",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 784,
+      "manualAddress": "0h0311",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 787,
+      "manualAddress": "0h0314",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 788,
+      "manualAddress": "0h0315",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압",
+        "en": "DC link voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 789,
+      "manualAddress": "0h0316",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 790,
+      "manualAddress": "0h0317",
+      "type": "u16",
+      "name": {
+        "ko": "출력 토크",
+        "en": "Output torque"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.300 (PDF 314)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 812,
+      "manualAddress": "0h032D",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 모듈 온도",
+        "en": "Inverter module temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.302 (PDF 316)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 813,
+      "manualAddress": "0h032E",
+      "type": "u16",
+      "name": {
+        "ko": "소비 전력량(kWh)",
+        "en": "Energy consumption (kWh)"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.302 (PDF 316)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 815,
+      "manualAddress": "0h0330",
+      "type": "u16",
+      "name": {
+        "ko": "래치형 트립 정보 1",
+        "en": "Latch type trip info 1"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "과부하 트립",
+          "en": "Overload trip"
+        },
+        {
+          "bit": 1,
+          "ko": "저부하 트립",
+          "en": "Underload trip"
+        },
+        {
+          "bit": 2,
+          "ko": "인버터 과부하 트립",
+          "en": "Inverter overload trip"
+        },
+        {
+          "bit": 3,
+          "ko": "전자 서멀 트립",
+          "en": "E-Thermal trip"
+        },
+        {
+          "bit": 4,
+          "ko": "지락 트립",
+          "en": "Ground fault trip"
+        },
+        {
+          "bit": 5,
+          "ko": "출력 결상 트립",
+          "en": "Output open-phase trip"
+        },
+        {
+          "bit": 6,
+          "ko": "입력 결상 트립",
+          "en": "Input open-phase trip"
+        },
+        {
+          "bit": 9,
+          "ko": "NTC 트립",
+          "en": "NTC trip"
+        },
+        {
+          "bit": 10,
+          "ko": "과전류 트립",
+          "en": "Overcurrent trip"
+        },
+        {
+          "bit": 11,
+          "ko": "과전압 트립",
+          "en": "Overvoltage trip"
+        },
+        {
+          "bit": 12,
+          "ko": "외부 트립",
+          "en": "External trip"
+        },
+        {
+          "bit": 13,
+          "ko": "암 단락",
+          "en": "Arm short"
+        },
+        {
+          "bit": 14,
+          "ko": "과열 트립",
+          "en": "Over heat trip"
+        },
+        {
+          "bit": 15,
+          "ko": "퓨즈 단선 트립",
+          "en": "Fuse open trip"
+        }
+      ],
+      "ref": "p.302 (PDF 316)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 816,
+      "manualAddress": "0h0331",
+      "type": "u16",
+      "name": {
+        "ko": "래치형 트립 정보 2",
+        "en": "Latch type trip info 2"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 2,
+          "ko": "서멀 트립",
+          "en": "Thermal trip"
+        },
+        {
+          "bit": 3,
+          "ko": "팬 트립",
+          "en": "Fan trip"
+        },
+        {
+          "bit": 5,
+          "ko": "파라미터 쓰기 오류",
+          "en": "Error while writing parameter"
+        },
+        {
+          "bit": 6,
+          "ko": "Pre PID 실패",
+          "en": "Pre PID fail"
+        },
+        {
+          "bit": 7,
+          "ko": "기본 I/O 접촉 불량",
+          "en": "Bad contact at basic I/O board"
+        },
+        {
+          "bit": 8,
+          "ko": "외부 브레이크 트립",
+          "en": "External brake trip"
+        },
+        {
+          "bit": 9,
+          "ko": "모터 미연결 트립",
+          "en": "No motor trip"
+        },
+        {
+          "bit": 10,
+          "ko": "옵션 카드 이상",
+          "en": "Bad option card"
+        },
+        {
+          "bit": 12,
+          "ko": "Safety A",
+          "en": "Safety A"
+        },
+        {
+          "bit": 13,
+          "ko": "Safety B",
+          "en": "Safety B"
+        }
+      ],
+      "ref": "p.302 (PDF 316)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 817,
+      "manualAddress": "0h0332",
+      "type": "u16",
+      "name": {
+        "ko": "레벨형 트립 정보",
+        "en": "Level type trip info"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "BX",
+          "en": "BX"
+        },
+        {
+          "bit": 1,
+          "ko": "저전압",
+          "en": "Low voltage"
+        },
+        {
+          "bit": 2,
+          "ko": "지령 상실",
+          "en": "Lost command"
+        },
+        {
+          "bit": 3,
+          "ko": "키패드 지령 상실",
+          "en": "Keypad lost command"
+        },
+        {
+          "bit": 6,
+          "ko": "옵션 지령 상실",
+          "en": "Lost option command"
+        },
+        {
+          "bit": 7,
+          "ko": "BLE 앱 상실",
+          "en": "BLE app lost"
+        }
+      ],
+      "ref": "p.303 (PDF 317)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 819,
+      "manualAddress": "0h0334",
+      "type": "u16",
+      "name": {
+        "ko": "경고 정보",
+        "en": "Warning information"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "과부하",
+          "en": "Overload"
+        },
+        {
+          "bit": 1,
+          "ko": "저부하",
+          "en": "Underload"
+        },
+        {
+          "bit": 2,
+          "ko": "인버터 과부하",
+          "en": "Inverter overload"
+        },
+        {
+          "bit": 3,
+          "ko": "지령 상실",
+          "en": "Lost command"
+        },
+        {
+          "bit": 4,
+          "ko": "팬 운전 중",
+          "en": "Fan running"
+        },
+        {
+          "bit": 5,
+          "ko": "DB",
+          "en": "DB"
+        },
+        {
+          "bit": 6,
+          "ko": "엔코더 설치 오류",
+          "en": "Wrong encoder installation"
+        },
+        {
+          "bit": 7,
+          "ko": "엔코더 단선",
+          "en": "Encoder disconnection"
+        },
+        {
+          "bit": 8,
+          "ko": "키패드 상실",
+          "en": "Keypad lost"
+        },
+        {
+          "bit": 9,
+          "ko": "오토튜닝 실패",
+          "en": "Auto tuning failed"
+        },
+        {
+          "bit": 10,
+          "ko": "팬 교체",
+          "en": "Fan exchange"
+        },
+        {
+          "bit": 11,
+          "ko": "화재 모드",
+          "en": "Fire mode"
+        },
+        {
+          "bit": 15,
+          "ko": "통신 Idle 상태",
+          "en": "Comm idle status"
+        }
+      ],
+      "ref": "p.303 (PDF 317)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 895,
+      "manualAddress": "0h0380",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령(확장)",
+        "en": "Frequency command (ext.)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.304 (PDF 318)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 897,
+      "manualAddress": "0h0382",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령(확장)",
+        "en": "Operation command (ext.)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "0 정지 / 1 운전",
+          "en": "0 stop / 1 run"
+        },
+        {
+          "bit": 1,
+          "ko": "0 역방향 / 1 정방향",
+          "en": "0 reverse / 1 forward"
+        },
+        {
+          "bit": 2,
+          "ko": "트립 리셋(0→1)",
+          "en": "Trip reset (0->1)"
+        },
+        {
+          "bit": 3,
+          "ko": "프리런 정지(0→1)",
+          "en": "Free-run stop (0->1)"
+        }
+      ],
+      "description": {
+        "ko": "정방향 운전 0x0003, 역방향 운전 0x0001",
+        "en": "Forward run 0x0003, reverse run 0x0001"
+      },
+      "ref": "p.304 (PDF 318)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 898,
+      "manualAddress": "0h0383",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간(확장)",
+        "en": "Acceleration time (ext.)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.304 (PDF 318)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 899,
+      "manualAddress": "0h0384",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간(확장)",
+        "en": "Deceleration time (ext.)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.304 (PDF 318)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 991,
+      "manualAddress": "0h03E0",
+      "type": "u16",
+      "name": {
+        "ko": "파라미터 저장",
+        "en": "Save parameters"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "아니오",
+          "en": "No"
+        },
+        {
+          "value": 1,
+          "ko": "예",
+          "en": "Yes"
+        }
+      ],
+      "description": {
+        "ko": "0 을 쓴 뒤 1 을 쓰면 저장. 운전 중 변경 불가",
+        "en": "Write 0 then 1 to save. Not changeable during run"
+      },
+      "ref": "p.306 (PDF 320)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "통신으로 운전·주파수를 주려면 운전 지령 소스 DRV=3(Int485)·주파수 소스 Frq=6(Int485) 로 둔다 (p.282).",
+      "en": "To run and set frequency over RS-485, set DRV = 3 (Int485) and Frq = 6 (Int485) (p.282)."
+    },
+    {
+      "ko": "통신으로 바꾼 공통 영역 값은 전원을 끄면 이전 값으로 돌아간다. 0h03E0 에 0 → 1 을 쓰거나 CNF.48 로 저장 (p.285). 0h0380·0h0005 주파수는 저장해도 남지 않는다 (p.306).",
+      "en": "Common-area changes revert at power-off unless saved via 0h03E0 (0 then 1) or CNF.48 (p.285). Frequency written to 0h0380/0h0005 is not retained (p.306)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "S100 User Manual (S100_Manual_English_V4.3.pdf) — LSLV-S100",
+      "publisher": "LS ELECTRIC",
+      "edition": {
+        "ko": "19th Edition, 2026.09 (Revision History p.474); 파일 V4.3",
+        "en": "19th Edition, 2026.09 (Revision History p.474); file V4.3"
+      },
+      "url": "https://sftpssqblobcdn.blob.core.windows.net/prod/largefile/document/17912520084750/S100_Manual_English_V4.3.pdf",
+      "pages": {
+        "ko": "7장 RS-485 p.279~306 (PDF 293~320), CM 그룹 p.346 (PDF 360)",
+        "en": "chapter 7 RS-485 pp.279-306 (PDF 293-320), CM group p.346 (PDF 360)"
+      },
+      "checked": "2026-10-19"
+    }
+  ]
+}

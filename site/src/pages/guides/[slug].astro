@@ -1,0 +1,8 @@
+---
+import V from "../../views/GuidePage.astro";
+import { GUIDES } from "../../data/guides";
+export const getStaticPaths = () => GUIDES.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+const { guide } = Astro.props;
+---
+
+<V lang="ko" guide={guide} />

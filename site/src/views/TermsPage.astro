@@ -1,0 +1,114 @@
+---
+// 이용 안내(면책) — 개인정보처리방침과 별개. 웹 도구·가이드·장비 맵 본문 끝의 짧은 안내(components/UseNotice.astro)가 이 페이지로 이어진다.
+// 근거(비공개 검토 문서): 약관규제법 7조 1호(고의·중과실 책임을 빼는 조항은 무효)라
+//   «어떠한 경우에도 책임지지 않음» 같은 문구는 쓰지 않는다. 구글 생성 AI 콘텐츠 안내(사람의 사실 확인, 만든 방법 밝히기)에 따라 만든 방법을 적는다.
+// «실제 장비에서 검증» 류 문구 금지(docs/todo.md — 실기 점검 미룸).
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { type Lang, REPO } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+const updated = "2026-10-25";
+---
+
+<Base
+  lang={lang}
+  title={t.terms}
+  description={ko
+    ? "PortDock 웹 도구·가이드·장비 레지스터 맵은 참고용 자료입니다. 설계·시공·운전 전 확인할 것, 만든 방법(AI 도구 사용과 원문 대조), 오류 신고 방법."
+    : "PortDock calculators, guides and register maps are reference material: what to check before use, how the site is made (AI-assisted) and how to report errors."}
+  path="terms/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.terms, path: "terms/" }]} />
+      <h1>{t.terms}</h1>
+      <p>{ko ? `시행일 ${updated}` : `Effective ${updated}`}</p>
+    </div>
+  </header>
+  <div class="wrap prose" style="padding-top:20px">
+    {
+      ko ? (
+        <>
+          <h2>1. 참고용 자료입니다</h2>
+          <ul>
+            <li>웹 도구(계산기)·가이드·장비 Modbus 레지스터 맵은 공개된 표준과 제조사 문서를 바탕으로 만든 참고 자료입니다.</li>
+            <li>실제 값은 장비 모델·펌웨어 판·설정·설치 조건에 따라 다를 수 있습니다. 설계·시공·운전 전에는 해당 장비의 매뉴얼과 관련 규격·법령을 확인하세요.</li>
+            <li>전기 공사·기계 안전처럼 자격이나 검사가 필요한 일은 자격을 갖춘 사람의 확인을 받으세요.</li>
+          </ul>
+          <h2>2. 만든 방법</h2>
+          <ul>
+            <li>이 사이트의 글·계산기·레지스터 맵은 AI 도구의 도움을 받아 만들었습니다.</li>
+            <li>
+              계산식과 수치는 운영자가 표준·제조사 공식 문서와 대조했고, 계산기의 계산식은 자동 시험으로 확인합니다(문서에 예제가 있으면 그 예제값과 같은 결과가 나오는지 대조). 레지스터 맵은 제조사 매뉴얼의 표에서
+              옮기고, 주소 기준은 매뉴얼에 실린 통신 예로 대조했습니다.
+            </li>
+            <li>근거 문서와 쪽 번호는 각 페이지의 «근거» 또는 «출처» 절에 있습니다. 원문으로 확인하지 못한 값은 넣지 않고 그 이유를 적어 둡니다.</li>
+            <li>실제 장비에 연결해 시험한 값은 아니므로, 쓰기 전에 원문과 장비에서 한 번 더 확인하세요.</li>
+          </ul>
+          <h2>3. 틀린 곳과 책임</h2>
+          <ul>
+            <li>
+              틀린 곳을 찾으면 <a href={url(lang, "contact/")}>문의 페이지</a>나 <a href={`${REPO}/issues`}>GitHub 이슈</a>로 알려 주세요(근거 문서와 쪽 번호가 있으면 더 빨리 고칠 수 있습니다). 고친 이력은 GitHub
+              저장소에 남습니다.
+            </li>
+            <li>이 사이트는 무료로 제공되며, 이 사이트의 계산이나 자료만으로 설계·시공·운전을 결정하지 말고 위 1절의 확인을 함께 거쳐 주세요.</li>
+            <li>운영자의 고의 또는 중대한 과실로 생긴 손해에 대한 책임은 이 안내로 줄어들지 않으며, 관련 법령에 따릅니다.</li>
+          </ul>
+          <h2>4. 프로그램·데이터·상표</h2>
+          <ul>
+            <li>윈도우 프로그램은 <a href={`${REPO}/blob/main/LICENSE`}>GPL-3.0</a> 으로 배포되며, 보증과 책임은 그 라이선스의 15·16조(관련 법이 허용하는 범위)를 따릅니다.</li>
+            <li>장비 레지스터 맵 데이터는 CC BY 4.0 입니다. 쓰실 때 출처를 밝혀 주세요.</li>
+            <li>제조사 이름과 모델명은 각 회사의 상표이며, 장비를 가리키는 데만 씁니다. PortDock 은 제조사와 관계가 없습니다.</li>
+            <li>
+              웹 도구·가이드·장비 맵 페이지에는 광고가 나올 수 있고, 광고 내용은 PortDock 이 정하지 않습니다. 쿠키와 방문 통계는 <a href={url(lang, "privacy/")}>개인정보처리방침</a>에 있습니다.
+            </li>
+          </ul>
+        </>
+      ) : (
+        <>
+          <h2>1. Reference material</h2>
+          <ul>
+            <li>The web tools (calculators), guides and device Modbus register maps are reference material based on published standards and manufacturer documents.</li>
+            <li>Real values can differ by model, firmware version, settings and installation. Before design, installation or operation, check the equipment manual and the applicable standards and regulations.</li>
+            <li>Work that needs a licence or inspection, such as electrical installation or machine safety, should be checked by a qualified person.</li>
+          </ul>
+          <h2>2. How this site is made</h2>
+          <ul>
+            <li>The articles, calculators and register maps on this site were made with the help of AI tools.</li>
+            <li>
+              Formulas and figures were checked by the author against standards and official manufacturer documents, and the calculators' formulas are tested automatically (against the worked
+              examples in those documents where they exist). Register maps are transcribed from the tables in the manufacturer's manual, and the addressing is checked against the manual's communication examples.
+            </li>
+            <li>Source documents and page numbers are listed in each page's «Basis», «Sources» or «References» section. Values that could not be confirmed in the original are left out, with the reason noted.</li>
+            <li>The values were not tested on real equipment, so check the original document and your device once more before relying on them.</li>
+          </ul>
+          <h2>3. Mistakes and responsibility</h2>
+          <ul>
+            <li>
+              If you find a mistake, please tell us through the <a href={url(lang, "contact/")}>contact page</a> or a <a href={`${REPO}/issues`}>GitHub issue</a> (the source document and page number help
+              us fix it faster). Corrections are recorded in the GitHub repository.
+            </li>
+            <li>This site is free. Please do not base design, installation or operation decisions on its calculations or data alone; do the checks in section 1 as well.</li>
+            <li>Nothing in this notice limits liability for damage caused by the operator's intent or gross negligence; such cases follow the applicable law.</li>
+          </ul>
+          <h2>4. Programs, data and trademarks</h2>
+          <ul>
+            <li>The Windows programs are distributed under <a href={`${REPO}/blob/main/LICENSE`}>GPL-3.0</a>; warranty and liability follow sections 15 and 16 of that licence (to the extent permitted by applicable law).</li>
+            <li>The device register map data is licensed under CC BY 4.0. Please credit the source when you use it.</li>
+            <li>Manufacturer and model names are trademarks of their owners and are used only to identify equipment. PortDock is not affiliated with any manufacturer.</li>
+            <li>
+              Web-tool, guide and device map pages may show ads; PortDock does not choose the ad content. Cookies and analytics are covered in the <a href={url(lang, "privacy/")}>privacy policy</a>.
+            </li>
+          </ul>
+        </>
+      )
+    }
+  </div>
+</Base>

@@ -1,0 +1,329 @@
+---
+// 웹 도구: 변류기(CT) 비·2차 전류·부담 — 1차 ↔ 2차 환산, 부하율, 왕복 선 저항 + 계기 VA → 전체 부담(VA·Ω·%), 비 보정 계수(lib/ct.ts).
+// 근거: ABB Instrument Transformers Application Guide(1VAP420003-TG, 2004 Rev. A) p.4·5·10·13·26, 선 저항은 lib/wire(IEC 60028).
+// IEC 61869-2 의 정확도 등급별 오차 한도는 원문을 확인하지 않아 싣지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { leadOhm, va } from "../lib/ct";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/ct-ratio/";
+// 선 굵기·편도 길이별 왕복 선 부담(20 °C 구리) — 5 A·1 A
+const leadRows = [1.5, 2.5, 4].flatMap((a) => [5, 10, 20, 50].map((m) => {
+  const r = leadOhm(m, a);
+  return [`${a} mm²`, `${m} m`, r.toFixed(3), va(5, r).toFixed(2), va(1, r).toFixed(3)];
+}));
+// 원문: ABB Library 의 1VAP420003-TG(문서 ID 로 내려받으면 이 주소로 감, 10/24 확인 — 끝 쪽에 «1VAP420003-TG December 2004 Rev. A»)
+const ABB_IT_GUIDE = "https://library.e.abb.com/public/e2462bd7f816437ac1256f9a007629cf/ITTechInfoAppGuide.pdf";
+const L = ko
+  ? {
+      title: "CT 비·2차 전류·부담 계산기",
+      desc: "변류기(CT) 비로 1차 ↔ 2차 전류를 바꾸고, 왕복 선 저항과 계기 부담(VA)을 더한 전체 부담(VA·Ω)을 CT 정격 부담과 비교합니다. 1 A·5 A 2차.",
+      ipn: "CT 1차 정격 (A)",
+      isn: "CT 2차 정격",
+      ip: "1차 전류 (A) — 2차로",
+      is: "2차 전류 (A) — 1차로",
+      res: "환산",
+      k: { ratio: "CT 비", sec: "1차 전류일 때 2차 전류", load: "정격 1차 대비", pri: "2차 전류일 때 1차 전류" },
+      bTitle: "2차 회로 부담",
+      len: "CT ↔ 계기 편도 거리 (m)",
+      area: "2차 선 굵기 (mm², 구리)",
+      temp: "선 온도 (°C)",
+      mva: "계기 입력 부담 (VA, 정격 2차 전류에서 — 계기 사양서)",
+      oth: "그 밖의 저항 (Ω, 단자·시험 단자 등)",
+      rva: "CT 정격 부담 (VA, 명판)",
+      bk: { lo: "왕복 선 저항", lva: "선 부담", mo: "계기 입력 (Ω)", tot: "전체 부담 (저항 성분)", pct: "CT 정격 부담 대비", v: "정격 2차 전류에서 2차 단자 전압" },
+      rTitle: "비 보정 계수 (실제 비 ÷ 표시 비)",
+      mp: "실제로 잰 1차 전류 (A)",
+      ms: "같은 때 잰 2차 전류 (A)",
+      rk: { rcf: "RCF", re: "비 오차 (RCF − 1)", corr: "읽은 값에 곱할 값" },
+      example: "기본값(200/5 A, 편도 10 m, 2.5 mm², 계기 1 VA, 정격 5 VA)은 예시입니다. 계기 입력 부담·CT 정격 부담은 각 사양서·명판 값을 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      warnTitle: "2차를 열지 마세요",
+      warn: "CT 2차 회로를 전류가 흐르는 채로 열면 1차 전류가 모두 여자 회로로 가서 2차 단자에 아주 높은 전압 펄스가 생깁니다. 전압계로는 잘 안 보이지만 절연을 깨고 사람에게 위험하며, ABB 가이드는 2차 개방을 «심각한 사고» 로 다루고, 큰 CT 에서 개방될 수 있으면 2차 단자에 보호 회로를 늘 이어 두라고 적습니다(p.26). 같은 가이드는 계기 쪽 전압을 안전하게 두려고 2차 회로를 접지한다고 적습니다(p.5).",
+      fTitle: "계산식",
+      formula: [
+        "CT 비 = 1차 정격 ÷ 2차 정격        (예: 200/5 → 40)",
+        "2차 전류 = 1차 전류 ÷ CT 비,   1차 전류 = 2차 전류 × CT 비",
+        "부담 VA = I² × R,   계기 Ω = 계기 VA ÷ (정격 2차 전류)²",
+        "왕복 선 저항 = ρ × (2 × 편도 길이) ÷ 단면적,   구리 ρ20 = 1/58 Ω·mm²/m",
+        "RCF = 실제 비 ÷ 표시 비,   RCF > 1 이면 계기는 낮게 읽음 → 읽은 값 × RCF",
+      ],
+      lTitle: "선 굵기·거리별 왕복 선 부담 (구리 20 °C)",
+      lHead: ["굵기", "편도", "왕복 Ω", "5 A 에서 VA", "1 A 에서 VA"],
+      lNote: "같은 선이라도 2차 정격이 1 A 면 부담(I²R)은 5 A 의 1/25 입니다. 배선이 길수록 이 차이가 커집니다.",
+      sTitle: "표준 부담(IEEE C57.13, 5 A 2차) — ABB 가이드 p.13",
+      sHead: ["표시", "임피던스 Ω", "5 A 에서 VA", "역률"],
+      sRows: [["B-0.1", "0.1", "2.5", "0.9"], ["B-0.2", "0.2", "5.0", "0.9"], ["B-0.5", "0.5", "12.5", "0.9"], ["B-0.9", "0.9", "22.5", "0.9"], ["B-1.8", "1.8", "45.0", "0.9"]],
+      sNote: "같은 가이드의 계량용 표준 부담입니다(IEEE 규격, 60 Hz). 5 A 가 아닌 CT 는 옴 값에 (5 ÷ 정격 전류)² 를 곱하고, 정격 전류에서 VA 는 같습니다 — 1 A CT 의 2.5 VA 는 2.5 Ω. IEC 쪽 정격 부담·정확도 등급의 오차 한도는 IEC 61869-2 원문을 확인하지 않아 여기 싣지 않습니다.",
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "전력 미터의 CT 비 설정: 계기에 1차·2차 정격(예: 200/5)을 넣으면 계기가 CT 비를 곱한 실제 전류를 보여 줍니다. LS ELECTRIC GIMAC1000·루텍 Accura 장비 맵의 계측값은 이미 PT/CT 비가 반영된 실제 단위라 Modbus 로 읽은 값에 다시 곱하지 않습니다.",
+        "CT 고르기: 평소 부하 전류가 정격 1차의 몇 % 인지 봅니다(위 «정격 1차 대비»). 너무 큰 CT 는 2차 전류가 작아 계기 눈금 아래쪽에서 읽게 됩니다.",
+        "배선 거리가 길면 선 부담이 CT 정격 부담을 넘기 쉽습니다. 선을 굵게 하거나, 계기를 CT 가까이 두거나, 2차 1 A CT 를 씁니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["CT 비 200/5 는 무슨 뜻인가요?", "1차에 200 A 가 흐르면 2차에 5 A 가 흐르는 CT 로, 비는 40 입니다. 1차 150 A 면 2차 3.75 A 입니다."],
+        ["CT 부담은 어떻게 계산하나요?", "2차 회로에 이어진 저항을 모두 더해 정격 2차 전류의 제곱을 곱합니다(VA = I² × R). 계기 입력 부담(VA)은 Ω 로 바꿔 더하고, 선은 왕복 길이로 셉니다. 구리 2.5 mm² 편도 10 m 는 왕복 약 0.138 Ω 으로 5 A 에서 약 3.45 VA 입니다."],
+        ["CT 비 오차는 어떻게 보나요?", "같은 때 잰 1차·2차 전류로 실제 비를 내고 표시 비로 나누면 비 보정 계수(RCF)입니다. ABB 가이드의 예처럼 실제 20.2 : 1, 표시 20 : 1 이면 RCF 1.01, 비 오차 1 % 이고, 계기는 1 % 낮게 읽습니다."],
+        ["1 A 와 5 A 2차 중 무엇을 쓰나요?", "ABB 가이드는 CT 의 보통 출력을 1~5 A 로 적습니다(p.4). 같은 선에서 1 A 2차의 선 부담은 5 A 의 1/25 이라 배선이 긴 곳에 유리합니다. 계기 입력이 어느 쪽을 받는지 먼저 확인합니다."],
+      ],
+      pNote: "전력 미터에서 읽은 전류·전력으로 kVA·역률을 볼 때는",
+      pLink: "3상 전력 계산기",
+      wNote: "선 굵기별 저항·전압 강하는",
+      wLink: "전압 강하·전선 굵기 계산기",
+      gNote: "CT 비 설정·부담·2차 개방을 정리한 글:",
+      gLink: "CT 비·2차 전류·부담 기초",
+      srcTitle: "근거",
+      srcLink: "ABB 가이드 원문 PDF (ABB Library)",
+      src: "CT 비·RCF·표준 부담·2차 개방 주의는 ABB «Instrument Transformers — Technical Information and Application Guide»(1VAP420003-TG, December 2004 Rev. A) p.4·5·10·13·26 을 따랐습니다. VA = I²R 은 정의식, 구리 저항률은 IEC 60028(1/58 Ω·mm²/m, 0.00393 /°C)로 전압 강하 계산기와 같습니다. 계기 입력 부담은 각 계기 사양서를 보세요.",
+    }
+  : {
+      title: "CT Ratio, Secondary Current & Burden Calculator",
+      desc: "Primary ↔ secondary current by CT ratio, and total burden (VA, Ω) from round-trip leads and the meter against the CT rating. For 1 A and 5 A secondaries.",
+      ipn: "CT rated primary (A)",
+      isn: "CT rated secondary",
+      ip: "Primary current (A) → secondary",
+      is: "Secondary current (A) → primary",
+      res: "Conversion",
+      k: { ratio: "CT ratio", sec: "Secondary at this primary", load: "Of rated primary", pri: "Primary at this secondary" },
+      bTitle: "Secondary burden",
+      len: "CT ↔ meter one-way distance (m)",
+      area: "Secondary wire size (mm², copper)",
+      temp: "Wire temperature (°C)",
+      mva: "Meter input burden (VA at rated secondary — meter datasheet)",
+      oth: "Other resistance (Ω, terminals, test blocks…)",
+      rva: "CT rated burden (VA, nameplate)",
+      bk: { lo: "Round-trip lead resistance", lva: "Lead burden", mo: "Meter input (Ω)", tot: "Total burden (resistive part)", pct: "Of CT rated burden", v: "Secondary terminal voltage at rated current" },
+      rTitle: "Ratio correction factor (actual ÷ marked)",
+      mp: "Measured primary current (A)",
+      ms: "Secondary current measured at the same time (A)",
+      rk: { rcf: "RCF", re: "Ratio error (RCF − 1)", corr: "Multiply readings by" },
+      example: "The defaults (200/5 A, 10 m one way, 2.5 mm², meter 1 VA, rated 5 VA) are an example. Enter the meter's input burden and the CT's rated burden from their datasheet and nameplate.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      warnTitle: "Never open the secondary",
+      warn: "Opening a CT secondary while current flows forces all the primary current through the exciting branch and produces very high voltage peaks at the secondary terminals. A voltmeter may barely show them, but they can break down insulation and are dangerous to people; ABB's guide says an open secondary should be treated as a serious accident and, where larger CTs may be opened, a protective circuit should be permanently connected to the secondary terminals (p.26). The same guide notes that the secondary circuit is grounded to keep the voltage at meters safe (p.5).",
+      fTitle: "Formulas",
+      formula: [
+        "CT ratio = rated primary ÷ rated secondary   (e.g. 200/5 → 40)",
+        "Secondary = primary ÷ ratio,   primary = secondary × ratio",
+        "Burden VA = I² × R,   meter Ω = meter VA ÷ (rated secondary)²",
+        "Round-trip lead = ρ × (2 × one-way length) ÷ area,   copper ρ20 = 1/58 Ω·mm²/m",
+        "RCF = actual ratio ÷ marked ratio;  RCF > 1 means the meter reads low → reading × RCF",
+      ],
+      lTitle: "Lead burden by size and distance (copper, 20 °C)",
+      lHead: ["Size", "One way", "Round-trip Ω", "VA at 5 A", "VA at 1 A"],
+      lNote: "On the same wire a 1 A secondary has 1/25 of the burden (I²R) of a 5 A one. The longer the run, the more it matters.",
+      sTitle: "Standard burdens (IEEE C57.13, 5 A secondary) — ABB guide p.13",
+      sHead: ["Designation", "Impedance Ω", "VA at 5 A", "Power factor"],
+      sRows: [["B-0.1", "0.1", "2.5", "0.9"], ["B-0.2", "0.2", "5.0", "0.9"], ["B-0.5", "0.5", "12.5", "0.9"], ["B-0.9", "0.9", "22.5", "0.9"], ["B-1.8", "1.8", "45.0", "0.9"]],
+      sNote: "The metering burdens from the same guide (IEEE, 60 Hz). For a CT not rated 5 A, multiply the ohms by (5 ÷ rated current)²; the VA at rated current stays the same — 2.5 VA on a 1 A CT is 2.5 Ω. IEC rated burdens and accuracy-class error limits are not shown: we have not checked the IEC 61869-2 text.",
+      uTitle: "Where it is used",
+      u: [
+        "Setting a power meter's CT ratio: enter the rated primary and secondary (e.g. 200/5) and the meter shows the real current. In the LS ELECTRIC GIMAC1000 and Rootech Accura device maps, measurements already include the PT/CT ratio, so do not multiply values read over Modbus again.",
+        "Choosing a CT: see what percentage of the rated primary your normal load is («Of rated primary» above). An oversized CT gives a small secondary current at the bottom of the meter's range.",
+        "Long secondary runs easily push lead burden past the CT's rating. Use thicker wire, put the meter closer, or use a 1 A secondary CT.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What does a 200/5 CT ratio mean?", "200 A in the primary gives 5 A in the secondary; the ratio is 40. 150 A primary gives 3.75 A secondary."],
+        ["How do I calculate CT burden?", "Add every resistance in the secondary circuit and multiply by the square of the rated secondary current (VA = I² × R). Convert the meter's input burden (VA) to ohms, and count the leads both ways. 2.5 mm² copper, 10 m one way, is about 0.138 Ω round trip: about 3.45 VA at 5 A."],
+        ["How do I check CT ratio error?", "Divide the actual ratio (primary and secondary measured together) by the marked ratio: that is the ratio correction factor (RCF). As in ABB's example, 20.2 : 1 actual against 20 : 1 marked is RCF 1.01, a 1 % ratio error, and the meter reads 1 % low."],
+        ["1 A or 5 A secondary?", "ABB's guide gives typical CT outputs of 1–5 A (p.4). On the same wire a 1 A secondary has 1/25 of the lead burden of 5 A, which helps on long runs. Check which input your meter takes first."],
+      ],
+      pNote: "For kVA and power factor from a meter's current and power, use the",
+      pLink: "Three-Phase Power Calculator",
+      wNote: "For wire resistance and voltage drop by size, use the",
+      wLink: "Voltage Drop & Wire Size Calculator",
+      gNote: "Guide on CT ratio settings, burden and open secondaries:",
+      gLink: "CT ratio, secondary current and burden basics",
+      srcTitle: "Basis",
+      srcLink: "ABB guide PDF (ABB Library)",
+      src: "CT ratio, RCF, standard burdens and the open-secondary warning follow ABB «Instrument Transformers — Technical Information and Application Guide» (1VAP420003-TG, December 2004 Rev. A) pp.4, 5, 10, 13, 26. VA = I²R is a definition; copper resistivity follows IEC 60028 (1/58 Ω·mm²/m, 0.00393 /°C) as in the voltage drop calculator. Meter input burdens come from each meter's datasheet.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "CT 비 계산기 — 2차 전류·CT 부담 계산 — PortDock" : "CT Ratio & Burden Calculator: Secondary Current, VA — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ct">
+      <div class="row">
+        <label class="fld">{L.ipn}<input id="ipn" class="mono" value="200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.isn}<select id="isn"><option value="5" selected>5 A</option><option value="1">1 A</option></select></label>
+        <label class="fld">{L.ip}<input id="ip" class="mono" value="150" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.is}<input id="is" class="mono" value="4" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.bTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.len}<input id="len" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.area}<input id="area" class="mono" value="2.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.temp}<input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.mva}<input id="mva" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.oth}<input id="oth" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.rva}<input id="rva" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err2" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <tbody>{Object.entries(L.bk).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.rTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.mp}<input id="mp" class="mono" value="200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ms}<input id="ms" class="mono" value="4.95" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err3" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <tbody>{Object.entries(L.rk).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.warnTitle}</h2>
+      <p>{L.warn}</p>
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.lTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.lHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{leadRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.lNote}</p>
+      <h2>{L.sTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.sHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{L.sRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.sNote}</p>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.gNote} <a href={url(lang, "guides/ct-ratio-burden/")}>{L.gLink}</a>. {L.pNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pLink}</a>. {L.wNote} <a href={url(lang, "tools/voltage-drop/")}>{L.wLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+      <p><a href={ABB_IT_GUIDE} rel="noopener">{L.srcLink}</a></p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { burden, loadPct, ratio, ratioError, toPrimary, toSecondary } from "../lib/ct";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ct") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const clear = (ks: string[]) => ks.forEach((k) => set(k, ""));
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    function run() {
+      const isn = Number($<HTMLSelectElement>("isn").value);
+      const ipn = num("ipn");
+      // 1) 환산
+      try {
+        const r = ratio(ipn, isn);
+        set("ratio", `${p4(ipn)}/${isn} = ${p4(r)}`);
+        const ip = num("ip");
+        if (Number.isNaN(ip)) clear(["sec", "load"]);
+        else {
+          set("sec", `${p4(toSecondary(ip, ipn, isn))} A`);
+          set("load", `${p4(loadPct(ip, ipn))} %`);
+        }
+        const is = num("is");
+        set("pri", Number.isNaN(is) ? "" : `${p4(toPrimary(is, ipn, isn))} A`);
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 정격은 0 보다 크고, 전류는 0 이상" : "Check the numbers — ratings above 0, currents 0 or more";
+        clear(["ratio", "sec", "load", "pri"]);
+      }
+      // 2) 부담
+      try {
+        const rva = num("rva");
+        const oth = num("oth");
+        const b = burden(isn, num("len"), num("area"), num("mva"), Number.isNaN(oth) ? 0 : oth, Number.isNaN(rva) ? undefined : rva, num("temp"));
+        set("lo", `${p4(b.leadOhm)} Ω`);
+        set("lva", `${p4(b.leadVa)} VA`);
+        set("mo", `${p4(b.meterOhm)} Ω`);
+        set("tot", `${p4(b.totalOhm)} Ω = ${p4(b.totalVa)} VA`);
+        set("pct", b.pctOfRated == null ? "" : `${p4(b.pctOfRated)} %${b.pctOfRated > 100 ? (ko ? " — 정격 부담을 넘음" : " — over the rated burden") : ""}`);
+        set("v", `${p4(b.volts)} V`);
+        $("err2").textContent = "";
+      } catch {
+        $("err2").textContent = ko ? "부담 칸을 확인하세요 — 거리·VA·저항은 0 이상, 굵기·정격 부담은 0 보다 커야 합니다" : "Check the burden fields — distance, VA and resistance 0 or more; size and rated burden above 0";
+        clear(["lo", "lva", "mo", "tot", "pct", "v"]);
+      }
+      // 3) RCF
+      try {
+        const e = ratioError(num("mp"), num("ms"), ipn, isn);
+        set("rcf", p4(e.rcf));
+        set("re", `${e.pct >= 0 ? "+" : ""}${p4(e.pct)} %${e.pct > 0 ? (ko ? " (계기가 낮게 읽음)" : " (meter reads low)") : e.pct < 0 ? (ko ? " (계기가 높게 읽음)" : " (meter reads high)") : ""}`);
+        set("corr", `× ${p4(e.rcf)}`);
+        $("err3").textContent = "";
+      } catch {
+        $("err3").textContent = ko ? "잰 전류와 CT 정격을 확인하세요 — 모두 0 보다 커야 합니다" : "Check the measured currents and CT rating — all above 0";
+        clear(["rcf", "re", "corr"]);
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

@@ -1,0 +1,1179 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/tx4",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "TX Series",
+  "models": [
+    "TX4S",
+    "TX4M",
+    "TX4W",
+    "TX4H",
+    "TX4L",
+    "TX4N"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "오토닉스 TX 시리즈 PID 온도 조절기 (RS485 모델)",
+    "en": "Autonics TX Series PID temperature controller (RS485 models)"
+  },
+  "summary": {
+    "ko": "LCD 표시 단일 출력 PID 온도 조절기. 옵션 T·B 모델만 RS485 Modbus RTU. 코일(RUN/STOP·AT·경보 해제), 입력 레지스터(PV·SV·표시 상태), 보유 레지스터(SV·PID·입력·경보·통신)를 담았다.",
+    "en": "Single-output PID temperature controller. Only option T/B models have RS485 Modbus RTU. Covers coils (RUN/STOP, AT, alarm reset), input registers (PV, SV, indicators) and holding registers (SV, PID, input, alarm, comm)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 2,
+    "unit": 1,
+    "unitRange": [
+      1,
+      127
+    ],
+    "notes": [
+      {
+        "ko": "통신 기본값: 통신 매뉴얼 p.31 (ADRS 기본 1·범위 1~127, BPS 기본 2=9600, PRTY 기본 NONE, STP 기본 2, 응답 대기 20 ms). 데이터 8비트 고정·지원 속도는 제품 매뉴얼(TCD250010AE) p.2 «Communication Interface».",
+        "en": "Defaults from comm manual p.31 (ADRS 1, range 1-127; BPS 2=9600; NONE; stop 2; 20 ms). 8 data bits fixed and speed list from product manual TCD250010AE p.2."
+      },
+      {
+        "ko": "매뉴얼은 «400001 (0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 프레임 주소로 썼다(통신 매뉴얼 p.23~31). 프레임 예시(p.12~20)는 바이트 자리만 있고 숫자 예는 없다.",
+        "en": "Manual writes «400001 (0000)»: 1-based reference + hex comm address; first entries are (0000), so the parenthesized value is used as the 0-based wire address (pp.23-31). Frame examples show layout only."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "000001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "제어 출력 RUN/STOP",
+        "en": "Control output RUN/STOP"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.23 표 2.1",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "000002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "오토튜닝 실행/정지",
+        "en": "Auto-tuning run/stop"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 표 2.1",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "000003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "경보 출력 해제",
+        "en": "Alarm output reset"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 표 2.1",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "301001 (03E8)",
+      "type": "s16",
+      "name": {
+        "ko": "현재값 PV",
+        "en": "Present value (PV)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": -1999,
+        "max": 9999
+      },
+      "values": [
+        {
+          "value": 31000,
+          "ko": "OPEN(센서 단선)",
+          "en": "OPEN"
+        },
+        {
+          "value": 30000,
+          "ko": "HHHH(상한 초과)",
+          "en": "HHHH (high)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(하한 미만)",
+          "en": "LLLL (low)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 위치는 입력 설정에 따름 — 소수점 레지스터 301002(03E9) 참조.",
+        "en": "Decimal point depends on input type — see 301002(03E9)."
+      },
+      "ref": "p.26 표 2.3",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1001,
+      "manualAddress": "301002 (03E9)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치 (DOT)",
+        "en": "Decimal point (DOT)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        }
+      ],
+      "ref": "p.26 표 2.3",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1002,
+      "manualAddress": "301003 (03EA)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 단위 (UNIT)",
+        "en": "Display unit (UNIT)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "p.26 표 2.3",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1003,
+      "manualAddress": "301004 (03EB)",
+      "type": "s16",
+      "name": {
+        "ko": "설정값 SV(읽기)",
+        "en": "Set value SV (read)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "L-SV~H-SV 안. 소수점 위치는 입력 설정에 따름(301002).",
+        "en": "Within L-SV..H-SV. Decimal point per input type (301002)."
+      },
+      "ref": "p.26 표 2.3",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1004,
+      "manualAddress": "301005 (03EC)",
+      "type": "u16",
+      "name": {
+        "ko": "전면 표시등 상태 비트",
+        "en": "Front indicator bits"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "℃ 표시등",
+          "en": "°C indicator"
+        },
+        {
+          "bit": 1,
+          "ko": "℉ 표시등",
+          "en": "°F indicator"
+        },
+        {
+          "bit": 2,
+          "ko": "제어 출력(OUT)",
+          "en": "OUT indicator"
+        },
+        {
+          "bit": 3,
+          "ko": "오토튜닝(AT)",
+          "en": "AT indicator"
+        },
+        {
+          "bit": 4,
+          "ko": "경보 출력 1(AL1)",
+          "en": "AL1 indicator"
+        },
+        {
+          "bit": 5,
+          "ko": "경보 출력 2(AL2)",
+          "en": "AL2 indicator"
+        }
+      ],
+      "ref": "p.26 표 2.3, p.27 «Bit data consistence of 301005 (03EC)»",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001 (0000)",
+      "type": "s16",
+      "name": {
+        "ko": "설정값 SV",
+        "en": "Set value (SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "L-SV~H-SV 안. 소수점 위치는 입력 설정에 따름(입력 레지스터 301002).",
+        "en": "Within L-SV..H-SV. Decimal point per input type (input reg 301002)."
+      },
+      "ref": "p.28 표 2.4.1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "400051(0032)",
+      "type": "s16",
+      "name": {
+        "ko": "경보 1 설정 (AL1)",
+        "en": "Alarm 1 setting (AL1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "편차 경보: -F.S.~F.S., 절대값 경보: 온도 범위 안. 소수점은 입력 설정에 따름.",
+        "en": "Deviation: -F.S..F.S.; absolute: within temperature range. Decimal per input type."
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "400052(0033)",
+      "type": "s16",
+      "name": {
+        "ko": "경보 2 설정 (AL2)",
+        "en": "Alarm 2 setting (AL2)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "편차 경보: -F.S.~F.S., 절대값 경보: 온도 범위 안. 소수점은 입력 설정에 따름.",
+        "en": "Deviation: -F.S..F.S.; absolute: within temperature range. Decimal per input type."
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 52,
+      "manualAddress": "400053(0034)",
+      "type": "u16",
+      "name": {
+        "ko": "오토튜닝 (AT)",
+        "en": "Auto-tuning (AT)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "400054(0035)",
+      "type": "u16",
+      "name": {
+        "ko": "비례대 (P)",
+        "en": "Proportional band (P)"
+      },
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 999.9
+      },
+      "description": {
+        "ko": "원시 1~9999 = 0.1~999.9 ℃/℉.",
+        "en": "Raw 1-9999 = 0.1-999.9 °C/°F."
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 54,
+      "manualAddress": "400055(0036)",
+      "type": "u16",
+      "name": {
+        "ko": "적분 시간 (I)",
+        "en": "Integral time (I)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 55,
+      "manualAddress": "400056(0037)",
+      "type": "u16",
+      "name": {
+        "ko": "미분 시간 (D)",
+        "en": "Derivative time (D)"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 56,
+      "manualAddress": "400057(0038)",
+      "type": "u16",
+      "name": {
+        "ko": "수동 리셋 (REST)",
+        "en": "Manual reset (REST)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 57,
+      "manualAddress": "400058(0039)",
+      "type": "u16",
+      "name": {
+        "ko": "히스테리시스 (HYS)",
+        "en": "Hysteresis (HYS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "1~100 (소수점 없는 입력) 또는 1~500 = 0.1~50.0 (0.1 입력). 배율은 입력 설정에 따름.",
+        "en": "1-100 (integer input) or 1-500 = 0.1-50.0 (0.1 input). Scaling follows input type."
+      },
+      "ref": "p.29 표 2.4.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "400101(0064)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 센서 (IN-T)",
+        "en": "Input sensor (IN-T)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "K(CA) 1℃ 단위 KCA.H",
+          "en": "K (CA), 1 digit, KCA.H"
+        },
+        {
+          "value": 1,
+          "ko": "K(CA) 0.1℃ 단위 KCA.L",
+          "en": "K (CA), 0.1, KCA.L"
+        },
+        {
+          "value": 2,
+          "ko": "J(IC) 1 JIC.H",
+          "en": "J (IC), 1, JIC.H"
+        },
+        {
+          "value": 3,
+          "ko": "J(IC) 0.1 JIC.L",
+          "en": "J (IC), 0.1, JIC.L"
+        },
+        {
+          "value": 4,
+          "ko": "L(IC) 1 LIC.H",
+          "en": "L (IC), 1, LIC.H"
+        },
+        {
+          "value": 5,
+          "ko": "L(IC) 0.1 LIC.L",
+          "en": "L (IC), 0.1, LIC.L"
+        },
+        {
+          "value": 6,
+          "ko": "T(CC) 1 TCC.H",
+          "en": "T (CC), 1, TCC.H"
+        },
+        {
+          "value": 7,
+          "ko": "T(CC) 0.1 TCC.L",
+          "en": "T (CC), 0.1, TCC.L"
+        },
+        {
+          "value": 8,
+          "ko": "R(PR) 1 RPR",
+          "en": "R (PR), 1, RPR"
+        },
+        {
+          "value": 9,
+          "ko": "S(PR) 1 SPR",
+          "en": "S (PR), 1, SPR"
+        },
+        {
+          "value": 10,
+          "ko": "DPt100Ω 1 DPT.H",
+          "en": "DPt100, 1, DPT.H"
+        },
+        {
+          "value": 11,
+          "ko": "DPt100Ω 0.1 DPT.L",
+          "en": "DPt100, 0.1, DPT.L"
+        },
+        {
+          "value": 12,
+          "ko": "Cu50Ω 1 CUS.H",
+          "en": "Cu50, 1, CUS.H"
+        },
+        {
+          "value": 13,
+          "ko": "Cu50Ω 0.1 CUS.L",
+          "en": "Cu50, 0.1, CUS.L"
+        }
+      ],
+      "description": {
+        "ko": "값마다 소수점(1 또는 0.1)이 정해진다 — PV·SV 등 온도 값 배율이 이걸 따른다.",
+        "en": "Each code fixes the decimal (1 or 0.1); temperature values follow it."
+      },
+      "ref": "p.30 표 2.4.3, p.32 Table 1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 101,
+      "manualAddress": "400102(0065)",
+      "type": "u16",
+      "name": {
+        "ko": "온도 단위 (UNIT)",
+        "en": "Temperature unit (UNIT)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "400103(0066)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 보정 (IN-B)",
+        "en": "Input correction (IN-B)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "-999~999, 0.1 입력이면 원시 -1999~9999 = -199.9~999.9. 배율은 입력 설정에 따름.",
+        "en": "-999..999; with 0.1 input raw -1999..9999 = -199.9..999.9. Scaling follows input type."
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "400104(0067)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 디지털 필터 (MAV.F)",
+        "en": "Input digital filter (MAV.F)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 120
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 104,
+      "manualAddress": "400105(0068)",
+      "type": "s16",
+      "name": {
+        "ko": "SV 하한 (L-SV)",
+        "en": "SV low limit (L-SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "범위는 입력 종류 표(p.32)를 따름. 소수점은 입력 설정에 따름.",
+        "en": "Range per input type table (p.32); decimal per input type."
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 105,
+      "manualAddress": "400106(0069)",
+      "type": "s16",
+      "name": {
+        "ko": "SV 상한 (H-SV)",
+        "en": "SV high limit (H-SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "범위는 입력 종류 표(p.32)를 따름. 소수점은 입력 설정에 따름.",
+        "en": "Range per input type table (p.32); decimal per input type."
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 106,
+      "manualAddress": "400107(006A)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 출력 모드 (O-FT)",
+        "en": "Control output mode (O-FT)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "가열",
+          "en": "HEAT"
+        },
+        {
+          "value": 1,
+          "ko": "냉각",
+          "en": "COOL"
+        }
+      ],
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 107,
+      "manualAddress": "400108(006B)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 방식 (C-MD)",
+        "en": "Control method (C-MD)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "PID",
+          "en": "PID"
+        },
+        {
+          "value": 1,
+          "ko": "ON/OFF",
+          "en": "ON/OFF"
+        }
+      ],
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 111,
+      "manualAddress": "400112(006F)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 주기 (T)",
+        "en": "Control cycle (T)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.5,
+        "max": 120
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 112,
+      "manualAddress": "400113(0070)",
+      "type": "u16",
+      "name": {
+        "ko": "경보 1 동작 (AL-1)",
+        "en": "Alarm 1 operation (AL-1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "경보 1 동작 방식 코드(매뉴얼 Table 2, pp.33-34). 레지스터 값과 표 표기의 대응이 매뉴얼에서 분명하지 않아 값 뜻은 넣지 않았다.",
+        "en": "Alarm 1 mode code (manual Table 2, pp.33-34). How the register value maps to the table notation is not explicit in the manual, so value meanings are omitted."
+      },
+      "ref": "p.30 표 2.4.3, pp.33-34 Table 2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 113,
+      "manualAddress": "400114(0071)",
+      "type": "u16",
+      "name": {
+        "ko": "경보 2 동작 (AL-2)",
+        "en": "Alarm 2 operation (AL-2)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "코드는 AL-1 과 같다(Table 2, 16진). 공장 기본 «20: AM2.A» = 0x20.",
+        "en": "Same codes as AL-1 (Table 2, hex). Default «20: AM2.A» = 0x20."
+      },
+      "ref": "p.30 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 119,
+      "manualAddress": "400120(0077)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 국번 (ADRS)",
+        "en": "Comm address (ADRS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 127
+      },
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 120,
+      "manualAddress": "400121(0078)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도 (BPS)",
+        "en": "Comm speed (BPS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 3,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 4,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 121,
+      "manualAddress": "400122(0079)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티 (PRTY)",
+        "en": "Parity (PRTY)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "NONE"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "EVEN"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "ODD"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 122,
+      "manualAddress": "400123(007A)",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트 (STP)",
+        "en": "Stop bit (STP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 bits"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 123,
+      "manualAddress": "400124(007B)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간 (RSW.T)",
+        "en": "Response waiting time (RSW.T)"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 124,
+      "manualAddress": "400125(007C)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기 허용 (COMW)",
+        "en": "Comm write enable (COMW)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "허용(EN.A)",
+          "en": "Enabled (EN.A)"
+        },
+        {
+          "value": 1,
+          "ko": "금지(DIS.A)",
+          "en": "Disabled (DIS.A)"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 125,
+      "manualAddress": "400126(007D)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 키 (DI-K)",
+        "en": "Digital input key (DI-K)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        },
+        {
+          "value": 2,
+          "ko": "경보 해제(AL.RE)",
+          "en": "Alarm reset (AL.RE)"
+        },
+        {
+          "value": 3,
+          "ko": "오토튜닝(AT)",
+          "en": "AT"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 127,
+      "manualAddress": "400128(007F)",
+      "type": "u16",
+      "name": {
+        "ko": "잠금 (LOC)",
+        "en": "Lock (LOC)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "LOC1",
+          "en": "LOC1"
+        },
+        {
+          "value": 2,
+          "ko": "LOC2",
+          "en": "LOC2"
+        },
+        {
+          "value": 3,
+          "ko": "LOC3",
+          "en": "LOC3"
+        }
+      ],
+      "ref": "p.31 표 2.4.3",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS485 는 옵션 T(경보1+RS485)·B(경보1+경보2+RS485) 모델만(제품 매뉴얼 p.2 주문 정보). 주문표는 모든 크기·옵션 조합이 있지는 않다고 적는다 — models 목록은 시리즈 크기이며 크기별 RS485 유무는 확인하지 않았다.",
+      "en": "RS485 only on option T (AL1+RS485) and B (AL1+AL2+RS485) models (product manual p.2). Not all size/option combinations exist; per-size RS485 availability not verified."
+    },
+    {
+      "ko": "입력 접점(1x) 100001(0000)~100006(0005) 은 입력 레지스터 301005 비트 0~5 와 같은 항목·순서다(p.24) — 레지스터 쪽만 넣었다.",
+      "en": "Discrete inputs 100001(0000)-100006(0005) mirror bits 0-5 of input reg 301005 (p.24); only the register is included."
+    },
+    {
+      "ko": "온도 값(PV·SV·경보·L-SV·H-SV·IN-B)의 소수점은 IN-T(400101) 가 0.1 형이면 한 자리 — 301002 로 확인.",
+      "en": "Temperature values have one decimal when IN-T is a 0.1 type — check 301002."
+    }
+  ],
+  "sources": [
+    {
+      "title": "TX Series Communication Manual MCT-TXC1-V1.7_EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCT-TXC1-V1.7_EN (PDF 작성 2026-07-10)",
+        "en": "MCT-TXC1-V1.7_EN (PDF created 2026-07-10)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/526426",
+      "pages": {
+        "ko": "pp.23-34 (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.23-34 (printed page = PDF page)"
+      },
+      "checked": "2026-10-19"
+    },
+    {
+      "title": "LCD PID Temperature Controllers TX Series PRODUCT MANUAL TCD250010AE",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "TX_EN_TCD250010AE_20260715",
+        "en": "TX_EN_TCD250010AE_20260715"
+      },
+      "url": "https://www.autonics.com/glb/common/download/526424",
+      "pages": {
+        "ko": "p.2 주문 정보·Communication Interface",
+        "en": "p.2 ordering information, Communication Interface"
+      },
+      "checked": "2026-10-19"
+    }
+  ]
+}

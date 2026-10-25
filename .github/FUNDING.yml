@@ -1,0 +1,9 @@
+# 후원 단추(GitHub 저장소 머리의 «Sponsor») — 지금은 후원 계정이 없어 비워 둔다.
+# 계정이 생기면 해당 줄의 주석(#)을 풀고 값을 넣는다. shared/links.ts 의 SPONSOR_URL 도 같은 주소로 맞춘다
+# (앱 설정 창·사이트 푸터·내려받기 페이지의 «후원» 링크가 그 값으로 나타난다).
+# 형식: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+#
+# github: [사용자이름]
+# ko_fi: 사용자이름
+# buy_me_a_coffee: 사용자이름
+# custom: ["https://..."]

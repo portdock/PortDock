@@ -1,0 +1,259 @@
+---
+// 웹 도구: 4–20mA 루프 부하 계산기 — 2선식 전송기의 전원 전압·최소 동작 전압·입력 저항·선 저항으로 남는 전압과 최대 부하·최대 거리(lib/loopLoad.ts).
+// 옴의 법칙만 쓴다. 전송기 최소 전압·부하 그림 전류는 전송기 매뉴얼 값을 넣게 하고, 기본값은 예시라고 밝힌다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { IEC_SIZES, AWGS, awg, awgName } from "../lib/wire";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/loop-load/";
+const SIZES = [...IEC_SIZES.filter((a) => a <= 2.5).map((a) => ({ v: a, n: `${a} mm²` })), ...AWGS.filter((n) => n >= 14 && n <= 24).map((n) => ({ v: awg(n).area, n: `${awgName(n)} (${awg(n).area.toFixed(3)} mm²)` }))];
+const L = ko
+  ? {
+      title: "4–20mA 루프 부하 계산기",
+      desc: "2선식 4–20mA 루프의 전원 전압으로 입력 저항(250 Ω)·선 저항·표시기를 감당할 수 있는지, 전송기에 남는 전압과 최대 부하 저항·최대 케이블 거리를 계산합니다.",
+      supply: "루프 전원(V)",
+      txMin: "전송기 최소 동작 전압(V)",
+      iMax: "확인할 최대 전류(mA)",
+      rIn: "입력 저항(Ω)",
+      rOther: "그 밖의 저항(Ω) — 표시기·절연기",
+      vOther: "그 밖의 전압 강하(V) — 배리어·루프 표시기",
+      len: "편도 케이블 거리(m)",
+      size: "선 굵기",
+      temp: "선 온도(°C)",
+      res: "결과",
+      k: {
+        rWire: "선 왕복 저항",
+        rTotal: "루프 저항 합계",
+        vTx: "최대 전류에서 전송기 단자 전압",
+        margin: "남는 전압(여유)",
+        rMax: "허용 최대 부하 저항",
+        minSupply: "필요한 최소 전원 전압",
+        maxLen: "이 굵기로 갈 수 있는 최대 편도 거리",
+        vIn: "입력 저항 양단 전압(4 mA · 20 mA)",
+      },
+      ok: "충분 — 최대 전류에서도 전송기 최소 전압보다 높습니다",
+      ng: "모자람 — 상한 근처에서 전류가 더 오르지 못하고 멈출 수 있습니다",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      example: "기본값(24 V, 최소 12 V, 20 mA, 250 Ω, 0.75 mm² 100 m)은 예시입니다. 전송기 최소 동작 전압과 부하 그림의 전류는 쓰는 전송기 매뉴얼의 «전원 전압» 이나 «부하(load)» 항목에서 확인해 넣으세요.",
+      fTitle: "계산식",
+      formula: [
+        "선 왕복 저항 = 2 × ρ × 편도 거리 ÷ 단면적   (구리 ρ20 = 1/58 Ω·mm²/m)",
+        "루프 저항 = 입력 저항 + 선 왕복 저항 + 그 밖의 저항",
+        "전송기 단자 전압 = 전원 − 최대 전류 × 루프 저항 − 그 밖의 전압 강하",
+        "최대 부하 저항 = (전원 − 전송기 최소 전압 − 그 밖의 전압 강하) ÷ 최대 전류",
+      ],
+      fNote: "예: 24 V 전원, 전송기 최소 12 V, 20 mA 면 최대 부하는 (24 − 12) ÷ 0.02 = 600 Ω 입니다. 250 Ω 입력 저항을 빼면 선과 표시기에 350 Ω 이 남습니다.",
+      whyTitle: "왜 «최대 전류» 로 보나",
+      why: "루프 저항에서 떨어지는 전압은 전류에 비례하므로, 전송기에 남는 전압은 전류가 가장 클 때 가장 작습니다. 그래서 상한 20 mA 에서 계산합니다. 전송기가 고장을 21 mA 이상으로 알리게 설정돼 있다면(NAMUR NE 43) 그 전류에서도 루프가 버텨야 고장 신호가 제대로 전달되므로, 최대 전류 칸에 그 값을 넣어 봅니다. 전송기 매뉴얼의 부하 그림(load diagram)이 어떤 전류로 그려졌는지도 함께 봅니다.",
+      symTitle: "전압이 모자랄 때 증상",
+      sym: [
+        "값이 낮은 쪽에서는 맞다가 상한 근처에서 더 오르지 않고 멈춥니다(예: 18 mA 에서 고정).",
+        "선을 늘리거나 표시기·절연기를 하나 더 넣은 뒤부터 상한이 안 나옵니다.",
+        "전원 전압이 떨어지는 때(다른 부하가 켜질 때)만 값이 깎입니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["250 Ω 을 넣으면 왜 1–5 V 가 되나요?", "옴의 법칙으로 4 mA × 250 Ω = 1 V, 20 mA × 250 Ω = 5 V 입니다. 전압 입력만 있는 장비에서 4–20 mA 를 받을 때 이 저항을 씁니다."],
+        ["전원 24 V 로 몇 m 까지 보낼 수 있나요?", "전송기 최소 전압과 입력 저항에 따라 다릅니다. 최소 12 V·250 Ω·20 mA 면 선에 350 Ω 까지 쓸 수 있고, 0.75 mm² 구리선(왕복 약 0.046 Ω/m)이면 편도 약 7.6 km 로, 거리보다는 표시기·배리어 같은 다른 부품이 먼저 한계가 되는 경우가 많습니다."],
+        ["4선식 전송기도 이 계산을 쓰나요?", "4선식(능동 출력)은 전송기가 따로 전원을 받아 전류를 냅니다. 전원 전압 대신 전송기 출력의 «최대 부하 저항» 사양과 루프 저항 합계를 비교하면 됩니다."],
+      ],
+      scaleNote: "전류를 공학값·PLC 카운트로 바꾸려면",
+      scaleLink: "4–20mA 환산 계산기",
+    }
+  : {
+      title: "4–20 mA Loop Load Calculator",
+      desc: "Can a 2-wire 4–20 mA loop supply drive the 250 Ω input, cable and indicators? Voltage left at the transmitter, maximum load resistance and cable length.",
+      supply: "Loop supply (V)",
+      txMin: "Transmitter minimum voltage (V)",
+      iMax: "Maximum current to check (mA)",
+      rIn: "Input resistor (Ω)",
+      rOther: "Other resistance (Ω) — indicators, isolators",
+      vOther: "Other voltage drop (V) — barriers, loop displays",
+      len: "One-way cable length (m)",
+      size: "Wire size",
+      temp: "Wire temperature (°C)",
+      res: "Results",
+      k: {
+        rWire: "Cable loop resistance",
+        rTotal: "Total loop resistance",
+        vTx: "Transmitter terminal voltage at max current",
+        margin: "Voltage margin",
+        rMax: "Maximum load resistance",
+        minSupply: "Minimum supply voltage needed",
+        maxLen: "Maximum one-way length with this wire",
+        vIn: "Voltage across the input resistor (4 mA · 20 mA)",
+      },
+      ok: "Enough — the transmitter stays above its minimum voltage at maximum current",
+      ng: "Not enough — the current may stall below the top of the range",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      example: "The defaults (24 V, 12 V minimum, 20 mA, 250 Ω, 0.75 mm² over 100 m) are an example. Take the transmitter's minimum voltage and the current of its load diagram from the «supply voltage» or «load» section of its manual.",
+      fTitle: "Formulas",
+      formula: [
+        "Cable loop resistance = 2 × ρ × one-way length ÷ cross-section   (copper ρ20 = 1/58 Ω·mm²/m)",
+        "Loop resistance = input resistor + cable + other resistance",
+        "Transmitter voltage = supply − max current × loop resistance − other voltage drop",
+        "Maximum load = (supply − transmitter minimum − other voltage drop) ÷ max current",
+      ],
+      fNote: "Example: with a 24 V supply, a 12 V transmitter minimum and 20 mA, the maximum load is (24 − 12) ÷ 0.02 = 600 Ω. After a 250 Ω input resistor, 350 Ω is left for cable and indicators.",
+      whyTitle: "Why check at maximum current",
+      why: "The voltage lost in the loop resistance grows with current, so the transmitter has the least voltage at the highest current — hence the check at 20 mA. If the transmitter is set to signal failures at 21 mA or more (NAMUR NE 43), the loop must carry that current too for the failure signal to arrive, so try that value. Also check which current the load diagram in the transmitter manual assumes.",
+      symTitle: "Symptoms of too little voltage",
+      sym: [
+        "Readings are right at the low end but stop rising near the top (stuck at, say, 18 mA).",
+        "The top of the range disappeared after lengthening the cable or adding an indicator or isolator.",
+        "Values are clipped only when the supply sags (when other loads switch on).",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Why does a 250 Ω resistor give 1–5 V?", "Ohm's law: 4 mA × 250 Ω = 1 V and 20 mA × 250 Ω = 5 V. It is how a voltage-only input reads a 4–20 mA signal."],
+        ["How far can I run a loop on 24 V?", "It depends on the transmitter minimum voltage and input resistor. With 12 V minimum, 250 Ω and 20 mA the cable may use up to 350 Ω; with 0.75 mm² copper (about 0.046 Ω/m out and back) that is about 7.6 km one way, so indicators and barriers usually run out first."],
+        ["Does this apply to 4-wire transmitters?", "A 4-wire (active output) transmitter has its own supply and drives the current. Compare the total loop resistance with the «maximum load» in its output specification instead of a supply voltage."],
+      ],
+      scaleNote: "To convert the current to engineering units or PLC counts, use the",
+      scaleLink: "4–20 mA Scaling Calculator",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "4–20mA 루프 부하 계산기 — 전원 전압·250Ω·케이블 거리 — PortDock" : "4–20 mA Loop Load Calculator: Supply, 250 Ω, Cable — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ll" data-t={JSON.stringify({ ok: L.ok, ng: L.ng })}>
+      <div class="row">
+        <label class="fld">{L.supply}<input id="supply" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.txMin}<input id="txMin" class="mono" value="12" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.iMax}<input id="iMax" class="mono" value="20" list="imax" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="imax"><option value="20" /><option value="20.5" /><option value="21" /><option value="22" /></datalist>
+        </label>
+        <label class="fld">{L.rIn}<input id="rIn" class="mono" value="250" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.rOther}<input id="rOther" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.vOther}<input id="vOther" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.len}<input id="len" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.size}<select id="area">{SIZES.map((s) => <option value={s.v} selected={s.v === 0.75}>{s.n}</option>)}</select></label>
+        <label class="fld">{L.temp}<input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <figure class="fig">
+        <img src={fig} width="780" height="300" alt={ko ? "2선식 4–20mA 루프: 24 V 전원에서 전송기, 선 저항, 250 Ω 입력 저항을 지나 돌아오는 직렬 회로와 각 부분의 전압 몫" : "Two-wire 4–20 mA loop: a 24 V supply, the transmitter, cable resistance and a 250 Ω input resistor in series, with the voltage share of each part"} loading="lazy" decoding="async" />
+        <figcaption>{ko ? "전원 전압은 전송기·선·입력 저항이 나눠 씁니다. 20 mA 에서 250 Ω 이 5 V, 0.75 mm² 선 편도 1 km(왕복 약 46 Ω)가 약 0.9 V 를 쓰면 전송기에 약 18.1 V 가 남습니다." : "The supply is shared by the transmitter, cable and input resistor. At 20 mA, 250 Ω takes 5 V and 1 km of 0.75 mm² cable (about 46 Ω out and back) about 0.9 V, leaving about 18.1 V for the transmitter."}</figcaption>
+      </figure>
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.whyTitle}</h2>
+      <p>{L.why}</p>
+      <h2>{L.symTitle}</h2>
+      <ul>{L.sym.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>.
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { loop } from "../lib/loopLoad";
+    const form = document.getElementById("ll") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { ok: string; ng: string };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim();
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 2) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const ko = document.documentElement.lang === "ko";
+    function run() {
+      const err = $("err");
+      const verdict = $("verdict");
+      try {
+        const r = loop({
+          supply: num("supply"),
+          txMin: num("txMin"),
+          iMax: num("iMax") / 1000,
+          rIn: num("rIn"),
+          rOther: num("rOther"),
+          vOther: num("vOther"),
+          lengthM: num("len"),
+          areaMm2: Number($<HTMLSelectElement>("area").value),
+          material: "cu",
+          tempC: num("temp"),
+        });
+        err.textContent = "";
+        set("rWire", `${fx(r.rWire)} Ω`);
+        set("rTotal", `${fx(r.rTotal)} Ω`);
+        set("vTx", `${fx(r.vTx)} V`);
+        set("margin", `${fx(r.margin)} V`);
+        set("rMax", `${fx(r.rMax, 1)} Ω`);
+        set("minSupply", `${fx(r.minSupply)} V`);
+        set("maxLen", `${fx(r.maxLength, 0)} m`);
+        set("vIn", `${fx(r.vIn4)} V · ${fx(r.vIn20)} V`);
+        verdict.className = "verdict " + (r.ok ? "ok" : "fault");
+        verdict.textContent = r.ok ? T.ok : T.ng;
+      } catch {
+        err.textContent = ko ? "숫자를 확인하세요 — 전류는 0 보다 크고, 저항·전압 강하는 0 이상" : "Check the numbers — current above 0, resistances and drops 0 or more";
+        verdict.textContent = "";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock Net Scan (N) — 배경: 앱 색, 흰 글자 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#15803d"/>
+  <g transform="translate(128 110) scale(0.88) translate(-128 -114)" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 178 V50 L172 178 V50"/>
+  </g>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

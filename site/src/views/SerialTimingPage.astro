@@ -1,0 +1,357 @@
+---
+// 웹 도구: 시리얼 통신 시간 계산기 — 보율·문자 형식 → 비트·문자 시간, Modbus RTU t1.5·t3.5, 프레임 시간, 폴링 주기(lib/serialTiming.ts).
+// 숫자 근거는 Modbus over serial line V1.02 규격(§2.4.1·§2.5.1·§2.5.1.1)과 Application Protocol V1.1b3. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { BAUDS, fmtTime, poll, timing, type CharFormat } from "../lib/serialTiming";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/serial-timing/";
+const E1: CharFormat = { dataBits: 8, parity: "even", stopBits: 1 };
+// 정적 표: 보율별 문자 시간·t3.5·FC03 10 레지스터 한 거래(슬레이브 처리 0) — 8E1(11 비트)
+const rows = BAUDS.map((b) => {
+  const t = timing(b, E1);
+  const p = poll({ baud: b, format: E1, fc: 3, qty: 10, slaveDelay: 0, masterGap: 0, transactions: 1 });
+  return { b, char: fmtTime(t.char), t15: fmtTime(t.t15), t35: fmtTime(t.t35), fixed: t.fixed, cps: Math.floor(t.charsPerSec), tr: fmtTime(p.transaction) };
+});
+const L = ko
+  ? {
+      title: "시리얼 통신 시간 계산기",
+      desc: "보율·패리티·정지 비트로 문자 시간, Modbus RTU 의 3.5 문자(t3.5)·1.5 문자(t1.5), 요청·응답 전송 시간, 장비 여러 대 폴링 주기와 응답 타임아웃 하한을 계산합니다.",
+      baud: "보율(bps)",
+      data: "데이터 비트",
+      parity: "패리티",
+      pN: "없음(N)",
+      pE: "짝수(E)",
+      pO: "홀수(O)",
+      stop: "정지 비트",
+      fc: "함수 코드",
+      qty: "개수(레지스터·코일)",
+      delay: "슬레이브 처리 시간(ms)",
+      gap: "마스터 추가 쉼(ms)",
+      n: "한 바퀴 거래 수(장비 × 요청)",
+      res: "결과",
+      k: {
+        bits: "한 문자 비트 수",
+        bit: "비트 시간",
+        char: "문자(바이트) 시간",
+        cps: "초당 최대 바이트",
+        t15: "t1.5 — 문자 사이 허용 틈",
+        t35: "t3.5 — 프레임 사이 최소 쉼",
+        req: "요청",
+        resp: "정상 응답",
+        exc: "예외 응답(5 바이트)",
+        tr: "거래 하나(요청+처리+응답+t3.5+쉼)",
+        cyc: "한 바퀴",
+        rate: "초당 거래 수",
+        to: "응답 타임아웃 하한(처리+응답)",
+        use: "선로 사용률",
+      },
+      bytes: "바이트",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fixedNote: "19200 bps 를 넘으면 규격 권장대로 t1.5 = 750 µs, t3.5 = 1.75 ms 고정값입니다.",
+      notRtu: "이 문자 형식은 11 비트가 아닙니다. Modbus RTU 규격의 문자는 8 데이터 비트 + 패리티 1 + 정지 1(패리티 없음이면 정지 2) = 11 비트입니다. 장비가 8N1 을 쓰면 양쪽을 같게 맞추기만 하면 통신은 되지만, 규격 밖입니다.",
+      usb: "USB-시리얼 변환기를 쓰면 받은 바이트가 묶여서 PC 에 넘어갑니다(FTDI 기본 16 ms). 타임아웃·프레임 구분이 이 계산보다 그만큼 늦어질 수 있습니다.",
+      fTitle: "계산식",
+      formula: [
+        "한 문자 비트 = 시작 1 + 데이터(7·8) + 패리티(0·1) + 정지(1·2)",
+        "문자 시간 = 비트 수 ÷ 보율   · 9600 bps 8E1 이면 11 ÷ 9600 = 1.146 ms",
+        "t1.5 = 1.5 × 문자 시간, t3.5 = 3.5 × 문자 시간 (19200 bps 이하)",
+        "전송 시간 = 바이트 수 × 문자 시간",
+        "거래 = 요청 + 슬레이브 처리 + 응답 + t3.5 + 마스터 쉼",
+      ],
+      fNote: "RTU 프레임은 바이트 사이에 1.5 문자보다 긴 틈이 생기면 깨진 것으로 보고, 3.5 문자 이상 조용하면 프레임이 끝난 것으로 봅니다. 그래서 보낼 때는 바이트를 쉬지 않고 이어 보내고, 프레임 사이에는 적어도 t3.5 를 쉽니다.",
+      frameTitle: "함수별 RTU 프레임 길이",
+      frameHead: ["함수", "요청 바이트", "정상 응답 바이트", "개수 한도"],
+      frameRows: [
+        ["01·02 코일·입력 읽기", "8", "5 + ⌈N ÷ 8⌉", "2000"],
+        ["03·04 레지스터 읽기", "8", "5 + 2N", "125"],
+        ["05·06 단일 쓰기", "8", "8 (요청 되돌림)", "1"],
+        ["0F 여러 코일 쓰기", "9 + ⌈N ÷ 8⌉", "8", "1968"],
+        ["10 여러 레지스터 쓰기", "9 + 2N", "8", "123"],
+      ],
+      tableTitle: "보율별 시간표 (8E1, 11 비트)",
+      tableHead: ["보율", "문자 시간", "t1.5", "t3.5", "초당 바이트", "FC03 10개 거래*"],
+      tableNote: "* 요청 8 + 응답 25 바이트 + t3.5, 슬레이브 처리 시간 0 으로 본 최솟값. 실제 장비는 처리 시간이 더해집니다. 굵은 칸은 규격 권장 고정값.",
+      toTitle: "응답 타임아웃은 얼마로?",
+      to: "규격은 응답 타임아웃(Response time-out)을 «응용에 따라» 정하라고 하고, 9600 bps 에서 보통 1 초~수 초, 방송(국번 0) 뒤 쉼(Turnaround delay)은 보통 100~200 ms 라고 적습니다. 이 계산기의 «타임아웃 하한» 은 슬레이브 처리 시간과 응답 전송 시간을 더한 이론 최솟값이라, 실제 설정은 장비 매뉴얼의 응답 시간과 USB 변환기 지연을 더해 넉넉히 잡습니다.",
+      srcTitle: "출처",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["9600 bps 에서 1 초에 몇 바이트를 보낼 수 있나요?", "8E1·8N2 처럼 한 문자가 11 비트면 9600 ÷ 11 ≈ 872 바이트, 8N1(10 비트)이면 960 바이트가 최대입니다. 실제로는 요청과 응답 사이 처리 시간과 프레임 사이 t3.5 가 더해져 이보다 적습니다."],
+        ["Modbus RTU 3.5 문자 시간은 몇 ms 인가요?", "11 비트 문자로 9600 bps 에서 약 4.01 ms, 19200 bps 에서 약 2.005 ms 입니다. 19200 bps 를 넘으면 규격이 1.75 ms 고정값을 권장합니다."],
+        ["장비 10 대를 폴링하면 한 바퀴가 얼마나 걸리나요?", "«한 바퀴 거래 수» 에 10 을 넣고, 슬레이브 처리 시간에 장비 매뉴얼의 응답 시간(모르면 실측값)을 넣으면 됩니다. 처리 시간이 전송 시간보다 긴 경우가 많아, 보율을 올려도 생각보다 빨라지지 않을 수 있습니다."],
+      ],
+      appNote: "실제 요청·응답 시각과 간격은",
+      appNote2: "의 통신 기록에서 볼 수 있습니다.",
+    }
+  : {
+      title: "Serial Timing Calculator",
+      desc: "From baud, parity and stop bits: character time, Modbus RTU 3.5- and 1.5-character times, request/response time, polling cycle and minimum response timeout.",
+      baud: "Baud rate (bps)",
+      data: "Data bits",
+      parity: "Parity",
+      pN: "None (N)",
+      pE: "Even (E)",
+      pO: "Odd (O)",
+      stop: "Stop bits",
+      fc: "Function code",
+      qty: "Quantity (registers/coils)",
+      delay: "Slave processing time (ms)",
+      gap: "Extra master gap (ms)",
+      n: "Transactions per cycle (devices × requests)",
+      res: "Results",
+      k: {
+        bits: "Bits per character",
+        bit: "Bit time",
+        char: "Character (byte) time",
+        cps: "Max bytes per second",
+        t15: "t1.5 — allowed gap inside a frame",
+        t35: "t3.5 — minimum silence between frames",
+        req: "Request",
+        resp: "Normal response",
+        exc: "Exception response (5 bytes)",
+        tr: "One transaction (req + processing + resp + t3.5 + gap)",
+        cyc: "One cycle",
+        rate: "Transactions per second",
+        to: "Minimum response timeout (processing + response)",
+        use: "Line utilisation",
+      },
+      bytes: "bytes",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fixedNote: "Above 19200 bps the specification recommends fixed values: t1.5 = 750 µs, t3.5 = 1.75 ms.",
+      notRtu: "This character format is not 11 bits. The Modbus RTU character is 8 data bits + 1 parity + 1 stop (2 stop bits with no parity) = 11 bits. If a device uses 8N1 it works as long as both ends match, but it is outside the specification.",
+      usb: "With a USB-serial adapter, received bytes reach the PC in batches (FTDI default 16 ms). Timeouts and frame splitting can lag this calculation by that much.",
+      fTitle: "Formulas",
+      formula: [
+        "Bits per character = start 1 + data (7/8) + parity (0/1) + stop (1/2)",
+        "Character time = bits ÷ baud   · 9600 bps 8E1: 11 ÷ 9600 = 1.146 ms",
+        "t1.5 = 1.5 × character time, t3.5 = 3.5 × character time (up to 19200 bps)",
+        "Transmission time = bytes × character time",
+        "Transaction = request + slave processing + response + t3.5 + master gap",
+      ],
+      fNote: "An RTU receiver treats a gap longer than 1.5 characters inside a frame as an error, and 3.5 characters of silence as the end of the frame. So a sender sends the bytes back to back and waits at least t3.5 between frames.",
+      frameTitle: "RTU frame length by function",
+      frameHead: ["Function", "Request bytes", "Normal response bytes", "Quantity limit"],
+      frameRows: [
+        ["01/02 read coils/inputs", "8", "5 + ⌈N ÷ 8⌉", "2000"],
+        ["03/04 read registers", "8", "5 + 2N", "125"],
+        ["05/06 write single", "8", "8 (echo)", "1"],
+        ["0F write multiple coils", "9 + ⌈N ÷ 8⌉", "8", "1968"],
+        ["10 write multiple registers", "9 + 2N", "8", "123"],
+      ],
+      tableTitle: "Timing by baud rate (8E1, 11 bits)",
+      tableHead: ["Baud", "Char time", "t1.5", "t3.5", "Bytes/s", "FC03 ×10 transaction*"],
+      tableNote: "* Request 8 + response 25 bytes + t3.5 with zero slave processing time — a lower bound. Real devices add processing time. Bold cells are the fixed values recommended by the specification.",
+      toTitle: "What response timeout should I use?",
+      to: "The specification leaves the response timeout to the application and notes it is typically 1 s to several seconds at 9600 bps, with a turnaround delay after a broadcast (address 0) of typically 100–200 ms. The «minimum response timeout» here is the theoretical floor — slave processing plus response transmission — so set the real value with the device's documented response time and any USB adapter latency added, with room to spare.",
+      srcTitle: "Sources",
+      faqTitle: "FAQ",
+      faq: [
+        ["How many bytes per second at 9600 bps?", "With 11-bit characters (8E1 or 8N2) at most 9600 ÷ 11 ≈ 872 bytes; with 8N1 (10 bits) 960 bytes. In practice processing time between request and response and the t3.5 silence between frames make it less."],
+        ["How long is the Modbus RTU 3.5-character time?", "About 4.01 ms at 9600 bps and 2.005 ms at 19200 bps with 11-bit characters. Above 19200 bps the specification recommends a fixed 1.75 ms."],
+        ["How long does a polling cycle over 10 devices take?", "Enter 10 in «Transactions per cycle» and the device's documented response time (or a measured one) as slave processing time. Processing time often exceeds transmission time, so raising the baud rate may help less than expected."],
+      ],
+      appNote: "Real request/response timestamps and gaps are visible in the traffic log of",
+      appNote2: ".",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "MODBUS over serial line specification and implementation guide V1.02 (2006) — §2.4.1, §2.5.1, §2.5.1.1", href: "https://www.modbus.org/modbus-specifications" },
+  { name: "MODBUS Application Protocol Specification V1.1b3 (2012)", href: "https://www.modbus.org/modbus-specifications" },
+];
+const FCS = [1, 2, 3, 4, 5, 6, 15, 16];
+const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "시리얼 통신 시간 계산기 — 보율·Modbus 3.5문자·폴링 — PortDock" : "Serial Timing Calculator: Baud, Modbus t3.5, Polling — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="st" data-lang={lang} data-t={JSON.stringify({ bytes: L.bytes, notRtu: L.notRtu, fixed: L.fixedNote, usb: L.usb })}>
+      <div class="row">
+        <label class="fld">
+          {L.baud}
+          <input id="baud" class="mono" value="9600" list="bauds" inputmode="numeric" spellcheck="false" autocomplete="off" />
+          <datalist id="bauds">{BAUDS.map((b) => <option value={b} />)}</datalist>
+        </label>
+        <label class="fld">
+          {L.data}
+          <select id="data"><option value="8" selected>8</option><option value="7">7</option></select>
+        </label>
+        <label class="fld">
+          {L.parity}
+          <select id="parity"><option value="even" selected>{L.pE}</option><option value="none">{L.pN}</option><option value="odd">{L.pO}</option></select>
+        </label>
+        <label class="fld">
+          {L.stop}
+          <select id="stop"><option value="1" selected>1</option><option value="2">2</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld">
+          {L.fc}
+          <select id="fc">{FCS.map((f) => <option value={f} selected={f === 3}>{fcName(f)}</option>)}</select>
+        </label>
+        <label class="fld">
+          {L.qty}
+          <input id="qty" class="mono" value="10" inputmode="numeric" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.delay}
+          <input id="delay" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.gap}
+          <input id="gap" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" />
+        </label>
+        <label class="fld">
+          {L.n}
+          <input id="n" class="mono" value="5" inputmode="numeric" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv" id="out">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>
+            {Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}
+          </tbody>
+        </table>
+      </div>
+      <p class="verdict warn" id="w1"></p>
+      <p class="verdict" id="w2"></p>
+      <p class="note">{L.usb}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+
+      <h2>{L.tableTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tableHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>
+            {
+              rows.map((r) => (
+                <tr>
+                  <td class="mono">{r.b}</td>
+                  <td class="mono">{r.char}</td>
+                  <td class="mono">{r.fixed ? <b>{r.t15}</b> : r.t15}</td>
+                  <td class="mono">{r.fixed ? <b>{r.t35}</b> : r.t35}</td>
+                  <td class="mono">{r.cps}</td>
+                  <td class="mono">{r.tr}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.tableNote}</p>
+
+      <h2>{L.frameTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.frameHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{L.frameRows.map((r) => <tr>{r.map((c, i) => <td class={i ? "mono" : ""}>{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.toTitle}</h2>
+      <p>{L.to}</p>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>{L.appNote2}
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { bitsPerChar, EXCEPTION_BYTES, bytesTime, fmtTime, isRtuFormat, poll, type CharFormat, type Fc, type Parity } from "../lib/serialTiming";
+    const form = document.getElementById("st") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { bytes: string; notRtu: string; fixed: string };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim();
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    function run() {
+      const err = $("err");
+      const f: CharFormat = { dataBits: Number($<HTMLSelectElement>("data").value) as 7 | 8, parity: $<HTMLSelectElement>("parity").value as Parity, stopBits: Number($<HTMLSelectElement>("stop").value) as 1 | 2 };
+      const baud = num("baud");
+      try {
+        const r = poll({ baud, format: f, fc: Number($<HTMLSelectElement>("fc").value) as Fc, qty: num("qty"), slaveDelay: num("delay") / 1000, masterGap: num("gap") / 1000, transactions: num("n") });
+        err.textContent = "";
+        set("bits", String(bitsPerChar(f)));
+        set("bit", fmtTime(r.t.bit));
+        set("char", fmtTime(r.t.char));
+        set("cps", String(Math.floor(r.t.charsPerSec)));
+        set("t15", fmtTime(r.t.t15));
+        set("t35", fmtTime(r.t.t35));
+        set("req", `${r.req} ${T.bytes} · ${fmtTime(r.reqTime)}`);
+        set("resp", `${r.res} ${T.bytes} · ${fmtTime(r.resTime)}`);
+        set("exc", fmtTime(bytesTime(EXCEPTION_BYTES, baud, f)));
+        set("tr", fmtTime(r.transaction));
+        set("cyc", fmtTime(r.cycle));
+        set("rate", (1 / r.transaction).toFixed(1));
+        set("to", fmtTime(r.minTimeout));
+        set("use", `${(r.busUse * 100).toFixed(0)} %`);
+        $("w1").textContent = isRtuFormat(f) ? "" : T.notRtu;
+        const w2 = $("w2");
+        w2.className = "verdict" + (r.t.fixed ? " ok" : "");
+        w2.textContent = r.t.fixed ? T.fixed : "";
+      } catch {
+        err.textContent = (document.documentElement.lang === "ko" ? "숫자를 확인하세요 — 개수는 함수별 한도(03·04: 125, 10: 123, 01·02: 2000, 0F: 1968) 안, 시간은 0 이상" : "Check the numbers — quantity within the function's limit (03/04: 125, 10: 123, 01/02: 2000, 0F: 1968), times ≥ 0");
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", (e) => {
+      const fc = Number($<HTMLSelectElement>("fc").value);
+      if ((e.target as HTMLElement).id === "fc" && (fc === 5 || fc === 6)) $("qty").value = "1";
+      run();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

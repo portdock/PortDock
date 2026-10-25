@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock Plot (흔들리는 값 선 — 들어오는 숫자를 그림으로) — 배경: 앱 색, 흰 선 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#b91c1c"/>
+  <polyline points="44,128 76,128 100,64 132,172 160,92 184,128 212,128" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

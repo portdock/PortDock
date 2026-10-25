@@ -1,0 +1,31 @@
+{
+  "name": "portdock",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "site"
+  ],
+  "scripts": {
+    "serial": "npm run tauri dev -w portdock-serial",
+    "build:serial": "npm run tauri build -w portdock-serial",
+    "test": "cargo test --workspace",
+    "modbus-slave": "npm run tauri dev -w portdock-modbus-slave",
+    "build:modbus-slave": "npm run tauri build -w portdock-modbus-slave",
+    "tcp": "npm run tauri dev -w portdock-tcp",
+    "build:tcp": "npm run tauri build -w portdock-tcp",
+    "udp": "npm run tauri dev -w portdock-udp",
+    "build:udp": "npm run tauri build -w portdock-udp",
+    "simulator": "npm run tauri dev -w portdock-simulator",
+    "build:simulator": "npm run tauri build -w portdock-simulator",
+    "netscan": "npm run tauri dev -w portdock-netscan",
+    "build:netscan": "npm run tauri build -w portdock-netscan",
+    "modbus-master": "npm run tauri dev -w portdock-modbus-master",
+    "build:modbus-master": "npm run tauri build -w portdock-modbus-master",
+    "scpi": "npm run tauri dev -w portdock-scpi",
+    "build:scpi": "npm run tauri build -w portdock-scpi",
+    "plot": "npm run tauri dev -w portdock-plot",
+    "build:plot": "npm run tauri build -w portdock-plot",
+    "site": "npm run dev -w portdock-site",
+    "build:site": "npm run build -w portdock-site"
+  }
+}

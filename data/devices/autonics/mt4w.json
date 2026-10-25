@@ -1,0 +1,899 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/mt4w",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "MT4W",
+  "models": [
+    "MT4W-DV-□8",
+    "MT4W-DV-□9",
+    "MT4W-DA-□8",
+    "MT4W-DA-□9",
+    "MT4W-AV-□8",
+    "MT4W-AV-□9",
+    "MT4W-AA-□8",
+    "MT4W-AA-□9"
+  ],
+  "kind": "panel-meter",
+  "title": {
+    "ko": "오토닉스 MT4W 4자리 멀티 패널 미터 (RS485 모델)",
+    "en": "Autonics MT4W 4-digit multi panel meter (RS485 models)"
+  },
+  "summary": {
+    "ko": "DC/AC 전압·전류 패널 미터. 출력 코드 8·9 모델만 RS485 Modbus RTU. 측정값·소수점·피크, 비교 출력 상태, 설정(프리셋·입력·통신)을 담았다.",
+    "en": "DC/AC voltage/current panel meter. Only output code 8/9 models have RS485 Modbus RTU. Covers measured value, decimal, peaks, comparator outputs and settings."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 2,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "notes": [
+      {
+        "ko": "통신 기본값: 통신 매뉴얼 «3.1.3 Parameter 2 group» 공장 기본(인쇄 p.31 = PDF p.32): 국번 01, 9600, NONE, 정지 2, 응답 대기 5 ms. 데이터 8비트 고정·지원 속도는 제품 매뉴얼 TCD220015AI p.3 «Communication Interface».",
+        "en": "Defaults from comm manual factory-default table (printed p.31 = PDF p.32): addr 01, 9600, NONE, stop 2, wait 5 ms. 8 data bits and speeds from product manual TCD220015AI p.3."
+      },
+      {
+        "ko": "매뉴얼은 «300001(0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 프레임 주소로 썼다(인쇄 pp.21-23). 프레임 예시(1.1 절)는 바이트 자리만 있고 숫자 예는 없다.",
+        "en": "Manual writes «300001(0000)»: 1-based reference + hex comm address; first entries are (0000), so the parenthesized value is the 0-based wire address (printed pp.21-23). Frame examples show layout only."
+      },
+      {
+        "ko": "브로드캐스트 명령을 지원하지 않는다(통신 매뉴얼 «Communication Protocol», PDF p.6).",
+        "en": "Broadcast is not supported (comm manual, PDF p.6)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "300001(0000)",
+      "type": "s16",
+      "name": {
+        "ko": "측정값",
+        "en": "Measured value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 30000,
+          "ko": "HHHH(STND 상한 초과)",
+          "en": "HHHH (STND over)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(STND 하한 미만)",
+          "en": "LLLL (STND under)"
+        },
+        {
+          "value": 30001,
+          "ko": "d-HH(SCAL 상한 초과)",
+          "en": "d-HH (SCAL over)"
+        },
+        {
+          "value": -30001,
+          "ko": "d-LL(SCAL 하한 미만)",
+          "en": "d-LL (SCAL under)"
+        },
+        {
+          "value": 30002,
+          "ko": "F-HH(FREQ 초과)",
+          "en": "F-HH (FREQ over)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 없는 정수로 온다 — 소수점 위치는 300002(0001). STND 는 -5~110 %, SCAL 은 -1999~9999 표시.",
+        "en": "Integer without decimal point — position in 300002(0001). STND shows -5..110 %, SCAL -1999..9999."
+      },
+      "ref": "인쇄 p.21 표 2.1.1 (PDF p.22)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1,
+      "manualAddress": "300002(0001)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치·표시 모드",
+        "en": "Decimal point / display mode"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "STND 0",
+          "en": "STND 0"
+        },
+        {
+          "value": 1,
+          "ko": "STND 0.0",
+          "en": "STND 0.0"
+        },
+        {
+          "value": 2,
+          "ko": "STND 0.00",
+          "en": "STND 0.00"
+        },
+        {
+          "value": 3,
+          "ko": "STND 0.000",
+          "en": "STND 0.000"
+        },
+        {
+          "value": 256,
+          "ko": "SCAL 0 (0x0100)",
+          "en": "SCAL 0 (0x0100)"
+        },
+        {
+          "value": 257,
+          "ko": "SCAL 0.0 (0x0101)",
+          "en": "SCAL 0.0 (0x0101)"
+        },
+        {
+          "value": 258,
+          "ko": "SCAL 0.00 (0x0102)",
+          "en": "SCAL 0.00 (0x0102)"
+        },
+        {
+          "value": 259,
+          "ko": "SCAL 0.000 (0x0103)",
+          "en": "SCAL 0.000 (0x0103)"
+        },
+        {
+          "value": 512,
+          "ko": "FREQ 0 (0x0200)",
+          "en": "FREQ 0 (0x0200)"
+        },
+        {
+          "value": 513,
+          "ko": "FREQ 0.0 (0x0201)",
+          "en": "FREQ 0.0 (0x0201)"
+        },
+        {
+          "value": 514,
+          "ko": "FREQ 0.00 (0x0202)",
+          "en": "FREQ 0.00 (0x0202)"
+        },
+        {
+          "value": 515,
+          "ko": "FREQ 0.000 (0x0203)",
+          "en": "FREQ 0.000 (0x0203)"
+        }
+      ],
+      "description": {
+        "ko": "상위 바이트 = 모드(0 STND·1 SCAL·2 FREQ), 하위 바이트 = 소수점 자리 수.",
+        "en": "High byte = mode (0 STND, 1 SCAL, 2 FREQ), low byte = decimal places."
+      },
+      "ref": "인쇄 p.21 표 2.1.1",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "300003(0002)",
+      "type": "s16",
+      "name": {
+        "ko": "최고 피크값",
+        "en": "HI peak value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "입력 최대값. 소수점 위치는 300002.",
+        "en": "Max of input. Decimal per 300002."
+      },
+      "ref": "인쇄 p.21 표 2.1.1",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 3,
+      "manualAddress": "300004(0003)",
+      "type": "s16",
+      "name": {
+        "ko": "최저 피크값",
+        "en": "LO peak value"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "입력 최소값. 소수점 위치는 300002.",
+        "en": "Min of input. Decimal per 300002."
+      },
+      "ref": "인쇄 p.21 표 2.1.1",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "300005(0004)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 상태 (HI·GO·LO)",
+        "en": "OUT status (HI, GO, LO)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "HI·GO·LO 출력 상태(0 OFF / 1 ON). 매뉴얼에 비트 자리가 적혀 있지 않아 bits 를 넣지 않았다 — 입력 접점 100001~100003 을 쓰면 확실하다.",
+        "en": "HI/GO/LO states (0 OFF/1 ON). Bit positions not given in manual — use discrete inputs 100001-100003 instead."
+      },
+      "ref": "인쇄 p.21 표 2.1.1",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "100001(0000)",
+      "type": "bit",
+      "name": {
+        "ko": "LO 출력 상태",
+        "en": "OUT status LO"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.2",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "100002(0001)",
+      "type": "bit",
+      "name": {
+        "ko": "GO 출력 상태",
+        "en": "OUT status GO"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.2",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 2,
+      "manualAddress": "100003(0002)",
+      "type": "bit",
+      "name": {
+        "ko": "HI 출력 상태",
+        "en": "OUT status HI"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001(0000)",
+      "type": "s16",
+      "name": {
+        "ko": "HI 프리셋 (H.SET)",
+        "en": "High preset (H.SET)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "출력 HIGH 설정값. 소수점 위치는 표시 설정(300002)에 따름.",
+        "en": "OUT HIGH set value. Decimal per display setting (300002)."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "400002(0001)",
+      "type": "s16",
+      "name": {
+        "ko": "LO 프리셋 (L.SET)",
+        "en": "Low preset (L.SET)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "출력 LOW 설정값. 소수점 위치는 표시 설정(300002)에 따름.",
+        "en": "OUT LOW set value. Decimal per display setting (300002)."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "400003(0002)",
+      "type": "s16",
+      "name": {
+        "ko": "최고 피크 (H.PEK)",
+        "en": "High peak (H.PEK)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "입력 최대값, 공장 기본 0.",
+        "en": "Max of input, default 0."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "400004(0003)",
+      "type": "s16",
+      "name": {
+        "ko": "최저 피크 (L.PEK)",
+        "en": "Low peak (L.PEK)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "입력 최소값, 공장 기본 0.",
+        "en": "Min of input, default 0."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.1",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "400101(0064)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 레인지 (IN-R)",
+        "en": "Input range (IN-R)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "코드표는 측정 입력 사양 참조라고만 적혀 있다.",
+        "en": "Code table not given (refers to input specifications)."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 101,
+      "manualAddress": "400102(0065)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 모드 (DISP)",
+        "en": "Display mode (DISP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "STND 표준",
+          "en": "STND"
+        },
+        {
+          "value": 1,
+          "ko": "SCAL 스케일",
+          "en": "SCAL"
+        },
+        {
+          "value": 2,
+          "ko": "FREQ 주파수",
+          "en": "FREQ"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "400103(0066)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 (DOT)",
+        "en": "Decimal point (DOT)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "0~3. 매뉴얼 값 이름이 7세그 기호(«)000»…«0»)로만 적혀 자리 뜻은 확정하지 않았다.",
+        "en": "0-3; manual shows values only as 7-segment glyphs, so positions are not stated here."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "400104(0067)",
+      "type": "s16",
+      "name": {
+        "ko": "스케일 상한 (H-SC)",
+        "en": "High scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -1999,
+        "max": 9999
+      },
+      "description": {
+        "ko": "원시 범위. 소수점 위치에 따라 바뀐다.",
+        "en": "Raw range; changes with decimal point."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 104,
+      "manualAddress": "400105(0068)",
+      "type": "s16",
+      "name": {
+        "ko": "스케일 하한 (L-SC)",
+        "en": "Low scale"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -1999,
+        "max": 9999
+      },
+      "description": {
+        "ko": "원시 범위. 소수점 위치에 따라 바뀐다.",
+        "en": "Raw range; changes with decimal point."
+      },
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 105,
+      "manualAddress": "400106(0069)",
+      "type": "u16",
+      "name": {
+        "ko": "측정 방식 (IN-T, AC 입력)",
+        "en": "Input type (IN-T, AC models)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "T.RMS 실효값",
+          "en": "T.RMS"
+        },
+        {
+          "value": 1,
+          "ko": "A.RMS",
+          "en": "A.RMS"
+        },
+        {
+          "value": 2,
+          "ko": "AVG 평균",
+          "en": "AVG"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.3.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 205,
+      "manualAddress": "400206(00CD)",
+      "type": "u16",
+      "name": {
+        "ko": "전면 영점 키 (ZERO)",
+        "en": "Front zero key"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NO",
+          "en": "NO"
+        },
+        {
+          "value": 1,
+          "ko": "YES",
+          "en": "YES"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 206,
+      "manualAddress": "400207(00CE)",
+      "type": "u16",
+      "name": {
+        "ko": "외부 입력 단자 기능",
+        "en": "Event input function"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "HOLD",
+          "en": "HOLD"
+        },
+        {
+          "value": 1,
+          "ko": "ZERO",
+          "en": "ZERO"
+        }
+      ],
+      "ref": "인쇄 p.22 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 209,
+      "manualAddress": "400210(00D1)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 국번",
+        "en": "Comm address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 99
+      },
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 210,
+      "manualAddress": "400211(00D2)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Comm speed"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        },
+        {
+          "value": 1,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 2,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 3,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 4,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 5,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 211,
+      "manualAddress": "400212(00D3)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "NONE"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "EVEN"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "ODD"
+        }
+      ],
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 212,
+      "manualAddress": "400213(00D4)",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트",
+        "en": "Stop bit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 bits"
+        }
+      ],
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 213,
+      "manualAddress": "400214(00D5)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간",
+        "en": "Response waiting time"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 214,
+      "manualAddress": "400215(00D6)",
+      "type": "u16",
+      "name": {
+        "ko": "잠금 (LOC)",
+        "en": "Lock (LOC)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "LOC1",
+          "en": "LOC1"
+        },
+        {
+          "value": 2,
+          "ko": "LOC2",
+          "en": "LOC2"
+        },
+        {
+          "value": 3,
+          "ko": "LOC3",
+          "en": "LOC3"
+        }
+      ],
+      "ref": "인쇄 p.23 표 2.1.3.3",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS485 는 출력 코드 8(NPN 오픈 컬렉터+RS485)·9(PNP+RS485) 모델만(제품 매뉴얼 p.2 주문 정보). models 의 □ 는 전원 코드(1: 12-24 VDC, 4: 100-240 VAC).",
+      "en": "RS485 only on output code 8 (NPN + RS485) and 9 (PNP + RS485) (product manual p.2). □ = power code (1: 12-24 VDC, 4: 100-240 VAC)."
+    },
+    {
+      "ko": "같은 통신 매뉴얼의 MT4Y 표(2.2 절)는 보유 레지스터 주소가 다르다(예: 통신 국번이 400213(00D4)) — 이 파일은 MT4W 전용.",
+      "en": "MT4Y (section 2.2) uses different holding addresses (e.g. comm address at 400213(00D4)); this file is MT4W only."
+    },
+    {
+      "ko": "통신 매뉴얼 쪽 번호: 인쇄 쪽 = PDF 쪽 - 1 (예: 인쇄 p.21 = PDF p.22).",
+      "en": "Page numbers: printed page = PDF page - 1."
+    }
+  ],
+  "sources": [
+    {
+      "title": "User Manual for Communication 4-Digit Multi Panel Meters MT Series MCT-MTC1-V1.7-EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCT-MTC1-V1.7-EN (2024-11-26)",
+        "en": "MCT-MTC1-V1.7-EN (2024-11-26)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/510417",
+      "pages": {
+        "ko": "인쇄 pp.21-23 (PDF pp.22-24) 매핑 표, 인쇄 p.31 (PDF p.32) 공장 기본값",
+        "en": "printed pp.21-23 (PDF pp.22-24) mapping table, printed p.31 (PDF p.32) factory defaults"
+      },
+      "checked": "2026-10-19"
+    },
+    {
+      "title": "4-Digit Multi Panel Meters MT4W Series PRODUCT MANUAL TCD220015AI",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MT4W_EN_TCD220015AI_20260629",
+        "en": "MT4W_EN_TCD220015AI_20260629"
+      },
+      "url": "https://www.autonics.com/glb/common/download/525959",
+      "pages": {
+        "ko": "p.2 주문 정보, p.3 Communication Interface",
+        "en": "p.2 ordering information, p.3 Communication Interface"
+      },
+      "checked": "2026-10-19"
+    }
+  ]
+}

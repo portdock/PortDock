@@ -1,0 +1,62 @@
+name: 버그 신고 / Bug report
+description: 프로그램이 잘못 동작하거나 꺼질 때 / Something is wrong or the program crashed
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        고맙습니다. 프로그램 안 **«!» 문제 보고** 의 «파일로 저장» 보고서를 붙이면 원인을 훨씬 빨리 찾습니다(통신 내용은 기본으로 빠져 있습니다).
+        Thanks! Attaching the report saved from the **«!» Report a problem** window helps a lot (traffic is excluded by default).
+        **회사·장비의 민감한 데이터는 올리지 마세요. 이슈는 공개됩니다. / Issues are public — do not post confidential data.**
+  - type: dropdown
+    id: app
+    attributes:
+      label: 프로그램 / Program
+      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, 홈페이지 / Website]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 버전 / Version
+      description: ⚙ 설정 → 정보 / Settings → About
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: 설치 방식 / Edition
+      options: [설치판 / Installer, 오프라인 설치판 / Offline installer, 휴대판 / Portable]
+  - type: input
+    id: windows
+    attributes:
+      label: 윈도우 / Windows
+      placeholder: "Windows 11 23H2"
+  - type: input
+    id: device
+    attributes:
+      label: 장비·변환기 / Device & adapter
+      description: 예) FTDI USB-RS485, CH340, 장비 이름·통신 설정(9600 8N1) / e.g. FTDI USB-RS485, 9600 8N1
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 순서 / Steps to reproduce
+      placeholder: |
+        1. COM3 9600 8N1 로 연결
+        2. «01 03 00 00 00 0A» + CRC16 Modbus 로 보내기
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 것과 실제 / Expected vs actual
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: 문제 보고서·로그 / Report & log
+      description: «!» → 파일로 저장 한 내용, 또는 로그 일부 / Paste the saved report or part of the log
+      render: text

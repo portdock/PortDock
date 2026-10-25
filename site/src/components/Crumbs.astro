@@ -1,0 +1,41 @@
+---
+// 빵부스러기 — 화면 줄(PortDock / 가이드 / …)과 검색엔진용 BreadcrumbList(JSON-LD)를 같은 목록에서 만든다.
+// 첫 칸은 늘 첫 화면, 마지막 칸은 지금 페이지(링크 없음).
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  /** 첫 화면 다음부터 — path 는 언어를 뺀 경로(예: "guides/"). 마지막 칸(지금 페이지)도 path 를 준다 */
+  items: { name: string; path: string }[];
+}
+const { lang, items } = Astro.props;
+const all = [{ name: "PortDock", path: "" }, ...items];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: all.map((c, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: c.name,
+    item: new URL(url(lang, c.path), Astro.site).href,
+  })),
+};
+---
+
+<nav class="crumb" aria-label={lang === "ko" ? "현재 위치" : "Breadcrumb"}>
+  <ol>
+    {
+      all.map((c, i) =>
+        i < all.length - 1 ? (
+          <li>
+            <a href={url(lang, c.path)}>{c.name}</a>
+          </li>
+        ) : (
+          <li aria-current="page">{c.name}</li>
+        ),
+      )
+    }
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={JSON.stringify(ld)} />

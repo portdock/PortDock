@@ -1,0 +1,1616 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "yaskawa/j1000",
+  "manufacturer": {
+    "ko": "야스카와",
+    "en": "YASKAWA"
+  },
+  "model": "J1000",
+  "models": [
+    "CIMR-JU"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "야스카와 J1000 인버터 (SI-485/J 옵션 MEMOBUS/Modbus)",
+    "en": "YASKAWA J1000 AC drive (MEMOBUS/Modbus via SI-485/J option)"
+  },
+  "summary": {
+    "ko": "SI-485/J 옵션으로 RS-422/485 MEMOBUS/Modbus RTU. 지령 0001H~, 모니터 0020H~, Enter 명령 0900H",
+    "en": "RS-422/485 MEMOBUS/Modbus RTU through the SI-485/J option. Commands from 0001H, monitors from 0020H, Enter command 0900H"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 31,
+    "unitRange": [
+      1,
+      255
+    ],
+    "maxRegisters": 16,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 읽기 예(p.224)는 02 03 00 20 00 04 45 F0 으로 0020H(드라이브 상태 1)부터 4개를 읽고, 쓰기 예(p.225)는 01 10 00 01 00 02 04 00 01 17 70 으로 0001H 에 0001h(정방향 운전)·0002H 에 1770h 를 쓴다(응답 01 10 00 01 00 02 10 08). 매뉴얼 주소 = 프레임 주소. 읽기 명령·쓰기 응답·오류 응답(02 83 03 F1 31, 01 90 02 CD C1)·루프백(01 08 00 00 A5 37 DA 8D)의 CRC 는 계산값과 같다. 읽기 정상 응답의 CRC 는 AF 82 로 적혀 있으나 계산값은 D5 6B, 쓰기 명령의 CRC 는 6D 67 로 적혀 있으나 계산값은 6D B7 — 주소와는 무관",
+        "en": "Addressing: the read example (p.224) sends 02 03 00 20 00 04 45 F0 to read 4 registers from 0020H (drive status 1); the write example (p.225) sends 01 10 00 01 00 02 04 00 01 17 70, writing 0001h (forward run) to 0001H and 1770h to 0002H (response 01 10 00 01 00 02 10 08). Manual address = frame address. CRCs of the read command, write response, error responses (02 83 03 F1 31, 01 90 02 CD C1) and loopback (01 08 00 00 A5 37 DA 8D) match calculation. The normal read response CRC is printed AF 82 but computes to D5 6B, and the write command CRC is printed 6D 67 but computes to 6D B7; this does not affect addressing."
+      },
+      {
+        "ko": "함수 코드는 03H(읽기, 한 번에 16개까지)·08H(루프백)·10H(여러 개 쓰기)뿐 — 06H 없음 (p.222, p.224).",
+        "en": "Only function codes 03H (read, up to 16 registers), 08H (loopback) and 10H (write multiple) — no 06H (p.222, p.224)."
+      },
+      {
+        "ko": "초기값: H5-01 국번 1F(31), 0~FF(0 이면 응답 없음); H5-02 3 = 9600 bps(0~5 = 1200~38400); H5-03 0 = 패리티 없음(1 짝수·2 홀수); 데이터 8비트·정지 1비트 고정, RTU 만 (p.212, p.217). 변경 후 전원 재투입.",
+        "en": "Defaults: H5-01 address 1F (31), range 0-FF (0 = no response); H5-02 3 = 9600 bps (0-5 = 1200-38400); H5-03 0 = no parity (1 even, 2 odd); 8 data bits and 1 stop bit fixed, RTU only (p.212, p.217). Cycle power after changes."
+      },
+      {
+        "ko": "RS-485 로 쓸 때 H5-07 = 1(초기값), 끝단 드라이브는 SI-485/J 의 DIP 스위치 S2 를 ON(종단 저항) (p.214~216).",
+        "en": "For RS-485 keep H5-07 = 1 (default); on the last drive set DIP switch S2 on the SI-485/J to ON (termination) (pp.214-216)."
+      }
+    ]
+  },
+  "notes": [
+    {
+      "ko": "통신으로 운전·주파수를 주려면 b1-02 = 2, b1-01 = 2 (p.220 표 C.1).",
+      "en": "To run and set frequency by communication set b1-02 = 2 and b1-01 = 2 (p.220 Table C.1)."
+    },
+    {
+      "ko": "주파수 지령 0002H·주파수 지령 모니터 0023H·출력 주파수 0024H 는 넣지 않았다 — 표(p.226~227)는 단위를 H5-13 으로 정한다고 하고 H5-13 초기값 0 은 «0.1Hz / 1»(p.219)인데, 같은 매뉴얼의 쓰기 예(p.225)는 1770h(6000)를 60.00 Hz 로 적어 배율이 어긋난다. 같은 H5-13 이 «주파수 모니터 단위» 도 정해 U1-01·U1-02(0040H·0041H, 표 p.203 은 0.01 Hz)도 넣지 않았다. 주파수는 단위가 0.01% 로 고정된 00B8H·003FH 로 읽는다.",
+      "en": "Frequency reference 0002H, frequency reference monitor 0023H and output frequency 0024H are not included: the table (pp.226-227) says their unit is set by H5-13, whose default 0 is «0.1Hz / 1» (p.219), but the write example in the same manual (p.225) gives 1770h (6000) as 60.00 Hz, so the scaling disagrees. Because H5-13 also sets the «frequency monitor unit», U1-01/U1-02 (0040H/0041H, 0.01 Hz in the table on p.203) are left out too. Read frequency through 00B8H and 003FH, whose unit is fixed at 0.01%."
+    },
+    {
+      "ko": "출력 전류 0026H·드라이브 정격 전류 00ABH 는 표(p.227, p.229)에 단위가 없어 넣지 않았다(전류는 0042H, 8192 = 정격 100%). U4-01 의 004CH 도 넣지 않았다 — 모니터 표(p.204)는 1 h 단위, 각주 <3>(p.205)은 통신 값이 10 h 단위라고 해 어긋나므로 0098H·0099H 로 읽는다.",
+      "en": "Output current 0026H and drive rated current 00ABH have no unit in the table (p.227, p.229) and are left out (use 0042H, 8192 = 100% rated). U4-01 at 004CH is also left out: the monitor table (p.204) says 1 h units while footnote <3> (p.205) says the communication value is in 10 h units, so read 0098H/0099H instead."
+    },
+    {
+      "ko": "통신으로 바꾼 파라미터는 RAM 에만 반영되므로 남기려면 0900H 에 0 을 쓴다(p.233). 파라미터 주소는 부록 B 표의 Addr. Hex 칸.",
+      "en": "Parameters changed by communication are applied to RAM only; write 0 to 0900H to keep them (p.233). Parameter addresses are in the Addr. Hex column of the Appendix B tables."
+    }
+  ],
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "0001H",
+      "type": "u16",
+      "name": {
+        "ko": "운전 신호·다기능 입력",
+        "en": "Operation signals and multi-function inputs"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "정방향 운전(H5-12=0) / 운전(H5-12=1)",
+          "en": "Forward run (H5-12=0) / Run (H5-12=1)"
+        },
+        {
+          "bit": 1,
+          "ko": "역방향 운전(H5-12=0) / 정·역 선택 1=역(H5-12=1)",
+          "en": "Reverse run (H5-12=0) / FWD-REV, 1 = reverse (H5-12=1)"
+        },
+        {
+          "bit": 2,
+          "ko": "외부 고장(EF0)",
+          "en": "External fault (EF0)"
+        },
+        {
+          "bit": 3,
+          "ko": "고장 리셋",
+          "en": "Fault reset"
+        },
+        {
+          "bit": 4,
+          "ko": "다기능 입력 1",
+          "en": "Multi-function input 1"
+        },
+        {
+          "bit": 5,
+          "ko": "다기능 입력 2",
+          "en": "Multi-function input 2"
+        },
+        {
+          "bit": 6,
+          "ko": "다기능 입력 3",
+          "en": "Multi-function input 3"
+        },
+        {
+          "bit": 7,
+          "ko": "다기능 입력 4",
+          "en": "Multi-function input 4"
+        },
+        {
+          "bit": 8,
+          "ko": "다기능 입력 5",
+          "en": "Multi-function input 5"
+        }
+      ],
+      "description": {
+        "ko": "H5-12 초기값 0(정방향/정지, 역방향/정지). 운전 지령 소스 b1-02 = 2(MEMOBUS) 일 때 운전",
+        "en": "H5-12 default 0 (FWD/stop, REV/stop). Runs when run command source b1-02 = 2 (MEMOBUS)"
+      },
+      "ref": "p.226",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "0007H",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 출력 AM 설정",
+        "en": "Analog output terminal AM setting"
+      },
+      "unit": "V",
+      "scale": 0.0006103515625,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "10 V = 4000H(16384)",
+        "en": "10 V = 4000H (16384)"
+      },
+      "ref": "p.226",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "0009H",
+      "type": "u16",
+      "name": {
+        "ko": "다기능 디지털 출력 설정",
+        "en": "Multi-function digital output settings"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "접점 출력(MA-MB-MC)",
+          "en": "Contact output (MA-MB-MC)"
+        }
+      ],
+      "ref": "p.226",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "000FH",
+      "type": "u16",
+      "name": {
+        "ko": "제어 선택 설정",
+        "en": "Control selection setting"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 12,
+          "ko": "단자 S5 입력 유효",
+          "en": "Terminal S5 input enabled"
+        }
+      ],
+      "ref": "p.226",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 32,
+      "manualAddress": "0020H",
+      "type": "u16",
+      "name": {
+        "ko": "드라이브 상태 1",
+        "en": "Drive status 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "운전 중",
+          "en": "During run"
+        },
+        {
+          "bit": 1,
+          "ko": "역방향 운전 중",
+          "en": "During reverse"
+        },
+        {
+          "bit": 2,
+          "ko": "운전 준비 완료",
+          "en": "Drive ready"
+        },
+        {
+          "bit": 3,
+          "ko": "고장",
+          "en": "Fault"
+        },
+        {
+          "bit": 4,
+          "ko": "데이터 설정 오류",
+          "en": "Data setting error"
+        },
+        {
+          "bit": 5,
+          "ko": "다기능 접점 출력(MA/MB-MC)",
+          "en": "Multi-function contact output (MA/MB-MC)"
+        },
+        {
+          "bit": 14,
+          "ko": "ComRef 유효",
+          "en": "ComRef enabled"
+        },
+        {
+          "bit": 15,
+          "ko": "ComCtrl 유효",
+          "en": "ComCtrl enabled"
+        }
+      ],
+      "ref": "p.227",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 33,
+      "manualAddress": "0021H",
+      "type": "u16",
+      "name": {
+        "ko": "고장 내용 1",
+        "en": "Fault contents 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "과전류(oC)",
+          "en": "Overcurrent (oC)"
+        },
+        {
+          "bit": 1,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "bit": 2,
+          "ko": "드라이브 과부하(oL2)",
+          "en": "Drive overload (oL2)"
+        },
+        {
+          "bit": 3,
+          "ko": "과열 1(oH1)",
+          "en": "Overheat 1 (oH1)"
+        },
+        {
+          "bit": 4,
+          "ko": "제동 저항 과열(rH)",
+          "en": "Braking resistor overheat (rH)"
+        },
+        {
+          "bit": 7,
+          "ko": "외부 고장 EF0~5",
+          "en": "External fault EF0-5"
+        },
+        {
+          "bit": 8,
+          "ko": "하드웨어 고장 CPF(oFx 포함)",
+          "en": "Hardware fault CPF (includes oFx)"
+        },
+        {
+          "bit": 9,
+          "ko": "모터 과부하(oL1)·과토크 검출 1(oL3)",
+          "en": "Motor overload (oL1), overtorque detection 1 (oL3)"
+        },
+        {
+          "bit": 11,
+          "ko": "주회로 저전압(Uv)",
+          "en": "Main circuit undervoltage (Uv)"
+        },
+        {
+          "bit": 12,
+          "ko": "저전압(Uv1)·충전 회로 고장(Uv3)",
+          "en": "Undervoltage (Uv1), soft charge circuit fault (Uv3)"
+        },
+        {
+          "bit": 13,
+          "ko": "출력 결상(LF)·입력 결상(PF)",
+          "en": "Output phase loss (LF), input phase loss (PF)"
+        },
+        {
+          "bit": 14,
+          "ko": "MEMOBUS/Modbus 통신 오류(CE)",
+          "en": "MEMOBUS/Modbus communication error (CE)"
+        },
+        {
+          "bit": 15,
+          "ko": "오퍼레이터 연결 고장(oPr)",
+          "en": "Operator connection fault (oPr)"
+        }
+      ],
+      "ref": "p.227",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 34,
+      "manualAddress": "0022H",
+      "type": "u16",
+      "name": {
+        "ko": "데이터 링크 상태",
+        "en": "Data link status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "데이터 쓰는 중·모터 전환 중",
+          "en": "Writing data or switching motors"
+        },
+        {
+          "bit": 3,
+          "ko": "상·하한 오류",
+          "en": "Upper or lower limit error"
+        },
+        {
+          "bit": 4,
+          "ko": "데이터 정합 오류",
+          "en": "Data conformity error"
+        },
+        {
+          "bit": 5,
+          "ko": "EEPROM 쓰는 중",
+          "en": "Writing to EEPROM"
+        }
+      ],
+      "ref": "p.227",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 37,
+      "manualAddress": "0025H",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압 지령",
+        "en": "Output voltage reference"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.227",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 41,
+      "manualAddress": "0029H",
+      "type": "u16",
+      "name": {
+        "ko": "고장 내용 2",
+        "en": "Fault contents 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 2,
+          "ko": "입력 결상(PF)",
+          "en": "Input phase loss (PF)"
+        },
+        {
+          "bit": 3,
+          "ko": "출력 결상(LF)",
+          "en": "Output phase loss (LF)"
+        },
+        {
+          "bit": 4,
+          "ko": "제동 저항 과열(rH)",
+          "en": "Braking resistor overheat (rH)"
+        }
+      ],
+      "ref": "p.227",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 42,
+      "manualAddress": "002AH",
+      "type": "u16",
+      "name": {
+        "ko": "경보 내용 1",
+        "en": "Alarm contents 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 2,
+          "ko": "운전 지령 입력 오류(EF)",
+          "en": "Run command input error (EF)"
+        },
+        {
+          "bit": 3,
+          "ko": "베이스 블록(bb)",
+          "en": "Drive baseblock (bb)"
+        },
+        {
+          "bit": 4,
+          "ko": "과토크 검출 1(oL3)",
+          "en": "Overtorque detection 1 (oL3)"
+        },
+        {
+          "bit": 5,
+          "ko": "방열판 과열(oH)",
+          "en": "Heatsink overheat (oH)"
+        },
+        {
+          "bit": 6,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "bit": 7,
+          "ko": "저전압(Uv)",
+          "en": "Undervoltage (Uv)"
+        },
+        {
+          "bit": 9,
+          "ko": "MEMOBUS/Modbus 통신 오류(CE)",
+          "en": "MEMOBUS/Modbus communication error (CE)"
+        }
+      ],
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 43,
+      "manualAddress": "002BH",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 상태",
+        "en": "Input terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "S1 닫힘",
+          "en": "Terminal S1 closed"
+        },
+        {
+          "bit": 1,
+          "ko": "S2 닫힘",
+          "en": "Terminal S2 closed"
+        },
+        {
+          "bit": 2,
+          "ko": "S3 닫힘",
+          "en": "Terminal S3 closed"
+        },
+        {
+          "bit": 3,
+          "ko": "S4 닫힘",
+          "en": "Terminal S4 closed"
+        },
+        {
+          "bit": 4,
+          "ko": "S5 닫힘",
+          "en": "Terminal S5 closed"
+        }
+      ],
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 44,
+      "manualAddress": "002CH",
+      "type": "u16",
+      "name": {
+        "ko": "드라이브 상태 2",
+        "en": "Drive status 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "운전 중",
+          "en": "During run"
+        },
+        {
+          "bit": 1,
+          "ko": "영속도",
+          "en": "Zero speed"
+        },
+        {
+          "bit": 2,
+          "ko": "속도 일치",
+          "en": "Speed agree"
+        },
+        {
+          "bit": 3,
+          "ko": "사용자 속도 일치",
+          "en": "User speed agree"
+        },
+        {
+          "bit": 4,
+          "ko": "주파수 검출 1",
+          "en": "Frequency detection 1"
+        },
+        {
+          "bit": 5,
+          "ko": "주파수 검출 2",
+          "en": "Frequency detection 2"
+        },
+        {
+          "bit": 6,
+          "ko": "운전 준비 완료",
+          "en": "Drive ready"
+        },
+        {
+          "bit": 7,
+          "ko": "저전압 중",
+          "en": "During undervoltage"
+        },
+        {
+          "bit": 8,
+          "ko": "베이스 블록 중",
+          "en": "During baseblock"
+        },
+        {
+          "bit": 9,
+          "ko": "주파수 지령이 오퍼레이터",
+          "en": "Frequency reference from operator keypad"
+        },
+        {
+          "bit": 10,
+          "ko": "운전 지령이 오퍼레이터",
+          "en": "Run command from operator keypad"
+        },
+        {
+          "bit": 11,
+          "ko": "과토크",
+          "en": "Overtorque"
+        },
+        {
+          "bit": 14,
+          "ko": "고장",
+          "en": "Fault"
+        },
+        {
+          "bit": 15,
+          "ko": "통신 타임아웃",
+          "en": "Communication timeout"
+        }
+      ],
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 45,
+      "manualAddress": "002DH",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 상태",
+        "en": "Output terminal status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "다기능 접점 출력(MA/MB-MC)",
+          "en": "Multi-function contact output (MA/MB-MC)"
+        }
+      ],
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 49,
+      "manualAddress": "0031H",
+      "type": "u16",
+      "name": {
+        "ko": "DC 버스 전압",
+        "en": "DC bus voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 52,
+      "manualAddress": "0034H",
+      "type": "string",
+      "len": 2,
+      "name": {
+        "ko": "제품 코드 1(ASCII)",
+        "en": "Product code 1 (ASCII)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "J1000 은 «J0»",
+        "en": "«J0» for J1000"
+      },
+      "ref": "p.228",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 61,
+      "manualAddress": "003DH",
+      "type": "u16",
+      "name": {
+        "ko": "통신 오류 기록",
+        "en": "Communications error log"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "CRC 오류",
+          "en": "CRC error"
+        },
+        {
+          "bit": 1,
+          "ko": "데이터 길이 오류",
+          "en": "Data length error"
+        },
+        {
+          "bit": 3,
+          "ko": "패리티 오류",
+          "en": "Parity error"
+        },
+        {
+          "bit": 4,
+          "ko": "오버런 오류",
+          "en": "Overrun error"
+        },
+        {
+          "bit": 5,
+          "ko": "프레이밍 오류",
+          "en": "Framing error"
+        },
+        {
+          "bit": 6,
+          "ko": "타임아웃",
+          "en": "Timeout"
+        }
+      ],
+      "description": {
+        "ko": "고장을 리셋할 때까지 남는다",
+        "en": "Kept until the fault is reset"
+      },
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 63,
+      "manualAddress": "003FH",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수(%)",
+        "en": "Output frequency (%)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 66,
+      "manualAddress": "0042H",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류(U1-03)",
+        "en": "Output current (U1-03)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "통신으로 읽으면 8192 = 드라이브 정격 출력 전류의 100%",
+        "en": "Via MEMOBUS/Modbus, 8192 = 100% of drive rated output current"
+      },
+      "ref": "p.203, p.205",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 69,
+      "manualAddress": "0045H",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압(U1-06)",
+        "en": "Output voltage (U1-06)"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.203",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 70,
+      "manualAddress": "0046H",
+      "type": "u16",
+      "name": {
+        "ko": "DC 버스 전압(U1-07)",
+        "en": "DC bus voltage (U1-07)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.203",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 78,
+      "manualAddress": "004EH",
+      "type": "u16",
+      "name": {
+        "ko": "아날로그 입력 A1 레벨(U1-13)",
+        "en": "Terminal A1 input level (U1-13)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "10 V 또는 20 mA 입력이 100%",
+        "en": "100% at 10 V or 20 mA input"
+      },
+      "ref": "p.204",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 124,
+      "manualAddress": "007CH",
+      "type": "u16",
+      "name": {
+        "ko": "주회로 콘덴서 수명(U4-05)",
+        "en": "Capacitor maintenance (U4-05)"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% 가 되면 교체 시기",
+        "en": "Replacement due at 100%"
+      },
+      "ref": "p.204",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 126,
+      "manualAddress": "007EH",
+      "type": "u16",
+      "name": {
+        "ko": "냉각팬 수명(U4-04)",
+        "en": "Cooling fan maintenance (U4-04)"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "100% 가 되면 교체 시기",
+        "en": "Replacement due at 100%"
+      },
+      "ref": "p.204",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 127,
+      "manualAddress": "007FH",
+      "type": "u16",
+      "name": {
+        "ko": "경보 코드",
+        "en": "Alarm code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "저전압(Uv)",
+          "en": "Undervoltage (Uv)"
+        },
+        {
+          "value": 2,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "value": 3,
+          "ko": "방열판 과열(oH)",
+          "en": "Heatsink overheat (oH)"
+        },
+        {
+          "value": 5,
+          "ko": "과토크 1(oL3)",
+          "en": "Overtorque 1 (oL3)"
+        },
+        {
+          "value": 7,
+          "ko": "운전 지령 입력 오류(EF)",
+          "en": "Run commands input error (EF)"
+        },
+        {
+          "value": 8,
+          "ko": "베이스 블록(bb)",
+          "en": "Drive baseblock (bb)"
+        },
+        {
+          "value": 9,
+          "ko": "외부 고장 3, 단자 S3(EF3)",
+          "en": "External fault 3, terminal S3 (EF3)"
+        },
+        {
+          "value": 10,
+          "ko": "외부 고장 4, 단자 S4(EF4)",
+          "en": "External fault 4, terminal S4 (EF4)"
+        },
+        {
+          "value": 11,
+          "ko": "외부 고장 5, 단자 S5(EF5)",
+          "en": "External fault 5, terminal S5 (EF5)"
+        },
+        {
+          "value": 20,
+          "ko": "MEMOBUS/Modbus 통신 오류(CE)",
+          "en": "MEMOBUS/Modbus communication error (CE)"
+        },
+        {
+          "value": 23,
+          "ko": "모터 과부하(oL1)",
+          "en": "Motor overload (oL1)"
+        },
+        {
+          "value": 24,
+          "ko": "드라이브 과부하(oL2)",
+          "en": "Drive overload (oL2)"
+        },
+        {
+          "value": 32,
+          "ko": "MEMOBUS/Modbus 시험 모드 고장(SE)",
+          "en": "MEMOBUS/Modbus test mode fault (SE)"
+        },
+        {
+          "value": 57,
+          "ko": "외부 고장, 단자 S1(EF1)",
+          "en": "External fault, terminal S1 (EF1)"
+        },
+        {
+          "value": 58,
+          "ko": "외부 고장, 단자 S2(EF2)",
+          "en": "External fault, terminal S2 (EF2)"
+        }
+      ],
+      "description": {
+        "ko": "표 C.5 의 코드 전부",
+        "en": "All codes from Table C.5"
+      },
+      "ref": "p.229, p.232 표 C.5",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 128,
+      "manualAddress": "0080H",
+      "type": "u16",
+      "name": {
+        "ko": "현재 고장(U2-01)",
+        "en": "Current fault (U2-01)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 2,
+          "ko": "저전압(Uv1)",
+          "en": "Undervoltage (Uv1)"
+        },
+        {
+          "value": 4,
+          "ko": "충전 회로 고장(Uv3)",
+          "en": "Soft charge circuit fault (Uv3)"
+        },
+        {
+          "value": 7,
+          "ko": "과전류(oC)",
+          "en": "Overcurrent (oC)"
+        },
+        {
+          "value": 8,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "value": 10,
+          "ko": "방열판 과열(oH1)",
+          "en": "Heatsink overheat (oH1)"
+        },
+        {
+          "value": 11,
+          "ko": "모터 과부하(oL1)",
+          "en": "Motor overload (oL1)"
+        },
+        {
+          "value": 12,
+          "ko": "드라이브 과부하(oL2)",
+          "en": "Drive overload (oL2)"
+        },
+        {
+          "value": 13,
+          "ko": "과토크 검출 1(oL3)",
+          "en": "Overtorque detection 1 (oL3)"
+        },
+        {
+          "value": 16,
+          "ko": "제동 저항 과열(rH)",
+          "en": "Braking resistor overheat (rH)"
+        },
+        {
+          "value": 17,
+          "ko": "외부 고장, 단자 S3(EF3)",
+          "en": "External fault, terminal S3 (EF3)"
+        },
+        {
+          "value": 18,
+          "ko": "외부 고장, 단자 S4(EF4)",
+          "en": "External fault, terminal S4 (EF4)"
+        },
+        {
+          "value": 19,
+          "ko": "외부 고장, 단자 S5(EF5)",
+          "en": "External fault, terminal S5 (EF5)"
+        },
+        {
+          "value": 27,
+          "ko": "입력 결상(PF)",
+          "en": "Input phase loss (PF)"
+        },
+        {
+          "value": 28,
+          "ko": "출력 결상(LF)",
+          "en": "Output phase loss (LF)"
+        },
+        {
+          "value": 30,
+          "ko": "디지털 오퍼레이터 연결(oPr)",
+          "en": "Digital operator connection (oPr)"
+        },
+        {
+          "value": 31,
+          "ko": "EEPROM 쓰기 오류(Err)",
+          "en": "EEPROM write error (Err)"
+        },
+        {
+          "value": 33,
+          "ko": "MEMOBUS/Modbus 통신 오류(CE)",
+          "en": "MEMOBUS/Modbus communication error (CE)"
+        },
+        {
+          "value": 39,
+          "ko": "PROFIBUS-DP 옵션 외부 고장(EF0)",
+          "en": "PROFIBUS-DP option external fault (EF0)"
+        },
+        {
+          "value": 66,
+          "ko": "외부 고장 1, 단자 S1(EF1)",
+          "en": "External fault 1, terminal S1 (EF1)"
+        },
+        {
+          "value": 67,
+          "ko": "외부 고장 2, 단자 S2(EF2)",
+          "en": "External fault 2, terminal S2 (EF2)"
+        },
+        {
+          "value": 70,
+          "ko": "전류 오프셋 고장(CoF)",
+          "en": "Current offset fault (CoF)"
+        },
+        {
+          "value": 131,
+          "ko": "A/D 변환 오류(CPF02)",
+          "en": "A/D conversion error (CPF02)"
+        },
+        {
+          "value": 135,
+          "ko": "단자대·제어 보드 교체 시 사양 불일치(CPF06)",
+          "en": "Drive specification mismatch after terminal/control board replacement (CPF06)"
+        },
+        {
+          "value": 137,
+          "ko": "EEPROM 직렬 통신 고장(CPF08)",
+          "en": "EEPROM serial communication fault (CPF08)"
+        },
+        {
+          "value": 140,
+          "ko": "RAM 고장(CPF11)",
+          "en": "RAM fault (CPF11)"
+        },
+        {
+          "value": 141,
+          "ko": "플래시 메모리 이상(CPF12)",
+          "en": "Flash memory circuit exception (CPF12)"
+        },
+        {
+          "value": 143,
+          "ko": "제어 회로 고장(CPF14)",
+          "en": "Control circuit fault (CPF14)"
+        },
+        {
+          "value": 146,
+          "ko": "타이밍 고장(CPF17)",
+          "en": "Timing fault (CPF17)"
+        },
+        {
+          "value": 147,
+          "ko": "제어 회로 고장(CPF18)",
+          "en": "Control circuit fault (CPF18)"
+        },
+        {
+          "value": 149,
+          "ko": "전원 투입 시 하드웨어 고장(CPF20)",
+          "en": "Hardware fault at power up (CPF20)"
+        },
+        {
+          "value": 150,
+          "ko": "통신 시작 시 하드웨어 고장(CPF21)",
+          "en": "Hardware fault at communication start up (CPF21)"
+        },
+        {
+          "value": 151,
+          "ko": "A/D 변환 고장(CPF22)",
+          "en": "A/D conversion fault (CPF22)"
+        },
+        {
+          "value": 152,
+          "ko": "PWM 피드백 고장(CPF23)",
+          "en": "PWM feedback fault (CPF23)"
+        },
+        {
+          "value": 153,
+          "ko": "드라이브 용량 신호 고장(CPF24)",
+          "en": "Drive capacity signal fault (CPF24)"
+        },
+        {
+          "value": 257,
+          "ko": "옵션 호환 오류(oFA00)",
+          "en": "Option compatibility error (oFA00)"
+        }
+      ],
+      "description": {
+        "ko": "값은 고장 코드(표 C.4 전부). Uv1 은 이력에 남지 않는다",
+        "en": "Value is a fault code (all of Table C.4). Uv1 is not saved to the history"
+      },
+      "ref": "p.204, p.232 표 C.4",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 129,
+      "manualAddress": "0081H",
+      "type": "u16",
+      "name": {
+        "ko": "직전 고장(U2-02)",
+        "en": "Previous fault (U2-02)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 2,
+          "ko": "저전압(Uv1)",
+          "en": "Undervoltage (Uv1)"
+        },
+        {
+          "value": 4,
+          "ko": "충전 회로 고장(Uv3)",
+          "en": "Soft charge circuit fault (Uv3)"
+        },
+        {
+          "value": 7,
+          "ko": "과전류(oC)",
+          "en": "Overcurrent (oC)"
+        },
+        {
+          "value": 8,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "value": 10,
+          "ko": "방열판 과열(oH1)",
+          "en": "Heatsink overheat (oH1)"
+        },
+        {
+          "value": 11,
+          "ko": "모터 과부하(oL1)",
+          "en": "Motor overload (oL1)"
+        },
+        {
+          "value": 12,
+          "ko": "드라이브 과부하(oL2)",
+          "en": "Drive overload (oL2)"
+        },
+        {
+          "value": 13,
+          "ko": "과토크 검출 1(oL3)",
+          "en": "Overtorque detection 1 (oL3)"
+        },
+        {
+          "value": 16,
+          "ko": "제동 저항 과열(rH)",
+          "en": "Braking resistor overheat (rH)"
+        },
+        {
+          "value": 17,
+          "ko": "외부 고장, 단자 S3(EF3)",
+          "en": "External fault, terminal S3 (EF3)"
+        },
+        {
+          "value": 18,
+          "ko": "외부 고장, 단자 S4(EF4)",
+          "en": "External fault, terminal S4 (EF4)"
+        },
+        {
+          "value": 19,
+          "ko": "외부 고장, 단자 S5(EF5)",
+          "en": "External fault, terminal S5 (EF5)"
+        },
+        {
+          "value": 27,
+          "ko": "입력 결상(PF)",
+          "en": "Input phase loss (PF)"
+        },
+        {
+          "value": 28,
+          "ko": "출력 결상(LF)",
+          "en": "Output phase loss (LF)"
+        },
+        {
+          "value": 30,
+          "ko": "디지털 오퍼레이터 연결(oPr)",
+          "en": "Digital operator connection (oPr)"
+        },
+        {
+          "value": 31,
+          "ko": "EEPROM 쓰기 오류(Err)",
+          "en": "EEPROM write error (Err)"
+        },
+        {
+          "value": 33,
+          "ko": "MEMOBUS/Modbus 통신 오류(CE)",
+          "en": "MEMOBUS/Modbus communication error (CE)"
+        },
+        {
+          "value": 39,
+          "ko": "PROFIBUS-DP 옵션 외부 고장(EF0)",
+          "en": "PROFIBUS-DP option external fault (EF0)"
+        },
+        {
+          "value": 66,
+          "ko": "외부 고장 1, 단자 S1(EF1)",
+          "en": "External fault 1, terminal S1 (EF1)"
+        },
+        {
+          "value": 67,
+          "ko": "외부 고장 2, 단자 S2(EF2)",
+          "en": "External fault 2, terminal S2 (EF2)"
+        },
+        {
+          "value": 70,
+          "ko": "전류 오프셋 고장(CoF)",
+          "en": "Current offset fault (CoF)"
+        },
+        {
+          "value": 131,
+          "ko": "A/D 변환 오류(CPF02)",
+          "en": "A/D conversion error (CPF02)"
+        },
+        {
+          "value": 135,
+          "ko": "단자대·제어 보드 교체 시 사양 불일치(CPF06)",
+          "en": "Drive specification mismatch after terminal/control board replacement (CPF06)"
+        },
+        {
+          "value": 137,
+          "ko": "EEPROM 직렬 통신 고장(CPF08)",
+          "en": "EEPROM serial communication fault (CPF08)"
+        },
+        {
+          "value": 140,
+          "ko": "RAM 고장(CPF11)",
+          "en": "RAM fault (CPF11)"
+        },
+        {
+          "value": 141,
+          "ko": "플래시 메모리 이상(CPF12)",
+          "en": "Flash memory circuit exception (CPF12)"
+        },
+        {
+          "value": 143,
+          "ko": "제어 회로 고장(CPF14)",
+          "en": "Control circuit fault (CPF14)"
+        },
+        {
+          "value": 146,
+          "ko": "타이밍 고장(CPF17)",
+          "en": "Timing fault (CPF17)"
+        },
+        {
+          "value": 147,
+          "ko": "제어 회로 고장(CPF18)",
+          "en": "Control circuit fault (CPF18)"
+        },
+        {
+          "value": 149,
+          "ko": "전원 투입 시 하드웨어 고장(CPF20)",
+          "en": "Hardware fault at power up (CPF20)"
+        },
+        {
+          "value": 150,
+          "ko": "통신 시작 시 하드웨어 고장(CPF21)",
+          "en": "Hardware fault at communication start up (CPF21)"
+        },
+        {
+          "value": 151,
+          "ko": "A/D 변환 고장(CPF22)",
+          "en": "A/D conversion fault (CPF22)"
+        },
+        {
+          "value": 152,
+          "ko": "PWM 피드백 고장(CPF23)",
+          "en": "PWM feedback fault (CPF23)"
+        },
+        {
+          "value": 153,
+          "ko": "드라이브 용량 신호 고장(CPF24)",
+          "en": "Drive capacity signal fault (CPF24)"
+        },
+        {
+          "value": 257,
+          "ko": "옵션 호환 오류(oFA00)",
+          "en": "Option compatibility error (oFA00)"
+        }
+      ],
+      "description": {
+        "ko": "값은 고장 코드(표 C.4 전부). Uv1 은 이력에 남지 않는다",
+        "en": "Value is a fault code (all of Table C.4). Uv1 is not saved to the history"
+      },
+      "ref": "p.204, p.232 표 C.4",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 152,
+      "manualAddress": "0098H",
+      "type": "u16",
+      "name": {
+        "ko": "누적 운전 시간(U4-01) 10 h 단위",
+        "en": "Cumulative operation time (U4-01), 10 h units"
+      },
+      "unit": "h",
+      "scale": 10,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "12345 h 이면 0098H = 1234, 0099H = 5",
+        "en": "For 12345 h: 0098H = 1234, 0099H = 5"
+      },
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 153,
+      "manualAddress": "0099H",
+      "type": "u16",
+      "name": {
+        "ko": "누적 운전 시간(U4-01) 1 h 자리",
+        "en": "Cumulative operation time (U4-01), 1 h digit"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 182,
+      "manualAddress": "00B6H",
+      "type": "u16",
+      "name": {
+        "ko": "소프트 스타터 뒤 주파수 지령(%)",
+        "en": "Frequency reference after soft-starter (%)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 184,
+      "manualAddress": "00B8H",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령(%)",
+        "en": "Frequency reference (%)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 191,
+      "manualAddress": "00BFH",
+      "type": "u16",
+      "name": {
+        "ko": "oPE 오류 번호",
+        "en": "oPE error number"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 192,
+      "manualAddress": "00C0H",
+      "type": "u16",
+      "name": {
+        "ko": "고장 내용 1(상세)",
+        "en": "Fault contents 1 (detail)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "저전압(Uv1)",
+          "en": "Undervoltage (Uv1)"
+        },
+        {
+          "bit": 3,
+          "ko": "충전 회로 고장(Uv3)",
+          "en": "Soft charge circuit fault (Uv3)"
+        },
+        {
+          "bit": 6,
+          "ko": "과전류(oC)",
+          "en": "Overcurrent (oC)"
+        },
+        {
+          "bit": 7,
+          "ko": "과전압(ov)",
+          "en": "Overvoltage (ov)"
+        },
+        {
+          "bit": 9,
+          "ko": "방열판 과열(oH1)",
+          "en": "Heatsink overheat (oH1)"
+        },
+        {
+          "bit": 10,
+          "ko": "모터 과부하(oL1)",
+          "en": "Motor overload (oL1)"
+        },
+        {
+          "bit": 11,
+          "ko": "드라이브 과부하(oL2)",
+          "en": "Drive overload (oL2)"
+        },
+        {
+          "bit": 12,
+          "ko": "과토크 검출 1(oL3)",
+          "en": "Overtorque detection 1 (oL3)"
+        },
+        {
+          "bit": 15,
+          "ko": "제동 저항 과열(rH)",
+          "en": "Braking resistor overheat (rH)"
+        }
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 193,
+      "manualAddress": "00C1H",
+      "type": "u16",
+      "name": {
+        "ko": "고장 내용 2(상세)",
+        "en": "Fault contents 2 (detail)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "외부 고장, 단자 S3(EF3)",
+          "en": "External fault, terminal S3 (EF3)"
+        },
+        {
+          "bit": 1,
+          "ko": "외부 고장, 단자 S4(EF4)",
+          "en": "External fault, terminal S4 (EF4)"
+        },
+        {
+          "bit": 2,
+          "ko": "외부 고장, 단자 S5(EF5)",
+          "en": "External fault, terminal S5 (EF5)"
+        },
+        {
+          "bit": 10,
+          "ko": "입력 결상(PF)",
+          "en": "Input phase loss (PF)"
+        },
+        {
+          "bit": 13,
+          "ko": "디지털 오퍼레이터 연결 고장(oPr)",
+          "en": "Digital operator connection fault (oPr)"
+        },
+        {
+          "bit": 14,
+          "ko": "EEPROM 쓰기 오류(Err)",
+          "en": "EEPROM write error (Err)"
+        }
+      ],
+      "ref": "p.229",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2304,
+      "manualAddress": "0900H",
+      "type": "u16",
+      "name": {
+        "ko": "Enter 명령(EEPROM 저장)",
+        "en": "Enter command (save to EEPROM)"
+      },
+      "access": "w",
+      "fc": [
+        16
+      ],
+      "description": {
+        "ko": "0 을 쓴다. 읽으면 오류(02H). EEPROM 쓰기 횟수 10만 회 제한. 쓰지 않으면 통신으로 바꾼 파라미터는 RAM 에만 있어 전원을 끄면 사라진다",
+        "en": "Write 0. Reading returns error 02H. EEPROM limited to 100,000 writes. Without it, parameters changed by communication stay in RAM only and are lost at power off"
+      },
+      "ref": "p.233 표 C.6",
+      "source": 0
+    }
+  ],
+  "sources": [
+    {
+      "title": "YASKAWA AC Drive-J1000 Compact V/f Control Drive Technical Manual (SIEP C710606 31D)",
+      "publisher": "YASKAWA ELECTRIC CORPORATION",
+      "edition": {
+        "ko": "SIEP C710606 31D <3>, 2015년 5월 발행",
+        "en": "SIEP C710606 31D <3>, published May 2015"
+      },
+      "url": "https://www.yaskawa.com/delegate/getAttachment?documentId=SIEPC71060631&cmd=documents&documentName=SIEPC71060631.pdf",
+      "pages": {
+        "ko": "부록 C MEMOBUS/Modbus p.210~235, U 모니터 표 p.203~205",
+        "en": "Appendix C MEMOBUS/Modbus pp.210-235, U monitor table pp.203-205"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}

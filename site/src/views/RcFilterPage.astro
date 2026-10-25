@@ -1,0 +1,255 @@
+---
+// 웹 도구: RC 시정수·1차 저역 필터 — τ·충전 곡선·차단 주파수·감쇠·위상, fc 로 R·C 풀기, E 계열 콘덴서 가까운 값(lib/rc.ts, lib/divider.ts).
+// 모두 정의식. ADC 앞 저역 필터 권고는 ATmega328P §23.6.1 문장 그대로.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { charge } from "../lib/rc";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/rc-filter/";
+const L = ko
+  ? {
+      title: "RC 시정수·차단 주파수 계산기",
+      desc: "저항·콘덴서로 RC 시정수 τ, 충전·방전 시간(63 %·99 %), 1차 저역 필터의 차단 주파수와 주파수별 감쇠·위상을 계산하고, 원하는 차단 주파수에 맞는 R·C 를 구합니다.",
+      r: "저항 R",
+      c: "콘덴서 C",
+      f: "볼 주파수 f (Hz) — 감쇠·위상",
+      t: "경과 시간 t (ms) — 충전 비율",
+      want: "원하는 차단 주파수 fc (Hz) — R·C 풀기",
+      res: "결과",
+      k: { tau: "시정수 τ = R × C", fc: "차단 주파수 fc", rise: "10 → 90 % 상승 시간", t99: "99 % 까지 (≈ 4.6 τ)", ch: "t 에서 충전 / 방전 남은 몫", g: "f 에서 감쇠", ph: "f 에서 위상", cf: "이 R 로 fc 에 필요한 C", rf: "이 C 로 fc 에 필요한 R" },
+      example: "기본값(10 kΩ, 100 nF)은 예시입니다. 콘덴서 용량의 허용차·온도 특성과 다음 단의 입력 저항이 실제 값을 바꿉니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "τ = R × C                     (Ω × F = s)",
+        "충전: Vc(t) = V × (1 − e^(−t/τ)),   방전: Vc(t) = V × e^(−t/τ)",
+        "비율 x 까지 걸리는 시간 t = −τ × ln(1 − x),   10→90 % 상승 = τ × ln 9 ≈ 2.2 τ",
+        "fc = 1 ÷ (2π × R × C)",
+        "|H(f)| = 1 ÷ √(1 + (f/fc)²),   dB = −10 × log10(1 + (f/fc)²),   위상 = −atan(f/fc)",
+      ],
+      cTitle: "τ 의 배수와 충전 비율",
+      cHead: ["시간", "충전 (%)", "방전 남은 몫 (%)"],
+      lTitle: "1차 저역 필터 읽기",
+      l: [
+        "차단 주파수에서 출력은 입력의 1/√2(−3.01 dB), 위상은 −45° 입니다. 그보다 10배 높은 주파수에서 약 −20 dB, 100배에서 약 −40 dB 로 10배마다 20 dB 씩 줄어듭니다.",
+        "차단 주파수 아래라도 감쇠가 0 은 아닙니다. fc 의 절반에서 약 −0.97 dB(89 %)이므로, 측정하려는 신호 대역은 fc 보다 충분히 낮게 둡니다.",
+        "필터 출력은 τ 만큼 늦게 따라옵니다. 계단 변화에 99 % 까지 따라오려면 약 4.6 τ 가 걸리므로, 빠른 응답이 필요한 입력에는 fc 를 너무 낮추지 않습니다.",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "ADC 앞 노이즈 필터: ATmega328P 데이터시트(§23.6.1)는 나이퀴스트 주파수(f_ADC/2)보다 높은 성분을 입력 전에 저역 필터로 없애라고 권합니다. 같은 절은 소스 출력 임피던스를 약 10 kΩ 이하로 두라고도 하므로 R 을 너무 크게 하지 않습니다.",
+        "스위치·접점 입력의 채터링 줄이기, 리셋 지연처럼 «시간» 을 만들 때는 차단 주파수보다 τ 와 충전 비율을 봅니다.",
+        "PWM 을 RC 로 걸러 아날로그 전압으로 만들 때는 PWM 주파수에서의 감쇠가 남는 리플을 정합니다(1차 필터는 그 주파수에서 |H| 만큼 남음).",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["10 kΩ 과 100 nF 의 시정수와 차단 주파수는?", "τ = 10 000 × 100 × 10⁻⁹ = 1 ms, fc = 1 ÷ (2π × 1 ms) ≈ 159 Hz 입니다."],
+        ["시정수 1τ 는 몇 % 인가요?", "충전은 1 − e⁻¹ ≈ 63.2 %, 방전은 e⁻¹ ≈ 36.8 % 가 남습니다. 3τ 에 95.0 %, 5τ 에 99.3 % 입니다."],
+        ["50 Hz 노이즈를 1/10 로 줄이려면 fc 를 얼마로?", "1차 필터에서 |H| = 0.1 이 되려면 f/fc = √99 ≈ 9.95 이므로 fc ≈ 5 Hz 입니다. 그만큼 응답이 느려지므로(τ ≈ 32 ms) 신호 속도와 함께 정합니다."],
+        ["필터 뒤에 무엇을 이으면 계산이 바뀌나요?", "다음 단의 입력 저항이 C 와 병렬로 붙으면 출력이 분압되고 fc 도 바뀝니다. 다음 단 입력 저항이 R 보다 충분히 크게 고르거나 버퍼를 둡니다."],
+      ],
+      adcNote: "ADC 분해능과 공학값 환산은",
+      adcLink: "ADC 분해능·스케일링 계산기",
+      dNote: "저항 표준 값은",
+      dLink: "분압 저항 계산기",
+      xNote: "주파수별 콘덴서 리액턴스와 LC 공진은",
+      xLink: "리액턴스·LC 공진 계산기",
+      srcTitle: "근거",
+      src: "τ·충전 곡선·차단 주파수·감쇠·위상은 정의식(회로 이론)으로 계산합니다. ADC 입력 필터 권고는 Microchip ATmega328P 데이터시트(7810D) §23.6.1 Analog Input Circuitry 를 따랐습니다. 실제 부품 값의 허용차는 각 데이터시트를 보세요.",
+    }
+  : {
+      title: "RC Time Constant & Cut-off Frequency Calculator",
+      desc: "RC time constant τ, charge and discharge times (63 %, 99 %), first-order low-pass cut-off frequency, attenuation and phase, and R or C for a target cut-off.",
+      r: "Resistor R",
+      c: "Capacitor C",
+      f: "Frequency f (Hz) — attenuation and phase",
+      t: "Elapsed time t (ms) — charge",
+      want: "Target cut-off fc (Hz) — solve R or C",
+      res: "Results",
+      k: { tau: "Time constant τ = R × C", fc: "Cut-off frequency fc", rise: "10 → 90 % rise time", t99: "To 99 % (≈ 4.6 τ)", ch: "Charged / left after discharge at t", g: "Attenuation at f", ph: "Phase at f", cf: "C for fc with this R", rf: "R for fc with this C" },
+      example: "The defaults (10 kΩ, 100 nF) are an example. Capacitor tolerance and temperature behaviour, and the next stage's input resistance, change the real result.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "τ = R × C                     (Ω × F = s)",
+        "Charge: Vc(t) = V × (1 − e^(−t/τ)),   discharge: Vc(t) = V × e^(−t/τ)",
+        "Time to fraction x: t = −τ × ln(1 − x),   10→90 % rise = τ × ln 9 ≈ 2.2 τ",
+        "fc = 1 ÷ (2π × R × C)",
+        "|H(f)| = 1 ÷ √(1 + (f/fc)²),   dB = −10 × log10(1 + (f/fc)²),   phase = −atan(f/fc)",
+      ],
+      cTitle: "Multiples of τ and charge",
+      cHead: ["Time", "Charged (%)", "Left after discharge (%)"],
+      lTitle: "Reading a first-order low-pass filter",
+      l: [
+        "At the cut-off frequency the output is 1/√2 of the input (−3.01 dB) and the phase is −45°. Ten times higher it is about −20 dB, a hundred times about −40 dB: 20 dB per decade.",
+        "Below the cut-off the attenuation is not zero: at half of fc it is about −0.97 dB (89 %), so keep the signal band well below fc.",
+        "The output lags by τ. Following a step to 99 % takes about 4.6 τ, so do not push fc too low on inputs that must respond quickly.",
+      ],
+      uTitle: "Where it is used",
+      u: [
+        "Noise filter in front of an ADC: the ATmega328P datasheet (§23.6.1) advises removing components above the Nyquist frequency (f_ADC/2) with a low-pass filter. The same section asks for a source impedance of about 10 kΩ or less, so do not make R too large.",
+        "Debouncing switch inputs or delaying a reset is about time, so look at τ and the charge fraction rather than the cut-off.",
+        "When filtering PWM into an analog voltage, the attenuation at the PWM frequency sets the remaining ripple (a first-order filter leaves |H| of it).",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What are τ and fc for 10 kΩ and 100 nF?", "τ = 10,000 × 100 × 10⁻⁹ = 1 ms and fc = 1 ÷ (2π × 1 ms) ≈ 159 Hz."],
+        ["What percentage is one time constant?", "Charging reaches 1 − e⁻¹ ≈ 63.2 %; discharging leaves e⁻¹ ≈ 36.8 %. 95.0 % at 3τ and 99.3 % at 5τ."],
+        ["What fc cuts 50 Hz noise to 1/10?", "A first-order filter has |H| = 0.1 at f/fc = √99 ≈ 9.95, so fc ≈ 5 Hz. The response slows to match (τ ≈ 32 ms), so decide together with the signal speed."],
+        ["What changes when I connect a load after the filter?", "The next stage's input resistance in parallel with C divides the output and shifts fc. Choose an input resistance much larger than R or add a buffer."],
+      ],
+      adcNote: "For ADC resolution and engineering units, use the",
+      adcLink: "ADC Resolution & Scaling Calculator",
+      dNote: "For standard resistor values, use the",
+      dLink: "Voltage Divider Calculator",
+      xNote: "For capacitor reactance at a frequency and LC resonance, use the",
+      xLink: "Reactance & LC Resonance Calculator",
+      srcTitle: "Basis",
+      src: "τ, the charge curve, cut-off, attenuation and phase are computed from circuit definitions. The ADC input filter advice follows Microchip's ATmega328P datasheet (7810D) §23.6.1 Analog Input Circuitry. Check component tolerances in their datasheets.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).toFixed(1), ((1 - charge(n, 1)) * 100).toFixed(1)]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "RC 시정수·차단 주파수 계산기 — 저역 필터 — PortDock" : "RC Time Constant & Low-Pass Cut-off Calculator — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="rc">
+      <div class="row">
+        <label class="fld">{L.r}<input id="r" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">&nbsp;<select id="ru" aria-label="R unit"><option value="1">Ω</option><option value="1000" selected>kΩ</option><option value="1000000">MΩ</option></select></label>
+        <label class="fld">{L.c}<input id="c" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">&nbsp;<select id="cu" aria-label="C unit"><option value="1e-12">pF</option><option value="1e-9" selected>nF</option><option value="1e-6">µF</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.f}<input id="f" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.t}<input id="t" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.want}<input id="fw" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.cTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.cHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{crow.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { cFor, charge, discharge, fc, gain, gainDb, phaseDeg, rFor, riseTime, tau, timeTo } from "../lib/rc";
+    import { nearestE } from "../lib/divider";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("rc") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const sec = (s: number) => (s >= 1 ? `${p4(s)} s` : s >= 1e-3 ? `${p4(s * 1e3)} ms` : s >= 1e-6 ? `${p4(s * 1e6)} µs` : `${p4(s * 1e9)} ns`);
+    const hz = (f: number) => (f >= 1e6 ? `${p4(f / 1e6)} MHz` : f >= 1e3 ? `${p4(f / 1e3)} kHz` : `${p4(f)} Hz`);
+    const farad = (c: number) => (c >= 1e-6 ? `${p4(c * 1e6)} µF` : c >= 1e-9 ? `${p4(c * 1e9)} nF` : `${p4(c * 1e12)} pF`);
+    const ohm = (r: number) => (r >= 1e6 ? `${p4(r / 1e6)} MΩ` : r >= 1e3 ? `${p4(r / 1e3)} kΩ` : `${p4(r)} Ω`);
+    function run() {
+      try {
+        const R = num("r") * Number($<HTMLSelectElement>("ru").value);
+        const C = num("c") * Number($<HTMLSelectElement>("cu").value);
+        const T = tau(R, C);
+        const F = fc(R, C);
+        set("tau", sec(T));
+        set("fc", hz(F));
+        set("rise", sec(riseTime(T)));
+        set("t99", sec(timeTo(0.99, T)));
+        const t = num("t") / 1000;
+        set("ch", t >= 0 ? `${p4(charge(t, T) * 100)} % / ${p4(discharge(t, T) * 100)} %` : "");
+        const f = num("f");
+        if (f > 0) {
+          set("g", `${p4(gainDb(f, F))} dB (× ${p4(gain(f, F))})`);
+          set("ph", `${p4(phaseDeg(f, F))}°`);
+        } else {
+          set("g", "");
+          set("ph", "");
+        }
+        const fw = num("fw");
+        if (fw > 0) {
+          const c = cFor(fw, R);
+          const r = rFor(fw, C);
+          set("cf", `${farad(c)} (E12 ${ko ? "가까운 값" : "nearest"} ${farad(nearestE(c * 1e12, "E12") / 1e12)})`);
+          set("rf", `${ohm(r)} (E24 ${ko ? "가까운 값" : "nearest"} ${ohm(nearestE(r, "E24"))})`);
+        } else {
+          set("cf", "");
+          set("rf", "");
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — R·C 는 0 보다 커야 합니다" : "Check the numbers — R and C must be above 0";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

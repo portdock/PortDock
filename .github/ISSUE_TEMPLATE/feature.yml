@@ -1,0 +1,26 @@
+name: 기능 제안 / Feature request
+description: 이런 기능이 있으면 좋겠다 / Suggest an improvement
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: 프로그램 / Program
+      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, 새 도구 / New tool, 홈페이지 / Website]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 하려는 일 / What are you trying to do?
+      description: 현장에서 어떤 상황인지 적어 주세요 / Describe the situation in the field
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 원하는 동작 / What would help?
+  - type: textarea
+    id: other
+    attributes:
+      label: 다른 도구에서는 / How do other tools do it?

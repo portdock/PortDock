@@ -1,0 +1,196 @@
+---
+// 문의(PortDock 질문·버그·제안) — 두 모드:
+//  · 빌드 변수 PUBLIC_TURNSTILE_SITE_KEY 가 있으면 양식(Cloudflare Pages Function /api/contact 가 Turnstile 확인 후 메일로 전달)
+//  · 없으면(도메인·메일 함수 준비 전) 양식 대신 메일 주소 복사·GitHub 이슈·Discussions 안내
+// 어느 쪽이든 아래에 연락 메일(shared/links.ts 의 CONTACT_EMAIL)을 함께 보여 준다.
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { REPO, type Lang } from "../data/tools";
+import { UI } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const L = ko
+  ? {
+      title: "PortDock 문의",
+      intro: "PortDock 프로그램·웹 도구·가이드·장비 레지스터 맵에 대한 질문, 버그, 제안을 받습니다. 메일로 답드립니다.",
+      offersTitle: "이런 내용을 받습니다",
+      offers: ["프로그램·웹 도구 사용법 질문", "버그·잘못된 계산 결과 제보", "새 기능·웹 도구·가이드 제안", "장비 레지스터 맵 오류 제보·추가 요청 (매뉴얼 출처와 함께)"],
+      name: "이름",
+      email: "답장 받을 메일",
+      kind: "문의 종류",
+      kinds: ["질문", "버그", "제안", "장비 레지스터 맵", "기타"],
+      message: "내용 — 어느 프로그램·페이지인지, 겪은 일이나 제안을 적어 주세요",
+      send: "보내기",
+      sending: "보내는 중…",
+      ok: "보냈습니다. 확인하는 대로 답드리겠습니다.",
+      fail: "보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+      noForm: "아래 메일로 보내 주세요. 어느 프로그램·페이지인지와 겪은 일(또는 제안)을 적어 주시면 확인하는 대로 답드립니다.",
+      mailTitle: "메일로 문의",
+      orMail: "양식 대신 메일로 보내셔도 됩니다:",
+      copy: "주소 복사",
+      copied: "복사했습니다",
+      public: "공개로 남겨도 되는 질문·제안",
+      issues: "GitHub 이슈 — 버그·기능 요청",
+      discussions: "GitHub Discussions — 사용법 질문·아이디어",
+      bug: "프로그램 버그는 GitHub 이슈나 프로그램 안 «!» 문제 보고를 이용해 주세요.",
+      privacy: "보내신 내용은 답장에만 쓰고 다른 곳에 넘기지 않습니다.",
+    }
+  : {
+      title: "Contact PortDock",
+      intro: "Questions, bug reports and suggestions about the PortDock programs, web tools, guides and device register maps are welcome. I reply by email.",
+      offersTitle: "What to send",
+      offers: ["Questions about using the programs or web tools", "Bugs and wrong calculation results", "Ideas for features, web tools and guides", "Corrections or requests for device register maps (with the manual as source)"],
+      name: "Name",
+      email: "Your email",
+      kind: "Topic",
+      kinds: ["Question", "Bug", "Suggestion", "Device register map", "Other"],
+      message: "Message — which program or page, and what happened or what you suggest",
+      send: "Send",
+      sending: "Sending…",
+      ok: "Sent. I'll get back to you soon.",
+      fail: "Could not send. Please try again later.",
+      noForm: "Please email the address below. Say which program or page it is about and what happened (or what you suggest), and I'll reply as soon as I can.",
+      mailTitle: "Email",
+      orMail: "You can also email me instead of using the form:",
+      copy: "Copy address",
+      copied: "Copied",
+      public: "Questions and ideas that can be public",
+      issues: "GitHub Issues — bugs and feature requests",
+      discussions: "GitHub Discussions — usage questions and ideas",
+      bug: "For bugs, please use GitHub issues or the «!» problem report inside the program.",
+      privacy: "Your message is used only to reply and is never shared.",
+    };
+---
+
+<Base
+  lang={lang}
+  title={t.contact}
+  description={ko
+    ? "PortDock 문의: 프로그램·웹 도구 사용법 질문, 버그 제보, 기능·가이드 제안, 장비 레지스터 맵 오류 제보. 메일로 답합니다."
+    : "Contact PortDock: questions about the programs and web tools, bug reports, feature and guide ideas, device register map corrections. Replies by email."}
+  path="contact/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.contact, path: "contact/" }]} />
+      <h1>{L.title}</h1>
+      <p>{L.intro}</p>
+    </div>
+  </header>
+  <div class="wrap two" style="padding-top:28px">
+    <div>
+      {
+        siteKey ? (
+          <form class="f" id="contact" data-ok={L.ok} data-fail={L.fail} data-sending={L.sending} data-send={L.send}>
+            <div class="row">
+              <label class="fld">
+                {L.name}
+                <input name="name" required maxlength="80" autocomplete="name" />
+              </label>
+              <label class="fld">
+                {L.email}
+                <input name="email" type="email" required maxlength="120" autocomplete="email" />
+              </label>
+            </div>
+            <label class="fld">
+              {L.kind}
+              <select name="kind">{L.kinds.map((k) => <option>{k}</option>)}</select>
+            </label>
+            <label class="fld">
+              {L.message}
+              <textarea name="message" rows="8" required maxlength="5000" />
+            </label>
+            {/* 사람이 아닌 것 걸러내기 — 숨은 칸에 값이 있으면 버린다 */}
+            <input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+            <input type="hidden" name="lang" value={lang} />
+            <div class="cf-turnstile" data-sitekey={siteKey} data-language={lang} />
+            <p class="note">{L.privacy}</p>
+            <div>
+              <button class="btn primary" type="submit">{L.send}</button>
+            </div>
+            <p id="contact-msg" role="status" />
+          </form>
+        ) : (
+          <div class="card mail-card">
+            <h2>{L.mailTitle}</h2>
+            <p>{L.noForm}</p>
+            <p class="mail-line">
+              <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+              <button class="btn" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
+            </p>
+          </div>
+        )
+      }
+      {
+        siteKey && (
+          <p class="note mail-line">
+            {L.orMail} <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+            <button class="btn tight" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
+          </p>
+        )
+      }
+      <h2 class="sub-h">{L.public}</h2>
+      <ul class="links">
+        <li><a href={`${REPO}/issues`}>{L.issues} →</a></li>
+        <li><a href={`${REPO}/discussions`}>{L.discussions} →</a></li>
+      </ul>
+      <p class="note">{L.bug}</p>
+    </div>
+    <aside class="side-box">
+      <div class="card">
+        <h3>{L.offersTitle}</h3>
+        <ul class="ticks">{L.offers.map((o) => <li>{o}</li>)}</ul>
+      </div>
+    </aside>
+  </div>
+  {siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />}
+  <script>
+    // 메일 주소 복사 — 클립보드를 못 쓰면(권한·옛 브라우저) 주소를 선택해 둔다
+    for (const b of document.querySelectorAll<HTMLButtonElement>("button[data-copy]")) {
+      const label = b.textContent;
+      b.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(b.dataset.copy ?? "");
+          b.textContent = b.dataset.done ?? "OK";
+          setTimeout(() => (b.textContent = label), 1500);
+        } catch {
+          const a = b.parentElement?.querySelector("a");
+          if (a) getSelection()?.selectAllChildren(a);
+        }
+      });
+    }
+    const form = document.getElementById("contact") as HTMLFormElement | null;
+    const msg = document.getElementById("contact-msg");
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector("button[type=submit]") as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = form.dataset.sending ?? "…";
+      try {
+        const r = await fetch("/api/contact", { method: "POST", body: new FormData(form) });
+        const ok = r.ok;
+        if (msg) {
+          msg.textContent = ok ? (form.dataset.ok ?? "OK") : (form.dataset.fail ?? "Failed");
+          msg.className = ok ? "okmsg" : "err";
+        }
+        if (ok) form.reset();
+      } catch {
+        if (msg) {
+          msg.textContent = form.dataset.fail ?? "Failed";
+          msg.className = "err";
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = form.dataset.send ?? "Send";
+        (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
+      }
+    });
+  </script>
+</Base>

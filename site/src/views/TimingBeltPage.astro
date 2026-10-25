@@ -1,0 +1,320 @@
+---
+// 웹 도구: 타이밍 벨트 길이·축간 거리·벨트 잇수·감긴 각·맞물린 이·벨트 속도 (lib/timingBelt.ts).
+// Gates Mectrol «Timing Belt Theory» 식 (4)~(10)과 Gates PowerGrip GT3 매뉴얼(17195) p.3·4 예, p.12 표, p.188 근사식을 시험으로 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { centerDistance, pitchDiameter } from "../lib/timingBelt";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/timing-belt/";
+const f1 = (x: number) => x.toFixed(1);
+// 같은 풀리 둘(1:1) — 5 mm 피치 20홈, 8 mm 피치 30홈: 벨트 잇수별 축간 거리(mm)
+const tBelts = [100, 120, 150, 200, 250, 300];
+const tRows = [
+  [5, 20],
+  [8, 30],
+  [5, 40],
+].map(([p, z]) => [`${p} mm / ${z}${ko ? "홈" : "T"}`, f1(pitchDiameter(z, p)), ...tBelts.map((t) => f1(centerDistance(t * p, pitchDiameter(z, p), pitchDiameter(z, p))))]);
+const L = ko
+  ? {
+      title: "타이밍 벨트 길이·축간 거리 계산기",
+      desc: "피치·풀리 잇수·축간 거리로 타이밍 벨트 길이와 벨트 잇수를, 벨트 길이로 축간 거리를 계산합니다. 피치원 지름, 감긴 각, 맞물린 이, 벨트 속도까지.",
+      s1: "풀리",
+      pitch: "벨트 피치 (mm)",
+      z1: "작은 풀리 잇수",
+      z2: "큰 풀리 잇수",
+      rpm: "작은 풀리 회전수 (rpm, 속도용)",
+      s2: "축간 거리 → 벨트 길이",
+      c: "원하는 축간 거리 (mm)",
+      k: { pd: "피치원 지름 PD = 잇수 × 피치 ÷ π", ratio: "속도비 / 큰 풀리 회전수", len: "벨트 피치 길이 (정확)", approx: "Gates 근사식 2C + 1.57(D + d) + (D − d)²/4C", zb: "필요한 벨트 잇수 (길이 ÷ 피치)", b1: "짧은 쪽 표준 벨트 → 축간 거리", b2: "긴 쪽 표준 벨트 → 축간 거리", wrap: "작은 풀리 감긴 각 (정확 / Gates 근사)", mesh: "작은 풀리 맞물린 이", v: "벨트 속도" },
+      s3: "벨트 → 축간 거리",
+      zb: "벨트 잇수 (또는 아래에 길이)",
+      lb: "벨트 길이 (mm, 잇수가 비었을 때)",
+      k3: { len: "벨트 피치 길이", c: "축간 거리 (정확, 식 (9))", ca: "축간 거리 (근사, 식 (10))", wrap: "작은 풀리 감긴 각", mesh: "작은 풀리 맞물린 이", span: "스팬 길이 (풀리 사이 직선 구간)" },
+      example: "기본값(8 mm 피치, 72·144홈, 축간 762 mm, 1160 rpm)은 Gates 매뉴얼의 선정 예와 같은 풀리입니다. 실제 벨트 잇수·길이는 쓰는 벨트 제조사의 표준 길이 표에서 고르세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식 (Gates)",
+      formula: [
+        "피치원 지름 PD = 잇수 z × 피치 p ÷ π",
+        "벨트 길이 L = p × 벨트 잇수 zb   (피치선에서 잰 길이, 피치의 정수배)",
+        "같은 풀리 둘: L = 2C + π·d",
+        "작은 풀리 감긴 각 θ1 = 2·arccos((d2 − d1) ÷ 2C)",
+        "L = 2C·sin(θ1/2) + θ1·d1/2 + (2π − θ1)·d2/2   (C 는 수치로 푼다)",
+        "근사: L ≈ 2C + 1.57(D + d) + (D − d)² ÷ 4C,   C ≈ (Y + √(Y² − 2(D − d)²)) ÷ 4,  Y = L − π(D + d)/2",
+        "벨트 속도 v(m/s) = π × PD(mm) × rpm ÷ 60 000",
+      ],
+      tTitle: "같은 풀리 둘(1:1)의 축간 거리 (mm)",
+      tHead: ["피치 / 잇수", "PD mm", ...tBelts.map((t) => `${t}이`)],
+      tNote: "1:1 이면 C = (L − π·PD) ÷ 2 로 바로 나옵니다. 풀리 크기가 다르면 위 계산기(식 (9))를 쓰세요.",
+      exTitle: "Gates 매뉴얼 예 (같은 값이 나오는지 시험으로 확인)",
+      ex: [
+        "8 mm 피치 72·144홈(PD 7.218·14.437 in), 2400 mm(94.49 in) 벨트 → 축간 30.02 in(762.5 mm).",
+        "14 mm 피치 36·72홈(PD 6.316·12.632 in), 2310 mm(90.94 in) 벨트 → 축간 30.42 in.",
+        "벨트 속도: 7.218 in × 1160 rpm ÷ 3.82 = 2191.9 ft/min(약 11.1 m/s). 3.82 는 12/π 를 줄인 값입니다.",
+        "5 mm 피치 선정 표(p.12)의 네 행 52칸을 계산해 48칸은 끝자리까지 같고, 나머지 4칸은 반올림 경계라 0.01 in 차이였습니다.",
+      ],
+      lTitle: "읽는 법",
+      l: [
+        "벨트 길이는 피치의 정수배라 원하는 축간 거리를 정확히 맞추지 못합니다. 가까운 벨트 두 개 중 하나를 고르고, 그때 축간 거리로 풀리 위치를 정합니다. 장력 조정 여유도 둡니다.",
+        "Gates 근사식(1.57·(D − d)²/4C)은 풀리 크기 차가 클수록 정확식과 벌어집니다. 이 계산기는 정확식을 수치로 풀고 근사값을 비교로 보여 줍니다.",
+        "Gates 매뉴얼의 정격 표는 작은 풀리에 이가 6개 이상 맞물린다는 기준입니다. 맞물린 이가 적으면 정격을 줄여야 하니 감긴 각을 같이 봅니다.",
+        "회전수비는 잇수비와 같습니다(미끄럼 없음). 감속 후 회전수와 벨트 속도를 함께 확인하세요.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["타이밍 벨트 길이 공식은?", "같은 풀리 둘이면 L = 2C + π·PD 입니다. 크기가 다르면 L = 2C·sin(θ/2) + θ·d1/2 + (2π − θ)·d2/2(θ = 2·arccos((d2 − d1)/2C))이고, 근사로 2C + 1.57(D + d) + (D − d)²/4C 를 씁니다."],
+        ["피치원 지름은 어떻게 구하나요?", "잇수 × 피치 ÷ π 입니다. 8 mm 피치 72홈은 72 × 8 ÷ π = 183.3 mm(7.218 in)입니다. 바깥지름은 이보다 조금 작습니다."],
+        ["벨트 길이로 축간 거리를 구하려면?", "아래 «벨트 → 축간 거리» 에 벨트 잇수나 길이를 넣으세요. 정확식은 닫힌 해가 없어 수치로 풀고, 근사식 결과도 함께 보여 줍니다."],
+        ["GT2 벨트도 되나요?", "피치만 맞으면 같은 식입니다. GT2 2 mm 피치·20홈 풀리 둘에 축간 100 mm 면 벨트 길이 240 mm(120이)입니다."],
+      ],
+      bNote: "볼스크류 대신 벨트로 직선 이송할 때의 모터 회전수·토크 기준은",
+      bLink: "볼스크류 토크·모터 선정 계산기",
+      eNote: "모터 엔코더 펄스와 회전수는",
+      eLink: "엔코더 펄스 ↔ rpm 계산기",
+      srcTitle: "근거",
+      src: "식은 Gates Mectrol «Timing Belt Theory»(백서, 2006) p.3~4 식 (4)~(10)과 Gates «PowerGrip GT3 Drive Design Manual»(17195, 10/2014)의 «Useful Formulas and Calculations»(p.188), 예는 같은 매뉴얼 p.3·4(선정 예, 벨트 속도)와 p.12(5 mm 피치 선정 표)에서 옮겼고(모두 gates.com PDF), 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 맞물린 이 6개 기준은 같은 매뉴얼 Engineering §14. 표준 벨트 길이·풀리 잇수는 쓰는 제조사의 카탈로그를 보세요.",
+    }
+  : {
+      title: "Timing Belt Length & Center Distance Calculator",
+      desc: "Timing belt length and teeth from pitch, pulley teeth and center distance, or center distance from a belt. Pitch diameter, wrap, teeth in mesh, speed.",
+      s1: "Pulleys",
+      pitch: "Belt pitch (mm)",
+      z1: "Small pulley teeth",
+      z2: "Large pulley teeth",
+      rpm: "Small pulley speed (rpm, for belt speed)",
+      s2: "Center distance → belt length",
+      c: "Desired center distance (mm)",
+      k: { pd: "Pitch diameter PD = teeth × pitch ÷ π", ratio: "Speed ratio / large pulley speed", len: "Belt pitch length (exact)", approx: "Gates approximation 2C + 1.57(D + d) + (D − d)²/4C", zb: "Belt teeth needed (length ÷ pitch)", b1: "Shorter whole-tooth belt → center distance", b2: "Longer whole-tooth belt → center distance", wrap: "Small pulley wrap angle (exact / Gates approx.)", mesh: "Teeth in mesh, small pulley", v: "Belt speed" },
+      s3: "Belt → center distance",
+      zb: "Belt teeth (or length below)",
+      lb: "Belt length (mm, when teeth is blank)",
+      k3: { len: "Belt pitch length", c: "Center distance (exact, eq. (9))", ca: "Center distance (approx., eq. (10))", wrap: "Small pulley wrap angle", mesh: "Teeth in mesh, small pulley", span: "Span length (straight run between pulleys)" },
+      example: "The defaults (8 mm pitch, 72 and 144 teeth, 762 mm centers, 1160 rpm) use the pulleys from Gates' selection example. Pick actual belt lengths from your belt maker's stock length table.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas (Gates)",
+      formula: [
+        "Pitch diameter PD = teeth z × pitch p ÷ π",
+        "Belt length L = p × belt teeth zb   (measured on the pitch line; a whole number of pitches)",
+        "Two equal pulleys: L = 2C + π·d",
+        "Small pulley wrap angle θ1 = 2·arccos((d2 − d1) ÷ 2C)",
+        "L = 2C·sin(θ1/2) + θ1·d1/2 + (2π − θ1)·d2/2   (solved numerically for C)",
+        "Approximation: L ≈ 2C + 1.57(D + d) + (D − d)² ÷ 4C,   C ≈ (Y + √(Y² − 2(D − d)²)) ÷ 4,  Y = L − π(D + d)/2",
+        "Belt speed v (m/s) = π × PD (mm) × rpm ÷ 60,000",
+      ],
+      tTitle: "Center distance with two equal pulleys (1:1, mm)",
+      tHead: ["Pitch / teeth", "PD mm", ...tBelts.map((t) => `${t}T`)],
+      tNote: "At 1:1, C = (L − π·PD) ÷ 2 directly. For different pulley sizes use the calculator above (eq. (9)).",
+      exTitle: "Gates manual examples (checked by tests to give the same values)",
+      ex: [
+        "8 mm pitch, 72 and 144 teeth (PD 7.218 and 14.437 in), 2400 mm (94.49 in) belt → 30.02 in centers (762.5 mm).",
+        "14 mm pitch, 36 and 72 teeth (PD 6.316 and 12.632 in), 2310 mm (90.94 in) belt → 30.42 in.",
+        "Belt speed: 7.218 in × 1160 rpm ÷ 3.82 = 2191.9 ft/min (about 11.1 m/s). 3.82 is 12/π rounded.",
+        "Four rows (52 cells) of the 5 mm pitch drive selection table (p.12) were calculated: 48 match to the last digit, and the other 4 differ by 0.01 in because the calculated value sits on a rounding boundary.",
+      ],
+      lTitle: "How to read it",
+      l: [
+        "Belt length is a whole number of pitches, so you cannot hit an arbitrary center distance exactly. Pick one of the two nearest belts and set the pulleys at its center distance, leaving room for tensioning.",
+        "Gates' approximation (1.57 and (D − d)²/4C) drifts from the exact formula as the pulley size difference grows. This calculator solves the exact formula numerically and shows the approximation for comparison.",
+        "Gates' rating tables assume at least six teeth in mesh on the small pulley. With fewer, ratings must be reduced, so check the wrap angle too.",
+        "The speed ratio equals the tooth ratio (no slip). Check the output speed and belt speed together.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the timing belt length formula?", "For two equal pulleys, L = 2C + π·PD. For different sizes, L = 2C·sin(θ/2) + θ·d1/2 + (2π − θ)·d2/2 with θ = 2·arccos((d2 − d1)/2C); the common approximation is 2C + 1.57(D + d) + (D − d)²/4C."],
+        ["How do I get the pitch diameter?", "Teeth × pitch ÷ π. An 8 mm pitch, 72-tooth pulley is 72 × 8 ÷ π = 183.3 mm (7.218 in). The outside diameter is slightly smaller."],
+        ["How do I find the center distance from a belt?", "Enter the belt teeth or length under «Belt → center distance». The exact formula has no closed form, so it is solved numerically; the approximation is shown too."],
+        ["Does it work for GT2 belts?", "Yes, the formula only needs the pitch. Two 20-tooth GT2 (2 mm pitch) pulleys at 100 mm centers need a 240 mm (120-tooth) belt."],
+      ],
+      bNote: "For motor speed and torque on a linear axis, see the",
+      bLink: "Ball Screw Torque & Motor Sizing Calculator",
+      eNote: "For motor encoder pulses and speed, use the",
+      eLink: "Encoder Pulses ↔ RPM Calculator",
+      srcTitle: "Basis",
+      src: "Formulas are from Gates Mectrol «Timing Belt Theory» (white paper, 2006) pp.3–4, equations (4)–(10), and the «Useful Formulas and Calculations» page (p.188) of Gates' «PowerGrip GT3 Drive Design Manual» (17195, 10/2014); examples are from the same manual pp.3–4 (selection example, belt speed) and p.12 (5 mm pitch drive selection table) (all PDFs on gates.com). Tests check that this calculator reproduces those values. The six-teeth-in-mesh basis is from the manual's Engineering §14. For stock belt lengths and pulley sizes, see your maker's catalogue.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "타이밍 벨트 길이 계산기 — 축간 거리·풀리 잇수·피치 — PortDock" : "Timing Belt Length Calculator: Center Distance, Pulleys — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="tb">
+      <h2 style="margin-top:0">{L.s1}</h2>
+      <div class="row">
+        <label class="fld">{L.pitch}<input id="pitch" class="mono" value="8" inputmode="decimal" spellcheck="false" autocomplete="off" list="pitches" /></label>
+        <label class="fld">{L.z1}<input id="z1" class="mono" value="72" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.z2}<input id="z2" class="mono" value="144" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.rpm}<input id="rpm" class="mono" value="1160" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <datalist id="pitches">{[2, 3, 5, 8, 10, 14, 20].map((p) => <option value={p} />)}</datalist>
+      <h2>{L.s2}</h2>
+      <div class="row">
+        <label class="fld">{L.c}<input id="c" class="mono" value="762" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody></table>
+      </div>
+      <h2>{L.s3}</h2>
+      <div class="row">
+        <label class="fld">{L.zb}<input id="zb" class="mono" value="300" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.lb}<input id="lb" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="note">{ko ? "피치·잇수는 위 «풀리» 칸 값을 씁니다." : "Pitch and teeth come from «Pulleys» above."}</p>
+      <p class="err" id="err3" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv"><tbody>{Object.entries(L.k3).map(([id, name]) => <tr><td>{name}</td><td data-k3={id}></td></tr>)}</tbody></table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.exTitle}</h2>
+      <ul>{L.ex.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.bNote} <a href={url(lang, "tools/ball-screw/")}>{L.bLink}</a>. {L.eNote} <a href={url(lang, "tools/encoder/")}>{L.eLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { beltLengthApprox, beltSpeed, centerApprox, centerDistance, nearestBelts, pitchDiameter, teethInMesh, wrapSmall } from "../lib/timingBelt";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("tb") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (attr: string, k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[${attr}="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const clear = (attr: string) => {
+      for (const td of form.querySelectorAll<HTMLElement>(`td[${attr}]`)) td.textContent = "";
+    };
+    const p4 = (x: number) => (Math.abs(x) >= 1e5 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(4)));
+    const mm = (x: number) => `${x.toFixed(2)} mm (${(x / 25.4).toFixed(3)} in)`;
+    const deg = (r: number) => `${((r * 180) / Math.PI).toFixed(1)}°`;
+    const mesh = (z1: number, th: number) => {
+      const m = teethInMesh(z1, th);
+      return `${p4(m.v)} (${m.whole}${ko ? "개" : ""})${m.whole < 6 ? (ko ? " — 6개 미만, 정격을 줄여야 함" : " — fewer than 6, derate") : ""}`;
+    };
+    function pulleys() {
+      const p = num("pitch");
+      const a = num("z1");
+      const b = num("z2");
+      const zs = Math.min(a, b);
+      const zl = Math.max(a, b);
+      return { p, zs, zl, d1: pitchDiameter(zs, p), d2: pitchDiameter(zl, p) };
+    }
+    function run() {
+      try {
+        const { p, zs, zl, d1, d2 } = pulleys();
+        const c = num("c");
+        const r = nearestBelts(zs, zl, p, c);
+        set("data-k", "pd", `${p4(d1)} / ${p4(d2)} mm`);
+        const rs = $("rpm").value.trim();
+        const rpm = rs === "" ? NaN : num("rpm");
+        set("data-k", "ratio", `${p4(zl / zs)} : 1${rs === "" ? "" : ` / ${p4((rpm * zs) / zl)} rpm`}`);
+        set("data-k", "len", mm(r.length));
+        set("data-k", "approx", mm(beltLengthApprox(c, d1, d2)));
+        set("data-k", "zb", `${p4(r.teeth)}${ko ? "이" : " teeth"}`);
+        const show = (k: string, b?: { teeth: number; length: number; c: number }) => set("data-k", k, b ? `${b.teeth}${ko ? "이" : "T"} · ${p4(b.length)} mm → ${b.c.toFixed(2)} mm` : "—");
+        show("b1", r.belts[0]);
+        show("b2", r.belts[1]);
+        const th = wrapSmall(c, d1, d2);
+        set("data-k", "wrap", `${deg(th)} / ${(180 - ((d2 - d1) * 60) / c).toFixed(1)}°`);
+        set("data-k", "mesh", mesh(zs, th));
+        if (rs === "") set("data-k", "v", ko ? "회전수를 넣으면 계산" : "Enter rpm to calculate");
+        else {
+          const v = beltSpeed(d1, rpm);
+          set("data-k", "v", `${p4(v)} m/s (${p4((v / 0.3048) * 60)} ft/min)`);
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 피치·회전수는 0 보다 크고, 잇수는 1 이상의 정수, 축간 거리는 두 피치원 반지름의 합보다 커야 합니다(풀리가 겹치지 않게)" : "Check the numbers — pitch and rpm above 0, teeth whole numbers 1 or more, center distance larger than the sum of the two pitch radii (pulleys must not overlap)";
+        clear("data-k");
+      }
+      try {
+        const { p, zs, d1, d2 } = pulleys();
+        const zt = $("zb").value.trim();
+        let len: number;
+        if (zt !== "") {
+          const z = num("zb");
+          if (!Number.isInteger(z) || z < 1) throw new RangeError("zb");
+          len = z * p;
+        } else len = num("lb");
+        const c = centerDistance(len, d1, d2);
+        set("data-k3", "len", `${p4(len)} mm (${p4(len / p)}${ko ? "이" : " teeth"})`);
+        set("data-k3", "c", mm(c));
+        let ca = "—";
+        try {
+          ca = mm(centerApprox(len, d1, d2));
+        } catch {
+          /* 근사식이 풀리지 않는 짧은 벨트 */
+        }
+        set("data-k3", "ca", ca);
+        const th = wrapSmall(c, d1, d2);
+        set("data-k3", "wrap", deg(th));
+        set("data-k3", "mesh", mesh(zs, th));
+        set("data-k3", "span", `${(c * Math.sin(th / 2)).toFixed(2)} mm`);
+        $("err3").textContent = "";
+      } catch {
+        $("err3").textContent = ko ? "숫자를 확인하세요 — 벨트 잇수는 1 이상의 정수(또는 길이 > 0)이고, 두 풀리를 감을 수 있을 만큼 길어야 합니다" : "Check the numbers — belt teeth a whole number 1 or more (or length above 0), and long enough to wrap both pulleys";
+        clear("data-k3");
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

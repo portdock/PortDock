@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PortDock Modbus Slave",
+  "version": "0.1.0",
+  "identifier": "dev.portdock.modbus-slave",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PortDock Modbus Slave",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "PortDock",
+    "copyright": "Copyright (C) 2026 PortDock",
+    "homepage": "https://portdock.dev",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../../../tools/installer-license.txt",
+    "shortDescription": "Modbus RTU slave simulator with register tables",
+    "longDescription": "PortDock Modbus Slave imitates a Modbus RTU device: edit coils and registers in a table and watch the requests from a master.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Korean"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "PortDock",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

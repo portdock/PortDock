@@ -1,0 +1,40 @@
+---
+// 웹 도구 페이지 아래 «이어 읽기» — 이 웹 도구를 쓰는 가이드(guides.ts 의 webTools)와 다른 웹 도구
+import { type Lang } from "../data/tools";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+  /** 지금 웹 도구 경로(예: "tools/modbus/") */
+  path: string;
+}
+const { lang, path } = Astro.props;
+const ko = lang === "ko";
+const guides = GUIDES.filter((g) => g.webTools?.includes(path));
+const others = WEB_TOOLS.filter((w) => w.path !== path);
+---
+
+<section class="related">
+  <h2>{ko ? "이어 읽기" : "Read next"}</h2>
+  <ul class="links">
+    {
+      guides.map((g) => (
+        <li>
+          <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+        </li>
+      ))
+    }
+    {
+      others.map((w) => (
+        <li>
+          <a href={url(lang, w.path)}>{w.name[lang]}</a> — {w.blurb[lang]}
+        </li>
+      ))
+    }
+    <li>
+      <a href={url(lang, "download/")}>{ko ? "PortDock 프로그램 내려받기(무료, 윈도우)" : "Download the PortDock programs (free, Windows)"}</a>
+    </li>
+  </ul>
+</section>

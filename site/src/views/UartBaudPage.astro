@@ -1,0 +1,269 @@
+---
+// 웹 도구: UART 보율 오차 계산기 — 클럭·오버샘플링·분주(정수·분수) → 실제 보율·오차, AVR 수신 허용 범위(lib/uartBaud.ts).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { AVR_REC, avrRange } from "../lib/uartBaud";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/uart-baud/";
+const L = ko
+  ? {
+      title: "UART 보율 오차 계산기",
+      desc: "MCU 클럭과 오버샘플링으로 보율 분주비(AVR UBRR 등)·실제 보율·오차 %를 계산하고, 데이터 비트 수에 따른 수신 허용 범위와 표준 보율 표를 함께 봅니다.",
+      clk: "UART 클럭 (MHz)",
+      baud: "원하는 보율 (bps)",
+      os: "오버샘플링",
+      osOpt: ["16 (보통)", "8 (AVR U2X 등 두 배 속도)"],
+      frac: "분주 레지스터",
+      fracOpt: ["정수", "소수 3비트 (1/8 단위)", "소수 4비트 (1/16 단위)"],
+      bits: "데이터 + 패리티 비트 (D)",
+      other: "상대 장비 보율 오차 (%)",
+      res: "결과",
+      k: { ideal: "이상적인 분주비 f ÷ (오버샘플링 × 보율)", div: "넣을 분주비", ubrr: "AVR UBRR (= 분주비 − 1)", act: "실제 보율", err: "오차", tot: "상대 장비와의 차이", rng: "AVR 수신 허용 범위 (§19.8.3)" },
+      tTitle: "이 클럭의 표준 보율",
+      tHead: ["보율", "분주비", "실제 보율", "오차"],
+      example: "기본값(16 MHz, 115200 bps, 오버샘플링 16)은 ATmega328P 데이터시트 표 19-12 의 한 줄입니다 — UBRR 8, 오차 −3.5 %.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "분주비 = f ÷ (오버샘플링 × 보율)   → 정수(또는 레지스터의 소수 단위)로 반올림",
+        "실제 보율 = f ÷ (오버샘플링 × 넣은 분주비)",
+        "오차(%) = (실제 보율 ÷ 원하는 보율 − 1) × 100",
+        "AVR: BAUD = f ÷ (16 × (UBRR + 1)), 두 배 속도(U2X = 1)는 8 × (UBRR + 1)",
+      ],
+      whyTitle: "오차가 왜 문제인가",
+      why: [
+        "UART 는 시작 비트의 하강 에지에 맞춰 시계를 맞추고, 그 뒤 비트들은 자기 클럭으로 세어 가운데쯤에서 읽습니다. 보율이 다르면 프레임 끝(패리티·정지 비트)으로 갈수록 읽는 위치가 밀립니다.",
+        "그래서 허용 오차는 프레임이 길수록 작습니다. ATmega328P 데이터시트는 데이터+패리티 비트 수(D)별로 받아들일 수 있는 범위를 식으로 주고(아래 표), 송신·수신이 오차를 반씩 나눈다고 보고 «권장 최대 수신 오차» 를 적습니다(보통 속도 D = 8 에서 ±2.0 %).",
+        "중요한 것은 두 장비 사이의 차이입니다. 한쪽이 +2 %, 다른 쪽이 −2 % 면 차이는 약 4 % 입니다. «상대 장비 보율 오차» 칸에 상대 쪽 오차를 넣어 차이를 봅니다.",
+        "클럭이 1.8432 MHz 의 배수(11.0592·14.7456·18.432 MHz 등)면 표준 보율이 정확히 나누어떨어집니다. 데이터시트 표 19-11 에서 이 클럭들의 오차가 0.0 % 인 이유입니다.",
+      ],
+      rTitle: "AVR 수신 허용 범위 (데이터시트 표 19-2·19-3)",
+      rHead: ["D", "보통 속도 최저 ~ 최고", "권장 최대 수신 오차", "두 배 속도 최저 ~ 최고", "권장 최대 수신 오차"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["16 MHz 에서 115200 bps 가 잘 안 되는 이유는?", "오버샘플링 16 이면 분주비가 8.68 이라 9 로 반올림되고, 실제 보율은 111 111 bps(−3.5 %)가 됩니다. 두 배 속도(오버샘플링 8)로 바꾸면 17.36 → 17, 117 647 bps(+2.1 %)로 오차가 줄어듭니다."],
+        ["오차가 몇 % 까지 괜찮나요?", "칩과 프레임 길이에 따라 다릅니다. ATmega328P 는 8비트 데이터·패리티 없음(D = 8)에서 보통 속도 기준 권장 최대 수신 오차를 ±2.0 % 로 적습니다. 다른 칩은 그 데이터시트의 수신 허용 범위 표를 봅니다."],
+        ["분수 분주는 무엇인가요?", "분주 레지스터에 소수 부분(예: 1/16 단위)이 있는 UART 입니다. 정수만 되는 UART 보다 오차를 훨씬 줄일 수 있습니다. 레지스터에 넣는 방법은 칩 매뉴얼을 따릅니다."],
+        ["PC 쪽 USB-시리얼 변환기도 오차가 있나요?", "변환기 칩도 자기 클럭을 나눠 보율을 만듭니다. 칩마다 만들 수 있는 보율과 오차가 다르므로, 높은 보율에서 글자가 깨지면 변환기 데이터시트의 보율 표를 확인합니다."],
+      ],
+      srcTitle: "출처",
+      stNote: "보율로 문자 시간·Modbus 3.5문자를 보려면",
+      stLink: "시리얼 통신 시간 계산기",
+    }
+  : {
+      title: "UART Baud Rate Error Calculator",
+      desc: "MCU clock and oversampling → baud divisor (AVR UBRR etc.), actual baud rate and error %, receiver tolerance by frame length, standard baud table.",
+      clk: "UART clock (MHz)",
+      baud: "Target baud rate (bps)",
+      os: "Oversampling",
+      osOpt: ["16 (normal)", "8 (double speed, e.g. AVR U2X)"],
+      frac: "Divisor register",
+      fracOpt: ["Integer", "3 fractional bits (1/8 steps)", "4 fractional bits (1/16 steps)"],
+      bits: "Data + parity bits (D)",
+      other: "Other device's baud error (%)",
+      res: "Results",
+      k: { ideal: "Ideal divisor f ÷ (oversampling × baud)", div: "Divisor to use", ubrr: "AVR UBRR (= divisor − 1)", act: "Actual baud rate", err: "Error", tot: "Mismatch with the other device", rng: "AVR receiver range (§19.8.3)" },
+      tTitle: "Standard baud rates at this clock",
+      tHead: ["Baud", "Divisor", "Actual", "Error"],
+      example: "The defaults (16 MHz, 115200 bps, oversampling 16) are one row of ATmega328P datasheet table 19-12 — UBRR 8, error −3.5 %.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Divisor = f ÷ (oversampling × baud)   → rounded to an integer (or the register's fractional step)",
+        "Actual baud = f ÷ (oversampling × divisor used)",
+        "Error (%) = (actual ÷ target − 1) × 100",
+        "AVR: BAUD = f ÷ (16 × (UBRR + 1)); double speed (U2X = 1) uses 8 × (UBRR + 1)",
+      ],
+      whyTitle: "Why the error matters",
+      why: [
+        "A UART synchronises on the falling edge of the start bit, then counts the following bits on its own clock and samples near their middle. With mismatched baud rates the sampling point drifts towards the end of the frame (parity and stop bits).",
+        "So the tolerance shrinks as the frame gets longer. The ATmega328P datasheet gives the acceptable range as formulas by data + parity bits (D) — table below — and, assuming transmitter and receiver share the total error equally, a «recommended max receiver error» (±2.0 % at D = 8, normal speed).",
+        "What counts is the difference between the two devices: +2 % on one side and −2 % on the other is about 4 % apart. Enter the other side's error to see the mismatch.",
+        "Clocks that are multiples of 1.8432 MHz (11.0592, 14.7456, 18.432 MHz…) divide standard baud rates exactly — that is why datasheet table 19-11 shows 0.0 % for them.",
+      ],
+      rTitle: "AVR receiver range (datasheet tables 19-2 and 19-3)",
+      rHead: ["D", "Normal speed, slowest ~ fastest", "Recommended max receiver error", "Double speed, slowest ~ fastest", "Recommended max receiver error"],
+      faqTitle: "FAQ",
+      faq: [
+        ["Why is 115200 bps unreliable at 16 MHz?", "With oversampling 16 the divisor is 8.68, rounded to 9, so the actual rate is 111,111 bps (−3.5 %). Double speed (oversampling 8) gives 17.36 → 17, 117,647 bps (+2.1 %), a smaller error."],
+        ["How much error is acceptable?", "It depends on the chip and frame length. The ATmega328P datasheet recommends at most ±2.0 % receiver error for 8 data bits without parity (D = 8) at normal speed. For other chips, see their receiver tolerance table."],
+        ["What is a fractional divisor?", "Some UARTs have a fractional part in the divisor register (e.g. 1/16 steps), which cuts the error a lot compared with integer-only dividers. How to load it depends on the chip manual."],
+        ["Do USB-serial adapters have baud error too?", "Yes — the adapter chip also divides its own clock. Achievable rates and errors differ by chip, so if text garbles at high baud rates, check the adapter datasheet's baud table."],
+      ],
+      srcTitle: "Sources",
+      stNote: "For character time and the Modbus 3.5-character gap at a baud rate, use the",
+      stLink: "Serial Timing Calculator",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "Microchip, ATmega328P datasheet (7810D, 01/2015): table 19-1, §19.8.3 Asynchronous Operational Range, tables 19-2, 19-3, §19.11 tables 19-9 to 19-12", href: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf" },
+];
+const pct = (x: number) => (x * 100).toFixed(2);
+const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
+  const n = avrRange(d);
+  const x = avrRange(d, true);
+  return [String(d), `${pct(n.slow)} ~ ${pct(n.fast)} %`, `±${AVR_REC.normal[d].toFixed(1)} %`, `${pct(x.slow)} ~ ${pct(x.fast)} %`, `±${AVR_REC.double[d].toFixed(1)} %`];
+});
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "UART 보율 오차 계산기 — MCU 클럭·UBRR·분주비 — PortDock" : "UART Baud Rate Error Calculator: MCU Clock, UBRR — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ub">
+      <div class="row">
+        <label class="fld">{L.clk}<input id="clk" class="mono" value="16" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.baud}<input id="baud" class="mono" value="115200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.os}<select id="os"><option value="16" selected>{L.osOpt[0]}</option><option value="8">{L.osOpt[1]}</option></select></label>
+        <label class="fld">{L.frac}<select id="frac"><option value="0" selected>{L.fracOpt[0]}</option><option value="3">{L.fracOpt[1]}</option><option value="4">{L.fracOpt[2]}</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.bits}<select id="d">{[5, 6, 7, 8, 9, 10].map((d) => <option value={d} selected={d === 8}>{d}</option>)}</select></label>
+        <label class="fld">{L.other}<input id="other" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["ideal", "div", "ubrr", "act", "err", "tot", "rng"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="vd"></p>
+      <div class="tbl">
+        <table class="t">
+          <caption class="note" style="text-align:left">{L.tTitle}</caption>
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.whyTitle}</h2>
+      <ul>{L.why.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.rTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.rHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{rRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.stNote} <a href={url(lang, "tools/serial-timing/")}>{L.stLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { AVR_REC, BAUDS, avrRange, avrUbrr, baudFor } from "../lib/uartBaud";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ub") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d: number) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const sg = (x: number, d = 2) => (x > 0 ? "+" : "") + x.toFixed(d);
+    function run() {
+      const tb = $("tb");
+      tb.replaceChildren();
+      const vd = $("vd");
+      vd.textContent = "";
+      vd.className = "verdict";
+      try {
+        const f = num("clk") * 1e6;
+        const baud = num("baud");
+        const os = Number($<HTMLSelectElement>("os").value);
+        const frac = Number($<HTMLSelectElement>("frac").value);
+        const d = Number($<HTMLSelectElement>("d").value);
+        const other = num("other");
+        const r = baudFor(f, baud, os, frac);
+        set("ideal", fx(r.ideal, 4));
+        set("div", fx(r.div, 4));
+        set("ubrr", frac === 0 ? String(avrUbrr(r)) : "—");
+        set("act", `${fx(r.actual, 1)} bps`);
+        set("err", `${sg(r.errPct)} %`);
+        const tot = Number.isFinite(other) ? ((1 + r.errPct / 100) / (1 + other / 100) - 1) * 100 : NaN;
+        set("tot", Number.isFinite(tot) ? `${sg(tot)} %` : "");
+        const rg = avrRange(d, os === 8);
+        set("rng", `${(rg.slow * 100).toFixed(2)} ~ ${(rg.fast * 100).toFixed(2)} %`);
+        const rec = (os === 8 ? AVR_REC.double : AVR_REC.normal)[d];
+        if (os === 16 || os === 8) {
+          const ok = Math.abs(r.errPct) <= rec;
+          vd.className = `verdict ${ok ? "ok" : "warn"}`;
+          vd.textContent = ok
+            ? ko ? `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 안` : `Error ${sg(r.errPct)} % — within the AVR recommended max receiver error ±${rec.toFixed(1)} %`
+            : ko ? `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 밖. 클럭·오버샘플링을 바꾸거나 보율을 낮추세요` : `Error ${sg(r.errPct)} % — outside the AVR recommended ±${rec.toFixed(1)} %. Change clock or oversampling, or lower the baud rate`;
+        }
+        for (const b of BAUDS) {
+          const x = baudFor(f, b, os, frac);
+          const tr = document.createElement("tr");
+          if (b === baud) tr.style.fontWeight = "600";
+          for (const t of [String(b), fx(x.div, 4), fx(x.actual, 1), `${sg(x.errPct)} %`]) {
+            const td = document.createElement("td");
+            td.className = "mono";
+            td.textContent = t;
+            tr.append(td);
+          }
+          tb.append(tr);
+        }
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 클럭과 보율은 0 보다 커야 합니다" : "Check the numbers — clock and baud rate must be above 0";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

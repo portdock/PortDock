@@ -1,0 +1,288 @@
+---
+// 웹 도구: 역률 개선 콘덴서 계산기 — kW·cos φ1 → cos φ2 에 필요한 kvar, Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류(lib/power.ts).
+// 근거: ABB Motor guide(2019) §4.10 «Reactive-power compensation»·표 4.7(Q = K·P/η, C = 3.2·10^6·Q/U² 50 Hz),
+//   K = tan φ1 − tan φ2 는 시험에서 표 4.7 을 재현. 콘덴서 하나 C = Q ÷ (2π f U²).
+//   전력 회사 역률 요금 기준(국내 기본공급약관 등)은 원문을 확인하지 않아 수치를 싣지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { kFactor } from "../lib/power";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/pf-capacitor/";
+const L = ko
+  ? {
+      title: "역률 개선 콘덴서 용량 계산기 (kvar·µF)",
+      desc: "부하 kW 와 지금 역률·목표 역률로 역률 개선 콘덴서 용량(kvar)을 구하고, 3상 Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류·kVA 를 계산합니다. 50·60 Hz.",
+      phase: "전원",
+      p3: "3상 (선간 전압)",
+      p1: "단상",
+      v: "전압 (V)",
+      hz: "주파수",
+      conn: "콘덴서 결선 (3상)",
+      cd: "Δ (삼각, 콘덴서에 선간 전압)",
+      cy: "Y (성형, 콘덴서에 상전압)",
+      kw: "부하 유효 전력 (kW) — 모터면 출력",
+      eff: "효율 (%) — 모터가 아니면 100",
+      pf1: "지금 역률 cos φ1",
+      pf2: "목표 역률 cos φ2",
+      res: "결과",
+      k: { p: "입력 유효 전력 P = 출력 ÷ η", k: "K = tan φ1 − tan φ2", qc: "필요한 콘덴서 용량 Qc", each: "콘덴서 하나 (전압 · kvar)", uf: "콘덴서 하나의 용량", ic: "콘덴서 선 전류", i: "선 전류 개선 전 → 후", s: "피상 전력 개선 전 → 후" },
+      chkTitle: "달 콘덴서 kvar 로 개선 뒤 역률",
+      inst: "콘덴서 kvar (합계)",
+      example: "기본값(3상 400 V 50 Hz, 100 kW, 0.75 → 0.95, Δ)은 예시입니다. 실제 역률은 부하에 따라 바뀌므로 전력 미터로 잰 값이나 명판 값을 넣고, 콘덴서는 정격 전압·kvar 가 정해진 제품에서 고릅니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "Qc (kvar) = P × (tan φ1 − tan φ2) = K × P,   tan φ = √(1 − cos²φ) ÷ cos φ",
+        "모터: P = 정격 출력 ÷ 효율   (ABB Motor guide: Q = K × P ÷ η)",
+        "콘덴서 하나: C = Q_하나 × 1000 ÷ (2π × f × U²)  [F],   Q_하나 = Qc ÷ 3 (3상)",
+        "Δ 결선: U = 선간 전압,   Y 결선: U = 선간 전압 ÷ √3  → 같은 kvar 에 Y 는 Δ 의 3배 µF",
+        "콘덴서 선 전류 = Qc × 1000 ÷ (√3 × V)",
+      ],
+      fNote: "ABB Motor guide 는 50 Hz 에서 C = 3.2 × 10⁶ × Q ÷ U² 를 적습니다. 3.2 × 10⁶ 은 10⁹ ÷ (2π × 50) ≈ 3.18 × 10⁶ 을 반올림한 값이고, Q 를 kvar·U 를 V 로 넣으면 C 는 µF 로 나옵니다. 이 계산기는 반올림 없이 C = Q ÷ (2π f U²) 를 써서 60 Hz 에도 그대로 씁니다.",
+      kTitle: "K 표 (tan φ1 − tan φ2)",
+      kNote: "아래 값은 식으로 계산했고 ABB Motor guide 표 4.7 의 값과 ±0.001 안에서 같습니다. 출력(또는 유효 전력) kW 에 K 를 곱하면 필요한 kvar 입니다.",
+      kHead: ["cos φ1 ↓ / 목표 →", "0.85", "0.90", "0.95"],
+      mTitle: "모터에 직접 달 때 (ABB Motor guide §4.10)",
+      m: [
+        "콘덴서는 보통 모터(또는 모터 묶음)와 병렬로 답니다. 과보상하면 유도 전동기가 자기 여자되어 발전기처럼 돌 수 있으므로, 모터의 무부하 전류를 넘게 보상하지 않는 것이 보통입니다.",
+        "콘덴서를 권선의 한 상에만 병렬로 달면 Y-Δ 기동이 어렵거나 안 될 수 있습니다.",
+        "권선이 따로인 2단 속도 모터에서 양쪽 권선에 보상을 달았다면, 쓰지 않는 권선의 콘덴서는 회로에 남아 있지 않게 합니다. 이런 콘덴서는 경우에 따라 권선 발열·진동을 늘릴 수 있습니다.",
+      ],
+      oTitle: "목표를 얼마로 잡나",
+      o: [
+        "목표 역률을 1.0 에 가깝게 잡을수록 필요한 kvar 가 빠르게 늘고, 부하가 줄었을 때 진상(과보상)이 되기 쉽습니다. 부하가 바뀌는 설비는 여러 단으로 나눠 켜고 끄는 자동 역률 조정 장치를 쓰는 경우가 많습니다.",
+        "전력 회사의 역률 기준·요금 조항은 계약마다 다르므로 계약서·공급 약관을 확인합니다. 이 페이지는 약관 원문을 확인하지 않아 기준 수치를 싣지 않습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["100 kW 부하를 역률 0.75 에서 0.95 로 올리려면 몇 kvar?", "K = tan(acos 0.75) − tan(acos 0.95) ≈ 0.882 − 0.329 = 0.553 이므로 Qc ≈ 55.3 kvar 입니다. 400 V 50 Hz Δ 결선이면 콘덴서 하나에 약 18.4 kvar, 약 367 µF 입니다."],
+        ["kvar 를 µF 로 바꾸려면?", "콘덴서 하나에 걸리는 전압 U 와 주파수 f 로 C(µF) = kvar × 10⁹ ÷ (2π × f × U²) 입니다. 같은 콘덴서라도 60 Hz 에서는 50 Hz 보다 kvar 가 1.2배가 됩니다."],
+        ["Δ 와 Y 중 무엇이 나은가요?", "같은 kvar 를 내려면 Y 는 콘덴서마다 Δ 의 3배 용량이 필요하지만 걸리는 전압은 1/√3 입니다. 시중 3상 콘덴서는 정격 전압·kvar 로 팔리므로 제품의 정격 전압이 선간 전압에 맞는지 봅니다."],
+        ["역률을 1.0 으로 맞추면 좋은가요?", "부하가 줄면 진상이 되고, 모터에 직접 단 경우 자기 여자 위험이 있어 보통 그보다 낮게 잡습니다. 위 «목표를 얼마로 잡나» 를 보세요."],
+      ],
+      pwNote: "kVA·kW·kvar·전류를 서로 바꾸려면",
+      pwLink: "3상 전력 계산기",
+      mcNote: "모터 정격 전류는",
+      mcLink: "모터 전류 계산기",
+      xNote: "콘덴서 하나의 리액턴스·전류는",
+      xLink: "리액턴스·LC 공진 계산기",
+      srcTitle: "출처",
+    }
+  : {
+      title: "Power Factor Correction Capacitor Calculator (kvar, µF)",
+      desc: "Capacitor kvar to raise a kW load from cos φ1 to cos φ2, µF per capacitor for delta or star banks, and current and kVA before and after. 50 or 60 Hz.",
+      phase: "Supply",
+      p3: "Three-phase (line-to-line)",
+      p1: "Single-phase",
+      v: "Voltage (V)",
+      hz: "Frequency",
+      conn: "Capacitor connection (three-phase)",
+      cd: "Delta (line voltage on each capacitor)",
+      cy: "Star (phase voltage on each capacitor)",
+      kw: "Load real power (kW) — output for a motor",
+      eff: "Efficiency (%) — 100 if not a motor",
+      pf1: "Present power factor cos φ1",
+      pf2: "Target power factor cos φ2",
+      res: "Results",
+      k: { p: "Input real power P = output ÷ η", k: "K = tan φ1 − tan φ2", qc: "Capacitor rating needed Qc", each: "Per capacitor (voltage · kvar)", uf: "Capacitance per capacitor", ic: "Capacitor line current", i: "Line current before → after", s: "Apparent power before → after" },
+      chkTitle: "Power factor after a given capacitor kvar",
+      inst: "Capacitor kvar (total)",
+      example: "The defaults (three-phase 400 V 50 Hz, 100 kW, 0.75 → 0.95, delta) are an example. Real power factor varies with load, so enter metered or nameplate values, and pick capacitors by their rated voltage and kvar.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "Qc (kvar) = P × (tan φ1 − tan φ2) = K × P,   tan φ = √(1 − cos²φ) ÷ cos φ",
+        "Motor: P = rated output ÷ efficiency   (ABB Motor guide: Q = K × P ÷ η)",
+        "Per capacitor: C = Q_each × 1000 ÷ (2π × f × U²)  [F],   Q_each = Qc ÷ 3 (three-phase)",
+        "Delta: U = line voltage,   star: U = line voltage ÷ √3  → star needs 3× the µF for the same kvar",
+        "Capacitor line current = Qc × 1000 ÷ (√3 × V)",
+      ],
+      fNote: "ABB's Motor guide gives C = 3.2 × 10⁶ × Q ÷ U² at 50 Hz. 3.2 × 10⁶ is 10⁹ ÷ (2π × 50) ≈ 3.18 × 10⁶ rounded; with Q in kvar and U in volts, C comes out in µF. This calculator uses C = Q ÷ (2π f U²) without rounding, so it also works at 60 Hz.",
+      kTitle: "K table (tan φ1 − tan φ2)",
+      kNote: "These values are computed from the formula and agree with ABB Motor guide Table 4.7 within ±0.001. Multiply the output (or real power) kW by K for the kvar needed.",
+      kHead: ["cos φ1 ↓ / target →", "0.85", "0.90", "0.95"],
+      mTitle: "Directly at a motor (ABB Motor guide §4.10)",
+      m: [
+        "Capacitors are usually connected in parallel with the motor or a group of motors. Over-compensation can make an induction motor self-excite and run as a generator, so it is normal practice not to compensate for more than the motor's no-load current.",
+        "Capacitors must not be connected in parallel with single phases of the winding; that can make star-delta starting difficult or impossible.",
+        "On a two-speed motor with separate windings and compensation on both, the capacitors should not remain in circuit on the unused winding. Such capacitors can in some cases increase winding heating and vibration.",
+      ],
+      oTitle: "Choosing the target",
+      o: [
+        "The closer the target is to 1.0, the faster the required kvar grows, and the easier it is to end up leading (over-compensated) when the load drops. Plants with varying load often use automatic correction that switches several steps.",
+        "Utility power factor requirements and tariffs differ by contract, so check your supply agreement. This page does not quote them because we have not checked the original terms.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How many kvar raise a 100 kW load from 0.75 to 0.95?", "K = tan(acos 0.75) − tan(acos 0.95) ≈ 0.882 − 0.329 = 0.553, so Qc ≈ 55.3 kvar. At 400 V 50 Hz in delta, each capacitor is about 18.4 kvar, about 367 µF."],
+        ["How do I convert kvar to µF?", "With the voltage U across one capacitor and the frequency f: C (µF) = kvar × 10⁹ ÷ (2π × f × U²). The same capacitor gives 1.2 times the kvar at 60 Hz as at 50 Hz."],
+        ["Delta or star?", "For the same kvar, star needs three times the capacitance per capacitor but sees 1/√3 of the voltage. Three-phase capacitor units are sold by rated voltage and kvar, so check the unit's rated voltage against the line voltage."],
+        ["Should I correct to exactly 1.0?", "It turns leading when the load drops, and at a motor it risks self-excitation, so targets are usually lower. See «Choosing the target» above."],
+      ],
+      pwNote: "To convert kVA, kW, kvar and amps, use the",
+      pwLink: "Three-Phase Power Calculator",
+      mcNote: "For a motor's rated current, use the",
+      mcLink: "Motor Current Calculator",
+      xNote: "For one capacitor's reactance and current, use the",
+      xLink: "Reactance & LC Resonance Calculator",
+      srcTitle: "Sources",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "ABB, Low voltage motors — Motor guide (2019): §4.10 Power factor, «Reactive-power compensation», Table 4.7 Phase compensation", href: "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf" },
+  { name: "ABB, Technical guide No. 7 — Dimensioning of a drive system (3AFE64362569 Rev D): eq. 3.15", href: "https://library.e.abb.com/public/e555e5106a3c44e882f48b75a44f6807/Technical_guide_No_7_3AFE64362569_RevD_EN_lowres.pdf" },
+];
+const PF1 = [0.6, 0.65, 0.7, 0.75, 0.8];
+const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFactor(p, t).toFixed(3))]);
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "역률 개선 콘덴서 용량 계산기 — kvar·µF·Δ/Y — PortDock" : "Power Factor Correction Capacitor Calculator: kvar, µF — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="pc">
+      <div class="row">
+        <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option></select></label>
+        <label class="fld">{L.v}<input id="v" class="mono" value="400" list="volts" inputmode="decimal" spellcheck="false" autocomplete="off" />
+          <datalist id="volts"><option value="220" /><option value="380" /><option value="400" /><option value="440" /><option value="690" /></datalist>
+        </label>
+        <label class="fld">{L.hz}<select id="hz"><option value="50" selected>50 Hz</option><option value="60">60 Hz</option></select></label>
+        <label class="fld">{L.conn}<select id="cn"><option value="delta" selected>{L.cd}</option><option value="star">{L.cy}</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.kw}<input id="kw" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.eff}<input id="eff" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf1}<input id="pf1" class="mono" value="0.75" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf2}<input id="pf2" class="mono" value="0.95" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+
+      <h2>{L.chkTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.inst}<input id="inst" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="verdict" id="vd" aria-live="polite"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.kTitle}</h2>
+      <p>{L.kNote}</p>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.kHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{krows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.mTitle}</h2>
+      <ul>{L.m.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.oTitle}</h2>
+      <ul>{L.o.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.pwNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pwLink}</a>. {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { capacitor, pfAfter, type Conn, type Ph } from "../lib/power";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("pc") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 2) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    function run() {
+      const ph = $<HTMLSelectElement>("ph").value as Ph;
+      $<HTMLSelectElement>("cn").disabled = ph === "1";
+      const vd = $("vd");
+      vd.className = "verdict";
+      vd.textContent = "";
+      try {
+        const eff = num("eff") / 100;
+        if (!(eff > 0 && eff <= 1)) throw new RangeError("eff");
+        const p = num("kw") / eff;
+        const pf1 = num("pf1");
+        const r = capacitor({ phase: ph, kw: p, pf1, pf2: num("pf2"), volts: num("v"), hz: num("hz"), conn: $<HTMLSelectElement>("cn").value as Conn });
+        set("p", `${fx(p, 3)} kW`);
+        set("k", fx(r.k, 4));
+        set("qc", `${fx(r.qc)} kvar`);
+        set("each", ph === "3" ? `${fx(r.uCap, 1)} V · ${fx(r.qEach)} kvar × 3` : `${fx(r.uCap, 1)} V · ${fx(r.qEach)} kvar`);
+        set("uf", `${fx(r.uf, 1)} µF`);
+        set("ic", `${fx(r.capAmps)} A`);
+        set("i", `${fx(r.before.amps, 1)} A → ${fx(r.after.amps, 1)} A (−${fx((1 - r.after.amps / r.before.amps) * 100, 1)} %)`);
+        set("s", `${fx(r.before.kva)} kVA → ${fx(r.after.kva)} kVA`);
+        $("err").textContent = "";
+        const inst = num("inst");
+        if (inst >= 0) {
+          const q = p * Math.sqrt(1 - pf1 * pf1) / pf1 - inst;
+          const pf = pfAfter(p, pf1, inst);
+          vd.className = `verdict ${q >= 0 ? "ok" : "fault"}`;
+          vd.textContent = q >= 0
+            ? ko ? `${fx(inst)} kvar 를 달면 역률 ${fx(pf, 3)} (지상) — 남는 무효 전력 ${fx(q)} kvar` : `${fx(inst)} kvar gives power factor ${fx(pf, 3)} (lagging) — ${fx(q)} kvar reactive left`
+            : ko ? `${fx(inst)} kvar 는 과보상 — 역률 ${fx(pf, 3)} 진상(무효 전력 ${fx(-q)} kvar 가 거꾸로 남음)` : `${fx(inst)} kvar over-compensates — power factor ${fx(pf, 3)} leading (${fx(-q)} kvar the other way)`;
+        }
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — kW·전압은 0 보다 크고, 역률은 0 초과 1 이하, 목표는 지금보다 높아야 합니다" : "Check the numbers — kW and voltage above 0, power factors above 0 and at most 1, target at least the present value";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

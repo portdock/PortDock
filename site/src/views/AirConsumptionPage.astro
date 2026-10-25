@@ -1,0 +1,289 @@
+---
+// 웹 도구: 공압 실린더 공기 소비량·분당 소비량·필요 공기량·컴프레서 여유 (lib/airConsumption.ts).
+// SMC «Best Pneumatics» 기술 자료 Data 2(p.1574 식 (8)~(16)·튜브 단면적 표)와 p.1573 예(678 L/min)를 시험으로 재현했다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { SMC_TUBES, cycleAir } from "../lib/airConsumption";
+import { SMC_BORES } from "../lib/cylinder";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/air-consumption/";
+const p3 = (x: number) => (x >= 100 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(3)));
+// ø20~ø100(SMC Data 3 의 첫째 로드), 행정 100 mm, 복동 한 사이클, 배관 없음 — 0.4·0.5·0.6 MPa
+const tRows = SMC_BORES.filter(([d]) => d >= 20 && d <= 100).map(([d, r]) => [
+  `ø${d} / ${r}`,
+  ...[0.4, 0.5, 0.6].map((p) => p3(cycleAir({ bore: d, rod: r, stroke: 100, mpa: p, pipeId: 1, pipeM: 0, acting: "double" }).q)),
+]);
+const PRESS = [
+  ["MPa", "MPa"],
+  ["bar", "bar"],
+  ["kgfcm2", "kgf/cm²"],
+  ["psi", "psi"],
+];
+const L = ko
+  ? {
+      title: "공압 실린더 공기 소비량 계산기",
+      desc: "보어·행정·압력·배관으로 공압 실린더 한 사이클의 공기 소비량(L ANR), 분당 소비량, 필요 공기량과 컴프레서 용량의 기준을 SMC 식으로 계산합니다.",
+      s1: "실린더와 배관",
+      bore: "보어 D (mm)",
+      rod: "로드 지름 d (mm)",
+      stroke: "행정 (mm)",
+      p: "사용 압력",
+      act: "작동 방식",
+      acts: [["double", "복동"], ["springReturn", "단동 — 스프링 복귀 (밀 때만 공기)"], ["springExtend", "단동 — 스프링 전진 (당길 때만 공기)"]],
+      pid: "배관 내경 (mm, 밸브 ~ 실린더)",
+      plen: "배관 길이 (m, 한쪽)",
+      cpm: "분당 사이클 수",
+      cnt: "실린더 수",
+      tst: "한 행정 시간 (s, 필요 공기량용)",
+      res: "결과",
+      k: { qc1: "실린더 — 미는 쪽 A1 × L × (P + 0.1) ÷ 0.1", qc2: "실린더 — 당기는 쪽", qp: "배관 한 번 (a × l × P ÷ 0.1)", q: "한 사이클 공기 소비량", qm: "분당 공기 소비량 (× 사이클 × 대수)", comp: "컴프레서 토출량 기준 (× 1.4 이상, SMC 참고값)", qr: "필요 공기량 (밸브·FRL·윗배관 고르기, 큰 쪽)" },
+      example: "기본값(ø50·로드 20·행정 600·0.5 MPa, 내경 6 mm 튜브 2 m, 분당 5회 × 10대)은 SMC 의 예와 같은 조건입니다. 행정 시간 1 s 는 예시입니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      tubeTitle: "튜브·강관 안 단면적 (SMC 표)",
+      tubeHead: ["호칭", "바깥지름 mm", "내경 mm", "안 단면적 mm²"],
+      fTitle: "계산식 (SMC Data 2)",
+      formula: [
+        "실린더 qc = A × L × (P + 0.1) ÷ 0.1 × 10⁻⁶   (L(ANR), A mm², 행정 L mm, P MPa)",
+        "배관 qp = a × l × P ÷ 0.1 × 10⁻⁶   (a 배관 안 단면적 mm², l 길이 mm)",
+        "복동 q = qc1 + qp1 + qc2 + qp2,   단동(스프링 복귀) q = qc1 + qp1,   (스프링 전진) q = qc2 + qp2",
+        "분당 소비량 = q × 분당 사이클 × 대수   (L/min(ANR))",
+        "필요 공기량 Q = (qc + qp) × 60 ÷ t   (t 한 행정 시간 s, 미는 쪽·당기는 쪽 중 큰 값)",
+      ],
+      tTitle: "행정 100 mm 복동 실린더 한 사이클 (L(ANR), 배관 제외)",
+      tHead: ["보어 / 로드 (mm)", "0.4 MPa", "0.5 MPa", "0.6 MPa"],
+      tNote: "공기 소비량은 행정에 비례합니다 — 행정 300 mm 면 이 값의 3배, 배관 몫은 따로 더합니다. 로드 지름은 SMC Data 3 표의 첫째 줄 값입니다.",
+      exTitle: "SMC 예 (같은 값이 나오는지 시험으로 확인)",
+      ex: [
+        "ø50·행정 600 mm·0.5 MPa 실린더 10대가 분당 5회, 실린더 ~ 밸브는 내경 6 mm 튜브 2 m.",
+        "실린더 한 사이클: SMC 그래프로 13 L(ANR) — 식으로는 미는 쪽 7.07 + 당기는 쪽 5.94 = 13.0 L.",
+        "배관 한 사이클: 0.56 L(ANR) — 식으로는 28.3 mm² × 2000 mm × 0.5 ÷ 0.1 × 10⁻⁶ × 2 = 0.565 L.",
+        "합계 (13 + 0.56) × 10 × 5 = 678 L/min(ANR). 컴프레서는 이보다 넉넉하게 — SMC 는 적어도 1.4배(약 950 L/min)를 참고값으로 듭니다.",
+      ],
+      lTitle: "읽는 법",
+      l: [
+        "실린더 식의 (P + 0.1) ÷ 0.1 은 게이지 압력을 대기압(약 0.1 MPa) 기준의 절대 압력 비로 바꾼 값입니다 — 0.5 MPa 로 채운 부피는 대기압으로 펴면 6배가 됩니다.",
+        "SMC 식은 배관 쪽에 P ÷ 0.1 을 씁니다(실린더는 P + 0.1). 식 그대로 옮겼습니다.",
+        "공기 소비량은 컴프레서 용량·전기료를 볼 때, 필요 공기량(순간 유량)은 밸브·필터·레귤레이터와 윗배관 크기를 고를 때 씁니다.",
+        "컴프레서를 고를 때는 온도 저하, 누설, 중간 기기의 소비도 생각해 계산값보다 넉넉한 토출량을 고릅니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["실린더 공기 소비량 공식은?", "SMC 식은 qc = 받는 면적(mm²) × 행정(mm) × (압력 MPa + 0.1) ÷ 0.1 × 10⁻⁶ L(ANR) 입니다. 복동은 미는 쪽과 당기는 쪽, 배관 몫을 모두 더합니다."],
+        ["ANR 이 뭔가요?", "표준 대기 상태로 환산한 공기 부피입니다. 압축 공기를 대기압으로 폈을 때의 부피라 컴프레서 토출량(흡입 공기량)과 바로 비교할 수 있습니다."],
+        ["컴프레서 용량은 어떻게 정하나요?", "모든 실린더의 분당 공기 소비량(L/min ANR)을 더하고 여유를 둡니다. SMC 는 온도 저하·누설·중간 기기 소비를 생각해 적어도 1.4배를 참고로 듭니다."],
+        ["배관 길이는 왜 넣나요?", "밸브가 바뀔 때마다 밸브 ~ 실린더 배관도 채웠다 비웁니다. 실린더가 작고 배관이 길면 배관 몫이 커집니다."],
+      ],
+      cNote: "같은 실린더가 내는 힘은",
+      cLink: "공압 실린더 추력 계산기",
+      pNote: "압력 단위를 바꾸려면",
+      pLink: "압력 단위 변환기",
+      gNote: "컴프레서 용량까지 이어지는 순서는",
+      gLink: "공압 실린더 공기 소비량과 컴프레서 용량 가이드",
+      srcTitle: "근거",
+      src: "식과 튜브 단면적 표는 SMC «Best Pneumatics» 기술 자료 «Technical Data 2: Air Consumption and Required Air Volume»(p.1574, 식 (8)~(16)), 예와 컴프레서 여유(1.4배)는 «Air Cylinders Model Selection» 4단계(p.1573)에서 옮겼고(SMC 공식 사이트 PDF 6-2-1-m21-43-tech_en), 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 로드 지름은 시리즈마다 다르니 쓰는 실린더의 카탈로그 값을 넣으세요.",
+    }
+  : {
+      title: "Pneumatic Cylinder Air Consumption Calculator",
+      desc: "Pneumatic cylinder air consumption per cycle (L ANR) from bore, stroke, pressure and tubing, plus L/min, required air flow and compressor size (SMC).",
+      s1: "Cylinder and tubing",
+      bore: "Bore D (mm)",
+      rod: "Rod diameter d (mm)",
+      stroke: "Stroke (mm)",
+      p: "Operating pressure",
+      act: "Type",
+      acts: [["double", "Double acting"], ["springReturn", "Single acting — spring return (air to extend)"], ["springExtend", "Single acting — spring extend (air to retract)"]],
+      pid: "Tube inside diameter (mm, valve to cylinder)",
+      plen: "Tube length (m, one side)",
+      cpm: "Cycles per minute",
+      cnt: "Number of cylinders",
+      tst: "Time per stroke (s, for required flow)",
+      res: "Results",
+      k: { qc1: "Cylinder — extend A1 × L × (P + 0.1) ÷ 0.1", qc2: "Cylinder — retract", qp: "Tubing, once (a × l × P ÷ 0.1)", q: "Air consumption per cycle", qm: "Air consumption per minute (× cycles × cylinders)", comp: "Compressor delivery guide (× 1.4 or more, SMC reference)", qr: "Required air flow (for valve, FRL, upstream pipe; larger side)" },
+      example: "The defaults (ø50, rod 20, 600 mm stroke, 0.5 MPa, 6 mm ID tube 2 m, 5 cycles/min × 10 cylinders) match SMC's example. The 1 s stroke time is an example.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      tubeTitle: "Inside area of tubing and steel pipe (SMC table)",
+      tubeHead: ["Size", "O.D. mm", "I.D. mm", "Inside area mm²"],
+      fTitle: "Formulas (SMC Data 2)",
+      formula: [
+        "Cylinder qc = A × L × (P + 0.1) ÷ 0.1 × 10⁻⁶   (L (ANR), A mm², stroke L mm, P MPa)",
+        "Tubing qp = a × l × P ÷ 0.1 × 10⁻⁶   (a inside area mm², l length mm)",
+        "Double acting q = qc1 + qp1 + qc2 + qp2,   single acting (spring return) q = qc1 + qp1,   (spring extend) q = qc2 + qp2",
+        "Per minute = q × cycles per minute × cylinders   (L/min (ANR))",
+        "Required air Q = (qc + qp) × 60 ÷ t   (t stroke time s; larger of extend and retract)",
+      ],
+      tTitle: "Double-acting cylinder, 100 mm stroke, one cycle (L (ANR), no tubing)",
+      tHead: ["Bore / rod (mm)", "0.4 MPa", "0.5 MPa", "0.6 MPa"],
+      tNote: "Air consumption is proportional to stroke — a 300 mm stroke uses three times these values; add tubing separately. Rod diameters are the first rows of SMC's Data 3 table.",
+      exTitle: "SMC example (checked by tests to give the same values)",
+      ex: [
+        "Ten ø50 cylinders, 600 mm stroke, 0.5 MPa, 5 cycles per minute, with 2 m of 6 mm ID tube between cylinder and valve.",
+        "Cylinder per cycle: 13 L (ANR) from SMC's graph — by formula, extend 7.07 + retract 5.94 = 13.0 L.",
+        "Tubing per cycle: 0.56 L (ANR) — by formula, 28.3 mm² × 2000 mm × 0.5 ÷ 0.1 × 10⁻⁶ × 2 = 0.565 L.",
+        "Total (13 + 0.56) × 10 × 5 = 678 L/min (ANR). Size the compressor with margin — SMC gives at least 1.4 times (about 950 L/min) as a reference.",
+      ],
+      lTitle: "How to read it",
+      l: [
+        "In the cylinder formula, (P + 0.1) ÷ 0.1 turns gauge pressure into an absolute pressure ratio against atmosphere (about 0.1 MPa) — a volume filled at 0.5 MPa expands six times at atmospheric pressure.",
+        "SMC's formula uses P ÷ 0.1 for tubing (P + 0.1 for the cylinder). It is reproduced as published.",
+        "Use air consumption for compressor size and running cost, and required air flow (instantaneous flow) to size valves, filters, regulators and upstream piping.",
+        "When choosing a compressor, allow for temperature drop, leakage and intermediate equipment, and pick a delivery well above the calculated total.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["What is the cylinder air consumption formula?", "SMC's formula is qc = area (mm²) × stroke (mm) × (pressure MPa + 0.1) ÷ 0.1 × 10⁻⁶ L (ANR). For a double-acting cylinder, add extend, retract and the tubing."],
+        ["What does ANR mean?", "Air volume converted to standard atmospheric conditions — the volume compressed air takes when expanded to atmospheric pressure, so it compares directly with a compressor's delivery (free air)."],
+        ["How do I size a compressor?", "Add up the per-minute air consumption (L/min ANR) of all cylinders and add margin. SMC gives at least 1.4 times as a reference, allowing for temperature drop, leakage and intermediate equipment."],
+        ["Why include tubing length?", "Each time the valve switches, the tubing between valve and cylinder is filled and exhausted too. With a small cylinder and long tubing, the tubing share becomes large."],
+      ],
+      cNote: "For the force the same cylinder delivers, use the",
+      cLink: "Pneumatic Cylinder Force Calculator",
+      pNote: "To convert pressure units, use the",
+      pLink: "Pressure Unit Converter",
+      gNote: "For the steps through to compressor size, see the guide",
+      gLink: "Pneumatic cylinder air consumption and compressor size",
+      srcTitle: "Basis",
+      src: "Formulas and the tubing area table are from SMC's «Best Pneumatics» technical data «Technical Data 2: Air Consumption and Required Air Volume» (p.1574, equations (8)–(16)); the example and compressor margin (1.4 times) are from «Air Cylinders Model Selection» step 4 (p.1573) (PDF 6-2-1-m21-43-tech_en on SMC's official site). Tests check that this calculator reproduces those values. Rod diameters vary by series — use your cylinder's catalogue.",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "공압 실린더 공기 소비량 계산기 — L/min·컴프레서 용량 — PortDock" : "Pneumatic Cylinder Air Consumption Calculator: L/min — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="air">
+      <h2 style="margin-top:0">{L.s1}</h2>
+      <div class="row">
+        <label class="fld">{L.bore}<input id="bore" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" list="bores" /></label>
+        <label class="fld">{L.rod}<input id="rod" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.stroke}<input id="stroke" class="mono" value="600" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.p}<input id="p" class="mono" value="0.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">&nbsp;<select id="pu" aria-label={L.p}>{PRESS.map(([v, s]) => <option value={v} selected={v === "MPa"}>{s}</option>)}</select></label>
+        <label class="fld">{L.act}<select id="act">{L.acts.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
+        <label class="fld">{L.pid}<input id="pid" class="mono" value="6" inputmode="decimal" spellcheck="false" autocomplete="off" list="tubes" /></label>
+        <label class="fld">{L.plen}<input id="plen" class="mono" value="2" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.cpm}<input id="cpm" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.cnt}<input id="cnt" class="mono" value="10" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.tst}<input id="tst" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <datalist id="bores">{SMC_BORES.map(([d]) => <option value={d} />)}</datalist>
+      <datalist id="tubes">{SMC_TUBES.map(([n, , id]) => <option value={id}>{n}</option>)}</datalist>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.tubeTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tubeHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{SMC_TUBES.map(([n, od, id, a]) => <tr><td class="mono">{n}</td><td class="mono">{od ?? "—"}</td><td class="mono">{id}</td><td class="mono">{a}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.exTitle}</h2>
+      <ul>{L.ex.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.cNote} <a href={url(lang, "tools/cylinder-force/")}>{L.cLink}</a>. {L.pNote} <a href={url(lang, "tools/pressure/")}>{L.pLink}</a>. {L.gNote} <a href={url(lang, "guides/pneumatic-air-consumption/")}>{L.gLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { COMPRESSOR_FACTOR, cycleAir, perMinute, requiredFlow, type Acting } from "../lib/airConsumption";
+    import { unit } from "../lib/units";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("air") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => (Math.abs(x) >= 1e5 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(4)));
+    const lit = (x: number) => `${p4(x)} L (ANR)`;
+    const lpm = (x: number) => `${p4(x)} L/min (ANR)`;
+    function run() {
+      try {
+        const pv = (num("p") * unit("pressure", $<HTMLSelectElement>("pu").value).f) / 1e6;
+        const act = $<HTMLSelectElement>("act").value as Acting;
+        const plen = $("plen").value.trim() === "" ? 0 : num("plen");
+        const c = cycleAir({ bore: num("bore"), rod: num("rod"), stroke: num("stroke"), mpa: pv, pipeId: num("pid"), pipeM: plen, acting: act });
+        set("qc1", act === "springExtend" ? "—" : lit(c.qc1));
+        set("qc2", act === "springReturn" ? "—" : lit(c.qc2));
+        set("qp", lit(c.qp));
+        set("q", lit(c.q));
+        const qm = perMinute(c.q, num("cpm"), num("cnt"));
+        set("qm", lpm(qm));
+        set("comp", lpm(qm * COMPRESSOR_FACTOR));
+        const t = num("tst");
+        const q1 = act === "springExtend" ? 0 : requiredFlow(c.qc1, c.qp, t);
+        const q2 = act === "springReturn" ? 0 : requiredFlow(c.qc2, c.qp, t);
+        set("qr", `${lpm(Math.max(q1, q2))} ${ko ? "× 대수(동시에 움직이는 수)" : "× cylinders moving at once"}`);
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 보어·행정·압력·내경·사이클·행정 시간은 0 보다 크고, 로드는 보어보다 작고, 배관 길이는 0 이상, 실린더 수는 1 이상의 정수여야 합니다" : "Check the numbers — bore, stroke, pressure, ID, cycles and stroke time above 0, rod smaller than the bore, tubing length 0 or more, cylinders a whole number 1 or more";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

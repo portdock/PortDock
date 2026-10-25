@@ -1,0 +1,1675 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/tmh",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "TMH Series",
+  "models": [
+    "TMH2-22□",
+    "TMH2-42□",
+    "TMH4-N2□"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "오토닉스 TMH 고기능 모듈형 2·4채널 PID 온도 조절기 (제어 모듈)",
+    "en": "Autonics TMH advanced modular 2/4-channel PID temperature controller (control module)"
+  },
+  "summary": {
+    "ko": "TMH2·TMH4 제어 모듈의 RS485 Modbus RTU 맵. 코일(채널별 RUN/STOP·오토튜닝), 입력 레지스터(채널별 PV·소수점·단위·SV·MV), CH1 보유 레지스터(SV·PID·입력·통신 설정)를 담았다.",
+    "en": "RS485 Modbus RTU map of the TMH2/TMH4 control module. Covers coils (per-channel RUN/STOP, auto-tuning), input registers (per-channel PV, decimal point, unit, SV, MV) and CH1 holding registers (SV, PID, input, comm)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "zero",
+    "baud": 9600,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 2,
+    "unitRange": [
+      1,
+      32
+    ],
+    "notes": [
+      {
+        "ko": "통신 사양: 사용자 매뉴얼 «1.5.2 Communication Interface»(p.33) — 제어 모듈 TMH2/4 는 Modbus RTU, 최대 32대(국번 01~32, TMHC 와 함께 쓰면 01~16), 9600 bps 기본, 데이터 8비트 고정, 패리티 None 기본, 정지 2비트 기본, 응답 대기 20 ms. 국번은 SW1·SW2 스위치로 정한다(출하 국번은 적지 않음).",
+        "en": "Comm spec from user manual 1.5.2 (p.33): TMH2/4 control module Modbus RTU, up to 32 units (01-32; 01-16 with TMHC), 9600 bps default, 8 data bits, parity none, 2 stop bits, response wait 20 ms. Address is set by switches SW1/SW2 (no factory unit listed)."
+      },
+      {
+        "ko": "매뉴얼은 «400001(0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 프레임 주소로 썼다(통신 매뉴얼 pp.23-55). 1.1 절 프레임 예시는 바이트 자리만 있고 숫자 예는 없다.",
+        "en": "Manual writes «400001(0000)»: 1-based reference plus hex comm address; first entries are (0000), so the parenthesized value is the 0-based wire address (pp.23-55). Frame examples show layout only."
+      },
+      {
+        "ko": "함수 코드: 코일 01·05·15, 입력 접점 02, 입력 레지스터 04, 보유 레지스터 03·06·16 (pp.23-55).",
+        "en": "Function codes: coils 01/05/15, discrete inputs 02, input registers 04, holding registers 03/06/16 (pp.23-55)."
+      },
+      {
+        "ko": "통신 설정을 바꾸면 기기를 다시 켜야 정상 동작한다(사용자 매뉴얼 p.33).",
+        "en": "Reboot after changing communication settings (user manual p.33)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "000001(0000)",
+      "type": "bit",
+      "name": {
+        "ko": "CH1 제어 출력 RUN/STOP",
+        "en": "CH1 control output RUN/STOP"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "000002(0001)",
+      "type": "bit",
+      "name": {
+        "ko": "CH2 제어 출력 RUN/STOP",
+        "en": "CH2 control output RUN/STOP"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "000003(0002)",
+      "type": "bit",
+      "name": {
+        "ko": "CH3 제어 출력 RUN/STOP (TMH4 만)",
+        "en": "CH3 control output RUN/STOP (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "000004(0003)",
+      "type": "bit",
+      "name": {
+        "ko": "CH4 제어 출력 RUN/STOP (TMH4 만)",
+        "en": "CH4 control output RUN/STOP (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "000005(0004)",
+      "type": "bit",
+      "name": {
+        "ko": "CH1 오토튜닝 실행",
+        "en": "CH1 auto-tuning execute"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 5,
+      "manualAddress": "000006(0005)",
+      "type": "bit",
+      "name": {
+        "ko": "CH2 오토튜닝 실행",
+        "en": "CH2 auto-tuning execute"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "000007(0006)",
+      "type": "bit",
+      "name": {
+        "ko": "CH3 오토튜닝 실행 (TMH4 만)",
+        "en": "CH3 auto-tuning execute (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "coils",
+      "address": 7,
+      "manualAddress": "000008(0007)",
+      "type": "bit",
+      "name": {
+        "ko": "CH4 오토튜닝 실행 (TMH4 만)",
+        "en": "CH4 auto-tuning execute (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.23 2.1.1"
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "301001(03E8)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 현재값 PV",
+        "en": "CH1 present value (PV)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 31000,
+          "ko": "OPEN(센서 단선)",
+          "en": "OPEN"
+        },
+        {
+          "value": 30000,
+          "ko": "HHHH(상한 초과)",
+          "en": "HHHH (high)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(하한 미만)",
+          "en": "LLLL (low)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1001,
+      "manualAddress": "301002(03E9)",
+      "type": "s16",
+      "name": {
+        "ko": "CH2 현재값 PV",
+        "en": "CH2 present value (PV)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 31000,
+          "ko": "OPEN(센서 단선)",
+          "en": "OPEN"
+        },
+        {
+          "value": 30000,
+          "ko": "HHHH(상한 초과)",
+          "en": "HHHH (high)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(하한 미만)",
+          "en": "LLLL (low)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1002,
+      "manualAddress": "301003(03EA)",
+      "type": "s16",
+      "name": {
+        "ko": "CH3 현재값 PV (TMH4 만)",
+        "en": "CH3 present value (PV) (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 31000,
+          "ko": "OPEN(센서 단선)",
+          "en": "OPEN"
+        },
+        {
+          "value": 30000,
+          "ko": "HHHH(상한 초과)",
+          "en": "HHHH (high)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(하한 미만)",
+          "en": "LLLL (low)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1003,
+      "manualAddress": "301004(03EB)",
+      "type": "s16",
+      "name": {
+        "ko": "CH4 현재값 PV (TMH4 만)",
+        "en": "CH4 present value (PV) (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 31000,
+          "ko": "OPEN(센서 단선)",
+          "en": "OPEN"
+        },
+        {
+          "value": 30000,
+          "ko": "HHHH(상한 초과)",
+          "en": "HHHH (high)"
+        },
+        {
+          "value": -30000,
+          "ko": "LLLL(하한 미만)",
+          "en": "LLLL (low)"
+        }
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1004,
+      "manualAddress": "301005(03EC)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 소수점 위치",
+        "en": "CH1 decimal point"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        }
+      ],
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1005,
+      "manualAddress": "301006(03ED)",
+      "type": "u16",
+      "name": {
+        "ko": "CH2 소수점 위치",
+        "en": "CH2 decimal point"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        }
+      ],
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1006,
+      "manualAddress": "301007(03EE)",
+      "type": "u16",
+      "name": {
+        "ko": "CH3 소수점 위치 (TMH4 만)",
+        "en": "CH3 decimal point (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        }
+      ],
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1007,
+      "manualAddress": "301008(03EF)",
+      "type": "u16",
+      "name": {
+        "ko": "CH4 소수점 위치 (TMH4 만)",
+        "en": "CH4 decimal point (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        }
+      ],
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1008,
+      "manualAddress": "301009(03F0)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 온도 단위",
+        "en": "CH1 temperature unit"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "온도 입력: 0 ℃, 1 ℉ / 아날로그 입력: 0 OFF, 1 ℃, 2 ℉, 3 %",
+        "en": "Temperature input: 0 °C, 1 °F / analog input: 0 OFF, 1 °C, 2 °F, 3 %"
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1009,
+      "manualAddress": "301010(03F1)",
+      "type": "u16",
+      "name": {
+        "ko": "CH2 온도 단위",
+        "en": "CH2 temperature unit"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "온도 입력: 0 ℃, 1 ℉ / 아날로그 입력: 0 OFF, 1 ℃, 2 ℉, 3 %",
+        "en": "Temperature input: 0 °C, 1 °F / analog input: 0 OFF, 1 °C, 2 °F, 3 %"
+      },
+      "ref": "p.28 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1010,
+      "manualAddress": "301011(03F2)",
+      "type": "u16",
+      "name": {
+        "ko": "CH3 온도 단위 (TMH4 만)",
+        "en": "CH3 temperature unit (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "온도 입력: 0 ℃, 1 ℉ / 아날로그 입력: 0 OFF, 1 ℃, 2 ℉, 3 %",
+        "en": "Temperature input: 0 °C, 1 °F / analog input: 0 OFF, 1 °C, 2 °F, 3 %"
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1011,
+      "manualAddress": "301012(03F3)",
+      "type": "u16",
+      "name": {
+        "ko": "CH4 온도 단위 (TMH4 만)",
+        "en": "CH4 temperature unit (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "온도 입력: 0 ℃, 1 ℉ / 아날로그 입력: 0 OFF, 1 ℃, 2 ℉, 3 %",
+        "en": "Temperature input: 0 °C, 1 °F / analog input: 0 OFF, 1 °C, 2 °F, 3 %"
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1012,
+      "manualAddress": "301013(03F4)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 설정값 SV(읽기)",
+        "en": "CH1 set value SV (read)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1013,
+      "manualAddress": "301014(03F5)",
+      "type": "s16",
+      "name": {
+        "ko": "CH2 설정값 SV(읽기)",
+        "en": "CH2 set value SV (read)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1014,
+      "manualAddress": "301015(03F6)",
+      "type": "s16",
+      "name": {
+        "ko": "CH3 설정값 SV(읽기) (TMH4 만)",
+        "en": "CH3 set value SV (read) (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1015,
+      "manualAddress": "301016(03F7)",
+      "type": "s16",
+      "name": {
+        "ko": "CH4 설정값 SV(읽기) (TMH4 만)",
+        "en": "CH4 set value SV (read) (TMH4 only)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1016,
+      "manualAddress": "301017(03F8)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 가열 조작량",
+        "en": "CH1 heating MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1017,
+      "manualAddress": "301018(03F9)",
+      "type": "u16",
+      "name": {
+        "ko": "CH2 가열 조작량",
+        "en": "CH2 heating MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1018,
+      "manualAddress": "301019(03FA)",
+      "type": "u16",
+      "name": {
+        "ko": "CH3 가열 조작량 (TMH4 만)",
+        "en": "CH3 heating MV (TMH4 only)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1019,
+      "manualAddress": "301020(03FB)",
+      "type": "u16",
+      "name": {
+        "ko": "CH4 가열 조작량 (TMH4 만)",
+        "en": "CH4 heating MV (TMH4 only)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 1020,
+      "manualAddress": "301021(03FC)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 냉각 조작량",
+        "en": "CH1 cooling MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.29 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 103,
+      "manualAddress": "300104(0067)",
+      "type": "u16",
+      "name": {
+        "ko": "소프트웨어 버전",
+        "en": "Software version"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.26 2.1.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 125,
+      "manualAddress": "300126(007D)",
+      "type": "u16",
+      "name": {
+        "ko": "채널 수",
+        "en": "Channel quantity"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 2,
+          "ko": "TMH2",
+          "en": "TMH2"
+        },
+        {
+          "value": 4,
+          "ko": "TMH4",
+          "en": "TMH4"
+        }
+      ],
+      "ref": "p.26 2.1.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001(0000)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 설정값 SV",
+        "en": "CH1 set value (SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "SV 하한~SV 상한. 소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "SV low limit to SV high limit. Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "400002(0001)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 가열 조작량",
+        "en": "CH1 heating MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "400003(0002)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 냉각 조작량",
+        "en": "CH1 cooling MV"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "400004(0003)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 자동/수동 제어",
+        "en": "CH1 auto/manual control"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "자동(AUTO)",
+          "en": "AUTO"
+        },
+        {
+          "value": 1,
+          "ko": "수동(MANUAL)",
+          "en": "MANUAL"
+        }
+      ],
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1000,
+      "manualAddress": "401001(03E8)",
+      "type": "s16",
+      "name": {
+        "ko": "CH2 설정값 SV",
+        "en": "CH2 set value (SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2000,
+      "manualAddress": "402001(07D0)",
+      "type": "s16",
+      "name": {
+        "ko": "CH3 설정값 SV (TMH4 만)",
+        "en": "CH3 set value (SV) (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3000,
+      "manualAddress": "403001(0BB8)",
+      "type": "s16",
+      "name": {
+        "ko": "CH4 설정값 SV (TMH4 만)",
+        "en": "CH4 set value (SV) (TMH4 only)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.34 2.1.4.1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "400051(0032)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 제어 출력 RUN/STOP",
+        "en": "CH1 control output RUN/STOP"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN",
+          "en": "RUN"
+        },
+        {
+          "value": 1,
+          "ko": "STOP",
+          "en": "STOP"
+        }
+      ],
+      "ref": "p.35 2.1.4.2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "400052(0033)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 멀티 SV 번호",
+        "en": "CH1 multi SV number"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "SV-0",
+          "en": "SV-0"
+        },
+        {
+          "value": 1,
+          "ko": "SV-1",
+          "en": "SV-1"
+        },
+        {
+          "value": 2,
+          "ko": "SV-2",
+          "en": "SV-2"
+        },
+        {
+          "value": 3,
+          "ko": "SV-3",
+          "en": "SV-3"
+        }
+      ],
+      "ref": "p.35 2.1.4.2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 52,
+      "manualAddress": "400053(0034)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 SV-0 설정값",
+        "en": "CH1 SV-0 set value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점 위치는 해당 채널 소수점 레지스터(301005~, 0: 0, 1: 0.0)를 따른다.",
+        "en": "Decimal point per the channel's dot register (301005-, 0: 0, 1: 0.0)."
+      },
+      "ref": "p.35 2.1.4.2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "400101(0064)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 오토튜닝 실행",
+        "en": "CH1 auto-tuning execute"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 101,
+      "manualAddress": "400102(0065)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 가열 비례대",
+        "en": "CH1 heating proportional band"
+      },
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 999.9
+      },
+      "description": {
+        "ko": "원시 1~9999 = 0.1~999.9, 단위 ℃/℉/%F.S.",
+        "en": "Raw 1-9999 = 0.1-999.9, unit °C/°F/%F.S."
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "400103(0066)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 냉각 비례대",
+        "en": "CH1 cooling proportional band"
+      },
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 999.9
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "400104(0067)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 가열 적분 시간",
+        "en": "CH1 heating integral time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 104,
+      "manualAddress": "400105(0068)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 냉각 적분 시간",
+        "en": "CH1 cooling integral time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 105,
+      "manualAddress": "400106(0069)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 가열 미분 시간",
+        "en": "CH1 heating derivative time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 106,
+      "manualAddress": "400107(006A)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 냉각 미분 시간",
+        "en": "CH1 cooling derivative time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 108,
+      "manualAddress": "400109(006C)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 수동 리셋",
+        "en": "CH1 manual reset"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.36 2.1.4.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 150,
+      "manualAddress": "400151(0096)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 입력 종류",
+        "en": "CH1 input type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 32
+      },
+      "description": {
+        "ko": "0 K(CA).H ~ 32 4-20 mA",
+        "en": "0 K(CA).H to 32 4-20 mA"
+      },
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 151,
+      "manualAddress": "400152(0097)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 온도 단위",
+        "en": "CH1 unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 154,
+      "manualAddress": "400155(009A)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 스케일 소수점",
+        "en": "CH1 scale decimal point"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "0.0",
+          "en": "0.0"
+        },
+        {
+          "value": 2,
+          "ko": "0.00",
+          "en": "0.00"
+        },
+        {
+          "value": 3,
+          "ko": "0.000",
+          "en": "0.000"
+        }
+      ],
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 155,
+      "manualAddress": "400156(009B)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 스케일 하한 표시값",
+        "en": "CH1 low-limit scale value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -9999,
+        "max": 9999
+      },
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 156,
+      "manualAddress": "400157(009C)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 스케일 상한 표시값",
+        "en": "CH1 high-limit scale value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -9999,
+        "max": 9999
+      },
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 160,
+      "manualAddress": "400161(00A0)",
+      "type": "s16",
+      "name": {
+        "ko": "CH1 입력 보정",
+        "en": "CH1 input bias"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "Temp.H·아날로그 -999~999, Temp.L -9999~9999(-999.9~999.9)",
+        "en": "Temp.H/analog -999..999, Temp.L -9999..9999 (-999.9..999.9)"
+      },
+      "ref": "p.41 2.1.4.4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 400,
+      "manualAddress": "400401(0190)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Bit per second"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 1,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 2,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 3,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 4,
+          "ko": "115200 bps",
+          "en": "115200 bps"
+        }
+      ],
+      "ref": "p.54 2.1.4.8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 401,
+      "manualAddress": "400402(0191)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity bit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "NONE"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "EVEN"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "ODD"
+        }
+      ],
+      "ref": "p.54 2.1.4.8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 402,
+      "manualAddress": "400403(0192)",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트",
+        "en": "Stop bit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 bits"
+        }
+      ],
+      "ref": "p.54 2.1.4.8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 403,
+      "manualAddress": "400404(0193)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간",
+        "en": "Response waiting time"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "p.54 2.1.4.8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 404,
+      "manualAddress": "400405(0194)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기 허용",
+        "en": "Communication write"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "허용",
+          "en": "ENABLE"
+        },
+        {
+          "value": 1,
+          "ko": "금지",
+          "en": "DISABLE"
+        }
+      ],
+      "ref": "p.54 2.1.4.8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 412,
+      "manualAddress": "400413(019C)",
+      "type": "u16",
+      "name": {
+        "ko": "CH1 경보 리셋",
+        "en": "CH1 alarm reset"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NO",
+          "en": "NO"
+        },
+        {
+          "value": 1,
+          "ko": "YES",
+          "en": "YES"
+        }
+      ],
+      "ref": "p.54 2.1.4.8"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "통신 매뉴얼은 «TMH2 와 TMH4 의 파라미터 주소가 다르다» 고 적지만, 여기 담은 항목은 두 열의 주소가 같다 — TMH2 에는 CH3·CH4 칸이 없다(«-»).",
+      "en": "The manual says TMH2 and TMH4 addresses differ, but the entries included here have the same address in both columns; TMH2 simply lacks CH3/CH4 ('-')."
+    },
+    {
+      "ko": "보유 레지스터는 CH1 만 적었다. CH2~CH4 는 같은 순서로 +1000(03E8h)씩: 예) CH2 RUN/STOP 401051(041A), CH3 오토튜닝 402101(0834), CH2 공통 그룹 401401(0578) (pp.34-55).",
+      "en": "Holding registers list CH1; CH2-CH4 follow at +1000 (03E8h), e.g. CH2 RUN/STOP 401051(041A), CH3 AT 402101(0834), CH2 common group 401401(0578) (pp.34-55)."
+    },
+    {
+      "ko": "옵션 모듈(TMHA 아날로그·TMHE 디지털 입력/경보·TMHCT CT 입력)과 통신 모듈 TMHC 는 별도 맵(통신 매뉴얼 2.2~2.6 절) — 여기선 제어 모듈만.",
+      "en": "Option modules (TMHA, TMHE, TMHCT) and the TMHC communication module have separate maps (sections 2.2-2.6); only the control module is covered."
+    },
+    {
+      "ko": "models 의 □ 는 제어 출력(R 릴레이·S SSR·C 전류/SSR), 스크루리스 단자 모델은 끝에 L 이 붙는다 (사용자 매뉴얼 p.20).",
+      "en": "□ = control output (R relay, S SSR, C current/SSR); screwless-terminal models add L (user manual p.20)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "TMH Series Communication Manual MCT-TMHC-V3.5-EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCT-TMHC-V3.5-EN (PDF 작성 2026-04-21)",
+        "en": "MCT-TMHC-V3.5-EN (PDF created 2026-04-21)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/524686",
+      "pages": {
+        "ko": "pp.23-55 «2.1 TMH2/4 Series [Control module]» (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.23-55 '2.1 TMH2/4 Series [Control module]' (printed page = PDF page)"
+      },
+      "checked": "2026-10-22"
+    },
+    {
+      "title": "TMH Series User Manual MCT-TMHU-V3.6-EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCT-TMHU-V3.6-EN (PDF 작성 2026-08-14)",
+        "en": "MCT-TMHU-V3.6-EN (PDF created 2026-08-14)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/528475",
+      "pages": {
+        "ko": "p.20 주문 정보, p.33 통신 인터페이스",
+        "en": "p.20 ordering information, p.33 Communication Interface"
+      },
+      "checked": "2026-10-22"
+    }
+  ]
+}

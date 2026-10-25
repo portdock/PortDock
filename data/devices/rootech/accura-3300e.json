@@ -1,0 +1,948 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "rootech/accura-3300e",
+  "manufacturer": {
+    "ko": "루텍",
+    "en": "Rootech"
+  },
+  "model": "Accura 3300E",
+  "kind": "power-meter",
+  "title": {
+    "ko": "루텍 Accura 3300E 디지털 전력 미터",
+    "en": "Rootech Accura 3300E digital power meter"
+  },
+  "summary": {
+    "ko": "3상 다기능 전력 미터. RS-485 Modbus RTU, 모든 값은 holding register(FC03)에 있고 32비트 값은 상위 워드 먼저.",
+    "en": "3-phase multifunction power meter. RS-485 Modbus RTU; all data in holding registers (FC03), 32-bit values high word first."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      115200
+    ],
+    "parity": "even",
+    "stopBits": 1,
+    "order": "ABCD",
+    "maxRegisters": 125,
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "매뉴얼은 레지스터 번호(1 기준)로 적는다 — 통신 주소 = 번호 − 1 (p.12, p.18, p.44 예: 11030 → 2B15h).",
+        "en": "Manual lists 1-based register numbers; wire address = number − 1 (p.12, p.18, p.44 example: 11030 → 2B15h)."
+      },
+      {
+        "ko": "32비트(UInt32/Int32/Float32)는 상위 워드가 낮은 주소 — Big-Endian (p.19, p.44 예: 380.2 = 43BEh 1999h).",
+        "en": "32-bit values: high word at lower address, big-endian (p.19, p.44 example: 380.2 = 43BEh 1999h)."
+      },
+      {
+        "ko": "출하값 9600 bps·짝수 패리티·정지 1비트·Modbus RTU (p.28). 국번은 범위 1-247 인데 같은 쪽에 Default 0 으로 적혀 있어 출하 국번은 비워 둠 — 장치 화면에서 확인.",
+        "en": "Defaults 9600 bps, even parity, 1 stop bit, Modbus RTU (p.28). Address range is 1-247 but the same page says default 0, so factory unit ID is left out — check on the device."
+      },
+      {
+        "ko": "함수 코드는 03·06·16 만 지원 (p.12). 한 번에 읽기 1-125 레지스터 (p.13).",
+        "en": "Only FC 03, 06, 16 supported (p.12). Read quantity 1-125 (p.13)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 9999,
+      "manualAddress": "10000",
+      "type": "u16",
+      "name": {
+        "ko": "제품 ID",
+        "en": "Product ID"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "3300E 는 3301",
+        "en": "3301 for Accura 3300E"
+      },
+      "ref": "p.22 System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10000,
+      "manualAddress": "10001",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "일련번호",
+        "en": "Serial number"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.22 System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10013,
+      "manualAddress": "10014",
+      "type": "u16",
+      "name": {
+        "ko": "펌웨어 버전",
+        "en": "Firmware version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.22 System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10014,
+      "manualAddress": "10015",
+      "type": "u16",
+      "name": {
+        "ko": "Modbus 맵 버전",
+        "en": "Modbus map version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.22 System Information"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10099,
+      "manualAddress": "10100",
+      "type": "u16",
+      "name": {
+        "ko": "원격 설정 잠금",
+        "en": "Remote setup lock"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "잠금 해제(출하값)",
+          "en": "Unlocked (default)"
+        },
+        {
+          "value": 1,
+          "ko": "잠금",
+          "en": "Locked"
+        }
+      ],
+      "description": {
+        "ko": "2300, 0, 700, 1 을 차례로 쓰면 해제, 다른 값을 쓰면 잠금. 전원 재투입 시 해제 상태로 돌아감",
+        "en": "Write 2300, 0, 700, 1 in sequence to unlock; any other value locks. Returns to unlocked after power cycle"
+      },
+      "ref": "p.23 Remote Setup Lock"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10249,
+      "manualAddress": "10250",
+      "type": "u16",
+      "name": {
+        "ko": "직렬 통신 설정 접근",
+        "en": "Serial comm setup access"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "읽으면 10251-10255 로 현재 설정을 가져오고(bit15=1 이면 성공), 1 을 쓰면 10251-10255 값을 장치에 적용",
+        "en": "Read to fetch settings into 10251-10255 (bit 15 = 1 on success); write 1 to apply 10251-10255"
+      },
+      "ref": "p.28 Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10250,
+      "manualAddress": "10251",
+      "type": "u16",
+      "name": {
+        "ko": "국번",
+        "en": "Device address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "범위 1-247. 10250 접근 레지스터로 가져오기/적용",
+        "en": "Range 1-247. Fetch/apply via access register 10250"
+      },
+      "ref": "p.28 Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10251,
+      "manualAddress": "10252",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Bit rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1200",
+          "en": "1200"
+        },
+        {
+          "value": 1,
+          "ko": "2400",
+          "en": "2400"
+        },
+        {
+          "value": 2,
+          "ko": "4800",
+          "en": "4800"
+        },
+        {
+          "value": 3,
+          "ko": "9600 (출하값)",
+          "en": "9600 (default)"
+        },
+        {
+          "value": 4,
+          "ko": "19200",
+          "en": "19200"
+        },
+        {
+          "value": 5,
+          "ko": "38400",
+          "en": "38400"
+        },
+        {
+          "value": 6,
+          "ko": "57600",
+          "en": "57600"
+        },
+        {
+          "value": 7,
+          "ko": "115200",
+          "en": "115200"
+        }
+      ],
+      "ref": "p.28 Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10252,
+      "manualAddress": "10253",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "홀수",
+          "en": "Odd"
+        },
+        {
+          "value": 2,
+          "ko": "짝수 (출하값)",
+          "en": "Even (default)"
+        }
+      ],
+      "ref": "p.28 Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10253,
+      "manualAddress": "10254",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트",
+        "en": "Stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트 (출하값)",
+          "en": "1 stop bit (default)"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 stop bits"
+        }
+      ],
+      "ref": "p.28 Serial Communication Setup"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11009,
+      "manualAddress": "11010",
+      "type": "u16",
+      "name": {
+        "ko": "데이터 유효성",
+        "en": "Data validity"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "유효하지 않음",
+          "en": "Invalid"
+        },
+        {
+          "value": 1,
+          "ko": "유효",
+          "en": "Valid"
+        }
+      ],
+      "description": {
+        "ko": "11011-15209 데이터의 유효성",
+        "en": "Validity of data in 11011-15209"
+      },
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11013,
+      "manualAddress": "11014",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 상전압",
+        "en": "Phase A voltage (L-N)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11015,
+      "manualAddress": "11016",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 상전압",
+        "en": "Phase B voltage (L-N)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11017,
+      "manualAddress": "11018",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 상전압",
+        "en": "Phase C voltage (L-N)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11019,
+      "manualAddress": "11020",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average L-N voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11021,
+      "manualAddress": "11022",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 전류",
+        "en": "Phase A current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11023,
+      "manualAddress": "11024",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 전류",
+        "en": "Phase B current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11025,
+      "manualAddress": "11026",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 전류",
+        "en": "Phase C current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11027,
+      "manualAddress": "11028",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 전류",
+        "en": "Average current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11029,
+      "manualAddress": "11030",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "AB 선간전압",
+        "en": "Voltage A-B (L-L)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11031,
+      "manualAddress": "11032",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "BC 선간전압",
+        "en": "Voltage B-C (L-L)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11033,
+      "manualAddress": "11034",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "CA 선간전압",
+        "en": "Voltage C-A (L-L)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11035,
+      "manualAddress": "11036",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 선간전압",
+        "en": "Average L-L voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11037,
+      "manualAddress": "11038",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 유효전력",
+        "en": "Phase A active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11039,
+      "manualAddress": "11040",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 유효전력",
+        "en": "Phase B active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11041,
+      "manualAddress": "11042",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 유효전력",
+        "en": "Phase C active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11043,
+      "manualAddress": "11044",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력",
+        "en": "Total active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11051,
+      "manualAddress": "11052",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 무효전력",
+        "en": "Total reactive power"
+      },
+      "unit": "kVAR",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11059,
+      "manualAddress": "11060",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 피상전력",
+        "en": "Total apparent power"
+      },
+      "unit": "kVA",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11061,
+      "manualAddress": "11062",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "A상 역률",
+        "en": "Phase A power factor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11063,
+      "manualAddress": "11064",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "B상 역률",
+        "en": "Phase B power factor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11065,
+      "manualAddress": "11066",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C상 역률",
+        "en": "Phase C power factor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11067,
+      "manualAddress": "11068",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 역률",
+        "en": "Total power factor"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11072,
+      "manualAddress": "11073",
+      "type": "u16",
+      "name": {
+        "ko": "총 역률 위상 상태",
+        "en": "Total PF angle status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "유효하지 않음(피상전력 0)",
+          "en": "Invalid (apparent power 0)"
+        },
+        {
+          "value": 1,
+          "ko": "진상",
+          "en": "Lead"
+        },
+        {
+          "value": 2,
+          "ko": "지상",
+          "en": "Lag"
+        }
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11073,
+      "manualAddress": "11074",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 유효전력량",
+        "en": "Received active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11075,
+      "manualAddress": "11076",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 유효전력량",
+        "en": "Delivered active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11081,
+      "manualAddress": "11082",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "양의 무효전력량",
+        "en": "Positive reactive energy"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11083,
+      "manualAddress": "11084",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "음의 무효전력량",
+        "en": "Negative reactive energy"
+      },
+      "unit": "kVARh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11089,
+      "manualAddress": "11090",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상전력량",
+        "en": "Apparent energy"
+      },
+      "unit": "kVAh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11127,
+      "manualAddress": "11128",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력 디맨드",
+        "en": "Total demand active power"
+      },
+      "unit": "kW",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11289,
+      "manualAddress": "11290",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11291,
+      "manualAddress": "11292",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "장치 후면 온도",
+        "en": "Rear temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.32-35 Measurement Data"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65525,
+      "manualAddress": "65526",
+      "type": "u16",
+      "name": {
+        "ko": "주소·엔디언 시험값",
+        "en": "Address/endian test word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "65526-65529 에 4142h, 4344h, 4546h, 4748h 상수. 65527 부터 2워드 읽어 43 44 45 46h 가 나오면 주소·순서 정상",
+        "en": "Constants 4142h, 4344h, 4546h, 4748h at 65526-65529; reading 2 words from 65527 should give 43 44 45 46h"
+      },
+      "ref": "p.45 Modbus Test Register Address"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "계측표(p.32-35)에는 속성 칸이 없다 — 계측값은 읽기 전용(FC03)으로 적었다.",
+      "en": "Measurement table (p.32-35) has no attribute column; measurement values are listed as read-only (FC03)."
+    },
+    {
+      "ko": "계측값은 1초마다 갱신. 11010-12197 을 여러 패킷으로 읽을 때 주소가 줄어드는 패킷에서만 전체를 다시 가져온다(동시성) (p.32).",
+      "en": "Data refreshed every 1 s. When reading 11010-12197 in several packets, a full re-fetch happens only on a packet with a lower start address (p.32)."
+    },
+    {
+      "ko": "값은 실제 단위(V·A·kW…)의 Float32 라서 PT/CT 비 배율을 곱할 필요가 없다. 전력량은 Int32 kWh/kVARh/kVAh 정수.",
+      "en": "Values are Float32 in engineering units (V, A, kW…), no PT/CT scaling needed. Energies are Int32 in kWh/kVARh/kVAh."
+    },
+    {
+      "ko": "직렬 설정(10251-10254)은 PRW — 10250 을 읽어 가져오고, 값을 쓴 뒤 10250 에 1 을 써야 적용된다 (p.28).",
+      "en": "Serial settings (10251-10254) are PRW: read 10250 to fetch, write values, then write 1 to 10250 to apply (p.28)."
+    },
+    {
+      "ko": "Rev 2.12(2026-10-22)를 Rev 2.11 과 대조했다 — 이 파일에 넣은 레지스터의 번호·형식·단위·읽기/쓰기는 그대로다. 새 판의 변경은 계측표 이름 표기·오타(11078 단위 칸 kWh 추가 등)와 시스템 정보 10017~10018 항목 이름, 쪽 번호(계측 p.32-35, 3장 p.44-45)다.",
+      "en": "Rev 2.12 (2026-10-22) was compared with Rev 2.11: register numbers, types, units and access for the registers in this file are unchanged. The new edition fixes measurement-table names and typos (e.g. kWh added to the 11078 unit column), renames system-information items 10017-10018, and shifts pages (measurements pp.32-35, chapter 3 pp.44-45)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Accura 3300E Communication Guide [Korean]",
+      "publisher": "Rootech Inc.",
+      "edition": {
+        "ko": "Revision 2.12, 2026-10-22",
+        "en": "Revision 2.12, 2026-10-22"
+      },
+      "url": "https://www.rootech.com/bbs/download.php?bo_table=m3_03_2&wr_id=1499&no=0",
+      "pages": {
+        "ko": "p.12-13 함수 코드, p.18-19 맵 개요·형식, p.22-23, p.28, p.32-35 계측, p.44-45 주소·엔디언",
+        "en": "pp.12-13 function codes, pp.18-19 map overview and formats, pp.22-23, p.28, pp.32-35 measurements, pp.44-45 addresses and endianness"
+      },
+      "checked": "2026-10-23"
+    }
+  ]
+}

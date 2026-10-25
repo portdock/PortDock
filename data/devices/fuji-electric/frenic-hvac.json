@@ -1,0 +1,1603 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "fuji-electric/frenic-hvac",
+  "manufacturer": {
+    "ko": "후지전기",
+    "en": "Fuji Electric"
+  },
+  "model": "FRENIC-HVAC/AQUA",
+  "models": [
+    "FRENIC-HVAC",
+    "FRENIC-AQUA"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "후지전기 FRENIC-HVAC·AQUA 인버터 (RS-485 Modbus RTU)",
+    "en": "Fuji Electric FRENIC-HVAC and AQUA inverters (RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "RS-485 Modbus RTU(RJ45 포트 1·단자 포트 2). 레지스터 주소 = 기능 코드 그룹 × 256 + 번호(S = 07h, M = 08h): 주파수 지령 S05 (0705h), 운전 명령 S06 (0706h), 출력 주파수 M09 (0809h), 운전 상태 M14 (080Eh)",
+    "en": "RS-485 Modbus RTU (RJ45 port 1, terminal port 2). Register address = function code group × 256 + number (S = 07h, M = 08h): frequency reference S05 (0705h), operation command S06 (0706h), output frequency M09 (0809h), operation status M14 (080Eh)"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 50,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼 CRC 계산 예(p.3-22~3-23)는 국번 1, FC03, 기능 코드 P02(그룹 P = 03h, 번호 02h), 20개 읽기를 01 03 03 02 00 14 E4 41 로 보낸다. 통신 주소 = 그룹 코드 × 256 + 번호(0 기준, 표 3.2 p.3-5). CRC 도 계산값과 맞다. 매뉴얼은 «40000 + 그룹 × 256 + 번호»(J60 = 43388) 라고도 적는데, 40001 이 첫 주소인 흔한 PLC 표기와 달리 40000 을 뺀 값이 곧 통신 주소다 (p.3-4).",
+        "en": "Addressing: the manual's CRC example (pp.3-22-3-23) reads 20 words from function code P02 (group P = 03h, number 02h) at station 1 with 01 03 03 02 00 14 E4 41. Wire address = group code × 256 + number (0-based, Table 3.2 p.3-5). The CRC matches calculation. The manual also writes «40000 + group × 256 + number» (J60 = 43388); unlike the usual PLC notation where 40001 is the first address, the value minus 40000 is the wire address (p.3-4)."
+      },
+      {
+        "ko": "y04 속도 2400·4800·9600·19200·38400 bps, y06 패리티 0 없음(정지 2비트)·1 짝수·2 홀수·3 없음(정지 1비트), Modbus RTU 는 8비트 고정 (p.2-21). Modbus RTU 로 쓰려면 y10(포트 1)·y20(포트 2) = 0 (p.2-22). 출하값은 이 매뉴얼에 없어 비웠다.",
+        "en": "y04 baud 2400/4800/9600/19200/38400 bps; y06 parity 0 none (2 stop bits), 1 even, 2 odd, 3 none (1 stop bit); Modbus RTU is fixed at 8 bits (p.2-21). Set y10 (port 1) or y20 (port 2) = 0 for Modbus RTU (p.2-22). Factory settings are not in this manual and are left empty."
+      },
+      {
+        "ko": "FC03 은 한 번에 50워드까지. 안 쓰는 기능 코드는 오류 없이 0 으로 읽히고, 한 번의 읽기가 그룹을 넘지 않는다 (p.3-5).",
+        "en": "FC03 reads up to 50 words at a time. Unused function codes read as 0 without an error, and one read does not cross a group (p.3-5)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1793,
+      "manualAddress": "S01 (0701h)",
+      "type": "s16",
+      "name": {
+        "ko": "S01 주파수 지령 (p.u.)",
+        "en": "S01 Frequency reference (p.u.)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "±20000 = 최대 주파수. S01 이 0 이 아니면 S05 보다 앞선다",
+        "en": "±20000 = maximum frequency. When S01 is not 0 it takes precedence over S05"
+      },
+      "ref": "p.5-2 표 5.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1797,
+      "manualAddress": "S05 (0705h)",
+      "type": "u16",
+      "name": {
+        "ko": "S05 주파수 지령",
+        "en": "S05 Frequency reference"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 655.35
+      },
+      "ref": "p.5-2 표 5.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1798,
+      "manualAddress": "S06 (0706h)",
+      "type": "u16",
+      "name": {
+        "ko": "S06 운전 명령",
+        "en": "S06 Operation command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 명령",
+          "en": "FWD forward run command"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 명령",
+          "en": "REV reverse run command"
+        },
+        {
+          "bit": 2,
+          "ko": "X1 범용 입력",
+          "en": "X1 general-purpose input"
+        },
+        {
+          "bit": 3,
+          "ko": "X2 범용 입력",
+          "en": "X2 general-purpose input"
+        },
+        {
+          "bit": 4,
+          "ko": "X3 범용 입력",
+          "en": "X3 general-purpose input"
+        },
+        {
+          "bit": 5,
+          "ko": "X4 범용 입력",
+          "en": "X4 general-purpose input"
+        },
+        {
+          "bit": 6,
+          "ko": "X5 범용 입력",
+          "en": "X5 general-purpose input"
+        },
+        {
+          "bit": 7,
+          "ko": "X6 범용 입력",
+          "en": "X6 general-purpose input"
+        },
+        {
+          "bit": 8,
+          "ko": "X7 범용 입력",
+          "en": "X7 general-purpose input"
+        },
+        {
+          "bit": 13,
+          "ko": "XF(FWD) 범용 입력",
+          "en": "XF (FWD) general-purpose input"
+        },
+        {
+          "bit": 14,
+          "ko": "XR(REV) 범용 입력",
+          "en": "XR (REV) general-purpose input"
+        },
+        {
+          "bit": 15,
+          "ko": "RST 경보 리셋",
+          "en": "RST alarm reset"
+        }
+      ],
+      "description": {
+        "ko": "형식 [14]. 매뉴얼 예: FWD·X1 켬 = 0005h. 비트 15 로 경보를 리셋하려면 1 로 쓴 뒤 다시 0 으로 쓴다",
+        "en": "Format [14]. Manual example: FWD and X1 on = 0005h. To reset an alarm with bit 15, write 1 and then 0 again"
+      },
+      "ref": "p.5-2 표 5.2, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1799,
+      "manualAddress": "S07 (0707h)",
+      "type": "u16",
+      "name": {
+        "ko": "S07 범용 DO",
+        "en": "S07 Universal DO"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "Y1 범용 출력",
+          "en": "Y1 general-purpose output"
+        },
+        {
+          "bit": 1,
+          "ko": "Y2 범용 출력",
+          "en": "Y2 general-purpose output"
+        },
+        {
+          "bit": 2,
+          "ko": "Y3 범용 출력",
+          "en": "Y3 general-purpose output"
+        },
+        {
+          "bit": 3,
+          "ko": "Y4 범용 출력",
+          "en": "Y4 general-purpose output"
+        },
+        {
+          "bit": 4,
+          "ko": "Y5 범용 출력",
+          "en": "Y5 general-purpose output"
+        },
+        {
+          "bit": 8,
+          "ko": "30 경보 출력(범용 출력)",
+          "en": "30 alarm output (general-purpose output)"
+        }
+      ],
+      "description": {
+        "ko": "형식 [15] — 범용 DO 로 정한 출력 단자를 통신으로 켠다",
+        "en": "Format [15]: drives output terminals assigned to universal DO"
+      },
+      "ref": "p.5-2 표 5.2, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1800,
+      "manualAddress": "S08 (0708h)",
+      "type": "u16",
+      "name": {
+        "ko": "S08 가속 시간 (F07)",
+        "en": "S08 Acceleration time (F07)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.5-2 표 5.2",
+      "source": 0,
+      "range": {
+        "min": 0,
+        "max": 3600
+      }
+    },
+    {
+      "table": "holding-registers",
+      "address": 1801,
+      "manualAddress": "S09 (0709h)",
+      "type": "u16",
+      "name": {
+        "ko": "S09 감속 시간 (F08)",
+        "en": "S09 Deceleration time (F08)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.5-2 표 5.2",
+      "source": 0,
+      "range": {
+        "min": 0,
+        "max": 3600
+      }
+    },
+    {
+      "table": "holding-registers",
+      "address": 1804,
+      "manualAddress": "S12 (070Ch)",
+      "type": "s16",
+      "name": {
+        "ko": "S12 범용 AO",
+        "en": "S12 Universal AO"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "±20000 = 풀 스케일",
+        "en": "±20000 = full scale"
+      },
+      "ref": "p.5-2 표 5.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1805,
+      "manualAddress": "S13 (070Dh)",
+      "type": "s16",
+      "name": {
+        "ko": "S13 PID 지령",
+        "en": "S13 PID command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "±20000 = ±100%",
+        "en": "±20000 = ±100%"
+      },
+      "ref": "p.5-2 표 5.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1806,
+      "manualAddress": "S14 (070Eh)",
+      "type": "u16",
+      "name": {
+        "ko": "S14 경보 리셋 명령",
+        "en": "S14 Alarm reset command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "경보 리셋",
+          "en": "Alarm reset"
+        }
+      ],
+      "description": {
+        "ko": "1 을 쓰면 리셋한다. 읽으면 늘 0",
+        "en": "Writing 1 resets the alarm. Always reads 0"
+      },
+      "ref": "p.5-2 표 5.2, p.5-5",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1811,
+      "manualAddress": "S19 (0713h)",
+      "type": "s16",
+      "name": {
+        "ko": "S19 속도 지령",
+        "en": "S19 Speed command"
+      },
+      "unit": "r/min",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.5-2 표 5.2",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2049,
+      "manualAddress": "M01 (0801h)",
+      "type": "s16",
+      "name": {
+        "ko": "M01 주파수 지령 (p.u.) (최종 지령)",
+        "en": "M01 Frequency reference (p.u.) (final command)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "±20000 = 최대 주파수",
+        "en": "±20000 = maximum frequency"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2053,
+      "manualAddress": "M05 (0805h)",
+      "type": "u16",
+      "name": {
+        "ko": "M05 주파수 지령 (최종 지령)",
+        "en": "M05 Frequency reference (final command)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2054,
+      "manualAddress": "M06 (0806h)",
+      "type": "s16",
+      "name": {
+        "ko": "M06 출력 주파수 1 (p.u.)",
+        "en": "M06 Output frequency 1 (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "±20000 = 최대 주파수, 슬립 보상 전",
+        "en": "±20000 = maximum frequency, before slip compensation"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2055,
+      "manualAddress": "M07 (0807h)",
+      "type": "s16",
+      "name": {
+        "ko": "M07 토크 실제값",
+        "en": "M07 Torque real value"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모터 정격 토크 = 100%",
+        "en": "100% = motor rated torque"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2057,
+      "manualAddress": "M09 (0809h)",
+      "type": "u16",
+      "name": {
+        "ko": "M09 출력 주파수",
+        "en": "M09 Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Modbus RTU 는 형식 [22](0.00~655.35 Hz, 부호 없음)",
+        "en": "Modbus RTU uses format [22] (0.00-655.35 Hz, unsigned)"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2058,
+      "manualAddress": "M10 (080Ah)",
+      "type": "u16",
+      "name": {
+        "ko": "M10 입력 전력",
+        "en": "M10 Input power"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "«적용 모터 공칭 출력» = 100%",
+        "en": "100% = nominal applicable motor output"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2059,
+      "manualAddress": "M11 (080Bh)",
+      "type": "u16",
+      "name": {
+        "ko": "M11 출력 전류 실효값",
+        "en": "M11 Output current effective value"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "인버터 정격 전류 = 100%",
+        "en": "100% = inverter rated current"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2060,
+      "manualAddress": "M12 (080Ch)",
+      "type": "u16",
+      "name": {
+        "ko": "M12 출력 전압 실효값",
+        "en": "M12 Output voltage effective value"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "형식 [3](0.1 단위)이지만 소수점 아래 값은 없다(1.0 V 단위로 바뀜)",
+        "en": "Format [3] (0.1 units) but there is no fractional part (changes in 1.0 V steps)"
+      },
+      "ref": "p.5-11 표 5.8",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2061,
+      "manualAddress": "M13 (080Dh)",
+      "type": "u16",
+      "name": {
+        "ko": "M13 운전 명령 (최종 지령)",
+        "en": "M13 Operation command (final command)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 명령",
+          "en": "FWD forward run command"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 명령",
+          "en": "REV reverse run command"
+        },
+        {
+          "bit": 2,
+          "ko": "X1 범용 입력",
+          "en": "X1 general-purpose input"
+        },
+        {
+          "bit": 3,
+          "ko": "X2 범용 입력",
+          "en": "X2 general-purpose input"
+        },
+        {
+          "bit": 4,
+          "ko": "X3 범용 입력",
+          "en": "X3 general-purpose input"
+        },
+        {
+          "bit": 5,
+          "ko": "X4 범용 입력",
+          "en": "X4 general-purpose input"
+        },
+        {
+          "bit": 6,
+          "ko": "X5 범용 입력",
+          "en": "X5 general-purpose input"
+        },
+        {
+          "bit": 7,
+          "ko": "X6 범용 입력",
+          "en": "X6 general-purpose input"
+        },
+        {
+          "bit": 8,
+          "ko": "X7 범용 입력",
+          "en": "X7 general-purpose input"
+        },
+        {
+          "bit": 13,
+          "ko": "XF(FWD) 범용 입력",
+          "en": "XF (FWD) general-purpose input"
+        },
+        {
+          "bit": 14,
+          "ko": "XR(REV) 범용 입력",
+          "en": "XR (REV) general-purpose input"
+        },
+        {
+          "bit": 15,
+          "ko": "RST 경보 리셋",
+          "en": "RST alarm reset"
+        }
+      ],
+      "description": {
+        "ko": "형식 [14] — 키패드·단자·통신을 합친 최종 명령",
+        "en": "Format [14]: final command from keypad, terminals and communications"
+      },
+      "ref": "p.5-12 표 5.9, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2062,
+      "manualAddress": "M14 (080Eh)",
+      "type": "u16",
+      "name": {
+        "ko": "M14 운전 상태",
+        "en": "M14 Operation status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 중",
+          "en": "FWD running forward"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 중",
+          "en": "REV running in reverse"
+        },
+        {
+          "bit": 2,
+          "ko": "EXT 직류 제동 중(또는 예비 여자 중)",
+          "en": "EXT DC braking (or pre-exciting)"
+        },
+        {
+          "bit": 3,
+          "ko": "INT 인버터 출력 차단",
+          "en": "INT inverter shut down"
+        },
+        {
+          "bit": 4,
+          "ko": "BRK 제동 중",
+          "en": "BRK braking"
+        },
+        {
+          "bit": 5,
+          "ko": "NUV 직류 중간 회로 전압 확립(0 = 부족 전압)",
+          "en": "NUV DC link voltage established (0 = undervoltage)"
+        },
+        {
+          "bit": 7,
+          "ko": "VL 전압 제한 중",
+          "en": "VL voltage limiting"
+        },
+        {
+          "bit": 8,
+          "ko": "IL 전류 제한 중",
+          "en": "IL current limiting"
+        },
+        {
+          "bit": 9,
+          "ko": "ACC 가속 중",
+          "en": "ACC accelerating"
+        },
+        {
+          "bit": 10,
+          "ko": "DEC 감속 중",
+          "en": "DEC decelerating"
+        },
+        {
+          "bit": 11,
+          "ko": "ALM 경보 릴레이(모든 고장)",
+          "en": "ALM alarm relay (any fault)"
+        },
+        {
+          "bit": 12,
+          "ko": "RL 통신 유효",
+          "en": "RL communications effective"
+        },
+        {
+          "bit": 15,
+          "ko": "BUSY 기능 코드 데이터 쓰는 중",
+          "en": "BUSY writing function code data"
+        }
+      ],
+      "description": {
+        "ko": "형식 [16]",
+        "en": "Format [16]"
+      },
+      "ref": "p.5-12 표 5.9, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2063,
+      "manualAddress": "M15 (080Fh)",
+      "type": "u16",
+      "name": {
+        "ko": "M15 범용 출력 단자 정보",
+        "en": "M15 General-purpose output terminal information"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "Y1 범용 출력",
+          "en": "Y1 general-purpose output"
+        },
+        {
+          "bit": 1,
+          "ko": "Y2 범용 출력",
+          "en": "Y2 general-purpose output"
+        },
+        {
+          "bit": 2,
+          "ko": "Y3 범용 출력",
+          "en": "Y3 general-purpose output"
+        },
+        {
+          "bit": 3,
+          "ko": "Y4 범용 출력",
+          "en": "Y4 general-purpose output"
+        },
+        {
+          "bit": 4,
+          "ko": "Y5 범용 출력",
+          "en": "Y5 general-purpose output"
+        },
+        {
+          "bit": 8,
+          "ko": "30 경보 출력(범용 출력)",
+          "en": "30 alarm output (general-purpose output)"
+        }
+      ],
+      "description": {
+        "ko": "형식 [15]",
+        "en": "Format [15]"
+      },
+      "ref": "p.5-12 표 5.9, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2064,
+      "manualAddress": "M16 (0810h)",
+      "type": "u16",
+      "name": {
+        "ko": "M16 최근 경보 내용",
+        "en": "M16 Latest alarm contents"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "경보 코드(형식 [10], p.5-65)",
+        "en": "Alarm code (format [10], p.5-65)"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2065,
+      "manualAddress": "M17 (0811h)",
+      "type": "u16",
+      "name": {
+        "ko": "M17 직전 경보 내용",
+        "en": "M17 Last alarm contents"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "경보 코드(형식 [10], p.5-65)",
+        "en": "Alarm code (format [10], p.5-65)"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2066,
+      "manualAddress": "M18 (0812h)",
+      "type": "u16",
+      "name": {
+        "ko": "M18 2회 전 경보 내용",
+        "en": "M18 Second last alarm contents"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "경보 코드(형식 [10], p.5-65)",
+        "en": "Alarm code (format [10], p.5-65)"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2067,
+      "manualAddress": "M19 (0813h)",
+      "type": "u16",
+      "name": {
+        "ko": "M19 3회 전 경보 내용",
+        "en": "M19 Third last alarm contents"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "경보 코드(형식 [10], p.5-65)",
+        "en": "Alarm code (format [10], p.5-65)"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2068,
+      "manualAddress": "M20 (0814h)",
+      "type": "u16",
+      "name": {
+        "ko": "M20 누적 운전 시간",
+        "en": "M20 Cumulative operation time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2069,
+      "manualAddress": "M21 (0815h)",
+      "type": "u16",
+      "name": {
+        "ko": "M21 직류 중간 회로 전압",
+        "en": "M21 DC link circuit voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2071,
+      "manualAddress": "M23 (0817h)",
+      "type": "u16",
+      "name": {
+        "ko": "M23 모델 코드",
+        "en": "M23 Model code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "시리즈·세대·모델·전압 계열을 16진 4자리로(형식 [17])",
+        "en": "Series, generation, model and voltage series as four hex digits (format [17])"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2072,
+      "manualAddress": "M24 (0818h)",
+      "type": "u16",
+      "name": {
+        "ko": "M24 용량 코드",
+        "en": "M24 Capacity code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "형식 [11]",
+        "en": "Format [11]"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2073,
+      "manualAddress": "M25 (0819h)",
+      "type": "u16",
+      "name": {
+        "ko": "M25 ROM 버전",
+        "en": "M25 ROM version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2074,
+      "manualAddress": "M26 (081Ah)",
+      "type": "u16",
+      "name": {
+        "ko": "M26 전송 오류 처리 코드",
+        "en": "M26 Transmission error transaction code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "RS-485 통신 오류 코드(형식 [20])",
+        "en": "RS-485 communications error code (format [20])"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2075,
+      "manualAddress": "M27 (081Bh)",
+      "type": "s16",
+      "name": {
+        "ko": "M27 경보 때 주파수 지령 (p.u.)",
+        "en": "M27 Frequency reference on alarm (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "±20000 = 최대 주파수",
+        "en": "±20000 = maximum frequency"
+      },
+      "ref": "p.5-12 표 5.9",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2079,
+      "manualAddress": "M31 (081Fh)",
+      "type": "u16",
+      "name": {
+        "ko": "M31 경보 때 주파수 지령",
+        "en": "M31 Frequency reference on alarm"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2080,
+      "manualAddress": "M32 (0820h)",
+      "type": "s16",
+      "name": {
+        "ko": "M32 경보 때 출력 주파수 1 (p.u.)",
+        "en": "M32 Output frequency 1 on alarm (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "±20000 = 최대 주파수",
+        "en": "±20000 = maximum frequency"
+      },
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2081,
+      "manualAddress": "M33 (0821h)",
+      "type": "s16",
+      "name": {
+        "ko": "M33 경보 때 토크 실제값",
+        "en": "M33 Torque real value on alarm"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2083,
+      "manualAddress": "M35 (0823h)",
+      "type": "u16",
+      "name": {
+        "ko": "M35 경보 때 출력 주파수",
+        "en": "M35 Output frequency on alarm"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2084,
+      "manualAddress": "M36 (0824h)",
+      "type": "u16",
+      "name": {
+        "ko": "M36 경보 때 입력 전력",
+        "en": "M36 Input power on alarm"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2085,
+      "manualAddress": "M37 (0825h)",
+      "type": "u16",
+      "name": {
+        "ko": "M37 경보 때 출력 전류 실효값",
+        "en": "M37 Output current effective value on alarm"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2087,
+      "manualAddress": "M39 (0827h)",
+      "type": "u16",
+      "name": {
+        "ko": "M39 경보 때 운전 명령",
+        "en": "M39 Operation command on alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 명령",
+          "en": "FWD forward run command"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 명령",
+          "en": "REV reverse run command"
+        },
+        {
+          "bit": 2,
+          "ko": "X1 범용 입력",
+          "en": "X1 general-purpose input"
+        },
+        {
+          "bit": 3,
+          "ko": "X2 범용 입력",
+          "en": "X2 general-purpose input"
+        },
+        {
+          "bit": 4,
+          "ko": "X3 범용 입력",
+          "en": "X3 general-purpose input"
+        },
+        {
+          "bit": 5,
+          "ko": "X4 범용 입력",
+          "en": "X4 general-purpose input"
+        },
+        {
+          "bit": 6,
+          "ko": "X5 범용 입력",
+          "en": "X5 general-purpose input"
+        },
+        {
+          "bit": 7,
+          "ko": "X6 범용 입력",
+          "en": "X6 general-purpose input"
+        },
+        {
+          "bit": 8,
+          "ko": "X7 범용 입력",
+          "en": "X7 general-purpose input"
+        },
+        {
+          "bit": 13,
+          "ko": "XF(FWD) 범용 입력",
+          "en": "XF (FWD) general-purpose input"
+        },
+        {
+          "bit": 14,
+          "ko": "XR(REV) 범용 입력",
+          "en": "XR (REV) general-purpose input"
+        },
+        {
+          "bit": 15,
+          "ko": "RST 경보 리셋",
+          "en": "RST alarm reset"
+        }
+      ],
+      "ref": "p.5-13 표 5.10, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2088,
+      "manualAddress": "M40 (0828h)",
+      "type": "u16",
+      "name": {
+        "ko": "M40 경보 때 운전 상태",
+        "en": "M40 Operation status on alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 중",
+          "en": "FWD running forward"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 중",
+          "en": "REV running in reverse"
+        },
+        {
+          "bit": 2,
+          "ko": "EXT 직류 제동 중(또는 예비 여자 중)",
+          "en": "EXT DC braking (or pre-exciting)"
+        },
+        {
+          "bit": 3,
+          "ko": "INT 인버터 출력 차단",
+          "en": "INT inverter shut down"
+        },
+        {
+          "bit": 4,
+          "ko": "BRK 제동 중",
+          "en": "BRK braking"
+        },
+        {
+          "bit": 5,
+          "ko": "NUV 직류 중간 회로 전압 확립(0 = 부족 전압)",
+          "en": "NUV DC link voltage established (0 = undervoltage)"
+        },
+        {
+          "bit": 7,
+          "ko": "VL 전압 제한 중",
+          "en": "VL voltage limiting"
+        },
+        {
+          "bit": 8,
+          "ko": "IL 전류 제한 중",
+          "en": "IL current limiting"
+        },
+        {
+          "bit": 9,
+          "ko": "ACC 가속 중",
+          "en": "ACC accelerating"
+        },
+        {
+          "bit": 10,
+          "ko": "DEC 감속 중",
+          "en": "DEC decelerating"
+        },
+        {
+          "bit": 11,
+          "ko": "ALM 경보 릴레이(모든 고장)",
+          "en": "ALM alarm relay (any fault)"
+        },
+        {
+          "bit": 12,
+          "ko": "RL 통신 유효",
+          "en": "RL communications effective"
+        },
+        {
+          "bit": 15,
+          "ko": "BUSY 기능 코드 데이터 쓰는 중",
+          "en": "BUSY writing function code data"
+        }
+      ],
+      "ref": "p.5-13 표 5.10, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2089,
+      "manualAddress": "M41 (0829h)",
+      "type": "u16",
+      "name": {
+        "ko": "M41 경보 때 출력 단자 정보",
+        "en": "M41 Output terminal information on alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "Y1 범용 출력",
+          "en": "Y1 general-purpose output"
+        },
+        {
+          "bit": 1,
+          "ko": "Y2 범용 출력",
+          "en": "Y2 general-purpose output"
+        },
+        {
+          "bit": 2,
+          "ko": "Y3 범용 출력",
+          "en": "Y3 general-purpose output"
+        },
+        {
+          "bit": 3,
+          "ko": "Y4 범용 출력",
+          "en": "Y4 general-purpose output"
+        },
+        {
+          "bit": 4,
+          "ko": "Y5 범용 출력",
+          "en": "Y5 general-purpose output"
+        },
+        {
+          "bit": 8,
+          "ko": "30 경보 출력(범용 출력)",
+          "en": "30 alarm output (general-purpose output)"
+        }
+      ],
+      "ref": "p.5-13 표 5.10, p.5-67",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2090,
+      "manualAddress": "M42 (082Ah)",
+      "type": "u16",
+      "name": {
+        "ko": "M42 경보 때 누적 운전 시간",
+        "en": "M42 Cumulative operation time on alarm"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2091,
+      "manualAddress": "M43 (082Bh)",
+      "type": "u16",
+      "name": {
+        "ko": "M43 경보 때 직류 중간 회로 전압",
+        "en": "M43 DC link circuit voltage on alarm"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2092,
+      "manualAddress": "M44 (082Ch)",
+      "type": "u16",
+      "name": {
+        "ko": "M44 경보 때 인버터 내부 공기 온도",
+        "en": "M44 Inverter internal air temperature on alarm"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2093,
+      "manualAddress": "M45 (082Dh)",
+      "type": "u16",
+      "name": {
+        "ko": "M45 경보 때 방열판 온도",
+        "en": "M45 Heat sink temperature on alarm"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2094,
+      "manualAddress": "M46 (082Eh)",
+      "type": "u16",
+      "name": {
+        "ko": "M46 주회로 콘덴서 수명",
+        "en": "M46 Life of main circuit capacitor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "출하 때 용량 = 100%",
+        "en": "100% = capacity at shipment"
+      },
+      "ref": "p.5-13 표 5.10",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2097,
+      "manualAddress": "M49 (0831h)",
+      "type": "s16",
+      "name": {
+        "ko": "M49 입력 단자 [12] 전압 (p.u.)",
+        "en": "M49 Input terminal [12] voltage (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "-20000 = -10 V, 20000 = 10 V",
+        "en": "-20000 = -10 V, 20000 = 10 V"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2098,
+      "manualAddress": "M50 (0832h)",
+      "type": "u16",
+      "name": {
+        "ko": "M50 입력 단자 [C1] 전류 (p.u.)",
+        "en": "M50 Input terminal [C1] current (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "0 = 0 mA, 20000 = 20 mA",
+        "en": "0 = 0 mA, 20000 = 20 mA"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2100,
+      "manualAddress": "M52 (0834h)",
+      "type": "s16",
+      "name": {
+        "ko": "M52 입력 단자 [32] 전압 (p.u.)",
+        "en": "M52 Input terminal [32] voltage (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "-20000 = -10 V, 20000 = 10 V",
+        "en": "-20000 = -10 V, 20000 = 10 V"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2102,
+      "manualAddress": "M54 (0836h)",
+      "type": "s16",
+      "name": {
+        "ko": "M54 입력 단자 [V2] 전압 (p.u.)",
+        "en": "M54 Input terminal [V2] voltage (p.u.)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "-20000 = -10 V, 20000 = 10 V",
+        "en": "-20000 = -10 V, 20000 = 10 V"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2109,
+      "manualAddress": "M61 (083Dh)",
+      "type": "u16",
+      "name": {
+        "ko": "M61 인버터 내부 공기 온도",
+        "en": "M61 Inverter internal air temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2110,
+      "manualAddress": "M62 (083Eh)",
+      "type": "u16",
+      "name": {
+        "ko": "M62 방열판 온도",
+        "en": "M62 Heat sink temperature"
+      },
+      "unit": "℃",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2111,
+      "manualAddress": "M63 (083Fh)",
+      "type": "s16",
+      "name": {
+        "ko": "M63 부하율",
+        "en": "M63 Load factor"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모터 정격 = 100%",
+        "en": "100% = motor rating"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2112,
+      "manualAddress": "M64 (0840h)",
+      "type": "s16",
+      "name": {
+        "ko": "M64 모터 출력",
+        "en": "M64 Motor output"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "모터 정격 출력(kW) = 100%",
+        "en": "100% = motor rated output (kW)"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2116,
+      "manualAddress": "M68 (0844h)",
+      "type": "s16",
+      "name": {
+        "ko": "M68 PID 최종 지령",
+        "en": "M68 PID final command"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "±20000 = ±100%",
+        "en": "±20000 = ±100%"
+      },
+      "ref": "p.5-14 표 5.11",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "HVAC·AQUA 가 모두 지원하는 S·M 코드 가운데 뜻·단위가 매뉴얼 표에 있는 것만 넣었다. M38 은 최소 단위 1.0 과 형식 [3](0.1)이 달라, M47·M48(수명)은 표 5.10 단위(10 h)와 형식 [74] 를 대조하지 못해, M69(정격 전류)는 용량에 따라 배율이 바뀌어 뺐다. M53 은 표 5.11 이름(입력 단자 [C2] 전류)과 형식 표 5.28 이름(전압)이 달라 뺐다.",
+      "en": "Only S and M codes supported by both HVAC and AQUA whose meaning and unit are in the manual tables are included. M38 is left out (step 1.0 vs format [3] = 0.1), M47/M48 (life) because Table 5.10 (10 h) could not be matched with format [74], M69 (rated current) because its scale changes with capacity, and M53 because Table 5.11 calls it input terminal [C2] current while format Table 5.28 says voltage."
+    },
+    {
+      "ko": "형식 [16] 운전 상태의 비트 6 은 비트 그림에서 0(안 씀)인데 아래 표에는 TL(토크 제한 중)로 나와 넣지 않았다 (p.5-67).",
+      "en": "Bit 6 of format [16] (operation status) is 0 (unused) in the bit diagram but TL (torque limiting) in the table below it, so it is left out (p.5-67)."
+    },
+    {
+      "ko": "통신으로 운전·주파수 지령을 주려면 H30(링크 기능)과 y98·y99 를 통신 쪽으로 정해야 한다 (p.2-17~2-19). 읽기(M 코드)는 그대로 된다.",
+      "en": "To run the drive and give the frequency reference over communications, set H30 (link function) and y98/y99 to communications (pp.2-17-2-19). Reading (M codes) works as is."
+    }
+  ],
+  "sources": [
+    {
+      "title": "RS-485 Communication User's Manual (FRENIC-HVAC, FRENIC-AQUA)",
+      "publisher": "Fuji Electric",
+      "edition": {
+        "ko": "24A7-E-0021b 3판 2015-05",
+        "en": "24A7-E-0021b 3rd edition May 2015"
+      },
+      "url": "https://americas.fujielectric.com/files/24A7-E-0021b.pdf",
+      "pages": {
+        "ko": "RS-485 설정 p.2-20~2-22, Modbus RTU 메시지 p.3-4~3-5, CRC 예 p.3-22~3-23, 명령 데이터 p.5-2, 모니터 데이터 p.5-11~5-14, 형식 번호 p.5-51~5-52, 형식 사양 p.5-63~5-71",
+        "en": "RS-485 settings pp.2-20-2-22, Modbus RTU messages pp.3-4-3-5, CRC example pp.3-22-3-23, command data p.5-2, monitor data pp.5-11-5-14, format numbers pp.5-51-5-52, format specifications pp.5-63-5-71"
+      },
+      "checked": "2026-10-24"
+    }
+  ]
+}

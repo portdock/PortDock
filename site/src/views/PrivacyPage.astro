@@ -1,0 +1,102 @@
+---
+// 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { type Lang } from "../data/tools";
+import { UI, url } from "../lib/i18n";
+import { CONTACT_EMAIL } from "@shared/links";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = UI[lang];
+const ko = lang === "ko";
+const updated = "2026-10-23";
+---
+
+<Base
+  lang={lang}
+  title={t.privacy}
+  description={ko
+    ? "PortDock 프로그램은 통신 내용을 밖으로 보내지 않고, 오류 보고는 허락할 때만 보냅니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리 방식과 위탁처."
+    : "PortDock programs never send your traffic; error reports go out only with your permission. How the site handles analytics, ad cookies and the contact form."}
+  path="privacy/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: t.privacy, path: "privacy/" }]} />
+      <h1>{t.privacy}</h1>
+      <p>{ko ? `시행일 ${updated}` : `Effective ${updated}`}</p>
+    </div>
+  </header>
+  <div class="wrap prose" style="padding-top:20px">
+    {
+      ko ? (
+        <>
+          <h2>1. 프로그램(PortDock 도구)</h2>
+          <ul>
+            <li>프로그램은 통신 내용·명령 목록·규칙·설정을 밖으로 보내지 않습니다. 설정은 이 PC 안에만 저장됩니다.</li>
+            <li>
+              <b>오류 보고</b>: 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정에서 «오류 자동 전송» 을 켠 경우에만 오류 원인(예외 내용·호출 위치)과
+              프로그램·윈도우 버전을 보냅니다. 통신 내용과 IP 설정은 넣지 않으며, 사용자가 직접 «최근 통신 기록» 을 켠 경우에만 그 내용이 들어갑니다.
+            </li>
+            <li>오류 보고는 오류 수집 서비스 Sentry(Functional Software, Inc.)로 전송되어 오류 분석에만 쓰이고, 30일 뒤 지워집니다. 저장 위치는 Sentry 의 EU(독일) 데이터 센터이며 IP 주소는 저장하지 않도록 설정합니다.</li>
+          </ul>
+          <h2>2. 이 사이트</h2>
+          <ul>
+            <li><b>방문 통계</b>: Cloudflare Web Analytics 로 페이지 방문 수를 셉니다. 쿠키를 쓰지 않고 개인을 알아보는 정보를 모으지 않습니다.</li>
+            <li>
+              <b>광고</b>: 웹 도구·가이드·장비 레지스터 맵(장비별) 페이지에는 Google AdSense 광고가 나올 수 있습니다. Google 과 협력사는 쿠키를 써서 이전 방문을 바탕으로 광고를 보여 줄 수 있습니다.
+              맞춤 광고는 <a href="https://adssettings.google.com">Google 광고 설정</a>에서 끌 수 있고, 자세한 내용은{" "}
+              <a href="https://policies.google.com/technologies/ads">Google 광고 정책</a>에 있습니다. 내려받기·도구 소개·사용법 페이지에는 광고를 두지 않습니다.
+            </li>
+            <li><b>문의 양식</b>: 이름·메일·내용은 답장에만 쓰고, 답이 끝나면 1년 안에 지웁니다. 스팸 방지를 위해 Cloudflare Turnstile 을 씁니다.</li>
+          </ul>
+          <h2>3. 처리를 맡기는 곳과 국외 이전</h2>
+          <ul>
+            <li>Cloudflare, Inc.(미국) — 사이트 호스팅·방문 통계·스팸 방지·문의 메일 전달</li>
+            <li>Google LLC(미국) — 광고(웹 도구·가이드·장비 레지스터 맵 페이지)</li>
+            <li>Functional Software, Inc.(Sentry, 미국 법인·EU 데이터 센터) — 프로그램 오류 보고(사용자가 허락한 경우)</li>
+          </ul>
+          <h2>4. 문의</h2>
+          <p>
+            개인정보 관련 문의·삭제 요청은 <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> 또는 <a href={url(lang, "contact/")}>문의 페이지</a>로 보내 주세요.
+          </p>
+        </>
+      ) : (
+        <>
+          <h2>1. The programs (PortDock tools)</h2>
+          <ul>
+            <li>The programs never send your traffic, commands, rules or settings anywhere. Settings stay on this PC.</li>
+            <li>
+              <b>Error reports</b> are sent only when you press send in the «!» report window or turn on «Automatic error reports». They contain the error cause (exception
+              text, location) and program/Windows versions. Traffic and IP settings are not included unless you explicitly tick «recent traffic».
+            </li>
+            <li>Reports go to Sentry (Functional Software, Inc.), are used only to fix bugs, are deleted after 30 days, are stored in Sentry's EU (Germany) region, and IP addresses are not stored.</li>
+          </ul>
+          <h2>2. This website</h2>
+          <ul>
+            <li><b>Analytics</b>: Cloudflare Web Analytics counts page views without cookies or personal identifiers.</li>
+            <li>
+              <b>Ads</b>: Web-tool, guide and per-device register map pages may show Google AdSense ads. Google and its partners may use cookies to serve ads based on prior visits. You can opt out of
+              personalised ads in <a href="https://adssettings.google.com">Google Ad Settings</a>; see <a href="https://policies.google.com/technologies/ads">Google's ad policies</a>.
+              Download, product and documentation pages carry no ads.
+            </li>
+            <li><b>Contact form</b>: your name, email and message are used only to reply and deleted within a year. Cloudflare Turnstile is used against spam.</li>
+          </ul>
+          <h2>3. Processors and international transfer</h2>
+          <ul>
+            <li>Cloudflare, Inc. (USA) — hosting, analytics, spam protection, contact mail delivery</li>
+            <li>Google LLC (USA) — ads on web-tool, guide and device register map pages</li>
+            <li>Functional Software, Inc. (Sentry; US entity, EU data region) — program error reports (only with your permission)</li>
+          </ul>
+          <h2>4. Contact</h2>
+          <p>
+            For privacy questions or deletion requests, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> or use the <a href={url(lang, "contact/")}>contact page</a>.
+          </p>
+        </>
+      )
+    }
+  </div>
+</Base>

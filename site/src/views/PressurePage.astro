@@ -1,0 +1,282 @@
+---
+// 웹 도구: 압력 단위 변환기 — bar·psi·kPa·MPa·kgf/cm²·mmH2O·mmHg… 한 값을 모든 단위로, 게이지 ↔ 절대, 센서 범위 환산(lib/units.ts).
+// 계수는 정의값(표준 중력·파운드·인치)에서 곱해 만들고 NIST SP 811 부록 B 값과 시험으로 맞춘다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { PRESSURE, convert, fmt } from "../lib/units";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/pressure/";
+const L = ko
+  ? {
+      title: "압력 단위 변환기",
+      desc: "bar·psi·kPa·MPa·kgf/cm²·mmH2O·mmHg·atm 을 한 번에 바꾸고, 게이지 압력과 절대 압력을 오가며, 압력 센서 범위를 다른 단위의 4–20mA 환산표로 만듭니다.",
+      val: "값",
+      unit: "단위",
+      res: "모든 단위로",
+      gTitle: "게이지 ↔ 절대 압력",
+      gKind: "입력한 값은",
+      gauge: "게이지 압력(대기압 기준, bar g)",
+      abs: "절대 압력(진공 기준, bar a)",
+      atm: "대기압(kPa)",
+      gOut: "반대쪽 값",
+      rTitle: "센서 범위 환산 (4–20mA 표)",
+      lo: "범위 하한",
+      hi: "범위 상한",
+      from: "센서 단위",
+      to: "바꿀 단위",
+      rOut: "바꾼 범위",
+      mA: "전류",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "환산 계수와 정의",
+      formula: [
+        "1 bar = 100 kPa = 0.1 MPa = 100 000 Pa",
+        "1 psi = 0.453 592 37 kg × 9.806 65 m/s² ÷ (0.0254 m)² ≈ 6894.757 Pa",
+        "1 kgf/cm² = 9.806 65 N ÷ 1 cm² = 98 066.5 Pa = 0.980 665 bar",
+        "1 mmH₂O(관용) = 1000 kg/m³ × 9.806 65 m/s² × 1 mm = 9.806 65 Pa",
+        "1 mmHg(관용) = 13 595.1 kg/m³ × 9.806 65 m/s² × 1 mm ≈ 133.3224 Pa",
+        "1 atm = 101 325 Pa,   1 Torr = 101 325 ÷ 760 Pa",
+        "절대 압력 = 게이지 압력 + 대기압",
+      ],
+      fNote: "kgf/cm²(현장에서 «kg/cm²», «kg» 로도 부름)는 bar 보다 약 2 % 큽니다. 수주(mmH₂O·inH₂O)와 수은주(mmHg)는 «관용» 값 — 물 밀도 1000 kg/m³, 수은 13 595.1 kg/m³, 표준 중력으로 정한 값 — 입니다. 실제 물기둥 높이는 물 온도에 따라 조금 다르며, NIST SP 811 은 39.2 °F 물의 inH₂O 를 249.082 Pa, 60 °F 를 248.84 Pa 로 따로 적습니다.",
+      gaTitle: "게이지 압력과 절대 압력",
+      ga: [
+        "게이지 압력(gauge, bar g·psig)은 그 자리 대기압을 0 으로 잰 값이고, 절대 압력(absolute, bar a·psia)은 완전 진공을 0 으로 잰 값입니다. 공장의 공압·유압 압력계와 대부분의 압력 전송기는 게이지 압력입니다.",
+        "진공 쪽은 게이지로 음수(예: −0.5 bar g)가 되고, 절대 압력은 0 아래로 내려가지 않습니다. 진공 펌프·진공 센서는 절대 압력(mbar a, Torr)으로 적는 경우가 많습니다.",
+        "대기압은 고도와 날씨에 따라 바뀌므로 게이지 ↔ 절대 환산에는 표준 대기압(101.325 kPa) 대신 그 자리 값을 넣을 수 있습니다.",
+        "차압(differential, 예: 필터 앞뒤·유량계 오리피스)은 두 점의 차이라 게이지·절대 어느 쪽도 아닙니다. 차압 전송기의 «kPa» 는 차이 값입니다.",
+      ],
+      tTitle: "자주 쓰는 압력 환산표",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["1 bar 는 몇 psi 인가요?", "약 14.5038 psi 입니다. 거꾸로 1 psi ≈ 0.068 948 bar(6.894 757 kPa)입니다. 100 psi ≈ 6.895 bar, 10 bar ≈ 145.04 psi 입니다."],
+        ["kgf/cm² 와 bar 는 같은가요?", "다릅니다. 1 kgf/cm² = 0.980 665 bar 로 약 2 % 차이입니다. 오래된 압력계·도면의 «kg/cm²» 를 bar 로 그대로 옮기면 그만큼 어긋납니다."],
+        ["mmH₂O 와 kPa 는 어떻게 바꾸나요?", "1 mmH₂O(관용) = 9.806 65 Pa 이므로 1 kPa ≈ 101.97 mmH₂O, 100 mmH₂O ≈ 0.981 kPa 입니다. 송풍기·덕트 정압, 수위 센서에서 자주 씁니다."],
+        ["압력 센서가 0–10 bar 인데 PLC 는 psi 로 보고 싶어요.", "범위만 바꾸면 됩니다. «센서 범위 환산» 에 0, 10, bar → psi 를 넣으면 0–145.04 psi 와 4·8·12·16·20 mA 에 대응하는 psi 값이 나옵니다. PLC 의 공학 단위 상·하한에 그 값을 넣습니다."],
+      ],
+      srcTitle: "출처",
+      scaleNote: "전류 값을 공학값·PLC 카운트로 바꾸려면",
+      scaleLink: "4–20mA 환산 계산기",
+    }
+  : {
+      title: "Pressure Unit Converter",
+      desc: "Convert bar, psi, kPa, MPa, kgf/cm², mmH2O, inH2O, mmHg and atm at once, gauge ↔ absolute pressure, and a sensor range with a 4–20 mA table.",
+      val: "Value",
+      unit: "Unit",
+      res: "In every unit",
+      gTitle: "Gauge ↔ absolute pressure",
+      gKind: "The value entered is",
+      gauge: "Gauge pressure (relative to atmosphere, bar g)",
+      abs: "Absolute pressure (relative to vacuum, bar a)",
+      atm: "Atmospheric pressure (kPa)",
+      gOut: "The other value",
+      rTitle: "Sensor range rescaling (4–20 mA table)",
+      lo: "Range low",
+      hi: "Range high",
+      from: "Sensor unit",
+      to: "Convert to",
+      rOut: "Converted range",
+      mA: "Current",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Factors and definitions",
+      formula: [
+        "1 bar = 100 kPa = 0.1 MPa = 100 000 Pa",
+        "1 psi = 0.453 592 37 kg × 9.806 65 m/s² ÷ (0.0254 m)² ≈ 6894.757 Pa",
+        "1 kgf/cm² = 9.806 65 N ÷ 1 cm² = 98 066.5 Pa = 0.980 665 bar",
+        "1 mmH₂O (conventional) = 1000 kg/m³ × 9.806 65 m/s² × 1 mm = 9.806 65 Pa",
+        "1 mmHg (conventional) = 13 595.1 kg/m³ × 9.806 65 m/s² × 1 mm ≈ 133.3224 Pa",
+        "1 atm = 101 325 Pa,   1 Torr = 101 325 ÷ 760 Pa",
+        "Absolute pressure = gauge pressure + atmospheric pressure",
+      ],
+      fNote: "kgf/cm² (often written «kg/cm²») is about 2 % larger than a bar. Water and mercury columns (mmH₂O, inH₂O, mmHg) use «conventional» values — water at 1000 kg/m³, mercury at 13 595.1 kg/m³ and standard gravity. A real water column depends slightly on temperature; NIST SP 811 lists inH₂O at 39.2 °F as 249.082 Pa and at 60 °F as 248.84 Pa.",
+      gaTitle: "Gauge versus absolute pressure",
+      ga: [
+        "Gauge pressure (bar g, psig) takes the local atmosphere as zero; absolute pressure (bar a, psia) takes a perfect vacuum as zero. Plant air and hydraulic gauges and most pressure transmitters read gauge pressure.",
+        "Vacuum is negative in gauge terms (e.g. −0.5 bar g), while absolute pressure never goes below zero. Vacuum pumps and vacuum sensors are often specified in absolute units (mbar a, Torr).",
+        "Atmospheric pressure changes with altitude and weather, so you can enter the local value instead of the standard 101.325 kPa for gauge ↔ absolute conversions.",
+        "Differential pressure (across a filter or an orifice plate) is the difference between two points — neither gauge nor absolute. The «kPa» of a DP transmitter is a difference.",
+      ],
+      tTitle: "Common pressure conversions",
+      faqTitle: "FAQ",
+      faq: [
+        ["How many psi is 1 bar?", "About 14.5038 psi. Conversely, 1 psi ≈ 0.068 948 bar (6.894 757 kPa). 100 psi ≈ 6.895 bar and 10 bar ≈ 145.04 psi."],
+        ["Is kgf/cm² the same as bar?", "No. 1 kgf/cm² = 0.980 665 bar, so the two differ by about 2 %. Copying «kg/cm²» from an old gauge or drawing straight into bar is off by that much."],
+        ["How do I convert mmH₂O to kPa?", "1 mmH₂O (conventional) = 9.806 65 Pa, so 1 kPa ≈ 101.97 mmH₂O and 100 mmH₂O ≈ 0.981 kPa. Common for fan and duct static pressure and level sensors."],
+        ["My sensor is 0–10 bar but the PLC should show psi.", "Only the range changes. Enter 0, 10, bar → psi in «Sensor range rescaling» to get 0–145.04 psi and the psi values at 4, 8, 12, 16 and 20 mA, then use them as the engineering-unit limits in the PLC."],
+      ],
+      srcTitle: "Sources",
+      scaleNote: "To turn a current into engineering units or PLC counts, use the",
+      scaleLink: "4–20 mA Scaling Calculator",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "NIST SP 811 (2008) Guide for the Use of the International System of Units — Appendix B.8, B.9", href: "https://www.nist.gov/pml/special-publication-811" },
+  { name: "BIPM, The International System of Units (SI Brochure), 9th edition — Table 8 (bar, litre)", href: "https://www.bipm.org/en/publications/si-brochure" },
+];
+const TABLE_UNITS = ["bar", "psi", "kPa", "MPa", "kgfcm2", "mmH2O", "mmHg", "atm"];
+const sym = (id: string) => PRESSURE.find((u) => u.id === id)!.sym;
+const table = TABLE_UNITS.map((from) => ({ from, cells: TABLE_UNITS.map((to) => fmt(convert("pressure", 1, from, to), 6)) }));
+const opts = (sel: string) => PRESSURE.map((u) => ({ id: u.id, sym: u.sym, label: `${u.sym} — ${u.name[lang]}`, sel: u.id === sel }));
+const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "압력 단위 변환기 — bar·psi·kPa·kgf/cm²·mmH2O — PortDock" : "Pressure Unit Converter: bar, psi, kPa, kgf/cm², mmH2O — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="pr">
+      <div class="row">
+        <label class="fld">{L.val}<input id="v" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.unit}<select id="u">{opts("bar").map((o) => <option value={o.id} selected={o.sel}>{o.label}</option>)}</select></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{PRESSURE.map((u) => <tr><td>{u.sym} <span class="note">{u.name[lang]}</span></td><td class="mono" data-k={u.id}></td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.gTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.gKind}<select id="gk"><option value="g" selected>{L.gauge}</option><option value="a">{L.abs}</option></select></label>
+        <label class="fld">{L.atm}<input id="atm" class="mono" value="101.325" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="result mono" id="gout" aria-live="polite"></p>
+
+      <h2>{L.rTitle}</h2>
+      <div class="row">
+        <label class="fld">{L.lo}<input id="lo" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.hi}<input id="hi" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.from}<select id="rf">{opts("bar").map((o) => <option value={o.id} selected={o.sel}>{o.sym}</option>)}</select></label>
+        <label class="fld">{L.to}<select id="rt">{opts("psi").map((o) => <option value={o.id} selected={o.sel}>{o.label}</option>)}</select></label>
+      </div>
+      <div class="tbl" aria-live="polite">
+        <table class="t">
+          <thead><tr><th>{L.mA}</th><th id="rh1"></th><th id="rh2"></th></tr></thead>
+          <tbody id="rtab"></tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+
+      <h2>{L.gaTitle}</h2>
+      <figure class="fig">
+        <img src={fig} width="780" height="330" alt={ko ? "압력 눈금: 완전 진공이 절대 압력 0, 대기압 101.325 kPa 가 게이지 압력 0. 5 bar g 는 약 6.013 bar a, −0.5 bar g 진공은 약 0.513 bar a" : "Pressure scale: perfect vacuum is 0 absolute, atmosphere at 101.325 kPa is 0 gauge. 5 bar g is about 6.013 bar a; a −0.5 bar g vacuum is about 0.513 bar a"} loading="lazy" decoding="async" />
+        <figcaption>{ko ? "게이지 압력은 대기압에서, 절대 압력은 완전 진공에서 잽니다. 두 값의 차이가 그 자리 대기압입니다." : "Gauge pressure is measured from the atmosphere, absolute pressure from a perfect vacuum; they differ by the local atmospheric pressure."}</figcaption>
+      </figure>
+      <ul>{L.ga.map((x) => <li>{x}</li>)}</ul>
+
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr><th>1 ↓ =</th>{TABLE_UNITS.map((u) => <th>{sym(u)}</th>)}</tr></thead>
+          <tbody>{table.map((r) => <tr><td class="mono">1 {sym(r.from)}</td>{r.cells.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>. {ko ? "공압 실린더가 그 압력에서 내는 힘은" : "For the force a pneumatic cylinder delivers at that pressure, use the"} <a href={url(lang, "tools/cylinder-force/")}>{ko ? "공압 실린더 추력 계산기" : "Pneumatic Cylinder Force Calculator"}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { PRESSURE, absToGauge, convert, fmt, gaugeToAbs } from "../lib/units";
+    const form = document.getElementById("pr") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const ko = document.documentElement.lang === "ko";
+    const sym = (id: string) => PRESSURE.find((u) => u.id === id)!.sym;
+    function run() {
+      const err = $("err");
+      const v = num("v");
+      const u = $<HTMLSelectElement>("u").value;
+      const cells = form.querySelectorAll<HTMLElement>("td[data-k]");
+      try {
+        if (!Number.isFinite(v)) throw new Error();
+        for (const td of cells) td.textContent = fmt(convert("pressure", v, u, td.dataset.k!), 7);
+        err.textContent = "";
+        // 게이지 ↔ 절대
+        const atmKpa = num("atm");
+        if (!(atmKpa > 0)) throw new Error();
+        const pa = convert("pressure", v, u, "Pa");
+        const isGauge = $<HTMLSelectElement>("gk").value === "g";
+        const other = isGauge ? gaugeToAbs(pa, atmKpa * 1000) : absToGauge(pa, atmKpa * 1000);
+        const s = sym(u);
+        $("gout").textContent = isGauge
+          ? `${fmt(v)} ${s} g → ${fmt(convert("pressure", other, "Pa", u))} ${s} a${other < 0 ? (ko ? " (진공보다 낮음 — 입력 확인)" : " (below vacuum — check input)") : ""}`
+          : `${fmt(v)} ${s} a → ${fmt(convert("pressure", other, "Pa", u))} ${s} g`;
+        if (!isGauge && pa < 0) $("gout").textContent = ko ? "절대 압력은 0 보다 작을 수 없습니다" : "Absolute pressure cannot be below 0";
+      } catch {
+        err.textContent = ko ? "숫자를 확인하세요 — 대기압은 0 보다 커야 합니다" : "Check the numbers — atmospheric pressure must be above 0";
+        for (const td of cells) td.textContent = "";
+        $("gout").textContent = "";
+      }
+      // 범위 환산
+      const tb = $("rtab");
+      tb.textContent = "";
+      const lo = num("lo"), hi = num("hi");
+      const rf = $<HTMLSelectElement>("rf").value, rt = $<HTMLSelectElement>("rt").value;
+      $("rh1").textContent = sym(rf);
+      $("rh2").textContent = sym(rt);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo === hi) return;
+      for (const mA of [4, 8, 12, 16, 20]) {
+        const x = lo + ((hi - lo) * (mA - 4)) / 16;
+        const tr = document.createElement("tr");
+        for (const t of [`${mA} mA (${(mA - 4) * 6.25} %)`, fmt(x), fmt(convert("pressure", x, rf, rt))]) {
+          const td = document.createElement("td");
+          td.className = "mono";
+          td.textContent = t;
+          tr.append(td);
+        }
+        tb.append(tr);
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

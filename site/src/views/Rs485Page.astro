@@ -1,0 +1,319 @@
+---
+// 웹 도구: RS-485 종단·바이어스 저항 계산기 — 유휴 차동 전압(바이어스 분압), 저항 전류·전력, 보율별 대략 길이 한계(lib/rs485.ts).
+// 근거: Modbus over serial line V1.02 §3.4.3~3.4.6, TI SLLA070D. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { bias, roughMaxLength } from "../lib/rs485";
+import { BAUDS } from "../lib/serialTiming";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/rs485/";
+const mv = (v: number) => `${Math.round(v * 1000)} mV`;
+// 정적 표: 흔한 조합의 유휴 전압
+const COMBOS = [
+  { vcc: 5, r: 560, t: 150 },
+  { vcc: 5, r: 650, t: 150 },
+  { vcc: 5, r: 560, t: 120 },
+  { vcc: 5, r: 680, t: 120 },
+  { vcc: 5, r: 1000, t: 120 },
+  { vcc: 3.3, r: 560, t: 120 },
+  { vcc: 3.3, r: 390, t: 120 },
+].map((c) => ({ ...c, v: bias({ vcc: c.vcc, rUp: c.r, rDown: c.r, ends: ["r", "r"], rTerm: c.t }).vIdle }));
+const L = ko
+  ? {
+      title: "RS-485 종단·바이어스 저항 계산기",
+      desc: "바이어스(페일세이프) 풀업·풀다운과 120·150 Ω 종단이 만드는 유휴 차동 전압이 수신기 문턱 200 mV 를 넘는지, 저항 전력과 보율별 길이 한계를 계산합니다.",
+      vcc: "바이어스 전원(V)",
+      up: "풀업 Ω (B/D1 → 전원)",
+      down: "풀다운 Ω (A/D0 → 공통)",
+      rt: "종단 저항 Ω",
+      end1: "한쪽 끝 종단",
+      end2: "다른 끝 종단",
+      eR: "저항만",
+      eRC: "커패시터 + 저항(직류 끊김)",
+      eN: "없음",
+      baud: "보율(bps)",
+      res: "결과",
+      k: {
+        rLine: "직류로 본 두 선 사이 저항",
+        vIdle: "유휴 차동 전압(B − A)",
+        iBias: "바이어스 전류",
+        pUp: "바이어스 저항 하나의 전력",
+        pTerm: "종단 저항 하나의 유휴 전력",
+        maxR: "200 mV 를 만드는 최대 바이어스 저항(같은 값 둘)",
+        len: "이 보율의 대략 최대 길이",
+      },
+      ok: "유휴 전압이 200 mV 이상 — 아무도 보내지 않을 때 수신기가 정해진 상태(1, 마크)를 읽습니다",
+      ng: "유휴 전압이 200 mV 미만 — 쉬는 동안 수신기가 잡음을 읽어 엉뚱한 바이트가 들어올 수 있습니다",
+      inRange: "Modbus 규격 범위(450~650 Ω) 안",
+      outRange: "Modbus 규격은 바이어스 저항을 450~650 Ω, 5 V 로 정합니다 — 장비 자체 바이어스라면 장비 매뉴얼 값을 따르세요",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다. 수신기 입력 저항(단위 부하)은 넣지 않으므로 장비가 많으면 실제 유휴 전압은 조금 낮습니다.",
+      whyTitle: "바이어스가 왜 필요한가",
+      why: [
+        "RS-485 는 반이중이라 마스터가 요청을 보내고 응답을 기다리는 사이 아무도 선로를 구동하지 않는 시간이 있습니다. 이때 A·B 사이 전압이 0 근처면 수신기 출력이 정해지지 않아, 잡음이 시작 비트로 읽혀 00·FF 같은 쓰레기 바이트가 들어옵니다.",
+        "바이어스는 B(D1)를 풀업으로 전원에, A(D0)를 풀다운으로 공통에 당겨 쉬는 동안 B − A 가 양수가 되게 합니다. 이 상태는 «1»(마크) — UART 가 쉴 때와 같은 값이라 시작 비트로 오인하지 않습니다.",
+        "종단 저항은 두 선 사이에 걸려 있어 바이어스 전류가 흐르는 길이 됩니다. 그래서 종단이 낮을수록(120 Ω 둘 = 60 Ω) 같은 바이어스 저항으로 만들 수 있는 유휴 전압이 작아집니다.",
+      ],
+      fTitle: "계산식",
+      formula: [
+        "두 선 사이 저항 Rline = 직류로 이어진 종단 저항들의 병렬 (120 Ω 둘이면 60 Ω)",
+        "바이어스 전류 I = Vcc ÷ (R풀업 + Rline + R풀다운)",
+        "유휴 차동 전압 = I × Rline",
+        "같은 값 R 로 200 mV 를 만드는 최대 R = (Vcc × Rline ÷ 0.2 − Rline) ÷ 2",
+        "대략 길이 한계 = min(1200 m, 10⁸ ÷ 보율)",
+      ],
+      specTitle: "Modbus 규격이 정한 것 (Modbus over serial line V1.02 §3.4)",
+      spec: [
+        "종단: 선로 양 끝 두 곳에만, A·B 사이에. 150 Ω(0.5 W) 저항, 또는 바이어스를 쓸 때는 1 nF(10 V 이상) 커패시터와 120 Ω(0.25 W) 직렬이 더 낫다. 가지선에는 종단을 달지 않는다.",
+        "바이어스: 필요하면 버스 전체에 한 곳(보통 마스터)만. D1 에 5 V 풀업, D0 에 공통 풀다운, 450~650 Ω. 650 Ω 이 더 많은 장비를 달 수 있고, 바이어스를 넣으면 최대 장비 수가 4 줄어든다.",
+        "장비 수: 중계기 없이 32 대는 언제나 허용.",
+        "길이: 9600 bps·AWG26 이상 굵기에서 최대 1000 m. 가지선은 20 m 이하, n 갈래 탭이면 각 40 m ÷ n.",
+      ],
+      tableTitle: "흔한 조합의 유휴 전압 (양 끝 종단, 수신기 부하 제외)",
+      tableHead: ["전원", "풀업·풀다운", "종단(양 끝)", "유휴 전압", "판정"],
+      lenTitle: "보율별 대략 길이 한계",
+      lenHead: ["보율", "10⁸ ÷ 보율", "적용(최대 1200 m)"],
+      lenNote: "TI 의 경험칙 «bps × m ≤ 10⁸» 과 권장 최대 약 1200 m 를 함께 쓴 대략값입니다. 실제 한계는 케이블(굵기·정전 용량), 장비 수, 잡음에 따라 다르며, Modbus 규격은 9600 bps 에서 1000 m 를 적습니다.",
+      srcTitle: "출처",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["종단 저항 120 Ω 과 150 Ω 중 무엇을 쓰나요?", "케이블 특성 임피던스에 맞추는 것이 원칙이고, 흔한 RS-485 용 꼬임쌍선은 약 120 Ω 입니다. Modbus 규격은 150 Ω 저항 또는 바이어스를 쓸 때 1 nF + 120 Ω 직렬을 제시합니다. 어느 쪽이든 선로 양 끝 두 곳에만 답니다."],
+        ["변환기에 바이어스 스위치가 있는데 켜야 하나요?", "버스 전체에서 한 곳만 켭니다(보통 마스터 쪽). 여러 장비가 각자 바이어스를 켜면 병렬로 합쳐져 저항이 낮아지고, 드라이버가 감당할 부하가 커집니다. 장비 매뉴얼에서 바이어스가 기본으로 켜져 있는지도 확인합니다."],
+        ["3.3 V 송수신기에서도 560 Ω 이면 되나요?", "120 Ω 종단 둘(60 Ω)이면 3.3 × 60 ÷ (560 + 60 + 560) ≈ 168 mV 로 200 mV 에 못 미칩니다. 바이어스 저항을 줄이거나(예: 390 Ω), 1 nF + 120 Ω 종단으로 직류 경로를 끊거나, 수신 문턱이 한쪽으로 치우친 «페일세이프 내장» 송수신기를 씁니다."],
+      ],
+      guideNote: "배선 전체 점검 순서는",
+      guideLink: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지",
+    }
+  : {
+      title: "RS-485 Termination & Bias Resistor Calculator",
+      desc: "Do failsafe bias resistors and 120/150 Ω termination keep the idle line above the 200 mV receiver threshold? Plus resistor power and cable length vs baud.",
+      vcc: "Bias supply (V)",
+      up: "Pull-up Ω (B/D1 → supply)",
+      down: "Pull-down Ω (A/D0 → common)",
+      rt: "Termination resistor Ω",
+      end1: "Termination at one end",
+      end2: "Termination at the other end",
+      eR: "Resistor only",
+      eRC: "Capacitor + resistor (DC open)",
+      eN: "None",
+      baud: "Baud rate (bps)",
+      res: "Results",
+      k: {
+        rLine: "DC resistance between the two lines",
+        vIdle: "Idle differential voltage (B − A)",
+        iBias: "Bias current",
+        pUp: "Power in one bias resistor",
+        pTerm: "Idle power in one terminator",
+        maxR: "Largest equal bias resistors for 200 mV",
+        len: "Rough maximum length at this baud",
+      },
+      ok: "Idle voltage ≥ 200 mV — with nobody transmitting, receivers read a defined state (1, mark)",
+      ng: "Idle voltage < 200 mV — receivers may read noise between frames and produce garbage bytes",
+      inRange: "Within the Modbus range (450–650 Ω)",
+      outRange: "The Modbus specification sets bias resistors at 450–650 Ω to 5 V — for a device's own bias, follow its manual",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere. Receiver input resistance (unit loads) is not included, so with many devices the real idle voltage is a little lower.",
+      whyTitle: "Why biasing is needed",
+      why: [
+        "RS-485 is half duplex, so while the master waits for a reply nobody drives the line. If the A–B voltage sits near 0 the receiver output is undefined, noise looks like a start bit and garbage bytes such as 00 or FF appear.",
+        "Biasing pulls B (D1) up to the supply and A (D0) down to common so B − A is positive at idle. That is the «1» (mark) state — the same as an idle UART — so it is not mistaken for a start bit.",
+        "Termination resistors sit across the pair and carry the bias current. The lower the termination (two 120 Ω = 60 Ω), the less idle voltage the same bias resistors produce.",
+      ],
+      fTitle: "Formulas",
+      formula: [
+        "Line resistance Rline = DC-coupled terminators in parallel (two 120 Ω → 60 Ω)",
+        "Bias current I = Vcc ÷ (Rpull-up + Rline + Rpull-down)",
+        "Idle differential voltage = I × Rline",
+        "Largest equal R for 200 mV = (Vcc × Rline ÷ 0.2 − Rline) ÷ 2",
+        "Rough length limit = min(1200 m, 10⁸ ÷ baud)",
+      ],
+      specTitle: "What the Modbus specification says (Modbus over serial line V1.02 §3.4)",
+      spec: [
+        "Termination: only near the two ends of the trunk, across A and B. A 150 Ω (0.5 W) resistor, or — when the line is biased — a 1 nF (10 V min) capacitor in series with 120 Ω (0.25 W) is better. Never on a derivation (stub).",
+        "Biasing: if needed, at one place for the whole bus (usually the master). Pull-up to 5 V on D1, pull-down to common on D0, 450–650 Ω; 650 Ω allows more devices, and biasing reduces the maximum device count by 4.",
+        "Devices: 32 are always allowed without a repeater.",
+        "Length: up to 1000 m at 9600 bps with AWG26 or thicker. Stubs no longer than 20 m; with an n-way tap, 40 m ÷ n each.",
+      ],
+      tableTitle: "Idle voltage for common combinations (both ends terminated, receiver loads excluded)",
+      tableHead: ["Supply", "Pull-up/down", "Termination (both ends)", "Idle voltage", "Result"],
+      lenTitle: "Rough length limit by baud",
+      lenHead: ["Baud", "10⁸ ÷ baud", "Applied (max 1200 m)"],
+      lenNote: "A rough value combining TI's rule of thumb «bps × m ≤ 10⁸» and the recommended maximum of about 1200 m. Real limits depend on cable gauge and capacitance, number of devices and noise; the Modbus specification states 1000 m at 9600 bps.",
+      srcTitle: "Sources",
+      faqTitle: "FAQ",
+      faq: [
+        ["120 Ω or 150 Ω termination?", "Match the cable's characteristic impedance; common RS-485 twisted pair is about 120 Ω. The Modbus specification gives a 150 Ω resistor, or 1 nF in series with 120 Ω when the line is biased. Either way, only at the two ends of the line."],
+        ["My converter has a bias switch — should I turn it on?", "Turn biasing on at one place for the whole bus (usually the master side). If several devices each add bias, the resistors combine in parallel and load the drivers more. Check whether a device enables bias by default in its manual."],
+        ["Is 560 Ω enough with a 3.3 V transceiver?", "With two 120 Ω terminators (60 Ω): 3.3 × 60 ÷ (560 + 60 + 560) ≈ 168 mV, below 200 mV. Use smaller bias resistors (e.g. 390 Ω), 1 nF + 120 Ω termination to block the DC path, or a transceiver with built-in failsafe (offset receiver threshold)."],
+      ],
+      guideNote: "For the full wiring checklist see",
+      guideLink: "RS-485 wiring checks: no reply or garbled data",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "MODBUS over serial line specification and implementation guide V1.02 (2006) — §3.4.1–3.4.6", href: "https://www.modbus.org/modbus-specifications" },
+  { name: "Texas Instruments, RS-422 and RS-485 Standards Overview and System Configurations (SLLA070D, 2010)", href: "https://www.ti.com/lit/an/slla070d/slla070d.pdf" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "RS485 종단·바이어스 저항 계산기 (120Ω·페일세이프) — PortDock" : "RS-485 Bias & Termination Resistor Calculator — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="rb" data-t={JSON.stringify({ ok: L.ok, ng: L.ng, inRange: L.inRange, outRange: L.outRange })}>
+      <div class="row">
+        <label class="fld">{L.vcc}<input id="vcc" class="mono" value="5" list="vccs" inputmode="decimal" spellcheck="false" autocomplete="off" /><datalist id="vccs"><option value="5" /><option value="3.3" /></datalist></label>
+        <label class="fld">{L.up}<input id="up" class="mono" value="560" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.down}<input id="down" class="mono" value="560" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.rt}<input id="rt" class="mono" value="120" list="rts" inputmode="decimal" spellcheck="false" autocomplete="off" /><datalist id="rts"><option value="120" /><option value="150" /></datalist></label>
+        <label class="fld">{L.end1}<select id="e1"><option value="r" selected>{L.eR}</option><option value="rc">{L.eRC}</option><option value="none">{L.eN}</option></select></label>
+        <label class="fld">{L.end2}<select id="e2"><option value="r" selected>{L.eR}</option><option value="rc">{L.eRC}</option><option value="none">{L.eN}</option></select></label>
+        <label class="fld">{L.baud}<input id="baud" class="mono" value="9600" list="bauds" inputmode="numeric" spellcheck="false" autocomplete="off" /><datalist id="bauds">{BAUDS.map((b) => <option value={b} />)}</datalist></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="v1"></p>
+      <p class="verdict" id="v2"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.whyTitle}</h2>
+      {L.why.map((p) => <p>{p}</p>)}
+      <figure class="fig">
+        <img src={`/img/guides/rs485-bias.${lang}.svg`} width="780" height="300" alt={ko ? "RS-485 바이어스: B(D1) 선은 풀업 저항으로 5 V 에, A(D0) 선은 풀다운 저항으로 공통에 연결되고, 양 끝 종단 저항 두 개가 A–B 사이에서 바이어스 전류의 길이 되는 회로" : "RS-485 biasing: B (D1) pulled up to 5 V and A (D0) pulled down to common, with the two end terminators across A–B carrying the bias current"} loading="lazy" decoding="async" />
+        <figcaption>{ko ? "바이어스 전류는 풀업 → 종단 저항(병렬) → 풀다운으로 흐르고, 종단 양단 전압이 유휴 차동 전압이 됩니다." : "Bias current flows pull-up → terminators (in parallel) → pull-down; the voltage across the terminators is the idle differential voltage."}</figcaption>
+      </figure>
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.specTitle}</h2>
+      <ul>{L.spec.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.tableTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tableHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>
+            {
+              COMBOS.map((c) => (
+                <tr>
+                  <td class="mono">{c.vcc} V</td>
+                  <td class="mono">{c.r} Ω</td>
+                  <td class="mono">{c.t} Ω</td>
+                  <td class="mono">{mv(c.v)}</td>
+                  <td>{c.v >= 0.2 ? "≥ 200 mV" : "< 200 mV"}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2>{L.lenTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.lenHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{BAUDS.map((b) => <tr><td class="mono">{b}</td><td class="mono">{Math.round(1e8 / b)} m</td><td class="mono">{Math.round(roughMaxLength(b))} m</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.lenNote}</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.guideNote} <a href={url(lang, "guides/rs485-wiring/")}>{L.guideLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { bias, maxBiasR, roughMaxLength, type TermKind } from "../lib/rs485";
+    const form = document.getElementById("rb") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { ok: string; ng: string; inRange: string; outRange: string };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim();
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const ko = document.documentElement.lang === "ko";
+    const fx = (x: number, d = 1) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const watt = (w: number) => (w < 1 ? `${fx(w * 1000, 2)} mW` : `${fx(w, 3)} W`);
+    function run() {
+      const err = $("err");
+      const v1 = $("v1");
+      const v2 = $("v2");
+      try {
+        const vcc = num("vcc");
+        const up = num("up");
+        const down = num("down");
+        const baud = num("baud");
+        if (!(baud > 0)) throw new Error();
+        const r = bias({ vcc, rUp: up, rDown: down, ends: [$<HTMLSelectElement>("e1").value as TermKind, $<HTMLSelectElement>("e2").value as TermKind], rTerm: num("rt") });
+        err.textContent = "";
+        set("rLine", r.rLine === Infinity ? (ko ? "직류 경로 없음" : "no DC path") : `${fx(r.rLine)} Ω`);
+        set("vIdle", `${Math.round(r.vIdle * 1000)} mV`);
+        set("iBias", `${fx(r.iBias * 1000, 2)} mA`);
+        set("pUp", watt(r.pUp));
+        set("pTerm", watt(r.pTerm));
+        const m = maxBiasR(vcc, r.rLine);
+        set("maxR", Number.isFinite(m) ? `${Math.floor(m)} Ω` : "—");
+        set("len", `${Math.round(roughMaxLength(baud))} m`);
+        v1.className = "verdict " + (r.ok ? "ok" : "fault");
+        v1.textContent = r.ok ? T.ok : T.ng;
+        const inR = vcc === 5 && up >= 450 && up <= 650 && down >= 450 && down <= 650;
+        v2.className = "verdict " + (inR ? "ok" : "warn");
+        v2.textContent = inR ? T.inRange : T.outRange;
+      } catch {
+        err.textContent = ko ? "숫자를 확인하세요 — 저항과 보율은 0 보다 크고, 전압은 0 이상이어야 합니다" : "Check the numbers — resistances and baud above 0, voltage 0 or more";
+        v1.textContent = "";
+        v2.textContent = "";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

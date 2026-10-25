@@ -1,0 +1,867 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "ls-electric/m100",
+  "manufacturer": {
+    "ko": "LS일렉트릭",
+    "en": "LS ELECTRIC"
+  },
+  "model": "LSLV-M100",
+  "models": [
+    "M100"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "LS일렉트릭 M100 인버터 (내장 RS-485, 고급 I/O 모델)",
+    "en": "LS ELECTRIC M100 AC drive (built-in RS-485, advanced I/O models)"
+  },
+  "summary": {
+    "ko": "고급 I/O 모델만 내장 RS-485(RJ45). Modbus-RTU 와 LS INV 485. G100·S100·H100·iS7·S300 호환 공통 영역(0x0001~0x001E)을 담았다.",
+    "en": "Built-in RS-485 (RJ45) on advanced I/O models only; Modbus-RTU and LS INV 485. Covers the common area compatible with G100/S100/H100/iS7/S300 (0x0001-0x001E)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      250
+    ],
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼 Modbus-RTU 통신 예(p.191, PDF 203)에서 통신 주소 0x1103 에 쓸 때 프레임 시작 주소를 0x1102(«Starting Address -1»)로 보낸다. 그래서 address = 매뉴얼 주소 - 1 로 적었다. 예는 파라미터 영역 하나뿐이고, 이 규칙대로면 0x0000(인버터 모델)은 -1 이 되어 표현할 수 없어 뺐다. 공통 영역에도 같은 규칙이 맞는지 실기로 확인 권장.",
+        "en": "Addressing: the manual's Modbus-RTU example (p.191, PDF 203) sends starting address 0x1102 for comm address 0x1103 ('Starting Address -1'), so address = manual address - 1. The example is from the parameter area only; under this rule 0x0000 (model) maps to -1 and is omitted. Verify on hardware for the common area."
+      },
+      {
+        "ko": "초기값: CM.01 국번 1(1~250), CM.02 0 Modbus-RTU(1 LS INV 485), CM.03 3=9600bps(0~5 = 1200~38400), CM.04 0=D8/PN/S1. CM.04 는 8N1·8N2·8E1·8O1. p.179~180 (PDF 191~192).",
+        "en": "Defaults: CM.01 ID 1 (1-250), CM.02 0 Modbus-RTU (1 LS INV 485), CM.03 3 = 9600 bps (0-5 = 1200-38400), CM.04 0 = D8/PN/S1; CM.04 offers 8N1/8N2/8E1/8O1. p.179-180 (PDF 191-192)."
+      },
+      {
+        "ko": "CM.03 설명엔 «115,200 bps 까지» 라고 적혀 있으나 설정표와 규격표(p.177)는 1,200~38,400 bps 뿐이라 그 범위만 넣었다.",
+        "en": "The CM.03 text says 'up to 115,200 bps', but the setting table and spec table (p.177) list only 1,200-38,400 bps, so only those are listed."
+      },
+      {
+        "ko": "함수 코드 03·04·06·16, 예외 코드 01·02·03·06 (p.189~190, PDF 201~202). 최대 16대, RJ45 1번 S+·8번 S- (p.177~179).",
+        "en": "Function codes 03, 04, 06, 16; exception codes 01/02/03/06 (p.189-190, PDF 201-202). Up to 16 drives, RJ45 pin 1 S+ / pin 8 S- (p.177-179)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "0x0001",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 용량",
+        "en": "Inverter capacity"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.1kW-1",
+          "en": "0.1kW-1"
+        },
+        {
+          "value": 1,
+          "ko": "0.2kW-1",
+          "en": "0.2kW-1"
+        },
+        {
+          "value": 2,
+          "ko": "0.4kW-1",
+          "en": "0.4kW-1"
+        },
+        {
+          "value": 3,
+          "ko": "0.8kW-1",
+          "en": "0.8kW-1"
+        },
+        {
+          "value": 4,
+          "ko": "1.5kW-1",
+          "en": "1.5kW-1"
+        },
+        {
+          "value": 5,
+          "ko": "2.2kW-1",
+          "en": "2.2kW-1"
+        },
+        {
+          "value": 10,
+          "ko": "1.5kW-2",
+          "en": "1.5kW-2"
+        },
+        {
+          "value": 11,
+          "ko": "2.2kW-2",
+          "en": "2.2kW-2"
+        },
+        {
+          "value": 12,
+          "ko": "3.7kW-2",
+          "en": "3.7kW-2"
+        },
+        {
+          "value": 15,
+          "ko": "0.4kW-4",
+          "en": "0.4kW-4"
+        },
+        {
+          "value": 16,
+          "ko": "0.8kW-4",
+          "en": "0.8kW-4"
+        },
+        {
+          "value": 17,
+          "ko": "1.5kW-4",
+          "en": "1.5kW-4"
+        },
+        {
+          "value": 18,
+          "ko": "2.2kW-4",
+          "en": "2.2kW-4"
+        },
+        {
+          "value": 19,
+          "ko": "3.7kW-4",
+          "en": "3.7kW-4"
+        }
+      ],
+      "description": {
+        "ko": "값 이름은 매뉴얼 표기 그대로(16진 000A=10, 000F=15 …).",
+        "en": "Value names as printed (hex 000A = 10, 000F = 15 …)."
+      },
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "0x0002",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전압",
+        "en": "Inverter input voltage"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "220V 단상",
+          "en": "220 V 1-phase"
+        },
+        {
+          "value": 1,
+          "ko": "220V 3상",
+          "en": "220 V 3-phase"
+        },
+        {
+          "value": 2,
+          "ko": "440V 3상",
+          "en": "440 V 3-phase"
+        }
+      ],
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "0x0003",
+      "type": "u16",
+      "name": {
+        "ko": "버전",
+        "en": "Version"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "description": {
+        "ko": "공통 영역 S/W 버전은 16진으로 표시(p.194 주 2). 매뉴얼 예: 0x0010 = 버전 1.01(표기 그대로).",
+        "en": "Common-area S/W version is shown in hex (p.194 note 2). Manual example: 0x0010 = version 1.01 (as printed)."
+      },
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "0x0004",
+      "type": "u16",
+      "name": {
+        "ko": "통신 설정 허용",
+        "en": "Parameter setting (comm)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "통신 설정 금지",
+          "en": "Prohibit communication settings"
+        },
+        {
+          "value": 1,
+          "ko": "통신 설정 허용",
+          "en": "Allow communication settings"
+        }
+      ],
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "0x0005",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령",
+        "en": "Command frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "시작 주파수~최대 주파수",
+        "en": "Start frequency to maximum frequency"
+      },
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "0x0006",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령",
+        "en": "Operation command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "bit": 1,
+          "ko": "정방향 운전",
+          "en": "Forward operation"
+        },
+        {
+          "bit": 2,
+          "ko": "역방향 운전",
+          "en": "Reverse operation"
+        },
+        {
+          "bit": 3,
+          "ko": "고장 리셋",
+          "en": "Fault reset"
+        },
+        {
+          "bit": 4,
+          "ko": "비상 정지",
+          "en": "Emergency stop"
+        }
+      ],
+      "description": {
+        "ko": "B0~B4 쓰기 가능, B5 예약. B6~B7(읽기) 운전 지령 소스: 0 단자대, 1 키패드, 3 통신. B8~B12(읽기) 주파수 지령 소스: 0 키패드-1·2, 2~8 다단속 1~7, 9 Up, 10 Down, 11 Up/down zero, 12 V0, 13 V1, 14 I2(I), 15 I2(V), 16 V0+I2(I), 17 V0+I2(V), 18 V0+I2(V)(표기 그대로), 19 통신 운전. B13~B15 예약.",
+        "en": "B0-B4 writable, B5 reserved. B6-B7 (read) run command source: 0 terminal block, 1 keypad, 3 communication. B8-B12 (read) frequency source: 0 keypad-1/2, 2-8 multi-step speed 1-7, 9 up, 10 down, 11 up/down zero, 12 V0, 13 V1, 14 I2(I), 15 I2(V), 16 V0+I2(I), 17 V0+I2(V), 18 V0+I2(V) (as printed), 19 communication. B13-B15 reserved."
+      },
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "0x0007",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간",
+        "en": "Acceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "0x0008",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간",
+        "en": "Deceleration time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "ref": "p.192 (PDF 204)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "0x0009",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "0x000A",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "0x000B",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "0x000C",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압",
+        "en": "DC link voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "0x000D",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "0x000E",
+      "type": "u16",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operation status"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "정지",
+          "en": "Stopped"
+        },
+        {
+          "bit": 1,
+          "ko": "정방향 운전 중",
+          "en": "Operating in forward direction"
+        },
+        {
+          "bit": 2,
+          "ko": "역방향 운전 중",
+          "en": "Operating in reverse direction"
+        },
+        {
+          "bit": 3,
+          "ko": "고장 트립",
+          "en": "Fault trip"
+        },
+        {
+          "bit": 4,
+          "ko": "가속 중",
+          "en": "Accelerating"
+        },
+        {
+          "bit": 5,
+          "ko": "감속 중",
+          "en": "Decelerating"
+        },
+        {
+          "bit": 6,
+          "ko": "속도 도달",
+          "en": "Speed reached"
+        },
+        {
+          "bit": 7,
+          "ko": "직류 제동",
+          "en": "DC braking"
+        },
+        {
+          "bit": 8,
+          "ko": "정지 중",
+          "en": "Drive stopping"
+        },
+        {
+          "bit": 10,
+          "ko": "브레이크 개방 신호",
+          "en": "Brake release signal"
+        },
+        {
+          "bit": 11,
+          "ko": "정방향 지령",
+          "en": "Forward command"
+        },
+        {
+          "bit": 12,
+          "ko": "역방향 지령",
+          "en": "Reverse command"
+        }
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "0x000F",
+      "type": "u16",
+      "name": {
+        "ko": "고장 트립 정보 A",
+        "en": "Fault trip information A"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "OVT",
+          "en": "OVT"
+        },
+        {
+          "bit": 2,
+          "ko": "EXT-A",
+          "en": "EXT-A"
+        },
+        {
+          "bit": 3,
+          "ko": "EST",
+          "en": "EST"
+        },
+        {
+          "bit": 4,
+          "ko": "COL",
+          "en": "COL"
+        },
+        {
+          "bit": 5,
+          "ko": "GFT",
+          "en": "GFT"
+        },
+        {
+          "bit": 6,
+          "ko": "OHT",
+          "en": "OHT"
+        },
+        {
+          "bit": 7,
+          "ko": "ETH",
+          "en": "ETH"
+        },
+        {
+          "bit": 8,
+          "ko": "OLT",
+          "en": "OLT"
+        },
+        {
+          "bit": 10,
+          "ko": "EXT-B",
+          "en": "EXT-B"
+        },
+        {
+          "bit": 11,
+          "ko": "EEP",
+          "en": "EEP"
+        },
+        {
+          "bit": 12,
+          "ko": "FAN",
+          "en": "FAN"
+        },
+        {
+          "bit": 13,
+          "ko": "POT",
+          "en": "POT"
+        },
+        {
+          "bit": 14,
+          "ko": "IOLT",
+          "en": "IOLT"
+        },
+        {
+          "bit": 15,
+          "ko": "LVT",
+          "en": "LVT"
+        }
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "0x0010",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 상태",
+        "en": "Input terminal information"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "P1",
+          "en": "P1"
+        },
+        {
+          "bit": 1,
+          "ko": "P2",
+          "en": "P2"
+        },
+        {
+          "bit": 2,
+          "ko": "P3",
+          "en": "P3"
+        },
+        {
+          "bit": 3,
+          "ko": "P4",
+          "en": "P4"
+        },
+        {
+          "bit": 4,
+          "ko": "P5",
+          "en": "P5"
+        }
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "0x0011",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 상태",
+        "en": "Output terminal information"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 4,
+          "ko": "3ABC",
+          "en": "3ABC"
+        }
+      ],
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "0x0012",
+      "type": "u16",
+      "name": {
+        "ko": "V1 입력",
+        "en": "V1 input"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 1023
+      },
+      "description": {
+        "ko": "0~10 V 입력에 대응하는 0x0000~0x03FF",
+        "en": "0x0000-0x03FF for 0-10 V input"
+      },
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "0x0013",
+      "type": "u16",
+      "name": {
+        "ko": "V0 입력(KPD 볼륨)",
+        "en": "V0 input (keypad volume)"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 1023
+      },
+      "description": {
+        "ko": "0~5 V KPD 볼륨 0x0000~0x03FF",
+        "en": "0-5 V keypad volume, 0x0000-0x03FF"
+      },
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 19,
+      "manualAddress": "0x0014",
+      "type": "u16",
+      "name": {
+        "ko": "I 입력",
+        "en": "I input"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 1023
+      },
+      "description": {
+        "ko": "0~20 mA 입력에 대응하는 0x0000~0x03FF",
+        "en": "0x0000-0x03FF for 0-20 mA input"
+      },
+      "ref": "p.193 (PDF 205)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "0x0015",
+      "type": "u16",
+      "name": {
+        "ko": "회전수",
+        "en": "RPM"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.194 (PDF 206)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "0x001D",
+      "type": "u16",
+      "name": {
+        "ko": "고장 트립 정보 B",
+        "en": "Fault trip information B"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "COM",
+          "en": "COM"
+        },
+        {
+          "bit": 2,
+          "ko": "NTC",
+          "en": "NTC"
+        },
+        {
+          "bit": 3,
+          "ko": "REEP",
+          "en": "REEP"
+        },
+        {
+          "bit": 4,
+          "ko": "OCT",
+          "en": "OCT"
+        },
+        {
+          "bit": 5,
+          "ko": "NBR",
+          "en": "NBR"
+        },
+        {
+          "bit": 9,
+          "ko": "ROT",
+          "en": "ROT"
+        }
+      ],
+      "ref": "p.194 (PDF 206)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 29,
+      "manualAddress": "0x001E",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "PID 피드백을 통신으로 줄 때 0.1% 단위로 쓰고 읽는다(AP.02 단위 설정과 무관). 예: 최대 주파수 60.00 Hz 에 0x0032(5.0%) → 3.00 Hz.",
+        "en": "Written/read in 0.1% when PID feedback is set to communication, regardless of AP.02. Example: max 60.00 Hz, 0x0032 (5.0%) → 3.00 Hz."
+      },
+      "ref": "p.194 (PDF 206)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS-485 는 고급 I/O(Advanced I/O) 모델만 (p.177).",
+      "en": "RS-485 is available only on models with advanced I/O (p.177)."
+    },
+    {
+      "ko": "통신으로 운전·주파수를 주려면 drv=3(Int 485)·Frq=9(Int 485) (p.181, PDF 193).",
+      "en": "Set drv = 3 (Int 485) and Frq = 9 (Int 485) to command over RS-485 (p.181, PDF 193)."
+    },
+    {
+      "ko": "공통 영역으로 바꾼 값은 저장되지 않아 리셋·전원 재투입 때 이전 값으로 돌아간다. 각 그룹 파라미터로 바꾼 값은 남는다 (p.194 주 1).",
+      "en": "Values changed via the common area are not saved and revert on reset/power cycle; changes via group parameters are retained (p.194 note 1)."
+    },
+    {
+      "ko": "0x001A 단위 표시·0x001B 극수·0x001C 커스텀 버전은 «Not Used», 0x0100~0x010F 는 CM.31~38·CM.51~58 에 등록한 주소의 읽기·쓰기 창 (p.194).",
+      "en": "0x001A unit display, 0x001B poles, 0x001C custom version are 'Not Used'; 0x0100-0x010F are read/write windows for addresses registered in CM.31-38 and CM.51-58 (p.194)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "M100 User Manual (M100_User Manual_EN_V2.3_260223.pdf) — LSLV-M100",
+      "publisher": "LS ELECTRIC",
+      "edition": {
+        "ko": "파일 V2.3, 2026-02-23 (Revision History 마지막 줄 V2.0 2022.09, p.254)",
+        "en": "file V2.3, 2026-02-23 (last Revision History entry V2.0 2022.09, p.254)"
+      },
+      "url": "https://ssq.ls-electric.com/uploads/document/17719093868370/M100_User%20Manual_EN_V2.3_260223.pdf",
+      "pages": {
+        "ko": "8장 RS-485 p.177~194 (PDF 189~206)",
+        "en": "chapter 8 RS-485 pp.177-194 (PDF 189-206)"
+      },
+      "checked": "2026-10-22"
+    }
+  ]
+}

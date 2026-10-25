@@ -1,0 +1,70 @@
+/* 로그 찾기·거르기 줄 (Serial·TCP·UDP) */
+.filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.filterbar > label,
+.filterbar > span,
+.filterbar > button {
+  white-space: nowrap;
+}
+/* 좁은 창(1000px)에서도 한 줄에 들어가게 — 남는 폭만큼 늘어난다 */
+.filterbar .find {
+  flex: 1 1 130px;
+  min-width: 110px;
+  max-width: 260px;
+  width: auto;
+  font-family: var(--mono);
+}
+.filterbar select {
+  width: auto;
+  flex-shrink: 0;
+}
+.filterbar .btn.small {
+  padding: 2px 6px;
+}
+.hitpos {
+  min-width: 44px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.hitpos.none {
+  color: var(--fail);
+}
+.filterbar .shown {
+  color: var(--accent);
+}
+/* 찾은 줄 표시 */
+.log .row.hit {
+  background: color-mix(in srgb, #f5c400 22%, transparent);
+}
+.log .row.hit.sel {
+  background: color-mix(in srgb, #f5c400 34%, transparent);
+}
+/* CHECK FAIL n — 누르면 «틀림만» */
+.failcount {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 1px 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.failcount.on {
+  color: var(--fail);
+  border-color: var(--fail);
+}
+.failcount[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--fail) 14%, transparent);
+}

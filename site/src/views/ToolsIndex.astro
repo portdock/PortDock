@@ -1,0 +1,43 @@
+---
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { type Lang } from "../data/tools";
+import { WEB_TOOLS } from "../data/webTools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const name = ko ? "웹 도구" : "Web tools";
+---
+
+<Base
+  lang={lang}
+  title={name}
+  seoTitle={ko ? "온라인 Modbus·CRC·4–20mA·모터·단위 변환 계산기 — PortDock" : "Online Modbus, CRC, 4–20 mA, Motor & Unit Calculators — PortDock"}
+  description={ko
+    ? "브라우저 현장 계산기: Modbus 해석·실수, CRC16, 웹 시리얼, RS485, 4–20mA, Pt100·NTC, 전압 강하, 서브넷, 단위, 모터, CAN·UART 보율, ASCII·HEX."
+    : "Browser field calculators: Modbus decoder, CRC16, web serial, RS-485, 4–20 mA, RTD and NTC, voltage drop, subnets, units, motors, CAN and UART timing, ASCII."}
+  path="tools/"
+>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name, path: "tools/" }]} />
+      <h1>{name}</h1>
+      <p>{ko ? "설치 없이 브라우저에서 바로 씁니다. 입력한 데이터는 어디에도 보내지 않습니다." : "Run right in your browser. Nothing you type is sent anywhere."}</p>
+    </div>
+  </header>
+  <div class="wrap grid" style="padding-top:24px">
+    {
+      WEB_TOOLS.map((x) => (
+        <a class="card" href={url(lang, x.path)}>
+          <h2>{x.name[lang]}</h2>
+          <p>{x.blurb[lang]}</p>
+          <span class="go">{ko ? "열기" : "Open"} →</span>
+        </a>
+      ))
+    }
+  </div>
+</Base>
