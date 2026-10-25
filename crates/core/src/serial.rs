@@ -254,9 +254,12 @@ struct Shared {
     log: Mutex<Option<LogWriter>>,
     rules: Mutex<Vec<Rule>>,
     responder: Mutex<Option<Responder>>,
-    /// 마지막으로 응답기·규칙이 보낸 것 — 송신 중(+여유)에 똑같은 것이 들어오면 RS-485 에코로 보고
-    /// 다시 답하지 않는다(창은 «송신 시간 + 50ms» 로 좁게 — 같은 05·06 쓰기를 곧바로 다시 보내도 답하게).
-    /// 창 밖 핑퐁은 초당 상한으로 끊는다. 자세한 판단은 `replyguard`
+    /// 마지막으로 응답기·규칙이 보낸 것 — RS-485 에코 창에 쓴다.
+    /// 에코 창: 응답기·규칙이 보낸 바이트가 그대로(바이트까지 같게) 되돌아오고, 그 첫 바이트가
+    /// 송신 시작(지연 응답은 예약 시각)부터 «송신 시간(문자당 11비트) + 50ms» 안이면 에코로 보고 다시 답하지 않는다.
+    /// 좁게 두는 까닭: 05·06 쓰기는 응답 = 요청이라, 마스터가 응답을 받고 같은 쓰기를 곧바로 다시 보내도 답해야 한다.
+    /// 창 밖에서 같은 것이 계속 오면(느린 에코·상대의 되돌려 보내기) 초당 상한(`replyguard::LOOP_LIMIT`)을 넘는 몫만
+    /// 답하지 않고 사건 줄 «AUTO 멈춤 …» 을 남긴다. 자세한 판단은 `replyguard`
     last_reply: Mutex<ReplyGuard>,
     /// 지연 응답 예약 — 응답마다 스레드를 만들지 않고 하나가 시간 순으로(상한 `delay::MAX_PENDING`)
     delayed: Delayer,
@@ -1032,7 +1035,8 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &SyncSender<Job>) {
         let ts = crate::event::wall_ms(at, now_i, now_w);
         let c = check.and_then(|k| k.verify_before(&bytes, &term));
         // 방금 우리가 보낸 응답이 송신 중에 그대로 들어온 것이면(RS-485 에코·루프백) 답하지 않는다 — 무한 반복 방지.
-        // 판정은 첫 바이트 시각으로: 송신 시작 ~ 송신 시간 + 50ms. 정상 마스터는 응답을 다 받은 뒤 보내므로 창 밖이다
+        // 판정은 첫 바이트 시각으로: 송신 시작 ~ 송신 시간 + 50ms. 정상 마스터는 응답을 다 받은 뒤 보내므로 창 밖이다.
+        // 창 밖이어도 방금 보낸 응답과 같은 것이 1초에 100번을 넘으면 그 나머지는 답하지 않는다(Flood — 사건 줄은 처음 한 번)
         let echo = match s.last_reply.lock().unwrap().check(&bytes, at, Some(ECHO_MARGIN)) {
             Verdict::Answer => false,
             Verdict::Echo => true,

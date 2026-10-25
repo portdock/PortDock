@@ -497,7 +497,7 @@ export const help: HelpDoc = {
   ],
 };
 
-/** Serial 만 — Break·터미널 보기(10/18) */
+/** Serial 만 — Break·터미널 보기(10/18), 자동응답과 RS-485 에코 */
 const SERIAL_EXTRA = {
   ko: [
     {
@@ -509,6 +509,16 @@ const SERIAL_EXTRA = {
         "- 터미널 보기는 받은 것(RX)만 보입니다. 보낸 것·사건 줄은 «HEX»·«ASCII» 보기로 돌아가 보세요. 글자는 설정의 «글자 인코딩» 으로 읽고, 최근 5,000줄까지 남깁니다(«지우기» 로 비움).",
       ],
     },
+    {
+      title: "자동응답과 RS-485 에코",
+      body: [
+        "- RS-485 2선식은 보내는 선과 받는 선이 같아, 변환기에 따라 우리가 보낸 바이트가 그대로 수신(RX)에도 보입니다(에코). 자동응답이 이 에코에 다시 답하면 끝없이 주고받게 되므로 걸러 냅니다.",
+        "- 에코로 보는 것: 자동응답(규칙·Modbus Slave)이 방금 보낸 응답과 바이트까지 똑같은 프레임이, 송신 시작(지연 응답이면 그 예약 시각)부터 «송신 시간 + 50ms» 안에 들어오면 답하지 않습니다. 송신 시간은 문자 한 개를 11비트(시작·8비트·패리티·정지)로 넉넉히 셉니다.",
+        "- 예: 9600 bps 에서 8바이트 응답(Modbus 06 쓰기 응답)은 8 × 11 ÷ 9600 ≈ 9.2ms 에 나갑니다 — 창은 송신 시작부터 약 59ms 입니다. 115200 bps 면 약 0.8ms + 50ms 입니다.",
+        "- 창을 좁게 두는 까닭: Modbus 05·06 쓰기는 응답이 요청과 똑같습니다. 정상 마스터는 응답을 다 받은 뒤에 다음 요청을 보내므로, 같은 쓰기를 곧바로 다시 보내도 창 밖이라 그대로 답합니다. 에코 하나를 걸러 낸 뒤에는 창 안이라도 다음 같은 프레임에 답합니다.",
+        "- 창 밖이어도 방금 보낸 응답과 같은 것이 1초에 100번을 넘게 들어오면 그 1초의 나머지에는 답하지 않고, 사건 줄 «AUTO 멈춤 — 방금 보낸 응답과 같은 것이 1초에 100번을 넘게 들어옴» 을 한 번 남깁니다. 1초가 지나면 다시 답합니다. 이 줄이 보이면 상대가 받은 것을 되돌려 보내는지(에코 장비·루프백 배선) 확인하세요.",
+      ],
+    },
   ],
   en: [
     {
@@ -518,6 +528,16 @@ const SERIAL_EXTRA = {
         "- «Terminal» in the toolbar: joins received text regardless of framing, starts new lines at CR/LF (CR LF counts once) and applies ANSI colors (ESC [ … m) — handy for Linux consoles, boot logs and AT replies. Long lines wrap.",
         "- Turn off «ANSI colors» in the terminal view to see plain text. Other ESC sequences (cursor moves, screen clears) are dropped, tabs become 4 spaces and backspace removes the previous character.",
         "- The terminal view shows received data (RX) only; switch back to «HEX»/«ASCII» to see sent data and event lines. Text is read with «Text encoding» in Settings, and the last 5,000 lines are kept («Clear» empties it).",
+      ],
+    },
+    {
+      title: "Auto-reply and RS-485 echo",
+      body: [
+        "- On 2-wire RS-485 the send and receive lines are the same, so depending on the adapter the bytes we send also show up as received (RX) — an echo. If auto-reply answered its own echo it would loop forever, so the echo is filtered.",
+        "- What counts as echo: a frame byte-for-byte identical to the reply auto-reply (rules or Modbus Slave) just sent, arriving within «transmit time + 50 ms» of the start of sending (for a delayed reply, its scheduled time), is not answered. Transmit time generously counts 11 bits per character (start, 8 data, parity, stop).",
+        "- Example: at 9600 bps an 8-byte reply (Modbus 06 write reply) takes 8 × 11 ÷ 9600 ≈ 9.2 ms — the window is about 59 ms from the start of sending. At 115200 bps it is about 0.8 ms + 50 ms.",
+        "- Why the window is narrow: a Modbus 05/06 write reply is identical to the request. A normal master sends its next request only after the whole reply, so repeating the same write right away falls outside the window and is answered. After one echo is filtered, the next identical frame is answered even inside the window.",
+        "- Even outside the window, if the reply just sent comes back more than 100 times in a second, the rest of that second is not answered and the event line «AUTO paused — the reply just sent came back more than 100 times in a second» is logged once. Replies resume after the second. If you see it, check whether the peer sends back what it receives (an echoing device or loopback wiring).",
       ],
     },
   ],
