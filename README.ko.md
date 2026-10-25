@@ -43,6 +43,8 @@
 
 윈도우 10·11, x64.
 
+[Scoop](https://scoop.sh) 으로(휴대판): `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial` (앱 이름은 [scoop-bucket](https://github.com/portdock/scoop-bucket#install)).
+
 ### 설치판과 휴대판
 
 - **설치판**(`-setup.exe`) — 지금 사용자에게만 설치하므로 **관리자 권한이 필요 없습니다.** 시작 메뉴의 *PortDock* 폴더에 들어가고, 제거 프로그램이 함께 설치됩니다.

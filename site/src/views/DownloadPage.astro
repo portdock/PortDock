@@ -73,6 +73,15 @@ const ko = lang === "ko";
         <li>{t.webview}</li>
         <li>{ko ? "설치판: 관리자 권한 없이 사용자 계정에 설치됩니다. 삭제는 «설정 → 앱» 에서." : "Installer: installs per user without admin rights. Uninstall from «Settings → Apps»."}</li>
         <li>{ko ? "휴대판: zip 을 풀어 exe 를 실행합니다. 설정·기록은 exe 옆 portdock-data 폴더에 남아 USB 로 옮겨 쓸 수 있습니다. 같은 폴더에 두고 쓰면 방화벽 허용을 다시 묻지 않습니다." : "Portable: unzip and run the exe. Settings and reports stay in the portdock-data folder next to it, so you can carry it on a USB stick. Keep it in the same folder to avoid repeated firewall prompts."}</li>
+        <li>
+          {ko ? "Scoop 으로(휴대판): " : "With Scoop (portable edition): "}
+          <code>scoop bucket add portdock https://github.com/portdock/scoop-bucket</code>
+          {" → "}
+          <code>scoop install portdock/portdock-serial</code>
+          {ko ? " — 앱 이름은 " : " — app names are listed in "}
+          <a href="https://github.com/portdock/scoop-bucket#install">scoop-bucket</a>
+          {ko ? " 에 있습니다." : "."}
+        </li>
       </ul>
       {
         SPONSOR_URL && (

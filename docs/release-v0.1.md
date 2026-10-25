@@ -29,6 +29,7 @@
   ```
   - winget: 패키지 ID `PortDock.<App>`(Serial·ModbusSlave·TCP·UDP·Simulator·NetScan·ModbusMaster·SCPI·Plot·PortInspector), NSIS 무인 설치 `/S`, 사용자 범위. winget-pkgs 는 **PR 하나에 패키지 버전 하나** → PR 10개. 제출 전 Windows Sandbox 시험(`.\Tools\SandboxTest.ps1 <폴더>`), VirusTotal·Defender 가 깨끗한 뒤에(2절). 제출은 사용자 확인 뒤
   - Scoop: 자체 bucket 저장소(예: `portdock/scoop-bucket`)의 `bucket/` 에 넣으면 `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial`. `checkver`·`autoupdate` 가 있어 다음 버전은 `scoop`의 자동 갱신(또는 다시 이 명령)으로
+  - 0.1.0: Scoop 매니페스트 10개를 [portdock/scoop-bucket](https://github.com/portdock/scoop-bucket) 에 올림(Scoop `schema.json` 으로 검사), winget 매니페스트 10개는 `winget validate` 통과 — 제출 전
 - [ ] Google Search Console · 네이버 서치어드바이저 등록, sitemap 제출
 
 ## 4. 릴리스 본문 초안 (v0.1.0)

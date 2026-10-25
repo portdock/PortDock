@@ -43,6 +43,8 @@ Get the latest version from **[GitHub Releases](https://github.com/portdock/Port
 
 Windows 10/11, x64.
 
+With [Scoop](https://scoop.sh) (portable edition): `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial` (app names: [scoop-bucket](https://github.com/portdock/scoop-bucket#install)).
+
 ### Installer or portable?
 
 - **Installer** (`-setup.exe`) — installs for the current user only, so **no administrator rights** are needed. Adds a Start menu entry under *PortDock* and an uninstaller.
