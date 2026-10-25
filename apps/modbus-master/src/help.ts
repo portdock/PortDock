@@ -69,6 +69,7 @@ export const help: HelpDoc = {
         "- 한 칸이면 06(코일은 05)을, 여러 칸·32/64비트 값이면 10(0F)을 씁니다. 장비가 06·05 를 받지 않으면 «통신 세부» 의 «한 칸도 «여러 칸 쓰기» 명령(FC15·16)으로» 를 켭니다.",
         "- 창 아래에 보낼 함수와 보낼 바이트(RTU 는 CRC 포함, TCP 는 트랜잭션 번호 0 으로)가 미리 보입니다. 쓰고 나면 그 표를 바로 다시 읽습니다.",
         "- RTU 에서 국번 0(브로드캐스트)으로 쓰면 모든 장비가 받아 쓰지만 아무도 답하지 않습니다(결과 «브로드캐스트»). Modbus TCP 에서 유닛 0 은 브로드캐스트가 아니라 «이 장비» 라서 보통처럼 답을 기다립니다(규격).",
+        "- 그래서 RTU 에서 국번 0 인 읽기 표는 폴링하지도 «한 번 읽기» 로 읽지도 않습니다 — 탭 이름 앞에 ⚠, 표 위에 알림과 [국번 1 로 바꾸기] 가 나옵니다. TCP 에서 RTU 로 바꿀 때도 그런 표가 몇 개인지 알립니다.",
       ],
     },
     {
@@ -220,6 +221,7 @@ export const help: HelpDoc = {
         "- One register uses 06 (coils 05); several registers or 32/64-bit values use 10 (0F). If the device rejects 06/05, turn on «Write single values with «write multiple» (FC15/16) too» under «Communication details».",
         "- The dialog previews the function and the exact bytes (RTU with CRC, TCP with transaction ID 0). After a write the table is read again at once.",
         "- On RTU, writing to ID 0 (broadcast) makes every device write and none reply (result «Broadcast»). On Modbus TCP, unit 0 is not a broadcast but «this device», so the reply is awaited as usual (per the spec).",
+        "- So on RTU a read table with ID 0 is neither polled nor read by «Read once» — its tab shows ⚠ before the name, and a notice above the table offers [Change Slave ID to 1]. Switching from TCP to RTU also tells how many such tables there are.",
       ],
     },
     {

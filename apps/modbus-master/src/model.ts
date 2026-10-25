@@ -43,6 +43,9 @@ export const isBitFc = (fc: Fc) => fc === 1 || fc === 2;
 export const writableFc = (fc: Fc) => fc === 1 || fc === 3;
 /** 읽기·찾기에 쓸 수 있는 가장 작은 국번 — RTU 의 0 은 브로드캐스트(답이 없음, 쓰기 창에서만), Modbus TCP 의 0 은 보통 유닛 */
 export const minUnit = (wire: "tcp" | "rtu") => (wire === "tcp" ? 0 : 1);
+/** RTU 에서 국번 0 인 읽기 표인지 — 국번 0 은 브로드캐스트라 응답이 없어 백엔드가 폴링하지 않는다(표를 조용히 뺀다).
+ *  TCP 의 유닛 0 은 «이 장비» 라 보통 요청이다 */
+export const broadcastRead = (t: Pick<PollTable, "unit">, wire: "tcp" | "rtu") => wire === "rtu" && t.unit === 0;
 export const maxQty = (fc: Fc) => (isBitFc(fc) ? 2000 : 125);
 export const fcHex = (fc: number) => fc.toString(16).toUpperCase().padStart(2, "0");
 

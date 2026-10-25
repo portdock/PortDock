@@ -3,6 +3,7 @@ import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { api, outcomeText, type Frame, type MasterEvent, type NetConfig, type Outcome, type PortInfo, type SerialConfig, type Setup, type Stats, type Timing, type Transport } from "./api";
 import {
   addrLabel,
+  broadcastRead,
   errorCount,
   exportCsv,
   FCS,
@@ -185,6 +186,16 @@ export default function App() {
   useEffect(() => store("tables", tables), [tables]);
   useEffect(() => store("selTable", sel.id), [sel.id]);
   useEffect(() => store("trends", trendKeys), [trendKeys]);
+  // TCP → RTU 로 바꾸면 국번 0 읽기 표는 브로드캐스트가 되어 폴링에서 빠진다 — 몇 개인지 알린다
+  const prevWire = useRef(wire);
+  useEffect(() => {
+    const was = prevWire.current;
+    prevWire.current = wire;
+    if (was !== "tcp" || wire !== "rtu") return;
+    const n = tables.filter((x) => broadcastRead(x, wire)).length;
+    if (n > 0) toast.show(fill(t("bcastSwitched"), { n }), { error: true, ms: 7000 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wire]);
 
   // 나중에 부르는 콜백에서 최신 값을 쓰려고
   const tablesRef = useRef(tables);
@@ -710,12 +721,17 @@ export default function App() {
   // ---- 단축키: F4 연결·끊기, Ctrl+L 기록 지우기, Ctrl+S 표 CSV 저장, Ctrl+Shift+L 파일 기록, F6 한 번 읽기, F8 폴링 멈춤
   const startable = transport === "serial" ? ports.some((p) => p.name === cfg.port) : !!net.host.trim() && net.port > 0;
   const runDisabled = connecting || (!connected && !startable);
+  /** «한 번 읽기» — RTU 국번 0 표는 백엔드가 조용히 건너뛰므로 여기서 알린다 */
+  function readOnceSel() {
+    if (broadcastRead(sel, wire)) return toast.show(t("bcastRead"), { error: true });
+    void api.readOnce(sel.id).catch((e) => setError(String(e)));
+  }
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (connected ? disconnect() : connect()) },
     { key: "l", ctrl: true, run: () => trafficApi.current?.clear() },
     { key: "l", ctrl: true, shift: true, run: () => connected && void toggleLog() },
     { key: "s", ctrl: true, run: () => void exportTable() },
-    { key: "F6", run: () => connected && void api.readOnce(sel.id).catch((e) => setError(String(e))) },
+    { key: "F6", run: () => connected && readOnceSel() },
     { key: "F8", run: () => setPaused((p) => !p) },
   ]);
   useExitGuard(connected || !!logPath || !!vlog, settings.confirmExit, lang, APP);
@@ -834,7 +850,11 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, res, sel.id, sel.view, sel.format, sel.fc, sel.start, addrMode, lang, selAddr, trendKeys, bits, stale]);
 
-  const lastLine = !res ? (
+  const lastLine = broadcastRead(sel, wire) ? (
+    <span className="hint warn" role="status">
+      ⚠ {t("bcastRead")}
+    </span>
+  ) : !res ? (
     <span className="hint">{connected ? t("notRead") : ""}</span>
   ) : res.outcome.result === "ok" ? (
     <span className="hint ok">
@@ -1100,6 +1120,11 @@ export default function App() {
                   }}
                   title={`${tableLabel(tb, i, t("tableWord"))} · ID ${tb.unit} · FC${fcHex(tb.fc)} · ${addrLabel(tb.fc, tb.start, addrMode)} (${tb.qty})`}
                 >
+                  {broadcastRead(tb, wire) && (
+                    <span className="bcast-mark" title={t("bcastRead")} aria-label={t("bcastRead")}>
+                      ⚠{" "}
+                    </span>
+                  )}
                   {!tb.enabled || tb.intervalMs === 0 ? "⏸ " : bad ? "● " : ""}
                   {tableLabel(tb, i, t("tableWord"))}
                   <small> {tb.unit}·{fcHex(tb.fc)}</small>
@@ -1178,7 +1203,7 @@ export default function App() {
           <label className="inline" data-tip={tip(lang, "mmPolling")}>
             <input type="checkbox" checked={sel.enabled} onChange={(e) => patchTable(sel.id, { enabled: e.target.checked })} /> {t("polling")}
           </label>
-          <button className="btn small" disabled={!connected} onClick={() => api.readOnce(sel.id).catch((e) => setError(String(e)))} data-tip={withKey(tip(lang, "mmReadOnce"), "F6")}>
+          <button className="btn small" disabled={!connected} onClick={readOnceSel} data-tip={withKey(tip(lang, "mmReadOnce"), "F6")}>
             {t("readOnce")}
           </button>
         </div>
@@ -1204,6 +1229,14 @@ export default function App() {
             </button>
             <button className="btn small ghost" aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")} onClick={() => setPlcNote(null)}>
               ✕
+            </button>
+          </div>
+        )}
+        {broadcastRead(sel, wire) && (
+          <div className="notice warn" role="status">
+            <span>{t("bcastNote")}</span>
+            <button className="btn small" onClick={() => patchTable(sel.id, { unit: 1 })}>
+              {t("bcastFix")}
             </button>
           </div>
         )}

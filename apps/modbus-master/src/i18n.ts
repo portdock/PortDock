@@ -169,6 +169,11 @@ const ko = {
   lastRead: "{t} · {ms} ms",
   stale: "마지막 읽기 실패 — 보이는 값은 그 전 값",
   readOnly: "읽기 전용 표(02·04)입니다 — 쓰려면 함수 01·03 표에서",
+  // RTU 국번 0 = 브로드캐스트 — 백엔드가 그 읽기 표를 폴링하지 않는다
+  bcastRead: "국번 0 은 RTU 에서 브로드캐스트 — 응답이 없어 폴링하지 않음",
+  bcastNote: "이 표의 국번이 0 입니다. RTU 에서 국번 0 은 브로드캐스트라 장비가 답하지 않으므로 이 표는 폴링하지도, «한 번 읽기» 로 읽지도 않습니다. 쓰기만 모든 장비에 보내집니다.",
+  bcastFix: "국번 1 로 바꾸기",
+  bcastSwitched: "RTU 로 바꿈 — 국번 0 인 읽기 표 {n}개는 브로드캐스트라 폴링하지 않습니다",
   cellTip: "두 번 눌러(또는 Enter) 쓰기 · 오른쪽 버튼으로 이름·형식",
   cellCfg: "칸 설정",
   // ---- 추세
@@ -388,6 +393,10 @@ const en: typeof ko = {
   lastRead: "{t} · {ms} ms",
   stale: "Last read failed — values shown are from before",
   readOnly: "Read-only table (02/04) — write from a function 01/03 table",
+  bcastRead: "Slave ID 0 is a broadcast in RTU — no reply, so it is not polled",
+  bcastNote: "This table uses Slave ID 0. In RTU, ID 0 is a broadcast that no device answers, so this table is neither polled nor read by «Read once». Only writes go out, to every device.",
+  bcastFix: "Change Slave ID to 1",
+  bcastSwitched: "Switched to RTU — {n} read table(s) with Slave ID 0 are broadcasts and are not polled",
   cellTip: "Double-click (or Enter) to write · right-click for name/type",
   cellCfg: "Cell settings",
   trend: "Trend",

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   addrLabel,
+  broadcastRead,
   minUnit,
   encodeValue,
   errorCount,
@@ -183,4 +184,14 @@ test("국번 0 — Modbus TCP 는 허용(유닛 0 도 보통 주소), RTU 는 �
   // 저장값은 0 도 그대로 둔다(TCP 표) — RTU 로 바꾸면 백엔드가 그 표를 거절해 알린다
   assert.equal(sanitizeTables([{ unit: 0, fc: 3 }])[0].unit, 0);
   assert.equal(sanitizeTables([{ unit: 256, fc: 3 }])[0].unit, 1);
+});
+
+test("RTU 국번 0 읽기 표 = 브로드캐스트(폴링 안 함)", () => {
+  assert.equal(broadcastRead({ unit: 0 }, "rtu"), true);
+  assert.equal(broadcastRead({ unit: 0 }, "tcp"), false);
+  assert.equal(broadcastRead({ unit: 1 }, "rtu"), false);
+  assert.equal(broadcastRead({ unit: 247 }, "rtu"), false);
+  const list = [newTable([], { unit: 0 }), newTable([], { unit: 2 })];
+  assert.equal(list.filter((t) => broadcastRead(t, "rtu")).length, 1);
+  assert.equal(list.filter((t) => broadcastRead(t, "tcp")).length, 0);
 });
