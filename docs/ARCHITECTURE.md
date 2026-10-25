@@ -205,7 +205,7 @@ Triggered by a `v*` tag (or manual dispatch, which only uploads build artifacts)
 
 ### Test inventory
 
-- **Rust**: `cargo test --workspace` (run 2026-10-19): 216 passed, 2 ignored, 0 failed — 179 in `portdock-core`, 23 (+2 ignored) Net Scan, 5 Plot, 3 Modbus Slave, 3 SCPI, 1 each in Serial, TCP and Modbus Master; Simulator and UDP have none. The repository has 218 `#[test]` functions (`grep -r "#\[test\]" crates apps --include=*.rs`). Tests are `#[cfg(test)]` modules inside the source files.
+- **Rust**: `cargo test --workspace` (run 2026-10-25): 264 passed, 2 ignored, 0 failed — 219 in `portdock-core`, 28 (+2 ignored) Net Scan, 6 Plot, 3 Modbus Slave, 3 SCPI, 2 Port Inspector, 1 each in Serial, TCP and Modbus Master; Simulator and UDP have none. The repository has 266 `#[test]` functions (`grep -r "#\[test\]" crates apps --include=*.rs`). Tests are `#[cfg(test)]` modules inside the source files. The Port Inspector readers (`portinfo`) also read this PC for real in tests (device properties, registry, power options, event logs, WMI) without administrator rights and without needing a COM device.
 - **Node** (`node --test`, Node 24 strips TypeScript types; the app and `shared/` test files start with `// @ts-nocheck`):
   - `shared/`: `autoReply.test.ts`, `devices.test.ts`, `ioFeatures.test.ts`, `logSearch.test.ts`, `mbPair.test.ts`, `mbap.test.ts`, `modbusBuild.test.ts`, `notation.test.ts`, `portinfo.test.ts`, `serialPresets.test.ts`
   - apps: `apps/modbus-master/src/model.test.ts`, `apps/modbus-slave/src/regmap.test.ts`, `apps/netscan/src/net.test.ts`, `apps/plot/src/model.test.ts`, `apps/port-inspector/src/model.test.ts`, `apps/scpi/src/model.test.ts`
