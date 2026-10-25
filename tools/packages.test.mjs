@@ -146,3 +146,8 @@ test("명령줄: --sums 파일로 두 스크립트가 파일을 만든다", () =
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test("shared/version.ts 의 VERSION = 앱 버전(tauri.conf.json)", () => {
+  const src = fs.readFileSync(path.join(ROOT, "shared/version.ts"), "utf8");
+  assert.equal(/VERSION = "([^"]+)"/.exec(src)?.[1], version);
+});

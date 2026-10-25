@@ -1,6 +1,7 @@
 // Serial «연결 점검…» — 지금 고른 포트의 장치·드라이버·문제 코드·지연 타이머·절전 요약과 연결 시험(루프백·에코).
 // Port Inspector 와 같은 코어(crates/core portinfo·loopback)와 같은 판정(shared/portinfo.ts)을 쓴다. 읽기만 한다.
 import { useEffect, useState, type ReactNode } from "react";
+import { VERSION } from "./version";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useRestoreFocus } from "./restoreFocus";
 import { LoopbackPanel, type LoopApi, type LoopState } from "./LoopbackPanel";
@@ -150,7 +151,7 @@ export function PortCheckDialog({ lang, app, port, connected, api, onClose }: { 
   });
   const copy = () =>
     navigator.clipboard
-      .writeText(bundleText(lang, { app, version: "0.1.0", report, com: null, events: null, nics: null, loop: loop.results, echo: loop.echo, loopError: loop.error }))
+      .writeText(bundleText(lang, { app, version: VERSION, report, com: null, events: null, nics: null, loop: loop.results, echo: loop.echo, loopError: loop.error }))
       .then(() => setNote(x.copied))
       .catch((e) => setNote(String(e)));
   const r = report;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type InputHTMLAttributes } from "react";
+import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
 import { api, type PlotEvent, type PortInfo, type RawLine, type SerialConfig, type Source, type Transport } from "./api";
 import { channelColor, channelName, clock, CK_SIZE, csvOf, fmtNum, frameLen, MAX_CHANNELS, NUM_SIZE, parseHex, Ring, stats, type CkKind, type Format, type NumKind, type Sep, type XMode } from "./model";
@@ -942,7 +943,7 @@ export default function App() {
 
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} />
       )}
       {toast.node}
     </div>

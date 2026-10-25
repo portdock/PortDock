@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { load, store } from "@shared/framing";
@@ -48,7 +49,6 @@ import { entryKey, overall, portLabel } from "./model";
 import "./App.css";
 
 const APP = "PortDock Port Inspector";
-const VERSION = "0.1.0";
 const DAYS = [7, 30, 90];
 
 /** 접히는 카드 — 머리에 결과 표시, 펼침 상태는 카드마다 기억(«모두 펼치기» 를 따른다) */

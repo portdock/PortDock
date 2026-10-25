@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as KeyEv, type MouseEvent as MouseEv } from "react";
+import { VERSION } from "@shared/version";
 import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { api, outcomeText, type Frame, type MasterEvent, type NetConfig, type Outcome, type PortInfo, type SerialConfig, type Setup, type Stats, type Timing, type Transport } from "./api";
 import {
@@ -1452,7 +1453,7 @@ export default function App() {
       {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
       )}
       {toast.node}
     </div>

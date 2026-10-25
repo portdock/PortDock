@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, parseTerminator, store, samePorts } from "@shared/framing";
 import {
@@ -775,7 +776,7 @@ export default function App() {
       {showSettings && (
         <SettingsDialog
           app="PortDock Simulator"
-          version="0.1.0"
+          version={VERSION}
           settings={settings}
           update={update}
           reset={reset}

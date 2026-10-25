@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
+import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
@@ -1734,7 +1735,7 @@ export default function App() {
       {showSettings && (
         <SettingsDialog
           app="PortDock Modbus Slave"
-          version="0.1.0"
+          version={VERSION}
           settings={settings}
           update={update}
           reset={reset}

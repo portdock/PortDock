@@ -105,20 +105,30 @@ fn query_now(namespace: &str, wql: &str, fields: &[&str]) -> Result<Vec<HashMap<
     }
 }
 
-/// 따로 만든 스레드에서 COM 을 열고 질의
+/// WMI 가 이만큼 답하지 않으면 «읽지 못함» 으로 돌려준다(서비스가 멈춘 PC 에서 ConnectServer 가 끝나지 않는 일이 있다)
+const QUERY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// 따로 만든 스레드에서 COM 을 열고 질의. `QUERY_TIMEOUT` 을 넘기면 그 스레드는 버려 두고 오류를 돌려준다
 fn query(namespace: &'static str, wql: &'static str, fields: &'static [&'static str]) -> Result<Vec<HashMap<String, Val>>, String> {
+    let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         // SAFETY: 이 스레드에서만 COM 을 쓴다 — 끝나면 닫는다
         let hr = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
-        if hr.is_err() {
-            return Err(hr.message());
-        }
-        let r = query_now(namespace, wql, fields);
-        unsafe { CoUninitialize() };
-        r
-    })
-    .join()
-    .unwrap_or_else(|_| Err("WMI thread panicked".into()))
+        let r = if hr.is_err() {
+            Err(hr.message())
+        } else {
+            let r = query_now(namespace, wql, fields);
+            unsafe { CoUninitialize() };
+            r
+        };
+        // 시간을 넘겨 받는 쪽이 떠났으면 보낼 곳이 없다 — 무시
+        let _ = tx.send(r);
+    });
+    match rx.recv_timeout(QUERY_TIMEOUT) {
+        Ok(r) => r,
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(format!("no answer in {}s", QUERY_TIMEOUT.as_secs())),
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Err("WMI thread panicked".into()),
+    }
 }
 
 /// MSPower_DeviceEnable — 인스턴스 ID(대문자) → «PC 가 끌 수 있음»

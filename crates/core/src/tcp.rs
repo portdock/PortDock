@@ -1112,14 +1112,29 @@ mod tests {
             std::thread::sleep(Duration::from_millis(20));
         }
         client.send(None, b"PING").unwrap();
-        std::thread::sleep(Duration::from_millis(1_000));
         let count = |rx: &mpsc::Receiver<SessionEvent>| {
             rx.try_iter().filter_map(|e| if let SessionEvent::Frames { frames } = e { Some(frames) } else { None }).flatten().filter(|f| f.dir == "rx").count()
         };
-        // 서버: PING(보냄) + PING(클라이언트의 답, 되돌아온 것이라 무시) · 클라이언트: 서버의 답 하나
-        let (s, c) = (count(&srx), count(&crx));
-        assert!(s >= 1 && c >= 1, "server {s} client {c}");
-        assert!(s + c <= 3, "server {s} client {c}");
+        // 보통은 한 바퀴: 서버 PING(보냄) + PING(클라이언트의 답, 되돌아온 것이라 무시) · 클라이언트 서버의 답 하나 = 합 3.
+        // 느린 PC(CI)에서는 되돌아온 답이 에코 창(50ms)을 넘겨 한두 바퀴 더 돌 수 있다 — 그래도 초당 상한이 끊으므로
+        // «결국 조용해지고, 많아야 상한 안» 을 본다(예전 «합 ≤ 3» 은 CI 에서 «server 2 client 2» 로 가끔 실패)
+        let (mut s, mut c) = (0, 0);
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut quiet_since = Instant::now();
+        loop {
+            std::thread::sleep(Duration::from_millis(100));
+            let (ds, dc) = (count(&srx), count(&crx));
+            if ds + dc > 0 {
+                quiet_since = Instant::now();
+            }
+            s += ds;
+            c += dc;
+            if s >= 1 && c >= 1 && quiet_since.elapsed() >= Duration::from_millis(500) {
+                break;
+            }
+            assert!(Instant::now() < deadline, "not quiet: server {s} client {c}");
+        }
+        assert!(s + c <= 2 * crate::replyguard::LOOP_LIMIT as usize + 2, "server {s} client {c}");
         client.stop();
         server.stop();
     }

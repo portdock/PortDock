@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
 import { tip } from "@shared/tips";
@@ -872,7 +873,7 @@ export default function App() {
       </main>
       {rowMenu && menuHost && <LogMenu x={rowMenu.x} y={rowMenu.y} label={rowMenu.ip} items={hostMenu(menuHost)} onClose={() => setRowMenu(null)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
-      {showSettings && <SettingsDialog app={APP} version="0.1.0" settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={scanning || mon.running} />}
+      {showSettings && <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={scanning || mon.running} />}
       {toast.node}
     </div>
   );

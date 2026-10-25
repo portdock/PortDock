@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+import { VERSION } from "@shared/version";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { save } from "@tauri-apps/plugin-dialog";
 import { load, loadInt, store, trimFrames } from "@shared/framing";
@@ -966,7 +967,7 @@ export default function App() {
       {showSettings && (
         <SettingsDialog
           app="PortDock UDP"
-          version="0.1.0"
+          version={VERSION}
           settings={settings}
           update={update}
           reset={reset}
