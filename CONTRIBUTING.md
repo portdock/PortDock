@@ -4,7 +4,7 @@
 
 ## English
 
-PortDock is nine Windows tools (Serial, Modbus Slave, TCP, UDP, Simulator, Net Scan, Modbus Master, SCPI, Plot) built with Tauri 2, Rust and React/TypeScript in one repository. How the pieces fit together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+PortDock is ten Windows tools (Serial, Modbus Slave, TCP, UDP, Simulator, Net Scan, Modbus Master, SCPI, Plot, Port Inspector) built with Tauri 2, Rust and React/TypeScript in one repository. How the pieces fit together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### Requirements and build
 
@@ -23,17 +23,18 @@ cargo test --workspace    # Rust tests (same as `npm test`)
 npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\portable.conf.json"
 ```
 
-The same `npm run <tool>` / `npm run build:<tool>` scripts exist for `serial`, `modbus-slave`, `tcp`, `udp`, `simulator`, `netscan`, `modbus-master`, `scpi`, `plot`. The website: `npm run site` (dev) and `npm run build:site`.
+The same `npm run <tool>` / `npm run build:<tool>` scripts exist for `serial`, `modbus-slave`, `tcp`, `udp`, `simulator`, `netscan`, `modbus-master`, `scpi`, `plot`, `port-inspector`. The website: `npm run site` (dev) and `npm run build:site`.
 
 ### Checks before a pull request
 
 CI (`.github/workflows/ci.yml`, `windows-latest`, on pushes to `main` and on pull requests) runs these in this order. Run the ones your change touches locally:
 
 ```powershell
-# 1. frontend build of each app (tsc type check + vite) — repeat for all 9 apps
+# 1. frontend build of each app (tsc type check + vite) — repeat for all 10 apps
 npm run build -w portdock-serial
 #    … portdock-modbus-slave, portdock-modbus-master, portdock-tcp, portdock-udp,
-#      portdock-simulator, portdock-netscan, portdock-scpi, portdock-plot
+#      portdock-simulator, portdock-netscan, portdock-scpi, portdock-plot,
+#      portdock-port-inspector
 
 # 2. UI-independent TypeScript and tool tests
 node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"
@@ -63,7 +64,7 @@ node tools/privacy-check.mjs site/dist
 
 ### Manual and UI checks (local, not in CI)
 
-- **Hardware checklist** — [docs/test-plan.md](docs/test-plan.md). Common items for all nine apps (C1–C44) and per-app tables. Items marked ⏸ need a virtual COM pair (e.g. com0com) or real devices. Real-device items are written as preparation → steps → expected result; when the result differs, keep a screenshot, the saved traffic log and the report saved from the «!» window.
+- **Hardware checklist** — [docs/test-plan.md](docs/test-plan.md). Common items for all apps (C1–C44) and per-app tables. Items marked ⏸ need a virtual COM pair (e.g. com0com) or real devices. Real-device items are written as preparation → steps → expected result; when the result differs, keep a screenshot, the saved traffic log and the report saved from the «!» window.
 - **UI automation** — [e2e/README.md](e2e/README.md).
   - Real app: build the app, install `tauri-driver` and an Edge WebDriver matching the installed WebView2 version, then run `node tcp.mjs`, `udp.mjs`, `sim.mjs`, `slave.mjs`, `serial.mjs` in `e2e/`. Results and screenshots go to `e2e/shots/`.
   - Preview without Rust or devices: start the UI with the mock backend (`APP=<tool> PORT=520x npx vite --config e2e/ui-preview/vite.config.mjs`), then `node ui-preview/smoke.mjs [tool]` clicks every control in Korean/English × light/dark and exits with code 1 on uncaught errors, overflow, clipped buttons and similar. `node ui-preview/shots.mjs` captures layouts. The mock backend blocks outbound network, so the error-report «Send now» never reaches Sentry.
@@ -117,9 +118,9 @@ PortDock's program code is licensed under the [GNU General Public License v3.0](
 
 ## 한국어 요약
 
-PortDock 은 Tauri 2·Rust·React/TS 로 만든 윈도우용 통신 시험 도구 9개를 한 저장소에서 만든다. 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+PortDock 은 Tauri 2·Rust·React/TS 로 만든 윈도우용 통신 시험 도구 10개를 한 저장소에서 만든다. 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**준비·빌드** — 윈도우 10/11, Node.js 22+, Rust(stable, MSVC), Visual Studio Build Tools(C++ 데스크톱 개발), WebView2. `npm install` → `npm run <앱>`(개발 실행) · `npm run build:<앱>`(설치판) · `cargo test --workspace`. 앱 이름: serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot.
+**준비·빌드** — 윈도우 10/11, Node.js 22+, Rust(stable, MSVC), Visual Studio Build Tools(C++ 데스크톱 개발), WebView2. `npm install` → `npm run <앱>`(개발 실행) · `npm run build:<앱>`(설치판) · `cargo test --workspace`. 앱 이름: serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector.
 
 **PR 전 검사(CI 와 같은 순서)**
 1. 9앱 화면 빌드 `npm run build -w portdock-<앱>`

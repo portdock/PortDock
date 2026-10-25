@@ -20,7 +20,7 @@ Please include the program and version (Settings → About), Windows version, wh
 | Latest release on [GitHub Releases](https://github.com/portdock/PortDock/releases/latest) | Yes |
 | Older releases | No — please update first and check whether the problem remains |
 
-All nine programs are released together with the same version number, so a fix ships as a new release of every program.
+All ten programs are released together with the same version number, so a fix ships as a new release of every program.
 
 ### What to expect
 
@@ -59,7 +59,7 @@ Not security issues:
 | [GitHub 릴리스](https://github.com/portdock/PortDock/releases/latest)의 최신판 | 함 |
 | 그 이전 판 | 하지 않음 — 먼저 최신판으로 올린 뒤 문제가 남는지 확인해 주세요 |
 
-아홉 프로그램은 같은 버전으로 함께 나오므로, 수정은 모든 프로그램의 새 릴리스로 나갑니다.
+열 프로그램은 같은 버전으로 함께 나오므로, 수정은 모든 프로그램의 새 릴리스로 나갑니다.
 
 ### 응답
 

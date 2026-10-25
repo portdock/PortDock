@@ -1,7 +1,7 @@
 # PortDock architecture
 
 > **한국어 요약**
-> - PortDock 은 윈도우용 통신 시험 도구 9개(serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot)를 한 저장소에서 만든다.
+> - PortDock 은 윈도우용 통신 시험 도구 10개(serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector)를 한 저장소에서 만든다.
 > - Rust 는 Cargo workspace 하나: 통신·해석 로직은 `crates/core`(Tauri 의존 없음), 각 앱의 `apps/<앱>/src-tauri` 는 core 를 감싼 Tauri 명령만 둔다.
 > - 화면은 앱마다 React + Vite 프로젝트(npm workspaces)이고, 공용 화면·로직은 `shared/` 를 `@shared` 별칭으로 가져다 쓴다.
 > - 오류 보고: Rust 가 비정상 종료 기록을 이 PC 에 파일로 남기고, 다음 실행 때 화면이 묻는다. 사용자가 보내기를 고르거나 «자동 전송» 을 켠 경우에만 Sentry 로 간다. 메일·GitHub 이슈·파일 저장도 고를 수 있다.
@@ -15,10 +15,10 @@ This document describes how the repository is put together. Everything here was 
 
 ```
 PortDock/
-├─ Cargo.toml              Cargo workspace (core + 9 app shells), release profile
+├─ Cargo.toml              Cargo workspace (core + 10 app shells), release profile
 ├─ package.json            npm workspaces (apps/*, site) and run/build scripts
 ├─ crates/core/            portdock-core — shared Rust logic, no Tauri dependency
-├─ apps/<tool>/            one per tool (9): React/Vite UI in src/, Tauri shell in src-tauri/
+├─ apps/<tool>/            one per tool (10): React/Vite UI in src/, Tauri shell in src-tauri/
 │  ├─ src/                 App.tsx, api.ts (invoke wrappers), i18n.ts, help.ts, main.tsx
 │  └─ src-tauri/           Cargo.toml, src/lib.rs (commands), tauri.conf.json, capabilities/
 ├─ shared/                 React components + UI-independent TS logic used by all apps (@shared)
@@ -36,7 +36,7 @@ Sources: `Cargo.toml`, `package.json`, `crates/core/Cargo.toml`, `apps/*/src-tau
 
 ### Rust: one Cargo workspace
 
-The root `Cargo.toml` declares a workspace (`resolver = "3"`) with ten members: `crates/core` and `apps/<tool>/src-tauri` for each of the nine tools. Version, edition (2024), license (`GPL-3.0-only`) and authors are inherited from `[workspace.package]`. The release profile is size-oriented (`lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = true`).
+The root `Cargo.toml` declares a workspace (`resolver = "3"`) with eleven members: `crates/core` and `apps/<tool>/src-tauri` for each of the ten tools. Version, edition (2024), license (`GPL-3.0-only`) and authors are inherited from `[workspace.package]`. The release profile is size-oriented (`lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = true`).
 
 - **`crates/core` (`portdock-core`)** holds the communication and parsing logic. Its `lib.rs` states the rule: only logic unrelated to the UI (Tauri) lives here. Its dependencies are `serde`, `serialport`, `chrono`, `socket2`, `encoding_rs`, plus Windows-only `windows-sys`, `crash-handler`, `minidumper`, `webview2-com`, `windows`. It does not depend on `tauri`.
 - **`apps/<tool>/src-tauri` (`portdock-<tool>`)** each depend on `portdock-core = { path = "../../../crates/core" }` together with `tauri` 2 and the plugins `opener`, `dialog`, `window-state`. The library is named `portdock_<tool>_lib` (`staticlib`, `cdylib`, `rlib`); `main.rs` only calls `portdock_<tool>_lib::run()`.
@@ -45,7 +45,7 @@ The root `Cargo.toml` declares a workspace (`resolver = "3"`) with ten members: 
 
 Each app's `src-tauri/src/lib.rs` defines thin `#[tauri::command]` functions that call into `portdock_core` (for example `portdock_core::ports::list()`, `Session::start(...)`, `modbus::decode(...)`) and registers them in `run()` with `tauri::generate_handler![...]`. Open sessions are kept in `portdock_core::registry::Registry<T>` held in Tauri managed state. Session events are pushed to the UI over a `tauri::ipc::Channel<SessionEvent>`.
 
-`run()` follows the same order in every app (all nine call `webview_missing`, `report::install` and `run_failed`):
+`run()` follows the same order in every app (all ten call `webview_missing`, `report::install` and `run_failed`):
 
 1. If `tauri::webview_version()` fails → `report::webview_missing` (message box, exit).
 2. `report::install("<tool>", version)` (panic hook), `report::crash_monitor_or_attach()`, `report::test_crash_if_asked()`.
@@ -74,6 +74,7 @@ Sources: the `//!` header and `pub` items of each file in `crates/core/src/`.
 | `codec.rs` | Send text → bytes: HEX in several notations, ASCII with escapes, encodings UTF-8/CP949/Latin-1/ASCII; `text_view` for displaying received bytes with the same rules as `shared/format.ts`. |
 | `event.rs` | Common event shape all sessions emit to the UI and logs (`Frame`, `SessionEvent`, `EventSink`), file log writer and log options (`LogWriter`, `LogOptions`, `write_log`, `flush_frames`). |
 | `framer.rs` | Cuts received bytes into frames (`FrameMode`: gap, terminator, …; idle gap always applies); Modbus request/response length helpers, length-field framing. |
+| `loopback.rs` | Connection test (Port Inspector, Serial «Check connection…»): TX–RX loopback per baud rate (bytes same/lost/changed, 1-byte round-trip ms, driver error flags via `ClearCommError`) and 2-wire RS-485 echo detection; runs on a `Link` so it is unit-tested with a fake port. |
 | `i18n.rs` | Backend message language: `set_lang` from the UI, `is_en`, and the `tr!(ko, en)` macro used for error/event strings. |
 | `modbus.rs` | Modbus frame decoding (`decode`: direction-agnostic RTU), exception names, `Summarizer` for one-line human summaries of RTU/TCP traffic. |
 | `modbus_master.rs` | Modbus master (polling): request PDUs, response matching and checks (byte count, CRC, exception, MBAP transaction, RS-485 echo), timeout/retry/spacing, poll schedule, slave-ID and address-range search; `Link` abstraction and worker `Engine`. |
@@ -81,6 +82,7 @@ Sources: the `//!` header and `pub` items of each file in `crates/core/src/`.
 | `net.rs` | This PC's network info: IPv4 addresses per adapter, which program holds a port when bind fails, bind error text. No admin rights needed. |
 | `oserr.rs` | Common OS errors (network, serial I/O, serial open) translated to the UI language, keeping the Windows original in parentheses. |
 | `plot.rs` | Plot: extracts numeric values from incoming bytes (text lines with separators/headers/`name:value`, binary formats); parsing is in Rust so only numbers cross to the WebView and CSV logging happens here. |
+| `portinfo/` | Port Inspector: reads, for one COM port and without admin rights, the device and driver properties and problem code (CfgMgr32), Device Parameters and the Windows `Ports` defaults, COM number reservations (ComDB, SERIALCOMM), USB power saving (power options, WMI), PnP events from the event logs; VID/PID chip and problem-code tables in `tables.rs`. Read-only — nothing is written. |
 | `ports.rs` | Serial port list with device name and USB info (`PortInfo`, `list`). |
 | `registry.rs` | Store of open sessions shared by all apps: no lock held while opening, duplicate opens rejected, self-closed sessions removed by generation number (`Registry`, `auto_remove_sink`). |
 | `regmap.rs` | Register value types (u16…f64), word/byte orders ABCD/CDAB/BADC/DCBA, value simulation, RNG — same rules as `apps/modbus-slave/src/regmap.ts`. |
@@ -188,7 +190,7 @@ Sources: `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `e2e/READM
 Runs on `windows-latest` for pushes to `main`, pull requests and manual dispatch, with Node 24 and stable Rust + clippy. Steps in order:
 
 1. `npm ci`
-2. Frontend build of all 9 apps: `npm run build -w portdock-<tool>` (`tsc` + `vite build`; this is also the type check, and produces the `dist` the Rust build needs)
+2. Frontend build of all 10 apps: `npm run build -w portdock-<tool>` (`tsc` + `vite build`; this is also the type check, and produces the `dist` the Rust build needs)
 3. `node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"`
 4. `node tools/devices-check.mjs`
 5. `cargo clippy --workspace --all-targets -- -D warnings`
@@ -199,14 +201,14 @@ Runs on `windows-latest` for pushes to `main`, pull requests and manual dispatch
 
 ### Release (`release.yml`)
 
-Triggered by a `v*` tag (or manual dispatch, which only uploads build artifacts). A matrix builds each of the 9 apps on `windows-latest` (Node 22): checks that the tag matches the app version, regenerates notices, builds the NSIS installer, an offline installer with the WebView2 runtime (`tools/offline.conf.json`) and a portable zip (`tools/portable.conf.json`, `--no-bundle`). A final job on `ubuntu-latest` writes `SHA256SUMS.txt` and creates a **draft** GitHub release; a person publishes it. Code signing (SignPath) is present but commented out. Procedure: `docs/release.md`.
+Triggered by a `v*` tag (or manual dispatch, which only uploads build artifacts). A matrix builds each of the 10 apps on `windows-latest` (Node 22): checks that the tag matches the app version, regenerates notices, builds the NSIS installer, an offline installer with the WebView2 runtime (`tools/offline.conf.json`) and a portable zip (`tools/portable.conf.json`, `--no-bundle`). A final job on `ubuntu-latest` writes `SHA256SUMS.txt` and creates a **draft** GitHub release; a person publishes it. Code signing (SignPath) is present but commented out. Procedure: `docs/release.md`.
 
 ### Test inventory
 
 - **Rust**: `cargo test --workspace` (run 2026-10-19): 216 passed, 2 ignored, 0 failed — 179 in `portdock-core`, 23 (+2 ignored) Net Scan, 5 Plot, 3 Modbus Slave, 3 SCPI, 1 each in Serial, TCP and Modbus Master; Simulator and UDP have none. The repository has 218 `#[test]` functions (`grep -r "#\[test\]" crates apps --include=*.rs`). Tests are `#[cfg(test)]` modules inside the source files.
 - **Node** (`node --test`, Node 24 strips TypeScript types; the app and `shared/` test files start with `// @ts-nocheck`):
-  - `shared/`: `autoReply.test.ts`, `devices.test.ts`, `ioFeatures.test.ts`, `logSearch.test.ts`, `mbPair.test.ts`, `mbap.test.ts`, `modbusBuild.test.ts`, `notation.test.ts`, `serialPresets.test.ts`
-  - apps: `apps/modbus-master/src/model.test.ts`, `apps/modbus-slave/src/regmap.test.ts`, `apps/netscan/src/net.test.ts`, `apps/plot/src/model.test.ts`, `apps/scpi/src/model.test.ts`
+  - `shared/`: `autoReply.test.ts`, `devices.test.ts`, `ioFeatures.test.ts`, `logSearch.test.ts`, `mbPair.test.ts`, `mbap.test.ts`, `modbusBuild.test.ts`, `notation.test.ts`, `portinfo.test.ts`, `serialPresets.test.ts`
+  - apps: `apps/modbus-master/src/model.test.ts`, `apps/modbus-slave/src/regmap.test.ts`, `apps/netscan/src/net.test.ts`, `apps/plot/src/model.test.ts`, `apps/port-inspector/src/model.test.ts`, `apps/scpi/src/model.test.ts`
   - tools: `tools/devices-check.test.mjs` (`tools/site-check.mjs` is a checker for the built site, not a test file)
   - site: `site/src/lib/checksum.test.ts`
 - **e2e/** (local only, not in CI; `e2e/README.md`):

@@ -14,7 +14,7 @@ import * as scoop from "./scoop.mjs";
 const apps = readApps();
 const version = apps[0].version;
 const hex = (i) => i.toString(16).padStart(2, "0").repeat(32);
-// release.yml 과 같은 파일 이름 27개 + sha256sum 형식(공백 둘, 이름순)
+// release.yml 과 같은 파일 이름 30개 + sha256sum 형식(공백 둘, 이름순)
 const names = apps.flatMap((a) => ["setup.exe", "setup-offline.exe", "portable.zip"].map((s) => `PortDock-${a.asset}-${s}`)).sort();
 const sumsText = names.map((n, i) => `${hex(i + 1)}  ${n}`).join("\n") + "\n";
 const sums = parseSums(sumsText);
@@ -22,8 +22,8 @@ const sums = parseSums(sumsText);
 // winget 스키마(1.12.0)의 PackageIdentifier 패턴
 const ID_RE = /^[^.\s\\/:*?"<>|\x01-\x1f]{1,32}(\.[^.\s\\/:*?"<>|\x01-\x1f]{1,32}){1,7}$/;
 
-test("앱 9개 — release.yml matrix 와 같고, 모든 앱이 같은 버전", () => {
-  assert.equal(apps.length, 9);
+test("앱 10개 — release.yml matrix 와 같고, 모든 앱이 같은 버전", () => {
+  assert.equal(apps.length, 10);
   assert.deepEqual(apps.map((a) => a.asset), readMatrix().map((m) => m.asset));
   for (const a of apps) assert.equal(a.version, version);
 });
@@ -35,7 +35,7 @@ test("패키지 ID = PortDock.<App>, 겹치지 않고 스키마 패턴에 맞음
     assert.match(id, /^PortDock\.[A-Z][A-Za-z]+$/);
     assert.match(id, ID_RE);
   }
-  assert.ok(ids.includes("PortDock.ModbusSlave") && ids.includes("PortDock.NetScan") && ids.includes("PortDock.SCPI"));
+  assert.ok(ids.includes("PortDock.ModbusSlave") && ids.includes("PortDock.NetScan") && ids.includes("PortDock.SCPI") && ids.includes("PortDock.PortInspector"));
 });
 
 test("parseSums: 두 칸·별표(바이너리) 형식, 잘못된 줄은 오류", () => {

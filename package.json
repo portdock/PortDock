@@ -25,6 +25,8 @@
     "build:scpi": "npm run tauri build -w portdock-scpi",
     "plot": "npm run tauri dev -w portdock-plot",
     "build:plot": "npm run tauri build -w portdock-plot",
+    "port-inspector": "npm run tauri dev -w portdock-port-inspector",
+    "build:port-inspector": "npm run tauri build -w portdock-port-inspector",
     "site": "npm run dev -w portdock-site",
     "build:site": "npm run build -w portdock-site"
   }
