@@ -292,11 +292,13 @@ fn rtu_len(buf: &[u8]) -> Option<usize> {
 }
 
 /// 처음 자리에서 CRC 가 틀렸을 때 — 1바이트 뒤부터 «국번 + 함수(또는 예외)» 로 시작하는 자리를 찾는다.
-/// CRC 가 맞는 응답이 있으면 그 앞을 버리고(Skip), 아직 덜 온 후보가 있으면 더 기다리고(More), 없으면 None
-fn resync_rtu(buf: &[u8], unit: u8, fc: u8) -> Option<Take> {
+/// 후보는 국번 뒤 함수 바이트까지 와 있어야 한다 — 틀린 응답의 끝 바이트가 우연히 국번과 같아도 후보로 보지 않는다.
+/// CRC 가 맞는 응답이 있으면 그 앞을 버리고(Skip), 아직 덜 온 후보가 있으면 더 기다리고(More), 없으면 None.
+/// `last`(응답 대기 시간이 끝난 뒤의 마지막 판정)면 덜 온 후보는 기다리지 않는다 — 부른 쪽이 CRC 오류로 끝낸다
+fn resync_rtu(buf: &[u8], unit: u8, fc: u8, last: bool) -> Option<Take> {
     let mut waiting = false;
     for k in 1..buf.len() {
-        if buf[k] != unit || !buf.get(k + 1).is_none_or(|&f| f == fc || f == fc | 0x80) {
+        if buf[k] != unit || !buf.get(k + 1).is_some_and(|&f| f == fc || f == fc | 0x80) {
             continue;
         }
         let rest = &buf[k..];
@@ -306,7 +308,7 @@ fn resync_rtu(buf: &[u8], unit: u8, fc: u8) -> Option<Take> {
                     return Some(Take::Skip(k));
                 }
             }
-            _ => waiting = true,
+            _ => waiting = !last,
         }
     }
     waiting.then_some(Take::More)
@@ -314,6 +316,11 @@ fn resync_rtu(buf: &[u8], unit: u8, fc: u8) -> Option<Take> {
 
 /// 받은 바이트(`buf`)에서 응답 하나를 찾는다. `sent` 는 보낸 ADU(RS-485 에코를 알아보는 데 쓴다 — 비우면 보지 않음)
 pub fn take(wire: Wire, tid: u16, unit: u8, req: &[u8], sent: &[u8], buf: &[u8]) -> Take {
+    take_at(wire, tid, unit, req, sent, buf, false)
+}
+
+/// `take` 와 같고, `last` 면 응답 대기 시간이 끝난 뒤의 마지막 판정 — 덜 온 재동기화 후보를 기다리지 않는다
+fn take_at(wire: Wire, tid: u16, unit: u8, req: &[u8], sent: &[u8], buf: &[u8], last: bool) -> Take {
     match wire {
         Wire::Rtu => {
             // 에코: 보낸 것이 그대로 먼저 돌아오면 버린다. 05·06 은 응답이 요청과 같아 가릴 수 없다 — 그대로 응답으로 본다
@@ -331,7 +338,7 @@ pub fn take(wire: Wire, tid: u16, unit: u8, req: &[u8], sent: &[u8], buf: &[u8])
                 Some(n) if buf.len() >= n => n,
                 // 덜 왔다 — 첫 바이트가 국번이 아니면 쓰레기 때문에 길이를 잘못 읽었을 수 있다. 뒤에 다 온 응답이 있으면 거기로
                 _ => {
-                    return match resync_rtu(buf, unit, fc) {
+                    return match resync_rtu(buf, unit, fc, last) {
                         Some(Take::Skip(k)) if buf[0] != unit => Take::Skip(k),
                         _ => Take::More,
                     };
@@ -340,7 +347,7 @@ pub fn take(wire: Wire, tid: u16, unit: u8, req: &[u8], sent: &[u8], buf: &[u8])
             let f = &buf[..n];
             if crc16_modbus(&f[..n - 2]).to_le_bytes() != f[n - 2..] {
                 // 앞에 쓰레기 바이트(RS-485 방향 전환 잡음 등)가 붙었을 수 있다 — 뒤에서 우리 응답 모양을 찾는다
-                return match resync_rtu(buf, unit, fc) {
+                return match resync_rtu(buf, unit, fc, last) {
                     Some(t) => t,
                     None => Take::Done(n, Outcome::Crc { why: crate::tr!("CRC 오류", "CRC error").into() }),
                 };
@@ -587,7 +594,7 @@ impl Master {
         }
         // 시간이 다 됐다 — 에코로 미뤄 둔 것까지 한 번 더 보고, 덜 온 응답이면 그 이유를
         if !buf.is_empty() {
-            if let Take::Done(n, outcome) = take(self.wire, tid, unit, pdu, &[], &buf) {
+            if let Take::Done(n, outcome) = take_at(self.wire, tid, unit, pdu, &[], &buf, true) {
                 buf.truncate(n);
                 return done(outcome, buf, Some(t0.elapsed()), Duration::ZERO);
             }
@@ -1613,6 +1620,36 @@ mod tests {
             vec![r]
         });
         assert!(matches!(m().transact(&mut link, 1, &read_pdu(3, 0, 1).unwrap()).outcome(), Outcome::Crc { .. }));
+    }
+
+    /// CRC 가 틀린 응답의 끝 바이트가 국번과 같아도 «덜 온 다음 응답» 으로 기다리지 않고 CRC 오류로 끝낸다
+    #[test]
+    fn rtu_bad_crc_ending_in_unit_is_crc_error() {
+        let req = read_pdu(3, 0, 1).unwrap();
+        let sent = frame(Wire::Rtu, 0, 1, &req);
+        let good = with_crc(&[1, 3, 2, 0x12, 0x34]);
+        let mut bad = good.clone();
+        // 끝 바이트(CRC 윗바이트)를 국번 1 로 — 원래 1 이면 아랫바이트를 틀리게
+        if bad[6] == 1 {
+            bad[5] ^= 0xFF;
+        } else {
+            bad[6] = 1;
+        }
+        assert!(matches!(take(Wire::Rtu, 0, 1, &req, &sent, &bad), Take::Done(7, Outcome::Crc { .. })));
+        // 뒤에 «국번 + 함수» 까지 왔으면 다음 응답일 수 있어 기다리고, 대기 시간이 끝나면 CRC 오류
+        let mut more = bad.clone();
+        more.extend([1, 3]);
+        assert_eq!(take(Wire::Rtu, 0, 1, &req, &sent, &more), Take::More);
+        assert!(matches!(take_at(Wire::Rtu, 0, 1, &req, &[], &more, true), Take::Done(7, Outcome::Crc { .. })));
+        // 엔진에서도 시간 초과·덜 온 응답이 아니라 CRC 오류
+        let m = || Master::new(Wire::Rtu, fast(50, 0));
+        for tail in [vec![], vec![1u8, 3]] {
+            let mut r = bad.clone();
+            r.extend(&tail);
+            let (mut link, _) = Script::new(move |_| vec![r.clone()]);
+            let ex = m().transact(&mut link, 1, &req);
+            assert!(matches!(ex.outcome(), Outcome::Crc { .. }), "tail {tail:?}: {:?}", ex.outcome());
+        }
     }
 
     /// Modbus TCP 에서 유닛 0 은 브로드캐스트가 아니다(장비는 IP 로 고르고, 0 은 «이 장비») — 답을 기다린다.
