@@ -237,7 +237,8 @@ const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger
 /** 실행 중일 때 실행 버튼 글자 */
 /** 다 눌러 보기 시간 한도(ms) — 기본 본 화면 90초·뜬 창 40초. TCP 는 방식 탭·자동응답·중계·명령 목록까지 «모두 펼치기» 요소가 가장 많아
  *  90초 안에 idle·running 을 다 못 눌렀다(10/23, 361·471번) — 두 배로 */
-const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 } };
+// Serial 도 0.3.0 에서 요소가 늘어(직접 입력·최근·복사·Master 로 열기) 본 화면 90초를 넘긴다 — TCP 와 같은 한도
+const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 }, serial: { budgetMs: 180000, modalBudgetMs: 80000 } };
 const STOP_RE = /^(끊기|멈춤|멈추기|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
@@ -1968,6 +1969,8 @@ async function runApp(app, port) {
       // ---- 포트 고르기: COM5(FTDI) — 장치 문제 없음·설정 볼 것(지연 16ms)·절전 볼 것 → 전체 «볼 것»
       const pick = (com) => js(`const b = [...document.querySelectorAll('.port-item')].find((x) => x.querySelector('.pi-port').textContent.trim() === ${JSON.stringify(com)}); if (b) b.click(); return !!b;`);
       if (!(await pick("COM5"))) add("pick COM5", "expect", "목록에 COM5 가 없음");
+      // (0.3.0) «Serial 로 열기» — 고른 포트를 넘긴다
+      if (combo.full) await openAppCheck("pi-open-serial", ".open-serial", (o) => o.app === "serial" && o.port === "COM5", "await w(300);");
       // (10/26) USB 장치면 «USB 경로» 카드가 하나 더(COM5 = 장치 → 버스 전원 허브 → 루트 허브 → 컨트롤러)
       // (10/26) «이 PC» 카드가 하나 더 — 9장
       await expectJs("cards", "return document.querySelectorAll('details.card').length === 9");
@@ -2159,6 +2162,231 @@ async function runApp(app, port) {
       if (folded) await js("const c = document.querySelector('aside.side .conn-change'); c && c.click()");
     }
 
+    // ---- (0.3.0) 편의 기능 — 최근 연결·직접 입력 포트·로그 키보드·상세 복사·다른 프로그램으로 열기·글자 크기·명령줄·새 버전 알림·오류로 꺼진 기록 창
+    /** 다른 PortDock 프로그램으로 열기: 찾으면 __pdMock.openedApp 에 대상, 못 찾으면(noApp) 넘길 값 복사 + 알림 «내려받기 페이지» 버튼.
+     *  pre: 누르기 전에 페이지에서 돌릴 JS(버튼을 보이게 등), btnSel: 버튼, want(opened): 연 대상이 맞는지 */
+    async function openAppCheck(step, btnSel, want, pre = "") {
+      const r = await jsAsync(`
+        const w = (ms = 400) => new Promise((r) => setTimeout(r, ms));
+        ${pre}
+        const b = document.querySelector(${JSON.stringify(btnSel)});
+        if (!b || b.disabled) return { btn: false, disabled: !!b };
+        const press = async () => { b.click(); await w(); const m = document.querySelector('.log-menu'); if (m) { m.querySelector('button:not(:disabled)').click(); await w(); } };
+        window.__pdMock.noApp = false; window.__pdMock.openedApp = null;
+        await press();
+        const a = { btn: true, opened: window.__pdMock.openedApp, toast1: (document.querySelector('.toast') || {}).textContent || '' };
+        window.__pdMock.noApp = true; window.__pdMock.openedApp = null; window.__smoke.clip = null;
+        await press();
+        const act = document.querySelector('.toast .toast-action');
+        a.action = act ? act.textContent.trim() : null; a.clip = window.__smoke.clip; a.opened2 = window.__pdMock.openedApp;
+        window.__pdMock.noApp = false;
+        return a;`);
+      if (r.fatal) return add(step, "smoke-error", r.fatal);
+      const okWant = r.btn && r.opened && want(r.opened);
+      if (!okWant || !r.toast1 || !/^(내려받기 페이지|Download page)$/.test(r.action ?? "") || !r.clip || r.opened2) await conv(step, `다른 프로그램으로 열기가 이상함: ${JSON.stringify(r)}`);
+      await verify(step);
+    }
+
+    /** 최근 연결(TCP·Master·SCPI) — 연결에 성공한 뒤 끊긴 상태에서: 주소 칸을 비우고 «▾» → 그 주소가 목록에 → 고르면 칸이 채워짐 → 다시 열어 ✕ 로 지움 → Esc */
+    async function recentCheck() {
+      if (app === "modbus-master") {
+        // Master 는 Modbus TCP 로 한 번 연결해 둔다(기본은 RTU) — 끝나면 RTU 로 돌린다(뒤 단계가 COM 을 쓴다)
+        await setIn("aside.side select", "tcp", await js("return [...document.querySelectorAll('aside.side select')].findIndex((s) => s.querySelector('option[value=rtu-tcp]'))"));
+        await sleep(200);
+        await clickRun("recent: connect tcp", (s) => /연결됨|Connected/.test(s.status ?? ""));
+        await clickRun("recent: stop tcp", (s) => !STOP_RE.test(s.btn ?? ""));
+      }
+      const r = await jsAsync(`
+        const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+        const btn = [...document.querySelectorAll('aside.side .recent-btn')].find((b) => __sm.vis(b));
+        if (!btn) return { btn: false };
+        const inp = btn.parentElement.querySelector('input');
+        const host = inp.value;
+        const mine = (b) => (b.title || b.textContent).startsWith(host + ':');
+        __sm.setVal(inp, ''); await w(150);
+        btn.click(); await w();
+        const list = [...document.querySelectorAll('.recent-pop .recent-pick')];
+        const a = { btn: true, host, list: list.map((b) => b.title), empty: btn.classList.contains('empty') };
+        const pick = list.find(mine);
+        if (pick) pick.click();
+        await w();
+        a.picked = inp.value; a.closed = !document.querySelector('.recent-pop');
+        btn.click(); await w();
+        const del = [...document.querySelectorAll('.recent-pop .recent-row')].find((row) => mine(row.querySelector('.recent-pick')));
+        if (del) del.querySelector('.recent-del').click();
+        await w();
+        a.after = [...document.querySelectorAll('.recent-pop .recent-pick')].map((b) => b.title);
+        __sm.key(document.activeElement || document.body, 'Escape'); await w(150);
+        a.escClosed = !document.querySelector('.recent-pop');
+        if (!a.escClosed) btn.click();
+        return a;`);
+      if (r.fatal) add("recent", "smoke-error", r.fatal);
+      else if (!r.btn || !r.host || r.empty || !r.list.some((v) => v.startsWith(r.host + ":")) || r.picked !== r.host || !r.closed || r.after.some((v) => v.startsWith(r.host + ":")) || !r.escClosed)
+        await conv("recent", `최근 연결 «▾» 가 이상함: ${JSON.stringify(r)}`);
+      await verify("recent");
+      if (app === "modbus-master") {
+        await setIn("aside.side select", "serial", await js("return [...document.querySelectorAll('aside.side select')].findIndex((s) => s.querySelector('option[value=rtu-tcp]'))"));
+        await sleep(200);
+      }
+    }
+
+    /** 포트 고르기 «직접 입력…»(Serial·Master) — COM0 은 확인이 막히고 오류 문구, com20 → COM20 «(직접 입력)» */
+    async function manualPortCheck() {
+      const r = await jsAsync(`
+        const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+        const tr = [...document.querySelectorAll('aside.side select')].find((s) => s.querySelector('option[value=rtu-tcp]'));
+        if (tr && tr.value !== 'serial') { __sm.setVal(tr, 'serial'); await w(); }
+        const isManual = (o) => o.value.charCodeAt(0) === 1;
+        const sel = () => [...document.querySelectorAll('aside.side select')].find((s) => [...s.options].some(isManual));
+        const s = sel();
+        if (!s) return { sel: false };
+        const last = s.options[s.options.length - 1];
+        const a = { sel: true, lastIsManual: isManual(last), lastText: last.textContent };
+        __sm.setVal(s, last.value); await w();
+        const box = document.querySelector('.port-manual input');
+        const ok = () => document.querySelector('.port-manual .row2 button:not(.ghost)');
+        if (!box || !ok()) return { ...a, box: false };
+        a.focus = document.activeElement === box;
+        __sm.setVal(box, 'COM0'); await w(150);
+        a.bad = { disabled: ok().disabled, err: (document.querySelector('.port-manual .error') || {}).textContent || null, red: box.classList.contains('bad') };
+        __sm.setVal(box, 'com20'); await w(150);
+        a.good = { disabled: ok().disabled, err: !!document.querySelector('.port-manual .error') };
+        ok().click(); await w();
+        const s2 = sel();
+        a.value = s2.value; a.label = s2.selectedOptions[0] ? s2.selectedOptions[0].textContent : null; a.closed = !document.querySelector('.port-manual');
+        return a;`);
+      if (r.fatal) add("manual port", "smoke-error", r.fatal);
+      else if (!r.sel || !r.lastIsManual || !/직접 입력…|Type a port…/.test(r.lastText) || r.box === false || !r.bad?.disabled || !r.bad?.err || !r.bad?.red || r.good?.disabled || r.good?.err || r.value !== "COM20" || !/\((직접 입력|typed)\)/.test(r.label ?? "") || !r.closed)
+        await conv("manual-port", `포트 «직접 입력…» 이 이상함: ${JSON.stringify(r)}`);
+      if (combo.name === "ko-light") await shot(app, `${combo.name}-manual-port`);
+      await verify("manual port");
+    }
+
+    /** 로그 칸 키보드(Serial·TCP) + 상세 «복사»(Serial) — 연결 중에 */
+    async function logKeysCheck() {
+      await closeRight();
+      const rows = await d.findElements(By.css(".log .row.rx, .log .row.tx"));
+      if (rows.length < 6) return conv("log-keys", `줄이 모자라 로그 키보드를 시험하지 못함(${rows.length}줄)`, false);
+      await rows[Math.floor(rows.length / 2)].click();
+      await sleep(200);
+      if (app === "serial") {
+        // 좁은 창이라 오른쪽 칸(상세)이 열려 있다 — «복사» → 상세 글이 클립보드로
+        const c = await jsAsync(`
+          const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+          window.__smoke.clip = null;
+          const b = [...document.querySelectorAll('.copy-detail')].find((x) => __sm.vis(x));
+          if (!b) return { btn: false };
+          const label = b.textContent;
+          b.click(); await w();
+          return { btn: true, label, after: b.textContent, clip: window.__smoke.clip };`);
+        if (c.fatal) add("copy detail", "smoke-error", c.fatal);
+        else if (!c.btn || !c.clip || c.clip.length < 8 || !/([0-9A-F]{2} ){2}/.test(c.clip) || c.after === c.label) await conv("copy-detail", `상세 «복사» 가 이상함: ${JSON.stringify(c)}`);
+        await verify("copy detail");
+      }
+      await closeRight();
+      await js("document.querySelector('.log').focus()");
+      const now = () =>
+        js(`const rows = [...document.querySelectorAll('.log .row')]; const i = rows.findIndex((r) => r.classList.contains('primary'));
+            return { i, t: i >= 0 ? rows[i].textContent : null, next: i >= 0 && rows[i + 1] ? rows[i + 1].textContent : null, first: rows[0] && rows[0].textContent, top: document.querySelector('.log').scrollTop, focus: document.activeElement === document.querySelector('.log'), follow: !!document.querySelector('.follow-btn') };`);
+      const s0 = await now();
+      await keys(Key.ARROW_DOWN);
+      const s1 = await now();
+      await keys(Key.ARROW_UP);
+      const s2 = await now();
+      await keys(Key.HOME);
+      await sleep(200);
+      const s3 = await now();
+      await keys(Key.END);
+      await sleep(300);
+      const s4 = await now();
+      if (!s0.focus || s0.i < 0 || s1.t !== s0.next || s2.t !== s0.t || s3.t !== s3.first || s3.top > 4 || s4.i < 0 || s4.follow)
+        await conv("log-keys", `로그 칸 ↓·↑·Home·End 가 이상함: ${JSON.stringify({ s0, s1, s2, s3, s4 }).slice(0, 600)}`);
+      await blur();
+      await verify("log keys");
+    }
+
+    /** 글자 크기 Ctrl+= 두 번 → +2, Ctrl+0 → 13 (설정 fontSize) */
+    async function zoomCheck() {
+      const fs = () => js("try { const s = JSON.parse(localStorage.getItem('settings') || '{}'); return s.fontSize ?? null; } catch { return null; }");
+      await blur();
+      const f0 = (await fs()) ?? 13;
+      await chord([Key.CONTROL], "=");
+      await chord([Key.CONTROL], "=");
+      const f1 = await fs();
+      await chord([Key.CONTROL], "0");
+      const f2 = await fs();
+      if (f1 !== f0 + 2 || f2 !== 13) await conv("zoom-keys", `Ctrl+= 두 번·Ctrl+0 결과가 이상함: ${f0} → ${f1} → ${f2}`);
+      await verify("zoom keys");
+    }
+
+    /** 명령줄 인자(한 경우만): Serial «--port COM3 --baud 19200», TCP «--connect 10.0.0.5:5000» */
+    async function launchArgsCheck() {
+      const args = app === "serial" ? ["--port", "COM3", "--baud", "19200"] : ["--connect", "10.0.0.5:5000"];
+      await d.get(`http://localhost:${port}/?args=${encodeURIComponent(JSON.stringify(args))}`);
+      await sleep(1200);
+      const r = await js(`
+        const inputs = [...document.querySelectorAll('aside.side input')].map((i) => i.value);
+        const portSel = [...document.querySelectorAll('aside.side select')].find((s) => s.querySelector('option[value=COM9]'));
+        const tab = document.querySelector('.mode-tabs .seg.on');
+        const run = document.querySelector(${JSON.stringify(RUN_BTN)});
+        return { baud: (document.querySelector('input[list=bauds]') || {}).value || null, port: portSel ? portSel.value : null, inputs, tab: tab ? [...tab.parentElement.children].indexOf(tab) : null, toast: (document.querySelector('.toast') || {}).textContent || null, run: run && run.textContent.trim() };`);
+      const ok = app === "serial" ? r.baud === "19200" && r.port === "COM3" : r.tab === 0 && r.inputs.includes("10.0.0.5") && r.inputs.includes("5000");
+      if (!ok || !r.toast || STOP_RE.test(r.run ?? "")) await conv("launch-args", `명령줄 인자 ${JSON.stringify(args)} 로 채운 값이 이상함: ${JSON.stringify(r)}`);
+      await verify("launch args");
+    }
+
+    /** 새 버전 알림(한 앱): 확인 켬 + 오늘 확인한 결과 9.9.9 → 알림줄(언어 섞임·넘침 없음, 좁은 창도) → «이 버전은 그만 알리기» 로 사라짐. 바깥 요청 없음 */
+    async function updateNoteCheck() {
+      await d.get(`http://localhost:${port}/`);
+      await d.executeScript(
+        `localStorage.clear(); localStorage.setItem('settings', JSON.stringify(arguments[0])); localStorage.setItem('lang', JSON.stringify(arguments[0].lang));
+         localStorage.setItem('updateLatest', JSON.stringify({ version: '9.9.9', url: 'https://github.com/portdock/PortDock/releases/tag/v9.9.9' })); localStorage.setItem('updateCheckedAt', JSON.stringify(Date.now()));`,
+        { lang: combo.lang, theme: combo.theme, expandAll: !!combo.full, updateCheck: true },
+      );
+      await d.navigate().refresh();
+      const look = `const n = document.querySelector('.update-note'); if (!n || !__sm.vis(n)) return null; const r = n.getBoundingClientRect();
+        const cut = [...n.querySelectorAll('button')].filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent);
+        return { text: n.innerText, left: Math.round(r.left), right: Math.round(r.right), w: innerWidth, bottom: Math.round(r.bottom), h: innerHeight, over: n.scrollWidth > n.clientWidth + 1, cut, net: window.__pdMock.net.map((x) => x.url) };`;
+      const okNote = (r) => r && r.left >= 0 && r.right <= r.w + 1 && r.bottom <= r.h + 1 && !r.over && !r.cut.length && !r.net.some((u) => /github/.test(u)) && (ko ? !/[A-Za-z]{2,}/.test(r.text.replace(/✕/g, "")) : !/[가-힣]/.test(r.text)) && /9\.9\.9/.test(r.text);
+      let r = null;
+      for (let i = 0; i < 40 && !r; i++, await sleep(200)) r = await js(look);
+      if (!okNote(r)) await conv("update-note", `새 버전 알림줄이 이상함(안 보임·넘침·언어 섞임·바깥 요청): ${JSON.stringify(r)}`);
+      if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-update-note`);
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await sleep(300);
+      const r2 = await js(look);
+      if (!okNote(r2)) await conv("update-note-narrow", `좁은 창(760)에서 새 버전 알림줄이 이상함: ${JSON.stringify(r2)}`);
+      if (combo.name === "ko-light") await shot(app, `${combo.name}-update-note-narrow`);
+      await clickText(".update-note button", ko ? "이 버전은 그만 알리기" : "Don't remind me about this version");
+      await sleep(250);
+      const gone = await js("return !document.querySelector('.update-note') && localStorage.getItem('updateDismissed') === JSON.stringify('9.9.9')");
+      if (!gone) await conv("update-note-dismiss", "«이 버전은 그만 알리기» 로 알림줄이 사라지지 않음");
+      await verify("update note");
+      await fitWindow();
+    }
+
+    /** 오류로 꺼진 기록이 남아 있을 때 켜면 묻는 창 — 좁은 창(760, 왼쪽 칸 접힘)에서도 보이는지 → «나중에» */
+    async function pendingCrashCheck() {
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await load(port, combo);
+      await d.get(`http://localhost:${port}/?pendingCrash=1`);
+      let r = null;
+      for (let i = 0; i < 20 && !(r && r.modal); i++, await sleep(150))
+        r = await js(`const m = document.querySelector('.modal-back [role=alertdialog]'); if (!m) return { modal: false }; const b = m.getBoundingClientRect();
+          return { modal: __sm.vis(m), inWin: b.left >= 0 && b.top >= 0 && b.right <= innerWidth + 1 && b.bottom <= innerHeight + 1, title: m.getAttribute('aria-label'), side: getComputedStyle(document.querySelector('aside.side') || document.body).display };`);
+      if (!r?.modal || !r.inWin || !/지난번에 오류로 꺼졌습니다|crashed last time/.test(r.title ?? "")) await conv("pending-crash", `오류로 꺼진 기록 묻는 창이 좁은 창에서 안 보임: ${JSON.stringify(r)}`);
+      if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-pending-crash-760`);
+      await clickText(".modal-back [role=alertdialog] button", ko ? "나중에" : "Later");
+      await sleep(200);
+      if (await js("return !!document.querySelector('.modal-back')")) await conv("pending-crash-later", "«나중에» 로 묻는 창이 닫히지 않음");
+      await verify("pending crash");
+      await fitWindow();
+    }
+
     try {
       if (app === "port-inspector") await inspectorFlow();
       else {
@@ -2319,6 +2547,15 @@ async function runApp(app, port) {
         // 눌러 본 뒤 설정이 바뀌었을 수 있다 — 깨끗하게 다시
         await load(port, combo);
       }
+      // (0.3.0) 끊긴 상태: 포트 «직접 입력…»(Serial·Master), Serial «Modbus Master 로 열기»·글자 크기 키
+      if (combo.full && (app === "serial" || app === "modbus-master")) {
+        await manualPortCheck();
+        if (app === "serial") {
+          await openAppCheck("open-master", ".open-master", (o) => o.app === "modbus-master" && /^COM\d+$/.test(o.rtu ?? "") && o.baud > 0, "__sm.setVal(document.querySelector('.preset-sel'), 'modbus'); await w(300);");
+          await zoomCheck();
+        }
+        await load(port, combo);
+      }
 
       // (10/25) Serial «연결 점검…»(끊긴 상태 — 장치 요약·루프백)
       if (app === "serial") await serialPortCheck(false);
@@ -2355,6 +2592,8 @@ async function runApp(app, port) {
       if (app === "plot") await plotRun();
       // (10/18) TCP: 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 «Modbus TCP 로 보기» 알림줄 한 번(첫 실행 상태라 이번이 처음)
       if (app === "tcp" && !(await js("return !!document.querySelector('.sendbar .mb502')"))) await conv("tcp-502", "502 로 접속했는데 «Modbus TCP 로 보기» 알림줄이 없음");
+      // (0.3.0) 그 알림줄의 «Modbus Master 로 열기» → 주소:502
+      else if (app === "tcp" && combo.full) await openAppCheck("tcp-502-open-master", ".sendbar .mb502 .open-master", (o) => o.app === "modbus-master" && /:502$/.test(o.tcp ?? ""));
       // (10/18) Net Scan 결과 줄: Modbus 칩을 누르면 «IP:502» 복사, 줄 오른쪽 버튼 메뉴(웹 열기·IP 복사·IP:502 복사·…) → «IP:502 복사» · Esc 로 닫힘
       if (app === "netscan" && combo.full) {
         // 가짜 장비는 주소당 0.5초 — 두 주소(.10 Modbus·.11)만 찾아 빨리 끝낸 뒤 보고, 끝나면 처음 범위로 다시 찾기 시작해 둔다
@@ -2423,6 +2662,8 @@ async function runApp(app, port) {
         else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false || !r.omItem || r.master?.ip !== r.ip || r.master?.port !== 502 || !(r.master?.unit >= 1) || !/Modbus Master/.test(r.omToast ?? "") || !r.omBtn || !r.missLink || !(r.missing ?? "").includes(`${r.ip}:502`) || r.clip3 !== `${r.ip}:502`) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
         if (combo.name === "ko-light") await shot(app, `${combo.name}-row-menu`);
         await verify("ns row menu");
+        // (0.3.0) 고른 장비 «TCP 로 열기»(502·웹 말고 열린 포트)
+        await openAppCheck("ns-open-tcp", ".detail-actions .open-tcp", (o) => o.app === "tcp" && /^192\.168\.0\.1[01]:\d+$/.test(o.connect ?? ""));
         await load(port, combo);
         await clickRun("ns scan again", (s) => s.btn !== idleBtn);
       }
@@ -2483,6 +2724,8 @@ async function runApp(app, port) {
       // 편의성(10/17): 창 제목·따라가기·줄 고르기·Ctrl+C·우클릭 메뉴·단축키·명령 목록·숫자 칸·표기 바꾸기·되돌리기·항상 위
       // Net Scan 은 통신 기록·명령 목록이 없어 편의성 점검(로그 따라가기 등)을 건너뛴다
       // SCPI·Plot 도 건너뛴다 — 앱별 단계(scpiRun·plotRun)가 그 앱의 편의 기능을 본다
+      // (0.3.0) 로그 칸 키보드(Serial·TCP)·상세 «복사»(Serial)
+      if (combo.full && (app === "serial" || app === "tcp")) await logKeysCheck();
       if (combo.full && !["netscan", "scpi", "plot"].includes(app)) await convenience();
       // Serial·TCP·UDP 공통 기능(이력·단축키·간격·트리거·체크섬 옵션·반복 횟수·Break·터미널·파일)
       if (combo.full) await ioFeatures();
@@ -2512,6 +2755,8 @@ async function runApp(app, port) {
       }
       void runS;
       void stopS;
+      // (0.3.0) 최근 연결 «▾»(연결에 성공한 주소가 남는다)
+      if (combo.full && ["tcp", "modbus-master", "scpi"].includes(app)) await recentCheck();
       // 기능 묶음 C: TCP 중계·Modbus TCP·이 PC 주소, UDP 멀티캐스트, 좁은 창 자동응답
       if (combo.full) await waveCStopped();
 
@@ -2603,6 +2848,10 @@ async function runApp(app, port) {
 
       // ---- 좁은 창(화면 반쪽 맞춤 등): 안쪽 760×600
       await narrow();
+      // (0.3.0) 한 번씩만: 명령줄 인자(Serial·TCP, ko-light), 새 버전 알림(UDP), 오류로 꺼진 기록 묻는 창(Simulator, 좁은 창)
+      if (combo.name === "ko-light" && (app === "serial" || app === "tcp")) await launchArgsCheck();
+      if (combo.full && app === "udp") await updateNoteCheck();
+      if (combo.full && app === "simulator") await pendingCrashCheck();
       }
     } catch (e) {
       add("runner", "smoke-error", e && e.stack ? e.stack : e);

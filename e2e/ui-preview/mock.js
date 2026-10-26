@@ -837,6 +837,11 @@ window.__pdMock = {
   calls: [],
   errors: [],
   files,
+  /** 오류로 꺼진 기록이 하나 남아 있는 것처럼(report_pending) — 켤 때 묻는 창. 주소에 «?pendingCrash=1» 이어도 켜진다. 지우기(report_dismiss)하면 꺼진다 */
+  pendingCrash: new URLSearchParams(location.search).has("pendingCrash"),
+  /** true 면 open_app 이 «이 PC 에서 찾지 못함»(false) — 복사 + 내려받기 페이지 알림. openedApp 에 연 대상이 남는다 */
+  noApp: false,
+  openedApp: null,
   /** 막아 둔 바깥 요청(오류 자동 전송 등) — 실제로는 나가지 않는다 */
   net,
   get session() {
@@ -863,9 +868,13 @@ async function handle(cmd, a) {
     case "report_env":
       return { app: "preview", version: "0.1.0", os: "windows 10.0.26100", arch: "x86_64", reportsDir: "C:\\Users\\me\\AppData\\Local\\dev.portdock.x\\reports" };
     case "report_pending":
-      return [];
+      // CrashReport(crates/core/src/report.rs, camelCase) — 덤프 없는 화면 쪽 기록 하나
+      return window.__pdMock.pendingCrash ? [{ name: "crash-20261025-101500.txt", text: "PortDock crash report\nmessage: preview crash\n", dump: null, dumpSize: null }] : [];
     case "report_dismiss":
+      window.__pdMock.pendingCrash = false;
       return null;
+    case "report_read_dump":
+      return new Uint8Array([0x4d, 0x44, 0x4d, 0x50]).buffer;
     // 명령줄 인자(0.2.0, Modbus Master) — 주소 «?args=["--tcp","1.2.3.4:502"]»(JSON 배열)
     case "launch_args":
       try {
