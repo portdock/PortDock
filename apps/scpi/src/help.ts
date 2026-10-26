@@ -20,19 +20,19 @@ export const help: HelpDoc = {
       body: [
         "- 1. 장비 앞 패널의 LAN 설정에서 IP 를 확인하고, «소켓»(Sockets·SCPI raw·Port 5025) 기능이 켜져 있는지 봅니다. IP 를 모르면 PortDock Net Scan 으로 찾을 수 있습니다.",
         "- 2. 왼쪽 «연결 방식» LAN → «장비 주소» 에 IP, «포트» 5025(대부분 그대로) → «연결»(F4).",
-        "- (0.3.0 부터) 연결에 성공한 주소·포트는 기록됩니다. «장비 주소» 옆 «▾» 에서 골라 다시 채우고(✕ 로 지움), 주소 칸에 입력하면 최근 주소가 자동 완성으로 뜹니다.",
+        "- 연결에 성공한 주소·포트는 기록됩니다. «장비 주소» 옆 «▾» 에서 골라 다시 채우고(✕ 로 지움), 주소 칸에 입력하면 최근 주소가 자동 완성으로 뜹니다.",
         "- 3. 연결되면 *IDN? 을 물어 왼쪽 «장비» 칸에 제조사·모델·일련번호·펌웨어가 나옵니다(«연결하면 *IDN? 묻기» 를 끄면 묻지 않음).",
         "- 4. 위 명령 칸에 명령을 넣고 Enter — ? 로 끝나면 «질의»(보내고 답을 기다림), 아니면 «쓰기»(보내기만). 답과 응답 시간이 «마지막 응답» 에, 주고받은 줄이 «통신 기록» 에 남습니다.",
         "- 5. 틀린 명령은 장비의 오류 큐에 쌓입니다. 가끔 «오류 큐 비우기» 로 확인하세요.",
         "- 시리얼(RS-232) 계측기: «연결 방식» 시리얼 → 포트·속도·패리티·정지 비트·흐름 제어를 장비 설정과 같게. 줄 끝도 장비에 맞춥니다(대부분 LF, 일부 CR LF).",
-        "- (0.3.0 부터) 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 포트 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 목록에는 Windows 의 SERIALCOMM 에 등록된 포트도 함께 보입니다.",
+        "- 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 포트 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 목록에는 Windows 의 SERIALCOMM 에 등록된 포트도 함께 보입니다.",
       ],
     },
     {
       title: "화면 구성",
       body: [
         "- 왼쪽: 연결 방식·주소(또는 포트·속도), «줄 끝», «통신 세부» 접기(응답 기다림·*OPC? 기다림·연결하면 *IDN? 묻기), 연결 버튼과 상태, «장비»(*IDN? 풀이), «자주 쓰는 동작»(*IDN?·*RST·*CLS·오류 큐 비우기·*OPC? 기다림)과 오류 큐 결과.",
-        "- (0.3.0 부터) 다른 창에서 일하는 동안 연결이 끊기면 작업 표시줄의 PortDock SCPI 단추가 깜빡입니다(«끊기» 를 눌러 닫은 때는 깜빡이지 않음). 설정에서 끌 수 있습니다.",
+        "- 다른 창에서 일하는 동안 연결이 끊기면 작업 표시줄의 PortDock SCPI 단추가 깜빡입니다(«끊기» 를 눌러 닫은 때는 깜빡이지 않음). 설정에서 끌 수 있습니다.",
         "- 가운데 위: 명령 칸과 [질의] [쓰기] [읽기] [＋ 목록에]. 기다리는 동안은 [멈춤](Esc). 칸 아래에 넣은 명령의 뜻(자주 쓰는 명령이면)과 Enter 가 무엇을 할지가 나옵니다.",
         "- 가운데: «마지막 응답» — 답 글(또는 블록 정보·HEX 미리보기·[파일로 저장]), 응답 시간, 실패 이유.",
         "- 아래: 탭 «통신 기록» / «반복 측정».",
@@ -127,7 +127,7 @@ export const help: HelpDoc = {
         "- «연결하면 파일 기록 자동 시작» 과 자동 기록 폴더: 연결할 때마다 «portdock-scpi-날짜-시각.log».",
         "- «설정 내보내기·가져오기» 로 연결 설정·명령 목록·반복 측정 설정을 JSON 파일로 옮깁니다.",
         ...settingsLines("ko", { run: true }),
-        "- (0.3.0 부터) 명령줄 «--auto»(예: 바로 가기 대상 끝에 붙임): 켤 때 마지막으로 연결에 성공한 설정(LAN 주소·포트 또는 시리얼 포트·속도, 줄 끝)으로 바로 연결합니다. 시리얼 포트가 없으면 연결하지 않고 그대로 둡니다.",
+        "- 명령줄 «--auto»(예: 바로 가기 대상 끝에 붙임): 켤 때 마지막으로 연결에 성공한 설정(LAN 주소·포트 또는 시리얼 포트·속도, 줄 끝)으로 바로 연결합니다. 시리얼 포트가 없으면 연결하지 않고 그대로 둡니다.",
       ],
     },
     {
@@ -167,19 +167,19 @@ export const help: HelpDoc = {
       body: [
         "- 1. Look up the IP in the instrument's front-panel LAN settings and check that the «socket» service (Sockets, raw SCPI, port 5025) is on. PortDock Net Scan can find the IP.",
         "- 2. On the left, «Connection» LAN → IP in «Instrument address», «Port» 5025 (usually leave it) → «Connect» (F4).",
-        "- (from 0.3.0) Addresses you connect to successfully are remembered. Pick one from «▾» next to «Instrument address» to fill it back in (✕ removes it); typing in the address box also suggests recent addresses.",
+        "- Addresses you connect to successfully are remembered. Pick one from «▾» next to «Instrument address» to fill it back in (✕ removes it); typing in the address box also suggests recent addresses.",
         "- 3. On connect, *IDN? fills «Instrument» on the left with maker, model, serial number and firmware (turn off «Ask *IDN? on connect» to skip).",
         "- 4. Type a command in the box at the top and press Enter — ending in ? it «queries» (sends and waits), otherwise it «writes» (sends only). The answer and response time appear in «Last reply», the exchanged lines in «Traffic».",
         "- 5. Wrong commands go to the instrument's error queue. Check it now and then with «Drain error queue».",
         "- RS-232 instruments: «Connection» Serial → port, baud, parity, stop bits and flow control as set on the instrument. Match the line ending too (usually LF, sometimes CR LF).",
-        "- (from 0.3.0) A port missing from the list (one Windows set up as a modem, some virtual ports) can be opened by name: choose «Type a port…» at the bottom of the port list and type it (e.g. COM12). The list also includes ports registered in Windows SERIALCOMM.",
+        "- A port missing from the list (one Windows set up as a modem, some virtual ports) can be opened by name: choose «Type a port…» at the bottom of the port list and type it (e.g. COM12). The list also includes ports registered in Windows SERIALCOMM.",
       ],
     },
     {
       title: "Layout",
       body: [
         "- Left: connection and address (or port and baud), «Line ending», «Timing» (response timeout, *OPC? timeout, ask *IDN? on connect), the connect button and status, «Instrument» (*IDN? decoded), «Common actions» (*IDN?, *RST, *CLS, drain error queue, wait *OPC?) with the error queue result.",
-        "- (from 0.3.0) If the connection drops while you are working in another window, the PortDock SCPI taskbar button flashes (not when you press «Disconnect» yourself). You can turn this off in Settings.",
+        "- If the connection drops while you are working in another window, the PortDock SCPI taskbar button flashes (not when you press «Disconnect» yourself). You can turn this off in Settings.",
         "- Top centre: the command box with [Query] [Write] [Read] [＋ To list]. While waiting, [Stop] (Esc). Under the box: what the command means (for common commands) and what Enter will do.",
         "- Centre: «Last reply» — the text (or block info, HEX preview and [Save to file]), response time and failure reasons.",
         "- Bottom: tabs «Traffic» / «Repeat measurement».",
@@ -274,7 +274,7 @@ export const help: HelpDoc = {
         "- «Start file log automatically» and the auto-log folder: each connection writes «portdock-scpi-date-time.log».",
         "- «Export / Import settings» move the connection settings, command list and repeat measurement settings as a JSON file.",
         ...settingsLines("en", { run: true }),
-        "- (from 0.3.0) Command-line «--auto» (e.g. added to the end of a shortcut target): on startup, connects right away with the last settings that connected successfully (LAN address and port, or serial port and baud, plus line ending). If the serial port is not there, it does not connect.",
+        "- Command-line «--auto» (e.g. added to the end of a shortcut target): on startup, connects right away with the last settings that connected successfully (LAN address and port, or serial port and baud, plus line ending). If the serial port is not there, it does not connect.",
       ],
     },
     {

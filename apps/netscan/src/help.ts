@@ -106,7 +106,7 @@ export const help: HelpDoc = {
         "- «핑 감시에 추가»: 그 IP 를 «핑 감시» 목록에 넣습니다.",
         "- «Modbus Master 로 열기»(502 가 열린 장비): 이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다. Master 는 Modbus TCP·장비 주소·국번을 채운 채 뜨고, 연결은 Master 에서 «연결» 을 누릅니다. 국번은 «Modbus 장비 정보» 를 읽었으면 그 국번, 아니면 1 입니다.",
         "- Master 는 설치판(이 사용자로 설치한 것), 또는 휴대판(Net Scan 과 같은 폴더나 옆 «PortDock…» 폴더)에서 찾습니다. 못 찾으면 «IP:502» 를 복사하고 아래 칸에 «Modbus Master 내려받기» 링크를 보입니다. 누를 때만 열고, 셸을 거치지 않으며 넘기는 것은 IP 와 숫자뿐입니다.",
-        "- (0.3.0 부터) «TCP 로 열기»(502·웹 80·443 말고 다른 포트가 열린 장비): 이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다. TCP 는 클라이언트 방식으로 주소·포트를 채운 채 뜨고, 접속은 거기서 누릅니다. 포트가 여럿이면 «TCP 로 열기 ▾» 에서 고릅니다(줄 오른쪽 버튼 메뉴에도 있음). TCP 를 못 찾으면 «IP:포트» 를 복사하고 내려받기 페이지를 알려 줍니다.",
+        "- «TCP 로 열기»(502·웹 80·443 말고 다른 포트가 열린 장비): 이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다. TCP 는 클라이언트 방식으로 주소·포트를 채운 채 뜨고, 접속은 거기서 누릅니다. 포트가 여럿이면 «TCP 로 열기 ▾» 에서 고릅니다(줄 오른쪽 버튼 메뉴에도 있음). TCP 를 못 찾으면 «IP:포트» 를 복사하고 내려받기 페이지를 알려 줍니다.",
       ],
     },
     {
@@ -278,7 +278,7 @@ export const help: HelpDoc = {
         "- «Add to ping monitor» adds the IP to the «Ping monitor» list.",
         "- «Open in Modbus Master» (devices with 502 open) starts PortDock Modbus Master on this PC with «--tcp IP:502 --unit ID». Master opens with Modbus TCP, the device address and Slave ID filled in; press «Connect» in Master. The ID is the one from «Modbus device ID» if it was read, else 1.",
         "- Master is looked up as an installed copy (installed for this user) or a portable copy (the same folder as Net Scan, or a «PortDock…» folder next to it). If it is not found, «IP:502» is copied and a «Get Modbus Master» link appears below. It only runs when you click, without a shell, and passes only the IP and numbers.",
-        "- (from 0.3.0) «Open in TCP» (devices with a port open other than 502 and web 80/443) starts PortDock TCP on this PC with «--connect IP:port». TCP opens in client mode with the address and port filled in; press Connect there. With several ports, pick one from «Open in TCP ▾» (also in the row right-click menu). If TCP is not found, «IP:port» is copied and a download page link is shown.",
+        "- «Open in TCP» (devices with a port open other than 502 and web 80/443) starts PortDock TCP on this PC with «--connect IP:port». TCP opens in client mode with the address and port filled in; press Connect there. With several ports, pick one from «Open in TCP ▾» (also in the row right-click menu). If TCP is not found, «IP:port» is copied and a download page link is shown.",
       ],
     },
     {

@@ -7,7 +7,7 @@ type Lang = "ko" | "en";
 export interface HelpFeatures {
   /** Ctrl+S «화면 내용 저장» 이 있는지(Serial·TCP·UDP) */
   saveView?: boolean;
-  /** Ctrl+S 가 이번 판(0.3.0)에 새로 생겼는지(Modbus Slave·Simulator) — 줄 앞에 «(0.3.0 부터)» */
+  /** Ctrl+S 가 이번 판(0.3.0)에 새로 생겼는지(Modbus Slave·Simulator) — 줄 앞에 «» */
   saveViewNew?: boolean;
   /** Esc 로 멈출 «반복» 이 있는지 */
   repeat?: boolean;
@@ -26,13 +26,13 @@ export function shortcutLines(lang: Lang, f: HelpFeatures): string[] {
   const lines = [
     ko ? `- ${KEYS.connect}: ${f.startStop ? "시작·멈춤" : "연결·끊기"}(왼쪽 버튼과 같음).` : `- ${KEYS.connect}: ${f.startStop ? "start / stop" : "connect / disconnect"} (same as the button on the left).`,
     ko ? `- ${KEYS.clear}: 화면 기록 지우기(파일 로그는 그대로).` : `- ${KEYS.clear}: clear the on-screen log (file logs are kept).`,
-    f.saveView && (ko ? `- ${f.saveViewNew ? "(0.3.0 부터) " : ""}${KEYS.save}: 화면 내용 저장.` : `- ${f.saveViewNew ? "(from 0.3.0) " : ""}${KEYS.save}: save view.`),
+    f.saveView && (ko ? `- ${f.saveViewNew ? "" : ""}${KEYS.save}: 화면 내용 저장.` : `- ${f.saveViewNew ? "" : ""}${KEYS.save}: save view.`),
     ko ? `- ${KEYS.fileLog}: 파일로 계속 저장 켜기·끄기.` : `- ${KEYS.fileLog}: start / stop logging to file.`,
     f.repeat && (ko ? `- ${KEYS.stopRepeat}: 반복 보내기 멈춤(입력칸 밖에서 — 입력칸 안의 Esc 는 그 칸의 동작).` : `- ${KEYS.stopRepeat}: stop repeat sending (outside text boxes — inside a box Esc keeps its own meaning).`),
     ko ? `- ${KEYS.end}: 로그 맨 아래로 가서 다시 따라가기.` : `- ${KEYS.end}: jump to the latest log line and follow again.`,
     ko
-      ? "- (0.3.0 부터) 로그를 한 번 누른 뒤(로그 칸에 포커스) ↑/↓: 줄 옮겨 고르기 · Shift+↑/↓: 범위 늘리기 · PageUp/PageDown: 한 화면씩 · Home: 첫 줄 · End: 마지막 줄(다시 따라가기). 옮기면 따라가기는 멈춥니다."
-      : "- (from 0.3.0) After clicking the log (focus in the log): ↑/↓ move the selection · Shift+↑/↓ extend it · PageUp/PageDown one screen · Home first line · End last line (and follow again). Moving pauses following.",
+      ? "- 로그를 한 번 누른 뒤(로그 칸에 포커스) ↑/↓: 줄 옮겨 고르기 · Shift+↑/↓: 범위 늘리기 · PageUp/PageDown: 한 화면씩 · Home: 첫 줄 · End: 마지막 줄(다시 따라가기). 옮기면 따라가기는 멈춥니다."
+      : "- After clicking the log (focus in the log): ↑/↓ move the selection · Shift+↑/↓ extend it · PageUp/PageDown one screen · Home first line · End last line (and follow again). Moving pauses following.",
     ko ? `- ${KEYS.copy}: 고른 로그 줄을 «시각 방향 내용» 으로 복사(지금 보기대로). 입력칸 안에서는 보통 복사.` : `- ${KEYS.copy}: copy the selected log lines as «time direction data» (in the current view). Inside a text box it copies normally.`,
     f.find && (ko ? "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기." : "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear."),
     ko ? "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다." : "- F1 or the ? button: this help. Close it with Esc.",
@@ -92,13 +92,13 @@ export function windowLines(lang: Lang): string[] {
         "- 머리줄 📌: 항상 위 — 이 창을 다른 창 위에 늘 보이게 합니다(설정의 «항상 위» 와 같음).",
         "- 창 제목에 지금 상태가 나옵니다(예: «COM3 115200 8N1 · 연결됨 ● REC — PortDock Serial»). 작업 표시줄에서 어느 창이 어느 포트인지 알 수 있습니다.",
         "- 창 너비가 900px 이하(화면 반쪽 맞춤 등)면 왼쪽 연결 설정 칸이 접히고, 위에 요약 줄과 «⚙ 연결 설정»·연결 버튼이 나옵니다. «⚙ 연결 설정» 으로 펼치고 ✕ 나 바깥을 눌러 닫습니다.",
-        "- (0.3.0 부터) 글자 크기: Ctrl+마우스 휠 또는 Ctrl+= / Ctrl+- 로 키우고 줄이고, Ctrl+0 으로 처음 크기(13px)로 돌아갑니다. 설정의 «글자 크기» 와 같은 값이라 다음에 켜도 그대로입니다.",
+        "- 글자 크기: Ctrl+마우스 휠 또는 Ctrl+= / Ctrl+- 로 키우고 줄이고, Ctrl+0 으로 처음 크기(13px)로 돌아갑니다. 설정의 «글자 크기» 와 같은 값이라 다음에 켜도 그대로입니다.",
       ]
     : [
         "- 📌 in the header: always on top — keeps this window above others (same as «Always on top» in Settings).",
         "- The window title shows the current state (e.g. «COM3 115200 8N1 · Connected ● REC — PortDock Serial»), so you can tell windows apart on the taskbar.",
         "- At 900 px wide or less (e.g. half-screen snap) the left connection panel folds away and a summary line with «⚙ Connection» and the connect button appears. «⚙ Connection» opens the panel; ✕ or clicking outside closes it.",
-        "- (from 0.3.0) Text size: Ctrl+mouse wheel or Ctrl+= / Ctrl+- makes it larger or smaller, and Ctrl+0 returns to the default (13 px). It is the same value as «Font size» in Settings, so it is kept next time.",
+        "- Text size: Ctrl+mouse wheel or Ctrl+= / Ctrl+- makes it larger or smaller, and Ctrl+0 returns to the default (13 px). It is the same value as «Font size» in Settings, so it is kept next time.",
       ];
 }
 
@@ -128,12 +128,12 @@ export function settingsLines(lang: Lang, f: { run?: boolean } = {}): string[] {
     ? []
     : ko
       ? [
-          "- (0.3.0 부터) «연결·기록 중 절전 막기»(기본 꺼짐): 연결(시작)해 있거나 파일로 기록하는 동안 PC 가 대기(절전) 모드로 들어가지 않게 합니다 — 밤샘 기록 중 USB 변환기가 사라지지 않게. 화면은 꺼져도 됩니다. 끊거나 창을 닫으면 풀리고, 전원 설정은 바꾸지 않습니다.",
-          "- (0.3.0 부터) «켤 때 마지막 연결 다시 열기»(기본 꺼짐): 켤 때 마지막으로 연결에 성공했던 설정으로 저절로 연결(시작)합니다. 그 포트·장치가 없으면 조용히 그만둡니다. 포트를 열면 리셋되는 장비(Arduino 등)에는 끄세요. 명령줄 «--auto» 도 같은 일을 합니다.",
+          "- «연결·기록 중 절전 막기»(기본 꺼짐): 연결(시작)해 있거나 파일로 기록하는 동안 PC 가 대기(절전) 모드로 들어가지 않게 합니다 — 밤샘 기록 중 USB 변환기가 사라지지 않게. 화면은 꺼져도 됩니다. 끊거나 창을 닫으면 풀리고, 전원 설정은 바꾸지 않습니다.",
+          "- «켤 때 마지막 연결 다시 열기»(기본 꺼짐): 켤 때 마지막으로 연결에 성공했던 설정으로 저절로 연결(시작)합니다. 그 포트·장치가 없으면 조용히 그만둡니다. 포트를 열면 리셋되는 장비(Arduino 등)에는 끄세요. 명령줄 «--auto» 도 같은 일을 합니다.",
         ]
       : [
-          "- (from 0.3.0) «Keep the PC awake while connected or logging» (off by default): keeps the PC from going to sleep while connected (or running) or logging to a file, so a USB adapter does not vanish during an overnight log. The screen may still turn off. Released when you disconnect or close the window; power settings are not changed.",
-          "- (from 0.3.0) «Reopen the last connection at startup» (off by default): at startup, connects (starts) with the settings of the last successful connection. Stops quietly if that port or device is missing. Turn it off for devices that reset when the port opens (Arduino, …). The «--auto» command-line option does the same.",
+          "- «Keep the PC awake while connected or logging» (off by default): keeps the PC from going to sleep while connected (or running) or logging to a file, so a USB adapter does not vanish during an overnight log. The screen may still turn off. Released when you disconnect or close the window; power settings are not changed.",
+          "- «Reopen the last connection at startup» (off by default): at startup, connects (starts) with the settings of the last successful connection. Stops quietly if that port or device is missing. Turn it off for devices that reset when the port opens (Arduino, …). The «--auto» command-line option does the same.",
         ];
   return [...settingsBase(lang), ...run];
 }
@@ -144,13 +144,13 @@ function settingsBase(lang: Lang): string[] {
         "- «항상 위»: 이 창을 다른 창 위에 늘 보이게 합니다(머리줄 📌 과 같은 값).",
         "- «모두 펼치기(전문가 화면)»: 평소 접어 두는 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법·트리거·자동응답 등)을 펼친 채 보입니다. 켜 둔 채 하나를 접으면 이번 실행 동안만 접힙니다. 끄면 칸마다 기억해 둔 열림 상태로 돌아갑니다.",
         "- «사용 통계 보내기»(기본 꺼짐): 켜면 창을 닫을 때 한 번, 기능별 사용 횟수(연결·보내기·읽기 등 — 횟수만)·켜 둔 시간(분)·프로그램/윈도우 버전·화면 언어·설치판/휴대판 구분을 Aptabase(EU)로 익명으로 보냅니다. 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다. 처음 실행할 때 한 번 묻고(고르지 않고 닫으면 보내지 않음), 여기서 언제든 끌 수 있습니다. 인터넷이 없거나 보내지 못하면 버립니다. 이 칸이 없는 판은 통계를 보내지 않습니다.",
-        "- (0.3.0 부터) «새 버전 확인(하루 한 번)»(기본 꺼짐): 켜면 하루 한 번 GitHub(api.github.com)에 PortDock 최신 릴리스만 묻습니다. 새 버전이면 창 아래에 알림줄과 «릴리스 페이지» 버튼이 나옵니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다. «이 버전은 그만 알리기» 로 그 버전 알림을 끕니다. 아래 «정보» 칸의 «새 버전 확인» 버튼은 지금처럼 릴리스 페이지를 엽니다.",
+        "- «새 버전 확인(하루 한 번)»(기본 꺼짐): 켜면 하루 한 번 GitHub(api.github.com)에 PortDock 최신 릴리스만 묻습니다. 새 버전이면 창 아래에 알림줄과 «릴리스 페이지» 버튼이 나옵니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다. «이 버전은 그만 알리기» 로 그 버전 알림을 끕니다. 아래 «정보» 칸의 «새 버전 확인» 버튼은 지금처럼 릴리스 페이지를 엽니다.",
       ]
     : [
         "- «Always on top»: keeps this window above other windows (same as 📌 in the header).",
         "- «Expand all (expert view)»: shows the groups that are normally collapsed (advanced connection, receive settings, fault injection, statistics, scan options, triggers, auto-reply …) open. Folding one while it is on lasts only for this run. Turning it off returns each group to its remembered state.",
         "- «Send usage statistics» (off by default): when on, the program sends an anonymous summary to Aptabase (EU) once, as you close the window — how many times each feature was used (connect, send, read … — counts only), minutes open, program/Windows version, display language and installed/portable edition. Traffic, IP addresses, ports, COM names, file paths and PC/user/device names are never sent. You're asked once on first run (closing the prompt without choosing means no), and you can turn it off here at any time. If you're offline or sending fails, the data is dropped. Builds without this option never send statistics.",
-        "- (from 0.3.0) «Check for new versions (once a day)» (off by default): when on, the program asks GitHub (api.github.com) once a day for PortDock's latest release only. If a newer version exists, a notice bar with a «Release page» button appears at the bottom of the window. No data is sent and nothing is downloaded or installed. «Don't remind me about this version» silences that version. The «Check for updates» button under «About» still just opens the release page.",
+        "- «Check for new versions (once a day)» (off by default): when on, the program asks GitHub (api.github.com) once a day for PortDock's latest release only. If a newer version exists, a notice bar with a «Release page» button appears at the bottom of the window. No data is sent and nothing is downloaded or installed. «Don't remind me about this version» silences that version. The «Check for updates» button under «About» still just opens the release page.",
       ];
 }
 
