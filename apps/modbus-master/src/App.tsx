@@ -61,7 +61,8 @@ import { NumInput } from "@shared/NumInput";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
 import { PortPicker } from "@shared/PortPicker";
-import { portUsable } from "@shared/portPick";
+import { portUsable, setManualPort } from "@shared/portPick";
+import { useLostAlert } from "@shared/useLostAlert";
 import { DeviceDialog, JOIN_GAP, type DeviceApplyOpts } from "@shared/DeviceDialog";
 import { deviceName, pollGroups, serialDefaults, type Device } from "@shared/devices";
 import { useToast } from "@shared/Toast";
@@ -260,7 +261,7 @@ export default function App() {
     launchDone.current = true;
     api
       .launchArgs()
-      .then((argv) => {
+      .then(async (argv) => {
         if (!argv?.length) return;
         const l = masterLaunch(argv, wire);
         const d = dict[langRef.current];
@@ -271,8 +272,16 @@ export default function App() {
           parts.push(`${d.trTcp} ${l.host.includes(":") ? `[${l.host}]` : l.host}:${l.port ?? 502}`);
         }
         if (l.transport === "serial" && l.serialPort) {
+          // 목록에 없는 COM 이면 직접 넣은 포트로 기억한다(0.3.0) — 다른 포트로 저절로 바뀌지 않게
+          const sp = l.serialPort;
+          const listed = await api
+            .listPorts()
+            .then((ps) => ps.some((p) => p.name.toLowerCase() === sp.toLowerCase()))
+            .catch(() => false);
+          if (!listed) setManualPort(sp);
           setTransport("serial");
-          setCfg((c) => ({ ...c, port: l.serialPort! }));
+          setCfg((c) => ({ ...c, port: sp }));
+          setPortNotice(null);
           parts.push(`${d.trSerial} ${l.serialPort}`);
         }
         if (l.baud !== undefined) {
@@ -793,6 +802,8 @@ export default function App() {
     { key: "F8", run: () => setPaused((p) => !p) },
   ]);
   useExitGuard(connected || !!logPath || !!vlog, settings.confirmExit, lang, APP);
+  // 끊기면 작업 표시줄 깜빡임(0.3.0) — 끊김·재연결 대기, 또는 이유가 붙은 닫힘(자동 재연결 끔). 사용자가 끊은 닫힘은 이유가 없다
+  useLostAlert((connected && (status === "disconnected" || status === "reconnecting")) || (status === "closed" && !!statusMsg), settings.lostAlert);
   const clearError = useCallback(() => setError(null), []);
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
 
@@ -1518,7 +1529,7 @@ export default function App() {
       {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} conn />
       )}
       {toast.node}
     </div>

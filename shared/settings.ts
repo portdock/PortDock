@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
+import { fileStamp } from "./fileName";
 
 export * from "./settingsData.ts";
 import { DEFAULTS, sanitize, type Settings, type TimeFormat } from "./settingsData.ts";
@@ -102,8 +103,7 @@ export const logExt = (s: Settings) => (s.logFormat === "csv" ? "csv" : "log");
 
 /** 자동 로그 파일 경로: 폴더\portdock-<도구>-<시각>.log */
 export function autoLogPath(folder: string, tool: string, ext = "log") {
-  const d = new Date();
-  const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+  const stamp = fileStamp();
   const sep = folder.includes("/") && !folder.includes("\\") ? "/" : "\\";
   return `${folder.replace(/[\\/]+$/, "")}${sep}portdock-${tool}-${stamp}.${ext}`;
 }

@@ -340,6 +340,24 @@ hr {
   margin: 6px 0 0;
   font-size: calc(var(--fs, 13px) * 1.0);
 }
+/* «상세» 제목 + «복사»(0.3.0) — 좁은 칸에서도 한 줄 */
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.detail-head h3 {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-head .copy-detail {
+  flex-shrink: 0;
+  margin-top: 6px;
+}
 .cmds {
   display: flex;
   flex-direction: column;

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, parseTerminator, store, samePorts } from "@shared/framing";
 import {
   api,
-  ascii,
   CHECKSUMS,
   hex,
   type ChecksumKind,
@@ -21,7 +20,7 @@ import { ReportButton } from "@shared/ReportDialog";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
-import { autoLogPath, formatTime, useFold, useSettings } from "@shared/settings";
+import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -29,10 +28,9 @@ import { AutoReplyPanel } from "@shared/AutoReplyPanel";
 import { normalizeRule, ruleFromRequest, validRule, type AutoRule, type MatchOptions } from "@shared/autoReply";
 import { matchesEverything, repeatInterval } from "@shared/interlocks";
 import { autoReplyApi } from "@shared/autoReplyApi";
-import { useSimpleLog } from "@shared/useSimpleLog";
-import { FollowButton } from "@shared/FollowButton";
-import { copyTextOf, selectedFrames, useCopyKey } from "@shared/logCopy";
-import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
+import { useLostAlert } from "@shared/useLostAlert";
+import { saveName } from "@shared/fileName";
+import { Traffic, type TrafficHandle } from "./Traffic";
 import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
@@ -158,23 +156,23 @@ export default function App() {
   const traffic = useRef<Frame[]>([]);
   // 줄마다 일련번호 — 줄 고르기·따라가기(멈춘 뒤 새 줄 수)에 쓴다
   const seqRef = useRef(0);
-  const timeBase = useRef<number | null>(null);
-  const [tick, setTick] = useState(0);
-  const [trafficView, setTrafficView] = useState<"hex" | "ascii">(() => load("trafficView", "hex"));
-  useEffect(() => {
-    store("trafficView", trafficView);
-  }, [trafficView]);
+  const trafficApi = useRef<TrafficHandle | null>(null);
+  // 사용자가 «멈춤» 을 눌러 닫는 중인지 — 그 «멈춤» 은 끊김 알림(작업 표시줄 깜빡임)에서 뺀다
+  const stopping = useRef(false);
+  // 세션이 뜻하지 않게 닫혔는지(재연결을 포기·포트 사라짐 등)
+  const [dropped, setDropped] = useState(false);
   const onEvent = useCallback((e: SessionEvent) => {
     if (e.type === "frames") {
       for (const f of e.frames) f.seq = ++seqRef.current;
       traffic.current.push(...e.frames);
       if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
-      setTick((x) => x + 1);
+      trafficApi.current?.bump();
     } else if (e.type === "status") {
       setStatus(e.state);
       // 백엔드가 준 설명(재접속 대기·멈춤의 마지막 실패 이유 등)을 먼저 보인다
       setStatusMsg(e.message || e.port || null);
       if (e.state === "closed") {
+        setDropped(!stopping.current);
         setRunning(false);
         // 세션이 닫히면 «멈춤» 과 같다 — 다시 시작해도 반복이 저절로 돌지 않게
         setRepeating(false);
@@ -183,17 +181,7 @@ export default function App() {
       setError(e.message);
     }
   }, []);
-  // 통신 기록 — 맨 아래에 있을 때만 새 줄을 따라간다(위로 굴리면 멈추고 «↓ 맨 아래로»). 마지막 500줄만 그린다
-  const tlog = useRef<HTMLDivElement>(null);
-  const log = useSimpleLog(traffic, seqRef, tlog, settings.autoScroll, `${tick}:${trafficView}`, 500);
-  const [menu, setMenu] = useState<MenuAt>(null);
-  function clearTraffic() {
-    traffic.current = [];
-    log.sel.clear();
-    setMenu(null);
-    log.follow.resume();
-    setTick((x) => x + 1);
-  }
+  const clearTraffic = () => trafficApi.current?.clear();
   useEffect(() => {
     if (running && transport !== "udp") api.setFraming(effFraming).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +196,8 @@ export default function App() {
     if (starting) return;
     setStarting(true);
     setError(null);
+    stopping.current = false;
+    setDropped(false);
     try {
       if (transport === "serial") {
         await api.startSerial(
@@ -245,6 +235,7 @@ export default function App() {
     }
   }
   async function stop() {
+    stopping.current = true;
     await api.stop();
     setRunning(false);
     setRepeating(false);
@@ -438,10 +429,6 @@ export default function App() {
   // HEX ↔ ASCII 를 바꾸면 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
 
-  // «지난 시간» 기준 — 오래된 줄이 화면에서 잘려도 바뀌지 않게 첫 기록 시각을 잡아 두고, 지우면 다시 잡는다
-  if (!traffic.current.length) timeBase.current = null;
-  else if (timeBase.current === null) timeBase.current = traffic.current[0].ts;
-  const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock Simulator");
 
   // ---- 단축키: F4 시작·멈춤, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
@@ -450,17 +437,13 @@ export default function App() {
     { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
     { key: "l", ctrl: true, run: clearTraffic },
     { key: "l", ctrl: true, shift: true, run: () => running && void toggleLog() },
+    { key: "s", ctrl: true, run: () => trafficApi.current?.save() },
     { key: "Escape", inInput: false, run: () => repeating && setRepeating(false) },
   ]);
-  // Ctrl+C — 고른 통신 기록 줄을 «시각 방향 [상대] 내용»(지금 보기대로)으로
+  // Ctrl+C(고른 통신 기록 줄 복사)는 Traffic 이 한다
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
-  useCopyKey(
-    () => {
-      const list = selectedFrames(log.sel, log.frameOf);
-      return list.length ? copyTextOf(list, "lines", trafficView, fmt, net2) : null;
-    },
-    (ok) => onCopied(ok, log.sel.set.size),
-  );
+  // 끊기면 작업 표시줄 깜빡임 — 실행 중 끊김·재연결 대기, 또는 «멈춤» 을 누르지 않았는데 닫힘. TCP 서버·UDP 는 상대가 떠나도 듣기는 계속이라 해당 없음
+  useLostAlert(running ? status === "disconnected" || status === "reconnecting" : dropped, settings.lostAlert);
   /** 로그 줄의 바이트 그대로(HEX·체크섬·줄 끝 없음) */
   const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
 
@@ -473,6 +456,16 @@ export default function App() {
         : transport === "tcp-client"
           ? `${t("titleTcpClient")} ${net.remoteHost}:${net.remotePort}`
           : `UDP :${net.port}`;
+  // 저장 파일 이름에 넣을 곳 — 포트·주소
+  const saveWhere = transport === "serial" ? com.port || null : transport === "tcp-server" || transport === "udp" ? `${net.host}:${net.port}` : `${net.remoteHost}:${net.remotePort}`;
+  async function saveView(text: string) {
+    const path = await save({ defaultPath: saveName("simulator", saveWhere, "txt"), filters: [{ name: "Text", extensions: ["txt", "log"] }] }).catch(() => null);
+    if (!path) return;
+    await api
+      .writeText(path, text)
+      .then(() => toast.show(fill(t("savedFile"), { a: path.split(/[\\/]/).pop() ?? path })))
+      .catch((e) => setError(String(e)));
+  }
   const ruleCount = t("titleRules").replace("{n}", String(rules.filter((r) => r.enabled).length));
   const statusText = dict[lang][`status_${status}` as Key] ?? status;
   useWindowTitle(windowTitle("PortDock Simulator", running ? [where, ruleCount] : [], !!logPath));
@@ -740,65 +733,19 @@ export default function App() {
           </details>
         </div>
 
-        <div className="traffic">
-          <div className="toolbar">
-            <b data-tip={tip(lang, "traffic")}>{t("traffic")}</b>
-            {(["hex", "ascii"] as const).map((v) => (
-              <button key={v} className={trafficView === v ? "seg on" : "seg"} onClick={() => setTrafficView(v)} aria-pressed={trafficView === v}>
-                {v.toUpperCase()}
-              </button>
-            ))}
-            <span className="grow" />
-            <button data-tip={withKey(tip(lang, "clear"), KEYS.clear)} className="btn small" onClick={clearTraffic}>
-              {t("clear")}
-            </button>
-          </div>
-          <div className="log-wrap">
-            <div className="tlog" ref={tlog}>
-              {log.frames.map((f) => {
-                const seq = f.seq ?? 0;
-                return (
-                  <div
-                    key={seq}
-                    className={`trow ${f.dir}${log.sel.has(seq) ? " sel" : ""}${log.sel.primary === seq ? " primary" : ""}`}
-                    onClick={(e: ReactMouseEvent) => log.sel.click(e, seq)}
-                    onContextMenu={(e: ReactMouseEvent) => {
-                      e.preventDefault();
-                      log.sel.context(seq);
-                      setMenu({ x: e.clientX, y: e.clientY, seq });
-                    }}
-                  >
-                    <span className="ts">{fmt(f.ts)}</span>
-                    <span className="dir">{f.dir === "rx" ? "RX ◀" : f.dir === "tx" ? "TX ▶" : "EV"}</span>
-                    {net2 && f.dir !== "ev" && <span className="peeraddr">{f.peer}</span>}
-                    <span className="data">{f.dir === "ev" ? f.note : trafficView === "ascii" ? ascii(f.bytes) : hex(f.bytes)}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <FollowButton follow={log.follow} lang={lang} hidden={!traffic.current.length} />
-          </div>
-          {menu && (
-            <LogMenu
-              x={menu.x}
-              y={menu.y}
-              label={t("traffic")}
-              onClose={() => setMenu(null)}
-              items={logMenuItems({
-                lang,
-                frames: selectedFrames(log.sel, log.frameOf),
-                clicked: log.frameOf(menu.seq),
-                view: trafficView,
-                fmt,
-                peers: net2,
-                onCopied,
-                sendAgain: { run: (b) => void api.send(rawSpec(b)).catch((e) => setError(String(e))), enabled: running, why: t("whyNotStarted") },
-                addRule: { run: ruleFromLog, bytes: ruleBytesOf(menu.seq) },
-              })}
-            />
-          )}
-          {error && <div className="error">{error}</div>}
-        </div>
+        <Traffic
+          lang={lang}
+          settings={settings}
+          traffic={traffic}
+          seqRef={seqRef}
+          handle={trafficApi}
+          peers={net2}
+          error={error}
+          onCopied={onCopied}
+          onSave={(text) => void saveView(text)}
+          sendAgain={{ run: (b) => void api.send(rawSpec(b)).catch((e) => setError(String(e))), enabled: running, why: t("whyNotStarted") }}
+          addRule={{ run: ruleFromLog, bytesOf: ruleBytesOf }}
+        />
       </main>
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Simulator" onClose={() => setShowHelp(false)} />}
       {showSettings && (
@@ -812,6 +759,7 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           busy={running || !!logPath}
+          conn
         />
       )}
       {toast.node}

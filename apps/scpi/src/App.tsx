@@ -14,6 +14,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { load, samePorts, store } from "@shared/framing";
 import { autoLogPath, formatTime, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
+import { useLostAlert } from "@shared/useLostAlert";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { useToast } from "@shared/Toast";
@@ -568,6 +569,8 @@ export default function App() {
       },
     },
   ]);
+  // 끊기면 작업 표시줄 깜빡임(0.3.0) — «lost» 는 사용자가 끊지 않았는데 끊긴 상태(끊기 버튼은 «closed»)
+  useLostAlert(status === "lost", settings.lostAlert);
   useExitGuard(connected || !!logPath || running, settings.confirmExit, lang, APP);
   const clearError = useCallback(() => setError(null), []);
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
@@ -1103,7 +1106,7 @@ export default function App() {
       </aside>
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
+        <SettingsDialog conn app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
       )}
       {toast.node}
     </div>

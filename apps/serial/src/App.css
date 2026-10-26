@@ -330,6 +330,21 @@ hr {
   margin: 6px 0 0;
   font-size: calc(var(--fs, 13px) * 1.0);
 }
+/* 상세 제목 + «복사»(0.3.0) — 좁은 칸에서도 한 줄, 넘치면 접힘 */
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.detail-head h3 {
+  flex: 1;
+  min-width: 0;
+}
+.detail-head .copy-detail {
+  margin-top: 6px;
+}
 .cmds {
   display: flex;
   flex-direction: column;

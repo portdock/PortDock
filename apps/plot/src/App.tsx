@@ -13,6 +13,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { load, samePorts, store } from "@shared/framing";
 import { useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
+import { useLostAlert } from "@shared/useLostAlert";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { useToast } from "@shared/Toast";
@@ -234,6 +235,8 @@ export default function App() {
   const [starting, setStarting] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  /** 세션이 스스로 닫힘(자동 재연결 끔 + 끊김 등) — 다음 시작까지 */
+  const [dropped, setDropped] = useState(false);
   const [startErr, setStartErr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -296,7 +299,10 @@ export default function App() {
           setStatus(e.state);
           setStatusMsg(e.message);
           // 세션이 스스로 닫힘(자동 재연결 끔 + 끊김 등) — 정리
-          if (e.state === "closed" && runningRef.current) void stopRef.current();
+          if (e.state === "closed" && runningRef.current) {
+            setDropped(true);
+            void stopRef.current();
+          }
           break;
         case "error":
           setError(e.message);
@@ -341,6 +347,7 @@ export default function App() {
     setStartErr(null);
     setError(null);
     setStatusMsg(null);
+    setDropped(false);
     const source: Source =
       transport === "serial" ? { kind: "serial", config: cfg } : transport === "tcp" ? { kind: "tcp", host: tcp.host.trim(), port: tcp.port } : { kind: "udp", host: udp.host.trim() || "0.0.0.0", port: udp.port, group: udp.group.trim() };
     try {
@@ -457,6 +464,8 @@ export default function App() {
   useEffect(() => store("firstHintDone", firstDone), [firstDone]);
 
   // ---- 단축키: F4 시작·멈춤, Space 멈춤, End 실시간, Esc 측정점, Ctrl+S 화면 CSV, Ctrl+Shift+L 기록, Ctrl+L 지우기
+  // 끊기면 작업 표시줄 깜빡임(0.3.0) — 받는 중 끊김·재연결 대기, 또는 세션이 스스로 닫힘. «멈춤» 으로 닫은 것은 아님
+  useLostAlert(dropped || (running && (status === "disconnected" || status === "reconnecting")), settings.lostAlert);
   const runDisabled = starting || (!running && !startable);
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
@@ -966,7 +975,7 @@ export default function App() {
 
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} conn />
       )}
       {toast.node}
     </div>

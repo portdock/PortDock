@@ -55,6 +55,7 @@ export const help: HelpDoc = {
         "- 서버는 최대 64개 접속을 받습니다. 넘으면 거절하고 «REJECT …» 를 남깁니다.",
         "- 실행 중에는 방식·주소·포트·즉시 전송·재접속 설정이 잠깁니다(🔒). 에코·프레임 구분·수신 체크섬 검사는 실행 중에 바꿔도 바로 적용됩니다.",
         "- 재접속 대기·멈춤 상태줄에는 백엔드가 알려 준 마지막 실패 이유가 함께 나옵니다.",
+        "- (0.3.0 부터) 다른 창에서 일하는 동안 클라이언트 접속이 끊기거나 재접속 대기로 바뀌면 작업 표시줄의 TCP 단추가 깜빡입니다. 직접 «끊기» 를 누른 때는 깜빡이지 않고, 서버·중계에서 상대가 끊긴 것도 깜빡이지 않습니다(듣기는 계속). ⚙ 설정의 «연결이 끊기면 작업 표시줄 깜빡임» 으로 끌 수 있습니다.",
       ],
     },
     {
@@ -166,6 +167,8 @@ export const help: HelpDoc = {
         "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 의 줄 모양은 보기와 상관없이 설정 «파일 로그 형식» 을 따릅니다 — 기본 HEX.)",
         "- «지우기»: 화면 로그와 RX·TX 바이트 수를 비웁니다. 파일 로그는 그대로입니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 시각·상대 주소·바이트 수·HEX·ASCII 가 나옵니다(따라가기는 그대로).",
+        "- (0.3.0 부터) «상세» 제목 오른쪽 «복사» 는 상세 칸에 보이는 글(시각·HEX·ASCII·Modbus TCP 풀이)을 그대로 클립보드에 넣습니다.",
+        "- (0.3.0 부터) «화면 내용 저장»·«파일로 계속 저장» 의 기본 파일 이름에 주소와 시각이 들어갑니다(예: «portdock-tcp-192.168.0.10-502-20261026-153012.txt»).",
         "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<STX>» 처럼, 그 밖은 «<1B>» 처럼 보입니다. 0x80 이상은 설정의 «글자 인코딩» 으로 읽습니다.",
       ],
     },
@@ -272,6 +275,7 @@ export const help: HelpDoc = {
         "- The server accepts up to 64 connections. Further ones are refused with «REJECT …».",
         "- While running, mode, host, port, no-delay and reconnect settings are locked (🔒). Echo, framing and the RX checksum check apply immediately when changed.",
         "- When waiting to reconnect or stopped, the status line also shows the last failure reason.",
+        "- (from 0.3.0) If a client connection drops or starts waiting to reconnect while you work in another window, the TCP taskbar button flashes. It does not flash when you click «Disconnect» yourself, or when a peer leaves a server or relay (listening goes on). Turn it off in ⚙ Settings with «Flash the taskbar button when the connection drops».",
       ],
     },
     {
@@ -384,6 +388,8 @@ export const help: HelpDoc = {
         "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». (The line format of «Log to file» follows «File log format» in Settings regardless of the view — HEX by default.)",
         "- «Clear»: empties the screen log and RX/TX counts. The file log is not affected.",
         "- Clicking a log line shows time, peer, byte count, HEX and ASCII in «Detail» (following continues).",
+        "- (from 0.3.0) «Copy» at the right of the «Detail» heading copies the text shown in the detail pane (time, HEX, ASCII, Modbus TCP decoding) to the clipboard.",
+        "- (from 0.3.0) The default file name for «Save view» and «Log to file» includes the address and time (e.g. «portdock-tcp-192.168.0.10-502-20261026-153012.txt»).",
         "- In ASCII view, control characters appear as «<CR>», «<LF>», «<STX>», others as «<1B>» and so on. Bytes 0x80 and up are read with «Text encoding» in Settings.",
       ],
     },

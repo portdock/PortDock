@@ -55,6 +55,9 @@ import { Popover } from "@shared/Popover";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
+import { useLogKeys } from "@shared/logKeys";
+import { CopyButton } from "@shared/CopyButton";
+import { saveName } from "@shared/fileName";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -296,9 +299,8 @@ export default function App() {
       }
       return;
     }
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const ext = logExt(settings);
-    const path = await save({ defaultPath: `portdock-udp-${stamp}.${ext}`, filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
+    const path = await save({ defaultPath: saveName("udp", whereName(), ext), filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
@@ -329,6 +331,17 @@ export default function App() {
   // 줄 고르기(누르기·Shift 범위·Ctrl 하나씩) — 누른 줄이 상세 칸에 나온다
   const sel = useLogSelection({ indexOfSeq: filter.indexOfSeq, seqAt: (i) => filter.at(i)?.seq });
   const selected = sel.primary;
+  // 로그 칸 키보드 이동(0.3.0) — 칸에 포커스가 있을 때만
+  const logKeys = useLogKeys({
+    sel,
+    count: filter.count,
+    seqAt: (i) => filter.at(i)?.seq,
+    indexOfSeq: filter.indexOfSeq,
+    scrollTo: (i) => rows.scrollToIndex(i, { align: "auto" }),
+    page: () => Math.max(1, Math.floor((listRef.current?.clientHeight ?? 0) / rowHeight(settings.fontSize)) - 1),
+    follow,
+  });
+  const detailBox = useRef<HTMLDivElement>(null);
   const [moreOpen, setMoreOpen] = useState<{ times: boolean } | null>(null);
   const moreBtn = useRef<HTMLButtonElement>(null);
   const closeMore = useCallback(() => setMoreOpen(null), []);
@@ -376,7 +389,7 @@ export default function App() {
     (ok) => onCopied(ok, sel.set.size),
   );
   async function saveView() {
-    const path = await save({ defaultPath: "portdock-udp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
+    const path = await save({ defaultPath: saveName("udp", whereName(), "txt"), filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
     const text = screenText({ app: "PortDock UDP", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers: true, col });
@@ -541,6 +554,8 @@ export default function App() {
 
   // ---- 창 제목: «:5001 받는 중 — PortDock UDP»
   const localPort = local?.match(/:(\d+)$/)?.[1] ?? String(cfg.bindPort);
+  /** 저장 파일 이름에 넣을 받는 쪽(«묶을 주소:포트») */
+  const whereName = () => `${cfg.bindHost || "0.0.0.0"}:${localPort}`;
   const statusText = t(`status_${status}` as Key);
   useWindowTitle(windowTitle("PortDock UDP", running ? [`:${localPort} ${statusText}`] : [], !!logPath));
   // 접힌 제목에 보일 지금 값
@@ -753,7 +768,7 @@ export default function App() {
         <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
 
         <div className="log-wrap">
-          <div className="log" ref={listRef}>
+          <div className="log" ref={listRef} tabIndex={0} onKeyDown={logKeys}>
             {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
@@ -956,10 +971,13 @@ export default function App() {
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
         <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} />
-        <h3 ref={detailHead} data-tip={tip(lang, "detail")}>{t("detail")}</h3>
+        <div className="detail-head">
+          <h3 ref={detailHead} data-tip={tip(lang, "detail")}>{t("detail")}</h3>
+          {selFrame && <CopyButton lang={lang} getText={() => detailBox.current?.innerText ?? ""} />}
+        </div>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
-          <div className="detail">
+          <div className="detail" ref={detailBox}>
             <div>
               {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
               {selFrame.peer ? ` · ${selFrame.peer}` : ""}

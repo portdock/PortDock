@@ -715,7 +715,8 @@ input.bad {
 
 /* 최소 창에서 규칙 칸이 너무 좁아지지 않게 — 통신 기록은 창 높이에 맞춰 줄어든다 */
 .traffic {
-  height: clamp(140px, 30vh, 280px);
+  /* 0.3.0: 찾기 줄이 생겨 조금 높게 */
+  height: clamp(180px, 34vh, 320px);
 }
 
 /* 주소 칸 + 최근 연결 «▾»(0.3.0) — 주소 칸을 넓게, 포트 칸은 숫자 5자리만큼 */
@@ -730,4 +731,27 @@ input.bad {
 .addr-row input {
   flex: 1;
   min-width: 0;
+}
+
+/* 통신 기록 가상 스크롤(0.3.0) — 줄 높이는 --row-h(글자 크기에 따라 settings 가 정함) */
+.tlog {
+  padding: 0;
+  position: relative;
+}
+.tlog .trow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--row-h, 22px);
+  align-items: center;
+  padding: 0 10px;
+}
+.tlog .trow.hit {
+  background: color-mix(in srgb, #f5c400 22%, transparent);
+}
+.trow .ts,
+.trow .dir,
+.trow .peeraddr {
+  flex: 0 0 auto;
 }

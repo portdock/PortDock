@@ -122,6 +122,8 @@ export const help: HelpDoc = {
         "- «화면 내용 저장»: 지금 화면에 남은 줄을 텍스트 파일로 저장합니다. 지금 «보기» 대로(HEX, ASCII, «둘 다» 는 «HEX | ASCII») 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다. 첫 줄(# 로 시작)에 보기·거르기·줄 수가 적힙니다. 시각은 설정의 «로그 시각 표시» 를 따르고, 체크섬이 틀린 줄 끝에는 «[CHECK FAIL]» 이 붙습니다. («파일로 계속 저장» 의 줄 모양은 보기와 상관없이 설정 «파일 로그 형식» 을 따릅니다 — 기본 HEX.)",
         "- «파일로 계속 저장»: 파일을 고르면 그때부터 오는 모든 줄을 계속 씁니다. 첫 줄에 설정이 적힙니다. «저장 멈춤» 으로 끝냅니다. 시작한 뒤에만 누를 수 있습니다.",
         "- 로그 줄을 누르면 오른쪽 «상세» 에 그 줄의 상대·바이트 수·HEX·ASCII 가 나옵니다.",
+        "- (0.3.0 부터) «상세» 제목 옆 «복사» 로 상세 칸에 보이는 글(상대·바이트 수·HEX·ASCII)을 그대로 클립보드에 넣습니다.",
+        "- (0.3.0 부터) «화면 내용 저장»·«파일로 계속 저장» 의 기본 파일 이름에 받는 주소·포트와 시각이 들어갑니다(예: portdock-udp-0.0.0.0-5000-20261026-153012.txt).",
       ],
     },
     {
@@ -273,6 +275,8 @@ export const help: HelpDoc = {
         "- «Save view»: saves the lines on screen to a text file in the current «View» (HEX, ASCII, or «Both» as «HEX | ASCII»). With a filter on, only the visible lines are saved. The first line (starting with #) records the view, filter and line count. Times follow «Log timestamp» in Settings; lines with a failed checksum end with «[CHECK FAIL]». (The line format of «Log to file» follows «File log format» in Settings regardless of the view — HEX by default.)",
         "- «Log to file»: writes every line from now on to a file, with the settings on the first line. «Stop logging» ends it. Available only while running.",
         "- Click a log line to see its peer, length, HEX and ASCII in «Detail».",
+        "- (from 0.3.0) «Copy» next to the «Detail» title copies what the detail pane shows (peer, length, HEX, ASCII) to the clipboard.",
+        "- (from 0.3.0) The default file names for «Save view» and «Log to file» include the bind address, port and time (e.g. portdock-udp-0.0.0.0-5000-20261026-153012.txt).",
       ],
     },
     {

@@ -2,12 +2,14 @@
 // 따로 떼어 둔 까닭: 새 줄·굴림·따라가기로 자주 다시 그려지는데, 그때마다 레지스터 표(수백 칸)까지 다시 그리지 않게.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { hex, type Frame } from "./api";
+import { ascii, hex, type Frame } from "./api";
 import { tip } from "@shared/tips";
 import { formatTime, rowHeight, type Settings } from "@shared/settings";
 import { useFollowTail } from "@shared/useFollowTail";
 import { FollowButton } from "@shared/FollowButton";
-import { FailCount, LogFilterBar, useLogFilter } from "@shared/LogFilter";
+import { FailCount, filterDesc, LogFilterBar, useLogFilter } from "@shared/LogFilter";
+import { useLogKeys } from "@shared/logKeys";
+import { screenText } from "@shared/logSearch";
 import { copyTextOf, selectedFrames, useCopyKey, useLogSelection } from "@shared/logCopy";
 import { LogMenu, logMenuItems, type MenuAt } from "@shared/LogMenu";
 import { KEYS, withKey } from "@shared/shortcuts";
@@ -63,6 +65,8 @@ export interface TrafficHandle {
   bump: () => void;
   /** 화면 기록 지우기(Ctrl+L) */
   clear: () => void;
+  /** «화면 저장»(0.3.0) 글 — 지금 거르기대로 보이는 줄만(HEX) */
+  screen: () => string;
 }
 
 export function Traffic({
@@ -79,6 +83,7 @@ export function Traffic({
   error,
   onClearError,
   onCopied,
+  onSaveView,
   empty,
   height,
 }: {
@@ -98,6 +103,8 @@ export function Traffic({
   error: string | null;
   onClearError: () => void;
   onCopied: (ok: boolean, n: number) => void;
+  /** «화면 저장»(Ctrl+S) — 앱이 파일을 고르고 handle.screen() 을 쓴다 */
+  onSaveView: () => void;
   /** 기록이 비었을 때 보일 안내(처음 쓰는 순서) */
   empty?: ReactNode;
 }) {
@@ -146,8 +153,9 @@ export function Traffic({
   };
   const clearRef = useRef(clear);
   clearRef.current = clear;
+  const screenRef = useRef<() => string>(() => "");
   useEffect(() => {
-    handle.current = { bump: () => setTick((x) => x + 1), clear: () => clearRef.current() };
+    handle.current = { bump: () => setTick((x) => x + 1), clear: () => clearRef.current(), screen: () => screenRef.current() };
     return () => {
       handle.current = null;
     };
@@ -157,6 +165,17 @@ export function Traffic({
   if (!frames.length) timeBase.current = null;
   else if (timeBase.current === null) timeBase.current = frames[0].ts;
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
+  screenRef.current = () => screenText({ app: "PortDock Modbus Slave", frames: traffic.current, view: filter.view, mode: "hex", fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers });
+  // 로그 키보드 이동(0.3.0) — 통신 기록 칸에 포커스가 있을 때 ↑↓·PageUp/PageDown·Home/End
+  const onLogKey = useLogKeys({
+    sel,
+    count: filter.count,
+    seqAt: (i) => filter.at(i)?.seq,
+    indexOfSeq: filter.indexOfSeq,
+    scrollTo: (i) => rows.scrollToIndex(i, { align: "auto" }),
+    page: () => Math.max(1, Math.floor((tlogRef.current?.clientHeight ?? 0) / rowHeight(settings.fontSize)) - 1),
+    follow,
+  });
   // Ctrl+C — 고른 통신 기록 줄을 «시각 방향 HEX» 로
   useCopyKey(
     () => {
@@ -178,6 +197,9 @@ export function Traffic({
         </label>
         <span className="grow" />
         <FailCount lang={lang} n={failCount.current} filter={filter} />
+        <button data-tip={withKey(t("saveViewTip"), KEYS.save)} className="btn small save-view" onClick={onSaveView} disabled={!frames.length}>
+          {t("saveView")}
+        </button>
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn small" onClick={onToggleLog} disabled={!connected}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
@@ -187,7 +209,7 @@ export function Traffic({
       </div>
       <LogFilterBar lang={lang} filter={filter} selected={sel.primary} total={frames.length} onJump={jumpTo} />
       <div className="log-wrap">
-        <div className="tlog" ref={tlogRef}>
+        <div className="tlog" ref={tlogRef} tabIndex={0} onKeyDown={onLogKey}>
           {!frames.length && empty}
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {

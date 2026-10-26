@@ -75,6 +75,8 @@ import { PortPicker } from "@shared/PortPicker";
 import { portUsable } from "@shared/portPick";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
+import { useLostAlert } from "@shared/useLostAlert";
+import { saveName } from "@shared/fileName";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -895,6 +897,19 @@ export default function App() {
     if (connected && tcp) api.setOptions({ ignoreUnitId: net.ignoreUnitId }).catch((e) => setError(String(e)));
   }, [connected, tcp, net.ignoreUnitId]);
 
+  /** 저장 파일 이름에 넣을 곳(0.3.0) — 시리얼은 포트, TCP 는 듣는 주소 */
+  const saveWhere = () => (transport === "serial" ? cfg.port || null : local || joinHostPort(net.host.trim() || "0.0.0.0", net.port));
+  // «화면 저장»(0.3.0, Ctrl+S) — 지금 거르기대로 보이는 통신 기록 줄(HEX)
+  async function saveView() {
+    const text = trafficApi.current?.screen();
+    if (!text) return;
+    const path = await save({ title: t("saveViewTitle"), defaultPath: saveName("modbus-slave", saveWhere(), "txt"), filters: [{ name: "Text", extensions: ["txt", "log"] }] }).catch(() => null);
+    if (!path) return;
+    await api
+      .writeText(path, text)
+      .then(() => toast.show(t("exported").replace("{a}", path.split(/[\\/]/).pop() ?? path)))
+      .catch((e) => setError(String(e)));
+  }
   async function toggleLog() {
     if (logPath) {
       try {
@@ -906,8 +921,7 @@ export default function App() {
       }
       return;
     }
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const path = await save({ title: t("logDlgTitle"), defaultPath: `modbus-slave-${stamp}.log`, filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const path = await save({ title: t("logDlgTitle"), defaultPath: saveName("modbus-slave", saveWhere(), "log"), filters: [{ name: "Log", extensions: ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
@@ -1052,7 +1066,10 @@ export default function App() {
     { key: "F4", run: () => !runDisabled && void (connected ? disconnect() : connect()) },
     { key: "l", ctrl: true, run: () => trafficApi.current?.clear() },
     { key: "l", ctrl: true, shift: true, run: () => connected && void toggleLog() },
+    { key: "s", ctrl: true, run: () => void saveView() },
   ]);
+  // 끊기면 작업 표시줄 깜빡임(0.3.0) — 시리얼 장치가 빠져 끊김·다시 꽂기 대기. 사용자가 «끊기» 한 닫힘은 아님
+  useLostAlert(connected && (status === "disconnected" || status === "reconnecting"), settings.lostAlert);
   const clearError = useCallback(() => setError(null), []);
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
 
@@ -1699,6 +1716,7 @@ export default function App() {
           error={error}
           onClearError={clearError}
           onCopied={onCopied}
+          onSaveView={() => void saveView()}
           empty={
             firstDone ? (
               <div className="tlog-empty hint">{t("first3")}</div>
@@ -1759,6 +1777,7 @@ export default function App() {
           writeText={api.writeText}
           readText={api.readText}
           busy={connected || !!logPath}
+          conn
         />
       )}
       {toast.node}

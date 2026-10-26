@@ -62,6 +62,10 @@ import { dict, type Key, type Lang } from "./i18n";
 import { ar } from "@shared/autoReplyText";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
+import { useLostAlert } from "@shared/useLostAlert";
+import { useLogKeys } from "@shared/logKeys";
+import { CopyButton } from "@shared/CopyButton";
+import { saveName } from "@shared/fileName";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
@@ -255,6 +259,9 @@ export default function App() {
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
+      // 뜻하지 않은 끊김(클라이언트 끊김·재접속 대기) — 백엔드가 이어서 «닫힘» 을 보내도 사용자가 다시 시작하거나 멈출 때까지 둔다
+      if (e.state === "disconnected" || e.state === "reconnecting") setDropped(true);
+      else if (e.state === "connected" || e.state === "listening") setDropped(false);
       if (e.state === "connected" && pendingRec.current.client) {
         recRef.current.main(pendingRec.current.client);
         pendingRec.current.client = undefined;
@@ -291,10 +298,14 @@ export default function App() {
   }, [running, cfg.echo, cfg.mode]);
 
   const [starting, setStarting] = useState(false);
+  // 끊기면 작업 표시줄 깜빡임(0.3.0) — 클라이언트만(서버·중계는 상대가 끊겨도 듣기는 계속). 사용자가 멈추면 false
+  const [dropped, setDropped] = useState(false);
+  useLostAlert(dropped && cfg.mode === "client", settings.lostAlert);
   async function start() {
     if (starting) return;
     setStarting(true);
     setError(null);
+    setDropped(false);
     const host = cfg.host.trim();
     // 클라이언트는 접속은 뒤에서 하므로 «접속됨» 이 와야 남긴다 — 이벤트가 start 응답보다 먼저 올 수 있어 미리 걸어 둔다
     pendingRec.current = {
@@ -320,6 +331,7 @@ export default function App() {
   }
   async function stop() {
     pendingRec.current = {};
+    setDropped(false);
     await api.stop();
     setRunning(false);
     setStatus("closed");
@@ -340,9 +352,8 @@ export default function App() {
       }
       return;
     }
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const ext = logExt(settings);
-    const path = await save({ defaultPath: `portdock-tcp-${stamp}.${ext}`, filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
+    const path = await save({ defaultPath: saveName("tcp", nameWhere(), ext), filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
@@ -401,6 +412,17 @@ export default function App() {
     return f && f.seq === seq ? f : undefined;
   };
   const [menu, setMenu] = useState<MenuAt>(null);
+  // 로그 칸 키보드 이동(0.3.0) — 그 칸에 포커스가 있을 때만(줄을 누르면 칸에 포커스가 간다)
+  const onLogKey = useLogKeys({
+    sel,
+    count: filter.count,
+    seqAt: (i) => filter.at(i)?.seq,
+    indexOfSeq: filter.indexOfSeq,
+    scrollTo: (i) => rows.scrollToIndex(i, { align: "auto" }),
+    page: () => Math.max(1, Math.floor((listRef.current?.clientHeight ?? 0) / rowHeight(settings.fontSize)) - 1),
+    follow,
+  });
+  const detailBox = useRef<HTMLDivElement>(null);
   // 찾은 줄로 — 고르고 가운데로 굴린다(따라가기는 멈춘다)
   const jumpTo = useCallback(
     (seq: number) => {
@@ -432,8 +454,15 @@ export default function App() {
     },
     (ok) => onCopied(ok, sel.set.size),
   );
+  /** 저장 파일 이름에 넣을 곳 — 클라이언트는 장비 «주소:포트», 서버는 «:포트», 중계는 장비 B */
+  function nameWhere() {
+    if (cfg.mode === "client") return cfg.host.trim() ? joinHostPort(cfg.host.trim(), cfg.port) : null;
+    if (relay) return relayTo.host.trim() ? joinHostPort(relayTo.host.trim(), relayTo.port) : null;
+    const p = local?.match(/:(\d+)$/)?.[1] ?? (cfg.port > 0 ? String(cfg.port) : "");
+    return p ? `server-${p}` : "server";
+  }
   async function saveView() {
-    const path = await save({ defaultPath: "portdock-tcp-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
+    const path = await save({ defaultPath: saveName("tcp", nameWhere(), "txt"), filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
     const text = screenText({ app: "PortDock TCP", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, peers: true, col });
@@ -952,7 +981,7 @@ export default function App() {
         <LogFilterBar lang={lang} filter={filter} selected={selected} total={frames.length} onJump={jumpTo} />
 
         <div className="log-wrap">
-          <div className="log" ref={listRef}>
+          <div className="log" ref={listRef} tabIndex={0} onKeyDown={onLogKey} aria-label={t("view")}>
             {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
@@ -1218,10 +1247,15 @@ export default function App() {
         />
         <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
         <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} inactiveNote={relay ? arRelayNote(lang) : null} />
-        <h3 ref={detailHead} data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>{t("detail")}</h3>
+        <div className="detail-head">
+          <h3 ref={detailHead} data-tip={tip(lang, framing.kind === "modbus-tcp" ? "detailMbap" : "detail")}>
+            {t("detail")}
+          </h3>
+          {selFrame && <CopyButton lang={lang} getText={() => detailBox.current?.innerText ?? ""} />}
+        </div>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
-          <div className="detail">
+          <div className="detail" ref={detailBox}>
             <div>
               {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
               {selFrame.peer ? ` · ${selFrame.peer}` : ""}
@@ -1271,6 +1305,7 @@ export default function App() {
           readText={api.readText}
           busy={running || !!logPath}
           ioOptions
+          conn
         />
       )}
       {showFile && (

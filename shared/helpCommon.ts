@@ -7,6 +7,8 @@ type Lang = "ko" | "en";
 export interface HelpFeatures {
   /** Ctrl+S «화면 내용 저장» 이 있는지(Serial·TCP·UDP) */
   saveView?: boolean;
+  /** Ctrl+S 가 이번 판(0.3.0)에 새로 생겼는지(Modbus Slave·Simulator) — 줄 앞에 «(0.3.0 부터)» */
+  saveViewNew?: boolean;
   /** Esc 로 멈출 «반복» 이 있는지 */
   repeat?: boolean;
   /** 로그 찾기(Ctrl+F)가 있는지 */
@@ -24,10 +26,13 @@ export function shortcutLines(lang: Lang, f: HelpFeatures): string[] {
   const lines = [
     ko ? `- ${KEYS.connect}: ${f.startStop ? "시작·멈춤" : "연결·끊기"}(왼쪽 버튼과 같음).` : `- ${KEYS.connect}: ${f.startStop ? "start / stop" : "connect / disconnect"} (same as the button on the left).`,
     ko ? `- ${KEYS.clear}: 화면 기록 지우기(파일 로그는 그대로).` : `- ${KEYS.clear}: clear the on-screen log (file logs are kept).`,
-    f.saveView && (ko ? `- ${KEYS.save}: 화면 내용 저장.` : `- ${KEYS.save}: save view.`),
+    f.saveView && (ko ? `- ${f.saveViewNew ? "(0.3.0 부터) " : ""}${KEYS.save}: 화면 내용 저장.` : `- ${f.saveViewNew ? "(from 0.3.0) " : ""}${KEYS.save}: save view.`),
     ko ? `- ${KEYS.fileLog}: 파일로 계속 저장 켜기·끄기.` : `- ${KEYS.fileLog}: start / stop logging to file.`,
     f.repeat && (ko ? `- ${KEYS.stopRepeat}: 반복 보내기 멈춤(입력칸 밖에서 — 입력칸 안의 Esc 는 그 칸의 동작).` : `- ${KEYS.stopRepeat}: stop repeat sending (outside text boxes — inside a box Esc keeps its own meaning).`),
     ko ? `- ${KEYS.end}: 로그 맨 아래로 가서 다시 따라가기.` : `- ${KEYS.end}: jump to the latest log line and follow again.`,
+    ko
+      ? "- (0.3.0 부터) 로그를 한 번 누른 뒤(로그 칸에 포커스) ↑/↓: 줄 옮겨 고르기 · Shift+↑/↓: 범위 늘리기 · PageUp/PageDown: 한 화면씩 · Home: 첫 줄 · End: 마지막 줄(다시 따라가기). 옮기면 따라가기는 멈춥니다."
+      : "- (from 0.3.0) After clicking the log (focus in the log): ↑/↓ move the selection · Shift+↑/↓ extend it · PageUp/PageDown one screen · Home first line · End last line (and follow again). Moving pauses following.",
     ko ? `- ${KEYS.copy}: 고른 로그 줄을 «시각 방향 내용» 으로 복사(지금 보기대로). 입력칸 안에서는 보통 복사.` : `- ${KEYS.copy}: copy the selected log lines as «time direction data» (in the current view). Inside a text box it copies normally.`,
     f.find && (ko ? "- Ctrl+F: 로그 찾기 칸으로. 찾기 칸에서 Enter 다음 · Shift+Enter 이전 · Esc 지우기." : "- Ctrl+F: focus the log find box. In it, Enter next, Shift+Enter previous, Esc clear."),
     ko ? "- F1 또는 화면의 ? 버튼: 이 도움말. Esc 로 닫습니다." : "- F1 or the ? button: this help. Close it with Esc.",

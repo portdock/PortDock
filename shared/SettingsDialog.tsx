@@ -50,6 +50,7 @@ const T = {
     choose: "고르기",
     noFolder: "폴더를 고르세요",
     confirmExit: "연결·기록 중에 창을 닫으려 하면 묻기",
+    lostAlert: "연결이 끊기면 작업 표시줄 깜빡임(창이 뒤에 있을 때)",
     autoReport: "오류 자동 전송",
     arAsk: "오류로 꺼지면 묻기",
     arOn: "묻지 않고 자동으로 보내기",
@@ -98,6 +99,7 @@ const T = {
     choose: "Choose",
     noFolder: "Choose a folder",
     confirmExit: "Ask before closing while connected or logging",
+    lostAlert: "Flash the taskbar button when the connection drops (while the window is in the background)",
     autoReport: "Automatic error reports",
     arAsk: "Ask after a crash",
     arOn: "Send automatically",
@@ -136,6 +138,7 @@ export function SettingsDialog({
   readText,
   busy,
   ioOptions,
+  conn,
 }: {
   app: string;
   version: string;
@@ -149,6 +152,8 @@ export function SettingsDialog({
   busy: boolean;
   /** 글자 인코딩·파일 로그 형식·나누기 칸을 보일지(Serial·TCP·UDP) */
   ioOptions?: boolean;
+  /** 연결이 있는 프로그램(끊김 알림 등 연결 설정 칸을 보일지) */
+  conn?: boolean;
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
@@ -266,6 +271,11 @@ export function SettingsDialog({
           <label className="inline">
             <input type="checkbox" checked={settings.confirmExit} onChange={(e) => update({ confirmExit: e.target.checked })} /> {t.confirmExit}
           </label>
+          {conn && (
+            <label className="inline" data-tip={tip(settings.lang, "lostAlert")}>
+              <input type="checkbox" checked={settings.lostAlert} onChange={(e) => update({ lostAlert: e.target.checked })} /> {t.lostAlert}
+            </label>
+          )}
           {ioOptions && (
             <>
               <hr />

@@ -23,6 +23,8 @@ export interface Settings {
   logFolder: string;
   /** 연결·기록 중에 창을 닫으려 하면 묻기 */
   confirmExit: boolean;
+  /** 연결이 끊기면 작업 표시줄 깜빡임(창이 뒤에 있을 때, 0.3.0) */
+  lostAlert: boolean;
   autoReport: AutoReport;
   /** 사용 통계 보내기(선택, 기본 꺼짐) — 창을 닫을 때 익명 횟수만(shared/usage.ts) */
   usageStats: boolean;
@@ -50,6 +52,7 @@ export const DEFAULTS: Settings = {
   autoLog: false,
   logFolder: "",
   confirmExit: true,
+  lostAlert: true,
   autoReport: "ask",
   usageStats: false,
   usageAsked: false,
@@ -67,7 +70,7 @@ export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000], logSpl
 export function sanitize(s: Partial<Settings>): Settings {
   const v = { ...DEFAULTS, ...s };
   if (typeof v.logFolder !== "string") v.logFolder = "";
-  for (const k of ["autoScroll", "autoLog", "confirmExit"] as const) if (typeof v[k] !== "boolean") v[k] = DEFAULTS[k];
+  for (const k of ["autoScroll", "autoLog", "confirmExit", "lostAlert"] as const) if (typeof v[k] !== "boolean") v[k] = DEFAULTS[k];
   v.fontSize = Math.min(LIMITS.fontSize[1], Math.max(LIMITS.fontSize[0], Math.round(v.fontSize) || DEFAULTS.fontSize));
   v.maxLines = Math.min(LIMITS.maxLines[1], Math.max(LIMITS.maxLines[0], Math.round(v.maxLines) || DEFAULTS.maxLines));
   if (!["system", "light", "dark"].includes(v.theme)) v.theme = "system";

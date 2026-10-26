@@ -82,6 +82,9 @@ const ko = {
   repeat: "반복(ms)",
   traffic: "통신 기록",
   clear: "지우기",
+  saveScreen: "화면 저장",
+  saveScreenTip: "지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 보기(HEX·ASCII)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
+  savedFile: "저장했습니다: {a}",
   logToFile: "파일로 계속 저장",
   stopLog: "저장 멈춤",
 };
@@ -168,6 +171,9 @@ const en: typeof ko = {
   repeat: "Repeat (ms)",
   traffic: "Traffic",
   clear: "Clear",
+  saveScreen: "Save view",
+  saveScreenTip: "Saves the on-screen log to a text file, in the current view (HEX / ASCII). With a filter on, only the visible lines are saved (noted in the first line).",
+  savedFile: "Saved {a}",
   logToFile: "Log to file",
   stopLog: "Stop logging",
 };

@@ -47,6 +47,7 @@ export const help: HelpDoc = {
         "- «정지 비트»: 1 또는 2. 보통 패리티가 «없음» 이면 2, 있으면 1 입니다.",
         "- 연결 중에도 속도·데이터 비트·패리티·정지 비트를 바꿀 수 있고, 끊지 않고 바로 적용됩니다(로그에 SET 줄).",
         "- 흐름 제어는 쓰지 않습니다. USB 변환기를 뽑았다 꽂으면 «다시 꽂기를 기다리는 중» 이 되고, 같은 장치가 돌아오면 저절로 다시 연결합니다.",
+        "- (0.3.0 부터) 다른 창에서 일하는 동안 장치가 빠져 연결이 끊기면 작업 표시줄 단추가 깜빡입니다. 직접 «끊기» 한 때는 깜빡이지 않고, 설정(⚙)에서 끌 수 있습니다.",
         "- 프레임 구분은 Modbus RTU 로, 수신 검사는 CRC16 Modbus 로 자동 설정됩니다. USB 변환기가 요청을 쪼개 보내도(16ms 지연) 요청 길이를 보고 이어 붙입니다(16·17·08·2B 포함).",
       ],
     },
@@ -212,6 +213,7 @@ export const help: HelpDoc = {
         "- 자기가 보낸 응답이 그대로 되돌아오면(RS-485 에코 등) 다시 답하지 않습니다.",
         "- «파일로 계속 저장»: 고른 파일에 모든 줄을 계속 덧붙입니다(이미 있는 파일이면 뒤에 이어 씁니다). 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]». 풀이는 화면에만 붙습니다.",
         "- «지우기»: 화면의 통신 기록만 비웁니다.",
+        "- (0.3.0 부터) «화면 저장»(Ctrl+S): 지금 화면에 있는 통신 기록을 텍스트 파일로 저장합니다(HEX, 풀이는 빠짐). 거르기가 켜져 있으면 보이는 줄만 쓰고 첫 줄에 그렇게 적습니다. 기본 이름은 «portdock-modbus-slave-COM3-20261026-153012.txt» 처럼 포트(TCP 는 주소)와 시각이 들어갑니다.",
         ...logHandlingLines("ko", { find: true, checkbox: true }),
       ],
     },
@@ -247,7 +249,7 @@ export const help: HelpDoc = {
     {
       title: "단축키·팁",
       body: [
-        ...shortcutLines("ko", { find: true }),
+        ...shortcutLines("ko", { find: true, saveView: true, saveViewNew: true }),
         "- 국번 칸에서 Enter: «추가».",
         "- 값 칸: Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸(옮기면서 반영), Esc 고치기 취소. 칸에서 오른쪽 버튼: «칸 설정».",
         "- 엑셀 등에서 여러 칸을 복사해 값 칸에 붙여 넣으면(탭·줄바꿈·쉼표로 나뉜 값) 그 칸부터 이어진 칸에 한꺼번에 들어갑니다. 칸마다 그 칸의 형식(U16 칸은 지금 «표시»)으로 읽고, 하나라도 못 읽으면 넣지 않고 알립니다. 범위를 넘는 값은 버립니다.",
@@ -316,6 +318,7 @@ export const help: HelpDoc = {
         "- «Stop bits»: 1 or 2. Usually 2 with no parity and 1 with parity.",
         "- Baud rate, data bits, parity and stop bits can be changed while connected and apply without disconnecting (a SET line is logged).",
         "- Flow control is not used. If a USB adapter is unplugged the status becomes «Waiting for device», and the same device is reconnected automatically when it returns.",
+        "- (from 0.3.0) If the device drops out while you are working in another window, the taskbar button flashes. It does not flash when you click «Disconnect» yourself, and it can be turned off in Settings (⚙).",
         "- Framing is set to Modbus RTU and RX checking to CRC16 Modbus automatically. Requests split by a USB adapter (16 ms latency) are rejoined by their expected length (including 16, 17, 08 and 2B).",
       ],
     },
@@ -481,6 +484,7 @@ export const help: HelpDoc = {
         "- If our own reply comes straight back (RS-485 echo, etc.), it is not answered again.",
         "- «Log to file»: appends every line to the chosen file (an existing file is appended to). A line looks like «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]». The decode is shown on screen only.",
         "- «Clear»: empties the on-screen traffic only.",
+        "- (from 0.3.0) «Save view» (Ctrl+S): saves the on-screen traffic to a text file (HEX, without the decode). With a filter on, only the visible lines are saved, as noted in the first line. The default name includes the port (or address for TCP) and time, e.g. «portdock-modbus-slave-COM3-20261026-153012.txt».",
         ...logHandlingLines("en", { find: true, checkbox: true }),
       ],
     },
@@ -516,7 +520,7 @@ export const help: HelpDoc = {
     {
       title: "Shortcuts and tips",
       body: [
-        ...shortcutLines("en", { find: true }),
+        ...shortcutLines("en", { find: true, saveView: true, saveViewNew: true }),
         "- Enter in the Slave ID box: «Add».",
         "- Value cells: Enter/↓ next cell, ↑/Shift+Enter previous (applies as you move), Esc cancels the edit. Right-click a cell: «Cell settings».",
         "- Paste several cells copied from Excel etc. (values separated by tabs, new lines or commas) into a value cell to fill consecutive cells at once. Each cell reads its value in its own type (plain U16 cells use the current «Format»); if any cannot be read nothing is pasted and a notice says why. Values beyond the range are dropped.",

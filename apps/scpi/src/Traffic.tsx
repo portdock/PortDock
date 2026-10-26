@@ -17,6 +17,7 @@ import { KEYS, withKey } from "@shared/shortcuts";
 import { ui } from "@shared/uiText";
 import { dict, type Key, type Lang } from "./i18n";
 import { load } from "@shared/framing";
+import { useLogKeys } from "@shared/logKeys";
 
 /**
  * 따라가기(공용 useFollowTail) + 경주 막기. 새 줄이 자주 오면, 사람이 위로 굴린 직후의 scroll 사건보다
@@ -138,6 +139,16 @@ export function Traffic({
     },
     [sel, follow, filter, rows],
   );
+  // 로그 칸 키보드 이동(0.3.0) — ↑↓·Shift+↑↓·PageUp/PageDown·Home/End
+  const onLogKey = useLogKeys({
+    sel,
+    count: filter.count,
+    seqAt: (i) => filter.at(i)?.seq,
+    indexOfSeq: filter.indexOfSeq,
+    scrollTo: (i) => rows.scrollToIndex(i, { align: "auto" }),
+    page: () => Math.max(1, Math.floor((tlogRef.current?.clientHeight ?? 0) / rowHeight(settings.fontSize)) - 1),
+    follow,
+  });
   const [showSum, setShowSum] = useState<boolean>(() => load("showSum", true));
   const saveRef = useRef(() => {});
   saveRef.current = () => onSave(filter.view, filterDesc(filter.state, lang));
@@ -203,7 +214,7 @@ export function Traffic({
       <LogFilterBar lang={lang} filter={filter} selected={sel.primary} total={frames.length} onJump={jumpTo} />
       <div className="log-wrap">
         {!frames.length && children}
-        <div className="tlog" ref={tlogRef}>
+        <div className="tlog" ref={tlogRef} tabIndex={0} onKeyDown={onLogKey}>
           <div style={{ height: rows.getTotalSize(), position: "relative" }}>
             {rows.getVirtualItems().map((r) => {
               const f = filter.at(r.index);

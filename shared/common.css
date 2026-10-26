@@ -709,3 +709,14 @@ html .row.sel.primary {
 .port-manual .btn {
   flex-shrink: 0;
 }
+
+/* ---- 로그 키보드 이동(0.3.0) — 로그 칸에 포커스가 있음을 얇게 */
+.log:focus,
+.tlog:focus {
+  outline: none;
+}
+.log:focus-visible,
+.tlog:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}

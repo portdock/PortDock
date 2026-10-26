@@ -32,6 +32,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: 연결 방식·주소(또는 포트·속도), «줄 끝», «통신 세부» 접기(응답 기다림·*OPC? 기다림·연결하면 *IDN? 묻기), 연결 버튼과 상태, «장비»(*IDN? 풀이), «자주 쓰는 동작»(*IDN?·*RST·*CLS·오류 큐 비우기·*OPC? 기다림)과 오류 큐 결과.",
+        "- (0.3.0 부터) 다른 창에서 일하는 동안 연결이 끊기면 작업 표시줄의 PortDock SCPI 단추가 깜빡입니다(«끊기» 를 눌러 닫은 때는 깜빡이지 않음). 설정에서 끌 수 있습니다.",
         "- 가운데 위: 명령 칸과 [질의] [쓰기] [읽기] [＋ 목록에]. 기다리는 동안은 [멈춤](Esc). 칸 아래에 넣은 명령의 뜻(자주 쓰는 명령이면)과 Enter 가 무엇을 할지가 나옵니다.",
         "- 가운데: «마지막 응답» — 답 글(또는 블록 정보·HEX 미리보기·[파일로 저장]), 응답 시간, 실패 이유.",
         "- 아래: 탭 «통신 기록» / «반복 측정».",
@@ -177,6 +178,7 @@ export const help: HelpDoc = {
       title: "Layout",
       body: [
         "- Left: connection and address (or port and baud), «Line ending», «Timing» (response timeout, *OPC? timeout, ask *IDN? on connect), the connect button and status, «Instrument» (*IDN? decoded), «Common actions» (*IDN?, *RST, *CLS, drain error queue, wait *OPC?) with the error queue result.",
+        "- (from 0.3.0) If the connection drops while you are working in another window, the PortDock SCPI taskbar button flashes (not when you press «Disconnect» yourself). You can turn this off in Settings.",
         "- Top centre: the command box with [Query] [Write] [Read] [＋ To list]. While waiting, [Stop] (Esc). Under the box: what the command means (for common commands) and what Enter will do.",
         "- Centre: «Last reply» — the text (or block info, HEX preview and [Save to file]), response time and failure reasons.",
         "- Bottom: tabs «Traffic» / «Repeat measurement».",

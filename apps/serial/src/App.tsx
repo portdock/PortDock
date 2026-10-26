@@ -47,6 +47,10 @@ import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { PortPicker } from "@shared/PortPicker";
 import { portUsable } from "@shared/portPick";
+import { useLostAlert } from "@shared/useLostAlert";
+import { useLogKeys } from "@shared/logKeys";
+import { CopyButton } from "@shared/CopyButton";
+import { saveName } from "@shared/fileName";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
@@ -404,6 +408,7 @@ export default function App() {
     await api.close(sessionId);
     setSessionId(null);
     setStatus("closed");
+    setStatusMsg(null);
     setLogPath(null);
     setLines(null);
   }
@@ -421,9 +426,8 @@ export default function App() {
       }
       return;
     }
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const ext = logExt(settings);
-    const path = await save({ title: t("logDlgTitle"), defaultPath: `portdock-${stamp}.${ext}`, filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
+    const path = await save({ title: t("logDlgTitle"), defaultPath: saveName("serial", livePort ?? cfg.port, ext), filters: [{ name: "Log", extensions: ext === "csv" ? ["csv", "txt"] : ["log", "txt"] }] });
     if (!path) return;
     try {
       await api.setLog(sessionId, path);
@@ -471,6 +475,7 @@ export default function App() {
   const [menu, setMenu] = useState<MenuAt>(null);
   // 좁은 창(1180px 이하)은 오른쪽 칸이 숨어 있다 — 줄을 누르면 펼치고 «상세» 로 굴려 «아무 일도 안 일어남» 이 없게
   const detailHead = useRef<HTMLHeadingElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
   const openDetail = () => {
     if (!matchMedia("(max-width: 1180px)").matches) return;
     setShowRight(true);
@@ -502,6 +507,16 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filter, rows, sel.only, follow.pause],
   );
+  // 로그 칸 키보드 이동(↑↓·Shift·PageUp/Down·Home/End) — 로그 칸에 포커스가 있을 때만
+  const onLogKeys = useLogKeys({
+    sel,
+    count: filter.count,
+    seqAt: (i) => filter.at(i)?.seq,
+    indexOfSeq: filter.indexOfSeq,
+    scrollTo: (i) => rows.scrollToIndex(i, { align: "auto" }),
+    page: () => Math.max(1, Math.floor((listRef.current?.clientHeight ?? 0) / rowHeight(settings.fontSize)) - 1),
+    follow,
+  });
   // Ctrl+C — 고른 줄을 «시각 [간격] 방향 내용»(지금 보기대로)으로
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
   useCopyKey(
@@ -514,7 +529,7 @@ export default function App() {
   );
 
   async function saveView() {
-    const path = await save({ defaultPath: "portdock-view.txt", filters: [{ name: "Text", extensions: ["txt", "log"] }] });
+    const path = await save({ defaultPath: saveName("serial", livePort ?? (cfg.port || null), "txt"), filters: [{ name: "Text", extensions: ["txt", "log"] }] });
     if (!path) return;
     // 지금 보기(HEX·ASCII·둘 다)대로, 거르기가 켜져 있으면 보이는 줄만
     const text = screenText({ app: "PortDock Serial", frames: framesRef.current, view: filter.view, mode: view, fmt, hex, ascii, filterDesc: filterDesc(filter.state, lang), lang, col });
@@ -777,6 +792,8 @@ export default function App() {
     if (!connected) setConnEditSaved(false);
   }, [connected]);
   const statusKey = `status_${status}` as Key;
+  // 끊기면 작업 표시줄 깜빡임 — 장치가 끊김·재연결 대기, 또는 자동 재연결이 꺼져 이유와 함께 닫힘(사용자가 끊은 닫힘은 이유 없음)
+  useLostAlert(status === "disconnected" || status === "reconnecting" || (status === "closed" && statusMsg != null), settings.lostAlert);
   const runDisabled = connecting || (!connected && !portUsable(ports, cfg.port));
 
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, baseTs.current ?? framesRef.current[0]?.ts ?? ts);
@@ -1187,7 +1204,7 @@ export default function App() {
             <TerminalView term={term.current} lang={lang} colors={termColors} onColors={setTermColors} version={version} />
           ) : (
             <>
-              <div className="log" ref={listRef}>
+              <div className="log" ref={listRef} tabIndex={0} onKeyDown={onLogKeys}>
                 {frames.length === 0 &&
                   (firstDone ? (
                     <div className="empty-guide">{t("emptyGuide")}</div>
@@ -1465,10 +1482,13 @@ export default function App() {
         <TriggerPanel lang={lang} trg={trg} toast={toast} expandAll={settings.expandAll} />
         <AutoReplySection lang={lang} toast={toast} expandAll={settings.expandAll} />
 
-        <h3 ref={detailHead} data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
+        <div className="detail-head">
+          <h3 ref={detailHead} data-tip={tip(lang, "detailModbus")}>{t("detail")}</h3>
+          {selFrame && <CopyButton lang={lang} getText={() => detailRef.current?.innerText ?? ""} />}
+        </div>
         {!selFrame && <div className="hint">{t("selectFrame")}</div>}
         {selFrame && (
-          <div className="detail">
+          <div className="detail" ref={detailRef}>
             <div>
               {selFrame.dir.toUpperCase()} · {fmt(selFrame.ts)}
               {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
@@ -1586,6 +1606,7 @@ export default function App() {
           readText={api.readText}
           busy={connected || !!logPath}
           ioOptions
+          conn
         />
       )}
       {toast.node}
