@@ -102,6 +102,16 @@ label.inline {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+/* 보낼 곳 주소 칸 + 최근 «▾»(0.3.0) */
+.addr-line {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.addr-line input {
+  flex: 1;
+  min-width: 0;
+}
 .checks {
   display: flex;
   gap: 14px;

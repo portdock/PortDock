@@ -60,10 +60,15 @@ import { MbValues } from "@shared/MbValues";
 import { pairInLog, type AddrNotation } from "@shared/mbPair";
 import { dict, type Key, type Lang } from "./i18n";
 import { ar } from "@shared/autoReplyText";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 import "./App.css";
+
+/** 최근 연결 기록의 모드 이름 — 중계의 듣는 주소는 서버와 따로 */
+const recentMode = (m: TcpConfig["mode"]) => (m === "relay" ? "relayListen" : m);
 
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
 type ViewMode = "hex" | "ascii" | "both";
@@ -135,10 +140,24 @@ export default function App() {
     const saved = { ...byMode, [cfg.mode]: { host: cfg.host, port: cfg.port } };
     setByMode(saved);
     const next = saved[mode] ?? { host: mode === "client" ? (cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host) : "0.0.0.0", port: cfg.port };
-    setCfg({ ...cfg, mode, host: next.host, port: next.port });
+    // 그 방식의 최근 연결 기록이 있으면 그 값으로(0.3.0)
+    const last = lastRecent(recentMode(mode));
+    const rec = last ? splitHostPort(last) : null;
+    setCfg({ ...cfg, mode, host: rec ? rec.host : next.host, port: rec?.port ?? next.port });
   }
   const relay = cfg.mode === "relay";
   const listening = cfg.mode !== "client";
+  // 최근 연결 기록(0.3.0) — 주소 칸은 방식마다 따로(중계의 듣는 주소는 «relayListen»), 중계의 이어 줄 장비(B)는 «relay»
+  const recMain = useRecent(recentMode(cfg.mode));
+  const recRelay = useRecent("relay");
+  // 아직 남기지 않은 성공 기록 — 클라이언트는 «접속됨» 이 왔을 때, 중계 B 는 처음 짝이 이어졌을 때(백엔드가 B 에 붙은 뒤에야 짝을 알린다)
+  const pendingRec = useRef<{ client?: string; relay?: string }>({});
+  const recRef = useRef({ main: recMain.remember, relay: recRelay.remember });
+  recRef.current = { main: recMain.remember, relay: recRelay.remember };
+  const pickRecent = (v: string) => {
+    const r = splitHostPort(v);
+    setCfg({ ...cfg, host: r.host, port: r.port ?? cfg.port });
+  };
   // 왼쪽 «고급 연결»(Nagle·재접속) — 대부분 기본값이라 접는다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작, 열림 상태는 기억
   const advConnChanged = !cfg.noDelay || (cfg.mode === "client" && (!cfg.autoReconnect || cfg.reconnectMs !== 2000));
   const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
@@ -236,6 +255,10 @@ export default function App() {
       setVersion((v) => v + 1);
     } else if (e.type === "status") {
       setStatus(e.state);
+      if (e.state === "connected" && pendingRec.current.client) {
+        recRef.current.main(pendingRec.current.client);
+        pendingRec.current.client = undefined;
+      }
       // 백엔드가 준 설명(재접속 대기·멈춤의 마지막 실패 이유 등)을 먼저 보인다
       setStatusMsg(e.message || e.port || null);
       if (e.state === "closed") setRunning(false);
@@ -250,6 +273,10 @@ export default function App() {
       }
       peersRef.current = e.peers;
       setPeers(e.peers);
+      if (e.peers.length > 0 && pendingRec.current.relay) {
+        recRef.current.relay(pendingRec.current.relay);
+        pendingRec.current.relay = undefined;
+      }
     } else {
       setError(e.message);
     }
@@ -268,21 +295,31 @@ export default function App() {
     if (starting) return;
     setStarting(true);
     setError(null);
+    const host = cfg.host.trim();
+    // 클라이언트는 접속은 뒤에서 하므로 «접속됨» 이 와야 남긴다 — 이벤트가 start 응답보다 먼저 올 수 있어 미리 걸어 둔다
+    pendingRec.current = {
+      client: cfg.mode === "client" ? joinHostPort(host, cfg.port) : undefined,
+      relay: relay ? joinHostPort(relayTo.host.trim(), relayTo.port) : undefined,
+    };
     try {
       const l = await api.start(cfg, effFraming, rxWire, cfg.mode === "relay" ? { host: relayTo.host.trim(), port: relayTo.port } : null, onEvent);
       setLocal(l);
       setRunning(true);
+      // 서버·중계는 듣기 시작이 성공 — 포트 0(운영체제가 고름)은 다시 쓸 값이 아니라 남기지 않는다
+      if (listening && host && cfg.port > 0) recMain.remember(joinHostPort(host, cfg.port));
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "tcp", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
+      pendingRec.current = {};
       setError(String(e));
     } finally {
       setStarting(false);
     }
   }
   async function stop() {
+    pendingRec.current = {};
     await api.stop();
     setRunning(false);
     setStatus("closed");
@@ -693,8 +730,11 @@ export default function App() {
         </div>
         <label data-tip={tip(lang, listening ? "ifaces" : "host")}>
           {relay ? t("relayListen") : server ? t("bindHost") : t("host")}
-          <input value={cfg.host} disabled={running} list={listening ? "tcp-ifaces" : undefined} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
-          {listening && <IfaceOptions id="tcp-ifaces" lang={lang} list={ifaces.list} />}
+          <div className="addr-row">
+            <input value={cfg.host} disabled={running} list={listening ? "tcp-ifaces" : "tcp-recent-client"} onChange={(e) => setCfg({ ...cfg, host: e.target.value.trim() })} />
+            <RecentButton lang={lang} recent={recMain} onPick={pickRecent} disabled={running} />
+          </div>
+          {listening ? <IfaceOptions id="tcp-ifaces" lang={lang} list={ifaces.list} /> : <RecentHosts id="tcp-recent-client" recent={recMain} />}
         </label>
         <label data-tip={tip(lang, "netPort")}>
           {t("port")}
@@ -707,7 +747,19 @@ export default function App() {
             <div className="grid2">
               <label data-tip={tip(lang, "relayUpstream")}>
                 {t("host")}
-                <input value={relayTo.host} disabled={running} onChange={(e) => setRelayTo({ ...relayTo, host: e.target.value.trim() })} />
+                <div className="addr-row">
+                  <input value={relayTo.host} disabled={running} list="tcp-recent-relay" onChange={(e) => setRelayTo({ ...relayTo, host: e.target.value.trim() })} />
+                  <RecentButton
+                    lang={lang}
+                    recent={recRelay}
+                    disabled={running}
+                    onPick={(v) => {
+                      const r = splitHostPort(v);
+                      setRelayTo({ host: r.host, port: r.port ?? relayTo.port });
+                    }}
+                  />
+                </div>
+                <RecentHosts id="tcp-recent-relay" recent={recRelay} />
               </label>
               <label data-tip={tip(lang, "netPort")}>
                 {t("port")}

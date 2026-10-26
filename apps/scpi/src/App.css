@@ -103,6 +103,17 @@ label.inline {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+/* 장비 주소 칸 옆 최근 «▾»(0.3.0) — 주소 칸을 넓게 */
+.grid2.net {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.host-row {
+  min-width: 0;
+}
+.host-row input {
+  flex: 1;
+  min-width: 0;
+}
 .checks {
   display: flex;
   gap: 14px;

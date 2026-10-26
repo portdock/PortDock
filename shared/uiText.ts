@@ -77,6 +77,21 @@ const ko = {
   keySelect: "로그 줄 누르기: 고르기 · Shift+누르기: 범위 · Ctrl+누르기: 하나씩 더하기/빼기 · 오른쪽 버튼: 복사·다시 보내기 메뉴",
   // ---- 위아래 칸 사이 높이 조절(Modbus Slave·Master 통신 기록)
   splitLog: "통신 기록 높이 — 끌어서 조절, 두 번 누르면 처음대로(↑·↓ 키도 됨)",
+  // ---- 최근 연결·직접 넣은 포트(0.3.0)
+  recentTitle: "최근 연결",
+  recentNone: "아직 없습니다 — 연결에 성공하면 여기에 남습니다.",
+  recentForget: "«{a}» 를 목록에서 지우기",
+  portManual: "직접 입력…",
+  portManualTag: "(직접 입력)",
+  portMissingTag: "(목록에 없음)",
+  portManualBox: "포트 이름 직접 입력",
+  portManualOk: "확인",
+  portManualHint: "목록에 없는 포트를 이름으로 엽니다(예: COM12). 모뎀으로 잡힌 포트·일부 가상 포트에 씁니다.",
+  portManualBad: "COM 뒤에 번호를 넣어 주세요(예: COM12, 1~256).",
+  // ---- 상세 칸 복사(0.3.0)
+  copyDetail: "복사",
+  copiedShort: "복사함",
+  copyFailShort: "복사 못 함",
 };
 
 const en: typeof ko = {
@@ -146,6 +161,19 @@ const en: typeof ko = {
   keyCopy: "Copy the selected log lines (time, direction, data in the current view)",
   keySelect: "Click a log line to select · Shift+click: range · Ctrl+click: add/remove · Right-click: copy / send again menu",
   splitLog: "Traffic height — drag to resize, double-click to reset (↑/↓ keys too)",
+  recentTitle: "Recent connections",
+  recentNone: "Nothing yet — successful connections are kept here.",
+  recentForget: "Remove «{a}» from the list",
+  portManual: "Type a port…",
+  portManualTag: "(typed)",
+  portMissingTag: "(not in list)",
+  portManualBox: "Port name",
+  portManualOk: "OK",
+  portManualHint: "Opens a port that is not listed, by name (e.g. COM12) — for ports Windows lists as modems and some virtual ports.",
+  portManualBad: "Type COM followed by a number (e.g. COM12, 1–256).",
+  copyDetail: "Copy",
+  copiedShort: "Copied",
+  copyFailShort: "Copy failed",
 };
 
 export const UI = { ko, en };

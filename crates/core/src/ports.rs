@@ -28,6 +28,25 @@ impl PortInfo {
 }
 
 pub fn list() -> Vec<PortInfo> {
+    // 장치 목록에 안 잡히는 포트(모뎀으로 분류된 포트·일부 가상 포트)도 SERIALCOMM 에는 있다(0.3.0)
+    with_extra(listed(), crate::portinfo::serialcomm_names())
+}
+
+/// 목록에 없는 COM 이름을 더한다 — «COMn» 모양만, 이미 있는 이름(대소문자 무시)은 빼고. 장치 정보는 없다(kind "unknown")
+pub fn with_extra(mut ports: Vec<PortInfo>, names: impl IntoIterator<Item = String>) -> Vec<PortInfo> {
+    for n in names {
+        let n = n.trim();
+        let ok = n.len() > 3 && n.len() <= 6 && n[..3].eq_ignore_ascii_case("COM") && n[3..].bytes().all(|b| b.is_ascii_digit()) && !n[3..].starts_with('0');
+        if !ok || ports.iter().any(|p| p.name.eq_ignore_ascii_case(n)) {
+            continue;
+        }
+        ports.push(PortInfo { name: format!("COM{}", &n[3..]), kind: "unknown", vid: None, pid: None, serial_number: None, manufacturer: None, product: None });
+    }
+    ports.sort_by_key(|a| natural_key(&a.name));
+    ports
+}
+
+fn listed() -> Vec<PortInfo> {
     let mut ports: Vec<PortInfo> = available_ports()
         .unwrap_or_default()
         .into_iter()
@@ -78,6 +97,18 @@ mod tests {
         let mut v = vec!["COM10", "COM2", "COM1"];
         v.sort_by_key(|n| natural_key(n));
         assert_eq!(v, vec!["COM1", "COM2", "COM10"]);
+    }
+
+    #[test]
+    fn extra_names_from_serialcomm() {
+        let usb = PortInfo { name: "COM3".into(), kind: "usb", vid: Some(1), pid: Some(2), serial_number: None, manufacturer: None, product: Some("X".into()) };
+        let v = with_extra(vec![usb.clone()], ["com3", "COM12", "COM2", " COM12 ", "COM0", "COM", r"\Device\Serial0", "COM1234", "COM05"].map(String::from));
+        let names: Vec<&str> = v.iter().map(|p| p.name.as_str()).collect();
+        assert_eq!(names, ["COM2", "COM3", "COM12"]);
+        // 이미 있던 포트는 장치 정보 그대로
+        assert_eq!(v[1], usb);
+        assert_eq!(v[2].kind, "unknown");
+        assert!(with_extra(Vec::new(), Vec::<String>::new()).is_empty());
     }
 
     #[test]

@@ -32,6 +32,14 @@ mod wmi;
 use serde::Serialize;
 pub use tables::{Chip, Problem, Text};
 
+/// 지금 열 수 있는 COM 이름(HKLM\HARDWARE\DEVICEMAP\SERIALCOMM) — 포트 목록 보강(0.3.0, ports::list). 읽기만
+pub(crate) fn serialcomm_names() -> Vec<String> {
+    #[cfg(windows)]
+    return win::serialcomm_names();
+    #[cfg(not(windows))]
+    Vec::new()
+}
+
 /// 목록의 한 줄 — COM 포트 장치(지금 없는 것 포함)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]

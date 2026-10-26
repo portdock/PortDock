@@ -20,6 +20,8 @@ export const help: HelpDoc = {
       body: [
         "- 처음 켜면 값 칸 위에 «어떤 장비인가요?» 카드가 나옵니다. [Modbus TCP (이더넷)]·[Modbus RTU (시리얼)] 를 누르면 연결 방식이 맞춰지고 다음에 넣을 칸(장비 주소·포트)으로 갑니다. 주소 표기(0 기준·1 기준·PLC 40001)도 여기서 고릅니다. 연결하거나 «다시 보지 않기» 를 누르면 숨습니다. 처음 연결하면 «두 번 눌러 쓰기·오른쪽 버튼으로 형식» 알림이 한 번 나옵니다.",
         "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 포트·속도·패리티·정지 비트를 장비와 같게, TCP 면 장비 IP·포트(보통 502)를 넣습니다.",
+        "- (0.3.0 부터) 장비 주소 칸 옆 «▾» 를 누르면 연결에 성공했던 주소·포트가 최근 것부터 8개까지 나옵니다. 고르면 주소·포트 칸이 채워지고, ✕ 로 한 줄씩 지웁니다. 주소 칸에 글자를 넣으면 같은 기록으로 자동 완성도 됩니다.",
+        "- (0.3.0 부터) 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 포트 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 포트 목록에는 Windows 의 SERIALCOMM 에 있는 포트도 함께 보입니다.",
         "- 2. «연결»(F4). 연결되면 표의 «주기» 마다 읽기 시작합니다.",
         "- 3. 가운데 위 표 설정에서 «국번(슬레이브 ID)», «함수», «시작», «개수» 를 장비 설명서대로 맞춥니다. 값 칸 위에 마지막 읽기 결과(✓ 시각·응답 시간 또는 ⚠ 이유)가 나옵니다.",
         "- 4. 다른 영역도 보려면 «+ 표» 로 표를 더합니다. 탭의 숫자는 그 표의 오류(타임아웃·CRC·예외) 누적 수입니다 — 지금 실패 중이면 빨강, 다시 정상으로 읽히면 회색(통계 «초기화» 로 지움).",
@@ -185,6 +187,8 @@ export const help: HelpDoc = {
       body: [
         "- On first start a «What kind of device?» card appears above the value cells. [Modbus TCP (Ethernet)] or [Modbus RTU (serial)] sets the connection type and moves to the next box to fill (device address or port). You can also pick the address notation (0-based, 1-based, PLC 40001) there. It hides once you connect or click «Don't show again». On the first connection a one-time notice explains double-click to write and right-click for types.",
         "- 1. Pick the «Connection» on the left. For serial, match the port, baud, parity and stop bits to the device; for TCP enter the device IP and port (usually 502).",
+        "- (from 0.3.0) The «▾» next to the device address lists up to 8 addresses and ports you connected to successfully, newest first. Pick one to fill the address and port; ✕ removes a line. Typing in the address box also suggests from the same list.",
+        "- (from 0.3.0) For a port that is not in the list (a port set up as a modem, some virtual ports), choose «Type a port…» at the bottom of the port list and type its name (e.g. COM12). The list also includes ports found in Windows' SERIALCOMM.",
         "- 2. «Connect» (F4). Tables are read at their «Every (ms)» interval.",
         "- 3. In the table settings set «Slave ID», «Function», «Start» and «Count» from the device manual. The last read (✓ time and response time, or ⚠ the reason) shows above the cells.",
         "- 4. «+ Table» adds another table. The number on a tab counts that table's errors so far (timeouts, CRC, exceptions) — red while it is failing now, grey once reads succeed again (Statistics «Reset» clears it).",

@@ -666,3 +666,46 @@ html .row.sel.primary {
   flex-direction: column;
   gap: 4px;
 }
+
+/* ---- 최근 연결 «▾»·직접 넣은 포트(0.3.0) */
+.recent-btn {
+  flex-shrink: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.recent-btn.empty {
+  opacity: 0.55;
+}
+.recent-pop {
+  min-width: 200px;
+}
+.recent-pop .recent-row {
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+.recent-pop .recent-pick {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.port-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.port-manual .row2 {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.port-manual input {
+  flex: 1;
+  min-width: 0;
+}
+.port-manual .btn {
+  flex-shrink: 0;
+}

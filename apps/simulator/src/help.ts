@@ -36,9 +36,11 @@ export const help: HelpDoc = {
       title: "연결 방식",
       body: [
         "- «시리얼(COM)»: «포트»·«속도(bps)»·«패리티» 를 고릅니다. 데이터 비트 8, 정지 비트 1, 흐름 제어 없음으로 엽니다. USB 를 뽑았다 꽂으면 저절로 다시 엽니다.",
+        "- (0.3.0 부터) 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 «포트» 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 목록에는 Windows 의 SERIALCOMM 에 있는 포트도 함께 나옵니다.",
         "- «TCP 서버 (상대가 접속)»: «주소»(보통 0.0.0.0)와 «포트» 로 기다립니다. 상위 프로그램이 이 PC 로 접속하는 경우입니다. 받은 접속에 각각 응답합니다.",
         "- «TCP 클라이언트 (상대에 접속)»: «접속할 곳» 의 주소·포트로 접속합니다. 상위 프로그램이 서버로 기다리는 경우입니다. 끊기면 다시 접속합니다.",
         "- «UDP»: «받을 포트» 로 받고, 응답은 보낸 쪽으로 돌려줍니다. «보낼 곳» 은 장비가 먼저 보낼 때 아직 받은 것이 없으면 쓰입니다. 브로드캐스트 주소(255.255.255.255, x.x.x.255)로 보내려면 시작 전에 «브로드캐스트 허용» 을 켜세요.",
+        "- (0.3.0 부터) 주소 칸 옆 «▾» 는 최근 연결 — 시작에 성공한 주소·포트가 최근 것부터 8개까지 남습니다(TCP 클라이언트 «접속할 곳», TCP 서버 «주소», UDP «보낼 곳» 이 따로). 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 연결 방식을 바꾸면 그 방식에서 마지막으로 쓴 주소·포트로 채워집니다.",
         "- 실행 중에는 연결 방식·포트·주소·속도를 바꿀 수 없습니다(🔒). 멈추고 바꾸세요. 프레임 구분·응답 규칙·비교 옵션은 실행 중에도 바로 적용됩니다.",
         "- 재접속 대기·멈춤 상태줄에는 마지막 실패 이유가 함께 나옵니다.",
         "- 시리얼인데 포트가 없으면 «시작» 이 잠깁니다.",
@@ -185,9 +187,11 @@ export const help: HelpDoc = {
       title: "Transport",
       body: [
         "- «Serial (COM)»: choose «Port», «Baud rate» and «Parity». Opened as 8 data bits, 1 stop bit, no flow control. Unplugging and replugging USB reopens it automatically.",
+        "- (from 0.3.0) For a port that is not listed (ports Windows lists as modems, some virtual ports), choose «Type a port…» at the bottom of the «Port» list and enter its name (e.g. COM12). The list also includes ports registered in Windows SERIALCOMM.",
         "- «TCP server (peer connects)»: listens on «Host» (usually 0.0.0.0) and «Port» for the host software to connect. Each connection gets its own replies.",
         "- «TCP client (connect to peer)»: connects to the «Connect to» host and port when the host software is the server. It reconnects when disconnected.",
         "- «UDP»: receives on «Listen port» and replies to the sender. «Send to» is used for device-initiated messages before anything has been received. To send to a broadcast address (255.255.255.255, x.x.x.255), check «Allow broadcast» before starting.",
+        "- (from 0.3.0) The «▾» next to the host box lists recent connections — up to 8 host:port pairs that started successfully, newest first (kept separately for the TCP client «Connect to», the TCP server «Host» and the UDP «Send to»). Click one to fill the host and port; ✕ removes it. Switching transport fills in the last address used with that transport.",
         "- Transport, port, addresses and baud are locked (🔒) while running; stop to change them. Framing, reply rules and match options apply immediately.",
         "- When waiting to reconnect or stopped, the status line also shows the last failure reason.",
         "- With Serial and no port, «Start» is disabled.",

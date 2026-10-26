@@ -58,6 +58,10 @@ import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, splitHostPort } from "@shared/recent";
+import { PortPicker } from "@shared/PortPicker";
+import { portUsable } from "@shared/portPick";
 import { DeviceDialog, JOIN_GAP, type DeviceApplyOpts } from "@shared/DeviceDialog";
 import { deviceName, pollGroups, serialDefaults, type Device } from "@shared/devices";
 import { useToast } from "@shared/Toast";
@@ -209,6 +213,13 @@ export default function App() {
   const langRef = useRef(lang);
   langRef.current = lang;
 
+  // ---- 최근 연결 기록(0.3.0) — TCP·RTU over TCP 가 같은 주소 칸을 쓰므로 한 모드 «tcp».
+  // TCP 는 open_tcp 가 접속 전에 돌아오므로, 처음 «connected» 상태가 왔을 때 기억한다(실패·취소는 남기지 않음)
+  const recent = useRecent("tcp");
+  const rememberRef = useRef(recent.remember);
+  rememberRef.current = recent.remember;
+  const pendingRecent = useRef<string | null>(null);
+
   // ---- 포트 목록
   const [ports, setPorts] = useState<PortInfo[]>([]);
   useEffect(() => {
@@ -236,7 +247,7 @@ export default function App() {
   const [logPath, setLogPath] = useState<string | null>(null);
   const [portNotice, setPortNotice] = useState<string | null>(null);
   useEffect(() => {
-    if (connected || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    if (connected || !ports.length || portUsable(ports, cfg.port)) return;
     const next = pickPort(ports, load<PortId | null>("portId", null));
     if (cfg.port) setPortNotice(fill(dict[lang].portSwitched, { a: cfg.port, b: next }));
     setCfg((c) => ({ ...c, port: next }));
@@ -415,9 +426,14 @@ export default function App() {
           setStatusMsg(e.message);
           if (e.state === "connected") {
             setError(null);
+            if (pendingRecent.current) {
+              rememberRef.current(pendingRecent.current);
+              pendingRecent.current = null;
+            }
             setCfg((c) => (!e.port || c.port === e.port || /:\d+$/.test(e.port) ? c : { ...c, port: e.port }));
           }
           if (e.state === "closed") {
+            pendingRecent.current = null;
             setConnected(false);
             setLogPath(null);
             setScan((s) => (s.running ? { ...s, running: false } : s));
@@ -491,6 +507,7 @@ export default function App() {
         const p = ports.find((x) => x.name === cfg.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
       } else {
+        pendingRecent.current = joinHostPort(net.host.trim(), net.port);
         await api.openTcp({ host: net.host.trim(), port: net.port, wire, autoReconnect: net.autoReconnect }, setup, onEvent);
       }
       setStatus((s) => (s === "idle" || s === "closed" ? (transport === "serial" ? "connected" : "connecting") : s));
@@ -512,6 +529,7 @@ export default function App() {
           .catch((e) => setError(String(e)));
       }
     } catch (e) {
+      pendingRecent.current = null;
       setConnectErr(String(e));
       noteError(String(e));
     } finally {
@@ -759,7 +777,7 @@ export default function App() {
   }
 
   // ---- 단축키: F4 연결·끊기, Ctrl+L 기록 지우기, Ctrl+S 표 CSV 저장, Ctrl+Shift+L 파일 기록, F6 한 번 읽기, F8 폴링 멈춤
-  const startable = transport === "serial" ? ports.some((p) => p.name === cfg.port) : !!net.host.trim() && net.port > 0;
+  const startable = transport === "serial" ? portUsable(ports, cfg.port) : !!net.host.trim() && net.port > 0;
   const runDisabled = connecting || (!connected && !startable);
   /** «한 번 읽기» — RTU 국번 0 표는 백엔드가 조용히 건너뛰므로 여기서 알린다 */
   function readOnceSel() {
@@ -946,23 +964,19 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "port")}>
               {t("port")}
-              <select
+              <PortPicker
+                lang={lang}
                 className="port-sel"
+                ports={ports}
                 value={cfg.port}
                 disabled={connected}
                 title={connected ? t("lockedHint") : ""}
-                onChange={(e) => {
-                  setCfg({ ...cfg, port: e.target.value });
+                emptyLabel={t("noPorts")}
+                onChange={(name) => {
+                  setCfg((c) => ({ ...c, port: name }));
                   setPortNotice(null);
                 }}
-              >
-                {ports.length === 0 && <option value="">{t("noPorts")}</option>}
-                {ports.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {(p.product ?? p.manufacturer) ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             {portNotice && !connected && <div className="hint warn">{portNotice}</div>}
             <div className="grid2">
@@ -1007,7 +1021,19 @@ export default function App() {
             <div className="grid2 net">
               <label data-tip={tip(lang, "mmHost")}>
                 {t("host")}
-                <input className={net.host.trim() ? "" : "bad"} value={net.host} disabled={connected} spellCheck={false} onChange={(e) => setNet({ ...net, host: e.target.value })} />
+                <div className="host-row">
+                  <input className={net.host.trim() ? "" : "bad"} list="recent-hosts" value={net.host} disabled={connected} spellCheck={false} onChange={(e) => setNet({ ...net, host: e.target.value })} />
+                  <RecentButton
+                    lang={lang}
+                    recent={recent}
+                    disabled={connected}
+                    onPick={(v) => {
+                      const hp = splitHostPort(v);
+                      setNet((n) => ({ ...n, host: hp.host, port: hp.port ? hp.port : n.port }));
+                    }}
+                  />
+                </div>
+                <RecentHosts id="recent-hosts" recent={recent} />
               </label>
               <label data-tip={tip(lang, "mmNetPort")}>
                 {t("netPort")}

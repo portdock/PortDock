@@ -40,6 +40,10 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
+import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { portUsable } from "@shared/portPick";
+import { PortPicker } from "@shared/PortPicker";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -82,6 +86,21 @@ export default function App() {
   const [ports, setPorts] = useState<PortInfo[]>([]);
   const [com, setCom] = useState<Com>(() => load("com", { port: "", baud: 9600, parity: "none" }));
   const [net, setNet] = useState<Net>(() => load("net", { host: "0.0.0.0", port: 5000, remoteHost: "192.168.0.10", remotePort: 5000 }));
+  // 최근 연결 기록(0.3.0) — TCP 클라이언트 «접속할 곳», TCP 서버 «묶을 주소:포트», UDP «보낼 곳»
+  const recentTcp = useRecent("tcp");
+  const recentServer = useRecent("tcp-server");
+  const recentUdp = useRecent("udp");
+  /** 최근 목록에서 고른 값 → 주소·포트 칸(포트가 없으면 주소만). bind 면 «묶을 주소» 쪽 */
+  const pickRecent = (v: string, bind: boolean) => {
+    const { host, port } = splitHostPort(v);
+    setNet((o) => (bind ? { ...o, host, port: port ?? o.port } : { ...o, remoteHost: host, remotePort: port ?? o.remotePort }));
+  };
+  /** 연결 방식을 바꿀 때 — 그 방식의 마지막 연결 기록이 있으면 주소·포트를 그 값으로 */
+  const changeTransport = (v: Transport) => {
+    setTransport(v);
+    const last = lastRecent(v === "tcp-server" ? "tcp-server" : v === "tcp-client" ? "tcp" : v === "udp" ? "udp" : "");
+    if (last && v !== "serial") pickRecent(last, v === "tcp-server");
+  };
   const [framing, setFraming] = useState<FrameMode>(() => load("framing", { kind: "gap", gapMs: 20 }));
   // 새로 설치했을 때 기본 끝 문자는 LF(0A) — 저장값이 있으면 그대로 쓴다
   const [termText, setTermText] = useState(() => load("termText", "0A"));
@@ -122,9 +141,10 @@ export default function App() {
 
   // ---- 실행
   const [running, setRunning] = useState(false);
-  // 저장된 포트가 목록에 없으면(다른 PC·USB 뺌) 화면에 보이는 첫 포트로 맞춘다 — 보이는 것과 다른 포트를 열지 않게. 실행 중엔 그대로
+  // 저장된 포트가 목록에 없으면(다른 PC·USB 뺌) 화면에 보이는 첫 포트로 맞춘다 — 보이는 것과 다른 포트를 열지 않게. 실행 중엔 그대로.
+  // 직접 넣은 포트(«직접 입력…»)는 목록에 없어도 그대로 둔다
   useEffect(() => {
-    if (running || !ports.length || ports.some((p) => p.name === com.port)) return;
+    if (running || !ports.length || portUsable(ports, com.port)) return;
     setCom((c) => ({ ...c, port: ports[0].name }));
   }, [ports, com.port, running]);
   const [status, setStatus] = useState("idle");
@@ -202,6 +222,7 @@ export default function App() {
           onEvent,
         );
         setStatusMsg(local);
+        if (net.remoteHost) recentUdp.remember(joinHostPort(net.remoteHost, net.remotePort));
       } else {
         const server = transport === "tcp-server";
         await api.startTcp(
@@ -209,6 +230,8 @@ export default function App() {
           effFraming,
           onEvent,
         );
+        if (server) recentServer.remember(joinHostPort(net.host, net.port));
+        else recentTcp.remember(joinHostPort(net.remoteHost, net.remotePort));
       }
       setRunning(true);
       if (settings.autoLog && settings.logFolder) {
@@ -422,7 +445,7 @@ export default function App() {
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock Simulator");
 
   // ---- 단축키: F4 시작·멈춤, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
-  const runDisabled = (!running && transport === "serial" && !ports.some((p) => p.name === com.port)) || starting;
+  const runDisabled = (!running && transport === "serial" && !portUsable(ports, com.port)) || starting;
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
     { key: "l", ctrl: true, run: clearTraffic },
@@ -489,7 +512,7 @@ export default function App() {
         </div>
         <label data-tip={tip(lang, "transport")}>
           {t("transport")}
-          <select value={transport} disabled={running} onChange={(e) => setTransport(e.target.value as Transport)}>
+          <select value={transport} disabled={running} onChange={(e) => changeTransport(e.target.value as Transport)}>
             <option value="serial">{t("serial")}</option>
             <option value="tcp-server">{t("tcpServer")}</option>
             <option value="tcp-client">{t("tcpClient")}</option>
@@ -501,14 +524,7 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "ports")}>
               {t("port")}
-              <select value={com.port} disabled={running} onChange={(e) => setCom({ ...com, port: e.target.value })}>
-                {ports.length === 0 && <option value="">{t("noPorts")}</option>}
-                {ports.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.product ?? p.manufacturer ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
-                  </option>
-                ))}
-              </select>
+              <PortPicker lang={lang} ports={ports} value={com.port} disabled={running} onChange={(port) => setCom({ ...com, port })} emptyLabel={t("noPorts")} />
             </label>
             <div className="grid2">
               <label data-tip={tip(lang, "baud")}>
@@ -532,10 +548,18 @@ export default function App() {
           </>
         )}
         {(transport === "tcp-server" || transport === "udp") && (
-          <div className="grid2">
+          <div className={transport === "tcp-server" ? "grid2 grid-addr" : "grid2"}>
             <label data-tip={tip(lang, "bindHost")}>
               {t("host")}
-              <input value={net.host} disabled={running} onChange={(e) => setNet({ ...net, host: e.target.value.trim() })} />
+              {transport === "tcp-server" ? (
+                <span className="addr-row">
+                  <input value={net.host} list="recent-server" disabled={running} onChange={(e) => setNet({ ...net, host: e.target.value.trim() })} />
+                  <RecentButton lang={lang} recent={recentServer} onPick={(v) => pickRecent(v, true)} disabled={running} />
+                  <RecentHosts id="recent-server" recent={recentServer} />
+                </span>
+              ) : (
+                <input value={net.host} disabled={running} onChange={(e) => setNet({ ...net, host: e.target.value.trim() })} />
+              )}
             </label>
             <label data-tip={tip(lang, transport === "udp" ? "bindPort" : "netPort")}>
               {transport === "udp" ? t("bindPort") : t("netPort")}
@@ -547,10 +571,14 @@ export default function App() {
           <>
             {/* TCP 클라이언트는 «접속할 곳», UDP 는 «보낼 곳» */}
             <label>{transport === "udp" ? t("remote") : t("connectTo")}</label>
-            <div className="grid2">
+            <div className="grid2 grid-addr">
               <label data-tip={tip(lang, transport === "udp" ? "remoteHost" : "host")}>
                 {t("host")}
-                <input value={net.remoteHost} disabled={running} onChange={(e) => setNet({ ...net, remoteHost: e.target.value.trim() })} />
+                <span className="addr-row">
+                  <input value={net.remoteHost} list={transport === "udp" ? "recent-udp" : "recent-tcp"} disabled={running} onChange={(e) => setNet({ ...net, remoteHost: e.target.value.trim() })} />
+                  <RecentButton lang={lang} recent={transport === "udp" ? recentUdp : recentTcp} onPick={(v) => pickRecent(v, false)} disabled={running} />
+                  <RecentHosts id={transport === "udp" ? "recent-udp" : "recent-tcp"} recent={transport === "udp" ? recentUdp : recentTcp} />
+                </span>
               </label>
               <label data-tip={tip(lang, transport === "udp" ? "remotePort" : "netPort")}>
                 {t("netPort")}

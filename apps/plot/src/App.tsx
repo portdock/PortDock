@@ -23,6 +23,10 @@ import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { FirstCard } from "@shared/FirstCard";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { ui } from "@shared/uiText";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, splitHostPort } from "@shared/recent";
+import { PortPicker } from "@shared/PortPicker";
+import { portUsable } from "@shared/portPick";
 import "./App.css";
 
 const APP = "PortDock Plot";
@@ -236,7 +240,7 @@ export default function App() {
     if (error) noteError(error);
   }, [error]);
   useEffect(() => {
-    if (running || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    if (running || !ports.length || portUsable(ports, cfg.port)) return;
     setCfg((c) => ({ ...c, port: pickPort(ports, load("portId", null)) }));
   }, [ports, cfg.port, running]);
 
@@ -327,7 +331,10 @@ export default function App() {
 
   // ---- 시작·멈춤
   const where = transport === "serial" ? `${cfg.port} ${cfg.baud}` : transport === "tcp" ? `TCP ${tcp.host.trim()}:${tcp.port}` : `UDP :${udp.port}`;
-  const startable = !!format && (transport === "serial" ? ports.some((p) => p.name === cfg.port) : transport === "tcp" ? !!tcp.host.trim() && tcp.port > 0 : udp.port >= 0);
+  const startable = !!format && (transport === "serial" ? portUsable(ports, cfg.port) : transport === "tcp" ? !!tcp.host.trim() && tcp.port > 0 : udp.port >= 0);
+  // 최근 연결 기록(0.3.0) — 받기 시작에 성공했을 때만 기억
+  const recentTcp = useRecent("tcp");
+  const recentUdp = useRecent("udp");
   async function start() {
     if (starting || runningRef.current || !format) return;
     setStarting(true);
@@ -345,7 +352,8 @@ export default function App() {
       if (transport === "serial") {
         const p = ports.find((x) => x.name === cfg.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number });
-      }
+      } else if (transport === "tcp") recentTcp.remember(joinHostPort(tcp.host.trim(), tcp.port));
+      else recentUdp.remember(joinHostPort(udp.host.trim() || "0.0.0.0", udp.port));
     } catch (e) {
       setStartErr(String(e));
       noteError(String(e));
@@ -538,15 +546,7 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "port")}>
               {T.port}
-              <select className="port-sel" value={cfg.port} disabled={running} title={running ? T.lockedHint : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
-                {ports.length === 0 && <option value="">{T.noPorts}</option>}
-                {ports.length > 0 && !ports.some((p) => p.name === cfg.port) && <option value={cfg.port}>{cfg.port || "—"}</option>}
-                {ports.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {(p.product ?? p.manufacturer) ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
-                  </option>
-                ))}
-              </select>
+              <PortPicker lang={lang} className="port-sel" ports={ports} value={cfg.port} disabled={running} title={running ? T.lockedHint : ""} emptyLabel={T.noPorts} onChange={(name) => setCfg((c) => ({ ...c, port: name }))} />
             </label>
             <div className="grid2">
               <label data-tip={tip(lang, "baud")}>
@@ -600,7 +600,19 @@ export default function App() {
             <div className="grid2 net">
               <label data-tip={tip(lang, "plHost")}>
                 {T.host}
-                <input className={tcp.host.trim() ? "" : "bad"} value={tcp.host} disabled={running} spellCheck={false} onChange={(e) => setTcp({ ...tcp, host: e.target.value })} />
+                <span className="addr-row">
+                  <input className={tcp.host.trim() ? "" : "bad"} list="tcp-recent-hosts" value={tcp.host} disabled={running} spellCheck={false} onChange={(e) => setTcp({ ...tcp, host: e.target.value })} />
+                  <RecentButton
+                    lang={lang}
+                    recent={recentTcp}
+                    disabled={running}
+                    onPick={(v) => {
+                      const r = splitHostPort(v);
+                      setTcp((o) => ({ ...o, host: r.host, port: r.port ?? o.port }));
+                    }}
+                  />
+                </span>
+                <RecentHosts id="tcp-recent-hosts" recent={recentTcp} />
               </label>
               <label data-tip={tip(lang, "plNetPort")}>
                 {T.netPort}
@@ -615,7 +627,18 @@ export default function App() {
             <div className="grid2 net">
               <label data-tip={tip(lang, "plBindHost")}>
                 {T.bindHost}
-                <input list="bind-hosts" value={udp.host} disabled={running} spellCheck={false} onChange={(e) => setUdp({ ...udp, host: e.target.value })} />
+                <span className="addr-row">
+                  <input list="bind-hosts" value={udp.host} disabled={running} spellCheck={false} onChange={(e) => setUdp({ ...udp, host: e.target.value })} />
+                  <RecentButton
+                    lang={lang}
+                    recent={recentUdp}
+                    disabled={running}
+                    onPick={(v) => {
+                      const r = splitHostPort(v);
+                      setUdp((o) => ({ ...o, host: r.host, port: r.port ?? o.port }));
+                    }}
+                  />
+                </span>
                 <datalist id="bind-hosts">
                   <option value="0.0.0.0" label={T.bindAny} />
                   <option value="127.0.0.1" />

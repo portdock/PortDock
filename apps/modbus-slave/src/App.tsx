@@ -71,6 +71,10 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { ui } from "@shared/uiText";
+import { PortPicker } from "@shared/PortPicker";
+import { portUsable } from "@shared/portPick";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, splitHostPort } from "@shared/recent";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -169,6 +173,8 @@ export default function App() {
     store("net", net);
   }, [net]);
   const tcp = transport !== "serial";
+  // 최근 연결(0.3.0) — Modbus TCP·RTU over TCP 모두 «묶을 주소:포트» 라 한 목록
+  const recent = useRecent("tcp");
   const [peers, setPeers] = useState<Peer[]>([]);
   const [local, setLocal] = useState<string | null>(null);
 
@@ -204,10 +210,10 @@ export default function App() {
   // 연결 실패는 상태 칸에 빨갛게
   const [connectErr, setConnectErr] = useState<string | null>(null);
 
-  // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 연결 중엔 건드리지 않는다
+  // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 직접 넣은 포트(0.3.0)는 그대로. 연결 중엔 건드리지 않는다
   const [portNotice, setPortNotice] = useState<string | null>(null);
   useEffect(() => {
-    if (connected || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    if (connected || !ports.length || portUsable(ports, cfg.port)) return;
     const next = pickPort(ports, load<PortId | null>("portId", null));
     if (cfg.port) setPortNotice(dict[lang].portSwitched.replace("{a}", cfg.port).replace("{b}", next));
     setCfg((c) => ({ ...c, port: next }));
@@ -853,6 +859,8 @@ export default function App() {
         const at = await api.openTcp({ host: net.host.trim(), port: net.port, wire: transport === "tcp" ? "tcp" : "rtu", ignoreUnitId: net.ignoreUnitId }, onEvent);
         setLocal(at || null);
         setStatus((s) => (s === "idle" || s === "closed" ? "listening" : s));
+        // 최근 연결(0.3.0) — 듣기 시작에 성공한 «묶을 주소:포트» 만
+        recent.remember(joinHostPort(net.host.trim(), net.port));
       }
       setConnected(true);
       if (settings.autoLog && settings.logFolder) {
@@ -1038,7 +1046,7 @@ export default function App() {
   useExitGuard(connected || !!logPath, settings.confirmExit, lang, "PortDock Modbus Slave");
 
   // ---- 단축키: F4 연결·끊기, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록
-  const startable = transport === "serial" ? ports.some((p) => p.name === cfg.port) : !!net.host.trim();
+  const startable = transport === "serial" ? portUsable(ports, cfg.port) : !!net.host.trim();
   const runDisabled = connecting || (!connected && !startable);
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (connected ? disconnect() : connect()) },
@@ -1234,22 +1242,18 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "port")}>
               {t("port")}
-              <select
+              <PortPicker
+                lang={lang}
+                ports={ports}
                 value={cfg.port}
                 disabled={connected}
                 title={connected ? t("lockedHint") : ""}
-                onChange={(e) => {
-                  setCfg({ ...cfg, port: e.target.value });
+                emptyLabel={t("noPorts")}
+                onChange={(name) => {
+                  setCfg({ ...cfg, port: name });
                   setPortNotice(null);
                 }}
-              >
-                {ports.length === 0 && <option value="">{t("noPorts")}</option>}
-                {ports.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {(p.product ?? p.manufacturer) ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             {portNotice && !connected && <div className="hint warn">{portNotice}</div>}
             <div className="grid2">
@@ -1289,10 +1293,22 @@ export default function App() {
         ) : (
           <>
             <div className="grid2 net">
-              <label data-tip={tip(lang, "mbBind")}>
-                {t("bindHost")}
-                <input className={net.host.trim() ? "" : "bad"} value={net.host} disabled={connected} spellCheck={false} onChange={(e) => setNet({ ...net, host: e.target.value })} />
-              </label>
+              <div className="host-cell">
+                <label data-tip={tip(lang, "mbBind")}>
+                  {t("bindHost")}
+                  <input className={net.host.trim() ? "" : "bad"} value={net.host} disabled={connected} spellCheck={false} list="recent-hosts" onChange={(e) => setNet({ ...net, host: e.target.value })} />
+                </label>
+                <RecentButton
+                  lang={lang}
+                  recent={recent}
+                  disabled={connected}
+                  onPick={(v) => {
+                    const { host, port } = splitHostPort(v);
+                    setNet({ ...net, host, port: port ?? net.port });
+                  }}
+                />
+                <RecentHosts id="recent-hosts" recent={recent} />
+              </div>
               <label data-tip={tip(lang, "mbPort")}>
                 {t("netPort")}
                 <NumInput min={0} max={65535} value={net.port} disabled={connected} onValue={(n) => setNet({ ...net, port: n })} />

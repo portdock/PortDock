@@ -53,6 +53,8 @@ import { deltaText, Meter, newDeltaState, stampDelta, type DeltaMode } from "@sh
 import { LiveStats, ViewOptions } from "@shared/StatsBar";
 import { Popover } from "@shared/Popover";
 import { TriggerPanel, useTriggers } from "@shared/TriggerPanel";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, splitHostPort } from "@shared/recent";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -246,6 +248,12 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, cfg.remoteHost, cfg.remotePort]);
 
+  // 최근 보낼 곳(0.3.0) — 시작에 성공한 «주소:포트»만
+  const recent = useRecent("remote");
+  const pickRecent = (v: string) => {
+    const { host, port } = splitHostPort(v);
+    setCfg((c) => ({ ...c, remoteHost: host, ...(port != null ? { remotePort: port } : {}) }));
+  };
   const [starting, setStarting] = useState(false);
   async function start() {
     if (starting) return;
@@ -257,6 +265,7 @@ export default function App() {
       setApplied(`${cfg.remoteHost}:${cfg.remotePort}`);
       setRemoteErr(null);
       setRunning(true);
+      if (cfg.remoteHost && cfg.remotePort) recent.remember(joinHostPort(cfg.remoteHost, cfg.remotePort));
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "udp", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
@@ -590,7 +599,11 @@ export default function App() {
         <div className="grid2">
           <label data-tip={tip(lang, "remoteHost")}>
             {t("remoteHost")}
-            <input className={remoteErr ? "bad" : undefined} value={cfg.remoteHost} onChange={(e) => setCfg({ ...cfg, remoteHost: e.target.value.trim() })} />
+            <div className="addr-line">
+              <input className={remoteErr ? "bad" : undefined} value={cfg.remoteHost} list="udp-recent-hosts" onChange={(e) => setCfg({ ...cfg, remoteHost: e.target.value.trim() })} />
+              <RecentButton lang={lang} recent={recent} onPick={pickRecent} />
+            </div>
+            <RecentHosts id="udp-recent-hosts" recent={recent} />
           </label>
           <label data-tip={tip(lang, "remotePort")}>
             {t("remotePort")}

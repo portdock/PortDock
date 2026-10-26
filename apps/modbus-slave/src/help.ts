@@ -39,6 +39,7 @@ export const help: HelpDoc = {
       body: [
         "- «포트»: 마스터와 이어진 COM 포트. 연결 중에는 포트만 바꿀 수 없고, 나머지 설정은 바로 적용됩니다.",
         "- 저장해 둔 포트가 목록에 없으면 같은 장치(일련번호, 없으면 VID:PID)를 찾아 고르고, 없으면 첫 포트로 바꾼 뒤 «저장된 COM3 이(가) 없어 COM7 로 바꿨습니다» 처럼 알려 줍니다.",
+        "- (0.3.0 부터) 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 포트 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 직접 넣은 포트는 목록에 없어도 다른 포트로 바뀌지 않습니다. 목록에는 Windows 의 SERIALCOMM 에 있는 포트도 함께 보입니다.",
         "- 연결에 실패하면 상태 칸에 빨갛게 «연결 실패 · 이유» 가 나옵니다. 포트가 사용 중이면 다른 프로그램이 쓰고 있는지 확인하세요.",
         "- «속도(bps)»: 목록(1200~115200)에서 고르거나 숫자를 넣습니다.",
         "- «데이터 비트»: 8 또는 7. Modbus RTU 는 보통 8 입니다.",
@@ -56,6 +57,7 @@ export const help: HelpDoc = {
         "- «TCP 서버 (RTU over TCP)»: 시리얼과 똑같은 RTU 프레임(국번 + PDU + CRC)을 TCP 로 주고받습니다. 시리얼 서버(게이트웨이)를 거치는 장비를 흉내 낼 때 씁니다.",
         "- «묶을 주소»: 들을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다. 마스터에는 이 PC 의 IP(예: 192.168.0.10)와 포트를 넣습니다.",
         "- «포트»: 기본 502. 0 이면 운영체제가 빈 포트를 고르고, 상태 칸에 실제 주소가 나옵니다. 포트가 이미 쓰이면 «포트가 이미 사용 중» 으로 시작하지 못합니다.",
+        "- (0.3.0 부터) 시작에 성공한 «묶을 주소:포트» 는 최근 것부터 8개까지 남습니다. «묶을 주소» 옆 «▾» 를 눌러 고르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 주소 칸에 글자를 넣으면 최근 주소가 자동 완성으로 뜹니다.",
         "- «시작» 하면 «듣는 중 — 마스터의 접속을 기다리는 중» 이 되고, 상태 칸 아래에 «연결된 클라이언트 n» 이 보입니다(마우스를 올리면 주소). 여러 마스터가 동시에 붙어도 각각 답합니다(최대 64).",
         "- «국번 무시 (0·255 포함 모두 답함)»: 켜면 어떤 국번으로 와도 답합니다 — 목록에 있는 국번이면 그 표, 아니면 첫 국번의 표로 답하고, 받은 국번을 그대로 돌려줍니다. 끄면 목록에 없는 국번은 무시(«IGNORED unit 5»)하고 0 은 브로드캐스트(쓰기만 하고 답 없음)입니다. 연결 중에도 바로 바뀝니다.",
         "- MBAP 머리가 틀린 요청(프로토콜 ID 가 0 이 아님, 길이 칸이 실제 길이와 다름)에는 답하지 않고 «IGNORED MBAP 머리가 틀림» 으로 남기며 «MBAP 오류» 로 셉니다.",
@@ -306,6 +308,7 @@ export const help: HelpDoc = {
       body: [
         "- «Port»: the COM port wired to the master. Only the port is locked while connected; other settings apply immediately.",
         "- If the saved port is not in the list, the same device is picked (by serial number, else VID:PID), otherwise the first port, with a note such as «Saved COM3 not found — switched to COM7».",
+        "- (from 0.3.0) Ports that are not listed (ports Windows lists as modems, some virtual ports) can be opened by name (e.g. COM12) with «Type a port…» at the bottom of the port list. A typed port stays selected even though it is not listed. The list also includes ports found in Windows' SERIALCOMM registry key.",
         "- If connecting fails, the status box turns red with «Connection failed · reason». For a busy port, check whether another program is using it.",
         "- «Baud rate»: pick from the list (1200 to 115200) or type a number.",
         "- «Data bits»: 8 or 7. Modbus RTU normally uses 8.",
@@ -323,6 +326,7 @@ export const help: HelpDoc = {
         "- «TCP server (RTU over TCP)»: exchanges the same RTU frames as serial (ID + PDU + CRC) over TCP. Use it to mimic a device behind a serial device server (gateway).",
         "- «Bind address»: the local adapter to listen on. 0.0.0.0 listens on all adapters. On the master, enter this PC's IP (e.g. 192.168.0.10) and the port.",
         "- «Port»: 502 by default. 0 lets the OS pick a free port; the real address appears in the status box. If the port is taken, starting fails with «Port already in use».",
+        "- (from 0.3.0) Up to 8 «bind address:port» pairs that started successfully are kept, newest first. Click «▾» next to «Bind address» and pick one to fill the address and port; ✕ removes an entry. Typing in the address box also suggests recent addresses.",
         "- After «Start» the status reads «Listening — waiting for the master to connect» with «n client(s) connected» below it (hover for the addresses). Several masters can connect at once and each is answered (up to 64).",
         "- «Ignore Slave ID (answer any, incl. 0/255)»: when on, any Slave ID is answered — from that Slave ID's tables if it is in the list, otherwise from the first one's — and the received Slave ID is echoed. When off, unlisted Slave IDs are ignored («IGNORED unit 5») and 0 is a broadcast (write only, no reply). It applies immediately, even while running.",
         "- Requests with a bad MBAP header (protocol ID not 0, length field different from the real length) are not answered; they are logged as «IGNORED bad MBAP header» and counted as «MBAP errors».",

@@ -311,6 +311,11 @@ fn serialcomm() -> Result<Vec<(String, String)>, u32> {
     Ok(all_values(&k).into_iter().filter(|(_, ty, _)| *ty == REG_SZ).map(|(n, _, d)| (n, from_wide(&u16s(&d)))).collect())
 }
 
+/// SERIALCOMM 의 COM 이름만(포트 목록 보강 — ports::list). 못 읽으면 빈 목록
+pub(crate) fn serialcomm_names() -> Vec<String> {
+    serialcomm().map(|v| v.into_iter().map(|(_, c)| c.trim().to_string()).collect()).unwrap_or_default()
+}
+
 // ---------------------------------------------------------------- 목록
 
 fn vid_pid_of(dn: u32, id: &str) -> Option<(u16, u16)> {

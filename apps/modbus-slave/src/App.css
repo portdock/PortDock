@@ -1070,3 +1070,15 @@ details.panel > .btn.small {
 .traffic:has(.first-card) {
   height: clamp(220px, 41vh, 320px);
 }
+
+/* ---- «묶을 주소» 칸 + 최근 연결 «▾»(0.3.0) — 좁은 왼쪽 칸에서도 넘치지 않게 */
+.host-cell {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+.host-cell > label {
+  flex: 1;
+  min-width: 0;
+}

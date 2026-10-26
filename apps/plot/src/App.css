@@ -103,6 +103,16 @@ label.inline {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+/* 주소 칸 + 최근 연결 «▾»(0.3.0) */
+.addr-row {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.addr-row input {
+  flex: 1;
+  min-width: 0;
+}
 .checks {
   display: flex;
   gap: 14px;

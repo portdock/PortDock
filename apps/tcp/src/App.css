@@ -671,3 +671,15 @@ details.panel > summary .sum-note {
 .kick-all {
   align-self: flex-start;
 }
+
+/* 주소 칸 + 최근 연결 «▾»(0.3.0) — 좁은 칸에서도 넘치지 않게 */
+.addr-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+  min-width: 0;
+}
+.addr-row > input {
+  flex: 1;
+  min-width: 0;
+}

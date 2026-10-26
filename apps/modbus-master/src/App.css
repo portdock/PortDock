@@ -1340,3 +1340,17 @@ details.panel > summary .sum-note.bad {
 .toolbar.tview {
   column-gap: 8px;
 }
+
+/* 최근 연결 «▾»(0.3.0) — 주소 칸이 좁은 왼쪽 칸에서도 넘치지 않게 */
+.grid2.net {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+.host-row {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.host-row input {
+  flex: 1;
+  min-width: 0;
+}

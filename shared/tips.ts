@@ -24,6 +24,10 @@ const TIPS: Record<string, Tip> = {
   // TCP 실행 중 버튼(10/18)
   stopClient: ["장비와의 연결을 끊습니다. 파일 기록도 멈춥니다.", "Disconnects from the device; file logging stops too."],
   stopListen: ["듣기를 멈추고 접속한 상대를 모두 끊습니다. 파일 기록도 멈춥니다.", "Stops listening and closes every connected peer; file logging stops too."],
+  // 0.3.0 — 최근 연결·직접 넣은 포트
+  recent: ["최근 연결 — 연결에 성공한 주소가 최근 것부터 8개까지 남습니다. 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다.", "Recent connections — up to 8 addresses that connected successfully, newest first. Click one to fill the address and port; ✕ removes it."],
+  portPick: ["통신할 COM 포트. 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 맨 아래 «직접 입력…» 으로 이름(COM12 등)을 넣어 엽니다.", "The COM port to use. For a port that is not listed (ports Windows lists as modems, some virtual ports), choose «Type a port…» at the bottom and enter its name (e.g. COM12)."],
+  copyDetail: ["상세 칸에 보이는 내용(덤프·풀이)을 글 그대로 복사합니다.", "Copies what the detail panel shows (dump and decoding) as text."],
   inputLine: ["장치가 보내는 입력 신호선. 켜지면 초록색이고, 바뀔 때마다 로그에 사건 줄(EV)이 남습니다.", "Input lines from the device. Green when on; every change is logged as an event (EV)."],
 
   // ---- 프레임 구분·검사

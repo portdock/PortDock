@@ -717,3 +717,17 @@ input.bad {
 .traffic {
   height: clamp(140px, 30vh, 280px);
 }
+
+/* 주소 칸 + 최근 연결 «▾»(0.3.0) — 주소 칸을 넓게, 포트 칸은 숫자 5자리만큼 */
+.grid-addr {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 6.5em);
+}
+.addr-row {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.addr-row input {
+  flex: 1;
+  min-width: 0;
+}

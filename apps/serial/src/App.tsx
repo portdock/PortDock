@@ -45,6 +45,8 @@ import { CommandList, type CommandListHandle } from "@shared/CommandList";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
+import { PortPicker } from "@shared/PortPicker";
+import { portUsable } from "@shared/portPick";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
@@ -93,11 +95,6 @@ function pickPort(ports: PortInfo[], id: PortId | null) {
 }
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
-
-function portLabel(p: PortInfo) {
-  const desc = p.product ?? p.manufacturer;
-  return desc ? `${p.name} — ${desc}` : p.name;
-}
 
 /** 예전 저장 값(rs485 없음·stopBits 2 외)도 받는다 */
 function loadCfg(): SerialConfig {
@@ -223,7 +220,7 @@ export default function App() {
   // 저장된 포트가 목록에 없으면 같은 장치(없으면 첫 포트)로 바꾸고 알린다. 연결 중엔 건드리지 않는다
   const [portNotice, setPortNotice] = useState<string | null>(null);
   useEffect(() => {
-    if (sessionId || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    if (sessionId || !ports.length || portUsable(ports, cfg.port)) return;
     const next = pickPort(ports, load<PortId | null>("portId", null));
     if (cfg.port) setPortNotice(fill(dict[lang].portSwitched, { a: cfg.port, b: next }));
     setCfg((c) => ({ ...c, port: next }));
@@ -780,7 +777,7 @@ export default function App() {
     if (!connected) setConnEditSaved(false);
   }, [connected]);
   const statusKey = `status_${status}` as Key;
-  const runDisabled = connecting || (!connected && !ports.some((p) => p.name === cfg.port));
+  const runDisabled = connecting || (!connected && !portUsable(ports, cfg.port));
 
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, baseTs.current ?? framesRef.current[0]?.ts ?? ts);
   useExitGuard(sessionId != null || !!logPath, settings.confirmExit, lang, "PortDock Serial");
@@ -878,22 +875,19 @@ export default function App() {
         <div className="hint preset-note">{presetChanged.length ? fill(t("presetDiff"), { a: presetChanged.map((k) => t(FIELD_KEY[k])).join(" · ") }) : t(`presetDesc_${preset}`)}</div>
 
         <label data-tip={tip(lang, "ports")}>{t("ports")}</label>
-        <select
+        <PortPicker
+          lang={lang}
+          ports={ports}
           value={cfg.port}
           disabled={connected}
           title={connected ? t("lockedHint") : ""}
-          onChange={(e) => {
-            setCfg({ ...cfg, port: e.target.value });
+          ariaLabel={t("ports")}
+          emptyLabel={t("noPorts")}
+          onChange={(name) => {
+            setCfg((c) => ({ ...c, port: name }));
             setPortNotice(null);
           }}
-        >
-          {ports.length === 0 && <option value="">{t("noPorts")}</option>}
-          {ports.map((p) => (
-            <option key={p.name} value={p.name}>
-              {portLabel(p)}
-            </option>
-          ))}
-        </select>
+        />
         <div className="port-info-row">
           {(() => {
             const p = ports.find((x) => x.name === cfg.port);

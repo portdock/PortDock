@@ -28,6 +28,10 @@ import { useSendHistory } from "@shared/sendHistory";
 import { screenText } from "@shared/logSearch";
 import { copyText } from "@shared/logCopy";
 import { ui } from "@shared/uiText";
+import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
+import { joinHostPort, splitHostPort } from "@shared/recent";
+import { PortPicker } from "@shared/PortPicker";
+import { portUsable } from "@shared/portPick";
 import "./App.css";
 
 const APP = "PortDock SCPI";
@@ -153,7 +157,7 @@ export default function App() {
     if (error) noteError(error);
   }, [error]);
   useEffect(() => {
-    if (connected || !ports.length || ports.some((p) => p.name === cfg.port)) return;
+    if (connected || !ports.length || portUsable(ports, cfg.port)) return;
     setCfg((c) => ({ ...c, port: pickPort(ports, load("portId", null)) }));
   }, [ports, cfg.port, connected]);
 
@@ -404,6 +408,11 @@ export default function App() {
   }
 
   // ---- 연결
+  const recentLan = useRecent("lan");
+  const pickRecent = (v: string) => {
+    const { host, port } = splitHostPort(v);
+    setNet((n) => ({ ...n, host, ...(port != null && port > 0 ? { port } : {}) }));
+  };
   const where = transport === "lan" ? `${net.host.trim()}:${net.port}` : `${cfg.port} ${cfg.baud}`;
   async function connect() {
     if (connecting || connectedRef.current) return;
@@ -412,8 +421,10 @@ export default function App() {
     setError(null);
     setStatusMsg(null);
     try {
-      if (transport === "lan") await api.openTcp({ host: net.host.trim(), port: net.port, term, connectTimeoutMs: 3000 });
-      else {
+      if (transport === "lan") {
+        await api.openTcp({ host: net.host.trim(), port: net.port, term, connectTimeoutMs: 3000 });
+        recentLan.remember(joinHostPort(net.host.trim(), net.port));
+      } else {
         await api.openSerial({ ...cfg, term });
         const p = ports.find((x) => x.name === cfg.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number });
@@ -541,7 +552,7 @@ export default function App() {
   useEffect(() => store("firstHintDone", firstDone), [firstDone]);
 
   // ---- 단축키: F4 연결·끊기, Ctrl+L 기록 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, Esc 멈춤
-  const startable = transport === "serial" ? ports.some((p) => p.name === cfg.port) : !!net.host.trim() && net.port > 0;
+  const startable = transport === "serial" ? portUsable(ports, cfg.port) : !!net.host.trim() && net.port > 0;
   const runDisabled = connecting || (!connected && !startable);
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (connected ? disconnect() : connect()) },
@@ -735,7 +746,11 @@ export default function App() {
             <div className="grid2 net">
               <label data-tip={tip(lang, "scHost")}>
                 {t("host")}
-                <input className={net.host.trim() ? "" : "bad"} value={net.host} disabled={connected} spellCheck={false} onChange={(e) => setNet({ ...net, host: e.target.value })} />
+                <div className="row2 host-row">
+                  <input className={net.host.trim() ? "" : "bad"} value={net.host} disabled={connected} spellCheck={false} list="recent-lan" onChange={(e) => setNet({ ...net, host: e.target.value })} />
+                  <RecentButton lang={lang} recent={recentLan} onPick={pickRecent} disabled={connected} />
+                </div>
+                <RecentHosts id="recent-lan" recent={recentLan} />
               </label>
               <label data-tip={tip(lang, "scNetPort")}>
                 {t("netPort")}
@@ -748,15 +763,7 @@ export default function App() {
           <>
             <label data-tip={tip(lang, "port")}>
               {t("port")}
-              <select value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setCfg({ ...cfg, port: e.target.value })}>
-                {ports.length === 0 && <option value="">{t("noPorts")}</option>}
-                {ports.length > 0 && !ports.some((p) => p.name === cfg.port) && <option value={cfg.port}>{cfg.port || "—"}</option>}
-                {ports.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {(p.product ?? p.manufacturer) ? `${p.name} — ${p.product ?? p.manufacturer}` : p.name}
-                  </option>
-                ))}
-              </select>
+              <PortPicker lang={lang} ports={ports} value={cfg.port} disabled={connected} title={connected ? t("lockedHint") : ""} emptyLabel={t("noPorts")} onChange={(name) => setCfg({ ...cfg, port: name })} />
             </label>
             <div className="grid2">
               <label data-tip={tip(lang, "baud")}>
