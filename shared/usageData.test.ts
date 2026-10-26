@@ -6,8 +6,8 @@ import { allowed, APTABASE_KEY, buildBatch, FEATURES, ingestUrl, MAX_MINUTES, SD
 const T0 = Date.UTC(2026, 9, 26, 9, 0, 0);
 const base: UsageSession = { app: "serial", version: "0.3.0", windows: "11", lang: "ko", portable: false, startedAt: T0, now: T0 + 12.6 * 60_000, counts: {}, random: 42 };
 
-test("키가 비면 받는 곳이 없다 — 공개 저장소의 기본값", () => {
-  assert.equal(APTABASE_KEY, "");
+test("받는 곳: EU 키만, 키가 비면 없음", () => {
+  assert.ok(APTABASE_KEY === "" || ingestUrl(APTABASE_KEY) !== null, "넣은 키는 EU 키 꼴이어야 함");
   assert.equal(ingestUrl(""), null);
   assert.equal(ingestUrl("A-US-1234567890"), null, "EU 키만");
   assert.equal(ingestUrl("A-SH-1234567890"), null);

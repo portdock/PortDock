@@ -8,7 +8,7 @@
  * 이 키는 공개돼도 되는 «쓰기 전용» 값이다 — 사건을 보내는 것만 되고 통계를 읽을 수는 없다(읽기는 계정 로그인).
  * EU 지역 키만 받는다(CSP 의 connect-src 도 eu.aptabase.com 하나만 연다).
  */
-export const APTABASE_KEY = "";
+export const APTABASE_KEY = "A-EU-6553686203";
 
 /** 키 → 수집 주소. 비었거나 EU 키가 아니면 null(보내지 않음) */
 export function ingestUrl(key: string = APTABASE_KEY): string | null {
