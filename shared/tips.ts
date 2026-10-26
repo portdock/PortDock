@@ -222,6 +222,14 @@ const TIPS: Record<string, Tip> = {
   nsIndustrialOnly: ["산업 포트(Modbus·FEnet·SLMP·S7·EtherNet/IP·OPC UA·MQTT·SCPI)가 하나라도 열린 장비만 보입니다.", "Shows only devices with at least one industrial port open (Modbus, FEnet, SLMP, S7, EtherNet/IP, OPC UA, MQTT, SCPI)."],
   nsMarkNew: ["지난번 같은 범위를 끝까지 찾았을 때는 없던 장비 수.", "Devices not found by the previous complete scan of the same range."],
   nsMarkGone: ["지난번 같은 범위 찾기엔 있었는데 이번엔 답하지 않은 장비 수(표에 흐리게).", "Devices found by the previous scan of this range that did not answer now (dimmed in the table)."],
+  nsConflict: [
+    "찾는 동안 같은 IP 에서 서로 다른 MAC 이 보인 장비 수 — 같은 IP 를 쓰는 장비가 둘일 수 있습니다. 한쪽만 답하거나 스위치 너머에서는 못 잡을 수 있습니다(도움말).",
+    "Hosts whose IP showed different MACs during the scan — two devices may share the IP. It can miss conflicts when only one device answers or across switches (see Help).",
+  ],
+  nsSubnetNote: [
+    "찾을 범위가 이 PC 의 켜진 랜카드 대역 밖이면 나옵니다. 같은 대역이 아니면 ARP 로 찾지 못하고, 게이트웨이를 거쳐(경유) 핑으로만 닿습니다.",
+    "Shown when the range is outside every connected adapter's subnet. Outside the subnet, ARP cannot be used; devices are reached only by ping via the gateway (routed).",
+  ],
   nsExport: ["지금 보이는 줄(거르기·정렬 그대로)을 엑셀에서 여는 CSV 로 저장합니다.", "Saves the rows as shown (filter and sort applied) as a CSV for Excel."],
   nsClear: ["결과 표를 비웁니다(지난번 기록은 그대로).", "Clears the results table (previous scan history is kept)."],
   nsSort: ["이 칸으로 정렬합니다. 한 번 더 누르면 거꾸로. IP 는 숫자 순입니다.", "Sorts by this column; click again to reverse. IPs sort numerically."],

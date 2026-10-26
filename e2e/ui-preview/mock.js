@@ -1285,7 +1285,8 @@ const nsNics = () => [
 const NS_DEVICES = {
   1: { mac: "28:4E:E9:A9:62:7E", vendor: "mercury corperation", rtt: 1, ports: [80, 443], name: "router.local" },
   5: { me: true, mac: "B4:2E:99:F6:AB:3D", vendor: "GIGA-BYTE", rtt: 0, ports: [] },
-  10: { mac: "00:1B:1B:12:34:56", vendor: "Siemens", rtt: 2, ports: [102, 80, 502], ident: { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" } },
+  // .10 — 확인 단계에서 MAC 이 하나 더 보임(IP 충돌 의심, 0.2.0)
+  10: { mac: "00:1B:1B:12:34:56", vendor: "Siemens", rtt: 2, ports: [102, 80, 502], ident: { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" }, conflict: ["00:1B:1B:12:34:56", "00:0B:29:0A:0B:99"] },
   11: { mac: "00:0B:29:0A:0B:0C", vendor: "LS Industrial Systems", rtt: null, ports: [2004, 80] },
   20: { mac: "00:26:92:01:02:03", vendor: "Mitsubishi Electric", rtt: 3, ports: [5000, 5001, 5002] },
   30: { mac: "00:00:BC:11:22:33", vendor: "Rockwell Automation", rtt: 4, ports: [44818, 4840, 80, 443] },
@@ -1344,7 +1345,7 @@ function nsScanStart(cfg, ch) {
       }
       const { host, dev } = job.found[k++];
       const ports = (dev.ports || []).filter((p) => cfg.ports.includes(p));
-      nsSend(ch, { type: "host", host: { ...host, ports, name: cfg.names ? (dev.name ?? null) : null, modbus: cfg.modbusId && ports.includes(502) ? (dev.ident ?? null) : null, done: true } });
+      nsSend(ch, { type: "host", host: { ...host, ports, name: cfg.names ? (dev.name ?? null) : null, modbus: cfg.modbusId && ports.includes(502) ? (dev.ident ?? null) : null, conflict: host.mac && dev.conflict ? dev.conflict : [], done: true } });
       nsSend(ch, { type: "progress", phase: "check", done: k, total: n, found: n });
     }, 300);
   };
@@ -1359,7 +1360,7 @@ function nsScanStart(cfg, ch) {
       const rtt = cfg.ping ? d.rtt : null;
       if (viaArp || rtt != null || me) {
         const known = viaArp || me;
-        const host = { ip: nsStr(ip), mac: known ? d.mac : null, vendor: known ? d.vendor : null, randomMac: !!d.randomMac && known, rtt, arp: viaArp && !me, name: null, ports: [], modbus: null, me, done: false };
+        const host = { ip: nsStr(ip), mac: known ? d.mac : null, vendor: known ? d.vendor : null, randomMac: !!d.randomMac && known, rtt, arp: viaArp && !me, name: null, ports: [], modbus: null, me, done: false, conflict: [] };
         job.found.push({ host, dev: d });
         nsSend(ch, { type: "host", host });
       }

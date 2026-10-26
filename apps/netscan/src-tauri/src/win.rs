@@ -1,4 +1,4 @@
-//! 윈도우 API — 랜카드 목록(GetAdaptersAddresses), 핑(IcmpSendEcho2), ARP(SendARP), 이름 찾기(GetNameInfoW).
+//! 윈도우 API — 랜카드 목록(GetAdaptersAddresses), 핑(IcmpSendEcho2), ARP(SendARP)·ARP 캐시(GetIpNetTable2), 이름 찾기(GetNameInfoW).
 //! 모두 관리자 권한·드라이버 없이 된다. 윈도우가 아니면(개발용) 빈 결과.
 
 use serde::Serialize;
@@ -212,6 +212,39 @@ mod imp {
         (m != [0; 6]).then_some(m)
     }
 
+    /// 윈도우 ARP 캐시(GetIpNetTable2, 관리자 권한 없이) — IPv4 이고 MAC 이 있는 줄만(고정·브로드캐스트·멀티캐스트 빼고).
+    /// 한 IP 에 장비 둘이 답하면 캐시의 MAC 이 바뀌어 보일 수 있다(IP 충돌 의심의 단서)
+    pub fn arp_table() -> Vec<(Ipv4Addr, [u8; 6])> {
+        use windows_sys::Win32::Networking::WinSock::{NlnsIncomplete, NlnsPermanent, NlnsUnreachable};
+        let mut t: *mut MIB_IPNET_TABLE2 = std::ptr::null_mut();
+        // SAFETY: 성공하면 t 에 표가 오고 FreeMibTable 로 푼다
+        if unsafe { GetIpNetTable2(AF_INET, &mut t) } != NO_ERROR || t.is_null() {
+            return Vec::new();
+        }
+        let mut out = Vec::new();
+        // SAFETY: NumEntries 개의 줄이 Table 에서 이어진다
+        let rows = unsafe { std::slice::from_raw_parts((*t).Table.as_ptr(), (*t).NumEntries as usize) };
+        for r in rows {
+            if r.PhysicalAddressLength != 6 || [NlnsUnreachable, NlnsIncomplete, NlnsPermanent].contains(&r.State) {
+                continue;
+            }
+            // SAFETY: AF_INET 표라 Ipv4 로 읽는다
+            let sin = unsafe { r.Address.Ipv4 };
+            if sin.sin_family != AF_INET {
+                continue;
+            }
+            let ip = Ipv4Addr::from(unsafe { sin.sin_addr.S_un.S_addr }.to_ne_bytes());
+            let mut m = [0u8; 6];
+            m.copy_from_slice(&r.PhysicalAddress[..6]);
+            if m != [0; 6] && m[0] & 1 == 0 {
+                out.push((ip, m));
+            }
+        }
+        // SAFETY: GetIpNetTable2 가 준 표
+        unsafe { FreeMibTable(t as *const _) };
+        out
+    }
+
     fn wsa() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
@@ -265,6 +298,9 @@ mod imp {
     pub fn arp(_ip: Ipv4Addr, _src: Option<Ipv4Addr>) -> Option<[u8; 6]> {
         None
     }
+    pub fn arp_table() -> Vec<(Ipv4Addr, [u8; 6])> {
+        Vec::new()
+    }
     pub fn reverse_name(_ip: Ipv4Addr) -> Option<String> {
         None
     }
@@ -293,6 +329,14 @@ mod tests {
             println!("ping {gw} → {:?}", p.ping(gw, 1000));
             println!("arp {gw} → {:?}", arp(gw, Some(src)).map(|m| crate::oui::fmt_mac(&m)));
             println!("name {gw} → {:?}", reverse_name(gw));
+        }
+    }
+
+    /// ARP 캐시 읽기 — 줄 수는 PC 마다 다르다(Server 러너는 0 일 수도). 읽은 줄은 유니캐스트 MAC 만
+    #[test]
+    fn arp_table_reads() {
+        for (_, m) in arp_table() {
+            assert!(m != [0; 6] && m[0] & 1 == 0);
         }
     }
 

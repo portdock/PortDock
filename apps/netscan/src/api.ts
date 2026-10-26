@@ -57,6 +57,8 @@ export interface Host {
   modbus: Ident | null;
   me: boolean;
   done: boolean;
+  /** 찾는 동안 이 IP 에서 본 서로 다른 MAC(둘 이상일 때만) — IP 충돌 의심(0.2.0) */
+  conflict: string[];
 }
 
 export type ScanEvent =

@@ -20,7 +20,7 @@ import { ui } from "@shared/uiText";
 import { api, type Host, type Nic, type NicAddr, type RangeInfo, type ScanEvent } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
-import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, sameSubnet, serviceLabel, serviceTip, stamp, togglePortChip } from "./net";
+import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, serviceLabel, serviceTip, stamp, subnetFit, subnetNote, togglePortChip } from "./net";
 import { LogMenu, type MenuItem } from "@shared/LogMenu";
 import { MonitorView, useMonitor } from "./Monitor";
 import "./App.css";
@@ -134,7 +134,9 @@ export default function App() {
       clearTimeout(id);
     };
   }, [cfg.range, lang]);
-  const outside = !!(sel && info && cfg.arp && !(sameSubnet(info.first, sel.addr.ip, sel.addr.prefix) && sameSubnet(info.last, sel.addr.ip, sel.addr.prefix)));
+  // 찾을 범위가 이 PC 의 켜진 랜카드 대역에 드는지(0.2.0) — 아니면 한 줄 알림(경유로 닿을 수 있으면 약하게)
+  const fit = useMemo(() => (info && !info.tooMany && !rangeErr ? subnetFit(info.first, info.last, nics, sel?.addr.ip ?? null) : null), [info, rangeErr, nics, sel?.addr.ip]);
+  const note = fit && info ? subnetNote(fit, cfg.range, info.first, lang) : null;
   const portsParsed = useMemo(() => parsePorts(cfg.portsText, lang), [cfg.portsText, lang]);
   // «찾는 방법·포트» 는 기본값이 맞아 거의 안 건드린다 — 접어 두고 제목에 요약. 기본값과 다르거나 틀린 칸이 있으면 펼친 채로
   const defaultPorts = useMemo(() => parsePorts(DEFAULT_PORTS, lang).ports, [lang]);
@@ -179,6 +181,8 @@ export default function App() {
   const [gone, setGone] = useState<Lite[]>([]);
   const prevRef = useRef<Set<string> | null>(null);
   const [scannedRange, setScannedRange] = useState<string>("");
+  // 찾기 시작 때의 대역 알림 — 결과가 0개일 때·CSV 머리에 다시 보인다
+  const [scanNote, setScanNote] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const scanning = phase === "scanning" || phase === "checking";
   const [selected, setSelected] = useState<string | null>(null);
@@ -237,6 +241,7 @@ export default function App() {
     const hist = load<History>("history", {});
     prevRef.current = hist[range] ? new Set(hist[range].hosts.map((h) => h.ip)) : null;
     setScannedRange(range);
+    setScanNote(note?.text ?? null);
     setProgress({ done: 0, total: info?.count ?? 0 });
     setFound(0);
     setVersion((v) => v + 1);
@@ -274,6 +279,7 @@ export default function App() {
     setGone([]);
     setSelected(null);
     setPhase("idle");
+    setScanNote(null);
     prevRef.current = null;
     setVersion((v) => v + 1);
   }
@@ -288,7 +294,7 @@ export default function App() {
   const gateway = sel?.nic.gateway ?? null;
   const isNew = (ip: string) => !!prevRef.current && !prevRef.current.has(ip);
   const allRows: Row[] = useMemo(
-    () => [...hostsRef.current.values(), ...gone.map((g) => ({ ...g, randomMac: false, rtt: null, arp: false, ports: [], modbus: null, me: false, done: true, gone: true }))],
+    () => [...hostsRef.current.values(), ...gone.map((g) => ({ ...g, randomMac: false, rtt: null, arp: false, ports: [], modbus: null, me: false, done: true, conflict: [], gone: true }))],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [version, gone],
   );
@@ -297,7 +303,7 @@ export default function App() {
     const list = allRows.filter((h) => {
       if (indOnly && !h.ports.some(isIndustrial)) return false;
       if (!q) return true;
-      const hay = [h.ip, h.mac, h.vendor, h.name, h.modbus?.vendor, h.modbus?.product, ...h.ports.map(serviceLabel), ...h.ports.map(String)].filter(Boolean).join(" ").toLowerCase();
+      const hay = [h.ip, h.mac, ...h.conflict, h.vendor, h.name, h.modbus?.vendor, h.modbus?.product, ...h.ports.map(serviceLabel), ...h.ports.map(String)].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
     const val = (h: Row): number | string => {
@@ -323,6 +329,7 @@ export default function App() {
     });
   }, [allRows, query, indOnly, sort]);
   const newCount = prevRef.current ? [...hostsRef.current.keys()].filter(isNew).length : 0;
+  const conflictCount = [...hostsRef.current.values()].filter((h) => h.conflict.length > 1).length;
   const head = (key: SortKey, label: string) => (
     <th aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
       <button className="th-btn" onClick={() => setSort((s) => ({ key, dir: s.key === key ? ((-s.dir) as 1 | -1) : 1 }))} data-tip={tip(lang, "nsSort")}>
@@ -388,7 +395,7 @@ export default function App() {
     if (!allRows.length) return;
     const path = await save({ defaultPath: `portdock-netscan-${stamp()}.csv`, filters: [{ name: "CSV", extensions: ["csv"] }] });
     if (!path) return;
-    const headRow = ["ip", "mac", "vendor", "name", "rtt_ms", "found_by", "open_ports", "services", "modbus_vendor", "modbus_product", "modbus_revision", "mark"];
+    const headRow = ["ip", "mac", "vendor", "name", "rtt_ms", "found_by", "open_ports", "services", "modbus_vendor", "modbus_product", "modbus_revision", "mark", "conflict_macs"];
     const lines = rows.map((h) =>
       [
         h.ip,
@@ -402,12 +409,14 @@ export default function App() {
         h.modbus?.vendor,
         h.modbus?.product,
         h.modbus?.revision,
-        h.gone ? "gone" : [isNew(h.ip) && "new", h.me && "self", h.ip === gateway && "gateway"].filter(Boolean).join(" "),
+        h.gone ? "gone" : [isNew(h.ip) && "new", h.me && "self", h.ip === gateway && "gateway", h.conflict.length > 1 && "ip-conflict"].filter(Boolean).join(" "),
+        h.conflict.join(" "),
       ]
         .map(csvCell)
         .join(","),
     );
-    const text = `﻿# ${APP} · ${scannedRange || cfg.range} · ${new Date().toISOString()}\r\n${headRow.join(",")}\r\n${lines.join("\r\n")}\r\n`;
+    const noteLine = scanNote ? `# ${scanNote.replace(/[\r\n]+/g, " ")}\r\n` : "";
+    const text = `﻿# ${APP} · ${scannedRange || cfg.range} · ${new Date().toISOString()}\r\n${noteLine}${headRow.join(",")}\r\n${lines.join("\r\n")}\r\n`;
     await api
       .writeText(path, text)
       .then(() => toast.show(`${t("exportCsv")}: ${path}`))
@@ -537,7 +546,11 @@ export default function App() {
             </button>
           )}
         </div>
-        {outside && !rangeErr && <div className="hint warn">{t("rangeOther")}</div>}
+        {note && (
+          <div className={note.weak ? "hint subnet-note" : "hint warn subnet-note"} data-tip={tip(lang, "nsSubnetNote")}>
+            {note.text}
+          </div>
+        )}
         {scanButton(false)}
         <div className={`status s-${scanning ? "connected" : "idle"}`}>{statusText}</div>
         {scanning && (
@@ -667,6 +680,11 @@ export default function App() {
                   {t("newCount", { n: newCount })}
                 </span>
               )}
+              {conflictCount > 0 && (
+                <span className="chip conflict" data-tip={tip(lang, "nsConflict")}>
+                  {t("conflictCount", { n: conflictCount })}
+                </span>
+              )}
               {gone.length > 0 && (
                 <span className="chip gone" data-tip={tip(lang, "nsMarkGone")}>
                   {t("goneCount", { n: gone.length })}
@@ -681,6 +699,7 @@ export default function App() {
               </button>
             </div>
             {error && <div className="error pad">{error}</div>}
+            {scanNote && (phase === "done" || phase === "cancelled") && n === 0 && <div className="hint warn pad subnet-note">{scanNote}</div>}
             <div className="table-wrap">
               {allRows.length === 0 ? (
                 firstDone ? (
@@ -739,6 +758,11 @@ export default function App() {
                           {h.gone ? <span className="mark gone">{t("markGone")}</span> : isNew(h.ip) ? <span className="mark new">{t("markNew")}</span> : null}
                           {h.me && <span className="mark me">{t("me")}</span>}
                           {h.ip === gateway && <span className="mark gw">{t("gateway")}</span>}
+                          {h.conflict.length > 1 && (
+                            <span className="mark conflict" title={t("conflictLine", { a: h.conflict.join(" · ") })}>
+                              {t("markConflict")}
+                            </span>
+                          )}
                         </td>
                         <td className="mono">{h.mac ?? <span className="muted" title={t("otherSubnet")}>—</span>}</td>
                         <td className="ellipsis-cell" title={h.vendor ?? undefined}>
@@ -848,6 +872,7 @@ export default function App() {
                       </button>
                     )}
                   </div>
+                  {selHost.conflict.length > 1 && <div className="hint warn">{t("conflictLine", { a: selHost.conflict.join(" · ") })}</div>}
                   {selHost.modbus && (
                     <div className="ident mono">
                       {t("identVendor")}: {selHost.modbus.vendor || "—"} · {t("identProduct")}: {selHost.modbus.product || "—"} · {t("identRevision")}: {selHost.modbus.revision || "—"} · {t("identUnit")} {selHost.modbus.unit}

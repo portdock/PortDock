@@ -1,11 +1,13 @@
 //! 장비 찾기 — ① 범위의 주소마다 ARP(같은 대역)·핑으로 살아 있는지 ② 찾은 장비마다 산업 포트·Modbus 식별·이름.
 //! 정해 둔 포트만 짧게 두드린다(범용 포트 스캔은 하지 않는다 — 백신 오탐·장비 부담).
 //! 일꾼 스레드 수는 정해 두고(기본 64), 멈춤을 누르면 하던 주소까지만 하고 끝낸다.
+//! IP 충돌 의심(0.2.0): 찾는 동안 같은 IP 에서 서로 다른 MAC 을 두 번 이상 보면(ARP 답·다시 물은 답·ARP 캐시) 표시한다.
 
 use crate::modbus_id::{self, Ident};
 use crate::{oui, range, win};
 use portdock_core::tr;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -55,12 +57,43 @@ pub struct Host {
     pub me: bool,
     /// 포트·이름 확인까지 끝났는지
     pub done: bool,
+    /// 이번 찾기 동안 이 IP 에서 본 서로 다른 MAC(둘 이상일 때만) — IP 충돌 의심
+    pub conflict: Vec<String>,
+}
+
+/// 찾기 동안 IP 마다 본 MAC(서로 다른 것만, 본 순서)
+#[derive(Debug, Default)]
+pub struct Seen(HashMap<Ipv4Addr, Vec<[u8; 6]>>);
+
+impl Seen {
+    pub fn note(&mut self, ip: Ipv4Addr, mac: [u8; 6]) {
+        let v = self.0.entry(ip).or_default();
+        if !v.contains(&mac) {
+            v.push(mac);
+        }
+    }
+    /// 둘 이상이면 그 MAC 들, 아니면 빈 목록
+    pub fn conflict(&self, ip: Ipv4Addr) -> Vec<String> {
+        match self.0.get(&ip) {
+            Some(v) if v.len() >= 2 => v.iter().map(oui::fmt_mac).collect(),
+            _ => Vec::new(),
+        }
+    }
+    /// ARP 캐시 줄 가운데 이미 ARP 로 찾은 IP 의 것만 더한다(찾지 않은 IP 의 줄은 이번 찾기와 상관없음)
+    pub fn note_table(&mut self, table: &[(Ipv4Addr, [u8; 6])]) {
+        for (ip, m) in table {
+            if self.0.contains_key(ip) {
+                self.note(*ip, *m);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ScanEvent {
-    Host { host: Host },
+    /// (상자에 — Host 가 다른 알림보다 훨씬 커서)
+    Host { host: Box<Host> },
     /// phase: "find"(살아 있는지) | "check"(포트·이름)
     Progress { phase: &'static str, done: u32, total: u32, found: u32 },
     Done { found: u32, total: u32, ms: u64, cancelled: bool },
@@ -235,6 +268,7 @@ fn run(cfg: ScanConfig, hosts: Vec<Ipv4Addr>, local: Option<Local>, cancel: Arc<
     let threads = cfg.threads.clamp(1, 128) as usize;
     let found: Mutex<Vec<Host>> = Mutex::new(Vec::new());
     let nfound = AtomicU32::new(0);
+    let seen = Mutex::new(Seen::default());
 
     // ① 살아 있는지 — 핑 손잡이는 일꾼마다 하나(스레드 지역)
     thread_local! {
@@ -250,13 +284,20 @@ fn run(cfg: ScanConfig, hosts: Vec<Ipv4Addr>, local: Option<Local>, cancel: Arc<
                 discover(hosts[i], &cfg, local.as_ref(), p)
             });
             if let Some(h) = host {
+                if let Some(m) = h.mac.as_deref().filter(|_| h.arp).and_then(oui::parse_mac) {
+                    seen.lock().unwrap_or_else(|e| e.into_inner()).note(hosts[i], m);
+                }
                 nfound.fetch_add(1, Ordering::Relaxed);
-                sink(ScanEvent::Host { host: h.clone() });
+                sink(ScanEvent::Host { host: Box::new(h.clone()) });
                 found.lock().unwrap_or_else(|e| e.into_inner()).push(h);
             }
         },
         |done| sink(ScanEvent::Progress { phase: "find", done, total, found: nfound.load(Ordering::Relaxed) }),
     );
+
+    // 찾기가 끝난 뒤 ARP 캐시 — 그사이 다른 장비가 같은 IP 로 답했으면 MAC 이 바뀌어 있다
+    seen.lock().unwrap_or_else(|e| e.into_inner()).note_table(&win::arp_table());
+    let conflict_of = |ip: &str| ip.parse::<Ipv4Addr>().map(|ip| seen.lock().unwrap_or_else(|e| e.into_inner()).conflict(ip)).unwrap_or_default();
 
     // ② 포트·Modbus·이름
     let mut list = found.into_inner().unwrap_or_else(|e| e.into_inner());
@@ -270,24 +311,37 @@ fn run(cfg: ScanConfig, hosts: Vec<Ipv4Addr>, local: Option<Local>, cancel: Arc<
             &cancel,
             |i| {
                 let mut h = slots[i].lock().unwrap_or_else(|e| e.into_inner());
+                // ARP 로 찾은 장비는 한 번 더 묻는다(두 장비가 번갈아 답하면 MAC 이 달라진다)
+                if h.arp
+                    && !cancel.load(Ordering::Relaxed)
+                    && let (Ok(ip), Some(l)) = (h.ip.parse::<Ipv4Addr>(), local.as_ref())
+                    && let Some(m) = win::arp(ip, Some(l.ip))
+                {
+                    seen.lock().unwrap_or_else(|e| e.into_inner()).note(ip, m);
+                }
                 check(&mut h, &cfg, &cancel);
+                h.conflict = conflict_of(&h.ip);
                 h.done = true;
-                sink(ScanEvent::Host { host: h.clone() });
+                sink(ScanEvent::Host { host: Box::new(h.clone()) });
             },
             |done| sink(ScanEvent::Progress { phase: "check", done, total: n, found: n }),
         );
-        // 멈춤으로 확인하지 못한 장비도 «끝» 으로(화면에 «확인 중» 이 남지 않게)
+        // 마지막으로 ARP 캐시를 한 번 더 — 충돌 표시가 바뀐 장비와, 멈춤으로 확인하지 못한 장비(«확인 중» 이 남지 않게)를 다시 보낸다
+        seen.lock().unwrap_or_else(|e| e.into_inner()).note_table(&win::arp_table());
         for s in slots {
             let mut h = s.into_inner().unwrap_or_else(|e| e.into_inner());
-            if !h.done {
+            let c = conflict_of(&h.ip);
+            if !h.done || c != h.conflict {
                 h.done = true;
-                sink(ScanEvent::Host { host: h });
+                h.conflict = c;
+                sink(ScanEvent::Host { host: Box::new(h) });
             }
         }
     } else {
         for mut h in list {
             h.done = true;
-            sink(ScanEvent::Host { host: h });
+            h.conflict = conflict_of(&h.ip);
+            sink(ScanEvent::Host { host: Box::new(h) });
         }
     }
     sink(ScanEvent::Done { found: nfound.load(Ordering::Relaxed), total, ms: t0.elapsed().as_millis() as u64, cancelled: cancel.load(Ordering::Relaxed) });
@@ -320,10 +374,28 @@ mod tests {
         assert_eq!(total, 1);
         scan.thread.take().unwrap().join().unwrap();
         let ev = events.lock().unwrap();
-        let last_host = ev.iter().rev().find_map(|e| if let ScanEvent::Host { host } = e { Some(host.clone()) } else { None }).unwrap();
+        let last_host = ev.iter().rev().find_map(|e| if let ScanEvent::Host { host } = e { Some((**host).clone()) } else { None }).unwrap();
         assert!(last_host.me && last_host.done);
         assert_eq!(last_host.ports, vec![port]);
         assert!(matches!(ev.last(), Some(ScanEvent::Done { found: 1, total: 1, cancelled: false, .. })));
+    }
+
+    /// IP 충돌 의심 — 같은 IP 에 서로 다른 MAC 이 둘 이상일 때만. 같은 MAC 을 여러 번 봐도 하나
+    #[test]
+    fn seen_flags_two_macs() {
+        let ip: Ipv4Addr = "192.168.0.10".parse().unwrap();
+        let other: Ipv4Addr = "192.168.0.11".parse().unwrap();
+        let a = [0x00, 0x1B, 0x1B, 1, 2, 3];
+        let b = [0x00, 0x0B, 0x29, 4, 5, 6];
+        let mut s = Seen::default();
+        s.note(ip, a);
+        s.note(ip, a);
+        assert!(s.conflict(ip).is_empty());
+        // ARP 캐시: 찾지 않은 IP 의 줄은 더하지 않는다
+        s.note_table(&[(ip, a), (other, b), (other, a)]);
+        assert!(s.conflict(ip).is_empty() && s.conflict(other).is_empty());
+        s.note_table(&[(ip, b)]);
+        assert_eq!(s.conflict(ip), vec![oui::fmt_mac(&a), oui::fmt_mac(&b)]);
     }
 
     /// 핑 기다림은 50ms~10초 — 아주 큰 값이면 장비 하나마다 몇 시간씩 걸려 취소도 늦었다

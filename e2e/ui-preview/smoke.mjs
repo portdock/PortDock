@@ -2342,6 +2342,21 @@ async function runApp(app, port) {
       if (app === "netscan" && combo.full) {
         // 가짜 장비는 주소당 0.5초 — 두 주소(.10 Modbus·.11)만 찾아 빨리 끝낸 뒤 보고, 끝나면 처음 범위로 다시 찾기 시작해 둔다
         await clickRun("ns stop for row menu", (s) => s.btn === idleBtn);
+        // (0.2.0) 대상 대역 알림: 어느 랜카드 대역도 아님(게이트웨이 경유 — 약함, 지금 랜카드 목록) · Wi-Fi 대역(그 랜카드 이름) · 고른 랜카드 대역(알림 없음)
+        const sn = await jsAsync(`
+          const w = (ms = 450) => new Promise((r) => setTimeout(r, ms));
+          const box = () => document.querySelector('aside .subnet-note');
+          const inp = document.querySelector('aside.side input.mono');
+          __sm.setVal(inp, '192.168.7.0/24'); await w();
+          const a = { routed: box()?.textContent ?? null, weak: !!box() && !box().classList.contains('warn') };
+          __sm.setVal(inp, '10.0.0.1-20'); await w();
+          a.other = box()?.textContent ?? null;
+          __sm.setVal(inp, '192.168.0.1-30'); await w();
+          a.none = !box();
+          return a;`);
+        if (sn.fatal) add("ns subnet note", "smoke-error", sn.fatal);
+        else if (!/192\.168\.0\.1/.test(sn.routed ?? "") || !/10\.0\.0\.23\/24/.test(sn.routed ?? "") || !sn.weak || !/Wi-Fi/.test(sn.other ?? "") || !sn.none) await conv("ns-subnet-note", `대상 대역 알림이 이상함: ${JSON.stringify(sn)}`);
+        await verify("ns subnet note");
         await js("__sm.setVal(document.querySelector('aside.side input.mono'), '192.168.0.10-192.168.0.11')");
         await sleep(400);
         await clickRun("ns scan two hosts", (s) => s.btn !== idleBtn);
@@ -2353,7 +2368,7 @@ async function runApp(app, port) {
           const ip = chip.closest('tr').querySelector('.ip-cell').firstChild.textContent;
           window.__smoke.clip = null;
           chip.click(); await w();
-          const a = { chip: true, ip, clip1: window.__smoke.clip, sel: chip.closest('tr').classList.contains('sel') };
+          const a = { chip: true, ip, clip1: window.__smoke.clip, sel: chip.closest('tr').classList.contains('sel'), conflict: !!chip.closest('tr').querySelector('.mark.conflict') && !!document.querySelector('.toolbar .chip.conflict') };
           window.__smoke.clip = null;
           chip.closest('tr').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 300 })); await w();
           const items = [...document.querySelectorAll('.log-menu button')];
@@ -2372,7 +2387,7 @@ async function runApp(app, port) {
           }
           return a;`);
         if (r.fatal) add("ns row menu", "smoke-error", r.fatal);
-        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
+        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
         if (combo.name === "ko-light") await shot(app, `${combo.name}-row-menu`);
         await verify("ns row menu");
         await load(port, combo);

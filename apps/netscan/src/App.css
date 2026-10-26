@@ -530,6 +530,24 @@ button.chip:hover {
 .mark.gw {
   color: var(--muted);
 }
+/* IP 충돌 의심(0.2.0) */
+.mark.conflict {
+  background: color-mix(in srgb, var(--fail) 14%, transparent);
+  color: var(--fail);
+  font-weight: 600;
+}
+.chip.conflict {
+  border-color: var(--fail);
+  color: var(--fail);
+  font-weight: 600;
+}
+/* 찾을 범위가 랜카드 대역 밖(0.2.0) — 긴 랜카드 목록도 줄바꿈 */
+.subnet-note {
+  overflow-wrap: anywhere;
+}
+.hint.pad {
+  padding: 6px 10px;
+}
 
 /* 고른 장비 */
 .detail-bar {

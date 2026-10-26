@@ -158,3 +158,109 @@ export const extraPorts = (ports: number[]) => ports.filter((p) => !PORT_CHIPS.s
 
 /** 두 포트 목록이 같은지(순서 무관) */
 export const samePortSet = (a: number[], b: number[]) => a.length === b.length && a.every((p) => b.includes(p));
+
+// ---- 대상 대역 알림(0.2.0) — 찾을 범위가 이 PC 의 켜진 랜카드 어느 대역에 드는지
+
+/** 판정에 쓰는 랜카드 모양(api.Nic 의 일부) */
+export interface NicLike {
+  name: string;
+  addrs: { ip: string; prefix: number }[];
+  gateway: string | null;
+  up: boolean;
+}
+
+/**
+ * in: 고른 랜카드 대역 안(알림 없음) · otherNic: 다른 켜진 랜카드 대역 안 · partial: 범위 일부만 어느 랜카드 대역
+ * routed: 어느 대역도 아니지만 게이트웨이가 있어 경유로 닿을 수는 있음(약한 알림) · none: 닿을 길 없음
+ * down: 켜진 랜카드엔 없고 연결이 끊긴(랜선 빠짐 등) 랜카드 대역 안
+ */
+export type SubnetFit =
+  | { kind: "in" }
+  | { kind: "down"; nic: string }
+  | { kind: "otherNic" | "partial"; nic: string; ip: string; prefix: number; apipa: string[]; list: string }
+  | { kind: "routed"; gateway: string; apipa: string[]; list: string }
+  | { kind: "none"; apipa: string[]; list: string };
+
+const maskOf = (prefix: number) => (prefix <= 0 ? 0 : (0xffffffff << (32 - Math.min(32, prefix))) >>> 0);
+const inNet = (x: number, ip: string, prefix: number) => ((x & maskOf(prefix)) >>> 0) === ((ipNum(ip) & maskOf(prefix)) >>> 0);
+export const isApipa = (ip: string) => ip.startsWith("169.254.");
+
+/**
+ * 범위(처음·끝 주소)가 켜진 랜카드 대역에 드는지. selIp = 고른 랜카드 주소(없으면 null).
+ * 처음·끝이 한 대역에 들면 그 사이 주소도 모두 든다(대역은 이어진 구간). 127.x 는 이 PC 라 알림 없음
+ */
+export function subnetFit(first: string, last: string, nics: NicLike[], selIp: string | null): SubnetFit {
+  const a = ipNum(first);
+  const b = ipNum(last);
+  if (first.startsWith("127.") && last.startsWith("127.")) return { kind: "in" };
+  const up = nics.filter((n) => n.up && n.addrs.length);
+  const addrs = up.flatMap((n) => n.addrs.map((ad) => ({ nic: n, ...ad })));
+  const list = addrs.map((x) => `${x.nic.name} ${x.ip}/${x.prefix}`).join(", ");
+  // 주소가 169.254 뿐인 켜진 랜카드 — DHCP 로 IP 를 못 받은 것
+  const apipa = up.filter((n) => n.addrs.every((ad) => isApipa(ad.ip))).map((n) => n.name);
+  const hit = addrs.filter((x) => inNet(a, x.ip, x.prefix) && inNet(b, x.ip, x.prefix));
+  if (hit.some((x) => x.ip === selIp)) return { kind: "in" };
+  if (hit.length) return { kind: "otherNic", nic: hit[0].nic.name, ip: hit[0].ip, prefix: hit[0].prefix, apipa, list };
+  // 일부만 겹침: 범위의 끝 하나가 대역 안이거나, 대역이 범위 안에 통째로 듦
+  const part = addrs.find((x) => {
+    const lo = (ipNum(x.ip) & maskOf(x.prefix)) >>> 0;
+    const hi = (lo | (~maskOf(x.prefix) >>> 0)) >>> 0;
+    return a <= hi && b >= lo;
+  });
+  if (part) return { kind: "partial", nic: part.nic.name, ip: part.ip, prefix: part.prefix, apipa, list };
+  // 게이트웨이 — 고른 랜카드 것이 먼저, 없으면 켜진 랜카드 가운데 처음 것(169.254 랜카드는 게이트웨이가 없다)
+  const sel = addrs.find((x) => x.ip === selIp);
+  const gw = sel?.nic.gateway ?? up.find((n) => n.gateway)?.gateway ?? null;
+  const down = nics.find((n) => !n.up && n.addrs.some((x) => inNet(a, x.ip, x.prefix) && inNet(b, x.ip, x.prefix)));
+  if (down) return { kind: "down", nic: down.name };
+  if (gw) return { kind: "routed", gateway: gw, apipa, list };
+  return { kind: "none", apipa, list };
+}
+
+/** 알림 한 줄. in 이면 null. weak = 약한 알림(경유로 닿을 수 있거나 일부만 밖) */
+export function subnetNote(fit: SubnetFit, range: string, first: string, lang: Lang): { text: string; weak: boolean } | null {
+  if (fit.kind === "in") return null;
+  const ko = lang === "ko";
+  const r = range.trim();
+  if (fit.kind === "down")
+    return { text: ko ? `${r} 는 «${fit.nic}» 대역인데 그 랜카드가 연결 끊김입니다 — 랜선·스위치 불을 확인하세요.` : `${r} is in «${fit.nic}»'s subnet, but that adapter is disconnected — check the cable and the switch link light.`, weak: false };
+  const ex = `${first.split(".").slice(0, 3).join(".")}.x`;
+  const now = fit.list ? (ko ? ` 지금 랜카드: ${fit.list}` : ` Adapters now: ${fit.list}`) : ko ? " 켜진 랜카드가 없습니다 — 랜선·Wi-Fi 연결을 확인하세요." : " No adapter is up — check the cable or Wi-Fi.";
+  const apipa = fit.apipa.length
+    ? ko
+      ? ` «${fit.apipa.join("», «")}» 는 169.254.x.x — IP 를 못 받았습니다(DHCP 없음). 장비 대역의 고정 IP 를 넣으세요.`
+      : ` «${fit.apipa.join("», «")}» has 169.254.x.x — it did not get an IP (no DHCP). Set a static IP in the devices' subnet.`
+    : "";
+  switch (fit.kind) {
+    case "otherNic":
+      return {
+        text: ko ? `${r} 는 «${fit.nic}»(${fit.ip}/${fit.prefix}) 대역입니다 — 랜카드를 «${fit.nic}» 로 고르면 ARP 로 찾습니다.` : `${r} is in «${fit.nic}»'s subnet (${fit.ip}/${fit.prefix}) — pick «${fit.nic}» as the adapter so ARP can be used.`,
+        weak: true,
+      };
+    case "partial":
+      return {
+        text: ko ? `${r} 의 일부만 «${fit.nic}»(${fit.ip}/${fit.prefix}) 대역입니다 — 나머지 주소는 ARP 없이 핑으로만 찾습니다.` : `Only part of ${r} is in «${fit.nic}»'s subnet (${fit.ip}/${fit.prefix}) — the rest is found by ping only, without ARP.`,
+        weak: true,
+      };
+    case "routed":
+      return {
+        text:
+          (ko
+            ? `${r} 는 이 PC 의 랜카드 대역 밖입니다 — 게이트웨이 ${fit.gateway} 를 거쳐(경유) 핑으로만 찾고 MAC 은 모릅니다. 장비가 이 PC 에 바로 꽂혀 있으면 이 PC 의 IP 를 같은 대역(예 ${ex})으로 바꾸세요.`
+            : `${r} is outside this PC's adapter subnets — it is reached only via gateway ${fit.gateway} (routed), by ping, without MACs. If the devices are plugged straight into this PC, change this PC's IP to the same subnet (e.g. ${ex}).`) +
+          apipa +
+          now,
+        weak: true,
+      };
+    case "none":
+      return {
+        text:
+          (ko
+            ? `${r} 는 이 PC 의 어느 랜카드 대역에도 없습니다 — 이 PC 의 IP 를 같은 대역(예 ${ex})으로 바꾸거나 다른 랜카드를 고르세요.`
+            : `${r} is not in any of this PC's adapter subnets — change this PC's IP to the same subnet (e.g. ${ex}) or pick another adapter.`) +
+          apipa +
+          now,
+        weak: false,
+      };
+  }
+}
