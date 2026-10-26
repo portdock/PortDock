@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { load, store } from "./framing";
 import { fileStamp } from "./fileName";
+import { useZoomKeys } from "./useZoomKeys";
 
 export * from "./settingsData.ts";
 import { DEFAULTS, sanitize, type Settings, type TimeFormat } from "./settingsData.ts";
@@ -35,6 +36,8 @@ export function useSettings() {
   const save = useCallback((next: Settings) => {
     store("settings", next);
     store("lang", next.lang);
+    // 같은 창의 다른 조각(새 버전 알림 등 — main.tsx 에서 그림)도 바뀐 설정을 알게
+    window.dispatchEvent(new Event(SETTINGS_EVENT));
   }, []);
   const update = useCallback(
     (patch: Partial<Settings>) => {
@@ -62,8 +65,13 @@ export function useSettings() {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+  // Ctrl+휠·Ctrl+=/-/0 글자 크기(0.3.0)
+  useZoomKeys(settings.fontSize, update);
   return { settings, update, reset };
 }
+
+/** 이 창에서 설정을 저장했을 때 window 에 보내는 사건 이름 */
+export const SETTINGS_EVENT = "portdock-settings";
 
 /**
  * 접기 칸 하나의 열림 상태 — 평소에는 칸마다 기억한 값(open·setOpen)을 쓰고,

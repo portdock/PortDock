@@ -491,8 +491,16 @@ pub fn run() {
             if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
                 let _ = w.with_webview(|wv| portdock_core::report::watch_webview2(&wv.controller()));
             }
-            #[cfg(not(windows))]
-            let _ = app;
+            // 켤 때 흰 화면 없이(0.3.0) — 창은 숨긴 채 만들고(tauri.conf.json visible false) 화면이 첫 그림 뒤 보인다(shared/windowShow.ts).
+            // 화면이 끝내 부르지 못하면(스크립트 오류 등) 4초 뒤 여기서 보인다 — 창이 안 뜨는 일이 없게
+            if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    if !w.is_visible().unwrap_or(true) {
+                        let _ = w.show();
+                    }
+                });
+            }
             Ok(())
         })
         .manage(App::default())
