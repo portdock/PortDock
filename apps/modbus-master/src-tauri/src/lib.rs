@@ -324,6 +324,12 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 명령줄 인자(0.2.0) — 처음 한 번만 준다. 뜻 풀이·검사는 화면(src/launch.ts)이 하고, 설정만 채운다(연결은 사용자가)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
 /// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
 #[tauri::command]
 fn set_lang(lang: String) {
@@ -389,6 +395,7 @@ pub fn run() {
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
+            launch_args,
             report_pending,
             report_dismiss,
             report_env,

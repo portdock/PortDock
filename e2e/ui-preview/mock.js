@@ -866,6 +866,14 @@ async function handle(cmd, a) {
       return [];
     case "report_dismiss":
       return null;
+    // 명령줄 인자(0.2.0, Modbus Master) — 주소 «?args=["--tcp","1.2.3.4:502"]»(JSON 배열)
+    case "launch_args":
+      try {
+        const v = JSON.parse(new URLSearchParams(location.search).get("args") ?? "[]");
+        return Array.isArray(v) ? v.map(String) : [];
+      } catch {
+        return [];
+      }
     case "write_text":
       if (/[<>|"?*]/.test(a.path.replace(/^[A-Za-z]:/, ""))) return fail(`${a.path}: ${tr("파일 이름이 잘못되었습니다", "The filename is invalid")} (os error 123)`);
       files.set(a.path, a.text);

@@ -620,6 +620,23 @@ async function runApp(app, port) {
         await verify("mm first card");
         await load(port, combo);
       }
+      // (0.2.0) 명령줄 인자: «--tcp 192.168.7.20:1502 --unit 3 --x» → Modbus TCP·주소·포트·국번이 채워지고(연결은 안 함) 알림 한 줄, 모르는 인자는 «무시»
+      if (app === "modbus-master" && combo.full) {
+        await d.get(`http://localhost:${port}/?args=${encodeURIComponent(JSON.stringify(["--tcp", "192.168.7.20:1502", "--unit", "3", "--x"]))}`);
+        await sleep(900);
+        const r = await js(`
+          const tr = [...document.querySelectorAll('aside.side select')].find((s) => s.querySelector('option[value=rtu-tcp]'));
+          const net = [...document.querySelectorAll('aside.side .grid2.net input')].map((i) => i.value);
+          const unit = [...document.querySelectorAll('.main .toolbar input.num')][0];
+          const toast = document.querySelector('.toast');
+          const run = document.querySelector(${JSON.stringify(RUN_BTN)});
+          return { tr: tr && tr.value, net, unit: unit && unit.value, toast: toast && toast.textContent, err: !!toast && toast.classList.contains('error'), run: run && run.textContent.trim() };`);
+        if (r.tr !== "tcp" || !r.net.includes("192.168.7.20") || !r.net.includes("1502") || r.unit !== "3" || !/192\.168\.7\.20:1502/.test(r.toast ?? "") || !/--x/.test(r.toast ?? "") || !r.err || !/^(연결|Connect)$/.test(r.run ?? ""))
+          await conv("mm-launch-args", `명령줄 인자로 채운 설정이 이상함: ${JSON.stringify(r)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-launch-args`);
+        await verify("mm launch args");
+        await load(port, combo);
+      }
       // (10/18) Slave 첫 실행 카드: 주소 부르는 법(가운데 위 «주소 표기» 와 같은 값) · «예제 채우기»(보유 레지스터 0~9, 이름·F32 CDAB 23.5) · «CSV 가져오기…»
       if (app === "modbus-slave" && combo.full && card) {
         const r = await jsAsync(`

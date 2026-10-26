@@ -52,6 +52,7 @@ import { FirstCard } from "@shared/FirstCard";
 import { Popover } from "@shared/Popover";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { help } from "./help";
+import { launchFilled, masterLaunch } from "./launch";
 import { load, samePorts, store } from "@shared/framing";
 import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
@@ -240,6 +241,44 @@ export default function App() {
     if (cfg.port) setPortNotice(fill(dict[lang].portSwitched, { a: cfg.port, b: next }));
     setCfg((c) => ({ ...c, port: next }));
   }, [ports, cfg.port, connected, lang]);
+
+  // ---- 명령줄 인자(0.2.0) — «--tcp 192.168.0.10:502 --unit 1» 등. 설정만 채우고 연결은 사용자가 누른다
+  const launchDone = useRef(false);
+  useEffect(() => {
+    if (launchDone.current) return;
+    launchDone.current = true;
+    api
+      .launchArgs()
+      .then((argv) => {
+        if (!argv?.length) return;
+        const l = masterLaunch(argv, wire);
+        const d = dict[langRef.current];
+        const parts: string[] = [];
+        if (l.transport === "tcp" && l.host) {
+          setTransport("tcp");
+          setNet((n) => ({ ...n, host: l.host!, port: l.port ?? 502 }));
+          parts.push(`${d.trTcp} ${l.host.includes(":") ? `[${l.host}]` : l.host}:${l.port ?? 502}`);
+        }
+        if (l.transport === "serial" && l.serialPort) {
+          setTransport("serial");
+          setCfg((c) => ({ ...c, port: l.serialPort! }));
+          parts.push(`${d.trSerial} ${l.serialPort}`);
+        }
+        if (l.baud !== undefined) {
+          setCfg((c) => ({ ...c, baud: l.baud! }));
+          parts.push(`${l.baud} bps`);
+        }
+        if (l.unit !== undefined) {
+          const id = sel.id;
+          setTables((ts) => ts.map((x) => (x.id === id ? { ...x, unit: l.unit! } : x)));
+          parts.push(fill(d.titleUnit, { a: l.unit }));
+        }
+        const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---- 읽은 값·추세·값 기록
   const [results, setResults] = useState<Record<number, TableResult>>({});

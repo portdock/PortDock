@@ -9,6 +9,7 @@ pub mod event;
 pub mod framer;
 pub mod loopback;
 pub mod i18n;
+pub mod launch;
 pub mod modbus;
 pub mod modbus_master;
 pub mod modbus_slave;

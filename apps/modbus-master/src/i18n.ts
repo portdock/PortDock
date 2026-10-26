@@ -47,6 +47,9 @@ const ko = {
   connectFailed: "연결 실패",
   busyHint: "다른 프로그램(다른 마스터·터미널)이 이 포트를 쓰고 있을 수 있습니다.",
   portSwitched: "저장된 포트 {a} 가 없어 {b} 를 골랐습니다",
+  // 명령줄 인자(0.2.0)
+  launchSet: "명령줄로 채움: {a} — «연결» 을 누르세요",
+  launchBad: "무시한 명령줄 인자: {a}",
   status_idle: "대기",
   status_connecting: "연결하는 중",
   status_connected: "연결됨",
@@ -276,6 +279,8 @@ const en: typeof ko = {
   connectFailed: "Connection failed",
   busyHint: "Another program (another master or terminal) may be using this port.",
   portSwitched: "Saved port {a} is missing — picked {b}",
+  launchSet: "Filled from the command line: {a} — press «Connect»",
+  launchBad: "Ignored command-line arguments: {a}",
   status_idle: "Idle",
   status_connecting: "Connecting",
   status_connected: "Connected",
