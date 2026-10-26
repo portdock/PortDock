@@ -28,3 +28,4 @@ dist-packages/
 
 # 개인 낱말 목록(privacy-check) — 공개하지 않는다
 .private-terms
+*.stackdump
