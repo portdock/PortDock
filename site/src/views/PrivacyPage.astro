@@ -1,5 +1,5 @@
 ---
-// 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
+// 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고·사용 통계)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
@@ -12,15 +12,15 @@ interface Props {
 const { lang } = Astro.props;
 const t = UI[lang];
 const ko = lang === "ko";
-const updated = "2026-10-23";
+const updated = "2026-10-26";
 ---
 
 <Base
   lang={lang}
   title={t.privacy}
   description={ko
-    ? "PortDock 프로그램은 통신 내용을 밖으로 보내지 않고, 오류 보고는 허락할 때만 보냅니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리 방식과 위탁처."
-    : "PortDock programs never send your traffic; error reports go out only with your permission. How the site handles analytics, ad cookies and the contact form."}
+    ? "PortDock 프로그램은 통신 내용을 밖으로 보내지 않고, 오류 보고·사용 통계는 사용자가 켤 때만 보냅니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리와 위탁처."
+    : "PortDock never sends your traffic; error reports and usage stats only if you turn them on. How the site handles analytics, ad cookies and the contact form."}
   path="privacy/"
 >
   <header class="page-head">
@@ -42,6 +42,16 @@ const updated = "2026-10-23";
               프로그램·윈도우 버전을 보냅니다. 통신 내용과 IP 설정은 넣지 않으며, 사용자가 직접 «최근 통신 기록» 을 켠 경우에만 그 내용이 들어갑니다.
             </li>
             <li>오류 보고는 오류 수집 서비스 Sentry(Functional Software, Inc.)로 전송되어 오류 분석에만 쓰이고, 30일 뒤 지워집니다. 저장 위치는 Sentry 의 EU(독일) 데이터 센터이며 IP 주소는 저장하지 않도록 설정합니다.</li>
+            <li>
+              <b>사용 통계(선택, 기본 꺼짐)</b>: 처음 실행할 때 한 번 묻고, 사용자가 «보내기» 를 고르거나 설정에서 «사용 통계 보내기» 를 켠 경우에만 보냅니다. 고르지 않고 닫으면 보내지 않습니다.
+              창을 닫을 때 한 번, 프로그램 이름·버전, 윈도우 버전(10·11), 화면 언어, 켜 둔 시간(분), 기능별 사용 횟수(연결·보내기·읽기 등 — 횟수만), 설치판/휴대판 구분을 보냅니다.
+              통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않고, 설치나 PC 를 알아볼 id 도 만들지 않습니다(실행마다 새로 만드는 무작위 번호만 씁니다).
+              인터넷이 없거나 보내지 못하면 버리고, 이 PC 에 쌓아 두지 않습니다.
+            </li>
+            <li>
+              사용 통계는 Aptabase(Technov Solutions SRL, 루마니아)의 EU 지역으로 전송되어 기능 개선 순서를 정하는 데만 쓰입니다. Aptabase 는 연결 주소(IP)로 나라·지역을 추정해 남기고 IP 자체는
+              저장하지 않으며, 같은 날의 방문을 묶는 익명 번호는 24시간마다 바뀝니다. 통계는 Aptabase 에 최대 5년 보관되며, 개인과 이어지지 않아 개별 삭제 대상을 찾을 수 없습니다.
+            </li>
           </ul>
           <h2>2. 이 사이트</h2>
           <ul>
@@ -58,6 +68,7 @@ const updated = "2026-10-23";
             <li>Cloudflare, Inc.(미국) — 사이트 호스팅·방문 통계·스팸 방지·문의 메일 전달</li>
             <li>Google LLC(미국) — 광고(웹 도구·가이드·장비 레지스터 맵 페이지)</li>
             <li>Functional Software, Inc.(Sentry, 미국 법인·EU 데이터 센터) — 프로그램 오류 보고(사용자가 허락한 경우)</li>
+            <li>Technov Solutions SRL(Aptabase, 루마니아·EU 데이터 센터) — 프로그램 사용 통계(사용자가 켠 경우)</li>
           </ul>
           <h2>4. 문의</h2>
           <p>
@@ -74,6 +85,18 @@ const updated = "2026-10-23";
               text, location) and program/Windows versions. Traffic and IP settings are not included unless you explicitly tick «recent traffic».
             </li>
             <li>Reports go to Sentry (Functional Software, Inc.), are used only to fix bugs, are deleted after 30 days, are stored in Sentry's EU (Germany) region, and IP addresses are not stored.</li>
+            <li>
+              <b>Usage statistics (optional, off by default)</b>: the program asks once on first run and sends statistics only if you choose «Send» or turn on «Send usage statistics» in
+              Settings. Closing the prompt without choosing means nothing is sent. When you close the window, it sends the program name and version, Windows version (10/11), display
+              language, minutes the program was open, how many times each feature was used (connect, send, read … — counts only) and whether it is the installed or portable edition.
+              It never sends traffic, IP addresses, ports, COM names, file paths or PC/user/device names, and it creates no ID tied to your installation or PC (only a random number that
+              changes every run). If you are offline or sending fails, the data is dropped rather than stored on the PC.
+            </li>
+            <li>
+              Usage statistics go to the EU region of Aptabase (Technov Solutions SRL, Romania) and are used only to decide what to improve. Aptabase derives country and region from the
+              connection's IP address but does not store the address itself, and the anonymous daily visitor number it uses changes every 24 hours. Statistics are kept by Aptabase for
+              up to 5 years; because they cannot be linked to a person, individual records cannot be located for deletion.
+            </li>
           </ul>
           <h2>2. This website</h2>
           <ul>
@@ -90,6 +113,7 @@ const updated = "2026-10-23";
             <li>Cloudflare, Inc. (USA) — hosting, analytics, spam protection, contact mail delivery</li>
             <li>Google LLC (USA) — ads on web-tool, guide and device register map pages</li>
             <li>Functional Software, Inc. (Sentry; US entity, EU data region) — program error reports (only with your permission)</li>
+            <li>Technov Solutions SRL (Aptabase; Romania, EU data region) — program usage statistics (only if you turn them on)</li>
           </ul>
           <h2>4. Contact</h2>
           <p>

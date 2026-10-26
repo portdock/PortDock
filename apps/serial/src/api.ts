@@ -4,6 +4,7 @@ import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
 import type { LoopConfig, LoopEvent, PortReport } from "@shared/portinfo";
 import type { PortCheckApi } from "@shared/PortCheckDialog";
+import { tally } from "@shared/usage";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 
 export type TextMode = "hex" | "ascii";
@@ -125,20 +126,20 @@ export const api = {
   open: (config: SerialConfig, framing: FrameMode, rxCheck: unknown, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<void>("open_session", { config, framing: frameModeToRust(framing), rxCheck, onEvent: ch });
+    return tally("connect", invoke<void>("open_session", { config, framing: frameModeToRust(framing), rxCheck, onEvent: ch }));
   },
   close: (id: string) => invoke<void>("close_session", { id }),
   setFraming: (id: string, framing: FrameMode, rxCheck: unknown) => invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
   reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
-  setLog: (id: string, path: string | null) => invoke<void>("set_log", { id, path }),
+  setLog: (id: string, path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { id, path })),
   setLogOptions: (options: LogOptions) => invoke<void>("set_log_options", { options }),
   send: (id: string, spec: SendSpec, encoding: Encoding, charDelayMs = 0) =>
-    invoke<number[]>("send", { id, spec: wireSpec(spec, encoding), pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null }),
+    tally("send", invoke<number[]>("send", { id, spec: wireSpec(spec, encoding), pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null })),
   preview: (spec: SendSpec, encoding: Encoding) => invoke<number[]>("preview", { spec: wireSpec(spec, encoding) }),
-  sendFile: (id: string, path: string, pace: Pace) => invoke<{ id: number; total: number }>("send_file", { id, path, pace }),
+  sendFile: (id: string, path: string, pace: Pace) => tally("send_file", invoke<{ id: number; total: number }>("send_file", { id, path, pace })),
   cancelSend: (id: string) => invoke<void>("cancel_send", { id }),
   fileSize: (path: string) => invoke<number>("file_size", { path }),
-  sendBreak: (id: string, ms: number) => invoke<void>("send_break", { id, ms }),
+  sendBreak: (id: string, ms: number) => tally("send_break", invoke<void>("send_break", { id, ms })),
   decodeModbus: (bytes: number[]) => invoke<ModbusInfo | null>("decode_modbus", { bytes }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
@@ -146,7 +147,7 @@ export const api = {
 
 /** «연결 점검…»(shared/PortCheckDialog) — 장치 읽기·연결 시험 */
 export const checkApi: PortCheckApi = {
-  report: (id: string) => invoke<PortReport>("pi_report", { id }),
+  report: (id: string) => tally("port_check", invoke<PortReport>("pi_report", { id })),
   start: (config: LoopConfig, onEvent: (e: LoopEvent) => void) => {
     const ch = new Channel<LoopEvent>();
     ch.onmessage = onEvent;

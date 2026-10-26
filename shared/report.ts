@@ -33,6 +33,8 @@ export interface EnvInfo {
   os: string;
   arch: string;
   reportsDir: string;
+  /** 휴대판(exe 옆 portdock-data 에 저장) — 예전 백엔드면 없음 */
+  portable?: boolean;
 }
 export interface ReportFrame {
   ts: number;
@@ -92,7 +94,8 @@ export function autoReportMode(): "ask" | "on" | "off" {
 }
 
 let envCache: Promise<EnvInfo | null> | null = null;
-const envOnce = () => (envCache ??= reportApi.env());
+/** 프로그램·버전·OS(한 번만 묻는다) — 사용 통계도 쓴다 */
+export const envOnce = () => (envCache ??= reportApi.env());
 
 const hex32 = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
 

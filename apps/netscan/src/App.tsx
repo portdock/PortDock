@@ -505,7 +505,7 @@ export default function App() {
               <option value="en">English</option>
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
-            <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
+            <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>

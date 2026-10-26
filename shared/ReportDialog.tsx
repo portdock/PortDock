@@ -22,6 +22,8 @@ import {
   type ReportFrame,
 } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
+import { usageAvailable } from "./usage";
+import { UsageAsk } from "./UsageAsk";
 
 const LOG_LINES = 200;
 
@@ -298,6 +300,7 @@ export function ReportDialog({
 /**
  * 머리줄의 «!» 버튼 + 문제 보고 창 + 시작할 때 «지난번에 오류로 꺼졌습니다» 안내.
  * 각 프로그램은 이것 하나만 머리줄에 둔다. 자동 전송을 켰으면 묻지 않고 보낸다.
+ * 사용 통계를 아직 묻지 않았으면(키가 들어간 빌드에서만) 한 번 묻는다 — 오류 안내가 떠 있으면 그 뒤에.
  */
 export function ReportButton({
   app,
@@ -305,12 +308,18 @@ export function ReportButton({
   frames,
   autoReport,
   setAutoReport,
+  usageAsked,
+  onUsage,
 }: {
   app: string;
   lang: Lang;
   frames?: () => ReportFrame[];
   autoReport: "ask" | "on" | "off";
   setAutoReport: (v: "ask" | "on" | "off") => void;
+  /** 사용 통계를 이미 물었나(설정 usageAsked) */
+  usageAsked: boolean;
+  /** 사용 통계 고름 — 설정 usageStats·usageAsked 를 함께 저장 */
+  onUsage: (on: boolean) => void;
 }) {
   const u = UI[lang];
   const [open, setOpen] = useState(false);
@@ -395,6 +404,7 @@ export function ReportButton({
           </div>
         </div>
       )}
+      {!usageAsked && !prompt && !open && usageAvailable() && <UsageAsk lang={lang} onChoose={onUsage} />}
       {open && (
         <ReportDialog
           app={app}

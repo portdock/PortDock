@@ -1,5 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { SimSpec, Table } from "./regmap";
+import { tally } from "@shared/usage";
 export { ascii, clock, hex } from "@shared/format";
 export type { Table } from "./regmap";
 
@@ -128,26 +129,26 @@ export const api = {
   open: (config: SerialConfig, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<void>("open", { config, onEvent: ch });
+    return tally("start_serial", invoke<void>("open", { config, onEvent: ch }));
   },
   /** TCP 서버로 연다 — 실제로 묶인 주소를 돌려준다 */
   openTcp: (config: { host: string; port: number; wire: "tcp" | "rtu"; ignoreUnitId: boolean }, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<string>("open_tcp", { config, onEvent: ch });
+    return tally("start_tcp", invoke<string>("open_tcp", { config, onEvent: ch }));
   },
   close: () => invoke<void>("close"),
   reconfigure: (config: SerialConfig) => invoke<void>("reconfigure", { config }),
-  setLog: (path: string | null) => invoke<void>("set_log", { path }),
-  setFaults: (faults: Faults) => invoke<void>("set_faults", { faults }),
+  setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
+  setFaults: (faults: Faults) => tally((faults.noResponse || faults.badCrc || faults.badMbapLen || faults.forceException > 0 || faults.delayMs > 0) && "faults", invoke<void>("set_faults", { faults })),
   setOptions: (options: { ignoreUnitId: boolean }) => invoke<void>("set_options", { options }),
   setDeviceId: (device: DeviceId) => invoke<void>("set_device_id", { device }),
-  setSims: (id: number, table: Table, sims: SimSpec[]) => invoke<void>("set_sims", { id, table, sims }),
+  setSims: (id: number, table: Table, sims: SimSpec[]) => tally(sims.length > 0 && "simulate", invoke<void>("set_sims", { id, table, sims })),
   setAddrStyle: (style: { base: number; plc: boolean }) => invoke<void>("set_addr_style", { style }),
   setSlaveIds: (ids: number[]) => invoke<void>("set_slave_ids", { ids }),
   setRange: (id: number, table: Table, start: number, count: number) => invoke<void>("set_range", { id, table, start, count }),
   getValues: (id: number, table: Table, start: number, count: number) => invoke<number[]>("get_values", { id, table, start, count }),
-  setValues: (id: number, table: Table, start: number, values: number[]) => invoke<void>("set_values", { id, table, start, values }),
+  setValues: (id: number, table: Table, start: number, values: number[]) => tally("edit_values", invoke<void>("set_values", { id, table, start, values })),
   getStats: () => invoke<Stats>("get_stats"),
   resetStats: () => invoke<void>("reset_stats"),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),

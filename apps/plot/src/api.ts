@@ -1,6 +1,7 @@
 // 백엔드(apps/plot/src-tauri/src/lib.rs) 명령과 사건 모양
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { Format } from "./model";
+import { tally } from "@shared/usage";
 
 export interface PortInfo {
   name: string;
@@ -50,12 +51,12 @@ export const api = {
   start: (source: Source, format: Format, onEvent: (e: PlotEvent) => void) => {
     const ch = new Channel<PlotEvent>();
     ch.onmessage = onEvent;
-    return invoke<string>("plot_start", { source, format, onEvent: ch });
+    return tally("start", invoke<string>("plot_start", { source, format, onEvent: ch }));
   },
   stop: () => invoke<void>("plot_stop"),
   setFormat: (format: Format) => invoke<void>("plot_set_format", { format }),
-  record: (path: string | null, names: string[]) => invoke<void>("plot_record", { path, names }),
+  record: (path: string | null, names: string[]) => tally(path ? "record" : null, invoke<void>("plot_record", { path, names })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
-  writeBytes: (path: string, data: number[]) => invoke<void>("write_bytes", { path, data }),
+  writeBytes: (path: string, data: number[]) => tally("export", invoke<void>("write_bytes", { path, data })),
   readText: (path: string) => invoke<string>("read_text", { path }),
 };

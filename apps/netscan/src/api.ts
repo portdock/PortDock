@@ -1,4 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import { tally } from "@shared/usage";
 
 export interface NicAddr {
   ip: string;
@@ -86,18 +87,18 @@ export const api = {
   scanStart: (config: ScanConfig, onEvent: (e: ScanEvent) => void) => {
     const ch = new Channel<ScanEvent>();
     ch.onmessage = onEvent;
-    return invoke<number>("scan_start", { config, onEvent: ch });
+    return tally("scan", invoke<number>("scan_start", { config, onEvent: ch }));
   },
   scanCancel: () => invoke<void>("scan_cancel"),
-  modbusIdent: (ip: string, port?: number) => invoke<Ident>("modbus_ident", { ip, port: port ?? null }),
-  wake: (mac: string, nicIp: string | null, prefix: number | null) => invoke<string[]>("wake", { mac, nicIp, prefix }),
-  openWeb: (ip: string, port: number | null, https: boolean) => invoke<void>("open_web", { ip, port, https }),
+  modbusIdent: (ip: string, port?: number) => tally("modbus_ident", invoke<Ident>("modbus_ident", { ip, port: port ?? null })),
+  wake: (mac: string, nicIp: string | null, prefix: number | null) => tally("wake", invoke<string[]>("wake", { mac, nicIp, prefix })),
+  openWeb: (ip: string, port: number | null, https: boolean) => tally("open_web", invoke<void>("open_web", { ip, port, https })),
   /** Modbus Master 로 열기(0.2.0) — false 면 이 PC 에서 Master 를 찾지 못함 */
-  openMaster: (ip: string, port: number, unit: number) => invoke<boolean>("open_master", { ip, port, unit }),
+  openMaster: (ip: string, port: number, unit: number) => tally("open_master", invoke<boolean>("open_master", { ip, port, unit })),
   monitorStart: (config: MonitorConfig, logPath: string | null, onEvent: (e: MonitorEvent) => void) => {
     const ch = new Channel<MonitorEvent>();
     ch.onmessage = onEvent;
-    return invoke<Target[]>("monitor_start", { config, logPath, onEvent: ch });
+    return tally("monitor", invoke<Target[]>("monitor_start", { config, logPath, onEvent: ch }));
   },
   monitorStop: () => invoke<void>("monitor_stop"),
   monitorSetLog: (path: string | null) => invoke<void>("monitor_set_log", { path }),

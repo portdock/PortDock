@@ -61,6 +61,22 @@ test("설정 가져오기 — 모양 검사, 오류 자동 전송 «켬» 은 «
   assert.equal(JSON.parse(m.get("settings")).autoReport, "ask");
 });
 
+test("사용 통계 — 기본 꺼짐, 참·거짓만, 가져온 파일로는 켜지지 않는다(다시 묻기)", () => {
+  assert.equal(DEFAULTS.usageStats, false);
+  assert.equal(DEFAULTS.usageAsked, false);
+  assert.equal(sanitize({ usageStats: "yes", usageAsked: 1 }).usageStats, false);
+  assert.equal(sanitize({ usageStats: true, usageAsked: true }).usageStats, true);
+  const m = fakeStorage();
+  const file = (settings) => JSON.stringify({ app: "PortDock Serial", version: 1, data: { settings } });
+  importAll("PortDock Serial", file({ usageStats: true, usageAsked: true }));
+  let s = JSON.parse(m.get("settings"));
+  assert.equal(s.usageStats, false);
+  assert.equal(s.usageAsked, false);
+  importAll("PortDock Serial", file({ usageStats: false, usageAsked: true }));
+  s = JSON.parse(m.get("settings"));
+  assert.equal(s.usageAsked, true, "«보내지 않기» 를 고른 것은 그대로");
+});
+
 test("반복 간격 — NaN·0·음수면 최소값(0ms 로 장비에 계속 보내지 않게)", () => {
   assert.equal(repeatInterval(NaN), 10);
   assert.equal(repeatInterval(0), 10);

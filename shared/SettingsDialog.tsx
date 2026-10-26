@@ -10,6 +10,8 @@ import { tip } from "./tips";
 import { autoSendAvailable, type EnvInfo } from "./report";
 import { REPO_URL, SPONSOR_URL } from "./links";
 import { useRestoreFocus } from "./restoreFocus";
+import { usageAvailable } from "./usage";
+import { USAGE_TEXT } from "./usageText";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
 const REPO = REPO_URL;
@@ -312,6 +314,15 @@ export function SettingsDialog({
                 </select>
               </label>
               <span className="hint">{t.autoReportHint}</span>
+            </>
+          )}
+          {usageAvailable() && (
+            <>
+              <label className="inline">
+                <input type="checkbox" checked={settings.usageStats} onChange={(e) => update({ usageStats: e.target.checked, usageAsked: true })} />{" "}
+                {USAGE_TEXT[settings.lang].setting}
+              </label>
+              <span className="hint">{USAGE_TEXT[settings.lang].hint}</span>
             </>
           )}
           <hr />

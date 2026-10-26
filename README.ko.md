@@ -109,7 +109,7 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 - **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다([portdock 조직 구성원](https://github.com/orgs/portdock/people)):
   - 작성자·검토자(Authors, Reviewers): 메인테이너 — 다른 사람의 풀 리퀘스트는 반영 전에 검토
   - 승인자(Approvers): 메인테이너
-- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
+- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
 
 ## 라이선스
 

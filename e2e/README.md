@@ -80,3 +80,12 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 오류 자동 전송(Sentry DSN, `shared/report.ts`)이 켜져 있어 문제 보고 창에 «지금 바로 보내기» 가 보인다. 미리보기·smoke 가 실제로 보내지 않게:
 - `mock.js` 가 `fetch`·`sendBeacon` 을 가로채 같은 서버(vite) 말고는 보내지 않고 200 으로 답한 뒤 `window.__pdMock.net` 에 남긴다.
 - `vite.config.mjs` 가 `Content-Security-Policy: connect-src 'self' ws://localhost:*` 를 붙여, 가로채기를 빠져나간 요청도 브라우저가 막는다. smoke 는 이렇게 막힌 요청(`securitypolicyviolation`)을 오류로 센다.
+
+## 사용 통계 묻는 창 점검 (`ui-preview/usage.mjs`)
+공개 저장소에는 통계 키가 비어 있어 묻는 창·설정 칸이 숨는다. 미리보기 서버를 `USAGE_PREVIEW=1` 로 띄우면 가짜 키를 넣어 보인다(바깥 요청은 mock.js·CSP 가 막는다).
+```
+USAGE_PREVIEW=1 APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs      (저장소 루트)
+EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/usage.mjs [앱…]                          (e2e 폴더, 기본 serial)
+```
+- 한국어·영어 × 밝게·어둡게, 안쪽 984×601·800×600 에서 잘림·넘침·다른 언어 글자 섞임, 열린 채 언어 바꾸기, ✕ = «보내지 않기», 설정 칸, 다시 띄워도 묻지 않음. 캡처 `shots/usage/`.
+- 다 눌러 보기(`smoke.mjs`)는 이 서버 말고 보통 서버(`USAGE_PREVIEW` 없이)로 돌린다 — 묻는 창이 다른 버튼을 가린다.

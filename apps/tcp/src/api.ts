@@ -4,6 +4,7 @@ import { frameModeToRust, type FrameMode } from "@shared/framing";
 import type { MbapInfo } from "@shared/MbapDetail";
 import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
+import { tally } from "@shared/usage";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 export type { FrameMode } from "@shared/framing";
 
@@ -85,7 +86,7 @@ export const api = {
   start: (config: TcpConfig, framing: TcpFrameMode, rxCheck: unknown, upstream: RelayTarget | null, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<string | null>("start", { config, framing: tcpFrameToRust(framing), rxCheck, upstream, onEvent: ch });
+    return tally(upstream ? "relay" : "start", invoke<string | null>("start", { config, framing: tcpFrameToRust(framing), rxCheck, upstream, onEvent: ch }));
   },
   stop: () => invoke<void>("stop"),
   setFraming: (framing: TcpFrameMode, rxCheck: unknown) => invoke<void>("set_framing", { framing: tcpFrameToRust(framing), rxCheck }),
@@ -93,25 +94,25 @@ export const api = {
   /** sent < total 이면 일부 상대에게만 나갔다. 문자 간 지연이 있으면 다 보낼 때까지 돌아오지 않는다.
    *  side: 중계에서 "b" = 장비(B) 쪽으로 끼워 넣기 · mbapTid: MBAP 이면 트랜잭션 ID 를 1씩 늘려 넣기 */
   send: (target: number | null, spec: SendSpec, encoding: Encoding, charDelayMs = 0, side: "a" | "b" = "a", mbapTid = false) =>
-    invoke<{ sent: number; total: number }>("send", {
+    tally("send", invoke<{ sent: number; total: number }>("send", {
       target,
       spec: wireSpec(spec, encoding),
       pace: charDelayMs > 0 ? { charDelayMs, lineDelayMs: 0, byLine: false, chunk: 0 } : null,
       side,
       mbapTid,
-    }),
+    })),
   decodeMbap: (bytes: number[]) => invoke<MbapInfo | null>("decode_mbap", { bytes }),
   /** 파일 보내기 — 진행은 onProgress 로 */
   sendFile: (target: number | null, path: string, pace: Pace, onProgress: (p: Progress) => void, side: "a" | "b" = "a") => {
     const ch = new Channel<Progress>();
     ch.onmessage = onProgress;
-    return invoke<{ id: number; total: number }>("send_file", { target, path, pace, side, onProgress: ch });
+    return tally("send_file", invoke<{ id: number; total: number }>("send_file", { target, path, pace, side, onProgress: ch }));
   },
   cancelSend: () => invoke<void>("cancel_send"),
   fileSize: (path: string) => invoke<number>("file_size", { path }),
   kick: (id: number) => invoke<void>("kick", { id }),
   preview: (spec: SendSpec, encoding: Encoding) => invoke<number[]>("preview", { spec: wireSpec(spec, encoding) }),
-  setLog: (path: string | null) => invoke<void>("set_log", { path }),
+  setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   setLogOptions: (options: LogOptions) => invoke<void>("set_log_options", { options }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),

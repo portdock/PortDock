@@ -96,10 +96,15 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               <b>오류 보고</b>는 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정의 «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만 오류 수집 서비스 Sentry 로 보냅니다.
               기본값은 «오류로 꺼지면 묻기» 라서 비정상 종료 뒤에도 사용자가 허락해야 보내고, «보내지 않기» 로 끌 수 있습니다.
             </li>
+            <li>
+              <b>사용 통계</b>(선택, 기본 꺼짐)는 처음 실행할 때 한 번 묻고, 사용자가 «보내기» 를 고르거나 설정에서 «사용 통계 보내기» 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다.
+              기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 구분만 보내고, 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다.
+            </li>
             <li>설치판은 Microsoft Edge WebView2 가 없으면 Microsoft 에서 받아 설치합니다(오프라인 설치판·휴대판은 받지 않음).</li>
           </ul>
           <p>
             자세한 내용: <a href={url(lang, "privacy/")}>개인정보처리방침</a> · 함께 쓰는 서비스·구성 요소: <a href="https://sentry.io/privacy/">Sentry 개인정보처리방침</a>(오류 보고를 보낼 때),{" "}
+            <a href="https://aptabase.com/legal/privacy">Aptabase 개인정보처리방침</a>(사용 통계를 켰을 때),{" "}
             <a href="https://privacy.microsoft.com/privacystatement">Microsoft 개인정보처리방침</a>(WebView2)
           </p>
         </>
@@ -144,11 +149,16 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               <b>Error reports</b> are sent to the error-tracking service Sentry only when you press send in the «!» report window, or set «Automatic error reports» to «Send automatically» in
               settings. The default is «Ask after a crash», so even after a crash nothing is sent without your permission; «Never send» turns it off.
             </li>
+            <li>
+              <b>Usage statistics</b> (optional, off by default): the program asks once on first run and sends statistics to Aptabase (EU) when you close the window, only if you chose
+              «Send» or turned on «Send usage statistics» in settings. Only feature use counts, minutes open, program/Windows version, display language and installed/portable edition are
+              sent — never traffic, IP addresses, ports, COM names, file paths or PC/user/device names.
+            </li>
             <li>If Microsoft Edge WebView2 is missing, the installer downloads it from Microsoft (the offline installer and portable edition do not).</li>
           </ul>
           <p>
             Details: <a href={url(lang, "privacy/")}>privacy policy</a> · Third-party services and components: <a href="https://sentry.io/privacy/">Sentry privacy policy</a> (when you send
-            an error report), <a href="https://privacy.microsoft.com/privacystatement">Microsoft privacy statement</a> (WebView2)
+            an error report), <a href="https://aptabase.com/legal/privacy">Aptabase privacy policy</a> (if usage statistics are on), <a href="https://privacy.microsoft.com/privacystatement">Microsoft privacy statement</a> (WebView2)
           </p>
         </>
       )

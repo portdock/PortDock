@@ -120,10 +120,12 @@ export function settingsLines(lang: Lang): string[] {
     ? [
         "- «항상 위»: 이 창을 다른 창 위에 늘 보이게 합니다(머리줄 📌 과 같은 값).",
         "- «모두 펼치기(전문가 화면)»: 평소 접어 두는 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법·트리거·자동응답 등)을 펼친 채 보입니다. 켜 둔 채 하나를 접으면 이번 실행 동안만 접힙니다. 끄면 칸마다 기억해 둔 열림 상태로 돌아갑니다.",
+        "- «사용 통계 보내기»(기본 꺼짐): 켜면 창을 닫을 때 한 번, 기능별 사용 횟수(연결·보내기·읽기 등 — 횟수만)·켜 둔 시간(분)·프로그램/윈도우 버전·화면 언어·설치판/휴대판 구분을 Aptabase(EU)로 익명으로 보냅니다. 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다. 처음 실행할 때 한 번 묻고(고르지 않고 닫으면 보내지 않음), 여기서 언제든 끌 수 있습니다. 인터넷이 없거나 보내지 못하면 버립니다. 이 칸이 없는 판은 통계를 보내지 않습니다.",
       ]
     : [
         "- «Always on top»: keeps this window above other windows (same as 📌 in the header).",
         "- «Expand all (expert view)»: shows the groups that are normally collapsed (advanced connection, receive settings, fault injection, statistics, scan options, triggers, auto-reply …) open. Folding one while it is on lasts only for this run. Turning it off returns each group to its remembered state.",
+        "- «Send usage statistics» (off by default): when on, the program sends an anonymous summary to Aptabase (EU) once, as you close the window — how many times each feature was used (connect, send, read … — counts only), minutes open, program/Windows version, display language and installed/portable edition. Traffic, IP addresses, ports, COM names, file paths and PC/user/device names are never sent. You're asked once on first run (closing the prompt without choosing means no), and you can turn it off here at any time. If you're offline or sending fails, the data is dropped. Builds without this option never send statistics.",
       ];
 }
 

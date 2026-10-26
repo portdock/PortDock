@@ -1,5 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { Fc, TableStats } from "./model";
+import { tally } from "@shared/usage";
 export { hex } from "@shared/format";
 
 export interface PortInfo {
@@ -172,12 +173,12 @@ export const api = {
   open: (config: SerialConfig, setup: Setup, onEvent: (e: MasterEvent) => void) => {
     const ch = new Channel<MasterEvent>();
     ch.onmessage = onEvent;
-    return invoke<void>("open", { config, setup, onEvent: ch });
+    return tally("connect_serial", invoke<void>("open", { config, setup, onEvent: ch }));
   },
   openTcp: (config: { host: string; port: number; wire: "tcp" | "rtu"; autoReconnect: boolean }, setup: Setup, onEvent: (e: MasterEvent) => void) => {
     const ch = new Channel<MasterEvent>();
     ch.onmessage = onEvent;
-    return invoke<void>("open_tcp", { config, setup, onEvent: ch });
+    return tally("connect_tcp", invoke<void>("open_tcp", { config, setup, onEvent: ch }));
   },
   close: () => invoke<void>("close"),
   reconfigure: (config: SerialConfig) => invoke<void>("reconfigure", { config }),
@@ -185,15 +186,15 @@ export const api = {
   setTiming: (timing: Timing) => invoke<void>("set_timing", { timing }),
   setAddrStyle: (style: { base: number; plc: boolean }) => invoke<void>("set_addr_style", { style }),
   setPaused: (paused: boolean) => invoke<void>("set_paused", { paused }),
-  readOnce: (table: number) => invoke<void>("read_once", { table }),
-  write: (token: number, table: number, req: WriteReq) => invoke<void>("write", { token, table, req }),
+  readOnce: (table: number) => tally("modbus_read", invoke<void>("read_once", { table })),
+  write: (token: number, table: number, req: WriteReq) => tally("modbus_write", invoke<void>("write", { token, table, req })),
   previewWrite: (req: WriteReq, wire: "tcp" | "rtu") => invoke<number[]>("preview_write", { req, wire }),
-  scanIds: (config: ScanIds) => invoke<void>("scan_ids", { config }),
-  scanAddrs: (config: ScanAddrs) => invoke<void>("scan_addrs", { config }),
+  scanIds: (config: ScanIds) => tally("scan_ids", invoke<void>("scan_ids", { config })),
+  scanAddrs: (config: ScanAddrs) => tally("scan_addrs", invoke<void>("scan_addrs", { config })),
   scanCancel: () => invoke<void>("scan_cancel"),
   getStats: () => invoke<Stats>("get_stats"),
   resetStats: () => invoke<void>("reset_stats"),
-  setLog: (path: string | null) => invoke<void>("set_log", { path }),
+  setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   appendText: (path: string, text: string) => invoke<void>("append_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),

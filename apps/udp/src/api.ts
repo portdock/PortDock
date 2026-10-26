@@ -1,6 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { checksumToRust, type ChecksumKind, type CkOpts, type Encoding } from "@shared/format";
 import type { LogFormat } from "@shared/settings";
+import { tally } from "@shared/usage";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 
 export type TextMode = "hex" | "ascii";
@@ -70,16 +71,16 @@ export const api = {
   start: (config: UdpConfig, rxCheck: unknown, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
-    return invoke<string>("start", { config, rxCheck, onEvent: ch });
+    return tally("start", invoke<string>("start", { config, rxCheck, onEvent: ch }));
   },
   stop: () => invoke<void>("stop"),
   setRemote: (host: string, port: number) => invoke<void>("set_remote", { host, port }),
   setRxCheck: (rxCheck: unknown) => invoke<void>("set_rx_check", { rxCheck }),
   setEcho: (on: boolean) => invoke<void>("set_echo", { on }),
-  send: (to: string | null, spec: SendSpec, encoding: Encoding) => invoke<string>("send", { to, spec: wireSpec(spec, encoding) }),
+  send: (to: string | null, spec: SendSpec, encoding: Encoding) => tally("send", invoke<string>("send", { to, spec: wireSpec(spec, encoding) })),
   rejoin: () => invoke<void>("rejoin"),
   preview: (spec: SendSpec, encoding: Encoding) => invoke<number[]>("preview", { spec: wireSpec(spec, encoding) }),
-  setLog: (path: string | null) => invoke<void>("set_log", { path }),
+  setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   setLogOptions: (options: LogOptions) => invoke<void>("set_log_options", { options }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),

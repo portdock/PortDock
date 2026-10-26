@@ -1,5 +1,6 @@
 // 백엔드(apps/scpi/src-tauri/src/lib.rs) 명령과 반환 모양
 import { invoke } from "@tauri-apps/api/core";
+import { tally } from "@shared/usage";
 export { hex } from "@shared/format";
 
 export interface PortInfo {
@@ -88,16 +89,16 @@ export const isFatal = (e: ScpiError) => e.kind === "closed" || e.kind === "io" 
 
 export const api = {
   listPorts: () => invoke<PortInfo[]>("list_ports"),
-  openTcp: (config: NetConfig & { term: Term; connectTimeoutMs: number }) => invoke<void>("open_tcp", { config }),
-  openSerial: (config: SerialConfig & { term: Term }) => invoke<void>("open_serial", { config }),
+  openTcp: (config: NetConfig & { term: Term; connectTimeoutMs: number }) => tally("connect_tcp", invoke<void>("open_tcp", { config })),
+  openSerial: (config: SerialConfig & { term: Term }) => tally("connect_serial", invoke<void>("open_serial", { config })),
   close: () => invoke<void>("close"),
   cancel: () => invoke<void>("cancel"),
   setTerm: (term: Term) => invoke<void>("set_term", { term }),
-  write: (cmd: string) => invoke<ExchangeOut>("write_cmd", { cmd }),
-  read: (timeoutMs: number) => invoke<ExchangeOut>("read_reply", { timeoutMs }),
-  query: (cmd: string, timeoutMs: number) => invoke<ExchangeOut>("query", { cmd, timeoutMs }),
+  write: (cmd: string) => tally("write", invoke<ExchangeOut>("write_cmd", { cmd })),
+  read: (timeoutMs: number) => tally("read", invoke<ExchangeOut>("read_reply", { timeoutMs })),
+  query: (cmd: string, timeoutMs: number) => tally("query", invoke<ExchangeOut>("query", { cmd, timeoutMs })),
   drainErrors: (timeoutMs: number, cmd?: string, max?: number) => invoke<DrainOut>("drain_errors", { cmd: cmd ?? null, timeoutMs, max: max ?? null }),
-  saveBlock: (path: string) => invoke<number>("save_block", { path }),
+  saveBlock: (path: string) => tally("save_block", invoke<number>("save_block", { path })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   appendText: (path: string, text: string) => invoke<void>("append_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),

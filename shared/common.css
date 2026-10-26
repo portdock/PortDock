@@ -99,6 +99,10 @@ html .dump {
 .modal-body .row2 input {
   flex: 1;
 }
+.usage-ask ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
 .interlock {
   font-size: calc(var(--fs, 13px) * 0.923);
   color: var(--fail);

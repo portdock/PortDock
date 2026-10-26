@@ -515,7 +515,7 @@ export default function App() {
               <option value="en">English</option>
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
-            <ReportButton app={APP} lang={lang} frames={() => raw.current.map((r) => ({ ts: r.ts, dir: r.ev ? "ev" : "rx", bytes: [], note: r.why ? `${r.text} — ${r.why}` : r.text }))} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} />
+            <ReportButton app={APP} lang={lang} frames={() => raw.current.map((r) => ({ ts: r.ts, dir: r.ev ? "ev" : "rx", bytes: [], note: r.why ? `${r.text} — ${r.why}` : r.text }))} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
             <button className="icon-btn" onClick={openHelp} title={T.helpTip} aria-label={T.helpTip}>
               ?
             </button>

@@ -9,7 +9,7 @@
 // 설치하는 사람이 미리 알 수 있게 안내를 사용권 화면 맨 위에 둔다.
 // Tauri NSIS 는 bundle.licenseFile 을 «사용권 계약» 화면(MUI_PAGE_LICENSE)으로 보여 주므로, 각 앱 tauri.conf.json 의
 // licenseFile 이 이 파일을 가리킨다. 프로그램 옆에 깔리는 LICENSE(resources)는 GPL 전문 그대로다.
-// 문구는 shared/report.ts·shared/settings.ts(autoReport 기본 «ask»)의 실제 동작과 맞춘다.
+// 문구는 shared/report.ts·shared/settings.ts(autoReport 기본 «ask»)·shared/usage.ts(사용 통계 기본 꺼짐)의 실제 동작과 맞춘다.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +33,11 @@ const HEAD = `PortDock — 개인정보 안내 / Privacy notice
   오류 원인과 프로그램·윈도우 버전을 오류 수집 서비스 Sentry 로
   보냅니다. 기본값은 «오류로 꺼지면 묻기» 이고, «보내지 않기» 로
   바꿀 수 있습니다.
+- 사용 통계(선택, 기본 꺼짐): 처음 실행할 때 한 번 묻고, «보내기» 를
+  고르거나 설정에서 «사용 통계 보내기» 를 켠 경우에만 창을 닫을 때
+  Aptabase(EU)로 보냅니다. 기능별 사용 횟수·켜 둔 시간·프로그램/
+  윈도우 버전·화면 언어·설치판/휴대판 구분만 보내고, 통신 내용·IP·
+  포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다.
 - 설치판은 Microsoft Edge WebView2 가 없으면 Microsoft 에서 받아
   설치합니다(오프라인 설치판은 받지 않습니다).
 - 제거: 윈도우 «설정 → 앱» 에서 지웁니다.
@@ -53,6 +58,13 @@ installing or operating it.
   «!» report window, or set «Automatic error reports» to «Send
   automatically» in settings. The default is «Ask after a crash»; you
   can set it to «Never send».
+- Usage statistics (optional, off by default): the program asks once on
+  first run and sends them to Aptabase (EU) when you close the window,
+  only if you chose «Send» or turned on «Send usage statistics» in
+  settings. Only feature use counts, minutes open, program/Windows
+  version, display language and installed/portable edition are sent —
+  never traffic, IP addresses, ports, COM names, file paths or
+  PC/user/device names.
 - If Microsoft Edge WebView2 is missing, the installer downloads it from
   Microsoft (the offline installer does not).
 - Uninstall from Windows «Settings → Apps».

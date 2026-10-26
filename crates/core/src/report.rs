@@ -356,6 +356,13 @@ pub struct EnvInfo {
     pub os: String,
     pub arch: String,
     pub reports_dir: String,
+    /// 휴대판(exe 옆 `portdock-data` 에 저장) — 사용 통계의 «설치판/휴대판» 구분에만 쓴다
+    pub portable: bool,
+}
+
+/// 보고 폴더가 `portdock-data` 아래면 휴대판
+fn is_portable(dir: &Path) -> bool {
+    dir.ancestors().any(|a| a.file_name().is_some_and(|n| n == "portdock-data"))
 }
 
 pub fn env_info() -> EnvInfo {
@@ -366,6 +373,7 @@ pub fn env_info() -> EnvInfo {
         os: std::env::consts::OS.into(),
         arch: std::env::consts::ARCH.into(),
         reports_dir: reports_dir().display().to_string(),
+        portable: is_portable(&reports_dir()),
     }
 }
 
@@ -511,8 +519,10 @@ mod tests {
         fs::create_dir_all(&exe).unwrap();
         let local = tmp("local");
         assert_eq!(pick_dir(Some(&exe), Some(local.clone()), "tcp"), local.join("dev.portdock.tcp").join("reports"));
+        assert!(!is_portable(&pick_dir(Some(&exe), Some(local.clone()), "tcp")));
         fs::create_dir_all(exe.join("portdock-data")).unwrap();
         assert_eq!(pick_dir(Some(&exe), Some(local.clone()), "tcp"), exe.join("portdock-data").join("reports").join("tcp"));
+        assert!(is_portable(&pick_dir(Some(&exe), Some(local.clone()), "tcp")));
         // 시험 파일은 남지 않는다
         assert_eq!(fs::read_dir(exe.join("portdock-data")).unwrap().count(), 0);
         let _ = fs::remove_dir_all(&exe);

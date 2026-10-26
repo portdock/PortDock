@@ -2,6 +2,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import type { ChecksumKind } from "@shared/format";
 import { frameModeToRust, type FrameMode } from "@shared/framing";
 import { autoReplyApi } from "@shared/autoReplyApi";
+import { tally } from "@shared/usage";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 export type { FrameMode } from "@shared/framing";
 
@@ -51,19 +52,19 @@ function channel(onEvent: (e: SessionEvent) => void) {
 export const api = {
   listPorts: () => invoke<PortInfo[]>("list_ports"),
   startSerial: (config: object, framing: FrameMode, onEvent: (e: SessionEvent) => void) =>
-    invoke<void>("start_serial", { config, framing: frameModeToRust(framing), onEvent: channel(onEvent) }),
+    tally("start_serial", invoke<void>("start_serial", { config, framing: frameModeToRust(framing), onEvent: channel(onEvent) })),
   startTcp: (config: object, framing: FrameMode, onEvent: (e: SessionEvent) => void) =>
-    invoke<string | null>("start_tcp", { config, framing: frameModeToRust(framing), onEvent: channel(onEvent) }),
-  startUdp: (config: object, onEvent: (e: SessionEvent) => void) => invoke<string>("start_udp", { config, onEvent: channel(onEvent) }),
+    tally("start_tcp", invoke<string | null>("start_tcp", { config, framing: frameModeToRust(framing), onEvent: channel(onEvent) })),
+  startUdp: (config: object, onEvent: (e: SessionEvent) => void) => tally("start_udp", invoke<string>("start_udp", { config, onEvent: channel(onEvent) })),
   stop: () => invoke<void>("stop"),
   setFraming: (framing: FrameMode) => invoke<void>("set_framing", { framing: frameModeToRust(framing) }),
   /** 규칙(set_rules·preview_rule)·횟수·비교 옵션은 autoReplyApi 로 */
   setMatchOptions: autoReplyApi.setMatchOptions,
   getHits: autoReplyApi.getHits,
   resetHits: autoReplyApi.resetHits,
-  send: (spec: SendSpec) => invoke<void>("send", { spec }),
+  send: (spec: SendSpec) => tally("send", invoke<void>("send", { spec })),
   preview: (spec: SendSpec) => invoke<number[]>("preview", { spec }),
-  setLog: (path: string | null) => invoke<void>("set_log", { path }),
+  setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
 };
