@@ -10,7 +10,7 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
   시험: `SITE_URL=https://portdock.pages.dev npm run build -w portdock-site` 뒤 `dist/robots.txt`·`dist/sitemap-index.xml` 확인.
 - 연락 메일·후원 주소·저장소 주소는 `shared/links.ts` 한 곳(앱과 함께 읽는다). `SPONSOR_URL` 이 비면 푸터·내려받기 페이지의 «후원» 이 숨는다.
 - 공유 미리보기 그림 `public/og.png`(한국어)·`public/og-en.png`(영어), 1200×630 — `node site/og/make.mjs` 로 다시 만든다(윈도우 Edge 헤드리스로 찍음, 결과 PNG 를 커밋).
-- 코드 서명 정책 페이지 `/code-signing/`(SignPath Foundation 조건). 승인되면 `src/views/CodeSigningPage.astro` 의 `status` 를 `"active"` 로.
+- 코드 서명 정책 페이지 `/code-signing/`(오픈소스 서명 프로그램 조건 — 2026-10 신청은 받아들여지지 않아 지금은 «서명하지 않음»). 다시 신청해 승인되면 `src/views/CodeSigningPage.astro` 의 `status` 를 `"active"` 로 바꾸고 그 프로그램의 귀속 문구를 넣는다.
 
 ## 처음 올릴 때 — 무료 주소 portdock.pages.dev (사용자)
 1. Cloudflare 가입 → **Workers & Pages → Pages → 저장소 연결**(portdock/PortDock): 프로젝트 이름 `portdock`(→ `portdock.pages.dev`), 빌드 명령 `npm run build:site`, 출력 폴더 `site/dist`, 루트 `/`.

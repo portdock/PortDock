@@ -20,7 +20,7 @@ const LINKS = {
   source: REPO,
   site: "https://portdock.dev",
   notices: `${REPO}/blob/main/THIRD_PARTY_NOTICES.txt`,
-  // 자동으로 인터넷에 묻지 않는다 — 누르면 최신 릴리스 페이지만 연다
+  // 누르면 최신 릴리스 페이지만 연다(하루 한 번 묻기는 설정 «새 버전 확인» 을 켰을 때만 — UpdateNotice)
   latest: `${REPO}/releases/latest`,
   // 비어 있으면 «후원» 단추를 숨긴다(links.ts — 값을 넣으면 opener 권한에도 더할 것)
   sponsor: SPONSOR_URL,
@@ -76,7 +76,9 @@ const T = {
     notices: "제3자 고지",
     sponsor: "후원",
     checkUpdate: "새 버전 확인",
-    checkUpdateHint: "최신 릴리스 페이지를 브라우저로 엽니다(자동으로 확인하지 않음).",
+    checkUpdateHint: "최신 릴리스 페이지를 브라우저로 엽니다.",
+    updateCheck: "새 버전 확인(하루 한 번)",
+    updateCheckHint: "켜면 하루 한 번 GitHub(api.github.com)에 최신 릴리스만 묻고, 새 버전이면 창 아래에 알립니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다.",
   },
   en: {
     title: "Settings",
@@ -127,7 +129,9 @@ const T = {
     notices: "Third-party notices",
     sponsor: "Sponsor",
     checkUpdate: "Check for updates",
-    checkUpdateHint: "Opens the latest release page in your browser (never checks automatically).",
+    checkUpdateHint: "Opens the latest release page in your browser.",
+    updateCheck: "Check for new versions (once a day)",
+    updateCheckHint: "When on, asks GitHub (api.github.com) once a day for the latest release only and shows a notice at the bottom of the window if a newer version exists. No data is sent; nothing is downloaded or installed.",
   },
 };
 
@@ -399,6 +403,10 @@ export function SettingsDialog({
               {t.checkUpdate}
             </button>
           </div>
+          <label className="inline" data-tip={t.updateCheckHint}>
+            <input type="checkbox" checked={settings.updateCheck} onChange={(e) => update({ updateCheck: e.target.checked })} /> {t.updateCheck}
+          </label>
+          <span className="hint">{t.updateCheckHint}</span>
         </div>
       </div>
     </div>

@@ -52,7 +52,7 @@
 
 ### «Windows의 PC 보호» 경고
 
-아직 **코드 서명이 없어서**(SignPath 의 오픈소스 무료 서명 신청 예정) 처음 실행할 때 Microsoft Defender SmartScreen 경고가 뜰 수 있습니다. **추가 정보 → 실행** 을 누르세요. 그 전에 받은 파일이 올린 파일과 같은지 확인할 수 있습니다.
+아직 **코드 서명이 없어서** 처음 실행할 때 Microsoft Defender SmartScreen 경고가 뜰 수 있습니다. **추가 정보 → 실행** 을 누르세요. 그 전에 받은 파일이 올린 파일과 같은지 확인할 수 있습니다.
 
 ```powershell
 Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
@@ -101,15 +101,13 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 
 ## Code signing policy (코드 서명 정책)
 
-> **상태: 신청 예정 / 승인 후 적용.** 아직 SignPath Foundation 의 승인을 받지 않았고, 지금 릴리스는 **서명되지 않았습니다.** 아래 내용은 승인된 뒤의 릴리스부터 적용됩니다.
-
-(신청 예정) Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+> **상태: 지금은 서명하지 않음.** 지금 릴리스는 **서명되지 않았습니다.** 오픈소스 서명 프로그램(예: SignPath Foundation)에 다시 신청할 계획이며, 아래 범위·역할은 서명을 시작하면 그대로 적용합니다.
 
 - **서명하는 것**: 이 저장소의 소스로 GitHub Actions([release.yml](.github/workflows/release.yml))가 빌드한 PortDock 프로그램만. 릴리스마다 사람이 승인해야 서명됩니다.
 - **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다([portdock 조직 구성원](https://github.com/orgs/portdock/people)):
   - 작성자·검토자(Authors, Reviewers): 메인테이너 — 다른 사람의 풀 리퀘스트는 반영 전에 검토
   - 승인자(Approvers): 메인테이너
-- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
+- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 새 버전 확인(0.3.0 부터)은 설정의 *새 버전 확인(하루 한 번)* 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다(보내는 데이터 없음, 내려받기·설치 없음, 기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
 
 ## 라이선스
 

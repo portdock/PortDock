@@ -91,3 +91,14 @@ test("반복 간격 — NaN·0·음수면 최소값(0ms 로 장비에 계속 보
   assert.equal(loadInt("d", 1, 3600, 5), 5);
   assert.equal(loadInt("none", 1, 3600, 5), 5);
 });
+
+test("새 버전 확인(0.3.0) — 기본 끔, 참일 때만 켬, 가져온 설정 파일로는 켜지지 않음", () => {
+  assert.equal(DEFAULTS.updateCheck, false);
+  assert.equal(sanitize({ updateCheck: "yes" }).updateCheck, false);
+  assert.equal(sanitize({ updateCheck: true }).updateCheck, true);
+  fakeStorage();
+  importAll("PortDock Serial", JSON.stringify({ app: "PortDock Serial", data: { settings: { updateCheck: true, keepAwake: true } } }));
+  const s = JSON.parse(localStorage.getItem("settings"));
+  assert.equal(s.updateCheck, false);
+  assert.equal(s.keepAwake, true);
+});

@@ -5,6 +5,7 @@ import { TipLayer } from "@shared/TipLayer";
 import { installErrorCapture } from "@shared/report";
 import { installBrowserGuard } from "@shared/browserGuard";
 import { showWhenPainted } from "@shared/windowShow";
+import { UpdateNotice } from "@shared/UpdateNotice";
 import App from "./App";
 import "@shared/common.css";
 
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <Boundary>
       <App />
       <TipLayer />
+      <UpdateNotice />
     </Boundary>
   </React.StrictMode>,
 );

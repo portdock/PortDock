@@ -32,6 +32,8 @@ export interface Settings {
   autoReport: AutoReport;
   /** 사용 통계 보내기(선택, 기본 꺼짐) — 창을 닫을 때 익명 횟수만(shared/usage.ts) */
   usageStats: boolean;
+  /** 새 버전 확인(0.3.0, 선택·기본 꺼짐) — 하루 한 번 GitHub API 의 최신 릴리스만 묻는다(shared/UpdateNotice.tsx) */
+  updateCheck: boolean;
   /** 사용 통계를 한 번 물었다(첫 실행·이 기능이 생긴 판으로 올린 뒤 처음) — 다시 묻지 않는다 */
   usageAsked: boolean;
   /** 창을 늘 다른 창 위에(머리줄 📌 과 같은 값) */
@@ -61,6 +63,7 @@ export const DEFAULTS: Settings = {
   autoConnect: false,
   autoReport: "ask",
   usageStats: false,
+  updateCheck: false,
   usageAsked: false,
   alwaysOnTop: false,
   encoding: "utf-8",
@@ -88,6 +91,7 @@ export function sanitize(s: Partial<Settings>): Settings {
   v.autoConnect = v.autoConnect === true;
   v.expandAll = v.expandAll === true;
   v.usageStats = v.usageStats === true;
+  v.updateCheck = v.updateCheck === true;
   v.usageAsked = v.usageAsked === true;
   if (!isEncoding(v.encoding)) v.encoding = "utf-8";
   if (!["hex", "ascii", "hex-ascii", "csv"].includes(v.logFormat)) v.logFormat = "hex";
@@ -115,7 +119,7 @@ const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v ==
 
 /**
  * 가져오기 — 다른 PortDock 도구의 파일이면 거절. 모양이 틀리면 지금 설정은 그대로 두고 거절한다.
- * 공통 설정은 고쳐서 넣고, 오류 자동 전송 «켬(묻지 않고 보내기)» 은 «묻기» 로, 사용 통계 «보내기» 는 «묻기» 로 낮춘다
+ * 공통 설정은 고쳐서 넣고, 오류 자동 전송 «켬(묻지 않고 보내기)» 은 «묻기» 로, 사용 통계 «보내기» 는 «묻기» 로, 새 버전 확인은 «끔» 으로 낮춘다
  * — 남이 준 파일로 몰래 켜지지 않게.
  * 도구별 값(명령 목록·표 등)은 읽는 쪽(`load`)이 종류를 보고, 그래도 화면이 깨지면 오류 화면의 «설정 초기화» 로 빠져나온다
  */
@@ -139,6 +143,7 @@ export function importAll(app: string, json: string, lang: "ko" | "en" = "ko") {
       s.usageStats = false;
       s.usageAsked = false;
     }
+    s.updateCheck = false;
     data.settings = s;
   }
   localStorage.clear();

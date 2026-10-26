@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -370,7 +371,10 @@ export function ReportButton({
       <button className={crashes.length ? "icon-btn alert" : "icon-btn"} onClick={() => setOpen(true)} title={u.button} aria-label={u.button}>
         !
       </button>
-      {prompt && !open && (
+      {/* body 에 그린다 — 머리줄(이 버튼)은 좁은 창(900px 이하)에서 접힌 왼쪽 칸 안에 숨어 있어 그 안에 그리면 보이지 않는다 */}
+      {prompt &&
+        !open &&
+        createPortal(
         <div className="modal-back">
           <div className="modal" role="alertdialog" aria-label={u.crashTitle}>
             <div className="modal-head">
@@ -402,10 +406,12 @@ export function ReportButton({
               {failed && <div className="error">{u.sendFail}</div>}
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
       {!usageAsked && !prompt && !open && usageAvailable() && <UsageAsk lang={lang} onChoose={onUsage} />}
-      {open && (
+      {open &&
+        createPortal(
         <ReportDialog
           app={app}
           lang={lang}
@@ -415,8 +421,9 @@ export function ReportButton({
             setPrompt(false); // 이번 실행에선 다시 묻지 않는다
             reportApi.pending().then(setCrashes);
           }}
-        />
-      )}
+        />,
+          document.body,
+        )}
     </>
   );
 }

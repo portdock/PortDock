@@ -52,7 +52,7 @@ With [Scoop](https://scoop.sh) (portable edition): `scoop bucket add portdock ht
 
 ### "Windows protected your PC"
 
-The builds are **not code-signed yet** (we have applied for SignPath Foundation's free open-source code signing), so Microsoft Defender SmartScreen may warn on first run. Click **More info → Run anyway**. Before you do, you can check that the file is the one we published:
+The builds are **not code-signed yet**, so Microsoft Defender SmartScreen may warn on first run. Click **More info → Run anyway**. Before you do, you can check that the file is the one we published:
 
 ```powershell
 Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
@@ -101,15 +101,13 @@ Layout: `apps/<tool>` (each tool's window and Tauri shell), `crates/core` (share
 
 ## Code signing policy
 
-> **Status: application planned / applies after approval.** PortDock has not been approved by SignPath Foundation yet, and current releases are **not signed**. The statement below applies to releases made after approval.
-
-(planned) Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+> **Status: not signed at the moment.** Current releases are **not signed**. We plan to apply again to an open-source signing program (such as SignPath Foundation); the scope and roles below will apply once signing starts.
 
 - **What is signed**: only PortDock's own programs, built by GitHub Actions ([release.yml](.github/workflows/release.yml)) from this repository. Every release is approved manually before signing.
 - **Team roles** — PortDock currently has a single maintainer who holds every role ([portdock organisation members](https://github.com/orgs/portdock/people)):
   - Committers and reviewers (Authors, Reviewers): the maintainer — pull requests from others are reviewed before merging
   - Approvers: the maintainer
-- **Privacy**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. Device traffic goes only where you point it; error reports go to Sentry only when you press send in the «!» report window or set *Automatic error reports* to *Send automatically* (default: *Ask after a crash*). Anonymous usage statistics (feature use counts, minutes open, program/Windows version, display language, installed/portable edition — never traffic, IP addresses, ports, COM names, file paths or PC/user/device names) go to Aptabase (EU) when you close the window, only if you chose *Send* when asked on first run or turned on *Send usage statistics* in Settings (default: off). If WebView2 is missing, the online installer downloads it from Microsoft. Details: [privacy policy](https://portdock.dev/privacy/) · [Sentry privacy policy](https://sentry.io/privacy/) · [Aptabase privacy policy](https://aptabase.com/legal/privacy) · [Microsoft privacy statement](https://privacy.microsoft.com/privacystatement) (WebView2). The installer shows this notice on its license page.
+- **Privacy**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. Device traffic goes only where you point it; error reports go to Sentry only when you press send in the «!» report window or set *Automatic error reports* to *Send automatically* (default: *Ask after a crash*). Anonymous usage statistics (feature use counts, minutes open, program/Windows version, display language, installed/portable edition — never traffic, IP addresses, ports, COM names, file paths or PC/user/device names) go to Aptabase (EU) when you close the window, only if you chose *Send* when asked on first run or turned on *Send usage statistics* in Settings (default: off). The update check (from 0.3.0) asks the GitHub API (api.github.com) for the latest release once a day, only if you turn on *Check for new versions (once a day)* in Settings (no data sent, nothing downloaded or installed; default: off). If WebView2 is missing, the online installer downloads it from Microsoft. Details: [privacy policy](https://portdock.dev/privacy/) · [Sentry privacy policy](https://sentry.io/privacy/) · [Aptabase privacy policy](https://aptabase.com/legal/privacy) · [GitHub privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft privacy statement](https://privacy.microsoft.com/privacystatement) (WebView2). The installer shows this notice on its license page.
 
 ## License
 

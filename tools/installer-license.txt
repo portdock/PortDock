@@ -8,7 +8,9 @@ PortDock — 개인정보 안내 / Privacy notice
 - 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·네트워크 장비 찾기)은
   사용자가 지정한 포트·주소·대역으로만 갑니다.
 - 통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.
-  새 버전 확인도 자동으로 하지 않습니다.
+- 새 버전 확인(선택, 기본 꺼짐): 설정에서 «새 버전 확인» 을 켠 경우에만
+  하루 한 번 GitHub(api.github.com)에 최신 릴리스를 묻습니다. 보내는
+  데이터는 없고, 내려받기·설치는 하지 않습니다.
 - 오류 보고: «!» 문제 보고 창에서 보내기를 누르거나, 설정의
   «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만
   오류 원인과 프로그램·윈도우 버전을 오류 수집 서비스 Sentry 로
@@ -33,7 +35,10 @@ installing or operating it.
 - Device communication (serial, TCP, UDP, Modbus, SCPI, network device
   discovery) goes only to the ports, addresses and subnets you choose.
 - Traffic, command lists, rules and settings stay on this PC.
-  The program never checks for updates on its own.
+- Update check (optional, off by default): only if you turn on «Check
+  for new versions» in settings, the program asks GitHub
+  (api.github.com) once a day for the latest release. No data is sent,
+  and nothing is downloaded or installed.
 - Error reports: the error cause and program/Windows versions are sent
   to the error-tracking service Sentry only when you press send in the
   «!» report window, or set «Automatic error reports» to «Send

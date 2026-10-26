@@ -1,5 +1,5 @@
 ---
-// 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고·사용 통계)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
+// 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고·사용 통계·새 버전 확인)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
@@ -19,8 +19,8 @@ const updated = "2026-10-26";
   lang={lang}
   title={t.privacy}
   description={ko
-    ? "PortDock 프로그램은 통신 내용을 밖으로 보내지 않고, 오류 보고·사용 통계는 사용자가 켤 때만 보냅니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리와 위탁처."
-    : "PortDock never sends your traffic; error reports and usage stats only if you turn them on. How the site handles analytics, ad cookies and the contact form."}
+    ? "PortDock 프로그램은 통신 내용을 보내지 않고, 오류 보고·사용 통계·새 버전 확인은 켤 때만 합니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리와 위탁처."
+    : "PortDock never sends your traffic; error reports, usage stats and update checks only if you opt in. How the site handles analytics, ads and the contact form."}
   path="privacy/"
 >
   <header class="page-head">
@@ -52,6 +52,11 @@ const updated = "2026-10-26";
               사용 통계는 Aptabase(Technov Solutions SRL, 루마니아)의 EU 지역으로 전송되어 기능 개선 순서를 정하는 데만 쓰입니다. Aptabase 는 연결 주소(IP)로 나라·지역을 추정해 남기고 IP 자체는
               저장하지 않으며, 같은 날의 방문을 묶는 익명 번호는 24시간마다 바뀝니다. 통계는 Aptabase 에 최대 5년 보관되며, 개인과 이어지지 않아 개별 삭제 대상을 찾을 수 없습니다.
             </li>
+            <li>
+              <b>새 버전 확인(선택, 기본 꺼짐, 0.3.0 부터)</b>: 설정에서 «새 버전 확인(하루 한 번)» 을 켠 경우에만, 하루 한 번 GitHub API(api.github.com)에 PortDock 최신 릴리스를 묻습니다.
+              요청에는 보내는 데이터가 없고(쿠키·식별자 없음), GitHub 는 다른 웹 요청처럼 연결 주소(IP)를 받습니다. 새 버전이면 알림줄만 띄우고, 내려받기·설치는 하지 않습니다.
+              GitHub 의 처리는 <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub 개인정보처리방침</a>을 따릅니다.
+            </li>
           </ul>
           <h2>2. 이 사이트</h2>
           <ul>
@@ -69,6 +74,7 @@ const updated = "2026-10-26";
             <li>Google LLC(미국) — 광고(웹 도구·가이드·장비 레지스터 맵 페이지)</li>
             <li>Functional Software, Inc.(Sentry, 미국 법인·EU 데이터 센터) — 프로그램 오류 보고(사용자가 허락한 경우)</li>
             <li>Technov Solutions SRL(Aptabase, 루마니아·EU 데이터 센터) — 프로그램 사용 통계(사용자가 켠 경우)</li>
+            <li>GitHub, Inc.(미국) — 새 버전 확인 요청을 받음(사용자가 켠 경우, 0.3.0 부터)</li>
           </ul>
           <h2>4. 문의</h2>
           <p>
@@ -97,6 +103,12 @@ const updated = "2026-10-26";
               connection's IP address but does not store the address itself, and the anonymous daily visitor number it uses changes every 24 hours. Statistics are kept by Aptabase for
               up to 5 years; because they cannot be linked to a person, individual records cannot be located for deletion.
             </li>
+            <li>
+              <b>Update check (optional, off by default, from 0.3.0)</b>: only if you turn on «Check for new versions (once a day)» in Settings, the program asks the GitHub API
+              (api.github.com) once a day for PortDock's latest release. The request carries no data (no cookies or identifiers); like any web request, GitHub sees the connection's IP
+              address. If a newer version exists, only a notice bar appears — nothing is downloaded or installed. GitHub handles the request under the{" "}
+              <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+            </li>
           </ul>
           <h2>2. This website</h2>
           <ul>
@@ -114,6 +126,7 @@ const updated = "2026-10-26";
             <li>Google LLC (USA) — ads on web-tool, guide and device register map pages</li>
             <li>Functional Software, Inc. (Sentry; US entity, EU data region) — program error reports (only with your permission)</li>
             <li>Technov Solutions SRL (Aptabase; Romania, EU data region) — program usage statistics (only if you turn them on)</li>
+            <li>GitHub, Inc. (USA) — receives the update check request (only if you turn it on, from 0.3.0)</li>
           </ul>
           <h2>4. Contact</h2>
           <p>

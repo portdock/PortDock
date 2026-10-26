@@ -726,3 +726,31 @@ html .row.sel.primary {
   outline-offset: -1px;
 }
 
+/* ---- 새 버전 알림줄(0.3.0, 설정에서 켠 경우만) — 창 아래 가운데, 알림(.toast)보다 뒤 */
+.update-note {
+  position: fixed;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  z-index: 105;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.update-note > span {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.update-note .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

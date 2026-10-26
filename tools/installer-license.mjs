@@ -4,12 +4,13 @@
 //   node tools/installer-license.mjs            → tools/installer-license.txt
 //   node tools/installer-license.mjs --check    → 다시 만들어 보고, 지금 파일과 다르면 종료 코드 1
 //
-// 왜: SignPath Foundation 조건(https://signpath.org/terms «Respect user privacy and security»)은 사용자가 지정하지 않은 곳으로
-// 데이터를 보내는 프로그램이면 설치 중에 개인정보 정책을 보여 주라고 한다. PortDock 은 사용자가 요청할 때만 보내지만(오류 보고),
+// 왜: 오픈소스 코드 서명 프로그램(예: SignPath Foundation, https://signpath.org/terms «Respect user privacy and security»)은
+// 사용자가 지정하지 않은 곳으로 데이터를 보내는 프로그램이면 설치 중에 개인정보 정책을 보여 주라고 한다. PortDock 은 사용자가 요청할 때만 보내지만(오류 보고),
 // 설치하는 사람이 미리 알 수 있게 안내를 사용권 화면 맨 위에 둔다.
 // Tauri NSIS 는 bundle.licenseFile 을 «사용권 계약» 화면(MUI_PAGE_LICENSE)으로 보여 주므로, 각 앱 tauri.conf.json 의
 // licenseFile 이 이 파일을 가리킨다. 프로그램 옆에 깔리는 LICENSE(resources)는 GPL 전문 그대로다.
-// 문구는 shared/report.ts·shared/settings.ts(autoReport 기본 «ask»)·shared/usage.ts(사용 통계 기본 꺼짐)의 실제 동작과 맞춘다.
+// 문구는 shared/report.ts·shared/settings.ts(autoReport 기본 «ask»)·shared/usage.ts(사용 통계 기본 꺼짐)·
+// shared/UpdateNotice.tsx(새 버전 확인 기본 꺼짐)의 실제 동작과 맞춘다.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,7 +28,9 @@ const HEAD = `PortDock — 개인정보 안내 / Privacy notice
 - 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·네트워크 장비 찾기)은
   사용자가 지정한 포트·주소·대역으로만 갑니다.
 - 통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.
-  새 버전 확인도 자동으로 하지 않습니다.
+- 새 버전 확인(선택, 기본 꺼짐): 설정에서 «새 버전 확인» 을 켠 경우에만
+  하루 한 번 GitHub(api.github.com)에 최신 릴리스를 묻습니다. 보내는
+  데이터는 없고, 내려받기·설치는 하지 않습니다.
 - 오류 보고: «!» 문제 보고 창에서 보내기를 누르거나, 설정의
   «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만
   오류 원인과 프로그램·윈도우 버전을 오류 수집 서비스 Sentry 로
@@ -52,7 +55,10 @@ installing or operating it.
 - Device communication (serial, TCP, UDP, Modbus, SCPI, network device
   discovery) goes only to the ports, addresses and subnets you choose.
 - Traffic, command lists, rules and settings stay on this PC.
-  The program never checks for updates on its own.
+- Update check (optional, off by default): only if you turn on «Check
+  for new versions» in settings, the program asks GitHub
+  (api.github.com) once a day for the latest release. No data is sent,
+  and nothing is downloaded or installed.
 - Error reports: the error cause and program/Windows versions are sent
   to the error-tracking service Sentry only when you press send in the
   «!» report window, or set «Automatic error reports» to «Send

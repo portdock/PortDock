@@ -61,8 +61,8 @@ export const UI = {
     safe: [
       "모든 파일은 GitHub 릴리스에서만 내려받습니다. 다른 곳에 올라온 파일은 받지 마세요.",
       "릴리스마다 SHA256 값(SHA256SUMS.txt)과 Microsoft Defender 검사 결과를 함께 올립니다. PowerShell 에서 Get-FileHash 로 값을 비교할 수 있습니다.",
-      "아직 코드 서명 전이라 «Windows의 PC 보호» 창이 뜰 수 있습니다. «추가 정보» → «실행» 을 누르면 됩니다. 오픈소스 무료 코드 서명(SignPath Foundation)을 신청했고, 승인되면 다음 릴리스부터 서명합니다.",
-      "통신 내용은 밖으로 보내지 않습니다. 오류 보고와 사용 통계는 사용자가 켤 때만 보냅니다.",
+      "아직 코드 서명이 없어 «Windows의 PC 보호» 창이 뜰 수 있습니다(«추가 정보» → «실행»). 내려받은 파일은 위의 SHA256 값으로 같은 파일인지 확인할 수 있습니다.",
+      "통신 내용은 밖으로 보내지 않습니다. 오류 보고와 사용 통계는 사용자가 켤 때만 보냅니다. 새 버전 확인(GitHub 에 최신 릴리스 묻기)도 설정에서 켤 때만 합니다(0.3.0 부터).",
     ],
     webview: "실행에 Microsoft Edge WebView2 가 필요합니다(윈도우 11 기본 포함). 인터넷이 없는 PC 는 WebView2 를 함께 넣은 «오프라인 설치판» 을 받으세요.",
     footerLine: "PortDock — 현장 하드웨어 시험용 통신 도구. GPL-3.0.",
@@ -118,8 +118,8 @@ export const UI = {
     safe: [
       "Download only from the GitHub releases page. Do not use copies hosted elsewhere.",
       "Every release lists SHA256 hashes (SHA256SUMS.txt) and a Microsoft Defender scan result. Compare with Get-FileHash in PowerShell.",
-      "Builds are not code-signed yet, so Windows may show «Windows protected your PC». Click «More info» → «Run anyway». We have applied for free open-source code signing by SignPath Foundation; once approved, releases will be signed.",
-      "Your traffic goes only to the devices you connect to. Error reports and usage statistics are sent only if you turn them on.",
+      "Builds are not code-signed yet, so Windows may show «Windows protected your PC» («More info» → «Run anyway»). You can check a downloaded file against the SHA256 values above.",
+      "Your traffic goes only to the devices you connect to. Error reports and usage statistics are sent only if you turn them on. The update check (asking GitHub for the latest release) also runs only if you turn it on in Settings (from 0.3.0).",
     ],
     webview: "Requires Microsoft Edge WebView2 (included in Windows 11). For offline PCs, get the «offline installer» with WebView2 bundled.",
     footerLine: "PortDock — communication tools for hardware testing. GPL-3.0.",
