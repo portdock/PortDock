@@ -243,9 +243,78 @@ pub fn location_port(s: &str) -> Option<u32> {
     digits.parse().ok().filter(|n| *n > 0)
 }
 
+/// 이 PC 점검 — 이벤트 원본·ID·수준 → 묶음. 예기치 않은 종료(Kernel-Power 41 · EventLog 6008), 하드웨어(WHEA-Logger·disk·Ntfs 의
+/// 경고 이상 — 정보 이벤트는 뺀다), 시간 서비스(Time-Service 전부). 그 밖은 None
+pub fn pc_event_group(provider: &str, id: u32, level: u8) -> Option<&'static str> {
+    match provider {
+        "Microsoft-Windows-Kernel-Power" if id == 41 => Some("unexpected"),
+        "EventLog" if id == 6008 => Some("unexpected"),
+        "Microsoft-Windows-WHEA-Logger" | "disk" | "Ntfs" | "Microsoft-Windows-Ntfs" if (1..=3).contains(&level) => Some("hardware"),
+        "Microsoft-Windows-Time-Service" => Some("time"),
+        _ => None,
+    }
+}
+
+/// 이 PC 점검 — System 로그에서 찾을 XPath(최근 `days` 일). 거르기는 pc_event_group 이 한 번 더 한다
+pub fn pc_events_query(days: u32) -> String {
+    let ms = u64::from(days) * 86_400_000;
+    format!(
+        "*[System[((Provider[@Name='Microsoft-Windows-Kernel-Power'] and EventID=41) or (Provider[@Name='EventLog'] and EventID=6008) or (Provider[@Name='Microsoft-Windows-WHEA-Logger' or @Name='disk' or @Name='Ntfs' or @Name='Microsoft-Windows-Ntfs'] and (Level=1 or Level=2 or Level=3)) or Provider[@Name='Microsoft-Windows-Time-Service']) and TimeCreated[timediff(@SystemTime) <= {ms}]]]"
+    )
+}
+
+/// (원본, ID, 수준, 시각 ms) 들 → 원본·ID 별 건수·마지막 시각(묶음·원본·ID 순)
+pub fn pc_event_counts(events: impl IntoIterator<Item = (String, u32, u8, u64)>) -> Vec<super::PcEventCount> {
+    let mut map: std::collections::BTreeMap<(&'static str, String, u32), super::PcEventCount> = std::collections::BTreeMap::new();
+    for (provider, id, level, time) in events {
+        let Some(group) = pc_event_group(&provider, id, level) else { continue };
+        let e = map.entry((group, provider.clone(), id)).or_insert(super::PcEventCount { group, provider, id, level, count: 0, last: 0 });
+        e.count += 1;
+        if time >= e.last {
+            e.last = time;
+            e.level = level;
+        }
+    }
+    map.into_values().collect()
+}
+
+/// 경로 → 파일 이름(«C:\Windows\system32\scrnsave.scr» → «scrnsave.scr»). 사용자 폴더 경로가 결과에 남지 않게
+pub fn file_name(path: &str) -> String {
+    path.trim().rsplit(['\\', '/']).next().unwrap_or("").to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pc_events() {
+        assert_eq!(pc_event_group("Microsoft-Windows-Kernel-Power", 41, 1), Some("unexpected"));
+        assert_eq!(pc_event_group("Microsoft-Windows-Kernel-Power", 42, 4), None);
+        assert_eq!(pc_event_group("EventLog", 6008, 2), Some("unexpected"));
+        assert_eq!(pc_event_group("EventLog", 6005, 4), None);
+        assert_eq!(pc_event_group("Microsoft-Windows-WHEA-Logger", 17, 3), Some("hardware"));
+        // 정보 수준(Ntfs 98 «볼륨 정상» 등)은 하드웨어 오류로 세지 않는다
+        assert_eq!(pc_event_group("Microsoft-Windows-Ntfs", 98, 4), None);
+        assert_eq!(pc_event_group("disk", 7, 2), Some("hardware"));
+        assert_eq!(pc_event_group("Microsoft-Windows-Time-Service", 37, 4), Some("time"));
+        let q = pc_events_query(2);
+        assert!(q.contains("timediff(@SystemTime) <= 172800000") && q.contains("'EventLog'"));
+        let c = pc_event_counts(vec![
+            ("Microsoft-Windows-Kernel-Power".to_string(), 41, 1, 100),
+            ("Microsoft-Windows-Kernel-Power".to_string(), 41, 1, 300),
+            ("EventLog".to_string(), 6008, 2, 200),
+            ("Microsoft-Windows-Kernel-Power".to_string(), 109, 4, 400),
+            ("Microsoft-Windows-Time-Service".to_string(), 36, 3, 50),
+        ]);
+        assert_eq!(c.len(), 3);
+        let kp = c.iter().find(|x| x.id == 41).unwrap();
+        assert_eq!((kp.group, kp.count, kp.last), ("unexpected", 2, 300));
+        assert_eq!(c.iter().find(|x| x.id == 36).unwrap().group, "time");
+        assert_eq!(file_name(r"C:\Windows\system32\Mystify.scr"), "Mystify.scr");
+        assert_eq!(file_name("ssText3d.scr"), "ssText3d.scr");
+        assert_eq!(file_name(""), "");
+    }
 
     #[test]
     fn filetime_to_ms() {

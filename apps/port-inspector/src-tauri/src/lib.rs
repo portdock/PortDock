@@ -3,7 +3,7 @@
 //! 읽기 전용 — 레지스트리·장치 설정을 바꾸는 명령은 없다.
 
 use portdock_core::loopback::{self, LoopConfig, LoopEvent};
-use portdock_core::portinfo::{self, ComNumbers, EventList, NicList, PortEntry, PortReport};
+use portdock_core::portinfo::{self, ComNumbers, EventList, NicList, PcCheck, PortEntry, PortReport};
 use portdock_core::tr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -45,6 +45,12 @@ fn pi_events(instance_id: String, days: u32) -> EventList {
 #[tauri::command(async)]
 fn pi_nics() -> NicList {
     portinfo::nics()
+}
+
+/// 이 PC 점검 — 장비 PC 로 쓸 때 볼 설정(빠른 시작·절전·업데이트·재시작 대기·시간 동기화)과 최근 days 일 이벤트
+#[tauri::command(async)]
+fn pi_pc(days: u32) -> PcCheck {
+    portinfo::pc(days)
 }
 
 /// 연결 시험 시작 — 결과는 on_event 로. 하나만 돈다
@@ -160,6 +166,7 @@ pub fn run() {
             pi_com_numbers,
             pi_events,
             pi_nics,
+            pi_pc,
             loop_start,
             loop_cancel,
             write_text,
@@ -188,6 +195,9 @@ mod tests {
         assert!(v.get("comdbFound").is_some() && v.get("serialcomm").is_some());
         let e = serde_json::to_value(portinfo::events(r"USB\VID_FFFF&PID_FFFF\NOPE", 1)).unwrap();
         assert_eq!(e["days"], 1);
+        let p = serde_json::to_value(portinfo::pc(1)).unwrap();
+        assert_eq!(p["days"], 1);
+        assert!(p.get("fastStartup").is_some() && p.get("rebootPending").is_some() && p["time"].get("type").is_some() && p["screenSaver"].get("program").is_some());
         // 시험 하나가 끝나야 다음 시험
         let app = App::default();
         *lock(&app.test) = Some(Arc::new(AtomicBool::new(false)));

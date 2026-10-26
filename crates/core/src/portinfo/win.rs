@@ -44,7 +44,7 @@ pub(super) fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
-fn from_wide(buf: &[u16]) -> String {
+pub(super) fn from_wide(buf: &[u16]) -> String {
     let n = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
     String::from_utf16_lossy(&buf[..n])
 }
@@ -54,7 +54,7 @@ pub(super) fn multi_sz(buf: &[u16]) -> Vec<String> {
     buf.split(|&c| c == 0).filter(|s| !s.is_empty()).map(String::from_utf16_lossy).collect()
 }
 
-fn os_err(code: u32) -> String {
+pub(super) fn os_err(code: u32) -> String {
     std::io::Error::from_raw_os_error(code as i32).to_string()
 }
 
@@ -120,7 +120,7 @@ pub(super) fn prop_raw(dn: u32, key: &DEVPROPKEY) -> Option<(DEVPROPTYPE, Vec<u8
     Some((ty, buf))
 }
 
-fn u16s(b: &[u8]) -> Vec<u16> {
+pub(super) fn u16s(b: &[u8]) -> Vec<u16> {
     b.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect()
 }
 
@@ -180,7 +180,7 @@ pub(super) fn display_name(dn: u32, id: &str) -> String {
 
 // ---------------------------------------------------------------- 레지스트리
 
-struct Key(HKEY);
+pub(super) struct Key(HKEY);
 
 impl Drop for Key {
     fn drop(&mut self) {
@@ -190,10 +190,15 @@ impl Drop for Key {
 }
 
 fn open_key(path: &str) -> Result<Key, u32> {
+    open_key_in(HKEY_LOCAL_MACHINE, path)
+}
+
+/// HKLM·HKCU 아래 키를 읽기 권한으로 연다
+pub(super) fn open_key_in(root: HKEY, path: &str) -> Result<Key, u32> {
     let w = wide(path);
     let mut h: HKEY = std::ptr::null_mut();
     // SAFETY: 읽기 권한으로만 연다
-    let r = unsafe { RegOpenKeyExW(HKEY_LOCAL_MACHINE, w.as_ptr(), 0, KEY_READ, &mut h) };
+    let r = unsafe { RegOpenKeyExW(root, w.as_ptr(), 0, KEY_READ, &mut h) };
     if r == ERROR_SUCCESS { Ok(Key(h)) } else { Err(r) }
 }
 
@@ -211,7 +216,7 @@ fn open_devnode_key(dn: u32, which: u32) -> Result<Key, String> {
 }
 
 /// 키의 값 하나(종류, 바이트). 없으면 Ok(None)
-fn query_value(k: &Key, name: &str) -> Result<Option<(u32, Vec<u8>)>, u32> {
+pub(super) fn query_value(k: &Key, name: &str) -> Result<Option<(u32, Vec<u8>)>, u32> {
     let w = wide(name);
     let mut ty = 0u32;
     let mut size = 0u32;
@@ -564,7 +569,7 @@ pub fn com_numbers() -> ComNumbers {
 
 // ---------------------------------------------------------------- 이벤트
 
-struct Evt(EVT_HANDLE);
+pub(super) struct Evt(pub(super) EVT_HANDLE);
 
 impl Drop for Evt {
     fn drop(&mut self) {
@@ -575,7 +580,7 @@ impl Drop for Evt {
     }
 }
 
-fn render_xml(ev: EVT_HANDLE) -> Option<String> {
+pub(super) fn render_xml(ev: EVT_HANDLE) -> Option<String> {
     let mut used = 0u32;
     let mut count = 0u32;
     // SAFETY: 크기만 묻는다

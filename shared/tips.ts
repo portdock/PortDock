@@ -451,6 +451,10 @@ const TIPS: Record<string, Tip> = {
   piCardNics: ["이 PC 랜카드의 링크 속도·이중·IPv4·게이트웨이와 고급 설정(점보·버퍼·인터럽트 완화·EEE)·절전·오류·네트워크 프로필·방화벽.", "Link speed, duplex, IPv4 and gateway of this PC's network adapters, plus advanced settings (jumbo, buffers, interrupt moderation, EEE), power saving, errors, network profile and firewall."],
   piNicPurpose: ["무엇을 꽂은 랜카드인지 — 용도에 맞춰 볼 값이 달라집니다. «일반» 은 링크·오류만 봅니다.", "What the adapter is used for — what gets checked depends on it. «General» looks at link and errors only."],
   piNicVendor: ["카메라 제조사 공개 문서에 적힌 값 — PortDock 의 권장이 아닙니다. 눌러 출처를 엽니다.", "Values from camera vendors' public docs — not PortDock recommendations. Click to open the source."],
+  piCardPc: ["장비 PC 로 쓸 때 볼 설정 — 빠른 시작·절전·업데이트 재시작·재시작 대기·화면 보호기·시간 동기화와 최근 예기치 않은 종료·하드웨어 오류.", "Settings to look at on an equipment PC — fast startup, sleep, update restarts, pending restarts, screen saver, time sync, plus recent unexpected shutdowns and hardware errors."],
+  piPcPurpose: ["«장비 PC» 를 고르면 절전·빠른 시작·자동 재시작 같은 설정에도 «볼 것» 을 붙입니다. «일반 PC» 는 적기만 합니다.", "With «Equipment PC», settings such as sleep, fast startup and automatic restarts are marked too. «General PC» only lists them."],
+  piPcDays: ["예기치 않은 종료·하드웨어 오류·시간 서비스 이벤트를 찾아볼 기간.", "How far back to look for unexpected shutdowns, hardware errors and time service events."],
+  piPcSource: ["Microsoft 공식 문서를 엽니다(장비용 Windows 의 업데이트·재시작 정책).", "Opens the official Microsoft doc (update and restart policies for device Windows)."],
   piDays: ["이벤트 로그에서 찾아볼 기간.", "How far back to search the event logs."],
   piCannot: ["PC 가 읽을 수 없는 것 — 결과와 상관없이 따로 확인합니다.", "What the PC cannot read — check it separately whatever the results say."],
 };

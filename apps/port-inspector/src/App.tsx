@@ -46,6 +46,8 @@ import {
 } from "@shared/portinfo";
 import { NicCard } from "./NicCard";
 import { NIC_PURPOSES, nicsVerdict, type NicPurpose } from "@shared/nicCheck";
+import { PC_DAYS, PcCard } from "./PcCard";
+import { PC_PURPOSES, pcFailed, pcVerdict, type PcCheck, type PcPurpose } from "@shared/pcCheck";
 import { api, loopApi } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
@@ -144,6 +146,19 @@ export default function App() {
     return (NIC_PURPOSES as string[]).includes(v) ? (v as NicPurpose) : "general";
   });
   useEffect(() => store("nicPurpose", nicPurpose), [nicPurpose]);
+  // ---- 이 PC 점검(누를 때 읽는다 — 이벤트 로그를 훑어 몇 초 걸릴 수 있다)
+  const [pc, setPc] = useState<PcCheck | null>(null);
+  const [pcLoading, setPcLoading] = useState(false);
+  const [pcPurpose, setPcPurpose] = useState<PcPurpose>(() => {
+    const v = load<string>("pcPurpose", "general");
+    return (PC_PURPOSES as string[]).includes(v) ? (v as PcPurpose) : "general";
+  });
+  useEffect(() => store("pcPurpose", pcPurpose), [pcPurpose]);
+  const [pcDays, setPcDays] = useState<number>(() => {
+    const d = load<number>("pcDays", 30);
+    return PC_DAYS.includes(d) ? d : 30;
+  });
+  useEffect(() => store("pcDays", pcDays), [pcDays]);
   const [loop, setLoop] = useState<LoopState>({ results: [], echo: null, error: null });
   const [testing, setTesting] = useState(false);
   useEffect(() => {
@@ -218,12 +233,38 @@ export default function App() {
       .finally(() => setNicsLoading(false));
   }, []);
 
+  const pcSeq = useRef(0);
+  const readPc = useCallback(() => {
+    const seq = ++pcSeq.current;
+    const mine = () => seq === pcSeq.current;
+    setPcLoading(true);
+    api
+      .pc(pcDays)
+      .then((p) => {
+        if (mine()) setPc(p);
+      })
+      .catch((e) => {
+        if (mine()) setPc(pcFailed(pcDays, String(e)));
+      })
+      .finally(() => {
+        if (mine()) setPcLoading(false);
+      });
+  }, [pcDays]);
+  // 기간을 바꾸면(이미 읽었으면) 다시 읽는다
+  const pcRead = pc !== null;
+  const pcReadRef = useRef(pcRead);
+  pcReadRef.current = pcRead;
+  useEffect(() => {
+    if (pcReadRef.current) readPc();
+  }, [readPc]);
+
   const refresh = useCallback(() => {
     reloadList();
     readPort();
     readEvents();
     if (nics) readNics();
-  }, [reloadList, readPort, readEvents, readNics, nics]);
+    if (pcReadRef.current) readPc();
+  }, [reloadList, readPort, readEvents, readNics, nics, readPc]);
 
   // ---- 판정
   const verdicts = useMemo(() => {
@@ -240,7 +281,7 @@ export default function App() {
   const total: Level | null = verdicts ? overall(Object.values(verdicts).map((v) => v.level)) : null;
 
   // ---- 내보내기
-  const bundle = (): Bundle => ({ app: APP, version: VERSION, report, com, events, nics, nicPurpose, loop: loop.results, echo: loop.echo, loopError: loop.error });
+  const bundle = (): Bundle => ({ app: APP, version: VERSION, report, com, events, nics, nicPurpose, pc, pcPurpose, loop: loop.results, echo: loop.echo, loopError: loop.error });
   const copy = (text: string) =>
     navigator.clipboard
       .writeText(text)
@@ -618,6 +659,10 @@ export default function App() {
 
               <Card id="nics" title={t("cardNics")} verdict={nics ? nicsVerdict(nics, nicPurpose) : undefined} lang={lang} expandAll={settings.expandAll} tipKey="piCardNics">
                 <NicCard lang={lang} t={t} nics={nics} loading={nicsLoading} onLoad={readNics} purpose={nicPurpose} setPurpose={setNicPurpose} link={link} />
+              </Card>
+
+              <Card id="pc" title={t("cardPc")} verdict={pc ? pcVerdict(pc, pcPurpose, (ms) => fmtTime(ms)) : undefined} lang={lang} expandAll={settings.expandAll} tipKey="piCardPc">
+                <PcCard lang={lang} t={t} pc={pc} loading={pcLoading} onLoad={readPc} purpose={pcPurpose} setPurpose={setPcPurpose} days={pcDays} setDays={setPcDays} link={link} />
               </Card>
 
               {r.errors.length > 0 && (

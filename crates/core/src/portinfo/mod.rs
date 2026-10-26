@@ -13,11 +13,17 @@
 //!   INetFwPolicy2(방화벽 프로필 켜짐). `Get-NetAdapterPowerManagement` 경로는 일반 사용자로 실패해 쓰지 않는다
 //! - USB 경로: CM_Get_Parent 사슬 · DEVPKEY_Device_Address(허브 포트 번호) · 허브 장치 인터페이스에 «조회» IOCTL
 //!   (IOCTL_USB_GET_NODE_INFORMATION · IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX(_V2) — 둘 다 FILE_ANY_ACCESS)
+//! - 이 PC 점검(장비 PC 설정): 레지스트리(빠른 시작·최대 절전·업데이트 정책·사용 시간·재시작 대기·화면 보호기·W32Time) ·
+//!   전원 계획(PowerReadAC/DCValueIndex — 절전·최대 절전·화면 끄기·PCIe ASPM·USB 선택적 절전) ·
+//!   이벤트 로그 System(Kernel-Power 41 · EventLog 6008 · WHEA-Logger·disk·Ntfs 경고 이상 · Time-Service).
+//!   `powercfg /requests`·Defender 예외·SMART(디스크 신뢰성 카운터)는 관리자만 읽을 수 있어 읽지 않는다
 
 pub mod parse;
 pub mod tables;
 #[cfg(windows)]
 mod win;
+#[cfg(windows)]
+mod pc;
 #[cfg(windows)]
 mod usb;
 #[cfg(windows)]
@@ -314,6 +320,119 @@ pub struct NicList {
     /// 방화벽 프로필 켜짐(읽지 못하면 빈 목록 + errors)
     pub firewall: Vec<FirewallProfile>,
     pub errors: Vec<String>,
+}
+
+/// 전원 계획 값 하나 — 전원 연결(AC)·배터리(DC). 못 읽으면 None
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcPowerValue {
+    /// «sleep»(절전까지 초) · «hibernate»(최대 절전까지 초) · «display»(화면 끄기까지 초) · «aspm»(0 끔 · 1 보통 · 2 최대) · «usbSuspend»(0 끔 · 1 켬)
+    pub id: &'static str,
+    pub ac: Option<u32>,
+    pub dc: Option<u32>,
+}
+
+/// Windows 업데이트 — 정책(그룹 정책·관리 도구가 정한 값)과 사용자 설정(사용 시간). 값이 없으면 None
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcUpdate {
+    /// 정책 …\WindowsUpdate\AU NoAutoUpdate(1 = 자동 업데이트 끔)
+    pub no_auto_update: Option<u32>,
+    /// 정책 AUOptions(2 다운로드 전 알림 · 3 자동 다운로드·설치 알림 · 4 자동 다운로드·예약 설치 · 5 로컬 관리자가 고름 · 7 설치·재시작 알림)
+    pub au_options: Option<u32>,
+    /// 정책 NoAutoRebootWithLoggedOnUsers(1 = 로그인한 사용자가 있으면 자동 재시작 안 함)
+    pub no_auto_reboot: Option<u32>,
+    /// 정책 AlwaysAutoRebootAtScheduledTime
+    pub always_auto_reboot: Option<u32>,
+    /// 정책 …\WindowsUpdate ExcludeWUDriversInQualityUpdate(1 = 드라이버는 업데이트에서 뺌)
+    pub exclude_drivers: Option<u32>,
+    /// 정책으로 정한 사용 시간(SetActiveHours = 1 일 때 시작·끝 시)
+    pub policy_active_hours: Option<(u32, u32)>,
+    /// 사용자 설정 사용 시간(시작·끝 시)
+    pub active_hours: Option<(u32, u32)>,
+    /// 사용 시간 자동 조정(1 켬)
+    pub smart_active_hours: Option<u32>,
+}
+
+/// 시간 동기화(W32Time) 설정
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcTime {
+    /// «NTP» · «NT5DS»(도메인) · «AllSync» · «NoSync»
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
+    pub ntp_server: Option<String>,
+    /// 정책 키(…\Policies\Microsoft\W32Time\Parameters)의 값인지
+    pub policy: bool,
+    /// W32Time 서비스 시작 유형(2 자동 · 3 수동(필요할 때) · 4 사용 안 함)
+    pub service_start: Option<u32>,
+}
+
+/// 화면 보호기(지금 사용자)
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcScreenSaver {
+    /// ScreenSaveActive
+    pub active: Option<bool>,
+    /// 화면 보호기 파일 이름(경로 뺌). 없으면 None — 고른 화면 보호기가 없음
+    pub program: Option<String>,
+    /// 대기 시간(초)
+    pub timeout: Option<u32>,
+    /// 다시 시작할 때 로그온 화면 표시
+    pub secure: Option<bool>,
+}
+
+/// 이벤트 묶음 한 줄 — 같은 원본·ID 의 건수와 마지막 시각
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcEventCount {
+    /// «unexpected»(예기치 않은 종료) · «hardware»(하드웨어 오류·경고) · «time»(시간 서비스)
+    pub group: &'static str,
+    pub provider: String,
+    pub id: u32,
+    /// 마지막 것의 수준(1 위험 · 2 오류 · 3 경고 · 4 정보)
+    pub level: u8,
+    pub count: u32,
+    /// 마지막 시각(유닉스 ms)
+    pub last: u64,
+}
+
+/// 이 PC 점검 — 장비 PC 로 쓸 때 볼 설정과 최근 기록(읽은 값)
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcCheck {
+    pub read_at: u64,
+    /// 이벤트를 찾아본 기간(일)
+    pub days: u32,
+    /// 빠른 시작(HiberbootEnabled)
+    pub fast_startup: Option<bool>,
+    /// 최대 절전 사용(HibernateEnabled) — 꺼져 있으면 빠른 시작도 쓰이지 않는다
+    pub hibernate_enabled: Option<bool>,
+    /// 지금 전원 계획 이름
+    pub scheme: Option<String>,
+    pub power: Vec<PcPowerValue>,
+    pub update: PcUpdate,
+    /// 재시작 대기 표시 «windowsUpdate»(RebootRequired 키) · «servicing»(구성 요소 RebootPending 키) · «fileRename»(PendingFileRenameOperations)
+    pub reboot_pending: Vec<&'static str>,
+    pub screen_saver: PcScreenSaver,
+    pub time: PcTime,
+    /// 기간 안의 이벤트 건수(원본·ID 별)
+    pub events: Vec<PcEventCount>,
+    /// 읽지 못한 것 «무엇: 이유»
+    pub errors: Vec<String>,
+}
+
+/// 이 PC 점검 — 설정과 최근 `days` 일 이벤트(관리자 권한 없이)
+pub fn pc(days: u32) -> PcCheck {
+    let days = days.clamp(1, 365);
+    #[cfg(windows)]
+    {
+        pc::read(days)
+    }
+    #[cfg(not(windows))]
+    {
+        PcCheck { days, read_at: crate::event::now_ms(), errors: vec![crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into()], ..Default::default() }
+    }
 }
 
 /// COM 포트 장치 목록 — `hidden` 이면 지금 없는 장치(예전에 꽂았던 것)도. 이름(COM 번호)순, 지금 있는 것이 먼저

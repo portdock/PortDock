@@ -2,6 +2,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { ComNumbers, EventList, LoopConfig, LoopEvent, NicList, PortEntry, PortReport } from "@shared/portinfo";
 import type { LoopApi } from "@shared/LoopbackPanel";
+import type { PcCheck } from "@shared/pcCheck";
 
 export const api = {
   list: (hidden: boolean) => invoke<PortEntry[]>("pi_list", { hidden }),
@@ -9,6 +10,7 @@ export const api = {
   comNumbers: () => invoke<ComNumbers>("pi_com_numbers"),
   events: (instanceId: string, days: number) => invoke<EventList>("pi_events", { instanceId, days }),
   nics: () => invoke<NicList>("pi_nics"),
+  pc: (days: number) => invoke<PcCheck>("pi_pc", { days }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
 };

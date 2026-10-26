@@ -1952,7 +1952,8 @@ async function runApp(app, port) {
       const pick = (com) => js(`const b = [...document.querySelectorAll('.port-item')].find((x) => x.querySelector('.pi-port').textContent.trim() === ${JSON.stringify(com)}); if (b) b.click(); return !!b;`);
       if (!(await pick("COM5"))) add("pick COM5", "expect", "목록에 COM5 가 없음");
       // (10/26) USB 장치면 «USB 경로» 카드가 하나 더(COM5 = 장치 → 버스 전원 허브 → 루트 허브 → 컨트롤러)
-      await expectJs("cards", "return document.querySelectorAll('details.card').length === 8");
+      // (10/26) «이 PC» 카드가 하나 더 — 9장
+      await expectJs("cards", "return document.querySelectorAll('details.card').length === 9");
       await expectJs("usb path", `const c = document.querySelector('details.card-usb'); return !!c && c.querySelectorAll('table.usb-path tbody tr').length === 4 && /Full Speed/.test(c.textContent) && /${ko ? "버스 전원" : "bus-powered"}/.test(c.textContent) && /lv-ok/.test(c.querySelector('summary .lv').className)`);
       await expectJs("com5 verdicts", `const lv = (id) => (document.querySelector('details.card-' + id + ' > summary .lv') || {}).className || '';
         return /lv-ok/.test(lv('device')) && /lv-look/.test(lv('settings')) && /lv-look/.test(lv('power')) && /lv-look/.test(document.querySelector('.toolbar .lv').className)`);
@@ -1992,6 +1993,26 @@ async function runApp(app, port) {
       await setIn("details.card-nics select", "plc");
       await expectJs("nics plc", `return /EEE/.test(document.querySelectorAll('details.card-nics .nic-block')[1].textContent) && !document.querySelector('details.card-nics .nic-vendor')`);
       await setIn("details.card-nics select", "general");
+      // (10/26) 이 PC — 일반 PC: 설정은 적기만, 예기치 않은 종료(41·6008)·disk 경고만 «볼 것». «문제 있음» 없음
+      await clickText("details.card-pc .btn", ko ? "이 PC 설정 읽기" : "Read this PC's settings");
+      const pcLv = (id) => `((document.querySelector('details.card-pc tr.pc-' + ${JSON.stringify(id)}) || document.body).querySelector('.lv') || {}).className || ''`;
+      await expectJs("pc general", `const c = document.querySelector('details.card-pc'); return !!c && c.querySelectorAll('table.pc-items tr').length === 13 && /lv-look/.test(c.querySelector('summary .lv').className)
+        && /lv-ok/.test(${pcLv("fastStartup")}) && /lv-ok/.test(${pcLv("sleep")}) && /lv-look/.test(${pcLv("unexpected")}) && /lv-look/.test(${pcLv("hardware")}) && !c.querySelector('.lv-problem')
+        && /Kernel-Power 41: 2/.test(c.textContent) && c.textContent.includes('powercfg /requests') && /${ko ? "관리자만 읽을 수 있음" : "Administrator only"}/.test(c.textContent)`, 4000);
+      // 장비 PC: 빠른 시작·절전·USB 절전·자동 재시작 정책 없음·재시작 대기·시간 경고도 «볼 것», Microsoft 문서 링크
+      await setIn("details.card-pc select.pc-purpose", "equipment");
+      await expectJs("pc equipment", `const c = document.querySelector('details.card-pc'); return ["fastStartup", "sleep", "usbSuspend", "updatePolicy", "rebootPending", "time"].every((id) => /lv-look/.test(((c.querySelector('tr.pc-' + id) || c).querySelector('.lv') || {}).className || ''))
+        && /lv-ok/.test(${pcLv("display")}) && !c.querySelector('.lv-problem') && [...c.querySelectorAll('a')].some((a) => a.href.startsWith('https://learn.microsoft.com/')) && /${ko ? "업데이트를 끄라는 뜻은 아닙니다" : "not advice to turn updates off"}/.test(c.textContent)`);
+      if (combo.full) await shot(app, `${combo.name}-pc-equipment`);
+      // 기록 기간 7일 → 20일 전 disk 경고가 빠진다
+      await setIn("details.card-pc select.pc-days", "7");
+      await expectJs("pc 7 days", `return /lv-ok/.test(${pcLv("hardware")}) && /lv-look/.test(${pcLv("unexpected")})`, 3000);
+      await setIn("details.card-pc select.pc-days", "30");
+      await expectJs("pc 30 days", `return /lv-look/.test(${pcLv("hardware")})`, 3000);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "텍스트 복사" : "Copy text");
+      await expectJs("pc copy", `const c = window.__smoke.clip || ''; return c.includes(${JSON.stringify(ko ? "## 이 PC (최근 30일)" : "## This PC (last 30 days)")}) && /Kernel-Power 41/.test(c) && c.includes('powercfg /requests') && !${BAN}.test(c)`, 3000);
+      await setIn("details.card-pc select.pc-purpose", "general");
 
       // ---- 연결 시험: 루프백(묻고 시작) → 속도 5개 «볼 것»(왕복 16ms)
       const startLoop = async (step) => {

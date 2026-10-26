@@ -18,7 +18,7 @@ export const help: HelpDoc = {
       id: "start",
       body: [
         "- 1. 왼쪽 «COM 포트» 목록에서 포트를 누릅니다. 예전에 꽂았던 장치까지 보려면 «지금 없는 장치도 보기» 를 켭니다.",
-        "- 2. 가운데에 카드가 나옵니다: 장치·드라이버, USB 경로(USB 장치일 때), 설정, 절전, 연결 기록, COM 번호 예약, 연결 시험, 이 PC 랜카드. 카드 머리에 결과가 붙고, «볼 것»·«문제 있음» 이면 그 까닭이 바로 아래 줄에 나옵니다.",
+        "- 2. 가운데에 카드가 나옵니다: 장치·드라이버, USB 경로(USB 장치일 때), 설정, 절전, 연결 기록, COM 번호 예약, 연결 시험, 이 PC 랜카드, 이 PC(0.2.0 부터). 카드 머리에 결과가 붙고, «볼 것»·«문제 있음» 이면 그 까닭이 바로 아래 줄에 나옵니다.",
         "- 3. 문제 보고·문의에는 위 «텍스트 복사»(또는 «저장…»)로 결과를 붙입니다. 사용자 폴더 경로는 «~» 로 가립니다.",
         "- 처음 켜면 빈 자리에 이 순서가 카드로 보입니다. «다시 보지 않기» 를 누르면 짧은 한 줄 안내로 바뀝니다.",
       ],
@@ -124,6 +124,21 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "이 PC — 장비 PC 설정 (0.2.0 부터)",
+      id: "pc",
+      body: [
+        "- (0.2.0 부터) «이 PC 설정 읽기» 를 누르면 장비를 돌리는 PC 에서 자주 문제가 되는 Windows 설정과 최근 기록을 관리자 권한 없이 읽습니다. 고른 COM 포트와는 상관없는 PC 전체 값입니다.",
+        "- (0.2.0 부터) 전원·절전: 빠른 시작(최대 절전이 꺼져 있으면 쓰이지 않음), 지금 전원 계획의 절전·최대 절전·화면 끄기 시간, PCI Express 링크 상태 전원 관리, USB 선택적 절전 — 전원 연결·배터리 따로.",
+        "- (0.2.0 부터) 업데이트·재시작: 업데이트 정책(그룹 정책 값 — 자동 업데이트·AUOptions·로그인 중 자동 재시작 안 함·드라이버 제외), 사용 시간(활동 시간), 재시작 대기(Windows 업데이트 RebootRequired·구성 요소 RebootPending·다음 시작 때 파일 바꾸기 예약).",
+        "- (0.2.0 부터) 화면 보호기·시간: 화면 보호기와 대기 시간·로그온 화면, 시간 동기화 방식(NTP·도메인·동기화 안 함)·서버·W32Time 서비스 시작 유형, 시간 서비스 이벤트의 마지막 «시간 원본과 동기화» 기록과 경고 수.",
+        "- (0.2.0 부터) 최근 기록: 고른 기간(7·30·90일)의 예기치 않은 종료(Kernel-Power 41·EventLog 6008)와 하드웨어 경고·오류(WHEA-Logger·disk·Ntfs) 건수와 마지막 시각. 예기치 않은 종료의 원인(정전·전원 버튼·멈춤)은 PC 가 알지 못합니다.",
+        "- (0.2.0 부터) «용도» 가 «일반 PC» 면 설정 값은 적기만 하고 기록(예기치 않은 종료·하드웨어 오류)만 «볼 것» 으로 표시합니다. «장비 PC» 를 고르면 빠른 시작 켜짐·절전 진입·USB 선택적 절전·자동 재시작을 막는 정책 없음·재시작 대기·시간이 맞춰지지 않음에도 «볼 것» 을 붙입니다.",
+        "- (0.2.0 부터) 정답은 현장마다 다릅니다. 사무용 PC 엔 켜 두는 게 맞는 값(업데이트·절전)이 대부분이라 «볼 것» 까지만 붙이고 «문제 있음» 으로 단정하지 않습니다. 업데이트를 끄라고 권하지 않습니다 — 사용 시간·재시작 정책은 Microsoft 문서 «Configure policy settings on IoT devices» 를 봅니다.",
+        "- (0.2.0 부터) 항목마다 «바꾸는 곳»(설정·제어판·그룹 정책 경로)이 함께 나옵니다. 이 프로그램은 바꾸지 않습니다.",
+        "- (0.2.0 부터) 관리자만 읽을 수 있는 것 — 절전을 막는 프로그램(powercfg /requests), Microsoft Defender 예외, 디스크 SMART — 은 읽지 않고 «관리자만 읽을 수 있음» 으로 적습니다.",
+      ],
+    },
+    {
       title: "PC 가 볼 수 없는 것",
       id: "cannot",
       body: [
@@ -140,6 +155,7 @@ export const help: HelpDoc = {
         "- FTDI 지연 타이머: 장치 관리자 → 포트(COM & LPT) → 장치 속성 → 포트 설정 → 고급 → «지연 타이머(msec)». 1 은 FTDI 가 권하지 않으므로 2~4 쯤으로 줄여 봅니다. 적용하려면 변환기를 다시 꽂아야 할 수 있습니다.",
         "- 장치 절전: 장치 관리자 → 장치(또는 위 USB 장치·허브) 속성 → 전원 관리 → «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음» 끄기.",
         "- USB 선택적 절전: 제어판 → 전원 옵션 → 설정 변경 → 고급 전원 관리 옵션 변경 → USB 설정 → USB 선택적 절전 설정 «사용 안 함».",
+        "- (0.2.0 부터) 이 PC 설정(빠른 시작·절전·업데이트·시간 동기화 등): 이 PC 카드의 항목마다 나오는 «바꾸는 곳» 에서 합니다.",
         "- 지금 없는 장치·유령 COM 번호: 장치 관리자 → 보기 → «숨겨진 장치 표시» 에서 흐린 포트 장치를 제거하면 그 번호가 풀립니다. ComDB 를 레지스트리에서 직접 고치는 것은 잘못하면 두 장치가 같은 번호를 받으므로 권하지 않습니다.",
       ],
     },
@@ -191,7 +207,7 @@ export const help: HelpDoc = {
       id: "start",
       body: [
         "- 1. Click a port in the «COM ports» list on the left. To include devices plugged in earlier, turn on «Show devices not connected now».",
-        "- 2. Cards appear in the middle: device and driver, USB path (for USB devices), settings, power saving, history, COM number reservations, connection test, network adapters. Each card header shows a result; for «Worth a look» or «Problem» the reason is on the line below.",
+        "- 2. Cards appear in the middle: device and driver, USB path (for USB devices), settings, power saving, history, COM number reservations, connection test, network adapters, this PC (from 0.2.0). Each card header shows a result; for «Worth a look» or «Problem» the reason is on the line below.",
         "- 3. For a problem report or question, use «Copy text» (or «Save…») at the top. User folder paths are masked as «~».",
         "- On first start these steps show as a card in the empty area. «Don't show again» turns it into a one-line hint.",
       ],
@@ -297,6 +313,21 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "This PC — equipment PC settings (from 0.2.0)",
+      id: "pc",
+      body: [
+        "- (from 0.2.0) «Read this PC's settings» reads, without administrator rights, the Windows settings and recent records that often matter on a PC running equipment. These are PC-wide values, not tied to the chosen COM port.",
+        "- (from 0.2.0) Power and sleep: fast startup (not in effect when hibernation is off), the current power plan's sleep, hibernate and display-off times, PCI Express Link State Power Management and USB selective suspend — plugged in and on battery.",
+        "- (from 0.2.0) Updates and restarts: update policy (group policy values — automatic updates, AUOptions, no auto-restart with logged-on users, drivers excluded), active hours, and pending restarts (Windows Update RebootRequired, component servicing RebootPending, files scheduled to be replaced at next start).",
+        "- (from 0.2.0) Screen saver and time: the screen saver with its wait time and logon screen, the time sync type (NTP, domain, no sync), server and W32Time service start type, and from time service events the last «synchronizing with time source» record and the warning count.",
+        "- (from 0.2.0) Recent records: counts and last times of unexpected shutdowns (Kernel-Power 41, EventLog 6008) and hardware warnings and errors (WHEA-Logger, disk, Ntfs) in the chosen period (7, 30 or 90 days). The PC cannot tell what caused an unexpected shutdown (power cut, power button, hang).",
+        "- (from 0.2.0) With «Use» set to «General PC», settings are only listed and just the records (unexpected shutdowns, hardware errors) are marked «Worth a look». With «Equipment PC», fast startup on, sleep, USB selective suspend, no policy holding back automatic restarts, a pending restart and an unsynced clock are marked too.",
+        "- (from 0.2.0) The right values differ from site to site. Most of them (updates, sleep) are right to keep on an office PC, so it marks at most «Worth a look», never «Problem». It never advises turning updates off — for active hours and restart policies see Microsoft's «Configure policy settings on IoT devices».",
+        "- (from 0.2.0) Each item shows «Where to change» (Settings, Control Panel or group policy path). This program does not change them.",
+        "- (from 0.2.0) What only an administrator can read — programs keeping the PC awake (powercfg /requests), Microsoft Defender exclusions, disk SMART — is not read and is listed as «Administrator only».",
+      ],
+    },
+    {
       title: "What the PC cannot see",
       id: "cannot",
       body: [
@@ -313,6 +344,7 @@ export const help: HelpDoc = {
         "- FTDI latency timer: Device Manager → Ports (COM & LPT) → device properties → Port Settings → Advanced → «Latency Timer (msec)». FTDI does not recommend 1, so try about 2–4. The adapter may need replugging to apply it.",
         "- Device power saving: Device Manager → device (or the USB device / hub above it) properties → Power Management → turn off «Allow the computer to turn off this device to save power».",
         "- USB selective suspend: Control Panel → Power Options → Change plan settings → Change advanced power settings → USB settings → USB selective suspend setting «Disabled».",
+        "- (from 0.2.0) This PC's settings (fast startup, sleep, updates, time sync …): use «Where to change» shown for each item in the This PC card.",
         "- Devices not connected now and orphan COM numbers: Device Manager → View → «Show hidden devices», then uninstall the dimmed port devices to free their numbers. Editing ComDB in the registry by hand is not recommended — a mistake can give two devices the same number.",
       ],
     },

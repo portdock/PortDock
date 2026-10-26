@@ -3,6 +3,7 @@
 // 단정하지 않는다 — PC 가 읽은 범위만 말하고, 볼 수 없는 것(배선·종단·바이어스·접지)을 늘 함께 적는다.
 import { hideUserPaths } from "./redact.ts";
 import { nicLines, type NicPurpose } from "./nicCheck.ts";
+import { pcLines, type PcCheck, type PcPurpose } from "./pcCheck.ts";
 
 export type Lang = "ko" | "en";
 export interface Text {
@@ -469,6 +470,9 @@ export interface Bundle {
   loopError: string | null;
   /** 랜카드 점검 용도(없으면 «일반») */
   nicPurpose?: NicPurpose;
+  /** 이 PC 점검(읽었을 때만)과 용도(없으면 «일반 PC») */
+  pc?: PcCheck | null;
+  pcPurpose?: PcPurpose;
 }
 
 const L = (lang: Lang, x: Text) => x[lang];
@@ -538,6 +542,10 @@ export function bundleText(lang: Lang, b: Bundle): string {
   if (b.nics && (b.nics.nics.length || b.nics.errors.length)) {
     head(ko ? "이 PC 랜카드" : "Network adapters on this PC");
     out.push(...nicLines(lang, b.nics, b.nicPurpose ?? "general", v, fmtSpeed));
+  }
+  if (b.pc) {
+    head(ko ? `이 PC (최근 ${b.pc.days}일)` : `This PC (last ${b.pc.days} days)`);
+    out.push(...pcLines(lang, b.pc, b.pcPurpose ?? "general", v, (ms) => fmtTime(ms), (l) => L(lang, LEVEL_TEXT[l])));
   }
   head(ko ? "PC 가 볼 수 없는 것" : "What the PC cannot see");
   for (const c of CANNOT_SEE) out.push(`- ${L(lang, c)}`);

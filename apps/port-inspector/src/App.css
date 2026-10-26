@@ -887,3 +887,38 @@ table.grid.usb-path tr.usb-root td,
 table.grid.usb-path tr.usb-controller td {
   color: var(--muted);
 }
+/* 이 PC 점검(PcCard.tsx) */
+.pc-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+table.grid.pc-items {
+  table-layout: fixed;
+}
+table.grid.pc-items td {
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+table.grid.pc-items td.pc-label {
+  width: 26%;
+  font-weight: 600;
+}
+table.grid.pc-items td.pc-lv {
+  width: 150px;
+  text-align: right;
+}
+table.grid.pc-items td.pc-lv .lv {
+  white-space: normal;
+}
+.pc-controls label {
+  white-space: nowrap;
+}
+.pc-note.look {
+  margin-top: 2px;
+}
+.pc-where {
+  margin-top: 2px;
+}

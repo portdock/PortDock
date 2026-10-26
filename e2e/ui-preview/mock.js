@@ -2023,7 +2023,7 @@ window.__pdMock.plot = () => (PL ? { format: PL.format, rec: PL.rec, ticks: PL.t
 // 모양: crates/core/src/portinfo·loopback.rs). Serial «연결 점검…» 도 pi_report·loop_start 를 쓴다.
 // 가짜 장치: COM3 CH340(문제 없음) · COM5 FTDI(지연 16ms·절전 켜짐 → 볼 것) · COM1 내장 포트 · COM9 Prolific(문제 코드 10, 시험하면 «사용 중»)
 // · 숨은 COM12 Prolific(지금 없음). 루프백: COM5 왕복 ≈16ms, COM3 ≈2ms, COM1 은 아무것도 돌아오지 않음. 에코: COM1 말고는 에코 있음.
-const PI_CMDS = new Set(["pi_list", "pi_report", "pi_com_numbers", "pi_events", "pi_nics", "loop_start", "loop_cancel"]);
+const PI_CMDS = new Set(["pi_list", "pi_report", "pi_com_numbers", "pi_events", "pi_nics", "pi_pc", "loop_start", "loop_cancel"]);
 const piT = (ko, en) => ({ ko, en });
 const PI_DEV = [
   { port: "COM1", name: "통신 포트(COM1)", instanceId: "ACPI\\PNP0501\\0", present: true, vid: null, pid: null, problem: null, class: "Ports", svc: "Serial", provider: "Microsoft", ver: "10.0.26100.1", inf: "msports.inf", chip: null },
@@ -2115,6 +2115,39 @@ async function pinsp(cmd, a) {
       if (d.port === "COM5") for (let i = 0; i < 3; i++) list.push(ev(3 * DAY + i * 600_000, 410, "start", started));
       if (d.problem) list.push(ev(3_000_000, 411, "problem", tr("장치를 시작하는 동안 문제가 발생했습니다.", "Device had a problem starting.")));
       return { events: list.filter((e) => now() - e.time <= a.days * DAY).sort((x, y) => y.time - x.time), days: a.days, errors: [] };
+    }
+    case "pi_pc": {
+      await sleep(120);
+      // 이 PC 점검(10/26): 빠른 시작 켜짐·절전 30분·USB 선택적 절전·업데이트 정책 없음·업데이트 재시작 대기 → 장비 PC 면 «볼 것»,
+      // 예기치 않은 종료(3일 전) → 일반 PC 도 «볼 것», disk 경고(20일 전) → 7일로 줄이면 빠진다
+      const ev = (group, provider, id, level, count, ago) => ({ group, provider, id, level, count, last: now() - ago });
+      const events = [
+        ev("unexpected", "EventLog", 6008, 2, 2, 3 * DAY),
+        ev("unexpected", "Microsoft-Windows-Kernel-Power", 41, 1, 2, 3 * DAY),
+        ev("hardware", "disk", 7, 2, 1, 20 * DAY),
+        ev("time", "Microsoft-Windows-Time-Service", 36, 3, 3, 2 * DAY),
+        ev("time", "Microsoft-Windows-Time-Service", 37, 4, 12, DAY),
+      ].filter((e) => now() - e.last <= a.days * DAY);
+      return {
+        readAt: now(),
+        days: a.days,
+        fastStartup: true,
+        hibernateEnabled: true,
+        scheme: tr("균형 조정", "Balanced"),
+        power: [
+          { id: "sleep", ac: 1800, dc: 900 },
+          { id: "hibernate", ac: 0, dc: 0 },
+          { id: "display", ac: 600, dc: 300 },
+          { id: "aspm", ac: 0, dc: 2 },
+          { id: "usbSuspend", ac: 1, dc: 1 },
+        ],
+        update: { noAutoUpdate: null, auOptions: null, noAutoReboot: null, alwaysAutoReboot: null, excludeDrivers: null, policyActiveHours: null, activeHours: [8, 17], smartActiveHours: 0 },
+        rebootPending: ["windowsUpdate", "fileRename"],
+        screenSaver: { active: true, program: null, timeout: null, secure: null },
+        time: { type: "NTP", ntpServer: "time.windows.com,0x9", policy: false, serviceStart: 3 },
+        events,
+        errors: [],
+      };
     }
     case "pi_nics":
       await sleep(100);
