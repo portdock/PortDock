@@ -239,7 +239,7 @@ const TIPS: Record<string, Tip> = {
   nsWol: ["이 MAC 으로 Wake-on-LAN 매직 패킷을 고른 랜카드의 브로드캐스트로 보냅니다. 장비의 WoL 설정이 켜져 있어야 합니다.", "Sends a Wake-on-LAN magic packet for this MAC as a broadcast on the selected adapter. WoL must be enabled on the target."],
   nsToMonitor: ["이 IP 를 «핑 감시» 목록에 넣습니다(감시 중에는 멈춘 뒤에).", "Adds this IP to the «Ping monitor» list (stop the monitor first if it is running)."],
   nsReadIdent: ["Modbus «Read Device Identification»(FC 2B/0E)을 다시 보냅니다 — 제조사·제품·버전.", "Sends Modbus «Read Device Identification» (FC 2B/0E) again — vendor, product, revision."],
-  nsOpenMaster: ["(0.2.0) 이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다 — 주소·국번이 채워지고, 연결은 거기서 누릅니다. 국번은 읽은 장비 정보의 것, 없으면 1. Master 가 없으면 «IP:502» 를 복사하고 내려받기를 알려 줍니다.", "(0.2.0) Opens PortDock Modbus Master on this PC with «--tcp IP:502 --unit ID» — the address and Slave ID are filled in; press Connect there. The ID comes from the device ID read, else 1. If Master is not installed, «IP:502» is copied and a download link is shown."],
+  nsOpenMaster: ["이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다 — 주소·국번이 채워지고, 연결은 거기서 누릅니다. 국번은 읽은 장비 정보의 것, 없으면 1. Master 가 없으면 «IP:502» 를 복사하고 내려받기를 알려 줍니다.", "Opens PortDock Modbus Master on this PC with «--tcp IP:502 --unit ID» — the address and Slave ID are filled in; press Connect there. The ID comes from the device ID read, else 1. If Master is not installed, «IP:502» is copied and a download link is shown."],
   nsMonHost: ["감시할 장비의 IP 또는 이름. Enter 로 추가. 64대까지.", "IP or name of a host to monitor. Enter adds it. Up to 64."],
   nsMonAdd: ["입력한 장비를 감시 목록에 추가합니다.", "Adds the host to the monitor list."],
   nsMonInterval: ["몇 초마다 핑할지(1~3600).", "How often to ping, in seconds (1–3600)."],
