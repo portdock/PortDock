@@ -9,7 +9,7 @@ export const GET: APIRoute = ({ site }) => {
   const head = [
     "# PortDock — Modbus register maps (full)",
     "",
-    `> ${DEVICES.length} industrial devices, ${regs} registers, taken only from manufacturer manuals (document, edition, page and date for each). License CC BY 4.0 (${CC_BY}) — please cite «PortDock device register maps, https://portdock.dev/devices/». Not affiliated with the makers; check the device manual before writing to a device.`,
+    `> ${DEVICES.length} industrial devices, ${regs} registers, taken only from manufacturer manuals (document, edition, page and date for each). License CC BY 4.0 (${CC_BY}) — please cite «PortDock device register maps, https://portdock.dev/devices/ ». Not affiliated with the makers; check the device manual before writing to a device.`,
     "",
     `Machine-readable: ${new URL("/devices/all.json", site).href} · CSV: ${new URL("/devices/registers.csv", site).href}`,
     "",
