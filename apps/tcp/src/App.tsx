@@ -66,6 +66,9 @@ import { useLostAlert } from "@shared/useLostAlert";
 import { useLogKeys } from "@shared/logKeys";
 import { CopyButton } from "@shared/CopyButton";
 import { saveName } from "@shared/fileName";
+import { openInApp } from "@shared/openApp";
+import { count } from "@shared/usage";
+import { tcpLaunch } from "./launch";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
@@ -151,6 +154,32 @@ export default function App() {
   }
   const relay = cfg.mode === "relay";
   const listening = cfg.mode !== "client";
+  // 명령줄 인자(0.3.0) — «--connect 10.0.0.5:5000». 클라이언트 방식·주소·포트만 채우고 접속은 사용자가 누른다(한 번만)
+  const launchDone = useRef(false);
+  useEffect(() => {
+    if (launchDone.current) return;
+    launchDone.current = true;
+    api
+      .launchArgs()
+      .then((argv) => {
+        if (!argv?.length) return;
+        const l = tcpLaunch(argv);
+        const d = dict[langRef.current];
+        if (l.host && l.port) {
+          const host = l.host;
+          const port = l.port;
+          // 지금 방식의 주소는 방식별 기억에 남겨 둔다(탭을 바꿀 때처럼)
+          setCfg((c) => {
+            if (c.mode !== "client") setByMode((b) => ({ ...b, [c.mode]: { host: c.host, port: c.port } }));
+            return { ...c, mode: "client", host, port };
+          });
+        }
+        const msg = [l.host && l.port && fill(d.launchSet, { a: joinHostPort(l.host, l.port) }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 최근 연결 기록(0.3.0) — 주소 칸은 방식마다 따로(중계의 듣는 주소는 «relayListen»), 중계의 이어 줄 장비(B)는 «relay»
   const recMain = useRecent(recentMode(cfg.mode));
   const recRelay = useRecent("relay");
@@ -1202,6 +1231,20 @@ export default function App() {
               <button type="button" className="btn small" onClick={acceptMb502}>
                 {t("mb502Yes")}
               </button>
+              {cfg.mode === "client" && cfg.host.trim() && (
+                <button
+                  type="button"
+                  className="btn small open-master"
+                  data-tip={t("openMasterTip")}
+                  onClick={() => {
+                    count("open_in_master");
+                    const a = joinHostPort(cfg.host.trim(), cfg.port);
+                    void openInApp({ app: "modbus-master", tcp: a }, a, lang, toast);
+                  }}
+                >
+                  {t("openMaster")}
+                </button>
+              )}
               <button type="button" className="btn small ghost" onClick={() => setMb502(false)} aria-label={ui(lang, "closeNote")} title={ui(lang, "closeNote")}>
                 ✕
               </button>

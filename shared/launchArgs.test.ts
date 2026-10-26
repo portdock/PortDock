@@ -24,7 +24,7 @@ test("값 검사 — 정수·COM·IPv4·host:port", () => {
   for (const s of ["0", "248", "1.5", "-1", "", "0x10", "99999999999"]) assert.equal(intIn(s, 1, 247), null, s);
   assert.equal(comPort("com7"), "COM7");
   assert.equal(comPort("COM012"), "COM12");
-  for (const s of ["COM0", "COM", "/dev/ttyS0", "COM1; x", "COM1234"]) assert.equal(comPort(s), null, s);
+  for (const s of ["COM0", "COM", "/dev/ttyS0", "COM1; x", "COM1234", "COM257"]) assert.equal(comPort(s), null, s);
   assert.ok(isIpv4("192.168.0.10"));
   for (const s of ["256.1.1.1", "1.2.3", "01.2.3.4", "1.2.3.4.5"]) assert.ok(!isIpv4(s), s);
   assert.deepEqual(hostPort("192.168.0.10", 502), { host: "192.168.0.10", port: 502 });

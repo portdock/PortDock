@@ -874,6 +874,16 @@ async function handle(cmd, a) {
       } catch {
         return [];
       }
+    // 다른 PortDock 프로그램으로 열기(0.3.0, core launch::Target) — 연 것을 남긴다. __pdMock.noApp = true 면 «찾지 못함»
+    case "open_app":
+      if (!a.target || !["modbus-master", "serial", "tcp"].includes(a.target.app)) return fail(tr("넘길 값이 잘못되었습니다", "Invalid value to pass"));
+      if (window.__pdMock.noApp) return false;
+      window.__pdMock.openedApp = { ...a.target };
+      return true;
+    // 연결·기록 중 절전 막기(0.3.0) — 실제로는 아무것도 하지 않고 지금 값만 남긴다
+    case "keep_awake":
+      window.__pdMock.awake = !!a.on;
+      return !!a.on;
     case "write_text":
       if (/[<>|"?*]/.test(a.path.replace(/^[A-Za-z]:/, ""))) return fail(`${a.path}: ${tr("파일 이름이 잘못되었습니다", "The filename is invalid")} (os error 123)`);
       files.set(a.path, a.text);

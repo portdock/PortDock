@@ -56,6 +56,18 @@ fn start(
     Ok(local)
 }
 
+/// 명령줄 인자(0.3.0) — 처음 한 번만 준다. 뜻 풀이·검사는 화면(src/launch.ts)이 하고, 주소·포트만 채운다(접속은 사용자가)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
+/// 다른 PortDock 프로그램으로 열기(0.3.0, 502 알림줄의 «Modbus Master 로 열기») — 못 찾으면 false
+#[tauri::command(async)]
+fn open_app(target: portdock_core::launch::Target) -> Result<bool, String> {
+    portdock_core::launch::open(&target)
+}
+
 #[tauri::command(async)]
 fn stop(app: State<App>) {
     if let Some(s) = app.0.take(MAIN) {
@@ -404,6 +416,8 @@ pub fn run() {
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
+            launch_args,
+            open_app,
             report_pending,
             report_dismiss,
             report_env,

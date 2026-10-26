@@ -2,13 +2,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ui, type Lang } from "./uiText";
 
-type Toast = { id: number; text: string; undo?: () => void; kind: "info" | "error"; ms: number };
+type Toast = { id: number; text: string; undo?: () => void; action?: { label: string; run: () => void }; kind: "info" | "error"; ms: number };
 
 export function useToast(lang: Lang) {
   const [toast, setToast] = useState<Toast | null>(null);
   const seq = useRef(0);
-  const show = useCallback((text: string, opts: { undo?: () => void; error?: boolean; ms?: number } = {}) => {
-    setToast({ id: ++seq.current, text, undo: opts.undo, kind: opts.error ? "error" : "info", ms: opts.ms ?? (opts.undo ? 5000 : 2500) });
+  const show = useCallback((text: string, opts: { undo?: () => void; action?: { label: string; run: () => void }; error?: boolean; ms?: number } = {}) => {
+    setToast({ id: ++seq.current, text, undo: opts.undo, action: opts.action, kind: opts.error ? "error" : "info", ms: opts.ms ?? (opts.undo ? 5000 : 2500) });
   }, []);
   const hide = useCallback(() => setToast(null), []);
   const node: ReactNode = toast ? <ToastBar key={toast.id} toast={toast} lang={lang} onDone={hide} /> : null;
@@ -37,6 +37,18 @@ function ToastBar({ toast, lang, onDone }: { toast: Toast; lang: Lang; onDone: (
           }}
         >
           {ui(lang, "undo")}
+        </button>
+      )}
+      {toast.action && (
+        <button
+          type="button"
+          className="btn small toast-action"
+          onClick={() => {
+            onDone();
+            toast.action!.run();
+          }}
+        >
+          {toast.action.label}
         </button>
       )}
       <button type="button" className="btn small ghost" onClick={onDone} title={ui(lang, "closeNote")} aria-label={ui(lang, "closeNote")}>

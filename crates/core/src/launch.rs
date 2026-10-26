@@ -158,6 +158,119 @@ fn reg_hkcu(_key: &str, _name: &str) -> Option<String> {
     None
 }
 
+// ---------------------------------------------------------------- 다른 PortDock 프로그램 열기(0.3.0)
+
+/// PortDock 프로그램 이름들 — tauri.conf.json productName · release.yml asset · Cargo 패키지(시험이 맞춰 본다)
+pub mod apps {
+    use super::AppId;
+    pub const SERIAL: AppId = AppId { product: "PortDock Serial", asset: "Serial", bin: "portdock-serial" };
+    pub const TCP: AppId = AppId { product: "PortDock TCP", asset: "TCP", bin: "portdock-tcp" };
+    pub const MODBUS_MASTER: AppId = AppId { product: "PortDock Modbus Master", asset: "Modbus-Master", bin: "portdock-modbus-master" };
+}
+
+/// 열 프로그램과 넘길 값 — 화면이 보낸 것(JSON). 글자를 그대로 옮기지 않고 아래 검사를 거친 값으로 인자를 만든다
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+#[serde(tag = "app", rename_all = "kebab-case")]
+pub enum Target {
+    /// Modbus Master — TCP(«host[:port]») 또는 RTU(COM) 하나, 속도·국번
+    ModbusMaster { tcp: Option<String>, rtu: Option<String>, baud: Option<u32>, unit: Option<u8> },
+    /// Serial — 포트·속도
+    Serial { port: String, baud: Option<u32> },
+    /// TCP 클라이언트 — «host:port»
+    Tcp { connect: String },
+}
+
+/// «COM3»·«com12» → «COM3»(COM1~COM256). 아니면 None
+pub fn com_arg(s: &str) -> Option<String> {
+    let t = s.trim();
+    if t.len() < 4 || t.len() > 6 || !t.is_char_boundary(3) || !t[..3].eq_ignore_ascii_case("COM") {
+        return None;
+    }
+    let d = &t[3..];
+    if !d.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let n: u32 = d.parse().ok()?;
+    (1..=256).contains(&n).then(|| format!("COM{n}"))
+}
+
+/// 호스트 이름·IPv4 — 글자·숫자·«-»·«.» 만, «-»·«.» 로 시작하지 않음(인자로 오해되지 않게), 253자까지
+fn host_ok(h: &str) -> bool {
+    !h.is_empty() && h.len() <= 253 && !h.starts_with('-') && !h.starts_with('.') && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.')
+}
+
+/// «host[:port]» 검사 → «host:port»(포트가 없으면 def). IPv6 는 받지 않는다(받는 쪽 화면 칸이 IPv4·이름)
+pub fn host_port_arg(s: &str, def: u16) -> Option<String> {
+    let t = s.trim();
+    let (h, p) = match t.split_once(':') {
+        Some((h, p)) => {
+            if p.is_empty() || !p.bytes().all(|b| b.is_ascii_digit()) {
+                return None;
+            }
+            (h, p.parse::<u16>().ok().filter(|&n| n > 0)?)
+        }
+        None => (t, def),
+    };
+    // 숫자와 점뿐이면 IPv4 여야 한다
+    if h.bytes().all(|b| b.is_ascii_digit() || b == b'.') && h.parse::<std::net::Ipv4Addr>().is_err() {
+        return None;
+    }
+    host_ok(h).then(|| format!("{h}:{p}"))
+}
+
+const BAUD: std::ops::RangeInclusive<u32> = 50..=20_000_000;
+
+fn bad(what: &str, v: &str) -> String {
+    format!("{}: «{what} {v}»", crate::tr!("넘길 값이 잘못되었습니다", "Invalid value to pass"))
+}
+
+fn baud_ok(b: Option<u32>) -> Result<Option<u32>, String> {
+    match b {
+        Some(n) if !BAUD.contains(&n) => Err(bad("--baud", &n.to_string())),
+        _ => Ok(b),
+    }
+}
+
+/// 열 프로그램과 인자(검사한 값으로만 만든다)
+pub fn target_args(t: &Target) -> Result<(AppId, Vec<String>), String> {
+    match t {
+        Target::ModbusMaster { tcp, rtu, baud, unit } => {
+            let mut a = Vec::new();
+            match (tcp, rtu) {
+                (Some(h), None) => a.extend(["--tcp".to_string(), host_port_arg(h, 502).ok_or_else(|| bad("--tcp", h))?]),
+                (None, Some(c)) => a.extend(["--rtu".to_string(), com_arg(c).ok_or_else(|| bad("--rtu", c))?]),
+                _ => return Err(bad("--tcp/--rtu", "?")),
+            }
+            if let Some(b) = baud_ok(*baud)? {
+                a.extend(["--baud".to_string(), b.to_string()]);
+            }
+            if let Some(u) = unit {
+                if rtu.is_some() && *u == 0 {
+                    return Err(bad("--unit", "0"));
+                }
+                a.extend(["--unit".to_string(), u.to_string()]);
+            }
+            Ok((apps::MODBUS_MASTER, a))
+        }
+        Target::Serial { port, baud } => {
+            let mut a = vec!["--port".to_string(), com_arg(port).ok_or_else(|| bad("--port", port))?];
+            if let Some(b) = baud_ok(*baud)? {
+                a.extend(["--baud".to_string(), b.to_string()]);
+            }
+            Ok((apps::SERIAL, a))
+        }
+        Target::Tcp { connect } => Ok((apps::TCP, vec!["--connect".to_string(), host_port_arg(connect, 502).ok_or_else(|| bad("--connect", connect))?])),
+    }
+}
+
+/// 다른 PortDock 프로그램을 인자와 함께 연다. 셸을 거치지 않는다. 못 찾으면 Ok(false) — 화면이 복사·내려받기 안내를 한다
+pub fn open(t: &Target) -> Result<bool, String> {
+    let (id, args) = target_args(t)?;
+    let Some(exe) = find_app(&id) else { return Ok(false) };
+    spawn(&exe, &args)?;
+    Ok(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +330,55 @@ mod tests {
         let found = candidates(&MM, Some(&me), None, None, &sib, None).into_iter().find(|p| p.is_file());
         assert_eq!(found, Some(other.join("PortDock Modbus-Master.exe")));
         let _ = std::fs::remove_dir_all(&root);
+    }
+    #[test]
+    fn target_args_checked() {
+        let mm = |tcp: Option<&str>, rtu: Option<&str>, baud, unit| Target::ModbusMaster { tcp: tcp.map(String::from), rtu: rtu.map(String::from), baud, unit };
+        assert_eq!(target_args(&mm(Some("192.168.0.10"), None, None, Some(1))).unwrap().1, ["--tcp", "192.168.0.10:502", "--unit", "1"]);
+        assert_eq!(target_args(&mm(Some("plc-1.local:1502"), None, None, None)).unwrap().1, ["--tcp", "plc-1.local:1502"]);
+        assert_eq!(target_args(&mm(None, Some("com3"), Some(19200), Some(5))).unwrap().1, ["--rtu", "COM3", "--baud", "19200", "--unit", "5"]);
+        assert_eq!(target_args(&mm(None, Some("COM3"), None, None)).unwrap().0.product, "PortDock Modbus Master");
+        // 둘 다·둘 다 없음·이상한 값
+        assert!(target_args(&mm(Some("1.2.3.4"), Some("COM1"), None, None)).is_err());
+        assert!(target_args(&mm(None, None, None, None)).is_err());
+        assert!(target_args(&mm(None, Some("COM1"), None, Some(0))).is_err());
+        assert!(target_args(&mm(None, Some("COM1"), Some(10), None)).is_err());
+        for h in ["1.2.3.999", "a b", "-x", "h:0", "h:70000", "h:+5", "1.2.3.4&calc", "\"h\"", "fe80::1", "", "h:", "콤"] {
+            assert!(target_args(&mm(Some(h), None, None, None)).is_err(), "{h}");
+        }
+        let s = Target::Serial { port: "COM12".into(), baud: Some(115200) };
+        let (id, a) = target_args(&s).unwrap();
+        assert_eq!(id.product, "PortDock Serial");
+        assert_eq!(a, ["--port", "COM12", "--baud", "115200"]);
+        for p in ["COM0", "COM257", "LPT1", "COM1 --x", "/dev/ttyS0", "콤12"] {
+            assert!(target_args(&Target::Serial { port: p.into(), baud: None }).is_err(), "{p}");
+        }
+        assert_eq!(target_args(&Target::Tcp { connect: "10.0.0.5:5000".into() }).unwrap().1, ["--connect", "10.0.0.5:5000"]);
+        assert!(target_args(&Target::Tcp { connect: "--connect".into() }).is_err());
+    }
+
+    #[test]
+    fn target_from_screen_json() {
+        let t: Target = serde_json::from_str(r#"{"app":"modbus-master","tcp":"10.0.0.5:502","unit":3}"#).unwrap();
+        assert_eq!(t, Target::ModbusMaster { tcp: Some("10.0.0.5:502".into()), rtu: None, baud: None, unit: Some(3) });
+        let t: Target = serde_json::from_str(r#"{"app":"serial","port":"COM3"}"#).unwrap();
+        assert_eq!(t, Target::Serial { port: "COM3".into(), baud: None });
+        assert!(serde_json::from_str::<Target>(r#"{"app":"calc","x":1}"#).is_err());
+    }
+
+    /// 찾을 이름이 각 프로그램의 실제 설정과 같은지 — 이름을 바꾸면 여기가 먼저 깨진다
+    #[test]
+    fn app_names_match_configs() {
+        let release = include_str!("../../../.github/workflows/release.yml");
+        let check = |id: AppId, dir: &str, conf: &str, cargo: &str| {
+            assert!(conf.contains(&format!("\"productName\": \"{}\"", id.product)), "{dir}");
+            assert!(cargo.contains(&format!("name = \"{}\"", id.bin)), "{dir}");
+            assert!(release.contains(&format!("{{ app: {dir}, asset: {} }}", id.asset)), "{dir}");
+            // 설치판은 사용자 범위(%LOCALAPPDATA%\<productName>) — find_app 의 기본 자리
+            assert!(conf.contains("\"installMode\": \"currentUser\""), "{dir}");
+        };
+        check(apps::SERIAL, "serial", include_str!("../../../apps/serial/src-tauri/tauri.conf.json"), include_str!("../../../apps/serial/src-tauri/Cargo.toml"));
+        check(apps::TCP, "tcp", include_str!("../../../apps/tcp/src-tauri/tauri.conf.json"), include_str!("../../../apps/tcp/src-tauri/Cargo.toml"));
+        check(apps::MODBUS_MASTER, "modbus-master", include_str!("../../../apps/modbus-master/src-tauri/tauri.conf.json"), include_str!("../../../apps/modbus-master/src-tauri/Cargo.toml"));
     }
 }

@@ -26,6 +26,11 @@ export function serviceOf(port: number) {
 }
 
 /** 칩 글자: «Modbus», «SLMP 5001», 목록에 없으면 «TCP 8080» */
+/** PortDock TCP 로 열 만한 열린 포트(0.3.0) — Modbus 502 는 Master 로, 웹 80·443 은 «웹 열기» 가 따로 있어 뺀다. 순서·중복 정리 */
+export function tcpOpenPorts(ports: number[]): number[] {
+  return [...new Set(ports)].filter((p) => Number.isInteger(p) && p > 0 && p <= 65535 && p !== 502 && p !== 80 && p !== 443).sort((a, b) => a - b);
+}
+
 export function serviceLabel(port: number) {
   const s = serviceOf(port);
   if (!s) return `TCP ${port}`;

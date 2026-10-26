@@ -98,16 +98,8 @@ fn open_web(ip: String, port: Option<u16>, https: bool) -> Result<(), String> {
     tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
 
-/// 열어 줄 Modbus Master — apps/modbus-master/src-tauri 의 tauri.conf.json productName·Cargo 패키지 이름, release.yml asset(시험이 맞춰 본다)
-const MASTER: launch::AppId = launch::AppId { product: "PortDock Modbus Master", asset: "Modbus-Master", bin: "portdock-modbus-master" };
-
-/// Modbus Master 에 넘길 인자 — 확인한 IP·숫자로만 만든다(글자를 그대로 옮기지 않는다)
-fn master_args(ip: Ipv4Addr, port: u16, unit: u8) -> Vec<String> {
-    vec!["--tcp".into(), format!("{ip}:{port}"), "--unit".into(), unit.to_string()]
-}
-
 /// 찾은 장비를 Modbus Master 로 연다(0.2.0) — «--tcp IP:포트 --unit n», 연결은 Master 에서 사용자가 누른다.
-/// 셸을 거치지 않는다. 못 찾으면 Ok(false) — 화면이 «IP:502» 복사·내려받기 안내를 한다
+/// 인자는 core launch 가 확인한 값으로만 만들고 셸을 거치지 않는다. 못 찾으면 Ok(false) — 화면이 «IP:502» 복사·내려받기 안내를 한다
 #[tauri::command(async)]
 fn open_master(ip: String, port: Option<u16>, unit: Option<u8>) -> Result<bool, String> {
     let ip = parse_ip(&ip)?;
@@ -115,9 +107,18 @@ fn open_master(ip: String, port: Option<u16>, unit: Option<u8>) -> Result<bool, 
     if port == 0 {
         return Err(tr!("포트는 1~65535 입니다", "Port must be 1–65535").into());
     }
-    let Some(exe) = launch::find_app(&MASTER) else { return Ok(false) };
-    launch::spawn(&exe, &master_args(ip, port, unit.unwrap_or(1)))?;
-    Ok(true)
+    launch::open(&master_target(ip, port, unit.unwrap_or(1)))
+}
+
+/// Modbus Master 로 넘길 대상 — 확인한 IP·숫자로만 만든다(글자를 그대로 옮기지 않는다)
+fn master_target(ip: Ipv4Addr, port: u16, unit: u8) -> launch::Target {
+    launch::Target::ModbusMaster { tcp: Some(format!("{ip}:{port}")), rtu: None, baud: None, unit: Some(unit) }
+}
+
+/// 다른 PortDock 프로그램으로 열기(0.3.0) — 화면은 «TCP 로 열기»(--connect IP:포트)에 쓴다. 값 검사·찾기·띄우기는 core
+#[tauri::command(async)]
+fn open_app(target: launch::Target) -> Result<bool, String> {
+    launch::open(&target)
 }
 
 #[tauri::command(async)]
@@ -245,6 +246,7 @@ pub fn run() {
             wake,
             open_web,
             open_master,
+            open_app,
             monitor_start,
             monitor_stop,
             monitor_set_log,
@@ -262,9 +264,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn master_args_from_checked_values() {
-        assert_eq!(master_args(Ipv4Addr::new(192, 168, 0, 10), 502, 1), ["--tcp", "192.168.0.10:502", "--unit", "1"]);
-        assert_eq!(master_args(Ipv4Addr::new(10, 0, 0, 5), 1502, 255), ["--tcp", "10.0.0.5:1502", "--unit", "255"]);
+    fn master_target_from_checked_values() {
+        let (_, args) = launch::target_args(&master_target(Ipv4Addr::new(192, 168, 0, 10), 502, 1)).unwrap();
+        assert_eq!(args, ["--tcp", "192.168.0.10:502", "--unit", "1"]);
+        let (_, args) = launch::target_args(&master_target(Ipv4Addr::new(10, 0, 0, 5), 1502, 255)).unwrap();
+        assert_eq!(args, ["--tcp", "10.0.0.5:1502", "--unit", "255"]);
         // 글자로 들어온 IP 는 parse_ip 를 거친다 — 따옴표·공백·명령 글자는 여기서 막힌다
         for bad in ["192.168.0.10 --unit 9", "\"1.2.3.4\"", "1.2.3.4&calc", "", "host"] {
             assert!(parse_ip(bad).is_err(), "{bad}");
@@ -272,16 +276,11 @@ mod tests {
         assert!(open_master("1.2.3.4".into(), Some(0), None).is_err());
     }
 
-    /// 찾을 이름이 Modbus Master 의 실제 설정과 같은지 — 이름을 바꾸면 여기가 먼저 깨진다
+    /// 화면의 «TCP 로 열기» 가 보내는 모양 그대로 — core 가 --connect 로 바꾼다
     #[test]
-    fn master_names_match_its_config() {
-        let conf = include_str!("../../../modbus-master/src-tauri/tauri.conf.json");
-        assert!(conf.contains(&format!("\"productName\": \"{}\"", MASTER.product)));
-        let cargo = include_str!("../../../modbus-master/src-tauri/Cargo.toml");
-        assert!(cargo.contains(&format!("name = \"{}\"", MASTER.bin)));
-        let release = include_str!("../../../../.github/workflows/release.yml");
-        assert!(release.contains(&format!("{{ app: modbus-master, asset: {} }}", MASTER.asset)));
-        // 설치판은 사용자 범위(%LOCALAPPDATA%\<productName>) — find_app 의 기본 자리
-        assert!(conf.contains("\"installMode\": \"currentUser\""));
+    fn tcp_target_from_screen_json() {
+        let t: launch::Target = serde_json::from_str(r#"{"app":"tcp","connect":"192.168.0.10:5001"}"#).unwrap();
+        let (_, args) = launch::target_args(&t).unwrap();
+        assert_eq!(args, ["--connect", "192.168.0.10:5001"]);
     }
 }

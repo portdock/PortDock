@@ -97,6 +97,10 @@ const ko = {
   masterOpened: "Modbus Master 를 열었습니다 — {a} · 국번 {n}. 거기서 «연결» 을 누르세요",
   masterMissing: "이 PC 에서 PortDock Modbus Master 를 찾지 못해 «{a}» 를 복사했습니다 — Modbus Master 의 장비 주소 칸에 붙여 넣으세요.",
   masterGet: "Modbus Master 내려받기",
+  // TCP 로 열기(0.3.0)
+  openTcp: "TCP 로 열기",
+  openTcpPort: "TCP 로 열기 :{p}",
+  openTcpTip: "이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다 — 클라이언트 방식으로 주소·포트가 채워지고, 접속은 거기서 누릅니다. 없으면 «IP:포트» 를 복사하고 내려받기를 알려 줍니다. 포트가 여럿이면 고릅니다.",
   noMac: "MAC 을 모르면 WoL 을 보낼 수 없습니다(같은 대역에서 ARP 로 찾은 장비만)",
   copied: "복사했습니다: {a}",
   woke: "매직 패킷을 보냈습니다 ({a})",
@@ -230,6 +234,10 @@ const en: typeof ko = {
   masterOpened: "Opened Modbus Master — {a} · Slave ID {n}. Press «Connect» there",
   masterMissing: "PortDock Modbus Master was not found on this PC, so «{a}» was copied — paste it into Modbus Master's device address box.",
   masterGet: "Get Modbus Master",
+  // Open in TCP (0.3.0)
+  openTcp: "Open in TCP",
+  openTcpPort: "Open in TCP :{p}",
+  openTcpTip: "Opens PortDock TCP on this PC with «--connect IP:port» — client mode with the address and port filled in; press Connect there. If TCP is not installed, «IP:port» is copied and a download link is shown. With several ports, pick one.",
   noMac: "Wake-on-LAN needs the MAC (only devices found by ARP on the same subnet)",
   copied: "Copied: {a}",
   woke: "Magic packet sent ({a})",

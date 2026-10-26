@@ -166,6 +166,7 @@ export const help: HelpDoc = {
         "- «JSON 복사»: 읽은 값 전부를 JSON 으로 복사합니다.",
         "- «저장…»(Ctrl+S): 파일 이름을 .txt 로 두면 텍스트, .json 으로 바꾸면 JSON 으로 저장합니다.",
         "- 사용자 폴더 경로(C:\\Users\\이름\\…)는 «~» 로 가립니다. 장치 인스턴스 ID·일련번호는 그대로 들어가므로 붙이기 전에 한 번 봅니다.",
+        "- (0.3.0 부터) «Serial 로 열기»: 고른 포트(지금 꽂혀 있는 장치)를 PortDock Serial 에 채워 엽니다. 연결은 그 창에서 누릅니다. 이 PC 에서 Serial 을 찾지 못하면 포트 이름을 복사하고 내려받기 페이지를 알려 줍니다.",
       ],
     },
     {
@@ -355,6 +356,7 @@ export const help: HelpDoc = {
         "- «Copy JSON»: copies every value read as JSON.",
         "- «Save…» (Ctrl+S): a .txt name saves text, a .json name saves JSON.",
         "- User folder paths (C:\\Users\\name\\…) are masked as «~». Device instance IDs and serial numbers stay in, so have a look before pasting.",
+        "- (from 0.3.0) «Open in Serial»: opens PortDock Serial with the selected port (a device plugged in now) filled in. Press connect in that window. If Serial is not found on this PC, the port name is copied and the download page is offered.",
       ],
     },
     {

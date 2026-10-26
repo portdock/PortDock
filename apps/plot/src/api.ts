@@ -59,4 +59,6 @@ export const api = {
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   writeBytes: (path: string, data: number[]) => tally("export", invoke<void>("write_bytes", { path, data })),
   readText: (path: string) => invoke<string>("read_text", { path }),
+  /** 명령줄 인자(0.3.0) — 처음 한 번만, 실행 파일 이름 뺀 것 */
+  launchArgs: () => invoke<string[]>("launch_args"),
 };

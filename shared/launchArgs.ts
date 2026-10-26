@@ -53,10 +53,10 @@ export function intIn(s: string, min: number, max: number): number | null {
   return n >= min && n <= max ? n : null;
 }
 
-/** COM 포트 이름 «COM3»·«com12» → «COM3». 아니면 null */
+/** COM 포트 이름 «COM3»·«com12» → «COM3»(COM1~COM256 — 직접 넣는 포트·core launch 와 같은 범위). 아니면 null */
 export function comPort(s: string): string | null {
   const m = /^com(\d{1,3})$/i.exec(s.trim());
-  return m && Number(m[1]) >= 1 ? `COM${Number(m[1])}` : null;
+  return m && Number(m[1]) >= 1 && Number(m[1]) <= 256 ? `COM${Number(m[1])}` : null;
 }
 
 const HOST_RE = /^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,62})(?:\.[A-Za-z0-9-]{1,63})*$/;

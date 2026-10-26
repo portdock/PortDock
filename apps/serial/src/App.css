@@ -694,6 +694,17 @@ details.panel > summary .sum-note {
 .preset-note {
   overflow-wrap: anywhere;
 }
+/* «Modbus Master 로 열기»(0.3.0) — 프리셋 «Modbus RTU 장비» 일 때 설명 아래 */
+.open-master-row {
+  display: flex;
+  min-width: 0;
+}
+.open-master-row .open-master {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
 /* 카드 모양은 shared/firstcard.css — 여기서는 빈 로그 자리만 */
 .log > .first-card {
   margin: 24px auto;

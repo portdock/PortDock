@@ -297,6 +297,12 @@ fn framing(f: &Format) -> FrameMode {
     }
 }
 
+/// 명령줄 인자(0.3.0) — 처음 한 번만 준다. 뜻 풀이·검사는 화면(src/launch.ts)이 하고, 칸만 채운다(받기 시작은 사용자가)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
 #[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
@@ -497,6 +503,7 @@ pub fn run() {
             report_env,
             report_read_dump,
             list_ports,
+            launch_args,
             plot_start,
             plot_stop,
             plot_set_format,

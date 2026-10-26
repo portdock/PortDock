@@ -27,7 +27,8 @@ import { ui } from "@shared/uiText";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
 import { PortPicker } from "@shared/PortPicker";
-import { portUsable } from "@shared/portPick";
+import { portUsable, setManualPort } from "@shared/portPick";
+import { launchFilled, plotLaunch } from "./launch";
 import "./App.css";
 
 const APP = "PortDock Plot";
@@ -246,6 +247,54 @@ export default function App() {
     if (running || !ports.length || portUsable(ports, cfg.port)) return;
     setCfg((c) => ({ ...c, port: pickPort(ports, load("portId", null)) }));
   }, [ports, cfg.port, running]);
+
+  // ---- 명령줄 인자(0.3.0) — «--serial COM3 --baud 9600»·«--tcp 10.0.0.5:5000»·«--udp 5005». 칸만 채우고 시작은 사용자가 누른다
+  const launchDone = useRef(false);
+  useEffect(() => {
+    if (launchDone.current) return;
+    launchDone.current = true;
+    api
+      .launchArgs()
+      .then(async (argv) => {
+        if (!argv?.length) return;
+        const l = plotLaunch(argv);
+        const d = dict[langRef.current];
+        const parts: string[] = [];
+        if (l.transport === "serial" && l.serialPort) {
+          // 목록에 없는 COM 이면 직접 넣은 포트로 기억한다 — 다른 포트로 저절로 바뀌지 않게
+          const sp = l.serialPort;
+          const listed = await api
+            .listPorts()
+            .then((ps) => ps.some((p) => p.name.toLowerCase() === sp.toLowerCase()))
+            .catch(() => false);
+          if (!listed) setManualPort(sp);
+          setTransport("serial");
+          setCfg((c) => ({ ...c, port: sp }));
+          parts.push(sp);
+        }
+        if (l.transport === "tcp" && l.host && l.port) {
+          const { host, port } = l;
+          setTransport("tcp");
+          setTcp((o) => ({ ...o, host, port }));
+          parts.push(`TCP ${joinHostPort(host, port)}`);
+        }
+        if (l.transport === "udp" && l.port !== undefined) {
+          const port = l.port;
+          setTransport("udp");
+          setUdp((o) => ({ ...o, port }));
+          parts.push(`UDP :${port}`);
+        }
+        if (l.baud !== undefined) {
+          const baud = l.baud;
+          setCfg((c) => ({ ...c, baud }));
+          parts.push(`${baud} bps`);
+        }
+        const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---- 값·원시 줄
   const ring = useRef(new Ring()).current;

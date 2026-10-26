@@ -18,10 +18,12 @@ import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { openInApp } from "@shared/openApp";
+import { count } from "@shared/usage";
 import { api, type Host, type Nic, type NicAddr, type RangeInfo, type ScanEvent } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
-import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, serviceLabel, serviceTip, stamp, subnetFit, subnetNote, togglePortChip } from "./net";
+import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, serviceLabel, serviceTip, stamp, subnetFit, subnetNote, tcpOpenPorts, togglePortChip } from "./net";
 import { LogMenu, type MenuItem } from "@shared/LogMenu";
 import { MonitorView, useMonitor } from "./Monitor";
 import "./App.css";
@@ -370,6 +372,17 @@ export default function App() {
       })
       .catch((e) => toast.show(String(e), { error: true }));
   const masterUrl = `https://portdock.dev/${lang === "en" ? "en/" : ""}modbus-master/`;
+  // TCP 로 열기(0.3.0) — 502·웹 말고 열린 포트를 PortDock TCP 클라이언트로. 포트가 여럿이면 메뉴로 고른다
+  const [tcpMenu, setTcpMenu] = useState<{ x: number; y: number; ip: string } | null>(null);
+  const openTcp = (ip: string, port: number) => {
+    count("open_in_tcp");
+    const addr = `${ip}:${port}`;
+    void openInApp({ app: "tcp", connect: addr }, addr, lang, toast);
+  };
+  const tcpMenuItems = (ip: string): MenuItem[] => {
+    const h: Row | undefined = hostsRef.current.get(ip) ?? allRows.find((r) => r.ip === ip);
+    return h ? tcpOpenPorts(h.ports).map((p) => ({ label: `${ip}:${p}`, hint: serviceLabel(p), run: () => openTcp(ip, p), disabled: !!h.gone })) : [];
+  };
   const [identBusy, setIdentBusy] = useState(false);
   const readIdent = (ip: string) => {
     setIdentBusy(true);
@@ -384,6 +397,20 @@ export default function App() {
       .finally(() => setIdentBusy(false));
   };
 
+  /** 메뉴의 «TCP 로 열기» — 포트 하나면 바로, 여럿이면 같은 자리에 포트 고르기 메뉴. 열 포트가 없으면 항목 없음 */
+  const tcpItem = (h: Row): MenuItem[] => {
+    const ps = tcpOpenPorts(h.ports);
+    if (!ps.length) return [];
+    const one = ps.length === 1;
+    return [
+      {
+        label: one ? t("openTcpPort", { p: ps[0] }) : `${t("openTcp")} ▸`,
+        run: () => (one ? openTcp(h.ip, ps[0]) : rowMenu && setTcpMenu({ x: rowMenu.x, y: rowMenu.y, ip: h.ip })),
+        disabled: !!h.gone,
+        title: t("openTcpTip"),
+      },
+    ];
+  };
   /** 결과 줄 오른쪽 버튼 메뉴 — 웹 열기·IP 복사·IP:502 복사·MAC 복사·Modbus 정보·감시에 추가·WoL(아래 줄 버튼과 같은 함수) */
   const hostMenu = (h: Row): MenuItem[] => {
     const https = h.ports.includes(443) && !h.ports.includes(80);
@@ -394,6 +421,7 @@ export default function App() {
       { label: t("copyIp"), run: () => void copy(h.ip) },
       { label: t("copyHostPort", { a: `${h.ip}:502` }), run: () => void copy(`${h.ip}:502`), disabled: !mb, title: mb ? t("hostPortHint") : t("no502") },
       { label: t("openMaster"), run: () => void openMaster(h.ip, h.modbus?.unit ?? 1), disabled: !mb || !!h.gone, title: mb ? tip(lang, "nsOpenMaster") : t("no502") },
+      ...tcpItem(h),
       { label: t("copyMac"), run: () => h.mac && void copy(h.mac), disabled: !h.mac },
       "sep",
       { label: t("readIdent"), run: () => readIdent(h.ip), disabled: !mb || identBusy || !!h.gone, title: mb ? undefined : t("no502") },
@@ -895,6 +923,26 @@ export default function App() {
                         {t("openMaster")}
                       </button>
                     )}
+                    {tcpOpenPorts(selHost.ports).length > 0 &&
+                      (() => {
+                        const ps = tcpOpenPorts(selHost.ports);
+                        const ip = selHost.ip;
+                        return (
+                          <button
+                            className="btn small open-tcp"
+                            disabled={!!selHost.gone}
+                            data-tip={t("openTcpTip")}
+                            aria-haspopup={ps.length > 1 ? "menu" : undefined}
+                            onClick={(e) => {
+                              if (ps.length === 1) return openTcp(ip, ps[0]);
+                              const r = e.currentTarget.getBoundingClientRect();
+                              setTcpMenu({ x: r.left, y: r.bottom + 2, ip });
+                            }}
+                          >
+                            {ps.length === 1 ? t("openTcpPort", { p: ps[0] }) : `${t("openTcp")} ▾`}
+                          </button>
+                        );
+                      })()}
                   </div>
                   {masterMissing === selHost.ip && (
                     <div className="hint warn master-missing">
@@ -934,6 +982,7 @@ export default function App() {
           <MonitorView lang={lang} mon={mon} settings={settings} />
         )}
       </main>
+      {tcpMenu && <LogMenu x={tcpMenu.x} y={tcpMenu.y} label={`${t("openTcp")} — ${tcpMenu.ip}`} items={tcpMenuItems(tcpMenu.ip)} onClose={() => setTcpMenu(null)} />}
       {rowMenu && menuHost && <LogMenu x={rowMenu.x} y={rowMenu.y} label={rowMenu.ip} items={hostMenu(menuHost)} onClose={() => setRowMenu(null)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={scanning || mon.running} />}

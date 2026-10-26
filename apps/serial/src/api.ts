@@ -123,6 +123,7 @@ export const wireSpec = (s: SendSpec, encoding: Encoding) => ({ text: s.text, mo
 
 export const api = {
   listPorts: () => invoke<PortInfo[]>("list_ports"),
+  launchArgs: () => invoke<string[]>("launch_args"),
   open: (config: SerialConfig, framing: FrameMode, rxCheck: unknown, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;

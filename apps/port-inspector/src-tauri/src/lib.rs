@@ -93,6 +93,12 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 다른 PortDock 프로그램으로 열기(Serial 에 포트 채움) — 못 찾으면 Ok(false)
+#[tauri::command(async)]
+fn open_app(target: portdock_core::launch::Target) -> Result<bool, String> {
+    portdock_core::launch::open(&target)
+}
+
 /// 화면 언어를 백엔드 문구(오류)에도 적용
 #[tauri::command]
 fn set_lang(lang: String) {
@@ -170,7 +176,8 @@ pub fn run() {
             loop_start,
             loop_cancel,
             write_text,
-            read_text
+            read_text,
+            open_app
         ])
         .run(tauri::generate_context!());
     if let Err(e) = result {

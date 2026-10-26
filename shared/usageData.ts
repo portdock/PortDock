@@ -17,16 +17,16 @@ export function ingestUrl(key: string = APTABASE_KEY): string | null {
 
 /** 프로그램마다 세는 기능 — 값·주소·내용 없이 횟수만. 이름은 이 목록에서만 */
 export const FEATURES = {
-  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check"],
-  tcp: ["start", "relay", "send", "send_file", "file_log"],
+  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master"],
+  tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master"],
   udp: ["start", "send", "file_log"],
   "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log"],
   "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log"],
   simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log"],
   scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block"],
   plot: ["start", "record", "export"],
-  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "monitor"],
-  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "loopback"],
+  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor"],
+  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "loopback", "open_in_serial"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type UsageApp = keyof typeof FEATURES;

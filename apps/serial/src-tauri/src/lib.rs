@@ -247,6 +247,18 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 명령줄 인자(0.3.0) — «--port COM3 --baud 9600». 처음 한 번만 준다(화면이 다시 읽혀도 두 번 채우지 않게)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
+/// 다른 PortDock 프로그램으로 열기(0.3.0) — 이 PC 에서 찾으면 띄우고 true, 못 찾으면 false
+#[tauri::command(async)]
+fn open_app(target: portdock_core::launch::Target) -> Result<bool, String> {
+    portdock_core::launch::open(&target)
+}
+
 /// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
 #[tauri::command]
 fn set_lang(lang: String) {
@@ -316,6 +328,8 @@ pub fn run() {
             loop_start,
             loop_cancel,
             set_lang,
+            launch_args,
+            open_app,
             report_pending,
             report_dismiss,
             report_env,

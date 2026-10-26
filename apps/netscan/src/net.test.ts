@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test apps/netscan/src/net.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_PORTS, chipOn, extraPorts, formatPorts, parsePorts, PORT_CHIPS, samePortSet, subnetFit, subnetNote, togglePortChip } from "./net.ts";
+import { DEFAULT_PORTS, chipOn, extraPorts, formatPorts, parsePorts, PORT_CHIPS, samePortSet, subnetFit, subnetNote, tcpOpenPorts, togglePortChip } from "./net.ts";
 
 test("포트 칩 — 기본 목록은 칩이 모두 켜짐, 글 모양은 기본 목록과 같다", () => {
   const p = parsePorts(DEFAULT_PORTS, "ko").ports;
@@ -82,4 +82,11 @@ test("대상 대역 — 169.254(APIPA) 랜카드는 «IP 를 못 받음» 안내
   assert.match(subnetNote(f, "192.168.1.0/24", "192.168.1.1", "ko").text, /«Ethernet 2» 는 169\.254\.x\.x — IP 를 못 받았습니다/);
   assert.match(subnetNote(subnetFit("192.168.1.1", "192.168.1.9", [ap], "169.254.12.7"), "x", "192.168.1.1", "en").text, /did not get an IP/);
   assert.equal(subnetFit("169.254.12.1", "169.254.12.254", [ap, wifi], "169.254.12.7").kind, "in");
+});
+
+test("TCP 로 열기 — 502·80·443 은 빼고 정렬·중복 없음", () => {
+  assert.deepEqual(tcpOpenPorts([502, 80, 443]), []);
+  assert.deepEqual(tcpOpenPorts([5001, 502, 102, 5001, 443, 4840]), [102, 4840, 5001]);
+  assert.deepEqual(tcpOpenPorts([0, 70000, 23]), [23]);
+  assert.deepEqual(tcpOpenPorts([]), []);
 });

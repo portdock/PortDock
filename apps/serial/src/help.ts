@@ -45,6 +45,8 @@ export const help: HelpDoc = {
       title: "연결 설정",
       body: [
         "- «용도»(포트 위): 무엇에 쓰는지 고르면 여러 칸을 한 번에 맞춥니다. «일반» = 끊김 시간 20ms·체크섬 검사 없음·ASCII + 줄 끝 CR LF(속도는 그대로). «AT 명령» = 115200 8N1·끝 문자 0D 0A 로 끊기·ASCII + CR LF. «Modbus RTU 장비» = 9600 8N1·프레임 구분 Modbus RTU·수신 CRC16 Modbus 검사·보내기 HEX + 체크섬 CRC16 Modbus·줄 끝 없음. «NMEA·GPS» = 9600 8N1(오래된 수신기는 4800 으로 고치세요)·끝 문자 0A(LF)로 끊기·ASCII + CR LF.",
+        "- (0.3.0 부터) «용도» 가 «Modbus RTU 장비» 이면 설명 아래에 «Modbus Master 로 열기» 가 나옵니다. 누르면 PortDock Modbus Master 를 지금 포트·속도로 채워 엽니다(연결은 그 창에서 누름). 한 포트는 한 프로그램만 열 수 있으니 이 창에서 먼저 «끊기» 하세요. 이 PC 에 Modbus Master 가 없으면 «COM3 9600» 처럼 포트·속도를 복사하고 내려받기 페이지를 알려 줍니다.",
+        "- (0.3.0 부터) 명령줄로 열면 연결 설정을 채웁니다: «portdock-serial.exe --port COM3 --baud 9600». 자동으로 연결하지는 않으니 «연결» 을 누르세요. 목록에 없는 포트는 직접 넣은 포트로 둡니다. 모르는 인자·범위 밖 값은 무시하고 «무시한 명령줄 인자: …» 로 알립니다.",
         "- 고른 뒤에도 각 칸은 그대로 고칠 수 있습니다. 프리셋과 달라지면 «AT 명령 (바꿈)» 처럼 붙고 아래에 다른 칸 이름이 나옵니다. 옆의 ↺ 는 프리셋 값으로 다시 맞춥니다. 보내기 형식(HEX/ASCII)이 바뀌면 입력칸은 비웁니다. 고른 용도는 기억합니다.",
         "- «포트»: 연결할 COM 포트. USB 장치는 아래에 «USB VID:PID · S/N 일련번호» 가 보입니다. 연결 중에는 포트만 바꿀 수 없고, 나머지 설정은 바로 적용됩니다.",
         "- (0.3.0 부터) 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 포트 목록 맨 아래 «직접 입력…» 을 골라 이름(예: COM12)을 넣고 «확인» 하면 엽니다. 직접 넣은 포트는 목록에 없어도 다른 포트로 바뀌지 않습니다. 목록에는 Windows 의 SERIALCOMM 에 등록된 포트도 함께 보입니다.",
@@ -295,6 +297,8 @@ export const help: HelpDoc = {
       title: "Connection settings",
       body: [
         "- «Use» (above the port): sets several fields at once for what you are doing. «General» = idle gap 20 ms, no checksum check, ASCII + CR LF line ending (baud unchanged). «AT commands» = 115200 8N1, split at terminator 0D 0A, ASCII + CR LF. «Modbus RTU device» = 9600 8N1, Modbus RTU framing, RX CRC16 Modbus check, send HEX + checksum CRC16 Modbus, no line ending. «NMEA / GPS» = 9600 8N1 (change to 4800 for older receivers), split at 0A (LF), ASCII + CR LF.",
+        "- (from 0.3.0) With «Use» set to «Modbus RTU device», «Open in Modbus Master» appears below the description. It opens PortDock Modbus Master with the current port and baud rate filled in (connect in that window). Only one program can open a port, so «Disconnect» here first. If Modbus Master is not on this PC, the port and baud (e.g. «COM3 9600») are copied and the download page is offered.",
+        "- (from 0.3.0) Started from the command line, it fills in the connection settings: «portdock-serial.exe --port COM3 --baud 9600». It does not connect — press «Connect». A port missing from the list is kept as a manually entered port. Unknown arguments and out-of-range values are ignored and listed as «Ignored command-line arguments: …».",
         "- Every field can still be changed afterwards. When something differs from the preset, «(changed)» is added (e.g. «AT commands (changed)») and the differing fields are listed below. ↺ next to it resets them to the preset. The input box is cleared when the send format (HEX/ASCII) changes. The chosen use is remembered.",
         "- «Ports»: the COM port to use. USB devices show «USB VID:PID · S/N serial number» below. Only the port is locked while connected; other settings apply immediately.",
         "- (from 0.3.0) A port missing from the list (one registered as a modem, some virtual ports) can be opened by choosing «Type a port…» at the bottom of the port list, typing its name (e.g. COM12) and pressing «OK». A port entered this way stays selected even though it is not listed. The list also includes ports registered in Windows SERIALCOMM.",

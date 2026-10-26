@@ -12,6 +12,8 @@ import { useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { useToast } from "@shared/Toast";
+import { openInApp } from "@shared/openApp";
+import { count } from "@shared/usage";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
@@ -405,6 +407,20 @@ export default function App() {
         <div className="toolbar">
           <b className="sel-title">{sel ? portLabel(sel) : t("pick")}</b>
           {total && <span className={`lv lv-${total}`}>{LEVEL_TEXT[total][lang]}</span>}
+          {sel?.port && (
+            <button
+              className="btn small open-serial"
+              disabled={!sel.present}
+              onClick={() => {
+                if (!sel.port) return;
+                count("open_in_serial");
+                void openInApp({ app: "serial", port: sel.port }, sel.port, lang, toast);
+              }}
+              data-tip={sel.present ? t("openSerialTip") : t("openSerialAbsent")}
+            >
+              {t("openSerial")}
+            </button>
+          )}
           <span className="grow" />
           {r && <span className="hint">{t("readAt", { t: fmtTime(r.readAt) })}</span>}
           {refreshButton(false)}

@@ -46,7 +46,10 @@ import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { PortPicker } from "@shared/PortPicker";
-import { portUsable } from "@shared/portPick";
+import { portUsable, setManualPort } from "@shared/portPick";
+import { openInApp } from "@shared/openApp";
+import { count } from "@shared/usage";
+import { launchFilled, serialLaunch } from "./launch";
 import { useLostAlert } from "@shared/useLostAlert";
 import { useLogKeys } from "@shared/logKeys";
 import { CopyButton } from "@shared/CopyButton";
@@ -229,6 +232,41 @@ export default function App() {
     if (cfg.port) setPortNotice(fill(dict[lang].portSwitched, { a: cfg.port, b: next }));
     setCfg((c) => ({ ...c, port: next }));
   }, [ports, cfg.port, sessionId, lang]);
+
+  // 명령줄 인자(0.3.0) — «--port COM3 --baud 9600». 설정만 채우고 연결은 사용자가 누른다(한 번만)
+  const launchDone = useRef(false);
+  useEffect(() => {
+    if (launchDone.current) return;
+    launchDone.current = true;
+    api
+      .launchArgs()
+      .then(async (argv) => {
+        if (!argv?.length) return;
+        const l = serialLaunch(argv);
+        const d = dict[langRef.current];
+        const parts: string[] = [];
+        if (l.port) {
+          // 목록에 없는 COM 이면 직접 넣은 포트로 기억한다 — 다른 포트로 저절로 바뀌지 않게
+          const sp = l.port;
+          const listed = await api
+            .listPorts()
+            .then((ps) => ps.some((p) => p.name.toLowerCase() === sp.toLowerCase()))
+            .catch(() => false);
+          if (!listed) setManualPort(sp);
+          setCfg((c) => ({ ...c, port: sp }));
+          setPortNotice(null);
+          parts.push(sp);
+        }
+        if (l.baud !== undefined) {
+          setCfg((c) => ({ ...c, baud: l.baud! }));
+          parts.push(`${l.baud} bps`);
+        }
+        const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 프레임은 ref 에 쌓고 version 으로만 다시 그린다(대량 수신 시 배열 복사 방지)
   const framesRef = useRef<Frame[]>([]);
@@ -890,6 +928,27 @@ export default function App() {
           )}
         </div>
         <div className="hint preset-note">{presetChanged.length ? fill(t("presetDiff"), { a: presetChanged.map((k) => t(FIELD_KEY[k])).join(" · ") }) : t(`presetDesc_${preset}`)}</div>
+        {preset === "modbus" && (
+          // Modbus Master 로 열기(0.3.0) — 같은 포트를 두 프로그램이 함께 열 수 없으니 연결 중이면 먼저 끊으라고 알린다
+          <div className="open-master-row">
+            <button
+              type="button"
+              className="btn small open-master"
+              disabled={!cfg.port}
+              data-tip={t(connected ? "openMasterBusy" : "openMasterTip")}
+              onClick={() => {
+                if (connected) {
+                  toast.show(t("openMasterBusy"), { error: true });
+                  return;
+                }
+                count("open_in_master");
+                void openInApp({ app: "modbus-master", rtu: cfg.port, baud: cfg.baud }, `${cfg.port} ${cfg.baud}`, lang, toast);
+              }}
+            >
+              {t("openMaster")}
+            </button>
+          </div>
+        )}
 
         <label data-tip={tip(lang, "ports")}>{t("ports")}</label>
         <PortPicker

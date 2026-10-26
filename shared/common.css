@@ -499,7 +499,12 @@ html .row.sel.primary {
   color: inherit;
   white-space: nowrap;
 }
-.toast .toast-undo {
+/* 버튼이 있는 긴 알림(«찾지 못해 복사했습니다 [내려받기 페이지]», 0.3.0)은 줄바꿈 */
+.toast:has(.toast-action) .toast-text {
+  white-space: normal;
+}
+.toast .toast-undo,
+.toast .toast-action {
   background: transparent;
   border-color: currentColor;
   font-weight: 600;
@@ -720,3 +725,4 @@ html .row.sel.primary {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }
+
