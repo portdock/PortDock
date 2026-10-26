@@ -2,6 +2,7 @@
 // 읽은 값을 «문제 없음(읽은 범위) / 볼 것 / 문제 있음 / 읽지 못함» 으로 나누는 순수 함수, 결과 글(복사·저장).
 // 단정하지 않는다 — PC 가 읽은 범위만 말하고, 볼 수 없는 것(배선·종단·바이어스·접지)을 늘 함께 적는다.
 import { hideUserPaths } from "./redact.ts";
+import { nicLines, type NicPurpose } from "./nicCheck.ts";
 
 export type Lang = "ko" | "en";
 export interface Text {
@@ -90,6 +91,27 @@ export interface EventList {
   days: number;
   errors: string[];
 }
+/** 랜카드 고급 속성 하나(장치 관리자 «고급» 탭) — keyword 가 «*» 로 시작하면 Microsoft 표준 키워드 */
+export interface NicProp {
+  keyword: string;
+  name: string;
+  display: string | null;
+  /** 레지스트리 원값. 바꾼 적이 없으면 null(기본값이 쓰인다) */
+  raw: string | null;
+  default: string | null;
+  valid: string[];
+  min: number | null;
+  max: number | null;
+}
+export interface NicStats {
+  inPackets: number;
+  outPackets: number;
+  inErrors: number;
+  inDiscards: number;
+  outErrors: number;
+  outDiscards: number;
+}
+export type NetProfile = "public" | "private" | "domain";
 export interface NicSummary {
   name: string;
   description: string;
@@ -98,9 +120,22 @@ export interface NicSummary {
   fullDuplex: boolean | null;
   ipv4: string[];
   gateway: string | null;
+  pnpId?: string | null;
+  advanced?: NicProp[];
+  canTurnOff?: boolean | null;
+  pnpCapabilities?: number | null;
+  stats?: NicStats | null;
+  profile?: NetProfile | null;
+  network?: string | null;
+}
+export interface FirewallProfile {
+  profile: NetProfile;
+  enabled: boolean | null;
+  current: boolean;
 }
 export interface NicList {
   nics: NicSummary[];
+  firewall?: FirewallProfile[];
   errors: string[];
 }
 
@@ -380,6 +415,8 @@ export interface Bundle {
   loop: BaudResult[];
   echo: EchoResult | null;
   loopError: string | null;
+  /** 랜카드 점검 용도(없으면 «일반») */
+  nicPurpose?: NicPurpose;
 }
 
 const L = (lang: Lang, x: Text) => x[lang];
@@ -437,9 +474,9 @@ export function bundleText(lang: Lang, b: Bundle): string {
       );
     if (b.echo) out.push(`${b.echo.baud} bps ${ko ? "에코" : "echo"}: ${v(echoVerdict(b.echo))}`);
   }
-  if (b.nics?.nics.length) {
+  if (b.nics && (b.nics.nics.length || b.nics.errors.length)) {
     head(ko ? "이 PC 랜카드" : "Network adapters on this PC");
-    for (const n of b.nics.nics) out.push(`${n.name}: ${n.up ? fmtSpeed(n.speed) : ko ? "연결 안 됨" : "not connected"}${n.fullDuplex == null ? "" : n.fullDuplex ? (ko ? " 전이중" : " full duplex") : ko ? " 반이중" : " half duplex"} · ${n.ipv4.join(", ") || "—"}`);
+    out.push(...nicLines(lang, b.nics, b.nicPurpose ?? "general", v, fmtSpeed));
   }
   head(ko ? "PC 가 볼 수 없는 것" : "What the PC cannot see");
   for (const c of CANNOT_SEE) out.push(`- ${L(lang, c)}`);

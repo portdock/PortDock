@@ -447,7 +447,9 @@ const TIPS: Record<string, Tip> = {
   piCardHistory: ["이 장치의 PnP 이벤트(연결·드라이버 설치·삭제·시작 문제) — 이벤트 로그에서 기간만큼.", "PnP events for this device (plug-in, driver install, removal, start problems) from the event logs for the chosen period."],
   piCardCom: ["Windows 가 예약해 둔 COM 번호(ComDB)와 실제 장치를 견줍니다 — 주인 없는 번호·겹친 번호.", "Compares the COM numbers Windows has reserved (ComDB) with real devices — orphan and duplicate numbers."],
   piCardLoop: ["TX·RX 를 이어 바이트 왕복을 재거나, 2선 RS-485 변환기의 에코를 봅니다. 선·버스에서 장비를 뗀 뒤에 합니다.", "Measures byte round trips with TX tied to RX, or checks a 2-wire RS-485 adapter for echo. Disconnect devices from the line first."],
-  piCardNics: ["이 PC 랜카드의 링크 속도·이중·IPv4·게이트웨이.", "Link speed, duplex, IPv4 and gateway of this PC's network adapters."],
+  piCardNics: ["이 PC 랜카드의 링크 속도·이중·IPv4·게이트웨이와 고급 설정(점보·버퍼·인터럽트 완화·EEE)·절전·오류·네트워크 프로필·방화벽.", "Link speed, duplex, IPv4 and gateway of this PC's network adapters, plus advanced settings (jumbo, buffers, interrupt moderation, EEE), power saving, errors, network profile and firewall."],
+  piNicPurpose: ["무엇을 꽂은 랜카드인지 — 용도에 맞춰 볼 값이 달라집니다. «일반» 은 링크·오류만 봅니다.", "What the adapter is used for — what gets checked depends on it. «General» looks at link and errors only."],
+  piNicVendor: ["카메라 제조사 공개 문서에 적힌 값 — PortDock 의 권장이 아닙니다. 눌러 출처를 엽니다.", "Values from camera vendors' public docs — not PortDock recommendations. Click to open the source."],
   piDays: ["이벤트 로그에서 찾아볼 기간.", "How far back to search the event logs."],
   piCannot: ["PC 가 읽을 수 없는 것 — 결과와 상관없이 따로 확인합니다.", "What the PC cannot read — check it separately whatever the results say."],
 };

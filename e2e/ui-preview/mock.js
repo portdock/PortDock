@@ -2067,6 +2067,7 @@ function piReport(d) {
     errors: [],
   };
 }
+const piProp = (keyword, name, raw, display, o = {}) => ({ keyword, name, display, raw, default: raw, valid: [], min: null, max: null, ...o });
 let PIL = null;
 async function pinsp(cmd, a) {
   switch (cmd) {
@@ -2094,11 +2095,57 @@ async function pinsp(cmd, a) {
     }
     case "pi_nics":
       await sleep(100);
+      // 랜카드 점검(10/26): 이더넷 = 점보 꺼짐·버퍼 512/2048·절전 켜짐·공용 → 카메라 용도면 «볼 것», 이더넷 2 = 10 Mbps 반이중·EEE 켜짐·받기 오류
       return {
         nics: [
-          { name: "이더넷", description: "Intel(R) Ethernet Connection I219-V", up: true, speed: 1e9, fullDuplex: true, ipv4: ["192.168.0.10/24"], gateway: "192.168.0.1" },
-          { name: "이더넷 2", description: "USB 10/100 LAN", up: true, speed: 1e7, fullDuplex: false, ipv4: ["10.0.0.5/24"], gateway: null },
-          { name: "Wi-Fi", description: "Wireless Adapter", up: false, speed: null, fullDuplex: null, ipv4: [], gateway: null },
+          {
+            name: "이더넷",
+            description: "Intel(R) Ethernet Connection I219-V",
+            up: true,
+            speed: 1e9,
+            fullDuplex: true,
+            ipv4: ["192.168.0.10/24"],
+            gateway: "192.168.0.1",
+            pnpId: "PCI\\VEN_8086&DEV_15B8&SUBSYS_00008086&REV_00\\3&11583659&0&FE",
+            advanced: [
+              piProp("*EEE", tr("에너지 효율 이더넷", "Energy Efficient Ethernet"), "0", tr("끄기", "Off"), { valid: ["0", "1"] }),
+              piProp("*FlowControl", tr("흐름 제어", "Flow Control"), "3", tr("Rx 및 Tx 사용", "Rx & Tx Enabled"), { valid: ["0", "1", "2", "3"] }),
+              piProp("*InterruptModeration", tr("인터럽트 조절", "Interrupt Moderation"), "1", tr("사용", "Enabled"), { valid: ["0", "1"] }),
+              piProp("*JumboPacket", tr("점보 패킷", "Jumbo Packet"), "1514", tr("사용 안 함", "Disabled"), { valid: ["1514", "4088", "9014"] }),
+              piProp("*ReceiveBuffers", tr("수신 버퍼", "Receive Buffers"), "512", "512", { min: 80, max: 2048 }),
+              piProp("*SpeedDuplex", tr("속도 및 이중", "Speed & Duplex"), "0", tr("자동 협상", "Auto Negotiation"), { valid: ["0", "1", "2", "3", "4", "6"] }),
+              piProp("*TransmitBuffers", tr("전송 버퍼", "Transmit Buffers"), "512", "512", { min: 80, max: 2048 }),
+              piProp("ITR", tr("인터럽트 조절 비율", "Interrupt Moderation Rate"), null, tr("적응형", "Adaptive"), { default: "65535", valid: ["65535", "3600", "2000", "950", "400", "200", "0"] }),
+              piProp("*WakeOnMagicPacket", tr("매직 패킷 웨이크 온", "Wake on Magic Packet"), "1", tr("사용", "Enabled"), { valid: ["0", "1"] }),
+            ],
+            canTurnOff: true,
+            pnpCapabilities: null,
+            stats: { inPackets: 1_284_330, outPackets: 902_114, inErrors: 0, inDiscards: 0, outErrors: 0, outDiscards: 0 },
+            profile: "public",
+            network: tr("네트워크", "Network"),
+          },
+          {
+            name: "이더넷 2",
+            description: "USB 10/100 LAN",
+            up: true,
+            speed: 1e7,
+            fullDuplex: false,
+            ipv4: ["10.0.0.5/24"],
+            gateway: null,
+            pnpId: "USB\\VID_0B95&PID_7720\\000001",
+            advanced: [piProp("*EEE", "EEE", "1", tr("사용", "Enabled"), { valid: ["0", "1"] }), piProp("*SpeedDuplex", tr("속도 및 이중", "Speed & Duplex"), "0", tr("자동", "Auto"), { valid: ["0", "1", "2"] })],
+            canTurnOff: false,
+            pnpCapabilities: 24,
+            stats: { inPackets: 5_120, outPackets: 4_870, inErrors: 12, inDiscards: 3, outErrors: 0, outDiscards: 0 },
+            profile: "private",
+            network: "PLC-LAN",
+          },
+          { name: "Wi-Fi", description: "Wireless Adapter", up: false, speed: null, fullDuplex: null, ipv4: [], gateway: null, pnpId: null, advanced: [], canTurnOff: null, pnpCapabilities: null, stats: null, profile: null, network: null },
+        ],
+        firewall: [
+          { profile: "domain", enabled: true, current: false },
+          { profile: "private", enabled: true, current: true },
+          { profile: "public", enabled: true, current: true },
         ],
         errors: [],
       };

@@ -1,5 +1,6 @@
 //! WMI 읽기 — 장치의 «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음»(root\WMI MSPower_DeviceEnable)과
-//! 랜카드 링크 속도·이중 방식(root\StandardCimv2 MSFT_NetAdapter). 둘 다 일반 사용자 권한으로 읽힌다.
+//! 랜카드 링크 속도·이중 방식·고급 속성·네트워크 프로필(root\StandardCimv2), 방화벽 프로필 켜짐(INetFwPolicy2).
+//! 모두 일반 사용자 권한으로 읽힌다(읽기만 — Put·Set 호출 없음).
 //! COM 은 따로 만든 스레드에서 MTA 로 초기화한다(화면·tauri 스레드의 COM 설정과 섞이지 않게).
 
 use std::collections::HashMap;
@@ -7,7 +8,9 @@ use windows::Win32::System::Com::{
     CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx, CoSetProxyBlanket, CoUninitialize, EOAC_NONE, RPC_C_AUTHN_LEVEL_CALL,
     RPC_C_IMP_LEVEL_IMPERSONATE,
 };
-use windows::Win32::System::Variant::{VARIANT, VT_BOOL, VT_BSTR, VT_I4, VT_UI4, VariantClear};
+use windows::Win32::NetworkManagement::WindowsFirewall::{INetFwPolicy2, NET_FW_PROFILE_TYPE2, NET_FW_PROFILE2_DOMAIN, NET_FW_PROFILE2_PRIVATE, NET_FW_PROFILE2_PUBLIC, NetFwPolicy2};
+use windows::Win32::System::Ole::{SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound};
+use windows::Win32::System::Variant::{VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_I4, VT_UI4, VariantClear};
 use windows::Win32::System::Wmi::{IWbemClassObject, IWbemLocator, WBEM_FLAG_FORWARD_ONLY, WBEM_FLAG_RETURN_IMMEDIATELY, WbemLocator};
 use windows::core::{BSTR, PCWSTR};
 
@@ -20,6 +23,8 @@ enum Val {
     Str(String),
     Bool(bool),
     Num(i64),
+    /// 글 배열(string[])
+    List(Vec<String>),
     Null,
 }
 
@@ -45,6 +50,13 @@ impl Val {
             _ => None,
         }
     }
+    fn list(&self) -> Vec<String> {
+        match self {
+            Val::List(v) => v.clone(),
+            Val::Str(s) => vec![s.clone()],
+            _ => Vec::new(),
+        }
+    }
 }
 
 /// VARIANT 를 읽고 비운다
@@ -57,6 +69,21 @@ unsafe fn take(v: &mut VARIANT) -> Val {
             VT_BOOL => Val::Bool(inner.Anonymous.boolVal.as_bool()),
             VT_I4 => Val::Num(inner.Anonymous.lVal as i64),
             VT_UI4 => Val::Num(inner.Anonymous.ulVal as i64),
+            vt if vt.0 == VT_ARRAY.0 | VT_BSTR.0 => {
+                let sa = inner.Anonymous.parray;
+                let mut out = Vec::new();
+                if !sa.is_null()
+                    && let (Ok(lo), Ok(hi)) = (SafeArrayGetLBound(sa, 1), SafeArrayGetUBound(sa, 1))
+                {
+                    for i in lo..=hi.min(lo.saturating_add(4096)) {
+                        let mut b = BSTR::new();
+                        if SafeArrayGetElement(sa, &i, &mut b as *mut BSTR as *mut _).is_ok() {
+                            out.push(b.to_string());
+                        }
+                    }
+                }
+                Val::List(out)
+            }
             _ => Val::Null,
         }
     };
@@ -108,8 +135,8 @@ fn query_now(namespace: &str, wql: &str, fields: &[&str]) -> Result<Vec<HashMap<
 /// WMI 가 이만큼 답하지 않으면 «읽지 못함» 으로 돌려준다(서비스가 멈춘 PC 에서 ConnectServer 가 끝나지 않는 일이 있다)
 const QUERY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
-/// 따로 만든 스레드에서 COM 을 열고 질의. `QUERY_TIMEOUT` 을 넘기면 그 스레드는 버려 두고 오류를 돌려준다
-fn query(namespace: &'static str, wql: &'static str, fields: &'static [&'static str]) -> Result<Vec<HashMap<String, Val>>, String> {
+/// 따로 만든 스레드에서 COM(MTA)을 열고 `f` 를 돌린다. `QUERY_TIMEOUT` 을 넘기면 그 스레드는 버려 두고 오류를 돌려준다
+fn on_com_thread<T: Send + 'static>(f: impl FnOnce() -> Result<T, String> + Send + 'static) -> Result<T, String> {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         // SAFETY: 이 스레드에서만 COM 을 쓴다 — 끝나면 닫는다
@@ -117,7 +144,7 @@ fn query(namespace: &'static str, wql: &'static str, fields: &'static [&'static 
         let r = if hr.is_err() {
             Err(hr.message())
         } else {
-            let r = query_now(namespace, wql, fields);
+            let r = f();
             unsafe { CoUninitialize() };
             r
         };
@@ -127,8 +154,13 @@ fn query(namespace: &'static str, wql: &'static str, fields: &'static [&'static 
     match rx.recv_timeout(QUERY_TIMEOUT) {
         Ok(r) => r,
         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(format!("no answer in {}s", QUERY_TIMEOUT.as_secs())),
-        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Err("WMI thread panicked".into()),
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Err("COM thread panicked".into()),
     }
+}
+
+/// WQL 질의 하나(따로 만든 COM 스레드에서, 시간 제한)
+fn query(namespace: &'static str, wql: &'static str, fields: &'static [&'static str]) -> Result<Vec<HashMap<String, Val>>, String> {
+    on_com_thread(move || query_now(namespace, wql, fields))
 }
 
 /// MSPower_DeviceEnable — 인스턴스 ID(대문자) → «PC 가 끌 수 있음»
@@ -158,14 +190,16 @@ pub struct Adapter {
     pub up: bool,
     pub speed: Option<u64>,
     pub full_duplex: Option<bool>,
+    pub pnp_id: Option<String>,
+    pub if_index: Option<u32>,
 }
 
 /// MSFT_NetAdapter — 실제 하드웨어 랜카드만
 pub fn net_adapters() -> Result<Vec<Adapter>, String> {
     let rows = query(
         r"root\StandardCimv2",
-        "SELECT Name, InterfaceDescription, Speed, FullDuplex, MediaConnectState, HardwareInterface FROM MSFT_NetAdapter",
-        &["Name", "InterfaceDescription", "Speed", "FullDuplex", "MediaConnectState", "HardwareInterface"],
+        "SELECT Name, InterfaceDescription, Speed, FullDuplex, MediaConnectState, HardwareInterface, PnPDeviceID, InterfaceIndex FROM MSFT_NetAdapter",
+        &["Name", "InterfaceDescription", "Speed", "FullDuplex", "MediaConnectState", "HardwareInterface", "PnPDeviceID", "InterfaceIndex"],
     )?;
     Ok(rows
         .into_iter()
@@ -178,9 +212,74 @@ pub fn net_adapters() -> Result<Vec<Adapter>, String> {
                 up: r.get("MediaConnectState").and_then(Val::num) == Some(1),
                 speed: r.get("Speed").and_then(Val::num).and_then(|n| u64::try_from(n).ok()),
                 full_duplex: r.get("FullDuplex").and_then(Val::bool),
+                pnp_id: r.get("PnPDeviceID").and_then(Val::str).filter(|s| !s.is_empty()),
+                if_index: r.get("InterfaceIndex").and_then(Val::num).and_then(|n| u32::try_from(n).ok()),
             })
         })
         .collect())
+}
+
+/// MSFT_NetAdapterAdvancedPropertySettingData — (어댑터 이름, 속성). 장치 관리자 «고급» 탭과 같은 값
+pub fn advanced_props() -> Result<Vec<(String, super::NicProp)>, String> {
+    let rows = query(
+        r"root\StandardCimv2",
+        "SELECT Name, DisplayName, DisplayValue, RegistryKeyword, RegistryValue, DefaultRegistryValue, ValidRegistryValues, NumericParameterMinValue, NumericParameterMaxValue FROM MSFT_NetAdapterAdvancedPropertySettingData",
+        &["Name", "DisplayName", "DisplayValue", "RegistryKeyword", "RegistryValue", "DefaultRegistryValue", "ValidRegistryValues", "NumericParameterMinValue", "NumericParameterMaxValue"],
+    )?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|r| {
+            let adapter = r.get("Name")?.str()?;
+            let keyword = r.get("RegistryKeyword")?.str().filter(|k| !k.is_empty())?;
+            let text = |k: &str| r.get(k).and_then(Val::str).filter(|s| !s.trim().is_empty());
+            let raw = r.get("RegistryValue").map(Val::list).unwrap_or_default();
+            Some((
+                adapter,
+                super::NicProp {
+                    name: text("DisplayName").unwrap_or_else(|| keyword.clone()),
+                    display: text("DisplayValue"),
+                    raw: (!raw.is_empty()).then(|| raw.join(",")),
+                    default: text("DefaultRegistryValue"),
+                    valid: r.get("ValidRegistryValues").map(Val::list).unwrap_or_default(),
+                    min: r.get("NumericParameterMinValue").and_then(Val::num),
+                    max: r.get("NumericParameterMaxValue").and_then(Val::num),
+                    keyword,
+                },
+            ))
+        })
+        .collect())
+}
+
+/// 네트워크 프로필(«public» …)과 네트워크 이름
+pub type ProfileOf = (Option<&'static str>, Option<String>);
+
+/// MSFT_NetConnectionProfile — 인터페이스 번호 → (프로필, 네트워크 이름)
+pub fn connection_profiles() -> Result<HashMap<u32, ProfileOf>, String> {
+    let rows = query(r"root\StandardCimv2", "SELECT InterfaceIndex, NetworkCategory, Name FROM MSFT_NetConnectionProfile", &["InterfaceIndex", "NetworkCategory", "Name"])?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|r| {
+            let idx = u32::try_from(r.get("InterfaceIndex")?.num()?).ok()?;
+            let cat = r.get("NetworkCategory").and_then(Val::num).and_then(super::parse::network_category);
+            Some((idx, (cat, r.get("Name").and_then(Val::str))))
+        })
+        .collect())
+}
+
+/// 방화벽 프로필 켜짐(INetFwPolicy2 — 그룹 정책까지 반영된 값)과 지금 쓰이는 프로필
+pub fn firewall() -> Result<Vec<super::FirewallProfile>, String> {
+    on_com_thread(|| {
+        // SAFETY: COM 호출 — 읽기 속성만 부른다
+        unsafe {
+            let p: INetFwPolicy2 = CoCreateInstance(&NetFwPolicy2, None, CLSCTX_INPROC_SERVER).map_err(|e| e.message())?;
+            let current = p.CurrentProfileTypes().unwrap_or(0);
+            let profiles: [(NET_FW_PROFILE_TYPE2, &'static str); 3] = [(NET_FW_PROFILE2_DOMAIN, "domain"), (NET_FW_PROFILE2_PRIVATE, "private"), (NET_FW_PROFILE2_PUBLIC, "public")];
+            Ok(profiles
+                .into_iter()
+                .map(|(ty, name)| super::FirewallProfile { profile: name, enabled: p.get_FirewallEnabled(ty).ok().map(|b| b.as_bool()), current: current & ty.0 != 0 })
+                .collect())
+        }
+    })
 }
 
 #[cfg(test)]
@@ -195,7 +294,7 @@ mod tests {
         assert_eq!(instance_of("A_B"), "A_B");
     }
 
-    /// 관리자 없이 WMI 두 질의가 실제로 읽힌다(이 PC)
+    /// 관리자 없이 WMI 질의·방화벽 프로필이 실제로 읽힌다(이 PC)
     #[test]
     fn reads_wmi_without_admin() {
         let p = device_power().expect("MSPower_DeviceEnable");
@@ -203,5 +302,11 @@ mod tests {
         let _ = p.len();
         let n = net_adapters().expect("MSFT_NetAdapter");
         assert!(n.iter().all(|a| !a.name.is_empty()));
+        // 고급 속성·프로필·방화벽도 관리자 없이 읽힌다(값이 없을 수는 있다 — 가상 PC)
+        let adv = advanced_props().expect("MSFT_NetAdapterAdvancedPropertySettingData");
+        assert!(adv.iter().all(|(_, p)| !p.keyword.is_empty()));
+        connection_profiles().expect("MSFT_NetConnectionProfile");
+        let fw = firewall().expect("INetFwPolicy2");
+        assert_eq!(fw.len(), 3);
     }
 }

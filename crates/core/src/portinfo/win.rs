@@ -2,12 +2,12 @@
 
 use super::parse::{self, com_number, filetime_ms};
 use super::tables::{self, Problem};
-use super::{Ancestor, ComNumbers, Driver, EventList, NicList, NicSummary, PnpEvent, PortEntry, PortReport, Power, PowerDevice, RegValue, Status, is_usb_device};
+use super::{Ancestor, ComNumbers, Driver, EventList, NicList, NicProp, NicStats, NicSummary, PnpEvent, PortEntry, PortReport, Power, PowerDevice, RegValue, Status, is_usb_device};
 use crate::tr;
 use std::collections::HashMap;
 use windows_sys::Win32::Devices::DeviceAndDriverInstallation::{
     CM_GETIDLIST_FILTER_CLASS, CM_GETIDLIST_FILTER_NONE, CM_GETIDLIST_FILTER_PRESENT, CM_Get_DevNode_PropertyW, CM_Get_DevNode_Status, CM_Get_Device_ID_ListW,
-    CM_Get_Device_ID_List_SizeW, CM_Get_Parent, CM_LOCATE_DEVNODE_NORMAL, CM_LOCATE_DEVNODE_PHANTOM, CM_Locate_DevNodeW, CM_Open_DevNode_Key, CM_REGISTRY_HARDWARE,
+    CM_Get_Device_ID_List_SizeW, CM_Get_Parent, CM_LOCATE_DEVNODE_NORMAL, CM_LOCATE_DEVNODE_PHANTOM, CM_Locate_DevNodeW, CM_Open_DevNode_Key, CM_REGISTRY_HARDWARE, CM_REGISTRY_SOFTWARE,
     CR_BUFFER_SMALL, CR_SUCCESS, DN_HAS_PROBLEM, DN_STARTED, RegDisposition_OpenExisting,
 };
 use windows_sys::Win32::Devices::Properties::{
@@ -21,6 +21,7 @@ use windows_sys::Win32::System::EventLog::{
     EVT_HANDLE, EvtClose, EvtFormatMessage, EvtFormatMessageEvent, EvtNext, EvtOpenPublisherMetadata, EvtQuery, EvtQueryChannelPath, EvtQueryReverseDirection, EvtRender,
     EvtRenderEventXml,
 };
+use windows_sys::Win32::NetworkManagement::IpHelper::{GetIfEntry2, MIB_IF_ROW2};
 use windows_sys::Win32::System::Power::{PowerGetActiveScheme, PowerReadACValueIndex, PowerReadDCValueIndex};
 use windows_sys::Win32::System::Registry::{
     HKEY, HKEY_LOCAL_MACHINE, KEY_READ, REG_BINARY, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ, RegCloseKey, RegEnumValueW, RegOpenKeyExW, RegQueryValueExW,
@@ -184,9 +185,14 @@ fn open_key(path: &str) -> Result<Key, u32> {
 
 /// 장치의 하드웨어 키(Device Parameters)
 fn open_device_key(dn: u32) -> Result<Key, String> {
+    open_devnode_key(dn, CM_REGISTRY_HARDWARE)
+}
+
+/// 장치의 하드웨어 키(CM_REGISTRY_HARDWARE) 또는 드라이버 키(CM_REGISTRY_SOFTWARE — Control\Class\{클래스}\000N)
+fn open_devnode_key(dn: u32, which: u32) -> Result<Key, String> {
     let mut h: HKEY = std::ptr::null_mut();
     // SAFETY: 읽기 권한으로 이미 있는 키만 연다
-    let r = unsafe { CM_Open_DevNode_Key(dn, KEY_READ, 0, RegDisposition_OpenExisting, &mut h, CM_REGISTRY_HARDWARE) };
+    let r = unsafe { CM_Open_DevNode_Key(dn, KEY_READ, 0, RegDisposition_OpenExisting, &mut h, which) };
     if r == CR_SUCCESS { Ok(Key(h)) } else { Err(format!("CONFIGRET {r}")) }
 }
 
@@ -657,19 +663,103 @@ pub fn events(inst: &str, days: u32) -> EventList {
 
 // ---------------------------------------------------------------- 이더넷
 
+/// 랜카드 드라이버 키의 PnPCapabilities(값이 없으면 None — 기본 동작)
+fn pnp_capabilities(pnp_id: &str) -> Result<Option<u32>, String> {
+    let dn = locate(pnp_id, false).ok_or_else(|| "device not found".to_string())?;
+    let k = open_devnode_key(dn, CM_REGISTRY_SOFTWARE)?;
+    match query_value(&k, "PnPCapabilities") {
+        Ok(Some((REG_DWORD, b))) if b.len() >= 4 => Ok(Some(u32::from_le_bytes(b[..4].try_into().unwrap_or_default()))),
+        Ok(_) => Ok(None),
+        Err(e) => Err(os_err(e)),
+    }
+}
+
+/// GetIfEntry2 — 받은·보낸 패킷과 오류·버린 수
+fn if_stats(if_index: u32) -> Result<NicStats, String> {
+    // SAFETY: MIB_IF_ROW2 는 C 구조체 — 0 으로 채우고 번호만 넣어 묻는다
+    let mut row: MIB_IF_ROW2 = unsafe { std::mem::zeroed() };
+    row.InterfaceIndex = if_index;
+    let r = unsafe { GetIfEntry2(&mut row) };
+    if r != ERROR_SUCCESS {
+        return Err(os_err(r));
+    }
+    Ok(NicStats {
+        in_packets: row.InUcastPkts.saturating_add(row.InNUcastPkts),
+        out_packets: row.OutUcastPkts.saturating_add(row.OutNUcastPkts),
+        in_errors: row.InErrors,
+        in_discards: row.InDiscards,
+        out_errors: row.OutErrors,
+        out_discards: row.OutDiscards,
+    })
+}
+
+fn joined<T>(r: std::thread::Result<Result<T, String>>) -> Result<T, String> {
+    r.unwrap_or_else(|_| Err("thread panicked".to_string()))
+}
+
 pub fn nics() -> NicList {
     let mut out = NicList::default();
     let ifs = crate::net::interfaces();
-    match super::wmi::net_adapters() {
+    // WMI 질의는 서로 기다리지 않게 함께 돌린다(하나가 멈춰도 10초 뒤 나머지는 보인다)
+    let (adapters, adv, profiles, power, firewall) = std::thread::scope(|sc| {
+        let a = sc.spawn(super::wmi::net_adapters);
+        let b = sc.spawn(super::wmi::advanced_props);
+        let c = sc.spawn(super::wmi::connection_profiles);
+        let d = sc.spawn(super::wmi::device_power);
+        let e = sc.spawn(super::wmi::firewall);
+        (joined(a.join()), joined(b.join()), joined(c.join()), joined(d.join()), joined(e.join()))
+    });
+    let mut adv: Vec<(String, NicProp)> = adv.unwrap_or_else(|e| {
+        out.errors.push(format!("WMI MSFT_NetAdapterAdvancedPropertySettingData: {e}"));
+        Vec::new()
+    });
+    adv.sort_by_key(|x| x.1.keyword.to_lowercase());
+    let profiles = profiles.unwrap_or_else(|e| {
+        out.errors.push(format!("WMI MSFT_NetConnectionProfile: {e}"));
+        HashMap::new()
+    });
+    let power = power.unwrap_or_else(|e| {
+        out.errors.push(format!("WMI MSPower_DeviceEnable: {e}"));
+        HashMap::new()
+    });
+    match firewall {
+        Ok(f) => out.firewall = f,
+        Err(e) => out.errors.push(format!("{}: {e}", tr!("방화벽 프로필", "Firewall profiles"))),
+    }
+    match adapters {
         Ok(ads) => {
             for a in ads {
                 let mine: Vec<&crate::net::Interface> = ifs.iter().filter(|i| i.name == a.name).collect();
+                let caps = match a.pnp_id.as_deref().map(pnp_capabilities) {
+                    Some(Ok(v)) => v,
+                    Some(Err(e)) => {
+                        out.errors.push(format!("{} PnPCapabilities: {e}", a.name));
+                        None
+                    }
+                    None => None,
+                };
+                let stats = match a.if_index.map(if_stats) {
+                    Some(Ok(s)) => Some(s),
+                    Some(Err(e)) => {
+                        out.errors.push(format!("{} GetIfEntry2: {e}", a.name));
+                        None
+                    }
+                    None => None,
+                };
+                let (profile, network) = a.if_index.and_then(|i| profiles.get(&i).cloned()).unwrap_or((None, None));
                 out.nics.push(NicSummary {
                     ipv4: mine.iter().map(|i| format!("{}/{}", i.ipv4, i.prefix)).collect(),
                     gateway: mine.iter().find_map(|i| i.gateway.clone()),
                     up: a.up,
                     speed: a.speed.filter(|s| *s > 0 && a.up),
                     full_duplex: a.full_duplex.filter(|_| a.up),
+                    can_turn_off: a.pnp_id.as_deref().and_then(|id| power.get(&id.to_ascii_uppercase()).copied()),
+                    advanced: adv.iter().filter(|(n, _)| *n == a.name).map(|(_, p)| p.clone()).collect(),
+                    pnp_capabilities: caps,
+                    stats,
+                    profile,
+                    network,
+                    pnp_id: a.pnp_id,
                     name: a.name,
                     description: a.description,
                 });
@@ -691,6 +781,13 @@ pub fn nics() -> NicList {
                     full_duplex: None,
                     ipv4: vec![format!("{}/{}", i.ipv4, i.prefix)],
                     gateway: i.gateway.clone(),
+                    pnp_id: None,
+                    advanced: Vec::new(),
+                    can_turn_off: None,
+                    pnp_capabilities: None,
+                    stats: None,
+                    profile: None,
+                    network: None,
                 });
             }
         }
@@ -730,5 +827,20 @@ mod tests {
         let e = events(r"USB\VID_FFFF&PID_FFFF\NOPE", 1);
         assert!(e.events.is_empty());
         assert!(e.errors.iter().all(|x| !x.contains("Kernel-PnP/Configuration")), "{:?}", e.errors);
+    }
+
+    /// 랜카드 점검 값 — 관리자 없이 드라이버 키·통계가 읽힌다(랜카드가 하나라도 있는 PC)
+    #[test]
+    fn nic_check_without_admin() {
+        let n = nics();
+        assert!(n.errors.iter().all(|e| !e.contains("MSFT_NetAdapter:")), "{:?}", n.errors);
+        assert!(n.errors.iter().all(|e| !e.contains("PnPCapabilities") && !e.contains("GetIfEntry2")), "{:?}", n.errors);
+        for x in &n.nics {
+            assert!(x.stats.is_some(), "{} 통계를 읽지 못함", x.name);
+            for p in &x.advanced {
+                assert!(!p.keyword.is_empty() && !p.name.is_empty());
+            }
+        }
+        assert_eq!(n.firewall.len(), 3, "{:?}", n.errors);
     }
 }

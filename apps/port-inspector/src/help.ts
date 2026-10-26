@@ -105,6 +105,12 @@ export const help: HelpDoc = {
       body: [
         "- «랜카드 읽기» 를 누르면 실제 랜카드마다 연결 여부·링크 속도·이중(전이중/반이중)·IPv4·게이트웨이를 보입니다.",
         "- 링크 속도·이중은 랜카드가 스위치와 맞춘 값입니다. 10 Mbps 나 반이중이면 케이블·스위치 포트의 자동 협상을 봅니다. 장비 IP 찾기는 PortDock Net Scan 이 합니다.",
+        "- 랜카드마다 장치 관리자 «고급» 탭의 값(점보 프레임·수신/송신 버퍼·인터럽트 완화·EEE·흐름 제어·속도/이중·RSS — 보이는 값과 레지스트리 원값), «전원 절약을 위해 끌 수 있음», 받기 오류·버린 패킷(누적), 네트워크 프로필(공용·개인·도메인)과 그 프로필의 방화벽 켜짐을 함께 읽습니다. 모두 관리자 권한 없이 읽습니다.",
+        "- «용도» 를 고르면 그 용도에 맞춰 봅니다. «일반» 은 링크·이중·오류만, «GigE 카메라» 는 점보 프레임·수신 버퍼·절전·공용 프로필·방화벽·EEE 까지, «PLC·Modbus TCP 장비» 는 절전·공용 프로필·EEE 까지 봅니다. 어느 쪽이든 «볼 것» 까지만 붙이고 «문제 있음» 으로 단정하지 않습니다.",
+        "- «GigE 카메라» 용도면 카메라 제조사 공개 문서(Basler·MathWorks·Balluff·Teledyne)에 적힌 값을 출처 링크와 함께 나란히 보입니다. PortDock 이 정한 권장값이 아니며, 제조사끼리 다른 값(인터럽트 완화 정도 등)은 둘 다 보입니다.",
+        "- 점보 프레임은 PC·카메라·스위치 셋 다 맞아야 합니다. PC 쪽 값만으로 «문제 없음» 이라고 볼 수 없습니다. 드라이버가 표준 키워드를 쓰지 않으면 그 항목은 «이 드라이버는 알려 주지 않음» 으로 보입니다.",
+        "- 방화벽은 프로필이 켜졌는지만 읽습니다. 포트·프로그램별 규칙은 이 화면에서 읽지 않습니다.",
+        "- 값을 바꾸려면 장치 관리자 → 네트워크 어댑터 → 그 랜카드 → 속성 → «고급»·«전원 관리» 탭에서 직접 합니다(관리자 권한).",
       ],
     },
     {
@@ -262,6 +268,12 @@ export const help: HelpDoc = {
       body: [
         "- «Read adapters» lists each physical adapter with connection, link speed, duplex (full/half), IPv4 and gateway.",
         "- Link speed and duplex are what the adapter negotiated with the switch. With 10 Mbps or half duplex, check the cable and auto-negotiation on the switch port. To find device IPs, use PortDock Net Scan.",
+        "- For each adapter it also reads the Device Manager «Advanced» tab values (jumbo frames, receive/transmit buffers, interrupt moderation, EEE, flow control, speed/duplex, RSS — shown value and registry value), «allow the computer to turn off this device», receive errors and discards (cumulative), the network profile (Public, Private, Domain) and whether the firewall is on for it. All without administrator rights.",
+        "- Pick a «Use» to look at it for that use. «General» looks at link, duplex and errors only; «GigE camera» adds jumbo frames, receive buffers, power saving, Public profile, firewall and EEE; «PLC / Modbus TCP device» adds power saving, Public profile and EEE. Either way it marks at most «Worth a look», never «Problem».",
+        "- With «GigE camera», values from camera vendors' public docs (Basler, MathWorks, Balluff, Teledyne) are shown side by side with links. They are not PortDock recommendations; where vendors differ (interrupt moderation rate, for example) both are shown.",
+        "- Jumbo frames must match on the PC, the camera and the switch — the PC value alone cannot show there is no issue. If a driver does not use the standard keyword, that item shows «not reported by this driver».",
+        "- For the firewall, only whether each profile is on is read. Per-port and per-program rules are not read here.",
+        "- To change values, use Device Manager → Network adapters → the adapter → Properties → «Advanced» and «Power Management» tabs (administrator).",
       ],
     },
     {

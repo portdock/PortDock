@@ -1973,7 +1973,23 @@ async function runApp(app, port) {
       await setIn("details.card-history select", "30");
       // 랜카드
       await clickText("details.card-nics .btn", ko ? "랜카드 읽기" : "Read adapters");
-      await expectJs("nics", `const t = document.querySelector('details.card-nics table.nics'); return !!t && t.querySelectorAll('tr').length === 3 && /${ko ? "반이중" : "half duplex"}/.test(t.textContent) && /1 Gbps/.test(t.textContent)`);
+      await expectJs("nics", `const c = document.querySelector('details.card-nics'); return !!c && c.querySelectorAll('.nic-block').length === 3 && /${ko ? "반이중" : "half duplex"}/.test(c.textContent) && /1 Gbps/.test(c.textContent)`);
+      // (10/26) 랜카드 점검 — 일반 용도: 이더넷 2(10 Mbps·반이중·받기 오류)만 «볼 것», 제조사 예 칸 없음
+      const nicLv = (i) => `(document.querySelectorAll('details.card-nics .nic-block')[${i}].querySelector('.nic-head .lv') || {}).className || ''`;
+      await expectJs("nics general", `return /lv-ok/.test(${nicLv(0)}) && /lv-look/.test(${nicLv(1)}) && !document.querySelector('details.card-nics .nic-vendor') && /\\*JumboPacket/.test(document.querySelector('details.card-nics table.nic-props').textContent)`);
+      // 카메라 용도: 이더넷(점보 꺼짐·버퍼 512/2048·절전·공용·방화벽) «볼 것» + 제조사 예(Basler·Balluff 둘 다) + 볼 수 없는 것
+      await setIn("details.card-nics select", "camera");
+      await expectJs("nics camera", `const c = document.querySelector('details.card-nics'); const b = c.querySelectorAll('.nic-block')[0];
+        return /lv-look/.test(${nicLv(0)}) && /${ko ? "점보 프레임 꺼짐" : "Jumbo frames off"}/.test(b.textContent) && /${ko ? "최대 2048" : "maximum 2048"}/.test(b.textContent)
+          && b.querySelectorAll('.nic-vendor a').length >= 4 && /Balluff/.test(b.textContent) && /${ko ? "PC 가 볼 수 없는 것\\(랜카드\\)" : "What the PC cannot see \\(network\\)"}/.test(c.textContent)`);
+      if (combo.full) await shot(app, `${combo.name}-nics-camera`);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "텍스트 복사" : "Copy text");
+      await expectJs("nics copy", `const c = window.__smoke.clip || ''; return /baslerweb/.test(c) && /\\*JumboPacket/.test(c) && !${BAN}.test(c)`);
+      // PLC 용도: EEE 켜짐(이더넷 2)
+      await setIn("details.card-nics select", "plc");
+      await expectJs("nics plc", `return /EEE/.test(document.querySelectorAll('details.card-nics .nic-block')[1].textContent) && !document.querySelector('details.card-nics .nic-vendor')`);
+      await setIn("details.card-nics select", "general");
 
       // ---- 연결 시험: 루프백(묻고 시작) → 속도 5개 «볼 것»(왕복 16ms)
       const startLoop = async (step) => {

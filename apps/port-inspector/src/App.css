@@ -819,3 +819,56 @@ ul.plain {
   align-self: center;
   margin-top: 24px;
 }
+/* 랜카드 점검(NicCard.tsx) */
+.nic-block {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.nic-block.down .kv {
+  opacity: 0.8;
+}
+.nic-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.nic-head .ellipsis {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.nic-head .lv {
+  flex: none;
+}
+table.grid.nic-props {
+  table-layout: fixed;
+}
+table.grid.nic-props th {
+  padding: 4px 8px;
+  white-space: normal;
+}
+table.grid.nic-props td {
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+table.grid.nic-props th:first-child {
+  width: 26%;
+}
+.nic-props.vendor th:last-child {
+  width: 30%;
+}
+.nic-purpose {
+  white-space: nowrap;
+}
+.nic-vendor > div + div {
+  margin-top: 2px;
+}
+details.nic-others > summary {
+  cursor: pointer;
+  color: var(--muted);
+}

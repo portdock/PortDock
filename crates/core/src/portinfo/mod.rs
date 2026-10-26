@@ -8,6 +8,9 @@
 //! - 절전: 전원 옵션(PowerReadACValueIndex) · WMI root\WMI MSPower_DeviceEnable
 //! - 연결 기록: 이벤트 로그 Microsoft-Windows-Kernel-PnP/Configuration · System(Kernel-PnP·UserPnp)
 //! - 이더넷: GetAdaptersAddresses(net.rs) · WMI root\StandardCimv2 MSFT_NetAdapter(이중 방식)
+//! - 랜카드 점검: WMI root\StandardCimv2 MSFT_NetAdapterAdvancedPropertySettingData(고급 탭 값)·MSFT_NetConnectionProfile(네트워크 프로필) ·
+//!   root\WMI MSPower_DeviceEnable · 장치 드라이버 키(CM_REGISTRY_SOFTWARE)의 PnPCapabilities · GetIfEntry2(오류·버린 패킷) ·
+//!   INetFwPolicy2(방화벽 프로필 켜짐). `Get-NetAdapterPowerManagement` 경로는 일반 사용자로 실패해 쓰지 않는다
 
 pub mod parse;
 pub mod tables;
@@ -195,7 +198,42 @@ pub struct EventList {
     pub errors: Vec<String>,
 }
 
-/// 이 PC 랜카드 요약
+/// 랜카드 고급 속성 하나(장치 관리자 «고급» 탭의 한 줄)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NicProp {
+    /// 레지스트리 키워드(«*JumboPacket» — `*` 로 시작하면 Microsoft 표준 키워드)
+    pub keyword: String,
+    /// 드라이버가 붙인 이름(PC 언어)
+    pub name: String,
+    /// 보이는 값(«사용 안 함», «512» …). 드라이버가 안 주면 None
+    pub display: Option<String>,
+    /// 레지스트리에 든 원값. 아직 한 번도 바꾸지 않아 값이 없으면 None(그때는 기본값이 쓰인다)
+    pub raw: Option<String>,
+    /// 드라이버 기본값(원값)
+    pub default: Option<String>,
+    /// 고를 수 있는 원값들(목록형). 숫자형이면 빈 목록
+    pub valid: Vec<String>,
+    /// 숫자형의 범위
+    pub min: Option<i64>,
+    pub max: Option<i64>,
+}
+
+/// 랜카드 통계(부팅·연결 뒤 누적, GetIfEntry2)
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NicStats {
+    pub in_packets: u64,
+    pub out_packets: u64,
+    /// 받았지만 오류로 버린 것(CRC 등)
+    pub in_errors: u64,
+    /// 오류는 없었지만 버린 것(버퍼 모자람 등 — 모르는 프로토콜은 따로 셈)
+    pub in_discards: u64,
+    pub out_errors: u64,
+    pub out_discards: u64,
+}
+
+/// 이 PC 랜카드 요약 + 점검 값
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NicSummary {
@@ -208,12 +246,39 @@ pub struct NicSummary {
     pub full_duplex: Option<bool>,
     pub ipv4: Vec<String>,
     pub gateway: Option<String>,
+    /// 장치 인스턴스 ID(PnP)
+    pub pnp_id: Option<String>,
+    /// 고급 속성(키워드순). 드라이버가 알리지 않으면 빈 목록
+    pub advanced: Vec<NicProp>,
+    /// «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음»(MSPower_DeviceEnable). WMI 에 항목이 없으면 None
+    pub can_turn_off: Option<bool>,
+    /// 드라이버 키의 PnPCapabilities(없으면 None — 기본 동작)
+    pub pnp_capabilities: Option<u32>,
+    pub stats: Option<NicStats>,
+    /// 네트워크 프로필 «public» · «private» · «domain». 프로필이 없으면(식별 안 된 네트워크·끊김) None
+    pub profile: Option<&'static str>,
+    /// 네트워크 이름(프로필)
+    pub network: Option<String>,
+}
+
+/// 방화벽 프로필 하나
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FirewallProfile {
+    /// «domain» · «private» · «public»
+    pub profile: &'static str,
+    /// 켜짐. 읽지 못하면 None
+    pub enabled: Option<bool>,
+    /// 지금 쓰이는 프로필인지
+    pub current: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NicList {
     pub nics: Vec<NicSummary>,
+    /// 방화벽 프로필 켜짐(읽지 못하면 빈 목록 + errors)
+    pub firewall: Vec<FirewallProfile>,
     pub errors: Vec<String>,
 }
 
@@ -269,7 +334,7 @@ pub fn events(instance_id: &str, days: u32) -> EventList {
     }
 }
 
-/// 이 PC 랜카드 요약(링크 속도·이중·IPv4) — 루프백·가상 어댑터는 뺀다
+/// 이 PC 랜카드 요약(링크 속도·이중·IPv4)과 점검 값(고급 속성·절전·통계·프로필·방화벽) — 루프백·가상 어댑터는 뺀다
 pub fn nics() -> NicList {
     #[cfg(windows)]
     {

@@ -24,7 +24,6 @@ import {
   CANNOT_SEE,
   comVerdict,
   deviceVerdict,
-  fmtSpeed,
   fmtTime,
   GUIDES,
   guideUrl,
@@ -42,6 +41,8 @@ import {
   type PortReport,
   type Verdict,
 } from "@shared/portinfo";
+import { NicCard } from "./NicCard";
+import { NIC_PURPOSES, nicsVerdict, type NicPurpose } from "@shared/nicCheck";
 import { api, loopApi } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
@@ -135,6 +136,11 @@ export default function App() {
   const [evLoading, setEvLoading] = useState(false);
   const [nics, setNics] = useState<NicList | null>(null);
   const [nicsLoading, setNicsLoading] = useState(false);
+  const [nicPurpose, setNicPurpose] = useState<NicPurpose>(() => {
+    const v = load<string>("nicPurpose", "general");
+    return (NIC_PURPOSES as string[]).includes(v) ? (v as NicPurpose) : "general";
+  });
+  useEffect(() => store("nicPurpose", nicPurpose), [nicPurpose]);
   const [loop, setLoop] = useState<LoopState>({ results: [], echo: null, error: null });
   const [testing, setTesting] = useState(false);
   useEffect(() => {
@@ -230,7 +236,7 @@ export default function App() {
   const total: Level | null = verdicts ? overall(Object.values(verdicts).map((v) => v.level)) : null;
 
   // ---- 내보내기
-  const bundle = (): Bundle => ({ app: APP, version: VERSION, report, com, events, nics, loop: loop.results, echo: loop.echo, loopError: loop.error });
+  const bundle = (): Bundle => ({ app: APP, version: VERSION, report, com, events, nics, nicPurpose, loop: loop.results, echo: loop.echo, loopError: loop.error });
   const copy = (text: string) =>
     navigator.clipboard
       .writeText(text)
@@ -564,39 +570,8 @@ export default function App() {
                 />
               </Card>
 
-              <Card id="nics" title={t("cardNics")} lang={lang} expandAll={settings.expandAll} tipKey="piCardNics">
-                {!nics ? (
-                  <button className="btn small" onClick={readNics} disabled={nicsLoading}>
-                    {nicsLoading ? t("loading") : t("nicsLoad")}
-                  </button>
-                ) : (
-                  <>
-                    <table className="grid nics">
-                      <tbody>
-                        {nics.nics.map((n) => (
-                          <tr key={n.name}>
-                            <td>
-                              <b>{n.name}</b>
-                              <div className="hint ellipsis">{n.description}</div>
-                            </td>
-                            <td className="nowrap">{n.up ? fmtSpeed(n.speed) : t("nicDown")}</td>
-                            <td className="nowrap">{n.fullDuplex == null ? "—" : n.fullDuplex ? t("full") : t("half")}</td>
-                            <td className="mono">
-                              {n.ipv4.join(", ") || "—"}
-                              {n.gateway ? ` · GW ${n.gateway}` : ""}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {nics.errors.map((x) => (
-                      <div key={x} className="hint warn">
-                        {t("readFail")}: {x}
-                      </div>
-                    ))}
-                    <div className="hint">{t("nicsNote")}</div>
-                  </>
-                )}
+              <Card id="nics" title={t("cardNics")} verdict={nics ? nicsVerdict(nics, nicPurpose) : undefined} lang={lang} expandAll={settings.expandAll} tipKey="piCardNics">
+                <NicCard lang={lang} t={t} nics={nics} loading={nicsLoading} onLoad={readNics} purpose={nicPurpose} setPurpose={setNicPurpose} link={link} />
               </Card>
 
               {r.errors.length > 0 && (

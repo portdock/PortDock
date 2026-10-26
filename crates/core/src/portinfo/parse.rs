@@ -201,6 +201,16 @@ pub fn port_default_note(v: &str) -> Option<Text> {
     ))
 }
 
+/// MSFT_NetConnectionProfile.NetworkCategory → «public»(0) · «private»(1) · «domain»(2 DomainAuthenticated)
+pub fn network_category(n: i64) -> Option<&'static str> {
+    match n {
+        0 => Some("public"),
+        1 => Some("private"),
+        2 => Some("domain"),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -266,5 +276,13 @@ mod tests {
         assert!(port_default_note("9600").is_none());
         assert!(port_default_note("9600,x,8,1").is_none());
         assert_eq!(xml_unescape("a&amp;b&lt;c"), "a&b<c");
+    }
+
+    #[test]
+    fn network_categories() {
+        assert_eq!(network_category(0), Some("public"));
+        assert_eq!(network_category(1), Some("private"));
+        assert_eq!(network_category(2), Some("domain"));
+        assert_eq!(network_category(7), None);
     }
 }

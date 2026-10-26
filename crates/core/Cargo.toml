@@ -27,8 +27,9 @@ crash-handler = "0.8"
 minidumper = "0.11"
 # WebView2 화면 프로세스가 죽었을 때(흰 화면) 알아채기 — tauri 가 이미 쓰는 판
 webview2-com = "0.39"
-# Win32_System_Wmi·Com·Variant·Ole: 장치 «전원 절약을 위해 끌 수 있음»·랜카드 이중 방식을 WMI 로 읽기(portinfo/wmi.rs)
-windows = { version = "0.62", default-features = false, features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Variant", "Win32_System_Wmi"] }
+# Win32_System_Wmi·Com·Variant·Ole: 장치 «전원 절약을 위해 끌 수 있음»·랜카드 이중 방식·고급 속성을 WMI 로 읽기(portinfo/wmi.rs)
+# Win32_NetworkManagement_WindowsFirewall: 방화벽 프로필 켜짐 읽기(INetFwPolicy2, 읽기 속성만)
+windows = { version = "0.62", default-features = false, features = ["Win32_Foundation", "Win32_NetworkManagement_WindowsFirewall", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Variant", "Win32_System_Wmi"] }
 
 [dev-dependencies]
 serde_json = "1"
