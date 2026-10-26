@@ -144,6 +144,8 @@ const ko = {
   // ---- 기록 줄
   evStale: "지난 응답의 늦게 온 {n} 바이트를 버렸습니다",
   evConnected: "연결됨 — {a}",
+  evAutoConnect: "켤 때 마지막 연결로 자동 연결: {a}",
+  launchBad: "무시한 명령줄 인자: {a}",
   evClosed: "끊음",
   evBlock: "블록 {h} · {n} 바이트",
   titleIdn: "{a}",
@@ -287,6 +289,8 @@ const en: Record<keyof typeof ko, string> = {
   firstSimLink: "Try it with Simulator",
   evStale: "Discarded {n} late bytes from an earlier reply",
   evConnected: "Connected — {a}",
+  evAutoConnect: "Auto-connecting to the last connection on startup: {a}",
+  launchBad: "Ignored command-line arguments: {a}",
   evClosed: "Disconnected",
   evBlock: "Block {h} · {n} bytes",
   titleIdn: "{a}",

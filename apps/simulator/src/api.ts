@@ -51,6 +51,8 @@ function channel(onEvent: (e: SessionEvent) => void) {
 
 export const api = {
   listPorts: () => invoke<PortInfo[]>("list_ports"),
+  /** 명령줄 인자(0.3.0) — 처음 한 번만, 실행 파일 이름 뺀 것 */
+  launchArgs: () => invoke<string[]>("launch_args"),
   startSerial: (config: object, framing: FrameMode, onEvent: (e: SessionEvent) => void) =>
     tally("start_serial", invoke<void>("start_serial", { config, framing: frameModeToRust(framing), onEvent: channel(onEvent) })),
   startTcp: (config: object, framing: FrameMode, onEvent: (e: SessionEvent) => void) =>

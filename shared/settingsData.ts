@@ -25,6 +25,10 @@ export interface Settings {
   confirmExit: boolean;
   /** 연결이 끊기면 작업 표시줄 깜빡임(창이 뒤에 있을 때, 0.3.0) */
   lostAlert: boolean;
+  /** 연결·기록 중 절전 막기(0.3.0, 기본 끔) — PC 가 대기 모드로 들어가지 않게(화면은 꺼져도 됨) */
+  keepAwake: boolean;
+  /** 켤 때 마지막으로 성공한 연결 다시 열기(0.3.0, 기본 끔) */
+  autoConnect: boolean;
   autoReport: AutoReport;
   /** 사용 통계 보내기(선택, 기본 꺼짐) — 창을 닫을 때 익명 횟수만(shared/usage.ts) */
   usageStats: boolean;
@@ -53,6 +57,8 @@ export const DEFAULTS: Settings = {
   logFolder: "",
   confirmExit: true,
   lostAlert: true,
+  keepAwake: false,
+  autoConnect: false,
   autoReport: "ask",
   usageStats: false,
   usageAsked: false,
@@ -78,6 +84,8 @@ export function sanitize(s: Partial<Settings>): Settings {
   if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
   if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
   v.alwaysOnTop = v.alwaysOnTop === true;
+  v.keepAwake = v.keepAwake === true;
+  v.autoConnect = v.autoConnect === true;
   v.expandAll = v.expandAll === true;
   v.usageStats = v.usageStats === true;
   v.usageAsked = v.usageAsked === true;

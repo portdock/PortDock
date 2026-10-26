@@ -74,6 +74,8 @@ export const api = {
     return tally("start", invoke<string>("start", { config, rxCheck, onEvent: ch }));
   },
   stop: () => invoke<void>("stop"),
+  /** 명령줄 인자(0.3.0) — 처음 한 번만 */
+  launchArgs: () => invoke<string[]>("launch_args"),
   setRemote: (host: string, port: number) => invoke<void>("set_remote", { host, port }),
   setRxCheck: (rxCheck: unknown) => invoke<void>("set_rx_check", { rxCheck }),
   setEcho: (on: boolean) => invoke<void>("set_echo", { on }),

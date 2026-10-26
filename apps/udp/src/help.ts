@@ -133,7 +133,8 @@ export const help: HelpDoc = {
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 «portdock-udp-날짜-시각.log» 에 저장합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기».",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 명령 목록을 JSON 파일로 옮깁니다. «기본값으로» 는 화면 설정만 되돌립니다.",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
+        "- (0.3.0 부터) 명령줄 «--auto»: 켤 때 마지막으로 시작에 성공한 설정(받는 쪽·보낼 곳 등)으로 바로 시작합니다. 성공한 적이 없으면 아무것도 하지 않습니다. 저절로 시작하면 로그에 사건 줄(EV)이 남고, 자동응답이 켜져 있으면 그것도 알립니다.",
       ],
     },
     {
@@ -286,7 +287,8 @@ export const help: HelpDoc = {
         "- «Start file log automatically»: with an auto-log folder, each start writes «portdock-udp-date-time.log».",
         "- «Ask before closing while connected or logging».",
         "- «Export settings» / «Import settings» move display settings and commands as JSON. «Reset to defaults» resets display settings only.",
-        ...settingsLines("en"),
+        ...settingsLines("en", { run: true }),
+        "- (from 0.3.0) Command line «--auto»: at launch, start right away with the last settings that started successfully (local side, destination, etc.). Nothing happens if there are none. An automatic start leaves an event line (EV) in the log, plus a note when auto-reply is on.",
       ],
     },
     {

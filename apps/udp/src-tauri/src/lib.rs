@@ -142,6 +142,18 @@ fn read_text(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))
 }
 
+/// 명령줄 인자(0.3.0) — 처음 한 번만 준다. 뜻 풀이는 화면(src/launch.ts)이 한다(UDP 는 --auto 만)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
+/// 연결·기록 중 절전 막기(0.3.0) — 화면 설정이 켜져 있고 시작·기록 중일 때 true
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 /// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
 #[tauri::command]
 fn set_lang(lang: String) {
@@ -215,6 +227,8 @@ pub fn run() {
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
+            launch_args,
+            keep_awake,
             report_pending,
             report_dismiss,
             report_env,

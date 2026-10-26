@@ -68,6 +68,12 @@ fn open_app(target: portdock_core::launch::Target) -> Result<bool, String> {
     portdock_core::launch::open(&target)
 }
 
+/// 연결·기록 중 절전 막기(0.3.0) — 화면이 켤 때 true, 끊거나 창을 닫을 때 false. 같은 값이면 아무 일 없음
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 #[tauri::command(async)]
 fn stop(app: State<App>) {
     if let Some(s) = app.0.take(MAIN) {
@@ -426,6 +432,7 @@ pub fn run() {
             set_lang,
             launch_args,
             open_app,
+            keep_awake,
             report_pending,
             report_dismiss,
             report_env,

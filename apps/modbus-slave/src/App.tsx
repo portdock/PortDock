@@ -77,6 +77,9 @@ import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
 import { useLostAlert } from "@shared/useLostAlert";
 import { saveName } from "@shared/fileName";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { cleanLastOk, slaveLaunch, type SlaveLaunch } from "./launch";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -116,6 +119,13 @@ function usePersist(k: string, v: unknown) {
 type PortId = { vid: number | null; pid: number | null; serial: string | null };
 
 /** 저장된 포트가 목록에 없으면 같은 장치(일련번호 → VID:PID)를, 없으면 첫 포트를 */
+/** 저장해 둔 시리얼 설정을 지금 설정에 합친다 — 같은 이름·같은 종류의 값만(저장값이 망가졌어도 화면이 깨지지 않게) */
+function mergeCfg(base: SerialConfig, v: Record<string, unknown>): SerialConfig {
+  const out: Record<string, unknown> = { ...base };
+  for (const k of Object.keys(out)) if (v[k] !== undefined && typeof v[k] === typeof out[k]) out[k] = v[k];
+  return out as unknown as SerialConfig;
+}
+
 function pickPort(ports: PortInfo[], id: PortId | null) {
   const same =
     id &&
@@ -182,9 +192,16 @@ export default function App() {
 
   // ---- 포트
   const [ports, setPorts] = useState<PortInfo[]>([]);
+  // 포트 목록을 한 번이라도 읽었는지 — 켤 때 자동 연결(0.3.0)이 기다린다
+  const [portsRead, setPortsRead] = useState(false);
   useEffect(() => {
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
+    const tick = () =>
+      api
+        .listPorts()
+        .then((p) => alive && setPorts((o) => samePorts(o, p)))
+        .catch(() => {})
+        .finally(() => alive && setPortsRead(true));
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -254,6 +271,13 @@ export default function App() {
     } else if (e.type === "error") {
       setError(e.message);
     }
+  }, []);
+
+  /** 화면에서 만든 사건 줄(EV) 하나를 통신 기록에 — 켤 때 자동 연결 알림(0.3.0) */
+  const addEv = useCallback((note: string) => {
+    traffic.current.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+    if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
+    trafficApi.current?.bump();
   }, []);
 
   // ---- 슬레이브·표 설정 (연결과 무관하게 살아 있다)
@@ -844,7 +868,9 @@ export default function App() {
 
   // ---- 연결
   const [connecting, setConnecting] = useState(false);
-  async function connect() {
+  const connect = () => connectWith(transport, cfg, net);
+  /** 그 설정으로 연결(시작). auto: 켤 때 자동 연결(0.3.0) — 성공하면 통신 기록에 사건 줄을 남긴다 */
+  async function connectWith(transport: Transport, cfg: SerialConfig, net: NetConfig, auto = false) {
     if (connecting) return;
     setConnecting(true);
     setError(null);
@@ -857,14 +883,22 @@ export default function App() {
         const p = ports.find((x) => x.name === cfg.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
         setStatus("connected");
+        saveLastOk({ transport, cfg });
       } else {
         const at = await api.openTcp({ host: net.host.trim(), port: net.port, wire: transport === "tcp" ? "tcp" : "rtu", ignoreUnitId: net.ignoreUnitId }, onEvent);
         setLocal(at || null);
         setStatus((s) => (s === "idle" || s === "closed" ? "listening" : s));
         // 최근 연결(0.3.0) — 듣기 시작에 성공한 «묶을 주소:포트» 만
         recent.remember(joinHostPort(net.host.trim(), net.port));
+        saveLastOk({ transport, net: { host: net.host.trim(), port: net.port } });
       }
       setConnected(true);
+      if (auto) {
+        const parity = cfg.parity === "odd" ? "O" : cfg.parity === "even" ? "E" : "N";
+        const where = transport === "serial" ? `${cfg.port} ${cfg.baud} ${cfg.dataBits}${parity}${cfg.stopBits}` : `${transport === "tcp" ? "Modbus TCP" : "RTU over TCP"} ${joinHostPort(net.host.trim(), net.port)}`;
+        addEv(t("autoConnected").replace("{a}", where));
+        if (faultOn) addEv(t("autoFaults"));
+      }
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "modbus-slave");
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
@@ -1068,6 +1102,44 @@ export default function App() {
     { key: "l", ctrl: true, shift: true, run: () => connected && void toggleLog() },
     { key: "s", ctrl: true, run: () => void saveView() },
   ]);
+  // 연결·기록 중 절전 막기(0.3.0)
+  useKeepAwake(connected || !!logPath, settings.keepAwake);
+
+  // ---- 명령줄 인자(0.3.0) — «--auto» 만. 다른 인자는 알리고 무시
+  const [launch, setLaunch] = useState<SlaveLaunch | null>(null);
+  const launchDone = useRef(false);
+  useEffect(() => {
+    if (launchDone.current) return;
+    launchDone.current = true;
+    api
+      .launchArgs()
+      .then((argv) => {
+        const l = slaveLaunch(argv ?? []);
+        if (l.bad.length) toast.show(dict[lang].launchBad.replace("{a}", l.bad.join(", ")), { error: true, ms: 9000 });
+        setLaunch(l);
+      })
+      .catch(() => setLaunch({ auto: false, bad: [] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // ---- 켤 때 마지막 연결 다시 열기(0.3.0) — 설정 또는 --auto. 시리얼 포트가 없으면 조용히 그만둔다
+  useAutoStart(settings.autoConnect || !!launch?.auto, portsRead && launch !== null, () => {
+    const last = cleanLastOk(loadLastOk());
+    if (!last || connected || connecting) return;
+    if (last.transport === "serial" && last.cfg) {
+      const c = mergeCfg(cfg, last.cfg);
+      if (!portUsable(ports, c.port)) return;
+      setTransport("serial");
+      setCfg(c);
+      setPortNotice(null);
+      void connectWith("serial", c, net, true);
+    } else if (last.net) {
+      const n = { ...net, ...last.net };
+      setTransport(last.transport);
+      setNet(n);
+      void connectWith(last.transport, cfg, n, true);
+    }
+  });
+
   // 끊기면 작업 표시줄 깜빡임(0.3.0) — 시리얼 장치가 빠져 끊김·다시 꽂기 대기. 사용자가 «끊기» 한 닫힘은 아님
   useLostAlert(connected && (status === "disconnected" || status === "reconnecting"), settings.lostAlert);
   const clearError = useCallback(() => setError(null), []);
@@ -1778,6 +1850,7 @@ export default function App() {
           readText={api.readText}
           busy={connected || !!logPath}
           conn
+          run
         />
       )}
       {toast.node}

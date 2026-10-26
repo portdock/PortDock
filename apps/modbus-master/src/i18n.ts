@@ -50,6 +50,8 @@ const ko = {
   // 명령줄 인자(0.2.0)
   launchSet: "명령줄로 채움: {a} — «연결» 을 누르세요",
   launchBad: "무시한 명령줄 인자: {a}",
+  launchSetAuto: "명령줄로 채움: {a}",
+  autoConnected: "켤 때 자동으로 연결합니다: {a}",
   status_idle: "대기",
   status_connecting: "연결하는 중",
   status_connected: "연결됨",
@@ -281,6 +283,8 @@ const en: typeof ko = {
   portSwitched: "Saved port {a} is missing — picked {b}",
   launchSet: "Filled from the command line: {a} — press «Connect»",
   launchBad: "Ignored command-line arguments: {a}",
+  launchSetAuto: "Filled from the command line: {a}",
+  autoConnected: "Connecting automatically on start: {a}",
   status_idle: "Idle",
   status_connecting: "Connecting",
   status_connected: "Connected",

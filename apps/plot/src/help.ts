@@ -46,6 +46,7 @@ export const help: HelpDoc = {
         "- (0.3.0 부터) TCP·UDP 주소 칸 오른쪽 «▾» 는 받기 시작에 성공했던 주소·포트를 최근 것부터 8개까지 보여 줍니다. 고르면 두 칸이 채워지고, ✕ 로 그 줄을 지웁니다.",
         "- (0.3.0 부터) 다른 창에서 일하는 동안 받던 연결이 끊기거나 재연결을 기다리게 되면 작업 표시줄의 Plot 단추가 깜빡입니다. «멈추기» 로 직접 멈춘 것은 알리지 않고, 설정(⚙)에서 끌 수 있습니다.",
         "- (0.3.0 부터) 명령줄로 받는 곳을 채울 수 있습니다: «portdock-plot.exe --serial COM3 --baud 115200» · «--tcp 10.0.0.5:5000» · «--udp 5005» (받는 곳은 하나만). 칸만 채우고, 받기는 «받기 시작» 을 눌러야 시작합니다. 잘못된 인자는 알림 한 줄로 알리고 무시합니다.",
+        "- (0.3.0 부터) «--auto» 를 붙이면 켜자마자 받기를 시작합니다 — 명령줄로 채운 설정, 없으면 마지막으로 받기에 성공한 설정으로. 시리얼 포트가 없으면 시작하지 않습니다.",
         "- 받는 중에는 받는 곳 설정이 잠기고, «해석» 은 바꿀 수 있습니다(바꾸면 줄 조각·채널 이름을 새로 시작).",
       ],
     },
@@ -126,7 +127,7 @@ export const help: HelpDoc = {
       title: "설정 (⚙)",
       body: [
         "- 언어, 테마, 글자 크기. 설정 내보내기·가져오기는 받는 곳·해석·보기·채널 이름과 색을 JSON 파일로 옮깁니다.",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
       ],
     },
     {
@@ -188,6 +189,7 @@ export const help: HelpDoc = {
         "- (from 0.3.0) The «▾» next to the TCP and UDP address box lists the last 8 address:port pairs that started receiving successfully. Pick one to fill both boxes; ✕ removes that entry.",
         "- (from 0.3.0) If the connection drops or starts waiting to reconnect while you work in another window, Plot's taskbar button flashes. Pressing «Stop» yourself does not flash; turn it off in Settings (⚙).",
         "- (from 0.3.0) The source can be filled from the command line: «portdock-plot.exe --serial COM3 --baud 115200» · «--tcp 10.0.0.5:5000» · «--udp 5005» (one source only). It only fills the boxes — press «Start» to begin receiving. Invalid arguments are ignored and reported in one notice.",
+        "- (from 0.3.0) Add «--auto» to start receiving right away — with the settings from the command line, or else the last source that started successfully. If the serial port is not present, it does not start.",
         "- While receiving, source settings are locked; «Format» can change (the parser restarts — partial lines and names are dropped).",
       ],
     },
@@ -266,7 +268,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Settings (⚙)",
-      body: ["- Language, theme and font size. Export/Import settings moves the source, format, view, channel names and colors as a JSON file.", ...settingsLines("en")],
+      body: ["- Language, theme and font size. Export/Import settings moves the source, format, view, channel names and colors as a JSON file.", ...settingsLines("en", { run: true })],
     },
     {
       title: "Shortcuts",

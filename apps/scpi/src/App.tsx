@@ -15,6 +15,9 @@ import { load, samePorts, store } from "@shared/framing";
 import { autoLogPath, formatTime, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useLostAlert } from "@shared/useLostAlert";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { cleanLastOk, scpiLaunch, type ScpiLastOk } from "./launch";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
 import { useToast } from "@shared/Toast";
@@ -415,27 +418,36 @@ export default function App() {
     setNet((n) => ({ ...n, host, ...(port != null && port > 0 ? { port } : {}) }));
   };
   const where = transport === "lan" ? `${net.host.trim()}:${net.port}` : `${cfg.port} ${cfg.baud}`;
-  async function connect() {
+  /** over: 켤 때 자동 연결(0.3.0) — 칸 상태가 아직 바뀌기 전이라 쓸 설정을 직접 넘긴다 */
+  async function connect(over?: { transport: Transport; net: NetConfig; cfg: SerialConfig; term: Term; ports: PortInfo[] }) {
     if (connecting || connectedRef.current) return;
+    const tr = over?.transport ?? transport;
+    const nc = over?.net ?? net;
+    const sc = over?.cfg ?? cfg;
+    const tm = over?.term ?? term;
+    const pl = over?.ports ?? ports;
+    const at = tr === "lan" ? `${nc.host.trim()}:${nc.port}` : `${sc.port} ${sc.baud}`;
     setConnecting(true);
     setConnectErr(null);
     setError(null);
     setStatusMsg(null);
     try {
-      if (transport === "lan") {
-        await api.openTcp({ host: net.host.trim(), port: net.port, term, connectTimeoutMs: 3000 });
-        recentLan.remember(joinHostPort(net.host.trim(), net.port));
+      if (tr === "lan") {
+        await api.openTcp({ host: nc.host.trim(), port: nc.port, term: tm, connectTimeoutMs: 3000 });
+        recentLan.remember(joinHostPort(nc.host.trim(), nc.port));
+        saveLastOk<ScpiLastOk>({ transport: "lan", host: nc.host.trim(), port: nc.port, term: tm });
       } else {
-        await api.openSerial({ ...cfg, term });
-        const p = ports.find((x) => x.name === cfg.port);
+        await api.openSerial({ ...sc, term: tm });
+        const p = pl.find((x) => x.name === sc.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number });
+        saveLastOk<ScpiLastOk>({ transport: "serial", serialPort: sc.port, baud: sc.baud, dataBits: sc.dataBits, parity: sc.parity, stopBits: sc.stopBits, flow: sc.flow, term: tm });
       }
       connectedRef.current = true;
       setConnected(true);
       setStatus("connected");
       setIdn(null);
       setErrResult(null);
-      addFrames([ev(fill(t("evConnected"), { a: where }))]);
+      addFrames([ev(fill(t("evConnected"), { a: at }))]);
       if (settings.autoLog && settings.logFolder) await startLog(autoLogPath(settings.logFolder, "scpi"));
       if (autoIdn) void askIdn();
     } catch (e) {
@@ -571,6 +583,65 @@ export default function App() {
   ]);
   // 끊기면 작업 표시줄 깜빡임(0.3.0) — «lost» 는 사용자가 끊지 않았는데 끊긴 상태(끊기 버튼은 «closed»)
   useLostAlert(status === "lost", settings.lostAlert);
+  // 연결·기록 중 절전 막기(0.3.0)
+  useKeepAwake(connected || !!logPath, settings.keepAwake);
+
+  // ---- 명령줄 «--auto»(0.3.0) — 다른 인자는 없다(무시한 것은 한 줄로 알림)
+  const [launchAuto, setLaunchAuto] = useState(false);
+  const [launchReady, setLaunchReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    api
+      .launchArgs()
+      .then((argv) => {
+        if (!alive || !argv?.length) return;
+        const l = scpiLaunch(argv);
+        setLaunchAuto(l.auto);
+        if (l.bad.length) toast.show(fill(dict[langRef.current].launchBad, { a: l.bad.join(", ") }), { error: true, ms: 9000 });
+      })
+      .catch(() => {})
+      .finally(() => alive && setLaunchReady(true));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // ---- 켤 때 마지막 연결 다시 열기(0.3.0) — 설정 또는 --auto. 시리얼 포트가 없으면 조용히 그만둔다
+  useAutoStart(settings.autoConnect || launchAuto, launchReady, () => {
+    const last = cleanLastOk(loadLastOk());
+    if (!last) return;
+    const tm = last.term ?? term;
+    if (last.transport === "lan") {
+      const nc = { host: last.host!, port: last.port! };
+      setTransport("lan");
+      setNet(nc);
+      setTerm(tm);
+      addFrames([ev(fill(dict[langRef.current].evAutoConnect, { a: `${nc.host}:${nc.port}` }))]);
+      void connect({ transport: "lan", net: nc, cfg, term: tm, ports });
+      return;
+    }
+    void api
+      .listPorts()
+      .catch(() => [] as PortInfo[])
+      .then((pl) => {
+        if (connectedRef.current || !portUsable(pl, last.serialPort!)) return;
+        const sc: SerialConfig = {
+          ...cfg,
+          port: last.serialPort!,
+          baud: last.baud!,
+          ...(last.dataBits !== undefined && { dataBits: last.dataBits }),
+          ...(last.parity !== undefined && { parity: last.parity }),
+          ...(last.stopBits !== undefined && { stopBits: last.stopBits }),
+          ...(last.flow !== undefined && { flow: last.flow }),
+        };
+        setTransport("serial");
+        setCfg(sc);
+        setTerm(tm);
+        setPorts((o) => samePorts(o, pl));
+        addFrames([ev(fill(dict[langRef.current].evAutoConnect, { a: `${sc.port} ${sc.baud}` }))]);
+        void connect({ transport: "serial", net, cfg: sc, term: tm, ports: pl });
+      });
+  });
   useExitGuard(connected || !!logPath || running, settings.confirmExit, lang, APP);
   const clearError = useCallback(() => setError(null), []);
   const onCopied = (ok: boolean, n: number) => toast.show(ok ? ui(lang, "copied", { n }) : ui(lang, "copyFail"), { error: !ok });
@@ -838,7 +909,7 @@ export default function App() {
             <input type="checkbox" checked={autoIdn} onChange={(e) => setAutoIdn(e.target.checked)} /> {t("autoIdn")}
           </label>
         </details>
-        <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={runDisabled}>
+        <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={() => void (connected ? disconnect() : connect())} disabled={runDisabled}>
           {runLabel}
         </button>
         {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -886,7 +957,7 @@ export default function App() {
 
       <main className="main">
         <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={connectErr && !connected ? "s-disconnected" : `s-${status === "lost" ? "disconnected" : status}`} summary={summaryLine}>
-          <button className={connected ? "btn small danger" : "btn small primary"} onClick={connected ? disconnect : connect} disabled={runDisabled} data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)}>
+          <button className={connected ? "btn small danger" : "btn small primary"} onClick={() => void (connected ? disconnect() : connect())} disabled={runDisabled} data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)}>
             {runLabel}
           </button>
         </NarrowBar>
@@ -1106,7 +1177,7 @@ export default function App() {
       </aside>
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog conn app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
+        <SettingsDialog conn run app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} />
       )}
       {toast.node}
     </div>

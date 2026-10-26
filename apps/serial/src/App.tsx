@@ -50,6 +50,8 @@ import { portUsable, setManualPort } from "@shared/portPick";
 import { openInApp } from "@shared/openApp";
 import { count } from "@shared/usage";
 import { launchFilled, serialLaunch } from "./launch";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
 import { useLostAlert } from "@shared/useLostAlert";
 import { useLogKeys } from "@shared/logKeys";
 import { CopyButton } from "@shared/CopyButton";
@@ -105,14 +107,19 @@ const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w
 
 /** 예전 저장 값(rs485 없음·stopBits 2 외)도 받는다 */
 function loadCfg(): SerialConfig {
-  const c = load<Partial<SerialConfig>>("cfg", {});
+  return cleanCfg(load<Partial<SerialConfig>>("cfg", {}));
+}
+
+/** 저장된 설정(모양이 틀릴 수 있음)을 쓸 수 있는 값으로 — 빠진 칸은 기본값 */
+function cleanCfg(raw: unknown): SerialConfig {
+  const c = (raw && typeof raw === "object" ? raw : {}) as Partial<SerialConfig>;
   return {
-    port: c.port ?? "",
-    baud: c.baud ?? 9600,
-    dataBits: c.dataBits ?? 8,
+    port: typeof c.port === "string" ? c.port : "",
+    baud: Number.isInteger(c.baud) && c.baud! >= 50 && c.baud! <= 20_000_000 ? c.baud! : 9600,
+    dataBits: c.dataBits === 5 || c.dataBits === 6 || c.dataBits === 7 ? c.dataBits : 8,
     parity: (["none", "odd", "even", "mark", "space"] as const).includes(c.parity as never) ? c.parity! : "none",
     stopBits: c.stopBits === 1.5 || c.stopBits === 2 ? c.stopBits : 1,
-    flow: c.flow ?? "none",
+    flow: c.flow === "hardware" || c.flow === "software" ? c.flow : "none",
     dtr: !!c.dtr,
     rts: !!c.rts,
     autoReconnect: c.autoReconnect ?? true,
@@ -148,9 +155,16 @@ export default function App() {
 
   // ---- 포트 목록 (1.5초마다 갱신 — 꽂고 뽑는 것을 바로 보여 준다)
   const [ports, setPorts] = useState<PortInfo[]>([]);
+  // 포트 목록을 한 번이라도 읽었는지(실패해도) — 켤 때 자동 연결은 그 뒤에
+  const [portsRead, setPortsRead] = useState(false);
   useEffect(() => {
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
+    const tick = () =>
+      api
+        .listPorts()
+        .then((p) => alive && setPorts((o) => samePorts(o, p)))
+        .catch(() => {})
+        .finally(() => alive && setPortsRead(true));
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -235,6 +249,8 @@ export default function App() {
 
   // 명령줄 인자(0.3.0) — «--port COM3 --baud 9600». 설정만 채우고 연결은 사용자가 누른다(한 번만)
   const launchDone = useRef(false);
+  // 명령줄 처리가 끝났는지·--auto·칸을 채웠는지 — 켤 때 자동 연결이 본다
+  const [launch, setLaunch] = useState<{ done: boolean; auto: boolean; filled: boolean }>({ done: false, auto: false, filled: false });
   useEffect(() => {
     if (launchDone.current) return;
     launchDone.current = true;
@@ -243,6 +259,7 @@ export default function App() {
       .then(async (argv) => {
         if (!argv?.length) return;
         const l = serialLaunch(argv);
+        setLaunch((x) => ({ ...x, auto: l.auto, filled: launchFilled(l) }));
         const d = dict[langRef.current];
         const parts: string[] = [];
         if (l.port) {
@@ -264,7 +281,8 @@ export default function App() {
         const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
         if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLaunch((x) => ({ ...x, done: true })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -417,8 +435,12 @@ export default function App() {
   }, [sessionId, liveCfg]);
 
   const [connecting, setConnecting] = useState(false);
-  async function connect() {
-    if (connecting) return;
+  function connect() {
+    return connectWith(cfg);
+  }
+  /** 이 설정으로 연결 — 성공하면 true(켤 때 자동 연결이 결과를 본다) */
+  async function connectWith(cfg: SerialConfig): Promise<boolean> {
+    if (connecting) return false;
     setConnecting(true);
     setError(null);
     setConnectErr(null);
@@ -433,9 +455,13 @@ export default function App() {
         const p = autoLogPath(settings.logFolder, "serial", logExt(settings));
         await api.setLog(cfg.port, p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
+      // 켤 때 자동 연결(0.3.0)이 다시 열 설정
+      saveLastOk(cfg);
+      return true;
     } catch (e) {
       setConnectErr(String(e));
       noteError(String(e));
+      return false;
     } finally {
       setConnecting(false);
     }
@@ -832,6 +858,35 @@ export default function App() {
   const statusKey = `status_${status}` as Key;
   // 끊기면 작업 표시줄 깜빡임 — 장치가 끊김·재연결 대기, 또는 자동 재연결이 꺼져 이유와 함께 닫힘(사용자가 끊은 닫힘은 이유 없음)
   useLostAlert(status === "disconnected" || status === "reconnecting" || (status === "closed" && statusMsg != null), settings.lostAlert);
+  // 연결·파일 기록 중 절전 막기(0.3.0, 설정 켬일 때만)
+  useKeepAwake(connected || !!logPath, settings.keepAwake);
+  // 켤 때 자동 연결(0.3.0) — 설정 «켤 때 마지막 연결 다시 열기» 또는 명령줄 --auto.
+  // 명령줄로 칸을 채웠으면 그 값, 아니면 마지막으로 성공한 설정. 포트가 목록에 없으면(직접 넣은 포트도 아니면) 조용히 그친다
+  useAutoStart(settings.autoConnect || launch.auto, portsRead && launch.done, () => {
+    let c: SerialConfig;
+    if (launch.filled) c = cfg;
+    else {
+      const last = loadLastOk<unknown>();
+      if (!last) return;
+      c = cleanCfg(last);
+    }
+    if (!portUsable(ports, c.port)) return;
+    if (!launch.filled) {
+      setCfg(c);
+      setPortNotice(null);
+    }
+    void connectWith(c).then((ok) => {
+      if (!ok) return;
+      const d = dict[langRef.current];
+      addEv(fill(d.autoConnected, { a: `${c.port} ${c.baud} ${c.dataBits}${parityChar(c.parity)}${c.stopBits}` }));
+      // 자동응답이 켜진 채 자동으로 열었으면 알린다 — 모르고 장비에 답하지 않게
+      const rules = load<unknown[]>("autoRules", []);
+      if (load("autoReplyOn", false) && Array.isArray(rules) && rules.length > 0) {
+        addEv(d.autoConnectedReply);
+        toast.show(d.autoConnectedReply, { error: true, ms: 12000 });
+      }
+    });
+  });
   const runDisabled = connecting || (!connected && !portUsable(ports, cfg.port));
 
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, baseTs.current ?? framesRef.current[0]?.ts ?? ts);
@@ -1666,6 +1721,7 @@ export default function App() {
           busy={connected || !!logPath}
           ioOptions
           conn
+          run
         />
       )}
       {toast.node}

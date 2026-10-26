@@ -134,6 +134,8 @@ const ko = {
   // ---- 사건·알림
   evStart: "시작 {a}",
   evStop: "멈춤",
+  evAutoLast: "켤 때 마지막 연결로 자동 시작: {a}",
+  evAutoArgs: "명령줄 --auto 로 자동 시작: {a}",
   lostClosed: "세션이 닫혔습니다",
 } as const;
 
@@ -267,6 +269,8 @@ const en: Dict = {
   firstSimLink: "Try it with Simulator",
   evStart: "START {a}",
   evStop: "STOP",
+  evAutoLast: "Auto-started with the last connection: {a}",
+  evAutoArgs: "Auto-started from the command line (--auto): {a}",
   lostClosed: "The session closed",
 };
 

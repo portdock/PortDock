@@ -58,6 +58,9 @@ import { joinHostPort, splitHostPort } from "@shared/recent";
 import { useLogKeys } from "@shared/logKeys";
 import { CopyButton } from "@shared/CopyButton";
 import { saveName } from "@shared/fileName";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { lastOkConfig, udpLaunch, type UdpLaunch } from "./launch";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
@@ -258,17 +261,27 @@ export default function App() {
     setCfg((c) => ({ ...c, remoteHost: host, ...(port != null ? { remotePort: port } : {}) }));
   };
   const [starting, setStarting] = useState(false);
-  async function start() {
+  const start = () => startWith(cfg, false);
+  /** c: 시작할 설정(켤 때 자동 시작은 마지막 성공 설정). auto: 켤 때 자동으로 시작한 것인지 — 사건 줄로 남긴다 */
+  async function startWith(c: UdpConfig, auto: boolean) {
     if (starting) return;
     setStarting(true);
     setError(null);
     setSenders([]);
     try {
-      setLocal(await api.start(cfg, rxWire, onEvent));
-      setApplied(`${cfg.remoteHost}:${cfg.remotePort}`);
+      setLocal(await api.start(c, rxWire, onEvent));
+      setApplied(`${c.remoteHost}:${c.remotePort}`);
       setRemoteErr(null);
       setRunning(true);
-      if (cfg.remoteHost && cfg.remotePort) recent.remember(joinHostPort(cfg.remoteHost, cfg.remotePort));
+      if (c.remoteHost && c.remotePort) recent.remember(joinHostPort(c.remoteHost, c.remotePort));
+      // 켤 때 자동 시작(0.3.0)용 — 시작에 성공한 설정
+      saveLastOk(c);
+      if (auto) {
+        const d = dict[langRef.current];
+        addEv(d.autoStarted.replace("{a}", `${c.bindHost}:${c.bindPort} → ${c.remoteHost}:${c.remotePort}`));
+        // 자동응답이 켜진 채 저절로 시작했으면 알린다(모르고 답하지 않게)
+        if (load("autoReplyOn", false)) addEv(d.autoStartedReply);
+      }
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "udp", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
@@ -279,6 +292,26 @@ export default function App() {
       setStarting(false);
     }
   }
+  // ---- 명령줄 «--auto»·켤 때 자동 시작(0.3.0) — 설정 «켤 때 마지막 연결 다시 열기» 또는 --auto 면 마지막으로 성공한 설정으로 한 번
+  const [launch, setLaunch] = useState<UdpLaunch | null>(null);
+  useEffect(() => {
+    api
+      .launchArgs()
+      .then((argv) => {
+        const l = udpLaunch(argv ?? []);
+        if (l.bad.length) toast.show(dict[langRef.current].launchBad.replace("{a}", l.bad.join(", ")), { error: true, ms: 9000 });
+        setLaunch(l);
+      })
+      .catch(() => setLaunch({ auto: false, bad: [] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useAutoStart(settings.autoConnect || !!launch?.auto, launch != null, () => {
+    // 마지막 성공 설정이 없으면 아무것도 안 한다. 네트워크라 그냥 시작해 본다(실패는 평소처럼 오류 줄)
+    const c = lastOkConfig(loadLastOk<unknown>(), cfg);
+    if (!c) return;
+    setCfg(c);
+    void startWith(c, true);
+  });
   async function stop() {
     await api.stop();
     setRunning(false);
@@ -540,6 +573,8 @@ export default function App() {
   if (!framesRef.current.length) timeBase.current = null;
   else if (timeBase.current === null) timeBase.current = framesRef.current[0].ts;
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
+  // 시작·파일 기록 중 절전 막기(0.3.0, 설정에서 켬)
+  useKeepAwake(running || !!logPath, settings.keepAwake);
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock UDP");
 
   // ---- 단축키: F4 시작·멈춤, Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
@@ -662,7 +697,7 @@ export default function App() {
             </>
           )}
         </details>
-        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
+        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : () => void start()} disabled={runDisabled}>
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -726,7 +761,7 @@ export default function App() {
 
       <main className="main">
         <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
-          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : () => void start()} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
             {running ? t("stop") : t("start")}
           </button>
         </NarrowBar>
@@ -998,6 +1033,7 @@ export default function App() {
       {showSettings && (
         <SettingsDialog
           app="PortDock UDP"
+          run
           version={VERSION}
           settings={settings}
           update={update}

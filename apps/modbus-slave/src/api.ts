@@ -153,4 +153,6 @@ export const api = {
   resetStats: () => invoke<void>("reset_stats"),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
+  /** 명령줄 인자(0.3.0) — 처음 한 번만 */
+  launchArgs: () => invoke<string[]>("launch_args"),
 };

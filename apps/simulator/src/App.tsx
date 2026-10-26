@@ -30,6 +30,9 @@ import { matchesEverything, repeatInterval } from "@shared/interlocks";
 import { autoReplyApi } from "@shared/autoReplyApi";
 import { useLostAlert } from "@shared/useLostAlert";
 import { saveName } from "@shared/fileName";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { simLaunch, type SimLaunch } from "./launch";
 import { Traffic, type TrafficHandle } from "./Traffic";
 import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
@@ -57,6 +60,24 @@ interface Net {
 }
 
 type Com = { port: string; baud: number; parity: "none" | "odd" | "even" };
+/** 시작에 쓰는 연결 설정 — 켤 때 다시 열기(lastConnOk)에도 이 모양으로 남긴다 */
+type Conn = { transport: Transport; com: Com; net: Net };
+
+/** 저장된 «마지막으로 시작에 성공한 설정» 확인 — 모양이 틀리면 null */
+function cleanConn(v: unknown): Conn | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Partial<Conn>;
+  if (!o.transport || !["serial", "tcp-server", "tcp-client", "udp"].includes(o.transport)) return null;
+  const c = o.com;
+  const n = o.net;
+  if (!c || typeof c.port !== "string" || !Number.isInteger(c.baud) || !["none", "odd", "even"].includes(c.parity)) return null;
+  if (!n || typeof n.host !== "string" || typeof n.remoteHost !== "string" || !Number.isInteger(n.port) || !Number.isInteger(n.remotePort)) return null;
+  return {
+    transport: o.transport,
+    com: { port: c.port, baud: c.baud, parity: c.parity },
+    net: { host: n.host, port: n.port, remoteHost: n.remoteHost, remotePort: n.remotePort, broadcast: !!n.broadcast },
+  };
+}
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
@@ -192,21 +213,23 @@ export default function App() {
   }, [running, matchOpts]);
 
   const [starting, setStarting] = useState(false);
-  async function start() {
-    if (starting) return;
+  /** 시작 — o 를 주면 그 설정으로(켤 때 자동 시작은 칸 값이 아직 반영되기 전이라). 성공하면 true */
+  async function start(o: Conn = { transport, com, net }): Promise<boolean> {
+    if (starting) return false;
+    const { com, net } = o;
     setStarting(true);
     setError(null);
     stopping.current = false;
     setDropped(false);
     try {
-      if (transport === "serial") {
+      if (o.transport === "serial") {
         await api.startSerial(
           { port: com.port, baud: com.baud, dataBits: 8, parity: com.parity, stopBits: 1, flow: "none", dtr: false, rts: false, autoReconnect: true },
           effFraming,
           onEvent,
         );
         setStatus("connected");
-      } else if (transport === "udp") {
+      } else if (o.transport === "udp") {
         const local = await api.startUdp(
           { bindHost: net.host, bindPort: net.port, remoteHost: net.remoteHost, remotePort: net.remotePort, broadcast: !!net.broadcast, multicastGroup: "", multicastIf: "0.0.0.0", echo: false },
           onEvent,
@@ -214,7 +237,7 @@ export default function App() {
         setStatusMsg(local);
         if (net.remoteHost) recentUdp.remember(joinHostPort(net.remoteHost, net.remotePort));
       } else {
-        const server = transport === "tcp-server";
+        const server = o.transport === "tcp-server";
         await api.startTcp(
           { mode: server ? "server" : "client", host: server ? net.host : net.remoteHost, port: server ? net.port : net.remotePort, noDelay: true, autoReconnect: true, reconnectMs: 2000, echo: false },
           effFraming,
@@ -224,12 +247,16 @@ export default function App() {
         else recentTcp.remember(joinHostPort(net.remoteHost, net.remotePort));
       }
       setRunning(true);
+      // 켤 때 다시 열 설정(0.3.0) — 시작에 성공한 것만
+      saveLastOk<Conn>({ transport: o.transport, com, net });
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "simulator");
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
+      return true;
     } catch (e) {
       setError(String(e));
+      return false;
     } finally {
       setStarting(false);
     }
@@ -430,6 +457,8 @@ export default function App() {
   const modeSwitch = useModeSwitch(spec, setSpec, lang);
 
   useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock Simulator");
+  // 시작·기록 중 절전 막기(0.3.0, 설정 켰을 때만)
+  useKeepAwake(running || !!logPath, settings.keepAwake);
 
   // ---- 단축키: F4 시작·멈춤, Ctrl+L 통신 기록 지우기, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
   const runDisabled = (!running && transport === "serial" && !portUsable(ports, com.port)) || starting;
@@ -448,14 +477,15 @@ export default function App() {
   const rawSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: null, suffix: "" });
 
   // ---- 창 제목: «TCP 서버 :502 · 규칙 3 — PortDock Simulator»
-  const where =
-    transport === "serial"
-      ? `${t("titleSerial")} ${com.port} ${com.baud}`
-      : transport === "tcp-server"
-        ? `${t("titleTcpServer")} :${net.port}`
-        : transport === "tcp-client"
-          ? `${t("titleTcpClient")} ${net.remoteHost}:${net.remotePort}`
-          : `UDP :${net.port}`;
+  const whereOf = (o: Conn) =>
+    o.transport === "serial"
+      ? `${t("titleSerial")} ${o.com.port} ${o.com.baud}`
+      : o.transport === "tcp-server"
+        ? `${t("titleTcpServer")} :${o.net.port}`
+        : o.transport === "tcp-client"
+          ? `${t("titleTcpClient")} ${o.net.remoteHost}:${o.net.remotePort}`
+          : `UDP :${o.net.port}`;
+  const where = whereOf({ transport, com, net });
   // 저장 파일 이름에 넣을 곳 — 포트·주소
   const saveWhere = transport === "serial" ? com.port || null : transport === "tcp-server" || transport === "udp" ? `${net.host}:${net.port}` : `${net.remoteHost}:${net.remotePort}`;
   async function saveView(text: string) {
@@ -470,6 +500,47 @@ export default function App() {
   const statusText = dict[lang][`status_${status}` as Key] ?? status;
   useWindowTitle(windowTitle("PortDock Simulator", running ? [where, ruleCount] : [], !!logPath));
   const summaryLine = `${where} · ${statusText} · ${ruleCount}`;
+
+  // ---- 명령줄(0.3.0) — «--auto» 만. 그 밖의 인자는 한 줄로 알린다
+  const [launch, setLaunch] = useState<SimLaunch | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api
+      .launchArgs()
+      .then((argv) => {
+        const l = simLaunch(argv ?? []);
+        if (l.bad.length) toast.show(fill(t("launchBad"), { a: l.bad.join(", ") }), { error: true, ms: 9000 });
+        return l;
+      })
+      .catch((): SimLaunch => ({ auto: false, bad: [] }))
+      .then((l) => alive && setLaunch(l));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 켤 때 한 번
+  }, []);
+  /** 켤 때 마지막으로 시작에 성공한 설정으로 한 번 시작 — 없거나 그 시리얼 포트가 없으면 조용히 그만둔다 */
+  async function autoStart() {
+    const last = cleanConn(loadLastOk<unknown>());
+    if (!last) return;
+    if (last.transport === "serial") {
+      const list = await api.listPorts().catch(() => [] as PortInfo[]);
+      if (!portUsable(list, last.com.port)) return;
+      setPorts((o) => samePorts(o, list));
+    }
+    setTransport(last.transport);
+    setCom(last.com);
+    setNet(last.net);
+    if (!(await start(last))) return;
+    // 자동 시작했다는 것은 늘 사건 줄로 남기고, 응답 규칙이 켜져 있으면 알림도(모르고 답하지 않게)
+    const on = rules.filter((r) => r.enabled).length;
+    const note = fill(t("autoStarted"), { a: whereOf(last) }) + (on ? ` — ${fill(t("autoStartedRules"), { n: on })}` : "");
+    const f: Frame = { ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current };
+    traffic.current.push(f);
+    trafficApi.current?.bump();
+    if (on) toast.show(note, { ms: 9000 });
+  }
+  useAutoStart(settings.autoConnect || !!launch?.auto, launch != null, () => void autoStart());
 
   return (
     <div className={showSide ? "app sim show-side" : "app sim"}>
@@ -620,7 +691,7 @@ export default function App() {
           </>
         )}
 
-        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
+        <button data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : () => void start()} disabled={runDisabled}>
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -635,7 +706,7 @@ export default function App() {
 
       <main className="main">
         <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
-          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : () => void start()} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
             {running ? t("stop") : t("start")}
           </button>
         </NarrowBar>
@@ -760,6 +831,7 @@ export default function App() {
           readText={api.readText}
           busy={running || !!logPath}
           conn
+          run
         />
       )}
       {toast.node}

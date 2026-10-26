@@ -61,7 +61,9 @@ import { pairInLog, type AddrNotation } from "@shared/mbPair";
 import { dict, type Key, type Lang } from "./i18n";
 import { ar } from "@shared/autoReplyText";
 import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
-import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
+import { joinHostPort, lastRecent, rememberRecent, splitHostPort } from "@shared/recent";
+import { useKeepAwake } from "@shared/useKeepAwake";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
 import { useLostAlert } from "@shared/useLostAlert";
 import { useLogKeys } from "@shared/logKeys";
 import { CopyButton } from "@shared/CopyButton";
@@ -76,6 +78,36 @@ import "./App.css";
 
 /** 최근 연결 기록의 모드 이름 — 중계의 듣는 주소는 서버와 따로 */
 const recentMode = (m: TcpConfig["mode"]) => (m === "relay" ? "relayListen" : m);
+
+/** 켤 때 다시 열 설정(0.3.0) — 연결에 성공했을 때의 방식·주소·포트·중계 대상 */
+interface LastOk {
+  cfg: TcpConfig;
+  relayTo: RelayTarget;
+}
+const isPort = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 65535;
+/** 저장값 확인 — 모양이 틀리면 null(손으로 고친 값·옛 판) */
+function cleanLastOk(v: unknown, base: TcpConfig): LastOk | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as { cfg?: Partial<TcpConfig>; relayTo?: Partial<RelayTarget> };
+  const c = o.cfg;
+  if (!c || (c.mode !== "client" && c.mode !== "server" && c.mode !== "relay") || typeof c.host !== "string" || !isPort(c.port)) return null;
+  const bool = (x: unknown, d: boolean) => (typeof x === "boolean" ? x : d);
+  const cfg: TcpConfig = {
+    ...base,
+    mode: c.mode,
+    host: c.host.trim(),
+    port: c.port,
+    noDelay: bool(c.noDelay, base.noDelay),
+    autoReconnect: bool(c.autoReconnect, base.autoReconnect),
+    reconnectMs: typeof c.reconnectMs === "number" && c.reconnectMs >= 200 && c.reconnectMs <= 3600000 ? c.reconnectMs : base.reconnectMs,
+    echo: bool(c.echo, base.echo),
+  };
+  if (cfg.mode === "client" && (!cfg.host || cfg.port === 0)) return null;
+  const r = o.relayTo;
+  const relayTo: RelayTarget = r && typeof r.host === "string" && isPort(r.port) ? { host: r.host.trim(), port: r.port } : { host: "", port: 0 };
+  if (cfg.mode === "relay" && (!relayTo.host || relayTo.port === 0)) return null;
+  return { cfg, relayTo };
+}
 
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
 type ViewMode = "hex" | "ascii" | "both";
@@ -164,6 +196,7 @@ export default function App() {
       .then((argv) => {
         if (!argv?.length) return;
         const l = tcpLaunch(argv);
+        launchRef.current = { auto: l.auto, filled: !!(l.host && l.port) };
         const d = dict[langRef.current];
         if (l.host && l.port) {
           const host = l.host;
@@ -175,18 +208,25 @@ export default function App() {
           });
         }
         const msg = [l.host && l.port && fill(d.launchSet, { a: joinHostPort(l.host, l.port) }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
-        if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
+        // --auto 면 곧 접속하므로 ««접속» 을 누르세요» 알림은 띄우지 않는다(무시한 인자만)
+        if (l.auto && l.host && l.port) {
+          if (l.bad.length) toast.show(fill(d.launchBad, { a: l.bad.join(", ") }), { error: true, ms: 9000 });
+        } else if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLaunchReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 명령줄 처리 결과 — 켤 때 자동 연결(0.3.0)이 쓴다
+  const launchRef = useRef({ auto: false, filled: false });
+  const [launchReady, setLaunchReady] = useState(false);
   // 최근 연결 기록(0.3.0) — 주소 칸은 방식마다 따로(중계의 듣는 주소는 «relayListen»), 중계의 이어 줄 장비(B)는 «relay»
   const recMain = useRecent(recentMode(cfg.mode));
   const recRelay = useRecent("relay");
   // 아직 남기지 않은 성공 기록 — 클라이언트는 «접속됨» 이 왔을 때, 중계 B 는 처음 짝이 이어졌을 때(백엔드가 B 에 붙은 뒤에야 짝을 알린다)
-  const pendingRec = useRef<{ client?: string; relay?: string }>({});
-  const recRef = useRef({ main: recMain.remember, relay: recRelay.remember });
-  recRef.current = { main: recMain.remember, relay: recRelay.remember };
+  const pendingRec = useRef<{ client?: string; relay?: string; ok?: LastOk }>({});
+  const recRef = useRef({ relay: recRelay.remember });
+  recRef.current = { relay: recRelay.remember };
   const pickRecent = (v: string) => {
     const r = splitHostPort(v);
     setCfg({ ...cfg, host: r.host, port: r.port ?? cfg.port });
@@ -292,8 +332,11 @@ export default function App() {
       if (e.state === "disconnected" || e.state === "reconnecting") setDropped(true);
       else if (e.state === "connected" || e.state === "listening") setDropped(false);
       if (e.state === "connected" && pendingRec.current.client) {
-        recRef.current.main(pendingRec.current.client);
+        rememberRecent("client", pendingRec.current.client);
         pendingRec.current.client = undefined;
+        // 켤 때 다시 열 설정(0.3.0) — 클라이언트는 접속됐을 때
+        if (pendingRec.current.ok) saveLastOk(pendingRec.current.ok);
+        pendingRec.current.ok = undefined;
       }
       // 백엔드가 준 설명(재접속 대기·멈춤의 마지막 실패 이유 등)을 먼저 보인다
       setStatusMsg(e.message || e.port || null);
@@ -330,23 +373,31 @@ export default function App() {
   // 끊기면 작업 표시줄 깜빡임(0.3.0) — 클라이언트만(서버·중계는 상대가 끊겨도 듣기는 계속). 사용자가 멈추면 false
   const [dropped, setDropped] = useState(false);
   useLostAlert(dropped && cfg.mode === "client", settings.lostAlert);
-  async function start() {
+  /** 시작 — over: 켤 때 자동 연결이 막 칸에 넣은 설정(상태가 아직 바뀌기 전이라 직접 넘긴다) */
+  async function start(over?: LastOk) {
     if (starting) return;
+    const c = over?.cfg ?? cfg;
+    const rt = over?.relayTo ?? relayTo;
+    const isRelay = c.mode === "relay";
     setStarting(true);
     setError(null);
     setDropped(false);
-    const host = cfg.host.trim();
+    const host = c.host.trim();
+    const ok: LastOk = { cfg: c, relayTo: { host: rt.host.trim(), port: rt.port } };
     // 클라이언트는 접속은 뒤에서 하므로 «접속됨» 이 와야 남긴다 — 이벤트가 start 응답보다 먼저 올 수 있어 미리 걸어 둔다
     pendingRec.current = {
-      client: cfg.mode === "client" ? joinHostPort(host, cfg.port) : undefined,
-      relay: relay ? joinHostPort(relayTo.host.trim(), relayTo.port) : undefined,
+      client: c.mode === "client" ? joinHostPort(host, c.port) : undefined,
+      relay: isRelay ? joinHostPort(rt.host.trim(), rt.port) : undefined,
+      ok: c.mode === "client" ? ok : undefined,
     };
     try {
-      const l = await api.start(cfg, effFraming, rxWire, cfg.mode === "relay" ? { host: relayTo.host.trim(), port: relayTo.port } : null, onEvent);
+      const l = await api.start(c, effFraming, rxWire, isRelay ? { host: rt.host.trim(), port: rt.port } : null, onEvent);
       setLocal(l);
       setRunning(true);
       // 서버·중계는 듣기 시작이 성공 — 포트 0(운영체제가 고름)은 다시 쓸 값이 아니라 남기지 않는다
-      if (listening && host && cfg.port > 0) recMain.remember(joinHostPort(host, cfg.port));
+      if (c.mode !== "client" && host && c.port > 0) rememberRecent(recentMode(c.mode), joinHostPort(host, c.port));
+      // 켤 때 다시 열 설정(0.3.0) — 서버·중계는 듣기 시작이 성공
+      if (c.mode !== "client") saveLastOk(ok);
       if (settings.autoLog && settings.logFolder) {
         const p = autoLogPath(settings.logFolder, "tcp", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
@@ -358,6 +409,34 @@ export default function App() {
       setStarting(false);
     }
   }
+  // 켤 때 자동 연결(0.3.0) — 설정 «켤 때 마지막 연결 다시 열기» 또는 명령줄 --auto. 명령줄로 주소를 채웠으면 그 값, 아니면 마지막으로 성공한 설정
+  useAutoStart(settings.autoConnect || launchRef.current.auto, launchReady, () => {
+    const d = dict[langRef.current];
+    let use: LastOk | undefined;
+    if (!launchRef.current.filled) {
+      const last = cleanLastOk(loadLastOk<unknown>(), cfg);
+      if (!last) return;
+      use = last;
+      if (last.cfg.mode !== cfg.mode) setByMode((b) => ({ ...b, [cfg.mode]: { host: cfg.host, port: cfg.port } }));
+      setCfg(last.cfg);
+      if (last.cfg.mode === "relay") setRelayTo(last.relayTo);
+    }
+    const c = use?.cfg ?? cfg;
+    const rt = use?.relayTo ?? relayTo;
+    const where =
+      c.mode === "client"
+        ? `${d.tab_client} ${joinHostPort(c.host, c.port)}`
+        : c.mode === "relay"
+          ? `${d.titleRelay} ${joinHostPort(c.host || "0.0.0.0", c.port)} → ${joinHostPort(rt.host, rt.port)}`
+          : `${d.titleServer} ${joinHostPort(c.host || "0.0.0.0", c.port)}`;
+    addEv(fill(d.evAutoStart, { a: where }));
+    // 자동응답이 켜진 채면 한 번 알린다 — 모르고 장비에 답하지 않게(중계는 자동응답을 쓰지 않는다)
+    const rules = load<unknown>("autoRules", []);
+    if (c.mode !== "relay" && load("autoReplyOn", false) && Array.isArray(rules) && rules.some((r) => (r as { enabled?: boolean } | null)?.enabled)) addEv(d.evAutoStartReply);
+    void start(use);
+  });
+  // 연결·기록 중 절전 막기(0.3.0)
+  useKeepAwake(running || !!logPath, settings.keepAwake);
   async function stop() {
     pendingRec.current = {};
     setDropped(false);
@@ -848,7 +927,7 @@ export default function App() {
             </label>
           )}
         </details>
-        <button data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={running ? stop : start} disabled={runDisabled}>
+        <button data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={() => void (running ? stop() : start())} disabled={runDisabled}>
           {running ? stopLabel : server ? t("listen") : t("connect")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
@@ -968,7 +1047,7 @@ export default function App() {
 
       <main className="main">
         <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
-          <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : start} disabled={runDisabled} data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)}>
+          <button className={running ? "btn small danger" : "btn small primary"} onClick={() => void (running ? stop() : start())} disabled={runDisabled} data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)}>
             {running ? stopLabel : server ? t("listen") : t("connect")}
           </button>
         </NarrowBar>
@@ -1349,6 +1428,7 @@ export default function App() {
           busy={running || !!logPath}
           ioOptions
           conn
+          run
         />
       )}
       {showFile && (

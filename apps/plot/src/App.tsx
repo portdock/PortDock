@@ -28,7 +28,9 @@ import { RecentButton, RecentHosts, useRecent } from "@shared/RecentPicker";
 import { joinHostPort, splitHostPort } from "@shared/recent";
 import { PortPicker } from "@shared/PortPicker";
 import { portUsable, setManualPort } from "@shared/portPick";
-import { launchFilled, plotLaunch } from "./launch";
+import { lastOkOf, launchFilled, plotLaunch } from "./launch";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { useKeepAwake } from "@shared/useKeepAwake";
 import "./App.css";
 
 const APP = "PortDock Plot";
@@ -213,6 +215,8 @@ export default function App() {
 
   // ---- 포트 목록(시리얼일 때만)
   const [ports, setPorts] = useState<PortInfo[]>([]);
+  /** 포트 목록을 한 번이라도 읽었는지(켤 때 자동 시작이 기다린다) */
+  const [portsRead, setPortsRead] = useState(false);
   useEffect(() => {
     if (transport !== "serial") return;
     let alive = true;
@@ -220,7 +224,8 @@ export default function App() {
       api
         .listPorts()
         .then((p) => alive && setPorts((o) => samePorts(o, p)))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => alive && setPortsRead(true));
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -249,15 +254,38 @@ export default function App() {
   }, [ports, cfg.port, running]);
 
   // ---- 명령줄 인자(0.3.0) — «--serial COM3 --baud 9600»·«--tcp 10.0.0.5:5000»·«--udp 5005». 칸만 채우고 시작은 사용자가 누른다
+  // --auto 또는 설정 «켤 때 마지막 연결 다시 열기» 면 칸을 채운 뒤(명령줄로 안 채웠으면 마지막 성공 설정으로) 한 번 시작한다
   const launchDone = useRef(false);
+  /** 명령줄 처리 끝 + 켤 때 자동 시작 여부·어디서 온 설정인지 */
+  const [launch, setLaunch] = useState<{ ready: boolean; want: boolean; from: "args" | "last" | null; port?: string }>({ ready: false, want: false, from: null });
   useEffect(() => {
     if (launchDone.current) return;
     launchDone.current = true;
+    const autoSetting = settings.autoConnect;
     api
       .launchArgs()
+      .catch(() => [] as string[])
       .then(async (argv) => {
+        const l = plotLaunch(argv ?? []);
+        let from: "args" | "last" | null = null;
+        /** 자동 시작할 시리얼 포트 — 목록에 없어 다른 포트로 저절로 바뀌었으면 시작하지 않는다 */
+        let port: string | undefined = l.serialPort;
+        if (l.transport) from = "args";
+        else if (autoSetting || l.auto) {
+          const last = lastOkOf(loadLastOk<unknown>());
+          if (last) {
+            from = "last";
+            setTransport(last.transport);
+            if (last.transport === "serial") {
+              port = last.cfg.port;
+              setCfg((c) => ({ ...c, ...last.cfg }));
+            }
+            else if (last.transport === "tcp") setTcp((o) => ({ ...o, host: last.host, port: last.port }));
+            else setUdp((o) => ({ ...o, host: last.host, port: last.port, group: last.group }));
+          }
+        }
+        setLaunch({ ready: true, want: (autoSetting || l.auto) && from !== null, from, port });
         if (!argv?.length) return;
-        const l = plotLaunch(argv);
         const d = dict[langRef.current];
         const parts: string[] = [];
         if (l.transport === "serial" && l.serialPort) {
@@ -292,7 +320,7 @@ export default function App() {
         const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
         if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
       })
-      .catch(() => {});
+      .catch(() => setLaunch({ ready: true, want: false, from: null }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -410,6 +438,14 @@ export default function App() {
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number });
       } else if (transport === "tcp") recentTcp.remember(joinHostPort(tcp.host.trim(), tcp.port));
       else recentUdp.remember(joinHostPort(udp.host.trim() || "0.0.0.0", udp.port));
+      // 켤 때 다시 열기(0.3.0)용 — 성공한 받는 곳만
+      saveLastOk(
+        transport === "serial"
+          ? { transport, cfg: { port: cfg.port, baud: cfg.baud, dataBits: cfg.dataBits, parity: cfg.parity, stopBits: cfg.stopBits, dtr: cfg.dtr, autoReconnect: cfg.autoReconnect } }
+          : transport === "tcp"
+            ? { transport, host: tcp.host.trim(), port: tcp.port }
+            : { transport, host: udp.host.trim() || "0.0.0.0", port: udp.port, group: udp.group.trim() },
+      );
     } catch (e) {
       setStartErr(String(e));
       noteError(String(e));
@@ -515,6 +551,15 @@ export default function App() {
   // ---- 단축키: F4 시작·멈춤, Space 멈춤, End 실시간, Esc 측정점, Ctrl+S 화면 CSV, Ctrl+Shift+L 기록, Ctrl+L 지우기
   // 끊기면 작업 표시줄 깜빡임(0.3.0) — 받는 중 끊김·재연결 대기, 또는 세션이 스스로 닫힘. «멈춤» 으로 닫은 것은 아님
   useLostAlert(dropped || (running && (status === "disconnected" || status === "reconnecting")), settings.lostAlert);
+  // 연결·기록 중 절전 막기(0.3.0)
+  useKeepAwake(running || !!recPath, settings.keepAwake);
+  // 켤 때 자동 시작(0.3.0) — 시리얼 포트가 목록에 없으면(직접 넣은 포트도 아니면) 조용히 그만둔다
+  useAutoStart(launch.want, launch.ready && (transport !== "serial" || portsRead), () => {
+    if (!startable || runningRef.current) return;
+    if (transport === "serial" && launch.port && launch.port.toLowerCase() !== cfg.port.toLowerCase()) return;
+    addRaw([evLine(fill(dict[langRef.current][launch.from === "args" ? "evAutoArgs" : "evAutoLast"], { a: where }))]);
+    void start();
+  });
   const runDisabled = starting || (!running && !startable);
   useShortcuts([
     { key: "F4", run: () => !runDisabled && void (running ? stop() : start()) },
@@ -1024,7 +1069,7 @@ export default function App() {
 
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} conn />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} conn run />
       )}
       {toast.node}
     </div>

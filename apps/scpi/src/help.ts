@@ -126,7 +126,8 @@ export const help: HelpDoc = {
         "- 언어·테마·글자 크기·기록 시각 형식·화면에 남길 줄 수.",
         "- «연결하면 파일 기록 자동 시작» 과 자동 기록 폴더: 연결할 때마다 «portdock-scpi-날짜-시각.log».",
         "- «설정 내보내기·가져오기» 로 연결 설정·명령 목록·반복 측정 설정을 JSON 파일로 옮깁니다.",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
+        "- (0.3.0 부터) 명령줄 «--auto»(예: 바로 가기 대상 끝에 붙임): 켤 때 마지막으로 연결에 성공한 설정(LAN 주소·포트 또는 시리얼 포트·속도, 줄 끝)으로 바로 연결합니다. 시리얼 포트가 없으면 연결하지 않고 그대로 둡니다.",
       ],
     },
     {
@@ -272,7 +273,8 @@ export const help: HelpDoc = {
         "- Language, theme, font size, log timestamp format and the number of lines kept on screen.",
         "- «Start file log automatically» and the auto-log folder: each connection writes «portdock-scpi-date-time.log».",
         "- «Export / Import settings» move the connection settings, command list and repeat measurement settings as a JSON file.",
-        ...settingsLines("en"),
+        ...settingsLines("en", { run: true }),
+        "- (from 0.3.0) Command-line «--auto» (e.g. added to the end of a shortcut target): on startup, connects right away with the last settings that connected successfully (LAN address and port, or serial port and baud, plus line ending). If the serial port is not there, it does not connect.",
       ],
     },
     {

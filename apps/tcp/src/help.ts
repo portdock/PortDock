@@ -53,6 +53,7 @@ export const help: HelpDoc = {
         "- 클라이언트로 502 포트에 접속했는데 프레임 구분이 «Modbus TCP» 가 아니면 «Modbus TCP 로 보기» 알림줄이 한 번 나옵니다. 누르면 요청·응답이 하나씩 끊기고 상세에 풀이가 나옵니다.",
         "- (0.3.0 부터) 그 알림줄의 «Modbus Master 로 열기» 는 PortDock Modbus Master 를 지금 주소·포트로 엽니다(접속은 그 창에서 누름). 이 PC 에 Modbus Master 가 없으면 «주소:포트» 를 복사하고 내려받기 페이지 버튼을 보여 줍니다.",
         "- (0.3.0 부터) 명령줄: «portdock-tcp.exe --connect 192.168.0.10:5000» 처럼 실행하면 클라이언트 방식으로 주소·포트를 채웁니다(포트까지 적어야 함). 저절로 접속하지는 않으니 «접속» 을 누르세요. 잘못된 인자는 무시하고 «무시한 명령줄 인자» 로 알려 줍니다. PortDock Net Scan 의 «TCP 로 열기» 가 이렇게 엽니다.",
+        "- (0.3.0 부터) «--auto» 를 더하면 켜자마자 연결합니다 — «--connect» 로 채운 주소로, 없으면 마지막으로 성공한 설정(방식·주소·포트·중계 대상)으로. 마지막 성공 설정이 없으면 아무것도 하지 않습니다. 자동 연결하면 기록에 «켤 때 자동 연결» 사건 줄이 남고, 자동응답이 켜져 있으면 한 줄 더 알립니다.",
         "- 에코는 1초에 200번을 넘으면 저절로 꺼집니다(상대도 에코하면 끝없이 주고받기 때문). 이때 «ECHO OFF …» 줄과 오류 문구가 나옵니다.",
         "- 서버는 최대 64개 접속을 받습니다. 넘으면 거절하고 «REJECT …» 를 남깁니다.",
         "- 실행 중에는 방식·주소·포트·즉시 전송·재접속 설정이 잠깁니다(🔒). 에코·프레임 구분·수신 체크섬 검사는 실행 중에 바꿔도 바로 적용됩니다.",
@@ -197,7 +198,7 @@ export const help: HelpDoc = {
         "- «연결·기록 중에 창을 닫으려 하면 묻기»: 실수로 창을 닫아 시험이 끊기는 것을 막습니다.",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 명령 목록을 JSON 파일로 옮깁니다. 다른 PortDock 프로그램의 파일은 받지 않습니다.",
         "- «기본값으로»: 화면 설정만 되돌립니다(명령 목록은 그대로).",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
       ],
     },
     {
@@ -275,6 +276,7 @@ export const help: HelpDoc = {
         "- When a client connects to port 502 but framing is not «Modbus TCP», a one-time «View as Modbus TCP» notice appears. Clicking it splits each request/response into one line with decoding in Detail.",
         "- (from 0.3.0) «Open in Modbus Master» on that notice opens PortDock Modbus Master with the current host and port (press connect in that window). If Modbus Master is not on this PC, «host:port» is copied and a download page button is shown.",
         "- (from 0.3.0) Command line: running «portdock-tcp.exe --connect 192.168.0.10:5000» selects client mode and fills the host and port (the port is required). It does not connect by itself — press «Connect». Invalid arguments are ignored and listed as «Ignored command-line arguments». PortDock Net Scan's «Open in TCP» opens it this way.",
+        "- (from 0.3.0) Add «--auto» to connect right away — to the «--connect» address, or else with the last successful settings (mode, address, port, relay target). With no successful settings saved it does nothing. An automatic connection leaves a «Connected automatically at startup» event line, plus one more line if auto reply is on.",
         "- Echo turns itself off above 200 times per second (two echoing sides would bounce forever). An «ECHO OFF …» line and an error message appear.",
         "- The server accepts up to 64 connections. Further ones are refused with «REJECT …».",
         "- While running, mode, host, port, no-delay and reconnect settings are locked (🔒). Echo, framing and the RX checksum check apply immediately when changed.",
@@ -420,7 +422,7 @@ export const help: HelpDoc = {
         "- «Ask before closing while connected or logging»: protects a running test from an accidental close.",
         "- «Export settings» and «Import settings»: move display settings and commands as a JSON file. Files from other PortDock programs are refused.",
         "- «Reset to defaults»: resets display settings only (commands are kept).",
-        ...settingsLines("en"),
+        ...settingsLines("en", { run: true }),
       ],
     },
     {

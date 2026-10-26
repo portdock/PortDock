@@ -253,6 +253,12 @@ fn launch_args() -> Vec<String> {
     portdock_core::launch::take_args()
 }
 
+/// 연결·기록 중 절전 막기(0.3.0) — 화면(useKeepAwake)이 설정·연결 상태를 보고 켜고 끈다. PC 대기만 막고 화면은 꺼져도 된다
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 /// 다른 PortDock 프로그램으로 열기(0.3.0) — 이 PC 에서 찾으면 띄우고 true, 못 찾으면 false
 #[tauri::command(async)]
 fn open_app(target: portdock_core::launch::Target) -> Result<bool, String> {
@@ -338,6 +344,7 @@ pub fn run() {
             set_lang,
             launch_args,
             open_app,
+            keep_awake,
             report_pending,
             report_dismiss,
             report_env,

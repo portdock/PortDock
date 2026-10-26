@@ -85,6 +85,9 @@ const ko = {
   saveScreen: "화면 저장",
   saveScreenTip: "지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 보기(HEX·ASCII)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
   savedFile: "저장했습니다: {a}",
+  launchBad: "무시한 명령줄 인자: {a}",
+  autoStarted: "켤 때 마지막 연결로 자동 시작: {a}",
+  autoStartedRules: "응답 규칙 {n}개가 켜져 있습니다(모르고 답하지 않게 확인하세요)",
   logToFile: "파일로 계속 저장",
   stopLog: "저장 멈춤",
 };
@@ -174,6 +177,9 @@ const en: typeof ko = {
   saveScreen: "Save view",
   saveScreenTip: "Saves the on-screen log to a text file, in the current view (HEX / ASCII). With a filter on, only the visible lines are saved (noted in the first line).",
   savedFile: "Saved {a}",
+  launchBad: "Ignored command-line arguments: {a}",
+  autoStarted: "Started automatically with the last connection: {a}",
+  autoStartedRules: "{n} reply rule(s) are on (check them so nothing answers unexpectedly)",
   logToFile: "Log to file",
   stopLog: "Stop logging",
 };

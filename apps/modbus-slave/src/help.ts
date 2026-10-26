@@ -243,7 +243,8 @@ export const help: HelpDoc = {
         "- «연결·기록 중에 창을 닫으려 하면 묻기»: 실수로 창을 닫아 시험이 끊기는 것을 막습니다.",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정과 연결 방식·국번·범위·표 값·칸 설정(이름·형식·자동 변화)·장치 식별을 JSON 파일로 옮깁니다(장애 주입은 빼고). 다른 PortDock 프로그램의 파일은 받지 않습니다.",
         "- «기본값으로»: 화면 설정만 되돌립니다.",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
+        "- (0.3.0 부터) 명령줄 «--auto»: 마지막으로 연결(시작)에 성공한 설정으로 바로 연결합니다(예: «PortDock Modbus Slave.exe --auto»). 다른 인자는 무시하고 «무시한 명령줄 인자» 로 알립니다. 자동 연결하면 통신 기록에 «켤 때 마지막 연결로 자동 연결: …» 사건 줄이 남습니다.",
       ],
     },
     {
@@ -514,7 +515,8 @@ export const help: HelpDoc = {
         "- «Ask before closing while connected or logging»: protects a running test from an accidental close.",
         "- «Export settings» and «Import settings»: move display settings, connection type, Slave IDs, ranges, table values, cell settings (names, types, simulation) and device identification as a JSON file (faults excluded). Files from other PortDock programs are refused.",
         "- «Reset to defaults»: resets display settings only.",
-        ...settingsLines("en"),
+        ...settingsLines("en", { run: true }),
+        "- (from 0.3.0) Command-line «--auto»: connects (starts) right away with the settings of the last successful connection (e.g. «PortDock Modbus Slave.exe --auto»). Other arguments are ignored and reported as «Ignored command-line arguments». An automatic connection leaves an event line «Auto-connected at startup: …» in the traffic log.",
       ],
     },
     {

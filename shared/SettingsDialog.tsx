@@ -51,6 +51,8 @@ const T = {
     noFolder: "폴더를 고르세요",
     confirmExit: "연결·기록 중에 창을 닫으려 하면 묻기",
     lostAlert: "연결이 끊기면 작업 표시줄 깜빡임(창이 뒤에 있을 때)",
+    keepAwake: "연결·기록 중 절전 막기(화면은 꺼져도 됨)",
+    autoConnect: "켤 때 마지막 연결 다시 열기",
     autoReport: "오류 자동 전송",
     arAsk: "오류로 꺼지면 묻기",
     arOn: "묻지 않고 자동으로 보내기",
@@ -100,6 +102,8 @@ const T = {
     noFolder: "Choose a folder",
     confirmExit: "Ask before closing while connected or logging",
     lostAlert: "Flash the taskbar button when the connection drops (while the window is in the background)",
+    keepAwake: "Keep the PC awake while connected or logging (the screen may still turn off)",
+    autoConnect: "Reopen the last connection at startup",
     autoReport: "Automatic error reports",
     arAsk: "Ask after a crash",
     arOn: "Send automatically",
@@ -139,6 +143,7 @@ export function SettingsDialog({
   busy,
   ioOptions,
   conn,
+  run,
 }: {
   app: string;
   version: string;
@@ -152,8 +157,10 @@ export function SettingsDialog({
   busy: boolean;
   /** 글자 인코딩·파일 로그 형식·나누기 칸을 보일지(Serial·TCP·UDP) */
   ioOptions?: boolean;
-  /** 연결이 있는 프로그램(끊김 알림 등 연결 설정 칸을 보일지) */
+  /** 연결이 끊길 수 있는 프로그램 — «끊기면 작업 표시줄 깜빡임» 칸을 보일지 */
   conn?: boolean;
+  /** 연결(시작)이 있는 프로그램 — «절전 막기»·«켤 때 마지막 연결 다시 열기» 칸을 보일지 */
+  run?: boolean;
 }) {
   const t = T[settings.lang];
   const [err, setErr] = useState<string | null>(null);
@@ -275,6 +282,16 @@ export function SettingsDialog({
             <label className="inline" data-tip={tip(settings.lang, "lostAlert")}>
               <input type="checkbox" checked={settings.lostAlert} onChange={(e) => update({ lostAlert: e.target.checked })} /> {t.lostAlert}
             </label>
+          )}
+          {run && (
+            <>
+              <label className="inline" data-tip={tip(settings.lang, "keepAwake")}>
+                <input type="checkbox" checked={settings.keepAwake} onChange={(e) => update({ keepAwake: e.target.checked })} /> {t.keepAwake}
+              </label>
+              <label className="inline" data-tip={tip(settings.lang, "autoConnect")}>
+                <input type="checkbox" checked={settings.autoConnect} onChange={(e) => update({ autoConnect: e.target.checked })} /> {t.autoConnect}
+              </label>
+            </>
           )}
           {ioOptions && (
             <>

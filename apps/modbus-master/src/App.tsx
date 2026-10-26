@@ -52,7 +52,9 @@ import { FirstCard } from "@shared/FirstCard";
 import { Popover } from "@shared/Popover";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { help } from "./help";
-import { launchFilled, masterLaunch } from "./launch";
+import { cleanLastOk, launchFilled, masterLaunch } from "./launch";
+import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
+import { useKeepAwake } from "@shared/useKeepAwake";
 import { load, samePorts, store } from "@shared/framing";
 import { autoLogPath, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
@@ -220,12 +222,21 @@ export default function App() {
   const rememberRef = useRef(recent.remember);
   rememberRef.current = recent.remember;
   const pendingRecent = useRef<string | null>(null);
+  /** 켤 때 다시 열 설정(0.3.0) — TCP 는 처음 «connected» 때 남긴다 */
+  const pendingLastOk = useRef<unknown>(null);
 
   // ---- 포트 목록
   const [ports, setPorts] = useState<PortInfo[]>([]);
+  /** 포트 목록을 한 번이라도 읽었는지(실패도) — 켤 때 자동 연결은 그 뒤에 */
+  const [portsRead, setPortsRead] = useState(false);
   useEffect(() => {
     let alive = true;
-    const tick = () => api.listPorts().then((p) => alive && setPorts((o) => samePorts(o, p))).catch(() => {});
+    const tick = () =>
+      api
+        .listPorts()
+        .then((p) => alive && setPorts((o) => samePorts(o, p)))
+        .catch(() => {})
+        .finally(() => alive && setPortsRead(true));
     tick();
     const id = setInterval(tick, 1500);
     return () => {
@@ -256,6 +267,9 @@ export default function App() {
 
   // ---- 명령줄 인자(0.2.0) — «--tcp 192.168.0.10:502 --unit 1» 등. 설정만 채우고 연결은 사용자가 누른다
   const launchDone = useRef(false);
+  /** 명령줄 처리 결과 — 켤 때 자동 연결(0.3.0)이 쓴다 */
+  const launchInfo = useRef<{ auto: boolean; transport: boolean; baud?: number; msg: string; bad: boolean }>({ auto: false, transport: false, msg: "", bad: false });
+  const [launchRead, setLaunchRead] = useState(false);
   useEffect(() => {
     if (launchDone.current) return;
     launchDone.current = true;
@@ -293,10 +307,13 @@ export default function App() {
           setTables((ts) => ts.map((x) => (x.id === id ? { ...x, unit: l.unit! } : x)));
           parts.push(fill(d.titleUnit, { a: l.unit }));
         }
-        const msg = [launchFilled(l) && fill(d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        // --auto 면 ««연결» 을 누르세요» 없이 — 자동 연결 알림에 붙여 한 번에 보인다
+        const msg = [launchFilled(l) && fill(l.auto ? d.launchSetAuto : d.launchSet, { a: parts.join(" · ") }), l.bad.length > 0 && fill(d.launchBad, { a: l.bad.join(", ") })].filter(Boolean).join(" / ");
+        launchInfo.current = { auto: l.auto, transport: l.transport !== undefined, baud: l.baud, msg, bad: l.bad.length > 0 };
         if (msg) toast.show(msg, { error: l.bad.length > 0, ms: 9000 });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLaunchRead(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -439,10 +456,15 @@ export default function App() {
               rememberRef.current(pendingRecent.current);
               pendingRecent.current = null;
             }
+            if (pendingLastOk.current) {
+              saveLastOk(pendingLastOk.current);
+              pendingLastOk.current = null;
+            }
             setCfg((c) => (!e.port || c.port === e.port || /:\d+$/.test(e.port) ? c : { ...c, port: e.port }));
           }
           if (e.state === "closed") {
             pendingRecent.current = null;
+            pendingLastOk.current = null;
             setConnected(false);
             setLogPath(null);
             setScan((s) => (s.running ? { ...s, running: false } : s));
@@ -515,8 +537,10 @@ export default function App() {
         await api.open(cfg, setup, onEvent);
         const p = ports.find((x) => x.name === cfg.port);
         if (p) store("portId", { vid: p.vid, pid: p.pid, serial: p.serial_number } satisfies PortId);
+        saveLastOk({ transport, cfg, net });
       } else {
         pendingRecent.current = joinHostPort(net.host.trim(), net.port);
+        pendingLastOk.current = { transport, cfg, net };
         await api.openTcp({ host: net.host.trim(), port: net.port, wire, autoReconnect: net.autoReconnect }, setup, onEvent);
       }
       setStatus((s) => (s === "idle" || s === "closed" ? (transport === "serial" ? "connected" : "connecting") : s));
@@ -539,6 +563,7 @@ export default function App() {
       }
     } catch (e) {
       pendingRecent.current = null;
+      pendingLastOk.current = null;
       setConnectErr(String(e));
       noteError(String(e));
     } finally {
@@ -802,6 +827,41 @@ export default function App() {
     { key: "F8", run: () => setPaused((p) => !p) },
   ]);
   useExitGuard(connected || !!logPath || !!vlog, settings.confirmExit, lang, APP);
+  // 연결·기록 중 절전 막기(0.3.0) — 값 기록(CSV)만 하는 동안도
+  useKeepAwake(connected || !!logPath || !!vlog, settings.keepAwake);
+
+  // ---- 켤 때 자동 연결(0.3.0) — 설정 «켤 때 마지막 연결 다시 열기» 또는 --auto.
+  // 명령줄로 연결 방식을 채웠으면 그 값, 아니면 마지막으로 성공한 연결. 시리얼 포트가 없으면 조용히 그친다
+  const [autoGo, setAutoGo] = useState(0);
+  const autoMsg = useRef("");
+  useAutoStart(settings.autoConnect || launchInfo.current.auto, launchRead && portsRead, () => {
+    const li = launchInfo.current;
+    let tr = transport;
+    let c = cfg;
+    let n = net;
+    if (!li.transport) {
+      const last = cleanLastOk(loadLastOk(), cfg, net);
+      if (!last) return;
+      tr = last.transport;
+      c = li.baud !== undefined ? { ...last.cfg, baud: li.baud } : last.cfg;
+      n = last.net;
+    }
+    if (tr === "serial" && !portUsable(ports, c.port)) return;
+    setTransport(tr);
+    setCfg(c);
+    setNet(n);
+    setPortNotice(null);
+    const where = tr === "serial" ? `${c.port} ${c.baud}` : `${tr === "tcp" ? "Modbus TCP" : "RTU over TCP"} ${joinHostPort(n.host, n.port)}`;
+    autoMsg.current = [li.msg, fill(t("autoConnected"), { a: where })].filter(Boolean).join(" / ");
+    setAutoGo((x) => x + 1);
+  });
+  // 칸 값이 바뀐 다음 화면에서 연결한다(connect 는 지금 칸 값을 쓴다)
+  useEffect(() => {
+    if (!autoGo || connectedRef.current) return;
+    toast.show(autoMsg.current, { error: launchInfo.current.bad, ms: 9000 });
+    void connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGo]);
   // 끊기면 작업 표시줄 깜빡임(0.3.0) — 끊김·재연결 대기, 또는 이유가 붙은 닫힘(자동 재연결 끔). 사용자가 끊은 닫힘은 이유가 없다
   useLostAlert((connected && (status === "disconnected" || status === "reconnecting")) || (status === "closed" && !!statusMsg), settings.lostAlert);
   const clearError = useCallback(() => setError(null), []);
@@ -1529,7 +1589,7 @@ export default function App() {
       {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} conn />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} conn run />
       )}
       {toast.node}
     </div>

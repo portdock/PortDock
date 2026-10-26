@@ -330,6 +330,12 @@ fn launch_args() -> Vec<String> {
     portdock_core::launch::take_args()
 }
 
+/// 연결·기록 중 절전 막기(0.3.0) — 지금 막고 있는지 돌려준다
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 /// 화면 언어를 백엔드 문구(오류·사건 줄)에도 적용
 #[tauri::command]
 fn set_lang(lang: String) {
@@ -404,6 +410,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             set_lang,
             launch_args,
+            keep_awake,
             report_pending,
             report_dismiss,
             report_env,

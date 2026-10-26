@@ -43,6 +43,7 @@ export const help: HelpDoc = {
         "- (0.3.0 부터) 주소 칸 옆 «▾» 는 최근 연결 — 시작에 성공한 주소·포트가 최근 것부터 8개까지 남습니다(TCP 클라이언트 «접속할 곳», TCP 서버 «주소», UDP «보낼 곳» 이 따로). 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 연결 방식을 바꾸면 그 방식에서 마지막으로 쓴 주소·포트로 채워집니다.",
         "- 실행 중에는 연결 방식·포트·주소·속도를 바꿀 수 없습니다(🔒). 멈추고 바꾸세요. 프레임 구분·응답 규칙·비교 옵션은 실행 중에도 바로 적용됩니다.",
         "- 재접속 대기·멈춤 상태줄에는 마지막 실패 이유가 함께 나옵니다.",
+        "- (0.3.0 부터) 명령줄 «--auto»(또는 설정 «켤 때 마지막 연결 다시 열기»): 켤 때 마지막으로 시작에 성공한 설정으로 바로 시작합니다. 그 시리얼 포트가 없으면 조용히 그만둡니다. 자동으로 시작하면 통신 기록에 사건 줄이 남고, 응답 규칙이 켜져 있으면 알림도 나옵니다.",
         "- (0.3.0 부터) 다른 창에서 일하는 동안 연결이 끊기거나 재접속 대기로 바뀌면 작업 표시줄 단추가 깜빡입니다(«멈춤» 을 누른 것은 빼고). 설정(⚙)에서 끌 수 있습니다.",
         "- 시리얼인데 포트가 없으면 «시작» 이 잠깁니다.",
       ],
@@ -136,7 +137,7 @@ export const help: HelpDoc = {
         "- «연결하면 자동으로 파일 로그 시작»: «자동 로그 폴더» 를 고르면 시작할 때마다 자동으로 저장합니다.",
         "- «연결·기록 중에 창을 닫으려 하면 묻기».",
         "- «설정 내보내기»·«설정 가져오기»: 화면 설정을 JSON 파일로 옮깁니다. 규칙은 «규칙 묶음 저장» 으로 따로 옮깁니다.",
-        ...settingsLines("ko"),
+        ...settingsLines("ko", { run: true }),
       ],
     },
     {
@@ -198,6 +199,7 @@ export const help: HelpDoc = {
         "- (from 0.3.0) The «▾» next to the host box lists recent connections — up to 8 host:port pairs that started successfully, newest first (kept separately for the TCP client «Connect to», the TCP server «Host» and the UDP «Send to»). Click one to fill the host and port; ✕ removes it. Switching transport fills in the last address used with that transport.",
         "- Transport, port, addresses and baud are locked (🔒) while running; stop to change them. Framing, reply rules and match options apply immediately.",
         "- When waiting to reconnect or stopped, the status line also shows the last failure reason.",
+        "- (from 0.3.0) The «--auto» command-line option (or the «Reopen the last connection at startup» setting) starts right away with the settings of the last successful start. If that serial port is missing it stops quietly. An automatic start leaves an event line in Traffic, and a notice if reply rules are on.",
         "- (from 0.3.0) If the connection drops or starts waiting to reconnect while you work in another window, the taskbar button flashes (not when you press «Stop»). You can turn this off in Settings (⚙).",
         "- With Serial and no port, «Start» is disabled.",
       ],
@@ -291,7 +293,7 @@ export const help: HelpDoc = {
         "- «Start file log automatically»: with an auto-log folder, each start writes a log automatically.",
         "- «Ask before closing while connected or logging».",
         "- «Export settings» / «Import settings» move display settings as JSON. Move rules with «Save rule set».",
-        ...settingsLines("en"),
+        ...settingsLines("en", { run: true }),
       ],
     },
     {

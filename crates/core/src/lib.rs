@@ -19,6 +19,7 @@ pub mod scpi;
 pub mod oserr;
 pub mod plot;
 pub mod portinfo;
+pub mod power;
 pub mod ports;
 pub mod registry;
 pub mod replyguard;

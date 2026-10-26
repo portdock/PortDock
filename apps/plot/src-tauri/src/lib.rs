@@ -303,6 +303,12 @@ fn launch_args() -> Vec<String> {
     portdock_core::launch::take_args()
 }
 
+/// 연결·기록 중 절전 막기(0.3.0) — 화면(@shared/useKeepAwake)이 받는 중·CSV 기록 중이고 설정이 켜졌을 때 true
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 #[tauri::command(async)]
 fn list_ports() -> Vec<ports::PortInfo> {
     ports::list()
@@ -512,6 +518,7 @@ pub fn run() {
             report_read_dump,
             list_ports,
             launch_args,
+            keep_awake,
             plot_start,
             plot_stop,
             plot_set_format,

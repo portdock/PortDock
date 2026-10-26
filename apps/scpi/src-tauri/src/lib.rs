@@ -289,6 +289,18 @@ fn set_lang(lang: String) {
     portdock_core::i18n::set_lang(&lang);
 }
 
+/// 명령줄 인자(0.3.0) — 처음 한 번만 준다. 뜻 풀이는 화면(src/launch.ts — 지금은 --auto 만)
+#[tauri::command]
+fn launch_args() -> Vec<String> {
+    portdock_core::launch::take_args()
+}
+
+/// 연결·기록 중 절전 막기(0.3.0) — 지금 막고 있는지 돌려준다
+#[tauri::command]
+fn keep_awake(on: bool) -> bool {
+    portdock_core::power::keep_awake(on)
+}
+
 /// 문제 보고 — 지난번에 죽으며 남긴 기록(보낼지는 화면에서 사용자가 정한다)
 #[tauri::command]
 fn report_pending() -> Vec<portdock_core::report::CrashReport> {
@@ -356,6 +368,8 @@ pub fn run() {
         .manage(App::default())
         .invoke_handler(tauri::generate_handler![
             set_lang,
+            launch_args,
+            keep_awake,
             report_pending,
             report_dismiss,
             report_env,

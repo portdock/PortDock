@@ -1,22 +1,25 @@
-// 명령줄 인자(0.3.0) — 연결 설정만 채운다(자동 연결은 하지 않는다 — 사용자가 «연결» 을 누른다).
+// 명령줄 인자(0.3.0) — 연결 설정을 채운다. --auto 가 없으면 연결은 사용자가 «연결» 을 누른다.
 //   --port <COMx>   그 포트
 //   --baud <n>      속도(50~20000000)
+//   --auto          켜자마자 연결(0.3.0) — 채운 설정, 없으면 마지막으로 성공한 설정으로
 // 잘못된 것은 bad 에 모아 화면이 한 줄로 알린다. 시험: node --test apps/serial/src/launch.test.ts
 import { comPort, intIn, parseArgs } from "../../../shared/launchArgs.ts";
 
 export interface SerialLaunch {
   port?: string;
   baud?: number;
+  /** --auto — 켜자마자 연결 */
+  auto: boolean;
   /** 무시한 인자(받은 모양 그대로, «--baud 10» 처럼 이름·값을 붙여서) */
   bad: string[];
 }
 
-const SPEC = { port: "value", baud: "value" } as const;
+const SPEC = { port: "value", baud: "value", auto: "flag" } as const;
 
 /** argv: 실행 파일 이름 뺀 인자 */
 export function serialLaunch(argv: readonly string[]): SerialLaunch {
   const { opts, bad } = parseArgs(argv, SPEC);
-  const out: SerialLaunch = { bad: [...bad] };
+  const out: SerialLaunch = { bad: [...bad], auto: opts.has("auto") };
   const port = opts.get("port");
   if (port !== undefined) {
     const p = comPort(port);
