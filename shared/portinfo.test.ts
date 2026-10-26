@@ -88,3 +88,25 @@ test("결과 글 — 볼 수 없는 것을 늘 적고, 사용자 폴더를 가�
   assert.equal(guideUrl("en", "rs485-wiring"), "https://portdock.dev/en/guides/rs485-wiring/");
   assert.equal(fmtSpeed(1e9), "1 Gbps");
 });
+
+test("USB 경로 — 허브·속도는 적기만, USB 3 가능인데 낮은 속도면 «볼 것»", async () => {
+  const { usbPathVerdict } = await import("./portinfo.ts");
+  const hop = (o) => ({ instanceId: "USB\\VID_0403&PID_6001\\A1", name: "USB Serial Converter", kind: "device", port: 2, speed: "full", belowCapable: false, busPowered: null, ports: null, ...o });
+  const path = (hops, errors = []) => report({ usbPath: { hops, errors } });
+  const root = hop({ instanceId: "USB\\ROOT_HUB30\\4&1", name: "USB Root Hub (USB 3.0)", kind: "root", port: null, speed: null, busPowered: false, ports: 18 });
+  const ok = usbPathVerdict(path([hop(), root]));
+  assert.equal(ok.level, "ok");
+  assert.ok(ok.notes.some((n) => /Full Speed/.test(n.en) && /far faster/.test(n.en)));
+  const viaHub = usbPathVerdict(path([hop(), hop({ name: "Generic USB Hub", kind: "hub", port: 3, speed: "high", busPowered: true, ports: 4 }), root]));
+  assert.equal(viaHub.level, "ok");
+  assert.ok(viaHub.notes.some((n) => /1 hub/.test(n.en)) && viaHub.notes.some((n) => /Bus-powered/.test(n.en)));
+  assert.equal(usbPathVerdict(path([hop({ speed: "high", belowCapable: true }), root])).level, "look");
+  assert.equal(usbPathVerdict(path([hop({ speed: null }), root], ["Open hub X: denied"])).level, "unread");
+  assert.equal(usbPathVerdict(report()).level, "unread");
+  const text = bundleText("ko", { app: "PI", version: "0", report: report({ usbPath: { hops: [hop(), root], errors: [] } }), com: null, events: null, nics: null, loop: [], echo: null, loopError: null });
+  assert.match(text, /## USB 경로/);
+  assert.match(text, /- 장치: USB Serial Converter · 포트 2 · Full Speed \(12 Mbps\)/);
+  assert.match(text, /- 루트 허브: .* · 자체 전원 · 포트 18개/);
+  // USB 가 아니면(옛 백엔드 포함) 절이 없다
+  assert.doesNotMatch(bundleText("ko", { app: "PI", version: "0", report: report(), com: null, events: null, nics: null, loop: [], echo: null, loopError: null }), /USB 경로/);
+});

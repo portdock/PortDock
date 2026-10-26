@@ -2063,9 +2063,32 @@ function piReport(d) {
     ],
     portDefault: d.port === "COM1" ? "9600,n,8,1" : null,
     ...(d.port === "COM1" ? { portDefaultNote: piT("9600 bps · 패리티 없음 · 8 비트 · 정지 1", "9600 bps · no parity · 8 data bits · 1 stop") } : {}),
-    power: { usbSuspendAc: ftdi, usbSuspendDc: true, devices: d.vid ? [{ instanceId: d.instanceId, name: d.name, canTurnOff: ftdi, own: true }] : [] },
+    power: {
+      usbSuspendAc: ftdi,
+      usbSuspendDc: true,
+      devices: d.vid ? [{ instanceId: d.instanceId, name: d.name, canTurnOff: ftdi, own: true }, ...(ftdi ? [{ instanceId: PI_HUB, name: "Generic USB Hub", canTurnOff: true, own: false }] : [])] : [],
+    },
+    // USB 경로(10/26): COM5 = 장치 → 버스 전원 허브(포트 3, High) → 루트 허브 → 컨트롤러, 다른 USB 장치 = 루트 허브에 바로
+    usbPath: d.vid && d.present ? piUsbPath(d, ftdi) : null,
     errors: [],
   };
+}
+const PI_HUB = "USB\\VID_05E3&PID_0610\\5&1A2B3C&0&3";
+function piUsbPath(d, ftdi) {
+  const hop = (o) => ({ belowCapable: false, busPowered: null, ports: null, ...o });
+  const root = hop({ instanceId: "USB\\ROOT_HUB30\\4&2AA8D0A4&0&0", name: tr("USB 루트 허브(USB 3.0)", "USB Root Hub (USB 3.0)"), kind: "root", port: null, speed: null, busPowered: false, ports: 18 });
+  const ctl = hop({ instanceId: "PCI\\VEN_8086&DEV_06ED&SUBSYS_00008086&REV_00\\3&11583659&0&A0", name: tr("Intel(R) USB 3.1 확장 가능한 호스트 컨트롤러", "Intel(R) USB 3.1 eXtensible Host Controller"), kind: "controller", port: null, speed: null });
+  if (ftdi)
+    return {
+      hops: [
+        hop({ instanceId: "USB\\VID_0403&PID_6001\\A10KQ2XZ", name: "USB Serial Converter", kind: "device", port: 2, speed: "full" }),
+        hop({ instanceId: PI_HUB, name: "Generic USB Hub", kind: "hub", port: 3, speed: "high", busPowered: true, ports: 4 }),
+        root,
+        ctl,
+      ],
+      errors: [],
+    };
+  return { hops: [hop({ instanceId: d.instanceId, name: d.name, kind: "device", port: 1, speed: "full" }), root, ctl], errors: [] };
 }
 const piProp = (keyword, name, raw, display, o = {}) => ({ keyword, name, display, raw, default: raw, valid: [], min: null, max: null, ...o });
 let PIL = null;

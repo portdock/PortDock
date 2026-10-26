@@ -211,6 +211,38 @@ pub fn network_category(n: i64) -> Option<&'static str> {
     }
 }
 
+/// USB 협상 속도 — IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX 의 Speed(0 Low · 1 Full · 2 High · 3 Super)와
+/// _V2 의 Flags(비트 0 SuperSpeed 이상으로 동작 · 비트 2 SuperSpeedPlus 이상으로 동작). _V2 를 못 읽었으면 None
+pub fn usb_speed(ex_speed: u8, v2_flags: Option<u32>) -> Option<&'static str> {
+    if let Some(f) = v2_flags {
+        if f & 0b100 != 0 {
+            return Some("super+");
+        }
+        if f & 0b1 != 0 {
+            return Some("super");
+        }
+    }
+    match ex_speed {
+        0 => Some("low"),
+        1 => Some("full"),
+        2 => Some("high"),
+        3 => Some("super"),
+        _ => None,
+    }
+}
+
+/// _V2 Flags — SuperSpeed 를 낼 수 있다는데(비트 1) SuperSpeed 로 동작하지 않음(비트 0 꺼짐)
+pub fn usb_below_capable(v2_flags: Option<u32>) -> bool {
+    v2_flags.is_some_and(|f| f & 0b10 != 0 && f & 0b1 == 0)
+}
+
+/// 장치 위치 «Port_#0002.Hub_#0001» → 포트 2
+pub fn location_port(s: &str) -> Option<u32> {
+    let i = s.find("Port_#")? + 6;
+    let digits: String = s[i..].chars().take_while(|c| c.is_ascii_digit()).collect();
+    digits.parse().ok().filter(|n| *n > 0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,6 +308,25 @@ mod tests {
         assert!(port_default_note("9600").is_none());
         assert!(port_default_note("9600,x,8,1").is_none());
         assert_eq!(xml_unescape("a&amp;b&lt;c"), "a&b<c");
+    }
+
+    #[test]
+    fn usb_speeds() {
+        assert_eq!(usb_speed(1, None), Some("full"));
+        assert_eq!(usb_speed(2, Some(0)), Some("high"));
+        assert_eq!(usb_speed(0, None), Some("low"));
+        // _V2 가 SuperSpeed 로 동작한다고 하면 EX 의 값(2 로 오는 일이 있다)보다 앞선다
+        assert_eq!(usb_speed(2, Some(0b11)), Some("super"));
+        assert_eq!(usb_speed(3, Some(0b1111)), Some("super+"));
+        assert_eq!(usb_speed(9, None), None);
+        assert!(usb_below_capable(Some(0b10)));
+        assert!(!usb_below_capable(Some(0b11)));
+        assert!(!usb_below_capable(Some(0)));
+        assert!(!usb_below_capable(None));
+        assert_eq!(location_port("Port_#0002.Hub_#0001"), Some(2));
+        assert_eq!(location_port("Port_#0014.Hub_#0003"), Some(14));
+        assert_eq!(location_port("0000.0014.0000.002.000.000.000.000.000"), None);
+        assert_eq!(location_port("Port_#0000.Hub_#0001"), None);
     }
 
     #[test]

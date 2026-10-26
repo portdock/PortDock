@@ -11,11 +11,15 @@
 //! - 랜카드 점검: WMI root\StandardCimv2 MSFT_NetAdapterAdvancedPropertySettingData(고급 탭 값)·MSFT_NetConnectionProfile(네트워크 프로필) ·
 //!   root\WMI MSPower_DeviceEnable · 장치 드라이버 키(CM_REGISTRY_SOFTWARE)의 PnPCapabilities · GetIfEntry2(오류·버린 패킷) ·
 //!   INetFwPolicy2(방화벽 프로필 켜짐). `Get-NetAdapterPowerManagement` 경로는 일반 사용자로 실패해 쓰지 않는다
+//! - USB 경로: CM_Get_Parent 사슬 · DEVPKEY_Device_Address(허브 포트 번호) · 허브 장치 인터페이스에 «조회» IOCTL
+//!   (IOCTL_USB_GET_NODE_INFORMATION · IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX(_V2) — 둘 다 FILE_ANY_ACCESS)
 
 pub mod parse;
 pub mod tables;
 #[cfg(windows)]
 mod win;
+#[cfg(windows)]
+mod usb;
 #[cfg(windows)]
 mod wmi;
 
@@ -117,6 +121,34 @@ pub struct Power {
     pub devices: Vec<PowerDevice>,
 }
 
+/// USB 경로의 한 칸(장치 → 허브 → 루트 허브 → 컨트롤러 순)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UsbHop {
+    pub instance_id: String,
+    pub name: String,
+    /// «device» · «hub» · «root»(루트 허브) · «controller»(USB 호스트 컨트롤러)
+    pub kind: &'static str,
+    /// 위 허브의 몇 번 포트에 꽂혔는지
+    pub port: Option<u32>,
+    /// 위 허브가 알려 준 협상 속도 «low» · «full» · «high» · «super» · «super+». 모르면 None
+    pub speed: Option<&'static str>,
+    /// 더 빠른 속도(SuperSpeed)를 낼 수 있다고 알리는데 그보다 낮게 붙었는지
+    pub below_capable: bool,
+    /// 허브만 — 버스 전원(true)·자체 전원(false)
+    pub bus_powered: Option<bool>,
+    /// 허브만 — 포트 수
+    pub ports: Option<u32>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UsbPath {
+    pub hops: Vec<UsbHop>,
+    /// 읽지 못한 것 «무엇: 이유»
+    pub errors: Vec<String>,
+}
+
 /// 포트 하나의 점검 결과(읽은 값)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -145,6 +177,8 @@ pub struct PortReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub port_default_note: Option<Text>,
     pub power: Power,
+    /// USB 장치면 허브 사슬·포트·속도. USB 가 아니면 None
+    pub usb_path: Option<UsbPath>,
     /// 읽지 못한 항목 «무엇: 이유»
     pub errors: Vec<String>,
 }

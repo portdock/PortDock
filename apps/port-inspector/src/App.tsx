@@ -32,6 +32,9 @@ import {
   LEVEL_TEXT,
   powerVerdict,
   settingsVerdict,
+  USB_KIND_TEXT,
+  USB_SPEED_TEXT,
+  usbPathVerdict,
   type Bundle,
   type ComNumbers,
   type EventList,
@@ -227,6 +230,7 @@ export default function App() {
     if (!report) return null;
     return {
       device: deviceVerdict(report),
+      ...(report.usbPath ? { usb: usbPathVerdict(report) } : {}),
       settings: settingsVerdict(report),
       power: powerVerdict(report),
       history: historyVerdict(events),
@@ -434,6 +438,48 @@ export default function App() {
                 />
                 {r.chip?.note && !r.chip.clue && <div className="hint">{r.chip.note[lang]}</div>}
               </Card>
+
+              {r.usbPath && verdicts.usb && (
+                <Card id="usb" title={t("cardUsb")} verdict={verdicts.usb} lang={lang} expandAll={settings.expandAll} tipKey="piCardUsb">
+                  {r.usbPath.hops.length ? (
+                    <table className="grid usb-path">
+                      <thead>
+                        <tr>
+                          <th>{t("usbColKind")}</th>
+                          <th>{t("usbColName")}</th>
+                          <th>{t("usbColPort")}</th>
+                          <th>{t("usbColSpeed")}</th>
+                          <th>{t("usbColPower")}</th>
+                          <th>{t("nicCanOff")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.usbPath.hops.map((h) => {
+                          const pw = r.power.devices.find((d) => d.instanceId.toUpperCase() === h.instanceId.toUpperCase());
+                          return (
+                            <tr key={h.instanceId} className={`usb-${h.kind}`}>
+                              <td className="nowrap">{USB_KIND_TEXT[h.kind][lang]}</td>
+                              <td title={h.instanceId}>{h.name}</td>
+                              <td className="mono">{h.port ?? "—"}</td>
+                              <td>{h.speed ? USB_SPEED_TEXT[h.speed][lang] : "—"}</td>
+                              <td>{h.busPowered == null ? "—" : `${h.busPowered ? t("usbBus") : t("usbSelf")}${h.ports != null ? ` · ${t("usbPorts", { n: h.ports })}` : ""}`}</td>
+                              <td>{pw ? (pw.canTurnOff ? t("on") : t("off")) : "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="hint">{t("usbNone")}</div>
+                  )}
+                  {r.usbPath.errors.map((x) => (
+                    <div key={x} className="hint warn">
+                      {t("readFail")}: {x}
+                    </div>
+                  ))}
+                  <div className="hint">{t("usbNote")}</div>
+                </Card>
+              )}
 
               <Card id="settings" title={t("cardSettings")} verdict={verdicts.settings} lang={lang} expandAll={settings.expandAll} tipKey="piCardSettings">
                 <KV rows={[[t("kDefault"), r.portDefault ? `${r.portDefault}${r.portDefaultNote ? ` (${r.portDefaultNote[lang]})` : ""}` : null]]} />

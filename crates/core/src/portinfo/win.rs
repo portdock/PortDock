@@ -14,7 +14,7 @@ use windows_sys::Win32::Devices::Properties::{
     DEVPKEY_Device_BusReportedDeviceDesc, DEVPKEY_Device_Class, DEVPKEY_Device_DeviceDesc, DEVPKEY_Device_DriverDate, DEVPKEY_Device_DriverInfPath,
     DEVPKEY_Device_DriverProvider, DEVPKEY_Device_DriverVersion, DEVPKEY_Device_FirstInstallDate, DEVPKEY_Device_FriendlyName, DEVPKEY_Device_HardwareIds,
     DEVPKEY_Device_LastArrivalDate, DEVPKEY_Device_LastRemovalDate, DEVPKEY_Device_LocationInfo, DEVPKEY_Device_Manufacturer, DEVPKEY_Device_Service, DEVPROP_TYPE_FILETIME,
-    DEVPROP_TYPE_STRING, DEVPROP_TYPE_STRING_LIST, DEVPROPTYPE,
+    DEVPROP_TYPE_STRING, DEVPROP_TYPE_STRING_LIST, DEVPROP_TYPE_UINT32, DEVPROPTYPE,
 };
 use windows_sys::Win32::Foundation::{DEVPROPKEY, ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_MORE_DATA, ERROR_NO_MORE_ITEMS, ERROR_SUCCESS, HLOCAL, LocalFree};
 use windows_sys::Win32::System::EventLog::{
@@ -40,7 +40,7 @@ const GUID_USB_SELECTIVE_SUSPEND: GUID = GUID::from_u128(0x48e6b7a6_50f5_4782_a5
 const EVENT_SCAN_MAX: usize = 50_000;
 const EVENT_KEEP: usize = 200;
 
-fn wide(s: &str) -> Vec<u16> {
+pub(super) fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
@@ -50,7 +50,7 @@ fn from_wide(buf: &[u16]) -> String {
 }
 
 /// 널로 나뉜 글 목록(MULTI_SZ) → Vec
-fn multi_sz(buf: &[u16]) -> Vec<String> {
+pub(super) fn multi_sz(buf: &[u16]) -> Vec<String> {
     buf.split(|&c| c == 0).filter(|s| !s.is_empty()).map(String::from_utf16_lossy).collect()
 }
 
@@ -87,8 +87,14 @@ fn device_ids(class: Option<&str>, present_only: bool) -> Vec<String> {
     Vec::new()
 }
 
+/// 지금 연결된 USB 장치(허브 아님 포함) 인스턴스 ID — 시험용
+#[cfg(test)]
+pub(super) fn usb_device_ids() -> Vec<String> {
+    device_ids(None, true).into_iter().filter(|id| id.to_ascii_uppercase().starts_with(r"USB\VID_")).collect()
+}
+
 /// 인스턴스 ID → devinst. `phantom` 이면 지금 없는 장치도
-fn locate(id: &str, phantom: bool) -> Option<u32> {
+pub(super) fn locate(id: &str, phantom: bool) -> Option<u32> {
     let w = wide(id);
     let mut dn = 0u32;
     // SAFETY: w 는 널로 끝나는 글
@@ -96,7 +102,7 @@ fn locate(id: &str, phantom: bool) -> Option<u32> {
     (r == CR_SUCCESS).then_some(dn)
 }
 
-fn prop_raw(dn: u32, key: &DEVPROPKEY) -> Option<(DEVPROPTYPE, Vec<u8>)> {
+pub(super) fn prop_raw(dn: u32, key: &DEVPROPKEY) -> Option<(DEVPROPTYPE, Vec<u8>)> {
     let mut ty: DEVPROPTYPE = 0;
     let mut size = 0u32;
     // SAFETY: 크기만 묻는다(버퍼 널)
@@ -118,13 +124,21 @@ fn u16s(b: &[u8]) -> Vec<u16> {
     b.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect()
 }
 
-fn prop_string(dn: u32, key: &DEVPROPKEY) -> Option<String> {
+pub(super) fn prop_string(dn: u32, key: &DEVPROPKEY) -> Option<String> {
     let (ty, b) = prop_raw(dn, key)?;
     if ty != DEVPROP_TYPE_STRING {
         return None;
     }
     let s = from_wide(&u16s(&b));
     (!s.trim().is_empty()).then(|| s.trim().to_string())
+}
+
+pub(super) fn prop_u32(dn: u32, key: &DEVPROPKEY) -> Option<u32> {
+    let (ty, b) = prop_raw(dn, key)?;
+    if ty != DEVPROP_TYPE_UINT32 || b.len() < 4 {
+        return None;
+    }
+    Some(u32::from_le_bytes(b[..4].try_into().ok()?))
 }
 
 fn prop_strings(dn: u32, key: &DEVPROPKEY) -> Vec<String> {
@@ -149,18 +163,18 @@ fn node_status(dn: u32) -> Option<(u32, u32)> {
     (unsafe { CM_Get_DevNode_Status(&mut st, &mut prob, dn, 0) } == CR_SUCCESS).then_some((st, prob))
 }
 
-fn parent(dn: u32) -> Option<u32> {
+pub(super) fn parent(dn: u32) -> Option<u32> {
     let mut p = 0u32;
     // SAFETY: 쓰기 가능한 u32
     (unsafe { CM_Get_Parent(&mut p, dn, 0) } == CR_SUCCESS).then_some(p)
 }
 
 /// devinst → 인스턴스 ID(DEVPKEY_Device_InstanceId)
-fn instance_id(dn: u32) -> Option<String> {
+pub(super) fn instance_id(dn: u32) -> Option<String> {
     prop_string(dn, &windows_sys::Win32::Devices::Properties::DEVPKEY_Device_InstanceId)
 }
 
-fn display_name(dn: u32, id: &str) -> String {
+pub(super) fn display_name(dn: u32, id: &str) -> String {
     prop_string(dn, &DEVPKEY_Device_FriendlyName).or_else(|| prop_string(dn, &DEVPKEY_Device_DeviceDesc)).unwrap_or_else(|| id.to_string())
 }
 
@@ -422,6 +436,7 @@ pub fn report(id: &str) -> Result<PortReport, String> {
                 port_default: None,
                 port_default_note: None,
                 power: Power::default(),
+                usb_path: None,
                 errors: vec![tr!("장치 정보: 포트 장치 목록에 없는 COM 입니다(모뎀·가상 COM 드라이버 등)", "Device info: this COM is not in the port device list (modem, virtual COM driver …)").into()],
             });
         }
@@ -480,7 +495,9 @@ pub fn report(id: &str) -> Result<PortReport, String> {
         }
         Err(e) => errors.push(format!("WMI MSPower_DeviceEnable: {e}")),
     }
+    let usb_path = if entry.present { super::usb::path(dn) } else { None };
     Ok(PortReport {
+        usb_path,
         status: status_of(dn, entry.present),
         description: prop_string(dn, &DEVPKEY_Device_DeviceDesc),
         bus_description: prop_string(dn, &DEVPKEY_Device_BusReportedDeviceDesc),

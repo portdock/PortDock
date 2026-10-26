@@ -46,6 +46,22 @@ export interface PowerDevice {
   canTurnOff: boolean;
   own: boolean;
 }
+export type UsbSpeed = "low" | "full" | "high" | "super" | "super+";
+/** USB 경로의 한 칸(장치 → 허브 → 루트 허브 → 컨트롤러) */
+export interface UsbHop {
+  instanceId: string;
+  name: string;
+  kind: "device" | "hub" | "root" | "controller";
+  port: number | null;
+  speed: UsbSpeed | null;
+  belowCapable: boolean;
+  busPowered: boolean | null;
+  ports: number | null;
+}
+export interface UsbPath {
+  hops: UsbHop[];
+  errors: string[];
+}
 export interface PortReport {
   entry: PortEntry;
   readAt: number;
@@ -65,6 +81,8 @@ export interface PortReport {
   portDefault: string | null;
   portDefaultNote?: Text;
   power: { usbSuspendAc: boolean | null; usbSuspendDc: boolean | null; devices: PowerDevice[] };
+  /** USB 장치면 허브 사슬·포트·속도(USB 가 아니거나 옛 백엔드면 없음) */
+  usbPath?: UsbPath | null;
   errors: string[];
 }
 export interface ComNumbers {
@@ -263,6 +281,40 @@ export function settingsVerdict(r: PortReport): Verdict {
   return { level, notes };
 }
 
+export const USB_SPEED_TEXT: Record<UsbSpeed, Text> = {
+  low: t("Low Speed (1.5 Mbps)", "Low Speed (1.5 Mbps)"),
+  full: t("Full Speed (12 Mbps)", "Full Speed (12 Mbps)"),
+  high: t("High Speed (480 Mbps)", "High Speed (480 Mbps)"),
+  super: t("SuperSpeed (5 Gbps)", "SuperSpeed (5 Gbps)"),
+  "super+": t("SuperSpeed+ (10 Gbps 이상)", "SuperSpeed+ (10 Gbps or more)"),
+};
+export const USB_KIND_TEXT: Record<UsbHop["kind"], Text> = {
+  device: t("장치", "Device"),
+  hub: t("허브", "Hub"),
+  root: t("루트 허브", "Root hub"),
+  controller: t("USB 컨트롤러", "USB controller"),
+};
+
+/** USB 경로 — 협상 속도가 장치가 낼 수 있는 것보다 낮을 때만 «볼 것». 허브·버스 전원·Full Speed 는 적기만 */
+export function usbPathVerdict(r: PortReport): Verdict {
+  const p = r.usbPath;
+  if (!p) return { level: "unread", notes: [] };
+  const notes: Text[] = [];
+  let level: Level = "ok";
+  if (!p.hops.length || (p.errors.length && !p.hops.some((h) => h.speed))) level = "unread";
+  if (p.hops.some((h) => h.belowCapable)) {
+    level = worst(level, "look");
+    notes.push(t("USB 3 속도를 낼 수 있다는 장치가 그보다 낮은 속도로 붙어 있습니다 — 케이블·포트(USB 2 포트인지)를 봅니다.", "A device that reports USB 3 capability is connected at a lower speed — check the cable and port (is it a USB 2 port?)."));
+  }
+  const hubs = p.hops.filter((h) => h.kind === "hub");
+  if (hubs.length) notes.push(t(`허브 ${hubs.length}개를 거칩니다 — 가끔 끊기면 PC 의 포트에 바로 꽂아 비교해 봅니다.`, `Goes through ${hubs.length} hub(s) — if it drops now and then, compare with plugging it straight into the PC.`));
+  if (hubs.some((h) => h.busPowered)) notes.push(t("버스 전원 허브(전원 어댑터 없이 USB 로만 전원을 받음) — 여러 장치를 달면 전원이 모자랄 수 있습니다.", "Bus-powered hub (no power adapter) — with several devices on it, power can run short."));
+  const dev = p.hops.find((h) => h.kind === "device");
+  if (dev?.speed === "full" || dev?.speed === "low")
+    notes.push(t(`${USB_SPEED_TEXT[dev.speed].ko} — USB-시리얼 변환기 칩은 대부분 이 속도로 붙습니다(시리얼 속도보다 훨씬 빠름).`, `${USB_SPEED_TEXT[dev.speed].en} — most USB-serial chips connect at this speed (far faster than the serial line).`));
+  return { level, notes };
+}
+
 /** 절전 */
 export function powerVerdict(r: PortReport): Verdict {
   const p = r.power;
@@ -443,6 +495,15 @@ export function bundleText(lang: Lang, b: Bundle): string {
     out.push(`${ko ? "드라이버" : "Driver"}: ${r.driver.provider ?? "—"} ${r.driver.version ?? ""} (${fmtTime(r.driver.date, false)}) ${r.driver.inf ?? ""} · ${ko ? "서비스" : "service"} ${r.driver.service ?? "—"}`);
     out.push(`${ko ? "상태" : "Status"}: ${r.status.present ? (ko ? "연결됨" : "connected") : ko ? "연결 안 됨" : "not connected"}${r.status.problem ? ` · ${ko ? "문제 코드" : "problem code"} ${r.status.problem.code} — ${L(lang, r.status.problem.meaning)} → ${L(lang, r.status.problem.action)}` : ""}`);
     out.push(`${ko ? "마지막 연결" : "Last arrival"}: ${fmtTime(r.lastArrival)} · ${ko ? "마지막 분리" : "Last removal"}: ${fmtTime(r.lastRemoval)}`);
+    if (r.usbPath) {
+      head(ko ? "USB 경로" : "USB path");
+      out.push(v(usbPathVerdict(r)));
+      for (const h of r.usbPath.hops)
+        out.push(
+          `- ${L(lang, USB_KIND_TEXT[h.kind])}: ${h.name}${h.port != null ? ` · ${ko ? "포트" : "port"} ${h.port}` : ""}${h.speed ? ` · ${L(lang, USB_SPEED_TEXT[h.speed])}` : ""}${h.busPowered != null ? ` · ${h.busPowered ? (ko ? "버스 전원" : "bus-powered") : ko ? "자체 전원" : "self-powered"}` : ""}${h.ports != null ? ` · ${ko ? `포트 ${h.ports}개` : `${h.ports} ports`}` : ""}`,
+        );
+      if (r.usbPath.errors.length) out.push(`${ko ? "읽지 못함" : "Not read"}: ${r.usbPath.errors.join(" / ")}`);
+    }
     head(ko ? "설정" : "Settings");
     out.push(v(settingsVerdict(r)));
     out.push(`${ko ? "Windows 포트 기본값" : "Windows port default"}: ${r.portDefault ?? "—"}`);

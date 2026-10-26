@@ -872,3 +872,18 @@ details.nic-others > summary {
   cursor: pointer;
   color: var(--muted);
 }
+/* USB 경로 */
+table.grid.usb-path th {
+  padding: 4px 8px;
+}
+table.grid.usb-path td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+table.grid.usb-path td.nowrap {
+  white-space: nowrap;
+}
+table.grid.usb-path tr.usb-root td,
+table.grid.usb-path tr.usb-controller td {
+  color: var(--muted);
+}

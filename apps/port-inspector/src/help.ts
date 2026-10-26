@@ -18,7 +18,7 @@ export const help: HelpDoc = {
       id: "start",
       body: [
         "- 1. 왼쪽 «COM 포트» 목록에서 포트를 누릅니다. 예전에 꽂았던 장치까지 보려면 «지금 없는 장치도 보기» 를 켭니다.",
-        "- 2. 가운데에 카드가 나옵니다: 장치·드라이버, 설정, 절전, 연결 기록, COM 번호 예약, 연결 시험, 이 PC 랜카드. 카드 머리에 결과가 붙고, «볼 것»·«문제 있음» 이면 그 까닭이 바로 아래 줄에 나옵니다.",
+        "- 2. 가운데에 카드가 나옵니다: 장치·드라이버, USB 경로(USB 장치일 때), 설정, 절전, 연결 기록, COM 번호 예약, 연결 시험, 이 PC 랜카드. 카드 머리에 결과가 붙고, «볼 것»·«문제 있음» 이면 그 까닭이 바로 아래 줄에 나옵니다.",
         "- 3. 문제 보고·문의에는 위 «텍스트 복사»(또는 «저장…»)로 결과를 붙입니다. 사용자 폴더 경로는 «~» 로 가립니다.",
         "- 처음 켜면 빈 자리에 이 순서가 카드로 보입니다. «다시 보지 않기» 를 누르면 짧은 한 줄 안내로 바뀝니다.",
       ],
@@ -59,6 +59,16 @@ export const help: HelpDoc = {
         "- «Windows 포트 기본값» 은 레지스트리 Ports 키의 값(예: 9600,n,8,1)입니다. 프로그램이 포트를 열 때 정한 속도·패리티가 이보다 앞서므로, 대개 장비 연결과는 상관없습니다.",
         "- «장치 설정 (Device Parameters)» 는 드라이버가 장치마다 둔 값을 이름·값 그대로 보입니다. 풀이는 공개 문서로 확인된 이름만 붙입니다(FTDI LatencyTimer, PortName).",
         "- FTDI 지연 타이머(LatencyTimer, 기본 16ms): 버퍼가 차지 않으면 이 시간만큼 모았다가 PC 로 보냅니다. 짧은 요청·응답을 빨리 주고받는 Modbus RTU 폴링 같은 일에서 응답이 늦게 보일 수 있어 16 이상이면 «볼 것» 입니다.",
+      ],
+    },
+    {
+      title: "USB 경로",
+      body: [
+        "- USB 변환기면 이 장치에서 위로 허브 → 루트 허브 → USB 컨트롤러까지 한 줄씩 보입니다. 장치 관리자 «연결별 장치» 보기와 같은 사슬입니다.",
+        "- 포트: 바로 위 허브의 몇 번 포트에 꽂혔는지. 협상 속도: 그 허브가 알려 준 속도(Low 1.5 Mbps · Full 12 Mbps · High 480 Mbps · SuperSpeed 5 Gbps 이상). USB-시리얼 칩은 대부분 Full Speed 로 붙고, 이것이 시리얼 속도보다 훨씬 빠르므로 느린 것이 아닙니다.",
+        "- 허브 전원: 버스 전원(전원 어댑터 없이 USB 로만 전원을 받음)·자체 전원. 버스 전원 허브에 여러 장치를 달면 전원이 모자랄 수 있습니다.",
+        "- USB 3 를 쓸 수 있다는 장치가 더 낮은 속도로 붙어 있으면 «볼 것» — 케이블이나 USB 2 포트 때문일 수 있습니다. 허브를 거치는 것·버스 전원 허브는 적기만 하고 판정하지 않습니다.",
+        "- 허브에는 상태를 묻는 조회만 보냅니다(관리자 권한 필요 없음). 허브 리셋 횟수·전류 같은 값은 읽지 않습니다.",
       ],
     },
     {
@@ -181,7 +191,7 @@ export const help: HelpDoc = {
       id: "start",
       body: [
         "- 1. Click a port in the «COM ports» list on the left. To include devices plugged in earlier, turn on «Show devices not connected now».",
-        "- 2. Cards appear in the middle: device and driver, settings, power saving, history, COM number reservations, connection test, network adapters. Each card header shows a result; for «Worth a look» or «Problem» the reason is on the line below.",
+        "- 2. Cards appear in the middle: device and driver, USB path (for USB devices), settings, power saving, history, COM number reservations, connection test, network adapters. Each card header shows a result; for «Worth a look» or «Problem» the reason is on the line below.",
         "- 3. For a problem report or question, use «Copy text» (or «Save…») at the top. User folder paths are masked as «~».",
         "- On first start these steps show as a card in the empty area. «Don't show again» turns it into a one-line hint.",
       ],
@@ -222,6 +232,16 @@ export const help: HelpDoc = {
         "- «Windows port default» is the value in the registry Ports key (e.g. 9600,n,8,1). The speed and parity a program sets when it opens the port take precedence, so it rarely matters for a device link.",
         "- «Device settings (Device Parameters)» shows the values the driver stored for the device, names and values as is. Explanations are added only for names confirmed by public documents (FTDI LatencyTimer, PortName).",
         "- FTDI latency timer (LatencyTimer, default 16 ms): unless the buffer fills, data waits this long before going to the PC. Fast short request/response traffic such as Modbus RTU polling can look slow, so 16 or more is «Worth a look».",
+      ],
+    },
+    {
+      title: "USB path",
+      body: [
+        "- For a USB adapter, each step from the device up through hubs and the root hub to the USB controller is shown on its own line — the same chain as Device Manager's «Devices by connection» view.",
+        "- Port: which port of the hub just above it is plugged into. Negotiated speed: what that hub reports (Low 1.5 Mbps · Full 12 Mbps · High 480 Mbps · SuperSpeed 5 Gbps or more). Most USB-serial chips connect at Full Speed, which is far faster than the serial line, so it is not slow.",
+        "- Hub power: bus-powered (power only over USB, no adapter) or self-powered. With several devices on a bus-powered hub, power can run short.",
+        "- If a device that reports USB 3 capability is connected at a lower speed, it is marked «Worth a look» — the cable or a USB 2 port may be why. Going through hubs and bus-powered hubs are noted only, not judged.",
+        "- Hubs are only sent status queries (no administrator rights needed). Hub reset counts and current draw are not read.",
       ],
     },
     {

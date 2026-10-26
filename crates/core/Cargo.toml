@@ -21,7 +21,8 @@ encoding_rs = "0.8"
 # Win32_NetworkManagement_*·Networking_WinSock: 랜카드 IPv4 목록·포트를 쥔 프로그램(net.rs)
 # Win32_Devices_DeviceAndDriverInstallation·Properties·System_Registry·EventLog·Power: Port Inspector 읽기(portinfo — 장치 속성·
 # Device Parameters·ComDB·PnP 이벤트·USB 선택적 절전). 모두 읽기 권한만 쓴다
-windows-sys = { version = "0.61", features = ["Win32_Devices_Communication", "Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Properties", "Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_System_EventLog", "Win32_System_Power", "Win32_System_Registry", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
+# Win32_Devices_Usb·System_IO: Port Inspector USB 경로(portinfo/usb.rs — 허브에 조회 IOCTL 만, FILE_ANY_ACCESS)
+windows-sys = { version = "0.61", features = ["Win32_Devices_Communication", "Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Properties", "Win32_Devices_Usb", "Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_System_EventLog", "Win32_System_IO", "Win32_System_Power", "Win32_System_Registry", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
 # 네이티브 크래시(접근 위반 등) — 감시 프로세스가 minidump 를 남긴다. 공식 Sentry SDK 대신 가벼운 부품만
 crash-handler = "0.8"
 minidumper = "0.11"

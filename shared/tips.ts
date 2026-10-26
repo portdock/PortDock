@@ -443,6 +443,7 @@ const TIPS: Record<string, Tip> = {
   piSave: ["결과를 파일로 저장합니다(.txt 는 글, .json 은 JSON).", "Saves the result to a file (.txt as text, .json as JSON)."],
   piCardDevice: ["장치·드라이버(제공자·버전·날짜·INF)·문제 코드와 뜻·VID/PID 로 본 칩·마지막 연결/분리 시각.", "Device and driver (provider, version, date, INF), problem code and meaning, chip from VID/PID, last plug-in/removal times."],
   piCardSettings: ["Windows 포트 기본값과 드라이버가 장치마다 둔 값(Device Parameters — FTDI 지연 타이머 등).", "The Windows port default and the values the driver stores per device (Device Parameters — FTDI latency timer …)."],
+  piCardUsb: ["USB 장치면 허브 사슬·허브 포트 번호·협상 속도(Full/High/Super)·허브 전원(버스/자체)·허브의 «끌 수 있음».", "For a USB device: the hub chain, hub port numbers, negotiated speed (Full/High/Super), hub power (bus/self) and whether the PC may turn hubs off."],
   piCardPower: ["전원 옵션의 USB 선택적 절전과, 장치·위 USB 장치의 «전원 절약을 위해 끌 수 있음».", "USB selective suspend from power options, and «allow the computer to turn off this device» for the device and the USB devices above it."],
   piCardHistory: ["이 장치의 PnP 이벤트(연결·드라이버 설치·삭제·시작 문제) — 이벤트 로그에서 기간만큼.", "PnP events for this device (plug-in, driver install, removal, start problems) from the event logs for the chosen period."],
   piCardCom: ["Windows 가 예약해 둔 COM 번호(ComDB)와 실제 장치를 견줍니다 — 주인 없는 번호·겹친 번호.", "Compares the COM numbers Windows has reserved (ComDB) with real devices — orphan and duplicate numbers."],

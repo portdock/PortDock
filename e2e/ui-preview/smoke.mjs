@@ -1951,7 +1951,9 @@ async function runApp(app, port) {
       // ---- 포트 고르기: COM5(FTDI) — 장치 문제 없음·설정 볼 것(지연 16ms)·절전 볼 것 → 전체 «볼 것»
       const pick = (com) => js(`const b = [...document.querySelectorAll('.port-item')].find((x) => x.querySelector('.pi-port').textContent.trim() === ${JSON.stringify(com)}); if (b) b.click(); return !!b;`);
       if (!(await pick("COM5"))) add("pick COM5", "expect", "목록에 COM5 가 없음");
-      await expectJs("cards", "return document.querySelectorAll('details.card').length === 7");
+      // (10/26) USB 장치면 «USB 경로» 카드가 하나 더(COM5 = 장치 → 버스 전원 허브 → 루트 허브 → 컨트롤러)
+      await expectJs("cards", "return document.querySelectorAll('details.card').length === 8");
+      await expectJs("usb path", `const c = document.querySelector('details.card-usb'); return !!c && c.querySelectorAll('table.usb-path tbody tr').length === 4 && /Full Speed/.test(c.textContent) && /${ko ? "버스 전원" : "bus-powered"}/.test(c.textContent) && /lv-ok/.test(c.querySelector('summary .lv').className)`);
       await expectJs("com5 verdicts", `const lv = (id) => (document.querySelector('details.card-' + id + ' > summary .lv') || {}).className || '';
         return /lv-ok/.test(lv('device')) && /lv-look/.test(lv('settings')) && /lv-look/.test(lv('power')) && /lv-look/.test(document.querySelector('.toolbar .lv').className)`);
       await expectJs("com5 title", `return /^COM5 · USB Serial Port · ${ko ? "볼 것" : "Worth a look"} — PortDock Port Inspector$/.test(document.title)`);
