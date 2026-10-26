@@ -17,6 +17,7 @@ import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, type Host, type Nic, type NicAddr, type RangeInfo, type ScanEvent } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
@@ -352,6 +353,23 @@ export default function App() {
       .wake(mac, sel?.addr.ip ?? null, sel?.addr.prefix ?? null)
       .then((sent) => toast.show(t("woke", { a: sent.join(", ") })))
       .catch((e) => toast.show(String(e), { error: true }));
+  // Modbus Master 로 열기(0.2.0) — 국번은 읽어 둔 장비 정보의 것, 없으면 1. 못 찾으면 «IP:502» 를 복사하고 아래 칸에 내려받기 안내
+  const [masterMissing, setMasterMissing] = useState<string | null>(null);
+  const openMaster = (ip: string, unit: number) =>
+    api
+      .openMaster(ip, 502, unit)
+      .then((ok) => {
+        if (ok) {
+          setMasterMissing(null);
+          toast.show(t("masterOpened", { a: `${ip}:502`, n: unit }), { ms: 6000 });
+          return;
+        }
+        setSelected(ip);
+        setMasterMissing(ip);
+        void navigator.clipboard.writeText(`${ip}:502`).catch(() => {});
+      })
+      .catch((e) => toast.show(String(e), { error: true }));
+  const masterUrl = `https://portdock.dev/${lang === "en" ? "en/" : ""}modbus-master/`;
   const [identBusy, setIdentBusy] = useState(false);
   const readIdent = (ip: string) => {
     setIdentBusy(true);
@@ -375,6 +393,7 @@ export default function App() {
       "sep",
       { label: t("copyIp"), run: () => void copy(h.ip) },
       { label: t("copyHostPort", { a: `${h.ip}:502` }), run: () => void copy(`${h.ip}:502`), disabled: !mb, title: mb ? t("hostPortHint") : t("no502") },
+      { label: t("openMaster"), run: () => void openMaster(h.ip, h.modbus?.unit ?? 1), disabled: !mb || !!h.gone, title: mb ? tip(lang, "nsOpenMaster") : t("no502") },
       { label: t("copyMac"), run: () => h.mac && void copy(h.mac), disabled: !h.mac },
       "sep",
       { label: t("readIdent"), run: () => readIdent(h.ip), disabled: !mb || identBusy || !!h.gone, title: mb ? undefined : t("no502") },
@@ -871,7 +890,26 @@ export default function App() {
                         {t("readIdent")}
                       </button>
                     )}
+                    {selHost.ports.includes(502) && (
+                      <button className="btn small open-master" onClick={() => void openMaster(selHost.ip, selHost.modbus?.unit ?? 1)} disabled={!!selHost.gone} data-tip={tip(lang, "nsOpenMaster")}>
+                        {t("openMaster")}
+                      </button>
+                    )}
                   </div>
+                  {masterMissing === selHost.ip && (
+                    <div className="hint warn master-missing">
+                      {t("masterMissing", { a: `${selHost.ip}:502` })}{" "}
+                      <a
+                        href={masterUrl}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void openUrl(masterUrl).catch(() => {});
+                        }}
+                      >
+                        {t("masterGet")}
+                      </a>
+                    </div>
+                  )}
                   {selHost.conflict.length > 1 && <div className="hint warn">{t("conflictLine", { a: selHost.conflict.join(" · ") })}</div>}
                   {selHost.modbus && (
                     <div className="ident mono">

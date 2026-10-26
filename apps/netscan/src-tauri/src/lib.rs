@@ -9,6 +9,7 @@ pub mod scan;
 pub mod wol;
 pub mod win;
 
+use portdock_core::launch;
 use portdock_core::tr;
 use std::net::Ipv4Addr;
 use std::sync::{Arc, Mutex};
@@ -95,6 +96,28 @@ fn open_web(ip: String, port: Option<u16>, https: bool) -> Result<(), String> {
         _ => format!("{scheme}://{ip}/"),
     };
     tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| e.to_string())
+}
+
+/// 열어 줄 Modbus Master — apps/modbus-master/src-tauri 의 tauri.conf.json productName·Cargo 패키지 이름, release.yml asset(시험이 맞춰 본다)
+const MASTER: launch::AppId = launch::AppId { product: "PortDock Modbus Master", asset: "Modbus-Master", bin: "portdock-modbus-master" };
+
+/// Modbus Master 에 넘길 인자 — 확인한 IP·숫자로만 만든다(글자를 그대로 옮기지 않는다)
+fn master_args(ip: Ipv4Addr, port: u16, unit: u8) -> Vec<String> {
+    vec!["--tcp".into(), format!("{ip}:{port}"), "--unit".into(), unit.to_string()]
+}
+
+/// 찾은 장비를 Modbus Master 로 연다(0.2.0) — «--tcp IP:포트 --unit n», 연결은 Master 에서 사용자가 누른다.
+/// 셸을 거치지 않는다. 못 찾으면 Ok(false) — 화면이 «IP:502» 복사·내려받기 안내를 한다
+#[tauri::command(async)]
+fn open_master(ip: String, port: Option<u16>, unit: Option<u8>) -> Result<bool, String> {
+    let ip = parse_ip(&ip)?;
+    let port = port.unwrap_or(502);
+    if port == 0 {
+        return Err(tr!("포트는 1~65535 입니다", "Port must be 1–65535").into());
+    }
+    let Some(exe) = launch::find_app(&MASTER) else { return Ok(false) };
+    launch::spawn(&exe, &master_args(ip, port, unit.unwrap_or(1)))?;
+    Ok(true)
 }
 
 #[tauri::command(async)]
@@ -221,6 +244,7 @@ pub fn run() {
             modbus_ident,
             wake,
             open_web,
+            open_master,
             monitor_start,
             monitor_stop,
             monitor_set_log,
@@ -230,5 +254,34 @@ pub fn run() {
         .run(tauri::generate_context!());
     if let Err(e) = result {
         portdock_core::report::run_failed(&e.to_string());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn master_args_from_checked_values() {
+        assert_eq!(master_args(Ipv4Addr::new(192, 168, 0, 10), 502, 1), ["--tcp", "192.168.0.10:502", "--unit", "1"]);
+        assert_eq!(master_args(Ipv4Addr::new(10, 0, 0, 5), 1502, 255), ["--tcp", "10.0.0.5:1502", "--unit", "255"]);
+        // 글자로 들어온 IP 는 parse_ip 를 거친다 — 따옴표·공백·명령 글자는 여기서 막힌다
+        for bad in ["192.168.0.10 --unit 9", "\"1.2.3.4\"", "1.2.3.4&calc", "", "host"] {
+            assert!(parse_ip(bad).is_err(), "{bad}");
+        }
+        assert!(open_master("1.2.3.4".into(), Some(0), None).is_err());
+    }
+
+    /// 찾을 이름이 Modbus Master 의 실제 설정과 같은지 — 이름을 바꾸면 여기가 먼저 깨진다
+    #[test]
+    fn master_names_match_its_config() {
+        let conf = include_str!("../../../modbus-master/src-tauri/tauri.conf.json");
+        assert!(conf.contains(&format!("\"productName\": \"{}\"", MASTER.product)));
+        let cargo = include_str!("../../../modbus-master/src-tauri/Cargo.toml");
+        assert!(cargo.contains(&format!("name = \"{}\"", MASTER.bin)));
+        let release = include_str!("../../../../.github/workflows/release.yml");
+        assert!(release.contains(&format!("{{ app: modbus-master, asset: {} }}", MASTER.asset)));
+        // 설치판은 사용자 범위(%LOCALAPPDATA%\<productName>) — find_app 의 기본 자리
+        assert!(conf.contains("\"installMode\": \"currentUser\""));
     }
 }

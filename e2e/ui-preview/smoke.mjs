@@ -2394,6 +2394,22 @@ async function runApp(app, port) {
           if (it) it.click();
           await w();
           a.clip2 = window.__smoke.clip; a.closed = !document.querySelector('.log-menu');
+          // (0.2.0) «Modbus Master 로 열기» — 메뉴에서 → Master 를 IP:502·국번으로 연다. Master 가 없으면 «IP:502» 복사 + 내려받기 안내
+          chip.closest('tr').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 300 })); await w();
+          const om = [...document.querySelectorAll('.log-menu button')].find((b) => /Modbus Master/.test(b.textContent));
+          a.omItem = !!om && !om.disabled;
+          if (om) om.click();
+          await w(400);
+          a.master = window.__pdMock.master || null;
+          a.omToast = (document.querySelector('.toast') || {}).textContent || null;
+          window.__pdMock.noMaster = true; window.__smoke.clip = null;
+          const ob = document.querySelector('.detail-actions .open-master');
+          a.omBtn = !!ob;
+          if (ob) ob.click();
+          await w(400);
+          const miss = document.querySelector('.master-missing');
+          a.missing = miss ? miss.textContent : null; a.missLink = !!miss && !!miss.querySelector('a[href*="portdock.dev"]'); a.clip3 = window.__smoke.clip;
+          window.__pdMock.noMaster = false;
           // 502 가 닫힌 장비는 «IP:502 복사» 가 흐림
           const other = [...document.querySelectorAll('.hosts tbody tr')].find((tr) => !tr.querySelector('.mb-copy') && !tr.classList.contains('gone'));
           if (other) {
@@ -2404,7 +2420,7 @@ async function runApp(app, port) {
           }
           return a;`);
         if (r.fatal) add("ns row menu", "smoke-error", r.fatal);
-        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
+        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false || !r.omItem || r.master?.ip !== r.ip || r.master?.port !== 502 || !(r.master?.unit >= 1) || !/Modbus Master/.test(r.omToast ?? "") || !r.omBtn || !r.missLink || !(r.missing ?? "").includes(`${r.ip}:502`) || r.clip3 !== `${r.ip}:502`) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
         if (combo.name === "ko-light") await shot(app, `${combo.name}-row-menu`);
         await verify("ns row menu");
         await load(port, combo);

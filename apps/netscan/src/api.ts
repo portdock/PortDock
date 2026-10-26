@@ -92,6 +92,8 @@ export const api = {
   modbusIdent: (ip: string, port?: number) => invoke<Ident>("modbus_ident", { ip, port: port ?? null }),
   wake: (mac: string, nicIp: string | null, prefix: number | null) => invoke<string[]>("wake", { mac, nicIp, prefix }),
   openWeb: (ip: string, port: number | null, https: boolean) => invoke<void>("open_web", { ip, port, https }),
+  /** Modbus Master 로 열기(0.2.0) — false 면 이 PC 에서 Master 를 찾지 못함 */
+  openMaster: (ip: string, port: number, unit: number) => invoke<boolean>("open_master", { ip, port, unit }),
   monitorStart: (config: MonitorConfig, logPath: string | null, onEvent: (e: MonitorEvent) => void) => {
     const ch = new Channel<MonitorEvent>();
     ch.onmessage = onEvent;

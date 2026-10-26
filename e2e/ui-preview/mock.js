@@ -1244,7 +1244,7 @@ mockIPC(
 // ================================================================ Net Scan (apps/netscan — 명령: apps/netscan/src-tauri/src/lib.rs)
 // 위 공용 세션(S)과 따로 논다. 범위의 주소를 0.5초에 하나씩 «찾는다»(/24 는 2분 남짓 — 다 눌러 보기 동안 계속 찾는 중이도록).
 // 일부러 실패하는 입력: 범위 4096개 초과, 감시 장비 «nohost»(찾지 못함), 감시 IP 끝이 .99(늘 시간 초과).
-const NETSCAN = new Set(["list_nics", "range_info", "scan_start", "scan_cancel", "modbus_ident", "wake", "open_web", "monitor_start", "monitor_stop", "monitor_set_log"]);
+const NETSCAN = new Set(["list_nics", "range_info", "scan_start", "scan_cancel", "modbus_ident", "wake", "open_web", "open_master", "monitor_start", "monitor_stop", "monitor_set_log"]);
 const nsIp = (s) => {
   const p = s.trim().split(".");
   if (p.length !== 4 || !p.every((x) => /^\d{1,3}$/.test(x) && Number(x) <= 255)) throw `${tr("IP 주소가 아닙니다", "Not an IP address")}: «${s.trim()}»`;
@@ -1429,6 +1429,16 @@ async function netscan(cmd, a) {
     case "open_web":
       window.__pdMock.opened = `${a.https ? "https" : "http"}://${a.ip}${a.port && a.port !== 80 && a.port !== 443 ? `:${a.port}` : ""}/`;
       return null;
+    // Modbus Master 로 열기(0.2.0) — 연 것을 남긴다. __pdMock.noMaster = true 면 «찾지 못함»
+    case "open_master":
+      try {
+        nsIp(a.ip);
+      } catch (e) {
+        return fail(String(e));
+      }
+      if (window.__pdMock.noMaster) return false;
+      window.__pdMock.master = { ip: a.ip, port: a.port, unit: a.unit };
+      return true;
     case "monitor_start":
       return nsMonitorStart(a.config, a.logPath, a.onEvent);
     case "monitor_stop":

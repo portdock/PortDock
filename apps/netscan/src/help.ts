@@ -104,6 +104,8 @@ export const help: HelpDoc = {
         "- 서비스 칩(«Modbus 502 ⧉» 등)을 누르면 «IP:포트» 를 복사합니다. PortDock TCP·Modbus 프로그램의 주소 칸에 붙여 넣으세요.",
         "- «WoL 깨우기»: 그 MAC 으로 매직 패킷을 고른 랜카드의 대역 브로드캐스트와 255.255.255.255 로(포트 9·7) 보냅니다. 장비의 BIOS·랜카드에서 WoL 이 켜져 있어야 하고, MAC 은 같은 대역에서 ARP 로 찾은 장비만 압니다.",
         "- «핑 감시에 추가»: 그 IP 를 «핑 감시» 목록에 넣습니다.",
+        "- (0.2.0 부터) «Modbus Master 로 열기»(502 가 열린 장비): 이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다. Master 는 Modbus TCP·장비 주소·국번을 채운 채 뜨고, 연결은 Master 에서 «연결» 을 누릅니다. 국번은 «Modbus 장비 정보» 를 읽었으면 그 국번, 아니면 1 입니다.",
+        "- (0.2.0 부터) Master 는 설치판(이 사용자로 설치한 것), 또는 휴대판(Net Scan 과 같은 폴더나 옆 «PortDock…» 폴더)에서 찾습니다. 못 찾으면 «IP:502» 를 복사하고 아래 칸에 «Modbus Master 내려받기» 링크를 보입니다. 누를 때만 열고, 셸을 거치지 않으며 넘기는 것은 IP 와 숫자뿐입니다.",
       ],
     },
     {
@@ -273,6 +275,8 @@ export const help: HelpDoc = {
         "- Click a service chip («Modbus 502 ⧉», …) to copy «IP:port» — paste it into the address box of PortDock TCP or Modbus.",
         "- «Wake (WoL)» sends a magic packet for that MAC to the selected adapter's subnet broadcast and 255.255.255.255 (ports 9 and 7). WoL must be enabled in the target's BIOS/NIC, and the MAC is known only for devices found by ARP on the same subnet.",
         "- «Add to ping monitor» adds the IP to the «Ping monitor» list.",
+        "- (from 0.2.0) «Open in Modbus Master» (devices with 502 open) starts PortDock Modbus Master on this PC with «--tcp IP:502 --unit ID». Master opens with Modbus TCP, the device address and Slave ID filled in; press «Connect» in Master. The ID is the one from «Modbus device ID» if it was read, else 1.",
+        "- (from 0.2.0) Master is looked up as an installed copy (installed for this user) or a portable copy (the same folder as Net Scan, or a «PortDock…» folder next to it). If it is not found, «IP:502» is copied and a «Get Modbus Master» link appears below. It only runs when you click, without a shell, and passes only the IP and numbers.",
       ],
     },
     {
