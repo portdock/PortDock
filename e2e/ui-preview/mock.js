@@ -225,7 +225,7 @@ const data = (dir, bytes, check = null, peer) => (peer ? { ts: now(), dir, bytes
 // ---- 포트 목록. COM9 는 «사용 중» 시험용, COM7 은 __pdMock.plug() 로 꽂고 뺀다
 const PORTS = [
   { name: "COM3", kind: "usb", vid: 0x1a86, pid: 0x7523, serial_number: null, manufacturer: "wch.cn", product: "USB-SERIAL CH340" },
-  { name: "COM5", kind: "usb", vid: 0x0403, pid: 0x6001, serial_number: "A10KQ2XZ", manufacturer: "FTDI", product: "USB Serial Port" },
+  { name: "COM5", kind: "usb", vid: 0x0403, pid: 0x6001, serial_number: "PD000001", manufacturer: "FTDI", product: "USB Serial Port" },
   { name: "COM1", kind: "pci", vid: null, pid: null, serial_number: null, manufacturer: "(표준 포트 유형)", product: "통신 포트" },
   { name: "COM9", kind: "usb", vid: 0x067b, pid: 0x2303, serial_number: null, manufacturer: "Prolific", product: "USB-to-Serial Comm Port" },
 ];
@@ -1304,14 +1304,14 @@ function nsInfo(text) {
   return { count, first: nsStr(Math.min(...s.map((x) => x[0]))), last: nsStr(Math.max(...s.map((x) => x[1]))), tooMany: count > 4096 };
 }
 const nsNics = () => [
-  { id: "{A1}", name: tr("이더넷", "Ethernet"), desc: "Intel(R) Ethernet Connection I219-LM", addrs: [{ ip: "192.168.0.5", prefix: 24, mask: "255.255.255.0" }, { ip: "192.168.1.200", prefix: 24, mask: "255.255.255.0" }], gateway: "192.168.0.1", mac: "B4:2E:99:F6:AB:3D", up: true, wireless: false, vendor: "GIGA-BYTE" },
-  { id: "{B2}", name: "Wi-Fi", desc: "Killer(R) Wi-Fi 6 AX1650x", addrs: [{ ip: "10.0.0.23", prefix: 24, mask: "255.255.255.0" }], gateway: "10.0.0.1", mac: "50:E0:85:E3:47:39", up: true, wireless: true, vendor: "Intel Corporate" },
+  { id: "{A1}", name: tr("이더넷", "Ethernet"), desc: "Intel(R) Ethernet Connection I219-LM", addrs: [{ ip: "192.168.0.5", prefix: 24, mask: "255.255.255.0" }, { ip: "192.168.1.200", prefix: 24, mask: "255.255.255.0" }], gateway: "192.168.0.1", mac: "02:00:5E:10:00:05", up: true, wireless: false, vendor: "GIGA-BYTE" },
+  { id: "{B2}", name: "Wi-Fi", desc: "Wireless Network Adapter", addrs: [{ ip: "10.0.0.23", prefix: 24, mask: "255.255.255.0" }], gateway: "10.0.0.1", mac: "02:00:5E:10:00:17", up: true, wireless: true, vendor: "Intel Corporate" },
   { id: "{C3}", name: tr("이더넷 2", "Ethernet 2"), desc: "Realtek USB GbE Family Controller", addrs: [{ ip: "169.254.12.7", prefix: 16, mask: "255.255.0.0" }], gateway: null, mac: "00:E0:4C:68:01:02", up: false, wireless: false, vendor: "REALTEK SEMICONDUCTOR" },
 ];
 // 끝 숫자 → 장비(어느 대역이든 같은 끝 숫자에)
 const NS_DEVICES = {
   1: { mac: "28:4E:E9:A9:62:7E", vendor: "mercury corperation", rtt: 1, ports: [80, 443], name: "router.local" },
-  5: { me: true, mac: "B4:2E:99:F6:AB:3D", vendor: "GIGA-BYTE", rtt: 0, ports: [] },
+  5: { me: true, mac: "02:00:5E:10:00:05", vendor: "GIGA-BYTE", rtt: 0, ports: [] },
   // .10 — 확인 단계에서 MAC 이 하나 더 보임(IP 충돌 의심, 0.2.0)
   10: { mac: "00:1B:1B:12:34:56", vendor: "Siemens", rtt: 2, ports: [102, 80, 502], ident: { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" }, conflict: ["00:1B:1B:12:34:56", "00:0B:29:0A:0B:99"] },
   11: { mac: "00:0B:29:0A:0B:0C", vendor: "LS Industrial Systems", rtt: null, ports: [2004, 80] },
@@ -1320,7 +1320,7 @@ const NS_DEVICES = {
   40: { mac: "00:30:DE:44:55:66", vendor: "WAGO Kontakttechnik GmbH & Co. KG, a very long vendor name", rtt: 6, ports: [502, 1883, 23] },
   55: { mac: "00:01:C0:AA:BB:CC", vendor: "CompuLab", rtt: 12, ports: [5025, 21], name: "scope-lab-2.factory.example" },
   77: { mac: "DA:A1:19:00:00:01", vendor: null, randomMac: true, rtt: 35, ports: [] },
-  100: { mac: "B4:2E:99:00:00:64", vendor: "GIGA-BYTE", rtt: null, ports: [], name: "DESKTOP-OFFICE1" },
+  100: { mac: "02:00:5E:10:00:64", vendor: "GIGA-BYTE", rtt: null, ports: [], name: "DESKTOP-OFFICE1" },
 };
 let NS = null; // 지금 찾기 { ch, timer, cancelled, finished }
 let NSM = null; // 지금 감시 { ch, timer, log }
@@ -2066,7 +2066,7 @@ const piT = (ko, en) => ({ ko, en });
 const PI_DEV = [
   { port: "COM1", name: "통신 포트(COM1)", instanceId: "ACPI\\PNP0501\\0", present: true, vid: null, pid: null, problem: null, class: "Ports", svc: "Serial", provider: "Microsoft", ver: "10.0.26100.1", inf: "msports.inf", chip: null },
   { port: "COM3", name: "USB-SERIAL CH340 (COM3)", instanceId: "USB\\VID_1A86&PID_7523\\5&2A1B3C&0&2", present: true, vid: 0x1a86, pid: 0x7523, problem: null, class: "Ports", svc: "CH341SER_A64", provider: "wch.cn", ver: "3.9.2024.9", inf: "oem42.inf", chip: { vendor: "WCH (Nanjing Qinheng)", chip: "CH340 / CH341", clue: false } },
-  { port: "COM5", name: "USB Serial Port (COM5)", instanceId: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000", present: true, vid: 0x0403, pid: 0x6001, problem: null, class: "Ports", svc: "FTSER2K", provider: "FTDI", ver: "2.12.36.4", inf: "oem7.inf", chip: { vendor: "FTDI", chip: "FT232R / FT232BM / FT245R", clue: false } },
+  { port: "COM5", name: "USB Serial Port (COM5)", instanceId: "FTDIBUS\\VID_0403+PID_6001+PD000001A\\0000", present: true, vid: 0x0403, pid: 0x6001, problem: null, class: "Ports", svc: "FTSER2K", provider: "FTDI", ver: "2.12.36.4", inf: "oem7.inf", chip: { vendor: "FTDI", chip: "FT232R / FT232BM / FT245R", clue: false } },
   { port: "COM9", name: "Prolific USB-to-Serial Comm Port (COM9)", instanceId: "USB\\VID_067B&PID_2303\\6&1F2E3D&0&1", present: true, vid: 0x067b, pid: 0x2303, problem: 10, class: "Ports", svc: "Ser2pl", provider: "Prolific", ver: "3.9.6.2", inf: "oem51.inf", chip: { vendor: "Prolific", chip: "PL2303 (HX/HXD/TA/RA …)", clue: false, note: piT("PL2303 옛 리비전(HXA·XA)은 단종…", "Old PL2303 revisions (HXA, XA) are discontinued…") } },
   { port: "COM12", name: "Prolific USB-to-Serial Comm Port (COM12)", instanceId: "USB\\VID_067B&PID_2303\\6&99AA&0&4", present: false, vid: 0x067b, pid: 0x2303, problem: null, class: "Ports", svc: "Ser2pl", provider: "Prolific", ver: "3.9.6.2", inf: "oem51.inf", chip: { vendor: "Prolific", chip: "PL2303 (HX/HXD/TA/RA …)", clue: false } },
 ];
@@ -2094,7 +2094,7 @@ function piReport(d) {
     lastArrival: now() - 2 * 3_600_000,
     lastRemoval: d.present ? now() - 3 * 3_600_000 : now() - 20 * DAY,
     firstInstall: now() - 300 * DAY,
-    ancestors: d.vid ? [{ instanceId: ftdi ? "USB\\VID_0403&PID_6001\\A10KQ2XZ" : "USB\\ROOT_HUB30\\4&1", name: ftdi ? "USB Serial Converter" : "USB 루트 허브(USB 3.0)", service: ftdi ? "FTDIBUS" : "USBHUB3" }] : [],
+    ancestors: d.vid ? [{ instanceId: ftdi ? "USB\\VID_0403&PID_6001\\PD000001" : "USB\\ROOT_HUB30\\4&1", name: ftdi ? "USB Serial Converter" : "USB 루트 허브(USB 3.0)", service: ftdi ? "FTDIBUS" : "USBHUB3" }] : [],
     params: [
       ...(ftdi ? [{ name: "LatencyTimer", value: "16", kind: "dword", num: 16, note: piT("FTDI 지연 타이머(ms). 기본값 16 …", "FTDI latency timer (ms). Default 16 …") }, { name: "MinReadTimeout", value: "0", kind: "dword", num: 0 }] : []),
       { name: "PortName", value: d.port, kind: "string", note: piT("이 장치에 붙은 COM 이름", "The COM name assigned to this device") },
@@ -2119,7 +2119,7 @@ function piUsbPath(d, ftdi) {
   if (ftdi)
     return {
       hops: [
-        hop({ instanceId: "USB\\VID_0403&PID_6001\\A10KQ2XZ", name: "USB Serial Converter", kind: "device", port: 2, speed: "full" }),
+        hop({ instanceId: "USB\\VID_0403&PID_6001\\PD000001", name: "USB Serial Converter", kind: "device", port: 2, speed: "full" }),
         hop({ instanceId: PI_HUB, name: "Generic USB Hub", kind: "hub", port: 3, speed: "high", busPowered: true, ports: 4 }),
         root,
         ctl,

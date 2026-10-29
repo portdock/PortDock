@@ -2114,7 +2114,7 @@ async function runApp(app, port) {
 
       // ---- 다 눌러 보기(포트를 고른 상태)
       if (combo.full) {
-        await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000", firstHintDone: true });
+        await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+PD000001A\\0000", firstHintDone: true });
         await sleep(600);
         await d.executeScript(`window.__pdMock.dialog = { ask: true, save: 'C:\\\\mock\\\\pi.txt', open: null };`);
         await pageExercise("selected", "#root");
@@ -2124,7 +2124,7 @@ async function runApp(app, port) {
       await d.manage().window().setRect({ width: 760, height: 600 });
       const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
       if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
-      await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+A10KQ2XZA\\0000" });
+      await load(port, combo, { selected: "FTDIBUS\\VID_0403+PID_6001+PD000001A\\0000" });
       await sleep(500);
       await expectJs("narrow", "return getComputedStyle(document.querySelector('.narrow-bar')).display !== 'none' && getComputedStyle(document.querySelector('aside.side')).display === 'none' && /COM5/.test(document.querySelector('.narrow-bar').textContent)");
       await js("document.querySelector('.narrow-bar .side-toggle').click()");
