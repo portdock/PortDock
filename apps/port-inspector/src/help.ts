@@ -27,7 +27,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: COM 포트 목록(지금 있는 것이 먼저, COM 번호순). 문제 코드가 있는 장치는 빨간 번호, 지금 없는 장치는 «지금 없음», Ports 장치 목록에 없는 COM(모뎀·가상 COM 드라이버 등)은 «장치 정보 없음» 이 붙습니다. ↻ 로 목록을 다시 읽습니다.",
-        "- 가운데 맨 위 탭: «COM 포트»(아래 카드들)와 «무선 (Wi-Fi·블루투스)» — 무선 탭은 고른 COM 포트와 상관없이 이 PC 의 Wi-Fi·블루투스를 봅니다(0.5.0 부터, «무선» 절).",
+        "- 가운데 맨 위 탭: «COM 포트»(아래 카드들)와 «무선 (Wi-Fi·블루투스)» — 무선 탭은 고른 COM 포트와 상관없이 이 PC 의 Wi-Fi·블루투스를 봅니다(«무선» 절).",
         "- 가운데 위 도구줄: 고른 포트와 전체 결과(카드 가운데 가장 무거운 것), 읽은 시각, «다시 읽기»(F4), «텍스트 복사», «JSON 복사», «저장…».",
         "- 카드는 머리를 눌러 접고 펼칩니다(카드마다 기억). 설정의 «모두 펼치기» 를 켜면 모두 펼친 채 시작합니다.",
         "- 맨 아래 «PC 가 볼 수 없는 것» 상자와 portdock.dev 가이드 링크는 늘 보입니다.",
@@ -140,7 +140,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "무선 — Wi-Fi·블루투스 (0.5.0 부터)",
+      title: "무선 — Wi-Fi·블루투스",
       id: "wireless",
       body: [
         "- 가운데 위 «무선 (Wi-Fi·블루투스)» 탭을 처음 열면 이 PC 의 Wi-Fi·블루투스를 관리자 권한·위치 권한 없이 읽습니다. 고른 COM 포트와는 상관없습니다. 핑 같은 트래픽을 보내지 않고, 주변 장치를 검색하지 않습니다. F4 로 다시 읽습니다.",
@@ -233,7 +233,7 @@ export const help: HelpDoc = {
       title: "Screen layout",
       body: [
         "- Left: the COM port list (connected first, by COM number). Devices with a problem code show a red number, devices not connected now show «not connected», and COMs not in the port device list (modems, virtual COM drivers …) show «no device info». ↻ reloads the list.",
-        "- Tabs at the very top of the middle: «COM ports» (the cards below) and «Wireless (Wi-Fi, Bluetooth)» — the wireless tab looks at this PC's Wi-Fi and Bluetooth regardless of the chosen COM port (from 0.5.0, see «Wireless»).",
+        "- Tabs at the very top of the middle: «COM ports» (the cards below) and «Wireless (Wi-Fi, Bluetooth)» — the wireless tab looks at this PC's Wi-Fi and Bluetooth regardless of the chosen COM port (see «Wireless»).",
         "- Top toolbar: the chosen port and the overall result (the heaviest of the cards), read time, «Refresh» (F4), «Copy text», «Copy JSON», «Save…».",
         "- Click a card header to fold or unfold it (remembered per card). With «Expand all» in Settings every card starts open.",
         "- The «What the PC cannot see» box with portdock.dev guide links is always shown at the bottom.",
@@ -346,7 +346,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Wireless — Wi-Fi and Bluetooth (from 0.5.0)",
+      title: "Wireless — Wi-Fi and Bluetooth",
       id: "wireless",
       body: [
         "- The first time you open the «Wireless (Wi-Fi, Bluetooth)» tab at the top of the middle area, it reads this PC's Wi-Fi and Bluetooth without administrator or location permission. It is not tied to the chosen COM port. It sends no traffic such as pings and does not scan for nearby devices. F4 reads again.",

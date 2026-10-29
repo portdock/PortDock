@@ -502,7 +502,7 @@ const TIPS: Record<string, Tip> = {
   piCardPc: ["장비 PC 로 쓸 때 볼 설정 — 빠른 시작·절전·업데이트 재시작·재시작 대기·화면 보호기·시간 동기화와 최근 예기치 않은 종료·하드웨어 오류.", "Settings to look at on an equipment PC — fast startup, sleep, update restarts, pending restarts, screen saver, time sync, plus recent unexpected shutdowns and hardware errors."],
   piPcPurpose: ["«장비 PC» 를 고르면 절전·빠른 시작·자동 재시작 같은 설정에도 «볼 것» 을 붙입니다. «일반 PC» 는 적기만 합니다.", "With «Equipment PC», settings such as sleep, fast startup and automatic restarts are marked too. «General PC» only lists them."],
   piPcDays: ["예기치 않은 종료·하드웨어 오류·시간 서비스 이벤트를 찾아볼 기간.", "How far back to look for unexpected shutdowns, hardware errors and time service events."],
-  piTabWireless: ["Wi-Fi·블루투스 어댑터·드라이버·절전·끊김 기록을 봅니다(COM 포트와 상관없음, 0.5.0 부터).", "Wi-Fi and Bluetooth adapters, drivers, power saving and disconnect records (not tied to a COM port, from 0.5.0)."],
+  piTabWireless: ["Wi-Fi·블루투스 어댑터·드라이버·절전·끊김 기록을 봅니다(COM 포트와 상관없음).", "Wi-Fi and Bluetooth adapters, drivers, power saving and disconnect records (not tied to a COM port)."],
   piCardWifi: ["무선 어댑터·드라이버·장치 절전·전원 계획 무선 절전 모드·연결 상태와 최근 끊김 이유(이벤트 8003)·드라이버 경고. 네트워크 이름은 읽지 않습니다.", "Wireless adapter, driver, device power saving, the power plan's wireless power saving mode, connection state, recent disconnect reasons (event 8003) and driver warnings. The network name is not read."],
   piCardBt: ["블루투스 어댑터·드라이버·장치 절전·USB 경로·서비스와 최근 경고, 블루투스 오디오가 핸즈프리(통화용)로 잡혀 있는지.", "Bluetooth adapter, driver, device power saving, USB path, services and recent warnings, and whether Bluetooth audio is on the hands-free (call) endpoint."],
   piWlDays: ["Wi-Fi 끊김·드라이버·블루투스 이벤트를 찾아볼 기간.", "How far back to look for Wi-Fi disconnects and driver and Bluetooth events."],
