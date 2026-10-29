@@ -32,6 +32,8 @@ export interface Guide {
   seoTitle?: Partial<Record<Lang, string>>;
   desc: Record<Lang, string>;
   body: Record<Lang, Block[]>;
+  /** 근거 문서(제조사·표준·공식 문서) — 본문 아래 «근거» 목록으로 링크 */
+  refs?: { title: string; url: string; note?: Record<Lang, string> }[];
 }
 
 export const GUIDES: Guide[] = [
@@ -163,7 +165,7 @@ export const GUIDES: Guide[] = [
     slug: "usb-serial-latency",
     date: "2026-10-17",
     tools: ["port-inspector", "serial", "modbus-master"],
-    related: ["modbus-no-response", "modbus-rtu-frame", "rs485-wiring", "modbus-rtu-timeout-polling"],
+    related: ["modbus-no-response", "modbus-rtu-frame", "rs485-wiring", "modbus-rtu-timeout-polling", "usb-serial-disconnects"],
     webTools: ["tools/serial-timing/", "tools/uart-baud/"],
     seoTitle: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지는 이유 — PortDock", en: "USB-Serial Adapter Latency: Split Frames, Late Replies — PortDock" },
     title: { ko: "USB-시리얼 변환기 지연 — 프레임이 쪼개지고 응답이 늦는 이유", en: "USB-serial adapter latency — why frames split and replies arrive late" },
@@ -1442,7 +1444,7 @@ export const GUIDES: Guide[] = [
     slug: "modbus-rtu-timeout-polling",
     date: "2026-10-23",
     tools: ["modbus-master", "serial", "modbus-slave"],
-    related: ["modbus-no-response", "usb-serial-latency", "modbus-rtu-frame", "rs485-bias-termination"],
+    related: ["modbus-no-response", "usb-serial-latency", "modbus-rtu-frame", "rs485-bias-termination", "modbus-read-blocks"],
     webTools: ["tools/serial-timing/", "tools/modbus/"],
     devices: true,
     title: { ko: "Modbus RTU 타임아웃·폴링 주기 정하기 — 3.5문자 시간과 응답 시간 계산", en: "Setting Modbus RTU timeouts and polling intervals — 3.5-character time and response time" },
@@ -3844,5 +3846,371 @@ export const GUIDES: Guide[] = [
         },
       ],
     },
+  },
+  {
+    // 근거: Microsoft Learn «USB Selective Suspend»(2025-05-07 — Windows 기본 켜짐, Microsoft 는 끄지 말 것을 강하게 권함, 허브 드라이버가 포트 단위로 절전),
+    // Microsoft Windows Music Dev 블로그 «The importance of including a unique iSerialNumber…»(Pete Brown, 2023-06-06 — 일련번호가 없으면 부모(포트·허브) 정보로 장치를 구별해,
+    // 다른 포트에 꽂으면 새 장치로 보임), Microsoft Learn «Configuration of COM Ports»(COM 번호는 COM port database 에서 받음),
+    // Microsoft Learn «Device Manager error messages»(문제 코드), apps/port-inspector/src/help.ts(USB 경로·절전·연결 기록 410/400/420/411·COM 번호 예약),
+    // apps/serial/src/help.ts(다시 꽂으면 같은 장치를 찾아 자동 연결, 일련번호 없는 변환기 여러 개면 기다림).
+    slug: "usb-serial-disconnects",
+    date: "2026-10-29",
+    tools: ["port-inspector", "serial", "modbus-master"],
+    related: ["usb-serial-latency", "rs485-wiring", "modbus-no-response", "rs232-db9-null-modem"],
+    webTools: ["tools/serial-timing/", "tools/web-serial/"],
+    title: { ko: "USB-시리얼 변환기가 자꾸 끊길 때 — 케이블·허브·절전·드라이버·COM 번호 점검 순서", en: "When a USB-serial adapter keeps disconnecting — cable, hub, power saving, driver and COM number checks" },
+    seoTitle: { ko: "USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서 — PortDock", en: "USB-Serial Adapter Keeps Disconnecting: COM Port Drops — PortDock" },
+    desc: {
+      ko: "COM 포트가 사라졌다 돌아오거나, 다시 꽂으면 번호가 바뀌거나, 며칠 돌다 멈출 때. 케이블·허브·USB 절전·드라이버·COM 번호 예약을 차례로 보는 법.",
+      en: "The COM port vanishes and returns, changes number when replugged, or stops after days. Check cable, hub, USB power saving, driver and COM reservations in order.",
+    },
+    body: {
+      ko: [
+        { p: "USB-시리얼 변환기(USB-RS485·USB-RS232)는 PC 쪽에서 보면 USB 장치입니다. USB 연결이 한 번 끊기면 Windows 는 COM 포트 장치를 지웠다가 다시 만들고, 포트를 열어 두었던 프로그램은 «장치가 없음»·쓰기 오류를 냅니다. 이 글은 그렇게 «연결 자체가 끊기는» 경우를 다룹니다. 연결은 그대로인데 응답이 늦거나 프레임이 쪼개지는 것은 지연 타이머 문제이고(USB-시리얼 지연 글), 응답이 아예 없는 것은 대개 배선·설정 문제입니다(Modbus 응답 없음 글)." },
+        { h: "증상으로 먼저 가르기" },
+        {
+          table: {
+            head: ["증상", "먼저 볼 것"],
+            plain: true,
+            rows: [
+              ["장치 관리자에서 포트가 잠깐 사라졌다 다시 나타남", "USB 연결이 끊겼다 다시 붙음 — 아래 1~4 순서"],
+              ["다시 꽂으면 COM 번호가 바뀜", "변환기에 일련번호가 없거나 다른 USB 포트에 꽂음 — 5절"],
+              ["오래 쉬었다가 처음 보낼 때만 실패", "절전 — 3절"],
+              ["포트는 그대로인데 장치 관리자에 느낌표", "드라이버·문제 코드 — 4절"],
+              ["포트는 그대로, 응답만 가끔 빠짐", "끊김이 아님 — 지연 타이머·타임아웃·배선을 봄"],
+            ],
+          },
+        },
+        { p: "«정말 끊겼는지» 는 기록으로 확인합니다. Windows 이벤트 로그(Kernel-PnP)에는 장치가 시작될 때마다 기록이 남아, 하루에 여러 번 다시 시작된 날이 있으면 연결이 끊겼다 붙은 것입니다. PortDock Port Inspector 의 «연결 기록» 카드가 이 기록을 포트별로 모아 보여 주고, 하루 3번 이상 다시 연결된 날이 있으면 «볼 것» 으로 표시합니다." },
+        { h: "1. 케이블·커넥터 — 증상이 따라가는지" },
+        { ul: [
+          "다른 USB 케이블(연장선이면 빼고), 다른 USB 포트로 바꿔 봅니다. 바꾼 쪽으로 증상이 따라가면 그 부품이 원인입니다.",
+          "변환기가 흔들리거나 케이블 무게로 비스듬히 꽂혀 있으면 커넥터 접촉이 순간적으로 떨어질 수 있습니다. 케이블을 고정합니다.",
+          "PC 앞면 단자는 본체 안쪽 케이블을 한 번 더 거칩니다. 끊김을 가릴 때는 뒷면(메인보드) 단자에 바로 꽂아 비교합니다.",
+        ] },
+        { h: "2. 허브 — 사이에 무엇이 있는지" },
+        { ul: [
+          "허브를 거친다면 일단 빼고 PC 단자에 직접 꽂아 비교합니다.",
+          "전원 어댑터 없이 USB 로만 전원을 받는 허브(버스 전원 허브)에 여러 장치를 달면 전원이 모자랄 수 있습니다. 자체 전원 허브로 바꾸거나 장치 수를 줄입니다.",
+          "Port Inspector 의 «USB 경로» 카드는 변환기에서 위로 허브 → 루트 허브 → USB 컨트롤러 사슬과 허브의 전원 방식(버스/자체), 꽂힌 포트 번호, 협상 속도를 보여 줍니다. USB-시리얼 칩은 대부분 Full Speed(12 Mbps)로 붙고, 이것은 시리얼 속도보다 훨씬 빠르므로 느린 것이 아닙니다.",
+        ] },
+        { h: "3. 절전 — 오래 쉬었다가 끊기는지" },
+        { p: "Windows 에는 USB 장치를 쉴 때 포트 단위로 재우는 «USB 선택적 절전» 이 있습니다. Microsoft 문서에 따르면 이 기능은 기본으로 켜져 있고, Microsoft 는 끄지 말 것을 강하게 권합니다 — 꺼 두면 CPU 가 깊은 절전 상태로 들어가지 못해 전력이 늘기 때문입니다. 그래서 «무조건 끄기» 가 아니라, 끊김이 절전과 맞물리는지를 먼저 봅니다." },
+        { ul: [
+          "증상이 «한동안 통신이 없다가 다시 쓸 때» 만 나오면 절전을 의심합니다. 계속 폴링하는 동안에도 끊기면 절전보다 케이블·허브·전원 쪽입니다.",
+          "볼 곳 두 군데: 제어판 → 전원 옵션 → 고급 전원 관리 옵션 → USB 설정 → «USB 선택적 절전 설정», 그리고 장치 관리자 → 변환기(또는 위 USB 장치·허브) 속성 → 전원 관리 → «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음».",
+          "끄는 것은 24시간 감시·기록용 장비 PC 처럼 절전보다 연결이 중요한 곳에서 검토합니다. 노트북 배터리 시간은 줄어듭니다.",
+          "Port Inspector 의 «절전» 카드는 이 두 값을 전원 연결·배터리 따로, 변환기와 그 위 허브까지 한 번에 읽어 보여 줍니다(바꾸지는 않음).",
+        ] },
+        { h: "4. 드라이버 — 장치 관리자의 문제 코드" },
+        { ul: [
+          "장치 관리자에서 포트에 느낌표가 있으면 속성 → 일반 탭의 «장치 상태» 에 문제 코드가 있습니다. 10(시작할 수 없음)·28(드라이버 없음)·43(장치가 문제를 알림) 같은 번호의 뜻은 Microsoft 문서 «Device Manager error messages» 에 있습니다.",
+          "드라이버는 Windows Update 가 고른 것보다 칩 제조사(FTDI·Silicon Labs·WCH·Prolific 등)가 배포한 것을 먼저 써 봅니다. 칩 이름은 장치의 VID/PID 로 알 수 있습니다.",
+          "같은 VID/PID 를 쓰는 복제 칩이 있어서, 최신 공식 드라이버가 오히려 그 장치를 거부하는 경우가 알려져 있습니다. 변환기 자체를 다른 제품으로 바꿔 증상이 사라지는지도 봅니다.",
+        ] },
+        { h: "5. COM 번호가 바뀌는 이유" },
+        { p: "Windows 는 COM 번호를 «COM 포트 데이터베이스» 에서 받아 장치에 붙이고, 한 번 쓴 번호는 장치를 뺀 뒤에도 예약해 둡니다. 그래서 새 변환기를 꽂으면 COM15 처럼 높은 번호를 받기도 합니다." },
+        { p: "같은 변환기인데 다른 USB 포트에 꽂으니 번호가 바뀌었다면, 변환기에 일련번호(iSerialNumber)가 없을 가능성이 큽니다. Microsoft 블로그 설명대로, 일련번호가 없는 USB 장치는 Windows 가 부모(꽂힌 포트·허브) 정보로 구별하므로 다른 포트에 꽂으면 «새 장치» 가 되고 새 COM 번호를 받습니다. 일련번호가 있는 변환기는 어느 포트에 꽂아도 같은 장치로 봅니다." },
+        { ul: [
+          "현장 PC 에서는 변환기를 늘 같은 USB 단자에 꽂아 두는 것이 가장 간단합니다.",
+          "프로그램에 COM 번호를 고정해 둔 경우, 일련번호가 있는 변환기를 쓰면 번호가 덜 바뀝니다.",
+          "지금 없는 장치가 쥔 번호는 장치 관리자 → 보기 → «숨겨진 장치 표시» 에서 흐린 포트를 제거하면 풀립니다. 레지스트리의 예약 값을 직접 고치면 두 장치가 같은 번호를 받을 수 있어 권하지 않습니다.",
+          "COM17 이상을 고를 수 없는 옛 프로그램이 있습니다. 그럴 때만 장치 속성 → 포트 설정 → 고급에서 번호를 낮춥니다(«사용 중» 표시가 있는 번호는 피함).",
+        ] },
+        { h: "끊긴 뒤 프로그램이 할 일" },
+        { p: "USB 가 끊기면 열려 있던 포트는 쓸 수 없게 되고, 다시 꽂아도 프로그램이 포트를 새로 열어야 이어집니다. PortDock Serial 은 «다시 꽂으면 자동 연결» 을 켜 두면 같은 장치가 다시 나타날 때 저절로 엽니다 — COM 번호가 바뀌어도 같은 장치를 찾아 열고, 로그에 «RECONNECT COM3 → COM5» 처럼 남깁니다. 일련번호 없는 같은 변환기를 여러 개 꽂아 두면 어느 것인지 알 수 없어 기다리므로, 그때는 직접 포트를 골라 다시 연결합니다." },
+        { h: "PC 가 볼 수 없는 것" },
+        { p: "위 점검은 PC 쪽입니다. 변환기 뒤의 RS-485 배선(A/B 뒤바뀜·종단·바이어스), 장비 쪽 접지·차폐, 큰 부하가 켜질 때의 잡음은 PC 가 알 수 없습니다. 끊김이 특정 설비가 켜질 때만 생긴다면 그쪽 배선·접지를 봅니다(RS-485 배선 점검 글)." },
+      ],
+      en: [
+        { p: "To the PC, a USB-serial adapter (USB to RS-485 or RS-232) is a USB device. When the USB link drops, Windows removes the COM port device and creates it again, and any program that had the port open gets «device not found» or write errors. This guide is about that case — the connection itself going away. If the link stays up but replies are late or frames split, that is the latency timer (see the USB-serial latency guide); if there is simply no reply, it is usually wiring or settings (see the Modbus no-reply guide)." },
+        { h: "Sort it by symptom first" },
+        {
+          table: {
+            head: ["Symptom", "Look at first"],
+            plain: true,
+            rows: [
+              ["The port briefly disappears from Device Manager and comes back", "The USB link dropped and re-attached — steps 1–4 below"],
+              ["The COM number changes when replugged", "The adapter has no serial number, or a different USB port was used — section 5"],
+              ["Only the first send after a long idle fails", "Power saving — section 3"],
+              ["The port stays but shows a warning icon in Device Manager", "Driver and problem code — section 4"],
+              ["The port stays, only some replies go missing", "Not a disconnect — check latency timer, timeouts and wiring"],
+            ],
+          },
+        },
+        { p: "Confirm it really disconnected by looking at the record. The Windows event log (Kernel-PnP) logs every time the device starts, so a day with several restarts means the link dropped and came back. The «History» card in PortDock Port Inspector collects these events per port and flags any day with three or more reconnects as «Look at»." },
+        { h: "1. Cable and connector — does the symptom follow?" },
+        { ul: [
+          "Swap the USB cable (remove any extension) and try another USB port. If the symptom follows the part you swapped, that part is the cause.",
+          "An adapter that wobbles or hangs at an angle under the cable's weight can lose contact for an instant. Secure the cable.",
+          "Front-panel ports go through an extra internal cable. When chasing drops, compare with a rear (motherboard) port.",
+        ] },
+        { h: "2. Hubs — what sits in between?" },
+        { ul: [
+          "If the adapter goes through a hub, take the hub out and plug straight into the PC to compare.",
+          "A hub without its own power adapter (bus-powered) shares the PC port's power among its devices and can run short with several attached. Use a self-powered hub or fewer devices.",
+          "Port Inspector's «USB path» card shows the chain from the adapter up through hubs and the root hub to the USB controller, each hub's power type (bus or self), the port number and the negotiated speed. Most USB-serial chips attach at Full Speed (12 Mbps), far faster than the serial line, so that is not a slow link.",
+        ] },
+        { h: "3. Power saving — does it drop after idling?" },
+        { p: "Windows can put an idle USB device to sleep port by port («USB selective suspend»). Microsoft's documentation says the feature is on by default and strongly recommends not disabling it, because without it the CPU cannot reach deeper sleep states and power use rises. So rather than switching it off by reflex, first check whether the drops line up with power saving." },
+        { ul: [
+          "If it only happens «after a quiet spell, on the next use», suspect power saving. If it drops while you are polling continuously, look at cable, hub and power instead.",
+          "Two places to look: Control Panel → Power Options → advanced power settings → USB settings → «USB selective suspend setting», and Device Manager → the adapter (or the USB device and hub above it) → Properties → Power Management → «Allow the computer to turn off this device to save power».",
+          "Consider turning them off on equipment PCs where staying connected matters more than saving power, such as 24/7 monitoring or logging. On a laptop, battery life will drop.",
+          "Port Inspector's «Power saving» card reads both values, on AC and battery, for the adapter and the hubs above it in one go (it does not change them).",
+        ] },
+        { h: "4. Driver — the problem code in Device Manager" },
+        { ul: [
+          "A warning icon on the port in Device Manager means there is a problem code under Properties → General → Device status. Microsoft's «Device Manager error messages» explains codes such as 10 (cannot start), 28 (no driver) and 43 (device reported a problem).",
+          "Try the driver from the chip maker (FTDI, Silicon Labs, WCH, Prolific …) before the one Windows Update picked. The device's VID/PID tells you the chip.",
+          "Clone chips use the same VID/PID, and there are known cases where the latest official driver refuses them. See whether the symptom goes away with a different adapter.",
+        ] },
+        { h: "5. Why the COM number changes" },
+        { p: "Windows takes COM numbers from its «COM port database» and keeps a number reserved even after the device is unplugged. That is why a new adapter can come up as COM15 or higher." },
+        { p: "If the same adapter gets a new number in a different USB port, it most likely has no serial number (iSerialNumber). As a Microsoft blog post explains, Windows tells such devices apart by their parent — the port or hub they are plugged into — so in another port the adapter becomes a «new device» and gets a new COM number. An adapter with a serial number is recognised as the same device in any port." },
+        { ul: [
+          "On a site PC, the simplest fix is to always plug the adapter into the same USB socket.",
+          "If a program has the COM number fixed, an adapter with a serial number keeps its number more reliably.",
+          "Numbers held by devices that are no longer present are released by removing the greyed-out ports under Device Manager → View → «Show hidden devices». Editing the reservation in the registry by hand can give two devices the same number, so it is not recommended.",
+          "Some old programs cannot select COM17 or above. Only then lower the number under the device's Properties → Port Settings → Advanced (avoid numbers marked «in use»).",
+        ] },
+        { h: "What the program must do after a drop" },
+        { p: "Once USB drops, the open port is gone; even after replugging, the program has to open the port again. With «Reconnect when plugged back in» on, PortDock Serial opens the same device automatically when it reappears — even if the COM number changed — and logs «RECONNECT COM3 → COM5». If several identical adapters without serial numbers are plugged in, it cannot tell which one is which and keeps waiting; then pick the port and connect by hand." },
+        { h: "What the PC cannot see" },
+        { p: "The checks above are on the PC side. The PC cannot see the RS-485 wiring behind the adapter (A/B swapped, termination, bias), grounding and shielding at the equipment, or noise when large loads switch on. If drops only happen when a particular machine starts, look at its wiring and grounding (see the RS-485 wiring guide)." },
+      ],
+    },
+    refs: [
+      { title: "Microsoft Learn — USB Selective Suspend", url: "https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/usb-selective-suspend", note: { ko: "기본 켜짐, 끄지 말 것을 권함(2025-05-07)", en: "on by default, Microsoft recommends not disabling it (2025-05-07)" } },
+      { title: "Microsoft Windows Music Dev blog — The importance of including a unique iSerialNumber in your USB MIDI Devices", url: "https://devblogs.microsoft.com/windows-music-dev/the-importance-of-including-a-unique-iserialnumber-in-your-usb-midi-devices/", note: { ko: "일련번호가 없으면 다른 포트에서 새 장치(2023-06-06)", en: "without a serial number, another port means a new device (2023-06-06)" } },
+      { title: "Microsoft Learn — Configuration of COM Ports", url: "https://learn.microsoft.com/en-us/previous-versions/windows/drivers/serports/configuration-of-com-ports", note: { ko: "COM 번호는 COM 포트 데이터베이스에서", en: "COM numbers come from the COM port database" } },
+      { title: "Microsoft Learn — Device Manager error messages", url: "https://learn.microsoft.com/windows-hardware/drivers/install/device-manager-error-messages", note: { ko: "문제 코드의 뜻", en: "what the problem codes mean" } },
+    ],
+  },
+  {
+    // 근거: Basler «Affected Network Parameters»(pylon GigE Configurator — Windows: 점보 최대, 수신 버퍼 최대(레지스트리 설정 없으면 2048), 인터럽트 완화 켬·속도 Extreme,
+    // RSS 켬·큐 1, 버퍼 언더런·패킷 손실이면 속도 Low·Minimal, 지연이 중요하면 Off), MathWorks «Configure Gigabit Ethernet Network Adapter on Windows»(점보 최대 예 9014,
+    // 수신 버퍼 최대 예 2048, 속도·이중 자동 협상, 카메라 연결엔 IPv4 만, 공급사·백신 드라이버 해제, 카메라 여러 대·랜카드 여러 개면 랜카드마다 다른 서브넷),
+    // Teledyne «Windows Firewall may disable GigE network»(방화벽 예외), Beckhoff «Bandwidth management for GigE Vision»(패킷 크기는 경로의 가장 작은 MTU, 점보는 오버헤드를 줄임,
+    // 1 GbE 125 MB/s·110~115 MB/s 가정), Microsoft Learn «Standardized INF Keywords for Network Devices»(*JumboPacket·*ReceiveBuffers·*InterruptModeration 등 표준 키워드),
+    // shared/nicCheck.ts(Port Inspector 의 벤더 예 표 — 같은 출처). Balluff·JAI 는 검색 요약(B)이라 쓰지 않음.
+    slug: "gige-camera-network-adapter",
+    date: "2026-10-29",
+    tools: ["port-inspector", "netscan"],
+    related: ["plc-ip-subnet", "modbus-tcp-connection", "usb-serial-disconnects"],
+    webTools: ["tools/gige-bandwidth/", "tools/subnet/"],
+    title: { ko: "GigE 카메라 랜카드 설정 — 점보 프레임·수신 버퍼·인터럽트 완화·방화벽, 제조사 문서 비교", en: "Network adapter settings for GigE cameras — jumbo frames, receive buffers, interrupt moderation, firewall" },
+    seoTitle: { ko: "GigE 카메라 랜카드 설정 — 점보 프레임·수신 버퍼 — PortDock", en: "GigE Camera NIC Settings: Jumbo Frames, Receive Buffers — PortDock" },
+    desc: {
+      ko: "GigE Vision 카메라 프레임이 빠질 때 볼 랜카드 고급 설정. Basler·MathWorks 문서의 점보 프레임·수신 버퍼·인터럽트 완화 값과 방화벽·서브넷·대역폭 점검.",
+      en: "What to check on the network adapter when a GigE Vision camera drops frames: jumbo frames, receive buffers, interrupt moderation and the firewall.",
+    },
+    body: {
+      ko: [
+        { p: "GigE Vision 카메라는 영상을 UDP 패킷으로 잘게 나눠 보냅니다. PC 랜카드가 패킷을 제때 받아 넘기지 못하면 패킷이 빠지고, 카메라 소프트웨어에는 «불완전 프레임», «프레임 손실», «재전송 요청» 이 쌓입니다. 카메라 제조사들은 이때 볼 랜카드 설정을 문서로 두고 있습니다. 이 글은 공개 문서에 적힌 값만 모아 비교합니다 — 값은 제조사 문서의 것이고, PortDock 이 정한 권장값이 아닙니다." },
+        { h: "먼저: 대역폭이 들어가는지" },
+        { p: "설정을 만지기 전에 그 카메라 설정이 링크에 들어가는지부터 계산합니다. 영상 데이터 속도는 가로 × 세로 × 화소당 바이트 × fps 이고, 1 GbE 의 총 속도는 125 MB/s 입니다. Beckhoff 문서의 예에서 1920 × 1200 Mono8 30 fps 는 69.12 MB/s, 같은 카메라 3대를 한 링크에 모으면 207.36 MB/s 로 1 GbE 를 넘습니다. 그 예는 1 GbE 에서 안정적으로 쓸 수 있는 속도를 약 110~115 MB/s 로 가정합니다. 넘치면 랜카드 설정으로는 해결되지 않습니다 — fps·해상도·픽셀 형식을 줄이거나 카메라를 다른 포트로 나눕니다(GigE 대역폭 계산기)." },
+        { h: "랜카드 고급 탭 — 제조사 문서의 값" },
+        {
+          table: {
+            head: ["설정(장치 관리자 → 랜카드 → 속성 → 고급)", "Basler", "MathWorks"],
+            plain: true,
+            rows: [
+              ["점보 패킷(Jumbo Packet / Jumbo Frame)", "가장 큰 값", "가장 큰 값(예 9014 바이트)"],
+              ["수신 버퍼(Receive Buffers / Receive Descriptors)", "가장 큰 값(드라이버에 레지스트리 설정이 없으면 2048)", "가장 큰 값(예 2048)"],
+              ["인터럽트 완화(Interrupt Moderation)", "켬(있으면)", "—"],
+              ["인터럽트 완화 속도(Interrupt Moderation Rate)", "Extreme(레지스트리 설정이 없으면 그대로). 버퍼 언더런·패킷 손실이면 먼저 Low·Minimal, 지연이 중요하고 CPU 여유가 있으면 Off", "—"],
+              ["수신측 배율(RSS)", "켬, RSS 큐 1", "—"],
+              ["속도 및 이중(Speed & Duplex)", "—", "자동 협상(Auto Negotiation)"],
+            ],
+          },
+        },
+        { p: "두 문서가 같은 방향을 가리키는 것은 점보 패킷과 수신 버퍼입니다. 인터럽트 완화는 Basler 문서 안에서도 «Extreme» 과 «손실이 나면 Low·Minimal» 이 함께 나옵니다 — 인터럽트를 묶으면 CPU 부담은 줄지만 버퍼를 늦게 비우게 되기 때문입니다. 한 값으로 고정하지 말고, 바꾼 뒤 카메라 소프트웨어의 손실·재전송 수를 비교합니다." },
+        { h: "점보 프레임은 셋 다 맞아야" },
+        { ul: [
+          "패킷 크기는 경로에서 가장 작은 MTU 를 넘을 수 없습니다(Beckhoff). PC 랜카드만 9014 로 올려도 스위치나 카메라 패킷 크기가 1500 이면 점보 프레임이 쓰이지 않습니다.",
+          "카메라의 패킷 크기 설정(GevSCPSPacketSize 등)을 랜카드·스위치가 받는 값 이하로 맞춥니다. 큰 패킷을 쓰면 프레임당 패킷 수와 프로토콜 오버헤드가 줄어듭니다.",
+          "중간에 스위치가 있으면 그 스위치가 점보 프레임을 지원하는지, 켜져 있는지 설명서로 확인합니다.",
+        ] },
+        { h: "카메라 연결 랜카드 정리" },
+        { ul: [
+          "MathWorks 문서는 카메라 전용 연결에서 «인터넷 프로토콜 버전 4(TCP/IPv4)» 만 남기고 다른 항목을 끄라고 합니다. 랜카드에 걸린 다른 공급사 드라이버·백신 드라이버도 해제합니다.",
+          "회사 정책으로 백신을 뺄 수 없다면, 같은 문서는 카메라 전용 랜카드를 하나 더 두고 PC 의 원래 랜카드는 그대로 두는 방법을 적습니다.",
+          "카메라 여러 대를 랜카드 여러 개에 나눠 꽂으면 자동 IP 로는 안 되고, 랜카드마다 IP 를 정하고 서로 다른 서브넷에 둡니다(MathWorks). 카메라와 그 랜카드가 같은 서브넷인지는 서브넷 계산기로 확인합니다.",
+          "랜카드 드라이버는 랜카드 제조사의 정상 드라이버를 씁니다. 다른 영상 프로그램이 설치한 전용 고성능 드라이버는 다른 소프트웨어와 맞지 않을 수 있다고 MathWorks 는 적습니다.",
+        ] },
+        { h: "방화벽" },
+        { p: "설정을 다 맞췄는데도 연결이 멈추거나 영상이 오지 않으면 방화벽을 봅니다. Teledyne 문서는 Windows 방화벽이 경고 없이 GigE 연결을 막아 프로그램이 멈출 수 있고, 프로그램을 방화벽 예외에 넣어 해결한다고 적습니다. 카메라 랜카드가 «공용» 네트워크 프로필로 잡혀 있으면 더 엄격한 규칙이 걸립니다." },
+        { h: "PC 에서 한 번에 읽기" },
+        { p: "PortDock Port Inspector 의 «이 PC 랜카드» 카드에서 용도를 «GigE 카메라» 로 고르면, 랜카드마다 점보 프레임·수신 버퍼·인터럽트 완화·EEE(에너지 절약 이더넷)·흐름 제어·속도/이중 값, «전원 절약을 위해 끌 수 있음», 받기 오류·버린 패킷, 네트워크 프로필과 방화벽 켜짐을 관리자 권한 없이 읽고, 위 제조사 문서의 값을 출처 링크와 나란히 보여 줍니다. 장치 관리자 고급 탭의 값은 Microsoft 가 정한 표준 키워드(*JumboPacket·*ReceiveBuffers·*InterruptModeration 등)로 레지스트리에 있어서 랜카드 제조사가 달라도 같은 이름으로 읽힙니다. 바꾸는 것은 장치 관리자에서 직접 합니다(관리자 권한)." },
+        { h: "랜카드 밖의 원인" },
+        { p: "랜카드 설정으로 볼 수 없는 것도 있습니다: 카메라 쪽 패킷 크기·패킷 지연 설정, 스위치 버퍼와 업링크 속도, 케이블 품질, PC 의 CPU 부하. 버린 패킷 수가 0 인데 프레임이 빠진다면 카메라 소프트웨어의 재전송·손실 통계와 카메라 설정을 봅니다." },
+      ],
+      en: [
+        { p: "A GigE Vision camera sends each image as many small UDP packets. If the PC's network adapter cannot take them in and hand them over in time, packets are lost and the camera software starts reporting incomplete frames, lost frames and resend requests. Camera vendors document which adapter settings to check. This guide collects only the values written in public documents and compares them — they are the vendors' values, not recommendations made by PortDock." },
+        { h: "First: does the bandwidth fit?" },
+        { p: "Before touching settings, check that the camera configuration fits the link. Image data rate is width × height × bytes per pixel × fps, and 1 GbE carries 125 MB/s gross. In the Beckhoff example, a 1920 × 1200 Mono8 camera at 30 fps needs 69.12 MB/s, and three of them on one link need 207.36 MB/s — more than 1 GbE. That example assumes about 110–115 MB/s is usable on 1 GbE. If the link is oversubscribed, no adapter setting will fix it: lower fps, resolution or pixel format, or spread cameras across ports (GigE Bandwidth Calculator)." },
+        { h: "Adapter Advanced tab — values in vendor documents" },
+        {
+          table: {
+            head: ["Setting (Device Manager → adapter → Properties → Advanced)", "Basler", "MathWorks"],
+            plain: true,
+            rows: [
+              ["Jumbo Packet / Jumbo Frame", "Maximum value", "Maximum value (e.g. 9014 bytes)"],
+              ["Receive Buffers / Receive Descriptors", "Maximum value (2048 if the driver has no registry setting)", "Maximum value (e.g. 2048)"],
+              ["Interrupt Moderation", "On (if available)", "—"],
+              ["Interrupt Moderation Rate", "Extreme (left as is if there is no registry setting). On buffer underruns or packet loss, first try Low or Minimal; if latency matters and CPU load does not, Off", "—"],
+              ["Receive Side Scaling (RSS)", "On, one RSS queue", "—"],
+              ["Speed & Duplex", "—", "Auto Negotiation"],
+            ],
+          },
+        },
+        { p: "Both documents agree on jumbo packets and receive buffers. For interrupt moderation, even Basler's page gives both «Extreme» and «Low or Minimal if you lose packets»: batching interrupts lowers CPU load but empties buffers later. Do not fix one value blindly — change it and compare the loss and resend counts in the camera software." },
+        { h: "Jumbo frames need all three ends" },
+        { ul: [
+          "Packet size cannot exceed the smallest MTU along the path (Beckhoff). Raising the PC adapter to 9014 does nothing if the switch or the camera's packet size stays at 1500.",
+          "Set the camera's packet size (GevSCPSPacketSize or similar) no higher than what the adapter and switch accept. Larger packets mean fewer packets per frame and less protocol overhead.",
+          "If there is a switch in between, check its manual for jumbo frame support and whether it is enabled.",
+        ] },
+        { h: "Clean up the camera adapter" },
+        { ul: [
+          "MathWorks says to leave only «Internet Protocol Version 4 (TCP/IPv4)» checked on a dedicated camera connection and to clear vendor and antivirus drivers bound to the adapter.",
+          "If company rules do not allow removing the antivirus, the same page suggests a second adapter dedicated to the camera, leaving the PC's main adapter as it is.",
+          "With several cameras on several adapters, automatic IP addressing will not do: give each adapter a fixed IP on its own subnet (MathWorks). Use the subnet calculator to confirm a camera and its adapter share a subnet.",
+          "Use the adapter maker's regular driver. MathWorks notes that custom high-performance drivers installed by another imaging application may not work with other software.",
+        ] },
+        { h: "Firewall" },
+        { p: "If everything is set and the stream still stalls or never arrives, look at the firewall. Teledyne documents that Windows Firewall can disable a GigE connection without warning, hanging the application, and that adding the application to the firewall exceptions fixes it. An adapter on the «Public» network profile gets stricter rules." },
+        { h: "Reading it all on the PC" },
+        { p: "In PortDock Port Inspector, choose «GigE camera» as the purpose on the «Network adapters on this PC» card. For each adapter it reads jumbo frames, receive buffers, interrupt moderation, EEE (Energy-Efficient Ethernet), flow control and speed/duplex, «allow the computer to turn off this device», receive errors and discarded packets, the network profile and whether the firewall is on — without admin rights — and shows the vendor values above with links. Advanced-tab values are stored in the registry under Microsoft's standardized keywords (*JumboPacket, *ReceiveBuffers, *InterruptModeration …), so they read the same way whatever the adapter brand. Changes are made in Device Manager (admin rights)." },
+        { h: "Causes outside the adapter" },
+        { p: "Some things adapter settings cannot show: the camera's packet size and packet delay, switch buffers and uplink speed, cable quality and CPU load. If discarded packets stay at zero but frames still drop, look at the camera software's resend and loss statistics and at the camera settings." },
+      ],
+    },
+    refs: [
+      { title: "Basler — Affected Network Parameters (pylon GigE Configurator)", url: "https://docs.baslerweb.com/affected-network-parameters", note: { ko: "점보·수신 버퍼·인터럽트 완화·RSS", en: "jumbo, receive buffers, interrupt moderation, RSS" } },
+      { title: "MathWorks — Configure Gigabit Ethernet Network Adapter on Windows", url: "https://www.mathworks.com/help/imaq/configure-gigabit-ethernet-network-adapter-on-windows.html", note: { ko: "점보 9014·수신 버퍼 2048·자동 협상·IPv4 만·서브넷", en: "jumbo 9014, receive buffers 2048, auto negotiation, IPv4 only, subnets" } },
+      { title: "Teledyne Vision Solutions — Windows Firewall may disable GigE network", url: "https://www.teledynevisionsolutions.com/support/support-center/troubleshooting/iis/windows-firewall-may-disable-gige-network/" },
+      { title: "Beckhoff TwinCAT 3 Vision — Bandwidth management for GigE Vision", url: "https://infosys.beckhoff.com/content/1033/tf7xxx_tc3_vision/22185723659.html", note: { ko: "대역폭 식·MTU·1 GbE 125 MB/s", en: "bandwidth formula, MTU, 1 GbE 125 MB/s" } },
+      { title: "Microsoft Learn — Standardized INF Keywords for Network Devices", url: "https://learn.microsoft.com/en-us/windows-hardware/drivers/network/standardized-inf-keywords-for-network-devices" },
+    ],
+  },
+  {
+    // 근거: MODBUS Application Protocol Specification V1.1b3(2012-04-26) §4.4(번호 X → PDU 주소 X−1, p.7–8), §6.1~6.4(읽기 개수 1~2000·1~125, p.11–16),
+    // §6.3 예(시작 0x006B, 3개), §7(예외 02 Illegal Data Address·03 Illegal Data Value), §6 상태도(시작 + 개수가 범위 밖이면 02).
+    // 시간·바이트는 site/src/lib/modbusPlan.ts·serialTiming.ts 로 계산(9600 bps 8E1, 장비 지연 10 ms).
+    slug: "modbus-read-blocks",
+    date: "2026-10-29",
+    tools: ["modbus-master", "modbus-slave"],
+    related: ["modbus-rtu-timeout-polling", "modbus-exception-codes", "modbus-address-notation", "modbus-float-word-order"],
+    webTools: ["tools/modbus-blocks/", "tools/serial-timing/", "tools/modbus/"],
+    devices: true,
+    title: { ko: "Modbus 레지스터를 묶어 읽기 — 125개 한도·빈 주소·예외 02 와 폴링 시간", en: "Reading Modbus registers in blocks — the 125 limit, gaps, exception 02 and poll time" },
+    seoTitle: { ko: "Modbus 여러 레지스터 한 번에 읽기 — 125개 한도·예외 02 — PortDock", en: "Modbus Read Multiple Registers: 125 Limit, Gaps — PortDock" },
+    desc: {
+      ko: "태그마다 요청을 하나씩 보내면 폴링이 느려집니다. 레지스터를 묶어 읽는 규칙, 125개·2000비트 한도, 빈 주소에서 나는 예외 02, 묶음에 따른 시간 차이를 계산으로.",
+      en: "One request per tag makes polling slow. Reading registers in blocks: the 125-register and 2000-bit limits, exception 02 on gaps, and the time saved.",
+    },
+    body: {
+      ko: [
+        { p: "HMI·SCADA·PC 프로그램에서 Modbus 장비의 값을 읽을 때, 태그(값)마다 요청을 하나씩 보내면 장비 수와 태그 수가 늘수록 한 바퀴가 길어집니다. 요청 하나에는 실제 데이터 말고도 요청 전송, 장비 처리 시간, 다음 요청 전 쉼이 붙기 때문입니다. 그래서 주소가 가까운 값들을 한 요청으로 «묶어» 읽습니다. 이 글은 묶는 규칙과 한계를 정리합니다." },
+        { h: "규칙 1 — 한 요청은 한 표, 연속한 칸" },
+        { ul: [
+          "함수 코드가 표를 정합니다: 01 코일, 02 이산 입력, 03 보유 레지스터, 04 입력 레지스터. 40001(보유)과 30001(입력)은 둘 다 통신 주소 0 이지만 한 요청에 넣을 수 없습니다.",
+          "요청은 «시작 주소 + 개수» 라서 연속한 칸만 읽습니다. 40001 과 40010 을 한 번에 읽으려면 40001~40010, 10칸을 읽어야 하고, 그 사이 8칸은 쓰지 않아도 함께 옵니다.",
+          "규격 예(§6.3)도 이렇게 생겼습니다 — 레지스터 108~110 을 읽는 요청은 시작 주소 0x006B(107), 개수 3 입니다. 번호 X 의 통신 주소는 X − 1 입니다(§4.4).",
+        ] },
+        { h: "규칙 2 — 개수 한도" },
+        {
+          table: {
+            head: ["함수", "한 요청 최대(규격)", "응답 데이터"],
+            rows: [
+              ["01 코일 읽기", "2000", "⌈개수 ÷ 8⌉ 바이트"],
+              ["02 이산 입력 읽기", "2000", "⌈개수 ÷ 8⌉ 바이트"],
+              ["03 보유 레지스터 읽기", "125", "2 × 개수 바이트"],
+              ["04 입력 레지스터 읽기", "125", "2 × 개수 바이트"],
+            ],
+          },
+        },
+        { p: "레지스터 125개를 읽으면 응답 PDU 는 함수 1 + 바이트 수 1 + 데이터 250 = 252 바이트로, 규격이 정한 PDU 최대 253 바이트(§4.1) 안에 들어갑니다. 장비는 이보다 적게 받을 수 있습니다 — 장비 레지스터 맵의 «한 번에 최대» 값이나 매뉴얼을 봅니다. 한도를 넘기면 장비는 예외 03(Illegal Data Value)으로 답합니다." },
+        { h: "규칙 3 — 빈 주소와 예외 02" },
+        { p: "묶은 요청 안에 장비가 정의하지 않은 주소가 끼면, 많은 장비가 요청 «전체» 를 예외 02(Illegal Data Address)로 거절합니다. 규격의 처리 순서도 «시작 주소 + 개수» 가 장비의 범위에 맞는지를 보고 아니면 02 를 냅니다. 어떤 장비는 빈 칸을 0 으로 채워 돌려주기도 하는데, 이것은 장비마다 다르므로 매뉴얼이나 시험으로 확인합니다." },
+        { ul: [
+          "처음에는 «붙어 있는 것만» 묶고(허용 빈칸 0), 예외가 없으면 빈칸을 조금씩 늘려 봅니다.",
+          "예외 02 가 났다면, 그 요청의 시작·개수를 반으로 나눠 읽어 보며 어느 주소가 비었는지 좁힙니다.",
+          "32비트 값(float·누적 전력량)은 두 워드를 한 요청에서 읽어야 합니다. 다른 요청으로 나누면 그 사이에 값이 바뀌어 위아래 워드가 어긋날 수 있습니다.",
+        ] },
+        { h: "묶으면 얼마나 빨라지나 — 계산 예" },
+        { p: "보유 레지스터 10개(40001~40010)를 9600 bps·8E1 로 읽고, 장비가 요청을 받고 10 ms 뒤에 답한다고 합시다. 값마다 따로 읽으면 요청 10개, 한 요청은 요청 8 바이트 + 응답 7 바이트입니다. 한 번에 읽으면 요청 1개, 요청 8 + 응답 25 바이트입니다." },
+        {
+          table: {
+            head: ["방법", "요청 수", "RTU 바이트", "한 바퀴(계산)"],
+            plain: true,
+            rows: [
+              ["값마다 따로", "10", "150", "약 312 ms"],
+              ["한 요청으로", "1", "33", "약 52 ms"],
+            ],
+          },
+        },
+        { p: "바이트는 4.5배 줄었고 시간은 6배 줄었습니다. 요청마다 붙는 장비 처리 시간(여기서는 10 ms)과 3.5문자 쉼이 요청 수만큼 반복되기 때문입니다. 장비 처리 시간이 길수록 묶는 효과가 커집니다. Modbus TCP 도 시리얼 전송 시간만 없을 뿐, 요청마다 장비 처리와 네트워크 왕복이 붙는 것은 같습니다." },
+        { h: "읽는 주기도 나누기" },
+        { ul: [
+          "측정값(전류·온도처럼 자주 바뀌는 값)과 설정값(가끔 바뀌는 값)을 같은 주기로 읽을 필요는 없습니다. 측정값 블록은 짧은 주기, 설정값 블록은 긴 주기로 나눕니다.",
+          "장비 여러 대를 한 RS-485 선에서 돌리면 한 바퀴 = 장비마다 블록 수 × 거래 시간의 합입니다. 목표 주기에 맞는지 계산해 보고 블록 수를 줄입니다.",
+          "PortDock Modbus Master 는 표(탭)마다 국번·함수·시작·개수·주기를 따로 두므로, 묶은 블록 하나를 표 하나로 만들고 주기를 블록마다 정하면 됩니다. «장비 프로필» 로 내장 장비 맵을 고르면 함수 코드별로 붙어 있는 레지스터끼리만 표로 묶어 줍니다 — 빈 주소에 예외 02 를 내는 장비가 많아서입니다. 통신 기록에 요청·응답이 그대로 남아 예외가 난 요청을 바로 봅니다.",
+        ] },
+      ],
+      en: [
+        { p: "When an HMI, SCADA system or PC program reads a Modbus device one request per tag, every extra device and tag makes the poll cycle longer. Each request carries more than its data: sending the request, the device's processing time, and the pause before the next request. So values with nearby addresses are read together in «blocks». This guide sets out the rules and limits." },
+        { h: "Rule 1 — one table, one contiguous run per request" },
+        { ul: [
+          "The function code picks the table: 01 coils, 02 discrete inputs, 03 holding registers, 04 input registers. 40001 (holding) and 30001 (input) are both wire address 0 but cannot share a request.",
+          "A request is «start address + quantity», so it reads a contiguous run. To get 40001 and 40010 together you read 40001–40010, ten registers, and the eight in between come along whether you need them or not.",
+          "The specification's own example (§6.3) works this way: reading registers 108–110 uses start address 0x006B (107) and quantity 3. Number X goes on the wire as X − 1 (§4.4).",
+        ] },
+        { h: "Rule 2 — quantity limits" },
+        {
+          table: {
+            head: ["Function", "Max per request (spec)", "Response data"],
+            rows: [
+              ["01 Read Coils", "2000", "⌈quantity ÷ 8⌉ bytes"],
+              ["02 Read Discrete Inputs", "2000", "⌈quantity ÷ 8⌉ bytes"],
+              ["03 Read Holding Registers", "125", "2 × quantity bytes"],
+              ["04 Read Input Registers", "125", "2 × quantity bytes"],
+            ],
+          },
+        },
+        { p: "Reading 125 registers gives a response PDU of function 1 + byte count 1 + data 250 = 252 bytes, within the 253-byte PDU maximum (§4.1). Devices may accept fewer — see «Max per request» on the device register map or the manual. Above the limit, the device answers with exception 03 (Illegal Data Value)." },
+        { h: "Rule 3 — gaps and exception 02" },
+        { p: "If a grouped request includes an address the device does not define, many devices reject the «whole» request with exception 02 (Illegal Data Address). The specification's processing order also checks whether «start + quantity» fits the device's range and returns 02 if not. Some devices fill undefined registers with 0 instead; this varies, so check the manual or test." },
+        { ul: [
+          "Start by grouping only adjacent values (allowed gap 0); if no exceptions come back, widen the gap step by step.",
+          "If you get exception 02, split that request's range in half and read each part to narrow down which address is missing.",
+          "Read both words of a 32-bit value (float, energy counter) in the same request. Split across requests, the value can change in between and the two halves no longer match.",
+        ] },
+        { h: "How much faster — a worked example" },
+        { p: "Take ten holding registers (40001–40010) at 9600 bps 8E1, with the device replying 10 ms after a request. One request per value means ten requests of 8 bytes out and 7 bytes back. One request for all means 8 bytes out and 25 back." },
+        {
+          table: {
+            head: ["Method", "Requests", "RTU bytes", "Cycle (calculated)"],
+            plain: true,
+            rows: [
+              ["One per value", "10", "150", "about 312 ms"],
+              ["One request", "1", "33", "about 52 ms"],
+            ],
+          },
+        },
+        { p: "Bytes fell 4.5-fold and time six-fold, because the device delay (10 ms here) and the 3.5-character pause repeat for every request. The longer the device takes to process, the more grouping helps. Modbus TCP has no serial transmission time, but processing and the network round trip still repeat per request." },
+        { h: "Split the poll rate too" },
+        { ul: [
+          "Measurements (current, temperature — values that change often) and settings (values that rarely change) need not be read at the same rate. Poll the measurement block often and the settings block rarely.",
+          "With several devices on one RS-485 line, the cycle is the sum over devices of blocks × transaction time. Check it against your target and cut the number of blocks.",
+          "PortDock Modbus Master gives each table (tab) its own Slave ID, function, start, count and interval, so make one table per block and set its rate. Picking a built-in device map with «Device profile» groups only contiguous registers per function code into tables, because many devices answer exception 02 for unused addresses. The traffic log shows every request and reply, so you can spot the one that raised an exception.",
+        ] },
+      ],
+    },
+    refs: [
+      { title: "MODBUS Application Protocol Specification V1.1b3", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§4.4 주소 모델, §6.1~6.4 개수 한도, §7 예외 코드", en: "§4.4 addressing model, §6.1–6.4 quantity limits, §7 exception codes" } },
+    ],
   },
 ];

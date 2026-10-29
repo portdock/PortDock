@@ -72,6 +72,21 @@ const ld = {
         ),
       )
     }
+    {
+      guide.refs && (
+        <>
+          <h2>{ko ? "근거" : "Sources"}</h2>
+          <ul>
+            {guide.refs.map((r) => (
+              <li>
+                <a href={r.url} rel="noopener">{r.title}</a>
+                {r.note ? ` — ${r.note[lang]}` : ""}
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
     <p class="note">{ko ? `작성 ${guide.date}` : `Published ${guide.date}`}</p>
     <UseNotice lang={lang} />
   </article>

@@ -82,6 +82,10 @@
 | 진공 패드 흡착력 (계산), 진공 흡착력 계산, 진공 이젝터 선정 | `/tools/vacuum-pad/` + 가이드 `vacuum-pad-lifting-force` | «진공 패드 흡착력 계산기 — 패드 지름·진공압·안전율», 가이드 «진공 패드 흡착력 계산 — 공식·안전율·패드 지름·이젝터» |
 | 공기 소비량 계산, 에어 소비량 계산, 컴프레서·콤프레샤 용량 계산 | `/tools/air-consumption/` + 가이드 `pneumatic-air-consumption` | «공압 실린더 공기 소비량 계산기 — L/min·컴프레서 용량», 가이드 «실린더 공기 소비량 계산 — 공식·컴프레서 용량» |
 | 타이밍 벨트 길이 (계산·계산기·선정), 벨트 길이 계산(기), 풀리 벨트 길이 계산 | `/tools/timing-belt/` | «타이밍 벨트 길이 계산기 — 축간 거리·풀리 잇수·피치» |
+| modbus 여러 레지스터 읽기, modbus 125개, 모드버스 폴링 블록 | `/tools/modbus-blocks/` + 가이드 `modbus-read-blocks` | «Modbus 읽기 요청 묶기 — 125개 한도·빈 주소·폴링 시간», 가이드 «Modbus 여러 레지스터 한 번에 읽기 — 125개 한도·예외 02» |
+| GigE 카메라 대역폭, 1기가 카메라 대역폭, GigE 카메라 프레임 드롭, 점보 프레임 설정, 수신 버퍼 | `/tools/gige-bandwidth/` + 가이드 `gige-camera-network-adapter` | «GigE 카메라 대역폭 계산기 — MB/s·1 GbE 한계·최대 fps», 가이드 «GigE 카메라 랜카드 설정 — 점보 프레임·수신 버퍼» |
+| 전력량계 펄스 계산, imp/kWh, 펄스 정수, 전력량계 배율 | `/tools/energy-pulse/` | «전력량계 펄스 계산기 — imp/kWh·kW 환산·CT 배율» |
+| USB 시리얼 끊김, COM 포트 사라짐, COM 포트 번호 바뀜 | `/guides/usb-serial-disconnects/` | «USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -156,6 +160,10 @@
 | suction cup force calculator, vacuum cup force calculation, vacuum cup lifting force (calculation), vacuum ejector selection | `/en/tools/vacuum-pad/` + guide `vacuum-pad-lifting-force` | «Vacuum Pad Lifting Force Calculator: Suction Cup Size», guide «Vacuum Pad Lifting Force: Formula, Safety Factor» |
 | air consumption calculator for pneumatic cylinder, pneumatic cylinder air consumption (formula), air compressor sizing calculation | `/en/tools/air-consumption/` + guide `pneumatic-air-consumption` | «Pneumatic Cylinder Air Consumption Calculator: L/min», guide «Pneumatic Cylinder Air Consumption: Formula, Compressor» |
 | timing belt length calculator, belt center distance calculator, timing belt length formula, gt2 timing belt length calculator | `/en/tools/timing-belt/` | «Timing Belt Length Calculator: Center Distance, Pulleys» |
+| modbus read multiple registers, modbus max registers per request 125, modbus polling blocks | `/en/tools/modbus-blocks/` + guide `modbus-read-blocks` | «Modbus Read Request Planner: 125 Limit, Poll Time», guide «Modbus Read Multiple Registers: 125 Limit, Gaps» |
+| gige camera bandwidth calculator, gige vision bandwidth, gige camera dropped frames, jumbo frames gige camera, receive buffers gige | `/en/tools/gige-bandwidth/` + guide `gige-camera-network-adapter` | «GigE Camera Bandwidth Calculator: MB/s and Max FPS», guide «GigE Camera NIC Settings: Jumbo Frames, Receive Buffers» |
+| energy meter pulse calculation, imp/kwh to kw, kwh pulse counter | `/en/tools/energy-pulse/` | «Energy Meter Pulse Calculator: imp/kWh to kW» |
+| usb serial adapter keeps disconnecting, com port disappears, com port number changes | `/en/guides/usb-serial-disconnects/` | «USB-Serial Adapter Keeps Disconnecting: COM Port Drops» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.
@@ -208,6 +216,10 @@
 | 45 | 컨베이어 모터 용량 계산(엑셀)·벨트 컨베이어 모터 선정·관성 모멘트 계산(기)·부하 관성 모멘트 계산(구글 hl=ko), conveyor motor sizing (calculator)(구글) | 없음 | 수요는 강함. Oriental Motor 공식 웹 문서(orientalmotor.eu «Selecting a Motor: Selection Example»)에 예가 있다고 검색에 나오지만 이번(10/24)엔 원문을 받아 식·숫자를 확인하지 않음 | 보류, 원문 확인 뒤 |
 | 46 | cv 값 계산(기)·밸브 cv 계산(식·엑셀)·cv 값 유량 계산(구글 hl=ko), valve cv calculator·valve cv formula(구글) | 없음 | Swagelok «Valve Sizing» 기술 자료는 대리점(chicago.swagelok.com) 사본만 찾았고 swagelok.com 공식 PDF 는 못 찾음. 바탕인 ISA S75.01(IEC 60534)은 유료라 확인 못 함(10/24) | 보류, 원문 확인 뒤 |
 | 47 | 제어반 발열 계산·판넬 쿨러 용량·분전반 발열량 계산(구글 hl=ko — 모두 자동완성 없음), enclosure heat dissipation calculator·enclosure cooling calculation(구글) | 없음 | 한국어 수요가 보이지 않고, 함체 제조사 원문(식·숫자 예)을 이번에 확인하지 않음 | 보류 |
+| 48 | modbus read multiple registers·modbus 125 registers limit(영어), 모드버스 폴링(한국어) — 10/29 자동완성은 확인하지 않음 | `/tools/modbus-blocks/` + 가이드 `modbus-read-blocks` | 주소 목록을 함수 코드별 요청으로 묶는 계산기는 찾지 못함(검색 범위 안). Modbus Application Protocol V1.1b3 §4.4·§6.1~6.4(1~2000·1~125)·§4.1(PDU 253)·§6.3 예(0x006B·3개), 시간은 serialTiming(Serial Line V1.02 §2.5.1.1). 주소 표기 변환기는 기존 가이드 `modbus-address-notation`·Modbus Master 와 겹쳐 만들지 않음 | ✅ 10/29 |
+| 49 | gige camera bandwidth calculator·gige vision bandwidth·jumbo frames gige(영어), GigE 카메라 대역폭·점보 프레임(한국어) — 자동완성 확인 안 함 | `/tools/gige-bandwidth/` + 가이드 `gige-camera-network-adapter` | Beckhoff «Bandwidth management for GigE Vision»(식·69.12/207.36/103.68 MB/s 예·125 MB/s·110~115 MB/s 가정)을 시험으로, 화소 크기는 EMVA PFNC 2.4(2021-06-16) §3.1.3·§4·§6.1. GVSP 머리글 크기는 GigE Vision 규격(유료)·공식 문서로 확인 못 해 패킷 오버헤드 계산은 뺌 — «쓸 수 있는 속도» 비율로만. Baumer «90 % 이하» 권고는 공식 페이지가 403 이라 안 씀. 가이드는 하드웨어점검 확장 문서의 A 등급(Basler·MathWorks·Teledyne·Microsoft INF 키워드)만, Balluff·JAI(B)는 뺌 | ✅ 10/29 |
+| 50 | 전력량계 펄스 계산·imp/kwh(한국어), energy meter pulse calculation·imp/kwh to kw(영어) — 자동완성 확인 안 함 | `/tools/energy-pulse/` | 정의식(1 kWh = 1 kW × 3600 s, SI 브로슈어 h). 계량기 제조사 원문의 숫자 예는 찾지 못해(공식 매뉴얼 아닌 OpenEnergyMonitor·eGauge·특허 문서만) 정의식으로만, «2000 imp/kWh·1 kW → 1.8 s» 는 계산 시험. 펄스 정수·폭·1차/2차 기준은 사용자가 계량기 설명서 값을 넣음 | ✅ 10/29 |
+| 51 | usb serial disconnect·com port disappears(영어), USB 시리얼 끊김·COM 포트 번호 바뀜(한국어) — 자동완성 확인 안 함 | 가이드 `usb-serial-disconnects` | Microsoft Learn «USB Selective Suspend»(기본 켜짐·끄지 말 것 권고 — 그래서 «무조건 끄기» 대신 증상 맞물림부터), Microsoft 블로그(일련번호 없으면 포트마다 새 장치), «Configuration of COM Ports»(COM 포트 데이터베이스). FTDI AN_107(고급 드라이버 옵션)은 403 이라 쓰지 않음. Port Inspector·Serial 자동 재연결과 연결 | ✅ 10/29 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
@@ -215,7 +227,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭).
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 10개·가이드 전부·장비 목록.
 
