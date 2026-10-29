@@ -19,14 +19,14 @@ const ko = lang === "ko";
 const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
 const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
   serial: ["tools/checksum/", "tools/modbus/", "tools/hex-ascii/", "tools/serial-timing/", "tools/rs485/", "tools/ascii/", "tools/uart-baud/"],
-  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/subnet/", "tools/motor-speed/", "tools/integer/"],
+  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/modbus-blocks/", "tools/subnet/", "tools/motor-speed/", "tools/integer/"],
   "modbus-slave": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/"],
   tcp: ["tools/hex-ascii/", "tools/subnet/"],
   udp: ["tools/hex-ascii/", "tools/subnet/"],
   netscan: ["tools/subnet/"],
   simulator: ["tools/checksum/", "tools/hex-ascii/", "tools/ascii/"],
   plot: ["tools/ntc/", "tools/encoder/", "tools/adc/"],
-  "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/"],
+  "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/", "tools/gige-bandwidth/"],
 };
 const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));
 const devices = tool.id === "modbus-master" || tool.id === "modbus-slave" ? DEVICES : [];

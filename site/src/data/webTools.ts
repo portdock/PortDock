@@ -43,7 +43,10 @@ export interface WebTool {
     | "tools/op-amp-gain/"
     | "tools/vacuum-pad/"
     | "tools/air-consumption/"
-    | "tools/timing-belt/";
+    | "tools/timing-belt/"
+    | "tools/modbus-blocks/"
+    | "tools/gige-bandwidth/"
+    | "tools/energy-pulse/";
   name: L;
   blurb: L;
 }
@@ -248,6 +251,21 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/timing-belt/",
     name: { ko: "타이밍 벨트 길이·축간 거리 계산기", en: "Timing Belt Length & Center Distance Calculator" },
     blurb: { ko: "피치·풀리 잇수·축간 거리 → 벨트 길이·잇수, 벨트 → 축간 거리. 피치원 지름, 감긴 각, 맞물린 이, 벨트 속도.", en: "Pitch, pulley teeth and center distance → belt length and teeth, or belt → center distance. Pitch diameter, wrap, teeth in mesh, speed." },
+  },
+  {
+    path: "tools/modbus-blocks/",
+    name: { ko: "Modbus 읽기 요청 묶기 계산기", en: "Modbus Read Request Planner" },
+    blurb: { ko: "읽을 주소 목록 → 함수 코드별 요청. 125개 한도·허용 빈칸, 안 쓰는 칸, RTU 한 바퀴 시간·바이트 비교.", en: "Address list → requests per function code. 125-register limit, allowed gap, unused registers, RTU poll time and bytes." },
+  },
+  {
+    path: "tools/gige-bandwidth/",
+    name: { ko: "GigE 카메라 대역폭 계산기", en: "GigE Camera Bandwidth Calculator" },
+    blurb: { ko: "해상도·픽셀 형식·fps·카메라 수 → MB/s, 1·2.5·5·10 GbE 대비 %, 링크 안에서 최대 fps.", en: "Resolution, pixel format, fps and cameras → MB/s, share of 1/2.5/5/10 GbE, max fps that fits." },
+  },
+  {
+    path: "tools/energy-pulse/",
+    name: { ko: "전력량계 펄스 계산기", en: "Energy Meter Pulse Calculator" },
+    blurb: { ko: "imp/kWh·펄스 간격·개수 → kW·kWh, CT·PT 배율, 최대 전력에서 펄스 주파수와 펄스 폭.", en: "imp/kWh, pulse interval or count → kW and kWh, CT/VT multiplier, pulse rate and width at full load." },
   },
 ];
 

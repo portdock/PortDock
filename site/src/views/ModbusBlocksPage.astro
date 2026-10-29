@@ -1,0 +1,310 @@
+---
+// 웹 도구: Modbus 읽기 요청 묶기 — 읽을 주소 목록 → 함수 코드별 요청, 개수 한도·허용 빈칸, RTU·TCP 바이트와 한 바퀴 시간(lib/modbusPlan.ts).
+// 근거: MODBUS Application Protocol Specification V1.1b3 §4.4·§6.1~6.4(개수 한도), 시간은 lib/serialTiming(Serial Line V1.02 §2.5.1.1).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { cost, onePerItem, parseList, plan } from "../lib/modbusPlan";
+import { fmtTime } from "../lib/serialTiming";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/modbus-blocks/";
+const SPEC = "https://www.modbus.org/modbus-specifications";
+const EXAMPLE = "40001\n40002\n40003-40006\n40021*2\n40023*2\n40101\n30001*2\n30003*2\n00001-00016";
+// 예시 목록으로 빈칸 허용별 비교(9600 bps 8E1, 장비 처리 10 ms)
+const F = { dataBits: 8, parity: "even", stopBits: 1 } as const;
+const exItems = parseList(EXAMPLE);
+const sep = cost(onePerItem(exItems), 9600, F, 0.01);
+const gRows = [0, 10, 100].map((g) => {
+  const r = plan(exItems, { maxQty: {}, maxGap: g });
+  const c = cost(r, 9600, F, 0.01);
+  return [String(g), String(c.requests), String(r.reduce((s, x) => s + x.unused, 0)), `${c.rtuBytes}`, fmtTime(c.rtuCycle)];
+});
+const L = ko
+  ? {
+      title: "Modbus 읽기 요청 묶기 계산기",
+      desc: "읽을 Modbus 주소 목록(40001·30001 표기)을 함수 코드별로 모아 125개 한도·허용 빈칸 안에서 요청 몇 개로 묶고, RTU 한 바퀴 시간과 바이트를 비교합니다.",
+      list: "읽을 주소 (한 줄에 하나, 쉼표로도 나눔)",
+      listHelp: "40001 · 40001-40010(범위) · 40021*2(2칸짜리 32비트 값) · hr 100 / ir 0x10*2 / co 5 / di 0(표 이름 + 0 기준 주소). # 뒤는 메모.",
+      gap: "사이에 끼워 읽어도 되는 빈 칸 수",
+      maxHr: "한 번에 읽는 최대 수 — 레지스터(03·04)",
+      maxBit: "한 번에 읽는 최대 수 — 비트(01·02)",
+      baud: "통신 속도 (bps)",
+      fmt: "문자 형식",
+      delay: "장비 응답 지연 (ms)",
+      res: "요청",
+      head: ["함수", "시작 (0 기준 · PLC 표기)", "개수", "안 쓰는 칸", "덮는 줄"],
+      sum: "합계",
+      k: { n: "요청 수 (묶음 / 따로)", bytes: "RTU 바이트 (요청 + 응답)", tcp: "TCP 바이트 (MBAP 포함)", cycle: "RTU 한 바퀴 시간 (묶음 / 따로)" },
+      example: "기본 목록은 예시입니다. 장비 맵이나 매뉴얼의 주소를 붙여 넣으세요. «따로» 는 값마다 요청을 하나씩 보낼 때(범위는 칸마다)입니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "어떻게 묶나",
+      formula: [
+        "함수 코드는 표가 정합니다: 코일 01, 이산 입력 02, 보유 레지스터 03, 입력 레지스터 04 — 표가 다르면 한 요청에 넣을 수 없습니다.",
+        "한 요청은 시작 주소부터 «연속한» 칸만 읽습니다. 떨어진 두 주소를 한 번에 읽으려면 그 사이 칸까지 함께 읽어야 합니다.",
+        "주소순으로 늘어놓고, 다음 값까지의 빈 칸이 «허용 빈칸» 이하이고 개수가 한도 안이면 지금 요청을 늘립니다. 아니면 새 요청을 시작합니다.",
+        "40021*2 처럼 적은 2칸짜리 값은 두 요청으로 쪼개지 않습니다. 한도 끝에 걸리면 통째로 다음 요청으로 넘깁니다.",
+        "RTU 바이트: 03·04 요청 8, 응답 5 + 2 × 개수 · 01·02 응답 5 + ⌈개수 ÷ 8⌉. TCP 는 국번·CRC 3 바이트 대신 MBAP 7 바이트.",
+        "한 바퀴 시간 = 요청마다 (요청 전송 + 장비 응답 지연 + 응답 전송 + 다음 요청 전 3.5문자) 의 합.",
+      ],
+      tTitle: "허용 빈칸에 따라 (기본 목록, 9600 bps 8E1, 응답 지연 10 ms)",
+      tHead: ["허용 빈칸", "요청 수", "안 쓰는 칸", "RTU 바이트", "한 바퀴"],
+      tNote: `같은 목록을 값마다 따로 읽으면 요청 ${sep.requests}개, ${sep.rtuBytes} 바이트, 한 바퀴 ${fmtTime(sep.rtuCycle)} 입니다. 요청 하나마다 응답 지연과 3.5문자 쉼이 붙어서, 요청 수를 줄이는 것이 바이트를 줄이는 것보다 시간에 더 듭니다.`,
+      lTitle: "읽는 법",
+      l: [
+        "«안 쓰는 칸» 은 목록에 없는데 함께 읽는 칸입니다. 장비에 따라 비어 있는(정의되지 않은) 주소를 읽으면 예외 02(Illegal Data Address)로 요청 전체를 거절합니다. 그런 장비면 허용 빈칸을 0 으로 두세요.",
+        "규격 한도는 레지스터 125개, 비트 2000개입니다. 장비가 더 적게 받는 경우가 많습니다(예: 장비 맵의 «한 번에 최대» 값). 한도를 넘기면 예외 03(Illegal Data Value)이 납니다.",
+        "TCP 는 시리얼 전송 시간이 없어서 요청 수가 곧 왕복 횟수입니다. 장비 처리 시간과 네트워크 왕복이 요청마다 붙으므로 묶을수록 유리한 것은 같습니다.",
+        "값이 자주 바뀌는 것(측정값)과 거의 안 바뀌는 것(설정값)을 다른 주기로 나눠 읽는 것도 방법입니다 — 그때는 목록을 둘로 나눠 각각 묶어 보세요.",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "HMI·SCADA·PLC 의 Modbus 마스터 태그 목록을 만들 때 — 태그를 주소순으로 모아 블록(요청) 수를 줄입니다.",
+        "폴링 주기가 목표보다 길게 나올 때, 요청이 몇 개인지와 그 가운데 빈 칸 때문에 나뉜 것이 무엇인지 볼 때.",
+        "장비가 예외 02 를 낼 때 — 묶은 요청 안에 장비가 없는 주소가 끼었는지 확인할 때.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["Modbus 로 한 번에 레지스터를 몇 개까지 읽을 수 있나요?", "규격(Application Protocol V1.1b3 §6.3·§6.4)상 함수 03·04 는 1~125개, 01·02 는 1~2000비트입니다. 장비는 이보다 적게 받을 수 있으니 매뉴얼의 한도를 따릅니다."],
+        ["떨어진 주소 두 개를 한 요청으로 읽을 수 있나요?", "한 요청은 연속한 칸만 읽으므로, 사이 칸까지 함께 읽어야 합니다. 그 사이에 장비가 정의하지 않은 주소가 있으면 예외 02 가 날 수 있습니다."],
+        ["40001 과 30001 을 한 요청에 넣을 수 있나요?", "아니요. 40001 은 보유 레지스터(함수 03), 30001 은 입력 레지스터(함수 04)라서 요청이 따로 필요합니다. 둘 다 통신 주소는 0 입니다."],
+        ["32비트 값(float)이 요청 경계에 걸리면?", "두 워드를 서로 다른 요청으로 읽으면 그 사이에 값이 바뀌어 위아래 워드가 어긋날 수 있습니다. 이 계산기는 «*2» 로 적은 값을 쪼개지 않습니다."],
+      ],
+      tNote2: "요청 하나의 프레임을 만들어 보려면",
+      tLink: "Modbus RTU 요청 만들기",
+      sNote: "통신 속도별 문자 시간·타임아웃은",
+      sLink: "시리얼 통신 시간 계산기",
+      gNote: "예외 02·03 이 왜 나는지는",
+      gLink: "Modbus 예외 코드 가이드",
+      dNote: "장비별 주소와 한 번에 읽을 수 있는 수는",
+      dLink: "장비 레지스터 맵",
+      srcTitle: "근거",
+      src: "MODBUS Application Protocol Specification V1.1b3(2012-04-26) — §4.4 주소 모델(번호 X 는 PDU 주소 X−1, p.7–8), §6.1·6.2 읽기 1~2000(p.11–12), §6.3·6.4 읽기 1~125(p.15–16), 각 함수의 요청·응답 모양. 3.5문자 시간은 MODBUS over Serial Line V1.02 §2.5.1.1. 규격 문서는",
+      srcLink: "Modbus Organization 규격 페이지",
+    }
+  : {
+      title: "Modbus Read Request Planner",
+      desc: "Group Modbus addresses (40001/30001 notation) into read requests by function code within the 125-register limit and an allowed gap; compare poll time and bytes.",
+      list: "Addresses to read (one per line, or comma-separated)",
+      listHelp: "40001 · 40001-40010 (range) · 40021*2 (a two-register 32-bit value) · hr 100 / ir 0x10*2 / co 5 / di 0 (table + 0-based address). Text after # is a comment.",
+      gap: "Unused registers allowed in between",
+      maxHr: "Max per request — registers (03, 04)",
+      maxBit: "Max per request — bits (01, 02)",
+      baud: "Baud rate (bps)",
+      fmt: "Character format",
+      delay: "Device response delay (ms)",
+      res: "Requests",
+      head: ["Function", "Start (0-based · PLC)", "Quantity", "Unused", "Lines covered"],
+      sum: "Total",
+      k: { n: "Requests (grouped / separate)", bytes: "RTU bytes (request + response)", tcp: "TCP bytes (incl. MBAP)", cycle: "RTU poll cycle (grouped / separate)" },
+      example: "The default list is an example; paste addresses from a device map or manual. «Separate» means one request per value (per register for ranges).",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "How the grouping works",
+      formula: [
+        "The table sets the function code: coils 01, discrete inputs 02, holding registers 03, input registers 04. Different tables cannot share a request.",
+        "A request reads one contiguous run from its start address. To read two separated addresses in one go you must read everything in between.",
+        "Values are sorted by address. If the gap to the next value is within the allowed gap and the quantity stays within the limit, the current request grows; otherwise a new one starts.",
+        "A two-register value written as 40021*2 is never split across requests; if it would cross the limit, it moves whole to the next request.",
+        "RTU bytes: 03/04 request 8, response 5 + 2 × quantity · 01/02 response 5 + ⌈quantity ÷ 8⌉. TCP swaps the 3 bytes of slave ID and CRC for the 7-byte MBAP header.",
+        "Poll cycle = sum over requests of (request time + device delay + response time + 3.5 characters before the next request).",
+      ],
+      tTitle: "By allowed gap (default list, 9600 bps 8E1, 10 ms device delay)",
+      tHead: ["Allowed gap", "Requests", "Unused", "RTU bytes", "Cycle"],
+      tNote: `Reading the same list one value at a time takes ${sep.requests} requests, ${sep.rtuBytes} bytes and ${fmtTime(sep.rtuCycle)} per cycle. Every request carries a device delay and a 3.5-character pause, so cutting the number of requests saves more time than cutting bytes.`,
+      lTitle: "How to read it",
+      l: [
+        "«Unused» registers are read along with the list but are not in it. Some devices reject the whole request with exception 02 (Illegal Data Address) if it touches an undefined address — for those, set the allowed gap to 0.",
+        "The specification limit is 125 registers or 2000 bits. Many devices accept fewer (see «Max per request» on the device map). Going over gives exception 03 (Illegal Data Value).",
+        "Over TCP there is no serial transmission time, so the number of requests is the number of round trips. Device processing and network round trip are added per request, so grouping still pays off.",
+        "You can also poll fast-changing values (measurements) and rarely changing ones (settings) at different rates — split the list in two and group each.",
+      ],
+      uTitle: "Where it is used",
+      u: [
+        "Building Modbus master tag lists in an HMI, SCADA or PLC — sort tags by address to cut the number of blocks (requests).",
+        "When the poll cycle comes out longer than planned: see how many requests there are and which ones were split by gaps.",
+        "When a device returns exception 02: check whether a grouped request includes an address the device does not have.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How many registers can one Modbus request read?", "The specification (Application Protocol V1.1b3 §6.3, §6.4) allows 1–125 for functions 03 and 04, and 1–2000 bits for 01 and 02. Devices may accept fewer, so follow the manual's limit."],
+        ["Can I read two separated addresses in one request?", "A request reads a contiguous run, so the registers in between are read too. If the device does not define one of them, it may answer with exception 02."],
+        ["Can 40001 and 30001 go in one request?", "No. 40001 is a holding register (function 03) and 30001 an input register (function 04), so they need separate requests. Both are wire address 0."],
+        ["What if a 32-bit value (float) falls on a request boundary?", "If the two words are read in different requests, the value can change in between and the halves no longer match. This planner never splits a value written with «*2»."],
+      ],
+      tNote2: "To build the frame for one request, use the",
+      tLink: "Modbus RTU Request Builder",
+      sNote: "For character time and timeouts by baud rate, use the",
+      sLink: "Serial Timing Calculator",
+      gNote: "For why exceptions 02 and 03 happen, see the",
+      gLink: "Modbus exception codes guide",
+      dNote: "For each device's addresses and request limit, see the",
+      dLink: "device register maps",
+      srcTitle: "Basis",
+      src: "MODBUS Application Protocol Specification V1.1b3 (2012-04-26) — §4.4 addressing model (number X is PDU address X−1, pp. 7–8), §6.1/6.2 reads of 1–2000 (pp. 11–12), §6.3/6.4 reads of 1–125 (pp. 15–16), and each function's request and response layout. The 3.5-character time is from MODBUS over Serial Line V1.02 §2.5.1.1. The specifications are on the",
+      srcLink: "Modbus Organization specifications page",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 읽기 요청 묶기 — 125개 한도·빈 주소·폴링 시간 — PortDock" : "Modbus Read Request Planner: 125 Limit, Poll Time — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="mb">
+      <label class="fld">{L.list}<textarea id="list" class="mono" rows="9" spellcheck="false" autocomplete="off">{EXAMPLE}</textarea></label>
+      <p class="note">{L.listHelp}</p>
+      <div class="row">
+        <label class="fld">{L.gap}<input id="gap" class="mono" value="0" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.maxHr}<input id="maxr" class="mono" value="125" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.maxBit}<input id="maxb" class="mono" value="2000" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.baud}<select id="baud">{[1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200].map((b) => <option value={b} selected={b === 9600}>{b}</option>)}</select></label>
+        <label class="fld">{L.fmt}<select id="fmt"><option value="8E1" selected>8E1</option><option value="8O1">8O1</option><option value="8N2">8N2</option><option value="8N1">8N1</option></select></label>
+        <label class="fld">{L.delay}<input id="delay" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <thead><tr>{L.head.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.sum}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li>{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{gRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.tNote2} <a href={url(lang, "tools/modbus/")}>{L.tLink}</a>. {L.sNote} <a href={url(lang, "tools/serial-timing/")}>{L.sLink}</a>. {L.gNote} <a href={url(lang, "guides/modbus-exception-codes/")}>{L.gLink}</a>. {L.dNote} <a href={url(lang, "devices/")}>{L.dLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src} <a href={SPEC} rel="noopener">{L.srcLink}</a>.</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { cost, onePerItem, parseList, plan, plcText, ParseError } from "../lib/modbusPlan";
+    import { fmtTime, type CharFormat } from "../lib/serialTiming";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("mb") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const int = (id: string) => {
+      const s = $(id).value.trim();
+      return /^\d+$/.test(s) ? Number(s) : NaN;
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const FMT: Record<string, CharFormat> = {
+      "8E1": { dataBits: 8, parity: "even", stopBits: 1 },
+      "8O1": { dataBits: 8, parity: "odd", stopBits: 1 },
+      "8N2": { dataBits: 8, parity: "none", stopBits: 2 },
+      "8N1": { dataBits: 8, parity: "none", stopBits: 1 },
+    };
+    const FC = { 1: "01", 2: "02", 3: "03", 4: "04" } as const;
+    function cell(tr: HTMLTableRowElement, text: string) {
+      const td = document.createElement("td");
+      td.className = "mono";
+      td.textContent = text;
+      tr.appendChild(td);
+    }
+    function run() {
+      const tbody = $<HTMLTableSectionElement>("rows");
+      tbody.replaceChildren();
+      try {
+        const items = parseList($<HTMLTextAreaElement>("list").value);
+        const gap = int("gap");
+        const maxr = int("maxr");
+        const maxb = int("maxb");
+        const delay = Number($("delay").value.trim().replace(",", ".")) / 1000;
+        if (!items.length || !Number.isFinite(gap) || !(maxr >= 1) || !(maxb >= 1) || !(delay >= 0)) throw new RangeError("input");
+        const reqs = plan(items, { maxGap: gap, maxQty: { hr: maxr, ir: maxr, co: maxb, di: maxb } });
+        const baud = Number($<HTMLSelectElement>("baud").value);
+        const f = FMT[$<HTMLSelectElement>("fmt").value];
+        const g = cost(reqs, baud, f, delay);
+        const s = cost(onePerItem(items), baud, f, delay);
+        for (const r of reqs) {
+          const tr = document.createElement("tr");
+          cell(tr, FC[r.fc]);
+          cell(tr, `${r.start} · ${plcText(r.space, r.start)}`);
+          cell(tr, String(r.qty));
+          cell(tr, String(r.unused));
+          cell(tr, r.items.map((i) => items[i].text).join(", "));
+          tbody.appendChild(tr);
+        }
+        set("n", `${g.requests} / ${s.requests}`);
+        set("bytes", `${g.rtuBytes} / ${s.rtuBytes}`);
+        set("tcp", `${g.tcpBytes} / ${s.tcpBytes}`);
+        set("cycle", `${fmtTime(g.rtuCycle)} / ${fmtTime(s.rtuCycle)}`);
+        $("err").textContent = "";
+      } catch (e) {
+        const bad = e instanceof ParseError ? e.token : "";
+        $("err").textContent = bad
+          ? ko
+            ? `읽을 수 없는 줄: «${bad}» — 40001, 40001-40010, 40021*2, hr 100 꼴로 적으세요`
+            : `Cannot read «${bad}» — use forms like 40001, 40001-40010, 40021*2 or hr 100`
+          : ko
+            ? "숫자를 확인하세요 — 빈칸은 0 이상, 최대 수는 1 이상(규격보다 크면 규격 한도), 한 값의 칸 수는 최대 수 이하"
+            : "Check the numbers — gap 0 or more, max 1 or more (capped at the spec limit), and no single value larger than the max";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

@@ -1,0 +1,269 @@
+---
+// 웹 도구: 전력량계 펄스 — 펄스 정수(imp/kWh)·간격·개수 → kW·kWh, CT·PT 배율, 최대 펄스 주파수와 펄스 폭(lib/energyPulse.ts).
+// 정의식(1 kWh = 1 kW × 3600 s). 펄스 정수·펄스 폭·1차/2차 기준은 계량기 설명서·명판 값을 사용자가 넣는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { intervalFromPower, pulseHz } from "../lib/energyPulse";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/energy-pulse/";
+const SI = "https://www.bipm.org/en/publications/si-brochure";
+const fmtS = (s: number) => (s >= 60 ? `${+(s / 60).toPrecision(3)} min` : s >= 1 ? `${+s.toPrecision(3)} s` : `${+(s * 1000).toPrecision(3)} ms`);
+// 펄스 정수별 표 — 전력마다 펄스 간격
+const KW = [0.1, 1, 10, 100];
+const tRows = [100, 400, 1000, 3200, 10000].map((c) => [`${c}`, `${+(1000 / c).toPrecision(4)} Wh`, ...KW.map((kw) => fmtS(intervalFromPower(c, kw))), `${+pulseHz(c, 100).toPrecision(3)} Hz`]);
+const L = ko
+  ? {
+      title: "전력량계 펄스 계산기",
+      desc: "전력량계 펄스 정수(imp/kWh)와 펄스 간격·개수로 순시 전력(kW)·전력량(kWh)을 구하고, CT·PT 배율과 PLC 카운터가 받을 펄스 주파수·펄스 폭을 확인합니다.",
+      c: "펄스 정수 (imp/kWh)",
+      t: "펄스 간격 (초)",
+      n: "센 펄스 수",
+      win: "센 시간 (초)",
+      ct1: "CT 1차 (A)",
+      ct2: "CT 2차 (A)",
+      pt1: "PT 1차 (V, 없으면 1)",
+      pt2: "PT 2차 (V, 없으면 1)",
+      side: "펄스가 나타내는 쪽",
+      sides: ["2차 (배율을 곱함)", "1차 (그대로)"],
+      maxKw: "최대 전력 (kW, 1차)",
+      width: "펄스 폭 (ms)",
+      res: "결과",
+      k: { wh: "펄스 하나의 전력량", mul: "배율 (CT 비 × PT 비)", p: "펄스 간격으로 본 전력 (1차)", e: "센 펄스의 전력량 (1차)", pa: "센 시간의 평균 전력 (1차)", hz: "최대 전력에서 펄스 주파수 / 주기", ok: "펄스 폭이 주기의 절반 안인가" },
+      example: "기본값(1000 imp/kWh, CT 200/5, 2차 기준)은 예시입니다. 펄스 정수·펄스 폭·펄스가 1차 기준인지 2차 기준인지는 계량기 명판과 설명서를 보세요 — 같은 제품도 설정에 따라 다릅니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식",
+      formula: [
+        "펄스 하나 = 1 ÷ C kWh = 1000 ÷ C Wh   (C = 펄스 정수, imp/kWh)",
+        "펄스 간격 T 초 → 전력 P [kW] = 3600 ÷ (C × T)",
+        "시간 t 초 동안 N 개 → 전력량 E = N ÷ C [kWh], 평균 전력 = 3600 × N ÷ (C × t) [kW]",
+        "전력 P 에서 펄스 주파수 f = P × C ÷ 3600 [Hz], 주기 = 1 ÷ f",
+        "변성기를 거친 계량기에서 펄스가 2차 기준이면 1차 값 = 2차 값 × CT 비 × PT 비(배율)",
+      ],
+      tTitle: "펄스 정수별 펄스 간격 (1차 기준, 배율 1)",
+      tHead: ["imp/kWh", "펄스 하나", "0.1 kW", "1 kW", "10 kW", "100 kW", "100 kW 에서 주파수"],
+      tNote: "부하가 작을수록 펄스 사이가 길어져, 짧은 시간의 평균 전력은 펄스 하나 차이로 크게 흔들립니다(예: 100 imp/kWh·0.1 kW 면 펄스가 6분마다). 반대로 정수가 크고 부하가 크면 주파수가 높아져 카운터 입력 한계와 펄스 폭을 봐야 합니다.",
+      lTitle: "읽는 법",
+      l: [
+        "«펄스 간격으로 본 전력» 은 마지막 두 펄스 사이의 평균입니다. 부하가 출렁이면 여러 펄스를 센 «평균 전력» 이 더 안정적입니다.",
+        "펄스 수로 1분 평균을 내면 해상도는 «펄스 하나 ÷ 1분» 입니다. 1000 imp/kWh 면 1 Wh ÷ 60 s = 60 W 단위로 움직입니다.",
+        "배율을 두 번 곱하거나 빠뜨리는 실수가 흔합니다. 계량기 표시값이 이미 1차 값인지(CT 비 설정이 들어간 기종), 펄스도 1차 기준인지 설명서에서 따로 확인합니다.",
+        "펄스 폭(ms)이 주기의 절반을 넘으면 최대 부하에서 펄스가 붙어 카운터가 놓칠 수 있습니다. 카운터 입력의 최소 ON·OFF 시간도 PLC 설명서에서 봅니다.",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: [
+        "PLC·데이터 로거의 고속 카운터나 디지털 입력으로 전력량계 펄스를 셀 때 — 환산 계수와 입력 한계.",
+        "Modbus 가 없는 계량기로 설비별 전력량을 모을 때, 또는 Modbus 값과 펄스로 센 값을 맞춰 볼 때.",
+        "CT 를 바꾼 뒤 기록값이 몇십 배 어긋날 때 — 배율이 어디에 들어가는지 확인.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["imp/kWh 로 전력을 어떻게 계산하나요?", "P[kW] = 3600 ÷ (펄스 정수 × 펄스 간격[초]) 입니다. 2000 imp/kWh 에서 펄스가 1.8초마다 나오면 3600 ÷ (2000 × 1.8) = 1 kW 입니다."],
+        ["펄스 수를 kWh 로 바꾸려면?", "펄스 수 ÷ 펄스 정수 입니다. 1000 imp/kWh 에서 2500개면 2.5 kWh 입니다. 2차 기준 펄스면 여기에 CT 비 × PT 비를 곱합니다."],
+        ["CT 200/5 를 쓰면 배율은?", "200 ÷ 5 = 40 입니다. PT 가 6600/110 이면 60 을 더 곱해 2400 입니다."],
+        ["PLC 일반 입력으로 펄스를 셀 수 있나요?", "최대 전력에서의 펄스 주파수가 입력의 응답(필터) 시간과 스캔 주기로 놓치지 않을 만큼 낮아야 합니다. 위 «최대 전력에서 펄스 주파수» 와 PLC 입력 사양을 비교하세요."],
+      ],
+      ctNote: "CT 비·2차 전류·부담은",
+      ctLink: "CT 비 계산기",
+      pNote: "kW·kVA·역률은",
+      pLink: "3상 전력 계산기",
+      dNote: "Modbus 로 전력량을 읽는 전력 미터 주소는",
+      dLink: "장비 레지스터 맵",
+      srcTitle: "근거",
+      src: "정의식입니다 — 1 kWh 는 1 kW 로 1시간(3600 s) 쓴 에너지이고, 시간 단위 h = 3600 s 는 SI 브로슈어의 «SI 와 함께 쓰는 단위» 표에 있습니다. 배율은 변성비의 곱입니다. 펄스 정수·펄스 폭·1차/2차 기준은 제품마다 다르므로 계량기 설명서 값을 넣습니다.",
+      srcLink: "BIPM SI 브로슈어",
+    }
+  : {
+      title: "Energy Meter Pulse Calculator",
+      desc: "Power (kW) and energy (kWh) from a meter's pulse constant (imp/kWh), pulse interval or count; CT/VT multiplier and the pulse rate a PLC counter must handle.",
+      c: "Pulse constant (imp/kWh)",
+      t: "Pulse interval (s)",
+      n: "Pulses counted",
+      win: "Counting time (s)",
+      ct1: "CT primary (A)",
+      ct2: "CT secondary (A)",
+      pt1: "VT primary (V, 1 if none)",
+      pt2: "VT secondary (V, 1 if none)",
+      side: "Pulses represent",
+      sides: ["Secondary (apply multiplier)", "Primary (as is)"],
+      maxKw: "Maximum power (kW, primary)",
+      width: "Pulse width (ms)",
+      res: "Results",
+      k: { wh: "Energy per pulse", mul: "Multiplier (CT ratio × VT ratio)", p: "Power from pulse interval (primary)", e: "Energy of pulses counted (primary)", pa: "Average power over counting time (primary)", hz: "Pulse rate / period at maximum power", ok: "Pulse width within half the period?" },
+      example: "The defaults (1000 imp/kWh, CT 200/5, secondary pulses) are an example. Take the pulse constant, pulse width and whether pulses count primary or secondary energy from the meter's nameplate and manual — the same model can differ by setting.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas",
+      formula: [
+        "One pulse = 1 ÷ C kWh = 1000 ÷ C Wh   (C = pulse constant, imp/kWh)",
+        "Pulse interval T seconds → power P [kW] = 3600 ÷ (C × T)",
+        "N pulses in t seconds → energy E = N ÷ C [kWh], average power = 3600 × N ÷ (C × t) [kW]",
+        "Pulse rate at power P: f = P × C ÷ 3600 [Hz], period = 1 ÷ f",
+        "On a transformer-connected meter with secondary-side pulses, primary value = secondary value × CT ratio × VT ratio (the multiplier)",
+      ],
+      tTitle: "Pulse interval by pulse constant (primary, multiplier 1)",
+      tHead: ["imp/kWh", "One pulse", "0.1 kW", "1 kW", "10 kW", "100 kW", "Rate at 100 kW"],
+      tNote: "The smaller the load, the longer between pulses, so a short-window average jumps by a whole pulse (e.g. 100 imp/kWh at 0.1 kW gives one pulse every 6 minutes). With a high constant and a large load, the rate climbs and the counter's input limit and the pulse width matter.",
+      lTitle: "How to read it",
+      l: [
+        "«Power from pulse interval» is the average between the last two pulses. With a fluctuating load, the «average power» over many pulses is steadier.",
+        "Averaging pulse counts over one minute gives a resolution of one pulse per minute: at 1000 imp/kWh that is 1 Wh ÷ 60 s = 60 W steps.",
+        "Applying the multiplier twice, or not at all, is a common mistake. Check separately in the manual whether the meter display is already primary (models with a CT ratio setting) and whether the pulses are too.",
+        "If the pulse width (ms) exceeds half the period, pulses run together at full load and a counter may miss them. Also check the counter input's minimum ON and OFF times in the PLC manual.",
+      ],
+      uTitle: "Where it is used",
+      u: [
+        "Counting meter pulses with a PLC high-speed counter, digital input or data logger — the conversion factor and input limits.",
+        "Collecting per-machine energy from meters without Modbus, or reconciling Modbus readings with pulse counts.",
+        "When logged values are off by a factor of tens after a CT change — checking where the multiplier goes.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How do I calculate power from imp/kWh?", "P[kW] = 3600 ÷ (pulse constant × pulse interval in seconds). At 2000 imp/kWh with a pulse every 1.8 s: 3600 ÷ (2000 × 1.8) = 1 kW."],
+        ["How do I convert pulse counts to kWh?", "Pulses ÷ pulse constant. At 1000 imp/kWh, 2500 pulses are 2.5 kWh. For secondary-side pulses, multiply by CT ratio × VT ratio."],
+        ["What is the multiplier with a 200/5 CT?", "200 ÷ 5 = 40. With a 6600/110 VT, multiply by another 60 for 2400."],
+        ["Can a plain PLC input count the pulses?", "Only if the pulse rate at maximum power is low enough for the input filter time and scan time not to miss pulses. Compare «Pulse rate at maximum power» above with the PLC input specification."],
+      ],
+      ctNote: "For CT ratio, secondary current and burden, use the",
+      ctLink: "CT Ratio Calculator",
+      pNote: "For kW, kVA and power factor, use the",
+      pLink: "Three-Phase Power Calculator",
+      dNote: "For power meter addresses read over Modbus, see the",
+      dLink: "device register maps",
+      srcTitle: "Basis",
+      src: "These are definitions: 1 kWh is the energy of 1 kW for one hour (3600 s), and the hour h = 3600 s is listed in the SI Brochure table of non-SI units accepted for use with the SI. The multiplier is the product of the transformer ratios. Pulse constant, pulse width and primary/secondary basis vary by product, so enter the values from the meter's manual.",
+      srcLink: "BIPM SI Brochure",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "전력량계 펄스 계산기 — imp/kWh·kW 환산·CT 배율 — PortDock" : "Energy Meter Pulse Calculator: imp/kWh to kW — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ep">
+      <div class="row">
+        <label class="fld">{L.c}<input id="c" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.t}<input id="t" class="mono" value="9" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.n}<input id="n" class="mono" value="25" inputmode="numeric" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.win}<input id="win" class="mono" value="300" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.ct1}<input id="ct1" class="mono" value="200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.ct2}<input id="ct2" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pt1}<input id="pt1" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pt2}<input id="pt2" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.side}<select id="side"><option value="sec" selected>{L.sides[0]}</option><option value="pri">{L.sides[1]}</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.maxKw}<input id="max" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.width}<input id="w" class="mono" value="80" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>. {L.pNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pLink}</a>. {L.dNote} <a href={url(lang, "devices/")}>{L.dLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src} <a href={SI} rel="noopener">{L.srcLink}</a>.</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { fromCount, multiplier, powerFromInterval, pulseCheck, whPerPulse } from "../lib/energyPulse";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("ep") as HTMLFormElement;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const kw = (x: number) => (x >= 1000 ? `${p4(x / 1000)} MW` : x >= 1 ? `${p4(x)} kW` : `${p4(x * 1000)} W`);
+    const kwh = (x: number) => (x >= 1000 ? `${p4(x / 1000)} MWh` : x >= 1 ? `${p4(x)} kWh` : `${p4(x * 1000)} Wh`);
+    function run() {
+      try {
+        const c = num("c");
+        const sec = $<HTMLSelectElement>("side").value === "sec";
+        const m = multiplier(num("ct1"), num("ct2"), num("pt1"), num("pt2"));
+        const k = sec ? m : 1;
+        set("wh", `${p4(whPerPulse(c))} Wh${sec ? (ko ? ` (1차 ${p4(whPerPulse(c) * m)} Wh)` : ` (primary ${p4(whPerPulse(c) * m)} Wh)`) : ""}`);
+        set("mul", `${p4(m)}${sec ? "" : ko ? " (펄스에는 곱하지 않음)" : " (not applied to pulses)"}`);
+        set("p", kw(powerFromInterval(c, num("t")) * k));
+        const o = fromCount(c, num("n"), num("win"));
+        set("e", kwh(o.kwh * k));
+        set("pa", kw(o.kw * k));
+        // 최대 전력(1차)을 펄스 쪽(2차면 배율로 나눔)으로 바꿔 주파수를 낸다
+        const chk = pulseCheck(c, num("max") / k, num("w"));
+        set("hz", `${p4(chk.hz)} Hz / ${p4(chk.periodMs)} ms`);
+        set("ok", chk.overlap ? (ko ? "아니요 — 최대 전력에서 펄스가 붙을 수 있음" : "No — pulses may run together at maximum power") : ko ? "예" : "Yes");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 펄스 정수·간격·시간·CT·PT·최대 전력·펄스 폭은 0 보다 크고, 펄스 수는 0 이상 정수" : "Check the numbers — constant, interval, time, CT, VT, maximum power and pulse width above 0; pulse count a whole number 0 or more";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>
