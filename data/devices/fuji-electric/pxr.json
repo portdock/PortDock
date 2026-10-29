@@ -1,0 +1,1017 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "fuji-electric/pxr",
+  "manufacturer": {
+    "ko": "후지전기",
+    "en": "Fuji Electric"
+  },
+  "model": "PXR",
+  "models": [
+    "PXR3",
+    "PXR4",
+    "PXR5",
+    "PXR9"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "후지전기 PXR 온도 조절기 (RS-485 Modbus RTU)",
+    "en": "Fuji Electric PXR temperature controller (RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "Micro Controller X(PXR3·4·5·9) 통신 옵션. 같은 값을 두 표로 준다 — 내부 계산값(입력 범위의 %, 30001·40001~)과 공학 단위(+1000: 31001·41001~). PV·SV·DV·MV·경보 상태(04), SV·PID·입력 범위·경보 설정(03·06·10), FIX 코일 00001",
+    "en": "Communication option of Micro Controller X (PXR3, 4, 5, 9). The same data comes in two tables: internal values (% of input range, 30001/40001-) and engineering units (+1000: 31001/41001-). PV, SV, DV, MV and alarm status (04); SV, PID, input range and alarm settings (03, 06, 10); FIX coil 00001"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      9600
+    ],
+    "dataBits": 8,
+    "parity": "odd",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      255
+    ],
+    "maxRegisters": 60,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "주소 체계: 프레임 주소 = 번호의 아래 네 자리 − 1(인쇄 p.8). 예: 01 01 00 00 00 01 FD CA(코일 00001), 1F 02 00 0C 00 02 3A 76(10013~), 02 03 00 1E 00 02 A4 3E(40031~), 02 03 04 06 00 02 25 09(41031~), 01 04 00 00 00 01 31 CA(30001), 01 04 03 E8 00 01 B1 BA(31001), 01 05 00 00 FF 00 8C 3A, 01 06 00 05 03 E8 99 75(40006), 01 10 00 05 00 03 06 03 E8 00 64 00 32 56 BE(인쇄 p.16~27). 요청과 응답 CRC 는 계산값과 같다 — 마지막 31001 응답(01 04 02 01 4F)만 CRC 를 앞 예의 38 32 로 적었다(계산 F9 54).",
+        "en": "Addressing: frame address = lower four digits of the number − 1 (printed p.8). Examples: 01 01 00 00 00 01 FD CA (coil 00001), 1F 02 00 0C 00 02 3A 76 (10013-), 02 03 00 1E 00 02 A4 3E (40031-), 02 03 04 06 00 02 25 09 (41031-), 01 04 00 00 00 01 31 CA (30001), 01 04 03 E8 00 01 B1 BA (31001), 01 05 00 00 FF 00 8C 3A, 01 06 00 05 03 E8 99 75 (40006), 01 10 00 05 00 03 06 03 E8 00 64 00 32 56 BE (printed pp.16-27). Request and reply CRCs match calculation, except the last 31001 reply (01 04 02 01 4F), which repeats 38 32 from the previous example (calculated F9 54)."
+      },
+      {
+        "ko": "통신 조건(인쇄 p.5): 9600 bps·데이터 8·정지 1 고정, 패리티 CoM 출하값 0 = 홀수(1 짝수·2 없음), 국번 STno 0~255(0 = 통신 정지), 프로토콜 PCoL = 1(Modbus). 함수 01·02·03·04·05·06·10h, 한 번에 03h·10h 60워드, 04h 37워드(인쇄 p.11).",
+        "en": "Communication (printed p.5): 9600 bps, 8 data bits and 1 stop bit fixed; parity CoM default 0 = odd (1 even, 2 none); station STno 0-255 (0 stops communication); protocol PCoL = 1 (Modbus). Functions 01, 02, 03, 04, 05, 06 and 10h; up to 60 words for 03h/10h and 37 for 04h (printed p.11)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "00001",
+      "type": "bit",
+      "name": {
+        "ko": "FIX (설정값 비휘발 메모리 저장)",
+        "en": "FIX (save settings to non-volatile memory)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "description": {
+        "ko": "1 = 저장 요청. 매뉴얼 예 01 05 00 00 FF 00 8C 3A. 저장에 약 5초 — 그동안 전원을 끄지 않는다",
+        "en": "1 = request. Manual example 01 05 00 00 FF 00 8C 3A. Saving takes about 5 s; do not power off meanwhile"
+      },
+      "ref": "인쇄 p.24 (PDF p.27), 인쇄 p.31 (PDF p.34)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "10001",
+      "type": "bit",
+      "name": {
+        "ko": "경보 1 ON/OFF",
+        "en": "Alarm 1 ON/OFF"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 4,
+      "manualAddress": "10005",
+      "type": "bit",
+      "name": {
+        "ko": "경보 2 ON/OFF",
+        "en": "Alarm 2 ON/OFF"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 8,
+      "manualAddress": "10009",
+      "type": "bit",
+      "name": {
+        "ko": "경보 1 출력(비여자 경보 계산 결과)",
+        "en": "Alarm 1 output (de-energizing alarm result)"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 9,
+      "manualAddress": "10010",
+      "type": "bit",
+      "name": {
+        "ko": "경보 2 출력",
+        "en": "Alarm 2 output"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 10,
+      "manualAddress": "10011",
+      "type": "bit",
+      "name": {
+        "ko": "경보 3 출력",
+        "en": "Alarm 3 output"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 11,
+      "manualAddress": "10012",
+      "type": "bit",
+      "name": {
+        "ko": "HB(히터 단선) 경보 릴레이 출력",
+        "en": "HB (heater break) alarm relay output"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 12,
+      "manualAddress": "10013",
+      "type": "bit",
+      "name": {
+        "ko": "경보 1 ON/OFF (10001 과 같음)",
+        "en": "Alarm 1 ON/OFF (same as 10001)"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "description": {
+        "ko": "매뉴얼 예: 1F 02 00 0C 00 02 3A 76 → 01h(경보 1 ON·경보 2 OFF)",
+        "en": "Manual example: 1F 02 00 0C 00 02 3A 76 → 01h (alarm 1 ON, alarm 2 OFF)"
+      },
+      "ref": "인쇄 p.18 (PDF p.21), 인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 13,
+      "manualAddress": "10014",
+      "type": "bit",
+      "name": {
+        "ko": "경보 2 ON/OFF",
+        "en": "Alarm 2 ON/OFF"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 14,
+      "manualAddress": "10015",
+      "type": "bit",
+      "name": {
+        "ko": "경보 3 ON/OFF",
+        "en": "Alarm 3 ON/OFF"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.37 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "30001",
+      "type": "s16",
+      "name": {
+        "ko": "PV (내부 계산값, %FS)",
+        "en": "PV (internal value, %FS)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "입력 범위에 대한 % (0.00~100.00 %FS). 매뉴얼 예 01 04 00 00 00 01 31 CA → 0346h = 8.38 %FS(0~400 ℃ 에서 33.5 ℃)",
+        "en": "% of input range (0.00-100.00 %FS). Manual example 01 04 00 00 00 01 31 CA → 0346h = 8.38 %FS (33.5 °C on a 0-400 °C range)"
+      },
+      "ref": "인쇄 p.22 (PDF p.25), 인쇄 p.36 (PDF p.39)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "31001",
+      "type": "s16",
+      "name": {
+        "ko": "PV (공학 단위)",
+        "en": "PV (engineering units)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "매뉴얼 예 01 04 03 E8 00 01 B1 BA → 014Fh = 335(소수점 1 → 33.5 ℃). 입력 이상이면 입력 범위의 105 %·−5 %",
+        "en": "Manual example 01 04 03 E8 00 01 B1 BA → 014Fh = 335 (1 decimal → 33.5 °C). On input error, 105 % or −5 % of the range"
+      },
+      "ref": "인쇄 p.23 (PDF p.26), 인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1001,
+      "manualAddress": "31002",
+      "type": "s16",
+      "name": {
+        "ko": "사용 중 SV",
+        "en": "SV in use"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "램프/소크·SV 전환 중에는 40003/41003(전면 SV)과 다를 수 있다 — 감시는 이 값으로",
+        "en": "May differ from 40003/41003 (front-panel SV) during ramp/soak or SV switching; monitor this one"
+      },
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1002,
+      "manualAddress": "31003",
+      "type": "s16",
+      "name": {
+        "ko": "사용 중 편차 DV",
+        "en": "Deviation DV in use"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "공학 단위(입력 범위로 스케일한 값), 소수점 없는 정수 — 소수점 자리는 41020(P-dP)",
+        "en": "Engineering units (scaled to the input range), integer without decimal point; decimal places from 41020 (P-dP)"
+      },
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1003,
+      "manualAddress": "31004",
+      "type": "s16",
+      "name": {
+        "ko": "MV (출력 1)",
+        "en": "MV (output 1)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": -3,
+        "max": 103
+      },
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1004,
+      "manualAddress": "31005",
+      "type": "s16",
+      "name": {
+        "ko": "MV (출력 2)",
+        "en": "MV (output 2)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": -3,
+        "max": 103
+      },
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1005,
+      "manualAddress": "31006",
+      "type": "u16",
+      "name": {
+        "ko": "국번",
+        "en": "Station number"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1006,
+      "manualAddress": "31007",
+      "type": "u16",
+      "name": {
+        "ko": "경보 상태",
+        "en": "Alarm status"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "경보 1 출력",
+          "en": "Alarm 1 output"
+        },
+        {
+          "bit": 1,
+          "ko": "경보 2 출력",
+          "en": "Alarm 2 output"
+        },
+        {
+          "bit": 2,
+          "ko": "경보 3 출력",
+          "en": "Alarm 3 output"
+        },
+        {
+          "bit": 3,
+          "ko": "HB 경보 릴레이 출력",
+          "en": "HB alarm relay output"
+        },
+        {
+          "bit": 4,
+          "ko": "경보 1 ON",
+          "en": "Alarm 1 ON"
+        },
+        {
+          "bit": 5,
+          "ko": "경보 2 ON",
+          "en": "Alarm 2 ON"
+        },
+        {
+          "bit": 6,
+          "ko": "경보 3 ON",
+          "en": "Alarm 3 ON"
+        },
+        {
+          "bit": 7,
+          "ko": "HB 경보 출력",
+          "en": "HB alarm output"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.45), 인쇄 p.44 (PDF p.47)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1007,
+      "manualAddress": "31008",
+      "type": "u16",
+      "name": {
+        "ko": "입력·본체 이상 상태",
+        "en": "Input/main unit abnormal status"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "입력 하한 단선",
+          "en": "Input lower open circuit"
+        },
+        {
+          "bit": 1,
+          "ko": "입력 상한 단선",
+          "en": "Input upper open circuit"
+        },
+        {
+          "bit": 2,
+          "ko": "입력 하한 밖(언더레인지)",
+          "en": "Input under-range"
+        },
+        {
+          "bit": 3,
+          "ko": "입력 상한 밖(오버레인지)",
+          "en": "Input over-range"
+        },
+        {
+          "bit": 6,
+          "ko": "설정 범위 이상",
+          "en": "Setting range error"
+        },
+        {
+          "bit": 7,
+          "ko": "EEPROM 이상",
+          "en": "EEPROM error"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.45), 인쇄 p.44 (PDF p.47)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1008,
+      "manualAddress": "31009",
+      "type": "u16",
+      "name": {
+        "ko": "램프/소크 현재 위치",
+        "en": "Ramp/soak current position"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 17
+      },
+      "ref": "인쇄 p.42 (PDF p.45), 인쇄 p.45 (PDF p.48)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1009,
+      "manualAddress": "31010",
+      "type": "u16",
+      "name": {
+        "ko": "히터 전류",
+        "en": "Heater current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "ref": "인쇄 p.42 (PDF p.45)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1002,
+      "manualAddress": "41003",
+      "type": "s16",
+      "name": {
+        "ko": "SV (전면 설정값)",
+        "en": "SV (front-panel set value)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "공학 단위(입력 범위로 스케일한 값), 소수점 없는 정수 — 소수점 자리는 41020(P-dP)",
+        "en": "Engineering units (scaled to the input range), integer without decimal point; decimal places from 41020 (P-dP)"
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1003,
+      "manualAddress": "41004",
+      "type": "u16",
+      "name": {
+        "ko": "제어 RUN/대기",
+        "en": "Control RUN/standby"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RUN(대기 해제)",
+          "en": "RUN (standby off)"
+        },
+        {
+          "value": 1,
+          "ko": "대기",
+          "en": "Standby"
+        }
+      ],
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1004,
+      "manualAddress": "41005",
+      "type": "u16",
+      "name": {
+        "ko": "오토 튜닝 명령",
+        "en": "Auto-tuning command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "해제·정지",
+          "en": "Off / stop"
+        },
+        {
+          "value": 1,
+          "ko": "표준형 AT",
+          "en": "Standard AT"
+        },
+        {
+          "value": 2,
+          "ko": "낮은 PV 형 AT",
+          "en": "Low-PV type AT"
+        }
+      ],
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1005,
+      "manualAddress": "41006",
+      "type": "u16",
+      "name": {
+        "ko": "P (비례대)",
+        "en": "P (proportional band)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999.9
+      },
+      "description": {
+        "ko": "매뉴얼 예: 01 06 00 05 03 E8 99 75(40006 에 100.0), 01 10 00 05 00 03 06 03 E8 00 64 00 32 56 BE(P·I·D 한 번에). 40006 과 같은 값",
+        "en": "Manual examples: 01 06 00 05 03 E8 99 75 (100.0 to 40006), 01 10 00 05 00 03 06 03 E8 00 64 00 32 56 BE (P, I, D at once). Same value as 40006"
+      },
+      "ref": "인쇄 p.25~27 (PDF p.28~30), 인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1006,
+      "manualAddress": "41007",
+      "type": "u16",
+      "name": {
+        "ko": "I (적분 시간)",
+        "en": "I (integral time)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3200
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1007,
+      "manualAddress": "41008",
+      "type": "u16",
+      "name": {
+        "ko": "D (미분 시간)",
+        "en": "D (derivative time)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999.9
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1015,
+      "manualAddress": "41016",
+      "type": "u16",
+      "name": {
+        "ko": "입력 종류 코드",
+        "en": "Input type code"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 16
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1016,
+      "manualAddress": "41017",
+      "type": "u16",
+      "name": {
+        "ko": "온도 단위",
+        "en": "Temperature unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1017,
+      "manualAddress": "41018",
+      "type": "s16",
+      "name": {
+        "ko": "입력 스케일 하한 (P-SL)",
+        "en": "Input scale lower limit (P-SL)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -1999,
+        "max": 9999
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1018,
+      "manualAddress": "41019",
+      "type": "s16",
+      "name": {
+        "ko": "입력 스케일 상한 (P-SU)",
+        "en": "Input scale upper limit (P-SU)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -1999,
+        "max": 9999
+      },
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1019,
+      "manualAddress": "41020",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 자리 (P-dP)",
+        "en": "Decimal point position (P-dP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 2
+      },
+      "description": {
+        "ko": "통신으로 소수점을 바꾸면 P-SL·P-SU 도 함께 바꿔 써야 한다(예: 0~400 → 0.0~400.0 은 P-dP = 1, P-SL = 0, P-SU = 4000)",
+        "en": "When changing the decimal point over communication, rewrite P-SL and P-SU too (e.g. 0-400 → 0.0-400.0: P-dP = 1, P-SL = 0, P-SU = 4000)"
+      },
+      "ref": "인쇄 p.28 (PDF p.31)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1030,
+      "manualAddress": "41031",
+      "type": "s16",
+      "name": {
+        "ko": "SV 하한 (SV-L)",
+        "en": "SV lower limit (SV-L)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "매뉴얼 예 02 03 04 06 00 02 25 09 → 0000h·0190h(SV-L 0, SV-H 400)",
+        "en": "Manual example 02 03 04 06 00 02 25 09 → 0000h, 0190h (SV-L 0, SV-H 400)"
+      },
+      "ref": "인쇄 p.21 (PDF p.24), 인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1031,
+      "manualAddress": "41032",
+      "type": "s16",
+      "name": {
+        "ko": "SV 상한 (SV-H)",
+        "en": "SV upper limit (SV-H)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "인쇄 p.38 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1038,
+      "manualAddress": "41039",
+      "type": "u16",
+      "name": {
+        "ko": "히터 단선 경보값 (HB)",
+        "en": "Heater break alarm set value (HB)"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "ref": "인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1039,
+      "manualAddress": "41040",
+      "type": "u16",
+      "name": {
+        "ko": "설정 잠금 (LoC)",
+        "en": "Setting lock (LoC)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 5
+      },
+      "description": {
+        "ko": "잠긴 동안 쓰기 요청은 정상 응답이 오지만 실행되지 않는다",
+        "en": "While locked, write requests get a normal reply but are not executed"
+      },
+      "ref": "인쇄 p.25 (PDF p.28), 인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1040,
+      "manualAddress": "41041",
+      "type": "u16",
+      "name": {
+        "ko": "경보 1 종류 (ALM1)",
+        "en": "Alarm 1 type (ALM1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 34
+      },
+      "ref": "인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1043,
+      "manualAddress": "41044",
+      "type": "s16",
+      "name": {
+        "ko": "경보 1 설정값 / 하한 (AL1·A1-L)",
+        "en": "Alarm 1 set value / lower limit (AL1, A1-L)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "공학 단위(입력 범위로 스케일한 값), 소수점 없는 정수 — 소수점 자리는 41020(P-dP)",
+        "en": "Engineering units (scaled to the input range), integer without decimal point; decimal places from 41020 (P-dP)"
+      },
+      "ref": "인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1044,
+      "manualAddress": "41045",
+      "type": "s16",
+      "name": {
+        "ko": "경보 2 설정값 / 하한 (AL2·A2-L)",
+        "en": "Alarm 2 set value / lower limit (AL2, A2-L)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 1081,
+      "manualAddress": "41082",
+      "type": "u16",
+      "name": {
+        "ko": "램프/소크 명령 (ProG)",
+        "en": "Ramp/soak command (ProG)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "oFF 정지",
+          "en": "oFF stop"
+        },
+        {
+          "value": 1,
+          "ko": "rUn 시작",
+          "en": "rUn start"
+        },
+        {
+          "value": 2,
+          "ko": "HLd 일시 정지",
+          "en": "HLd hold"
+        },
+        {
+          "value": 3,
+          "ko": "End 끝남(읽기만)",
+          "en": "End finished (read only)"
+        }
+      ],
+      "ref": "인쇄 p.40 (PDF p.43)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "입력 범위에 영향을 받는 값은 두 표로 읽을 수 있다: 내부 계산값(30001·40001~, 입력 범위의 0.00~100.00 %)과 공학 단위(번호 + 1000, 예 PV 31001). 이 파일은 공학 단위 표를 주로 적었다. 범위와 상관없는 값(PID 등)은 두 번호에서 같은 값이다(인쇄 p.28).",
+      "en": "Values that depend on the input range can be read from two tables: internal values (30001/40001-, 0.00-100.00 % of the input range) and engineering units (number + 1000, e.g. PV at 31001). This file lists mainly the engineering table. Range-independent values (PID etc.) read the same at both numbers (printed p.28)."
+    },
+    {
+      "ko": "통신으로 쓴 파라미터는 자동으로 EEPROM 에 저장된다 — 쓰기 횟수 한도 100,000회, 주기적으로 쓰지 말 것(인쇄 p.15). 이 매뉴얼(TN512642d)은 PXR 구형(Micro Controller X) 통신 설명서다. 쪽 번호는 인쇄 쪽(PDF = 인쇄 + 3).",
+      "en": "Parameters written over communication are saved to EEPROM automatically: 100,000-write limit, avoid cyclic writes (printed p.15). This manual (TN512642d) covers the earlier PXR (Micro Controller X). Page numbers are printed pages (PDF = printed + 3)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Micro Controller X Communication Functions (RS-485 MODBUS) Type: PXR — Instruction Manual",
+      "publisher": "Fuji Electric",
+      "edition": {
+        "ko": "INP-TN512642d-E",
+        "en": "INP-TN512642d-E"
+      },
+      "url": "https://americas.fujielectric.com/files/prod_selector_v/Micro%20Controller%20X%20Communication%20Functions%20%28MODBUS%29%20Model%20PXR%20%28TN512642d-E%29.pdf",
+      "pages": {
+        "ko": "인쇄 p.5 통신 설정, p.8~27 프로토콜·예, p.28~46 데이터 형식·주소표 (PDF p.8, 11~30, 31~49)",
+        "en": "printed p.5 settings, pp.8-27 protocol and examples, pp.28-46 data format and address maps (PDF p.8, 11-30, 31-49)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}
