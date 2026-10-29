@@ -21,6 +21,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 | **PortDock SCPI** | SCPI instrument terminal over LAN socket (5025) or RS-232, no VISA: query/write/read with response times, `*IDN?` identification, error queue draining, `*OPC?` waits, repeated numeric measurements (table, trend, CSV), block data (#…) with HEX preview and file save |
 | **PortDock Plot** | Live plotter for numbers from serial, TCP or UDP: comma/space/tab/semicolon text (auto-detected), Arduino-style `name:value`, header names, binary frames (start bytes, u8–f64, endianness, checksum); up to 32 channels on left/right axes, pause, cursor, two-point Δt/Δvalue, zoom; statistics, CSV recording while receiving, CSV/PNG export |
 | **PortDock Port Inspector** | Read-only COM port inspector, no administrator rights: device and driver (provider, version, date, INF), Device Manager problem code with its meaning and what to try, USB chip from VID/PID (FTDI, Prolific, WCH, Silicon Labs …), device settings such as the FTDI latency timer, USB power saving, plug and driver history from the event logs, COM number reservations (orphan and duplicate numbers); TX–RX loopback test per baud rate (lost/changed bytes, round-trip ms) and 2-wire RS-485 echo check; text/JSON export. It never changes settings |
+| **PortDock PLC Simulator** | MC protocol (SLMP) server simulator, implemented from Mitsubishi Electric's public manuals (not affiliated; behaviour may differ from a real PLC) — 3E/4E frames, binary/ASCII, TCP server or UDP, batch and random read/write and loopback, 18 devices (D, W, R, ZR, M, X, Y, B, L, SM, SD …) with hex numbering for X/Y/B/W/ZR, end-code error replies, fault injection, value simulation, JSON save/load. Listens on 127.0.0.1 by default. *Coming in the next release.* |
 
 Website: <https://portdock.dev>
 
@@ -40,6 +41,7 @@ Get the latest version from **[GitHub Releases](https://github.com/portdock/Port
 | SCPI | [PortDock-SCPI-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-setup.exe) | [PortDock-SCPI-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-SCPI-portable.zip) |
 | Plot | [PortDock-Plot-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 | Port Inspector | [PortDock-Port-Inspector-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-setup.exe) | [PortDock-Port-Inspector-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-portable.zip) |
+| PLC Simulator | [PortDock-PLC-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-setup.exe) | [PortDock-PLC-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-portable.zip) |
 
 Windows 10/11, x64.
 
@@ -78,7 +80,7 @@ Settings → *Export settings* saves everything to one JSON file you can move to
 
 ## Checks
 
-Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all ten apps, 138 Node tests (`shared/`, apps, tools), the device register map check (45 devices, 1858 registers), `cargo clippy` with warnings as errors, 266 Rust tests (264 run, 2 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all eleven apps, 230 Node tests (`shared/`, apps, tools), the device register map check (51 devices, 2098 registers), `cargo clippy` with warnings as errors, 312 Rust tests (309 run, 3 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Build from source
 
@@ -89,7 +91,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator, netscan, modbus-master, scpi, plot, port-inspector)
+npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator, netscan, modbus-master, scpi, plot, port-inspector, plc-simulator)
 npm run build:serial      # installer → target\release\bundle\nsis\
 cargo test --workspace    # tests
 

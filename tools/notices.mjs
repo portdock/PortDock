@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "THIRD_PARTY_NOTICES.txt");
-const APPS = ["serial", "modbus-slave", "tcp", "udp", "simulator", "netscan", "modbus-master", "scpi", "plot", "port-inspector"];
+const APPS = ["serial", "modbus-slave", "tcp", "udp", "simulator", "netscan", "modbus-master", "scpi", "plot", "port-inspector", "plc-simulator"];
 const TARGET = "x86_64-pc-windows-msvc";
 
 // ---------- Rust ----------

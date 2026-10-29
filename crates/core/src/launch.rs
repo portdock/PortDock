@@ -166,6 +166,8 @@ pub mod apps {
     pub const SERIAL: AppId = AppId { product: "PortDock Serial", asset: "Serial", bin: "portdock-serial" };
     pub const TCP: AppId = AppId { product: "PortDock TCP", asset: "TCP", bin: "portdock-tcp" };
     pub const MODBUS_MASTER: AppId = AppId { product: "PortDock Modbus Master", asset: "Modbus-Master", bin: "portdock-modbus-master" };
+    /// PLC Simulator(0.3.x) — 아직 여는 대상(Target)은 없고 이름만 맞춰 둔다(설치 자리·휴대판 exe 이름 찾기에 쓸 때 같은 값)
+    pub const PLC_SIMULATOR: AppId = AppId { product: "PortDock PLC Simulator", asset: "PLC-Simulator", bin: "portdock-plc-simulator" };
 }
 
 /// 열 프로그램과 넘길 값 — 화면이 보낸 것(JSON). 글자를 그대로 옮기지 않고 아래 검사를 거친 값으로 인자를 만든다
@@ -380,5 +382,6 @@ mod tests {
         check(apps::SERIAL, "serial", include_str!("../../../apps/serial/src-tauri/tauri.conf.json"), include_str!("../../../apps/serial/src-tauri/Cargo.toml"));
         check(apps::TCP, "tcp", include_str!("../../../apps/tcp/src-tauri/tauri.conf.json"), include_str!("../../../apps/tcp/src-tauri/Cargo.toml"));
         check(apps::MODBUS_MASTER, "modbus-master", include_str!("../../../apps/modbus-master/src-tauri/tauri.conf.json"), include_str!("../../../apps/modbus-master/src-tauri/Cargo.toml"));
+        check(apps::PLC_SIMULATOR, "plc-simulator", include_str!("../../../apps/plc-simulator/src-tauri/tauri.conf.json"), include_str!("../../../apps/plc-simulator/src-tauri/Cargo.toml"));
     }
 }

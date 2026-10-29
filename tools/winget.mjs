@@ -1,4 +1,4 @@
-// winget 매니페스트 만들기 — 앱 10개를 패키지 10개(PortDock.<App>)로. 제출은 하지 않는다(사람이 winget-pkgs 에 PR).
+// winget 매니페스트 만들기 — 앱 11개를 패키지 11개(PortDock.<App>)로. 제출은 하지 않는다(사람이 winget-pkgs 에 PR).
 //
 //   node tools/winget.mjs --version 0.1.0                      # 공개된 릴리스의 SHA256SUMS.txt 를 내려받아 채움
 //   node tools/winget.mjs --version 0.1.0 --sums SHA256SUMS.txt # 받아 둔 파일로(초안 릴리스 단계)
@@ -11,7 +11,7 @@
 //  - InstallerUrl 은 게시자 배포 위치의 https 주소 → GitHub 릴리스의 «버전이 든» 주소(latest/download 는 내용이 바뀌어 해시가 어긋남)
 //  - 폴더 = manifests/<게시자 첫 글자 소문자>/<게시자>/<앱>/<버전>, PackageIdentifier·PackageVersion 과 일치
 //  - PackageName·Publisher 는 «앱 및 기능» 표시와 같게(tauri.conf.json productName·bundle.publisher)
-//  - PR 하나에 패키지 버전 하나 → 10개 PR(제출 순서는 docs/release-v0.1.md)
+//  - PR 하나에 패키지 버전 하나 → 11개 PR(제출 순서는 docs/release-v0.1.md)
 // 오프라인 설치판·휴대판은 winget 에 넣지 않는다(같은 아키텍처·범위의 설치판이 둘이 되면 고를 기준이 없음). 휴대판은 Scoop(tools/scoop.mjs).
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -31,6 +31,7 @@ const TAGS = {
   scpi: ["scpi", "instrument", "lxi", "test-equipment", "rs232"],
   plot: ["serial-plotter", "plot", "graph", "chart", "csv", "arduino"],
   "port-inspector": ["com-port", "serial", "usb-serial", "ftdi", "driver", "loopback"],
+  "plc-simulator": ["plc", "mc-protocol", "slmp", "simulator", "hmi", "test-tool"],
 };
 
 /** YAML 문자열 — JSON 큰따옴표 문자열은 YAML 큰따옴표 문자열로도 같은 뜻 */

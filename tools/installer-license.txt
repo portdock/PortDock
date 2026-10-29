@@ -5,7 +5,7 @@ PortDock — 개인정보 안내 / Privacy notice
 이 프로그램은 사용자나 설치·운영하는 사람이 직접 요청하지 않으면
 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다.
 
-- 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·네트워크 장비 찾기)은
+- 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·MC 프로토콜·네트워크 장비 찾기)은
   사용자가 지정한 포트·주소·대역으로만 갑니다.
 - 통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.
 - 새 버전 확인(선택, 기본 꺼짐): 설정에서 «새 버전 확인» 을 켠 경우에만
@@ -32,8 +32,9 @@ This program will not transfer any information to other networked
 systems unless specifically requested by the user or the person
 installing or operating it.
 
-- Device communication (serial, TCP, UDP, Modbus, SCPI, network device
-  discovery) goes only to the ports, addresses and subnets you choose.
+- Device communication (serial, TCP, UDP, Modbus, SCPI, MC protocol,
+  network device discovery) goes only to the ports, addresses and subnets
+  you choose.
 - Traffic, command lists, rules and settings stay on this PC.
 - Update check (optional, off by default): only if you turn on «Check
   for new versions» in settings, the program asks GitHub
