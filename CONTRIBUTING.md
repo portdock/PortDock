@@ -4,7 +4,7 @@
 
 ## English
 
-PortDock is eleven Windows tools (Serial, Modbus Slave, TCP, UDP, Simulator, Net Scan, Modbus Master, SCPI, Plot, Port Inspector, PLC Simulator) built with Tauri 2, Rust and React/TypeScript in one repository. How the pieces fit together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+PortDock is twelve Windows tools (Serial, Modbus Slave, TCP, UDP, Simulator, Net Scan, Modbus Master, SCPI, Plot, Port Inspector, PLC Simulator, Hardware Tester) built with Tauri 2, Rust and React/TypeScript in one repository. How the pieces fit together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### Requirements and build
 
@@ -23,18 +23,18 @@ cargo test --workspace    # Rust tests (same as `npm test`)
 npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\portable.conf.json"
 ```
 
-The same `npm run <tool>` / `npm run build:<tool>` scripts exist for `serial`, `modbus-slave`, `tcp`, `udp`, `simulator`, `netscan`, `modbus-master`, `scpi`, `plot`, `port-inspector`, `plc-simulator`. The website: `npm run site` (dev) and `npm run build:site`.
+The same `npm run <tool>` / `npm run build:<tool>` scripts exist for `serial`, `modbus-slave`, `tcp`, `udp`, `simulator`, `netscan`, `modbus-master`, `scpi`, `plot`, `port-inspector`, `plc-simulator`, `hw-tester`. The website: `npm run site` (dev) and `npm run build:site`.
 
 ### Checks before a pull request
 
 CI (`.github/workflows/ci.yml`, `windows-latest`, on pushes to `main` and on pull requests) runs these in this order. Run the ones your change touches locally:
 
 ```powershell
-# 1. frontend build of each app (tsc type check + vite) — repeat for all 11 apps
+# 1. frontend build of each app (tsc type check + vite) — repeat for all 12 apps
 npm run build -w portdock-serial
 #    … portdock-modbus-slave, portdock-modbus-master, portdock-tcp, portdock-udp,
 #      portdock-simulator, portdock-netscan, portdock-scpi, portdock-plot,
-#      portdock-port-inspector, portdock-plc-simulator
+#      portdock-port-inspector, portdock-plc-simulator, portdock-hw-tester
 
 # 2. UI-independent TypeScript and tool tests
 node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"
@@ -118,7 +118,7 @@ PortDock's program code is licensed under the [GNU General Public License v3.0](
 
 ## 한국어 요약
 
-PortDock 은 Tauri 2·Rust·React/TS 로 만든 윈도우용 통신 시험 도구 11개를 한 저장소에서 만든다. 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+PortDock 은 Tauri 2·Rust·React/TS 로 만든 윈도우용 통신 시험 도구 12개를 한 저장소에서 만든다. 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 **준비·빌드** — 윈도우 10/11, Node.js 22+, Rust(stable, MSVC), Visual Studio Build Tools(C++ 데스크톱 개발), WebView2. `npm install` → `npm run <앱>`(개발 실행) · `npm run build:<앱>`(설치판) · `cargo test --workspace`. 앱 이름: serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector.
 

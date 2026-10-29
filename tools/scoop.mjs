@@ -1,4 +1,4 @@
-// Scoop 매니페스트 만들기 — 자체 bucket(예: 저장소 portdock/scoop-bucket 의 bucket/ 폴더)에 넣을 앱 11개. 휴대판 zip 기준.
+// Scoop 매니페스트 만들기 — 자체 bucket(예: 저장소 portdock/scoop-bucket 의 bucket/ 폴더)에 넣을 앱 12개. 휴대판 zip 기준.
 //
 //   node tools/scoop.mjs --version 0.1.0                       # 공개된 릴리스의 SHA256SUMS.txt 를 내려받아 채움
 //   node tools/scoop.mjs --version 0.1.0 --sums SHA256SUMS.txt  # 받아 둔 파일로

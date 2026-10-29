@@ -27,6 +27,9 @@ const HEAD = `PortDock — 개인정보 안내 / Privacy notice
 
 - 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·MC 프로토콜·네트워크 장비 찾기)은
   사용자가 지정한 포트·주소·대역으로만 갑니다.
+- 끊김·지연 기록(Hardware Tester)은 «기록 시작» 을 누른 동안만 게이트웨이와
+  사용자가 고른 인터넷 주소 하나에 핑을, 정한 이름 하나를 DNS 서버에
+  묻습니다. Wi-Fi 이름·블루투스 장치 이름은 저장하거나 보내지 않습니다.
 - 통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.
 - 새 버전 확인(선택, 기본 꺼짐): 설정에서 «새 버전 확인» 을 켠 경우에만
   하루 한 번 GitHub(api.github.com)에 최신 릴리스를 묻습니다. 보내는
@@ -55,6 +58,10 @@ installing or operating it.
 - Device communication (serial, TCP, UDP, Modbus, SCPI, MC protocol,
   network device discovery) goes only to the ports, addresses and subnets
   you choose.
+- The drop and latency log (Hardware Tester) pings the gateway and one
+  internet address you choose, and looks up one name at the DNS server,
+  only while «Start recording» is on. Wi-Fi and Bluetooth device names
+  are never saved or sent.
 - Traffic, command lists, rules and settings stay on this PC.
 - Update check (optional, off by default): only if you turn on «Check
   for new versions» in settings, the program asks GitHub

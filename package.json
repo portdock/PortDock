@@ -29,6 +29,8 @@
     "build:port-inspector": "npm run tauri build -w portdock-port-inspector",
     "plc-simulator": "npm run tauri dev -w portdock-plc-simulator",
     "build:plc-simulator": "npm run tauri build -w portdock-plc-simulator",
+    "hw-tester": "npm run tauri dev -w portdock-hw-tester",
+    "build:hw-tester": "npm run tauri build -w portdock-hw-tester",
     "site": "npm run dev -w portdock-site",
     "build:site": "npm run build -w portdock-site"
   }

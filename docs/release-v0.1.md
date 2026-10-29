@@ -22,8 +22,8 @@
 - [ ] 사이트 내려받기 링크(`/releases/latest/download/PortDock-<App>-setup.exe`)가 실제 파일로 이어지는지
 - [ ] winget·Scoop 매니페스트 만들기(공개 뒤 — 릴리스의 `SHA256SUMS.txt` 로 버전 주소·해시를 채움, 결과는 `dist-packages/`, 저장소엔 안 올라감):
   ```powershell
-  node tools/winget.mjs --version 0.1.0 --date <공개일 YYYY-MM-DD>   # → dist-packages/winget/manifests/p/PortDock/<App>/0.1.0/ (패키지 11개 × 4파일 — 0.1.0 때는 10개)
-  node tools/scoop.mjs  --version 0.1.0                     # → dist-packages/scoop/bucket/portdock-<app>.json (휴대판 zip 기준 11개 — 0.1.0 때는 10개)
+  node tools/winget.mjs --version 0.1.0 --date <공개일 YYYY-MM-DD>   # → dist-packages/winget/manifests/p/PortDock/<App>/0.1.0/ (패키지 12개 × 4파일 — 0.1.0 때는 10개)
+  node tools/scoop.mjs  --version 0.1.0                     # → dist-packages/scoop/bucket/portdock-<app>.json (휴대판 zip 기준 12개 — 0.1.0 때는 10개)
   # 공개 전 초안 단계라면 초안의 SHA256SUMS.txt 를 받아 --sums SHA256SUMS.txt 로
   winget validate dist-packages/winget/manifests/p/PortDock/Serial/0.1.0   # 패키지마다
   ```

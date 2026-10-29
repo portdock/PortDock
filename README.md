@@ -22,6 +22,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 | **PortDock Plot** | Live plotter for numbers from serial, TCP or UDP: comma/space/tab/semicolon text (auto-detected), Arduino-style `name:value`, header names, binary frames (start bytes, u8–f64, endianness, checksum); up to 32 channels on left/right axes, pause, cursor, two-point Δt/Δvalue, zoom; statistics, CSV recording while receiving, CSV/PNG export |
 | **PortDock Port Inspector** | Read-only COM port inspector, no administrator rights: device and driver (provider, version, date, INF), Device Manager problem code with its meaning and what to try, USB chip from VID/PID (FTDI, Prolific, WCH, Silicon Labs …), device settings such as the FTDI latency timer, USB power saving, plug and driver history from the event logs, COM number reservations (orphan and duplicate numbers); TX–RX loopback test per baud rate (lost/changed bytes, round-trip ms) and 2-wire RS-485 echo check; text/JSON export. It never changes settings |
 | **PortDock PLC Simulator** | MC protocol (SLMP) server simulator, implemented from Mitsubishi Electric's public manuals (not affiliated; behaviour may differ from a real PLC) — 3E/4E frames, binary/ASCII, TCP server or UDP, batch and random read/write and loopback, 18 devices (D, W, R, ZR, M, X, Y, B, L, SM, SD …) with hex numbering for X/Y/B/W/ZR, end-code error replies, fault injection, value simulation, JSON save/load. Listens on 127.0.0.1 by default. *Coming in the next release.* |
+| **PortDock Hardware Tester** | Wi-Fi and Bluetooth recorder for Windows PCs, read-only and without administrator rights: only while recording, pings the gateway and one internet address side by side (latency, loss, jitter) with DNS response time and the Wi-Fi disconnect reasons Windows logs on one timeline, a «router side / beyond the router» summary that says where to look, CSV export; a log of when paired Bluetooth devices connect and disconnect (names shown on screen only), Bluetooth audio mode (stereo or hands-free) with left/right test tones, and on request the Wi-Fi signal, link speed, band and channel with nearby networks counted per channel (location permission; names never read). *Coming in the next release.* |
 
 Website: <https://portdock.dev>
 
@@ -42,6 +43,7 @@ Get the latest version from **[GitHub Releases](https://github.com/portdock/Port
 | Plot | [PortDock-Plot-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 | Port Inspector | [PortDock-Port-Inspector-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-setup.exe) | [PortDock-Port-Inspector-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-portable.zip) |
 | PLC Simulator | [PortDock-PLC-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-setup.exe) | [PortDock-PLC-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-portable.zip) |
+| Hardware Tester | [PortDock-Hardware-Tester-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-setup.exe) | [PortDock-Hardware-Tester-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-portable.zip) |
 
 Windows 10/11, x64.
 
@@ -80,7 +82,7 @@ Settings → *Export settings* saves everything to one JSON file you can move to
 
 ## Checks
 
-Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all eleven apps, 230 Node tests (`shared/`, apps, tools), the device register map check (55 devices, 2268 registers), `cargo clippy` with warnings as errors, 312 Rust tests (309 run, 3 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all twelve apps, 247 Node tests (`shared/`, apps, tools), the device register map check (55 devices, 2268 registers), `cargo clippy` with warnings as errors, 331 Rust tests (327 run, 4 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Build from source
 
@@ -91,7 +93,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator, netscan, modbus-master, scpi, plot, port-inspector, plc-simulator)
+npm run serial            # run in development mode (also: modbus-slave, tcp, udp, simulator, netscan, modbus-master, scpi, plot, port-inspector, plc-simulator, hw-tester)
 npm run build:serial      # installer → target\release\bundle\nsis\
 cargo test --workspace    # tests
 

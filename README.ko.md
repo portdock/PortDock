@@ -22,6 +22,7 @@
 | **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭·세미콜론 글자 줄(자동 감지), Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
 | **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인, 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
 | **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받음. *다음 릴리스에 들어갑니다.* |
+| **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(위치 권한, 이름은 읽지 않음). *다음 릴리스에 공개.* |
 
 홈페이지: <https://portdock.dev>
 
@@ -42,6 +43,7 @@
 | Plot | [PortDock-Plot-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-setup.exe) | [PortDock-Plot-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Plot-portable.zip) |
 | Port Inspector | [PortDock-Port-Inspector-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-setup.exe) | [PortDock-Port-Inspector-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-portable.zip) |
 | PLC Simulator | [PortDock-PLC-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-setup.exe) | [PortDock-PLC-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-portable.zip) |
+| Hardware Tester | [PortDock-Hardware-Tester-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-setup.exe) | [PortDock-Hardware-Tester-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-portable.zip) |
 
 윈도우 10·11, x64.
 
@@ -80,7 +82,7 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 
 ## 검사
 
-push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열한 앱의 화면 빌드·타입 검사, Node 시험 230개(`shared/`·앱·도구), 장비 레지스터 맵 검사(55종·레지스터 2268개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 312개(309개 실행, 3개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
+push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열두 앱의 화면 빌드·타입 검사, Node 시험 247개(`shared/`·앱·도구), 장비 레지스터 맵 검사(55종·레지스터 2268개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 331개(327개 실행, 4개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 소스에서 빌드
 
@@ -91,7 +93,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator 도 같음)
+npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator · hw-tester 도 같음)
 npm run build:serial      # 설치판 → target\release\bundle\nsis\
 cargo test --workspace    # 테스트
 

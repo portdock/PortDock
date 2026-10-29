@@ -20,7 +20,7 @@ Please include the program and version (Settings → About), Windows version, wh
 | Latest release on [GitHub Releases](https://github.com/portdock/PortDock/releases/latest) | Yes |
 | Older releases | No — please update first and check whether the problem remains |
 
-All eleven programs are released together with the same version number, so a fix ships as a new release of every program.
+All twelve programs are released together with the same version number, so a fix ships as a new release of every program.
 
 ### What to expect
 

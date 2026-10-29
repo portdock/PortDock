@@ -6,7 +6,7 @@ body:
     id: app
     attributes:
       label: 프로그램 / Program
-      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, PortDock Port Inspector, PortDock PLC Simulator, 새 도구 / New tool, 홈페이지 / Website]
+      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, PortDock Port Inspector, PortDock PLC Simulator, PortDock Hardware Tester, 새 도구 / New tool, 홈페이지 / Website]
     validations:
       required: true
   - type: textarea

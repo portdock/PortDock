@@ -1,7 +1,7 @@
 # PortDock architecture
 
 > **한국어 요약**
-> - PortDock 은 윈도우용 통신 시험 도구 11개(serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator)를 한 저장소에서 만든다.
+> - PortDock 은 윈도우용 통신 시험 도구 12개(serial · modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator · hw-tester)를 한 저장소에서 만든다.
 > - Rust 는 Cargo workspace 하나: 통신·해석 로직은 `crates/core`(Tauri 의존 없음), 각 앱의 `apps/<앱>/src-tauri` 는 core 를 감싼 Tauri 명령만 둔다.
 > - 화면은 앱마다 React + Vite 프로젝트(npm workspaces)이고, 공용 화면·로직은 `shared/` 를 `@shared` 별칭으로 가져다 쓴다.
 > - 오류 보고: Rust 가 비정상 종료 기록을 이 PC 에 파일로 남기고, 다음 실행 때 화면이 묻는다. 사용자가 보내기를 고르거나 «자동 전송» 을 켠 경우에만 Sentry 로 간다. 메일·GitHub 이슈·파일 저장도 고를 수 있다.
@@ -36,7 +36,7 @@ Sources: `Cargo.toml`, `package.json`, `crates/core/Cargo.toml`, `apps/*/src-tau
 
 ### Rust: one Cargo workspace
 
-The root `Cargo.toml` declares a workspace (`resolver = "3"`) with twelve members: `crates/core` and `apps/<tool>/src-tauri` for each of the eleven tools. Version, edition (2024), license (`GPL-3.0-only`) and authors are inherited from `[workspace.package]`. The release profile is size-oriented (`lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = true`).
+The root `Cargo.toml` declares a workspace (`resolver = "3"`) with thirteen members: `crates/core` and `apps/<tool>/src-tauri` for each of the twelve tools. Version, edition (2024), license (`GPL-3.0-only`) and authors are inherited from `[workspace.package]`. The release profile is size-oriented (`lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = true`).
 
 - **`crates/core` (`portdock-core`)** holds the communication and parsing logic. Its `lib.rs` states the rule: only logic unrelated to the UI (Tauri) lives here. Its dependencies are `serde`, `serialport`, `chrono`, `socket2`, `encoding_rs`, plus Windows-only `windows-sys`, `crash-handler`, `minidumper`, `webview2-com`, `windows`. It does not depend on `tauri`.
 - **`apps/<tool>/src-tauri` (`portdock-<tool>`)** each depend on `portdock-core = { path = "../../../crates/core" }` together with `tauri` 2 and the plugins `opener`, `dialog`, `window-state`. The library is named `portdock_<tool>_lib` (`staticlib`, `cdylib`, `rlib`); `main.rs` only calls `portdock_<tool>_lib::run()`.
@@ -45,7 +45,7 @@ The root `Cargo.toml` declares a workspace (`resolver = "3"`) with twelve member
 
 Each app's `src-tauri/src/lib.rs` defines thin `#[tauri::command]` functions that call into `portdock_core` (for example `portdock_core::ports::list()`, `Session::start(...)`, `modbus::decode(...)`) and registers them in `run()` with `tauri::generate_handler![...]`. Open sessions are kept in `portdock_core::registry::Registry<T>` held in Tauri managed state. Session events are pushed to the UI over a `tauri::ipc::Channel<SessionEvent>`.
 
-`run()` follows the same order in every app (all eleven call `webview_missing`, `report::install` and `run_failed`):
+`run()` follows the same order in every app (all twelve call `webview_missing`, `report::install` and `run_failed`):
 
 1. If `tauri::webview_version()` fails → `report::webview_missing` (message box, exit).
 2. `report::install("<tool>", version)` (panic hook), `report::crash_monitor_or_attach()`, `report::test_crash_if_asked()`.
@@ -77,6 +77,8 @@ Sources: the `//!` header and `pub` items of each file in `crates/core/src/`.
 | `loopback.rs` | Connection test (Port Inspector, Serial «Check connection…»): TX–RX loopback per baud rate (bytes same/lost/changed, 1-byte round-trip ms, driver error flags via `ClearCommError`) and 2-wire RS-485 echo detection; runs on a `Link` so it is unit-tested with a fake port. |
 | `i18n.rs` | Backend message language: `set_lang` from the UI, `is_en`, and the `tr!(ko, en)` macro used for error/event strings. |
 | `mc.rs` | PLC Simulator: MC protocol (SLMP) server — 3E/4E frames in binary or ASCII, commands 0401/1401/0403/1402/0619, 18 device types with per-device sizes, end-code error replies (C050–C061), fault injection and value simulation (`regmap`), one-line decode for the traffic log. Golden tests use the manual examples byte for byte. |
+| `ping.rs` | ICMP echo (`IcmpSendEcho2`), next hop toward an address (`GetBestRoute` — the default gateway), DNS response time for one name (`DnsQuery_W`, cache and hosts file skipped). Shared by Net Scan and Hardware Tester (moved from `apps/netscan` 10/30) |
+| `wlan.rs` | Hardware Tester «Wi-Fi signal»: Native Wifi API loaded only when called (`LoadLibraryExW` from System32 + `GetProcAddress`), so the exe still starts on Windows Server without `wlanapi.dll`. Reads signal quality, RSSI, link speed, PHY, the connected AP's channel and per-channel counts of nearby APs; SSID/BSSID are never copied out. Needs location permission on Windows 11 24H2+ |
 | `modbus.rs` | Modbus frame decoding (`decode`: direction-agnostic RTU), exception names, `Summarizer` for one-line human summaries of RTU/TCP traffic. |
 | `modbus_master.rs` | Modbus master (polling): request PDUs, response matching and checks (byte count, CRC, exception, MBAP transaction, RS-485 echo), timeout/retry/spacing, poll schedule, slave-ID and address-range search; `Link` abstraction and worker `Engine`. |
 | `modbus_slave.rs` | Modbus slave emulation: register tables answering master requests (PDU core, RTU/TCP wrapping), fault injection (delay, no reply, forced exception, broken CRC/MBAP length), automatic value changes. |
@@ -191,7 +193,7 @@ Sources: `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `e2e/READM
 Runs on `windows-latest` for pushes to `main`, pull requests and manual dispatch, with Node 24 and stable Rust + clippy. Steps in order:
 
 1. `npm ci`
-2. Frontend build of all 11 apps: `npm run build -w portdock-<tool>` (`tsc` + `vite build`; this is also the type check, and produces the `dist` the Rust build needs)
+2. Frontend build of all 12 apps: `npm run build -w portdock-<tool>` (`tsc` + `vite build`; this is also the type check, and produces the `dist` the Rust build needs)
 3. `node --test "shared/**/*.test.ts" "apps/*/src/**/*.test.ts" "tools/**/*.test.mjs"`
 4. `node tools/devices-check.mjs`
 5. `cargo clippy --workspace --all-targets -- -D warnings`
@@ -202,7 +204,7 @@ Runs on `windows-latest` for pushes to `main`, pull requests and manual dispatch
 
 ### Release (`release.yml`)
 
-Triggered by a `v*` tag (or manual dispatch, which only uploads build artifacts). A matrix builds each of the 11 apps on `windows-latest` (Node 22): checks that the tag matches the app version, regenerates notices, builds the NSIS installer, an offline installer with the WebView2 runtime (`tools/offline.conf.json`) and a portable zip (`tools/portable.conf.json`, `--no-bundle`). A final job on `ubuntu-latest` writes `SHA256SUMS.txt` and creates a **draft** GitHub release; a person publishes it. Code signing (SignPath) is present but commented out. Procedure: `docs/release.md`.
+Triggered by a `v*` tag (or manual dispatch, which only uploads build artifacts). A matrix builds each of the 12 apps on `windows-latest` (Node 22): checks that the tag matches the app version, regenerates notices, builds the NSIS installer, an offline installer with the WebView2 runtime (`tools/offline.conf.json`) and a portable zip (`tools/portable.conf.json`, `--no-bundle`). A final job on `ubuntu-latest` writes `SHA256SUMS.txt` and creates a **draft** GitHub release; a person publishes it. Code signing (SignPath) is present but commented out. Procedure: `docs/release.md`.
 
 ### Test inventory
 
