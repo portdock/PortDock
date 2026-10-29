@@ -424,16 +424,15 @@ impl Instrument {
         let mut seen = 0usize;
         loop {
             let unchanged = seen > 0 && seen <= self.pending.len() && waits_for_end(&self.pending) && !self.pending[seen..].contains(&end);
-            if !unchanged {
-                if let Some((body, used)) = parse_reply(&self.pending, self.term) {
-                    let mut raw: Vec<u8> = self.pending.drain(..used).collect();
-                    if matches!(body, Body::Block { indefinite: false, .. }) && !raw.ends_with(b"\n") && !raw.ends_with(b"\r") {
-                        self.swallow_term(&mut raw, &mut buf);
-                    }
-                    return Ok(Reply { raw, body });
+            if !unchanged && let Some((body, used)) = parse_reply(&self.pending, self.term) {
+                let mut raw: Vec<u8> = self.pending.drain(..used).collect();
+                if matches!(body, Body::Block { indefinite: false, .. }) && !raw.ends_with(b"\n") && !raw.ends_with(b"\r") {
+                    self.swallow_term(&mut raw, &mut buf);
                 }
-                seen = self.pending.len();
+                return Ok(Reply { raw, body });
             }
+            // 이번에 본 데까지 표시 — 바뀐 게 없던 차례에도 옮겨야 다음 조각에서 새로 온 바이트만 훑는다
+            seen = self.pending.len();
             if self.cancel.swap(false, Ordering::SeqCst) {
                 return Err(self.give_up(ErrKind::Cancelled, crate::tr!("멈췄습니다", "Stopped").into()));
             }
