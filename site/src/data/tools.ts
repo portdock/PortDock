@@ -11,6 +11,7 @@ import { help as modbusMasterHelp } from "../../../apps/modbus-master/src/help";
 import { help as scpiHelp } from "../../../apps/scpi/src/help";
 import { help as plotHelp } from "../../../apps/plot/src/help";
 import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help";
+import { help as plcSimulatorHelp } from "../../../apps/plc-simulator/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -23,11 +24,13 @@ export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 export const RELEASED = true;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
   tagline: L;
+  /** 아직 릴리스에 들어가지 않은 도구 — 소개·문서 쪽은 보이고, 내려받기 자리는 «곧 공개»(없는 파일로 가는 링크를 만들지 않는다). 그 판을 공개하면 지운다 */
+  upcoming?: boolean;
   /** 검색 결과용 제목·설명 — 사람들이 치는 검색어(site/SEO.md)를 앞에, 길이는 tools/site-check.mjs 가 검사 */
   seo: { title: L; desc: L };
   summary: L;
@@ -475,6 +478,66 @@ export const TOOLS: Tool[] = [
     },
     help: portInspectorHelp,
   },
+  {
+    id: "plc-simulator",
+    name: "PortDock PLC Simulator",
+    file: "PortDock-PLC-Simulator",
+    tagline: { ko: "MC 프로토콜(SLMP) 서버 흉내 — PLC 없이 HMI·수집 프로그램 시험", en: "MC protocol (SLMP) server simulator for testing without a PLC" },
+    upcoming: true,
+    seo: {
+      title: { ko: "PortDock PLC Simulator — 무료 MC 프로토콜(SLMP) 시뮬레이터", en: "PortDock PLC Simulator — Free MC Protocol (SLMP) Simulator" },
+      desc: {
+        ko: "PLC 없이 MC 프로토콜(3E·4E, 이진·ASCII) 통신을 시험하는 무료 윈도우 도구. D·M·X·Y 등 디바이스 표, 일괄·랜덤 읽기쓰기, 종료 코드·지연 장애 주입.",
+        en: "Free Windows tool to test MC protocol (3E/4E, binary/ASCII) links without a PLC: device tables (D, M, X, Y …), batch/random read and write, fault injection.",
+      },
+    },
+    summary: {
+      ko: "PC 가 PLC 의 이더넷 포트처럼 MC 프로토콜(SLMP) 요청에 답합니다. 디바이스 표에 값을 넣어 두면 HMI·데이터 수집·상위 프로그램이 읽고 쓰는 것을 그대로 받아 주고, 일부러 늦게·오류로 답해 오류 처리도 시험합니다. 미쓰비시 공개 매뉴얼(SLMP/MC)의 메시지 형식대로 만든 흉내이며 제휴가 아니고, 실제 PLC 와 동작이 다를 수 있습니다.",
+      en: "The PC answers MC protocol (SLMP) requests like a PLC's Ethernet port. Put values in the device tables and HMI, data-collection or host software can read and write them; deliberate delays and error end codes test its error handling. It follows the message formats in Mitsubishi Electric's public manuals (SLMP/MC); it is not affiliated, and behaviour may differ from a real PLC.",
+    },
+    who: [
+      { ko: "PLC 가 오기 전에 HMI 화면·통신을 맞추려는 분", en: "Teams preparing HMI screens and communication before the PLC arrives" },
+      { ko: "MC 프로토콜로 PLC 값을 읽는 데이터 수집·상위 프로그램 개발자", en: "Developers of data-collection or host software that reads PLCs over the MC protocol" },
+    ],
+    features: [
+      { title: { ko: "3E·4E, 이진·ASCII, TCP·UDP", en: "3E/4E, binary/ASCII, TCP/UDP" }, body: { ko: "TCP 서버(여러 클라이언트) 또는 UDP 로 듣습니다. 4E 응답에는 요청의 일련번호를 그대로 넣습니다. 기본은 이 PC 안(127.0.0.1)에서만 받고, 다른 PC 에서 붙게 하려면 직접 켭니다.", en: "Listens as a TCP server (several clients) or on UDP. 4E replies carry the request's serial number. By default only this PC (127.0.0.1) can connect; allowing other PCs is your choice." } },
+      { title: { ko: "명령 다섯 가지", en: "Five commands" }, body: { ko: "0401 일괄 읽기·1401 일괄 쓰기(워드·비트, 서브 명령 0000~0003), 0403 랜덤 읽기, 1402 랜덤 쓰기, 0619 루프백. 그 밖의 명령은 종료 코드 C059 로 답합니다.", en: "0401 Read and 1401 Write (words and bits, subcommands 0000–0003), 0403 Read Random, 1402 Write Random and 0619 Loopback. Other commands get end code C059." } },
+      { title: { ko: "디바이스 18종", en: "18 devices" }, body: { ko: "X·Y·M·L·F·B·SM, D·W·R·ZR·SD, TS·TC·TN·CS·CC·CN. X·Y·B·W·ZR 는 16진 번호, 디바이스마다 크기를 정하고 넘으면 C056. 비트 디바이스는 16점 워드로도 보고, 칸마다 32비트·실수·문자열·이름을 정합니다.", en: "X, Y, M, L, F, B, SM, D, W, R, ZR, SD, TS, TC, TN, CS, CC and CN. X, Y, B, W and ZR use hex numbers; each device has a size and requests beyond it get C056. Bit devices can be viewed as 16-point words; cells can be 32-bit, float, string or named." } },
+      { title: { ko: "장애 주입", en: "Fault injection" }, body: { ko: "응답 지연(범위), 응답 안 함, 정한 종료 코드로 답하기를 명령·디바이스·N번째·확률로 골라 겁니다.", en: "Response delay (with a range), no response or a chosen end code — targeted by command, device, every Nth request or probability." } },
+      { title: { ko: "풀이가 붙은 통신 기록", en: "Decoded traffic" }, body: { ko: "요청마다 명령 이름·디바이스·점 수, 응답마다 종료 코드와 뜻이 붙습니다. 클라이언트가 바꾼 칸은 잠깐 강조되고 통계가 남습니다.", en: "Each request shows the command name, device and points; each reply the end code and its meaning. Cells changed by a client flash, with statistics." } },
+      { title: { ko: "값 자동 변화·저장", en: "Simulation and saved states" }, body: { ko: "증가·랜덤·사인·램프·토글로 값을 저절로 바꾸고, 디바이스 값·칸 설정을 JSON 파일로 저장하고 불러옵니다.", en: "Values can change by themselves (increment, random, sine, ramp, toggle), and device values and cell settings save to and load from a JSON file." } },
+    ],
+    steps: [
+      { ko: "프레임(3E/4E)·데이터 코드(이진/ASCII)·포트를 클라이언트와 맞추기", en: "Match the frame (3E/4E), data code (binary/ASCII) and port with the client" },
+      { ko: "디바이스(D·M·X …)를 고르고 값을 넣기", en: "Pick a device (D, M, X …) and enter values" },
+      { ko: "«시작» — 클라이언트의 읽기·쓰기에 표 값으로 답합니다", en: "«Start» — client reads and writes are answered from the tables" },
+    ],
+    faq: [
+      {
+        q: { ko: "실제 PLC 와 똑같이 동작하나요?", en: "Does it behave exactly like a real PLC?" },
+        a: {
+          ko: "아닙니다. 공개 매뉴얼의 메시지 형식대로 만들었고 실기와 견주지 않았습니다. 래더는 돌리지 않으며, 오류 코드·응답 시간·연결 수 제한·기종별 디바이스 범위는 실제와 다를 수 있습니다.",
+          en: "No. It follows the message formats in the public manuals and has not been compared with real hardware. No ladder program runs, and error codes, timing, connection limits and per-model device ranges may differ.",
+        },
+      },
+      {
+        q: { ko: "다른 PC 의 HMI 에서 붙으려면?", en: "How do I connect an HMI on another PC?" },
+        a: {
+          ko: "«다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜고 윈도우 방화벽에서 이 프로그램을 허용합니다. 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요.",
+          en: "Turn on «Allow other PCs to connect (0.0.0.0)» and allow the program in Windows Firewall. Do not run it on a plant network with the same IP and port as a real PLC.",
+        },
+      },
+    ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 DummyPLC(무료, 소스 비공개), HslCommunication(상용) 등이 있습니다. PortDock PLC Simulator 는 무료(GPL-3.0)·한국어이고, 장애 주입·풀이가 붙은 통신 기록·값 자동 변화를 함께 합니다.",
+      en: "Similar tools include DummyPLC (free, closed source) and HslCommunication (commercial). PortDock PLC Simulator is free (GPL-3.0) and adds fault injection, decoded traffic and value simulation.",
+    },
+    help: plcSimulatorHelp,
+  },
 ];
 
 export const toolById = (id: string) => TOOLS.find((t) => t.id === id)!;
+/** 지금 내려받을 수 있는지(첫 릴리스 공개 + 이 도구가 릴리스에 들어 있음) */
+export const downloadable = (t: Tool) => RELEASED && !t.upcoming;
+/** 내려받을 수 있는 도구 — 첫 화면 «윈도우 프로그램 N종» 같은 숫자에 쓴다 */
+export const RELEASED_TOOLS = TOOLS.filter((t) => !t.upcoming);

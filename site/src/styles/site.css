@@ -1236,3 +1236,15 @@ details.more ul {
   margin: 8px 0 2px;
   color: var(--muted);
 }
+
+/* 아직 릴리스에 없는 도구 카드의 «곧 공개» */
+.soon-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--line, #ccc);
+  font-size: 0.72em;
+  font-weight: 500;
+  vertical-align: middle;
+  white-space: nowrap;
+}

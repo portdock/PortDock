@@ -28,7 +28,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "## Tools",
     "",
-    ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}`),
+    ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}${t.upcoming ? " (coming in the next release)" : ""}`),
     "",
     "## Web tools (browser calculators, nothing is sent anywhere)",
     "",

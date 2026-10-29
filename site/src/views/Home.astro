@@ -1,6 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
-import { TOOLS, REPO, type Lang } from "../data/tools";
+import { TOOLS, RELEASED_TOOLS, REPO, type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { DEVICES } from "../data/devices";
 import { UI, url } from "../lib/i18n";
@@ -23,8 +23,8 @@ const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
 const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order"];
 const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
 const sub = ko
-  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기 ${WEB_TOOLS.length}개.`
-  : `${TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators that run in your browser.`;
+  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기 ${WEB_TOOLS.length}개.`
+  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators that run in your browser.`;
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {
@@ -78,7 +78,7 @@ const ld = [
 
   <section class="block" id="tools">
     <div class="wrap">
-      <h2>{ko ? `윈도우 프로그램 ${TOOLS.length}종` : `${TOOLS.length} Windows programs`}</h2>
+      <h2>{ko ? `윈도우 프로그램 ${RELEASED_TOOLS.length}종` : `${RELEASED_TOOLS.length} Windows programs`}</h2>
       <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
       <div class="shots3">
         {["modbus-master", "netscan", "plot"].map((id) => {
@@ -97,7 +97,10 @@ const ld = [
             <a class="card app-card" href={url(lang, `${x.id}/`)}>
               {appIcon(x.id) && <img class="app-icon" src={appIcon(x.id)} alt="" width="40" height="40" loading="lazy" decoding="async" />}
               <div>
-                <h3>{x.name.replace("PortDock ", "")}</h3>
+                <h3>
+                  {x.name.replace("PortDock ", "")}
+                  {x.upcoming && <small class="soon-badge">{ko ? "곧 공개" : "Coming soon"}</small>}
+                </h3>
                 <p>{x.tagline[lang]}</p>
               </div>
             </a>

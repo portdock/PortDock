@@ -1,6 +1,6 @@
 ---
 // 내려받기 칸 — 이 칸 근처에는 광고를 두지 않는다(애드센스 정책: 다운로드 버튼과 오인 금지)
-import { RELEASED, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
+import { downloadable, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 
 interface Props {
@@ -14,7 +14,7 @@ const t = UI[lang];
 <div class="card">
   <h3>{t.dlTitle}</h3>
   {
-    RELEASED ? (
+    downloadable(tool) ? (
       <div class="dl-list">
         <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
         <a class="btn" href={latest(`${tool.file}-setup-offline.exe`)}>{t.dlOffline} <small>{lang === "ko" ? "WebView2 포함" : "WebView2 bundled"}</small></a>
@@ -22,8 +22,8 @@ const t = UI[lang];
       </div>
     ) : (
       <>
-        <div class="dl-list"><span class="btn soon" aria-disabled="true">{t.dlSoon}</span></div>
-        <p class="note">{t.dlSoonNote} <a href={REPO}>GitHub →</a></p>
+        <div class="dl-list"><span class="btn soon" aria-disabled="true">{tool.upcoming ? t.dlUpcoming : t.dlSoon}</span></div>
+        <p class="note">{tool.upcoming ? t.dlUpcomingNote : t.dlSoonNote} <a href={REPO}>GitHub →</a></p>
       </>
     )
   }

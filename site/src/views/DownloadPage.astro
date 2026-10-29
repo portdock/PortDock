@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { TOOLS, RELEASED, REPO, RELEASES, latest, type Lang } from "../data/tools";
+import { TOOLS, RELEASED, REPO, RELEASES, downloadable, latest, type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 import { SPONSOR_URL } from "@shared/links";
 import { appIcon } from "../lib/appIcons";
@@ -70,14 +70,14 @@ const ko = lang === "ko";
                   <span class="note">{x.tagline[lang]}</span>
                 </span>
               </td>
-              {RELEASED ? (
+              {downloadable(x) ? (
                 <>
                   <td class="c-setup" data-label={t.dlSetup}><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
                   <td class="c-offline" data-label={t.dlOffline}><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
                   <td class="c-portable" data-label={t.dlPortable}><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
                 </>
               ) : (
-                <td colspan="3"><span class="note">{t.dlSoon}</span></td>
+                <td colspan="3"><span class="note">{x.upcoming ? t.dlUpcoming : t.dlSoon}</span></td>
               )}
               <td class="dl-docs"><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
             </tr>
