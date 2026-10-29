@@ -1,0 +1,1091 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "accuenergy/acuvim-l",
+  "manufacturer": {
+    "ko": "어큐에너지",
+    "en": "Accuenergy"
+  },
+  "model": "Acuvim-L",
+  "models": [
+    "Acuvim-CL",
+    "Acuvim-DL",
+    "Acuvim-EL",
+    "Acuvim-KL"
+  ],
+  "kind": "power-meter",
+  "title": {
+    "ko": "어큐에너지 Acuvim-L 전력 미터 (RS-485 Modbus RTU)",
+    "en": "Accuenergy Acuvim-L power meter (RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "RS-485 가 있는 CL·DL·EL·KL. 2차 값 워드 표 0130h~(주파수·전압·전류·전력·역률, PT·CT 비를 곱해 실제 값), 전력량 0156h~(Dword, ÷10 kWh), 운전 시간 0180h~, 시계 0184h~. 함수 03·16(전력량·시계 쓰기), 릴레이 01·DI 02",
+    "en": "CL, DL, EL and KL with RS-485. Secondary-value word table from 0130h (frequency, voltage, current, power, PF; multiply by PT/CT ratios for actual values), energy from 0156h (Dword, /10 kWh), run time from 0180h, clock from 0184h. Functions 03 and 16 (energy, clock), relays 01, DI 02"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 매뉴얼 예(국번 17 = 11h)의 프레임 주소가 표 주소와 같다(0 기준). 읽기 11 03 01 30 00 03 06 A8 → F·V1·V2(0130h~0132h), 응답 11 03 06 13 88 03 E7 03 E9 7F 04(50.00 Hz·99.9 V·100.1 V), 쓰기 11 10 01 56 00 02 04 0A 9D 40 89 4D B9 → Ep_imp(0156h·0157h), 릴레이 11 01 00 00 00 02 BF 5B, DI 11 02 00 00 00 04 7B 59 (인쇄 p.90~93). 이 요청들의 CRC 는 계산값과 같다.",
+        "en": "Addressing: frame addresses in the manual examples (slave 17 = 11h) equal the table addresses (0-based). Read 11 03 01 30 00 03 06 A8 → F, V1, V2 (0130h-0132h), reply 11 03 06 13 88 03 E7 03 E9 7F 04 (50.00 Hz, 99.9 V, 100.1 V); write 11 10 01 56 00 02 04 0A 9D 40 89 4D B9 → Ep_imp (0156h/0157h); relays 11 01 00 00 00 02 BF 5B; DI 11 02 00 00 00 04 7B 59 (printed pp.90-93). The CRCs of these requests match calculation."
+      },
+      {
+        "ko": "매뉴얼 응답 예 세 곳의 오타: 릴레이 응답(11 01 01 02)의 CRC 를 요청과 같은 BF 5B 로 적음(계산 D4 89), DI 응답의 함수 코드를 01 로 적음(CRC E5 49 는 02 로 계산한 값), FC16 응답의 시작 주소를 010Ch 로 적음(CRC A2 B4 는 0156h 로 계산한 값). 표의 CRC 칸 이름은 Hi·Lo 지만 실제로는 하위 바이트를 먼저 보낸다(인쇄 p.89 설명과 같음).",
+        "en": "Three typos in the manual's reply examples: the relay reply (11 01 01 02) repeats the request CRC BF 5B (calculated D4 89); the DI reply shows function 01 (its CRC E5 49 is calculated with 02); the FC16 reply shows start 010Ch (its CRC A2 B4 is calculated with 0156h). The CRC columns are labelled Hi/Lo, but the low byte is sent first, as the text on printed p.89 says."
+      },
+      {
+        "ko": "통신 설정(인쇄 p.48~49): 국번 1~247, 속도 1200~57600 bps, 데이터 8비트, 검사 non1(패리티 없음·정지 1)·non2(없음·정지 2)·odd·EVEN — 출하값 EVEN(이 화면은 EL·KL). 출하 속도는 매뉴얼에서 찾지 못해 비웠다. 함수 코드는 01·02·03·16 (표 4-2, 인쇄 p.87).",
+        "en": "Communication settings (printed pp.48-49): address 1-247, 1200-57600 bps, 8 data bits, check non1 (no parity, 1 stop), non2 (no parity, 2 stop), odd or EVEN, default EVEN (this screen on EL/KL). The default baud rate was not found in the manual, so it is left empty. Function codes 01, 02, 03 and 16 (Table 4-2, printed p.87)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 304,
+      "manualAddress": "0130H",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 F",
+        "en": "Frequency F"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 45,
+        "max": 65
+      },
+      "description": {
+        "ko": "F = Rx ÷ 100. 매뉴얼 읽기 예(4-8·4-9)에서 1388h = 50.00 Hz",
+        "en": "F = Rx / 100. In the manual read example (4-8, 4-9) 1388h = 50.00 Hz"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 305,
+      "manualAddress": "0131H",
+      "type": "u16",
+      "name": {
+        "ko": "상전압 V1",
+        "en": "Phase voltage V1"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 306,
+      "manualAddress": "0132H",
+      "type": "u16",
+      "name": {
+        "ko": "상전압 V2",
+        "en": "Phase voltage V2"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 307,
+      "manualAddress": "0133H",
+      "type": "u16",
+      "name": {
+        "ko": "상전압 V3",
+        "en": "Phase voltage V3"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 308,
+      "manualAddress": "0134H",
+      "type": "u16",
+      "name": {
+        "ko": "선간 전압 V12",
+        "en": "Line voltage V12"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 309,
+      "manualAddress": "0135H",
+      "type": "u16",
+      "name": {
+        "ko": "선간 전압 V23",
+        "en": "Line voltage V23"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 310,
+      "manualAddress": "0136H",
+      "type": "u16",
+      "name": {
+        "ko": "선간 전압 V31",
+        "en": "Line voltage V31"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) ÷ 10 [V]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) / 10 [V]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 311,
+      "manualAddress": "0137H",
+      "type": "u16",
+      "name": {
+        "ko": "전류 I1",
+        "en": "Current I1"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (CT1/CT2) ÷ 1000 [A]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (CT1/CT2) / 1000 [A]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 312,
+      "manualAddress": "0138H",
+      "type": "u16",
+      "name": {
+        "ko": "전류 I2",
+        "en": "Current I2"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (CT1/CT2) ÷ 1000 [A]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (CT1/CT2) / 1000 [A]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 313,
+      "manualAddress": "0139H",
+      "type": "u16",
+      "name": {
+        "ko": "전류 I3",
+        "en": "Current I3"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (CT1/CT2) ÷ 1000 [A]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (CT1/CT2) / 1000 [A]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 314,
+      "manualAddress": "013AH",
+      "type": "u16",
+      "name": {
+        "ko": "중성선 전류 In",
+        "en": "Neutral current In"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (CT1/CT2) ÷ 1000 [A]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (CT1/CT2) / 1000 [A]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 315,
+      "manualAddress": "013BH",
+      "type": "s16",
+      "name": {
+        "ko": "A상 유효 전력 Pa",
+        "en": "Phase A active power Pa"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [W]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [W]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 316,
+      "manualAddress": "013CH",
+      "type": "s16",
+      "name": {
+        "ko": "B상 유효 전력 Pb",
+        "en": "Phase B active power Pb"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [W]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [W]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 317,
+      "manualAddress": "013DH",
+      "type": "s16",
+      "name": {
+        "ko": "C상 유효 전력 Pc",
+        "en": "Phase C active power Pc"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [W]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [W]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 318,
+      "manualAddress": "013EH",
+      "type": "s16",
+      "name": {
+        "ko": "합계 유효 전력 Psum",
+        "en": "Total active power Psum"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [W]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [W]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 319,
+      "manualAddress": "013FH",
+      "type": "s16",
+      "name": {
+        "ko": "A상 무효 전력 Qa",
+        "en": "Phase A reactive power Qa"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [var]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [var]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 320,
+      "manualAddress": "0140H",
+      "type": "s16",
+      "name": {
+        "ko": "B상 무효 전력 Qb",
+        "en": "Phase B reactive power Qb"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Rx × (PT1/PT2) × (CT1/CT2) [var]. 표 4-26 은 13Fh·140h 를 둘 다 Qa, 141h 를 Qb 로 적었다 — 같은 순서의 1차 값 표 4-28(061Eh Qa·0620h Qb·0622h Qc)에 맞춰 140h = Qb, 141h = Qc 로 두었다",
+        "en": "Rx × (PT1/PT2) × (CT1/CT2) [var]. Table 4-26 labels both 13Fh and 140h as Qa and 141h as Qb; following the same order in primary Table 4-28 (061Eh Qa, 0620h Qb, 0622h Qc), 140h = Qb and 141h = Qc"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 321,
+      "manualAddress": "0141H",
+      "type": "s16",
+      "name": {
+        "ko": "C상 무효 전력 Qc",
+        "en": "Phase C reactive power Qc"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Rx × (PT1/PT2) × (CT1/CT2) [var]. 표 4-26 은 13Fh·140h 를 둘 다 Qa, 141h 를 Qb 로 적었다 — 같은 순서의 1차 값 표 4-28(061Eh Qa·0620h Qb·0622h Qc)에 맞춰 140h = Qb, 141h = Qc 로 두었다",
+        "en": "Rx × (PT1/PT2) × (CT1/CT2) [var]. Table 4-26 labels both 13Fh and 140h as Qa and 141h as Qb; following the same order in primary Table 4-28 (061Eh Qa, 0620h Qb, 0622h Qc), 140h = Qb and 141h = Qc"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 322,
+      "manualAddress": "0142H",
+      "type": "s16",
+      "name": {
+        "ko": "합계 무효 전력 Qsum",
+        "en": "Total reactive power Qsum"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [var]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [var]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 323,
+      "manualAddress": "0143H",
+      "type": "u16",
+      "name": {
+        "ko": "합계 피상 전력 Ssum",
+        "en": "Total apparent power Ssum"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "PT1/PT2·CT1/CT2 가 1 일 때의 배율. 실제 값 = Rx × (PT1/PT2) × (CT1/CT2) [VA]",
+        "en": "Scale when PT1/PT2 and CT1/CT2 are 1. Actual value = Rx × (PT1/PT2) × (CT1/CT2) [VA]"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 324,
+      "manualAddress": "0144H",
+      "type": "s16",
+      "name": {
+        "ko": "A상 역률 PFa",
+        "en": "Phase A power factor PFa"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -1,
+        "max": 1
+      },
+      "description": {
+        "ko": "PF = Rx ÷ 1000 (−1000~1000)",
+        "en": "PF = Rx / 1000 (−1000 to 1000)"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 325,
+      "manualAddress": "0145H",
+      "type": "s16",
+      "name": {
+        "ko": "B상 역률 PFb",
+        "en": "Phase B power factor PFb"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -1,
+        "max": 1
+      },
+      "description": {
+        "ko": "PF = Rx ÷ 1000 (−1000~1000)",
+        "en": "PF = Rx / 1000 (−1000 to 1000)"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 326,
+      "manualAddress": "0146H",
+      "type": "s16",
+      "name": {
+        "ko": "C상 역률 PFc",
+        "en": "Phase C power factor PFc"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -1,
+        "max": 1
+      },
+      "description": {
+        "ko": "PF = Rx ÷ 1000 (−1000~1000)",
+        "en": "PF = Rx / 1000 (−1000 to 1000)"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 327,
+      "manualAddress": "0147H",
+      "type": "s16",
+      "name": {
+        "ko": "합계 역률 PFsum",
+        "en": "System power factor PFsum"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -1,
+        "max": 1
+      },
+      "description": {
+        "ko": "PF = Rx ÷ 1000 (−1000~1000)",
+        "en": "PF = Rx / 1000 (−1000 to 1000)"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 328,
+      "manualAddress": "0148H",
+      "type": "u16",
+      "name": {
+        "ko": "전압 불평형률",
+        "en": "Voltage unbalance factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Unbl = Rx ÷ 1000 × 100 %",
+        "en": "Unbl = Rx / 1000 × 100 %"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 329,
+      "manualAddress": "0149H",
+      "type": "u16",
+      "name": {
+        "ko": "전류 불평형률",
+        "en": "Current unbalance factor"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "Unbl = Rx ÷ 1000 × 100 %",
+        "en": "Unbl = Rx / 1000 × 100 %"
+      },
+      "ref": "인쇄 p.135~136 표 4-26·4-27 (PDF p.143~144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 330,
+      "manualAddress": "014AH",
+      "type": "u16",
+      "name": {
+        "ko": "부하 성질",
+        "en": "Load nature"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 76,
+          "ko": "L (유도성)",
+          "en": "L (inductive)"
+        },
+        {
+          "value": 67,
+          "ko": "C (용량성)",
+          "en": "C (capacitive)"
+        },
+        {
+          "value": 82,
+          "ko": "R (저항성)",
+          "en": "R (resistive)"
+        }
+      ],
+      "ref": "인쇄 p.136 (PDF p.144)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 342,
+      "manualAddress": "0156H",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량(수전) Ep_imp",
+        "en": "Import active energy Ep_imp"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "Dword, 상위 워드 먼저. 실제 값 = Rx ÷ 10. 쓰기(FC16) 예: 0156h·0157h 에 0A9D 4089h = 17807783.3 kWh(인쇄 p.93)",
+        "en": "Dword, high word first. Actual value = Rx / 10. Write (FC16) example: 0A9D 4089h = 17807783.3 kWh to 0156h/0157h (printed p.93)"
+      },
+      "ref": "인쇄 p.146~147 표 4-37·4-38 (PDF p.154~155)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 344,
+      "manualAddress": "0158H",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량(송전) Ep_exp",
+        "en": "Export active energy Ep_exp"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "Dword, 상위 워드 먼저. 실제 값 = Rx ÷ 10",
+        "en": "Dword, high word first. Actual value = Rx / 10"
+      },
+      "ref": "인쇄 p.146~147 표 4-37·4-38 (PDF p.154~155)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 346,
+      "manualAddress": "015AH",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량(수전) Eq_imp",
+        "en": "Import reactive energy Eq_imp"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.146~147 표 4-37·4-38 (PDF p.154~155)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 348,
+      "manualAddress": "015CH",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량(송전) Eq_exp",
+        "en": "Export reactive energy Eq_exp"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.146~147 표 4-37·4-38 (PDF p.154~155)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 350,
+      "manualAddress": "015EH",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력량 Es",
+        "en": "Apparent energy Es"
+      },
+      "unit": "kVAh",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.146~147 표 4-37·4-38 (PDF p.154~155)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 384,
+      "manualAddress": "0180H",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "계기 운전 시간",
+        "en": "Meter run time"
+      },
+      "unit": "h",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "상위 16비트(180h)·하위 16비트(181h). Run_Hur = Rx ÷ 10",
+        "en": "High 16 bits (180h), low 16 bits (181h). Run_Hur = Rx / 10"
+      },
+      "ref": "인쇄 p.142 표 4-33·4-34 (PDF p.150)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 386,
+      "manualAddress": "0182H",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "부하 운전 시간",
+        "en": "Load run time"
+      },
+      "unit": "h",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "상위 16비트(182h)·하위 16비트(183h). Rx ÷ 10",
+        "en": "High 16 bits (182h), low 16 bits (183h). Rx / 10"
+      },
+      "ref": "인쇄 p.142 표 4-33·4-34 (PDF p.150)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 388,
+      "manualAddress": "0184H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 연",
+        "en": "Clock — Year"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 2000,
+        "max": 2099
+      },
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 389,
+      "manualAddress": "0185H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 월",
+        "en": "Clock — Month"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 390,
+      "manualAddress": "0186H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 일",
+        "en": "Clock — Day"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 391,
+      "manualAddress": "0187H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 시",
+        "en": "Clock — Hour"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 392,
+      "manualAddress": "0188H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 분",
+        "en": "Clock — Minute"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 393,
+      "manualAddress": "0189H",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 초",
+        "en": "Clock — Second"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 394,
+      "manualAddress": "018AH",
+      "type": "u16",
+      "name": {
+        "ko": "시계 — 요일",
+        "en": "Clock — Week"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.144 표 4-36 (PDF p.152)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "0000H",
+      "type": "bit",
+      "name": {
+        "ko": "릴레이 1 상태",
+        "en": "Relay 1 status"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = ON. DL·EL 확장 IO. 읽기 예 11 01 00 00 00 02 BF 5B(인쇄 p.90)",
+        "en": "1 = ON. DL/EL extended IO. Read example 11 01 00 00 00 02 BF 5B (printed p.90)"
+      },
+      "ref": "인쇄 p.90~91 표 4-4·4-5 (PDF p.98~99)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "0001H",
+      "type": "bit",
+      "name": {
+        "ko": "릴레이 2 상태",
+        "en": "Relay 2 status"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "description": {
+        "ko": "1 = ON",
+        "en": "1 = ON"
+      },
+      "ref": "인쇄 p.90 (PDF p.98)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "0000H",
+      "type": "bit",
+      "name": {
+        "ko": "디지털 입력 DI1",
+        "en": "Digital input DI1"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "description": {
+        "ko": "1 = ON. 읽기 예 11 02 00 00 00 04 7B 59(인쇄 p.91)",
+        "en": "1 = ON. Read example 11 02 00 00 00 04 7B 59 (printed p.91)"
+      },
+      "ref": "인쇄 p.91~92 표 4-6·4-7 (PDF p.99~100)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "0001H",
+      "type": "bit",
+      "name": {
+        "ko": "디지털 입력 DI2",
+        "en": "Digital input DI2"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.91~92 표 4-6·4-7 (PDF p.99~100)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 2,
+      "manualAddress": "0002H",
+      "type": "bit",
+      "name": {
+        "ko": "디지털 입력 DI3",
+        "en": "Digital input DI3"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.91~92 표 4-6·4-7 (PDF p.99~100)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 3,
+      "manualAddress": "0003H",
+      "type": "bit",
+      "name": {
+        "ko": "디지털 입력 DI4",
+        "en": "Digital input DI4"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "ref": "인쇄 p.91~92 표 4-6·4-7 (PDF p.99~100)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "0130h~ 표는 2차 쪽 값이다: 전압 = Rx × (PT1/PT2) ÷ 10, 전류 = Rx × (CT1/CT2) ÷ 1000, 전력 = Rx × (PT1/PT2) × (CT1/CT2) (표 4-27). 여기 적은 배율은 PT·CT 없이 직접 연결(비 1)일 때 값이므로, CT 를 쓰면 읽은 값에 CT 비(와 PT 비)를 곱한다. CT2 = 333(mV CT)이면 1 로 본다.",
+      "en": "The 0130h table holds secondary-side values: voltage = Rx × (PT1/PT2) / 10, current = Rx × (CT1/CT2) / 1000, power = Rx × (PT1/PT2) × (CT1/CT2) (Table 4-27). The scales given here assume direct connection (ratio 1); with CTs, multiply readings by the CT ratio (and PT ratio). CT2 = 333 (mV CT) counts as 1."
+    },
+    {
+      "ko": "1차 값(실제 단위) Float 표 0600h~(표 4-28)도 있지만 매뉴얼에 Float 의 워드 순서가 적혀 있지 않아 넣지 않았다. 설정 표 0100h~(표 4-35)는 쪽에 주소와 이름이 한 줄씩 어긋나 있어 뺐다.",
+      "en": "A primary-value (actual units) Float table from 0600h (Table 4-28) exists, but the manual does not state the float word order, so it is left out. The settings table from 0100h (Table 4-35) has addresses and names shifted by a row on the page, so it is left out too."
+    },
+    {
+      "ko": "쪽 번호는 인쇄 쪽(PDF 쪽 = 인쇄 쪽 + 8). 이더넷 모듈(AXM-NET)의 Modbus TCP 는 이 파일에 넣지 않았다.",
+      "en": "Page numbers are printed pages (PDF page = printed + 8). Modbus TCP through the Ethernet module (AXM-NET) is not covered here."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Acuvim-L Series Power Meter User's Manual",
+      "publisher": "Accuenergy",
+      "edition": {
+        "ko": "V2.01, Document #1030E2201, 개정일 2013-04",
+        "en": "V2.01, Document #1030E2201, revision date Apr 2013"
+      },
+      "url": "https://www.accuenergy.com/wp-content/uploads/Acuvim-L-Panel-Submeter-Power-Energy-Meter-User-Manual1030E2201.pdf",
+      "pages": {
+        "ko": "인쇄 p.48~49 통신 설정, p.86~93 Modbus·프레임 예, p.134~147 주소표 (PDF p.56~57, 94~101, 142~155)",
+        "en": "printed pp.48-49 comm settings, pp.86-93 Modbus and frame examples, pp.134-147 address tables (PDF pp.56-57, 94-101, 142-155)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}

@@ -1,0 +1,592 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "fuji-electric/pxh",
+  "manufacturer": {
+    "ko": "후지전기",
+    "en": "Fuji Electric"
+  },
+  "model": "PXH",
+  "models": [
+    "PXH9"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "후지전기 PXH 디지털 조절계 (RS-485 Modbus RTU)",
+    "en": "Fuji Electric PXH digital controller (RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "PXH9 의 RS-485(단자 14·15·16)와 PC 로더 포트. 모든 값이 2워드(하위 워드 먼저). 상태·PV1·SV1·DV1·MV1·입력 이상(04, 30257~), AT·경보 래치·리셋·로컬 SV·PID·PV1 범위·FIX(03·06·10)",
+    "en": "RS-485 (terminals 14, 15, 16) and PC loader port of the PXH9. Every value is two words (low word first). Status, PV1, SV1, DV1, MV1, input error (04, from 30257); AT, alarm unlatch, reset, local SV, PID, PV1 range, FIX (03, 06, 10)"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 38400,
+    "bauds": [
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "odd",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      255
+    ],
+    "order": "CDAB",
+    "maxRegisters": 32,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "주소 체계: 프레임 주소 = 번호의 아래 네 자리 − 1(인쇄 p.9). 예: 01 03 08 30 00 02 C6 64(42097 PV1F), 01 04 01 02 00 02 D1 F7(30259 PV1), 01 06 02 82 03 E8 28 E4·01 10 02 82 00 06 … B6 D8(40643 P1~), 응답 01 03 04 0F A0 00 00 F9 05·01 04 04 38 80 00 01 36 CC·01 10 02 82 00 06 E1 9B(인쇄 p.18~23). 모두 CRC 가 계산값과 같다.",
+        "en": "Addressing: frame address = lower four digits of the number − 1 (printed p.9). Examples: 01 03 08 30 00 02 C6 64 (42097 PV1F), 01 04 01 02 00 02 D1 F7 (30259 PV1), 01 06 02 82 03 E8 28 E4 and 01 10 02 82 00 06 … B6 D8 (40643 P1-), replies 01 03 04 0F A0 00 00 F9 05, 01 04 04 38 80 00 01 36 CC, 01 10 02 82 00 06 E1 9B (printed pp.18-23). All CRCs match calculation."
+      },
+      {
+        "ko": "모든 데이터가 2워드이고 하위 워드를 먼저 보낸다(99999 = 86 9F 00 01, 인쇄 p.17). 06h 로는 하위 워드만 쓸 수 있다(인쇄 p.12). 함수 03·04·06·10h, 한 번에 03h·10h 32워드, 04h 15워드.",
+        "en": "All data is two words with the low word sent first (99999 = 86 9F 00 01, printed p.17). 06h can write only the low word (printed p.12). Functions 03, 04, 06 and 10h; up to 32 words for 03h/10h, 15 for 04h."
+      },
+      {
+        "ko": "출하값(인쇄 p.6): RS-485 38400 bps·데이터 8·정지 1·홀수 패리티·국번 1(STN4 0~255, 0 = 통신 정지). 바꾼 뒤 전원을 다시 넣는다. PC 로더 포트는 국번 1 고정.",
+        "en": "Defaults (printed p.6): RS-485 38400 bps, 8 data bits, 1 stop bit, odd parity, station 1 (STN4 0-255, 0 stops communication). Cycle power after changing. The PC loader port is fixed at station 1."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 256,
+      "manualAddress": "30257",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "제어 모드 상태 (MODE1)",
+        "en": "Control mode status (MODE1)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "이상",
+          "en": "Fault"
+        },
+        {
+          "bit": 1,
+          "ko": "대기",
+          "en": "Standby"
+        },
+        {
+          "bit": 2,
+          "ko": "리모트 확인",
+          "en": "Remote ack"
+        },
+        {
+          "bit": 3,
+          "ko": "자동 아님",
+          "en": "Other than auto"
+        },
+        {
+          "bit": 4,
+          "ko": "자동 모드 요청",
+          "en": "Auto mode request"
+        },
+        {
+          "bit": 5,
+          "ko": "리모트 모드 요청",
+          "en": "Remote mode request"
+        },
+        {
+          "bit": 6,
+          "ko": "오토 튜닝 중",
+          "en": "Auto-tuning"
+        },
+        {
+          "bit": 7,
+          "ko": "보통 운전 상태",
+          "en": "Normal operation"
+        },
+        {
+          "bit": 8,
+          "ko": "PV 트래킹",
+          "en": "PV tracking"
+        },
+        {
+          "bit": 9,
+          "ko": "로컬 SV",
+          "en": "Local SV"
+        },
+        {
+          "bit": 10,
+          "ko": "리모트 SV",
+          "en": "Remote SV"
+        },
+        {
+          "bit": 11,
+          "ko": "로컬 + PV 트래킹",
+          "en": "Local + PV tracking"
+        },
+        {
+          "bit": 12,
+          "ko": "강제 수동",
+          "en": "Forced manual"
+        },
+        {
+          "bit": 13,
+          "ko": "EX-MV",
+          "en": "EX-MV"
+        },
+        {
+          "bit": 14,
+          "ko": "수동 모드",
+          "en": "Manual mode"
+        }
+      ],
+      "ref": "인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 258,
+      "manualAddress": "30259",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PV1 (제어에 쓰는 PV)",
+        "en": "PV1 (process value used for control)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "매뉴얼 예 01 04 01 02 00 02 D1 F7 → 38 80 00 01 = 00013880h = 80000(PV1D = 2 → 800.00 ℃), 응답 CRC 36 CC. 입력 이상이면 범위의 105 %·−5 %",
+        "en": "Manual example 01 04 01 02 00 02 D1 F7 → 38 80 00 01 = 00013880h = 80000 (PV1D = 2 → 800.00 °C), reply CRC 36 CC. On input error, 105 % or −5 % of the range"
+      },
+      "ref": "인쇄 p.20 (PDF p.23), 인쇄 p.28 (PDF p.31), 인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 260,
+      "manualAddress": "30261",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "SV1 (사용 중 SV)",
+        "en": "SV1 (setpoint in use)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "공학 단위 정수, 소수점 자리는 PV1D(42101) 또는 UCD1(제어 형식 TPLT 에 따라)",
+        "en": "Engineering-unit integer; decimal places from PV1D (42101) or UCD1, depending on control type TPLT"
+      },
+      "ref": "인쇄 p.28 (PDF p.31), 인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 262,
+      "manualAddress": "30263",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "DV1 (사용 중 편차)",
+        "en": "DV1 (deviation in use)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "공학 단위 정수, 소수점 자리는 PV1D(42101) 또는 UCD1(제어 형식 TPLT 에 따라)",
+        "en": "Engineering-unit integer; decimal places from PV1D (42101) or UCD1, depending on control type TPLT"
+      },
+      "ref": "인쇄 p.28 (PDF p.31), 인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 264,
+      "manualAddress": "30265",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "MV1 (사용 중 조작량)",
+        "en": "MV1 (manipulated value in use)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "range": {
+        "min": -25,
+        "max": 125
+      },
+      "ref": "인쇄 p.28 (PDF p.31), 인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 268,
+      "manualAddress": "30269",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "FAULT1 (입력 이상 상태)",
+        "en": "FAULT1 (input error status)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "이상 없음",
+          "en": "Normal"
+        },
+        {
+          "value": 1,
+          "ko": "오버",
+          "en": "Over"
+        },
+        {
+          "value": 2,
+          "ko": "언더",
+          "en": "Under"
+        }
+      ],
+      "ref": "인쇄 p.28 (PDF p.31), 인쇄 p.49 (PDF p.52)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "40021",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "AT (오토 튜닝 명령)",
+        "en": "AT (auto-tuning command)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "쓰기: AT 정지 / 읽기: 동작 안 함",
+          "en": "Write: stop AT / read: not active"
+        },
+        {
+          "value": 1,
+          "ko": "쓰기: AT 실행 / 읽기: 동작 중",
+          "en": "Write: execute AT / read: active"
+        }
+      ],
+      "ref": "인쇄 p.30 (PDF p.33)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 32,
+      "manualAddress": "40033",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "LACH (경보 래치 해제)",
+        "en": "LACH (alarm unlatch)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "쓰기: 효과 없음 / 읽기: 래치됨",
+          "en": "Write: no effect / read: latched"
+        },
+        {
+          "value": 1,
+          "ko": "쓰기: 래치 해제 / 읽기: 해제됨",
+          "en": "Write: unlatch / read: unlatched"
+        }
+      ],
+      "ref": "인쇄 p.30 (PDF p.33)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 96,
+      "manualAddress": "40097",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "RES (리셋 명령)",
+        "en": "RES (reset command)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "쓰기: 효과 없음 / 읽기: 동작 중",
+          "en": "Write: no effect / read: operating normally"
+        },
+        {
+          "value": 1,
+          "ko": "쓰기: 리셋 실행 / 읽기: 리셋 중",
+          "en": "Write: execute reset / read: being reset"
+        }
+      ],
+      "description": {
+        "ko": "입력 범위 설정을 바꾼 뒤 전원을 다시 넣는 대신 1 을 쓴다(인쇄 p.24)",
+        "en": "Write 1 instead of cycling power after changing the input range (printed p.24)"
+      },
+      "ref": "인쇄 p.24 (PDF p.27), 인쇄 p.30 (PDF p.33)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 640,
+      "manualAddress": "40641",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "SV_L1 (로컬 SV)",
+        "en": "SV_L1 (local SV)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "공학 단위 정수, 소수점 자리는 PV1D(42101) 또는 UCD1(제어 형식 TPLT 에 따라)",
+        "en": "Engineering-unit integer; decimal places from PV1D (42101) or UCD1, depending on control type TPLT"
+      },
+      "ref": "인쇄 p.25 (PDF p.28), 인쇄 p.31 (PDF p.34)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 642,
+      "manualAddress": "40643",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "P1 (비례대)",
+        "en": "P1 (proportional band)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999.9
+      },
+      "description": {
+        "ko": "매뉴얼 예 01 06 02 82 03 E8 28 E4(100.0 — 06h 는 하위 워드만), 01 10 02 82 00 06 0C 03 E8 00 00 00 64 00 00 00 32 00 00 B6 D8(P1·I1·D1)",
+        "en": "Manual examples 01 06 02 82 03 E8 28 E4 (100.0; 06h writes the low word only), 01 10 02 82 00 06 0C 03 E8 00 00 00 64 00 00 00 32 00 00 B6 D8 (P1, I1, D1)"
+      },
+      "ref": "인쇄 p.21~23 (PDF p.24~26), 인쇄 p.31 (PDF p.34)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 644,
+      "manualAddress": "40645",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "I1 (적분 시간)",
+        "en": "I1 (integral time)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3200
+      },
+      "ref": "인쇄 p.31 (PDF p.34)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 646,
+      "manualAddress": "40647",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "D1 (미분 시간)",
+        "en": "D1 (derivative time)"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999.9
+      },
+      "ref": "인쇄 p.31 (PDF p.34)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2096,
+      "manualAddress": "42097",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PV1F (PV1 풀 스케일)",
+        "en": "PV1F (PV1 full scale)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "매뉴얼 예 01 03 08 30 00 02 C6 64 → 0F A0 00 00 = 4000, 응답 CRC F9 05. 바꾼 뒤 FIX 와 리셋(또는 전원 재투입)",
+        "en": "Manual example 01 03 08 30 00 02 C6 64 → 0F A0 00 00 = 4000, reply CRC F9 05. After changing, FIX and reset (or power cycle)"
+      },
+      "ref": "인쇄 p.18 (PDF p.21), 인쇄 p.24 (PDF p.27), 인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2098,
+      "manualAddress": "42099",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PV1B (PV1 베이스 스케일)",
+        "en": "PV1B (PV1 base scale)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2100,
+      "manualAddress": "42101",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "PV1D (PV1 소수점 위치)",
+        "en": "PV1D (PV1 decimal point position)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 3
+      },
+      "description": {
+        "ko": "바꾸면 PV1F·PV1B 가 자동으로 바뀐다(예 0~400 → 0.0~400.0)",
+        "en": "Changing it updates PV1F and PV1B automatically (e.g. 0-400 → 0.0-400.0)"
+      },
+      "ref": "인쇄 p.24 (PDF p.27), 인쇄 p.39 (PDF p.42)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 3152,
+      "manualAddress": "43153",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "FIX 명령 (비휘발 메모리 저장)",
+        "en": "FIX command (save to non-volatile memory)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "읽기: FIX 아님(끝남)",
+          "en": "Read: no FIX (finished)"
+        },
+        {
+          "value": 1,
+          "ko": "쓰기: FIX 실행",
+          "en": "Write: execute FIX"
+        }
+      ],
+      "description": {
+        "ko": "순서(그림 5-4): 03h 로 0 인지 읽기 → 06h 로 1 쓰기 → 0 이 될 때까지 읽기. 5초~3분 걸리고 그동안 전원을 끄지 않는다. 쓰기 횟수 한도 100,000회",
+        "en": "Procedure (Fig. 5-4): read 0 with 03h → write 1 with 06h → read until 0. Takes 5 s to 3 min; do not power off meanwhile. 100,000-write limit"
+      },
+      "ref": "인쇄 p.16 (PDF p.19), 인쇄 p.43 (PDF p.46)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "주소표(인쇄 p.30~50)는 PDF 글자 칸이 줄마다 어긋나 있어, 프레임 예·소수점 표(인쇄 p.25~28)·본문 설명으로 이름을 맞출 수 있는 항목만 넣었다. 경보 설정(40257~)·팔레트·램프/소크 등은 뺐다.",
+      "en": "The address map (printed pp.30-50) has text columns shifted line by line in the PDF, so only items whose names could be matched by frame examples, the decimal point tables (printed pp.25-28) or the text are included. Alarm settings (40257-), palettes, ramp/soak etc. are left out."
+    },
+    {
+      "ko": "FIX 하지 않으면 통신으로 쓴 값은 전원을 끄면 사라진다(인쇄 p.16). 쪽 번호는 인쇄 쪽(PDF = 인쇄 + 3).",
+      "en": "Without FIX, values written over communication are lost at power-off (printed p.16). Page numbers are printed pages (PDF = printed + 3)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "PXH Digital Controller Communication Functions (MODBUS) — Instruction Manual",
+      "publisher": "Fuji Electric",
+      "edition": {
+        "ko": "INP-TN514207c-E",
+        "en": "INP-TN514207c-E"
+      },
+      "url": "https://americas.fujielectric.com/wp-content/uploads/2018/12/PXH-Digital-Controller-Communication-FunctionsMODBUS-TN514207c-E-.pdf",
+      "pages": {
+        "ko": "인쇄 p.6 통신 설정, p.9~23 프로토콜·예, p.24~29 데이터 형식, p.30~50 주소표 (PDF p.9, 12~26, 27~32, 33~53)",
+        "en": "printed p.6 settings, pp.9-23 protocol and examples, pp.24-29 data format, pp.30-50 address map (PDF p.9, 12-26, 27-32, 33-53)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}

@@ -1,0 +1,2110 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "omron/3g3m1",
+  "manufacturer": {
+    "ko": "오므론",
+    "en": "OMRON"
+  },
+  "model": "3G3M1",
+  "kind": "inverter",
+  "title": {
+    "ko": "오므론 M1 시리즈 3G3M1 인버터 표준형 (내장 RS-485 Modbus RTU)",
+    "en": "OMRON M1 Series 3G3M1 inverter, standard type (built-in RS-485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "제어 단자 SP·SN 의 RS-485 Modbus RTU. 코일 0000h~(운전·입력·상태), 지령 S01·S05·S06(5001h~), 주파수 C99(1215h), 파라미터 F·y, 모니터 M(50C1h~)·W(1002h~·5242h~), 알람 0011h~. 데이터 목록 주소 = 프레임 주소",
+    "en": "RS-485 Modbus RTU on control terminals SP/SN. Coils from 0000h (run, inputs, status), commands S01/S05/S06 (from 5001h), frequency C99 (1215h), F and y parameters, monitors M (from 50C1h) and W (from 1002h, 5242h), alarms from 0011h. Data list address = frame address"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "maxRegisters": 100,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 8-9 데이터 목록의 «Modbus 주소» 가 프레임 주소다. 예(8-11~8-21)는 «레지스터 번호 = 주소 + 1» 로 설명한다 — 01 01 00 02 00 0C 9D CF(DI1 코일 0002h~), 01 05 00 00 FF 00 8C 3A(FW 0000h), 01 06 12 16 13 88 60 20(C99 하위 1216h ← 50.00 Hz), 01 0F 00 02 00 0C 02 17 00 EB A2, 01 10 11 02 00 02 04 00 00 03 E8 B2 98(F07 1102h·1103h ← 10.00 s), 01 17 52 44 00 02 12 15 00 02 04 00 00 13 88 E8 67(W03 읽기·C99 쓰기), 엔터 08 06 08 FF 00 01 7A C3. 응답 01 01 02 08 05 7E 3F, 01 03 14 …F9 14, 01 0F 00 02 00 0C F4 0E, 01 10 11 02 00 02 E5 34, 01 17 04 00 00 13 88 F4 71 까지 CRC 가 계산값과 같다.",
+        "en": "Addressing: the «Modbus address» in the 8-9 data lists is the frame address. The examples (8-11 to 8-21) describe it as «register number = address + 1»: 01 01 00 02 00 0C 9D CF (coils from DI1 0002h), 01 05 00 00 FF 00 8C 3A (FW 0000h), 01 06 12 16 13 88 60 20 (C99 low word 1216h ← 50.00 Hz), 01 0F 00 02 00 0C 02 17 00 EB A2, 01 10 11 02 00 02 04 00 00 03 E8 B2 98 (F07 1102h/1103h ← 10.00 s), 01 17 52 44 00 02 12 15 00 02 04 00 00 13 88 E8 67 (read W03, write C99), Enter 08 06 08 FF 00 01 7A C3. The replies 01 01 02 08 05 7E 3F, 01 03 14 … F9 14, 01 0F 00 02 00 0C F4 0E, 01 10 11 02 00 02 E5 34 and 01 17 04 00 00 13 88 F4 71 all have CRCs matching calculation."
+      },
+      {
+        "ko": "매뉴얼 FC03 예(8-12)의 오타: 시작 주소를 0011h(01 03 00 11 00 0A)로 적었지만 CRC C4 08 은 0010h 로 계산한 값이다(0011h 면 95 C8). 응답 내용(알람 코드·상태·12.34 Hz·3.00 A·284.0 V)은 데이터 목록의 0011h~ 배치와 맞아 0011h 를 따랐다.",
+        "en": "Typo in the manual FC03 example (8-12): the start address is written 0011h (01 03 00 11 00 0A), but its CRC C4 08 is calculated for 0010h (0011h gives 95 C8). The reply contents (alarm code, status, 12.34 Hz, 3.00 A, 284.0 V) match the data list layout from 0011h, so 0011h is used."
+      },
+      {
+        "ko": "출하값(8-5~8-6): 국번 y11 = 1(1~255), 속도 y14 = 2(9600 bps), 패리티 y16 = 3(없음·정지 1), 데이터 8비트. 통신으로 운전하려면 F02(또는 E102) = 4, 주파수는 F01(또는 C30) = 14. 함수 코드 01·03·05·06·08·0F·10·17h, 한 번에 03h 100개·10h 100개·17h 각 16개(8-8). 종단 저항 110 Ω 내장(SW6, 8-4).",
+        "en": "Defaults (8-5 to 8-6): station y11 = 1 (1-255), baud y14 = 2 (9600 bps), parity y16 = 3 (none, 1 stop), 8 data bits. To run over communication set F02 (or E102) = 4; for frequency F01 (or C30) = 14. Function codes 01, 03, 05, 06, 08, 0F, 10 and 17h; up to 100 registers for 03h and 10h, 16 each for 17h (8-8). Built-in 110 Ω terminator (SW6, 8-4)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "0000 hex",
+      "type": "bit",
+      "name": {
+        "ko": "FW (정회전 운전)",
+        "en": "FW (forward run)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "description": {
+        "ko": "1 = ON. F02 = 4(RS-485) 일 때. 매뉴얼 예 01 05 00 00 FF 00 8C 3A",
+        "en": "1 = ON. With F02 = 4 (RS-485). Manual example 01 05 00 00 FF 00 8C 3A"
+      },
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "0001 hex",
+      "type": "bit",
+      "name": {
+        "ko": "RV (역회전 운전)",
+        "en": "RV (reverse run)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "0002 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI1 (다기능 입력 1)",
+        "en": "DI1 (multifunction input 1)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "0003 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI2 (다기능 입력 2)",
+        "en": "DI2 (multifunction input 2)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "0004 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI3 (다기능 입력 3)",
+        "en": "DI3 (multifunction input 3)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 5,
+      "manualAddress": "0005 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI4 (다기능 입력 4)",
+        "en": "DI4 (multifunction input 4)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "0006 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI5 (다기능 입력 5)",
+        "en": "DI5 (multifunction input 5)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 13,
+      "manualAddress": "000D hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI6 (다기능 입력 6)",
+        "en": "DI6 (multifunction input 6)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 14,
+      "manualAddress": "000E hex",
+      "type": "bit",
+      "name": {
+        "ko": "DI7 (다기능 입력 7)",
+        "en": "DI7 (multifunction input 7)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 15,
+      "manualAddress": "000F hex",
+      "type": "bit",
+      "name": {
+        "ko": "RS (리셋)",
+        "en": "RS (reset)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 16,
+      "manualAddress": "0010 hex",
+      "type": "bit",
+      "name": {
+        "ko": "FWR (정회전 중)",
+        "en": "FWR (during forward rotation)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 17,
+      "manualAddress": "0011 hex",
+      "type": "bit",
+      "name": {
+        "ko": "RVR (역회전 중)",
+        "en": "RVR (during reverse rotation)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 19,
+      "manualAddress": "0013 hex",
+      "type": "bit",
+      "name": {
+        "ko": "INT (인버터 출력 차단)",
+        "en": "INT (inverter shut down)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 21,
+      "manualAddress": "0015 hex",
+      "type": "bit",
+      "name": {
+        "ko": "NUV (DC 링크 전압 확립)",
+        "en": "NUV (DC link voltage established)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 25,
+      "manualAddress": "0019 hex",
+      "type": "bit",
+      "name": {
+        "ko": "ACC (가속 중)",
+        "en": "ACC (during acceleration)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 26,
+      "manualAddress": "001A hex",
+      "type": "bit",
+      "name": {
+        "ko": "DEC (감속 중)",
+        "en": "DEC (during deceleration)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 27,
+      "manualAddress": "001B hex",
+      "type": "bit",
+      "name": {
+        "ko": "ALM (알람 릴레이)",
+        "en": "ALM (alarm relay)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 28,
+      "manualAddress": "001C hex",
+      "type": "bit",
+      "name": {
+        "ko": "RL (통신 유효)",
+        "en": "RL (communications effective)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 32,
+      "manualAddress": "0020 hex",
+      "type": "bit",
+      "name": {
+        "ko": "FA1 (정속 도달)",
+        "en": "FA1 (constant speed arrival)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 34,
+      "manualAddress": "0022 hex",
+      "type": "bit",
+      "name": {
+        "ko": "IRDY (운전 준비 완료)",
+        "en": "IRDY (operation ready)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-34~8-35 (PDF 684-685)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 64,
+      "manualAddress": "0040 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DO1 (다기능 출력 1)",
+        "en": "DO1 (multifunction output 1)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-35~8-36 (PDF 685-686)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 65,
+      "manualAddress": "0041 hex",
+      "type": "bit",
+      "name": {
+        "ko": "DO2 (다기능 출력 2)",
+        "en": "DO2 (multifunction output 2)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-35~8-36 (PDF 685-686)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 72,
+      "manualAddress": "0048 hex",
+      "type": "bit",
+      "name": {
+        "ko": "RO (다기능 릴레이 출력)",
+        "en": "RO (multifunction relay output)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "8-35~8-36 (PDF 685-686)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20481,
+      "manualAddress": "5001h",
+      "type": "s16",
+      "name": {
+        "ko": "S01 주파수 지령 (±20000 = 최고 주파수)",
+        "en": "S01 frequency reference (±20000 = max frequency)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -32768,
+        "max": 32767
+      },
+      "description": {
+        "ko": "데이터 형식 [29]: ±20000 이 최고 출력 주파수(F03) ±100 %. F01 = 14(RS-485) 일 때 쓰인다",
+        "en": "Data format [29]: ±20000 is ±100 % of the maximum output frequency (F03). Used with F01 = 14 (RS-485)"
+      },
+      "ref": "8-74 (PDF 724), 8-41 (PDF 691), 8-87 (PDF 737)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20485,
+      "manualAddress": "5005h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "S05 주파수 지령 (0.01 Hz)",
+        "en": "S05 frequency reference (0.01 Hz)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "5005h(상위)·5006h(하위) 2워드",
+        "en": "Two words, 5005h (high) and 5006h (low)"
+      },
+      "ref": "8-74 (PDF 724), 8-87 (PDF 737)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20487,
+      "manualAddress": "5007h",
+      "type": "u16",
+      "name": {
+        "ko": "S06 운전 명령",
+        "en": "S06 operation command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전",
+          "en": "FWD forward"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전",
+          "en": "REV reverse"
+        },
+        {
+          "bit": 2,
+          "ko": "DI1",
+          "en": "DI1"
+        },
+        {
+          "bit": 3,
+          "ko": "DI2",
+          "en": "DI2"
+        },
+        {
+          "bit": 4,
+          "ko": "DI3",
+          "en": "DI3"
+        },
+        {
+          "bit": 5,
+          "ko": "DI4",
+          "en": "DI4"
+        },
+        {
+          "bit": 6,
+          "ko": "DI5",
+          "en": "DI5"
+        },
+        {
+          "bit": 13,
+          "ko": "DI6",
+          "en": "DI6"
+        },
+        {
+          "bit": 14,
+          "ko": "DI7",
+          "en": "DI7"
+        },
+        {
+          "bit": 15,
+          "ko": "RST 알람 리셋",
+          "en": "RST alarm reset"
+        }
+      ],
+      "description": {
+        "ko": "데이터 형식 [14]. 예: 정회전 + DI1 = 0005h. F02 = 4(RS-485) 일 때",
+        "en": "Data format [14]. Example: FWD + DI1 = 0005h. With F02 = 4 (RS-485)"
+      },
+      "ref": "8-74 (PDF 724), 8-39 (PDF 689), 8-87 (PDF 737)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4629,
+      "manualAddress": "1215h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "C99 주파수 지령 / 다단 주파수 0",
+        "en": "C99 frequency reference / multi-step frequency 0"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "1215h(상위)·1216h(하위). 매뉴얼 FC06 예는 하위 워드 1216h 에 1388h(50.00 Hz)를 쓴다: 01 06 12 16 13 88 60 20",
+        "en": "1215h (high), 1216h (low). The manual FC06 example writes 1388h (50.00 Hz) to the low word 1216h: 01 06 12 16 13 88 60 20"
+      },
+      "ref": "8-56 (PDF 706), 8-14 (PDF 664)~8-15",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 2303,
+      "manualAddress": "08FFh",
+      "type": "u16",
+      "name": {
+        "ko": "엔터 명령 (EEPROM 저장)",
+        "en": "Enter command (save to EEPROM)"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "설정값을 EEPROM 에 저장(자동으로 0 으로 돌아감)",
+          "en": "Store set values in EEPROM (returns to 0)"
+        }
+      ],
+      "description": {
+        "ko": "매뉴얼은 레지스터 번호 0900h 로 적고 프레임 주소는 08FFh(번호 − 1). 예: 08 06 08 FF 00 01 7A C3. 06·10·17h 로 쓴 값은 EEPROM 에 저장되지 않아 전원을 끄면 돌아간다",
+        "en": "The manual gives register number 0900h; the frame address is 08FFh (number − 1). Example: 08 06 08 FF 00 01 7A C3. Values written with 06/10/17h are not stored in EEPROM and revert at power-off"
+      },
+      "ref": "8-21 (PDF 671)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12289,
+      "manualAddress": "3001h",
+      "type": "u16",
+      "name": {
+        "ko": "F01 1차 주파수 지령 선택",
+        "en": "F01 1st frequency reference selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 15
+      },
+      "values": [
+        {
+          "value": 14,
+          "ko": "RS-485 통신",
+          "en": "RS-485 communication"
+        }
+      ],
+      "description": {
+        "ko": "출하값 0. 통신으로 주파수를 주려면 14",
+        "en": "Default 0. Set 14 to give the frequency over communication"
+      },
+      "ref": "8-47 (PDF 697), 8-5 (PDF 655)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4609,
+      "manualAddress": "1201h",
+      "type": "u16",
+      "name": {
+        "ko": "F02 1차 운전 명령 선택",
+        "en": "F02 1st RUN command selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 4,
+          "ko": "RS-485 통신",
+          "en": "RS-485 communication"
+        }
+      ],
+      "description": {
+        "ko": "출하값 2. 통신으로 운전하려면 4",
+        "en": "Default 2. Set 4 to run over communication"
+      },
+      "ref": "8-47 (PDF 697), 8-5 (PDF 655)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 12291,
+      "manualAddress": "3003h",
+      "type": "u16",
+      "name": {
+        "ko": "F03 1차 최고 출력 주파수",
+        "en": "F03 1st maximum output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 590
+      },
+      "description": {
+        "ko": "데이터 형식 [3](0.1). 예: 70.0 Hz = 02BCh",
+        "en": "Data format [3] (0.1). Example: 70.0 Hz = 02BCh"
+      },
+      "ref": "8-47 (PDF 697), 8-37 (PDF 687)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4354,
+      "manualAddress": "1102h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "F07 1차 가속 시간 1",
+        "en": "F07 1st acceleration time 1"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "1102h·1103h 2워드(0.01 s). 예: 10.00 s = 0000 03E8h — 01 10 11 02 00 02 04 00 00 03 E8 B2 98. 1워드 접근은 부동소수 형식 [12]",
+        "en": "Two words 1102h/1103h (0.01 s). Example: 10.00 s = 0000 03E8h — 01 10 11 02 00 02 04 00 00 03 E8 B2 98. Single-word access uses floating format [12]"
+      },
+      "ref": "8-47 (PDF 697), 8-18 (PDF 668)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4356,
+      "manualAddress": "1104h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "F08 1차 감속 시간 1",
+        "en": "F08 1st deceleration time 1"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "1104h·1105h 2워드(0.01 s)",
+        "en": "Two words 1104h/1105h (0.01 s)"
+      },
+      "ref": "8-47 (PDF 697)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 16907,
+      "manualAddress": "420Bh",
+      "type": "u16",
+      "name": {
+        "ko": "y11 RS-485 국번",
+        "en": "y11 RS-485 station number"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 255
+      },
+      "description": {
+        "ko": "출하값 1",
+        "en": "Default 1"
+      },
+      "ref": "8-74 (PDF 724), 8-6 (PDF 656)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 16908,
+      "manualAddress": "420Ch",
+      "type": "u16",
+      "name": {
+        "ko": "y12 통신 오류 시 동작",
+        "en": "y12 operation on communication error"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "즉시 트립(ErP)",
+          "en": "Trip immediately (ErP)"
+        },
+        {
+          "value": 1,
+          "ko": "y13 시간 운전 후 트립",
+          "en": "Trip after running for timer y13"
+        },
+        {
+          "value": 2,
+          "ko": "y13 시간 재시도, 실패하면 트립",
+          "en": "Retry for timer y13, trip if not restored"
+        },
+        {
+          "value": 3,
+          "ko": "계속 운전",
+          "en": "Continue to run"
+        },
+        {
+          "value": 11,
+          "ko": "감속 정지 후 트립",
+          "en": "Trip after deceleration stop"
+        },
+        {
+          "value": 13,
+          "ko": "프리런 정지(트립 없음)",
+          "en": "Free-run stop (no trip)"
+        },
+        {
+          "value": 14,
+          "ko": "감속 정지(트립 없음)",
+          "en": "Deceleration stop (no trip)"
+        }
+      ],
+      "description": {
+        "ko": "출하값 0. y18(통신 타임아웃) 시간 동안 통신이 없으면 동작",
+        "en": "Default 0. Acts when communication stops for longer than y18 (timeout)"
+      },
+      "ref": "8-74 (PDF 724), 8-5 (PDF 655)~8-6",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 16910,
+      "manualAddress": "420Eh",
+      "type": "u16",
+      "name": {
+        "ko": "y14 RS-485 통신 속도",
+        "en": "y14 RS-485 baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 3,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 4,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 5,
+          "ko": "57600 bps",
+          "en": "57600 bps"
+        },
+        {
+          "value": 6,
+          "ko": "76800 bps",
+          "en": "76800 bps"
+        },
+        {
+          "value": 7,
+          "ko": "115200 bps",
+          "en": "115200 bps"
+        }
+      ],
+      "description": {
+        "ko": "출하값 2(9600 bps)",
+        "en": "Default 2 (9600 bps)"
+      },
+      "ref": "8-74 (PDF 724), 8-6 (PDF 656)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 16912,
+      "manualAddress": "4210h",
+      "type": "u16",
+      "name": {
+        "ko": "y16 RS-485 패리티",
+        "en": "y16 RS-485 parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음(정지 2비트)",
+          "en": "None (2 stop bits)"
+        },
+        {
+          "value": 1,
+          "ko": "짝수(정지 1비트)",
+          "en": "Even (1 stop bit)"
+        },
+        {
+          "value": 2,
+          "ko": "홀수(정지 1비트)",
+          "en": "Odd (1 stop bit)"
+        },
+        {
+          "value": 3,
+          "ko": "없음(정지 1비트)",
+          "en": "None (1 stop bit)"
+        }
+      ],
+      "description": {
+        "ko": "출하값 3",
+        "en": "Default 3"
+      },
+      "ref": "8-74 (PDF 724), 8-6 (PDF 656)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20673,
+      "manualAddress": "50C1h",
+      "type": "s16",
+      "name": {
+        "ko": "M01 최종 주파수 지령 (±20000 = 최고 주파수)",
+        "en": "M01 final frequency reference (±20000 = max frequency)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-2 (PDF 168)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20677,
+      "manualAddress": "50C5h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "M05 최종 주파수 지령",
+        "en": "M05 final frequency reference"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "50C5h·50C6h",
+        "en": "50C5h/50C6h"
+      },
+      "ref": "8-75 (PDF 725), 4-2 (PDF 168)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20680,
+      "manualAddress": "50C8h",
+      "type": "s16",
+      "name": {
+        "ko": "M07 토크 값",
+        "en": "M07 torque value"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20682,
+      "manualAddress": "50CAh",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "M09 출력 주파수 (슬립 보상 없음)",
+        "en": "M09 output frequency without slip compensation"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "50CAh·50CBh",
+        "en": "50CAh/50CBh"
+      },
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20684,
+      "manualAddress": "50CCh",
+      "type": "u16",
+      "name": {
+        "ko": "M10 입력 전력",
+        "en": "M10 input power"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20685,
+      "manualAddress": "50CDh",
+      "type": "u16",
+      "name": {
+        "ko": "M11 출력 전류 (%)",
+        "en": "M11 output current (%)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20686,
+      "manualAddress": "50CEh",
+      "type": "u16",
+      "name": {
+        "ko": "M12 출력 전압",
+        "en": "M12 output voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20687,
+      "manualAddress": "50CFh",
+      "type": "u16",
+      "name": {
+        "ko": "M13 최종 운전 명령",
+        "en": "M13 final operation command"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전",
+          "en": "FWD forward"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전",
+          "en": "REV reverse"
+        },
+        {
+          "bit": 2,
+          "ko": "DI1",
+          "en": "DI1"
+        },
+        {
+          "bit": 3,
+          "ko": "DI2",
+          "en": "DI2"
+        },
+        {
+          "bit": 4,
+          "ko": "DI3",
+          "en": "DI3"
+        },
+        {
+          "bit": 5,
+          "ko": "DI4",
+          "en": "DI4"
+        },
+        {
+          "bit": 6,
+          "ko": "DI5",
+          "en": "DI5"
+        },
+        {
+          "bit": 13,
+          "ko": "DI6",
+          "en": "DI6"
+        },
+        {
+          "bit": 14,
+          "ko": "DI7",
+          "en": "DI7"
+        },
+        {
+          "bit": 15,
+          "ko": "RST 알람 리셋",
+          "en": "RST alarm reset"
+        }
+      ],
+      "ref": "8-75 (PDF 725), 4-3 (PDF 169)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20688,
+      "manualAddress": "50D0h",
+      "type": "u16",
+      "name": {
+        "ko": "M14 운전 상태 1",
+        "en": "M14 operation status 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 중",
+          "en": "FWD during forward run"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 중",
+          "en": "REV during reverse run"
+        },
+        {
+          "bit": 2,
+          "ko": "EXT 직류 제동·예비 여자 중",
+          "en": "EXT DC braking / pre-exciting"
+        },
+        {
+          "bit": 3,
+          "ko": "INT 출력 차단",
+          "en": "INT inverter shut down"
+        },
+        {
+          "bit": 4,
+          "ko": "BRK 제동 중",
+          "en": "BRK braking"
+        },
+        {
+          "bit": 5,
+          "ko": "NUV DC 전압 확립(0 = 부족 전압)",
+          "en": "NUV DC voltage established (0 = undervoltage)"
+        },
+        {
+          "bit": 6,
+          "ko": "TL 토크 제한 중",
+          "en": "TL torque limiting"
+        },
+        {
+          "bit": 7,
+          "ko": "VL 전압 제한 중",
+          "en": "VL voltage limiting"
+        },
+        {
+          "bit": 8,
+          "ko": "IL 전류 제한 중",
+          "en": "IL current limiting"
+        },
+        {
+          "bit": 9,
+          "ko": "ACC 가속 중",
+          "en": "ACC accelerating"
+        },
+        {
+          "bit": 10,
+          "ko": "DEC 감속 중",
+          "en": "DEC decelerating"
+        },
+        {
+          "bit": 11,
+          "ko": "ALM 알람 릴레이",
+          "en": "ALM alarm relay"
+        },
+        {
+          "bit": 12,
+          "ko": "RL 통신 유효",
+          "en": "RL communications effective"
+        },
+        {
+          "bit": 15,
+          "ko": "BUSY 파라미터 쓰는 중",
+          "en": "BUSY writing parameter data"
+        }
+      ],
+      "description": {
+        "ko": "데이터 형식 [16]. 예: 정회전·가속 중 = 0201h(FC03 응답 예의 두 번째 워드)",
+        "en": "Data format [16]. Example: forward + accelerating = 0201h (second word of the FC03 reply example)"
+      },
+      "ref": "8-75 (PDF 725), 8-39 (PDF 689)~8-40",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20689,
+      "manualAddress": "50D1h",
+      "type": "u16",
+      "name": {
+        "ko": "M15 출력 단자",
+        "en": "M15 output terminals"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DO1",
+          "en": "DO1"
+        },
+        {
+          "bit": 1,
+          "ko": "DO2",
+          "en": "DO2"
+        },
+        {
+          "bit": 8,
+          "ko": "RO 릴레이",
+          "en": "RO relay"
+        }
+      ],
+      "ref": "8-75 (PDF 725), 4-4 (PDF 170)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "0011h",
+      "type": "u16",
+      "name": {
+        "ko": "M16 최근 알람",
+        "en": "M16 latest alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "알람 없음",
+          "en": "No alarm"
+        },
+        {
+          "value": 1,
+          "ko": "OC1 과전류(가속 중)",
+          "en": "OC1 overcurrent (accel)"
+        },
+        {
+          "value": 2,
+          "ko": "OC2 과전류(감속 중)",
+          "en": "OC2 overcurrent (decel)"
+        },
+        {
+          "value": 3,
+          "ko": "OC3 과전류(정속 중)",
+          "en": "OC3 overcurrent (constant speed)"
+        },
+        {
+          "value": 6,
+          "ko": "OU1 과전압(가속 중)",
+          "en": "OU1 overvoltage (accel)"
+        },
+        {
+          "value": 7,
+          "ko": "OU2 과전압(감속 중)",
+          "en": "OU2 overvoltage (decel)"
+        },
+        {
+          "value": 8,
+          "ko": "OU3 과전압(정속 중)",
+          "en": "OU3 overvoltage (constant speed)"
+        },
+        {
+          "value": 10,
+          "ko": "LU 부족 전압",
+          "en": "LU undervoltage"
+        },
+        {
+          "value": 11,
+          "ko": "Lin 입력 결상",
+          "en": "Lin input phase loss"
+        },
+        {
+          "value": 17,
+          "ko": "OH1 방열판 과열",
+          "en": "OH1 heat sink overheat"
+        },
+        {
+          "value": 18,
+          "ko": "OH2 외부 트립",
+          "en": "OH2 external trip"
+        },
+        {
+          "value": 23,
+          "ko": "OL1 모터 1 과부하",
+          "en": "OL1 motor 1 overload"
+        },
+        {
+          "value": 25,
+          "ko": "OLU 인버터 과부하",
+          "en": "OLU inverter overload"
+        },
+        {
+          "value": 46,
+          "ko": "OPL 출력 결상",
+          "en": "OPL output phase loss"
+        },
+        {
+          "value": 53,
+          "ko": "ErP RS-485 통신 오류",
+          "en": "ErP RS-485 communication error"
+        }
+      ],
+      "description": {
+        "ko": "데이터 형식 [10] 알람 코드(일부만 적음 — 전체는 8-37~8-38). FC03 예가 0011h 부터 10워드를 읽어 0001h(OC1)를 받는다",
+        "en": "Data format [10] alarm code (partial list; full list on 8-37 to 8-38). The FC03 example reads 10 words from 0011h and gets 0001h (OC1)"
+      },
+      "ref": "8-75 (PDF 725), 8-37 (PDF 687)~8-38, 8-12 (PDF 662)~8-13",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 27,
+      "manualAddress": "001Bh",
+      "type": "u16",
+      "name": {
+        "ko": "M17 직전 알람",
+        "en": "M17 last alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "알람 없음",
+          "en": "No alarm"
+        },
+        {
+          "value": 1,
+          "ko": "OC1 과전류(가속 중)",
+          "en": "OC1 overcurrent (accel)"
+        },
+        {
+          "value": 2,
+          "ko": "OC2 과전류(감속 중)",
+          "en": "OC2 overcurrent (decel)"
+        },
+        {
+          "value": 3,
+          "ko": "OC3 과전류(정속 중)",
+          "en": "OC3 overcurrent (constant speed)"
+        },
+        {
+          "value": 6,
+          "ko": "OU1 과전압(가속 중)",
+          "en": "OU1 overvoltage (accel)"
+        },
+        {
+          "value": 7,
+          "ko": "OU2 과전압(감속 중)",
+          "en": "OU2 overvoltage (decel)"
+        },
+        {
+          "value": 8,
+          "ko": "OU3 과전압(정속 중)",
+          "en": "OU3 overvoltage (constant speed)"
+        },
+        {
+          "value": 10,
+          "ko": "LU 부족 전압",
+          "en": "LU undervoltage"
+        },
+        {
+          "value": 11,
+          "ko": "Lin 입력 결상",
+          "en": "Lin input phase loss"
+        },
+        {
+          "value": 17,
+          "ko": "OH1 방열판 과열",
+          "en": "OH1 heat sink overheat"
+        },
+        {
+          "value": 18,
+          "ko": "OH2 외부 트립",
+          "en": "OH2 external trip"
+        },
+        {
+          "value": 23,
+          "ko": "OL1 모터 1 과부하",
+          "en": "OL1 motor 1 overload"
+        },
+        {
+          "value": 25,
+          "ko": "OLU 인버터 과부하",
+          "en": "OLU inverter overload"
+        },
+        {
+          "value": 46,
+          "ko": "OPL 출력 결상",
+          "en": "OPL output phase loss"
+        },
+        {
+          "value": 53,
+          "ko": "ErP RS-485 통신 오류",
+          "en": "ErP RS-485 communication error"
+        }
+      ],
+      "ref": "8-75 (PDF 725)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 37,
+      "manualAddress": "0025h",
+      "type": "u16",
+      "name": {
+        "ko": "M18 2회 전 알람",
+        "en": "M18 second last alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "알람 없음",
+          "en": "No alarm"
+        },
+        {
+          "value": 1,
+          "ko": "OC1 과전류(가속 중)",
+          "en": "OC1 overcurrent (accel)"
+        },
+        {
+          "value": 2,
+          "ko": "OC2 과전류(감속 중)",
+          "en": "OC2 overcurrent (decel)"
+        },
+        {
+          "value": 3,
+          "ko": "OC3 과전류(정속 중)",
+          "en": "OC3 overcurrent (constant speed)"
+        },
+        {
+          "value": 6,
+          "ko": "OU1 과전압(가속 중)",
+          "en": "OU1 overvoltage (accel)"
+        },
+        {
+          "value": 7,
+          "ko": "OU2 과전압(감속 중)",
+          "en": "OU2 overvoltage (decel)"
+        },
+        {
+          "value": 8,
+          "ko": "OU3 과전압(정속 중)",
+          "en": "OU3 overvoltage (constant speed)"
+        },
+        {
+          "value": 10,
+          "ko": "LU 부족 전압",
+          "en": "LU undervoltage"
+        },
+        {
+          "value": 11,
+          "ko": "Lin 입력 결상",
+          "en": "Lin input phase loss"
+        },
+        {
+          "value": 17,
+          "ko": "OH1 방열판 과열",
+          "en": "OH1 heat sink overheat"
+        },
+        {
+          "value": 18,
+          "ko": "OH2 외부 트립",
+          "en": "OH2 external trip"
+        },
+        {
+          "value": 23,
+          "ko": "OL1 모터 1 과부하",
+          "en": "OL1 motor 1 overload"
+        },
+        {
+          "value": 25,
+          "ko": "OLU 인버터 과부하",
+          "en": "OLU inverter overload"
+        },
+        {
+          "value": 46,
+          "ko": "OPL 출력 결상",
+          "en": "OPL output phase loss"
+        },
+        {
+          "value": 53,
+          "ko": "ErP RS-485 통신 오류",
+          "en": "ErP RS-485 communication error"
+        }
+      ],
+      "ref": "8-75 (PDF 725)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 47,
+      "manualAddress": "002Fh",
+      "type": "u16",
+      "name": {
+        "ko": "M19 3회 전 알람",
+        "en": "M19 third last alarm"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "알람 없음",
+          "en": "No alarm"
+        },
+        {
+          "value": 1,
+          "ko": "OC1 과전류(가속 중)",
+          "en": "OC1 overcurrent (accel)"
+        },
+        {
+          "value": 2,
+          "ko": "OC2 과전류(감속 중)",
+          "en": "OC2 overcurrent (decel)"
+        },
+        {
+          "value": 3,
+          "ko": "OC3 과전류(정속 중)",
+          "en": "OC3 overcurrent (constant speed)"
+        },
+        {
+          "value": 6,
+          "ko": "OU1 과전압(가속 중)",
+          "en": "OU1 overvoltage (accel)"
+        },
+        {
+          "value": 7,
+          "ko": "OU2 과전압(감속 중)",
+          "en": "OU2 overvoltage (decel)"
+        },
+        {
+          "value": 8,
+          "ko": "OU3 과전압(정속 중)",
+          "en": "OU3 overvoltage (constant speed)"
+        },
+        {
+          "value": 10,
+          "ko": "LU 부족 전압",
+          "en": "LU undervoltage"
+        },
+        {
+          "value": 11,
+          "ko": "Lin 입력 결상",
+          "en": "Lin input phase loss"
+        },
+        {
+          "value": 17,
+          "ko": "OH1 방열판 과열",
+          "en": "OH1 heat sink overheat"
+        },
+        {
+          "value": 18,
+          "ko": "OH2 외부 트립",
+          "en": "OH2 external trip"
+        },
+        {
+          "value": 23,
+          "ko": "OL1 모터 1 과부하",
+          "en": "OL1 motor 1 overload"
+        },
+        {
+          "value": 25,
+          "ko": "OLU 인버터 과부하",
+          "en": "OLU inverter overload"
+        },
+        {
+          "value": 46,
+          "ko": "OPL 출력 결상",
+          "en": "OPL output phase loss"
+        },
+        {
+          "value": 53,
+          "ko": "ErP RS-485 통신 오류",
+          "en": "ErP RS-485 communication error"
+        }
+      ],
+      "ref": "8-75 (PDF 725)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20694,
+      "manualAddress": "50D6h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "M20 누적 운전 시간",
+        "en": "M20 cumulative operation time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-12 (PDF 178)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20696,
+      "manualAddress": "50D8h",
+      "type": "u16",
+      "name": {
+        "ko": "M21 주회로 DC 전압",
+        "en": "M21 main circuit DC voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-75 (PDF 725), 4-12 (PDF 178)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20738,
+      "manualAddress": "5102h",
+      "type": "s16",
+      "name": {
+        "ko": "M61 인버터 내부 공기 온도",
+        "en": "M61 inverter internal air temperature"
+      },
+      "unit": "℃",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-77 (PDF 727), 4-17 (PDF 183)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4120,
+      "manualAddress": "1018h",
+      "type": "s16",
+      "name": {
+        "ko": "M62 방열판 온도",
+        "en": "M62 fin temperature"
+      },
+      "unit": "℃",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-77 (PDF 727), 4-17 (PDF 183)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 20746,
+      "manualAddress": "510Ah",
+      "type": "u16",
+      "name": {
+        "ko": "M69 인버터 정격 전류",
+        "en": "M69 inverter rated current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-77 (PDF 727), 4-18 (PDF 184)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4099,
+      "manualAddress": "1003h",
+      "type": "u16",
+      "name": {
+        "ko": "W01 운전 상태 1",
+        "en": "W01 running status 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "FWD 정회전 중",
+          "en": "FWD during forward run"
+        },
+        {
+          "bit": 1,
+          "ko": "REV 역회전 중",
+          "en": "REV during reverse run"
+        },
+        {
+          "bit": 2,
+          "ko": "EXT 직류 제동·예비 여자 중",
+          "en": "EXT DC braking / pre-exciting"
+        },
+        {
+          "bit": 3,
+          "ko": "INT 출력 차단",
+          "en": "INT inverter shut down"
+        },
+        {
+          "bit": 4,
+          "ko": "BRK 제동 중",
+          "en": "BRK braking"
+        },
+        {
+          "bit": 5,
+          "ko": "NUV DC 전압 확립(0 = 부족 전압)",
+          "en": "NUV DC voltage established (0 = undervoltage)"
+        },
+        {
+          "bit": 6,
+          "ko": "TL 토크 제한 중",
+          "en": "TL torque limiting"
+        },
+        {
+          "bit": 7,
+          "ko": "VL 전압 제한 중",
+          "en": "VL voltage limiting"
+        },
+        {
+          "bit": 8,
+          "ko": "IL 전류 제한 중",
+          "en": "IL current limiting"
+        },
+        {
+          "bit": 9,
+          "ko": "ACC 가속 중",
+          "en": "ACC accelerating"
+        },
+        {
+          "bit": 10,
+          "ko": "DEC 감속 중",
+          "en": "DEC decelerating"
+        },
+        {
+          "bit": 11,
+          "ko": "ALM 알람 릴레이",
+          "en": "ALM alarm relay"
+        },
+        {
+          "bit": 12,
+          "ko": "RL 통신 유효",
+          "en": "RL communications effective"
+        },
+        {
+          "bit": 15,
+          "ko": "BUSY 파라미터 쓰는 중",
+          "en": "BUSY writing parameter data"
+        }
+      ],
+      "ref": "8-77 (PDF 727), 4-30 (PDF 196)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 21058,
+      "manualAddress": "5242h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "W02 주파수 지령 모니터",
+        "en": "W02 frequency reference monitor"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "5242h·5243h",
+        "en": "5242h/5243h"
+      },
+      "ref": "8-77 (PDF 727), 4-30 (PDF 196)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 21060,
+      "manualAddress": "5244h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "W03 출력 주파수 (슬립 보상 전)",
+        "en": "W03 output frequency before slip compensation"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "5244h·5245h. FC17 예가 5244h 부터 2워드를 읽어 0000 1388h(50.00 Hz)를 받는다",
+        "en": "5244h/5245h. The FC17 example reads 2 words from 5244h and gets 0000 1388h (50.00 Hz)"
+      },
+      "ref": "8-78 (PDF 728), 8-19 (PDF 669)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 21062,
+      "manualAddress": "5246h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "W04 출력 주파수 (슬립 보상 후)",
+        "en": "W04 output frequency after slip compensation"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-78 (PDF 728), 4-30 (PDF 196)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4098,
+      "manualAddress": "1002h",
+      "type": "u16",
+      "name": {
+        "ko": "W05 출력 전류",
+        "en": "W05 output current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-78 (PDF 728), 4-30 (PDF 196)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4112,
+      "manualAddress": "1010h",
+      "type": "u16",
+      "name": {
+        "ko": "W06 출력 전압",
+        "en": "W06 output voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-78 (PDF 728), 4-30 (PDF 196)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4111,
+      "manualAddress": "100Fh",
+      "type": "s16",
+      "name": {
+        "ko": "W07 출력 토크",
+        "en": "W07 output torque"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -999,
+        "max": 999
+      },
+      "ref": "8-78 (PDF 728), 4-31 (PDF 197)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4102,
+      "manualAddress": "1006h",
+      "type": "u16",
+      "name": {
+        "ko": "W40 입력 단자",
+        "en": "W40 input terminals"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DI6",
+          "en": "DI6"
+        },
+        {
+          "bit": 1,
+          "ko": "DI7",
+          "en": "DI7"
+        },
+        {
+          "bit": 2,
+          "ko": "DI1",
+          "en": "DI1"
+        },
+        {
+          "bit": 3,
+          "ko": "DI2",
+          "en": "DI2"
+        },
+        {
+          "bit": 4,
+          "ko": "DI3",
+          "en": "DI3"
+        },
+        {
+          "bit": 5,
+          "ko": "DI4",
+          "en": "DI4"
+        },
+        {
+          "bit": 6,
+          "ko": "DI5",
+          "en": "DI5"
+        },
+        {
+          "bit": 11,
+          "ko": "EN1",
+          "en": "EN1"
+        },
+        {
+          "bit": 12,
+          "ko": "EN2",
+          "en": "EN2"
+        }
+      ],
+      "description": {
+        "ko": "데이터 형식 [43]. 예: 0061h = DI4·DI5·DI6 ON",
+        "en": "Data format [43]. Example: 0061h = DI4, DI5, DI6 ON"
+      },
+      "ref": "8-78 (PDF 728), 8-43 (PDF 693)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4103,
+      "manualAddress": "1007h",
+      "type": "u16",
+      "name": {
+        "ko": "W41 출력 신호",
+        "en": "W41 output signals"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DO1",
+          "en": "DO1"
+        },
+        {
+          "bit": 1,
+          "ko": "DO2",
+          "en": "DO2"
+        },
+        {
+          "bit": 8,
+          "ko": "RO 릴레이",
+          "en": "RO relay"
+        }
+      ],
+      "ref": "8-78 (PDF 728)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 4116,
+      "manualAddress": "1014h",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "W179 총 운전 시간",
+        "en": "W179 total RUN time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "8-81 (PDF 731), 4-40 (PDF 206)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "2워드 값은 상위 워드가 낮은 주소(빅 엔디언). 하위 워드만 쓰면 하위만 바뀌고, 상위 워드만 쓰면 예외 02(8-25). H396(엔디언 선택)을 바꾸면 순서가 바뀐다.",
+      "en": "Two-word values put the high word at the lower address (big endian). Writing only the low word changes only the low word; writing only the high word gives exception 02 (8-25). Changing H396 (endian selection) changes the order."
+    },
+    {
+      "ko": "통신으로 쓴 값은 EEPROM 에 저장되지 않는다(y97 출하값 1). 남기려면 엔터 명령(0900h 번호 = 08FFh)에 1 을 쓴다(8-21).",
+      "en": "Values written over communication are not saved to EEPROM (y97 default 1). To keep them, write 1 to the Enter command (register number 0900h = address 08FFh) (8-21)."
+    },
+    {
+      "ko": "뺀 것: 8-9 표에서 이름·형식 칸이 줄마다 어긋난 쪽(8-48·8-56·8-74·8-78·8-80)의 항목 중 예나 4장 목록으로 맞출 수 없는 것, W71(데이터 목록은 DC 전압인데 4장 모니터 목록은 «사용 안 함»), y18·y19(형식 칸을 확정 못 함). 쪽 번호는 인쇄 쪽(8장 PDF = 650 + 쪽, 4장 PDF = 166 + 쪽).",
+      "en": "Left out: items on pages where the name and format columns are shifted (8-48, 8-56, 8-74, 8-78, 8-80) that could not be matched by an example or the chapter 4 list; W71 (DC voltage in the data list but «do not use» in the chapter 4 monitor list); y18 and y19 (format column not certain). Page numbers are printed pages (chapter 8 PDF = 650 + page, chapter 4 PDF = 166 + page)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "M1 Series Standard Type User's Manual",
+      "publisher": "OMRON Corporation",
+      "edition": {
+        "ko": "Cat. No. I669-E1-03",
+        "en": "Cat. No. I669-E1-03"
+      },
+      "url": "https://files.omron.eu/downloads/latest/manual/en/i669b_m1_series_standard_type_v1.0_users_manual_en.pdf",
+      "pages": {
+        "ko": "모니터 목록 4-2~4-40 (PDF 168-206), 통신 8-3~8-22 (PDF 653-672), 데이터 목록 8-34~8-86 (PDF 684-736), 통신 지령 8-87 (PDF 737)",
+        "en": "monitor lists 4-2 to 4-40 (PDF 168-206), communications 8-3 to 8-22 (PDF 653-672), data lists 8-34 to 8-86 (PDF 684-736), commands via communication 8-87 (PDF 737)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}
