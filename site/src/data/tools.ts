@@ -36,6 +36,10 @@ export interface Tool {
   features: { title: L; body: L }[];
   /** 빠른 시작 */
   steps: L[];
+  /** 이럴 때 쓰기 — 실제 쓰는 장면(앱 도움말 help.ts 에 있는 사실만) */
+  uses?: { title: L; body: L }[];
+  /** 자주 묻는 것 — 앱 도움말의 «문제 해결»·설명에서 옮긴 답 */
+  faq?: { q: L; a: L }[];
   /** 비슷한 도구 — 사실만(이름·무료/상용/오픈소스 여부). 남의 제품을 깎지 않고, 검색 제목에는 넣지 않는다(site/SEO.md) */
   similar?: L;
   help: HelpDoc;
@@ -159,6 +163,18 @@ export const TOOLS: Tool[] = [
       ko: "비슷한 일을 하는 도구로 Hercules SETUP utility(HW-group, 무료) 등이 있습니다.",
       en: "Similar tools include the Hercules SETUP utility (HW-group, freeware).",
     },
+    uses: [
+      { title: { ko: "장비에 접속해 명령 확인", en: "Talk to a device" }, body: { ko: "장비가 접속을 기다리는 쪽이면 «클라이언트» 로 IP·포트에 접속해 명령을 보내고 답을 HEX·ASCII 로 봅니다. 끊기면 정한 간격으로 다시 접속합니다.", en: "If the device waits for connections, use «Client» with its IP and port, send commands and read replies in HEX or ASCII. The client reconnects at a set interval if the link drops." } },
+      { title: { ko: "장비가 PC 로 접속해 올 때", en: "When the device connects to the PC" }, body: { ko: "«서버» 로 포트를 열어 두면 여러 장비(최대 64)가 붙습니다. 상대마다 또는 모두에게 보내고, 하나씩 끊을 수 있습니다.", en: "Open a port with «Server» and up to 64 devices can connect. Send to one or all, and drop them one at a time." } },
+      { title: { ko: "HMI ⇄ PLC 사이 엿보기", en: "Watch HMI ⇄ PLC traffic" }, body: { ko: "«중계» 로 이 PC 를 두 장비 사이에 끼우고, HMI 의 접속 대상을 이 PC 로 바꾸면 오가는 것을 방향별로 기록합니다. 넘기는 바이트는 바꾸지 않습니다.", en: "With «Relay» the PC sits between two devices; point the HMI at this PC and both directions are logged. Bytes pass through unchanged." } },
+      { title: { ko: "Modbus TCP 장비 한 번 읽기", en: "Read a Modbus TCP device once" }, body: { ko: "포트 502 로 접속하면 «Modbus TCP 로 보기» 알림이 나옵니다. 누르면 요청·응답이 하나씩 끊기고 상세 칸에 풀이가 나옵니다. 계속 읽으려면 Modbus Master 가 편합니다.", en: "Connect to port 502 and a «View as Modbus TCP» bar appears. It splits requests and replies one by one and decodes them in the detail pane. For continuous polling, Modbus Master is easier." } },
+    ],
+    faq: [
+      { q: { ko: "접속이 계속 실패(CONNECT FAIL)합니다", en: "The client keeps failing to connect (CONNECT FAIL)" }, a: { ko: "장비 전원과 랜 케이블, IP·포트, PC 와 장비가 같은 대역(예: 192.168.0.x)인지 확인하세요.", en: "Check the device's power and cable, the IP and port, and that the PC and device are on the same subnet (e.g. 192.168.0.x)." } },
+      { q: { ko: "서버를 열었는데 장비가 접속하지 못합니다", en: "I started the server but the device cannot connect" }, a: { ko: "윈도우 방화벽 창에서 허용했는지, 장비가 접속하는 IP 가 이 PC 의 IP 인지 확인하세요. «이미 사용 중» 오류면 다른 프로그램이 그 포트를 쓰고 있습니다.", en: "Make sure you allowed it in the Windows Firewall prompt and that the device connects to this PC's IP. An «already in use» error means another program holds the port." } },
+      { q: { ko: "데이터가 합쳐지거나 쪼개져 보입니다", en: "Data looks merged or split" }, a: { ko: "TCP 는 보낸 단위를 지켜 주지 않습니다. «받기 설정» 의 프레임 구분을 끝 문자·고정 길이·Modbus TCP(MBAP 길이)로 바꾸거나 끊김 시간을 조정하세요.", en: "TCP does not keep message boundaries. Switch framing in «Receive settings» to terminator, fixed length or Modbus TCP (MBAP length), or adjust the idle gap." } },
+      { q: { ko: "중계로 끼우면 통신 내용이 바뀌나요?", en: "Does the relay change the traffic?" }, a: { ko: "받는 즉시 그대로 넘깁니다. 프레임 구분·체크섬 검사는 기록에만 쓰고, 자동응답·에코는 쓰지 않습니다. 직접 «끼워 넣기» 로 보낸 것만 실제 장비에 들어가므로 조심하세요.", en: "No. Bytes are forwarded as they arrive; framing and checksum checks are only used for the log, and auto-reply and echo are off. Only what you inject yourself reaches the devices, so take care." } },
+    ],
     help: tcpHelp,
   },
   {
@@ -190,6 +206,18 @@ export const TOOLS: Tool[] = [
       { ko: "받을 포트와 보낼 곳을 입력", en: "Enter the listen port and destination" },
       { ko: "«시작»", en: "«Start»" },
       { ko: "보낼 내용을 입력하고 «보내기»", en: "Type and «Send»" },
+    ],
+    uses: [
+      { title: { ko: "상태를 뿌리는 장비 받기", en: "Receive status broadcasts" }, body: { ko: "받을 포트만 넣고 «시작» 하면 데이터그램 하나가 한 줄로 찍히고, 보내온 주소가 «보내온 상대» 목록(최대 256)에 모입니다.", en: "Enter the listen port and press «Start». Each datagram is one log line, and senders collect in the «Senders» list (up to 256)." } },
+      { title: { ko: "장비 IP·포트를 모를 때", en: "When you don't know the device's address" }, body: { ko: "장비가 보내는 포트로 받기만 시작해 «보내온 상대» 를 보세요. 주소 옆 «보낼 곳으로» 를 누르면 그대로 답할 곳이 됩니다.", en: "Start listening on the port the device sends to and watch «Senders». Click «Use as destination» next to an address to reply there." } },
+      { title: { ko: "브로드캐스트 보내기", en: "Send a broadcast" }, body: { ko: "«브로드캐스트 허용» 을 켜고 시작한 뒤 255.255.255.255 나 192.168.0.255 같은 주소로 보냅니다. 꺼진 채로 넣으면 경고가 나옵니다.", en: "Turn on «Allow broadcast» before starting, then send to 255.255.255.255 or an address like 192.168.0.255. You are warned if it is off." } },
+      { title: { ko: "멀티캐스트 수신 확인", en: "Check multicast reception" }, body: { ko: "그룹(224~239.x.x.x)을 넣으면 시작할 때 가입합니다. 랜카드가 여럿(사무망 + 장비망)이면 «멀티캐스트 랜카드» 를 장비 쪽으로 고르세요. TTL 기본 1 은 같은 망 안에서만 갑니다.", en: "Enter a group (224–239.x.x.x) and it is joined on start. With several network cards (office and machine networks) pick the machine-side «Multicast NIC». The default TTL of 1 stays on the local network." } },
+    ],
+    faq: [
+      { q: { ko: "아무것도 들어오지 않습니다", en: "Nothing arrives" }, a: { ko: "장비가 보내는 대상 IP·포트, 윈도우 방화벽 허용, PC 와 장비가 같은 대역인지 확인하세요. 멀티캐스트면 그룹 주소와 랜카드를 보고 «다시 가입» 을 눌러 보세요.", en: "Check the IP and port the device sends to, the Windows Firewall permission, and that both are on the same subnet. For multicast, check the group and NIC and try «Rejoin»." } },
+      { q: { ko: "시작할 때 «주소 사용 중» 이 나옵니다", en: "Starting fails with «address in use»" }, a: { ko: "다른 프로그램이 그 포트를 쓰고 있습니다. 사건 줄에 그 포트를 쥔 프로그램·PID 가 함께 나옵니다. 다른 포트를 쓰거나 그 프로그램을 닫으세요.", en: "Another program holds the port; the event line names that program and its PID. Use another port or close it." } },
+      { q: { ko: "«ICMP port unreachable» 은 무슨 뜻인가요?", en: "What does «ICMP port unreachable» mean?" }, a: { ko: "보낸 곳에서 그 포트를 듣는 프로그램이 없다는 운영체제 알림입니다. 장비의 포트 번호와 전원을 확인하세요.", en: "The OS reports that nothing is listening on that port at the destination. Check the device's port number and power." } },
+      { q: { ko: "한 번에 얼마나 보낼 수 있나요?", en: "How much can I send at once?" }, a: { ko: "한 번 보내기가 데이터그램 하나입니다. 약 64KB 를 넘으면 운영체제가 거절합니다.", en: "One send is one datagram. Above roughly 64 KB the OS rejects it." } },
     ],
     help: udpHelp,
   },
@@ -223,6 +251,19 @@ export const TOOLS: Tool[] = [
       { ko: "연결 방식을 고르고 포트·주소 입력", en: "Pick a transport and enter port or address" },
       { ko: "«+ 규칙 추가» — 받으면 / 응답", en: "«+ Add rule» — When / Reply" },
       { ko: "«시작» — 상위 프로그램에서 요청을 보내 보세요", en: "«Start» — send a request from your host software" },
+    ],
+    uses: [
+      { title: { ko: "장비가 오기 전에 상위 프로그램 만들기", en: "Build host software before the hardware arrives" }, body: { ko: "장비 설명서의 요청·응답을 «받으면 → 응답» 규칙으로 옮겨 두면, HMI·검사 프로그램을 실제 장비 없이 붙여 볼 수 있습니다.", en: "Turn the request/reply pairs from the device manual into «when → reply» rules and connect your HMI or test program without the real device." } },
+      { title: { ko: "타임아웃·오류 처리 시험", en: "Test timeouts and error handling" }, body: { ko: "응답 지연(흔들림 포함), N번째마다·확률로 무응답, 응답 여러 개 돌리기로 상위 프로그램이 늦거나 빠진 답을 어떻게 다루는지 봅니다.", en: "Reply delays (with jitter), no reply every Nth time or by chance, and rotating replies show how your host software copes with late or missing answers." } },
+      { title: { ko: "계측기 없이 SCPI 연습", en: "Practice SCPI without an instrument" }, body: { ko: "TCP 서버 5025 에 [SCPI *IDN? 응답] 예제를 두고 PortDock SCPI 로 127.0.0.1 에 붙습니다. «+1.2{rand 0..9}E+00» 처럼 받을 때마다 바뀌는 값도 됩니다.", en: "Run a TCP server on 5025 with the [SCPI *IDN? reply] example and connect PortDock SCPI to 127.0.0.1. Replies like «+1.2{rand 0..9}E+00» change on every request." } },
+      { title: { ko: "하트비트·상태 보고 흉내", en: "Imitate heartbeats and status reports" }, body: { ko: "«장비가 먼저 보내기» 로 요청 없이 정한 간격마다 보냅니다. {counter}·{rand}·{time} 자리는 보낼 때마다 새로 채웁니다.", en: "«Device-initiated messages» sends without a request at a set interval. {counter}, {rand} and {time} placeholders are filled on every send." } },
+    ],
+    faq: [
+      { q: { ko: "요청이 와도 응답이 나가지 않습니다", en: "Requests arrive but no reply goes out" }, a: { ko: "규칙이 켜져 있는지, 패턴 방식(HEX/ASCII)과 «정확히/포함» 이 맞는지, 위에 «**» 규칙이 있는지 보세요. «안 맞은 요청 기록» 을 켜 두면 «NO MATCH» 줄이 남고, 그 줄을 오른쪽 버튼으로 눌러 바로 규칙을 만들 수 있습니다.", en: "Check that the rule is on, the pattern type (HEX/ASCII) and «exact/contains» match, and that no «**» rule sits above it. With «Log unmatched requests» on, a «NO MATCH» line appears; right-click it to create a rule from it." } },
+      { q: { ko: "요청이 둘로 쪼개지거나 합쳐집니다", en: "Requests arrive split or merged" }, a: { ko: "규칙은 프레임 단위로 비교합니다. «프레임 구분»(끊김 시간·끝 문자)과 «끊김 시간(ms)» 을 조정하세요. UDP 는 데이터그램 하나가 한 덩어리라 필요 없습니다.", en: "Rules compare whole frames. Adjust «Framing» (idle gap or terminator) and the gap in ms. UDP needs no framing — one datagram is one frame." } },
+      { q: { ko: "같은 PC 의 프로그램과 어떻게 잇나요?", en: "How do I connect a program on the same PC?" }, a: { ko: "TCP 는 서버로 열고 상위 프로그램이 127.0.0.1 로 접속하게 합니다. 시리얼은 가상 COM 쌍(com0com 등)으로 잇습니다.", en: "For TCP, start a server and let the host program connect to 127.0.0.1. For serial, use a virtual COM pair (com0com or similar)." } },
+      { q: { ko: "SCPI «*IDN?» 규칙이 엉뚱한 요청에도 답합니다", en: "My «*IDN?» rule answers unrelated requests" }, a: { ko: "ASCII 규칙의 «와일드카드» 가 켜져 있으면 ? 와 * 가 아무 글자로 읽힙니다. SCPI 규칙은 와일드카드를 끈 채로 두세요(새 규칙의 기본).", en: "With «Wildcards» on, ? and * in an ASCII rule match any character. Keep wildcards off for SCPI rules (the default for new rules)." } },
+      { q: { ko: "규칙을 다른 PC 로 옮길 수 있나요?", en: "Can I move rules to another PC?" }, a: { ko: "«규칙 묶음 저장» 은 규칙과 연결 방식·포트·주소·프레임 구분·먼저 보내기 내용을 JSON 파일 하나로 저장합니다. 장비·시험마다 만들어 두세요.", en: "«Save rule set» stores the rules plus transport, port, address, framing and device-initiated messages in one JSON file — keep one per device or test." } },
     ],
     help: simHelp,
   },
@@ -341,6 +382,19 @@ export const TOOLS: Tool[] = [
       ko: "계측기 제조사의 VISA 기반 도구(NI MAX, Keysight Connection Expert 등)로도 명령을 보낼 수 있습니다. PortDock SCPI 는 VISA 를 설치하지 않은 PC 에서 LAN 소켓·RS-232 로 바로 붙습니다.",
       en: "VISA-based vendor tools (NI MAX, Keysight Connection Expert …) can also send commands. PortDock SCPI connects over a LAN socket or RS-232 on PCs without VISA.",
     },
+    uses: [
+      { title: { ko: "자동화 코드 쓰기 전에 명령 확인", en: "Check commands before writing automation" }, body: { ko: "명령을 손으로 넣어 응답과 응답 시간을 봅니다. ? 로 끝나면 질의, 아니면 쓰기입니다. 틀린 명령은 «오류 큐 비우기» 로 바로 확인합니다.", en: "Type commands by hand and see the reply and response time. Commands ending in ? are queries, others are writes. Check mistakes at once with «Drain error queue»." } },
+      { title: { ko: "VISA 없는 PC 에서 계측기 보기", en: "Reach an instrument on a PC without VISA" }, body: { ko: "LAN 소켓(보통 포트 5025)이나 RS-232 로 바로 붙습니다. *IDN? 으로 제조사·모델·일련번호·펌웨어를 나눠 보여 줍니다.", en: "Connect straight over a LAN socket (usually port 5025) or RS-232. *IDN? is split into maker, model, serial number and firmware." } },
+      { title: { ko: "값을 여러 번 재서 CSV 로", en: "Log repeated readings to CSV" }, body: { ko: "«반복 측정» 에서 MEAS:VOLT:DC? 같은 질의를 주기·횟수대로 물어 값 표·추세·통계(최소·최대·평균·표준편차)를 보고 CSV 로 저장합니다.", en: "In «Repeat measurement», ask a query such as MEAS:VOLT:DC? at an interval for a count, see the table, trend and statistics (min, max, mean, std dev) and save as CSV." } },
+      { title: { ko: "화면 캡처 같은 블록 데이터 받기", en: "Fetch block data such as screenshots" }, body: { ko: "IEEE 488.2 블록(#N…)은 길이 머리로 끝을 알아 받으므로 바이너리 속 LF 에 끊기지 않습니다. HEX 로 미리 보고 파일(PNG 등)로 저장합니다.", en: "IEEE 488.2 blocks (#N…) are read by their length header, so LF bytes inside binary data do not cut them. Preview in HEX and save to a file (PNG and so on)." } },
+    ],
+    faq: [
+      { q: { ko: "«연결 거부» 가 나옵니다", en: "I get «connection refused»" }, a: { ko: "포트가 다르거나(설명서의 «socket port» 확인 — 5025 가 아닌 장비도 있음) 장비의 소켓 기능이 꺼져 있습니다. 다른 프로그램(VISA 세션)이 이미 붙어 있으면 새 접속을 받지 않는 장비도 있습니다.", en: "The port differs (check the manual's «socket port» — not every instrument uses 5025) or the socket interface is off. Some instruments refuse a new connection while another program (a VISA session) is attached." } },
+      { q: { ko: "«응답 없음(시간 초과)» 이 납니다", en: "I get «no response (timeout)»" }, a: { ko: "질의가 아닌 명령을 질의로 보냈거나, 철자가 틀렸거나(오류 큐 확인), 장비가 느린 측정 중입니다. «응답 기다림» 을 늘리거나 *OPC? 로 기다리세요. «응답이 끝나지 않았습니다» 면 줄 끝(LF·CR LF·CR)이 장비와 다릅니다.", en: "A non-query was sent as a query, the command is misspelled (check the error queue) or the instrument is busy measuring. Increase the reply wait or use *OPC?. «Reply not finished» means the line ending (LF, CR LF, CR) differs from the instrument's." } },
+      { q: { ko: "-410 Query INTERRUPTED 는 무엇인가요?", en: "What is -410 Query INTERRUPTED?" }, a: { ko: "답을 읽기 전에 다음 명령을 보냈다는 뜻입니다. «쓰기» 로 질의를 보냈다면 «읽기» 로 답을 먼저 받으세요.", en: "The next command was sent before the reply was read. If you sent a query with «Write», fetch the answer with «Read» first." } },
+      { q: { ko: "USB(USBTMC)·GPIB·VXI-11·HiSLIP 도 되나요?", en: "Does it support USBTMC, GPIB, VXI-11 or HiSLIP?" }, a: { ko: "아직 아닙니다. VXI-11 은 다음 판에서 할 일이고, HiSLIP·USBTMC·GPIB 는 VISA·드라이버가 필요해 하지 않습니다. 대부분의 LAN 계측기는 소켓(5025)도 켜져 있고, USB 만 있는 장비는 «USB 가상 COM» 설정이 있으면 시리얼로 쓸 수 있습니다.", en: "Not yet. VXI-11 is planned; HiSLIP, USBTMC and GPIB need VISA or drivers and are out of scope. Most LAN instruments also offer a socket (5025), and USB-only instruments with a «USB virtual COM» setting work over serial." } },
+      { q: { ko: "계측기 없이 먼저 해 볼 수 있나요?", en: "Can I try it without an instrument?" }, a: { ko: "PortDock Simulator 를 TCP 서버 5025·끝 문자 LF 로 두고 [SCPI *IDN? 응답] 예제를 넣은 뒤, 127.0.0.1:5025 로 연결하면 됩니다.", en: "Run PortDock Simulator as a TCP server on 5025 with LF framing and the [SCPI *IDN? reply] example, then connect to 127.0.0.1:5025." } },
+    ],
     help: scpiHelp,
   },
   {

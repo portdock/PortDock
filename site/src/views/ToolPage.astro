@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import DownloadBox from "../components/DownloadBox.astro";
+import AppShot from "../components/AppShot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { REPO, type Lang, type Tool } from "../data/tools";
 import { GUIDES } from "../data/guides";
@@ -55,6 +56,18 @@ const ld = {
 
 <Base lang={lang} title={tool.name} seoTitle={tool.seo.title[lang]} description={tool.seo.desc[lang]} path={`${tool.id}/`}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  {
+    tool.faq && (
+      <script
+        type="application/ld+json"
+        set:html={JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: tool.faq.map((f) => ({ "@type": "Question", name: f.q[lang], acceptedAnswer: { "@type": "Answer", text: f.a[lang] } })),
+        })}
+      />
+    )
+  }
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }]} />
@@ -69,6 +82,7 @@ const ld = {
   </header>
   <div class="wrap two" style="padding-top:32px">
     <div>
+      <AppShot lang={lang} tool={tool} lazy={false} />
       <section>
         <h2>{t.whoTitle}</h2>
         <ul class="ticks">{tool.who.map((w) => <li>{w[lang]}</li>)}</ul>
@@ -86,11 +100,39 @@ const ld = {
           }
         </div>
       </section>
+      {
+        tool.uses && (
+          <section style="margin-top:28px">
+            <h2>{ko ? "이럴 때 씁니다" : "When to use it"}</h2>
+            <div class="grid uses">
+              {tool.uses.map((u) => (
+                <div class="card">
+                  <h3>{u.title[lang]}</h3>
+                  <p>{u.body[lang]}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      }
       <section style="margin-top:28px">
         <h2>{t.stepsTitle}</h2>
         <ol class="steps">{tool.steps.map((s) => <li>{s[lang]}</li>)}</ol>
         <p><a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.readDocs} →</a></p>
       </section>
+      {
+        tool.faq && (
+          <section class="related faq">
+            <h2>{ko ? "자주 묻는 것" : "FAQ"}</h2>
+            {tool.faq.map((f) => (
+              <details>
+                <summary>{f.q[lang]}</summary>
+                <p>{f.a[lang]}</p>
+              </details>
+            ))}
+          </section>
+        )
+      }
       {
         tool.similar && (
           <section class="related">

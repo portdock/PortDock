@@ -1,0 +1,22 @@
+---
+// 앱 화면 그림 — public/img/apps/<앱>.<언어>.webp (site/shots/make.py 로 만든다. 가짜 데이터로 띄운 미리보기 화면)
+// 누르면 원래 크기(1200×760)로 열린다.
+import { type Lang, type Tool } from "../data/tools";
+
+interface Props {
+  lang: Lang;
+  tool: Tool;
+  /** 첫 화면 위쪽 그림만 false(바로 읽기) */
+  lazy?: boolean;
+  caption?: boolean;
+}
+const { lang, tool, lazy = true, caption = true } = Astro.props;
+const ko = lang === "ko";
+const src = `/img/apps/${tool.id}.${lang}.webp`;
+const alt = ko ? `${tool.name} 화면 — ${tool.tagline.ko}` : `${tool.name} screen — ${tool.tagline.en}`;
+---
+
+<figure class="shot">
+  <a href={src}><img src={src} width="1200" height="760" alt={alt} loading={lazy ? "lazy" : "eager"} decoding="async" /></a>
+  {caption && <figcaption>{ko ? "화면 예시 — 미리보기용 가짜 데이터로 띄운 화면입니다. 누르면 크게 봅니다." : "Example screen with sample data. Click to enlarge."}</figcaption>}
+</figure>

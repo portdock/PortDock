@@ -7,6 +7,7 @@ import { UI, url } from "../lib/i18n";
 import { WEB_TOOLS, webToolByPath } from "../data/webTools";
 import { POPULAR_WEB_TOOLS } from "../data/webToolGroups";
 import { appIcon } from "../lib/appIcons";
+import { toolById } from "../data/tools";
 import { CONTACT_EMAIL } from "@shared/links";
 
 interface Props {
@@ -68,19 +69,10 @@ const ld = [
         </div>
         <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
       </div>
-      <!-- 통신 기록이 어떻게 보이는지 보여 주는 그림(실제 화면 캡처 아님). 사건 줄 문구는 crates/core/src/serial.rs 의 note(OPEN·LOST·RECONNECT),
-           바이트는 실제 CRC16 값, ↳ 줄은 RX 줄을 눌렀을 때 «상세» 칸의 «요청과 짝»(shared/MbValues.tsx)을 옮긴 것 -->
-      <div class="term mono" role="img" aria-label={lang === "ko" ? "통신 기록 예시" : "Example traffic log"}>
-        <div class="head"><i></i><i></i><i></i></div>
-        <div><span class="t">09:41:07.112</span> <span class="ev">EV   OPEN COM3 9600 8N1 flow=none DTR=0 RTS=0</span></div>
-        <div><span class="t">09:41:08.530</span> <span class="tx">TX ▶ 01 03 00 00 00 0A C5 CD</span></div>
-        <div><span class="t">09:41:08.561</span> <span class="rx">RX ◀ 01 03 14 00 64 00 C8 … 03 E8 DB 70</span> <span class="ok">{lang === "ko" ? "정상" : "OK"}</span></div>
-        <div><span class="t">          </span> <span class="t">   ↳ {lang === "ko" ? "요청과 짝: 국번 1 · FC03 · 0~9 (10개)" : "Paired with request: Slave ID 1 · FC03 · 0~9 (10)"}</span></div>
-        <div><span class="t">09:41:12.004</span> <span class="ev">EV   LOST {lang === "ko" ? "장치가 목록에서 사라졌습니다" : "The device disappeared from the port list"}</span></div>
-        <div><span class="t">09:41:13.871</span> <span class="ev">EV   RECONNECT COM3 → COM5</span></div>
-        <div><span class="t">09:41:14.020</span> <span class="tx">TX ▶ STATUS?&lt;CR&gt;&lt;LF&gt;</span></div>
-        <div><span class="t">09:41:14.046</span> <span class="rx">RX ◀ READY,24.8C&lt;CR&gt;&lt;LF&gt;</span></div>
-      </div>
+      <figure class="shot hero-shot">
+        <img src={`/img/apps/serial.${lang}.webp`} width="1200" height="760" alt={ko ? "PortDock Serial 화면 — 받은 바이트 기록과 Modbus 응답 풀이" : "PortDock Serial screen — received bytes and a decoded Modbus reply"} fetchpriority="high" decoding="async" />
+        <figcaption>{ko ? "PortDock Serial — 화면 예시(가짜 데이터)" : "PortDock Serial — example screen (sample data)"}</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -88,6 +80,17 @@ const ld = [
     <div class="wrap">
       <h2>{ko ? `윈도우 프로그램 ${TOOLS.length}종` : `${TOOLS.length} Windows programs`}</h2>
       <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
+      <div class="shots3">
+        {["modbus-master", "netscan", "plot"].map((id) => {
+          const x = toolById(id);
+          return (
+            <a class="shot-card" href={url(lang, `${x.id}/`)}>
+              <img src={`/img/apps/${x.id}.${lang}.webp`} width="1200" height="760" alt={ko ? `${x.name} 화면` : `${x.name} screen`} loading="lazy" decoding="async" />
+              <span>{x.name.replace("PortDock ", "")} — {x.tagline[lang]}</span>
+            </a>
+          );
+        })}
+      </div>
       <div class="grid apps">
         {
           TOOLS.map((x) => (
