@@ -4,6 +4,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { GUIDES } from "../data/guides";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
+import ListFilter from "../components/ListFilter.astro";
 
 interface Props {
   lang: Lang;
@@ -29,15 +30,18 @@ const name = ko ? "가이드" : "Guides";
       <p>{ko ? "현장에서 자주 막히는 통신 문제를 바이트 단위로 풀어 봅니다." : "Common field communication problems, explained byte by byte."}</p>
     </div>
   </header>
-  <div class="wrap grid" style="padding-top:24px">
-    {
-      GUIDES.map((g) => (
-        <a class="card" href={url(lang, `guides/${g.slug}/`)}>
-          <h2>{g.title[lang]}</h2>
-          <p>{g.desc[lang]}</p>
-          <span class="go">{ko ? "읽기" : "Read"} →</span>
-        </a>
-      ))
-    }
+  <div class="wrap list-page" id="gd-list">
+    <ListFilter lang={lang} target="gd-list" total={GUIDES.length} placeholder={ko ? "가이드 찾기 — 예: 응답 없음, 485, 4-20, 모터" : "Find a guide — e.g. no reply, 485, 4-20, motor"} />
+    <div class="grid">
+      {
+        GUIDES.map((g) => (
+          <a class="card" href={url(lang, `guides/${g.slug}/`)} data-filter-item>
+            <h2>{g.title[lang]}</h2>
+            <p>{g.desc[lang]}</p>
+            <span class="go">{ko ? "읽기" : "Read"} →</span>
+          </a>
+        ))
+      }
+    </div>
   </div>
 </Base>

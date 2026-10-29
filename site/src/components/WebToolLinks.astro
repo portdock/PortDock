@@ -3,6 +3,7 @@
 import { type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
+import { groupOf } from "../data/webToolGroups";
 import { url } from "../lib/i18n";
 
 interface Props {
@@ -13,7 +14,10 @@ interface Props {
 const { lang, path } = Astro.props;
 const ko = lang === "ko";
 const guides = GUIDES.filter((g) => g.webTools?.includes(path));
+// 같은 묶음 도구를 먼저 보이고, 나머지는 접어 둔다(목록이 길어 본문보다 길어지지 않게 — 링크는 그대로 남는다)
 const others = WEB_TOOLS.filter((w) => w.path !== path);
+const near = others.filter((w) => groupOf(w.path) === groupOf(path)).slice(0, 6);
+const rest = others.filter((w) => !near.includes(w));
 ---
 
 <section class="related">
@@ -27,7 +31,7 @@ const others = WEB_TOOLS.filter((w) => w.path !== path);
       ))
     }
     {
-      others.map((w) => (
+      near.map((w) => (
         <li>
           <a href={url(lang, w.path)}>{w.name[lang]}</a> — {w.blurb[lang]}
         </li>
@@ -37,4 +41,18 @@ const others = WEB_TOOLS.filter((w) => w.path !== path);
       <a href={url(lang, "download/")}>{ko ? "PortDock 프로그램 내려받기(무료, 윈도우)" : "Download the PortDock programs (free, Windows)"}</a>
     </li>
   </ul>
+  {
+    rest.length > 0 && (
+      <details class="more">
+        <summary>{ko ? `다른 웹 도구 ${rest.length}개 더 보기` : `${rest.length} more web tools`}</summary>
+        <ul class="links cols">
+          {rest.map((w) => (
+            <li>
+              <a href={url(lang, w.path)}>{w.name[lang]}</a>
+            </li>
+          ))}
+        </ul>
+      </details>
+    )
+  }
 </section>

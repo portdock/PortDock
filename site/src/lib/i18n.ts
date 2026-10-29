@@ -47,7 +47,7 @@ export const UI = {
     stepsTitle: "빠른 시작",
     dlTitle: "내려받기",
     dlSetup: "설치판 (.exe)",
-    dlPortable: "포터블 (.zip)",
+    dlPortable: "휴대판 (.zip)",
     dlOffline: "오프라인 설치판",
     dlNote: "윈도우 10·11 (64비트). 처음 실행하면 «Windows의 PC 보호» 창이 뜰 수 있습니다 — 아래 «안전 확인» 을 보세요.",
     dlAll: "모든 버전·변경 내역",

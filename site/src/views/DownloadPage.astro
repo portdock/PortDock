@@ -4,6 +4,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { TOOLS, RELEASED, REPO, RELEASES, latest, type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 import { SPONSOR_URL } from "@shared/links";
+import { appIcon } from "../lib/appIcons";
 
 interface Props {
   lang: Lang;
@@ -31,29 +32,54 @@ const ko = lang === "ko";
     </div>
   </header>
   <div class="wrap" style="padding-top:28px">
-    <table class="t">
+    {/* 어느 걸 받을지 — 질문 2개. 스크립트가 없어도 세 줄 안내는 그대로 읽힌다 */}
+    <section class="pick card" id="pick" aria-labelledby="pick-h">
+      <h2 id="pick-h">{ko ? "어느 걸 받아야 하나요?" : "Which one should I get?"}</h2>
+      <ul class="pick-list">
+        <li data-pick="setup"><b>{t.dlSetup}</b> — {ko ? "대부분은 이것. 인터넷이 되는 PC 에 설치합니다(관리자 권한 필요 없음)." : "Most people. Installs on a PC with internet (no admin rights needed)."}</li>
+        <li data-pick="offline"><b>{t.dlOffline}</b> — {ko ? "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다." : "PCs without internet (plant floor, closed networks). WebView2 is bundled."}</li>
+        <li data-pick="portable"><b>{t.dlPortable}</b> — {ko ? "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다." : "No install — carry it on a USB stick. Unzip and run."}</li>
+      </ul>
+      <form class="pick-q" hidden>
+        <fieldset>
+          <legend>{ko ? "1. 이 PC 에 설치해도 되나요?" : "1. Can you install software on this PC?"}</legend>
+          <label><input type="radio" name="inst" value="y" checked /> {ko ? "예" : "Yes"}</label>
+          <label><input type="radio" name="inst" value="n" /> {ko ? "아니요 / 설치 없이 쓰고 싶어요" : "No / I'd rather not install"}</label>
+        </fieldset>
+        <fieldset>
+          <legend>{ko ? "2. 이 PC 가 인터넷에 연결돼 있나요?" : "2. Is this PC connected to the internet?"}</legend>
+          <label><input type="radio" name="net" value="y" checked /> {ko ? "예" : "Yes"}</label>
+          <label><input type="radio" name="net" value="n" /> {ko ? "아니요" : "No"}</label>
+        </fieldset>
+        <p class="pick-out" aria-live="polite"></p>
+      </form>
+    </section>
+    <table class="t dl-table" data-pick="setup">
       <thead>
-        <tr><th>{t.tools}</th><th>{t.dlSetup}</th><th>{t.dlOffline}</th><th>{t.dlPortable}</th><th>{t.docs}</th></tr>
+        <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}</th><th class="c-offline">{t.dlOffline}</th><th class="c-portable">{t.dlPortable}</th><th>{t.docs}</th></tr>
       </thead>
       <tbody>
         {
           TOOLS.map((x) => (
             <tr>
-              <td>
-                <a href={url(lang, `${x.id}/`)}><b>{x.name}</b></a>
-                <br />
-                <span class="note">{x.tagline[lang]}</span>
+              <td class="dl-name">
+                {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="28" height="28" loading="lazy" decoding="async" />}
+                <span>
+                  <a href={url(lang, `${x.id}/`)}><b>{x.name}</b></a>
+                  <br />
+                  <span class="note">{x.tagline[lang]}</span>
+                </span>
               </td>
               {RELEASED ? (
                 <>
-                  <td><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
-                  <td><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
-                  <td><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td class="c-setup" data-label={t.dlSetup}><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td class="c-offline" data-label={t.dlOffline}><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td class="c-portable" data-label={t.dlPortable}><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
                 </>
               ) : (
                 <td colspan="3"><span class="note">{t.dlSoon}</span></td>
               )}
-              <td><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
+              <td class="dl-docs"><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
             </tr>
           ))
         }
@@ -96,4 +122,28 @@ const ko = lang === "ko";
       }
     </section>
   </div>
+  <script>
+    // 질문 2개 → 권하는 파일 종류를 표에서 강조(설치판·오프라인 설치판·휴대판)
+    const form = document.querySelector<HTMLFormElement>(".pick-q");
+    const table = document.querySelector<HTMLElement>(".dl-table");
+    const list = document.querySelector<HTMLElement>(".pick-list");
+    if (form && table && list) {
+      const ko = document.documentElement.lang === "ko";
+      const NAME: Record<string, string> = ko
+        ? { setup: "설치판 (.exe)", offline: "오프라인 설치판", portable: "휴대판 (.zip)" }
+        : { setup: "Installer (.exe)", offline: "Offline installer", portable: "Portable (.zip)" };
+      form.hidden = false;
+      const run = () => {
+        const inst = (form.elements.namedItem("inst") as RadioNodeList).value;
+        const net = (form.elements.namedItem("net") as RadioNodeList).value;
+        const pick = inst === "n" ? "portable" : net === "n" ? "offline" : "setup";
+        table.dataset.pick = pick;
+        for (const li of list.querySelectorAll<HTMLElement>("li")) li.classList.toggle("on", li.dataset.pick === pick);
+        const out = form.querySelector(".pick-out")!;
+        out.textContent = (ko ? "→ 이것을 받으세요: " : "→ Get this one: ") + NAME[pick] + (pick === "portable" && net === "n" ? (ko ? " (휴대판은 WebView2 가 있는 PC 에서만 실행됩니다 — 윈도우 11 은 기본 포함)" : " (the portable edition needs WebView2 on the PC — included in Windows 11)") : "");
+      };
+      form.addEventListener("change", run);
+      run();
+    }
+  </script>
 </Base>

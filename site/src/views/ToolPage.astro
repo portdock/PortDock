@@ -7,6 +7,7 @@ import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
 import { DEVICES, devPath } from "../data/devices";
 import { UI, url } from "../lib/i18n";
+import { appIcon } from "../lib/appIcons";
 
 interface Props {
   lang: Lang;
@@ -57,8 +58,13 @@ const ld = {
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }]} />
-      <h1>{tool.name}</h1>
+      <h1 class="with-icon">{appIcon(tool.id) && <img class="app-icon" src={appIcon(tool.id)} alt="" width="40" height="40" />}{tool.name}</h1>
       <p>{tool.summary[lang]}</p>
+      {/* 좁은 화면에서는 내려받기 칸이 맨 아래로 가므로 위에 바로 가기를 둔다 */}
+      <p class="btns only-narrow">
+        <a class="btn primary" href="#dl">{t.download}</a>
+        <a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.docs}</a>
+      </p>
     </div>
   </header>
   <div class="wrap two" style="padding-top:32px">
@@ -143,7 +149,7 @@ const ld = {
         )
       }
     </div>
-    <aside class="side-box">
+    <aside class="side-box" id="dl">
       <DownloadBox lang={lang} tool={tool} />
     </aside>
   </div>

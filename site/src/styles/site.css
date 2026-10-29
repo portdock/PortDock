@@ -824,3 +824,345 @@ ul.links.cols {
 ul.links.cols li {
   break-inside: avoid;
 }
+
+/* ===== 2026-10-29 사이트 점검 — 읽기 쉽게·찾기 쉽게 ===== */
+/* hidden 속성은 display 를 준 요소(a.card 등)에서도 숨긴다(목록 거르기) */
+[hidden] {
+  display: none !important;
+}
+/* 첫 화면 두 행동 단추 — 크게, 아래 줄에 짧은 설명 */
+.btn.big {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 12px 22px;
+  font-size: 17px;
+  line-height: 1.3;
+}
+.btn.big small {
+  font-size: 13px;
+}
+.hero-btns {
+  margin: 4px 0 18px;
+}
+.hero .trust {
+  margin-bottom: 0;
+}
+section.block.alt {
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+section.block p.lead {
+  margin: -12px 0 18px;
+  color: var(--muted);
+}
+.more-link {
+  margin: 18px 0 0;
+}
+/* 앱 카드 — 아이콘 + 이름 + 한 줄 */
+.app-card {
+  display: flex !important;
+  gap: 12px;
+  align-items: flex-start;
+}
+.app-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 9px;
+}
+.app-icon.sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.grid.apps {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.grid.compact .card {
+  padding: 14px 16px;
+}
+.grid.compact .card h3 {
+  font-size: 16px;
+}
+.grid.compact .card p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+h1.with-icon {
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.only-narrow {
+  display: none !important;
+}
+
+/* 목록 거르기 칸·종류 칩 */
+.list-page {
+  padding-top: 20px;
+}
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  max-width: 560px;
+}
+.filter input {
+  flex: 1;
+  font-size: 16px;
+}
+.filter-count {
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.chips a {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+}
+.chips a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chips small {
+  color: var(--muted);
+}
+.list-group {
+  scroll-margin-top: 76px;
+}
+.list-group h2 {
+  font-size: 20px;
+  margin: 26px 0 12px;
+}
+
+/* 접어 둔 목록(다른 웹 도구 더 보기) */
+details.more {
+  margin-top: 10px;
+}
+details.more summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 6px 0;
+}
+details.more ul {
+  margin-top: 8px;
+}
+
+/* 의견 보내기 — 웹 도구·가이드·장비 맵 본문 끝 */
+.feedback {
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--soft);
+}
+.feedback p {
+  margin: 0;
+}
+.feedback-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-top: 10px !important;
+}
+.feedback + .use-notice {
+  margin-top: 12px;
+}
+
+/* 내려받기 — 어느 걸 받을지 */
+.pick {
+  margin: 0 0 24px;
+}
+.pick h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.pick-list {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+.pick-list li {
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.pick-list li.on {
+  background: var(--soft);
+}
+.pick-q {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 10px;
+}
+.pick-q fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.pick-q legend {
+  font-weight: 600;
+  font-size: 15px;
+  padding: 0;
+  margin-bottom: 2px;
+}
+.pick-q label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 14px;
+  font-size: 15px;
+}
+.pick-q input {
+  width: auto;
+}
+.pick-out {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+.dl-table .btn {
+  white-space: nowrap;
+}
+.dl-table .dl-name {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.dl-table[data-pick="setup"] .c-setup,
+.dl-table[data-pick="offline"] .c-offline,
+.dl-table[data-pick="portable"] .c-portable {
+  background: color-mix(in srgb, var(--soft) 70%, transparent);
+}
+.dl-table[data-pick="offline"] .c-offline .btn,
+.dl-table[data-pick="portable"] .c-portable .btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.dl-table[data-pick="offline"] .c-setup .btn,
+.dl-table[data-pick="portable"] .c-setup .btn {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.dl-table td.dl-docs {
+  white-space: nowrap;
+}
+
+/* 장비 레지스터 표 — 첫 열(매뉴얼 주소) 고정 */
+.regs-scroll table.dev-regs th:first-child,
+.regs-scroll table.dev-regs td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
+  box-shadow: 1px 0 0 var(--line);
+}
+
+/* 404 */
+.h404 {
+  font-size: clamp(26px, 5vw, 36px);
+  line-height: 1.3;
+}
+
+@media (max-width: 860px) {
+  .only-narrow {
+    display: flex !important;
+  }
+  p.only-narrow.scroll-hint {
+    display: block !important;
+    margin: 0 0 6px;
+  }
+  .page-head .only-narrow {
+    margin-top: 14px;
+  }
+}
+
+/* 휴대폰 — 머리줄을 두 줄로 줄이고 따라다니지 않게(화면 3분의 1을 가리던 것) */
+@media (max-width: 640px) {
+  .top {
+    position: static;
+  }
+  .bar {
+    position: relative;
+    gap: 0;
+    padding-bottom: 6px;
+  }
+  .brand {
+    min-height: 48px;
+  }
+  .top nav {
+    flex-basis: 100%;
+    gap: 2px 12px;
+    font-size: 14.5px;
+  }
+  .top nav .lang {
+    position: absolute;
+    right: 16px;
+    top: 11px;
+  }
+  .hero h1 {
+    font-size: 27px;
+  }
+  .hero p.sub {
+    font-size: 16.5px;
+  }
+  .btn.big {
+    flex: 1 1 100%;
+  }
+  /* 내려받기 표 → 도구마다 카드 한 장 */
+  .dl-table thead {
+    display: none;
+  }
+  .dl-table,
+  .dl-table tbody {
+    display: block;
+  }
+  .dl-table tr {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 8px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  table.t.dl-table td {
+    border: 0;
+    padding: 0;
+  }
+  .dl-table td.dl-name,
+  .dl-table td.dl-docs,
+  .dl-table td[colspan] {
+    grid-column: 1 / -1;
+  }
+  .dl-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .dl-table td[data-label] .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .dl-table td.dl-docs {
+    font-size: 14px;
+  }
+}

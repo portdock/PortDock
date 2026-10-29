@@ -3,6 +3,8 @@ import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
 import { WEB_TOOLS } from "../data/webTools";
+import { groupedWebTools } from "../data/webToolGroups";
+import ListFilter from "../components/ListFilter.astro";
 import { url } from "../lib/i18n";
 
 interface Props {
@@ -11,6 +13,7 @@ interface Props {
 const { lang } = Astro.props;
 const ko = lang === "ko";
 const name = ko ? "웹 도구" : "Web tools";
+const groups = groupedWebTools();
 ---
 
 <Base
@@ -26,17 +29,28 @@ const name = ko ? "웹 도구" : "Web tools";
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name, path: "tools/" }]} />
       <h1>{name}</h1>
-      <p>{ko ? "설치 없이 브라우저에서 바로 씁니다. 입력한 데이터는 어디에도 보내지 않습니다." : "Run right in your browser. Nothing you type is sent anywhere."}</p>
+      <p>{ko ? `설치 없이 브라우저에서 바로 쓰는 현장 계산기 ${WEB_TOOLS.length}개. 입력한 값은 어디에도 보내지 않습니다.` : `${WEB_TOOLS.length} field calculators that run right in your browser. Nothing you type is sent anywhere.`}</p>
     </div>
   </header>
-  <div class="wrap grid" style="padding-top:24px">
+  <div class="wrap list-page" id="wt-list">
+    <ListFilter lang={lang} target="wt-list" total={WEB_TOOLS.length} placeholder={ko ? "도구 찾기 — 예: crc, 4-20, 모터, 서브넷" : "Find a tool — e.g. crc, 4-20, motor, subnet"} />
+    <nav class="chips" aria-label={ko ? "종류" : "Categories"}>
+      {groups.map((g) => <a href={`#g-${g.id}`}>{g.name[lang]} <small>{g.tools.length}</small></a>)}
+    </nav>
     {
-      WEB_TOOLS.map((x) => (
-        <a class="card" href={url(lang, x.path)}>
-          <h2>{x.name[lang]}</h2>
-          <p>{x.blurb[lang]}</p>
-          <span class="go">{ko ? "열기" : "Open"} →</span>
-        </a>
+      groups.map((g) => (
+        <section class="list-group" id={`g-${g.id}`} data-filter-group>
+          <h2>{g.name[lang]}</h2>
+          <div class="grid">
+            {g.tools.map((x) => (
+              <a class="card" href={url(lang, x.path)} data-filter-item>
+                <h3>{x.name[lang]}</h3>
+                <p>{x.blurb[lang]}</p>
+                <span class="go">{ko ? "열기" : "Open"} →</span>
+              </a>
+            ))}
+          </div>
+        </section>
       ))
     }
   </div>

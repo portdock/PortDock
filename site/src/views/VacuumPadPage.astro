@@ -244,7 +244,9 @@ const ld = {
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim().replace(",", ".");
-      return s === "" ? NaN : Number(s);
+      // 빈칸·글자·아주 큰 수(1e12 넘음)는 «값 없음» 으로 — 결과에 Infinity·NaN 이 보이지 않게
+      const n = s === "" ? NaN : Number(s);
+      return Math.abs(n) > 1e12 ? NaN : n;
     };
     // 진공압은 «−60» 처럼 부호를 붙여 넣어도 크기로 읽는다
     const vac = () => {

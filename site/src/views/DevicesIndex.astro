@@ -5,6 +5,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
 import { CC_BY, DEVICES, LICENSE_URL, RAW, SCHEMA_URL, devPath } from "../data/devices";
 import { url } from "../lib/i18n";
+import ListFilter from "../components/ListFilter.astro";
 import { KIND_TEXT, type Device } from "@shared/devices";
 import "../styles/devices.css";
 
@@ -36,14 +37,15 @@ const desc = L(
       <p>{desc}</p>
     </div>
   </header>
-  <div class="wrap" style="padding-top:24px">
+  <div class="wrap list-page" id="dev-list">
+    <ListFilter lang={lang} target="dev-list" total={DEVICES.length} placeholder={L("장비 찾기 — 제조사·모델·종류(예: LS, 인버터, TK4)", "Find a device — maker, model or type (e.g. LS, inverter, TK4)")} />
     {
       kinds.map((k) => (
-        <section class="dev-kind">
+        <section class="dev-kind" data-filter-group>
           <h2>{KIND_TEXT[k][lang]}</h2>
           <div class="grid">
             {DEVICES.filter((d) => d.kind === k).map((d) => (
-              <a class="card" href={url(lang, devPath(d))}>
+              <a class="card" href={url(lang, devPath(d))} data-filter-item data-filter-text={`${KIND_TEXT[k].ko} ${KIND_TEXT[k].en} ${d.manufacturer.ko} ${d.manufacturer.en} ${d.models?.join(" ") ?? ""}`}>
                 <h3>
                   {d.manufacturer[lang]} {d.model}
                 </h3>

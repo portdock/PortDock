@@ -10,7 +10,22 @@ interface Props {
 }
 const { lang } = Astro.props;
 const ko = lang === "ko";
+// «도움이 됐나요?» — 서버 없이 GitHub Discussions(의견)·이슈(틀린 곳)로 잇는다
+const pageTitle = Astro.url.pathname;
+const ideaUrl = `${REPO}/discussions/new?category=ideas&title=${encodeURIComponent((ko ? "의견: " : "Feedback: ") + pageTitle)}`;
 ---
+
+<aside class="feedback" aria-label={ko ? "의견 보내기" : "Feedback"}>
+  <p>
+    <b>{ko ? "이 페이지가 도움이 됐나요?" : "Was this page helpful?"}</b>
+    {ko ? " 좋았던 점·아쉬운 점·더 있었으면 하는 계산을 알려 주세요." : " Tell us what worked, what was missing, or which calculation you would like next."}
+  </p>
+  <p class="feedback-links">
+    <a class="btn tight" href={ideaUrl} rel="noopener">{ko ? "의견 남기기" : "Leave feedback"}</a>
+    <a class="btn tight" href={`${REPO}/issues/new/choose`} rel="noopener">{ko ? "틀린 곳 알리기" : "Report a mistake"}</a>
+    <a href={url(lang, "contact/")}>{ko ? "메일로 문의" : "Email us"}</a>
+  </p>
+</aside>
 
 <aside class="use-notice" aria-label={ko ? "이용 안내" : "Use notice"}>
   {

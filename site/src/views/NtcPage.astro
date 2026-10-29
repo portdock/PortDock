@@ -244,7 +244,9 @@ const inp = (id: string, v: string) => ({ id, v });
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim().replace(",", ".");
-      return s === "" ? NaN : Number(s);
+      // 빈칸·글자·아주 큰 수(1e12 넘음)는 «값 없음» 으로 — 결과에 Infinity·NaN 이 보이지 않게
+      const n = s === "" ? NaN : Number(s);
+      return Math.abs(n) > 1e12 ? NaN : n;
     };
     const set = (k: string, v: string) => {
       const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
@@ -281,6 +283,8 @@ const inp = (id: string, v: string) => ({ id, v });
           set("coef", `${c.a.toExponential(6)} · ${c.b.toExponential(6)} · ${c.c.toExponential(6)}`);
         } else {
           const r0 = num("r0"), t0 = num("t0"), b = num("b");
+          // 실제 NTC 의 B 는 수천 K — 터무니없이 큰 값은 계산이 넘쳐(Infinity) 입력 오류로 본다
+          if (!(b < 1e6)) throw new RangeError("beta");
           R = (t) => betaR(r0, b, t0, t);
           T = (r) => betaT(r0, b, t0, r);
           R(t0);

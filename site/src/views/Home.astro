@@ -4,6 +4,9 @@ import { TOOLS, REPO, type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { DEVICES } from "../data/devices";
 import { UI, url } from "../lib/i18n";
+import { WEB_TOOLS, webToolByPath } from "../data/webTools";
+import { POPULAR_WEB_TOOLS } from "../data/webToolGroups";
+import { appIcon } from "../lib/appIcons";
 import { CONTACT_EMAIL } from "@shared/links";
 
 interface Props {
@@ -14,6 +17,13 @@ const t = UI[lang];
 const ko = lang === "ko";
 const home = new URL(url(lang), Astro.site).href;
 const root = new URL("/", Astro.site).href;
+// 첫 화면은 짧게 — 웹 도구·가이드는 몇 개만 보이고 «모두 보기» 로 잇는다
+const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
+const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order"];
+const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
+const sub = ko
+  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기 ${WEB_TOOLS.length}개.`
+  : `${TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators that run in your browser.`;
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {
@@ -51,12 +61,12 @@ const ld = [
     <div class="wrap">
       <div>
         <h1>{t.heroTitle}</h1>
-        <p class="sub">{t.heroSub}</p>
-        <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
-        <div class="btns">
-          <a class="btn primary" href={url(lang, "download/")}>{t.download}</a>
-          <a class="btn" href="#tools">{t.allTools}</a>
+        <p class="sub">{sub}</p>
+        <div class="btns hero-btns">
+          <a class="btn primary big" href={url(lang, "download/")}>{ko ? "프로그램 내려받기" : "Download the programs"} <small>{ko ? "무료 · 윈도우 10·11" : "free · Windows 10/11"}</small></a>
+          <a class="btn big" href={url(lang, "tools/")}>{ko ? "웹 도구 바로 쓰기" : "Use the web tools"} <small>{ko ? "설치 없이" : "no install"}</small></a>
         </div>
+        <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
       </div>
       <!-- 통신 기록이 어떻게 보이는지 보여 주는 그림(실제 화면 캡처 아님). 사건 줄 문구는 crates/core/src/serial.rs 의 note(OPEN·LOST·RECONNECT),
            바이트는 실제 CRC16 값, ↳ 줄은 RX 줄을 눌렀을 때 «상세» 칸의 «요청과 짝»(shared/MbValues.tsx)을 옮긴 것 -->
@@ -76,18 +86,39 @@ const ld = [
 
   <section class="block" id="tools">
     <div class="wrap">
-      <h2>{t.allTools}</h2>
-      <div class="grid">
+      <h2>{ko ? `윈도우 프로그램 ${TOOLS.length}종` : `${TOOLS.length} Windows programs`}</h2>
+      <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
+      <div class="grid apps">
         {
           TOOLS.map((x) => (
-            <a class="card" href={url(lang, `${x.id}/`)}>
-              <h3>{x.name}</h3>
-              <p>{x.tagline[lang]}</p>
-              <span class="go">{t.more} →</span>
+            <a class="card app-card" href={url(lang, `${x.id}/`)}>
+              {appIcon(x.id) && <img class="app-icon" src={appIcon(x.id)} alt="" width="40" height="40" loading="lazy" decoding="async" />}
+              <div>
+                <h3>{x.name.replace("PortDock ", "")}</h3>
+                <p>{x.tagline[lang]}</p>
+              </div>
             </a>
           ))
         }
       </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="web-tools">
+    <div class="wrap">
+      <h2>{ko ? "웹 도구 — 설치 없이 바로" : "Web tools — no install"}</h2>
+      <p class="lead">{ko ? "브라우저에서 바로 계산합니다. 입력한 값은 어디에도 보내지 않습니다." : "Calculate right in your browser. Nothing you type is sent anywhere."}</p>
+      <div class="grid compact">
+        {
+          popular.map((w) => (
+            <a class="card" href={url(lang, w.path)}>
+              <h3>{w.name[lang]}</h3>
+              <p>{w.blurb[lang]}</p>
+            </a>
+          ))
+        }
+      </div>
+      <p class="more-link"><a class="btn" href={url(lang, "tools/")}>{ko ? `웹 도구 ${WEB_TOOLS.length}개 모두 보기` : `All ${WEB_TOOLS.length} web tools`} →</a></p>
     </div>
   </section>
 
@@ -112,7 +143,7 @@ const ld = [
       <h2>{ko ? "가이드와 장비 레지스터 맵" : "Guides and device register maps"}</h2>
       <div class="grid">
         {
-          GUIDES.map((g) => (
+          featured.map((g) => (
             <a class="card" href={url(lang, `guides/${g.slug}/`)}>
               <h3>{g.title[lang]}</h3>
               <span class="go">{ko ? "읽기" : "Read"} →</span>
@@ -125,6 +156,7 @@ const ld = [
           <span class="go">{t.more} →</span>
         </a>
       </div>
+      <p class="more-link"><a class="btn" href={url(lang, "guides/")}>{ko ? `가이드 ${GUIDES.length}편 모두 보기` : `All ${GUIDES.length} guides`} →</a></p>
     </div>
   </section>
 

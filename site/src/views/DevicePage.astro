@@ -4,6 +4,7 @@ import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import UseNotice from "../components/UseNotice.astro";
 import Crumbs from "../components/Crumbs.astro";
+import ListFilter from "../components/ListFilter.astro";
 import { toolById, type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
@@ -125,7 +126,10 @@ const ld = {
         )
       }
     </p>
-    <div class="tbl">
+    <div id="regs">
+    {dev.registers.length > 12 && <ListFilter lang={lang} target="regs" total={dev.registers.length} placeholder={L("레지스터 찾기 — 예: 전압, 30001", "Find a register — e.g. voltage, 30001")} />}
+    <p class="note only-narrow scroll-hint">{L("표는 옆으로 밀어 볼 수 있습니다 — 첫 열(매뉴얼 주소)은 고정됩니다.", "Swipe the table sideways — the first column (manual address) stays put.")}</p>
+    <div class="tbl regs-scroll">
       <table class="t dev-regs">
         <thead>
           <tr>
@@ -143,7 +147,7 @@ const ld = {
         <tbody>
           {
             dev.registers.map((r) => (
-              <tr>
+              <tr data-filter-item>
                 <td class="mono">{r.manualAddress}</td>
                 <td class="mono">
                   {r.address} <small>({hex(r.address)})</small>
@@ -171,6 +175,7 @@ const ld = {
           }
         </tbody>
       </table>
+    </div>
     </div>
     {!!dev.notes?.length && (
       <>

@@ -1,0 +1,60 @@
+---
+// 목록 거르기 칸 — 웹 도구·가이드·장비 목록, 장비 레지스터 표. 서버 없이 이 페이지 안에서만 거른다.
+// 거를 항목에 data-filter-item, 묶음(제목+항목)에 data-filter-group 을 단다. 묶음 안 항목이 다 숨으면 묶음도 숨는다.
+import { type Lang } from "../data/tools";
+
+interface Props {
+  lang: Lang;
+  /** 거를 항목을 담은 요소의 id */
+  target: string;
+  placeholder: string;
+  /** 항목 수(처음 보이는 수) */
+  total: number;
+}
+const { lang, target, placeholder, total } = Astro.props;
+const ko = lang === "ko";
+---
+
+<div class="filter" data-filter-for={target} data-ko={ko ? "1" : ""}>
+  <input type="search" placeholder={placeholder} aria-label={placeholder} aria-controls={target} autocomplete="off" spellcheck="false" />
+  <span class="filter-count" aria-live="polite">{ko ? `${total}개` : `${total}`}</span>
+</div>
+
+<script>
+  // 공백·대소문자·가운뎃점을 무시하고 낱말마다 모두 들어 있으면 보인다
+  const norm = (s: string) => s.toLowerCase().replace(/[·・\-–—_/()]/g, " ");
+  for (const box of document.querySelectorAll<HTMLElement>("[data-filter-for]")) {
+    const root = document.getElementById(box.dataset.filterFor!);
+    const input = box.querySelector("input")!;
+    const count = box.querySelector<HTMLElement>(".filter-count")!;
+    if (!root) continue;
+    const ko = box.dataset.ko === "1";
+    const items = [...root.querySelectorAll<HTMLElement>("[data-filter-item]")];
+    const text = new Map(items.map((el) => [el, norm(`${el.textContent ?? ""} ${el.dataset.filterText ?? ""}`)]));
+    const groups = [...root.querySelectorAll<HTMLElement>("[data-filter-group]")];
+    let empty = root.querySelector<HTMLElement>(".filter-empty");
+    if (!empty) {
+      empty = document.createElement("p");
+      empty.className = "filter-empty note";
+      empty.hidden = true;
+      empty.textContent = ko ? "맞는 항목이 없습니다. 다른 낱말로 찾아 보세요." : "Nothing matches. Try another word.";
+      root.append(empty);
+    }
+    const run = () => {
+      const words = norm(input.value).split(/\s+/).filter(Boolean);
+      let n = 0;
+      for (const el of items) {
+        const t = text.get(el)!;
+        const show = words.every((w) => t.includes(w));
+        el.hidden = !show;
+        if (show) n++;
+      }
+      for (const g of groups) g.hidden = !g.querySelector("[data-filter-item]:not([hidden])");
+      count.textContent = ko ? `${n}개` : `${n}`;
+      empty!.hidden = n > 0;
+    };
+    input.addEventListener("input", run);
+    // 뒤로 가기로 돌아왔을 때 남아 있는 입력값도 반영
+    if (input.value) run();
+  }
+</script>
