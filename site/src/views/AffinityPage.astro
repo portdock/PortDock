@@ -1,0 +1,230 @@
+---
+// 웹 도구: 펌프·팬 회전수와 동력 — 상사 법칙(lib/affinity.ts). DOE 팬·펌프 소스북의 식과 «20 % → 50 %» 어림을 근거로.
+// 정수두가 큰 계통·저부하 효율 저하는 식에 넣지 않고 글로 밝힌다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { ratios } from "../lib/affinity";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/pump-fan-affinity/";
+const FAN = "https://www.energy.gov/sites/prod/files/2014/05/f16/fan_sourcebook.pdf";
+const PUMP = "https://www.energy.gov/sites/prod/files/2014/05/f16/pump.pdf";
+const pct = (x: number) => `${+(x * 100).toPrecision(3)} %`;
+const tRows = [100, 90, 80, 70, 60, 50].map((p) => {
+  const k = ratios(p / 100);
+  return [`${p} %`, `${+((60 * p) / 100).toFixed(1)} / ${+((50 * p) / 100).toFixed(1)} Hz`, pct(k.flow), pct(k.pressure), pct(k.power)];
+});
+const L = ko
+  ? {
+      title: "펌프·팬 회전수와 동력 계산기",
+      desc: "인버터로 펌프·팬 회전수(주파수)를 바꿀 때 유량·압력·동력이 어떻게 변하는지 상사 법칙으로 계산하고, 한 해 전력량 차이를 어림합니다.",
+      f1: "정격 주파수 (Hz)",
+      f2: "운전 주파수 (Hz)",
+      q: "정격 유량 (m³/h 등)",
+      h: "정격 압력·양정 (kPa·m 등)",
+      p: "정격 축동력 (kW)",
+      hours: "한 해 운전 시간 (h)",
+      q2: "원하는 유량 (같은 단위, 비우면 생략)",
+      res: "결과",
+      k: { r: "회전수비 (주파수비)", flow: "유량", pres: "압력·양정", pow: "동력", year: "한 해 전력량 (정격 → 운전)", saved: "줄어드는 전력량", need: "원하는 유량에 필요한 주파수" },
+      example: "기본값(22 kW, 60 → 48 Hz, 4000 h)은 예시입니다. 정격점은 펌프·팬 명판이나 성능 곡선의 운전점을 넣으세요.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "계산식 (상사 법칙)",
+      formula: ["회전수비 r = n2 ÷ n1 ≈ f2 ÷ f1   (인버터 주파수비, 슬립 무시)", "유량 Q2 = Q1 × r", "압력·양정 H2 = H1 × r²", "동력 P2 = P1 × r³", "한 해 전력량 차 = (P1 − P2) × 운전 시간"],
+      tTitle: "회전수별 유량·압력·동력 (정격 = 100 %)",
+      tHead: ["회전수", "60 / 50 Hz 기준", "유량", "압력", "동력"],
+      tNote: "회전수를 20 % 낮추면 동력은 0.8³ = 51.2 %, 곧 약 절반이 됩니다. DOE 팬 소스북도 «회전수 20 % 감소 → 동력 50 % 감소» 로 적습니다(어림).",
+      lTitle: "이 식이 맞지 않는 경우",
+      l: [
+        "정수두(높이차)·정압이 큰 계통: 상사 법칙은 마찰 손실만 있는 계통의 이론값입니다. 높이차가 큰 펌프는 회전수를 조금만 낮춰도 체절(유량 0) 가까이 가서 유량이 식보다 훨씬 많이 줄 수 있습니다 — DOE 펌프 소스북은 정수두가 큰 계통에선 인버터를 신중히 검토하라고 적습니다.",
+        "저부하 효율: 회전수를 많이 낮추면 모터 효율·역률이 떨어집니다(DOE 팬 소스북). 위 «줄어드는 전력량» 은 효율 변화를 넣지 않은 상한 쪽 어림입니다.",
+        "주파수비 = 회전수비는 근사입니다. 유도 전동기는 슬립만큼 느리고, 정확한 회전수는 모터 회전수 계산기로 봅니다.",
+        "댐퍼·밸브로 유량을 줄이던 설비를 인버터로 바꾸는 경우, 비교 대상(기존 운전점의 동력)은 실제 측정값을 쓰는 것이 정확합니다.",
+      ],
+      uTitle: "현장에서 쓰는 곳",
+      u: ["팬·펌프에 인버터를 달 때 운전 주파수별 유량·동력 어림.", "공조 팬·냉각수 펌프의 주파수를 낮춰 운전할 때 절감량 설명 자료.", "원하는 유량에 맞는 주파수 정하기(마찰 위주 계통)."],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["주파수를 60 Hz 에서 48 Hz 로 낮추면 동력은?", "회전수비 0.8 이므로 동력은 0.8³ = 0.512, 약 51 % 입니다. 22 kW 정격이면 약 11.3 kW 입니다(마찰 위주 계통의 이론값)."],
+        ["유량은 회전수에 정비례하나요?", "상사 법칙에서는 그렇습니다(Q ∝ n). 압력은 제곱, 동력은 세제곱에 비례합니다."],
+        ["실제 절감이 계산보다 작은 이유는?", "정수두가 있는 계통, 저부하에서 떨어지는 모터·인버터 효율, 인버터 자체 손실 때문입니다. 계산값은 이론적 상한에 가깝습니다."],
+      ],
+      msNote: "주파수와 실제 모터 회전수(극수·슬립)는",
+      msLink: "모터 회전수 계산기",
+      mcNote: "모터 정격 전류·입력 전력은",
+      mcLink: "모터 전류 계산기",
+      srcTitle: "근거",
+      src: "미국 에너지부(DOE) «Improving Fan System Performance: A Sourcebook for Industry»(DOE/GO-102003-1294, 2003) p.4 의 fan laws(유량 ∝ n, 압력 ∝ n², 동력 ∝ n³)와 p.18 의 «회전수 20 % 감소 → 동력 50 % 감소», 저부하에서 모터 효율·역률 저하. 펌프 쪽 같은 꼴의 식과 정수두가 큰 계통의 주의는 «Improving Pumping System Performance»(2판, 2006) p.17·p.49.",
+      srcLink1: "DOE 팬 소스북 (PDF)",
+      srcLink2: "DOE 펌프 소스북 (PDF)",
+    }
+  : {
+      title: "Pump & Fan Speed vs Power Calculator",
+      desc: "Affinity laws for VFD-driven pumps and fans: how flow, pressure and power change with speed or frequency, and the yearly energy difference.",
+      f1: "Rated frequency (Hz)",
+      f2: "Operating frequency (Hz)",
+      q: "Rated flow (m³/h etc.)",
+      h: "Rated pressure / head (kPa, m etc.)",
+      p: "Rated shaft power (kW)",
+      hours: "Operating hours per year (h)",
+      q2: "Target flow (same unit, optional)",
+      res: "Results",
+      k: { r: "Speed ratio (frequency ratio)", flow: "Flow", pres: "Pressure / head", pow: "Power", year: "Energy per year (rated → operating)", saved: "Energy saved", need: "Frequency for target flow" },
+      example: "The defaults (22 kW, 60 → 48 Hz, 4000 h) are an example. Enter the operating point from the pump or fan nameplate or its performance curve.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      fTitle: "Formulas (affinity laws)",
+      formula: ["Speed ratio r = n2 ÷ n1 ≈ f2 ÷ f1   (drive frequency ratio, slip ignored)", "Flow Q2 = Q1 × r", "Pressure / head H2 = H1 × r²", "Power P2 = P1 × r³", "Yearly energy difference = (P1 − P2) × operating hours"],
+      tTitle: "Flow, pressure and power by speed (rated = 100 %)",
+      tHead: ["Speed", "At 60 / 50 Hz", "Flow", "Pressure", "Power"],
+      tNote: "Lowering speed by 20 % gives 0.8³ = 51.2 % power, roughly half. The DOE fan sourcebook says the same: «reducing fan rotational speed by 20 percent decreases fan power by 50 percent» (rounded).",
+      lTitle: "When the laws do not hold",
+      l: [
+        "Systems with high static head or static pressure: the affinity laws are the theoretical result for friction-only systems. A pump lifting to a height can approach shut-off with only a small speed cut, so flow can drop far more than the formula says. The DOE pumping sourcebook says drives must be evaluated carefully for high-static-head systems.",
+        "Low-load efficiency: at much lower speed, motor efficiency and power factor drop (DOE fan sourcebook). «Energy saved» above ignores efficiency changes and leans to the upper bound.",
+        "Frequency ratio = speed ratio is an approximation. Induction motors run slower by the slip; see the motor speed calculator for the real speed.",
+        "When replacing damper or valve throttling with a drive, use a measured power at the old operating point as the baseline.",
+      ],
+      uTitle: "Where it is used",
+      u: ["Estimating flow and power per operating frequency when adding a VFD to a fan or pump.", "Explaining the savings of running HVAC fans or cooling water pumps at a lower frequency.", "Choosing a frequency for a target flow (friction-dominated systems)."],
+      faqTitle: "FAQ",
+      faq: [
+        ["What happens to power when I go from 60 Hz to 48 Hz?", "The speed ratio is 0.8, so power is 0.8³ = 0.512, about 51 %. A 22 kW rated point becomes about 11.3 kW (theoretical, friction-dominated system)."],
+        ["Is flow proportional to speed?", "Under the affinity laws, yes (Q ∝ n). Pressure goes with the square and power with the cube."],
+        ["Why are real savings smaller than calculated?", "Static head in the system, lower motor and drive efficiency at light load, and the drive's own losses. The calculation is close to a theoretical upper bound."],
+      ],
+      msNote: "For frequency versus actual motor speed (poles, slip), use the",
+      msLink: "Motor Speed Calculator",
+      mcNote: "For motor rated current and input power, use the",
+      mcLink: "Motor Current Calculator",
+      srcTitle: "Basis",
+      src: "U.S. Department of Energy, «Improving Fan System Performance: A Sourcebook for Industry» (DOE/GO-102003-1294, 2003): fan laws on p.4 (flow ∝ n, pressure ∝ n², power ∝ n³), «20 percent speed reduction → 50 percent power reduction» and the drop in motor efficiency and power factor at low load on p.18. The same form for pumps and the caution for high-static-head systems: «Improving Pumping System Performance» (2nd ed., 2006) pp.17, 49.",
+      srcLink1: "DOE fan sourcebook (PDF)",
+      srcLink2: "DOE pumping sourcebook (PDF)",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "펌프·팬 상사 법칙 계산기 — 인버터 주파수와 동력 — PortDock" : "Pump & Fan Affinity Laws Calculator (VFD Hz, Power) — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="af">
+      <div class="row">
+        <label class="fld">{L.f1}<input id="f1" class="mono" value="60" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.f2}<input id="f2" class="mono" value="48" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.q}<input id="q" class="mono" value="120" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.h}<input id="h" class="mono" value="300" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.p}<input id="p" class="mono" value="22" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.hours}<input id="hours" class="mono" value="4000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.q2}<input id="q2" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.example}</p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{tRows.map((r) => <tr>{r.map((c) => <td class="mono">{c}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.uTitle}</h2>
+      <ul>{L.u.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.msNote} <a href={url(lang, "tools/motor-speed/")}>{L.msLink}</a>. {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>.
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src} <a href={FAN} rel="noopener">{L.srcLink1}</a> · <a href={PUMP} rel="noopener">{L.srcLink2}</a>.</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { at, ratioForFlow, ratioFromHz, yearly } from "../lib/affinity";
+    const ko = document.documentElement.lang === "ko";
+    const form = document.getElementById("af") as HTMLFormElement;
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+    const num = (id: string) => {
+      const s = $(id).value.trim().replace(",", ".");
+      const n = s === "" ? NaN : Number(s);
+      return Math.abs(n) > 1e12 ? NaN : n;
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const p4 = (x: number) => String(+x.toPrecision(4));
+    const pc = (x: number) => `${+(x * 100).toPrecision(3)} %`;
+    function run() {
+      try {
+        const f1 = num("f1");
+        const r = ratioFromHz(f1, num("f2"));
+        const o = at({ flow: num("q"), pressure: num("h"), power: num("p") }, r);
+        set("r", p4(r));
+        set("flow", `${p4(o.flow)} (${pc(r)})`);
+        set("pres", `${p4(o.pressure)} (${pc(r * r)})`);
+        set("pow", `${p4(o.power)} kW (${pc(r ** 3)})`);
+        const y = yearly(num("p"), r, num("hours"));
+        set("year", `${p4(y.kwh1)} → ${p4(y.kwh2)} kWh`);
+        set("saved", y.saved >= 0 ? `${p4(y.saved)} kWh (${p4(y.savedPct)} %)` : ko ? `${p4(-y.saved)} kWh 늘어남` : `${p4(-y.saved)} kWh more`);
+        const q2 = $("q2").value.trim();
+        set("need", q2 === "" ? "—" : `${p4(f1 * ratioForFlow(num("q"), num("q2")))} Hz`);
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "숫자를 확인하세요 — 주파수·유량·압력·동력·시간은 0 보다 커야 합니다" : "Check the numbers — frequencies, flow, pressure, power and hours must be above 0";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>
