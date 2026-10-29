@@ -117,7 +117,7 @@ fn services(errors: &mut Vec<String>) -> Vec<ServiceState> {
 }
 
 /// 블루투스 소리 끝점(사용 가능 상태) — MMDevices 레지스트리. `defaults` = 기본 끝점 (흐름, 역할, ID)
-fn bt_audio(defaults: &[(&'static str, &'static str, String)], errors: &mut Vec<String>) -> Vec<BtAudio> {
+pub(super) fn bt_audio(defaults: &[(&'static str, &'static str, String)], errors: &mut Vec<String>) -> Vec<BtAudio> {
     let mut out = Vec::new();
     for (flow, sub) in [("render", "Render"), ("capture", "Capture")] {
         let path = format!(r"{MMDEVICES}\{sub}");

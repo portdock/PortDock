@@ -34,6 +34,8 @@ mod usb;
 #[cfg(windows)]
 mod wireless;
 #[cfg(windows)]
+mod live;
+#[cfg(windows)]
 mod wmi;
 
 use serde::Serialize;
@@ -571,6 +573,53 @@ pub fn wireless(days: u32) -> Wireless {
     {
         Wireless { days, read_at: crate::event::now_ms(), errors: vec![crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into()], ..Default::default() }
     }
+}
+
+/// 짝지은 블루투스 장치 하나와 지금 연결 여부(Hardware Tester 연결 기록기). 인스턴스 ID(장치 주소가 든다)·이름은
+/// 백엔드 안에서만 쓰고, 화면에는 번호와 이름만, 저장·복사에는 번호만 간다 — 그래서 Serialize 하지 않는다
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BtLink {
+    pub id: String,
+    pub name: String,
+    /// PnP «연결됨» 속성. 못 읽으면 None
+    pub connected: Option<bool>,
+}
+
+/// Wi-Fi 연결(8001)·끊김(8003) 한 건 — 이유 코드·Windows 문구만(SSID·프로필 이름 없음)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WlanEvent {
+    pub time: u64,
+    pub connected: bool,
+    pub code: Option<u32>,
+    pub reason: Option<String>,
+}
+
+/// 짝지은 블루투스 장치들의 지금 연결 여부(관리자 권한 없이, 주변 검색 없이)
+pub fn bt_links() -> Vec<BtLink> {
+    #[cfg(windows)]
+    return live::bt_links();
+    #[cfg(not(windows))]
+    Vec::new()
+}
+
+/// 최근 `within_ms` 안의 Wi-Fi 연결·끊김(오래된 것부터). 로그가 없는 PC(서버)면 Err
+pub fn wlan_events(within_ms: u64) -> Result<Vec<WlanEvent>, String> {
+    #[cfg(windows)]
+    return live::wlan_events(within_ms);
+    #[cfg(not(windows))]
+    {
+        let _ = within_ms;
+        Err(crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into())
+    }
+}
+
+/// 블루투스 오디오 끝점(무선 탭과 같은 값)과 읽지 못한 것
+pub fn bt_audio() -> (Vec<BtAudio>, Vec<String>) {
+    #[cfg(windows)]
+    return live::bt_audio();
+    #[cfg(not(windows))]
+    (Vec::new(), vec![crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into()])
 }
 
 /// 이 PC 점검 — 설정과 최근 `days` 일 이벤트(관리자 권한 없이)

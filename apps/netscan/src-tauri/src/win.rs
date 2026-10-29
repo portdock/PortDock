@@ -1,4 +1,4 @@
-//! 윈도우 API — 랜카드 목록(GetAdaptersAddresses), 핑(IcmpSendEcho2), ARP(SendARP)·ARP 캐시(GetIpNetTable2), 이름 찾기(GetNameInfoW).
+//! 윈도우 API — 랜카드 목록(GetAdaptersAddresses), 핑(core ping.rs 의 IcmpSendEcho2), ARP(SendARP)·ARP 캐시(GetIpNetTable2), 이름 찾기(GetNameInfoW).
 //! 모두 관리자 권한·드라이버 없이 된다. 윈도우가 아니면(개발용) 빈 결과.
 
 use serde::Serialize;
@@ -43,7 +43,7 @@ mod imp {
     use crate::oui;
     use crate::range;
     use std::sync::Once;
-    use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, HANDLE, INVALID_HANDLE_VALUE, NO_ERROR};
+    use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
     use windows_sys::Win32::NetworkManagement::IpHelper::*;
     use windows_sys::Win32::NetworkManagement::Ndis::IfOperStatusUp;
     use windows_sys::Win32::Networking::WinSock::{AF_INET, GetNameInfoW, IN_ADDR, IN_ADDR_0, NI_MAXHOST, NI_NAMEREQD, SOCKADDR, SOCKADDR_IN, SOCKET_ADDRESS, WSADATA, WSAStartup};
@@ -146,58 +146,6 @@ mod imp {
         Ok(out)
     }
 
-    /// 핑 손잡이 — 일꾼 스레드마다 하나
-    pub struct Pinger(HANDLE);
-    // SAFETY: ICMP 손잡이는 스레드 사이에 옮겨도 된다(같은 순간에 한 스레드만 쓴다)
-    unsafe impl Send for Pinger {}
-
-    impl Pinger {
-        pub fn new() -> Result<Self, String> {
-            // SAFETY: 인자 없음. 실패하면 INVALID_HANDLE_VALUE
-            let h = unsafe { IcmpCreateFile() };
-            if h == INVALID_HANDLE_VALUE || h.is_null() {
-                return Err(format!("IcmpCreateFile: {}", std::io::Error::last_os_error()));
-            }
-            Ok(Self(h))
-        }
-
-        /// 응답하면 왕복 시간(ms)
-        pub fn ping(&self, ip: Ipv4Addr, timeout_ms: u32) -> Option<u32> {
-            let data = *b"PortDock Net Scan ping 0123456789";
-            // 답(ICMP_ECHO_REPLY + 보낸 데이터 + ICMP 오류 8바이트) 넉넉히, 8바이트 정렬
-            let mut reply = [0u64; 64];
-            // SAFETY: 동기 호출(이벤트·APC 없음). reply 는 512바이트
-            let n = unsafe {
-                IcmpSendEcho2(
-                    self.0,
-                    std::ptr::null_mut(),
-                    None,
-                    std::ptr::null(),
-                    raw(ip),
-                    data.as_ptr() as *const _,
-                    data.len() as u16,
-                    std::ptr::null(),
-                    reply.as_mut_ptr() as *mut _,
-                    std::mem::size_of_val(&reply) as u32,
-                    timeout_ms.max(1),
-                )
-            };
-            if n == 0 {
-                return None;
-            }
-            // SAFETY: 답이 하나 이상이면 앞부분이 ICMP_ECHO_REPLY
-            let r = unsafe { &*(reply.as_ptr() as *const ICMP_ECHO_REPLY) };
-            (r.Status == IP_SUCCESS && r.Address == raw(ip)).then_some(r.RoundTripTime)
-        }
-    }
-
-    impl Drop for Pinger {
-        fn drop(&mut self) {
-            // SAFETY: new 에서 받은 손잡이
-            unsafe { IcmpCloseHandle(self.0) };
-        }
-    }
-
     /// ARP 로 MAC 묻기 — 같은 대역의 장비만 된다. 핑을 막아 둔 장비도 답한다
     pub fn arp(ip: Ipv4Addr, src: Option<Ipv4Addr>) -> Option<[u8; 6]> {
         let mut mac = [0u32; 2];
@@ -286,15 +234,6 @@ mod imp {
     pub fn list_nics() -> Result<Vec<Nic>, String> {
         Ok(Vec::new())
     }
-    pub struct Pinger;
-    impl Pinger {
-        pub fn new() -> Result<Self, String> {
-            Err("Windows only".into())
-        }
-        pub fn ping(&self, _ip: Ipv4Addr, _timeout_ms: u32) -> Option<u32> {
-            None
-        }
-    }
     pub fn arp(_ip: Ipv4Addr, _src: Option<Ipv4Addr>) -> Option<[u8; 6]> {
         None
     }
@@ -307,6 +246,8 @@ mod imp {
 }
 
 pub use imp::*;
+/// 핑은 공용 부품(portdock_core::ping — Hardware Tester 와 함께 쓴다)
+pub use portdock_core::ping::Pinger;
 
 #[cfg(all(test, windows))]
 mod tests {
@@ -338,11 +279,5 @@ mod tests {
         for (_, m) in arp_table() {
             assert!(m != [0; 6] && m[0] & 1 == 0);
         }
-    }
-
-    #[test]
-    fn loopback_ping() {
-        let p = Pinger::new().unwrap();
-        assert!(p.ping(Ipv4Addr::LOCALHOST, 1000).is_some());
     }
 }

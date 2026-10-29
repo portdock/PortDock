@@ -359,6 +359,29 @@ pub fn is_bt_radio(instance_id: &str, service: Option<&str>) -> bool {
     svc == "BTHUSB" || svc == "BTHMINI" || id.starts_with("USB\\") || id.starts_with("PCI\\")
 }
 
+/// 짝지은 블루투스 «장치» 노드인지 — 고전(BTHENUM\DEV_…)·저전력(BTHLE\DEV_…). 서비스별 하위 노드(BTHENUM\{UUID}…)·라디오·열거기는 뺀다
+pub fn is_bt_device_node(instance_id: &str) -> bool {
+    let id = instance_id.to_ascii_uppercase();
+    id.starts_with(r"BTHENUM\DEV_") || id.starts_with(r"BTHLE\DEV_")
+}
+
+/// 최근 `within_ms` 안의 Wi-Fi 연결(8001)·끊김(8003) XPath
+pub fn wlan_link_query(within_ms: u64) -> String {
+    format!("*[System[(EventID=8001 or EventID=8003) and TimeCreated[timediff(@SystemTime) <= {}]]]", within_ms.max(1000))
+}
+
+/// 8001 → 연결, 8003 → 끊김(이유 코드·문구). SSID·프로필 이름 같은 다른 값은 꺼내지 않는다
+pub fn wlan_link_event(ev: &RawEvent) -> Option<super::WlanEvent> {
+    match ev.id {
+        8001 => Some(super::WlanEvent { time: iso_ms(&ev.time).unwrap_or(0), connected: true, code: None, reason: None }),
+        8003 => {
+            let (code, reason, time) = wlan_disconnect(ev)?;
+            Some(super::WlanEvent { time, connected: false, code, reason: Some(reason).filter(|r| !r.is_empty()) })
+        }
+        _ => None,
+    }
+}
+
 /// 소리 끝점의 장치 정보(KS 장치 인스턴스 ID·인터페이스 경로를 이어 붙인 글) → 블루투스 끝점 종류.
 /// «BTHHFENUM» = 핸즈프리 프로필(통화용, 모노) · «BTHENUM» + A2DP 서비스 UUID(0000110B) = 스테레오. 블루투스가 아니면 None
 pub fn bt_audio_kind(info: &str) -> Option<&'static str> {
@@ -579,5 +602,21 @@ mod tests {
         assert_eq!(network_category(1), Some("private"));
         assert_eq!(network_category(2), Some("domain"));
         assert_eq!(network_category(7), None);
+    }
+    #[test]
+    fn bt_device_nodes_and_wlan_links() {
+        assert!(is_bt_device_node(r"BTHENUM\DEV_020000000001\7&1&0&BLUETOOTHDEVICE_020000000001"));
+        assert!(is_bt_device_node(r"bthle\dev_020000000001\7&2&0&0"));
+        assert!(!is_bt_device_node(r"BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}_VID&0001&PID_0002\8&1"));
+        assert!(!is_bt_device_node(r"USB\VID_8087&PID_0029\5&1"));
+        assert!(wlan_link_query(60_000).contains("EventID=8001 or EventID=8003") && wlan_link_query(60_000).contains("<= 60000"));
+        let ev = |id: u32, data: Vec<(&str, &str)>| RawEvent { id, provider: "Microsoft-Windows-WLAN-AutoConfig".into(), time: "2026-10-30T01:02:03.000Z".into(), level: 4, data: data.into_iter().map(|(a, b)| (a.to_string(), b.to_string())).collect() };
+        let c = wlan_link_event(&ev(8001, vec![("SSID", "example-net"), ("ProfileName", "example-net")])).unwrap();
+        assert!(c.connected && c.reason.is_none() && c.time > 0);
+        let d = wlan_link_event(&ev(8003, vec![("SSID", "example-net"), ("Reason", "드라이버에 의해 네트워크 연결이 끊어졌습니다."), ("ReasonCode", "0x48000")])).unwrap();
+        assert!(!d.connected && d.code == Some(0x48000) && d.reason.as_deref().unwrap().contains("드라이버"));
+        // 이름 칸은 결과 어디에도 없다
+        assert!(!format!("{c:?}{d:?}").contains("example-net"));
+        assert!(wlan_link_event(&ev(8000, vec![])).is_none());
     }
 }
