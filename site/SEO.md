@@ -95,6 +95,11 @@
 | 게임패드 테스트(사이트·윈도우11), 스틱 쏠림 | `/tools/gamepad-test/` | «게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인» |
 | 마우스 더블클릭 테스트·증상, 마우스 테스트, 폴링레이트 테스트·측정 | `/tools/mouse-test/` | «마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인» |
 | 불량화소 테스트, 모니터 주사율 확인·테스트 | `/tools/monitor-test/` | «불량화소 테스트 — 모니터 단색 화면·주사율 확인» |
+| 윈도우 마이크 안됨·인식 안됨, 마이크 권한, 마이크 독점 모드 | 가이드 `windows-microphone-not-working` → `/tools/mic-test/` | «윈도우 마이크 안 됨 — 권한·기본 장치·드라이버 순서» |
+| 키보드 채터링(뜻·현상·해결), 키보드 두번 입력 | 가이드 `keyboard-chatter-double-typing` → `/tools/keyboard-test/` | «키보드 채터링(두 번 입력) 확인과 원인 후보» |
+| 마우스 더블클릭 증상·현상·확인, 마우스 한번 클릭 두번 | 가이드 `mouse-double-click-problem` → `/tools/mouse-test/` | «마우스 더블클릭 증상 확인 — 채터링·드래그 끊김» |
+| 블루투스 이어폰 끊김 pc·노트북·데스크탑, 블루투스 끊김 원인 | 가이드 `bluetooth-headphones-cutting-out-windows` → `/tools/speaker-test/` | «블루투스 이어폰 끊김 PC·노트북 — 확인 순서», 설명에 «USB 3.0·2.4 GHz·핸즈프리» |
+| 불량화소 확인·체크, 모니터 밴딩, 빛샘 | 가이드 `monitor-dead-pixel-banding` → `/tools/monitor-test/` | «모니터 불량화소·밴딩 확인하는 법» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -182,6 +187,11 @@
 | gamepad tester, controller tester, stick drift test | `/en/tools/gamepad-test/` | «Gamepad Tester: Stick Drift & Dead Zone Test Online» |
 | mouse double click test, double click test, mouse test, polling rate test | `/en/tools/mouse-test/` | «Mouse Double Click Test: Chatter, Wheel & Polling Rate» |
 | dead pixel test, stuck pixel test, refresh rate test, test hz | `/en/tools/monitor-test/` | «Dead Pixel Test & Refresh Rate Check Online» |
+| microphone not working windows 11, mic not detected, exclusive mode microphone | guide `windows-microphone-not-working` → `/en/tools/mic-test/` | «Microphone Not Working on Windows: What to Check» |
+| keyboard typing double letters, key chatter fix, keyboard double typing | guide `keyboard-chatter-double-typing` → `/en/tools/keyboard-test/` | «Keyboard Typing Double Letters: Key Chatter Check» |
+| mouse double clicking on single click, mouse double click problem | guide `mouse-double-click-problem` → `/en/tools/mouse-test/` | «Mouse Double Clicking on Single Click: How to Check» |
+| bluetooth headphones cutting out windows 11, bluetooth keeps disconnecting windows 11, bluetooth audio stuttering pc | guide `bluetooth-headphones-cutting-out-windows` → `/en/tools/speaker-test/` | «Bluetooth Headphones Cutting Out on Windows PC» |
+| how to check dead pixels, monitor banding, backlight bleed test | guide `monitor-dead-pixel-banding` → `/en/tools/monitor-test/` | «How to Check a Monitor for Dead Pixels & Banding» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.

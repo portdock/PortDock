@@ -36,7 +36,8 @@ const ld = {
   inLanguage: lang,
   author: { "@type": "Organization", name: "PortDock", url: REPO },
   publisher: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
-  about: tools.map((t) => ({ "@type": "SoftwareApplication", name: t.name, applicationCategory: "DeveloperApplication", operatingSystem: "Windows" })),
+  // 앱이 없는 글(PC 하드웨어 웹 도구 글)은 about 을 빼고, 이어지는 웹 도구를 카드로 보인다
+  ...(tools.length ? { about: tools.map((t) => ({ "@type": "SoftwareApplication", name: t.name, applicationCategory: "DeveloperApplication", operatingSystem: "Windows" })) } : {}),
 };
 ---
 
@@ -96,6 +97,16 @@ const ld = {
       <h2>{ko ? "이 글과 이어지는 도구" : "Tools for this"}</h2>
       <div class="grid">
         {
+          !tools.length &&
+            webTools.map((w) => (
+              <a class="card" href={url(lang, w.path)}>
+                <h3>{w.name[lang]}</h3>
+                <p>{w.blurb[lang]}</p>
+                <span class="go">{ko ? "웹 도구 열기(설치 없음)" : "Open the web tool (no install)"} →</span>
+              </a>
+            ))
+        }
+        {
           tools.map((t) => (
             <a class="card" href={url(lang, `${t.id}/`)}>
               <h3>{t.name}</h3>
@@ -120,7 +131,8 @@ const ld = {
           ))
         }
         {
-          webTools.map((w) => (
+          tools.length > 0 &&
+            webTools.map((w) => (
             <li>
               <a href={url(lang, w.path)}>{w.name[lang]}</a> — {ko ? "웹 도구, 설치 없이" : "web tool, no install"}
             </li>
