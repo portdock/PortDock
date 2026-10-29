@@ -30,6 +30,7 @@ const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
   plot: ["tools/ntc/", "tools/encoder/", "tools/adc/"],
   "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/", "tools/gige-bandwidth/"],
   "plc-simulator": ["tools/mc-decoder/", "tools/subnet/", "tools/integer/"],
+  "hw-tester": ["tools/speaker-test/", "tools/mic-test/", "tools/keyboard-test/", "tools/mouse-test/", "tools/webcam-test/", "tools/monitor-test/", "tools/gamepad-test/"],
 };
 const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));
 const devices = tool.id === "modbus-master" || tool.id === "modbus-slave" ? DEVICES : [];

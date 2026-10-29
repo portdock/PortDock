@@ -1,7 +1,7 @@
 # 앱 소개·홈의 앱 화면 그림 — e2e/ui-preview(가짜 백엔드, 앱 실행 아님)를 Chromium 으로 열어 1200×760 라이트로 찍고
 # site/public/img/apps/<앱>.<ko|en>.webp(장당 30~75KB)로 저장한다. 결과 webp 를 커밋한다.
 # 준비: pip install playwright pillow && playwright install chromium
-#       미리보기 서버 열한 개(5201~5211) — e2e/README.md «화면 미리보기·캡처» 1번
+#       미리보기 서버 열두 개(5201~5212) — e2e/README.md «화면 미리보기·캡처» 1번
 # 실행: python -X utf8 site/shots/make.py [앱 ...]
 import sys, re, os, time
 from playwright.sync_api import sync_playwright
@@ -14,7 +14,7 @@ only = sys.argv[1:] or None
 os.makedirs(OUT, exist_ok=True)
 APPS = {"serial": 5201, "modbus-slave": 5202, "tcp": 5203, "udp": 5204, "simulator": 5205, "netscan": 5206,
         "modbus-master": 5207, "scpi": 5208, "plot": 5209, "port-inspector": 5210,
-        "plc-simulator": 5211}
+        "plc-simulator": 5211, "hw-tester": 5212}
 
 # 가짜 데이터 중 실제 기기처럼 보이는 MAC·일련번호·NIC 이름은 찍을 때만 예시 값으로 바꾼다(e2e/ui-preview/mock.js 는 그대로)
 def sanitize(js: str) -> str:
@@ -44,6 +44,9 @@ def run(pg, app, port, lang, theme, w, h):
     if app == "plc-simulator":
         pg.evaluate("""() => { const b=document.querySelector('.first-card .first-example'); b && b.click(); }""")
         time.sleep(0.6)
+    # Hardware Tester: 끊김 기록 시작(가짜 90박자 + Wi-Fi 끊김 사건)
+    if app == "hw-tester":
+        pg.evaluate("""() => { const b=document.querySelector('.toolbar .rec-btn'); b && b.click(); }""")
     pg.evaluate("""() => { const b=[...document.querySelectorAll('aside button.btn.primary, .side button.btn.primary')][0]; b && b.click(); }""")
     pg.evaluate("""() => { const p=[...document.querySelectorAll('.port-item')].find((x)=>/COM5/.test(x.textContent)); p && p.click(); }""")
     time.sleep({"netscan": 14, "plot": 5, "serial": 6, "tcp": 5, "udp": 5, "modbus-master": 6, "modbus-slave": 5}.get(app, 3))

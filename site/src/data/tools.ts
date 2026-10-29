@@ -12,6 +12,7 @@ import { help as scpiHelp } from "../../../apps/scpi/src/help";
 import { help as plotHelp } from "../../../apps/plot/src/help";
 import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help";
 import { help as plcSimulatorHelp } from "../../../apps/plc-simulator/src/help";
+import { help as hwTesterHelp } from "../../../apps/hw-tester/src/help";
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
@@ -24,7 +25,7 @@ export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 export const RELEASED = true;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator" | "hw-tester";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -533,6 +534,62 @@ export const TOOLS: Tool[] = [
       en: "Similar tools include DummyPLC (free, closed source) and HslCommunication (commercial). PortDock PLC Simulator is free (GPL-3.0) and adds fault injection, decoded traffic and value simulation.",
     },
     help: plcSimulatorHelp,
+  },
+  {
+    id: "hw-tester",
+    name: "PortDock Hardware Tester",
+    file: "PortDock-Hardware-Tester",
+    tagline: { ko: "와이파이·인터넷 끊김·지연 기록, 블루투스 연결·끊김 기록", en: "Wi-Fi and internet drop/latency recorder with a Bluetooth connection log" },
+    upcoming: true,
+    seo: {
+      title: { ko: "PortDock Hardware Tester — 와이파이 끊김·핑 기록 (무료)", en: "PortDock Hardware Tester — Wi-Fi Drop & Ping Logger (Free)" },
+      desc: {
+        ko: "와이파이가 자꾸 끊길 때 공유기 쪽인지 그 너머인지 기록으로 보는 무료 윈도우 도구. 게이트웨이·인터넷 핑, DNS, 끊김 이유, 블루투스 연결 기록.",
+        en: "Free Windows tool that logs Wi-Fi drops: gateway vs internet ping side by side, DNS time, Windows disconnect reasons and a Bluetooth connect/disconnect log.",
+      },
+    },
+    summary: {
+      ko: "«와이파이가 자꾸 끊긴다» 를 기록으로 남깁니다. 기록을 켠 동안 게이트웨이(공유기)와 인터넷 주소 하나에 핑을 나란히 보내 지연·손실을 한 그래프에 그리고, Windows 가 남긴 Wi-Fi 끊김 이유를 같은 시간축에 표시해 «공유기 쪽» 인지 «공유기 너머» 인지 볼 곳을 알려 줍니다. 블루투스 장치가 언제 연결되고 끊겼는지도 기록합니다. 관리자 권한 없이 읽기만 하고, 설정을 바꾸지 않습니다.",
+      en: "Turns «my Wi-Fi keeps dropping» into a record. While recording it pings your gateway (router) and one internet address side by side, draws latency and loss on one chart with the Wi-Fi disconnect reasons Windows logs on the same timeline, and tells you whether to look on the router side or beyond it. It also logs when Bluetooth devices connect and disconnect. Read-only, without administrator rights; it changes no settings.",
+    },
+    who: [
+      { ko: "와이파이가 자꾸 끊기는데 공유기 탓인지 인터넷 탓인지 알고 싶은 분", en: "Anyone whose Wi-Fi keeps dropping and who wants to know whether it is the router or the internet" },
+      { ko: "블루투스 이어폰·키보드가 끊기는 시각을 남겨 두려는 분", en: "People who want a record of when Bluetooth earbuds or keyboards disconnect" },
+      { ko: "장비 PC 의 무선 연결 상태를 문의 전에 정리하려는 현장 엔지니어", en: "Field engineers documenting a device PC's wireless link before a support call" },
+    ],
+    features: [
+      { title: { ko: "게이트웨이 vs 인터넷", en: "Gateway vs internet" }, body: { ko: "공유기와 인터넷 주소(1.1.1.1·8.8.8.8 또는 직접 입력)에 같은 박자로 핑을 보내 손실·평균·95%·흔들림을 나란히 보여 줍니다. 1초에 한 번보다 자주 보내지 않고, 한 번 기록은 24시간에서 멈춥니다.", en: "Pings the router and an internet address (1.1.1.1, 8.8.8.8 or your own) on the same beat and shows loss, average, 95th percentile and jitter side by side. Never more than once per second; one recording stops after 24 hours." } },
+      { title: { ko: "Windows 끊김 이유를 같은 그래프에", en: "Windows' disconnect reasons on the same chart" }, body: { ko: "WLAN-AutoConfig 기록(8001 연결·8003 끊김)을 읽어 그래프에 세로 줄로, 사건 목록에 Windows 이유 문구로 보입니다. Wi-Fi 이름은 읽지 않습니다.", en: "Reads the WLAN-AutoConfig log (8001 connect, 8003 disconnect) and shows it as lines on the chart and as Windows' reason wording in the event list. The Wi-Fi name is not read." } },
+      { title: { ko: "DNS 응답 시간", en: "DNS response time" }, body: { ko: "5초마다 이름 하나(기본 example.com)를 캐시 없이 DNS 서버에 물어 응답 시간·실패를 잽니다.", en: "Every 5 s one name (example.com by default) is looked up at the DNS server without the cache, timing replies and failures." } },
+      { title: { ko: "«볼 곳» 요약·CSV", en: "Where-to-look summary and CSV" }, body: { ko: "게이트웨이까지 손실이 있으면 «공유기 쪽», 인터넷만 손실이면 «공유기 너머» 처럼 볼 곳만 알립니다(원인을 정하지 않음). 기록은 CSV 로 저장합니다.", en: "Says «router side» when loss reaches the gateway and «beyond the router» when only the internet target loses replies — where to look, not the cause. Records save as CSV." } },
+      { title: { ko: "블루투스 연결 기록", en: "Bluetooth connection log" }, body: { ko: "짝지은 장치들의 «연결됨» 상태를 2초마다 읽어 연결·끊김 시각을 남깁니다. 장치 이름은 화면에만 보이고 저장·복사엔 «장치 N» 만 들어갑니다.", en: "Reads paired devices' «Connected» state every 2 s and logs connects and drops. Names are shown only on screen; saved and copied text uses «Device N»." } },
+      { title: { ko: "블루투스 소리 모드·좌우 소리", en: "Bluetooth audio mode and left/right tones" }, body: { ko: "기본 출력이 스테레오(A2DP)인지 통화용 핸즈프리인지 보이고, 왼쪽·오른쪽·양쪽 시험 소리를 냅니다.", en: "Shows whether the default output is stereo (A2DP) or hands-free for calls, and plays left, right and both test tones." } },
+      { title: { ko: "Wi-Fi 신호·채널(누를 때만)", en: "Wi-Fi signal and channel (on request)" }, body: { ko: "«신호 보기» 를 누른 동안만 신호 세기·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(이름 없이)를 읽습니다. Windows 11 은 위치 권한이 필요합니다.", en: "Only while «Show signal» is on: signal strength, link speed, band, channel and how many nearby networks share each channel (no names). Windows 11 requires location permission." } },
+    ],
+    steps: [
+      { ko: "인터넷 대상·간격을 고르고 «기록 시작»", en: "Choose the internet target and interval, then «Start recording»" },
+      { ko: "끊김이 생길 때까지 그대로 두기 — 공유기·인터넷 지연과 Windows 끊김 이유가 한 그래프에", en: "Leave it until the drops happen — router and internet latency and Windows' reasons on one chart" },
+      { ko: "«요약» 의 볼 곳을 읽고 «CSV 저장…»·«요약 복사»", en: "Read where to look in «Summary», then «Save CSV…» or «Copy summary»" },
+    ],
+    faq: [
+      {
+        q: { ko: "인터넷 속도도 재나요?", en: "Does it measure internet speed?" },
+        a: { ko: "아닙니다. 다운로드·업로드 속도는 재지 않고, 끊김·지연·손실을 기록합니다. 속도는 측정 사이트를 씁니다.", en: "No. It records drops, latency and loss, not download or upload speed. Use a speed-test site for that." },
+      },
+      {
+        q: { ko: "고쳐 주나요?", en: "Does it fix the problem?" },
+        a: { ko: "아닙니다. 읽기만 하고 설정을 바꾸지 않습니다. 볼 곳(공유기 쪽·공유기 너머·DNS·Wi-Fi 끊김 이유)을 알려 줄 뿐입니다.", en: "No. It only reads and changes no settings. It points to where to look (router side, beyond the router, DNS, Windows' disconnect reasons)." },
+      },
+      {
+        q: { ko: "무엇을 바깥으로 보내나요?", en: "What does it send out?" },
+        a: { ko: "기록을 켠 동안 게이트웨이와 고른 인터넷 주소에 보내는 핑, 정한 이름 하나의 DNS 질의뿐입니다. 대상은 화면에 늘 보이고, 멈추면 보내지 않습니다.", en: "Only the pings to the gateway and the chosen internet address and one DNS lookup, while recording. The targets are always shown, and nothing is sent after you stop." },
+      },
+    ],
+    similar: {
+      ko: "비슷한 일을 하는 도구로 PingPlotter(상용, 무료판 있음), WifiHistoryView(무료, 연결·끊김 기록) 등이 있습니다. PortDock Hardware Tester 는 무료(GPL-3.0)·한국어이고, 게이트웨이·인터넷 핑과 Windows 끊김 이유를 한 그래프에, 블루투스 연결 기록을 함께 합니다.",
+      en: "Similar tools include PingPlotter (commercial, with a free edition) and WifiHistoryView (free, connect/disconnect history). PortDock Hardware Tester is free (GPL-3.0) and puts gateway and internet pings and Windows' disconnect reasons on one chart, together with a Bluetooth connection log.",
+    },
+    help: hwTesterHelp,
   },
 ];
 
