@@ -24,7 +24,7 @@ use windows_sys::Win32::System::EventLog::{
 use windows_sys::Win32::NetworkManagement::IpHelper::{GetIfEntry2, MIB_IF_ROW2};
 use windows_sys::Win32::System::Power::{PowerGetActiveScheme, PowerReadACValueIndex, PowerReadDCValueIndex};
 use windows_sys::Win32::System::Registry::{
-    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, REG_BINARY, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ, RegCloseKey, RegEnumValueW, RegOpenKeyExW, RegQueryValueExW,
+    HKEY, HKEY_LOCAL_MACHINE, KEY_READ, REG_BINARY, REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ, RegCloseKey, RegEnumKeyExW, RegEnumValueW, RegOpenKeyExW, RegQueryValueExW,
 };
 use windows_sys::core::GUID;
 
@@ -61,7 +61,7 @@ pub(super) fn os_err(code: u32) -> String {
 // ---------------------------------------------------------------- CfgMgr32
 
 /// 장치 인스턴스 ID 목록
-fn device_ids(class: Option<&str>, present_only: bool) -> Vec<String> {
+pub(super) fn device_ids(class: Option<&str>, present_only: bool) -> Vec<String> {
     let filter = class.map(wide);
     let fptr = filter.as_ref().map_or(std::ptr::null(), |f| f.as_ptr());
     let mut flags = if class.is_some() { CM_GETIDLIST_FILTER_CLASS } else { CM_GETIDLIST_FILTER_NONE };
@@ -148,7 +148,7 @@ fn prop_strings(dn: u32, key: &DEVPROPKEY) -> Vec<String> {
     }
 }
 
-fn prop_time(dn: u32, key: &DEVPROPKEY) -> Option<u64> {
+pub(super) fn prop_time(dn: u32, key: &DEVPROPKEY) -> Option<u64> {
     let (ty, b) = prop_raw(dn, key)?;
     if ty != DEVPROP_TYPE_FILETIME || b.len() < 8 {
         return None;
@@ -157,7 +157,7 @@ fn prop_time(dn: u32, key: &DEVPROPKEY) -> Option<u64> {
 }
 
 /// (상태 비트, 문제 코드) — 지금 연결된 장치만
-fn node_status(dn: u32) -> Option<(u32, u32)> {
+pub(super) fn node_status(dn: u32) -> Option<(u32, u32)> {
     let (mut st, mut prob) = (0u32, 0u32);
     // SAFETY: 쓰기 가능한 u32 둘
     (unsafe { CM_Get_DevNode_Status(&mut st, &mut prob, dn, 0) } == CR_SUCCESS).then_some((st, prob))
@@ -237,6 +237,33 @@ pub(super) fn query_value(k: &Key, name: &str) -> Result<Option<(u32, Vec<u8>)>,
     }
     buf.truncate(n as usize);
     Ok(Some((ty, buf)))
+}
+
+/// 키 바로 아래 하위 키 이름들(최대 512개)
+pub(super) fn subkeys(k: &Key) -> Vec<String> {
+    let mut out = Vec::new();
+    for i in 0..512u32 {
+        let mut name = vec![0u16; 256];
+        let mut len = name.len() as u32;
+        // SAFETY: name 은 len 글자, 클래스·시각은 받지 않는다
+        let r = unsafe { RegEnumKeyExW(k.0, i, name.as_mut_ptr(), &mut len, std::ptr::null(), std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut()) };
+        if r != ERROR_SUCCESS {
+            break;
+        }
+        out.push(String::from_utf16_lossy(&name[..len as usize]));
+    }
+    out
+}
+
+/// 장치의 드라이버(제공자·버전·날짜·INF·서비스)
+pub(super) fn driver_of(dn: u32) -> Driver {
+    Driver {
+        provider: prop_string(dn, &DEVPKEY_Device_DriverProvider),
+        version: prop_string(dn, &DEVPKEY_Device_DriverVersion),
+        date: prop_time(dn, &DEVPKEY_Device_DriverDate),
+        inf: prop_string(dn, &DEVPKEY_Device_DriverInfPath),
+        service: prop_string(dn, &DEVPKEY_Device_Service),
+    }
 }
 
 /// 키의 모든 값(이름, 종류, 바이트)
@@ -613,6 +640,39 @@ fn format_message(meta: EVT_HANDLE, ev: EVT_HANDLE) -> Option<String> {
     // SAFETY: buf 는 used 글자 이상
     let ok = unsafe { EvtFormatMessage(meta, ev, 0, 0, std::ptr::null(), EvtFormatMessageEvent, buf.len() as u32, buf.as_mut_ptr(), &mut used) } != 0;
     ok.then(|| from_wide(&buf).trim().to_string()).filter(|s| !s.is_empty())
+}
+
+/// 로그 하나를 새것부터 훑어 XPath 에 맞는 이벤트를 `f` 에 넘긴다(최대 EVENT_SCAN_MAX 건). 로그가 없거나 막히면 Err
+pub(super) fn scan_events(path: &str, query: &str, f: &mut dyn FnMut(parse::RawEvent)) -> Result<(), String> {
+    let (wp, wq) = (wide(path), wide(query));
+    // SAFETY: 널로 끝나는 글, 세션 0 = 이 PC
+    let h = Evt(unsafe { EvtQuery(0, wp.as_ptr(), wq.as_ptr(), EvtQueryChannelPath | EvtQueryReverseDirection) });
+    if h.0 == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    let mut scanned = 0usize;
+    let mut batch = [0isize; 64];
+    loop {
+        let mut got = 0u32;
+        // SAFETY: batch 는 64칸, 받은 핸들은 Evt 가 닫는다
+        if unsafe { EvtNext(h.0, batch.len() as u32, batch.as_mut_ptr(), 2_000, 0, &mut got) } == 0 {
+            let e = std::io::Error::last_os_error();
+            if e.raw_os_error() == Some(ERROR_NO_MORE_ITEMS as i32) || scanned > 0 {
+                return Ok(());
+            }
+            return Err(e.to_string());
+        }
+        for &raw in &batch[..got as usize] {
+            let ev = Evt(raw);
+            scanned += 1;
+            if let Some(re) = render_xml(ev.0).as_deref().and_then(parse::parse_event_xml) {
+                f(re);
+            }
+        }
+        if scanned >= EVENT_SCAN_MAX {
+            return Ok(());
+        }
+    }
 }
 
 /// 로그 하나를 새것부터 훑어 이 장치들의 이벤트를 모은다

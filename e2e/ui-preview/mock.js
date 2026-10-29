@@ -2063,7 +2063,7 @@ window.__pdMock.plot = () => (PL ? { format: PL.format, rec: PL.rec, ticks: PL.t
 // 모양: crates/core/src/portinfo·loopback.rs). Serial «연결 점검…» 도 pi_report·loop_start 를 쓴다.
 // 가짜 장치: COM3 CH340(문제 없음) · COM5 FTDI(지연 16ms·절전 켜짐 → 볼 것) · COM1 내장 포트 · COM9 Prolific(문제 코드 10, 시험하면 «사용 중»)
 // · 숨은 COM12 Prolific(지금 없음). 루프백: COM5 왕복 ≈16ms, COM3 ≈2ms, COM1 은 아무것도 돌아오지 않음. 에코: COM1 말고는 에코 있음.
-const PI_CMDS = new Set(["pi_list", "pi_report", "pi_com_numbers", "pi_events", "pi_nics", "pi_pc", "loop_start", "loop_cancel"]);
+const PI_CMDS = new Set(["pi_list", "pi_report", "pi_com_numbers", "pi_events", "pi_nics", "pi_pc", "pi_wireless", "loop_start", "loop_cancel"]);
 const piT = (ko, en) => ({ ko, en });
 const PI_DEV = [
   { port: "COM1", name: "통신 포트(COM1)", instanceId: "ACPI\\PNP0501\\0", present: true, vid: null, pid: null, problem: null, class: "Ports", svc: "Serial", provider: "Microsoft", ver: "10.0.26100.1", inf: "msports.inf", chip: null },
@@ -2186,6 +2186,65 @@ async function pinsp(cmd, a) {
         screenSaver: { active: true, program: null, timeout: null, secure: null },
         time: { type: "NTP", ntpServer: "time.windows.com,0x9", policy: false, serviceStart: 3 },
         events,
+        errors: [],
+      };
+    }
+    case "pi_wireless": {
+      await sleep(140);
+      // 무선 탭(0.5.0): Wi-Fi = 장치 절전 켜짐·전원 연결 절전 보통·3일 안에 끊김 26건(드라이버 20·직접 6 — 30일 기준 «잦음») → «볼 것»,
+      // 드라이버 경고(20일 전) → 7일이면 빠짐. 블루투스 = USB 동글이 버스 전원 허브 경유·핸즈프리 끝점이 기본 출력 → «볼 것».
+      // 이름은 예시 값(실제 장치·네트워크 이름 아님). 네트워크 이름(SSID)은 백엔드가 읽지 않는다
+      const inDays = (ago) => ago <= a.days * DAY;
+      const drv = (provider, version, svc) => ({ provider, version, date: now() - 300 * DAY, inf: "oem77.inf", service: svc });
+      const btName = tr("인텔(R) 무선 Bluetooth(R)", "Intel(R) Wireless Bluetooth(R)");
+      const hs = tr("헤드셋 (Example Buds Hands-Free AG Audio)", "Headset (Example Buds Hands-Free AG Audio)");
+      return {
+        readAt: now(),
+        days: a.days,
+        wifi: {
+          adapters: [{ name: "Wi-Fi", description: "Intel(R) Wi-Fi 6E AX211 160MHz", connected: true, driver: drv("Intel", "23.60.1.2", "Netwtw14"), problem: null, canTurnOff: true }],
+          powerSaveAc: 2,
+          powerSaveDc: 3,
+          disconnects: [
+            { code: 0, reason: tr("드라이버에 의해 네트워크 연결이 끊어졌습니다.", "The network is disconnected by the driver."), count: 20, last: now() - 2 * 3_600_000 },
+            { code: 1, reason: tr("사용자가 네트워크 연결을 끊었습니다.", "The network is disconnected by the user."), count: 6, last: now() - 3 * DAY + 60_000 },
+          ],
+          logRead: true,
+          driverEvents: inDays(20 * DAY) ? [{ provider: "Netwtw14", id: 6062, level: 3, count: 4, last: now() - 20 * DAY }] : [],
+        },
+        bt: {
+          radios: [
+            {
+              name: btName,
+              vid: 0x8087,
+              pid: 0x0033,
+              driver: drv("Intel Corporation", "23.60.0.1", "BTHUSB"),
+              started: true,
+              problem: null,
+              canTurnOff: false,
+              usbPath: {
+                hops: [
+                  { instanceId: "USB\\VID_8087&PID_0033\\5&3C1D&0&1", name: btName, kind: "device", port: 1, speed: "full", belowCapable: false, busPowered: null, ports: null },
+                  { instanceId: PI_HUB, name: "Generic USB Hub", kind: "hub", port: 3, speed: "high", belowCapable: false, busPowered: true, ports: 4 },
+                  { instanceId: "USB\\ROOT_HUB30\\4&2AA8D0A4&0&0", name: tr("USB 루트 허브(USB 3.0)", "USB Root Hub (USB 3.0)"), kind: "root", port: null, speed: null, belowCapable: false, busPowered: false, ports: 18 },
+                ],
+                errors: [],
+              },
+            },
+          ],
+          services: [
+            { name: "bthserv", found: true, state: "running", startType: 3 },
+            { name: "BTAGService", found: true, state: "running", startType: 3 },
+            { name: "BthAvctpSvc", found: true, state: "running", startType: 3 },
+          ],
+          events: [],
+          logRead: true,
+          audio: [
+            { name: hs, flow: "render", kind: "handsFree", defaultConsole: true, defaultComms: true },
+            { name: tr("헤드폰 (Example Buds Stereo)", "Headphones (Example Buds Stereo)"), flow: "render", kind: "stereo", defaultConsole: false, defaultComms: false },
+            { name: hs, flow: "capture", kind: "handsFree", defaultConsole: true, defaultComms: true },
+          ],
+        },
         errors: [],
       };
     }

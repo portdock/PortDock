@@ -283,9 +283,184 @@ pub fn file_name(path: &str) -> String {
     path.trim().rsplit(['\\', '/']).next().unwrap_or("").to_string()
 }
 
+// ---------------------------------------------------------------- 무선(0.5.0)
+
+/// WLAN-AutoConfig/Operational 에서 찾을 XPath — 최근 `days` 일의 8003(무선 연결 끊김)
+pub fn wlan_query(days: u32) -> String {
+    let ms = u64::from(days) * 86_400_000;
+    format!("*[System[EventID=8003 and TimeCreated[timediff(@SystemTime) <= {ms}]]]")
+}
+
+/// 이벤트 원본 이름이 XPath 에 넣어도 되는 글자만인지(드라이버 서비스 이름 — «Netwtw14», «BTHUSB»)
+fn safe_provider(p: &str) -> bool {
+    !p.is_empty() && p.len() <= 64 && p.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
+}
+
+/// System 로그에서 이 원본들의 경고·오류(수준 1~3)를 찾을 XPath. 넣을 원본이 없으면 None
+pub fn providers_query(providers: &[String], days: u32) -> Option<String> {
+    let mut names: Vec<&str> = providers.iter().map(|p| p.trim()).filter(|p| safe_provider(p)).collect();
+    names.sort_unstable_by_key(|p| p.to_ascii_lowercase());
+    names.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    if names.is_empty() {
+        return None;
+    }
+    let ms = u64::from(days) * 86_400_000;
+    let list = names.iter().map(|p| format!("@Name='{p}'")).collect::<Vec<_>>().join(" or ");
+    Some(format!("*[System[Provider[{list}] and (Level=1 or Level=2 or Level=3) and TimeCreated[timediff(@SystemTime) <= {ms}]]]"))
+}
+
+/// 8003 이벤트 → (이유 코드, 이유 문구, 시각 ms). SSID·프로필 이름·인터페이스 GUID 같은 다른 값은 꺼내지 않는다
+pub fn wlan_disconnect(ev: &RawEvent) -> Option<(Option<u32>, String, u64)> {
+    if ev.id != 8003 {
+        return None;
+    }
+    let get = |n: &str| ev.data.iter().find(|(k, _)| k == n).map(|(_, v)| v.trim().to_string());
+    let code = get("ReasonCode").and_then(|v| v.parse::<u32>().ok().or_else(|| v.strip_prefix("0x").and_then(|h| u32::from_str_radix(h, 16).ok())));
+    let reason = get("Reason").filter(|r| !r.is_empty()).unwrap_or_default();
+    Some((code, reason, iso_ms(&ev.time).unwrap_or(0)))
+}
+
+/// 끊김들 → 이유(코드·문구)별 건수·마지막 시각. 많은 것부터
+pub fn reason_counts(items: impl IntoIterator<Item = (Option<u32>, String, u64)>) -> Vec<super::ReasonCount> {
+    let mut out: Vec<super::ReasonCount> = Vec::new();
+    for (code, reason, time) in items {
+        match out.iter_mut().find(|r| r.code == code && r.reason == reason) {
+            Some(r) => {
+                r.count += 1;
+                r.last = r.last.max(time);
+            }
+            None => out.push(super::ReasonCount { code, reason, count: 1, last: time }),
+        }
+    }
+    out.sort_by(|a, b| b.count.cmp(&a.count).then(b.last.cmp(&a.last)));
+    out
+}
+
+/// (원본, ID, 수준, 시각 ms) → 원본·ID 별 경고·오류 건수(수준 1~3 만, 원본·ID 순)
+pub fn event_counts(events: impl IntoIterator<Item = (String, u32, u8, u64)>) -> Vec<super::EventCount> {
+    let mut map: std::collections::BTreeMap<(String, u32), super::EventCount> = std::collections::BTreeMap::new();
+    for (provider, id, level, time) in events {
+        if !(1..=3).contains(&level) {
+            continue;
+        }
+        let e = map.entry((provider.to_ascii_lowercase(), id)).or_insert(super::EventCount { provider, id, level, count: 0, last: 0 });
+        e.count += 1;
+        e.level = e.level.min(level);
+        e.last = e.last.max(time);
+    }
+    map.into_values().collect()
+}
+
+/// 블루투스 라디오(어댑터)인지 — Bluetooth 클래스 장치 가운데 라디오 드라이버(BTHUSB·BthMini) 이거나 USB·PCI 버스에 바로 붙은 것.
+/// 짝지은 장치(BTHENUM·BTHLE …)와 열거기(BTH\MS_…)는 뺀다
+pub fn is_bt_radio(instance_id: &str, service: Option<&str>) -> bool {
+    let id = instance_id.to_ascii_uppercase();
+    let svc = service.unwrap_or("").to_ascii_uppercase();
+    svc == "BTHUSB" || svc == "BTHMINI" || id.starts_with("USB\\") || id.starts_with("PCI\\")
+}
+
+/// 소리 끝점의 장치 정보(KS 장치 인스턴스 ID·인터페이스 경로를 이어 붙인 글) → 블루투스 끝점 종류.
+/// «BTHHFENUM» = 핸즈프리 프로필(통화용, 모노) · «BTHENUM» + A2DP 서비스 UUID(0000110B) = 스테레오. 블루투스가 아니면 None
+pub fn bt_audio_kind(info: &str) -> Option<&'static str> {
+    let u = info.to_ascii_uppercase();
+    if u.contains("BTHHFENUM") {
+        Some("handsFree")
+    } else if u.contains("BTHENUM") && u.contains("0000110B") {
+        Some("stereo")
+    } else if u.contains("BTHENUM") || u.contains("BTHLE") {
+        Some("other")
+    } else {
+        None
+    }
+}
+
+/// MMDevices DeviceState → 사용 가능(DEVICE_STATE_ACTIVE)인지. 위 비트는 Windows 가 따로 쓰는 표시라 낮은 4비트만 본다
+pub fn endpoint_active(state: u32) -> bool {
+    state & 0xF == 1
+}
+
+/// 기본 끝점 ID(«{0.0.0.00000000}.{guid}») → 레지스트리 키 이름(«{guid}», 소문자)
+pub fn endpoint_key(id: &str) -> String {
+    id.rsplit_once("}.").map_or(id, |(_, k)| k).trim().to_ascii_lowercase()
+}
+
+/// 서비스 상태 번호(SERVICE_STATUS.dwCurrentState) → 이름
+pub fn service_state(n: u32) -> &'static str {
+    match n {
+        1 => "stopped",
+        2 => "starting",
+        3 => "stopping",
+        4 => "running",
+        7 => "paused",
+        _ => "other",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wlan_events() {
+        // 실제 8003 모양을 본뜬 예 — SSID·프로필은 예시 값
+        let x = "<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Microsoft-Windows-WLAN-AutoConfig' Guid='{9580d7dd-0379-4658-9870-d5be7d52d6de}'/><EventID>8003</EventID><Level>4</Level><TimeCreated SystemTime='2026-10-19T02:07:35.5Z'/></System><EventData><Data Name='InterfaceGuid'>{00000000-0000-0000-0000-000000000001}</Data><Data Name='InterfaceDescription'>Example Wi-Fi Adapter</Data><Data Name='ConnectionMode'>Automatic connection with a profile</Data><Data Name='ProfileName'>ExampleNet</Data><Data Name='SSID'>ExampleNet</Data><Data Name='BSSType'>Infrastructure</Data><Data Name='Reason'>The network is disconnected by the driver.</Data><Data Name='ConnectionId'>0x5</Data><Data Name='ReasonCode'>0</Data></EventData></Event>";
+        let e = parse_event_xml(x).unwrap();
+        let (code, reason, time) = wlan_disconnect(&e).unwrap();
+        assert_eq!((code, reason.as_str(), time), (Some(0), "The network is disconnected by the driver.", 1_792_375_655_500));
+        // 돌려주는 값에 SSID·프로필 이름이 들어가지 않는다
+        let all = format!("{code:?}{reason}{time}");
+        assert!(!all.contains("ExampleNet"));
+        let mut other = e.clone();
+        other.id = 8001;
+        assert!(wlan_disconnect(&other).is_none());
+        // 이유 코드가 16진·없음
+        let mut hex = e.clone();
+        hex.data.retain(|(k, _)| k != "ReasonCode");
+        hex.data.push(("ReasonCode".into(), "0x28002".into()));
+        assert_eq!(wlan_disconnect(&hex).unwrap().0, Some(0x28002));
+        hex.data.retain(|(k, _)| k != "ReasonCode" && k != "Reason");
+        assert_eq!(wlan_disconnect(&hex).unwrap().0, None);
+        assert!(wlan_query(7).contains("EventID=8003") && wlan_query(7).contains("<= 604800000"));
+        let c = reason_counts(vec![(Some(5), "policy".into(), 10), (Some(0), "driver".into(), 50), (Some(5), "policy".into(), 30), (Some(5), "policy".into(), 20)]);
+        assert_eq!(c.len(), 2);
+        assert_eq!((c[0].code, c[0].count, c[0].last), (Some(5), 3, 30));
+        assert_eq!((c[1].reason.as_str(), c[1].count), ("driver", 1));
+        assert!(reason_counts(Vec::new()).is_empty());
+    }
+
+    #[test]
+    fn wireless_queries_and_counts() {
+        let q = providers_query(&["Netwtw14".into(), "netwtw14".into(), "BTHUSB".into()], 30).unwrap();
+        assert!(q.contains("@Name='BTHUSB' or @Name='Netwtw14'") && q.contains("Level=3") && q.contains("<= 2592000000"));
+        // XPath 를 깨뜨릴 이름은 넣지 않는다
+        assert!(providers_query(&["a' or 1=1".into(), String::new()], 1).is_none());
+        let c = event_counts(vec![("BTHUSB".into(), 18, 4, 100), ("BTHUSB".into(), 17, 3, 200), ("BTHUSB".into(), 17, 2, 150), ("BTHPORT".into(), 1, 3, 50)]);
+        assert_eq!(c.len(), 2);
+        let b = c.iter().find(|e| e.id == 17).unwrap();
+        assert_eq!((b.level, b.count, b.last), (2, 2, 200));
+    }
+
+    #[test]
+    fn bluetooth_parts() {
+        assert!(is_bt_radio(r"USB\VID_8087&PID_0029\5&1", Some("BTHUSB")));
+        assert!(is_bt_radio(r"USB\VID_0A12&PID_0001\6&2", None));
+        assert!(is_bt_radio(r"ACPI\QCOM0000\0", Some("BthMini")));
+        assert!(!is_bt_radio(r"BTH\MS_BTHBRB\7&1", Some("BthEnum")));
+        assert!(!is_bt_radio(r"BTHENUM\{0000110B-0000-1000-8000-00805F9B34FB}_X\8&1", None));
+        assert!(!is_bt_radio(r"BTHLE\DEV_020000000001\8&1", Some("BthLEEnum")));
+        assert_eq!(bt_audio_kind(r"{1}.BTHHFENUM\BTHHFPAUDIO\8&1 {2}.\\?\bthhfenum#bthhfpaudio#8&1#{6994ad04-93ef-11d0-a3cc-00a0c9223196}"), Some("handsFree"));
+        assert_eq!(bt_audio_kind(r"{1}.BTHENUM\{0000110b-0000-1000-8000-00805f9b34fb}_VID&0001\9&1"), Some("stereo"));
+        assert_eq!(bt_audio_kind(r"{1}.BTHENUM\{0000111e-0000-1000-8000-00805f9b34fb}\9&1"), Some("other"));
+        assert_eq!(bt_audio_kind(r"{1}.USB\VID_04E8&PID_A054&MI_00\6&1"), None);
+        assert_eq!(bt_audio_kind(r"{1}.HDAUDIO\FUNC_01&VEN_10EC&DEV_0255\4&1"), None);
+        assert!(endpoint_active(1) && endpoint_active(0x1000_0001));
+        assert!(!endpoint_active(4) && !endpoint_active(0x2200_0004) && !endpoint_active(8));
+        assert_eq!(endpoint_key("{0.0.0.00000000}.{8EC74F42-A19F-46AC-9D8E-000000000001}"), "{8ec74f42-a19f-46ac-9d8e-000000000001}");
+        assert_eq!(endpoint_key("{abc}"), "{abc}");
+        assert_eq!(service_state(4), "running");
+        assert_eq!(service_state(1), "stopped");
+        assert_eq!(service_state(99), "other");
+    }
 
     #[test]
     fn pc_events() {

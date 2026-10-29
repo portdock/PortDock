@@ -27,6 +27,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: COM 포트 목록(지금 있는 것이 먼저, COM 번호순). 문제 코드가 있는 장치는 빨간 번호, 지금 없는 장치는 «지금 없음», Ports 장치 목록에 없는 COM(모뎀·가상 COM 드라이버 등)은 «장치 정보 없음» 이 붙습니다. ↻ 로 목록을 다시 읽습니다.",
+        "- 가운데 맨 위 탭: «COM 포트»(아래 카드들)와 «무선 (Wi-Fi·블루투스)» — 무선 탭은 고른 COM 포트와 상관없이 이 PC 의 Wi-Fi·블루투스를 봅니다(0.5.0 부터, «무선» 절).",
         "- 가운데 위 도구줄: 고른 포트와 전체 결과(카드 가운데 가장 무거운 것), 읽은 시각, «다시 읽기»(F4), «텍스트 복사», «JSON 복사», «저장…».",
         "- 카드는 머리를 눌러 접고 펼칩니다(카드마다 기억). 설정의 «모두 펼치기» 를 켜면 모두 펼친 채 시작합니다.",
         "- 맨 아래 «PC 가 볼 수 없는 것» 상자와 portdock.dev 가이드 링크는 늘 보입니다.",
@@ -139,6 +140,21 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "무선 — Wi-Fi·블루투스 (0.5.0 부터)",
+      id: "wireless",
+      body: [
+        "- 가운데 위 «무선 (Wi-Fi·블루투스)» 탭을 처음 열면 이 PC 의 Wi-Fi·블루투스를 관리자 권한·위치 권한 없이 읽습니다. 고른 COM 포트와는 상관없습니다. 핑 같은 트래픽을 보내지 않고, 주변 장치를 검색하지 않습니다. F4 로 다시 읽습니다.",
+        "- Wi-Fi: 무선 어댑터(제품 이름·연결됨/연결 안 됨), 드라이버(제공자·버전·날짜), 장치 «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음», 전원 계획의 «무선 어댑터 절전 모드»(전원 연결·배터리), 고른 기간(7·30·90일)의 끊김 기록(이벤트 뷰어 WLAN-AutoConfig 이벤트 8003 — 이유별 건수와 마지막 시각), 드라이버 경고·오류(System 로그).",
+        "- 연결된 네트워크 이름(SSID)·신호·채널은 Windows 가 위치 권한으로 묶어 두어 읽지 않습니다. 끊김 기록에서도 이유 코드·문구만 꺼내고 네트워크 이름은 버립니다. 이유 문구는 Windows 가 남긴 그대로(PC 언어)라 원인이 아니라 증상일 수 있습니다.",
+        "- 블루투스: 어댑터(라디오)·드라이버·장치 절전, USB 동글이면 USB 경로(허브를 거치는지), Bluetooth 지원 서비스·오디오 게이트웨이 서비스 상태, System 로그의 BTHUSB·BTHPORT 경고·오류, 블루투스 오디오 끝점이 핸즈프리(통화용)인지 스테레오인지와 기본 장치인지.",
+        "- «볼 것» 이 붙는 것: 장치 절전 켜짐, 전원 연결 상태에서도 무선 어댑터 절전, 끊김이 평균 일주일에 5번 이상, 드라이버·블루투스 오류 수준 이벤트, 블루투스 동글이 USB 허브를 거침, Bluetooth 지원 서비스가 멈춤·사용 안 함, 핸즈프리 끝점이 기본 출력 장치, 장치 관리자 문제 코드. 모두 원인 후보일 뿐이라 «문제 있음» 으로 단정하지 않습니다.",
+        "- 핸즈프리: 회의·통화 앱이 헤드셋 마이크를 열면 블루투스 헤드셋은 핸즈프리 프로필로 바뀌어 소리가 모노·낮은 음질이 됩니다. 음악·영상에는 «헤드폰»(스테레오) 끝점을 기본 출력으로 고르고, 통화 앱의 마이크를 PC 마이크로 바꾸면 바뀌지 않습니다.",
+        "- 항목마다 «바꾸는 곳» 이 함께 나오고, 블루투스 항목에는 Microsoft 지원 문서 «Bluetooth keeps disconnecting in Windows» 링크가 붙습니다. 이 프로그램은 설정을 바꾸지 않습니다.",
+        "- 이 탭의 «텍스트 복사»·«JSON 복사»·«저장…» 은 무선 결과만 담고, 블루투스 오디오 장치 이름을 «장치 1» 처럼 가립니다. 화면에는 그대로 보입니다.",
+        "- PC 가 볼 수 없는 것: 네트워크 이름·신호·채널·주변 Wi-Fi, 공유기·통신사 쪽과 인터넷 속도, 2.4GHz 간섭(전자레인지·USB 3 장치), 헤드셋 쪽 배터리·펌웨어, 짝지은 장치 목록. 관리자만 읽을 수 있는 Windows 무선 보고서(netsh wlan show wlanreport)는 읽지 않습니다.",
+      ],
+    },
+    {
       title: "PC 가 볼 수 없는 것",
       id: "cannot",
       body: [
@@ -217,6 +233,7 @@ export const help: HelpDoc = {
       title: "Screen layout",
       body: [
         "- Left: the COM port list (connected first, by COM number). Devices with a problem code show a red number, devices not connected now show «not connected», and COMs not in the port device list (modems, virtual COM drivers …) show «no device info». ↻ reloads the list.",
+        "- Tabs at the very top of the middle: «COM ports» (the cards below) and «Wireless (Wi-Fi, Bluetooth)» — the wireless tab looks at this PC's Wi-Fi and Bluetooth regardless of the chosen COM port (from 0.5.0, see «Wireless»).",
         "- Top toolbar: the chosen port and the overall result (the heaviest of the cards), read time, «Refresh» (F4), «Copy text», «Copy JSON», «Save…».",
         "- Click a card header to fold or unfold it (remembered per card). With «Expand all» in Settings every card starts open.",
         "- The «What the PC cannot see» box with portdock.dev guide links is always shown at the bottom.",
@@ -326,6 +343,21 @@ export const help: HelpDoc = {
         "- The right values differ from site to site. Most of them (updates, sleep) are right to keep on an office PC, so it marks at most «Worth a look», never «Problem». It never advises turning updates off — for active hours and restart policies see Microsoft's «Configure policy settings on IoT devices».",
         "- Each item shows «Where to change» (Settings, Control Panel or group policy path). This program does not change them.",
         "- What only an administrator can read — programs keeping the PC awake (powercfg /requests), Microsoft Defender exclusions, disk SMART — is not read and is listed as «Administrator only».",
+      ],
+    },
+    {
+      title: "Wireless — Wi-Fi and Bluetooth (from 0.5.0)",
+      id: "wireless",
+      body: [
+        "- The first time you open the «Wireless (Wi-Fi, Bluetooth)» tab at the top of the middle area, it reads this PC's Wi-Fi and Bluetooth without administrator or location permission. It is not tied to the chosen COM port. It sends no traffic such as pings and does not scan for nearby devices. F4 reads again.",
+        "- Wi-Fi: the wireless adapter (product name, connected or not), its driver (provider, version, date), the device's «Allow the computer to turn off this device to save power», the power plan's «Wireless Adapter Settings → Power Saving Mode» (plugged in and on battery), disconnect records in the chosen period (7, 30 or 90 days — WLAN-AutoConfig event 8003 in Event Viewer, counted by reason with the last time), and driver warnings and errors (System log).",
+        "- Windows ties the connected network name (SSID), signal and channel to location permission, so they are not read. From the disconnect records only the reason code and text are taken; network names are dropped. The reason text is what Windows logged (in the PC's language), so it may be a symptom rather than the cause.",
+        "- Bluetooth: the adapter (radio), driver and device power saving, the USB path for a USB dongle (whether it goes through a hub), the state of the Bluetooth Support Service and the Audio Gateway service, BTHUSB and BTHPORT warnings and errors in the System log, and whether Bluetooth audio endpoints are hands-free (calls) or stereo and which one is the default.",
+        "- Marked «Worth a look»: device power saving on, wireless power saving even when plugged in, disconnects averaging 5 or more a week, error-level driver or Bluetooth events, a Bluetooth dongle behind a USB hub, the Bluetooth Support Service stopped or disabled, a hands-free endpoint as the default output, and a Device Manager problem code. These are only possible causes, so it never says «Problem».",
+        "- Hands-free: when a meeting or call app opens the headset microphone, a Bluetooth headset switches to the hands-free profile and the sound becomes mono and lower quality. For music and video, make the «Headphones» (stereo) endpoint the default output; setting the call app's microphone to the PC's own microphone avoids the switch.",
+        "- Each item shows «Where to change», and the Bluetooth items link to Microsoft's support article «Bluetooth keeps disconnecting in Windows». This program does not change any setting.",
+        "- «Copy text», «Copy JSON» and «Save…» on this tab contain only the wireless results and hide Bluetooth audio device names as «Device 1» and so on. The screen still shows the names.",
+        "- What the PC cannot see: the network name, signal, channel and nearby Wi-Fi, the router and provider side and internet speed, 2.4 GHz interference (microwave ovens, USB 3 devices), the headset's battery and firmware, and the list of paired devices. The Windows wireless report (netsh wlan show wlanreport) needs administrator rights and is not read.",
       ],
     },
     {

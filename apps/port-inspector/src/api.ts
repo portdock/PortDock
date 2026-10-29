@@ -3,6 +3,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import type { ComNumbers, EventList, LoopConfig, LoopEvent, NicList, PortEntry, PortReport } from "@shared/portinfo";
 import type { LoopApi } from "@shared/LoopbackPanel";
 import type { PcCheck } from "@shared/pcCheck";
+import type { Wireless } from "@shared/wireless";
 import { tally } from "@shared/usage";
 
 export const api = {
@@ -12,6 +13,7 @@ export const api = {
   events: (instanceId: string, days: number) => tally("events", invoke<EventList>("pi_events", { instanceId, days })),
   nics: () => tally("nics", invoke<NicList>("pi_nics")),
   pc: (days: number) => tally("pc_check", invoke<PcCheck>("pi_pc", { days })),
+  wireless: (days: number) => tally("wireless", invoke<Wireless>("pi_wireless", { days })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
 };

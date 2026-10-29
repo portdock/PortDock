@@ -1,9 +1,10 @@
 //! PortDock Port Inspector — COM 포트 하나를 기준으로 장치·드라이버·문제 코드·설정·절전·연결 기록·COM 번호 예약을
 //! 관리자 권한 없이 읽고(portdock_core::portinfo), TX↔RX 루프백·2선 RS-485 에코를 잰다(portdock_core::loopback).
+//! «무선» 탭(0.5.0)은 Wi-Fi·블루투스를 같은 방식으로 읽는다(위치 권한·주변 장치 검색 없이).
 //! 읽기 전용 — 레지스트리·장치 설정을 바꾸는 명령은 없다.
 
 use portdock_core::loopback::{self, LoopConfig, LoopEvent};
-use portdock_core::portinfo::{self, ComNumbers, EventList, NicList, PcCheck, PortEntry, PortReport};
+use portdock_core::portinfo::{self, ComNumbers, EventList, NicList, PcCheck, PortEntry, PortReport, Wireless};
 use portdock_core::tr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -51,6 +52,12 @@ fn pi_nics() -> NicList {
 #[tauri::command(async)]
 fn pi_pc(days: u32) -> PcCheck {
     portinfo::pc(days)
+}
+
+/// 무선 점검(0.5.0) — Wi-Fi·블루투스 어댑터·드라이버·절전·서비스와 최근 days 일 끊김·경고 이벤트(위치 권한·주변 검색 없이)
+#[tauri::command(async)]
+fn pi_wireless(days: u32) -> Wireless {
+    portinfo::wireless(days)
 }
 
 /// 연결 시험 시작 — 결과는 on_event 로. 하나만 돈다
@@ -181,6 +188,7 @@ pub fn run() {
             pi_events,
             pi_nics,
             pi_pc,
+            pi_wireless,
             loop_start,
             loop_cancel,
             write_text,
@@ -213,6 +221,9 @@ mod tests {
         let p = serde_json::to_value(portinfo::pc(1)).unwrap();
         assert_eq!(p["days"], 1);
         assert!(p.get("fastStartup").is_some() && p.get("rebootPending").is_some() && p["time"].get("type").is_some() && p["screenSaver"].get("program").is_some());
+        let w = serde_json::to_value(portinfo::wireless(1)).unwrap();
+        assert_eq!(w["days"], 1);
+        assert!(w["wifi"].get("powerSaveAc").is_some() && w["wifi"].get("logRead").is_some() && w["bt"].get("services").is_some() && w["bt"].get("audio").is_some());
         // 시험 하나가 끝나야 다음 시험
         let app = App::default();
         *lock(&app.test) = Some(Arc::new(AtomicBool::new(false)));

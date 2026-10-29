@@ -2034,6 +2034,35 @@ async function runApp(app, port) {
       await expectJs("pc copy", `const c = window.__smoke.clip || ''; return c.includes(${JSON.stringify(ko ? "## 이 PC (최근 30일)" : "## This PC (last 30 days)")}) && /Kernel-Power 41/.test(c) && c.includes('powercfg /requests') && !${BAN}.test(c)`, 3000);
       await setIn("details.card-pc select.pc-purpose", "general");
 
+      // ---- (0.5.0) 무선 탭 — 열면 읽는다. Wi-Fi = 장치 절전·전원 연결 절전·잦은 끊김 «볼 것», 블루투스 = 허브 경유·핸즈프리 기본 출력 «볼 것».
+      //      «문제 있음» 없음, 링크는 Microsoft 문서만, 복사·JSON 에는 오디오 장치 이름이 «장치 1» 로 가려지고 포트 결과가 섞이지 않는다
+      await clickText(".tabs .seg", ko ? "무선 (Wi-Fi·블루투스)" : "Wireless (Wi-Fi, Bluetooth)");
+      const wlLv = (id) => `((document.querySelector('tr.wl-${id}') || document.body).querySelector('.lv') || {}).className || ''`;
+      await expectJs("wireless", `const w = document.querySelector('details.card-wifi'), b = document.querySelector('details.card-bt');
+        return !!w && !!b && /lv-look/.test(w.querySelector('summary .lv').className) && /lv-look/.test(b.querySelector('summary .lv').className) && !document.querySelector('.wl-cards .lv-problem')
+          && /Example Buds/.test(b.textContent) && /${ko ? "26건" : "26 in the last"}/.test(w.textContent) && !document.querySelector('details.card-device')
+          && document.title.startsWith(${JSON.stringify(ko ? "무선 — Wi-Fi·블루투스 · 볼 것" : "Wireless — Wi-Fi and Bluetooth · Worth a look")})`, 4000);
+      await expectJs("wireless rows", `return [${["wifiDevicePower", "wifiPowerPlan", "wifiDisconnects", "btUsbPath", "btAudio"].map(wlLv).join(", ")}].every((c) => /lv-look/.test(c))
+        && /lv-ok/.test(${wlLv("btService")}) && /lv-ok/.test(${wlLv("wifiDriverEvents")}) && document.querySelectorAll('.wl-cards a').length >= 2
+        && [...document.querySelectorAll('.wl-cards a')].every((a) => /^https:\\/\\/(support|learn)\\.microsoft\\.com\\//.test(a.href))`);
+      if (combo.full) await shot(app, `${combo.name}-wireless`);
+      // 기간 7일 → 20일 전 드라이버 경고가 빠진다, 90일 → 끊김 26건은 «잦음» 이 아니다
+      await setIn(".toolbar select.wl-days", "7");
+      await expectJs("wireless 7 days", `return /${ko ? "경고·오류 없음\\(최근 7일\\)" : "no warnings or errors \\(last 7 days\\)"}/.test((document.querySelector('tr.wl-wifiDriverEvents') || {}).textContent || '')`, 3000);
+      await setIn(".toolbar select.wl-days", "90");
+      await expectJs("wireless 90 days", `return /lv-ok/.test(${wlLv("wifiDisconnects")}) && /Netwtw14 6062: 4/.test((document.querySelector('tr.wl-wifiDriverEvents') || {}).textContent || '')`, 3000);
+      await setIn(".toolbar select.wl-days", "30");
+      await expectJs("wireless 30 days", `return /lv-look/.test(${wlLv("wifiDisconnects")})`, 3000);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "텍스트 복사" : "Copy text");
+      await expectJs("wireless copy", `const c = window.__smoke.clip || ''; return c.includes(${JSON.stringify(ko ? "## 블루투스 [볼 것]" : "## Bluetooth [Worth a look]")}) && c.includes(${JSON.stringify(ko ? "장치 1 — 출력" : "Device 1 — output")}) && !/Example Buds/.test(c) && !/LatencyTimer/.test(c) && c.includes('netsh wlan show wlanreport') && !${BAN}.test(c)`, 3000);
+      await clickText(".toolbar .btn", ko ? "JSON 복사" : "Copy JSON");
+      await expectJs("wireless json", "try { const c = window.__smoke.clip || ''; const j = JSON.parse(c); return j.wireless.bt.audio[0].name === 'device-1' && !/Example Buds/.test(c) && !j.report; } catch { return false; }");
+      await expectJs("wireless wording", `return !${BAN}.test(document.querySelector('.wl-cards').innerText)`);
+      await verify("wireless");
+      await clickText(".tabs .seg", ko ? "COM 포트" : "COM ports");
+      await expectJs("back to ports", "return document.querySelectorAll('details.card').length === 9 && /COM5/.test(document.querySelector('.toolbar .sel-title').textContent)");
+
       // ---- 연결 시험: 루프백(묻고 시작) → 속도 5개 «볼 것»(왕복 16ms)
       const startLoop = async (step) => {
         await clickText(".loop-panel .loop-actions .btn.primary", ko ? "시험 시작" : "Start test");
@@ -2134,6 +2163,13 @@ async function runApp(app, port) {
       await pick("COM3");
       await expectJs("narrow pick closes side", "return getComputedStyle(document.querySelector('aside.side')).display === 'none' && /COM3/.test(document.querySelector('.narrow-bar').textContent)");
       await shot(app, `${combo.name}-narrow-760`);
+      // (0.5.0) 좁은 창에서 무선 탭 — 요약 줄이 무선으로 바뀌고 표·버튼이 잘리지 않는다
+      await clickText(".tabs .seg", ko ? "무선 (Wi-Fi·블루투스)" : "Wireless (Wi-Fi, Bluetooth)");
+      await expectJs("narrow wireless", `return !!document.querySelector('details.card-bt') && /${ko ? "무선" : "Wireless"}/.test(document.querySelector('.narrow-bar').textContent)`, 4000);
+      await js("document.querySelectorAll('details.card').forEach((x) => (x.open = true))");
+      await sleep(200);
+      await verify("narrow wireless");
+      await shot(app, `${combo.name}-narrow-760-wireless`);
       await fitWindow();
     }
 

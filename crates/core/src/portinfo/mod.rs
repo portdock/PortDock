@@ -17,6 +17,11 @@
 //!   전원 계획(PowerReadAC/DCValueIndex — 절전·최대 절전·화면 끄기·PCIe ASPM·USB 선택적 절전) ·
 //!   이벤트 로그 System(Kernel-Power 41 · EventLog 6008 · WHEA-Logger·disk·Ntfs 경고 이상 · Time-Service).
 //!   `powercfg /requests`·Defender 예외·SMART(디스크 신뢰성 카운터)는 관리자만 읽을 수 있어 읽지 않는다
+//! - 무선(0.5.0, wireless.rs): Wi-Fi 어댑터(MSFT_NetAdapter NdisPhysicalMedium 9)·드라이버·장치 절전·전원 계획 «무선 어댑터 절전 모드»,
+//!   이벤트 로그 Microsoft-Windows-WLAN-AutoConfig/Operational 8003(끊김 이유 — SSID·프로필 이름은 버린다)·드라이버 경고·오류(System),
+//!   블루투스 라디오(Bluetooth 클래스 BTHUSB 등)·USB 경로·서비스 상태(SCM 조회)·System BTHUSB/BTHPORT 이벤트,
+//!   블루투스 오디오 끝점(MMDevices 레지스트리 + IMMDeviceEnumerator 기본 장치). 위치 권한이 필요한 것(SSID·신호·채널·주변 AP)과
+//!   주변 장치 검색은 하지 않는다
 
 pub mod parse;
 pub mod tables;
@@ -26,6 +31,8 @@ mod win;
 mod pc;
 #[cfg(windows)]
 mod usb;
+#[cfg(windows)]
+mod wireless;
 #[cfg(windows)]
 mod wmi;
 
@@ -428,6 +435,142 @@ pub struct PcCheck {
     pub events: Vec<PcEventCount>,
     /// 읽지 못한 것 «무엇: 이유»
     pub errors: Vec<String>,
+}
+
+/// Wi-Fi 어댑터 하나
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WifiAdapter {
+    /// 인터페이스 이름(«Wi-Fi»)
+    pub name: String,
+    /// 어댑터 설명(제품 이름)
+    pub description: String,
+    /// 무선 연결됨(MediaConnectState). 네트워크 이름(SSID)은 읽지 않는다
+    pub connected: bool,
+    pub driver: Driver,
+    /// 장치 관리자 문제 코드(있을 때만)
+    pub problem: Option<Problem>,
+    /// «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음». WMI 에 항목이 없으면 None
+    pub can_turn_off: Option<bool>,
+}
+
+/// Wi-Fi 끊김(WLAN-AutoConfig 8003) 이유 하나 — 이유 코드·Windows 문구(PC 언어)별 건수와 마지막 시각
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReasonCount {
+    pub code: Option<u32>,
+    pub reason: String,
+    pub count: u32,
+    pub last: u64,
+}
+
+/// 이벤트 원본·ID 별 건수(경고·오류만)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EventCount {
+    pub provider: String,
+    pub id: u32,
+    /// 가장 무거운 수준(1 위험 · 2 오류 · 3 경고)
+    pub level: u8,
+    pub count: u32,
+    pub last: u64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Wifi {
+    pub adapters: Vec<WifiAdapter>,
+    /// 전원 계획 «무선 어댑터 설정 → 절전 모드»(0 최대 성능 · 1 절전 낮음 · 2 절전 보통 · 3 최대 절전). 항목이 없으면 None
+    pub power_save_ac: Option<u32>,
+    pub power_save_dc: Option<u32>,
+    /// 끊김 이유별 건수(기간 안, 많은 것부터). SSID·BSSID·프로필 이름은 읽은 뒤 버린다
+    pub disconnects: Vec<ReasonCount>,
+    /// WLAN-AutoConfig 로그를 읽었는지
+    pub log_read: bool,
+    /// Wi-Fi 드라이버(서비스 이름 = 이벤트 원본)의 System 경고·오류
+    pub driver_events: Vec<EventCount>,
+}
+
+/// 블루투스 라디오(어댑터)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BtRadio {
+    pub name: String,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
+    pub driver: Driver,
+    pub started: bool,
+    pub problem: Option<Problem>,
+    pub can_turn_off: Option<bool>,
+    /// USB 라디오면 허브 사슬(Port Inspector USB 경로와 같음)
+    pub usb_path: Option<UsbPath>,
+}
+
+/// 서비스 상태(SCM 조회만)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceState {
+    /// «bthserv» 등
+    pub name: String,
+    /// 이 PC 에 서비스가 있는지
+    pub found: bool,
+    /// «running» · «stopped» · «starting» · «stopping» · «paused» · «other». 못 읽으면 None
+    pub state: Option<&'static str>,
+    /// 시작 유형(2 자동 · 3 수동 · 4 사용 안 함)
+    pub start_type: Option<u32>,
+}
+
+/// 블루투스 오디오 끝점(사용 가능 상태인 것만)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BtAudio {
+    /// 소리 설정에 보이는 이름(«헤드셋 (…)») — 화면에만. 결과 복사·저장에서는 화면 쪽이 가린다
+    pub name: String,
+    /// «render»(출력) · «capture»(입력)
+    pub flow: &'static str,
+    /// «handsFree»(핸즈프리·통화용) · «stereo»(A2DP) · «other»
+    pub kind: &'static str,
+    /// 기본 장치(콘솔·멀티미디어)인지
+    pub default_console: bool,
+    /// 기본 통신 장치인지
+    pub default_comms: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Bluetooth {
+    pub radios: Vec<BtRadio>,
+    pub services: Vec<ServiceState>,
+    /// System BTHUSB·BTHPORT 경고·오류
+    pub events: Vec<EventCount>,
+    /// System 로그를 읽었는지
+    pub log_read: bool,
+    pub audio: Vec<BtAudio>,
+}
+
+/// 무선 점검(Wi-Fi·블루투스) — 읽은 값
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Wireless {
+    pub read_at: u64,
+    pub days: u32,
+    pub wifi: Wifi,
+    pub bt: Bluetooth,
+    /// 읽지 못한 것 «무엇: 이유»
+    pub errors: Vec<String>,
+}
+
+/// 무선 점검 — Wi-Fi·블루투스 설정과 최근 `days` 일 이벤트(관리자 권한·위치 권한 없이, 주변 장치 검색 없이)
+pub fn wireless(days: u32) -> Wireless {
+    let days = days.clamp(1, 365);
+    #[cfg(windows)]
+    {
+        wireless::read(days)
+    }
+    #[cfg(not(windows))]
+    {
+        Wireless { days, read_at: crate::event::now_ms(), errors: vec![crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into()], ..Default::default() }
+    }
 }
 
 /// 이 PC 점검 — 설정과 최근 `days` 일 이벤트(관리자 권한 없이)

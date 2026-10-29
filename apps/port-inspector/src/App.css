@@ -922,3 +922,15 @@ table.grid.pc-items td.pc-lv .lv {
 .pc-where {
   margin-top: 2px;
 }
+/* 무선 탭(0.5.0) — 탭 줄(무선 카드 표 모양은 이 PC 점검과 같음, WirelessCard.tsx) */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.tabs .seg {
+  white-space: nowrap;
+}

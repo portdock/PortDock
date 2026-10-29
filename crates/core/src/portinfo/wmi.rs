@@ -1,5 +1,6 @@
 //! WMI 읽기 — 장치의 «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음»(root\WMI MSPower_DeviceEnable)과
-//! 랜카드 링크 속도·이중 방식·고급 속성·네트워크 프로필(root\StandardCimv2), 방화벽 프로필 켜짐(INetFwPolicy2).
+//! 랜카드 링크 속도·이중 방식·고급 속성·네트워크 프로필(root\StandardCimv2), 방화벽 프로필 켜짐(INetFwPolicy2),
+//! 기본 소리 끝점 ID(IMMDeviceEnumerator — 무선 점검의 핸즈프리 기본 장치 확인).
 //! 모두 일반 사용자 권한으로 읽힌다(읽기만 — Put·Set 호출 없음).
 //! COM 은 따로 만든 스레드에서 MTA 로 초기화한다(화면·tauri 스레드의 COM 설정과 섞이지 않게).
 
@@ -192,14 +193,16 @@ pub struct Adapter {
     pub full_duplex: Option<bool>,
     pub pnp_id: Option<String>,
     pub if_index: Option<u32>,
+    /// Wi-Fi(802.11) 어댑터인지
+    pub wireless: bool,
 }
 
 /// MSFT_NetAdapter — 실제 하드웨어 랜카드만
 pub fn net_adapters() -> Result<Vec<Adapter>, String> {
     let rows = query(
         r"root\StandardCimv2",
-        "SELECT Name, InterfaceDescription, Speed, FullDuplex, MediaConnectState, HardwareInterface, PnPDeviceID, InterfaceIndex FROM MSFT_NetAdapter",
-        &["Name", "InterfaceDescription", "Speed", "FullDuplex", "MediaConnectState", "HardwareInterface", "PnPDeviceID", "InterfaceIndex"],
+        "SELECT Name, InterfaceDescription, Speed, FullDuplex, MediaConnectState, HardwareInterface, PnPDeviceID, InterfaceIndex, NdisPhysicalMedium FROM MSFT_NetAdapter",
+        &["Name", "InterfaceDescription", "Speed", "FullDuplex", "MediaConnectState", "HardwareInterface", "PnPDeviceID", "InterfaceIndex", "NdisPhysicalMedium"],
     )?;
     Ok(rows
         .into_iter()
@@ -214,6 +217,8 @@ pub fn net_adapters() -> Result<Vec<Adapter>, String> {
                 full_duplex: r.get("FullDuplex").and_then(Val::bool),
                 pnp_id: r.get("PnPDeviceID").and_then(Val::str).filter(|s| !s.is_empty()),
                 if_index: r.get("InterfaceIndex").and_then(Val::num).and_then(|n| u32::try_from(n).ok()),
+                // NdisPhysicalMedium 9 = NdisPhysicalMediumNative802_11(Wi-Fi)
+                wireless: r.get("NdisPhysicalMedium").and_then(Val::num) == Some(9),
             })
         })
         .collect())
@@ -278,6 +283,31 @@ pub fn firewall() -> Result<Vec<super::FirewallProfile>, String> {
                 .into_iter()
                 .map(|(ty, name)| super::FirewallProfile { profile: name, enabled: p.get_FirewallEnabled(ty).ok().map(|b| b.as_bool()), current: current & ty.0 != 0 })
                 .collect())
+        }
+    })
+}
+
+/// 기본 소리 끝점 ID 들 — (흐름 «render»·«capture», 역할 «console»·«comms», 끝점 ID «{0.0.0.00000000}.{guid}»).
+/// IMMDeviceEnumerator 로 ID 만 묻는다(소리 장치를 열지 않는다). 기본 장치가 없는 흐름·역할은 빠진다(소리 장치 없는 서버 등)
+pub fn default_audio() -> Result<Vec<(&'static str, &'static str, String)>, String> {
+    use windows::Win32::Media::Audio::{IMMDeviceEnumerator, MMDeviceEnumerator, eCapture, eCommunications, eConsole, eRender};
+    use windows::Win32::System::Com::CoTaskMemFree;
+    on_com_thread(|| {
+        // SAFETY: COM 호출 — 받은 ID 글은 CoTaskMemFree 로 돌려준다
+        unsafe {
+            let en: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER).map_err(|e| e.message())?;
+            let mut out = Vec::new();
+            for (flow, f) in [("render", eRender), ("capture", eCapture)] {
+                for (role, r) in [("console", eConsole), ("comms", eCommunications)] {
+                    let Ok(dev) = en.GetDefaultAudioEndpoint(f, r) else { continue };
+                    let Ok(id) = dev.GetId() else { continue };
+                    if let Ok(s) = id.to_string() {
+                        out.push((flow, role, s));
+                    }
+                    CoTaskMemFree(Some(id.0 as *const _));
+                }
+            }
+            Ok(out)
         }
     })
 }
