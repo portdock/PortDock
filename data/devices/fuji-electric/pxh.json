@@ -108,7 +108,7 @@
         },
         {
           "bit": 7,
-          "ko": "정상 운전",
+          "ko": "보통 운전 상태",
           "en": "Normal operation"
         },
         {
@@ -253,7 +253,7 @@
       "values": [
         {
           "value": 0,
-          "ko": "정상",
+          "ko": "이상 없음",
           "en": "Normal"
         },
         {
@@ -348,7 +348,7 @@
       "values": [
         {
           "value": 0,
-          "ko": "쓰기: 효과 없음 / 읽기: 정상 동작",
+          "ko": "쓰기: 효과 없음 / 읽기: 동작 중",
           "en": "Write: no effect / read: operating normally"
         },
         {

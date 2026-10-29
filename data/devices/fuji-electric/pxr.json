@@ -879,7 +879,7 @@
         "max": 5
       },
       "description": {
-        "ko": "잠긴 동안 쓰기 요청은 정상 응답이 오지만 실행되지 않는다",
+        "ko": "잠긴 동안 쓰기 요청은 응답은 오지만 실행되지 않는다",
         "en": "While locked, write requests get a normal reply but are not executed"
       },
       "ref": "인쇄 p.25 (PDF p.28), 인쇄 p.39 (PDF p.42)",
