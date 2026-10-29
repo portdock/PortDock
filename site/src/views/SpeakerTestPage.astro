@@ -1,0 +1,434 @@
+---
+// 웹 도구: 스피커 좌우 테스트 — Web Audio 로 소리를 만든다(파일·네트워크 없음).
+// 좌우: StereoPannerNode(pan −1·0·1). 다채널: destination.maxChannelCount 가 2 보다 크면 ChannelMergerNode 로 채널별(채널 이름은 lib/hwSignal.ts channelLabel).
+// 위상(극성): 같은 소리를 두 채널에 그대로 / 한쪽만 −1 배로. 출력 장치 고르기는 AudioContext.setSinkId 가 있는 브라우저(Chromium 110+)만, 보안 컨텍스트 필요.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/speaker-test/";
+const L = ko
+  ? {
+      title: "스피커 좌우 테스트",
+      desc: "왼쪽·오른쪽·양쪽 소리, 5.1·7.1 채널별 소리, 위상(극성) 반전 비교, 주파수 스윕과 톤, 출력 장치 고르기. 설치 없이 브라우저에서 바로 들어 봅니다.",
+      warn: "음량 주의: 처음엔 아래 음량을 낮게 두고, 헤드폰은 귀에서 조금 떼고 시작하세요. 높은 주파수·큰 음량은 귀와 트위터(고음 스피커)를 다치게 할 수 있습니다.",
+      vol: "음량",
+      sound: "소리",
+      tone: "톤 440 Hz",
+      noise: "잡음(쉬익)",
+      out: "출력 장치",
+      outDefault: "기본 장치",
+      outNo: "이 브라우저는 출력 장치를 고를 수 없어 윈도우 기본 출력 장치로 재생합니다.",
+      lr: "좌우",
+      left: "◀ 왼쪽",
+      both: "양쪽",
+      right: "오른쪽 ▶",
+      alt: "왼쪽·오른쪽 번갈아",
+      chTitle: "채널별",
+      chNone: "이 출력은 2채널(스테레오)로 열렸습니다. 5.1·7.1 장치를 기본 출력으로 두고 윈도우 소리 설정에서 스피커 구성을 맞추면 채널 버튼이 나옵니다.",
+      chCount: "출력 채널",
+      polTitle: "위상(극성)",
+      inPhase: "같은 위상",
+      outPhase: "한쪽 반전",
+      polNote: "두 스피커 사이 가운데에서 들어 보세요. «같은 위상» 은 소리가 가운데에 또렷이 모이고 저음이 꽉 차게, «한쪽 반전» 은 소리가 퍼지고 저음이 빠지게 들려야 합니다. 반대로 들리면 한쪽 스피커 선의 +·− 가 바뀌었을 수 있습니다.",
+      sweepTitle: "주파수 스윕·톤",
+      sweep: "20 Hz → 20 kHz 스윕(10초)",
+      toneBtn: "톤 재생",
+      freq: "주파수",
+      stop: "멈춤",
+      playing: "재생 중",
+      howTitle: "쓰는 법",
+      steps: [
+        "음량을 낮게 두고 «◀ 왼쪽» 을 누릅니다. 왼쪽 스피커(헤드폰 왼쪽)에서만 소리가 나야 합니다. «오른쪽 ▶» 도 같은 방법으로 확인합니다.",
+        "소리가 반대쪽에서 나면 스피커·헤드폰 선이 바뀌었거나, 윈도우 소리 설정의 «모노 오디오» 나 좌우 균형을 볼 만합니다.",
+        "스윕은 낮은 음에서 높은 음으로 올라갑니다. 어느 구간에서 지지직거리거나 떨리는 소리가 나면 그 주파수에서 스피커·케이스가 울리는 것일 수 있습니다. 아주 낮은 음과 아주 높은 음은 원래 작은 스피커에서 잘 들리지 않습니다.",
+      ],
+      fieldTitle: "장비 PC 에서도",
+      field: "현장 PC 의 경고음 스피커, 산업용 패널 PC 의 내장 스피커, 회의실 스피커의 좌우 배선을 볼 때도 씁니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["양쪽 버튼을 눌러도 한쪽에서만 납니다", "케이블이 끝까지 꽂혀 있는지, 스피커 하나의 전원·음량을 먼저 보세요. 윈도우 설정 → 시스템 → 소리 → 출력 장치 → 왼쪽·오른쪽 균형이 한쪽으로 치우쳐 있는지도 확인하세요."],
+        ["5.1 채널 버튼이 안 보입니다", "브라우저가 출력 장치를 2채널로 열면 채널 버튼이 나오지 않습니다. 윈도우 소리 설정에서 그 장치의 스피커 구성을 5.1·7.1 로 바꾸고 이 쪽을 새로 고치세요. 7.1 의 5번 채널부터 순서는 드라이버·브라우저마다 달라 번호로만 표시합니다."],
+        ["소리 파일을 내려받나요?", "아니요. 모든 소리는 이 브라우저가 그 자리에서 만들고, 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Left/Right Speaker Test",
+      desc: "Play sound on the left, right or both speakers, per channel for 5.1 and 7.1, check polarity, run a frequency sweep or tone and pick an output device.",
+      warn: "Volume warning: start with the volume below turned down and headphones held a little away from your ears. High frequencies at high volume can hurt your ears and tweeters.",
+      vol: "Volume",
+      sound: "Sound",
+      tone: "Tone 440 Hz",
+      noise: "Noise (hiss)",
+      out: "Output device",
+      outDefault: "Default device",
+      outNo: "This browser cannot pick an output device, so sound plays on the Windows default output.",
+      lr: "Left / right",
+      left: "◀ Left",
+      both: "Both",
+      right: "Right ▶",
+      alt: "Alternate left and right",
+      chTitle: "Per channel",
+      chNone: "This output opened as 2 channels (stereo). Make a 5.1 or 7.1 device the default output and set its speaker configuration in Windows sound settings to get channel buttons.",
+      chCount: "Output channels",
+      polTitle: "Polarity",
+      inPhase: "In phase",
+      outPhase: "One side inverted",
+      polNote: "Listen from the middle between the speakers. «In phase» should sound focused in the center with full bass; «one side inverted» should sound wide and thin in the bass. If it is the other way round, one speaker's + and − wires may be swapped.",
+      sweepTitle: "Frequency sweep and tone",
+      sweep: "Sweep 20 Hz → 20 kHz (10 s)",
+      toneBtn: "Play tone",
+      freq: "Frequency",
+      stop: "Stop",
+      playing: "Playing",
+      howTitle: "How to use",
+      steps: [
+        "Keep the volume low and press «◀ Left». Sound should come only from the left speaker (left headphone). Check «Right ▶» the same way.",
+        "If it comes from the wrong side, the speaker or headphone wiring is swapped, or Windows «Mono audio» or balance settings are worth a look.",
+        "The sweep rises from low to high. Buzzing or rattling in one range can mean the speaker or case resonates at that frequency. Very low and very high tones are naturally faint on small speakers.",
+      ],
+      fieldTitle: "On equipment PCs too",
+      field: "It also helps with alarm speakers on shop-floor PCs, built-in speakers on panel PCs, and the left/right wiring of meeting-room speakers.",
+      faqTitle: "FAQ",
+      faq: [
+        ["Both buttons play on one side only", "Check that the cable is fully inserted and the other speaker has power and volume. Also look at Settings → System → Sound → output device → left/right balance in Windows."],
+        ["I do not see 5.1 channel buttons", "If the browser opens the output as 2 channels, no channel buttons appear. Set the device's speaker configuration to 5.1 or 7.1 in Windows sound settings and reload the page. From channel 5 on, 7.1 order differs between drivers and browsers, so those are shown by number."],
+        ["Does it download sound files?", "No. Every sound is generated on the spot by this browser, and this tool's code makes no network requests."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ outDefault: L.outDefault, playing: L.playing, lang });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "스피커 좌우 테스트 — 왼쪽·오른쪽·5.1 채널·위상 확인 — PortDock" : "Left Right Speaker Test: Stereo, 5.1 & Polarity Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="spk" data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="output" />
+      <p class="err" style="margin:0">{L.warn}</p>
+      <div class="hw-bar">
+        <label class="inl">{L.vol} <input type="range" id="vol" min="0" max="1" step="0.01" value="0.2" style="width:160px" /> <span id="volV" class="mono">20%</span></label>
+        <label class="inl">{L.sound}
+          <select id="kind"><option value="tone">{L.tone}</option><option value="noise">{L.noise}</option></select>
+        </label>
+        <label class="inl" id="outBox" hidden>{L.out} <select id="out"><option value="">{L.outDefault}</option></select></label>
+        <button type="button" class="btn tight" id="stop">{L.stop}</button>
+        <span class="note" id="status" aria-live="polite"></span>
+      </div>
+      <p class="note" id="outNo" style="margin:0" hidden>{L.outNo}</p>
+      <h2 class="sp-h">{L.lr}</h2>
+      <div class="hw-bar sp-lr">
+        <button type="button" class="btn" data-pan="-1">{L.left}</button>
+        <button type="button" class="btn" data-pan="0">{L.both}</button>
+        <button type="button" class="btn" data-pan="1">{L.right}</button>
+        <button type="button" class="btn" id="alt">{L.alt}</button>
+      </div>
+      <h2 class="sp-h">{L.chTitle} <span class="hw-tag" id="chCount"></span></h2>
+      <div class="hw-bar" id="chBtns"></div>
+      <p class="note" id="chNone" style="margin:0">{L.chNone}</p>
+      <h2 class="sp-h">{L.polTitle}</h2>
+      <div class="hw-bar">
+        <button type="button" class="btn" id="pIn">{L.inPhase}</button>
+        <button type="button" class="btn" id="pOut">{L.outPhase}</button>
+      </div>
+      <p class="note" style="margin:0">{L.polNote}</p>
+      <h2 class="sp-h">{L.sweepTitle}</h2>
+      <div class="hw-bar">
+        <button type="button" class="btn" id="sweep">{L.sweep}</button>
+        <button type="button" class="btn" id="toneBtn">{L.toneBtn}</button>
+        <label class="inl">{L.freq} <input type="range" id="freq" min="0" max="1" step="0.001" value="0.4" style="width:200px" /></label>
+        <b class="mono" id="freqV">–</b>
+      </div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "소리 크기 단위는" : "For sound level units, see the"} <a href={url(lang, "tools/db/")}>{ko ? "dB·dBm 변환기" : "dB & dBm converter"}</a>{ko ? ", 마이크는 " : "; for the microphone, the "}<a href={url(lang, "tools/mic-test/")}>{ko ? "마이크 테스트" : "mic test"}</a>.
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .sp-h {
+      font-size: 16px;
+      margin: 8px 0 0;
+    }
+    .sp-lr .btn {
+      min-width: 110px;
+    }
+    .btn.on {
+      outline: 2px solid var(--accent);
+    }
+  </style>
+  <script>
+    import { channelLabel, fmtHz, sliderToFreq, sweepFreqAt } from "../lib/hwSignal";
+
+    const root = document.getElementById("spk")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const lang = M.lang === "en" ? "en" : "ko";
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const vol = $<HTMLInputElement>("vol");
+    const kindSel = $<HTMLSelectElement>("kind");
+    const freq = $<HTMLInputElement>("freq");
+    const outSel = $<HTMLSelectElement>("out");
+    const status = $("status");
+
+    type SinkCtx = AudioContext & { setSinkId?: (id: string) => Promise<void> };
+    const canSink = typeof AudioContext !== "undefined" && "setSinkId" in AudioContext.prototype && window.isSecureContext;
+    $("outBox").hidden = !canSink;
+    $("outNo").hidden = canSink;
+
+    let ctx: SinkCtx | null = null;
+    let master: GainNode;
+    let nCh = 2;
+    let active: AudioScheduledSourceNode[] = [];
+    let altTimer = 0;
+    let raf = 0;
+
+    function ensure() {
+      if (ctx) return ctx;
+      ctx = new AudioContext() as SinkCtx;
+      master = ctx.createGain();
+      master.gain.value = Number(vol.value);
+      master.connect(ctx.destination);
+      const max = ctx.destination.maxChannelCount;
+      if (max > 2) {
+        ctx.destination.channelCount = max;
+        ctx.destination.channelInterpretation = "discrete";
+      }
+      nCh = ctx.destination.channelCount;
+      drawChannels();
+      void listOutputs();
+      return ctx;
+    }
+
+    function drawChannels() {
+      $("chCount").textContent = `${nCh} ch`;
+      const box = $("chBtns");
+      box.replaceChildren();
+      $("chNone").hidden = nCh > 2;
+      if (nCh <= 2) return;
+      for (let i = 0; i < nCh; i++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn tight";
+        b.textContent = channelLabel(i, nCh, lang);
+        b.addEventListener("click", () => playChannel(i));
+        box.append(b);
+      }
+    }
+
+    async function listOutputs() {
+      if (!canSink || !navigator.mediaDevices?.enumerateDevices) return;
+      const list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audiooutput" && d.deviceId && d.deviceId !== "default");
+      outSel.replaceChildren(new Option(M.outDefault, ""));
+      list.forEach((d, i) => outSel.append(new Option(d.label || `#${i + 1}`, d.deviceId)));
+    }
+    outSel.addEventListener("change", async () => {
+      const c = ensure();
+      try {
+        await c.setSinkId?.(outSel.value);
+      } catch {
+        outSel.value = "";
+      }
+    });
+
+    vol.addEventListener("input", () => {
+      $("volV").textContent = `${Math.round(Number(vol.value) * 100)}%`;
+      if (ctx) master.gain.setTargetAtTime(Number(vol.value), ctx.currentTime, 0.02);
+    });
+
+    function stopAll() {
+      clearInterval(altTimer);
+      cancelAnimationFrame(raf);
+      for (const s of active) {
+        try {
+          s.stop();
+        } catch {
+          /* 이미 멈춤 */
+        }
+      }
+      active = [];
+      status.textContent = "";
+      document.querySelectorAll("#spk .btn.on").forEach((b) => b.classList.remove("on"));
+    }
+
+    /** 소리 하나(톤 또는 잡음) + 앞뒤로 부드럽게 켜고 끄는 게인. dur 초 뒤 멈춤(0 이면 멈출 때까지) */
+    function voice(dur: number, f = 440) {
+      const c = ensure();
+      void c.resume();
+      let src: AudioScheduledSourceNode;
+      if (kindSel.value === "noise") {
+        const buf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+        const b = c.createBufferSource();
+        b.buffer = buf;
+        b.loop = true;
+        src = b;
+      } else {
+        const o = c.createOscillator();
+        o.frequency.value = f;
+        src = o;
+      }
+      const env = c.createGain();
+      const t = c.currentTime;
+      env.gain.setValueAtTime(0, t);
+      env.gain.linearRampToValueAtTime(1, t + 0.03);
+      if (dur) {
+        env.gain.setValueAtTime(1, t + dur - 0.05);
+        env.gain.linearRampToValueAtTime(0, t + dur);
+      }
+      src.connect(env);
+      src.start(t);
+      if (dur) src.stop(t + dur + 0.02); // stop 은 start 뒤에만 부를 수 있다
+      active.push(src);
+      src.addEventListener("ended", () => (active = active.filter((x) => x !== src)));
+      return env;
+    }
+
+    function playPan(p: number, dur = 1.2) {
+      const c = ensure();
+      const pan = c.createStereoPanner();
+      pan.pan.value = p;
+      voice(dur).connect(pan).connect(master);
+    }
+    function playChannel(i: number) {
+      stopAll();
+      const c = ensure();
+      const m = c.createChannelMerger(nCh);
+      voice(1.2).connect(m, 0, i);
+      m.connect(master);
+      status.textContent = `${M.playing}: ${channelLabel(i, nCh, lang)}`;
+    }
+    function playPolarity(invert: boolean) {
+      stopAll();
+      const c = ensure();
+      const m = c.createChannelMerger(Math.max(2, nCh));
+      const v = voice(3);
+      const a = c.createGain();
+      const b = c.createGain();
+      b.gain.value = invert ? -1 : 1;
+      v.connect(a).connect(m, 0, 0);
+      v.connect(b).connect(m, 0, 1);
+      m.connect(master);
+    }
+
+    document.querySelectorAll<HTMLButtonElement>("#spk [data-pan]").forEach((b) =>
+      b.addEventListener("click", () => {
+        stopAll();
+        playPan(Number(b.dataset.pan));
+        status.textContent = `${M.playing}: ${b.textContent}`;
+      }),
+    );
+    $("alt").addEventListener("click", (e) => {
+      stopAll();
+      (e.currentTarget as HTMLElement).classList.add("on");
+      let side = -1;
+      const go = () => {
+        playPan(side, 0.8);
+        side = -side;
+      };
+      go();
+      altTimer = window.setInterval(go, 1000);
+    });
+    $("pIn").addEventListener("click", () => playPolarity(false));
+    $("pOut").addEventListener("click", () => playPolarity(true));
+    $("stop").addEventListener("click", stopAll);
+
+    // 스윕 — 지수(로그) 상승, 화면의 주파수는 같은 식(sweepFreqAt)으로
+    $("sweep").addEventListener("click", (e) => {
+      stopAll();
+      const c = ensure();
+      void c.resume();
+      (e.currentTarget as HTMLElement).classList.add("on");
+      const o = c.createOscillator();
+      const env = c.createGain();
+      const t = c.currentTime;
+      const T = 10;
+      o.frequency.setValueAtTime(20, t);
+      o.frequency.exponentialRampToValueAtTime(20000, t + T);
+      env.gain.setValueAtTime(0, t);
+      env.gain.linearRampToValueAtTime(1, t + 0.05);
+      env.gain.setValueAtTime(1, t + T - 0.05);
+      env.gain.linearRampToValueAtTime(0, t + T);
+      o.connect(env).connect(master);
+      o.start(t);
+      o.stop(t + T);
+      active.push(o);
+      const tick = () => {
+        const dt = c.currentTime - t;
+        $("freqV").textContent = fmtHz(sweepFreqAt(20, 20000, T, dt));
+        if (dt < T && active.includes(o)) raf = requestAnimationFrame(tick);
+        else stopAll();
+      };
+      tick();
+    });
+
+    // 출력 채널 수를 미리 보이려고 일시 정지 상태로 만들어 둔다(소리는 누를 때 resume)
+    if (typeof AudioContext !== "undefined") ensure();
+
+    // 톤 — 슬라이더(로그 눈금)로 주파수를 바꾸며 계속 재생
+    let toneOsc: OscillatorNode | null = null;
+    const showFreq = () => ($("freqV").textContent = fmtHz(sliderToFreq(Number(freq.value))));
+    showFreq();
+    freq.addEventListener("input", () => {
+      showFreq();
+      if (toneOsc && ctx) toneOsc.frequency.setTargetAtTime(sliderToFreq(Number(freq.value)), ctx.currentTime, 0.01);
+    });
+    $("toneBtn").addEventListener("click", (e) => {
+      stopAll();
+      const c = ensure();
+      void c.resume();
+      (e.currentTarget as HTMLElement).classList.add("on");
+      const o = c.createOscillator();
+      o.frequency.value = sliderToFreq(Number(freq.value));
+      const env = c.createGain();
+      env.gain.setValueAtTime(0, c.currentTime);
+      env.gain.linearRampToValueAtTime(1, c.currentTime + 0.05);
+      o.connect(env).connect(master);
+      o.start();
+      active.push(o);
+      toneOsc = o;
+      o.addEventListener("ended", () => (toneOsc = null));
+      status.textContent = M.playing;
+    });
+  </script>
+</Base>

@@ -1,0 +1,333 @@
+---
+// 웹 도구: 웹캠 테스트 — getUserMedia 로 미리보기, 트랙 설정값(getSettings)으로 실제 해상도·fps, requestVideoFrameCallback 으로 실제 들어오는 fps 를 잰다.
+// 영상은 <video> 에만 붙이고 캔버스·녹화·전송을 하지 않는다(네트워크 요청 없음). 계산은 lib/hwSignal.ts.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/webcam-test/";
+const RES = [
+  ["", ko ? "브라우저 기본" : "Browser default"],
+  ["640x480", "640×480"],
+  ["1280x720", "1280×720 (720p)"],
+  ["1920x1080", "1920×1080 (1080p)"],
+  ["2560x1440", "2560×1440"],
+  ["3840x2160", "3840×2160 (4K)"],
+];
+const L = ko
+  ? {
+      title: "웹캠 테스트",
+      desc: "설치 없이 브라우저에서 웹캠 미리보기, 요청한 해상도와 실제로 받은 해상도·fps 측정, 카메라 고르기. 영상은 저장하거나 어디로 보내지 않습니다.",
+      start: "카메라 켜기",
+      stop: "끄기",
+      device: "카메라",
+      devDefault: "기본 카메라",
+      res: "요청 해상도",
+      fps: "요청 fps",
+      fpsDefault: "기본",
+      mirror: "거울처럼 좌우 뒤집기",
+      sReq: "요청",
+      sGot: "실제 받은 해상도",
+      sSetFps: "트랙 설정 fps",
+      sFps: "측정 fps(최근 2초)",
+      sMax: "이 카메라의 최대",
+      sDev: "장치",
+      unknown: "알 수 없음",
+      idle: "꺼짐",
+      live: "켜짐",
+      howTitle: "쓰는 법",
+      steps: [
+        "«카메라 켜기» 를 누르고 권한 창에서 «허용» 을 누릅니다. 여러 카메라가 있으면 «카메라» 에서 고릅니다(이름은 권한을 준 뒤에 보입니다).",
+        "«요청 해상도» 를 바꾸면 그 크기를 달라고 다시 엽니다. 카메라가 그 크기를 못 내면 브라우저가 가까운 크기를 줍니다 — «실제 받은 해상도» 를 보세요.",
+        "«측정 fps» 는 실제로 화면에 들어온 프레임 수입니다. 어두운 곳에서는 노출 시간이 길어져 30 fps 카메라도 15 fps 안팎으로 떨어질 수 있습니다.",
+      ],
+      readTitle: "숫자 읽는 법",
+      read: [
+        ["요청 vs 실제", "웹 페이지는 «이 정도» 를 부탁할 뿐이고, 카메라·드라이버가 지원하는 값 중에서 브라우저가 고릅니다. 요청보다 작게 나오면 그 카메라(또는 USB 대역)의 한계일 수 있습니다."],
+        ["트랙 설정 fps vs 측정 fps", "설정값은 카메라에 걸린 목표, 측정값은 실제 도착한 프레임입니다. 둘이 크게 다르면 조명·USB 허브·CPU 부하를 볼 만합니다. 측정은 requestVideoFrameCallback 을 지원하는 브라우저에서만 나옵니다."],
+        ["이 카메라의 최대", "브라우저가 알려 주는 트랙 능력(getCapabilities)입니다. 지원하지 않는 브라우저에서는 비어 있습니다."],
+      ],
+      errTitle: "켜지지 않을 때",
+      err: {
+        denied: "카메라 권한이 막혀 있습니다. 주소창 왼쪽의 사이트 설정에서 카메라를 «허용» 으로 바꾸고 다시 켜세요. 윈도우는 설정 → 개인 정보 및 보안 → 카메라 에서 «카메라 액세스»·«앱에서 카메라에 액세스하도록 허용»·«데스크톱 앱이 카메라에 액세스하도록 허용» 이 켜져 있어야 합니다.",
+        notfound: "카메라를 찾지 못했습니다. 연결과 장치 관리자의 «카메라» 항목, 노트북의 카메라 가림막·끄기 키를 확인하세요.",
+        busy: "카메라를 열 수 없습니다. 다른 프로그램(화상 회의·카메라 앱)이 쓰고 있거나 드라이버 문제일 수 있습니다. 그 프로그램을 닫고 다시 켜세요.",
+        constraint: "고른 해상도·fps 를 이 카메라가 내지 못합니다. «브라우저 기본» 으로 바꿔 보세요.",
+        insecure: "이 브라우저·주소에서는 카메라를 쓸 수 없습니다. https 주소로, 최신 Chrome·Edge·Firefox·Safari 에서 여세요.",
+        other: "카메라를 열지 못했습니다",
+      },
+      fieldTitle: "장비 PC 에서도",
+      field: "현장 PC 에 붙인 USB 카메라(화상 지원·간이 모니터링용)가 어떤 해상도·fps 로 잡히는지 볼 때도 씁니다. 산업용 GigE 카메라는 웹캠처럼 브라우저에 잡히지 않습니다 — 대역폭은",
+      gigeLink: "GigE 카메라 대역폭 계산기",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["영상이 서버로 가나요?", "아니요. 영상은 이 쪽의 미리보기 칸에만 붙고, 저장·녹화·캡처·업로드를 하지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
+        ["1080p 웹캠인데 720p 로 나옵니다", "요청 해상도를 1920×1080 으로 바꿔 보세요. 그래도 작으면 USB 2.0 포트·허브의 대역, 드라이버, 다른 앱의 설정이 원인일 수 있습니다. 다른 USB 포트에 꽂아 비교하세요."],
+        ["화면이 좌우로 뒤집혀 보입니다", "셀카처럼 보이게 «거울처럼 좌우 뒤집기» 가 켜져 있습니다. 끄면 상대방이 보는 방향 그대로입니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Webcam Test",
+      desc: "Test your webcam in the browser: live preview, requested vs actual resolution, measured fps and a camera picker. Video is never saved or sent anywhere.",
+      start: "Turn on camera",
+      stop: "Turn off",
+      device: "Camera",
+      devDefault: "Default camera",
+      res: "Requested resolution",
+      fps: "Requested fps",
+      fpsDefault: "Default",
+      mirror: "Mirror image",
+      sReq: "Requested",
+      sGot: "Actual resolution",
+      sSetFps: "Track setting fps",
+      sFps: "Measured fps (last 2 s)",
+      sMax: "Camera maximum",
+      sDev: "Device",
+      unknown: "unknown",
+      idle: "Off",
+      live: "On",
+      howTitle: "How to use",
+      steps: [
+        "Press «Turn on camera» and choose «Allow». With several cameras, pick one under «Camera» (names appear after you grant permission).",
+        "Changing «Requested resolution» reopens the camera asking for that size. If the camera cannot deliver it, the browser picks the closest — check «Actual resolution».",
+        "«Measured fps» counts frames that really arrive. In dim light exposure gets longer, so a 30 fps camera may drop to around 15 fps.",
+      ],
+      readTitle: "Reading the numbers",
+      read: [
+        ["Requested vs actual", "A web page only asks; the browser picks from what the camera and driver support. A smaller result can be the limit of the camera or the USB bandwidth."],
+        ["Track setting vs measured fps", "The setting is the target given to the camera; the measurement is frames that actually arrived. A big gap points at lighting, USB hubs or CPU load. Measuring needs a browser with requestVideoFrameCallback."],
+        ["Camera maximum", "The track capabilities the browser reports (getCapabilities). Empty in browsers that do not support it."],
+      ],
+      errTitle: "If the camera does not start",
+      err: {
+        denied: "Camera access is blocked. Allow the camera in the site settings next to the address bar and try again. On Windows, Settings → Privacy & security → Camera must have «Camera access», «Let apps access your camera» and «Let desktop apps access your camera» turned on.",
+        notfound: "No camera was found. Check the connection, the «Cameras» entry in Device Manager, and any privacy shutter or camera-off key on the laptop.",
+        busy: "The camera could not be opened. Another program (video call or camera app) may be using it, or the driver may have a problem. Close that program and try again.",
+        constraint: "This camera cannot deliver the chosen resolution or fps. Switch to «Browser default».",
+        insecure: "The camera is not available in this browser or address. Open the page over https in a current Chrome, Edge, Firefox or Safari.",
+        other: "Could not open the camera",
+      },
+      fieldTitle: "On equipment PCs too",
+      field: "Use it to see what resolution and fps a USB camera on a shop-floor PC (remote support or simple monitoring) actually delivers. Industrial GigE cameras do not show up in a browser like webcams — for their bandwidth, see the",
+      gigeLink: "GigE camera bandwidth calculator",
+      faqTitle: "FAQ",
+      faq: [
+        ["Is the video sent to a server?", "No. The video is attached only to the preview on this page and is never saved, recorded, captured or uploaded. This tool's code makes no network requests."],
+        ["My 1080p webcam shows 720p", "Set «Requested resolution» to 1920×1080. If it stays smaller, the USB 2.0 port or hub bandwidth, the driver or another app's settings may be the cause. Try another USB port to compare."],
+        ["The picture is flipped left to right", "«Mirror image» is on so it looks like a selfie. Turn it off to see what the other side sees."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ err: L.err, unknown: L.unknown, devDefault: L.devDefault, idle: L.idle, live: L.live, fpsDefault: L.fpsDefault });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음) — PortDock" : "Webcam Test: Check Actual Resolution & FPS Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="cam" data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="media" />
+      <div class="hw-bar">
+        <button type="button" class="btn primary" id="start">{L.start}</button>
+        <button type="button" class="btn" id="stop" disabled>{L.stop}</button>
+        <span class="note" id="status" aria-live="polite">{L.idle}</span>
+      </div>
+      <div class="hw-bar">
+        <label class="inl">{L.device} <select id="dev"><option value="">{L.devDefault}</option></select></label>
+        <label class="inl">{L.res} <select id="res">{RES.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+        <label class="inl">{L.fps}
+          <select id="fps"><option value="">{L.fpsDefault}</option><option value="15">15</option><option value="30">30</option><option value="60">60</option></select>
+        </label>
+        <label class="inl"><input type="checkbox" id="mirror" checked /> {L.mirror}</label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="cam-box"><video id="video" autoplay muted playsinline></video></div>
+      <div class="hw-stats">
+        <div class="hw-stat"><b id="vReq">–</b><span>{L.sReq}</span></div>
+        <div class="hw-stat"><b id="vGot">–</b><span>{L.sGot}</span></div>
+        <div class="hw-stat"><b id="vSetFps">–</b><span>{L.sSetFps}</span></div>
+        <div class="hw-stat"><b id="vFps">–</b><span>{L.sFps}</span></div>
+        <div class="hw-stat"><b id="vMax">–</b><span>{L.sMax}</span></div>
+        <div class="hw-stat"><b id="vDev" style="font-size:13px">–</b><span>{L.sDev}</span></div>
+      </div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.readTitle}</h2>
+      <ul>{L.read.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
+      <h2>{L.errTitle}</h2>
+      <ul>
+        <li>{L.err.denied}</li>
+        <li>{L.err.busy}</li>
+        <li>{L.err.notfound}</li>
+      </ul>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} <a href={url(lang, "tools/gige-bandwidth/")}>{L.gigeLink}</a>. {ko ? "마이크는" : "For the microphone, use the"} <a href={url(lang, "tools/mic-test/")}>{ko ? "마이크 테스트" : "mic test"}</a>{ko ? " 에서 봅니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .cam-box {
+      background: var(--code-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cam-box video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .cam-box video.mirror {
+      transform: scaleX(-1);
+    }
+  </style>
+  <script>
+    import { framesPerSecond, mediaErrorKind, resolutionLabel } from "../lib/hwSignal";
+    import { trimWindow } from "../lib/inputTiming";
+
+    const root = document.getElementById("cam")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as { err: Record<string, string> } & Record<string, string>;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const video = $<HTMLVideoElement>("video");
+    const startBtn = $<HTMLButtonElement>("start");
+    const stopBtn = $<HTMLButtonElement>("stop");
+    const devSel = $<HTMLSelectElement>("dev");
+    const resSel = $<HTMLSelectElement>("res");
+    const fpsSel = $<HTMLSelectElement>("fps");
+    const mirror = $<HTMLInputElement>("mirror");
+    const errEl = $("err");
+    const md = window.isSecureContext ? navigator.mediaDevices : undefined;
+    if (!md?.getUserMedia) {
+      errEl.textContent = M.err.insecure;
+      startBtn.disabled = true;
+    }
+    let stream: MediaStream | null = null;
+    let frames: number[] = [];
+    let timer = 0;
+    type RVFC = (cb: (now: number) => void) => number;
+    const rvfc = (video as unknown as { requestVideoFrameCallback?: RVFC }).requestVideoFrameCallback?.bind(video);
+
+    const applyMirror = () => video.classList.toggle("mirror", mirror.checked);
+    mirror.addEventListener("change", applyMirror);
+    applyMirror();
+
+    async function listDevices() {
+      if (!md?.enumerateDevices) return;
+      const keep = devSel.value;
+      const list = (await md.enumerateDevices()).filter((d) => d.kind === "videoinput");
+      devSel.replaceChildren(new Option(M.devDefault, ""));
+      list.forEach((d, i) => d.deviceId && devSel.append(new Option(d.label || `#${i + 1}`, d.deviceId)));
+      devSel.value = [...devSel.options].some((o) => o.value === keep) ? keep : "";
+    }
+    md?.addEventListener?.("devicechange", () => void listDevices());
+
+    function stop() {
+      clearInterval(timer);
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = null;
+      video.srcObject = null;
+      startBtn.disabled = !md?.getUserMedia;
+      stopBtn.disabled = true;
+      $("status").textContent = M.idle;
+    }
+
+    function onFrame(now: number) {
+      if (!stream) return;
+      frames.push(now);
+      trimWindow(frames, now, 2000);
+      rvfc?.(onFrame);
+    }
+
+    async function start() {
+      if (!md?.getUserMedia) return;
+      stop();
+      errEl.textContent = "";
+      const v: MediaTrackConstraints = {};
+      const [w, h] = resSel.value ? resSel.value.split("x").map(Number) : [0, 0];
+      if (w) {
+        v.width = { ideal: w };
+        v.height = { ideal: h };
+      }
+      if (fpsSel.value) v.frameRate = { ideal: Number(fpsSel.value) };
+      if (devSel.value) v.deviceId = { exact: devSel.value };
+      $("vReq").textContent = (w ? `${w}×${h}` : M.fpsDefault) + (fpsSel.value ? ` @ ${fpsSel.value}` : "");
+      try {
+        stream = await md.getUserMedia({ video: Object.keys(v).length ? v : true, audio: false });
+      } catch (e) {
+        const kind = mediaErrorKind((e as DOMException).name);
+        errEl.textContent = M.err[kind] + (kind === "other" ? `: ${(e as Error).message || (e as DOMException).name}` : "");
+        return;
+      }
+      const track = stream.getVideoTracks()[0];
+      video.srcObject = stream;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      $("status").textContent = M.live;
+      $("vDev").textContent = track.label || M.unknown;
+      track.addEventListener("ended", stop);
+      const caps = (track as MediaStreamTrack & { getCapabilities?: () => MediaTrackCapabilities }).getCapabilities?.();
+      const mw = caps?.width?.max;
+      const mh = caps?.height?.max;
+      const mf = caps?.frameRate?.max;
+      $("vMax").textContent = mw && mh ? `${mw}×${mh}${mf ? ` @ ${Math.round(mf)}` : ""}` : "–";
+      frames = [];
+      rvfc?.(onFrame);
+      const show = () => {
+        const s = track.getSettings();
+        $("vGot").textContent = resolutionLabel(s.width ?? video.videoWidth, s.height ?? video.videoHeight);
+        $("vSetFps").textContent = s.frameRate ? s.frameRate.toFixed(1) : M.unknown;
+        const f = framesPerSecond(frames);
+        $("vFps").textContent = rvfc ? (f === null ? "–" : f.toFixed(1)) : M.unknown;
+      };
+      show();
+      timer = window.setInterval(show, 500);
+      await listDevices();
+      const id = track.getSettings().deviceId;
+      if (id && [...devSel.options].some((o) => o.value === id)) devSel.value = id;
+    }
+
+    startBtn.addEventListener("click", () => void start());
+    stopBtn.addEventListener("click", stop);
+    for (const s of [devSel, resSel, fpsSel]) s.addEventListener("change", () => stream && void start());
+  </script>
+</Base>

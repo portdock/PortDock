@@ -1,0 +1,123 @@
+/* PC 하드웨어 테스트 웹 도구 공통 — views/*TestPage.astro 가 불러온다 */
+.hw-privacy {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--soft);
+  font-size: 13px;
+  color: var(--muted);
+}
+.hw-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.hw-bar label.inl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hw-bar label.inl input[type="checkbox"] {
+  width: auto;
+}
+.hw-bar label.inl input[type="number"],
+.hw-bar label.inl select {
+  width: auto;
+  padding: 5px 8px;
+}
+.hw-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.hw-stat {
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.hw-stat b {
+  display: block;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.hw-stat span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.hw-stat.warn b {
+  color: #b54708;
+}
+.hw-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  vertical-align: middle;
+}
+.hw-meter {
+  position: relative;
+  height: 22px;
+  background: var(--code-bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.hw-meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, #12a150 0%, #12a150 70%, #e0b25a 85%, #d92d20 100%);
+  background-size: var(--full, 100%) 100%;
+}
+.hw-meter u {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #fff;
+  left: 0;
+}
+.hw-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+.hw-log {
+  max-height: 220px;
+  overflow: auto;
+  font-size: 13px;
+}
+.hw-log table {
+  font-size: 13px;
+}
+.hw-log td,
+.hw-log th {
+  padding: 4px 6px;
+}
+.hw-canvas {
+  width: 100%;
+  display: block;
+  background: var(--code-bg);
+  border-radius: 8px;
+}
+.hw-suspect {
+  color: #b42318;
+  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  .hw-suspect {
+    color: #f97066;
+  }
+  .hw-stat.warn b {
+    color: #f5a35c;
+  }
+}

@@ -1,0 +1,26 @@
+---
+// PC 하드웨어 테스트 쪽의 개인정보 한 줄 — 시험 칸 안에 둔다.
+// 이 도구들의 스크립트는 네트워크 요청을 하지 않는다(fetch·XHR·sendBeacon·WebSocket 없음). 장치 이름도 어디에도 보내지 않는다.
+import { type Lang } from "../data/tools";
+
+interface Props {
+  lang: Lang;
+  /** media: 카메라·마이크 / input: 키보드·마우스·게임패드 / output: 화면·소리 */
+  kind: "media" | "input" | "output";
+}
+const { lang, kind } = Astro.props;
+const ko = lang === "ko";
+const text = ko
+  ? {
+      media: "개인정보: 카메라 영상·마이크 소리는 이 브라우저 안에서만 다루고 저장·업로드하지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않으며, 장치 이름도 보내지 않습니다.",
+      input: "개인정보: 누른 키·버튼·움직임은 이 브라우저 안에서만 세고 어디에도 보내지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않습니다.",
+      output: "개인정보: 이 도구는 화면·소리를 내기만 하고, 이 도구의 코드는 네트워크 요청을 하지 않습니다.",
+    }
+  : {
+      media: "Privacy: camera video and microphone sound stay inside this browser and are never saved or uploaded. This tool's code makes no network requests and does not send device names.",
+      input: "Privacy: keys, buttons and movement are counted inside this browser and sent nowhere. This tool's code makes no network requests.",
+      output: "Privacy: this tool only produces picture or sound, and its code makes no network requests.",
+    };
+---
+
+<p class="hw-privacy">{text[kind]}</p>

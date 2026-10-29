@@ -1,0 +1,317 @@
+---
+// 웹 도구: 모니터 불량화소·주사율 테스트 — 전체 화면 단색·그라데이션, requestAnimationFrame 으로 주사율 추정, 움직이는 막대(잔상). 추정은 lib/inputTiming.ts estimateRefresh.
+// 전체 화면은 Fullscreen API(요소.requestFullscreen) — 없는 브라우저(아이폰 Safari 등)는 화면을 덮는 칸으로 대신한다. Esc 로 나간다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/monitor-test/";
+// 전체 화면에서 차례로 보일 화면 — [이름, CSS 배경]
+const SCREENS: [string, string][] = [
+  [ko ? "검정" : "Black", "#000000"],
+  [ko ? "흰색" : "White", "#ffffff"],
+  [ko ? "빨강" : "Red", "#ff0000"],
+  [ko ? "초록" : "Green", "#00ff00"],
+  [ko ? "파랑" : "Blue", "#0000ff"],
+  [ko ? "회색 25 %" : "Gray 25%", "#404040"],
+  [ko ? "회색 50 %" : "Gray 50%", "#808080"],
+  [ko ? "회색 75 %" : "Gray 75%", "#bfbfbf"],
+  [ko ? "회색 그라데이션" : "Gray gradient", "linear-gradient(90deg,#000,#fff)"],
+  [ko ? "RGB 그라데이션" : "RGB gradients", "linear-gradient(90deg,#000,#f00) 0 0/100% 33.4% no-repeat,linear-gradient(90deg,#000,#0f0) 0 50%/100% 33.4% no-repeat,linear-gradient(90deg,#000,#00f) 0 100%/100% 33.4% no-repeat"],
+];
+const L = ko
+  ? {
+      title: "모니터 불량화소·주사율 테스트",
+      desc: "전체 화면 단색(검정·흰색·빨강·초록·파랑·회색)으로 불량화소를 찾고, 그라데이션 밴딩, 주사율 추정, 잔상용 움직이는 막대를 봅니다. 설치 없이 브라우저에서.",
+      full: "전체 화면 색 보기",
+      fullHint: "클릭·스페이스·→ 다음 색 · ← 앞 색 · Esc 나가기",
+      list: "차례",
+      refresh: "주사율",
+      frame: "한 프레임",
+      dropped: "건너뛴 프레임(2초)",
+      est: "브라우저 추정치",
+      refreshNote: "브라우저가 화면을 그리는 횟수로 셉니다. 여러 모니터를 쓰면 주 모니터 주사율로 나올 수 있고, 가변 주사율(G-SYNC·FreeSync·VRR)·절전 모드·배터리 모드에서는 실제와 다를 수 있습니다. 이 탭을 앞에 두고 몇 초 기다리세요.",
+      gradTitle: "그라데이션(밴딩)",
+      gradNote: "위는 부드러운 그라데이션, 아래는 32단계 계단입니다. 위쪽에 계단 같은 띠가 뚜렷하게 보이면 색 깊이·색 보정·화질 설정을 볼 만합니다.",
+      motionTitle: "움직이는 막대(잔상)",
+      speed: "속도",
+      motionStart: "움직이기",
+      motionStop: "멈추기",
+      motionNote: "막대 뒤로 흐린 꼬리가 길게 남으면 응답 속도(잔상)를, 막대가 툭툭 끊기면 프레임 건너뜀을 의심할 수 있습니다. 같은 속도에서 모니터의 오버드라이브 설정을 바꿔 비교해 보세요.",
+      perFrame: "프레임당",
+      howTitle: "쓰는 법",
+      steps: [
+        "화면을 닦고 «전체 화면 색 보기» 를 누릅니다. 색마다 화면 전체를 천천히 훑어봅니다.",
+        "검정에서 혼자 밝은 점은 «켜진 채 붙은 화소(stuck)», 흰색에서 혼자 검은 점은 «꺼진 화소(dead)» 일 수 있습니다. 빨강·초록·파랑에서만 보이는 점은 그 색 부화소 하나의 문제일 수 있습니다.",
+        "회색 단계에서는 얼룩(밝기가 고르지 않은 곳)·빛샘(가장자리가 밝음)을 봅니다. 검정 화면을 어두운 방에서 보면 빛샘이 잘 보입니다.",
+        "점이 먼지인지 헷갈리면 다른 색으로 바꿔 같은 자리에 있는지 봅니다. 먼지는 모든 색에서 같은 그림자로 보입니다.",
+      ],
+      fieldTitle: "장비 PC 에서도",
+      field: "현장 HMI·패널 PC·검사 장비 모니터를 들이거나 바꿀 때, 불량화소와 밝기 얼룩을 설치 전에 살펴볼 때도 씁니다. 판단 기준(허용 불량화소 수)은 제조사 보증 조건을 보세요.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["불량화소가 몇 개면 교환되나요?", "제조사·제품마다 다릅니다(무결점 보증 제품도 있고, 개수·위치 기준을 두는 곳도 있습니다). 이 쪽에서 찾은 위치를 사진으로 남기고 보증 조건을 확인하세요."],
+        ["주사율이 모니터 설정과 다르게 나옵니다", "윈도우 설정 → 디스플레이 → 고급 디스플레이에서 주사율을 먼저 확인하세요. 브라우저 추정치라 여러 모니터·가변 주사율·절전 모드에서는 다르게 나올 수 있습니다. 탭을 앞에 두고 마우스를 움직이지 않은 채 몇 초 기다리면 안정됩니다."],
+        ["전체 화면이 안 됩니다", "아이폰 Safari 처럼 전체 화면 API 가 없는 브라우저에서는 화면을 덮는 칸으로 대신합니다. 주소창이 보이면 화면을 가로로 돌리거나 스크롤해 숨기세요."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Dead Pixel & Refresh Rate Test",
+      desc: "Find dead or stuck pixels with full-screen black, white, red, green, blue and gray, check gradient banding, estimate refresh rate and watch a ghosting bar.",
+      full: "Full-screen colors",
+      fullHint: "Click, Space or → next · ← previous · Esc exit",
+      list: "Order",
+      refresh: "Refresh rate",
+      frame: "Frame time",
+      dropped: "Skipped frames (2 s)",
+      est: "browser estimate",
+      refreshNote: "Counted from how often the browser draws. With several monitors it may show the primary monitor's rate, and variable refresh (G-SYNC, FreeSync, VRR), power saving or battery mode can make it differ. Keep this tab in front and wait a few seconds.",
+      gradTitle: "Gradient (banding)",
+      gradNote: "The top bar is a smooth gradient and the bottom bar has 32 steps. If the top shows clear step-like bands, look at color depth, color calibration or picture settings.",
+      motionTitle: "Moving bar (ghosting)",
+      speed: "Speed",
+      motionStart: "Start",
+      motionStop: "Stop",
+      motionNote: "A long blurry tail behind the bar points at response time (ghosting); a bar that jumps points at skipped frames. Compare the monitor's overdrive settings at the same speed.",
+      perFrame: "per frame",
+      howTitle: "How to use",
+      steps: [
+        "Wipe the screen and press «Full-screen colors». Scan the whole screen slowly on each color.",
+        "A lone bright dot on black may be a stuck pixel; a lone dark dot on white may be a dead pixel. A dot visible only on red, green or blue may be one faulty subpixel.",
+        "On the gray steps look for clouding (uneven brightness) and backlight bleed (bright edges). Bleed is easiest to see on black in a dark room.",
+        "If you are unsure whether a dot is dust, switch colors and see if it stays put. Dust looks like the same shadow on every color.",
+      ],
+      fieldTitle: "On equipment PCs too",
+      field: "Use it when receiving or replacing HMI, panel PC or inspection monitors to check pixels and uniformity before installation. For how many defects are acceptable, see the manufacturer's warranty terms.",
+      faqTitle: "FAQ",
+      faq: [
+        ["How many dead pixels qualify for a replacement?", "It varies by maker and product (some promise zero defects, others set counts and positions). Photograph what you find here and check the warranty terms."],
+        ["The refresh rate differs from my monitor setting", "First check Settings → Display → Advanced display in Windows. This is a browser estimate, so several monitors, variable refresh or power saving can change it. Keep the tab in front without moving the mouse for a few seconds and it settles."],
+        ["Full screen does not work", "Browsers without the Fullscreen API (such as Safari on iPhone) get a page-covering layer instead. If the address bar shows, rotate to landscape or scroll to hide it."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ motionStart: L.motionStart, motionStop: L.motionStop, perFrame: L.perFrame, fullHint: L.fullHint });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "불량화소 테스트 — 모니터 단색 화면·주사율 확인 — PortDock" : "Dead Pixel Test & Refresh Rate Check Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="mon" data-msg={msgs} data-screens={JSON.stringify(SCREENS)}>
+      <HwPrivacy lang={lang} kind="output" />
+      <div class="hw-bar">
+        <button type="button" class="btn primary" id="full">{L.full}</button>
+        <span class="note">{L.fullHint}</span>
+      </div>
+      <p class="note" style="margin:0">{L.list}: {SCREENS.map((s) => s[0]).join(" → ")}</p>
+      <div class="hw-stats">
+        <div class="hw-stat"><b id="vHz">–</b><span>{L.refresh} <span class="hw-tag">{L.est}</span></span></div>
+        <div class="hw-stat"><b id="vFrame">–</b><span>{L.frame}</span></div>
+        <div class="hw-stat"><b id="vDrop">–</b><span>{L.dropped}</span></div>
+      </div>
+      <p class="note" style="margin:0">{L.refreshNote}</p>
+      <h2 class="mn-h">{L.gradTitle}</h2>
+      <div class="mn-grad"></div>
+      <div class="mn-steps">{Array.from({ length: 32 }, (_, i) => <i style={`background:rgb(${Math.round((i * 255) / 31)},${Math.round((i * 255) / 31)},${Math.round((i * 255) / 31)})`}></i>)}</div>
+      <p class="note" style="margin:0">{L.gradNote}</p>
+      <h2 class="mn-h">{L.motionTitle}</h2>
+      <div class="hw-bar">
+        <label class="inl">{L.speed}
+          <select id="speed"><option value="480">480 px/s</option><option value="960" selected>960 px/s</option><option value="1920">1920 px/s</option></select>
+        </label>
+        <button type="button" class="btn tight" id="motion">{L.motionStart}</button>
+        <span class="note mono" id="ppf"></span>
+      </div>
+      <canvas id="mv" class="hw-canvas" width="960" height="140" aria-hidden="true"></canvas>
+      <p class="note" style="margin:0">{L.motionNote}</p>
+    </div>
+
+    <div id="fs" class="mn-fs" hidden tabindex="-1"><span id="fsHint"></span></div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "카메라·입력 장치는" : "For cameras and input devices, see the"} <a href={url(lang, "tools/webcam-test/")}>{ko ? "웹캠 테스트" : "webcam test"}</a>{ko ? "·" : " and the "}<a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .mn-h {
+      font-size: 16px;
+      margin: 8px 0 0;
+    }
+    .mn-grad {
+      height: 48px;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(90deg, #000, #fff);
+    }
+    .mn-steps {
+      display: flex;
+      height: 48px;
+      border-radius: 0 0 6px 6px;
+      overflow: hidden;
+      margin-top: -12px;
+    }
+    .mn-steps i {
+      flex: 1;
+    }
+    .mn-fs {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      cursor: none;
+      outline: none;
+    }
+    .mn-fs[hidden] {
+      display: none;
+    }
+    .mn-fs span {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      font-size: 14px;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+    .mn-fs span.gone {
+      opacity: 0;
+    }
+  </style>
+  <script>
+    import { estimateRefresh, trimWindow } from "../lib/inputTiming";
+
+    const root = document.getElementById("mon")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const SCREENS = JSON.parse(root.dataset.screens ?? "[]") as [string, string][];
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+    // ---- 전체 화면 색
+    const fs = $("fs");
+    const hint = $("fsHint");
+    let idx = 0;
+    let hintTimer = 0;
+    function show(i: number) {
+      idx = (i + SCREENS.length) % SCREENS.length;
+      fs.style.background = SCREENS[idx][1];
+      hint.textContent = `${idx + 1}/${SCREENS.length} ${SCREENS[idx][0]} — ${M.fullHint}`;
+      hint.classList.remove("gone");
+      clearTimeout(hintTimer);
+      hintTimer = window.setTimeout(() => hint.classList.add("gone"), 1800);
+    }
+    function open() {
+      fs.hidden = false;
+      show(0);
+      fs.focus();
+      if (fs.requestFullscreen) fs.requestFullscreen().catch(() => {});
+    }
+    function close() {
+      fs.hidden = true;
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    }
+    $("full").addEventListener("click", open);
+    fs.addEventListener("click", () => show(idx + 1));
+    fs.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowLeft" || e.key === "Backspace") show(idx - 1);
+      else if (e.key === " " || e.key === "ArrowRight" || e.key === "Enter") show(idx + 1);
+      else return;
+      e.preventDefault();
+    });
+    // Esc 로 전체 화면만 풀린 경우(브라우저가 키를 먼저 씀)도 덮개를 닫는다
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement && !fs.hidden) fs.hidden = true;
+    });
+
+    // ---- 주사율(rAF) + 움직이는 막대
+    const ts: number[] = [];
+    const cv = $<HTMLCanvasElement>("mv");
+    const g = cv.getContext("2d")!;
+    const speedSel = $<HTMLSelectElement>("speed");
+    let moving = false;
+    let x = 0;
+    let prev = 0;
+    let lastShow = 0;
+    function drawBar(dt: number) {
+      const W = cv.width;
+      const H = cv.height;
+      const v = Number(speedSel.value);
+      x = (x + (v * dt) / 1000) % (W + 60);
+      g.fillStyle = "#1b2128";
+      g.fillRect(0, 0, W, H);
+      g.fillStyle = "#2a3038";
+      for (let i = 0; i < W; i += 60) g.fillRect(i, 0, 1, H);
+      g.fillStyle = "#ffffff";
+      g.fillRect(x - 60, 20, 60, H - 40);
+    }
+    function frame(now: number) {
+      ts.push(now);
+      trimWindow(ts, now, 2000);
+      if (moving) drawBar(prev ? now - prev : 0);
+      prev = now;
+      if (now - lastShow > 500) {
+        lastShow = now;
+        const r = estimateRefresh(ts);
+        if (r) {
+          $("vHz").textContent = `≈ ${r.hz.toFixed(1)} Hz${r.snapped ? ` (${r.snapped})` : ""}`;
+          $("vFrame").textContent = `${r.frameMs.toFixed(2)} ms`;
+          $("vDrop").textContent = String(r.dropped);
+          $("ppf").textContent = `${(Number(speedSel.value) / r.hz).toFixed(1)} px ${M.perFrame}`;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    drawBar(0);
+    $("motion").addEventListener("click", (e) => {
+      moving = !moving;
+      (e.currentTarget as HTMLElement).textContent = moving ? M.motionStop : M.motionStart;
+    });
+    // 숨은 탭에서 돌아오면 이전 간격을 버린다(멈춘 동안이 «건너뛴 프레임» 으로 세지지 않게)
+    document.addEventListener("visibilitychange", () => {
+      ts.length = 0;
+      prev = 0;
+    });
+  </script>
+</Base>

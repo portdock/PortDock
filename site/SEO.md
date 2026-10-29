@@ -88,6 +88,13 @@
 | USB 시리얼 끊김, COM 포트 사라짐, COM 포트 번호 바뀜 | `/guides/usb-serial-disconnects/` | «USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서» |
 | MC 프로토콜 해석, SLMP 프레임, 3E 프레임 분석, MC 프로토콜 종료 코드, C059·C056 | `/tools/mc-decoder/` + 가이드 `mc-protocol-3e-binary-frame`·`mc-protocol-end-codes` | «MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이», 가이드 «MC 프로토콜 3E 이진 프레임 읽는 법»·«종료 코드 C050~C061 확인 순서» |
 | PLC 없이 통신 테스트, MC 프로토콜 시뮬레이터, 가상 PLC, 미쓰비시 X Y 16진 | 가이드 `mc-protocol-test-without-plc`·`mc-protocol-device-numbers` → `/plc-simulator/` | «PLC 없이 MC 프로토콜 통신 시험하기», «MC 프로토콜 디바이스 번호 — X·Y 16진·D·W·ZR» |
+| 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
+| 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
+| 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
+| 스피커 테스트 좌우, 스피커 테스트 사이트 | `/tools/speaker-test/` | «스피커 좌우 테스트 — 왼쪽·오른쪽·5.1 채널·위상 확인» |
+| 게임패드 테스트(사이트·윈도우11), 스틱 쏠림 | `/tools/gamepad-test/` | «게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인» |
+| 마우스 더블클릭 테스트·증상, 마우스 테스트, 폴링레이트 테스트·측정 | `/tools/mouse-test/` | «마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인» |
+| 불량화소 테스트, 모니터 주사율 확인·테스트 | `/tools/monitor-test/` | «불량화소 테스트 — 모니터 단색 화면·주사율 확인» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -168,6 +175,13 @@
 | usb serial adapter keeps disconnecting, com port disappears, com port number changes | `/en/guides/usb-serial-disconnects/` | «USB-Serial Adapter Keeps Disconnecting: COM Port Drops» |
 | mc protocol decoder, slmp frame parser, 3e frame format, mc protocol end code c059 | `/en/tools/mc-decoder/` + guides `mc-protocol-3e-binary-frame`, `mc-protocol-end-codes` | «MC Protocol (SLMP) Frame Decoder: 3E/4E Online», guides «MC Protocol 3E Binary Frame Explained Byte by Byte», «MC Protocol End Codes C050–C061» |
 | test mc protocol without plc, slmp simulator, dummy plc, mitsubishi x y hex numbering | guides `mc-protocol-test-without-plc`, `mc-protocol-device-numbers` → `/en/plc-simulator/` | «Test MC Protocol (SLMP) Without a PLC», «MC Protocol Device Numbers: Hex X/Y, D, W, ZR» |
+| mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
+| keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
+| webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |
+| left right speaker test, left right audio test, speaker test, sound test | `/en/tools/speaker-test/` | «Left Right Speaker Test: Stereo, 5.1 & Polarity Online» |
+| gamepad tester, controller tester, stick drift test | `/en/tools/gamepad-test/` | «Gamepad Tester: Stick Drift & Dead Zone Test Online» |
+| mouse double click test, double click test, mouse test, polling rate test | `/en/tools/mouse-test/` | «Mouse Double Click Test: Chatter, Wheel & Polling Rate» |
+| dead pixel test, stuck pixel test, refresh rate test, test hz | `/en/tools/monitor-test/` | «Dead Pixel Test & Refresh Rate Check Online» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.

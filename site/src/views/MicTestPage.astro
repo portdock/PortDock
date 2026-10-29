@@ -1,0 +1,399 @@
+---
+// 웹 도구: 마이크 테스트 — getUserMedia + Web Audio AnalyserNode 로 입력 레벨을 본다. 계산은 lib/hwSignal.ts.
+// 소리는 이 브라우저 안에서만(네트워크 요청 없음). 5초 녹음은 MediaRecorder → 메모리의 Blob → 같은 쪽에서 재생, 저장·업로드 없음.
+// getUserMedia 는 보안 컨텍스트(https)·사용자 권한이 필요하다(Media Capture and Streams 명세). 장치 이름은 권한을 준 뒤에만 보인다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/mic-test/";
+const L = ko
+  ? {
+      title: "마이크 테스트",
+      desc: "설치 없이 브라우저에서 마이크 입력 레벨·실제 샘플레이트·잡음 바닥·클리핑을 보고, 에코 제거를 켜고 끄며 비교하고, 5초 녹음을 들어 봅니다. 소리는 보내지 않습니다.",
+      start: "마이크 켜기",
+      stop: "끄기",
+      device: "입력 장치",
+      devDefault: "기본 장치",
+      ec: "에코 제거",
+      ns: "잡음 억제",
+      agc: "자동 음량",
+      procNote: "세 처리는 처음엔 꺼 둡니다(마이크 그대로의 소리). 켜고 끄면 다시 열어 비교합니다.",
+      rms: "지금 레벨(RMS)",
+      peak: "피크",
+      floor: "잡음 바닥",
+      clip: "클리핑",
+      rate: "샘플레이트",
+      ch: "채널",
+      applied: "적용된 처리",
+      on: "켬",
+      off: "끔",
+      unknown: "알 수 없음",
+      rec: "5초 녹음 후 듣기",
+      recNow: "녹음 중…",
+      recNote: "녹음은 이 탭의 메모리에만 있고 쪽을 닫으면 사라집니다. 저장·업로드하지 않습니다.",
+      idle: "꺼짐",
+      live: "켜짐",
+      howTitle: "쓰는 법",
+      steps: [
+        "«마이크 켜기» 를 누르고 브라우저가 묻는 권한 창에서 «허용» 을 누릅니다.",
+        "말하거나 손가락으로 가볍게 두드려 레벨 막대가 움직이는지 봅니다. 여러 마이크가 있으면 «입력 장치» 에서 고릅니다(장치 이름은 권한을 준 뒤에 보입니다).",
+        "조용히 몇 초 있으면 «잡음 바닥» 이 잡힙니다. 큰 소리에서 «클리핑» 이 늘면 입력 음량(윈도우 소리 설정의 마이크 레벨)을 낮추세요.",
+        "«5초 녹음 후 듣기» 로 실제로 어떻게 들리는지 확인합니다. 에코 제거·잡음 억제를 켜고 같은 말을 다시 녹음해 비교할 수 있습니다.",
+      ],
+      readTitle: "숫자 읽는 법",
+      read: [
+        ["dBFS", "디지털 최대값을 0 으로 한 크기입니다. 0 dBFS 에 닿으면 소리가 잘립니다(클리핑). 보통 말소리는 −30~−12 dBFS 근처에서 움직입니다."],
+        ["잡음 바닥", "조용할 때의 레벨(최근 짧은 구간들의 하위 10 %)입니다. 아무 말도 안 하는데 −40 dBFS 보다 크면 팬·전원·접지 잡음, 마이크 위치를 볼 만합니다. 값은 마이크·드라이버·처리 설정에 따라 달라 기준선은 없습니다."],
+        ["샘플레이트·채널", "브라우저가 실제로 연 값입니다(트랙 설정). 브라우저가 알려 주지 않으면 «알 수 없음» 으로 나옵니다."],
+      ],
+      errTitle: "안 잡힐 때",
+      err: {
+        denied: "마이크 권한이 막혀 있습니다. 주소창 왼쪽의 사이트 설정에서 마이크를 «허용» 으로 바꾸고 다시 켜세요. 윈도우는 설정 → 개인 정보 및 보안 → 마이크 에서 «마이크 액세스»·«앱에서 마이크에 액세스하도록 허용»·«데스크톱 앱이 마이크에 액세스하도록 허용» 이 켜져 있어야 합니다.",
+        notfound: "마이크를 찾지 못했습니다. 연결을 확인하고, 윈도우 소리 설정 → 입력 에서 장치가 보이는지 보세요.",
+        busy: "마이크를 열 수 없습니다. 다른 프로그램(화상 회의·녹음 앱)이 독점하고 있거나 드라이버 문제일 수 있습니다. 그 프로그램을 닫고 다시 켜세요.",
+        constraint: "고른 장치나 설정을 이 마이크가 받지 않습니다. 다른 장치를 고르세요.",
+        insecure: "이 브라우저·주소에서는 마이크를 쓸 수 없습니다. https 주소로, 최신 Chrome·Edge·Firefox·Safari 에서 여세요.",
+        other: "마이크를 열지 못했습니다",
+      },
+      fieldTitle: "장비 PC 에서도",
+      field: "현장 PC·HMI 패널에 붙인 헤드셋·인터컴 마이크, 화상 지원용 노트북 마이크도 같은 방법으로 봅니다. 설치가 막힌 PC 에서도 브라우저만 있으면 됩니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["권한을 줬는데 레벨이 전혀 안 움직입니다", "윈도우 소리 설정에서 그 마이크가 음소거이거나 레벨이 0 인지, 헤드셋의 음소거 스위치가 켜져 있는지 보세요. «입력 장치» 에서 다른 장치를 골라 비교해도 좋습니다."],
+        ["녹음한 소리가 서버로 가나요?", "아니요. 소리는 이 브라우저 안에서만 다루고, 이 도구의 코드는 네트워크 요청을 하지 않습니다. 녹음은 탭의 메모리에만 있고 쪽을 닫으면 사라집니다."],
+        ["에코 제거를 켜면 왜 소리가 달라지나요?", "브라우저가 스피커 소리를 지우고 잡음을 줄이며 음량을 자동으로 맞추기 때문입니다. 화상 회의 앱이 쓰는 소리에 가깝고, 꺼 두면 마이크 그대로의 소리입니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Mic Test",
+      desc: "Check your mic in the browser: live level, actual sample rate, noise floor, clipping, echo cancellation on/off and a 5-second local playback. Nothing is sent.",
+      start: "Turn on mic",
+      stop: "Turn off",
+      device: "Input device",
+      devDefault: "Default device",
+      ec: "Echo cancellation",
+      ns: "Noise suppression",
+      agc: "Auto gain",
+      procNote: "All three start off (the raw microphone). Toggling one reopens the mic so you can compare.",
+      rms: "Level now (RMS)",
+      peak: "Peak",
+      floor: "Noise floor",
+      clip: "Clipping",
+      rate: "Sample rate",
+      ch: "Channels",
+      applied: "Processing applied",
+      on: "on",
+      off: "off",
+      unknown: "unknown",
+      rec: "Record 5 s and play",
+      recNow: "Recording…",
+      recNote: "The recording lives only in this tab's memory and is gone when you close the page. It is never saved or uploaded.",
+      idle: "Off",
+      live: "On",
+      howTitle: "How to use",
+      steps: [
+        "Press «Turn on mic» and choose «Allow» in the browser's permission prompt.",
+        "Speak or tap lightly and watch the level bar. With several microphones, pick one under «Input device» (names appear after you grant permission).",
+        "Stay quiet for a few seconds to capture the «noise floor». If «clipping» climbs on loud sounds, lower the input level in Windows sound settings.",
+        "Use «Record 5 s and play» to hear how you actually sound. Turn echo cancellation or noise suppression on and record the same phrase again to compare.",
+      ],
+      readTitle: "Reading the numbers",
+      read: [
+        ["dBFS", "Level relative to digital full scale (0). Touching 0 dBFS clips the sound. Speech usually moves around −30 to −12 dBFS."],
+        ["Noise floor", "The level while quiet (the lowest 10 % of recent short blocks). Above about −40 dBFS while silent, look at fans, power or ground noise and mic placement. It depends on the mic, driver and processing, so there is no single target."],
+        ["Sample rate and channels", "What the browser actually opened (track settings). If the browser does not report it, you see «unknown»."],
+      ],
+      errTitle: "If nothing is picked up",
+      err: {
+        denied: "Microphone access is blocked. Allow the microphone in the site settings next to the address bar and try again. On Windows, Settings → Privacy & security → Microphone must have «Microphone access», «Let apps access your microphone» and «Let desktop apps access your microphone» turned on.",
+        notfound: "No microphone was found. Check the connection and whether the device shows up in Windows sound settings → Input.",
+        busy: "The microphone could not be opened. Another program (video call or recording app) may hold it, or the driver may have a problem. Close that program and try again.",
+        constraint: "This microphone does not accept the chosen device or settings. Pick another device.",
+        insecure: "The microphone is not available in this browser or address. Open the page over https in a current Chrome, Edge, Firefox or Safari.",
+        other: "Could not open the microphone",
+      },
+      fieldTitle: "On equipment PCs too",
+      field: "Use the same steps for headset or intercom mics on shop-floor PCs and HMI panels, or a laptop mic used for remote support. It only needs a browser, so it works where installing software is blocked.",
+      faqTitle: "FAQ",
+      faq: [
+        ["I granted permission but the level does not move", "Check whether the mic is muted or at level 0 in Windows sound settings, or whether the headset's mute switch is on. Picking another device under «Input device» helps compare."],
+        ["Is my recording sent to a server?", "No. Sound is handled inside this browser and this tool's code makes no network requests. The recording stays in the tab's memory and disappears when you close the page."],
+        ["Why does it sound different with echo cancellation on?", "The browser removes speaker sound, reduces noise and adjusts the level automatically. That is close to what video call apps hear; with them off you hear the raw microphone."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ err: L.err, on: L.on, off: L.off, unknown: L.unknown, devDefault: L.devDefault, rec: L.rec, recNow: L.recNow, idle: L.idle, live: L.live });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음) — PortDock" : "Mic Test: Level, Noise Floor & Playback Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="mic" data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="media" />
+      <div class="hw-bar">
+        <button type="button" class="btn primary" id="start">{L.start}</button>
+        <button type="button" class="btn" id="stop" disabled>{L.stop}</button>
+        <span class="note" id="status" aria-live="polite">{L.idle}</span>
+      </div>
+      <div class="hw-bar">
+        <label class="inl">{L.device} <select id="dev"><option value="">{L.devDefault}</option></select></label>
+        <label class="inl"><input type="checkbox" id="ec" /> {L.ec}</label>
+        <label class="inl"><input type="checkbox" id="ns" /> {L.ns}</label>
+        <label class="inl"><input type="checkbox" id="agc" /> {L.agc}</label>
+      </div>
+      <p class="note" style="margin:0">{L.procNote}</p>
+      <p class="err" id="err" role="alert"></p>
+      <div>
+        <div class="hw-meter" aria-hidden="true"><i id="bar"></i><u id="pk"></u></div>
+        <div class="hw-scale"><span>−60</span><span>−45</span><span>−30</span><span>−15</span><span>0 dBFS</span></div>
+      </div>
+      <canvas id="wave" class="hw-canvas" width="900" height="120" aria-hidden="true"></canvas>
+      <div class="hw-stats">
+        <div class="hw-stat"><b id="vRms">–</b><span>{L.rms}</span></div>
+        <div class="hw-stat"><b id="vPeak">–</b><span>{L.peak}</span></div>
+        <div class="hw-stat"><b id="vFloor">–</b><span>{L.floor}</span></div>
+        <div class="hw-stat" id="clipBox"><b id="vClip">0</b><span>{L.clip}</span></div>
+        <div class="hw-stat"><b id="vRate">–</b><span>{L.rate}</span></div>
+        <div class="hw-stat"><b id="vCh">–</b><span>{L.ch}</span></div>
+        <div class="hw-stat"><b id="vApplied" style="font-size:13px">–</b><span>{L.applied}</span></div>
+      </div>
+      <div class="hw-bar">
+        <button type="button" class="btn" id="rec" disabled>{L.rec}</button>
+        <audio id="play" controls hidden></audio>
+      </div>
+      <p class="note" style="margin:0">{L.recNote}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.readTitle}</h2>
+      <ul>{L.read.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
+      <h2>{L.errTitle}</h2>
+      <ul>
+        <li>{L.err.denied}</li>
+        <li>{L.err.busy}</li>
+        <li>{L.err.notfound}</li>
+      </ul>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "스피커 쪽은" : "For the output side, see the"} <a href={url(lang, "tools/speaker-test/")}>{ko ? "스피커 좌우 테스트" : "left/right speaker test"}</a>{ko ? ", 카메라는 " : "; for the camera, the "}<a href={url(lang, "tools/webcam-test/")}>{ko ? "웹캠 테스트" : "webcam test"}</a>.
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { clipped, levelOf, mediaErrorKind, meterFraction, noiseFloor } from "../lib/hwSignal";
+
+    const root = document.getElementById("mic")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as { err: Record<string, string>; [k: string]: unknown } & Record<string, string>;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const startBtn = $<HTMLButtonElement>("start");
+    const stopBtn = $<HTMLButtonElement>("stop");
+    const devSel = $<HTMLSelectElement>("dev");
+    const errEl = $("err");
+    const recBtn = $<HTMLButtonElement>("rec");
+    const play = $<HTMLAudioElement>("play");
+    const canvas = $<HTMLCanvasElement>("wave");
+    const g = canvas.getContext("2d")!;
+    const md = window.isSecureContext ? navigator.mediaDevices : undefined;
+    if (!md?.getUserMedia) {
+      errEl.textContent = M.err.insecure;
+      startBtn.disabled = true;
+    }
+
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let raf = 0;
+    let blocks: number[] = [];
+    let clips = 0;
+    let peakHold = -100;
+    let peakT = 0;
+    let lastBlock = 0;
+    let acc: number[] = [];
+    let playUrl = "";
+
+    const db = (x: number) => (x <= -100 ? "–∞" : x.toFixed(1)) + " dBFS";
+
+    async function listDevices() {
+      if (!md?.enumerateDevices) return;
+      const keep = devSel.value;
+      const list = (await md.enumerateDevices()).filter((d) => d.kind === "audioinput");
+      devSel.replaceChildren(new Option(M.devDefault, ""));
+      list.forEach((d, i) => {
+        if (d.deviceId === "default" || !d.deviceId) return;
+        devSel.append(new Option(d.label || `#${i + 1}`, d.deviceId));
+      });
+      devSel.value = [...devSel.options].some((o) => o.value === keep) ? keep : "";
+    }
+    md?.addEventListener?.("devicechange", () => void listDevices());
+
+    function stop() {
+      cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = null;
+      void ctx?.close();
+      ctx = null;
+      analyser = null;
+      startBtn.disabled = !md?.getUserMedia;
+      stopBtn.disabled = true;
+      recBtn.disabled = true;
+      $("status").textContent = M.idle;
+    }
+
+    async function start() {
+      if (!md?.getUserMedia) return;
+      stop();
+      errEl.textContent = "";
+      const audio: MediaTrackConstraints = {
+        echoCancellation: $<HTMLInputElement>("ec").checked,
+        noiseSuppression: $<HTMLInputElement>("ns").checked,
+        autoGainControl: $<HTMLInputElement>("agc").checked,
+      };
+      if (devSel.value) audio.deviceId = { exact: devSel.value };
+      try {
+        stream = await md.getUserMedia({ audio, video: false });
+      } catch (e) {
+        const kind = mediaErrorKind((e as DOMException).name);
+        errEl.textContent = M.err[kind] + (kind === "other" ? `: ${(e as Error).message || (e as DOMException).name}` : "");
+        return;
+      }
+      const track = stream.getAudioTracks()[0];
+      const s = track.getSettings();
+      ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(stream);
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      // 분석만 하고 소리는 내지 않는다(되울림 방지) — 0 배 게인으로 출력에 이어 처리 흐름만 유지
+      const mute = ctx.createGain();
+      mute.gain.value = 0;
+      analyser.connect(mute).connect(ctx.destination);
+      blocks = [];
+      clips = 0;
+      peakHold = -100;
+      acc = [];
+      $("vClip").textContent = "0";
+      $("clipBox").classList.remove("warn");
+      $("vRate").textContent = s.sampleRate ? `${s.sampleRate} Hz` : M.unknown;
+      $("vCh").textContent = s.channelCount ? String(s.channelCount) : M.unknown;
+      const yn = (v: unknown) => (v === undefined ? M.unknown : v ? M.on : M.off);
+      $("vApplied").textContent = `EC ${yn(s.echoCancellation)} · NS ${yn(s.noiseSuppression)} · AGC ${yn(s.autoGainControl)}`;
+      $("status").textContent = `${M.live}: ${track.label || ""}`;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      recBtn.disabled = typeof MediaRecorder === "undefined";
+      track.addEventListener("ended", stop);
+      await listDevices();
+      if (s.deviceId && [...devSel.options].some((o) => o.value === s.deviceId)) devSel.value = s.deviceId;
+      loop();
+    }
+
+    function loop() {
+      if (!analyser) return;
+      const buf = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(buf);
+      const l = levelOf(buf);
+      const now = performance.now();
+      if (l.peakDb > peakHold || now - peakT > 1500) {
+        peakHold = l.peakDb;
+        peakT = now;
+      }
+      if (clipped(l.peak)) {
+        clips++;
+        $("vClip").textContent = String(clips);
+        $("clipBox").classList.add("warn");
+      }
+      acc.push(l.rmsDb);
+      if (now - lastBlock > 100) {
+        // 100 ms 마다 한 칸 — 최근 10초로 잡음 바닥
+        blocks.push(acc.reduce((a, b) => a + b, 0) / acc.length);
+        if (blocks.length > 100) blocks.shift();
+        acc = [];
+        lastBlock = now;
+        const f = noiseFloor(blocks);
+        $("vFloor").textContent = f === null ? "–" : db(f);
+      }
+      $("bar").style.width = `${meterFraction(l.rmsDb) * 100}%`;
+      $("pk").style.left = `calc(${meterFraction(peakHold) * 100}% - 2px)`;
+      $("vRms").textContent = db(l.rmsDb);
+      $("vPeak").textContent = db(peakHold);
+      // 파형
+      const w = canvas.width;
+      const h = canvas.height;
+      g.clearRect(0, 0, w, h);
+      g.strokeStyle = "#4fb3ba";
+      g.lineWidth = 2;
+      g.beginPath();
+      for (let x = 0; x < w; x++) {
+        const v = buf[Math.floor((x / w) * buf.length)];
+        const y = h / 2 - v * (h / 2);
+        if (x) g.lineTo(x, y);
+        else g.moveTo(x, y);
+      }
+      g.stroke();
+      raf = requestAnimationFrame(loop);
+    }
+
+    startBtn.addEventListener("click", () => void start());
+    stopBtn.addEventListener("click", stop);
+    for (const id of ["ec", "ns", "agc"]) $(id).addEventListener("change", () => stream && void start());
+    devSel.addEventListener("change", () => stream && void start());
+
+    recBtn.addEventListener("click", () => {
+      if (!stream) return;
+      const rec = new MediaRecorder(stream);
+      const parts: Blob[] = [];
+      rec.ondataavailable = (e) => e.data.size && parts.push(e.data);
+      rec.onstop = () => {
+        if (playUrl) URL.revokeObjectURL(playUrl);
+        playUrl = URL.createObjectURL(new Blob(parts, { type: rec.mimeType }));
+        play.src = playUrl;
+        play.hidden = false;
+        void play.play().catch(() => {});
+        recBtn.textContent = M.rec;
+        recBtn.disabled = !stream;
+      };
+      rec.start();
+      recBtn.disabled = true;
+      recBtn.textContent = M.recNow;
+      setTimeout(() => rec.state !== "inactive" && rec.stop(), 5000);
+    });
+  </script>
+</Base>

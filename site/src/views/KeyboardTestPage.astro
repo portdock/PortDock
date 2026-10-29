@@ -1,0 +1,502 @@
+---
+// 웹 도구: 키보드 테스트(채터링·동시 입력) — KeyboardEvent.code(물리 위치)로 화면 키보드를 켠다. 배열은 lib/keyboardLayout.ts, 채터링 판정은 lib/inputTiming.ts.
+// 자동 반복(event.repeat)은 채터링·횟수에서 뺀다. 누른 키는 어디에도 보내지 않는다(네트워크 요청 없음).
+// Keyboard Lock API(navigator.keyboard.lock)는 Chromium 계열에서 스크립트로 연 전체 화면일 때만 OS 단축키 일부를 받게 해 준다(Esc 를 길게 누르면 풀림).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import { LAYOUTS } from "../lib/keyboardLayout";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/keyboard-test/";
+const L = ko
+  ? {
+      title: "키보드 테스트 (채터링·동시 입력)",
+      desc: "누른 키를 한국어 106·ANSI·ISO 배열에 표시하고 동시 입력 수, 키별 횟수, 채터링 의심(ms), 누름 시간을 봅니다. 브라우저가 못 받는 키도 안내합니다.",
+      mobile: "휴대폰·태블릿의 화면 키보드는 키 위치(code)를 알려 주지 않아 이 시험에 맞지 않습니다. 컴퓨터에 키보드를 꽂고 여세요(블루투스·USB 키보드를 태블릿에 연결한 경우는 됩니다).",
+      layout: "배열",
+      thr: "채터링 임계값",
+      grab: "키 입력 가로채기",
+      grabNote: "켜 두면 스페이스·방향키로 쪽이 움직이거나 F5·Tab 같은 브라우저 동작이 일어나지 않습니다.",
+      reset: "처음부터",
+      lock: "전체 화면에서 시험(Win·Alt+Tab 도 받기)",
+      lockNote: "Chrome·Edge 만: 전체 화면에서 Win·Alt+Tab·Esc 같은 키도 이 쪽이 받습니다. 나가려면 Esc 를 2초 길게 누르세요.",
+      down: "지금 눌린 키",
+      max: "최대 동시 입력",
+      tested: "눌러 본 키",
+      sus: "채터링 의심",
+      last: "마지막 키",
+      hold: "누름 시간",
+      gray: "회색 점선 키 = 브라우저가 받지 못할 수 있는 키(고장 아님). 아래 «받지 못하는 키» 를 보세요.",
+      others: "배열 밖의 키",
+      logTitle: "입력 기록 (최근 50개)",
+      th: ["시각", "이벤트", "key", "code", "간격·누름 시간", "볼 것"],
+      evDown: "누름",
+      evUp: "뗌",
+      evUpOnly: "뗌만 옴",
+      sFast: "채터링 의심 — 누름 간격이 임계값보다 짧음",
+      sBounce: "채터링 의심 — 뗀 뒤 임계값 안에 다시 눌림",
+      blur: "창이 포커스를 잃어 눌린 키를 비웠습니다",
+      howTitle: "쓰는 법",
+      steps: [
+        "키를 하나씩 눌러 화면 키보드의 같은 자리가 켜지는지 봅니다. 한 번이라도 눌린 키는 색이 남고, 키 오른쪽 아래 숫자는 누른 횟수입니다.",
+        "동시 입력(롤오버): 여러 키를 함께 누르고 «최대 동시 입력» 을 봅니다. 어떤 조합에서 키가 안 켜지면 그 키보드의 동시 입력 한계(예: 6키) 또는 고스팅 방지 범위일 수 있습니다.",
+        "채터링: 한 번만 눌렀는데 기록에 «누름» 이 두 번 나오고 «채터링 의심» 이 붙으면, 그 키의 스위치를 볼 만합니다. 같은 키를 여러 번 천천히 눌러 반복되는지 확인하세요.",
+        "길게 누르고 있으면 OS 가 자동 반복을 보냅니다. 자동 반복은 횟수·채터링에 넣지 않습니다.",
+      ],
+      chatterTitle: "채터링 판정 기준",
+      chatter:
+        "같은 키에서 «앞 누름 → 이번 누름» 또는 «뗌 → 다시 누름» 간격이 임계값(기본 30 ms)보다 짧으면 «채터링 의심» 으로 표시합니다. 사람 손으로 같은 키를 떼었다 다시 누르는 데는 보통 이보다 오래 걸립니다. 이것은 의심 표시일 뿐 고장 판정이 아닙니다 — 아주 빠른 연타나 OS·무선 수신기의 지연이 섞일 수 있으니 여러 번 되풀이해 보세요.",
+      blockTitle: "받지 못하는 키 — 고장이 아닙니다",
+      block: [
+        ["Fn", "대부분 키보드 안에서 처리되어 PC 로 아무것도 오지 않습니다(Fn+F키 조합은 밝기·볼륨 같은 다른 키로 옵니다). 브라우저도, 일반 프로그램도 Fn 만 따로는 못 봅니다."],
+        ["Win(⊞)", "윈도우가 시작 메뉴를 열면서 먼저 가져가 뗌이 오지 않거나 둘 다 안 올 수 있습니다. «전체 화면에서 시험» 을 쓰면 Chrome·Edge 에서는 받습니다."],
+        ["Print Screen", "윈도우에서는 «뗌» 만 오는 경우가 많습니다. 기록에 «뗌만 옴» 으로 남기고 눌린 것으로 셉니다."],
+        ["Ctrl+Alt+Del, Win+L, Alt+Tab", "OS 가 먼저 처리합니다. Alt+Tab 은 «전체 화면에서 시험» 에서 받을 수 있고, Ctrl+Alt+Del 은 어떤 웹 페이지도 받지 못합니다."],
+        ["Ctrl+W·Ctrl+T·Ctrl+N", "브라우저가 탭·창 단축키로 먼저 씁니다(가로채기를 켜도 막을 수 없음)."],
+        ["한/영·한자", "명세상 code 는 Lang1(한/영)·Lang2(한자)지만, 노트북·일부 키보드는 오른쪽 Alt·오른쪽 Ctrl 로 보내 그 자리가 켜집니다. 입력기(IME)가 먼저 가져가 아무것도 안 올 수도 있습니다."],
+        ["미디어·밝기 키", "키보드에 따라 브라우저로 오기도 하고(«배열 밖의 키» 에 표시) OS 만 받기도 합니다."],
+      ] as [string, string][],
+      fieldTitle: "장비 PC 에서도",
+      field: "설치가 막힌 현장 PC·산업용 패널 PC 의 키보드, 바코드 스캐너처럼 키보드로 들어오는 장치가 어떤 키를 얼마나 빨리 보내는지 볼 때도 쓸 수 있습니다(스캐너는 자동 입력이라 «채터링 의심» 이 붙을 수 있습니다).",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["키를 한 번 눌렀는데 두 글자가 입력됩니다", "기록에서 그 키의 «누름» 이 두 번 나오고 간격이 수 ms~수십 ms 면 스위치 채터링을 의심할 수 있습니다. 키캡을 빼고 먼지를 털거나, 교체형 스위치라면 바꿔 보고 다시 시험하세요."],
+        ["여러 키를 함께 누르면 일부가 안 켜집니다", "키보드의 동시 입력 한계나 고스팅 방지 범위입니다. 사무용 키보드는 특정 조합에서 2~3키, USB 기본 방식은 일반 키 6개까지가 흔합니다. 이 쪽은 키보드가 보낸 것을 그대로 셉니다."],
+        ["입력한 키가 어딘가로 전송되나요?", "아니요. 이 도구의 코드는 네트워크 요청을 하지 않으며, 누른 키는 이 브라우저 탭 안에서만 셉니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Keyboard Tester (Chatter & Rollover)",
+      desc: "Pressed keys on a Korean 106, ANSI or ISO layout with rollover count, presses per key, chatter suspects in ms and hold time, plus keys browsers cannot see.",
+      mobile: "On-screen keyboards on phones and tablets do not report key positions (code), so this test does not fit them. Open it on a computer with a keyboard (a USB or Bluetooth keyboard on a tablet works).",
+      layout: "Layout",
+      thr: "Chatter threshold",
+      grab: "Capture keys",
+      grabNote: "While on, Space and arrows do not scroll the page and browser actions such as F5 or Tab do not fire.",
+      reset: "Reset",
+      lock: "Test in full screen (catch Win and Alt+Tab)",
+      lockNote: "Chrome and Edge only: in full screen this page also receives Win, Alt+Tab and Esc. Hold Esc for 2 seconds to leave.",
+      down: "Keys down now",
+      max: "Max simultaneous",
+      tested: "Keys tested",
+      sus: "Chatter suspects",
+      last: "Last key",
+      hold: "Hold time",
+      gray: "Dashed gray keys = keys the browser may not receive (not a fault). See «Keys the browser cannot see» below.",
+      others: "Keys outside the layout",
+      logTitle: "Input log (last 50)",
+      th: ["Time", "Event", "key", "code", "Interval / hold", "Look at"],
+      evDown: "down",
+      evUp: "up",
+      evUpOnly: "up only",
+      sFast: "chatter suspect — presses closer than the threshold",
+      sBounce: "chatter suspect — pressed again within the threshold after release",
+      blur: "The window lost focus, so held keys were cleared",
+      howTitle: "How to use",
+      steps: [
+        "Press keys one at a time and check that the same spot lights up. Keys pressed at least once stay tinted, and the small number is the press count.",
+        "Rollover: hold several keys together and read «Max simultaneous». If a key does not light up in some combination, that is the keyboard's rollover limit (for example 6 keys) or anti-ghosting range.",
+        "Chatter: if a single press shows two «down» rows marked as a chatter suspect, that switch is worth a look. Press the same key slowly several times to see if it repeats.",
+        "Holding a key makes the OS send auto-repeat. Auto-repeat is not counted and never flagged as chatter.",
+      ],
+      chatterTitle: "How chatter is flagged",
+      chatter:
+        "On the same key, if «previous press → this press» or «release → press again» is shorter than the threshold (30 ms by default), the press is marked as a chatter suspect. Human fingers usually take longer than that to release and press a key again. It is a hint, not a verdict — very fast tapping or OS and wireless receiver delays can play a part, so repeat the test a few times.",
+      blockTitle: "Keys the browser cannot see — not a fault",
+      block: [
+        ["Fn", "Usually handled inside the keyboard, so nothing reaches the PC (Fn+F-key combos arrive as other keys such as brightness or volume). Neither browsers nor ordinary programs can see Fn on its own."],
+        ["Win (⊞)", "Windows grabs it to open the Start menu, so the release or both events may never arrive. «Test in full screen» lets Chrome and Edge receive it."],
+        ["Print Screen", "On Windows often only the release arrives. The log shows «up only» and it still counts as a press."],
+        ["Ctrl+Alt+Del, Win+L, Alt+Tab", "The OS handles them first. Alt+Tab can be caught in «Test in full screen»; no web page can receive Ctrl+Alt+Del."],
+        ["Ctrl+W, Ctrl+T, Ctrl+N", "The browser uses them for tabs and windows first (capturing cannot stop that)."],
+        ["Korean Han/Eng, Hanja", "The specification names them Lang1 and Lang2, but laptops and some keyboards send right Alt and right Ctrl instead, so those keys light up. The input method may also swallow them."],
+        ["Media and brightness keys", "Depending on the keyboard they reach the browser (shown under «Keys outside the layout») or only the OS."],
+      ] as [string, string][],
+      fieldTitle: "On equipment PCs too",
+      field: "It also helps on shop-floor and panel PCs where installing software is blocked, and with keyboard-wedge devices such as barcode scanners to see which keys they send and how fast (scanners type automatically, so they can trigger chatter suspects).",
+      faqTitle: "FAQ",
+      faq: [
+        ["One press types two characters", "If the log shows two «down» rows for that key a few to a few tens of milliseconds apart, switch chatter is a likely suspect. Remove the keycap and clean it, or swap a hot-swap switch, and test again."],
+        ["Some keys do not light up when I press several together", "That is the keyboard's rollover limit or anti-ghosting range. Office keyboards often manage 2–3 keys in some combinations, and the basic USB mode allows six regular keys. This page counts exactly what the keyboard sends."],
+        ["Are my keystrokes sent anywhere?", "No. This tool's code makes no network requests, and keys are counted only inside this browser tab."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ evDown: L.evDown, evUp: L.evUp, evUpOnly: L.evUpOnly, sFast: L.sFast, sBounce: L.sBounce, blur: L.blur });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "키보드 테스트 — 채터링·동시 입력(롤오버) 확인 — PortDock" : "Keyboard Tester: Key Chatter & Rollover Test Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="kt" data-lang={lang} data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="input" />
+      <p class="note kt-mobile">{L.mobile}</p>
+      <div class="hw-bar">
+        <label class="inl">{L.layout}
+          <select id="layout">{LAYOUTS.map((l) => <option value={l.id}>{l[lang]}</option>)}</select>
+        </label>
+        <label class="inl">{L.thr} <input type="number" id="thr" value="30" min="1" max="500" step="1" style="width:5em" /> ms</label>
+        <label class="inl"><input type="checkbox" id="grab" checked /> {L.grab}</label>
+        <button type="button" class="btn tight" id="reset">{L.reset}</button>
+        <button type="button" class="btn tight" id="lock" hidden>{L.lock}</button>
+      </div>
+      <p class="note" style="margin:0">{L.grabNote} <span id="lockNote" hidden>{L.lockNote}</span></p>
+      <div class="hw-stats">
+        <div class="hw-stat"><b id="vDown">0</b><span>{L.down}</span></div>
+        <div class="hw-stat"><b id="vMax">0</b><span>{L.max}</span></div>
+        <div class="hw-stat"><b id="vTested">0</b><span>{L.tested}</span></div>
+        <div class="hw-stat" id="susBox"><b id="vSus">0</b><span>{L.sus}</span></div>
+        <div class="hw-stat"><b id="vLast" style="font-size:14px">–</b><span>{L.last}</span></div>
+        <div class="hw-stat"><b id="vHold">–</b><span>{L.hold}</span></div>
+      </div>
+      <div class="kb-scroll" tabindex="0" id="kbFocus">
+        <div class="kb" id="kb" aria-label={ko ? "화면 키보드" : "On-screen keyboard"}></div>
+      </div>
+      <p class="note" style="margin:0">{L.gray}</p>
+      <div class="hw-bar"><b style="font-size:14px">{L.others}:</b> <span id="others" class="mono note">–</span></div>
+      <h2 class="kt-h">{L.logTitle}</h2>
+      <div class="hw-log">
+        <table class="t">
+          <thead><tr>{L.th.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="log"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.chatterTitle}</h2>
+      <p>{L.chatter}</p>
+      <h2>{L.blockTitle}</h2>
+      <ul>{L.block.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "마우스 버튼 채터링은" : "For mouse button chatter, use the"} <a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .kt-mobile {
+      display: none;
+      margin: 0;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-left: 3px solid #e0b25a;
+      border-radius: 8px;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      .kt-mobile {
+        display: block;
+      }
+    }
+    .kt-h {
+      font-size: 16px;
+      margin: 4px 0 0;
+    }
+    .kb-scroll {
+      overflow-x: auto;
+      padding: 4px 0;
+      border-radius: 8px;
+    }
+    .kb-scroll:focus {
+      outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .kb {
+      position: relative;
+      min-width: 720px;
+      container-type: inline-size;
+    }
+    .kb :global(.k) {
+      position: absolute;
+      box-sizing: border-box;
+      padding: 2px;
+    }
+    .kb :global(.k > span) {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel);
+      padding: 0.25cqw 0.4cqw;
+      font-size: 1.15cqw;
+      line-height: 1.15;
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+    .kb :global(.k small) {
+      color: var(--muted);
+      font-size: 1em;
+    }
+    .kb :global(.k em) {
+      position: absolute;
+      right: 0.35cqw;
+      bottom: 0.15cqw;
+      font-style: normal;
+      font-size: 0.85em;
+      color: var(--muted);
+    }
+    .kb :global(.k.gray > span) {
+      border-style: dashed;
+      color: var(--muted);
+      background: transparent;
+    }
+    .kb :global(.k.tested > span) {
+      background: var(--soft);
+      border-color: var(--accent);
+      border-style: solid;
+      color: var(--ink);
+    }
+    .kb :global(.k.down > span) {
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+    .kb :global(.k.down small),
+    .kb :global(.k.down em) {
+      color: var(--accent-ink);
+    }
+    .kb :global(.k.sus > span) {
+      border: 2px solid #d92d20;
+    }
+  </style>
+  <script>
+    import { layoutKeys, layoutSize, defaultLayout, type LayoutId } from "../lib/keyboardLayout";
+    import { judgePress, fmtMs, type PressMemo } from "../lib/inputTiming";
+
+    const root = document.getElementById("kt")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const kb = $("kb");
+    const layoutSel = $<HTMLSelectElement>("layout");
+    const thrIn = $<HTMLInputElement>("thr");
+    const grab = $<HTMLInputElement>("grab");
+    const logEl = $("log");
+    // 브라우저가 받지 못할 수 있는 키 — 눌리기 전까지 회색 점선
+    const GRAY = new Set(["MetaLeft", "MetaRight", "PrintScreen", "Lang1", "Lang2"]);
+
+    const memo = new Map<string, PressMemo>();
+    const count = new Map<string, number>();
+    const suspects = new Set<string>();
+    const held = new Map<string, number>();
+    const others = new Set<string>();
+    let maxDown = 0;
+    let susN = 0;
+    let t0 = performance.now();
+    const keyEls = new Map<string, HTMLElement>();
+
+    function draw(id: LayoutId) {
+      const keys = layoutKeys(id);
+      const { w, h } = layoutSize(keys);
+      kb.style.aspectRatio = `${w} / ${h}`;
+      keyEls.clear();
+      kb.replaceChildren(
+        ...keys.map((k) => {
+          const d = document.createElement("div");
+          d.className = "k";
+          d.style.cssText = `left:${(k.x / w) * 100}%;top:${(k.y / h) * 100}%;width:${(k.w / w) * 100}%;height:${(k.h / h) * 100}%`;
+          d.title = k.code;
+          const s = document.createElement("span");
+          s.append(k.label);
+          if (k.sub) {
+            const sm = document.createElement("small");
+            sm.textContent = k.sub;
+            s.append(sm);
+          }
+          s.append(document.createElement("em"));
+          d.append(s);
+          keyEls.set(k.code, d);
+          paint(k.code, d);
+          return d;
+        }),
+      );
+      showOthers();
+    }
+    function paint(code: string, el = keyEls.get(code)) {
+      if (!el) return;
+      const n = count.get(code) ?? 0;
+      el.classList.toggle("gray", GRAY.has(code) && !n);
+      el.classList.toggle("tested", n > 0);
+      el.classList.toggle("down", held.has(code));
+      el.classList.toggle("sus", suspects.has(code));
+      el.querySelector("em")!.textContent = n ? String(n) : "";
+    }
+    function showOthers() {
+      const list = [...others].filter((c) => !keyEls.has(c));
+      $("others").textContent = list.length ? list.map((c) => `${c} ×${count.get(c) ?? 0}`).join(", ") : "–";
+    }
+    function stats() {
+      $("vDown").textContent = String(held.size);
+      $("vMax").textContent = String(maxDown);
+      const inLayout = [...count.keys()].filter((c) => keyEls.has(c)).length;
+      $("vTested").textContent = `${inLayout} / ${keyEls.size}`;
+      $("vSus").textContent = String(susN);
+      $("susBox").classList.toggle("warn", susN > 0);
+    }
+    function log(cells: string[], warn = "") {
+      const tr = document.createElement("tr");
+      for (const c of [...cells, warn]) {
+        const td = document.createElement("td");
+        td.textContent = c;
+        tr.append(td);
+      }
+      if (warn) tr.lastElementChild!.className = "hw-suspect";
+      tr.children[2].className = tr.children[3].className = "mono";
+      logEl.prepend(tr);
+      while (logEl.childElementCount > 50) logEl.lastElementChild!.remove();
+    }
+    const thr = () => Math.max(1, Number(thrIn.value) || 30);
+    const tStr = (t: number) => `${((t - t0) / 1000).toFixed(3)} s`;
+    const keyName = (k: string) => (k === " " ? "Space" : k);
+
+    function press(code: string, key: string, t: number, upOnly = false) {
+      const m = memo.get(code) ?? {};
+      const j = judgePress(m, t, thr());
+      m.lastDown = t;
+      memo.set(code, m);
+      count.set(code, (count.get(code) ?? 0) + 1);
+      if (!keyEls.has(code)) others.add(code);
+      let warn = "";
+      if (j.suspect) {
+        suspects.add(code);
+        susN++;
+        warn = j.reason === "fast-repeat" ? M.sFast : M.sBounce;
+      }
+      const gap = j.reason === "release-bounce" ? j.upGap : j.interval;
+      log([tStr(t), upOnly ? M.evUpOnly : M.evDown, keyName(key), code, gap === undefined ? "" : fmtMs(gap)], warn);
+      $("vLast").textContent = `${keyName(key)} · ${code}`;
+    }
+
+    function inField(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") && el.id !== "grab";
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (inField(e)) return;
+      if (grab.checked) e.preventDefault();
+      if (e.repeat) return; // 자동 반복은 세지 않는다
+      const code = e.code || `key:${e.key}`;
+      if (held.has(code)) return;
+      held.set(code, e.timeStamp);
+      maxDown = Math.max(maxDown, held.size);
+      press(code, e.key, e.timeStamp);
+      paint(code);
+      showOthers();
+      stats();
+    });
+    window.addEventListener("keyup", (e) => {
+      if (inField(e)) return;
+      if (grab.checked) e.preventDefault();
+      const code = e.code || `key:${e.key}`;
+      const t = e.timeStamp;
+      const down = held.get(code);
+      if (down === undefined) {
+        // 누름 없이 뗌만 온 키(윈도우의 Print Screen 등) — 눌린 것으로 센다
+        press(code, e.key, t, true);
+      } else {
+        held.delete(code);
+        $("vHold").textContent = fmtMs(t - down);
+        log([tStr(t), M.evUp, keyName(e.key), code, fmtMs(t - down)]);
+      }
+      const m = memo.get(code) ?? {};
+      m.lastUp = t;
+      memo.set(code, m);
+      paint(code);
+      showOthers();
+      stats();
+    });
+    window.addEventListener("blur", () => {
+      if (!held.size) return;
+      const codes = [...held.keys()];
+      held.clear();
+      codes.forEach((c) => paint(c));
+      log([tStr(performance.now()), "", "", "", ""], M.blur);
+      stats();
+    });
+
+    function reset() {
+      memo.clear();
+      count.clear();
+      suspects.clear();
+      held.clear();
+      others.clear();
+      maxDown = 0;
+      susN = 0;
+      t0 = performance.now();
+      logEl.replaceChildren();
+      $("vHold").textContent = $("vLast").textContent = "–";
+      draw(layoutSel.value as LayoutId);
+      stats();
+    }
+    $("reset").addEventListener("click", (e) => {
+      reset();
+      (e.currentTarget as HTMLElement).blur();
+    });
+    layoutSel.addEventListener("change", () => {
+      draw(layoutSel.value as LayoutId);
+      stats();
+      layoutSel.blur();
+    });
+
+    // 전체 화면 + Keyboard Lock(Chromium 계열만)
+    const kl = (navigator as unknown as { keyboard?: { lock?: () => Promise<void>; unlock?: () => void } }).keyboard;
+    if (kl?.lock && document.documentElement.requestFullscreen) {
+      $("lock").hidden = false;
+      $("lockNote").hidden = false;
+      $("lock").addEventListener("click", async () => {
+        try {
+          await document.documentElement.requestFullscreen();
+          await kl.lock!();
+        } catch {
+          /* 전체 화면을 막은 경우 — 그냥 둔다 */
+        }
+      });
+      document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement) kl.unlock?.();
+      });
+    }
+
+    // 한국어 쪽은 한국어 106, 영어 쪽은 브라우저 언어(영국·유럽이면 ISO)
+    layoutSel.value = defaultLayout(root.dataset.lang === "ko" ? ["ko"] : [...navigator.languages]);
+    draw(layoutSel.value as LayoutId);
+    stats();
+  </script>
+</Base>

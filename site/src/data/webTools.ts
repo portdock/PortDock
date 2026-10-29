@@ -49,7 +49,14 @@ export interface WebTool {
     | "tools/energy-pulse/"
     | "tools/mc-decoder/"
     | "tools/pump-fan-affinity/"
-    | "tools/conveyor-speed/";
+    | "tools/conveyor-speed/"
+    | "tools/mic-test/"
+    | "tools/keyboard-test/"
+    | "tools/webcam-test/"
+    | "tools/speaker-test/"
+    | "tools/gamepad-test/"
+    | "tools/mouse-test/"
+    | "tools/monitor-test/";
   name: L;
   blurb: L;
 }
@@ -284,6 +291,42 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/conveyor-speed/",
     name: { ko: "컨베이어 속도 ↔ 인버터 주파수 계산기", en: "Conveyor Speed ↔ VFD Frequency Calculator" },
     blurb: { ko: "롤러 지름·감속비·극수·슬립 → 라인 속도 m/min, 원하는 속도의 Hz, 1 Hz 당 속도.", en: "Roller diameter, gear ratio, poles and slip → line speed in m/min, Hz for a target speed, speed per Hz." },
+  },
+  // ---- PC 하드웨어 테스트(브라우저 API 로 장치 입출력을 본다 — 영상·소리·입력은 브라우저 밖으로 보내지 않는다)
+  {
+    path: "tools/mic-test/",
+    name: { ko: "마이크 테스트", en: "Mic Test" },
+    blurb: { ko: "입력 레벨 막대·실제 샘플레이트·잡음 바닥·클리핑, 에코 제거 켜고 끄며 비교, 5초 로컬 녹음 듣기.", en: "Live level meter, actual sample rate, noise floor and clipping, echo cancellation on/off, 5-second local playback." },
+  },
+  {
+    path: "tools/keyboard-test/",
+    name: { ko: "키보드 테스트 (채터링·동시 입력)", en: "Keyboard Tester (Chatter & Rollover)" },
+    blurb: { ko: "한국어 106·ANSI·ISO 배열에 누른 키 표시, 동시 입력 수, 키별 횟수, 채터링 의심(ms), 브라우저가 못 받는 키.", en: "Korean 106, ANSI or ISO layout: pressed keys, rollover count, presses per key, chatter suspects in ms, keys the browser cannot see." },
+  },
+  {
+    path: "tools/webcam-test/",
+    name: { ko: "웹캠 테스트", en: "Webcam Test" },
+    blurb: { ko: "미리보기, 요청한 해상도와 실제 받은 해상도·fps 측정, 카메라 고르기. 영상은 저장·전송하지 않음.", en: "Preview, requested vs actual resolution, measured fps, camera picker. Video is never saved or sent." },
+  },
+  {
+    path: "tools/speaker-test/",
+    name: { ko: "스피커 좌우 테스트", en: "Left/Right Speaker Test" },
+    blurb: { ko: "왼쪽·오른쪽·양쪽, 5.1·7.1 채널별 소리, 위상(극성) 반전 비교, 주파수 스윕·톤, 출력 장치 고르기.", en: "Left, right and both, per-channel 5.1/7.1, polarity check, frequency sweep and tone, output device picker." },
+  },
+  {
+    path: "tools/gamepad-test/",
+    name: { ko: "게임패드 테스트 (스틱 쏠림·데드존)", en: "Gamepad Tester (Stick Drift & Dead Zone)" },
+    blurb: { ko: "버튼·트리거·축 실시간 값, 놓았을 때 스틱 쏠림 수치와 궤적, 데드존 적용 결과, 진동(되는 브라우저).", en: "Live buttons, triggers and axes, stick drift at rest with a trace, dead zone preview, rumble where supported." },
+  },
+  {
+    path: "tools/mouse-test/",
+    name: { ko: "마우스 더블클릭 테스트", en: "Mouse Double Click Test" },
+    blurb: { ko: "버튼 5개·휠 4방향, 더블클릭 간격 ms·의도하지 않은 더블클릭(채터링) 의심, 드래그 끊김, 폴링 레이트 추정.", en: "Five buttons and four wheel directions, double-click interval in ms, chatter suspects, drag breaks, polling rate estimate." },
+  },
+  {
+    path: "tools/monitor-test/",
+    name: { ko: "모니터 불량화소·주사율 테스트", en: "Dead Pixel & Refresh Rate Test" },
+    blurb: { ko: "전체 화면 단색(검정·흰색·빨강·초록·파랑·회색)으로 불량화소 보기, 그라데이션 밴딩, 주사율 추정, 잔상 패턴.", en: "Full-screen solid colors for dead or stuck pixels, gradient banding, refresh rate estimate, motion pattern for ghosting." },
   },
 ];
 

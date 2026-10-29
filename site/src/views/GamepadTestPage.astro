@@ -1,0 +1,420 @@
+---
+// 웹 도구: 게임패드 테스트 — Gamepad API(W3C)를 requestAnimationFrame 마다 읽는다. 데드존·쏠림 계산은 lib/hwSignal.ts.
+// 명세상 페이지가 게임패드를 보려면 연결 뒤 사용자가 버튼을 한 번 눌러야 한다(지문 방지). 진동은 vibrationActuator 가 있을 때만 버튼을 보인다.
+// 읽는 주기가 화면 주사율에 묶이므로 게임패드 폴링 레이트는 재지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/gamepad-test/";
+const L = ko
+  ? {
+      title: "게임패드 테스트 (스틱 쏠림·데드존)",
+      desc: "게임패드 버튼·트리거·축 값을 실시간으로 보고, 스틱을 놓았을 때의 쏠림(드리프트) 수치와 궤적, 데드존을 적용한 결과, 진동을 확인합니다. 설치 없음.",
+      wait: "게임패드를 연결하고 아무 버튼이나 한 번 누르세요. 브라우저는 버튼이 눌리기 전에는 게임패드를 페이지에 보여 주지 않습니다.",
+      noApi: "이 브라우저에서는 Gamepad API 를 쓸 수 없습니다. https 주소로, 최신 Chrome·Edge·Firefox·Safari 에서 여세요.",
+      dz: "데드존",
+      drift: "쏠림 재기 (스틱을 놓고 3초)",
+      measuring: "재는 중… 스틱을 건드리지 마세요",
+      left: "왼쪽 스틱",
+      right: "오른쪽 스틱",
+      dRes: "놓았을 때 가장 먼 거리",
+      dMean: "평균 위치",
+      dDz: "이만큼이면 덮는 데드존",
+      rumble: "진동 (0.5초)",
+      rumbleNo: "이 브라우저·게임패드는 진동을 지원하지 않습니다.",
+      btn: "버튼",
+      axes: "축",
+      mapping: "배치",
+      std: "standard(표준)",
+      nonStd: "표준 아님 — 버튼 번호만 표시",
+      legend: "회색 원 = 데드존, 흐린 선 = 최근 2초 궤적, 흰 점 = 실제 값, 청록 점 = 데드존을 거친 값",
+      howTitle: "쓰는 법",
+      steps: [
+        "USB 나 블루투스로 게임패드를 연결하고 버튼을 한 번 누르면 아래에 나타납니다. 여러 개를 동시에 볼 수 있습니다.",
+        "버튼·트리거를 하나씩 눌러 해당 칸이 켜지는지, 트리거(LT·RT)는 0 에서 1 까지 부드럽게 올라가는지 봅니다.",
+        "스틱을 끝까지 돌려 원 테두리에 닿는지(바깥 범위), 놓았을 때 가운데로 돌아오는지 궤적으로 봅니다.",
+        "스틱을 놓은 채로 «쏠림 재기» 를 누르면 3초 동안 가운데에서 얼마나 벗어나 있는지 재고, 그만큼을 덮는 데드존을 알려 줍니다.",
+      ],
+      driftTitle: "스틱 쏠림(드리프트) 읽는 법",
+      drift2:
+        "놓아 둔 스틱도 0 이 아니라 0.02~0.05 안팎의 작은 값이 나오는 것은 흔합니다. 게임은 보통 데드존(가운데 일정 반지름은 0 으로 봄)으로 이를 지웁니다. 놓았을 때 거리가 0.1 을 넘거나 시간이 지날수록 커지면 스틱 부품의 마모·오염을 의심해 볼 만합니다. 이 값은 브라우저가 받은 값이라 드라이버·게임의 보정과 다를 수 있습니다.",
+      limitTitle: "브라우저의 한계",
+      limit: [
+        "페이지는 버튼을 한 번 누르기 전에는 게임패드를 볼 수 없습니다(명세의 개인정보 보호).",
+        "브라우저가 standard 배치로 인식하지 못한 패드는 버튼 이름 없이 번호만 나옵니다. 같은 패드도 브라우저·연결 방식(USB·블루투스)에 따라 번호가 다를 수 있습니다.",
+        "값은 화면을 그릴 때마다 읽으므로 게임패드의 폴링 레이트(1000 Hz 등)는 잴 수 없습니다.",
+        "진동은 Chrome·Edge 처럼 vibrationActuator 를 주는 브라우저에서만 됩니다. 듀얼센스의 적응형 트리거·고급 햅틱은 다루지 않습니다.",
+      ],
+      fieldTitle: "장비 PC 에서도",
+      field: "로봇·카메라 짐벌·시험 장비를 게임패드로 조그하는 현장에서, 패드의 축 방향·데드존이 장비 설정과 맞는지 미리 볼 때도 씁니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["연결했는데 아무것도 안 나옵니다", "버튼을 한 번 눌러 보세요. 그래도 안 나오면 윈도우 «게임 컨트롤러 설정»(joy.cpl)에 보이는지, 다른 USB 포트·케이블을 써 보세요. 일부 패드는 X-input/D-input 전환 스위치가 있습니다."],
+        ["스틱을 놓아도 값이 0 이 아닙니다", "작은 값은 흔합니다. «쏠림 재기» 로 거리를 재고, 게임의 데드존을 그보다 조금 크게 두면 됩니다. 0.1 이 넘거나 점점 커지면 부품 상태를 볼 만합니다."],
+        ["게임패드 정보가 어디로 전송되나요?", "아니요. 값은 이 브라우저 탭 안에서만 그리고, 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Gamepad Tester (Stick Drift & Dead Zone)",
+      desc: "See gamepad buttons, triggers and axes live, measure stick drift at rest with a trace, preview a dead zone and try rumble. Nothing to install.",
+      wait: "Connect a gamepad and press any button once. Browsers do not expose a gamepad to the page until a button is pressed.",
+      noApi: "The Gamepad API is not available in this browser. Open the page over https in a current Chrome, Edge, Firefox or Safari.",
+      dz: "Dead zone",
+      drift: "Measure drift (let go, 3 s)",
+      measuring: "Measuring… do not touch the sticks",
+      left: "Left stick",
+      right: "Right stick",
+      dRes: "Farthest distance at rest",
+      dMean: "Average position",
+      dDz: "Dead zone that covers it",
+      rumble: "Rumble (0.5 s)",
+      rumbleNo: "This browser or gamepad does not support rumble.",
+      btn: "Buttons",
+      axes: "Axes",
+      mapping: "Mapping",
+      std: "standard",
+      nonStd: "not standard — button numbers only",
+      legend: "Gray circle = dead zone, faint line = last 2 s trace, white dot = raw value, teal dot = after dead zone",
+      howTitle: "How to use",
+      steps: [
+        "Connect the gamepad over USB or Bluetooth and press a button once; it appears below. Several pads can be shown at once.",
+        "Press each button and trigger and check that its cell lights up; triggers (LT, RT) should rise smoothly from 0 to 1.",
+        "Rotate each stick fully to see it touch the outer circle, and check on the trace that it returns to the center when released.",
+        "Leave the sticks alone and press «Measure drift». For 3 seconds it measures how far they sit from center and suggests a dead zone that covers it.",
+      ],
+      driftTitle: "Reading stick drift",
+      drift2:
+        "A released stick commonly reads a small value around 0.02–0.05 rather than 0. Games hide this with a dead zone (a radius around the center treated as 0). If the distance at rest exceeds 0.1 or grows over time, worn or dirty stick parts are worth suspecting. These are the values the browser receives, which can differ from driver or game calibration.",
+      limitTitle: "Browser limits",
+      limit: [
+        "A page cannot see a gamepad until a button has been pressed (privacy rule in the specification).",
+        "Pads the browser does not recognise as the standard mapping show button numbers without names. The same pad can number buttons differently per browser and connection (USB or Bluetooth).",
+        "Values are read once per screen frame, so the pad's polling rate (such as 1000 Hz) cannot be measured.",
+        "Rumble works only in browsers that provide vibrationActuator, such as Chrome and Edge. DualSense adaptive triggers and advanced haptics are not covered.",
+      ],
+      fieldTitle: "On equipment PCs too",
+      field: "Where robots, camera gimbals or test rigs are jogged with a gamepad, use it to check axis directions and dead zone against the machine settings beforehand.",
+      faqTitle: "FAQ",
+      faq: [
+        ["I connected it but nothing appears", "Press a button once. If it still does not appear, check whether Windows «Game controllers» (joy.cpl) sees it and try another USB port or cable. Some pads have an X-input/D-input switch."],
+        ["The stick is not 0 when released", "Small values are common. Measure with «Measure drift» and set the game's dead zone a little larger. Above 0.1, or if it keeps growing, check the stick hardware."],
+        ["Is my gamepad data sent anywhere?", "No. Values are drawn inside this browser tab only, and this tool's code makes no network requests."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ lang, left: L.left, right: L.right, dRes: L.dRes, dMean: L.dMean, dDz: L.dDz, rumble: L.rumble, rumbleNo: L.rumbleNo, btn: L.btn, axes: L.axes, mapping: L.mapping, std: L.std, nonStd: L.nonStd, measuring: L.measuring, drift: L.drift });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인 — PortDock" : "Gamepad Tester: Stick Drift & Dead Zone Test Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="gp" data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="input" />
+      <p class="note" id="wait" style="margin:0">{L.wait}</p>
+      <p class="err" id="noApi" hidden>{L.noApi}</p>
+      <div class="hw-bar">
+        <label class="inl">{L.dz} <input type="range" id="dz" min="0" max="0.5" step="0.01" value="0.1" style="width:160px" /> <span class="mono" id="dzV">10%</span></label>
+      </div>
+      <p class="note" style="margin:0">{L.legend}</p>
+      <div id="pads"></div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.driftTitle}</h2>
+      <p>{L.drift2}</p>
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limit.map((s) => <li>{s}</li>)}</ul>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "키보드·마우스는" : "For keyboards and mice, see the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? "·" : " and "}<a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    #pads :global(.pad) {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    #pads :global(.pad h2) {
+      font-size: 15px;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+    #pads :global(.sticks) {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    #pads :global(.stick) {
+      flex: 1 1 220px;
+      max-width: 320px;
+    }
+    #pads :global(.stick canvas) {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      background: var(--code-bg);
+      border-radius: 8px;
+    }
+    #pads :global(.stick p) {
+      white-space: pre-line;
+      margin: 4px 0 0;
+      font-size: 13px;
+    }
+    #pads :global(.btns) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 6px;
+    }
+    #pads :global(.b) {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      overflow: hidden;
+    }
+    #pads :global(.b i) {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 3px;
+      background: var(--accent);
+      width: 0;
+    }
+    #pads :global(.b.on) {
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+    #pads :global(.axes) {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+    }
+  </style>
+  <script>
+    import { driftSummary, radialDeadzone, STANDARD_BUTTONS } from "../lib/hwSignal";
+
+    const root = document.getElementById("gp")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const lang = M.lang === "en" ? "en" : "ko";
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const padsEl = $("pads");
+    const dzIn = $<HTMLInputElement>("dz");
+    dzIn.addEventListener("input", () => ($("dzV").textContent = `${Math.round(Number(dzIn.value) * 100)}%`));
+
+    const hasApi = typeof navigator.getGamepads === "function" && window.isSecureContext;
+    if (!hasApi) {
+      $("noApi").hidden = false;
+      $("wait").hidden = true;
+    }
+
+    type Vib = { playEffect?: (t: string, p: object) => Promise<unknown> };
+    interface View {
+      el: HTMLElement;
+      btns: HTMLElement[];
+      axes: HTMLElement;
+      sticks: { cv: HTMLCanvasElement; info: HTMLElement; trail: [number, number, number][] }[];
+      drift: [number, number][][] | null;
+      driftUntil: number;
+    }
+    const views = new Map<number, View>();
+    const f2 = (x: number) => (x >= 0 ? "+" : "") + x.toFixed(3);
+
+    function build(gp: Gamepad): View {
+      const el = document.createElement("div");
+      el.className = "pad";
+      const h = document.createElement("h2");
+      h.textContent = `#${gp.index} ${gp.id}`;
+      const meta = document.createElement("p");
+      meta.className = "note";
+      meta.style.margin = "0";
+      meta.textContent = `${M.mapping}: ${gp.mapping === "standard" ? M.std : M.nonStd} · ${gp.buttons.length} ${M.btn} · ${gp.axes.length} ${M.axes}`;
+      const bar = document.createElement("div");
+      bar.className = "hw-bar";
+      const driftBtn = document.createElement("button");
+      driftBtn.type = "button";
+      driftBtn.className = "btn tight";
+      driftBtn.textContent = M.drift;
+      bar.append(driftBtn);
+      const vib = (gp as unknown as { vibrationActuator?: Vib }).vibrationActuator;
+      if (vib?.playEffect) {
+        const rb = document.createElement("button");
+        rb.type = "button";
+        rb.className = "btn tight";
+        rb.textContent = M.rumble;
+        rb.addEventListener("click", () => {
+          const live = navigator.getGamepads()[gp.index] as unknown as { vibrationActuator?: Vib } | null;
+          void live?.vibrationActuator?.playEffect?.("dual-rumble", { duration: 500, strongMagnitude: 1, weakMagnitude: 1 }).catch(() => {});
+        });
+        bar.append(rb);
+      } else {
+        const n = document.createElement("span");
+        n.className = "note";
+        n.textContent = M.rumbleNo;
+        bar.append(n);
+      }
+      const sticksEl = document.createElement("div");
+      sticksEl.className = "sticks";
+      const sticks: View["sticks"] = [];
+      for (let s = 0; s < Math.min(2, Math.floor(gp.axes.length / 2)); s++) {
+        const box = document.createElement("div");
+        box.className = "stick";
+        const t = document.createElement("b");
+        t.textContent = s === 0 ? M.left : M.right;
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 300;
+        const info = document.createElement("p");
+        info.className = "mono";
+        box.append(t, cv, info);
+        sticksEl.append(box);
+        sticks.push({ cv, info, trail: [] });
+      }
+      const btnsEl = document.createElement("div");
+      btnsEl.className = "btns";
+      const btns = gp.buttons.map((_, i) => {
+        const b = document.createElement("div");
+        b.className = "b";
+        b.textContent = gp.mapping === "standard" && STANDARD_BUTTONS[i] ? `${i} ${STANDARD_BUTTONS[i][lang]}` : `${M.btn} ${i}`;
+        b.append(document.createElement("i"));
+        btnsEl.append(b);
+        return b;
+      });
+      const axes = document.createElement("div");
+      axes.className = "axes";
+      el.append(h, meta, bar, sticksEl, btnsEl, axes);
+      const v: View = { el, btns, axes, sticks, drift: null, driftUntil: 0 };
+      driftBtn.addEventListener("click", () => {
+        v.drift = sticks.map(() => []);
+        v.driftUntil = performance.now() + 3000;
+        driftBtn.disabled = true;
+        sticks.forEach((s) => (s.info.textContent = M.measuring));
+        setTimeout(() => {
+          const d = v.drift;
+          v.drift = null;
+          driftBtn.disabled = false;
+          d?.forEach((samples, i) => {
+            const r = driftSummary(samples);
+            sticks[i].info.dataset.drift = r
+              ? `${M.dRes}: ${r.maxR.toFixed(3)} · ${M.dMean}: (${f2(r.meanX)}, ${f2(r.meanY)}) · ${M.dDz}: ${Math.round(r.deadzone * 100)}%`
+              : "";
+          });
+        }, 3000);
+      });
+      padsEl.append(el);
+      return v;
+    }
+
+    function drawStick(cv: HTMLCanvasElement, x: number, y: number, trail: [number, number, number][], dz: number) {
+      const g = cv.getContext("2d")!;
+      const W = cv.width;
+      const c = W / 2;
+      const R = W / 2 - 12;
+      g.clearRect(0, 0, W, W);
+      g.strokeStyle = "#3a434d";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(c, c, R, 0, Math.PI * 2);
+      g.moveTo(c - R, c);
+      g.lineTo(c + R, c);
+      g.moveTo(c, c - R);
+      g.lineTo(c, c + R);
+      g.stroke();
+      g.fillStyle = "rgba(154,166,178,0.25)";
+      g.beginPath();
+      g.arc(c, c, R * dz, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = "rgba(122,167,255,0.5)";
+      g.beginPath();
+      trail.forEach(([tx, ty], i) => (i ? g.lineTo(c + tx * R, c + ty * R) : g.moveTo(c + tx * R, c + ty * R)));
+      g.stroke();
+      const d = radialDeadzone(x, y, dz);
+      g.fillStyle = "#4fb3ba";
+      g.beginPath();
+      g.arc(c + d.x * R, c + d.y * R, 7, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#ffffff";
+      g.beginPath();
+      g.arc(c + x * R, c + y * R, 4, 0, Math.PI * 2);
+      g.fill();
+      return d;
+    }
+
+    function loop(now: number) {
+      const pads = navigator.getGamepads();
+      const seen = new Set<number>();
+      const dz = Number(dzIn.value);
+      for (const gp of pads) {
+        if (!gp || !gp.connected) continue;
+        seen.add(gp.index);
+        const v = views.get(gp.index) ?? build(gp);
+        views.set(gp.index, v);
+        gp.buttons.forEach((b, i) => {
+          const el = v.btns[i];
+          if (!el) return;
+          el.classList.toggle("on", b.pressed);
+          (el.lastElementChild as HTMLElement).style.width = `${b.value * 100}%`;
+        });
+        v.axes.textContent = gp.axes.map((a, i) => `${i}: ${f2(a)}`).join("   ");
+        v.sticks.forEach((s, i) => {
+          const x = gp.axes[i * 2] ?? 0;
+          const y = gp.axes[i * 2 + 1] ?? 0;
+          s.trail.push([x, y, now]);
+          while (s.trail.length && s.trail[0][2] < now - 2000) s.trail.shift();
+          const d = drawStick(s.cv, x, y, s.trail, dz);
+          if (v.drift) v.drift[i].push([x, y]);
+          else s.info.textContent = `x ${f2(x)}  y ${f2(y)}  r ${d.r.toFixed(3)}${s.info.dataset.drift ? "\n" + s.info.dataset.drift : ""}`;
+        });
+      }
+      for (const [i, v] of views)
+        if (!seen.has(i)) {
+          v.el.remove();
+          views.delete(i);
+        }
+      $("wait").hidden = views.size > 0 || !$("noApi").hidden;
+      requestAnimationFrame(loop);
+    }
+    if (hasApi) requestAnimationFrame(loop);
+  </script>
+</Base>

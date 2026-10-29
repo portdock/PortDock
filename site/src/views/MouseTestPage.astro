@@ -1,0 +1,483 @@
+---
+// 웹 도구: 마우스 더블클릭 테스트 — 버튼(MouseEvent.button 0~4)·휠·드래그·폴링 레이트. 판정·추정은 lib/inputTiming.ts.
+// 버튼은 mousedown/mouseup(버튼마다 따로 온다), 폴링은 pointerrawupdate(Chromium, 보안 컨텍스트)가 있으면 그것, 없으면 pointermove + getCoalescedEvents.
+// 브라우저가 이벤트를 합쳐 보내는 방식은 표준이 정하지 않아 폴링 레이트는 «브라우저 추정치» 로만 보인다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import HwPrivacy from "../components/HwPrivacy.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import { MOUSE_BUTTONS } from "../lib/inputTiming";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/mouse-test/";
+const WHEEL = [
+  ["up", ko ? "휠 위" : "Wheel up"],
+  ["down", ko ? "휠 아래" : "Wheel down"],
+  ["left", ko ? "휠 왼쪽" : "Wheel left"],
+  ["right", ko ? "휠 오른쪽" : "Wheel right"],
+];
+const L = ko
+  ? {
+      title: "마우스 더블클릭 테스트",
+      desc: "버튼 5개·휠 4방향을 눌러 보고, 더블클릭 간격(ms)과 의도하지 않은 더블클릭(채터링) 의심, 드래그 끊김, 폴링 레이트 추정치를 봅니다. 설치 없이 브라우저에서.",
+      area: "이 칸 안에서 누르고, 굴리고, 끌어 보세요",
+      thr: "채터링 임계값",
+      reset: "처음부터",
+      count: "횟수",
+      lastDbl: "마지막 간격",
+      minDbl: "가장 짧은 간격",
+      sus: "의심",
+      poll: "폴링 레이트",
+      pollMax: "최고",
+      pollEst: "브라우저 추정치",
+      pollHow: "마우스를 칸 안에서 빠르게 원을 그리며 2초쯤 움직이세요.",
+      pollSrc: "측정 이벤트",
+      dragBreak: "드래그 끊김 의심",
+      dblSus: "채터링 의심",
+      logTitle: "버튼 기록 (최근 30개)",
+      th: ["시각", "버튼", "이벤트", "간격", "볼 것"],
+      evDown: "누름",
+      evUp: "뗌",
+      sFast: "채터링 의심 — 누름 간격이 임계값보다 짧음",
+      sBounce: "드래그 끊김 의심 — 뗀 뒤 임계값 안에 다시 눌림",
+      howTitle: "쓰는 법",
+      steps: [
+        "칸 안에서 왼쪽·오른쪽·가운데(휠) 버튼, 옆 버튼(뒤로·앞으로)을 하나씩 누릅니다. 누르는 동안 해당 버튼이 켜지고 횟수가 올라갑니다.",
+        "휠을 위·아래로, 틸트 휠이 있으면 좌우로 기울입니다. 한 칸 굴렸는데 반대 방향이 섞여 세지면 휠 엔코더를 볼 만합니다.",
+        "한 번만 클릭했는데 «채터링 의심» 이 붙거나 횟수가 2씩 오르면, 의도하지 않은 더블클릭(스위치 채터링)을 의심할 수 있습니다. 여러 번 되풀이해 보세요.",
+        "왼쪽 버튼을 누른 채 끌어 선을 그립니다. 끌던 중에 선이 끊기고 빨간 원이 찍히면 버튼이 잠깐 떨어졌다 붙은 것(드래그 끊김)입니다.",
+      ],
+      chatterTitle: "채터링 판정 기준",
+      chatter:
+        "같은 버튼에서 «앞 누름 → 이번 누름» 또는 «뗌 → 다시 누름» 간격이 임계값(기본 40 ms)보다 짧으면 의심으로 표시합니다. 사람이 가장 빠르게 더블클릭해도 뗐다가 다시 누르기까지는 보통 이보다 오래 걸립니다. 고장 판정이 아니라 «볼 것» 표시입니다 — 무선 수신기 지연이나 아주 빠른 연타가 섞일 수 있으니 되풀이해 확인하세요.",
+      pollTitle: "폴링 레이트 추정의 한계",
+      poll2: [
+        "웹 페이지는 마우스가 보낸 보고를 직접 보지 못하고, 브라우저가 넘겨준 움직임 이벤트만 셉니다. 브라우저가 이벤트를 합쳐 보내는 방식은 표준에 정해져 있지 않습니다.",
+        "Chrome·Edge 는 pointerrawupdate 로 비교적 촘촘히 받지만, 다른 브라우저는 화면 주사율(60·144 Hz 등) 근처로 묶일 수 있습니다.",
+        "1000 Hz 이상(2000·4000·8000 Hz)은 이벤트 시각의 정밀도와 브라우저 처리 때문에 가장 불확실합니다. 숫자는 «대략 이 정도» 로만 보세요.",
+      ],
+      fieldTitle: "장비 PC 에서도",
+      field: "현장 PC·산업용 패널 PC 에 붙은 마우스·트랙볼이 클릭을 두 번 넣거나 드래그가 끊겨 작업 화면에서 잘못 눌리는지 확인할 때도 씁니다.",
+      mobile: "휴대폰·태블릿의 터치는 마우스 버튼·휠이 없어 이 시험에 맞지 않습니다. 컴퓨터에서 여세요.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["한 번 클릭했는데 두 번 눌립니다", "«채터링 의심» 이 붙고 간격이 수 ms~수십 ms 면 스위치 접점 문제를 의심할 수 있습니다. 다른 PC·다른 USB 포트에서도 같으면 마우스 쪽일 가능성이 큽니다. 보증 기간이면 교환을 문의해 보세요."],
+        ["뒤로·앞으로 버튼을 누르면 쪽이 넘어갑니다", "칸 밖에서 누르면 브라우저가 «뒤로 가기» 로 씁니다. 칸 안에서 누르세요(칸 안에서는 막습니다)."],
+        ["폴링 레이트가 마우스 설정보다 낮게 나옵니다", "브라우저 추정치라 실제보다 낮게 나올 수 있습니다. 특히 1000 Hz 이상은 브라우저가 이벤트를 합쳐 보내 숫자가 흔들립니다. 마우스를 더 빠르게 계속 움직이면 조금 더 가깝게 나옵니다."],
+      ] as [string, string][],
+    }
+  : {
+      title: "Mouse Double Click Test",
+      desc: "Test five buttons and four wheel directions, see double-click intervals in ms, spot unintended double clicks and drag breaks, and estimate polling rate.",
+      area: "Click, scroll and drag inside this box",
+      thr: "Chatter threshold",
+      reset: "Reset",
+      count: "Count",
+      lastDbl: "Last interval",
+      minDbl: "Shortest interval",
+      sus: "Suspects",
+      poll: "Polling rate",
+      pollMax: "highest",
+      pollEst: "browser estimate",
+      pollHow: "Move the mouse in fast circles inside the box for about 2 seconds.",
+      pollSrc: "Event source",
+      dragBreak: "Drag break suspects",
+      dblSus: "Chatter suspects",
+      logTitle: "Button log (last 30)",
+      th: ["Time", "Button", "Event", "Interval", "Look at"],
+      evDown: "down",
+      evUp: "up",
+      sFast: "chatter suspect — presses closer than the threshold",
+      sBounce: "drag break suspect — pressed again within the threshold after release",
+      howTitle: "How to use",
+      steps: [
+        "Inside the box, press the left, right and middle (wheel) buttons and the side buttons (back, forward) one at a time. Each lights up while held and its count goes up.",
+        "Scroll the wheel up and down, and tilt it left and right if it can. If one notch counts in both directions, the wheel encoder is worth a look.",
+        "If a single click gets a chatter suspect or the count jumps by two, suspect an unintended double click (switch chatter). Repeat a few times.",
+        "Hold the left button and drag to draw a line. If the line breaks mid-drag with a red circle, the button let go for a moment (drag break).",
+      ],
+      chatterTitle: "How chatter is flagged",
+      chatter:
+        "On the same button, if «previous press → this press» or «release → press again» is shorter than the threshold (40 ms by default), it is flagged. Even the fastest human double click usually takes longer than that between release and the next press. It is a hint, not a verdict — wireless receiver delays or very fast clicking can play a part, so repeat the test.",
+      pollTitle: "Limits of the polling rate estimate",
+      poll2: [
+        "A web page cannot see the mouse's reports directly; it only counts the movement events the browser hands over. How browsers merge (coalesce) those events is not defined by any standard.",
+        "Chrome and Edge deliver fairly dense pointerrawupdate events; other browsers may tie them to the screen refresh rate (60, 144 Hz…).",
+        "Rates of 1000 Hz and above (2000, 4000, 8000 Hz) are the least certain because of timestamp precision and browser processing. Treat the number as a rough figure.",
+      ],
+      fieldTitle: "On equipment PCs too",
+      field: "Use it on shop-floor and panel PCs to check whether a mouse or trackball double-clicks on its own or drops drags, causing wrong presses on operator screens.",
+      mobile: "Touch screens on phones and tablets have no mouse buttons or wheel, so this test does not fit them. Open it on a computer.",
+      faqTitle: "FAQ",
+      faq: [
+        ["One click registers as two", "If it is flagged as a chatter suspect a few to a few tens of milliseconds apart, the switch contacts are a likely suspect. If it happens on another PC or USB port too, the mouse is the likely cause; ask about a warranty replacement."],
+        ["Back and forward buttons leave the page", "Outside the box the browser uses them to navigate. Press them inside the box, where they are blocked."],
+        ["The polling rate is lower than my mouse setting", "It is a browser estimate and can read low. Above 1000 Hz especially, browsers merge events and the number wobbles. Moving the mouse faster and continuously gets a little closer."],
+      ] as [string, string][],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const msgs = JSON.stringify({ lang, evDown: L.evDown, evUp: L.evUp, sFast: L.sFast, sBounce: L.sBounce, pollMax: L.pollMax });
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인 — PortDock" : "Mouse Double Click Test: Chatter, Wheel & Polling Rate — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="mt" data-msg={msgs}>
+      <HwPrivacy lang={lang} kind="input" />
+      <p class="note mt-mobile">{L.mobile}</p>
+      <div class="hw-bar">
+        <label class="inl">{L.thr} <input type="number" id="thr" value="40" min="1" max="500" step="1" style="width:5em" /> ms</label>
+        <button type="button" class="btn tight" id="reset">{L.reset}</button>
+      </div>
+      <div class="mt-btns">
+        {
+          MOUSE_BUTTONS.map((b) => (
+            <div class="mt-b" id={`b${b.b}`}>
+              <b>{b[lang]}</b>
+              <span>{L.count} <em class="mono" data-f="n">0</em></span>
+              <span>{L.lastDbl} <em class="mono" data-f="last">–</em></span>
+              <span>{L.minDbl} <em class="mono" data-f="min">–</em></span>
+              <span>{L.sus} <em class="mono" data-f="sus">0</em></span>
+            </div>
+          ))
+        }
+        {
+          WHEEL.map(([d, name]) => (
+            <div class="mt-b" id={`w-${d}`}>
+              <b>{name}</b>
+              <span>{L.count} <em class="mono" data-f="n">0</em></span>
+            </div>
+          ))
+        }
+      </div>
+      <div class="mt-area" id="area" tabindex="0">
+        <canvas id="trail"></canvas>
+        <span class="mt-hint">{L.area}</span>
+      </div>
+      <div class="hw-stats">
+        <div class="hw-stat"><b id="vPoll">–</b><span>{L.poll} <span class="hw-tag">{L.pollEst}</span></span></div>
+        <div class="hw-stat"><b id="vSrc" style="font-size:13px">–</b><span>{L.pollSrc}</span></div>
+        <div class="hw-stat" id="dblBox"><b id="vDbl">0</b><span>{L.dblSus}</span></div>
+        <div class="hw-stat" id="dragBox"><b id="vDrag">0</b><span>{L.dragBreak}</span></div>
+      </div>
+      <p class="note" style="margin:0">{L.pollHow}</p>
+      <h2 class="mt-h">{L.logTitle}</h2>
+      <div class="hw-log">
+        <table class="t">
+          <thead><tr>{L.th.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="log"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.chatterTitle}</h2>
+      <p>{L.chatter}</p>
+      <h2>{L.pollTitle}</h2>
+      <ul>{L.poll2.map((s) => <li>{s}</li>)}</ul>
+      <h2>{L.fieldTitle}</h2>
+      <p>
+        {L.field} {ko ? "키보드는" : "For keyboards, use the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? ", 화면 주사율은 " : "; for screen refresh rate, the "}<a href={url(lang, "tools/monitor-test/")}>{ko ? "모니터 불량화소·주사율 테스트" : "dead pixel & refresh rate test"}</a>.
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .mt-mobile {
+      display: none;
+      margin: 0;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      .mt-mobile {
+        display: block;
+      }
+    }
+    .mt-h {
+      font-size: 16px;
+      margin: 4px 0 0;
+    }
+    .mt-btns {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 6px;
+    }
+    .mt-b {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      color: var(--muted);
+    }
+    .mt-b b {
+      color: var(--ink);
+      font-size: 13px;
+    }
+    .mt-b em {
+      font-style: normal;
+      color: var(--ink);
+    }
+    .mt-b.tested {
+      border-color: var(--accent);
+      background: var(--soft);
+    }
+    .mt-b.on {
+      background: var(--accent);
+    }
+    .mt-b.on,
+    .mt-b.on b,
+    .mt-b.on em {
+      color: var(--accent-ink);
+    }
+    .mt-b.sus {
+      border: 2px solid #d92d20;
+    }
+    .mt-area {
+      position: relative;
+      height: 320px;
+      border: 2px dashed var(--line);
+      border-radius: 10px;
+      user-select: none;
+      touch-action: none;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .mt-area canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .mt-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 15px;
+      text-align: center;
+      padding: 12px;
+    }
+  </style>
+  <script>
+    import { estimatePolling, fmtMs, judgePress, trimWindow, wheelDir, type PressMemo } from "../lib/inputTiming";
+
+    const root = document.getElementById("mt")!;
+    const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const area = $("area");
+    const cv = $<HTMLCanvasElement>("trail");
+    const g = cv.getContext("2d")!;
+    const thrIn = $<HTMLInputElement>("thr");
+    const logEl = $("log");
+    const NAMES = [...document.querySelectorAll<HTMLElement>(".mt-btns .mt-b > b")].map((b) => b.textContent ?? "");
+
+    const memo = new Map<number, PressMemo>();
+    const st = new Map<number, { n: number; min: number; sus: number }>();
+    const wheel: Record<string, number> = { up: 0, down: 0, left: 0, right: 0 };
+    let dblSus = 0;
+    let dragSus = 0;
+    let t0 = performance.now();
+    let pollMax = 0;
+    const moves: number[] = [];
+    let last: { x: number; y: number } | null = null;
+    let leftDown = false;
+
+    function size() {
+      const r = area.getBoundingClientRect();
+      const d = window.devicePixelRatio || 1;
+      cv.width = Math.round(r.width * d);
+      cv.height = Math.round(r.height * d);
+      g.setTransform(d, 0, 0, d, 0, 0);
+    }
+    size();
+    window.addEventListener("resize", size);
+
+    const thr = () => Math.max(1, Number(thrIn.value) || 40);
+    const field = (id: string, f: string, v: string) => (document.querySelector(`#${id} [data-f="${f}"]`)!.textContent = v);
+    function log(cells: string[], warn = "") {
+      const tr = document.createElement("tr");
+      for (const c of [...cells, warn]) {
+        const td = document.createElement("td");
+        td.textContent = c;
+        tr.append(td);
+      }
+      if (warn) tr.lastElementChild!.className = "hw-suspect";
+      logEl.prepend(tr);
+      while (logEl.childElementCount > 30) logEl.lastElementChild!.remove();
+    }
+    const tStr = (t: number) => `${((t - t0) / 1000).toFixed(3)} s`;
+    const local = (e: MouseEvent) => {
+      const r = area.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    function mark(p: { x: number; y: number }) {
+      g.strokeStyle = "#d92d20";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      g.stroke();
+    }
+
+    area.addEventListener("mousedown", (e) => {
+      e.preventDefault(); // 가운데 버튼 자동 스크롤·글자 선택 막기
+      area.focus();
+      const b = e.button;
+      const t = e.timeStamp;
+      const m = memo.get(b) ?? {};
+      const j = judgePress(m, t, thr());
+      m.lastDown = t;
+      memo.set(b, m);
+      const s = st.get(b) ?? { n: 0, min: Infinity, sus: 0 };
+      s.n++;
+      if (j.interval !== undefined) s.min = Math.min(s.min, j.interval);
+      let warn = "";
+      if (j.suspect) {
+        s.sus++;
+        if (j.reason === "release-bounce") {
+          dragSus++;
+          warn = M.sBounce;
+        } else {
+          dblSus++;
+          warn = M.sFast;
+        }
+        mark(local(e));
+      }
+      st.set(b, s);
+      const el = document.getElementById(`b${b}`);
+      if (el) {
+        el.classList.add("on", "tested");
+        el.classList.toggle("sus", s.sus > 0);
+        field(`b${b}`, "n", String(s.n));
+        field(`b${b}`, "last", fmtMs(j.interval));
+        field(`b${b}`, "min", Number.isFinite(s.min) ? fmtMs(s.min) : "–");
+        field(`b${b}`, "sus", String(s.sus));
+      }
+      $("vDbl").textContent = String(dblSus);
+      $("vDrag").textContent = String(dragSus);
+      $("dblBox").classList.toggle("warn", dblSus > 0);
+      $("dragBox").classList.toggle("warn", dragSus > 0);
+      log([tStr(t), NAMES[b] ?? `#${b}`, M.evDown, j.reason === "release-bounce" ? fmtMs(j.upGap) : fmtMs(j.interval)], warn);
+      if (b === 0) {
+        leftDown = true;
+        last = local(e);
+      }
+    });
+    window.addEventListener("mouseup", (e) => {
+      const b = e.button;
+      if (!memo.has(b)) return;
+      if (area.contains(e.target as Node)) e.preventDefault(); // 뒤로·앞으로 버튼의 쪽 이동 막기
+      const m = memo.get(b)!;
+      m.lastUp = e.timeStamp;
+      document.getElementById(`b${b}`)?.classList.remove("on");
+      log([tStr(e.timeStamp), NAMES[b] ?? `#${b}`, M.evUp, m.lastDown !== undefined ? fmtMs(e.timeStamp - m.lastDown) : ""]);
+      if (b === 0) leftDown = false;
+    });
+    area.addEventListener("auxclick", (e) => e.preventDefault());
+    area.addEventListener("contextmenu", (e) => e.preventDefault());
+    area.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        const d = wheelDir(e.deltaX, e.deltaY);
+        if (!d) return;
+        wheel[d]++;
+        const id = `w-${d}`;
+        field(id, "n", String(wheel[d]));
+        const el = $(id);
+        el.classList.add("on", "tested");
+        setTimeout(() => el.classList.remove("on"), 120);
+      },
+      { passive: false },
+    );
+
+    // 드래그 선
+    area.addEventListener("pointermove", (e) => {
+      if (!leftDown || !last) return;
+      const p = local(e);
+      g.strokeStyle = "#4fb3ba";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(last.x, last.y);
+      g.lineTo(p.x, p.y);
+      g.stroke();
+      last = p;
+    });
+
+    // 폴링 레이트 — pointerrawupdate(있으면) 또는 pointermove 의 합쳐진 이벤트 시각
+    const raw = "onpointerrawupdate" in window && window.isSecureContext;
+    $("vSrc").textContent = raw ? "pointerrawupdate" : "pointermove + getCoalescedEvents";
+    area.addEventListener(raw ? "pointerrawupdate" : "pointermove", ((e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const list = !raw && e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      if (list.length) for (const c of list) moves.push(c.timeStamp);
+      else moves.push(e.timeStamp);
+    }) as EventListener);
+    setInterval(() => {
+      const now = performance.now();
+      trimWindow(moves, now, 1500);
+      const p = estimatePolling(moves);
+      if (!p) return;
+      pollMax = Math.max(pollMax, p.hz);
+      $("vPoll").textContent = `≈ ${Math.round(p.hz)} Hz${p.snapped ? ` (${p.snapped})` : ""} · ${M.pollMax} ${Math.round(pollMax)}`;
+    }, 250);
+
+    $("reset").addEventListener("click", () => {
+      memo.clear();
+      st.clear();
+      for (const k of Object.keys(wheel)) wheel[k] = 0;
+      dblSus = dragSus = 0;
+      pollMax = 0;
+      moves.length = 0;
+      t0 = performance.now();
+      logEl.replaceChildren();
+      g.clearRect(0, 0, cv.width, cv.height);
+      document.querySelectorAll<HTMLElement>(".mt-b").forEach((el) => {
+        el.classList.remove("on", "tested", "sus");
+        el.querySelectorAll("[data-f]").forEach((f) => (f.textContent = (f as HTMLElement).dataset.f === "n" || (f as HTMLElement).dataset.f === "sus" ? "0" : "–"));
+      });
+      $("vDbl").textContent = $("vDrag").textContent = "0";
+      $("vPoll").textContent = "–";
+      $("dblBox").classList.remove("warn");
+      $("dragBox").classList.remove("warn");
+    });
+  </script>
+</Base>

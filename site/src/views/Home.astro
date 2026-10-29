@@ -23,8 +23,8 @@ const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
 const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order"];
 const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
 const sub = ko
-  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기 ${WEB_TOOLS.length}개.`
-  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators that run in your browser.`;
+  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기·하드웨어 테스트 ${WEB_TOOLS.length}개.`
+  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators and hardware tests that run in your browser.`;
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {

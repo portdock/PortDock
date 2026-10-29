@@ -3,7 +3,7 @@
 import { WEB_TOOLS, type WebTool } from "./webTools";
 import type { L } from "./tools";
 
-export type GroupId = "comm" | "net" | "signal" | "elec" | "mech" | "units" | "etc";
+export type GroupId = "comm" | "net" | "signal" | "elec" | "mech" | "units" | "hw" | "etc";
 
 export const GROUPS: { id: GroupId; name: L }[] = [
   { id: "comm", name: { ko: "통신·Modbus", en: "Serial and Modbus" } },
@@ -12,6 +12,7 @@ export const GROUPS: { id: GroupId; name: L }[] = [
   { id: "elec", name: { ko: "전기·모터", en: "Electrical and motors" } },
   { id: "mech", name: { ko: "기계·공압", en: "Mechanical and pneumatics" } },
   { id: "units", name: { ko: "단위 변환", en: "Unit conversion" } },
+  { id: "hw", name: { ko: "PC 하드웨어 테스트", en: "PC hardware tests" } },
   { id: "etc", name: { ko: "그 밖의 도구", en: "Other tools" } },
 ];
 
@@ -60,6 +61,13 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/pressure/": "units",
   "tools/units/": "units",
   "tools/db/": "units",
+  "tools/mic-test/": "hw",
+  "tools/keyboard-test/": "hw",
+  "tools/webcam-test/": "hw",
+  "tools/speaker-test/": "hw",
+  "tools/gamepad-test/": "hw",
+  "tools/mouse-test/": "hw",
+  "tools/monitor-test/": "hw",
 };
 
 export const groupOf = (path: string): GroupId => GROUP_OF[path as WebTool["path"]] ?? "etc";
