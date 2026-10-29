@@ -15,7 +15,7 @@ const { lang } = Astro.props;
 const ko = lang === "ko";
 const L = (k: string, e: string) => (ko ? k : e);
 const kinds = [...new Set(DEVICES.map((d) => d.kind))] as Device["kind"][];
-const title = L("국산 장비 Modbus 레지스터 맵", "Modbus register maps for Korean devices");
+const title = L("산업 장비 Modbus 레지스터 맵", "Modbus register maps for industrial devices");
 const desc = L(
   `국산 인버터·온도 조절기·전력 미터 ${DEVICES.length}종의 Modbus 주소·형식·단위·배율과 통신 기본값. 제조사 매뉴얼 출처, JSON(CC BY 4.0), PortDock 에서 바로 불러오기.`,
   `Modbus addresses, types, units, scaling and defaults for ${DEVICES.length} Korean inverters, temperature controllers and power meters — manual references, JSON (CC BY 4.0).`,
@@ -25,7 +25,7 @@ const desc = L(
 <Base
   lang={lang}
   title={title}
-  seoTitle={L("국산 장비 Modbus 주소표 — 인버터·온도 조절기·전력 미터 — PortDock", "Modbus Register Maps: Korean Inverters, Meters — PortDock")}
+  seoTitle={L("Modbus 주소표 — 인버터·온도 조절기·전력 미터 — PortDock", "Modbus Register Maps: Inverters, Meters, Controllers — PortDock")}
   description={desc}
   path="devices/"
 >

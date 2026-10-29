@@ -92,7 +92,7 @@ export const TOOLS: Tool[] = [
     seo: {
       title: { ko: "PortDock Modbus Slave — 무료 Modbus 슬레이브 시뮬레이터", en: "PortDock Modbus Slave — Free Modbus Slave Simulator (RTU/TCP)" },
       desc: {
-        ko: "PC 를 Modbus RTU·TCP 슬레이브로 만들어 장비 없이 PLC·HMI·마스터를 시험하는 무료 시뮬레이터. 레지스터 표, 장애 주입, 국산 장비 흉내.",
+        ko: "PC 를 Modbus RTU·TCP 슬레이브로 만들어 장비 없이 PLC·HMI·마스터를 시험하는 무료 시뮬레이터. 레지스터 표, 장애 주입, 내장 장비 흉내.",
         en: "Free Modbus RTU/TCP slave simulator for Windows: test a PLC, HMI or master without the device, with register tables, fault injection and device profiles.",
       },
     },
