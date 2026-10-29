@@ -636,7 +636,14 @@ fn describe_framing(m: &FrameMode) -> String {
         FrameMode::Fixed { len, gap_ms } => format!("fixed {len} gap {gap_ms}ms"),
         FrameMode::ModbusRtu { baud } => format!("modbus-rtu @{baud}"),
         FrameMode::ModbusRtuRequest { baud, min_gap_ms } => format!("modbus-rtu-request @{baud} min gap {min_gap_ms}ms"),
-        FrameMode::LengthField { offset, size, adjust, max, gap_ms } => format!("length-field @{offset}+{size} {adjust:+} max {max} gap {gap_ms}ms"),
+        FrameMode::LengthField { offset, size, adjust, max, gap_ms, encoding } => {
+            let enc = match encoding {
+                crate::framer::LengthEncoding::BigEndian => "",
+                crate::framer::LengthEncoding::LittleEndian => " LE",
+                crate::framer::LengthEncoding::AsciiHex => " ASCII-hex",
+            };
+            format!("length-field @{offset}+{size}{enc} {adjust:+} max {max} gap {gap_ms}ms")
+        }
     }
 }
 

@@ -23,8 +23,9 @@ pub enum FrameMode {
         #[serde(default)]
         min_gap_ms: u64,
     },
-    /// 머리의 길이 칸으로 끊기(Modbus TCP 의 MBAP 등). 길이 칸은 `offset` 에서 `size`(1·2·4)바이트,
-    /// 빅 엔디언. 프레임 전체 길이 = 길이 값 + `adjust`. `max` 를 넘거나 머리보다 짧은 길이면
+    /// 머리의 길이 칸으로 끊기(Modbus TCP 의 MBAP, MC 프로토콜 3E/4E 등). 길이 칸은 `offset` 에서 `size` 바이트.
+    /// 읽는 법은 `encoding` — 빅 엔디언(기본, size 1·2·4), 리틀 엔디언(1·2·4), ASCII 16진 글자(size = 글자 수 1~8).
+    /// 프레임 전체 길이 = 길이 값 + `adjust`. `max` 를 넘거나 머리보다 짧은 길이, 16진이 아닌 글자면
     /// 믿을 수 없으므로 길이로 끊지 않고 무응답 시간(`gap_ms`)에 맡긴다.
     LengthField {
         offset: usize,
@@ -33,7 +34,22 @@ pub enum FrameMode {
         max: usize,
         #[serde(default = "default_length_gap")]
         gap_ms: u64,
+        #[serde(default)]
+        encoding: LengthEncoding,
     },
+}
+
+/// 길이 칸을 읽는 법
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LengthEncoding {
+    /// 큰 자리 바이트 먼저(Modbus TCP MBAP)
+    #[default]
+    BigEndian,
+    /// 작은 자리 바이트 먼저(MC 프로토콜 이진 코드)
+    LittleEndian,
+    /// 16진 글자(«0018» = 24, 큰 자리 먼저 — MC 프로토콜 ASCII 코드). 대소문자 모두
+    AsciiHex,
 }
 
 fn default_length_gap() -> u64 {
@@ -61,7 +77,7 @@ impl FrameMode {
     /// Modbus TCP 요청·응답(MBAP 7바이트 머리: 트랜잭션 2 · 프로토콜 2 · 길이 2 · 유닛 1).
     /// 길이 칸(4번째부터 2바이트)은 유닛 ID 부터 센다 → 전체 = 길이 + 6. ADU 최대 260.
     pub fn modbus_tcp() -> Self {
-        Self::LengthField { offset: 4, size: 2, adjust: 6, max: 260, gap_ms: default_length_gap() }
+        Self::LengthField { offset: 4, size: 2, adjust: 6, max: 260, gap_ms: default_length_gap(), encoding: LengthEncoding::BigEndian }
     }
 
     /// 끝 문자 방식이면 그 바이트들, 아니면 빈 것
@@ -162,8 +178,8 @@ impl Framer {
             FrameMode::Fixed { len, .. } => (*len > 0 && self.buf.len() >= *len).then_some(*len),
             FrameMode::ModbusRtu { .. } => modbus_expected_len(&self.buf).filter(|n| self.buf.len() >= *n),
             FrameMode::ModbusRtuRequest { .. } => modbus_request_len(&self.buf).filter(|n| self.buf.len() >= *n),
-            FrameMode::LengthField { offset, size, adjust, max, .. } => {
-                length_field_len(&self.buf, *offset, *size, *adjust, *max).filter(|n| self.buf.len() >= *n)
+            FrameMode::LengthField { offset, size, adjust, max, encoding, .. } => {
+                length_field_len_with(&self.buf, *offset, *size, *adjust, *max, *encoding).filter(|n| self.buf.len() >= *n)
             }
         }
         .or((self.buf.len() >= MAX_FRAME).then_some(MAX_FRAME))?;
@@ -200,14 +216,33 @@ pub fn modbus_request_len(buf: &[u8]) -> Option<usize> {
     }
 }
 
-/// 길이 칸 방식의 프레임 길이. 길이 칸이 다 오기 전이거나 믿을 수 없는 값이면 None
+/// 길이 칸 방식의 프레임 길이(빅 엔디언). 길이 칸이 다 오기 전이거나 믿을 수 없는 값이면 None
 pub fn length_field_len(buf: &[u8], offset: usize, size: u8, adjust: i64, max: usize) -> Option<usize> {
+    length_field_len_with(buf, offset, size, adjust, max, LengthEncoding::BigEndian)
+}
+
+/// 길이 칸 방식의 프레임 길이 — 읽는 법을 골라서
+pub fn length_field_len_with(buf: &[u8], offset: usize, size: u8, adjust: i64, max: usize, encoding: LengthEncoding) -> Option<usize> {
     let size = size as usize;
-    if !matches!(size, 1 | 2 | 4) {
+    let ok_size = match encoding {
+        LengthEncoding::AsciiHex => (1..=8).contains(&size),
+        _ => matches!(size, 1 | 2 | 4),
+    };
+    if !ok_size {
         return None;
     }
     let field = buf.get(offset..offset + size)?;
-    let value = field.iter().fold(0u64, |a, &b| (a << 8) | b as u64) as i64;
+    let value = match encoding {
+        LengthEncoding::BigEndian => field.iter().fold(0u64, |a, &b| (a << 8) | b as u64),
+        LengthEncoding::LittleEndian => field.iter().rev().fold(0u64, |a, &b| (a << 8) | b as u64),
+        LengthEncoding::AsciiHex => {
+            let mut v = 0u64;
+            for &b in field {
+                v = (v << 4) | (b as char).to_digit(16)? as u64;
+            }
+            v
+        }
+    } as i64;
     let total = value.checked_add(adjust)?;
     let total = usize::try_from(total).ok()?;
     (total >= offset + size && total <= max.min(MAX_FRAME)).then_some(total)
@@ -392,6 +427,49 @@ mod tests {
         assert_eq!(length_field_len(&[0, 0, 0, 0, 0], 4, 2, 6, 260), None);
         let m: FrameMode = serde_json::from_str(r#"{"kind":"length-field","offset":4,"size":2,"adjust":6,"max":260}"#).unwrap();
         assert_eq!(m, FrameMode::modbus_tcp());
+    }
+
+    #[test]
+    fn length_field_little_endian_and_ascii_hex() {
+        // 리틀 엔디언 2바이트(MC 3E 이진: 머리 7바이트 뒤 길이, 전체 = 길이 + 9)
+        let le = |b: &[u8]| length_field_len_with(b, 7, 2, 9, 8192, LengthEncoding::LittleEndian);
+        assert_eq!(le(&[0x50, 0, 0, 0xFF, 0xFF, 0x03, 0, 0x0C, 0x00]), Some(21));
+        assert_eq!(le(&[0x50, 0, 0, 0xFF, 0xFF, 0x03, 0, 0x00, 0x01]), Some(265));
+        assert_eq!(le(&[0x50, 0, 0, 0xFF, 0xFF, 0x03, 0, 0x0C]), None, "길이 칸이 덜 옴");
+        // 4바이트 리틀 엔디언
+        assert_eq!(length_field_len_with(&[4, 1, 0, 0], 0, 4, 0, 1000, LengthEncoding::LittleEndian), Some(260));
+        // ASCII 16진 4글자(MC 3E ASCII: 머리 14글자 뒤 길이, 전체 = 길이 + 18). 소문자도
+        let ah = |b: &[u8]| length_field_len_with(b, 14, 4, 18, 8192, LengthEncoding::AsciiHex);
+        assert_eq!(ah(b"500000FF03FF000018"), Some(42));
+        assert_eq!(ah(b"500000FF03FF00001a"), Some(44));
+        assert_eq!(ah(b"500000FF03FF0000G8"), None, "16진이 아닌 글자");
+        assert_eq!(ah(b"500000FF03FF0000"), None);
+        // 크기: 이진은 1·2·4, 16진 글자는 1~8
+        assert_eq!(length_field_len_with(&[0; 8], 0, 3, 0, 100, LengthEncoding::LittleEndian), None);
+        assert_eq!(length_field_len_with(b"000000FF", 0, 8, 0, 300, LengthEncoding::AsciiHex), Some(255));
+        assert_eq!(length_field_len_with(b"000000000", 0, 9, 0, 300, LengthEncoding::AsciiHex), None);
+        // 빅 엔디언(기본)은 예전과 같다
+        assert_eq!(length_field_len_with(&[0, 0, 0, 0, 0, 6], 4, 2, 6, 260, LengthEncoding::BigEndian), length_field_len(&[0, 0, 0, 0, 0, 6], 4, 2, 6, 260));
+    }
+
+    #[test]
+    fn length_field_encoding_framer_and_serde() {
+        let start = t0();
+        let mode = FrameMode::LengthField { offset: 7, size: 2, adjust: 9, max: 8192, gap_ms: 1000, encoding: LengthEncoding::LittleEndian };
+        let mut f = Framer::new(mode.clone());
+        // 0619 루프백 요청 둘이 붙어 와도 나뉘고, 쪼개져 와도 이어 붙는다
+        let req = [0x50, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x0D, 0x00, 0x10, 0x00, 0x19, 0x06, 0x00, 0x00, 0x05, 0x00, 0x41, 0x42, 0x43, 0x44, 0x45];
+        assert!(f.feed(&req[..8], start).is_empty());
+        assert_eq!(bytes(f.feed(&req[8..], start + Duration::from_millis(5))), vec![req.to_vec()]);
+        assert_eq!(f.feed(&[req, req].concat(), start + Duration::from_millis(10)).len(), 2);
+        // 이름(JSON): 빠지면 빅 엔디언 — 예전 설정 파일·화면(tcp api.ts)이 그대로 읽힌다
+        let m: FrameMode = serde_json::from_str(r#"{"kind":"length-field","offset":7,"size":2,"adjust":9,"max":8192,"gap_ms":1000,"encoding":"little-endian"}"#).unwrap();
+        assert_eq!(m, mode);
+        let a: FrameMode = serde_json::from_str(r#"{"kind":"length-field","offset":14,"size":4,"adjust":18,"max":8192,"encoding":"ascii-hex"}"#).unwrap();
+        assert!(matches!(a, FrameMode::LengthField { encoding: LengthEncoding::AsciiHex, gap_ms: 1000, .. }));
+        let mut g = Framer::new(a);
+        let ascii = b"500000FF03FF000018001004010001M*0001000008";
+        assert_eq!(bytes(g.feed(ascii, start)), vec![ascii.to_vec()]);
     }
 
     #[test]
