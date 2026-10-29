@@ -86,6 +86,8 @@
 | GigE 카메라 대역폭, 1기가 카메라 대역폭, GigE 카메라 프레임 드롭, 점보 프레임 설정, 수신 버퍼 | `/tools/gige-bandwidth/` + 가이드 `gige-camera-network-adapter` | «GigE 카메라 대역폭 계산기 — MB/s·1 GbE 한계·최대 fps», 가이드 «GigE 카메라 랜카드 설정 — 점보 프레임·수신 버퍼» |
 | 전력량계 펄스 계산, imp/kWh, 펄스 정수, 전력량계 배율 | `/tools/energy-pulse/` | «전력량계 펄스 계산기 — imp/kWh·kW 환산·CT 배율» |
 | USB 시리얼 끊김, COM 포트 사라짐, COM 포트 번호 바뀜 | `/guides/usb-serial-disconnects/` | «USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서» |
+| MC 프로토콜 해석, SLMP 프레임, 3E 프레임 분석, MC 프로토콜 종료 코드, C059·C056 | `/tools/mc-decoder/` + 가이드 `mc-protocol-3e-binary-frame`·`mc-protocol-end-codes` | «MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이», 가이드 «MC 프로토콜 3E 이진 프레임 읽는 법»·«종료 코드 C050~C061 확인 순서» |
+| PLC 없이 통신 테스트, MC 프로토콜 시뮬레이터, 가상 PLC, 미쓰비시 X Y 16진 | 가이드 `mc-protocol-test-without-plc`·`mc-protocol-device-numbers` → `/plc-simulator/` | «PLC 없이 MC 프로토콜 통신 시험하기», «MC 프로토콜 디바이스 번호 — X·Y 16진·D·W·ZR» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -164,6 +166,8 @@
 | gige camera bandwidth calculator, gige vision bandwidth, gige camera dropped frames, jumbo frames gige camera, receive buffers gige | `/en/tools/gige-bandwidth/` + guide `gige-camera-network-adapter` | «GigE Camera Bandwidth Calculator: MB/s and Max FPS», guide «GigE Camera NIC Settings: Jumbo Frames, Receive Buffers» |
 | energy meter pulse calculation, imp/kwh to kw, kwh pulse counter | `/en/tools/energy-pulse/` | «Energy Meter Pulse Calculator: imp/kWh to kW» |
 | usb serial adapter keeps disconnecting, com port disappears, com port number changes | `/en/guides/usb-serial-disconnects/` | «USB-Serial Adapter Keeps Disconnecting: COM Port Drops» |
+| mc protocol decoder, slmp frame parser, 3e frame format, mc protocol end code c059 | `/en/tools/mc-decoder/` + guides `mc-protocol-3e-binary-frame`, `mc-protocol-end-codes` | «MC Protocol (SLMP) Frame Decoder: 3E/4E Online», guides «MC Protocol 3E Binary Frame Explained Byte by Byte», «MC Protocol End Codes C050–C061» |
+| test mc protocol without plc, slmp simulator, dummy plc, mitsubishi x y hex numbering | guides `mc-protocol-test-without-plc`, `mc-protocol-device-numbers` → `/en/plc-simulator/` | «Test MC Protocol (SLMP) Without a PLC», «MC Protocol Device Numbers: Hex X/Y, D, W, ZR» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.
@@ -227,7 +231,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭, PLC Simulator → MC 프레임 해석기·서브넷·정수 변환).
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 10개·가이드 전부·장비 목록.
 

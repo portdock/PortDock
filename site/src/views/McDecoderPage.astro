@@ -1,0 +1,502 @@
+---
+// 웹 도구: MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E, 이진·ASCII 프레임을 붙여 넣으면 칸마다 풀어 준다.
+// 풀이는 lib/mcDecode.ts(= crates/core/src/mc.rs 와 같은 규칙, 시험으로 같은 답을 고정). 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { hex } from "../lib/checksum";
+import { buildRequest, frameText, END_CODES, MC_DEVICES } from "../lib/mcDecode";
+import { MC_MANUALS } from "../data/guides";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/mc-decoder/";
+const L = ko
+  ? {
+      title: "MC 프로토콜(SLMP) 프레임 해석기",
+      desc: "MC 프로토콜(SLMP) 3E·4E 프레임을 HEX 나 ASCII 로 붙여 넣으면 머리 칸·명령·디바이스·점 수·값·종료 코드를 풀어 줍니다. 요청 프레임 만들기도 함께.",
+      input: "프레임 (HEX 바이트 또는 ASCII 글자)",
+      help: "예: 50 00 00 FF FF 03 00 0C 00 … · 500000FF03FF000018… — 프레임 하나씩. 이진·ASCII 와 3E·4E, 요청·응답은 서브헤더와 길이 칸으로 가립니다.",
+      pair: "짝 요청 (응답의 값을 풀 때, 선택)",
+      pairHelp: "응답에는 디바이스 번호가 없습니다. 그 응답을 부른 요청을 넣으면 디바이스마다 값이 붙습니다.",
+      mode: "데이터 코드",
+      auto: "자동 판별",
+      binary: "이진 (HEX 로 붙여 넣기)",
+      ascii: "ASCII",
+      examples: "예시",
+      ex: ["0401 요청", "0401 응답", "비트 읽기 ASCII", "랜덤 읽기 응답", "4E 루프백", "오류 응답"],
+      how: "모든 풀이는 이 브라우저 안에서만 하고, 붙여 넣은 내용은 어디에도 보내지 않습니다.",
+      buildTitle: "요청 만들기",
+      buildNote: "일괄 읽기·쓰기(0401·1401, 서브명령 0000·0001) 요청을 자기 국(00·FF·03FF·00), 감시 타이머 0010 으로 만듭니다.",
+      op: "명령",
+      ops: [
+        ["read-words", "0401 일괄 읽기 (워드)"],
+        ["read-bits", "0401 일괄 읽기 (비트)"],
+        ["write-words", "1401 일괄 쓰기 (워드)"],
+        ["write-bits", "1401 일괄 쓰기 (비트)"],
+      ],
+      frame: "프레임",
+      code: "데이터 코드",
+      dev: "디바이스",
+      start: "시작 번호",
+      startHelp: "X·Y·B·W·ZR 는 16진(1F), 나머지는 10진",
+      count: "점 수",
+      values: "쓸 값 (쉼표·띄어쓰기로 구분)",
+      valuesHelp: "워드는 10진 또는 0x 16진, 비트는 0·1",
+      serial: "일련번호 (4E, HEX)",
+      made: "만든 프레임",
+      toDecoder: "해석기에 넣기",
+      faqTitle: "자주 묻는 것",
+      endTitle: "종료 코드 (이 해석기가 설명하는 것)",
+      endCols: ["코드", "이름", "PortDock PLC Simulator 가 이 코드로 답하는 경우"],
+      endSrc: "이름은 MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5 «List of Error Codes» 의 설명을 줄인 것입니다. 어느 조건에 어느 코드를 쓸지는 PortDock PLC Simulator 가 고른 것이며, 실제 PLC·모듈과 다를 수 있습니다.",
+      devTitle: "디바이스 코드",
+      devCols: ["디바이스", "이름", "이진 코드", "번호", "종류"],
+      hexNo: "16진",
+      decNo: "10진",
+      bit: "비트",
+      word: "워드",
+      srcTitle: "근거",
+      notAffiliated: "미쓰비시 전기의 공개 매뉴얼(SLMP·MC 프로토콜)을 기준으로 만든 해석기이며, 제휴 관계가 아닙니다.",
+      faq: [
+        ["이진과 ASCII 는 어떻게 가리나요?", "HEX 로 읽혀서 첫 2바이트가 50 00(3E 요청)·D0 00(3E 응답)·54 00(4E 요청)·D4 00(4E 응답)이면 이진으로, 글자가 5000·D000·5400·D400 으로 시작하면 ASCII 로 봅니다. «500000FF…» 처럼 둘 다 될 수 있으면 머리의 데이터 길이 칸이 실제 뒤따르는 길이와 맞는 쪽을 고릅니다. ASCII 프레임을 HEX 로 적은 것(35 30 30 30 …)도 ASCII 로 풉니다."],
+        ["왜 응답에 디바이스 번호가 없나요?", "MC 프로토콜의 응답은 종료 코드 뒤에 값만 싣습니다. 어느 디바이스의 값인지는 짝 요청을 봐야 알 수 있어서, «짝 요청» 칸에 요청을 넣으면 D100·D101 … 처럼 붙여 보여 줍니다. 없으면 16비트 워드로만 나눠 보여 줍니다."],
+        ["이진에서 03FF 가 FF 03 으로 보입니다", "이진 코드는 숫자를 작은 자리 바이트부터 보냅니다(리틀 엔디언). I/O 번호 03FF 는 FF 03, 길이 12 는 0C 00, 명령 0401 은 01 04 입니다. ASCII 코드는 16진 글자를 큰 자리부터 쓰므로 «03FF» 그대로입니다."],
+        ["«PortDock PLC Simulator 가 답할 종료 코드» 는 무엇인가요?", "요청을 PortDock PLC Simulator 의 처리 규칙(점 수 한도·디바이스 코드·데이터 길이)으로 따져 본 결과입니다. 디바이스 크기(점 수)를 넘는 번호(C056)와 «자기 국 요청만 받기»(C05F)는 앱 설정에 따라 달라서 여기서는 따지지 않습니다. 실제 PLC 는 기종·설정에 따라 다르게 답할 수 있습니다."],
+      ],
+      guideNote: "칸마다 풀이는 가이드",
+      appNote: "PLC 없이 자기 프로그램의 통신을 시험하려면",
+    }
+  : {
+      title: "MC Protocol (SLMP) Frame Decoder",
+      desc: "Paste an MC protocol (SLMP) 3E or 4E frame as HEX or ASCII to decode the header, command, device, points, values and end code. It can build requests too.",
+      input: "Frame (HEX bytes or ASCII characters)",
+      help: "e.g. 50 00 00 FF FF 03 00 0C 00 … · 500000FF03FF000018… — one frame at a time. Binary/ASCII, 3E/4E and request/response are told apart by the subheader and length field.",
+      pair: "Matching request (to decode a reply's values, optional)",
+      pairHelp: "A reply carries no device numbers. Add the request that produced it and each value is labelled with its device.",
+      mode: "Data code",
+      auto: "Auto-detect",
+      binary: "Binary (paste as HEX)",
+      ascii: "ASCII",
+      examples: "Examples",
+      ex: ["0401 request", "0401 reply", "Bit read ASCII", "Random read reply", "4E loopback", "Error reply"],
+      how: "Everything is decoded in your browser; nothing you paste is sent anywhere.",
+      buildTitle: "Build a request",
+      buildNote: "Builds batch read/write requests (0401/1401, subcommands 0000/0001) for the own station (00, FF, 03FF, 00) with monitoring timer 0010.",
+      op: "Command",
+      ops: [
+        ["read-words", "0401 Read (words)"],
+        ["read-bits", "0401 Read (bits)"],
+        ["write-words", "1401 Write (words)"],
+        ["write-bits", "1401 Write (bits)"],
+      ],
+      frame: "Frame",
+      code: "Data code",
+      dev: "Device",
+      start: "Start number",
+      startHelp: "X, Y, B, W and ZR in hex (1F), others in decimal",
+      count: "Points",
+      values: "Values to write (comma or space separated)",
+      valuesHelp: "Words as decimal or 0x hex, bits as 0/1",
+      serial: "Serial number (4E, hex)",
+      made: "Built frame",
+      toDecoder: "Decode it",
+      faqTitle: "FAQ",
+      endTitle: "End codes (described by this decoder)",
+      endCols: ["Code", "Name", "When PortDock PLC Simulator answers with it"],
+      endSrc: "Names are shortened from MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5 «List of Error Codes». Which condition gets which code was chosen by PortDock PLC Simulator; a real PLC or module may differ.",
+      devTitle: "Device codes",
+      devCols: ["Device", "Name", "Binary code", "Numbering", "Type"],
+      hexNo: "hex",
+      decNo: "decimal",
+      bit: "bit",
+      word: "word",
+      srcTitle: "References",
+      notAffiliated: "Built from Mitsubishi Electric's public manuals (SLMP and MC protocol); not affiliated with Mitsubishi Electric.",
+      faq: [
+        ["How does it tell binary from ASCII?", "If the text reads as HEX and the first two bytes are 50 00 (3E request), D0 00 (3E reply), 54 00 (4E request) or D4 00 (4E reply), it is binary; if the characters start with 5000, D000, 5400 or D400, it is ASCII. When both fit, as with «500000FF…», it picks the one whose header length field matches what actually follows. An ASCII frame written as HEX (35 30 30 30 …) is decoded as ASCII too."],
+        ["Why does the reply have no device numbers?", "An MC protocol reply carries only the values after the end code. Which device they belong to is in the request, so put the request in «Matching request» to see D100, D101 … next to the values. Without it the data is split into 16-bit words."],
+        ["In binary 03FF shows up as FF 03", "Binary code sends numbers low byte first (little-endian). I/O number 03FF is FF 03, length 12 is 0C 00, command 0401 is 01 04. ASCII code writes hex characters high digit first, so it stays «03FF»."],
+        ["What is «End code PortDock PLC Simulator would return»?", "The request checked against PortDock PLC Simulator's handling rules (point limits, device codes, data length). Numbers beyond the device size (C056) and «Own station requests only» (C05F) depend on the app's settings and are not checked here. A real PLC may answer differently depending on model and settings."],
+      ],
+      guideNote: "For a field-by-field walkthrough see",
+      appNote: "To test your own program's communication without a PLC, use",
+    };
+
+// 예시 — mc.rs 시험의 매뉴얼 예와 같은 프레임
+const B = (o: Parameters<typeof buildRequest>[0]) => frameText(buildRequest(o), o.code);
+const readD = B({ frame: "3e", code: "binary", op: "read-words", dev: "D", start: 100, count: 3 });
+const randA = "500000FF03FF000048001004030000" + "0403D*000000TN000000M*000100X*000020D*001500Y*000160M*001111";
+const EXAMPLES: { name: string; data: string; pair?: string }[] = [
+  { name: L.ex[0], data: readD },
+  { name: L.ex[1], data: hex([0xd0, 0x00, 0x00, 0xff, 0xff, 0x03, 0x00, 0x08, 0x00, 0x00, 0x00, 0x95, 0x19, 0x02, 0x12, 0x30, 0x11]), pair: readD },
+  { name: L.ex[2], data: B({ frame: "3e", code: "ascii", op: "read-bits", dev: "M", start: 100, count: 8 }) },
+  { name: L.ex[3], data: "D00000FF03FF00002C000019951202203048494C544F4EC3DEB9AFBADDBCB7", pair: randA },
+  { name: L.ex[4], data: "54 00 34 12 00 00 00 FF FF 03 00 0D 00 10 00 19 06 00 00 05 00 41 42 43 44 45" },
+  { name: L.ex[5], data: "D0 00 00 FF FF 03 00 0B 00 59 C0 00 FF FF 03 00 01 01 00 00" },
+];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이 — PortDock" : "MC Protocol (SLMP) Frame Decoder: 3E/4E Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="mcd" data-lang={lang}>
+      <label class="fld">
+        {L.input}
+        <textarea id="data" class="mono" rows="3" spellcheck="false" autocomplete="off">{EXAMPLES[0].data}</textarea>
+        <span class="note">{L.help}</span>
+      </label>
+      <div class="row">
+        <label class="fld" style="flex:1 1 360px">
+          {L.pair}
+          <input id="pair" class="mono" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.pairHelp}</span>
+        </label>
+        <label class="fld" style="flex:0 1 220px">
+          {L.mode}
+          <select id="mode">
+            <option value="auto">{L.auto}</option>
+            <option value="binary">{L.binary}</option>
+            <option value="ascii">{L.ascii}</option>
+          </select>
+        </label>
+      </div>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {EXAMPLES.map((e) => <button type="button" class="btn tight" data-ex={e.data} data-pair={e.pair ?? ""}>{e.name}</button>)}
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div id="out" aria-live="polite"></div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <form class="calc card" id="mcb" style="margin-top:20px">
+      <h2 style="margin-top:0">{L.buildTitle}</h2>
+      <p class="note">{L.buildNote}</p>
+      <div class="row">
+        <label class="fld" style="flex:1 1 220px">
+          {L.op}
+          <select id="b-op">{L.ops.map(([v, n]) => <option value={v}>{n}</option>)}</select>
+        </label>
+        <label class="fld" style="flex:0 1 120px">
+          {L.frame}
+          <select id="b-frame"><option value="3e">3E</option><option value="4e">4E</option></select>
+        </label>
+        <label class="fld" style="flex:0 1 140px">
+          {L.code}
+          <select id="b-code"><option value="binary">{ko ? "이진" : "Binary"}</option><option value="ascii">ASCII</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="fld" style="flex:0 1 120px">
+          {L.dev}
+          <select id="b-dev">{MC_DEVICES.map((d) => <option value={d.name} selected={d.name === "D"}>{d.name}</option>)}</select>
+        </label>
+        <label class="fld" style="flex:1 1 160px">
+          {L.start}
+          <input id="b-start" class="mono" value="100" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.startHelp}</span>
+        </label>
+        <label class="fld" style="flex:0 1 120px">
+          {L.count}
+          <input id="b-count" class="mono" value="3" inputmode="numeric" autocomplete="off" />
+        </label>
+        <label class="fld" style="flex:0 1 150px" id="b-serial-box" hidden>
+          {L.serial}
+          <input id="b-serial" class="mono" value="0001" spellcheck="false" autocomplete="off" />
+        </label>
+      </div>
+      <label class="fld" id="b-values-box" hidden>
+        {L.values}
+        <input id="b-values" class="mono" spellcheck="false" autocomplete="off" />
+        <span class="note">{L.valuesHelp}</span>
+      </label>
+      <p class="err" id="b-err" role="alert"></p>
+      <div id="b-out" hidden>
+        <p class="note">{L.made}</p>
+        <pre class="mono" id="b-frame-out"></pre>
+        <button type="button" class="btn tight" id="b-use">{L.toDecoder}</button>
+      </div>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.endTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.endCols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              Object.entries(END_CODES).map(([code, e]) => (
+                <tr>
+                  <td class="mono">{Number(code).toString(16).toUpperCase()}</td>
+                  <td>{e[lang]}</td>
+                  <td>{ko ? e.whenKo : e.whenEn}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.endSrc}</p>
+      <h2>{L.devTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.devCols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              MC_DEVICES.map((d) => (
+                <tr>
+                  <td class="mono">{d.name}</td>
+                  <td>{d[lang]}</td>
+                  <td class="mono">{d.code.toString(16).toUpperCase()}</td>
+                  <td>{d.hex ? L.hexNo : L.decNo}</td>
+                  <td>{d.bits ? L.bit : L.word}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        {
+          MC_MANUALS.map((r) => (
+            <li>
+              <a href={r.url} rel="noopener">{r.title}</a> — {r.note[lang]}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="note">{L.notAffiliated}</p>
+      <p>
+        {L.guideNote} <a href={url(lang, "guides/mc-protocol-3e-binary-frame/")}>{ko ? "MC 프로토콜 3E 이진 프레임 읽는 법" : "Reading an MC protocol 3E binary frame"}</a>{ko ? ", 종료 코드는 " : "; for end codes see "}
+        <a href={url(lang, "guides/mc-protocol-end-codes/")}>{ko ? "MC 종료 코드 확인 순서" : "MC protocol end codes: what to check"}</a>{ko ? " 를 보세요." : "."}
+      </p>
+      <p>
+        {L.appNote} <a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a>{ko ? " — " : " — "}<a href={url(lang, "guides/mc-protocol-test-without-plc/")}>{ko ? "PLC 없이 MC 프로토콜 통신 시험하기" : "Testing MC protocol communication without a PLC"}</a>.
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .scroll {
+      overflow-x: auto;
+    }
+    #b-frame-out {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 4px 0 8px;
+    }
+    #out :global(.mcd-sum) {
+      margin: 0 0 8px;
+    }
+    #out :global(.mcd-ok) {
+      font-weight: 600;
+    }
+    #out :global(.mcd-bad) {
+      color: #b42318;
+      font-weight: 600;
+    }
+    #out :global(h2) {
+      font-size: 17px;
+      margin: 14px 0 6px;
+    }
+    #out :global(.mcd-notes) {
+      font-size: 14px;
+      margin: 6px 0 0;
+      padding-left: 20px;
+    }
+    #out :global(.scroll) {
+      overflow-x: auto;
+    }
+  </style>
+  <script>
+    import { type Lang } from "../lib/checksum";
+    import { decodeMc, buildRequest, frameText, devByName, parseStart, endText, type Field, type Item, type McMode, type BuildOp, type McFrame, type McCode } from "../lib/mcDecode";
+    const form = document.getElementById("mcd") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const ko = lang === "ko";
+    const t = (k: string, e: string) => (ko ? k : e);
+    const data = document.getElementById("data") as HTMLTextAreaElement;
+    const pair = document.getElementById("pair") as HTMLInputElement;
+    const mode = document.getElementById("mode") as HTMLSelectElement;
+    const err = document.getElementById("err")!;
+    const out = document.getElementById("out")!;
+    const h = (n: number, w: number) => n.toString(16).toUpperCase().padStart(w, "0");
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    function table(head: string[], rows: string[][], mono: number[] = []) {
+      const box = el("div", "scroll");
+      const tb = el("table", "t");
+      const tr = el("tr");
+      for (const x of head) tr.append(el("th", "", x));
+      tb.append(el("thead"));
+      tb.tHead!.append(tr);
+      const body = el("tbody");
+      for (const r of rows) {
+        const row = el("tr");
+        r.forEach((c, i) => row.append(el("td", mono.includes(i) ? "mono" : "", c)));
+        body.append(row);
+      }
+      tb.append(body);
+      box.append(tb);
+      return box;
+    }
+    const fieldTable = (fs: Field[]) =>
+      table(
+        [t("항목", "Field"), t("원래 값", "Raw"), t("뜻", "Meaning")],
+        fs.map((f) => [f.name, f.raw, f.value]),
+        [1],
+      );
+    function itemRow(i: Item): string[] {
+      if (i.kind === "bit") return [i.addr, String(i.value), i.value ? "ON" : "OFF", "—", "—"];
+      if (i.kind === "dword") return [i.addr, String(i.value), String(i.value | 0), h(i.value, 8), "—"];
+      const s = i.value >= 0x8000 ? i.value - 0x10000 : i.value;
+      return [i.addr, String(i.value), String(s), h(i.value, 4), i.kind === "bitword" ? i.value.toString(2).padStart(16, "0") : "—"];
+    }
+
+    function run() {
+      out.replaceChildren();
+      err.textContent = "";
+      if (!data.value.trim()) return;
+      let d;
+      try {
+        d = decodeMc(data.value, { mode: mode.value as McMode, lang, pair: pair.value });
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        return;
+      }
+      const sum = el("p", "mcd-sum");
+      const kind = `${d.frame.toUpperCase()} ${d.code === "ascii" ? "ASCII" : t("이진", "binary")} · ${d.dir === "request" ? t("요청", "request") : t("응답", "reply")}`;
+      const what = d.dir === "request" ? `${h(d.command ?? 0, 4)} ${d.commandName ?? ""}` : `${t("종료 코드", "end code")} ${h(d.endCode ?? 0, 4)} ${endText(d.endCode ?? 0, lang)}`;
+      sum.append(el("b", "", `${kind} · ${what}`), el("br"), el("span", "note", d.why));
+      out.append(sum);
+      if (d.simEnd !== undefined) {
+        const p = el("p", "mcd-sum");
+        p.append(document.createTextNode(t("PortDock PLC Simulator 가 답할 종료 코드: ", "End code PortDock PLC Simulator would return: ")));
+        p.append(el("span", d.simEnd === 0 ? "mcd-ok" : "mcd-bad", `${h(d.simEnd, 4)} ${endText(d.simEnd, lang)}`));
+        out.append(p);
+      }
+      out.append(el("h2", "", t("머리", "Header")), fieldTable(d.header));
+      if (d.body.length) out.append(el("h2", "", d.dir === "request" ? t("명령 데이터", "Command data") : d.endCode ? t("오류 정보", "Error information") : t("응답 데이터", "Response data")), fieldTable(d.body));
+      if (d.items.length) {
+        out.append(el("h2", "", d.itemsCaption ?? t("값", "Values")));
+        out.append(table([t("디바이스", "Device"), t("10진", "Decimal"), t("부호 있음·ON/OFF", "Signed / ON-OFF"), "HEX", t("16점 (왼쪽이 큰 번호)", "16 points (left = highest)")], d.items.map(itemRow), [0, 1, 2, 3, 4]));
+      }
+      if (d.notes.length) {
+        const ul = el("ul", "mcd-notes");
+        for (const n of d.notes) ul.append(el("li", "", n));
+        out.append(ul);
+      }
+    }
+    for (const b of form.querySelectorAll<HTMLButtonElement>("button[data-ex]")) {
+      b.addEventListener("click", () => {
+        data.value = b.dataset.ex ?? "";
+        pair.value = b.dataset.pair ?? "";
+        mode.value = "auto";
+        run();
+      });
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+
+    // ---- 요청 만들기
+    const bform = document.getElementById("mcb") as HTMLFormElement;
+    const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const bOp = g<HTMLSelectElement>("b-op");
+    const bFrame = g<HTMLSelectElement>("b-frame");
+    const bCode = g<HTMLSelectElement>("b-code");
+    const bDev = g<HTMLSelectElement>("b-dev");
+    const bStart = g<HTMLInputElement>("b-start");
+    const bCount = g<HTMLInputElement>("b-count");
+    const bSerial = g<HTMLInputElement>("b-serial");
+    const bValues = g<HTMLInputElement>("b-values");
+    const bErr = g<HTMLElement>("b-err");
+    const bOut = g<HTMLElement>("b-out");
+    const bText = g<HTMLElement>("b-frame-out");
+    function build() {
+      bErr.textContent = "";
+      bOut.hidden = true;
+      const op = bOp.value as BuildOp;
+      g<HTMLElement>("b-values-box").hidden = !op.startsWith("write");
+      g<HTMLElement>("b-serial-box").hidden = bFrame.value !== "4e";
+      const dev = devByName(bDev.value)!;
+      try {
+        const start = parseStart(dev, bStart.value);
+        if (Number.isNaN(start)) throw new Error(dev.hex ? t("시작 번호는 16진(예: 1F)", "Start number in hex (e.g. 1F)") : t("시작 번호는 10진 숫자", "Start number must be decimal"));
+        const count = Number(bCount.value.trim());
+        const serial = parseInt(bSerial.value.trim() || "0", 16);
+        if (!(serial >= 0 && serial <= 0xffff)) throw new Error(t("일련번호는 HEX 0~FFFF", "Serial number must be hex 0–FFFF"));
+        const values = bValues.value
+          .split(/[\s,;]+/)
+          .filter(Boolean)
+          .map((v) => (/^0x[0-9a-f]+$/i.test(v) ? parseInt(v, 16) : /^\d+$/.test(v) ? Number(v) : NaN));
+        const code = bCode.value as McCode;
+        const u = buildRequest({ frame: bFrame.value as McFrame, code, op, dev: dev.name, start, count, values, serial }, lang);
+        bText.textContent = frameText(u, code);
+        bOut.hidden = false;
+      } catch (e) {
+        bErr.textContent = (e as Error).message;
+      }
+    }
+    bform.addEventListener("input", build);
+    bform.addEventListener("change", build);
+    bform.addEventListener("submit", (e) => e.preventDefault());
+    g<HTMLButtonElement>("b-use").addEventListener("click", () => {
+      data.value = bText.textContent ?? "";
+      pair.value = "";
+      mode.value = "auto";
+      run();
+      data.scrollIntoView({ block: "center" });
+    });
+    build();
+  </script>
+</Base>
