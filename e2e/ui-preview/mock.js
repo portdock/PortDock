@@ -1253,6 +1253,8 @@ mockIPC(
     if (PLOT_CMDS.has(cmd)) return plot(cmd, a);
     // Port Inspector·Serial «연결 점검…» 명령은 pi_·loop_ 으로 시작해 겹치지 않는다
     if (PI_CMDS.has(cmd)) return pinsp(cmd, a);
+    // PLC Simulator 도 이름이 겹치는 명령(start·stop·set_faults·get_values …)이 있어 창 제목으로 가린다
+    if (PLC_CMDS.has(cmd) && isPLC()) return plcsim(cmd, a);
     if (SCPI_CMDS.has(cmd) && isSCPI()) return scpi(cmd, a);
     if (MM_CMDS.has(cmd) && isMM()) return mmaster(cmd, a);
     return NETSCAN.has(cmd) ? netscan(cmd, a) : handle(cmd, a);
@@ -2293,3 +2295,159 @@ async function pinsp(cmd, a) {
   return null;
 }
 window.__pdMock.loop = () => (PIL ? { config: PIL.config, done: PIL.done, cancel: PIL.cancel } : null);
+
+// ================================================================ PLC Simulator (apps/plc-simulator — 명령: apps/plc-simulator/src-tauri/src/lib.rs,
+// 처리기 모양: crates/core/src/mc.rs). 시작하면 TCP 는 클라이언트 둘(UDP 는 보내온 곳 하나)이 붙고, 0.45초마다 «0401 D0 ×4 읽기»,
+// 다섯 번에 한 번 «1401 D100 쓰기»(값이 1씩 오름)를 주고받는다. 일부러 실패하는 입력: 포트 445(사용 중), 주소 nohost(찾지 못함).
+const PLC_CMDS = new Set(["start", "stop", "kick", "set_log", "set_faults", "set_options", "set_sims", "set_size", "devices", "get_values", "set_values", "get_stats", "reset_stats"]);
+const isPLC = () => /PLC Simulator/.test(document.title);
+const PLC_DEV = { X: [0x9c, 1, 8192], Y: [0x9d, 1, 8192], M: [0x90, 1, 8192], L: [0x92, 1, 8192], F: [0x93, 1, 2048], B: [0xa0, 1, 8192], SM: [0x91, 1, 2048], D: [0xa8, 0, 12288], W: [0xb4, 0, 8192], R: [0xaf, 0, 32768], ZR: [0xb0, 0, 65536], SD: [0xa9, 0, 2048], TS: [0xc1, 1, 1024], TC: [0xc0, 1, 1024], TN: [0xc2, 0, 1024], CS: [0xc4, 1, 1024], CC: [0xc3, 1, 1024], CN: [0xc5, 0, 1024] };
+const plcNewStats = () => ({ requests: 0, ok: 0, errors: 0, ignored: 0, noResponse: 0, writes: 0, perCmd: {}, perEnd: {} });
+const plc = { mem: new Map(), sizes: Object.fromEntries(Object.entries(PLC_DEV).map(([k, v]) => [k, v[2]])), faults: null, options: { ownStationOnly: false }, sims: new Map(), stats: plcNewStats(), format: { frame: "3e", code: "binary" } };
+const plcTbl = (d) => plc.mem.get(d) ?? plc.mem.set(d, new Map()).get(d);
+const plcRange = (d, start, count) =>
+  !(d in PLC_DEV) ? tr("모르는 디바이스", "unknown device") : start + count > plc.sizes[d] ? tr(`${d} 범위 밖(${plc.sizes[d]}점)`, `${d} out of range (${plc.sizes[d]} points)`) : null;
+const plcHx = (v, n) => v.toString(16).toUpperCase().padStart(n * 2, "0");
+/** 요청·응답 바이트(3E/4E·이진/ASCII) — 머리 + (요청: 감시 타이머 + 명령 데이터 / 응답: 종료 코드 + 데이터) */
+function plcFrame(f, body, resp, serial) {
+  if (f.code === "ascii") {
+    const sub = f.frame === "4e" ? `${resp ? "D400" : "5400"}${plcHx(serial, 2)}0000` : resp ? "D000" : "5000";
+    return [...enc.encode(`${sub}00FF03FF00${plcHx(body.length, 2)}${body}`)];
+  }
+  const sub = f.frame === "4e" ? [resp ? 0xd4 : 0x54, 0, serial & 0xff, serial >> 8, 0, 0] : [resp ? 0xd0 : 0x50, 0];
+  return [...sub, 0, 0xff, 0xff, 0x03, 0, body.length & 0xff, body.length >> 8, ...body];
+}
+const plcData = (dir, bytes, peer) => ({ ts: now(), dir, bytes, check: null, peer });
+function plcTick() {
+  const s = S;
+  if (!s || !s.peers.length) return;
+  s.tick = (s.tick ?? 0) + 1;
+  const p = s.peers[s.tick % s.peers.length];
+  const f = plc.format;
+  const ascii = f.code === "ascii";
+  const serial = s.tick & 0xffff;
+  const write = s.tick % 5 === 0;
+  const d = plcTbl("D");
+  const st = plc.stats;
+  const fl = plc.faults;
+  const forced = fl && fl.forceEndCode > 0 ? fl.forceEndCode : 0;
+  const cmd = write ? "1401" : "0401";
+  st.requests++;
+  st.perCmd[cmd] = (st.perCmd[cmd] ?? 0) + 1;
+  let req;
+  let data;
+  let sumReq;
+  if (write) {
+    const v = ((d.get(100) ?? 0) + 1) & 0xffff;
+    req = ascii ? `00101401000000D*0001000001${plcHx(v, 2)}` : [0x10, 0, 0x01, 0x14, 0, 0, 100, 0, 0, 0xa8, 1, 0, v & 0xff, v >> 8];
+    if (!forced) {
+      d.set(100, v);
+      st.writes++;
+    }
+    data = ascii ? "" : [];
+    sumReq = tr("1401 일괄 쓰기 (워드) D100 ×1", "1401 Write (words) D100 ×1");
+  } else {
+    req = ascii ? "00100401000000D*0000000004" : [0x10, 0, 0x01, 0x04, 0, 0, 0, 0, 0, 0xa8, 4, 0];
+    const vals = [0, 1, 2, 3].map((i) => d.get(i) ?? 0);
+    data = ascii ? vals.map((v) => plcHx(v, 2)).join("") : vals.flatMap((v) => [v & 0xff, v >> 8]);
+    sumReq = tr("0401 일괄 읽기 (워드) D0 ×4", "0401 Read (words) D0 ×4");
+  }
+  if (f.frame === "4e") sumReq += ` · #${plcHx(serial, 2)}`;
+  frames({ ...plcData("rx", plcFrame(f, req, false, serial), p.addr), sum: sumReq });
+  if (fl && fl.noResponse) {
+    st.noResponse++;
+    frames(ev(`NO-RESPONSE (fault) ${cmd}`));
+    return;
+  }
+  const end = forced;
+  const endHex = plcHx(end, 2);
+  if (end) {
+    st.errors++;
+    st.perEnd[endHex] = (st.perEnd[endHex] ?? 0) + 1;
+    frames(ev(`END ${endHex} ${tr("강제·기타", "forced/other")} — ${cmd} (fault)`));
+  } else st.ok++;
+  const info = ascii ? `00FF03FF00${cmd}0000` : [0, 0xff, 0xff, 0x03, 0, 0x01, write ? 0x14 : 0x04, 0, 0];
+  const body = ascii ? `${endHex}${end ? info : data}` : [end & 0xff, end >> 8, ...(end ? info : data)];
+  const n = end ? 0 : data.length;
+  const sumTx = `${tr("종료", "End")} ${endHex} ${end ? tr("강제·기타", "forced/other") : tr("완료", "OK")}${n ? ` · ${n} ${ascii ? tr("글자", "chars") : tr("바이트", "bytes")}` : ""}`;
+  const delay = fl ? (fl.delayMaxMs > fl.delayMs ? fl.delayMs + Math.floor(Math.random() * (fl.delayMaxMs - fl.delayMs + 1)) : fl.delayMs) : 0;
+  later(Math.min(delay, 400), () => frames({ ...plcData("tx", plcFrame(f, body, true, serial), p.addr), sum: sumTx }));
+}
+function plcStart(c, ch) {
+  if (S) return fail(tr("이미 시작했거나 여는 중입니다", "Already started or starting"));
+  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(tr(`${c.host}:${c.port}: 주소를 찾지 못했습니다`, `${c.host}:${c.port}: address not found`));
+  if (c.port === 445) return fail(inUse(`${c.host}:${c.port}`));
+  plc.format = { ...c.format };
+  const local = `${c.host.trim()}:${c.port || 50500}`;
+  const s = newSession("plc", ch, { cfg: { ...c }, port: local, server: true, online: true });
+  later(10, () => {
+    frames(ev(`${c.transport === "udp" ? "BIND" : "LISTEN"} ${local}`));
+    status("listening", local, null);
+  });
+  const join = (addr) => {
+    s.peers.push({ id: ++s.seq, addr });
+    if (c.transport === "tcp") frames(ev(`ACCEPT ${addr}`));
+    send({ type: "peers", peers: peerList() });
+  };
+  const net3 = c.host.trim() === "0.0.0.0" ? "192.168.0" : "127.0.0";
+  later(250, () => join(`${net3}.20:51234`));
+  if (c.transport === "tcp") later(700, () => join(`${net3}.21:50000`));
+  every(450, plcTick);
+  return Promise.resolve(local);
+}
+function plcsim(cmd, a) {
+  switch (cmd) {
+    case "start":
+      return plcStart(a.config, a.onEvent);
+    case "stop":
+      if (S) endSession(S.port, [...S.peers.map((p) => `CLOSE ${p.addr} (${tr("사용자가 끊음", "disconnected by user")})`), "STOP LISTEN"]);
+      return null;
+    case "kick":
+      return kick(a.id);
+    case "set_log":
+      if (!S) return fail(NO_SESSION());
+      frames(ev(a.path ? `LOG ${a.path}` : "LOG OFF"));
+      return null;
+    case "set_faults":
+      if ((a.faults.target?.probability ?? 100) > 100) return fail(tr("확률은 0~100% 입니다", "Probability is 0–100%"));
+      plc.faults = { ...a.faults };
+      return null;
+    case "set_options":
+      plc.options = { ...a.options };
+      return null;
+    case "set_sims":
+      if (!(a.dev in PLC_DEV)) return fail("device");
+      if (a.sims.length) plc.sims.set(a.dev, a.sims);
+      else plc.sims.delete(a.dev);
+      return null;
+    case "set_size":
+      if (!(a.dev in PLC_DEV)) return fail("device");
+      if (!Number.isInteger(a.size) || a.size < 1 || a.size > 65536) return fail(tr(`${a.dev} 크기는 1~65536 점입니다`, `${a.dev} size must be 1–65536 points`));
+      plc.sizes[a.dev] = a.size;
+      for (const k of [...plcTbl(a.dev).keys()]) if (k >= a.size) plcTbl(a.dev).delete(k);
+      return null;
+    case "devices":
+      return Object.entries(PLC_DEV).map(([dev, v]) => ({ dev, code: v[0], bits: !!v[1], hex: ["X", "Y", "B", "W", "ZR"].includes(dev), defaultSize: v[2], size: plc.sizes[dev] }));
+    case "get_values": {
+      const e = plcRange(a.dev, a.start, a.count);
+      if (e) return fail(e);
+      const m = plcTbl(a.dev);
+      return Array.from({ length: a.count }, (_, i) => m.get(a.start + i) ?? 0);
+    }
+    case "set_values": {
+      const e = plcRange(a.dev, a.start, a.values.length);
+      if (e) return fail(e);
+      const m = plcTbl(a.dev);
+      const bits = !!PLC_DEV[a.dev][1];
+      a.values.forEach((v, i) => m.set(a.start + i, bits ? (v ? 1 : 0) : v & 0xffff));
+      return null;
+    }
+    case "get_stats":
+      return JSON.parse(JSON.stringify(plc.stats));
+    case "reset_stats":
+      plc.stats = plcNewStats();
+      return null;
+  }
+  return null;
+}
+window.__pdMock.plc = () => ({ format: plc.format, faults: plc.faults, options: plc.options, sizes: { ...plc.sizes }, sims: [...plc.sims.keys()] });

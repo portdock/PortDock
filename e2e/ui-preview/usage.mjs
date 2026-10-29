@@ -11,7 +11,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/usage";
 fs.mkdirSync(OUT, { recursive: true });
-const PORTS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210 };
+const PORTS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210, "plc-simulator": 5211 };
 const apps = process.argv.slice(2).length ? process.argv.slice(2) : ["serial"];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 const COMBOS = [

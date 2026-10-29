@@ -1,6 +1,6 @@
-// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 열 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
+// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 열한 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
 // 예외·화면 오류(Boundary)·창 밖으로 넘친 요소·풀리지 않는 «연결 중»·대화상자 닫은 뒤 포커스 잃음을 찾는다.
-// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209 · port-inspector 5210
+// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209 · port-inspector 5210 · plc-simulator 5211
 // Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 inspectorFlow 를 돈다(10/25).
 // SCPI·Plot 의 앱별 단계(가짜 계측기 질의·블록·반복 측정 / 그래프 그려짐·측정점·CSV 기록 …)도 이 공통 흐름 안에서 한다(10/19, 옛 smoke-scpi·smoke-plot).
 // 사용: (저장소 루트에서 서버 5201~5210 을 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
@@ -12,7 +12,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210, "plc-simulator": 5211 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -711,7 +711,7 @@ async function runApp(app, port) {
 
     /** 편의성 점검 — 연결된 상태에서 부른다. 끝나면 다시 연결된 상태로 돌려 둔다 */
     async function convenience() {
-      const simple = app === "modbus-slave" || app === "simulator" || app === "modbus-master";
+      const simple = app === "modbus-slave" || app === "simulator" || app === "modbus-master" || app === "plc-simulator";
       const LOG = simple ? ".tlog" : ".log";
       const ROW = simple ? ".tlog .trow" : ".log .row";
       // ---- 창 제목
@@ -811,8 +811,8 @@ async function runApp(app, port) {
       await sleep(800);
       await verify("shortcuts");
 
-      // ---- 반복 보내기 → Esc 로 멈춤 (입력칸 밖에서)
-      if (app !== "modbus-slave" && app !== "modbus-master") {
+      // ---- 반복 보내기 → Esc 로 멈춤 (입력칸 밖에서) — 보내기 칸이 없는 Slave·Master·PLC Simulator 는 빼고
+      if (app !== "modbus-slave" && app !== "modbus-master" && app !== "plc-simulator") {
         const sendSel = app === "simulator" ? ".unsol input.mono" : ".sendtext";
         await js(`__sm.setVal(document.querySelector(${JSON.stringify(sendSel)}), ${JSON.stringify(VALID_TEXT[app])})`);
         await sleep(300);
@@ -826,7 +826,7 @@ async function runApp(app, port) {
       }
 
       // ---- 숫자 칸: ↑ +1, Shift+↑ +10, PageDown −100
-      const num = (await d.findElements(By.css(app === "simulator" ? ".unsol input.num" : app === "modbus-slave" || app === "modbus-master" ? ".main .toolbar input.num" : ".sendrow.sub input.num")))[app === "modbus-slave" ? 1 : 0];
+      const num = (await d.findElements(By.css(app === "simulator" ? ".unsol input.num" : app === "modbus-slave" || app === "modbus-master" || app === "plc-simulator" ? ".main .toolbar input.num" : ".sendrow.sub input.num")))[app === "modbus-slave" || app === "plc-simulator" ? 1 : 0];
       if (num) {
         const v0 = Number(await num.getAttribute("value"));
         await num.click();
@@ -852,7 +852,7 @@ async function runApp(app, port) {
       }
 
       // ---- HEX ↔ ASCII: 같은 바이트의 새 표기로, 켜진 체크섬은 알림줄로
-      if (app !== "modbus-slave" && app !== "modbus-master") {
+      if (app !== "modbus-slave" && app !== "modbus-master" && app !== "plc-simulator") {
         const row = app === "simulator" ? ".unsol .arrow" : ".sendbar .sendrow";
         const r = await jsAsync(`
           const row = document.querySelector(${JSON.stringify(row)});
@@ -2561,7 +2561,7 @@ async function runApp(app, port) {
       if (app === "serial") await serialPortCheck(false);
 
       // ---- 연결·시작
-      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/ }[app];
+      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/, "plc-simulator": /듣는|Listening/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
