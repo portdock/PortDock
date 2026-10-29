@@ -51,7 +51,7 @@
 사이트 설정에서 지킬 것: `Base.astro` 의 검색엔진 소유 확인 meta 값은 지우지 않는다 · `PUBLIC_CF_ANALYTICS_TOKEN` 은 비워 둔다(Pages 자동 주입과 두 번 셈) · @portdock.dev 로 메일을 보내게 되면 SPF·DKIM 을 그 서비스에 맞게 바꾼다(지금은 `v=spf1 -all`·DMARC reject).
 
 ## 4. 장비 레지스터 맵 — 확장 규칙과 후보
-지금 45종·1858개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
+지금 51종·2098개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
 
 규칙:
 - 공식 매뉴얼(또는 제조사 공식 응용 노트)에서 확인한 값만. 출처 문서 번호·판·쪽을 남긴다.

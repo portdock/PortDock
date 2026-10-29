@@ -1,0 +1,1559 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "hanyoung-nux/lp",
+  "manufacturer": {
+    "ko": "한영넉스",
+    "en": "Hanyoung Nux"
+  },
+  "model": "LP Series",
+  "models": [
+    "LP3-5A5NC",
+    "LP3-5A5PC",
+    "LP6-5ANC"
+  ],
+  "kind": "panel-meter",
+  "title": {
+    "ko": "한영넉스 LP 시리즈 LCD 멀티 펄스미터 (RS485 모델)",
+    "en": "Hanyoung Nux LP series LCD multi pulse meter (RS485 models)"
+  },
+  "summary": {
+    "ko": "주파수·회전수·속도·주기·시간차·적산 등 13가지 동작 모드의 펄스미터. 형번 끝이 C 인 RS485 모델만 Modbus RTU 슬레이브. 출력 상태 코일, 입력 상태, 램프 상태·모드 입력 레지스터, 동작·입력·출력·통신 설정 보유 레지스터를 담았다.",
+    "en": "Pulse meter with 13 operation modes (frequency/speed, period, time difference, totalizing, etc.). Only RS485 models (code ending in C) are Modbus RTU slaves. Covers output-state coils, input states, lamp/mode input registers and operation/input/output/comm holding registers."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "addressing": "plc",
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      127
+    ],
+    "notes": [
+      {
+        "ko": "매뉴얼은 «00001 (0000)» 처럼 PLC 번호와 괄호 속 16진 통신 주소를 함께 적는다. 통신선 주소 = 괄호 값. 근거: 인쇄 p.38 (PDF p.37) FC01 예 «01 01 00 00 00 03 7C 0B» 가 시작 주소 0x0000 으로 L-OUT·GO-OUT·H-OUT(00001~00003) 3개를 읽고, 응답 «01 01 01 05 91 8B» 의 05 = L-OUT ON·GO-OUT OFF·H-OUT ON. 같은 쪽 FC02 예 «01 02 00 00 00 01 B9 CA» → «01 02 01 01 60 48» 은 HOLD(10001 (0000)) ON. 이 예들과 인쇄 p.40 (PDF p.39) 예외 예(«01 03 00 95 00 07 14 24» → «01 83 02 C0 F1»)의 CRC 를 직접 계산해 모두 맞음을 확인.",
+        "en": "The manual writes «00001 (0000)»: PLC number plus hex wire address in brackets; wire address = bracket value. Evidence: FC01 example on printed p.38 (PDF p.37) «01 01 00 00 00 03 7C 0B» reads L-OUT/GO-OUT/H-OUT (00001-00003) from 0x0000; reply «01 01 01 05 91 8B» (05 = L-OUT ON, GO-OUT OFF, H-OUT ON). FC02 example on the same page «01 02 00 00 00 01 B9 CA» → «01 02 01 01 60 48» = HOLD (10001 (0000)) ON. The CRCs of these and of the exception example on printed p.40 (PDF p.39) («01 03 00 95 00 07 14 24» → «01 83 02 C0 F1») were recomputed and all match."
+      },
+      {
+        "ko": "Modbus RTU, RS485 2선 반이중, 최대 31대, 국번 1~127, 2400~38400 bps, 응답 대기 5~99 ms, 정지 비트 1 고정(인쇄 p.8·p.15·p.45). 출하 초기값 표(인쇄 p.17)는 LCD 글꼴 그림이라 국번·속도·패리티 초기값은 넣지 않았다. 데이터 비트 수는 매뉴얼에 없다.",
+        "en": "Modbus RTU, RS485 2-wire half duplex, up to 31 units, station 1-127, 2400-38400 bps, response wait 5-99 ms, stop bit fixed 1 (printed pp.8, 15, 45). The factory-default table (printed p.17) is drawn in LCD glyphs, so default station/baud/parity are not given. Data bits are not stated."
+      },
+      {
+        "ko": "지원 함수 코드 01H~04H·06H·10H (인쇄 p.37). 응답 데이터 표기: FC03 «n = 1~16», FC04 «n = 1~22», FC16 «n = 1~20» (인쇄 p.39).",
+        "en": "Supported FCs 01h-04h, 06h, 10h (printed p.37). Data count shown as FC03 'n = 1-16', FC04 'n = 1-22', FC16 'n = 1-20' (printed p.39)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "00001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "L-OUT 출력 상태",
+        "en": "L-OUT output state"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "3단·5단 출력 모델만",
+        "en": "3- and 5-stage output models only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "00002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "GO-OUT 출력 상태",
+        "en": "GO-OUT output state"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "3단·5단 출력 모델만",
+        "en": "3- and 5-stage output models only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "00003 (0002)",
+      "type": "bit",
+      "name": {
+        "ko": "H-OUT 출력 상태",
+        "en": "H-OUT output state"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "3단·5단 출력 모델만",
+        "en": "3- and 5-stage output models only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "00004 (0003)",
+      "type": "bit",
+      "name": {
+        "ko": "LL-OUT 출력 상태",
+        "en": "LL-OUT output state"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "5단 출력 모델만",
+        "en": "5-stage output models only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "00005 (0004)",
+      "type": "bit",
+      "name": {
+        "ko": "HH-OUT 출력 상태",
+        "en": "HH-OUT output state"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "5단 출력 모델만",
+        "en": "5-stage output models only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 0,
+      "manualAddress": "10001 (0000)",
+      "type": "bit",
+      "name": {
+        "ko": "HOLD/RESET 입력 상태",
+        "en": "HOLD/RESET input state"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "discrete-inputs",
+      "address": 1,
+      "manualAddress": "10002 (0001)",
+      "type": "bit",
+      "name": {
+        "ko": "BANK 입력 상태",
+        "en": "BANK input state"
+      },
+      "access": "r",
+      "fc": [
+        2
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "description": {
+        "ko": "LP3 만",
+        "en": "LP3 only"
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 102,
+      "manualAddress": "30103 (0066)",
+      "type": "u16",
+      "name": {
+        "ko": "하드웨어 버전",
+        "en": "Hardware version"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 103,
+      "manualAddress": "30104 (0067)",
+      "type": "u16",
+      "name": {
+        "ko": "펌웨어 버전",
+        "en": "Firmware version"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 104,
+      "manualAddress": "30105 (0068)",
+      "type": "u16",
+      "name": {
+        "ko": "모델 이름(ASCII)",
+        "en": "Model name (ASCII)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "매뉴얼 표기 \"LP\" (ASCII 코드).",
+        "en": "Manual shows \"LP\" (ASCII code)."
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 105,
+      "manualAddress": "30106 (0069)",
+      "type": "u16",
+      "name": {
+        "ko": "외형(ASCII)",
+        "en": "Case size (ASCII)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "ASCII \"3\" = LP3, \"6\" = LP6.",
+        "en": "ASCII \"3\" = LP3, \"6\" = LP6."
+      },
+      "ref": "인쇄 p.41 (PDF p.40)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1000,
+      "manualAddress": "31001 (03E8)",
+      "type": "u16",
+      "name": {
+        "ko": "동작 램프 표시 상태",
+        "en": "Active lamp status (ACTIVE-LAMP)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "LL-OUT 램프",
+          "en": "LL-OUT lamp"
+        },
+        {
+          "bit": 2,
+          "ko": "L-OUT 램프",
+          "en": "L-OUT lamp"
+        },
+        {
+          "bit": 3,
+          "ko": "GO-OUT 램프",
+          "en": "GO-OUT lamp"
+        },
+        {
+          "bit": 4,
+          "ko": "H-OUT 램프",
+          "en": "H-OUT lamp"
+        },
+        {
+          "bit": 5,
+          "ko": "HH-OUT 램프",
+          "en": "HH-OUT lamp"
+        },
+        {
+          "bit": 10,
+          "ko": "CWP 램프",
+          "en": "CWP lamp"
+        },
+        {
+          "bit": 11,
+          "ko": "LOCK 램프",
+          "en": "LOCK lamp"
+        },
+        {
+          "bit": 12,
+          "ko": "HOLD 램프",
+          "en": "HOLD lamp"
+        },
+        {
+          "bit": 13,
+          "ko": "RESET 램프",
+          "en": "RESET lamp"
+        },
+        {
+          "bit": 14,
+          "ko": "MIN 램프",
+          "en": "MIN lamp"
+        },
+        {
+          "bit": 15,
+          "ko": "MAX 램프",
+          "en": "MAX lamp"
+        }
+      ],
+      "description": {
+        "ko": "비트 0·6~9 는 RESERVED. 각 비트 0 = OFF, 1 = ON.",
+        "en": "Bits 0 and 6-9 reserved. Each bit 0 = OFF, 1 = ON."
+      },
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1001,
+      "manualAddress": "31002 (03E9)",
+      "type": "u16",
+      "name": {
+        "ko": "설정 램프 표시 상태",
+        "en": "Set lamp status (SET-LAMP)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "BANK_2 램프",
+          "en": "BANK_2 lamp"
+        },
+        {
+          "bit": 2,
+          "ko": "BANK_1 램프",
+          "en": "BANK_1 lamp"
+        },
+        {
+          "bit": 3,
+          "ko": "BANK 램프",
+          "en": "BANK lamp"
+        },
+        {
+          "bit": 4,
+          "ko": "LL-SET 램프",
+          "en": "LL-SET lamp"
+        },
+        {
+          "bit": 5,
+          "ko": "L-SET 램프",
+          "en": "L-SET lamp"
+        },
+        {
+          "bit": 6,
+          "ko": "H-SET 램프",
+          "en": "H-SET lamp"
+        },
+        {
+          "bit": 7,
+          "ko": "HH-SET 램프",
+          "en": "HH-SET lamp"
+        }
+      ],
+      "description": {
+        "ko": "비트 0·8~15 는 RESERVED.",
+        "en": "Bits 0 and 8-15 reserved."
+      },
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1018,
+      "manualAddress": "31019 (03FA)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치 (DOT)",
+        "en": "Decimal point (DOT)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "00000",
+          "en": "00000"
+        },
+        {
+          "value": 1,
+          "ko": "0000.0",
+          "en": "0000.0"
+        },
+        {
+          "value": 2,
+          "ko": "000.00",
+          "en": "000.00"
+        },
+        {
+          "value": 3,
+          "ko": "00.000",
+          "en": "00.000"
+        },
+        {
+          "value": 4,
+          "ko": "0.0000",
+          "en": "0.0000"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1019,
+      "manualAddress": "31020 (03FB)",
+      "type": "u16",
+      "name": {
+        "ko": "시간 진법 (SCAL)",
+        "en": "Time scale (SCAL)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "10진법",
+          "en": "Decimal"
+        },
+        {
+          "value": 1,
+          "ko": "60진법",
+          "en": "Sexagesimal (60)"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1020,
+      "manualAddress": "31021 (03FC)",
+      "type": "u16",
+      "name": {
+        "ko": "시간 범위 (RANG)",
+        "en": "Time range (RANG)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.01 s",
+          "en": "0.01 s"
+        },
+        {
+          "value": 1,
+          "ko": "0.1 s",
+          "en": "0.1 s"
+        },
+        {
+          "value": 2,
+          "ko": "초(SEC)",
+          "en": "Seconds (SEC)"
+        },
+        {
+          "value": 3,
+          "ko": "분(MIN)",
+          "en": "Minutes (MIN)"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "input-registers",
+      "address": 1021,
+      "manualAddress": "31022 (03FD)",
+      "type": "u16",
+      "name": {
+        "ko": "동작 모드 (FUNC)",
+        "en": "Operation mode (FUNC)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "F1 주파수/회전수/속도",
+          "en": "F1 frequency/speed"
+        },
+        {
+          "value": 1,
+          "ko": "F2 이동 속도",
+          "en": "F2 travel speed"
+        },
+        {
+          "value": 2,
+          "ko": "F3 주기",
+          "en": "F3 period"
+        },
+        {
+          "value": 3,
+          "ko": "F4 통과 시간",
+          "en": "F4 passing time"
+        },
+        {
+          "value": 4,
+          "ko": "F5 시간차",
+          "en": "F5 time difference"
+        },
+        {
+          "value": 5,
+          "ko": "F6 시간 폭",
+          "en": "F6 time width"
+        },
+        {
+          "value": 6,
+          "ko": "F7 측정 길이",
+          "en": "F7 length"
+        },
+        {
+          "value": 7,
+          "ko": "F8 간격",
+          "en": "F8 interval"
+        },
+        {
+          "value": 8,
+          "ko": "F9 적산",
+          "en": "F9 totalizing"
+        },
+        {
+          "value": 9,
+          "ko": "F10 절대 비율",
+          "en": "F10 absolute ratio"
+        },
+        {
+          "value": 10,
+          "ko": "F11 오차 비율",
+          "en": "F11 error ratio"
+        },
+        {
+          "value": 11,
+          "ko": "F12 농도",
+          "en": "F12 density"
+        },
+        {
+          "value": 12,
+          "ko": "F13 오차",
+          "en": "F13 error"
+        }
+      ],
+      "ref": "인쇄 p.42 (PDF p.41)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "40051 (0032)",
+      "type": "u16",
+      "name": {
+        "ko": "동작 모드 (FUNC)",
+        "en": "Operation mode (FUNC)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "F1 주파수/회전수/속도",
+          "en": "F1 frequency/speed"
+        },
+        {
+          "value": 1,
+          "ko": "F2 이동 속도",
+          "en": "F2 travel speed"
+        },
+        {
+          "value": 2,
+          "ko": "F3 주기",
+          "en": "F3 period"
+        },
+        {
+          "value": 3,
+          "ko": "F4 통과 시간",
+          "en": "F4 passing time"
+        },
+        {
+          "value": 4,
+          "ko": "F5 시간차",
+          "en": "F5 time difference"
+        },
+        {
+          "value": 5,
+          "ko": "F6 시간 폭",
+          "en": "F6 time width"
+        },
+        {
+          "value": 6,
+          "ko": "F7 측정 길이",
+          "en": "F7 length"
+        },
+        {
+          "value": 7,
+          "ko": "F8 간격",
+          "en": "F8 interval"
+        },
+        {
+          "value": 8,
+          "ko": "F9 적산",
+          "en": "F9 totalizing"
+        },
+        {
+          "value": 9,
+          "ko": "F10 절대 비율",
+          "en": "F10 absolute ratio"
+        },
+        {
+          "value": 10,
+          "ko": "F11 오차 비율",
+          "en": "F11 error ratio"
+        },
+        {
+          "value": 11,
+          "ko": "F12 농도",
+          "en": "F12 density"
+        },
+        {
+          "value": 12,
+          "ko": "F13 오차",
+          "en": "F13 error"
+        }
+      ],
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "40052 (0033)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 A 센서 종류 (IN-A)",
+        "en": "Input A sensor type (IN-A)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NPN-L",
+          "en": "NPN-L"
+        },
+        {
+          "value": 1,
+          "ko": "NPN-H",
+          "en": "NPN-H"
+        },
+        {
+          "value": 2,
+          "ko": "PNP-L",
+          "en": "PNP-L"
+        },
+        {
+          "value": 3,
+          "ko": "PNP-H",
+          "en": "PNP-H"
+        }
+      ],
+      "description": {
+        "ko": "접점 입력이면 NPN-L 또는 PNP-L.",
+        "en": "For contact input use NPN-L or PNP-L."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 52,
+      "manualAddress": "40053 (0034)",
+      "type": "u16",
+      "name": {
+        "ko": "입력 B 센서 종류 (IN-B)",
+        "en": "Input B sensor type (IN-B)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "NPN-L",
+          "en": "NPN-L"
+        },
+        {
+          "value": 1,
+          "ko": "NPN-H",
+          "en": "NPN-H"
+        },
+        {
+          "value": 2,
+          "ko": "PNP-L",
+          "en": "PNP-L"
+        },
+        {
+          "value": 3,
+          "ko": "PNP-H",
+          "en": "PNP-H"
+        }
+      ],
+      "description": {
+        "ko": "F2/F5/F7/F8/F9/F10/F11/F13 모드에서만.",
+        "en": "Only in F2/F5/F7/F8/F9/F10/F11/F13 modes."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "40054 (0035)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 모드 (O-MD)",
+        "en": "Output mode (O-MD)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OUT-S",
+          "en": "OUT-S"
+        },
+        {
+          "value": 1,
+          "ko": "OUT-H",
+          "en": "OUT-H"
+        },
+        {
+          "value": 2,
+          "ko": "OUT-L",
+          "en": "OUT-L"
+        },
+        {
+          "value": 3,
+          "ko": "OUT-B",
+          "en": "OUT-B"
+        },
+        {
+          "value": 4,
+          "ko": "OUT-F",
+          "en": "OUT-F"
+        },
+        {
+          "value": 5,
+          "ko": "OUT-D",
+          "en": "OUT-D"
+        }
+      ],
+      "description": {
+        "ko": "F9 모드는 OUT-H 고정. 출력 모델만.",
+        "en": "F9 mode is fixed to OUT-H. Output models only."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 56,
+      "manualAddress": "40057 (0038)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 A 프리스케일 지수 (P-AY)",
+        "en": "Input A prescale exponent (P-AY)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -9,
+        "max": 9
+      },
+      "description": {
+        "ko": "10 의 거듭제곱 지수(10^-9 ~ 10^9).",
+        "en": "Power-of-ten exponent (10^-9 to 10^9)."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 59,
+      "manualAddress": "40060 (003B)",
+      "type": "s16",
+      "name": {
+        "ko": "입력 B 프리스케일 지수 (P-BY)",
+        "en": "Input B prescale exponent (P-BY)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -9,
+        "max": 9
+      },
+      "description": {
+        "ko": "F10/F11/F12/F13 모드에서만.",
+        "en": "Only in F10/F11/F12/F13 modes."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 60,
+      "manualAddress": "40061 (003C)",
+      "type": "u16",
+      "name": {
+        "ko": "소수점 위치 (DOT)",
+        "en": "Decimal point (DOT)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "00000",
+          "en": "00000"
+        },
+        {
+          "value": 1,
+          "ko": "0000.0",
+          "en": "0000.0"
+        },
+        {
+          "value": 2,
+          "ko": "000.00",
+          "en": "000.00"
+        },
+        {
+          "value": 3,
+          "ko": "00.000",
+          "en": "00.000"
+        },
+        {
+          "value": 4,
+          "ko": "0.0000",
+          "en": "0.0000"
+        }
+      ],
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 61,
+      "manualAddress": "40062 (003D)",
+      "type": "u16",
+      "name": {
+        "ko": "시간 진법 (SCAL)",
+        "en": "Time scale (SCAL)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "10진법",
+          "en": "Decimal"
+        },
+        {
+          "value": 1,
+          "ko": "60진법",
+          "en": "Sexagesimal (60)"
+        }
+      ],
+      "description": {
+        "ko": "F3/F4/F5/F6 모드에서만.",
+        "en": "Only in F3/F4/F5/F6 modes."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 62,
+      "manualAddress": "40063 (003E)",
+      "type": "u16",
+      "name": {
+        "ko": "시간 범위 (RANG)",
+        "en": "Time range (RANG)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.01 s",
+          "en": "0.01 s"
+        },
+        {
+          "value": 1,
+          "ko": "0.1 s",
+          "en": "0.1 s"
+        },
+        {
+          "value": 2,
+          "ko": "초(SEC)",
+          "en": "Seconds (SEC)"
+        },
+        {
+          "value": 3,
+          "ko": "분(MIN)",
+          "en": "Minutes (MIN)"
+        }
+      ],
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 63,
+      "manualAddress": "40064 (003F)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 주기 (D-REF)",
+        "en": "Display refresh period (D-REF)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.05 s",
+          "en": "0.05 s"
+        },
+        {
+          "value": 1,
+          "ko": "0.5 s",
+          "en": "0.5 s"
+        },
+        {
+          "value": 2,
+          "ko": "1 s",
+          "en": "1 s"
+        },
+        {
+          "value": 3,
+          "ko": "2 s",
+          "en": "2 s"
+        },
+        {
+          "value": 4,
+          "ko": "4 s",
+          "en": "4 s"
+        },
+        {
+          "value": 5,
+          "ko": "8 s",
+          "en": "8 s"
+        }
+      ],
+      "description": {
+        "ko": "F1/F10/F11/F12/F13 모드에서만.",
+        "en": "Only in F1/F10/F11/F12/F13 modes."
+      },
+      "ref": "인쇄 p.44 (PDF p.43)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "40101 (0064)",
+      "type": "u16",
+      "name": {
+        "ko": "히스테리시스 (HYS)",
+        "en": "Hysteresis (HYS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "description": {
+        "ko": "소수점 위치에 따라 범위가 달라진다. 출력 모델만.",
+        "en": "Range depends on decimal point. Output models only."
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 105,
+      "manualAddress": "40106 (0069)",
+      "type": "u16",
+      "name": {
+        "ko": "L·LL 출력 제한 (O-LIM)",
+        "en": "L/LL output limit (O-LIM)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "L-OUT",
+          "en": "L-OUT"
+        },
+        {
+          "value": 1,
+          "ko": "S-TIM(기동 보상)",
+          "en": "S-TIM (start-up compensation)"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 107,
+      "manualAddress": "40108 (006B)",
+      "type": "u16",
+      "name": {
+        "ko": "정전 기억 (BACK)",
+        "en": "Power-failure memory (BACK)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "CLR",
+          "en": "CLR"
+        },
+        {
+          "value": 1,
+          "ko": "SAVE",
+          "en": "SAVE"
+        }
+      ],
+      "description": {
+        "ko": "F9 모드에서만.",
+        "en": "F9 mode only."
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 108,
+      "manualAddress": "40109 (006C)",
+      "type": "u16",
+      "name": {
+        "ko": "BANK 전환 (B-CHG)",
+        "en": "BANK change (B-CHG)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "KEY",
+          "en": "KEY"
+        },
+        {
+          "value": 2,
+          "ko": "EX-IN(외부 입력)",
+          "en": "EX-IN (external input)"
+        }
+      ],
+      "description": {
+        "ko": "LP3 만.",
+        "en": "LP3 only."
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 109,
+      "manualAddress": "40110 (006D)",
+      "type": "u16",
+      "name": {
+        "ko": "잠금 (LOCK)",
+        "en": "Lock (LOCK)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "KEY",
+          "en": "KEY"
+        },
+        {
+          "value": 2,
+          "ko": "PAR",
+          "en": "PAR"
+        },
+        {
+          "value": 3,
+          "ko": "K-P",
+          "en": "K-P"
+        },
+        {
+          "value": 4,
+          "ko": "BNK",
+          "en": "BNK"
+        },
+        {
+          "value": 5,
+          "ko": "OPT",
+          "en": "OPT"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 110,
+      "manualAddress": "40111 (006E)",
+      "type": "u16",
+      "name": {
+        "ko": "BANK 번호 (BANK)",
+        "en": "BANK number (BANK)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "BANK #1",
+          "en": "BANK #1"
+        },
+        {
+          "value": 1,
+          "ko": "BANK #2",
+          "en": "BANK #2"
+        }
+      ],
+      "description": {
+        "ko": "B-CHG 가 KEY 일 때만 바꿀 수 있다. LP3 만.",
+        "en": "Changeable only when B-CHG is KEY. LP3 only."
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 150,
+      "manualAddress": "40151 (0096)",
+      "type": "u16",
+      "name": {
+        "ko": "국번 (S-NO)",
+        "en": "Station number (S-NO)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 127
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 151,
+      "manualAddress": "40152 (0097)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도 (BPS)",
+        "en": "Baud rate (BPS)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 3,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 4,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 152,
+      "manualAddress": "40153 (0098)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티 (PTY)",
+        "en": "Parity (PTY)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "홀수",
+          "en": "Odd"
+        },
+        {
+          "value": 2,
+          "ko": "짝수",
+          "en": "Even"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 153,
+      "manualAddress": "40154 (0099)",
+      "type": "u16",
+      "name": {
+        "ko": "정지 비트 (STOP)",
+        "en": "Stop bits (STOP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1 비트 고정",
+          "en": "1 bit (fixed)"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 154,
+      "manualAddress": "40155 (009A)",
+      "type": "u16",
+      "name": {
+        "ko": "응답 대기 시간 (RWT)",
+        "en": "Response wait time (RWT)"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 99
+      },
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    },
+    {
+      "table": "holding-registers",
+      "address": 155,
+      "manualAddress": "40156 (009B)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 쓰기 금지 (CWP)",
+        "en": "Communication write protect (CWP)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "OFF",
+          "en": "OFF"
+        },
+        {
+          "value": 1,
+          "ko": "ON",
+          "en": "ON"
+        }
+      ],
+      "ref": "인쇄 p.45 (PDF p.44)",
+      "source": 0
+    }
+  ],
+  "notes": [
+    {
+      "ko": "RS485 는 형번 끝 C 모델만: LP3-5A5NC·LP3-5A5PC(5단 출력 + RS485), LP6-5ANC(지시 전용 + RS485) (인쇄 p.6 (PDF p.5) 주문 정보).",
+      "en": "RS485 only on models ending in C: LP3-5A5NC, LP3-5A5PC (5-stage output + RS485), LP6-5ANC (indicator + RS485) (ordering info, printed p.6 (PDF p.5))."
+    },
+    {
+      "ko": "측정값 PV·MAX·MIN(31003~31008), 비교값 LSV·HSV·LLSV·HHSV·DSV(31009~31018, 40001~40010), 프리스케일 가수 P-AX·P-BX(40055~40056·40058~40059), Auto-zero 시간 AZ-A·AZ-B(40102~40105)는 «Double Word 로 멀티 전송» 이라고만 적혀 있고 두 워드 중 어느 쪽이 상위인지(워드 순서)·배율이 매뉴얼에 없어 넣지 않았다.",
+      "en": "PV/MAX/MIN (31003-31008), set values LSV/HSV/LLSV/HHSV/DSV (31009-31018, 40001-40010), prescale mantissas P-AX/P-BX (40055-40056, 40058-40059) and auto-zero times AZ-A/AZ-B (40102-40105) are only described as 'double word, multi-register transfer'; the word order and scaling are not stated, so they are omitted."
+    },
+    {
+      "ko": "기동 보상 시간 S-TMR(40107 (006A), 0.0~99.9 s)은 원시 값 배율이 적혀 있지 않아 넣지 않았다. 제품 번호(30101~30102)와 BANK #1·#2 묶음(40161~40180·40201~40220, LP3 만)도 뺐다 — 필요하면 인쇄 p.46~47 참조.",
+      "en": "Start-up compensation time S-TMR (40107 (006A), 0.0-99.9 s) is omitted because its raw scaling is not stated. Product number (30101-30102) and the BANK #1/#2 blocks (40161-40180, 40201-40220, LP3 only) are also omitted — see printed pp.46-47."
+    },
+    {
+      "ko": "예외 코드 1 = 지원하지 않는 명령, 2 = 시작 번지 불일치, 3 = 개수 불일치, 4 = 처리 실패 (인쇄 p.40). 통신 쓰기 금지(CWP) ON 이면 쓰기가 막힌다.",
+      "en": "Exception codes 1 = unsupported function, 2 = start address mismatch, 3 = quantity mismatch, 4 = processing failure (printed p.40). Writes are blocked while CWP is ON."
+    },
+    {
+      "ko": "쪽 번호: 이 PDF 는 인쇄 쪽 = PDF 쪽 + 1.",
+      "en": "Page numbers: in this PDF, printed page = PDF page + 1."
+    }
+  ],
+  "sources": [
+    {
+      "title": "LP SERIES LCD Multi Pulsemeter 사용설명서",
+      "publisher": "Hanyoung Nux",
+      "edition": {
+        "ko": "MF0601K240828_U (PDF 작성 2024-08-28)",
+        "en": "MF0601K240828_U (PDF created 2024-08-28)"
+      },
+      "url": "https://www.hanyoungnux.co.kr/data/main.php?down=2487(LP_user_kr).pdf&file_name=LP_user_kr.pdf",
+      "pages": {
+        "ko": "인쇄 p.37~47 (PDF p.36~46) 통신, p.6 주문 정보, p.8·p.15 통신 사양",
+        "en": "printed pp.37-47 (PDF pp.36-46) communication, p.6 ordering, pp.8, 15 comm spec"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}

@@ -1,0 +1,779 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "eastron/sdm120ct-40ma",
+  "manufacturer": {
+    "ko": "이스트론",
+    "en": "Eastron"
+  },
+  "model": "SDM120CT-40mA",
+  "kind": "power-meter",
+  "title": {
+    "ko": "이스트론 SDM120CT-40mA 단상 DIN 레일 다기능 전력량계(40 mA 2차 CT)",
+    "en": "Eastron SDM120CT-40mA single-phase DIN-rail multifunction meter (40 mA secondary CT)"
+  },
+  "summary": {
+    "ko": "단상 계측값은 input register(FC04)에 IEEE 754 Float32(상위 워드 먼저), 설정은 holding register(FC03 읽기·FC16 쓰기). 일부 설정(F9xx)은 2바이트 한 칸.",
+    "en": "Single-phase measurements are IEEE 754 Float32 input registers (FC04, high word first); settings are holding registers (FC03 read, FC16 write). Some settings (F9xx) are single 2-byte registers."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600
+    ],
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 30001·40001 꼴 번호와 Hex 시작 주소 칸을 함께 적는다(30001 ↔ 00 00, 40003 ↔ 00 02). 통신 주소 = 번호 − 30001·− 40001, 6자리(461457·463761 등)는 − 400001 (p.16-19).",
+        "en": "The manual lists 30001/40001-style numbers with a Hex start-address column (30001 ↔ 00 00, 40003 ↔ 00 02). Wire address = number − 30001 / − 40001; 6-digit numbers (461457, 463761 …) use − 400001 (p.16-19)."
+      },
+      {
+        "ko": "주소 기준은 프레임 예로 확인: 30001 L1 전압 읽기 01 04 00 00 00 02 71 CB → 01 04 04 43 66 00 00 0E 1F(230.0) (p.16-17), 40003 읽기 01 03 00 02 00 02 65 CB → 01 03 04 42 70 00 00 EF 90(60.0), 15분 쓰기 01 10 00 02 00 02 04 41 70 00 00 67 91 → 01 10 00 02 00 02 E0 08 (p.19-20). 여섯 프레임 모두 CRC 를 다시 계산해 맞음.",
+        "en": "Addressing confirmed by frame examples: read 30001 L1 voltage 01 04 00 00 00 02 71 CB → 01 04 04 43 66 00 00 0E 1F (230.0) (p.16-17); read 40003 01 03 00 02 00 02 65 CB → 01 03 04 42 70 00 00 EF 90 (60.0); write 15 min 01 10 00 02 00 02 04 41 70 00 00 67 91 → 01 10 00 02 00 02 E0 08 (p.19-20). CRC recomputed and correct for all six."
+      },
+      {
+        "ko": "Float 은 빅 엔디언 — 첫 레지스터가 상위 16비트 (p.15 응답 프레임 설명, 위 예 43 66 00 00 = 230).",
+        "en": "Float is big-endian: the first register holds the high 16 bits (p.15 response frame description; example 43 66 00 00 = 230)."
+      },
+      {
+        "ko": "출하값 9600 bps·패리티 없음·국번 1 (p.6 사양표, p.18 40019·40021·40029). 데이터 비트 수는 매뉴얼에 없다.",
+        "en": "Defaults 9600 bps, no parity, address 1 (p.6 spec table, p.18 40019/40021/40029). Data bits are not stated."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "30001",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압(L-N)",
+        "en": "Line-to-neutral voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "30007",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류",
+        "en": "Current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "30013",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효전력",
+        "en": "Active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 18,
+      "manualAddress": "30019",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상전력",
+        "en": "Apparent power"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 24,
+      "manualAddress": "30025",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효전력",
+        "en": "Reactive power"
+      },
+      "unit": "VAr",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 30,
+      "manualAddress": "30031",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "역률",
+        "en": "Power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 70,
+      "manualAddress": "30071",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 72,
+      "manualAddress": "30073",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 유효전력량",
+        "en": "Import active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 74,
+      "manualAddress": "30075",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 유효전력량",
+        "en": "Export active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 76,
+      "manualAddress": "30077",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 무효전력량",
+        "en": "Import reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 78,
+      "manualAddress": "30079",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 무효전력량",
+        "en": "Export reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 84,
+      "manualAddress": "30085",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력 디맨드",
+        "en": "Total active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 86,
+      "manualAddress": "30087",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력 최대 디맨드",
+        "en": "Maximum total active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 88,
+      "manualAddress": "30089",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 유효전력 디맨드",
+        "en": "Import active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "표 이름은 «Import active energy demand» 이나 단위는 W",
+        "en": "Table name says 'Import active energy demand' but unit is W"
+      },
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 90,
+      "manualAddress": "30091",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 유효전력 최대 디맨드",
+        "en": "Maximum import active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 92,
+      "manualAddress": "30093",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 유효전력 디맨드",
+        "en": "Export active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 94,
+      "manualAddress": "30095",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 유효전력 최대 디맨드",
+        "en": "Maximum export active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 258,
+      "manualAddress": "30259",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 디맨드",
+        "en": "Current demand"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 264,
+      "manualAddress": "30265",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 최대 디맨드",
+        "en": "Maximum current demand"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 342,
+      "manualAddress": "30343",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력량",
+        "en": "Total active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "input-registers",
+      "address": 344,
+      "manualAddress": "30345",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 무효전력량",
+        "en": "Total reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.16 (PDF 19)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "40003",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "디맨드 주기",
+        "en": "Demand period"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "description": {
+        "ko": "출하 60. 0 = 실시간(1초마다 갱신)",
+        "en": "Default 60; 0 = real time (updated every second)"
+      },
+      "ref": "p.17 (PDF 20)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "40013",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "펄스 출력 폭",
+        "en": "Relay pulse width"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 60,
+          "ko": "60 ms(출하)",
+          "en": "60 ms (default)"
+        },
+        {
+          "value": 100,
+          "ko": "100 ms",
+          "en": "100 ms"
+        },
+        {
+          "value": 200,
+          "ko": "200 ms",
+          "en": "200 ms"
+        }
+      ],
+      "ref": "p.17 (PDF 20)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "40019",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "패리티·정지 비트",
+        "en": "Parity and stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지 1비트·패리티 없음(출하)",
+          "en": "1 stop bit, no parity (default)"
+        },
+        {
+          "value": 1,
+          "ko": "정지 1비트·짝수 패리티",
+          "en": "1 stop bit, even parity"
+        },
+        {
+          "value": 2,
+          "ko": "정지 1비트·홀수 패리티",
+          "en": "1 stop bit, odd parity"
+        },
+        {
+          "value": 3,
+          "ko": "정지 2비트·패리티 없음",
+          "en": "2 stop bits, no parity"
+        }
+      ],
+      "ref": "p.17-18 (PDF 20-21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "40021",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "Modbus 국번",
+        "en": "Modbus address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 1",
+        "en": "Default 1"
+      },
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "40029",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps(출하)",
+          "en": "9600 bps (default)"
+        },
+        {
+          "value": 5,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        }
+      ],
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50,
+      "manualAddress": "40051",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "CT 1차 전류",
+        "en": "CT primary current"
+      },
+      "unit": "A",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 5,
+        "max": 9999
+      },
+      "description": {
+        "ko": "출하 5",
+        "en": "Default 5"
+      },
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60,
+      "manualAddress": "40061",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "백라이트 시간",
+        "en": "Backlight time"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 121
+      },
+      "description": {
+        "ko": "0 = 늘 켬, 121 = 늘 끔, 출하 60",
+        "en": "0 = always on, 121 = always off, default 60"
+      },
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 86,
+      "manualAddress": "40087",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "펄스 1 출력 대상",
+        "en": "Pulse 1 output mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "수전 유효전력량",
+          "en": "Import active energy"
+        },
+        {
+          "value": 2,
+          "ko": "수전 + 송전 유효전력량",
+          "en": "Import + export active energy"
+        },
+        {
+          "value": 4,
+          "ko": "송전 유효전력량(출하)",
+          "en": "Export active energy (default)"
+        },
+        {
+          "value": 5,
+          "ko": "수전 무효전력량",
+          "en": "Import reactive energy"
+        },
+        {
+          "value": 6,
+          "ko": "수전 + 송전 무효전력량",
+          "en": "Import + export reactive energy"
+        },
+        {
+          "value": 8,
+          "ko": "송전 무효전력량",
+          "en": "Export reactive energy"
+        }
+      ],
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 61456,
+      "manualAddress": "461457",
+      "type": "u16",
+      "name": {
+        "ko": "리셋",
+        "en": "Reset"
+      },
+      "access": "w",
+      "fc": [
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "최대 디맨드 리셋",
+          "en": "Reset maximum demand"
+        }
+      ],
+      "description": {
+        "ko": "2바이트 Hex(F0 10)",
+        "en": "2-byte hex (F0 10)"
+      },
+      "ref": "p.18 (PDF 21)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 63760,
+      "manualAddress": "463761",
+      "type": "u16",
+      "name": {
+        "ko": "펄스 1 정수",
+        "en": "Pulse 1 rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0.001 kWh/imp(출하)",
+          "en": "0.001 kWh/imp (default)"
+        },
+        {
+          "value": 1,
+          "ko": "0.01 kWh/imp",
+          "en": "0.01 kWh/imp"
+        },
+        {
+          "value": 2,
+          "ko": "0.1 kWh/imp",
+          "en": "0.1 kWh/imp"
+        },
+        {
+          "value": 3,
+          "ko": "1 kWh/imp",
+          "en": "1 kWh/imp"
+        }
+      ],
+      "description": {
+        "ko": "2바이트 Hex(F9 10)",
+        "en": "2-byte hex (F9 10)"
+      },
+      "ref": "p.19 (PDF 22)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "뺀 레지스터: 463779 계량 모드(번호 463779 는 F9 22 인데 Hex 칸은 F9 20 — 어느 쪽이 맞는지 예가 없음, p.19), 463745 화면 자동 넘김 시간(형식 BCD), 464513 일련번호(unsigned int32 — 워드 순서가 매뉴얼에 없음).",
+      "en": "Left out: 463779 metering mode (number 463779 means F9 22 but the Hex column says F9 20; no example decides, p.19), 463745 scroll display time (BCD format), 464513 serial number (unsigned int32 — word order not stated)."
+    },
+    {
+      "ko": "Float 계측값·설정은 2개씩(짝수 시작) 읽고 쓴다. 이 매뉴얼은 40 mA CT 형만 다룬다 — 다른 SDM120 형번은 각자의 매뉴얼로 확인.",
+      "en": "Read/write Float values as register pairs (even start). This manual covers the 40 mA CT version only; check other SDM120 variants against their own manuals."
+    }
+  ],
+  "sources": [
+    {
+      "title": "SDM120CT-40mA User Manual",
+      "publisher": "Eastron Electronic Co., Ltd.",
+      "edition": {
+        "ko": "2026 V1.0 (판 이력 1.0 = 2026-07-16 첫 판), 파일명 EastronSDM120CT-M40mAUsermanualV10.pdf (eastrongroup.com 다운로드 센터 2026-07-17 게시)",
+        "en": "2026 V1.0 (version history 1.0 = 2026-07-16 initial issue); file name EastronSDM120CT-M40mAUsermanualV10.pdf (posted 2026-07-17 on the eastrongroup.com download center)"
+      },
+      "url": "https://www.eastrongroup.com/eastrongroup/2026/07/17/EastronSDM120CT-M40mAUsermanualV10.pdf",
+      "pages": {
+        "ko": "인쇄 p.6 통신 사양, p.14-15 프레임 형식, p.16-17 입력 레지스터·예, p.17-20 홀딩 레지스터·예 (PDF 쪽 = 인쇄 쪽 + 3)",
+        "en": "printed p.6 comm specs, p.14-15 frame format, p.16-17 input registers and example, p.17-20 holding registers and examples (PDF page = printed + 3)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}

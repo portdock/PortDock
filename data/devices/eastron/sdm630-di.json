@@ -1,0 +1,924 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "eastron/sdm630-di",
+  "manufacturer": {
+    "ko": "이스트론",
+    "en": "Eastron"
+  },
+  "model": "SDM630-DI",
+  "kind": "power-meter",
+  "title": {
+    "ko": "이스트론 SDM630-DI 3상 DIN 레일 전력량계(직결 100 A, 디지털 입력 2점)",
+    "en": "Eastron SDM630-DI three-phase DIN-rail energy meter (100 A direct, 2 digital inputs)"
+  },
+  "summary": {
+    "ko": "계측값은 input register(FC04)에 IEEE 754 Float32(상위 워드 먼저), 설정은 holding register(FC03 읽기·FC16 쓰기)에 Float32. 같은 값을 정수(Int32·Int64)로 주는 310021~ 영역도 있다.",
+    "en": "Measurements are IEEE 754 Float32 input registers (FC04, high word first); settings are Float32 holding registers (FC03 read, FC16 write). An integer (Int32/Int64) area from 310021 also exists."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 30001·40001 꼴 번호와 «Modbus Protocol Start Address Hex» 칸을 함께 적는다(30001 ↔ 00 00, 40003 ↔ 00 02). 통신 주소 = 번호 − 30001(입력)·− 40001(홀딩), 6자리(310021·461457 등)는 − 300001·− 400001 (p.20-25).",
+        "en": "The manual lists 30001/40001-style numbers together with a 'Modbus Protocol Start Address Hex' column (30001 ↔ 00 00, 40003 ↔ 00 02). Wire address = number − 30001 (input) or − 40001 (holding); 6-digit numbers (310021, 461457 …) use − 300001 / − 400001 (p.20-25)."
+      },
+      {
+        "ko": "주소 기준은 p.26-27 프레임 예로 확인: 40003 Demand Period 읽기 01 03 00 02 00 02 65 CB → 01 03 04 42 70 00 00 EF 90(60.0), 15분 쓰기 01 10 00 02 00 02 04 41 70 00 00 67 91 → 01 10 00 02 00 02 E0 08. 네 프레임 모두 CRC 를 다시 계산해 맞음. 입력 레지스터의 숫자 예는 이 매뉴얼에 없어 표의 Hex 칸(30001 ↔ 00 00)으로 맞췄다.",
+        "en": "Addressing confirmed by the frame examples on p.26-27: read 40003 Demand Period 01 03 00 02 00 02 65 CB → 01 03 04 42 70 00 00 EF 90 (60.0); write 15 min 01 10 00 02 00 02 04 41 70 00 00 67 91 → 01 10 00 02 00 02 E0 08. CRC recomputed and correct for all four. This manual has no numeric input-register example, so input addresses follow the table's Hex column (30001 ↔ 00 00)."
+      },
+      {
+        "ko": "Float 은 빅 엔디언 — 첫 레지스터가 상위 16비트 (p.19-20 응답 프레임 설명, 위 예 42 70 00 00 = 60.0).",
+        "en": "Float is big-endian: the first register holds the high 16 bits (p.19-20 response frame description; example 42 70 00 00 = 60.0)."
+      },
+      {
+        "ko": "출하값 9600 bps·패리티 없음·국번 1 (p.7 2.7.1, p.24 40019·40021). 속도 115.2k 는 40029 값 6 (5 는 표에 없음) (p.25).",
+        "en": "Defaults 9600 bps, no parity, address 1 (p.7 2.7.1, p.24 40019/40021). 115.2k is value 6 in 40029 (5 is not listed) (p.25)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "30001",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 상전압",
+        "en": "L1 line-to-neutral voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "30003",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 상전압",
+        "en": "L2 line-to-neutral voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "30005",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 상전압",
+        "en": "L3 line-to-neutral voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "30007",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 전류",
+        "en": "L1 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 8,
+      "manualAddress": "30009",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 전류",
+        "en": "L2 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 10,
+      "manualAddress": "30011",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 전류",
+        "en": "L3 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "30013",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 유효전력",
+        "en": "L1 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "30015",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 유효전력",
+        "en": "L2 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "30017",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 유효전력",
+        "en": "L3 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.20 (PDF 23)"
+    },
+    {
+      "table": "input-registers",
+      "address": 30,
+      "manualAddress": "30031",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 역률",
+        "en": "L1 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "부호 = 전류 방향(+ 정방향, − 역방향)",
+        "en": "Sign shows current direction (+ forward, − reverse)"
+      },
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 32,
+      "manualAddress": "30033",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 역률",
+        "en": "L2 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 34,
+      "manualAddress": "30035",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 역률",
+        "en": "L3 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 42,
+      "manualAddress": "30043",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average line-to-neutral voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 46,
+      "manualAddress": "30047",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 전류",
+        "en": "Average line current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 52,
+      "manualAddress": "30053",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력",
+        "en": "Total active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 56,
+      "manualAddress": "30057",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 피상전력",
+        "en": "Total apparent power"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 60,
+      "manualAddress": "30061",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 무효전력",
+        "en": "Total reactive power"
+      },
+      "unit": "VAr",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 62,
+      "manualAddress": "30063",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 역률",
+        "en": "Total power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 70,
+      "manualAddress": "30071",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 72,
+      "manualAddress": "30073",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 유효전력량",
+        "en": "Import active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 74,
+      "manualAddress": "30075",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 유효전력량",
+        "en": "Export active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 76,
+      "manualAddress": "30077",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수전 무효전력량",
+        "en": "Import reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 78,
+      "manualAddress": "30079",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "송전 무효전력량",
+        "en": "Export reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 84,
+      "manualAddress": "30085",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력 디맨드",
+        "en": "Total active power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "수전 − 송전으로 계산",
+        "en": "Calculated as import − export"
+      },
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 200,
+      "manualAddress": "30201",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1-L2 선간전압",
+        "en": "L1-L2 voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 202,
+      "manualAddress": "30203",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2-L3 선간전압",
+        "en": "L2-L3 voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 204,
+      "manualAddress": "30205",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3-L1 선간전압",
+        "en": "L3-L1 voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 224,
+      "manualAddress": "30225",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "중성선 전류",
+        "en": "Neutral current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.21 (PDF 24)"
+    },
+    {
+      "table": "input-registers",
+      "address": 342,
+      "manualAddress": "30343",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효전력량",
+        "en": "Total active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "수전 + 송전",
+        "en": "Import + export"
+      },
+      "ref": "p.22 (PDF 25)"
+    },
+    {
+      "table": "input-registers",
+      "address": 344,
+      "manualAddress": "30345",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 무효전력량",
+        "en": "Total reactive energy"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "수전 + 송전",
+        "en": "Import + export"
+      },
+      "ref": "p.22 (PDF 25)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "40001",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "디맨드 경과 시간",
+        "en": "Demand time"
+      },
+      "unit": "min",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "첫 디맨드 계산까지 지난 분. Demand Period 에 이르면 디맨드 값이 유효",
+        "en": "Minutes into the first demand calculation; demand values are valid once it reaches the demand period"
+      },
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "40003",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "디맨드 주기",
+        "en": "Demand period"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "description": {
+        "ko": "출하 60. 0 = 실시간(1초마다 갱신)",
+        "en": "Default 60; 0 = real time (updated every second)"
+      },
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "40011",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "결선 방식",
+        "en": "System type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "1P2W",
+          "en": "1P2W"
+        },
+        {
+          "value": 2,
+          "ko": "3P3W",
+          "en": "3P3W"
+        },
+        {
+          "value": 3,
+          "ko": "3P4W(출하)",
+          "en": "3P4W (default)"
+        }
+      ],
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "40015",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주요 파라미터 설정 권한(KPPA)",
+        "en": "Key parameter programming authorization (KPPA)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "권한 없음",
+          "en": "Not authorized"
+        },
+        {
+          "value": 1,
+          "ko": "권한 있음",
+          "en": "Authorized"
+        }
+      ],
+      "description": {
+        "ko": "읽으면 상태, 맞는 비밀번호를 쓰면 주요 파라미터 설정 권한을 얻는다",
+        "en": "Read for status; write the correct password to enable programming of key parameters"
+      },
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "40019",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "패리티·정지 비트",
+        "en": "Parity and stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지 1비트·패리티 없음(출하)",
+          "en": "1 stop bit, no parity (default)"
+        },
+        {
+          "value": 1,
+          "ko": "정지 1비트·짝수 패리티",
+          "en": "1 stop bit, even parity"
+        },
+        {
+          "value": 2,
+          "ko": "정지 1비트·홀수 패리티",
+          "en": "1 stop bit, odd parity"
+        },
+        {
+          "value": 3,
+          "ko": "정지 2비트·패리티 없음",
+          "en": "2 stop bits, no parity"
+        }
+      ],
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "40021",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "Modbus 국번",
+        "en": "Modbus address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 1",
+        "en": "Default 1"
+      },
+      "ref": "p.24 (PDF 27)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 24,
+      "manualAddress": "40025",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "비밀번호",
+        "en": "Password"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "description": {
+        "ko": "출하 1000",
+        "en": "Default 1000"
+      },
+      "ref": "p.25 (PDF 28)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "40029",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps(출하)",
+          "en": "9600 bps (default)"
+        },
+        {
+          "value": 3,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 4,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 6,
+          "ko": "115200 bps",
+          "en": "115200 bps"
+        }
+      ],
+      "ref": "p.25 (PDF 28)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60,
+      "manualAddress": "40061",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "백라이트 시간",
+        "en": "Backlight time"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 121
+      },
+      "description": {
+        "ko": "0 = 늘 켬, 121 = 늘 끔, 출하 60",
+        "en": "0 = always on, 121 = always off, default 60"
+      },
+      "ref": "p.25 (PDF 28)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 61456,
+      "manualAddress": "461457",
+      "type": "u16",
+      "name": {
+        "ko": "리셋",
+        "en": "Reset"
+      },
+      "access": "w",
+      "fc": [
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "최대 디맨드 리셋",
+          "en": "Reset maximum demand"
+        },
+        {
+          "value": 6,
+          "ko": "DI 카운트 리셋",
+          "en": "Reset DI counts"
+        }
+      ],
+      "description": {
+        "ko": "2바이트 Hex(F0 10)",
+        "en": "2-byte hex (F0 10)"
+      },
+      "ref": "p.25 (PDF 28)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "정수 영역(310021~ Int64 Wh·VArh, 310251~ Int32 0.1 V 등)은 넣지 않았다 — 매뉴얼은 Float 의 워드 순서만 적고 Int32·Int64 의 워드 순서는 적지 않는다 (p.19-20, p.22-23). 일련번호(464513, unsigned int32)도 같은 이유로 뺐다.",
+      "en": "The integer area (310021~ Int64 Wh/VArh, 310251~ Int32 0.1 V etc.) is left out: the manual states word order only for Float, not for Int32/Int64 (p.19-20, p.22-23). Serial number (464513, unsigned int32) is left out for the same reason."
+    },
+    {
+      "ko": "뺀 레지스터: 30255(이름은 총 역률인데 단위가 Degrees, p.21), 40071 CO2 RATE(범위는 소수인데 형식 칸이 hex, p.25), 40769 DI 필터 시간(통신 표는 ms·0~255, 설정 메뉴 p.18 은 000~255 min — 단위가 어긋남), 40770·40772 DI 카운트(홀수 주소의 unsigned int32, 워드 순서 없음).",
+      "en": "Left out: 30255 (named total power factor but unit Degrees, p.21), 40071 CO2 RATE (decimal range but format 'hex', p.25), 40769 DI filter time (comm table says ms, 0-255; setup menu p.18 says 000-255 min — units disagree), 40770/40772 DI counts (unsigned int32 at odd addresses, no word order)."
+    },
+    {
+      "ko": "Float 계측값은 2개씩(짝수 시작) 읽는다. 이 매뉴얼은 같은 이스트론 SDM630 계열이라도 SDM630-DI 만 다룬다 — 다른 SDM630 형번은 각자의 매뉴얼로 확인.",
+      "en": "Read Float values as register pairs (even start). This manual covers SDM630-DI only; check other SDM630 variants against their own manuals."
+    }
+  ],
+  "sources": [
+    {
+      "title": "SDM630-DI User Manual",
+      "publisher": "Eastron Electronic Co., Ltd.",
+      "edition": {
+        "ko": "2025 V1.01(표지·머리말), 판 이력 표 마지막 줄 1.02 2025-08-04, 파일명 eastronsdm630-diusermanualv1.02.pdf (eastrongroup.com 다운로드 센터 2025-08-06 게시)",
+        "en": "2025 V1.01 (cover and headers); version history last row 1.02 dated 2025-08-04; file name eastronsdm630-diusermanualv1.02.pdf (posted 2025-08-06 on the eastrongroup.com download center)"
+      },
+      "url": "https://www.eastrongroup.com/eastrongroup/2025/08/06/eastronsdm630-diusermanualv1.02.pdf",
+      "pages": {
+        "ko": "인쇄 p.7 통신 사양, p.19-20 프레임 형식, p.20-23 입력 레지스터, p.23-27 홀딩 레지스터·프레임 예 (PDF 쪽 = 인쇄 쪽 + 3)",
+        "en": "printed p.7 comm specs, p.19-20 frame format, p.20-23 input registers, p.23-27 holding registers and frame examples (PDF page = printed + 3)"
+      },
+      "checked": "2026-10-29"
+    }
+  ]
+}
