@@ -717,12 +717,19 @@ mod tests {
     /// 수 MB 글 응답이 작은 조각으로 와도 길이에 비례한 시간에 끝난다(예전: 8MB 에 약 15초 — 조각마다 처음부터 다시 훑음)
     #[test]
     fn big_text_reply_in_small_chunks_is_linear() {
-        let mut inst = Instrument::new(Box::new(Chunks { left: 4 << 20 }), Term::Lf);
-        let t = Instant::now();
-        let r = inst.read(Duration::from_secs(60)).unwrap();
-        assert_eq!(r.raw.len(), 4 << 20);
-        assert_eq!(r.text().map(str::len), Some((4 << 20) - 1));
-        assert!(t.elapsed() < Duration::from_secs(3), "{:?}", t.elapsed());
+        // 절대 시간 대신 «1MB 대비 4MB» 비율로 본다 — CI 러너는 다른 시험과 CPU 를 나눠 써 느리다(10/29 CI 6.96 s)
+        let timed = |len: usize| {
+            let mut inst = Instrument::new(Box::new(Chunks { left: len }), Term::Lf);
+            let t = Instant::now();
+            let r = inst.read(Duration::from_secs(120)).unwrap();
+            assert_eq!(r.raw.len(), len);
+            assert_eq!(r.text().map(str::len), Some(len - 1));
+            t.elapsed()
+        };
+        let small = timed(1 << 20);
+        let big = timed(4 << 20);
+        // 선형이면 약 4배, 조각마다 처음부터 훑던 예전(제곱)이면 약 16배
+        assert!(big < small * 9 + Duration::from_millis(300), "1MB {small:?} → 4MB {big:?}");
         assert!(waits_for_end(b"\r\n1.5") && waits_for_end(b"#0ab") && waits_for_end(b"#A"));
         assert!(!waits_for_end(b"#210") && !waits_for_end(b"\n") && !waits_for_end(b""));
     }
