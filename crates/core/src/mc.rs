@@ -51,7 +51,7 @@ pub const E_DATA_LEN: u16 = 0xC061;
 /// 화면·기록에 보일 종료 코드 설명(한·영)
 pub fn end_code_text(code: u16) -> &'static str {
     match code {
-        0 => crate::tr!("정상", "OK"),
+        0 => crate::tr!("완료", "OK"),
         E_ASCII => crate::tr!("ASCII 변환 불가", "ASCII conversion error"),
         E_POINTS_WORD => crate::tr!("점 수 범위 밖(워드)", "points out of range (words)"),
         E_POINTS_BIT => crate::tr!("점 수 범위 밖(비트)", "points out of range (bits)"),
@@ -1062,7 +1062,7 @@ pub fn describe_request(fmt: Format, f: &[u8]) -> Option<String> {
     Some(s)
 }
 
-/// 보낸 응답 한 줄(«종료 0000 정상 · 6바이트», «종료 C056 주소 범위 밖»)
+/// 보낸 응답 한 줄(«종료 0000 완료 · 6바이트», «종료 C056 주소 범위 밖»)
 pub fn describe_response(fmt: Format, f: &[u8]) -> Option<String> {
     let ascii = fmt.ascii();
     let off = fmt.len_offset();
@@ -1105,7 +1105,7 @@ mod tests {
         v.extend(cmd);
         v
     }
-    /// 3E 이진 정상 응답 = D0 00 + 같은 국 정보 + 길이 + 종료 0000 + 응답 데이터
+    /// 3E 이진 완료 응답 = D0 00 + 같은 국 정보 + 길이 + 종료 0000 + 응답 데이터
     fn b3_ok(data: &[u8]) -> Vec<u8> {
         let len = (2 + data.len()) as u16;
         let mut v = vec![0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00];

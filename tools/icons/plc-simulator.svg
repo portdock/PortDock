@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock PLC Simulator (제어기 몸통 + 양옆 단자 + 표시등) — 배경: 앱 색(벽돌), 흰 획 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#9a3412"/>
+  <g fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="80" y="52" width="96" height="124" rx="10"/>
+    <path d="M40 82 H62 M40 146 H62 M194 82 H216 M194 146 H216"/>
+  </g>
+  <circle cx="128" cy="114" r="16" fill="#ffffff"/>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

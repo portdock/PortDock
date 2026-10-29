@@ -27,6 +27,7 @@ export const FEATURES = {
   plot: ["start", "record", "export"],
   netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor"],
   "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "loopback", "open_in_serial"],
+  "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type UsageApp = keyof typeof FEATURES;
