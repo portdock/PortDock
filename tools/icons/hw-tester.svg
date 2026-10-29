@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock Hardware Tester (Wi-Fi 부채꼴 — 무선 끊김·지연 기록) — 배경: 앱 색(짙은 시안), 흰 호 둘 + 점 + 아래 흰 막대(독). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#0e7490"/>
+  <g fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round">
+    <path d="M52 102 A108 108 0 0 1 204 102"/>
+    <path d="M86 136 A60 60 0 0 1 170 136"/>
+  </g>
+  <circle cx="128" cy="168" r="17" fill="#ffffff"/>
+  <rect x="56" y="200" width="144" height="20" rx="10" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

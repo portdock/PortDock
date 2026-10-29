@@ -1,0 +1,242 @@
+/* PortDock Hardware Tester — App.css(Port Inspector 바탕) 위에 이 앱만의 모양 */
+.hw-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.nav-item:hover {
+  background: var(--sel);
+}
+.nav-item.sel {
+  background: var(--sel);
+  border-color: var(--accent);
+}
+.nav-item .nav-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-item.later {
+  color: var(--muted);
+}
+.nav-later-head {
+  margin-top: 10px;
+}
+.tag.rec {
+  color: #fff;
+  background: var(--fail);
+  border-color: var(--fail);
+}
+.net-config {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: flex-end;
+}
+.net-config .field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.net-config .field > span:first-child {
+  color: var(--muted);
+}
+.target-in {
+  width: 150px;
+}
+.dns-in {
+  width: 190px;
+}
+.out-note {
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--sel);
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.chart-head .grow {
+  flex: 1;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  color: var(--muted);
+}
+.legend .mono {
+  color: var(--ink);
+  margin-right: 6px;
+}
+.sw {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+.sw-gw {
+  background: var(--rx);
+}
+.sw-net {
+  background: var(--tx);
+}
+.sw-dns {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+}
+.sw-loss {
+  width: 4px;
+  height: 8px;
+  background: var(--fail);
+}
+.sw-down {
+  width: 0;
+  height: 12px;
+  border-left: 2px dashed var(--fail);
+  border-radius: 0;
+}
+.seg-group {
+  display: inline-flex;
+  gap: 2px;
+}
+.chart {
+  position: relative;
+  height: 240px;
+  min-height: 160px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.chart canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+section.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+section.card .sub-title {
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+section.card .card-notes {
+  margin: 0;
+}
+section.card table.grid td,
+section.card table.grid th {
+  padding: 3px 8px;
+  position: static;
+}
+table.grid .num {
+  text-align: right;
+  width: auto;
+  font-variant-numeric: tabular-nums;
+}
+table.grid td.warn {
+  color: var(--fail);
+  font-weight: 600;
+}
+table.grid.ev-list tr.ev-wifiDown td {
+  color: var(--fail);
+}
+table.grid.ev-list tr.ev-wifiUp td {
+  color: var(--ok);
+}
+.ellipsis-cell {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-table tr.mine td {
+  font-weight: 600;
+}
+.ch-table .bar {
+  display: inline-block;
+  height: 8px;
+  max-width: 160px;
+  min-width: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.plain-ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.audio-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.tone .vol {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+}
+.tone .vol input {
+  flex: 1;
+}
+.tone-btns .btn {
+  flex: 0 0 auto;
+}
+.btn.on {
+  border-color: var(--accent);
+  background: var(--sel);
+}
+.empty-guide.later {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rec-btn {
+  min-width: 96px;
+}

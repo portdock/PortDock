@@ -1,0 +1,23 @@
+[package]
+name = "portdock-hw-tester"
+description = "PortDock Hardware Tester — Wi-Fi·인터넷 끊김·지연 기록, Wi-Fi 신호·채널, 블루투스 연결 기록·오디오 확인(읽기 전용)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_hw_tester_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-window-state = "2"

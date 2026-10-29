@@ -510,6 +510,25 @@ const TIPS: Record<string, Tip> = {
   piPcSource: ["Microsoft 공식 문서를 엽니다(장비용 Windows 의 업데이트·재시작 정책).", "Opens the official Microsoft doc (update and restart policies for device Windows)."],
   piDays: ["이벤트 로그에서 찾아볼 기간.", "How far back to search the event logs."],
   piCannot: ["PC 가 읽을 수 없는 것 — 결과와 상관없이 따로 확인합니다.", "What the PC cannot read — check it separately whatever the results say."],
+  // ---- Hardware Tester
+  hwTab_net: ["게이트웨이(공유기)와 인터넷 대상의 지연·손실, DNS 응답, Windows 가 남긴 Wi-Fi 끊김을 한 그래프에 기록합니다.", "Records gateway (router) and internet latency and loss, DNS replies and the Wi-Fi drops Windows logs on one chart."],
+  hwTab_signal: ["누를 때만 지금 Wi-Fi 신호·링크 속도·채널과 채널별 주변 Wi-Fi 수를 봅니다(위치 권한 필요).", "Only when you ask: current Wi-Fi signal, link speed, channel and nearby networks per channel (needs location permission)."],
+  hwTab_bt: ["짝지은 블루투스 장치가 언제 연결되고 끊겼는지 기록합니다.", "Logs when paired Bluetooth devices connect and disconnect."],
+  hwTab_audio: ["기본 블루투스 출력이 스테레오인지 핸즈프리(통화용)인지, 왼쪽·오른쪽 소리를 확인합니다.", "Whether the default Bluetooth output is stereo or hands-free (calls), and left/right test tones."],
+  hwRecStart: ["게이트웨이와 인터넷 대상에 정한 간격(1초 이상)으로 핑을 보내기 시작합니다. 24시간 뒤 저절로 멈춥니다.", "Starts pinging the gateway and the internet target at the chosen interval (1 s or longer). Stops by itself after 24 hours."],
+  hwRecStop: ["기록을 멈춥니다. 멈추면 핑을 보내지 않습니다. 기록은 저장할 때까지 화면에 남습니다.", "Stops recording; no more pings are sent. The record stays on screen until you save it."],
+  hwCopySummary: ["요약·통계·Wi-Fi 사건을 글로 복사합니다(네트워크 이름 없음).", "Copies the summary, statistics and Wi-Fi events as text (no network name)."],
+  hwSaveCsv: ["박자마다의 응답 시간과 Wi-Fi 사건을 CSV 로 저장합니다.", "Saves per-beat reply times and Wi-Fi events as CSV."],
+  hwTarget: ["공유기 너머의 기준이 될 주소 하나. 1.1.1.1(Cloudflare)·8.8.8.8(Google) 공용 DNS 가운데 고르거나 직접 넣습니다.", "One address beyond the router to compare with. Pick public DNS 1.1.1.1 (Cloudflare) or 8.8.8.8 (Google), or enter your own."],
+  hwDns: ["5초마다 이 이름을 DNS 서버에 물어 응답 시간을 잽니다(캐시를 건너뜀). 비우면 묻지 않습니다.", "Every 5 s this name is looked up at the DNS server to time the reply (cache skipped). Leave empty to skip."],
+  hwInterval: ["핑 간격. 1초에 한 번보다 자주 보내지 않습니다.", "Ping interval. Never more often than once per second."],
+  hwOutNote: ["이 프로그램이 이 PC 밖으로 보내는 것 전부입니다.", "Everything this program sends out of this PC."],
+  hwSignal: ["누른 동안만 2초마다 읽습니다. 처음엔 Windows 가 위치 사용을 물을 수 있습니다.", "Reads every 2 s only while on. Windows may ask about location the first time."],
+  hwBtStart: ["짝지은 장치의 «연결됨» 상태를 2초마다 읽기 시작합니다. 장치를 찾거나 연결하지 않습니다.", "Starts reading paired devices' «Connected» state every 2 s. Does not search for or connect devices."],
+  hwBtStop: ["블루투스 기록을 멈춥니다.", "Stops the Bluetooth log."],
+  hwBtCopy: ["연결·끊김 기록을 «장치 N» 번호로만 복사·저장합니다(이름 없음).", "Copies or saves the log with «Device N» numbers only (no names)."],
+  hwAudioReload: ["블루투스 오디오 장치와 기본 장치를 다시 읽습니다.", "Reads Bluetooth audio devices and the default device again."],
+  hwVolume: ["시험 소리 크기. 헤드폰이면 낮게 시작합니다.", "Test tone level. Start low with headphones."],
 };
 
 export function tip(lang: "ko" | "en", key: string) {

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PortDock Hardware Tester",
+  "version": "0.4.0",
+  "identifier": "dev.portdock.hw-tester",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PortDock Hardware Tester",
+        "width": 1200,
+        "height": 780,
+        "minWidth": 760,
+        "minHeight": 640,
+        "visible": false,
+        "backgroundColor": "#111418"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://eu.aptabase.com https://api.github.com; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "PortDock",
+    "copyright": "Copyright (C) 2026 PortDock",
+    "homepage": "https://portdock.dev",
+    "license": "GPL-3.0-only",
+    "licenseFile": "../../../tools/installer-license.txt",
+    "shortDescription": "Wi-Fi and Bluetooth drop and latency recorder for Windows PCs",
+    "longDescription": "PortDock Hardware Tester records, only while you press Start, ping latency and loss to your gateway and to one internet address side by side, DNS response time and the Wi-Fi connect and disconnect events Windows logs, on one timeline you can save as CSV. It also records when paired Bluetooth devices connect and disconnect, shows whether the default Bluetooth audio device is in stereo or hands-free mode with left/right test tones, and, when you ask, the current Wi-Fi signal, link speed, band and channel with the number of nearby networks per channel (names are never read). Read-only, without administrator rights; it does not change settings.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../LICENSE": "LICENSE",
+      "../../../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Korean"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "PortDock",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}
