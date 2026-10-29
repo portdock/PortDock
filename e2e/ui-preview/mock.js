@@ -1253,6 +1253,8 @@ mockIPC(
     if (PLOT_CMDS.has(cmd)) return plot(cmd, a);
     // Port Inspector·Serial «연결 점검…» 명령은 pi_·loop_ 으로 시작해 겹치지 않는다
     if (PI_CMDS.has(cmd)) return pinsp(cmd, a);
+    // Hardware Tester 명령(rec_·bt_·wifi_signal)은 다른 앱과 겹치지 않는다
+    if (HW_CMDS.has(cmd)) return hwsim(cmd, a);
     // PLC Simulator 도 이름이 겹치는 명령(start·stop·set_faults·get_values …)이 있어 창 제목으로 가린다
     if (PLC_CMDS.has(cmd) && isPLC()) return plcsim(cmd, a);
     if (SCPI_CMDS.has(cmd) && isSCPI()) return scpi(cmd, a);
@@ -2510,3 +2512,129 @@ function plcsim(cmd, a) {
   return null;
 }
 window.__pdMock.plc = () => ({ format: plc.format, faults: plc.faults, options: plc.options, sizes: { ...plc.sizes }, sims: [...plc.sims.keys()] });
+
+// ================================================================ Hardware Tester (apps/hw-tester — 명령: apps/hw-tester/src-tauri/src/lib.rs,
+// 모양: rec.rs·bt.rs·crates/core/src/wlan.rs). 주소·이름은 예시 값(실제 기기·네트워크 아님).
+// 끊김 기록: 시작하면 90박자 치 지난 기록을 한꺼번에 보내고(게이트웨이까지 손실 → «공유기 쪽»), 그 뒤 간격마다 하나씩.
+// 지난 기록 50번째에 Wi-Fi 끊김(이유 문구)·55번째에 다시 연결. 대상 «10.255.255.1» 은 인터넷 쪽만 늘 손실(«공유기 너머»).
+// 블루투스: 짝지은 장치 셋, 장치 1 이 1.2초마다 끊김·연결을 번갈아. 신호: window.__pdMock.hwSignal 로 상태를 바꿈(기본 ok).
+const HW_CMDS = new Set(["rec_start", "rec_stop", "bt_start", "bt_stop", "wifi_signal", "bt_audio"]);
+const HW_GW = "192.168.0.1";
+let hwRec = null;
+let hwBt = null;
+const hwOut = (ch) => (e) => {
+  try {
+    ch?.onmessage?.(e);
+  } catch (err) {
+    window.__pdMock.errors.push(String(err?.stack ?? err));
+  }
+};
+function hwTick(i, beyond) {
+  // 게이트웨이: 17번째마다 손실, 끊김 구간(i 50~54)은 둘 다 손실
+  // 공유기 너머(beyond): 게이트웨이는 늘 응답, 인터넷만 손실
+  const down = !beyond && i >= 50 && i <= 54;
+  const gw = down || (!beyond && i % 17 === 0) ? -1 : 2 + (i % 5) + (i % 23 === 0 ? 60 : 0);
+  const net = down || beyond || i % 17 === 0 ? -1 : 18 + (i % 7) * 2;
+  const dns = i % 5 === 0 ? (down ? -1 : 24 + (i % 3) * 6) : null;
+  return { gw, net, dns };
+}
+async function hwsim(cmd, a) {
+  switch (cmd) {
+    case "rec_start": {
+      if (hwRec && !hwRec.done) return fail(tr("이미 기록 중입니다", "Already recording"));
+      const c = a.config;
+      const t = String(c.target ?? "").trim();
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(t) && !/^[A-Za-z0-9.-]+$/.test(t)) return fail(`${t}: ${tr("IPv4 주소나 이름이 아닙니다", "not an IPv4 address or host name")}`);
+      const iv = Math.min(60000, Math.max(1000, c.intervalMs | 0));
+      const out = hwOut(a.onEvent);
+      const beyond = t === "10.255.255.1";
+      const past = 90;
+      const t0 = now() - past * iv;
+      const me = { done: false, timer: 0, i: 0, out };
+      hwRec = me;
+      await sleep(30);
+      out({ type: "started", ts: t0, gateway: HW_GW, target: /^\d/.test(t) ? t : "192.0.2.10", dnsName: c.dnsName ?? "", intervalMs: iv });
+      for (; me.i < past; me.i++) out({ type: "tick", ts: t0 + me.i * iv, ...hwTick(me.i, beyond) });
+      if (!beyond) out({ type: "wifi", ts: t0 + 50 * iv, connected: false, code: 0x48000, reason: tr("드라이버에 의해 네트워크 연결이 끊어졌습니다.", "The network is disconnected by the driver.") });
+      if (!beyond) out({ type: "wifi", ts: t0 + 55 * iv, connected: true, code: null, reason: null });
+      me.timer = setInterval(() => {
+        if (me.done) return;
+        out({ type: "tick", ts: now(), ...hwTick(me.i++, beyond) });
+      }, iv);
+      return null;
+    }
+    case "rec_stop":
+      if (hwRec && !hwRec.done) {
+        hwRec.done = true;
+        clearInterval(hwRec.timer);
+        hwRec.out({ type: "stopped", ts: now(), reason: "user" });
+      }
+      return null;
+    case "bt_start": {
+      if (hwBt && !hwBt.done) return fail(tr("이미 기록 중입니다", "Already recording"));
+      const out = hwOut(a.onEvent);
+      const me = { done: false, timer: 0, on: true, out };
+      hwBt = me;
+      await sleep(30);
+      out({
+        type: "snapshot",
+        ts: now(),
+        devices: [
+          { n: 1, name: "Example Buds", connected: true },
+          { n: 2, name: "Example Keyboard", connected: true },
+          { n: 3, name: "Example Mouse", connected: false },
+        ],
+      });
+      me.timer = setInterval(() => {
+        if (me.done) return;
+        me.on = !me.on;
+        out({ type: "change", ts: now(), dev: { n: 1, name: "Example Buds", connected: me.on }, added: false, removed: false });
+      }, 1200);
+      return null;
+    }
+    case "bt_stop":
+      if (hwBt && !hwBt.done) {
+        hwBt.done = true;
+        clearInterval(hwBt.timer);
+        hwBt.out({ type: "stopped", ts: now(), reason: "user" });
+      }
+      return null;
+    case "wifi_signal": {
+      await sleep(60);
+      const st = window.__pdMock.hwSignal ?? "ok";
+      const empty = { quality: null, rssi: null, rxMbps: null, txMbps: null, phy: null, band: null, channel: null, channels: [], error: null };
+      if (st !== "ok") return { ...empty, state: st };
+      const q = 62 + Math.round(Math.sin(now() / 4000) * 8);
+      return {
+        state: "ok",
+        quality: q,
+        rssi: -68 + Math.round(Math.sin(now() / 4000) * 4),
+        rxMbps: 433,
+        txMbps: 390,
+        phy: "802.11ac",
+        band: "5",
+        channel: 36,
+        channels: [
+          { band: "2.4", channel: 1, count: 4, mine: false },
+          { band: "2.4", channel: 6, count: 7, mine: false },
+          { band: "2.4", channel: 11, count: 3, mine: false },
+          { band: "5", channel: 36, count: 3, mine: true },
+          { band: "5", channel: 149, count: 1, mine: false },
+        ],
+        error: null,
+      };
+    }
+    case "bt_audio":
+      await sleep(80);
+      return {
+        audio: [
+          { name: tr("헤드셋 (Example Buds Hands-Free AG Audio)", "Headset (Example Buds Hands-Free AG Audio)"), flow: "render", kind: "handsFree", defaultConsole: true, defaultComms: true },
+          { name: tr("헤드폰 (Example Buds Stereo)", "Headphones (Example Buds Stereo)"), flow: "render", kind: "stereo", defaultConsole: false, defaultComms: false },
+          { name: tr("헤드셋 마이크 (Example Buds Hands-Free AG Audio)", "Headset microphone (Example Buds Hands-Free AG Audio)"), flow: "capture", kind: "handsFree", defaultConsole: true, defaultComms: true },
+        ],
+        errors: [],
+      };
+  }
+  return null;
+}
+window.__pdMock.hw = () => ({ rec: hwRec && { done: hwRec.done, i: hwRec.i }, bt: hwBt && { done: hwBt.done } });

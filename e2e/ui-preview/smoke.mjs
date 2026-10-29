@@ -1,9 +1,9 @@
-// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 열한 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
+// «다 눌러 보기» 화면 점검 — 미리보기 서버(가짜 백엔드 mock.js)에 띄운 열두 앱의 버튼·고르기·체크·입력칸을 모두 건드리고
 // 예외·화면 오류(Boundary)·창 밖으로 넘친 요소·풀리지 않는 «연결 중»·대화상자 닫은 뒤 포커스 잃음을 찾는다.
-// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209 · port-inspector 5210 · plc-simulator 5211
-// Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 inspectorFlow 를 돈다(10/25).
+// 앱: serial 5201 · modbus-slave 5202 · tcp 5203 · udp 5204 · simulator 5205 · netscan 5206 · modbus-master 5207 · scpi 5208 · plot 5209 · port-inspector 5210 · plc-simulator 5211 · hw-tester 5212
+// Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 inspectorFlow 를, Hardware Tester 는 hwFlow 를 돈다(10/25·10/30).
 // SCPI·Plot 의 앱별 단계(가짜 계측기 질의·블록·반복 측정 / 그래프 그려짐·측정점·CSV 기록 …)도 이 공통 흐름 안에서 한다(10/19, 옛 smoke-scpi·smoke-plot).
-// 사용: (저장소 루트에서 서버 5201~5210 을 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
+// 사용: (저장소 루트에서 서버 5201~5212 를 띄운 뒤) cd e2e && EDGEDRIVER=<msedgedriver.exe> node ui-preview/smoke.mjs [앱]
 // 결과: shots/smoke/<앱>.json (+ 문제가 난 단계의 캡처 shots/smoke/<앱>-*.png)
 import { Builder, By, Key } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
@@ -12,7 +12,7 @@ import path from "node:path";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
-const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210, "plc-simulator": 5211 };
+const APPS = { serial: 5201, "modbus-slave": 5202, tcp: 5203, udp: 5204, simulator: 5205, netscan: 5206, "modbus-master": 5207, scpi: 5208, plot: 5209, "port-inspector": 5210, "plc-simulator": 5211, "hw-tester": 5212 };
 const only = process.argv[2];
 const driverPath = process.env.EDGEDRIVER ?? path.join(process.env.PD_E2E_TOOLS ?? "C:\\tools", "edgedriver", "msedgedriver.exe");
 // 최소 창 1008×740 의 안쪽(제목줄·테두리 뺀 화면) 크기
@@ -2173,6 +2173,164 @@ async function runApp(app, port) {
       await fitWindow();
     }
 
+    /** (10/30) Hardware Tester — 실행 버튼이 왼쪽 칸에 없는 기록 앱이라 따로 돈다: 첫 실행 카드·대화상자 → 끊김 기록(가짜 90박자 = 게이트웨이 손실 «볼 것»·
+     *  Wi-Fi 끊김 사건·요약 복사·CSV) → 신호(ok·위치 권한 없음) → 블루투스 기록(이름은 화면에만) → 블루투스 소리(핸즈프리 «볼 것»·시험 소리) → 다음 판 자리
+     *  → 금지 낱말 → 다 눌러 보기 → 좁은 창. 가짜 값은 mock.js «Hardware Tester» 부분 */
+    async function hwFlow() {
+      const BAN = /진단|검증|최적|정상|diagnos|verif|optimi/i;
+      const nav = (cls) => js(`const b = document.querySelector('.hw-nav .nav-${cls}'); if (b) b.click(); return !!b;`);
+      await load(port, combo);
+      await fitWindow();
+      await load(port, combo);
+      await verify("load");
+      await expectJs("title", "return /PortDock Hardware Tester$/.test(document.title) && document.querySelectorAll('.hw-nav .nav-item').length === 10");
+      // 첫 실행 카드 + 도움말 링크(«처음 쓰는 순서» 절)
+      const card = await js(`const c = document.querySelector('.first-card'); return c && { links: c.querySelectorAll('.first-links .link-btn').length, hide: !!c.querySelector('.first-hide') }`);
+      if (!card || !card.links || !card.hide) await conv("first-card", `첫 실행 카드가 이상함: ${JSON.stringify(card)}`);
+      else {
+        await js("[...document.querySelectorAll('.first-card .first-links .link-btn')].pop().click()");
+        await sleep(250);
+        const h = await js("const a = document.querySelector('.modal.help .help-link.on'); return a && a.textContent");
+        if (!h || !/처음 쓰는 순서|Getting started/.test(h)) await conv("first-help", `카드의 도움말 링크로 연 절이 «${h}»`);
+        await keys(Key.ESCAPE);
+        await verify("first-card help");
+      }
+      for (const [label, open, close] of [
+        ["help", "?", "esc"],
+        ["settings", "⚙", "x"],
+        ["report", "!", "esc"],
+      ]) {
+        const ok = await js(`const b = [...document.querySelectorAll('.brand-tools button')].find((x) => x.textContent.trim() === ${JSON.stringify(open)}); if (b) { b.focus(); b.click(); } return !!b;`);
+        if (!ok) {
+          add(label, "dialog", `«${open}» 버튼이 없음`);
+          continue;
+        }
+        await sleep(250);
+        if (!(await js("return !!document.querySelector('.modal-back')"))) add(label, "dialog", `«${open}» 로 창이 열리지 않음`);
+        if (combo.full) await pageExercise(label, ".modal-back", { scope: "modal", depth: 1, skip: ".modal-head button" });
+        if (close === "x") await js("const x = document.querySelector('.modal-back .modal-head button'); x && x.click()");
+        else await keys(Key.ESCAPE);
+        await sleep(200);
+        if (await js("return !!document.querySelector('.modal-back')")) add(label, "dialog", `${label} 창이 닫히지 않음`);
+        await verify(`${label} close`, { expectFocus: true });
+      }
+
+      // ---- 끊김·지연 기록: 바깥으로 나가는 대상 안내 → 시작 → 90박자 + Wi-Fi 끊김 → 요약 «볼 것»(공유기 쪽)
+      await expectJs("out note", `const n = document.querySelector('.out-note'); return !!n && /1\\.1\\.1\\.1/.test(n.textContent) && /example\\.com/.test(n.textContent)`);
+      await clickText(".toolbar .rec-btn");
+      await expectJs("rec ticks", `return window.__pdMock.hw().rec?.i >= 90 && /${ko ? "끊김 기록 중" : "recording drops"}/.test(document.title) && !!document.querySelector('.hw-nav .nav-net .tag.rec')`, 4000);
+      await expectJs("rec summary", `const s = document.querySelector('section.summary'); return !!s && /lv-look/.test(s.querySelector('.lv')?.className ?? '') && /${ko ? "공유기 쪽" : "router side"}/.test(s.textContent) && s.querySelectorAll('table.stats tbody tr').length === 3`);
+      await expectJs("rec gateway", "return /192\\.168\\.0\\.1/.test(document.querySelector('.out-note').textContent) && /192\\.168\\.0\\.1/.test(document.querySelector('.chart-head').textContent)");
+      await expectJs("rec wifi events", `return document.querySelectorAll('table.ev-list tr.ev-wifiDown').length === 1 && document.querySelectorAll('table.ev-list tr.ev-wifiUp').length === 1 && /${ko ? "드라이버에 의해" : "by the driver"}/.test(document.querySelector('section.events').textContent)`);
+      // 기록 중에는 대상·간격을 바꾸지 못한다
+      await expectJs("rec locked", "return document.querySelector('.target-sel').disabled && document.querySelector('.dns-in').disabled");
+      for (const s of ["1", "5", "30", ko ? "전체" : "All"]) await clickText(".chart-head .seg", s);
+      await verify("span buttons");
+      if (combo.full) await shot(app, `${combo.name}-net-record`);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "요약 복사" : "Copy summary");
+      await expectJs("copy summary", `const c = window.__smoke.clip || ''; return /192\\.168\\.0\\.1/.test(c) && /1\\.1\\.1\\.1/.test(c) && /${ko ? "공유기 쪽" : "router side"}/.test(c) && !${BAN}.test(c)`);
+      await d.executeScript(`window.__pdMock.dialog = { ask: false, save: 'C:\\\\mock\\\\net.csv', open: null };`);
+      await clickText(".toolbar .btn", ko ? "CSV 저장…" : "Save CSV…");
+      await expectJs("save csv", "const f = window.__pdMock.files.get('C:\\\\mock\\\\net.csv'); return !!f && /^# PortDock Hardware Tester/.test(f) && /time,gateway_ms,internet_ms,dns_ms,event/.test(f) && /lost/.test(f) && /wifi_disconnected/.test(f)");
+      await d.executeScript(`window.__pdMock.dialog = { ask: false, save: null, open: null };`);
+      await clickText(".toolbar .rec-btn");
+      await expectJs("rec stopped", `return window.__pdMock.hw().rec?.done === true && !/${ko ? "기록 중" : "recording"}/.test(document.title) && !document.querySelector('.target-sel').disabled`);
+      // 잘못된 대상 → 시작 단추가 막힌다
+      await setIn(".target-sel", "custom");
+      await typeInto(".target-in", "999.1.1.1", false);
+      await expectJs("bad target", "return document.querySelector('.toolbar .rec-btn').disabled && !!document.querySelector('.cards .hint.warn')");
+      // 공유기 너머: 인터넷 쪽만 손실
+      await typeInto(".target-in", "10.255.255.1", false);
+      await clickText(".toolbar .rec-btn");
+      await expectJs("beyond", `const s = document.querySelector('section.summary'); return !!s && /${ko ? "공유기 너머" : "beyond the router"}/.test(s.textContent)`, 4000);
+      await clickText(".toolbar .rec-btn");
+      await setIn(".target-sel", "1.1.1.1");
+
+      // ---- Wi-Fi 신호: 누르기 전에는 읽지 않음 → ok → 위치 권한 없음 안내
+      await nav("signal");
+      await sleep(300);
+      if ((await calls("wifi_signal")) !== 0) add("signal idle", "expect", "«신호 보기» 를 누르기 전에 wifi_signal 을 불렀음");
+      await clickText(".toolbar .sig-btn");
+      await expectJs("signal ok", `const c = document.querySelector('.sig-state'); return !!c && /802\\.11ac/.test(c.textContent) && /dBm/.test(c.textContent) && document.querySelectorAll('.ch-table tbody tr').length === 5 && !!document.querySelector('.ch-table tr.mine')`, 4000);
+      if (combo.full) await shot(app, `${combo.name}-signal`);
+      await d.executeScript("window.__pdMock.hwSignal = 'denied'");
+      await expectJs("signal denied", `const c = document.querySelector('.sig-state'); return !!c && c.classList.contains('st-denied') && c.querySelectorAll('ol li').length === 3`, 4000);
+      await d.executeScript("window.__pdMock.hwSignal = 'noWlan'");
+      await expectJs("signal noWlan", "return !!document.querySelector('.sig-state.st-noWlan')", 4000);
+      await d.executeScript("window.__pdMock.hwSignal = undefined");
+      await clickText(".toolbar .sig-btn");
+      // 다른 탭에선 읽지 않는다
+      const n0 = await calls("wifi_signal");
+      await nav("bt");
+      await sleep(2500);
+      if ((await calls("wifi_signal")) !== n0) add("signal off", "expect", "«멈춤»·다른 탭에서도 wifi_signal 을 계속 부름");
+
+      // ---- 블루투스 연결 기록: 이름은 화면에만, 복사는 «장치 N»
+      await clickText(".toolbar .rec-btn");
+      await expectJs("bt rows", "return document.querySelectorAll('table.bt-table tbody tr').length === 3 && /Example Buds/.test(document.querySelector('table.bt-table').textContent)", 3000);
+      await expectJs("bt change", "return document.querySelectorAll('section.bt-log table.ev-list tr').length >= 2", 4000);
+      if (combo.full) await shot(app, `${combo.name}-bt`);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "기록 복사" : "Copy log");
+      await expectJs("bt copy masked", `const c = window.__smoke.clip || ''; return /${ko ? "장치 1" : "Device 1"}/.test(c) && !/Example/.test(c) && !${BAN}.test(c)`);
+      await clickText(".toolbar .rec-btn");
+      await expectJs("bt stopped", "return window.__pdMock.hw().bt?.done === true");
+
+      // ---- 블루투스 소리: 기본 출력이 핸즈프리 → «볼 것», 시험 소리 버튼
+      await nav("audio");
+      await expectJs("audio hf", `const c = document.querySelector('section.audio-mode'); return !!c && /lv-look/.test(c.querySelector('.audio-now .lv')?.className ?? '') && c.querySelectorAll('table.audio-table tbody tr').length === 3`, 3000);
+      for (const b of [ko ? "왼쪽" : "Left", ko ? "오른쪽" : "Right", ko ? "양쪽" : "Both"]) await clickText(".tone-btns .btn", b);
+      await sleep(300);
+      await verify("tones");
+      if (combo.full) await shot(app, `${combo.name}-audio`);
+      // ---- 다음 판 자리
+      for (const x of ["keyboard", "mouse", "monitor", "speaker", "mic", "webcam"]) {
+        await nav(x);
+        await expectJs(`later ${x}`, `const a = document.querySelector('.empty-guide.later a.later-web'); return !!a && /portdock\\.dev\\/${ko ? "" : "en\\/"}tools\\/[a-z]+-test\\//.test(a.href)`, 1500);
+      }
+      // 화면 어디에도 금지 낱말이 없다(각 탭)
+      for (const x of ["net", "signal", "bt", "audio"]) {
+        await nav(x);
+        await sleep(150);
+        await expectJs(`wording ${x}`, `return !${BAN}.test(document.body.innerText)`);
+      }
+
+      // ---- 다 눌러 보기(탭마다)
+      if (combo.full) {
+        await d.executeScript(`window.__pdMock.dialog = { ask: true, save: 'C:\\\\mock\\\\hw.txt', open: null };`);
+        for (const x of ["net", "signal", "bt", "audio"]) {
+          await load(port, combo, { tab: x, firstHintDone: true });
+          await sleep(500);
+          await pageExercise(`exercise-${x}`, "#root");
+          // 다 눌러 보기가 켠 기록·신호를 멈춘다
+          await mock("(window.__pdMock.hw().rec && !window.__pdMock.hw().rec.done) && document.querySelector('.toolbar .rec-btn.danger') && document.querySelector('.toolbar .rec-btn.danger').click()");
+        }
+        await d.executeScript(`window.__pdMock.dialog = { ask: false, save: null, open: null };`);
+        await load(port, combo);
+      }
+      // ---- 좁은 창: 왼쪽 칸이 접히고 요약 줄
+      await d.manage().window().setRect({ width: 760, height: 600 });
+      const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
+      if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
+      await load(port, combo, { firstHintDone: true });
+      await sleep(400);
+      await clickText(".toolbar .rec-btn");
+      await sleep(400);
+      await expectJs("narrow", `return getComputedStyle(document.querySelector('.narrow-bar')).display !== 'none' && getComputedStyle(document.querySelector('aside.side')).display === 'none' && /${ko ? "기록 중" : "recording"}/.test(document.querySelector('.narrow-bar').textContent)`);
+      await js("document.querySelector('.narrow-bar .side-toggle').click()");
+      await sleep(250);
+      await expectJs("narrow side", "const s = document.querySelector('aside.side'); const r = s.getBoundingClientRect(); return getComputedStyle(s).display !== 'none' && r.width > 200 && r.right <= innerWidth");
+      await nav("bt");
+      await expectJs("narrow pick closes side", "return getComputedStyle(document.querySelector('aside.side')).display === 'none'");
+      await nav("net");
+      await sleep(200);
+      await verify("narrow net");
+      await shot(app, `${combo.name}-narrow-760`);
+      await clickText(".toolbar .rec-btn");
+      await fitWindow();
+    }
+
     /** (10/25) Serial «연결 점검…» — 끊긴 상태: 장치 요약·루프백 5개 → Esc 로 닫히고 포커스 제자리. 연결 중: 시험이 막히고 이유 */
     async function serialPortCheck(connectedNow) {
       await closeRight();
@@ -2425,6 +2583,7 @@ async function runApp(app, port) {
 
     try {
       if (app === "port-inspector") await inspectorFlow();
+      else if (app === "hw-tester") await hwFlow();
       else {
       await load(port, combo);
       await fitWindow();

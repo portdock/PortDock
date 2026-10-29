@@ -28,7 +28,7 @@ node serial.mjs
 
 ## 화면 미리보기·캡처 (장비·Rust 없이, `ui-preview/`)
 백엔드 대신 가짜 응답(`ui-preview/mock.js`)을 넣고 화면만 브라우저에 띄운다. 글자 잘림·배치·테마·글자 크기를 빠르게 본다.
-1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208, plot 5209, port-inspector 5210, plc-simulator 5211)
+1. 저장소 루트에서 앱마다 서버: `APP=serial PORT=5201 npx vite --config e2e/ui-preview/vite.config.mjs` (modbus-slave 5202, tcp 5203, udp 5204, simulator 5205, netscan 5206, modbus-master 5207, scpi 5208, plot 5209, port-inspector 5210, plc-simulator 5211, hw-tester 5212)
 2. `e2e` 폴더에서: `EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/shots.mjs [앱]` → `shots/ui/*.png` + `probe.json`(잘린 칸 목록)
 - 경우: 최소 창(1000×640) 한국어 대기·연결, 영어, 넓은 창 어두운 테마, 글자 17px, 설정 창
 - 가짜 응답이라 상태 문구·사건 줄 내용은 실제와 다를 수 있다. 실제 동작 확인은 위 실기 점검으로.
@@ -41,7 +41,7 @@ node serial.mjs
 - 시험용 손잡이 `window.__pdMock`: `dialog = { ask, save, open }`(확인 창 답·저장/열기 경로, 기본 «아니오»·취소), `unplug()`(장치 뽑힘 → 자동 재연결이면 1.5초 뒤 다시), `plug(true)`(블루투스 COM7 꽂기), `error(msg)`, `calls`·`files`, `noApp`(다른 PortDock 프로그램을 찾지 못한 것처럼)·`openedApp`(연 대상), `pendingCrash`(오류로 꺼진 기록 하나 — 주소 `?pendingCrash=1` 로도), 명령줄 인자는 주소 `?args=[...]`(JSON 배열).
 
 ## 다 눌러 보기 점검 (`ui-preview/smoke.mjs`)
-미리보기 서버 열한 개(위 1번, 5201~5211)를 띄운 뒤 `e2e` 폴더에서:
+미리보기 서버 열두 개(위 1번, 5201~5212)를 띄운 뒤 `e2e` 폴더에서:
 ```
 EDGEDRIVER=<msedgedriver.exe 경로> node ui-preview/smoke.mjs [앱]      (예: node ui-preview/smoke.mjs tcp)
 COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경우만 빨리)
@@ -66,6 +66,7 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 ### Port Inspector·Serial «연결 점검…» (10/25)
 `node ui-preview/smoke.mjs port-inspector`. Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 `inspectorFlow()` 를 돈다.
 - PLC Simulator(5211, 10/29): 가짜 백엔드는 시작하면 클라이언트 둘(UDP 는 보내온 곳 하나)이 붙고 0.45초마다 «0401 D0 ×4 읽기», 다섯 번에 한 번 «1401 D100 쓰기» 를 주고받는다(풀이 줄 포함). 공통 흐름(대기·시작·다 눌러 보기·편의성·좁은 창)만 돈다 — 보내기 칸이 없어 반복 보내기·표기 바꾸기는 건너뛴다. 실제 MC 프로토콜 동작은 `cargo test -p portdock-core mc::`(매뉴얼 예시 고정 시험)와 127.0.0.1 교차 시험(`cargo test -p portdock-plc-simulator --lib cross_server -- --ignored`)으로 본다.
+- Hardware Tester(5212, 10/30): 실행 버튼이 왼쪽 칸에 없는 기록 앱이라 `hwFlow()` 를 돈다. 가짜 백엔드(mock.js «Hardware Tester»)는 «기록 시작» 하면 90박자 치 지난 기록(게이트웨이 17번째마다 손실·Wi-Fi 끊김 사건 하나 → 요약 «공유기 쪽»)을 한꺼번에 보내고 간격마다 하나씩, 대상 `10.255.255.1` 은 인터넷만 손실(«공유기 너머»). 네 경우 모두: 첫 실행 카드·?·⚙·! 창, 바깥 대상 안내 줄, 기록 시작·요약·사건·보이는 길이, 요약 복사(금지 낱말 없음)·CSV 저장, 기록 중 칸 잠김, 잘못된 대상이면 시작 막힘, 신호(누르기 전 호출 없음 → ok → 위치 권한 없음·무선 랜 없음 → 멈추면 호출 없음), 블루투스 기록(이름은 화면에만, 복사는 «장치 N»), 소리(핸즈프리 «볼 것»·좌우 소리), 다음 판 자리 여섯, 탭마다 금지 낱말, 좁은 창. `ko-light`·`en-dark` 는 탭마다 다 눌러 보기.
 - 가짜 장치(mock.js «Port Inspector» 부분): COM3 CH340(문제 없음) · COM5 FTDI(지연 타이머 16ms·절전 켜짐 → «볼 것», 3일 전 하루 세 번 다시 연결) · COM1 내장 포트(루프백에서 아무것도 돌아오지 않음) · COM9 Prolific(문제 코드 10, 시험하면 «사용 중») · 숨은 COM12(지금 없음). ComDB 예약 1·3·4·5·9·12·17(주인 없음 4·17), 랜카드 셋(1 Gbps 전이중·10 Mbps 반이중·연결 안 됨).
 - 네 경우 모두: 첫 실행 카드·도움말 링크, ?·⚙·!·F1 창(닫은 뒤 포커스), COM5 카드 결과(장치 문제 없음·설정/절전/기록 «볼 것»)·창 제목·지연 타이머 풀이·이벤트·기간 7일·COM 번호·«PC 가 볼 수 없는 것»(가이드 링크 5개)·랜카드, 루프백(묻고 시작 → 속도 5개 «볼 것»)·에코·시험 중 멈춤, 텍스트·JSON 복사(금지 낱말 없음)·JSON 저장, COM9 문제 코드·«사용 중» + Find Handle 안내, COM1 «돌아오지 않음», 숨은 장치(COM12 시험 막힘·이유), 화면 전체 금지 낱말(진단·검증 …) 없음, F4, 좁은 창(고르면 왼쪽 칸 닫힘). `ko-light`·`en-dark` 는 포트를 고른 상태에서 다 눌러 보기도.
 - Serial(네 경우): 끊긴 상태에서 «연결 점검…» → 장치 요약 결과 3개 이상·루프백 5개 → Esc(포커스 제자리), 연결 중에는 시험이 막히고 «연결을 끊은 뒤» 이유(연결 설정이 한 줄로 접혀 있으면 [바꾸기] 로 펼쳐서).
