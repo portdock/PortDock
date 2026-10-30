@@ -55,6 +55,12 @@ const updated = "2026-10-30";
               디바이스 값을 읽고 쓸 수 있습니다(MC 프로토콜에는 인증이 없음). 믿을 수 있는 망에서만 켜세요.
             </li>
             <li>
+              <b>PortDock MCP(AI 클라이언트용 서버)</b>: 도구 호출마다 세션 기록 한 줄(시각·도구·인자·대상·성공 여부·결과 앞부분·걸린 시간)을 이 PC 에 남깁니다. 위치는 exe 옆에
+              portdock-data 폴더가 있으면 portdock-data\mcp-log, 아니면 %LOCALAPPDATA%\dev.portdock\mcp-log 이고, 30일 지난 파일은 지웁니다. 기록에서 사용자 폴더 경로는 «~», MAC
+              주소는 «xx-…» 로 가립니다. PortDock MCP 는 이 기록을 밖으로 보내지 않고, 오류 보고·사용 통계도 보내지 않습니다. 다만 <b>도구 결과(읽은 포트·장비 값 등)는 사용자가 쓰는
+              AI 클라이언트로 넘어가고, 그 클라이언트가 결과를 자기 회사 서버(AI 모델)로 보낼 수 있습니다</b> — 그 뒤의 처리는 그 클라이언트·회사의 개인정보처리방침을 따릅니다.
+            </li>
+            <li>
               <b>오류 보고</b>: 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정의 «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만(기본값은 «오류로 꺼지면 묻기», «보내지 않기» 로 끌 수 있음) 오류 원인(예외 내용·호출 위치)과
               프로그램·윈도우 버전을 보냅니다. 통신 내용과 IP 설정은 넣지 않으며, 사용자가 직접 «최근 통신 기록» 을 켠 경우에만 그 내용이 들어갑니다.
             </li>
@@ -93,6 +99,7 @@ const updated = "2026-10-30";
             <li>Technov Solutions SRL(Aptabase, 루마니아·EU 데이터 센터) — 프로그램 사용 통계(사용자가 켠 경우)</li>
             <li>GitHub, Inc.(미국) — 새 버전 확인 요청을 받음(사용자가 켠 경우)</li>
             <li>Hardware Tester 의 핑·DNS 대상 — 사용자가 고른 인터넷 주소(기본 1.1.1.1 은 Cloudflare, 8.8.8.8 은 Google)와 이 PC 의 DNS 서버가 핑·질의를 받습니다(기록을 켠 동안만, 위탁이 아니라 사용자가 고른 통신 상대)</li>
+            <li>PortDock MCP 를 붙인 AI 클라이언트와 그 클라이언트를 만든 회사(예: Claude Desktop·VS Code·Cursor 의 회사) — 도구 결과를 받습니다(사용자가 고른 클라이언트이며 PortDock 의 위탁처가 아님, 그 회사의 방침을 따름)</li>
           </ul>
           <h2>4. 문의</h2>
           <p>
@@ -122,6 +129,13 @@ const updated = "2026-10-30";
             <li>
               <b>PLC Simulator</b>: by default it accepts connections only from this PC (127.0.0.1). If you turn on «Allow other PCs to connect (0.0.0.0)», other PCs on the same
               network can connect without authentication and read and write device values (the MC protocol has no authentication). Turn it on only on trusted networks.
+            </li>
+            <li>
+              <b>PortDock MCP (server for AI clients)</b>: for every tool call it keeps one line in a session log on this PC (time, tool, arguments, target, success, the start of the
+              result, duration). The log is in portdock-data\mcp-log when a portdock-data folder sits next to the exe, otherwise in %LOCALAPPDATA%\dev.portdock\mcp-log, and files older
+              than 30 days are removed. User folder paths are masked as «~» and MAC addresses as «xx-…». PortDock MCP never sends this log anywhere and sends no error reports or usage
+              statistics. However, <b>tool results (the port and device values it read) go to the AI client you use, and that client may send them to its company's servers (the AI
+              model)</b> — from there, that client's and company's privacy policy applies.
             </li>
             <li>
               <b>Error reports</b> are sent only when you press send in the «!» report window or set «Automatic error reports» to «Send automatically» (the default is «Ask after a crash»; «Never send» turns it off). They contain the error cause (exception
@@ -165,6 +179,7 @@ const updated = "2026-10-30";
             <li>Technov Solutions SRL (Aptabase; Romania, EU data region) — program usage statistics (only if you turn them on)</li>
             <li>GitHub, Inc. (USA) — receives the update check request (only if you turn it on)</li>
             <li>Hardware Tester ping and DNS targets — the internet address you choose (1.1.1.1 by default is Cloudflare, 8.8.8.8 is Google) and this PC's DNS server receive the pings and lookups (only while recording; these are parties you chose to contact, not processors)</li>
+            <li>The AI client you connect PortDock MCP to and the company behind it (for example the makers of Claude Desktop, VS Code or Cursor) — receive the tool results (a client you chose, not a PortDock processor; its own policy applies)</li>
           </ul>
           <h2>4. Contact</h2>
           <p>

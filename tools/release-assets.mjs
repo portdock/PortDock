@@ -17,6 +17,16 @@ export function readMatrix(root = ROOT) {
   return out;
 }
 
+/** 릴리스에 올라가는 파일 이름 전부 — release.yml 의 matrix(앱마다 설치판·오프라인 설치판·휴대판)와 «files:» 에 이름 그대로 적힌 것(MCP·SHA256SUMS).
+ *  사이트의 /releases/latest/download/<이름> 링크를 이것과 대조한다(tools/site-check.mjs) */
+export function releaseAssetNames(root = ROOT) {
+  const yml = fs.readFileSync(path.join(root, ".github", "workflows", "release.yml"), "utf8");
+  const names = readMatrix(root).flatMap(({ asset }) => ["setup.exe", "setup-offline.exe", "portable.zip"].map((s) => `PortDock-${asset}-${s}`));
+  for (const m of yml.matchAll(/^\s*dist\/([\w.-]+)\s*$/gm)) if (!m[1].includes("*")) names.push(m[1]);
+  if (!names.includes("SHA256SUMS.txt")) throw new Error("release.yml files: 에서 SHA256SUMS.txt 를 찾지 못함");
+  return [...new Set(names)].sort();
+}
+
 /** site/src/data/tools.ts 에서 file → { ko, en } tagline */
 export function readTaglines(root = ROOT) {
   const src = fs.readFileSync(path.join(root, "site", "src", "data", "tools.ts"), "utf8");

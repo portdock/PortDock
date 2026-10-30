@@ -23,7 +23,7 @@
 | **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인. 그 밖에 «이 PC 랜카드»(링크 속도·이중·점보 프레임·절전, GigE 카메라 용도), «이 PC»(빠른 시작·절전·업데이트 재시작·시간 동기화·예기치 않은 종료 등 장비 PC 설정), «무선»(Wi-Fi 어댑터 절전·끊김 기록, 블루투스 어댑터·서비스·핸즈프리 소리) 탭. 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
 | **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받고, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 같은 망에서 접속 가능. |
 | **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(Windows 11 24H2 부터 위치 권한, 네트워크 이름은 읽지 않음). 키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 사이트의 [PC 하드웨어 테스트](https://portdock.dev/tools/#g-hw)(브라우저, 설치 없음)로. |
-| **PortDock MCP** (미리 보기) | AI 클라이언트(Claude Desktop·VS Code·Cursor 등)용 MCP 서버, 창 없음·stdio: AI 가 COM 포트 목록과 Port Inspector 보고서를 *읽고*, 시리얼을 듣고(보내지 않음), Modbus(FC 01~04)·MC 프로토콜 3E(0401)·SCPI 질의로 값을 읽고, 핑·랜카드·내장 장비 레지스터 맵을 봅니다. 쓰기는 127.0.0.1 시뮬레이터에만 되고 실장비에 쓰는 도구는 없습니다. 모든 호출은 이 PC 의 세션 기록에 남습니다. 자세히: [docs/mcp.md](docs/mcp.md) |
+| **PortDock MCP** | AI 클라이언트(Claude Desktop·VS Code·Cursor 등)용 MCP 서버, 창 없음·stdio: AI 가 COM 포트 목록과 Port Inspector 보고서를 *읽고*, 시리얼을 듣고(보내지 않음), Modbus(FC 01~04)·MC 프로토콜 3E(0401)·SCPI 질의로 값을 읽고, 핑·랜카드·내장 장비 레지스터 맵을 봅니다. 쓰기 도구 두 개는 127.0.0.1(이 PC) 주소만 받아 시뮬레이터 연습용입니다 — 판정은 주소로만 하므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄운 채 쓰지 마세요. 모든 호출은 이 PC 의 세션 기록에 남습니다. 자세히: [docs/mcp.md](docs/mcp.md) |
 
 홈페이지: <https://portdock.dev>
 
@@ -48,9 +48,9 @@
 
 윈도우 10·11, x64.
 
-AI 클라이언트용 MCP 서버(다음 릴리스부터): `PortDock-MCP.mcpb`(Claude Desktop 에서 열어 설치) 또는 `PortDock-MCP.zip`(`portdock-mcp.exe` — 클라이언트 설정의 `command` 로). 설정: [portdock.dev/guides/portdock-mcp/](https://portdock.dev/guides/portdock-mcp/).
+AI 클라이언트용 MCP 서버: [PortDock-MCP.mcpb](https://github.com/portdock/PortDock/releases/latest/download/PortDock-MCP.mcpb)(Claude Desktop 에서 열어 설치) 또는 [PortDock-MCP.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-MCP.zip)(`portdock-mcp.exe` — 클라이언트 설정의 `command` 로). 설정: [portdock.dev/guides/portdock-mcp/](https://portdock.dev/guides/portdock-mcp/).
 
-[Scoop](https://scoop.sh) 으로(휴대판): `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial` (앱 이름은 [scoop-bucket](https://github.com/portdock/scoop-bucket#install)).
+[Scoop](https://scoop.sh) 으로(휴대판): `scoop bucket add portdock https://github.com/portdock/scoop-bucket` → `scoop install portdock/portdock-serial` (MCP 서버는 `portdock/portdock-mcp`, 앱 이름은 [scoop-bucket](https://github.com/portdock/scoop-bucket#install)).
 
 ### 설치판과 휴대판
 

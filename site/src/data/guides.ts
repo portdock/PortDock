@@ -5721,7 +5721,7 @@ export const GUIDES: Guide[] = [
     },
     body: {
       ko: [
-        { p: "PortDock MCP(portdock-mcp.exe)는 AI 클라이언트가 띄우는 창 없는 서버입니다. MCP(Model Context Protocol)는 AI 클라이언트가 바깥 프로그램의 «도구» 를 부르는 약속이고, 이 서버를 붙이면 AI 가 대화 중에 이 PC 의 COM 포트 목록·Port Inspector 보고서·랜카드를 읽고, 사용자가 알려 준 장비에서 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 다음 릴리스에 들어갑니다." },
+        { p: "PortDock MCP(portdock-mcp.exe)는 AI 클라이언트가 띄우는 창 없는 서버입니다. MCP(Model Context Protocol)는 AI 클라이언트가 바깥 프로그램의 «도구» 를 부르는 약속이고, 이 서버를 붙이면 AI 가 대화 중에 이 PC 의 COM 포트 목록·Port Inspector 보고서·랜카드를 읽고, 사용자가 알려 준 장비에서 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 0.7.0 부터 릴리스에 들어 있어 지금 받아 쓸 수 있습니다." },
         { h: "할 수 있는 것과 없는 것" },
         {
           table: {
@@ -5739,11 +5739,12 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
-        { p: "실장비에 쓰는 도구는 없습니다. 쓰기 두 개는 대상이 이 PC(127.0.0.1·::1·localhost)가 아니면 연결하기 전에 거절합니다. 모든 호출은 이 PC 의 세션 기록(%LOCALAPPDATA%\\dev.portdock\\mcp-log, 휴대 폴더가 있으면 그 안)에 남고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 전체는 1분에 120번까지입니다." },
+        { p: "쓰기 도구 두 개는 이 PC 주소(127.0.0.1·::1·localhost)만 받고, 다른 주소는 연결하기 전에 거절합니다. 판정은 주소로만 합니다 — 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·SSH 터널 등)을 띄워 두면 127.0.0.1 로 쓴 값이 실제 장비까지 갈 수 있으니, 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 않습니다. 모든 호출은 이 PC 의 세션 기록(%LOCALAPPDATA%\\dev.portdock\\mcp-log, 휴대 폴더가 있으면 그 안)에 남고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 전체는 1분에 120번까지입니다." },
         { h: "1. 설치" },
         { ul: [
           "Claude Desktop: 릴리스의 PortDock-MCP.mcpb 를 내려받아 열면 설치 화면이 나옵니다. 오류 문구 언어(en·ko)를 고를 수 있습니다.",
           "그 밖의 클라이언트: PortDock-MCP.zip 을 원하는 폴더(예: C:\\Tools\\PortDock-MCP)에 풀고, 아래처럼 command 에 exe 경로를 넣습니다. 인자는 없습니다.",
+          "Scoop 을 쓴다면: scoop bucket add portdock https://github.com/portdock/scoop-bucket 을 한 번 한 뒤 scoop install portdock/portdock-mcp. 설치된 폴더는 scoop prefix portdock-mcp 로 확인하고, 설정의 command 에 그 안의 portdock-mcp.exe 경로를 넣습니다.",
           "코드 서명이 아직 없어 회사 PC 에서는 보안 정책이 실행을 막을 수 있습니다. 그때는 관리자에게 먼저 묻습니다.",
         ] },
         { h: "2. 설정 예시" },
@@ -5759,11 +5760,11 @@ export const GUIDES: Guide[] = [
           "PortDock PLC Simulator 를 열고 프레임 3E·이진, 묶을 주소 127.0.0.1, 포트 5000(기본) 그대로 «시작». D100~D102 에 값을 넣어 둡니다.",
           "AI 에게: «127.0.0.1 포트 5000 의 PLC 시뮬레이터에서 D100 부터 3워드 읽어 줘» → mc_read 가 불리고 값이 돌아옵니다.",
           "«D200 에 42 를 쓰고 다시 읽어서 확인해 줘» → mc_write_sim 다음 mc_read. 시뮬레이터 화면의 D200 도 바뀝니다.",
-          "같은 말에서 주소만 192.168.0.10 처럼 바꾸면 mc_write_sim 은 «Refused» 로 끝납니다 — 실장비 쓰기는 이 서버로는 되지 않습니다.",
+          "같은 말에서 주소만 192.168.0.10 처럼 바꾸면 mc_write_sim 은 «Refused» 로 끝납니다 — 이 PC 가 아닌 주소에는 연결하지 않습니다.",
         ] },
         { h: "4. Modbus Slave 로 연습" },
         { ul: [
-          "PortDock Modbus Slave 에서 연결 방식 «TCP 서버(Modbus TCP)» 를 고르고 빈 포트(예: 1502)로 시작한 뒤 보유 레지스터 몇 칸에 값을 넣습니다.",
+          "PortDock Modbus Slave 에서 연결 방식 «TCP 서버(Modbus TCP)» 를 고르고, 묶을 주소를 127.0.0.1 로 바꾸고(기본 0.0.0.0 은 다른 PC 도 붙을 수 있고 방화벽 창이 뜹니다) 빈 포트(예: 1502)로 시작한 뒤 보유 레지스터 몇 칸에 값을 넣습니다.",
           "«127.0.0.1:1502 국번 1 에서 보유 레지스터 0 부터 4개 읽어 줘» → modbus_read(FC 03). «0~1 을 float(ABCD)로 풀어 줘» 처럼 풀이도 시킬 수 있습니다.",
           "장비 맵을 쓰려면 «오토닉스 MT4W 레지스터 맵에서 측정값 주소 알려 줘» → device_map_get. 주소·배율은 비공식 자료이므로 장비 매뉴얼로 한 번 더 봅니다.",
         ] },
@@ -5772,12 +5773,13 @@ export const GUIDES: Guide[] = [
         { h: "주의" },
         { ul: [
           "도구 결과는 사용 중인 AI 클라이언트로 넘어갑니다. 회사 장비 값을 다룬다면 그 클라이언트의 데이터 정책을 먼저 확인합니다.",
+          "쓰기 도구는 주소만 봅니다. 이 PC 에서 실제 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)을 띄운 채 쓰기 도구를 쓰지 않습니다.",
           "장비가 보낸 글(예: *IDN? 응답)은 데이터일 뿐입니다. 서버도 클라이언트에게 그렇게 알립니다.",
           "AI 가 읽은 값의 뜻을 단정하지 않게, 단위·배율·주소 표기(40001 등)는 장비 매뉴얼로 맞춰 봅니다.",
         ] },
       ],
       en: [
-        { p: "PortDock MCP (portdock-mcp.exe) is a windowless server started by an AI client. MCP (Model Context Protocol) is how AI clients call «tools» in other programs; with this server added, the AI can read this PC's COM port list, Port Inspector reports and network adapters during a conversation, and read Modbus, MC protocol and SCPI values from devices you name. It ships in the next release." },
+        { p: "PortDock MCP (portdock-mcp.exe) is a windowless server started by an AI client. MCP (Model Context Protocol) is how AI clients call «tools» in other programs; with this server added, the AI can read this PC's COM port list, Port Inspector reports and network adapters during a conversation, and read Modbus, MC protocol and SCPI values from devices you name. It has been part of the release since 0.7.0, so you can download it now." },
         { h: "What it can and cannot do" },
         {
           table: {
@@ -5795,11 +5797,12 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
-        { p: "There is no tool that writes to real devices. The two write tools refuse any target other than this PC (127.0.0.1, ::1, localhost) before connecting. Every call is kept in a session log on this PC (%LOCALAPPDATA%\\dev.portdock\\mcp-log, or inside the portable folder) and never sent anywhere. The same target is called at most once per 100 ms, and 120 calls per minute overall." },
+        { p: "The two write tools accept only this PC's address (127.0.0.1, ::1, localhost) and refuse any other target before connecting. The check is by address only — if a program on this PC forwards to another device (a TCP relay, a gateway, an SSH tunnel …), a value written to 127.0.0.1 can reach a real device, so do not use the write tools while such a program is running. Every call is kept in a session log on this PC (%LOCALAPPDATA%\\dev.portdock\\mcp-log, or inside the portable folder) and never sent anywhere. The same target is called at most once per 100 ms, and 120 calls per minute overall." },
         { h: "1. Install" },
         { ul: [
           "Claude Desktop: download PortDock-MCP.mcpb from the release and open it to get the install screen. You can choose the message language (en or ko).",
           "Other clients: unzip PortDock-MCP.zip into a folder (for example C:\\Tools\\PortDock-MCP) and put the exe path in command as below. There are no arguments.",
+          "With Scoop: run scoop bucket add portdock https://github.com/portdock/scoop-bucket once, then scoop install portdock/portdock-mcp. Find the install folder with scoop prefix portdock-mcp and put the portdock-mcp.exe path inside it in command.",
           "It is not code-signed yet, so security policy on company PCs may block it. Ask your administrator first.",
         ] },
         { h: "2. Settings examples" },
@@ -5815,11 +5818,11 @@ export const GUIDES: Guide[] = [
           "Open PortDock PLC Simulator, keep frame 3E binary, bind address 127.0.0.1 and port 5000 (defaults) and press Start. Put values in D100–D102.",
           "Ask the AI: «Read 3 words from D100 on the PLC simulator at 127.0.0.1 port 5000» → mc_read is called and returns the values.",
           "«Write 42 to D200 and read it back» → mc_write_sim, then mc_read. D200 changes on the simulator screen too.",
-          "Change only the address to something like 192.168.0.10 and mc_write_sim ends with «Refused» — this server cannot write to real devices.",
+          "Change only the address to something like 192.168.0.10 and mc_write_sim ends with «Refused» — it does not connect to any address other than this PC.",
         ] },
         { h: "4. Practise with Modbus Slave" },
         { ul: [
-          "In PortDock Modbus Slave choose «TCP server (Modbus TCP)», start it on a free port (for example 1502) and put values in a few holding registers.",
+          "In PortDock Modbus Slave choose «TCP server (Modbus TCP)», change the bind address to 127.0.0.1 (the default 0.0.0.0 lets other PCs connect and triggers a firewall prompt), start it on a free port (for example 1502) and put values in a few holding registers.",
           "«Read 4 holding registers from 0 at 127.0.0.1:1502 unit 1» → modbus_read (FC 03). You can also ask it to decode 0–1 as a float (ABCD).",
           "For a device map: «Find the measured-value address in the Autonics MT4W map» → device_map_get. Addresses and scales are unofficial; check the device manual once more.",
         ] },
@@ -5828,6 +5831,7 @@ export const GUIDES: Guide[] = [
         { h: "Cautions" },
         { ul: [
           "Tool results go to the AI client you use. If you handle company device values, check that client's data policy first.",
+          "The write tools only look at the address. Do not use them while a program on this PC forwards to real devices (PortDock TCP relay, a vendor gateway, an SSH tunnel …).",
           "Text sent by devices (such as an *IDN? reply) is only data, and the server tells the client so.",
           "Do not let the AI settle what a value means on its own — match units, scale and address notation (40001 and so on) against the device manual.",
         ] },

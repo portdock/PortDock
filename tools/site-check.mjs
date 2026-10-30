@@ -1,12 +1,17 @@
 // 사이트 빌드 결과 검사 — 검색엔진이 보는 것(제목·설명·canonical·구조화 데이터·내부 링크·sitemap)을 외부 서비스 없이 확인한다.
-// 쓰는 법: npm run build -w portdock-site 뒤 node tools/site-check.mjs [site/dist]
-// 실패(종료 코드 1): 제목·설명 없음·중복·너무 김, h1 이 하나가 아님, 제목 단계 건너뜀, img alt 없음,
+// 쓰는 법: npm run build -w portdock-site 뒤 node tools/site-check.mjs [site/dist] [--assets 이름목록.txt]
+//   --assets: 실제 릴리스 자산 이름(한 줄에 하나 — 예: gh api repos/portdock/PortDock/releases/latest --jq '.assets[].name')과도 대조. 없으면 release.yml 기준만
+// 실패(종료 코드 1): 릴리스 내려받기 링크(/releases/latest/download/<이름>)가 release.yml 이 만드는 파일 이름에 없음, 제목·설명 없음·중복·너무 김, h1 이 하나가 아님, 제목 단계 건너뜀, img alt 없음,
 //   canonical·hreflang 이 SITE 와 다름, x-default 가 영어판(hreflang en)과 다름, JSON-LD 파싱 실패·필수 필드 없음, 깨진 내부 링크, sitemap 누락, robots.txt 의 Sitemap 줄 없음.
 // 길이 기준(대략): 검색 결과 제목 약 600px, 설명 약 920px. 한글·한자 한 글자 = 2칸, 나머지 = 1칸으로 세어 제목 66칸·설명 160칸까지.
 import fs from "node:fs";
 import path from "node:path";
+import { releaseAssetNames } from "./release-assets.mjs";
 
-const dist = path.resolve(process.argv[2] ?? "site/dist");
+const argv = process.argv.slice(2);
+const ai = argv.indexOf("--assets");
+const assetsFile = ai >= 0 ? argv.splice(ai, 2)[1] : null;
+const dist = path.resolve(argv[0] ?? "site/dist");
 const TITLE_MAX = 66;
 const DESC_MIN = 70;
 const DESC_MAX = 160;
@@ -111,6 +116,7 @@ const descs = new Map();
 const indexable = [];
 const ldCount = {};
 const linkTargets = new Set();
+const dlLinks = new Map();
 let biggest = { file: "", size: 0 };
 
 for (const f of htmlFiles) {
@@ -186,6 +192,10 @@ for (const f of htmlFiles) {
     }
   }
 
+  // 릴리스 내려받기 링크 — 없는 파일 이름이면 404(v0.7.0 MCP 버튼이 앱 3종 이름을 만들었던 일)
+  for (const m of html.matchAll(/\shref="https:\/\/github\.com\/portdock\/PortDock\/releases\/(?:latest\/download|download\/[^/"]+)\/([^"?#]+)"/g))
+    dlLinks.set(m[1], [...(dlLinks.get(m[1]) ?? []), file]);
+
   // 내부 링크(같은 사이트로 가는 href·src)
   for (const m of html.matchAll(/\s(?:href|src)="(\/[^"#?]*)/g)) linkTargets.add(m[1] + "|" + file);
 }
@@ -218,9 +228,19 @@ for (const u of inSitemap) {
 }
 for (const p of indexable) if (!inSitemap.has(SITE + p)) err("sitemap", `빠진 페이지: ${p}`);
 
+// 릴리스 내려받기 링크 대조 — release.yml 이 만드는 이름, --assets 가 있으면 실제 릴리스 자산 이름에도 있어야 한다
+const fromYml = new Set(releaseAssetNames());
+const real = assetsFile ? new Set(fs.readFileSync(assetsFile, "utf8").split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) : null;
+for (const [name, from] of dlLinks) {
+  const where = from.slice(0, 3).join(", ") + (from.length > 3 ? ` 외 ${from.length - 3}` : "");
+  if (!fromYml.has(name)) err(where, `릴리스에 없는 내려받기 파일 ${name}(release.yml 기준)`);
+  if (real && !real.has(name)) err(where, `실제 릴리스 자산에 없는 파일 ${name}(${assetsFile})`);
+}
+
 // ---- 결과
 const kb = Math.round(biggest.size / 1024);
 console.log(`사이트 검사: ${htmlFiles.length}쪽(색인 ${indexable.length}) · SITE ${SITE} · 가장 큰 HTML ${biggest.file} ${kb}KB`);
+console.log(`릴리스 내려받기 링크: 파일 ${dlLinks.size}종${real ? ` · 실제 자산 ${real.size}개와 대조` : ""}`);
 console.log(`구조화 데이터: ${Object.entries(ldCount).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
 for (const w of warns) console.warn(`주의 ${w}`);
 if (errors.length) {

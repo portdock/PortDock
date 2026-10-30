@@ -1,6 +1,6 @@
 ---
 // 내려받기 칸 — 이 칸 근처에는 광고를 두지 않는다(애드센스 정책: 다운로드 버튼과 오인 금지)
-import { downloadable, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
+import { downloadable, isApp, MCP_FILES, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
 import { UI, url } from "../lib/i18n";
 
 interface Props {
@@ -9,12 +9,19 @@ interface Props {
 }
 const { lang, tool } = Astro.props;
 const t = UI[lang];
+const ko = lang === "ko";
+const app = isApp(tool);
 ---
 
 <div class="card">
   <h3>{t.dlTitle}</h3>
   {
-    downloadable(tool) ? (
+    downloadable(tool) && !app ? (
+      <div class="dl-list">
+        <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{ko ? "Claude Desktop 용 (.mcpb)" : "For Claude Desktop (.mcpb)"} <small>{ko ? "열면 설치" : "open to install"}</small></a>
+        <a class="btn" href={latest(MCP_FILES.zip)}>{ko ? "exe (.zip)" : "exe (.zip)"} <small>{ko ? "VS Code·Cursor·Claude Code 등" : "VS Code, Cursor, Claude Code …"}</small></a>
+      </div>
+    ) : downloadable(tool) ? (
       <div class="dl-list">
         <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
         <a class="btn" href={latest(`${tool.file}-setup-offline.exe`)}>{t.dlOffline} <small>{lang === "ko" ? "WebView2 포함" : "WebView2 bundled"}</small></a>
@@ -28,6 +35,6 @@ const t = UI[lang];
     )
   }
   <p class="note">{t.dlNote}</p>
-  <p class="note">{t.webview}</p>
+  {app && <p class="note">{t.webview}</p>}
   <p class="note"><a href={RELEASES}>{t.dlAll} →</a> · <a href={url(lang, "download/#safe")}>{t.safeTitle}</a> · <a href={url(lang, "code-signing/")}>{t.codeSigning}</a></p>
 </div>

@@ -36,6 +36,9 @@ export interface Tool {
   tagline: L;
   /** 아직 릴리스에 들어가지 않은 도구 — 소개·문서 쪽은 보이고, 내려받기 자리는 «곧 공개»(없는 파일로 가는 링크를 만들지 않는다). 그 판을 공개하면 지운다 */
   upcoming?: boolean;
+  /** 내려받기 파일 종류 — 없으면 앱(설치판·오프라인 설치판·휴대판 3종), "mcp" 면 .mcpb·.zip 2종(WebView2 와 무관).
+   *  실제 이름은 .github/workflows/release.yml 과 같아야 한다 — tools/site-check.mjs 가 빌드 결과의 링크를 대조 */
+  assets?: "mcp";
   /** 창이 없는 도구(MCP 서버) — 화면 그림을 두지 않는다 */
   shot?: false;
   /** 검색 결과용 제목·설명 — 사람들이 치는 검색어(site/SEO.md)를 앞에, 길이는 tools/site-check.mjs 가 검사 */
@@ -616,17 +619,18 @@ export const TOOLS: Tool[] = [
     name: "PortDock MCP",
     file: "PortDock-MCP",
     tagline: { ko: "AI 클라이언트용 MCP 서버 — 포트·Modbus·MC·SCPI 읽기 전용", en: "MCP server for AI clients — read-only ports, Modbus, MC and SCPI" },
+    assets: "mcp",
     shot: false,
     seo: {
       title: { ko: "PortDock MCP — AI 에서 COM 포트·Modbus 읽기 (무료)", en: "PortDock MCP — Read COM Ports & Modbus from AI Clients" },
       desc: {
-        ko: "Claude Desktop 등 AI 클라이언트가 COM 포트 점검·Modbus·MC·SCPI 값을 읽게 하는 무료 MCP 서버. 실장비 쓰기 없음, 로컬 기록.",
-        en: "Free MCP server that lets Claude Desktop and other AI clients read COM port reports, Modbus, MC protocol and SCPI values. No writes to real devices; local log.",
+        ko: "Claude Desktop 등 AI 클라이언트가 COM 포트 점검·Modbus·MC·SCPI 값을 읽게 하는 무료 MCP 서버. 쓰기는 127.0.0.1 시뮬레이터만, 로컬 기록.",
+        en: "Free MCP server that lets Claude Desktop and other AI clients read COM port reports, Modbus, MC protocol and SCPI values. Writes only to 127.0.0.1 simulators.",
       },
     },
     summary: {
-      ko: "AI 클라이언트(Claude Desktop·VS Code·Cursor 등)가 띄우는 창 없는 MCP 서버입니다. AI 가 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비의 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기는 이 PC(127.0.0.1)의 시뮬레이터에만 되고, 실장비에 쓰는 도구는 없습니다.",
-      en: "A windowless MCP server started by AI clients (Claude Desktop, VS Code, Cursor …). The AI reads this PC's COM ports and network adapters and reads Modbus, MC protocol and SCPI values from devices you name. Writes go only to simulators on this PC (127.0.0.1); there is no tool that writes to real devices.",
+      ko: "AI 클라이언트(Claude Desktop·VS Code·Cursor 등)가 띄우는 창 없는 MCP 서버입니다. AI 가 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비의 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기 도구는 이 PC 주소(127.0.0.1)만 받아 시뮬레이터 연습용입니다. 다만 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄워 두면 실제 장비에 닿을 수 있으니 주의하세요.",
+      en: "A windowless MCP server started by AI clients (Claude Desktop, VS Code, Cursor …). The AI reads this PC's COM ports and network adapters and reads Modbus, MC protocol and SCPI values from devices you name. The write tools accept only this PC's address (127.0.0.1) and are meant for simulators. Note that if a program on this PC forwards to another device (a TCP relay, gateway or tunnel), a write can reach a real device.",
     },
     who: [
       { ko: "COM 포트·USB 변환기 문제를 AI 에게 함께 보게 하려는 분", en: "Anyone who wants an AI assistant to look at COM port and USB adapter problems with them" },
@@ -635,8 +639,8 @@ export const TOOLS: Tool[] = [
     ],
     features: [
       { title: { ko: "읽기 도구 9개", en: "Nine read tools" }, body: { ko: "COM 포트 목록, Port Inspector 보고서, 시리얼 듣기(보내지 않음), Modbus 읽기(FC 01~04), MC 3E 일괄 읽기, SCPI 질의, 핑, 랜카드, 장비 레지스터 맵.", en: "COM port list, Port Inspector report, serial listening (sends nothing), Modbus reads (FC 01–04), MC 3E batch read, SCPI queries, ping, network adapters and device register maps." } },
-      { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다.", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting." } },
-      { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused." } },
+      { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다(판정은 주소로만 — 중계 프로그램을 띄운 채 쓰지 마세요).", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting (the check is by address only — do not use it with a relay program running)." } },
+      { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다. 측정을 새로 시작하는 READ?·MEAS…? 는 다음 판부터 사용자가 허락할 때만 보냅니다.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused. From the next version, READ? and MEAS…?, which start a new measurement, are sent only when you allow it." } },
       { title: { ko: "세션 기록·속도 제한", en: "Session log and rate limits" }, body: { ko: "모든 호출을 이 PC 에 JSONL 로 남기고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 1분에 120번까지.", en: "Every call is kept on this PC as JSON lines and never sent out. The same target at most once per 100 ms, 120 calls a minute." } },
       { title: { ko: "개인정보 가림", en: "Personal data masked" }, body: { ko: "결과의 사용자 폴더 경로는 «~», MAC 주소는 «xx-…», 네트워크 이름은 «(hidden)» 으로 바꿉니다.", en: "User folder paths in results become «~», MAC addresses «xx-…» and network names «(hidden)»." } },
       { title: { ko: "설치 파일 하나", en: "One file to install" }, body: { ko: "Python·Node·Docker 없이 .mcpb(Claude Desktop 에서 열기) 또는 zip 의 exe 하나.", en: "No Python, Node or Docker: a .mcpb (open in Claude Desktop) or a single exe in a zip." } },
@@ -649,7 +653,7 @@ export const TOOLS: Tool[] = [
     faq: [
       {
         q: { ko: "AI 가 장비 설정을 바꿀 수 있나요?", en: "Can the AI change device settings?" },
-        a: { ko: "아닙니다. 실장비에 쓰는 도구가 없습니다. 쓰기 두 개는 대상이 127.0.0.1·localhost 일 때만 동작합니다.", en: "No. There is no tool that writes to real devices. The two write tools only work when the target is 127.0.0.1 or localhost." },
+        a: { ko: "쓰기 도구 두 개는 대상이 127.0.0.1·localhost(이 PC)일 때만 동작하고, 다른 주소는 연결 전에 거절합니다. 판정은 주소로만 하므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·SSH 터널 등)을 띄워 두면 실제 장비에 닿을 수 있습니다 — 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 마세요.", en: "The two write tools only work when the target is 127.0.0.1 or localhost (this PC); any other address is refused before connecting. The check is by address only, so if a program on this PC forwards to another device (a TCP relay, gateway, SSH tunnel …), a write can reach a real device — do not use the write tools while such a program is running." },
       },
       {
         q: { ko: "무엇을 바깥으로 보내나요?", en: "What does it send out?" },
@@ -663,5 +667,9 @@ export const TOOLS: Tool[] = [
 export const toolById = (id: string) => TOOLS.find((t) => t.id === id)!;
 /** 지금 내려받을 수 있는지(첫 릴리스 공개 + 이 도구가 릴리스에 들어 있음) */
 export const downloadable = (t: Tool) => RELEASED && !t.upcoming;
+/** 설치판·오프라인 설치판·휴대판 3종이 있는 윈도우 앱인지(MCP 는 아님) */
+export const isApp = (t: Tool) => t.assets !== "mcp";
+/** MCP 내려받기 파일 — release.yml «MCP zip·.mcpb» 와 같은 이름 */
+export const MCP_FILES = { mcpb: "PortDock-MCP.mcpb", zip: "PortDock-MCP.zip" } as const;
 /** 내려받을 수 있는 도구 — 첫 화면 «윈도우 프로그램 N종» 같은 숫자에 쓴다 */
 export const RELEASED_TOOLS = TOOLS.filter((t) => !t.upcoming);

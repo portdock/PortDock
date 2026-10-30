@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, latest, type Lang } from "../data/tools";
+import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, isApp, MCP_FILES, latest, type Lang } from "../data/tools";
 import { VERSION, SIZE, SHA256SUMS } from "../data/release";
 import PickApp from "../components/PickApp.astro";
 import { UI, url } from "../lib/i18n";
@@ -14,6 +14,9 @@ interface Props {
 const { lang } = Astro.props;
 const t = UI[lang];
 const ko = lang === "ko";
+// 표·«어느 걸 받아야 하나요?» 는 설치판·오프라인·휴대판이 있는 윈도우 앱만. MCP 는 파일 종류가 달라(.mcpb·.zip) 표 아래 따로
+const APPS = TOOLS.filter(isApp);
+const MCP = TOOLS.filter((x) => !isApp(x));
 ---
 
 <Base
@@ -45,6 +48,7 @@ const ko = lang === "ko";
         <li data-pick="offline"><b>{t.dlOffline}</b> <small>({SIZE.offline[lang]})</small> — {ko ? "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다." : "PCs without internet (plant floor, closed networks). WebView2 is bundled."}</li>
         <li data-pick="portable"><b>{t.dlPortable}</b> <small>({SIZE.portable[lang]})</small> — {ko ? "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다." : "No install — carry it on a USB stick. Unzip and run."}</li>
       </ul>
+      {MCP.length > 0 && <p class="note">{ko ? "AI 클라이언트용 PortDock MCP 는 파일 종류가 달라 표 아래에 따로 있습니다." : "PortDock MCP (for AI clients) uses different files — see below the table."} <a href="#mcp-dl">PortDock MCP ↓</a></p>}
       <form class="pick-q" hidden>
         <fieldset>
           <legend>{ko ? "1. 이 PC 에 설치해도 되나요?" : "1. Can you install software on this PC?"}</legend>
@@ -65,7 +69,7 @@ const ko = lang === "ko";
       </thead>
       <tbody>
         {
-          TOOLS.map((x) => (
+          APPS.map((x) => (
             <tr>
               <td class="dl-name">
                 {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="28" height="28" loading="lazy" decoding="async" />}
@@ -90,6 +94,23 @@ const ko = lang === "ko";
         }
       </tbody>
     </table>
+    {
+      MCP.map((x) => (
+        <section class="card" id="mcp-dl" aria-labelledby="mcp-dl-h">
+          <h2 id="mcp-dl-h">{x.name}</h2>
+          <p class="note">{x.tagline[lang]} · <a href={url(lang, `${x.id}/`)}>{ko ? "소개" : "About"}</a> · <a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></p>
+          {downloadable(x) ? (
+            <div class="dl-list">
+              <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{ko ? "Claude Desktop 용 (.mcpb)" : "For Claude Desktop (.mcpb)"}</a>
+              <a class="btn" href={latest(MCP_FILES.zip)}>{ko ? "exe (.zip) — VS Code·Cursor·Claude Code 등" : "exe (.zip) — VS Code, Cursor, Claude Code …"}</a>
+            </div>
+          ) : (
+            <p class="note">{x.upcoming ? t.dlUpcoming : t.dlSoon}</p>
+          )}
+          <p class="note">{ko ? "설치판·휴대판 구분이 없고 WebView2 도 필요 없습니다. .mcpb 는 Claude Desktop 에서 열면 설치되고, 다른 클라이언트는 zip 을 풀어 portdock-mcp.exe 경로를 설정에 적습니다." : "No installer/portable split and no WebView2. Open the .mcpb in Claude Desktop to install; for other clients, unzip and put the path of portdock-mcp.exe in their settings."}</p>
+        </section>
+      ))
+    }
     <p class="note">{ko ? `파일 크기는 프로그램마다 조금씩 다릅니다(${VERSION} 기준 어림값). ` : `Sizes vary slightly by program (approximate, ${VERSION}). `}<a href={RELEASES}>{t.dlAll} →</a></p>
 
     <section class="prose" id="safe">
