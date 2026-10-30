@@ -108,9 +108,13 @@ pub struct LogOptions {
     pub split_mb: u32,
     /// 이 시간(시간)이 지나면 다음 파일로(0 = 나누지 않음)
     pub split_hours: u32,
+    /// (0.6.0) 날짜가 바뀌면 다음 파일로 — 이름에 날짜(«이름-20261030.log», 같은 날 크기로 또 나누면 «-002»)
+    pub split_daily: bool,
+    /// (0.6.0) 같은 이름 갈래의 옛 로그 파일 중 이 날 수보다 오래된 것을 지운다(0 = 지우지 않음). 파일을 열 때·다음 파일로 넘어갈 때
+    pub keep_days: u32,
 }
 
-static LOG_OPTIONS: Mutex<LogOptions> = Mutex::new(LogOptions { format: LogFormat::Hex, encoding: Encoding::Utf8, split_mb: 0, split_hours: 0 });
+static LOG_OPTIONS: Mutex<LogOptions> = Mutex::new(LogOptions { format: LogFormat::Hex, encoding: Encoding::Utf8, split_mb: 0, split_hours: 0, split_daily: false, keep_days: 0 });
 
 /// 화면 설정(파일 로그 형식·나누기)을 받는다. 이미 쓰고 있는 파일은 그대로 — 다음에 여는 파일부터
 pub fn set_log_options(o: LogOptions) {
@@ -140,8 +144,12 @@ pub struct LogWriter {
     part: u32,
     /// 첫 파일 경로 — 다음 파일 이름의 바탕
     base: String,
-    /// 다음 파일을 여는 방법(시험에서 바꾼다)
+    /// 지금 파일을 연 날(YYYYMMDD)과 그날 안의 번호 — 날짜별 나누기
+    day: String,
+    day_part: u32,
+    /// 다음 파일을 여는 방법·오늘 날짜(시험에서 바꾼다)
     opener: Opener,
+    today: fn() -> String,
 }
 
 impl LogWriter {
@@ -155,7 +163,21 @@ impl LogWriter {
         let mut lw = Self::from_writer_with(path, f, opts);
         lw.written = len;
         lw.start_file().map_err(|e| format!("{path}: {e}"))?;
+        lw.clean_old().map_err(|e| format!("{path}: {e}"))?;
         Ok(lw)
+    }
+
+    /// 오래된 같은 갈래 파일 지우기 — 지웠으면 사건 줄로 남긴다
+    fn clean_old(&mut self) -> std::io::Result<()> {
+        if self.opts.keep_days == 0 {
+            return Ok(());
+        }
+        let gone = remove_old_logs(&self.base, &self.path, self.opts.keep_days, SystemTime::now());
+        if !gone.is_empty() {
+            self.write_line(&Frame::event(format!("LOG CLEAN {} (> {} d)", gone.len(), self.opts.keep_days)))?;
+            self.w.flush()?;
+        }
+        Ok(())
     }
 
     pub fn from_writer(path: &str, w: Box<dyn Write + Send>) -> Self {
@@ -171,7 +193,10 @@ impl LogWriter {
             opened: Instant::now(),
             part: 1,
             base: path.to_string(),
+            day: local_day(),
+            day_part: 1,
             opener: open_append,
+            today: local_day,
         }
     }
 
@@ -193,11 +218,19 @@ impl LogWriter {
     fn due(&self) -> bool {
         (self.opts.split_mb > 0 && self.written >= self.opts.split_mb as u64 * 1_048_576)
             || (self.opts.split_hours > 0 && self.opened.elapsed() >= Duration::from_secs(self.opts.split_hours as u64 * 3600))
+            || (self.opts.split_daily && (self.today)() != self.day)
     }
 
     /// 다음 파일로 — 옛 파일 끝과 새 파일 처음에 서로의 이름을 사건 줄로 남긴다
     fn rotate(&mut self) -> std::io::Result<()> {
-        let next = part_path(&self.base, self.part + 1);
+        let next = if self.opts.split_daily {
+            let today = (self.today)();
+            self.day_part = if today == self.day { self.day_part + 1 } else { 1 };
+            self.day = today;
+            day_path(&self.base, &self.day, self.day_part)
+        } else {
+            part_path(&self.base, self.part + 1)
+        };
         let (f, len) = (self.opener)(&next).map_err(std::io::Error::other)?;
         self.write_line(&Frame::event(format!("LOG NEXT {next}")))?;
         self.w.flush()?;
@@ -207,7 +240,8 @@ impl LogWriter {
         self.opened = Instant::now();
         self.part += 1;
         self.start_file()?;
-        self.write_line(&Frame::event(format!("LOG PART {} (prev {prev})", self.part)))
+        self.write_line(&Frame::event(format!("LOG PART {} (prev {prev})", self.part)))?;
+        self.clean_old()
     }
 
     fn write_line(&mut self, f: &Frame) -> std::io::Result<()> {
@@ -243,6 +277,78 @@ pub fn part_path(base: &str, n: u32) -> String {
         Some(dot) if dot > 0 => format!("{dir}{}-{n:03}{}", &name[..dot], &name[dot..]),
         _ => format!("{dir}{name}-{n:03}"),
     }
+}
+
+/// 오늘(이 PC 시각) «YYYYMMDD»
+fn local_day() -> String {
+    chrono::Local::now().format("%Y%m%d").to_string()
+}
+
+/// 날짜별 파일 이름 — «C:\log\a.log» 의 20261030 첫 파일 → «C:\log\a-20261030.log», 그날 두 번째 → «a-20261030-002.log»
+pub fn day_path(base: &str, day: &str, n: u32) -> String {
+    let cut = base.rfind(['\\', '/']).map_or(0, |i| i + 1);
+    let (dir, name) = base.split_at(cut);
+    let tail = if n > 1 { format!("-{day}-{n:03}") } else { format!("-{day}") };
+    match name.rfind('.') {
+        Some(dot) if dot > 0 => format!("{dir}{}{tail}{}", &name[..dot], &name[dot..]),
+        _ => format!("{dir}{name}{tail}"),
+    }
+}
+
+/// 이름 갈래 — 확장자를 뺀 이름에서 끝의 «-숫자» 묶음을 떼어 낸 것(«portdock-tcp-20261030-101500» → «portdock-tcp»)
+fn log_family(stem: &str) -> &str {
+    let mut s = stem;
+    while let Some(i) = s.rfind('-') {
+        let tail = &s[i + 1..];
+        if i == 0 || tail.is_empty() || !tail.bytes().all(|c| c.is_ascii_digit()) {
+            break;
+        }
+        s = &s[..i];
+    }
+    s
+}
+
+/// `name` 이 `base` 와 같은 갈래의 로그 파일인지 — 같은 확장자, 갈래 이름 뒤에 «-숫자» 묶음만 붙은 것
+pub fn same_log_family(base_name: &str, name: &str) -> bool {
+    let split = |n: &str| match n.rfind('.') {
+        Some(d) if d > 0 => (n[..d].to_string(), n[d..].to_ascii_lowercase()),
+        _ => (n.to_string(), String::new()),
+    };
+    let (bstem, bext) = split(base_name);
+    let (stem, ext) = split(name);
+    let fam = log_family(&bstem);
+    if ext != bext || !stem.starts_with(fam) {
+        return false;
+    }
+    let rest = &stem[fam.len()..];
+    rest.is_empty() || (rest.starts_with('-') && rest[1..].split('-').all(|t| !t.is_empty() && t.bytes().all(|c| c.is_ascii_digit())))
+}
+
+/// 같은 폴더의 같은 갈래 로그 중 고친 지 `keep_days` 일이 넘은 것을 지운다(지금 파일은 빼고, 하위 폴더는 보지 않는다). 지운 경로들
+pub fn remove_old_logs(base: &str, current: &str, keep_days: u32, now: SystemTime) -> Vec<String> {
+    let p = std::path::Path::new(base);
+    let (Some(dir), Some(base_name)) = (p.parent(), p.file_name().and_then(|n| n.to_str())) else { return Vec::new() };
+    let dir = if dir.as_os_str().is_empty() { std::path::Path::new(".") } else { dir };
+    let limit = Duration::from_secs(keep_days as u64 * 86_400);
+    let cur = std::path::Path::new(current).file_name().map(|n| n.to_os_string());
+    let mut gone = Vec::new();
+    let Ok(rd) = std::fs::read_dir(dir) else { return gone };
+    for e in rd.flatten() {
+        let name = e.file_name();
+        let Some(n) = name.to_str() else { continue };
+        if Some(&name) == cur.as_ref() || !same_log_family(base_name, n) {
+            continue;
+        }
+        let Ok(meta) = e.metadata() else { continue };
+        if !meta.is_file() {
+            continue;
+        }
+        let old = meta.modified().ok().and_then(|m| now.duration_since(m).ok()).is_some_and(|age| age > limit);
+        if old && std::fs::remove_file(e.path()).is_ok() {
+            gone.push(e.path().to_string_lossy().into_owned());
+        }
+    }
+    gone
 }
 
 /// 프레임들을 로그에 쓴다. 실패하면 기록을 멈추고(slot = None) 알릴 문구를 돌려준다.
@@ -426,6 +532,77 @@ mod tests {
         assert_eq!(part_path("C:\\log.d\\a", 3), "C:\\log.d\\a-003");
         assert_eq!(part_path("/tmp/x.y.csv", 12), "/tmp/x.y-012.csv");
         assert_eq!(part_path(".hidden", 2), ".hidden-002");
+    }
+
+    #[test]
+    fn day_names_and_families() {
+        assert_eq!(day_path("C:\\log\\a.log", "20261030", 1), "C:\\log\\a-20261030.log");
+        assert_eq!(day_path("C:\\log\\a.log", "20261030", 2), "C:\\log\\a-20261030-002.log");
+        assert_eq!(day_path("/t/x", "20261031", 1), "/t/x-20261031");
+        let auto = "portdock-plc-simulator-20261030-101500.log";
+        assert!(same_log_family(auto, "portdock-plc-simulator-20261001-090000.log"));
+        assert!(same_log_family(auto, "portdock-plc-simulator-20261001-090000-002.log"));
+        assert!(same_log_family(auto, "portdock-plc-simulator-20261001-090000-20261002.log"));
+        assert!(!same_log_family(auto, "portdock-plc-simulator-20261001-090000.csv"), "다른 확장자");
+        assert!(!same_log_family(auto, "portdock-plc-simulator-old.log"), "숫자가 아닌 꼬리");
+        assert!(!same_log_family(auto, "portdock-tcp-20261001-090000.log"), "다른 앱");
+        assert!(same_log_family("data.log", "data-002.log"));
+        assert!(!same_log_family("data.log", "data-important.log"));
+        assert!(!same_log_family("data.log", "database.log"));
+        assert!(!same_log_family("data.log", "data-.log"));
+    }
+
+    /// 오래된 같은 갈래 파일만 지운다 — 지금 파일·다른 이름·하위 폴더는 남는다
+    #[test]
+    fn keep_days_removes_only_old_family_files() {
+        let dir = std::env::temp_dir().join(format!("pd-logclean-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("sub")).unwrap();
+        for n in ["run.log", "run-002.log", "run-20261001.log", "run-notes.log", "other.log", "run.txt", "sub/run-003.log"] {
+            std::fs::write(dir.join(n), b"x").unwrap();
+        }
+        let base = dir.join("run.log").to_string_lossy().into_owned();
+        let cur = dir.join("run-20261001.log").to_string_lossy().into_owned();
+        // 지금으로 보면 아무것도 오래되지 않았다
+        assert!(remove_old_logs(&base, &cur, 3, SystemTime::now()).is_empty());
+        // 10일 뒤로 보면: run.log·run-002.log 만(지금 파일 run-20261001.log 는 남김)
+        let later = SystemTime::now() + Duration::from_secs(10 * 86_400);
+        let mut gone: Vec<String> = remove_old_logs(&base, &cur, 3, later).iter().map(|p| std::path::Path::new(p).file_name().unwrap().to_string_lossy().into_owned()).collect();
+        gone.sort();
+        assert_eq!(gone, ["run-002.log", "run.log"]);
+        for n in ["run-20261001.log", "run-notes.log", "other.log", "run.txt", "sub/run-003.log"] {
+            assert!(dir.join(n).exists(), "{n}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// 날짜가 바뀌면 «이름-날짜» 파일로, 같은 날 크기로 또 나누면 «-002»
+    #[test]
+    fn split_daily_names_by_date() {
+        type Files = Arc<Mutex<Vec<String>>>;
+        static OPENED: std::sync::OnceLock<Files> = std::sync::OnceLock::new();
+        static DAY: Mutex<&str> = Mutex::new("20261030");
+        let opened = OPENED.get_or_init(Default::default).clone();
+        fn sink_open(path: &str) -> Result<(Box<dyn Write + Send>, u64), String> {
+            OPENED.get().unwrap().lock().unwrap().push(path.to_string());
+            Ok((Box::new(std::io::sink()), 0))
+        }
+        fn today() -> String {
+            DAY.lock().unwrap().to_string()
+        }
+        let o = LogOptions { split_daily: true, split_mb: 1, ..LogOptions::default() };
+        let mut lw = LogWriter::from_writer_with("D:\\t\\run.log", Box::new(std::io::sink()), o);
+        lw.opener = sink_open;
+        lw.today = today;
+        lw.day = today();
+        lw.write(&[rx(&[1, 2, 3])]).unwrap();
+        assert!(opened.lock().unwrap().is_empty());
+        *DAY.lock().unwrap() = "20261031";
+        lw.write(&[rx(&[1, 2, 3])]).unwrap();
+        lw.write(&[rx(&[0x55; 1_100_000])]).unwrap();
+        lw.write(&[rx(&[1])]).unwrap();
+        assert_eq!(*opened.lock().unwrap(), ["D:\\t\\run-20261031.log", "D:\\t\\run-20261031-002.log"]);
+        assert_eq!(lw.path(), "D:\\t\\run-20261031-002.log");
     }
 
     /// 크기로 나누기 — 옛 파일에 «LOG NEXT», 새 파일에 «LOG PART 2», CSV 는 파일마다 머리줄

@@ -332,6 +332,13 @@ export function SettingsDialog({
                   <NumInput min={LIMITS.logSplitHours[0]} max={LIMITS.logSplitHours[1]} value={settings.logSplitHours} onValue={(n) => update({ logSplitHours: n })} />
                 </label>
               </div>
+              <label className="inline" data-tip={tip(settings.lang, "logSplitDaily")}>
+                <input type="checkbox" checked={settings.logSplitDaily} onChange={(e) => update({ logSplitDaily: e.target.checked })} /> {io(settings.lang, "splitDaily")}
+              </label>
+              <label data-tip={tip(settings.lang, "logKeepDays")}>
+                {io(settings.lang, "keepDays")}
+                <NumInput min={LIMITS.logKeepDays[0]} max={LIMITS.logKeepDays[1]} value={settings.logKeepDays} onValue={(n) => update({ logKeepDays: n })} />
+              </label>
               <span className="hint">{io(settings.lang, "logFmtHint")}</span>
             </>
           )}

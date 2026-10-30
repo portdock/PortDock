@@ -62,6 +62,10 @@ export interface LogOptions {
   encoding: Encoding;
   splitMb: number;
   splitHours: number;
+  /** (0.6.0) 날짜가 바뀌면 새 파일 */
+  splitDaily: boolean;
+  /** (0.6.0) 옛 로그 지우기(일, 0 = 안 지움) */
+  keepDays: number;
 }
 
 /** 보낼 것 → 백엔드 codec::SendText(체크섬 옵션은 ChecksumKind::Spec 으로, 글자 인코딩 포함) */

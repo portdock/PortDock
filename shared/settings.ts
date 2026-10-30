@@ -104,7 +104,7 @@ export function formatTime(ts: number, f: TimeFormat, base: number) {
 }
 
 /** 백엔드 set_log_options 에 넘기는 값 */
-export const logOptionsOf = (s: Settings) => ({ format: s.logFormat, encoding: s.encoding, splitMb: s.logSplitMb, splitHours: s.logSplitHours });
+export const logOptionsOf = (s: Settings) => ({ format: s.logFormat, encoding: s.encoding, splitMb: s.logSplitMb, splitHours: s.logSplitHours, splitDaily: s.logSplitDaily, keepDays: s.logKeepDays });
 
 /** 파일 로그 확장자 — CSV 면 .csv */
 export const logExt = (s: Settings) => (s.logFormat === "csv" ? "csv" : "log");
