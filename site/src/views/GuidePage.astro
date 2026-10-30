@@ -42,6 +42,8 @@ const ld = {
   author: { "@type": "Organization", name: "PortDock", url: REPO },
   publisher: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
   // 앱이 없는 글(PC 하드웨어 웹 도구 글)은 about 을 빼고, 이어지는 웹 도구를 카드로 보인다
+  // «근거» 목록(제조사·표준·공식 문서) — 기계가 읽는 인용
+  ...(guide.refs?.length ? { citation: guide.refs.map((r) => ({ "@type": "CreativeWork", name: r.title, url: r.url })) } : {}),
   ...(tools.length ? { about: tools.map((t) => ({ "@type": "SoftwareApplication", name: t.name, applicationCategory: "DeveloperApplication", operatingSystem: "Windows" })) } : {}),
 };
 ---

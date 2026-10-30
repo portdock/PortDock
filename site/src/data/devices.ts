@@ -2,6 +2,7 @@
 // 데이터 라이선스 CC BY 4.0(data/devices/LICENSE). 검사: node tools/devices-check.mjs
 import type { Device } from "@shared/devices";
 import { REPO } from "./tools";
+import { dataRelease } from "../lib/dataRelease";
 
 const files = import.meta.glob<Device>("../../../data/devices/*/*.json", { eager: true, import: "default" });
 
@@ -22,3 +23,8 @@ export const devParams = (d: Device) => {
   return { maker, model };
 };
 export const devPath = (d: Device) => `devices/${d.id}/`;
+
+/** 데이터 묶음의 판·기준일·내용 해시(lib/dataRelease.ts) — /data/ 쪽·all.json·llms.txt 가 같이 쓴다 */
+export const RELEASE = dataRelease(DEVICES);
+/** 인용할 주소(장비 맵 홈) */
+export const dataHome = (site: URL | undefined) => new URL("/devices/", site).href;

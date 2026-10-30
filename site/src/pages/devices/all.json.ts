@@ -1,16 +1,9 @@
-// 모든 장비 레지스터 맵 한 파일 — /devices/all.json (데이터셋 통째로 받기, llms.txt 에서 가리킨다)
+// 모든 장비 레지스터 맵 한 파일 — /devices/all.json (데이터 묶음 통째로 받기). 판·인용·라이선스가 머리에 붙는다(lib/dataRelease.ts), 형식은 /data/schema.json
 import type { APIRoute } from "astro";
-import { CC_BY, DEVICES, SCHEMA_URL } from "../../data/devices";
+import { DEVICES, dataHome } from "../../data/devices";
+import { bundle } from "../../lib/dataRelease";
 
-export const GET: APIRoute = () =>
-  new Response(
-    JSON.stringify({
-      name: "PortDock device register maps",
-      license: CC_BY,
-      attribution: "PortDock device register maps (https://portdock.dev/devices/)",
-      schema: SCHEMA_URL,
-      note: "Facts from manufacturer manuals only, with sources. Not affiliated with the makers. Check the device manual before writing to a device. address = 0-based wire address; value = raw × scale.",
-      devices: DEVICES,
-    }) + "\n",
-    { headers: { "Content-Type": "application/json; charset=utf-8" } },
-  );
+export const GET: APIRoute = ({ site }) =>
+  new Response(JSON.stringify(bundle(DEVICES, { home: dataHome(site), schema: new URL("/data/schema.json", site).href })) + "\n", {
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });

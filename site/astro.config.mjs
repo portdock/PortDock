@@ -36,6 +36,8 @@ export default defineConfig({
     sitemap({
       i18n: { defaultLocale: "ko", locales: { ko: "ko-KR", en: "en-US" } },
       filter: (page) => !page.endsWith("/en/404/"),
+      // 데이터 묶음 파일(장비 맵 JSON·CSV·스키마·판)과 AI 용 안내도 sitemap 에 — 쪽(HTML)이 아니라 저절로 들어가지 않는다(tools/site-check.mjs 가 대조)
+      customPages: ["/devices/all.json", "/devices/registers.csv", "/devices/index.json", "/data/schema.json", "/data/version.json", "/llms.txt", "/llms-full.txt"].map((p) => SITE_URL + p),
     }),
     en404,
   ],

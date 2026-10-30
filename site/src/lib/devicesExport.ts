@@ -92,3 +92,25 @@ export function devicesMarkdown(devices: Device[], pageUrl: (d: Device) => strin
   }
   return out.join("\n");
 }
+
+const TABLE_SHORT: Record<DevRegister["table"], string> = { coils: "CO", "discrete-inputs": "DI", "input-registers": "IR", "holding-registers": "HR" };
+
+/** AI 용 요약(영어) — /llms-full.txt 의 장비 부분. 레지스터 한 줄에 «표 주소 형식 배율 단위 R/W — 이름», 매뉴얼 주소·함수 코드·값 뜻은 장비별 .md·JSON 에 */
+export function devicesDigest(devices: Device[], links: (d: Device) => { page: string; json: string; md: string }): string {
+  const out: string[] = [];
+  for (const d of devices) {
+    const l = links(d);
+    out.push(`## ${d.manufacturer.en} ${d.model} — ${d.title.en}`, "");
+    out.push(`- Page: ${l.page} · JSON: ${l.json} · Full table: ${l.md}`);
+    out.push(`- Protocols: ${d.protocols.join(", ")}${fmtComm(d) ? ` · factory settings: ${fmtComm(d)}` : ""} · manual address style: ${d.comm.addressing}${d.comm.order ? ` · 32-bit order ${d.comm.order}` : ""}`);
+    for (const s of d.sources) out.push(`- Source: ${s.title}${s.edition ? `, ${s.edition.en}` : ""}${s.pages ? `, ${s.pages.en}` : ""} — checked ${s.checked}`);
+    out.push(`- Registers (${d.registers.length}) — table, 0-based wire address, type, scale and unit, access, name:`);
+    for (const r of d.registers) {
+      const type = r.type + (r.order ? ` ${r.order}` : "") + (r.len ? `×${r.len}` : "");
+      const su = [r.scale != null && r.scale !== 1 ? `×${r.scale}` : "", r.unit ?? ""].filter(Boolean).join(" ");
+      out.push(`  - ${TABLE_SHORT[r.table]} ${r.address} ${type}${su ? ` ${su}` : ""} ${r.access} — ${r.name.en.replace(/\r?\n/g, " ")}`);
+    }
+    out.push("");
+  }
+  return out.join("\n");
+}

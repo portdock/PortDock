@@ -17,10 +17,10 @@ function sample(regs) {
     protocols: ["rtu"],
     comm: { addressing: "zero", baud: 9600, parity: "none", stopBits: 1, unit: 1 },
     registers: regs,
-    sources: [{ title: "매뉴얼", url: "https://example.com/m.pdf", checked: "2026-10-19" }],
+    sources: [{ title: "매뉴얼", edition: t("판 1", "Ed. 1"), pages: t("p.3", "p.3"), url: "https://example.com/m.pdf", checked: "2026-10-19" }],
   };
 }
-const reg = (o) => ({ table: "holding-registers", address: 0, manualAddress: "0x0000", type: "u16", name: t("값", "Value"), access: "r", fc: [3], ...o });
+const reg = (o) => ({ table: "holding-registers", address: 0, manualAddress: "0x0000", type: "u16", name: t("값", "Value"), access: "r", fc: [3], ref: "p.3", ...o });
 
 test("저장소의 모든 장비 맵이 검사를 통과한다", () => {
   const { devices, errors } = checkAll();
@@ -39,6 +39,17 @@ test("스키마 — 필수 키·모르는 키·enum·pattern", () => {
   assert.match(es, /toaster/);
   assert.match(validateSchema({ ...ok, id: "No Slash" }, schema).join(), /모양/);
   assert.match(validateSchema(sample([reg({ address: 70000 })]), schema).join(), /65535/);
+});
+
+test("스키마 — 출처는 문서·판·쪽·확인일, 레지스터는 근거 쪽(ref)이 필수", () => {
+  for (const k of ["title", "edition", "pages", "url", "checked"]) {
+    const dev = sample([reg({})]);
+    delete dev.sources[0][k];
+    assert.match(validateSchema(dev, schema).join(), new RegExp(`«${k}» 없음`));
+  }
+  const dev = sample([reg({})]);
+  delete dev.registers[0].ref;
+  assert.match(validateSchema(dev, schema).join(), /registers\/0: «ref» 없음/);
 });
 
 test("주소 중복·형식 칸 수 겹침", () => {

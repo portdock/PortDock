@@ -1,0 +1,165 @@
+---
+// 장비 맵 데이터 묶음 — 판·파일·주소 규칙·칸 설명(스키마에서)·라이선스와 인용·바뀐 점·AI 자동 수집 안내. 모두 빌드 때 data/devices 에서 만든다(lib/dataRelease.ts).
+import Base from "../layouts/Base.astro";
+import Crumbs from "../components/Crumbs.astro";
+import { type Lang } from "../data/tools";
+import { CC_BY, DEVICES, LICENSE_URL, RAW, RELEASE, dataHome, devPath } from "../data/devices";
+import { DATA_FILES, DATASET_NAME, DEVICE_JSON, DEVICE_MD, changelog, citeText, citeTextKo, descIn } from "../lib/dataRelease";
+import { url } from "../lib/i18n";
+import deviceSchema from "../../../data/devices/schema.json";
+import "../styles/devices.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const L = (k: string, e: string) => (ko ? k : e);
+const R = RELEASE;
+const home = dataHome(Astro.site);
+const cite = citeText(R, home);
+const title = L("장비 맵 데이터 묶음 — 판·내려받기·인용", "Modbus register map dataset — version, files, citation");
+const desc = L(
+  `산업 장비 ${R.devices}종 Modbus 레지스터 ${R.registers}개를 JSON·CSV 로 한 번에. 판 v${R.version}, 칸 설명(JSON Schema), CC BY 4.0 인용 방법, 바뀐 점.`,
+  `Modbus register maps for ${R.devices} industrial devices (${R.registers} registers) as JSON and CSV — version v${R.version}, JSON Schema, CC BY 4.0 citation and changelog.`,
+);
+const byId = new Map(DEVICES.map((d) => [d.id, d]));
+const devName = (id: string) => {
+  const d = byId.get(id)!;
+  return `${d.manufacturer[lang]} ${d.model}`;
+};
+const log = changelog(DEVICES);
+
+// 칸 설명 — 스키마의 «한국어 / English» 설명에서 언어별로
+type Prop = { description?: string; $ref?: string; enum?: unknown[]; type?: string };
+const defs = deviceSchema.$defs as unknown as Record<string, { properties: Record<string, Prop>; required?: string[] }>;
+const rows = (props: Record<string, Prop>, req: string[] = []) =>
+  Object.entries(props)
+    .filter(([k]) => k !== "$schema")
+    .map(([k, p]) => ({ k, req: req.includes(k), d: descIn(p.description ?? (p.$ref ? (defs[p.$ref.split("/").pop()!] as unknown as Prop)?.description : ""), lang) }));
+const regRows = rows(defs.register.properties, defs.register.required);
+const srcRows = rows(defs.source.properties, defs.source.required);
+const abs = (p: string) => new URL(p, Astro.site).href;
+const here = abs(url(lang, "data/"));
+
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: DATASET_NAME,
+  alternateName: L("PortDock 장비 레지스터 맵", "PortDock Modbus register maps"),
+  description: desc,
+  url: here,
+  sameAs: home,
+  inLanguage: lang,
+  version: R.version,
+  dateModified: R.date,
+  license: CC_BY,
+  isAccessibleForFree: true,
+  creditText: cite,
+  creator: { "@type": "Organization", name: "PortDock", url: abs("/") },
+  keywords: ["Modbus", "register map", "inverter", "power meter", "temperature controller", "industrial automation"],
+  distribution: DATA_FILES.filter((f) => f.path.startsWith("/devices/")).map((f) => ({ "@type": "DataDownload", encodingFormat: f.format, contentUrl: abs(f.path) })),
+};
+---
+
+<Base lang={lang} title={title} description={desc} path="data/">
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: L("장비", "Devices"), path: "devices/" }, { name: L("데이터 묶음", "Data bundle"), path: "data/" }]} />
+      <h1>{title}</h1>
+      <p>{desc}</p>
+    </div>
+  </header>
+  <article class="wrap prose" style="padding-top:20px">
+    <h2 id="version">{L("판", "Version")}</h2>
+    <div class="tbl">
+      <table class="t">
+        <tbody>
+          <tr><th>{L("판", "Version")}</th><td class="mono">v{R.version}</td></tr>
+          <tr><th>{L("기준일", "Date")}</th><td>{R.date} {L("(가장 늦은 출처 확인일)", "(latest source check)")}</td></tr>
+          <tr><th>{L("내용 해시", "Content hash")}</th><td class="mono">{R.contentHash} <small>{L("SHA-256 앞 12자리", "first 12 hex of SHA-256")}</small></td></tr>
+          <tr><th>{L("크기", "Size")}</th><td>{L(`장비 ${R.devices}종 · 제조사 ${R.makers}곳 · 레지스터 ${R.registers}개`, `${R.devices} devices · ${R.makers} makers · ${R.registers} registers`)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      {L("판은 손으로 매기지 않습니다. 빌드 때 데이터에서 정합니다 — 판 = 가장 늦은 출처 확인일의 «연.월», 내용 해시 = 장비 JSON 전체의 SHA-256. 받아 둔 사본이 최신인지는 ", "Versions are not assigned by hand; the build derives them from the data — version = year.month of the latest source check, content hash = SHA-256 over all device JSON. To see whether your copy is current, compare ")}<a href="/data/version.json">version.json</a>{L(" 의 contentHash 와 견주면 됩니다.", "'s contentHash.")}
+    </p>
+
+    <h2 id="files">{L("파일", "Files")}</h2>
+    <div class="tbl">
+      <table class="t">
+        <thead><tr><th>{L("파일", "File")}</th><th>{L("형식", "Format")}</th><th>{L("내용", "Contents")}</th></tr></thead>
+        <tbody>
+          {DATA_FILES.map((f) => <tr><td><a href={f.path}>{f.path}</a></td><td class="mono">{f.format}</td><td>{f[lang]}</td></tr>)}
+          <tr><td class="mono">{DEVICE_JSON}</td><td class="mono">application/json</td><td>{L("장비 하나(예: ", "One device (e.g. ")}<a href={`/devices/${DEVICES[0].id}.json`}>{DEVICES[0].id}.json</a>{L("). id = «제조사/모델», 장비 쪽 주소와 같습니다", "). id = «maker/model», same as the device page path")}</td></tr>
+          <tr><td class="mono">{DEVICE_MD}</td><td class="mono">text/markdown</td><td>{L("장비 하나의 전체 표(영어, AI·글 도구용)", "One device's full table in Markdown (for AI and text tools)")}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>{L("GitHub 원본(늘 최신, 고친 이력 포함): ", "GitHub source (always current, with history): ")}<code>{RAW}/&lt;{L("제조사", "maker")}&gt;/&lt;{L("모델", "model")}&gt;.json</code></p>
+
+    <h2 id="rules">{L("주소·값 규칙", "Address and value rules")}</h2>
+    <ul>
+      <li>{L("address 는 늘 통신선에 실리는 0 기준 주소입니다. 매뉴얼이 1 기준이나 40001 꼴로 적었으면 그 모양은 manualAddress 에 그대로 둡니다.", "address is always the 0-based address on the wire. If the manual writes 1-based numbers or 40001 style, that notation is kept in manualAddress.")}</li>
+      <li>{L("실제 값 = 원시 값 × scale, 단위는 unit. scale 이 없으면 1 입니다.", "Real value = raw × scale, in unit. No scale means 1.")}</li>
+      <li>{L("table 은 holding-registers·input-registers·coils·discrete-inputs, type 은 u16·s16·u32·s32·f32·f64·string(len 바이트)·bit, order 는 ABCD(빅 엔디언)·CDAB(워드 바꿈)·BADC·DCBA — PortDock CSV 와 같은 이름입니다.", "table is holding-registers, input-registers, coils or discrete-inputs; type is u16, s16, u32, s32, f32, f64, string (len bytes) or bit; order is ABCD (big-endian), CDAB (word swap), BADC or DCBA — the same names as the PortDock CSV.")}</li>
+      <li>{L("access 는 r·rw·w, fc 는 매뉴얼이 그 주소에 허용한 함수 코드입니다.", "access is r, rw or w; fc lists the function codes the manual allows for that address.")}</li>
+    </ul>
+
+    <h2 id="schema">{L("칸 설명 (JSON Schema)", "Fields (JSON Schema)")}</h2>
+    <p>
+      <a href="/data/schema.json">/data/schema.json</a>{L(" 가 all.json 전체를, 그 안의 $defs/device 가 장비 파일 하나를 설명합니다(원본 ", " describes all.json; its $defs/device describes one device file (source ")}<a href={`${RAW}/schema.json`}>data/devices/schema.json</a>{L("). 출처는 문서 이름·판·쪽·확인일이 모두 있어야 하고, 레지스터마다 근거 쪽(ref)이 있어야 통과합니다.", "). A source must have title, edition, pages and date checked, and every register its page (ref).")}
+    </p>
+    <h3>{L("레지스터 (registers[])", "Register (registers[])")}</h3>
+    <div class="tbl">
+      <table class="t">
+        <thead><tr><th>{L("칸", "Field")}</th><th>{L("필수", "Required")}</th><th>{L("뜻", "Meaning")}</th></tr></thead>
+        <tbody>{regRows.map((r) => <tr><td class="mono">{r.k}</td><td>{r.req ? "●" : ""}</td><td>{r.d}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <h3>{L("출처 (sources[])", "Source (sources[])")}</h3>
+    <div class="tbl">
+      <table class="t">
+        <thead><tr><th>{L("칸", "Field")}</th><th>{L("필수", "Required")}</th><th>{L("뜻", "Meaning")}</th></tr></thead>
+        <tbody>{srcRows.map((r) => <tr><td class="mono">{r.k}</td><td>{r.req ? "●" : ""}</td><td>{r.d}</td></tr>)}</tbody>
+      </table>
+    </div>
+
+    <h2 id="cite">{L("라이선스와 인용", "License and citation")}</h2>
+    <p>
+      {L("데이터는 ", "The data is ")}<a href={CC_BY}>CC BY 4.0</a> (<a href={LICENSE_URL}>LICENSE</a>){L(" 입니다. 출처를 밝히면 상업용을 포함해 자유롭게 쓰고 고칠 수 있습니다. PortDock 프로그램의 GPL-3.0 과는 별개이고, 제조사·모델 이름은 각 회사의 상표입니다.", ". Use and adapt it freely, commercially too, with attribution. It is separate from the PortDock programs' GPL-3.0; maker and model names are trademarks of their owners.")}
+    </p>
+    <p>{L("인용할 때:", "To cite:")}</p>
+    <pre><code>{ko ? citeTextKo(R, home) : cite}</code></pre>
+    <p>{L("장비 하나를 인용하면 그 장비 쪽 주소(예: ", "For a single device, link its page (e.g. ")}<a href={url(lang, devPath(DEVICES[0]))}>{abs(url(lang, devPath(DEVICES[0])))}</a>{L(")와 매뉴얼 쪽 번호를 함께 적어 주세요.", ") together with the manual page.")}</p>
+
+    <h2 id="changes">{L("바뀐 점", "Changelog")}</h2>
+    <p class="note">{L("출처 확인일 기준으로 저절로 만듭니다 — «더함» 은 그날 처음 확인해 넣은 장비, «다시 확인» 은 출처를 더하거나 다시 연 장비입니다. 글자 하나까지의 고친 이력은 GitHub 에 있습니다.", "Generated from source check dates — «added» are devices first checked that day, «re-checked» are devices whose sources were added or opened again. Every edit is in the GitHub history.")}</p>
+    <div class="tbl">
+      <table class="t">
+        <thead><tr><th>{L("날짜", "Date")}</th><th>{L("판", "Version")}</th><th>{L("바뀐 것", "Changes")}</th></tr></thead>
+        <tbody>
+          {
+            log.map((e) => (
+              <tr>
+                <td class="mono">{e.date}</td>
+                <td class="mono">v{e.version}</td>
+                <td>
+                  {e.added.length > 0 && <div>{L(`더함 ${e.added.length}종: `, `Added ${e.added.length}: `)}{e.added.map(devName).join(", ")}</div>}
+                  {e.rechecked.length > 0 && <div>{L(`다시 확인 ${e.rechecked.length}종: `, `Re-checked ${e.rechecked.length}: `)}{e.rechecked.map(devName).join(", ")}</div>}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="ai">{L("AI·자동 수집 안내", "AI and automated access")}</h2>
+    <p>
+      {L("AI 도구·검색 로봇·스크립트가 이 데이터를 읽고 쓰는 것을 환영합니다. robots.txt 는 AI 크롤러를 포함해 모든 수집을 막지 않습니다. 쪽을 하나씩 긁기보다 ", "AI tools, crawlers and scripts are welcome to read and use this data. robots.txt does not block any crawler, AI crawlers included. Rather than scraping every page, please fetch ")}<a href="/devices/all.json">all.json</a>{L("·", ", ")}<a href="/devices/registers.csv">registers.csv</a>{L(" 를 한 번 받거나 ", " once, or start from ")}<a href="/llms.txt">llms.txt</a>{L("(AI 용 안내)에서 시작해 주세요. 답변이나 자료에 쓸 때는 «", " (the AI guide). When an answer or document uses the data, please cite «")}{cite}{L("» 처럼 출처를 밝히고, 장비에 쓰기 전에는 매뉴얼로 확인하라고 덧붙여 주세요. 틀린 곳은 GitHub 이슈로 알려 주시면 고칩니다.", "» and remind readers to check the device manual before writing to a device. Report mistakes as a GitHub issue and we will fix them.")}
+    </p>
+  </article>
+</Base>

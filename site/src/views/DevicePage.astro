@@ -8,7 +8,8 @@ import ListFilter from "../components/ListFilter.astro";
 import { toolById, type Lang } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
-import { CC_BY, DEVICES, LICENSE_URL, SCHEMA_URL, devPath, rawUrl, sourceUrl } from "../data/devices";
+import { CC_BY, DEVICES, LICENSE_URL, RELEASE, SCHEMA_URL, dataHome, devPath, rawUrl, sourceUrl } from "../data/devices";
+import { DATASET_NAME, citeText } from "../lib/dataRelease";
 import { url } from "../lib/i18n";
 import { KIND_TEXT, devRegs, refText, type Device, type DevRegister } from "@shared/devices";
 import "../styles/devices.css";
@@ -73,6 +74,15 @@ if (c.order) commRows.push([L("32비트 순서", "32-bit order"), c.order]);
 if (c.maxRegisters) commRows.push([L("한 번에 최대", "Max per request"), L(`${c.maxRegisters} 레지스터`, `${c.maxRegisters} registers`)]);
 commRows.push([L("매뉴얼 주소 표기", "Manual address style"), addrText[c.addressing]]);
 
+const manuals = dev.sources.map((s) => ({
+  "@type": "CreativeWork",
+  name: s.title,
+  url: s.url,
+  ...(s.publisher ? { publisher: { "@type": "Organization", name: s.publisher } } : {}),
+  ...(s.edition ? { version: s.edition.en } : {}),
+  // 확인일은 schema.org 에 알맞은 칸이 없어 설명에 붙인다
+  description: `${s.pages ? `${s.pages.en}; ` : ""}checked ${s.checked}`,
+}));
 const ld = {
   "@context": "https://schema.org",
   "@type": "Dataset",
@@ -83,9 +93,17 @@ const ld = {
   license: CC_BY,
   isAccessibleForFree: true,
   creator: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
-  isBasedOn: dev.sources.map((s) => s.url),
+  // 근거 매뉴얼 — 문서 이름·판·쪽·주소(기계가 읽는 출처). citation 은 schema.org 뜻대로 «이 자료가 인용한 문서», 인용 문구는 creditText
+  isBasedOn: manuals,
+  citation: manuals,
+  creditText: `${citeText(RELEASE, dataHome(Astro.site))} — ${name}`,
+  version: RELEASE.version,
   dateModified: dev.sources.map((s) => s.checked).sort().pop(),
-  distribution: [{ "@type": "DataDownload", encodingFormat: "application/json", contentUrl: rawUrl(dev) }],
+  isPartOf: { "@type": "Dataset", name: DATASET_NAME, url: new URL(url(lang, "data/"), Astro.site).href },
+  distribution: [
+    { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: siteJson },
+    { "@type": "DataDownload", encodingFormat: "text/markdown", contentUrl: new URL(`/devices/${dev.id}.md`, Astro.site).href },
+  ],
   keywords: ["Modbus", "register map", dev.manufacturer.en, dev.model, KIND_TEXT[dev.kind].en],
 };
 ---
@@ -201,7 +219,7 @@ const ld = {
       <li><a href={rawUrl(dev)}>{dev.id}.json</a> {L("(GitHub 원본)", "(GitHub raw)")} · <a href={siteJson}>{L("이 사이트 사본", "copy on this site")}</a> · <a href={sourceUrl(dev)}>{L("고친 이력", "history")}</a></li>
       <li><a href={SCHEMA_URL}>schema.json</a> — {L("형식 설명(JSON Schema). table·address(0 기준)·type·order 는 PortDock CSV 와 같습니다.", "format (JSON Schema). table, address (0-based), type and order match the PortDock CSV.")}</li>
       <li>
-        {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a>{L(" — 쓰실 때 «PortDock 장비 레지스터 맵» 과 이 주소를 밝혀 주세요. ", " — please credit «PortDock device register maps» with a link. ")}<a href={LICENSE_URL}>LICENSE</a>
+        {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a>{L(" — 쓰실 때 출처를 밝혀 주세요: ", " — please cite: ")}<q>{citeText(RELEASE, dataHome(Astro.site))}</q>{L(" 와 이 쪽 주소. ", " and this page. ")}<a href={LICENSE_URL}>LICENSE</a> · <a href={url(lang, "data/")}>{L("데이터 묶음·판·바뀐 점", "data bundle, version and changelog")}</a>
       </li>
       <li>{L("틀린 곳을 찾으면 GitHub 이슈로 알려 주세요(쪽 번호와 함께).", "Found a mistake? Please open a GitHub issue with the manual page.")}</li>
     </ul>

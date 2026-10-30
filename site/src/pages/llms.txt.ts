@@ -1,40 +1,40 @@
-// llms.txt — AI 가 PortDock 과 장비 레지스터 맵 데이터셋·웹 도구·가이드를 찾게 하는 짧은 안내(https://llmstxt.org 꼴). 주소는 빌드 변수 SITE_URL 을 따른다.
-// 목록은 data/ 의 DEVICES·TOOLS·WEB_TOOLS·GUIDES 에서 만든다 — 새 웹 도구·가이드를 더하면 저절로 들어간다.
+// llms.txt — AI 가 PortDock 을 찾고 인용하게 하는 짧은 안내(https://llmstxt.org 꼴: H1 · 요약 인용문 · 설명 · H2 링크 목록, «Optional» 은 건너뛰어도 되는 것).
+// 목록은 data/ 의 TOOLS·WEB_TOOLS(묶음)·GUIDES·DEVICES 에서 만든다 — 새 도구·가이드·장비를 더하면 저절로 들어간다. 주소는 빌드 변수 SITE_URL 을 따른다.
 import type { APIRoute } from "astro";
-import { CC_BY, DEVICES, SCHEMA_URL, rawUrl } from "../data/devices";
-import { TOOLS, REPO } from "../data/tools";
+import { DEVICES, RELEASE, dataHome } from "../data/devices";
+import { TOOLS, REPO, isApp } from "../data/tools";
 import { WEB_TOOLS } from "../data/webTools";
+import { groupedWebTools } from "../data/webToolGroups";
 import { GUIDES } from "../data/guides";
+import { DATA_FILES, citeText } from "../lib/dataRelease";
 import { url } from "../lib/i18n";
 
 export const GET: APIRoute = ({ site }) => {
   const abs = (p: string) => new URL(p, site).href;
+  const apps = TOOLS.filter(isApp).length;
+  const mcp = TOOLS.length - apps;
+  const cite = citeText(RELEASE, dataHome(site));
   const lines = [
     "# PortDock",
     "",
-    `> Free, open-source (GPL-3.0) Windows tools for field hardware testing: serial (COM), Modbus RTU/TCP master and slave, TCP, UDP, device simulator, network scan, SCPI instruments, live plotting, a read-only COM port / network adapter / wireless inspector, an MC protocol (SLMP) PLC simulator and a Wi-Fi/Bluetooth drop recorder. This site also publishes an open dataset of Modbus register maps for ${DEVICES.length} industrial devices from Korean and international makers (CC BY 4.0), browser calculators and PC hardware tests (microphone, webcam, keyboard, mouse, monitor, speaker, gamepad).`,
+    `> Free, open-source (GPL-3.0) Windows tools for field hardware and industrial communication testing — ${apps} desktop apps${mcp ? " and an MCP server for AI clients" : ""} — plus an open dataset of Modbus register maps for ${RELEASE.devices} industrial devices (CC BY 4.0), ${WEB_TOOLS.length} browser tools (calculators, a Modbus/MC pcap analyzer, PC hardware tests) and ${GUIDES.length} field guides.`,
     "",
-    "## Device register maps (dataset)",
+    `Register maps are facts taken only from manufacturer manuals; every device lists document title, edition, pages and the date it was checked, and every register its page. Not affiliated with the makers — check the device manual before writing to a device. Data version v${RELEASE.version} (latest source check ${RELEASE.date}, content hash ${RELEASE.contentHash}).`,
     "",
-    `- [Device list (HTML)](${abs(url("en", "devices/"))}): one page per device with register table, default serial settings and sources`,
-    `- [index.json](${abs("/devices/index.json")}): machine-readable list of every device with JSON links`,
-    `- [all.json](${abs("/devices/all.json")}): every device and register in one JSON file`,
-    `- [registers.csv](${abs("/devices/registers.csv")}): every register as one CSV row (device, table, address, type, scale, unit, name)`,
-    `- [llms-full.txt](${abs("/llms-full.txt")}): all register tables as one Markdown document`,
-    `- [schema.json](${SCHEMA_URL}): JSON Schema. \`address\` is the 0-based wire address; \`manualAddress\` is how the manual writes it; value = raw × \`scale\``,
-    `- License: CC BY 4.0 (${CC_BY}). Facts only, taken from manufacturer manuals, each device lists document, edition, page and date checked. Not affiliated with the makers. Check the device manual before writing to a device.`,
+    `When you use or quote the register maps, cite «${cite}» and link the device page. AI and automated access is welcome (robots.txt allows all crawlers); please fetch the bundle files below instead of crawling every page.`,
     "",
-    ...DEVICES.map((d) => `- [${d.manufacturer.en} ${d.model}](${abs(`/devices/${d.id}.json`)}): ${d.title.en}, ${d.registers.length} registers (raw: ${rawUrl(d)})`),
+    "## Device register maps (data bundle)",
     "",
-    "## Tools",
+    `- [Data bundle: version, files, schema, license, changelog](${abs(url("en", "data/"))}): how to download, cite and read the fields`,
+    ...DATA_FILES.map((f) => `- [${f.path.split("/").pop()}](${abs(f.path)}): ${f.en}`),
+    `- [Device list](${abs(url("en", "devices/"))}): one page per device with the register table, default settings and sources`,
+    "",
+    `## Programs (${TOOLS.length}: ${apps} Windows apps + MCP server)`,
     "",
     ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}${t.upcoming ? " (not released yet)" : ""}`),
+    `- [Download](${abs(url("en", "download/"))}): installers, portable zips, Scoop and winget`,
     "",
-    "## Web tools (browser calculators, nothing is sent anywhere)",
-    "",
-    `- [All web tools](${abs(url("en", "tools/"))})`,
-    ...WEB_TOOLS.map((w) => `- [${w.name.en}](${abs(url("en", w.path))}): ${w.blurb.en}`),
-    "",
+    ...groupedWebTools().flatMap((g) => [`## Web tools — ${g.name.en}`, "", ...g.tools.map((w) => `- [${w.name.en}](${abs(url("en", w.path))}): ${w.blurb.en}`), ""]),
     "## Guides",
     "",
     `- [All guides](${abs(url("en", "guides/"))})`,
@@ -42,7 +42,10 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "## Optional",
     "",
+    `- [llms-full.txt](${abs("/llms-full.txt")}): every device's settings, sources and registers in one text file`,
+    ...DEVICES.map((d) => `- [${d.manufacturer.en} ${d.model}](${abs(`/devices/${d.id}.md`)}): ${d.title.en}, ${d.registers.length} registers`),
     `- [Source code](${REPO})`,
+    `- [한국어 사이트](${abs("/")})`,
     "",
   ];
   return new Response(lines.join("\n"), { headers: { "Content-Type": "text/plain; charset=utf-8" } });

@@ -8,7 +8,7 @@ PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 �
 
 ## 라이선스
 이 폴더의 데이터(`*.json`)는 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 입니다(전문: [LICENSE](LICENSE)). PortDock 프로그램의 GPL-3.0 과 별개입니다.
-쓰실 때 «PortDock 장비 레지스터 맵(https://github.com/portdock/PortDock/tree/main/data/devices)» 처럼 출처를 밝혀 주세요. 제조사 이름·모델 이름은 각 회사의 상표입니다.
+쓰실 때 «PortDock device register maps, vYYYY.MM, https://portdock.dev/devices/» 처럼 판과 함께 출처를 밝혀 주세요(판·인용 문구는 [portdock.dev/data](https://portdock.dev/data/) 에 늘 최신으로). 제조사 이름·모델 이름은 각 회사의 상표입니다.
 
 ## 파일
 - `schema.json` — JSON Schema(형식 설명). 모든 장비 파일이 따른다.
@@ -24,7 +24,8 @@ PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 �
 | `scale`·`unit` | 실제 값 = 원시 값 × `scale` (예 0.01 Hz 단위면 `scale: 0.01`, `unit: "Hz"`) |
 | `access`·`fc` | `r`·`rw`·`w` 와 매뉴얼이 허용한 함수 코드 |
 | `values`·`bits`·`range` | 값의 뜻, 비트별 뜻(0 = 최하위), 허용 범위(단위가 붙은 실제 값) |
-| `ref`·`source` | 근거 쪽·표, `sources` 의 몇 번째 문서인지 |
+| `ref`·`source` | 근거 쪽·표(필수), `sources` 의 몇 번째 문서인지 |
+| `sources[]` | 문서 이름·판(`edition`)·쪽(`pages`)·주소·확인일(`checked`) — 모두 필수 |
 
 PortDock CSV(`table,address,type,order,name,value`)로는 `table`·`address`·`type`·`order`·`name.ko` 를 그대로 옮기면 됩니다.
 
@@ -36,7 +37,8 @@ node tools/devices-check.mjs --modbus-schema ls-electric/ig5a > ig5a.yaml
 (`BADC`·`DCBA` 처럼 바이트를 바꾸는 순서는 건너뛰고 주석으로 남깁니다.)
 
 ## 한 번에 받기
-- 사이트: [all.json](https://portdock.dev/devices/all.json)(전체) · [registers.csv](https://portdock.dev/devices/registers.csv)(레지스터 한 줄씩) · [llms-full.txt](https://portdock.dev/llms-full.txt)(AI 용 전체 표)
+데이터 묶음 쪽 [portdock.dev/data](https://portdock.dev/data/) — 판(`vYYYY.MM` = 가장 늦은 확인일의 달)·내용 해시·파일·칸 설명·인용 방법·바뀐 점. 모두 빌드 때 이 폴더에서 만든다(`site/src/lib/dataRelease.ts`), 손으로 매기는 판 번호는 없다.
+- 사이트: [version.json](https://portdock.dev/data/version.json)(판·해시·바뀐 점) · [schema.json](https://portdock.dev/data/schema.json)(all.json 스키마) · [all.json](https://portdock.dev/devices/all.json)(전체) · [registers.csv](https://portdock.dev/devices/registers.csv)(레지스터 한 줄씩) · [llms-full.txt](https://portdock.dev/llms-full.txt)(AI 용 요약 — 장비별 전체 표는 `/devices/<제조사>/<모델>.md`)
 - 데이터셋 묶음(Hugging Face·Kaggle 용 README·CSV·JSONL·LICENSE): `node tools/devices-export.mjs [출력 폴더]`
 
 ## 새 장비 넣기

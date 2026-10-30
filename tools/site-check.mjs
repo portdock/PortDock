@@ -74,6 +74,7 @@ const REQUIRED = {
     if (!o.author?.name) e("author.name");
     if (!isAbs(o.image)) e("image(절대 주소)");
     if (!onSite(o.url)) e("url(사이트 주소)");
+    for (const c of [].concat(o.citation ?? [])) if (typeof c === "object" && (!c.name || !isAbs(c.url))) e("citation 의 name·url");
   },
   Dataset: (o, e) => {
     if (!o.name) e("name");
@@ -81,6 +82,9 @@ const REQUIRED = {
     if (!o.license) e("license");
     if (!onSite(o.url)) e("url(사이트 주소)");
     for (const d of [].concat(o.distribution ?? [])) if (!isAbs(d.contentUrl) || !d.encodingFormat) e("distribution.contentUrl·encodingFormat");
+    // 기계가 읽는 출처 — 근거 문서는 이름·주소가 있어야 한다
+    for (const b of [].concat(o.isBasedOn ?? [], o.citation ?? [])) if (typeof b === "object" && (!b.name || !isAbs(b.url))) e("isBasedOn·citation 의 name·url");
+    if (o.dateModified && !/^\d{4}-\d{2}-\d{2}/.test(o.dateModified)) e("dateModified(ISO 8601)");
   },
   BreadcrumbList: (o, e) => {
     const items = o.itemListElement ?? [];
@@ -227,6 +231,19 @@ for (const u of inSitemap) {
   else if (!exists(new URL(u).pathname)) err("sitemap", `없는 페이지: ${u}`);
 }
 for (const p of indexable) if (!inSitemap.has(SITE + p)) err("sitemap", `빠진 페이지: ${p}`);
+
+// 데이터 묶음: /data/version.json 이 적은 파일이 실제로 있고 sitemap 에도 있어야 한다(쪽이 아니라 저절로 들어가지 않음 — astro.config.mjs customPages)
+const verFile = path.join(dist, "data", "version.json");
+if (fs.existsSync(verFile)) {
+  const ver = JSON.parse(fs.readFileSync(verFile, "utf8"));
+  for (const f of ver.files ?? []) {
+    if (!f.url) continue; // 주소 틀(urlTemplate)은 건너뜀
+    const p = new URL(f.url).pathname;
+    if (!exists(p)) err("data/version.json", `없는 파일: ${p}`);
+    if (!inSitemap.has(SITE + p)) err("sitemap", `데이터 파일 빠짐: ${p}`);
+  }
+  if (!inSitemap.has(SITE + "/data/version.json")) err("sitemap", "데이터 파일 빠짐: /data/version.json");
+}
 
 // 릴리스 내려받기 링크 대조 — release.yml 이 만드는 이름, --assets 가 있으면 실제 릴리스 자산 이름에도 있어야 한다
 const fromYml = new Set(releaseAssetNames());
