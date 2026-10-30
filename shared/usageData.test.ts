@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/usageData.test.ts (사용 통계 묶기·허용 목록)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { allowed, APTABASE_KEY, buildBatch, FEATURES, ingestUrl, MAX_MINUTES, SDK_VERSION, sessionId, windowsMajor, type UsageEvent, type UsageSession } from "./usageData.ts";
+import { allowed, APTABASE_KEY, buildBatch, FEATURES, ingestUrl, MAX_MINUTES, SDK_VERSION, sessionId, sharedConsentPatch, windowsMajor, type UsageEvent, type UsageSession } from "./usageData.ts";
 
 const T0 = Date.UTC(2026, 9, 26, 9, 0, 0);
 const base: UsageSession = { app: "serial", version: "0.3.0", windows: "11", lang: "ko", portable: false, startedAt: T0, now: T0 + 12.6 * 60_000, counts: {}, random: 42 };
@@ -97,4 +97,15 @@ test("윈도우 메이저 — WebView2 platformVersion", () => {
 test("세션 id 는 Aptabase 숫자 꼴", () => {
   assert.equal(sessionId(1_000_000, 99_999_999_999), "100099999999");
   assert.match(sessionId(T0, 0.5), /^\d+$/);
+});
+
+test("공용 동의: 이 앱이 아직 안 물었을 때만, 확실한 «물어봤음» 만 이어받는다", () => {
+  assert.deepEqual(sharedConsentPatch(false, { asked: true, usageStats: true }), { usageStats: true, usageAsked: true });
+  assert.deepEqual(sharedConsentPatch(false, { asked: true, usageStats: false }), { usageStats: false, usageAsked: true });
+  // 이미 이 앱에서 골랐으면 건드리지 않는다
+  assert.equal(sharedConsentPatch(true, { asked: true, usageStats: true }), null);
+  // 아직 아무 데서도 안 물었거나 모양이 틀리면 이 앱에서 묻는다
+  for (const v of [null, undefined, "yes", 1, {}, { asked: false, usageStats: true }, { asked: "true", usageStats: true }]) assert.equal(sharedConsentPatch(false, v), null);
+  // 켬은 true 일 때만
+  for (const s of ["true", 1, null, undefined]) assert.deepEqual(sharedConsentPatch(false, { asked: true, usageStats: s }), { usageStats: false, usageAsked: true });
 });

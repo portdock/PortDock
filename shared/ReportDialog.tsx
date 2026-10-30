@@ -23,6 +23,8 @@ import {
   type ReportFrame,
 } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
+import { readSharedConsent, writeSharedConsent } from "./consent";
+import { sharedConsentPatch } from "./usageData.ts";
 import { usageAvailable } from "./usage";
 import { UsageAsk } from "./UsageAsk";
 
@@ -302,6 +304,7 @@ export function ReportDialog({
  * 머리줄의 «!» 버튼 + 문제 보고 창 + 시작할 때 «지난번에 오류로 꺼졌습니다» 안내.
  * 각 프로그램은 이것 하나만 머리줄에 둔다. 자동 전송을 켰으면 묻지 않고 보낸다.
  * 사용 통계를 아직 묻지 않았으면(키가 들어간 빌드에서만) 한 번 묻는다 — 오류 안내가 떠 있으면 그 뒤에.
+ * 다른 PortDock 앱에서 이미 골랐으면(공용 동의, 0.6.0) 묻지 않고 그 값을 이 앱 설정으로 이어받는다. 여기서 고른 값은 공용 동의에도 남긴다.
  */
 export function ReportButton({
   app,
@@ -331,6 +334,32 @@ export function ReportButton({
   const [failed, setFailed] = useState(false);
   const mode = useRef(autoReport);
   mode.current = autoReport;
+  // 공용 동의를 읽기 전에는 묻는 창을 띄우지 않는다(다른 앱에서 이미 골랐을 수 있다)
+  const [consentRead, setConsentRead] = useState(usageAsked);
+  const onUsageRef = useRef(onUsage);
+  onUsageRef.current = onUsage;
+  useEffect(() => {
+    if (usageAsked || !usageAvailable()) {
+      setConsentRead(true);
+      return;
+    }
+    let live = true;
+    readSharedConsent().then((c) => {
+      if (!live) return;
+      const p = sharedConsentPatch(false, c);
+      if (p) onUsageRef.current(p.usageStats);
+      setConsentRead(true);
+    });
+    return () => {
+      live = false;
+    };
+    // 켤 때 한 번 — 이 앱에서 고르면 usageAsked 가 true 가 되어 다시 읽지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const chooseUsage = (on: boolean) => {
+    writeSharedConsent(on);
+    onUsage(on);
+  };
 
   useEffect(() => {
     (async () => {
@@ -409,7 +438,7 @@ export function ReportButton({
         </div>,
           document.body,
         )}
-      {!usageAsked && !prompt && !open && usageAvailable() && <UsageAsk lang={lang} onChoose={onUsage} />}
+      {!usageAsked && consentRead && !prompt && !open && usageAvailable() && <UsageAsk lang={lang} onChoose={chooseUsage} />}
       {open &&
         createPortal(
         <ReportDialog

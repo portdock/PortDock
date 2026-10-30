@@ -839,6 +839,12 @@ window.__pdMock = {
   files,
   /** 오류로 꺼진 기록이 하나 남아 있는 것처럼(report_pending) — 켤 때 묻는 창. 주소에 «?pendingCrash=1» 이어도 켜진다. 지우기(report_dismiss)하면 꺼진다 */
   pendingCrash: new URLSearchParams(location.search).has("pendingCrash"),
+  /** 여러 앱이 함께 보는 사용 통계 동의(consent_get/consent_set, crates/core/src/consent.rs) — 처음엔 «아무 데서도 안 물음».
+   *  주소에 «?sharedConsent=on|off» 면 다른 앱에서 이미 고른 것처럼 */
+  consent: (() => {
+    const v = new URLSearchParams(location.search).get("sharedConsent");
+    return v === "on" || v === "off" ? { asked: true, usageStats: v === "on" } : { asked: false, usageStats: false };
+  })(),
   /** true 면 open_app 이 «이 PC 에서 찾지 못함»(false) — 복사 + 내려받기 페이지 알림. openedApp 에 연 대상이 남는다 */
   noApp: false,
   openedApp: null,
@@ -872,6 +878,11 @@ async function handle(cmd, a) {
       return window.__pdMock.pendingCrash ? [{ name: "crash-20261025-101500.txt", text: "PortDock crash report\nmessage: preview crash\n", dump: null, dumpSize: null }] : [];
     case "report_dismiss":
       window.__pdMock.pendingCrash = false;
+      return null;
+    case "consent_get":
+      return { ...window.__pdMock.consent };
+    case "consent_set":
+      window.__pdMock.consent = { asked: true, usageStats: a.usageStats === true };
       return null;
     case "report_read_dump":
       return new Uint8Array([0x4d, 0x44, 0x4d, 0x50]).buffer;
