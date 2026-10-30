@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/core", "apps/serial/src-tauri", "apps/modbus-slave/src-tauri", "apps/tcp/src-tauri", "apps/udp/src-tauri", "apps/simulator/src-tauri", "apps/netscan/src-tauri", "apps/modbus-master/src-tauri", "apps/scpi/src-tauri", "apps/plot/src-tauri", "apps/port-inspector/src-tauri", "apps/plc-simulator/src-tauri", "apps/hw-tester/src-tauri"]
+members = ["crates/core", "apps/serial/src-tauri", "apps/modbus-slave/src-tauri", "apps/tcp/src-tauri", "apps/udp/src-tauri", "apps/simulator/src-tauri", "apps/netscan/src-tauri", "apps/modbus-master/src-tauri", "apps/scpi/src-tauri", "apps/plot/src-tauri", "apps/port-inspector/src-tauri", "apps/plc-simulator/src-tauri", "apps/hw-tester/src-tauri", "crates/mcp"]
 
 [workspace.package]
 version = "0.6.0"
