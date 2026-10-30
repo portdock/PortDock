@@ -153,6 +153,7 @@ export const help: HelpDoc = {
         "- 항목마다 «바꾸는 곳» 이 함께 나오고, 블루투스 항목에는 Microsoft 지원 문서 «Bluetooth keeps disconnecting in Windows» 링크가 붙습니다. 이 프로그램은 설정을 바꾸지 않습니다.",
         "- 이 탭의 «텍스트 복사»·«JSON 복사»·«저장…» 은 무선 결과만 담고, 블루투스 오디오 장치 이름을 «장치 1» 처럼 가립니다. 화면에는 그대로 보입니다.",
         "- PC 가 볼 수 없는 것: 네트워크 이름·신호·채널·주변 Wi-Fi, 공유기·통신사 쪽과 인터넷 속도, 2.4GHz 간섭(전자레인지·USB 3 장치), 헤드셋 쪽 배터리·펌웨어, 짝지은 장치 목록. 관리자만 읽을 수 있는 Windows 무선 보고서(netsh wlan show wlanreport)는 읽지 않습니다.",
+        "- 끊김이 언제 얼마나 생기는지 시간대별로 기록하려면 PortDock Hardware Tester 의 «Wi-Fi·인터넷 끊김 기록» 탭을 씁니다(이 탭 맨 아래에도 안내).",
       ],
     },
     {
@@ -359,6 +360,7 @@ export const help: HelpDoc = {
         "- Each item shows «Where to change», and the Bluetooth items link to Microsoft's support article «Bluetooth keeps disconnecting in Windows». This program does not change any setting.",
         "- «Copy text», «Copy JSON» and «Save…» on this tab contain only the wireless results and hide Bluetooth audio device names as «Device 1» and so on. The screen still shows the names.",
         "- What the PC cannot see: the network name, signal, channel and nearby Wi-Fi, the router and provider side and internet speed, 2.4 GHz interference (microwave ovens, USB 3 devices), the headset's battery and firmware, and the list of paired devices. The Windows wireless report (netsh wlan show wlanreport) needs administrator rights and is not read.",
+        "- To log when and how often drops happen over time, use the «Wi-Fi / internet drop log» tab in PortDock Hardware Tester (also noted at the bottom of this tab).",
       ],
     },
     {

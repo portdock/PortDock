@@ -12,7 +12,7 @@ body:
     id: app
     attributes:
       label: 프로그램 / Program
-      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, PortDock Port Inspector, PortDock PLC Simulator, PortDock Hardware Tester, 홈페이지 / Website]
+      options: [PortDock Serial, PortDock Modbus Slave, PortDock TCP, PortDock UDP, PortDock Simulator, PortDock Net Scan, PortDock Modbus Master, PortDock SCPI, PortDock Plot, PortDock Port Inspector, PortDock PLC Simulator, PortDock Hardware Tester, PortDock MCP, 홈페이지 / Website]
     validations:
       required: true
   - type: input
@@ -27,7 +27,7 @@ body:
     id: edition
     attributes:
       label: 설치 방식 / Edition
-      options: [설치판 / Installer, 오프라인 설치판 / Offline installer, 휴대판 / Portable]
+      options: [설치판 / Installer, 오프라인 설치판 / Offline installer, 휴대판 / Portable, Scoop, "MCP .mcpb (Claude Desktop)", "MCP zip (portdock-mcp.exe)"]
   - type: input
     id: windows
     attributes:

@@ -17,6 +17,7 @@ export function FillDialog({
   start: start0,
   count: count0,
   onWrite,
+  readNow,
   onClose,
 }: {
   lang: Lang;
@@ -28,6 +29,8 @@ export function FillDialog({
   count: number;
   /** 시작 번호부터 값들을 쓴다 — 성공하면 true */
   onWrite: (start: number, values: number[], mode: Mode) => Promise<boolean>;
+  /** (10/31) 지금 값 읽기 — 덮어쓸 칸에 0 이 아닌 값이 있으면 한 번 묻는다(되돌리기가 없으므로) */
+  readNow?: (start: number, count: number) => Promise<number[]>;
   onClose: () => void;
 }) {
   const t = (k: Key) => dict[lang][k];
@@ -44,6 +47,8 @@ export function FillDialog({
   const [nul, setNul] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** 덮어쓰기 확인 — 묻는 범위(서명)와 값이 있던 칸 수. 범위·값이 바뀌면 다시 묻는다 */
+  const [confirm, setConfirm] = useState<{ sig: string; n: number } | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -81,11 +86,23 @@ export function FillDialog({
             .replace("{b}", addrText(dev, start! + v.length - 1))
             .replace("{n}", String(v.length));
 
+  const sig = typeof v === "string" ? "" : `${dev}:${start}:${v.join(",")}`;
+  const asking = confirm != null && confirm.sig === sig;
+
   async function run() {
     setErr(null);
     if (typeof v === "string") return setErr(v);
     if (over) return setErr(preview);
     setBusy(true);
+    if (readNow && !asking) {
+      const now = await readNow(start!, v.length).catch(() => null);
+      const n = now ? now.filter((x, i) => x !== 0 && x !== v[i]).length : 0;
+      if (n > 0) {
+        setBusy(false);
+        setConfirm({ sig, n });
+        return;
+      }
+    }
     const ok = await onWrite(start!, v, mode);
     setBusy(false);
     if (ok) onClose();
@@ -162,6 +179,15 @@ export function FillDialog({
           <div className={typeof v === "string" || over ? "hint warn" : "hint"} role="status">
             {preview}
           </div>
+          {asking && typeof v !== "string" && (
+            <div className="interlock fd-confirm" role="alert">
+              {t("fdConfirm")
+                .replace("{a}", addrText(dev, start!))
+                .replace("{b}", addrText(dev, start! + v.length - 1))
+                .replace("{n}", String(v.length))
+                .replace("{m}", String(confirm!.n))}
+            </div>
+          )}
           {err && (
             <div className="error" role="alert">
               {err}
@@ -173,7 +199,7 @@ export function FillDialog({
               {t("cancel")}
             </button>
             <button className="btn small primary" onClick={run} disabled={busy}>
-              {t("fdWrite")}
+              {asking ? t("fdOverwrite") : t("fdWrite")}
             </button>
           </div>
         </div>

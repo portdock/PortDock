@@ -13,7 +13,7 @@
 |---|---|
 | **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬(9종 + 사용자 정의 CRC), Modbus RTU 풀이·요청 만들기, 자동응답, 시각이 찍힌 시험 기록 |
 | **PortDock Modbus Slave** | Modbus 슬레이브 장비 흉내(시리얼 RTU·Modbus TCP·RTU over TCP) — 코일·레지스터 표(32비트·실수·문자열 칸), 값 자동 변화, 장애 주입, 내장 장비 프로필, CSV 레지스터 맵, 마스터의 요청 확인 |
-| **PortDock TCP** | TCP 클라이언트·서버·중계(모니터) — 여러 접속, 에코, 자동 재접속, Modbus TCP 프레임 구분 |
+| **PortDock TCP** | TCP 클라이언트·서버·중계(모니터) — 여러 연결, 에코, 자동 재연결, Modbus TCP 프레임 구분, 중계 기록 pcapng 저장(Wireshark 로 열기), Modbus TCP·MC 요청/응답 짝·응답 시간·무응답 |
 | **PortDock UDP** | UDP 송수신 — 브로드캐스트, 멀티캐스트, 에코 |
 | **PortDock Simulator** | 규칙대로 답하는 가짜 장비(시리얼·TCP·UDP) — «이게 오면 이걸로 답하기» |
 | **PortDock Net Scan** | 산업 네트워크 장비 IP 찾기 — 핑·ARP 훑기, MAC 제조사, 산업 포트 판정(Modbus 502·MC·XGT 등), 장기 핑 감시, Wake-on-LAN |
@@ -21,9 +21,11 @@
 | **PortDock SCPI** | SCPI 계측기 터미널 — LAN 소켓(5025)·RS-232, VISA 없이. 질의·쓰기·읽기와 응답 시간, `*IDN?` 식별, 오류 큐 비우기, `*OPC?` 기다림, 숫자 반복 측정(값 표·추세·CSV), 블록 데이터(#…) HEX 미리보기·파일 저장 |
 | **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭·세미콜론 글자 줄(자동 감지), Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
 | **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인. 그 밖에 «이 PC 랜카드»(링크 속도·이중·점보 프레임·절전, GigE 카메라 용도), «이 PC»(빠른 시작·절전·업데이트 재시작·시간 동기화·예기치 않은 종료 등 장비 PC 설정), «무선»(Wi-Fi 어댑터 절전·끊김 기록, 블루투스 어댑터·서비스·핸즈프리 소리) 탭. 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
-| **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받고, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 같은 망에서 접속 가능. |
+| **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받고, «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜면 같은 망에서 연결 가능. |
 | **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(Windows 11 24H2 부터 위치 권한, 네트워크 이름은 읽지 않음). 키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 사이트의 [PC 하드웨어 테스트](https://portdock.dev/tools/#g-hw)(브라우저, 설치 없음)로. |
 | **PortDock MCP** | AI 클라이언트(Claude Desktop·VS Code·Cursor 등)용 MCP 서버, 창 없음·stdio: AI 가 COM 포트 목록과 Port Inspector 보고서를 *읽고*, 시리얼을 듣고(보내지 않음), Modbus(FC 01~04)·MC 프로토콜 3E(0401)·SCPI 질의로 값을 읽고, 핑·랜카드·내장 장비 레지스터 맵을 봅니다. 쓰기 도구 두 개는 127.0.0.1(이 PC) 주소만 받아 시뮬레이터 연습용입니다 — 판정은 주소로만 하므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄운 채 쓰지 마세요. 모든 호출은 이 PC 의 세션 기록에 남습니다. 자세히: [docs/mcp.md](docs/mcp.md) |
+
+열두 앱 공통: 머리줄 «AI» 단추 — 지금 상황(연결 설정·오류·최근 통신 기록 또는 점검 결과)을 AI 채팅에 붙여 넣을 글로 클립보드에 복사합니다. PortDock 은 아무 데도 보내지 않습니다(사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는 가림).
 
 홈페이지: <https://portdock.dev>
 
@@ -85,7 +87,7 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 
 ## 검사
 
-push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열두 앱의 화면 빌드·타입 검사, Node 시험 247개(`shared/`·앱·도구), 장비 레지스터 맵 검사(55종·레지스터 2268개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 331개(327개 실행, 4개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
+push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열두 앱의 화면 빌드·타입 검사, Node 시험 287개(`shared/`·앱·도구), 장비 레지스터 맵 검사(55종·레지스터 2268개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 402개(398개 실행, 4개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 소스에서 빌드
 
@@ -104,7 +106,7 @@ cargo test --workspace    # 테스트
 npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\portable.conf.json"
 ```
 
-구성: `apps/<프로그램>`(각 프로그램의 화면과 Tauri 셸), `crates/core`(공용 Rust — 체크섬·HEX/ASCII·프레임 구분·Modbus·자동응답·세션), `shared/`(공용 화면), `site/`(portdock.dev). 릴리스 절차: [docs/release.md](docs/release.md).
+구성: `apps/<프로그램>`(각 프로그램의 화면과 Tauri 셸), `crates/core`(공용 Rust — 체크섬·HEX/ASCII·프레임 구분·Modbus·자동응답·세션), `crates/mcp`(PortDock MCP — [docs/mcp.md](docs/mcp.md)), `shared/`(공용 화면), `site/`(portdock.dev). 릴리스 절차: [docs/release.md](docs/release.md).
 
 ## Code signing policy (코드 서명 정책)
 
@@ -114,12 +116,14 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 - **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다(조직 구성원 목록은 공개하지 않음):
   - 작성자·검토자(Authors, Reviewers): 메인테이너 — 다른 사람의 풀 리퀘스트는 반영 전에 검토
   - 승인자(Approvers): 메인테이너
-- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 갑니다. Hardware Tester 는 기록을 켠 동안만 게이트웨이와 고른 인터넷 주소 하나(기본 1.1.1.1, 8.8.8.8 또는 직접 입력)에 핑을 보내고 정한 이름 하나(기본 example.com)를 DNS 서버에 묻습니다. Wi-Fi 신호 보기(누를 때만)는 Windows 11 24H2 부터 위치 권한이 필요하고, 블루투스 장치 이름은 화면에만 보이며 저장·전송하지 않습니다. 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 새 버전 확인은 설정의 *새 버전 확인(하루 한 번)* 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다(보내는 데이터 없음, 내려받기·설치 없음, 기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
+- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 갑니다. Hardware Tester 는 기록을 켠 동안만 게이트웨이와 고른 인터넷 주소 하나(기본 1.1.1.1, 8.8.8.8 또는 직접 입력)에 핑을 보내고 정한 이름 하나(기본 example.com)를 DNS 서버에 묻습니다. Wi-Fi 신호 보기(누를 때만)는 Windows 11 24H2 부터 위치 권한이 필요하고, 블루투스 장치 이름은 화면에만 보이며 저장·전송하지 않습니다. 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 새 버전 확인은 설정의 *새 버전 확인(하루 한 번)* 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다(보내는 데이터 없음, 내려받기·설치 없음, 기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 머리줄 «AI» 단추(AI 에게 물어보기용 복사)는 미리보기 글을 클립보드에만 넣고 아무 데도 보내지 않습니다 — 붙여 넣으면 그 AI 서비스로 갑니다. 사용자 폴더·PC 이름·MAC 뒤 3바이트·공인 IP 는 가리고, 사설 IP 는 고를 때만 가리며, 8,000자까지입니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
 
 ## 라이선스
 
 Copyright (C) 2026 PortDock
 
 PortDock 은 자유 소프트웨어이며 **GNU GPL v3** ([LICENSE](LICENSE)) 에 따라 배포·수정할 수 있습니다. 어떠한 보증도 없습니다.
+
+장비 레지스터 맵 데이터(`data/devices`)와 그 데이터 묶음은 **CC BY 4.0** 입니다([data/devices/LICENSE](data/devices/LICENSE)).
 
 제3자 구성 요소와 그 라이선스는 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) 에 있으며, 이 파일은 모든 프로그램과 함께 배포됩니다.

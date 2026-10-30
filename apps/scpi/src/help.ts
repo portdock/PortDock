@@ -95,7 +95,7 @@ export const help: HelpDoc = {
       title: "Simulator 로 따라하기 (계측기 없이)",
       body: [
         "실제 계측기가 없으면 PortDock Simulator 를 가짜 계측기로 씁니다(같은 PC).",
-        "- 1. PortDock Simulator 를 열고 방식 «TCP 서버 (상대가 접속)», 포트 5025, 프레임 구분 «끝 문자» 0A(LF)로 둡니다.",
+        "- 1. PortDock Simulator 를 열고 방식 «TCP 서버 (상대가 연결)», 포트 5025, 프레임 구분 «끝 문자» 0A(LF)로 둡니다.",
         "- 2. 규칙이 없을 때 나오는 [SCPI *IDN? 응답] 예제를 누릅니다. 규칙은 ASCII «*IDN?» → «PORTDOCK,SIM,1» + 줄 끝 CR LF 이고, «와일드카드» 는 꺼져 있습니다 — 꺼 두어야 ?·* 를 글자 그대로 비교합니다.",
         "- 3. «+ 규칙 추가» 로 «MEAS:VOLT:DC?» → «+1.2{rand 0..9}E+00»(받을 때마다 끝자리가 바뀜), «SYST:ERR?» → «+0,\"No error\"» 를 더합니다(새 규칙은 위 규칙의 방식과 줄 끝을 물려받고 와일드카드는 꺼진 채 시작).",
         "- 4. Simulator «시작». PortDock SCPI 에서 LAN, 장비 주소 127.0.0.1, 포트 5025, 줄 끝 LF → «연결». «장비» 칸에 PORTDOCK · SIM · 1 이 나오면 됩니다(Simulator 는 CR LF 로 답하지만 LF 에서 끊고 CR 을 뗍니다).",
@@ -107,7 +107,7 @@ export const help: HelpDoc = {
     {
       title: "범위 밖 (아직 하지 않는 것)",
       body: [
-        "- VXI-11(LAN, RPC 방식 — 포트 111·동적 포트): 다음 판에서 할 일입니다. 지금은 장비의 «소켓(5025)» 을 쓰세요. 대부분의 LAN 계측기는 둘 다 켜져 있습니다.",
+        "- VXI-11(LAN, RPC 방식 — 포트 111·동적 포트): 지금은 없습니다. 장비의 «소켓(5025)» 을 쓰세요. 대부분의 LAN 계측기는 둘 다 켜져 있습니다.",
         "- HiSLIP(4880)·USBTMC(USB)·GPIB: VISA·드라이버가 필요해 하지 않습니다. USB 만 있는 장비는 장비 쪽 «USB 가상 COM» 설정이 있으면 시리얼로 쓸 수 있습니다.",
         "- 서비스 요청(SRQ)·장치 지우기(Device Clear)·원격/로컬 전환 같은 VISA 기능은 소켓에 없습니다. 장비가 바쁠 때는 *OPC? 로 기다리세요.",
       ],
@@ -142,7 +142,7 @@ export const help: HelpDoc = {
     {
       title: "문제 해결",
       body: [
-        "- «연결 거부»: 포트가 다르거나(5025 가 아닌 장비 — 설명서의 «socket port») 장비의 소켓 기능이 꺼져 있습니다. 다른 프로그램(VISA 세션)이 이미 붙어 있으면 장비가 새 접속을 받지 않기도 합니다.",
+        "- «연결 거부»: 포트가 다르거나(5025 가 아닌 장비 — 설명서의 «socket port») 장비의 소켓 기능이 꺼져 있습니다. 다른 프로그램(VISA 세션)이 이미 붙어 있으면 장비가 새 연결을 받지 않기도 합니다.",
         "- «응답 없음(시간 초과)»: 질의가 아닌 명령을 질의로 보냈거나, 철자가 틀렸거나(오류 큐 확인), 장비가 느린 측정 중입니다(«응답 기다림» 늘리기 또는 *OPC?).",
         "- «응답이 끝나지 않았습니다»: «줄 끝» 이 장비와 다릅니다(CR 을 쓰는 장비 등).",
         "- -410 Query INTERRUPTED: 답을 읽기 전에 다음 명령을 보냈습니다. «쓰기» 로 질의를 보냈다면 «읽기» 로 답을 먼저 받으세요.",
@@ -254,7 +254,7 @@ export const help: HelpDoc = {
     {
       title: "Out of scope (not yet)",
       body: [
-        "- VXI-11 (LAN, RPC — port 111 plus dynamic ports): planned for a later version. Use the instrument's «socket (5025)» for now; most LAN instruments offer both.",
+        "- VXI-11 (LAN, RPC — port 111 plus dynamic ports): not available. Use the instrument's «socket (5025)» instead; most LAN instruments offer both.",
         "- HiSLIP (4880), USBTMC (USB) and GPIB need VISA or drivers and are not supported. A USB-only instrument with a «USB virtual COM» option can be used as serial.",
         "- VISA features such as service requests (SRQ), device clear and remote/local switching do not exist on a socket. Use *OPC? to wait while the instrument is busy.",
       ],

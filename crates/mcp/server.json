@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.portdock/portdock-mcp",
   "title": "PortDock MCP",
-  "description": "Read-only MCP server for COM ports, Modbus, MC protocol and SCPI devices on Windows",
+  "description": "Read-only tools for COM ports, Modbus, MC and SCPI on Windows, plus writes to local simulators only",
   "version": "0.8.0",
   "websiteUrl": "https://portdock.dev/en/guides/portdock-mcp/",
   "repository": {

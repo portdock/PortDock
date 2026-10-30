@@ -550,7 +550,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
-            <AiCopyButton app={APP} lang={lang} checks={aiScanText} />
+            <AiCopyButton app={APP} lang={lang} kind="scan" checks={aiScanText} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>
@@ -781,7 +781,7 @@ export default function App() {
                 firstDone ? (
                   <div className="empty-guide">{t("emptyGuide")}</div>
                 ) : (
-                  <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+                  <FirstCard lang={lang} sideLabel={t("sideLabel")} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
                     <ol>
                       <li>{t("first1")}</li>
                       <li>{t("first2")}</li>

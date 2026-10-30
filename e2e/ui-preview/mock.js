@@ -514,11 +514,11 @@ function slaveTcpStart(c, ch) {
 function tcpStart(config, framing, rxCheck, ch, sim = false, upstream = null) {
   if (S) return fail(ALREADY());
   if (config.mode === "client") {
-    if (!config.host.trim() || !(config.port > 0)) return fail(tr("접속할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to"));
+    if (!config.host.trim() || !(config.port > 0)) return fail(tr("연결할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to"));
     if (!hostOk(config.host) || unresolvable(config.host)) return fail(`${config.host}:${config.port}: ${hostNotFound()}`);
     const target = `${config.host}:${config.port}`;
     const s = newSession(sim ? "sim-tcp" : "tcp", ch, { cfg: { ...config }, rxCheck, framing, target, port: target });
-    // 10.0.0.99 는 늘 실패(재접속 대기 시험), 그 밖은 0.2초 뒤 붙는다
+    // 10.0.0.99 는 늘 실패(재연결 대기 시험), 그 밖은 0.2초 뒤 붙는다
     const attempt = () => {
       if (config.host === "10.0.0.99") {
         const why = tr("연결 시간 초과 — 상대가 꺼져 있거나 방화벽이 막음", "Connection timed out — the peer is off or a firewall blocks it");
@@ -569,7 +569,7 @@ function relayStart(config, upstream, rxCheck, framing, ch, local) {
   later(30, () => status("listening", local, null));
   const join = (addr) => {
     if (unresolvable(upstream.host) || upstream.host === "10.0.0.99") {
-      frames(ev(tr(`RELAY FAIL ${addr} → ${b}: 응답 없음(시간 초과) — A 쪽 접속을 닫습니다`, `RELAY FAIL ${addr} → ${b}: no answer (timed out) — closing the A side`)));
+      frames(ev(tr(`RELAY FAIL ${addr} → ${b}: 응답 없음(시간 초과) — A 쪽 연결을 닫습니다`, `RELAY FAIL ${addr} → ${b}: no answer (timed out) — closing the A side`)));
       return;
     }
     s.online = true;
@@ -2058,7 +2058,7 @@ async function plot(cmd, a) {
         desc = `TCP ${src.host}:${src.port}`;
         st =
           src.host === "10.0.0.99"
-            ? { type: "status", state: "reconnecting", port: `${src.host}:${src.port}`, message: tr("재접속 대기 · 마지막 실패: 응답 없음(시간 초과)", "Waiting to reconnect · last failure: timed out") }
+            ? { type: "status", state: "reconnecting", port: `${src.host}:${src.port}`, message: tr("재연결 대기 · 마지막 실패: 응답 없음(시간 초과)", "Waiting to reconnect · last failure: timed out") }
             : { type: "status", state: "connected", port: `${src.host}:${src.port}`, message: null };
       } else {
         if (src.port === 445) return fail(inUse(`${src.host}:${src.port}`));

@@ -10,7 +10,7 @@ const TIPS: Record<string, Tip> = {
   ports: ["통신할 COM 포트. 장치 이름·USB 정보가 함께 나오고, 꽂으면 1.5초 안에 목록에 나타납니다.", "The COM port to use. Shows the device name and USB info; a newly plugged adapter appears within 1.5 s."],
   port: ["통신할 COM 포트(또는 TCP·UDP 포트 번호).", "The COM port (or the TCP/UDP port number)."],
   // 네트워크 포트 번호 — TCP·UDP·Simulator 용(위 «port» 는 COM 포트 설명)
-  netPort: ["네트워크 포트 번호(1~65535). 접속할 때는 장비가 듣는 포트, 서버로 들을 때는 이 PC 의 포트입니다. 0 이면 운영체제가 빈 포트를 고릅니다.", "Network port number (1–65535): the device's port when connecting, or this PC's port when listening. 0 lets the OS pick a free port."],
+  netPort: ["네트워크 포트 번호(1~65535). 연결할 때는 장비가 듣는 포트, 서버로 들을 때는 이 PC 의 포트입니다. 0 이면 운영체제가 빈 포트를 고릅니다.", "Network port number (1–65535): the device's port when connecting, or this PC's port when listening. 0 lets the OS pick a free port."],
   baud: ["통신 속도(bps). 장비 설정과 같아야 합니다. 목록에 없으면 숫자를 직접 넣으세요(연결 중에는 Enter 로 적용).", "Line speed in bps — must match the device. Type any value if it is not listed (while connected, press Enter to apply)."],
   dataBits: ["한 글자의 데이터 비트 수. 대부분 8.", "Data bits per character — usually 8."],
   parity: ["오류 검출용 패리티 비트. 장비가 쓰는 것과 같아야 합니다(대부분 없음, Modbus 는 짝수인 경우가 많음).", "Parity bit for error detection — must match the device (usually None; Modbus often uses Even)."],
@@ -23,7 +23,7 @@ const TIPS: Record<string, Tip> = {
   stop: ["멈추고 연결을 닫습니다. 파일 기록도 멈춥니다.", "Stops and closes the connection; file logging stops too."],
   // TCP 실행 중 버튼(10/18)
   stopClient: ["장비와의 연결을 끊습니다. 파일 기록도 멈춥니다.", "Disconnects from the device; file logging stops too."],
-  stopListen: ["듣기를 멈추고 접속한 상대를 모두 끊습니다. 파일 기록도 멈춥니다.", "Stops listening and closes every connected peer; file logging stops too."],
+  stopListen: ["듣기를 멈추고 연결한 상대를 모두 끊습니다. 파일 기록도 멈춥니다.", "Stops listening and closes every connected peer; file logging stops too."],
   // 0.3.0 — 최근 연결·직접 넣은 포트
   recent: ["최근 연결 — 연결에 성공한 주소가 최근 것부터 8개까지 남습니다. 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다.", "Recent connections — up to 8 addresses that connected successfully, newest first. Click one to fill the address and port; ✕ removes it."],
   portPick: ["통신할 COM 포트. 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 맨 아래 «직접 입력…» 으로 이름(COM12 등)을 넣어 엽니다.", "The COM port to use. For a port that is not listed (ports Windows lists as modems, some virtual ports), choose «Type a port…» at the bottom and enter its name (e.g. COM12)."],
@@ -88,7 +88,7 @@ const TIPS: Record<string, Tip> = {
   firstWatch: ["용도를 «일반» 으로 두고 받은 데이터만 봅니다(예시는 넣지 않음).", "Keeps «Use» at «General» to just watch incoming data (no examples added)."],
   serialAdvConn: ["흐름 제어·RS-485 송신 방향·DTR·RTS. 대부분 기본값(없음·끔)이라 접어 두고 제목에 지금 값을 요약합니다. 기본값이 아니면 펼친 채 시작합니다.", "Flow control, RS-485 direction, DTR and RTS. Usually left at the defaults (none/off), so it is collapsed with a summary; it starts expanded when something differs from the defaults."],
   // TCP·UDP 왼쪽 칸 접기(10/18)
-  tcpAdvConn: ["즉시 전송(Nagle 끔)과 클라이언트의 자동 재접속·간격. 대부분 기본값이라 접어 두고 제목에 지금 값을 요약합니다. 기본값(즉시 전송·재접속 2초)이 아니면 펼친 채 시작합니다.", "Send immediately (Nagle off) and, for the client, automatic reconnect and its interval. Usually left at the defaults, so it is collapsed with a summary; it starts expanded when something differs (immediate send, reconnect every 2 s)."],
+  tcpAdvConn: ["즉시 전송(Nagle 끔)과 클라이언트의 자동 재연결·간격. 대부분 기본값이라 접어 두고 제목에 지금 값을 요약합니다. 기본값(즉시 전송·재연결 2초)이 아니면 펼친 채 시작합니다.", "Send immediately (Nagle off) and, for the client, automatic reconnect and its interval. Usually left at the defaults, so it is collapsed with a summary; it starts expanded when something differs (immediate send, reconnect every 2 s)."],
   tcpRx: ["받은 바이트를 줄로 끊는 방법(프레임 구분·끊김 시간·끝 문자·Modbus TCP), 수신 체크섬 검사, 서버의 에코. 접힌 제목에 지금 값이 보이고, 기본값(끊김 시간 20ms·검사 없음·에코 끔)이 아니면 펼친 채 시작합니다.", "How received bytes are split into lines (framing, idle gap, terminator, Modbus TCP), the RX checksum check and the server's echo. The collapsed title shows the current values; it starts expanded when they differ from the defaults (idle gap 20 ms, no check, echo off)."],
   udpAdvConn: ["브로드캐스트 허용과 멀티캐스트(그룹·랜카드·TTL·되돌려 받기). 대부분 쓰지 않아 접어 두고 제목에 요약합니다. 하나라도 켜 두었거나 보낼 곳이 멀티캐스트 주소면 펼친 채 시작합니다.", "Broadcast and multicast (group, NIC, TTL, loopback). Usually unused, so it is collapsed with a summary; it starts expanded when any is set or the destination is a multicast address."],
   udpRx: ["수신 체크섬 검사와 에코(받은 것을 보낸 쪽으로 돌려주기). 접힌 제목에 지금 값이 보이고, 기본값(검사 없음·에코 끔)이 아니면 펼친 채 시작합니다.", "RX checksum check and echo (send received data back to the sender). The collapsed title shows the current values; it starts expanded when they differ from the defaults (no check, echo off)."],
@@ -100,17 +100,17 @@ const TIPS: Record<string, Tip> = {
   delete: ["지웁니다 — 5초 안에 알림의 «되돌리기» 로 되살릴 수 있습니다.", "Deletes it — click «Undo» in the notice within 5 s to restore."],
 
   // ---- TCP
-  mode: ["클라이언트: 이 PC 가 장비에 접속합니다. 서버: 장비가 이 PC 에 접속합니다.", "Client: this PC connects to the device. Server: the device connects to this PC."],
-  host: ["접속할 장비의 IP 주소(또는 이름). 서버 모드에서는 묶을 랜카드 주소입니다.", "IP address (or name) of the device. In server mode, the local interface to bind."],
+  mode: ["클라이언트: 이 PC 가 장비에 연결합니다. 서버: 장비가 이 PC 에 연결합니다.", "Client: this PC connects to the device. Server: the device connects to this PC."],
+  host: ["연결할 장비의 IP 주소(또는 이름). 서버 모드에서는 묶을 랜카드 주소입니다.", "IP address (or name) of the device. In server mode, the local interface to bind."],
   noDelay: ["작은 데이터를 모으지 않고 바로 보냅니다(Nagle 끔). 장비 시험에는 켜 두는 것이 좋습니다.", "Sends small packets immediately (Nagle off). Recommended for device testing."],
-  reconnectMs: ["끊긴 뒤 다시 접속을 시도하는 간격(ms).", "Interval between reconnect attempts (ms)."],
+  reconnectMs: ["끊긴 뒤 다시 연결을 시도하는 간격(ms).", "Interval between reconnect attempts (ms)."],
   echo: ["받은 것을 보낸 쪽으로 그대로 돌려보냅니다. 상대도 에코면 끝없이 주고받으므로 1초에 200번을 넘으면 저절로 꺼집니다.", "Sends received data straight back. If the peer echoes too, it is turned off automatically above 200 per second."],
   peers: ["지금 이 서버에 붙어 있는 상대들. «끊기» 로 하나씩 끊을 수 있습니다.", "Peers connected to this server. «Kick» disconnects one."],
   kick: ["이 상대만 끊습니다.", "Disconnects only this peer."],
   target: ["보낼 상대. «모두에게» 면 붙어 있는 전부에게 보냅니다. 고른 상대가 끊기면 «(끊김)» 으로 남고 보내기가 막힙니다(다른 장비로 새지 않게).", "Who to send to. «All» sends to every connected peer. If the chosen peer disconnects it stays as «(disconnected)» and sending is blocked, so nothing goes to another device."],
 
   // ---- UDP
-  bindHost: ["받을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다.", "Local interface to receive on. 0.0.0.0 receives on all interfaces."],
+  bindHost: ["받을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다. 127.0.0.1 이면 이 PC 안에서만.", "Local interface to receive on. 0.0.0.0 receives on all interfaces; 127.0.0.1 = this PC only."],
   bindPort: ["이 PC 가 받을 포트. 0 이면 운영체제가 빈 포트를 고릅니다.", "Port this PC listens on. 0 lets the OS pick a free port."],
   remoteHost: ["기본으로 보낼 장비의 주소.", "Default destination address."],
   remotePort: ["기본으로 보낼 장비의 포트.", "Default destination port."],
@@ -144,7 +144,7 @@ const TIPS: Record<string, Tip> = {
   reset: ["통계를 0 으로 되돌립니다.", "Resets the statistics."],
 
   // ---- Simulator
-  transport: ["장비를 흉내 낼 연결 방식. 시리얼, TCP 서버(상대가 접속), TCP 클라이언트(상대에 접속), UDP.", "How the simulated device connects: Serial, TCP server, TCP client or UDP."],
+  transport: ["장비를 흉내 낼 연결 방식. 시리얼, TCP 서버(상대가 연결), TCP 클라이언트(상대에 연결), UDP.", "How the simulated device connects: Serial, TCP server, TCP client or UDP."],
   rules: ["받은 것이 패턴에 맞으면 정해 둔 응답을 보냅니다. 위에서부터 처음 맞는 규칙 하나만 답합니다.", "When a frame matches a pattern, the reply is sent. Only the first matching rule (top-down) replies."],
   arWhen: ["이 패턴을 받으면. HEX 는 ??(1바이트)·**(0개 이상)가 늘 와일드카드입니다. ASCII 는 글자 그대로 비교하고, «와일드카드» 를 켠 규칙만 ?(1글자)·*(0개 이상)를 와일드카드로 읽습니다.", "Pattern to match. In HEX, ?? (one byte) and ** (zero or more) are always wildcards. ASCII compares literally; only rules with «Wildcards» on read ? (one char) and * (zero or more) as wildcards."],
   arWild: ["켜면 ASCII 패턴의 ? 는 아무 1글자, * 는 0개 이상입니다(켠 채 글자 자체는 \\x3F·\\x2A). 끄면 글자 그대로 비교해 SCPI *IDN? 가 XIDN! 에 맞지 않습니다. 새 규칙은 꺼진 채, 예전에 저장한 규칙은 켜진 채(예전 동작)입니다.", "When on, ? in an ASCII pattern is any one character and * is zero or more (write a literal ? or * as \\x3F / \\x2A). When off, the pattern is compared literally, so SCPI *IDN? does not match XIDN!. New rules start off; rules saved before keep it on (old behavior)."],
@@ -167,7 +167,7 @@ const TIPS: Record<string, Tip> = {
 
   // ---- Modbus Slave: Modbus TCP·레지스터 맵·자동 변화·장애 대상 (10/18)
   mbTransport: ["장비를 흉내 낼 연결 방식. 시리얼(RTU), TCP 서버(Modbus TCP — MBAP 머리), TCP 서버(RTU over TCP — 시리얼과 같은 프레임을 TCP 로). 연결 중에는 바꿀 수 없습니다.", "How the slave is reached: Serial (RTU), TCP server (Modbus TCP — MBAP header) or TCP server (RTU over TCP — serial frames carried over TCP). Locked while running."],
-  mbBind: ["이 PC 에서 들을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다. 마스터는 이 PC 의 IP 로 접속합니다.", "Local interface to listen on. 0.0.0.0 listens on all adapters; the master connects to this PC's IP."],
+  mbBind: ["이 PC 에서 들을 랜카드 주소. 0.0.0.0 이면 모든 랜카드에서 받습니다. 마스터는 이 PC 의 IP 로 연결합니다. 127.0.0.1 이면 이 PC 안에서만.", "Local interface to listen on. 0.0.0.0 listens on all adapters; the master connects to this PC's IP. 127.0.0.1 = this PC only."],
   mbPort: ["들을 TCP 포트. Modbus TCP 기본은 502 입니다. 0 이면 운영체제가 빈 포트를 고르고 상태 칸에 보입니다.", "TCP port to listen on — 502 is the Modbus TCP default. 0 lets the OS pick a free port (shown in the status box)."],
   ignoreUnitId: ["켜면 어떤 국번(MBAP Unit ID, 0·255 포함)으로 와도 답합니다 — 목록에 있는 국번이면 그 표, 아니면 첫 국번의 표로. 끄면 목록에 없는 국번은 무시하고 0 은 브로드캐스트(쓰기만, 답 없음)입니다.", "When on, any Unit ID (incl. 0 and 255) is answered — from that slave's tables if listed, otherwise from the first slave. When off, unlisted IDs are ignored and 0 is a broadcast (write only, no reply)."],
   tcpClients: ["지금 붙어 있는 마스터(클라이언트) 수. 마우스를 올리면 주소가 보입니다. 통신 기록 줄에도 상대 주소가 붙습니다.", "Masters (clients) connected now. Hover to see their addresses; each traffic line also shows the peer."],
@@ -216,9 +216,9 @@ const TIPS: Record<string, Tip> = {
   nsTimeout: ["핑 하나를 기다리는 시간(ms). 무선·느린 장비면 늘리세요.", "How long to wait for each ping (ms). Increase for Wi-Fi or slow devices."],
   nsThreads: ["한꺼번에 묻는 주소 수(1~128). 많을수록 빨리 끝나지만 약한 장비·무선망에는 부담이 됩니다.", "How many addresses are probed at once (1–128). More is faster but heavier on weak devices and Wi-Fi."],
   nsNames: ["찾은 장비의 이름을 윈도우가 아는 방법(DNS·NetBIOS 등)으로 찾습니다. 이름 없는 장비가 많으면 몇 초 더 걸립니다.", "Looks up device names via whatever Windows knows (DNS, NetBIOS, …). Adds a few seconds when many devices have no name."],
-  nsPorts: ["찾은 장비마다 아래 TCP 포트에 접속만 해 보고 열린 것을 «서비스» 에 보입니다. 정해 둔 포트만 확인합니다(범용 포트 스캔 아님).", "For each device, only opens a TCP connection to the ports below and shows open ones under «Services». Only these ports are checked (not a generic port scan)."],
+  nsPorts: ["찾은 장비마다 아래 TCP 포트에 연결만 해 보고 열린 것을 «서비스» 에 보입니다. 정해 둔 포트만 확인합니다(범용 포트 스캔 아님).", "For each device, only opens a TCP connection to the ports below and shows open ones under «Services». Only these ports are checked (not a generic port scan)."],
   nsPortList: ["확인할 포트. «502, 5000-5010» 처럼 쉼표와 범위로, 32개까지. 기본: Modbus 502·FEnet 2004·SLMP 5000~5010·S7 102·EtherNet/IP 44818·OPC UA 4840·웹·텔넷·FTP·MQTT·SCPI.", "Ports to check, e.g. «502, 5000-5010», up to 32. Default: Modbus 502, FEnet 2004, SLMP 5000–5010, S7 102, EtherNet/IP 44818, OPC UA 4840, web, Telnet, FTP, MQTT, SCPI."],
-  nsPortTimeout: ["포트 하나의 접속을 기다리는 시간(ms). 막힌 포트는 이만큼 지나야 닫힘으로 봅니다.", "How long to wait for each port (ms). A filtered port counts as closed after this time."],
+  nsPortTimeout: ["포트 하나의 연결을 기다리는 시간(ms). 막힌 포트는 이만큼 지나야 닫힘으로 봅니다.", "How long to wait for each port (ms). A filtered port counts as closed after this time."],
   nsPortsDefault: ["확인할 포트를 기본 산업 포트 목록으로 되돌립니다.", "Restores the default industrial port list."],
   nsModbusId: ["502 가 열린 장비에 «Read Device Identification»(FC 2B/0E)을 보내 제조사·제품·버전을 읽습니다. 국번 1, 안 되면 255. 읽기 전용입니다.", "Sends «Read Device Identification» (FC 2B/0E) to devices with 502 open to read vendor, product and revision — unit 1, then 255. Read-only."],
   nsScan: ["범위의 주소를 ARP·핑으로 찾고, 찾은 장비의 포트·이름을 확인합니다. 찾은 장비는 바로바로 표에 나옵니다.", "Probes the range by ARP and ping, then checks ports and names of the devices found. Devices appear in the table as they are found."],
@@ -276,14 +276,14 @@ const TIPS: Record<string, Tip> = {
   autoReplyOn: ["자동응답을 켜고 끕니다. 켜져 있으면 머리에 초록색으로 보이고, 응답마다 통신 기록에 «AUTO 이름» 이 남습니다.", "Turns auto reply on or off. When on it shows in green, and each reply is logged as «AUTO name»."],
 
   // ---- TCP 중계·Modbus TCP·랜카드 목록 / UDP 멀티캐스트
-  modeRelay: ["중계(모니터): 이 PC 포트로 들어온 접속(A, 예: HMI)을 장비(B, 예: PLC)로 이어 주며 오가는 것을 모두 기록합니다. A 가 B 대신 이 PC 주소로 접속하게 바꿔야 합니다.", "Relay (monitor): connections arriving at this PC's port (A, e.g. an HMI) are passed to the device (B, e.g. a PLC) and everything in between is logged. Point A at this PC instead of B."],
-  relayUpstream: ["이어 줄 장비(B)의 주소와 포트. 들어온 접속마다 여기로 새로 접속합니다(실패하면 A 쪽을 닫음).", "The device (B) to relay to. Each incoming connection opens its own connection here (if that fails, the A side is closed)."],
-  relaySide: ["끼워 넣을 쪽: A(접속해 온 쪽, 예: HMI) 또는 B(장비, 예: PLC). 끼워 넣은 것은 «INJECT» 사건 줄과 함께 기록됩니다.", "Where to inject: A (the side that connected, e.g. an HMI) or B (the device, e.g. a PLC). Injected data is logged with an «INJECT» event."],
-  pcapSave: ["(0.8.0) 중계가 넘긴 양방향 바이트를 .pcapng 파일로 남깁니다 — Wireshark·PortDock pcap 해석기로 엽니다. 실제 패킷이 아니라 응용 데이터에 이더넷·IP·TCP 머리를 만들어 붙인 것입니다(파일에 «reconstructed» 표시). 파일 하나가 ⚙ 설정의 «크기로 나누기 (MB)»(0 이면 100MB)를 넘으면 «이름-002.pcapng» 로 이어 씁니다.", "(0.8.0) Saves the bytes the relay forwarded, both directions, as a .pcapng file — open it in Wireshark or the PortDock pcap analyzer. These are not captured packets: Ethernet/IP/TCP headers are synthesized around the application data (the file says «reconstructed»). When a file passes «Split by size (MB)» in ⚙ Settings (100 MB if 0) it continues in «name-002.pcapng»."],
+  modeRelay: ["중계(모니터): 이 PC 포트로 들어온 연결(A, 예: HMI)을 장비(B, 예: PLC)로 이어 주며 오가는 것을 모두 기록합니다. A 가 B 대신 이 PC 주소로 연결하게 바꿔야 합니다.", "Relay (monitor): connections arriving at this PC's port (A, e.g. an HMI) are passed to the device (B, e.g. a PLC) and everything in between is logged. Point A at this PC instead of B."],
+  relayUpstream: ["이어 줄 장비(B)의 주소와 포트. 들어온 연결마다 여기로 새로 연결합니다(실패하면 A 쪽을 닫음).", "The device (B) to relay to. Each incoming connection opens its own connection here (if that fails, the A side is closed)."],
+  relaySide: ["끼워 넣을 쪽: A(연결해 온 쪽, 예: HMI) 또는 B(장비, 예: PLC). 끼워 넣은 것은 «INJECT» 사건 줄과 함께 기록됩니다.", "Where to inject: A (the side that connected, e.g. an HMI) or B (the device, e.g. a PLC). Injected data is logged with an «INJECT» event."],
+  pcapSave: ["중계가 넘긴 양방향 바이트를 .pcapng 파일로 남깁니다 — Wireshark·PortDock pcap 해석기로 엽니다. 실제 패킷이 아니라 응용 데이터에 이더넷·IP·TCP 머리를 만들어 붙인 것입니다(파일에 «reconstructed» 표시). 파일 하나가 ⚙ 설정의 «크기로 나누기 (MB)»(0 이면 100MB)를 넘으면 «이름-002.pcapng» 로 이어 씁니다.", "Saves the bytes the relay forwarded, both directions, as a .pcapng file — open it in Wireshark or the PortDock pcap analyzer. These are not captured packets: Ethernet/IP/TCP headers are synthesized around the application data (the file says «reconstructed»). When a file passes «Split by size (MB)» in ⚙ Settings (100 MB if 0) it continues in «name-002.pcapng»."],
   pcapStop: ["pcap 저장을 멈추고 파일을 닫습니다.", "Stops saving pcap and closes the file."],
-  pairCol: ["(0.8.0) Modbus TCP(트랜잭션 ID)·MC 3E/4E 를 알아보면 A→B 요청에 번호를 붙이고, B→A 응답에 같은 번호와 응답 시간(요청 첫 바이트 → 응답 첫 바이트, ms)을 보입니다. 3초 안에 응답이 없거나 같은 번호의 요청이 다시 오거나 연결이 끊기면 «무응답». 예외·종료 코드는 빨갛게.", "(0.8.0) When Modbus TCP (transaction ID) or MC 3E/4E is recognized, A→B requests get a number and B→A replies show the same number with the reply time (first request byte → first reply byte, ms). No reply within 3 s, the same request again, or a closed connection marks «no reply». Exceptions and end codes are red."],
-  pairStats: ["(0.8.0) 지우기 뒤로 짝지은 응답(최근 1만 개)의 응답 시간 — 최소·중앙·95%·최대(ms), 무응답·오류 응답 수.", "(0.8.0) Reply times of paired replies since the last clear (latest 10,000) — min, median, 95th percentile, max (ms), plus no-reply and error-reply counts."],
-  relayDir: ["A→B: 접속해 온 쪽에서 장비로 · B→A: 장비에서 접속해 온 쪽으로. 방향마다 프레임을 따로 끊습니다.", "A→B: from the connecting side to the device · B→A: from the device back. Each direction is framed separately."],
+  pairCol: ["Modbus TCP(트랜잭션 ID)·MC 3E/4E 를 알아보면 A→B 요청에 번호를 붙이고, B→A 응답에 같은 번호와 응답 시간(요청 첫 바이트 → 응답 첫 바이트, ms)을 보입니다. 3초 안에 응답이 없거나 같은 번호의 요청이 다시 오거나 연결이 끊기면 «무응답». 예외·종료 코드는 빨갛게.", "When Modbus TCP (transaction ID) or MC 3E/4E is recognized, A→B requests get a number and B→A replies show the same number with the reply time (first request byte → first reply byte, ms). No reply within 3 s, the same request again, or a closed connection marks «no reply». Exceptions and end codes are red."],
+  pairStats: ["지우기 뒤로 짝지은 응답(최근 1만 개)의 응답 시간 — 최소·중앙·95%·최대(ms), 무응답·오류 응답 수.", "Reply times of paired replies since the last clear (latest 10,000) — min, median, 95th percentile, max (ms), plus no-reply and error-reply counts."],
+  relayDir: ["A→B: 연결해 온 쪽에서 장비로 · B→A: 장비에서 연결해 온 쪽으로. 방향마다 프레임을 따로 끊습니다.", "A→B: from the connecting side to the device · B→A: from the device back. Each direction is framed separately."],
   ifaces: ["이 PC 의 랜카드 IPv4 주소. 눌러서 고르거나 직접 적습니다. 0.0.0.0 은 모든 랜카드, 127.0.0.1 은 이 PC 안에서만.", "IPv4 addresses of this PC's adapters. Pick one or type your own. 0.0.0.0 = all adapters, 127.0.0.1 = this PC only."],
   ifaceRefresh: ["랜카드 목록을 다시 읽습니다(케이블을 꽂았거나 무선에 붙은 뒤).", "Reloads the adapter list (after plugging a cable or joining Wi-Fi)."],
   mbapTid: ["보낼 때마다 MBAP 트랜잭션 ID(앞 2바이트)를 1씩 늘려 넣습니다 — 응답과 요청을 짝짓는 장비·게이트웨이용. MBAP 모양이 아니면 그대로 보냅니다.", "Puts an incrementing MBAP transaction ID (first 2 bytes) into every send — for devices and gateways that pair responses by it. Non-MBAP data is sent unchanged."],
@@ -353,7 +353,7 @@ const TIPS: Record<string, Tip> = {
   nsRowMenu: ["줄을 누르면 아래에 할 일이 나옵니다. 오른쪽 버튼(또는 메뉴 키·Shift+F10)으로 웹 열기·IP 복사·IP:502 복사·Modbus 정보 읽기·핑 감시에 추가·WoL 메뉴. HTTP 가 열린 장비는 두 번 눌러 웹을 엽니다. 서비스의 Modbus 칩을 누르면 «IP:502» 를 복사합니다.", "Click a row to see actions below. Right-click (or the Menu key / Shift+F10) for open web page, copy IP, copy IP:502, read Modbus ID, add to ping monitor and WoL. Double-click opens the web page of a device with HTTP. Clicking a Modbus service chip copies «IP:502»."],
   sendMoreNet: ["가끔 쓰는 보내기 도구: 문자 간 지연, 파일 보내기…, (반복이 꺼져 있으면) 반복 횟수. 문자 간 지연이 켜져 있으면 버튼에 보입니다.", "Occasional send tools: character delay, Send file…, and (with repeat off) the repeat count. The button shows the character delay while it is on."],
   sendMoreUdp: ["반복 횟수(0 = 멈출 때까지)를 정합니다. 반복을 켜거나 횟수를 정하면 줄에 바로 보입니다.", "Sets the repeat count (0 = until stopped). Once repeat is on or a count is set, it shows in the row."],
-  kickAll: ["접속한 상대를 모두 끊습니다(듣기는 계속).", "Disconnects every connected peer (listening continues)."],
+  kickAll: ["연결한 상대를 모두 끊습니다(듣기는 계속).", "Disconnects every connected peer (listening continues)."],
   viewOpts: ["가끔 바꾸는 보기 옵션 — 시각 옆 «시간 간격 열»(없음·직전 줄과 간격·응답 시간). 간격 열이 켜져 있으면 버튼이 강조됩니다.", "Occasional view options — the «Time gap column» next to the time (none, gap from previous line, response time). The button is highlighted while the column is on."],
 
   // ---- SCPI(10/19) — 앱 쪽 tips.ts 에서 옮김
@@ -400,7 +400,7 @@ const TIPS: Record<string, Tip> = {
 
   // ---- Plot(10/19) — 앱 쪽 tips.ts 에서 옮김
   plTransport: [
-    "숫자가 들어오는 곳. 시리얼(USB 보드·변환기), TCP 클라이언트(이 PC 가 장비의 포트에 접속), UDP 받기(장비가 이 PC 의 포트로 보냄).",
+    "숫자가 들어오는 곳. 시리얼(USB 보드·변환기), TCP 클라이언트(이 PC 가 장비의 포트에 연결), UDP 받기(장비가 이 PC 의 포트로 보냄).",
     "Where the numbers come from: serial (USB boards, adapters), TCP client (this PC connects to the device's port) or UDP receive (the device sends to a port on this PC).",
   ],
   plSerialAdv: ["DTR·자동 재연결. 흐름 제어는 쓰지 않습니다.", "DTR and auto reconnect. Flow control is not used."],
@@ -409,7 +409,7 @@ const TIPS: Record<string, Tip> = {
     "Asserts DTR when the port opens. Native-USB boards (Leonardo, ESP32-S2/S3, RP2040 …) often send only while DTR is on. Boards such as the Uno reset once on open (as with the Arduino IDE).",
   ],
   plAutoReconnect: ["USB 를 뽑았다 꽂으면 같은 장치를 찾아 다시 엽니다. 그 사이 값은 비어 있습니다.", "Reopens the same device after an unplug/replug. Values are missing in between."],
-  plHost: ["접속할 장비의 IP(또는 이름). 끊기면 2초마다 다시 접속합니다.", "The device's IP (or host name) to connect to. Reconnects every 2 s after a drop."],
+  plHost: ["연결할 장비의 IP(또는 이름). 끊기면 2초마다 다시 연결합니다.", "The device's IP (or host name) to connect to. Reconnects every 2 s after a drop."],
   plNetPort: ["장비가 듣는 TCP 포트.", "The TCP port the device listens on."],
   plBindHost: ["UDP 를 받을 이 PC 의 주소. 0.0.0.0 이면 모든 랜카드.", "This PC's address for UDP. 0.0.0.0 listens on every interface."],
   plBindPort: ["UDP 를 받을 이 PC 의 포트 — 장비가 보내는 «대상 포트» 와 같게.", "The UDP port on this PC — the same as the device's destination port."],
@@ -568,8 +568,8 @@ const TIPS: Record<string, Tip> = {
   hwBtCopy: ["연결·끊김 기록을 «장치 N» 번호로만 복사·저장합니다(이름 없음).", "Copies or saves the log with «Device N» numbers only (no names)."],
   hwAudioReload: ["블루투스 오디오 장치와 기본 장치를 다시 읽습니다.", "Reads Bluetooth audio devices and the default device again."],
   // (0.8.0) AI 에게 물어보기용 복사 — 머리줄 «AI»
-  aiCopy: ["(0.8.0) 미리보기 내용을 클립보드에 넣습니다. PortDock 은 아무 데도 보내지 않습니다 — AI 채팅에 붙여 넣으면 그 서비스로 갑니다. 8,000자를 넘으면 오래된 통신 기록 줄부터 뺍니다.", "(0.8.0) Puts the preview on the clipboard. PortDock sends nothing — once pasted into an AI chat it goes to that service. Above 8,000 characters the oldest traffic lines are removed first."],
-  aiHideIp: ["(0.8.0) 공인 IP 는 늘 «[IP-1]» 처럼 번호로 바꿉니다. 사설 IP(192.168.x.x·10.x.x.x 등)는 회사 밖에서 찾을 수 없고 «PC 와 장비의 서브넷이 다름» 같은 원인을 보는 데 필요해 기본으로 남깁니다. 켜면 사설 IP 도 번호로 바꿉니다(같은 주소는 같은 번호).", "(0.8.0) Public IPs are always replaced with numbers like «[IP-1]». Private IPs (192.168.x.x, 10.x.x.x …) cannot be traced from outside and are often needed to spot causes such as «PC and device on different subnets», so they are kept by default. Turn this on to number private IPs too (the same address gets the same number)."],
+  aiCopy: ["미리보기 내용을 클립보드에 넣습니다. PortDock 은 아무 데도 보내지 않습니다 — AI 채팅에 붙여 넣으면 그 서비스로 갑니다. 8,000자를 넘으면 오래된 통신 기록 줄부터 뺍니다.", "Puts the preview on the clipboard. PortDock sends nothing — once pasted into an AI chat it goes to that service. Above 8,000 characters the oldest traffic lines are removed first."],
+  aiHideIp: ["공인 IP 는 늘 «[IP-1]» 처럼 번호로 바꿉니다. 사설 IP(192.168.x.x·10.x.x.x 등)는 회사 밖에서 찾을 수 없고 «PC 와 장비의 서브넷이 다름» 같은 원인을 보는 데 필요해 기본으로 남깁니다. 켜면 사설 IP 도 번호로 바꿉니다(같은 주소는 같은 번호).", "Public IPs are always replaced with numbers like «[IP-1]». Private IPs (192.168.x.x, 10.x.x.x …) cannot be traced from outside and are often needed to spot causes such as «PC and device on different subnets», so they are kept by default. Turn this on to number private IPs too (the same address gets the same number)."],
   hwVolume: ["시험 소리 크기. 헤드폰이면 낮게 시작합니다.", "Test tone level. Start low with headphones."],
 };
 

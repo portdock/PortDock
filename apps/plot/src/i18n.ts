@@ -5,7 +5,7 @@ const ko = {
   // ---- 연결
   transport: "받는 곳",
   trSerial: "시리얼 (COM)",
-  trTcp: "TCP 클라이언트 (장비에 접속)",
+  trTcp: "TCP 클라이언트 (장비에 연결)",
   trUdp: "UDP 받기",
   port: "포트",
   noPorts: "포트 없음",
@@ -42,7 +42,7 @@ const ko = {
   lockedHint: "받는 중에는 받는 곳 설정이 잠깁니다(해석 방식은 바꿀 수 있음)",
   startFailed: "시작 실패",
   busyHint: "다른 프로그램(시리얼 모니터·Arduino IDE·다른 PortDock 창)이 포트를 쥐고 있을 수 있습니다.",
-  refusedHint: "장비 주소·포트가 맞는지, 장비가 그 포트에서 접속을 받는지 보세요.",
+  refusedHint: "장비 주소·포트가 맞는지, 장비가 그 포트에서 연결을 받는지 보세요.",
   // ---- 해석
   formatTitle: "해석",
   fmtKind: "데이터 모양",

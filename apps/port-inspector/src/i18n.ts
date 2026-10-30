@@ -163,6 +163,7 @@ const ko = {
   wlIntro: "Wi-Fi·블루투스 어댑터·드라이버·절전 설정과 최근 끊김·경고 기록을 관리자 권한·위치 권한 없이 읽습니다. 트래픽을 보내지 않고, 주변 장치를 검색하지 않습니다.",
   wlDays: "기록 기간",
   wlCannot: "PC 가 볼 수 없는 것(무선)",
+  wlToHw: "끊김이 언제 얼마나 생기는지 시간대별로 기록하려면 PortDock Hardware Tester 의 «Wi-Fi·인터넷 끊김 기록» 탭을 쓰세요.",
   wlReadOnly: "읽기만 합니다 — 설정은 «바꾸는 곳» 에서 직접 바꿉니다. 결과 복사·저장에서는 블루투스 오디오 장치 이름을 «장치 1» 처럼 가립니다.",
   // 시험
   loopBusy: "다른 시험이 돌고 있습니다",
@@ -328,6 +329,7 @@ const en: Record<keyof typeof ko, string> = {
   wlIntro: "Reads Wi-Fi and Bluetooth adapters, drivers and power saving settings, plus recent disconnect and warning records, without administrator or location permission. It sends no traffic and does not scan for nearby devices.",
   wlDays: "Record period",
   wlCannot: "What the PC cannot see (wireless)",
+  wlToHw: "To log when and how often drops happen over time, use the «Wi-Fi / internet drop log» tab in PortDock Hardware Tester.",
   wlReadOnly: "Read-only — change settings yourself at «Where to change». Copied and saved results hide Bluetooth audio device names as «Device 1» and so on.",
   loopBusy: "Another test is running",
   loopAbsent: "A device that is not connected cannot be tested",

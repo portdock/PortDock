@@ -112,10 +112,10 @@ try {
   await click(d, "지우기");
   check("C8 지우기 → 카운터 0", (await text(d)).includes("RX 0 · TX 0"));
 
-  section("T1 끊김·자동 재접속");
+  section("T1 끊김·자동 재연결");
   for (const so of s.socks) so.destroy();
   check("T1 끊김 감지", await waitText(d, "closed by peer", 4000) || await waitText(d, "CLOSE", 1000));
-  check("T1 재접속", await waitText(d, "연결됨", 6000));
+  check("T1 재연결", await waitText(d, "연결됨", 6000));
   await shot(d, "tcp-05-reconnected");
   await click(d, "멈춤");
   check("T1 멈춤", await waitText(d, "멈춤"));
@@ -132,7 +132,7 @@ try {
   check("T2 듣는 중", await waitText(d, "듣는 중"));
   const a = await client(port);
   const b = await client(port);
-  check("T2 접속 2개 목록", await waitText(d, "접속한 상대") && (await d.findElements(By.css(".peer"))).length === 2);
+  check("T2 연결 2개 목록", await waitText(d, "연결한 상대") && (await d.findElements(By.css(".peer"))).length === 2);
   await checkLayout(d, "tcp-C3-server");
   await shot(d, "tcp-06-server-2peers");
   const sb = await d.findElement(By.css("input.sendtext"));
