@@ -38,7 +38,7 @@ import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
@@ -169,6 +169,8 @@ export default function App() {
   const [status, setStatus] = useState("idle");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 시작 실패 — 버튼 바로 밑 빨간 상자로(다른 앱과 같은 자리)
+  const [startErr, setStartErr] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
   useEffect(() => {
     if (error) noteError(error);
@@ -219,6 +221,7 @@ export default function App() {
     const { com, net } = o;
     setStarting(true);
     setError(null);
+    setStartErr(null);
     stopping.current = false;
     setDropped(false);
     try {
@@ -255,7 +258,7 @@ export default function App() {
       }
       return true;
     } catch (e) {
-      setError(String(e));
+      setStartErr(String(e));
       return false;
     } finally {
       setStarting(false);
@@ -542,15 +545,9 @@ export default function App() {
   }
   useAutoStart(settings.autoConnect || !!launch?.auto, launch != null, () => void autoStart());
 
-  return (
-    <div className={showSide ? "app sim show-side" : "app sim"}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>Simulator</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
           <select
             className="lang"
             aria-label={lang === "ko" ? "언어" : "Language"}
@@ -571,6 +568,18 @@ export default function App() {
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+    </>
+  );
+  return (
+    <div className={showSide ? "app sim show-side" : "app sim"}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>Simulator</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
           <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -695,17 +704,23 @@ export default function App() {
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
-        <div className={`status s-${status === "listening" ? "connected" : status}`}>
-          {dict[lang][`status_${status}` as Key] ?? status}
-          {statusMsg ? ` · ${statusMsg}` : ""}
-        </div>
+        {startErr && !running ? (
+          <div className="status s-failed" role="alert">
+            <b>{t("startFailed")}</b> · {startErr}
+          </div>
+        ) : (
+          <div className={`status s-${status === "listening" ? "connected" : status}`}>
+            {dict[lang][`status_${status}` as Key] ?? status}
+            {statusMsg ? ` · ${statusMsg}` : ""}
+          </div>
+        )}
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn small" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+        <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={startErr && !running ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
           <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : () => void start()} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
             {running ? t("stop") : t("start")}
           </button>

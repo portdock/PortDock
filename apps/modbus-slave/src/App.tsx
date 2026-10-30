@@ -68,7 +68,7 @@ import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { ui } from "@shared/uiText";
 import { PortPicker } from "@shared/PortPicker";
@@ -1286,15 +1286,9 @@ export default function App() {
     [items, values, flash, format, addrMode, regView, tableSims, pts, lang, bits, table, selId, range.start, range.count, toast.show, picked, lastCell],
   );
 
-  return (
-    <div className={showSide ? "app show-side" : "app"}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>Modbus Slave</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
             <select
               className="lang"
               aria-label={lang === "ko" ? "언어" : "Language"}
@@ -1315,6 +1309,18 @@ export default function App() {
             <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
               ⚙
             </button>
+    </>
+  );
+  return (
+    <div className={showSide ? "app show-side" : "app"}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>Modbus Slave</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
             <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -1630,7 +1636,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={connectErr && !connected ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+        <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={connectErr && !connected ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
           <button className={connected ? "btn small danger" : "btn small primary"} onClick={connected ? disconnect : connect} disabled={runDisabled} data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)}>
             {runLabel}
           </button>

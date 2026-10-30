@@ -91,13 +91,13 @@ export function windowLines(lang: Lang): string[] {
     ? [
         "- 머리줄 📌: 항상 위 — 이 창을 다른 창 위에 늘 보이게 합니다(설정의 «항상 위» 와 같음).",
         "- 창 제목에 지금 상태가 나옵니다(예: «COM3 115200 8N1 · 연결됨 ● REC — PortDock Serial»). 작업 표시줄에서 어느 창이 어느 포트인지 알 수 있습니다.",
-        "- 창 너비가 900px 이하(화면 반쪽 맞춤 등)면 왼쪽 연결 설정 칸이 접히고, 위에 요약 줄과 «⚙ 연결 설정»·연결 버튼이 나옵니다. «⚙ 연결 설정» 으로 펼치고 ✕ 나 바깥을 눌러 닫습니다.",
+        "- 창 너비가 900px 이하(화면 반쪽 맞춤 등)면 왼쪽 칸이 접히고, 위에 요약 줄과 «⚙ 연결 설정»(Port Inspector 는 «⚙ 포트 목록», Net Scan 은 «⚙ 찾기 설정», Hardware Tester 는 «⚙ 점검 항목»)·연결 버튼이 나옵니다. 언어·📌·!·?·⚙ 단추는 그 줄 오른쪽으로 옮겨 갑니다. «⚙ …» 으로 펼치고 ✕ 나 바깥을 눌러 닫습니다.",
         "- 글자 크기: Ctrl+마우스 휠 또는 Ctrl+= / Ctrl+- 로 키우고 줄이고, Ctrl+0 으로 처음 크기(13px)로 돌아갑니다. 설정의 «글자 크기» 와 같은 값이라 다음에 켜도 그대로입니다.",
       ]
     : [
         "- 📌 in the header: always on top — keeps this window above others (same as «Always on top» in Settings).",
         "- The window title shows the current state (e.g. «COM3 115200 8N1 · Connected ● REC — PortDock Serial»), so you can tell windows apart on the taskbar.",
-        "- At 900 px wide or less (e.g. half-screen snap) the left connection panel folds away and a summary line with «⚙ Connection» and the connect button appears. «⚙ Connection» opens the panel; ✕ or clicking outside closes it.",
+        "- At 900 px wide or less (e.g. half-screen snap) the left panel folds away and a summary line with «⚙ Connection» (Port Inspector: «⚙ Ports», Net Scan: «⚙ Scan settings», Hardware Tester: «⚙ Checks») and the connect button appears. The language, 📌, !, ? and ⚙ buttons move to the right end of that line. «⚙ …» opens the panel; ✕ or clicking outside closes it.",
         "- Text size: Ctrl+mouse wheel or Ctrl+= / Ctrl+- makes it larger or smaller, and Ctrl+0 returns to the default (13 px). It is the same value as «Font size» in Settings, so it is kept next time.",
       ];
 }

@@ -63,8 +63,8 @@ const ko = {
   settings: "설정",
   // ---- 좁은 창
   sidePanel: "연결 설정",
-  sideOpenTip: "왼쪽 연결 설정 칸을 펼칩니다(창이 좁을 때)",
-  sideClose: "연결 설정 닫기",
+  sideOpenTip: "창이 좁아 접힌 왼쪽 칸을 펼칩니다",
+  sideClose: "왼쪽 칸 닫기",
   // ---- 단축키
   shortcutsTitle: "단축키",
   keyConnect: "연결·끊기(시작·멈춤)",
@@ -149,8 +149,8 @@ const en: typeof ko = {
   pinOff: "Always on top — keep this window above others",
   settings: "Settings",
   sidePanel: "Connection",
-  sideOpenTip: "Opens the connection settings panel (narrow window)",
-  sideClose: "Close connection settings",
+  sideOpenTip: "Opens the left panel (folded because the window is narrow)",
+  sideClose: "Close the left panel",
   shortcutsTitle: "Shortcuts",
   keyConnect: "Connect / disconnect (start / stop)",
   keyClear: "Clear the on-screen log",

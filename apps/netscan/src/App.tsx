@@ -15,7 +15,7 @@ import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { openInApp } from "@shared/openApp";
@@ -519,15 +519,9 @@ export default function App() {
     </button>
   );
 
-  return (
-    <div className={`app${showSide ? " show-side" : ""}`}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>Net Scan</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
             <select className="lang" aria-label={lang === "ko" ? "언어" : "Language"} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
               <option value="ko">한국어</option>
               <option value="en">English</option>
@@ -540,6 +534,18 @@ export default function App() {
             <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
               ⚙
             </button>
+    </>
+  );
+  return (
+    <div className={`app${showSide ? " show-side" : ""}`}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>Net Scan</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
             <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -699,7 +705,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={dotCls} summary={summary}>
+        <NarrowBar tools={headTools} label={t("sideLabel")} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={dotCls} summary={summary}>
           {scanButton(true)}
         </NarrowBar>
         <div className="tabs" role="tablist">

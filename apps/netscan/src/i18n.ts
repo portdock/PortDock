@@ -2,6 +2,7 @@
 const ko = {
   helpTip: "도움말 (F1)",
   // ---- 왼쪽: 랜카드·범위·방법
+  sideLabel: "찾기 설정",
   nic: "랜카드",
   nicNone: "IPv4 랜카드가 없습니다",
   nicDown: "연결 안 됨",
@@ -142,6 +143,7 @@ const ko = {
 
 const en: typeof ko = {
   helpTip: "Help (F1)",
+  sideLabel: "Scan settings",
   nic: "Network adapter",
   nicNone: "No IPv4 adapter found",
   nicDown: "disconnected",
