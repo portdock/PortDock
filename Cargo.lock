@@ -2821,7 +2821,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "crash-handler",
@@ -2838,7 +2838,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-hw-tester"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2852,7 +2852,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-mcp"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "portdock-core",
@@ -2866,7 +2866,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-modbus-master"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2880,7 +2880,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-modbus-slave"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2894,7 +2894,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-netscan"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "portdock-core",
@@ -2910,7 +2910,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-plc-simulator"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2924,7 +2924,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-plot"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "portdock-core",
@@ -2939,7 +2939,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-port-inspector"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2953,7 +2953,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-scpi"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2967,7 +2967,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-serial"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2981,7 +2981,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-simulator"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -2995,7 +2995,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-tcp"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",
@@ -3009,7 +3009,7 @@ dependencies = [
 
 [[package]]
 name = "portdock-udp"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "portdock-core",
  "serde",

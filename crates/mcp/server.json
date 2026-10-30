@@ -3,7 +3,7 @@
   "name": "io.github.portdock/portdock-mcp",
   "title": "PortDock MCP",
   "description": "Read-only MCP server for COM ports, Modbus, MC protocol and SCPI devices on Windows",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "websiteUrl": "https://portdock.dev/en/guides/portdock-mcp/",
   "repository": {
     "url": "https://github.com/portdock/PortDock",
@@ -12,8 +12,8 @@
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/portdock/PortDock/releases/download/v0.7.0/PortDock-MCP.mcpb",
-      "version": "0.7.0",
+      "identifier": "https://github.com/portdock/PortDock/releases/download/v0.8.0/PortDock-MCP.mcpb",
+      "version": "0.8.0",
       "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "transport": {
         "type": "stdio"

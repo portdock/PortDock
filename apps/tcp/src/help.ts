@@ -474,7 +474,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       ],
     },
     {
-      title: "중계: pcap 저장·요청/응답 짝 (0.8.0 부터)",
+      title: "중계: pcap 저장·요청/응답 짝",
       body: [
         "HMI ⇄ PLC 사이에 끼워 기록하는 법 — 스위치에 물린 PC 의 Wireshark 는 다른 장비끼리의 통신을 보지 못합니다(포트 미러링·탭이 필요). 중계는 드라이버·관리자 권한 없이 HMI 의 대상 주소만 이 PC 로 바꿔 양쪽을 기록합니다. 사용자가 직접 설정을 바꾼 접속만 지나가며, 자기 장비 시험용입니다.",
         "- 1. «중계» 탭: «A 가 접속할 이 PC 주소» 0.0.0.0, «포트» 는 PLC 와 같은 번호(예: 502), «이어 줄 장비 (B)» 에 PLC 의 IP·포트 → «듣기 시작».",
@@ -525,7 +525,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       ],
     },
     {
-      title: "Relay: save pcap, request/reply pairs (from 0.8.0)",
+      title: "Relay: save pcap, request/reply pairs",
       body: [
         "Logging between an HMI and a PLC — on a switch, Wireshark on your PC cannot see traffic between other devices (it needs port mirroring or a tap). The relay records both sides without drivers or admin rights: you only point the HMI at this PC. Only connections whose settings you changed yourself pass through; it is meant for testing your own equipment.",
         "- 1. «Relay» tab: «This PC address for A to connect to» 0.0.0.0, «Port» the same number as the PLC (e.g. 502), «Device to relay to (B)» the PLC's IP and port → «Start listening».",

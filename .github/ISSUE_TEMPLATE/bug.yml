@@ -20,7 +20,7 @@ body:
     attributes:
       label: 버전 / Version
       description: ⚙ 설정 → 정보 / Settings → About
-      placeholder: "0.7.0"
+      placeholder: "0.8.0"
     validations:
       required: true
   - type: dropdown
