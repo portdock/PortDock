@@ -21,6 +21,7 @@ import { useToast } from "@shared/Toast";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
+import { CopyButton } from "@shared/CopyButton";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { Splitter, useStoredHeight } from "@shared/Splitter";
 import { ui } from "@shared/uiText";
@@ -634,6 +635,8 @@ export default function App() {
   const peersText = t(net.transport === "udp" ? "senders" : "clients").replace("{n}", String(peers.length));
   useWindowTitle(windowTitle(APP, connected ? [`${net.transport.toUpperCase()} ${where}`, fmtLabel(net.format, lang), peersText] : [], !!logPath));
   const statusKey = `status_${status}` as Key;
+  // 클라이언트에 넣을 주소 — 모든 랜카드(0.0.0.0)로 들으면 같은 PC 기준 127.0.0.1
+  const clientAddr = `${!net.host.trim() || net.host.trim() === "0.0.0.0" ? "127.0.0.1" : net.host.trim()}:${net.port}`;
   const summaryLine = `${net.transport.toUpperCase()} ${where} · ${fmtLabel(net.format, lang)} · ${t(statusKey)}${connected ? ` · ${peersText}` : ""}`;
   const runLabel = connected ? t("stop") : t("start");
   const open = !isLoopback(net.host);
@@ -802,6 +805,20 @@ export default function App() {
                 {peersText}
               </div>
             )}
+          </div>
+        )}
+        {connected && (
+          // 클라이언트 쪽에 넣을 값을 한 덩어리로(상태 줄은 좁은 칸에서 잘린다) — 주소는 복사 단추로
+          <div className="client-cfg panel">
+            <div className="hint">{t("clientCfg")}</div>
+            <div className="row-inline">
+              <b className="mono">{clientAddr}</b>
+              <CopyButton lang={lang} getText={() => clientAddr} />
+            </div>
+            <div className="hint">
+              {net.transport.toUpperCase()} · {fmtLabel(net.format, lang)} · {t("clientCfgStation")}
+              {open ? ` · ${t("clientCfgOther")}` : ""}
+            </div>
           </div>
         )}
         {connected && (

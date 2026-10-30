@@ -152,7 +152,7 @@ const ko = {
   fTNth: "{n}번째마다",
   fTProb: "{p}% 확률",
   // ---- 장치 식별
-  device: "장치 식별 (FC 2B/0E)",
+  device: "장치 정보 응답 (FC 2B/0E)",
   devVendor: "제조사 (객체 0)",
   devProduct: "제품 코드 (객체 1)",
   devRevision: "버전 (객체 2)",

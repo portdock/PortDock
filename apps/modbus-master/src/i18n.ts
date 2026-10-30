@@ -61,7 +61,7 @@ const ko = {
   pauseAll: "모든 폴링 멈춤",
   pausedNote: "폴링을 멈췄습니다 — «한 번 읽기»·쓰기는 됩니다",
   // ---- 찾기
-  scan: "찾기…",
+  scan: "국번·주소 찾기…",
   scanTitle: "장비·주소 찾기",
   scanIds: "국번 찾기",
   scanAddrs: "주소 범위 찾기",

@@ -16,6 +16,7 @@ import { count } from "@shared/usage";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
+import { TERMS } from "@shared/glossary";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
 import { api } from "./api";
@@ -522,10 +523,10 @@ export default function App() {
                     <th>{t("colSent")}</th>
                     <th>{t("colLoss")}</th>
                     <th>{t("colAvg")}</th>
-                    <th>95%</th>
+                    <th data-tip={TERMS.p95[lang][1]}>95%</th>
                     <th>{t("colMax")}</th>
-                    <th>{t("colJitter")}</th>
-                    <th>{t("colRun")}</th>
+                    <th data-tip={TERMS.jitter[lang][1]}>{t("colJitter")}</th>
+                    <th data-tip={TERMS.lossRun[lang][1]}>{t("colRun")}</th>
                   </tr>
                 </thead>
                 <tbody>
