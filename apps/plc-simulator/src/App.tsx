@@ -1137,7 +1137,7 @@ export default function App() {
           <span className="grow" />
           <button className={rulesOn ? "btn small on" : "btn small"} onClick={() => setShowRules(true)} data-tip={tip(lang, "plcRules")}>
             {t("ruButton")}
-            {rules.length ? ` (${rulesOn}/${rules.length})` : ""}
+            {rules.length ? ` · ${t("ruOnTotal").replace("{on}", String(rulesOn)).replace("{n}", String(rules.length))}` : ""}
           </button>
           <button className="btn small" onClick={() => setShowFill(true)} data-tip={tip(lang, "plcFill")}>
             {t("fill")}
@@ -1270,7 +1270,7 @@ export default function App() {
           onClose={() => setShowRules(false)}
         />
       )}
-      {showFill && <FillDialog lang={lang} dev={dev} size={size} start={view.start} count={cells * per} onWrite={writeRange} onClose={() => setShowFill(false)} />}
+      {showFill && <FillDialog lang={lang} dev={dev} size={size} start={view.start} count={cells * per} onWrite={writeRange} readNow={(st, n) => api.getValues(dev, st, n)} onClose={() => setShowFill(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} run ioOptions />

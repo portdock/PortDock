@@ -15,6 +15,8 @@ import { hideUserPaths } from "./redact.ts";
 export type AiLang = "ko" | "en";
 /** IP 가림 — public: 공인 IP 만(기본) · all: 사설 IP 까지 */
 export type HideIp = "public" | "all";
+/** (10/31) 질문 틀 종류 — 통신 앱(장비·배선) · Hardware Tester(PC·무선 환경) · Net Scan(네트워크 장비 찾기) · Port Inspector(포트·드라이버) */
+export type AiKind = "comm" | "pc" | "scan" | "port";
 
 /** 붙여 넣을 글의 기본 길이 상한(글자) — 대부분의 AI 채팅 입력칸에 들어가고 읽기에도 짧은 정도 */
 export const AI_MAX_CHARS = 8000;
@@ -50,6 +52,8 @@ export interface AiCopyInput {
   hideIp?: HideIp;
   /** 더 가릴 이름(PC 이름 등) */
   names?: string[];
+  /** 질문 틀 종류(기본 comm) */
+  kind?: AiKind;
   /** 길이 상한(글자) */
   max?: number;
 }
@@ -68,6 +72,24 @@ const T = {
     ask2: "장비 설정·배선·PC 설정 가운데 무엇부터 볼지, 기록에서 근거가 되는 줄을 짚어 주세요. 확실하지 않으면 무엇을 더 확인하면 되는지 알려 주세요.",
     situation: "## 상황 (붙여 넣은 뒤 직접 적어 주세요)",
     situationLines: ["- 하려던 일:", "- 기대한 결과 / 실제 결과:", "- 장비(제조사·형명)·연결 방식:"],
+    kinds: {
+      pc: {
+        ask: (app: string) => `다음은 ${app} 의 PC 점검 결과입니다. 문제 원인 후보와 확인 순서를 알려 주세요.`,
+        ask2: "PC 설정·드라이버·무선(Wi-Fi·블루투스) 환경·공유기 가운데 무엇부터 볼지, 결과에서 근거가 되는 줄을 짚어 주세요. 확실하지 않으면 무엇을 더 확인하면 되는지 알려 주세요.",
+        situationLines: ["- 하려던 일:", "- 기대한 결과 / 실제 결과:", "- PC·무선 환경(노트북/데스크톱, 유선/무선, 공유기·장치 형명):"],
+      },
+      scan: {
+        ask: (app: string) => `다음은 ${app} 로 찾은 네트워크 장비 목록입니다. 찾으려던 장비가 어디 있는지·왜 안 보이는지 알려 주세요.`,
+        ask2: "주소 대역(서브넷)·장비 IP 설정·랜카드·스위치 가운데 무엇부터 볼지, 목록에서 근거가 되는 줄을 짚어 주세요. 확실하지 않으면 무엇을 더 확인하면 되는지 알려 주세요.",
+        situationLines: ["- 찾으려던 장비(제조사·형명·알고 있는 IP):", "- 기대한 결과 / 실제 결과:", "- PC 와 장비의 연결(직결·스위치·공장망):"],
+      },
+      port: {
+        ask: (app: string) => `다음은 ${app} 의 포트 점검 결과입니다. 문제 원인 후보와 확인 순서를 알려 주세요.`,
+        ask2: "포트 번호·드라이버·USB 변환기·절전 설정 가운데 무엇부터 볼지, 결과에서 근거가 되는 줄을 짚어 주세요. 확실하지 않으면 무엇을 더 확인하면 되는지 알려 주세요.",
+        situationLines: ["- 하려던 일:", "- 기대한 결과 / 실제 결과:", "- 변환기·장비(제조사·형명)·연결한 USB 포트:"],
+      },
+    },
+    found: "## 찾은 장비",
     program: "## 프로그램",
     state: "지금 상태",
     settings: "## 연결 설정",
@@ -85,6 +107,24 @@ const T = {
     ask2: "Say whether to look at the device settings, the wiring or the PC first, and point to the log lines that support it. If unsure, tell me what else to check.",
     situation: "## Situation (fill in after pasting)",
     situationLines: ["- What I was trying to do:", "- Expected / actual result:", "- Device (maker, model) and connection:"],
+    kinds: {
+      pc: {
+        ask: (app: string) => `Below are PC check results from ${app}. Please list likely causes of the problem and the order to check them.`,
+        ask2: "Say whether to look at PC settings, drivers, the wireless (Wi-Fi, Bluetooth) environment or the router first, and point to the lines that support it. If unsure, tell me what else to check.",
+        situationLines: ["- What I was trying to do:", "- Expected / actual result:", "- PC and wireless setup (laptop/desktop, wired/wireless, router or device model):"],
+      },
+      scan: {
+        ask: (app: string) => `Below is the list of network devices found by ${app}. Please help me find the device I am looking for, or why it does not show up.`,
+        ask2: "Say whether to look at the address range (subnet), the device's IP settings, the network adapter or the switch first, and point to the lines that support it. If unsure, tell me what else to check.",
+        situationLines: ["- Device I was looking for (maker, model, known IP):", "- Expected / actual result:", "- How the PC and device are connected (direct, switch, plant network):"],
+      },
+      port: {
+        ask: (app: string) => `Below are port check results from ${app}. Please list likely causes of the problem and the order to check them.`,
+        ask2: "Say whether to look at the port number, the driver, the USB adapter or power-saving settings first, and point to the lines that support it. If unsure, tell me what else to check.",
+        situationLines: ["- What I was trying to do:", "- Expected / actual result:", "- Adapter or device (maker, model) and the USB port used:"],
+      },
+    },
+    found: "## Devices found",
     program: "## Program",
     state: "Current state",
     settings: "## Connection settings",
@@ -231,7 +271,8 @@ export function buildAiCopy(i: AiCopyInput): AiCopyResult {
   const ipMap = new Map<string, string>();
   const mask = (s: string) => maskForAi(s, { hideIp, names: i.names, ipMap });
 
-  const head: string[] = [t.ask(i.app), t.ask2, "", t.situation, ...t.situationLines, "", t.program];
+  const k = i.kind && i.kind !== "comm" ? t.kinds[i.kind] : t;
+  const head: string[] = [k.ask(i.app), k.ask2, "", t.situation, ...k.situationLines, "", t.program];
   head.push(`- ${mask([i.app, i.version].filter(Boolean).join(" "))}${i.os ? ` · ${mask(i.os)}` : ""}`);
   if (i.state?.trim()) head.push(`- ${t.state}: ${mask(i.state.trim())}`);
   head.push("");
@@ -246,7 +287,7 @@ export function buildAiCopy(i: AiCopyInput): AiCopyResult {
   const assemble = (keep: number, cut: number) => {
     const out = [...head];
     if (errors) out.push(t.errors(i.errors!.length), errors, "");
-    if (checks) out.push(t.checks, block(checks), "");
+    if (checks) out.push(i.kind === "scan" ? t.found : t.checks, block(checks), "");
     if (hasLog) {
       const lines = log.slice(log.length - keep);
       out.push(t.log(lines.length), t.logFormat);

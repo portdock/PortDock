@@ -69,6 +69,13 @@ function overflow() {
     }
     if (!clipped && vis(e)) out.push('off-window ' + name(e) + ' right=' + Math.round(r.right) + ' > ' + w);
   }
+  // (10/31) 왼쪽 칸 머리줄 단추가 칸 밖으로 밀려 잘림(240px 칸에 «AI» 가 더해져 ⚙ 가 반쯤 숨었음) — 칸이 잘라 주므로 위 검사로는 안 잡힌다
+  for (const b of document.querySelectorAll('aside .brand-tools .icon-btn, aside .brand-tools button')) {
+    const a = b.closest('aside');
+    if (!vis(b) || !a) continue;
+    const ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+    if (br.right > ar.left + a.clientLeft + a.clientWidth + 0.5 || br.left < ar.left - 0.5) out.push('header button cut by side panel ' + name(b) + ' right=' + Math.round(br.right) + ' > ' + Math.round(ar.right));
+  }
   // 대화상자가 창 위아래로 넘쳐 버튼에 닿을 수 없는지(작은 창)
   for (const m of document.querySelectorAll('.modal')) {
     const r = m.getBoundingClientRect();
@@ -489,6 +496,17 @@ async function runApp(app, port) {
       await clickText(".fill-dlg .dlg-buttons .btn.primary");
       await expectJs("plc fill", "const m = window.__pdMock.plc().mem('D', 10, 5); return !document.querySelector('.modal.fill-dlg') && m.join(',') === '100,102,104,106,108'");
       await verify("plc fill close", { expectFocus: true });
+      // (10/31) 값이 있는 칸을 덮어쓰면 한 번 묻는다 — D10~D14 에 다시 0 을 채우려 하면 «덮어쓰기» 확인, 누르면 씀
+      await clickText(".devbar button", L("채우기", "Fill"));
+      await inLabel(".fill-dlg", L("시작 번호", "Start"), "10");
+      await inLabel(".fill-dlg", L("개수", "Count"), "5");
+      await inLabel(".fill-dlg", L("값", "Value"), "0");
+      await inLabel(".fill-dlg", L("증가량", "Step"), "0");
+      await clickText(".fill-dlg .dlg-buttons .btn.primary");
+      await expectJs("plc fill confirm", "const c = document.querySelector('.fill-dlg .fd-confirm'); return !!c && /5/.test(c.textContent) && !!document.querySelector('.modal.fill-dlg') && window.__pdMock.plc().mem('D', 10, 5).join(',') === '100,102,104,106,108'");
+      await clickText(".fill-dlg .dlg-buttons .btn.primary");
+      await expectJs("plc fill overwrite", "return !document.querySelector('.modal.fill-dlg') && window.__pdMock.plc().mem('D', 10, 5).join(',') === '0,0,0,0,0'");
+      await verify("plc fill overwrite close", { expectFocus: true });
       if (combo.full) {
         // 문자열 «ABC» → D20 = 4241, D21 = 0043(끝 0 이 홀수 자리에) · 숫자 목록 · 틀린 시작 번호
         await clickText(".devbar button", L("채우기", "Fill"));
@@ -1952,6 +1970,9 @@ async function runApp(app, port) {
           relayTo: { host: "192.168.0.50", port: 502 },
           framing: { kind: "modbus-tcp", gapMs: 1000 },
         });
+        // (10/31) 중계 시작 버튼은 «듣기 시작»(안내·도움말과 같게) — 전엔 «연결»
+        const relayBtn = await js("return [...document.querySelectorAll('aside .btn.primary')].map((b) => b.textContent.trim()).join('|')");
+        if (!/듣기 시작|Start listening/.test(relayBtn)) await conv("relay-start-label", `중계 시작 버튼이 «듣기 시작» 이 아님: «${relayBtn}»`);
         await clickRun("relay start", (x) => STOP_RE.test(x.btn ?? "") && /듣는|Listening/.test(x.status ?? ""));
         await sleep(2500);
         const rows = await js("return { ab: [...document.querySelectorAll('.log .row.rx .dir')].some((e) => /A→B/.test(e.textContent)), ba: [...document.querySelectorAll('.log .row.tx .dir')].some((e) => /B→A/.test(e.textContent)), relay: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /RELAY .*⇄/.test(n.textContent)), pairs: document.querySelectorAll('aside .peer').length }");
@@ -2093,7 +2114,12 @@ async function runApp(app, port) {
         const t = r.text ?? "";
         const bad = [];
         if (!r.modal) bad.push("창이 안 열림");
-        if (!(ko ? /^다음은 PortDock .+ 의 기록입니다\. 문제 원인 후보와 확인 순서를 알려 주세요\.$/ : /^Below is a log from PortDock .+\. Please list likely causes/).test(r.first ?? "")) bad.push(`첫 줄 «${r.first}»`);
+        // (10/31) 질문 틀은 앱 성격별 — 통신 앱 «기록», Port Inspector «포트 점검 결과», Hardware Tester «PC 점검 결과», Net Scan «찾은 네트워크 장비 목록»
+        const firstRe = app === "port-inspector" ? (ko ? /^다음은 PortDock .+ 의 포트 점검 결과입니다\. 문제 원인 후보와 확인 순서를 알려 주세요\.$/ : /^Below are port check results from PortDock .+\. Please list likely causes/)
+          : app === "hw-tester" ? (ko ? /^다음은 PortDock .+ 의 PC 점검 결과입니다\./ : /^Below are PC check results from PortDock /)
+          : app === "netscan" ? (ko ? /^다음은 PortDock .+ 로 찾은 네트워크 장비 목록입니다\./ : /^Below is the list of network devices found by PortDock /)
+          : ko ? /^다음은 PortDock .+ 의 기록입니다\. 문제 원인 후보와 확인 순서를 알려 주세요\.$/ : /^Below is a log from PortDock .+\. Please list likely causes/;
+        if (!firstRe.test(r.first ?? "")) bad.push(`첫 줄 «${r.first}»`);
         if (t.length > 8000) bad.push(`길이 ${t.length}`);
         if (BAN.test(t)) bad.push(`금지 낱말 ${t.match(BAN)[0]}`);
         if (/[a-z]:\\users\\/i.test(t)) bad.push("사용자 폴더");

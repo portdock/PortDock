@@ -250,6 +250,11 @@ html .dump {
   font-size: calc(var(--fs, 13px) * 0.923);
   white-space: pre;
 }
+/* (10/31) AI 복사 미리보기는 질문 틀이 긴 한 줄이라 가로로 넘쳤다 — 줄바꿈해 보인다(복사되는 글은 그대로) */
+.ai-copy .report-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .report-parts {
   display: flex;
   flex-direction: column;
@@ -275,6 +280,24 @@ html .dump {
 }
 .brand-tools {
   margin-left: auto;
+}
+/* (10/31) 왼쪽 칸이 240px 로 줄어드는 창(901~1180px)에서 머리줄 단추(언어·📌·!·AI·?·⚙)가 칸보다 넓어 ⚙ 가 잘렸다 —
+   12앱 공용으로 간격·안쪽 여백을 줄이고, 그래도 넘치면(큰 글자) 단추 줄을 접어 다음 줄로 */
+.side .brand-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 1180px) {
+  .side .brand-tools {
+    gap: 2px;
+  }
+  .side .brand-tools .icon-btn {
+    padding: 3px 5px;
+    min-width: 24px;
+  }
 }
 
 /* ---- 화면 점검(10/17) 뒤 보강 */

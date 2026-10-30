@@ -1160,7 +1160,8 @@ export default function App() {
         {connectErr && !connected ? (
           <div className="status s-failed" role="alert">
             <b>{t("connectFailed")}</b> · {connectErr}
-            {/busy|in use|denied|사용 중|거부/i.test(connectErr) && <div>{t("busyHint")}</div>}
+            {/* 백엔드 oserr 가 «사용 중 — 다른 프로그램…확인 (원문)» 을 이미 붙인다 — 그 말이 없는 «거부» 원문일 때만 덧붙인다(10/31, 같은 말 두 번이었음) */}
+            {/denied|거부/i.test(connectErr) && !/busy|in use|사용 중/i.test(connectErr) && <div>{t("busyHint")}</div>}
           </div>
         ) : (
           <div className={`status s-${status}`}>

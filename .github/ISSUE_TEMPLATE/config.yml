@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: 질문 / Q&A (Discussions)
+    url: https://github.com/portdock/PortDock/discussions
+    about: 쓰는 법 질문은 Discussions 의 Q&A 로 / Usage questions go to Discussions (Q&A)
   - name: 문의 / Contact
     url: https://portdock.dev/contact/
     about: 버그·기능 요청이 아닌 문의 / Other inquiries

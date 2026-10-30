@@ -60,10 +60,12 @@ pub fn ports_list(a: PortsListArgs) -> Result<Value, String> {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PortInspectArgs {
-    /// COM name («COM3») or a device instance ID from ports_list.devices[].instanceId
-    pub port: String,
+    /// COM port name («COM3») or a device instance ID from ports_list.devices[].instanceId. (The old name «port» is still accepted.)
+    #[serde(alias = "port")]
+    pub serial_port: String,
     /// Also read Plug-and-Play events of this device for the last N days (1–30). Omit or 0 to skip.
     #[serde(default)]
+    #[schemars(range(min = 0, max = 30))]
     pub events_days: Option<u32>,
     /// Also read COM number reservations (ComDB: reserved, hidden and orphan numbers). Default false.
     #[serde(default)]
@@ -71,7 +73,7 @@ pub struct PortInspectArgs {
 }
 
 pub fn port_inspect(a: PortInspectArgs) -> Result<Value, String> {
-    let id = a.port.trim();
+    let id = a.serial_port.trim();
     if id.is_empty() || id.len() > 400 {
         return Err("port must be a COM name or an instance ID / 포트 이름 또는 인스턴스 ID".into());
     }
@@ -93,24 +95,30 @@ pub fn port_inspect(a: PortInspectArgs) -> Result<Value, String> {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SerialReadArgs {
-    /// COM port name, e.g. «COM3»
-    pub port: String,
+    /// COM port name, e.g. «COM3». (The old name «port» is still accepted.)
+    #[serde(alias = "port")]
+    pub serial_port: String,
     /// Baud rate, e.g. 9600
+    #[schemars(range(min = 1))]
     pub baud: u32,
     /// 7 or 8 (default 8)
     #[serde(default)]
+    #[schemars(range(min = 7, max = 8))]
     pub data_bits: Option<u8>,
     /// none (default), odd or even
     #[serde(default)]
     pub parity: Option<Parity>,
     /// 1 (default) or 2
     #[serde(default)]
+    #[schemars(range(min = 1, max = 2))]
     pub stop_bits: Option<u8>,
     /// How long to listen, 100–10000 ms (default 1000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 10000))]
     pub duration_ms: Option<u64>,
     /// Stop after this many bytes, 1–65536 (default 4096)
     #[serde(default)]
+    #[schemars(range(min = 1, max = 65536))]
     pub max_bytes: Option<usize>,
     /// Set DTR on/off after opening. Omit to leave the driver default.
     #[serde(default)]
@@ -123,7 +131,7 @@ pub struct SerialReadArgs {
 impl SerialReadArgs {
     fn opts(&self) -> SerialOpts {
         SerialOpts {
-            port: self.port.clone(),
+            port: self.serial_port.clone(),
             baud: self.baud,
             data_bits: self.data_bits.unwrap_or(8),
             parity: self.parity.unwrap_or_default(),
@@ -153,12 +161,12 @@ pub fn serial_read(a: SerialReadArgs) -> Result<Value, String> {
             }
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::TimedOut => {}
-            Err(e) => return Err(format!("{}: {}", a.port.trim(), portdock_core::oserr::serial_io(&e))),
+            Err(e) => return Err(format!("{}: {}", a.serial_port.trim(), portdock_core::oserr::serial_io(&e))),
         }
     }
     drop(p);
     Ok(json!({
-        "port": a.port.trim(),
+        "port": a.serial_port.trim(),
         "listenedMs": t0.elapsed().as_millis(),
         "bytes": got.len(),
         "firstByteMs": first_ms,
@@ -212,6 +220,7 @@ pub struct ModbusReadArgs {
     pub host: Option<String>,
     /// TCP port (default 502)
     #[serde(default)]
+    #[schemars(range(min = 1, max = 65535))]
     pub tcp_port: Option<u16>,
     /// COM port for rtu, e.g. «COM3»
     #[serde(default)]
@@ -224,21 +233,27 @@ pub struct ModbusReadArgs {
     pub parity: Option<Parity>,
     /// rtu: stop bits (default 1)
     #[serde(default)]
+    #[schemars(range(min = 1, max = 2))]
     pub stop_bits: Option<u8>,
     /// Unit / slave ID (default 1). Broadcast 0 is refused.
     #[serde(default)]
+    #[schemars(range(min = 1, max = 255))]
     pub unit: Option<u8>,
     /// Read function code: 1 coils, 2 discrete inputs, 3 holding registers, 4 input registers
+    #[schemars(range(min = 1, max = 4))]
     pub function: u8,
     /// Wire address, 0-based (40001 in a manual is usually address 0 with function 3)
     pub address: u16,
     /// How many: registers 1–125, bits 1–2000
+    #[schemars(range(min = 1, max = 2000))]
     pub count: u16,
     /// Response timeout 100–5000 ms (default 1000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 5000))]
     pub timeout_ms: Option<u64>,
     /// Retries on timeout or bad reply, 0–2 (default 0)
     #[serde(default)]
+    #[schemars(range(min = 0, max = 2))]
     pub retries: Option<u8>,
     /// Also decode registers as this type (registers only)
     #[serde(default)]
@@ -346,28 +361,32 @@ pub fn modbus_read(a: ModbusReadArgs) -> Result<Value, String> {
 pub struct McReadArgs {
     /// PLC IP or name
     pub host: String,
-    /// TCP port the PLC opened for MC protocol (3E binary)
-    pub port: u16,
+    /// TCP port the PLC opened for MC protocol (3E binary). (The old name «port» is still accepted.)
+    #[serde(alias = "port")]
+    #[schemars(range(min = 1, max = 65535))]
+    pub tcp_port: u16,
     /// Start device, e.g. «D100», «M0», «X1F» (X, Y, B, W, ZR are hexadecimal)
     pub address: String,
     /// Points: words 1–960, or bits 1–7168 with bit_units
+    #[schemars(range(min = 1, max = 7168))]
     pub count: u32,
     /// Read bit devices in bit units (one value per point). Default false = word units (16 bits per word).
     #[serde(default)]
     pub bit_units: bool,
     /// Response timeout 100–5000 ms (default 2000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 5000))]
     pub timeout_ms: Option<u64>,
 }
 
 pub fn mc_read(a: McReadArgs) -> Result<Value, String> {
     let timeout = ms(a.timeout_ms, 2000, 100, 5000, "timeout_ms")?;
     let (dev, start) = portdock_core::mc_client::parse_address(&a.address)?;
-    let addr = guard::resolve(&a.host, a.port)?;
+    let addr = guard::resolve(&a.host, a.tcp_port)?;
     let mut c = portdock_core::mc_client::Client::connect(addr, timeout)?;
     let values = c.read(dev, start, a.count, a.bit_units)?;
     Ok(json!({
-        "target": format!("{}:{}", a.host.trim(), a.port),
+        "target": format!("{}:{}", a.host.trim(), a.tcp_port),
         "frame": "3E binary, command 0401",
         "address": dev.addr_text(start),
         "count": a.count,
@@ -399,6 +418,7 @@ pub struct ScpiQueryArgs {
     pub host: Option<String>,
     /// LAN socket port (default 5025)
     #[serde(default)]
+    #[schemars(range(min = 1, max = 65535))]
     pub tcp_port: Option<u16>,
     /// Or a COM port for RS-232 instruments, e.g. «COM4»
     #[serde(default)]
@@ -411,6 +431,7 @@ pub struct ScpiQueryArgs {
     pub termination: Option<Termination>,
     /// Reply timeout 100–10000 ms (default 2000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 10000))]
     pub timeout_ms: Option<u64>,
 }
 
@@ -472,15 +493,19 @@ pub struct PingArgs {
     pub host: String,
     /// Echo requests 1–10 (default 4)
     #[serde(default)]
+    #[schemars(range(min = 1, max = 10))]
     pub count: Option<u32>,
     /// Gap between requests 200–5000 ms (default 1000)
     #[serde(default)]
+    #[schemars(range(min = 200, max = 5000))]
     pub interval_ms: Option<u64>,
     /// Per-request timeout 100–3000 ms (default 1000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 3000))]
     pub timeout_ms: Option<u64>,
     /// Also time a TCP connect to this port each round (e.g. 502 for Modbus TCP). The connection is closed at once.
     #[serde(default)]
+    #[schemars(range(min = 1, max = 65535))]
     pub tcp_port: Option<u16>,
 }
 
@@ -608,9 +633,11 @@ pub struct ModbusWriteSimArgs {
     #[serde(default)]
     pub host: Option<String>,
     /// TCP port of PortDock Modbus Slave (Modbus TCP) on this PC
+    #[schemars(range(min = 1, max = 65535))]
     pub tcp_port: u16,
-    /// Unit ID (default 1)
+    /// Unit / slave ID (default 1). Broadcast 0 is refused.
     #[serde(default)]
+    #[schemars(range(min = 1, max = 255))]
     pub unit: Option<u8>,
     pub table: WriteTable,
     /// Wire address, 0-based
@@ -619,6 +646,7 @@ pub struct ModbusWriteSimArgs {
     pub values: Vec<u16>,
     /// Response timeout 100–5000 ms (default 1000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 5000))]
     pub timeout_ms: Option<u64>,
 }
 
@@ -647,8 +675,10 @@ pub struct McWriteSimArgs {
     /// Must be this PC: 127.0.0.1, ::1 or localhost (default 127.0.0.1). Anything else is refused.
     #[serde(default)]
     pub host: Option<String>,
-    /// TCP port of PortDock PLC Simulator (MC 3E binary) on this PC
-    pub port: u16,
+    /// TCP port of PortDock PLC Simulator (MC 3E binary) on this PC. (The old name «port» is still accepted.)
+    #[serde(alias = "port")]
+    #[schemars(range(min = 1, max = 65535))]
+    pub tcp_port: u16,
     /// Start device, e.g. «D100», «M0», «Y10»
     pub address: String,
     /// Words (1–960), or bits 0/1 with bit_units
@@ -658,11 +688,12 @@ pub struct McWriteSimArgs {
     pub bit_units: bool,
     /// Response timeout 100–5000 ms (default 2000)
     #[serde(default)]
+    #[schemars(range(min = 100, max = 5000))]
     pub timeout_ms: Option<u64>,
 }
 
 pub fn mc_write_sim(a: McWriteSimArgs) -> Result<Value, String> {
-    let addr = guard::loopback_addr(a.host.as_deref().unwrap_or("127.0.0.1"), a.port)?;
+    let addr = guard::loopback_addr(a.host.as_deref().unwrap_or("127.0.0.1"), a.tcp_port)?;
     let timeout = ms(a.timeout_ms, 2000, 100, 5000, "timeout_ms")?;
     let (dev, start) = portdock_core::mc_client::parse_address(&a.address)?;
     let mut c = portdock_core::mc_client::Client::connect(addr, timeout)?;
@@ -748,7 +779,7 @@ mod tests {
         for host in ["192.168.0.10", "10.1.2.3", "plc.example", "0.0.0.0"] {
             let e = modbus_write_sim(ModbusWriteSimArgs { host: Some(host.into()), tcp_port: 502, unit: None, table: WriteTable::HoldingRegisters, address: 0, values: vec![1], timeout_ms: None }).unwrap_err();
             assert!(e.starts_with("Refused"), "{e}");
-            let e = mc_write_sim(McWriteSimArgs { host: Some(host.into()), port: 5000, address: "D0".into(), values: vec![1], bit_units: false, timeout_ms: None }).unwrap_err();
+            let e = mc_write_sim(McWriteSimArgs { host: Some(host.into()), tcp_port: 5000, address: "D0".into(), values: vec![1], bit_units: false, timeout_ms: None }).unwrap_err();
             assert!(e.starts_with("Refused"), "{e}");
         }
     }
@@ -757,18 +788,18 @@ mod tests {
     fn mc_read_and_write_sim_against_plc_emulator() {
         let (addr, server) = testsim::mc_3e();
         server.lock().unwrap().mem.set(Dev::D, 100, &[1, 2, 3]).unwrap();
-        let v = mc_read(McReadArgs { host: "127.0.0.1".into(), port: addr.port(), address: "D100".into(), count: 3, bit_units: false, timeout_ms: None }).unwrap();
+        let v = mc_read(McReadArgs { host: "127.0.0.1".into(), tcp_port: addr.port(), address: "D100".into(), count: 3, bit_units: false, timeout_ms: None }).unwrap();
         assert_eq!(v["values"], json!([1, 2, 3]));
         assert_eq!(v["address"], "D100");
-        mc_write_sim(McWriteSimArgs { host: None, port: addr.port(), address: "M10".into(), values: vec![1, 1, 0, 1], bit_units: true, timeout_ms: None }).unwrap();
-        mc_write_sim(McWriteSimArgs { host: Some("127.0.0.1".into()), port: addr.port(), address: "D200".into(), values: vec![42], bit_units: false, timeout_ms: None }).unwrap();
-        let v = mc_read(McReadArgs { host: "localhost".into(), port: addr.port(), address: "M10".into(), count: 4, bit_units: true, timeout_ms: None }).unwrap();
+        mc_write_sim(McWriteSimArgs { host: None, tcp_port: addr.port(), address: "M10".into(), values: vec![1, 1, 0, 1], bit_units: true, timeout_ms: None }).unwrap();
+        mc_write_sim(McWriteSimArgs { host: Some("127.0.0.1".into()), tcp_port: addr.port(), address: "D200".into(), values: vec![42], bit_units: false, timeout_ms: None }).unwrap();
+        let v = mc_read(McReadArgs { host: "localhost".into(), tcp_port: addr.port(), address: "M10".into(), count: 4, bit_units: true, timeout_ms: None }).unwrap();
         assert_eq!(v["values"], json!([1, 1, 0, 1]));
-        let v = mc_read(McReadArgs { host: "127.0.0.1".into(), port: addr.port(), address: "D200".into(), count: 1, bit_units: false, timeout_ms: None }).unwrap();
+        let v = mc_read(McReadArgs { host: "127.0.0.1".into(), tcp_port: addr.port(), address: "D200".into(), count: 1, bit_units: false, timeout_ms: None }).unwrap();
         assert_eq!(v["values"], json!([42]));
         // 워드 디바이스를 비트로 → 보내기 전에 오류, 주소 글 틀림 → 오류
-        assert!(mc_read(McReadArgs { host: "127.0.0.1".into(), port: addr.port(), address: "D0".into(), count: 1, bit_units: true, timeout_ms: None }).is_err());
-        assert!(mc_read(McReadArgs { host: "127.0.0.1".into(), port: addr.port(), address: "Q0".into(), count: 1, bit_units: false, timeout_ms: None }).is_err());
+        assert!(mc_read(McReadArgs { host: "127.0.0.1".into(), tcp_port: addr.port(), address: "D0".into(), count: 1, bit_units: true, timeout_ms: None }).is_err());
+        assert!(mc_read(McReadArgs { host: "127.0.0.1".into(), tcp_port: addr.port(), address: "Q0".into(), count: 1, bit_units: false, timeout_ms: None }).is_err());
     }
 
     #[test]
@@ -797,7 +828,7 @@ mod tests {
             order: None,
         })
         .unwrap();
-        let c = mc_read(McReadArgs { host: "127.0.0.1".into(), port: caddr.port(), address: "D0".into(), count: 4, bit_units: false, timeout_ms: None }).unwrap();
+        let c = mc_read(McReadArgs { host: "127.0.0.1".into(), tcp_port: caddr.port(), address: "D0".into(), count: 4, bit_units: false, timeout_ms: None }).unwrap();
         assert_eq!(m["values"], c["values"]);
         assert_eq!(m["values"], json!(vals));
     }
@@ -843,11 +874,11 @@ mod tests {
     fn input_ranges_checked() {
         assert!(ping(PingArgs { host: "127.0.0.1".into(), count: Some(11), interval_ms: None, timeout_ms: None, tcp_port: None }).is_err());
         assert!(ping(PingArgs { host: "127.0.0.1".into(), count: Some(1), interval_ms: Some(10), timeout_ms: None, tcp_port: None }).is_err());
-        let s = |d, m| SerialReadArgs { port: "COM999".into(), baud: 9600, data_bits: None, parity: None, stop_bits: None, duration_ms: d, max_bytes: m, dtr: None, rts: None };
+        let s = |d, m| SerialReadArgs { serial_port: "COM999".into(), baud: 9600, data_bits: None, parity: None, stop_bits: None, duration_ms: d, max_bytes: m, dtr: None, rts: None };
         assert!(serial_read(s(Some(50), None)).is_err());
         assert!(serial_read(s(None, Some(0))).is_err());
-        assert!(serial_read(SerialReadArgs { port: "/dev/x".into(), ..s(None, None) }).is_err());
-        assert!(port_inspect(PortInspectArgs { port: " ".into(), events_days: None, com_numbers: false }).is_err());
+        assert!(serial_read(SerialReadArgs { serial_port: "/dev/x".into(), ..s(None, None) }).is_err());
+        assert!(port_inspect(PortInspectArgs { serial_port: " ".into(), events_days: None, com_numbers: false }).is_err());
     }
 
     #[cfg(windows)]

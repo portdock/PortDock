@@ -715,6 +715,12 @@ details.panel > summary .sum-note {
 .rec + .pcap-rec {
   margin-left: 8px;
 }
+/* (0.9.0) 중계 실행 중 아직 저장하지 않았으면 눈에 띄게 */
+.pcap-btn.pcap-ready {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
 .pair-stats {
   margin-left: 10px;
   min-width: 0;

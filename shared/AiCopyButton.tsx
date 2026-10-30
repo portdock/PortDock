@@ -2,7 +2,7 @@
 // 글 만들기·가림·길이 줄이기는 aiCopy.ts(시험 있음).
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { AI_MAX_CHARS, aiFrameLines, buildAiCopy, settingsLines, type AiFrame, type HideIp } from "./aiCopy.ts";
+import { AI_MAX_CHARS, aiFrameLines, buildAiCopy, settingsLines, type AiFrame, type AiKind, type HideIp } from "./aiCopy.ts";
 import { configSnapshot, envOnce, recentErrors, type EnvInfo } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
 import { tip } from "./tips";
@@ -12,7 +12,7 @@ type Lang = "ko" | "en";
 
 const UI = {
   ko: {
-    button: "AI 에게 물어보기용 복사 — 지금 상황을 AI 채팅에 붙여 넣을 글로",
+    button: "AI 에 묻기 — 복사만, 보내지 않음: 지금 상황을 AI 채팅에 붙여 넣을 글로 클립보드에",
     title: "AI 에게 물어보기용 복사",
     introLog: "프로그램·연결 설정·이번 실행의 오류·최근 통신 기록을 AI 채팅에 붙여 넣기 좋은 글(질문 틀 포함)로 만듭니다.",
     introChecks: "프로그램·이번 실행의 오류·점검 결과를 AI 채팅에 붙여 넣기 좋은 글(질문 틀 포함)로 만듭니다.",
@@ -21,6 +21,8 @@ const UI = {
     hideIp: "사설 IP 도 가리기 (공인 IP 는 늘 가림)",
     incLog: "최근 통신 기록 넣기",
     incChecks: "점검 결과 넣기",
+    incFound: "찾은 장비 넣기",
+    introFound: "프로그램·이번 실행의 오류·찾은 장비 목록을 AI 채팅에 붙여 넣기 좋은 글(질문 틀 포함)로 만듭니다.",
     preview: "붙여 넣을 내용 (미리보기)",
     size: "{n}자 / 한도 {max}자",
     cut: " · 오래된 줄 {n}개 뺌",
@@ -31,7 +33,7 @@ const UI = {
     close: "닫기",
   },
   en: {
-    button: "Copy for asking AI — the current situation as text to paste into an AI chat",
+    button: "Ask AI — copy only, nothing is sent: the current situation as text for an AI chat, on the clipboard",
     title: "Copy for asking AI",
     introLog: "Builds text for an AI chat (with a question template): program, connection settings, errors in this session and recent traffic.",
     introChecks: "Builds text for an AI chat (with a question template): program, errors in this session and check results.",
@@ -40,6 +42,8 @@ const UI = {
     hideIp: "Hide private IPs too (public IPs are always hidden)",
     incLog: "Include recent traffic",
     incChecks: "Include check results",
+    incFound: "Include devices found",
+    introFound: "Builds text for an AI chat (with a question template): program, errors in this session and the devices found.",
     preview: "Text to paste (preview)",
     size: "{n} / {max} characters",
     cut: " · {n} older lines removed",
@@ -84,12 +88,15 @@ export function AiCopyDialog({
   lang,
   frames,
   checks,
+  kind,
   onClose,
 }: {
   app: string;
   lang: Lang;
   frames?: () => AiFrame[];
   checks?: () => string | null;
+  /** 질문 틀 종류 — 비우면 통신 앱(장비·배선) */
+  kind?: AiKind;
   onClose: () => void;
 }) {
   const u = UI[lang];
@@ -137,6 +144,7 @@ export function AiCopyDialog({
     checks: checkText && incChecks ? checkText : null,
     log: log && incLog ? log : undefined,
     hideIp,
+    kind,
   });
 
   async function copy() {
@@ -169,7 +177,7 @@ export function AiCopyDialog({
         </div>
         <div className="modal-body">
           <div className="hint">
-            {checks && !frames ? u.introChecks : u.introLog} {u.local}
+            {checks && !frames ? (kind === "scan" ? u.introFound : u.introChecks) : u.introLog} {u.local}
           </div>
           <div className="interlock">{u.warn}</div>
           <div className="report-parts">
@@ -192,7 +200,7 @@ export function AiCopyDialog({
             )}
             {checkText && (
               <label className="inline">
-                <input type="checkbox" checked={incChecks} onChange={(e) => setIncChecks(e.target.checked)} /> {u.incChecks}
+                <input type="checkbox" checked={incChecks} onChange={(e) => setIncChecks(e.target.checked)} /> {kind === "scan" ? u.incFound : u.incChecks}
               </label>
             )}
           </div>
@@ -220,7 +228,7 @@ export function AiCopyDialog({
 /**
  * 머리줄 «AI» 단추 — 문제 보고(!) 옆. 통신 앱은 `frames`(최근 기록), Port Inspector·Hardware Tester 는 `checks`(점검 결과 글)
  */
-export function AiCopyButton({ app, lang, frames, checks }: { app: string; lang: Lang; frames?: () => AiFrame[]; checks?: () => string | null }) {
+export function AiCopyButton({ app, lang, frames, checks, kind }: { app: string; lang: Lang; frames?: () => AiFrame[]; checks?: () => string | null; kind?: AiKind }) {
   const u = UI[lang];
   const [open, setOpen] = useState(false);
   return (
@@ -229,7 +237,7 @@ export function AiCopyButton({ app, lang, frames, checks }: { app: string; lang:
         AI
       </button>
       {/* body 에 그린다 — 좁은 창에서는 이 단추가 접힌 칸 안에 있을 수 있다(문제 보고와 같음) */}
-      {open && createPortal(<AiCopyDialog app={app} lang={lang} frames={frames} checks={checks} onClose={() => setOpen(false)} />, document.body)}
+      {open && createPortal(<AiCopyDialog app={app} lang={lang} frames={frames} checks={checks} kind={kind} onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }

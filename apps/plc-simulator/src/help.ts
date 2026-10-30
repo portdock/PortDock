@@ -25,7 +25,7 @@ export const help: HelpDoc = {
       id: "start",
       body: [
         "- 1. 왼쪽 «연결 방식»(TCP 서버·UDP), «프레임»(3E·4E), «데이터 코드»(이진·ASCII), «포트» 를 클라이언트 설정과 똑같이 맞춥니다. 포트 기본값 5000 은 이 프로그램의 기본값입니다 — 매뉴얼은 포트 번호를 정해 두지 않고 PLC 쪽 설정에서 정합니다.",
-        "- 2. «묶을 주소» 는 기본 127.0.0.1 — 이 PC 안의 프로그램만 붙습니다. 다른 PC 의 HMI 를 붙이려면 «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켭니다(방화벽 안내가 나옵니다).",
+        "- 2. «묶을 주소» 는 기본 127.0.0.1 — 이 PC 안의 프로그램만 붙습니다. 다른 PC 의 HMI 를 붙이려면 «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켭니다(방화벽 안내가 나옵니다).",
         "- 3. 가운데 위에서 디바이스(예: D)를 고르고 칸에 값을 넣어 둡니다. 시작 전에 넣어 둬도 됩니다. 32비트·실수·이름은 칸의 ⋯(또는 오른쪽 버튼)으로 «칸 설정» 을 엽니다.",
         "- 4. «시작»(F4)을 누르면 요청이 오는 대로 답합니다. 주고받은 내용과 풀이(«0401 일괄 읽기 (워드) D100 ×3», «종료 0000 완료 · 6바이트»)는 아래 «통신 기록» 에 찍힙니다.",
         "- 처음 켜면 비어 있는 «통신 기록» 자리에 이 순서가 카드로 보입니다. «예제 채우기» 는 D0~D7 에 1~8(D0 «상태»·D1 «설정값»), D8~D9 에 F32 23.5(CDAB, «온도»), M0~M7 에 1·0 을 넣습니다(그 자리에 값이 있으면 먼저 묻습니다). «다시 보지 않기» 로 숨깁니다.",
@@ -49,7 +49,7 @@ export const help: HelpDoc = {
         "- «연결 방식»: TCP 서버 — 클라이언트 여러 개가 동시에 붙어도 각각 답합니다(최대 64). 요청 하나가 TCP 조각 여럿으로 나뉘어 오거나 둘이 붙어 와도 머리의 «요청 데이터 길이» 로 끊어 하나씩 답합니다. UDP — 데이터그램 하나가 요청 하나이고, 보낸 곳으로 답합니다.",
         "- «프레임»: 3E 는 부머리 5000(이진 50 00), 4E 는 5400 + 일련번호 + 0000 — 4E 응답에는 요청의 일련번호를 그대로 넣습니다. 고른 것과 다른 프레임이 오면 답하지 않고 «IGNORED» 줄을 남깁니다.",
         "- «데이터 코드»: 이진은 숫자를 작은 자리 바이트부터, ASCII 는 16진 글자로 큰 자리부터 보냅니다(SLMP 4장). 클라이언트와 같아야 합니다.",
-        "- «묶을 주소»: 기본 127.0.0.1(이 PC 안에서만). «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 모든 랜카드에서 받습니다 — 처음 시작할 때 윈도우 방화벽 허용 창이 뜰 수 있습니다(관리자 권한 필요). 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요. 실제 PLC 대신 답하게 됩니다.",
+        "- «묶을 주소»: 기본 127.0.0.1(이 PC 안에서만). «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜면 모든 랜카드에서 받습니다 — 처음 시작할 때 윈도우 방화벽 허용 창이 뜰 수 있습니다(관리자 권한 필요). 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요. 실제 PLC 대신 답하게 됩니다.",
         "- «포트»: 기본 5000. 0 이면 운영체제가 빈 포트를 고르고 상태 칸에 실제 주소가 나옵니다. 이미 쓰는 포트면 «포트가 이미 사용 중» 으로 시작하지 못합니다. 시작에 성공한 «주소:포트» 는 «▾» 최근 목록에 남습니다.",
         "- «자기 국 요청만 받기»: 켜면 요청 머리의 네트워크 00·국 FF·I/O 03FF·멀티드롭 00(연결된 국 자신)만 처리하고, 다른 국 요청에는 종료 코드 C05F 로 답합니다. 끄면(기본) 어느 국 요청이든 이 표로 답하고, 응답 머리에는 요청의 국 정보를 그대로 돌려줍니다. 시작한 동안에도 바뀝니다.",
         "- 감시 타이머 값은 읽기만 하고 쓰지 않습니다(이 흉내는 바로 답합니다).",
@@ -96,7 +96,7 @@ export const help: HelpDoc = {
     {
       title: "통신 기록",
       body: [
-        "- RX ◀ 는 받은 요청, TX ▶ 는 보낸 응답, EV 는 사건(듣기 시작·클라이언트 접속·끊김·IGNORED·END·DELAY)입니다. 줄마다 클라이언트 주소가 붙습니다.",
+        "- RX ◀ 는 받은 요청, TX ▶ 는 보낸 응답, EV 는 사건(듣기 시작·클라이언트 연결·끊김·IGNORED·END·DELAY)입니다. 줄마다 클라이언트 주소가 붙습니다.",
         "- «풀이 보기» 를 켜면 요청 줄에 «명령 이름 · 첫 디바이스 · 점 수»(랜덤은 «W 워드 수 D 더블워드 수»), 다른 국이면 «NW·ST·IO·MD», 4E 면 «#일련번호», 응답 줄에 «종료 코드 · 뜻 · 데이터 길이» 가 붙습니다. 오류 응답 줄은 빨갛습니다.",
         "- 오류로 답한 요청은 EV 줄 «END C056 주소 범위 밖 — 0401» 처럼 남고 통계의 «종료 코드별» 에 셉니다.",
         "- 원격 조작은 «REMOTE STOP · RUN → STOP», 실행된 조건 규칙은 «RULE #1 요청 → 완료: M101=ON» 줄로 남습니다. 클라이언트 쓰기 직후 바로 실행된 규칙은 그 요청의 사건 줄에 붙어 파일 기록에도 들어가고, 지연 뒤·주기로 실행된 규칙 줄은 화면에만 보입니다.",
@@ -122,7 +122,7 @@ export const help: HelpDoc = {
         "- 값 칸: Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸, Esc 고치기 취소. 엑셀 등에서 여러 값을 붙여 넣으면 이어진 칸에 한꺼번에 넣습니다.",
         "- 비트 보기에서는 칸 아무 데나 눌러도 ON·OFF 가 뒤집힙니다(체크칸도 그대로).",
         "- «표시» 의 ASCII(2글자)는 한 워드를 두 글자로 — 아래 바이트 글자가 먼저(PLC 문자열 순서), 보이지 않는 바이트는 «\\x0D», 0 은 «\\0». «바이트(위 아래)» 는 위 바이트·아래 바이트를 10진으로(«18 52» = 1234h). 입력도 같은 모양으로 합니다.",
-        "- «채우기…»: «숫자로 채우기»(시작 번호·개수·값·증가량 — 워드는 0~65535 를 돌고 «줄여 가기» 로 빼 나감, 비트는 0·1 하나로), «문자열 써 넣기»(시작 번호부터 한 워드에 두 글자, 글자 순서·끝 0 고름, \\xNN 됨 — 워드 디바이스만), «숫자 목록 써 넣기»(«100, 200 0x10 -1», 비트는 0·1). 미리보기 줄에 «D100~D104 에 5칸» 처럼 나오고, 디바이스 크기를 넘으면 쓰지 않습니다.",
+        "- «채우기…»: «숫자로 채우기»(시작 번호·개수·값·증가량 — 워드는 0~65535 를 돌고 «줄여 가기» 로 빼 나감, 비트는 0·1 하나로), «문자열 써 넣기»(시작 번호부터 한 워드에 두 글자, 글자 순서·끝 0 고름, \\xNN 됨 — 워드 디바이스만), «숫자 목록 써 넣기»(«100, 200 0x10 -1», 비트는 0·1). 미리보기 줄에 «D100~D104 에 5칸» 처럼 나오고, 디바이스 크기를 넘으면 쓰지 않습니다. 쓸 칸에 이미 값(0 이 아닌)이 있으면 몇 칸인지 보이고 «덮어쓰기» 를 한 번 더 눌러야 씁니다(0.9.0 부터) — 되돌리기는 없습니다.",
       ],
     },
     {
@@ -168,7 +168,7 @@ export const help: HelpDoc = {
     {
       title: "문제 해결",
       body: [
-        "- 클라이언트가 붙지 않음: «연결된 클라이언트 0» 이면 주소·포트를 확인합니다. 다른 PC 에서 붙으면 «다른 PC 에서 접속 허용» 을 켜고, 윈도우 방화벽에서 이 프로그램을 허용합니다. 127.0.0.1 이면 이 PC 안에서만 붙습니다.",
+        "- 클라이언트가 붙지 않음: «연결된 클라이언트 0» 이면 주소·포트를 확인합니다. 다른 PC 에서 붙으면 «다른 PC 에서 연결 허용» 을 켜고, 윈도우 방화벽에서 이 프로그램을 허용합니다. 127.0.0.1 이면 이 PC 안에서만 붙습니다.",
         "- RX 줄은 오는데 응답이 없음: EV 줄 «IGNORED» 면 프레임(3E/4E)·데이터 코드(이진/ASCII)가 클라이언트와 다릅니다. 장애 주입 «응답 안 함» 도 확인합니다.",
         "- 클라이언트가 오류를 받음: 통신 기록의 «종료» 코드를 보고 위 «종료 코드» 절에서 찾습니다. C056 이면 «크기(점)» 를 늘리고, C059 면 이 프로그램에 없는 명령, C05D 면 모니터 등록(0801)을 먼저 보내야 합니다.",
         "- 조건 규칙이 돌지 않음: 왼쪽 «흉내 PLC 상태» 가 RUN 인지(원격 STOP 을 받았을 수 있음), 규칙 체크칸이 켜져 있는지, 조건이 «맞게 된 순간» 이 있었는지(이미 ON 인 채로는 다시 실행하지 않음) 봅니다. 목록의 실행 횟수·⏳ 로 확인합니다.",
@@ -292,7 +292,7 @@ export const help: HelpDoc = {
         "- Value cells: Enter/↓ next cell, ↑/Shift+Enter previous, Esc cancels the edit. Pasting several values from Excel etc. fills consecutive cells at once.",
         "- In the bit view, clicking anywhere in a cell toggles ON/OFF (the checkbox still works).",
         "- «Format» ASCII (2 chars) shows a word as two characters — low byte first (PLC string order), invisible bytes as «\\x0D», zero as «\\0». «Bytes (high low)» shows the high and low byte in decimal («18 52» = 1234h). Input uses the same forms.",
-        "- «Fill…»: «Fill with numbers» (start, count, value, step — words wrap within 0–65535, «Count down» subtracts; bits use one 0/1), «Write a string» (two characters per word from the start, choose the character order and an ending 0, \\xNN works — word devices only), «Write a number list» («100, 200 0x10 -1»; bits take 0/1). A preview line shows e.g. «5 cells at D100–D104»; nothing is written past the device size.",
+        "- «Fill…»: «Fill with numbers» (start, count, value, step — words wrap within 0–65535, «Count down» subtracts; bits use one 0/1), «Write a string» (two characters per word from the start, choose the character order and an ending 0, \\xNN works — word devices only), «Write a number list» («100, 200 0x10 -1»; bits take 0/1). A preview line shows e.g. «5 cells at D100–D104»; nothing is written past the device size. If cells in the range already hold non-zero values, it says how many and writes only after you press «Overwrite» once more (from 0.9.0) — there is no undo.",
       ],
     },
     {

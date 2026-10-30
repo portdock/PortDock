@@ -17,6 +17,22 @@ test("질문 틀 — 앱 언어를 따른다", () => {
   assert.doesNotMatch(en, /[가-힣]/, "영어 틀에 한글이 섞이지 않는다");
 });
 
+test("(10/31) 질문 틀 — 앱 성격별(통신·PC·장비 찾기·포트), 영어 틀엔 한글 없음", () => {
+  const comm = buildAiCopy({ lang: "ko", app: "PortDock TCP" }).text;
+  assert.match(comm, /장비 설정·배선/);
+  const pc = buildAiCopy({ lang: "ko", app: "PortDock Hardware Tester", kind: "pc", checks: "x" }).text;
+  assert.match(pc, /PC 점검 결과/);
+  assert.match(pc, /무선\(Wi-Fi·블루투스\)/);
+  assert.doesNotMatch(pc, /배선/);
+  const scan = buildAiCopy({ lang: "ko", app: "PortDock Net Scan", kind: "scan", checks: "192.168.0.10" }).text;
+  assert.match(scan, /찾은 네트워크 장비 목록/);
+  assert.match(scan, /## 찾은 장비/);
+  assert.doesNotMatch(scan, /## 점검 결과/);
+  const port = buildAiCopy({ lang: "ko", app: "PortDock Port Inspector", kind: "port", checks: "COM3" }).text;
+  assert.match(port, /포트 번호·드라이버/);
+  for (const kind of ["comm", "pc", "scan", "port"]) assert.doesNotMatch(buildAiCopy({ lang: "en", app: "A", kind, checks: "x" }).text, /[가-힣]/, kind);
+});
+
 test("칸 — 상태·연결 설정·오류·점검 결과·통신 기록, 없는 칸은 빠진다", () => {
   const r = buildAiCopy({
     lang: "ko",

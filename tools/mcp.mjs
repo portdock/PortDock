@@ -33,7 +33,7 @@ export const TOOLS = [
   ["serial_read", "Listen on a COM port for a set time; sends nothing (read-only)"],
   ["modbus_read", "One Modbus read (FC 01–04) over TCP, RTU or RTU over TCP (read-only)"],
   ["mc_read", "Mitsubishi MC protocol 3E binary batch read 0401 (read-only)"],
-  ["scpi_query", "One SCPI query ending with ?; state-changing queries refused, READ?/MEAS? only with allow_measure (read-only)"],
+  ["scpi_query", "One SCPI query ending with ?; state-changing queries refused, READ?/MEAS? only with allow_measure, which starts a new measurement (read-only otherwise)"],
   ["ping", "Ping one IPv4 address up to 10 times, optional TCP connect timing (read-only)"],
   ["net_adapters", "Network adapter settings, link speed, power saving, firewall profiles (read-only)"],
   ["device_map_get", "Built-in Modbus register maps of industrial devices (read-only)"],
@@ -41,7 +41,8 @@ export const TOOLS = [
   ["mc_write_sim", "Write to an MC protocol PLC simulator on 127.0.0.1 only"],
 ];
 
-export const DESCRIPTION = "Read-only MCP server for COM ports, Modbus, MC protocol and SCPI devices on Windows";
+// (10/31) «Read-only» 만 적으면 쓰기 도구 2개(127.0.0.1 시뮬레이터)가 빠진다 — 레지스트리 description 은 100자 이하(시험)
+export const DESCRIPTION = "Read-only tools for COM ports, Modbus, MC and SCPI on Windows, plus writes to local simulators only";
 
 export function workspaceVersion(root = ROOT) {
   const toml = fs.readFileSync(path.join(root, "Cargo.toml"), "utf8");

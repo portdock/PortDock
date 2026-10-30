@@ -67,7 +67,7 @@ export const help: HelpDoc = {
     },
     {
       title: "웹에서 테스트",
-      body: ["- 키보드·마우스·모니터·스피커·마이크·웹캠은 왼쪽 «웹에서 테스트 ↗» 아래에 있습니다. 누르면 portdock.dev 의 같은 이름 웹 도구 링크가 나옵니다(브라우저에서 바로, 설치 없음). 같은 코드를 이 앱 안에 붙이는 것은 다음 판 계획입니다."],
+      body: ["- 키보드·마우스·모니터·스피커·마이크·웹캠은 왼쪽 «웹에서 테스트 ↗» 아래에 있습니다. 누르면 portdock.dev 의 같은 이름 웹 도구 링크가 나옵니다(브라우저에서 바로, 설치 없음). 이 앱 안에서 하는 검사는 지금은 없습니다."],
     },
     {
       title: "화면 구성",
@@ -158,7 +158,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Test on the web",
-      body: ["- Keyboard, mouse, monitor, speakers, microphone and webcam are under «Test on the web ↗» on the left. Each one shows a link to the portdock.dev web tool of the same name (right in the browser, nothing to install). Bringing the same code into this app is planned for the next version."],
+      body: ["- Keyboard, mouse, monitor, speakers, microphone and webcam are under «Test on the web ↗» on the left. Each one shows a link to the portdock.dev web tool of the same name (right in the browser, nothing to install). These checks are not built into this app for now."],
     },
     {
       title: "Screen layout",

@@ -1,4 +1,4 @@
-//! TCP 세션 — 클라이언트(자동 재접속), 서버(여러 접속), 중계(모니터). 연결마다 읽기 스레드와
+//! TCP 세션 — 클라이언트(자동 재연결), 서버(여러 접속), 중계(모니터). 연결마다 읽기 스레드와
 //! 프레임 구분기를 따로 두고, 50ms 마다 한 번에 화면·로그로 내보낸다.
 //!
 //! 중계: 이 PC 포트로 들어온 접속(A, 예: HMI)마다 위쪽 장비(B, 예: PLC)로 새로 접속해 양쪽을 그대로 잇는다.
@@ -36,7 +36,7 @@ pub enum TcpMode {
 #[serde(rename_all = "camelCase")]
 pub struct TcpConfig {
     pub mode: TcpMode,
-    /// 클라이언트: 접속할 주소. 서버: 묶을 주소(0.0.0.0 = 모든 랜카드)
+    /// 클라이언트: 연결할 주소. 서버: 묶을 주소(0.0.0.0 = 모든 랜카드)
     pub host: String,
     pub port: u16,
     #[serde(default = "yes")]
@@ -121,7 +121,7 @@ struct Shared {
     pair_seq: Mutex<u64>,
 }
 
-/// 서버가 받는 최대 접속 수 — 넘으면 거절하고 기록
+/// 서버가 받는 최대 연결 수 — 넘으면 거절하고 기록
 pub const MAX_CONNS: usize = 64;
 /// 초당 에코 상한
 const ECHO_LIMIT: u32 = 200;
@@ -490,7 +490,7 @@ impl Shared {
         let upstream = match attempt {
             Ok(s) => s,
             Err(e) => {
-                self.note(crate::tr!(format!("RELAY FAIL {from} → {e} — A 쪽 접속을 닫습니다"), format!("RELAY FAIL {from} → {e} — closing the A side")));
+                self.note(crate::tr!(format!("RELAY FAIL {from} → {e} — A 쪽 연결을 닫습니다"), format!("RELAY FAIL {from} → {e} — closing the A side")));
                 let _ = client.shutdown(Shutdown::Both);
                 return;
             }
@@ -582,7 +582,7 @@ impl TcpSession {
         events: EventSink,
     ) -> Result<Self, String> {
         if cfg.mode == TcpMode::Client && (cfg.host.trim().is_empty() || cfg.port == 0) {
-            return Err(crate::tr!("접속할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to").into());
+            return Err(crate::tr!("연결할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to").into());
         }
         let upstream = match (cfg.mode, upstream) {
             (TcpMode::Relay, Some(u)) => Some(u),
@@ -645,7 +645,7 @@ impl TcpSession {
                         match listener.accept() {
                             Ok((stream, from)) => {
                                 if s.conns.lock().unwrap().len() >= MAX_CONNS {
-                                    s.note(crate::tr!(format!("REJECT {from} — 최대 접속 수 {MAX_CONNS}"), format!("REJECT {from} — max {MAX_CONNS} connections")));
+                                    s.note(crate::tr!(format!("REJECT {from} — 최대 연결 수 {MAX_CONNS}"), format!("REJECT {from} — max {MAX_CONNS} connections")));
                                     let _ = stream.shutdown(Shutdown::Both);
                                     continue;
                                 }
@@ -883,14 +883,14 @@ fn connect_stoppable(s: &Shared, host: &str, port: u16, target: &str) -> Option<
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) if s.stop.load(Ordering::SeqCst) => return None,
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
             Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                return Some(Err(format!("{target}: {}", crate::tr!("접속 시도가 중단됐습니다", "connect attempt aborted"))));
+                return Some(Err(format!("{target}: {}", crate::tr!("연결 시도가 중단됐습니다", "connect attempt aborted"))));
             }
         }
     }
 }
 
 fn client_loop(s: Arc<Shared>, cfg: TcpConfig, target: String) {
-    // 끊긴·실패한 이유 — 다음 상태(재접속 대기·닫힘) 문구에 이어 붙여 덮어쓰지 않는다
+    // 끊긴·실패한 이유 — 다음 상태(재연결 대기·닫힘) 문구에 이어 붙여 덮어쓰지 않는다
     let mut last: Option<String> = None;
     loop {
         if s.stop.load(Ordering::SeqCst) {
@@ -1148,7 +1148,7 @@ mod tests {
             }
         }
         let m = msg.expect("reconnecting").expect("message");
-        assert!(m.starts_with("재접속 대기 · 마지막 실패:"), "{m}");
+        assert!(m.starts_with("재연결 대기 · 마지막 실패:"), "{m}");
         assert!(m.contains("연결 거부") || m.contains("응답 없음"), "{m}");
         client.stop();
     }

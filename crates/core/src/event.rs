@@ -381,9 +381,9 @@ pub fn flush_frames(mut frames: Vec<Frame>, log: &std::sync::Mutex<Option<LogWri
     }
 }
 
-/// 재접속을 기다리는 동안 상태 문구 — 직전 실패 이유를 덮어쓰지 않고 이어 보여 준다
+/// 재연결을 기다리는 동안 상태 문구 — 직전 실패 이유를 덮어쓰지 않고 이어 보여 준다
 pub fn waiting_reason(reason: &str) -> String {
-    crate::tr!(format!("재접속 대기 · 마지막 실패: {reason}"), format!("Waiting to reconnect · last failure: {reason}"))
+    crate::tr!(format!("재연결 대기 · 마지막 실패: {reason}"), format!("Waiting to reconnect · last failure: {reason}"))
 }
 
 /// 끊긴 뒤 닫힐 때 상태 문구

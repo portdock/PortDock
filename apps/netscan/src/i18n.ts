@@ -101,7 +101,7 @@ const ko = {
   // TCP 로 열기(0.3.0)
   openTcp: "TCP 로 열기",
   openTcpPort: "TCP 로 열기 :{p}",
-  openTcpTip: "이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다 — 클라이언트 방식으로 주소·포트가 채워지고, 접속은 거기서 누릅니다. 없으면 «IP:포트» 를 복사하고 내려받기를 알려 줍니다. 포트가 여럿이면 고릅니다.",
+  openTcpTip: "이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다 — 클라이언트 방식으로 주소·포트가 채워지고, 연결은 거기서 누릅니다. 없으면 «IP:포트» 를 복사하고 내려받기를 알려 줍니다. 포트가 여럿이면 고릅니다.",
   noMac: "MAC 을 모르면 WoL 을 보낼 수 없습니다(같은 대역에서 ARP 로 찾은 장비만)",
   copied: "복사했습니다: {a}",
   woke: "매직 패킷을 보냈습니다 ({a})",

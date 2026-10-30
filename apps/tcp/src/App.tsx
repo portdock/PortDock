@@ -1005,9 +1005,15 @@ export default function App() {
           )}
         </details>
         <button data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)} className={running ? "btn danger" : "btn primary"} onClick={() => void (running ? stop() : start())} disabled={runDisabled}>
-          {running ? stopLabel : server ? t("listen") : t("connect")}
+          {running ? stopLabel : listening ? t("listen") : t("connect")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
+        {/* (0.9.0) 중계 pcap — 시작 버튼 바로 밑(전엔 왼쪽 맨 아래라 굴려야 보였다). 실행 중엔 강조 */}
+        {relay && (
+          <button data-tip={tip(lang, pcapPath ? "pcapStop" : "pcapSave")} className={running && !pcapPath ? "btn pcap-btn pcap-ready" : "btn pcap-btn"} onClick={() => void togglePcap()} disabled={!running}>
+            {pcapPath ? t("pcapStop") : t("pcapSave")}
+          </button>
+        )}
         {startErr && !running ? (
           <div className="status s-failed" role="alert">
             <b>{t(cfg.mode === "client" ? "connectFailed" : "startFailed")}</b> · {startErr}
@@ -1126,17 +1132,12 @@ export default function App() {
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
-        {relay && (
-          <button data-tip={tip(lang, pcapPath ? "pcapStop" : "pcapSave")} className="btn pcap-btn" onClick={() => void togglePcap()} disabled={!running}>
-            {pcapPath ? t("pcapStop") : t("pcapSave")}
-          </button>
-        )}
       </aside>
 
       <main className="main">
         <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={startErr && !running ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
           <button className={running ? "btn small danger" : "btn small primary"} onClick={() => void (running ? stop() : start())} disabled={runDisabled} data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)}>
-            {running ? stopLabel : server ? t("listen") : t("connect")}
+            {running ? stopLabel : listening ? t("listen") : t("connect")}
           </button>
         </NarrowBar>
         <div className="toolbar">

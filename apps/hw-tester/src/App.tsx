@@ -480,7 +480,7 @@ export default function App() {
             {(info ? info.dnsName : dnsName.trim()) && ` ${t("outNoteDns", { name: info?.dnsName ?? dnsName.trim(), n: DNS_EVERY_S })}`} {t("outNoteOnly")}
           </div>
           {!hasData && !recording && !firstDone ? (
-            <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+            <FirstCard lang={lang} sideLabel={t("sideLabel")} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
               <ol>
                 <li>{t("first1")}</li>
                 <li>{t("first2")}</li>
@@ -876,7 +876,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
-            <AiCopyButton app={APP} lang={lang} checks={() => [hasData && recText(lang, APP, VERSION, info, summary, wifi), btRows.length > 0 && btText(lang, APP, VERSION, btRows, btLog, btStarted)].filter(Boolean).join("\n\n") || null} />
+            <AiCopyButton app={APP} lang={lang} kind="pc" checks={() => [hasData && recText(lang, APP, VERSION, info, summary, wifi), btRows.length > 0 && btText(lang, APP, VERSION, btRows, btLog, btStarted)].filter(Boolean).join("\n\n") || null} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>
