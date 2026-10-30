@@ -39,6 +39,14 @@ export const IO_TIPS: Record<string, Tip> = {
     "«파일로 계속 저장» 의 줄 모양. CSV 는 엑셀에서 바로 열 수 있습니다(ts,dir,len,hex,ascii,check,note,peer).",
     "Line format of «Log to file». CSV opens directly in Excel (ts,dir,len,hex,ascii,check,note,peer).",
   ],
+  logSplitDaily: [
+    "자정을 넘으면 «이름-날짜.log» 새 파일로 이어 씁니다. 오래 켜 두는 기록을 날짜별로 나눌 때.",
+    "After midnight, logging continues in a new «name-date.log» file — to split long-running logs by date.",
+  ],
+  logKeepDays: [
+    "기록을 시작할 때·다음 파일로 넘어갈 때, 같은 폴더의 같은 이름 갈래 로그 중 고친 지 이 날 수가 지난 것을 지웁니다. 0 = 지우지 않음.",
+    "When logging starts and at each new file, deletes logs of the same name family in the same folder last modified more than this many days ago. 0 = never.",
+  ],
   triggers: [
     "받은 줄에 패턴이 오면: 줄 색칠, 소리, 반복 멈춤, 파일 기록 멈춤, 사건 줄, 작업 표시줄 깜빡임. 패턴은 자동응답과 같은 와일드카드(?? ** / ? *).",
     "When a received line contains a pattern: color the line, beep, stop repeat, stop file logging, add an event line, flash the taskbar. Wildcards as in auto reply (?? ** / ? *).",

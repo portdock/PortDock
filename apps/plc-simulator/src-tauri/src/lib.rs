@@ -3,7 +3,9 @@
 //! 처리기는 crates/core/src/mc.rs — 공개 매뉴얼 기준 구현, 실제 PLC 와 동작이 다를 수 있다.
 
 use portdock_core::event::SessionEvent;
-use portdock_core::mc::{self, Dev, Faults, Format, Options, Outcome, Server};
+use portdock_core::event::LogOptions;
+use portdock_core::mc::{self, Dev, Faults, Format, Options, Outcome, RunMode, Server};
+use portdock_core::mc_rules::{Fired, Rule, RuleStat};
 use portdock_core::regmap::SimSpec;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{Reply, Responder};
@@ -12,7 +14,7 @@ use portdock_core::tr;
 use portdock_core::udp::{UdpConfig, UdpSession};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::State;
@@ -36,6 +38,39 @@ struct Stats {
     per_cmd: BTreeMap<String, u64>,
     /// 종료 코드별 오류 수(«C056» → 2)
     per_end: BTreeMap<String, u64>,
+    /// 흉내 운전 상태(RUN/STOP/PAUSE) — get_stats 가 서버에서 채운다
+    run_mode: RunMode,
+    /// 모니터 등록(0801) 점 수 — get_stats 가 채운다
+    monitor_points: usize,
+}
+
+/// 요청과 따로 실행된 규칙(주기·화면 편집 뒤) — 화면이 사건 줄로 보인다. 요청 처리 중 실행된 것은 그 응답의 사건 줄에 붙는다
+#[derive(Default)]
+struct RuleLog {
+    seq: u64,
+    items: VecDeque<RuleNote>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RuleNote {
+    seq: u64,
+    ts: u64,
+    text: String,
+}
+
+const RULE_LOG_MAX: usize = 500;
+
+impl RuleLog {
+    fn push(&mut self, fired: &[Fired]) {
+        for f in fired {
+            self.seq += 1;
+            self.items.push_back(RuleNote { seq: self.seq, ts: portdock_core::event::now_ms(), text: f.line() });
+        }
+        while self.items.len() > RULE_LOG_MAX {
+            self.items.pop_front();
+        }
+    }
 }
 
 /// 열린 서버 — TCP 또는 UDP
@@ -66,12 +101,22 @@ struct App {
     stats: Arc<Mutex<Stats>>,
     /// 서버는 하나 — 보관함 이름 "main". 스스로 닫히면 알아서 빠진다
     sess: Arc<Registry<Link>>,
+    rule_log: Arc<Mutex<RuleLog>>,
 }
 
 const MAIN: &str = "main";
 
-/// 요청 하나의 결과를 통계에 넣고, 사건 줄 문구를 돌려준다
+/// 요청 하나의 결과를 통계에 넣고, 사건 줄 문구를 돌려준다(원격 조작·바로 실행한 규칙 줄도 함께)
 fn record(st: &mut Stats, o: &Outcome) -> Option<String> {
+    let base = record_one(st, o);
+    if o.events.is_empty() {
+        return base;
+    }
+    let ev = o.events.join(" · ");
+    Some(base.map_or(ev.clone(), |b| format!("{b} · {ev}")))
+}
+
+fn record_one(st: &mut Stats, o: &Outcome) -> Option<String> {
     if o.written {
         st.writes += 1;
     }
@@ -161,7 +206,12 @@ struct StartConfig {
 fn start(app: State<App>, config: StartConfig, on_event: Channel<Value>) -> Result<String, String> {
     let reg = app.sess.clone();
     let opening = reg.begin(MAIN).map_err(|_| tr!("이미 시작했거나 여는 중입니다", "Already started or starting").to_string())?;
-    app.server.lock().unwrap().format = config.format;
+    {
+        let mut sv = app.server.lock().unwrap();
+        sv.format = config.format;
+        // 새로 연 서버 — 모니터 등록은 처음부터
+        sv.clear_monitor();
+    }
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, forward(config.format, on_event));
     let r = responder(app.server.clone(), app.stats.clone());
     let host = config.host.trim().to_string();
@@ -227,10 +277,62 @@ fn set_faults(app: State<App>, faults: Faults) -> Result<(), String> {
     Ok(())
 }
 
-/// 연결 중에도 바꿀 수 있는 선택(자기 국 요청만)
+/// 연결 중에도 바꿀 수 있는 선택(자기 국 요청만·형명 읽기 값)
 #[tauri::command]
-fn set_options(app: State<App>, options: Options) {
+fn set_options(app: State<App>, options: Options) -> Result<(), String> {
+    options.check()?;
     app.server.lock().unwrap().options = options;
+    Ok(())
+}
+
+/// 파일 로그 형식·나누기·정리(설정 창) — 다음에 여는 파일부터
+#[tauri::command]
+fn set_log_options(options: LogOptions) {
+    portdock_core::event::set_log_options(options);
+}
+
+/// 조건 규칙 목록을 통째로 바꾼다(검사 뒤). 같은 번호의 실행 횟수는 이어 간다
+#[tauri::command]
+fn set_rules(app: State<App>, rules: Vec<Rule>) -> Result<(), String> {
+    let fired = {
+        let mut sv = app.server.lock().unwrap();
+        sv.set_rules(rules)?;
+        sv.eval_rules(Instant::now())
+    };
+    app.rule_log.lock().unwrap().push(&fired);
+    Ok(())
+}
+
+/// 규칙 실행 상태 + after 번호 뒤에 따로 실행된 규칙 줄
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RulesState {
+    stats: Vec<RuleStat>,
+    notes: Vec<RuleNote>,
+    seq: u64,
+}
+
+#[tauri::command]
+fn rules_state(app: State<App>, after: u64) -> RulesState {
+    let stats = app.server.lock().unwrap().rules.stats();
+    let log = app.rule_log.lock().unwrap();
+    RulesState { stats, notes: log.items.iter().filter(|n| n.seq > after).cloned().collect(), seq: log.seq }
+}
+
+#[tauri::command]
+fn reset_rule_counts(app: State<App>) {
+    app.server.lock().unwrap().rules.reset_counts();
+}
+
+/// 흉내 운전 상태를 화면에서 바꾼다(원격 RUN·STOP·PAUSE 와 같은 효과)
+#[tauri::command]
+fn set_run_mode(app: State<App>, mode: RunMode) {
+    let fired = {
+        let mut sv = app.server.lock().unwrap();
+        sv.set_run_mode(mode);
+        sv.eval_rules(Instant::now())
+    };
+    app.rule_log.lock().unwrap().push(&fired);
 }
 
 /// 디바이스 하나의 자동 변화 목록을 통째로 바꾼다
@@ -268,14 +370,25 @@ fn get_values(app: State<App>, dev: Dev, start: u32, count: u32) -> Result<Vec<u
     app.server.lock().unwrap().mem.get(dev, start, count)
 }
 
+/// 화면에서 값 바꾸기 — 바뀐 값으로 규칙도 바로 본다
 #[tauri::command]
 fn set_values(app: State<App>, dev: Dev, start: u32, values: Vec<u16>) -> Result<(), String> {
-    app.server.lock().unwrap().mem.set(dev, start, &values)
+    let fired = {
+        let mut sv = app.server.lock().unwrap();
+        sv.mem.set(dev, start, &values)?;
+        sv.eval_rules(Instant::now())
+    };
+    app.rule_log.lock().unwrap().push(&fired);
+    Ok(())
 }
 
 #[tauri::command]
 fn get_stats(app: State<App>) -> Stats {
-    app.stats.lock().unwrap().clone()
+    let (run_mode, monitor_points) = {
+        let sv = app.server.lock().unwrap();
+        (sv.run_mode, sv.monitor_points())
+    };
+    Stats { run_mode, monitor_points, ..app.stats.lock().unwrap().clone() }
 }
 
 #[tauri::command]
@@ -343,14 +456,14 @@ fn report_read_dump(name: String) -> Result<tauri::ipc::Response, String> {
     portdock_core::report::read_dump(&name).map(tauri::ipc::Response::new)
 }
 
-/// 값 자동 변화 — 화면이 숨어 있어도 돌도록 백엔드에서 100ms 마다
-fn start_ticker(server: Arc<Mutex<Server>>) {
+/// 값 자동 변화·조건 규칙 — 화면이 숨어 있어도 돌도록 백엔드에서 20ms 마다(자동 변화는 칸마다 정한 간격으로)
+fn start_ticker(server: Arc<Mutex<Server>>, log: Arc<Mutex<RuleLog>>) {
     std::thread::spawn(move || {
         loop {
-            std::thread::sleep(Duration::from_millis(100));
-            let mut sv = server.lock().unwrap_or_else(|e| e.into_inner());
-            if sv.has_sims() {
-                sv.tick(Instant::now());
+            std::thread::sleep(Duration::from_millis(20));
+            let fired = server.lock().unwrap_or_else(|e| e.into_inner()).tick(Instant::now());
+            if !fired.is_empty() {
+                log.lock().unwrap_or_else(|e| e.into_inner()).push(&fired);
             }
         }
     });
@@ -365,7 +478,7 @@ pub fn run() {
     portdock_core::report::crash_monitor_or_attach();
     portdock_core::report::test_crash_if_asked();
     let app = App::default();
-    start_ticker(app.server.clone());
+    start_ticker(app.server.clone(), app.rule_log.clone());
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -411,6 +524,11 @@ pub fn run() {
             set_log,
             set_faults,
             set_options,
+            set_log_options,
+            set_rules,
+            rules_state,
+            reset_rule_counts,
+            set_run_mode,
             set_sims,
             set_size,
             devices,
@@ -445,8 +563,8 @@ mod tests {
         let stats = Arc::new(Mutex::new(Stats::default()));
         let mut r = responder(server.clone(), stats.clone());
         assert!(r(&loop_req()).bytes.is_some());
-        // 모르는 명령 → END C059
-        let bad = [0x50, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x06, 0x00, 0x10, 0x00, 0x01, 0x01, 0x00, 0x00];
+        // 모르는 명령(0613) → END C059
+        let bad = [0x50, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x06, 0x00, 0x10, 0x00, 0x13, 0x06, 0x00, 0x00];
         assert!(r(&bad).note.unwrap().starts_with("END C059"));
         // 4E 는 이 서버(3E)의 형식이 아님
         assert!(r(&[0x54, 0x00, 0x01, 0x00, 0x00, 0x00]).note.unwrap().starts_with("IGNORED"));
@@ -458,6 +576,22 @@ mod tests {
         assert_eq!(st.per_cmd.get("0619"), Some(&1));
         assert_eq!(st.per_end.get("C059"), Some(&1));
         assert_eq!(server.lock().unwrap().mem.get(Dev::D, 0, 1).unwrap(), [5]);
+        // 원격 STOP — 사건 줄에 상태가 바뀐 것을 남긴다
+        let stop = [0x50, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x08, 0x00, 0x10, 0x00, 0x02, 0x10, 0x00, 0x00, 0x01, 0x00];
+        let rep = r(&stop);
+        assert!(rep.bytes.is_some());
+        assert!(rep.note.unwrap().starts_with("REMOTE STOP"));
+        assert_eq!(server.lock().unwrap().run_mode, RunMode::Stop);
+    }
+
+    #[test]
+    fn rule_log_keeps_latest() {
+        let mut l = RuleLog::default();
+        let f: Vec<Fired> = (0..RULE_LOG_MAX as u32 + 5).map(|id| Fired { id, text: "x".into() }).collect();
+        l.push(&f);
+        assert_eq!(l.items.len(), RULE_LOG_MAX);
+        assert_eq!(l.seq, RULE_LOG_MAX as u64 + 5);
+        assert_eq!(l.items.front().unwrap().seq, 6);
     }
 
     #[test]

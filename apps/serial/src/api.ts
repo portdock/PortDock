@@ -102,6 +102,10 @@ export interface LogOptions {
   encoding: Encoding;
   splitMb: number;
   splitHours: number;
+  /** (0.6.0) 날짜가 바뀌면 새 파일 */
+  splitDaily: boolean;
+  /** (0.6.0) 옛 로그 지우기(일, 0 = 안 지움) */
+  keepDays: number;
 }
 
 // Rust 의 serde 는 FrameMode 필드를 snake_case 로 받는다

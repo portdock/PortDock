@@ -2,18 +2,24 @@
 //!
 //! 근거(공개 매뉴얼, 저장소에는 넣지 않고 링크만 — docs·도움말 참고):
 //! - SLMP Reference Manual SH(NA)-080956ENG rev. L — 4장 메시지 형식(머리·길이·종료 코드·오류 정보),
-//!   5.2 디바이스 코드 표와 0401·1401·0403·1402 명령, 5.9 루프백 0619
+//!   5.2 디바이스 코드 표와 0401·1401·0403·1402·0406·1406·0801·0802 명령, 5.6 원격 조작 1001~1006·형명 읽기 0101,
+//!   5.9 루프백 0619
 //! - MELSEC Communication Protocol Reference Manual SH-080008 rev. AB — 5장 이더넷 메시지(3E·4E 같은 모양)
 //! - 종료 코드 값: MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG rev. AF, 3.5 List of Error Codes(C050~C061).
 //!   어느 조건에 어느 코드를 쓸지는 그 표의 설명을 보고 이 흉내가 고른 것이다 — 실제 PLC 와 다를 수 있다.
 //!
 //! 구현한 명령: 0401 일괄 읽기·1401 일괄 쓰기(서브 0000·0001·0002·0003), 0403 랜덤 읽기(0000·0002),
-//! 1402 랜덤 쓰기(0000·0001·0002·0003), 0619 루프백(0000). 그 밖의 명령·서브 명령(0080 등 확장 지정 포함)은 C059.
+//! 1402 랜덤 쓰기(0000·0001·0002·0003), 0619 루프백(0000).
+//! 0.6.0 부터: 0406 블록 읽기·1406 블록 쓰기(0000·0002), 0801 모니터 등록(0000·0002)·0802 모니터 실행(0000),
+//! 1001 원격 RUN·1002 STOP·1003 PAUSE·1005 래치 클리어·1006 리셋(0000), 0101 형명 읽기(0000).
+//! 원격 조작은 흉내 상태(RUN/STOP/PAUSE)만 바꾼다 — 래더가 없으므로 STOP 이어도 읽기·쓰기는 평소대로 답하고,
+//! 이 앱의 «조건 규칙»(mc_rules.rs)만 RUN 일 때 돈다(이 앱의 선택). 그 밖의 명령·서브 명령(0080 등 확장 지정 포함)은 C059.
 //! 디바이스: X·Y·M·L·F·B·SM(비트) · D·W·R·ZR·SD(워드) · TS·TC·CS·CC(비트)·TN·CN(워드). X·Y·B·W·ZR 는 16진 번호.
 //! 디바이스마다 크기(점 수)를 정하고(최대 65536), 넘으면 C056.
 //! 장애 주입(지연·무응답·종료 코드 강제)과 값 자동 변화(regmap)는 Modbus Slave 와 같은 부품을 쓴다.
 
 use crate::framer::{FrameMode, LengthEncoding};
+use crate::mc_rules::{Fired, Rule, Rules};
 use crate::regmap::{Rng, SimRun, SimSpec, ValueType, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -43,6 +49,8 @@ pub const E_DEVICE: u16 = 0xC05B;
 pub const E_REQUEST: u16 = 0xC05C;
 /// 지정한 접근 대상으로는 실행할 수 없음(자기 국 요청만 받을 때 다른 국 요청)
 pub const E_TARGET: u16 = 0xC05F;
+/// 모니터 등록(0801) 없이 모니터 실행(0802)을 받음
+pub const E_MONITOR: u16 = 0xC05D;
 /// 비트 디바이스 요청 내용이 틀림(ON/OFF 가 0·1 이 아님)
 pub const E_BIT_VALUE: u16 = 0xC060;
 /// 명령 데이터 길이가 요청한 점 수와 맞지 않음
@@ -62,6 +70,7 @@ pub fn end_code_text(code: u16) -> &'static str {
         E_COMMAND => crate::tr!("명령·서브 명령 틀림", "wrong command/subcommand"),
         E_DEVICE => crate::tr!("디바이스 지정 틀림", "device cannot be accessed"),
         E_REQUEST => crate::tr!("요청 데이터 틀림", "request data error"),
+        E_MONITOR => crate::tr!("모니터 등록 전 실행", "monitor not registered"),
         E_TARGET => crate::tr!("접근 대상 틀림", "wrong access destination"),
         E_BIT_VALUE => crate::tr!("비트 값 틀림", "bit request error"),
         E_DATA_LEN => crate::tr!("데이터 길이 불일치", "data length mismatch"),
@@ -449,6 +458,48 @@ enum Req {
     RandomWriteWords { words: Vec<(Dev, u32, u16)>, dwords: Vec<(Dev, u32, u32)> },
     /// 0619
     Loopback { data: Vec<u8> },
+    /// 0406 — (디바이스, 시작, 워드 수). 비트 블록의 1점 = 16비트
+    ReadBlock { words: Vec<(Dev, u32, u32)>, bits: Vec<(Dev, u32, u32)> },
+    /// 1406 — (디바이스, 시작, 워드 값들)
+    WriteBlock { words: Vec<(Dev, u32, Vec<u16>)>, bits: Vec<(Dev, u32, Vec<u16>)> },
+    /// 0801 — 0403 과 같은 모양으로 등록만
+    MonitorEntry { words: Vec<(Dev, u32)>, dwords: Vec<(Dev, u32)> },
+    /// 0802
+    MonitorRun,
+    /// 1001·1002·1003·1005·1006
+    Remote(RemoteOp),
+    /// 0101
+    TypeName,
+}
+
+/// 원격 조작(SLMP 5.6)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemoteOp {
+    Run,
+    Stop,
+    Pause,
+    LatchClear,
+    Reset,
+}
+
+/// 흉내 운전 상태 — 원격 조작·화면 단추로 바꾼다
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RunMode {
+    #[default]
+    Run,
+    Stop,
+    Pause,
+}
+
+impl RunMode {
+    pub fn label(self) -> &'static str {
+        match self {
+            RunMode::Run => "RUN",
+            RunMode::Stop => "STOP",
+            RunMode::Pause => "PAUSE",
+        }
+    }
 }
 
 impl Req {
@@ -459,7 +510,11 @@ impl Req {
             Req::RandomRead { words, dwords } => words.iter().chain(dwords).map(|x| x.0).collect(),
             Req::RandomWriteBits { items } => items.iter().map(|x| x.0).collect(),
             Req::RandomWriteWords { words, dwords } => words.iter().map(|x| x.0).chain(dwords.iter().map(|x| x.0)).collect(),
-            Req::Loopback { .. } => Vec::new(),
+            Req::ReadBlock { words, bits } => words.iter().chain(bits).map(|x| x.0).collect(),
+            Req::WriteBlock { words, bits } => words.iter().chain(bits).map(|x| x.0).collect(),
+            Req::MonitorEntry { words, dwords } => words.iter().chain(dwords).map(|x| x.0).collect(),
+            Req::Remote(RemoteOp::LatchClear) => vec![Dev::L],
+            Req::Loopback { .. } | Req::MonitorRun | Req::Remote(_) | Req::TypeName => Vec::new(),
         };
         v.sort();
         v.dedup();
@@ -467,8 +522,67 @@ impl Req {
     }
 
     fn writes(&self) -> bool {
-        matches!(self, Req::Write { .. } | Req::RandomWriteBits { .. } | Req::RandomWriteWords { .. })
+        matches!(self, Req::Write { .. } | Req::RandomWriteBits { .. } | Req::RandomWriteWords { .. } | Req::WriteBlock { .. } | Req::Remote(RemoteOp::LatchClear))
     }
+}
+
+/// 워드 점들·더블워드 점들(0403·0801)
+type Points = (Vec<(Dev, u32)>, Vec<(Dev, u32)>);
+
+/// 0403·0801 의 몸통 — 워드 점 수·더블워드 점 수, 디바이스들
+fn parse_random_read(r: &mut Rd, sub: u16) -> Result<Points, u16> {
+    let wide = match sub {
+        0x0000 => false,
+        0x0002 => true,
+        _ => return Err(E_COMMAND),
+    };
+    let (nw, nd) = (r.num(1)?, r.num(1)?);
+    let max = if wide { 96 } else { 192 };
+    if nw + nd == 0 || nw + nd > max {
+        return Err(E_RANDOM_WORD);
+    }
+    let words = (0..nw).map(|_| r.device(wide)).collect::<Result<Vec<_>, _>>()?;
+    let dwords = (0..nd).map(|_| r.device(wide)).collect::<Result<Vec<_>, _>>()?;
+    r.end()?;
+    Ok((words, dwords))
+}
+
+/// 0406·1406 — 워드 블록 수·비트 블록 수, 블록마다 디바이스·점 수(쓰기면 값이 바로 뒤). 점 수 1점 = 1워드(비트 블록은 16점)
+type Blocks = (Vec<(Dev, u32, Vec<u16>)>, Vec<(Dev, u32, Vec<u16>)>);
+fn parse_blocks(r: &mut Rd, sub: u16, write: bool) -> Result<Blocks, u16> {
+    let wide = match sub {
+        0x0000 => false,
+        0x0002 => true,
+        _ => return Err(E_COMMAND),
+    };
+    let (nw, nb) = (r.num(1)?, r.num(1)?);
+    let max_blocks = if wide { 60 } else { 120 };
+    if nw + nb == 0 || nw + nb > max_blocks {
+        return Err(E_POINTS_WORD);
+    }
+    let mut total = 0u32;
+    let mut one = |r: &mut Rd, bits: bool| -> Result<(Dev, u32, Vec<u16>), u16> {
+        let (dev, start) = r.device(wide)?;
+        let n = r.num(2)?;
+        if dev.bits() != bits {
+            return Err(E_DEVICE);
+        }
+        if n == 0 {
+            return Err(E_POINTS_WORD);
+        }
+        total += n;
+        let vals = if write { (0..n).map(|_| r.num(2).map(|x| x as u16)).collect::<Result<Vec<_>, _>>()? } else { vec![0; n as usize] };
+        Ok((dev, start, vals))
+    };
+    let words = (0..nw).map(|_| one(r, false)).collect::<Result<Vec<_>, _>>()?;
+    let bits = (0..nb).map(|_| one(r, true)).collect::<Result<Vec<_>, _>>()?;
+    // 점 수 상한(SLMP 5.2): 읽기는 합 ≤ 960, 쓰기는 블록 수 × 4(0002 는 × 9) + 합 ≤ 960
+    let load = total + if write { (nw + nb) * if wide { 9 } else { 4 } } else { 0 };
+    if load > 960 {
+        return Err(E_POINTS_WORD);
+    }
+    r.end()?;
+    Ok((words, bits))
 }
 
 /// 서브 명령 → (비트 단위, 넓은 디바이스 지정(iQ-R 0002·0003)). 모르면 C059
@@ -530,20 +644,72 @@ fn parse(cmd: u16, sub: u16, body: &[u8], ascii: bool) -> Result<Req, u16> {
             Ok(Req::Write { bit, dev, start, values })
         }
         0x0403 => {
-            let wide = match sub {
-                0x0000 => false,
-                0x0002 => true,
-                _ => return Err(E_COMMAND),
-            };
-            let (nw, nd) = (r.num(1)?, r.num(1)?);
-            let max = if wide { 96 } else { 192 };
-            if nw + nd == 0 || nw + nd > max {
-                return Err(E_RANDOM_WORD);
-            }
-            let words = (0..nw).map(|_| r.device(wide)).collect::<Result<Vec<_>, _>>()?;
-            let dwords = (0..nd).map(|_| r.device(wide)).collect::<Result<Vec<_>, _>>()?;
-            r.end()?;
+            let (words, dwords) = parse_random_read(&mut r, sub)?;
             Ok(Req::RandomRead { words, dwords })
+        }
+        0x0801 => {
+            let (words, dwords) = parse_random_read(&mut r, sub)?;
+            // 타이머·카운터 접점·코일은 등록할 수 없다(SLMP 5.2 Entry Monitor Device)
+            if words.iter().chain(&dwords).any(|(d, _)| matches!(d, Dev::Ts | Dev::Tc | Dev::Cs | Dev::Cc)) {
+                return Err(E_DEVICE);
+            }
+            Ok(Req::MonitorEntry { words, dwords })
+        }
+        0x0802 => {
+            if sub != 0 {
+                return Err(E_COMMAND);
+            }
+            r.end()?;
+            Ok(Req::MonitorRun)
+        }
+        0x0406 | 0x1406 => {
+            let (words, bits) = parse_blocks(&mut r, sub, cmd == 0x1406)?;
+            if cmd == 0x0406 {
+                let n = |v: Vec<(Dev, u32, Vec<u16>)>| v.into_iter().map(|(d, s, x)| (d, s, x.len() as u32)).collect();
+                Ok(Req::ReadBlock { words: n(words), bits: n(bits) })
+            } else {
+                Ok(Req::WriteBlock { words, bits })
+            }
+        }
+        0x1001 | 0x1002 | 0x1003 | 0x1005 | 0x1006 => {
+            if sub != 0 {
+                return Err(E_COMMAND);
+            }
+            let op = match cmd {
+                0x1001 => {
+                    // 모드(0001 강제 아님·0003 강제) + 클리어 모드(00·01·02) + 00
+                    let (mode, clear, fixed) = (r.num(2)?, r.num(1)?, r.num(1)?);
+                    if !matches!(mode, 1 | 3) || clear > 2 || fixed != 0 {
+                        return Err(E_REQUEST);
+                    }
+                    RemoteOp::Run
+                }
+                0x1003 => {
+                    if !matches!(r.num(2)?, 1 | 3) {
+                        return Err(E_REQUEST);
+                    }
+                    RemoteOp::Pause
+                }
+                _ => {
+                    if r.num(2)? != 1 {
+                        return Err(E_REQUEST);
+                    }
+                    match cmd {
+                        0x1002 => RemoteOp::Stop,
+                        0x1005 => RemoteOp::LatchClear,
+                        _ => RemoteOp::Reset,
+                    }
+                }
+            };
+            r.end()?;
+            Ok(Req::Remote(op))
+        }
+        0x0101 => {
+            if sub != 0 {
+                return Err(E_COMMAND);
+            }
+            r.end()?;
+            Ok(Req::TypeName)
         }
         0x1402 => {
             let (bit, wide) = sub_kind(sub)?;
@@ -686,6 +852,29 @@ fn execute(m: &mut Memory, req: &Req, ascii: bool, t: Duration, rng: &mut Rng) -
             w.num(data.len() as u32, 2);
             w.out.extend(data);
         }
+        Req::ReadBlock { words, bits } => {
+            if words.iter().chain(bits).any(|&(d, s, n)| !m.fits(d, s, span(d, n))) {
+                return Err(E_ADDRESS);
+            }
+            for &(d, s, n) in words.iter().chain(bits) {
+                m.sims_on_read(d, s, s + span(d, n) as u32, t, rng);
+                for k in 0..n {
+                    w.num(m.word(d, s, k) as u32, 2);
+                }
+            }
+        }
+        Req::WriteBlock { words, bits } => {
+            if words.iter().chain(bits).any(|(d, s, v)| !m.fits(*d, *s, span(*d, v.len() as u32))) {
+                return Err(E_ADDRESS);
+            }
+            for (d, s, v) in words.iter().chain(bits) {
+                for (k, &x) in v.iter().enumerate() {
+                    m.set_word(*d, *s, k as u32, x);
+                }
+            }
+        }
+        // 서버 상태를 쓰는 명령은 Server::run 이 처리한다
+        Req::MonitorEntry { .. } | Req::MonitorRun | Req::Remote(_) | Req::TypeName => return Err(E_COMMAND),
     }
     Ok(w.out)
 }
@@ -851,12 +1040,41 @@ impl Faults {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Options {
     /// 자기 국(네트워크 00·국 FF·I/O 03FF·멀티드롭 00) 요청만 받고, 다른 국 요청은 C05F 로 답한다. 끄면(기본) 모두 받는다
     #[serde(default)]
     pub own_station_only: bool,
+    /// 형명 읽기(0101)에 답할 형명 — ASCII 16글자까지(모자라면 공백). 흉내 값이다
+    #[serde(default = "default_model_name")]
+    pub model_name: String,
+    /// 형명 코드(흉내 값)
+    #[serde(default)]
+    pub model_code: u16,
+}
+
+/// 실제 기종 이름을 쓰지 않는 기본 형명
+pub const DEFAULT_MODEL_NAME: &str = "PORTDOCK-SIM";
+
+fn default_model_name() -> String {
+    DEFAULT_MODEL_NAME.into()
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self { own_station_only: false, model_name: default_model_name(), model_code: 0 }
+    }
+}
+
+impl Options {
+    /// 형명은 ASCII 글자(20h~7Eh) 16자까지
+    pub fn check(&self) -> Result<(), String> {
+        if self.model_name.len() > 16 || !self.model_name.bytes().all(|c| (0x20..=0x7E).contains(&c)) {
+            return Err(crate::tr!("형명은 영문·숫자·기호(ASCII) 16글자까지입니다", "The model name is up to 16 ASCII characters").into());
+        }
+        Ok(())
+    }
 }
 
 /// 요청 하나를 처리한 결과 — 화면 기록·통계용
@@ -872,11 +1090,13 @@ pub struct Outcome {
     pub written: bool,
     pub delay_ms: u64,
     pub faulted: bool,
+    /// 사건 줄로 남길 일 — 원격 조작(«REMOTE STOP»)·쓰기 뒤 바로 실행한 규칙(«RULE #1 …»)
+    pub events: Vec<String>,
 }
 
 impl Outcome {
     fn new(result: &'static str) -> Self {
-        Self { command: 0, sub: 0, result, end_code: None, written: false, delay_ms: 0, faulted: false }
+        Self { command: 0, sub: 0, result, end_code: None, written: false, delay_ms: 0, faulted: false, events: Vec::new() }
     }
 }
 
@@ -885,6 +1105,12 @@ pub struct Server {
     pub format: Format,
     pub faults: Faults,
     pub options: Options,
+    /// 조건 규칙(mc_rules.rs)
+    pub rules: Rules,
+    /// 흉내 운전 상태 — 원격 조작(1001~1006)·화면 단추로 바뀐다. RUN 일 때만 규칙이 돈다
+    pub run_mode: RunMode,
+    /// 모니터 등록(0801) — 서버 하나에 하나(연결마다 따로 두지 않는다 — 이 흉내의 단순화)
+    monitor: Option<Points>,
     rng: Rng,
     fault_count: u64,
     t0: Instant,
@@ -903,7 +1129,18 @@ impl Server {
     }
 
     fn with_rng(rng: Rng) -> Self {
-        Self { mem: Memory::default(), format: Format::default(), faults: Faults::default(), options: Options::default(), rng, fault_count: 0, t0: Instant::now() }
+        Self {
+            mem: Memory::default(),
+            format: Format::default(),
+            faults: Faults::default(),
+            options: Options::default(),
+            rules: Rules::default(),
+            run_mode: RunMode::Run,
+            monitor: None,
+            rng,
+            fault_count: 0,
+            t0: Instant::now(),
+        }
     }
 
     pub fn set_faults(&mut self, f: Faults) {
@@ -935,10 +1172,96 @@ impl Server {
         !self.mem.sims.is_empty()
     }
 
-    /// 주기 자동 변화 — 앱이 100ms 쯤마다 부른다
-    pub fn tick(&mut self, now: Instant) {
-        let t = now.saturating_duration_since(self.t0);
-        self.mem.tick(now, t, &mut self.rng);
+    /// 주기 자동 변화·조건 규칙 — 앱이 20ms 쯤마다 부른다. 실행한 규칙을 돌려준다
+    pub fn tick(&mut self, now: Instant) -> Vec<Fired> {
+        if self.has_sims() {
+            let t = now.saturating_duration_since(self.t0);
+            self.mem.tick(now, t, &mut self.rng);
+        }
+        self.eval_rules(now)
+    }
+
+    /// 조건 규칙 평가 — RUN 일 때만. 화면이 값을 바꾼 뒤에도 부른다
+    pub fn eval_rules(&mut self, now: Instant) -> Vec<Fired> {
+        if self.run_mode != RunMode::Run || self.rules.is_empty() {
+            return Vec::new();
+        }
+        self.rules.eval(&mut self.mem, now, crate::event::now_ms(), &mut self.rng)
+    }
+
+    /// 규칙 목록을 바꾼다(검사 뒤)
+    pub fn set_rules(&mut self, rules: Vec<Rule>) -> Result<(), String> {
+        self.rules.set(rules)
+    }
+
+    /// 흉내 운전 상태를 바꾼다. RUN 으로 돌아오면 규칙 예약을 처음부터
+    pub fn set_run_mode(&mut self, m: RunMode) {
+        if m == RunMode::Run && self.run_mode != RunMode::Run {
+            self.rules.rearm();
+        }
+        self.run_mode = m;
+    }
+
+    /// 모니터 등록을 지운다(서버를 새로 열 때 — 실제로도 대상이 다시 켜지면 지워진다)
+    pub fn clear_monitor(&mut self) {
+        self.monitor = None;
+    }
+
+    pub fn monitor_points(&self) -> usize {
+        self.monitor.as_ref().map_or(0, |(w, d)| w.len() + d.len())
+    }
+
+    /// 요청 실행 — 서버 상태(모니터·원격·형명)는 여기서, 디바이스 읽기·쓰기는 execute
+    fn run(&mut self, req: &Req, ascii: bool, o: &mut Outcome) -> Result<Option<Vec<u8>>, u16> {
+        match req {
+            Req::MonitorEntry { words, dwords } => {
+                self.monitor = Some((words.clone(), dwords.clone()));
+                Ok(Some(Vec::new()))
+            }
+            Req::MonitorRun => {
+                let (words, dwords) = self.monitor.clone().ok_or(E_MONITOR)?;
+                let t = self.t0.elapsed();
+                execute(&mut self.mem, &Req::RandomRead { words, dwords }, ascii, t, &mut self.rng).map(Some)
+            }
+            Req::TypeName => {
+                let mut w = Wr::new(ascii);
+                w.out.extend(format!("{:<16}", self.options.model_name).bytes().take(16));
+                w.num(self.options.model_code as u32, 2);
+                Ok(Some(w.out))
+            }
+            Req::Remote(op) => {
+                let before = self.run_mode;
+                match op {
+                    RemoteOp::Run => self.set_run_mode(RunMode::Run),
+                    RemoteOp::Stop => self.set_run_mode(RunMode::Stop),
+                    RemoteOp::Pause => self.set_run_mode(RunMode::Pause),
+                    // 래치 릴레이 L 을 0 으로(그 밖의 래치 범위는 PLC 파라미터라 흉내 내지 않는다)
+                    RemoteOp::LatchClear => {
+                        if let Some(v) = self.mem.data.get_mut(&Dev::L) {
+                            v.fill(0);
+                        }
+                    }
+                    // 다시 켜진 것처럼: RUN 으로, 모니터 등록 지움. 매뉴얼대로 응답은 보내지 않는다(SLMP 5.6 Remote Reset)
+                    RemoteOp::Reset => {
+                        self.set_run_mode(RunMode::Run);
+                        self.monitor = None;
+                    }
+                }
+                let what = match op {
+                    RemoteOp::Run => "RUN",
+                    RemoteOp::Stop => "STOP",
+                    RemoteOp::Pause => "PAUSE",
+                    RemoteOp::LatchClear => "LATCH CLEAR",
+                    RemoteOp::Reset => "RESET",
+                };
+                o.events.push(format!("REMOTE {what} · {} → {}", before.label(), self.run_mode.label()));
+                Ok(if *op == RemoteOp::Reset { None } else { Some(Vec::new()) })
+            }
+            _ => {
+                let t = self.t0.elapsed();
+                execute(&mut self.mem, req, ascii, t, &mut self.rng).map(Some)
+            }
+        }
     }
 
     /// 요청 프레임 하나(머리 포함)를 처리한다. 돌려주는 응답이 None 이면 아무것도 보내지 않는다
@@ -964,15 +1287,19 @@ impl Server {
         let res = match req {
             _ if faulted && self.faults.force_end_code != 0 => Err(self.faults.force_end_code),
             Ok(req) => {
-                let t = self.t0.elapsed();
-                let r = execute(&mut self.mem, &req, fmt.ascii(), t, &mut self.rng);
+                let r = self.run(&req, fmt.ascii(), &mut o);
                 o.written = r.is_ok() && req.writes();
                 r
             }
             Err(code) => Err(code),
         };
+        if o.written {
+            o.events.extend(self.eval_rules(Instant::now()).iter().map(Fired::line));
+        }
         let resp = match res {
-            Ok(data) => build_response(fmt, &h, 0, &data),
+            Ok(Some(data)) => build_response(fmt, &h, 0, &data),
+            // 원격 리셋 — 응답 없음
+            Ok(None) => return (None, o),
             Err(code) => {
                 o.result = "error";
                 o.end_code = Some(code);
@@ -1026,6 +1353,16 @@ pub fn command_name(cmd: u16, sub: u16) -> String {
         0x0403 => crate::tr!("랜덤 읽기", "Read Random").to_string(),
         0x1402 => format!("{} ({unit})", crate::tr!("랜덤 쓰기", "Write Random")),
         0x0619 => crate::tr!("루프백", "Loopback").to_string(),
+        0x0406 => crate::tr!("블록 읽기", "Read Block").to_string(),
+        0x1406 => crate::tr!("블록 쓰기", "Write Block").to_string(),
+        0x0801 => crate::tr!("모니터 등록", "Entry Monitor Device").to_string(),
+        0x0802 => crate::tr!("모니터 실행", "Execute Monitor").to_string(),
+        0x1001 => crate::tr!("원격 RUN", "Remote Run").to_string(),
+        0x1002 => crate::tr!("원격 STOP", "Remote Stop").to_string(),
+        0x1003 => crate::tr!("원격 PAUSE", "Remote Pause").to_string(),
+        0x1005 => crate::tr!("원격 래치 클리어", "Remote Latch Clear").to_string(),
+        0x1006 => crate::tr!("원격 리셋", "Remote Reset").to_string(),
+        0x0101 => crate::tr!("형명 읽기", "Read Type Name").to_string(),
         _ => crate::tr!("모르는 명령", "unknown command").to_string(),
     }
 }
@@ -1051,6 +1388,21 @@ pub fn describe_request(fmt: Format, f: &[u8]) -> Option<String> {
             s += &format!(" {first}… W{} D{}", words.len(), dwords.len());
         }
         Ok(Req::Loopback { data }) => s += &format!(" ×{}", data.len()),
+        Ok(Req::ReadBlock { words, bits }) => {
+            let first = words.first().or(bits.first()).map(|&(d, n, _)| d.addr_text(n)).unwrap_or_default();
+            let pts: u32 = words.iter().chain(&bits).map(|x| x.2).sum();
+            s += &format!(" {first}… W{} B{} ×{pts}", words.len(), bits.len());
+        }
+        Ok(Req::WriteBlock { words, bits }) => {
+            let first = words.first().or(bits.first()).map(|(d, n, _)| d.addr_text(*n)).unwrap_or_default();
+            let pts: usize = words.iter().chain(&bits).map(|x| x.2.len()).sum();
+            s += &format!(" {first}… W{} B{} ×{pts}", words.len(), bits.len());
+        }
+        Ok(Req::MonitorEntry { words, dwords }) => {
+            let first = words.first().or(dwords.first()).map(|&(d, n)| d.addr_text(n)).unwrap_or_default();
+            s += &format!(" {first}… W{} D{}", words.len(), dwords.len());
+        }
+        Ok(Req::MonitorRun | Req::Remote(_) | Req::TypeName) => {}
         Err(code) => s += &format!(" — {:04X} {}", code, end_code_text(code)),
     }
     if !h.own_station() {
@@ -1275,6 +1627,201 @@ mod tests {
         assert_eq!(run(&mut a, &a3("061900000005ABCDE")), a3_ok("0005ABCDE"));
     }
 
+    // ---- 0.6.0: 블록(5.2 Read Block·Write Block), 모니터(5.2 Entry Monitor Device·Execute Monitor),
+    //      원격 조작·형명 읽기(5.6) — 매뉴얼 «Communication example» 의 바이트
+
+    /// 0406 예: 워드 블록 D0~D3(4점)·W100~W107(8점), 비트 블록 M0~M31(2점)·M128~M159(2점)·B100~B12F(3점)
+    const BLOCK_READ_REQ: [u8; 36] = [
+        0x06, 0x04, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x04, 0x00, 0x00, 0x01, 0x00, 0xB4, 0x08, 0x00, 0x00, 0x00, 0x00, 0x90, 0x02, 0x00, 0x80, 0x00, 0x00, 0x90, 0x02, 0x00, 0x00, 0x01, 0x00, 0xA0, 0x03, 0x00,
+    ];
+    const BLOCK_READ_ASCII: &str = "040600000203D*0000000004W*0001000008M*0000000002M*0001280002B*0001000003";
+    /// 예의 값 — W101~W106 은 매뉴얼에 줄여 적혀 있어(…) 0 으로 둔다
+    fn block_setup(s: &mut Server) {
+        let mut w = vec![0u16; 8];
+        (w[0], w[7]) = (0x0970, 0x0131);
+        set(s, Dev::D, 0, &[0x0008, 0x2030, 0x1545, 0x2800]);
+        set(s, Dev::W, 0x100, &w);
+        set(s, Dev::M, 0, &[word_bits(0x2030), word_bits(0x4849)].concat());
+        set(s, Dev::M, 128, &[word_bits(0xC3DE), word_bits(0x2800)].concat());
+        set(s, Dev::B, 0x100, &[word_bits(0x0970), word_bits(0xB9AF), word_bits(0xB9AF)].concat());
+    }
+
+    #[test]
+    fn read_block_manual_example() {
+        let mut s = srv(B3);
+        block_setup(&mut s);
+        let mut resp = vec![0x08, 0x00, 0x30, 0x20, 0x45, 0x15, 0x00, 0x28, 0x70, 0x09];
+        resp.extend([0u8; 12]);
+        resp.extend([0x31, 0x01, 0x30, 0x20, 0x49, 0x48, 0xDE, 0xC3, 0x00, 0x28, 0x70, 0x09, 0xAF, 0xB9, 0xAF, 0xB9]);
+        assert_eq!(run(&mut s, &b3(&BLOCK_READ_REQ)), b3_ok(&resp));
+        let mut a = srv(A3);
+        block_setup(&mut a);
+        assert_eq!(run(&mut a, &a3(BLOCK_READ_ASCII)), a3_ok(&format!("00082030154528000970{}013120304849C3DE28000970B9AFB9AF", "0".repeat(24))));
+    }
+
+    #[test]
+    fn write_block_manual_example() {
+        // 매뉴얼 예(가운데 줄인 D1·D2·W101~W106·B110~B11F 는 읽기 예와 같은 값으로 채움)
+        let mut req = vec![0x06, 0x14, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x04, 0x00, 0x08, 0x00, 0x30, 0x20, 0x45, 0x15, 0x00, 0x28, 0x00, 0x01, 0x00, 0xB4, 0x08, 0x00, 0x70, 0x09];
+        req.extend([0u8; 12]);
+        req.extend([0x31, 0x01, 0x00, 0x00, 0x00, 0x90, 0x02, 0x00, 0x30, 0x20, 0x49, 0x48, 0x80, 0x00, 0x00, 0x90, 0x02, 0x00, 0xDE, 0xC3, 0x00, 0x28, 0x00, 0x01, 0x00, 0xA0, 0x03, 0x00, 0x70, 0x09, 0xAF, 0xB9, 0xAF, 0xB9]);
+        let mut s = srv(B3);
+        assert_eq!(run(&mut s, &b3(&req)), b3_ok(&[]));
+        let mut want = srv(B3);
+        block_setup(&mut want);
+        assert_eq!(s.mem.data, want.mem.data);
+        // ASCII — 블록마다 디바이스·점 수 바로 뒤에 값
+        let cmd = ["140600000203", "D*0000000004", "0008203015452800", "W*0001000008", "0970", &"0000".repeat(6), "0131", "M*0000000002", "20304849", "M*0001280002", "C3DE2800", "B*0001000003", "0970B9AFB9AF"].concat();
+        let mut a = srv(A3);
+        assert_eq!(run(&mut a, &a3(&cmd)), a3_ok(""));
+        assert_eq!(a.mem.data, want.mem.data);
+    }
+
+    #[test]
+    fn block_limits_and_errors() {
+        let mut s = srv(B3);
+        let end = |r: Vec<u8>| u16::from_le_bytes([r[9], r[10]]);
+        // 블록 0개·121개 → C051, 점 수 합 961 → C051
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x00, 0x00, 0x00, 0x00]))), E_POINTS_WORD);
+        let mut many = vec![0x06, 0x04, 0x00, 0x00, 121, 0x00];
+        for _ in 0..121 {
+            many.extend([0, 0, 0, 0xA8, 1, 0]);
+        }
+        assert_eq!(end(run(&mut s, &b3(&many))), E_POINTS_WORD);
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x00, 0x00, 0x02, 0x00, 0, 0, 0, 0xA8, 0xC0, 0x03, 0, 0, 0, 0xA8, 0x01, 0x00]))), E_POINTS_WORD);
+        // 960 점은 된다
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x00, 0x00, 0x01, 0x00, 0, 0, 0, 0xA8, 0xC0, 0x03]))), 0);
+        // 워드 블록에 비트 디바이스·비트 블록에 워드 디바이스 → C05B
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x00, 0x00, 0x01, 0x00, 0, 0, 0, 0x90, 1, 0]))), E_DEVICE);
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x00, 0x00, 0x00, 0x01, 0, 0, 0, 0xA8, 1, 0]))), E_DEVICE);
+        // 쓰기: 블록 수 × 4 + 합 ≤ 960 — 1블록 957점은 넘는다
+        let mut w = vec![0x06, 0x14, 0x00, 0x00, 0x01, 0x00, 0, 0, 0, 0xA8, 0xBD, 0x03];
+        w.extend(vec![0u8; 957 * 2]);
+        assert_eq!(end(run(&mut s, &b3(&w))), E_POINTS_WORD);
+        // 하나라도 범위 밖이면 아무것도 쓰지 않는다
+        let w = b3(&[0x06, 0x14, 0x00, 0x00, 0x02, 0x00, 0, 0, 0, 0xA8, 1, 0, 0x34, 0x12, 0xFF, 0x2F, 0, 0xA8, 2, 0, 1, 0, 2, 0]);
+        assert_eq!(end(run(&mut s, &w)), E_ADDRESS);
+        assert_eq!(get(&s, Dev::D, 0, 1), [0]);
+        // iQ-R 서브 0002 — 번호 4바이트·코드 2바이트
+        set(&mut s, Dev::D, 5, &[0xBEEF]);
+        assert_eq!(run(&mut s, &b3(&[0x06, 0x04, 0x02, 0x00, 0x01, 0x00, 5, 0, 0, 0, 0xA8, 0, 1, 0])), b3_ok(&[0xEF, 0xBE]));
+        // 모르는 서브 명령
+        assert_eq!(end(run(&mut s, &b3(&[0x06, 0x04, 0x01, 0x00, 0x01, 0x00, 0, 0, 0, 0xA8, 1, 0]))), E_COMMAND);
+    }
+
+    #[test]
+    fn monitor_manual_example() {
+        // 0801 등록(0403 예와 같은 디바이스) → 0802 실행 응답은 매뉴얼 Execute Monitor 예와 같다
+        let entry = [
+            0x01, 0x08, 0x00, 0x00, 0x04, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x00, 0x00, 0x00, 0xC2, 0x64, 0x00, 0x00, 0x90, 0x20, 0x00, 0x00, 0x9C, 0xDC, 0x05, 0x00, 0xA8, 0x60, 0x01, 0x00, 0x9D, 0x57, 0x04, 0x00, 0x90,
+        ];
+        let resp = [0x95, 0x19, 0x02, 0x12, 0x30, 0x20, 0x49, 0x48, 0x4E, 0x4F, 0x54, 0x4C, 0xAF, 0xB9, 0xDE, 0xC3, 0xB7, 0xBC, 0xDD, 0xBA];
+        let mut s = srv(B3);
+        random_read_setup(&mut s);
+        // 등록 전 실행 → C05D
+        let r = run(&mut s, &b3(&[0x02, 0x08, 0x00, 0x00]));
+        assert_eq!(u16::from_le_bytes([r[9], r[10]]), E_MONITOR);
+        assert_eq!(run(&mut s, &b3(&entry)), b3_ok(&[]));
+        assert_eq!(s.monitor_points(), 7);
+        assert_eq!(run(&mut s, &b3(&[0x02, 0x08, 0x00, 0x00])), b3_ok(&resp));
+        let mut a = srv(A3);
+        random_read_setup(&mut a);
+        assert_eq!(run(&mut a, &a3("080100000403D*000000TN000000M*000100X*000020D*001500Y*000160M*001111")), a3_ok(""));
+        assert_eq!(run(&mut a, &a3("08020000")), a3_ok("19951202203048494C544F4EC3DEB9AFBADDBCB7"));
+        // 타이머 접점은 등록할 수 없다 → C05B. 서버를 다시 열면 등록이 지워진다
+        let r = run(&mut a, &a3("080100000100TS000000"));
+        assert_eq!(&r[18..22], b"C05B");
+        a.clear_monitor();
+        assert_eq!(&run(&mut a, &a3("08020000"))[18..22], b"C05D");
+    }
+
+    #[test]
+    fn remote_control_manual_examples() {
+        let mut s = srv(B3);
+        // 1002 STOP → 1003 PAUSE(강제 아님) → 1001 RUN(강제 아님·래치 포함 클리어 — 이 흉내는 값을 지우지 않음)
+        set(&mut s, Dev::D, 0, &[7]);
+        let (r, o) = s.handle(&b3(&[0x02, 0x10, 0x00, 0x00, 0x01, 0x00]));
+        assert_eq!(r.unwrap(), b3_ok(&[]));
+        assert_eq!((s.run_mode, o.events.len()), (RunMode::Stop, 1));
+        assert!(o.events[0].starts_with("REMOTE STOP · RUN → STOP"), "{:?}", o.events);
+        assert_eq!(run(&mut s, &b3(&[0x03, 0x10, 0x00, 0x00, 0x01, 0x00])), b3_ok(&[]));
+        assert_eq!(s.run_mode, RunMode::Pause);
+        assert_eq!(run(&mut s, &b3(&[0x01, 0x10, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00])), b3_ok(&[]));
+        assert_eq!((s.run_mode, get(&s, Dev::D, 0, 1)[0]), (RunMode::Run, 7));
+        // 1005 래치 클리어 — L 이 0
+        set(&mut s, Dev::L, 3, &[1]);
+        let (r, o) = s.handle(&b3(&[0x05, 0x10, 0x00, 0x00, 0x01, 0x00]));
+        assert_eq!(r.unwrap(), b3_ok(&[]));
+        assert!(o.written);
+        assert_eq!(get(&s, Dev::L, 3, 1), [0]);
+        // 1006 리셋 — 응답하지 않고 RUN 으로
+        s.set_run_mode(RunMode::Stop);
+        let (r, o) = s.handle(&b3(&[0x06, 0x10, 0x00, 0x00, 0x01, 0x00]));
+        assert!(r.is_none());
+        assert_eq!((o.result, s.run_mode), ("ok", RunMode::Run));
+        // ASCII(매뉴얼 예)
+        let mut a = srv(A3);
+        assert_eq!(run(&mut a, &a3("100200000001")), a3_ok(""));
+        assert_eq!(a.run_mode, RunMode::Stop);
+        assert_eq!(run(&mut a, &a3("100300000001")), a3_ok(""));
+        assert_eq!(run(&mut a, &a3("1001000000010200")), a3_ok(""));
+        assert_eq!(run(&mut a, &a3("100500000001")), a3_ok(""));
+        assert!(a.handle(&a3("100600000001")).0.is_none());
+        // 틀린 모드·클리어 모드·고정 값 → C05C, 서브 명령 0001 → C059, 데이터 없음 → C061
+        let end = |r: Vec<u8>| u16::from_le_bytes([r[9], r[10]]);
+        assert_eq!(end(run(&mut s, &b3(&[0x01, 0x10, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]))), E_REQUEST);
+        assert_eq!(end(run(&mut s, &b3(&[0x01, 0x10, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00]))), E_REQUEST);
+        assert_eq!(end(run(&mut s, &b3(&[0x02, 0x10, 0x00, 0x00, 0x00, 0x00]))), E_REQUEST);
+        assert_eq!(end(run(&mut s, &b3(&[0x02, 0x10, 0x01, 0x00, 0x01, 0x00]))), E_COMMAND);
+        assert_eq!(end(run(&mut s, &b3(&[0x02, 0x10, 0x00, 0x00]))), E_DATA_LEN);
+    }
+
+    #[test]
+    fn read_type_name_manual_example() {
+        // 매뉴얼 예는 Q02UCPU(코드 0263) — 시험에서만 그 값을 넣는다(앱 기본값은 실제 형명이 아님)
+        let opts = Options { model_name: "Q02UCPU".into(), model_code: 0x0263, ..Default::default() };
+        let mut s = srv(B3);
+        s.options = opts.clone();
+        let mut want = b"Q02UCPU         ".to_vec();
+        want.extend([0x63, 0x02]);
+        assert_eq!(run(&mut s, &b3(&[0x01, 0x01, 0x00, 0x00])), b3_ok(&want));
+        let mut a = srv(A3);
+        a.options = opts;
+        assert_eq!(run(&mut a, &a3("01010000")), a3_ok("Q02UCPU         0263"));
+        // 기본값 — 실제 형명이 아닌 흉내 값
+        let mut d = srv(A3);
+        assert_eq!(run(&mut d, &a3("01010000")), a3_ok(&format!("{:<16}0000", DEFAULT_MODEL_NAME)));
+        assert!(Options { model_name: "가나".into(), ..Default::default() }.check().is_err());
+        assert!(Options { model_name: "X".repeat(17), ..Default::default() }.check().is_err());
+        assert!(Options::default().check().is_ok());
+        let o: Options = serde_json::from_str(r#"{"ownStationOnly":true}"#).unwrap();
+        assert_eq!((o.model_name.as_str(), o.model_code), (DEFAULT_MODEL_NAME, 0));
+    }
+
+    #[test]
+    fn rules_run_after_client_writes_only_in_run_mode() {
+        use crate::mc_rules::{ActOp, Action, Addr, Cond, Rule};
+        let mut s = srv(B3);
+        let at = |dev, no| Addr { dev, no, bit: None };
+        s.set_rules(vec![Rule { id: 1, name: "ack".into(), enabled: true, cond: Cond::On { at: at(Dev::M, 100) }, delay_ms: 0, delay_max_ms: 0, actions: vec![Action { at: at(Dev::M, 101), op: ActOp::On, value: 0 }] }]).unwrap();
+        // 클라이언트가 M100 ON(1402 비트) → 같은 요청 처리 안에서 M101 ON, 사건 줄
+        let (_, o) = s.handle(&b3(&[0x02, 0x14, 0x01, 0x00, 0x01, 0x64, 0x00, 0x00, 0x90, 0x01]));
+        assert_eq!(get(&s, Dev::M, 101, 1), [1]);
+        assert_eq!(o.events, ["RULE #1 ack: M101=ON"]);
+        // STOP 이면 규칙이 쉰다
+        set(&mut s, Dev::M, 100, &[0]);
+        set(&mut s, Dev::M, 101, &[0]);
+        s.tick(Instant::now());
+        s.set_run_mode(RunMode::Stop);
+        s.handle(&b3(&[0x02, 0x14, 0x01, 0x00, 0x01, 0x64, 0x00, 0x00, 0x90, 0x01]));
+        assert!(s.tick(Instant::now()).is_empty());
+        assert_eq!(get(&s, Dev::M, 101, 1), [0]);
+        // RUN 으로 돌아오면 이미 맞는 조건은 한 번
+        s.set_run_mode(RunMode::Run);
+        assert_eq!(s.tick(Instant::now()).len(), 1);
+        assert_eq!(get(&s, Dev::M, 101, 1), [1]);
+    }
+
     // ---- 머리(SLMP 4장): 4E 일련번호, 국 정보 되돌려 주기, 오류 응답 모양
 
     #[test]
@@ -1300,10 +1847,10 @@ mod tests {
 
     #[test]
     fn error_response_shape_binary_and_ascii() {
-        // 모르는 명령 0101 → 종료 C059 + 오류 정보(국 정보·명령·서브 명령). 이진 데이터 길이 = 2 + 9 = 0B
+        // 모르는 명령 0613(버퍼 메모리 — 만들지 않음) → 종료 C059 + 오류 정보(국 정보·명령·서브 명령). 이진 데이터 길이 = 2 + 9 = 0B
         let mut s = srv(B3);
-        let (r, o) = s.handle(&b3(&[0x01, 0x01, 0x00, 0x00]));
-        assert_eq!(r.unwrap(), [0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x0B, 0x00, 0x59, 0xC0, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x01, 0x00, 0x00]);
+        let (r, o) = s.handle(&b3(&[0x13, 0x06, 0x00, 0x00]));
+        assert_eq!(r.unwrap(), [0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x0B, 0x00, 0x59, 0xC0, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x13, 0x06, 0x00, 0x00]);
         assert_eq!((o.result, o.end_code), ("error", Some(E_COMMAND)));
         // ASCII 데이터 길이 = 4 + 18 = 22(0016) — 매뉴얼 «응답 데이터 길이 22바이트» 예와 같은 모양, C051 은 «C051»
         let mut a = srv(A3);
@@ -1535,8 +2082,12 @@ mod tests {
         let l = describe_response(B3, &err).unwrap();
         assert!(l.contains(" C056 ") && l.contains(end_code_text(E_ADDRESS)), "{l}");
         assert!(describe_request(B3, &[0x01, 0x02]).is_none());
-        let l = describe_request(B3, &b3(&[0x01, 0x01, 0x00, 0x00])).unwrap();
-        assert!(l.starts_with("0101 ") && l.contains("C059"), "{l}");
+        let l = describe_request(B3, &b3(&[0x13, 0x06, 0x00, 0x00])).unwrap();
+        assert!(l.starts_with("0613 ") && l.contains("C059"), "{l}");
+        let l = describe_request(B3, &b3(&BLOCK_READ_REQ)).unwrap();
+        assert!(l.starts_with("0406 ") && l.ends_with(" D0… W2 B3 ×19"), "{l}");
+        let l = describe_request(A3, &a3("080200000")).unwrap();
+        assert!(l.starts_with("0802 ") && l.contains("C061"), "{l}");
     }
 
     #[test]

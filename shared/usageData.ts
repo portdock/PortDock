@@ -27,7 +27,7 @@ export const FEATURES = {
   plot: ["start", "record", "export"],
   netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor"],
   "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial"],
-  "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state"],
+  "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state", "rules", "fill_write"],
   "hw-tester": ["net_record", "csv_save", "wifi_signal", "bt_record", "bt_audio", "test_tone"],
 } as const satisfies Record<string, readonly string[]>;
 

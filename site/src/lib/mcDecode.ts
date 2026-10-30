@@ -1,9 +1,10 @@
 // 웹 도구 «MC 프로토콜(SLMP) 프레임 해석기» 의 풀이 — crates/core/src/mc.rs(PortDock PLC Simulator 의 처리기)와 같은 규칙.
 // 머리(서브헤더·네트워크·PC·I/O·국·길이·감시 타이머/종료 코드), 명령 0401·1401·0403·1402·0619 의 데이터, 디바이스 코드 18종,
+// (0.6.0 부터) 0406·1406 블록·0801·0802 모니터·1001~1006 원격 조작·0101 형명 읽기의 요청(블록 읽기·형명 응답도),
 // 종료 코드 C050~C061(그 앱이 쓰는 값)을 풀고, 요청이면 그 앱이 어떤 종료 코드로 답할지도 같은 순서로 따진다.
 // 시험(mcDecode.test.ts)은 mc.rs 시험의 매뉴얼 예시 프레임을 그대로 쓴다.
 // 근거(공개 매뉴얼, 링크만): SLMP Reference Manual SH(NA)-080956ENG 4장·5.2·5.9, MELSEC Communication Protocol Reference Manual
-// SH-080008 5장, 종료 코드 MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5.
+// SH-080008 5장, 종료 코드 MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5. 0.6.0 명령은 SLMP 5.2·5.6.
 import { parseHex, hex, type Lang } from "./checksum.ts";
 
 export type McMode = "auto" | "binary" | "ascii";
@@ -69,14 +70,17 @@ export const END_CODES: Record<number, { ko: string; en: string; whenKo: string;
   0xc057: { ko: "요청 길이 불일치", en: "request length mismatch", whenKo: "머리의 요청 데이터 길이가 실제 뒤따르는 길이와 다름", whenEn: "the header's request data length differs from what actually follows" },
   0xc059: { ko: "명령·서브 명령 틀림", en: "wrong command/subcommand", whenKo: "구현하지 않은 명령·서브 명령", whenEn: "a command or subcommand that is not implemented" },
   0xc05b: { ko: "디바이스 지정 틀림", en: "device cannot be accessed", whenKo: "모르는 디바이스 코드, 워드 디바이스를 비트 단위로", whenEn: "an unknown device code, or a word device in bit units" },
-  0xc05c: { ko: "요청 데이터 틀림", en: "request data error", whenKo: "루프백 데이터 수가 1~960 밖", whenEn: "loopback data count outside 1–960" },
+  0xc05c: { ko: "요청 데이터 틀림", en: "request data error", whenKo: "루프백 데이터 수가 1~960 밖, 원격 조작의 모드 값이 틀림", whenEn: "loopback data count outside 1–960, or a wrong mode value in a remote operation" },
+  0xc05d: { ko: "모니터 등록 전 실행", en: "monitor not registered", whenKo: "모니터 등록(0801) 전에 모니터 실행(0802)", whenEn: "Execute Monitor (0802) before Entry Monitor Device (0801)" },
   0xc05f: { ko: "접근 대상 틀림", en: "wrong access destination", whenKo: "다른 국 요청(«자기 국 요청만 받기» 켬)", whenEn: "a request for another station («Own station requests only» on)" },
   0xc060: { ko: "비트 값 틀림", en: "bit request error", whenKo: "비트 쓰기 값이 0·1 이 아님", whenEn: "a bit write value other than 0 or 1" },
   0xc061: { ko: "데이터 길이 불일치", en: "data length mismatch", whenKo: "명령 데이터가 점 수보다 짧거나 김", whenEn: "command data shorter or longer than the point count" },
 };
 
 export interface McRequest {
-  kind: "read" | "write" | "random-read" | "random-write-bits" | "random-write-words" | "loopback";
+  kind: "read" | "write" | "random-read" | "random-write-bits" | "random-write-words" | "loopback" | "read-block" | "write-block" | "monitor-entry" | "monitor-run" | "remote" | "type-name";
+  /** 0406 — [디바이스, 시작, 워드 수](비트 블록은 1점 = 16비트) */
+  blocks?: [DevInfo, number, number][];
   bit?: boolean;
   dev?: DevInfo;
   start?: number;
@@ -129,7 +133,7 @@ const text = (u: number[]) => String.fromCharCode(...u);
 export const addrText = (d: DevInfo, n: number) => d.name + (d.hex ? n.toString(16).toUpperCase() : String(n));
 const rangeText = (d: DevInfo, a: number, b: number) => (a === b ? addrText(d, a) : `${addrText(d, a)}–${addrText(d, b)}`);
 
-/** 명령 이름 — 구현한 5가지는 mc.rs command_name 과 같은 이름, 그 밖은 SLMP 의 이름만(데이터는 풀지 않음) */
+/** 명령 이름 — mc.rs command_name 과 같은 이름 */
 export function commandName(cmd: number, sub: number, lang: Lang = "ko") {
   const unit = sub === 0x0001 || sub === 0x0003 ? msg(lang, "비트", "bits") : msg(lang, "워드", "words");
   switch (cmd) {
@@ -144,13 +148,25 @@ export function commandName(cmd: number, sub: number, lang: Lang = "ko") {
     case 0x0619:
       return msg(lang, "루프백", "Loopback");
     case 0x0406:
-      return msg(lang, "블록 일괄 읽기(이 해석기는 이름만)", "Read Block (name only)");
+      return msg(lang, "블록 읽기", "Read Block");
     case 0x1406:
-      return msg(lang, "블록 일괄 쓰기(이 해석기는 이름만)", "Write Block (name only)");
+      return msg(lang, "블록 쓰기", "Write Block");
     case 0x0801:
-      return msg(lang, "모니터 등록(이 해석기는 이름만)", "Entry Monitor Device (name only)");
+      return msg(lang, "모니터 등록", "Entry Monitor Device");
     case 0x0802:
-      return msg(lang, "모니터(이 해석기는 이름만)", "Execute Monitor (name only)");
+      return msg(lang, "모니터 실행", "Execute Monitor");
+    case 0x1001:
+      return msg(lang, "원격 RUN", "Remote Run");
+    case 0x1002:
+      return msg(lang, "원격 STOP", "Remote Stop");
+    case 0x1003:
+      return msg(lang, "원격 PAUSE", "Remote Pause");
+    case 0x1005:
+      return msg(lang, "원격 래치 클리어", "Remote Latch Clear");
+    case 0x1006:
+      return msg(lang, "원격 리셋", "Remote Reset");
+    case 0x0101:
+      return msg(lang, "형명 읽기", "Read Type Name");
     default:
       return msg(lang, "모르는 명령", "unknown command");
   }
@@ -158,8 +174,8 @@ export function commandName(cmd: number, sub: number, lang: Lang = "ko") {
 
 function subName(cmd: number, sub: number, lang: Lang) {
   const wide = msg(lang, " · 디바이스 번호 4바이트·코드 2바이트(ASCII 코드 4글자·번호 8글자)", " · 4-byte device number, 2-byte code (ASCII: 4-char code, 8-digit number)");
-  if (cmd === 0x0619) return sub === 0 ? "—" : "?";
-  if (cmd === 0x0403) return sub === 0 ? msg(lang, "기본", "standard") : sub === 2 ? msg(lang, "넓은 지정", "wide") + wide : "?";
+  if ([0x0619, 0x0802, 0x1001, 0x1002, 0x1003, 0x1005, 0x1006, 0x0101].includes(cmd)) return sub === 0 ? "—" : "?";
+  if (cmd === 0x0403 || cmd === 0x0801 || cmd === 0x0406 || cmd === 0x1406) return sub === 0 ? msg(lang, "기본", "standard") : sub === 2 ? msg(lang, "넓은 지정", "wide") + wide : "?";
   switch (sub) {
     case 0x0000:
       return msg(lang, "워드 단위", "word units");
@@ -304,7 +320,7 @@ function parseRequestBody(cmd: number, sub: number, r: Rd, lang: Lang, out: McDe
     r.end();
     return;
   }
-  if (cmd === 0x0403) {
+  if (cmd === 0x0403 || cmd === 0x0801) {
     if (sub !== 0 && sub !== 2) throw new McErr(0xc059);
     const wide = sub === 2;
     const nw = r.num(1);
@@ -325,8 +341,94 @@ function parseRequestBody(cmd: number, sub: number, r: Rd, lang: Lang, out: McDe
       const span = d.dev.bits ? 32 : 2;
       f(`${msg(lang, "더블워드", "Double word")} ${k + 1}`, d.raw, devValue(d.dev, d.no, lang) + ` · ${rangeText(d.dev, d.no, d.no + span - 1)}`);
     }
-    out.req = { kind: "random-read", words, dwords };
     r.end();
+    if (cmd === 0x0801) {
+      // 타이머·카운터 접점·코일은 등록할 수 없다(SLMP 5.2)
+      if ([...words, ...dwords].some(([d]) => ["TS", "TC", "CS", "CC"].includes(d.name))) throw new McErr(0xc05b, "monitor");
+      out.req = { kind: "monitor-entry", words, dwords };
+      out.notes.push(msg(lang, "등록만 하고 응답 데이터는 없습니다 — 값은 0802(모니터 실행) 응답에 0403 과 같은 모양으로 옵니다", "Registers only; no response data — the values come in the 0802 (Execute Monitor) reply in the 0403 layout"));
+      return;
+    }
+    out.req = { kind: "random-read", words, dwords };
+    return;
+  }
+  if (cmd === 0x0802) {
+    if (sub !== 0) throw new McErr(0xc059);
+    r.end();
+    out.req = { kind: "monitor-run" };
+    out.notes.push(msg(lang, "0801(모니터 등록)을 먼저 보내지 않았으면 C05D 로 답합니다", "Answered with C05D unless 0801 (Entry Monitor Device) was sent first"));
+    return;
+  }
+  if (cmd === 0x0406 || cmd === 0x1406) {
+    if (sub !== 0 && sub !== 2) throw new McErr(0xc059);
+    const wide = sub === 2;
+    const write = cmd === 0x1406;
+    const nw = r.num(1);
+    f(msg(lang, "워드 블록 수", "Word device blocks"), nw.raw, String(nw.v));
+    const nb = r.num(1);
+    f(msg(lang, "비트 블록 수", "Bit device blocks"), nb.raw, String(nb.v));
+    if (nw.v + nb.v === 0 || nw.v + nb.v > (wide ? 60 : 120)) throw new McErr(0xc051);
+    const blocks: [DevInfo, number, number][] = [];
+    let total = 0;
+    if (write) out.itemsCaption = msg(lang, "쓸 값", "Values to write");
+    for (let k = 0; k < nw.v + nb.v; k++) {
+      const bitBlock = k >= nw.v;
+      const d = r.device(wide);
+      const n = r.num(2);
+      const label = `${bitBlock ? msg(lang, "비트 블록", "Bit block") : msg(lang, "워드 블록", "Word block")} ${(bitBlock ? k - nw.v : k) + 1}`;
+      const span = bitBlock ? n.v * 16 : n.v;
+      f(label, `${d.raw} ${n.raw}`, `${devValue(d.dev, d.no, lang)} · ${n.v} ${pts}${n.v ? ` · ${rangeText(d.dev, d.no, d.no + span - 1)}` : ""}`);
+      if (d.dev.bits !== bitBlock) throw new McErr(0xc05b, "block");
+      if (n.v === 0) throw new McErr(0xc051);
+      total += n.v;
+      blocks.push([d.dev, d.no, n.v]);
+      if (write) {
+        const at = r.i;
+        for (let i = 0; i < n.v; i++) {
+          const w = r.num(2).v;
+          out.items.push(bitBlock ? { addr: rangeText(d.dev, d.no + i * 16, d.no + i * 16 + 15), kind: "bitword", value: w } : { addr: addrText(d.dev, d.no + i), kind: "word", value: w });
+        }
+        f(`${label} — ${msg(lang, "쓸 데이터", "write data")}`, r.raw(r.u.slice(at, r.i)), `${n.v} ${msg(lang, "워드", "words")}`);
+      }
+    }
+    // 점 수 상한(SLMP 5.2): 읽기는 합 ≤ 960, 쓰기는 블록 수 × 4(0002 는 × 9) + 합 ≤ 960
+    if (total + (write ? (nw.v + nb.v) * (wide ? 9 : 4) : 0) > 960) throw new McErr(0xc051);
+    r.end();
+    out.req = write ? { kind: "write-block" } : { kind: "read-block", blocks };
+    return;
+  }
+  if ([0x1001, 0x1002, 0x1003, 0x1005, 0x1006].includes(cmd)) {
+    if (sub !== 0) throw new McErr(0xc059);
+    if (cmd === 0x1001) {
+      const mode = r.num(2);
+      f(msg(lang, "모드", "Mode"), mode.raw, mode.v === 1 ? msg(lang, "0001 강제 실행 아님", "0001 forced execution not allowed") : mode.v === 3 ? msg(lang, "0003 강제 실행", "0003 forced execution allowed") : "?");
+      const clear = r.num(1);
+      f(msg(lang, "클리어 모드", "Clear mode"), clear.raw, [msg(lang, "00 지우지 않음", "00 do not clear"), msg(lang, "01 래치 범위 밖 지움", "01 clear outside the latch range"), msg(lang, "02 래치 범위까지 지움", "02 clear including the latch range")][clear.v] ?? "?");
+      const fixed = r.num(1);
+      f(msg(lang, "고정 값", "Fixed value"), fixed.raw, fixed.v === 0 ? "00" : "?");
+      if ((mode.v !== 1 && mode.v !== 3) || clear.v > 2 || fixed.v !== 0) throw new McErr(0xc05c);
+    } else if (cmd === 0x1003) {
+      const mode = r.num(2);
+      f(msg(lang, "모드", "Mode"), mode.raw, mode.v === 1 ? msg(lang, "0001 강제 실행 아님", "0001 forced execution not allowed") : mode.v === 3 ? msg(lang, "0003 강제 실행", "0003 forced execution allowed") : "?");
+      if (mode.v !== 1 && mode.v !== 3) throw new McErr(0xc05c);
+    } else {
+      const v = r.num(2);
+      f(msg(lang, "고정 값", "Fixed value"), v.raw, v.v === 1 ? "0001" : "?");
+      if (v.v !== 1) throw new McErr(0xc05c);
+    }
+    r.end();
+    out.req = { kind: "remote" };
+    out.notes.push(
+      cmd === 0x1006
+        ? msg(lang, "원격 리셋은 응답을 보내지 않습니다(SLMP 5.6) — PLC Simulator 는 흉내 상태를 RUN 으로 돌리고 모니터 등록을 지웁니다", "Remote Reset sends no reply (SLMP 5.6) — PLC Simulator returns its simulated state to RUN and clears the monitor registration")
+        : msg(lang, "응답 데이터는 없습니다 — PLC Simulator 는 흉내 운전 상태(RUN/STOP/PAUSE)만 바꿉니다", "No response data — PLC Simulator only changes its simulated run state (RUN/STOP/PAUSE)"),
+    );
+    return;
+  }
+  if (cmd === 0x0101) {
+    if (sub !== 0) throw new McErr(0xc059);
+    r.end();
+    out.req = { kind: "type-name" };
     return;
   }
   if (cmd === 0x1402) {
@@ -420,6 +522,18 @@ function parseResponseData(r: Rd, req: McRequest | undefined, lang: Lang, out: M
     } else if (req.kind === "random-read") {
       for (const [d, no] of req.words ?? []) out.items.push(d.bits ? { addr: rangeText(d, no, no + 15), kind: "bitword", value: r.num(2).v } : { addr: addrText(d, no), kind: "word", value: r.num(2).v });
       for (const [d, no] of req.dwords ?? []) out.items.push({ addr: rangeText(d, no, no + (d.bits ? 31 : 1)), kind: "dword", value: r.num(4).v });
+    } else if (req.kind === "read-block" || req.kind === "monitor-run") {
+      for (const [d, no, n] of req.blocks ?? []) {
+        for (let k = 0; k < n; k++) {
+          const w = r.num(2).v;
+          out.items.push(d.bits ? { addr: rangeText(d, no + k * 16, no + k * 16 + 15), kind: "bitword", value: w } : { addr: addrText(d, no + k), kind: "word", value: w });
+        }
+      }
+    } else if (req.kind === "type-name") {
+      const name = r.take(16);
+      f(msg(lang, "형명", "Model name"), r.raw(name), JSON.stringify(text(name).replace(/ +$/, "")));
+      const code = r.num(2);
+      f(msg(lang, "형명 코드", "Model code"), code.raw, h(code.v, 4));
     } else if (req.kind === "loopback") {
       const n = r.num(2);
       f(msg(lang, "루프백 데이터 수", "Number of loopback data"), n.raw, `${n.v} ${msg(lang, "바이트", "bytes")}`);

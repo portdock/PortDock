@@ -1,6 +1,9 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { SimSpec } from "../../modbus-slave/src/regmap";
 import { tally } from "@shared/usage";
+import type { logOptionsOf } from "@shared/settings";
+import type { Rule } from "./model.ts";
+import type { RuleStat } from "./RulesDialog";
 export { ascii, clock, hex } from "@shared/format";
 
 export { DEV_GROUPS, DEV_INFO, DEVS, MAX_SIZE, type DataCode, type Dev, type Format, type FrameKind } from "./devs.ts";
@@ -67,6 +70,26 @@ export interface Stats {
   writes: number;
   perCmd: Record<string, number>;
   perEnd: Record<string, number>;
+  /** (0.6.0) 흉내 운전 상태 */
+  runMode: RunMode;
+  /** (0.6.0) 모니터 등록(0801) 점 수 */
+  monitorPoints: number;
+}
+
+export type RunMode = "run" | "stop" | "pause";
+
+/** 서버 선택 — 자기 국만·형명 읽기(0101) 흉내 값 */
+export interface ServerOptions {
+  ownStationOnly: boolean;
+  modelName: string;
+  modelCode: number;
+}
+
+/** (0.6.0) 규칙 실행 상태와 따로 실행된 규칙 줄 */
+export interface RulesState {
+  stats: RuleStat[];
+  notes: { seq: number; ts: number; text: string }[];
+  seq: number;
 }
 
 /** 구현한 명령 — [코드, 한국어, 영어] */
@@ -76,7 +99,20 @@ export const COMMANDS: [number, string, string][] = [
   [0x0403, "랜덤 읽기", "Read Random"],
   [0x1402, "랜덤 쓰기", "Write Random"],
   [0x0619, "루프백", "Loopback"],
+  [0x0406, "블록 읽기", "Read Block"],
+  [0x1406, "블록 쓰기", "Write Block"],
+  [0x0801, "모니터 등록", "Entry Monitor Device"],
+  [0x0802, "모니터 실행", "Execute Monitor"],
+  [0x1001, "원격 RUN", "Remote Run"],
+  [0x1002, "원격 STOP", "Remote Stop"],
+  [0x1003, "원격 PAUSE", "Remote Pause"],
+  [0x1005, "원격 래치 클리어", "Remote Latch Clear"],
+  [0x1006, "원격 리셋", "Remote Reset"],
+  [0x0101, "형명 읽기", "Read Type Name"],
 ];
+
+/** 형명 읽기 기본 흉내 값 — 실제 기종 이름이 아니다(crates/core/src/mc.rs DEFAULT_MODEL_NAME) */
+export const DEFAULT_MODEL_NAME = "PORTDOCK-SIM";
 
 /**
  * 종료 코드 — 이 흉내가 쓰는 값과 뜻(MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5 의 설명을 줄인 것).
@@ -93,6 +129,7 @@ export const END_CODES: [number, string, string][] = [
   [0xc059, "명령·서브 명령 틀림", "Wrong command/subcommand"],
   [0xc05b, "디바이스 지정 틀림", "Device cannot be accessed"],
   [0xc05c, "요청 데이터 틀림", "Request data error"],
+  [0xc05d, "모니터 등록 전 실행", "Monitor not registered"],
   [0xc05f, "접근 대상 틀림", "Wrong access destination"],
   [0xc060, "비트 값 틀림", "Bit request error"],
   [0xc061, "데이터 길이 불일치", "Data length mismatch"],
@@ -109,7 +146,12 @@ export const api = {
   kick: (id: number) => invoke<void>("kick", { id }),
   setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   setFaults: (faults: Faults) => tally((faults.noResponse || faults.forceEndCode > 0 || faults.delayMs > 0 || faults.delayMaxMs > 0) && "faults", invoke<void>("set_faults", { faults })),
-  setOptions: (options: { ownStationOnly: boolean }) => invoke<void>("set_options", { options }),
+  setOptions: (options: ServerOptions) => invoke<void>("set_options", { options }),
+  setLogOptions: (options: ReturnType<typeof logOptionsOf>) => invoke<void>("set_log_options", { options }),
+  setRules: (rules: Rule[]) => tally(rules.some((r) => r.enabled) && "rules", invoke<void>("set_rules", { rules })),
+  rulesState: (after: number) => invoke<RulesState>("rules_state", { after }),
+  resetRuleCounts: () => invoke<void>("reset_rule_counts"),
+  setRunMode: (mode: RunMode) => invoke<void>("set_run_mode", { mode }),
   setSims: (dev: Dev, sims: SimSpec[]) => tally(sims.length > 0 && "simulate", invoke<void>("set_sims", { dev, sims })),
   setSize: (dev: Dev, size: number) => invoke<void>("set_size", { dev, size }),
   getValues: (dev: Dev, start: number, count: number) => invoke<number[]>("get_values", { dev, start, count }),

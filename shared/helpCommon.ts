@@ -275,6 +275,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
             "- «글자 인코딩»: UTF-8(기본)·CP949(EUC-KR)·Latin-1·ASCII. ASCII 보기·복사·저장과 ASCII 로 보내는 글자에 씁니다. 이 인코딩으로 읽을 수 없는 바이트는 «<C7>» 처럼, 제어 문자는 «<CR>» 처럼 보입니다. 보낼 글자가 그 인코딩에 없으면 «보낼 바이트» 에 이유가 나오고 보내지 않습니다(\\xNN 이스케이프는 늘 그 바이트). 로그 찾기의 한글은 UTF-8 바이트로 찾습니다 — CP949 줄은 HEX 로 찾으세요.",
             "- «파일 로그 형식»: HEX(예전과 같음) · ASCII(글자) · HEX + ASCII · CSV(엑셀용 «ts,dir,len,hex,ascii,check,note,peer», UTF-8 BOM). CSV 의 = + - @ 로 시작하는 칸은 엑셀이 수식으로 읽지 않게 앞에 ' 를 붙입니다. CSV 를 고르면 저장 파일 이름도 .csv 로 제안합니다.",
             "- «크기로 나누기(MB)»·«시간으로 나누기(시간)»: 넘으면 «이름-002.log», «이름-003.log» … 로 이어 씁니다. 옛 파일 끝에 «LOG NEXT 새 이름», 새 파일 처음에 «LOG PART 2 (prev 옛 이름)» 사건 줄이 남습니다. 0 이면 나누지 않습니다.",
+            "- (0.6.0 부터) «날짜가 바뀌면 새 파일»: 자정을 넘으면 «이름-20261031.log» 로 이어 씁니다(같은 날 크기로 또 나누면 «이름-20261031-002.log»). «옛 로그 지우기(일)»: 파일 기록을 시작할 때와 다음 파일로 넘어갈 때, 같은 폴더에서 같은 이름 갈래(같은 확장자, 이름 뒤에 «-숫자» 만 붙은 파일 — 자동 로그 이름 «portdock-앱-날짜-시각» 끼리도 같은 갈래)의 파일 중 고친 지 그 날 수가 지난 것을 지우고 «LOG CLEAN 개수» 사건 줄을 남깁니다. 하위 폴더·다른 이름은 건드리지 않습니다. 0 이면 지우지 않습니다.",
             "- 형식·나누기는 다음에 시작하는 파일 기록부터 적용됩니다(지금 쓰는 파일은 그대로).",
           ],
         }
@@ -285,6 +286,7 @@ export function ioSections(lang: Lang, f: IoHelp = {}): { title: string; body: s
             "- «Text encoding»: UTF-8 (default), CP949 (EUC-KR), Latin-1, ASCII. Used for the ASCII view, copies and saves, and for characters sent in ASCII mode. Bytes the encoding cannot read appear as «<C7>», control characters as «<CR>». If a character to send is not in the encoding, «Bytes to send» explains why and nothing is sent (\\xNN escapes always give that byte). Korean text in the log search is matched as UTF-8 bytes — search CP949 lines in HEX.",
             "- «File log format»: HEX (as before), ASCII (text), HEX + ASCII, or CSV (for Excel: «ts,dir,len,hex,ascii,check,note,peer», UTF-8 BOM). CSV cells starting with = + - @ get a leading ' so Excel does not treat them as formulas. With CSV the save dialog suggests a .csv name.",
             "- «Split by size (MB)» / «Split by time (hours)»: logging continues in «name-002.log», «name-003.log» … The old file ends with «LOG NEXT new name» and the new one starts with «LOG PART 2 (prev old name)». 0 means never split.",
+            "- (from 0.6.0) «New file when the date changes»: after midnight logging continues in «name-20261031.log» (a further size split the same day gives «name-20261031-002.log»). «Delete old logs (days)»: when file logging starts and at each new file, files in the same folder from the same name family (same extension, only «-digits» added to the name — auto-log names «portdock-app-date-time» count as one family) last modified more than that many days ago are deleted, leaving a «LOG CLEAN count» event line. Subfolders and other names are never touched. 0 means never delete.",
             "- Format and splitting apply from the next file log you start (the current file is unchanged).",
           ],
         },

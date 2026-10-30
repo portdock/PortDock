@@ -398,6 +398,123 @@ async function runApp(app, port) {
     }
 
     /** SCPI — 연결된 상태에서: *IDN? 장비 칸·창 제목·질의·(full) 쓰기·시간 초과·오류 큐·줄 끝 없는 답·블록·*OPC?·이력·예시·통신 기록 → 반복 측정 → 좁은 창 */
+    // ---- (0.6.0) PLC Simulator: 조건 규칙 창·흉내 PLC 상태(RUN/STOP·형명)·워드 ASCII 보기·채우기·써 넣기·비트 칸 누르기
+    async function plcRun() {
+      const L = (k, e) => (ko ? k : e);
+      const mem = (dev, start, n) => js(`return window.__pdMock.plc().mem(${JSON.stringify(dev)}, ${start}, ${n})`);
+      /** 라벨 글이 text 로 시작하는 칸 안의 입력 — scope 안에서 */
+      const inLabel = (scope, text, value) =>
+        d.executeScript(
+          `const lab = [...document.querySelectorAll(arguments[0] + ' label')].find((l) => l.textContent.trim().startsWith(arguments[1]));
+           const el = lab && lab.querySelector('input, textarea');
+           if (!el) return false;
+           const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+           Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, arguments[2]);
+           el.dispatchEvent(new Event('input', { bubbles: true }));
+           el.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+           return true;`,
+          scope,
+          text,
+          value,
+        );
+      // 조건 규칙 — 예제 넣기 → 두 규칙·요약, 시작한 동안 실행 횟수·RULE 줄
+      await clickText(".devbar button", L("규칙", "Rules"));
+      await expectJs("plc rules open", "return !!document.querySelector('.modal.rules-dlg')");
+      await clickText(".rules-dlg .rules-tools button", L("예제 넣기", "Add example"));
+      await expectJs(
+        "plc rules example",
+        "return document.querySelectorAll('.rule-list li').length === 2 && /M100 ON → 300 ms → M101 ON/.test(document.querySelector('.rule-list').textContent) && window.__pdMock.plc().rules.length === 2 && !!document.querySelector('.toast')",
+      );
+      await expectJs("plc rules ran", `return /${L("[1-9]\\d*번", "[1-9]\\d*×")}/.test(document.querySelector('.rule-list .rule-stat').textContent) && /RULE #1/.test(document.querySelector('main').textContent)`, 8000);
+      if (combo.name === "ko-light") await shot(app, `${combo.name}-rules`);
+      if (combo.full) {
+        // 고치기: 틀린 주소 → 오류, 고쳐서 «여러 개 만들기» 3개·간격 2 → 4개, 둘 지우기, 끄고 켜기
+        await d.executeScript(`document.querySelector('.rule-list li button[title="${L("고치기", "Edit")}"]').click()`);
+        await expectJs("plc rule edit open", "return !!document.querySelector('.rule-edit')");
+        await inLabel(".rule-edit", L("주소", "Address"), "Q1");
+        await clickText(".rule-edit .dlg-buttons .btn.primary");
+        await expectJs("plc rule bad addr", "return !!document.querySelector('.rule-edit .error') && /Q1/.test(document.querySelector('.rule-edit .error').textContent)");
+        await inLabel(".rule-edit", L("주소", "Address"), "M200");
+        await inLabel(".rule-edit", L("여러 개", "Make several"), "3");
+        await inLabel(".rule-edit", L("번호 간격", "Number step"), "2");
+        await expectJs("plc rule range hint", "return /3/.test((document.querySelector('.rule-edit .hint') || {}).textContent || '')");
+        await clickText(".rule-edit .dlg-buttons .btn.primary");
+        await expectJs("plc rule range", "return !document.querySelector('.rule-edit') && document.querySelectorAll('.rule-list li').length === 4 && /M204 ON → 300 ms → M105 ON/.test(document.querySelector('.rule-list').textContent) && window.__pdMock.plc().rules.length === 4");
+        for (let i = 0; i < 2; i++) await d.executeScript(`[...document.querySelectorAll('.rule-list li button[title="${L("지우기", "Delete")}"]')].pop().click()`);
+        await expectJs("plc rule delete", "return document.querySelectorAll('.rule-list li').length === 2 && window.__pdMock.plc().rules.length === 2");
+        await d.executeScript("document.querySelector('.rule-list li input[type=checkbox]').click()");
+        await expectJs("plc rule off", "return window.__pdMock.plc().rules[0].enabled === false && document.querySelector('.rule-list li').classList.contains('off')");
+        await d.executeScript("document.querySelector('.rule-list li input[type=checkbox]').click()");
+        await expectJs("plc rule on", "return window.__pdMock.plc().rules[0].enabled === true");
+        // 고치는 중 Esc 는 고치기만 닫는다
+        await d.executeScript(`document.querySelector('.rule-list li button[title="${L("고치기", "Edit")}"]').click()`);
+        await keys(Key.ESCAPE);
+        await expectJs("plc rule edit Esc", "return !document.querySelector('.rule-edit') && !!document.querySelector('.modal.rules-dlg')");
+      }
+      await keys(Key.ESCAPE);
+      await expectJs("plc rules Esc", "return !document.querySelector('.modal.rules-dlg')");
+      await verify("plc rules close", { expectFocus: true });
+
+      // 흉내 PLC 상태 — STOP 이면 노란 줄, 형명은 ASCII 16글자까지
+      await d.executeScript("const det = document.querySelector('.run-modes').closest('details'); if (!det.open) det.querySelector('summary').click();");
+      await clickText(".run-modes button", "STOP");
+      await expectJs("plc run mode stop", "return window.__pdMock.plc().runMode === 'stop' && /STOP/.test([...document.querySelectorAll('aside .hint.warn')].map((e) => e.textContent).join(' '))");
+      if (combo.name === "ko-light") await shot(app, `${combo.name}-run-stop`);
+      await clickText(".run-modes button", "RUN");
+      await expectJs("plc run mode run", "return window.__pdMock.plc().runMode === 'run'");
+      await inLabel("aside", L("형명 (흉내 값)", "Model name"), "가나");
+      await expectJs("plc model bad", `return [...document.querySelectorAll('aside label')].find((l) => l.textContent.trim().startsWith(${JSON.stringify(L("형명 (흉내 값)", "Model name"))})).querySelector('input').classList.contains('bad')`);
+      await inLabel("aside", L("형명 (흉내 값)", "Model name"), "TEST-PLC");
+      await expectJs("plc model set", "return window.__pdMock.plc().options.modelName === 'TEST-PLC'");
+      await inLabel("aside", L("형명 (흉내 값)", "Model name"), "PORTDOCK-SIM");
+
+      // 워드 ASCII 보기 — D0 에 «AB» = 4241h(아래 바이트가 앞 글자), U16 으로 16961
+      await clickText(".devbar .seg", "D");
+      await setIn(".fmt-sel", "ascii");
+      await setIn(".regs .regval", "AB");
+      await expectJs("plc ascii view", "return window.__pdMock.plc().mem('D', 0, 1)[0] === 0x4241");
+      await setIn(".fmt-sel", "bytes");
+      await expectJs("plc bytes view", "return document.querySelector('.regs .regval').value === '66 65'");
+      await setIn(".fmt-sel", "u16");
+      await expectJs("plc u16 back", "return document.querySelector('.regs .regval').value === '16961'");
+
+      // 채우기 — D10 부터 5칸 100·102·…
+      await clickText(".devbar button", L("채우기", "Fill"));
+      await expectJs("plc fill open", "return !!document.querySelector('.modal.fill-dlg')");
+      await inLabel(".fill-dlg", L("시작 번호", "Start"), "10");
+      await inLabel(".fill-dlg", L("개수", "Count"), "5");
+      await inLabel(".fill-dlg", L("값", "Value"), "100");
+      await inLabel(".fill-dlg", L("증가량", "Step"), "2");
+      await expectJs("plc fill preview", "return /D10/.test(document.querySelector('.fill-dlg [role=status]').textContent) && /D14/.test(document.querySelector('.fill-dlg [role=status]').textContent)");
+      await clickText(".fill-dlg .dlg-buttons .btn.primary");
+      await expectJs("plc fill", "const m = window.__pdMock.plc().mem('D', 10, 5); return !document.querySelector('.modal.fill-dlg') && m.join(',') === '100,102,104,106,108'");
+      await verify("plc fill close", { expectFocus: true });
+      if (combo.full) {
+        // 문자열 «ABC» → D20 = 4241, D21 = 0043(끝 0 이 홀수 자리에) · 숫자 목록 · 틀린 시작 번호
+        await clickText(".devbar button", L("채우기", "Fill"));
+        await clickText(".fill-dlg .seg", L("문자열", "Write a string"));
+        await inLabel(".fill-dlg", L("시작 번호", "Start"), "20");
+        await inLabel(".fill-dlg", L("글자", "Text"), "ABC");
+        await clickText(".fill-dlg .dlg-buttons .btn.primary");
+        await expectJs("plc write text", "const m = window.__pdMock.plc().mem('D', 20, 2); return !document.querySelector('.modal.fill-dlg') && m[0] === 0x4241 && m[1] === 0x43");
+        await clickText(".devbar button", L("채우기", "Fill"));
+        await clickText(".fill-dlg .seg", L("숫자 목록", "Write a number list"));
+        await inLabel(".fill-dlg", L("시작 번호", "Start"), "zz");
+        await expectJs("plc fill bad start", "return document.querySelector('.fill-dlg [role=status]').classList.contains('warn')");
+        await inLabel(".fill-dlg", L("시작 번호", "Start"), "30");
+        await inLabel(".fill-dlg", L("숫자", "Numbers"), "1, 2 0x10");
+        await clickText(".fill-dlg .dlg-buttons .btn.primary");
+        await expectJs("plc write list", "return !document.querySelector('.modal.fill-dlg') && window.__pdMock.plc().mem('D', 30, 3).join(',') === '1,2,16'");
+      }
+
+      // 비트 칸 아무 데나 눌러 반전(M0)
+      await clickText(".devbar .seg", "M");
+      const before = (await mem("M", 0, 1))[0];
+      await d.executeScript("document.querySelector('.regs .reg.bitcell .addr').click()");
+      await expectJs("plc bit click", `return window.__pdMock.plc().mem('M', 0, 1)[0] === ${before ? 0 : 1}`);
+      await clickText(".devbar .seg", "D");
+    }
+
     async function scpiRun() {
       await expectJs("scpi idn", "return /PORTDOCK/.test((document.querySelector('table.idn') || {}).textContent || '') && /SCPI-SIM/.test(document.querySelector('table.idn').textContent)");
       await expectJs("scpi title", "return /:5025 · PORTDOCK SCPI-SIM — PortDock SCPI/.test(document.title)");
@@ -2785,6 +2902,7 @@ async function runApp(app, port) {
       // (10/19) SCPI·Plot 앱별 단계(옛 smoke-scpi·smoke-plot)
       if (app === "scpi") await scpiRun();
       if (app === "plot") await plotRun();
+      if (app === "plc-simulator") await plcRun();
       // (10/18) TCP: 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 «Modbus TCP 로 보기» 알림줄 한 번(첫 실행 상태라 이번이 처음)
       if (app === "tcp" && !(await js("return !!document.querySelector('.sendbar .mb502')"))) await conv("tcp-502", "502 로 접속했는데 «Modbus TCP 로 보기» 알림줄이 없음");
       // (0.3.0) 그 알림줄의 «Modbus Master 로 열기» → 주소:502
@@ -3079,7 +3197,8 @@ let total = 0;
 try {
   for (const [app, port] of Object.entries(APPS)) {
     if (only && only !== app) continue;
-    total += await runApp(app, port);
+    // 다른 클론의 미리보기 서버와 겹치지 않게 한 앱만 돌릴 때 포트를 바꿀 수 있다(SMOKE_PORT=5311 node ui-preview/smoke.mjs plc-simulator)
+    total += await runApp(app, only && process.env.SMOKE_PORT ? Number(process.env.SMOKE_PORT) : port);
   }
 } finally {
   await d.quit();

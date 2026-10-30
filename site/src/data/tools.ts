@@ -507,7 +507,20 @@ export const TOOLS: Tool[] = [
     ],
     features: [
       { title: { ko: "3E·4E, 이진·ASCII, TCP·UDP", en: "3E/4E, binary/ASCII, TCP/UDP" }, body: { ko: "TCP 서버(여러 클라이언트) 또는 UDP 로 듣습니다. 4E 응답에는 요청의 일련번호를 그대로 넣습니다. 기본은 이 PC 안(127.0.0.1)에서만 받고, 다른 PC 에서 붙게 하려면 직접 켭니다.", en: "Listens as a TCP server (several clients) or on UDP. 4E replies carry the request's serial number. By default only this PC (127.0.0.1) can connect; allowing other PCs is your choice." } },
-      { title: { ko: "명령 다섯 가지", en: "Five commands" }, body: { ko: "0401 일괄 읽기·1401 일괄 쓰기(워드·비트, 서브 명령 0000~0003), 0403 랜덤 읽기, 1402 랜덤 쓰기, 0619 루프백. 그 밖의 명령은 종료 코드 C059 로 답합니다.", en: "0401 Read and 1401 Write (words and bits, subcommands 0000–0003), 0403 Read Random, 1402 Write Random and 0619 Loopback. Other commands get end code C059." } },
+      {
+        title: { ko: "구현한 명령", en: "Implemented commands" },
+        body: {
+          ko: "0401 일괄 읽기·1401 일괄 쓰기(워드·비트, 서브 명령 0000~0003), 0403 랜덤 읽기, 1402 랜덤 쓰기, 0619 루프백. 0.6.0 부터 0406·1406 블록 읽기·쓰기, 0801·0802 모니터, 1001~1006 원격 RUN·STOP·PAUSE·래치 클리어·리셋(흉내 상태만), 0101 형명 읽기(흉내 값)도. 그 밖의 명령은 종료 코드 C059 로 답합니다.",
+          en: "0401 Read and 1401 Write (words and bits, subcommands 0000–0003), 0403 Read Random, 1402 Write Random and 0619 Loopback. From 0.6.0 also 0406/1406 Read/Write Block, 0801/0802 monitor, 1001–1006 remote RUN/STOP/PAUSE/latch clear/reset (simulated state only) and 0101 Read Type Name (simulated values). Other commands get end code C059.",
+        },
+      },
+      {
+        title: { ko: "조건 규칙 (0.6.0 부터)", en: "Condition rules (from 0.6.0)" },
+        body: {
+          ko: "«요청 비트가 켜지면 300 ms 뒤 완료 비트 켜기» 처럼 조건(비트 ON·OFF·에지, 워드 값 비교, 주기) → 지연(고정·무작위) → 동작(비트·워드 쓰기)을 정해 핸드셰이크를 흉내 냅니다. 래더 프로그램은 아닙니다.",
+          en: "Mimic handshakes such as «when the request bit turns on, turn the done bit on 300 ms later»: condition (bit ON/OFF/edge, word comparison, periodic) → delay (fixed or random) → actions (bit and word writes). Not a ladder program.",
+        },
+      },
       { title: { ko: "디바이스 18종", en: "18 devices" }, body: { ko: "X·Y·M·L·F·B·SM, D·W·R·ZR·SD, TS·TC·TN·CS·CC·CN. X·Y·B·W·ZR 는 16진 번호, 디바이스마다 크기를 정하고 넘으면 C056. 비트 디바이스는 16점 워드로도 보고, 칸마다 32비트·실수·문자열·이름을 정합니다.", en: "X, Y, M, L, F, B, SM, D, W, R, ZR, SD, TS, TC, TN, CS, CC and CN. X, Y, B, W and ZR use hex numbers; each device has a size and requests beyond it get C056. Bit devices can be viewed as 16-point words; cells can be 32-bit, float, string or named." } },
       { title: { ko: "장애 주입", en: "Fault injection" }, body: { ko: "응답 지연(범위), 응답 안 함, 정한 종료 코드로 답하기를 명령·디바이스·N번째·확률로 골라 겁니다.", en: "Response delay (with a range), no response or a chosen end code — targeted by command, device, every Nth request or probability." } },
       { title: { ko: "풀이가 붙은 통신 기록", en: "Decoded traffic" }, body: { ko: "요청마다 명령 이름·디바이스·점 수, 응답마다 종료 코드와 뜻이 붙습니다. 클라이언트가 바꾼 칸은 잠깐 강조되고 통계가 남습니다.", en: "Each request shows the command name, device and points; each reply the end code and its meaning. Cells changed by a client flash, with statistics." } },

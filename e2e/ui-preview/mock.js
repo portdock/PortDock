@@ -2386,11 +2386,39 @@ window.__pdMock.loop = () => (PIL ? { config: PIL.config, done: PIL.done, cancel
 // ================================================================ PLC Simulator (apps/plc-simulator — 명령: apps/plc-simulator/src-tauri/src/lib.rs,
 // 처리기 모양: crates/core/src/mc.rs). 시작하면 TCP 는 클라이언트 둘(UDP 는 보내온 곳 하나)이 붙고, 0.45초마다 «0401 D0 ×4 읽기»,
 // 다섯 번에 한 번 «1401 D100 쓰기»(값이 1씩 오름)를 주고받는다. 일부러 실패하는 입력: 포트 445(사용 중), 주소 nohost(찾지 못함).
-const PLC_CMDS = new Set(["start", "stop", "kick", "set_log", "set_faults", "set_options", "set_sims", "set_size", "devices", "get_values", "set_values", "get_stats", "reset_stats"]);
+// (0.6.0) 조건 규칙은 모양만 받아 두고, 시작한 동안 켠 규칙이 있으면 네 박자마다 첫 켠 규칙이 «실행» 된 것처럼(횟수·마지막 시각·RULE 줄)
+// 알린다 — 실제 조건 판단은 Rust(crates/core/src/mc_rules.rs) 시험이 본다. 흉내 운전 상태(RUN/STOP/PAUSE)는 그대로 돌려준다.
+const PLC_CMDS = new Set(["start", "stop", "kick", "set_log", "set_faults", "set_options", "set_sims", "set_size", "devices", "get_values", "set_values", "get_stats", "reset_stats", "set_rules", "rules_state", "reset_rule_counts", "set_run_mode"]);
 const isPLC = () => /PLC Simulator/.test(document.title);
 const PLC_DEV = { X: [0x9c, 1, 8192], Y: [0x9d, 1, 8192], M: [0x90, 1, 8192], L: [0x92, 1, 8192], F: [0x93, 1, 2048], B: [0xa0, 1, 8192], SM: [0x91, 1, 2048], D: [0xa8, 0, 12288], W: [0xb4, 0, 8192], R: [0xaf, 0, 32768], ZR: [0xb0, 0, 65536], SD: [0xa9, 0, 2048], TS: [0xc1, 1, 1024], TC: [0xc0, 1, 1024], TN: [0xc2, 0, 1024], CS: [0xc4, 1, 1024], CC: [0xc3, 1, 1024], CN: [0xc5, 0, 1024] };
 const plcNewStats = () => ({ requests: 0, ok: 0, errors: 0, ignored: 0, noResponse: 0, writes: 0, perCmd: {}, perEnd: {} });
-const plc = { mem: new Map(), sizes: Object.fromEntries(Object.entries(PLC_DEV).map(([k, v]) => [k, v[2]])), faults: null, options: { ownStationOnly: false }, sims: new Map(), stats: plcNewStats(), format: { frame: "3e", code: "binary" } };
+const plc = {
+  mem: new Map(),
+  sizes: Object.fromEntries(Object.entries(PLC_DEV).map(([k, v]) => [k, v[2]])),
+  faults: null,
+  options: { ownStationOnly: false, modelName: "PORTDOCK-SIM", modelCode: 0 },
+  sims: new Map(),
+  stats: plcNewStats(),
+  format: { frame: "3e", code: "binary" },
+  rules: [],
+  ruleStats: new Map(),
+  ruleNotes: [],
+  ruleSeq: 0,
+  runMode: "run",
+};
+/** 켠 규칙 하나를 «실행» 한 것처럼 — 횟수·마지막 시각·RULE 줄 */
+function plcRuleTick() {
+  const r = plc.runMode === "run" && plc.rules.find((x) => x.enabled);
+  if (!r) return;
+  const st = plc.ruleStats.get(r.id) ?? { count: 0, lastMs: null };
+  st.count++;
+  st.lastMs = Date.now();
+  plc.ruleStats.set(r.id, st);
+  const a = r.actions[0];
+  const at = `${a.at.dev}${a.at.no}${a.at.bit != null ? `.${a.at.bit.toString(16).toUpperCase()}` : ""}`;
+  plc.ruleNotes.push({ seq: ++plc.ruleSeq, ts: Date.now(), text: `RULE #${r.id} ${r.name ? `${r.name}: ` : ""}${at}=${a.op === "off" ? "OFF" : a.op === "on" ? "ON" : a.value}` });
+  if (plc.ruleNotes.length > 200) plc.ruleNotes.splice(0, 100);
+}
 const plcTbl = (d) => plc.mem.get(d) ?? plc.mem.set(d, new Map()).get(d);
 const plcRange = (d, start, count) =>
   !(d in PLC_DEV) ? tr("모르는 디바이스", "unknown device") : start + count > plc.sizes[d] ? tr(`${d} 범위 밖(${plc.sizes[d]}점)`, `${d} out of range (${plc.sizes[d]} points)`) : null;
@@ -2414,6 +2442,7 @@ function plcTick() {
   const ascii = f.code === "ascii";
   const serial = s.tick & 0xffff;
   const write = s.tick % 5 === 0;
+  if (s.tick % 4 === 0) plcRuleTick();
   const d = plcTbl("D");
   const st = plc.stats;
   const fl = plc.faults;
@@ -2500,7 +2529,27 @@ function plcsim(cmd, a) {
       plc.faults = { ...a.faults };
       return null;
     case "set_options":
+      if (typeof a.options.modelName === "string" && (a.options.modelName.length > 16 || !/^[\x20-\x7e]*$/.test(a.options.modelName))) return fail(tr("형명은 영문·숫자·기호(ASCII) 16글자까지입니다", "The model name is up to 16 ASCII characters"));
       plc.options = { ...a.options };
+      return null;
+    case "set_rules":
+      if (!Array.isArray(a.rules)) return fail("rules");
+      if (new Set(a.rules.map((r) => r.id)).size !== a.rules.length) return fail(tr("규칙 번호가 겹칩니다", "Rule number is used twice"));
+      plc.rules = a.rules.map((r) => ({ ...r }));
+      for (const id of [...plc.ruleStats.keys()]) if (!plc.rules.some((r) => r.id === id)) plc.ruleStats.delete(id);
+      return null;
+    case "rules_state":
+      return {
+        stats: plc.rules.map((r) => ({ id: r.id, count: plc.ruleStats.get(r.id)?.count ?? 0, lastMs: plc.ruleStats.get(r.id)?.lastMs ?? null, waiting: false })),
+        notes: plc.ruleNotes.filter((n) => n.seq > (a.after ?? 0)),
+        seq: plc.ruleSeq,
+      };
+    case "reset_rule_counts":
+      plc.ruleStats.clear();
+      return null;
+    case "set_run_mode":
+      if (!["run", "stop", "pause"].includes(a.mode)) return fail("mode");
+      plc.runMode = a.mode;
       return null;
     case "set_sims":
       if (!(a.dev in PLC_DEV)) return fail("device");
@@ -2530,14 +2579,14 @@ function plcsim(cmd, a) {
       return null;
     }
     case "get_stats":
-      return JSON.parse(JSON.stringify(plc.stats));
+      return { ...JSON.parse(JSON.stringify(plc.stats)), runMode: plc.runMode, monitorPoints: 0 };
     case "reset_stats":
       plc.stats = plcNewStats();
       return null;
   }
   return null;
 }
-window.__pdMock.plc = () => ({ format: plc.format, faults: plc.faults, options: plc.options, sizes: { ...plc.sizes }, sims: [...plc.sims.keys()] });
+window.__pdMock.plc = () => ({ format: plc.format, faults: plc.faults, options: plc.options, sizes: { ...plc.sizes }, sims: [...plc.sims.keys()], rules: plc.rules, runMode: plc.runMode, mem: (d, start, n) => Array.from({ length: n }, (_, i) => plcTbl(d).get(start + i) ?? 0) });
 
 // ================================================================ Hardware Tester (apps/hw-tester — 명령: apps/hw-tester/src-tauri/src/lib.rs,
 // 모양: rec.rs·bt.rs·crates/core/src/wlan.rs). 주소·이름은 예시 값(실제 기기·네트워크 아님).

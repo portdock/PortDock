@@ -44,6 +44,10 @@ export interface Settings {
   logFormat: LogFormat;
   logSplitMb: number;
   logSplitHours: number;
+  /** (0.6.0) 날짜가 바뀌면 다음 파일로(이름에 날짜) */
+  logSplitDaily: boolean;
+  /** (0.6.0) 같은 이름 갈래의 옛 로그 파일을 이 날 수가 지나면 지움(0 = 안 지움) */
+  logKeepDays: number;
   /** 모두 펼치기(전문가 화면) — 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계 등)을 늘 펼친 채 시작 */
   expandAll: boolean;
 }
@@ -70,10 +74,12 @@ export const DEFAULTS: Settings = {
   logFormat: "hex",
   logSplitMb: 0,
   logSplitHours: 0,
+  logSplitDaily: false,
+  logKeepDays: 0,
   expandAll: false,
 };
 
-export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000], logSplitMb: [0, 4096], logSplitHours: [0, 720] } as const;
+export const LIMITS = { fontSize: [11, 18], maxLines: [1_000, 1_000_000], logSplitMb: [0, 4096], logSplitHours: [0, 720], logKeepDays: [0, 3650] } as const;
 
 /** 저장값·가져온 값 고치기 — 범위 밖·종류가 다른 값은 기본값으로 */
 export function sanitize(s: Partial<Settings>): Settings {
@@ -98,6 +104,8 @@ export function sanitize(s: Partial<Settings>): Settings {
   const clamp = (n: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, Math.round(Number(n)) || 0));
   v.logSplitMb = clamp(v.logSplitMb, LIMITS.logSplitMb);
   v.logSplitHours = clamp(v.logSplitHours, LIMITS.logSplitHours);
+  v.logSplitDaily = v.logSplitDaily === true;
+  v.logKeepDays = clamp(v.logKeepDays, LIMITS.logKeepDays);
   return v;
 }
 
