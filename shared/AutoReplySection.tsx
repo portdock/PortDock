@@ -104,7 +104,7 @@ export function AutoReplySection({
               </button>
             )}
           </div>
-          <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={api} compact />
+          <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={api} compact expandAll={expandAll} />
           <div className="hint ars-sim">{ar(lang, "simNote")}</div>
         </>
       )}

@@ -498,7 +498,7 @@ async function runApp(app, port) {
       if (combo.full) {
         // 멈춤 → 받기는 계속(+n) → 실시간
         await clickText(".plotbar button", ko ? "⏸ 화면 고정" : "⏸ Freeze view");
-        await expectJs("plot paused", `return /${ko ? "멈춤 — 받기는 계속" : "Paused — still receiving"}/.test(document.querySelector('.notes').textContent)`);
+        await expectJs("plot paused", `return /${ko ? "화면 고정 — 받기는 계속" : "View frozen — still receiving"}/.test(document.querySelector('.notes').textContent)`);
         await expectJs("plot paused count", "return /\\(\\+\\d/.test(document.querySelector('.notes').textContent)", 2000);
         await clickText(".plotbar button", ko ? "▶ 실시간" : "▶ Live");
         await expectJs("plot live", "return !document.querySelector('.notes') || !/⏸/.test(document.querySelector('.notes').textContent)");

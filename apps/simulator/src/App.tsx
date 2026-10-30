@@ -760,7 +760,7 @@ export default function App() {
               <div className="hint">{t("firstNote")}</div>
             </FirstCard>
           )}
-          <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={autoReplyApi} />
+          <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={autoReplyApi} expandAll={settings.expandAll} />
           <details className="unsol adv panel" open={unsolOpen} onToggle={(e) => setUnsolOpen((e.target as HTMLDetailsElement).open)}>
             <summary data-tip={tip(lang, "unsolicited")}>
               <span className="sum-title">{t("unsolicited")}</span>

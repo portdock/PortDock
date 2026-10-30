@@ -250,6 +250,7 @@ export function AutoReplyPanel({
   toast,
   api,
   compact = false,
+  expandAll = false,
 }: {
   lang: Lang;
   rules: AutoRule[];
@@ -258,6 +259,8 @@ export function AutoReplyPanel({
   toast: ToastApi;
   api: AutoReplyApi;
   compact?: boolean;
+  /** 설정 «모두 펼치기» — 문법 설명 접기도 따라 펼친다(켜고 끌 때 다시 그려 따라가게 key) */
+  expandAll?: boolean;
 }) {
   const [err, setErr] = useState<string | null>(null);
   const [active, setActive] = useState<number | null>(null);
@@ -465,7 +468,7 @@ export function AutoReplyPanel({
       {shadow.by && shadow.names.length > 0 && <div className="interlock">{ar(lang, "ilShadow", { a: shadow.by, b: shadow.names.join(", ") })}</div>}
       {dups.length > 0 && <div className="interlock">{ar(lang, "ilDup", { a: dups.join(", ") })}</div>}
       {dupPat.length > 0 && <div className="interlock">{ar(lang, "ilDupPat", { a: dupPat.join(", ") })}</div>}
-      <details className="ar-syntax">
+      <details className="ar-syntax" key={expandAll ? "open" : "closed"} open={expandAll}>
         <summary className="hint">{ar(lang, "syntaxTitle")}</summary>
         <div className="hint">{ar(lang, "help")}</div>
       </details>

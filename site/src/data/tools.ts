@@ -163,7 +163,7 @@ export const TOOLS: Tool[] = [
     ],
     steps: [
       { ko: "«클라이언트» 또는 «서버» 를 고르고 주소·포트 입력", en: "Choose «Client» or «Server», enter address and port" },
-      { ko: "«접속» 또는 «듣기 시작»", en: "«Connect» or «Start listening»" },
+      { ko: "«연결» 또는 «듣기 시작»", en: "«Connect» or «Start listening»" },
       { ko: "보낼 내용을 입력하고 «보내기»", en: "Type and «Send»" },
     ],
     similar: {
