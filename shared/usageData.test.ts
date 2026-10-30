@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/usageData.test.ts (사용 통계 묶기·허용 목록)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { allowed, APTABASE_KEY, buildBatch, FEATURES, ingestUrl, MAX_MINUTES, SDK_VERSION, sessionId, sharedConsentPatch, windowsMajor, type UsageEvent, type UsageSession } from "./usageData.ts";
+import { allowed, APTABASE_KEY, buildBatch, COMMON_FEATURES, FEATURES, ingestUrl, MAX_MINUTES, SDK_VERSION, sessionId, sharedConsentPatch, windowsMajor, type UsageEvent, type UsageSession } from "./usageData.ts";
 
 const T0 = Date.UTC(2026, 9, 26, 9, 0, 0);
 const base: UsageSession = { app: "serial", version: "0.3.0", windows: "11", lang: "ko", portable: false, startedAt: T0, now: T0 + 12.6 * 60_000, counts: {}, random: 42 };
@@ -74,9 +74,11 @@ test("보내기 전 검사: 속성이 하나라도 더 붙으면 버린다", () 
   assert.equal(allowed({ ...s, sessionId: "kim" }), false);
 });
 
-test("모든 기능 이름은 짧은 소문자_밑줄, 앱마다 3~10개", () => {
+test("모든 기능 이름은 짧은 소문자_밑줄, 앱 고유 기능 3~10개 + 공용 기능", () => {
   for (const [app, list] of Object.entries(FEATURES)) {
-    assert.ok(list.length >= 3 && list.length <= 10, app);
+    for (const c of COMMON_FEATURES) assert.ok(list.includes(c), `${app} 에 공용 ${c}`);
+    const own = list.filter((f) => !COMMON_FEATURES.includes(f));
+    assert.ok(own.length >= 3 && own.length <= 10, app);
     for (const f of list) {
       assert.match(f, /^[a-z_]+$/);
       assert.ok(`${app}.${f}`.length <= 60, "Aptabase 사건 이름 한도");

@@ -567,6 +567,9 @@ const TIPS: Record<string, Tip> = {
   hwBtStop: ["블루투스 기록을 멈춥니다.", "Stops the Bluetooth log."],
   hwBtCopy: ["연결·끊김 기록을 «장치 N» 번호로만 복사·저장합니다(이름 없음).", "Copies or saves the log with «Device N» numbers only (no names)."],
   hwAudioReload: ["블루투스 오디오 장치와 기본 장치를 다시 읽습니다.", "Reads Bluetooth audio devices and the default device again."],
+  // (0.8.0) AI 에게 물어보기용 복사 — 머리줄 «AI»
+  aiCopy: ["(0.8.0) 미리보기 내용을 클립보드에 넣습니다. PortDock 은 아무 데도 보내지 않습니다 — AI 채팅에 붙여 넣으면 그 서비스로 갑니다. 8,000자를 넘으면 오래된 통신 기록 줄부터 뺍니다.", "(0.8.0) Puts the preview on the clipboard. PortDock sends nothing — once pasted into an AI chat it goes to that service. Above 8,000 characters the oldest traffic lines are removed first."],
+  aiHideIp: ["(0.8.0) 공인 IP 는 늘 «[IP-1]» 처럼 번호로 바꿉니다. 사설 IP(192.168.x.x·10.x.x.x 등)는 회사 밖에서 찾을 수 없고 «PC 와 장비의 서브넷이 다름» 같은 원인을 보는 데 필요해 기본으로 남깁니다. 켜면 사설 IP 도 번호로 바꿉니다(같은 주소는 같은 번호).", "(0.8.0) Public IPs are always replaced with numbers like «[IP-1]». Private IPs (192.168.x.x, 10.x.x.x …) cannot be traced from outside and are often needed to spot causes such as «PC and device on different subnets», so they are kept by default. Turn this on to number private IPs too (the same address gets the same number)."],
   hwVolume: ["시험 소리 크기. 헤드폰이면 낮게 시작합니다.", "Test tone level. Start low with headphones."],
 };
 

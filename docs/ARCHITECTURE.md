@@ -117,6 +117,7 @@ Sources: header comments of the files in `shared/`.
 | Network | `NetIfaces.tsx` | Calls the `interfaces` command (core `net.rs`). |
 | Settings and misc | `settings.ts` (common settings in `localStorage("settings")`), `format.ts`, `framing.ts`, `shortcuts.ts`, `exitGuard.ts`, `browserGuard.ts`, `restoreFocus.ts`, `useWindowTitle.ts`, `links.ts` | `links.ts` holds contact e-mail, repo URL and sponsor URL; the apps and the site both read it. |
 | Error reporting | `report.ts`, `ReportDialog.tsx` | See below. |
+| Copy for asking AI (0.8.0) | `aiCopy.ts` (pure: Markdown template, masking, length cap — `aiCopy.test.ts`), `AiCopyButton.tsx` (header «AI» button and preview dialog) | Clipboard only, nothing is sent. Masks user folders, default Windows PC names, the last 3 MAC bytes and public IPs (private IPs only when the user ticks it — they are not traceable from outside and are needed for subnet problems). Above 8,000 characters the oldest traffic lines are dropped first. Communication apps pass their recent frames, Port Inspector / Hardware Tester / Net Scan pass their result text. |
 
 ## Error report flow
 

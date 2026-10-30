@@ -33,6 +33,7 @@ import { FillDialog } from "./FillDialog";
 import { Traffic, type TrafficHandle } from "./Traffic";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
+import { AiCopyButton } from "@shared/AiCopyButton";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { FirstCard } from "@shared/FirstCard";
@@ -811,6 +812,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
+            <AiCopyButton app={APP} lang={lang} frames={() => traffic.current} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>

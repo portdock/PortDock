@@ -63,6 +63,9 @@ COMBO=ko-light node ui-preview/smoke.mjs serial                         (한 경
 - 결과: 화면에 경우별 ✅/❌ 와 누른 횟수, `shots/smoke/<앱>.json`(같은 문제는 묶어 횟수·단계와 함께), 문제가 난 단계의 캡처 `shots/smoke/<앱>-*.png`. 문제가 있으면 종료 코드 1.
 - 가짜 백엔드라 «화면 쪽» 버그만 찾는다. 실제 통신·타이밍 문제는 위 실기 점검으로.
 
+### AI 에게 물어보기용 복사 (0.8.0, `aiCopyCheck()`)
+Serial·TCP·Modbus Master 는 연결 중(최근 통신 기록), Port Inspector 는 COM5 를 고른 뒤(점검 결과) 머리줄 «AI» 를 눌러 네 경우 모두: 미리보기 첫 줄이 앱 언어의 질문 틀인지, 8,000자 이하·금지 낱말·사용자 폴더 없음, 기록 줄(«시각 방향 HEX | 글자 | 풀이»)·점검 결과 칸, «사설 IP 도 가리기» 가 처음엔 꺼져 있고 켜면 사설 IP 가 «[IP-n]» 으로 바뀌고 끄면 처음 글로 돌아오는지, «복사» 가 미리보기 그대로 클립보드에 들어가는지, Esc 로 닫히고 포커스가 돌아오는지. 나머지 앱은 «다 눌러 보기» 가 그 창을 연다. 이 클론처럼 다른 미리보기 서버와 겹치면 `SMOKE_PORT` 로 포트를 바꾼다.
+
 ### Port Inspector·Serial «연결 점검…» (10/25)
 `node ui-preview/smoke.mjs port-inspector`. Port Inspector 는 실행 버튼이 없는 읽기 앱이라 공통 흐름 대신 `inspectorFlow()` 를 돈다.
 - PLC Simulator(5211, 10/29): 가짜 백엔드는 시작하면 클라이언트 둘(UDP 는 보내온 곳 하나)이 붙고 0.45초마다 «0401 D0 ×4 읽기», 다섯 번에 한 번 «1401 D100 쓰기» 를 주고받는다(풀이 줄 포함). 공통 흐름(대기·시작·다 눌러 보기·편의성·좁은 창)만 돈다 — 보내기 칸이 없어 반복 보내기·표기 바꾸기는 건너뛴다. (0.6.0) 시작한 뒤 `plcRun()`: 네 경우 모두 «규칙» 창 «예제 넣기»(두 규칙·요약 «M100 ON → 300 ms → M101 ON»·실행 횟수·RULE 줄 — 가짜 백엔드는 켠 첫 규칙을 네 박자마다 «실행» 한 것처럼 알림)·Esc, «흉내 PLC 상태» STOP(노란 줄)→RUN, 형명 칸(한글이면 빨강·«TEST-PLC» 반영), D0 «표시» ASCII 에 «AB» → 4241h·바이트 «66 65»·U16 «16961», «채우기…» D10 부터 5칸 100·102…, M0 칸 누르기 반전. `ko-light`·`en-dark` 는 더해서 규칙 고치기(틀린 주소 오류·«여러 개 만들기» 3개·간격 2·지우기·끄고 켜기·고치기 중 Esc), 문자열 «ABC» → D20·D21, 숫자 목록, 틀린 시작 번호. 다른 클론의 미리보기 서버와 겹치면 `SMOKE_PORT=5311 node ui-preview/smoke.mjs plc-simulator` 처럼 포트를 바꾼다. 실제 MC 프로토콜 동작은 `cargo test -p portdock-core mc::`(매뉴얼 예시 고정 시험)와 127.0.0.1 교차 시험(`cargo test -p portdock-plc-simulator --lib cross_server -- --ignored`)으로 본다.

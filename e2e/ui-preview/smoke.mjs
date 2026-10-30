@@ -2055,6 +2055,64 @@ async function runApp(app, port) {
     /** (10/25) Port Inspector — 실행 버튼이 없는 읽기 앱이라 따로 돈다: 첫 실행 카드·대화상자 → 포트 고르기·카드 결과 →
      *  기록·COM 번호·랜카드 → 연결 시험(루프백·에코·사용 중·돌아오지 않음) → 숨은 장치 → 복사·저장 → 다 눌러 보기 → 좁은 창.
      *  가짜 장치는 mock.js «Port Inspector» 부분(COM5 FTDI = 볼 것, COM9 문제 코드 10·사용 중, COM1 루프백 안 돌아옴, 숨은 COM12) */
+    /**
+     * (0.8.0) 머리줄 «AI» — AI 에게 물어보기용 복사. kind: "log"(통신 앱 — 최근 기록) · "checks"(Port Inspector — 점검 결과).
+     * 미리보기 질문 틀이 앱 언어인지, 8,000자 이하·금지 낱말·사용자 폴더 없음, «사설 IP 도 가리기» 를 켜면 사설 IP 가 [IP-n] 이 되고 끄면 돌아오는지,
+     * «복사» 가 미리보기 그대로 클립보드에 들어가는지, Esc 로 닫히고 포커스가 돌아오는지
+     */
+    async function aiCopyCheck(kind) {
+      const btn = (await d.findElements(By.css(".brand-tools .ai-copy-btn")))[0];
+      if (!btn) return conv("ai-copy-button", "머리줄에 AI 단추가 없음");
+      await btn.click();
+      await sleep(300);
+      await verify("ai copy open");
+      const r = await jsAsync(String.raw`
+        const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+        const m = document.querySelector('.modal.ai-copy');
+        if (!m) return { modal: false };
+        const ta = () => m.querySelector('textarea.report-preview').value;
+        const PRIV = /(?<![\w.])(?:192\.168|10\.\d{1,3}|127\.0)\.\d{1,3}\.\d{1,3}(?![\w.]*\w)/;
+        const a = { modal: true, text: ta() };
+        a.first = a.text.split('\n')[0];
+        const hide = m.querySelector('.report-parts input[type=checkbox]');
+        a.hide0 = hide.checked;
+        a.priv0 = PRIV.test(a.text);
+        hide.click(); await w();
+        a.priv1 = PRIV.test(ta());
+        a.tok1 = /\[IP-1\]/.test(ta());
+        hide.click(); await w();
+        a.back = ta() === a.text;
+        window.__smoke.clip = null;
+        m.querySelector('.btn.primary').click(); await w(300);
+        a.clip = window.__smoke.clip === ta();
+        a.ok = !!m.querySelector('.ok-msg');
+        return a;`);
+      if (r.fatal) add("ai copy", "smoke-error", r.fatal);
+      else {
+        const BAN = /진단|검증|최적|정상|diagnos|verif|optimi/i;
+        const t = r.text ?? "";
+        const bad = [];
+        if (!r.modal) bad.push("창이 안 열림");
+        if (!(ko ? /^다음은 PortDock .+ 의 기록입니다\. 문제 원인 후보와 확인 순서를 알려 주세요\.$/ : /^Below is a log from PortDock .+\. Please list likely causes/).test(r.first ?? "")) bad.push(`첫 줄 «${r.first}»`);
+        if (t.length > 8000) bad.push(`길이 ${t.length}`);
+        if (BAN.test(t)) bad.push(`금지 낱말 ${t.match(BAN)[0]}`);
+        if (/[a-z]:\\users\\/i.test(t)) bad.push("사용자 폴더");
+        if (kind === "log" && !(t.includes(ko ? "## 최근 통신 기록" : "## Recent traffic") && /\d\d:\d\d:\d\d\.\d{3} (RX|TX|A→B|B→A)/i.test(t))) bad.push("통신 기록 줄 없음");
+        if (kind === "checks" && !(t.includes(ko ? "## 점검 결과" : "## Check results") && /COM5/.test(t))) bad.push("점검 결과 없음");
+        if (r.hide0) bad.push("«사설 IP 도 가리기» 가 처음부터 켜짐");
+        if (r.priv0 && (r.priv1 || !r.tok1)) bad.push("사설 IP 가리기를 켜도 사설 IP 가 남음");
+        if (!r.back) bad.push("가리기를 끄니 처음 글로 안 돌아옴");
+        if (!r.clip || !r.ok) bad.push(`복사 ${JSON.stringify({ clip: r.clip, ok: r.ok })}`);
+        if (bad.length) await conv("ai-copy", `AI 에게 물어보기용 복사가 이상함: ${bad.join(" · ")}`);
+        else actions.checks = (actions.checks ?? 0) + 1;
+      }
+      if (combo.full) await shot(app, `${combo.name}-ai-copy`);
+      await d.actions().sendKeys(Key.ESCAPE).perform();
+      await sleep(200);
+      if (await js("return !!document.querySelector('.modal.ai-copy')")) add("ai copy Esc", "dialog", "Esc 로 AI 복사 창이 닫히지 않음");
+      await verify("ai copy Esc", { expectFocus: true });
+    }
+
     async function inspectorFlow() {
       const BAN = /진단|정상 판정|검증|diagnos|verif/i;
       await load(port, combo);
@@ -2246,6 +2304,8 @@ async function runApp(app, port) {
       await clickText(".toolbar .btn", ko ? "저장…" : "Save…");
       await expectJs("save json", "const f = window.__pdMock.files.get('C:\\\\mock\\\\pi.json'); try { return !!f && JSON.parse(f).report.entry.port === 'COM5'; } catch { return false; }");
       await d.executeScript(`window.__pdMock.dialog = { ask: false, save: null, open: null };`);
+      // (0.8.0) AI 에게 물어보기용 복사 — COM5 점검 결과
+      await aiCopyCheck("checks");
 
       // ---- COM9: 문제 코드 10 → «문제 있음», 시험하면 «사용 중» + Process Explorer 안내
       await pick("COM9");
@@ -2919,6 +2979,8 @@ async function runApp(app, port) {
       if (app === "scpi") await scpiRun();
       if (app === "plot") await plotRun();
       if (app === "plc-simulator") await plcRun();
+      // (0.8.0) AI 에게 물어보기용 복사 — 연결 중 최근 통신 기록(대표 셋: Serial·TCP·Modbus Master)
+      if (app === "serial" || app === "tcp" || app === "modbus-master") await aiCopyCheck("log");
       // (10/18) TCP: 502 로 접속했는데 프레임 구분이 Modbus TCP 가 아니면 «Modbus TCP 로 보기» 알림줄 한 번(첫 실행 상태라 이번이 처음)
       if (app === "tcp" && !(await js("return !!document.querySelector('.sendbar .mb502')"))) await conv("tcp-502", "502 로 접속했는데 «Modbus TCP 로 보기» 알림줄이 없음");
       // (0.3.0) 그 알림줄의 «Modbus Master 로 열기» → 주소:502
