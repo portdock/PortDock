@@ -16,7 +16,7 @@ pub fn loopback_addr(host: &str, port: u16) -> Result<SocketAddr, String> {
     match h.parse::<IpAddr>() {
         Ok(ip) if ip.is_loopback() => Ok(SocketAddr::new(ip, port)),
         _ => Err(format!(
-            "Refused: simulator writes go only to this PC (127.0.0.1 / localhost), not «{host}». PortDock MCP has no write tool for real devices. / 거절: 시뮬레이터 쓰기는 이 PC(127.0.0.1·localhost)만 됩니다. 실장비 쓰기 도구는 없습니다."
+            "Refused: simulator writes go only to this PC (127.0.0.1 / localhost), not «{host}». Write tools accept only this PC's address. / 거절: 시뮬레이터 쓰기는 이 PC(127.0.0.1·localhost) 주소만 받습니다."
         )),
     }
 }
@@ -212,8 +212,20 @@ const SCPI_DENY: &[&str] = &[
     "INIT", "ABOR", "TRIG",                                // 측정 시작·멈춤
 ];
 
-/// SCPI 질의 하나만 허용 — 머리가 «?» 로 끝나고, «;» 로 잇지 않고, 거부 목록에 없을 때
-pub fn scpi_check(cmd: &str) -> Result<String, String> {
+/// 질의지만 측정을 새로 시작하는 것 — SCPI-99 기준 READ? = ABORt + INITiate + FETCh?(트리거·측정 시작),
+/// MEASure:…? = ABORt + CONFigure(기능·범위 다시 설정) + READ?. 기본은 거절하고, 사용자가 `allow_measure` 를 켠 호출만 보낸다.
+/// FETCh? 는 마지막 측정값을 읽기만 해서 그대로 허용. SYST:ERR?·*ESR? 는 오류 큐·이벤트 레지스터를 비우지만(읽으면 지워짐) 진단에 필요해 허용 — docs/mcp.md
+const SCPI_MEASURE: &[&str] = &["MEAS", "READ"];
+
+/// 머리가 측정을 시작하는 질의(MEAS…?·READ?)인지
+pub fn scpi_starts_measurement(cmd: &str) -> bool {
+    let head = cmd.split_whitespace().next().unwrap_or("").trim_start_matches(':').to_ascii_uppercase();
+    SCPI_MEASURE.iter().any(|m| head.starts_with(m))
+}
+
+/// SCPI 질의 하나만 허용 — 머리가 «?» 로 끝나고, «;» 로 잇지 않고, 거부 목록에 없을 때.
+/// 측정을 시작하는 질의(MEAS…?·READ?)는 `allow_measure` 가 true 일 때만
+pub fn scpi_check(cmd: &str, allow_measure: bool) -> Result<String, String> {
     let c = cmd.trim();
     if c.is_empty() || c.len() > 256 {
         return Err("SCPI command must be 1–256 characters / SCPI 명령은 1~256자입니다".into());
@@ -231,6 +243,11 @@ pub fn scpi_check(cmd: &str) -> Result<String, String> {
     let up = head.trim_start_matches(':').to_ascii_uppercase();
     if let Some(d) = SCPI_DENY.iter().find(|d| up.starts_with(**d)) {
         return Err(format!("Refused: «{head}» is on the deny list ({d}… may change instrument state). / 거절: 계측기 상태를 바꿀 수 있는 질의입니다."));
+    }
+    if !allow_measure && scpi_starts_measurement(c) {
+        return Err(format!(
+            "Refused: «{head}» starts a new measurement (READ? triggers one; MEAS…? also reconfigures function and range). Use FETC? to read the last result, or call again with allow_measure=true if the user agrees. / 거절: 측정을 새로 시작하는 질의입니다(MEAS…? 는 기능·범위도 다시 설정). 마지막 값은 FETC? 로 읽거나, 사용자가 동의하면 allow_measure=true 로 다시 부르세요."
+        ));
     }
     Ok(c.to_string())
 }
@@ -299,11 +316,23 @@ mod tests {
 
     #[test]
     fn scpi_only_safe_queries() {
-        for ok in ["*IDN?", "SYST:ERR?", ":MEAS:VOLT:DC? 10,0.001", "  *OPC?  ", "READ?", "FETC?", "*ESR?", "OUTP?", "SOUR:VOLT?"] {
-            assert!(scpi_check(ok).is_ok(), "{ok}");
+        for ok in ["*IDN?", "SYST:ERR?", "  *OPC?  ", "FETC?", "FETCH:VOLT?", "*ESR?", "OUTP?", "SOUR:VOLT?", "CONF?", "SENS:FUNC?"] {
+            assert!(scpi_check(ok, false).is_ok(), "{ok}");
+            assert!(!scpi_starts_measurement(ok), "{ok}");
         }
         for bad in ["*RST", "VOLT 5", "*CLS", "*IDN?;*RST", "*TST?", "*CAL?", "CAL:ALL?", ":CAL?", "SYST:PRES", "MMEM:CAT?", "INIT?", "", "*IDN?\n*RST", "x".repeat(300).as_str()] {
-            assert!(scpi_check(bad).is_err(), "{bad}");
+            assert!(scpi_check(bad, false).is_err(), "{bad}");
+            assert!(scpi_check(bad, true).is_err(), "{bad} — allow_measure 는 거부 목록을 풀지 않는다");
+        }
+    }
+
+    #[test]
+    fn scpi_measurement_queries_need_allow_measure() {
+        for m in ["READ?", ":MEAS:VOLT:DC? 10,0.001", "MEAS?", "measure:current:ac?", ":read?"] {
+            let e = scpi_check(m, false).unwrap_err();
+            assert!(e.starts_with("Refused") && e.contains("allow_measure"), "{m}: {e}");
+            assert!(scpi_starts_measurement(m), "{m}");
+            assert!(scpi_check(m, true).is_ok(), "{m}");
         }
     }
 }

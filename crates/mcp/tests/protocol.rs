@@ -135,8 +135,11 @@ fn stdio_round_trip() {
         let r = c.call("scpi_query", Some(json!({ "command": "*RST", "host": "127.0.0.1" })));
         assert_eq!(r["isError"], json!(true));
 
-        let bad = c.request("tools/call", json!({ "name": "modbus_read", "arguments": { "transport": "tcp" } }));
+        // 인자 형식이 틀린 호출(필수 인자 없음 — rmcp 가 handler 전에 돌려보냄)과 없는 도구도 기록에 남아야 한다(아래 5)
+        let bad = c.request("tools/call", json!({ "name": "modbus_read", "arguments": { "transport": "tcp", "note": "C:\\Users\\kim\\x" } }));
         assert!(bad.get("error").is_some() || bad["result"]["isError"] == json!(true), "{bad}");
+        let none = c.request("tools/call", json!({ "name": "nope", "arguments": {} }));
+        assert!(none.get("error").is_some() || none["result"]["isError"] == json!(true), "{none}");
 
         // 4) resources
         let res = c.request("resources/list", json!({}));
@@ -155,8 +158,13 @@ fn stdio_round_trip() {
     let text = std::fs::read_to_string(files[0].path()).unwrap();
     let lines: Vec<Value> = text.lines().map(|l| serde_json::from_str(l).unwrap()).collect();
     let tools: Vec<&str> = lines.iter().map(|l| l["tool"].as_str().unwrap()).collect();
-    assert!(tools.starts_with(&["device_map_get", "mc_read", "mc_write_sim", "scpi_query"]), "{tools:?}");
+    assert_eq!(tools, ["device_map_get", "mc_read", "mc_write_sim", "scpi_query", "modbus_read", "nope"], "{text}");
     assert_eq!(lines[2]["ok"], json!(false));
+    for l in &lines[4..] {
+        assert_eq!(l["ok"], json!(false));
+        assert!(l["summary"].as_str().unwrap().starts_with("not run"), "{l}");
+    }
+    assert!(!text.contains("kim"), "{text}");
     assert_eq!(lines[1]["target"], json!(format!("127.0.0.1:{}", mc_addr.port())));
     std::fs::remove_dir_all(&log_dir).unwrap();
 }

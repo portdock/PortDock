@@ -74,7 +74,7 @@ impl SessionLog {
         }
         let res = std::fs::create_dir_all(&self.dir).and_then(|_| OpenOptions::new().create(true).append(true).open(self.file())).and_then(|mut f| writeln!(f, "{text}"));
         if let Err(e) = res {
-            eprintln!("portdock-mcp: session log not written ({}): {e}", self.dir.display());
+            eprintln!("{}", crate::guard::redact(&format!("portdock-mcp: session log not written ({}): {e}", self.dir.display())));
         }
     }
 

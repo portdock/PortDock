@@ -33,7 +33,7 @@ export const TOOLS = [
   ["serial_read", "Listen on a COM port for a set time; sends nothing (read-only)"],
   ["modbus_read", "One Modbus read (FC 01–04) over TCP, RTU or RTU over TCP (read-only)"],
   ["mc_read", "Mitsubishi MC protocol 3E binary batch read 0401 (read-only)"],
-  ["scpi_query", "One SCPI query ending with ?; state-changing queries refused (read-only)"],
+  ["scpi_query", "One SCPI query ending with ?; state-changing queries refused, READ?/MEAS? only with allow_measure (read-only)"],
   ["ping", "Ping one IPv4 address up to 10 times, optional TCP connect timing (read-only)"],
   ["net_adapters", "Network adapter settings, link speed, power saving, firewall profiles (read-only)"],
   ["device_map_get", "Built-in Modbus register maps of industrial devices (read-only)"],
@@ -58,7 +58,7 @@ export function manifestFor(version) {
     version,
     description: DESCRIPTION,
     long_description:
-      "Lets an AI client read this Windows PC's serial (COM) ports and network adapters (Port Inspector), listen on a serial port, and read Modbus RTU/TCP, Mitsubishi MC protocol (3E) and SCPI instruments. All tools only read, except two that write only to simulators on 127.0.0.1 (PortDock Modbus Slave, PLC Simulator). There is no tool that writes to real devices. Every call is kept in a local session log; nothing is sent elsewhere.",
+      "Lets an AI client read this Windows PC's serial (COM) ports and network adapters (Port Inspector), listen on a serial port, and read Modbus RTU/TCP, Mitsubishi MC protocol (3E) and SCPI instruments. All tools only read, except two that write only to simulators on 127.0.0.1 (PortDock Modbus Slave, PLC Simulator). The check is by address only: if a program on this PC forwards 127.0.0.1 to another device (a TCP relay, gateway or tunnel), a write can reach a real device, so do not use the write tools while one runs. Every call is kept in a local session log; nothing is sent elsewhere.",
     author: { name: "PortDock", url: SITE },
     repository: { type: "git", url: REPO },
     homepage: `${SITE}/en/guides/portdock-mcp/`,

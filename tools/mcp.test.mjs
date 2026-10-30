@@ -35,7 +35,10 @@ test(".mcpb manifest: 0.3 · binary · Windows 전용 · 실행 파일 경로 ·
   assert.equal(m.tools.length, 11);
   // 문구: «control» 같은 말 없이 읽기 전용
   const text = JSON.stringify(m);
-  assert.match(text, /no tool that writes to real devices/);
+  // «실장비 쓰기 도구 없음» 단정 대신 사실대로(판정은 주소로만 — 중계 프로그램 주의, docs/mcp.md 안전장치 1)
+  assert.match(text, /127\.0\.0\.1/);
+  assert.match(text, /check is by address only/);
+  assert.doesNotMatch(text, /no tool that writes to real devices/);
   assert.doesNotMatch(text, /\bcontrol\b/i);
 });
 

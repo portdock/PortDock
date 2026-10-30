@@ -74,7 +74,7 @@ impl Link for SerialLink {
     }
 }
 
-/// 패리티
+/// Serial parity: none (default), odd or even
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Parity {
