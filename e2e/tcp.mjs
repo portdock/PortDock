@@ -45,8 +45,8 @@ try {
   const s = await server();
   await type(await field(d, "주소"), "127.0.0.1");
   await type(await field(d, "포트"), s.port);
-  await click(d, "접속");
-  check("T1 접속됨 표시", await waitText(d, "접속됨"));
+  await click(d, "연결");
+  check("T1 연결됨 표시", await waitText(d, "연결됨"));
   check("T1 CONNECT 사건 줄", await waitText(d, "CONNECT 127.0.0.1"));
   await sleep(300);
   s.socks[0].write("HELLO\r\n");
@@ -115,7 +115,7 @@ try {
   section("T1 끊김·자동 재접속");
   for (const so of s.socks) so.destroy();
   check("T1 끊김 감지", await waitText(d, "closed by peer", 4000) || await waitText(d, "CLOSE", 1000));
-  check("T1 재접속", await waitText(d, "접속됨", 6000));
+  check("T1 재접속", await waitText(d, "연결됨", 6000));
   await shot(d, "tcp-05-reconnected");
   await click(d, "멈춤");
   check("T1 멈춤", await waitText(d, "멈춤"));

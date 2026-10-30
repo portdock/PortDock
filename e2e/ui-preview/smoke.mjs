@@ -2756,7 +2756,7 @@ async function runApp(app, port) {
       if (app === "serial") await serialPortCheck(false);
 
       // ---- 연결·시작
-      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/, "plc-simulator": /듣는|Listening/ }[app];
+      const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /연결됨|접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/, "plc-simulator": /듣는|Listening/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));
       if (combo.full) await shot(app, `${combo.name}-running`);
       await sleep(1800); // 상대가 붙고 프레임이 몇 줄 오도록
