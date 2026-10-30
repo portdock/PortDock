@@ -43,6 +43,7 @@ import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
+import { FirstCard } from "@shared/FirstCard";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
@@ -76,7 +77,10 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(다른 앱과 같은 shared/FirstCard) — «다시 보지 않기» 를 누르면 짧은 안내만
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -819,7 +823,19 @@ export default function App() {
 
         <div className="log-wrap">
           <div className="log" ref={listRef} tabIndex={0} onKeyDown={logKeys}>
-            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+            {frames.length === 0 &&
+              (firstDone ? (
+                <div className="empty-guide">{t("emptyGuide")}</div>
+              ) : (
+                <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+                  <ol>
+                    <li>{t("first1")}</li>
+                    <li>{t("first2")}</li>
+                    <li>{t("first3")}</li>
+                  </ol>
+                  <div className="hint">{t("firstNote")}</div>
+                </FirstCard>
+              ))}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
                 const f = filter.at(r.index);
@@ -1044,7 +1060,7 @@ export default function App() {
           </div>
         )}
       </aside>
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock UDP" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock UDP" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock UDP"

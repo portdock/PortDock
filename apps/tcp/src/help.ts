@@ -15,6 +15,7 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «방식» 을 고릅니다. 장비가 서버(접속을 기다림)면 «클라이언트 (장비에 접속)», 장비가 PC 로 접속해 오면 «서버 (장비가 접속)».",
         "- 2. 클라이언트면 장비의 «주소»(IP)와 «포트» 를, 서버면 «묶을 주소» 와 기다릴 «포트» 를 넣습니다.",
@@ -238,6 +239,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Choose «Mode» on the left: «Client (connect to device)» if the device waits for connections, «Server (device connects)» if the device connects to the PC.",
         "- 2. As a client enter the device «Host» (IP) and «Port»; as a server enter the «Bind address» and the «Port» to listen on.",

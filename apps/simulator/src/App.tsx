@@ -39,6 +39,7 @@ import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
+import { FirstCard } from "@shared/FirstCard";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { joinHostPort, lastRecent, splitHostPort } from "@shared/recent";
@@ -89,7 +90,10 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(다른 앱과 같은 shared/FirstCard) — «다시 보지 않기» 를 누르면 짧은 안내만
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -578,6 +582,7 @@ export default function App() {
           <span className="logo">
             PortDock <small>Simulator</small>
           </span>
+          <span className="hint brand-sub">{t("appSub")}</span>
           <span className="brand-tools">
             <SideTools>{headTools}</SideTools>
           <SideClose lang={lang} onClose={() => setShowSide(false)} />
@@ -745,6 +750,16 @@ export default function App() {
           </button>
         </div>
         <div className="rules">
+          {rules.length === 0 && !firstDone && (
+            <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+              <ol>
+                <li>{t("first1")}</li>
+                <li>{t("first2")}</li>
+                <li>{t("first3")}</li>
+              </ol>
+              <div className="hint">{t("firstNote")}</div>
+            </FirstCard>
+          )}
           <AutoReplyPanel lang={lang} rules={rules} setRules={setRules} hits={hits} toast={toast} api={autoReplyApi} />
           <details className="unsol adv panel" open={unsolOpen} onToggle={(e) => setUnsolOpen((e.target as HTMLDetailsElement).open)}>
             <summary data-tip={tip(lang, "unsolicited")}>
@@ -833,7 +848,7 @@ export default function App() {
           addRule={{ run: ruleFromLog, bytesOf: ruleBytesOf }}
         />
       </main>
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Simulator" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Simulator" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock Simulator"

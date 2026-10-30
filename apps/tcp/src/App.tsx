@@ -40,6 +40,7 @@ import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
+import { FirstCard } from "@shared/FirstCard";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
@@ -123,6 +124,9 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   // true = 첫 절, 글자 = 그 id 의 절(요청 창 «따라하기 보기»)
   const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(다른 앱과 같은 shared/FirstCard) — «다시 보지 않기» 를 누르면 짧은 안내만
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -1105,7 +1109,23 @@ export default function App() {
 
         <div className="log-wrap">
           <div className="log" ref={listRef} tabIndex={0} onKeyDown={onLogKey} aria-label={t("view")}>
-            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+            {frames.length === 0 &&
+              (firstDone ? (
+                <div className="empty-guide">{t("emptyGuide")}</div>
+              ) : (
+                <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+                  <div>{t("firstAsk")}</div>
+                  <div className="first-picks">
+                    {(["client", "server", "relay"] as const).map((m) => (
+                      <button key={m} type="button" className={cfg.mode === m ? "btn small primary" : "btn small"} aria-pressed={cfg.mode === m} disabled={running} onClick={() => pickMode(m)}>
+                        {t(m === "client" ? "firstClient" : m === "server" ? "firstServer" : "firstRelay")}
+                      </button>
+                    ))}
+                  </div>
+                  <div>{t("first2")}</div>
+                  <div>{t("first3")}</div>
+                </FirstCard>
+              ))}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
                 const f = filter.at(r.index);

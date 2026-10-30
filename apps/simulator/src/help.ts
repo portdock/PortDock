@@ -15,6 +15,7 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «연결 방식» 을 고르고 포트·주소를 넣습니다.",
         "- 2. «+ 규칙 추가» 로 규칙을 만듭니다: «받으면» 패턴, «응답» 내용, 필요하면 체크섬·줄 끝·지연. 규칙이 하나도 없으면 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코(받은 것 그대로)] 예제 버튼으로 시작할 수 있습니다.",
@@ -171,6 +172,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Choose a «Transport» on the left and enter the port or address.",
         "- 2. Add rules with «+ Add rule»: a «When» pattern, a «Reply», and optionally checksum, line ending and delay. With no rules yet, the [Modbus RTU 03 reply] [SCPI *IDN? reply] [Echo] example buttons give you a start.",
