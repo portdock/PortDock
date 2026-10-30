@@ -1,10 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
 import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
-import { api, DEV_GROUPS, DEV_INFO, DEVS, END_CODES, type Dev, type Faults, type Frame, type NetConfig, type Peer, type SessionEvent, type Stats } from "./api";
-import { decodeValue, encodeValue, formatValue, isPlainPoint, layout, mergePoints, parse16, parseValue, pointRegs, simSummary, simToSpec, type Item, type Point, type SimCfg, type SimSpec, type VType } from "../../modbus-slave/src/regmap";
-import { addrText, cleanLastOk, isLoopback, numText, packWord, parseCommands, parseDevices, parseEndCode, parseNum, parseState, runs, show16, sparse, STATE_APP, unpackWord, type Fmt, type SparseValues, type StateFile } from "./model";
+import { api, DEFAULT_MODEL_NAME, DEV_GROUPS, DEV_INFO, DEVS, END_CODES, type Dev, type Faults, type Frame, type NetConfig, type Peer, type RunMode, type SessionEvent, type Stats } from "./api";
+import { decodeValue, encodeValue, formatValue, isPlainPoint, layout, mergePoints, parseValue, pointRegs, simSummary, simToSpec, type Item, type Point, type SimCfg, type SimSpec, type VType } from "../../modbus-slave/src/regmap";
+import {
+  addrText,
+  cleanLastOk,
+  cleanRules,
+  isLoopback,
+  numText,
+  packWord,
+  parseCommands,
+  parseDevices,
+  parseEndCode,
+  parseNum,
+  parseState,
+  parseWord,
+  runs,
+  showWord,
+  sparse,
+  STATE_APP,
+  unpackWord,
+  WORD_FMTS,
+  type Rule,
+  type SparseValues,
+  type StateFile,
+  type WordFmt,
+} from "./model";
 import { PointDialog } from "./PointDialog";
+import { RulesDialog, type RuleStat } from "./RulesDialog";
+import { FillDialog } from "./FillDialog";
 import { Traffic, type TrafficHandle } from "./Traffic";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
@@ -13,7 +38,7 @@ import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { FirstCard } from "@shared/FirstCard";
 import { help } from "./help";
 import { load, store } from "@shared/framing";
-import { autoLogPath, useFold, useSettings } from "@shared/settings";
+import { autoLogPath, logExt, logOptionsOf, useFold, useSettings } from "@shared/settings";
 import { SettingsDialog } from "@shared/SettingsDialog";
 import { useExitGuard } from "@shared/exitGuard";
 import { NumInput } from "@shared/NumInput";
@@ -63,6 +88,22 @@ function loadNet(): NetConfig {
     ownStationOnly: v.ownStationOnly === true,
   };
 }
+
+/** 형명 읽기(0101) 흉내 값 — ASCII 16글자·코드 0~FFFF */
+interface Ident {
+  modelName: string;
+  modelCode: number;
+}
+const DEFAULT_IDENT: Ident = { modelName: DEFAULT_MODEL_NAME, modelCode: 0 };
+const identOk = (s: string) => s.length <= 16 && /^[\x20-\x7e]*$/.test(s);
+function loadIdent(): Ident {
+  const v = load<Partial<Ident>>("ident", {});
+  return {
+    modelName: typeof v.modelName === "string" && identOk(v.modelName) ? v.modelName : DEFAULT_IDENT.modelName,
+    modelCode: Number.isInteger(v.modelCode) && (v.modelCode as number) >= 0 && (v.modelCode as number) <= 0xffff ? (v.modelCode as number) : 0,
+  };
+}
+const RUN_MODES: RunMode[] = ["run", "stop", "pause"];
 
 export default function App() {
   const { settings, update, reset } = useSettings();
@@ -118,10 +159,12 @@ export default function App() {
     } else if (e.type === "peers") setPeers(e.peers);
     else if (e.type === "error") setError(e.message);
   }, []);
-  const addEv = useCallback((note: string) => {
-    traffic.current.push({ ts: Date.now(), dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+  const addEvAt = useCallback((ts: number, note: string) => {
+    traffic.current.push({ ts, dir: "ev", bytes: [], check: null, note, seq: ++seqRef.current });
+    if (traffic.current.length > maxLines.current) traffic.current.splice(0, traffic.current.length - maxLines.current);
     trafficApi.current?.bump();
   }, []);
+  const addEv = useCallback((note: string) => addEvAt(Date.now(), note), [addEvAt]);
 
   // ---- 디바이스 표(연결과 따로 살아 있다)
   const [dev, setDev] = useState<Dev>(() => {
@@ -130,11 +173,25 @@ export default function App() {
   });
   const [sizes, setSizes] = useState<Record<Dev, number>>(() => ({ ...sizesDefault(), ...load<Partial<Record<Dev, number>>>("sizes", {}) }));
   const [views, setViews] = useState<Partial<Record<Dev, View>>>(() => load("views", {}));
-  const [fmt, setFmt] = useState<Fmt>(() => load<Fmt>("fmt", "u16"));
+  const [fmt, setFmt] = useState<WordFmt>(() => {
+    const f = load<string>("fmt", "u16");
+    return (WORD_FMTS as string[]).includes(f) ? (f as WordFmt) : "u16";
+  });
   const [bitView, setBitView] = useState<BitView>(() => (load<string>("bitView", "bit") === "word" ? "word" : "bit"));
   const [points, setPoints] = useState<Partial<Record<Dev, Point[]>>>(() => load("points", {}));
   const [sims, setSims] = useState<Partial<Record<Dev, SimCfg[]>>>(() => load("sims", {}));
   const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  // (0.6.0) 조건 규칙·형명 흉내 값·창
+  const [rules, setRules] = useState<Rule[]>(() => cleanRules(load<unknown>("rules", [])).rules);
+  const [ruleStats, setRuleStats] = useState<RuleStat[]>([]);
+  const [ident, setIdent] = useState<Ident>(loadIdent);
+  const [identText, setIdentText] = useState(() => ({ name: ident.modelName, code: ident.modelCode.toString(16).toUpperCase().padStart(4, "0") }));
+  const [showRules, setShowRules] = useState(false);
+  const [showFill, setShowFill] = useState(false);
+  const [plcOpenSaved, setPlcOpenSaved] = useState<boolean>(() => load("plcOpen", false));
+  usePersist("rules", rules);
+  usePersist("ident", ident);
+  usePersist("plcOpen", plcOpenSaved);
   usePersist("dev", dev);
   usePersist("sizes", sizes);
   usePersist("views", views);
@@ -165,6 +222,7 @@ export default function App() {
   const [faultOpen, setFaultOpen] = useFold(faultOpenSaved, setFaultOpenSaved, settings.expandAll);
   const [statsOpen, setStatsOpen] = useFold(statsOpenSaved, setStatsOpenSaved, settings.expandAll);
   const [advOpen, setAdvOpen] = useFold(advOpenSaved, setAdvOpenSaved, settings.expandAll);
+  const [plcOpen, setPlcOpen] = useFold(plcOpenSaved, setPlcOpenSaved, settings.expandAll);
   const [trafficH, setTrafficH] = useStoredHeight("trafficH");
   const [cellDlg, setCellDlg] = useState<number | null>(null);
 
@@ -236,8 +294,15 @@ export default function App() {
     if (ready) api.setFaults(faults).catch((e) => setError(String(e)));
   }, [ready, faults]);
   useEffect(() => {
-    if (ready) api.setOptions({ ownStationOnly: net.ownStationOnly }).catch((e) => setError(String(e)));
-  }, [ready, net.ownStationOnly]);
+    if (ready) api.setOptions({ ownStationOnly: net.ownStationOnly, modelName: ident.modelName, modelCode: ident.modelCode }).catch((e) => setError(String(e)));
+  }, [ready, net.ownStationOnly, ident]);
+  useEffect(() => {
+    if (ready) api.setRules(rules).catch((e) => setError(String(e)));
+  }, [ready, rules]);
+  // 파일 로그 형식·나누기·정리(설정 창) — 다음 파일부터
+  useEffect(() => {
+    api.setLogOptions(logOptionsOf(settings)).catch(() => {});
+  }, [settings]);
   const pushed = useRef<Partial<Record<Dev, string>>>({});
   useEffect(() => {
     if (!ready) return;
@@ -285,6 +350,7 @@ export default function App() {
     prev.current = { k, v };
     if (!same) setValues(v);
   }, [ready, dev, view.start, cells, per]);
+  const ruleSeq = useRef(0);
   useEffect(() => {
     refresh().catch(() => {});
     const id = setInterval(() => {
@@ -293,8 +359,19 @@ export default function App() {
         .getStats()
         .then((s) => setStats((o) => (o && JSON.stringify(o) === JSON.stringify(s) ? o : s)))
         .catch(() => {});
+      // 규칙 실행 상태와, 요청과 따로(주기·화면 편집 뒤) 실행된 규칙 줄
+      api
+        .rulesState(ruleSeq.current)
+        .then((r) => {
+          if (!r) return;
+          for (const n of r.notes) addEvAt(n.ts, n.text);
+          ruleSeq.current = r.seq;
+          setRuleStats((o) => (JSON.stringify(o) === JSON.stringify(r.stats) ? o : r.stats));
+        })
+        .catch(() => {});
     }, 300);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
   // 클라이언트가 쓰면(쓰기 수가 바뀌면) 1초 뒤 모든 디바이스를 읽어 저장한다
   const writes = stats?.writes;
@@ -318,22 +395,22 @@ export default function App() {
   const regsOf = (it: Item) => values.slice(it.addr - view.start, it.addr - view.start + it.span);
   const itemType = (it: Item): VType => it.point?.type ?? "u16";
   const showItem = (it: Item, regs = regsOf(it)) => {
-    if (wordsOfBits) return show16(packWord(regs), fmt);
+    if (wordsOfBits) return showWord(packWord(regs), fmt);
     const ty = itemType(it);
     const order = it.point?.order ?? "ABCD";
-    if (ty === "u16") return show16((decodeValue(regs, "u16", order) as number | null) ?? 0, fmt);
+    if (ty === "u16") return showWord((decodeValue(regs, "u16", order) as number | null) ?? 0, fmt);
     return formatValue(decodeValue(regs, ty, order, it.point?.len), ty);
   };
   /** 입력 → 쓸 값들(비트 디바이스 워드 보기는 16점). 틀리면 null */
   const parseItem = (it: Item, text: string): number[] | null => {
     if (wordsOfBits) {
-      const n = parse16(text, fmt);
+      const n = parseWord(text, fmt);
       return n == null ? null : unpackWord(n);
     }
     const ty = itemType(it);
     const order = it.point?.order ?? "ABCD";
     if (ty === "u16") {
-      const n = parse16(text, fmt);
+      const n = parseWord(text, fmt);
       return n == null ? null : encodeValue(n, "u16", order);
     }
     const v = parseValue(text, ty, it.point?.len);
@@ -382,12 +459,26 @@ export default function App() {
     return showItem(items[i], vals.slice(0, items[i].span));
   }
 
-  async function fill() {
-    if (!(await ask(t("askFill"), { title: APP, kind: "warning" }))) return;
-    const n = cells * per;
-    const v = Array.from({ length: n }, (_, i) => (info.bits ? i % 2 : (view.start + i) & 0xffff));
-    if (await writeVals(view.start, v)) refresh();
+  /** 채우기·써 넣기 창에서 — 시작 번호부터 값들 */
+  async function writeRange(start: number, vals: number[]) {
+    if (!(await writeVals(start, vals))) return false;
+    countUsage("fill_write");
+    toast.show(t("fdDone").replace("{n}", String(vals.length)).replace("{a}", addrText(dev, start)));
+    refresh();
+    return true;
   }
+  /** 흉내 형명 칸 — 맞는 글이면 바로 반영 */
+  function setIdentField(k: "name" | "code", v: string) {
+    const next = { ...identText, [k]: v };
+    setIdentText(next);
+    const code = /^[0-9a-f]{1,4}$/i.test(next.code.trim()) ? parseInt(next.code.trim(), 16) : null;
+    if (identOk(next.name) && code != null) {
+      setIdent({ modelName: next.name, modelCode: code });
+    }
+  }
+  const identBad = { name: !identOk(identText.name), code: !/^[0-9a-f]{1,4}$/i.test(identText.code.trim()) };
+  const runMode: RunMode = stats?.runMode ?? "run";
+  const rulesOn = rules.filter((r) => r.enabled).length;
 
   /** 첫 실행 카드 «예제 채우기» — D0~D7 = 1~8(이름 둘), D8~D9 = F32 CDAB 23.5 «온도», M0~M7 = 1·0 */
   async function fillExample() {
@@ -443,7 +534,7 @@ export default function App() {
         if (Object.keys(m).length) values[d] = m;
       }
       const changed = Object.fromEntries(DEVS.filter((d) => sizes[d] !== DEV_INFO[d].size).map((d) => [d, sizes[d]]));
-      const body: StateFile = { app: STATE_APP, version: 1, sizes: changed, values, points, sims };
+      const body: StateFile = { app: STATE_APP, version: 1, sizes: changed, values, points, sims, rules };
       await api.writeText(path, JSON.stringify(body, null, 1));
       countUsage("save_state");
       toast.show(t("stateSaved").replace("{a}", path.split(/[\\/]/).pop() ?? path));
@@ -480,6 +571,7 @@ export default function App() {
       flushValues();
       setPoints(st.points as Partial<Record<Dev, Point[]>>);
       setSims(st.sims as Partial<Record<Dev, SimCfg[]>>);
+      setRules(st.rules);
       countUsage("load_state");
       const msg = t("stateLoaded").replace("{a}", path.split(/[\\/]/).pop() ?? path).replace("{n}", String(n));
       toast.show(r.skipped ? `${msg} · ${t("stateSkipped").replace("{n}", String(r.skipped))}` : msg, r.skipped ? { ms: 6000 } : {});
@@ -510,7 +602,7 @@ export default function App() {
         if (faultOn) addEv(t("autoFaults"));
       }
       if (settings.autoLog && settings.logFolder) {
-        const p = autoLogPath(settings.logFolder, "plc-simulator");
+        const p = autoLogPath(settings.logFolder, "plc-simulator", logExt(settings));
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
@@ -551,7 +643,8 @@ export default function App() {
       }
       return;
     }
-    const path = await save({ title: t("logDlgTitle"), defaultPath: saveName("plc-simulator", saveWhere(), "log"), filters: [{ name: "Log", extensions: ["log", "txt"] }] });
+    const ext = logExt(settings);
+    const path = await save({ title: t("logDlgTitle"), defaultPath: saveName("plc-simulator", saveWhere(), ext), filters: [{ name: ext === "csv" ? "CSV" : "Log", extensions: ext === "csv" ? ["csv"] : ["log", "txt"] }] });
     if (!path) return;
     await api.setLog(path).then(() => setLogPath(path)).catch((e) => setError(String(e)));
   }
@@ -675,6 +768,11 @@ export default function App() {
               className={`reg${fl ? " flash" : ""}${it.span > 1 && !wordsOfBits ? " wide" : ""}${wordsOfBits ? " wordbits" : ""}${info.bits && !wordsOfBits ? " bitcell" : ""}`}
               style={it.span > 1 && !wordsOfBits ? { gridColumn: `span ${it.span >= 4 ? 3 : 2}` } : undefined}
               title={fl ? t("writtenByClient") : name}
+              onClick={(e) => {
+                // 비트 칸은 칸 아무 데나 눌러도 반전(체크칸·버튼은 제 할 일)
+                if (!info.bits || wordsOfBits || (e.target as HTMLElement).closest("input, button")) return;
+                writeVals(it.addr, [(values[it.addr - view.start] ?? 0) ? 0 : 1]);
+              }}
               onContextMenu={(e) => {
                 if (!canCfg) return;
                 e.preventDefault();
@@ -838,6 +936,44 @@ export default function App() {
         )}
 
         <hr />
+        <details className={runMode !== "run" ? "adv panel on" : "adv panel"} open={plcOpen} onToggle={(e) => setPlcOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "plcState")}>
+            <span className="sum-title">{t("plcState")}</span>
+            {!plcOpen && (
+              <span className={runMode !== "run" ? "sum-note bad" : "sum-note"}>
+                {runMode.toUpperCase()}
+                {rulesOn ? ` · ${t("ruShort").replace("{n}", String(rulesOn))}` : ""}
+              </span>
+            )}
+          </summary>
+          <span className="segs run-modes" role="group" aria-label={t("runModeLabel")} data-tip={tip(lang, "plcRunMode")}>
+            {RUN_MODES.map((m) => (
+              <button key={m} className={runMode === m ? "seg on" : "seg"} aria-pressed={runMode === m} onClick={() => api.setRunMode(m).catch((e) => setError(String(e)))}>
+                {m.toUpperCase()}
+              </button>
+            ))}
+          </span>
+          <span className="hint">{runMode === "run" ? t("runModeHint") : t("runModeStopHint")}</span>
+          <div className="grid2">
+            <label data-tip={tip(lang, "plcModelName")}>
+              {t("modelName")}
+              <input className={identBad.name ? "mono bad" : "mono"} value={identText.name} maxLength={16} spellCheck={false} onChange={(e) => setIdentField("name", e.target.value)} />
+            </label>
+            <label data-tip={tip(lang, "plcModelCode")}>
+              {t("modelCode")}
+              <input className={identBad.code ? "mono bad" : "mono"} value={identText.code} maxLength={4} spellCheck={false} onChange={(e) => setIdentField("code", e.target.value)} />
+            </label>
+          </div>
+          <span className="hint">{t("modelHint")}</span>
+          {(stats?.monitorPoints ?? 0) > 0 && <span className="hint">{t("monitorNow").replace("{n}", String(stats?.monitorPoints ?? 0))}</span>}
+        </details>
+        {runMode !== "run" && (
+          <div className="hint warn" role="status">
+            ⚠ {t("runModeWarn").replace("{a}", runMode.toUpperCase())}
+          </div>
+        )}
+
+        <hr />
         <details className={faultOn ? "adv panel on" : "adv panel"} open={faultOpen} onToggle={(e) => setFaultOpen((e.target as HTMLDetailsElement).open)}>
           <summary data-tip={tip(lang, "plcFaults")}>
             <span className="sum-title">{faultOn ? t("faultsOn") : t("faults")}</span>
@@ -997,7 +1133,11 @@ export default function App() {
             </span>
           ))}
           <span className="grow" />
-          <button className="btn small" onClick={fill} data-tip={tip(lang, "fill")}>
+          <button className={rulesOn ? "btn small on" : "btn small"} onClick={() => setShowRules(true)} data-tip={tip(lang, "plcRules")}>
+            {t("ruButton")}
+            {rules.length ? ` (${rulesOn}/${rules.length})` : ""}
+          </button>
+          <button className="btn small" onClick={() => setShowFill(true)} data-tip={tip(lang, "plcFill")}>
             {t("fill")}
           </button>
           <button className="btn small" onClick={saveState} data-tip={tip(lang, "plcSave")}>
@@ -1038,11 +1178,20 @@ export default function App() {
           {(!info.bits || wordsOfBits) && (
             <label data-tip={tip(lang, "plcFormat")} className="inline">
               {t("format")}
-              <select className="fmt-sel" value={fmt} onChange={(e) => setFmt(e.target.value as Fmt)}>
+              <select
+                className="fmt-sel"
+                value={fmt}
+                onChange={(e) => {
+                  const f = e.target.value as WordFmt;
+                  setFmt(f);
+                }}
+              >
                 <option value="u16">U16</option>
                 <option value="s16">S16</option>
                 <option value="hex">HEX</option>
                 <option value="bin">BIN</option>
+                <option value="ascii">{t("fmtAscii")}</option>
+                <option value="bytes">{t("fmtBytes")}</option>
               </select>
             </label>
           )}
@@ -1103,9 +1252,26 @@ export default function App() {
           onClose={() => setCellDlg(null)}
         />
       )}
+      {showRules && (
+        <RulesDialog
+          lang={lang}
+          rules={rules}
+          stats={ruleStats}
+          running={runMode === "run"}
+          onChange={(r, why) => {
+            if (why === "example") {
+              toast.show(t("ruExampleDone"));
+            }
+            setRules(r);
+          }}
+          onResetCounts={() => api.resetRuleCounts().catch((e) => setError(String(e)))}
+          onClose={() => setShowRules(false)}
+        />
+      )}
+      {showFill && <FillDialog lang={lang} dev={dev} size={size} start={view.start} count={cells * per} onWrite={writeRange} onClose={() => setShowFill(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
-        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} run />
+        <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={connected || !!logPath} run ioOptions />
       )}
       {toast.node}
     </div>
