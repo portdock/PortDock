@@ -144,7 +144,7 @@ test("0619 루프백·4E 일련번호 (mc.rs loopback_manual_example, frame_4e_s
 });
 
 test("오류 응답 — 종료 코드·오류 정보 (mc.rs error_response_shape)", () => {
-  const e = decodeMc("D0 00 00 FF FF 03 00 0B 00 59 C0 00 FF FF 03 00 01 01 00 00", { lang: "en" });
+  const e = decodeMc("D0 00 00 FF FF 03 00 0B 00 59 C0 00 FF FF 03 00 01 01 00 00", { lang: "en" }); // 다른 기기의 응답 모양(0101 을 지원하지 않는 상대)
   assert.deepEqual([e.endCode, e.command, e.sub], [0xc059, 0x0101, 0]);
   assert.equal(field(e, "End code"), "C059 wrong command/subcommand");
   assert.equal(field(e, "Error info — I/O No."), "03FF");
@@ -234,4 +234,75 @@ test("요청 만들기 — 매뉴얼 예와 같은 프레임", () => {
   assert.throws(() => buildRequest({ frame: "3e", code: "binary", op: "read-bits", dev: "D", start: 0, count: 1 }));
   assert.throws(() => buildRequest({ frame: "3e", code: "binary", op: "read-words", dev: "D", start: 0, count: 961 }));
   assert.throws(() => buildRequest({ frame: "3e", code: "binary", op: "write-words", dev: "D", start: 0, count: 2, values: [1] }));
+});
+
+test("0.6.0 명령 — 블록·모니터·원격·형명 매뉴얼 예 (mc.rs read_block·write_block·monitor·remote·read_type_name)", () => {
+  // 0406: D0~D3·W100~W107 워드 블록, M0~M31·M128~M159·B100~B12F 비트 블록
+  const blockReq = b3([
+    0x06, 0x04, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0xa8, 0x04, 0x00, 0x00, 0x01, 0x00, 0xb4, 0x08, 0x00, 0x00, 0x00, 0x00, 0x90, 0x02, 0x00, 0x80, 0x00, 0x00, 0x90, 0x02, 0x00, 0x00, 0x01, 0x00, 0xa0, 0x03, 0x00,
+  ]);
+  const q = decodeMc(blockReq, { lang: "en" });
+  assert.deepEqual([q.command, q.commandName, q.simEnd, q.req?.kind], [0x0406, "Read Block", 0, "read-block"]);
+  assert.equal(field(q, "Word device blocks"), "2");
+  assert.ok(field(q, "Bit block 3")!.includes("B100–B12F"));
+  const resp = [0x08, 0x00, 0x30, 0x20, 0x45, 0x15, 0x00, 0x28, 0x70, 0x09, ...new Array(12).fill(0), 0x31, 0x01, 0x30, 0x20, 0x49, 0x48, 0xde, 0xc3, 0x00, 0x28, 0x70, 0x09, 0xaf, 0xb9, 0xaf, 0xb9];
+  const r = items(decodeMc(b3ok(resp), { pair: blockReq }));
+  assert.equal(r.length, 4 + 8 + 2 + 2 + 3);
+  assert.deepEqual(r.slice(0, 4), [
+    ["D0", 0x0008],
+    ["D1", 0x2030],
+    ["D2", 0x1545],
+    ["D3", 0x2800],
+  ]);
+  assert.deepEqual(r.slice(11), [
+    ["W107", 0x0131],
+    ["M0–M15", 0x2030],
+    ["M16–M31", 0x4849],
+    ["M128–M143", 0xc3de],
+    ["M144–M159", 0x2800],
+    ["B100–B10F", 0x0970],
+    ["B110–B11F", 0xb9af],
+    ["B120–B12F", 0xb9af],
+  ]);
+  const qa = decodeMc(a3("040600000203D*0000000004W*0001000008M*0000000002M*0001280002B*0001000003"));
+  assert.deepEqual([qa.code, qa.simEnd], ["ascii", 0]);
+  // 1406 ASCII — 블록마다 값
+  const wr = decodeMc(a3(["140600000203", "D*0000000004", "0008203015452800", "W*0001000008", "0970", "0000".repeat(6), "0131", "M*0000000002", "20304849", "M*0001280002", "C3DE2800", "B*0001000003", "0970B9AFB9AF"].join("")), { lang: "en" });
+  assert.deepEqual([wr.commandName, wr.simEnd, wr.items.length], ["Write Block", 0, 19]);
+  // 블록 한도·종류
+  const end = (s: string) => decodeMc(s).simEnd;
+  assert.equal(end(b3([0x06, 0x04, 0x00, 0x00, 0x00, 0x00])), 0xc051);
+  assert.equal(end(b3([0x06, 0x04, 0x00, 0x00, 0x01, 0x00, 0, 0, 0, 0xa8, 0xc0, 0x03])), 0);
+  assert.equal(end(b3([0x06, 0x04, 0x00, 0x00, 0x02, 0x00, 0, 0, 0, 0xa8, 0xc0, 0x03, 0, 0, 0, 0xa8, 0x01, 0x00])), 0xc051);
+  assert.equal(end(b3([0x06, 0x04, 0x00, 0x00, 0x01, 0x00, 0, 0, 0, 0x90, 1, 0])), 0xc05b);
+  // 0801·0802 — 0403 예와 같은 디바이스, 실행 응답은 0403 모양(짝 없이 워드로)
+  const entry = decodeMc(b3([0x01, 0x08, 0x00, 0x00, 0x04, 0x03, 0x00, 0x00, 0x00, 0xa8, 0x00, 0x00, 0x00, 0xc2, 0x64, 0x00, 0x00, 0x90, 0x20, 0x00, 0x00, 0x9c, 0xdc, 0x05, 0x00, 0xa8, 0x60, 0x01, 0x00, 0x9d, 0x57, 0x04, 0x00, 0x90]), { lang: "en" });
+  assert.deepEqual([entry.commandName, entry.simEnd, entry.req?.kind], ["Entry Monitor Device", 0, "monitor-entry"]);
+  assert.equal(end(a3("080100000100TS000000")), 0xc05b);
+  const run = decodeMc(a3("08020000"), { lang: "en" });
+  assert.deepEqual([run.commandName, run.simEnd], ["Execute Monitor", 0]);
+  assert.ok(run.notes.some((n) => n.includes("C05D")));
+  assert.equal(decodeMc("D0 00 00 FF FF 03 00 0B 00 5D C0 00 FF FF 03 00 02 08 00 00", { lang: "en" }).endCode, 0xc05d);
+  // 원격 조작(5.6 예)
+  const remote = (s: string) => {
+    const d = decodeMc(s, { lang: "en" });
+    return [d.commandName, d.simEnd];
+  };
+  assert.deepEqual(remote(b3([0x01, 0x10, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00])), ["Remote Run", 0]);
+  assert.deepEqual(remote(a3("1001000000010200")), ["Remote Run", 0]);
+  assert.deepEqual(remote(b3([0x02, 0x10, 0x00, 0x00, 0x01, 0x00])), ["Remote Stop", 0]);
+  assert.deepEqual(remote(a3("100300000001")), ["Remote Pause", 0]);
+  assert.deepEqual(remote(b3([0x05, 0x10, 0x00, 0x00, 0x01, 0x00])), ["Remote Latch Clear", 0]);
+  assert.deepEqual(remote(a3("100600000001")), ["Remote Reset", 0]);
+  assert.equal(end(b3([0x01, 0x10, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00])), 0xc05c);
+  assert.equal(end(b3([0x02, 0x10, 0x01, 0x00, 0x01, 0x00])), 0xc059);
+  assert.equal(end(b3([0x02, 0x10, 0x00, 0x00])), 0xc061);
+  // 0101 형명 읽기 — 매뉴얼 예 Q02UCPU·0263
+  const tn = b3([0x01, 0x01, 0x00, 0x00]);
+  assert.deepEqual([decodeMc(tn, { lang: "en" }).commandName, decodeMc(tn).simEnd], ["Read Type Name", 0]);
+  const tr = decodeMc(b3ok([...Array.from("Q02UCPU         ", (c) => c.charCodeAt(0)), 0x63, 0x02]), { pair: tn, lang: "en" });
+  assert.equal(field(tr, "Model name"), '"Q02UCPU"');
+  assert.equal(field(tr, "Model code"), "0263");
+  const tra = decodeMc(a3ok("Q02UCPU         0263"), { pair: a3("01010000"), lang: "en" });
+  assert.equal(field(tra, "Model code"), "0263");
 });
