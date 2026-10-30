@@ -4,3 +4,17 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Frame-Options: DENY
+
+# 마이크·웹캠 테스트 쪽만 이 사이트(self)에 허용 — 위 기본값(camera=(), microphone=())을 떼고 다시 건다
+/tools/mic-test/
+  ! Permissions-Policy
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
+/en/tools/mic-test/
+  ! Permissions-Policy
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
+/tools/webcam-test/
+  ! Permissions-Policy
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
+/en/tools/webcam-test/
+  ! Permissions-Policy
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
