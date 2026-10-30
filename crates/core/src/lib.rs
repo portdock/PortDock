@@ -10,6 +10,7 @@ pub mod event;
 pub mod framer;
 pub mod loopback;
 pub mod mc;
+pub mod mc_rules;
 pub mod i18n;
 pub mod launch;
 pub mod modbus;
