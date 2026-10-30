@@ -44,6 +44,11 @@ const HEAD = `PortDock — 개인정보 안내 / Privacy notice
   Aptabase(EU)로 보냅니다. 기능별 사용 횟수·켜 둔 시간·프로그램/
   윈도우 버전·화면 언어·설치판/휴대판 구분만 보내고, 통신 내용·IP·
   포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다.
+- «AI» 단추(AI 에게 물어보기용 복사): 지금 상황을 글로 만들어 클립보드에만
+  넣습니다. PortDock 은 아무 데도 보내지 않습니다. 붙여 넣는 AI 서비스로
+  내용이 가니 확인 후 붙여 넣으세요(사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는
+  가리고, 사설 IP 는 기본으로 남김).
+- TCP 중계의 «pcap 으로 저장» 은 고른 폴더에만 파일을 씁니다.
 - 설치판은 Microsoft Edge WebView2 가 없으면 Microsoft 에서 받아
   설치합니다(오프라인 설치판은 받지 않습니다).
 - 제거: 윈도우 «설정 → 앱» 에서 지웁니다.
@@ -79,6 +84,12 @@ installing or operating it.
   version, display language and installed/portable edition are sent —
   never traffic, IP addresses, ports, COM names, file paths or
   PC/user/device names.
+- The «AI» button (copy for asking AI) only puts a text summary on the
+  clipboard; PortDock sends nothing. Whatever you paste goes to that AI
+  service, so review it first (user folders, PC names, the last part of
+  MAC addresses and public IPs are masked; private IPs are kept by
+  default).
+- «Save as pcap» in the TCP relay writes only to the folder you choose.
 - If Microsoft Edge WebView2 is missing, the installer downloads it from
   Microsoft (the offline installer does not).
 - Uninstall from Windows «Settings → Apps».

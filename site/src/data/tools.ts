@@ -405,7 +405,7 @@ export const TOOLS: Tool[] = [
       { q: { ko: "«연결 거부» 가 나옵니다", en: "I get «connection refused»" }, a: { ko: "포트가 다르거나(설명서의 «socket port» 확인 — 5025 가 아닌 장비도 있음) 장비의 소켓 기능이 꺼져 있습니다. 다른 프로그램(VISA 세션)이 이미 붙어 있으면 새 접속을 받지 않는 장비도 있습니다.", en: "The port differs (check the manual's «socket port» — not every instrument uses 5025) or the socket interface is off. Some instruments refuse a new connection while another program (a VISA session) is attached." } },
       { q: { ko: "«응답 없음(시간 초과)» 이 납니다", en: "I get «no response (timeout)»" }, a: { ko: "질의가 아닌 명령을 질의로 보냈거나, 철자가 틀렸거나(오류 큐 확인), 장비가 느린 측정 중입니다. «응답 기다림» 을 늘리거나 *OPC? 로 기다리세요. «응답이 끝나지 않았습니다» 면 줄 끝(LF·CR LF·CR)이 장비와 다릅니다.", en: "A non-query was sent as a query, the command is misspelled (check the error queue) or the instrument is busy measuring. Increase the reply wait or use *OPC?. «Reply not finished» means the line ending (LF, CR LF, CR) differs from the instrument's." } },
       { q: { ko: "-410 Query INTERRUPTED 는 무엇인가요?", en: "What is -410 Query INTERRUPTED?" }, a: { ko: "답을 읽기 전에 다음 명령을 보냈다는 뜻입니다. «쓰기» 로 질의를 보냈다면 «읽기» 로 답을 먼저 받으세요.", en: "The next command was sent before the reply was read. If you sent a query with «Write», fetch the answer with «Read» first." } },
-      { q: { ko: "USB(USBTMC)·GPIB·VXI-11·HiSLIP 도 되나요?", en: "Does it support USBTMC, GPIB, VXI-11 or HiSLIP?" }, a: { ko: "아직 아닙니다. VXI-11 은 다음 판에서 할 일이고, HiSLIP·USBTMC·GPIB 는 VISA·드라이버가 필요해 하지 않습니다. 대부분의 LAN 계측기는 소켓(5025)도 켜져 있고, USB 만 있는 장비는 «USB 가상 COM» 설정이 있으면 시리얼로 쓸 수 있습니다.", en: "Not yet. VXI-11 is planned; HiSLIP, USBTMC and GPIB need VISA or drivers and are out of scope. Most LAN instruments also offer a socket (5025), and USB-only instruments with a «USB virtual COM» setting work over serial." } },
+      { q: { ko: "USB(USBTMC)·GPIB·VXI-11·HiSLIP 도 되나요?", en: "Does it support USBTMC, GPIB, VXI-11 or HiSLIP?" }, a: { ko: "지금은 없습니다. VXI-11 은 지금 없고, HiSLIP·USBTMC·GPIB 는 VISA·드라이버가 필요해 하지 않습니다. 대부분의 LAN 계측기는 소켓(5025)도 켜져 있고, USB 만 있는 장비는 «USB 가상 COM» 설정이 있으면 시리얼로 쓸 수 있습니다.", en: "Not now. VXI-11 is not supported at the moment; HiSLIP, USBTMC and GPIB need VISA or drivers and are out of scope. Most LAN instruments also offer a socket (5025), and USB-only instruments with a «USB virtual COM» setting work over serial." } },
       { q: { ko: "계측기 없이 먼저 해 볼 수 있나요?", en: "Can I try it without an instrument?" }, a: { ko: "PortDock Simulator 를 TCP 서버 5025·끝 문자 LF 로 두고 [SCPI *IDN? 응답] 예제를 넣은 뒤, 127.0.0.1:5025 로 연결하면 됩니다.", en: "Run PortDock Simulator as a TCP server on 5025 with LF framing and the [SCPI *IDN? reply] example, then connect to 127.0.0.1:5025." } },
     ],
     help: scpiHelp,
@@ -548,7 +548,7 @@ export const TOOLS: Tool[] = [
       {
         q: { ko: "다른 PC 의 HMI 에서 붙으려면?", en: "How do I connect an HMI on another PC?" },
         a: {
-          ko: "«다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜고 윈도우 방화벽에서 이 프로그램을 허용합니다. 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요.",
+          ko: "«다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜고 윈도우 방화벽에서 이 프로그램을 허용합니다. 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요.",
           en: "Turn on «Allow other PCs to connect (0.0.0.0)» and allow the program in Windows Firewall. Do not run it on a plant network with the same IP and port as a real PLC.",
         },
       },
