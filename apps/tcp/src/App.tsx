@@ -72,6 +72,7 @@ import { saveName } from "@shared/fileName";
 import { openInApp } from "@shared/openApp";
 import { count } from "@shared/usage";
 import { tcpLaunch } from "./launch";
+import { pairCell, RtBag, rtStats, statsText } from "./pairStats";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
@@ -108,6 +109,16 @@ function cleanLastOk(v: unknown, base: TcpConfig): LastOk | null {
   const relayTo: RelayTarget = r && typeof r.host === "string" && isPort(r.port) ? { host: r.host.trim(), port: r.port } : { host: "", port: 0 };
   if (cfg.mode === "relay" && (!relayTo.host || relayTo.port === 0)) return null;
   return { cfg, relayTo };
+}
+
+/** (0.8.0) 중계 기록 줄의 짝 칸 — 요청 «#12 FC03 →», 응답 «#12 3.25 ms», 무응답 */
+function PairCell({ p, missed, lang }: { p: NonNullable<Frame["pair"]>; missed: boolean; lang: Lang }) {
+  const c = pairCell(p, lang, missed);
+  return (
+    <span className={c.cls} data-tip={tip(lang, "pairCol")}>
+      {c.text}
+    </span>
+  );
 }
 
 type Status = "idle" | "listening" | "connected" | "disconnected" | "reconnecting" | "closed";
@@ -278,6 +289,11 @@ export default function App() {
     logPathRef.current = p;
     setLogPathState(p);
   };
+  // (0.8.0) 중계 pcap 저장 경로(멈추면 null)
+  const [pcapPath, setPcapPath] = useState<string | null>(null);
+  // (0.8.0) 중계 요청/응답 짝 — 응답을 기다리는 요청 줄(번호 → 줄)과 응답 시간 통
+  const reqById = useRef(new Map<number, Frame>());
+  const rtBag = useRef(new RtBag());
   const framesRef = useRef<Frame[]>([]);
   const timeBase = useRef<number | null>(null);
   // 줄마다 일련번호 — 앞을 잘라내도 선택한 줄이 다른 줄로 바뀌지 않게
@@ -329,6 +345,25 @@ export default function App() {
         }
         if (f.dir === "rx") trgCheck(f);
         if (f.check === false) counters.current.fail++;
+        // 짝: 요청은 기다리는 목록에, 응답은 응답 시간 통에, 무응답은 그 요청 줄에 표시
+        const p = f.pair;
+        if (p) {
+          const waiting = reqById.current;
+          if (p.role === "req") {
+            waiting.set(p.id, f);
+            if (waiting.size > 5000) waiting.delete(waiting.keys().next().value as number);
+          } else {
+            const q = waiting.get(p.id);
+            waiting.delete(p.id);
+            if (p.role === "rsp") {
+              if (p.rtMs != null) rtBag.current.add(p.rtMs);
+              if (p.error) rtBag.current.errors++;
+            } else {
+              rtBag.current.misses++;
+              if (q) q.missed = true;
+            }
+          }
+        }
       }
       screenBytes.current = trimFrames(framesRef.current, maxLines.current, screenBytes.current);
       setVersion((v) => v + 1);
@@ -346,7 +381,10 @@ export default function App() {
       }
       // 백엔드가 준 설명(재접속 대기·멈춤의 마지막 실패 이유 등)을 먼저 보인다
       setStatusMsg(e.message || e.port || null);
-      if (e.state === "closed") setRunning(false);
+      if (e.state === "closed") {
+        setRunning(false);
+        setPcapPath(null);
+      }
       // 끊기면 반복을 끈다 — 다시 붙었을 때 저절로 보내지 않게
       if (e.state !== "connected" && e.state !== "listening") setRepeating(false);
     } else if (e.type === "peers") {
@@ -397,6 +435,8 @@ export default function App() {
       relay: isRelay ? joinHostPort(rt.host.trim(), rt.port) : undefined,
       ok: c.mode === "client" ? ok : undefined,
     };
+    // 요청 번호는 세션마다 1부터 — 앞 세션의 기다리던 요청은 버린다
+    reqById.current.clear();
     try {
       const l = await api.start(c, effFraming, rxWire, isRelay ? { host: rt.host.trim(), port: rt.port } : null, onEvent);
       setLocal(l);
@@ -443,7 +483,7 @@ export default function App() {
     void start(use);
   });
   // 연결·기록 중 절전 막기(0.3.0)
-  useKeepAwake(running || !!logPath, settings.keepAwake);
+  useKeepAwake(running || !!logPath || !!pcapPath, settings.keepAwake);
   async function stop() {
     pendingRec.current = {};
     setDropped(false);
@@ -455,6 +495,23 @@ export default function App() {
     setTarget(null);
     setSendNote(null);
     setLogPath(null);
+    setPcapPath(null);
+  }
+  /** (0.8.0) 중계 pcap 저장 켜기·끄기 */
+  async function togglePcap() {
+    if (pcapPath) {
+      try {
+        await api.setPcap(null);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setPcapPath(null);
+      }
+      return;
+    }
+    const path = await save({ defaultPath: saveName("tcp", nameWhere(), "pcapng"), filters: [{ name: "pcapng", extensions: ["pcapng"] }] });
+    if (!path) return;
+    await api.setPcap(path).then(() => setPcapPath(path)).catch((e) => setError(String(e)));
   }
   async function toggleLog() {
     if (logPath) {
@@ -552,6 +609,8 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0, fail: 0 };
+    reqById.current.clear();
+    rtBag.current.reset();
     meter.current.reset();
     deltaSt.current = newDeltaState();
     screenBytes.current = 0;
@@ -777,7 +836,10 @@ export default function App() {
   if (!framesRef.current.length) timeBase.current = null;
   else if (timeBase.current === null) timeBase.current = framesRef.current[0].ts;
   const fmt = (ts: number) => formatTime(ts, settings.timeFormat, timeBase.current ?? ts);
-  useExitGuard(running || !!logPath, settings.confirmExit, lang, "PortDock TCP");
+  useExitGuard(running || !!logPath || !!pcapPath, settings.confirmExit, lang, "PortDock TCP");
+  // (0.8.0) 중계 응답 시간 통계 — 짝이나 무응답이 하나라도 있을 때만
+  const bag = rtBag.current;
+  const pairStatsLine = relay && (bag.values.length > 0 || bag.misses > 0) ? statsText(rtStats(bag.values), bag.misses, bag.errors, lang) : null;
 
   // ---- 단축키: F4 시작·멈춤, Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, Esc 반복 멈춤
   const runDisabled = (!running && !startable) || starting;
@@ -802,7 +864,7 @@ export default function App() {
           : server
             ? [`${t("titleServer")} :${localPort}`, t("titlePeers").replace("{n}", String(peers.length))]
             : [`${cfg.host}:${cfg.port}`, statusText],
-      !!logPath,
+      !!logPath || !!pcapPath,
     ),
   );
   // 접힌 제목에 보일 지금 값
@@ -1062,6 +1124,11 @@ export default function App() {
         <button data-tip={withKey(tip(lang, logPath ? "stopLog" : "logToFile"), KEYS.fileLog)} className="btn" onClick={toggleLog} disabled={!running}>
           {logPath ? t("stopLog") : t("logToFile")}
         </button>
+        {relay && (
+          <button data-tip={tip(lang, pcapPath ? "pcapStop" : "pcapSave")} className="btn pcap-btn" onClick={() => void togglePcap()} disabled={!running}>
+            {pcapPath ? t("pcapStop") : t("pcapSave")}
+          </button>
+        )}
       </aside>
 
       <main className="main">
@@ -1101,6 +1168,16 @@ export default function App() {
           <span className={`dot s-${status === "listening" ? "connected" : status}`} />
           <span className="mono">{statusText}</span>
           {logPath && <span className="rec">● REC</span>}
+          {pcapPath && (
+            <span className="rec pcap-rec" title={pcapPath}>
+              ● PCAP
+            </span>
+          )}
+          {pairStatsLine && (
+            <span className="pair-stats mono" data-tip={tip(lang, "pairStats")}>
+              {pairStatsLine}
+            </span>
+          )}
           <span className="grow" />
           <LiveStats meter={meter.current} lang={lang} active={running} />
         </div>
@@ -1163,6 +1240,7 @@ export default function App() {
                       {dirLabel(f.dir)}
                     </span>
                     {listening && <span className="peeraddr">{f.peer}</span>}
+                    {relay && f.pair && <PairCell p={f.pair} missed={!!f.missed} lang={lang} />}
                     <span className="data">
                       {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
                       {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
@@ -1419,6 +1497,11 @@ export default function App() {
               {relay && selFrame.dir !== "ev" ? ` · ${dirLabel(selFrame.dir)}` : ""}
               {selFrame.dir !== "ev" && ` · ${selFrame.bytes.length} ${t("bytes")}`}
             </div>
+            {selFrame.pair && (
+              <div className="pair-detail">
+                {t("pairCol")}: {pairCell(selFrame.pair, lang, !!selFrame.missed).text}
+              </div>
+            )}
             {selFrame.dir === "ev" ? (
               <pre className="dump">{selFrame.note}</pre>
             ) : (

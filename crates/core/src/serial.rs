@@ -602,7 +602,7 @@ impl Session {
 }
 
 fn note(s: &Shared, text: String) {
-    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(text), peer: None });
+    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(text), peer: None, pair: None });
 }
 
 /// «COM3 9600 8N1 flow=none DTR=0 RTS=0» (+ RS-485 방향 제어가 켜져 있으면 « RS485=driver»)
@@ -843,7 +843,7 @@ fn writer_loop(rx: Receiver<Job>, s: Arc<Shared>, events: EventSink) {
 }
 
 fn push_tx(s: &Shared, bytes: &[u8]) {
-    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes.to_vec(), check: None, note: None, peer: None });
+    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes.to_vec(), check: None, note: None, peer: None, pair: None });
 }
 
 /// 한 덩어리를 보낸 결과
@@ -1068,10 +1068,10 @@ fn push_rx(s: &Shared, frames: Vec<Cut>, replies: &SyncSender<Job>) {
                 answer = hit.map(|r| (r.reply, r.delay_ms, Some(format!("AUTO {}", r.name))));
             }
         }
-        pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None, peer: None });
+        pending.push(Frame { ts, dir: "rx", bytes, check: c, note: None, peer: None, pair: None });
         if let Some((reply, delay_ms, note)) = answer {
             if let Some(n) = note {
-                pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(n), peer: None });
+                pending.push(Frame { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(n), peer: None, pair: None });
             }
             if reply.is_empty() {
                 continue;
@@ -1249,7 +1249,7 @@ mod tests {
 
     #[test]
     fn event_log_line() {
-        let f = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()), peer: None };
+        let f = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()), peer: None, pair: None };
         assert!(log_line(&f).ends_with(" EV SET baud 9600→115200"));
     }
 

@@ -300,6 +300,12 @@ fn set_log(app: State<App>, path: Option<String>) -> Result<(), String> {
     app.0.with(MAIN, |s| s.set_log(path))?
 }
 
+/// (0.8.0) 중계: pcapng 저장 시작(경로)·멈춤(null) — 머리는 만든 값(core pcap.rs)
+#[tauri::command(async)]
+fn set_pcap(app: State<App>, path: Option<String>) -> Result<(), String> {
+    app.0.with(MAIN, |s| s.set_pcap(path, concat!("PortDock TCP ", env!("CARGO_PKG_VERSION"))))?
+}
+
 // ---- 자동응답(Simulator 와 같은 규칙) — 세션은 늘 응답기를 꽂고, «켜기» 가 꺼져 있으면 지나간다
 
 #[tauri::command]
@@ -449,7 +455,7 @@ pub fn run() {
             report_env,
             consent_get,
             consent_set,
-            report_read_dump, start, stop, set_framing, set_echo, send, send_file, file_size, cancel_send, set_log_options, kick, preview, set_log, write_text, read_text,
+            report_read_dump, start, stop, set_framing, set_echo, send, send_file, file_size, cancel_send, set_log_options, kick, preview, set_log, set_pcap, write_text, read_text,
             set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule, interfaces, decode_mbap])
         .run(tauri::generate_context!());
     if let Err(e) = result {

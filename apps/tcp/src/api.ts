@@ -5,6 +5,7 @@ import type { MbapInfo } from "@shared/MbapDetail";
 import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
 import { tally } from "@shared/usage";
+import type { PairMark } from "./pairStats";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 export type { FrameMode } from "@shared/framing";
 
@@ -50,6 +51,10 @@ export interface Frame {
   rsp?: number | null;
   /** 트리거 색 */
   mark?: string | null;
+  /** (0.8.0) 중계: 요청/응답 짝(core reqpair) */
+  pair?: PairMark;
+  /** 화면에서 붙임 — 이 요청이 무응답으로 끝남 */
+  missed?: boolean;
 }
 
 export interface Peer {
@@ -117,6 +122,8 @@ export const api = {
   kick: (id: number) => invoke<void>("kick", { id }),
   preview: (spec: SendSpec, encoding: Encoding) => invoke<number[]>("preview", { spec: wireSpec(spec, encoding) }),
   setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
+  /** (0.8.0) 중계: pcapng 저장 시작(경로)·멈춤(null) */
+  setPcap: (path: string | null) => tally(path ? "pcap_save" : null, invoke<void>("set_pcap", { path })),
   setLogOptions: (options: LogOptions) => invoke<void>("set_log_options", { options }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),

@@ -1438,10 +1438,89 @@ pub fn describe_response(fmt: Format, f: &[u8]) -> Option<String> {
     Some(s)
 }
 
+/// 통신 기록에서 알아본 MC 프레임 하나(중계 기록의 요청/응답 짝 맞추기용, 0.8.0)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Seen {
+    pub fmt: Format,
+    /// 응답(부머리 D000·D400)인지
+    pub response: bool,
+    /// 4E 의 일련번호
+    pub serial: Option<u16>,
+    /// 요청의 명령(응답이면 0)
+    pub command: u16,
+    /// 응답의 종료 코드(요청이면 None)
+    pub end: Option<u16>,
+}
+
+/// 부머리(3E 5000/D000·4E 5400/D400, 이진·ASCII)로 형식과 방향을 알아본다. 머리·길이 칸이 실제 길이와 맞을 때만 Some
+pub fn recognize(f: &[u8]) -> Option<Seen> {
+    let (frame, code, response) = match f.get(..2)? {
+        [0x50, 0x00] => (FrameKind::E3, DataCode::Binary, false),
+        [0xD0, 0x00] => (FrameKind::E3, DataCode::Binary, true),
+        [0x54, 0x00] => (FrameKind::E4, DataCode::Binary, false),
+        [0xD4, 0x00] => (FrameKind::E4, DataCode::Binary, true),
+        _ => match f.get(..4)? {
+            b"5000" => (FrameKind::E3, DataCode::Ascii, false),
+            b"D000" => (FrameKind::E3, DataCode::Ascii, true),
+            b"5400" => (FrameKind::E4, DataCode::Ascii, false),
+            b"D400" => (FrameKind::E4, DataCode::Ascii, true),
+            _ => return None,
+        },
+    };
+    let fmt = Format { frame, code };
+    if !response {
+        let (h, _) = parse_header(fmt, f).ok()?;
+        return Some(Seen { fmt, response, serial: h.serial, command: h.command, end: None });
+    }
+    let ascii = fmt.ascii();
+    let off = fmt.len_offset();
+    let mut r = Rd::new(f.get(off..)?, ascii);
+    let len = r.num(2).ok()? as usize;
+    if r.left() != len {
+        return None;
+    }
+    let end = r.num(2).ok()? as u16;
+    let serial = match (frame, ascii) {
+        (FrameKind::E4, false) => Some(u16::from_le_bytes([f[2], f[3]])),
+        (FrameKind::E4, true) => Some(hex_val(f.get(4..8)?).ok()? as u16),
+        _ => None,
+    };
+    Some(Seen { fmt, response, serial, command: 0, end: Some(end) })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::regmap::{SimKind, WordOrder};
+
+    #[test]
+    fn recognize_requests_and_responses() {
+        // 3E 이진 0401 D100 ×3 요청과 완료 응답
+        let req = b3(&[0x01, 0x04, 0x00, 0x00, 0x64, 0x00, 0x00, 0xA8, 0x03, 0x00]);
+        let s = recognize(&req).unwrap();
+        assert_eq!((s.fmt, s.response, s.command, s.serial, s.end), (B3, false, 0x0401, None, None));
+        let s = recognize(&b3_ok(&[1, 0, 2, 0, 3, 0])).unwrap();
+        assert_eq!((s.fmt, s.response, s.end), (B3, true, Some(0)));
+        // ASCII 3E
+        let s = recognize(&a3("04010000D*0001000003")).unwrap();
+        assert_eq!((s.fmt, s.command), (A3, 0x0401));
+        assert_eq!(recognize(&a3_ok("000100020003")).unwrap().end, Some(0));
+        // 4E 이진: 일련번호 0x1234
+        let mut q = vec![0x54, 0x00, 0x34, 0x12, 0x00, 0x00];
+        q.extend(&req[2..]);
+        let s = recognize(&q).unwrap();
+        assert_eq!((s.fmt, s.serial), (B4, Some(0x1234)));
+        let mut r = vec![0xD4, 0x00, 0x34, 0x12, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x56, 0xC0];
+        assert_eq!(recognize(&r).map(|s| (s.serial, s.end)), Some((Some(0x1234), Some(0xC056))));
+        // 4E ASCII 응답 일련번호
+        let s = recognize(b"D4000ABC000000FF03FF0000040000").unwrap();
+        assert_eq!((s.fmt, s.serial, s.end), (A4, Some(0x0ABC), Some(0)));
+        // 길이 칸이 틀리면·모르는 머리면 None
+        r.push(0);
+        assert!(recognize(&r).is_none());
+        assert!(recognize(&[0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 1, 3, 0, 0, 0, 1]).is_none());
+        assert!(recognize(&[0x50]).is_none());
+    }
 
     const B3: Format = Format { frame: FrameKind::E3, code: DataCode::Binary };
     const A3: Format = Format { frame: FrameKind::E3, code: DataCode::Ascii };

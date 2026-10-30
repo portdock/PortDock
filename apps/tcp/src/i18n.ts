@@ -128,6 +128,10 @@ const ko = {
   dirAB: "A→B ▶",
   dirBA: "◀ B→A",
   whyNoPairs: "아직 이어진 쌍이 없습니다",
+  // ---- (0.8.0) 중계 pcap 저장·요청/응답 짝
+  pcapSave: "pcap 으로 저장",
+  pcapStop: "pcap 저장 멈춤",
+  pairCol: "짝·응답",
   // ---- Modbus TCP
   fmModbusTcp: "Modbus TCP (MBAP 길이)",
   mbRequest: "Modbus…",
@@ -260,6 +264,9 @@ const en: typeof ko = {
   dirAB: "A→B ▶",
   dirBA: "◀ B→A",
   whyNoPairs: "No relayed pair yet",
+  pcapSave: "Save as pcap",
+  pcapStop: "Stop pcap",
+  pairCol: "Pair · reply",
   fmModbusTcp: "Modbus TCP (MBAP length)",
   mbRequest: "Modbus…",
   mbapTid: "Auto MBAP transaction ID",

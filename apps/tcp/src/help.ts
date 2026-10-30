@@ -27,7 +27,7 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: «방식»·주소·«포트», «고급 연결» 접기(즉시 전송·재접속), «연결»/«듣기 시작» 버튼(실행 중에는 클라이언트 «끊기», 서버·중계 «듣기 멈춤»), 상태, (서버) «접속한 상대» 목록, «받기 설정» 접기(프레임 구분·수신 체크섬 검사·에코), «파일로 계속 저장».",
+        "- 왼쪽: «방식»·주소·«포트», «고급 연결» 접기(즉시 전송·재접속), «연결»/«듣기 시작» 버튼(실행 중에는 클라이언트 «끊기», 서버·중계 «듣기 멈춤»), 상태, (서버) «접속한 상대» 목록, «받기 설정» 접기(프레임 구분·수신 체크섬 검사·에코), «파일로 계속 저장», (중계) «pcap 으로 저장».",
         "- «고급 연결»·«받기 설정» 은 평소 접혀 있고 제목 옆에 지금 값(«Nagle 끔 · 재접속 2초», «끊김 시간 20ms · 체크섬 검사 없음»)이 보입니다. 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다» — 처음에는 «둘 다»), «자동 스크롤», RX·TX 누적 바이트 수, «화면 내용 저장», «지우기».",
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
@@ -251,7 +251,7 @@ export const help: HelpDoc = {
     {
       title: "Screen layout",
       body: [
-        "- Left: «Mode», address, «Port», the «Advanced connection» section (immediate send, reconnect), «Connect»/«Start listening» (while running: «Disconnect» for a client, «Stop listening» for server/relay), status, (server) «Connected peers», the «Receive settings» section (framing, RX checksum check, echo), «Log to file».",
+        "- Left: «Mode», address, «Port», the «Advanced connection» section (immediate send, reconnect), «Connect»/«Start listening» (while running: «Disconnect» for a client, «Stop listening» for server/relay), status, (server) «Connected peers», the «Receive settings» section (framing, RX checksum check, echo), «Log to file», (relay) «Save as pcap».",
         "- «Advanced connection» and «Receive settings» are collapsed with the current values next to the title («Nagle off · reconnect 2 s», «Idle gap 20ms · No checksum check»). They start expanded when something differs from the defaults, and their open state is remembered.",
         "- Top toolbar: «View» (HEX, ASCII, «Both» — «Both» at first), «Auto-scroll», total RX/TX bytes, «Save view», «Clear».",
         "- Below the toolbar, the find/filter row: find box, ▲/▼, «Matches only», «FAIL only», direction (All/RX/TX/EV). See «Find and filter the log».",
@@ -461,7 +461,7 @@ export const help: HelpDoc = {
 const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
   ko: [
     {
-      title: "중계(모니터) — HMI ⇄ PLC 사이 엿보기",
+      title: "중계(모니터) — HMI ⇄ PLC 사이에 끼워 기록",
       body: [
         "«방식» 의 «중계 (모니터 — A ⇄ 이 PC ⇄ B)» 는 이 PC 를 두 장비 사이에 끼웁니다. A(예: HMI·SCADA)가 B(예: PLC) 대신 이 PC 에 접속하면, 접속마다 B 로 새로 이어 주고 오가는 것을 모두 기록합니다.",
         "- 1. «A 가 접속할 이 PC 주소»(보통 0.0.0.0)와 «포트»(예: 502), «이어 줄 장비 (B)» 의 주소·포트(PLC 의 IP·502)를 넣고 «듣기 시작».",
@@ -471,6 +471,22 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
         "- 한쪽이 끊으면 다른 쪽도 닫고 «CLOSE A ⇄ B (B 쪽이 끊음)» 처럼 먼저 끊은 쪽을 남깁니다. 다시 잇지 않습니다 — A 가 다시 접속하면 새 쌍이 생깁니다. B 에 접속하지 못하면 «RELAY FAIL …» 을 남기고 A 를 닫습니다.",
         "- 끼워 넣기: 보내기 줄 맨 왼쪽에서 «A 쪽으로»/«B 쪽으로» 를 고르고 보냅니다(받는 쪽으로 특정 쌍도 고를 수 있음). 끼워 넣은 것은 «INJECT → A/B» 사건 줄 다음에 그 방향으로 기록됩니다. 실제 장비에 명령이 들어가므로 조심하세요.",
         "- 상대 옆 «끊기» 는 그 쌍(A·B 둘 다)을 닫습니다.",
+      ],
+    },
+    {
+      title: "중계: pcap 저장·요청/응답 짝 (0.8.0 부터)",
+      body: [
+        "HMI ⇄ PLC 사이에 끼워 기록하는 법 — 스위치에 물린 PC 의 Wireshark 는 다른 장비끼리의 통신을 보지 못합니다(포트 미러링·탭이 필요). 중계는 드라이버·관리자 권한 없이 HMI 의 대상 주소만 이 PC 로 바꿔 양쪽을 기록합니다. 사용자가 직접 설정을 바꾼 접속만 지나가며, 자기 장비 시험용입니다.",
+        "- 1. «중계» 탭: «A 가 접속할 이 PC 주소» 0.0.0.0, «포트» 는 PLC 와 같은 번호(예: 502), «이어 줄 장비 (B)» 에 PLC 의 IP·포트 → «듣기 시작».",
+        "- 2. HMI 의 통신 설정에서 대상(PLC) IP 를 이 PC 의 IP 로 바꿉니다(왼쪽 «이 PC 주소» 에서 확인). HMI 가 다시 접속하면 «RELAY A ⇄ B» 줄이 남고 기록이 시작됩니다.",
+        "- 3. 끝나면 HMI 의 대상 주소를 PLC 로 되돌립니다.",
+        "- «pcap 으로 저장»(왼쪽 아래, 중계 실행 중에만): 파일을 고르면 그때부터 양방향 바이트를 .pcapng 로 남깁니다. 상태 줄에 «● PCAP», 기록에 «PCAP START …». 다시 누르거나 «듣기 멈춤» 이면 닫고 «PCAP STOP … (n packets)» 를 남깁니다.",
+        "- 실제로 잡은 패킷이 아니라 중계가 넘긴 응용 데이터에 이더넷·IP·TCP 머리를 만들어 붙인 것입니다. 주소·포트는 A·B 의 실제 값, 순서번호는 보낸 바이트만큼 늘고, 쌍마다 처음에 SYN·끝에 FIN 을 넣습니다. 시각은 중계가 읽은 순간(µs). 파일 주석과 인터페이스 이름에 «PortDock TCP relay (reconstructed)» 가 적히고, 끼워 넣은 것은 패킷 주석 «PortDock INJECT -> A/B» 가 붙습니다.",
+        "- 열기: Wireshark(Modbus TCP 는 502 면 바로 풀이, 다른 포트는 «Decode As») 또는 사이트의 산업 프로토콜 pcap 해석기 https://portdock.dev/tools/pcap-analyzer/ (곧 공개 — 파일은 브라우저 밖으로 나가지 않음).",
+        "- 파일 크기: ⚙ 설정의 «크기로 나누기 (MB)» 를 넘으면 «이름-002.pcapng» 로 이어 씁니다(0 이면 100MB). 파일마다 머리부터 다시 쓰므로 하나씩 열립니다. 디스크가 차는 등 쓰기에 실패하면 저장을 멈추고 알립니다.",
+        "- «짝·응답» 칸: Modbus TCP(트랜잭션 ID)·MC 3E/4E(이진·ASCII — 4E 는 일련번호, 3E 는 먼저 온 요청부터)를 알아보면 A→B 요청에 «#12 FC03 →», B→A 응답에 «#12 3.25 ms» 를 붙입니다. 응답 시간 = 요청 첫 바이트 → 응답 첫 바이트(이 PC 에서 잰 값 — 네트워크 왕복 + 장비 처리).",
+        "- 예외 응답(«EXC 02»)·MC 종료 코드(«C056»)는 빨갛게. 3초 안에 응답이 없거나, 같은 번호의 요청이 다시 오거나, 연결이 끊기면 «NO REPLY #12 …» 사건 줄이 남고 그 요청 줄이 «무응답» 으로 바뀝니다.",
+        "- 상태 줄 통계: «짝 N · 무응답 M · 응답 ms 최소·중앙·95%·최대» — 지우기 뒤로 최근 1만 개. 한 줄에 프레임 하나가 오도록 «프레임 구분» 을 «Modbus TCP (MBAP 길이)»(MC 는 «끊김 시간»)로 두세요.",
       ],
     },
     {
@@ -496,7 +512,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
   ],
   en: [
     {
-      title: "Relay (monitor) — watch HMI ⇄ PLC",
+      title: "Relay (monitor) — log HMI ⇄ PLC traffic",
       body: [
         "«Relay (monitor — A ⇄ this PC ⇄ B)» in «Mode» puts this PC between two devices. When A (e.g. an HMI/SCADA) connects to this PC instead of B (e.g. a PLC), each connection gets its own link to B and everything in between is logged.",
         "- 1. Enter «This PC address for A to connect to» (usually 0.0.0.0) and «Port» (e.g. 502), and the «Device to relay to (B)» host and port (the PLC's IP, 502). Press «Start listening».",
@@ -506,6 +522,22 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
         "- When either side closes, the other is closed too and the first side is logged, e.g. «CLOSE A ⇄ B (B side closed)». There is no reconnect — when A connects again a new pair is made. If B cannot be reached, «RELAY FAIL …» is logged and A is closed.",
         "- Injecting: pick «To A» or «To B» at the far left of the send bar and send (a specific pair can be chosen in «To»). Injected data is logged in that direction after an «INJECT → A/B» event. It reaches real equipment — be careful.",
         "- «Kick» next to a pair closes that pair (both A and B).",
+      ],
+    },
+    {
+      title: "Relay: save pcap, request/reply pairs (from 0.8.0)",
+      body: [
+        "Logging between an HMI and a PLC — on a switch, Wireshark on your PC cannot see traffic between other devices (it needs port mirroring or a tap). The relay records both sides without drivers or admin rights: you only point the HMI at this PC. Only connections whose settings you changed yourself pass through; it is meant for testing your own equipment.",
+        "- 1. «Relay» tab: «This PC address for A to connect to» 0.0.0.0, «Port» the same number as the PLC (e.g. 502), «Device to relay to (B)» the PLC's IP and port → «Start listening».",
+        "- 2. In the HMI's communication settings, change the target (PLC) IP to this PC's IP (see «This PC» on the left). When the HMI reconnects, a «RELAY A ⇄ B» line appears and logging starts.",
+        "- 3. When done, point the HMI back at the PLC.",
+        "- «Save as pcap» (bottom left, relay running only): pick a file and both directions are saved as .pcapng from then on. The status bar shows «● PCAP» and the log «PCAP START …». Click again or «Stop listening» to close it with «PCAP STOP … (n packets)».",
+        "- These are not captured packets: Ethernet/IP/TCP headers are synthesized around the application data the relay forwarded. Addresses and ports are A's and B's real ones, sequence numbers grow by the bytes sent, and each pair gets a SYN at the start and a FIN at the end. Timestamps are when the relay read the data (µs). The file comment and interface name say «PortDock TCP relay (reconstructed)»; injected data carries the packet comment «PortDock INJECT -> A/B».",
+        "- Open it in Wireshark (Modbus TCP on 502 is decoded right away; other ports need «Decode As») or in the site's industrial protocol pcap analyzer https://portdock.dev/tools/pcap-analyzer/ (coming soon — the file never leaves your browser).",
+        "- File size: past «Split by size (MB)» in ⚙ Settings it continues in «name-002.pcapng» (100 MB if 0). Each file starts with its own header, so each opens on its own. If writing fails (disk full etc.) saving stops and you are told.",
+        "- «Pair · reply» column: when Modbus TCP (transaction ID) or MC 3E/4E (binary/ASCII — 4E by serial number, 3E oldest request first) is recognized, A→B requests get «#12 FC03 →» and B→A replies «#12 3.25 ms». Reply time = first request byte → first reply byte (measured on this PC — network round trip plus device processing).",
+        "- Exception replies («EXC 02») and MC end codes («C056») are red. No reply within 3 s, the same request again, or a closed connection leaves a «NO REPLY #12 …» event and marks that request «no reply».",
+        "- Status bar statistics: «pairs N · no reply M · reply ms min · median · 95% · max» — latest 10,000 since the last clear. Set «Framing» to «Modbus TCP (MBAP length)» (MC: «Idle gap») so each line holds one frame.",
       ],
     },
     {
