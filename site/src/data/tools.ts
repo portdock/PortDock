@@ -484,7 +484,6 @@ export const TOOLS: Tool[] = [
     name: "PortDock PLC Simulator",
     file: "PortDock-PLC-Simulator",
     tagline: { ko: "MC 프로토콜(SLMP) 서버 흉내 — PLC 없이 HMI·수집 프로그램 시험", en: "MC protocol (SLMP) server simulator for testing without a PLC" },
-    upcoming: true,
     seo: {
       title: { ko: "PortDock PLC Simulator — 무료 MC 프로토콜(SLMP) 시뮬레이터", en: "PortDock PLC Simulator — Free MC Protocol (SLMP) Simulator" },
       desc: {
@@ -540,7 +539,6 @@ export const TOOLS: Tool[] = [
     name: "PortDock Hardware Tester",
     file: "PortDock-Hardware-Tester",
     tagline: { ko: "와이파이·인터넷 끊김·지연 기록, 블루투스 연결·끊김 기록", en: "Wi-Fi and internet drop/latency recorder with a Bluetooth connection log" },
-    upcoming: true,
     seo: {
       title: { ko: "PortDock Hardware Tester — 와이파이 끊김·핑 기록 (무료)", en: "PortDock Hardware Tester — Wi-Fi Drop & Ping Logger (Free)" },
       desc: {
