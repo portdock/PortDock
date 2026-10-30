@@ -5,6 +5,8 @@
 #   PortDock-<App>-setup.exe     설치판(NSIS, 현재 사용자용 — 관리자 권한 필요 없음)
 #   PortDock-<App>-setup-offline.exe  인터넷 없는 PC 용 설치판(WebView2 런타임 동봉, 약 +130MB)
 #   PortDock-<App>-portable.zip  휴대판(exe + LICENSE + THIRD_PARTY_NOTICES.txt + 빈 portdock-data/)
+#   PortDock-MCP.zip             MCP 서버(portdock-mcp.exe + LICENSE + THIRD_PARTY_NOTICES.txt) — 앱 matrix 와 따로(build-mcp)
+#   PortDock-MCP.mcpb            같은 exe 의 MCP 묶음(manifest.json + server/) — Claude Desktop 등에서 열어 설치, 공식 레지스트리가 가리킴
 #   SHA256SUMS.txt               위 파일 모두의 SHA-256
 name: release
 
@@ -139,8 +141,72 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  # MCP 서버 — 창 없는 Rust 실행 파일 하나라 Tauri·NSIS 를 거치지 않는다(crates/mcp, docs/mcp.md)
+  build-mcp:
+    name: build mcp
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Rust (stable)
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mcp
+
+      # 제3자 고지는 앱과 같은 파일(npm 패키지 목록까지 같게 node_modules 가 필요)
+      - name: npm ci
+        run: npm ci
+
+      - name: 태그와 버전이 맞는지
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $ver = ((Get-Content Cargo.toml -Raw) -split '\[workspace\.package\]')[1] -replace '(?s).*?version\s*=\s*"([^"]+)".*','$1'
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          if ($ver -ne $tag) { throw "workspace version $ver != tag $tag" }
+
+      - name: 제3자 고지 만들기
+        run: node tools/notices.mjs
+
+      - name: 빌드
+        run: cargo build --release --locked -p portdock-mcp
+
+      - name: MCP zip·.mcpb
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $zip = "stage/mcp-zip"
+          New-Item -ItemType Directory -Force $zip | Out-Null
+          Copy-Item target/release/portdock-mcp.exe "$zip/portdock-mcp.exe"
+          Copy-Item LICENSE "$zip/LICENSE.txt"
+          Copy-Item THIRD_PARTY_NOTICES.txt "$zip/THIRD_PARTY_NOTICES.txt"
+          Compress-Archive -Path "$zip/*" -DestinationPath out/PortDock-MCP.zip -CompressionLevel Optimal
+          # .mcpb = zip(manifest.json 이 맨 위, exe 는 server/) — 형식: github.com/modelcontextprotocol/mcpb MANIFEST.md
+          $b = "stage/mcpb"
+          New-Item -ItemType Directory -Force "$b/server" | Out-Null
+          node tools/mcp.mjs manifest --out $b
+          Copy-Item target/release/portdock-mcp.exe "$b/server/portdock-mcp.exe"
+          Copy-Item LICENSE "$b/LICENSE.txt"
+          Copy-Item THIRD_PARTY_NOTICES.txt "$b/THIRD_PARTY_NOTICES.txt"
+          Compress-Archive -Path "$b/*" -DestinationPath stage/PortDock-MCP.mcpb.zip -CompressionLevel Optimal
+          Move-Item stage/PortDock-MCP.mcpb.zip out/PortDock-MCP.mcpb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portdock-mcp
+          path: out/*
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, build-mcp]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -167,6 +233,8 @@ jobs:
             dist/PortDock-*-setup.exe
             dist/PortDock-*-setup-offline.exe
             dist/PortDock-*-portable.zip
+            dist/PortDock-MCP.zip
+            dist/PortDock-MCP.mcpb
             dist/SHA256SUMS.txt
           body: |
             ## 내려받기 / Download
@@ -184,6 +252,7 @@ jobs:
             | Port Inspector | PortDock-Port-Inspector-setup.exe | PortDock-Port-Inspector-portable.zip |
             | PLC Simulator | PortDock-PLC-Simulator-setup.exe | PortDock-PLC-Simulator-portable.zip |
             | Hardware Tester | PortDock-Hardware-Tester-setup.exe | PortDock-Hardware-Tester-portable.zip |
+            | MCP 서버 / MCP server (AI 클라이언트용, 읽기 전용) | PortDock-MCP.mcpb (Claude Desktop 등에서 열기) | PortDock-MCP.zip (portdock-mcp.exe) |
 
             - 인터넷이 없는 PC(WebView2 없음): `PortDock-<App>-setup-offline.exe` 를 쓰세요(WebView2 런타임 동봉). / Offline PCs without WebView2: use `-setup-offline.exe`.
             - 아직 코드 서명이 없어 Windows SmartScreen 경고가 뜹니다 → «추가 정보» → «실행». / Not code-signed yet: SmartScreen → "More info" → "Run anyway".

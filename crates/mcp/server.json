@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.portdock/portdock-mcp",
+  "title": "PortDock MCP",
+  "description": "Read-only MCP server for COM ports, Modbus, MC protocol and SCPI devices on Windows",
+  "version": "0.6.0",
+  "websiteUrl": "https://portdock.dev/en/guides/portdock-mcp/",
+  "repository": {
+    "url": "https://github.com/portdock/PortDock",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/portdock/PortDock/releases/download/v0.6.0/PortDock-MCP.mcpb",
+      "version": "0.6.0",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

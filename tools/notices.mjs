@@ -5,7 +5,7 @@
 //   node tools/notices.mjs --check    → 다시 만들어 보고, 지금 파일과 다르면 종료 코드 1
 //
 // 무엇을 담나
-//  - Rust: `cargo metadata` 로 앱(portdock-*, 아래 APPS)에서 일반(normal) 의존성만 따라간 패키지.
+//  - Rust: `cargo metadata` 로 앱(portdock-*, 아래 APPS)과 MCP 서버(portdock-mcp, 아래 RUST_ONLY)에서 일반(normal) 의존성만 따라간 패키지.
 //    빌드 전용(build)·개발 전용(dev) 의존성은 실행 파일에 들어가지 않으므로 뺀다. Windows x64 대상만.
 //  - npm: apps/*/package.json 의 dependencies 와 그 dependencies 를 재귀로(화면 번들에 들어가는 것).
 //  - 라이선스 종류별로 묶고, 종류마다 대표 본문 한 벌(로컬 레지스트리·node_modules 에서 찾음),
@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "THIRD_PARTY_NOTICES.txt");
 const APPS = ["serial", "modbus-slave", "tcp", "udp", "simulator", "netscan", "modbus-master", "scpi", "plot", "port-inspector", "plc-simulator", "hw-tester"];
+/** 화면(npm) 없이 Rust 만 있는 실행 파일 — crates/mcp(portdock-mcp.exe, 릴리스 zip·.mcpb 에 같은 고지 파일을 넣는다) */
+const RUST_ONLY = ["mcp"];
 const TARGET = "x86_64-pc-windows-msvc";
 
 // ---------- Rust ----------
@@ -37,8 +39,9 @@ function rustPackages() {
   const byId = new Map(meta.packages.map((p) => [p.id, p]));
   const nodes = new Map(meta.resolve.nodes.map((n) => [n.id, n]));
   const members = new Set(meta.workspace_members);
-  const roots = meta.packages.filter((p) => members.has(p.id) && APPS.some((a) => p.name === `portdock-${a}`)).map((p) => p.id);
-  if (roots.length !== APPS.length) throw new Error(`앱 패키지를 다 찾지 못했습니다: ${roots.length}/${APPS.length}`);
+  const bins = [...APPS, ...RUST_ONLY];
+  const roots = meta.packages.filter((p) => members.has(p.id) && bins.some((a) => p.name === `portdock-${a}`)).map((p) => p.id);
+  if (roots.length !== bins.length) throw new Error(`앱 패키지를 다 찾지 못했습니다: ${roots.length}/${bins.length}`);
 
   const seen = new Set();
   const stack = [...roots];
