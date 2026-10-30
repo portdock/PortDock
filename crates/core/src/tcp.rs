@@ -4,10 +4,13 @@
 //! 중계: 이 PC 포트로 들어온 접속(A, 예: HMI)마다 위쪽 장비(B, 예: PLC)로 새로 접속해 양쪽을 그대로 잇는다.
 //! A→B 는 «rx», B→A 는 «tx» 방향으로 기록하고(상대 칸 = A 주소), 방향마다 프레임 구분기를 따로 둔다.
 //! 한쪽이 끊으면 다른 쪽도 닫는다(다시 잇지 않음). 끼워 넣기: A 쪽(`send`) · B 쪽(`send_upstream`).
+//! (0.8.0) 중계 기록에 요청/응답 짝·응답 시간·무응답(`reqpair`), «pcap 저장»(`set_pcap`, 합성 TCP/IP 머리 — `pcap`).
 
 use crate::checksum::ChecksumKind;
 use crate::event::{EventSink, Frame, LogWriter, Peer, SessionEvent, closed_reason, waiting_reason};
 use crate::framer::{FrameMode, Framer};
+use crate::pcap::PcapWriter;
+use crate::reqpair::{PairMark, Pairer, miss_note};
 use crate::delay::Delayer;
 use crate::replyguard::{ECHO_MARGIN, ReplyGuard, Verdict, flood_note};
 use crate::serial::Responder;
@@ -74,6 +77,10 @@ struct Conn {
     last_reply: Mutex<ReplyGuard>,
     /// 이 연결의 지연 응답 예약 — 한 연결의 송신이 막혀도(최대 2초) 다른 연결의 지연 응답은 늦지 않게 연결마다
     delayed: Delayer,
+    /// 상대 주소(pcap 의 A 쪽)
+    peer: Option<SocketAddr>,
+    /// 중계: 요청(A→B)·응답(B→A) 짝
+    pairer: Mutex<Pairer>,
 }
 
 /// 중계의 위쪽(B) 연결 — 쓰기 핸들과 B→A 방향 프레임 구분기
@@ -81,6 +88,8 @@ struct Upstream {
     addr: String,
     writer: Mutex<TcpStream>,
     framer: Mutex<Framer>,
+    /// 장비(B) 주소(pcap 의 B 쪽)
+    peer: Option<SocketAddr>,
 }
 
 struct Shared {
@@ -106,6 +115,10 @@ struct Shared {
     /// 서버의 연결별 읽기 스레드 — 멈출 때 끝까지 기다려 마지막 기록을 남긴다
     conn_threads: Mutex<Vec<JoinHandle<()>>>,
     stop: AtomicBool,
+    /// 중계: pcapng 저장(0.8.0)
+    pcap: Mutex<Option<PcapWriter>>,
+    /// 중계: 요청 번호 계수기(세션 안에서 1부터)
+    pair_seq: Mutex<u64>,
 }
 
 /// 서버가 받는 최대 접속 수 — 넘으면 거절하고 기록
@@ -173,6 +186,15 @@ impl Shared {
 
     fn flush(&self) {
         let _one = self.flushing.lock().unwrap();
+        // pcap: 버퍼를 비우고, 다음 파일로 넘어갔으면 사건 줄로
+        let mut rotated = Vec::new();
+        self.pcap_put(|w| {
+            rotated = w.take_rotated();
+            w.flush()
+        });
+        for p in rotated {
+            self.note(format!("PCAP NEXT {p}"));
+        }
         let frames = std::mem::take(&mut *self.pending.lock().unwrap());
         crate::event::flush_frames(frames, &self.log, &self.events);
     }
@@ -195,6 +217,7 @@ impl Shared {
 
     fn add_with(&self, stream: TcpStream, no_delay: bool, up: Option<Upstream>) -> Option<(u64, Arc<Conn>, TcpStream)> {
         let addr = stream.peer_addr().map(|a| a.to_string()).unwrap_or_else(|_| "?".into());
+        let peer = stream.peer_addr().ok();
         let reader = self.prepare(&stream, no_delay)?;
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let conn = Arc::new(Conn {
@@ -205,6 +228,8 @@ impl Shared {
             up,
             last_reply: Mutex::new(ReplyGuard::new()),
             delayed: Delayer::new(),
+            peer,
+            pairer: Mutex::new(Pairer::default()),
         });
         self.conns.lock().unwrap().insert(id, conn.clone());
         self.peers();
@@ -356,12 +381,50 @@ impl Shared {
         let check = *self.rx_check.lock().unwrap();
         let term = framer.lock().unwrap().terminator().to_vec();
         let (now_i, now_w) = (Instant::now(), crate::event::now_ms());
-        let mut pending = self.pending.lock().unwrap();
+        let mut out = Vec::with_capacity(frames.len());
         for (at, bytes) in frames {
             let ts = crate::event::wall_ms(at, now_i, now_w);
             let c = check.and_then(|k| k.verify_before(&bytes, &term));
-            pending.push(Frame { ts, ..Frame::data(dir, bytes, c, Some(conn.addr.clone())) });
+            let mut f = Frame { ts, ..Frame::data(dir, bytes, c, Some(conn.addr.clone())) };
+            self.mark_pair(conn, &mut f, at, &mut out);
+            out.push(f);
         }
+        self.pending.lock().unwrap().extend(out);
+    }
+
+    /// 중계 줄에 짝 표시 — A→B(rx)는 요청, B→A(tx)는 응답. 이 요청 때문에 무응답이 된 앞 요청은 사건 줄로 먼저
+    fn mark_pair(&self, conn: &Conn, f: &mut Frame, at: Instant, out: &mut Vec<Frame>) {
+        let mut p = conn.pairer.lock().unwrap();
+        if f.dir == "rx" {
+            let mut n = self.pair_seq.lock().unwrap();
+            if let Some((mark, missed)) = p.request(&f.bytes, at, &mut n) {
+                out.extend(missed.into_iter().map(|m| miss_frame(conn, m, false)));
+                f.pair = Some(mark);
+            }
+        } else {
+            f.pair = p.response(&f.bytes, at);
+        }
+    }
+
+    /// pcap 에 쓴다. 실패하면(디스크 가득 등) 저장을 멈추고 한 번 알린다
+    fn pcap_put(&self, write: impl FnOnce(&mut PcapWriter) -> std::io::Result<()>) {
+        let mut slot = self.pcap.lock().unwrap();
+        let Some(w) = slot.as_mut() else { return };
+        if let Err(e) = write(w) {
+            let path = w.path().to_string();
+            *slot = None;
+            drop(slot);
+            let msg = crate::tr!(format!("pcap 쓰기 실패 — 저장을 멈췄습니다: {path} ({e})"), format!("pcap write failed — saving stopped: {path} ({e})"));
+            self.note(msg.clone());
+            self.events.send(SessionEvent::Error { message: msg });
+        }
+    }
+
+    /// 중계 쌍의 한 방향 바이트를 pcap 에(주소를 모르면 건너뜀)
+    fn pcap_data(&self, id: u64, conn: &Conn, from_b: bool, bytes: &[u8], comment: Option<&str>) {
+        let (Some(a), Some(b)) = (conn.peer, conn.up.as_ref().and_then(|u| u.peer)) else { return };
+        let ts = crate::pcap::now_us();
+        self.pcap_put(|w| w.data(id, a, b, from_b, bytes, ts, comment));
     }
 
     /// 중계 한 방향 — 읽는 즉시 반대쪽에 그대로 쓰고(기다리지 않음), 기록은 프레임으로 끊어서.
@@ -381,6 +444,9 @@ impl Shared {
                 Ok(0) => break (crate::tr!(format!("{src} 쪽이 끊음"), format!("{src} side closed")), true),
                 Ok(n) => {
                     let sent = dest.lock().unwrap().write_all(&buf[..n]);
+                    if sent.is_ok() {
+                        self.pcap_data(id, conn, from_up, &buf[..n], None);
+                    }
                     let frames = framer.lock().unwrap().feed(&buf[..n], Instant::now());
                     self.push_relay(conn, dir, framer, frames);
                     if let Err(e) = sent {
@@ -394,6 +460,13 @@ impl Shared {
             let tail = framer.lock().unwrap().poll(Instant::now());
             if let Some(f) = tail {
                 self.push_relay(conn, dir, framer, vec![f]);
+            }
+            // 기다린 시간이 넘은 요청 → 무응답(A→B 쪽 스레드만 본다)
+            if !from_up {
+                let missed = conn.pairer.lock().unwrap().expire(Instant::now());
+                if !missed.is_empty() {
+                    self.pending.lock().unwrap().extend(missed.into_iter().map(|m| miss_frame(conn, m, false)));
+                }
             }
             if gone() {
                 break user();
@@ -427,7 +500,8 @@ impl Shared {
             return;
         };
         let up_addr = upstream.peer_addr().map(|a| a.to_string()).unwrap_or(target);
-        let up = Upstream { addr: up_addr.clone(), writer: Mutex::new(upstream), framer: Mutex::new(Framer::new(self.mode.lock().unwrap().clone())) };
+        let up_peer = upstream.peer_addr().ok();
+        let up = Upstream { addr: up_addr.clone(), writer: Mutex::new(upstream), framer: Mutex::new(Framer::new(self.mode.lock().unwrap().clone())), peer: up_peer };
         let Some((id, conn, reader)) = self.add_with(client, no_delay, Some(up)) else { return };
         self.note(format!("RELAY {} ⇄ {up_addr}", conn.addr));
         // 먼저 끝난 쪽(상대가 끊음·오류)의 이유 — 그 뒤 우리가 닫아서 끝난 반대쪽 이유로 덮지 않는다
@@ -453,9 +527,22 @@ impl Shared {
         let _ = back.join();
         let reason = first.lock().unwrap().take().unwrap_or(a_reason);
         self.conns.lock().unwrap().remove(&id);
+        // 끝까지 응답이 없던 요청은 무응답으로, pcap 에는 FIN
+        let missed = conn.pairer.lock().unwrap().close(Instant::now());
+        if !missed.is_empty() {
+            self.pending.lock().unwrap().extend(missed.into_iter().map(|m| miss_frame(&conn, m, true)));
+        }
+        let ts = crate::pcap::now_us();
+        self.pcap_put(|w| w.close(id, ts));
         self.note(format!("CLOSE {} ⇄ {up_addr} ({reason})", conn.addr));
         self.peers();
     }
+}
+
+/// 무응답 사건 줄(상대 칸 = A 주소)
+fn miss_frame(conn: &Conn, m: PairMark, closed: bool) -> Frame {
+    let note = miss_note(&m, closed);
+    Frame { peer: Some(conn.addr.clone()), pair: Some(m), ..Frame::event(note) }
 }
 
 /// 버려지기만 해도 스레드가 멈추게(보관함에서 지워진 세션 등). `stop` 은 끝까지 기다린다.
@@ -521,6 +608,8 @@ impl TcpSession {
             echo_window: Mutex::new(Some(ECHO_MARGIN)),
             conn_threads: Mutex::new(Vec::new()),
             stop: AtomicBool::new(false),
+            pcap: Mutex::new(None),
+            pair_seq: Mutex::new(0),
         });
         let mut threads = Vec::new();
 
@@ -661,6 +750,12 @@ impl TcpSession {
             self.shared.note(crate::tr!(format!("INJECT → A ({n}바이트)"), format!("INJECT → A ({n} bytes)")));
         }
         let sent = conns.iter().filter(|c| self.shared.write_to(c, bytes)).count();
+        if self.shared.relay {
+            let ids: Vec<(u64, Arc<Conn>)> = self.shared.conns.lock().unwrap().iter().filter(|(_, c)| conns.iter().any(|x| Arc::ptr_eq(x, c))).map(|(i, c)| (*i, c.clone())).collect();
+            for (id, c) in ids {
+                self.shared.pcap_data(id, &c, true, bytes, Some("PortDock INJECT -> A"));
+            }
+        }
         Ok((sent, total))
     }
 
@@ -673,6 +768,7 @@ impl TcpSession {
                 None => map.values().cloned().collect(),
             }
         };
+        let ids: BTreeMap<*const Conn, u64> = self.shared.conns.lock().unwrap().iter().map(|(i, c)| (Arc::as_ptr(c), *i)).collect();
         let pairs: Vec<&Arc<Conn>> = conns.iter().filter(|c| c.up.is_some()).collect();
         if pairs.is_empty() {
             return Err(crate::tr!("이어진 중계 쌍이 없습니다", "No relayed pair is connected").into());
@@ -685,9 +781,16 @@ impl TcpSession {
             match w.write_all(bytes) {
                 Ok(()) => {
                     sent += 1;
-                    let mut p = self.shared.pending.lock().unwrap();
-                    p.push(Frame::event(crate::tr!(format!("INJECT → B {} ({}바이트)", u.addr, bytes.len()), format!("INJECT → B {} ({} bytes)", u.addr, bytes.len()))));
-                    p.push(Frame::data("rx", bytes.to_vec(), None, Some(c.addr.clone())));
+                    drop(w);
+                    if let Some(&id) = ids.get(&Arc::as_ptr(c)) {
+                        self.shared.pcap_data(id, c, false, bytes, Some("PortDock INJECT -> B"));
+                    }
+                    // 끼워 넣은 요청도 짝을 기다린다 — B 의 응답에 응답 시간이 붙게
+                    let mut f = Frame::data("rx", bytes.to_vec(), None, Some(c.addr.clone()));
+                    let mut out = vec![Frame::event(crate::tr!(format!("INJECT → B {} ({}바이트)", u.addr, bytes.len()), format!("INJECT → B {} ({} bytes)", u.addr, bytes.len())))];
+                    self.shared.mark_pair(c, &mut f, Instant::now(), &mut out);
+                    out.push(f);
+                    self.shared.pending.lock().unwrap().extend(out);
                 }
                 Err(e) => {
                     self.shared.note(crate::tr!(format!("SEND FAIL B {} ({e}) — 쌍을 닫습니다", u.addr), format!("SEND FAIL B {} ({e}) — closing the pair", u.addr)));
@@ -719,6 +822,31 @@ impl TcpSession {
         Ok(())
     }
 
+    /// (0.8.0) 중계: pcapng 저장 시작(경로)·멈춤(None). 파일 하나는 파일 로그의 «크기로 나누기(MB)» 에서
+    /// 다음 파일로(설정이 0 이면 100MB). `app` 은 파일 머리의 만든 프로그램 이름
+    pub fn set_pcap(&self, path: Option<String>, app: &str) -> Result<(), String> {
+        if !self.shared.relay {
+            return Err(crate::tr!("pcap 저장은 중계(모니터)에서만 됩니다", "Saving pcap works in relay (monitor) mode only").into());
+        }
+        let next = match path.as_deref() {
+            Some(p) => {
+                let mb = crate::event::log_options().split_mb as u64;
+                Some(PcapWriter::create(p, app, if mb > 0 { mb * 1_048_576 } else { crate::pcap::DEFAULT_LIMIT })?)
+            }
+            None => None,
+        };
+        let started = next.as_ref().map(|w| w.path().to_string());
+        let old = std::mem::replace(&mut *self.shared.pcap.lock().unwrap(), next);
+        if let Some(mut w) = old {
+            let _ = w.flush();
+            self.shared.note(format!("PCAP STOP {} ({} packets)", w.path(), w.packets()));
+        }
+        if let Some(p) = started {
+            self.shared.note(format!("PCAP START {p}"));
+        }
+        Ok(())
+    }
+
     pub fn stop(mut self) {
         self.shared.stop.store(true, Ordering::SeqCst);
         let ids: Vec<u64> = self.shared.conns.lock().unwrap().keys().copied().collect();
@@ -731,6 +859,11 @@ impl TcpSession {
         let conn_threads = std::mem::take(&mut *self.shared.conn_threads.lock().unwrap());
         for t in conn_threads {
             let _ = t.join();
+        }
+        let last = self.shared.pcap.lock().unwrap().take();
+        if let Some(mut w) = last {
+            let _ = w.flush();
+            self.shared.note(format!("PCAP STOP {} ({} packets)", w.path(), w.packets()));
         }
         self.shared.flush();
     }
@@ -1414,5 +1547,129 @@ mod tests {
         if cfg!(windows) && crate::net::port_owner(port, false).is_some() {
             assert!(err.contains(&std::process::id().to_string()), "{err}");
         }
+    }
+
+    /// (0.8.0) 127.0.0.1 실중계: Modbus TCP 장비 흉내(두 번 답하고 세 번째는 무시) ⇄ 중계 ⇄ 클라이언트.
+    /// 요청/응답 짝·응답 시간·무응답(연결 끊김)과 pcapng 파일(손잡기·순서번호·바이트 그대로)을 본다
+    #[test]
+    fn relay_pairs_modbus_and_saves_pcap() {
+        let mb = |tid: u16, pdu: &[u8]| {
+            let mut v = tid.to_be_bytes().to_vec();
+            v.extend([0, 0]);
+            v.extend(((pdu.len() + 1) as u16).to_be_bytes());
+            v.push(1);
+            v.extend(pdu);
+            v
+        };
+        let l = TcpListener::bind("127.0.0.1:0").unwrap();
+        let up_port = l.local_addr().unwrap().port();
+        let replies = [mb(7, &[3, 4, 0, 1, 0, 2]), mb(8, &[0x83, 2])];
+        let dev = std::thread::spawn(move || {
+            let (mut s, _) = l.accept().unwrap();
+            s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+            let mut buf = [0u8; 12];
+            for r in &replies {
+                s.read_exact(&mut buf).unwrap();
+                std::thread::sleep(Duration::from_millis(15));
+                s.write_all(r).unwrap();
+            }
+            // 세 번째 요청은 받고 답하지 않는다 — A 가 떠날 때까지
+            s.read_exact(&mut buf).unwrap();
+            let mut rest = [0u8; 1];
+            let _ = s.read(&mut rest);
+        });
+        let (sink_, rx) = sink();
+        let relay = TcpSession::start_relay(cfg(TcpMode::Server, 0), RelayTarget { host: "127.0.0.1".into(), port: up_port }, FrameMode::modbus_tcp(), None, sink_).unwrap();
+        let dir = std::env::temp_dir().join(format!("pd-relay-pcap-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("relay.pcapng").to_string_lossy().into_owned();
+        relay.set_pcap(Some(path.clone()), "PortDock TCP test").unwrap();
+        // 서버·클라이언트 세션은 pcap 을 거절
+        let (s2, _r2) = sink();
+        let plain = TcpSession::start(cfg(TcpMode::Server, 0), FrameMode::Gap { gap_ms: 20 }, None, None, s2).unwrap();
+        assert!(plain.set_pcap(Some(dir.join("x.pcapng").to_string_lossy().into_owned()), "t").is_err());
+        plain.stop();
+
+        let mut a = TcpStream::connect(relay.local_addr().unwrap()).unwrap();
+        a.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        wait_peers(&relay, 1);
+        let reqs = [mb(7, &[3, 0, 0, 0, 2]), mb(8, &[3, 0x27, 0x10, 0, 1]), mb(9, &[3, 0, 0, 0, 1])];
+        let mut got = Vec::new();
+        for (i, q) in reqs.iter().enumerate() {
+            a.write_all(q).unwrap();
+            if i < 2 {
+                let mut r = vec![0u8; if i == 0 { 13 } else { 9 }];
+                a.read_exact(&mut r).unwrap();
+                got.extend(r);
+            }
+        }
+        std::thread::sleep(Duration::from_millis(50));
+        let a_port = a.local_addr().unwrap().port();
+        drop(a);
+        dev.join().unwrap();
+        wait_peers(&relay, 0);
+        relay.stop();
+
+        let mut frames = Vec::new();
+        while let Ok(e) = rx.recv_timeout(Duration::from_millis(200)) {
+            if let SessionEvent::Frames { frames: f } = e {
+                frames.extend(f);
+            }
+        }
+        let marks: Vec<&PairMark> = frames.iter().filter_map(|f| f.pair.as_ref()).collect();
+        let roles: Vec<(u64, &str)> = marks.iter().map(|m| (m.id, m.role)).collect();
+        assert_eq!(roles, vec![(1, "req"), (1, "rsp"), (2, "req"), (2, "rsp"), (3, "req"), (3, "miss")], "{frames:?}");
+        let rt1 = marks[1].rt_ms.unwrap();
+        assert!((10.0..3000.0).contains(&rt1), "response time {rt1}");
+        assert_eq!(marks[3].error.as_deref(), Some("EXC 02"));
+        let miss = frames.iter().find(|f| f.pair.as_ref().is_some_and(|m| m.role == "miss")).unwrap();
+        assert_eq!(miss.dir, "ev");
+        assert!(miss.note.as_deref().unwrap().starts_with("NO REPLY #3 FC03"), "{:?}", miss.note);
+        let notes: Vec<String> = frames.iter().filter_map(|f| f.note.clone()).collect();
+        assert!(notes.iter().any(|n| n.starts_with("PCAP START ")), "{notes:?}");
+        assert!(notes.iter().any(|n| n.starts_with("PCAP STOP ") && n.contains("packets")), "{notes:?}");
+
+        // pcapng: SHB·IDB 뒤 EPB 들 — 이더넷/IPv4/TCP, A 포트 ⇄ B 포트, 방향마다 바이트가 그대로 이어진다
+        let file = std::fs::read(&path).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        let le32 = |b: &[u8], i: usize| u32::from_le_bytes(b[i..i + 4].try_into().unwrap());
+        let mut i = 0;
+        let mut kinds = Vec::new();
+        let (mut ab, mut ba, mut flags): (Vec<u8>, Vec<u8>, Vec<u8>) = (Vec::new(), Vec::new(), Vec::new());
+        let mut next_seq: [Option<u32>; 2] = [None, None];
+        while i < file.len() {
+            let (kind, len) = (le32(&file, i), le32(&file, i + 4) as usize);
+            kinds.push(kind);
+            if kind == 6 {
+                let cap = le32(&file, i + 20) as usize;
+                let fr = &file[i + 28..i + 28 + cap];
+                assert_eq!(&fr[12..14], &[0x08, 0x00]);
+                let t = &fr[34..];
+                let (sp, dp) = (u16::from_be_bytes([t[0], t[1]]), u16::from_be_bytes([t[2], t[3]]));
+                let seq = u32::from_be_bytes(t[4..8].try_into().unwrap());
+                let payload = &t[20..];
+                let k = usize::from(sp != a_port);
+                if sp == a_port {
+                    assert_eq!(dp, up_port);
+                } else {
+                    assert_eq!((sp, dp), (up_port, a_port));
+                }
+                if !payload.is_empty() {
+                    if let Some(want) = next_seq[k] {
+                        assert_eq!(seq, want, "sequence numbers continue");
+                    }
+                    next_seq[k] = Some(seq.wrapping_add(payload.len() as u32));
+                    if k == 0 { ab.extend(payload) } else { ba.extend(payload) }
+                }
+                flags.push(t[13]);
+            }
+            i += len;
+        }
+        assert_eq!(&kinds[..2], &[0x0A0D_0D0A, 1]);
+        assert!(String::from_utf8_lossy(&file).contains(crate::pcap::IF_NAME));
+        assert_eq!(ab, reqs.concat());
+        assert_eq!(ba, got);
+        assert_eq!(&flags[..3], &[0x02, 0x12, 0x10], "SYN, SYN/ACK, ACK");
+        assert_eq!(&flags[flags.len() - 3..], &[0x11, 0x11, 0x10], "FIN/ACK ×2, ACK");
     }
 }

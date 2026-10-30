@@ -18,7 +18,7 @@ export function ingestUrl(key: string = APTABASE_KEY): string | null {
 /** 프로그램마다 세는 기능 — 값·주소·내용 없이 횟수만. 이름은 이 목록에서만 */
 export const FEATURES = {
   serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master"],
-  tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master"],
+  tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save"],
   udp: ["start", "send", "file_log"],
   "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log"],
   "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log"],

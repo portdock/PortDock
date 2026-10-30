@@ -21,15 +21,18 @@ pub struct Frame {
     /// TCP·UDP: 상대 주소(«192.168.0.10:502»). 시리얼은 None
     #[serde(skip_serializing_if = "Option::is_none")]
     pub peer: Option<String>,
+    /// (0.8.0) TCP 중계: 요청/응답 짝·응답 시간·무응답(reqpair). 그 밖은 None
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pair: Option<crate::reqpair::PairMark>,
 }
 
 impl Frame {
     pub fn data(dir: &'static str, bytes: Vec<u8>, check: Option<bool>, peer: Option<String>) -> Self {
-        Self { ts: now_ms(), dir, bytes, check, note: None, peer }
+        Self { ts: now_ms(), dir, bytes, check, note: None, peer, pair: None }
     }
 
     pub fn event(note: String) -> Self {
-        Self { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(note), peer: None }
+        Self { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(note), peer: None, pair: None }
     }
 }
 
@@ -497,7 +500,7 @@ mod tests {
     }
 
     fn rx(bytes: &[u8]) -> Frame {
-        Frame { ts: 0, dir: "rx", bytes: bytes.to_vec(), check: Some(true), note: None, peer: None }
+        Frame { ts: 0, dir: "rx", bytes: bytes.to_vec(), check: Some(true), note: None, peer: None, pair: None }
     }
 
     #[test]
@@ -511,7 +514,7 @@ mod tests {
         let ko = LogOptions { format: LogFormat::Ascii, encoding: Encoding::Cp949, ..LogOptions::default() };
         assert!(log_line_with(&rx(&[0xC7, 0xD1]), &ko).ends_with(" RX 한 [OK]"));
         // 사건 줄은 형식과 상관없이 «EV 내용»
-        let ev = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()), peer: None };
+        let ev = Frame { ts: 0, dir: "ev", bytes: vec![], check: None, note: Some("SET baud 9600→115200".into()), peer: None, pair: None };
         assert!(log_line_with(&ev, &opts(LogFormat::Ascii)).ends_with(" EV SET baud 9600→115200"));
         assert!(log_line_with(&ev, &opts(LogFormat::Csv)).ends_with(",EV,,,,,SET baud 9600→115200,"));
     }
@@ -522,7 +525,7 @@ mod tests {
         assert_eq!(csv_cell("say \"hi\""), "\"say \"\"hi\"\"\"");
         assert_eq!(csv_cell("=1+2"), "'=1+2");
         assert_eq!(csv_cell("-5,3"), "\"'-5,3\"");
-        let f = Frame { ts: 0, dir: "tx", bytes: b"A,B".to_vec(), check: None, note: None, peer: Some("10.0.0.1:502".into()) };
+        let f = Frame { ts: 0, dir: "tx", bytes: b"A,B".to_vec(), check: None, note: None, peer: Some("10.0.0.1:502".into()), pair: None };
         assert!(log_line_with(&f, &opts(LogFormat::Csv)).ends_with(",TX,3,41 2C 42,\"A,B\",,,10.0.0.1:502"));
     }
 

@@ -586,8 +586,16 @@ function relayStart(config, upstream, rxCheck, framing, ch, local) {
     const tid = s.tick & 0xffff;
     const req = [tid >> 8, tid & 0xff, 0, 0, 0, 6, 1, 3, 0, 0, 0, 2];
     const rsp = [tid >> 8, tid & 0xff, 0, 0, 0, 7, 1, 3, 4, 0, 100 + (s.tick % 50), 0, 200];
-    frames(data("rx", req, verify(s.rxCheck, req), p.addr));
-    later(40, () => frames(data("tx", rsp, verify(s.rxCheck, rsp), p.addr)));
+    // (0.8.0) core reqpair 흉내 — 요청 번호·응답 시간, 7번째마다 무응답(3초 뒤 NO REPLY 사건 줄), 5번째마다 예외 응답
+    const id = (s.pairSeq = (s.pairSeq ?? 0) + 1);
+    frames({ ...data("rx", req, verify(s.rxCheck, req), p.addr), pair: { id, role: "req", proto: "modbus", what: "FC03" } });
+    if (id % 7 === 0) {
+      later(3000, () => S === s && frames({ ...ev(`NO REPLY #${id} FC03 (3000 ms)`), peer: p.addr, pair: { id, role: "miss", proto: "modbus", what: "FC03", rtMs: 3000 } }));
+      return;
+    }
+    const exc = id % 5 === 0 ? [tid >> 8, tid & 0xff, 0, 0, 0, 3, 1, 0x83, 2] : null;
+    const rtMs = 38 + (id % 9) * 1.25;
+    later(40, () => frames({ ...data("tx", exc ?? rsp, verify(s.rxCheck, exc ?? rsp), p.addr), pair: { id, role: "rsp", proto: "modbus", what: "FC03", rtMs, ...(exc ? { error: "EXC 02" } : {}) } }));
   });
   return Promise.resolve(local);
 }
@@ -1017,6 +1025,19 @@ async function handle(cmd, a) {
       if (!S) return fail(NO_SESSION());
       if (a.path && /readonly|denied/i.test(a.path)) return fail(`${a.path}: ${tr("액세스가 거부되었습니다.", "Access is denied.")} (os error 5)`);
       frames(ev(a.path ? `LOG START ${a.path}` : "LOG STOP"));
+      return null;
+    case "set_pcap":
+      // (0.8.0) TCP 중계 pcap 저장 — core tcp.rs set_pcap 흉내
+      if (!S) return fail(NO_SESSION());
+      if (!S.relay) return fail(tr("pcap 저장은 중계(모니터)에서만 됩니다", "Saving pcap works in relay (monitor) mode only"));
+      if (a.path && /readonly|denied/i.test(a.path)) return fail(`${a.path}: ${tr("액세스가 거부되었습니다.", "Access is denied.")} (os error 5)`);
+      if (a.path) {
+        S.pcap = a.path;
+        frames(ev(`PCAP START ${a.path}`));
+      } else if (S.pcap) {
+        frames(ev(`PCAP STOP ${S.pcap} (${3 + (S.pairSeq ?? 0) * 2} packets)`));
+        S.pcap = null;
+      }
       return null;
     case "send": {
       // Serial: {id, spec} → 바이트 · TCP: {target, spec} → {sent,total} · UDP: {to, spec} → 주소 · Simulator: {spec}

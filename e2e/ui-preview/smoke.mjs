@@ -1956,6 +1956,22 @@ async function runApp(app, port) {
         await sleep(2500);
         const rows = await js("return { ab: [...document.querySelectorAll('.log .row.rx .dir')].some((e) => /A→B/.test(e.textContent)), ba: [...document.querySelectorAll('.log .row.tx .dir')].some((e) => /B→A/.test(e.textContent)), relay: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /RELAY .*⇄/.test(n.textContent)), pairs: document.querySelectorAll('aside .peer').length }");
         if (!rows.ab || !rows.ba || !rows.relay || !rows.pairs) await conv("relay", `중계 기록·쌍 표시가 이상함: ${JSON.stringify(rows)}`);
+        // (0.8.0) 요청/응답 짝 칸·응답 시간 통계
+        const pr = await js("return { req: [...document.querySelectorAll('.log .row.rx .pair.req')].some((e) => /^#\\d+ FC03 →$/.test(e.textContent)), rsp: [...document.querySelectorAll('.log .row.tx .pair')].some((e) => /^#\\d+ [\\d.]+ ms/.test(e.textContent)), stats: (document.querySelector('.statusbar .pair-stats') || {}).textContent || '' }");
+        if (!pr.req || !pr.rsp || !/95% [\d.]+/.test(pr.stats) || !/(짝|pairs) \d+/.test(pr.stats)) await conv("relay-pair", `중계 짝·응답 시간 열·통계가 이상함: ${JSON.stringify(pr)}`);
+        // (0.8.0) pcap 으로 저장 → «● PCAP»·PCAP START, 다시 누르면 PCAP STOP
+        await d.executeScript("window.__pdMock.dialog.save = 'C:\\\\tmp\\\\relay.pcapng'");
+        await js("document.querySelector('aside .pcap-btn').click()");
+        await sleep(400);
+        const pc = await js("return { rec: !!document.querySelector('.statusbar .pcap-rec'), start: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /PCAP START .*relay\\.pcapng/.test(n.textContent)), btn: document.querySelector('aside .pcap-btn').textContent.trim() }");
+        if (!pc.rec || !pc.start || !/멈춤|Stop/.test(pc.btn)) await conv("relay-pcap", `«pcap 으로 저장» 뒤 표시가 이상함: ${JSON.stringify(pc)}`);
+        if (snap) await shot(app, `${combo.name}-relay-pcap`);
+        await js("document.querySelector('aside .pcap-btn').click()");
+        await sleep(400);
+        await d.executeScript("window.__pdMock.dialog.save = null");
+        const ps = await js("return { rec: !!document.querySelector('.statusbar .pcap-rec'), stop: [...document.querySelectorAll('.log .row.ev .note')].some((n) => /PCAP STOP .*packets/.test(n.textContent)) }");
+        if (ps.rec || !ps.stop) await conv("relay-pcap-stop", `pcap 저장 멈춤 뒤 표시가 이상함: ${JSON.stringify(ps)}`);
+        await verify("relay pcap");
         // (10/18) 듣는 방식의 실행 중 버튼은 «듣기 멈춤», 상대 주소는 줄임표(끊기 버튼은 왼쪽 칸 안)
         const pe = await js(`const b = document.querySelector(${JSON.stringify(RUN_BTN)}); const side = document.querySelector('aside.side').getBoundingClientRect();
           return { btn: b.textContent.trim(), peers: [...document.querySelectorAll('aside .peer')].map((p) => ({ ell: getComputedStyle(p.querySelector('.mono')).textOverflow, title: !!p.querySelector('.mono').title, kick: p.querySelector('.btn').getBoundingClientRect().right <= side.right + 1 })) };`);

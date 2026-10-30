@@ -710,3 +710,40 @@ details.panel > summary .sum-note {
   flex-shrink: 0;
   margin-top: 6px;
 }
+
+/* ---- (0.8.0) 중계 pcap·요청/응답 짝 */
+.rec + .pcap-rec {
+  margin-left: 8px;
+}
+.pair-stats {
+  margin-left: 10px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.pair {
+  flex: none;
+  min-width: 96px;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: nowrap;
+}
+.pair.req {
+  color: var(--muted);
+}
+.pair.rsp {
+  color: var(--ok);
+}
+.pair.err,
+.pair.miss {
+  color: var(--fail);
+  font-weight: 600;
+}
+.pair-detail {
+  font-family: var(--mono);
+  margin: 2px 0 4px;
+}
