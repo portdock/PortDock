@@ -1,5 +1,6 @@
 // Hardware Tester 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { settingsLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -65,8 +66,8 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "다음 판",
-      body: ["- 키보드·마우스·모니터·스피커·마이크·웹캠은 자리만 있습니다. 지금은 각 자리의 링크로 portdock.dev 웹 도구를 열고, 다음 판에 같은 코드로 붙입니다."],
+      title: "웹에서 테스트",
+      body: ["- 키보드·마우스·모니터·스피커·마이크·웹캠은 왼쪽 «웹에서 테스트 ↗» 아래에 있습니다. 누르면 portdock.dev 의 같은 이름 웹 도구 링크가 나옵니다(브라우저에서 바로, 설치 없음). 같은 코드를 이 앱 안에 붙이는 것은 다음 판 계획입니다."],
     },
     {
       title: "화면 구성",
@@ -79,6 +80,19 @@ export const help: HelpDoc = {
     {
       title: "단축키",
       body: ["- Ctrl+S: 지금 탭의 기록 저장(끊김 기록 CSV · 블루투스 기록 글).", "- F1 또는 ? 단추: 이 도움말. Esc 로 닫습니다."],
+    },
+    {
+      title: "문제 해결",
+      id: "trouble",
+      body: [
+        "- «게이트웨이를 찾지 못했습니다» 사건이 나오면: 연결이 없거나 인터넷 대상과 같은 대역입니다. 이때는 인터넷 대상만 잽니다 — Wi-Fi·랜 연결을 확인하고 다시 «기록 시작» 을 누릅니다.",
+        "- 인터넷 대상만 늘 «응답 없음»: 회사·학교 망은 바깥으로 가는 핑을 막기도 합니다. 대상을 8.8.8.8 이나 망 안의 다른 주소로 바꿔 봅니다.",
+        "- DNS 만 늘 실패: 사내 DNS 가 바깥 이름에 답하지 않을 수 있습니다. 묻는 이름을 망 안의 이름으로 바꾸거나 비워서 끕니다.",
+        "- «Wi-Fi 신호·채널» 이 비어 있거나 위치 권한 안내가 나옴: Windows 11 24H2 부터 위치 권한이 있어야 읽힙니다. 화면 안내대로 켜거나, 이 탭 없이 다른 탭을 씁니다.",
+        "- 블루투스 장치가 목록에 없음: 이 PC 와 짝지은(페어링) 장치만 보입니다. Windows 블루투스 설정에서 먼저 짝짓습니다.",
+        "- 시험 소리가 안 들림: 기본 출력 장치가 다른 곳(모니터 스피커 등)일 수 있습니다. 작업 표시줄 소리 아이콘에서 출력 장치를 확인합니다.",
+        "- 요약이 «기록이 짧음»: 20번 이상 잰 뒤에 요약합니다. 끊김이 드물면 더 길게 둡니다.",
+      ],
     },
   ],
   en: [
@@ -143,8 +157,8 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Next version",
-      body: ["- Keyboard, mouse, monitor, speakers, microphone and webcam are placeholders only. For now each one links to the portdock.dev web tool; the same code comes into the app in the next version."],
+      title: "Test on the web",
+      body: ["- Keyboard, mouse, monitor, speakers, microphone and webcam are under «Test on the web ↗» on the left. Each one shows a link to the portdock.dev web tool of the same name (right in the browser, nothing to install). Bringing the same code into this app is planned for the next version."],
     },
     {
       title: "Screen layout",
@@ -158,5 +172,21 @@ export const help: HelpDoc = {
       title: "Shortcuts",
       body: ["- Ctrl+S: save the current tab's record (drop log CSV, Bluetooth log text).", "- F1 or the ? button: this help. Close it with Esc."],
     },
+    {
+      title: "Troubleshooting",
+      id: "trouble",
+      body: [
+        "- A «No gateway found» event: there is no connection, or the internet target is on the same subnet. Only the internet target is measured then — check the Wi-Fi / cable and press «Start recording» again.",
+        "- Only the internet target is always «no reply»: company and school networks may block outgoing ping. Try 8.8.8.8 or another address inside the network.",
+        "- Only DNS always fails: a company DNS may not answer outside names. Ask for a name inside the network, or clear the field to turn it off.",
+        "- «Wi-Fi signal and channel» is empty or asks for location permission: from Windows 11 24H2 these values need location permission. Turn it on as the screen explains, or use the other tabs without it.",
+        "- A Bluetooth device is missing: only devices paired with this PC are listed. Pair it in Windows Bluetooth settings first.",
+        "- The test tone is silent: the default output may be somewhere else (monitor speakers etc.). Check the output device from the taskbar sound icon.",
+        "- The summary says «Too short to tell»: it summarises after 20 or more samples. If drops are rare, record longer.",
+      ],
+    },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["gateway", "ping", "p95", "jitter", "lossRun"]));

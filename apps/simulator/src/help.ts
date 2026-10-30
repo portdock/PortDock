@@ -1,5 +1,6 @@
 // Simulator 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 import { simAutoReplySections } from "@shared/helpAutoReply";
 
@@ -325,3 +326,6 @@ for (const lang of ["ko", "en"] as const) {
   const at = help[lang].findIndex((x) => x.title === (lang === "ko" ? "와일드카드" : "Wildcards"));
   help[lang].splice(at < 0 ? help[lang].length - 1 : at + 1, 0, ...simAutoReplySections(lang));
 }
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["gap", "crlf", "checksum", "datagram", "rxtx", "baud"]));

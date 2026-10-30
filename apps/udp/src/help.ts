@@ -1,5 +1,6 @@
 // UDP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc, HelpSection } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { ioAutoReplySections } from "@shared/helpAutoReply";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
@@ -349,3 +350,6 @@ const UDP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
 
 // Serial·TCP·UDP 공통 기능 + 이 PC 주소·멀티캐스트 + 자동응답 — «문제 해결» 앞에
 for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: false }), ...UDP_EXTRA[lang], ...ioAutoReplySections(lang));
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["datagram", "broadcast", "checksum", "failOnly", "crlf", "rxtx"]));

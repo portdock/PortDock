@@ -1,6 +1,7 @@
 // PLC Simulator 도움말 — 화면 ? 버튼·F1 로 연다. 사이트 도구 쪽(site/src/data/tools.ts)도 이 글을 보인다.
 // 근거: crates/core/src/mc.rs(처리기), 공개 매뉴얼(SLMP SH-080956ENG, MC SH-080008, 종료 코드 SH-081257ENG 3.5) — 매뉴얼은 저장소에 넣지 않고 주소만
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { logHandlingLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 const SLMP = "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080956eng/sh080956engl.pdf";
@@ -291,3 +292,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["mc", "device", "c05f"]));

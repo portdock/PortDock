@@ -1,5 +1,6 @@
 // Net Scan 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { settingsLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -348,3 +349,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["ping", "arp", "wol"]));
