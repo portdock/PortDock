@@ -21,15 +21,15 @@ const ko = lang === "ko";
 const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
 const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
   serial: ["tools/checksum/", "tools/modbus/", "tools/hex-ascii/", "tools/serial-timing/", "tools/rs485/", "tools/ascii/", "tools/uart-baud/"],
-  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/modbus-blocks/", "tools/subnet/", "tools/motor-speed/", "tools/integer/"],
-  "modbus-slave": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/"],
-  tcp: ["tools/hex-ascii/", "tools/subnet/"],
+  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/modbus-blocks/", "tools/subnet/", "tools/motor-speed/", "tools/integer/", "tools/pcap-analyzer/"],
+  "modbus-slave": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/pcap-analyzer/"],
+  tcp: ["tools/hex-ascii/", "tools/subnet/", "tools/pcap-analyzer/"],
   udp: ["tools/hex-ascii/", "tools/subnet/"],
   netscan: ["tools/subnet/"],
   simulator: ["tools/checksum/", "tools/hex-ascii/", "tools/ascii/"],
   plot: ["tools/ntc/", "tools/encoder/", "tools/adc/"],
   "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/", "tools/gige-bandwidth/"],
-  "plc-simulator": ["tools/mc-decoder/", "tools/subnet/", "tools/integer/"],
+  "plc-simulator": ["tools/mc-decoder/", "tools/pcap-analyzer/", "tools/subnet/", "tools/integer/"],
   "hw-tester": ["tools/speaker-test/", "tools/mic-test/", "tools/keyboard-test/", "tools/mouse-test/", "tools/webcam-test/", "tools/monitor-test/", "tools/gamepad-test/"],
 };
 const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));

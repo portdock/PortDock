@@ -1,0 +1,834 @@
+---
+// 웹 도구: 산업 통신 pcap 해석기 — Wireshark·tcpdump·pktmon 으로 뜬 .pcap/.pcapng 를 끌어 놓으면 Modbus TCP·MC 프로토콜(3E·4E)의
+// 요청/응답 짝·응답 시간·무응답·예외/종료 코드를 연결·장치·함수별로 집계한다. 풀이는 lib/pcapRead.ts·pcapAnalyze.ts(Web Worker 에서),
+// 프레임 칸마다 풀이는 기존 Modbus·MC 해석기로 넘긴다(주소의 # 뒤 — 서버로 가지 않음). 이 도구 코드는 네트워크 요청을 하지 않는다.
+// 산업 프로토콜이 아닌 통신은 풀지 않고 개수만 센다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/pcap-analyzer/";
+const L = ko
+  ? {
+      title: "산업 통신 pcap 해석기",
+      desc: "Wireshark·pktmon 으로 뜬 .pcap·.pcapng 를 끌어 놓으면 Modbus TCP·MC(3E·4E)의 요청·응답 짝, 응답 시간, 무응답, 예외·종료 코드를 연결·장치별로 보여 줍니다.",
+      drop: "캡처 파일을 여기에 끌어 놓거나 눌러서 고르세요",
+      dropNote: ".pcap · .pcapng · .cap — 200MB 까지",
+      privacy: "파일은 이 브라우저 안에서만 처리합니다 — 어디에도 올리지 않고, 사용 통계에도 파일 이름·내용을 넣지 않습니다. IP 주소는 화면에만 보이고, CSV 에는 고를 때만 들어갑니다.",
+      mbPorts: "Modbus TCP 포트",
+      mbHelp: "쉼표·범위(1502-1505)",
+      mcPorts: "MC 프로토콜 포트",
+      mcHelp: "예: 5000-5010 (비우면 모양으로만 찾기)",
+      auto: "목록 밖 포트도 첫 바이트 모양(MBAP·MC 서브헤더)으로 찾기",
+      timeout: "무응답 기준 (ms)",
+      dedupe: "겹친 패킷 빼기(pktmon 처럼 같은 패킷이 여러 번 든 파일)",
+      cancel: "취소",
+      reading: "파일 읽는 중…",
+      parsing: "푸는 중",
+      again: "설정을 바꿨으면 다시 풀기",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["어떤 파일을 읽나요?", "Wireshark·tcpdump·dumpcap·pktmon(etl2pcap 으로 바꾼 것)이 저장한 .pcap(마이크로초·나노초, 두 바이트 순서)과 .pcapng(여러 인터페이스, EPB·SPB)를 읽습니다. 링크는 이더넷(VLAN 포함)·Linux cooked(SLL·SLL2, tcpdump -i any)·Raw IP·루프백입니다. IPv4 의 TCP 와 UDP(MC 만)를 풀고, IPv6 는 개수만 셉니다. .gz 로 압축한 파일은 먼저 풀어 주세요."],
+        ["Modbus·MC 가 아닌 통신은 어떻게 하나요?", "풀지도, 보여 주지도 않습니다. 결과에는 «산업 통신이 아닌 패킷 N개» 처럼 개수만 남습니다. 웹·DNS·파일 공유처럼 다른 통신이 섞인 캡처라도 그 내용은 화면·CSV 어디에도 나오지 않습니다."],
+        ["응답 시간은 어떻게 재나요?", "요청 프레임의 마지막 바이트가 잡힌 시각부터 응답 프레임의 마지막 바이트가 잡힌 시각까지입니다. 캡처한 PC 가 본 시각이라, 미러 포트·허브에서 뜨면 장비 사이의 시간에 가깝고, 클라이언트 PC 에서 뜨면 그 PC 쪽 시간입니다. 중앙값·95% 는 가장 가까운 순위로 고릅니다."],
+        ["짝은 어떻게 맞추나요?", "Modbus TCP 는 트랜잭션 ID 로, MC 4E 는 일련번호로 맞춥니다. MC 3E 는 번호가 없어서 연결 안에서 먼저 보낸 요청부터 맞춥니다. 무응답 기준 시간이 지난 요청은 무응답으로 치고, 그 뒤에 온 응답은 «짝 없는 응답» 으로 셉니다."],
+        ["«무응답» 이면 장비가 답하지 않은 건가요?", "꼭 그렇지는 않습니다. 미러 포트가 바쁘면 캡처가 패킷을 빠뜨릴 수 있고(Wireshark 위키 «lose packets»), 캡처를 시작하기 전·끝난 뒤의 패킷은 없습니다. 캡처가 끝나 판단할 수 없는 요청은 «캡처 끝» 으로 따로 셉니다. 결과 위의 «빠진 바이트·재전송» 수도 함께 보세요."],
+        ["pktmon 파일에 같은 패킷이 여러 번 있습니다", "pktmon 은 한 패킷을 네트워크 스택의 여러 지점에서 잡고, etl2pcap 은 그것을 구분하지 않고 모두 씁니다(Microsoft 문서). «겹친 패킷 빼기» 를 켜 두면 IP ID·길이·순서 번호가 같고 50ms 안에 다시 잡힌 패킷을 하나로 칩니다. etl2pcap 에 --component-id 로 한 지점만 뽑으면 처음부터 깨끗합니다."],
+      ],
+      guideTitle: "가이드",
+      relTitle: "함께 쓰는 도구",
+      relMb: "프레임 하나를 칸마다 풀기",
+      relMc: "MC 프레임 칸마다 풀기·요청 만들기",
+      relTcp: "Wireshark 없이 HMI–PLC 통신 보기 — 중계(모니터) 모드",
+      relSlave: "장비 없이 응답 시간·무응답을 일부러 만들어 시험",
+      relPlc: "PLC 없이 MC 프로토콜 시험",
+      srcTitle: "근거",
+      notAffiliated: "Wireshark 는 Wireshark Foundation 의 상표이며, PortDock 은 Wireshark·Microsoft·미쓰비시 전기와 제휴 관계가 아닙니다. 이 도구는 장비 통신의 모니터·시험·문제 찾기를 돕는 것이며, 남의 통신을 가로채는 기능은 없습니다.",
+    }
+  : {
+      title: "Industrial pcap Analyzer",
+      desc: "Drop a Wireshark or pktmon .pcap/.pcapng to see Modbus TCP and MC (3E/4E) request/response pairs, response times, missing replies and exception codes.",
+      drop: "Drop a capture file here, or click to choose one",
+      dropNote: ".pcap · .pcapng · .cap — up to 200 MB",
+      privacy: "The file is processed only inside this browser — it is not uploaded anywhere, and usage statistics carry no file name or content. IP addresses are shown on screen only and go into the CSV only if you choose.",
+      mbPorts: "Modbus TCP ports",
+      mbHelp: "comma separated, ranges like 1502-1505",
+      mcPorts: "MC protocol ports",
+      mcHelp: "e.g. 5000-5010 (empty = detect by shape only)",
+      auto: "Also detect other ports by their first bytes (MBAP header, MC subheader)",
+      timeout: "No-response limit (ms)",
+      dedupe: "Drop duplicated packets (files like pktmon's that hold the same packet several times)",
+      cancel: "Cancel",
+      reading: "Reading the file…",
+      parsing: "Decoding",
+      again: "Changed a setting? Decode again",
+      faqTitle: "FAQ",
+      faq: [
+        ["Which files can it read?", ".pcap (microsecond or nanosecond, either byte order) and .pcapng (several interfaces, EPB and SPB) saved by Wireshark, tcpdump, dumpcap or pktmon (after etl2pcap). Link types: Ethernet (with VLAN tags), Linux cooked (SLL, SLL2 from tcpdump -i any), raw IP and loopback. It decodes TCP and UDP (MC only) over IPv4 and only counts IPv6. Unpack .gz files first."],
+        ["What happens to traffic that is not Modbus or MC?", "It is neither decoded nor shown. The result only says «N packets that are not industrial traffic». Even if the capture contains web, DNS or file sharing traffic, none of its content appears on screen or in the CSV."],
+        ["How is response time measured?", "From the time the last byte of the request frame was captured to the time the last byte of the response frame was captured. It is the capturing PC's view: from a mirror port or hub it is close to the time between the devices; captured on the client PC it is that PC's side. Median and 95th percentile use the nearest-rank method."],
+        ["How are requests and responses paired?", "Modbus TCP by transaction ID, MC 4E by serial number. MC 3E carries no number, so within a connection the oldest open request is paired first. A request older than the no-response limit counts as no response, and a reply arriving after that counts as an «unmatched response»."],
+        ["Does «no response» mean the device did not answer?", "Not necessarily. A busy mirror port can lose packets (Wireshark wiki), and packets before or after the capture are missing. Requests the capture ended on too early to tell are counted separately as «capture ended». Check the «missing bytes» and «retransmissions» counts above the results as well."],
+        ["My pktmon file has every packet several times", "pktmon captures a packet at several points in the network stack and etl2pcap writes them all without telling them apart (Microsoft docs). With «Drop duplicated packets» on, packets with the same IP ID, length and sequence number seen again within 50 ms count once. Giving etl2pcap --component-id for one point gives a clean file from the start."],
+      ],
+      guideTitle: "Guides",
+      relTitle: "Tools that go with it",
+      relMb: "decode one frame field by field",
+      relMc: "decode MC frames field by field, build requests",
+      relTcp: "watch HMI–PLC traffic without Wireshark — relay (monitor) mode",
+      relSlave: "create slow replies and missing replies on purpose, without a device",
+      relPlc: "test MC protocol without a PLC",
+      srcTitle: "References",
+      notAffiliated: "Wireshark is a trademark of the Wireshark Foundation; PortDock is not affiliated with Wireshark, Microsoft or Mitsubishi Electric. This tool helps with monitoring, testing and troubleshooting device communication; it has no feature for intercepting other people's traffic.",
+    };
+const REFS = [
+  { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: ko ? "스위치·미러 포트·탭, 미러 포트의 패킷 손실" : "switches, mirror ports and taps; packet loss on mirror ports" },
+  { title: "Microsoft — pktmon etl2pcap", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-etl2pcap", note: ko ? "pcapng 변환, 여러 구성 요소의 같은 패킷, --component-id" : "pcapng conversion, the same packet from several components, --component-id" },
+  { title: "tcpdump — pcap-savefile(5)", url: "https://www.tcpdump.org/manpages/pcap-savefile.5.txt", note: ko ? "pcap 형식(마이크로초·나노초 매직)" : "pcap format (microsecond and nanosecond magic)" },
+  { title: "IETF — PCAP Next Generation (pcapng) Capture File Format", url: "https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/", note: ko ? "SHB·IDB·EPB·SPB, if_tsresol" : "SHB, IDB, EPB, SPB, if_tsresol" },
+  { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications", note: ko ? "MBAP 머리·트랜잭션 ID" : "MBAP header, transaction ID" },
+  { title: "SLMP Reference Manual SH(NA)-080956ENG", url: "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080956eng/sh080956engl.pdf", note: ko ? "3E·4E 머리, 4E 일련번호, 종료 코드" : "3E/4E header, 4E serial number, end code" },
+];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "산업 통신 pcap 해석기 — Modbus·MC 응답 시간 — PortDock" : "Industrial pcap Analyzer: Modbus TCP & MC Timing — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="pa" data-lang={lang} data-mb={url(lang, "tools/modbus-decoder/")} data-mc={url(lang, "tools/mc-decoder/")}>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".pcap,.pcapng,.cap,.ntar,application/vnd.tcpdump.pcap" />
+        <b>{L.drop}</b>
+        <span class="note">{L.dropNote}</span>
+      </label>
+      <p class="note privacy">{L.privacy}</p>
+      <div class="row">
+        <label class="fld">
+          {L.mbPorts}
+          <input id="mb-ports" class="mono" value="502" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.mbHelp}</span>
+        </label>
+        <label class="fld">
+          {L.mcPorts}
+          <input id="mc-ports" class="mono" value="" placeholder="5000-5010" spellcheck="false" autocomplete="off" />
+          <span class="note">{L.mcHelp}</span>
+        </label>
+        <label class="fld" style="flex:0 1 170px">
+          {L.timeout}
+          <input id="timeout" class="mono" value="1000" inputmode="numeric" autocomplete="off" />
+        </label>
+      </div>
+      <label class="chk"><input type="checkbox" id="auto" checked /> {L.auto}</label>
+      <label class="chk"><input type="checkbox" id="dedupe" checked /> {L.dedupe}</label>
+      <div id="busy" hidden>
+        <progress id="prog" max="1" value="0"></progress>
+        <span id="busy-text" class="note"></span>
+        <button type="button" class="btn tight" id="cancel">{L.cancel}</button>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <button type="button" class="btn tight" id="again" hidden>{L.again}</button>
+    </form>
+
+    <div id="out" aria-live="polite"></div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.guideTitle}</h2>
+      <ul>
+        <li><a href={url(lang, "guides/capture-plc-traffic-wireshark-pktmon/")}>{ko ? "Wireshark·pktmon 으로 PLC 통신 기록 뜨기 — 포트 미러링·관리자 권한·스위치 한계" : "Capturing PLC traffic with Wireshark or pktmon: port mirroring, admin rights, switch limits"}</a></li>
+        <li><a href={url(lang, "guides/modbus-response-time-pcap/")}>{ko ? "Modbus 응답 시간 읽기 — 해석기 결과 보는 법" : "Reading Modbus response times from a capture"}</a></li>
+      </ul>
+      <h2>{L.relTitle}</h2>
+      <ul>
+        <li><a href={url(lang, "tools/modbus-decoder/")}>{ko ? "Modbus 프레임 해석기" : "Modbus Frame Decoder"}</a> — {L.relMb}</li>
+        <li><a href={url(lang, "tools/mc-decoder/")}>{ko ? "MC 프로토콜(SLMP) 프레임 해석기" : "MC Protocol (SLMP) Frame Decoder"}</a> — {L.relMc}</li>
+        <li><a href={url(lang, "tcp/")}>PortDock TCP</a> — {L.relTcp}</li>
+        <li><a href={url(lang, "modbus-slave/")}>PortDock Modbus Slave</a> — {L.relSlave}</li>
+        <li><a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a> — {L.relPlc}</li>
+      </ul>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        {
+          REFS.map((r) => (
+            <li>
+              <a href={r.url} rel="noopener">{r.title}</a> — {r.note}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="note">{L.notAffiliated}</p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 130px;
+      border: 2px dashed var(--line);
+      border-radius: var(--radius);
+      text-align: center;
+      padding: 16px;
+      cursor: pointer;
+    }
+    .drop:hover,
+    .drop.over {
+      border-color: var(--accent);
+      background: var(--soft);
+    }
+    .drop input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+    .drop:focus-within {
+      outline: 2px solid var(--accent);
+    }
+    .chk {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    .chk input {
+      width: auto;
+      margin-top: 4px;
+    }
+    #busy {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #busy[hidden] {
+      display: none;
+    }
+    #busy progress {
+      flex: 1 1 200px;
+      height: 14px;
+    }
+    #out {
+      --pa-ok: var(--accent);
+      --pa-exc: #b54708;
+      --pa-bad: #b42318;
+    }
+    @media (prefers-color-scheme: dark) {
+      #out {
+        --pa-exc: #f5a524;
+        --pa-bad: #f97066;
+      }
+    }
+    #out :global(section.pa) {
+      margin-top: 20px;
+    }
+    #out :global(h2) {
+      font-size: 19px;
+      margin: 22px 0 8px;
+    }
+    #out :global(.scroll) {
+      overflow-x: auto;
+    }
+    #out :global(table.t) {
+      font-size: 14px;
+    }
+    #out :global(table.t td.num),
+    #out :global(table.t th.num) {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    #out :global(.tiles) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    #out :global(.tile) {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    #out :global(.tile b) {
+      display: block;
+      font-size: 22px;
+      font-variant-numeric: tabular-nums;
+    }
+    #out :global(.tile span) {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    #out :global(.warn) {
+      border-left: 4px solid var(--pa-exc);
+      background: var(--panel);
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    #out :global(.st-exception),
+    #out :global(.st-orphan) {
+      color: var(--pa-exc);
+      font-weight: 600;
+    }
+    #out :global(.st-timeout),
+    #out :global(.st-closed) {
+      color: var(--pa-bad);
+      font-weight: 600;
+    }
+    #out :global(.st-cut) {
+      color: var(--muted);
+    }
+    #out :global(tr.txn) {
+      cursor: pointer;
+    }
+    #out :global(tr.txn:hover),
+    #out :global(tr.txn.sel) {
+      background: var(--soft);
+    }
+    #out :global(.bar) {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: end;
+      margin: 8px 0;
+    }
+    #out :global(.bar label) {
+      font-size: 14px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    #out :global(.bar select),
+    #out :global(.bar input[type="checkbox"]) {
+      width: auto;
+    }
+    #out :global(.detail) {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin: 10px 0;
+    }
+    #out :global(.detail pre) {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 2px 0 8px;
+      font-size: 13px;
+    }
+    #out :global(.chart) {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    #out :global(.chart text) {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+    #out :global(.chart .grid) {
+      stroke: var(--line);
+      stroke-width: 1;
+    }
+    #out :global(.legend) {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    #out :global(.legend i) {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+  </style>
+  <script>
+    import type { Analysis, Txn, Group, Conv, Status, AnalyzeOpts } from "../lib/pcapAnalyze";
+    import { toCsv, decoderLink, parsePorts, STATUS_ORDER } from "../lib/pcapAnalyze";
+    import { LINK_NAMES } from "../lib/pcapRead";
+    import type { WorkerOut } from "../lib/pcapWorker";
+
+    const form = document.getElementById("pa") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
+    const ko = lang === "ko";
+    const t = (k: string, e: string) => (ko ? k : e);
+    const MAX = 200 * 1024 * 1024;
+    const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const fileIn = g<HTMLInputElement>("file");
+    const drop = g<HTMLLabelElement>("drop");
+    const err = g<HTMLElement>("err");
+    const out = g<HTMLElement>("out");
+    const busy = g<HTMLElement>("busy");
+    const prog = g<HTMLProgressElement>("prog");
+    const busyText = g<HTMLElement>("busy-text");
+    const again = g<HTMLButtonElement>("again");
+    let worker: Worker | null = null;
+    let lastFile: File | null = null;
+
+    const STATUS: Record<Status, string> = {
+      ok: t("응답", "Answered"),
+      exception: t("예외·오류 코드", "Exception / error code"),
+      timeout: t("무응답", "No response"),
+      closed: t("연결 끊김", "Connection closed"),
+      cut: t("캡처 끝(판단 못 함)", "Capture ended (unknown)"),
+      orphan: t("짝 없는 응답", "Unmatched response"),
+    };
+    const nf = new Intl.NumberFormat(ko ? "ko-KR" : "en-US");
+    const n = (v: number) => nf.format(v);
+    const ms = (v: number | null) => (v === null ? "—" : v >= 100 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3));
+    const sec = (nsv: number) => (nsv / 1e9).toFixed(6);
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    type Cell = string | { v: string; cls?: string };
+    function table(head: (string | { v: string; num: boolean })[], rows: Cell[][], numCols: number[] = []) {
+      const box = el("div", "scroll");
+      const tb = el("table", "t");
+      const thead = el("thead");
+      const tr = el("tr");
+      head.forEach((h, i) => tr.append(el("th", numCols.includes(i) ? "num" : "", typeof h === "string" ? h : h.v)));
+      thead.append(tr);
+      const body = el("tbody");
+      for (const r of rows) {
+        const row = el("tr");
+        r.forEach((c, i) => {
+          const td = el("td", (numCols.includes(i) ? "num " : "") + (typeof c === "string" ? "" : (c.cls ?? "")), typeof c === "string" ? c : c.v);
+          row.append(td);
+        });
+        body.append(row);
+      }
+      tb.append(thead, body);
+      box.append(tb);
+      return { box, body };
+    }
+
+    function opts(): AnalyzeOpts | null {
+      const mb = parsePorts(g<HTMLInputElement>("mb-ports").value);
+      const mc = parsePorts(g<HTMLInputElement>("mc-ports").value);
+      const to = Number(g<HTMLInputElement>("timeout").value.trim());
+      if (!mb || !mc) {
+        err.textContent = t("포트는 1~65535 숫자를 쉼표로, 범위는 5000-5010 처럼 적습니다", "Ports are numbers from 1 to 65535, comma separated; ranges like 5000-5010");
+        return null;
+      }
+      if (!(to >= 1 && to <= 600000)) {
+        err.textContent = t("무응답 기준은 1~600000 ms 입니다", "The no-response limit is 1 to 600000 ms");
+        return null;
+      }
+      return { modbusPorts: mb, mcPorts: mc, autoDetect: g<HTMLInputElement>("auto").checked, timeoutMs: to, dedupe: g<HTMLInputElement>("dedupe").checked, lang };
+    }
+
+    function stop() {
+      worker?.terminate();
+      worker = null;
+      busy.hidden = true;
+    }
+
+    function run(f: File) {
+      err.textContent = "";
+      out.replaceChildren();
+      lastFile = f;
+      again.hidden = true;
+      if (f.size > MAX) {
+        err.textContent = t(
+          `파일이 ${(f.size / 1048576).toFixed(0)}MB 입니다 — 200MB 까지 읽습니다. Wireshark 의 «파일 → 지정한 패킷 내보내기»(필터 modbus 또는 tcp.port==5000) 나 editcap -c 로 잘라 오세요.`,
+          `The file is ${(f.size / 1048576).toFixed(0)} MB — the limit is 200 MB. Cut it with Wireshark «File → Export Specified Packets» (filter modbus or tcp.port==5000) or editcap -c.`,
+        );
+        return;
+      }
+      const o = opts();
+      if (!o) return;
+      stop();
+      busy.hidden = false;
+      prog.value = 0;
+      busyText.textContent = t("파일 읽는 중…", "Reading the file…");
+      const w = new Worker(new URL("../lib/pcapWorker.ts", import.meta.url), { type: "module" });
+      worker = w;
+      w.onmessage = (e: MessageEvent<WorkerOut>) => {
+        const m = e.data;
+        if (m.type === "progress") {
+          prog.value = m.f;
+          busyText.textContent = m.phase === "read" ? t("파일 읽는 중…", "Reading the file…") : `${t("푸는 중", "Decoding")} ${Math.round(m.f * 100)}%`;
+        } else if (m.type === "error") {
+          stop();
+          err.textContent =
+            m.code === "gzip"
+              ? t("gzip 으로 압축한 파일입니다 — 먼저 풀어 주세요(.pcap·.pcapng).", "This file is gzip-compressed — unpack it first (.pcap or .pcapng).")
+              : m.code === "unknown" || m.code === "empty"
+                ? t("pcap·pcapng 파일이 아닙니다. Wireshark 에서 «다른 이름으로 저장» 으로 pcapng 나 pcap 을 고르세요(.etl 은 pktmon etl2pcap 으로 바꿔서).", "Not a pcap or pcapng file. In Wireshark use «Save As» with pcapng or pcap (convert .etl with pktmon etl2pcap).")
+                : t(`파일을 읽다가 멈췄습니다: ${m.message}`, `Stopped while reading the file: ${m.message}`);
+        } else {
+          stop();
+          again.hidden = false;
+          render(m.result);
+        }
+      };
+      w.onerror = (e) => {
+        stop();
+        err.textContent = t(`처리 중 오류: ${e.message}`, `Error while processing: ${e.message}`);
+      };
+      w.postMessage({ file: f, opts: o });
+    }
+
+    fileIn.addEventListener("change", () => {
+      const f = fileIn.files?.[0];
+      if (f) run(f);
+      fileIn.value = "";
+    });
+    for (const ev of ["dragenter", "dragover"]) drop.addEventListener(ev, (e) => {
+      e.preventDefault();
+      drop.classList.add("over");
+    });
+    for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, () => drop.classList.remove("over"));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const f = (e as DragEvent).dataTransfer?.files?.[0];
+      if (f) run(f);
+    });
+    g<HTMLButtonElement>("cancel").addEventListener("click", () => {
+      stop();
+      err.textContent = t("취소했습니다.", "Cancelled.");
+    });
+    again.addEventListener("click", () => lastFile && run(lastFile));
+    form.addEventListener("submit", (e) => e.preventDefault());
+
+    // ---------------------------------------------------------------- 결과 그리기
+    const protoName = (p: string, code?: string | null) => (p === "modbus" ? "Modbus TCP" : `MC${code === "ascii" ? " ASCII" : code === "binary" ? t(" 이진", " binary") : code === "mixed" ? t(" 이진+ASCII", " binary+ASCII") : ""}`);
+    const statCells = (s: { requests: number; ok: number; exception: number; timeout: number; closed: number; cut: number; orphan: number; min: number | null; median: number | null; p95: number | null; max: number | null }): Cell[] => [
+      n(s.requests),
+      n(s.ok),
+      s.exception ? { v: n(s.exception), cls: "st-exception" } : "0",
+      s.timeout + s.closed ? { v: n(s.timeout + s.closed), cls: "st-timeout" } : "0",
+      ms(s.min),
+      ms(s.median),
+      ms(s.p95),
+      ms(s.max),
+    ];
+    const statHead = [t("요청", "Requests"), t("응답", "Answered"), t("예외·오류", "Exceptions"), t("무응답·끊김", "No reply / closed"), t("최소 ms", "Min ms"), t("중앙 ms", "Median ms"), t("95% ms", "95% ms"), t("최대 ms", "Max ms")];
+
+    function section(title: string, ...kids: Node[]) {
+      const s = el("section", "pa");
+      s.append(el("h2", "", title), ...kids);
+      return s;
+    }
+
+    function render(a: Analysis) {
+      out.replaceChildren();
+      const c = a.counts;
+      // ---- 알림
+      const warns: string[] = [];
+      warns.push(t("캡처에 없는 패킷은 볼 수 없습니다 — «무응답» 은 캡처가 빠뜨린 것일 수도 있습니다(미러 포트 손실·캡처 시작 전후).", "Packets missing from the capture cannot be seen — «no response» may be a packet the capture lost (mirror port loss, before/after the capture)."));
+      if (a.capture.truncatedFile) warns.push(t("파일 끝이 잘려 있어 읽은 데까지만 풀었습니다.", "The file ends early; decoded as far as it goes."));
+      if (c.duplicates) warns.push(t(`겹친 패킷 ${n(c.duplicates)}개를 뺐습니다(pktmon 처럼 한 패킷을 여러 지점에서 잡은 파일).`, `Dropped ${n(c.duplicates)} duplicated packets (a file like pktmon's that captured each packet at several points).`));
+      const gaps = a.convs.reduce((s, x) => s + x.gaps, 0);
+      const retr = a.convs.reduce((s, x) => s + x.retrans, 0);
+      if (gaps) warns.push(t(`캡처가 빠뜨린 바이트가 ${n(gaps)}곳 있습니다 — 그 자리의 프레임은 풀지 못했습니다.`, `The capture is missing bytes in ${n(gaps)} places — frames there could not be decoded.`));
+      if (retr) warns.push(t(`TCP 재전송 ${n(retr)}개(같은 바이트를 다시 보냄) — 겹친 것은 한 번만 셌습니다.`, `${n(retr)} TCP retransmissions (the same bytes sent again) — counted once.`));
+      if (c.truncated) warns.push(t(`캡처 길이(snaplen)로 잘린 패킷 ${n(c.truncated)}개 — 잘린 프레임은 건너뜁니다.`, `${n(c.truncated)} packets cut short by the capture length (snaplen) — cut frames are skipped.`));
+      if (c.unsupportedLink) warns.push(t(`읽지 못하는 링크 종류의 패킷 ${n(c.unsupportedLink)}개(${a.capture.linkTypes.map((x) => LINK_NAMES[x] ?? x).join(", ")}).`, `${n(c.unsupportedLink)} packets of an unsupported link type (${a.capture.linkTypes.map((x) => LINK_NAMES[x] ?? x).join(", ")}).`));
+      if (a.rowsDropped) warns.push(t(`거래가 많아 표에는 일부만 넣었습니다(${n(a.rowsDropped)}건 빠짐). 집계·통계는 전부 셉니다.`, `Too many transactions for the table (${n(a.rowsDropped)} left out). Totals and statistics include all of them.`));
+      if (!a.convs.length)
+        warns.push(
+          t(
+            "Modbus TCP·MC 통신을 찾지 못했습니다. 포트 칸에 장비가 쓰는 포트를 넣어 보세요(MC 는 PLC 설정의 포트 번호). 연결 중간부터 뜬 파일이면 첫 프레임이 잘려 모양으로 찾기가 안 될 수 있습니다.",
+            "No Modbus TCP or MC traffic found. Put the device's port in the port fields (for MC, the port set in the PLC). If the capture starts mid-connection the first frame may be cut, so shape detection can miss it.",
+          ),
+        );
+      for (const w of warns) out.append(el("p", "warn", w));
+
+      // ---- 요약
+      const o = a.overall;
+      const start = a.start ? new Date(a.start.sec * 1000).toLocaleString(ko ? "ko-KR" : "en-US") : "—";
+      const tiles: [string, string][] = [
+        [n(a.convs.length), t("산업 통신 연결", "Industrial connections")],
+        [n(o.requests), t("요청", "Requests")],
+        [n(o.ok), t("응답", "Answered")],
+        [n(o.exception), t("예외·오류 코드", "Exception / error code")],
+        [n(o.timeout + o.closed), t("무응답·연결 끊김", "No response / closed")],
+        [ms(o.median), t("응답 시간 중앙 (ms)", "Median response (ms)")],
+        [ms(o.p95), t("95% (ms)", "95th percentile (ms)")],
+        [ms(o.max), t("최대 (ms)", "Max (ms)")],
+      ];
+      const tl = el("div", "tiles");
+      for (const [v, k] of tiles) {
+        const d = el("div", "tile");
+        d.append(el("b", "", v), el("span", "", k));
+        tl.append(d);
+      }
+      const facts = el("p", "note");
+      facts.textContent = [
+        `${a.capture.format} · ${a.capture.precision === "ns" ? t("나노초", "nanosecond") : a.capture.precision === "us" ? t("마이크로초", "microsecond") : t("인터페이스마다 다름", "per interface")}`,
+        `${t("패킷", "packets")} ${n(c.packets)}`,
+        `${t("시작", "start")} ${start}`,
+        `${t("길이", "duration")} ${(a.durationMs / 1000).toFixed(3)} s`,
+        `${t("산업 통신 패킷", "industrial packets")} ${n(c.industrial)}`,
+        `${t("산업 통신이 아닌 패킷(풀지 않음)", "other packets (not decoded)")} ${n(c.otherTcpUdp + c.ipv6 + c.arp + c.otherEther + c.otherIp + c.fragments + c.short)}`,
+        o.orphan ? `${t("짝 없는 응답", "unmatched responses")} ${n(o.orphan)}` : "",
+        o.cut ? `${t("캡처 끝(판단 못 함)", "capture ended (unknown)")} ${n(o.cut)}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      out.append(section(t("요약", "Summary"), tl, facts));
+      if (!a.convs.length) return;
+
+      // ---- 연결
+      const cv = table(
+        [t("연결", "Conn."), t("프로토콜", "Protocol"), t("클라이언트", "Client"), t("서버", "Server"), ...statHead, t("요청 간격 ms", "Interval ms"), t("재전송·빠짐", "Retrans / gaps")],
+        a.convs.map((x: Conv) => ["C" + x.id, protoName(x.proto, x.mcCode) + (x.transport === "udp" ? " (UDP)" : ""), x.client, x.server, ...statCells(x), ms(x.interval), `${x.retrans} · ${x.gaps}`]),
+        [4, 5, 6, 7, 8, 9, 10, 11, 12],
+      );
+      out.append(section(t("연결별", "By connection"), cv.box, el("p", "note", t("IP 주소는 이 화면에만 보입니다. 응답 시간은 응답이 온 요청만으로 셉니다.", "IP addresses appear on this screen only. Response times count answered requests only."))));
+
+      // ---- 장치
+      const dv = table(
+        [t("프로토콜", "Protocol"), t("서버", "Server"), t("국번(Modbus 유닛 ID · MC 네트워크-PC-I/O-국)", "Station (Modbus unit ID · MC network-PC-I/O-station)"), ...statHead],
+        a.devices.map((x: Group) => [protoName(x.proto), x.server ?? "", x.label, ...statCells(x)]),
+        [3, 4, 5, 6, 7, 8, 9, 10],
+      );
+      out.append(section(t("장치(국번)별", "By device (station)"), dv.box));
+
+      // ---- 함수·명령
+      const fv = table([t("프로토콜", "Protocol"), t("함수·명령", "Function / command"), ...statHead], a.funcs.map((x: Group) => [protoName(x.proto), x.label, ...statCells(x)]), [2, 3, 4, 5, 6, 7, 8, 9]);
+      out.append(section(t("함수 코드·명령별", "By function code / command"), fv.box));
+
+      // ---- 코드
+      if (a.codes.length) {
+        const kv = table([t("프로토콜", "Protocol"), t("코드", "Code"), t("횟수", "Count")], a.codes.map((x) => [protoName(x.proto), x.name, n(x.count)]), [2]);
+        out.append(section(t("예외 코드·MC 종료 코드", "Exception codes and MC end codes"), kv.box));
+      }
+
+      // ---- 그래프
+      out.append(section(t("응답 시간 — 시간 축", "Response time over the capture"), chart(a)));
+
+      // ---- 거래 표
+      out.append(txnSection(a));
+    }
+
+    function chart(a: Analysis) {
+      const box = el("div");
+      const pts = a.points;
+      if (!pts.length) {
+        box.append(el("p", "note", t("그릴 요청이 없습니다.", "No requests to plot.")));
+        return box;
+      }
+      const W = 900;
+      const H = 240;
+      const P = { l: 52, r: 12, t: 16, b: 28 };
+      const x1 = Math.max(1, ...pts.map((p) => p[0]));
+      const rts = pts.filter((p) => p[1] >= 0).map((p) => p[1]);
+      const y1 = Math.max(1, ...rts) * 1.08;
+      const X = (v: number) => P.l + (v / x1) * (W - P.l - P.r);
+      const Y = (v: number) => H - P.b - (v / y1) * (H - P.t - P.b - 12);
+      const NS = "http://www.w3.org/2000/svg";
+      const s = document.createElementNS(NS, "svg");
+      s.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      s.setAttribute("class", "chart");
+      s.setAttribute("role", "img");
+      s.setAttribute("aria-label", t("요청 시각에 따른 응답 시간 점 그래프", "Scatter plot of response time against request time"));
+      const mk = (tag: string, at: Record<string, string | number>, text?: string) => {
+        const e = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(at)) e.setAttribute(k, String(v));
+        if (text) e.textContent = text;
+        s.append(e);
+        return e;
+      };
+      for (let i = 0; i <= 4; i++) {
+        const v = (y1 / 4) * i;
+        mk("line", { x1: P.l, x2: W - P.r, y1: Y(v), y2: Y(v), class: "grid" });
+        mk("text", { x: P.l - 6, y: Y(v) + 4, "text-anchor": "end" }, ms(v));
+      }
+      for (let i = 0; i <= 4; i++) {
+        const v = (x1 / 4) * i;
+        mk("text", { x: X(v), y: H - 8, "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle" }, `${(v / 1000).toFixed(1)} s`);
+      }
+      mk("text", { x: P.l, y: 11 }, t("ms ↑ · 맨 위 줄 = 무응답", "ms ↑ · top row = no response"));
+      for (const [tx, rt, st] of pts) {
+        const status = STATUS_ORDER[st];
+        const col = status === "ok" ? "var(--pa-ok)" : status === "exception" ? "var(--pa-exc)" : status === "cut" ? "var(--muted)" : "var(--pa-bad)";
+        const cy = rt < 0 ? P.t : Y(rt);
+        const e = rt < 0 ? mk("rect", { x: X(tx) - 3, y: cy - 3, width: 6, height: 6, fill: col }) : mk("circle", { cx: X(tx), cy, r: 3, fill: col, "fill-opacity": 0.75 });
+        const ti = document.createElementNS(NS, "title");
+        ti.textContent = `${(tx / 1000).toFixed(3)} s · ${STATUS[status]}${rt >= 0 ? ` · ${ms(rt)} ms` : ""}`;
+        e.append(ti);
+      }
+      box.append(s);
+      const lg = el("div", "legend");
+      for (const [cls, name] of [["var(--pa-ok)", STATUS.ok], ["var(--pa-exc)", STATUS.exception], ["var(--pa-bad)", `${STATUS.timeout} · ${STATUS.closed}`], ["var(--muted)", STATUS.cut]]) {
+        const sp = el("span");
+        const i = el("i");
+        i.style.background = cls;
+        sp.append(i, document.createTextNode(name));
+        lg.append(sp);
+      }
+      box.append(lg);
+      if (a.pointsSampled) box.append(el("p", "note", t(`점이 많아 응답한 요청은 고르게 솎아 ${n(pts.length)}개만 그렸습니다(무응답은 우선).`, `Too many points — answered requests are thinned evenly to ${n(pts.length)} (missing replies first).`)));
+      return box;
+    }
+
+    function txnSection(a: Analysis) {
+      const PAGE = 200;
+      const s = el("section", "pa");
+      s.append(el("h2", "", t("요청·응답 표", "Requests and responses")));
+      const bar = el("div", "bar");
+      const fSel = el("select");
+      for (const [v, k] of [["all", t("전부", "All")], ["bad", t("문제만(예외·무응답·끊김·짝 없음)", "Problems only (exception, no reply, closed, unmatched)")]]) fSel.append(new Option(k, v));
+      const cSel = el("select");
+      cSel.append(new Option(t("모든 연결", "All connections"), "0"));
+      for (const x of a.convs) cSel.append(new Option(`C${x.id} ${protoName(x.proto, x.mcCode)}`, String(x.id)));
+      const lf = el("label");
+      lf.append(t("보기", "Show"), fSel);
+      const lc = el("label");
+      lc.append(t("연결", "Connection"), cSel);
+      const ipChk = el("input");
+      ipChk.type = "checkbox";
+      const li = el("label");
+      li.append(ipChk, t("CSV 에 IP 주소 넣기", "Include IP addresses in CSV"));
+      const byChk = el("input");
+      byChk.type = "checkbox";
+      byChk.checked = true;
+      const lb = el("label");
+      lb.append(byChk, t("CSV 에 프레임 바이트 넣기", "Include frame bytes in CSV"));
+      const csvBtn = el("button", "btn tight", t("CSV 내려받기", "Download CSV"));
+      csvBtn.type = "button";
+      bar.append(lf, lc, li, lb, csvBtn);
+      s.append(bar);
+      const info = el("p", "note");
+      const tableBox = el("div");
+      const more = el("button", "btn tight", t("더 보기", "Show more"));
+      more.type = "button";
+      const detail = el("div", "detail");
+      detail.hidden = true;
+      s.append(info, tableBox, more, detail);
+      let shown = PAGE;
+      let list: Txn[] = [];
+
+      const head = [t("연결", "Conn."), t("시각 s", "Time s"), t("국번", "Station"), t("함수·명령", "Function / command"), t("주소", "Address"), t("개수", "Qty"), "ID", t("응답 ms", "Reply ms"), t("결과", "Result"), t("패킷", "Packets")];
+      function draw() {
+        const f = fSel.value;
+        const cid = Number(cSel.value);
+        list = a.rows.filter((r) => (cid === 0 || r.conv === cid) && (f === "all" || r.status !== "ok"));
+        info.textContent = t(`${n(list.length)}건 · 행을 누르면 바이트와 해석기 링크가 나옵니다. 주소는 Modbus 0 기준·MC 디바이스 번호.`, `${n(list.length)} rows · click a row for its bytes and decoder links. Addresses are Modbus 0-based or MC device numbers.`);
+        const tb = table(
+          head,
+          list.slice(0, shown).map((r) => [
+            "C" + r.conv,
+            sec(r.t),
+            r.unit,
+            r.fnName,
+            r.addr || "—",
+            r.qty === null ? "—" : String(r.qty),
+            r.tag === null ? "—" : String(r.tag),
+            ms(r.rtMs),
+            { v: STATUS[r.status] + (r.codeName ? ` · ${r.codeName}` : ""), cls: "st-" + r.status },
+            [r.reqNo, r.respNo].map((x) => (x === null ? "—" : String(x))).join(" → "),
+          ]),
+          [1, 5, 6, 7],
+        );
+        [...tb.body.rows].forEach((row, i) => {
+          row.className = "txn";
+          row.tabIndex = 0;
+          const open = () => {
+            tb.body.querySelectorAll("tr.sel").forEach((x) => x.classList.remove("sel"));
+            row.classList.add("sel");
+            showDetail(list[i]);
+          };
+          row.addEventListener("click", open);
+          row.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              open();
+            }
+          });
+        });
+        tableBox.replaceChildren(tb.box);
+        more.hidden = list.length <= shown;
+      }
+      const hexOf = (u: Uint8Array) => Array.from(u, (b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+      function showDetail(r: Txn) {
+        detail.hidden = false;
+        detail.replaceChildren();
+        detail.append(el("b", "", `C${r.conv} · ${r.fnName} · ${STATUS[r.status]}${r.rtMs !== null ? ` · ${ms(r.rtMs)} ms` : ""}`));
+        for (const [which, u, name] of [["req", r.req, t("요청", "Request")], ["resp", r.resp, t("응답", "Response")]] as const) {
+          if (!u) continue;
+          detail.append(el("div", "note", `${name} (${u.length} B)`));
+          detail.append(el("pre", "mono", r.ascii ? String.fromCharCode(...u) : hexOf(u)));
+          const l = decoderLink(r, which);
+          if (l) {
+            const base = r.proto === "modbus" ? form.dataset.mb! : form.dataset.mc!;
+            const aEl = el("a", "btn tight", r.proto === "modbus" ? t(`Modbus 해석기에서 ${name} 보기`, `Open the ${name.toLowerCase()} in the Modbus decoder`) : t(`MC 해석기에서 ${name} 보기`, `Open the ${name.toLowerCase()} in the MC decoder`));
+            aEl.setAttribute("href", base + l.hash);
+            aEl.setAttribute("target", "_blank");
+            aEl.setAttribute("rel", "noopener");
+            detail.append(aEl, document.createTextNode(" "));
+          }
+        }
+        detail.scrollIntoView({ block: "nearest" });
+      }
+      fSel.addEventListener("change", () => {
+        shown = PAGE;
+        draw();
+      });
+      cSel.addEventListener("change", () => {
+        shown = PAGE;
+        draw();
+      });
+      more.addEventListener("click", () => {
+        shown += PAGE * 5;
+        draw();
+      });
+      csvBtn.addEventListener("click", () => {
+        const csv = toCsv(a, { withAddr: ipChk.checked, withBytes: byChk.checked, lang });
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+        const u = URL.createObjectURL(blob);
+        const link = el("a");
+        link.href = u;
+        link.download = "pcap-industrial.csv";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 2000);
+      });
+      draw();
+      return s;
+    }
+  </script>
+</Base>

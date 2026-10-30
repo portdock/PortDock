@@ -88,6 +88,7 @@
 | USB 시리얼 끊김, COM 포트 사라짐, COM 포트 번호 바뀜 | `/guides/usb-serial-disconnects/` | «USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서» |
 | MC 프로토콜 해석, SLMP 프레임, 3E 프레임 분석, MC 프로토콜 종료 코드, C059·C056 | `/tools/mc-decoder/` + 가이드 `mc-protocol-3e-binary-frame`·`mc-protocol-end-codes` | «MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이», 가이드 «MC 프로토콜 3E 이진 프레임 읽는 법»·«종료 코드 C050~C061 확인 순서» |
 | PLC 없이 통신 테스트, MC 프로토콜 시뮬레이터, 가상 PLC, 미쓰비시 X Y 16진 | 가이드 `mc-protocol-test-without-plc`·`mc-protocol-device-numbers` → `/plc-simulator/` | «PLC 없이 MC 프로토콜 통신 시험하기», «MC 프로토콜 디바이스 번호 — X·Y 16진·D·W·ZR» |
+| 와이어샤크 모드버스, 모드버스 패킷 분석, modbus pcap, 모드버스 응답 시간, PLC 통신 캡처, 포트 미러링, pktmon | `/tools/pcap-analyzer/` + 가이드 `capture-plc-traffic-wireshark-pktmon`·`modbus-response-time-pcap` | «산업 통신 pcap 해석기 — Modbus·MC 응답 시간», 설명에 «Wireshark·pktmon», «무응답·예외·종료 코드», 가이드 «Wireshark·pktmon 으로 PLC 통신 캡처 — 포트 미러링»·«Modbus 응답 시간·무응답 읽기» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -180,6 +181,7 @@
 | usb serial adapter keeps disconnecting, com port disappears, com port number changes | `/en/guides/usb-serial-disconnects/` | «USB-Serial Adapter Keeps Disconnecting: COM Port Drops» |
 | mc protocol decoder, slmp frame parser, 3e frame format, mc protocol end code c059 | `/en/tools/mc-decoder/` + guides `mc-protocol-3e-binary-frame`, `mc-protocol-end-codes` | «MC Protocol (SLMP) Frame Decoder: 3E/4E Online», guides «MC Protocol 3E Binary Frame Explained Byte by Byte», «MC Protocol End Codes C050–C061» |
 | test mc protocol without plc, slmp simulator, dummy plc, mitsubishi x y hex numbering | guides `mc-protocol-test-without-plc`, `mc-protocol-device-numbers` → `/en/plc-simulator/` | «Test MC Protocol (SLMP) Without a PLC», «MC Protocol Device Numbers: Hex X/Y, D, W, ZR» |
+| modbus pcap analysis, modbus pcap analyzer, pcap analyzer online, wireshark modbus response time, wireshark mc protocol, capture plc traffic, port mirroring plc, pktmon pcapng | `/en/tools/pcap-analyzer/` + guides `capture-plc-traffic-wireshark-pktmon`, `modbus-response-time-pcap` | «Industrial pcap Analyzer: Modbus TCP & MC Timing», guides «Capture PLC Traffic with Wireshark or pktmon: Port Mirroring», «Modbus Response Time & Missing Replies from a pcap» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |
@@ -259,7 +261,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭, PLC Simulator → MC 프레임 해석기·서브넷·정수 변환).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭, PLC Simulator → MC 프레임 해석기·서브넷·정수 변환, TCP·Modbus Master·Modbus Slave·PLC Simulator → pcap 해석기).
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 10개·가이드 전부·장비 목록.
 

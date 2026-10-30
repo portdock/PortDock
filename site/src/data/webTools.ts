@@ -48,6 +48,7 @@ export interface WebTool {
     | "tools/gige-bandwidth/"
     | "tools/energy-pulse/"
     | "tools/mc-decoder/"
+    | "tools/pcap-analyzer/"
     | "tools/pump-fan-affinity/"
     | "tools/conveyor-speed/"
     | "tools/mic-test/"
@@ -281,6 +282,11 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/mc-decoder/",
     name: { ko: "MC 프로토콜(SLMP) 프레임 해석기", en: "MC Protocol (SLMP) Frame Decoder" },
     blurb: { ko: "3E·4E, 이진·ASCII 프레임 → 머리 칸·명령·디바이스·값·종료 코드. 짝 요청으로 응답 값 풀이, 요청 만들기.", en: "3E/4E binary or ASCII frames → header, command, device, values and end code. Pair a reply with its request; build requests." },
+  },
+  {
+    path: "tools/pcap-analyzer/",
+    name: { ko: "산업 통신 pcap 해석기", en: "Industrial pcap Analyzer" },
+    blurb: { ko: "Wireshark·pktmon 캡처 → Modbus TCP·MC 요청/응답 짝, 응답 시간, 무응답, 예외·종료 코드 집계. 브라우저 안에서만.", en: "Wireshark or pktmon capture → Modbus TCP and MC request/response pairs, response times, missing replies, exception and end codes. In your browser only." },
   },
   {
     path: "tools/pump-fan-affinity/",

@@ -177,6 +177,10 @@ const ld = {
       <p>
         {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
       </p>
+      <p>
+        {ko ? "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) " : "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the "}
+        <a href={url(lang, "tools/pcap-analyzer/")}>{ko ? "산업 통신 pcap 해석기" : "Industrial pcap Analyzer"}</a>{ko ? " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다." : ". Clicking a row there opens that frame in this decoder."}
+      </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
@@ -350,6 +354,14 @@ const ld = {
     form.addEventListener("input", run);
     form.addEventListener("change", run);
     form.addEventListener("submit", (e) => e.preventDefault());
+    // pcap 해석기 등에서 넘긴 프레임 — 주소의 # 뒤라 서버로 가지 않는다(#frame=…&mode=tcp&start=…)
+    const hp = new URLSearchParams(location.hash.slice(1));
+    if (hp.get("frame")) {
+      data.value = hp.get("frame") ?? "";
+      const m = hp.get("mode");
+      if (m === "tcp" || m === "rtu" || m === "auto") mode.value = m;
+      start.value = hp.get("start") ?? "";
+    }
     run();
   </script>
 </Base>
