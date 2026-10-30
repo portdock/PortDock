@@ -1822,7 +1822,7 @@ async function runApp(app, port) {
         const ifl = await js("return document.querySelectorAll('aside .ifaces button.iface').length");
         if (ifl < 2) await conv("iface-list", `«이 PC 주소» 목록이 비었음 (${ifl})`);
         await clickRun("listen non-local", (x) => !STOP_RE.test(x.btn ?? ""));
-        const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
+        const err = await js("return (document.querySelector('aside .status.s-failed') || {}).textContent || ''"); // 시작 실패는 버튼 밑 빨간 상자(10/30)
         if (!/192\.168\.0\.15/.test(err)) await conv("iface-error", `없는 주소 오류에 이 PC 주소가 붙지 않음: «${err}»`);
         // 목록에서 눌러 고르기
         await js("document.querySelector('aside .ifaces button.iface').click()");
@@ -2968,13 +2968,13 @@ async function runApp(app, port) {
         await clickRun("stop while reconnecting", (s) => s.btn === idleBtn);
         await load(port, combo, { cfg: { mode: "server", host: "0.0.0.0", port: 445, noDelay: true, autoReconnect: true, reconnectMs: 2000, echo: false } });
         const s = await clickRun("listen busy port", (x) => !STOP_RE.test(x.btn ?? ""));
-        const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
+        const err = await js("return (document.querySelector('aside .status.s-failed') || {}).textContent || ''"); // 시작 실패는 버튼 밑 빨간 상자(10/30)
         if (!/사용 중|in use/.test(err)) add("listen busy port", "state", `포트 사용 중 오류가 안 보임 (상태 «${s?.status}»)`, await shot(app, `${combo.name}-busy`));
       }
       if (app === "udp") {
         await load(port, combo, { cfg: { bindHost: "0.0.0.0", bindPort: 445, remoteHost: "192.168.0.10", remotePort: 5000, broadcast: false, multicastGroup: "", multicastIf: "0.0.0.0", echo: false } });
         await clickRun("bind busy port", (x) => x.btn === idleBtn);
-        const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
+        const err = await js("return (document.querySelector('aside .status.s-failed') || {}).textContent || ''"); // 시작 실패는 버튼 밑 빨간 상자(10/30)
         if (!/사용 중|in use/.test(err)) add("bind busy port", "state", "포트 사용 중 오류가 안 보임", await shot(app, `${combo.name}-busy`));
       }
       // (10/19) SCPI: 안 붙는 주소(10.0.0.99) → «연결 실패» 안내. Plot: 사용 중 포트(COM9) → «시작 실패» + 다른 프로그램 안내
@@ -2991,7 +2991,7 @@ async function runApp(app, port) {
       if (app === "simulator") {
         await load(port, combo, { transport: "tcp-server", net: { host: "0.0.0.0", port: 445, remoteHost: "192.168.0.10", remotePort: 5000 } });
         await clickRun("listen busy port", (x) => x.btn === idleBtn);
-        const err = await js("return (document.querySelector('.error') || {}).textContent || ''");
+        const err = await js("return (document.querySelector('aside .status.s-failed') || {}).textContent || ''"); // 시작 실패는 버튼 밑 빨간 상자(10/30)
         if (!/사용 중|in use/.test(err)) add("listen busy port", "state", "포트 사용 중 오류가 안 보임", await shot(app, `${combo.name}-busy`));
       }
 

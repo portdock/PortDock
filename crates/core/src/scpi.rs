@@ -336,7 +336,7 @@ impl Instrument {
         }
         let addrs: Vec<_> = (host, port)
             .to_socket_addrs()
-            .map_err(|e| format!("{host}:{port}: {} ({e})", crate::tr!("주소를 찾지 못했습니다", "Could not resolve the address")))?
+            .map_err(|e| format!("{host}:{port}: {}", crate::oserr::resolve(&e)))?
             .collect();
         let mut last = None;
         for a in &addrs {
@@ -352,7 +352,7 @@ impl Instrument {
         }
         Err(match last {
             Some(e) => format!("{host}:{port}: {}", crate::oserr::net(&e)),
-            None => format!("{host}:{port}: {}", crate::tr!("주소를 찾지 못했습니다", "Could not resolve the address")),
+            None => format!("{host}:{port}: {}", crate::oserr::resolve_text()),
         })
     }
 

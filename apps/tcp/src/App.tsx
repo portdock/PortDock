@@ -263,7 +263,7 @@ export default function App() {
   const langRef = useRef(lang);
   langRef.current = lang;
   const [error, setError] = useState<string | null>(null);
-  // 시작(접속·듣기) 실패 — 버튼 바로 밑 빨간 상자로(다른 앱과 같은 자리). 다시 시작하거나 설정을 바꾸면 지운다
+  // 시작(연결·듣기) 실패 — 버튼 바로 밑 빨간 상자로(다른 앱과 같은 자리). 다시 시작하면 지운다
   const [startErr, setStartErr] = useState<string | null>(null);
   // 일부 상대에게만 보냈을 때 알림(오류는 아님)
   const [sendNote, setSendNote] = useState<string | null>(null);

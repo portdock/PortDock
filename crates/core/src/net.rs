@@ -81,26 +81,59 @@ pub fn port_owner(port: u16, udp: bool) -> Option<PortOwner> {
     imp::port_owner(port, udp)
 }
 
+/// 윈도우 자신(System, PID 4)이 쥐는 포트 — 445 파일 공유·135/139 등. 끌 수 없으니 다른 포트를 고르라고 한다
+const SYSTEM_PID: u32 = 4;
+
 /// «사용 중» 바인드 실패에 덧붙일 말 «— 쥔 프로그램: node.exe (PID 1234)»
 pub fn owner_hint(port: u16, udp: bool) -> String {
-    match port_owner(port, udp) {
+    owner_text(port_owner(port, udp))
+}
+
+fn owner_text(owner: Option<PortOwner>) -> String {
+    match owner {
+        Some(PortOwner { pid: SYSTEM_PID, .. }) => crate::tr!(format!(" — 쥔 쪽: 윈도우 자신(System, PID {SYSTEM_PID})"), format!(" — held by Windows itself (System, PID {SYSTEM_PID})")),
         Some(PortOwner { pid, name: Some(n) }) => crate::tr!(format!(" — 쥔 프로그램: {n} (PID {pid})"), format!(" — held by {n} (PID {pid})")),
         Some(PortOwner { pid, name: None }) => crate::tr!(format!(" — 쥔 프로그램: PID {pid}"), format!(" — held by PID {pid}")),
         None => String::new(),
     }
 }
 
-/// 바인드 오류에 안내를 덧붙인다 — «사용 중» 이면 쥔 프로그램, «없는 주소» 면 이 PC 주소 목록
+/// «사용 중» 일 때 할 일 — 윈도우가 쓰는 포트(1024 밑·System)면 다른 포트, 아니면 다른 포트 또는 그 프로그램 끄기
+fn in_use_action(port: u16, owner: Option<&PortOwner>) -> String {
+    let alt = if port < 5000 { 5001 } else { port.saturating_add(1) };
+    if owner.is_some_and(|o| o.pid == SYSTEM_PID) || (port != 0 && port < 1024) {
+        crate::tr!(
+            format!("윈도우·다른 서비스가 쓰는 포트입니다 — 포트를 {alt} 처럼 1024 위의 빈 번호로 바꾸세요(상대 쪽 포트도 같이)"),
+            format!("Windows or another service uses this port — change the port to a free number above 1024 such as {alt} (and on the other side too)")
+        )
+    } else {
+        crate::tr!(
+            format!("포트를 {alt} 처럼 다른 번호로 바꾸거나, 그 포트를 쓰는 프로그램(다른 PortDock 창 포함)을 끄세요"),
+            format!("Change the port (e.g. {alt}) or close the program using it (another PortDock window included)")
+        )
+    }
+}
+
+/// 바인드 오류에 안내를 덧붙인다 — «사용 중» 이면 쥔 프로그램과 할 일, «없는 주소» 면 이 PC 주소 목록. 윈도우 원문은 맨 끝 괄호
 pub fn bind_error(e: &std::io::Error, addr: std::net::SocketAddr, udp: bool) -> String {
     let base = format!("{addr}: {}", crate::oserr::net(e));
     match (e.raw_os_error(), e.kind()) {
-        (Some(10048), _) | (_, std::io::ErrorKind::AddrInUse) => format!("{base}{}", owner_hint(addr.port(), udp)),
+        (Some(10048), _) | (_, std::io::ErrorKind::AddrInUse) => {
+            let owner = port_owner(addr.port(), udp);
+            in_use_message(e, addr, owner)
+        }
         (Some(10049), _) | (_, std::io::ErrorKind::AddrNotAvailable) => {
             let h = address_hint();
             if h.is_empty() { base } else { format!("{base} — {h}") }
         }
         _ => base,
     }
+}
+
+fn in_use_message(e: &std::io::Error, addr: std::net::SocketAddr, owner: Option<PortOwner>) -> String {
+    let text = crate::oserr::net_text(e).unwrap_or_else(|| e.to_string());
+    let action = in_use_action(addr.port(), owner.as_ref());
+    format!("{addr}: {text}{} — {action} ({e})", owner_text(owner))
 }
 
 #[cfg(windows)]
@@ -333,5 +366,21 @@ mod tests {
             let msg = bind_error(&e, format!("127.0.0.1:{port}").parse().unwrap(), false);
             assert!(msg.starts_with(&format!("127.0.0.1:{port}")), "{msg}");
         }
+    }
+
+    #[test]
+    fn in_use_says_what_to_do_and_keeps_raw_last() {
+        let e = std::io::Error::from(std::io::ErrorKind::AddrInUse);
+        let raw = format!("({e})");
+        // 윈도우가 쥔 445 — 끄라고 하지 않고 1024 위 포트로
+        let m = in_use_message(&e, "0.0.0.0:445".parse().unwrap(), Some(PortOwner { pid: 4, name: Some("System".into()) }));
+        assert!(m.contains("윈도우 자신") && m.contains("5001") && m.contains("1024 위"), "{m}");
+        assert!(m.ends_with(&raw), "{m}");
+        // 보통 프로그램 — 다른 포트 또는 그 프로그램 끄기
+        let m = in_use_message(&e, "0.0.0.0:5020".parse().unwrap(), Some(PortOwner { pid: 1234, name: Some("app.exe".into()) }));
+        assert!(m.contains("app.exe (PID 1234)") && m.contains("5021") && m.contains("끄세요"), "{m}");
+        // 쥔 쪽을 모를 때도 할 일은 나온다
+        let m = in_use_message(&e, "0.0.0.0:502".parse().unwrap(), None);
+        assert!(m.contains("1024 위") && !m.contains("쥔"), "{m}");
     }
 }
