@@ -3,7 +3,7 @@ import Base from "../layouts/Base.astro";
 import DownloadBox from "../components/DownloadBox.astro";
 import AppShot from "../components/AppShot.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { REPO, type Lang, type Tool } from "../data/tools";
+import { REPO, isApp, type Lang, type Tool } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
 import { DEVICES, devPath } from "../data/devices";
@@ -114,6 +114,16 @@ const ld = {
             ))
           }
         </div>
+        {
+          isApp(tool) && (
+            <p class="note common-ai">
+              {ko
+                ? "모든 앱에 있는 것 — 머리줄 «AI» 단추(0.8.0, AI 에게 물어보기용 복사): 프로그램·연결 설정·이번 실행의 오류·최근 통신 기록(또는 점검 결과)을 AI 채팅에 붙여 넣을 글로 만들어 미리 보여 주고 클립보드에만 넣습니다. PortDock 은 보내지 않고, 붙여 넣으면 그 AI 서비스로 갑니다. 사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는 가립니다. "
+                : "In every app — the «AI» button in the title bar (0.8.0, copy for asking AI): builds text for an AI chat from the program, connection settings, errors in this session and recent traffic (or check results), shows a preview and puts it on the clipboard only. PortDock sends nothing; once pasted, it goes to that AI service. User folders, PC names, the last half of MAC addresses and public IPs are masked. "}
+              <a href={url(lang, "privacy/")}>{ko ? "개인정보처리방침" : "Privacy policy"} →</a>
+            </p>
+          )
+        }
       </section>
       {
         tool.uses && (

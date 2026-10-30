@@ -18,3 +18,8 @@
 /en/tools/webcam-test/
   ! Permissions-Policy
   Permissions-Policy: camera=(self), microphone=(), geolocation=()
+
+# 데이터 묶음 스키마 — /data/ 쪽·version.json 이 적은 형식(application/schema+json)과 같게(확장자 .json 기본값을 떼고 다시 건다)
+/data/schema.json
+  ! Content-Type
+  Content-Type: application/schema+json

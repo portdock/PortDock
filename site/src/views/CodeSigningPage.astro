@@ -88,7 +88,15 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               DNS 서버에 묻습니다. Wi-Fi 신호 보기(누를 때만)는 Windows 11 24H2 부터 위치 권한이 필요합니다. Wi-Fi 이름·블루투스 장치 이름은 저장하거나 보내지 않습니다.
             </li>
             <li>PLC Simulator 는 기본으로 이 PC 안(127.0.0.1)에서만 접속을 받고, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켤 때만 같은 망에서 접속할 수 있습니다.</li>
-            <li>통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.</li>
+            <li>통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다. TCP 중계의 «pcap 으로 저장» 도 사용자가 고른 파일에만 씁니다.</li>
+            <li>
+              <b>«AI» 복사</b>(12개 앱 머리줄의 «AI» 단추)는 미리보기 글을 클립보드에만 넣고 아무 데도 보내지 않습니다. 사용자가 AI 채팅에 붙여 넣으면 그 서비스로 갑니다. 글에서 사용자 폴더·윈도우 기본
+              PC 이름·MAC 뒤 3바이트·공인 IP 는 가리고, 사설 IP 는 기본으로 남깁니다(미리보기에서 함께 가리기 가능).
+            </li>
+            <li>
+              <b>PortDock MCP</b> 는 사용자가 지정한 장비 주소·포트로만 통신하고, 세션 기록은 이 PC 에만 남기며(30일 뒤 지움) 오류 보고·사용 통계를 보내지 않습니다. 도구 결과는 사용자가 쓰는 AI
+              클라이언트로 넘어가고, 그 뒤는 그 클라이언트의 정책을 따릅니다.
+            </li>
             <li>
               <b>오류 보고</b>는 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정의 «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만 오류 수집 서비스 Sentry 로 보냅니다.
               기본값은 «오류로 꺼지면 묻기» 라서 비정상 종료 뒤에도 사용자가 허락해야 보내고, «보내지 않기» 로 끌 수 있습니다.
@@ -148,7 +156,15 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               Bluetooth device names are never saved or sent.
             </li>
             <li>PLC Simulator accepts connections only from this PC (127.0.0.1) by default; other PCs on the network can connect only after you turn on «Allow other PCs to connect (0.0.0.0)».</li>
-            <li>Traffic, command lists, rules and settings stay on your PC.</li>
+            <li>Traffic, command lists, rules and settings stay on your PC. The TCP relay's «Save as pcap» writes only to the file you choose.</li>
+            <li>
+              <b>«AI» copy</b> (the «AI» button in the title bar of the 12 apps) puts the preview text on the clipboard only and sends it nowhere. If you paste it into an AI chat, it goes to
+              that service. User folders, default Windows PC names, the last 3 bytes of MAC addresses and public IPs are masked; private IPs are kept by default (the preview can mask them too).
+            </li>
+            <li>
+              <b>PortDock MCP</b> talks only to the device addresses and ports you give, keeps its session log on this PC (removed after 30 days) and sends no error reports or usage
+              statistics. Tool results go to the AI client you use, and that client's policy applies from there.
+            </li>
             <li>
               <b>Error reports</b> are sent to the error-tracking service Sentry only when you press send in the «!» report window, or set «Automatic error reports» to «Send automatically» in
               settings. The default is «Ask after a crash», so even after a crash nothing is sent without your permission; «Never send» turns it off.

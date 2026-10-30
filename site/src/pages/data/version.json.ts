@@ -1,7 +1,7 @@
 // 데이터 묶음 판 — /data/version.json (판·기준일·내용 해시·파일·바뀐 점). 받아 둔 사본이 최신인지 contentHash 로 견준다
 import type { APIRoute } from "astro";
 import { DEVICES, RELEASE, dataHome } from "../../data/devices";
-import { CC_BY_URL, DATASET_NAME, DATA_FILES, DEVICE_JSON, DEVICE_MD, changelog, citeText } from "../../lib/dataRelease";
+import { CC_BY_URL, DATASET_NAME, DATA_FILES, DEVICE_JSON, DEVICE_MD, VERSION_NOTE, changelog, citeText } from "../../lib/dataRelease";
 import { url } from "../../lib/i18n";
 
 export const GET: APIRoute = ({ site }) => {
@@ -13,6 +13,7 @@ export const GET: APIRoute = ({ site }) => {
       {
         name: DATASET_NAME,
         ...RELEASE,
+        versionNote: VERSION_NOTE,
         url: dataHome(site),
         about: abs(url("en", "data/")),
         license: CC_BY_URL,

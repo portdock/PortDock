@@ -1135,6 +1135,16 @@ details.more ul {
     right: 16px;
     top: 11px;
   }
+  /* 영어 메뉴 이름이 길어 390px 에서 «Contact» 가 셋째 줄로 넘어가던 것 — 간격·글자만 조금 줄인다 */
+  html[lang="en"] .top nav {
+    gap: 2px 6px;
+    font-size: 12.5px;
+  }
+  html[lang="en"] .top nav > a,
+  html[lang="en"] .menu summary {
+    padding-left: 1px;
+    padding-right: 1px;
+  }
   .hero h1 {
     font-size: 27px;
   }

@@ -32,14 +32,23 @@ const MCP = TOOLS.filter((x) => !isApp(x));
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: t.download, path: "download/" }]} />
       <h1>{t.download}</h1>
-      <p>{t.dlNote}</p>
+      <p>{t.dlNote} — <a href="#safe">{ko ? "아래 «안전 확인»" : "see «Is it safe?» below"}</a>{ko ? " 을 보세요." : "."}</p>
       {RELEASED && <p class="note">{ko ? `현재 버전 ${VERSION} · 프로그램 ${RELEASED_TOOLS.length}개 모두 같은 버전` : `Current version ${VERSION} · all ${RELEASED_TOOLS.length} programs share it`} · <a href={`${RELEASES}/latest`}>{ko ? "변경 내역" : "What's new"} →</a></p>}
       <p class="note only-phone">{ko ? "윈도우 PC 용 프로그램입니다. 휴대폰에서 받으면 실행할 수 없으니, 이 쪽 주소를 PC 로 보내 PC 에서 받으세요." : "These are Windows PC programs and will not run on a phone — send this page's address to your PC and download there."}</p>
+      {
+        RELEASED && (
+          <p class="btns dl-jump">
+            <a class="btn primary" href="#dl-table">{ko ? `최신 ${VERSION} 받기 — 프로그램 표로 ↓` : `Get the latest ${VERSION} — jump to the table ↓`}</a>
+            {MCP.length > 0 && <a class="btn" href="#mcp-dl">{ko ? "PortDock MCP ↓" : "PortDock MCP ↓"}</a>}
+          </p>
+        )
+      }
       {!RELEASED && <p><b>{t.dlSoon}</b> — {t.dlSoonNote} <a href={REPO}>GitHub →</a></p>}
     </div>
   </header>
   <div class="wrap" style="padding-top:28px">
-    <PickApp lang={lang} />
+    {/* 상자의 프로그램 이름은 이 쪽 표의 그 줄로 간다(#dl-<id>, :target 으로 강조) */}
+    <PickApp lang={lang} toRow />
     {/* 어느 걸 받을지 — 질문 2개. 스크립트가 없어도 세 줄 안내는 그대로 읽힌다 */}
     <section class="pick card" id="pick" aria-labelledby="pick-h">
       <h2 id="pick-h">{ko ? "어느 걸 받아야 하나요?" : "Which one should I get?"}</h2>
@@ -63,14 +72,14 @@ const MCP = TOOLS.filter((x) => !isApp(x));
         <p class="pick-out" aria-live="polite"></p>
       </form>
     </section>
-    <table class="t dl-table" data-pick="setup">
+    <table class="t dl-table" id="dl-table" data-pick="setup">
       <thead>
         <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}<br /><small>{SIZE.setup[lang]}</small></th><th class="c-offline">{t.dlOffline}<br /><small>{SIZE.offline[lang]}</small></th><th class="c-portable">{t.dlPortable}<br /><small>{SIZE.portable[lang]}</small></th><th>{t.docs}</th></tr>
       </thead>
       <tbody>
         {
           APPS.map((x) => (
-            <tr>
+            <tr id={`dl-${x.id}`}>
               <td class="dl-name">
                 {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="28" height="28" loading="lazy" decoding="async" />}
                 <span>
@@ -156,6 +165,24 @@ const MCP = TOOLS.filter((x) => !isApp(x));
       }
     </section>
   </div>
+  <style>
+    .dl-jump {
+      margin-top: 10px;
+    }
+    #dl-table,
+    .dl-table tr,
+    #mcp-dl {
+      scroll-margin-top: 76px;
+    }
+    .dl-table tr:target td {
+      background: var(--soft);
+    }
+    .dl-table tr:target,
+    #mcp-dl:target {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+  </style>
   <script>
     // 질문 2개 → 권하는 파일 종류를 표에서 강조(설치판·오프라인 설치판·휴대판)
     const form = document.querySelector<HTMLFormElement>(".pick-q");

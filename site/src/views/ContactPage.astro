@@ -8,6 +8,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { REPO, type Lang } from "../data/tools";
 import { UI } from "../lib/i18n";
 import { CONTACT_EMAIL } from "@shared/links";
+import EmailOff from "../components/EmailOff.astro";
 
 interface Props {
   lang: Lang;
@@ -121,19 +122,23 @@ const L = ko
           <div class="card mail-card">
             <h2>{L.mailTitle}</h2>
             <p>{L.noForm}</p>
-            <p class="mail-line">
-              <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-              <button class="btn" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
-            </p>
+            <EmailOff>
+              <p class="mail-line">
+                <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                <button class="btn" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
+              </p>
+            </EmailOff>
           </div>
         )
       }
       {
         siteKey && (
-          <p class="note mail-line">
-            {L.orMail} <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-            <button class="btn tight" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
-          </p>
+          <EmailOff>
+            <p class="note mail-line">
+              {L.orMail} <a class="mono" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+              <button class="btn tight" type="button" data-copy={CONTACT_EMAIL} data-done={L.copied}>{L.copy}</button>
+            </p>
+          </EmailOff>
         )
       }
       <h2 class="sub-h">{L.public}</h2>

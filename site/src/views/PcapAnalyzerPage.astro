@@ -1,7 +1,8 @@
 ---
 // 웹 도구: 산업 통신 pcap 해석기 — Wireshark·tcpdump·pktmon 으로 뜬 .pcap/.pcapng 를 끌어 놓으면 Modbus TCP·MC 프로토콜(3E·4E)의
 // 요청/응답 짝·응답 시간·무응답·예외/종료 코드를 연결·장치·함수별로 집계한다. 풀이는 lib/pcapRead.ts·pcapAnalyze.ts(Web Worker 에서),
-// 프레임 칸마다 풀이는 기존 Modbus·MC 해석기로 넘긴다(주소의 # 뒤 — 서버로 가지 않음). 이 도구 코드는 네트워크 요청을 하지 않는다.
+// 프레임 칸마다 풀이는 기존 Modbus·MC 해석기로 넘긴다(주소의 # 뒤 — 서버로 가지 않음). 이 도구 코드가 하는 네트워크 요청은
+// «예시 캡처로 보기» 를 누를 때 이 사이트의 예시 파일(/tools/pcap-analyzer/sample.pcapng, 빌드 때 lib/pcapSample.ts 로 만든 합성 캡처)을 받는 것뿐이다.
 // 산업 프로토콜이 아닌 통신은 풀지 않고 개수만 센다. 광고는 본문 아래에만(AdSlot).
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
@@ -10,6 +11,7 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
+import { samplePcapng } from "../lib/pcapSample";
 
 interface Props {
   lang: Lang;
@@ -17,13 +19,19 @@ interface Props {
 const { lang } = Astro.props;
 const ko = lang === "ko";
 const PATH = "tools/pcap-analyzer/";
+const SAMPLE = "/tools/pcap-analyzer/sample.pcapng";
+const sampleKb = Math.max(1, Math.round(samplePcapng().length / 1024));
 const L = ko
   ? {
       title: "산업 통신 pcap 해석기",
       desc: "Wireshark·pktmon 으로 뜬 .pcap·.pcapng 를 끌어 놓으면 Modbus TCP·MC(3E·4E)의 요청·응답 짝, 응답 시간, 무응답, 예외·종료 코드를 연결·장치별로 보여 줍니다.",
       drop: "캡처 파일을 여기에 끌어 놓거나 눌러서 고르세요",
       dropNote: ".pcap · .pcapng · .cap — 200MB 까지",
-      privacy: "파일은 이 브라우저 안에서만 처리합니다 — 어디에도 올리지 않고, 사용 통계에도 파일 이름·내용을 넣지 않습니다. IP 주소는 화면에만 보이고, CSV 에는 고를 때만 들어갑니다.",
+      privacy: "파일은 이 브라우저 안에서만 처리하고 어디에도 올리지 않습니다. IP 주소는 화면에만 보이고, CSV 에는 고를 때만 들어갑니다.",
+      picked: "다른 파일은 여기를 누르거나 끌어 놓아 다시 고르기",
+      sampleBtn: "예시 캡처로 보기",
+      sampleDl: `예시 캡처 내려받기 (.pcapng, ${sampleKb}KB)`,
+      sampleNote: "직접 만든 합성 파일 — Modbus TCP 예외·무응답, MC 종료 코드 C059 가 들어 있습니다. 캡처가 없을 때 결과 모양을 먼저 보세요.",
       mbPorts: "Modbus TCP 포트",
       mbHelp: "쉼표·범위(1502-1505)",
       mcPorts: "MC 프로토콜 포트",
@@ -59,7 +67,11 @@ const L = ko
       desc: "Drop a Wireshark or pktmon .pcap/.pcapng to see Modbus TCP and MC (3E/4E) request/response pairs, response times, missing replies and exception codes.",
       drop: "Drop a capture file here, or click to choose one",
       dropNote: ".pcap · .pcapng · .cap — up to 200 MB",
-      privacy: "The file is processed only inside this browser — it is not uploaded anywhere, and usage statistics carry no file name or content. IP addresses are shown on screen only and go into the CSV only if you choose.",
+      privacy: "The file is processed only inside this browser and is not uploaded anywhere. IP addresses are shown on screen only and go into the CSV only if you choose.",
+      picked: "Click here or drop another file to choose again",
+      sampleBtn: "Open the sample capture",
+      sampleDl: `Download the sample (.pcapng, ${sampleKb} KB)`,
+      sampleNote: "A synthetic file made for this page — with a Modbus TCP exception, a missing reply and MC end code C059. See what the results look like before you have a capture.",
       mbPorts: "Modbus TCP ports",
       mbHelp: "comma separated, ranges like 1502-1505",
       mcPorts: "MC protocol ports",
@@ -115,12 +127,17 @@ const ld = {
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pa" data-lang={lang} data-mb={url(lang, "tools/modbus-decoder/")} data-mc={url(lang, "tools/mc-decoder/")}>
+    <form class="calc card" id="pa" data-lang={lang} data-mb={url(lang, "tools/modbus-decoder/")} data-mc={url(lang, "tools/mc-decoder/")} data-sample={SAMPLE} data-picked={L.picked}>
       <label class="drop" id="drop">
         <input type="file" id="file" accept=".pcap,.pcapng,.cap,.ntar,application/vnd.tcpdump.pcap" />
-        <b>{L.drop}</b>
-        <span class="note">{L.dropNote}</span>
+        <b id="drop-title">{L.drop}</b>
+        <span class="note" id="drop-note">{L.dropNote}</span>
       </label>
+      <p class="sample-row">
+        <button type="button" class="btn tight" id="sample">{L.sampleBtn}</button>
+        <a href={SAMPLE} download="portdock-sample.pcapng">{L.sampleDl}</a>
+        <span class="note">{L.sampleNote}</span>
+      </p>
       <p class="note privacy">{L.privacy}</p>
       <div class="row">
         <label class="fld">
@@ -235,8 +252,23 @@ const ld = {
       align-items: center;
       flex-wrap: wrap;
     }
-    #busy[hidden] {
+    #busy[hidden],
+    #again[hidden] {
       display: none;
+    }
+    .drop.has-file {
+      border-style: solid;
+      border-color: var(--accent);
+    }
+    .sample-row {
+      display: flex;
+      gap: 6px 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 0;
+    }
+    .sample-row .note {
+      flex: 1 1 100%;
     }
     #busy progress {
       flex: 1 1 200px;
@@ -259,6 +291,7 @@ const ld = {
     #out :global(h2) {
       font-size: 19px;
       margin: 22px 0 8px;
+      scroll-margin-top: 76px;
     }
     #out :global(.scroll) {
       overflow-x: auto;
@@ -398,6 +431,10 @@ const ld = {
     const prog = g<HTMLProgressElement>("prog");
     const busyText = g<HTMLElement>("busy-text");
     const again = g<HTMLButtonElement>("again");
+    const dropTitle = g<HTMLElement>("drop-title");
+    const dropNote = g<HTMLElement>("drop-note");
+    const sampleBtn = g<HTMLButtonElement>("sample");
+    const size = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
     let worker: Worker | null = null;
     let lastFile: File | null = null;
 
@@ -468,6 +505,10 @@ const ld = {
       out.replaceChildren();
       lastFile = f;
       again.hidden = true;
+      // 고른 파일을 칸에 보인다 — 고른 뒤에도 «끌어 놓으세요» 그대로면 아무 일도 안 일어난 것처럼 보인다
+      drop.classList.add("has-file");
+      dropTitle.textContent = `${f.name} · ${size(f.size)}`;
+      dropNote.textContent = form.dataset.picked ?? "";
       if (f.size > MAX) {
         err.textContent = t(
           `파일이 ${(f.size / 1048576).toFixed(0)}MB 입니다 — 200MB 까지 읽습니다. Wireshark 의 «파일 → 지정한 패킷 내보내기»(필터 modbus 또는 tcp.port==5000) 나 editcap -c 로 잘라 오세요.`,
@@ -500,6 +541,13 @@ const ld = {
           stop();
           again.hidden = false;
           render(m.result);
+          // 결과가 첫 화면 밖에 생기므로 요약으로 데려가고 화면 읽기 프로그램도 그곳부터 읽게 한다
+          const h = out.querySelector<HTMLElement>("h2");
+          if (h) {
+            h.tabIndex = -1;
+            h.focus({ preventScroll: true });
+            h.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+          }
         }
       };
       w.onerror = (e) => {
@@ -529,6 +577,20 @@ const ld = {
       err.textContent = t("취소했습니다.", "Cancelled.");
     });
     again.addEventListener("click", () => lastFile && run(lastFile));
+    // 예시 캡처 — 이 사이트의 합성 파일을 받아 고른 파일처럼 푼다
+    sampleBtn.addEventListener("click", async () => {
+      err.textContent = "";
+      sampleBtn.disabled = true;
+      try {
+        const r = await fetch(form.dataset.sample!);
+        if (!r.ok) throw new Error(String(r.status));
+        run(new File([await r.arrayBuffer()], "portdock-sample.pcapng"));
+      } catch (e) {
+        err.textContent = t(`예시 파일을 받지 못했습니다: ${(e as Error).message}`, `Could not load the sample file: ${(e as Error).message}`);
+      } finally {
+        sampleBtn.disabled = false;
+      }
+    });
     form.addEventListener("submit", (e) => e.preventDefault());
 
     // ---------------------------------------------------------------- 결과 그리기

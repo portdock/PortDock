@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { DATA_DIR, deviceFiles, loadSchema, validateSchema } from "./devices-check.mjs";
-import { bundle, bundleSchema, changelog, citeText, dataRelease } from "../site/src/lib/dataRelease.ts";
+import { bundle, bundleSchema, changelog, citeText, dataRelease, versionLabel } from "../site/src/lib/dataRelease.ts";
 import { devicesDigest } from "../site/src/lib/devicesExport.ts";
 
 const devices = deviceFiles().map((f) => JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), "utf8")));
@@ -46,7 +46,10 @@ test("판·기준일·해시·인용 문구", () => {
   const changed = structuredClone(devices);
   changed[0].registers[0].name.en += " x";
   assert.notEqual(dataRelease(changed).contentHash, r.contentHash);
-  assert.equal(citeText(r, HOME), `PortDock device register maps, v${r.version}, ${HOME}`);
+  // 같은 판 안의 고침을 가르도록 인용에는 판과 해시를 함께
+  assert.equal(versionLabel(r), `v${r.version} · ${r.contentHash}`);
+  assert.equal(citeText(r, HOME), `PortDock device register maps, v${r.version} · ${r.contentHash}, ${HOME}`);
+  assert.notEqual(citeText(dataRelease(changed), HOME), citeText(r, HOME));
 });
 
 test("바뀐 점: 모든 장비가 «더함» 에 한 번씩, 최근 날짜가 먼저", () => {

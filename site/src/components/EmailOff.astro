@@ -1,0 +1,6 @@
+---
+// 메일 주소 둘레 — Cloudflare 메일 가림(Email Obfuscation)은 주소를 JS 로 푸는 링크(/cdn-cgi/l/email-protection)로 바꿔
+// JS 없이 열면 «[email protected]» 로 보이고 링크는 404 로 간다. email_off 주석 안은 Cloudflare 가 건드리지 않는다(Cloudflare 문서 «Email Address Obfuscation»).
+---
+
+<Fragment set:html="<!--email_off-->" /><slot /><Fragment set:html="<!--/email_off-->" />

@@ -1,8 +1,9 @@
 ---
-// «무엇을 하려나요?» — 프로그램 12개를 목적으로 고르게 한다(첫 화면·내려받기).
-// 갈래마다 프로그램 1~3개(앞이 대표). 마지막 갈래는 설치 없는 웹 PC 하드웨어 테스트로 보낸다.
+// «무엇을 하려나요?» — 프로그램 13개(12 앱 + MCP)를 목적으로 고르게 한다(첫 화면·내려받기).
+// 갈래마다 프로그램 1~3개(앞이 대표). 웹 도구로 보내는 갈래(통신 기록 분석·PC 하드웨어 테스트)도 있다.
 // 프로그램 설명은 tools.ts 의 tagline 을 그대로 쓴다(코드에 있는 기능만).
-import { toolById, type Lang, type Tool } from "../data/tools";
+// toRow: 내려받기 쪽에서는 프로그램 이름이 소개 쪽이 아니라 그 쪽 표의 줄(#dl-<id>, MCP 는 #mcp-dl)로 간다.
+import { toolById, isApp, type Lang, type Tool } from "../data/tools";
 import { url } from "../lib/i18n";
 import { appIcon } from "../lib/appIcons";
 import { WEB_TOOLS } from "../data/webTools";
@@ -12,19 +13,32 @@ interface Props {
   lang: Lang;
   /** 제목 id(쪽 안에서 겹치지 않게) */
   id?: string;
+  /** 프로그램 링크를 내려받기 표의 줄로 */
+  toRow?: boolean;
 }
-const { lang, id = "pick-app" } = Astro.props;
+const { lang, id = "pick-app", toRow = false } = Astro.props;
 const ko = lang === "ko";
 const hwCount = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw").length;
 
-const PATHS: { q: { ko: string; en: string }; apps: Tool["id"][] }[] = [
-  { q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, apps: ["serial", "plot"] },
-  { q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, apps: ["modbus-master", "modbus-slave"] },
-  { q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, apps: ["netscan", "tcp", "udp"] },
-  { q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, apps: ["plc-simulator", "simulator", "modbus-slave"] },
-  { q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, apps: ["scpi", "plot"] },
-  { q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, apps: ["port-inspector", "hw-tester"] },
+type Item = { app: Tool["id"]; note?: { ko: string; en: string } } | { web: string; name: { ko: string; en: string }; note: { ko: string; en: string } };
+const PATHS: { q: { ko: string; en: string }; items: Item[] }[] = [
+  { q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, items: [{ app: "serial" }, { app: "plot" }] },
+  { q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, items: [{ app: "modbus-master" }, { app: "modbus-slave" }] },
+  { q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, items: [{ app: "netscan" }, { app: "tcp" }, { app: "udp" }] },
+  { q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, items: [{ app: "plc-simulator" }, { app: "simulator" }, { app: "modbus-slave" }] },
+  { q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, items: [{ app: "scpi" }, { app: "plot" }] },
+  { q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, items: [{ app: "port-inspector" }, { app: "hw-tester" }] },
+  { q: { ko: "AI 에서 장비 읽기 (MCP)", en: "Read devices from an AI client (MCP)" }, items: [{ app: "mcp" }] },
+  {
+    q: { ko: "통신 기록 분석 (pcap) — 응답 시간·무응답", en: "Analyse a traffic capture (pcap) — response times, missing replies" },
+    items: [
+      { web: "tools/pcap-analyzer/", name: { ko: "pcap 해석기", en: "pcap Analyzer" }, note: { ko: "Wireshark·pktmon 캡처를 브라우저에서 바로(설치 없음) — Modbus TCP·MC 요청/응답 짝", en: "Wireshark or pktmon captures in your browser, no install — Modbus TCP and MC request/response pairs" } },
+      { app: "tcp", note: { ko: "Wireshark 없이 HMI–PLC 사이에 끼워 중계하며 pcap 으로 저장", en: "Sit between HMI and PLC as a relay and save a pcap — no Wireshark" } },
+    ],
+  },
 ];
+for (const it of PATHS.flatMap((p) => p.items)) if ("web" in it && !WEB_TOOLS.some((w) => w.path === it.web)) throw new Error(`PickApp: 없는 웹 도구 ${it.web}`);
+const appHref = (x: Tool) => (toRow ? (isApp(x) ? `#dl-${x.id}` : "#mcp-dl") : url(lang, `${x.id}/`));
 ---
 
 <section class="pick-app" aria-labelledby={id}>
@@ -35,15 +49,29 @@ const PATHS: { q: { ko: string; en: string }; apps: Tool["id"][] }[] = [
         <div class="card">
           <h3>{p.q[lang]}</h3>
           <ul>
-            {p.apps.map(toolById).map((x) => (
-              <li>
-                <a href={url(lang, `${x.id}/`)}>
-                  {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="20" height="20" loading="lazy" decoding="async" />}
-                  <b>{x.name.replace("PortDock ", "")}</b>
-                </a>
-                <small>{x.tagline[lang]}</small>
-              </li>
-            ))}
+            {p.items.map((it) =>
+              "app" in it ? (
+                (() => {
+                  const x = toolById(it.app);
+                  return (
+                    <li>
+                      <a href={appHref(x)} data-row={toRow ? x.id : undefined}>
+                        {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="20" height="20" loading="lazy" decoding="async" />}
+                        <b>{x.name.replace("PortDock ", "")}</b>
+                      </a>
+                      <small>{(it.note ?? x.tagline)[lang]}</small>
+                    </li>
+                  );
+                })()
+              ) : (
+                <li>
+                  <a href={url(lang, it.web)}>
+                    <b>{it.name[lang]}</b>
+                  </a>
+                  <small>{it.note[lang]}</small>
+                </li>
+              ),
+            )}
           </ul>
         </div>
       ))

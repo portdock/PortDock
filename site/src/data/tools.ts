@@ -618,7 +618,7 @@ export const TOOLS: Tool[] = [
     id: "mcp",
     name: "PortDock MCP",
     file: "PortDock-MCP",
-    tagline: { ko: "AI 클라이언트용 MCP 서버 — 포트·Modbus·MC·SCPI 읽기 전용", en: "MCP server for AI clients — read-only ports, Modbus, MC and SCPI" },
+    tagline: { ko: "AI 클라이언트용 MCP 서버 — 포트·Modbus·MC·SCPI 읽기 + 이 PC 시뮬레이터에만 쓰기", en: "MCP server for AI clients — reads ports, Modbus, MC and SCPI; writes only to simulators on this PC" },
     assets: "mcp",
     shot: false,
     seo: {
@@ -640,7 +640,7 @@ export const TOOLS: Tool[] = [
     features: [
       { title: { ko: "읽기 도구 9개", en: "Nine read tools" }, body: { ko: "COM 포트 목록, Port Inspector 보고서, 시리얼 듣기(보내지 않음), Modbus 읽기(FC 01~04), MC 3E 일괄 읽기, SCPI 질의, 핑, 랜카드, 장비 레지스터 맵.", en: "COM port list, Port Inspector report, serial listening (sends nothing), Modbus reads (FC 01–04), MC 3E batch read, SCPI queries, ping, network adapters and device register maps." } },
       { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다(판정은 주소로만 — 중계 프로그램을 띄운 채 쓰지 마세요).", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting (the check is by address only — do not use it with a relay program running)." } },
-      { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다. 측정을 새로 시작하는 READ?·MEAS…? 는 다음 판부터 사용자가 허락할 때만 보냅니다.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused. From the next version, READ? and MEAS…?, which start a new measurement, are sent only when you allow it." } },
+      { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다. 측정을 새로 시작하는 READ?·MEAS…? 는 기본으로 거절하고, 사용자가 허락해 allow_measure 를 켠 호출만 보냅니다(0.8.0 부터). 마지막 값만 읽으려면 FETC?.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused. READ? and MEAS…?, which start a new measurement, are refused by default and sent only when you allow it with allow_measure (since 0.8.0). Use FETC? to read just the last value." } },
       { title: { ko: "세션 기록·속도 제한", en: "Session log and rate limits" }, body: { ko: "모든 호출을 이 PC 에 JSONL 로 남기고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 1분에 120번까지.", en: "Every call is kept on this PC as JSON lines and never sent out. The same target at most once per 100 ms, 120 calls a minute." } },
       { title: { ko: "개인정보 가림", en: "Personal data masked" }, body: { ko: "결과의 사용자 폴더 경로는 «~», MAC 주소는 «xx-…», 네트워크 이름은 «(hidden)» 으로 바꿉니다.", en: "User folder paths in results become «~», MAC addresses «xx-…» and network names «(hidden)»." } },
       { title: { ko: "설치 파일 하나", en: "One file to install" }, body: { ko: "Python·Node·Docker 없이 .mcpb(Claude Desktop 에서 열기) 또는 zip 의 exe 하나.", en: "No Python, Node or Docker: a .mcpb (open in Claude Desktop) or a single exe in a zip." } },

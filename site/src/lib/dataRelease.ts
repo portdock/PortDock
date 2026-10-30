@@ -1,6 +1,9 @@
 // 장비 맵 데이터 묶음의 판·인용·바뀐 점·묶음 스키마 — /data/ 쪽, /devices/all.json·index.json, /data/version.json·/data/schema.json,
 // llms.txt·llms-full.txt, tools/devices-export.mjs 가 같이 쓴다. 파일 읽기·쓰기 없이 데이터에서 저절로 만든다(손으로 적는 판 번호 없음).
 //   판(version)   = 모든 출처 확인일(sources[].checked) 중 가장 늦은 날의 «YYYY.MM» — 인용 문구의 vYYYY.MM
+//                   한 달에 여러 번 바뀌면 판은 같으므로, 인용·표시는 늘 «v판 · 내용 해시» 로 함께 적는다(citeText).
+//                   판을 «바뀔 때마다 증가(v2026.10.5)» 로 바꾸지 않은 까닭: 공개한 schema.json 이 판 모양 ^YYYY.MM$ 를 약속했고,
+//                   확인일만으로 매긴 증가 번호는 확인일을 바꾸지 않은 고침(오타 등)을 가르지 못한다 — 해시는 모든 고침을 가른다.
 //   기준일(date)  = 그 가장 늦은 확인일(YYYY-MM-DD)
 //   내용 해시     = 장비 JSON 을 id 순으로 이은 것의 SHA-256 앞 12자리 — 같은 판 안에서 데이터가 고쳐져도 구별된다
 //   바뀐 점       = 장비마다 첫 확인일(더한 날)·마지막 확인일(출처를 더하거나 다시 확인한 날)로 묶는다
@@ -40,9 +43,13 @@ export function dataRelease(devices: Device[]): Release {
   };
 }
 
-/** 인용 문구 — «PortDock device register maps, v2026.10, https://portdock.dev/devices/» */
-export const citeText = (r: Release, home: string) => `${DATASET_NAME}, v${r.version}, ${home}`;
-export const citeTextKo = (r: Release, home: string) => `${DATASET_NAME_KO}(${DATASET_NAME}), v${r.version}, ${home}`;
+/** 판 표시 — «v2026.10 · 09ac1d0b2792»(같은 판 안에서 데이터가 바뀌면 해시가 바뀐다) */
+export const versionLabel = (r: Release) => `v${r.version} · ${r.contentHash}`;
+/** 인용 문구 — «PortDock device register maps, v2026.10 · 09ac1d0b2792, https://portdock.dev/devices/» */
+export const citeText = (r: Release, home: string) => `${DATASET_NAME}, ${versionLabel(r)}, ${home}`;
+export const citeTextKo = (r: Release, home: string) => `${DATASET_NAME_KO}(${DATASET_NAME}), ${versionLabel(r)}, ${home}`;
+/** version.json·all.json 의 판 설명 */
+export const VERSION_NOTE = "version = year.month (YYYY.MM) of the latest source check. The data can change several times within one version; contentHash changes with every change, so cite version and contentHash together.";
 
 export interface ChangeEntry {
   date: string;
@@ -94,7 +101,7 @@ export function bundleHead(r: Release, o: { home: string; schema: string }) {
     license: CC_BY_URL,
     citation: citeText(r, o.home),
     schema: o.schema,
-    note: "Facts from manufacturer manuals only, each with document, edition, pages and date checked. Not affiliated with the makers. Check the device manual before writing to a device. address = 0-based wire address; value = raw × scale.",
+    note: `Facts from manufacturer manuals only, each with document, edition, pages and date checked. Not affiliated with the makers. Check the device manual before writing to a device. address = 0-based wire address; value = raw × scale. ${VERSION_NOTE}`,
   };
 }
 

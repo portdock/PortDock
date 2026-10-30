@@ -1,5 +1,5 @@
 // 시험용 캡처 파일 만들기 — pcapRead·pcapAnalyze 시험과 브라우저 시험이 쓰는 작은 .pcap·.pcapng 를 바이트로 직접 만든다.
-// (공개 샘플 파일을 받지 않는다.) 페이지 코드는 이 파일을 쓰지 않는다.
+// (공개 샘플 파일을 받지 않는다.) 페이지(브라우저) 코드는 이 파일을 쓰지 않는다 — 빌드 때 pcapSample.ts 가 예시 캡처를 만드는 데만 쓴다.
 
 export interface IpPkt {
   src: string;

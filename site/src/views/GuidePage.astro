@@ -4,7 +4,7 @@ import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import UseNotice from "../components/UseNotice.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { toolById, REPO, type Lang } from "../data/tools";
+import { toolById, REPO, isApp, type Lang } from "../data/tools";
 import { GUIDES, type Guide } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
 import { groupOf } from "../data/webToolGroups";
@@ -22,8 +22,8 @@ const related = guide.related.map((s) => GUIDES.find((g) => g.slug === s)!);
 const webTools = (guide.webTools ?? []).map(webToolByPath);
 // PC 하드웨어 글(마이크·블루투스…)은 웹 테스트를 먼저, 그 밖의 글은 윈도우 프로그램을 먼저 보인다
 const webFirst = webTools.length > 0 && groupOf(webTools[0].path) === "hw";
-const appCards = tools.map((x) => ({ app: true, href: url(lang, `${x.id}/`), name: x.name, blurb: x.tagline[lang], go: ko ? "프로그램 보기(무료)" : "See the program (free)" }));
-const webCards = webTools.map((w) => ({ app: false, href: url(lang, w.path), name: w.name[lang], blurb: w.blurb[lang], go: ko ? "웹 도구 열기(설치 없음)" : "Open the web tool (no install)" }));
+const appCards = tools.map((x) => ({ app: true, mcp: !isApp(x), href: url(lang, `${x.id}/`), name: x.name, blurb: x.tagline[lang], go: ko ? "프로그램 보기(무료)" : "See the program (free)" }));
+const webCards = webTools.map((w) => ({ app: false, mcp: false, href: url(lang, w.path), name: w.name[lang], blurb: w.blurb[lang], go: ko ? "웹 도구 열기(설치 없음)" : "Open the web tool (no install)" }));
 // 이 글과 같은 종류의 장비 레지스터 맵(예: 인버터 글 → 인버터 장비)
 const kindDevices = DEVICES.filter((d) => guide.deviceKinds?.includes(d.kind));
 const here = new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href;
@@ -62,7 +62,7 @@ const ld = {
             <b>{ko ? "이 글에서 쓰는 도구" : "Tools for this guide"}</b>
             {(webFirst ? [...webCards.slice(0, 2), ...appCards.slice(0, 2)] : [...appCards.slice(0, 2), ...webCards.slice(0, 2)]).map((c) => (
               <a href={c.href}>
-                {c.name.replace("PortDock ", "")} <small>{c.app ? (ko ? "윈도우 프로그램 · 무료" : "Windows program · free") : ko ? "웹 · 설치 없음" : "web · no install"}</small>
+                {c.name.replace("PortDock ", "")} <small>{c.mcp ? (ko ? "AI 클라이언트용 · 무료" : "for AI clients · free") : c.app ? (ko ? "윈도우 프로그램 · 무료" : "Windows program · free") : ko ? "웹 · 설치 없음" : "web · no install"}</small>
               </a>
             ))}
           </p>

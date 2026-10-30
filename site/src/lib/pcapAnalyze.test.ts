@@ -260,3 +260,18 @@ test("SLL2·나노초 pcapng 의 응답 시간은 나노초까지", () => {
   const a = analyzeCapture(pcapng([{ link: 276, tsresol: 9 }], recs), { lang: "en" });
   assert.equal(a.rows[0].rtMs, 0.0015);
 });
+
+test("예시 캡처(사이트 /tools/pcap-analyzer/sample.pcapng): Modbus 예외·무응답, MC C059 가 보이고 작다", async () => {
+  const { samplePcapng } = await import("./pcapSample.ts");
+  const buf = samplePcapng();
+  assert.ok(buf.length < 64 * 1024, `크기 ${buf.length}`);
+  const a = analyzeCapture(buf, { lang: "ko" });
+  assert.equal(a.capture.format, "pcapng");
+  const mb = a.convs.find((c) => c.proto === "modbus")!;
+  const mc = a.convs.find((c) => c.proto === "mc")!;
+  assert.deepEqual([mb.requests, mb.ok, mb.exception, mb.timeout], [30, 28, 1, 1]);
+  assert.deepEqual([mc.requests, mc.ok, mc.exception], [12, 11, 1]);
+  assert.ok(a.codes.some((c) => c.proto === "mc" && /C059/.test(c.name)));
+  assert.ok(a.counts.otherTcpUdp >= 4);
+  assert.equal(a.overall.orphan, 0);
+});

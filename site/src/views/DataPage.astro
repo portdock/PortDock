@@ -4,7 +4,7 @@ import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { type Lang } from "../data/tools";
 import { CC_BY, DEVICES, LICENSE_URL, RAW, RELEASE, dataHome, devPath } from "../data/devices";
-import { DATA_FILES, DATASET_NAME, DEVICE_JSON, DEVICE_MD, changelog, citeText, citeTextKo, descIn } from "../lib/dataRelease";
+import { DATA_FILES, DATASET_NAME, DEVICE_JSON, DEVICE_MD, changelog, citeText, citeTextKo, descIn, versionLabel } from "../lib/dataRelease";
 import { url } from "../lib/i18n";
 import deviceSchema from "../../../data/devices/schema.json";
 import "../styles/devices.css";
@@ -76,7 +76,7 @@ const ld = {
     <div class="tbl">
       <table class="t">
         <tbody>
-          <tr><th>{L("판", "Version")}</th><td class="mono">v{R.version}</td></tr>
+          <tr><th>{L("판", "Version")}</th><td class="mono">{versionLabel(R)}</td></tr>
           <tr><th>{L("기준일", "Date")}</th><td>{R.date} {L("(가장 늦은 출처 확인일)", "(latest source check)")}</td></tr>
           <tr><th>{L("내용 해시", "Content hash")}</th><td class="mono">{R.contentHash} <small>{L("SHA-256 앞 12자리", "first 12 hex of SHA-256")}</small></td></tr>
           <tr><th>{L("크기", "Size")}</th><td>{L(`장비 ${R.devices}종 · 제조사 ${R.makers}곳 · 레지스터 ${R.registers}개`, `${R.devices} devices · ${R.makers} makers · ${R.registers} registers`)}</td></tr>
@@ -84,7 +84,7 @@ const ld = {
       </table>
     </div>
     <p class="note">
-      {L("판은 손으로 매기지 않습니다. 빌드 때 데이터에서 정합니다 — 판 = 가장 늦은 출처 확인일의 «연.월», 내용 해시 = 장비 JSON 전체의 SHA-256. 받아 둔 사본이 최신인지는 ", "Versions are not assigned by hand; the build derives them from the data — version = year.month of the latest source check, content hash = SHA-256 over all device JSON. To see whether your copy is current, compare ")}<a href="/data/version.json">version.json</a>{L(" 의 contentHash 와 견주면 됩니다.", "'s contentHash.")}
+      {L("판은 손으로 매기지 않습니다. 빌드 때 데이터에서 정합니다 — 판 = 가장 늦은 출처 확인일의 «연.월», 내용 해시 = 장비 JSON 전체의 SHA-256. 같은 판 안에서도 데이터가 바뀌면(한 달에 여러 번 더하거나 고치면) 해시가 바뀌므로, 판과 해시를 함께 적어 «v2026.10 · 해시» 처럼 인용합니다. 받아 둔 사본이 최신인지는 ", "Versions are not assigned by hand; the build derives them from the data — version = year.month of the latest source check, content hash = SHA-256 over all device JSON. The data can change several times within one version (devices added or fixed in the same month), and the hash changes every time, so cite both, as in «v2026.10 · hash». To see whether your copy is current, compare ")}<a href="/data/version.json">version.json</a>{L(" 의 contentHash 와 견주면 됩니다.", "'s contentHash.")}
     </p>
 
     <h2 id="files">{L("파일", "Files")}</h2>
