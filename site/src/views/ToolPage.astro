@@ -97,7 +97,7 @@ const ld = {
   </header>
   <div class="wrap two" style="padding-top:32px">
     <div>
-      <AppShot lang={lang} tool={tool} lazy={false} />
+      {tool.shot !== false && <AppShot lang={lang} tool={tool} lazy={false} />}
       <section>
         <h2>{t.whoTitle}</h2>
         <ul class="ticks">{tool.who.map((w) => <li>{w[lang]}</li>)}</ul>

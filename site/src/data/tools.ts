@@ -13,6 +13,7 @@ import { help as plotHelp } from "../../../apps/plot/src/help";
 import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help";
 import { help as plcSimulatorHelp } from "../../../apps/plc-simulator/src/help";
 import { help as hwTesterHelp } from "../../../apps/hw-tester/src/help";
+import { mcpHelp } from "./mcpHelp";
 
 /** 내장 장비 프로필 수 — data/devices 의 JSON 개수(앱 도움말 «내장 장비 N종» 과 같은 데이터). 숫자를 손으로 적지 않는다 */
 const DEVICE_COUNT = Object.keys(import.meta.glob("../../../data/devices/*/*.json")).length;
@@ -28,13 +29,15 @@ export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 export const RELEASED = true;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator" | "hw-tester";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator" | "hw-tester" | "mcp";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
   tagline: L;
   /** 아직 릴리스에 들어가지 않은 도구 — 소개·문서 쪽은 보이고, 내려받기 자리는 «곧 공개»(없는 파일로 가는 링크를 만들지 않는다). 그 판을 공개하면 지운다 */
   upcoming?: boolean;
+  /** 창이 없는 도구(MCP 서버) — 화면 그림을 두지 않는다 */
+  shot?: false;
   /** 검색 결과용 제목·설명 — 사람들이 치는 검색어(site/SEO.md)를 앞에, 길이는 tools/site-check.mjs 가 검사 */
   seo: { title: L; desc: L };
   summary: L;
@@ -607,6 +610,54 @@ export const TOOLS: Tool[] = [
       en: "Similar tools include PingPlotter (commercial, with a free edition) and WifiHistoryView (free, connect/disconnect history). PortDock Hardware Tester is free (GPL-3.0) and puts gateway and internet pings and Windows' disconnect reasons on one chart, together with a Bluetooth connection log.",
     },
     help: hwTesterHelp,
+  },
+  {
+    id: "mcp",
+    name: "PortDock MCP",
+    file: "PortDock-MCP",
+    tagline: { ko: "AI 클라이언트용 MCP 서버 — 포트·Modbus·MC·SCPI 읽기 전용", en: "MCP server for AI clients — read-only ports, Modbus, MC and SCPI" },
+    upcoming: true,
+    shot: false,
+    seo: {
+      title: { ko: "PortDock MCP — AI 에서 COM 포트·Modbus 읽기 (무료)", en: "PortDock MCP — Read COM Ports & Modbus from AI Clients" },
+      desc: {
+        ko: "Claude Desktop 등 AI 클라이언트가 COM 포트 점검·Modbus·MC·SCPI 값을 읽게 하는 무료 MCP 서버. 실장비 쓰기 없음, 로컬 기록.",
+        en: "Free MCP server that lets Claude Desktop and other AI clients read COM port reports, Modbus, MC protocol and SCPI values. No writes to real devices; local log.",
+      },
+    },
+    summary: {
+      ko: "AI 클라이언트(Claude Desktop·VS Code·Cursor 등)가 띄우는 창 없는 MCP 서버입니다. AI 가 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비의 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기는 이 PC(127.0.0.1)의 시뮬레이터에만 되고, 실장비에 쓰는 도구는 없습니다.",
+      en: "A windowless MCP server started by AI clients (Claude Desktop, VS Code, Cursor …). The AI reads this PC's COM ports and network adapters and reads Modbus, MC protocol and SCPI values from devices you name. Writes go only to simulators on this PC (127.0.0.1); there is no tool that writes to real devices.",
+    },
+    who: [
+      { ko: "COM 포트·USB 변환기 문제를 AI 에게 함께 보게 하려는 분", en: "Anyone who wants an AI assistant to look at COM port and USB adapter problems with them" },
+      { ko: "Modbus·MC·SCPI 장비 값을 AI 대화 안에서 읽어 보려는 개발자", en: "Developers who want to read Modbus, MC or SCPI values inside an AI conversation" },
+      { ko: "실장비 없이 시뮬레이터로 AI 도구 사용을 연습하려는 분", en: "People practising AI tool use against simulators instead of real devices" },
+    ],
+    features: [
+      { title: { ko: "읽기 도구 9개", en: "Nine read tools" }, body: { ko: "COM 포트 목록, Port Inspector 보고서, 시리얼 듣기(보내지 않음), Modbus 읽기(FC 01~04), MC 3E 일괄 읽기, SCPI 질의, 핑, 랜카드, 장비 레지스터 맵.", en: "COM port list, Port Inspector report, serial listening (sends nothing), Modbus reads (FC 01–04), MC 3E batch read, SCPI queries, ping, network adapters and device register maps." } },
+      { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다.", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting." } },
+      { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused." } },
+      { title: { ko: "세션 기록·속도 제한", en: "Session log and rate limits" }, body: { ko: "모든 호출을 이 PC 에 JSONL 로 남기고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 1분에 120번까지.", en: "Every call is kept on this PC as JSON lines and never sent out. The same target at most once per 100 ms, 120 calls a minute." } },
+      { title: { ko: "개인정보 가림", en: "Personal data masked" }, body: { ko: "결과의 사용자 폴더 경로는 «~», MAC 주소는 «xx-…», 네트워크 이름은 «(hidden)» 으로 바꿉니다.", en: "User folder paths in results become «~», MAC addresses «xx-…» and network names «(hidden)»." } },
+      { title: { ko: "설치 파일 하나", en: "One file to install" }, body: { ko: "Python·Node·Docker 없이 .mcpb(Claude Desktop 에서 열기) 또는 zip 의 exe 하나.", en: "No Python, Node or Docker: a .mcpb (open in Claude Desktop) or a single exe in a zip." } },
+    ],
+    steps: [
+      { ko: "PortDock-MCP.mcpb 를 Claude Desktop 에서 열어 설치(다른 클라이언트는 zip 의 exe 경로를 설정에)", en: "Open PortDock-MCP.mcpb in Claude Desktop (other clients: put the exe path from the zip in their settings)" },
+      { ko: "AI 에게 «COM 포트 목록 보여 줘» 처럼 묻기 — 도구를 부를 때 클라이언트가 확인을 받습니다", en: "Ask the AI something like «list my COM ports» — the client asks you before each tool call" },
+      { ko: "장비 값을 읽게 하려면 주소·포트·국번을 알려 주기. 연습은 127.0.0.1 의 Modbus Slave·PLC Simulator 로", en: "Give the address, port and unit to read a device. Practise with Modbus Slave or PLC Simulator on 127.0.0.1" },
+    ],
+    faq: [
+      {
+        q: { ko: "AI 가 장비 설정을 바꿀 수 있나요?", en: "Can the AI change device settings?" },
+        a: { ko: "아닙니다. 실장비에 쓰는 도구가 없습니다. 쓰기 두 개는 대상이 127.0.0.1·localhost 일 때만 동작합니다.", en: "No. There is no tool that writes to real devices. The two write tools only work when the target is 127.0.0.1 or localhost." },
+      },
+      {
+        q: { ko: "무엇을 바깥으로 보내나요?", en: "What does it send out?" },
+        a: { ko: "PortDock MCP 자체는 사용자가 지정한 장비 주소·포트로만 통신하고, 세션 기록은 이 PC 에만 남습니다. 도구 결과는 사용 중인 AI 클라이언트로 넘어가므로, 그 뒤는 그 클라이언트의 정책을 따릅니다.", en: "PortDock MCP itself only talks to the device addresses and ports you give, and the session log stays on this PC. Tool results go to the AI client you use, so from there that client's policy applies." },
+      },
+    ],
+    help: mcpHelp,
   },
 ];
 

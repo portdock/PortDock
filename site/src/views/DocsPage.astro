@@ -33,8 +33,8 @@ const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
 const width = (s: string) => [...s].reduce((n, c) => n + (/[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af]/.test(c) ? 2 : 1), 0);
 const descOf = (topics: string[]) =>
   ko
-    ? `${tool.name} 사용법(앱 도움말 F1 과 같음): ${topics.join(", ")} 등 ${sections.length}개 항목.`
-    : `${tool.name} manual (same as the in-app help, F1): ${topics.join(", ")} and more — ${sections.length} sections.`;
+    ? `${tool.name} 사용법${tool.shot === false ? "" : "(앱 도움말 F1 과 같음)"}: ${topics.join(", ")} 등 ${sections.length}개 항목.`
+    : `${tool.name} manual${tool.shot === false ? "" : " (same as the in-app help, F1)"}: ${topics.join(", ")} and more — ${sections.length} sections.`;
 const topics: string[] = [];
 for (const s of sections.slice(1, 6)) if (width(descOf([...topics, s.title])) <= 160) topics.push(s.title);
 const desc = descOf(topics);
