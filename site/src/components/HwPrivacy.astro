@@ -1,7 +1,10 @@
 ---
 // PC 하드웨어 테스트 쪽의 개인정보 한 줄 — 시험 칸 안에 둔다.
 // 이 도구들의 스크립트는 네트워크 요청을 하지 않는다(fetch·XHR·sendBeacon·WebSocket 없음). 장치 이름도 어디에도 보내지 않는다.
+// 다만 같은 쪽에 광고 스크립트(AdSense)가 붙을 수 있으므로 «이 쪽은 아무 요청도 안 한다» 로 쓰지 않는다 — 시험 데이터를 보내지 않는다고만 쓴다.
+// 아래 한 줄은 윈도우 프로그램 Hardware Tester(Wi-Fi·블루투스 기록)와 이름이 겹쳐 헷갈리지 않게 서로 안내한다.
 import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
 
 interface Props {
   lang: Lang;
@@ -12,15 +15,24 @@ const { lang, kind } = Astro.props;
 const ko = lang === "ko";
 const text = ko
   ? {
-      media: "개인정보: 카메라 영상·마이크 소리는 이 브라우저 안에서만 다루고 저장·업로드하지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않으며, 장치 이름도 보내지 않습니다.",
-      input: "개인정보: 누른 키·버튼·움직임은 이 브라우저 안에서만 세고 어디에도 보내지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않습니다.",
-      output: "개인정보: 이 도구는 화면·소리를 내기만 하고, 이 도구의 코드는 네트워크 요청을 하지 않습니다.",
+      media: "개인정보: 카메라 영상·마이크 소리는 이 브라우저 안에서만 다루고 저장·업로드하지 않습니다 — 카메라·마이크 데이터와 장치 이름은 밖으로 보내지 않습니다.",
+      input: "개인정보: 누른 키·버튼·움직임은 이 브라우저 안에서만 세고 밖으로 보내지 않습니다.",
+      output: "개인정보: 이 도구는 화면·소리를 내기만 하고, 시험 내용을 밖으로 보내지 않습니다.",
     }
   : {
-      media: "Privacy: camera video and microphone sound stay inside this browser and are never saved or uploaded. This tool's code makes no network requests and does not send device names.",
-      input: "Privacy: keys, buttons and movement are counted inside this browser and sent nowhere. This tool's code makes no network requests.",
-      output: "Privacy: this tool only produces picture or sound, and its code makes no network requests.",
+      media: "Privacy: camera video and microphone sound stay inside this browser and are never saved or uploaded — camera and microphone data and device names are not sent anywhere.",
+      input: "Privacy: keys, buttons and movement are counted inside this browser and not sent anywhere.",
+      output: "Privacy: this tool only produces picture or sound and sends nothing about your test anywhere.",
     };
 ---
 
-<p class="hw-privacy">{text[kind]}</p>
+<p class="hw-privacy">
+  {text[kind]}
+  {ko ? " 이 쪽의 광고(Google AdSense)는 따로 동작합니다 — " : " Ads on this page (Google AdSense) work separately — see the "}
+  <a href={url(lang, "privacy/")}>{ko ? "개인정보처리방침" : "privacy policy"}</a>.
+</p>
+<p class="hw-privacy">
+  {ko ? "Wi-Fi·인터넷 끊김이나 블루투스 연결·끊김을 시간대별로 기록하려면 윈도우 프로그램 " : "To log Wi-Fi or internet drops and Bluetooth connects and disconnects over time, use the Windows program "}
+  <a href={url(lang, "hw-tester/")}>PortDock Hardware Tester</a>
+  {ko ? " 를 씁니다(무료)." : " (free)."}
+</p>

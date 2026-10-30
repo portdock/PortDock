@@ -14,6 +14,9 @@ import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help
 import { help as plcSimulatorHelp } from "../../../apps/plc-simulator/src/help";
 import { help as hwTesterHelp } from "../../../apps/hw-tester/src/help";
 
+/** 내장 장비 프로필 수 — data/devices 의 JSON 개수(앱 도움말 «내장 장비 N종» 과 같은 데이터). 숫자를 손으로 적지 않는다 */
+const DEVICE_COUNT = Object.keys(import.meta.glob("../../../data/devices/*/*.json")).length;
+
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;
 
@@ -118,7 +121,7 @@ export const TOOLS: Tool[] = [
       { title: { ko: "국번 여러 개", en: "Several Slave IDs" }, body: { ko: "국번(슬레이브 ID) 1~247 을 여러 개 두고 따로 값을 줍니다.", en: "Run several Slave IDs (1–247), each with its own values." } },
       { title: { ko: "장애 주입", en: "Fault injection" }, body: { ko: "응답 지연, 무응답, CRC 깨기, MBAP 길이 틀리게, 예외 강제를 국번·함수·주소·N번째·확률로 골라 걸어 마스터의 타임아웃·재시도를 시험합니다.", en: "Delay, no response, broken CRC, wrong MBAP length or forced exceptions — targeted by Slave ID, function, address, every Nth request or probability — to test the master's timeouts and retries." } },
       { title: { ko: "쓰기가 보임", en: "See every write" }, body: { ko: "마스터가 쓴 칸이 잠깐 강조되고, 통신 기록과 통계가 남습니다.", en: "Cells written by the master flash, with a traffic log and statistics." } },
-      { title: { ko: "장비 흉내·표 저장", en: "Device profiles, saved tables" }, body: { ko: "내장 장비 45종(인버터·온도 조절기·전력 미터 등)의 레지스터 이름·형식을 예시 값과 함께 넣습니다. 표는 CSV 레지스터 맵(Modbus Master 와 같은 모양)이나 JSON 으로 내보내고 가져옵니다.", en: "Load register names and types of 45 built-in devices (inverters, temperature controllers, power meters …) with example values. Export and import tables as CSV register maps (same format as Modbus Master) or JSON." } },
+      { title: { ko: "장비 흉내·표 저장", en: "Device profiles, saved tables" }, body: { ko: `내장 장비 ${DEVICE_COUNT}종(인버터·온도 조절기·전력 미터 등)의 레지스터 이름·형식을 예시 값과 함께 넣습니다. 표는 CSV 레지스터 맵(Modbus Master 와 같은 모양)이나 JSON 으로 내보내고 가져옵니다.`, en: `Load register names and types of ${DEVICE_COUNT} built-in devices (inverters, temperature controllers, power meters …) with example values. Export and import tables as CSV register maps (same format as Modbus Master) or JSON.` } },
     ],
     steps: [
       { ko: "연결 방식(시리얼·TCP)과 포트·속도(또는 주소·포트)를 고르고, 필요하면 국번을 추가", en: "Pick the transport (serial or TCP) and port and baud rate (or address and port); add Slave IDs if needed" },
@@ -334,7 +337,7 @@ export const TOOLS: Tool[] = [
       { title: { ko: "여러 폴링 표", en: "Several poll tables" }, body: { ko: "표마다 국번·함수(01~04)·시작·개수·주기를 따로 두고, 탭에 오류 수가 보입니다. 시리얼 RTU·Modbus TCP·RTU over TCP.", en: "Each table has its own slave ID, function (01–04), start, count and interval, with an error count on its tab. Serial RTU, Modbus TCP and RTU over TCP." } },
       { title: { ko: "타입 값·바이트 순서", en: "Typed values and byte order" }, body: { ko: "U16·S16·U32·S32·F32·F64·문자열을 ABCD·CDAB·BADC·DCBA 로, HEX·BIN·40001 표기까지. Modbus Slave 와 같은 CSV 레지스터 맵을 주고받습니다.", en: "U16 to F64 and strings in ABCD/CDAB/BADC/DCBA, HEX/BIN and 40001 notation. Shares the CSV register map format with Modbus Slave." } },
       { title: { ko: "쓰기 미리보기", en: "Writes with preview" }, body: { ko: "칸을 두 번 눌러 05·06·0F·10 으로 쓰고, 보낼 바이트를 미리 봅니다. 한 칸도 0F·10 으로 보내는 «늘 FC15·16» 선택도 있습니다.", en: "Double-click to write with 05/06/0F/10 and preview the exact bytes. An «always FC15/16» option sends even single values with 0F/10." } },
-      { title: { ko: "장비 프로필", en: "Device profiles" }, body: { ko: "내장 장비 45종(인버터·온도 조절기·전력 미터 등)에서 고르면 폴링 표·칸 이름(단위·배율)·형식·국번과 시리얼 기본값을 채웁니다.", en: "Pick one of 45 built-in devices (inverters, temperature controllers, power meters …) to add poll tables with names (unit and scale), types, Slave ID and default serial settings." } },
+      { title: { ko: "장비 프로필", en: "Device profiles" }, body: { ko: `내장 장비 ${DEVICE_COUNT}종(인버터·온도 조절기·전력 미터 등)에서 고르면 폴링 표·칸 이름(단위·배율)·형식·국번과 시리얼 기본값을 채웁니다.`, en: `Pick one of ${DEVICE_COUNT} built-in devices (inverters, temperature controllers, power meters …) to add poll tables with names (unit and scale), types, Slave ID and default serial settings.` } },
       { title: { ko: "국번·주소 찾기", en: "Slave ID and address scan" }, body: { ko: "1~247 중 답하는 국번과 읽히는 주소 범위를 찾아 바로 표로 만듭니다.", en: "Find which Slave IDs (1–247) answer and which address ranges are readable, then turn them into tables." } },
       { title: { ko: "타임아웃·재시도·통계", en: "Timeouts, retries, statistics" }, body: { ko: "응답 기다림·재시도·요청 간격을 정하고, 표마다 요청·정상·타임아웃·CRC·예외와 응답 시간을 셉니다. 예외는 한국어로 풀어 줍니다.", en: "Set timeout, retries and delay; count requests, OK, timeouts, CRC errors and exceptions with response times per table. Exceptions are explained." } },
       { title: { ko: "값 기록·추세", en: "Value log and trends" }, body: { ko: "값을 폴링마다 또는 바뀔 때만 CSV 로 남기고, 고른 칸의 변화를 작은 그림으로 봅니다.", en: "Log values to CSV on every poll or on change, and watch chosen cells as small trend lines." } },
@@ -443,7 +446,7 @@ export const TOOLS: Tool[] = [
     id: "port-inspector",
     name: "PortDock Port Inspector",
     file: "PortDock-Port-Inspector",
-    tagline: { ko: "COM 포트 드라이버·문제 코드·절전 읽기와 연결 시험", en: "Read-only COM port inspector with a loopback test" },
+    tagline: { ko: "COM 포트·랜카드·장비 PC 설정·무선(Wi-Fi·블루투스) 읽기 전용 점검", en: "Read-only inspector for COM ports, network adapters, PC settings and wireless" },
     seo: {
       title: { ko: "PortDock Port Inspector — 무료 COM 포트 점검 (USB 시리얼)", en: "PortDock Port Inspector — Free COM Port Inspector (USB Serial)" },
       desc: {
@@ -452,8 +455,8 @@ export const TOOLS: Tool[] = [
       },
     },
     summary: {
-      ko: "COM 포트 하나를 고르면 장치 관리자·이벤트 뷰어·레지스트리를 따로 뒤져야 보이는 것을 한 화면에 모읍니다: 드라이버, 문제 코드와 뜻, USB 칩, FTDI 지연 타이머 같은 장치 설정, USB 절전, 최근 연결 기록, COM 번호 예약. 관리자 권한 없이 읽기만 하고, TX 와 RX 를 이어 두면 속도마다 왕복 시간을 잽니다.",
-      en: "Pick a COM port and see in one place what you would otherwise dig out of Device Manager, Event Viewer and the registry: the driver, problem code and its meaning, USB chip, device settings such as the FTDI latency timer, USB power saving, recent plug history and COM number reservations. It only reads, without admin rights, and with TX tied to RX it measures the round trip at each baud rate.",
+      ko: "COM 포트 하나를 고르면 장치 관리자·이벤트 뷰어·레지스트리를 따로 뒤져야 보이는 것을 한 화면에 모읍니다: 드라이버, 문제 코드와 뜻, USB 칩, FTDI 지연 타이머 같은 장치 설정, USB 절전, 최근 연결 기록, COM 번호 예약. 관리자 권한 없이 읽기만 하고, TX 와 RX 를 이어 두면 속도마다 왕복 시간을 잽니다. 탭을 바꾸면 이 PC 의 랜카드, 장비 PC 로서의 Windows 설정, Wi-Fi·블루투스도 같은 방식으로 읽습니다.",
+      en: "Pick a COM port and see in one place what you would otherwise dig out of Device Manager, Event Viewer and the registry: the driver, problem code and its meaning, USB chip, device settings such as the FTDI latency timer, USB power saving, recent plug history and COM number reservations. It only reads, without admin rights, and with TX tied to RX it measures the round trip at each baud rate. Other tabs read this PC's network adapters, its Windows settings as an equipment PC, and Wi-Fi and Bluetooth the same way.",
     },
     who: [
       { ko: "USB-시리얼 변환기가 안 잡히거나 가끔 끊기는 현장 엔지니어", en: "Field engineers whose USB-serial adapter is not detected or drops now and then" },
@@ -466,6 +469,9 @@ export const TOOLS: Tool[] = [
       { title: { ko: "절전·연결 기록", en: "Power saving and history" }, body: { ko: "전원 옵션의 USB 선택적 절전, 이 장치와 위 USB 장치의 «컴퓨터가 이 장치를 끌 수 있음», 이벤트 로그의 연결·드라이버 기록(7·30·90일).", en: "USB selective suspend from the power options, «Allow the computer to turn off this device» for the device and the USB devices above it, and plug and driver events from the event logs (7, 30 or 90 days)." } },
       { title: { ko: "COM 번호 예약", en: "COM number reservations" }, body: { ko: "Windows 가 예약해 둔 번호(ComDB), 지금 없는 장치가 쥔 번호, 주인 없는 번호, 여러 장치가 쥔 번호 — 새 변환기가 COM15 처럼 높은 번호를 받는 까닭을 봅니다.", en: "Numbers Windows keeps reserved (ComDB), numbers held by devices not connected now, orphan numbers and numbers held by more than one device — why a new adapter ends up on COM15." } },
       { title: { ko: "연결 시험", en: "Connection test" }, body: { ko: "TX–RX 루프백으로 속도마다 같음·잃음·바뀐 바이트와 1바이트 왕복 ms(중앙값·최대), 드라이버 오류 표시(ClearCommError). 2선 RS-485 변환기의 에코 여부도 알려 줍니다.", en: "A TX–RX loopback per baud rate: bytes same, lost and changed, 1-byte round trip in ms (median and max) and driver error flags (ClearCommError). It also tells whether a 2-wire RS-485 adapter echoes." } },
+      { title: { ko: "이 PC 랜카드", en: "Network adapters on this PC" }, body: { ko: "«랜카드 읽기» 로 랜카드마다 연결·링크 속도·이중·IPv4·게이트웨이와 장치 관리자 «고급» 값(점보 프레임·수신 버퍼·인터럽트 완화·EEE 등)·절전·받기 오류·네트워크 프로필과 방화벽 켜짐을 읽습니다. «GigE 카메라» 용도면 카메라 제조사 문서의 값을 출처와 나란히 보입니다.", en: "«Read adapters» shows, for each adapter, link, speed, duplex, IPv4 and gateway plus Device Manager «Advanced» values (jumbo frames, receive buffers, interrupt moderation, EEE …), power saving, receive errors, network profile and whether its firewall is on. The «GigE camera» purpose shows camera makers' published values with sources alongside." } },
+      { title: { ko: "이 PC — 장비 PC 설정", en: "This PC — equipment PC settings" }, body: { ko: "«이 PC 설정 읽기» 로 빠른 시작·절전·USB 선택적 절전·업데이트 재시작 정책·화면 보호기·시간 동기화와 최근의 예기치 않은 종료·하드웨어 오류 기록을 읽습니다. «장비 PC» 용도를 고르면 멈춤·재시작으로 이어질 수 있는 값에 «볼 것» 을 붙입니다.", en: "«Read this PC's settings» reads fast startup, sleep, USB selective suspend, update restart policy, screen saver, time sync and recent unexpected shutdowns and hardware errors. With the «Equipment PC» purpose, values that can lead to stops or restarts are marked «Worth a look»." } },
+      { title: { ko: "무선 — Wi-Fi·블루투스", en: "Wireless — Wi-Fi and Bluetooth" }, body: { ko: "«무선» 탭은 Wi-Fi 어댑터·드라이버·절전과 Windows 가 남긴 끊김 기록(이유별 건수), 블루투스 어댑터·서비스 상태·오류 기록과 블루투스 소리가 핸즈프리(통화용)인지를 관리자·위치 권한 없이 읽습니다. 핑을 보내지 않고, 내보낼 때 장치 이름은 가립니다.", en: "The «Wireless» tab reads the Wi-Fi adapter, driver, power saving and the disconnect records Windows keeps (counted by reason), plus the Bluetooth adapter, service state, error events and whether Bluetooth audio is in hands-free (call) mode — without admin or location permission. It sends no pings, and exports mask device names." } },
       { title: { ko: "읽기만, 결과는 그대로", en: "Read-only, plain results" }, body: { ko: "설정·드라이버를 바꾸지 않습니다(고치는 법은 도움말). 카드마다 «문제 없음(읽은 범위)·볼 것·문제 있음·읽지 못함», A/B 뒤바뀜·종단·바이어스·접지처럼 PC 가 볼 수 없는 것은 늘 따로 적고, 텍스트·JSON 으로 내보낼 때 사용자 폴더 경로는 가립니다.", en: "It never changes settings or drivers (the help explains manual fixes). Each card is marked «No issue found (in what was read) / Worth a look / Problem / Could not read»; what the PC cannot see — A/B swap, termination, bias, ground — is always listed; text and JSON exports mask user folder paths." } },
     ],
     steps: [
@@ -562,7 +568,7 @@ export const TOOLS: Tool[] = [
       { title: { ko: "«볼 곳» 요약·CSV", en: "Where-to-look summary and CSV" }, body: { ko: "게이트웨이까지 손실이 있으면 «공유기 쪽», 인터넷만 손실이면 «공유기 너머» 처럼 볼 곳만 알립니다(원인을 정하지 않음). 기록은 CSV 로 저장합니다.", en: "Says «router side» when loss reaches the gateway and «beyond the router» when only the internet target loses replies — where to look, not the cause. Records save as CSV." } },
       { title: { ko: "블루투스 연결 기록", en: "Bluetooth connection log" }, body: { ko: "짝지은 장치들의 «연결됨» 상태를 2초마다 읽어 연결·끊김 시각을 남깁니다. 장치 이름은 화면에만 보이고 저장·복사엔 «장치 N» 만 들어갑니다.", en: "Reads paired devices' «Connected» state every 2 s and logs connects and drops. Names are shown only on screen; saved and copied text uses «Device N»." } },
       { title: { ko: "블루투스 소리 모드·좌우 소리", en: "Bluetooth audio mode and left/right tones" }, body: { ko: "기본 출력이 스테레오(A2DP)인지 통화용 핸즈프리인지 보이고, 왼쪽·오른쪽·양쪽 시험 소리를 냅니다.", en: "Shows whether the default output is stereo (A2DP) or hands-free for calls, and plays left, right and both test tones." } },
-      { title: { ko: "Wi-Fi 신호·채널(누를 때만)", en: "Wi-Fi signal and channel (on request)" }, body: { ko: "«신호 보기» 를 누른 동안만 신호 세기·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(이름 없이)를 읽습니다. Windows 11 은 위치 권한이 필요합니다.", en: "Only while «Show signal» is on: signal strength, link speed, band, channel and how many nearby networks share each channel (no names). Windows 11 requires location permission." } },
+      { title: { ko: "Wi-Fi 신호·채널(누를 때만)", en: "Wi-Fi signal and channel (on request)" }, body: { ko: "«신호 보기» 를 누른 동안만 신호 세기·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(이름 없이)를 읽습니다. Windows 11 24H2 부터는 위치 권한이 필요합니다(거부해도 다른 기능은 됩니다).", en: "Only while «Show signal» is on: signal strength, link speed, band, channel and how many nearby networks share each channel (no names). From Windows 11 24H2 this needs location permission (the rest works without it)." } },
     ],
     steps: [
       { ko: "인터넷 대상·간격을 고르고 «기록 시작»", en: "Choose the internet target and interval, then «Start recording»" },

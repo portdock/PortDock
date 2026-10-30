@@ -558,7 +558,7 @@ export const GUIDES: Guide[] = [
     title: { ko: "Modbus 주소 0 기준 vs 40001 표기 — 매뉴얼 주소를 통신 주소로", en: "Modbus addresses: 0-based vs 40001 notation — from manual to wire" },
     seoTitle: { ko: "Modbus 주소 40001 vs 0 기준 — 매뉴얼 주소 읽는 법 — PortDock", en: "Modbus Address 40001 vs 0-Based: Reading the Manual — PortDock" },
     desc: {
-      ko: "같은 첫 레지스터를 매뉴얼마다 0, 1, 40001, 400001, 0h0001 로 적습니다. 국산 장비 매뉴얼의 실제 표기로 통신 주소(0 기준) 구하는 법과 값이 한 칸 밀릴 때 볼 것.",
+      ko: "같은 첫 레지스터를 매뉴얼마다 0, 1, 40001, 400001, 0h0001 로 적습니다. 실제 장비 매뉴얼의 표기로 통신 주소(0 기준) 구하는 법과 값이 한 칸 밀릴 때 볼 것.",
       en: "The same first register is written 0, 1, 40001, 400001 or 0h0001 depending on the manual. How to get the 0-based wire address, with real manual examples.",
     },
     body: {
@@ -5071,7 +5071,7 @@ export const GUIDES: Guide[] = [
     // Microsoft Learn «IAudioClient::Initialize»(장치가 독점 모드로 쓰이는 중이면 공유 모드 열기가 실패 — AUDCLNT_E_DEVICE_IN_USE).
     slug: "windows-microphone-not-working",
     date: "2026-10-30",
-    tools: [],
+    tools: ["port-inspector", "hw-tester"],
     related: ["bluetooth-headphones-cutting-out-windows", "keyboard-chatter-double-typing"],
     webTools: ["tools/mic-test/", "tools/speaker-test/"],
     title: { ko: "Windows 에서 마이크가 안 잡힐 때 — 권한·기본 장치·독점 모드·드라이버 확인 순서", en: "When Windows can't hear your microphone — permissions, default device, exclusive mode and driver, in order" },
@@ -5135,7 +5135,7 @@ export const GUIDES: Guide[] = [
           "에코 제거·잡음 억제·자동 음량을 켜고 끄며 «5초 녹음 후 듣기» 를 비교하면, 화상 회의 앱에서 들리는 소리(처리 켬)와 마이크 그대로의 소리(처리 끔)의 차이를 들을 수 있습니다.",
         ] },
         { h: "블루투스 헤드셋 마이크라면" },
-        { p: "블루투스 이어폰·헤드셋의 마이크를 쓰는 순간 헤드셋은 «핸즈프리» 방식으로 바뀌고, 이때는 음질이 통화용으로 떨어집니다. 마이크는 잡히는데 소리가 먹먹해졌다면 고장이 아니라 이 전환일 수 있습니다 — 블루투스 이어폰 끊김 글의 핸즈프리 절을 보세요." },
+        { p: "블루투스 이어폰·헤드셋의 마이크를 쓰는 순간 헤드셋은 «핸즈프리» 방식으로 바뀌고, 이때는 음질이 통화용으로 떨어집니다. 마이크는 잡히는데 소리가 먹먹해졌다면 고장이 아니라 이 전환일 수 있습니다 — 블루투스 이어폰 끊김 글의 핸즈프리 절을 보세요. 지금 블루투스 소리가 핸즈프리인지 스테레오인지는 PortDock Port Inspector 의 «무선» 탭이나 Hardware Tester 의 블루투스 소리 모드 표시로 확인할 수 있습니다(둘 다 무료 윈도우 프로그램)." },
         { h: "웹 도구로 범위 좁히기" },
         { p: "웹 마이크 테스트는 브라우저가 Windows 를 거쳐 마이크를 엽니다. 그래서 웹 도구에서 레벨이 움직이면 장치·드라이버·Windows 권한까지는 살아 있고, 남은 것은 문제가 난 그 앱의 마이크 선택·권한입니다. 웹 도구에서도 안 되면 위 1~4 단계 쪽입니다. 소리는 브라우저 안에서만 다루고 어디로도 보내지 않습니다." },
       ],
@@ -5193,7 +5193,7 @@ export const GUIDES: Guide[] = [
           "Toggle echo cancellation, noise suppression and auto gain and compare «Record 5 s and play» to hear the difference between what a video-call app sends (processing on) and the raw mic (processing off).",
         ] },
         { h: "If it is a Bluetooth headset mic" },
-        { p: "The moment the mic of Bluetooth earbuds or a headset is used, the headset switches to «hands-free» mode and sound drops to call quality. If the mic works but everything sounds muffled, that switch rather than a fault may be the reason — see the hands-free section of the Bluetooth headphones guide." },
+        { p: "The moment the mic of Bluetooth earbuds or a headset is used, the headset switches to «hands-free» mode and sound drops to call quality. If the mic works but everything sounds muffled, that switch rather than a fault may be the reason — see the hands-free section of the Bluetooth headphones guide. Whether Bluetooth audio is in hands-free or stereo mode right now is shown by the «Wireless» tab of PortDock Port Inspector or the Bluetooth audio mode in Hardware Tester (both free Windows programs)." },
         { h: "Narrow it down with the web tool" },
         { p: "The web mic test opens the mic through Windows like any other app. If the level moves there, the device, driver and Windows permissions are working, and what remains is the mic choice and permission of the app that fails. If it does not move there either, go back to steps 1–4. Sound is handled only inside the browser and is never sent anywhere." },
       ],
@@ -5433,10 +5433,10 @@ export const GUIDES: Guide[] = [
     // Microsoft Learn «Bluetooth Classic Audio»(A2DP 스테레오 재생, HFP 모노 재생·마이크, 협대역 8 kHz·광대역 16 kHz, Windows 11 은 앱이 마이크를 열거나 통신 재생을 만들면 HFP,
     // Windows 10 은 Stereo·Hands-Free 끝점이 따로이고 핸즈프리가 쓰이면 스테레오 출력은 버려짐),
     // Bluetooth Core Specification Part A Architecture(2.4 GHz ISM 대역을 무선 LAN·무선 전화·전자레인지와 함께 씀, 간섭원이자 피해자).
-    // 노트북 Wi-Fi·블루투스 콤보 칩 공존은 벤더 원문 없음 → «제품에 따라·비교» 로만(C). Port Inspector «무선» 탭은 아직 안 나와 쓰지 않는다.
+    // 노트북 Wi-Fi·블루투스 콤보 칩 공존은 벤더 원문 없음 → «제품에 따라·비교» 로만(C). Hardware Tester 의 블루투스 연결 기록(2초마다 «연결됨» 읽기)·소리 모드, Port Inspector «무선» 탭(0.5.0, 절전·서비스·BTHUSB/BTHPORT 오류·핸즈프리 끝점)은 각 앱 help.ts 기준.
     slug: "bluetooth-headphones-cutting-out-windows",
     date: "2026-10-30",
-    tools: [],
+    tools: ["hw-tester", "port-inspector"],
     related: ["windows-microphone-not-working", "keyboard-chatter-double-typing"],
     webTools: ["tools/speaker-test/", "tools/mic-test/"],
     title: { ko: "PC 에서 블루투스 이어폰이 끊길 때 — 절전·USB 3.0 근처·2.4 GHz·핸즈프리 모드 확인 순서", en: "Bluetooth headphones cutting out on a Windows PC — power saving, USB 3.0, 2.4 GHz, hands-free mode" },
@@ -5461,6 +5461,11 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
+        { h: "끊긴 시각 남기기·PC 쪽 값 한 번에 읽기" },
+        { ul: [
+          "연결이 언제 끊겼다 붙는지 시각으로 남기려면 윈도우 프로그램 PortDock Hardware Tester(무료)의 블루투스 연결 기록을 켜 둡니다. 짝지은 장치의 «연결됨» 상태를 2초마다 읽어 연결·끊김 시각을 남기고, 지금 기본 출력이 스테레오(A2DP)인지 핸즈프리인지도 보여 줍니다.",
+          "아래 4·5·6 단계의 PC 쪽 값 — 어댑터의 «전원 절약을 위해 컴퓨터가 이 장치를 끌 수 있음», Bluetooth 지원 서비스 상태, 블루투스 드라이버 오류 기록, 동글이 USB 허브를 거치는지, 블루투스 오디오가 핸즈프리 끝점인지 — 는 PortDock Port Inspector 의 «무선 (Wi-Fi·블루투스)» 탭이 관리자 권한 없이 한 번에 읽어 보여 줍니다(설정은 바꾸지 않음).",
+        ] },
         { h: "끊김을 재현해 두기 — 스피커 테스트" },
         { p: "웹 도구 «스피커 좌우 테스트» 에서 출력 장치로 이어폰을 고르고(고를 수 있는 브라우저에서), 음량을 낮춘 뒤 «잡음(쉬익)» 이나 톤을 틀어 둡니다. 계속 나는 소리는 끊김이 바로 들려서, 아래 단계마다 무엇을 바꿨을 때 끊김이 줄어드는지 비교하기 좋습니다. 소리는 브라우저가 그 자리에서 만들고 아무것도 내려받거나 보내지 않습니다." },
         { h: "1. 거리·위치" },
@@ -5521,6 +5526,11 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
+        { h: "Log when it drops, read the PC side at once" },
+        { ul: [
+          "To record when the connection drops and comes back, leave the Bluetooth connection log running in the free Windows program PortDock Hardware Tester. It reads paired devices' «Connected» state every 2 seconds, logs each connect and drop, and shows whether the default output is stereo (A2DP) or hands-free.",
+          "The PC-side values in steps 4, 5 and 6 below — the adapter's «Allow the computer to turn off this device to save power», the Bluetooth Support Service state, Bluetooth driver error events, whether the dongle sits behind a USB hub and whether Bluetooth audio is on a hands-free endpoint — are read in one go, without admin rights, by the «Wireless (Wi-Fi, Bluetooth)» tab of PortDock Port Inspector (it changes nothing).",
+        ] },
         { h: "Make the dropout repeatable — the speaker test" },
         { p: "In the «Left/Right Speaker Test» web tool, choose the earbuds as the output device (in browsers that allow it), turn the volume down and play «Noise (hiss)» or a tone. A continuous sound makes every gap audible, so you can compare what reduces the dropouts at each step below. The sound is generated in the browser; nothing is downloaded or sent." },
         { h: "1. Distance and placement" },

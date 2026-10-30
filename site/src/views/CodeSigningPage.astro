@@ -6,7 +6,6 @@ import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { REPO, type Lang } from "../data/tools";
 import { UI, url } from "../lib/i18n";
-import { ORG_PEOPLE_URL } from "@shared/links";
 
 interface Props {
   lang: Lang;
@@ -62,18 +61,18 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
 
           <h2>팀 역할</h2>
           <p>
-            PortDock 은 지금 메인테이너 한 사람이 만듭니다. 아래 세 역할을 모두 같은 사람이 맡으며, 구성원은 GitHub 조직{" "}
-            <a href={ORG_PEOPLE_URL}>portdock 구성원</a>에서 볼 수 있습니다. 구성원은 모두 GitHub(서명을 시작하면 서명 서비스에도)에 2단계 인증을 켜야 합니다.
+            PortDock 은 지금 메인테이너 한 사람이 만듭니다. 아래 세 역할을 모두 같은 사람(GitHub 조직 portdock 의 관리자 1명, 구성원 목록은 공개하지 않음)이 맡습니다.
+            구성원은 모두 GitHub(서명을 시작하면 서명 서비스에도)에 2단계 인증을 켜야 합니다.
           </p>
           <ul>
             <li>
-              <b>Authors (작성자)</b> — 검토 없이 저장소에 바로 반영할 수 있는 사람: <a href={ORG_PEOPLE_URL}>메인테이너</a>
+              <b>Authors (작성자)</b> — 검토 없이 저장소에 바로 반영할 수 있는 사람: 메인테이너
             </li>
             <li>
-              <b>Reviewers (검토자)</b> — 바깥 기여(풀 리퀘스트)를 반영 전에 검토하는 사람: <a href={ORG_PEOPLE_URL}>메인테이너</a>
+              <b>Reviewers (검토자)</b> — 바깥 기여(풀 리퀘스트)를 반영 전에 검토하는 사람: 메인테이너
             </li>
             <li>
-              <b>Approvers (승인자)</b> — 릴리스마다 서명 요청을 승인하는 사람: <a href={ORG_PEOPLE_URL}>메인테이너</a>
+              <b>Approvers (승인자)</b> — 릴리스마다 서명 요청을 승인하는 사람: 메인테이너
             </li>
           </ul>
 
@@ -83,8 +82,13 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
           </p>
           <p>이 프로그램은 사용자나 설치·운영하는 사람이 직접 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 실제 동작은 다음과 같습니다.</p>
           <ul>
-            <li>장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·네트워크 장비 찾기)은 사용자가 지정한 포트·주소·대역으로만 갑니다.</li>
-            <li>통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다. 새 버전 확인도 자동으로 하지 않습니다(누르면 릴리스 페이지를 브라우저로 엽니다).</li>
+            <li>장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·MC 프로토콜·네트워크 장비 찾기)은 사용자가 지정한 포트·주소·대역으로만 갑니다.</li>
+            <li>
+              끊김·지연 기록(Hardware Tester)은 «기록 시작» 을 누른 동안만 게이트웨이와 사용자가 고른 인터넷 주소 하나(기본 1.1.1.1)에 핑을, 정한 이름 하나(기본 example.com)를
+              DNS 서버에 묻습니다. Wi-Fi 신호 보기(누를 때만)는 Windows 11 24H2 부터 위치 권한이 필요합니다. Wi-Fi 이름·블루투스 장치 이름은 저장하거나 보내지 않습니다.
+            </li>
+            <li>PLC Simulator 는 기본으로 이 PC 안(127.0.0.1)에서만 접속을 받고, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켤 때만 같은 망에서 접속할 수 있습니다.</li>
+            <li>통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.</li>
             <li>
               <b>오류 보고</b>는 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정의 «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만 오류 수집 서비스 Sentry 로 보냅니다.
               기본값은 «오류로 꺼지면 묻기» 라서 비정상 종료 뒤에도 사용자가 허락해야 보내고, «보내지 않기» 로 끌 수 있습니다.
@@ -93,7 +97,7 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               <b>사용 통계</b>(선택, 기본 꺼짐)는 처음 실행할 때 한 번 묻고, 사용자가 «보내기» 를 고르거나 설정에서 «사용 통계 보내기» 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다.
               기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 구분만 보내고, 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 보내지 않습니다.
             </li>
-            <li><b>새 버전 확인</b>(선택, 기본 꺼짐, 0.3.0 부터)은 설정에서 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다.</li>
+            <li><b>새 버전 확인</b>(선택, 기본 꺼짐)은 설정에서 «새 버전 확인» 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다.</li>
             <li>설치판은 Microsoft Edge WebView2 가 없으면 Microsoft 에서 받아 설치합니다(오프라인 설치판·휴대판은 받지 않음).</li>
           </ul>
           <p>
@@ -116,18 +120,18 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
 
           <h2>Team roles</h2>
           <p>
-            PortDock is currently developed by a single maintainer, who holds all three roles. Members are listed in the GitHub organisation{" "}
-            <a href={ORG_PEOPLE_URL}>portdock people</a>. All members must use multi-factor authentication for GitHub (and for the signing service once signing starts).
+            PortDock is currently developed by a single maintainer — the one administrator of the GitHub organisation portdock (its member list is not public) — who holds all
+            three roles. All members must use multi-factor authentication for GitHub (and for the signing service once signing starts).
           </p>
           <ul>
             <li>
-              <b>Authors</b> — may modify the source code without additional review: <a href={ORG_PEOPLE_URL}>the maintainer</a>
+              <b>Authors</b> — may modify the source code without additional review: the maintainer
             </li>
             <li>
-              <b>Reviewers</b> — review every change proposed by non-committers (pull requests): <a href={ORG_PEOPLE_URL}>the maintainer</a>
+              <b>Reviewers</b> — review every change proposed by non-committers (pull requests): the maintainer
             </li>
             <li>
-              <b>Approvers</b> — approve each signing request: <a href={ORG_PEOPLE_URL}>the maintainer</a>
+              <b>Approvers</b> — approve each signing request: the maintainer
             </li>
           </ul>
 
@@ -137,8 +141,14 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
           </p>
           <p>In practice:</p>
           <ul>
-            <li>Device communication (serial, TCP, UDP, Modbus, SCPI, network device discovery) goes only to the ports, addresses and subnets you choose.</li>
-            <li>Traffic, command lists, rules and settings stay on your PC. The programs never check for updates on their own (the button opens the release page in your browser).</li>
+            <li>Device communication (serial, TCP, UDP, Modbus, SCPI, MC protocol, network device discovery) goes only to the ports, addresses and subnets you choose.</li>
+            <li>
+              The drop and latency log (Hardware Tester) pings the gateway and one internet address you choose (1.1.1.1 by default) and looks up one name (example.com by default)
+              at the DNS server, only while «Start recording» is on. The Wi-Fi signal view (only when you press it) needs location permission from Windows 11 24H2. Wi-Fi and
+              Bluetooth device names are never saved or sent.
+            </li>
+            <li>PLC Simulator accepts connections only from this PC (127.0.0.1) by default; other PCs on the network can connect only after you turn on «Allow other PCs to connect (0.0.0.0)».</li>
+            <li>Traffic, command lists, rules and settings stay on your PC.</li>
             <li>
               <b>Error reports</b> are sent to the error-tracking service Sentry only when you press send in the «!» report window, or set «Automatic error reports» to «Send automatically» in
               settings. The default is «Ask after a crash», so even after a crash nothing is sent without your permission; «Never send» turns it off.
@@ -148,7 +158,7 @@ const releaseYml = `${REPO}/blob/main/.github/workflows/release.yml`;
               «Send» or turned on «Send usage statistics» in settings. Only feature use counts, minutes open, program/Windows version, display language and installed/portable edition are
               sent — never traffic, IP addresses, ports, COM names, file paths or PC/user/device names.
             </li>
-            <li><b>Update check</b> (optional, off by default, from 0.3.0): only if you turn it on in settings, the program asks the GitHub API (api.github.com) once a day for the latest release. No data is sent; nothing is downloaded or installed.</li>
+            <li><b>Update check</b> (optional, off by default): only if you turn on «Check for new versions» in settings, the program asks the GitHub API (api.github.com) once a day for the latest release. No data is sent; nothing is downloaded or installed.</li>
             <li>If Microsoft Edge WebView2 is missing, the installer downloads it from Microsoft (the offline installer and portable edition do not).</li>
           </ul>
           <p>

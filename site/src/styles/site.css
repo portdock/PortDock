@@ -174,6 +174,22 @@ kbd,
   font-size: 13px;
   line-height: 1.4;
 }
+.menu .menu-head {
+  padding: 4px 10px 6px;
+  color: var(--muted);
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.menu .menu-foot {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+.menu .menu-foot a {
+  color: var(--accent);
+  font-weight: 600;
+}
 
 /* ---- 첫 화면 */
 .hero {
@@ -1097,8 +1113,9 @@ details.more ul {
 
 /* 휴대폰 — 머리줄을 두 줄로 줄이고 따라다니지 않게(화면 3분의 1을 가리던 것) */
 @media (max-width: 640px) {
+  /* 따라다니지 않되(static 이 아님) z-index 는 살려, 펼친 «프로그램 ▾» 메뉴가 아래 글자 위에 오게 */
   .top {
-    position: static;
+    position: relative;
   }
   .bar {
     position: relative;
@@ -1110,8 +1127,8 @@ details.more ul {
   }
   .top nav {
     flex-basis: 100%;
-    gap: 2px 12px;
-    font-size: 14.5px;
+    gap: 2px 9px;
+    font-size: 13.5px;
   }
   .top nav .lang {
     position: absolute;
@@ -1247,4 +1264,78 @@ details.more ul {
   font-weight: 500;
   vertical-align: middle;
   white-space: nowrap;
+}
+
+/* 가이드 첫 화면의 «이 글에서 쓰는 도구» 한 줄 */
+.guide-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 12px 0 0;
+  font-size: 15px;
+}
+.guide-tools a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  text-decoration: none;
+}
+.guide-tools small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* «무엇을 하려나요?» — 목적별 프로그램 고르기(첫 화면·내려받기) */
+.pick-app {
+  margin: 0 0 28px;
+}
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.pick-grid h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.pick-grid ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pick-grid li {
+  margin: 0 0 8px;
+}
+.pick-grid li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pick-grid li small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* 첫 화면 — PC 문제로 들어온 사람에게 한 줄 */
+.hero-pc {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* 휴대폰에서만 — 내려받기 «윈도우 PC 용» 안내 */
+.only-phone {
+  display: none;
+}
+@media (max-width: 640px), (pointer: coarse) and (max-width: 1024px) {
+  .only-phone {
+    display: block;
+  }
 }

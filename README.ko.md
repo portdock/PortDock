@@ -20,9 +20,9 @@
 | **PortDock Modbus Master** | Modbus RTU·TCP 마스터(폴링) — 여러 폴링 표, 타입 값(U16~F64·문자열·바이트 순서·40001 표기), 05·06·0F·10 쓰기, 국번·주소 범위 찾기, 내장 장비 프로필, 통신 풀이·통계, 값 CSV 기록, 추세 |
 | **PortDock SCPI** | SCPI 계측기 터미널 — LAN 소켓(5025)·RS-232, VISA 없이. 질의·쓰기·읽기와 응답 시간, `*IDN?` 식별, 오류 큐 비우기, `*OPC?` 기다림, 숫자 반복 측정(값 표·추세·CSV), 블록 데이터(#…) HEX 미리보기·파일 저장 |
 | **PortDock Plot** | 시리얼·TCP·UDP 로 들어오는 숫자를 실시간 그래프로 — 쉼표·빈칸·탭·세미콜론 글자 줄(자동 감지), Arduino 식 `이름:값`, 머리글 이름, 바이너리 프레임(시작 바이트·u8~f64·엔디언·체크섬). 채널 32개·왼/오른 축, 멈춤·커서·두 점 Δt·Δ값·확대, 통계 표, 받는 동안 CSV 기록, 화면 CSV·PNG 저장 |
-| **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인, 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
-| **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받음. *다음 릴리스에 들어갑니다.* |
-| **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(위치 권한, 이름은 읽지 않음). *다음 릴리스에 공개.* |
+| **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인. 그 밖에 «이 PC 랜카드»(링크 속도·이중·점보 프레임·절전, GigE 카메라 용도), «이 PC»(빠른 시작·절전·업데이트 재시작·시간 동기화·예기치 않은 종료 등 장비 PC 설정), «무선»(Wi-Fi 어댑터 절전·끊김 기록, 블루투스 어댑터·서비스·핸즈프리 소리) 탭. 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
+| **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 기본은 127.0.0.1 에서만 받고, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 같은 망에서 접속 가능. |
+| **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(Windows 11 24H2 부터 위치 권한, 네트워크 이름은 읽지 않음). 키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 사이트의 [PC 하드웨어 테스트](https://portdock.dev/tools/#g-hw)(브라우저, 설치 없음)로. |
 
 홈페이지: <https://portdock.dev>
 
@@ -62,14 +62,14 @@
 Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256
 ```
 
-나온 값을 같은 릴리스에 붙은 `SHA256SUMS.txt` 와 비교합니다. 릴리스마다 파일별 VirusTotal 검사 링크도 적어 둡니다.
+나온 값을 같은 릴리스에 붙은 [`SHA256SUMS.txt`](https://github.com/portdock/PortDock/releases/latest/download/SHA256SUMS.txt) 에서 같은 파일 이름 줄과 비교합니다(파일 이름 앞 64자가 같으면 됨, 대소문자 무관). 릴리스 본문마다 Microsoft Defender 검사 결과도 적어 둡니다.
 
 ### WebView2
 
 PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 11 에는 기본으로 들어 있고, 업데이트된 윈도우 10 에도 보통 있습니다.
 
 - 설치판은 WebView2 가 없으면 자동으로 받아 설치합니다(인터넷 필요).
-- **인터넷이 없는 PC**: WebView2 런타임을 함께 넣은 `PortDock-<App>-setup-offline.exe`(약 +130MB)를 쓰세요. 또는 다른 PC 에서 <https://developer.microsoft.com/microsoft-edge/webview2/> 의 *Evergreen Standalone Installer* 를 받아 옮겨 먼저 설치한 뒤 PortDock 을 설치·실행하세요. 휴대판은 WebView2 를 스스로 설치하지 않습니다.
+- **인터넷이 없는 PC**: WebView2 런타임을 함께 넣은 `PortDock-<App>-setup-offline.exe`(약 220MB — 일반 설치판 약 4MB, 휴대판 약 3MB)를 쓰세요. 또는 다른 PC 에서 <https://developer.microsoft.com/microsoft-edge/webview2/> 의 *Evergreen Standalone Installer* 를 받아 옮겨 먼저 설치한 뒤 PortDock 을 설치·실행하세요. 휴대판은 WebView2 를 스스로 설치하지 않습니다.
 
 ### 데이터 위치
 
@@ -108,10 +108,10 @@ npm run tauri -w portdock-serial -- build --no-bundle --config "$PWD\tools\porta
 > **상태: 지금은 서명하지 않음.** 지금 릴리스는 **서명되지 않았습니다.** 오픈소스 서명 프로그램(예: SignPath Foundation)에 다시 신청할 계획이며, 아래 범위·역할은 서명을 시작하면 그대로 적용합니다.
 
 - **서명하는 것**: 이 저장소의 소스로 GitHub Actions([release.yml](.github/workflows/release.yml))가 빌드한 PortDock 프로그램만. 릴리스마다 사람이 승인해야 서명됩니다.
-- **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다([portdock 조직 구성원](https://github.com/orgs/portdock/people)):
+- **팀 역할** — 지금은 메인테이너 한 사람이 모든 역할을 맡습니다(조직 구성원 목록은 공개하지 않음):
   - 작성자·검토자(Authors, Reviewers): 메인테이너 — 다른 사람의 풀 리퀘스트는 반영 전에 검토
   - 승인자(Approvers): 메인테이너
-- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 가고, 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 새 버전 확인(0.3.0 부터)은 설정의 *새 버전 확인(하루 한 번)* 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다(보내는 데이터 없음, 내려받기·설치 없음, 기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
+- **개인정보**: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. — 사용자나 설치·운영하는 사람이 요청하지 않으면 어떤 정보도 다른 네트워크 시스템으로 보내지 않습니다. 장비 통신은 사용자가 지정한 곳으로만 갑니다. Hardware Tester 는 기록을 켠 동안만 게이트웨이와 고른 인터넷 주소 하나(기본 1.1.1.1, 8.8.8.8 또는 직접 입력)에 핑을 보내고 정한 이름 하나(기본 example.com)를 DNS 서버에 묻습니다. Wi-Fi 신호 보기(누를 때만)는 Windows 11 24H2 부터 위치 권한이 필요하고, 블루투스 장치 이름은 화면에만 보이며 저장·전송하지 않습니다. 오류 보고는 «!» 문제 보고 창에서 보내기를 누르거나 설정의 *오류 자동 전송* 을 *묻지 않고 자동으로 보내기* 로 바꾼 경우에만 Sentry 로 보냅니다(기본값 *오류로 꺼지면 묻기*). 익명 사용 통계(기능별 사용 횟수·켜 둔 시간·프로그램/윈도우 버전·화면 언어·설치판/휴대판 — 통신 내용·IP·포트·COM 이름·파일 경로·PC/사용자/장비 이름은 빼고)는 처음 실행 때 묻는 창에서 *보내기* 를 고르거나 설정의 *사용 통계 보내기* 를 켠 경우에만 창을 닫을 때 Aptabase(EU)로 보냅니다(기본 꺼짐). 새 버전 확인은 설정의 *새 버전 확인(하루 한 번)* 을 켠 경우에만 하루 한 번 GitHub API(api.github.com)에 최신 릴리스를 묻습니다(보내는 데이터 없음, 내려받기·설치 없음, 기본 꺼짐). 설치판은 WebView2 가 없으면 Microsoft 에서 받습니다. 자세히: [개인정보처리방침](https://portdock.dev/privacy/) · [Sentry 개인정보처리방침](https://sentry.io/privacy/) · [Aptabase 개인정보처리방침](https://aptabase.com/legal/privacy) · [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) · [Microsoft 개인정보처리방침](https://privacy.microsoft.com/privacystatement)(WebView2). 설치 프로그램의 사용권 화면 맨 위에도 이 안내가 나옵니다.
 
 ## 라이선스
 

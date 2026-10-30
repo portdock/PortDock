@@ -12,7 +12,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     "# PortDock",
     "",
-    "> Free, open-source (GPL-3.0) Windows tools for field hardware testing: serial (COM), Modbus RTU/TCP master and slave, TCP, UDP, device simulator, network scan, SCPI instruments, live plotting and a read-only COM port inspector. This site also publishes an open dataset of Modbus register maps for Korean industrial devices (CC BY 4.0).",
+    `> Free, open-source (GPL-3.0) Windows tools for field hardware testing: serial (COM), Modbus RTU/TCP master and slave, TCP, UDP, device simulator, network scan, SCPI instruments, live plotting, a read-only COM port / network adapter / wireless inspector, an MC protocol (SLMP) PLC simulator and a Wi-Fi/Bluetooth drop recorder. This site also publishes an open dataset of Modbus register maps for ${DEVICES.length} industrial devices from Korean and international makers (CC BY 4.0), browser calculators and PC hardware tests (microphone, webcam, keyboard, mouse, monitor, speaker, gamepad).`,
     "",
     "## Device register maps (dataset)",
     "",
@@ -28,7 +28,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     "## Tools",
     "",
-    ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}${t.upcoming ? " (coming in the next release)" : ""}`),
+    ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}${t.upcoming ? " (not released yet)" : ""}`),
     "",
     "## Web tools (browser calculators, nothing is sent anywhere)",
     "",

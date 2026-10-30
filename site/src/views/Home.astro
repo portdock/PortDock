@@ -9,6 +9,8 @@ import { POPULAR_WEB_TOOLS } from "../data/webToolGroups";
 import { appIcon } from "../lib/appIcons";
 import { toolById } from "../data/tools";
 import { CONTACT_EMAIL } from "@shared/links";
+import PickApp from "../components/PickApp.astro";
+import { groupOf } from "../data/webToolGroups";
 
 interface Props {
   lang: Lang;
@@ -20,11 +22,13 @@ const home = new URL(url(lang), Astro.site).href;
 const root = new URL("/", Astro.site).href;
 // 첫 화면은 짧게 — 웹 도구·가이드는 몇 개만 보이고 «모두 보기» 로 잇는다
 const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
-const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order"];
+// 현장 글 6편 + PC 문제 글 2편(마이크·블루투스로 들어온 사람도 «내 사이트» 로 보이게)
+const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order", "bluetooth-headphones-cutting-out-windows", "windows-microphone-not-working"];
+const hwTests = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw");
 const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
 const sub = ko
-  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기·하드웨어 테스트 ${WEB_TOOLS.length}개.`
-  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators and hardware tests that run in your browser.`;
+  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${WEB_TOOLS.length}개.`
+  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`;
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {
@@ -53,8 +57,8 @@ const ld = [
   title="PortDock"
   seoTitle={ko ? "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램" : "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows"}
   description={ko
-    ? "시리얼 통신 프로그램, Modbus 마스터·슬레이브 시뮬레이터, TCP·UDP, SCPI, 실시간 그래프, COM 포트 점검까지 무료 윈도우 도구 10종. 오픈소스, 프로그램에 광고 없음."
-    : "Ten free Windows hardware test tools: serial terminal, Modbus master/slave, TCP, UDP, SCPI, live plotter, COM port inspector. Open source, no ads in the apps."}
+    ? `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 도구 ${RELEASED_TOOLS.length}종. 오픈소스.`
+    : `${RELEASED_TOOLS.length} free Windows test tools: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`}
   path=""
 >
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
@@ -68,6 +72,12 @@ const ld = [
           <a class="btn big" href={url(lang, "tools/")}>{ko ? "웹 도구 바로 쓰기" : "Use the web tools"} <small>{ko ? "설치 없이" : "no install"}</small></a>
         </div>
         <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
+        <p class="hero-pc">
+          {ko ? "PC 문제라면: " : "PC trouble? "}
+          <a href={url(lang, "tools/#g-hw")}>{ko ? "마이크·키보드·마우스·웹캠 테스트(브라우저)" : "Mic, keyboard, mouse and webcam tests (browser)"}</a>
+          {" · "}
+          <a href={url(lang, "hw-tester/")}>{ko ? "Wi-Fi·블루투스 끊김 기록(Hardware Tester)" : "Wi-Fi and Bluetooth drop log (Hardware Tester)"}</a>
+        </p>
       </div>
       <figure class="shot hero-shot">
         <img src={`/img/apps/serial.${lang}.webp`} width="1200" height="760" alt={ko ? "PortDock Serial 화면 — 받은 바이트 기록과 Modbus 응답 풀이" : "PortDock Serial screen — received bytes and a decoded Modbus reply"} fetchpriority="high" decoding="async" />
@@ -80,6 +90,7 @@ const ld = [
     <div class="wrap">
       <h2>{ko ? `윈도우 프로그램 ${RELEASED_TOOLS.length}종` : `${RELEASED_TOOLS.length} Windows programs`}</h2>
       <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
+      <PickApp lang={lang} />
       <div class="shots3">
         {["modbus-master", "netscan", "plot"].map((id) => {
           const x = toolById(id);
@@ -113,8 +124,12 @@ const ld = [
   <section class="block alt" id="web-tools">
     <div class="wrap">
       <h2>{ko ? "웹 도구 — 설치 없이 바로" : "Web tools — no install"}</h2>
-      <p class="lead">{ko ? "브라우저에서 바로 계산합니다. 입력한 값은 어디에도 보내지 않습니다." : "Calculate right in your browser. Nothing you type is sent anywhere."}</p>
+      <p class="lead">{ko ? "현장 계산기와 PC 하드웨어 테스트를 브라우저에서 바로 씁니다. 입력한 값은 어디에도 보내지 않습니다." : "Field calculators and PC hardware tests, right in your browser. Nothing you type is sent anywhere."}</p>
       <div class="grid compact">
+        <a class="card hw-card" href={url(lang, "tools/#g-hw")}>
+          <h3>{ko ? `PC 하드웨어 테스트 ${hwTests.length}종` : `${hwTests.length} PC hardware tests`}</h3>
+          <p>{hwTests.map((w) => w.name[lang].replace(/ (테스트|test|Test|tester|Tester).*$/, "")).join(" · ")}</p>
+        </a>
         {
           popular.map((w) => (
             <a class="card" href={url(lang, w.path)}>

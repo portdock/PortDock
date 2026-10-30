@@ -96,6 +96,7 @@ import { ADSENSE_CLIENT } from "../lib/ads";
           <details class="menu">
             <summary>{t.tools}</summary>
             <ul>
+              <li class="menu-head">{t.toolsNote}</li>
               {
                 TOOLS.map((x) => (
                   <li>
@@ -106,9 +107,10 @@ import { ADSENSE_CLIENT } from "../lib/ads";
                   </li>
                 ))
               }
+              <li class="menu-foot"><a href={url(lang, "download/")}>{t.download} →</a></li>
             </ul>
           </details>
-          <a href={url(lang, "tools/")}>{t.webTools}</a>
+          <a href={url(lang, "tools/")} title={t.webToolsNote}>{t.webTools}</a>
           <a href={url(lang, "guides/")}>{t.guides}</a>
           <a href={url(lang, "devices/")}>{t.devices}</a>
           <a href={url(lang, "download/")}>{t.download}</a>

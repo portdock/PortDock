@@ -12,15 +12,15 @@ interface Props {
 const { lang } = Astro.props;
 const t = UI[lang];
 const ko = lang === "ko";
-const updated = "2026-10-26";
+const updated = "2026-10-30";
 ---
 
 <Base
   lang={lang}
   title={t.privacy}
   description={ko
-    ? "PortDock 프로그램은 통신 내용을 보내지 않고, 오류 보고·사용 통계·새 버전 확인은 켤 때만 합니다. 사이트 방문 통계·광고 쿠키·문의 양식의 처리와 위탁처."
-    : "PortDock never sends your traffic; error reports, usage stats and update checks only if you opt in. How the site handles analytics, ads and the contact form."}
+    ? "PortDock 프로그램은 통신 내용을 보내지 않고, 오류 보고·사용 통계·새 버전 확인은 켤 때만 합니다. Hardware Tester 의 핑·DNS, 사이트 통계·광고 쿠키·문의 양식."
+    : "PortDock never sends your traffic; error reports, usage stats and update checks only if you opt in. Hardware Tester pings; site analytics, ads, contact form."}
   path="privacy/"
 >
   <header class="page-head">
@@ -36,9 +36,26 @@ const updated = "2026-10-26";
         <>
           <h2>1. 프로그램(PortDock 도구)</h2>
           <ul>
-            <li>프로그램은 통신 내용·명령 목록·규칙·설정을 밖으로 보내지 않습니다. 설정은 이 PC 안에만 저장됩니다.</li>
+            <li>프로그램은 통신 내용·명령 목록·규칙·설정을 밖으로 보내지 않습니다. 설정은 이 PC 안에만 저장됩니다. 장비와의 통신(시리얼·TCP·UDP·Modbus·SCPI·MC 프로토콜·네트워크 장비 찾기)은 사용자가 지정한 포트·주소·대역으로만 갑니다.</li>
             <li>
-              <b>오류 보고</b>: 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정에서 «오류 자동 전송» 을 켠 경우에만 오류 원인(예외 내용·호출 위치)과
+              <b>Hardware Tester 의 끊김·지연 기록</b>: «기록 시작» 을 누른 동안만 게이트웨이(공유기)와 사용자가 고른 인터넷 주소 하나(기본 1.1.1.1 = Cloudflare, 고르면
+              8.8.8.8 = Google 또는 직접 입력)에 핑을 보내고, 5초마다 정한 이름 하나(기본 example.com, 비우면 묻지 않음)를 이 PC 에 설정된 DNS 서버에 묻습니다. 핑·DNS 를 받는
+              쪽은 다른 인터넷 요청처럼 이 PC 의 연결 주소(IP)를 봅니다. 대상은 화면에 늘 보이고, 멈추면 보내지 않습니다. 기록은 사용자가 CSV 로 저장할 때만 이 PC 에 남습니다.
+            </li>
+            <li>
+              <b>Hardware Tester 의 Wi-Fi 신호 보기(누를 때만)</b>: 신호 세기·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수를 읽습니다. Windows 11 24H2 부터는 Windows 가 이
+              값을 읽는 데 위치 권한을 요구합니다 — 프로그램은 위치(좌표)를 읽지 않고, Wi-Fi 이름(SSID)·AP 주소(BSSID)는 읽지도 저장하지도 않습니다. 거부해도 다른 기능은 됩니다.
+            </li>
+            <li>
+              <b>블루투스 장치 이름</b>: Hardware Tester 의 연결 기록과 Port Inspector 의 «무선» 탭은 장치 이름을 화면에만 보이고, 저장·복사·내보내기 글에는 «장치 N» 으로
+              가립니다. 밖으로 보내지 않습니다.
+            </li>
+            <li>
+              <b>PLC Simulator</b>: 기본은 이 PC 안(127.0.0.1)에서만 접속을 받습니다. «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 같은 망의 다른 PC 가 인증 없이 접속해
+              디바이스 값을 읽고 쓸 수 있습니다(MC 프로토콜에는 인증이 없음). 믿을 수 있는 망에서만 켜세요.
+            </li>
+            <li>
+              <b>오류 보고</b>: 사용자가 «!» 문제 보고 창에서 보내기를 누르거나, 설정의 «오류 자동 전송» 을 «묻지 않고 자동으로 보내기» 로 바꾼 경우에만(기본값은 «오류로 꺼지면 묻기», «보내지 않기» 로 끌 수 있음) 오류 원인(예외 내용·호출 위치)과
               프로그램·윈도우 버전을 보냅니다. 통신 내용과 IP 설정은 넣지 않으며, 사용자가 직접 «최근 통신 기록» 을 켠 경우에만 그 내용이 들어갑니다.
             </li>
             <li>오류 보고는 오류 수집 서비스 Sentry(Functional Software, Inc.)로 전송되어 오류 분석에만 쓰이고, 30일 뒤 지워집니다. 저장 위치는 Sentry 의 EU(독일) 데이터 센터이며 IP 주소는 저장하지 않도록 설정합니다.</li>
@@ -53,7 +70,7 @@ const updated = "2026-10-26";
               저장하지 않으며, 같은 날의 방문을 묶는 익명 번호는 24시간마다 바뀝니다. 통계는 Aptabase 에 최대 5년 보관되며, 개인과 이어지지 않아 개별 삭제 대상을 찾을 수 없습니다.
             </li>
             <li>
-              <b>새 버전 확인(선택, 기본 꺼짐, 0.3.0 부터)</b>: 설정에서 «새 버전 확인(하루 한 번)» 을 켠 경우에만, 하루 한 번 GitHub API(api.github.com)에 PortDock 최신 릴리스를 묻습니다.
+              <b>새 버전 확인(선택, 기본 꺼짐)</b>: 설정에서 «새 버전 확인(하루 한 번)» 을 켠 경우에만, 하루 한 번 GitHub API(api.github.com)에 PortDock 최신 릴리스를 묻습니다.
               요청에는 보내는 데이터가 없고(쿠키·식별자 없음), GitHub 는 다른 웹 요청처럼 연결 주소(IP)를 받습니다. 새 버전이면 알림줄만 띄우고, 내려받기·설치는 하지 않습니다.
               GitHub 의 처리는 <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub 개인정보처리방침</a>을 따릅니다.
             </li>
@@ -74,7 +91,8 @@ const updated = "2026-10-26";
             <li>Google LLC(미국) — 광고(웹 도구·가이드·장비 레지스터 맵 페이지)</li>
             <li>Functional Software, Inc.(Sentry, 미국 법인·EU 데이터 센터) — 프로그램 오류 보고(사용자가 허락한 경우)</li>
             <li>Technov Solutions SRL(Aptabase, 루마니아·EU 데이터 센터) — 프로그램 사용 통계(사용자가 켠 경우)</li>
-            <li>GitHub, Inc.(미국) — 새 버전 확인 요청을 받음(사용자가 켠 경우, 0.3.0 부터)</li>
+            <li>GitHub, Inc.(미국) — 새 버전 확인 요청을 받음(사용자가 켠 경우)</li>
+            <li>Hardware Tester 의 핑·DNS 대상 — 사용자가 고른 인터넷 주소(기본 1.1.1.1 은 Cloudflare, 8.8.8.8 은 Google)와 이 PC 의 DNS 서버가 핑·질의를 받습니다(기록을 켠 동안만, 위탁이 아니라 사용자가 고른 통신 상대)</li>
           </ul>
           <h2>4. 문의</h2>
           <p>
@@ -85,9 +103,28 @@ const updated = "2026-10-26";
         <>
           <h2>1. The programs (PortDock tools)</h2>
           <ul>
-            <li>The programs never send your traffic, commands, rules or settings anywhere. Settings stay on this PC.</li>
+            <li>The programs never send your traffic, commands, rules or settings anywhere. Settings stay on this PC. Device communication (serial, TCP, UDP, Modbus, SCPI, MC protocol, network device discovery) goes only to the ports, addresses and subnets you choose.</li>
             <li>
-              <b>Error reports</b> are sent only when you press send in the «!» report window or turn on «Automatic error reports». They contain the error cause (exception
+              <b>Hardware Tester's drop and latency log</b>: only while «Start recording» is on, it pings the gateway (router) and one internet address you choose (1.1.1.1 =
+              Cloudflare by default; 8.8.8.8 = Google or your own address), and every 5 s looks up one name (example.com by default; leave it empty to skip) at the DNS server set on
+              this PC. Like any internet request, the receivers see this PC's connection address (IP). The targets are always shown, and nothing is sent after you stop. The log stays
+              on the PC only if you save it as CSV.
+            </li>
+            <li>
+              <b>Hardware Tester's Wi-Fi signal view (only when you press it)</b>: reads signal strength, link speed, band, channel and how many nearby networks share each channel.
+              From Windows 11 24H2, Windows requires location permission to read these values — the program reads no location (coordinates), and network names (SSID) and
+              access point addresses (BSSID) are never read or saved. Everything else works if you decline.
+            </li>
+            <li>
+              <b>Bluetooth device names</b>: Hardware Tester's connection log and Port Inspector's «Wireless» tab show names on screen only; saved, copied and exported text uses
+              «Device N». Names are never sent.
+            </li>
+            <li>
+              <b>PLC Simulator</b>: by default it accepts connections only from this PC (127.0.0.1). If you turn on «Allow other PCs to connect (0.0.0.0)», other PCs on the same
+              network can connect without authentication and read and write device values (the MC protocol has no authentication). Turn it on only on trusted networks.
+            </li>
+            <li>
+              <b>Error reports</b> are sent only when you press send in the «!» report window or set «Automatic error reports» to «Send automatically» (the default is «Ask after a crash»; «Never send» turns it off). They contain the error cause (exception
               text, location) and program/Windows versions. Traffic and IP settings are not included unless you explicitly tick «recent traffic».
             </li>
             <li>Reports go to Sentry (Functional Software, Inc.), are used only to fix bugs, are deleted after 30 days, are stored in Sentry's EU (Germany) region, and IP addresses are not stored.</li>
@@ -104,7 +141,7 @@ const updated = "2026-10-26";
               up to 5 years; because they cannot be linked to a person, individual records cannot be located for deletion.
             </li>
             <li>
-              <b>Update check (optional, off by default, from 0.3.0)</b>: only if you turn on «Check for new versions (once a day)» in Settings, the program asks the GitHub API
+              <b>Update check (optional, off by default)</b>: only if you turn on «Check for new versions (once a day)» in Settings, the program asks the GitHub API
               (api.github.com) once a day for PortDock's latest release. The request carries no data (no cookies or identifiers); like any web request, GitHub sees the connection's IP
               address. If a newer version exists, only a notice bar appears — nothing is downloaded or installed. GitHub handles the request under the{" "}
               <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
@@ -126,7 +163,8 @@ const updated = "2026-10-26";
             <li>Google LLC (USA) — ads on web-tool, guide and device register map pages</li>
             <li>Functional Software, Inc. (Sentry; US entity, EU data region) — program error reports (only with your permission)</li>
             <li>Technov Solutions SRL (Aptabase; Romania, EU data region) — program usage statistics (only if you turn them on)</li>
-            <li>GitHub, Inc. (USA) — receives the update check request (only if you turn it on, from 0.3.0)</li>
+            <li>GitHub, Inc. (USA) — receives the update check request (only if you turn it on)</li>
+            <li>Hardware Tester ping and DNS targets — the internet address you choose (1.1.1.1 by default is Cloudflare, 8.8.8.8 is Google) and this PC's DNS server receive the pings and lookups (only while recording; these are parties you chose to contact, not processors)</li>
           </ul>
           <h2>4. Contact</h2>
           <p>

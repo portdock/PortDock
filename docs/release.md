@@ -9,11 +9,11 @@
 | 파일 | 내용 |
 |---|---|
 | `PortDock-<App>-setup.exe` | 설치판(NSIS, `currentUser` — 관리자 권한 없음, WebView2 부트스트래퍼 포함) |
-| `PortDock-<App>-setup-offline.exe` | 오프라인 설치판 — WebView2 런타임 동봉(`tools/offline.conf.json`, 약 +130MB). 인터넷 없는 공장 PC 용 |
+| `PortDock-<App>-setup-offline.exe` | 오프라인 설치판 — WebView2 런타임 동봉(`tools/offline.conf.json`, 0.5.0 기준 약 220MB — 설치판 약 4MB·휴대판 약 3MB. 사이트 표기는 `site/src/data/release.ts`). 인터넷 없는 공장 PC 용 |
 | `PortDock-<App>-portable.zip` | 휴대판: `PortDock <App>.exe` + `LICENSE.txt` + `THIRD_PARTY_NOTICES.txt` + `portdock-data/` |
 | `SHA256SUMS.txt` | 위 파일 모두의 SHA-256 |
 
-`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` · `Port-Inspector` · `PLC-Simulator` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
+`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` · `Port-Inspector` · `PLC-Simulator` · `Hardware-Tester` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
 
 ## 설치판과 휴대판의 차이
 

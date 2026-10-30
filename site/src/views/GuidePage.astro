@@ -7,6 +7,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { toolById, REPO, type Lang } from "../data/tools";
 import { GUIDES, type Guide } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
+import { groupOf } from "../data/webToolGroups";
 import { DEVICES, devPath } from "../data/devices";
 import { url } from "../lib/i18n";
 
@@ -19,6 +20,10 @@ const ko = lang === "ko";
 const tools = guide.tools.map(toolById);
 const related = guide.related.map((s) => GUIDES.find((g) => g.slug === s)!);
 const webTools = (guide.webTools ?? []).map(webToolByPath);
+// PC 하드웨어 글(마이크·블루투스…)은 웹 테스트를 먼저, 그 밖의 글은 윈도우 프로그램을 먼저 보인다
+const webFirst = webTools.length > 0 && groupOf(webTools[0].path) === "hw";
+const appCards = tools.map((x) => ({ app: true, href: url(lang, `${x.id}/`), name: x.name, blurb: x.tagline[lang], go: ko ? "프로그램 보기(무료)" : "See the program (free)" }));
+const webCards = webTools.map((w) => ({ app: false, href: url(lang, w.path), name: w.name[lang], blurb: w.blurb[lang], go: ko ? "웹 도구 열기(설치 없음)" : "Open the web tool (no install)" }));
 // 이 글과 같은 종류의 장비 레지스터 맵(예: 인버터 글 → 인버터 장비)
 const kindDevices = DEVICES.filter((d) => guide.deviceKinds?.includes(d.kind));
 const here = new URL(url(lang, `guides/${guide.slug}/`), Astro.site).href;
@@ -48,6 +53,19 @@ const ld = {
       <Crumbs lang={lang} items={[{ name: ko ? "가이드" : "Guides", path: "guides/" }, { name: guide.title[lang], path: `guides/${guide.slug}/` }]} />
       <h1>{guide.title[lang]}</h1>
       <p>{guide.desc[lang]}</p>
+      {/* 첫 화면 안에 «이 글에서 쓰는 도구» — 맨 아래 카드까지 내려가지 않아도 다음 행동이 보이게(앱 2개·웹 도구 2개까지) */}
+      {
+        (tools.length > 0 || webTools.length > 0) && (
+          <p class="guide-tools">
+            <b>{ko ? "이 글에서 쓰는 도구" : "Tools for this guide"}</b>
+            {(webFirst ? [...webCards.slice(0, 2), ...appCards.slice(0, 2)] : [...appCards.slice(0, 2), ...webCards.slice(0, 2)]).map((c) => (
+              <a href={c.href}>
+                {c.name.replace("PortDock ", "")} <small>{c.app ? (ko ? "윈도우 프로그램 · 무료" : "Windows program · free") : ko ? "웹 · 설치 없음" : "web · no install"}</small>
+              </a>
+            ))}
+          </p>
+        )
+      }
     </div>
   </header>
   <article class="wrap prose guide" style="padding-top:20px">
@@ -97,21 +115,11 @@ const ld = {
       <h2>{ko ? "이 글과 이어지는 도구" : "Tools for this"}</h2>
       <div class="grid">
         {
-          !tools.length &&
-            webTools.map((w) => (
-              <a class="card" href={url(lang, w.path)}>
-                <h3>{w.name[lang]}</h3>
-                <p>{w.blurb[lang]}</p>
-                <span class="go">{ko ? "웹 도구 열기(설치 없음)" : "Open the web tool (no install)"} →</span>
-              </a>
-            ))
-        }
-        {
-          tools.map((t) => (
-            <a class="card" href={url(lang, `${t.id}/`)}>
-              <h3>{t.name}</h3>
-              <p>{t.tagline[lang]}</p>
-              <span class="go">{ko ? "도구 보기" : "See the tool"} →</span>
+          (webFirst ? [...webCards, ...appCards] : [...appCards, ...webCards]).map((c) => (
+            <a class="card" href={c.href}>
+              <h3>{c.name}</h3>
+              <p>{c.blurb}</p>
+              <span class="go">{c.go} →</span>
             </a>
           ))
         }
@@ -127,14 +135,6 @@ const ld = {
           related.map((g) => (
             <li>
               <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
-            </li>
-          ))
-        }
-        {
-          tools.length > 0 &&
-            webTools.map((w) => (
-            <li>
-              <a href={url(lang, w.path)}>{w.name[lang]}</a> — {ko ? "웹 도구, 설치 없이" : "web tool, no install"}
             </li>
           ))
         }

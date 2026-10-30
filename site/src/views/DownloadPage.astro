@@ -1,7 +1,9 @@
 ---
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { TOOLS, RELEASED, REPO, RELEASES, downloadable, latest, type Lang } from "../data/tools";
+import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, latest, type Lang } from "../data/tools";
+import { VERSION, SIZE, SHA256SUMS } from "../data/release";
+import PickApp from "../components/PickApp.astro";
 import { UI, url } from "../lib/i18n";
 import { SPONSOR_URL } from "@shared/links";
 import { appIcon } from "../lib/appIcons";
@@ -17,10 +19,10 @@ const ko = lang === "ko";
 <Base
   lang={lang}
   title={t.download}
-  seoTitle={ko ? "내려받기 — 무료 통신 테스트 도구 10종 (윈도우) — PortDock" : "Download — Ten Free Hardware Test Tools for Windows — PortDock"}
+  seoTitle={ko ? `내려받기 — 무료 통신 테스트 도구 ${RELEASED_TOOLS.length}종 (윈도우) — PortDock` : `Download — ${RELEASED_TOOLS.length} Free Hardware Test Tools for Windows — PortDock`}
   description={ko
-    ? "시리얼·Modbus 마스터/슬레이브·TCP·UDP·시뮬레이터·Net Scan·SCPI·Plot·Port Inspector 10개 도구의 설치판·오프라인 설치판·휴대판. 무료, 윈도우 10·11."
-    : "Installer, offline installer or portable zip — Serial, Modbus Master/Slave, TCP, UDP, Simulator, Net Scan, SCPI, Plot, Port Inspector. Free, Windows 10/11."}
+    ? `시리얼·Modbus·TCP·UDP·시뮬레이터·Net Scan·SCPI·Plot·Port Inspector·PLC Simulator·Hardware Tester ${RELEASED_TOOLS.length}종 설치판·휴대판. 무료.`
+    : `Installer, offline or portable: Serial, Modbus Master/Slave, TCP, UDP, Simulator, Net Scan, SCPI, Plot, Port Inspector, PLC Simulator, Hardware Tester.`}
   path="download/"
 >
   <header class="page-head">
@@ -28,17 +30,20 @@ const ko = lang === "ko";
       <Crumbs lang={lang} items={[{ name: t.download, path: "download/" }]} />
       <h1>{t.download}</h1>
       <p>{t.dlNote}</p>
+      {RELEASED && <p class="note">{ko ? `현재 버전 ${VERSION} · 프로그램 ${RELEASED_TOOLS.length}개 모두 같은 버전` : `Current version ${VERSION} · all ${RELEASED_TOOLS.length} programs share it`} · <a href={`${RELEASES}/latest`}>{ko ? "변경 내역" : "What's new"} →</a></p>}
+      <p class="note only-phone">{ko ? "윈도우 PC 용 프로그램입니다. 휴대폰에서 받으면 실행할 수 없으니, 이 쪽 주소를 PC 로 보내 PC 에서 받으세요." : "These are Windows PC programs and will not run on a phone — send this page's address to your PC and download there."}</p>
       {!RELEASED && <p><b>{t.dlSoon}</b> — {t.dlSoonNote} <a href={REPO}>GitHub →</a></p>}
     </div>
   </header>
   <div class="wrap" style="padding-top:28px">
+    <PickApp lang={lang} />
     {/* 어느 걸 받을지 — 질문 2개. 스크립트가 없어도 세 줄 안내는 그대로 읽힌다 */}
     <section class="pick card" id="pick" aria-labelledby="pick-h">
       <h2 id="pick-h">{ko ? "어느 걸 받아야 하나요?" : "Which one should I get?"}</h2>
       <ul class="pick-list">
-        <li data-pick="setup"><b>{t.dlSetup}</b> — {ko ? "대부분은 이것. 인터넷이 되는 PC 에 설치합니다(관리자 권한 필요 없음)." : "Most people. Installs on a PC with internet (no admin rights needed)."}</li>
-        <li data-pick="offline"><b>{t.dlOffline}</b> — {ko ? "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다." : "PCs without internet (plant floor, closed networks). WebView2 is bundled."}</li>
-        <li data-pick="portable"><b>{t.dlPortable}</b> — {ko ? "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다." : "No install — carry it on a USB stick. Unzip and run."}</li>
+        <li data-pick="setup"><b>{t.dlSetup}</b> <small>({SIZE.setup[lang]})</small> — {ko ? "대부분은 이것. 인터넷이 되는 PC 에 설치합니다(관리자 권한 필요 없음)." : "Most people. Installs on a PC with internet (no admin rights needed)."}</li>
+        <li data-pick="offline"><b>{t.dlOffline}</b> <small>({SIZE.offline[lang]})</small> — {ko ? "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다." : "PCs without internet (plant floor, closed networks). WebView2 is bundled."}</li>
+        <li data-pick="portable"><b>{t.dlPortable}</b> <small>({SIZE.portable[lang]})</small> — {ko ? "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다." : "No install — carry it on a USB stick. Unzip and run."}</li>
       </ul>
       <form class="pick-q" hidden>
         <fieldset>
@@ -56,7 +61,7 @@ const ko = lang === "ko";
     </section>
     <table class="t dl-table" data-pick="setup">
       <thead>
-        <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}</th><th class="c-offline">{t.dlOffline}</th><th class="c-portable">{t.dlPortable}</th><th>{t.docs}</th></tr>
+        <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}<br /><small>{SIZE.setup[lang]}</small></th><th class="c-offline">{t.dlOffline}<br /><small>{SIZE.offline[lang]}</small></th><th class="c-portable">{t.dlPortable}<br /><small>{SIZE.portable[lang]}</small></th><th>{t.docs}</th></tr>
       </thead>
       <tbody>
         {
@@ -85,13 +90,21 @@ const ko = lang === "ko";
         }
       </tbody>
     </table>
-    <p class="note"><a href={RELEASES}>{t.dlAll} →</a></p>
+    <p class="note">{ko ? `파일 크기는 프로그램마다 조금씩 다릅니다(${VERSION} 기준 어림값). ` : `Sizes vary slightly by program (approximate, ${VERSION}). `}<a href={RELEASES}>{t.dlAll} →</a></p>
 
     <section class="prose" id="safe">
       <h2>{t.safeTitle}</h2>
       <ul>{t.safe.map((s) => <li>{s}</li>)}</ul>
-      <p class="note">{ko ? "파일 값 확인 예:" : "Hash check example:"}</p>
+      <p class="note">{ko ? "파일 값 확인 예(받은 폴더에서 PowerShell):" : "Hash check example (PowerShell, in the download folder):"}</p>
       <pre class="result">Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256</pre>
+      <p>
+        {ko ? "나온 Hash 값을 " : "Compare the Hash it prints with "}
+        <a href={SHA256SUMS}>SHA256SUMS.txt</a>
+        {ko
+          ? " (최신 릴리스) 에서 같은 파일 이름이 적힌 줄의 앞 64자와 비교합니다. 대소문자는 상관없고, 한 글자라도 다르면 받은 파일을 지우고 GitHub 릴리스에서 다시 받으세요."
+          : " (latest release): find the line with the same file name and compare the 64 characters before it. Case does not matter; if any character differs, delete the file and download it again from GitHub Releases."}
+      </p>
+      <pre class="result">{ko ? "SHA256SUMS.txt 의 줄 모양: <64자 값>  <파일 이름>" : "Each line in SHA256SUMS.txt: <64-character hash>  <file name>"}</pre>
       <p><a href={url(lang, "code-signing/")}>{t.codeSigning} →</a></p>
       <h2>{ko ? "필요한 것" : "Requirements"}</h2>
       <ul>

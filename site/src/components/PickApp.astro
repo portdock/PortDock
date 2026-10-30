@@ -1,0 +1,61 @@
+---
+// «무엇을 하려나요?» — 프로그램 12개를 목적으로 고르게 한다(첫 화면·내려받기).
+// 갈래마다 프로그램 1~3개(앞이 대표). 마지막 갈래는 설치 없는 웹 PC 하드웨어 테스트로 보낸다.
+// 프로그램 설명은 tools.ts 의 tagline 을 그대로 쓴다(코드에 있는 기능만).
+import { toolById, type Lang, type Tool } from "../data/tools";
+import { url } from "../lib/i18n";
+import { appIcon } from "../lib/appIcons";
+import { WEB_TOOLS } from "../data/webTools";
+import { groupOf } from "../data/webToolGroups";
+
+interface Props {
+  lang: Lang;
+  /** 제목 id(쪽 안에서 겹치지 않게) */
+  id?: string;
+}
+const { lang, id = "pick-app" } = Astro.props;
+const ko = lang === "ko";
+const hwCount = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw").length;
+
+const PATHS: { q: { ko: string; en: string }; apps: Tool["id"][] }[] = [
+  { q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, apps: ["serial", "plot"] },
+  { q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, apps: ["modbus-master", "modbus-slave"] },
+  { q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, apps: ["netscan", "tcp", "udp"] },
+  { q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, apps: ["plc-simulator", "simulator", "modbus-slave"] },
+  { q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, apps: ["scpi", "plot"] },
+  { q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, apps: ["port-inspector", "hw-tester"] },
+];
+---
+
+<section class="pick-app" aria-labelledby={id}>
+  <h2 id={id}>{ko ? "무엇을 하려나요?" : "What do you want to do?"}</h2>
+  <div class="pick-grid">
+    {
+      PATHS.map((p) => (
+        <div class="card">
+          <h3>{p.q[lang]}</h3>
+          <ul>
+            {p.apps.map(toolById).map((x) => (
+              <li>
+                <a href={url(lang, `${x.id}/`)}>
+                  {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="20" height="20" loading="lazy" decoding="async" />}
+                  <b>{x.name.replace("PortDock ", "")}</b>
+                </a>
+                <small>{x.tagline[lang]}</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <div class="card">
+      <h3>{ko ? "마이크·키보드·마우스·웹캠·모니터 시험" : "Test a mic, keyboard, mouse, webcam or monitor"}</h3>
+      <ul>
+        <li>
+          <a href={url(lang, "tools/#g-hw")}><b>{ko ? "PC 하드웨어 테스트" : "PC hardware tests"}</b></a>
+          <small>{ko ? `윈도우 프로그램이 아니라 브라우저에서 바로(설치 없음) — ${hwCount}종` : `Not a Windows program — runs in your browser, no install (${hwCount} tests)`}</small>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>

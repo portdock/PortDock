@@ -25,7 +25,7 @@
 | 시리얼 플로터, 시리얼 그래프, 아두이노 그래프 | `/plot/` | «무료 시리얼 플로터 (실시간 그래프·CSV)», «Arduino 식 이름:값» |
 | COM 포트 점검, USB 시리얼 드라이버 확인, 유령 COM 포트, FTDI 지연 | `/port-inspector/` | «무료 COM 포트 점검 (USB 시리얼)», «장치 관리자 문제 코드·FTDI 지연·유령 COM 번호» |
 | <제조사> <모델> 모드버스 주소 (예: LS S100 모드버스 주소, 오토닉스 TK 모드버스) | `/devices/<제조사>/<모델>/` | «<제조사> <모델> Modbus 주소·레지스터 맵», 설명에 «Modbus(모드버스) 통신 주소» |
-| 인버터 모드버스 주소, 온도 조절기 모드버스 | `/devices/` | «국산 장비 Modbus 주소표 — 인버터·온도 조절기·전력 미터» |
+| 인버터 모드버스 주소, 온도 조절기 모드버스 | `/devices/` | «Modbus 주소표 — 인버터·온도 조절기·전력 미터»(국산·해외 제조사) |
 | 모드버스 응답 없음, modbus 타임아웃 | `/guides/modbus-no-response/` | «Modbus 응답 없음·타임아웃 점검 순서 (RTU·TCP)» |
 | 40001 주소, 모드버스 주소 계산, modbus 주소 0 1 차이 | `/guides/modbus-address-notation/` | «Modbus 주소 40001 vs 0 기준 — 매뉴얼 주소 읽는 법» |
 | modbus rtu 프레임, 모드버스 CRC | `/guides/modbus-rtu-frame/` | «Modbus RTU 프레임 읽는 법 — 요청·응답·예외·CRC» |

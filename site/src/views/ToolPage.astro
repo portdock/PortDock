@@ -76,6 +76,18 @@ const ld = {
       <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }]} />
       <h1 class="with-icon">{appIcon(tool.id) && <img class="app-icon" src={appIcon(tool.id)} alt="" width="40" height="40" />}{tool.name}</h1>
       <p>{tool.summary[lang]}</p>
+      <p class="note">{ko ? "무료 · 윈도우 10·11 · 프로그램에 광고 없음 · 오픈소스(GPL-3.0)" : "Free · Windows 10 and 11 · no ads in the program · open source (GPL-3.0)"}</p>
+      {
+        tool.id === "hw-tester" && (
+          <p class="note">
+            {ko
+              ? "키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 이 프로그램이 아니라 브라우저에서 바로 쓰는 "
+              : "Keyboard, mouse, monitor, speaker, microphone, webcam and gamepad tests are not in this program — use the "}
+            <a href={url(lang, "tools/#g-hw")}>{ko ? "PC 하드웨어 테스트(웹, 설치 없음)" : "PC hardware tests (web, no install)"}</a>
+            {ko ? " 로 합니다." : " in your browser."}
+          </p>
+        )
+      }
       {/* 좁은 화면에서는 내려받기 칸이 맨 아래로 가므로 위에 바로 가기를 둔다 */}
       <p class="btns only-narrow">
         <a class="btn primary" href="#dl">{t.download}</a>

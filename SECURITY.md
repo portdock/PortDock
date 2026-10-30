@@ -37,7 +37,7 @@ In scope: the PortDock programs, their installers and portable packages, and the
 
 Not security issues:
 
-- The industrial protocols themselves have no authentication (Modbus, SCPI raw socket, plain TCP/UDP). When you start a server in PortDock (Modbus Slave TCP, TCP server or relay, Simulator, UDP), anyone who can reach that port on your network can talk to it — that is how these protocols work. Bind to a specific network adapter and use them on trusted networks.
+- The industrial protocols themselves have no authentication (Modbus, MC protocol/SLMP, SCPI raw socket, plain TCP/UDP). When you start a server in PortDock (Modbus Slave TCP, TCP server or relay, Simulator, UDP, PLC Simulator with «Allow other PCs to connect (0.0.0.0)» turned on — it listens on 127.0.0.1 only by default), anyone who can reach that port on your network can talk to it — that is how these protocols work. Bind to a specific network adapter and use them on trusted networks.
 - Mistakes in the device register maps (`data/devices`) — please open a normal issue.
 - Vulnerabilities in a third-party component that are not reachable through PortDock — please report them to that project. (If one *is* reachable through PortDock, report it here.)
 
@@ -59,7 +59,7 @@ Not security issues:
 | [GitHub 릴리스](https://github.com/portdock/PortDock/releases/latest)의 최신판 | 함 |
 | 그 이전 판 | 하지 않음 — 먼저 최신판으로 올린 뒤 문제가 남는지 확인해 주세요 |
 
-열 프로그램은 같은 버전으로 함께 나오므로, 수정은 모든 프로그램의 새 릴리스로 나갑니다.
+열두 프로그램은 같은 버전으로 함께 나오므로, 수정은 모든 프로그램의 새 릴리스로 나갑니다.
 
 ### 응답
 
@@ -76,6 +76,6 @@ PortDock 은 **1인 메인테이너가 여가 시간, 주로 주말에** 관리�
 
 보안 문제가 아닌 것:
 
-- 산업용 프로토콜 자체에는 인증이 없습니다(Modbus, SCPI 소켓, 일반 TCP/UDP). PortDock 에서 서버를 켜면(Modbus Slave TCP, TCP 서버·중계, Simulator, UDP) 네트워크에서 그 포트에 닿는 누구나 통신할 수 있습니다 — 프로토콜이 원래 그렇습니다. 특정 랜카드에만 묶고, 믿을 수 있는 망에서 쓰세요.
+- 산업용 프로토콜 자체에는 인증이 없습니다(Modbus, MC 프로토콜(SLMP), SCPI 소켓, 일반 TCP/UDP). PortDock 에서 서버를 켜면(Modbus Slave TCP, TCP 서버·중계, Simulator, UDP, «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켠 PLC Simulator — 기본은 127.0.0.1 에서만 받음) 네트워크에서 그 포트에 닿는 누구나 통신할 수 있습니다 — 프로토콜이 원래 그렇습니다. 특정 랜카드에만 묶고, 믿을 수 있는 망에서 쓰세요.
 - 장비 레지스터 맵(`data/devices`)의 틀린 곳 — 일반 이슈로 알려 주세요.
 - PortDock 을 거쳐서는 닿지 않는 제3자 구성 요소의 취약점 — 그 프로젝트에 알려 주세요. (PortDock 을 거쳐 닿는다면 여기로 알려 주세요.)
