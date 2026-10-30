@@ -616,7 +616,6 @@ export const TOOLS: Tool[] = [
     name: "PortDock MCP",
     file: "PortDock-MCP",
     tagline: { ko: "AI 클라이언트용 MCP 서버 — 포트·Modbus·MC·SCPI 읽기 전용", en: "MCP server for AI clients — read-only ports, Modbus, MC and SCPI" },
-    upcoming: true,
     shot: false,
     seo: {
       title: { ko: "PortDock MCP — AI 에서 COM 포트·Modbus 읽기 (무료)", en: "PortDock MCP — Read COM Ports & Modbus from AI Clients" },
