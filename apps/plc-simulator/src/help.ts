@@ -122,7 +122,7 @@ export const help: HelpDoc = {
         "- 값 칸: Enter·↓ 다음 칸, ↑·Shift+Enter 앞 칸, Esc 고치기 취소. 엑셀 등에서 여러 값을 붙여 넣으면 이어진 칸에 한꺼번에 넣습니다.",
         "- 비트 보기에서는 칸 아무 데나 눌러도 ON·OFF 가 뒤집힙니다(체크칸도 그대로).",
         "- «표시» 의 ASCII(2글자)는 한 워드를 두 글자로 — 아래 바이트 글자가 먼저(PLC 문자열 순서), 보이지 않는 바이트는 «\\x0D», 0 은 «\\0». «바이트(위 아래)» 는 위 바이트·아래 바이트를 10진으로(«18 52» = 1234h). 입력도 같은 모양으로 합니다.",
-        "- «채우기…»: «숫자로 채우기»(시작 번호·개수·값·증가량 — 워드는 0~65535 를 돌고 «줄여 가기» 로 빼 나감, 비트는 0·1 하나로), «문자열 써 넣기»(시작 번호부터 한 워드에 두 글자, 글자 순서·끝 0 고름, \\xNN 됨 — 워드 디바이스만), «숫자 목록 써 넣기»(«100, 200 0x10 -1», 비트는 0·1). 미리보기 줄에 «D100~D104 에 5칸» 처럼 나오고, 디바이스 크기를 넘으면 쓰지 않습니다. 쓸 칸에 이미 값(0 이 아닌)이 있으면 몇 칸인지 보이고 «덮어쓰기» 를 한 번 더 눌러야 씁니다(0.9.0 부터) — 되돌리기는 없습니다.",
+        "- «채우기…»: «숫자로 채우기»(시작 번호·개수·값·증가량 — 워드는 0~65535 를 돌고 «줄여 가기» 로 빼 나감, 비트는 0·1 하나로), «문자열 써 넣기»(시작 번호부터 한 워드에 두 글자, 글자 순서·끝 0 고름, \\xNN 됨 — 워드 디바이스만), «숫자 목록 써 넣기»(«100, 200 0x10 -1», 비트는 0·1). 미리보기 줄에 «D100~D104 에 5칸» 처럼 나오고, 디바이스 크기를 넘으면 쓰지 않습니다. 쓸 칸에 이미 값(0 이 아닌)이 있으면 몇 칸인지 보이고 «덮어쓰기» 를 한 번 더 눌러야 씁니다 — 되돌리기는 없습니다.",
       ],
     },
     {
@@ -292,7 +292,7 @@ export const help: HelpDoc = {
         "- Value cells: Enter/↓ next cell, ↑/Shift+Enter previous, Esc cancels the edit. Pasting several values from Excel etc. fills consecutive cells at once.",
         "- In the bit view, clicking anywhere in a cell toggles ON/OFF (the checkbox still works).",
         "- «Format» ASCII (2 chars) shows a word as two characters — low byte first (PLC string order), invisible bytes as «\\x0D», zero as «\\0». «Bytes (high low)» shows the high and low byte in decimal («18 52» = 1234h). Input uses the same forms.",
-        "- «Fill…»: «Fill with numbers» (start, count, value, step — words wrap within 0–65535, «Count down» subtracts; bits use one 0/1), «Write a string» (two characters per word from the start, choose the character order and an ending 0, \\xNN works — word devices only), «Write a number list» («100, 200 0x10 -1»; bits take 0/1). A preview line shows e.g. «5 cells at D100–D104»; nothing is written past the device size. If cells in the range already hold non-zero values, it says how many and writes only after you press «Overwrite» once more (from 0.9.0) — there is no undo.",
+        "- «Fill…»: «Fill with numbers» (start, count, value, step — words wrap within 0–65535, «Count down» subtracts; bits use one 0/1), «Write a string» (two characters per word from the start, choose the character order and an ending 0, \\xNN works — word devices only), «Write a number list» («100, 200 0x10 -1»; bits take 0/1). A preview line shows e.g. «5 cells at D100–D104»; nothing is written past the device size. If cells in the range already hold non-zero values, it says how many and writes only after you press «Overwrite» once more — there is no undo.",
       ],
     },
     {
