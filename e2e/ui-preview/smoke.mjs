@@ -239,7 +239,7 @@ const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger
  *  90초 안에 idle·running 을 다 못 눌렀다(10/23, 361·471번) — 두 배로 */
 // Serial 도 0.3.0 에서 요소가 늘어(직접 입력·최근·복사·Master 로 열기) 본 화면 90초를 넘긴다 — TCP 와 같은 한도
 const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 }, serial: { budgetMs: 180000, modalBudgetMs: 80000 } };
-const STOP_RE = /^(끊기|멈춤|멈추기|듣기 멈춤|Disconnect|Stop|Stop listening)$/;
+const STOP_RE = /^(끊기|멈춤|멈추기|받기 멈춤|듣기 멈춤|Disconnect|Stop|Stop listening|Stop receiving)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
 async function runButton() {
@@ -497,7 +497,7 @@ async function runApp(app, port) {
       await expectJs("plot markers", "const t = document.querySelector('.measure-bar').textContent; return /Δt/.test(t) && /Δn/.test(t) && /sin Δ/.test(t)");
       if (combo.full) {
         // 멈춤 → 받기는 계속(+n) → 실시간
-        await clickText(".plotbar button", ko ? "⏸ 멈춤" : "⏸ Pause");
+        await clickText(".plotbar button", ko ? "⏸ 화면 고정" : "⏸ Freeze view");
         await expectJs("plot paused", `return /${ko ? "멈춤 — 받기는 계속" : "Paused — still receiving"}/.test(document.querySelector('.notes').textContent)`);
         await expectJs("plot paused count", "return /\\(\\+\\d/.test(document.querySelector('.notes').textContent)", 2000);
         await clickText(".plotbar button", ko ? "▶ 실시간" : "▶ Live");

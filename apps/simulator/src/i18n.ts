@@ -89,7 +89,7 @@ const ko = {
   repeat: "반복(ms)",
   traffic: "통신 기록",
   clear: "지우기",
-  saveScreen: "화면 저장",
+  saveScreen: "화면 내용 저장",
   saveScreenTip: "지금 화면에 있는 기록을 텍스트 파일로 저장합니다. 지금 보기(HEX·ASCII)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
   savedFile: "저장했습니다: {a}",
   launchBad: "무시한 명령줄 인자: {a}",

@@ -224,7 +224,7 @@ const ko = {
   traffic: "통신 기록",
   autoscroll: "자동 스크롤",
   showSum: "풀이",
-  logToFile: "파일로 기록",
+  logToFile: "파일로 계속 저장",
   stopLog: "기록 멈춤",
   clear: "지우기",
   logDlgTitle: "통신 기록 파일",

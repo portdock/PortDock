@@ -97,7 +97,7 @@ const ko = {
   showSum: "풀이 보기",
   clear: "지우기",
   close: "닫기",
-  saveView: "화면 저장",
+  saveView: "화면 내용 저장",
   saveViewTitle: "화면의 통신 기록 저장",
   saveViewTip: "지금 화면에 있는 통신 기록을 텍스트 파일로 저장합니다(HEX). 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
   logToFile: "파일로 계속 저장",

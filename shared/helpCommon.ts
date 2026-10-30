@@ -47,8 +47,8 @@ function graphShortcutLines(lang: Lang, f: HelpFeatures): string[] {
   const ko = lang === "ko";
   return ko
     ? [
-        `- ${KEYS.connect}: ${f.startStop ? "받기 시작·멈추기" : "연결·끊기"}(왼쪽 버튼과 같음).`,
-        "- Space: 그래프 멈춤·이어 보기(입력칸·버튼 밖에서 — 받기와 CSV 기록은 계속).",
+        `- ${KEYS.connect}: ${f.startStop ? "받기 시작·받기 멈춤" : "연결·끊기"}(왼쪽 버튼과 같음).`,
+        "- Space: 화면 고정·풀기(입력칸·버튼 밖에서 — 받기와 CSV 기록은 계속).",
         `- ${KEYS.end}: 실시간 보기로(확대·옮기기를 버림). 그래프를 두 번 눌러도 같습니다.`,
         `- ${KEYS.stopRepeat}: 측정점 A·B 지우기(입력칸 밖에서).`,
         `- ${KEYS.save}: 화면 CSV 저장(보이는 범위만). ${KEYS.fileLog}: CSV 기록 켜기·끄기. ${KEYS.clear}: 지우기(버퍼·그래프·원시 줄·측정점, 기록 파일은 그대로).`,
@@ -58,7 +58,7 @@ function graphShortcutLines(lang: Lang, f: HelpFeatures): string[] {
       ]
     : [
         `- ${KEYS.connect}: ${f.startStop ? "start / stop receiving" : "connect / disconnect"} (same as the button on the left).`,
-        "- Space: pause / resume the graph (outside text boxes and buttons — receiving and CSV recording continue).",
+        "- Space: freeze / unfreeze the view (outside text boxes and buttons — receiving and CSV recording continue).",
         `- ${KEYS.end}: back to the live view (drops zoom and pan). Double-clicking the graph does the same.`,
         `- ${KEYS.stopRepeat}: clear markers A and B (outside text boxes).`,
         `- ${KEYS.save}: save view CSV (visible range only). ${KEYS.fileLog}: start / stop CSV recording. ${KEYS.clear}: clear (buffer, graph, raw lines and markers; a recording file is kept).`,
