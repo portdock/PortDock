@@ -11,6 +11,7 @@
 | `PortDock-<App>-setup.exe` | 설치판(NSIS, `currentUser` — 관리자 권한 없음, WebView2 부트스트래퍼 포함) |
 | `PortDock-<App>-setup-offline.exe` | 오프라인 설치판 — WebView2 런타임 동봉(`tools/offline.conf.json`, 0.5.0 기준 약 220MB — 설치판 약 4MB·휴대판 약 3MB. 사이트 표기는 `site/src/data/release.ts`). 인터넷 없는 공장 PC 용 |
 | `PortDock-<App>-portable.zip` | 휴대판: `PortDock <App>.exe` + `LICENSE.txt` + `THIRD_PARTY_NOTICES.txt` + `portdock-data/` |
+| `PortDock-MCP.zip` · `PortDock-MCP.mcpb` | MCP 서버(`portdock-mcp.exe`) — `build-mcp` 작업(앱 matrix 와 따로). 내용·레지스트리 등록은 [mcp.md](mcp.md) «배포» |
 | `SHA256SUMS.txt` | 위 파일 모두의 SHA-256 |
 
 `<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` · `Port-Inspector` · `PLC-Simulator` · `Hardware-Tester` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
@@ -50,6 +51,7 @@
    - 변경 내용을 다듬는다(자동 생성된 노트 위에 한국어·영어 요약).
 7. **Publish** — 첫 공개라면 먼저 `site/src/data/tools.ts` 의 `RELEASED` 를 `true` 로 바꿔 푸시(사이트 내려받기 버튼이 «공개 준비 중» 에서 진짜 링크로). 공개 후 `https://github.com/portdock/PortDock/releases/latest/download/PortDock-Serial-setup.exe` 가 새 파일을 받는지 확인. 앱의 «새 버전 확인» 버튼은 `/releases/latest` 페이지를 연다(자동 확인 없음).
 8. **패키지 관리자** — 공개 뒤 `node tools/winget.mjs --version <버전>` · `node tools/scoop.mjs --version <버전>` 으로 매니페스트를 만든다(릴리스의 `SHA256SUMS.txt` 를 받아 버전이 든 주소·해시를 채움, 결과 `dist-packages/`). winget 은 winget-pkgs 에 패키지마다 PR, Scoop 은 bucket 저장소에 커밋. 형식·정책 메모는 두 스크립트 머리 주석, 시험은 `tools/packages.test.mjs`.
+9. **MCP** — `.mcpb` 를 Claude Desktop 에 열어 확인한 뒤 `node tools/mcp.mjs server-json --sums SHA256SUMS.txt --out server.json` 으로 해시를 채운다. 공식 레지스트리 제출(`mcp-publisher publish`)은 사용자 확인 뒤에만([mcp.md](mcp.md) «릴리스 뒤 사람이 할 일»).
 
 ## 코드 서명 (예정)
 

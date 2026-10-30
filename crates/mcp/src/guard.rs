@@ -208,7 +208,7 @@ const SCPI_DENY: &[&str] = &[
     "*RST", "*TRG", "*SAV", "*RCL", "*PSC", "*DDT", "*PUD", "*LRN", "*WAI",
     "SYST:PRES", "SYSTEM:PRES", "SYST:SEC", "SYSTEM:SEC", // 초기화·보안 지우기
     "MMEM", "MMEMORY",                                     // 파일
-    "DIAG", "TEST",                                        // 진단·시험 실행
+    "DIAG", "TEST",                                        // DIAGnostic·TEST 명령 실행
     "INIT", "ABOR", "TRIG",                                // 측정 시작·멈춤
 ];
 

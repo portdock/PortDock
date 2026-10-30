@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn parse_and_decode() {
-        // 정상: D0 00 00 FF FF 03 00 | 06 00 | 00 00 | 34 12 78 56
+        // 종료 코드 0: D0 00 00 FF FF 03 00 | 06 00 | 00 00 | 34 12 78 56
         let ok = [0xD0, 0x00, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x06, 0x00, 0x00, 0x00, 0x34, 0x12, 0x78, 0x56];
         let Reply::Ok(data) = parse_response(&ok).unwrap() else { panic!() };
         assert_eq!(decode_read(&data, 2, false).unwrap(), vec![0x1234, 0x5678]);

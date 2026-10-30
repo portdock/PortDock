@@ -33,7 +33,7 @@ test(".mcpb manifest: 0.3 · binary · Windows 전용 · 실행 파일 경로 ·
   assert.deepEqual(m.compatibility.platforms, ["win32"]);
   assert.equal(m.license, "GPL-3.0-only");
   assert.equal(m.tools.length, 11);
-  // 문구: «제어» 류 없이 읽기 전용
+  // 문구: «control» 같은 말 없이 읽기 전용
   const text = JSON.stringify(m);
   assert.match(text, /no tool that writes to real devices/);
   assert.doesNotMatch(text, /\bcontrol\b/i);

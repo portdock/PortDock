@@ -18,6 +18,7 @@ PortDock/
 ├─ Cargo.toml              Cargo workspace (core + 10 app shells), release profile
 ├─ package.json            npm workspaces (apps/*, site) and run/build scripts
 ├─ crates/core/            portdock-core — shared Rust logic, no Tauri dependency
+├─ crates/mcp/             portdock-mcp — MCP server for AI clients (stdio, no window; docs/mcp.md)
 ├─ apps/<tool>/            one per tool (10): React/Vite UI in src/, Tauri shell in src-tauri/
 │  ├─ src/                 App.tsx, api.ts (invoke wrappers), i18n.ts, help.ts, main.tsx
 │  └─ src-tauri/           Cargo.toml, src/lib.rs (commands), tauri.conf.json, capabilities/
@@ -77,6 +78,7 @@ Sources: the `//!` header and `pub` items of each file in `crates/core/src/`.
 | `loopback.rs` | Connection test (Port Inspector, Serial «Check connection…»): TX–RX loopback per baud rate (bytes same/lost/changed, 1-byte round-trip ms, driver error flags via `ClearCommError`) and 2-wire RS-485 echo detection; runs on a `Link` so it is unit-tested with a fake port. |
 | `i18n.rs` | Backend message language: `set_lang` from the UI, `is_en`, and the `tr!(ko, en)` macro used for error/event strings. |
 | `mc.rs` | PLC Simulator: MC protocol (SLMP) server — 3E/4E frames in binary or ASCII, commands 0401/1401/0403/1402/0619, 18 device types with per-device sizes, end-code error replies (C050–C061), fault injection and value simulation (`regmap`), one-line decode for the traffic log. Golden tests use the manual examples byte for byte. |
+| `mc_client.rs` | MC protocol client for PortDock MCP: 3E binary batch read 0401 and write 1401 (own station), device addresses like «D100»/«X1F», end-code errors. Tested byte for byte against the manual layout and round-trip against `mc.rs`. |
 | `ping.rs` | ICMP echo (`IcmpSendEcho2`), next hop toward an address (`GetBestRoute` — the default gateway), DNS response time for one name (`DnsQuery_W`, cache and hosts file skipped). Shared by Net Scan and Hardware Tester (moved from `apps/netscan` 10/30) |
 | `wlan.rs` | Hardware Tester «Wi-Fi signal»: Native Wifi API loaded only when called (`LoadLibraryExW` from System32 + `GetProcAddress`), so the exe still starts on Windows Server without `wlanapi.dll`. Reads signal quality, RSSI, link speed, PHY, the connected AP's channel and per-channel counts of nearby APs; SSID/BSSID are never copied out. Needs location permission on Windows 11 24H2+ |
 | `modbus.rs` | Modbus frame decoding (`decode`: direction-agnostic RTU), exception names, `Summarizer` for one-line human summaries of RTU/TCP traffic. |
