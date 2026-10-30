@@ -1,5 +1,6 @@
 // UDP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc, HelpSection } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { ioAutoReplySections } from "@shared/helpAutoReply";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
@@ -15,6 +16,7 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. «받는 쪽 (이 PC)» 에 «묶을 주소»(보통 0.0.0.0)와 «받을 포트» 를 넣습니다. 장비가 이 PC 로 보내는 포트입니다.",
         "- 2. «보낼 곳 (기본)» 에 장비의 «주소»(IP)와 «포트» 를 넣습니다. 받기만 할 거면 비워도 됩니다.",
@@ -169,6 +171,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Under «Local (this PC)», enter the «Bind address» (usually 0.0.0.0) and the «Listen port» the device sends to.",
         "- 2. Under «Destination (default)», enter the device «Host» (IP) and «Port». Leave it empty if you only receive.",
@@ -347,3 +350,6 @@ const UDP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
 
 // Serial·TCP·UDP 공통 기능 + 이 PC 주소·멀티캐스트 + 자동응답 — «문제 해결» 앞에
 for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: false }), ...UDP_EXTRA[lang], ...ioAutoReplySections(lang));
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["datagram", "broadcast", "checksum", "failOnly", "crlf", "rxtx"]));

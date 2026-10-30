@@ -133,3 +133,15 @@ export function windowsMajor(platformVersion: string | undefined): string {
   if (!Number.isFinite(n) || n <= 0) return "?";
   return n >= 13 ? "11" : "10";
 }
+
+/**
+ * 여러 PortDock 앱이 함께 보는 동의(0.6.0, 백엔드 consent.rs) → 이 앱 설정에 넣을 값.
+ * 이 앱이 이미 물었으면(usageAsked) 그대로 둔다(null). 공용 값은 «물어봤음» 이 확실할 때만 쓰고,
+ * 켬은 `usageStats === true` 일 때만 — 모양이 틀리거나 비면 null(이 앱에서 따로 묻는다)
+ */
+export function sharedConsentPatch(localAsked: boolean, shared: unknown): { usageStats: boolean; usageAsked: true } | null {
+  if (localAsked || !shared || typeof shared !== "object") return null;
+  const c = shared as { asked?: unknown; usageStats?: unknown };
+  if (c.asked !== true) return null;
+  return { usageStats: c.usageStats === true, usageAsked: true };
+}

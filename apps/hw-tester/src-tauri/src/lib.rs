@@ -127,6 +127,17 @@ fn report_env() -> portdock_core::report::EnvInfo {
     portdock_core::report::env_info()
 }
 
+/// 여러 PortDock 앱이 함께 보는 사용 통계 동의(0.6.0) — 아직 묻지 않은 앱은 이 값을 기본으로 쓴다
+#[tauri::command]
+fn consent_get() -> portdock_core::consent::Consent {
+    portdock_core::consent::read()
+}
+
+#[tauri::command]
+fn consent_set(usage_stats: bool) -> Result<(), String> {
+    portdock_core::consent::write(usage_stats)
+}
+
 #[tauri::command(async)]
 fn report_read_dump(name: String) -> Result<tauri::ipc::Response, String> {
     portdock_core::report::read_dump(&name).map(tauri::ipc::Response::new)
@@ -173,6 +184,8 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env,
+            consent_get,
+            consent_set,
             report_read_dump,
             rec_start,
             rec_stop,

@@ -14,6 +14,8 @@ const ko = {
   readOnly: "관리자 권한 없이 읽기만 합니다. 레지스트리·장치 설정을 바꾸지 않습니다.",
   // ---- 가운데
   pick: "왼쪽에서 COM 포트를 고르세요.",
+  pickNarrow: "위 «⚙ 포트 목록» 에서 COM 포트를 고르세요.",
+  sideLabel: "포트 목록",
   readAt: "읽은 시각 {t}",
   copyText: "텍스트 복사",
   copyJson: "JSON 복사",
@@ -186,6 +188,8 @@ const en: Record<keyof typeof ko, string> = {
   portCount: "{n} · {h} not connected",
   readOnly: "Read-only, without administrator rights. Registry and device settings are never changed.",
   pick: "Pick a COM port on the left.",
+  pickNarrow: "Pick a COM port under «⚙ Ports» at the top.",
+  sideLabel: "Ports",
   readAt: "Read at {t}",
   copyText: "Copy text",
   copyJson: "Copy JSON",

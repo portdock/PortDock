@@ -429,7 +429,7 @@ const TIPS: Record<string, Tip> = {
   plEndian: ["여러 바이트 값의 순서. Arduino(AVR·ARM)·ESP32·PC 는 리틀 엔디언, 네트워크·Modbus 식은 빅 엔디언.", "Byte order of multi-byte values. Arduino (AVR, ARM), ESP32 and PCs are little-endian; network/Modbus style is big-endian."],
   plChecksum: ["프레임 끝의 체크섬. 틀린 프레임은 버리고(빨간 원시 줄) 한 바이트 밀어 다시 찾습니다. 계산 범위는 기본 시작 바이트 뒤 ~ 체크섬 앞.", "Checksum at the end of each frame. Bad frames are dropped (red raw line) and the search resumes one byte later. Computed by default from after the start bytes up to the checksum."],
   plCheckSync: ["체크섬 계산에 시작 바이트도 넣습니다.", "Include the start bytes in the checksum."],
-  plPause: ["그래프만 멈춥니다 — 받기·CSV 기록은 계속. 확대·옮기기를 하면 저절로 멈춥니다. Space.", "Freezes the graph only — receiving and CSV recording continue. Zooming or panning pauses automatically. Space."],
+  plPause: ["화면 고정 — 그래프만 멈춥니다. 받기·CSV 기록은 계속(받기를 멈추려면 왼쪽 «받기 멈춤»). 확대·옮기기를 하면 저절로 고정됩니다. Space.", "Freeze view — only the graph stops; receiving and CSV recording continue (to stop receiving use «Stop receiving» on the left). Zooming or panning freezes it automatically. Space."],
   plResume: ["실시간 보기로 돌아갑니다(확대·옮기기·세로 조절을 버림). 그래프를 두 번 눌러도 됩니다. End.", "Back to the live view (drops zoom, pan and vertical scaling). Double-clicking the graph does the same. End."],
   plWindow: ["가로축. «최근 점» 은 받은 순서(점 N개), «최근 초» 는 PC 가 받은 시각(N초). 장비 시각이 아니므로 USB 묶음 때문에 점 간격이 고르지 않을 수 있습니다.", "Horizontal axis. «Last points» uses arrival order (N points), «Last seconds» the PC's receive time (N s) — not the device's clock, so USB batching can make spacing uneven."],
   plSpan: ["보이는 폭 — 점 수 또는 초. 버퍼는 최근 10만 줄입니다.", "Visible width — points or seconds. The buffer keeps the last 100,000 rows."],

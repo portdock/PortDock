@@ -272,7 +272,7 @@ const en: typeof ko = {
   presetDesc_modbus: "9600 8N1 · Modbus RTU framing + RX CRC check · HEX + CRC16 Modbus",
   presetDesc_nmea: "9600 8N1 (older receivers 4800) · split at LF · ASCII + CR LF",
   sendMode: "Send format",
-  firstAsk: "What are you doing?",
+  firstAsk: "What do you want to do?",
   firstAt: "Send AT commands",
   firstModbus: "Read values from a Modbus device",
   firstWatch: "Just watch",

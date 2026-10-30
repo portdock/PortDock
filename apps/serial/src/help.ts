@@ -1,5 +1,6 @@
 // Serial 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 import { ioAutoReplySections } from "@shared/helpAutoReply";
 
@@ -580,3 +581,6 @@ const SERIAL_EXTRA = {
 // Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기) — «문제 해결» 앞에
 for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true, serial: true }), ...SERIAL_EXTRA[lang], ...ioAutoReplySections(lang));
 
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["gap", "frame", "checksum", "failOnly", "crlf", "rxtx", "baud", "dtrrts"]));

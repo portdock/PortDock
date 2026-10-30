@@ -12,6 +12,7 @@ import { REPO_URL, SPONSOR_URL } from "./links";
 import { useRestoreFocus } from "./restoreFocus";
 import { usageAvailable } from "./usage";
 import { USAGE_TEXT } from "./usageText";
+import { writeSharedConsent } from "./consent";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
 const REPO = REPO_URL;
@@ -350,7 +351,15 @@ export function SettingsDialog({
           {usageAvailable() && (
             <>
               <label className="inline">
-                <input type="checkbox" checked={settings.usageStats} onChange={(e) => update({ usageStats: e.target.checked, usageAsked: true })} />{" "}
+                <input
+                  type="checkbox"
+                  checked={settings.usageStats}
+                  onChange={(e) => {
+                    // 바꾼 값은 아직 묻지 않은 다른 PortDock 앱의 기본값이 된다(이미 고른 앱은 그대로)
+                    writeSharedConsent(e.target.checked);
+                    update({ usageStats: e.target.checked, usageAsked: true });
+                  }}
+                />{" "}
                 {USAGE_TEXT[settings.lang].setting}
               </label>
               <span className="hint">{USAGE_TEXT[settings.lang].hint}</span>

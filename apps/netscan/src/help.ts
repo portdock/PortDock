@@ -1,5 +1,6 @@
 // Net Scan 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { settingsLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -102,7 +103,7 @@ export const help: HelpDoc = {
         "- «웹 열기»: 기본 브라우저로 http://IP/ 를 엽니다(443 만 열렸으면 https). 장비의 설정 화면을 볼 때 씁니다.",
         "- «IP 복사»·«MAC 복사».",
         "- 서비스 칩(«Modbus 502 ⧉» 등)을 누르면 «IP:포트» 를 복사합니다. PortDock TCP·Modbus 프로그램의 주소 칸에 붙여 넣으세요.",
-        "- «WoL 깨우기»: 그 MAC 으로 매직 패킷을 고른 랜카드의 대역 브로드캐스트와 255.255.255.255 로(포트 9·7) 보냅니다. 장비의 BIOS·랜카드에서 WoL 이 켜져 있어야 하고, MAC 은 같은 대역에서 ARP 로 찾은 장비만 압니다.",
+        "- «원격 켜기(WoL)»: 그 MAC 으로 매직 패킷을 고른 랜카드의 대역 브로드캐스트와 255.255.255.255 로(포트 9·7) 보냅니다. 장비의 BIOS·랜카드에서 WoL 이 켜져 있어야 하고, MAC 은 같은 대역에서 ARP 로 찾은 장비만 압니다.",
         "- «핑 감시에 추가»: 그 IP 를 «핑 감시» 목록에 넣습니다.",
         "- «Modbus Master 로 열기»(502 가 열린 장비): 이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다. Master 는 Modbus TCP·장비 주소·국번을 채운 채 뜨고, 연결은 Master 에서 «연결» 을 누릅니다. 국번은 «Modbus 장비 정보» 를 읽었으면 그 국번, 아니면 1 입니다.",
         "- Master 는 설치판(이 사용자로 설치한 것), 또는 휴대판(Net Scan 과 같은 폴더나 옆 «PortDock…» 폴더)에서 찾습니다. 못 찾으면 «IP:502» 를 복사하고 아래 칸에 «Modbus Master 내려받기» 링크를 보입니다. 누를 때만 열고, 셸을 거치지 않으며 넘기는 것은 IP 와 숫자뿐입니다.",
@@ -348,3 +349,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["ping", "arp", "wol"]));

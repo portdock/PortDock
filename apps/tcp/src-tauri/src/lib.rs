@@ -379,6 +379,17 @@ fn report_env() -> portdock_core::report::EnvInfo {
     portdock_core::report::env_info()
 }
 
+/// 여러 PortDock 앱이 함께 보는 사용 통계 동의(0.6.0) — 아직 묻지 않은 앱은 이 값을 기본으로 쓴다
+#[tauri::command]
+fn consent_get() -> portdock_core::consent::Consent {
+    portdock_core::consent::read()
+}
+
+#[tauri::command]
+fn consent_set(usage_stats: bool) -> Result<(), String> {
+    portdock_core::consent::write(usage_stats)
+}
+
 /// 네이티브 크래시의 minidump 내용 — 화면이 Sentry 로 올릴 때(이름은 report_pending 이 준 것만)
 #[tauri::command(async)]
 fn report_read_dump(name: String) -> Result<tauri::ipc::Response, String> {
@@ -436,6 +447,8 @@ pub fn run() {
             report_pending,
             report_dismiss,
             report_env,
+            consent_get,
+            consent_set,
             report_read_dump, start, stop, set_framing, set_echo, send, send_file, file_size, cancel_send, set_log_options, kick, preview, set_log, write_text, read_text,
             set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule, interfaces, decode_mbap])
         .run(tauri::generate_context!());

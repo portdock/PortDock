@@ -1,5 +1,6 @@
 // Simulator 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 import { simAutoReplySections } from "@shared/helpAutoReply";
 
@@ -15,6 +16,7 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «연결 방식» 을 고르고 포트·주소를 넣습니다.",
         "- 2. «+ 규칙 추가» 로 규칙을 만듭니다: «받으면» 패턴, «응답» 내용, 필요하면 체크섬·줄 끝·지연. 규칙이 하나도 없으면 [Modbus RTU 03 응답] [SCPI *IDN? 응답] [에코(받은 것 그대로)] 예제 버튼으로 시작할 수 있습니다.",
@@ -28,7 +30,7 @@ export const help: HelpDoc = {
         "- 왼쪽: «연결 방식», 포트·주소, «프레임 구분», «시작»/«멈춤», 상태, «파일로 계속 저장».",
         "- 가운데 위: «응답 규칙» 카드들, «끝 문자 떼고 비교»·«안 맞은 요청 기록(NO MATCH)», «횟수 초기화», «규칙 묶음 저장»·«규칙 묶음 불러오기».",
         "- 그 아래: «장비가 먼저 보내기» 접기(평소 접힘, 반복을 켜면 펼쳐짐).",
-        "- 맨 아래: «통신 기록»(시각·RX ◀ / TX ▶ / EV·상대 주소·내용), HEX/ASCII 전환, 찾기 줄, «화면 저장»·«지우기».",
+        "- 맨 아래: «통신 기록»(시각·RX ◀ / TX ▶ / EV·상대 주소·내용), HEX/ASCII 전환, 찾기 줄, «화면 내용 저장»·«지우기».",
         ...windowLines("ko"),
       ],
     },
@@ -126,7 +128,7 @@ export const help: HelpDoc = {
         "- «파일로 계속 저장»: 시작한 뒤에 파일을 고르면 그때부터 모든 줄을 계속 씁니다. «저장 멈춤» 으로 끝냅니다.",
         "- 마지막 500줄만이 아니라 설정 «화면에 남길 줄 수» 만큼 전부 굴려 볼 수 있습니다.",
         "- 기록 위 찾기 줄(Ctrl+F)에 HEX·글자를 넣으면 맞는 줄을 칠하고 다음·이전으로 옮겨 갑니다. RX·TX 만 보기·«맞는 줄만» 으로 거를 수 있습니다.",
-        "- «화면 저장»(Ctrl+S): 지금 보이는 기록을 텍스트 파일로 저장합니다. 지금 보기(HEX·ASCII)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
+        "- «화면 내용 저장»(Ctrl+S): 지금 보이는 기록을 텍스트 파일로 저장합니다. 지금 보기(HEX·ASCII)대로 쓰고, 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
         ...logHandlingLines("ko", { sendAgain: true, find: true }),
       ],
     },
@@ -171,6 +173,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Choose a «Transport» on the left and enter the port or address.",
         "- 2. Add rules with «+ Add rule»: a «When» pattern, a «Reply», and optionally checksum, line ending and delay. With no rules yet, the [Modbus RTU 03 reply] [SCPI *IDN? reply] [Echo] example buttons give you a start.",
@@ -323,3 +326,6 @@ for (const lang of ["ko", "en"] as const) {
   const at = help[lang].findIndex((x) => x.title === (lang === "ko" ? "와일드카드" : "Wildcards"));
   help[lang].splice(at < 0 ? help[lang].length - 1 : at + 1, 0, ...simAutoReplySections(lang));
 }
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["gap", "crlf", "checksum", "datagram", "rxtx", "baud"]));

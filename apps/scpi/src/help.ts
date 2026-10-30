@@ -1,5 +1,6 @@
 // SCPI 도움말 — 화면 ? 버튼·F1 로 연다(사이트 도구 소개에도 쓴다)
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { logHandlingLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -116,7 +117,7 @@ export const help: HelpDoc = {
       body: [
         "- TX ▶ 보낸 명령, RX ◀ 받은 답, EV 사건(연결·끊김·시간 초과·묵은 바이트 버림). 줄 끝 같은 제어 문자는 <CR>·<LF> 로 보입니다. 시간 초과·끊김은 빨간 사건 줄입니다.",
         "- «응답 시간» 을 켜면 RX 줄 옆에 «12.3 ms»(블록이면 «#41000 · 1000 B · 12.3 ms»)가 붙습니다.",
-        "- 찾기·거르기, 따라가기, 줄 고르기·복사는 다른 PortDock 프로그램과 같습니다. «화면 저장»(Ctrl+S)은 보이는 줄을 글 파일로, «파일 기록»(Ctrl+Shift+L)은 지금부터 오는 줄을 파일에 계속 덧붙입니다.",
+        "- 찾기·거르기, 따라가기, 줄 고르기·복사는 다른 PortDock 프로그램과 같습니다. «화면 내용 저장»(Ctrl+S)은 보이는 줄을 글 파일로, «파일로 계속 저장»(Ctrl+Shift+L)은 지금부터 오는 줄을 파일에 계속 덧붙입니다.",
         ...logHandlingLines("ko", { find: true, checkbox: true }),
       ],
     },
@@ -298,3 +299,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["idn", "terminator", "timeout"]));

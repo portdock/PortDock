@@ -61,7 +61,7 @@ const ko = {
   pauseAll: "모든 폴링 멈춤",
   pausedNote: "폴링을 멈췄습니다 — «한 번 읽기»·쓰기는 됩니다",
   // ---- 찾기
-  scan: "찾기…",
+  scan: "국번·주소 찾기…",
   scanTitle: "장비·주소 찾기",
   scanIds: "국번 찾기",
   scanAddrs: "주소 범위 찾기",
@@ -224,7 +224,7 @@ const ko = {
   traffic: "통신 기록",
   autoscroll: "자동 스크롤",
   showSum: "풀이",
-  logToFile: "파일로 기록",
+  logToFile: "파일로 계속 저장",
   stopLog: "기록 멈춤",
   clear: "지우기",
   logDlgTitle: "통신 기록 파일",

@@ -1,5 +1,6 @@
 // Modbus Slave 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { logHandlingLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
 export const help: HelpDoc = {
@@ -173,7 +174,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "장치 식별 (FC 2B/0E)",
+      title: "장치 정보 응답 (FC 2B/0E)",
       body: [
         "- 마스터가 2B/0E(Read Device Identification)로 물으면 «제조사 (객체 0)»·«제품 코드 (객체 1)»·«버전 (객체 2)» 칸의 글로 답합니다. 모든 슬레이브가 같은 값을 씁니다.",
         "- 각 칸은 80바이트까지입니다(한글은 한 글자에 3바이트). 넘으면 칸이 빨개지고 저장하지 않습니다. 값은 저장되어 다음에 켜도 남습니다.",
@@ -213,7 +214,7 @@ export const help: HelpDoc = {
         "- 자기가 보낸 응답이 그대로 되돌아오면(RS-485 에코 등) 다시 답하지 않습니다.",
         "- «파일로 계속 저장»: 고른 파일에 모든 줄을 계속 덧붙입니다(이미 있는 파일이면 뒤에 이어 씁니다). 한 줄 모양: «2026-10-17 21:05:03.123 RX 01 03 00 00 00 0A C5 CD [OK]». 풀이는 화면에만 붙습니다.",
         "- «지우기»: 화면의 통신 기록만 비웁니다.",
-        "- «화면 저장»(Ctrl+S): 지금 화면에 있는 통신 기록을 텍스트 파일로 저장합니다(HEX, 풀이는 빠짐). 거르기가 켜져 있으면 보이는 줄만 쓰고 첫 줄에 그렇게 적습니다. 기본 이름은 «portdock-modbus-slave-COM3-20261026-153012.txt» 처럼 포트(TCP 는 주소)와 시각이 들어갑니다.",
+        "- «화면 내용 저장»(Ctrl+S): 지금 화면에 있는 통신 기록을 텍스트 파일로 저장합니다(HEX, 풀이는 빠짐). 거르기가 켜져 있으면 보이는 줄만 쓰고 첫 줄에 그렇게 적습니다. 기본 이름은 «portdock-modbus-slave-COM3-20261026-153012.txt» 처럼 포트(TCP 는 주소)와 시각이 들어갑니다.",
         ...logHandlingLines("ko", { find: true, checkbox: true }),
       ],
     },
@@ -548,3 +549,6 @@ export const help: HelpDoc = {
     },
   ],
 };
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["hr", "coils", "fc2b0e", "baud", "rxtx"]));

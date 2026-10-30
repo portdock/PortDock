@@ -235,7 +235,22 @@ const listPorts = () => (com7 ? [...PORTS, COM7] : PORTS).map((p) => ({ ...p }))
 const busyPort = (port) =>
   `${port}: ${tr("포트가 사용 중입니다 — 다른 프로그램(또는 다른 PortDock 창)이 열고 있는지 확인", "Port is busy — check whether another program (or another PortDock window) has it open")} (Access is denied.)`;
 const notFound = (port) => `${port}: ${tr("포트를 찾을 수 없습니다 — 케이블·드라이버·포트 이름 확인", "Port not found — check cable, driver and port name")} (The system cannot find the file specified.)`;
-const inUse = (addr) => `${addr}: ${tr("포트가 이미 사용 중입니다(다른 프로그램이 쓰는 중)", "Port already in use (another program has it)")} (os error 10048)`;
+// crates/core/src/net.rs bind_error 와 같은 모양 — 설명 · 할 일 · (원문)
+const inUse = (addr) => {
+  const port = Number(String(addr).split(":").pop()) || 0;
+  const alt = port < 5000 ? 5001 : port + 1;
+  const act =
+    port > 0 && port < 1024
+      ? tr(`윈도우·다른 서비스가 쓰는 포트입니다 — 포트를 ${alt} 처럼 1024 위의 빈 번호로 바꾸세요(상대 쪽 포트도 같이)`, `Windows or another service uses this port — change the port to a free number above 1024 such as ${alt} (and on the other side too)`)
+      : tr(`포트를 ${alt} 처럼 다른 번호로 바꾸거나, 그 포트를 쓰는 프로그램(다른 PortDock 창 포함)을 끄세요`, `Change the port (e.g. ${alt}) or close the program using it (another PortDock window included)`);
+  return `${addr}: ${tr("포트가 이미 사용 중입니다(다른 프로그램이 쓰는 중)", "Port already in use (another program has it)")} — ${act} (os error 10048)`;
+};
+// crates/core/src/oserr.rs resolve_text
+const hostNotFound = () =>
+  tr(
+    "주소를 찾지 못했습니다 — 이름 철자를 확인하거나 IP 주소(예: 192.168.0.10)를 직접 넣으세요(이름이면 DNS·hosts 확인)",
+    "Address not found — check the spelling or enter the IP address directly (e.g. 192.168.0.10); for a name, check DNS / hosts",
+  );
 const ALREADY = () => tr("이미 시작돼 있거나 시작하는 중입니다", "Already running or starting");
 const NO_SESSION = () => tr("세션이 없습니다", "No session");
 /** 주소처럼 생겼는지(이름 해석은 흉내만) */
@@ -475,7 +490,7 @@ function slaveTick() {
 /** TCP 서버로 시작 — 실제처럼 LISTEN, 상대 둘이 붙는다 */
 function slaveTcpStart(c, ch) {
   if (S) return fail(tr("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting"));
-  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(tr(`${c.host}:${c.port}: 주소를 찾지 못했습니다`, `${c.host}:${c.port}: address not found`));
+  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(`${c.host}:${c.port}: ${hostNotFound()}`);
   if (c.port === 445) return fail(inUse(`${c.host}:${c.port}`));
   const local = `${c.host}:${c.port || 50502}`;
   const s = newSession("slave-tcp", ch, { cfg: { ...c }, port: local, server: true, online: true });
@@ -500,7 +515,7 @@ function tcpStart(config, framing, rxCheck, ch, sim = false, upstream = null) {
   if (S) return fail(ALREADY());
   if (config.mode === "client") {
     if (!config.host.trim() || !(config.port > 0)) return fail(tr("접속할 주소와 포트(1~65535)를 넣어 주세요", "Enter the host and port (1–65535) to connect to"));
-    if (!hostOk(config.host) || unresolvable(config.host)) return fail(tr(`${config.host}:${config.port}: 주소를 찾지 못했습니다`, `${config.host}:${config.port}: address not found`));
+    if (!hostOk(config.host) || unresolvable(config.host)) return fail(`${config.host}:${config.port}: ${hostNotFound()}`);
     const target = `${config.host}:${config.port}`;
     const s = newSession(sim ? "sim-tcp" : "tcp", ch, { cfg: { ...config }, rxCheck, framing, target, port: target });
     // 10.0.0.99 는 늘 실패(재접속 대기 시험), 그 밖은 0.2초 뒤 붙는다
@@ -526,7 +541,7 @@ function tcpStart(config, framing, rxCheck, ch, sim = false, upstream = null) {
     return Promise.resolve(null);
   }
   // 서버 · 중계
-  if (!hostOk(config.host) || unresolvable(config.host)) return fail(tr(`${config.host}:${config.port}: 주소를 찾지 못했습니다`, `${config.host}:${config.port}: address not found`));
+  if (!hostOk(config.host) || unresolvable(config.host)) return fail(`${config.host}:${config.port}: ${hostNotFound()}`);
   if (config.port === 445) return fail(inUse(`${config.host}:${config.port}`) + heldBy());
   if (notLocal(config.host)) return fail(notHere(`${config.host}:${config.port}`));
   const local = `${config.host}:${config.port || 50123}`;
@@ -603,7 +618,7 @@ function kick(id) {
 // ---- UDP 앱
 function udpStart(config, rxCheck, ch, sim = false) {
   if (S) return fail(ALREADY());
-  if (!hostOk(config.bindHost) || unresolvable(config.bindHost)) return fail(tr(`${config.bindHost}:${config.bindPort}: 주소를 찾지 못했습니다`, `${config.bindHost}:${config.bindPort}: address not found`));
+  if (!hostOk(config.bindHost) || unresolvable(config.bindHost)) return fail(`${config.bindHost}:${config.bindPort}: ${hostNotFound()}`);
   if (config.bindPort === 445) return fail(inUse(`${config.bindHost}:${config.bindPort}`) + heldBy());
   if (notLocal(config.bindHost)) return fail(notHere(`${config.bindHost}:${config.bindPort}`));
   const mif = (config.multicastIf ?? "0.0.0.0").trim() || "0.0.0.0";
@@ -839,6 +854,12 @@ window.__pdMock = {
   files,
   /** 오류로 꺼진 기록이 하나 남아 있는 것처럼(report_pending) — 켤 때 묻는 창. 주소에 «?pendingCrash=1» 이어도 켜진다. 지우기(report_dismiss)하면 꺼진다 */
   pendingCrash: new URLSearchParams(location.search).has("pendingCrash"),
+  /** 여러 앱이 함께 보는 사용 통계 동의(consent_get/consent_set, crates/core/src/consent.rs) — 처음엔 «아무 데서도 안 물음».
+   *  주소에 «?sharedConsent=on|off» 면 다른 앱에서 이미 고른 것처럼 */
+  consent: (() => {
+    const v = new URLSearchParams(location.search).get("sharedConsent");
+    return v === "on" || v === "off" ? { asked: true, usageStats: v === "on" } : { asked: false, usageStats: false };
+  })(),
   /** true 면 open_app 이 «이 PC 에서 찾지 못함»(false) — 복사 + 내려받기 페이지 알림. openedApp 에 연 대상이 남는다 */
   noApp: false,
   openedApp: null,
@@ -872,6 +893,11 @@ async function handle(cmd, a) {
       return window.__pdMock.pendingCrash ? [{ name: "crash-20261025-101500.txt", text: "PortDock crash report\nmessage: preview crash\n", dump: null, dumpSize: null }] : [];
     case "report_dismiss":
       window.__pdMock.pendingCrash = false;
+      return null;
+    case "consent_get":
+      return { ...window.__pdMock.consent };
+    case "consent_set":
+      window.__pdMock.consent = { asked: true, usageStats: a.usageStats === true };
       return null;
     case "report_read_dump":
       return new Uint8Array([0x4d, 0x44, 0x4d, 0x50]).buffer;
@@ -1156,7 +1182,7 @@ async function handle(cmd, a) {
       return kick(a.id);
     case "set_remote":
       if (!S) return fail(NO_SESSION());
-      if (!hostOk(a.host) || unresolvable(a.host)) return fail(tr(`${a.host}:${a.port}: 주소를 찾지 못했습니다`, `${a.host}:${a.port}: address not found`));
+      if (!hostOk(a.host) || unresolvable(a.host)) return fail(`${a.host}:${a.port}: ${hostNotFound()}`);
       S.remote = `${a.host}:${a.port}`;
       frames(ev(`REMOTE ${S.remote}`));
       return null;
@@ -1670,7 +1696,7 @@ async function mmaster(cmd, a) {
     }
     case "open_tcp": {
       if (S) return fail(tr("이미 연결돼 있거나 여는 중입니다", "Already connected or connecting"));
-      if (!a.config.host || unresolvable(a.config.host)) return fail(`${a.config.host}:${a.config.port}: ${tr("주소를 찾지 못했습니다", "address not found")}`);
+      if (!a.config.host || unresolvable(a.config.host)) return fail(`${a.config.host}:${a.config.port}: ${hostNotFound()}`);
       const s = newSession("modbus-master", a.onEvent, { port: `${a.config.host}:${a.config.port}` });
       mmStart(a.onEvent, a.config.wire, a.setup);
       later(250, () => {
@@ -2436,7 +2462,7 @@ function plcTick() {
 }
 function plcStart(c, ch) {
   if (S) return fail(tr("이미 시작했거나 여는 중입니다", "Already started or starting"));
-  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(tr(`${c.host}:${c.port}: 주소를 찾지 못했습니다`, `${c.host}:${c.port}: address not found`));
+  if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(`${c.host}:${c.port}: ${notFound()}`);
   if (c.port === 445) return fail(inUse(`${c.host}:${c.port}`));
   plc.format = { ...c.format };
   const local = `${c.host.trim()}:${c.port || 50500}`;

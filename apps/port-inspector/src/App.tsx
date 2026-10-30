@@ -17,7 +17,7 @@ import { count } from "@shared/usage";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools, useNarrow } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
 import { LoopbackPanel, type LoopState } from "@shared/LoopbackPanel";
 import {
@@ -98,6 +98,7 @@ function KV({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 export default function App() {
+  const narrow = useNarrow();
   const { settings, update, reset } = useSettings();
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
@@ -364,7 +365,7 @@ export default function App() {
   const wlTotal: Level | null = wl ? overall([wlVerdict(wl, "wifi").level, wlVerdict(wl, "bt").level]) : null;
   const titleParts = onWl ? [t("wlTitle"), wlTotal && LEVEL_TEXT[wlTotal][lang]] : [sel && portLabel(sel), total && LEVEL_TEXT[total][lang], testing && (lang === "ko" ? "시험 중" : "testing")];
   useWindowTitle(windowTitle(APP, titleParts));
-  const summary = onWl ? `${t("wlTitle")} · ${wlTotal ? LEVEL_TEXT[wlTotal][lang] : t("loading")}` : sel ? `${portLabel(sel)} · ${total ? LEVEL_TEXT[total][lang] : t("loading")}` : t("pick");
+  const summary = onWl ? `${t("wlTitle")} · ${wlTotal ? LEVEL_TEXT[wlTotal][lang] : t("loading")}` : sel ? `${portLabel(sel)} · ${total ? LEVEL_TEXT[total][lang] : t("loading")}` : t(narrow ? "pickNarrow" : "pick");
   const shown = onWl ? wlTotal : total;
   const dotCls = shown === "problem" ? "s-disconnected" : shown === "ok" ? "s-connected" : "";
   const nowCount = ports.filter((p) => p.present).length;
@@ -379,15 +380,9 @@ export default function App() {
   );
 
   const r = report;
-  return (
-    <div className={`app${showSide ? " show-side" : ""}`}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>Port Inspector</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
             <select className="lang" aria-label={lang === "ko" ? "언어" : "Language"} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
               <option value="ko">한국어</option>
               <option value="en">English</option>
@@ -400,6 +395,18 @@ export default function App() {
             <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
               ⚙
             </button>
+    </>
+  );
+  return (
+    <div className={`app${showSide ? " show-side" : ""}`}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>Port Inspector</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
             <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -452,7 +459,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={dotCls} summary={summary}>
+        <NarrowBar tools={headTools} label={t("sideLabel")} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={dotCls} summary={summary}>
           {refreshButton(true)}
         </NarrowBar>
         <div className="tabs" role="tablist" aria-label={t("tabWireless")}>
@@ -542,7 +549,7 @@ export default function App() {
         ) : (
           <>
             <div className="toolbar">
-              <b className="sel-title">{sel ? portLabel(sel) : t("pick")}</b>
+              <b className="sel-title">{sel ? portLabel(sel) : t(narrow ? "pickNarrow" : "pick")}</b>
               {total && <span className={`lv lv-${total}`}>{LEVEL_TEXT[total][lang]}</span>}
               {sel?.port && (
                 <button
@@ -574,7 +581,7 @@ export default function App() {
             <div className="cards">
               {!sel ? (
                 firstDone ? (
-                  <div className="empty-guide">{t("emptyGuide")}</div>
+                  <div className="empty-guide">{narrow ? t("pickNarrow") : t("emptyGuide")}</div>
                 ) : (
                   <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
                     <ol>

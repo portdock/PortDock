@@ -61,7 +61,7 @@ fn pick_dir(exe_dir: Option<&Path>, local: Option<PathBuf>, app: &str) -> PathBu
 }
 
 /// 실제로 파일을 만들어 본다(읽기 전용 매체·권한 없는 Program Files 등)
-fn writable(dir: &Path) -> bool {
+pub(crate) fn writable(dir: &Path) -> bool {
     let probe = dir.join(format!(".write-test-{}", std::process::id()));
     let ok = fs::write(&probe, b"").is_ok();
     let _ = fs::remove_file(&probe);

@@ -43,7 +43,7 @@ const ko = {
   autoConnected: "켤 때 마지막 연결로 자동 연결: {a}",
   autoFaults: "켤 때 자동 연결했습니다 — 장애 주입이 켜져 있습니다(모르고 틀린 응답을 보내지 않게 확인하세요)",
   launchBad: "무시한 명령줄 인자: {a}",
-  saveView: "화면 저장",
+  saveView: "화면 내용 저장",
   saveViewTitle: "화면의 통신 기록 저장",
   saveViewTip: "지금 화면에 있는 통신 기록을 텍스트 파일로 저장합니다(HEX). 거르기가 켜져 있으면 보이는 줄만 씁니다(첫 줄에 그렇게 적힘).",
   logToFile: "파일로 계속 저장",
@@ -152,7 +152,7 @@ const ko = {
   fTNth: "{n}번째마다",
   fTProb: "{p}% 확률",
   // ---- 장치 식별
-  device: "장치 식별 (FC 2B/0E)",
+  device: "장치 정보 응답 (FC 2B/0E)",
   devVendor: "제조사 (객체 0)",
   devProduct: "제품 코드 (객체 1)",
   devRevision: "버전 (객체 2)",

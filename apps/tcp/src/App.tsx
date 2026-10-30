@@ -39,7 +39,8 @@ import { tcpExamples } from "@shared/examples";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
+import { FirstCard } from "@shared/FirstCard";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
@@ -123,6 +124,9 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   // true = 첫 절, 글자 = 그 id 의 절(요청 창 «따라하기 보기»)
   const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(다른 앱과 같은 shared/FirstCard) — «다시 보지 않기» 를 누르면 짧은 안내만
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -259,6 +263,8 @@ export default function App() {
   const langRef = useRef(lang);
   langRef.current = lang;
   const [error, setError] = useState<string | null>(null);
+  // 시작(연결·듣기) 실패 — 버튼 바로 밑 빨간 상자로(다른 앱과 같은 자리). 다시 시작하면 지운다
+  const [startErr, setStartErr] = useState<string | null>(null);
   // 일부 상대에게만 보냈을 때 알림(오류는 아님)
   const [sendNote, setSendNote] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
@@ -381,6 +387,7 @@ export default function App() {
     const isRelay = c.mode === "relay";
     setStarting(true);
     setError(null);
+    setStartErr(null);
     setDropped(false);
     const host = c.host.trim();
     const ok: LastOk = { cfg: c, relayTo: { host: rt.host.trim(), port: rt.port } };
@@ -404,7 +411,7 @@ export default function App() {
       }
     } catch (e) {
       pendingRec.current = {};
-      setError(String(e));
+      setStartErr(String(e));
     } finally {
       setStarting(false);
     }
@@ -821,15 +828,9 @@ export default function App() {
     ? `${t(relay ? "titleRelay" : "titleServer")} ${cfg.host}:${running ? localPort : cfg.port}${relay ? ` → ${relayTo.host}:${relayTo.port}` : ""} · ${statusText}${running ? ` · ${t("titlePeers").replace("{n}", String(peers.length))}` : ""}`
     : `${cfg.host}:${cfg.port} · ${statusText}`;
 
-  return (
-    <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>TCP</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
           <select
             className="lang"
             aria-label={lang === "ko" ? "언어" : "Language"}
@@ -850,6 +851,18 @@ export default function App() {
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+    </>
+  );
+  return (
+    <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>TCP</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
           <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -931,10 +944,16 @@ export default function App() {
           {running ? stopLabel : server ? t("listen") : t("connect")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
-        <div className={`status s-${status === "listening" ? "connected" : status}`}>
-          {t(`status_${status}` as Key)}
-          {local && status === "listening" ? ` · ${local}` : statusMsg ? ` · ${statusMsg}` : ""}
-        </div>
+        {startErr && !running ? (
+          <div className="status s-failed" role="alert">
+            <b>{t(cfg.mode === "client" ? "connectFailed" : "startFailed")}</b> · {startErr}
+          </div>
+        ) : (
+          <div className={`status s-${status === "listening" ? "connected" : status}`}>
+            {t(`status_${status}` as Key)}
+            {local && status === "listening" ? ` · ${local}` : statusMsg ? ` · ${statusMsg}` : ""}
+          </div>
+        )}
         {listening && <IfaceList lang={lang} list={ifaces.list} loaded={ifaces.loaded} refresh={ifaces.refresh} disabled={running} onPick={(ip) => setCfg({ ...cfg, host: ip })} />}
         {listening && !running && <div className="hint">{t("firewallHint")}</div>}
         {listening && cfg.port === 0 && <div className="interlock">{t("ilPort0")}</div>}
@@ -1046,7 +1065,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+        <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={startErr && !running ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
           <button className={running ? "btn small danger" : "btn small primary"} onClick={() => void (running ? stop() : start())} disabled={runDisabled} data-tip={withKey(tip(lang, running ? (listening ? "stopListen" : "stopClient") : "run"), KEYS.connect)}>
             {running ? stopLabel : server ? t("listen") : t("connect")}
           </button>
@@ -1090,7 +1109,23 @@ export default function App() {
 
         <div className="log-wrap">
           <div className="log" ref={listRef} tabIndex={0} onKeyDown={onLogKey} aria-label={t("view")}>
-            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+            {frames.length === 0 &&
+              (firstDone ? (
+                <div className="empty-guide">{t("emptyGuide")}</div>
+              ) : (
+                <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+                  <div>{t("firstAsk")}</div>
+                  <div className="first-picks">
+                    {(["client", "server", "relay"] as const).map((m) => (
+                      <button key={m} type="button" className={cfg.mode === m ? "btn small primary" : "btn small"} aria-pressed={cfg.mode === m} disabled={running} onClick={() => pickMode(m)}>
+                        {t(m === "client" ? "firstClient" : m === "server" ? "firstServer" : "firstRelay")}
+                      </button>
+                    ))}
+                  </div>
+                  <div>{t("first2")}</div>
+                  <div>{t("first3")}</div>
+                </FirstCard>
+              ))}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
                 const f = filter.at(r.index);

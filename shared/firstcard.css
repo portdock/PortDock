@@ -52,3 +52,13 @@
 .link-btn:focus-visible {
   text-decoration-thickness: 2px;
 }
+/* 빈 로그 자리(Serial·TCP·UDP) — 가상 스크롤 위에 */
+.log > .first-card {
+  margin: 24px auto;
+  position: relative;
+  z-index: 1;
+}
+/* Simulator — 규칙 칸 맨 위 */
+.rules > .first-card {
+  margin: 4px 0 10px;
+}

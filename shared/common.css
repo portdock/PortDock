@@ -754,3 +754,27 @@ html .row.sel.primary {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* ---- 좁은 창 요약 줄 오른쪽의 머리줄 도구(언어·📌·!·?·⚙) — 접힌 왼쪽 칸 안에 숨지 않게(고객 점검 10/30) */
+.narrow-bar .nb-tools {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+.narrow-bar .nb-tools select.lang {
+  max-width: 90px;
+}
+
+/* 시작·연결 실패 — 상태 칸을 빨갛게(버튼 바로 밑. 앱 CSS 에도 같은 규칙이 있는 곳이 있음) */
+.status.s-failed {
+  color: var(--fail);
+  border: 1px solid var(--fail);
+}
+/* 머리줄 밑 짧은 부제(Simulator «규칙 기반 장비 흉내») — 한 줄 전체 */
+.brand .brand-sub {
+  flex-basis: 100%;
+  order: 3;
+  margin: 0;
+}
+.ar-syntax > summary {
+  cursor: pointer;
+}

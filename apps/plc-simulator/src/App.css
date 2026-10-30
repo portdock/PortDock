@@ -1135,3 +1135,20 @@ input.size-num {
 .open-warn {
   white-space: normal;
 }
+
+/* 클라이언트에 넣을 값(고객 점검 10/30) — 상태 줄 밑 한 덩어리, 주소 + 복사 */
+.client-cfg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+}
+.client-cfg .row-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.client-cfg .row-inline b {
+  overflow-wrap: anywhere;
+}

@@ -1,5 +1,6 @@
 // TCP 도움말 — 화면 ? 버튼·F1 로 연다
 import type { HelpDoc, HelpSection } from "@shared/HelpDialog";
+import { termsSection } from "@shared/glossary";
 import { ioAutoReplySections } from "@shared/helpAutoReply";
 import { commandLines, ioEvLines, ioKeyLines, ioLayoutLines, ioSections, logHandlingLines, notationLines, settingsLines, shortcutLines, windowLines } from "@shared/helpCommon";
 
@@ -15,17 +16,18 @@ export const help: HelpDoc = {
     },
     {
       title: "처음 쓰는 순서",
+      id: "start",
       body: [
         "- 1. 왼쪽 «방식» 을 고릅니다. 장비가 서버(접속을 기다림)면 «클라이언트 (장비에 접속)», 장비가 PC 로 접속해 오면 «서버 (장비가 접속)».",
         "- 2. 클라이언트면 장비의 «주소»(IP)와 «포트» 를, 서버면 «묶을 주소» 와 기다릴 «포트» 를 넣습니다.",
-        "- 3. «접속»(클라이언트) 또는 «듣기 시작»(서버)을 누릅니다. 상태가 «접속됨» 또는 «듣는 중» 이 되면 준비 끝입니다.",
+        "- 3. «연결»(클라이언트) 또는 «듣기 시작»(서버)을 누릅니다. 상태가 «연결됨» 또는 «듣는 중» 이 되면 준비 끝입니다.",
         "- 4. 아래 입력칸에 보낼 내용을 쓰고 «보내기»(또는 Enter)를 누릅니다. 받은 것은 RX ◀, 보낸 것은 TX ▶ 로 찍힙니다.",
       ],
     },
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: «방식»·주소·«포트», «고급 연결» 접기(즉시 전송·재접속), «접속»/«듣기 시작» 버튼(실행 중에는 클라이언트 «끊기», 서버·중계 «듣기 멈춤»), 상태, (서버) «접속한 상대» 목록, «받기 설정» 접기(프레임 구분·수신 체크섬 검사·에코), «파일로 계속 저장».",
+        "- 왼쪽: «방식»·주소·«포트», «고급 연결» 접기(즉시 전송·재접속), «연결»/«듣기 시작» 버튼(실행 중에는 클라이언트 «끊기», 서버·중계 «듣기 멈춤»), 상태, (서버) «접속한 상대» 목록, «받기 설정» 접기(프레임 구분·수신 체크섬 검사·에코), «파일로 계속 저장».",
         "- «고급 연결»·«받기 설정» 은 평소 접혀 있고 제목 옆에 지금 값(«Nagle 끔 · 재접속 2초», «끊김 시간 20ms · 체크섬 검사 없음»)이 보입니다. 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위 도구줄: «보기»(HEX·ASCII·«둘 다» — 처음에는 «둘 다»), «자동 스크롤», RX·TX 누적 바이트 수, «화면 내용 저장», «지우기».",
         "- 도구줄 아래 찾기·거르기 줄: 찾기 칸, ▲·▼, «찾은 줄만», «틀림만», 방향(전체·RX·TX·EV). «로그 찾기·거르기» 절을 보세요.",
@@ -52,7 +54,7 @@ export const help: HelpDoc = {
         "- 실행 중 버튼은 클라이언트면 «끊기», 서버·중계면 «듣기 멈춤» 입니다(F4 도 같음).",
         "- 클라이언트로 502 포트에 접속했는데 프레임 구분이 «Modbus TCP» 가 아니면 «Modbus TCP 로 보기» 알림줄이 한 번 나옵니다. 누르면 요청·응답이 하나씩 끊기고 상세에 풀이가 나옵니다.",
         "- 그 알림줄의 «Modbus Master 로 열기» 는 PortDock Modbus Master 를 지금 주소·포트로 엽니다(접속은 그 창에서 누름). 이 PC 에 Modbus Master 가 없으면 «주소:포트» 를 복사하고 내려받기 페이지 버튼을 보여 줍니다.",
-        "- 명령줄: «portdock-tcp.exe --connect 192.168.0.10:5000» 처럼 실행하면 클라이언트 방식으로 주소·포트를 채웁니다(포트까지 적어야 함). 저절로 접속하지는 않으니 «접속» 을 누르세요. 잘못된 인자는 무시하고 «무시한 명령줄 인자» 로 알려 줍니다. PortDock Net Scan 의 «TCP 로 열기» 가 이렇게 엽니다.",
+        "- 명령줄: «portdock-tcp.exe --connect 192.168.0.10:5000» 처럼 실행하면 클라이언트 방식으로 주소·포트를 채웁니다(포트까지 적어야 함). 저절로 접속하지는 않으니 «연결» 을 누르세요. 잘못된 인자는 무시하고 «무시한 명령줄 인자» 로 알려 줍니다. PortDock Net Scan 의 «TCP 로 열기» 가 이렇게 엽니다.",
         "- «--auto» 를 더하면 켜자마자 연결합니다 — «--connect» 로 채운 주소로, 없으면 마지막으로 성공한 설정(방식·주소·포트·중계 대상)으로. 마지막 성공 설정이 없으면 아무것도 하지 않습니다. 자동 연결하면 기록에 «켤 때 자동 연결» 사건 줄이 남고, 자동응답이 켜져 있으면 한 줄 더 알립니다.",
         "- 에코는 1초에 200번을 넘으면 저절로 꺼집니다(상대도 에코하면 끝없이 주고받기 때문). 이때 «ECHO OFF …» 줄과 오류 문구가 나옵니다.",
         "- 서버는 최대 64개 접속을 받습니다. 넘으면 거절하고 «REJECT …» 를 남깁니다.",
@@ -90,7 +92,7 @@ export const help: HelpDoc = {
       id: "modbus",
       body: [
         "Modbus TCP 장비(PLC·인버터·전력계·게이트웨이)의 레지스터를 한 번 읽어 보는 순서입니다. 값을 계속 읽고 표로 보려면 PortDock Modbus Master 가 더 편합니다.",
-        "- 1. 탭 «클라이언트», 주소에 장비 IP, 포트 502 → «접속». 처음이면 «Modbus TCP 로 보기» 알림줄이 나옵니다 — 누르면 프레임 구분이 «Modbus TCP (MBAP 길이)» 가 됩니다.",
+        "- 1. 탭 «클라이언트», 주소에 장비 IP, 포트 502 → «연결». 처음이면 «Modbus TCP 로 보기» 알림줄이 나옵니다 — 누르면 프레임 구분이 «Modbus TCP (MBAP 길이)» 가 됩니다.",
         "- 2. 보내기 줄의 «Modbus…» 로 요청 창을 엽니다. 국번(슬레이브 ID) 1, 함수 03, 시작 주소(40001 표기면 «4xxxx 표기»), 개수 10.",
         "- 3. «입력칸에 넣기» → 보내기 줄이 HEX·체크섬 없음·줄 끝 없음으로 맞춰지고 MBAP 머리(트랜잭션 ID)가 붙은 요청이 들어갑니다. «보내기».",
         "- 4. 응답 줄을 누르면 «상세» 에 MBAP 풀이와 «40001 = 1812 (0x0714)» 처럼 요청과 짝지은 값이 나옵니다(같은 트랜잭션 ID). 예외면 이름(예: 02 없는 주소)이 나옵니다.",
@@ -238,6 +240,7 @@ export const help: HelpDoc = {
     },
     {
       title: "Getting started",
+      id: "start",
       body: [
         "- 1. Choose «Mode» on the left: «Client (connect to device)» if the device waits for connections, «Server (device connects)» if the device connects to the PC.",
         "- 2. As a client enter the device «Host» (IP) and «Port»; as a server enter the «Bind address» and the «Port» to listen on.",
@@ -531,3 +534,6 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
 // Serial·TCP·UDP 공통 기능(10/18: 이력·단축키·간격·처리량·반복 횟수·트리거·체크섬 옵션·인코딩·로그 형식·파일 보내기)
 // + 중계·Modbus TCP·이 PC 주소 + 자동응답 — «문제 해결» 앞에
 for (const lang of ["ko", "en"] as const) help[lang].splice(help[lang].length - 1, 0, ...ioSections(lang, { fileSend: true }), ...TCP_EXTRA[lang], ...ioAutoReplySections(lang));
+
+// «용어» 절 — 공용 목록(shared/glossary.ts)에서 이 앱 화면에 나오는 것만, 맨 끝에
+for (const lang of ["ko", "en"] as const) help[lang].push(termsSection(lang, ["nagle", "gap", "frame", "mbap", "checksum", "failOnly", "crlf", "rxtx"]));

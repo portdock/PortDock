@@ -1,9 +1,17 @@
-//! 자주 나오는 OS 오류를 화면 언어로. 윈도우 원문(PC 언어로 나옴)은 괄호 안에 남긴다.
+//! 자주 나오는 OS 오류를 화면 언어로 + 다음에 할 일. 윈도우 원문(PC 언어로 나옴)은 괄호 안에 남긴다.
 
 use std::io::{self, ErrorKind};
 
 /// 네트워크(바인드·접속·송수신) 오류
 pub fn net(e: &io::Error) -> String {
+    match net_text(e) {
+        Some(text) => format!("{text} ({e})"),
+        None => e.to_string(),
+    }
+}
+
+/// `net` 의 설명만(원문 없이) — 모르는 오류면 None. 원문 앞에 다른 안내를 끼울 때(net::bind_error) 쓴다
+pub fn net_text(e: &io::Error) -> Option<String> {
     let code = e.raw_os_error();
     let text = match (code, e.kind()) {
         (Some(10048), _) | (_, ErrorKind::AddrInUse) => {
@@ -25,9 +33,25 @@ pub fn net(e: &io::Error) -> String {
         (Some(10051), _) | (Some(10065), _) => {
             crate::tr!("그 주소로 가는 길이 없습니다(네트워크 설정 확인)", "No route to that address (check network settings)")
         }
-        _ => return e.to_string(),
+        // WSAHOST_NOT_FOUND·WSATRY_AGAIN·WSANO_DATA — 이름을 IP 로 바꾸지 못함
+        (Some(11001 | 11002 | 11004), _) => return Some(resolve_text()),
+        _ => return None,
     };
-    format!("{text} ({e})")
+    Some(text.to_string())
+}
+
+/// 주소(이름)를 찾지 못함 — 철자·DNS 안내
+pub fn resolve_text() -> String {
+    crate::tr!(
+        "주소를 찾지 못했습니다 — 이름 철자를 확인하거나 IP 주소(예: 192.168.0.10)를 직접 넣으세요(이름이면 DNS·hosts 확인)",
+        "Address not found — check the spelling or enter the IP address directly (e.g. 192.168.0.10); for a name, check DNS / hosts"
+    )
+    .to_string()
+}
+
+/// 이름 풀기(to_socket_addrs) 오류 — 무엇이든 «찾지 못함» 안내 + 원문
+pub fn resolve(e: &io::Error) -> String {
+    format!("{} ({e})", resolve_text())
 }
 
 /// 열려 있던 시리얼 포트의 읽기 오류
@@ -75,6 +99,16 @@ mod tests {
         // 모르는 오류는 원문 그대로
         let other = io::Error::other("boom");
         assert_eq!(net(&other), "boom");
+        assert!(net_text(&other).is_none());
+    }
+
+    #[test]
+    fn host_not_found_says_what_to_do() {
+        let e = io::Error::from_raw_os_error(11001);
+        let s = net(&e);
+        assert!(s.contains("찾지 못했습니다") && s.contains("IP 주소"), "{s}");
+        assert!(s.ends_with(&format!("({e})")));
+        assert!(resolve(&io::Error::other("raw")).ends_with("(raw)"));
     }
 
     #[test]

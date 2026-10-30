@@ -4,6 +4,7 @@ import type { Lang } from "./uiText";
 const ko = {
   // ---- 규칙 카드
   noRules: "아직 규칙이 없습니다. «+ 규칙 추가» 로 만들거나 아래 예제로 시작하세요.",
+  syntaxTitle: "패턴·응답 쓰는 법(??·*·{req}…)",
   examples: "예제:",
   exModbus: "Modbus RTU 03 응답",
   exScpi: "SCPI *IDN? 응답",
@@ -87,6 +88,7 @@ const ko = {
 
 const en: typeof ko = {
   noRules: "No rules yet. Use «+ Add rule» or start from an example below.",
+  syntaxTitle: "How to write patterns and replies (??, *, {req}…)",
   examples: "Examples:",
   exModbus: "Modbus RTU 03 reply",
   exScpi: "SCPI *IDN? reply",

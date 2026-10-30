@@ -4,6 +4,7 @@
 pub mod autoreply;
 pub mod checksum;
 pub mod codec;
+pub mod consent;
 pub mod delay;
 pub mod event;
 pub mod framer;

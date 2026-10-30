@@ -465,7 +465,10 @@ export function AutoReplyPanel({
       {shadow.by && shadow.names.length > 0 && <div className="interlock">{ar(lang, "ilShadow", { a: shadow.by, b: shadow.names.join(", ") })}</div>}
       {dups.length > 0 && <div className="interlock">{ar(lang, "ilDup", { a: dups.join(", ") })}</div>}
       {dupPat.length > 0 && <div className="interlock">{ar(lang, "ilDupPat", { a: dupPat.join(", ") })}</div>}
-      <div className="hint">{ar(lang, "help")}</div>
+      <details className="ar-syntax">
+        <summary className="hint">{ar(lang, "syntaxTitle")}</summary>
+        <div className="hint">{ar(lang, "help")}</div>
+      </details>
       {err && <div className="error">{err}</div>}
     </div>
   );

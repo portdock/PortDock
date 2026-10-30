@@ -42,7 +42,8 @@ import { udpExamples } from "@shared/examples";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { NarrowBar, SideBackdrop, SideClose } from "@shared/NarrowBar";
+import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
+import { FirstCard } from "@shared/FirstCard";
 import { useModeSwitch } from "@shared/SendMode";
 import { ui } from "@shared/uiText";
 import { io } from "@shared/ioText";
@@ -76,7 +77,10 @@ export default function App() {
   const lang = settings.lang;
   const setLang = (l: Lang) => update({ lang: l });
   const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState<boolean | string>(false);
+  // 첫 실행 카드(다른 앱과 같은 shared/FirstCard) — «다시 보지 않기» 를 누르면 짧은 안내만
+  const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
+  useEffect(() => store("firstHintDone", firstDone), [firstDone]);
   const openHelp = useCallback(() => setShowHelp(true), []);
   useHelpKey(openHelp);
   // 화면에 남길 줄 수 — 이벤트 콜백 안에서 최신 값을 쓰려고 ref
@@ -147,6 +151,8 @@ export default function App() {
   const [applied, setApplied] = useState<string | null>(null);
   const [remoteErr, setRemoteErr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 시작 실패 — 버튼 바로 밑 빨간 상자로(다른 앱과 같은 자리)
+  const [startErr, setStartErr] = useState<string | null>(null);
   // 화면에 보인 오류는 «문제 보고» 에 넣을 수 있게 모아 둔다
   useEffect(() => {
     if (error) noteError(error);
@@ -267,6 +273,7 @@ export default function App() {
     if (starting) return;
     setStarting(true);
     setError(null);
+    setStartErr(null);
     setSenders([]);
     try {
       setLocal(await api.start(c, rxWire, onEvent));
@@ -287,7 +294,7 @@ export default function App() {
         await api.setLog(p).then(() => setLogPath(p)).catch((e) => setError(String(e)));
       }
     } catch (e) {
-      setError(String(e));
+      setStartErr(String(e));
     } finally {
       setStarting(false);
     }
@@ -599,15 +606,9 @@ export default function App() {
   const rxSummary = [rxCheck ? checksumLabel(rxCheck, lang) : t("rxNoCheck"), cfg.echo ? t("echoShort") : ""].filter(Boolean).join(" · ");
   const summaryLine = `${cfg.bindHost}:${running ? localPort : cfg.bindPort} → ${cfg.remoteHost}:${cfg.remotePort} · ${statusText}`;
 
-  return (
-    <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
-      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
-      <aside className="side">
-        <div className="brand">
-          <span className="logo">
-            PortDock <small>UDP</small>
-          </span>
-          <span className="brand-tools">
+  // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
+  const headTools = (
+    <>
           <select
             className="lang"
             aria-label={lang === "ko" ? "언어" : "Language"}
@@ -628,6 +629,18 @@ export default function App() {
           <button className="icon-btn" onClick={() => setShowSettings(true)} title={ui(lang, "settings")} aria-label={ui(lang, "settings")}>
             ⚙
           </button>
+    </>
+  );
+  return (
+    <div className={`app three${showRight ? " show-right" : ""}${showSide ? " show-side" : ""}`}>
+      <SideBackdrop open={showSide} onClose={() => setShowSide(false)} />
+      <aside className="side">
+        <div className="brand">
+          <span className="logo">
+            PortDock <small>UDP</small>
+          </span>
+          <span className="brand-tools">
+            <SideTools>{headTools}</SideTools>
           <SideClose lang={lang} onClose={() => setShowSide(false)} />
           </span>
         </div>
@@ -701,10 +714,16 @@ export default function App() {
           {running ? t("stop") : t("start")}
         </button>
         {running && <span className="lock-note">🔒 {t("lockedHint")}</span>}
-        <div className={`status s-${status === "listening" ? "connected" : status}`}>
-          {t(`status_${status}` as Key)}
-          {running && local ? ` · ${local}` : ""}
-        </div>
+        {startErr && !running ? (
+          <div className="status s-failed" role="alert">
+            <b>{t("startFailed")}</b> · {startErr}
+          </div>
+        ) : (
+          <div className={`status s-${status === "listening" ? "connected" : status}`}>
+            {t(`status_${status}` as Key)}
+            {running && local ? ` · ${local}` : ""}
+          </div>
+        )}
         {running && cfg.multicastGroup && (
           <button data-tip={tip(lang, "rejoin")} className="btn small" onClick={() => api.rejoin().catch((e) => setError(String(e)))} title={t("rejoinHint")}>
             {t("rejoin")} {cfg.multicastGroup}
@@ -760,7 +779,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <NarrowBar lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={`s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
+        <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={startErr && !running ? "s-disconnected" : `s-${status === "listening" ? "connected" : status}`} summary={summaryLine}>
           <button className={running ? "btn small danger" : "btn small primary"} onClick={running ? stop : () => void start()} disabled={runDisabled} data-tip={withKey(tip(lang, running ? "stop" : "run"), KEYS.connect)}>
             {running ? t("stop") : t("start")}
           </button>
@@ -804,7 +823,19 @@ export default function App() {
 
         <div className="log-wrap">
           <div className="log" ref={listRef} tabIndex={0} onKeyDown={logKeys}>
-            {frames.length === 0 && <div className="empty-guide">{t("emptyGuide")}</div>}
+            {frames.length === 0 &&
+              (firstDone ? (
+                <div className="empty-guide">{t("emptyGuide")}</div>
+              ) : (
+                <FirstCard lang={lang} title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
+                  <ol>
+                    <li>{t("first1")}</li>
+                    <li>{t("first2")}</li>
+                    <li>{t("first3")}</li>
+                  </ol>
+                  <div className="hint">{t("firstNote")}</div>
+                </FirstCard>
+              ))}
             <div style={{ height: rows.getTotalSize(), position: "relative" }}>
               {rows.getVirtualItems().map((r) => {
                 const f = filter.at(r.index);
@@ -1029,7 +1060,7 @@ export default function App() {
           </div>
         )}
       </aside>
-      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock UDP" onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock UDP" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog
           app="PortDock UDP"

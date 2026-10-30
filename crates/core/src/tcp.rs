@@ -124,10 +124,10 @@ const BATCH: Duration = Duration::from_millis(50);
 /// 이름 → 주소들. IPv4 를 앞에 둔다 — 윈도우에서 localhost 는 ::1 이 먼저 나오는데
 /// 장비·서버는 대개 IPv4 에만 묶여 있다
 pub(crate) fn resolve_all(host: &str, port: u16) -> Result<Vec<SocketAddr>, String> {
-    let mut v: Vec<SocketAddr> = (host, port).to_socket_addrs().map_err(|e| format!("{host}:{port}: {e}"))?.collect();
+    let mut v: Vec<SocketAddr> = (host, port).to_socket_addrs().map_err(|e| format!("{host}:{port}: {}", crate::oserr::resolve(&e)))?.collect();
     v.sort_by_key(|a| a.is_ipv6()); // 안정 정렬 — 같은 종류 안의 순서는 그대로
     if v.is_empty() {
-        return Err(crate::tr!(format!("{host}:{port}: 주소를 찾지 못했습니다"), format!("{host}:{port}: address not found")));
+        return Err(format!("{host}:{port}: {}", crate::oserr::resolve_text()));
     }
     Ok(v)
 }
