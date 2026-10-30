@@ -9,6 +9,7 @@ import { tip } from "@shared/tips";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
 import { ReportButton } from "@shared/ReportDialog";
+import { AiCopyButton } from "@shared/AiCopyButton";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { load, samePorts, store } from "@shared/framing";
@@ -792,6 +793,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} frames={() => traffic.current.map((f) => ({ ts: f.ts, dir: f.dir, bytes: f.bytes, note: f.note }))} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
+            <AiCopyButton app={APP} lang={lang} frames={() => traffic.current.map((f) => ({ ts: f.ts, dir: f.dir, bytes: f.bytes, note: f.note }))} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>

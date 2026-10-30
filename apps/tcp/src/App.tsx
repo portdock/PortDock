@@ -20,6 +20,7 @@ import {
 } from "./api";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
+import { AiCopyButton } from "@shared/AiCopyButton";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { help } from "./help";
@@ -907,6 +908,7 @@ export default function App() {
           </select>
           <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock TCP" lang={lang} frames={() => framesRef.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
+          <AiCopyButton app="PortDock TCP" lang={lang} frames={() => framesRef.current} />
           <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
             ?
           </button>

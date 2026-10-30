@@ -4,6 +4,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
+import { AiCopyButton } from "@shared/AiCopyButton";
 import { noteError } from "@shared/report";
 import { HelpDialog, useHelpKey } from "@shared/HelpDialog";
 import { FirstCard } from "@shared/FirstCard";
@@ -469,6 +470,27 @@ export default function App() {
       .then(() => toast.show(`${t("exportCsv")}: ${path}`))
       .catch((e) => setError(String(e)));
   }
+  /** (0.8.0) AI 에게 물어보기용 복사 — 찾은 장비 목록(이름 칸은 PC 이름일 수 있어 빼고, MAC 은 aiCopy 가 뒤 3바이트를 가린다) */
+  const aiScanText = () => {
+    if (!allRows.length) return null;
+    const head = [`# ${scannedRange || cfg.range}${sel ? ` · NIC ${sel.addr.ip}/${sel.addr.prefix}` : ""}${gateway ? ` · gateway ${gateway}` : ""}`];
+    if (scanNote) head.push(`# ${scanNote.replace(/[\r\n]+/g, " ")}`);
+    const lines = rows.slice(0, 150).map((h) =>
+      [
+        h.ip,
+        h.mac ?? "-",
+        h.vendor ?? "-",
+        h.rtt != null ? `${h.rtt}ms` : "-",
+        h.ports.length ? `ports ${h.ports.join(",")}` : "",
+        h.modbus ? `modbus ${[h.modbus.vendor, h.modbus.product, h.modbus.revision].filter(Boolean).join(" ")}` : "",
+        h.gone ? "gone" : [h.me && "self", h.ip === gateway && "gateway", h.conflict.length > 1 && "ip-conflict"].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+    if (rows.length > 150) lines.push(`… +${rows.length - 150}`);
+    return [...head, ...lines].join("\n");
+  };
 
   // ---- 핑 감시
   const mon = useMonitor(lang, settings, toast);
@@ -528,6 +550,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
+            <AiCopyButton app={APP} lang={lang} checks={aiScanText} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>

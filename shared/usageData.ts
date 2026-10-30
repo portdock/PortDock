@@ -15,20 +15,26 @@ export function ingestUrl(key: string = APTABASE_KEY): string | null {
   return /^A-EU-[0-9A-Za-z]{4,40}$/.test(key.trim()) ? "https://eu.aptabase.com/api/v0/events" : null;
 }
 
-/** 프로그램마다 세는 기능 — 값·주소·내용 없이 횟수만. 이름은 이 목록에서만 */
+/**
+ * 모든 프로그램에 같은 이름으로 있는 기능 — «앱마다 3~10개» 규칙은 앱 고유 기능에만 센다(공용 단추 하나 때문에 고유 기능을 빼지 않게).
+ * ai_copy: «AI 에게 물어보기용 복사»(0.8.0)
+ */
+export const COMMON_FEATURES = ["ai_copy"] as const;
+
+/** 프로그램마다 세는 기능 — 값·주소·내용 없이 횟수만. 이름은 이 목록에서만(끝의 공용 기능 포함) */
 export const FEATURES = {
-  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master"],
-  tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save"],
-  udp: ["start", "send", "file_log"],
-  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log"],
-  "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log"],
-  simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log"],
-  scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block"],
-  plot: ["start", "record", "export"],
-  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor"],
-  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial"],
-  "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state", "rules", "fill_write"],
-  "hw-tester": ["net_record", "csv_save", "wifi_signal", "bt_record", "bt_audio", "test_tone"],
+  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master", ...COMMON_FEATURES],
+  tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save", ...COMMON_FEATURES],
+  udp: ["start", "send", "file_log", ...COMMON_FEATURES],
+  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log", ...COMMON_FEATURES],
+  "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log", ...COMMON_FEATURES],
+  simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log", ...COMMON_FEATURES],
+  scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block", ...COMMON_FEATURES],
+  plot: ["start", "record", "export", ...COMMON_FEATURES],
+  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor", ...COMMON_FEATURES],
+  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial", ...COMMON_FEATURES],
+  "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state", "rules", "fill_write", ...COMMON_FEATURES],
+  "hw-tester": ["net_record", "csv_save", "wifi_signal", "bt_record", "bt_audio", "test_tone", ...COMMON_FEATURES],
 } as const satisfies Record<string, readonly string[]>;
 
 export type UsageApp = keyof typeof FEATURES;
