@@ -1279,7 +1279,7 @@ export default function App() {
             )
           }
         />
-        <div className="disclaimer hint">{t("disclaimer")}</div>
+        <div className="disclaimer hint">{t(xgt ? "disclaimerXgt" : "disclaimer")}</div>
       </main>
       {cellDlg != null && dlgItem && (
         <PointDialog

@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/scanBaseline.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareScan, diffCsv, diffDetail, diffSummary, diffText, makeBaseline, normMac, parseBaseline, scopeOf, upsertNamed } from "./scanBaseline.ts";
+import { compareScan, diffCsv, diffDetail, diffSummary, diffText, makeBaseline, normMac, parseBaseline, scopeOf, upsertNamed, upsertPlan, freeName } from "./scanBaseline.ts";
 import { maskForAi } from "./aiCopy.ts";
 
 const M = (n) => `02:00:5E:10:00:${n.toString(16).padStart(2, "0").toUpperCase()}`;
@@ -150,6 +150,32 @@ test("upsertNamed — 같은 이름은 바꾸고 새것이 앞, 최대 개수", 
     ["a", "B"],
   );
   assert.equal(upsertNamed(l, { name: "C", savedAt: 4 }, 2).length, 2);
+});
+
+test("upsertPlan — 20개가 차 있어도 불러온 오래된 항목은 남고, 나머지에서 가장 오래된 것을 뺀다", () => {
+  const full = Array.from({ length: 20 }, (_, i) => ({ name: `B${i}`, savedAt: 1000 + i }));
+  // 다른 PC 에서 받은 작년 기준(저장 시각이 가장 오래됨)
+  const old = { name: "작년", savedAt: 1 };
+  // 고치기 전: 넣고 나서 시각순으로 자르면 불러온 것이 바로 사라졌다
+  assert.equal(upsertNamed(full, old).some((x) => x.name === "작년"), true);
+  const p = upsertPlan(full, old);
+  assert.equal(p.list.length, 20);
+  assert.equal(p.list[0].name, "작년");
+  assert.deepEqual(p.dropped.map((x) => x.name), ["B0"], "가장 오래된 B0 을 뺀다");
+  assert.equal(p.replaced, null);
+  // 같은 이름은 바꾸기만 — 뺄 것 없음
+  const r = upsertPlan(full, { name: "b5", savedAt: 5000 });
+  assert.equal(r.replaced.name, "B5");
+  assert.equal(r.dropped.length, 0);
+  assert.equal(r.list.length, 20);
+  // 자리가 남으면 뺄 것 없음
+  assert.equal(upsertPlan(full.slice(0, 3), old).dropped.length, 0);
+});
+
+test("freeName — 겹치면 «이름 (2)»", () => {
+  assert.equal(freeName([{ name: "A" }], "B"), "B");
+  assert.equal(freeName([{ name: "A" }], "a"), "a (2)");
+  assert.equal(freeName([{ name: "A" }, { name: "A (2)" }], "A"), "A (3)");
 });
 
 test("CSV·AI 글 — AI 글은 aiCopy 가 MAC 뒤 3바이트를 가린다", () => {

@@ -5,7 +5,7 @@ import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
 import { tip } from "@shared/tips";
 import { count } from "@shared/usage";
-import { BASELINE_MAX, CHANGE_TEXT, compareScan, diffCsv, diffDetail, diffSummary, diffText, makeBaseline, parseBaseline, scopeOf, upsertNamed, type BaseHost, type Baseline, type HostChange, type ScanDiff } from "@shared/scanBaseline";
+import { BASELINE_MAX, CHANGE_TEXT, compareScan, diffCsv, diffDetail, diffSummary, diffText, makeBaseline, parseBaseline, scopeOf, freeName, upsertPlan, type BaseHost, type Baseline, type HostChange, type ScanDiff } from "@shared/scanBaseline";
 import { api, type Host } from "./api";
 import type { Key, Lang } from "./i18n";
 import { stamp } from "./net";
@@ -77,15 +77,25 @@ export function BaselineView({ lang, t, now, bs, toast, onError }: { lang: Lang;
   const canSave = !scanning && now.hosts.length > 0 && now.phase !== "idle";
   const { selected, diff } = bs;
 
-  function saveBaseline() {
+  /** 목록에 넣기 — 같은 이름은 바꿔 쓸지, 20개가 넘치면 가장 오래된 것을 지울지 먼저 묻는다. 넣은 것은 늘 남는다 */
+  async function put(b: Baseline): Promise<string | null> {
+    const p = upsertPlan(bs.list, b, BASELINE_MAX);
+    const yes = (msg: string) => ask(msg, { kind: "warning" }).catch(() => false);
+    if (p.replaced && !(await yes(t("bsReplaceAsk", { a: p.replaced.name })))) return null;
+    if (p.dropped.length && !(await yes(t("bsDropAsk", { a: p.dropped[0].name, n: BASELINE_MAX })))) return null;
+    bs.setList(p.list);
+    bs.setSelName(b.name);
+    return p.dropped.length ? t("bsDropped", { a: p.dropped.map((x) => x.name).join("», «") }) : "";
+  }
+  async function saveBaseline() {
     if (!canSave) return;
     const n = name.trim() || `${now.range} ${day(Date.now())}`;
     const b = makeBaseline(n, now.range, now.ports, now.hosts.map(toBase));
-    bs.setList((l) => upsertNamed(l, b, BASELINE_MAX));
-    bs.setSelName(b.name);
+    const dropped = await put(b);
+    if (dropped == null) return;
     setName("");
     count("baseline_save");
-    toast.show(t("bsSaved", { a: b.name, n: b.hosts.length }));
+    toast.show([t("bsSaved", { a: b.name, n: b.hosts.length }), dropped].filter(Boolean).join(" · "));
   }
   async function removeBaseline() {
     if (!selected) return;
@@ -120,9 +130,12 @@ export function BaselineView({ lang, t, now, bs, toast, onError }: { lang: Lang;
         toast.show(t("bsBadFile"), { error: true });
         return;
       }
-      bs.setList((l) => upsertNamed(l, b, BASELINE_MAX));
-      bs.setSelName(b.name);
-      toast.show(t("bsImported", { a: b.name, n: b.hosts.length }));
+      // 불러온 것이 같은 이름을 말없이 덮지 않게 «이름 (2)»
+      const free = freeName(bs.list, b.name);
+      const item = free === b.name ? b : { ...b, name: free };
+      const dropped = await put(item);
+      if (dropped == null) return;
+      toast.show([t("bsImported", { a: item.name, n: item.hosts.length }), free !== b.name ? t("bsRenamed", { a: free }) : "", dropped].filter(Boolean).join(" · "));
     } catch (e) {
       onError(String(e));
     }

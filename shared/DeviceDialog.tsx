@@ -12,7 +12,7 @@ export interface DeviceApplyOpts {
   comm: boolean;
   /** Master: 빈 주소를 사이에 둔 칸도 한 표로(최대 8칸) */
   joinGaps: boolean;
-  /** Slave(0.10.0): 값 만들기(잡음·누적)와 연결 규칙(운전 지령 → 출력 주파수 등)도 넣기 */
+  /** Slave(0.10.0): 값 만들기(잡음·누적)와 칸 잇기 규칙(운전 지령 → 출력 주파수 등)도 넣기 */
   behave?: boolean;
   /** Slave(0.10.0): 읽기 전용·쓰기 전용 지키기, 맵에 없는 주소는 예외 02 */
   guard?: boolean;
@@ -46,8 +46,8 @@ const TX = {
     thUnit: "단위",
     thRw: "R/W",
     notes: "주의",
-    behaveOpt: "값 만들기·연결 규칙도 넣기 — 전압·전류 흔들림, 전력량 누적, 운전 지령 → 출력 주파수 가감속 (0.10.0 부터)",
-    guardOpt: "읽기 전용·쓰기 전용 지키기, 맵에 없는 주소는 예외 02 (0.10.0 부터)",
+    behaveOpt: "값 만들기·칸 잇기 규칙도 넣기 — 전압·전류 흔들림, 전력량 누적, 운전 지령 → 출력 주파수 가감속",
+    guardOpt: "읽기 전용·쓰기 전용 지키기",
     slaveNote: "이 값은 매뉴얼 표를 옮긴 것 — 실제 장비 동작(가감속 시간 등)과 다를 수 있습니다.",
   },
   en: {
@@ -75,8 +75,8 @@ const TX = {
     thUnit: "Unit",
     thRw: "R/W",
     notes: "Notes",
-    behaveOpt: "Also add value generators and link rules — voltage/current drift, energy accumulation, run command → output frequency ramp (from 0.10.0)",
-    guardOpt: "Enforce read-only and write-only, exception 02 for addresses not in the map (from 0.10.0)",
+    behaveOpt: "Also add value generators and link rules — voltage/current drift, energy accumulation, run command → output frequency ramp",
+    guardOpt: "Enforce read-only and write-only",
     slaveNote: "These values are taken from the manual's tables — real device behaviour (ramp times, etc.) may differ.",
   },
 };

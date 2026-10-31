@@ -3,7 +3,8 @@
 // 화면·Tauri 의존 없는 순수 함수(시험: node --test shared/inspectSnapshot.test.ts). 읽기·저장·화면은 apps/port-inspector.
 //
 // 스냅샷에 넣지 않는 것: 장치 인스턴스 ID(USB 일련번호가 들어 있다)·USB 허브의 인스턴스 ID·PC 이름·연결한 네트워크 이름·
-// 통계 카운터(늘 바뀐다)·디스크 온도(읽은 순간 값). 사용자 폴더 경로는 «~» 로 가린다(hideUserPaths).
+// 통계 카운터(늘 바뀐다)·디스크 온도(읽은 순간 값)·랜카드 고급 속성 «네트워크 주소»(MAC 을 직접 정한 값 — privateProp).
+// 사용자 폴더 경로는 «~» 로 가린다(hideUserPaths). 랜카드 이름·IPv4 주소·게이트웨이 주소는 들어간다(화면 안내 snPrivacy).
 // 장치는 인스턴스 ID 대신 «VID:PID + USB 포트 사슬(또는 위치)» 로 알아본다 — 같은 변환기를 다른 USB 포트에 꽂으면
 // VID:PID 가 양쪽에 하나뿐일 때 같은 장치로 보고 «USB 위치 바뀜» 으로 적는다.
 import { hideUserPaths } from "./redact.ts";
@@ -105,6 +106,14 @@ export interface SnapInput {
   pc: PcCheck | null;
 }
 
+/** 넣지 않는 랜카드 고급 속성 — «네트워크 주소»(NetworkAddress, MAC 직접 지정). 키워드가 다른 드라이버도 있어 값이 MAC 모양이면 뺀다 */
+const MAC_LIKE = /^(?:[0-9a-f]{12}|(?:[0-9a-f]{2}[-:]){5}[0-9a-f]{2})$/i;
+export function privateProp(keyword: string, name: string, raw: string | null, display: string | null): boolean {
+  const k = `${keyword} ${name}`.toLowerCase().replace(/\s+/g, "");
+  return k.includes("networkaddress") || k.includes("네트워크주소") || k.includes("locallyadministered") || MAC_LIKE.test((raw ?? "").trim()) || MAC_LIKE.test((display ?? "").trim());
+}
+const safeProps = (props: Record<string, [string | null, string | null]>) => Object.fromEntries(Object.entries(props).filter(([k, [raw, shown]]) => !privateProp(k, k, raw, shown)));
+
 /** 읽은 값 → 스냅샷 */
 export function makeSnapshot(name: string, input: SnapInput, savedAt = Date.now(), version?: string): Snapshot {
   const ports = input.entries
@@ -147,7 +156,7 @@ export function makeSnapshot(name: string, input: SnapInput, savedAt = Date.now(
         gateway: n.gateway,
         canTurnOff: n.canTurnOff ?? null,
         profile: n.profile ?? null,
-        props: Object.fromEntries((n.advanced ?? []).map((p) => [p.name || p.keyword, [effective(p), p.display]])),
+        props: Object.fromEntries((n.advanced ?? []).filter((p) => !privateProp(p.keyword, p.name, p.raw, p.display)).map((p) => [p.name || p.keyword, [effective(p), p.display]])),
       }))
     : null;
   const pc = input.pc && !input.pc.failed ? snapPc(input.pc) : null;
@@ -219,7 +228,8 @@ export function parseSnapshot(v: unknown): Snapshot | null {
   if (!o || typeof o !== "object" || o.kind !== SNAPSHOT_KIND) return null;
   const arr = <T>(x: unknown): T[] | null => (Array.isArray(x) ? (x as T[]) : null);
   const ports = arr<SnapPort>(o.ports)?.filter((p) => p && typeof p.id === "string" && typeof p.name === "string") ?? null;
-  const nics = arr<SnapNic>(o.nics)?.filter((n) => n && typeof n.id === "string" && typeof n.name === "string" && n.props && typeof n.props === "object") ?? null;
+  // 옛 파일에 «네트워크 주소» 가 들어 있어도 불러올 때 뺀다
+  const nics = arr<SnapNic>(o.nics)?.filter((n) => n && typeof n.id === "string" && typeof n.name === "string" && n.props && typeof n.props === "object").map((n) => ({ ...n, props: safeProps(n.props) })) ?? null;
   const pc =
     o.pc && typeof o.pc === "object" && Array.isArray(o.pc.items)
       ? {
@@ -418,7 +428,7 @@ function comparePc(base: SnapPc, now: SnapPc, out: SnapChange[]) {
 /** 비교 결과 글(복사·AI) */
 export function snapDiffText(lang: "ko" | "en", base: Snapshot, now: Snapshot, d: SnapDiff): string {
   const ko = lang === "ko";
-  const out = [ko ? `## 지난 점검과 비교 — «${base.name}» (${fmtTime(base.savedAt)}) → 지금 (${fmtTime(now.savedAt)})` : `## Compared with saved check «${base.name}» (${fmtTime(base.savedAt)}) → now (${fmtTime(now.savedAt)})`];
+  const out = [ko ? `## 지난 점검과 비교 — «${base.name}» (${fmtTime(base.savedAt)}) → 지금 (${fmtTime(now.savedAt)})` : `## Compared with baseline «${base.name}» (${fmtTime(base.savedAt)}) → now (${fmtTime(now.savedAt)})`];
   if (!d.changes.length) out.push(ko ? "바뀐 것 없음(읽은 범위)" : "Nothing changed (within what was read)");
   for (const c of d.changes) out.push(`- [${SNAP_CHANGE_TEXT[c.change][lang]}] ${SECTION_TEXT[c.section][lang]} · ${c.target[lang]} · ${c.field[lang]}: ${c.before[lang]} → ${c.after[lang]}`);
   if (d.skipped.length) out.push(ko ? `(한쪽에서 읽지 않아 비교하지 않음: ${d.skipped.map((s) => SECTION_TEXT[s].ko).join(", ")})` : `(Not compared — not read on one side: ${d.skipped.map((s) => SECTION_TEXT[s].en).join(", ")})`);

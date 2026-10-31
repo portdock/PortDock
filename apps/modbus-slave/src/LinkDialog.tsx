@@ -1,4 +1,4 @@
-// 연결 규칙 창(0.10.0) — 칸끼리 잇는 규칙(따라가기·비례·누적)을 고친다. 계산은 백엔드(crates/core/src/slave_profile.rs).
+// 칸 잇기 규칙 창(0.10.0) — 칸끼리 잇는 규칙(따라가기·비례·누적)을 고친다. 계산은 백엔드(crates/core/src/slave_profile.rs).
 import { useEffect, useState } from "react";
 import { tip } from "@shared/tips";
 import { useRestoreFocus } from "@shared/restoreFocus";

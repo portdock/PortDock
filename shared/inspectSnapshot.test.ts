@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/inspectSnapshot.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareSnapshots, makeSnapshot, parseSnapshot, portId, snapDiffText } from "./inspectSnapshot.ts";
+import { compareSnapshots, makeSnapshot, parseSnapshot, portId, privateProp, snapDiffText } from "./inspectSnapshot.ts";
 
 const SERIAL = "A1B2C3D4";
 const entry = (o = {}) => ({
@@ -232,6 +232,22 @@ test("스냅샷에 일련번호·네트워크 이름·사용자 폴더·통계�
     ),
     "dev:ports:communications port",
   );
+});
+
+test("랜카드 «네트워크 주소»(MAC 직접 지정)는 저장본에 넣지 않고, 옛 파일에서도 뺀다", () => {
+  const mac = "02005E100001";
+  const n = nic({ advanced: [prop("JumboPacket", "9014", "9KB MTU"), { ...prop("NetworkAddress", mac), keyword: "NetworkAddress", name: "Network Address" }, { ...prop("X", "02-00-5E-10-00-02"), keyword: "LAA", name: "로컬 관리 주소" }] });
+  const s = snap("a", { nic: n });
+  const json = JSON.stringify(s);
+  assert.ok(!json.includes(mac), "NetworkAddress");
+  assert.ok(!json.includes("02-00-5E-10-00-02"), "MAC 모양 값");
+  assert.ok(json.includes("9014"), "다른 속성은 남는다");
+  // 옛 파일(속성이 들어 있음)을 불러와도 뺀다
+  const old = { ...s, nics: [{ ...s.nics[0], props: { ...s.nics[0].props, "Network Address": [mac, mac] } }] };
+  const back = parseSnapshot(JSON.stringify(old));
+  assert.ok(!JSON.stringify(back).includes(mac));
+  assert.equal(privateProp("*JumboPacket", "Jumbo Packet", "9014", "9KB MTU"), false);
+  assert.equal(privateProp("NetworkAddress", "네트워크 주소", null, null), true);
 });
 
 test("바뀐 것 없음", () => {

@@ -1,5 +1,5 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test apps/modbus-slave/src/profile.test.ts
-// 장비 프로필로 흉내(0.10.0) — 제한 칸·짐작한 값·연결 규칙·백엔드 모양·저장값 되살리기
+// 장비 프로필로 흉내(0.10.0) — 제한 칸·짐작한 값·칸 잇기 규칙·백엔드 모양·저장값 되살리기
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -53,7 +53,8 @@ test("제한 칸 — 주소·칸 수·읽기/쓰기, 백엔드 모양, 끄면 nu
   assert.deepEqual(cells.find((c) => c.addr === 20), { table: "holding-registers", addr: 20, count: 2, access: "r" });
   assert.equal(cells.find((c) => c.addr === 30).access, "w");
   const p = makeProfile(INV, "Maker M1", []);
-  assert.deepEqual(guardSpec(p), { cells, access: true, denyException: 2, unmapped: true });
+  assert.deepEqual(guardSpec(p), { cells, access: true, denyException: 2, unmapped: false }, "맵에 없는 주소 → 예외 02 는 기본 끔(0.9 처럼 빈 번지는 0)");
+  assert.equal(guardSpec({ ...p, guard: { ...p.guard, unmapped: true } }).unmapped, true);
   assert.equal(guardSpec({ ...p, guard: { access: false, unmapped: false, code: 2 } }), null);
   assert.equal(guardSpec({ ...p, guard: { access: true, unmapped: false, code: 3 } }).denyException, 3);
   assert.equal(guardSpec(undefined), null);
@@ -147,7 +148,7 @@ test("온도 조절기 짐작 — 채널마다 PV 가 SV 를 따라가고, SV �
   assert.ok(plan.links.some((l) => l.kind === "scale" && l.out.addr === 1003 && l.src.addr === 0));
 });
 
-test("다른 종류·역할 못 찾음 — 빈 계획(연결 규칙 창에서 직접)", () => {
+test("다른 종류·역할 못 찾음 — 빈 계획(칸 잇기 규칙 창에서 직접)", () => {
   assert.deepEqual(planProfile(dev("panel-meter", [reg({})])), { values: [], sims: [], links: [], roles: [] });
   const noOut = planProfile(dev("inverter", [reg({ address: 5, name: t("운전 지령", "Operation command"), access: "rw" })]));
   assert.equal(noOut.links.length, 0);
@@ -229,7 +230,7 @@ test("저장값 되살리기 — 틀린 것은 빼고 기본값으로", () => {
   const back = cleanProfiles({ 1: good, 2: { device: 5 }, 300: good, x: good, 3: { device: "a/b", cells: [{ table: "coils", addr: -1, count: 1, access: "r" }], links: [{ kind: "zzz" }], guard: { code: 9, access: false } } });
   assert.deepEqual(Object.keys(back).sort(), ["1", "3"]);
   assert.deepEqual(back[1], good);
-  assert.deepEqual(back[3], { device: "a/b", name: "a/b", cells: [], guard: { access: false, unmapped: true, code: 2 }, links: [] });
+  assert.deepEqual(back[3], { device: "a/b", name: "a/b", cells: [], guard: { access: false, unmapped: false, code: 2 }, links: [] });
   assert.deepEqual(cleanProfiles(null), {});
   assert.deepEqual(cleanProfiles([1]), {});
 });

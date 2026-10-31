@@ -398,7 +398,7 @@ const slave = {
   options: { ignoreUnitId: false },
   device: { vendor: "PortDock", productCode: "Modbus Slave", revision: "1.0" },
   sims: new Map(), // "id:table" → [SimSpec]
-  // 장비 프로필(0.10.0) — 국번 → 읽기/쓰기 제한(GuardSpec)·연결 규칙(LinkSpec[])
+  // 장비 프로필(0.10.0) — 국번 → 읽기/쓰기 제한(GuardSpec)·칸 잇기 규칙(LinkSpec[])
   guards: new Map(),
   links: new Map(),
   style: { base: 0, plc: false },
@@ -428,7 +428,7 @@ setInterval(() => {
       else if (s.valueType === "u16" && s.sim.kind === "noise") m.set(s.addr, v < s.sim.min || v > s.sim.max ? Math.round((s.sim.min + s.sim.max) / 2) : Math.min(s.sim.max, Math.max(s.sim.min, v + Math.round((Math.random() * 2 - 1) * s.sim.step))));
     }
   }
-  // 연결 규칙(0.10.0) — u16 칸만 흉내: 따라가기(운전 지령 → 목표로 초당 rate)·비례·누적
+  // 칸 잇기 규칙(0.10.0) — u16 칸만 흉내: 따라가기(운전 지령 → 목표로 초당 rate)·비례·누적
   for (const [id, list] of slave.links) {
     const val = (c) => tbl(id, c.table).get(c.addr) ?? 0;
     for (const l of list) {

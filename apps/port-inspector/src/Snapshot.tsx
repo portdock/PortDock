@@ -1,6 +1,6 @@
 // «지난번과 비교» 탭(0.10.0) — 지금 점검 결과(COM 포트·드라이버·USB 위치·랜카드 설정·이 PC 설정)를 이름 붙여 저장하고
 // 나중에 다시 읽은 것과 비교해 바뀐 것만 보인다. 스냅샷 모양·비교는 shared/inspectSnapshot.ts(시험 있음).
-// 저장본에는 장치 일련번호(인스턴스 ID)·PC 이름·사용자 폴더·네트워크 이름을 넣지 않는다.
+// 기준에는 장치 일련번호(인스턴스 ID)·PC 이름·사용자 폴더·네트워크 이름을 넣지 않는다.
 import { useEffect, useState } from "react";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
@@ -9,7 +9,7 @@ import { count } from "@shared/usage";
 import { VERSION } from "@shared/version";
 import { fmtTime, type PortReport } from "@shared/portinfo";
 import { compareSnapshots, makeSnapshot, parseSnapshot, SECTION_TEXT, SNAP_CHANGE_TEXT, snapDiffCsv, snapDiffText, type SnapDiff, type Snapshot } from "@shared/inspectSnapshot";
-import { BASELINE_MAX, upsertNamed } from "@shared/scanBaseline";
+import { BASELINE_MAX, freeName, upsertPlan } from "@shared/scanBaseline";
 import { api } from "./api";
 import type { Key, Lang } from "./i18n";
 import { entryKey } from "./model";
@@ -56,7 +56,7 @@ export function useSnapshots(lang: Lang) {
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const selected = list.find((s) => s.name === selName) ?? null;
-  // 다른 저장본을 고르면 앞 비교는 지운다
+  // 다른 기준을 고르면 앞 비교는 지운다
   useEffect(() => {
     setResult((r) => (r && selected && r.base.name === selected.name && r.base.savedAt === selected.savedAt ? r : null));
   }, [selected]);
@@ -81,16 +81,26 @@ export function SnapshotView({ lang, t, sn, pcDays, toast }: { lang: Lang; t: T;
   const { selected, result, busy } = sn;
   const err = (e: unknown) => toast.show(String(e), { error: true });
 
+  /** 목록에 넣기 — 같은 이름은 바꿔 쓸지, 20개가 넘치면 가장 오래된 것을 지울지 먼저 묻는다. 넣은 것은 늘 남는다 */
+  async function put(s: Snapshot): Promise<string | null> {
+    const p = upsertPlan(sn.list, s, BASELINE_MAX);
+    const yes = (msg: string) => ask(msg, { kind: "warning" }).catch(() => false);
+    if (p.replaced && !(await yes(t("snReplaceAsk", { a: p.replaced.name })))) return null;
+    if (p.dropped.length && !(await yes(t("snDropAsk", { a: p.dropped[0].name, n: BASELINE_MAX })))) return null;
+    sn.setList(p.list);
+    sn.setSelName(s.name);
+    return p.dropped.length ? t("snDropped", { a: p.dropped.map((x) => x.name).join("», «") }) : "";
+  }
   async function saveNow() {
     if (busy) return;
     sn.setBusy(true);
     try {
       const s = await readSnapshot(name.trim() || stampName(), pcDays);
-      sn.setList((l) => upsertNamed(l, s, BASELINE_MAX));
-      sn.setSelName(s.name);
+      const dropped = await put(s);
+      if (dropped == null) return;
       setName("");
       count("snapshot_save");
-      toast.show(t("snSaved", { a: s.name, n: s.ports?.length ?? 0 }));
+      toast.show([t("snSaved", { a: s.name, n: s.ports?.length ?? 0 }), dropped].filter(Boolean).join(" · "));
     } catch (e) {
       err(e);
     } finally {
@@ -147,9 +157,12 @@ export function SnapshotView({ lang, t, sn, pcDays, toast }: { lang: Lang; t: T;
         toast.show(t("snBadFile"), { error: true });
         return;
       }
-      sn.setList((l) => upsertNamed(l, s, BASELINE_MAX));
-      sn.setSelName(s.name);
-      toast.show(t("snImported", { a: s.name }));
+      // 불러온 것이 같은 이름을 말없이 덮지 않게 «이름 (2)»
+      const free = freeName(sn.list, s.name);
+      const item = free === s.name ? s : { ...s, name: free };
+      const dropped = await put(item);
+      if (dropped == null) return;
+      toast.show([t("snImported", { a: item.name }), free !== s.name ? t("snRenamed", { a: free }) : "", dropped].filter(Boolean).join(" · "));
     } catch (e) {
       err(e);
     }

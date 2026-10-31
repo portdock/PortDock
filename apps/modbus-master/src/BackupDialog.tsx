@@ -20,10 +20,12 @@ import {
   makeBackup,
   parseBackup,
   planReads,
+  previewReadAny,
   rangeProblem,
   rangesFromDevice,
   readBackRanges,
   restoreRows,
+  restoreUnitProblem,
   verifyRows,
   writePlan,
   RANGE_MAX,
@@ -50,7 +52,10 @@ interface RangeRow {
 }
 
 const WHY_KEY: Record<BlockReason, Key> = { input: "bkWhyInput", "profile-ro": "bkWhyRo", "too-long": "bkWhyLong", "no-value": "bkWhyNoValue" };
-const STATE_KEY: Record<VerifyState, Key> = { match: "bkStMatch", differ: "bkStDiffer", unread: "bkStUnread", "write-failed": "bkStWriteFailed" };
+const STATE_KEY: Record<VerifyState, Key> = { match: "bkStMatch", differ: "bkStDiffer", unread: "bkStUnread", "write-failed": "bkStWriteFailed", skipped: "bkStSkipped" };
+/** 표에 그리는 줄 한도 — 넘으면 «앞 N줄만» 을 밝힌다 */
+const RESTORE_SHOW = 3000;
+const CMP_SHOW = 2000;
 
 export interface BackupDialogProps {
   lang: Lang;
@@ -194,11 +199,20 @@ export function BackupDialog(p: BackupDialogProps) {
     if (!b) return;
     setBase(b);
     setUnit(b.backup.unit);
+    const bad = restoreUnitProblem(b.backup.unit, p.wire);
     if (b.backup.device && DEVICES.some((d) => d.id === b.backup.device!.id)) setDevId(b.backup.device.id);
     setCmp(null);
     setPicked(new Set());
     setResult(null);
     setMsg(fill(t("bkLoaded"), { a: b.name }));
+    // 파일의 국번이 이 연결에서 쓸 수 없는 값이면 바로 알린다(미리보기·쓰기도 막힌다)
+    if (bad) setErr(fill(t(bad === "broadcast" ? "bkUnitBcast" : "bkUnitReserved"), { u: b.backup.unit }));
+  }
+  /** 복원 전 국번 검사 — 문제가 있으면 오류를 띄우고 true */
+  function unitBlocked(): boolean {
+    const bad = restoreUnitProblem(unit, p.wire);
+    if (bad) setErr(fill(t(bad === "broadcast" ? "bkUnitBcast" : "bkUnitReserved"), { u: unit }));
+    return !!bad;
   }
 
   // ---------------------------------------------------------------- 비교
@@ -248,30 +262,35 @@ export function BackupDialog(p: BackupDialogProps) {
     setResult(null);
     if (!p.connected) return setErr(t("needConnect"));
     if (!writes.length) return setErr(t("bkPickFirst"));
+    if (unitBlocked()) return;
     const now = await readAll(readBackRanges(writes.map((w) => w.row)), "bkReading");
     if (!alive.current) return;
     const v = verifyRows(
       writes.map((w) => ({ row: w.row, ok: true })),
       now,
     );
-    setPreview(new Map(v.map((x) => [x.row.key, x.got])));
+    const pv = new Map(v.map((x) => [x.row.key, x.got]));
+    setPreview(pv);
+    if (!previewReadAny(pv)) setErr(t("bkPreviewNone"));
   }
   async function runWrite() {
     setErr(null);
     setMsg(null);
     if (!p.connected) return setErr(t("needConnect"));
     if (!writes.length || !preview) return;
+    if (unitBlocked()) return;
+    if (!previewReadAny(preview)) return setErr(t("bkPreviewNone"));
     if (!asking) return setConfirm(sig);
     setConfirm(null);
     count("device_backup");
     stop.current = false;
     setBusy({ done: 0, total: writes.length, what: "bkWriting" });
-    const done: { row: RestoreRow; ok: boolean }[] = [];
+    const done: { row: RestoreRow; ok: boolean | "skipped" }[] = [];
     const errs: string[] = [];
     for (let i = 0; i < writes.length; i++) {
       const w = writes[i];
       if (stop.current || !alive.current) {
-        done.push({ row: w.row, ok: false });
+        done.push({ row: w.row, ok: "skipped" });
         continue;
       }
       const o = await p.writeCells(unit, w.bits, w.start, w.values, p.forceMulti);
@@ -295,7 +314,12 @@ export function BackupDialog(p: BackupDialogProps) {
   const diffN = cmp ? cmp.rows.filter((r) => !r.same).length : 0;
   const sum = base ? backupSummary(base.backup.blocks) : null;
   const failed = base ? base.backup.blocks.filter((k) => !k.values) : [];
-  const writable = rows.filter((r) => !r.blocked);
+  // 표는 앞 RESTORE_SHOW 줄만 그린다 — «모두 고르기» 도 보이는 줄 안에서만(안 보이는 칸이 몰래 쓰이지 않게)
+  const rowsVisible = rows.slice(0, RESTORE_SHOW);
+  const writable = rowsVisible.filter((r) => !r.blocked);
+  const resultMap = useMemo(() => new Map((result ?? []).map((x) => [x.row.key, x])), [result]);
+  const unitBad = restoreUnitProblem(unit, p.wire);
+  const previewOk = !!preview && previewReadAny(preview);
   const fmtSel = (
     <label className="inline">
       {t("format")}
@@ -510,7 +534,7 @@ export function BackupDialog(p: BackupDialogProps) {
                           </tr>
                         </thead>
                         <tbody>
-                          {rowsShown.slice(0, 2000).map((r) => (
+                          {rowsShown.slice(0, CMP_SHOW).map((r) => (
                             <tr key={r.key} className={r.same ? "" : "bk-diff"}>
                               <td className="addr">
                                 FC{fcHex(r.fc)} {label(r.fc, r.addr)}
@@ -524,6 +548,7 @@ export function BackupDialog(p: BackupDialogProps) {
                       </table>
                     </div>
                   )}
+                  {rowsShown.length > CMP_SHOW && <div className="hint warn bk-trunc">{fill(t("bkTrunc"), { n: rowsShown.length, m: CMP_SHOW })}</div>}
                 </>
               )}
             </>
@@ -559,8 +584,8 @@ export function BackupDialog(p: BackupDialogProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.slice(0, 3000).map((r) => {
-                      const res = result?.find((x) => x.row.key === r.key);
+                    {rowsVisible.map((r) => {
+                      const res = resultMap.get(r.key);
                       const now = preview?.get(r.key);
                       return (
                         <tr key={r.key} className={r.blocked ? "bk-blocked" : picked.has(r.key) ? "picked" : ""}>
@@ -583,6 +608,7 @@ export function BackupDialog(p: BackupDialogProps) {
                   </tbody>
                 </table>
               </div>
+              {rows.length > RESTORE_SHOW && <div className="hint warn bk-trunc">{fill(t("bkTruncRestore"), { n: rows.length, m: RESTORE_SHOW })}</div>}
               {asking && (
                 <div className="interlock bk-confirm" role="alert">
                   {fill(t("bkConfirm"), { u: unit, n: writes.length })}
@@ -596,13 +622,14 @@ export function BackupDialog(p: BackupDialogProps) {
                     f: result.filter((x) => x.state === "write-failed").length,
                     u: result.filter((x) => x.state === "unread").length,
                   })}
+                  {result.some((x) => x.state === "skipped") && ` · ${fill(t("bkVerifySkipped"), { n: result.filter((x) => x.state === "skipped").length })}`}
                 </div>
               )}
               <div className="row2 scan-run dlg-buttons">
-                <button className="btn small bk-preview" disabled={!!busy || !writes.length} onClick={() => void runPreview()} data-tip={tip(lang, "mmBkPreview")}>
+                <button className="btn small bk-preview" disabled={!!busy || !writes.length || !!unitBad} onClick={() => void runPreview()} title={unitBad ? fill(t(unitBad === "broadcast" ? "bkUnitBcast" : "bkUnitReserved"), { u: unit }) : ""} data-tip={tip(lang, "mmBkPreview")}>
                   {t("bkPreview")}
                 </button>
-                <button className={asking ? "btn small danger bk-write" : "btn small primary bk-write"} disabled={!!busy || !writes.length || !preview} onClick={() => void runWrite()} title={preview ? "" : t("bkPreviewFirst")} data-tip={tip(lang, "mmBkWrite")}>
+                <button className={asking ? "btn small danger bk-write" : "btn small primary bk-write"} disabled={!!busy || !writes.length || !previewOk || !!unitBad} onClick={() => void runWrite()} title={unitBad ? fill(t(unitBad === "broadcast" ? "bkUnitBcast" : "bkUnitReserved"), { u: unit }) : !preview ? t("bkPreviewFirst") : previewOk ? "" : t("bkPreviewNone")} data-tip={tip(lang, "mmBkWrite")}>
                   {asking ? t("bkWriteConfirm") : t("bkWrite")}
                 </button>
                 {progress}

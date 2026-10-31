@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { VERSION } from "@shared/version";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { save } from "@tauri-apps/plugin-dialog";
+import { ask, save } from "@tauri-apps/plugin-dialog";
 import {
   api,
   ascii,
@@ -99,7 +99,7 @@ function PairCell({ p, missed, lang }: { p: NonNullable<Frame["pair"]>; missed: 
   );
 }
 
-const DEFAULT_GW: GatewayConfig = { timeoutMs: 1000, unit0: "broadcast", defaultUnit: 1, units: "", broadcastDelayMs: 100 };
+const DEFAULT_GW: GatewayConfig = { timeoutMs: 1000, unit0: "noroute", defaultUnit: 1, units: "", broadcastDelayMs: 100 };
 const DEFAULT_SHARE: ShareConfig = { host: "127.0.0.1", port: 7000, rfc2217: false, maxClients: 4, gateway: false, gw: DEFAULT_GW };
 /** 포트 나눔 방식 바꾸기 — 게이트웨이는 기본 502, 다른 방식은 기본 7000(사용자가 바꾼 번호는 그대로) */
 function shareMode(c: ShareConfig, mode: string): ShareConfig {
@@ -214,12 +214,19 @@ export default function App() {
   // (0.10.0) 포트 나눔(COM ↔ TCP)
   const [shareCfg, setShareCfg] = useState<ShareConfig>(() => {
     const s = load<Partial<ShareConfig>>("share", {});
-    return { ...DEFAULT_SHARE, ...s, gw: { ...DEFAULT_GW, ...(s.gw ?? {}) } };
+    const gw = { ...DEFAULT_GW, ...(s.gw ?? {}) };
+    // 0.10.0 전 기본이던 «방송» 은 한 번 «경로 없음» 으로 옮긴다(안전 쪽) — 방송은 사용자가 다시 고른다
+    if (!load("gwUnit0Moved", false)) {
+      if (gw.unit0 === "broadcast") gw.unit0 = "noroute";
+      store("gwUnit0Moved", true);
+    }
+    // «다른 PC 에서 연결 허용(0.0.0.0)» 은 기억하지 않는다 — 앱을 다시 켜면 늘 127.0.0.1(이 PC 안)에서 시작
+    return { ...DEFAULT_SHARE, ...s, host: DEFAULT_SHARE.host, gw };
   });
   const gwCfg = shareCfg.gw ?? DEFAULT_GW;
   const setGw = (p: Partial<GatewayConfig>) => setShareCfg((c) => ({ ...c, gw: { ...(c.gw ?? DEFAULT_GW), ...p } }));
   const [gwStats, setGwStats] = useState<GwStats | null>(null);
-  useEffect(() => store("share", shareCfg), [shareCfg]);
+  useEffect(() => store("share", { ...shareCfg, host: DEFAULT_SHARE.host }), [shareCfg]);
   const [shareAddr, setShareAddr] = useState<string | null>(null);
   const [shareClients, setShareClients] = useState<ShareClient[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
@@ -997,6 +1004,8 @@ export default function App() {
   // ---- (0.10.0) 포트 나눔
   async function startShare() {
     if (!sessionId || shareBusy) return;
+    // 모든 주소(0.0.0.0)로 열 때는 한 번 묻는다 — 같은 망의 누구나 COM 장비에 보낼 수 있다(게이트웨이면 읽기·쓰기)
+    if (shareOpen && !(await ask(t(shareCfg.gateway ? "gwOpenAsk" : "shareOpenAsk"), { title: "PortDock Serial", kind: "warning" }))) return;
     setShareBusy(true);
     setError(null);
     try {
@@ -1008,8 +1017,10 @@ export default function App() {
           const c = e.config;
           setCfg((o) => ({ ...o, baud: c.baud, dataBits: c.dataBits, parity: c.parity, stopBits: c.stopBits, flow: c.flow, dtr: c.dtr, rts: c.rts }));
         } else {
+          // 멈춤 — 사용자가 멈췄거나, 세션(포트)이 스스로 닫혀 백엔드가 나눔도 멈췄을 때. 칸을 꺼짐으로
           setShareAddr(null);
           setShareClients([]);
+          if (e.message) toast.show(`${t("shareStopped")}: ${e.message}`, { error: true, ms: 9000 });
         }
       });
       setShareAddr(addr);
@@ -1420,7 +1431,8 @@ export default function App() {
                 </label>
                 <label data-tip={tip(lang, "gwUnit0")}>
                   {t("gwUnit0")}
-                  <select value={gwCfg.unit0} disabled={!!shareAddr} onChange={(e) => setGw({ unit0: e.target.value === "default" ? "default" : "broadcast" })}>
+                  <select value={gwCfg.unit0} disabled={!!shareAddr} onChange={(e) => setGw({ unit0: e.target.value === "default" ? "default" : e.target.value === "broadcast" ? "broadcast" : "noroute" })}>
+                    <option value="noroute">{t("gwUnit0NoRoute")}</option>
                     <option value="broadcast">{t("gwUnit0Broadcast")}</option>
                     <option value="default">{t("gwUnit0Default")}</option>
                   </select>
@@ -1430,7 +1442,7 @@ export default function App() {
                     {t("gwDefaultUnit")}
                     <NumInput min={1} max={247} value={gwCfg.defaultUnit} disabled={!!shareAddr} onValue={(n) => setGw({ defaultUnit: n })} />
                   </label>
-                ) : (
+                ) : gwCfg.unit0 === "noroute" ? null : (
                   <label data-tip={tip(lang, "gwBcastDelay")}>
                     {t("gwBcastDelay")}
                     <NumInput min={0} max={10000} value={gwCfg.broadcastDelayMs} disabled={!!shareAddr} onValue={(n) => setGw({ broadcastDelayMs: n })} />
@@ -1448,6 +1460,7 @@ export default function App() {
             <input type="checkbox" checked={shareOpen} disabled={!!shareAddr} onChange={(e) => setShareCfg({ ...shareCfg, host: e.target.checked ? "0.0.0.0" : "127.0.0.1" })} /> {t("allowOthers")}
           </label>
           {shareOpen ? <div className="hint warn open-warn">{t("shareOpenHint")}</div> : <span className="hint">{t("shareLocalHint")}</span>}
+          {shareOpen && shareCfg.gateway && <div className="hint warn open-warn gw-open-warn">{t("gwOpenHint")}</div>}
           <button
             className={shareAddr ? "btn small danger" : "btn small primary"}
             onClick={shareAddr ? stopShare : startShare}
