@@ -928,10 +928,10 @@ async function runApp(app, port) {
 
       // ---- 단축키: Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, F4 끊기·다시 연결
       await blur();
-      // 받는 중이면 지운 뒤에도 새 줄이 들어온다(가짜 클라이언트 둘이 0.5초마다) — «지우기 전 시각» 의 줄이 남았는지로 본다
-      const tClear = await js("const d = new Date(); return d.getHours() * 3600000 + d.getMinutes() * 60000 + d.getSeconds() * 1000 + d.getMilliseconds();");
+      // 받는 중이면 지운 뒤에도 새 줄이 들어온다(가짜 클라이언트) — 지우기 전에 있던 줄에 표시를 해 두고 그 줄이 남았는지로 본다
+      await js(`document.querySelectorAll('${ROW}').forEach((r) => r.setAttribute('data-smoke-old', '1'))`);
       await chord([Key.CONTROL], "l");
-      const left = await js(`const t0 = ${tClear}; return [...document.querySelectorAll('${ROW}')].filter((r) => { const m = r.textContent.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})/); if (!m) return true; const t = +m[1] * 3600000 + +m[2] * 60000 + +m[3] * 1000 + +m[4]; return t < t0 - 50; }).length`);
+      const left = await js(`return document.querySelectorAll('${ROW}[data-smoke-old]').length`);
       if (left > 0) await conv("ctrl-l", `Ctrl+L 뒤에도 지우기 전 로그가 ${left}줄`);
       if (!simple) {
         const n0 = await calls("plugin:dialog|save");
@@ -1940,8 +1940,13 @@ async function runApp(app, port) {
           await js("document.querySelector('.modal.file-dialog .btn.primary').click()");
           await sleep(500);
           if (snap) await shot(app, `${combo.name}-file-sending`);
-          await sleep(1600);
-          const f = await js("return (document.querySelector('.modal.file-dialog .file-job') || {}).textContent || ''");
+          // 가짜 포트 속도로 4096 바이트에 약 2초 — PC 가 바쁘면 더 걸리므로 다 보낼 때까지(최대 6초) 기다린다
+          let f = "";
+          for (let i = 0; i < 30; i++) {
+            await sleep(200);
+            f = await js("return (document.querySelector('.modal.file-dialog .file-job') || {}).textContent || ''");
+            if (/다 보냈|Sent everything/.test(f)) break;
+          }
           if (!/4,096|4096/.test(f) || !/다 보냈|Sent everything/.test(f)) await conv("file-send", `파일 보내기 진행이 끝나지 않음: «${f}»`);
           await verify("file send");
           await keys(Key.ESCAPE);
