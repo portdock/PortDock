@@ -1,0 +1,277 @@
+---
+// 웹 도구: 절연 저항 판정 — 회로 종류(SELV·PELV / 500 V 이하 / 500 V 초과)·측정 전압·잰 값(MΩ) → «문제 없음(이 측정 범위)/볼 것/문제 있음».
+// 기준표·판정은 lib/insulation.ts(node --test — 전기설비기술기준 제52조·IEC 60364-6 표 6.1). 모두 브라우저 안 — 서버로 보내지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { LEVEL_NAME, ROWS } from "../lib/insulation";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/insulation-resistance/";
+const L = ko
+  ? {
+      h1: "절연 저항 판정",
+      desc: "회로 전압(SELV·PELV, 500 V 이하, 500 V 초과)과 측정 전압·잰 값(MΩ)을 넣으면 전기설비기술기준 제52조·IEC 60364-6 최소값과 비교해 판정합니다.",
+      seo: "절연저항 기준·판정 (KEC 제52조·0.5·1 MΩ) — PortDock",
+      helper: "공칭 전압으로 고르기",
+      nominal: "회로 공칭 전압 (V)",
+      selv: "SELV·PELV 회로(안전 절연 변압기·전원)",
+      circuit: "회로 종류",
+      testV: "측정(시험) 전압 DC (V)",
+      reading: "잰 값 (MΩ — >2000, OL, 550k 도 됨)",
+      copy: "결과 복사",
+      copied: "복사했습니다.",
+      need: "기준",
+      noCircuit: "이 전압·종류에 맞는 줄이 없습니다(SELV·PELV 는 AC 50 V·DC 120 V 이하, 표는 1000 V 까지).",
+      privacy: "넣은 값은 이 브라우저 안에서만 판정하며 어디에도 보내지 않습니다.",
+      safeTitle: "재기 전에 (안전)",
+      safe: [
+        "절연 저항 측정은 전기 작업입니다 — 자격을 갖춘 사람이 현장 안전 규칙(작업 허가·잠금·표지)에 따라 합니다.",
+        "회로를 차단하고, 검전기로 전압이 없는 것을 확인한 뒤 잽니다. 다른 사람이 전원을 넣지 못하게 잠급니다.",
+        "PLC·인버터·전원 장치·센서·통신 장비·서지 보호기·노이즈 필터 같은 전자 장비는 떼어 내거나 단자를 풀어 시험 전압이 걸리지 않게 합니다(손상 위험, 값도 낮게 나옴).",
+        "측정 중·직후에는 케이블이 충전돼 있습니다 — 측정기 단자를 만지지 말고, 끝나면 측정기의 방전 기능이나 접지로 방전한 뒤 손댑니다.",
+        "긴 케이블·모터는 값이 자리 잡는 데 시간이 걸립니다. 같은 시간(예: 1분)에 읽어 지난 기록과 비교합니다.",
+      ],
+      tTitle: "저압 전로 절연 저항 최소값",
+      tHead: ["전로의 사용 전압", "DC 시험 전압", "절연 저항"],
+      tNote:
+        "특별저압(ELV)은 교류 50 V·직류 120 V 이하입니다. SELV(비접지)·PELV(접지)는 1차와 2차가 전기적으로 절연된 회로, FELV 는 절연되지 않은 회로입니다. 이 표는 2021년부터 적용되는 새 설비 기준이며, 그 전에 설치된 설비·고압 설비·장비 자체의 시험값은 원문·제조사 자료를 봅니다.",
+      lTitle: "값을 읽는 법",
+      l: [
+        "최소값을 넘는다고 끝이 아닙니다. 같은 회로를 같은 조건으로 잰 지난 값보다 크게 떨어졌다면 습기·먼지·피복 손상의 시작일 수 있습니다 — 일지에 남겨 추세를 봅니다.",
+        "여러 회로가 묶인 채 낮게 나오면 차단기·단자대에서 구간을 나눠 다시 재어 낮은 구간을 좁힙니다.",
+        "SELV·PELV(24 V 제어 회로)에 500 V 를 걸면 회로에 남은 전자 부품이 상할 수 있습니다 — 규정 시험 전압(250 V)을 씁니다.",
+      ],
+      srcTitle: "출처",
+      seeMm: "통신·전원 배선을 멀티미터로 볼 때는",
+      mm: "멀티미터 측정값 점검기",
+      seeLog: "측정값을 남기려면",
+      log: "시운전·설치 점검표",
+    }
+  : {
+      h1: "Insulation Resistance Checker",
+      desc: "Enter the circuit type (SELV/PELV, up to 500 V, above 500 V), test voltage and reading in MΩ to compare with the IEC 60364-6 and Korean minimum values.",
+      seo: "Insulation Resistance Minimum Values (IEC 60364-6) — PortDock",
+      helper: "Pick by nominal voltage",
+      nominal: "Circuit nominal voltage (V)",
+      selv: "SELV or PELV circuit (safety isolating transformer / supply)",
+      circuit: "Circuit type",
+      testV: "Test voltage DC (V)",
+      reading: "Reading (MΩ — >2000, OL, 550k work too)",
+      copy: "Copy result",
+      copied: "Copied.",
+      need: "Requirement",
+      noCircuit: "No row matches this voltage and type (SELV/PELV is up to 50 V AC or 120 V DC; the table goes to 1000 V).",
+      privacy: "Values you enter are checked inside this browser and sent nowhere.",
+      safeTitle: "Before measuring (safety)",
+      safe: [
+        "Insulation resistance testing is electrical work — have a qualified person do it under the site's safety rules (permit, lockout, tags).",
+        "Isolate the circuit and prove it dead with a voltage tester before measuring. Lock it off so nobody can re-energise it.",
+        "Disconnect electronics — PLCs, drives, power supplies, sensors, network gear, surge protectors and EMC filters — so the test voltage does not reach them (they can be damaged, and readings come out low).",
+        "Cables stay charged during and right after the test — do not touch the leads, and discharge with the tester's discharge function or to earth before handling.",
+        "Long cables and motors take time to settle. Read at the same time (e.g. 1 minute) each time so you can compare with earlier records.",
+      ],
+      tTitle: "Minimum insulation resistance — low-voltage circuits",
+      tHead: ["Circuit nominal voltage", "DC test voltage", "Insulation resistance"],
+      tNote:
+        "Extra-low voltage (ELV) is up to 50 V AC or 120 V DC. SELV (unearthed) and PELV (earthed) circuits are separated from the primary; FELV is not. The values are for new installations (Korea: from 2021); for older installations, high voltage, or equipment-level tests, see the source text and the maker's data.",
+      lTitle: "Reading the result",
+      l: [
+        "Passing the minimum is not the whole story. A large drop from earlier readings of the same circuit under the same conditions can be the start of moisture, dust or insulation damage — log readings and watch the trend.",
+        "If several circuits measured together read low, split them at breakers or terminal blocks and re-measure to narrow down the low section.",
+        "Putting 500 V on SELV/PELV (24 V control) circuits can damage electronics left connected — use the specified 250 V.",
+      ],
+      srcTitle: "Sources",
+      seeMm: "To check signal and supply wiring with a multimeter, use the",
+      mm: "multimeter reading checker",
+      seeLog: "To keep records, use the",
+      log: "commissioning checklist maker",
+    };
+const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, v[lang]])) };
+---
+
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <aside class="ir-safe card">
+      <h2>{L.safeTitle}</h2>
+      <ul>{L.safe.map((x) => <li>{x}</li>)}</ul>
+    </aside>
+    <form class="calc card" id="ir" data-lang={lang} data-t={JSON.stringify(T)}>
+      <h2>{L.helper}</h2>
+      <div class="row">
+        <label class="fld">{L.nominal}<input id="nom" class="mono" value="380" inputmode="decimal" autocomplete="off" /></label>
+        <label class="ck"><input type="checkbox" id="selv" /> {L.selv}</label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.circuit}<select id="circuit">{ROWS.map((r) => <option value={r.id} selected={r.id === "le500"}>{r.name[lang]}</option>)}</select></label>
+        <label class="fld">{L.testV}<input id="testV" class="mono" value="500" inputmode="decimal" autocomplete="off" list="ir-v" /></label>
+        <datalist id="ir-v"><option value="250"></option><option value="500"></option><option value="1000"></option></datalist>
+        <label class="fld">{L.reading}<input id="mohm" class="mono" value="85" inputmode="decimal" autocomplete="off" /></label>
+      </div>
+      <p class="note" id="need"></p>
+      <div class="ir-out" id="out" aria-live="polite"></div>
+      <button type="button" class="btn tight" id="bCopy">{L.copy}</button>
+      <p class="note">{L.privacy}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{ROWS.map((r) => <tr><td>{r.name[lang]}</td><td class="mono">{r.testV} V</td><td class="mono">≥ {r.minMohm.toFixed(1)} MΩ</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.lTitle}</h2>
+      <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
+      <p>{L.seeMm} <a href={url(lang, "tools/multimeter-check/")}>{L.mm}</a>. {L.seeLog} <a href={url(lang, "tools/commissioning-checklist/")}>{L.log}</a>.</p>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        <li><a href="https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B8%B0%EC%88%A0%EA%B8%B0%EC%A4%80" rel="noopener" target="_blank">{ko ? "전기설비기술기준(산업통상자원부 고시) 제52조 저압전로의 절연성능 — 국가법령정보센터" : "Korean Electrical Equipment Technical Standards, Article 52 (insulation of low-voltage circuits) — law.go.kr"}</a></li>
+        <li><a href="https://webstore.iec.ch/en/publication/24656" rel="noopener" target="_blank">IEC 60364-6:2016 — {ko ? "저압 전기 설비 — 검사(6.4.3.3 절연 저항, 표 6.1)" : "Low-voltage electrical installations — Verification (6.4.3.3 insulation resistance, Table 6.1)"}</a></li>
+      </ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ir-safe {
+      margin-bottom: 16px;
+      border-left: 4px solid var(--ev);
+    }
+    .ir-safe h2 {
+      font-size: 18px;
+      margin: 0 0 6px;
+    }
+    .ir-safe ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 14px;
+    }
+    .ck {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      align-self: end;
+      padding-bottom: 8px;
+    }
+    .ir-out {
+      margin: 10px 0 8px;
+    }
+    .ir-out :global(.lv) {
+      display: inline-block;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      margin-right: 6px;
+      font-size: 14px;
+    }
+    .ir-out :global(.lv-ok) {
+      background: color-mix(in srgb, var(--tx) 18%, transparent);
+      color: var(--tx);
+    }
+    .ir-out :global(.lv-warn) {
+      background: color-mix(in srgb, var(--ev) 20%, transparent);
+      color: var(--ev);
+    }
+    .ir-out :global(.lv-fault) {
+      background: color-mix(in srgb, #d92d20 18%, transparent);
+      color: #b42318;
+    }
+    @media (prefers-color-scheme: dark) {
+      .ir-out :global(.lv-fault) {
+        color: #ff8a80;
+      }
+    }
+    .ir-out :global(ul) {
+      margin: 6px 0 0;
+      padding-left: 20px;
+      font-size: 14px;
+    }
+  </style>
+  <script>
+    import { circuitFor, judge, parseMohm, rowOf, verdictText, type Circuit } from "../lib/insulation";
+    const form = document.getElementById("ir") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(form.dataset.t ?? "{}") as { copied: string; noCircuit: string; level: Record<string, string> };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as unknown as E;
+    let text = "";
+
+    function fromNominal() {
+      const c = circuitFor(Number($("nom").value.replace(",", ".")), $("selv").checked);
+      if (!c) {
+        $<HTMLElement>("need").textContent = T.noCircuit;
+        return;
+      }
+      ($("circuit") as unknown as HTMLSelectElement).value = c;
+      $("testV").value = String(rowOf(c).testV);
+    }
+    function render() {
+      const c = ($("circuit") as unknown as HTMLSelectElement).value as Circuit;
+      const r = rowOf(c);
+      const tv = Number($("testV").value.replace(",", "."));
+      const m = parseMohm($("mohm").value);
+      const v = judge(c, tv, m);
+      $<HTMLElement>("need").textContent = `DC ${r.testV} V · ≥ ${r.minMohm.toFixed(1)} MΩ`;
+      const badge = document.createElement("span");
+      badge.className = `lv lv-${v.level}`;
+      badge.textContent = T.level[v.level];
+      const p = document.createElement("p");
+      p.style.margin = "0";
+      p.append(badge, v.msg[lang]);
+      const kids: HTMLElement[] = [p];
+      if (v.more.length) {
+        const ul = document.createElement("ul");
+        for (const x of v.more) {
+          const li = document.createElement("li");
+          li.textContent = x[lang];
+          ul.append(li);
+        }
+        kids.push(ul);
+      }
+      $<HTMLElement>("out").replaceChildren(...kids);
+      text = verdictText(c, tv, m, v, lang);
+    }
+    form.addEventListener("input", (e) => {
+      const id = (e.target as HTMLElement).id;
+      if (id === "nom") fromNominal();
+      render();
+    });
+    form.addEventListener("change", (e) => {
+      if ((e.target as HTMLElement).id === "selv") fromNominal();
+      render();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    $("bCopy").addEventListener("click", async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = btn.textContent;
+        btn.textContent = T.copied;
+        setTimeout(() => (btn.textContent = old), 1500);
+      } catch {
+        window.prompt("", text);
+      }
+    });
+    render();
+  </script>
+</Base>
