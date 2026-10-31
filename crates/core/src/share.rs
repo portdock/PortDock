@@ -25,6 +25,8 @@ use std::time::Duration;
 pub const MAX_CLIENTS: usize = 16;
 /// 클라이언트 하나에 밀어 둘 수 있는 받은 덩어리 수 — 넘치면(그 클라이언트가 읽지 않음) 그 클라이언트를 끊는다
 const QUEUE: usize = 1024;
+/// RFC 2217 FLOWCONTROL-SUSPEND 동안 클라이언트 하나에 모아 둘 바이트 상한 — 넘치면 그 클라이언트를 끊는다
+const HOLD_MAX: usize = 1 << 20;
 
 fn default_max() -> usize {
     4
@@ -54,6 +56,14 @@ pub trait Port: Send + Sync {
     fn config(&self) -> SerialConfig;
     fn reconfigure(&self, cfg: SerialConfig) -> Result<(), String>;
     fn note(&self, text: String);
+    /// 세션이 끝났는지(포트 사라짐·오류·재연결 실패·닫기) — 그러면 나눔이 스스로 멈춘다
+    fn closed(&self) -> bool {
+        false
+    }
+    /// 입력 신호선 CTS·DSR·RI·CD(모르면 None)
+    fn lines(&self) -> Option<[bool; 4]> {
+        None
+    }
 }
 
 impl Port for crate::serial::Handle {
@@ -68,6 +78,12 @@ impl Port for crate::serial::Handle {
     }
     fn note(&self, text: String) {
         crate::serial::Handle::note(self, text)
+    }
+    fn closed(&self) -> bool {
+        crate::serial::Handle::closed(self)
+    }
+    fn lines(&self) -> Option<[bool; 4]> {
+        crate::serial::Handle::lines(self)
     }
 }
 
@@ -91,7 +107,7 @@ pub enum ShareEvent {
     Config { config: SerialConfig },
     /// 게이트웨이 통계(바뀌면, 많아도 0.25초에 한 번)
     Gateway { stats: GwStats },
-    /// 서버가 멈춤(오류 포함)
+    /// 서버가 멈춤(오류 포함). 포트 세션이 스스로 닫혀 멈췄으면 그 까닭
     Stopped { message: Option<String> },
 }
 
@@ -101,6 +117,8 @@ struct Client {
     tx: SyncSender<Vec<u8>>,
     rfc: Option<Arc<Mutex<rfc2217::Server>>>,
     sent: Arc<AtomicU64>,
+    /// RFC 2217 FLOWCONTROL-SUSPEND 동안 모아 둔 것(RESUME 때 보낸다, 상한 HOLD_MAX)
+    held: Vec<u8>,
 }
 
 struct Inner {
@@ -226,7 +244,19 @@ impl Inner {
     }
 
     fn accept_loop(self: Arc<Self>, listener: TcpListener) {
+        let mut message = None;
         while !self.stop.load(Ordering::SeqCst) {
+            // 포트 세션이 스스로 닫힘(포트 사라짐·오류·재연결 실패) — 서버를 닫고 클라이언트를 끊는다
+            if self.port.closed() {
+                let why: String = crate::tr!("포트 세션이 닫혀 나눔을 멈췄습니다", "The port session closed — sharing stopped").into();
+                self.stop.store(true, Ordering::SeqCst);
+                let ids: Vec<u64> = self.clients.lock().unwrap().keys().copied().collect();
+                for id in ids {
+                    self.drop_client(id, why.clone());
+                }
+                message = Some(why);
+                break;
+            }
             match listener.accept() {
                 Ok((stream, from)) => self.add(stream, from),
                 Err(e) if e.kind() == ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(20)),
@@ -236,8 +266,9 @@ impl Inner {
                 }
             }
         }
+        drop(listener);
         self.port.note("SHARE STOP".into());
-        (self.on_event)(ShareEvent::Stopped { message: None });
+        (self.on_event)(ShareEvent::Stopped { message });
     }
 
     fn add(self: &Arc<Self>, stream: TcpStream, from: SocketAddr) {
@@ -265,7 +296,7 @@ impl Inner {
         });
         let sent = Arc::new(AtomicU64::new(0));
         let addr = from.to_string();
-        self.clients.lock().unwrap().insert(id, Client { addr: addr.clone(), stream, tx, rfc: rfc.clone(), sent: sent.clone() });
+        self.clients.lock().unwrap().insert(id, Client { addr: addr.clone(), stream, tx, rfc: rfc.clone(), sent: sent.clone(), held: Vec::new() });
         self.port.note(format!("SHARE ACCEPT {}", peer_label(id, &addr)));
         self.announce();
         let me = self.clone();
@@ -345,21 +376,41 @@ impl Inner {
 
     fn rfc_item(&self, id: u64, server: &Mutex<rfc2217::Server>, item: &rfc2217::Item) {
         let cur = self.port.config();
-        let out = server.lock().unwrap().handle(item, &cur);
-        if let Some(next) = out.config {
-            match self.port.reconfigure(next.clone()) {
+        let mut out = {
+            let mut s = server.lock().unwrap();
+            if let Some([cts, dsr, ri, cd]) = self.port.lines() {
+                s.modem = rfc2217::modem_byte(cts, dsr, ri, cd);
+            }
+            s.handle(item, &cur)
+        };
+        if let Some(next) = out.config.take() {
+            match self.port.reconfigure(next) {
                 Ok(()) => {
-                    for n in out.notes {
+                    for n in std::mem::take(&mut out.notes) {
                         self.port.note(format!("{n} ← {}", peer_label(id, &self.addr_of(id))));
                     }
                     (self.on_event)(ShareEvent::Config { config: self.port.config() });
                 }
-                Err(e) => self.port.note(format!("RFC2217 {e}")),
+                Err(e) => {
+                    self.port.note(format!("RFC2217 {e}"));
+                    // 규격대로 «실제 값» 으로 답한다 — 요청 값으로 답하면 클라이언트가 바뀐 줄 안다
+                    out.reply = server.lock().unwrap().actual_reply(item, &self.port.config());
+                }
             }
         }
-        if !out.reply.is_empty()
-            && let Some(c) = self.clients.lock().unwrap().get(&id)
-        {
+        let mut clients = self.clients.lock().unwrap();
+        let Some(c) = clients.get_mut(&id) else { return };
+        let suspended = server.lock().unwrap().suspended;
+        if suspended {
+            // 멈춤 동안은 답도 모아 둔다(순서 유지)
+            c.held.extend_from_slice(&out.reply);
+            return;
+        }
+        // RESUME — 모아 둔 것부터
+        if !c.held.is_empty() {
+            let _ = c.tx.try_send(std::mem::take(&mut c.held));
+        }
+        if !out.reply.is_empty() {
             let _ = c.tx.try_send(out.reply);
         }
     }
@@ -380,14 +431,21 @@ impl Inner {
         }
         let mut slow = Vec::new();
         {
-            let clients = self.clients.lock().unwrap();
-            for (&id, c) in clients.iter() {
+            let mut clients = self.clients.lock().unwrap();
+            for (&id, c) in clients.iter_mut() {
                 let payload = match &c.rfc {
                     Some(s) => {
+                        let escaped = rfc2217::escape(bytes);
+                        // FLOWCONTROL-SUSPEND: 버리지 않고 모았다가 RESUME 때 보낸다. 넘치면 끊는다
                         if s.lock().unwrap().suspended {
+                            if c.held.len() + escaped.len() > HOLD_MAX {
+                                slow.push(id);
+                            } else {
+                                c.held.extend_from_slice(&escaped);
+                            }
                             continue;
                         }
-                        rfc2217::escape(bytes)
+                        escaped
                     }
                     None => bytes.to_vec(),
                 };
@@ -440,6 +498,7 @@ mod tests {
         sent: Mutex<Vec<(Vec<u8>, String)>>,
         notes: Mutex<Vec<String>>,
         cfg: Mutex<SerialConfig>,
+        closed: AtomicBool,
     }
 
     impl Fake {
@@ -459,6 +518,7 @@ mod tests {
                     auto_reconnect: true,
                     rs485: String::new(),
                 }),
+                closed: AtomicBool::new(false),
             })
         }
     }
@@ -471,12 +531,22 @@ mod tests {
         fn config(&self) -> SerialConfig {
             self.cfg.lock().unwrap().clone()
         }
+        /// 보율 50 은 거절한다(드라이버가 받지 않는 값 흉내)
         fn reconfigure(&self, cfg: SerialConfig) -> Result<(), String> {
+            if cfg.baud == 50 {
+                return Err("baud refused".into());
+            }
             *self.cfg.lock().unwrap() = cfg;
             Ok(())
         }
         fn note(&self, text: String) {
             self.notes.lock().unwrap().push(text);
+        }
+        fn closed(&self) -> bool {
+            self.closed.load(Ordering::SeqCst)
+        }
+        fn lines(&self) -> Option<[bool; 4]> {
+            Some([true, false, false, false])
         }
     }
 
@@ -567,6 +637,55 @@ mod tests {
         assert_eq!(fake.sent.lock().unwrap()[0].0, vec![0x10, 0xFF, 0x11]);
         (share.tap())(&[0xFF, 0x01]);
         assert_eq!(read_some(&mut c, 3), vec![0xFF, 0xFF, 0x01]);
+        share.stop();
+    }
+
+    /// 세션이 스스로 닫히면(포트 사라짐 등) 나눔도 멈추고 Stopped 에 까닭을 싣는다 — 클라이언트는 끊긴다
+    #[test]
+    fn stops_when_session_closes_itself() {
+        let fake = Fake::new();
+        let (share, ev) = start(&fake, false, 4);
+        let addr = share.local_addr();
+        let mut a = TcpStream::connect(addr).unwrap();
+        wait_for(|| share.clients().len() == 1);
+        fake.closed.store(true, Ordering::SeqCst);
+        wait_for(|| ev.lock().unwrap().iter().any(|e| matches!(e, ShareEvent::Stopped { message: Some(_) })));
+        a.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        let mut x = [0u8; 1];
+        assert!(matches!(a.read(&mut x), Ok(0) | Err(_)));
+        assert!(share.clients().is_empty());
+        // 듣던 포트도 닫혔다
+        wait_for(|| TcpStream::connect_timeout(&addr, Duration::from_millis(200)).is_err());
+        share.stop();
+        let stops = ev.lock().unwrap().iter().filter(|e| matches!(e, ShareEvent::Stopped { .. })).count();
+        assert_eq!(stops, 1);
+    }
+
+    /// RFC 2217: 포트가 바꾸기를 거절하면 지금 값으로 답한다 · SUSPEND 동안 데이터를 모았다가 RESUME 때 보낸다 · 모뎀 상태 알림
+    #[test]
+    fn rfc2217_refused_baud_suspend_and_modem_state() {
+        let fake = Fake::new();
+        let (share, _ev) = start(&fake, true, 4);
+        let mut c = TcpStream::connect(share.local_addr()).unwrap();
+        assert_eq!(read_some(&mut c, 6), vec![IAC, WILL, COM_PORT, IAC, WILL, SGA]);
+        // 보율 50 — 포트가 거절 → 답은 지금 값 9600(0x2580)
+        c.write_all(&[IAC, SB, COM_PORT, 1, 0, 0, 0, 50, IAC, SE]).unwrap();
+        assert_eq!(read_some(&mut c, 10), vec![IAC, SB, COM_PORT, 101, 0, 0, 0x25, 0x80, IAC, SE]);
+        assert_eq!(fake.cfg.lock().unwrap().baud, 9600);
+        // 모뎀 상태 묻기 — CTS 켜짐(0x10)
+        c.write_all(&[IAC, SB, COM_PORT, 7, IAC, SE]).unwrap();
+        assert_eq!(read_some(&mut c, 7), vec![IAC, SB, COM_PORT, 107, 0x10, IAC, SE]);
+        // SUSPEND → 받은 데이터는 모아 둔다
+        c.write_all(&[IAC, SB, COM_PORT, 8, IAC, SE]).unwrap();
+        wait_for(|| share.inner.clients.lock().unwrap().values().any(|c| c.rfc.as_ref().is_some_and(|s| s.lock().unwrap().suspended)));
+        (share.tap())(&[0x41, 0xFF]);
+        (share.tap())(&[0x42]);
+        c.set_read_timeout(Some(Duration::from_millis(150))).unwrap();
+        let mut x = [0u8; 1];
+        assert!(c.read(&mut x).is_err(), "nothing while suspended");
+        // RESUME → 모은 것이 순서대로
+        c.write_all(&[IAC, SB, COM_PORT, 9, IAC, SE]).unwrap();
+        assert_eq!(read_some(&mut c, 4), vec![0x41, 0xFF, 0xFF, 0x42]);
         share.stop();
     }
 

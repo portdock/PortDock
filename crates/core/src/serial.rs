@@ -276,6 +276,10 @@ struct Shared {
     /// (일련번호 없는 USB 는 식별에 포트 이름이 들어 있어, 옛것으로 감시하면 «사라짐» 으로 오인한다)
     identity: Mutex<Identity>,
     stop: AtomicBool,
+    /// (0.10.0) 읽기 스레드가 끝남(사용자 닫기·포트 사라짐·오류·재연결 실패 모두) — 포트 나눔이 보고 스스로 멈춘다
+    ended: AtomicBool,
+    /// (0.10.0) 마지막으로 읽은 입력 신호선 CTS·DSR·RI·CD(아직 못 읽었으면 None) — RFC 2217 모뎀 상태 알림
+    lines: Mutex<Option<[bool; 4]>>,
 }
 
 /// 송신 대기열에 쌓아 둘 수 있는 최대 건수. 흐름 제어(CTS)로 막힌 채 반복 송신이 돌면
@@ -453,6 +457,8 @@ impl Shared {
             gone: AtomicBool::new(false),
             identity: Mutex::new(identity),
             stop: AtomicBool::new(false),
+            ended: AtomicBool::new(false),
+            lines: Mutex::new(None),
         }
     }
 }
@@ -490,7 +496,11 @@ impl Session {
             std::thread::spawn(move || watch_loop(s))
         });
         let (s, replies) = (shared.clone(), tx.clone());
-        let reader = std::thread::spawn(move || reader_loop(port, cfg, identity, s, events, replies));
+        let reader = std::thread::spawn(move || {
+            let done = s.clone();
+            reader_loop(port, cfg, identity, s, events, replies);
+            done.ended.store(true, Ordering::SeqCst);
+        });
         Ok(Self { shared, tx: Some(tx), reader: Some(reader), writer: Some(writer), watcher })
     }
 
@@ -667,6 +677,16 @@ impl Handle {
     pub fn note(&self, text: String) {
         note(&self.shared, text);
     }
+
+    /// 세션이 끝났는지(사용자가 닫음·스스로 닫힘). 재연결을 기다리는 동안은 false
+    pub fn closed(&self) -> bool {
+        self.shared.stop.load(Ordering::SeqCst) || self.shared.ended.load(Ordering::SeqCst)
+    }
+
+    /// 마지막으로 읽은 입력 신호선 CTS·DSR·RI·CD
+    pub fn lines(&self) -> Option<[bool; 4]> {
+        *self.shared.lines.lock().unwrap()
+    }
 }
 
 fn note(s: &Shared, text: String) {
@@ -840,6 +860,7 @@ fn reader_loop(
                     port = Some(p);
                     name = n;
                     lines = None;
+                    *s.lines.lock().unwrap() = None;
                 }
                 None => {
                     note(&s, "CLOSE".into());
@@ -868,6 +889,7 @@ fn reader_loop(
                         }
                     }
                     lines = Some(now);
+                    *s.lines.lock().unwrap() = Some(now);
                     events.send(SessionEvent::Lines { cts: now[0], dsr: now[1], ri: now[2], cd: now[3] });
                 }
             }
@@ -1557,7 +1579,15 @@ mod tests {
         assert_eq!(h.config().baud, 19_200);
         session.set_tap(Some(Box::new(|_: &[u8]| {})));
         assert!(shared.tap.lock().unwrap().is_some());
+        // 읽기 스레드가 스스로 끝나면(포트 사라짐·재연결 실패) 나눔이 «닫힘» 으로 본다
+        assert!(!h.closed() && h.lines().is_none());
+        *shared.lines.lock().unwrap() = Some([true, false, false, true]);
+        assert_eq!(h.lines(), Some([true, false, false, true]));
+        shared.ended.store(true, Ordering::SeqCst);
+        assert!(h.closed());
+        shared.ended.store(false, Ordering::SeqCst);
         session.stop();
+        assert!(h.closed());
         assert!(shared.tap.lock().unwrap().is_none());
         assert!(h.send_from(vec![1], "x".into()).is_err());
     }

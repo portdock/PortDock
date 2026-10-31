@@ -5,7 +5,9 @@
 //! 다루는 것: Telnet 협상(WILL·WONT·DO·DONT — BINARY·SGA·COM-PORT-OPTION 만 받고 나머지는 거절),
 //! 하위 협상 SIGNATURE·SET-BAUDRATE·SET-DATASIZE·SET-PARITY·SET-STOPSIZE·SET-CONTROL·FLOWCONTROL-SUSPEND/RESUME·
 //! SET-LINESTATE-MASK·SET-MODEMSTATE-MASK·PURGE-DATA, 데이터 안의 0xFF 두 번 쓰기(IAC IAC).
-//! 하지 않는 것: 선 상태·모뎀 상태 알림(NOTIFY-LINESTATE·MODEMSTATE) 보내기, Break 실제 출력, 버퍼 비우기 실제 동작.
+//! 모뎀 상태 알림(NOTIFY-MODEMSTATE)은 최소만 — 마스크를 받았을 때와 클라이언트가 물을 때(NOTIFY-MODEMSTATE 요청) 지금 값을
+//! 마스크대로 한 번 보낸다(바뀔 때마다 먼저 알리지는 않는다). 선 상태(NOTIFY-LINESTATE)는 물으면 0(오류 없음)으로 답한다.
+//! 하지 않는 것: Break 실제 출력, 버퍼 비우기 실제 동작.
 
 use crate::serial::SerialConfig;
 
@@ -148,6 +150,15 @@ pub struct Server {
     pub suspended: bool,
     /// 상대가 알려 온 이름(SIGNATURE)
     pub signature: Option<String>,
+    /// 지금 모뎀 상태(RFC 2217 비트: CD 0x80 · RI 0x40 · DSR 0x20 · CTS 0x10) — 나눔이 포트에서 읽어 넣는다
+    pub modem: u8,
+    /// 알릴 모뎀 상태 비트(SET-MODEMSTATE-MASK, 받기 전엔 규격 기본 255)
+    modem_mask: Option<u8>,
+}
+
+/// 입력 신호선(CTS·DSR·RI·CD) → RFC 2217 모뎀 상태 바이트(바뀜 비트 없이)
+pub fn modem_byte(cts: bool, dsr: bool, ri: bool, cd: bool) -> u8 {
+    (cd as u8) << 7 | (ri as u8) << 6 | (dsr as u8) << 5 | (cts as u8) << 4
 }
 
 /// 한 항목을 처리한 결과
@@ -212,6 +223,22 @@ impl Server {
         self.us[idx(COM_PORT)] = true;
         self.us[idx(SGA)] = true;
         [neg(WILL, COM_PORT), neg(WILL, SGA)].concat()
+    }
+
+    /// 설정 바꾸기가 포트에서 실패했을 때 — 같은 명령에 대해 «실제 지금 값»(`cur`)으로 답을 다시 만든다(바꾸지 않는 명령은 빈 답)
+    pub fn actual_reply(&mut self, item: &Item, cur: &SerialConfig) -> Vec<u8> {
+        let Item::Sub(sub) = item else { return Vec::new() };
+        let (Some(&COM_PORT), Some(&cmd)) = (sub.first(), sub.get(1)) else { return Vec::new() };
+        let query: &[u8] = match (cmd, sub.get(2).copied()) {
+            (1, _) => &[0, 0, 0, 0],
+            (2..=4, _) => &[0],
+            (5, Some(1..=3)) => &[0],
+            (5, Some(8 | 9)) => &[7],
+            (5, Some(11 | 12)) => &[10],
+            _ => return Vec::new(),
+        };
+        let q = [&[COM_PORT, cmd][..], query].concat();
+        self.sub(&q, cur).reply
     }
 
     /// 상대가 COM-PORT-OPTION 을 쓰는 중인지(어느 쪽으로든 켜짐)
@@ -369,9 +396,20 @@ impl Server {
                 };
                 out.reply = sub_reply(5, &[answer]);
             }
+            // NOTIFY-LINESTATE 요청 — 선 오류를 읽지 않으니 0
+            6 => out.reply = sub_reply(6, &[0]),
+            // NOTIFY-MODEMSTATE 요청(pyserial 등이 CTS·DSR·CD 를 읽을 때 묻는다) — 지금 값
+            7 => out.reply = sub_reply(7, &[self.modem & self.modem_mask.unwrap_or(255)]),
             8 => self.suspended = true,
             9 => self.suspended = false,
-            10..=12 => out.reply = sub_reply(cmd, &val[..val.len().min(1)]),
+            // SET-MODEMSTATE-MASK — 답 뒤에 지금 모뎀 상태를 마스크대로 한 번 알린다
+            11 => {
+                let mask = val.first().copied().unwrap_or(255);
+                self.modem_mask = Some(mask);
+                out.reply = sub_reply(11, &val[..val.len().min(1)]);
+                out.reply.extend(sub_reply(7, &[self.modem & mask]));
+            }
+            10 | 12 => out.reply = sub_reply(cmd, &val[..val.len().min(1)]),
             _ => {}
         }
         let changes = crate::serial::changes(cur, &next);
@@ -479,6 +517,21 @@ mod tests {
         assert!(o.config.is_none());
     }
 
+    /// 포트가 바꾸기를 거절했을 때 — 요청 값이 아니라 지금 값으로 답한다
+    #[test]
+    fn actual_reply_uses_current_values() {
+        let mut s = Server::default();
+        let c = cfg();
+        let item = Item::Sub(vec![COM_PORT, 1, 0, 0, 0, 50]);
+        assert_eq!(s.handle(&item, &c).reply, vec![IAC, SB, COM_PORT, 101, 0, 0, 0, 50, IAC, SE]);
+        assert_eq!(s.actual_reply(&item, &c), vec![IAC, SB, COM_PORT, 101, 0, 0, 0x25, 0x80, IAC, SE]);
+        assert_eq!(s.actual_reply(&Item::Sub(vec![COM_PORT, 2, 7]), &c), vec![IAC, SB, COM_PORT, 102, 8, IAC, SE]);
+        assert_eq!(s.actual_reply(&Item::Sub(vec![COM_PORT, 5, 8]), &c), vec![IAC, SB, COM_PORT, 105, 9, IAC, SE]);
+        assert_eq!(s.actual_reply(&Item::Sub(vec![COM_PORT, 5, 11]), &c), vec![IAC, SB, COM_PORT, 105, 12, IAC, SE]);
+        assert_eq!(s.actual_reply(&Item::Sub(vec![COM_PORT, 5, 3]), &c), vec![IAC, SB, COM_PORT, 105, 1, IAC, SE]);
+        assert!(s.actual_reply(&Item::Neg { verb: DO, opt: COM_PORT }, &c).is_empty());
+    }
+
     #[test]
     fn baud_with_ff_byte_is_escaped_in_reply() {
         let mut s = Server::default();
@@ -503,13 +556,20 @@ mod tests {
         assert_eq!(o.reply, vec![IAC, SB, COM_PORT, 105, 6, IAC, SE]);
         assert!(o.config.is_none());
         let o = s.handle(&Item::Sub(vec![COM_PORT, 11, 0xFF]), &c);
-        assert_eq!(o.reply, vec![IAC, SB, COM_PORT, 111, IAC, IAC, IAC, SE]);
+        assert_eq!(o.reply, vec![IAC, SB, COM_PORT, 111, IAC, IAC, IAC, SE, IAC, SB, COM_PORT, 107, 0, IAC, SE]);
         let o = s.handle(&Item::Sub(vec![COM_PORT, 0]), &c);
         assert_eq!(o.reply, [&[IAC, SB, COM_PORT, 100][..], b"PortDock", &[IAC, SE]].concat());
         s.handle(&Item::Sub(vec![COM_PORT, 8]), &c);
         assert!(s.suspended);
         s.handle(&Item::Sub(vec![COM_PORT, 9]), &c);
         assert!(!s.suspended);
+        // 모뎀 상태: CTS·CD 켜짐 — 마스크(CTS 만)대로 알리고, 물으면(7) 같은 마스크로 답한다
+        s.modem = modem_byte(true, false, false, true);
+        assert_eq!(s.modem, 0x90);
+        let o = s.handle(&Item::Sub(vec![COM_PORT, 11, 0x10]), &c);
+        assert_eq!(o.reply, vec![IAC, SB, COM_PORT, 111, 0x10, IAC, SE, IAC, SB, COM_PORT, 107, 0x10, IAC, SE]);
+        assert_eq!(s.handle(&Item::Sub(vec![COM_PORT, 7]), &c).reply, vec![IAC, SB, COM_PORT, 107, 0x10, IAC, SE]);
+        assert_eq!(s.handle(&Item::Sub(vec![COM_PORT, 6]), &c).reply, vec![IAC, SB, COM_PORT, 106, 0, IAC, SE]);
         // 다른 옵션의 하위 협상은 무시
         assert_eq!(s.handle(&Item::Sub(vec![1, 2, 3]), &c), Outcome::default());
     }
