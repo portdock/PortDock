@@ -8,6 +8,7 @@ Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결
 - PC 하드웨어 테스트(묶음 `hw`: 마이크·키보드·웹캠·스피커·게임패드·마우스·모니터)는 `views/*TestPage.astro` + 공통 `styles/hw.css`·`components/HwPrivacy.astro`. 순수 계산은 `lib/inputTiming.ts`·`lib/keyboardLayout.ts`·`lib/hwSignal.ts`(시험 있음). 도구 코드에서 네트워크 요청 금지(카메라·마이크·입력은 브라우저 밖으로 안 보냄).
 - 파일·글을 읽는 웹 도구(블루스크린 코드 사전 `lib/bsod.ts`, 배터리 리포트 해석기 `lib/batteryReport.ts`+가짜 리포트 `lib/batteryFixture.ts`, 바코드 스캐너 테스트 `lib/barcode.ts`, MQTT 디코더 `lib/mqttDecode.ts`)도 풀이를 순수 모듈로 두고 시험한다. 파일·입력은 브라우저 밖으로 보내지 않는다.
 - 배선·구성도 묶음(`draw`): 배선도 `lib/wiring.ts`, 구성도 `lib/sysDiagram.ts`, 커넥터 핀 배치 사전 `lib/pinouts.ts`(시험이 핀 번호 중복·빠짐을 본다 — 출처 없는 값은 넣지 않는다), 시운전 점검표 `lib/commissioning.ts`(링크는 실제 가이드 slug·웹 도구 경로만 — 시험이 확인), IO 리스트 `lib/ioList.ts`(저장소 장비 JSON 전부가 가져오기·저장·불러오기를 지나는지 시험), 현장 문서 묶음 `lib/handover.ts`(구성도는 sysDiagram.ts 의 validateDoc·toDrawing 을 그대로 쓰고, 점검표 CSV 는 commissioning.ts 의 toCsv 출력으로 시험). 전기 묶음의 24V 전원 용량 계산기는 `lib/psuSizing.ts`.
+- Modbus 프레임 변환기(RTU·TCP·ASCII) `lib/modbusConvert.ts` 는 CRC·LRC 를 checksum.ts, PDU 풀이를 modbusDecode.ts 의 decodePdu 로 쓴다. Modbus 연습장 `lib/modbusQuiz.ts` 는 시드로 문제를 만들어(같은 시드 → 같은 문제) 시험에서 재현하고, 링크는 실제 가이드 slug·웹 도구 경로만(시험이 확인).
 - 도구 소개 문구·내려받기 파일 이름: `src/data/tools.ts`. 릴리스 파일 이름은 버전 없이 `PortDock-<App>-setup.exe` 로 고정(릴리스 작업과 맞출 것).
 - 광고는 `AdSlot` 을 둔 페이지(웹 도구·가이드·장비별 레지스터 맵)에만. 내려받기·도구 소개 페이지에는 두지 않는다(애드센스 정책 + «광고 없음» 약속).
 - 사이트 주소는 빌드 변수 **`SITE_URL`**(기본 `https://portdock.dev`). canonical·hreflang·sitemap·`robots.txt`(`src/pages/robots.txt.ts`)·og:url·og:image·JSON-LD 가 모두 이 값을 따른다.

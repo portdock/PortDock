@@ -78,7 +78,9 @@ export interface WebTool {
     | "tools/ferrules/"
     | "tools/panel-heat/"
     | "tools/insulation-resistance/"
-    | "tools/metric-threads/";
+    | "tools/metric-threads/"
+    | "tools/modbus-rtu-tcp/"
+    | "tools/modbus-practice/";
   name: L;
   blurb: L;
 }
@@ -462,6 +464,16 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/metric-threads/",
     name: { ko: "미터 나사 탭 드릴·볼트 참고표", en: "Metric Thread Tap Drill & Bolt Chart" },
     blurb: { ko: "M2~M20 보통·가는 나사 피치, 탭 드릴(d − P), 육각 렌치(ISO 4762)·스패너(ISO 4032) 크기, 공구 크기 → 나사.", en: "M2–M20 coarse and fine pitch, tap drill (d − P), hex key (ISO 4762) and spanner (ISO 4032) sizes, tool size → thread." },
+  },
+  {
+    path: "tools/modbus-rtu-tcp/",
+    name: { ko: "Modbus RTU ↔ TCP 프레임 변환기", en: "Modbus RTU ↔ TCP Frame Converter" },
+    blurb: { ko: "RTU(국번+CRC) ↔ TCP(MBAP: 트랜잭션·길이·유닛 ID) ↔ ASCII(«:»·LRC·CR LF). 요청·응답 모두, 바이트별 색 풀이, 게이트웨이 유닛 ID 0·255 설명.", en: "RTU (address + CRC) ↔ TCP (MBAP: transaction, length, unit ID) ↔ ASCII (colon, LRC, CR LF). Requests and responses, color-coded bytes, gateway unit ID 0 and 255 explained." },
+  },
+  {
+    path: "tools/modbus-practice/",
+    name: { ko: "Modbus 연습장 (퀴즈)", en: "Modbus Practice Quiz" },
+    blurb: { ko: "신입·교육용 자동 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 해설·가이드 링크·점수.", en: "Auto-generated practice for beginners — read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. Explanations, guide links, score." },
   },
 ];
 
