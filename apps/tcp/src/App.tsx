@@ -194,7 +194,7 @@ export default function App() {
     if (mode === cfg.mode || running) return;
     const saved = { ...byMode, [cfg.mode]: { host: cfg.host, port: cfg.port } };
     setByMode(saved);
-    const next = saved[mode] ?? { host: mode === "client" ? (cfg.host === "0.0.0.0" ? "192.168.0.10" : cfg.host) : "0.0.0.0", port: cfg.port };
+    const next = saved[mode] ?? { host: mode === "client" ? (cfg.host === "0.0.0.0" || cfg.host === "127.0.0.1" ? "192.168.0.10" : cfg.host) : "127.0.0.1", port: cfg.port };
     // 그 방식의 최근 연결 기록이 있으면 그 값으로(0.3.0)
     const last = lastRecent(recentMode(mode));
     const rec = last ? splitHostPort(last) : null;

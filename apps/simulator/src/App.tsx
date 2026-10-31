@@ -109,7 +109,7 @@ export default function App() {
   const [transport, setTransport] = useState<Transport>(() => load("transport", "serial"));
   const [ports, setPorts] = useState<PortInfo[]>([]);
   const [com, setCom] = useState<Com>(() => load("com", { port: "", baud: 9600, parity: "none" }));
-  const [net, setNet] = useState<Net>(() => load("net", { host: "0.0.0.0", port: 5000, remoteHost: "192.168.0.10", remotePort: 5000 }));
+  const [net, setNet] = useState<Net>(() => load("net", { host: "127.0.0.1", port: 5000, remoteHost: "192.168.0.10", remotePort: 5000 }));
   // 최근 연결 기록(0.3.0) — TCP 클라이언트 «접속할 곳», TCP 서버 «묶을 주소:포트», UDP «보낼 곳»
   const recentTcp = useRecent("tcp");
   const recentServer = useRecent("tcp-server");

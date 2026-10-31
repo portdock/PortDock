@@ -3041,7 +3041,7 @@ async function runApp(app, port) {
         if ((app === "tcp" || app === "udp") && !/^(둘 다|Both)$/.test(f.view ?? "")) await conv("first-view", `첫 실행 로그 보기가 «둘 다» 가 아님: ${JSON.stringify(f.view)}`, false);
         if (app === "udp" && f.mode !== "ascii") await conv("first-run", `UDP 첫 실행 보내기가 ASCII 가 아님: ${JSON.stringify(f.mode)}`, false);
       }
-      // (10/18) TCP 방식 탭: [클라이언트|서버|중계] — 서버로 가면 0.0.0.0, 다시 클라이언트로 오면 장비 주소가 그대로(방식마다 따로 기억)
+      // (10/18) TCP 방식 탭: [클라이언트|서버|중계] — 서버로 가면 127.0.0.1(0.10.0 부터, 전엔 0.0.0.0), 다시 클라이언트로 오면 장비 주소가 그대로(방식마다 따로 기억)
       if (app === "tcp") {
         const r = await jsAsync(`
           const w = (ms = 200) => new Promise((r) => setTimeout(r, ms));
@@ -3054,7 +3054,7 @@ async function runApp(app, port) {
           a.back = host();
           return a;`);
         if (r.fatal) add("tcp mode tabs", "smoke-error", r.fatal);
-        else if (r.n !== 3 || r.on !== 0 || r.server !== "0.0.0.0" || r.on1 !== 1 || r.back !== r.h0) await conv("tcp-mode-tabs", `방식 탭·방식별 주소 기억이 이상함: ${JSON.stringify(r)}`);
+        else if (r.n !== 3 || r.on !== 0 || r.server !== "127.0.0.1" || r.on1 !== 1 || r.back !== r.h0) await conv("tcp-mode-tabs", `방식 탭·방식별 주소 기억이 이상함: ${JSON.stringify(r)}`);
         await verify("tcp mode tabs");
         await load(port, combo);
       }

@@ -195,7 +195,7 @@ export default function App() {
   useEffect(() => {
     store("transport", transport);
   }, [transport]);
-  const [net, setNet] = useState<NetConfig>(() => ({ host: "0.0.0.0", port: 502, ignoreUnitId: false, ...load<Partial<NetConfig>>("net", {}) }));
+  const [net, setNet] = useState<NetConfig>(() => ({ host: "127.0.0.1", port: 502, ignoreUnitId: false, ...load<Partial<NetConfig>>("net", {}) }));
   useEffect(() => {
     store("net", net);
   }, [net]);
