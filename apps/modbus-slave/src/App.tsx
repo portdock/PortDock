@@ -50,6 +50,20 @@ import {
   parse16,
 } from "./regmap";
 import { CellDialog, typeLabel } from "./CellDialog";
+import { LinkDialog, type CellOption } from "./LinkDialog";
+import {
+  accessAt,
+  cleanProfiles,
+  guardSpec,
+  linkSpec,
+  linkSummary,
+  makeProfile,
+  planProfile,
+  type CellRef,
+  type LinkCfg,
+  type LinkSpec,
+  type SlaveProfile,
+} from "./profile";
 import { Traffic, type TrafficHandle } from "./Traffic";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
@@ -295,6 +309,10 @@ export default function App() {
   const [points, setPoints] = useState<Record<string, Point[]>>(() => load("points", {}));
   const [sims, setSims] = useState<Record<string, SimCfg[]>>(() => load("sims", {}));
   const [device, setDevice] = useState<DeviceId>(() => ({ ...DEFAULT_DEVICE, ...load<Partial<DeviceId>>("device", {}) }));
+  // 장비 프로필로 흉내(0.10.0) — 국번마다 읽기/쓰기 제한·연결 규칙
+  const [profiles, setProfiles] = useState<Record<string, SlaveProfile>>(() => cleanProfiles(load<unknown>("profiles", {})));
+  const [showLinks, setShowLinks] = useState(false);
+  const [profOpenSaved, setProfOpenSaved] = useState<boolean>(() => load("profOpen", false));
   // 장애 주입은 켤 때마다 꺼진 상태로 시작한다 — 모르고 켜 둔 채 정상 시험을 하지 않게
   const [faults, setFaults] = useState<Faults>(NO_FAULTS);
   const [fText, setFText] = useState({ ids: "", fcs: "", from: "", to: "" });
@@ -313,6 +331,7 @@ export default function App() {
   const [faultOpen, setFaultOpen] = useFold(faultOpenSaved, setFaultOpenSaved, settings.expandAll);
   const [statsOpen, setStatsOpen] = useFold(statsOpenSaved, setStatsOpenSaved, settings.expandAll);
   const [devOpen, setDevOpen] = useFold(devOpenSaved, setDevOpenSaved, settings.expandAll);
+  const [profOpen, setProfOpen] = useFold(profOpenSaved, setProfOpenSaved, settings.expandAll);
   // 처음 쓰는 순서 카드(통신 기록 빈 자리) — «다시 보지 않기» 를 누르면 숨긴다
   const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
   // Shift+클릭으로 고른 칸 범위(주소, 끝 포함) — 형식을 한 번에 정한다(10/18). 앞끝은 마지막으로 고른 칸
@@ -338,6 +357,8 @@ export default function App() {
   usePersist("points", points);
   usePersist("sims", sims);
   usePersist("device", device);
+  usePersist("profiles", profiles);
+  usePersist("profOpen", profOpenSaved);
   usePersist("faultOpen", faultOpenSaved);
   usePersist("statsOpen", statsOpenSaved);
   usePersist("firstHintDone", firstDone);
@@ -446,6 +467,7 @@ export default function App() {
     const prune = <T,>(o: Record<string, T>) => Object.fromEntries(Object.entries(o).filter(([k]) => ids.includes(Number(k.split(":")[0]))));
     setPoints((o) => (stale(o) ? prune(o) : o));
     setSims((o) => (stale(o) ? prune(o) : o));
+    setProfiles((o) => (stale(o) ? prune(o) : o));
   }, [ids, ready, flushValues]);
   useEffect(() => {
     if (ready) api.setSlaveIds(ids).catch((e) => setError(String(e)));
@@ -482,6 +504,68 @@ export default function App() {
     // 지운 슬레이브는 다음에 다시 더하면 처음부터 보낸다
     for (const k of Object.keys(pushed.current)) if (!ids.includes(Number(k.split(":")[0]))) delete pushed.current[k];
   }, [ready, ids, specsFor]);
+  // 장비 프로필(0.10.0) — 읽기/쓰기 제한·연결 규칙. 바뀐 국번만 보낸다(같은 내용이면 규칙의 시계가 처음부터 돌지 않게)
+  const pointAtFor = useCallback((id: number) => (c: CellRef) => points[key(id, c.table)]?.find((p) => p.addr === c.addr), [points]);
+  const pushedProf = useRef<Record<number, string>>({});
+  useEffect(() => {
+    if (!ready) return;
+    for (const id of ids) {
+      const p = profiles[id];
+      const guard = guardSpec(p);
+      const links = (p?.links ?? []).map((l) => linkSpec(l, pointAtFor(id))).filter((x): x is LinkSpec => !!x);
+      const sig = JSON.stringify([guard, links]);
+      if ((pushedProf.current[id] ?? JSON.stringify([null, []])) === sig) continue;
+      pushedProf.current[id] = sig;
+      api
+        .setGuard(id, guard)
+        .then(() => api.setLinks(id, links))
+        .catch((e) => setError(String(e)));
+    }
+    for (const k of Object.keys(pushedProf.current)) if (!ids.includes(Number(k))) delete pushedProf.current[Number(k)];
+  }, [ready, ids, profiles, pointAtFor]);
+  const prof = profiles[selId];
+  /** 규칙 결과 칸(지금 표) → 규칙 */
+  const linkAt = useMemo(() => {
+    const m = new Map<number, LinkCfg>();
+    for (const l of prof?.links ?? []) if (l.out.table === table) m.set(l.out.addr, l);
+    return m;
+  }, [prof, table]);
+  /** 칸 이름(연결 규칙 설명·고르기) — «HR 40010 출력 주파수 (×0.01 Hz)» */
+  const cellLabel = useCallback(
+    (c: CellRef) => {
+      const nm = points[key(selId, c.table)]?.find((p) => p.addr === c.addr)?.name ?? "";
+      const short = { coils: "CO", "discrete-inputs": "DI", "holding-registers": "HR", "input-registers": "IR" }[c.table];
+      return `${short} ${addrText(c.table, c.addr, addrMode)}${nm ? ` ${nm}` : ""}`;
+    },
+    [points, selId, addrMode],
+  );
+  const linkCells = useMemo((): CellOption[] => {
+    const seen = new Set<string>();
+    const out: CellOption[] = [];
+    const add = (c: CellRef) => {
+      const k = `${c.table}:${c.addr}`;
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ ref: c, label: cellLabel(c) });
+    };
+    for (const tb of TABLE_IDS) for (const p of points[key(selId, tb)] ?? []) if (p.type !== "string") add({ table: tb, addr: p.addr });
+    for (const c of prof?.cells ?? []) add({ table: c.table, addr: c.addr });
+    for (const l of prof?.links ?? []) [l.out, l.src, l.run].forEach((c) => c && add(c));
+    return out.sort((a, b) => TABLE_IDS.indexOf(a.ref.table) - TABLE_IDS.indexOf(b.ref.table) || a.ref.addr - b.ref.addr);
+  }, [points, selId, prof, cellLabel]);
+  function saveLinks(links: LinkCfg[]) {
+    setShowLinks(false);
+    setProfiles((o) => ({ ...o, [selId]: o[selId] ? { ...o[selId], links } : { device: "", name: "", cells: [], guard: { access: false, unmapped: false, code: 2 }, links } }));
+  }
+  function clearProfile() {
+    setProfiles((o) => {
+      const n = { ...o };
+      delete n[selId];
+      return n;
+    });
+    toast.show(t("profCleared").replace("{u}", String(selId)));
+  }
+
   // TCP 로 바꾸면 «CRC 틀리게», RTU 로 바꾸면 «MBAP 길이 틀리게» 를 끈다(보이지 않는 장애가 켜져 있지 않게)
   useEffect(() => {
     setFaults((f) => (transport === "tcp" ? (f.badCrc ? { ...f, badCrc: false } : f) : f.badMbapLen ? { ...f, badMbapLen: false } : f));
@@ -580,6 +664,18 @@ export default function App() {
     return `${p.type === "string" ? `STR(${p.len ?? 2})` : p.type.toUpperCase()}${p.order !== "ABCD" ? ` ${p.order}` : ""}`;
   };
   const simOf = (a: number) => tableSims?.find((s) => s.addr === a);
+  /** 장비 프로필의 읽기 전용·쓰기 전용 표시(0.10.0) — 제한을 켰을 때만 */
+  const accessMark = (a: number) => {
+    if (!prof?.guard.access) return null;
+    const acc = accessAt(prof, table, a);
+    if (acc !== "r" && acc !== "w") return null;
+    const label = acc === "r" ? t("markRo") : t("markWo");
+    return (
+      <span className="accmark" title={label} aria-label={label}>
+        {acc === "r" ? "RO" : "WO"}
+      </span>
+    );
+  };
 
   async function writeRegs(addr: number, regs: number[]) {
     // 실패하면 화면 값은 그대로 두고 이유를 보인다(다음 읽기에서 실제 값으로 돌아온다)
@@ -779,7 +875,10 @@ export default function App() {
   async function applyDevice(d: Device, o: DeviceApplyOpts) {
     setShowDevice(false);
     try {
-      const rows = slaveRows(d, lang);
+      // 값 만들기·연결 규칙(0.10.0) — 짐작한 시작 값으로 예시 값을 바꾼다
+      const plan = o.behave ? planProfile(d) : null;
+      const planVal = new Map((plan?.values ?? []).map((v) => [`${v.table}:${v.addr}`, v.value]));
+      const rows = slaveRows(d, lang).map((r) => (planVal.has(`${r.table}:${r.address}`) ? { ...r, value: planVal.get(`${r.table}:${r.address}`)! } : r));
       const nextRanges = { ...ranges };
       for (const [tb, sp] of tableSpans(d)) {
         const k = key(selId, tb);
@@ -802,9 +901,36 @@ export default function App() {
         nextPoints[k] = mergePoints(points[k], list.map((r) => ({ addr: r.address, type: r.type, order: r.order, name: r.name, ...(r.type === "string" ? { len: r.len } : {}) })));
       }
       setPoints(nextPoints);
+      // 장비 프로필 — 값 만들기(잡음)는 칸 자동 변화로, 제한·연결 규칙은 국번마다
+      const linkOuts = new Set((plan?.links ?? []).map((l) => `${l.out.table}:${l.out.addr}`));
+      if (plan) {
+        setSims((old) => {
+          const next = { ...old };
+          for (const tb of TABLE_IDS) {
+            const k = key(selId, tb);
+            const add = plan.sims.filter((x) => x.table === tb).map((x) => x.sim);
+            const drop = new Set([...add.map((x) => x.addr), ...[...linkOuts].filter((x) => x.startsWith(`${tb}:`)).map((x) => Number(x.split(":")[1]))]);
+            if (!add.length && !drop.size) continue;
+            next[k] = [...(old[k] ?? []).filter((x) => !drop.has(x.addr)), ...add].sort((a, b) => a.addr - b.addr);
+          }
+          return next;
+        });
+      }
+      if (o.behave || o.guard) {
+        const p = makeProfile(d, deviceName(d, lang), plan?.links ?? []);
+        if (!o.guard) p.guard = { ...p.guard, access: false, unmapped: false };
+        setProfiles((x) => ({ ...x, [selId]: p }));
+      } else
+        setProfiles((x) => {
+          const n = { ...x };
+          delete n[selId];
+          return n;
+        });
       const first = rows.find((r) => r.table === table) ?? rows[0];
       if (first && first.table !== table) setTable(first.table);
       const msgs = [t("devLoaded").replace("{a}", deviceName(d, lang)).replace("{n}", String(rows.length)).replace("{u}", String(selId))];
+      if (plan) msgs.push(t("profApplied").replace("{s}", String(plan.sims.length)).replace("{l}", String(plan.links.length)));
+      if (plan && d.kind === "inverter" && !plan.links.some((l) => l.kind === "approach")) msgs.push(t("profNoRole"));
       const sd = serialDefaults(d);
       if (o.comm && Object.keys(sd).length) {
         const next = { ...cfg, ...sd };
@@ -969,6 +1095,7 @@ export default function App() {
     const mine = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([k]) => Number(k.split(":")[0]) === id));
     const snapPoints = mine(points) as Record<string, Point[]>;
     const snapSims = mine(sims) as Record<string, SimCfg[]>;
+    const snapProf = profiles[id];
     const rest = ids.filter((x) => x !== id);
     setIds(rest);
     if (selId === id) setSel(rest[0]);
@@ -998,6 +1125,7 @@ export default function App() {
         setIds(back);
         setPoints((o) => ({ ...o, ...snapPoints }));
         setSims((o) => ({ ...o, ...snapSims }));
+        if (snapProf) setProfiles((o) => ({ ...o, [id]: snapProf }));
         if (wasSel === id) setSel(id);
       },
     });
@@ -1227,6 +1355,12 @@ export default function App() {
                       ◷
                     </span>
                   )}
+                  {linkAt.get(it.addr) && (
+                    <span className="simmark" title={t("linkMark").replace("{a}", linkSummary(linkAt.get(it.addr)!, cellLabel, lang))} aria-label={t("linkMark").replace("{a}", linkSummary(linkAt.get(it.addr)!, cellLabel, lang))}>
+                      ⇢
+                    </span>
+                  )}
+                  {accessMark(it.addr)}
                   {cfgButton(it)}
                 </div>
               );
@@ -1273,7 +1407,10 @@ export default function App() {
                         {!bits && it.point && it.point.order !== "ABCD" ? ` ${it.point.order}` : ""}
                       </td>
                       <td className="rval">{valueControl(it, i)}</td>
-                      <td className="simcol">{sim ? `◷ ${simSummary(sim, lang)}` : ""}</td>
+                      <td className="simcol">
+                        {[sim && `◷ ${simSummary(sim, lang)}`, linkAt.get(it.addr) && `⇢ ${linkSummary(linkAt.get(it.addr)!, cellLabel, lang)}`].filter(Boolean).join(" · ")}
+                        {accessMark(it.addr)}
+                      </td>
                       <td>{cfgButton(it)}</td>
                     </tr>
                   );
@@ -1284,7 +1421,7 @@ export default function App() {
         </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, values, flash, format, addrMode, regView, tableSims, pts, lang, bits, table, selId, range.start, range.count, toast.show, picked, lastCell],
+    [items, values, flash, format, addrMode, regView, tableSims, pts, lang, bits, table, selId, range.start, range.count, toast.show, picked, lastCell, linkAt, prof, cellLabel],
   );
 
   // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
@@ -1549,6 +1686,50 @@ export default function App() {
         {(faults.delayMs >= 1000 || faults.delayMaxMs >= 1000) && <div className="interlock">{t("ilDelay")}</div>}
         {faults.delayMaxMs > 0 && faults.delayMaxMs < faults.delayMs && <div className="interlock">{t("ilJitter").replace("{a}", String(faults.delayMs))}</div>}
         {faults.noResponse && faults.forceException > 0 && <div className="interlock">{t("ilNoRespWins")}</div>}
+
+        <hr />
+        <details className={prof?.device ? "adv panel on" : "adv panel"} open={profOpen} onToggle={(e) => setProfOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "devGuard")}>
+            <span className="sum-title">{t("prof")}</span>
+            {!profOpen && <span className="sum-note">{prof?.device ? prof.name : prof?.links.length ? t("profLinks").replace("{n}", String(prof.links.length)) : t("profOff")}</span>}
+          </summary>
+          {prof?.device ? (
+            <>
+              <div className="hint">{t("profOf").replace("{u}", String(selId)).replace("{a}", prof.name)}</div>
+              <div className="hint warn prof-note">{t("profNote")}</div>
+              <label data-tip={tip(lang, "profAccess")} className="inline">
+                <input type="checkbox" checked={prof.guard.access} onChange={(e) => setProfiles((o) => ({ ...o, [selId]: { ...prof, guard: { ...prof.guard, access: e.target.checked } } }))} /> {t("profAccess")}
+              </label>
+              {prof.guard.access && (
+                <label data-tip={tip(lang, "profCode")}>
+                  {t("profCode")}
+                  <select value={prof.guard.code} onChange={(e) => setProfiles((o) => ({ ...o, [selId]: { ...prof, guard: { ...prof.guard, code: Number(e.target.value) === 3 ? 3 : 2 } } }))}>
+                    {EXCEPTIONS.filter(([c]) => c === 2 || c === 3).map(([c, n, ko]) => (
+                      <option key={c} value={c}>
+                        {lang === "ko" ? `${ko} (${n.slice(3)})` : n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label data-tip={tip(lang, "profUnmapped")} className="inline">
+                <input type="checkbox" checked={prof.guard.unmapped} onChange={(e) => setProfiles((o) => ({ ...o, [selId]: { ...prof, guard: { ...prof.guard, unmapped: e.target.checked } } }))} /> {t("profUnmapped")}
+              </label>
+            </>
+          ) : (
+            <div className="hint">{t("profNone")}</div>
+          )}
+          <div className="row2">
+            <button data-tip={tip(lang, "profLinks")} className="btn small" onClick={() => setShowLinks(true)}>
+              {prof?.links.length ? t("profLinks").replace("{n}", String(prof.links.length)) : t("profLinksNew")}
+            </button>
+            {prof && (
+              <button data-tip={tip(lang, "profClear")} className="btn small" onClick={clearProfile}>
+                {t("profClear")}
+              </button>
+            )}
+          </div>
+        </details>
 
         <hr />
         <details className="adv" open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)}>
@@ -1844,6 +2025,7 @@ export default function App() {
           onClose={() => setCellDlg(null)}
         />
       )}
+      {showLinks && <LinkDialog lang={lang} unit={selId} links={prof?.links ?? []} cells={linkCells} onSave={saveLinks} onClose={() => setShowLinks(false)} />}
       {showDevice && <DeviceDialog lang={lang} mode="slave" unit={selId} onApply={(d, o) => void applyDevice(d, o)} onClose={() => setShowDevice(false)} />}
       {showHelp && <HelpDialog doc={help} lang={lang} app="PortDock Modbus Slave" start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (

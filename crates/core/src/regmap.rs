@@ -210,6 +210,8 @@ pub enum SimKind {
     },
     /// 0 ↔ 1
     Toggle,
+    /// 잡음(천천히 흔들림) — 지금 값에서 ±step 안의 아무 만큼 움직이고 min~max 를 넘지 않는다. 범위 밖이면 가운데부터(0.10.0)
+    Noise { step: f64, min: f64, max: f64 },
 }
 
 /// 칸(또는 타입 지정 점) 하나의 자동 변화
@@ -246,6 +248,11 @@ impl SimSpec {
             SimKind::Increment { step, min, max, .. } | SimKind::Decrement { step, min, max, .. } => {
                 if !(step.is_finite() && min.is_finite() && max.is_finite()) || *step <= 0.0 || min > max {
                     return bad(crate::tr!("증가·감소는 step > 0, 최소 ≤ 최대", "step > 0 and min ≤ max are required"));
+                }
+            }
+            SimKind::Noise { step, min, max } => {
+                if !(step.is_finite() && min.is_finite() && max.is_finite()) || *step <= 0.0 || min > max {
+                    return bad(crate::tr!("잡음은 step > 0, 최소 ≤ 최대", "step > 0 and min ≤ max are required"));
                 }
             }
             SimKind::Random { min, max } | SimKind::Ramp { min, max, .. } => {
@@ -304,6 +311,13 @@ impl SimSpec {
             SimKind::Sine { amp, offset, wave_ms } => offset + amp * (std::f64::consts::TAU * phase(*wave_ms)).sin(),
             SimKind::Ramp { min, max, wave_ms } => min + (max - min) * phase(*wave_ms),
             SimKind::Toggle => (cur == 0.0) as u8 as f64,
+            SimKind::Noise { step, min, max } => {
+                if cur < *min || cur > *max {
+                    (min + max) / 2.0
+                } else {
+                    (cur + (rng.unit() * 2.0 - 1.0) * step).clamp(*min, *max)
+                }
+            }
         };
         ty.fit(v)
     }
@@ -427,6 +441,29 @@ mod tests {
         let tg = spec(SimKind::Toggle, ValueType::Bit);
         assert_eq!(tg.next(0.0, Duration::ZERO, &mut rng), 1.0);
         assert_eq!(tg.next(1.0, Duration::ZERO, &mut rng), 0.0);
+    }
+
+    #[test]
+    fn noise_walks_inside_range() {
+        let mut rng = Rng::new(9);
+        let n = spec(SimKind::Noise { step: 2.0, min: 2190.0, max: 2210.0 }, ValueType::U16);
+        // 범위 밖(처음 0)이면 가운데부터
+        let mut v = n.next(0.0, Duration::ZERO, &mut rng);
+        assert_eq!(v, 2200.0);
+        let mut moved = false;
+        for _ in 0..500 {
+            let w = n.next(v, Duration::ZERO, &mut rng);
+            assert!((2190.0..=2210.0).contains(&w) && (w - v).abs() <= 2.0 && w.fract() == 0.0, "{v} → {w}");
+            moved |= w != v;
+            v = w;
+        }
+        assert!(moved);
+        let f = spec(SimKind::Noise { step: 0.5, min: 59.9, max: 60.1 }, ValueType::F32);
+        let w = f.next(60.0, Duration::ZERO, &mut rng);
+        assert!((59.9..=60.1).contains(&w));
+        assert!(spec(SimKind::Noise { step: 0.0, min: 0.0, max: 1.0 }, ValueType::U16).check().is_err());
+        let j: SimSpec = serde_json::from_str(r#"{"addr":1,"periodMs":500,"sim":{"kind":"noise","step":1,"min":0,"max":10}}"#).unwrap();
+        assert!(j.check().is_ok());
     }
 
     #[test]

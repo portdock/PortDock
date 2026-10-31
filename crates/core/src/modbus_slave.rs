@@ -5,6 +5,7 @@
 
 use crate::checksum::crc16_modbus;
 use crate::regmap::{Rng, SimRun, SimSpec, ValueType, decode, encode};
+use crate::slave_profile::{Guard, GuardMap, LinkRun, LinkSpec, Tables};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
@@ -37,6 +38,10 @@ pub struct Model {
     pub ranges: BTreeMap<Table, (u16, u32)>,
     /// 값 자동 변화 — 표마다
     pub sims: BTreeMap<Table, Vec<SimRun>>,
+    /// 장비 프로필의 읽기/쓰기 제한(0.10.0) — 마스터 요청에만
+    pub guard: Option<GuardMap>,
+    /// 칸끼리 잇는 규칙(0.10.0) — 주기마다
+    pub links: Vec<LinkRun>,
 }
 
 impl Default for Model {
@@ -52,6 +57,8 @@ impl Default for Model {
             input: vec![0; TABLE_SIZE],
             ranges,
             sims: BTreeMap::new(),
+            guard: None,
+            links: Vec::new(),
         }
     }
 }
@@ -105,6 +112,11 @@ impl Model {
         start >= s as u32 && end <= s as u32 + n
     }
 
+    /// 장비 프로필 제한 — 없으면 통과
+    fn allow(&self, t: Table, start: u16, qty: u16, write: bool) -> Result<(), u8> {
+        self.guard.as_ref().map_or(Ok(()), |g| g.allow(t, start, qty, write))
+    }
+
     /// «읽을 때마다» 자동 변화 — 읽는 범위에 걸친 것만
     fn sims_on_read(&mut self, t: Table, start: u16, qty: u16, ctx: &mut Ctx) {
         let Some(list) = self.sims.get(&t) else { return };
@@ -129,6 +141,22 @@ impl Model {
             }
             *self.sims.get_mut(&tb).unwrap() = list;
         }
+        if !self.links.is_empty() {
+            let mut links = std::mem::take(&mut self.links);
+            for l in links.iter_mut() {
+                l.step(self, now);
+            }
+            self.links = links;
+        }
+    }
+}
+
+impl Tables for Model {
+    fn regs(&self, t: Table) -> &[u16] {
+        self.table(t)
+    }
+    fn regs_mut(&mut self, t: Table) -> &mut [u16] {
+        self.table_mut(t)
     }
 }
 
@@ -355,6 +383,26 @@ impl Slave {
         Ok(())
     }
 
+    /// 장비 프로필의 읽기/쓰기 제한(None 이면 끔)
+    pub fn set_guard(&mut self, id: u8, guard: Option<Guard>) -> Result<(), String> {
+        if let Some(g) = &guard {
+            g.check()?;
+        }
+        let m = self.models.get_mut(&id).ok_or_else(|| crate::tr!("없는 슬레이브", "Unknown slave ID").to_string())?;
+        m.guard = guard.map(|g| g.build());
+        Ok(())
+    }
+
+    /// 칸끼리 잇는 규칙을 통째로 바꾼다
+    pub fn set_links(&mut self, id: u8, links: Vec<LinkSpec>) -> Result<(), String> {
+        for l in &links {
+            l.check()?;
+        }
+        let m = self.models.get_mut(&id).ok_or_else(|| crate::tr!("없는 슬레이브", "Unknown slave ID").to_string())?;
+        m.links = links.into_iter().map(LinkRun::from).collect();
+        Ok(())
+    }
+
     /// 주기 자동 변화 — 앱이 100ms 쯤마다 부른다
     pub fn tick(&mut self, now: Instant) {
         let t = now.saturating_duration_since(self.t0);
@@ -366,7 +414,7 @@ impl Slave {
 
     /// 자동 변화가 하나라도 있는지(없으면 tick 을 건너뛰어도 된다)
     pub fn has_sims(&self) -> bool {
-        self.models.values().any(|m| !m.sims.is_empty())
+        self.models.values().any(|m| !m.sims.is_empty() || !m.links.is_empty())
     }
 
     /// RTU 프레임 하나를 처리한다(국번 + PDU + CRC). 돌려주는 응답이 None 이면 아무것도 보내지 않는다.
@@ -511,6 +559,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(t, start, qty) {
                 return Err(2);
             }
+            m.allow(t, start, qty, false)?;
             m.sims_on_read(t, start, qty, ctx);
             let packed = pack_bits(&m.table(t)[start as usize..start as usize + qty as usize]);
             let mut body = vec![packed.len() as u8];
@@ -526,6 +575,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(t, start, qty) {
                 return Err(2);
             }
+            m.allow(t, start, qty, false)?;
             m.sims_on_read(t, start, qty, ctx);
             Ok((read_regs(m, t, start, qty), None))
         }
@@ -539,6 +589,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(Table::Coils, start, 1) {
                 return Err(2);
             }
+            m.allow(Table::Coils, start, 1, true)?;
             m.coils[start as usize] = v;
             Ok((d[..4].to_vec(), Some(Table::Coils)))
         }
@@ -547,6 +598,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(Table::HoldingRegisters, start, 1) {
                 return Err(2);
             }
+            m.allow(Table::HoldingRegisters, start, 1, true)?;
             m.holding[start as usize] = v;
             Ok((d[..4].to_vec(), Some(Table::HoldingRegisters)))
         }
@@ -559,6 +611,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(Table::Coils, start, qty) {
                 return Err(2);
             }
+            m.allow(Table::Coils, start, qty, true)?;
             for i in 0..qty as usize {
                 m.coils[start as usize + i] = ((d[5 + i / 8] >> (i % 8)) & 1) as u16;
             }
@@ -573,6 +626,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(Table::HoldingRegisters, start, qty) {
                 return Err(2);
             }
+            m.allow(Table::HoldingRegisters, start, qty, true)?;
             for i in 0..qty as usize {
                 m.holding[start as usize + i] = u16_at(d, 5 + i * 2).unwrap();
             }
@@ -585,6 +639,7 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(Table::HoldingRegisters, addr, 1) {
                 return Err(2);
             }
+            m.allow(Table::HoldingRegisters, addr, 1, true)?;
             let cur = m.holding[addr as usize];
             m.holding[addr as usize] = (cur & and) | (or & !and);
             Ok((d[..6].to_vec(), Some(Table::HoldingRegisters)))
@@ -601,6 +656,8 @@ fn execute(m: &mut Model, func: u8, d: &[u8], ctx: &mut Ctx) -> Result<(Vec<u8>,
             if !m.in_range(t, ws, wq) || !m.in_range(t, rs, rq) {
                 return Err(2);
             }
+            m.allow(t, ws, wq, true)?;
+            m.allow(t, rs, rq, false)?;
             for i in 0..wq as usize {
                 m.holding[ws as usize + i] = u16_at(d, 9 + i * 2).unwrap();
             }
@@ -701,6 +758,55 @@ mod tests {
         let (r, _) = s.handle(&req(&[1, 0x10, 0, 0, 0, 2, 4, 0, 1, 0, 2]));
         assert_eq!(&r.unwrap()[..6], &[1, 0x10, 0, 0, 0, 2]);
         assert_eq!(&s.models[&1].holding[0..2], &[1, 2]);
+    }
+
+    #[test]
+    fn profile_guard_with_faults_and_links() {
+        use crate::slave_profile::{Access, CellRef, Guard, GuardCell, LinkRule, LinkSpec};
+        let mut s = slave();
+        let hr = Table::HoldingRegisters;
+        let cell = |addr, access| GuardCell { table: hr, addr, count: 1, access };
+        // 4 설정 주파수(rw) · 5 운전 지령(rw) · 9 출력 주파수(r) · 20 리셋(w)
+        let g = Guard { cells: vec![cell(4, Access::Rw), cell(5, Access::Rw), cell(9, Access::R), cell(20, Access::W)], access: true, deny_exception: 2, unmapped: true };
+        s.set_guard(1, Some(g.clone())).unwrap();
+        // 읽기 전용 칸 쓰기 → 02, 값은 그대로
+        let (r, o) = s.handle(&req(&[1, 6, 0, 9, 0, 1]));
+        assert_eq!(&r.unwrap()[..3], &[1, 0x86, 2]);
+        assert_eq!(o.exception, Some(2));
+        assert_eq!(s.models[&1].holding[9], 0);
+        // 여러 칸 쓰기에 읽기 전용이 하나라도 끼면 아무것도 쓰지 않는다
+        let (r, _) = s.handle(&req(&[1, 0x10, 0, 4, 0, 2, 4, 0x0B, 0xB8, 0, 2]));
+        assert_eq!(&r.unwrap()[..6], &[1, 0x10, 0, 4, 0, 2]);
+        let (r, _) = s.handle(&req(&[1, 0x10, 0, 8, 0, 2, 4, 0, 1, 0, 2]));
+        assert_eq!(&r.unwrap()[..3], &[1, 0x90, 2]);
+        // 쓰기 전용 읽기·빈 주소 읽기 → 02. 03 으로 바꿀 수 있다
+        assert_eq!(&s.handle(&req(&[1, 3, 0, 20, 0, 1])).0.unwrap()[..3], &[1, 0x83, 2]);
+        assert_eq!(&s.handle(&req(&[1, 3, 0, 4, 0, 3])).0.unwrap()[..3], &[1, 0x83, 2]);
+        s.set_guard(1, Some(Guard { deny_exception: 3, unmapped: false, ..g })).unwrap();
+        assert_eq!(&s.handle(&req(&[1, 3, 0, 20, 0, 1])).0.unwrap()[..3], &[1, 0x83, 3]);
+        assert_eq!(&s.handle(&req(&[1, 3, 0, 4, 0, 3])).0.unwrap()[..3], &[1, 3, 6]);
+        // 장애 주입이 먼저 — 예외 강제는 제한과 상관없이
+        s.set_faults(Faults { force_exception: 4, ..Faults::default() });
+        assert_eq!(&s.handle(&req(&[1, 3, 0, 4, 0, 1])).0.unwrap()[..3], &[1, 0x83, 4]);
+        s.set_faults(Faults::default());
+        // 연결 규칙: 운전 지령(5)이 0 이 아니면 출력 주파수(9)가 설정 주파수(4)로
+        let c = |addr| CellRef { table: hr, addr, value_type: ValueType::U16, order: WordOrder::Abcd };
+        s.set_links(1, vec![LinkSpec { out: c(9), rule: LinkRule::Approach { src: c(4), run: Some(c(5)), run_mask: 0, gain: 1.0, rate: 1000.0 } }]).unwrap();
+        assert!(s.has_sims());
+        s.handle(&req(&[1, 6, 0, 5, 0, 2]));
+        let t0 = Instant::now();
+        s.tick(t0);
+        s.tick(t0 + Duration::from_millis(1000));
+        assert_eq!(s.models[&1].holding[9], 1000);
+        s.tick(t0 + Duration::from_millis(2000));
+        s.tick(t0 + Duration::from_millis(3000));
+        assert_eq!(s.models[&1].holding[9], 3000);
+        // 끄기
+        s.set_guard(1, None).unwrap();
+        s.set_links(1, vec![]).unwrap();
+        assert!(!s.has_sims());
+        assert_eq!(&s.handle(&req(&[1, 6, 0, 9, 0, 1])).0.unwrap()[..2], &[1, 6]);
+        assert!(s.set_links(9, vec![]).is_err());
     }
 
     #[test]

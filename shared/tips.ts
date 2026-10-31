@@ -1,11 +1,13 @@
 // 말풍선 설명 — 화면 칸 이름(i18n 키)마다 «무엇인지 + 언제 쓰는지». 모든 프로그램 공통.
 import { IO_TIPS } from "./tipsIo";
+import { PROFILE_TIPS } from "./tipsProfile";
 
 type Tip = [ko: string, en: string];
 
 const TIPS: Record<string, Tip> = {
   // Serial·TCP·UDP 공통 기능(이력·트리거·체크섬 옵션 등) — shared/tipsIo.ts
   ...IO_TIPS,
+  ...PROFILE_TIPS,
   // ---- 연결
   ports: ["통신할 COM 포트. 장치 이름·USB 정보가 함께 나오고, 꽂으면 1.5초 안에 목록에 나타납니다.", "The COM port to use. Shows the device name and USB info; a newly plugged adapter appears within 1.5 s."],
   port: ["통신할 COM 포트(또는 TCP·UDP 포트 번호).", "The COM port (or the TCP/UDP port number)."],
@@ -193,7 +195,7 @@ const TIPS: Record<string, Tip> = {
   mbPointType: ["값의 형식. 32비트(U32·S32·F32)는 2칸, F64 는 4칸, 문자열은 길이/2 칸을 씁니다.", "Value type. 32-bit types (U32, S32, F32) use 2 registers, F64 uses 4, a string uses length/2."],
   mbPointLen: ["문자열 길이(바이트, 1~250). 남는 칸은 0 으로 채웁니다.", "String length in bytes (1–250). Unused bytes are filled with 0."],
   mbPointOrder: ["여러 칸에 나눠 넣는 순서. ABCD = 큰 쪽 먼저(Modbus 기본), CDAB = 워드 바꿈, BADC = 바이트 바꿈, DCBA = 둘 다. 마스터 설정과 같아야 합니다.", "Order of the bytes across registers. ABCD = big end first (Modbus default), CDAB = word swap, BADC = byte swap, DCBA = both. Must match the master."],
-  mbSimKind: ["값을 저절로 바꿉니다 — 증가·감소·랜덤·사인·램프·토글. 화면을 내려 두어도 백엔드가 바꿉니다.", "Changes the value automatically — increment, decrement, random, sine, ramp or toggle. Runs in the backend even when the window is minimized."],
+  mbSimKind: ["값을 저절로 바꿉니다 — 증가·감소·랜덤·사인·램프·잡음(범위 안에서 천천히 흔들림, 0.10.0 부터)·토글. 화면을 내려 두어도 백엔드가 바꿉니다.", "Changes the value automatically — increment, decrement, random, sine, ramp, noise (slow drift inside a range, from 0.10.0) or toggle. Runs in the backend even when the window is minimized."],
   mbSimStep: ["한 번에 더하거나 빼는 양(0 보다 큼, 실수형은 소수 가능).", "Amount added or subtracted each time (> 0; decimals allowed for float types)."],
   mbSimMinMax: ["값의 범위. 정수형은 형식의 범위 안으로 맞춥니다.", "Value range. Integer types are clamped to the type's range."],
   mbSimWrap: ["켜면 최대(감소는 최소)에 닿은 뒤 반대 끝으로 돌아갑니다. 끄면 그 자리에서 멈춥니다.", "When on, wraps to the other end after reaching max (min for decrement); when off, stops there."],

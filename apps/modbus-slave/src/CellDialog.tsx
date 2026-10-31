@@ -8,7 +8,7 @@ import {
   BIT_SIM_KINDS,
   ORDERS,
   REG_TYPES,
-  SIM_KINDS,
+  SLAVE_SIM_KINDS,
   STR_MAX,
   defaultSim,
   overlapOf,
@@ -93,7 +93,7 @@ export function CellDialog({
   }, [onClose]);
 
   const n = regsOf(type, len);
-  const kinds: SimKindName[] = bits ? BIT_SIM_KINDS : SIM_KINDS;
+  const kinds: SimKindName[] = bits ? BIT_SIM_KINDS : SLAVE_SIM_KINDS;
   const set = (k: keyof Draft) => (s: string) => setD((x) => ({ ...x, [k]: s }));
 
   function save() {
@@ -119,7 +119,7 @@ export function CellDialog({
   }
 
   const kindLabel = (k: SimKindName) => simKindName(k, lang);
-  const showStep = kind === "increment" || kind === "decrement";
+  const showStep = kind === "increment" || kind === "decrement" || kind === "noise";
   const showMinMax = showStep || kind === "random" || kind === "ramp";
   const showWave = kind === "sine" || kind === "ramp";
 
@@ -217,7 +217,7 @@ export function CellDialog({
                   <FloatInput lang={lang} tipKey="mbSimMinMax" label={t("max")} value={d.max} onChange={set("max")} />
                 </div>
               )}
-              {showStep && (
+              {showStep && kind !== "noise" && (
                 <label className="inline" data-tip={tip(lang, "mbSimWrap")}>
                   <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} /> {t("wrap")}
                 </label>

@@ -1,5 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { SimSpec, Table } from "./regmap";
+import type { GuardSpec, LinkSpec } from "./profile";
 import { tally } from "@shared/usage";
 export { ascii, clock, hex } from "@shared/format";
 export type { Table } from "./regmap";
@@ -144,6 +145,10 @@ export const api = {
   setOptions: (options: { ignoreUnitId: boolean }) => invoke<void>("set_options", { options }),
   setDeviceId: (device: DeviceId) => invoke<void>("set_device_id", { device }),
   setSims: (id: number, table: Table, sims: SimSpec[]) => tally(sims.length > 0 && "simulate", invoke<void>("set_sims", { id, table, sims })),
+  /** 장비 프로필의 읽기/쓰기 제한(0.10.0) — null 이면 끔 */
+  setGuard: (id: number, guard: GuardSpec | null) => tally(guard && "device_profile", invoke<void>("set_guard", { id, guard })),
+  /** 칸끼리 잇는 규칙(0.10.0) */
+  setLinks: (id: number, links: LinkSpec[]) => tally(links.length > 0 && "simulate", invoke<void>("set_links", { id, links })),
   setAddrStyle: (style: { base: number; plc: boolean }) => invoke<void>("set_addr_style", { style }),
   setSlaveIds: (ids: number[]) => invoke<void>("set_slave_ids", { ids }),
   setRange: (id: number, table: Table, start: number, count: number) => invoke<void>("set_range", { id, table, start, count }),
