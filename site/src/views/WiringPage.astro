@@ -294,6 +294,9 @@ const SRC = [
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
       <p>{L.sysNote} <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a>.</p>
+      <p>
+        {ko ? "다 이었는데 안 되면 " : "If it still does not work once wired, try the "}<a href={url(lang, "tools/troubleshoot/")}>{ko ? "고장 원인 찾기 도우미" : "field troubleshooting wizard"}</a>{ko ? " 로 원인 후보를 좁히고, 잰 값은 " : " to narrow down causes, and check readings with the "}<a href={url(lang, "tools/multimeter-check/")}>{ko ? "멀티미터 측정값 점검기" : "multimeter reading checker"}</a>{ko ? " 에 넣어 보세요." : "."}
+      </p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (
