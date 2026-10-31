@@ -2,7 +2,8 @@
 // 판정은 이 파일의 순수 함수만 한다(node --test). 화면·그림은 views/MultimeterCheckPage.astro, lib/meterFig.ts.
 // 근거(값은 «일반적으로» — 장비 매뉴얼 값이 먼저):
 //   RS-485: TIA/EIA-485-A — 수신기 문턱 ±200 mV, 공통 모드 −7~+12 V, 단위 부하 12 kΩ (TI SLLA070D 2010 설명)
-//           MODBUS over serial line V1.02 (2006) §3.4.5 종단은 양 끝에만 120 Ω(또는 150 Ω), §3.4.6 바이어스 450~650 Ω
+//           MODBUS over serial line V1.02 (2006) §3.4.5 종단은 양 끝에만 — 150 Ω(0.5 W) 또는 1 nF + 120 Ω(0.25 W) 직렬(RC, 바이어스를 쓸 때 더 나음),
+//           관례로 120 Ω 도 흔함. RC 종단은 직류를 막아 멀티미터(직류 저항)로는 보이지 않는다. §3.4.6 바이어스 450~650 Ω
 //   4–20 mA: NAMUR NE 43 — 측정 정보 3.8~20.5 mA, 고장 신호 ≤3.6 mA·≥21 mA (lib/analogScale.ts 와 같은 경계)
 //   24 V DC·센서 입력: IEC 61131-2 — 24 V DC 전원 허용 −15 %~+20 %(20.4~28.8 V),
 //           입력 형식 1 켜짐 15 V 이상, 형식 2·3 켜짐 11 V 이상, 꺼짐 5 V 이하
@@ -85,7 +86,7 @@ export interface OhmInput {
   ohm: number;
   /** 버스의 트랜시버 수(변환기 포함) */
   nodes: number;
-  /** 종단 저항 하나 Ω (120 또는 150) */
+  /** 종단 저항 하나 Ω (120 또는 150). RC_TERM(음수) = 1 nF + 120 Ω 직렬(RC) 종단 — 직류로는 보이지 않는다 */
   rTerm: number;
   /** 바이어스 저항 하나 Ω (0 = 없음). 전원이 꺼지면 풀업·풀다운이 전원 회로를 거쳐 A–B 사이에 직렬로 보일 수 있다 */
   rBias: number;
@@ -96,12 +97,22 @@ export function expectedOhm(k: number, x: Omit<OhmInput, "ohm">) {
   return par(k > 0 ? x.rTerm / k : Infinity, x.nodes > 0 ? UNIT_LOAD / x.nodes : Infinity, x.rBias > 0 ? 2 * x.rBias : Infinity);
 }
 
+/** «종단 저항» 칸의 RC 종단(1 nF + 120 Ω 직렬, Modbus V1.02 §3.4.5) 값 */
+export const RC_TERM = -1;
+
+const RC_NOTE = t(
+  "RC 종단(1 nF + 120 Ω 직렬 — Modbus 규격이 바이어스와 함께 쓸 때 권하는 방식)은 콘덴서가 직류를 막아 멀티미터 저항(직류)으로는 보이지 않습니다. 그런 버스는 종단이 있어도 «종단 없음» 값으로 읽히니, «종단 저항» 칸에서 RC 를 고르거나 끝 장비의 종단 스위치·부품을 눈으로 볼 것.",
+  "RC termination (1 nF + 120 Ω in series — the form the Modbus spec recommends with biasing) blocks DC with its capacitor, so a multimeter's resistance (DC) range cannot see it. Such a bus reads like «no termination» even when terminated — choose RC in the «Terminator» field, or look at the end devices' termination switches and parts.",
+);
+
 export function rs485Ohm(x: OhmInput): Verdict {
   if (!(x.ohm >= 0)) return bad();
   const nodes = Number.isFinite(x.nodes) && x.nodes >= 1 ? Math.round(x.nodes) : 2;
+  const rc = x.rTerm < 0;
   const rTerm = x.rTerm > 0 ? x.rTerm : 120;
   const rBias = x.rBias > 0 ? x.rBias : 0;
   const cfg = { nodes, rTerm, rBias };
+  if (rc) return rs485OhmRc(x.ohm, cfg);
   const exp = [0, 1, 2, 3].map((k) => expectedOhm(k, cfg));
   const values = [
     { k: t("양 끝 종단(2개)일 때 예상", "Expected with both ends terminated (2)"), v: `≈ ${fmt(exp[2], 0)} Ω` },
@@ -146,6 +157,7 @@ export function rs485Ohm(x: OhmInput): Verdict {
       more: [
         t("양 끝의 종단 스위치가 꺼져 있거나 120 Ω 가 빠졌을 수 있습니다. 장비 안 종단이 «전원 켤 때만» 붙는 제품도 있어, 전원 끈 상태에선 이렇게 보일 수 있습니다.", "The termination switches at both ends may be off or the 120 Ω missing. Some devices only switch in internal termination when powered, so it can read like this with power off."),
         t("A–B 사이에서 OL(범위 초과)이 나오면 선이 중간에 끊겼을 수도 있습니다 — 끝 장비 단자에서 다시 재 볼 것.", "OL between A and B can also mean the line is broken part-way — measure again at the end device's terminals."),
+        RC_NOTE,
         ...more,
       ],
       values,
@@ -156,6 +168,48 @@ export function rs485Ohm(x: OhmInput): Verdict {
     more: [
       t("중간 장비의 종단 스위치가 켜져 있거나, 변환기·장비 안 종단이 겹쳤을 수 있습니다. 종단이 많으면 신호가 작아지고 바이어스가 모자라 응답이 빠지거나 깨집니다.", "A middle device may have its termination switch on, or adapter and device terminations overlap. Too many terminations shrink the signal and starve the bias, causing missing or garbled replies."),
       t("장비 수가 아주 많거나(수십 대) 바이어스 저항이 작은 경우에도 이 값 가까이 내려갑니다 — 장비 수·바이어스 칸을 실제와 맞춰 볼 것.", "Very many devices (dozens) or small bias resistors also pull it down this far — make sure the device count and bias fields match the real bus."),
+      ...more,
+    ],
+    values,
+  };
+}
+
+/** RC 종단 버스: 직류로는 종단이 안 보이므로 «저항 종단이 섞였나» 만 본다 */
+function rs485OhmRc(ohm: number, cfg: { nodes: number; rTerm: number; rBias: number }): Verdict {
+  const none = expectedOhm(0, cfg);
+  const one = expectedOhm(1, { ...cfg, rTerm: 120 });
+  const values = [
+    { k: t("RC 종단만일 때 예상(직류)", "Expected with RC termination only (DC)"), v: Number.isFinite(none) ? `≈ ${fmt(none, 0)} Ω` : "OL" },
+    { k: t("120 Ω 저항 종단 하나가 섞이면", "If one 120 Ω resistor termination is mixed in"), v: `≈ ${fmt(one, 0)} Ω` },
+  ];
+  const more = [RC_NOTE];
+  if (ohm < 5)
+    return {
+      level: "fault",
+      msg: t("거의 0 Ω — A 와 B 가 붙어 있습니다(단락).", "Close to 0 Ω — A and B are shorted together."),
+      more: [t("단자대의 잔선, 눌린 케이블, 손상된 트랜시버를 볼 것. 장비를 하나씩 떼며 다시 재면 어디인지 좁혀집니다.", "Look for stray strands at terminals, crushed cable or a damaged transceiver. Re-measure while removing devices one by one to narrow it down."), ...more],
+      values,
+    };
+  const d = (e: number) => (Number.isFinite(e) && Number.isFinite(ohm) ? Math.abs(Math.log(ohm / e)) : e === ohm ? 0 : Infinity);
+  if (!Number.isFinite(ohm) || d(none) <= d(one))
+    return {
+      level: "ok",
+      msg: t(
+        "RC 종단만 있는 버스의 직류 값에 가깝습니다 — 저항 종단이 섞인 흔적은 없습니다(이 측정 범위).",
+        "Close to the DC value of a bus with RC termination only — no sign of a resistor termination mixed in (in this measurement).",
+      ),
+      more: [
+        t("RC 종단 자체는 직류로 확인할 수 없습니다 — 양 끝 장비에 실제로 있는지는 종단 스위치·부품으로 볼 것.", "RC termination itself cannot be confirmed with DC — check the switch or parts at both end devices."),
+        t("OL(범위 초과)이면 선이 중간에 끊겼을 수도 있습니다 — 끝 장비 단자에서 다시 재 볼 것.", "OL can also mean the line is broken part-way — measure again at the end device's terminals."),
+        ...more,
+      ],
+      values,
+    };
+  return {
+    level: "warn",
+    msg: t(`RC 종단 버스인데 저항 종단(≈ ${fmt(one, 0)} Ω 이하)이 보입니다.`, `An RC-terminated bus, but a resistor termination shows (≈ ${fmt(one, 0)} Ω or less).`),
+    more: [
+      t("어느 장비·변환기의 120 Ω 종단 스위치가 켜져 있거나 저항 종단이 섞였을 수 있습니다. 끝이 아닌 장비라면 끌 것.", "A device or adapter may have its 120 Ω termination switch on, or a resistor termination is mixed in. Turn it off if it is not at an end."),
       ...more,
     ],
     values,

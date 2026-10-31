@@ -136,7 +136,7 @@ export const TREE: TreeData = {
         { ko: "SG(공통)선이 없어 멀리 있는 장비의 공통 모드 전압이 범위를 벗어남", en: "No SG (common) wire, pushing distant devices outside the common-mode range" },
       ],
       checks: [
-        { ko: "모든 장비 전원 끄고 A–B 저항: 약 60 Ω(양 끝 종단), 약 120 Ω(한쪽만), 수 kΩ 이상(없음), 40 Ω 이하(과다)", en: "All power off, A–B resistance: about 60 Ω (both ends), about 120 Ω (one end), several kΩ or more (none), 40 Ω or less (too many)" },
+        { ko: "모든 장비 전원 끄고 A–B 저항: 약 60 Ω(양 끝 종단), 약 120 Ω(한쪽만), 수백 Ω~수 kΩ 이상(없음 — 장비가 많거나 바이어스가 보이면 1 kΩ 안팎까지 내려감), 40 Ω 이하(과다). RC 종단(1 nF + 120 Ω)은 직류로 안 보여 «없음» 으로 읽힘", en: "All power off, A–B resistance: about 60 Ω (both ends), about 120 Ω (one end), hundreds of Ω to several kΩ or more (none — many devices or visible bias resistors pull it down to around 1 kΩ), 40 Ω or less (too many). RC termination (1 nF + 120 Ω) is invisible to DC and reads as «none»" },
         { ko: "전원 켜고 A–SG·B–SG 가 −7~+12 V 안인지", en: "Power on: A–SG and B–SG within −7 to +12 V" },
         { ko: "장비를 한 대씩 더하며 어느 장비부터 안 되는지 보기, 국번 목록 적기", en: "Add devices back one at a time to see where it fails; list every slave ID" },
       ],
@@ -283,7 +283,7 @@ export const TREE: TreeData = {
         { ko: "핀 번호를 잘못 이음(루프백은 2–3번)", en: "Wrong pins linked (the loopback is pins 2–3)" },
       ],
       checks: [
-        { ko: "아무것도 보내지 않을 때 3번(TXD)–5번(GND)이 −3~−15 V(보통 −5~−12 V)인지", en: "While idle, pin 3 (TXD) to pin 5 (GND) reads −3 to −15 V (typically −5 to −12 V)" },
+        { ko: "아무것도 보내지 않을 때 3번(TXD)–5번(GND)이 −5~−15 V 인지(−3~−5 V 면 약함 — 볼 것)", en: "While idle, pin 3 (TXD) to pin 5 (GND) reads −5 to −15 V (−3 to −5 V is weak — worth a look)" },
         { ko: "Port Inspector 의 루프백 연결 시험으로 속도마다 같은 바이트가 돌아오는지", en: "Run Port Inspector's loopback test and check that bytes come back at each baud rate" },
       ],
       links: [
@@ -300,7 +300,7 @@ export const TREE: TreeData = {
         { ko: "반대로 장비가 DCE 인데 크로스 케이블을 씀", en: "Or the device is DCE and a crossover cable is used" },
       ],
       checks: [
-        { ko: "각 쪽 커넥터에서 쉬는 동안 −3~−15 V 가 나오는 핀이 그쪽 TX — 두 TX 가 한 선에 붙어 있으면 맞물린 것", en: "On each connector, the pin showing −3 to −15 V at idle is that side's TX — if both TX pins share one wire, they are clashing" },
+        { ko: "각 쪽 커넥터에서 쉬는 동안 −5~−15 V(약하면 −3~−5 V)가 나오는 핀이 그쪽 TX — 두 TX 가 한 선에 붙어 있으면 맞물린 것", en: "On each connector, the pin showing −5 to −15 V at idle (−3 to −5 V if weak) is that side's TX — if both TX pins share one wire, they are clashing" },
         { ko: "케이블 양 끝 2·3번 사이를 저항(통전)으로 재서 2↔3 이 엇갈리는지 보기", en: "Use continuity mode across the cable to see whether 2↔3 are crossed" },
       ],
       links: [

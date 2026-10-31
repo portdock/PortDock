@@ -10,7 +10,22 @@ PortDock — 개인정보 안내 / Privacy notice
 - 끊김·지연 기록(Hardware Tester)은 «기록 시작» 을 누른 동안만 게이트웨이와
   사용자가 고른 인터넷 주소 하나에 핑을, 정한 이름 하나를 DNS 서버에
   묻습니다. Wi-Fi 이름·블루투스 장치 이름은 저장하거나 보내지 않습니다.
+  USB 연결·끊김 기록은 저장할 때만 장치 이름·VID:PID 를 고른 파일에
+  쓰고, 장치 일련번호는 넣지 않습니다.
 - 통신 내용·명령 목록·규칙·설정은 이 PC 안에만 저장됩니다.
+- 네트워크에서 받는 서버(켤 때만): Serial 포트 나눔(raw·RFC 2217, 기본
+  TCP 7000)·Modbus TCP ↔ RTU 게이트웨이(기본 TCP 502), PLC Simulator
+  (MC 기본 TCP 5000, XGT TCP 2004·UDP 2005)는 기본으로 127.0.0.1(이 PC)
+  에서만 받고, «다른 PC 에서 연결 허용» 을 켤 때만 다른 PC 가 닿습니다.
+  Modbus Slave TCP·TCP 서버·중계·Simulator·UDP 는 입력한 주소에서
+  받습니다(기본 0.0.0.0 — 모든 랜카드). 산업 프로토콜이라 인증이 없으니
+  믿을 수 있는 망에서만 여세요.
+- 이 PC 의 파일·앱 저장소에 쓰는 것(밖으로 보내지 않음, 앱 저장소는
+  «설정 내보내기» 파일에도 들어감): Net Scan 기준 목록(장비마다 IP·MAC
+  주소 전체·호스트 이름·열린 포트), Port Inspector 저장한 점검 결과
+  (20개까지 — 랜카드 IP·게이트웨이 포함, 일련번호·PC 이름은 뺌), Modbus
+  Master 장비 설정 백업(JSON·CSV), Modbus Master·Plot 알람 기록 CSV,
+  Hardware Tester USB 기록 — 파일은 고른 곳에만 씁니다.
 - 새 버전 확인(선택, 기본 꺼짐): 설정에서 «새 버전 확인» 을 켠 경우에만
   하루 한 번 GitHub(api.github.com)에 최신 릴리스를 묻습니다. 보내는
   데이터는 없고, 내려받기·설치는 하지 않습니다.
@@ -46,8 +61,25 @@ installing or operating it.
 - The drop and latency log (Hardware Tester) pings the gateway and one
   internet address you choose, and looks up one name at the DNS server,
   only while «Start recording» is on. Wi-Fi and Bluetooth device names
-  are never saved or sent.
+  are never saved or sent. The USB connect/disconnect log writes device
+  names and VID:PID only to a file you save, never serial numbers.
 - Traffic, command lists, rules and settings stay on this PC.
+- Servers that listen on the network (only when you start them): Serial
+  port sharing (raw or RFC 2217, TCP 7000 by default), the Modbus TCP ↔
+  RTU gateway (TCP 502 by default) and PLC Simulator (MC on TCP 5000 by
+  default, XGT on TCP 2004 / UDP 2005) listen on 127.0.0.1 (this PC)
+  only, unless you turn on «Allow other PCs to connect». Modbus Slave
+  TCP, TCP server/relay, Simulator and UDP listen on the address you
+  enter (0.0.0.0, all network adapters, by default). Industrial
+  protocols have no authentication — open them on trusted networks only.
+- Written to files and app storage on this PC (never sent; app storage
+  is also copied into «Export settings» files): Net Scan baselines (IP,
+  full MAC address, host name and open ports of each device), Port
+  Inspector saved checks (up to 20 — including network
+  adapter IPs and gateway; serial numbers and PC name left out), Modbus
+  Master device settings backups (JSON/CSV), alarm CSV logs in Modbus
+  Master and Plot, and the Hardware Tester USB log — files go only
+  where you choose.
 - Update check (optional, off by default): only if you turn on «Check
   for new versions» in settings, the program asks GitHub
   (api.github.com) once a day for the latest release. No data is sent,

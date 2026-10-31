@@ -532,7 +532,8 @@ function packet(r: Reader, version: 4 | 5): MqttPacket {
       const ka = u16(p);
       f.push({ k: "protocol", v: JSON.stringify(proto) });
       f.push({ k: "level", v: String(level), note: { ko: level === 5 ? "MQTT 5.0" : level === 4 ? "MQTT 3.1.1" : level === 3 ? "MQTT 3.1" : "?", en: level === 5 ? "MQTT 5.0" : level === 4 ? "MQTT 3.1.1" : level === 3 ? "MQTT 3.1" : "?" } });
-      const names = [cf & 0x80 && "username", cf & 0x40 && "password", cf & 0x20 && "will retain", cf & 0x04 && `will QoS ${(cf >> 3) & 3}`, cf & 0x04 && "will", cf & 0x02 && "clean session"].filter(Boolean);
+      const names = [cf & 0x80 && "username", cf & 0x40 && "password", cf & 0x20 && "will retain", cf & 0x04 && `will QoS ${(cf >> 3) & 3}`, cf & 0x04 && "will", // bit1: MQTT 3.1.1 §3.1.2.4 «Clean Session», MQTT 5.0 §3.1.2.4 «Clean Start»(뜻도 다름 — 세션 만료는 속성으로)
+        cf & 0x02 && (level === 5 ? "clean start" : "clean session")].filter(Boolean);
       f.push({ k: "connectFlags", v: `0x${cf.toString(16).toUpperCase().padStart(2, "0")} (${names.join(", ") || "-"})` });
       f.push({ k: "keepAlive", v: String(ka) });
       const v = level === 5 ? 5 : 4;

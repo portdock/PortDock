@@ -82,6 +82,20 @@ export interface Rs485Input {
 }
 
 export const MAX_DEVICES = 8;
+/** Modbus V1.02 §3.4.3: 9600 bps·AWG26 이상 굵기에서 최대 길이 */
+export const MODBUS_MAX_M = 1000;
+
+/** 1000~1200 m: TIA/TI 기준 안이지만 Modbus 규격 값(9600 bps·AWG26)은 넘음 */
+function modbusLengthNote(len: number, t: (k: string, e: string) => string): Note {
+  return {
+    level: "warn",
+    text: t(
+      `길이 ${len} m — Modbus 규격은 9600 bps·AWG26 이상 굵기에서 최대 1000 m 입니다(TIA-485 일반값 1200 m 보다 짧음). 굵은 선을 쓰거나 중계기로 나눕니다.`,
+      `${len} m — the Modbus spec allows at most 1000 m at 9600 bps with AWG26 or thicker (shorter than the general TIA-485 1200 m). Use thicker cable or split with a repeater.`,
+    ),
+    src: `${SRC_MODBUS} §3.4.3`,
+  };
+}
 const BW = 136;
 const GAP = 36;
 
@@ -164,8 +178,12 @@ export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
     S.push({ k: "dot", x: xx, y: yP, c: "dp" });
     S.push({ k: "dot", x: xx, y: yN, c: "dn" });
   }
-  S.push({ k: "text", x: termL, y: yG + 26, t: "120 Ω", anchor: "middle", size: 11, bold: true });
-  S.push({ k: "text", x: termR, y: yG + 26, t: "120 Ω", anchor: "middle", size: 11, bold: true });
+  // 바이어스를 쓰면 Modbus V1.02 §3.4.5 는 150 Ω 또는 1 nF + 120 Ω 직렬(RC) 종단 — 순수 120 Ω 도 흔한 관례
+  const termLabel = x.bias ? "150 Ω" : "120 Ω";
+  for (const xx of [termL, termR]) {
+    S.push({ k: "text", x: xx, y: yG + 26, t: termLabel, anchor: "middle", size: 11, bold: true });
+    if (x.bias) S.push({ k: "text", x: xx, y: yG + 39, t: t("또는 1 nF+120 Ω", "or 1 nF+120 Ω"), anchor: "middle", size: 10, c: "muted" });
+  }
   // 바이어스(변환기 쪽) — D1 풀업 → +5 V, D0 풀다운 → Common
   if (x.bias) {
     const bx = firstX + 22;
@@ -187,7 +205,7 @@ export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
   S.push({
     k: "text",
     x: (left + lastX) / 2,
-    y: yG + 48,
+    y: yG + (x.bias ? 56 : 48),
     t: t(`데이지 체인 — 전체 길이 약 ${len} m · ${x.baud} bps ${8}${parityChar(x.parity)}1`, `Daisy chain — total length about ${len} m · ${x.baud} bps 8${parityChar(x.parity)}1`),
     anchor: "middle",
     size: 12,
@@ -205,6 +223,7 @@ export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
   const maxLen = roughMaxLength(x.baud);
   if (len > 1200) warnings.push({ level: "fault", text: t(`길이 ${len} m — 일반적으로 RS-485 한 구간은 약 1200 m 까지입니다. 중계기(리피터)로 나눕니다.`, `${len} m — one RS-485 segment is generally limited to about 1200 m. Split it with a repeater.`), src: SRC_TI });
   else if (len > maxLen) warnings.push({ level: "warn", text: t(`${x.baud} bps 에서 대략 한계는 약 ${Math.round(maxLen)} m 입니다(경험칙 bps × m ≤ 10⁸). 보율을 낮추거나 길이를 줄입니다.`, `At ${x.baud} bps the rough limit is about ${Math.round(maxLen)} m (rule of thumb bps × m ≤ 10⁸). Lower the baud rate or shorten the line.`), src: SRC_TI });
+  else if (len > MODBUS_MAX_M) warnings.push(modbusLengthNote(len, t));
   for (const u of duplicateUnits(units)) warnings.push({ level: "fault", text: t(`국번 ${u} 이(가) 겹칩니다 — 같은 버스에서는 국번이 모두 달라야 합니다.`, `Slave ID ${u} is used twice — every ID on one bus must be different.`), src: SRC_MODBUS });
   for (const d of devs) {
     if (!(d.unit >= 1 && d.unit <= 247)) warnings.push({ level: "warn", text: t(`«${d.name}» 국번 ${d.unit} — Modbus 국번은 1~247 입니다.`, `«${d.name}» ID ${d.unit} — Modbus slave IDs are 1–247.`), src: SRC_MODBUS });
@@ -219,8 +238,10 @@ export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
 
   const last = devs[devs.length - 1].name;
   const checks: Note[] = [
-    { level: "info", text: t(`종단 120 Ω 은 선로 양 끝 두 곳(여기서는 변환기와 «${last}»)에만 답니다. 장비에 종단 스위치가 있으면 그것을 켜고 외부 저항은 겹쳐 달지 않습니다.`, `120 Ω termination only at the two ends of the line (here the adapter and «${last}»). If a device has a termination switch, use it instead of adding an external resistor.`), src: `${SRC_MODBUS} §3.4.5` },
-    { level: "info", text: t("바이어스(페일세이프)는 버스 전체에 한 곳만 — 보통 마스터(변환기) 쪽 스위치나 점퍼로 켭니다.", "Bias (failsafe) at one place for the whole bus — usually the master (adapter) side switch or jumper."), src: `${SRC_MODBUS} §3.4.6` },
+    x.bias
+      ? { level: "info", text: t(`종단은 선로 양 끝 두 곳(여기서는 변환기와 «${last}»)에만 답니다. 바이어스를 쓸 때 Modbus 규격은 150 Ω(0.5 W) 또는 1 nF + 120 Ω 직렬(0.25 W, RC 종단 — 쉬는 동안 바이어스 전류를 덜 먹음)을 권합니다. 120 Ω 만 다는 것도 흔한 관례입니다. 장비에 종단 스위치가 있으면 그것을 켜고 외부 저항은 겹쳐 달지 않습니다.`, `Terminate only at the two ends of the line (here the adapter and «${last}»). With biasing the Modbus spec recommends 150 Ω (0.5 W) or 1 nF + 120 Ω in series (0.25 W, RC termination — it draws less bias current at idle); a plain 120 Ω is also common practice. If a device has a termination switch, use it instead of adding an external resistor.`), src: `${SRC_MODBUS} §3.4.5` }
+      : { level: "info", text: t(`종단 120 Ω 은 선로 양 끝 두 곳(여기서는 변환기와 «${last}»)에만 답니다. 장비에 종단 스위치가 있으면 그것을 켜고 외부 저항은 겹쳐 달지 않습니다.`, `120 Ω termination only at the two ends of the line (here the adapter and «${last}»). If a device has a termination switch, use it instead of adding an external resistor.`), src: `${SRC_MODBUS} §3.4.5` },
+    { level: "info", text: t("바이어스(페일세이프)는 버스 전체에 한 곳만 — 보통 마스터(변환기) 쪽 스위치나 점퍼로 켭니다. 바이어스를 쓰면 Modbus 규격은 최대 장비 수를 4대 줄여 봅니다(32 → 28).", "Bias (failsafe) at one place for the whole bus — usually the master (adapter) side switch or jumper. With biasing the Modbus spec lowers the maximum number of devices by 4 (32 → 28)."), src: `${SRC_MODBUS} §3.4.6` },
     { level: "info", text: t("장비는 한 줄로 차례로(데이지 체인) 잇습니다. 한 점에서 여러 갈래로 뻗는 스타 배선은 쓰지 않고, 가지선은 20 m 이하로 짧게 합니다.", "Chain the devices one after another (daisy chain). Do not wire a star from one point; keep stubs under 20 m."), src: `${SRC_MODBUS} §3.4.3` },
     { level: "info", text: t("Common(SG)을 세 번째 선으로 함께 잇습니다 — 장비끼리 접지 전위가 다르면 통신이 끊기거나 장비가 상할 수 있습니다.", "Run Common (SG) as a third wire — ground potential differences between devices can break communication or damage devices."), src: `${SRC_MODBUS} §3.3` },
     { level: "warn", text: t("A/B 극성은 제조사마다 반대로 표기하기도 합니다 — 응답이 전혀 없으면 두 선을 바꿔 봅니다(극성이 반대여도 장비는 상하지 않음).", "A/B naming is reversed by some vendors — if nothing answers, swap the two wires (reversed polarity does not damage devices).") },
@@ -279,20 +300,18 @@ export function rs485FourWire(x: FourWireInput, lang: Lang): WiringResult {
       S.push({ k: "term", x: xx, y: yT, label: lb, pos: "above" });
     });
   });
-  // 종단: 쌍1(드라이버 하나 — 마스터) 은 먼 끝(마지막 장비)만, 쌍2(장비 여럿이 보냄) 는 양 끝
+  // 종단: Modbus 4선(V1.02 §3.4.5 «In a 4W-system, each pair must be terminated at each end of the bus») — 두 쌍 모두 양 끝
   const tR = lastX + 20;
   const tL = tx(0) + 8;
-  S.push({ k: "res", x1: tR, y1: ys[0], x2: tR, y2: ys[1] });
-  S.push({ k: "res", x1: tR, y1: ys[2], x2: tR, y2: ys[3] });
-  S.push({ k: "res", x1: tL, y1: ys[2], x2: tL, y2: ys[3] });
-  for (const [xx, a, b] of [[tR, 0, 1], [tR, 2, 3], [tL, 2, 3]] as const) {
+  for (const [xx, a, b] of [[tR, 0, 1], [tR, 2, 3], [tL, 0, 1], [tL, 2, 3]] as const) {
+    S.push({ k: "res", x1: xx, y1: ys[a], x2: xx, y2: ys[b] });
     S.push({ k: "dot", x: xx, y: ys[a], c: cs[a] });
     S.push({ k: "dot", x: xx, y: ys[b], c: cs[b] });
   }
-  S.push({ k: "wire", pts: [[tL, ys[2]], [tx(0) + 16, ys[2]]], c: cs[2] });
-  S.push({ k: "wire", pts: [[tL, ys[3]], [tx(0) + 16, ys[3]]], c: cs[3] });
+  for (const j of [0, 1, 2, 3]) S.push({ k: "wire", pts: [[tL, ys[j]], [tx(0) + 16, ys[j]]], c: cs[j] });
   S.push({ k: "text", x: tR + 8, y: ys[1] + 18, t: "120 Ω", size: 11, bold: true });
   S.push({ k: "text", x: tR + 8, y: ys[3] + 18, t: "120 Ω", size: 11, bold: true });
+  S.push({ k: "text", x: tL - 4, y: ys[1] + 18, t: "120 Ω", size: 11, bold: true, anchor: "end" });
   S.push({ k: "text", x: tL - 4, y: ys[3] + 18, t: "120 Ω", size: 11, bold: true, anchor: "end" });
   S.push({ k: "text", x: (tx(0) + lastX) / 2, y: ys[4] + 30, t: t(`위 쌍: 마스터 → 장비 · 아래 쌍: 장비 → 마스터 — 약 ${x.lengthM} m · ${x.baud} bps`, `Upper pair: master → devices · lower pair: devices → master — about ${x.lengthM} m · ${x.baud} bps`), anchor: "middle", size: 12, c: "muted" });
   const legend: LegendItem[] = [
@@ -306,12 +325,13 @@ export function rs485FourWire(x: FourWireInput, lang: Lang): WiringResult {
   const maxLen = roughMaxLength(x.baud);
   if (x.lengthM > 1200) warnings.push({ level: "fault", text: t(`길이 ${x.lengthM} m — 일반적으로 한 구간은 약 1200 m 까지입니다.`, `${x.lengthM} m — one segment is generally limited to about 1200 m.`), src: SRC_TI });
   else if (x.lengthM > maxLen) warnings.push({ level: "warn", text: t(`${x.baud} bps 에서 대략 한계는 약 ${Math.round(maxLen)} m 입니다.`, `At ${x.baud} bps the rough limit is about ${Math.round(maxLen)} m.`), src: SRC_TI });
+  else if (x.lengthM > MODBUS_MAX_M) warnings.push(modbusLengthNote(x.lengthM, t));
   for (const u of duplicateUnits(devs.map((d) => d.unit))) warnings.push({ level: "fault", text: t(`국번 ${u} 이(가) 겹칩니다.`, `Slave ID ${u} is used twice.`), src: SRC_MODBUS });
   for (const d of devs) for (const m of deviceMismatch(d, x.baud, x.parity)) warnings.push({ level: "warn", text: t(`«${d.name}» 통신 설정(${m === "baud" ? "보율" : m === "parity" ? "패리티" : "국번 범위"})이 장비 맵 값과 다릅니다.`, `«${d.name}»: ${m === "baud" ? "baud rate" : m === "parity" ? "parity" : "ID range"} differs from the device map.`) });
   const checks: Note[] = [
     { level: "info", text: t("송신 쌍과 수신 쌍을 엇갈려 잇습니다 — 마스터의 TX± 는 장비의 RX± 로, 장비의 TX± 는 마스터의 RX± 로.", "Cross the pairs — master TX± to device RX±, device TX± to master RX±.") },
     { level: "info", text: t("한 쌍은 한 꼬임쌍선으로(+ 와 − 를 같은 쌍에). 두 쌍을 서로 다른 꼬임쌍으로 나눕니다.", "Keep + and − of each signal on the same twisted pair; use two separate pairs.") },
-    { level: "info", text: t("RS-422 은 드라이버가 하나(마스터)라 그 쌍은 먼 끝(받는 쪽)만 종단하는 것이 일반적입니다. 장비 여럿이 번갈아 보내는 쌍(4선 멀티드롭)은 양 끝을 종단합니다.", "RS-422 has one driver (the master), so that pair is generally terminated only at the far (receiving) end. The pair several devices take turns driving (4-wire multidrop) is terminated at both ends."), src: SRC_TI },
+    { level: "info", text: t("Modbus 4선은 두 쌍 모두 버스 양 끝에서 종단합니다(그림). 드라이버가 하나뿐인 RS-422 점대점은 그 쌍을 먼 끝(받는 쪽)만 종단하기도 합니다 — 장비 매뉴얼을 따릅니다.", "In 4-wire Modbus each pair is terminated at both ends of the bus (as drawn). A point-to-point RS-422 link with a single driver is sometimes terminated only at the far (receiving) end of that pair — follow the device manual."), src: `${SRC_MODBUS} §3.4.5` },
     { level: "info", text: t("장비 여럿이 보내는 쌍(아래 쌍)에는 쉬는 동안을 위한 바이어스를 마스터 쪽 한 곳에 둡니다.", "Bias the pair several devices drive (lower pair) at one place on the master side."), src: `${SRC_MODBUS} §3.4.6` },
     { level: "info", text: t("변환기를 4선(전이중) 모드로 둡니다 — 2선/4선 스위치·점퍼가 있는 변환기가 많습니다.", "Set the adapter to 4-wire (full duplex) mode — many have a 2-wire/4-wire switch or jumper.") },
     { level: "warn", text: t("+/− 표기와 TX/RX 기준(자기 기준인지 상대 기준인지)은 제조사마다 다릅니다 — 장비 매뉴얼의 단자 번호를 확인합니다.", "+/− naming and whether TX/RX are named from the device's own side vary by vendor — check the manual's terminal numbers.") },

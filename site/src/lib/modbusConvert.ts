@@ -109,9 +109,10 @@ function asciiAsBytes(text: string): number[] | null {
 /** ASCII 글자열에서 «:» 다음부터 CR LF 앞까지. 실제 CR LF·«\r\n» 글자·<CR><LF> 모두 받는다 */
 function asciiBody(text: string, lang: Lang): { body: string; crlf: boolean } {
   const t = (ko: string, en: string) => msg(lang, ko, en);
-  let s = text.trim();
+  // 끝은 자르지 않는다 — 실제 CR LF(0D 0A 글자)가 trim 에 지워지면 «CR LF 없음» 으로 잘못 알린다
+  let s = text.replace(/^\s+/, "");
   // HEX 바이트로 붙여 넣은 ASCII(3A 30 31 …)
-  const asBytes = s.startsWith(":") ? null : asciiAsBytes(s);
+  const asBytes = s.startsWith(":") ? null : asciiAsBytes(s.trim());
   if (asBytes) s = String.fromCharCode(...asBytes);
   if (!s.startsWith(":")) throw new Error(t("ASCII 프레임은 «:» 로 시작합니다", "An ASCII frame starts with «:»"));
   let crlf = false;
@@ -188,7 +189,7 @@ export function parseFrame(text: string, fmt: InFormat = "auto", lang: Lang = "k
     if (proto !== 0) problems.push(t("프로토콜 ID 가 0 이 아닙니다 — Modbus 가 아닐 수 있습니다", "Protocol ID is not 0 — this may not be Modbus"));
     if (len !== bytes.length - 6) problems.push(t(`길이 칸(${len})이 실제 뒤 바이트 수(${bytes.length - 6})와 다릅니다 — 프레임이 잘렸거나 두 개가 붙었을 수 있습니다. 실제 바이트로 변환했습니다`, `The length field (${len}) differs from the bytes that follow (${bytes.length - 6}) — the frame may be cut off or two frames joined. Converted using the actual bytes`));
   } else {
-    const { body, crlf } = asciiBody(trimmed, lang);
+    const { body, crlf } = asciiBody(text, lang);
     if (!body.length || body.length % 2) throw new Error(t("«:» 뒤 HEX 글자 수가 짝수여야 합니다(바이트마다 2글자)", "The HEX characters after «:» must come in pairs (2 per byte)"));
     const bad = [...body].find((c) => !/[0-9a-fA-F]/.test(c));
     if (bad) throw new Error(t(`HEX 가 아닌 글자: «${bad}»`, `Not a HEX digit: «${bad}»`));

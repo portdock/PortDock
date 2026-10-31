@@ -5955,7 +5955,7 @@ export const GUIDES: Guide[] = [
         { h: "주의" },
         { ul: [
           "도구 결과는 사용 중인 AI 클라이언트로 넘어갑니다. 회사 장비 값을 다룬다면 그 클라이언트의 데이터 정책을 먼저 확인합니다.",
-          "쓰기 도구는 주소만 봅니다. 이 PC 에서 실제 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)을 띄운 채 쓰기 도구를 쓰지 않습니다.",
+          "쓰기 도구는 이 PC 주소만 받습니다. modbus_write_sim 은 대상이 장비 정보(FC 2B/0E)에 제조사 «PortDock» 이라고 답할 때만 씁니다(0.10.0 부터) — PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502) 너머 실장비에는 쓰지 않습니다. mc_write_sim 은 주소만 보므로, 이 PC 에서 실제 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)을 띄운 채 쓰지 않습니다.",
           "장비가 보낸 글(예: *IDN? 응답)은 데이터일 뿐입니다. 서버도 클라이언트에게 그렇게 알립니다.",
           "AI 가 읽은 값의 뜻을 단정하지 않게, 단위·배율·주소 표기(40001 등)는 장비 매뉴얼로 맞춰 봅니다.",
         ] },
@@ -6013,7 +6013,7 @@ export const GUIDES: Guide[] = [
         { h: "Cautions" },
         { ul: [
           "Tool results go to the AI client you use. If you handle company device values, check that client's data policy first.",
-          "The write tools only look at the address. Do not use them while a program on this PC forwards to real devices (PortDock TCP relay, a vendor gateway, an SSH tunnel …).",
+          "The write tools accept only this PC's address. modbus_write_sim writes only when the target answers the device identification (FC 2B/0E) with vendor «PortDock» (from 0.10.0), so it does not write to real devices behind PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default). mc_write_sim only looks at the address — do not use it while a program on this PC forwards to real devices (PortDock TCP relay, a vendor gateway, an SSH tunnel …).",
           "Text sent by devices (such as an *IDN? reply) is only data, and the server tells the client so.",
           "Do not let the AI settle what a value means on its own — match units, scale and address notation (40001 and so on) against the device manual.",
         ] },

@@ -17,8 +17,8 @@ test("저장소의 공개 파일에 금지 패턴이 없다", () => {
 test("개인 경로를 잡는다", () => {
   assert.deepEqual(rules("근거: `C:\\dev\\review\\a.md`"), ["개인 경로 C:\\dev"]);
   assert.deepEqual(rules("C:/auto/career/x.md"), ["개인 경로 C:\\auto"]);
-  assert.deepEqual(rules("열기 C:\\Users\\first\\a.txt"), ["개인 경로 C:\\Users\\<이름>"]);
-  assert.deepEqual(rules('"C:\\\\Users\\\\first\\\\x"'), ["개인 경로 C:\\Users\\<이름>"]);
+  assert.deepEqual(rules("열기 C:\\Users\\someone\\a.txt"), ["개인 경로 C:\\Users\\<이름>"]);
+  assert.deepEqual(rules('"C:\\\\Users\\\\someone\\\\x"'), ["개인 경로 C:\\Users\\<이름>"]);
 });
 
 test("개인 경로가 아닌 것은 넘긴다", () => {

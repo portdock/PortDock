@@ -45,6 +45,15 @@ test("ASCII: LRC 와 CR LF", () => {
   assert.equal(bad.problems.length, 1);
   assert.ok(bad.problems[0].includes("F2"));
   assert.equal(bad.notes.length, 1); // CR LF 없음
+  // 실제 줄바꿈 CR LF 로 붙여 넣어도(trim 에 지워지지 않고) CR LF 있음, 끝 빈칸·앞 빈칸도 괜찮다
+  for (const s of [":01030000000AF2\r\n", "  :01030000000AF2\r\n  ", ":01030000000AF2<CR><LF>"]) {
+    const real = parseFrame(s);
+    assert.equal(real.format, "ascii", JSON.stringify(s));
+    assert.deepEqual(real.notes, [], JSON.stringify(s));
+    assert.ok(real.segments.some((g) => g.raw === "CR LF"));
+  }
+  // LF 만 있으면 CR LF 가 아니다
+  assert.equal(parseFrame(":01030000000AF2\n").notes.length, 1);
 });
 
 test("세 형식 왕복 — 예외 응답·쓰기 요청", () => {
