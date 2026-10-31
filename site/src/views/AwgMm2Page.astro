@@ -1,0 +1,215 @@
+---
+// 웹 도구: AWG ↔ mm² 변환표 — AWG 0000~40 지름·단면적(ASTM B258 공식), 가까운 IEC 60228 규격, 구리 20 °C Ω/km(IEC 60028 저항률). lib/wireGauge.ts.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { gaugeTable, metricRows, awgLabel } from "../lib/wireGauge";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/awg-mm2/";
+const f3 = (x: number) => (x >= 100 ? x.toFixed(1) : x >= 10 ? x.toFixed(2) : x >= 0.1 ? x.toFixed(3) : x.toFixed(4));
+const pm = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(0)} %`;
+const L = ko
+  ? {
+      title: "AWG ↔ mm² 변환표·전선 표",
+      desc: "AWG 0000~40 의 지름·단면적을 ASTM B258 공식으로 계산하고, 가까운 미터 규격(IEC 60228 mm²)과 구리 20 °C 저항(Ω/km)을 붙인 표. AWG·mm² 어느 쪽이든 넣어 바꿉니다.",
+      inAwg: "AWG (예: 18, 2/0, 0000)",
+      inMm: "단면적 mm²",
+      res: "결과",
+      k: { d: "지름(단선 환산)", area: "단면적", ohm: "구리 20 °C 저항(한 가닥)", near: "가까운 미터 규격", awgNear: "가장 가까운 AWG", awgUp: "같거나 굵은 AWG" },
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      err: "AWG 는 0000~50 (2/0 같은 표기 가능), 단면적은 0 보다 큰 수로 넣으세요",
+      fTitle: "계산식",
+      formula: [
+        "지름 d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: AWG 번호, 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+        "단면적 A = π ÷ 4 × d²",
+        "저항 R(Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (구리 20 °C)",
+      ],
+      fNote: "AWG 식은 ASTM B258, 구리 저항률은 IEC 60028(국제 표준 연동선) 값입니다. AWG 는 6 번호마다 지름이 2 배, 3 번호마다 단면적이 약 2 배가 됩니다.",
+      limitTitle: "표를 볼 때 주의",
+      limits: [
+        "AWG 와 미터 규격은 서로 딱 맞지 않습니다. «가까운 규격» 은 단면적 비율로 가장 가까운 것이고, 차이 % 가 음수면 미터 규격이 더 가늡니다 — 허용 전류·전압 강하가 빠듯하면 같거나 굵은 쪽을 고릅니다.",
+        "지름은 단선(한 가닥) 기준입니다. 연선은 같은 단면적이라도 겉지름이 더 크고, 피복을 더하면 더 커집니다 — 전선관·덕트 계산에는 제조사의 피복 포함 외경을 씁니다.",
+        "실제 케이블 저항은 IEC 60228 이 도체 등급(단선·연선·가요선)별 최대값을 따로 정합니다. 연선·주석 도금선은 같은 mm² 라도 조금 높습니다.",
+        "허용 전류는 굵기만으로 정해지지 않습니다(공사 방법·주위 온도·묶음). 이 표에는 싣지 않습니다.",
+      ],
+      awgTitle: "AWG 표 (0000 ~ 40)",
+      awgHead: ["AWG", "지름 mm", "단면적 mm²", "Ω/km (구리 20 °C)", "가까운 mm² (차이)"],
+      mmTitle: "미터 규격 표 (IEC 60228)",
+      mmHead: ["단면적 mm²", "지름 mm (단선 환산)", "Ω/km (구리 20 °C)", "가장 가까운 AWG", "같거나 굵은 AWG"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["18 AWG 는 몇 mm² 인가요?", "약 0.823 mm²(지름 1.024 mm)입니다. 가장 가까운 미터 규격은 0.75 mm² 이고 그보다 조금 굵습니다. 16 AWG 는 약 1.31 mm², 14 AWG 는 약 2.08 mm², 12 AWG 는 약 3.31 mm² 입니다."],
+        ["1.5 mm² 는 몇 AWG 인가요?", "15 AWG(1.65 mm²)가 가장 가깝지만 15 AWG 는 흔하지 않아, 미국 규격 전선으로 바꾸면 보통 14 AWG(2.08 mm²)를 씁니다. 16 AWG(1.31 mm²)는 1.5 mm² 보다 가늡니다."],
+        ["4/0 이나 2/0 은 무엇인가요?", "0 보다 굵은 AWG 는 0 을 겹쳐 씁니다: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG 는 약 107 mm² 입니다."],
+      ],
+    }
+  : {
+      title: "AWG to mm² Conversion Table",
+      desc: "AWG 0000 to 40 diameter and area (ASTM B258 formula), nearest metric mm² size (IEC 60228) and copper Ω/km at 20 °C. Convert either way.",
+      inAwg: "AWG (e.g. 18, 2/0, 0000)",
+      inMm: "Cross-section mm²",
+      res: "Result",
+      k: { d: "Diameter (solid equivalent)", area: "Cross-section", ohm: "Copper resistance at 20 °C (one conductor)", near: "Nearest metric size", awgNear: "Nearest AWG", awgUp: "AWG of equal or larger area" },
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      err: "Enter AWG 0000 to 50 (2/0 notation works) and a cross-section greater than 0",
+      fTitle: "Formulas",
+      formula: [
+        "Diameter d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: AWG number; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+        "Area A = π ÷ 4 × d²",
+        "Resistance R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (copper, 20 °C)",
+      ],
+      fNote: "The AWG formula is from ASTM B258; copper resistivity is the IEC 60028 annealed copper value. Every 6 gauges the diameter doubles; every 3 gauges the area roughly doubles.",
+      limitTitle: "Reading the table",
+      limits: [
+        "AWG and metric sizes never match exactly. «Nearest» is by area ratio; a negative difference means the metric size is smaller — when ampacity or voltage drop is tight, pick the equal-or-larger size.",
+        "Diameters are for a solid conductor. Stranded wire of the same area is wider, and insulation adds more — use the maker's overall diameter for conduit and duct fill.",
+        "Real cable resistance: IEC 60228 sets maximum values per conductor class (solid, stranded, flexible); stranded and tinned conductors are slightly higher.",
+        "Ampacity does not follow from size alone (installation method, ambient temperature, grouping) and is not listed here.",
+      ],
+      awgTitle: "AWG table (0000 to 40)",
+      awgHead: ["AWG", "Diameter mm", "Area mm²", "Ω/km (copper 20 °C)", "Nearest mm² (difference)"],
+      mmTitle: "Metric sizes (IEC 60228)",
+      mmHead: ["Area mm²", "Diameter mm (solid equiv.)", "Ω/km (copper 20 °C)", "Nearest AWG", "Equal or larger AWG"],
+      faqTitle: "FAQ",
+      faq: [
+        ["How many mm² is 18 AWG?", "About 0.823 mm² (1.024 mm diameter). The nearest metric size is 0.75 mm², slightly smaller. 16 AWG is about 1.31 mm², 14 AWG about 2.08 mm², 12 AWG about 3.31 mm²."],
+        ["What AWG is 1.5 mm²?", "15 AWG (1.65 mm²) is nearest, but 15 AWG is uncommon, so the usual US-gauge substitute is 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) is smaller than 1.5 mm²."],
+        ["What do 4/0 and 2/0 mean?", "Gauges larger than 0 repeat the zero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG is about 107 mm²."],
+      ],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const awgRows = gaugeTable();
+const mmRows = metricRows();
+const nm = (n: number | undefined) => (n === undefined ? "—" : awgLabel(n));
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "AWG mm2 변환표 — 전선 굵기 환산·지름·저항 — PortDock" : "AWG to mm² Conversion Table: Diameter & Resistance — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ag" data-t={JSON.stringify({ err: L.err })}>
+      <div class="row">
+        <label class="fld">{L.inAwg}<input id="awg" class="mono" value="18" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.inMm}<input id="mm" class="mono" value="1.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+
+      <h2>{L.awgTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.awgHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{awgRows.map((r) => <tr><td class="mono">{r.label}</td><td class="mono">{r.d.toFixed(3)}</td><td class="mono">{f3(r.area)}</td><td class="mono">{f3(r.ohmKm)}</td><td class="mono">{r.near} ({pm(r.nearDiff)})</td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.mmTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.mmHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{mmRows.map((r) => <tr><td class="mono">{r.area}</td><td class="mono">{r.d.toFixed(2)}</td><td class="mono">{f3(r.ohmKm)}</td><td class="mono">{nm(r.nearest)}</td><td class="mono">{nm(r.atLeast)}</td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
+
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {ko ? "굵기를 거리·전류로 정하려면 " : "To size a wire from length and current, use the "}<a href={url(lang, "tools/voltage-drop/")}>{ko ? "전압 강하·전선 굵기 계산기" : "voltage drop calculator"}</a>{ko ? ", 용도별 케이블 종류는 " : "; for cable types by use, the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? ", 전선관에 몇 가닥 들어가는지는 " : "; for how many wires fit in a conduit, the "}<a href={url(lang, "tools/conduit-fill/")}>{ko ? "전선관·덕트 점유율 계산기" : "conduit and duct fill calculator"}</a>{ko ? " 를 씁니다." : "."}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { awgLabel, gaugeRow, mm2ToAwg, nearestIec, parseAwg } from "../lib/wireGauge";
+    import { resistance } from "../lib/wire";
+    const form = document.getElementById("ag") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { err: string };
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 3) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    // 마지막으로 고친 칸을 기준으로 다른 칸을 채운다
+    function fromAwg() {
+      const n = parseAwg($("awg").value);
+      if (n === undefined) return fail();
+      const r = gaugeRow(n);
+      $("mm").value = fx(r.area, 4);
+      show(r.area, n);
+    }
+    function fromMm() {
+      const s = $("mm").value.trim();
+      const a = s === "" ? NaN : Number(s);
+      if (!(a > 0) || a > 1e6) return fail();
+      show(a);
+    }
+    function show(area: number, n?: number) {
+      $("err").textContent = "";
+      const d = Math.sqrt((4 * area) / Math.PI);
+      const m = mm2ToAwg(area);
+      const near = nearestIec(area);
+      set("d", `${fx(d)} mm`);
+      set("area", `${fx(area, 4)} mm²`);
+      set("ohm", `${fx(resistance("cu", 1000, area), 4)} Ω/km`);
+      set("near", `${near} mm² (${near >= area ? "+" : "−"}${Math.abs((near / area - 1) * 100).toFixed(0)} %)`);
+      set("awgNear", n !== undefined ? awgLabel(n) : m.nearest !== undefined ? `${awgLabel(m.nearest)} (${fx(m.exact, 2)})` : "—");
+      set("awgUp", m.atLeast !== undefined ? awgLabel(m.atLeast) : "—");
+    }
+    function fail() {
+      $("err").textContent = T.err;
+      for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+    }
+    $("awg").addEventListener("input", fromAwg);
+    $("mm").addEventListener("input", fromMm);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    fromAwg();
+  </script>
+</Base>

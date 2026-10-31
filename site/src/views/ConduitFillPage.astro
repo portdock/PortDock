@@ -1,0 +1,259 @@
+---
+// 웹 도구: 전선관·덕트 점유율 계산기 — 전선 외경·개수 → 단면 점유율 %, NEC Chapter 9 Table 1(53·31·40 %), NEC 376.22·378.22 와이어웨이 20 %,
+// NFPA 79 13.5.2 제어반 덕트 50 % 와 비교(lib/conduitFill.ts). KEC 점유율 조문은 원문 확인 전이라 싣지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { DUCT_RULES } from "../lib/conduitFill";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/conduit-fill/";
+const ROWS: [string, string][] = [
+  ["3.0", "10"],
+  ["", ""],
+  ["", ""],
+  ["", ""],
+];
+const L = ko
+  ? {
+      title: "전선관·덕트 점유율 계산기",
+      desc: "전선 외경과 개수로 전선관·덕트 점유율 % 를 계산하고, 전선관 NEC 53·31·40 %, 와이어웨이 20 %, 제어반 덕트 NFPA 79 50 % 와 비교합니다.",
+      mode: "넣을 곳",
+      conduit: "전선관(원형)",
+      duct: "덕트(사각)",
+      inner: "전선관 안지름(mm)",
+      w: "덕트 안쪽 폭(mm)",
+      h: "덕트 안쪽 높이(mm)",
+      rule: "덕트 기준",
+      wires: "전선(피복 포함 외경 mm × 개수, 다심 케이블은 케이블 하나를 1개로)",
+      od: "외경 mm",
+      n: "개수",
+      res: "결과",
+      k: { wires: "전선 단면적 합", inner: "안쪽 단면적", pct: "점유율", limit: "기준", minD: "기준 안에 드는 최소 안지름", maxN: "첫 줄 전선만이면 최대 개수" },
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      err: "숫자를 확인하세요 — 외경·안지름·폭·높이는 0 보다 크고, 개수는 0 이상의 정수",
+      over: "기준을 넘습니다",
+      under: "기준 안",
+      lines: "가닥",
+      fTitle: "계산식",
+      formula: ["전선 단면적 = π ÷ 4 × (피복 포함 외경)²", "전선관 안쪽 단면적 = π ÷ 4 × 안지름², 덕트 = 안쪽 폭 × 높이", "점유율 = 전선 단면적 합 ÷ 안쪽 단면적 × 100"],
+      stdTitle: "기준과 출처",
+      std: [
+        "전선관 — NEC(NFPA 70) Chapter 9 Table 1: 1가닥 53 %, 2가닥 31 %, 3가닥 이상 40 %. 다심 케이블 하나는 한 가닥으로 셉니다(Note 9). 600 mm 이하 짧은 니플은 60 %(Note 4) — 이 계산기는 다루지 않습니다.",
+        "와이어웨이 — NEC 376.22(A)(금속)·378.22(비금속): 전선 단면적 합이 내부 단면적의 20 % 이하.",
+        "제어반 배선 덕트 — NFPA 79(산업 기계 전기 설비) 13.5.2(2007·2012 판): 전선·케이블 단면적 합이 덕트 내부 단면적의 50 % 이하. 판에 따라 절 번호가 다를 수 있습니다.",
+        "국내 KEC 의 전선관·덕트 점유율 조문은 원문을 확인하지 못해 싣지 않습니다. 국내 시공은 KEC 와 한국전기설비규정 해설, 전선관·덕트 제조사 표를 따릅니다.",
+      ],
+      limitTitle: "주의",
+      limits: [
+        "외경은 제조사 자료의 피복 포함 값을 씁니다. AWG·mm² 지름은 도체만이라 쓰면 안 됩니다.",
+        "전선관 안지름은 관 종류(후강·박강·합성수지·가요)와 규격마다 다릅니다 — 호칭이 아니라 카탈로그의 안지름을 넣습니다.",
+        "덕트 크기도 바깥 치수가 아니라 안쪽 치수로 넣습니다. 슬롯·커버 두께만큼 줄어듭니다.",
+        "점유율 안이라도 굽힘이 많거나 길면 당기기 어렵고, 묶음이 많으면 허용 전류가 줄어듭니다(보정 계수). 시공은 자격자와 그 나라 규정으로 확인합니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["전선관에 전선을 몇 가닥 넣을 수 있나요?", "NEC Chapter 9 Table 1 기준으로 3가닥 이상이면 피복 포함 단면적 합이 관 안쪽 단면적의 40 % 이하입니다. 예: 안지름 16 mm 관에 외경 3 mm 전선이면 11 가닥까지(약 38.7 %)."],
+        ["왜 2가닥이 31 % 로 가장 낮나요?", "흔한 설명은 두 가닥이 관 안에서 나란히 서면 관 지름 방향을 채워 당길 때 끼기 쉽다는 것입니다. 표는 1가닥(53 %)·3가닥 이상(40 %)보다 낮게 둡니다."],
+        ["제어반 배선 덕트는 몇 % 까지 채우나요?", "NFPA 79 는 덕트 내부 단면적의 50 % 이하를 둡니다. 나중에 배선을 더할 여유도 이 정도에서 남깁니다."],
+      ],
+    }
+  : {
+      title: "Conduit & Duct Fill Calculator",
+      desc: "Conduit or duct fill % from wire diameters and counts, against NEC conduit fill (53/31/40 %), wireways (20 %) and NFPA 79 panel duct (50 %).",
+      mode: "Where",
+      conduit: "Conduit (round)",
+      duct: "Duct (rectangular)",
+      inner: "Conduit inside diameter (mm)",
+      w: "Duct inside width (mm)",
+      h: "Duct inside height (mm)",
+      rule: "Duct rule",
+      wires: "Wires (overall diameter mm × count; a multi-core cable counts as one)",
+      od: "OD mm",
+      n: "Count",
+      res: "Results",
+      k: { wires: "Total wire area", inner: "Inside area", pct: "Fill", limit: "Limit", minD: "Smallest inside diameter within the limit", maxN: "Max count of the first-row wire alone" },
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      err: "Check the numbers — diameters, width and height must be greater than 0, counts whole numbers from 0",
+      over: "Over the limit",
+      under: "Within the limit",
+      lines: "wires",
+      fTitle: "Formulas",
+      formula: ["Wire area = π ÷ 4 × (overall diameter)²", "Conduit inside area = π ÷ 4 × ID², duct = inside width × height", "Fill = total wire area ÷ inside area × 100"],
+      stdTitle: "Limits and sources",
+      std: [
+        "Conduit — NEC (NFPA 70) Chapter 9 Table 1: 1 conductor 53 %, 2 conductors 31 %, more than 2: 40 %. A multiconductor cable counts as one conductor (Note 9). Nipples up to 600 mm (24 in) may be filled to 60 % (Note 4) — not covered here.",
+        "Wireways — NEC 376.22(A) (metal) and 378.22 (nonmetallic): conductors may fill at most 20 % of the interior area.",
+        "Panel wiring duct — NFPA 79 (Electrical Standard for Industrial Machinery) 13.5.2 (2007 and 2012 editions): conductors and cables may fill at most 50 % of the duct's interior area. The clause number may differ by edition.",
+        "Other national codes (IEC countries, Korea's KEC, …) have their own rules; this tool does not include them.",
+      ],
+      limitTitle: "Notes",
+      limits: [
+        "Use the maker's overall diameter including insulation. AWG and mm² diameters are for the bare conductor and are too small.",
+        "Conduit inside diameters vary by type (rigid, EMT, PVC, flexible) and trade size — enter the catalogue ID, not the trade size.",
+        "Enter the duct's inside dimensions, not the outside — slots and cover take some room.",
+        "Even within the limit, many bends or long pulls make installation hard, and bundling reduces ampacity (correction factors). Have a qualified person check against your local code.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How many wires fit in a conduit?", "Under NEC Chapter 9 Table 1, with more than two conductors the total area including insulation may be at most 40 % of the conduit's inside area. Example: 3 mm OD wires in a 16 mm ID conduit — up to 11 (about 38.7 %)."],
+        ["Why is two conductors the lowest at 31 %?", "The usual explanation is that two conductors side by side span the conduit's diameter and can jam when pulled; the table sets the limit lower than for one (53 %) or three or more (40 %)."],
+        ["How full can panel wiring duct be?", "NFPA 79 limits fill to 50 % of the duct's interior area, which also leaves room for wiring added later."],
+      ],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "전선관 점유율 계산 — 전선관·덕트 몇 가닥 (NEC 40%) — PortDock" : "Conduit Fill Calculator (mm): NEC 40 %, Panel Duct — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="cf" data-t={JSON.stringify({ err: L.err, over: L.over, under: L.under, lines: L.lines })}>
+      <div class="row">
+        <label class="fld">
+          {L.mode}
+          <select id="mode"><option value="conduit">{L.conduit}</option><option value="duct">{L.duct}</option></select>
+        </label>
+        <label class="fld" data-mode="conduit">{L.inner}<input id="inner" class="mono" value="16" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld" data-mode="duct" hidden>{L.w}<input id="w" class="mono" value="40" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld" data-mode="duct" hidden>{L.h}<input id="h" class="mono" value="60" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld" data-mode="duct" hidden>
+          {L.rule}
+          <select id="rule">{DUCT_RULES.map((r) => <option value={r.id}>{r.name[lang]}</option>)}</select>
+        </label>
+      </div>
+      <p class="note">{L.wires}</p>
+      {
+        ROWS.map(([od, n], i) => (
+          <div class="row">
+            <label class="fld">
+              {L.od} {i + 1}
+              <input class="mono" data-od value={od} inputmode="decimal" spellcheck="false" autocomplete="off" />
+            </label>
+            <label class="fld">
+              {L.n} {i + 1}
+              <input class="mono" data-n value={n} inputmode="numeric" spellcheck="false" autocomplete="off" />
+            </label>
+          </div>
+        ))
+      }
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr data-row={id}><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.stdTitle}</h2>
+      <ul>{L.std.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {ko ? "전선 굵기를 고르려면 " : "To pick wire sizes, see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 와 " : " and the "}<a href={url(lang, "tools/awg-mm2/")}>{ko ? "AWG ↔ mm² 변환표" : "AWG to mm² table"}</a>{ko ? " 를, 통신선과 동력선을 같은 덕트에 넣어도 되는지는 " : "; whether signal and power cables may share a duct is covered in "}<a href={url(lang, "guides/field-noise-communication-errors/")}>{ko ? "현장 노이즈 가이드" : "the field noise guide"}</a>{ko ? " 를 봅니다." : "."}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { conduitFill, ductFill, maxSameDuct, maxSameWires, minConduitInner, type DuctRule, type WireGroup } from "../lib/conduitFill";
+    const form = document.getElementById("cf") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { err: string; over: string; under: string; lines: string };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (el: HTMLInputElement) => {
+      const s = el.value.trim();
+      const n = s === "" ? NaN : Number(s);
+      return Math.abs(n) > 1e9 ? NaN : n;
+    };
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    const fx = (x: number, d = 1) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    function groups(): WireGroup[] {
+      const ods = [...form.querySelectorAll<HTMLInputElement>("[data-od]")];
+      const ns = [...form.querySelectorAll<HTMLInputElement>("[data-n]")];
+      const out: WireGroup[] = [];
+      ods.forEach((o, i) => {
+        if (o.value.trim() === "" && ns[i].value.trim() === "") return;
+        out.push({ od: num(o), count: num(ns[i]) });
+      });
+      return out;
+    }
+    function run() {
+      const mode = $<HTMLSelectElement>("mode").value;
+      for (const el of form.querySelectorAll<HTMLElement>("[data-mode]")) el.hidden = el.dataset.mode !== mode;
+      for (const id of ["minD"]) (form.querySelector(`tr[data-row="${id}"]`) as HTMLElement).hidden = mode !== "conduit";
+      const verdict = $("verdict");
+      try {
+        const g = groups();
+        if (g.length === 0) throw new Error();
+        const r = mode === "conduit" ? conduitFill(g, num($("inner"))) : ductFill(g, num($("w")), num($("h")), $<HTMLSelectElement>("rule").value as DuctRule);
+        $("err").textContent = "";
+        set("wires", `${fx(r.wires)} mm² (${r.count} ${T.lines})`);
+        set("inner", `${fx(r.inner)} mm²`);
+        set("pct", `${fx(r.pct)} %`);
+        set("limit", r.limit !== undefined ? `${r.limit} %` : "—");
+        if (mode === "conduit") {
+          const d = minConduitInner(g);
+          set("minD", d !== undefined ? `${fx(d)} mm` : "—");
+          set("maxN", `${maxSameWires(g[0].od, num($("inner")))}`);
+        } else set("maxN", `${maxSameDuct(g[0].od, num($("w")), num($("h")), $<HTMLSelectElement>("rule").value as DuctRule)}`);
+        if (r.over === undefined) {
+          verdict.className = "verdict";
+          verdict.textContent = "";
+        } else {
+          verdict.className = "verdict " + (r.over ? "fault" : "ok");
+          verdict.textContent = `${r.over ? T.over : T.under} (${fx(r.pct)} % / ${r.limit} %)`;
+        }
+      } catch {
+        $("err").textContent = T.err;
+        verdict.textContent = "";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>
