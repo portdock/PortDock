@@ -213,6 +213,10 @@ export default function App() {
   const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
   useEffect(() => store("advConnOpen", advConnOpenSaved), [advConnOpenSaved]);
   const [advConnOpen, setAdvConnOpen] = useFold(advConnOpenSaved, setAdvConnOpenSaved, settings.expandAll);
+  // 포트 나눔 칸: 접힘 기본(켜 두면 펼침), «모두 펼치기» 를 따른다
+  const [shareFoldSaved, setShareFoldSaved] = useState<boolean>(() => load("shareOpen", false));
+  useEffect(() => store("shareOpen", shareFoldSaved), [shareFoldSaved]);
+  const [shareFold, setShareFold] = useFold(shareFoldSaved, setShareFoldSaved, settings.expandAll);
   // 연결되면 연결 설정(용도·포트·속도·고급 연결·자동 재연결)을 «COM3 9600 8N1 [바꾸기]» 한 줄로 접는다(10/18).
   // [바꾸기] 로 펼치면 지금처럼 바로 적용되고, 끊으면 다시 펼친 채로. «모두 펼치기» 면 늘 펼침
   const [connEditSaved, setConnEditSaved] = useState(false);
@@ -1366,7 +1370,7 @@ export default function App() {
         </details>
 
         {/* (0.10.0) 포트 나눔 — 연 포트를 TCP 서버로. 기본 127.0.0.1, 다른 PC 는 사용자가 켤 때만 */}
-        <details className="adv panel share-panel" open={!!shareAddr || undefined}>
+        <details className="adv panel share-panel" open={shareFold || !!shareAddr} onToggle={(e) => setShareFold((e.target as HTMLDetailsElement).open)}>
           <summary data-tip={tip(lang, "share")}>
             <span className="sum-title">{t("shareTitle")}</span>
             <span className="sum-note">{shareAddr ? fill(t("shareOn"), { a: shareAddr, n: shareClients.length }) : t("shareOff")}</span>

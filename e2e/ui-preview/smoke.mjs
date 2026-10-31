@@ -2853,8 +2853,8 @@ async function runApp(app, port) {
           return { mode: sels.find((x) => x.querySelector('option[value=ascii]')).value, suffix: sels[sels.length - 1].value, ph: document.querySelector('.sendtext').placeholder,
             adv: [...document.querySelectorAll('aside.side details.adv')].map((x) => x.open), notes: [...document.querySelectorAll('aside.side details.adv .sum-note')].map((x) => x.textContent) };`);
         if (f.mode !== "ascii" || f.suffix !== "\\r\\n" || f.ph !== "AT") await conv("first-run", `첫 실행 보내기 기본값이 ASCII·CR LF·«AT» 가 아님: ${JSON.stringify(f)}`, false);
-        const want = combo.full ? [true, true] : [false, false];
-        if (JSON.stringify(f.adv) !== JSON.stringify(want) || (!combo.full && f.notes.length !== 2)) await conv("serial-fold", `왼쪽 접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
+        const want = combo.full ? [true, true, true] : [false, false, false]; // (0.10.0) 셋째 = 포트 나눔
+        if (JSON.stringify(f.adv) !== JSON.stringify(want) || (!combo.full && f.notes.length !== 3)) await conv("serial-fold", `왼쪽 접기 상태·요약이 이상함(기대 ${JSON.stringify(want)}): ${JSON.stringify(f)}`);
         // (10/18) 도구줄 한 줄(최소 창): 간격 열은 «보기 설정 ▾» 안, «파일로 계속 저장» 은 도구줄(왼쪽 칸에는 없음)
         const tb = await js(`const tb = document.querySelector('.main .toolbar');
           const mids = [...tb.children].filter((e) => __sm.vis(e) && !e.classList.contains('grow')).map((e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
