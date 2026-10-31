@@ -120,6 +120,7 @@ export const TREE: TreeData = {
         { ko: "바꾼 상태를 배선도에 적어 두기(다음 사람이 다시 바꾸지 않게)", en: "Record the swapped state on the wiring diagram so nobody swaps it back" },
       ],
       links: [
+        { k: "guide", to: "rs485-multimeter-check" },
         { k: "guide", to: "rs485-wiring" },
         { k: "web", to: "tools/multimeter-check/", hash: "rs485-idle" },
         { k: "web", to: "tools/wiring/", hash: "tpl=rs485-2w" },
@@ -140,6 +141,7 @@ export const TREE: TreeData = {
         { ko: "장비를 한 대씩 더하며 어느 장비부터 안 되는지 보기, 국번 목록 적기", en: "Add devices back one at a time to see where it fails; list every slave ID" },
       ],
       links: [
+        { k: "guide", to: "rs485-multimeter-check" },
         { k: "guide", to: "rs485-wiring" },
         { k: "guide", to: "rs485-bias-termination" },
         { k: "web", to: "tools/multimeter-check/", hash: "rs485-ohm" },
@@ -181,6 +183,8 @@ export const TREE: TreeData = {
         { ko: "RS-485 계산기로 이 보율의 길이 한계 보기", en: "Check the length limit for this baud rate in the RS-485 calculator" },
       ],
       links: [
+        { k: "guide", to: "field-noise-communication-errors" },
+        { k: "guide", to: "cable-shield-grounding" },
         { k: "guide", to: "rs485-wiring" },
         { k: "guide", to: "rs485-bias-termination" },
         { k: "web", to: "tools/rs485/" },
@@ -239,6 +243,7 @@ export const TREE: TreeData = {
         { ko: "빠지는 시각이 모터 운전과 겹치는지 기록과 대조", en: "Compare when replies drop with when motors run" },
       ],
       links: [
+        { k: "guide", to: "rs485-multimeter-check" },
         { k: "guide", to: "rs485-bias-termination" },
         { k: "web", to: "tools/rs485/" },
         { k: "web", to: "tools/multimeter-check/", hash: "rs485-idle" },
@@ -579,6 +584,7 @@ export const TREE: TreeData = {
         { ko: "Hardware Tester 의 USB 끊김 시각을 모터 운전 시각과 대조(0.10.0 부터)", en: "Compare Hardware Tester's USB drop times with motor run times (from 0.10.0)" },
       ],
       links: [
+        { k: "guide", to: "field-noise-communication-errors" },
         { k: "web", to: "tools/multimeter-check/", hash: "ground-diff" },
         { k: "guide", to: "usb-serial-disconnects" },
         { k: "app", to: "hw-tester" },
@@ -777,6 +783,7 @@ export const TREE: TreeData = {
         { ko: "입력 필터 시간 상수(RC 필터)로 흔들림 줄이기", en: "Reduce fluctuation with an input filter time constant (RC filter)" },
       ],
       links: [
+        { k: "guide", to: "cable-shield-grounding" },
         { k: "web", to: "tools/multimeter-check/", hash: "ground-diff" },
         { k: "guide", to: "4-20ma-loop" },
         { k: "web", to: "tools/rc-filter/" },
@@ -794,6 +801,7 @@ export const TREE: TreeData = {
         { ko: "부하 켠 상태에서 24 V 전원 전압 재기(강하 5 % 이하가 무난)", en: "Measure the 24 V supply under load (5 % drop or less is comfortable)" },
       ],
       links: [
+        { k: "guide", to: "24v-power-supply-check" },
         { k: "web", to: "tools/loop-load/" },
         { k: "web", to: "tools/multimeter-check/", hash: "supply-24v" },
         { k: "guide", to: "24v-voltage-drop" },
@@ -884,6 +892,7 @@ export const TREE: TreeData = {
         { ko: "센서 데이터시트의 선 색·전원 범위 보기", en: "Check wire colours and supply range in the sensor datasheet" },
       ],
       links: [
+        { k: "guide", to: "24v-power-supply-check" },
         { k: "web", to: "tools/multimeter-check/", hash: "supply-24v" },
         { k: "guide", to: "24v-voltage-drop" },
         { k: "web", to: "tools/voltage-drop/" },
@@ -917,6 +926,7 @@ export const TREE: TreeData = {
         { ko: "PLC 매뉴얼의 입력 배선 그림에서 COM 이 어디로 가는지 보기", en: "Check in the PLC manual's input wiring figure where COM goes" },
       ],
       links: [
+        { k: "guide", to: "npn-pnp-sensor-plc-input" },
         { k: "web", to: "tools/multimeter-check/", hash: "sensor-out" },
         { k: "web", to: "tools/wiring/", hash: "tpl=npn-pnp" },
       ],
@@ -934,6 +944,7 @@ export const TREE: TreeData = {
         { ko: "PLC 입력 단자–COM 사이: 켜짐 15 V 이상(형식 1), 꺼짐 5 V 이하", en: "PLC input to COM: ON 15 V or more (type 1), OFF 5 V or less" },
       ],
       links: [
+        { k: "guide", to: "npn-pnp-sensor-plc-input" },
         { k: "web", to: "tools/multimeter-check/", hash: "sensor-out" },
         { k: "web", to: "tools/wiring/", hash: "tpl=npn-pnp" },
       ],

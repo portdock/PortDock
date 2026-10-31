@@ -206,7 +206,7 @@ export const ITEMS: Item[] = [
   { id: "exp-remote", stage: "pre", for: ["remote"], work: ["expand"], text: t("새 장비에 원격으로 접속해야 하면 현장 보안 규칙대로 승인부터", "If the new device needs remote access, get it approved under the site's security rules first") },
 
   // ================= 교체(같은 자리)
-  { id: "rep-record", stage: "pre", for: "all", work: ["replace"], text: t("옛 장비의 통신 설정·파라미터·레지스터 값을 읽어 파일로 남길 것 — 바꾼 뒤 같은 값과 비교", "Read the old device's communication settings, parameters and register values into a file — compare after the swap"), links: ["guides/modbus-read-blocks/"] },
+  { id: "rep-record", stage: "pre", for: "all", work: ["replace"], text: t("옛 장비의 통신 설정·파라미터·레지스터 값을 읽어 파일로 남길 것 — 바꾼 뒤 같은 값과 비교", "Read the old device's communication settings, parameters and register values into a file — compare after the swap"), links: ["modbus-master/", "guides/device-replacement-settings/", "guides/modbus-read-blocks/"] },
   { id: "rep-model", stage: "pre", for: "all", work: ["replace"], text: t("같은 모델·펌웨어 판인지 — 다르면 레지스터 맵·기본값·단위 차이를 매뉴얼로 비교", "Same model and firmware? If not, compare the register map, defaults and units in the manuals"), links: ["guides/modbus-address-notation/"] },
   { id: "rep-label", stage: "off", for: "all", work: ["replace"], text: t("옛 장비 선을 뽑기 전에 단자마다 번호표를 붙이고 사진을 남길 것", "Label every terminal and take photos before disconnecting the old device"), links: ["tools/wiring/", "tools/pinouts/"] },
   { id: "rep-compare", stage: "comm", for: "all", work: ["replace"], text: t("바꾼 뒤 같은 레지스터·값을 읽어 옛 기록과 비교 — 배율·워드 순서", "After the swap, read the same registers and compare with the old record — scaling and word order"), links: ["tools/modbus-float/", "guides/modbus-float-word-order/"] },
@@ -229,7 +229,7 @@ export const ITEMS: Item[] = [
 
   // ================= 제거·철거
   { id: "del-impact", stage: "pre", for: "all", work: ["remove"], text: t("그 장비 값을 쓰는 곳(PLC 프로그램·HMI 화면·상위 시스템·알람)을 찾아 두고 범위를 운전 담당과 정할 것", "Find everything that uses the device's values (PLC program, HMI screens, upper systems, alarms) and agree the scope with operations") },
-  { id: "del-backup", stage: "pre", for: "all", work: ["remove"], text: t("빼기 전 마지막 설정·레지스터 값·프로그램을 백업 — 나중에 다시 쓸 수 있게", "Back up the last settings, register values and program before removal so it can be reused"), links: ["guides/modbus-read-blocks/"] },
+  { id: "del-backup", stage: "pre", for: "all", work: ["remove"], text: t("빼기 전 마지막 설정·레지스터 값·프로그램을 백업 — 나중에 다시 쓸 수 있게", "Back up the last settings, register values and program before removal so it can be reused"), links: ["modbus-master/", "guides/modbus-read-blocks/"] },
   { id: "del-wires", stage: "off", for: "all", work: ["remove"], text: t("남은 선·분기선 정리 — 걷어 내거나 끝을 절연하고 표시", "Clean up leftover wires and stubs — remove them or insulate and label the ends"), links: ["tools/wiring/"] },
   { id: "del-others", stage: "on", for: "all", work: ["remove"], text: t("남은 장비들이 그대로 응답·값이 맞는지 확인", "Check that the remaining devices still answer with correct values") },
   { id: "del-docs", stage: "rec", for: "all", work: ["remove"], text: t("구성도·배선도·장비 목록에서 지우고 판 번호·날짜를 붙일 것", "Remove it from the system and wiring diagrams and the device list, with a version and date"), links: ["tools/system-diagram/", "tools/wiring/"] },
