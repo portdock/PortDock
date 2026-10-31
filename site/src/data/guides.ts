@@ -8306,7 +8306,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: ["serial"],
     related: ["rs232-rs422-rs485", "rs485-wiring", "i2c-troubleshooting", "can-wiring-termination-check", "usb-serial-latency"],
-    webTools: ["tools/logic-capture/", "tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/wiring/"],
+    webTools: ["tools/logic-capture/", "tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/wiring/", "tools/can-decoder/", "tools/i2c/", "tools/spi/", "tools/uart-waveform/"],
     title: { ko: "UART·SPI·I2C·CAN·RS-485 차이 — 거리·속도·장비 수·배선으로 고르기", en: "UART vs SPI vs I2C vs CAN vs RS-485 — choosing by distance, speed, device count and wiring" },
     seoTitle: { ko: "UART·SPI·I2C·CAN·RS-485 차이와 고르는 법 — PortDock", en: "UART vs SPI vs I2C vs CAN vs RS-485: How to Choose — PortDock" },
     desc: {
@@ -8453,7 +8453,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: [],
     related: ["uart-spi-i2c-can-rs485", "can-wiring-termination-check", "cable-shield-grounding", "field-noise-communication-errors"],
-    webTools: ["tools/logic-capture/", "tools/parallel-resistor/", "tools/multimeter-check/", "tools/pinouts/", "tools/troubleshoot/"],
+    webTools: ["tools/logic-capture/", "tools/parallel-resistor/", "tools/multimeter-check/", "tools/pinouts/", "tools/troubleshoot/", "tools/i2c/"],
     title: { ko: "I2C 가 안 될 때 점검 순서 — 풀업·주소·전압 레벨·버스 걸림(SDA low) 풀기·선 길이", en: "I2C troubleshooting, in order — pull-ups, address, voltage levels, clearing a stuck SDA, wire length" },
     seoTitle: { ko: "I2C 안 될 때 — 풀업·주소·SDA 걸림·선 길이 점검 — PortDock", en: "I2C Not Working: Pull-ups, Address, Stuck SDA, Length — PortDock" },
     desc: {
@@ -8593,7 +8593,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: [],
     related: ["uart-spi-i2c-can-rs485", "rs485-bias-termination", "cable-shield-grounding", "field-noise-communication-errors", "rs485-multimeter-check"],
-    webTools: ["tools/can-bit-timing/", "tools/logic-capture/", "tools/multimeter-check/", "tools/wiring/", "tools/pinouts/", "tools/troubleshoot/"],
+    webTools: ["tools/can-bit-timing/", "tools/logic-capture/", "tools/multimeter-check/", "tools/wiring/", "tools/pinouts/", "tools/troubleshoot/", "tools/can-decoder/"],
     title: { ko: "CAN 배선·종단 점검 — 양 끝 120 Ω(전원 끄고 약 60 Ω), 공통 접지, 비트 타이밍·샘플 포인트, 오류 프레임·버스 오프", en: "CAN wiring and termination checks — 120 Ω ends (60 Ω power-off), ground, bit timing, error frames, bus-off" },
     seoTitle: { ko: "CAN 종단 60 Ω 점검·접지·샘플 포인트·버스 오프 — PortDock", en: "CAN Termination 60 Ω Check, Ground, Bus-Off — PortDock" },
     desc: {
