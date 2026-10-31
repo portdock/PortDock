@@ -1,7 +1,8 @@
 // 이 PC 점검(Port Inspector «이 PC» 카드) — 장비 PC 로 쓸 때 볼 설정(빠른 시작·절전·업데이트·재시작 대기·화면 보호기·시간 동기화)과
 // 최근 기록(예기치 않은 종료·하드웨어 오류)을 «문제 없음(읽은 범위) / 볼 것 / 읽지 못함» 으로 나누는 순수 함수와 결과 글.
 // 정답은 현장마다 다르다 — 사무용 PC 엔 켜 두는 게 맞는 값(업데이트·절전)이 대부분이라, 설정 값은 «장비 PC» 를 고른 뒤에만 «볼 것» 을 붙인다.
-// «문제 있음» 은 쓰지 않는다. 업데이트를 끄라고 권하지 않는다. 바꾸기는 하지 않는다(바꾸는 곳 안내만).
+// «문제 있음» 은 디스크가 스스로 경고 비트를 알릴 때(NVMe Critical Warning)만 쓴다. 업데이트를 끄라고 권하지 않는다.
+// (0.10.0) 블루스크린·갑자기 꺼짐(정지 코드 이름)·저장장치 수명·깨운 원인·배터리(있을 때만) 묶음이 붙었다. 바꾸기는 하지 않는다(바꾸는 곳 안내만).
 import type { Level, Text, Verdict } from "./portinfo.ts";
 
 // ---------------------------------------------------------------- 백엔드 모양(crates/core/src/portinfo/mod.rs PcCheck)
@@ -43,6 +44,53 @@ export interface PcEventCount {
   last: number;
 }
 export type RebootFlag = "windowsUpdate" | "servicing" | "fileRename";
+/** (0.10.0) 블루스크린·갑자기 꺼짐 한 건 */
+export interface PcCrash {
+  time: number;
+  kind: "bugcheck" | "kernelPower" | "unexpected";
+  code: number | null;
+  params: string | null;
+  dump: string | null;
+  powerButton: boolean;
+}
+export interface PcDump {
+  name: string;
+  time: number;
+  size: number;
+}
+export interface DiskHealth {
+  criticalWarning: number | null;
+  temperatureC: number | null;
+  availableSpare: number | null;
+  spareThreshold: number | null;
+  percentageUsed: number | null;
+  writtenGb: number | null;
+  powerCycles: number | null;
+  powerOnHours: number | null;
+  unsafeShutdowns: number | null;
+  mediaErrors: number | null;
+}
+export interface PcDisk {
+  index: number;
+  model: string | null;
+  bus: "nvme" | "sata" | "usb" | "other";
+  state: "ok" | "adminOnly" | "unsupported" | "error";
+  health: DiskHealth | null;
+  error: string | null;
+}
+export interface PcWake {
+  time: number;
+  sleepTime: number | null;
+  source: string | null;
+  sourceType: number | null;
+  device: string | null;
+  timerOwner: string | null;
+}
+export interface PcBattery {
+  designMwh: number | null;
+  fullMwh: number | null;
+  cycles: number | null;
+}
 export interface PcCheck {
   readAt: number;
   days: number;
@@ -55,6 +103,13 @@ export interface PcCheck {
   screenSaver: PcScreenSaver;
   time: PcTime;
   events: PcEventCount[];
+  /** (0.10.0) 아래 다섯은 0.9.x 백엔드에 없다 — 없으면 빈 것으로 본다 */
+  crashes?: PcCrash[];
+  dumps?: PcDump[];
+  dumpsRead?: boolean;
+  disks?: PcDisk[];
+  wakes?: PcWake[];
+  batteries?: PcBattery[];
   errors: string[];
   /** 화면 쪽 — 백엔드 호출 자체가 실패함(값을 하나도 못 읽음) */
   failed?: boolean;
@@ -74,6 +129,12 @@ export function pcFailed(days: number, message: string): PcCheck {
     screenSaver: { active: null, program: null, timeout: null, secure: null },
     time: { type: null, ntpServer: null, policy: false, serviceStart: null },
     events: [],
+    crashes: [],
+    dumps: [],
+    dumpsRead: false,
+    disks: [],
+    wakes: [],
+    batteries: [],
     errors: [message],
     failed: true,
   };
@@ -96,25 +157,95 @@ export const PC_PURPOSE_TEXT: Record<PcPurpose, Text> = {
 /** Microsoft Learn «Configure policy settings on IoT devices» — 업데이트 재시작·사용 시간·빠른 시작 등을 장비용으로 다룬 공식 문서 */
 export const IOT_POLICY_URL = "https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/iot-ent-configure-policy-settings";
 
-export type PcGroup = "power" | "update" | "screen" | "events";
+export type PcGroup = "power" | "update" | "screen" | "events" | "crash" | "disk" | "wake" | "battery";
 export const PC_GROUP_TEXT: Record<PcGroup, Text> = {
   power: t("전원·절전", "Power and sleep"),
   update: t("업데이트·재시작", "Updates and restarts"),
   screen: t("화면 보호기·시간", "Screen saver and time"),
   events: t("최근 기록", "Recent records"),
+  crash: t("블루스크린·갑자기 꺼짐", "Blue screens and sudden shutdowns"),
+  disk: t("저장장치 수명", "Storage health"),
+  wake: t("무엇이 절전을 깨웠나", "What woke the PC"),
+  battery: t("배터리", "Battery"),
 };
+
+/** 사이트 웹 도구 — 블루스크린 코드 사전(원인 후보·확인 순서) · 배터리 리포트 해석기 */
+export const BSOD_CODES_URL = "https://portdock.dev/tools/bsod-codes/";
+export const BATTERY_REPORT_URL = "https://portdock.dev/tools/battery-report/";
+
+/** 자주 보이는 정지 코드(버그체크) 이름 — Microsoft «Bug check code reference» 의 이름 그대로. 뜻·원인 후보는 사이트 사전에서 */
+export const BUGCHECK_NAMES: Record<number, string> = {
+  0x0a: "IRQL_NOT_LESS_OR_EQUAL",
+  0x1a: "MEMORY_MANAGEMENT",
+  0x1e: "KMODE_EXCEPTION_NOT_HANDLED",
+  0x3b: "SYSTEM_SERVICE_EXCEPTION",
+  0x3d: "INTERRUPT_EXCEPTION_NOT_HANDLED",
+  0x4e: "PFN_LIST_CORRUPT",
+  0x50: "PAGE_FAULT_IN_NONPAGED_AREA",
+  0x7a: "KERNEL_DATA_INPAGE_ERROR",
+  0x7b: "INACCESSIBLE_BOOT_DEVICE",
+  0x7e: "SYSTEM_THREAD_EXCEPTION_NOT_HANDLED",
+  0x7f: "UNEXPECTED_KERNEL_MODE_TRAP",
+  0x9f: "DRIVER_POWER_STATE_FAILURE",
+  0xa0: "INTERNAL_POWER_ERROR",
+  0xc2: "BAD_POOL_CALLER",
+  0xc5: "DRIVER_CORRUPTED_EXPOOL",
+  0xd1: "DRIVER_IRQL_NOT_LESS_OR_EQUAL",
+  0xef: "CRITICAL_PROCESS_DIED",
+  0xf4: "CRITICAL_OBJECT_TERMINATION",
+  0xfc: "ATTEMPTED_EXECUTE_OF_NOEXECUTE_MEMORY",
+  0x101: "CLOCK_WATCHDOG_TIMEOUT",
+  0x109: "CRITICAL_STRUCTURE_CORRUPTION",
+  0x116: "VIDEO_TDR_FAILURE",
+  0x117: "VIDEO_TDR_TIMEOUT_DETECTED",
+  0x119: "VIDEO_SCHEDULER_INTERNAL_ERROR",
+  0x124: "WHEA_UNCORRECTABLE_ERROR",
+  0x133: "DPC_WATCHDOG_VIOLATION",
+  0x139: "KERNEL_SECURITY_CHECK_FAILURE",
+  0x13a: "KERNEL_MODE_HEAP_CORRUPTION",
+  0x154: "UNEXPECTED_STORE_EXCEPTION",
+  0x1000007e: "SYSTEM_THREAD_EXCEPTION_NOT_HANDLED_M",
+  0x1000008e: "KERNEL_MODE_EXCEPTION_NOT_HANDLED_M",
+};
+
+/** 0x50 → «0x00000050 PAGE_FAULT_IN_NONPAGED_AREA» */
+export function bugcheckText(code: number): string {
+  const hex = `0x${code.toString(16).toUpperCase().padStart(8, "0")}`;
+  const name = BUGCHECK_NAMES[code];
+  return name ? `${hex} ${name}` : hex;
+}
+
+/** NVMe 경고 비트 → 뜻 */
+const NVME_WARN: [number, Text][] = [
+  [0x01, t("예비 영역이 기준 아래", "spare space below threshold")],
+  [0x02, t("온도가 기준 밖", "temperature outside threshold")],
+  [0x04, t("신뢰성 떨어짐(오류 많음)", "reliability degraded (many errors)")],
+  [0x08, t("읽기 전용으로 바뀜", "switched to read-only")],
+  [0x10, t("휘발성 메모리 백업 실패", "volatile memory backup failed")],
+];
+
+/** 배터리 수명(%) — 완전 충전 용량 / 설계 용량 */
+export function batteryHealth(b: PcBattery): number | null {
+  return b.designMwh && b.fullMwh ? Math.round((b.fullMwh / b.designMwh) * 100) : null;
+}
+/** 배터리 «볼 것» 기준(%) — 설계 용량의 80% 아래 */
+export const BATTERY_LOOK = 80;
+/** 저장장치 «볼 것» 기준 */
+export const DISK_RULES = { percentageUsed: 90, temperatureC: 70 };
 
 export interface PcItem {
   id: string;
   group: PcGroup;
   label: Text;
   value: Text;
-  /** ok = 걸리는 것 없음(읽은 범위) · look = 볼 것 · unread = 읽지 못함. «문제 있음» 은 쓰지 않는다 */
+  /** ok = 걸리는 것 없음(읽은 범위) · look = 볼 것 · unread = 읽지 못함 · problem = 디스크가 스스로 알린 경고만 */
   level: Level;
   notes: Text[];
   /** 바꾸는 곳·보는 곳(Windows 화면) */
   where: Text;
   link?: string;
+  /** 링크 글(없으면 «공식 문서») */
+  linkLabel?: Text;
 }
 
 // ---------------------------------------------------------------- 값 글
@@ -422,6 +553,146 @@ export function pcItems(pc: PcCheck, purpose: PcPurpose, fmtTime: (ms: number) =
       last(),
       t(`최근 ${pc.days}일 하드웨어 경고·오류 이벤트 ${sum(hw)}건 — 이벤트 뷰어에서 설명을 봅니다. 하나만으로 고장이라 단정하지 않습니다.`, `${sum(hw)} hardware warning/error event(s) in the last ${pc.days} days — read the descriptions in Event Viewer. One event alone is not proof of a fault.`),
     );
+
+  // ---- (0.10.0) 블루스크린·갑자기 꺼짐 — 한 건씩, 정지 코드 이름
+  const crashes = pc.crashes ?? [];
+  const bug = crashes.filter((c) => c.kind === "bugcheck");
+  const kp = crashes.filter((c) => c.kind === "kernelPower");
+  const crashLine = (c: PcCrash): Text => {
+    const code = c.code != null ? ` ${bugcheckText(c.code)}` : "";
+    if (c.kind === "bugcheck") return t(`${fmtTime(c.time)} 블루스크린${code}${c.dump ? ` · 덤프 ${c.dump}` : ""}`, `${fmtTime(c.time)} blue screen${code}${c.dump ? ` · dump ${c.dump}` : ""}`);
+    if (c.kind === "kernelPower")
+      return t(
+        `${fmtTime(c.time)} 깨끗이 꺼지지 않고 다시 켜짐(Kernel-Power 41)${c.code != null ? ` — 정지 코드${code}` : ""}${c.powerButton ? " — 전원 버튼 기록 있음" : ""}`,
+        `${fmtTime(c.time)} restarted without a clean shutdown (Kernel-Power 41)${c.code != null ? ` — stop code${code}` : ""}${c.powerButton ? " — power button recorded" : ""}`,
+      );
+    return t(`${fmtTime(c.time)} 앞 종료가 예기치 않음(EventLog 6008)`, `${fmtTime(c.time)} previous shutdown was unexpected (EventLog 6008)`);
+  };
+  add({
+    id: "crashes",
+    group: "crash",
+    label: t("블루스크린·갑자기 꺼짐 기록", "Blue screen and sudden shutdown records"),
+    value: evUnread
+      ? UNREAD
+      : crashes.length
+        ? t(`블루스크린 ${bug.length}번 · Kernel-Power 41 ${kp.length}번 · 6008 ${crashes.length - bug.length - kp.length}번 (최근 ${pc.days}일)`, `blue screens ${bug.length} · Kernel-Power 41 ${kp.length} · 6008 ${crashes.length - bug.length - kp.length} (last ${pc.days} days)`)
+        : t(`없음(최근 ${pc.days}일)`, `none (last ${pc.days} days)`),
+    level: evUnread ? "unread" : "ok",
+    notes: crashes.slice(0, 10).map(crashLine),
+    where: t("이벤트 뷰어 → Windows 로그 → 시스템(원본 WER-SystemErrorReporting 1001 · Kernel-Power 41 · EventLog 6008)", "Event Viewer → Windows Logs → System (sources WER-SystemErrorReporting 1001, Kernel-Power 41, EventLog 6008)"),
+    link: BSOD_CODES_URL,
+    linkLabel: t("블루스크린 코드 사전 — 원인 후보·확인 순서", "Blue screen code dictionary — likely causes and what to check"),
+  });
+  if (bug.length || kp.some((c) => c.code != null)) {
+    const codes = [...new Set(crashes.map((c) => c.code).filter((c): c is number => c != null))].map(bugcheckText).join(", ");
+    look(last(), t(`블루스크린 기록이 있습니다(${codes}) — 같은 코드가 되풀이되는지 보고, 코드 사전에서 원인 후보·확인 순서를 봅니다. 코드 하나로 원인을 정하지는 않습니다.`, `Blue screen records found (${codes}) — check whether the same code repeats and see the likely causes and checks in the code dictionary. One code alone does not settle the cause.`));
+  } else if (crashes.length)
+    look(last(), t("블루스크린 없이 갑자기 꺼진 기록입니다 — 정전·전원 버튼 길게 누름·전원부(파워) 문제 가운데 무엇인지 PC 는 모릅니다.", "Sudden shutdowns without a blue screen — the PC cannot tell a power cut, a long press of the power button or a power-supply problem apart."));
+
+  const dumps = pc.dumps ?? [];
+  add({
+    id: "dumps",
+    group: "crash",
+    label: t("작은 메모리 덤프(Minidump)", "Small memory dumps (Minidump)"),
+    value: pc.dumpsRead === false ? UNREAD : dumps.length ? t(`${dumps.length}개 · 가장 최근 ${fmtTime(dumps[0].time)}`, `${dumps.length} file(s) · newest ${fmtTime(dumps[0].time)}`) : t("없음", "none"),
+    level: pc.dumpsRead === false ? "unread" : "ok",
+    notes: [
+      ...dumps.slice(0, 5).map((d) => t(`${d.name} · ${fmtTime(d.time)} · ${Math.max(1, Math.round(d.size / 1024))} KB`, `${d.name} · ${fmtTime(d.time)} · ${Math.max(1, Math.round(d.size / 1024))} KB`)),
+      t("파일 목록만 봅니다 — 덤프 내용(원인 드라이버)은 읽지 않습니다.", "Lists the files only — the dump contents (likely driver) are not read."),
+    ],
+    where: t("파일 탐색기 → C:\\Windows\\Minidump", "File Explorer → C:\\Windows\\Minidump"),
+  });
+
+  // ---- (0.10.0) 저장장치 수명
+  const BUS: Record<PcDisk["bus"], string> = { nvme: "NVMe", sata: "SATA", usb: "USB", other: "—" };
+  for (const d of pc.disks ?? []) {
+    const h = d.health;
+    const parts: Text[] = [t(BUS[d.bus], BUS[d.bus])];
+    if (h) {
+      if (h.temperatureC != null) parts.push(t(`온도 ${h.temperatureC}°C`, `temperature ${h.temperatureC}°C`));
+      if (h.percentageUsed != null) parts.push(t(`사용률 ${h.percentageUsed}%`, `percentage used ${h.percentageUsed}%`));
+      if (h.availableSpare != null) parts.push(t(`예비 ${h.availableSpare}%${h.spareThreshold != null ? `(기준 ${h.spareThreshold}%)` : ""}`, `available spare ${h.availableSpare}%${h.spareThreshold != null ? ` (threshold ${h.spareThreshold}%)` : ""}`));
+      if (h.powerOnHours != null) parts.push(t(`켜진 시간 ${h.powerOnHours.toLocaleString("en-US")}시간`, `power-on ${h.powerOnHours.toLocaleString("en-US")} h`));
+      if (h.writtenGb != null) parts.push(t(`쓴 양 ${(h.writtenGb / 1000).toFixed(1)} TB`, `written ${(h.writtenGb / 1000).toFixed(1)} TB`));
+      if (h.unsafeShutdowns != null) parts.push(t(`안전하지 않은 종료 ${h.unsafeShutdowns}번`, `unsafe shutdowns ${h.unsafeShutdowns}`));
+      if (h.mediaErrors != null) parts.push(t(`미디어 오류 ${h.mediaErrors}`, `media errors ${h.mediaErrors}`));
+    } else if (d.state === "adminOnly") parts.push(t("관리자만 읽을 수 있음", "administrator only"));
+    else if (d.bus === "usb") parts.push(t("USB 외장은 읽지 않음", "USB external disks are not read"));
+    else parts.push(t("이 장치는 상태를 알리지 않음(읽지 못함)", "this device does not report health (not read)"));
+    add({
+      id: `disk-${d.index}`,
+      group: "disk",
+      label: t(`디스크 ${d.index}${d.model ? ` — ${d.model}` : ""}`, `Disk ${d.index}${d.model ? ` — ${d.model}` : ""}`),
+      value: join(parts),
+      level: h ? "ok" : "unread",
+      notes: d.error ? [t(d.error, d.error)] : [],
+      where: t("장치 관리자 → 디스크 드라이브(모델) · 설정 → 시스템 → 저장소 → 고급 저장소 설정 → 디스크 및 볼륨 → 속성(드라이브 상태)", "Device Manager → Disk drives (model) · Settings → System → Storage → Advanced storage settings → Disks & volumes → Properties (drive health)"),
+    });
+    const i = last();
+    if (d.state === "adminOnly")
+      i.notes.push(t("이 디스크는 관리자 권한으로만 상태를 읽을 수 있습니다 — PortDock 은 관리자로 다시 열거나 다른 길로 읽지 않습니다.", "This disk's health can only be read with administrator rights — PortDock does not re-run as administrator or read it another way."));
+    if (!h) continue;
+    const warn = h.criticalWarning ?? 0;
+    if (warn) {
+      i.level = worst(i.level, "problem");
+      const what = NVME_WARN.filter(([bit]) => warn & bit).map(([, x]) => x);
+      i.notes.push(t(`디스크가 스스로 경고를 알립니다: ${what.map((x) => x.ko).join(", ") || `0x${warn.toString(16)}`} — 중요한 자료부터 다른 곳에 복사해 둡니다.`, `The disk itself reports a warning: ${what.map((x) => x.en).join(", ") || `0x${warn.toString(16)}`} — copy important data elsewhere first.`));
+    }
+    if (h.percentageUsed != null && h.percentageUsed >= DISK_RULES.percentageUsed)
+      look(i, t(`사용률 ${h.percentageUsed}% — 제조사가 정한 쓰기 수명에 가깝거나 넘었습니다(100% 를 넘어도 바로 멈추지는 않음). 백업과 교체 계획을 봅니다.`, `Percentage used ${h.percentageUsed}% — near or past the maker's rated write endurance (it does not stop right at 100%). Check backups and plan a replacement.`));
+    if (h.availableSpare != null && h.spareThreshold != null && h.spareThreshold > 0 && h.availableSpare <= h.spareThreshold)
+      look(i, t("예비 영역이 경고 기준까지 줄었습니다.", "Available spare is down to the warning threshold."));
+    if (h.mediaErrors) look(i, t(`미디어·데이터 무결성 오류 ${h.mediaErrors}건 — 장치가 고치지 못한 읽기·쓰기 오류입니다. 백업을 봅니다.`, `${h.mediaErrors} media/data integrity error(s) — errors the device could not correct. Check backups.`));
+    if (h.temperatureC != null && h.temperatureC >= DISK_RULES.temperatureC)
+      look(i, t(`온도 ${h.temperatureC}°C — 높습니다. 케이스 바람길·방열판을 봅니다(읽은 순간 값).`, `Temperature ${h.temperatureC}°C — high. Check case airflow and the heatsink (value at the moment of reading).`));
+    if (h.unsafeShutdowns) i.notes.push(t("«안전하지 않은 종료» 는 전원이 갑자기 끊긴 횟수로, 사용 기간 동안 쌓인 값입니다.", "«Unsafe shutdowns» counts sudden power losses over the disk's whole life."));
+  }
+
+  // ---- (0.10.0) 무엇이 절전을 깨웠나
+  const wakes = pc.wakes ?? [];
+  const byThing = wakes.filter((w) => w.device || w.timerOwner);
+  add({
+    id: "wakes",
+    group: "wake",
+    label: t("절전에서 깨어난 기록", "Wakes from sleep"),
+    value: evUnread ? UNREAD : wakes.length ? t(`${wakes.length}번 · 마지막 ${fmtTime(wakes[0].time)}${wakes[0].source ? ` — ${wakes[0].source}` : ""}`, `${wakes.length} · last ${fmtTime(wakes[0].time)}${wakes[0].source ? ` — ${wakes[0].source}` : ""}`) : t(`없음(최근 ${pc.days}일)`, `none (last ${pc.days} days)`),
+    level: evUnread ? "unread" : "ok",
+    notes: wakes.slice(0, 8).map((w) => {
+      const what = w.source ?? w.device ?? w.timerOwner ?? "—";
+      return t(`${fmtTime(w.time)} — ${what}${w.device && !what.includes(w.device) ? ` (${w.device})` : ""}${w.timerOwner && !what.includes(w.timerOwner) ? ` (타이머: ${w.timerOwner})` : ""}`, `${fmtTime(w.time)} — ${what}${w.device && !what.includes(w.device) ? ` (${w.device})` : ""}${w.timerOwner && !what.includes(w.timerOwner) ? ` (timer: ${w.timerOwner})` : ""}`);
+    }),
+    where: t("이벤트 뷰어 → Windows 로그 → 시스템(원본 Power-Troubleshooter) · 장치 관리자 → 장치 속성 → 전원 관리 «이 장치를 사용하여 컴퓨터의 대기 모드를 종료할 수 있음»", "Event Viewer → Windows Logs → System (source Power-Troubleshooter) · Device Manager → device Properties → Power Management «Allow this device to wake the computer»"),
+  });
+  if (byThing.length)
+    look(
+      last(),
+      t(
+        `장치·타이머가 깨운 기록 ${byThing.length}번 — 저절로 깨어난다면 그 장치의 «이 장치를 사용하여 컴퓨터의 대기 모드를 종료할 수 있음» 이나 타이머를 건 프로그램(예약 작업·업데이트)을 원인 후보로 봅니다.`,
+        `${byThing.length} wake(s) by a device or timer — if the PC wakes by itself, look at that device's «Allow this device to wake the computer» or the program that set the timer (scheduled task, update) as candidates.`,
+      ),
+    );
+
+  // ---- (0.10.0) 배터리 — 있을 때만
+  (pc.batteries ?? []).forEach((b, k) => {
+    const hp = batteryHealth(b);
+    const mwh = (v: number | null) => (v == null ? "—" : `${v.toLocaleString("en-US")} mWh`);
+    add({
+      id: `battery-${k}`,
+      group: "battery",
+      label: t(`배터리 ${k + 1}`, `Battery ${k + 1}`),
+      value: t(
+        `설계 ${mwh(b.designMwh)} · 완전 충전 ${mwh(b.fullMwh)}${hp != null ? ` (${hp}%)` : ""} · 충전 횟수 ${b.cycles ?? "알리지 않음"}`,
+        `design ${mwh(b.designMwh)} · full charge ${mwh(b.fullMwh)}${hp != null ? ` (${hp}%)` : ""} · cycles ${b.cycles ?? "not reported"}`,
+      ),
+      level: hp == null ? "unread" : "ok",
+      where: t("명령 프롬프트에서 powercfg /batteryreport 로 만든 battery-report.html(관리자 권한 없이 됨)", "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)"),
+      link: BATTERY_REPORT_URL,
+      linkLabel: t("배터리 리포트 해석기 — 자세한 이력", "Battery report reader — full history"),
+    });
+    if (hp != null && hp < BATTERY_LOOK)
+      look(last(), t(`완전 충전 용량이 설계의 ${hp}% — 새것보다 사용 시간이 짧습니다(${BATTERY_LOOK}% 아래를 «볼 것» 으로 봄). 제조사 보증·교체 기준을 봅니다.`, `Full charge capacity is ${hp}% of design — shorter runtime than new (below ${BATTERY_LOOK}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.`));
+  });
+
   return items;
 }
 
@@ -437,7 +708,9 @@ export function pcVerdict(pc: PcCheck | null, purpose: PcPurpose, fmtTime: (ms: 
 export const PC_ADMIN_ONLY: Text[] = [
   t("절전을 막고 있는 프로그램·드라이버(powercfg /requests)", "Programs and drivers keeping the PC awake (powercfg /requests)"),
   t("Microsoft Defender 검사 예외 목록", "Microsoft Defender exclusion list"),
-  t("디스크 SMART·신뢰성 카운터(온도·마모)", "Disk SMART and reliability counters (temperature, wear)"),
+  t("SATA·USB 외장 디스크의 SMART(온도·마모) — NVMe 는 «저장장치 수명» 에서 읽습니다", "SMART (temperature, wear) of SATA and USB external disks — NVMe is read under «Storage health»"),
+  t("절전을 깨울 수 있는 장치 목록·예약된 깨우기 타이머(powercfg /devicequery wake_armed · /waketimers)", "Devices allowed to wake the PC and scheduled wake timers (powercfg /devicequery wake_armed, /waketimers)"),
+  t("블루스크린 덤프 파일의 내용(원인 드라이버 추정) — 이 화면은 파일 목록만", "The contents of blue-screen dump files (likely driver) — this screen lists the files only"),
 ];
 
 export const PC_CANNOT_SEE: Text[] = [
@@ -462,6 +735,7 @@ export function pcLines(lang: "ko" | "en", pc: PcCheck, purpose: PcPurpose, v: (
     }
     out.push(`- ${i.label[lang]}: ${i.value[lang]} [${levelText(i.level)}]`);
     for (const n of i.notes) out.push(`  - ${n[lang]}`);
+    if (i.linkLabel && i.link) out.push(`  - ${i.linkLabel[lang]}: ${i.link}`);
   }
   if (pc.errors.length) out.push(`${ko ? "읽지 못함" : "Not read"}: ${pc.errors.join(" / ")}`);
   out.push("", ko ? "관리자만 읽을 수 있음 — 읽지 않음:" : "Administrator only — not read:");

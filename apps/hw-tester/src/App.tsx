@@ -46,6 +46,17 @@ import {
   TARGETS,
   validDnsName,
   validTarget,
+  portPath,
+  usbApply,
+  usbNotes,
+  usbText,
+  USB_EVENT_TEXT,
+  USB_SPEED_TEXT,
+  vidPid,
+  type UsbEvent,
+  type UsbHistory,
+  type UsbLog,
+  type UsbRow,
   type BtAudioState,
   type BtEvent,
   type BtLog,
@@ -62,7 +73,9 @@ import "./App.css";
 import "./hw.css";
 
 const APP = "PortDock Hardware Tester";
-const TABS = ["net", "signal", "bt", "audio"] as const;
+const TABS = ["net", "signal", "bt", "usb", "audio"] as const;
+/** USB 지난 기록 기간(일) */
+const USB_PAST_DAYS = [7, 30, 90];
 /** 다음 판 — 사이트 웹 도구와 같은 코드로 붙인다(이번엔 자리만, 웹 도구로 가는 링크) */
 const LATER = ["keyboard", "mouse", "monitor", "speaker", "mic", "webcam"] as const;
 const LATER_WEB: Record<(typeof LATER)[number], string> = {
@@ -94,6 +107,12 @@ interface NetNote {
 }
 
 const fmt = (v: number | null | undefined, d = 0) => (v == null ? "—" : v.toFixed(d));
+const pad2 = (n: number) => String(n).padStart(2, "0");
+/** «10-31 14:05» */
+const stampShort = (ms: number) => {
+  const d = new Date(ms);
+  return `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
 
 export default function App() {
   const { settings, update, reset } = useSettings();
@@ -310,6 +329,73 @@ export default function App() {
       .catch((e) => toast.show(String(e), { error: true }));
   }
 
+  // ================================================================ USB 연결 기록(0.10.0)
+  const [usbRec, setUsbRec] = useState(false);
+  const [usbRows, setUsbRows] = useState<UsbRow[]>([]);
+  const [usbLog, setUsbLog] = useState<UsbLog[]>([]);
+  const [usbStarted, setUsbStarted] = useState<number | null>(null);
+  const [usbNotify, setUsbNotify] = useState(true);
+  const usbState = useRef<{ rows: UsbRow[]; log: UsbLog[] }>({ rows: [], log: [] });
+  const onUsb = useCallback(
+    (e: UsbEvent) => {
+      if (e.type === "stopped") {
+        setUsbRec(false);
+        if (e.reason === "limit") toast.show(dict[lang].recLimit);
+        return;
+      }
+      if (e.type === "snapshot") {
+        setUsbStarted(e.ts);
+        setUsbNotify(e.notify);
+        setUsbRec(true);
+      }
+      if (e.type === "change" && e.flap && !e.arrived) toast.show(fill(dict[lang].usbFlapToast, { n: e.dev.n, name: e.dev.name }), { error: true });
+      usbState.current = usbApply(usbState.current.rows, usbState.current.log, e);
+      setUsbRows(usbState.current.rows);
+      setUsbLog(usbState.current.log);
+    },
+    [lang, toast],
+  );
+  const startUsb = async () => {
+    if (usbRec) return;
+    usbState.current = { rows: [], log: [] };
+    setUsbRows([]);
+    setUsbLog([]);
+    try {
+      await api.usbStart(onUsb);
+    } catch (e) {
+      toast.show(String(e), { error: true });
+    }
+  };
+  const stopUsb = () => void api.usbStop().finally(() => setUsbRec(false));
+  const [usbPast, setUsbPast] = useState<UsbHistory | null>(null);
+  const [usbPastLoading, setUsbPastLoading] = useState(false);
+  const [usbPastDays, setUsbPastDays] = useState<number>(() => {
+    const v = load<number>("usbPastDays", 30);
+    return USB_PAST_DAYS.includes(v) ? v : 30;
+  });
+  useEffect(() => store("usbPastDays", usbPastDays), [usbPastDays]);
+  const readUsbPast = useCallback((days: number) => {
+    setUsbPastLoading(true);
+    api
+      .usbHistory(days)
+      .then(setUsbPast)
+      .catch((e) => setUsbPast({ days, devices: [], events: [], errors: [String(e)] }))
+      .finally(() => setUsbPastLoading(false));
+  }, []);
+  const usbHasData = usbStarted != null || usbPast != null;
+  const usbCopyText = () => usbText(lang, APP, VERSION, usbRows, usbLog, usbStarted, usbPast);
+  async function saveUsb() {
+    if (!usbHasData) return;
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const path = await save({ defaultPath: `portdock-usb-${stamp}.txt`, filters: [{ name: "Text", extensions: ["txt"] }] });
+    if (!path) return;
+    await api
+      .writeText(path, usbCopyText())
+      .then(() => toast.show(t("saved", { p: path })))
+      .catch((e) => toast.show(String(e), { error: true }));
+  }
+  const usbFound = useMemo(() => usbNotes(usbRows, lang), [usbRows, lang]);
+
   // ================================================================ 블루투스 소리
   const [audio, setAudio] = useState<BtAudioState | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
@@ -365,7 +451,7 @@ export default function App() {
   const defOut = audio?.audio.find((a) => a.flow === "render" && a.defaultConsole) ?? null;
 
   // ================================================================ 공통
-  const busy = recording || btRec;
+  const busy = recording || btRec || usbRec;
   useExitGuard(busy, settings.confirmExit, lang, APP);
   useEffect(() => {
     void api.keepAwake(busy).catch(() => {});
@@ -378,11 +464,12 @@ export default function App() {
   const saveCurrent = () => {
     if (tab === "net") void saveCsv();
     else if (tab === "bt") void saveBt();
+    else if (tab === "usb") void saveUsb();
   };
   useShortcuts([{ key: "s", ctrl: true, run: saveCurrent }]);
 
   const tabTitle = (x: Tab) => t(`tab_${x}` as Key);
-  const recMark = [recording && t("recNet"), btRec && t("recBt")].filter(Boolean).join(" · ");
+  const recMark = [recording && t("recNet"), btRec && t("recBt"), usbRec && t("recUsb")].filter(Boolean).join(" · ");
   useWindowTitle(windowTitle(APP, [tabTitle(tab), recMark || null]));
   const dotCls = busy ? "s-connected" : "";
   const sideSummary = `${tabTitle(tab)}${recMark ? ` · ${recMark}` : ""}`;
@@ -758,6 +845,202 @@ export default function App() {
         </div>
       </>
     );
+  } else if (tab === "usb") {
+    body = (
+      <>
+        <div className="toolbar">
+          <b className="sel-title">{t("tab_usb")}</b>
+          {usbStarted != null && <span className={`lv lv-${usbFound.length ? "look" : "ok"}`}>{usbFound.length ? LEVEL_TEXT.look[lang] : LEVEL_TEXT.ok[lang]}</span>}
+          <span className="grow" />
+          {usbRec ? (
+            <button className="btn danger rec-btn" onClick={stopUsb} data-tip={tip(lang, "hwUsbStop")}>
+              ■ {t("recStop")}
+            </button>
+          ) : (
+            <button className="btn primary rec-btn" onClick={() => void startUsb()} data-tip={tip(lang, "hwUsbStart")}>
+              ● {t("recStart")}
+            </button>
+          )}
+          <button className="btn small" disabled={!usbHasData} onClick={() => void copy(usbCopyText())} data-tip={tip(lang, "hwUsbCopy")}>
+            {t("copyLog")}
+          </button>
+          <button className="btn small" disabled={!usbHasData} onClick={() => void saveUsb()} data-tip={withKey(tip(lang, "hwUsbCopy"), KEYS.save)}>
+            {t("saveFile")}
+          </button>
+        </div>
+        <div className="cards">
+          <div className="hint">{t("usbIntro")}</div>
+          {usbStarted == null ? (
+            <div className="empty-guide">{t("usbEmpty")}</div>
+          ) : (
+            <>
+              {!usbNotify && <div className="hint warn">{t("usbPollOnly")}</div>}
+              {usbFound.length > 0 && (
+                <section className="card usb-found">
+                  <ul className="card-notes">
+                    {usbFound.map((n) => (
+                      <li key={n} className="warn">
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <section className="card usb-devs">
+                <div className="sub-title">
+                  {t("usbDevices")} <span className="hint">· {t("since", { t: clock(usbStarted) })}</span>
+                </div>
+                {usbRows.length ? (
+                  <table className="grid usb-table">
+                    <thead>
+                      <tr>
+                        <th>{t("colDev")}</th>
+                        <th>{t("colUsbName")}</th>
+                        <th>VID:PID</th>
+                        <th data-tip={tip(lang, "hwUsbPort")}>{t("colPort")}</th>
+                        <th>{t("colSpeed")}</th>
+                        <th>{t("colNow")}</th>
+                        <th>{t("colDrops")}</th>
+                        <th>{t("colLast")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usbRows.map((r) => (
+                        <tr key={r.n} className={`${r.present ? "on" : ""}${r.flap ? " flap" : ""}`}>
+                          <td className="nowrap">{devLabel(lang, r.n)}</td>
+                          <td className="ellipsis-cell" title={r.name}>
+                            {r.name}
+                            {r.hub ? ` (${t("usbHub")})` : ""}
+                          </td>
+                          <td className="mono nowrap">{vidPid(r.vid, r.pid)}</td>
+                          <td className="mono nowrap">{portPath(r.ports)}</td>
+                          <td className={r.belowCapable ? "warn" : ""}>{r.speed ? USB_SPEED_TEXT[r.speed][lang] : "—"}</td>
+                          <td className="nowrap">{r.present ? t("usbNow") : t("usbGone")}</td>
+                          <td className={`num${r.drops ? " warn" : ""}`}>
+                            {r.drops}
+                            {r.flap && <b> · {t("usbFlap")}</b>}
+                          </td>
+                          <td className="mono nowrap">{r.last ? clock(r.last) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="hint">{t("usbNone")}</div>
+                )}
+              </section>
+              <section className="card usb-log">
+                <div className="sub-title">{t("btTimeline")}</div>
+                {usbLog.length ? (
+                  <table className="grid ev-list">
+                    <tbody>
+                      {[...usbLog]
+                        .reverse()
+                        .slice(0, 300)
+                        .map((l, i) => (
+                          <tr key={i} className={l.arrived ? "ev-wifiUp" : "ev-wifiDown"}>
+                            <td className="mono nowrap">{clock(l.ts)}</td>
+                            <td className="nowrap">{devLabel(lang, l.n)}</td>
+                            <td>
+                              {usbRows.find((r) => r.n === l.n)?.name ?? ""} — {l.arrived ? t("usbArrived") : t("usbRemoved")}
+                              {l.flap ? ` (${t("usbFlap")})` : ""}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="hint">{t("btNoChange")}</div>
+                )}
+              </section>
+            </>
+          )}
+          <section className="card usb-past">
+            <div className="sub-title">{t("usbPast")}</div>
+            <div className="row-inline">
+              <button className="btn small usb-past-btn" onClick={() => readUsbPast(usbPastDays)} disabled={usbPastLoading} data-tip={tip(lang, "hwUsbPast")}>
+                {usbPastLoading ? t("loading") : usbPast ? `↻ ${t("reload")}` : t("usbPastLoad")}
+              </button>
+              <label className="field inline">
+                <span>{t("pastDays")}</span>
+                <select
+                  value={usbPastDays}
+                  onChange={(e) => {
+                    const d = Number(e.target.value);
+                    setUsbPastDays(d);
+                    if (usbPast) readUsbPast(d);
+                  }}
+                  aria-label={t("pastDays")}
+                >
+                  {USB_PAST_DAYS.map((d) => (
+                    <option key={d} value={d}>
+                      {t("daysN", { n: d })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="hint">{t("usbPastIntro")}</div>
+            {usbPast && (
+              <>
+                {usbPast.devices.length > 0 && (
+                  <table className="grid usb-past-table">
+                    <thead>
+                      <tr>
+                        <th>{t("colUsbName")}</th>
+                        <th>VID:PID</th>
+                        <th>{t("colLastArrival")}</th>
+                        <th>{t("colLastRemoval")}</th>
+                        <th>{t("colNow")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usbPast.devices.slice(0, 50).map((d, i) => (
+                        <tr key={i} className={d.present ? "on" : ""}>
+                          <td className="ellipsis-cell" title={d.name}>
+                            {d.name}
+                          </td>
+                          <td className="mono nowrap">{vidPid(d.vid, d.pid)}</td>
+                          <td className="mono nowrap">{d.lastArrival ? stampShort(d.lastArrival) : "—"}</td>
+                          <td className="mono nowrap">{d.lastRemoval ? stampShort(d.lastRemoval) : "—"}</td>
+                          <td className="nowrap">{d.present ? t("usbNow") : t("usbGone")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                <div className="sub-title">{t("usbPastEvents", { n: usbPast.days })}</div>
+                {usbPast.events.length ? (
+                  <table className="grid ev-list">
+                    <tbody>
+                      {usbPast.events.slice(0, 100).map((e, i) => (
+                        <tr key={i} className={e.kind === "problem" ? "ev-wifiDown" : ""}>
+                          <td className="mono nowrap">{stampShort(e.time)}</td>
+                          <td className="nowrap">{e.id}</td>
+                          <td>
+                            {USB_EVENT_TEXT[e.kind][lang]} — {e.name || vidPid(e.vid, e.pid)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="hint">{t("usbPastNone")}</div>
+                )}
+                {usbPast.errors.map((x) => (
+                  <div key={x} className="hint warn">
+                    {t("readFail")}: {x}
+                  </div>
+                ))}
+              </>
+            )}
+          </section>
+          <div className="cannot-see">
+            <div className="hint">{t("usbReadOnly")}</div>
+          </div>
+        </div>
+      </>
+    );
   } else if (tab === "audio") {
     body = (
       <>
@@ -876,7 +1159,7 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
-            <AiCopyButton app={APP} lang={lang} kind="pc" checks={() => [hasData && recText(lang, APP, VERSION, info, summary, wifi), btRows.length > 0 && btText(lang, APP, VERSION, btRows, btLog, btStarted)].filter(Boolean).join("\n\n") || null} />
+            <AiCopyButton app={APP} lang={lang} kind="pc" checks={() => [hasData && recText(lang, APP, VERSION, info, summary, wifi), btRows.length > 0 && btText(lang, APP, VERSION, btRows, btLog, btStarted), usbHasData && usbCopyText()].filter(Boolean).join("\n\n") || null} />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>
@@ -904,6 +1187,7 @@ export default function App() {
               <span className="nav-name">{tabTitle(x)}</span>
               {x === "net" && recording && <span className="tag rec">{t("recShort")}</span>}
               {x === "bt" && btRec && <span className="tag rec">{t("recShort")}</span>}
+              {x === "usb" && usbRec && <span className="tag rec">{t("recShort")}</span>}
               {x === "signal" && sigOn && <span className="tag">{t("onShort")}</span>}
             </button>
           ))}

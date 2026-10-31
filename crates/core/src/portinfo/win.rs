@@ -626,7 +626,7 @@ pub(super) fn render_xml(ev: EVT_HANDLE) -> Option<String> {
     ok.then(|| from_wide(&buf))
 }
 
-fn format_message(meta: EVT_HANDLE, ev: EVT_HANDLE) -> Option<String> {
+pub(super) fn format_message(meta: EVT_HANDLE, ev: EVT_HANDLE) -> Option<String> {
     if meta == 0 {
         return None;
     }
@@ -644,6 +644,12 @@ fn format_message(meta: EVT_HANDLE, ev: EVT_HANDLE) -> Option<String> {
 
 /// 로그 하나를 새것부터 훑어 XPath 에 맞는 이벤트를 `f` 에 넘긴다(최대 EVENT_SCAN_MAX 건). 로그가 없거나 막히면 Err
 pub(super) fn scan_events(path: &str, query: &str, f: &mut dyn FnMut(parse::RawEvent)) -> Result<(), String> {
+    scan_events_with(path, query, false, &mut |e, _| f(e))
+}
+
+/// scan_events + Windows 가 만든 설명(PC 언어, `message` 일 때만 — 원본마다 메타데이터를 한 번 연다)
+pub(super) fn scan_events_with(path: &str, query: &str, message: bool, f: &mut dyn FnMut(parse::RawEvent, Option<String>)) -> Result<(), String> {
+    let mut metas: HashMap<String, Evt> = HashMap::new();
     let (wp, wq) = (wide(path), wide(query));
     // SAFETY: 널로 끝나는 글, 세션 0 = 이 PC
     let h = Evt(unsafe { EvtQuery(0, wp.as_ptr(), wq.as_ptr(), EvtQueryChannelPath | EvtQueryReverseDirection) });
@@ -666,7 +672,17 @@ pub(super) fn scan_events(path: &str, query: &str, f: &mut dyn FnMut(parse::RawE
             let ev = Evt(raw);
             scanned += 1;
             if let Some(re) = render_xml(ev.0).as_deref().and_then(parse::parse_event_xml) {
-                f(re);
+                let msg = if message {
+                    let meta = metas.entry(re.provider.clone()).or_insert_with(|| {
+                        let w = wide(&re.provider);
+                        // SAFETY: 널로 끝나는 글
+                        Evt(unsafe { EvtOpenPublisherMetadata(0, w.as_ptr(), std::ptr::null(), 0, 0) })
+                    });
+                    format_message(meta.0, ev.0)
+                } else {
+                    None
+                };
+                f(re, msg);
             }
         }
         if scanned >= EVENT_SCAN_MAX {

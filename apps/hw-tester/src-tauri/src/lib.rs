@@ -1,9 +1,11 @@
 //! PortDock Hardware Tester — Wi-Fi·인터넷 끊김·지연 기록(rec.rs), Wi-Fi 신호·채널(portdock_core::wlan — 누를 때만, 위치 권한),
-//! 블루투스 연결 기록(bt.rs), 블루투스 오디오 모드(portdock_core::portinfo::bt_audio — Port Inspector 무선 탭과 같은 읽기).
+//! 블루투스 연결 기록(bt.rs), 블루투스 오디오 모드(portdock_core::portinfo::bt_audio — Port Inspector 무선 탭과 같은 읽기),
+//! USB 연결·끊김 기록(usb.rs, 0.10.0 — 도착·제거 알림 + Kernel-PnP 지난 기록).
 //! 읽기 전용 — 설정·드라이버·연결을 바꾸는 명령은 없다. 핑·DNS 는 사용자가 «기록 시작» 을 누른 동안만, 정한 대상에만.
 
 mod bt;
 mod rec;
+mod usb;
 
 use portdock_core::portinfo::{self, BtAudio};
 use portdock_core::tr;
@@ -17,6 +19,7 @@ use tauri::ipc::Channel;
 struct App {
     rec: Mutex<Option<rec::Recorder>>,
     bt: Mutex<Option<bt::BtRecorder>>,
+    usb: Mutex<Option<usb::UsbRecorder>>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -67,6 +70,33 @@ fn bt_stop(app: State<App>) {
     if let Some(mut r) = r {
         r.stop();
     }
+}
+
+/// USB 연결·끊김 기록 시작(0.10.0) — 사건은 on_event 로. 하나만 돈다
+#[tauri::command(async)]
+fn usb_start(app: State<App>, on_event: Channel<usb::UsbEvent>) -> Result<(), String> {
+    let mut g = lock(&app.usb);
+    if g.as_ref().is_some_and(|r| r.running()) {
+        return Err(tr!("이미 기록 중입니다", "Already recording").into());
+    }
+    *g = Some(usb::start(Arc::new(move |e| {
+        let _ = on_event.send(e);
+    }))?);
+    Ok(())
+}
+
+#[tauri::command(async)]
+fn usb_stop(app: State<App>) {
+    let r = lock(&app.usb).take();
+    if let Some(mut r) = r {
+        r.stop();
+    }
+}
+
+/// USB 지난 기록 — 장치별 마지막 연결·분리 시각과 최근 days 일 Kernel-PnP/Configuration 이벤트(인스턴스 ID 없이)
+#[tauri::command(async)]
+fn usb_history(days: u32) -> usb::UsbHistory {
+    usb::history(days)
 }
 
 /// Wi-Fi 신호·채널 — 화면이 «신호 보기» 를 켠 동안만 부른다(위치 권한이 필요할 수 있다)
@@ -191,6 +221,9 @@ pub fn run() {
             rec_stop,
             bt_start,
             bt_stop,
+            usb_start,
+            usb_stop,
+            usb_history,
             wifi_signal,
             bt_audio,
             keep_awake,
@@ -226,6 +259,8 @@ mod tests {
         let w = serde_json::to_value(rec::RecEvent::Wifi { ts: 1, connected: false, code: Some(1), reason: Some("x".into()) }).unwrap();
         assert_eq!(w["type"], "wifi");
         let s = serde_json::to_value(WifiSignal { state: "denied", ..Default::default() }).unwrap();
+        let h = serde_json::to_value(usb::history_out(7, Vec::new(), Vec::new(), Vec::new())).unwrap();
+        assert!(h.get("devices").is_some() && h.get("events").is_some() && h["days"] == 7);
         assert!(s.get("rxMbps").is_some() && s.get("channels").is_some());
     }
 }

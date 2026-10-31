@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/pcCheck.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dur, eventsUnread, IOT_POLICY_URL, PC_ADMIN_ONLY, pcFailed, pcItems, pcLines, pcVerdict, restartLimited } from "./pcCheck.ts";
+import { batteryHealth, BATTERY_REPORT_URL, BSOD_CODES_URL, bugcheckText, dur, eventsUnread, IOT_POLICY_URL, PC_ADMIN_ONLY, pcFailed, pcItems, pcLines, pcVerdict, restartLimited } from "./pcCheck.ts";
 import { bundleText } from "./portinfo.ts";
 
 const ft = (ms) => `T${ms}`;
@@ -129,7 +129,7 @@ test("결과 글 — 항목·관리자만·볼 수 없는 것, 금지 낱말 없
   assert.match(lines, /- 빠른 시작: 켜짐 \[look\]/);
   assert.match(lines, /powercfg \/requests/);
   assert.match(lines, /PC 가 볼 수 없는 것\(이 PC 설정\)/);
-  assert.equal(PC_ADMIN_ONLY.length, 3);
+  assert.equal(PC_ADMIN_ONLY.length, 5);
   const text = bundleText("en", { app: "PI", version: "0", report: null, com: null, events: null, nics: null, loop: [], echo: null, loopError: null, pc: pc(), pcPurpose: "equipment" });
   assert.match(text, /## This PC \(last 30 days\)/);
   assert.match(text, /Fast startup: on \[Worth a look\]/);
@@ -141,4 +141,56 @@ test("결과 글 — 항목·관리자만·볼 수 없는 것, 금지 낱말 없
     }
   // 읽지 않았으면 결과 글에 넣지 않는다
   assert.doesNotMatch(bundleText("ko", { app: "PI", version: "0", report: null, com: null, events: null, nics: null, loop: [], echo: null, loopError: null }), /이 PC \(/);
+});
+
+test("(0.10.0) 블루스크린·꺼짐·저장장치·깨어남·배터리", () => {
+  const BAN = /진단|검증|최적|정상|원인 확정|고쳐 줍/;
+  assert.equal(bugcheckText(0x50), "0x00000050 PAGE_FAULT_IN_NONPAGED_AREA");
+  assert.equal(bugcheckText(0x12345), "0x00012345");
+  const nvme = (h) => ({ index: 0, model: "Example NVMe SSD", bus: "nvme", state: "ok", error: null, health: { criticalWarning: 0, temperatureC: 42, availableSpare: 100, spareThreshold: 10, percentageUsed: 11, writtenGb: 30000, powerCycles: 900, powerOnHours: 4516, unsafeShutdowns: 37, mediaErrors: 0, ...h } });
+  const data = pc({
+    crashes: [
+      { time: 3 * DAY, kind: "bugcheck", code: 0x50, params: "0x1, 0x0, 0x2, 0x3", dump: "MEMORY.DMP", powerButton: false },
+      { time: 3 * DAY - 1000, kind: "kernelPower", code: 0x50, params: null, dump: null, powerButton: false },
+      { time: 2 * DAY, kind: "unexpected", code: null, params: null, dump: null, powerButton: false },
+    ],
+    dumps: [{ name: "103126-1234-01.dmp", time: 3 * DAY, size: 2048 * 1024 }],
+    dumpsRead: true,
+    disks: [nvme({}), { index: 1, model: "Example SATA SSD", bus: "sata", state: "adminOnly", health: null, error: null }, nvme({ criticalWarning: 0x04, percentageUsed: 95 })].map((d, i) => ({ ...d, index: i })),
+    wakes: [
+      { time: 4 * DAY, sleepTime: 4 * DAY - 9000, source: "Device -USB Input Device", sourceType: 4, device: "USB Input Device", timerOwner: null },
+      { time: 2 * DAY, sleepTime: null, source: "Power Button", sourceType: 1, device: null, timerOwner: null },
+    ],
+    batteries: [{ designMwh: 50000, fullMwh: 36000, cycles: 412 }],
+  });
+  const items = pcItems(data, "general", ft);
+  const cr = item(items, "crashes");
+  assert.equal(cr.level, "look");
+  assert.equal(cr.link, BSOD_CODES_URL);
+  assert.match(cr.notes[0].en, /PAGE_FAULT_IN_NONPAGED_AREA/);
+  assert.match(cr.value.ko, /블루스크린 1번/);
+  assert.match(item(items, "dumps").value.en, /1 file/);
+  assert.equal(item(items, "disk-0").level, "ok");
+  assert.match(item(items, "disk-0").value.ko, /사용률 11%/);
+  assert.equal(item(items, "disk-1").level, "unread");
+  assert.match(item(items, "disk-1").value.ko, /관리자만/);
+  const bad = item(items, "disk-2");
+  assert.equal(bad.level, "problem");
+  assert.ok(bad.notes.some((n) => /신뢰성/.test(n.ko)) && bad.notes.some((n) => /95%/.test(n.ko)));
+  const wk = item(items, "wakes");
+  assert.equal(wk.level, "look");
+  assert.match(wk.value.en, /2 · last T345600000 — Device -USB Input Device/);
+  const bat = item(items, "battery-0");
+  assert.equal(batteryHealth(data.batteries[0]), 72);
+  assert.equal(bat.level, "look");
+  assert.equal(bat.link, BATTERY_REPORT_URL);
+  for (const i of items) for (const x of [i.value, ...i.notes]) assert.ok(!BAN.test(x.ko), x.ko);
+  // 배터리가 없으면 카드 줄이 없다, 0.9 백엔드 모양(새 칸 없음)도 깨지지 않는다
+  assert.equal(pcItems(pc(), "general", ft).filter((i) => i.group === "battery").length, 0);
+  const lines = pcLines("ko", data, "general", (v) => `[${v.level}]`, ft, (l) => l).join("\n");
+  assert.ok(lines.includes(BSOD_CODES_URL) && lines.includes("### 저장장치 수명") && lines.includes("### 배터리"));
+  // 실패한 결과는 새 칸도 비어 있다
+  const f = pcFailed(7, "x");
+  assert.deepEqual([f.crashes, f.disks, f.wakes, f.batteries], [[], [], [], []]);
+  assert.equal(item(pcItems(f, "general", ft), "crashes").level, "unread");
 });

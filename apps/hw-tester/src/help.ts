@@ -58,6 +58,18 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "USB 연결·끊김 기록 (0.10.0 부터)",
+      id: "usb",
+      body: [
+        "- «띠링–또롱» 연결음이 되풀이될 때 어느 USB 장치가 끊기는지 찾습니다. «기록 시작» 을 누른 동안 Windows 장치 알림으로 USB 장치가 꽂히고 빠진 시각을 남기고, 놓친 것이 없게 3초마다 목록을 한 번 더 견줍니다.",
+        "- 장치마다 «장치 N» 번호, 이름(장치가 알린 제품 이름), VID:PID, 허브 포트(«2 › 3» = PC 의 2번 포트에 꽂힌 허브의 3번 포트), 협상 속도를 보입니다.",
+        "- 같은 장치가 10분 안에 3번 이상 끊기면 «반복 끊김 의심» 을 붙입니다 — 원인 후보일 뿐입니다. 다른 포트·케이블로, 허브 없이 바로 꽂아 견주고, PortDock Port Inspector 에서 절전(USB 선택적 절전)·USB 경로를 봅니다.",
+        "- USB 3 장치가 USB 2.0 속도(High-Speed)로 붙으면 «볼 것» 으로 알립니다 — 파란색(USB 3) 포트인지, 케이블·허브가 USB 3 을 지원하는지 봅니다.",
+        "- «지난 기록» 은 앱을 켜기 전 일입니다: Windows 가 장치마다 남긴 마지막 연결·분리 시각과 Kernel-PnP/Configuration 로그(400 구성 · 410 시작 · 411 시작 문제 · 420 삭제 · 430 추가 설치 필요). 이 로그는 처음 연결·드라이버 설치·삭제 때 남고, 같은 장치를 다시 꽂을 때마다 남지는 않습니다.",
+        "- 관리자 권한 없이 읽기만 합니다. 장치를 끄거나 다시 시작하지 않고, 장치 일련번호는 화면·복사·저장에 넣지 않습니다.",
+      ],
+    },
+    {
       title: "블루투스 소리",
       id: "audio",
       body: [
@@ -146,6 +158,18 @@ export const help: HelpDoc = {
         "- While recording, every 2 s it reads the «Connected» state of paired devices (the value in Device Manager → Properties → Details) and logs when it changes. Windows keeps no such log itself.",
         "- Each device gets a «Device N» number. Names are shown only on the screen; copies and saved files contain numbers only.",
         "- It does not search for, connect or disconnect devices. If drops are frequent, also check the mode under «Bluetooth audio» and PortDock Port Inspector's «Wireless» tab (power saving, USB path, driver, services).",
+      ],
+    },
+    {
+      title: "USB connect/disconnect log (from 0.10.0)",
+      id: "usb",
+      body: [
+        "- Finds which USB device drops when the connect/disconnect sound keeps repeating. While recording it logs the time each USB device is plugged in or removed (Windows device notifications) and compares the device list every 3 s so nothing is missed.",
+        "- Each device shows a «Device N» number, its name (the product name the device reports), VID:PID, hub port («2 › 3» = port 3 of a hub plugged into the PC's port 2) and negotiated speed.",
+        "- A device that drops 3 or more times within 10 minutes is marked «suspected repeated drops» — a candidate, not a cause. Compare with another port or cable and without a hub, and check power saving (USB selective suspend) and the USB path in PortDock Port Inspector.",
+        "- A USB 3 device connected at USB 2.0 speed (High-Speed) is flagged «Worth a look» — check that the port is a USB 3 (blue) port and that the cable and hub support USB 3.",
+        "- «Earlier records» covers the time before the app started: the last arrival/removal time Windows keeps per device and the Kernel-PnP/Configuration log (400 configured · 410 started · 411 problem starting · 420 deleted · 430 needs further installation). That log is written on first connection, driver install and removal — not every time the same device is plugged in again.",
+        "- Read-only, without administrator rights. It never turns devices off or restarts them, and device serial numbers are never shown, copied or saved.",
       ],
     },
     {

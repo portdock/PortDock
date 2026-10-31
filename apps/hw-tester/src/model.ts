@@ -1,6 +1,7 @@
 // Hardware Tester 화면 쪽 순수 함수(node --test apps/hw-tester/src/model.test.ts) — 통계·구간 요약·CSV·결과 글.
 // 판정은 «볼 것» 까지만 쓴다(«문제 있음»·원인 단정 없음). 고치지 않는다.
 // 개인 정보: Wi-Fi 이름(SSID)·AP 주소는 백엔드가 읽지 않는다. 블루투스 장치 이름은 화면에만 — 저장·복사 글은 «장치 N» 만 쓴다.
+// USB 는 제품 이름·VID:PID·허브 포트만 받는다(장치 일련번호가 든 인스턴스 ID 는 백엔드 밖으로 나오지 않는다).
 
 export type Lang = "ko" | "en";
 export interface Text {
@@ -342,6 +343,151 @@ export function btText(lang: Lang, app: string, version: string, rows: readonly 
   for (const r of rows) out.push(`${devLabel(lang, r.n)}: ${btState(lang, r.connected, r.removed)} · ${ko ? "연결" : "connects"} ${r.connects} · ${ko ? "끊김" : "drops"} ${r.drops}`);
   out.push("");
   for (const l of log) out.push(`${stamp(l.ts)}  ${devLabel(lang, l.n)}  ${btState(lang, l.connected, l.removed)}${l.added ? (ko ? " (새로 보임)" : " (new)") : ""}`);
+  return out.join("\n") + "\n";
+}
+
+// ---------------------------------------------------------------- USB 연결 기록(0.10.0 — apps/hw-tester/src-tauri/src/usb.rs)
+
+export type UsbSpeed = "low" | "full" | "high" | "super" | "super+";
+export interface UsbDev {
+  n: number;
+  name: string;
+  vid: number | null;
+  pid: number | null;
+  hub: boolean;
+  /** 루트 허브부터의 포트 번호 */
+  ports: number[];
+  speed: UsbSpeed | null;
+  /** USB 3 이상을 낼 수 있다고 알리는데 그보다 낮게 붙음 */
+  belowCapable: boolean;
+}
+export type UsbEvent =
+  | { type: "snapshot"; ts: number; devices: UsbDev[]; notify: boolean }
+  | { type: "change"; ts: number; dev: UsbDev; arrived: boolean; drops: number; flap: boolean }
+  | { type: "stopped"; ts: number; reason: "user" | "limit" };
+export interface UsbPastDev {
+  name: string;
+  vid: number | null;
+  pid: number | null;
+  present: boolean;
+  lastArrival: number | null;
+  lastRemoval: number | null;
+  firstInstall: number | null;
+}
+export interface UsbPastEvent {
+  time: number;
+  id: number;
+  kind: "install" | "start" | "problem" | "delete" | "other";
+  name: string;
+  vid: number | null;
+  pid: number | null;
+}
+export interface UsbHistory {
+  days: number;
+  devices: UsbPastDev[];
+  events: UsbPastEvent[];
+  errors: string[];
+}
+
+/** 반복 끊김 의심 기준 — 백엔드 usb.rs FLAP_WINDOW_MS·FLAP_DROPS 와 같은 숫자 */
+export const USB_FLAP = { windowMin: 10, drops: 3 };
+
+export const USB_SPEED_TEXT: Record<UsbSpeed, Text> = {
+  low: t("Low-Speed (1.5 Mbps)", "Low-Speed (1.5 Mbps)"),
+  full: t("Full-Speed (12 Mbps)", "Full-Speed (12 Mbps)"),
+  high: t("High-Speed (480 Mbps, USB 2.0)", "High-Speed (480 Mbps, USB 2.0)"),
+  super: t("SuperSpeed (5 Gbps, USB 3)", "SuperSpeed (5 Gbps, USB 3)"),
+  "super+": t("SuperSpeed+ (10 Gbps 이상)", "SuperSpeed+ (10 Gbps or more)"),
+};
+
+/** Kernel-PnP/Configuration 이벤트 번호의 뜻 */
+export const USB_EVENT_TEXT: Record<UsbPastEvent["kind"], Text> = {
+  install: t("구성됨(드라이버 설치·처음 연결)", "configured (driver installed, first connection)"),
+  start: t("시작됨(처음 연결·드라이버 바뀐 뒤)", "started (first connection or after a driver change)"),
+  problem: t("시작하는 동안 문제", "problem while starting"),
+  delete: t("삭제됨(장치 제거)", "deleted (device uninstalled)"),
+  other: t("그 밖의 구성 기록", "other configuration record"),
+};
+
+const hex4 = (v: number | null) => (v == null ? "????" : v.toString(16).toUpperCase().padStart(4, "0"));
+export const vidPid = (vid: number | null, pid: number | null) => (vid == null && pid == null ? "—" : `${hex4(vid)}:${hex4(pid)}`);
+/** «2 › 3» — 루트 허브 2번 포트에 꽂힌 허브의 3번 포트 */
+export const portPath = (ports: readonly number[]) => (ports.length ? ports.join(" › ") : "—");
+
+export interface UsbRow extends UsbDev {
+  present: boolean;
+  connects: number;
+  drops: number;
+  flap: boolean;
+  last: number | null;
+}
+export interface UsbLog {
+  ts: number;
+  n: number;
+  arrived: boolean;
+  flap: boolean;
+}
+
+/** 사건들 → 장치 표·시간순 기록 */
+export function usbApply(rows: UsbRow[], log: UsbLog[], e: UsbEvent): { rows: UsbRow[]; log: UsbLog[] } {
+  if (e.type === "snapshot") return { rows: e.devices.map((d) => ({ ...d, present: true, connects: 0, drops: 0, flap: false, last: null })), log: [] };
+  if (e.type !== "change") return { rows, log };
+  const prev = rows.find((r) => r.n === e.dev.n);
+  const row: UsbRow = {
+    ...e.dev,
+    present: e.arrived,
+    connects: (prev?.connects ?? 0) + (e.arrived ? 1 : 0),
+    drops: e.drops,
+    flap: (prev?.flap ?? false) || e.flap,
+    last: e.ts,
+  };
+  const next = prev ? rows.map((r) => (r.n === e.dev.n ? row : r)) : [...rows, row].sort((a, b) => a.n - b.n);
+  return { rows: next, log: [...log, { ts: e.ts, n: e.dev.n, arrived: e.arrived, flap: e.flap }] };
+}
+
+/** 장치 표 → 걸리는 것(«볼 것» 까지). 반복 끊김 의심 · USB 3 장치가 USB 2.0 속도로 */
+export function usbNotes(rows: readonly UsbRow[], lang: Lang): string[] {
+  const out: string[] = [];
+  const ko = lang === "ko";
+  for (const r of rows.filter((x) => x.flap))
+    out.push(
+      ko
+        ? `${devLabel(lang, r.n)} (${r.name}) — ${USB_FLAP.windowMin}분 안에 ${USB_FLAP.drops}번 이상 끊겼습니다(반복 끊김 의심). «띠링–또롱» 소리의 원인 후보입니다 — 다른 포트·케이블·허브 없이 바로 꽂아 보고, Port Inspector 의 절전(USB 선택적 절전) 값을 봅니다.`
+        : `${devLabel(lang, r.n)} (${r.name}) — dropped and came back ${USB_FLAP.drops}+ times within ${USB_FLAP.windowMin} min (suspected repeated drops). A candidate for the repeated connect/disconnect sound — try another port or cable, plug it in without a hub, and check power saving (USB selective suspend) in Port Inspector.`,
+    );
+  for (const r of rows.filter((x) => x.belowCapable && x.present))
+    out.push(
+      ko
+        ? `${devLabel(lang, r.n)} (${r.name}) — USB 3 장치인데 USB 2.0 속도로 연결됨(${r.speed ? USB_SPEED_TEXT[r.speed].ko : "—"}) — 파란색(USB 3) 포트인지, 케이블·허브가 USB 3 을 지원하는지 봅니다.`
+        : `${devLabel(lang, r.n)} (${r.name}) — a USB 3 device connected at USB 2.0 speed (${r.speed ? USB_SPEED_TEXT[r.speed].en : "—"}) — check that the port is a USB 3 (blue) port and that the cable and hub support USB 3.`,
+    );
+  return out;
+}
+
+/** USB 기록 글(복사·저장) — 제품 이름·VID:PID·포트만(일련번호·인스턴스 ID 는 백엔드가 보내지 않는다) */
+export function usbText(lang: Lang, app: string, version: string, rows: readonly UsbRow[], log: readonly UsbLog[], startedAt: number | null, past: UsbHistory | null = null) {
+  const ko = lang === "ko";
+  const out = [`${app} ${version} — ${ko ? "USB 연결·끊김 기록" : "USB connect/disconnect log"}`];
+  if (startedAt) out.push(`${ko ? "시작" : "Started"}: ${stamp(startedAt)}`);
+  const notes = usbNotes(rows, lang);
+  if (notes.length) out.push(...notes.map((n) => `- ${n}`));
+  if (rows.length) {
+    out.push("");
+    for (const r of rows)
+      out.push(
+        `${devLabel(lang, r.n)}: ${r.name} · ${vidPid(r.vid, r.pid)} · ${ko ? "포트" : "port"} ${portPath(r.ports)}${r.speed ? ` · ${USB_SPEED_TEXT[r.speed][lang]}` : ""}${r.belowCapable ? (ko ? " · USB 3 가능" : " · USB 3 capable") : ""} · ${r.present ? (ko ? "연결됨" : "connected") : ko ? "끊김" : "disconnected"} · ${ko ? "끊김" : "drops"} ${r.drops}${r.flap ? (ko ? " · 반복 끊김 의심" : " · suspected repeated drops") : ""}`,
+      );
+  }
+  if (log.length) {
+    out.push("");
+    for (const l of log) out.push(`${stamp(l.ts)}  ${devLabel(lang, l.n)}  ${l.arrived ? (ko ? "연결" : "connected") : ko ? "끊김" : "disconnected"}${l.flap ? (ko ? " (반복 끊김 의심)" : " (repeated drops)") : ""}`);
+  }
+  if (past) {
+    out.push("", ko ? `지난 기록(앱을 켜기 전, Windows 장치 기록 — 최근 분리 순):` : `Earlier records (before the app started, Windows device records — latest removal first):`);
+    for (const d of past.devices.slice(0, 20))
+      out.push(`- ${d.name} · ${vidPid(d.vid, d.pid)} · ${ko ? "마지막 연결" : "last arrival"} ${d.lastArrival ? stamp(d.lastArrival) : "—"} · ${ko ? "마지막 분리" : "last removal"} ${d.lastRemoval ? stamp(d.lastRemoval) : "—"}${d.present ? (ko ? " · 지금 연결됨" : " · connected now") : ""}`);
+    for (const e of past.events.slice(0, 30)) out.push(`- ${stamp(e.time)} · ${e.id} ${USB_EVENT_TEXT[e.kind][lang]} · ${e.name || vidPid(e.vid, e.pid)}`);
+  }
   return out.join("\n") + "\n";
 }
 

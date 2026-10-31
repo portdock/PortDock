@@ -17,6 +17,11 @@
 //!   전원 계획(PowerReadAC/DCValueIndex — 절전·최대 절전·화면 끄기·PCIe ASPM·USB 선택적 절전) ·
 //!   이벤트 로그 System(Kernel-Power 41 · EventLog 6008 · WHEA-Logger·disk·Ntfs 경고 이상 · Time-Service).
 //!   `powercfg /requests`·Defender 예외·SMART(디스크 신뢰성 카운터)는 관리자만 읽을 수 있어 읽지 않는다
+//! - 이 PC 점검(0.10.0): System 1001(블루스크린 정지 코드)·41·6008 한 건씩, %SystemRoot%\Minidump 파일 목록(내용은 열지 않음),
+//!   저장장치 수명(disk.rs — 디스크 인터페이스를 접근 권한 0 으로 열고 NVMe 상태 로그·ATA 장치 통계 «조회»; 일련번호는 받지 않음),
+//!   Power-Troubleshooter 1(깨어난 기록), 배터리(GetSystemPowerStatus·root\WMI Battery*)
+//! - USB 연결 기록(0.10.0, usblive.rs): USB 장치 목록·허브 포트·속도, CM_Register_Notification 도착·제거 알림, 장치 속성의 마지막 연결·분리 시각,
+//!   Kernel-PnP/Configuration 의 USB 장치 이벤트
 //! - 무선(0.5.0, wireless.rs): Wi-Fi 어댑터(MSFT_NetAdapter NdisPhysicalMedium 9)·드라이버·장치 절전·전원 계획 «무선 어댑터 절전 모드»,
 //!   이벤트 로그 Microsoft-Windows-WLAN-AutoConfig/Operational 8003(끊김 이유 — SSID·프로필 이름은 버린다)·드라이버 경고·오류(System),
 //!   블루투스 라디오(Bluetooth 클래스 BTHUSB 등)·USB 경로·서비스 상태(SCM 조회)·System BTHUSB/BTHPORT 이벤트,
@@ -24,6 +29,7 @@
 //!   주변 장치 검색은 하지 않는다
 
 pub mod parse;
+pub mod pchealth;
 pub mod tables;
 #[cfg(windows)]
 mod win;
@@ -35,6 +41,10 @@ mod usb;
 mod wireless;
 #[cfg(windows)]
 mod live;
+#[cfg(windows)]
+mod disk;
+#[cfg(windows)]
+mod usblive;
 #[cfg(windows)]
 mod wmi;
 
@@ -435,8 +445,118 @@ pub struct PcCheck {
     pub time: PcTime,
     /// 기간 안의 이벤트 건수(원본·ID 별)
     pub events: Vec<PcEventCount>,
+    /// (0.10.0) 블루스크린(1001)·갑자기 꺼짐(Kernel-Power 41·EventLog 6008) 한 건씩(새것부터, 최대 PC_CRASH_KEEP)
+    pub crashes: Vec<PcCrash>,
+    /// (0.10.0) 작은 메모리 덤프 폴더(%SystemRoot%\Minidump)의 파일 — 이름·시각·크기만(내용은 읽지 않는다)
+    pub dumps: Vec<PcDump>,
+    /// 덤프 폴더를 읽었는지(폴더가 없으면 true + 빈 목록)
+    pub dumps_read: bool,
+    /// (0.10.0) 저장장치 수명 — 디스크마다(모델 이름·버스·NVMe 상태 로그). 일련번호는 읽지 않는다
+    pub disks: Vec<PcDisk>,
+    /// (0.10.0) 절전·최대 절전에서 깨어난 기록(Power-Troubleshooter 1, 새것부터)
+    pub wakes: Vec<PcWake>,
+    /// (0.10.0) 배터리 — 없는 PC(데스크톱)면 빈 목록
+    pub batteries: Vec<PcBattery>,
     /// 읽지 못한 것 «무엇: 이유»
     pub errors: Vec<String>,
+}
+
+/// 블루스크린·갑자기 꺼짐 한 건
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcCrash {
+    /// 유닉스 ms
+    pub time: u64,
+    /// «bugcheck»(WER-SystemErrorReporting 1001 — 블루스크린 뒤 다시 시작) · «kernelPower»(Kernel-Power 41 — 깨끗이 꺼지지 않고 다시 켜짐) ·
+    /// «unexpected»(EventLog 6008 — 앞 종료가 예기치 않음)
+    pub kind: &'static str,
+    /// 정지 코드(1001 의 버그체크, 41 의 BugcheckCode — 0 이면 None)
+    pub code: Option<u32>,
+    /// 1001 의 매개변수 넷(«0x…, 0x…, …») — 커널 주소라 사람을 가리키지 않는다
+    pub params: Option<String>,
+    /// 1001 이 알린 덤프 파일 이름(경로 뺌)
+    pub dump: Option<String>,
+    /// 41 — 전원 버튼 기록(PowerButtonTimestamp ≠ 0 또는 LongPowerButtonPressDetected)
+    pub power_button: bool,
+}
+
+/// 작은 메모리 덤프 파일 하나
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcDump {
+    pub name: String,
+    /// 마지막 수정 시각(유닉스 ms)
+    pub time: u64,
+    pub size: u64,
+}
+
+/// 저장장치 상태(NVMe SMART/Health 로그 0x02 · ATA 장치 통계 로그 0x04 에서 읽은 것만)
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskHealth {
+    /// 장치가 알린 경고 비트(NVMe Critical Warning — 0 이면 없음)
+    pub critical_warning: Option<u8>,
+    /// 온도(°C)
+    pub temperature_c: Option<i32>,
+    /// 사용 가능 예비 영역(%)과 경고 기준(%)
+    pub available_spare: Option<u32>,
+    pub spare_threshold: Option<u32>,
+    /// 사용률(Percentage Used, %) — 제조사가 정한 수명 대비 쓴 정도. 100 을 넘을 수 있다
+    pub percentage_used: Option<u32>,
+    /// 쓴 양(GB, 10^9 바이트)
+    pub written_gb: Option<u64>,
+    pub power_cycles: Option<u64>,
+    pub power_on_hours: Option<u64>,
+    /// 안전하지 않은 종료 수(전원이 갑자기 끊김)
+    pub unsafe_shutdowns: Option<u64>,
+    /// 미디어·데이터 무결성 오류 수
+    pub media_errors: Option<u64>,
+}
+
+/// 디스크 하나
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcDisk {
+    /// PhysicalDriveN 의 N
+    pub index: u32,
+    /// 장치 관리자 이름(모델). 일련번호는 읽지 않는다
+    pub model: Option<String>,
+    /// «nvme» · «sata» · «usb» · «other»
+    pub bus: &'static str,
+    /// «ok»(읽음) · «adminOnly»(관리자만 읽을 수 있음 — 권한 거부) · «unsupported»(이 장치·연결 방식은 읽지 않음) · «error»
+    pub state: &'static str,
+    pub health: Option<DiskHealth>,
+    pub error: Option<String>,
+}
+
+/// 절전에서 깨어난 기록 하나
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcWake {
+    /// 깨어난 시각(유닉스 ms)
+    pub time: u64,
+    /// 잠든 시각
+    pub sleep_time: Option<u64>,
+    /// Windows 문구의 «깨운 원본» 값(PC 언어 — «전원 단추», «장치 -USB 입력 장치» …)
+    pub source: Option<String>,
+    /// WakeSourceType 번호(Windows 내부 값)
+    pub source_type: Option<u32>,
+    /// 깨운 장치 이름(WakeSourceText — 장치가 깨웠을 때)
+    pub device: Option<String>,
+    /// 깨우기 타이머를 건 프로그램 — 파일 이름만(경로 뺌)
+    pub timer_owner: Option<String>,
+}
+
+/// 배터리 하나(root\WMI BatteryStaticData·BatteryFullChargedCapacity·BatteryCycleCount)
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcBattery {
+    /// 설계 용량(mWh)
+    pub design_mwh: Option<u64>,
+    /// 완전 충전 용량(mWh)
+    pub full_mwh: Option<u64>,
+    /// 충전 횟수(알리지 않는 배터리는 None 또는 0)
+    pub cycles: Option<u32>,
 }
 
 /// Wi-Fi 어댑터 하나
@@ -593,6 +713,106 @@ pub struct WlanEvent {
     pub connected: bool,
     pub code: Option<u32>,
     pub reason: Option<String>,
+}
+
+/// (0.10.0) 지금 연결된 USB 장치 하나(Hardware Tester «USB 연결 기록»). 인스턴스 ID 에는 장치 일련번호가 들 수 있어
+/// 백엔드 안에서만 쓰고 Serialize 하지 않는다 — 화면에는 번호·이름·VID:PID·허브 포트·속도만 간다
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UsbDevice {
+    pub id: String,
+    pub name: String,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
+    /// 허브(장치를 더 꽂는 곳)인지
+    pub hub: bool,
+    /// 루트 허브부터 이 장치까지의 포트 번호(«2 › 3» = 루트 허브 2번 포트의 허브 3번 포트)
+    pub ports: Vec<u32>,
+    /// 협상 속도(«low» · «full» · «high» · «super» · «super+»). 못 읽으면 None
+    pub speed: Option<&'static str>,
+    /// SuperSpeed 를 낼 수 있다고 알리는데 그보다 낮게 붙었는지(USB 3 장치가 USB 2.0 속도로)
+    pub below_capable: bool,
+}
+
+/// (0.10.0) 장치 도착·제거 알림 하나(CM_Register_Notification — USB 장치 인터페이스)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UsbNotice {
+    pub arrived: bool,
+    /// 인스턴스 ID(백엔드 안에서만)
+    pub id: String,
+    /// 알림을 받은 시각(유닉스 ms)
+    pub time: u64,
+}
+
+/// (0.10.0) 예전에 꽂았던 것까지 포함한 USB 장치 하나와 Windows 가 남긴 마지막 연결·분리 시각(장치 속성). Serialize 하지 않는다(인스턴스 ID)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UsbPast {
+    pub id: String,
+    pub name: String,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
+    pub present: bool,
+    pub last_arrival: Option<u64>,
+    pub last_removal: Option<u64>,
+    pub first_install: Option<u64>,
+}
+
+/// (0.10.0) Kernel-PnP/Configuration 의 USB 장치 이벤트 한 건(400 구성 · 410 시작 · 411 시작 문제 · 420 삭제 · 430 추가 설치 필요)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UsbConfigEvent {
+    pub time: u64,
+    pub id: u32,
+    /// «install» · «start» · «problem» · «delete» · «other»(parse::event_kind)
+    pub kind: &'static str,
+    /// 인스턴스 ID(백엔드 안에서만)
+    pub device: String,
+}
+
+/// 지금 연결된 USB 장치(허브 포함, 복합 장치의 인터페이스 노드·루트 허브 제외) — 관리자 권한 없이
+pub fn usb_devices() -> Vec<UsbDevice> {
+    #[cfg(windows)]
+    return usblive::devices();
+    #[cfg(not(windows))]
+    Vec::new()
+}
+
+/// 장치 하나 다시 읽기(도착 알림 뒤). 지금 없으면 None
+pub fn usb_device(id: &str) -> Option<UsbDevice> {
+    #[cfg(windows)]
+    return usblive::device(id);
+    #[cfg(not(windows))]
+    {
+        let _ = id;
+        None
+    }
+}
+
+/// USB 장치 도착·제거 알림을 받는 동안 살아 있는 것 — 놓으면(drop) 알림을 끊는다
+pub struct UsbWatch {
+    #[cfg(windows)]
+    _inner: usblive::Watch,
+}
+
+/// USB 장치 도착·제거 알림 받기(CM_Register_Notification — 창·메시지 루프 없이, 읽기만). `f` 는 Windows 스레드 풀에서 불린다
+pub fn usb_watch(f: impl Fn(UsbNotice) + Send + Sync + 'static) -> Result<UsbWatch, String> {
+    #[cfg(windows)]
+    return usblive::watch(Box::new(f)).map(|w| UsbWatch { _inner: w });
+    #[cfg(not(windows))]
+    {
+        let _ = f;
+        Err(crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into())
+    }
+}
+
+/// 예전에 꽂았던 USB 장치까지 마지막 연결·분리 시각과, 최근 `days` 일 Kernel-PnP/Configuration 의 USB 장치 이벤트(새것부터, 최대 300건)
+pub fn usb_history(days: u32) -> (Vec<UsbPast>, Vec<UsbConfigEvent>, Vec<String>) {
+    let days = days.clamp(1, 365);
+    #[cfg(windows)]
+    return usblive::history(days);
+    #[cfg(not(windows))]
+    {
+        let _ = days;
+        (Vec::new(), Vec::new(), vec![crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into()])
+    }
 }
 
 /// 짝지은 블루투스 장치들의 지금 연결 여부(관리자 권한 없이, 주변 검색 없이)

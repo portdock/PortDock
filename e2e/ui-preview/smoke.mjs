@@ -2233,9 +2233,12 @@ async function runApp(app, port) {
       // (10/26) 이 PC — 일반 PC: 설정은 적기만, 예기치 않은 종료(41·6008)·disk 경고만 «볼 것». «문제 있음» 없음
       await clickText("details.card-pc .btn", ko ? "이 PC 설정 읽기" : "Read this PC's settings");
       const pcLv = (id) => `((document.querySelector('details.card-pc tr.pc-' + ${JSON.stringify(id)}) || document.body).querySelector('.lv') || {}).className || ''`;
-      await expectJs("pc general", `const c = document.querySelector('details.card-pc'); return !!c && c.querySelectorAll('table.pc-items tr').length === 13 && /lv-look/.test(c.querySelector('summary .lv').className)
+      await expectJs("pc general", `const c = document.querySelector('details.card-pc'); return !!c && c.querySelectorAll('table.pc-items tr').length === 18 && /lv-look/.test(c.querySelector('summary .lv').className)
         && /lv-ok/.test(${pcLv("fastStartup")}) && /lv-ok/.test(${pcLv("sleep")}) && /lv-look/.test(${pcLv("unexpected")}) && /lv-look/.test(${pcLv("hardware")}) && !c.querySelector('.lv-problem')
         && /Kernel-Power 41: 2/.test(c.textContent) && c.textContent.includes('powercfg /requests') && /${ko ? "관리자만 읽을 수 있음" : "Administrator only"}/.test(c.textContent)`, 4000);
+      // (0.10.0) 블루스크린 코드 이름·사전 링크, NVMe 사용률, SATA «관리자만», 장치가 깨움 → «볼 것», 배터리 없음 → 줄 없음
+      await expectJs("pc health", `const c = document.querySelector('details.card-pc'); return /lv-look/.test(${pcLv("crashes")}) && c.textContent.includes('PAGE_FAULT_IN_NONPAGED_AREA') && [...c.querySelectorAll('a')].some((a) => a.href === 'https://portdock.dev/tools/bsod-codes/')
+        && /lv-ok/.test(${pcLv("disk-0")}) && /lv-unread/.test(${pcLv("disk-1")}) && /lv-look/.test(${pcLv("wakes")}) && !c.querySelector('tr.pc-battery-0') && !/Example.*Serial/i.test(c.textContent)`);
       // 장비 PC: 빠른 시작·절전·USB 절전·자동 재시작 정책 없음·재시작 대기·시간 경고도 «볼 것», Microsoft 문서 링크
       await setIn("details.card-pc select.pc-purpose", "equipment");
       await expectJs("pc equipment", `const c = document.querySelector('details.card-pc'); return ["fastStartup", "sleep", "usbSuspend", "updatePolicy", "rebootPending", "time"].every((id) => /lv-look/.test(((c.querySelector('tr.pc-' + id) || c).querySelector('.lv') || {}).className || ''))
@@ -2402,7 +2405,7 @@ async function runApp(app, port) {
       await fitWindow();
       await load(port, combo);
       await verify("load");
-      await expectJs("title", "return /PortDock Hardware Tester$/.test(document.title) && document.querySelectorAll('.hw-nav .nav-item').length === 10");
+      await expectJs("title", "return /PortDock Hardware Tester$/.test(document.title) && document.querySelectorAll('.hw-nav .nav-item').length === 11");
       // 첫 실행 카드 + 도움말 링크(«처음 쓰는 순서» 절)
       const card = await js(`const c = document.querySelector('.first-card'); return c && { links: c.querySelectorAll('.first-links .link-btn').length, hide: !!c.querySelector('.first-hide') }`);
       if (!card || !card.links || !card.hide) await conv("first-card", `첫 실행 카드가 이상함: ${JSON.stringify(card)}`);
@@ -2495,6 +2498,20 @@ async function runApp(app, port) {
       await expectJs("bt copy masked", `const c = window.__smoke.clip || ''; return /${ko ? "장치 1" : "Device 1"}/.test(c) && !/Example/.test(c) && !${BAN}.test(c)`);
       await clickText(".toolbar .rec-btn");
       await expectJs("bt stopped", "return window.__pdMock.hw().bt?.done === true");
+
+      // ---- (0.10.0) USB 연결 기록: 장치 넷, 장치 2 반복 끊김 의심, 장치 3 USB 2.0 속도, 지난 기록
+      await nav("usb");
+      await clickText(".toolbar .rec-btn");
+      await expectJs("usb rows", "return document.querySelectorAll('table.usb-table tbody tr').length === 4 && /1234:0003/.test(document.querySelector('table.usb-table').textContent)", 3000);
+      await expectJs("usb flap", "return !!document.querySelector('table.usb-table tr.flap') && document.querySelectorAll('section.usb-found li').length === 2", 6000);
+      await clickText(".usb-past .usb-past-btn");
+      await expectJs("usb past", "return document.querySelectorAll('table.usb-past-table tbody tr').length === 3", 3000);
+      if (combo.full) await shot(app, `${combo.name}-usb`);
+      await js("window.__smoke.clip = null");
+      await clickText(".toolbar .btn", ko ? "기록 복사" : "Copy log");
+      await expectJs("usb copy", `const c = window.__smoke.clip || ''; return /1234:0002/.test(c) && /3 › 2/.test(c) && !${BAN}.test(c)`);
+      await clickText(".toolbar .rec-btn");
+      await expectJs("usb stopped", "return window.__pdMock.hw().usb?.done === true");
 
       // ---- 블루투스 소리: 기본 출력이 핸즈프리 → «볼 것», 시험 소리 버튼
       await nav("audio");
