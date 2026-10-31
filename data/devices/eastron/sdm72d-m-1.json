@@ -1,0 +1,512 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "eastron/sdm72d-m-1",
+  "manufacturer": {
+    "ko": "이스트론",
+    "en": "Eastron"
+  },
+  "model": "SDM72D-M-1",
+  "kind": "power-meter",
+  "title": {
+    "ko": "이스트론 SDM72D-M-1 3상 4선 DIN 레일 전력량계(100 A 직결)",
+    "en": "Eastron SDM72D-M-1 three-phase four-wire DIN-rail energy meter (100 A direct)"
+  },
+  "summary": {
+    "ko": "유효전력·유효전력량(수전·송전·리셋 가능 부분량)만 재는 간단한 3상 미터. 계측값은 input register(FC04) Float, 설정은 holding register(FC03 읽기·FC10 쓰기, 한 메시지에 한 파라미터).",
+    "en": "Simple three-phase meter for active power and energy (import, export, resettable partial). Measurements are Float input registers (FC04); settings are holding registers (FC03 read, FC10 write, one parameter per message)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 30001·40001 꼴 번호와 «Modbus Protocol Start Address Hex» 칸을 함께 적고, 예로 «Amps 1 시작 주소 0006»(30007)을 든다 (PDF p.11). 통신 주소 = 번호 − 30001·− 40001, 6자리(461457 등)는 − 400001.",
+        "en": "The manual lists 30001/40001-style numbers with a 'Modbus Protocol Start Address Hex' column and gives 'Amps 1 start address 0006' (30007) as an example (PDF p.11). Wire address = number − 30001 / − 40001; 6-digit numbers (461457 …) use − 400001."
+      },
+      {
+        "ko": "출하값 9600 bps·패리티 없음·데이터 8비트·국번 1 (PDF p.3, p.8, p.11-12). 한 번에 30 파라미터 이하로 읽어야 하고 넘으면 예외 응답 (PDF p.11).",
+        "en": "Defaults 9600 bps, no parity, 8 data bits, address 1 (PDF p.3, p.8, pp.11-12). Requests are limited to 30 parameters; more returns an exception (PDF p.11)."
+      },
+      {
+        "ko": "워드 순서: 매뉴얼은 «Hi/Lo 순서가 자동으로 normal 또는 reverse 로 맞춰지고 메뉴에서 바꿀 수 없다» 고만 적는다 (PDF p.3). PortDock 은 순서가 없으면 ABCD 로 읽는다 — 값이 이상하면 CDAB 로 볼 것.",
+        "en": "Word order: the manual only says Hi/Lo order is set automatically to normal or reverse and cannot be configured from the menu (PDF p.3). PortDock reads ABCD when no order is given; try CDAB if values look wrong."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "30013",
+      "type": "f32",
+      "name": {
+        "ko": "L1 유효전력",
+        "en": "Phase 1 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "30015",
+      "type": "f32",
+      "name": {
+        "ko": "L2 유효전력",
+        "en": "Phase 2 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "30017",
+      "type": "f32",
+      "name": {
+        "ko": "L3 유효전력",
+        "en": "Phase 3 active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 52,
+      "manualAddress": "30053",
+      "type": "f32",
+      "name": {
+        "ko": "전체 유효전력",
+        "en": "Total system power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 72,
+      "manualAddress": "30073",
+      "type": "f32",
+      "name": {
+        "ko": "수전 유효전력량",
+        "en": "Total import kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 74,
+      "manualAddress": "30075",
+      "type": "f32",
+      "name": {
+        "ko": "송전 유효전력량",
+        "en": "Total export kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 342,
+      "manualAddress": "30343",
+      "type": "f32",
+      "name": {
+        "ko": "총 유효전력량",
+        "en": "Total kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "수전 + 송전",
+        "en": "Import + export"
+      },
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 384,
+      "manualAddress": "30385",
+      "type": "f32",
+      "name": {
+        "ko": "리셋 가능 총 유효전력량",
+        "en": "Resettable total active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "수전 + 송전",
+        "en": "Import + export"
+      },
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 388,
+      "manualAddress": "30389",
+      "type": "f32",
+      "name": {
+        "ko": "리셋 가능 수전 유효전력량",
+        "en": "Resettable import active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 390,
+      "manualAddress": "30391",
+      "type": "f32",
+      "name": {
+        "ko": "리셋 가능 송전 유효전력량",
+        "en": "Resettable export active energy"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 1280,
+      "manualAddress": "31281",
+      "type": "f32",
+      "name": {
+        "ko": "전체 수전 유효전력",
+        "en": "Total import active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "input-registers",
+      "address": 1282,
+      "manualAddress": "31283",
+      "type": "f32",
+      "name": {
+        "ko": "전체 송전 유효전력",
+        "en": "Total export active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.11"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "40019",
+      "type": "f32",
+      "name": {
+        "ko": "패리티·정지 비트",
+        "en": "Parity / stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지 1비트·패리티 없음(출하)",
+          "en": "1 stop bit, no parity (default)"
+        },
+        {
+          "value": 1,
+          "ko": "정지 1비트·짝수 패리티",
+          "en": "1 stop bit, even parity"
+        },
+        {
+          "value": 2,
+          "ko": "정지 1비트·홀수 패리티",
+          "en": "1 stop bit, odd parity"
+        },
+        {
+          "value": 3,
+          "ko": "정지 2비트·패리티 없음",
+          "en": "2 stop bits, no parity"
+        }
+      ],
+      "ref": "PDF p.11-12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "40021",
+      "type": "f32",
+      "name": {
+        "ko": "Modbus 국번",
+        "en": "Modbus address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 1",
+        "en": "Default 1"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 24,
+      "manualAddress": "40025",
+      "type": "f32",
+      "name": {
+        "ko": "비밀번호",
+        "en": "Password"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "description": {
+        "ko": "읽으면 비밀번호, 쓰면 변경. 화면 설정 출하 비밀번호 1000 (PDF p.7)",
+        "en": "Read returns the password; write changes it. Default setup password 1000 (PDF p.7)"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "40029",
+      "type": "f32",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Network baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 1,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 2,
+          "ko": "9600 bps(출하)",
+          "en": "9600 bps (default)"
+        },
+        {
+          "value": 5,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        }
+      ],
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 58,
+      "manualAddress": "40059",
+      "type": "f32",
+      "name": {
+        "ko": "화면 자동 넘김 시간",
+        "en": "Time for scrolling display"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 30
+      },
+      "description": {
+        "ko": "출하 5, 0 은 넘기지 않음",
+        "en": "Default 5; 0 turns scrolling off"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60,
+      "manualAddress": "40061",
+      "type": "f32",
+      "name": {
+        "ko": "백라이트 시간",
+        "en": "Time of back light"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "description": {
+        "ko": "출하 60, 0 은 늘 켜짐",
+        "en": "Default 60; 0 keeps the backlight on"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 61456,
+      "manualAddress": "461457",
+      "type": "u16",
+      "name": {
+        "ko": "리셋",
+        "en": "Reset"
+      },
+      "access": "w",
+      "fc": [
+        16
+      ],
+      "values": [
+        {
+          "value": 3,
+          "ko": "리셋 가능 전력량 리셋",
+          "en": "Reset resettable energy"
+        }
+      ],
+      "description": {
+        "ko": "2바이트 Hex(F0 10)",
+        "en": "2-byte hex (F0 10)"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64514,
+      "manualAddress": "464515",
+      "type": "u16",
+      "name": {
+        "ko": "미터 코드",
+        "en": "Meter code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "SDM72D-M-1 = 0084h",
+        "en": "SDM72D-M-1 = 0084h"
+      },
+      "ref": "PDF p.12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64644,
+      "manualAddress": "464645",
+      "type": "u16",
+      "name": {
+        "ko": "소프트웨어 판",
+        "en": "Software version"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "화면 XX.YY — 첫 바이트 XX, 둘째 바이트 YY",
+        "en": "Display XX.YY: first byte XX, second byte YY"
+      },
+      "ref": "PDF p.13"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "뺀 레지스터: 464513 일련번호(unsigned int32 — 워드 순서가 매뉴얼에 없음). 예로만 나온 30007 Amps 1 은 표에 없어 넣지 않았다. 표의 «Parameter Number» 칸은 주소가 아니다.",
+      "en": "Left out: 464513 serial number (unsigned int32 — word order not stated). 30007 Amps 1 appears only in the example, not in the table, so it is not included. The table's 'Parameter Number' column is not an address."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Eastron SDM72D-M-1 User Manual V1.4",
+      "publisher": "Zhejiang Eastron Electronic Co., Ltd.",
+      "edition": {
+        "ko": "User Manual V1.4 (2023), 파일명 eastronsdm72d-m-1usermanualv1.4.pdf (eastrongroup.com 2024-08-21 게시)",
+        "en": "User Manual V1.4 (2023); file name eastronsdm72d-m-1usermanualv1.4.pdf (posted 2024-08-21 on eastrongroup.com)"
+      },
+      "url": "https://www.eastrongroup.com/eastrongroup/2024/08/21/eastronsdm72d-m-1usermanualv1.4.pdf",
+      "pages": {
+        "ko": "PDF p.3 통신 사양, p.7-8 설정 화면, p.10-11 입력 레지스터, p.11-13 홀딩 레지스터 (인쇄 쪽 번호 없음)",
+        "en": "PDF p.3 communication spec, pp.7-8 setup screens, pp.10-11 input registers, pp.11-13 holding registers (no printed page numbers)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}

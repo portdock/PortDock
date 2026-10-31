@@ -1,0 +1,967 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "carlo-gavazzi/em24",
+  "manufacturer": {
+    "ko": "카를로 가바치",
+    "en": "Carlo Gavazzi"
+  },
+  "model": "EM24-DIN",
+  "kind": "power-meter",
+  "title": {
+    "ko": "카를로 가바치 EM24-DIN 3상 전력 분석계 (PFA·PFB·X 형, RS485)",
+    "en": "Carlo Gavazzi EM24-DIN three-phase energy analyzer (PFA, PFB and X models, RS485)"
+  },
+  "summary": {
+    "ko": "Modbus RTU. 계측값은 INT32(워드 순서 하위 먼저)에 배율(V×10, A×1000, W×10, kWh×10). FC 03·04 는 같은 결과, 쓰기는 FC 06 한 칸씩. 한 번에 최대 11 워드.",
+    "en": "Modbus RTU. Measurements are INT32 (low word first) with weights (V×10, A×1000, W×10, kWh×10). FC 03 and 04 give the same result; writes use FC 06, one word at a time. Up to 11 words per request."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "bauds": [
+      4800,
+      9600
+    ],
+    "parity": "none",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "CDAB",
+    "maxRegisters": 11,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 «Modicom address»(300001 꼴)와 «Physical address»(프레임에 넣는 워드 주소, 0000h 꼴)를 함께 적는다 (p.3). address 는 Physical address. 300001 ↔ 0000h, 304353 ↔ 1100h 처럼 Modicom 번호와 Physical 의 차가 일정하지 않은 구간이 있어 늘 Physical 쪽을 따른다.",
+        "en": "The manual gives both the 'Modicom address' (300001 style) and the 'Physical address' (word address placed in the frame, 0000h style) (p.3). address is the physical address. Since the Modicom-to-physical offset is not constant everywhere (e.g. 304353 ↔ 1100h), the physical address is always used."
+      },
+      {
+        "ko": "FC 03 과 04 는 같은 결과(p.3) — 표는 3x(input) 로 두고, 설정값은 FC 06 으로 쓰므로 holding 으로 적었다. 정지 비트 1·패리티 없음 고정, 속도 4800/9600 (p.11). 출하 속도·국번은 이 문서에 없다(기기 설명서 참고).",
+        "en": "FC 03 and 04 give the same result (p.3); measurements are listed as 3x (input) and settings, written with FC 06, as holding. 1 stop bit and no parity are fixed; baud 4800/9600 (p.11). Factory baud and address are not in this document (see the instrument manual)."
+      },
+      {
+        "ko": "INT32·UINT32 는 바이트 MSB→LSB, 워드 LSW→MSW (p.7) → CDAB.",
+        "en": "INT32/UINT32: bytes MSB→LSB, words LSW→MSW (p.7) → CDAB."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "300001 (0000h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1-N 전압",
+        "en": "V L1-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "300003 (0002h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2-N 전압",
+        "en": "V L2-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "300005 (0004h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3-N 전압",
+        "en": "V L3-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "300007 (0006h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1-L2 전압",
+        "en": "V L1-L2"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 8,
+      "manualAddress": "300009 (0008h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2-L3 전압",
+        "en": "V L2-L3"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 10,
+      "manualAddress": "300011 (000Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3-L1 전압",
+        "en": "V L3-L1"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "300013 (000Ch)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1 전류",
+        "en": "A L1"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "300015 (000Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2 전류",
+        "en": "A L2"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "300017 (0010h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3 전류",
+        "en": "A L3"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 18,
+      "manualAddress": "300019 (0012h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1 유효전력",
+        "en": "W L1"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 20,
+      "manualAddress": "300021 (0014h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2 유효전력",
+        "en": "W L2"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 22,
+      "manualAddress": "300023 (0016h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3 유효전력",
+        "en": "W L3"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 40,
+      "manualAddress": "300041 (0028h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "전체 유효전력",
+        "en": "W (system)"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 42,
+      "manualAddress": "300043 (002Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "전체 피상전력",
+        "en": "VA (system)"
+      },
+      "unit": "VA",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 44,
+      "manualAddress": "300045 (002Ch)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "전체 무효전력",
+        "en": "var (system)"
+      },
+      "unit": "var",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 46,
+      "manualAddress": "300047 (002Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력 디맨드",
+        "en": "DMD W"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 50,
+      "manualAddress": "300051 (0032h)",
+      "type": "s16",
+      "name": {
+        "ko": "L1 역률",
+        "en": "PF L1"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "음수 = 진상(C), 양수 = 지상(L)",
+        "en": "Negative = lead (C), positive = lag (L)"
+      },
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 53,
+      "manualAddress": "300054 (0035h)",
+      "type": "s16",
+      "name": {
+        "ko": "전체 역률",
+        "en": "PF (system)"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "음수 = 진상(C), 양수 = 지상(L)",
+        "en": "Negative = lead (C), positive = lag (L)"
+      },
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 54,
+      "manualAddress": "300055 (0036h)",
+      "type": "s16",
+      "name": {
+        "ko": "상순",
+        "en": "Phase sequence"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": -1,
+          "ko": "L1-L3-L2",
+          "en": "L1-L3-L2"
+        },
+        {
+          "value": 0,
+          "ko": "L1-L2-L3",
+          "en": "L1-L2-L3"
+        }
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 55,
+      "manualAddress": "300056 (0037h)",
+      "type": "s16",
+      "name": {
+        "ko": "주파수",
+        "en": "Hz"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 56,
+      "manualAddress": "300057 (0038h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "최대 유효전력 디맨드",
+        "en": "DMD W max"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 62,
+      "manualAddress": "300063 (003Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "수전 유효전력량 합계",
+        "en": "kWh(+) TOT"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 64,
+      "manualAddress": "300065 (0040h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "수전 무효전력량 합계",
+        "en": "kvarh(+) TOT"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 66,
+      "manualAddress": "300067 (0042h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "수전 유효전력량 부분량",
+        "en": "kWh(+) PAR"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 92,
+      "manualAddress": "300093 (005Ch)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "송전 유효전력량 합계",
+        "en": "kWh(-) TOT"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 94,
+      "manualAddress": "300095 (005Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "송전 무효전력량 합계",
+        "en": "kvarh(-) TOT"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 96,
+      "manualAddress": "300097 (0060h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "운전 시간",
+        "en": "Hour"
+      },
+      "unit": "h",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 768,
+      "manualAddress": "300769 (0300h)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 상태",
+        "en": "Digital input status"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "입력 1 (0 닫힘·1 열림)",
+          "en": "Input 1 (0 closed, 1 open)"
+        },
+        {
+          "bit": 1,
+          "ko": "입력 2",
+          "en": "Input 2"
+        },
+        {
+          "bit": 2,
+          "ko": "입력 3",
+          "en": "Input 3"
+        }
+      ],
+      "ref": "p.8"
+    },
+    {
+      "table": "input-registers",
+      "address": 769,
+      "manualAddress": "300770 (0301h)",
+      "type": "u16",
+      "name": {
+        "ko": "현재 요금",
+        "en": "Current tariff"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "요금 1",
+          "en": "Tariff 1"
+        },
+        {
+          "value": 1,
+          "ko": "요금 2",
+          "en": "Tariff 2"
+        },
+        {
+          "value": 2,
+          "ko": "요금 3",
+          "en": "Tariff 3"
+        },
+        {
+          "value": 3,
+          "ko": "요금 4",
+          "en": "Tariff 4"
+        }
+      ],
+      "ref": "p.9"
+    },
+    {
+      "table": "input-registers",
+      "address": 770,
+      "manualAddress": "300771 (0302h)",
+      "type": "u16",
+      "name": {
+        "ko": "버전 코드(형번)",
+        "en": "Version code (model)"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "PFA 0~10, PFB 는 +128, X 는 +64 (형번 표는 매뉴얼)",
+        "en": "PFA 0-10; PFB adds 128, X adds 64 (model table in the manual)"
+      },
+      "ref": "p.9"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4352,
+      "manualAddress": "304353 (1100h)",
+      "type": "u16",
+      "name": {
+        "ko": "비밀번호",
+        "en": "Password"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "range": {
+        "min": 0,
+        "max": 9999
+      },
+      "ref": "p.10"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4353,
+      "manualAddress": "304354 (1101h)",
+      "type": "u16",
+      "name": {
+        "ko": "애플리케이션",
+        "en": "Type of application"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "«A»",
+          "en": "'A'"
+        },
+        {
+          "value": 1,
+          "ko": "«B»",
+          "en": "'B'"
+        },
+        {
+          "value": 2,
+          "ko": "«C»",
+          "en": "'C'"
+        },
+        {
+          "value": 3,
+          "ko": "«D»",
+          "en": "'D'"
+        },
+        {
+          "value": 4,
+          "ko": "«E»",
+          "en": "'E'"
+        },
+        {
+          "value": 5,
+          "ko": "«F»",
+          "en": "'F'"
+        },
+        {
+          "value": 6,
+          "ko": "«G»",
+          "en": "'G'"
+        },
+        {
+          "value": 7,
+          "ko": "«H»",
+          "en": "'H'"
+        }
+      ],
+      "ref": "p.10"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4354,
+      "manualAddress": "304355 (1102h)",
+      "type": "u16",
+      "name": {
+        "ko": "결선 방식",
+        "en": "Measuring system"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "3Pn",
+          "en": "3Pn"
+        },
+        {
+          "value": 1,
+          "ko": "3P1",
+          "en": "3P1"
+        },
+        {
+          "value": 2,
+          "ko": "2P",
+          "en": "2P"
+        },
+        {
+          "value": 3,
+          "ko": "1P",
+          "en": "1P"
+        },
+        {
+          "value": 4,
+          "ko": "3P",
+          "en": "3P"
+        }
+      ],
+      "description": {
+        "ko": "PFA·PFB 는 3Pn 만",
+        "en": "PFA and PFB support 3Pn only"
+      },
+      "ref": "p.10"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4355,
+      "manualAddress": "304356 (1103h)",
+      "type": "u16",
+      "name": {
+        "ko": "디맨드 적산 시간",
+        "en": "DMD interval time"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "range": {
+        "min": 1,
+        "max": 30
+      },
+      "ref": "p.10"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4362,
+      "manualAddress": "304363 (110Ah)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 국번",
+        "en": "RS485 instrument address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "ref": "p.11"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4363,
+      "manualAddress": "304364 (110Bh)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 통신 속도",
+        "en": "RS485 baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 1,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        }
+      ],
+      "ref": "p.11"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4396,
+      "manualAddress": "304397 (112Ch)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "CT 비",
+        "en": "Current transformer ratio"
+      },
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 1.0,
+        "max": 60000.0
+      },
+      "ref": "p.13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4398,
+      "manualAddress": "304399 (112Eh)",
+      "type": "u32",
+      "order": "CDAB",
+      "name": {
+        "ko": "VT 비",
+        "en": "Voltage transformer ratio"
+      },
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 1.0,
+        "max": 6000.0
+      },
+      "ref": "p.13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12288,
+      "manualAddress": "312289 (3000h)",
+      "type": "u16",
+      "name": {
+        "ko": "전력량 전체 리셋(운전 시간 제외)",
+        "en": "Reset all meters (hour counter excluded)"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "실행",
+          "en": "Execute"
+        }
+      ],
+      "ref": "p.13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12290,
+      "manualAddress": "312291 (3002h)",
+      "type": "u16",
+      "name": {
+        "ko": "부분 전력량 리셋",
+        "en": "Reset partial meters"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "실행",
+          "en": "Execute"
+        }
+      ],
+      "ref": "p.13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12293,
+      "manualAddress": "312294 (3005h)",
+      "type": "u16",
+      "name": {
+        "ko": "최대 디맨드 리셋",
+        "en": "Reset dmd max"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "실행",
+          "en": "Execute"
+        }
+      ],
+      "ref": "p.13"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "음수 역률은 진상(C), 양수는 지상(L). 측정값이 범위를 넘으면 상위 워드가 7FFFh(«EEEE» 표시) (p.7). 300770~300773·304xxx 는 한 번에 한 워드씩만 읽을 수 있다(p.9).",
+      "en": "Negative PF = lead (C), positive = lag (L). Over-range shows MSB word 7FFFh ('EEEE') (p.7). 300770-300773 and 304xxx can only be read one word at a time (p.9)."
+    },
+    {
+      "ko": "뺀 레지스터: 상별 VA·var, 요금별 kWh·kvarh(T1~T4), 카운터 1~3(배율이 디지털 입력 설정에 따름), 선택기·필터·사용자·디지털 입력 설정, 일련번호 등. 식별 코드 300012(000Bh)는 L3-L1 전압(000Ah~000Bh)과 주소가 겹쳐 넣지 않았다. CT·VT 비는 2워드인데 문서가 쓰기 함수로 FC 06(한 워드)만 들어 읽기(r)로 적었다.",
+      "en": "Left out: per-phase VA/var, per-tariff kWh/kvarh (T1-T4), counters 1-3 (weight depends on digital input setup), selector, filter, user and digital input settings, serial number and others. Identification code 300012 (000Bh) overlaps V L3-L1 (000Ah-000Bh) and is not included. CT/VT ratios are 2 words but the document lists only FC 06 (single word) for writing, so they are listed as read (r)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "EM24-DIN PFA, PFB & X models COMMUNICATION PROTOCOL",
+      "publisher": "Carlo Gavazzi",
+      "edition": {
+        "ko": "Version 4 Revision 0, 2012-12-03",
+        "en": "Version 4 Revision 0, December 3, 2012"
+      },
+      "url": "https://www.gavazziautomation.com/fileadmin/images/PIM/OTHERSTUFF/COMPRO/EM24_IS_CP.pdf",
+      "pages": {
+        "ko": "p.3~5 Modbus 함수, p.7 데이터 형식, p.8~9 계측값, p.10~13 설정·리셋 (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.3-5 Modbus functions, p.7 data format, pp.8-9 measurements, pp.10-13 settings and resets (printed page = PDF page)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}

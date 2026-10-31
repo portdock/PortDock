@@ -1,0 +1,657 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "eastron/sdm630-tcp",
+  "manufacturer": {
+    "ko": "이스트론",
+    "en": "Eastron"
+  },
+  "model": "SDM630-TCP",
+  "kind": "power-meter",
+  "title": {
+    "ko": "이스트론 SDM630-TCP 3상 DIN 레일 다기능 전력량계(이더넷 Modbus TCP)",
+    "en": "Eastron SDM630-TCP three-phase DIN-rail multifunction meter (Ethernet Modbus TCP)"
+  },
+  "summary": {
+    "ko": "이더넷 Modbus TCP(포트 502). 계측값은 input register(FC04) Float(2 레지스터), 설정은 holding register(FC03 읽기·FC10 쓰기).",
+    "en": "Ethernet Modbus TCP (port 502). Measurements are Float input registers (FC04, two registers each); settings are holding registers (FC03 read, FC10 write)."
+  },
+  "protocols": [
+    "tcp"
+  ],
+  "comm": {
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "tcpPort": 502,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 030001·40001 꼴 번호와 «Start Address Hex» 칸(030001 ↔ 00 00, 030007 ↔ 00 06)을 함께 적는다 (PDF p.24~28). 통신 주소 = 번호 − 30001·− 40001.",
+        "en": "The manual lists 030001/40001-style numbers with a 'Start Address Hex' column (030001 ↔ 00 00, 030007 ↔ 00 06) (PDF pp.24-28). Wire address = number − 30001 / − 40001."
+      },
+      {
+        "ko": "출하값: IP 192.168.1.200, 서브넷 255.255.255.0, 게이트웨이 192.168.1.1, DHCP 끔, 포트 502 (PDF p.9~10, p.21~22). 국번(40021) 출하 1 (PDF p.28). Float 의 워드 순서는 이 매뉴얼에 없다(PortDock 은 순서가 없으면 ABCD).",
+        "en": "Defaults: IP 192.168.1.200, mask 255.255.255.0, gateway 192.168.1.1, DHCP off, port 502 (PDF pp.9-10, 21-22). Node address (40021) default 1 (PDF p.28). Float word order is not given in this manual (PortDock reads ABCD when no order is given)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "030001",
+      "type": "f32",
+      "name": {
+        "ko": "L1 상전압",
+        "en": "Phase 1 line to neutral volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "030003",
+      "type": "f32",
+      "name": {
+        "ko": "L2 상전압",
+        "en": "Phase 2 line to neutral volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "030005",
+      "type": "f32",
+      "name": {
+        "ko": "L3 상전압",
+        "en": "Phase 3 line to neutral volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "030007",
+      "type": "f32",
+      "name": {
+        "ko": "L1 전류",
+        "en": "Phase 1 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 8,
+      "manualAddress": "030009",
+      "type": "f32",
+      "name": {
+        "ko": "L2 전류",
+        "en": "Phase 2 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 10,
+      "manualAddress": "030011",
+      "type": "f32",
+      "name": {
+        "ko": "L3 전류",
+        "en": "Phase 3 current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "030013",
+      "type": "f32",
+      "name": {
+        "ko": "L1 유효전력",
+        "en": "Phase 1 power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "030015",
+      "type": "f32",
+      "name": {
+        "ko": "L2 유효전력",
+        "en": "Phase 2 power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "030017",
+      "type": "f32",
+      "name": {
+        "ko": "L3 유효전력",
+        "en": "Phase 3 power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 30,
+      "manualAddress": "030031",
+      "type": "f32",
+      "name": {
+        "ko": "L1 역률",
+        "en": "Phase 1 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 32,
+      "manualAddress": "030033",
+      "type": "f32",
+      "name": {
+        "ko": "L2 역률",
+        "en": "Phase 2 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 34,
+      "manualAddress": "030035",
+      "type": "f32",
+      "name": {
+        "ko": "L3 역률",
+        "en": "Phase 3 power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 42,
+      "manualAddress": "030043",
+      "type": "f32",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average line to neutral volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 48,
+      "manualAddress": "030049",
+      "type": "f32",
+      "name": {
+        "ko": "선전류 합",
+        "en": "Sum of line currents"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 52,
+      "manualAddress": "030053",
+      "type": "f32",
+      "name": {
+        "ko": "전체 유효전력",
+        "en": "Total system power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 56,
+      "manualAddress": "030057",
+      "type": "f32",
+      "name": {
+        "ko": "전체 피상전력",
+        "en": "Total system volt amps"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 60,
+      "manualAddress": "030061",
+      "type": "f32",
+      "name": {
+        "ko": "전체 무효전력",
+        "en": "Total system VAr"
+      },
+      "unit": "VAr",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.24"
+    },
+    {
+      "table": "input-registers",
+      "address": 62,
+      "manualAddress": "030063",
+      "type": "f32",
+      "name": {
+        "ko": "전체 역률",
+        "en": "Total system power factor"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 70,
+      "manualAddress": "030071",
+      "type": "f32",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency of supply voltages"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 72,
+      "manualAddress": "030073",
+      "type": "f32",
+      "name": {
+        "ko": "수전 유효전력량(마지막 리셋 뒤)",
+        "en": "Import Wh since last reset"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 74,
+      "manualAddress": "030075",
+      "type": "f32",
+      "name": {
+        "ko": "송전 유효전력량(마지막 리셋 뒤)",
+        "en": "Export Wh since last reset"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 76,
+      "manualAddress": "030077",
+      "type": "f32",
+      "name": {
+        "ko": "수전 무효전력량(마지막 리셋 뒤)",
+        "en": "Import VArh since last reset"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 78,
+      "manualAddress": "030079",
+      "type": "f32",
+      "name": {
+        "ko": "송전 무효전력량(마지막 리셋 뒤)",
+        "en": "Export VArh since last reset"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 84,
+      "manualAddress": "030085",
+      "type": "f32",
+      "name": {
+        "ko": "전체 전력 디맨드",
+        "en": "Total system power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 86,
+      "manualAddress": "030087",
+      "type": "f32",
+      "name": {
+        "ko": "최대 전체 전력 디맨드",
+        "en": "Maximum total system power demand"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 200,
+      "manualAddress": "030201",
+      "type": "f32",
+      "name": {
+        "ko": "L1-L2 선간전압",
+        "en": "Line 1 to line 2 volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 202,
+      "manualAddress": "030203",
+      "type": "f32",
+      "name": {
+        "ko": "L2-L3 선간전압",
+        "en": "Line 2 to line 3 volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 204,
+      "manualAddress": "030205",
+      "type": "f32",
+      "name": {
+        "ko": "L3-L1 선간전압",
+        "en": "Line 3 to line 1 volts"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 342,
+      "manualAddress": "030343",
+      "type": "f32",
+      "name": {
+        "ko": "총 유효전력량",
+        "en": "Total kWh"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "input-registers",
+      "address": 344,
+      "manualAddress": "030345",
+      "type": "f32",
+      "name": {
+        "ko": "총 무효전력량",
+        "en": "Total kvarh"
+      },
+      "unit": "kVArh",
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "PDF p.25"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "40003",
+      "type": "f32",
+      "name": {
+        "ko": "디맨드 주기",
+        "en": "Demand period"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0(현재값 표시)",
+          "en": "0 (shows present value)"
+        },
+        {
+          "value": 5,
+          "ko": "5",
+          "en": "5"
+        },
+        {
+          "value": 8,
+          "ko": "8",
+          "en": "8"
+        },
+        {
+          "value": 10,
+          "ko": "10",
+          "en": "10"
+        },
+        {
+          "value": 15,
+          "ko": "15",
+          "en": "15"
+        },
+        {
+          "value": 20,
+          "ko": "20",
+          "en": "20"
+        },
+        {
+          "value": 30,
+          "ko": "30",
+          "en": "30"
+        },
+        {
+          "value": 60,
+          "ko": "60(출하)",
+          "en": "60 (default)"
+        }
+      ],
+      "ref": "PDF p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "40011",
+      "type": "f32",
+      "name": {
+        "ko": "결선 방식",
+        "en": "System type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "1P2W",
+          "en": "1P2W"
+        },
+        {
+          "value": 2,
+          "ko": "3P3W",
+          "en": "3P3W"
+        },
+        {
+          "value": 3,
+          "ko": "3P4W",
+          "en": "3P4W"
+        }
+      ],
+      "ref": "PDF p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "40021",
+      "type": "f32",
+      "name": {
+        "ko": "Modbus 국번",
+        "en": "Network node"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 1, 재시작 뒤 적용",
+        "en": "Default 1; effective after restart"
+      },
+      "ref": "PDF p.28"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "표의 «Start Address Hex» 높은 바이트가 줄 끝에 따로 찍혀 있어(PDF p.24~26), 낮은 바이트와 번호가 맞는 항목만 넣었다. 30255(이름은 총 역률인데 단위 Degrees)·위상각·상별 전력량·CO2 는 뺐다.",
+      "en": "The high byte of 'Start Address Hex' is printed separately at the line end (PDF pp.24-26); only entries whose number and low byte agree are included. 30255 (named total PF but unit Degrees), phase angles, per-phase energies and CO2 are left out."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Eastron SDM630-TCP User Manual V2.01",
+      "publisher": "Zhejiang Eastron Electronic Co., Ltd.",
+      "edition": {
+        "ko": "V2.01 (2025), 파일명 eastronsdm630-tcpusermanualv2.01.pdf (eastrongroup.com 2025-04-27 게시)",
+        "en": "V2.01 (2025); file name eastronsdm630-tcpusermanualv2.01.pdf (posted 2025-04-27 on eastrongroup.com)"
+      },
+      "url": "https://www.eastrongroup.com/eastrongroup/2025/04/27/eastronsdm630-tcpusermanualv2.01.pdf",
+      "pages": {
+        "ko": "PDF p.9~10 통신 사양, p.21~22 TCP 설정, p.24~27 입력 레지스터, p.27~28 홀딩 레지스터 (인쇄 쪽 = PDF 쪽 − 7)",
+        "en": "PDF pp.9-10 communication spec, pp.21-22 TCP setup, pp.24-27 input registers, pp.27-28 holding registers (printed page = PDF page − 7)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}
