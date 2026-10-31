@@ -309,7 +309,7 @@ export const GUIDES: Guide[] = [
     slug: "rs485-wiring",
     date: "2026-10-17",
     tools: ["serial", "modbus-master", "port-inspector"],
-    related: ["rs232-rs422-rs485", "rs485-bias-termination", "modbus-no-response", "usb-serial-latency", "modbus-rtu-frame"],
+    related: ["rs232-rs422-rs485", "rs485-bias-termination", "modbus-no-response", "usb-serial-latency", "modbus-rtu-frame", "cable-shield-grounding", "rs485-multimeter-check", "commissioning-communication-checklist"],
     webTools: ["tools/rs485/", "tools/wiring/"],
     seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
     title: { ko: "RS-485 배선 점검 — 응답이 없거나 깨질 때 먼저 볼 다섯 가지", en: "RS-485 wiring checks — five things to look at when replies are missing or garbled" },
@@ -398,7 +398,7 @@ export const GUIDES: Guide[] = [
     slug: "modbus-no-response",
     date: "2026-10-19",
     tools: ["modbus-master", "port-inspector", "netscan"],
-    related: ["modbus-tcp-connection", "rs485-wiring", "modbus-address-notation", "usb-serial-latency", "modbus-rtu-timeout-polling", "modbus-exception-codes"],
+    related: ["modbus-tcp-connection", "rs485-wiring", "modbus-address-notation", "usb-serial-latency", "modbus-rtu-timeout-polling", "modbus-exception-codes", "commissioning-communication-checklist", "field-noise-communication-errors"],
     webTools: ["tools/modbus/", "tools/checksum/", "tools/serial-timing/"],
     devices: true,
     title: { ko: "Modbus 응답이 없을 때 — 점검 순서 (RTU·TCP)", en: "No reply from a Modbus device — a checklist for RTU and TCP" },
@@ -1230,7 +1230,7 @@ export const GUIDES: Guide[] = [
     slug: "4-20ma-loop",
     date: "2026-10-22",
     tools: ["modbus-master", "plot"],
-    related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order", "pressure-units"],
+    related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order", "pressure-units", "cable-shield-grounding"],
     webTools: ["tools/4-20ma/", "tools/loop-load/", "tools/wiring/"],
     title: { ko: "4–20mA 신호 기초와 고장 찾기 — 2선식·4선식·라이브 제로·단선 판정", en: "4–20 mA basics and troubleshooting — 2-wire, 4-wire, live zero, open loop" },
     seoTitle: { ko: "4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선) — PortDock", en: "4–20 mA Loop Basics & Troubleshooting (2-Wire, 4-Wire) — PortDock" },
@@ -1839,7 +1839,7 @@ export const GUIDES: Guide[] = [
     slug: "24v-voltage-drop",
     date: "2026-10-23",
     tools: ["modbus-master", "serial"],
-    related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable"],
+    related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable", "24v-power-supply-check", "npn-pnp-sensor-plc-input"],
     webTools: ["tools/voltage-drop/", "tools/loop-load/"],
     title: { ko: "24V DC 전압 강하 — 멀리 있는 센서·통신 장비의 전선 굵기 고르기", en: "24 V DC voltage drop — choosing wire size for remote sensors and devices" },
     seoTitle: { ko: "24V DC 전압 강하 계산과 전선 굵기 고르기 — PortDock", en: "24 V DC Voltage Drop: Choosing Wire Size (mm², AWG) — PortDock" },
@@ -1938,7 +1938,7 @@ export const GUIDES: Guide[] = [
     slug: "rs485-bias-termination",
     date: "2026-10-23",
     tools: ["serial", "modbus-master", "port-inspector"],
-    related: ["rs485-wiring", "rs232-rs422-rs485", "modbus-no-response", "modbus-rtu-timeout-polling"],
+    related: ["rs485-wiring", "rs232-rs422-rs485", "modbus-no-response", "modbus-rtu-timeout-polling", "rs485-multimeter-check"],
     webTools: ["tools/rs485/", "tools/serial-timing/"],
     devices: true,
     title: { ko: "RS485 종단·바이어스 저항 값 정하기 — 120 Ω, 560 Ω, 200 mV", en: "Choosing RS-485 termination and bias resistor values — 120 Ω, 560 Ω, 200 mV" },
@@ -3977,7 +3977,7 @@ export const GUIDES: Guide[] = [
     slug: "usb-serial-disconnects",
     date: "2026-10-29",
     tools: ["port-inspector", "serial", "modbus-master"],
-    related: ["usb-serial-latency", "rs485-wiring", "modbus-no-response", "rs232-db9-null-modem"],
+    related: ["usb-serial-latency", "rs485-wiring", "modbus-no-response", "rs232-db9-null-modem", "field-noise-communication-errors"],
     webTools: ["tools/serial-timing/", "tools/web-serial/"],
     title: { ko: "USB-시리얼 변환기가 자꾸 끊길 때 — 케이블·허브·절전·드라이버·COM 번호 점검 순서", en: "When a USB-serial adapter keeps disconnecting — cable, hub, power saving, driver and COM number checks" },
     seoTitle: { ko: "USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서 — PortDock", en: "USB-Serial Adapter Keeps Disconnecting: COM Port Drops — PortDock" },
@@ -4862,7 +4862,7 @@ export const GUIDES: Guide[] = [
     slug: "vfd-modbus-setup",
     date: "2026-10-30",
     tools: ["modbus-master", "serial"],
-    related: ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "vfd-frequency-rpm"],
+    related: ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "vfd-frequency-rpm", "commissioning-communication-checklist", "field-noise-communication-errors"],
     webTools: ["tools/modbus/", "tools/serial-timing/", "tools/motor-speed/", "tools/conveyor-speed/"],
     devices: true,
     deviceKinds: ["inverter"],
@@ -6071,6 +6071,876 @@ export const GUIDES: Guide[] = [
       { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications", note: { ko: "MBAP 머리 — 트랜잭션 ID 로 요청·응답 짝, 유닛 ID", en: "MBAP header — transaction ID pairs requests and responses; unit ID" } },
       { title: "Modbus Application Protocol Specification V1.1b3", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§7 예외 코드", en: "§7 exception codes" } },
       { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: { ko: "미러 포트의 캡처 손실", en: "capture loss on mirror ports" } },
+    ],
+  },
+  // 근거: MODBUS over serial line V1.02 §3.4(공통선은 버스 한 곳에서 보호 접지, 케이블 실드는 한쪽 끝을 보호 접지 — Danfoss 매뉴얼이 같은 문장 인용),
+  // TI SLLA070D §4.5·SLLA272D §11(접지 전위차·접지 루프·100 Ω·절연), PI 8.102(PROFIBUS 실드 양 끝 + 등전위 본딩), SEW 버스 케이블 지침(양 끝·동력선 분리·등전위 본딩).
+  {
+    slug: "cable-shield-grounding",
+    date: "2026-10-31",
+    tools: ["serial", "modbus-master", "port-inspector"],
+    related: ["rs485-wiring", "field-noise-communication-errors", "rs485-multimeter-check", "rs485-bias-termination", "4-20ma-loop"],
+    webTools: ["tools/wiring/", "tools/rs485/"],
+    title: { ko: "통신선 차폐(실드)·접지 — 한쪽 접지와 양쪽 접지, 접지 루프, SG 선", en: "Communication cable shields and grounding — one end or both, ground loops, the signal ground wire" },
+    seoTitle: { ko: "통신선 실드 접지 한쪽 vs 양쪽, 접지 루프, SG 선 — PortDock", en: "Cable Shield Grounding: One End or Both, Ground Loops — PortDock" },
+    desc: {
+      ko: "RS-485·Modbus 통신선의 실드를 한쪽만 접지할지 양쪽 다 할지, 접지 루프가 왜 생기는지, SG(공통) 선과 실드의 차이, 동력선과 떨어뜨리고 교차하는 법.",
+      en: "Ground an RS-485 cable shield at one end or both? Why ground loops form, the signal ground wire versus the shield, and keeping clear of power cables.",
+    },
+    body: {
+      ko: [
+        { p: "통신 케이블의 실드(차폐)와 접지는 현장마다 말이 다르고, 문서끼리도 «한쪽만» 과 «양쪽 다» 가 갈립니다. 둘 다 이유가 있으므로, 무엇을 막으려는지와 장비·버스의 설치 지침을 함께 보고 정합니다. 이 글은 RS-485(Modbus RTU)를 중심으로 쓰고, 4–20mA 같은 아날로그 신호선에도 같은 생각이 이어집니다." },
+        { h: "세 가지를 나눠서 본다" },
+        {
+          table: {
+            plain: true,
+            head: ["선", "하는 일", "어디에 잇나"],
+            rows: [
+              ["A·B(D0·D1) 꼬임쌍", "신호 — 두 선의 전압 차", "장비마다 A 는 A 끼리, B 는 B 끼리"],
+              ["SG(신호 접지, 공통, 0V, C)", "송수신기들의 기준 전압을 맞춤", "모든 장비의 SG 단자를 한 선으로"],
+              ["실드(차폐, 편조·포일)", "바깥 잡음이 신호선에 닿지 않게 받아 냄", "보호 접지(PE)·판넬 접지 — 한쪽 또는 양쪽"],
+            ],
+          },
+        },
+        { p: "흔한 실수는 실드를 SG 대신 쓰는 것입니다. 실드는 잡음 전류를 땅으로 흘려 보내는 길이고, SG 는 신호의 기준입니다. 실드에 잡음 전류가 흐르는데 그것을 기준으로 쓰면 그 잡음이 그대로 신호의 기준을 흔듭니다. 장비 매뉴얼이 따로 정하지 않았다면, 꼬임쌍 하나 + SG 용 한 가닥(또는 쌍 하나) + 실드인 케이블을 쓰고 SG 를 별도 선으로 잇습니다. Modbus 직렬 규격도 RS-485 에 균형 쌍(D0·D1)과 «세 번째 선(Common)» 을 적고 있습니다." },
+        { h: "SG 를 왜 이어야 하나" },
+        { p: "RS-485 수신기는 두 선의 «차이» 를 읽지만, 각 선의 전압이 수신기 자신의 접지에 대해 일정 범위(표준 송수신기 기준 −7 V ~ +12 V) 안에 있어야 합니다. 장비마다 전원이 다르면 접지끼리 전위차가 생기고, SG 선이 없으면 이 차이가 그대로 공통 모드 전압에 얹혀 범위를 넘을 수 있습니다. TI 문서는 «흔히 별도 접지선 없이 그리지만, 물리 법칙상 드라이버와 수신기 사이에 단단한 접지 연결이 필요하다» 고 적습니다." },
+        { h: "접지 루프" },
+        { p: "SG 선이나 실드를 두 장비의 접지에 양쪽 다 직접 이으면, 두 접지 사이의 전위차가 그 선을 통해 전류를 흘립니다. 이것이 접지 루프입니다. 큰 모터가 기동할 때처럼 전위차가 순간적으로 커지면 루프 전류가 신호선에 공통 모드 잡음으로 실립니다. TI 응용 노트는 이 때문에 RS-485 표준이 장비의 로직 접지와 섀시 접지 사이에 저항(그림에서는 100 Ω)을 두는 방법을 권한다고 적고, 그래도 큰 루프가 남아 다른 곳의 잡음에 민감하므로 먼 거리·큰 전위차에는 송수신기를 절연(절연형 DC/DC + 디지털 절연기)하는 것이 튼튼한 방법이라고 정리합니다." },
+        { h: "실드: 한쪽 접지" },
+        { p: "Modbus 직렬 규격은 «케이블마다 한쪽 끝의 실드를 보호 접지에 연결» 하고, 공통(Common)은 «버스 전체에서 가능하면 한 곳(보통 마스터 쪽)만» 보호 접지에 직접 연결하라고 적습니다. 실드를 한쪽만 접지하면 실드를 통한 접지 루프가 생기지 않습니다. 정전기·전기장 쪽 잡음(정전 결합)은 한쪽 접지로도 잘 막힙니다. 판넬 쪽(마스터 쪽) 한 곳을 접지하고, 반대쪽 장비에서는 실드를 잘라 절연 테이프로 마감하거나 장비 매뉴얼이 정한 단자에 둡니다." },
+        { h: "실드: 양쪽 접지" },
+        { p: "자기장·고주파 잡음은 실드 양 끝이 접지돼야 실드에 반대 전류가 흘러 잘 상쇄됩니다. 그래서 PROFIBUS 의 PI 지침이나 일부 드라이브 제조사의 버스 케이블 지침은 실드를 «양 끝» 에 넓은 면으로 잇고, 대신 접지끼리 전위가 같도록 등전위 본딩선을 케이블 가까이 함께 깔라고 적습니다. 등전위 본딩 없이 양쪽만 접지하면 접지 루프 전류가 실드로 흐릅니다. 일부 지침은 한쪽은 직접, 다른 쪽은 작은 커패시터를 거쳐 접지하는 절충도 소개합니다." },
+        { h: "그래서 어떻게 정하나" },
+        {
+          ul: [
+            "장비·버스의 설치 지침이 정한 방법을 먼저 따릅니다. 같은 판넬 안에서도 버스 종류마다 다를 수 있습니다.",
+            "Modbus RTU(RS-485) 이고 장비 매뉴얼에 따로 없으면: 실드는 판넬 쪽 한쪽 접지, SG 는 모든 장비를 별도 선으로 잇고 보호 접지와는 한 곳만.",
+            "건물이 다르거나 거리가 멀어 접지 전위차가 큰 곳: 실드 방식보다 절연형 송수신기·절연 리피터를 먼저 생각합니다.",
+            "실드를 이을 때는 돼지꼬리(가늘게 꼬아 늘린 선)를 짧게 — 긴 꼬리는 고주파에서 실드 효과를 떨어뜨립니다. 클램프로 넓게 물리는 방법이 지침에 자주 나옵니다.",
+            "중간 장비에서 케이블이 끊겼다 이어질 때는 실드도 끊기지 않게 이어 줍니다(한쪽 접지라도 실드 자체는 끝까지 이어진 한 덩어리).",
+          ],
+        },
+        { h: "동력선과 이격·교차" },
+        { p: "인버터 출력선·모터선·전원선과 통신선을 같은 덕트에 넣지 않는 것이 가장 효과가 큽니다. 떨어뜨릴 거리는 제조사 문서마다 수 cm 에서 수십 cm 까지 다르므로, 쓰는 인버터·서보 매뉴얼의 배선 장에 있는 값을 따릅니다. 꼭 교차해야 하면 나란히 달리지 말고 직각으로 짧게 교차시키는 것이 여러 매뉴얼의 공통 권장입니다. 금속 덕트를 나눠 쓰는 경우 칸막이가 있는 덕트를 씁니다." },
+        { h: "증상으로 보기" },
+        {
+          table: {
+            plain: true,
+            head: ["증상", "볼 것"],
+            rows: [
+              ["특정 모터·인버터가 돌 때만 CRC 오류·타임아웃", "동력선과 같은 덕트, 실드 미접속, 돼지꼬리 길이"],
+              ["건물·판넬이 다른 장비만 가끔 끊기거나 송수신기가 상함", "접지 전위차, SG 미연결 — 절연 송수신기 검토"],
+              ["실드를 양쪽 다 이은 뒤 오히려 잡음이 늘어남", "등전위 본딩 없음 — 실드로 루프 전류"],
+              ["SG 를 이었더니 판넬 퓨즈·누전 쪽이 이상", "SG 를 여러 곳에서 보호 접지에 직결 — 한 곳만"],
+            ],
+          },
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «배선도 만들기»: RS-485 2선·4선 배선을 장비 수·국번에 맞춰 그리고 A·B·SG·실드 연결 확인 목록을 붙여 SVG·PNG 로 남깁니다.",
+            "Modbus Master: 표마다 요청·타임아웃·CRC 오류 수가 쌓입니다. 실드·SG 연결을 바꾸기 전과 뒤에 같은 시간 동안 오류 수를 비교합니다.",
+            "Serial: 요청 없이 수신만 켜 두면, 모터가 기동할 때 들어오는 쓰레기 바이트를 시각과 함께 볼 수 있습니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Cable shields and grounding are argued differently on every site, and documents disagree too — «one end only» versus «both ends». Both have reasons, so decide by what you are trying to block and by the installation rules for the device or bus. This guide centres on RS-485 (Modbus RTU); the same thinking carries over to analog lines such as 4–20 mA." },
+        { h: "Three conductors, three jobs" },
+        {
+          table: {
+            plain: true,
+            head: ["Conductor", "Job", "Where it goes"],
+            rows: [
+              ["A/B (D0/D1) twisted pair", "The signal — the difference between two wires", "A to A and B to B at every device"],
+              ["SG (signal ground, common, 0V, C)", "Keeps the transceivers' reference voltages together", "One wire linking every device's SG terminal"],
+              ["Shield (braid, foil)", "Catches outside noise before it reaches the pair", "Protective earth (PE) or panel ground — one end or both"],
+            ],
+          },
+        },
+        { p: "A common mistake is to use the shield as SG. The shield is a path that drains noise current to earth; SG is the signal reference. If noise current flows in the shield and you use it as the reference, the noise moves the reference. Unless the device manual says otherwise, use a cable with a twisted pair, one more conductor (or pair) for SG, and a shield, and run SG on its own wire. The Modbus serial line specification likewise calls for a balanced pair (D0, D1) and a «third wire (Common)» on RS-485." },
+        { h: "Why SG must be connected" },
+        { p: "An RS-485 receiver reads the «difference» between the wires, but each wire must also stay within a range relative to the receiver's own ground (−7 V to +12 V for standard transceivers). Devices on different supplies have ground potential differences, and without an SG wire that difference rides on the common-mode voltage and can exceed the range. A TI note puts it this way: systems are often drawn without a separate ground wire, but the laws of physics still require a solid ground connection between drivers and receivers." },
+        { h: "Ground loops" },
+        { p: "Tie the SG wire or the shield directly to the ground at both devices, and the potential difference between those grounds drives current through it — a ground loop. When the difference jumps, for instance as a large motor starts, the loop current couples into the signal pair as common-mode noise. TI's application notes say this is why the RS-485 standard suggests a resistor between logic ground and chassis ground (100 Ω in their figure), and that the loop still leaves the link sensitive to noise elsewhere, so for long distances and large potential differences the robust approach is an isolated transceiver (isolated DC/DC plus a digital isolator)." },
+        { h: "Shield grounded at one end" },
+        { p: "The Modbus serial line specification says that at one end of each cable the shield must be connected to protective ground, and that the Common should be connected directly to protective ground at one point only for the whole bus, generally at the master. Grounding the shield at one end creates no loop through it, and it still blocks electric-field (capacitively coupled) noise well. Ground it at the panel (master) side and, at the far device, trim and insulate the shield or land it where the device manual says." },
+        { h: "Shield grounded at both ends" },
+        { p: "Magnetic and high-frequency noise is cancelled better when both ends of the shield are grounded, because a counter-current can flow in it. That is why the PROFIBUS (PI) guideline and some drive makers' bus cable instructions connect the shield at «both ends» over a wide area — and require an equipotential bonding conductor run close to the cable so the grounds stay at the same potential. Grounding both ends without bonding sends ground loop current through the shield. Some guidelines also describe a compromise: direct at one end, through a small capacitor at the other." },
+        { h: "So how do you decide?" },
+        {
+          ul: [
+            "Follow the installation rules of the device or bus first. Different buses in the same panel may need different treatment.",
+            "Modbus RTU (RS-485) with nothing in the device manual: shield grounded at the panel end, SG run to every device on its own wire and tied to protective earth at one point only.",
+            "Different buildings or long runs with large ground differences: consider isolated transceivers or isolated repeaters before arguing about shields.",
+            "Keep shield pigtails short — a long twisted tail weakens shielding at high frequency. Guidelines often show a clamp that grips the shield over a wide area.",
+            "Where the cable breaks and continues at a middle device, carry the shield through as well (even when grounded at one end, the shield should be one continuous piece).",
+          ],
+        },
+        { h: "Distance from power cables, and crossings" },
+        { p: "The biggest win is not putting drive output, motor or supply cables in the same duct as communication cables. The recommended separation differs between manufacturers' documents, from a few centimetres to tens of centimetres, so use the figure in the wiring chapter of the drive or servo manual you have. Where cables must cross, many manuals agree: do not run them alongside — cross at a right angle, briefly. In shared metal trunking, use one with a divider." },
+        { h: "Reading the symptoms" },
+        {
+          table: {
+            plain: true,
+            head: ["Symptom", "Look at"],
+            rows: [
+              ["CRC errors or timeouts only while a certain motor or drive runs", "Shared duct with power cables, shield not connected, pigtail length"],
+              ["Only devices in another building or panel drop out or lose transceivers", "Ground potential difference, SG missing — consider isolation"],
+              ["Noise got worse after grounding the shield at both ends", "No equipotential bonding — loop current in the shield"],
+              ["Odd behaviour on panel fuses or earth leakage after linking SG", "SG tied straight to protective earth in several places — use one"],
+            ],
+          },
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Wiring Diagram Maker» web tool: draws RS-485 2-wire or 4-wire wiring for your device count and IDs, with a checklist for A, B, SG and shield, as SVG or PNG.",
+            "Modbus Master counts requests, timeouts and CRC errors per table. Compare the counts over the same period before and after changing the shield or SG wiring.",
+            "Serial: leave reception on without sending and you can see garbage bytes, with timestamps, arriving as a motor starts.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§3.4 — 균형 쌍 + 공통선, 공통은 한 곳에서 보호 접지, 케이블 실드는 한쪽 끝 보호 접지", en: "§3.4 — balanced pair plus common, common to protective ground at one point, shield to protective ground at one end" } },
+      { title: "TI SLLA070D — RS-422 and RS-485 Standards Overview and System Configurations", url: "https://www.ti.com/lit/an/slla070d/slla070d.pdf", note: { ko: "§4.5 접지 연결 — 별도 접지선, 로직·섀시 접지 사이 저항, 절연", en: "§4.5 ground connections — separate ground wire, resistor between logic and chassis ground, isolation" } },
+      { title: "TI SLLA272 — The RS-485 Design Guide", url: "https://www.ti.com/lit/an/slla272c/slla272c.pdf", note: { ko: "§11 접지와 절연 — 접지 전위차, 접지 루프", en: "§11 grounding and isolation — ground potential difference, ground loops" } },
+      { title: "PI — Functional Bonding and Shielding of PROFIBUS and PROFINET (8.102)", url: "https://it.profibus.com/fileadmin/media/downloadsection/installation_guide/Earthing-Shielding_8102_V31_Sep22.pdf", note: { ko: "실드 양 끝 접속과 등전위 본딩", en: "shield at both ends with equipotential bonding" } },
+      { title: "SEW-EURODRIVE — Shielding and routing bus cables", url: "https://download.sew-eurodrive.com/download/html/25870726/en-EN/32779984907.html", note: { ko: "버스 케이블 실드 양 끝, 동력선과 분리, 등전위 본딩", en: "bus cable shield at both ends, separation from power cables, equipotential bonding" } },
+    ],
+  },
+  // 근거: TI SLLA272D §5(꼬임쌍·공통 모드 잡음 제거)·§6(잡음 많은 곳 종단을 60 Ω 둘 + 커패시터로 공통 모드 필터)·§11(접지 전위차·절연),
+  // TI SLLA070D §4.5, SEW 버스 케이블 지침(동력선 분리). PortDock 기능은 apps/modbus-master/src/help.ts(표마다 통계·통신 기록 EV 줄·값 CSV 기록)·site/src/data/tools.ts(Plot).
+  {
+    slug: "field-noise-communication-errors",
+    date: "2026-10-31",
+    tools: ["modbus-master", "plot", "serial"],
+    related: ["cable-shield-grounding", "rs485-wiring", "24v-power-supply-check", "modbus-no-response", "rs485-multimeter-check", "usb-serial-disconnects"],
+    webTools: ["tools/rs485/", "tools/serial-timing/", "tools/wiring/"],
+    title: { ko: "현장 노이즈로 통신이 끊길 때 원인 찾기 — 인버터·서보 근처, 시간대·부하 따라 나는 오류", en: "When field noise breaks communication — near drives and servos, errors that follow time or load" },
+    seoTitle: { ko: "인버터·서보 노이즈로 RS-485 통신 오류 날 때 원인 찾기 — PortDock", en: "RS-485 Errors from Drive and Servo Noise — PortDock" },
+    desc: {
+      ko: "책상에선 되는데 현장에서만 가끔 CRC 오류·타임아웃이 날 때 — 오류 시각과 설비 동작을 맞춰 보는 법, 인버터·서보 근처 배선, 페라이트·필터·라인 분리·절연.",
+      en: "Fine on the bench, CRC errors and timeouts on site? Line up error times with machine activity, then check wiring near drives, ferrites, routing, isolation.",
+    },
+    body: {
+      ko: [
+        { p: "«사무실에서 시험할 때는 멀쩡했는데 설비를 돌리면 가끔 끊긴다» 는 현장 통신 문제의 흔한 모양입니다. 잡음은 눈에 보이지 않으니, 감으로 페라이트부터 끼우기보다 오류가 «언제» 나는지를 먼저 모으면 원인 후보가 크게 줄어듭니다." },
+        { h: "1. 잡음인지 먼저 가르기" },
+        {
+          table: {
+            plain: true,
+            head: ["모양", "원인 후보"],
+            rows: [
+              ["처음부터 한 번도 응답 없음", "잡음보다 설정·배선 — 국번·보율·패리티·A/B(응답 없음 점검 글)"],
+              ["늘 같은 장비만 같은 비율로 실패", "그 장비의 종단·배선·국번 중복, 폴링 간격"],
+              ["설비가 돌 때·특정 시간대에만 오류가 몰림", "잡음, 또는 같은 전원의 전압 강하"],
+              ["CRC 오류가 많고 바이트가 깨져 들어옴", "잡음·종단·바이어스·보율 대비 길이"],
+              ["한동안 전부 타임아웃 뒤 다시 회복", "장비 재시작(전원), 변환기 끊김, 접지 전위차로 송수신기 보호 동작"],
+            ],
+          },
+        },
+        { h: "2. 오류 시각을 기록한다" },
+        { p: "오류가 몇 시 몇 분 몇 초에 났는지를 남깁니다. 그다음 같은 시각에 무엇이 움직였는지 — 인버터 기동·정지, 서보 가감속, 용접기, 히터 켜짐, 큰 솔레노이드 — 를 설비 쪽 기록이나 운전자에게 묻고 맞춰 봅니다. 몇 번만 겹쳐도 «컨베이어 인버터가 기동할 때마다» 같은 규칙이 보입니다. 시간대(교대·점심·야간 운전)에 따라 몰리는지도 봅니다." },
+        { p: "가능하면 부하 쪽 값도 같은 시간축에 둡니다. 인버터 출력 주파수·전류를 Modbus 로 읽을 수 있으면 함께 기록하고, 장비가 시리얼로 값을 내보내면 Plot 으로 같이 그립니다. 오류가 «가속 구간» 이나 «전류가 큰 구간» 에 몰리면 그 설비의 배선부터 봅니다." },
+        { h: "3. 인버터·서보 근처에서 먼저 볼 것" },
+        { p: "인버터·서보 앰프는 출력에서 빠르게 켜고 끄는(PWM) 전압을 만들어 모터선과 접지로 고주파 전류를 흘립니다. 통신선이 이 근처를 지날 때 볼 순서입니다." },
+        {
+          ul: [
+            "같은 덕트·같은 묶음: 모터선·인버터 출력선과 통신선이 나란히 달리는 구간이 있는지. 가장 효과가 큰 조치는 따로 까는 것입니다. 이격 거리는 그 인버터·서보 매뉴얼의 배선 장 값을 따르고, 교차는 직각으로.",
+            "모터선 실드·접지: 실드 모터 케이블의 실드가 양 끝(드라이브·모터)에 제대로 물려 있는지, 모터 접지선이 드라이브로 돌아오는지. 잡음 전류가 돌아갈 길이 없으면 통신선·장비 접지로 돌아갑니다.",
+            "통신선 실드·SG: 실드 접지와 SG 선 연결(차폐·접지 글).",
+            "드라이브 쪽 필터: 매뉴얼에 있는 입력 EMC 필터·출력 리액터·영상(제로상) 리액터 권장이 지켜졌는지.",
+            "캐리어 주파수: 일부 인버터는 캐리어 주파수를 낮추면 잡음이 줄어든다고 적습니다(모터 소음은 늘 수 있음). 매뉴얼에 있는 경우만 바꿉니다.",
+          ],
+        },
+        { h: "4. 통신선 쪽 대책" },
+        {
+          ul: [
+            "페라이트 코어: 통신 케이블 끝(장비 가까이)에 클램프형 페라이트를 끼우면 공통 모드 고주파 잡음을 줄입니다. 효과는 주파수·감는 횟수에 따라 다르므로, 끼우기 전과 뒤의 오류 수를 같은 시간 동안 비교합니다.",
+            "종단의 공통 모드 필터: TI 문서는 잡음이 많은 곳에서 120 Ω 종단을 60 Ω 두 개로 나누고 가운데를 커패시터로 접지 쪽에 이어 공통 모드 잡음을 거르는 방법을 소개합니다. 두 저항 값을 잘 맞춰야 합니다(1 % 저항 권장).",
+            "보율 낮추기: 같은 잡음이라도 비트 시간이 길면 덜 깨집니다. 장비가 지원하면 19200 → 9600 처럼 낮춰 오류 수가 줄어드는지 봅니다.",
+            "절연: 접지 전위차가 큰 곳(다른 판넬·다른 건물)은 절연형 RS-485 변환기·절연 리피터로 버스를 나눕니다.",
+            "버스 나누기: 장비가 많고 일부만 잡음 근처라면 그 구간을 리피터나 별도 포트로 분리해 영향 범위를 줄입니다.",
+            "재시도: 원인을 줄인 뒤에도 드문 오류가 남으면 마스터의 재시도 1~2 회로 흡수합니다. 재시도로 원인을 덮어 두면 나중에 오류가 늘어도 모릅니다 — 오류 수는 계속 봅니다.",
+          ],
+        },
+        { h: "5. 잡음처럼 보이는 다른 원인" },
+        {
+          ul: [
+            "전원: 같은 24 V 를 쓰는 밸브·모터가 켜질 때 장비 전압이 떨어져 재시작하면 «몰려서 나는 타임아웃» 으로 보입니다(24V 전원 점검 글).",
+            "USB-시리얼 변환기: PC 쪽 변환기가 순간 끊겼다 다시 잡히는 경우 — 장치 관리자·이벤트 기록에서 같은 시각을 봅니다(USB-시리얼 끊김 글).",
+            "다른 마스터: 같은 버스에 HMI·다른 PC 가 함께 요청을 보내면 충돌로 CRC 오류가 납니다. 마스터는 하나입니다.",
+            "느린 장비: 바쁠 때 응답이 늦어지는 장비는 부하 따라 «타임아웃» 이 납니다 — 응답 기다림을 늘려 사라지면 잡음이 아닙니다.",
+          ],
+        },
+        { h: "6. 하나씩 바꾸고 숫자로 비교" },
+        { p: "대책을 한꺼번에 넣으면 무엇이 효과였는지 모릅니다. 한 가지를 바꾸고, 같은 운전 조건에서 같은 시간 동안 요청 수 대비 CRC 오류·타임아웃 수를 비교합니다. 바뀐 것·시각·오류 수를 표로 남겨 두면 다음 사람도 이어서 볼 수 있습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: 표마다 요청·타임아웃·CRC·예외 수가 쌓이고, 통신 기록에 타임아웃이 시각과 함께 사건(EV) 줄로 찍힙니다. «파일로 기록» 으로 오래 남겨 설비 동작 시각과 맞춰 봅니다.",
+            "Modbus Master «값 기록(CSV)»: 인버터 주파수·전류 같은 값을 폴링마다 시각과 함께 기록해, 오류 시각과 같은 시간축에서 봅니다.",
+            "Plot: 시리얼·TCP·UDP 로 오는 숫자를 실시간 그래프로 그리고 받는 동안 CSV 로 기록합니다. 장비가 값을 직접 내보낼 때 부하 변화와 오류 시각을 겹쳐 보는 데 씁니다.",
+            "Serial: 요청 없이 수신만 켜 두면 설비가 움직일 때 들어오는 쓰레기 바이트가 시각과 함께 보입니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "«It was fine on the bench, but once the machine runs it drops out now and then» is the usual shape of a field communication problem. Noise is invisible, so before clipping on ferrites by instinct, collect «when» the errors happen — that cuts the list of likely causes sharply." },
+        { h: "1. Is it noise at all?" },
+        {
+          table: {
+            plain: true,
+            head: ["Pattern", "Likely causes"],
+            rows: [
+              ["Never answered even once", "Settings or wiring rather than noise — ID, baud, parity, A/B (see the no-reply guide)"],
+              ["Always the same device, at the same rate", "That device's termination, wiring, duplicate ID, poll spacing"],
+              ["Errors bunch up while machines run or at certain times", "Noise, or voltage dips on a shared supply"],
+              ["Many CRC errors, corrupted bytes", "Noise, termination, bias, baud vs length"],
+              ["Everything times out for a while, then recovers", "Device restart (power), adapter dropout, transceiver protection from ground differences"],
+            ],
+          },
+        },
+        { h: "2. Record when errors happen" },
+        { p: "Keep the time of each error down to the second. Then find out what moved at the same time — a drive starting or stopping, a servo accelerating, a welder, a heater, a big solenoid — from the machine's log or the operator, and line them up. A handful of matches is often enough to see a rule like «every time the conveyor drive starts». Also check whether errors cluster by time of day (shift change, lunch, night runs)." },
+        { p: "Where possible, put the load on the same time axis. If you can read the drive's output frequency or current over Modbus, log it too; if a device streams values over serial, plot them in Plot. Errors bunched in «acceleration» or «high current» stretches point at that machine's wiring first." },
+        { h: "3. Near drives and servos, look here first" },
+        { p: "Drives and servo amplifiers switch their output voltage rapidly (PWM), pushing high-frequency current through the motor cable and earth. When a communication cable runs nearby, check in this order." },
+        {
+          ul: [
+            "Same duct, same bundle: is there a stretch where motor or drive output cables run alongside the communication cable? Separate routing is the most effective fix. Take the separation distance from the wiring chapter of that drive or servo manual, and cross at right angles.",
+            "Motor cable shield and earth: is the shielded motor cable's shield properly clamped at both ends (drive and motor), and does the motor earth conductor return to the drive? Noise current with no return path finds its way back through communication cables and device grounds.",
+            "Communication shield and SG: see the shield and grounding guide.",
+            "Drive-side filters: are the input EMC filter, output reactor or zero-phase reactor recommended in the manual fitted?",
+            "Carrier frequency: some drive manuals say a lower carrier frequency reduces noise (motor noise may rise). Change it only where the manual covers it.",
+          ],
+        },
+        { h: "4. On the communication cable" },
+        {
+          ul: [
+            "Ferrite cores: a clamp-on ferrite near the device end of the communication cable reduces common-mode high-frequency noise. The effect depends on frequency and turns, so compare error counts over the same period before and after.",
+            "Common-mode filtering at the terminator: a TI design guide describes splitting each 120 Ω terminator into two 60 Ω resistors with a capacitor from the centre point, to filter common-mode noise in noisy environments. The two resistors must be well matched (1 % recommended).",
+            "Lower baud rate: the same noise corrupts fewer bits when bits are longer. If the devices allow it, drop from 19200 to 9600, for example, and see whether errors fall.",
+            "Isolation: where ground potentials differ (another panel, another building), split the bus with an isolated RS-485 adapter or isolated repeater.",
+            "Split the bus: with many devices and only some near the noise, separate that segment with a repeater or its own port to limit the damage.",
+            "Retries: once the cause is reduced, absorb rare leftovers with 1–2 retries at the master. Retries that hide the cause also hide a later rise — keep watching the error counts.",
+          ],
+        },
+        { h: "5. Things that look like noise" },
+        {
+          ul: [
+            "Power: when valves or motors on the same 24 V supply switch on, the device voltage dips and it restarts — that looks like «timeouts in bursts» (see the 24 V supply guide).",
+            "USB-serial adapter: the adapter on the PC side may drop and reconnect — check Device Manager and the event log at the same times (see the USB-serial disconnect guide).",
+            "A second master: an HMI or another PC polling the same bus causes collisions and CRC errors. There is one master.",
+            "Slow device: a device that answers late when busy produces «timeouts» that follow load — if a longer response timeout makes them go away, it is not noise.",
+          ],
+        },
+        { h: "6. Change one thing, compare numbers" },
+        { p: "Apply several fixes at once and you will not know which one worked. Change one thing, then compare CRC errors and timeouts per request over the same period under the same operating conditions. A table of what changed, when, and the error counts lets the next person carry on." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master counts requests, timeouts, CRC errors and exceptions per table, and timeouts appear in the traffic log as event lines with timestamps. Use «Log to file» to keep a long record and line it up with machine activity.",
+            "Modbus Master «Value log (CSV)»: record values such as drive frequency and current with a timestamp on every poll, to compare with error times on one time axis.",
+            "Plot: live graphs of numbers arriving over serial, TCP or UDP, recorded to CSV while receiving. Use it to overlay load changes and error times when a device streams its own values.",
+            "Serial: leave reception on without sending to see garbage bytes, with timestamps, arriving as machines move.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA272 — The RS-485 Design Guide", url: "https://www.ti.com/lit/an/slla272c/slla272c.pdf", note: { ko: "§5 꼬임쌍과 공통 모드 잡음, §6 60 Ω 둘 + 커패시터 종단, §11 접지와 절연", en: "§5 twisted pair and common-mode noise, §6 split 60 Ω termination with capacitor, §11 grounding and isolation" } },
+      { title: "TI SLLA070D — RS-422 and RS-485 Standards Overview and System Configurations", url: "https://www.ti.com/lit/an/slla070d/slla070d.pdf", note: { ko: "§4.5 접지 루프와 절연", en: "§4.5 ground loops and isolation" } },
+      { title: "SEW-EURODRIVE — Shielding and routing bus cables", url: "https://download.sew-eurodrive.com/download/html/25870726/en-EN/32779984907.html", note: { ko: "버스 케이블을 동력선(모터선)과 떨어뜨려 깔기", en: "route bus cables apart from power (motor) cables" } },
+    ],
+  },
+  // 근거: IEC 60947-5-2(근접 스위치 — 선 색 BN·BU·BK·WH 관례), IEC 61131-2(디지털 입력 Type 1·2·3 — Type 2 는 2선식 근접 스위치용),
+  // 누설 전류·OFF 전류 값은 기종마다 달라 싣지 않고 «센서 사양 vs 입력 사양» 비교만 쓴다. 싱크/소스 용어가 제조사마다 반대로 쓰이는 점은 매뉴얼 결선도로 판단.
+  {
+    slug: "npn-pnp-sensor-plc-input",
+    date: "2026-10-31",
+    tools: ["modbus-master"],
+    related: ["24v-power-supply-check", "24v-voltage-drop", "4-20ma-loop", "cable-shield-grounding", "commissioning-communication-checklist"],
+    webTools: ["tools/wiring/", "tools/voltage-drop/"],
+    title: { ko: "NPN·PNP 센서와 PLC 입력 배선 — 싱크/소스, 공통(COM), 2선식 누설 전류", en: "Wiring NPN and PNP sensors to PLC inputs — sink/source, common (COM), 2-wire leakage current" },
+    seoTitle: { ko: "NPN PNP 센서 PLC 입력 배선 — 싱크·소스·COM·2선식 — PortDock", en: "NPN vs PNP Sensors to PLC Inputs: Sink, Source, COM — PortDock" },
+    desc: {
+      ko: "NPN 센서와 PNP 센서를 PLC 입력에 어떻게 잇는지, 공통(COM)을 +24V 와 0V 중 어디에 두는지, 2선식 센서 누설 전류로 입력이 꺼지지 않을 때, 선 색 관례.",
+      en: "How NPN and PNP sensors connect to PLC inputs, whether COM goes to +24 V or 0 V, 2-wire sensors whose leakage keeps an input on, and the usual wire colours.",
+    },
+    body: {
+      ko: [
+        { p: "근접 센서·광전 센서를 PLC 입력에 달 때 가장 흔한 질문은 «NPN 을 사야 하나 PNP 를 사야 하나» 와 «COM 을 어디에 잇나» 입니다. 답은 센서 출력이 «0V 쪽으로 당기는지(NPN)» 아니면 «+24V 를 내보내는지(PNP)» 와, PLC 입력 회로의 전류가 어느 쪽으로 흐르게 돼 있는지를 맞추는 것입니다." },
+        { h: "NPN 출력과 PNP 출력" },
+        {
+          table: {
+            plain: true,
+            head: ["", "NPN 출력(전류를 빨아들임)", "PNP 출력(전류를 내보냄)"],
+            rows: [
+              ["켜졌을 때 출력선", "0V 에 붙음", "+24V 에 붙음"],
+              ["부하(입력)의 다른 쪽", "+24V", "0V"],
+              ["PLC 입력 공통(COM)", "+24V 에 연결", "0V 에 연결"],
+              ["전류 방향", "입력 → 센서 출력 → 0V", "+24V → 센서 출력 → 입력 → COM(0V)"],
+            ],
+          },
+        },
+        { p: "즉 PLC 입력 공통을 +24V 에 두면 NPN 센서, 0V 에 두면 PNP 센서가 맞습니다. 공통 단자 하나로 양쪽을 다 받는 입력 모듈이 많지만, 한 공통에 묶인 입력은 같은 방식 센서만 씁니다. 방식을 섞어야 하면 공통이 나뉜 그룹을 따로 씁니다." },
+        { h: "싱크·소스라는 말은 조심한다" },
+        { p: "«싱크 입력», «소스 입력» 은 입력 쪽에서 보느냐 센서 쪽에서 보느냐에 따라 제조사마다 반대로 쓰이는 일이 있습니다. 같은 «싱크» 라는 말이 한 회사 매뉴얼에서는 NPN 센서용, 다른 회사에서는 PNP 센서용을 가리키기도 합니다. 그래서 말보다 매뉴얼의 결선도 — COM 이 +24V 와 0V 중 어디에 붙어 있고 센서가 어떻게 그려져 있는지 — 를 보고 판단합니다." },
+        { h: "선 색 관례" },
+        {
+          table: {
+            plain: true,
+            head: ["색", "흔한 뜻(3선식 DC)"],
+            rows: [
+              ["갈색(BN)", "+24V(전원 +)"],
+              ["파랑(BU)", "0V(전원 −)"],
+              ["검정(BK)", "출력(보통 NO, 평소 열림)"],
+              ["흰색(WH)", "4선식의 두 번째 출력(NC 등) 또는 다른 용도"],
+            ],
+          },
+        },
+        { p: "이 색은 IEC 60947-5-2 계열 근접 스위치에서 널리 쓰는 관례지만, 제조사·제품에 따라 다르고 커넥터형은 핀 번호로 적습니다. 반드시 그 센서의 사양서·라벨을 확인합니다. 2선식 DC 센서는 보통 갈색·파랑 두 선뿐이며, 어느 쪽이 + 인지도 제품마다 정해져 있습니다." },
+        { h: "2선식 센서와 누설 전류" },
+        { p: "2선식 센서는 전원선과 신호선이 같아서, 꺼져 있는 동안에도 자기 회로를 살리려고 작은 전류(누설 전류, 잔류 전류)를 흘립니다. 켜져 있을 때는 센서 안에서 전압이 조금 떨어집니다(잔류 전압). 그래서 두 가지가 맞아야 합니다." },
+        {
+          ul: [
+            "꺼짐: 센서 누설 전류가 PLC 입력의 «OFF 전류»(이 전류 이하면 꺼짐으로 봄)보다 작아야 합니다. 크면 센서가 꺼져도 입력이 켜진 채로 남거나 깜빡입니다.",
+            "켜짐: 24V 에서 센서 잔류 전압을 뺀 전압이 입력의 «ON 전압» 보다 높아야 합니다. 긴 선의 전압 강하까지 더해지면 모자랄 수 있습니다.",
+          ],
+        },
+        { p: "IEC 61131-2 는 디지털 입력을 Type 1·2·3 으로 나누고, Type 2 를 2선식 근접 스위치를 받을 수 있는 입력으로 둡니다. 쓰는 입력 모듈의 사양표(ON 전압·OFF 전류·입력 형식)와 센서 사양표(누설 전류·잔류 전압)를 나란히 놓고 비교합니다. 맞지 않으면 3선식 센서로 바꾸거나, 매뉴얼이 권하는 방법(입력에 병렬로 블리더 저항을 다는 등 — 값과 전력은 매뉴얼 기준)을 씁니다." },
+        { h: "증상으로 보기" },
+        {
+          table: {
+            plain: true,
+            head: ["증상", "볼 것"],
+            rows: [
+              ["센서 표시등은 켜지는데 PLC 입력이 안 들어옴", "NPN/PNP 와 COM 방향 불일치, COM 미연결"],
+              ["센서가 꺼져도 입력이 켜져 있거나 깜빡임", "2선식 누설 전류 > 입력 OFF 전류, 유도 전압(긴 선이 동력선 옆)"],
+              ["멀리 있는 센서만 가끔 안 들어옴", "전압 강하로 ON 전압 미달, 단자 풀림"],
+              ["센서 하나 바꿨더니 그 그룹 입력이 이상", "한 공통에 다른 방식 센서를 섞음"],
+              ["센서를 연결하자 전원이 꺼지거나 퓨즈가 끊어짐", "출력선을 전원에 직결(부하 없음) — 결선 다시 확인"],
+            ],
+          },
+        },
+        { h: "멀티미터로 확인" },
+        {
+          ul: [
+            "센서 갈색–파랑 사이: 24V 가까이 나와야 합니다(멀면 전압 강하·전원).",
+            "센서 감지 전·후 입력 단자–COM 사이 전압: 켜질 때 입력 사양의 ON 전압 이상, 꺼질 때 OFF 쪽으로 내려가는지.",
+            "NPN 은 켜질 때 출력선–0V 사이가 0 가까이로, PNP 는 출력선–0V 사이가 24V 가까이로 바뀝니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «배선도 만들기»: NPN/PNP 센서와 PLC 입력 결선을 그림으로 그리고 확인 목록을 붙여 SVG·PNG 로 남깁니다.",
+            "웹 도구 «전압 강하·전선 굵기 계산기»: 멀리 있는 센서의 선 길이·굵기로 센서 쪽 전압을 계산합니다.",
+            "Modbus Master: PLC 가 Modbus 로 입력 상태를 내주면 «02 입력 접점 읽기» 표로 센서를 움직이며 입력이 들어오는지 PC 에서 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "When fitting proximity or photoelectric sensors to PLC inputs, the usual questions are «NPN or PNP?» and «where does COM go?». The answer is to match whether the sensor output «pulls to 0 V (NPN)» or «drives +24 V (PNP)» with the direction the PLC input circuit expects current to flow." },
+        { h: "NPN and PNP outputs" },
+        {
+          table: {
+            plain: true,
+            head: ["", "NPN output (sinks current)", "PNP output (sources current)"],
+            rows: [
+              ["Output wire when on", "Pulled to 0 V", "Pulled to +24 V"],
+              ["Other side of the load (input)", "+24 V", "0 V"],
+              ["PLC input common (COM)", "To +24 V", "To 0 V"],
+              ["Current path", "Input → sensor output → 0 V", "+24 V → sensor output → input → COM (0 V)"],
+            ],
+          },
+        },
+        { p: "So with the input common on +24 V you use NPN sensors, and with it on 0 V you use PNP sensors. Many input modules accept either through the common terminal, but all inputs sharing one common must use the same type. To mix types, use groups with separate commons." },
+        { h: "Be careful with «sink» and «source»" },
+        { p: "«Sink input» and «source input» are used in opposite senses by different manufacturers, depending on whether they describe the input or the sensor. The same word «sink» can mean the NPN-sensor input in one manual and the PNP-sensor input in another. Go by the wiring diagram instead — where COM connects (+24 V or 0 V) and how the sensor is drawn." },
+        { h: "Wire colour conventions" },
+        {
+          table: {
+            plain: true,
+            head: ["Colour", "Usual meaning (3-wire DC)"],
+            rows: [
+              ["Brown (BN)", "+24 V (supply +)"],
+              ["Blue (BU)", "0 V (supply −)"],
+              ["Black (BK)", "Output (usually NO, normally open)"],
+              ["White (WH)", "Second output on 4-wire types (NC, etc.) or other use"],
+            ],
+          },
+        },
+        { p: "These colours are a widespread convention for proximity switches in the IEC 60947-5-2 family, but they vary by maker and product, and connector types are documented by pin number. Always check that sensor's datasheet or label. 2-wire DC sensors usually have only brown and blue, and which one is + is defined per product." },
+        { h: "2-wire sensors and leakage current" },
+        { p: "A 2-wire sensor shares its supply and signal wires, so even while off it passes a small current (leakage or residual current) to keep its own circuit alive. While on, it drops a little voltage inside itself (residual voltage). Two things must therefore line up." },
+        {
+          ul: [
+            "Off: the sensor's leakage current must be below the PLC input's «OFF current» (the current below which the input reads off). If it is higher, the input stays on or flickers when the sensor is off.",
+            "On: 24 V minus the sensor's residual voltage must exceed the input's «ON voltage». Add the drop on a long cable and it may fall short.",
+          ],
+        },
+        { p: "IEC 61131-2 sorts digital inputs into Types 1, 2 and 3, with Type 2 intended to accept 2-wire proximity switches. Put the input module's specification (ON voltage, OFF current, input type) beside the sensor's (leakage current, residual voltage) and compare. If they do not fit, use a 3-wire sensor or the method the manual recommends (such as a bleeder resistor in parallel with the input — value and wattage from the manual)." },
+        { h: "Reading the symptoms" },
+        {
+          table: {
+            plain: true,
+            head: ["Symptom", "Look at"],
+            rows: [
+              ["Sensor LED lights but the PLC input does not", "NPN/PNP does not match the COM direction, COM not connected"],
+              ["Input stays on or flickers with the sensor off", "2-wire leakage above the input OFF current, induced voltage (long run beside power cables)"],
+              ["Only distant sensors sometimes fail to register", "Voltage drop below the ON voltage, loose terminals"],
+              ["After replacing one sensor, a whole group acts up", "Different sensor types mixed on one common"],
+              ["Supply trips or a fuse blows when the sensor is connected", "Output wired straight to the supply (no load) — recheck the wiring"],
+            ],
+          },
+        },
+        { h: "Checking with a multimeter" },
+        {
+          ul: [
+            "Across the sensor's brown and blue: close to 24 V (if not, voltage drop or supply).",
+            "Input terminal to COM, before and after the sensor detects: at least the input's ON voltage when on, falling towards the OFF side when off.",
+            "On an NPN sensor the output-to-0 V voltage goes near 0 when on; on a PNP sensor it goes near 24 V.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Wiring Diagram Maker» web tool: draws NPN/PNP sensor to PLC input wiring with a checklist, as SVG or PNG.",
+            "«Voltage Drop & Wire Size Calculator» web tool: the voltage left at a distant sensor for a given cable length and size.",
+            "Modbus Master: if the PLC exposes its inputs over Modbus, a «02 Read discrete inputs» table shows on the PC whether the input changes as you trigger the sensor.",
+          ],
+        },
+      ],
+    },
+  },
+  // 근거: PLC 매뉴얼의 24 V DC 허용 범위(Siemens·Schneider 20.4~28.8 V, SEW 는 EN 61131-2 −10 %/+20 %), 전압 강하 계산은 24v-voltage-drop 글·site/src/lib 의 계산기.
+  // 돌입 전류·과부하 동작(정전류·hiccup)·차단기 트립은 제조사·기종마다 달라 수치를 싣지 않는다.
+  {
+    slug: "24v-power-supply-check",
+    date: "2026-10-31",
+    tools: ["modbus-master", "plot"],
+    related: ["24v-voltage-drop", "field-noise-communication-errors", "npn-pnp-sensor-plc-input", "4-20ma-loop", "commissioning-communication-checklist"],
+    webTools: ["tools/voltage-drop/", "tools/loop-load/"],
+    title: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 시 전압·0V 공통·퓨즈", en: "Checking a 24 V DC supply — capacity, inrush, voltage under load, 0 V common, fuses" },
+    seoTitle: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 전압·퓨즈 — PortDock", en: "24 V DC Power Supply Checks: Capacity, Inrush, Fuses — PortDock" },
+    desc: {
+      ko: "판넬 24V 전원이 모자라거나 흔들려 장비가 재시작하고 통신 오류처럼 보일 때 — 용량 합계, 돌입 전류, 부하 때 전압 재기, 0V 공통, 퓨즈·서킷 프로텍터 확인 순서.",
+      en: "When a 24 V supply sags, devices restart and it looks like a communication fault — capacity, inrush, voltage under load, the 0 V common, fuses and protectors.",
+    },
+    body: {
+      ko: [
+        { p: "판넬의 24V DC 전원은 PLC·센서·리모트 I/O·통신 장비·밸브를 함께 먹이는 경우가 많습니다. 전원이 모자라거나 순간적으로 처지면 장비가 다시 시작하고, 그동안 응답이 없어 «통신이 끊긴다» 는 모양으로 보입니다. 통신 설정을 고치기 전에 전원을 한 번 점검해 둘 가치가 있습니다." },
+        { h: "1. 용량: 합계와 여유" },
+        { p: "그 전원에 물린 장비의 소비 전류를 매뉴얼에서 모아 더합니다. 센서·I/O 처럼 작은 것도 수가 많으면 커지고, 밸브·릴레이 코일·표시등·팬도 빠뜨리기 쉽습니다. 합계가 전원 정격 전류에 바짝 붙어 있으면 온도가 높을 때나 부하가 겹칠 때 처집니다. 많은 전원은 주위 온도가 높으면 낼 수 있는 전류가 줄어드는(감소 특성) 곡선을 매뉴얼에 적어 두니 판넬 안 온도로 봅니다." },
+        { h: "2. 돌입 전류" },
+        { p: "커패시터가 큰 장비(전원부가 있는 HMI·PC·드라이브 제어 전원)는 켜는 순간, 솔레노이드 밸브·릴레이·모터는 켜지는 순간 평소보다 훨씬 큰 전류를 잠깐 흘립니다. 이 순간에 전원이 과부하 보호(전류 제한·출력 끊었다 다시 켜기)로 들어가거나 전압이 처지면, 같은 전원의 다른 장비가 재시작합니다. 증상은 «밸브가 동작할 때마다» 또는 «전원 켤 때 일부 장비만 안 올라옴» 입니다." },
+        { h: "3. 전압은 부하가 걸린 채로 잰다" },
+        {
+          ul: [
+            "무부하 전압만 보면 대부분 24V 근처로 나옵니다. 설비를 돌리는 상태에서 «전원 단자» 와 «멀리 있는 장비 단자» 두 곳을 재서 비교합니다. 둘의 차이가 배선의 전압 강하입니다.",
+            "장비 쪽 허용 범위는 매뉴얼의 전원 사양에서 봅니다. 많은 PLC 매뉴얼은 24 V DC 입력 허용 범위를 20.4~28.8 V(24 V 의 −15 %~+20 %)로 적지만, 하한을 −10 %(21.6 V)로 적는 제조사도 있으니 그 장비 값을 씁니다.",
+            "멀티미터는 짧은 처짐을 놓칩니다. 최소값 기록(MIN/MAX) 기능이 있으면 켜 두고 밸브·모터를 동작시켜 봅니다. 잔물결(리플)이나 수 ms 처짐은 오실로스코프로 봅니다.",
+            "전원 출력 조정(+V ADJ)으로 전압을 올려 강하를 메우는 것은 임시입니다. 부하 전류가 바뀌면 강하도 바뀌므로 굵기·배치·전원 분리로 풉니다.",
+          ],
+        },
+        { h: "4. 0V 공통" },
+        { p: "+24V 쪽만 신경 쓰고 0V 는 «어디든 이으면 된다» 고 보기 쉽습니다. 여러 장비가 0V 선 하나를 함께 쓰면, 큰 부하의 전류가 그 선에 흘러 전압이 떨어지고 같은 선을 쓰는 다른 장비의 기준이 함께 흔들립니다. 밸브·모터 같은 큰 부하와 PLC·통신 장비는 0V 를 전원 단자에서 따로 뽑는 편이 낫습니다. 0V 를 보호 접지(PE)에 잇는지, 몇 곳에서 잇는지는 판넬 설계 기준을 따르고, 여러 곳에서 이으면 접지 루프가 됩니다." },
+        { h: "5. 퓨즈·서킷 프로텍터" },
+        {
+          ul: [
+            "스위칭 전원은 단락 때 내놓는 전류를 제한하거나 출력을 끊었다 켰다 하므로, 정격이 큰 차단기는 단락이 나도 바로 떨어지지 않을 수 있습니다. 전원 매뉴얼의 과부하 동작과 차단기·퓨즈의 트립 곡선을 함께 봅니다.",
+            "전원 하나에서 가지를 나눠 가지마다 퓨즈나 전자식 서킷 프로텍터를 두면, 한 가지가 단락돼도 다른 장비(특히 PLC·통신)가 살아 있습니다.",
+            "가지 보호기의 정격은 그 가지 부하의 돌입 전류에 떨어지지 않도록 — 돌입 때문에 떨어지면 지연형·설정 가능한 형을 고릅니다.",
+            "트립 기록이 남는 전자식 보호기는 언제 떨어졌는지 알려 주므로 통신 오류 시각과 맞춰 보기 좋습니다.",
+          ],
+        },
+        { h: "6. 전원 문제로 보이는 통신 오류" },
+        {
+          table: {
+            plain: true,
+            head: ["모양", "전원 쪽 원인 후보"],
+            rows: [
+              ["밸브·모터가 켜질 때마다 타임아웃이 몇 초 몰림", "돌입 전류로 처짐 → 장비 재시작"],
+              ["멀리 있는 장비만 부하가 클 때 끊김", "배선 전압 강하, 0V 공유"],
+              ["전원 켤 때 일부 장비가 응답하지 않다가 껐다 켜면 됨", "켜짐 순서·돌입으로 장비가 덜 켜짐"],
+              ["오후·여름에 더 자주", "판넬 온도로 전원 용량 감소"],
+              ["오류 뒤 장비 설정값이 기본값으로 돌아감", "재시작 + 설정을 저장하지 않음(시운전 점검 글)"],
+            ],
+          },
+        },
+        { p: "장비가 재시작했는지는 장비 쪽 «가동 시간»·«전원 켜짐 횟수» 레지스터가 있으면 그 값으로, 없으면 표시부·상태 LED 의 깜빡임으로 봅니다. 재시작이 보이면 통신이 아니라 전원부터입니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «전압 강하·전선 굵기 계산기»: 전류·길이·굵기로 장비 쪽 전압을 계산합니다.",
+            "웹 도구 «4–20mA 루프 부하 계산기»: 같은 24V 로 2선식 전송기를 먹일 때 남는 전압을 계산합니다.",
+            "Modbus Master: 장비의 가동 시간·전압 레지스터(있다면)를 «값 기록(CSV)» 으로 남기고, 타임아웃 시각과 함께 봅니다. 가동 시간이 0 으로 돌아간 시각이 재시작 시각입니다.",
+            "Plot: 전압을 시리얼로 내보내는 측정기·보드가 있으면 그 값을 그래프로 그리고 CSV 로 기록합니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "A panel's 24 V DC supply often feeds the PLC, sensors, remote I/O, communication devices and valves together. When it runs short or dips, devices restart and do not answer meanwhile, which looks like «communication dropping out». Checking the supply once is worth it before touching communication settings." },
+        { h: "1. Capacity: total and headroom" },
+        { p: "Add up the current of everything on that supply from the manuals. Small loads such as sensors and I/O add up in numbers, and valves, relay coils, lamps and fans are easy to forget. A total close to the supply's rated current sags when it is hot or when loads coincide. Many supplies document a derating curve — less available current at higher ambient temperature — so use the temperature inside the panel." },
+        { h: "2. Inrush" },
+        { p: "Devices with large input capacitors (HMIs, PCs, drive control supplies) draw a large current briefly when powered, and solenoid valves, relays and motors do so when switched on. If that pushes the supply into overload protection (current limiting, or switching off and retrying) or makes the voltage sag, other devices on the same supply restart. The symptom is «every time the valve operates» or «some devices do not come up at power-on»." },
+        { h: "3. Measure voltage under load" },
+        {
+          ul: [
+            "No-load voltage almost always reads about 24 V. With the machine running, measure at the «supply terminals» and at the «terminals of a distant device» and compare; the difference is the voltage drop in the wiring.",
+            "Take the device's allowed range from its supply specification. Many PLC manuals give 20.4–28.8 V (24 V −15 % to +20 %) for 24 V DC inputs, but some makers state −10 % (21.6 V) as the lower limit, so use that device's figure.",
+            "A multimeter misses short dips. If it has MIN/MAX recording, turn it on and operate the valves and motors. Ripple and dips of a few milliseconds need an oscilloscope.",
+            "Turning up the supply's output adjust (+V ADJ) to cover the drop is temporary. The drop changes with load current, so fix it with wire size, layout or separate supplies.",
+          ],
+        },
+        { h: "4. The 0 V common" },
+        { p: "It is easy to care about +24 V and treat 0 V as «connect it anywhere». When several devices share one 0 V wire, a large load's current in that wire drops voltage and shifts the reference of everything else on it. Take separate 0 V runs from the supply terminals for large loads (valves, motors) and for the PLC and communication devices. Whether and where 0 V is tied to protective earth (PE) follows the panel's design rules; tying it in several places makes a ground loop." },
+        { h: "5. Fuses and circuit protectors" },
+        {
+          ul: [
+            "Switched-mode supplies limit their short-circuit current or switch off and retry, so a large breaker may not trip promptly on a short. Read the supply's overload behaviour together with the trip curve of the breaker or fuse.",
+            "Split one supply into branches, each with a fuse or electronic circuit protector, so a short on one branch leaves the others (especially PLC and communication) running.",
+            "Size each branch protector so it does not trip on that branch's inrush — if it does, choose a delayed or adjustable type.",
+            "Electronic protectors that log trips tell you when they tripped, which is handy to line up with communication error times.",
+          ],
+        },
+        { h: "6. Communication errors that are really power" },
+        {
+          table: {
+            plain: true,
+            head: ["Pattern", "Possible supply cause"],
+            rows: [
+              ["A few seconds of timeouts each time a valve or motor switches on", "Inrush sag → device restart"],
+              ["Only distant devices drop out under heavy load", "Voltage drop in the wiring, shared 0 V"],
+              ["Some devices do not answer after power-on, fine after a power cycle", "Power-up order or inrush leaves them half started"],
+              ["Worse in the afternoon or in summer", "Supply derating with panel temperature"],
+              ["Device settings revert to defaults after an error", "Restart plus settings never saved (see the commissioning guide)"],
+            ],
+          },
+        },
+        { p: "Whether a device restarted can be read from an «uptime» or «power-on count» register if it has one, or seen from its display and status LEDs. If it restarted, look at power before communication." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Voltage Drop & Wire Size Calculator» web tool: voltage at the device from current, length and wire size.",
+            "«4–20 mA Loop Load Calculator» web tool: voltage left for 2-wire transmitters fed from the same 24 V.",
+            "Modbus Master: log a device's uptime or voltage registers (if any) with «Value log (CSV)» next to the timeout times. The moment uptime goes back to 0 is when it restarted.",
+            "Plot: if a meter or board streams the voltage over serial, graph it and record CSV.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "Schneider Electric — Modicon M262 DC power supply characteristics", url: "https://product-help.schneider-electric.com/Machine%20Expert/V2.1/en/m262hw/m262hw/D-SE-0069641.html", note: { ko: "전원 전압 범위 20.4~28.8 Vdc", en: "supply voltage range 20.4–28.8 Vdc" } },
+      { title: "SEW-EURODRIVE — DC 24 V supply", url: "https://download.sew-eurodrive.com/download/html/31967183/en-EN/38301733899.html", note: { ko: "EN 61131-2 에 따른 −10 %/+20 % 허용 범위", en: "−10 %/+20 % tolerance according to EN 61131-2" } },
+    ],
+  },
+  // 근거: TI SLLA070D(수신기 ±200 mV, 공통 모드 −7~+12 V), MODBUS over serial line V1.02 §3.4(종단 150 Ω 또는 1 nF + 120 Ω, 바이어스 5 V·450~650 Ω, D1 이 쉬는 동안 양),
+  // 계산: 종단 120 Ω 둘 병렬 60 Ω, 셋 40 Ω; 5 V·560 Ω 바이어스 + 60 Ω → 4.24 mA, A ≈ 2.37 V·B ≈ 2.63 V·B − A ≈ 254 mV(rs485-bias-termination 글과 같은 계산).
+  // 사이트 «멀티미터 측정값 점검기»(tools/multimeter-check/)는 다른 작업에서 만드는 중이라 본문 글로만 적는다(webTools 에 넣지 않음).
+  {
+    slug: "rs485-multimeter-check",
+    date: "2026-10-31",
+    tools: ["serial", "modbus-master", "port-inspector"],
+    related: ["rs485-wiring", "rs485-bias-termination", "cable-shield-grounding", "field-noise-communication-errors", "commissioning-communication-checklist"],
+    webTools: ["tools/rs485/", "tools/wiring/"],
+    title: { ko: "멀티미터로 RS-485 버스 점검하기 — 종단 저항·바이어스 전압·공통 모드·A/B 바뀜", en: "Checking an RS-485 bus with a multimeter — termination, bias voltage, common mode, swapped A/B" },
+    seoTitle: { ko: "멀티미터로 RS-485 점검 — 60Ω 종단·바이어스 전압·A/B — PortDock", en: "Testing RS-485 with a Multimeter: 60 Ω, Bias, A/B — PortDock" },
+    desc: {
+      ko: "오실로스코프 없이 멀티미터 하나로 RS-485 버스를 보는 순서 — 전원 끄고 A–B 저항으로 종단 수, 켜고 쉬는 동안 A–B 전압으로 바이어스, 선마다 SG 대비 전압, A/B 바뀜.",
+      en: "An RS-485 bus with just a multimeter: A–B resistance (power off) for terminators, idle voltage for bias, each line against SG, and swapped A/B.",
+    },
+    body: {
+      ko: [
+        { p: "RS-485 문제를 가장 잘 보여 주는 것은 오실로스코프지만, 현장에서 늘 손에 있는 것은 멀티미터입니다. 멀티미터로는 파형을 못 보지만 «종단이 몇 개 달렸는지», «바이어스가 걸려 있는지», «한 선이 땅에 붙지 않았는지», «A/B 가 바뀐 장비가 있는지» 는 꽤 정확히 가릴 수 있습니다. 이름 표기는 Modbus 기준으로 A = D0, B = D1 로 씁니다 — 장비마다 A/B 이름이 반대인 경우가 있으니 매뉴얼의 D+/D− 표기도 함께 봅니다." },
+        { h: "1. 전원 끄고: A–B 저항으로 종단 수 세기" },
+        { p: "버스의 모든 장비 전원을 끄고(마스터·변환기 포함), 아무 장비 단자에서 A–B 사이 저항을 잽니다. 저항 측정은 반드시 전원이 꺼진 상태에서 합니다." },
+        {
+          table: {
+            head: ["읽은 값(대략)", "뜻"],
+            rows: [
+              ["약 60 Ω", "120 Ω 종단 두 개(양 끝) — 맞음"],
+              ["약 120 Ω", "종단 하나뿐 — 한쪽 끝이 빠짐"],
+              ["약 40 Ω 이하", "종단 셋 이상 — 중간 장비에도 켜져 있음"],
+              ["수 kΩ 이상", "종단 없음(송수신기 입력 저항만 보임)"],
+              ["0 Ω 근처", "A–B 단락 — 배선·단자 확인"],
+              ["약 75 Ω", "150 Ω 종단 두 개(Modbus 규격의 150 Ω 를 쓴 경우)"],
+            ],
+          },
+        },
+        { p: "종단을 1 nF + 120 Ω(커패시터 직렬)로 단 버스는 직류 저항계로는 종단이 안 보입니다. 바이어스 저항이 있는 장비가 버스에 있으면 그 경로 때문에 값이 조금 낮게 나올 수 있습니다. 판단이 애매하면 장비를 하나씩 떼며 값이 어떻게 바뀌는지 봅니다." },
+        { h: "2. 전원 끄고: 단락·끊김" },
+        {
+          ul: [
+            "A–SG, B–SG 저항이 0 Ω 가까이면 선이 공통이나 실드에 붙어 있습니다.",
+            "A–실드, B–실드, SG–실드도 같은 방법으로 봅니다.",
+            "선이 끝까지 이어졌는지: 장비를 떼고 먼 끝에서 A 와 B 를 잠깐 묶은 뒤, 가까운 끝에서 A–B 저항을 재면 선 왕복 저항(작은 값)이 나와야 합니다. 묶음을 풀면 다시 크게 나와야 합니다. SG 도 같은 방법으로 봅니다.",
+          ],
+        },
+        { h: "3. 전원 켜고, 아무도 보내지 않을 때: 바이어스" },
+        { p: "마스터의 폴링을 멈추고(아무도 보내지 않는 상태), 직류 전압으로 B − A(검정 리드를 A, 빨강 리드를 B)를 잽니다. 바이어스가 있으면 쉬는 동안 B 가 A 보다 높아야 하고, 수신기 문턱 200 mV 보다 커야 쓰레기 바이트가 들어오지 않습니다." },
+        {
+          table: {
+            head: ["B − A (쉬는 동안)", "뜻"],
+            rows: [
+              ["+0.2 V 이상", "바이어스가 걸려 있음"],
+              ["0 ~ +0.2 V", "바이어스 없음 또는 약함 — 계산기로 값 확인"],
+              ["음수(−0.2 V 이하)", "이 장비의 A/B 이름이 반대이거나 배선이 바뀜"],
+              ["1 V 이상 크게", "종단이 빠졌거나 누군가 계속 송신 중"],
+            ],
+          },
+        },
+        { p: "예를 들어 5 V 에 560 Ω 풀업·풀다운, 양 끝 120 Ω 종단이면 쉬는 동안 B − A 는 약 0.25 V 입니다(5 V × 60 Ω ÷ 1180 Ω). 같은 측정을 각 장비 단자에서 해 보면, 한 장비만 부호가 반대일 때 그 장비의 A/B 가 바뀐 것입니다." },
+        { h: "4. 전원 켜고: 선마다 SG 대비 전압(공통 모드)" },
+        { p: "검정 리드를 그 장비의 SG(공통)에 두고 A 와 B 를 각각 잽니다. 위 예라면 A 는 약 2.37 V, B 는 약 2.63 V 로 둘 다 전원의 절반 근처입니다. 표준 송수신기는 각 선이 자기 접지 기준 −7 V ~ +12 V 안에 있어야 합니다. 먼 장비에서 이 값이 크게 벗어나거나, 장비마다 크게 다르면 SG 가 이어지지 않았거나 접지 전위차가 큰 것입니다. 교류 전압 범위로도 재 보아, 설비가 돌 때 큰 교류가 실려 있는지 봅니다." },
+        { h: "5. 통신 중일 때 읽는 법" },
+        { p: "폴링 중에 직류 전압을 재면 데이터의 평균이 보여 값이 쉬는 때보다 작아지고 흔들립니다. 이것은 «무언가 보내고 있다» 는 표시일 뿐, 신호 품질은 알 수 없습니다. 전압은 반드시 쉬는 상태에서 재고, 파형·반사·잡음은 오실로스코프로 봅니다." },
+        { h: "6. 측정값 정리" },
+        { p: "장비마다 «A–B 저항(전원 끔)», «B − A(쉼)», «A–SG·B–SG(쉼)» 를 한 줄씩 적어 두면, 어느 장비에서 값이 달라지는지가 한눈에 보입니다. PortDock 사이트에 측정값을 넣어 판정을 보는 «멀티미터 측정값 점검기»(/tools/multimeter-check/)를 준비하고 있습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "웹 도구 «RS-485 종단·바이어스 계산기»: 풀업·풀다운·종단 값으로 쉬는 동안의 B − A 가 얼마여야 하는지 계산해, 잰 값과 비교합니다.",
+            "웹 도구 «배선도 만들기»: 측정한 버스를 장비 수·국번에 맞춰 그리고 종단 위치를 표시해 둡니다.",
+            "Modbus Master: «모든 폴링 멈춤» 으로 쉬는 상태를 만든 뒤 재고, 다시 켜서 오류 수가 바뀌는지 봅니다.",
+            "Serial: 쉬는 상태에서 수신만 켜 두면, 바이어스가 약할 때 들어오는 쓰레기 바이트가 보입니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "An oscilloscope shows RS-485 problems best, but on site the tool in hand is usually a multimeter. It cannot show waveforms, but it tells you quite reliably «how many terminators there are», «whether the bus is biased», «whether a line is shorted to ground» and «whether a device has A/B swapped». Names here follow Modbus, A = D0 and B = D1 — some devices label A and B the other way round, so check the D+/D− marking in the manual too." },
+        { h: "1. Power off: count terminators with A–B resistance" },
+        { p: "Turn off every device on the bus (master and adapter included) and measure the resistance between A and B at any device's terminals. Only ever measure resistance with the power off." },
+        {
+          table: {
+            head: ["Reading (approx.)", "Meaning"],
+            rows: [
+              ["About 60 Ω", "Two 120 Ω terminators (both ends) — as it should be"],
+              ["About 120 Ω", "Only one terminator — one end missing"],
+              ["About 40 Ω or less", "Three or more — middle devices are terminated too"],
+              ["Several kΩ or more", "No termination (only transceiver inputs)"],
+              ["Near 0 Ω", "A–B short — check wiring and terminals"],
+              ["About 75 Ω", "Two 150 Ω terminators (the Modbus spec's 150 Ω)"],
+            ],
+          },
+        },
+        { p: "Terminators built as 1 nF in series with 120 Ω are invisible to a DC ohmmeter. A device with bias resistors on the bus can make the reading slightly lower through that path. If in doubt, disconnect devices one at a time and watch how the value changes." },
+        { h: "2. Power off: shorts and breaks" },
+        {
+          ul: [
+            "A–SG or B–SG near 0 Ω means a line is touching the common or the shield.",
+            "Check A–shield, B–shield and SG–shield the same way.",
+            "Continuity: with devices disconnected, briefly tie A and B together at the far end and measure A–B at the near end — you should see the cable's loop resistance (a small value). Untie them and it should read high again. Check SG the same way.",
+          ],
+        },
+        { h: "3. Power on, nobody sending: bias" },
+        { p: "Stop the master's polling so nobody transmits, and measure B − A on DC volts (black lead on A, red lead on B). With bias, B must sit above A while idle, by more than the receivers' 200 mV threshold, or garbage bytes come in." },
+        {
+          table: {
+            head: ["B − A (idle)", "Meaning"],
+            rows: [
+              ["+0.2 V or more", "The bus is biased"],
+              ["0 to +0.2 V", "No or weak bias — check values with the calculator"],
+              ["Negative (−0.2 V or below)", "This device labels A/B the other way, or the wires are swapped"],
+              ["Well above 1 V", "Termination missing, or someone is transmitting continuously"],
+            ],
+          },
+        },
+        { p: "For example, with 560 Ω pull-up and pull-down from 5 V and 120 Ω at both ends, idle B − A is about 0.25 V (5 V × 60 Ω ÷ 1180 Ω). Repeat the measurement at each device's terminals: if one device alone shows the opposite sign, its A/B is swapped." },
+        { h: "4. Power on: each line against SG (common mode)" },
+        { p: "Put the black lead on that device's SG (common) and measure A and B separately. In the example above A is about 2.37 V and B about 2.63 V, both near half the supply. Standard transceivers need each line within −7 V to +12 V of their own ground. If a distant device reads far outside that, or devices differ a lot, SG is not connected or the ground potential difference is large. Measure on AC volts as well to see whether a large AC voltage rides on the lines while machines run." },
+        { h: "5. Readings during traffic" },
+        { p: "Measure DC volts while polling and you see the average of the data, smaller than at idle and jumping about. That only shows «something is transmitting»; it says nothing about signal quality. Take voltages at idle, and use an oscilloscope for waveforms, reflections and noise." },
+        { h: "6. Keep the readings" },
+        { p: "Write one line per device — «A–B resistance (power off)», «B − A (idle)», «A–SG and B–SG (idle)» — and the device where values change stands out. A «multimeter reading checker» that judges entered readings (/en/tools/multimeter-check/) is being prepared for the PortDock site." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«RS-485 Termination & Bias Calculator» web tool: works out what idle B − A should be for your pull-up, pull-down and terminators, to compare with your reading.",
+            "«Wiring Diagram Maker» web tool: draw the measured bus for your device count and IDs and mark where the terminators are.",
+            "Modbus Master: use «Pause all polling» to get an idle bus for measuring, then resume and see whether the error counts change.",
+            "Serial: leave reception on at idle to see the garbage bytes that weak bias lets in.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA070D — RS-422 and RS-485 Standards Overview and System Configurations", url: "https://www.ti.com/lit/an/slla070d/slla070d.pdf", note: { ko: "수신기 ±200 mV, 공통 모드 −7 V ~ +12 V, 종단", en: "receiver ±200 mV, common mode −7 V to +12 V, termination" } },
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§3.4 — D0·D1 이름, 종단 150 Ω 또는 1 nF + 120 Ω, 바이어스 450~650 Ω", en: "§3.4 — D0/D1 naming, 150 Ω or 1 nF + 120 Ω termination, 450–650 Ω biasing" } },
+    ],
+  },
+  // 근거: MODBUS over serial line V1.02(국번 1~247, 0 은 브로드캐스트, 3.5문자 쉼), apps/modbus-master/src/help.ts(국번 찾기 — 기다림 기본 200ms × 국번 수, 통계·값 기록·설정 내보내기),
+  // 기존 가이드(rs485-wiring·vfd-modbus-setup·modbus-rtu-timeout-polling)의 순서. 웹 도구는 site/src/data/webTools.ts(wiring·system-diagram).
+  {
+    slug: "commissioning-communication-checklist",
+    date: "2026-10-31",
+    tools: ["modbus-master", "serial", "port-inspector", "plot"],
+    related: ["rs485-wiring", "rs485-multimeter-check", "vfd-modbus-setup", "modbus-no-response", "modbus-rtu-timeout-polling", "24v-power-supply-check"],
+    webTools: ["tools/wiring/", "tools/system-diagram/", "tools/serial-timing/", "tools/modbus/"],
+    title: { ko: "장비 시운전 통신 점검 순서 — 배선·전원·통신 설정 저장·한 대씩·버스 전체·폴링·백업", en: "Commissioning communication step by step — wiring, power, saved settings, one device, the whole bus, polling" },
+    seoTitle: { ko: "시운전 통신 점검 순서 (RS-485·Modbus) — PortDock", en: "RS-485 / Modbus Commissioning Checklist — PortDock" },
+    desc: {
+      ko: "새 설비의 RS-485·Modbus 통신을 처음 살리는 순서 — 배선, 전원, 국번·보율·패리티 저장, PC 에서 한 대씩, 버스 전체, 폴링·타임아웃, 기록·백업.",
+      en: "Bringing up RS-485 / Modbus on a new machine: wiring, power, saved ID and baud, one device from a PC, the whole bus, polling and timeouts, backups.",
+    },
+    body: {
+      ko: [
+        { p: "시운전에서 통신이 안 될 때 가장 시간을 잡아먹는 것은 «여러 가지가 동시에 틀린» 상태입니다. 배선·설정·프로그램을 한꺼번에 의심하면 어디서부터 볼지 모릅니다. 아래 순서는 아래층(선)부터 위층(프로그램)으로 하나씩 확정해 올라가, 문제가 생겨도 바로 앞 단계만 보면 되게 만드는 것입니다." },
+        { h: "0. 시작 전에: 구성도와 표" },
+        { p: "장비 목록 표를 먼저 만듭니다 — 장비 이름, 위치, 국번, 보율, 패리티·정지 비트, 버스(포트), 종단 유무, 매뉴얼 쪽 번호. 같은 버스에 국번이 겹치지 않는지, 모든 장비의 보율·패리티가 같은지를 표에서 먼저 봅니다. 구성도는 이 표를 그림으로 옮긴 것입니다." },
+        { h: "1. 배선 확인(전원 끈 채)" },
+        {
+          ul: [
+            "데이지 체인인지(별 모양·긴 가지선 없음), 종단이 양 끝 두 곳에만 있는지.",
+            "A/B(D0/D1)가 장비마다 같은 이름끼리, SG 가 모든 장비에 이어졌는지, 실드 접지 위치.",
+            "멀티미터로 A–B 저항(종단 둘이면 약 60 Ω), A·B 와 SG·실드 사이 단락 없음.",
+            "동력선과 같은 덕트를 지나지 않는지.",
+          ],
+        },
+        { h: "2. 전원" },
+        {
+          ul: [
+            "장비마다 전원 단자 전압이 매뉴얼 허용 범위 안인지 — 설비 부하가 걸린 상태에서도.",
+            "통신 장비와 밸브·모터가 같은 24 V 를 쓰면 0V 를 나눠 뽑았는지.",
+            "켜고 나서 장비 표시부·상태 LED 가 매뉴얼의 «대기» 상태인지.",
+          ],
+        },
+        { h: "3. 장비 통신 설정 — 그리고 저장" },
+        { p: "각 장비의 프로토콜(Modbus RTU 선택이 따로 있는 장비가 많음), 국번, 보율, 패리티·정지 비트를 표대로 맞춥니다. 장비에 따라 통신 설정은 «저장(쓰기)» 을 따로 하거나 전원을 껐다 켜야 적용됩니다. 저장하지 않으면 정전·재시작 뒤 기본값으로 돌아가 «어제는 됐는데 오늘 안 됨» 이 됩니다. 설정 후 한 번 전원을 껐다 켜서 값이 남았는지 확인합니다. Modbus 국번은 1~247 이고 0 은 브로드캐스트(응답 없음)입니다." },
+        { h: "4. PC 에서 한 대씩" },
+        {
+          ul: [
+            "버스에서 장비 한 대만 남기거나, 짧은 선으로 장비 한 대에 PC 를 직접 붙입니다.",
+            "PC 쪽 COM 포트 번호·변환기 드라이버를 먼저 확인합니다. 변환기에 바이어스·종단 스위치가 있으면 설정을 적어 둡니다.",
+            "알고 있는 국번·보율로 레지스터 하나를 읽습니다. 응답이 없으면 «국번 찾기» 로 이 보율에서 답하는 국번을 찾습니다. 그래도 없으면 보율·패리티를 바꿔 다시 찾고, 마지막으로 A/B 를 바꿔 봅니다.",
+            "읽은 값이 매뉴얼 단위·배율과 맞는지(예: 0.1 Hz 단위) 확인합니다. 쓰기가 필요하면 위험하지 않은 레지스터 하나로 먼저 시험합니다.",
+          ],
+        },
+        { h: "5. 버스 전체" },
+        {
+          ul: [
+            "장비를 한 대씩 버스에 더하며 매번 전체를 다시 읽습니다. 어느 장비를 붙일 때부터 오류가 나는지가 단서입니다.",
+            "다 붙인 뒤 «국번 찾기» 로 표에 있는 국번이 모두 답하고, 표에 없는 국번이 답하지 않는지 봅니다(국번 중복이면 CRC 오류·이상한 값).",
+            "같은 버스에 마스터가 둘 이상(PC 와 HMI 등)이 아닌지 — 시운전 PC 는 시험이 끝나면 떼어 냅니다.",
+          ],
+        },
+        { h: "6. 폴링 주기·타임아웃" },
+        {
+          ul: [
+            "한 번 읽는 데 걸리는 시간(요청 + 응답 전송 + 장비 처리 + 쉼) × 장비 수가 원하는 갱신 주기보다 충분히 짧아야 합니다. 보율·바이트 수로 전송 시간을 계산합니다.",
+            "타임아웃은 가장 느린 장비의 응답 시간보다 여유 있게, 요청 간격은 연달아 오는 요청을 놓치는 장비가 있으면 늘립니다.",
+            "설비를 실제로 돌리면서 한동안 폴링해 요청 수 대비 타임아웃·CRC 오류 수를 봅니다. 0 이 아니면 그 장비와 시각부터 봅니다.",
+          ],
+        },
+        { h: "7. 기록·백업" },
+        {
+          ul: [
+            "최종 장비 표(국번·보율·패리티·종단 위치·바이어스 위치)와 구성도를 판넬 도면과 함께 남깁니다.",
+            "장비 파라미터는 장비 제조사 방법(로더 소프트웨어·키패드 복사 등)으로 백업합니다.",
+            "통신 점검에 쓴 설정(포트·표·레지스터)과 마지막 시험의 통계·기록 파일을 함께 둡니다. 나중에 «시운전 때는 오류가 몇 개였나» 를 비교할 기준이 됩니다.",
+          ],
+        },
+        { h: "PortDock 도구로 각 단계" },
+        {
+          table: {
+            plain: true,
+            head: ["단계", "도구"],
+            rows: [
+              ["0. 구성도", "웹 도구 «시스템 구성도 그리기» — PC·PLC·HMI·인버터를 놓고 RS-485 버스로 잇기, 국번·IP 중복 점검, JSON·SVG·PNG"],
+              ["1. 배선", "웹 도구 «배선도 만들기» — 장비 수·국번에 맞춘 RS-485 배선도와 확인 목록"],
+              ["4. PC 쪽 포트", "Port Inspector — COM 포트·변환기 드라이버·설정을 읽기 전용으로 확인"],
+              ["4. 한 대씩", "Modbus Master «국번·주소 찾기…» 의 «국번 찾기»(국번마다 한 칸 읽기, 기다림 기본 200ms × 국번 수), 표 읽기·쓰기"],
+              ["4. 바이트 보기", "Serial — 요청·응답 바이트를 HEX 로, 쓰레기 바이트·에코 확인"],
+              ["6. 폴링", "웹 도구 «시리얼 통신 시간 계산기» — 보율·바이트 수로 한 번 읽는 시간; Modbus Master 표마다 통계(요청·타임아웃·CRC·응답 시간)"],
+              ["6. 값 흐름", "Modbus Master «값 기록(CSV)»·추세, 장비가 값을 직접 내보내면 Plot 으로 그래프·CSV"],
+              ["7. 백업", "Modbus Master «설정 내보내기» — 연결·표·칸 이름을 JSON 으로"],
+            ],
+          },
+        },
+      ],
+      en: [
+        { p: "What eats the most time during commissioning is «several things wrong at once». Suspect wiring, settings and software together and you do not know where to start. The order below settles one layer at a time, from the wire up to the program, so that when something fails you only need to look at the step just before it." },
+        { h: "0. Before you start: diagram and device table" },
+        { p: "Make the device table first — name, location, ID, baud rate, parity and stop bits, bus (port), terminated or not, manual page. Check in the table that no two devices on a bus share an ID and that every device has the same baud and parity. The system diagram is this table drawn as a picture." },
+        { h: "1. Wiring (power off)" },
+        {
+          ul: [
+            "Daisy chain (no star, no long stubs), terminators at the two ends only.",
+            "A/B (D0/D1) to the same names at every device, SG connected to every device, where the shield is grounded.",
+            "A–B resistance with a multimeter (about 60 Ω with two terminators), no shorts from A or B to SG or shield.",
+            "Not sharing a duct with power cables.",
+          ],
+        },
+        { h: "2. Power" },
+        {
+          ul: [
+            "Each device's supply voltage within the manual's range — with the machine's loads running too.",
+            "If communication devices share the 24 V with valves and motors, separate 0 V runs.",
+            "After power-on, each device's display or status LEDs show the «ready» state described in its manual.",
+          ],
+        },
+        { h: "3. Device communication settings — and save them" },
+        { p: "Set each device's protocol (many devices have a separate Modbus RTU selection), ID, baud rate, parity and stop bits as in the table. Depending on the device, communication settings need a separate «save (write)» or a power cycle to take effect. Unsaved settings revert after a power cut or restart — «it worked yesterday, not today». After setting, cycle the power once and confirm the values stayed. Modbus IDs are 1–247; 0 is broadcast (no reply)." },
+        { h: "4. One device from a PC" },
+        {
+          ul: [
+            "Leave only one device on the bus, or connect the PC straight to one device with a short cable.",
+            "Check the PC's COM port number and the adapter driver first. If the adapter has bias or termination switches, note how they are set.",
+            "Read one register with the known ID and baud. If nothing answers, use «Slave ID scan» to find which IDs answer at this baud. If still nothing, change baud and parity and scan again, and finally swap A/B.",
+            "Check that the value read matches the manual's unit and scale (e.g. 0.1 Hz units). If you need to write, try one harmless register first.",
+          ],
+        },
+        { h: "5. The whole bus" },
+        {
+          ul: [
+            "Add devices to the bus one at a time and read everything again each time. The device at which errors start is the clue.",
+            "With everything connected, run «Slave ID scan» and check that every ID in the table answers and no ID outside it does (duplicate IDs give CRC errors and strange values).",
+            "Make sure there is only one master on the bus (not a PC and an HMI together) — remove the commissioning PC when testing is done.",
+          ],
+        },
+        { h: "6. Polling interval and timeouts" },
+        {
+          ul: [
+            "The time for one read (request + reply transfer + device processing + gaps) × the number of devices must be well below the update interval you want. Compute the transfer time from baud rate and byte counts.",
+            "Set the timeout comfortably above the slowest device's response time; lengthen the delay between requests if a device misses back-to-back requests.",
+            "Poll for a while with the machine actually running and look at timeouts and CRC errors per request. If they are not zero, start from that device and those times.",
+          ],
+        },
+        { h: "7. Records and backup" },
+        {
+          ul: [
+            "Keep the final device table (ID, baud, parity, terminator and bias locations) and the system diagram with the panel drawings.",
+            "Back up device parameters the manufacturer's way (configuration software, keypad copy, etc.).",
+            "Keep the settings used for the communication check (ports, tables, registers) and the statistics and log files of the final test. They become the baseline for «how many errors did we have at commissioning?» later.",
+          ],
+        },
+        { h: "PortDock tools for each step" },
+        {
+          table: {
+            plain: true,
+            head: ["Step", "Tool"],
+            rows: [
+              ["0. Diagram", "«System Diagram Editor» web tool — place PCs, PLCs, HMIs and drives, connect RS-485 buses, check duplicate IDs and IPs; JSON, SVG, PNG"],
+              ["1. Wiring", "«Wiring Diagram Maker» web tool — RS-485 wiring for your device count and IDs, with a checklist"],
+              ["4. PC-side port", "Port Inspector — COM ports, adapter drivers and settings, read-only"],
+              ["4. One device", "Modbus Master «Scan…» → «Slave ID scan» (reads one register per ID; wait 200 ms by default × number of IDs), table reads and writes"],
+              ["4. Raw bytes", "Serial — request and reply bytes in HEX, garbage bytes and echo"],
+              ["6. Polling", "«Serial Timing Calculator» web tool — time per read from baud and bytes; Modbus Master per-table statistics (requests, timeouts, CRC, response time)"],
+              ["6. Values over time", "Modbus Master «Value log (CSV)» and trend; Plot for graphs and CSV when a device streams values itself"],
+              ["7. Backup", "Modbus Master «Export settings» — connection, tables and cell names as JSON"],
+            ],
+          },
+        },
+      ],
+    },
+    refs: [
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "국번 1~247·0 브로드캐스트, 3.5문자 쉼, RS-485 배선(§3.4)", en: "addresses 1–247 and 0 broadcast, 3.5-character gap, RS-485 wiring (§3.4)" } },
     ],
   },
 ];
