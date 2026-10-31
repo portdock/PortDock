@@ -112,6 +112,9 @@
 | rs485 장비 추가·증설, 이더넷 장비 증설 ip 충돌, 장비 교체 설정 백업, 장비 철거 종단 | 가이드 `rs485-add-device`·`ethernet-add-device`·`device-replacement-settings`·`remove-device-from-bus` | «RS-485 버스에 장비 증설하기», «이더넷(Modbus TCP·PLC) 장비 증설하기», «장비 교체할 때 설정 옮기기», «통신 장비를 뺄 때» |
 | 통신 장애 기록·유지보수 일지 양식 | 가이드 `communication-fault-log` | «통신 장애 기록 남기기·유지보수 일지» |
 | 모드버스 게이트웨이 pc, modbus tcp rtu 게이트웨이 프로그램 | 가이드 `modbus-tcp-rtu-gateway-pc` ↔ `/tools/modbus-rtu-tcp/` | «PC 를 Modbus TCP ↔ RTU 게이트웨이로 쓰기» — 설명문에 «(0.10.0 부터)» |
+| modbus 보안, 산업 프로토콜 인증 없음, 설비망 사무망 분리, 0.0.0.0 의미 | 가이드 `industrial-protocol-no-authentication` ↔ `/safety/` | «Modbus·MC·XGT 에는 인증이 없다» — 일반 원칙·공개 출처(CISA·NIST), «보안 제품 아님» |
+| 현장 pc 원격 데스크톱 smbv1 점검, 자동 로그온 위험, 장비 pc 보안 점검 | 가이드 `field-pc-exposure-check` | «현장 PC 노출 점검 결과 읽는 법» — 설명문에 «(0.10.0 부터)» |
+| portdock 안전, portdock 안전한가 | `/safety/` | «안전 원칙» — 읽기 전용·기본 주소·쓰기 확인·MCP 제한 |
 | ls xgt 전용 프로토콜, fenet 2004, xgt 프레임 해석, plc 없이 xgt 시험 | `/tools/xgt-decoder/` + 가이드 `xgt-protocol-test-without-plc` | «LS XGT 전용 프로토콜(FEnet) 프레임 해석기», «PLC 없이 LS XGT 전용 프로토콜 통신 시험하기» — 앱 기능에만 «(0.10.0 부터)» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
@@ -230,6 +233,9 @@
 | commissioning communication checklist, vfd modbus commissioning | guide `commissioning-communication-checklist` ↔ `/en/tools/commissioning-checklist/` | «Commissioning communication step by step» |
 | preventive maintenance communication, rs485 adding a device, ethernet device ip conflict, replacing a modbus device settings, removing a device rs485 termination, maintenance log template | guides `communication-preventive-maintenance`, `rs485-add-device`, `ethernet-add-device`, `device-replacement-settings`, `remove-device-from-bus`, `communication-fault-log` | each guide's title |
 | modbus gateway software pc, modbus tcp to rtu gateway windows | guide `modbus-tcp-rtu-gateway-pc` ↔ `/en/tools/modbus-rtu-tcp/` | «Using a PC as a Modbus TCP ↔ RTU gateway» — description says «from 0.10.0» |
+| modbus security no authentication, ot network segmentation basics, 0.0.0.0 bind meaning | guide `industrial-protocol-no-authentication` ↔ `/en/safety/` | «Modbus, MC and XGT have no authentication» — general principles, public sources (CISA, NIST), «not a security product» |
+| field pc exposure check, smbv1 remote desktop check, autologon plain text password | guide `field-pc-exposure-check` | «Reading a field PC exposure check» — description says «from 0.10.0» |
+| is portdock safe | `/en/safety/` | «Safety principles» |
 | ls xgt dedicated protocol, fenet port 2004, xgt frame decoder, test xgt without plc | `/en/tools/xgt-decoder/` + guide `xgt-protocol-test-without-plc` | «LS XGT Dedicated Protocol (FEnet) Frame Decoder» — «from 0.10.0» only on the app feature |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |

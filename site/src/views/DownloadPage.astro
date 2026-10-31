@@ -135,7 +135,7 @@ const MCP = TOOLS.filter((x) => !isApp(x));
           : " (latest release): find the line with the same file name and compare the 64 characters before it. Case does not matter; if any character differs, delete the file and download it again from GitHub Releases."}
       </p>
       <pre class="result">{ko ? "SHA256SUMS.txt 의 줄 모양: <64자 값>  <파일 이름>" : "Each line in SHA256SUMS.txt: <64-character hash>  <file name>"}</pre>
-      <p><a href={url(lang, "code-signing/")}>{t.codeSigning} →</a></p>
+      <p><a href={url(lang, "code-signing/")}>{t.codeSigning} →</a> · <a href={url(lang, "safety/")}>{t.safety} →</a></p>
       <h2>{ko ? "필요한 것" : "Requirements"}</h2>
       <ul>
         <li>{ko ? "윈도우 10 또는 11, 64비트" : "Windows 10 or 11, 64-bit"}</li>

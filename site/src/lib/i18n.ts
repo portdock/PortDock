@@ -25,6 +25,7 @@ export const UI = {
     terms: "이용 안내",
     // SignPath 조건: 홈·내려받기 페이지에 «Code signing policy» 라는 말이 보여야 한다
     codeSigning: "코드 서명 정책 (Code signing policy)",
+    safety: "안전 원칙",
     sponsor: "후원",
     license: "라이선스",
     source: "소스 코드",
@@ -88,6 +89,7 @@ export const UI = {
     privacy: "Privacy",
     terms: "Terms of use",
     codeSigning: "Code signing policy",
+    safety: "Safety principles",
     sponsor: "Sponsor",
     license: "License",
     source: "Source code",
