@@ -34,10 +34,10 @@ export const ROWS: Row[] = [
 
 export const rowOf = (c: Circuit) => ROWS.find((r) => r.id === c)!;
 
-/** 공칭 전압(V)과 SELV·PELV 여부 → 줄 */
-export function circuitFor(nominalV: number, selvPelv: boolean): Circuit | null {
+/** 공칭 전압(V)·SELV·PELV 여부·직류 여부 → 줄. 특별저압 한계는 교류 50 V·직류 120 V(IEC 60364, ELV) */
+export function circuitFor(nominalV: number, selvPelv: boolean, dc = false): Circuit | null {
   if (!Number.isFinite(nominalV) || nominalV <= 0 || nominalV > 1000) return null;
-  if (selvPelv) return nominalV <= 120 ? "selv" : null;
+  if (selvPelv) return nominalV <= (dc ? 120 : 50) ? "selv" : null;
   return nominalV <= 500 ? "le500" : "gt500";
 }
 

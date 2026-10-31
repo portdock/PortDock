@@ -722,7 +722,7 @@ export const TREE: TreeData = {
       causes: [
         { ko: "입력 범위 설정이 다름(0–20 mA·1–5 V·0–10 V 로 설정)", en: "Input range set differently (0–20 mA, 1–5 V, 0–10 V)" },
         { ko: "다른 채널을 보고 있음, 스케일 설정이 0", en: "Looking at another channel, or scaling set to 0" },
-        { ko: "3.6~3.8 mA 근처면 트랜스미터가 고장 신호를 내는 중", en: "Around 3.6–3.8 mA the transmitter is signalling a fault" },
+        { ko: "3.6 mA 이하면 트랜스미터가 NE 43 고장 신호를 내는 중(3.6~3.8 mA 는 측정 범위 아래쪽 넘침 — 고장 신호는 아님)", en: "At 3.6 mA or below the transmitter is signalling an NE 43 fault (3.6–3.8 mA is under-range, not a fault signal)" },
       ],
       checks: [
         { ko: "잰 mA 를 멀티미터 점검기에 넣어 %·NE 43 구간 보기", en: "Enter the measured mA in the multimeter checker for % and the NE 43 zone" },

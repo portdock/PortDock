@@ -20,10 +20,11 @@ const L = ko
   ? {
       h1: "절연 저항 판정",
       desc: "회로 전압(SELV·PELV, 500 V 이하, 500 V 초과)과 측정 전압·잰 값(MΩ)을 넣으면 전기설비기술기준 제52조·IEC 60364-6 최소값과 비교해 판정합니다.",
-      seo: "절연저항 기준·판정 (KEC 제52조·0.5·1 MΩ) — PortDock",
+      seo: "절연저항 기준·판정 (전기설비기술기준 제52조·0.5·1 MΩ) — PortDock",
       helper: "공칭 전압으로 고르기",
       nominal: "회로 공칭 전압 (V)",
       selv: "SELV·PELV 회로(안전 절연 변압기·전원)",
+      dc: "직류(DC) — 특별저압 한계는 교류 50 V·직류 120 V",
       circuit: "회로 종류",
       testV: "측정(시험) 전압 DC (V)",
       reading: "잰 값 (MΩ — >2000, OL, 550k 도 됨)",
@@ -63,6 +64,7 @@ const L = ko
       helper: "Pick by nominal voltage",
       nominal: "Circuit nominal voltage (V)",
       selv: "SELV or PELV circuit (safety isolating transformer / supply)",
+      dc: "DC — the extra-low-voltage limit is 50 V AC, 120 V DC",
       circuit: "Circuit type",
       testV: "Test voltage DC (V)",
       reading: "Reading (MΩ — >2000, OL, 550k work too)",
@@ -116,6 +118,7 @@ const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(
       <div class="row">
         <label class="fld">{L.nominal}<input id="nom" class="mono" value="380" inputmode="decimal" autocomplete="off" /></label>
         <label class="ck"><input type="checkbox" id="selv" /> {L.selv}</label>
+        <label class="ck"><input type="checkbox" id="dc" /> {L.dc}</label>
       </div>
       <div class="row">
         <label class="fld">{L.circuit}<select id="circuit">{ROWS.map((r) => <option value={r.id} selected={r.id === "le500"}>{r.name[lang]}</option>)}</select></label>
@@ -217,7 +220,7 @@ const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(
     let text = "";
 
     function fromNominal() {
-      const c = circuitFor(Number($("nom").value.replace(",", ".")), $("selv").checked);
+      const c = circuitFor(Number($("nom").value.replace(",", ".")), $("selv").checked, $("dc").checked);
       if (!c) {
         $<HTMLElement>("need").textContent = T.noCircuit;
         return;
@@ -257,7 +260,7 @@ const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(
       render();
     });
     form.addEventListener("change", (e) => {
-      if ((e.target as HTMLElement).id === "selv") fromNominal();
+      if (["selv", "dc"].includes((e.target as HTMLElement).id)) fromNominal();
       render();
     });
     form.addEventListener("submit", (e) => e.preventDefault());

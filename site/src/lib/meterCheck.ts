@@ -368,6 +368,8 @@ export function sensorOutput(type: SensorType, state: SensorState, vOut: number,
   if (Math.abs(supply - 24) > 4)
     more.push(t("문턱(15 V·11 V·5 V)은 24 V DC 입력 기준입니다 — 다른 전압이면 입력 카드 매뉴얼의 값을 볼 것.", "Thresholds (15 V, 11 V, 5 V) are for 24 V DC inputs — for other voltages use the input card manual."));
   if (state === "on") {
+    if (vIn > 30 + EPS)
+      return { level: "warn", msg: t("30 V 넘음 — 24 V DC 입력의 켜짐 범위(15~30 V)를 넘습니다. 전원 전압을 볼 것.", "Above 30 V — beyond the ON range of a 24 V DC input (15–30 V). Check the supply voltage."), more, values };
     if (vIn >= IN_ON_T1 - EPS) return { level: "ok", msg: t("켜짐으로 읽힐 전압입니다(입력 형식 1·2·3 모두 15 V 이상이면 켜짐).", "A voltage read as ON (15 V or more is ON for input types 1, 2 and 3)."), more, values };
     if (vIn >= IN_ON_T23 - EPS)
       return {

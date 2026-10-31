@@ -39,7 +39,7 @@ const L = ko
       mat: "도체",
       cu: "구리",
       al: "알루미늄",
-      temp: "도체 온도(°C)",
+      temp: "도체 온도(°C) — 운전 중 PVC 는 일반적으로 70 °C",
       baud: "보율(bps)",
       pf: "케이블 정전 용량(pF/m, 데이터시트)",
       speed: "속도",
@@ -84,7 +84,7 @@ const L = ko
       mat: "Conductor",
       cu: "Copper",
       al: "Aluminium",
-      temp: "Conductor temperature (°C)",
+      temp: "Conductor temperature (°C) — PVC typically runs at 70 °C",
       baud: "Baud rate (bps)",
       pf: "Cable capacitance (pF/m, datasheet)",
       speed: "Speed",
@@ -148,7 +148,7 @@ const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id),
           {L.mat}
           <select id="mat"><option value="cu">{L.cu}</option><option value="al">{L.al}</option></select>
         </label>
-        <label class="fld">{L.temp}<input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.temp}<input id="temp" class="mono" value="70" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </fieldset>
       <fieldset class="row" data-kind="rs485" style="border:0;padding:0;margin:0" hidden>
         <label class="fld">

@@ -20,6 +20,10 @@ test("회로 고르기 — 공칭 전압·SELV/PELV", () => {
   assert.equal(circuitFor(500, false), "le500");
   assert.equal(circuitFor(690, false), "gt500");
   assert.equal(circuitFor(230, true), null);
+  // 특별저압 한계: 교류 50 V, 직류 120 V
+  assert.equal(circuitFor(100, true), null);
+  assert.equal(circuitFor(100, true, true), "selv");
+  assert.equal(circuitFor(48, true), "selv");
   assert.equal(circuitFor(1500, false), null);
 });
 
