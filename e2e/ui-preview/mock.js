@@ -1560,7 +1560,8 @@ async function netscan(cmd, a) {
 // 가짜 장비: 국번 1·2 는 모든 표의 0~199 에 답하고(밖은 예외 02), 17 은 늘 예외 01, 나머지는 무응답(타임아웃).
 // (0.10.0) 국번 5 는 2선 변환기 에코만 오고(원인 후보 «에코»), 통신 설정 찾기에서 장비는 19200 8E1 에 있다(19200 8N1 은 깨진 바이트).
 // 입력 레지스터 0 = 카운터, 1 = 사인, 보유 레지스터 10~11 = F32(CDAB) 온도, 코일 0 = 깜빡임.
-const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "preview_write", "scan_ids", "scan_addrs", "scan_line", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
+const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "read_block", "preview_write", "scan_ids", "scan_addrs", "scan_line", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
+const MM_NO_TABLE = 0xffffffff;
 const isMM = () => /Modbus Master/.test(document.title);
 const mmNewStats = () => ({ requests: 0, ok: 0, exceptions: 0, timeouts: 0, crc: 0, bad: 0, sendErrors: 0, avgMs: 0, maxMs: 0, lastMs: 0, _sum: 0, _n: 0 });
 const MMD = { coils: new Array(200).fill(0), discrete: Array.from({ length: 200 }, (_, i) => (i % 3 === 0 ? 1 : 0)), holding: Array.from({ length: 200 }, (_, i) => i * 10), input: new Array(200).fill(0) };
@@ -1862,8 +1863,10 @@ async function mmaster(cmd, a) {
         return a.wire === "tcp" ? mbap(0, q.unit, pdu) : withCrc([q.unit, ...pdu]);
       }
       if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
-      const r = mmTransact(q.unit, fc, q.start, fc === 5 || fc === 6 ? [q.values[0]] : q.values, a.table);
-      mmCount(a.table, r.outcome, r.rttMs);
+      // 표 없는 쓰기(장비 설정 복원, 0.10.0)는 표 번호가 u32 최댓값 — 전체 통계에만
+      const tableNo = a.table === MM_NO_TABLE ? undefined : a.table;
+      const r = mmTransact(q.unit, fc, q.start, fc === 5 || fc === 6 ? [q.values[0]] : q.values, tableNo);
+      mmCount(tableNo, r.outcome, r.rttMs);
       setTimeout(() => {
         send({ type: "batch", lines: r.lines, polls: [] });
         send({ type: "write", token: a.token, table: a.table, outcome: r.outcome, rttMs: r.rttMs });
@@ -1874,6 +1877,20 @@ async function mmaster(cmd, a) {
           send(batch);
         }
       }, 40);
+      return null;
+    }
+    // (0.10.0) 장비 설정 백업·비교·복원 — 범위 하나 읽기, 결과는 «write» 사건(같은 token)
+    case "read_block": {
+      const q = a.req;
+      if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      if (MMS.wire === "rtu" && q.unit === 0) return fail(tr("국번 0 은 브로드캐스트라 읽을 수 없습니다", "Slave ID 0 is broadcast and cannot be read"));
+      if (![1, 2, 3, 4].includes(q.fc) || q.qty < 1 || q.qty > (q.fc <= 2 ? 2000 : 125) || q.start + q.qty > 65536) return fail(tr("읽기 범위가 틀립니다", "Bad read range"));
+      const r = mmTransact(q.unit, q.fc, q.start, q.qty, undefined);
+      mmCount(undefined, r.outcome, r.rttMs);
+      setTimeout(() => {
+        send({ type: "batch", lines: r.lines, polls: [] });
+        send({ type: "write", token: a.token, table: MM_NO_TABLE, outcome: r.outcome, rttMs: r.rttMs });
+      }, 30);
       return null;
     }
     case "scan_ids":

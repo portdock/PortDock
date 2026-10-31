@@ -349,6 +349,15 @@ const TIPS: Record<string, Tip> = {
   mmLineFramings: ["해 볼 패리티·정지 비트 묶음. 8N1·8E1 이 가장 흔합니다.", "Parity/stop-bit combinations to try. 8N1 and 8E1 are the most common."],
   mmLineFirstOnly: ["답하는 설정을 하나 찾으면 나머지 속도는 해 보지 않습니다.", "Stops trying further speeds once one setting answers."],
   mmLineUse: ["이 속도·패리티·정지 비트로 연결을 바꾸고 지금 표의 국번도 이 국번으로 바꿉니다.", "Switches the connection to this baud/parity/stop bits and sets the selected table's ID to this one."],
+  // 장비 설정 백업·비교·복원(0.10.0)
+  mmBackup: ["장비 교체·유지보수용 — 설정 레지스터를 읽어 파일(JSON·CSV)로 남기고, 새 장비와 견주고, 고른 칸만 다시 씁니다. (0.10.0 부터)", "For device replacement and maintenance — reads setting registers into a file (JSON, CSV), compares with a new device and writes back only the cells you pick. (from 0.10.0)"],
+  mmBkProfile: ["내장 장비 프로필 — 고르면 그 레지스터 목록으로 범위를 채울 수 있고, 복원 때 프로필의 읽기 전용 칸은 쓰지 않습니다.", "Built-in device profile — fills ranges from its register list, and during restore its read-only registers are not written."],
+  mmBkFill: ["고른 장비 프로필의 읽을 수 있는 레지스터로 범위 목록을 바꿉니다(이어진 칸끼리 한 줄).", "Replaces the range list with the readable registers of the chosen profile (consecutive registers in one row)."],
+  mmBkRead: ["범위를 차례로 읽습니다. 125개(비트 2000개)가 넘는 범위는 나눠 읽고, 실패한 범위는 따로 보입니다. 장비에 쓰지 않습니다.", "Reads the ranges in turn. Ranges over 125 (2000 bits) are split; failed ranges are listed. Nothing is written."],
+  mmBkLoad: ["저장해 둔 백업 파일(JSON)을 엽니다 — 비교·복원은 이 백업을 기준으로 합니다.", "Opens a saved backup file (JSON) — compare and restore use this backup."],
+  mmBkCompare: ["백업과 지금 장비 값(다시 읽기) 또는 다른 백업 파일을 칸마다 견줍니다. 장비에 쓰지 않습니다.", "Compares the backup cell by cell with the device now (read again) or another backup file. Nothing is written."],
+  mmBkPreview: ["고른 칸의 지금 값을 읽어 쓸 값과 나란히 보입니다. 쓰기 전에 꼭 봅니다.", "Reads the picked cells now and shows them next to the values to write. Required before writing."],
+  mmBkWrite: ["고른 칸을 씁니다(06·10, 코일 05·0F). 한 번 더 눌러야 쓰고, 쓴 뒤 다시 읽어 맞는지 표에 보입니다.", "Writes the picked cells (06/10, coils 05/0F). Needs a second click; afterwards it reads back and shows whether each cell matches."],
   mmDiag: ["최근 요청 결과(응답 없음·에코·CRC 오류·잘림·예외·다른 국번)를 나눠 원인 후보와 확인 방법을 보입니다.", "Sorts recent results (no reply, echo, CRC error, truncated, exception, other ID) into possible causes and how to check them."],
 
   // ---- 쉽게 쓰기 2차(10/18)

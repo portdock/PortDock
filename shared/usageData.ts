@@ -18,6 +18,7 @@ export function ingestUrl(key: string = APTABASE_KEY): string | null {
 /**
  * 모든 프로그램에 같은 이름으로 있는 기능 — «앱마다 3~10개» 규칙은 앱 고유 기능에만 센다(공용 단추 하나 때문에 고유 기능을 빼지 않게).
  * ai_copy: «AI 에게 물어보기용 복사»(0.8.0)
+ * modbus-master device_backup: 장비 설정 백업·비교·복원 창에서 장비를 읽거나 쓴 횟수(0.10.0)
  */
 export const COMMON_FEATURES = ["ai_copy"] as const;
 
@@ -26,7 +27,7 @@ export const FEATURES = {
   serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master", "share", "sniff", ...COMMON_FEATURES],
   tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save", ...COMMON_FEATURES],
   udp: ["start", "send", "file_log", ...COMMON_FEATURES],
-  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "scan_line", "file_log", ...COMMON_FEATURES],
+  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "scan_line", "file_log", "device_backup", ...COMMON_FEATURES],
   "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log", ...COMMON_FEATURES],
   simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log", ...COMMON_FEATURES],
   scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block", ...COMMON_FEATURES],
