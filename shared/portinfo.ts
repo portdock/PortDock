@@ -159,7 +159,7 @@ export interface NicList {
 }
 
 export type LoopMode = "loopback" | "echo";
-/** 시험 무늬(0.11.0) — random: 속도마다 다른 의사 난수, ramp: 0x00~0xFF 차례로, alt: 0x55·0xAA 번갈아 */
+/** 시험 무늬(0.10.0) — random: 속도마다 다른 의사 난수, ramp: 0x00~0xFF 차례로, alt: 0x55·0xAA 번갈아 */
 export type LoopPattern = "random" | "ramp" | "alt";
 export interface LoopConfig {
   port: string;
@@ -168,7 +168,7 @@ export interface LoopConfig {
   bytes?: number;
   pings?: number;
   pattern?: LoopPattern;
-  /** 두 포트 시험(0.11.0) — 서로 이어 둔 다른 포트 */
+  /** 두 포트 시험(0.10.0) — 서로 이어 둔 다른 포트 */
   peer?: string | null;
 }
 export interface CommFlags {
@@ -415,13 +415,13 @@ export function loopVerdict(r: BaudResult): Verdict {
   return { level, notes };
 }
 
-/** 루프백 시험 전체(0.11.0) — 속도·방향마다 판정 중 가장 나쁜 것. 결과가 없으면 null */
+/** 루프백 시험 전체(0.10.0) — 속도·방향마다 판정 중 가장 나쁜 것. 결과가 없으면 null */
 export function loopOverall(results: BaudResult[]): Level | null {
   if (!results.length) return null;
   return results.map((r) => loopVerdict(r).level).reduce(worst, "ok");
 }
 
-/** 시험 결과 전체의 말(0.11.0) — «문제 없음(이 시험 범위)» 처럼 시험한 범위만 말한다 */
+/** 시험 결과 전체의 말(0.10.0) — «문제 없음(이 시험 범위)» 처럼 시험한 범위만 말한다 */
 export const LOOP_OVERALL_TEXT: Record<Level, Text> = {
   ok: t("문제 없음(이 시험 범위)", "No issue found (within this test)"),
   look: t("볼 것", "Worth a look"),

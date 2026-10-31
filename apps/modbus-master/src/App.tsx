@@ -84,7 +84,7 @@ const APP = "PortDock Modbus Master";
 type Status = "idle" | "connecting" | "connected" | "disconnected" | "reconnecting" | "closed";
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
 const MAX_TRENDS = 6;
-/** 원인 후보(0.11.0)에 쓰는 최근 요청 수 */
+/** 원인 후보(0.10.0)에 쓰는 최근 요청 수 */
 const DIAG_KEEP = 50;
 
 /** 표 하나의 마지막 읽기 */
@@ -335,7 +335,7 @@ export default function App() {
   const vlogBuf = useRef("");
   const vlogPrev = useRef(new Map<number, Map<number, string>>());
 
-  // 원인 후보(0.11.0) — 최근 요청 결과 50개
+  // 원인 후보(0.10.0) — 최근 요청 결과 50개
   const diagRef = useRef<DiagSample[]>([]);
   const [diagBad, setDiagBad] = useState(0);
   const diagSamples = useCallback(() => diagRef.current.slice(), []);

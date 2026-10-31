@@ -1558,7 +1558,7 @@ async function netscan(cmd, a) {
 // ================================================================ Modbus Master (apps/modbus-master — 명령: apps/modbus-master/src-tauri/src/lib.rs)
 // 창 제목이 «… PortDock Modbus Master» 일 때만 이 부분이 받는다(open·close 같은 이름이 다른 앱과 겹친다).
 // 가짜 장비: 국번 1·2 는 모든 표의 0~199 에 답하고(밖은 예외 02), 17 은 늘 예외 01, 나머지는 무응답(타임아웃).
-// (0.11.0) 국번 5 는 2선 변환기 에코만 오고(원인 후보 «에코»), 통신 설정 찾기에서 장비는 19200 8E1 에 있다(19200 8N1 은 깨진 바이트).
+// (0.10.0) 국번 5 는 2선 변환기 에코만 오고(원인 후보 «에코»), 통신 설정 찾기에서 장비는 19200 8E1 에 있다(19200 8N1 은 깨진 바이트).
 // 입력 레지스터 0 = 카운터, 1 = 사인, 보유 레지스터 10~11 = F32(CDAB) 온도, 코일 0 = 깜빡임.
 const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "preview_write", "scan_ids", "scan_addrs", "scan_line", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
 const isMM = () => /Modbus Master/.test(document.title);
@@ -1654,7 +1654,7 @@ function mmPoll(t, batch) {
   const r = mmTransact(t.unit, t.fc, t.start, t.qty, t.id);
   mmCount(t.id, r.outcome, r.rttMs);
   batch.lines.push(...r.lines);
-  // (0.11.0) 원인 후보용 — 에코·덜 옴·받은 바이트 수
+  // (0.10.0) 원인 후보용 — 에코·덜 옴·받은 바이트 수
   const got = r.lines.filter((l) => l.dir === "rx").reduce((n, l) => n + l.bytes.length, 0);
   batch.polls.push({ table: t.id, ts: r.ts, outcome: r.outcome, rttMs: r.rttMs, tries: 1, ...(r.echo ? { echo: true } : {}), got });
 }
@@ -1742,7 +1742,7 @@ function mmScanRun(kind, cfg) {
     if (a + n > 199 || i >= total) finish();
   }, 60);
 }
-/** 통신 설정 찾기(0.11.0) — 장비는 19200 8E1, 19200 8N1 은 깨진 바이트. 끝나면 처음 설정으로 되돌린다(가짜라 할 일 없음) */
+/** 통신 설정 찾기(0.10.0) — 장비는 19200 8E1, 19200 8N1 은 깨진 바이트. 끝나면 처음 설정으로 되돌린다(가짜라 할 일 없음) */
 function mmLineRun(cfg) {
   const s = S;
   const units = Array.from({ length: cfg.to - cfg.from + 1 }, (_, i) => cfg.from + i);
@@ -2487,7 +2487,7 @@ async function pinsp(cmd, a) {
           const back = c.port !== "COM1";
           out({ type: "echo", result: { baud: c.bauds[0], sent: 15, received: back ? 15 : 0, echoed: back, partial: false, firstMs: back ? 3.2 : null, flags } });
         } else if (c.peer) {
-          // (0.11.0) 두 포트 — 방향마다 결과, 다른 포트가 COM1 이면 그쪽 TX 가 끊긴 것으로
+          // (0.10.0) 두 포트 — 방향마다 결과, 다른 포트가 COM1 이면 그쪽 TX 가 끊긴 것으로
           for (const b of c.bauds) {
             for (const [from, to] of [[c.port, c.peer], [c.peer, c.port]]) {
               if (me.cancel) break;

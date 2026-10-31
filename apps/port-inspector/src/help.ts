@@ -110,8 +110,8 @@ export const help: HelpDoc = {
         "- 2선 RS-485 에코: 버스에서 장비를 뗀 채 고른 속도로 «PortDock echo» 를 보내, 같은 바이트가 돌아오면 «에코 있음» 입니다. 에코가 있는 변환기를 쓰면 받는 쪽에 보낸 것이 먼저 섞여 보입니다(PortDock Serial 의 에코 처리·Modbus 도구의 에코 무시가 이것을 다룹니다).",
         "- 다른 프로그램이 포트를 쓰는 중이면 «사용 중» 이 나옵니다. 어느 프로그램인지는 Microsoft Process Explorer 의 «Find → Find Handle or DLL» 에 장치 카드의 «서비스» 이름(예: FTSER2K, usbser)을 넣어 찾습니다.",
         "- 4선(RS-422) 변환기는 TX+–RX+, TX−–RX− 를 이어 루프백으로 시험할 수 있습니다(변환기 설명서의 단자 이름을 봅니다).",
-        "- 두 포트 시험(0.11.0 부터): 변환기·케이블 두 개를 서로 이어 두고(RS-232 는 널 모뎀으로 2–3번 엇갈림·5번 GND, RS-485 는 A–A·B–B·GND) «다른 포트» 를 고르면, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. 한 포트로 시험할 수 없는 RS-485 변환기를 점검할 때 씁니다.",
-        "- 무늬·길이(0.11.0 부터): 섞인 바이트(기본)·0x00~0xFF 차례로(바이트 값마다 한 번씩)·0x55/0xAA 번갈아(비트가 가장 자주 바뀜) 가운데 고르고, 길이는 64~4096 바이트입니다. «잇는 법» 을 펼치면 핀을 잇는 그림이 글자로 나옵니다. 시험이 끝나면 위에 전체 판정(«문제 없음(이 시험 범위) / 볼 것 / 문제 있음»)이 나옵니다.",
+        "- 두 포트 시험(0.10.0 부터): 변환기·케이블 두 개를 서로 이어 두고(RS-232 는 널 모뎀으로 2–3번 엇갈림·5번 GND, RS-485 는 A–A·B–B·GND) «다른 포트» 를 고르면, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. 한 포트로 시험할 수 없는 RS-485 변환기를 점검할 때 씁니다.",
+        "- 무늬·길이(0.10.0 부터): 섞인 바이트(기본)·0x00~0xFF 차례로(바이트 값마다 한 번씩)·0x55/0xAA 번갈아(비트가 가장 자주 바뀜) 가운데 고르고, 길이는 64~4096 바이트입니다. «잇는 법» 을 펼치면 핀을 잇는 그림이 글자로 나옵니다. 시험이 끝나면 위에 전체 판정(«문제 없음(이 시험 범위) / 볼 것 / 문제 있음»)이 나옵니다.",
       ],
     },
     {
@@ -323,8 +323,8 @@ export const help: HelpDoc = {
         "- 2-wire RS-485 echo: with no device on the bus it sends «PortDock echo» at the chosen speed; if the same bytes come back it reports an echo. With such an adapter your own bytes show up before the reply (PortDock Serial's echo handling and the Modbus tools' echo skip deal with this).",
         "- If another program has the port open you get «busy». To find which one, search for the «Service» name from the device card (e.g. FTSER2K, usbser) with «Find → Find Handle or DLL» in Microsoft Process Explorer.",
         "- A 4-wire (RS-422) adapter can be loopback-tested by tying TX+ to RX+ and TX− to RX− (check the terminal names in the adapter manual).",
-        "- Two-port test (from 0.11.0): with two adapters/cables wired to each other (RS-232 crossed with a null modem — pins 2–3 swapped, pin 5 GND; RS-485 A–A, B–B, GND) choose «Other port»; at each speed it sends this port → the other and the other → this port and compares what arrives. Use it for RS-485 adapters, which cannot loop on one port.",
-        "- Pattern and length (from 0.11.0): mixed bytes (default), 0x00–0xFF in order (every byte value once) or 0x55/0xAA alternating (the most bit changes), 64–4096 bytes. «How to wire» shows the pin wiring as text. When the test ends an overall verdict appears on top («No issue found (within this test) / Worth a look / Problem»).",
+        "- Two-port test (from 0.10.0): with two adapters/cables wired to each other (RS-232 crossed with a null modem — pins 2–3 swapped, pin 5 GND; RS-485 A–A, B–B, GND) choose «Other port»; at each speed it sends this port → the other and the other → this port and compares what arrives. Use it for RS-485 adapters, which cannot loop on one port.",
+        "- Pattern and length (from 0.10.0): mixed bytes (default), 0x00–0xFF in order (every byte value once) or 0x55/0xAA alternating (the most bit changes), 64–4096 bytes. «How to wire» shows the pin wiring as text. When the test ends an overall verdict appears on top («No issue found (within this test) / Worth a look / Problem»).",
       ],
     },
     {

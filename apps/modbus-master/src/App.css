@@ -1355,7 +1355,7 @@ details.panel > summary .sum-note.bad {
   min-width: 0;
 }
 
-/* 통신 설정 찾기(0.11.0) */
+/* 통신 설정 찾기(0.10.0) */
 .scan-dlg .line-set {
   display: flex;
   flex-wrap: wrap;
@@ -1378,7 +1378,7 @@ details.panel > summary .sum-note.bad {
   white-space: normal;
 }
 
-/* 원인 후보(0.11.0) */
+/* 원인 후보(0.10.0) */
 .modal.diag-dlg {
   width: min(680px, calc(100vw - 32px));
 }

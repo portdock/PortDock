@@ -1,4 +1,4 @@
-// «응답 없음» 원인 후보 창(0.11.0) — 최근 요청 결과(폴링·한 번 읽기)를 shared/commDiag 로 나눠 원인 후보·확인 방법·가이드 링크를 보인다.
+// «응답 없음» 원인 후보 창(0.10.0) — 최근 요청 결과(폴링·한 번 읽기)를 shared/commDiag 로 나눠 원인 후보·확인 방법·가이드 링크를 보인다.
 // 읽기만 한다(보내는 요청 없음). 창이 열려 있는 동안 1초마다 새로 나눈다.
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";

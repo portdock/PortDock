@@ -1,6 +1,6 @@
 // 연결 시험(루프백·두 포트·2선 RS-485 에코) — Port Inspector 와 Serial «연결 점검…» 이 함께 쓴다.
 // 시작 전에 «선에서 장비를 떼었나» 를 한 번 더 묻는다(시험 바이트가 장비에 명령으로 들어갈 수 있다).
-// 0.11.0: 두 포트 시험(변환기 두 개를 서로 이음), 무늬(0x00~0xFF·0x55/0xAA)·길이 고르기, 잇는 법 그림, 전체 판정.
+// 0.10.0: 두 포트 시험(변환기 두 개를 서로 이음), 무늬(0x00~0xFF·0x55/0xAA)·길이 고르기, 잇는 법 그림, 전체 판정.
 import { useEffect, useRef, useState } from "react";
 import {
   busyHint,
@@ -25,7 +25,7 @@ const LENGTHS = [64, 256, 1024, 4096];
 export interface LoopApi {
   start: (config: LoopConfig, onEvent: (e: LoopEvent) => void) => Promise<void>;
   cancel: () => Promise<void>;
-  /** 두 포트 시험(0.11.0)에 고를 다른 포트 이름들 — 없으면 두 포트 시험을 숨긴다 */
+  /** 두 포트 시험(0.10.0)에 고를 다른 포트 이름들 — 없으면 두 포트 시험을 숨긴다 */
   ports?: () => Promise<string[]>;
 }
 
@@ -60,7 +60,7 @@ const T = {
     loop: "루프백 — TX·RX 를 이어 둠",
     loopHint: "DB9 는 2번(RX)–3번(TX), TTL 변환기는 TX–RX 를 잇습니다. 속도마다 바이트가 그대로 돌아오는지와 1바이트 왕복 시간을 잽니다.",
     two: "두 포트 — 변환기 두 개를 서로 이음",
-    twoHint: "변환기·케이블 두 개를 서로 이어 두고, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. RS-485 변환기 점검에 씁니다. (0.11.0 부터)",
+    twoHint: "변환기·케이블 두 개를 서로 이어 두고, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. RS-485 변환기 점검에 씁니다. (0.10.0 부터)",
     peer: "다른 포트",
     peerNone: "다른 포트가 없습니다",
     pattern: "무늬",
@@ -98,7 +98,7 @@ const T = {
     loop: "Loopback — TX tied to RX",
     loopHint: "On a DB9 tie pin 2 (RX) to pin 3 (TX); on a TTL adapter tie TX to RX. Checks that bytes come back unchanged at each speed and measures the 1-byte round trip.",
     two: "Two ports — two adapters wired to each other",
-    twoHint: "With two adapters/cables wired to each other, sends this port → the other and the other → this port at each speed and compares what arrives. Useful for checking RS-485 adapters. (from 0.11.0)",
+    twoHint: "With two adapters/cables wired to each other, sends this port → the other and the other → this port at each speed and compares what arrives. Useful for checking RS-485 adapters. (from 0.10.0)",
     peer: "Other port",
     peerNone: "No other port",
     pattern: "Pattern",

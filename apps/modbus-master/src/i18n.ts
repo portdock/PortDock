@@ -94,9 +94,9 @@ const ko = {
   needConnect: "먼저 연결하세요",
   scanIdsHint: "국번마다 «물어볼 주소» 한 칸을 읽어 봅니다. 예외로 답해도 «장비가 있음» 입니다. 1~247 을 다 찾으면 무응답 국번마다 기다림만큼 걸립니다.",
   scanAddrsHint: "시작~끝을 «한 번에» 개씩 읽어 보고 읽히는 범위를 모읍니다. 예외 01(지원하지 않는 함수)이거나 세 번 이어 무응답이면 멈춥니다.",
-  // ---- 통신 설정 찾기(0.11.0)
+  // ---- 통신 설정 찾기(0.10.0)
   scanLine: "통신 설정 찾기",
-  lineHint: "장비의 속도·패리티·국번을 모를 때 — 고른 속도 × 패리티·정지 비트 × 국번 범위로 짧은 읽기를 보내 답하는 조합을 찾습니다. 예외로 답해도 «장비가 있음» 입니다. 국번 0(브로드캐스트)은 쓰지 않습니다. (0.11.0 부터)",
+  lineHint: "장비의 속도·패리티·국번을 모를 때 — 고른 속도 × 패리티·정지 비트 × 국번 범위로 짧은 읽기를 보내 답하는 조합을 찾습니다. 예외로 답해도 «장비가 있음» 입니다. 국번 0(브로드캐스트)은 쓰지 않습니다. (0.10.0 부터)",
   lineWarn: "버스에 다른 마스터(PLC·HMI)가 있으면 쓰지 마세요 — 속도를 바꿔 가며 보내는 동안 다른 마스터의 통신을 깨뜨릴 수 있습니다.",
   lineBauds: "속도",
   lineFramings: "패리티·정지 비트(데이터 8비트)",
@@ -111,10 +111,10 @@ const ko = {
   lineGarbledHint: "깨진 응답만 온 설정은 속도·패리티가 비슷하지만 다르거나, 선에 잡음이 있을 수 있습니다.",
   lineRestore: "끝나면 지금 설정({s})으로 되돌립니다.",
   lineApplied: "{s} · 국번 {u} 로 바꿨습니다",
-  // ---- 원인 후보(0.11.0)
+  // ---- 원인 후보(0.10.0)
   diag: "원인 후보…",
   diagTitle: "«응답 없음» 원인 후보",
-  diagHint: "최근 요청 {n}개의 결과를 나눠 원인 후보와 확인 방법을 보입니다. 원인을 정해 주는 것이 아니라 후보입니다 — 위에서부터 하나씩 확인해 보세요. (0.11.0 부터)",
+  diagHint: "최근 요청 {n}개의 결과를 나눠 원인 후보와 확인 방법을 보입니다. 원인을 정해 주는 것이 아니라 후보입니다 — 위에서부터 하나씩 확인해 보세요. (0.10.0 부터)",
   diagNone: "아직 요청 결과가 없습니다 — 연결하고 표를 읽으면 여기에 모입니다.",
   diagAllOk: "최근 요청 {n}개가 모두 응답을 받았습니다.",
   diagCount: "{n}번",
@@ -361,9 +361,9 @@ const en: typeof ko = {
   needConnect: "Connect first",
   scanIdsHint: "Reads one «Address to read» from each ID. An exception reply still means «a device is there». Scanning 1–247 waits the timeout for every silent ID.",
   scanAddrsHint: "Reads From–To in blocks and collects the readable ranges. Stops on exception 01 (illegal function) or three silent requests in a row.",
-  // ---- Line-settings search (0.11.0)
+  // ---- Line-settings search (0.10.0)
   scanLine: "Find line settings",
-  lineHint: "When the device's baud, parity and ID are unknown — sends a short read for each chosen baud × parity/stop bits × ID and lists the combinations that answer. An exception reply still means «a device is there». ID 0 (broadcast) is never used. (from 0.11.0)",
+  lineHint: "When the device's baud, parity and ID are unknown — sends a short read for each chosen baud × parity/stop bits × ID and lists the combinations that answer. An exception reply still means «a device is there». ID 0 (broadcast) is never used. (from 0.10.0)",
   lineWarn: "Do not use this when another master (PLC, HMI) is on the bus — sending at changing speeds can break its traffic.",
   lineBauds: "Baud rates",
   lineFramings: "Parity and stop bits (8 data bits)",
@@ -378,10 +378,10 @@ const en: typeof ko = {
   lineGarbledHint: "A setting that only got garbled replies may be close but wrong (baud/parity), or the line may be noisy.",
   lineRestore: "Goes back to the current setting ({s}) when done.",
   lineApplied: "Switched to {s} · ID {u}",
-  // ---- Possible causes (0.11.0)
+  // ---- Possible causes (0.10.0)
   diag: "Possible causes…",
   diagTitle: "«No response» — possible causes",
-  diagHint: "Sorts the last {n} request results into possible causes and how to check each. These are candidates, not a final answer — check them from the top. (from 0.11.0)",
+  diagHint: "Sorts the last {n} request results into possible causes and how to check each. These are candidates, not a final answer — check them from the top. (from 0.10.0)",
   diagNone: "No request results yet — connect and read a table; they collect here.",
   diagAllOk: "All of the last {n} requests got a reply.",
   diagCount: "{n}×",

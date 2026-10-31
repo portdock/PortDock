@@ -1,4 +1,4 @@
-// 찾기 창 — 국번 찾기(1~247 중 답하는 장비), 주소 범위 찾기(읽히는 주소 모으기), 통신 설정 찾기(0.11.0 — 속도·패리티·국번).
+// 찾기 창 — 국번 찾기(1~247 중 답하는 장비), 주소 범위 찾기(읽히는 주소 모으기), 통신 설정 찾기(0.10.0 — 속도·패리티·국번).
 // 찾는 동안 폴링은 멈춘다. 창을 닫아도 찾기는 계속되고, 왼쪽 상태 칸에 진행이 보인다.
 import { useEffect, useState } from "react";
 import { NumInput } from "@shared/NumInput";
@@ -52,7 +52,7 @@ export interface ScanState {
   unit: number;
   fc: Fc;
   finished: { found: number; cancelled: boolean; stopped: string | null } | null;
-  /** 통신 설정 찾기(0.11.0): 답한 조합, 깨진 바이트만 온 설정(«9600 8N1», 횟수) */
+  /** 통신 설정 찾기(0.10.0): 답한 조합, 깨진 바이트만 온 설정(«9600 8N1», 횟수) */
   lineHits: LineHit[];
   lineGarbled: [string, number][];
 }
@@ -86,7 +86,7 @@ export function ScanDialog({
   wire: "tcp" | "rtu";
   /** 지금 표의 국번·함수·시작 */
   defaults: { unit: number; fc: Fc; start: number };
-  /** 통신 설정 찾기(0.11.0) — 시리얼 연결인지, 지금 설정 이름(«9600 8N1»), 요청 간격(어림에) */
+  /** 통신 설정 찾기(0.10.0) — 시리얼 연결인지, 지금 설정 이름(«9600 8N1»), 요청 간격(어림에) */
   serial: boolean;
   lineNow: string;
   delayMs: number;

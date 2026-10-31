@@ -395,7 +395,7 @@ pub trait Link: Send {
     fn recv(&mut self, wait: Duration) -> Option<Vec<u8>>;
     /// 쌓인 것을 버린다(새 요청 직전)
     fn clear(&mut self) {}
-    /// (0.11.0) 시리얼 속도·패리티·정지 비트를 바꾼다(통신 설정 찾기). 바꿀 수 없는 통로(TCP)는 오류
+    /// (0.10.0) 시리얼 속도·패리티·정지 비트를 바꾼다(통신 설정 찾기). 바꿀 수 없는 통로(TCP)는 오류
     fn set_line(&mut self, _line: &LineSetting) -> Result<(), String> {
         Err(no_line())
     }
@@ -405,7 +405,7 @@ fn no_line() -> String {
     crate::tr!("이 연결은 통신 설정을 바꿀 수 없습니다(시리얼에서만)", "This connection cannot change line settings (serial only)").into()
 }
 
-/// (0.11.0) 시리얼 통신 설정 하나 — 데이터 비트는 8 로 둔다(Modbus RTU)
+/// (0.10.0) 시리얼 통신 설정 하나 — 데이터 비트는 8 로 둔다(Modbus RTU)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LineSetting {
@@ -434,7 +434,7 @@ impl ChannelLink {
         Self { send: Box::new(send), rx, line: None }
     }
 
-    /// (0.11.0) 통신 설정을 바꿀 수 있는 통로로(시리얼 세션)
+    /// (0.10.0) 통신 설정을 바꿀 수 있는 통로로(시리얼 세션)
     pub fn with_line(mut self, f: impl FnMut(&LineSetting) -> Result<(), String> + Send + 'static) -> Self {
         self.line = Some(Box::new(f));
         self
@@ -528,9 +528,9 @@ pub struct Try {
     pub outcome: Outcome,
     /// 보낸 뒤 응답이 다 올 때까지(ms) — 응답이 없으면 0
     pub rtt_ms: f64,
-    /// (0.11.0) 보낸 것이 그대로 먼저 되돌아왔는지(2선 RS-485 에코 — 버리고 응답을 기다렸다)
+    /// (0.10.0) 보낸 것이 그대로 먼저 되돌아왔는지(2선 RS-485 에코 — 버리고 응답을 기다렸다)
     pub echo: bool,
-    /// (0.11.0) 응답이 끝까지 오지 않았는지(바이트는 왔지만 덜 옴)
+    /// (0.10.0) 응답이 끝까지 오지 않았는지(바이트는 왔지만 덜 옴)
     pub partial: bool,
 }
 
@@ -791,7 +791,7 @@ pub struct ScanAddrs {
     pub fine: bool,
 }
 
-/// (0.11.0) 통신 설정 찾기 — 속도 × (패리티·정지 비트) × 국번 범위로 짧은 읽기를 보내 답하는 조합을 찾는다.
+/// (0.10.0) 통신 설정 찾기 — 속도 × (패리티·정지 비트) × 국번 범위로 짧은 읽기를 보내 답하는 조합을 찾는다.
 /// 국번 0(브로드캐스트)은 쓰지 않는다. 시리얼 RTU 에서만
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -911,15 +911,15 @@ pub struct PollResult {
     pub outcome: Outcome,
     pub rtt_ms: f64,
     pub tries: u8,
-    /// (0.11.0) 원인 후보 패널용 — 마지막 시도에서 에코가 왔는지
+    /// (0.10.0) 원인 후보 패널용 — 마지막 시도에서 에코가 왔는지
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub echo: bool,
-    /// (0.11.0) 응답이 덜 왔는지(잘린 프레임)
+    /// (0.10.0) 응답이 덜 왔는지(잘린 프레임)
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub partial: bool,
-    /// (0.11.0) 받은 바이트 수(마지막 시도)
+    /// (0.10.0) 받은 바이트 수(마지막 시도)
     pub got: usize,
-    /// (0.11.0) 다른 국번이 답했으면 그 국번
+    /// (0.10.0) 다른 국번이 답했으면 그 국번
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other_unit: Option<u8>,
 }
@@ -951,9 +951,9 @@ pub enum MasterEvent {
     ScanProgress { done: u32, total: u32 },
     /// 찾기 끝. stopped 는 스스로 멈춘 이유(예외 01·연속 무응답)
     ScanDone { kind: &'static str, found: u32, cancelled: bool, stopped: Option<String> },
-    /// (0.11.0) 통신 설정 찾기: 이 설정·국번에서 맞는 응답(정상 또는 예외 — 예외도 «장비가 있음»)
+    /// (0.10.0) 통신 설정 찾기: 이 설정·국번에서 맞는 응답(정상 또는 예외 — 예외도 «장비가 있음»)
     LineHit { baud: u32, parity: String, stop_bits: u8, unit: u8, outcome: Outcome, rtt_ms: f64 },
-    /// (0.11.0) 통신 설정 찾기: 설정 하나를 마침. garbled = 바이트는 왔지만 깨진(CRC·모양 틀림) 응답 수
+    /// (0.10.0) 통신 설정 찾기: 설정 하나를 마침. garbled = 바이트는 왔지만 깨진(CRC·모양 틀림) 응답 수
     LineStep { baud: u32, parity: String, stop_bits: u8, garbled: u32 },
 }
 
@@ -1114,7 +1114,7 @@ impl Engine {
         self.scanning.store(true, Ordering::SeqCst);
         self.job(Job::ScanAddrs(cfg));
     }
-    /// (0.11.0) 통신 설정 찾기 — 통로가 설정을 바꿀 수 있어야 한다(시리얼)
+    /// (0.10.0) 통신 설정 찾기 — 통로가 설정을 바꿀 수 있어야 한다(시리얼)
     pub fn scan_line(&self, cfg: ScanLine) {
         self.scan_cancel.store(false, Ordering::SeqCst);
         self.scanning.store(true, Ordering::SeqCst);

@@ -87,7 +87,7 @@ export interface PollResult {
   outcome: Outcome;
   rttMs: number;
   tries: number;
-  /** (0.11.0) 원인 후보 패널용 — 에코만 옴·덜 옴·받은 바이트 수·답한 다른 국번 */
+  /** (0.10.0) 원인 후보 패널용 — 에코만 옴·덜 옴·받은 바이트 수·답한 다른 국번 */
   echo?: boolean;
   partial?: boolean;
   got?: number;
@@ -101,7 +101,7 @@ export type MasterEvent =
   | { type: "scan-ranges"; ranges: [number, number][] }
   | { type: "scan-progress"; done: number; total: number }
   | { type: "scan-done"; kind: "ids" | "addrs" | "line"; found: number; cancelled: boolean; stopped: string | null }
-  // 통신 설정 찾기(0.11.0)
+  // 통신 설정 찾기(0.10.0)
   | { type: "line-hit"; baud: number; parity: string; stopBits: number; unit: number; outcome: Outcome; rttMs: number }
   | { type: "line-step"; baud: number; parity: string; stopBits: number; garbled: number }
   // 세션(연결) 사건
@@ -130,7 +130,7 @@ export interface ScanIds {
   timeoutMs: number;
 }
 
-/** 통신 설정 찾기(0.11.0) — crates/core modbus_master ScanLine */
+/** 통신 설정 찾기(0.10.0) — crates/core modbus_master ScanLine */
 export interface ScanLine {
   bauds: number[];
   framings: Framing[];

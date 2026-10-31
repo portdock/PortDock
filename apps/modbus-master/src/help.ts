@@ -108,7 +108,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "통신 설정 찾기 (0.11.0 부터)",
+      title: "통신 설정 찾기 (0.10.0 부터)",
       id: "line-scan",
       body: [
         "- 장비의 속도·패리티·국번을 모를 때 씁니다. «국번·주소·설정 찾기…» 창의 «통신 설정 찾기» 에서 해 볼 속도(1200~115200)와 패리티·정지 비트(8N1·8N2·8E1·8O1·8E2·8O2)를 고르고, 국번 범위·함수·주소를 정합니다.",
@@ -121,7 +121,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "«응답 없음» 원인 후보 (0.11.0 부터)",
+      title: "«응답 없음» 원인 후보 (0.10.0 부터)",
       id: "diag",
       body: [
         "- 왼쪽 «원인 후보…» 를 누르면 최근 요청 50개(폴링·한 번 읽기)의 결과를 나눠, 많이 나온 갈래부터 원인 후보와 확인 방법을 보입니다. 실패가 있으면 왼쪽에 «최근 실패 n번 — 원인 후보 보기» 가 나옵니다.",
@@ -303,7 +303,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Find line settings (from 0.11.0)",
+      title: "Find line settings (from 0.10.0)",
       id: "line-scan",
       body: [
         "- For when the device's baud, parity and ID are unknown. In «Scan…», open «Find line settings», pick the baud rates (1200–115200) and parity/stop bits (8N1, 8N2, 8E1, 8O1, 8E2, 8O2) to try, and set the ID range, function and address.",
@@ -316,7 +316,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "«No response» — possible causes (from 0.11.0)",
+      title: "«No response» — possible causes (from 0.10.0)",
       id: "diag",
       body: [
         "- «Possible causes…» on the left sorts the last 50 request results (polling and read once) and shows possible causes and how to check them, most frequent first. When there are failures, «n recent failures — see possible causes» appears on the left.",

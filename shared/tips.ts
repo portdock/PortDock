@@ -301,7 +301,7 @@ const TIPS: Record<string, Tip> = {
   mmPauseAll: ["모든 표의 자동 폴링을 멈춥니다. «한 번 읽기»·쓰기·찾기는 됩니다.", "Pauses automatic polling of all tables. «Read once», writes and scans still work."],
   mmForceMulti: ["한 칸을 쓸 때도 «한 칸 쓰기»(FC06, 코일 FC05) 대신 «여러 칸 쓰기»(FC16, 코일 FC15)를 씁니다 — FC06·05 를 받지 않는 장비용.", "Writes even a single register/coil with «write multiple» (FC16, coils FC15) instead of «write single» (FC06, coils FC05) — for devices that reject FC06/05."],
   mmComm: ["응답 기다림·재시도·요청 간격과 «한 칸도 여러 칸 쓰기로». 대부분 기본값(1000ms·0·20ms·끔)이라 접어 두고 제목에 요약합니다. 기본값이 아니면 펼친 채 시작합니다.", "Response timeout, retries, delay between polls and «write single values with write multiple». Usually left at the defaults (1000 ms, 0, 20 ms, off), so it is collapsed with a summary; it starts expanded when something differs."],
-  mmScan: ["답하는 국번(1~247)이나 읽히는 주소 범위, 모르는 통신 설정(속도·패리티 — 0.11.0 부터)을 찾습니다. 찾는 동안 폴링은 멈춥니다.", "Finds Slave IDs that answer (1–247), readable address ranges or unknown line settings (baud, parity — from 0.11.0). Polling pauses while scanning."],
+  mmScan: ["답하는 국번(1~247)이나 읽히는 주소 범위, 모르는 통신 설정(속도·패리티 — 0.10.0 부터)을 찾습니다. 찾는 동안 폴링은 멈춥니다.", "Finds Slave IDs that answer (1–247), readable address ranges or unknown line settings (baud, parity — from 0.10.0). Polling pauses while scanning."],
   mmValueLog: ["읽은 값을 CSV 파일(time,table,address,name,value)에 계속 덧붙입니다. 엑셀에서 바로 열립니다.", "Keeps appending the values read to a CSV file (time,table,address,name,value). Opens directly in Excel."],
   mmVlEvery: ["읽을 때마다 모든 칸을 기록합니다.", "Logs every cell on every poll."],
   mmVlChange: ["지난번과 값이 달라진 칸만 기록합니다(파일이 작음).", "Logs only cells whose value changed (smaller files)."],

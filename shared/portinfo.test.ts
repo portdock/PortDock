@@ -70,7 +70,7 @@ test("루프백·에코", () => {
   const e = { baud: 9600, sent: 15, received: 15, echoed: true, partial: false, firstMs: 3, flags };
   assert.equal(echoVerdict(e).level, "look");
   assert.equal(echoVerdict({ ...e, echoed: false, received: 0 }).level, "ok");
-  // 두 포트(0.11.0) — 방향이 있으면 «서로 이었는지» 안내, 전체는 가장 나쁜 것
+  // 두 포트(0.10.0) — 방향이 있으면 «서로 이었는지» 안내, 전체는 가장 나쁜 것
   const two = loopVerdict({ ...ok, nothingBack: true, dir: "COM3 → COM4" });
   assert.equal(two.level, "problem");
   assert.ok(two.notes[0].ko.includes("A–A"));

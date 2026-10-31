@@ -33,15 +33,15 @@ pub struct LoopConfig {
     /// 속도마다 1바이트 왕복 시간을 잴 횟수
     #[serde(default = "d_pings")]
     pub pings: usize,
-    /// (0.11.0) 보낼 무늬
+    /// (0.10.0) 보낼 무늬
     #[serde(default)]
     pub pattern: Pattern,
-    /// (0.11.0) 두 포트 시험 — 이 포트와 서로 이어 두고 port→peer, peer→port 를 차례로 잰다. 루프백에서만
+    /// (0.10.0) 두 포트 시험 — 이 포트와 서로 이어 두고 port→peer, peer→port 를 차례로 잰다. 루프백에서만
     #[serde(default)]
     pub peer: Option<String>,
 }
 
-/// (0.11.0) 시험 무늬
+/// (0.10.0) 시험 무늬
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Pattern {
@@ -121,7 +121,7 @@ pub struct BaudResult {
     pub flags: CommFlags,
     /// 첫 묶음에서 아무것도 돌아오지 않아 이 속도를 일찍 끝냈는지
     pub nothing_back: bool,
-    /// (0.11.0) 두 포트 시험의 방향(«COM3 → COM4») — 한 포트면 없음
+    /// (0.10.0) 두 포트 시험의 방향(«COM3 → COM4») — 한 포트면 없음
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dir: Option<String>,
 }
@@ -384,7 +384,7 @@ pub fn run_on(link: &mut dyn Link, cfg: &LoopConfig, cancel: &AtomicBool, emit: 
     emit(LoopEvent::Done { cancelled: cancel.load(Ordering::SeqCst), ms: t0.elapsed().as_millis() as u64 });
 }
 
-/// (0.11.0) 두 포트 시험 — 속도마다 a→b, b→a 를 잰다(둘을 서로 이어 둔 채로)
+/// (0.10.0) 두 포트 시험 — 속도마다 a→b, b→a 를 잰다(둘을 서로 이어 둔 채로)
 pub fn run_pair(a: &mut dyn Link, b: &mut dyn Link, names: (&str, &str), cfg: &LoopConfig, cancel: &AtomicBool, emit: &mut dyn FnMut(LoopEvent)) {
     let t0 = Instant::now();
     let bauds: Vec<u32> = cfg.bauds.iter().copied().filter(|b| *b > 0).collect();

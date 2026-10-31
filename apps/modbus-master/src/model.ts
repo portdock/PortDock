@@ -368,7 +368,7 @@ export const errorCount = (s: TableStats | undefined) => (s ? s.exceptions + s.t
 /** «12.3» / «<1» */
 export const fmtMs = (ms: number) => (ms <= 0 ? "—" : ms < 1 ? "<1" : ms < 100 ? ms.toFixed(1) : String(Math.round(ms)));
 
-// ---- 통신 설정 찾기(0.11.0)
+// ---- 통신 설정 찾기(0.10.0)
 
 export type Parity = "none" | "even" | "odd";
 export interface Framing {

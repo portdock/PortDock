@@ -25,6 +25,6 @@ export const loopApi: LoopApi = {
     return tally("loopback", invoke<void>("loop_start", { config, onEvent: ch }));
   },
   cancel: () => invoke<void>("loop_cancel"),
-  // 두 포트 시험(0.11.0) — 지금 있는 COM 포트
+  // 두 포트 시험(0.10.0) — 지금 있는 COM 포트
   ports: () => invoke<PortEntry[]>("pi_list", { hidden: false }).then((l) => l.filter((e) => e.present && e.port).map((e) => e.port!)),
 };

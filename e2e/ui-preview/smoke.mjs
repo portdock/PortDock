@@ -1468,7 +1468,7 @@ async function runApp(app, port) {
         await w(300);
         if ((await js("return document.querySelectorAll('.tabs .tab').length")) !== tabsA + 1 || (await js("return !!document.querySelector('.scan-dlg')"))) await conv("mm-scan", "찾은 국번으로 표를 만들지 못함");
         await verify("mm scan");
-        // (0.11.0) 통신 설정 찾기: 국번 1~2, 기본 속도·묶음, «찾으면 멈춤» → 가짜 장비는 19200 8E1(19200 8N1 은 깨짐) → 이 설정으로 연결
+        // (0.10.0) 통신 설정 찾기: 국번 1~2, 기본 속도·묶음, «찾으면 멈춤» → 가짜 장비는 19200 8E1(19200 8N1 은 깨짐) → 이 설정으로 연결
         {
           await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /찾기|Scan/.test(b.textContent)).click()");
           await w(300);
@@ -1490,7 +1490,7 @@ async function runApp(app, port) {
           if (after.open || after.baud !== "19200" || !/19200 8E1/.test(after.toast)) await conv("mm-line", `«이 설정으로 연결» 결과가 이상함: ${JSON.stringify(after)}`);
           await verify("mm line settings");
         }
-        // (0.11.0) 원인 후보: 창이 열리고, 후보가 있으면 링크는 모두 사이트(portdock.dev) 주소
+        // (0.10.0) 원인 후보: 창이 열리고, 후보가 있으면 링크는 모두 사이트(portdock.dev) 주소
         {
           await js("document.querySelector('aside .diag-open').click()");
           await w(300);
@@ -2332,7 +2332,7 @@ async function runApp(app, port) {
       await sleep(150);
       await startLoop("echo COM5");
       await expectJs("echo COM5", "const e = document.querySelector('.loop-echo'); return !!e && /lv-look/.test(e.querySelector('.lv').className)", 3000);
-      // (0.11.0) 두 포트 시험: 다른 포트를 고르고 속도마다 양쪽 방향 → 방향 칸·전체 판정
+      // (0.10.0) 두 포트 시험: 다른 포트를 고르고 속도마다 양쪽 방향 → 방향 칸·전체 판정
       await js("[...document.querySelectorAll('.loop-modes input[type=radio]')][2].click()");
       await expectJs("two-port peers", "const s = document.querySelector('.loop-peer select'); return !!s && s.options.length > 0 && !!s.value", 2000);
       await expectJs("two-port wiring", "return (document.querySelector('.loop-wiring pre')?.textContent || '').includes('A(D+)')");

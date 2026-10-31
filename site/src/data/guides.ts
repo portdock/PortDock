@@ -6643,13 +6643,12 @@ export const GUIDES: Guide[] = [
   },
   // 근거: TI SLLA070D(수신기 ±200 mV, 공통 모드 −7~+12 V), MODBUS over serial line V1.02 §3.4(종단 150 Ω 또는 1 nF + 120 Ω, 바이어스 5 V·450~650 Ω, D1 이 쉬는 동안 양),
   // 계산: 종단 120 Ω 둘 병렬 60 Ω, 셋 40 Ω; 5 V·560 Ω 바이어스 + 60 Ω → 4.24 mA, A ≈ 2.37 V·B ≈ 2.63 V·B − A ≈ 254 mV(rs485-bias-termination 글과 같은 계산).
-  // 사이트 «멀티미터 측정값 점검기»(tools/multimeter-check/)는 다른 작업에서 만드는 중이라 본문 글로만 적는다(webTools 에 넣지 않음).
   {
     slug: "rs485-multimeter-check",
     date: "2026-10-31",
     tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs485-wiring", "rs485-bias-termination", "cable-shield-grounding", "field-noise-communication-errors", "commissioning-communication-checklist"],
-    webTools: ["tools/rs485/", "tools/wiring/"],
+    webTools: ["tools/multimeter-check/", "tools/rs485/", "tools/wiring/", "tools/troubleshoot/"],
     title: { ko: "멀티미터로 RS-485 버스 점검하기 — 종단 저항·바이어스 전압·공통 모드·A/B 바뀜", en: "Checking an RS-485 bus with a multimeter — termination, bias voltage, common mode, swapped A/B" },
     seoTitle: { ko: "멀티미터로 RS-485 점검 — 60Ω 종단·바이어스 전압·A/B — PortDock", en: "Testing RS-485 with a Multimeter: 60 Ω, Bias, A/B — PortDock" },
     desc: {
@@ -6702,7 +6701,7 @@ export const GUIDES: Guide[] = [
         { h: "5. 통신 중일 때 읽는 법" },
         { p: "폴링 중에 직류 전압을 재면 데이터의 평균이 보여 값이 쉬는 때보다 작아지고 흔들립니다. 이것은 «무언가 보내고 있다» 는 표시일 뿐, 신호 품질은 알 수 없습니다. 전압은 반드시 쉬는 상태에서 재고, 파형·반사·잡음은 오실로스코프로 봅니다." },
         { h: "6. 측정값 정리" },
-        { p: "장비마다 «A–B 저항(전원 끔)», «B − A(쉼)», «A–SG·B–SG(쉼)» 를 한 줄씩 적어 두면, 어느 장비에서 값이 달라지는지가 한눈에 보입니다. PortDock 사이트에 측정값을 넣어 판정을 보는 «멀티미터 측정값 점검기»(/tools/multimeter-check/)를 준비하고 있습니다." },
+        { p: "장비마다 «A–B 저항(전원 끔)», «B − A(쉼)», «A–SG·B–SG(쉼)» 를 한 줄씩 적어 두면, 어느 장비에서 값이 달라지는지가 한눈에 보입니다. 잰 값을 아래 «멀티미터 측정값 점검기» 에 넣으면 «문제 없음·볼 것·문제 있음» 으로 판정해 줍니다." },
         { h: "PortDock 에서는" },
         {
           ul: [
@@ -6758,7 +6757,7 @@ export const GUIDES: Guide[] = [
         { h: "5. Readings during traffic" },
         { p: "Measure DC volts while polling and you see the average of the data, smaller than at idle and jumping about. That only shows «something is transmitting»; it says nothing about signal quality. Take voltages at idle, and use an oscilloscope for waveforms, reflections and noise." },
         { h: "6. Keep the readings" },
-        { p: "Write one line per device — «A–B resistance (power off)», «B − A (idle)», «A–SG and B–SG (idle)» — and the device where values change stands out. A «multimeter reading checker» that judges entered readings (/en/tools/multimeter-check/) is being prepared for the PortDock site." },
+        { p: "Write one line per device — «A–B resistance (power off)», «B − A (idle)», «A–SG and B–SG (idle)» — and the device where values change stands out. Enter the readings in the «Multimeter Reading Checker» below to get a «no issue / worth a look / problem» verdict." },
         { h: "In PortDock" },
         {
           ul: [
