@@ -3,7 +3,10 @@
 import type { ExtraLang } from "./langs";
 import JaSafety from "./ja/SafetyBody.astro";
 import JaPrivacy from "./ja/PrivacyBody.astro";
+import EsSafety from "./es/SafetyBody.astro";
+import EsPrivacy from "./es/PrivacyBody.astro";
 
 export const PROSE = {
   ja: { safety: JaSafety, privacy: JaPrivacy },
+  es: { safety: EsSafety, privacy: EsPrivacy },
 } satisfies Record<ExtraLang, { safety: unknown; privacy: unknown }>;
