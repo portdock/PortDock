@@ -275,8 +275,8 @@ mod tests {
         assert_eq!(message_last_value("시스템이 저전력 상태에서 다시 시작되었습니다.\n\n절전 모드 해제 원본: 장치 -USB 입력 장치").as_deref(), Some("장치 -USB 입력 장치"));
         assert_eq!(message_last_value("no colon here"), None);
         // 사용자 폴더 가리기(예시 이름)
-        assert_eq!(mask_user_dir(r"Timer - C:\Users\Example User\AppData\Local\app.exe"), r"Timer - ~\AppData\Local\app.exe");
-        assert_eq!(mask_user_dir(r"\Device\HarddiskVolume3\users\sample\x.exe and 'D:\USERS\b'"), r"~\x.exe and '~'");
+        assert_eq!(mask_user_dir(r"Timer - C:\Users\John Smith\AppData\Local\app.exe"), r"Timer - ~\AppData\Local\app.exe");
+        assert_eq!(mask_user_dir(r"\Device\HarddiskVolume3\users\kim\x.exe and 'D:\USERS\bob'"), r"~\x.exe and '~'");
         assert_eq!(mask_user_dir("Power Button"), "Power Button");
         assert_eq!(mask_user_dir(r"C:\Program Files\Tool\t.exe"), r"C:\Program Files\Tool\t.exe");
         let e = ev(
