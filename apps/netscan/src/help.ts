@@ -30,7 +30,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: 랜카드, 찾을 범위, «찾기»/«멈춤», 상태와 진행 막대. 그 아래 «찾는 방법·포트 (고급)» 은 접혀 있고 제목 옆에 지금 설정이 «ARP+핑 · 포트 22개 · Modbus 정보 · 이름» 처럼 요약됩니다. 기본값과 다르면 «(바꿈)» 이 붙고, 다음에 켤 때 펼친 채로 시작합니다. 제목을 누르면 ARP·핑·핑 기다림·동시에·이름 찾기·산업 포트 확인·확인할 포트·포트 기다림·Modbus 장비 정보 읽기가 펼쳐집니다(펼친 상태는 기억). 핑과 ARP 를 둘 다 끄거나 포트 목록이 틀리면 저절로 펼쳐집니다.",
-        "- 가운데 위 탭: «찾은 장비»(결과 표)와 «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
+        "- 가운데 위 탭: «찾은 장비»(결과 표), «기준과 비교»(0.10.0 부터), «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
         "- «찾은 장비» 도구줄: 거르기 칸, «산업 포트 열린 것만», «새로 n»·«사라짐 n», «CSV 저장», «지우기».",
         "- 표 아래 칸: 고른 장비의 정보와 할 일 버튼.",
         ...windowLines("ko"),
@@ -108,6 +108,22 @@ export const help: HelpDoc = {
         "- «Modbus Master 로 열기»(502 가 열린 장비): 이 PC 의 PortDock Modbus Master 를 «--tcp IP:502 --unit 국번» 으로 엽니다. Master 는 Modbus TCP·장비 주소·국번을 채운 채 뜨고, 연결은 Master 에서 «연결» 을 누릅니다. 국번은 «Modbus 장비 정보» 를 읽었으면 그 국번, 아니면 1 입니다.",
         "- Master 는 설치판(이 사용자로 설치한 것), 또는 휴대판(Net Scan 과 같은 폴더나 옆 «PortDock…» 폴더)에서 찾습니다. 못 찾으면 «IP:502» 를 복사하고 아래 칸에 «Modbus Master 내려받기» 링크를 보입니다. 누를 때만 열고, 셸을 거치지 않으며 넘기는 것은 IP 와 숫자뿐입니다.",
         "- «TCP 로 열기»(502·웹 80·443 말고 다른 포트가 열린 장비): 이 PC 의 PortDock TCP 를 «--connect IP:포트» 로 엽니다. TCP 는 클라이언트 방식으로 주소·포트를 채운 채 뜨고, 연결은 거기서 누릅니다. 포트가 여럿이면 «TCP 로 열기 ▾» 에서 고릅니다(줄 오른쪽 버튼 메뉴에도 있음). TCP 를 못 찾으면 «IP:포트» 를 복사하고 내려받기 페이지를 알려 줍니다.",
+      ],
+    },
+    {
+      title: "기준과 비교 (0.10.0 부터)",
+      id: "baseline",
+      body: [
+        "유지보수·증설·제거 뒤 «지난번과 무엇이 달라졌나» 를 봅니다. 장비 구성이 맞을 때 찾은 목록을 기준으로 저장해 두고, 다음에 찾은 결과와 비교합니다.",
+        "- 저장: «찾기» 가 끝난 뒤 «기준과 비교» 탭에서 이름(예: 1라인 정기점검)을 넣고 «지금 결과를 기준으로 저장». 이름을 비우면 «범위 날짜». 같은 이름이면 바꿔 씁니다. 이 PC 의 앱 저장소에 20개까지 남고, «파일로 저장…»·«파일에서 불러오기…» 로 JSON 파일을 주고받습니다.",
+        "- 기준에 들어가는 것: IP·MAC·제조사·이름·열린 포트·Modbus 장비 정보, 찾은 범위와 확인한 포트. MAC 이 있어야 비교가 되므로 기준 파일에는 MAC 주소가 들어 있습니다 — 다른 사람에게 줄 때 주의합니다. 어디에도 보내지 않습니다.",
+        "- 비교: 기준을 고르면 이번 결과와 바로 비교합니다(찾는 중이면 끝난 뒤). 같은 MAC 이면 같은 장비, MAC 을 모르면(경유·ARP 끔) 같은 IP 를 같은 장비로 봅니다.",
+        "- «MAC 바뀜»(빨강): 같은 IP 에 다른 MAC — 장비 교체 또는 IP 겹침 의심.",
+        "- «IP 바뀜»(노랑): 같은 MAC 이 다른 IP — DHCP 로 주소가 바뀌었거나 설정을 바꿈.",
+        "- «새로 생김»(초록): 기준에 없던 장비 — 증설? «사라짐»(빨강): 기준에 있던 장비가 안 보임 — 제거·꺼짐·케이블?",
+        "- «포트 바뀜»(노랑): 같은 장비의 열린 포트가 달라짐. 기준과 이번에 둘 다 확인한 포트만 비교합니다(이번에 확인하지 않은 포트는 «닫힘» 이 아님).",
+        "- 이번 범위가 기준 범위보다 좁으면 범위 밖 기준 장비는 «사라짐» 이 아니라 따로 셉니다. 찾기를 멈췄으면 «사라짐» 이 실제보다 많을 수 있습니다.",
+        "- «비교 CSV» 로 비교 결과를 저장하고(«같음도 보기» 를 켜면 같은 장비도), 머리줄 «AI» 로 복사하면 비교 결과가 함께 들어갑니다(MAC 뒤 3바이트는 가림).",
       ],
     },
     {
@@ -202,7 +218,7 @@ export const help: HelpDoc = {
       title: "Layout",
       body: [
         "- Left: adapter, range, «Scan»/«Stop», status and progress bar. Below them «Discovery & ports (advanced)» is collapsed, with the current settings summarized next to its title, e.g. «ARP+ping · 22 ports · Modbus ID · names». Non-default settings add «(changed)» and the section starts expanded next time. Click the title to show ARP, ping, ping wait, parallel, name lookup, industrial port check, ports to check, port wait and Modbus ID reading (the state is remembered). It expands by itself when both ping and ARP are off or the port list is invalid.",
-        "- Tabs: «Devices» (results) and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
+        "- Tabs: «Devices» (results), «Baseline» (from 0.10.0) and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
         "- «Devices» toolbar: filter box, «Industrial ports only», «New n» / «Gone n», «Save CSV», «Clear».",
         "- Below the table: details and actions for the selected device.",
         ...windowLines("en"),
@@ -280,6 +296,22 @@ export const help: HelpDoc = {
         "- «Open in Modbus Master» (devices with 502 open) starts PortDock Modbus Master on this PC with «--tcp IP:502 --unit ID». Master opens with Modbus TCP, the device address and Slave ID filled in; press «Connect» in Master. The ID is the one from «Modbus device ID» if it was read, else 1.",
         "- Master is looked up as an installed copy (installed for this user) or a portable copy (the same folder as Net Scan, or a «PortDock…» folder next to it). If it is not found, «IP:502» is copied and a «Get Modbus Master» link appears below. It only runs when you click, without a shell, and passes only the IP and numbers.",
         "- «Open in TCP» (devices with a port open other than 502 and web 80/443) starts PortDock TCP on this PC with «--connect IP:port». TCP opens in client mode with the address and port filled in; press Connect there. With several ports, pick one from «Open in TCP ▾» (also in the row right-click menu). If TCP is not found, «IP:port» is copied and a download page link is shown.",
+      ],
+    },
+    {
+      title: "Baseline comparison (from 0.10.0)",
+      id: "baseline",
+      body: [
+        "After maintenance, additions or removals, see «what changed since last time». Save the device list as a baseline while the setup is right, then compare later scans with it.",
+        "- Save: after a «Scan», open the «Baseline» tab, type a name (e.g. Line 1 routine check) and press «Save results as baseline». An empty name becomes «range date». The same name is overwritten. Up to 20 are kept in the app's storage on this PC; «Save to file…» and «Load from file…» exchange JSON files.",
+        "- A baseline holds IP, MAC, vendor, name, open ports and Modbus device ID, plus the range and the ports checked. MACs are needed to compare, so a baseline file contains MAC addresses — take care when giving it to others. Nothing is sent anywhere.",
+        "- Compare: pick a baseline and the current result is compared right away (after the scan finishes). The same MAC is the same device; without a MAC (routed, ARP off) the same IP counts as the same device.",
+        "- «MAC changed» (red): another MAC on the same IP — a replaced device, or an IP clash?",
+        "- «IP changed» (yellow): the same MAC on another IP — DHCP gave a new address, or it was reconfigured.",
+        "- «New» (green): not in the baseline — added? «Missing» (red): in the baseline but not seen — removed, off, or a cable?",
+        "- «Ports changed» (yellow): the same device's open ports differ. Only ports checked both in the baseline and now are compared (a port not checked now is not «closed»).",
+        "- If this range is narrower than the baseline's, baseline hosts outside it are counted separately, not as «Missing». After a stopped scan «Missing» may be overstated.",
+        "- «Comparison CSV» saves the comparison («Show unchanged» includes unchanged devices); the header «AI» copy includes it as well (the last 3 bytes of each MAC are hidden).",
       ],
     },
     {

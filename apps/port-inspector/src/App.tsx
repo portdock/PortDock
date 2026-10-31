@@ -57,6 +57,7 @@ import { api, loopApi } from "./api";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
 import { entryKey, overall, portLabel } from "./model";
+import { SnapshotView, useSnapshots } from "./Snapshot";
 import "./App.css";
 
 const APP = "PortDock Port Inspector";
@@ -166,7 +167,12 @@ export default function App() {
   });
   useEffect(() => store("pcDays", pcDays), [pcDays]);
   // ---- 무선 탭(0.5.0) — 탭을 처음 열 때 읽는다(이벤트 로그를 훑어 몇 초 걸릴 수 있다)
-  const [tab, setTab] = useState<"ports" | "wireless">(() => (load<string>("tab", "ports") === "wireless" ? "wireless" : "ports"));
+  const [tab, setTab] = useState<"ports" | "wireless" | "compare">(() => {
+    const v = load<string>("tab", "ports");
+    return v === "wireless" || v === "compare" ? v : "ports";
+  });
+  // ---- 점검 결과 저장·비교(0.10.0)
+  const sn = useSnapshots(lang);
   useEffect(() => store("tab", tab), [tab]);
   const [wl, setWl] = useState<Wireless | null>(null);
   const [wlLoading, setWlLoading] = useState(false);
@@ -390,7 +396,16 @@ export default function App() {
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
-            <AiCopyButton app={APP} lang={lang} kind="port" checks={() => (canExport ? exportText() : null)} />
+            <AiCopyButton
+              app={APP}
+              lang={lang}
+              kind="port"
+              checks={() => {
+                // (0.10.0) «지난번과 비교» 탭이면 비교 결과를 함께
+                const parts = [canExport && tab !== "compare" ? exportText() : null, tab === "compare" ? sn.aiText() : null].filter(Boolean);
+                return parts.length ? parts.join("\n\n") : null;
+              }}
+            />
             <button className="icon-btn" onClick={openHelp} title={t("helpTip")} aria-label={t("helpTip")}>
               ?
             </button>
@@ -465,14 +480,19 @@ export default function App() {
           {refreshButton(true)}
         </NarrowBar>
         <div className="tabs" role="tablist" aria-label={t("tabWireless")}>
-          <button type="button" role="tab" aria-selected={!onWl} className={`seg tab-ports${onWl ? "" : " on"}`} onClick={() => setTab("ports")}>
+          <button type="button" role="tab" aria-selected={tab === "ports"} className={`seg tab-ports${tab === "ports" ? " on" : ""}`} onClick={() => setTab("ports")}>
             {t("tabPorts")}
           </button>
           <button type="button" role="tab" aria-selected={onWl} className={`seg tab-wireless${onWl ? " on" : ""}`} onClick={() => setTab("wireless")} data-tip={tip(lang, "piTabWireless")}>
             {t("tabWireless")}
           </button>
+          <button type="button" role="tab" aria-selected={tab === "compare"} className={`seg tab-compare${tab === "compare" ? " on" : ""}`} onClick={() => setTab("compare")} data-tip={tip(lang, "piTabCompare")}>
+            {t("tabCompare")}
+          </button>
         </div>
-        {onWl ? (
+        {tab === "compare" ? (
+          <SnapshotView lang={lang} t={t} sn={sn} pcDays={pcDays} toast={toast} />
+        ) : onWl ? (
           <>
             <div className="toolbar">
               <b className="sel-title">{t("wlTitle")}</b>

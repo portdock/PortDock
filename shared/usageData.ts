@@ -31,8 +31,8 @@ export const FEATURES = {
   simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log", ...COMMON_FEATURES],
   scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block", ...COMMON_FEATURES],
   plot: ["start", "record", "export", ...COMMON_FEATURES],
-  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor", ...COMMON_FEATURES],
-  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial", ...COMMON_FEATURES],
+  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor", "baseline_save", "baseline_compare", ...COMMON_FEATURES],
+  "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial", "snapshot_save", "snapshot_compare", ...COMMON_FEATURES],
   "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state", "rules", "fill_write", ...COMMON_FEATURES],
   "hw-tester": ["net_record", "csv_save", "wifi_signal", "bt_record", "bt_audio", "test_tone", "usb_record", "usb_history", ...COMMON_FEATURES],
 } as const satisfies Record<string, readonly string[]>;

@@ -1,0 +1,123 @@
+/* 기준·저장본과 비교(0.10.0) — Net Scan «기준과 비교»·Port Inspector «지난번과 비교» 공용 모양 */
+.cmp-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.cmp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.cmp-bar > * {
+  white-space: nowrap;
+}
+.cmp-bar select,
+.cmp-bar input[type="text"] {
+  min-width: 0;
+  max-width: 260px;
+}
+.cmp-notes {
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cmp-mac-note {
+  color: #a16207;
+}
+:root[data-theme="dark"] .cmp-mac-note {
+  color: #f3c34f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cmp-mac-note {
+    color: #f3c34f;
+  }
+}
+.cmp-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+/* 바뀜 표시 — 새로 생김 초록 · 사라짐·MAC 바뀜 빨강 · IP·포트·값 바뀜 노랑 · 같음 흐리게 */
+.chg {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  font-size: calc(var(--fs, 13px) * 0.85);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chg-new {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+.chg-gone,
+.chg-macChanged {
+  color: var(--fail);
+  border-color: var(--fail);
+  background: color-mix(in srgb, var(--fail) 12%, transparent);
+}
+.chg-ipChanged,
+.chg-portsChanged,
+.chg-changed {
+  color: #a16207;
+  border-color: #d4a017;
+  background: color-mix(in srgb, #d4a017 14%, transparent);
+}
+:root[data-theme="dark"] :is(.chg-ipChanged, .chg-portsChanged, .chg-changed) {
+  color: #f3c34f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) :is(.chg-ipChanged, .chg-portsChanged, .chg-changed) {
+    color: #f3c34f;
+  }
+}
+.chg-same {
+  color: var(--muted);
+}
+table.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.cmp-table th,
+table.cmp-table td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+table.cmp-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  font-weight: 600;
+}
+table.cmp-table tr.row-gone td,
+table.cmp-table tr.row-same td {
+  color: var(--muted);
+}
+table.cmp-table td.mono {
+  font-family: var(--mono, monospace);
+}
+.cmp-arrow {
+  color: var(--muted);
+  padding: 0 4px;
+}
+.cmp-bar input.bs-name,
+.cmp-bar input.sn-name {
+  width: 200px;
+}
+.cmp-counts .grow,
+.cmp-bar .grow {
+  flex: 1;
+}

@@ -27,6 +27,7 @@ import { dict, fill, type Key, type Lang } from "./i18n";
 import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, serviceLabel, serviceTip, stamp, subnetFit, subnetNote, tcpOpenPorts, togglePortChip } from "./net";
 import { LogMenu, type MenuItem } from "@shared/LogMenu";
 import { MonitorView, useMonitor } from "./Monitor";
+import { BaselineView, useBaselines, type ScanNow } from "./Baseline";
 import "./App.css";
 
 const APP = "PortDock Net Scan";
@@ -74,7 +75,10 @@ export default function App() {
   useHelpKey(openHelp);
   const [showSide, setShowSide] = useState(false);
   const toast = useToast(lang);
-  const [tab, setTab] = useState<"results" | "monitor">(() => load("tab", "results"));
+  const [tab, setTab] = useState<"results" | "compare" | "monitor">(() => {
+    const v = load<string>("tab", "results");
+    return v === "compare" || v === "monitor" ? v : "results";
+  });
   useEffect(() => store("tab", tab), [tab]);
 
   // ---- 설정(마지막 값 기억)
@@ -185,6 +189,9 @@ export default function App() {
   const [gone, setGone] = useState<Lite[]>([]);
   const prevRef = useRef<Set<string> | null>(null);
   const [scannedRange, setScannedRange] = useState<string>("");
+  // 기준과 비교(0.10.0) — 이번 찾기에서 확인한 포트·범위의 처음·끝
+  const [scannedPorts, setScannedPorts] = useState<number[]>([]);
+  const [scannedScope, setScannedScope] = useState<{ first: string | null; last: string | null }>({ first: null, last: null });
   // 찾기 시작 때의 대역 알림 — 결과가 0개일 때·CSV 머리에 다시 보인다
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -245,6 +252,8 @@ export default function App() {
     const hist = load<History>("history", {});
     prevRef.current = hist[range] ? new Set(hist[range].hosts.map((h) => h.ip)) : null;
     setScannedRange(range);
+    setScannedPorts(cfg.portsOn ? portsParsed.ports : []);
+    setScannedScope({ first: info?.first ?? null, last: info?.last ?? null });
     setScanNote(note?.text ?? null);
     setProgress({ done: 0, total: info?.count ?? 0 });
     setFound(0);
@@ -489,11 +498,21 @@ export default function App() {
         .join(" "),
     );
     if (rows.length > 150) lines.push(`… +${rows.length - 150}`);
-    return [...head, ...lines].join("\n");
+    // (0.10.0) 기준과 비교한 결과가 있으면 뒤에(MAC 은 aiCopy 가 뒤 3바이트를 가린다)
+    const cmp = bs.aiText();
+    return [...head, ...lines, ...(cmp ? ["", cmp] : [])].join("\n");
   };
 
   // ---- 핑 감시
   const mon = useMonitor(lang, settings, toast);
+
+  // ---- 기준과 비교(0.10.0)
+  const scanNow: ScanNow = useMemo(
+    () => ({ hosts: [...hostsRef.current.values()], range: scannedRange, ports: scannedPorts, first: scannedScope.first, last: scannedScope.last, phase }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [version, scannedRange, scannedPorts, scannedScope, phase],
+  );
+  const bs = useBaselines(scanNow, lang);
 
   useExitGuard(scanning || mon.running, settings.confirmExit, lang, APP);
   const runDisabled = (!scanning && !canScan) || starting;
@@ -527,6 +546,7 @@ export default function App() {
   const countWord = lang === "ko" ? `${n}대` : `${n} ${n === 1 ? "host" : "hosts"}`;
   const titleParts = [phase !== "idle" && scannedRange, phase !== "idle" && (scanning ? `${countWord} · ${pct}%` : countWord), mon.running && (lang === "ko" ? `감시 ${mon.hosts.length}${mon.downCount ? ` · 끊김 ${mon.downCount}` : ""}` : `monitor ${mon.hosts.length}${mon.downCount ? ` · ${mon.downCount} down` : ""}`)];
   useWindowTitle(windowTitle(APP, titleParts, !!mon.logPath));
+  const bsChanged = bs.diff ? bs.diff.rows.filter((r) => r.change !== "same").length : 0;
   const dotCls = scanning ? "s-connected" : error ? "s-disconnected" : "";
   const summary = `${cfg.range || "—"} · ${sel ? sel.nic.name : "—"} · ${statusText}`;
 
@@ -735,6 +755,10 @@ export default function App() {
           <button role="tab" aria-selected={tab === "results"} className={tab === "results" ? "tab on" : "tab"} onClick={() => setTab("results")} data-tip={tip(lang, "nsTabResults")}>
             {t("tabResults")}
             {n ? <span className="tab-n">{n}</span> : null}
+          </button>
+          <button role="tab" aria-selected={tab === "compare"} className={tab === "compare" ? "tab on tab-compare" : "tab tab-compare"} onClick={() => setTab("compare")} data-tip={tip(lang, "nsTabCompare")}>
+            {t("tabCompare")}
+            {bs.diff ? <span className={bsChanged ? "tab-n bad" : "tab-n ok"}>{bsChanged || "="}</span> : null}
           </button>
           <button role="tab" aria-selected={tab === "monitor"} className={tab === "monitor" ? "tab on" : "tab"} onClick={() => setTab("monitor")} data-tip={tip(lang, "nsTabMonitor")}>
             {t("tabMonitor")}
@@ -1007,6 +1031,8 @@ export default function App() {
               )}
             </div>
           </>
+        ) : tab === "compare" ? (
+          <BaselineView lang={lang} t={t} now={scanNow} bs={bs} toast={toast} onError={setError} />
         ) : (
           <MonitorView lang={lang} mon={mon} settings={settings} />
         )}
