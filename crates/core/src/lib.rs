@@ -36,6 +36,7 @@ pub mod rtu_sniff;
 pub mod report;
 pub mod serial;
 pub mod share;
+pub mod slave_profile;
 pub mod tcp;
 pub mod udp;
 pub mod wlan;

@@ -250,8 +250,10 @@ export function addrText(table: Table, a: number, mode: AddrMode): string {
 
 // ------------------------------------------------------------------ 값 자동 변화
 
-export type SimKindName = "increment" | "decrement" | "random" | "sine" | "ramp" | "toggle";
+export type SimKindName = "increment" | "decrement" | "random" | "sine" | "ramp" | "toggle" | "noise";
 export const SIM_KINDS: SimKindName[] = ["increment", "decrement", "random", "sine", "ramp", "toggle"];
+/** Modbus Slave 칸 설정 창 — noise(잡음, 범위 안에서 천천히 흔들림)는 0.10.0 부터. PLC Simulator 창에는 아직 없다(백엔드는 같이 받는다) */
+export const SLAVE_SIM_KINDS: SimKindName[] = ["increment", "decrement", "random", "sine", "ramp", "noise", "toggle"];
 /** 비트 표에서 쓸 수 있는 것 */
 export const BIT_SIM_KINDS: SimKindName[] = ["toggle", "random"];
 
@@ -306,7 +308,9 @@ export function simToSpec(s: SimCfg, point: Point | undefined, bits: boolean): S
           ? { kind: "sine", amp: s.amp, offset: s.offset, waveMs: s.waveMs }
           : s.kind === "ramp"
             ? { kind: "ramp", min: s.min, max: s.max, waveMs: s.waveMs }
-            : { kind: "toggle" };
+            : s.kind === "noise"
+              ? { kind: "noise", step: s.step, min: s.min, max: s.max }
+              : { kind: "toggle" };
   return { addr: s.addr, valueType: type, order: bits ? "ABCD" : (point?.order ?? "ABCD"), periodMs: s.periodMs, sim };
 }
 
@@ -324,6 +328,7 @@ const SM = {
     sine: "사인",
     ramp: "램프",
     toggle: "토글",
+    noise: "잡음(천천히 흔들림)",
     onRead: "읽을 때마다",
     every: "{a}ms 마다",
     wrapOn: "끝에서 처음으로",
@@ -342,6 +347,7 @@ const SM = {
     sine: "Sine",
     ramp: "Ramp",
     toggle: "Toggle",
+    noise: "Noise (slow drift)",
     onRead: "on every read",
     every: "every {a} ms",
     wrapOn: "wraps",
@@ -357,8 +363,8 @@ export function simCheck(s: SimCfg, lang: Lang): string | null {
   const nums = [s.step, s.min, s.max, s.amp, s.offset, s.waveMs, s.periodMs];
   if (nums.some((x) => typeof x !== "number" || !Number.isFinite(x))) return m.num;
   if (s.periodMs !== 0 && (s.periodMs < 50 || s.periodMs > 3_600_000)) return m.period;
-  if ((s.kind === "increment" || s.kind === "decrement") && !(s.step > 0)) return m.stepPos;
-  if ((s.kind === "increment" || s.kind === "decrement" || s.kind === "random" || s.kind === "ramp") && s.min > s.max) return m.minMax;
+  if ((s.kind === "increment" || s.kind === "decrement" || s.kind === "noise") && !(s.step > 0)) return m.stepPos;
+  if ((s.kind === "increment" || s.kind === "decrement" || s.kind === "random" || s.kind === "ramp" || s.kind === "noise") && s.min > s.max) return m.minMax;
   if ((s.kind === "sine" || s.kind === "ramp") && !(s.waveMs >= 1)) return m.wave;
   return null;
 }
@@ -381,6 +387,9 @@ export function simSummary(s: SimCfg, lang: Lang): string {
       break;
     case "ramp":
       what = `${m.ramp} ${s.min} → ${s.max} / ${s.waveMs}ms`;
+      break;
+    case "noise":
+      what = `${m.noise} ${s.min}~${s.max} ±${s.step}`;
       break;
     default:
       what = m.toggle;

@@ -12,6 +12,10 @@ export interface DeviceApplyOpts {
   comm: boolean;
   /** Master: 빈 주소를 사이에 둔 칸도 한 표로(최대 8칸) */
   joinGaps: boolean;
+  /** Slave(0.10.0): 값 만들기(잡음·누적)와 연결 규칙(운전 지령 → 출력 주파수 등)도 넣기 */
+  behave?: boolean;
+  /** Slave(0.10.0): 읽기 전용·쓰기 전용 지키기, 맵에 없는 주소는 예외 02 */
+  guard?: boolean;
 }
 
 export const JOIN_GAP = 8;
@@ -42,6 +46,9 @@ const TX = {
     thUnit: "단위",
     thRw: "R/W",
     notes: "주의",
+    behaveOpt: "값 만들기·연결 규칙도 넣기 — 전압·전류 흔들림, 전력량 누적, 운전 지령 → 출력 주파수 가감속 (0.10.0 부터)",
+    guardOpt: "읽기 전용·쓰기 전용 지키기, 맵에 없는 주소는 예외 02 (0.10.0 부터)",
+    slaveNote: "이 값은 매뉴얼 표를 옮긴 것 — 실제 장비 동작(가감속 시간 등)과 다를 수 있습니다.",
   },
   en: {
     masterTitle: "Load device profile",
@@ -68,6 +75,9 @@ const TX = {
     thUnit: "Unit",
     thRw: "R/W",
     notes: "Notes",
+    behaveOpt: "Also add value generators and link rules — voltage/current drift, energy accumulation, run command → output frequency ramp (from 0.10.0)",
+    guardOpt: "Enforce read-only and write-only, exception 02 for addresses not in the map (from 0.10.0)",
+    slaveNote: "These values are taken from the manual's tables — real device behaviour (ramp times, etc.) may differ.",
   },
 };
 type TKey = keyof typeof TX.ko;
@@ -96,6 +106,8 @@ export function DeviceDialog({
   const dev = list.find((d) => d.id === selId) ?? list[0];
   const [comm, setComm] = useState(true);
   const [joinGaps, setJoinGaps] = useState(false);
+  const [behave, setBehave] = useState(true);
+  const [guard, setGuard] = useState(true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -204,6 +216,19 @@ export function DeviceDialog({
                 <input type="checkbox" checked={comm && hasComm} disabled={!hasComm} onChange={(e) => setComm(e.target.checked)} />
                 {hasComm ? t("commOpt") : t("commNone")}
               </label>
+              {mode === "slave" && (
+                <>
+                  <label className="inline dev-opt" data-tip={tip(lang, "devBehave")}>
+                    <input type="checkbox" checked={behave} onChange={(e) => setBehave(e.target.checked)} />
+                    {t("behaveOpt")}
+                  </label>
+                  <label className="inline dev-opt" data-tip={tip(lang, "devGuard")}>
+                    <input type="checkbox" checked={guard} onChange={(e) => setGuard(e.target.checked)} />
+                    {t("guardOpt")}
+                  </label>
+                  <div className="hint warn dev-note">{t("slaveNote")}</div>
+                </>
+              )}
               {mode === "master" && (
                 <label className="inline dev-opt" data-tip={tip(lang, "devJoin")}>
                   <input type="checkbox" checked={joinGaps} onChange={(e) => setJoinGaps(e.target.checked)} />
@@ -222,7 +247,7 @@ export function DeviceDialog({
             <button className="btn small" onClick={onClose}>
               {t("cancel")}
             </button>
-            <button className="btn small primary" disabled={!dev || (mode === "master" && !groups.length)} onClick={() => dev && onApply(dev, { comm: comm && hasComm, joinGaps })} data-tip={tip(lang, mode === "master" ? "devApplyMaster" : "devApplySlave")}>
+            <button className="btn small primary" disabled={!dev || (mode === "master" && !groups.length)} onClick={() => dev && onApply(dev, { comm: comm && hasComm, joinGaps, ...(mode === "slave" ? { behave, guard } : {}) })} data-tip={tip(lang, mode === "master" ? "devApplyMaster" : "devApplySlave")}>
               {t("apply")}
             </button>
           </div>

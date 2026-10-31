@@ -398,6 +398,9 @@ const slave = {
   options: { ignoreUnitId: false },
   device: { vendor: "PortDock", productCode: "Modbus Slave", revision: "1.0" },
   sims: new Map(), // "id:table" → [SimSpec]
+  // 장비 프로필(0.10.0) — 국번 → 읽기/쓰기 제한(GuardSpec)·연결 규칙(LinkSpec[])
+  guards: new Map(),
+  links: new Map(),
   style: { base: 0, plc: false },
   tid: 0,
 };
@@ -422,6 +425,24 @@ setInterval(() => {
       const v = m.get(s.addr) ?? 0;
       if (s.sim.kind === "toggle") m.set(s.addr, v ? 0 : 1);
       else if (s.valueType === "u16" && (s.sim.kind === "increment" || s.sim.kind === "decrement")) m.set(s.addr, (v + (s.sim.kind === "increment" ? 1 : 0xffff)) & 0xffff);
+      else if (s.valueType === "u16" && s.sim.kind === "noise") m.set(s.addr, v < s.sim.min || v > s.sim.max ? Math.round((s.sim.min + s.sim.max) / 2) : Math.min(s.sim.max, Math.max(s.sim.min, v + Math.round((Math.random() * 2 - 1) * s.sim.step))));
+    }
+  }
+  // 연결 규칙(0.10.0) — u16 칸만 흉내: 따라가기(운전 지령 → 목표로 초당 rate)·비례·누적
+  for (const [id, list] of slave.links) {
+    const val = (c) => tbl(id, c.table).get(c.addr) ?? 0;
+    for (const l of list) {
+      if (l.out.valueType !== "u16" && l.out.valueType !== "bit") continue;
+      const r = l.rule;
+      const cur = val(l.out);
+      let next = cur;
+      if (r.kind === "approach") {
+        const on = !r.run || (r.runMask ? (val(r.run) & r.runMask) !== 0 : val(r.run) !== 0);
+        const target = on ? val(r.src) * r.gain : 0;
+        next = Math.abs(target - cur) <= r.rate ? target : cur + Math.sign(target - cur) * r.rate;
+      } else if (r.kind === "scale") next = val(r.src) * r.gain + r.offset;
+      else next = cur + (r.src ? val(r.src) * r.gain : r.gain);
+      tbl(id, l.out.table).set(l.out.addr, Math.min(0xffff, Math.max(0, Math.round(next))));
     }
   }
 }, 1000);
@@ -1191,6 +1212,17 @@ async function handle(cmd, a) {
       if (a.sims.length) slave.sims.set(`${a.id}:${a.table}`, a.sims);
       else slave.sims.delete(`${a.id}:${a.table}`);
       return null;
+    case "set_guard":
+      if (!slave.ids.includes(a.id)) return fail(tr("없는 슬레이브", "Unknown slave ID"));
+      if (a.guard && ![2, 3].includes(a.guard.denyException)) return fail(tr("제한 위반 예외는 02 또는 03 입니다", "The access exception must be 02 or 03"));
+      if (a.guard) slave.guards.set(a.id, a.guard);
+      else slave.guards.delete(a.id);
+      return null;
+    case "set_links":
+      if (!slave.ids.includes(a.id)) return fail(tr("없는 슬레이브", "Unknown slave ID"));
+      if (a.links.length) slave.links.set(a.id, a.links);
+      else slave.links.delete(a.id);
+      return null;
     case "set_addr_style":
       slave.style = { base: a.style.base, plc: !!a.style.plc };
       return null;
@@ -1199,6 +1231,7 @@ async function handle(cmd, a) {
       if (a.ids.some((x) => !Number.isInteger(x) || x < 1 || x > 247)) return fail(tr("슬레이브 주소는 1~247", "Slave IDs are 1–247"));
       slave.ids = [...a.ids];
       for (const k of [...slave.sims.keys()]) if (!slave.ids.includes(Number(k.split(":")[0]))) slave.sims.delete(k);
+      for (const m of [slave.guards, slave.links]) for (const k of [...m.keys()]) if (!slave.ids.includes(k)) m.delete(k);
       return null;
     case "set_range": {
       const e = spanErr(a.start, a.count);

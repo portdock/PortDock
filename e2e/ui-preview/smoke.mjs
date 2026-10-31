@@ -1222,14 +1222,24 @@ async function runApp(app, port) {
         {
           await js("[...document.querySelectorAll('.main .toolbar .btn.small')].find((b) => /장비 흉내|Emulate device/.test(b.textContent)).click()");
           await sleep(300);
-          const ok = await js("const d = document.querySelector('.modal.dev-dlg'); return d ? { items: d.querySelectorAll('.dev-item').length, rows: d.querySelectorAll('.dev-regs tbody tr').length, plan: (d.querySelector('.dev-plan') || {}).textContent || '' } : null");
+          const ok = await js("const d = document.querySelector('.modal.dev-dlg'); return d ? { items: d.querySelectorAll('.dev-item').length, rows: d.querySelectorAll('.dev-regs tbody tr').length, plan: (d.querySelector('.dev-plan') || {}).textContent || '', opts: d.querySelectorAll('label.dev-opt input:checked').length, note: (d.querySelector('.dev-note') || {}).textContent || '' } : null");
           if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-device`);
           if (!ok || ok.items < 1 || ok.rows < 1 || !/국번|Slave ID/.test(ok.plan)) await conv("slave-device", `장비 흉내 창이 이상함: ${JSON.stringify(ok)}`);
+          // (0.10.0) 장비 프로필로 흉내 — 값 만들기·제한 두 칸(기본 켬)과 «매뉴얼 표를 옮긴 것» 문구
+          if (ok && (ok.opts < 2 || !/매뉴얼 표를 옮긴 것|taken from the manual/.test(ok.note))) await conv("slave-profile", `장비 흉내 창의 프로필 선택지가 이상함: ${JSON.stringify(ok)}`);
           else {
             await js("document.querySelector('.modal.dev-dlg .dlg-buttons .btn.primary').click()");
             await sleep(700);
             const r = await js("return { open: !!document.querySelector('.modal.dev-dlg'), toast: (document.querySelector('.toast') || {}).textContent || '', err: !!document.querySelector('.traffic-error'), names: [...document.querySelectorAll('.regs .reg .rname')].map((e) => e.textContent).filter(Boolean).length }");
             if (r.open || r.err || !/레지스터 \d+개를 국번|Loaded \d+ registers/.test(r.toast) || r.names < 1) await conv("slave-device", `장비 흉내 결과가 이상함: ${JSON.stringify(r)}`);
+            // (0.10.0) 첫 장비(전력 미터)는 값 만들기·연결 규칙이 붙고, 왼쪽 «장비 프로필» 칸 → «연결 규칙…» 창에 규칙 줄
+            if (!/연결 규칙 [1-9]\d*개|[1-9]\d* link rules/.test(r.toast)) await conv("slave-profile", `장비 프로필 알림에 연결 규칙이 없음: ${JSON.stringify(r.toast)}`);
+            const pr = await js("const s = [...document.querySelectorAll('aside.side details > summary')].find((x) => /장비 프로필|Device profile/.test(x.textContent)); if (!s) return null; const d = s.parentElement; d.open = true; const b = [...d.querySelectorAll('button')].find((x) => /연결 규칙|Link rules/.test(x.textContent)); if (!b) return { btn: false }; b.click(); return { btn: true, on: d.classList.contains('on'), checks: d.querySelectorAll('input[type=checkbox]:checked').length }");
+            await sleep(300);
+            const lk = await js("const d = document.querySelector('.modal.link-dlg'); const r = d ? { rows: d.querySelectorAll('.link-row').length, note: (d.querySelector('.hint.warn') || {}).textContent || '' } : null; if (d) [...d.querySelectorAll('.dlg-buttons .btn')].find((x) => !x.classList.contains('primary')).click(); return r");
+            const marks = await js("return document.querySelectorAll('.regs .accmark, .regs .simmark').length");
+            if (!pr || !pr.btn || !pr.on || pr.checks < 2 || !lk || lk.rows < 1 || !/매뉴얼|manual/.test(lk.note) || marks < 1) await conv("slave-profile", `장비 프로필 칸·연결 규칙 창이 이상함: ${JSON.stringify({ pr, lk, marks })}`);
+            if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-profile`);
             if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-device-loaded`);
           }
           await verify("slave device emulation");

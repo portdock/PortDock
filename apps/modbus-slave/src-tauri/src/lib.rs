@@ -8,6 +8,7 @@ use portdock_core::modbus::{AddrStyle, Summarizer, Wire};
 use portdock_core::modbus_slave::{DeviceId, Faults, Outcome, Slave, SlaveOptions, TABLE_SIZE, Table};
 use portdock_core::ports;
 use portdock_core::regmap::SimSpec;
+use portdock_core::slave_profile::{Guard, LinkSpec};
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{Reply, Responder, SerialConfig, Session};
 use portdock_core::tcp::{TcpConfig, TcpMode, TcpSession};
@@ -307,6 +308,18 @@ fn set_sims(app: State<App>, id: u8, table: Table, sims: Vec<SimSpec>) -> Result
     app.slave.lock().unwrap().set_sims(id, table, sims)
 }
 
+/// 장비 프로필의 읽기/쓰기 제한(0.10.0) — None 이면 끔
+#[tauri::command]
+fn set_guard(app: State<App>, id: u8, guard: Option<Guard>) -> Result<(), String> {
+    app.slave.lock().unwrap().set_guard(id, guard)
+}
+
+/// 칸끼리 잇는 규칙(0.10.0)을 통째로 바꾼다
+#[tauri::command]
+fn set_links(app: State<App>, id: u8, links: Vec<LinkSpec>) -> Result<(), String> {
+    app.slave.lock().unwrap().set_links(id, links)
+}
+
 /// 통신 기록 요약의 주소 표기(0·1 기준, PLC 표기)
 #[tauri::command]
 fn set_addr_style(app: State<App>, style: AddrStyle) {
@@ -519,6 +532,8 @@ pub fn run() {
             set_options,
             set_device_id,
             set_sims,
+            set_guard,
+            set_links,
             set_addr_style,
             set_slave_ids,
             set_range,
