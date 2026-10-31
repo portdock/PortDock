@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ExposeMark, ExposeNote } from "./Exposure";
 import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
@@ -858,6 +859,7 @@ export default function App() {
                           {h.gone ? <span className="mark gone">{t("markGone")}</span> : isNew(h.ip) ? <span className="mark new">{t("markNew")}</span> : null}
                           {h.me && <span className="mark me">{t("me")}</span>}
                           {h.ip === gateway && <span className="mark gw">{t("gateway")}</span>}
+                          {!h.gone && <ExposeMark ports={h.ports} lang={lang} />}
                           {h.conflict.length > 1 && (
                             <span className="mark conflict" title={t("conflictLine", { a: h.conflict.join(" · ") })}>
                               {t("markConflict")}
@@ -1012,6 +1014,7 @@ export default function App() {
                     </div>
                   )}
                   {selHost.conflict.length > 1 && <div className="hint warn">{t("conflictLine", { a: selHost.conflict.join(" · ") })}</div>}
+                  <ExposeNote ports={selHost.ports} lang={lang} />
                   {selHost.modbus && (
                     <div className="ident mono">
                       {t("identVendor")}: {selHost.modbus.vendor || "—"} · {t("identProduct")}: {selHost.modbus.product || "—"} · {t("identRevision")}: {selHost.modbus.revision || "—"} · {t("identUnit")} {selHost.modbus.unit}

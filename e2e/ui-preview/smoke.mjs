@@ -1357,6 +1357,27 @@ async function runApp(app, port) {
         if (!(await js("return document.querySelectorAll('.trend .trend-row').length === 1"))) await conv("mm-trend", "📈 추세를 눌렀는데 추세 줄이 없음");
         if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-trend`);
         await verify("mm point/trend");
+        // (0.10.0) 값 감시·알람: 첫 칸에 «하한 10억» → 늘 걸림 → 칸 강조·알람 목록·확인 → 조건 지우면 목록의 알람이 닫힘
+        const alr = await jsAsync(`
+          const w = (ms) => new Promise((r) => setTimeout(r, ms));
+          document.querySelector('.regs .reg').click(); await w(150);
+          document.querySelector('.main .toolbar .alarm-add').click(); await w(250);
+          const dlg = document.querySelector('.modal.alarm-dlg');
+          if (!dlg) return { open: false };
+          __sm.setVal(dlg.querySelector('.al-lo input'), '1000000000'); await w(100);
+          dlg.querySelector('.alarm-dlg-btns .btn.primary').click(); await w(2500);
+          const p = document.querySelector('.alarm-panel');
+          const a = { open: true, closed: !document.querySelector('.modal.alarm-dlg'), on: !!p && p.classList.contains('on'), hit: !!document.querySelector('.regs .reg.alarm-hit'), rows: p ? p.querySelectorAll('.alarm-list tbody tr.open').length : 0, safety: !!p && !!p.querySelector('.alarm-safety') };
+          const ack = p && p.querySelector('.al-ack'); if (ack) ack.click(); await w(200);
+          a.acked = !!document.querySelector('.alarm-list tr.acked');
+          document.querySelector('.main .toolbar .alarm-add').click(); await w(250);
+          const d2 = document.querySelector('.modal.alarm-dlg');
+          const rm = d2 && [...d2.querySelectorAll('.alarm-dlg-btns .btn')].find((b) => /조건 지우기|Remove conditions/.test(b.textContent));
+          if (rm) rm.click(); await w(400);
+          a.cleared = !document.querySelector('.regs .reg.alarm-hit') && !document.querySelector('.alarm-list tr.open');
+          return a;`);
+        if (!alr.open || !alr.closed || !alr.on || !alr.hit || alr.rows !== 1 || !alr.safety || !alr.acked || !alr.cleared) await conv("mm-alarm", `값 감시·알람이 이상함: ${JSON.stringify(alr)}`);
+        await verify("mm alarm");
         // 40001 표기: 시작 칸이 40001, 30001 을 넣으면 함수가 04 로
         const plc = await jsAsync(`
           const sel = [...document.querySelectorAll('.main .toolbar select')].find((s) => s.querySelector('option[value=plc]'));
@@ -2301,12 +2322,15 @@ async function runApp(app, port) {
       // (10/26) 이 PC — 일반 PC: 설정은 적기만, 예기치 않은 종료(41·6008)·disk 경고만 «볼 것». «문제 있음» 없음
       await clickText("details.card-pc .btn", ko ? "이 PC 설정 읽기" : "Read this PC's settings");
       const pcLv = (id) => `((document.querySelector('details.card-pc tr.pc-' + ${JSON.stringify(id)}) || document.body).querySelector('.lv') || {}).className || ''`;
-      await expectJs("pc general", `const c = document.querySelector('details.card-pc'); return !!c && c.querySelectorAll('table.pc-items tr').length === 18 && /lv-look/.test(c.querySelector('summary .lv').className)
+      await expectJs("pc general", `const c = document.querySelector('details.card-pc'); return !!c && c.querySelectorAll('table.pc-items tr').length === 25 && /lv-look/.test(c.querySelector('summary .lv').className)
         && /lv-ok/.test(${pcLv("fastStartup")}) && /lv-ok/.test(${pcLv("sleep")}) && /lv-look/.test(${pcLv("unexpected")}) && /lv-look/.test(${pcLv("hardware")}) && !c.querySelector('.lv-problem')
         && /Kernel-Power 41: 2/.test(c.textContent) && c.textContent.includes('powercfg /requests') && /${ko ? "관리자만 읽을 수 있음" : "Administrator only"}/.test(c.textContent)`, 4000);
       // (0.10.0) 블루스크린 코드 이름·사전 링크, NVMe 사용률, SATA «관리자만», 장치가 깨움 → «볼 것», 배터리 없음 → 줄 없음
       await expectJs("pc health", `const c = document.querySelector('details.card-pc'); return /lv-look/.test(${pcLv("crashes")}) && c.textContent.includes('PAGE_FAULT_IN_NONPAGED_AREA') && [...c.querySelectorAll('a')].some((a) => a.href === 'https://portdock.dev/tools/bsod-codes/')
         && /lv-ok/.test(${pcLv("disk-0")}) && /lv-unread/.test(${pcLv("disk-1")}) && /lv-look/.test(${pcLv("wakes")}) && !c.querySelector('tr.pc-battery-0') && !/Example.*Serial/i.test(c.textContent)`);
+      // (0.10.0) 현장 PC 노출 — 원격 데스크톱·SMBv1·방화벽은 문제 없음, 502 를 모든 주소에 연 프로그램·자동 실행은 «볼 것», 고치기 단추 없음
+      await expectJs("pc exposure", `const c = document.querySelector('details.card-pc'); return ["rdp", "rdpNla", "smb1", "firewall"].every((id) => /lv-ok/.test(((c.querySelector('tr.pc-' + id) || c).querySelector('.lv') || {}).className || ''))
+        && /lv-ok/.test(${pcLv("autoLogon")}) && /lv-look/.test(${pcLv("listeners")}) && /lv-look/.test(${pcLv("autoplay")}) && c.textContent.includes('portdock-modbus-slave.exe') && c.textContent.includes('PID 6200') && !!c.querySelector('.pc-group-exposure')`);
       // 장비 PC: 빠른 시작·절전·USB 절전·자동 재시작 정책 없음·재시작 대기·시간 경고도 «볼 것», Microsoft 문서 링크
       await setIn("details.card-pc select.pc-purpose", "equipment");
       await expectJs("pc equipment", `const c = document.querySelector('details.card-pc'); return ["fastStartup", "sleep", "usbSuspend", "updatePolicy", "rebootPending", "time"].every((id) => /lv-look/.test(((c.querySelector('tr.pc-' + id) || c).querySelector('.lv') || {}).className || ''))
@@ -3158,7 +3182,9 @@ async function runApp(app, port) {
           const ip = chip.closest('tr').querySelector('.ip-cell').firstChild.textContent;
           window.__smoke.clip = null;
           chip.click(); await w();
-          const a = { chip: true, ip, clip1: window.__smoke.clip, sel: chip.closest('tr').classList.contains('sel'), conflict: !!chip.closest('tr').querySelector('.mark.conflict') && !!document.querySelector('.toolbar .chip.conflict') };
+          const a = { chip: true, ip, clip1: window.__smoke.clip, sel: chip.closest('tr').classList.contains('sel'), conflict: !!chip.closest('tr').querySelector('.mark.conflict') && !!document.querySelector('.toolbar .chip.conflict'),
+            // (0.10.0) 502 열림 → «노출» 표·아래 칸 안내(인증 없음)
+            expose: !!chip.closest('tr').querySelector('.mark.expose') && /502 Modbus TCP/.test((document.querySelector('.detail-bar .expose-note') || {}).textContent || '') };
           window.__smoke.clip = null;
           chip.closest('tr').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 300 })); await w();
           const items = [...document.querySelectorAll('.log-menu button')];
@@ -3193,7 +3219,7 @@ async function runApp(app, port) {
           }
           return a;`);
         if (r.fatal) add("ns row menu", "smoke-error", r.fatal);
-        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false || !r.omItem || r.master?.ip !== r.ip || r.master?.port !== 502 || !(r.master?.unit >= 1) || !/Modbus Master/.test(r.omToast ?? "") || !r.omBtn || !r.missLink || !(r.missing ?? "").includes(`${r.ip}:502`) || r.clip3 !== `${r.ip}:502`) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
+        else if (!r.chip || r.clip1 !== `${r.ip}:502` || !r.sel || !r.conflict || !r.expose || (r.items || []).length < 7 || r.clip2 !== `${r.ip}:502` || !r.closed || r.otherDisabled === false || r.closed2 === false || !r.omItem || r.master?.ip !== r.ip || r.master?.port !== 502 || !(r.master?.unit >= 1) || !/Modbus Master/.test(r.omToast ?? "") || !r.omBtn || !r.missLink || !(r.missing ?? "").includes(`${r.ip}:502`) || r.clip3 !== `${r.ip}:502`) await conv("ns-row-menu", `결과 줄 Modbus 칩·오른쪽 버튼 메뉴가 이상함: ${JSON.stringify(r)}`);
         if (combo.name === "ko-light") await shot(app, `${combo.name}-row-menu`);
         await verify("ns row menu");
         // (0.3.0) 고른 장비 «TCP 로 열기»(502·웹 말고 열린 포트)

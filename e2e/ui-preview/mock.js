@@ -931,6 +931,10 @@ async function handle(cmd, a) {
       if (/[<>|"?*]/.test(a.path.replace(/^[A-Za-z]:/, ""))) return fail(`${a.path}: ${tr("파일 이름이 잘못되었습니다", "The filename is invalid")} (os error 123)`);
       files.set(a.path, a.text);
       return null;
+    // Plot 알람 기록(0.10.0) — Modbus Master·SCPI 는 창 제목으로 먼저 받는다
+    case "append_text":
+      files.set(a.path, (files.get(a.path) ?? "") + a.text);
+      return null;
     case "read_text":
       if (!files.has(a.path)) return fail(`${a.path}: ${tr("지정된 파일을 찾을 수 없습니다.", "The system cannot find the file specified.")} (os error 2)`);
       return files.get(a.path);
@@ -2363,6 +2367,30 @@ async function pinsp(cmd, a) {
           { time: now() - 2 * DAY, sleepTime: null, source: tr("전원 단추", "Power Button"), sourceType: 1, device: null, timerOwner: null },
         ].filter((w) => now() - w.time <= a.days * DAY),
         batteries: window.__pdMock.piBattery ? [{ designMwh: 50_000, fullMwh: 36_000, cycles: 412 }] : [],
+        // (0.10.0) 현장 PC 노출: 원격 데스크톱 꺼짐·SMBv1 없음·방화벽 모두 켜짐 → 문제 없음, 502 를 0.0.0.0 에 연 프로그램·자동 실행 켜짐 → «볼 것»
+        exposure: {
+          rdpDeny: 1,
+          rdpNla: 1,
+          rdpPort: 3389,
+          smb1Client: "absent",
+          smb1Server: "absent",
+          firewall: [
+            { profile: "domain", enabled: true, current: false },
+            { profile: "private", enabled: true, current: true },
+            { profile: "public", enabled: true, current: false },
+          ],
+          listeners: [
+            { port: 135, v6: false, pid: 1100, process: "svchost.exe" },
+            { port: 445, v6: false, pid: 4 },
+            { port: 502, v6: false, pid: 5120, process: "portdock-modbus-slave.exe" },
+            { port: 5040, v6: false, pid: 6200 },
+          ],
+          listenersRead: true,
+          autoLogon: false,
+          autoLogonPassword: false,
+          autoplayOff: false,
+          autorunPolicy: null,
+        },
         errors: [],
       };
     }

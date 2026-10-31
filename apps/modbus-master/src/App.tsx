@@ -48,6 +48,9 @@ import { DiagDialog } from "./DiagDialog";
 import { BackupDialog } from "./BackupDialog";
 import type { DiagSample } from "@shared/commDiag";
 import { Trend, type TrendItem } from "./Trend";
+import { useAlarms } from "@shared/useAlarms";
+import { AlarmPanel } from "@shared/AlarmPanel";
+import { AlarmRuleDialog } from "@shared/AlarmRuleDialog";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
 import { AiCopyButton } from "@shared/AiCopyButton";
@@ -326,6 +329,23 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---- 값 감시·알람(0.10.0) — 열쇠는 추세와 같은 «표id:주소». 연결해 있는 동안만 본다
+  const alarmLabel = useCallback(
+    (key: string) => {
+      const [tid, a] = key.split(":").map(Number);
+      const list = tablesRef.current;
+      const tb = list.find((x) => x.id === tid);
+      if (!tb) return key;
+      const name = isBitFc(tb.fc) ? "" : (tb.points.find((q) => q.addr === a)?.name ?? "");
+      return `${tableLabel(tb, list.indexOf(tb), dict[lang].tableWord)} ${addrLabel(tb.fc, a, addrMode)}${name ? ` ${name}` : ""}`;
+    },
+    [lang, addrMode],
+  );
+  const al = useAlarms({ storeKey: "alarms", lang, running: connected, labelOf: alarmLabel, writeText: api.writeText, appendText: api.appendText, feature: "alarms", fileStem: "modbus", onError: setError });
+  const alRef = useRef(al);
+  alRef.current = al;
+  const [alarmAt, setAlarmAt] = useState<string | null>(null);
+
   // ---- 읽은 값·추세·값 기록
   const [results, setResults] = useState<Record<number, TableResult>>({});
   const resultsRef = useRef(results);
@@ -353,9 +373,27 @@ export default function App() {
     if (diagRef.current.length > DIAG_KEEP) diagRef.current.splice(0, diagRef.current.length - DIAG_KEEP);
     const bad = diagRef.current.filter((s) => s.result !== "ok" && s.result !== "broadcast").length;
     setDiagBad(bad);
+    // 감시·알람(0.10.0) — 이 표의 조건마다 값(실패면 null)
+    const feedAlarms = (tb: PollTable, ts: number, values: number[] | null) => {
+      const a = alRef.current;
+      if (!a.rules.size) return;
+      for (const rule of a.rules.values()) {
+        const [tid, addr] = rule.key.split(":").map(Number);
+        if (tid !== tb.id || addr < tb.start || addr >= tb.start + tb.qty) continue;
+        if (!values) {
+          a.feed(rule.key, ts, null);
+          continue;
+        }
+        if (addr >= tb.start + values.length) continue;
+        const pt = isBitFc(tb.fc) ? undefined : tb.points.find((q) => q.addr === addr);
+        const v = numValue(values.slice(addr - tb.start, addr - tb.start + (pt ? pointRegs(pt) : 1)), shapeOf(tb.fc, pt));
+        if (v != null) a.feed(rule.key, ts, v);
+      }
+    };
     for (const p of polls) {
       const tb = tablesRef.current.find((x) => x.id === p.table);
       const prev = next[p.table];
+      if (tb && p.outcome.result !== "broadcast") feedAlarms(tb, p.ts, p.outcome.result === "ok" ? p.outcome.values : null);
       if (p.outcome.result !== "ok") {
         next[p.table] = { values: prev?.values ?? null, ts: p.ts, outcome: p.outcome, rttMs: p.rttMs, changed: new Set() };
         continue;
@@ -692,6 +730,9 @@ export default function App() {
     if (sel.id === id) setSelId(rest[Math.min(idx, rest.length - 1)].id);
     const goneTrends = trendKeys.filter((k) => k.startsWith(`${id}:`));
     setTrendKeys((k) => k.filter((x) => !x.startsWith(`${id}:`)));
+    // 감시 조건(0.10.0)도 함께 — 되돌리면 다시
+    const goneRules = [...al.rules.values()].filter((r) => r.key.startsWith(`${id}:`));
+    for (const r of goneRules) al.setRule(r.key, null);
     toast.show(fill(t("deletedTable"), { a: tableLabel(gone, idx, t("tableWord")) }), {
       undo: () => {
         setTables((list) => {
@@ -700,6 +741,7 @@ export default function App() {
           return back;
         });
         setTrendKeys((k) => [...k, ...goneTrends].slice(0, MAX_TRENDS));
+        for (const r of goneRules) al.setRule(r.key, r);
         setSelId(id);
       },
     });
@@ -946,7 +988,7 @@ export default function App() {
       const changed = !!res && Array.from({ length: it.span }, (_, k) => res.changed.has(it.addr - sel.start + k)).some(Boolean);
       const text = textOf(it);
       const tag = !p || bits ? "" : p.type === "u16" ? (p.order !== "ABCD" ? p.order : "") : `${p.type === "string" ? `STR(${p.len ?? 2})` : TYPE_LABEL[p.type]}${p.order !== "ABCD" ? ` ${p.order}` : ""}`;
-      return { key, name, changed, text, tag, trended: trendKeys.includes(key) };
+      return { key, name, changed, text, tag, trended: trendKeys.includes(key), alarm: al.active.has(key), watched: al.rules.has(key) };
     };
     const common = (it: Item) => ({
       onClick: () => setSelAddr(it.addr),
@@ -972,7 +1014,7 @@ export default function App() {
             return (
               <div
                 key={`${sel.id}:${it.addr}`}
-                className={`reg${c.changed ? " flash" : ""}${it.span > 1 ? " wide" : ""}${selAddr === it.addr ? " picked" : ""}`}
+                className={`reg${c.changed ? " flash" : ""}${it.span > 1 ? " wide" : ""}${selAddr === it.addr ? " picked" : ""}${c.alarm ? " alarm-hit" : ""}`}
                 style={it.span > 1 ? { gridColumn: `span ${it.span >= 4 ? 3 : 2}` } : undefined}
                 tabIndex={0}
                 role="button"
@@ -985,6 +1027,7 @@ export default function App() {
                 <span className={`rv${bits ? (c.text === "1" ? " bit on" : " bit") : ""}`}>{c.text}</span>
                 {c.tag && <span className="rtype">{c.tag}</span>}
                 {c.trended && <span className="trendmark">📈</span>}
+                {c.watched && <span className="trendmark alarm-mark">🔔</span>}
               </div>
             );
           })
@@ -1007,7 +1050,7 @@ export default function App() {
                 return (
                   <tr
                     key={`${sel.id}:${it.addr}`}
-                    className={`${c.changed ? "flash" : ""}${selAddr === it.addr ? " picked" : ""}`}
+                    className={`${c.changed ? "flash" : ""}${selAddr === it.addr ? " picked" : ""}${c.alarm ? " alarm-hit" : ""}`}
                     tabIndex={0}
                     aria-label={`${range(it)} ${c.name} ${c.text}`}
                     title={t("cellTip")}
@@ -1022,6 +1065,7 @@ export default function App() {
                     <td className="rval mono">
                       {c.text}
                       {c.trended ? " 📈" : ""}
+                      {c.watched ? " 🔔" : ""}
                     </td>
                     <td className="rraw mono">{raw}</td>
                   </tr>
@@ -1033,7 +1077,7 @@ export default function App() {
       </div>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, res, sel.id, sel.view, sel.format, sel.fc, sel.start, addrMode, lang, selAddr, trendKeys, bits, stale]);
+  }, [items, res, sel.id, sel.view, sel.format, sel.fc, sel.start, addrMode, lang, selAddr, trendKeys, bits, stale, al.active, al.rules]);
 
   const lastLine = broadcastRead(sel, wire) ? (
     <span className="hint warn" role="status">
@@ -1496,6 +1540,17 @@ export default function App() {
           <button className={selKey && trendKeys.includes(selKey) ? "btn small on" : "btn small"} onClick={toggleTrend} data-tip={tip(lang, "mmTrendAdd")}>
             {t("trendAdd")}
           </button>
+          <button
+            className={selKey && al.rules.has(selKey) ? "btn small on alarm-add" : "btn small alarm-add"}
+            onClick={() => {
+              if (!selKey || selAddr == null) return toast.show(t("alarmPick"));
+              if (shapeOf(sel.fc, pts?.find((q) => q.addr === selAddr)).type === "string") return toast.show(t("alarmString"), { error: true });
+              setAlarmAt(selKey);
+            }}
+            data-tip={tip(lang, "mmAlarm")}
+          >
+            {t("alarmAdd")}
+          </button>
           <span className="grow" />
           {/* 값 기록(CSV) — 왼쪽 칸에서 표 도구줄로(10/18). 기록 중이면 빨간 «● 값 기록 n줄» */}
           <button
@@ -1597,6 +1652,8 @@ export default function App() {
           </FirstCard>
         )}
 
+        <AlarmPanel al={al} lang={lang} labelOf={alarmLabel} />
+
         {regsView}
 
         {trendItems.length > 0 && <Trend lang={lang} items={trendItems} version={trendVer} onRemove={(k) => setTrendKeys(trendKeys.filter((x) => x !== k))} onClear={() => setTrendKeys([])} />}
@@ -1619,6 +1676,19 @@ export default function App() {
           onCopied={onCopied}
         />
       </main>
+      {alarmAt && (
+        <AlarmRuleDialog
+          lang={lang}
+          keyId={alarmAt}
+          label={alarmLabel(alarmAt)}
+          rule={al.rules.get(alarmAt)}
+          onSave={(r) => {
+            al.setRule(alarmAt, r);
+            setAlarmAt(null);
+          }}
+          onClose={() => setAlarmAt(null)}
+        />
+      )}
       {writeAt != null && writeItem && (
         <WriteDialog
           lang={lang}

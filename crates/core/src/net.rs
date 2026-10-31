@@ -81,6 +81,27 @@ pub fn port_owner(port: u16, udp: bool) -> Option<PortOwner> {
     imp::port_owner(port, udp)
 }
 
+/// (0.10.0) 모든 주소(0.0.0.0 · ::)에서 듣고 있는 TCP 포트 하나 — 이 PC 노출 점검(Port Inspector «이 PC»)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Listener {
+    pub port: u16,
+    /// IPv6(::) 에서 듣는지
+    pub v6: bool,
+    pub pid: u32,
+    /// 실행 파일 이름(경로 뺌). 관리자 권한 없이 열 수 없는 프로세스면 None
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub process: Option<String>,
+}
+
+/// (0.10.0) 0.0.0.0 · :: 에서 듣고 있는 TCP 포트들(포트 순). 127.0.0.1 처럼 이 PC 안에서만 받는 것은 뺀다. 표를 읽지 못하면 Err
+pub fn open_listeners() -> Result<Vec<Listener>, String> {
+    let mut v = imp::open_listeners()?;
+    v.sort_by_key(|l| (l.port, l.v6));
+    v.dedup_by_key(|l| (l.port, l.v6, l.pid));
+    Ok(v)
+}
+
 /// 윈도우 자신(System, PID 4)이 쥐는 포트 — 445 파일 공유·135/139 등. 끌 수 없으니 다른 포트를 고르라고 한다
 const SYSTEM_PID: u32 = 4;
 
@@ -138,15 +159,16 @@ fn in_use_message(e: &std::io::Error, addr: std::net::SocketAddr, owner: Option<
 
 #[cfg(windows)]
 mod imp {
-    use super::{Interface, PortOwner, mask_of};
+    use super::{Interface, Listener, PortOwner, mask_of};
     use std::net::Ipv4Addr;
     use windows_sys::Win32::Foundation::{CloseHandle, ERROR_BUFFER_OVERFLOW, ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
     use windows_sys::Win32::NetworkManagement::IpHelper::{
         GAA_FLAG_INCLUDE_GATEWAYS, GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST, GetAdaptersAddresses, GetExtendedTcpTable,
-        GetExtendedUdpTable, IP_ADAPTER_ADDRESSES_LH, MIB_TCP_STATE_LISTEN, MIB_TCPROW_OWNER_PID, MIB_UDPROW_OWNER_PID, TCP_TABLE_OWNER_PID_ALL, UDP_TABLE_OWNER_PID,
+        GetExtendedUdpTable, IP_ADAPTER_ADDRESSES_LH, MIB_TCP_STATE_LISTEN, MIB_TCP6ROW_OWNER_PID, MIB_TCPROW_OWNER_PID, MIB_UDPROW_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        TCP_TABLE_OWNER_PID_LISTENER, UDP_TABLE_OWNER_PID,
     };
     use windows_sys::Win32::NetworkManagement::Ndis::IfOperStatusUp;
-    use windows_sys::Win32::Networking::WinSock::{AF_INET, SOCKADDR, SOCKADDR_IN};
+    use windows_sys::Win32::Networking::WinSock::{AF_INET, AF_INET6, SOCKADDR, SOCKADDR_IN};
     use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW};
 
     const IF_TYPE_SOFTWARE_LOOPBACK: u32 = 24;
@@ -272,6 +294,28 @@ mod imp {
         Some(PortOwner { pid, name: process_name(pid) })
     }
 
+    pub fn open_listeners() -> Result<Vec<Listener>, String> {
+        let mut out = Vec::new();
+        let names = std::cell::RefCell::new(std::collections::HashMap::<u32, Option<String>>::new());
+        let name = |pid: u32| names.borrow_mut().entry(pid).or_insert_with(|| process_name(pid)).clone();
+        // SAFETY: 머리(항목 수 u32) 다음에 행 배열 — table 이 받은 크기 안
+        let v4 = table(|p, s| unsafe { GetExtendedTcpTable(p, s, 0, AF_INET as u32, TCP_TABLE_OWNER_PID_LISTENER, 0) }).ok_or("GetExtendedTcpTable (IPv4)")?;
+        let n = unsafe { *(v4.as_ptr() as *const u32) } as usize;
+        let rows = unsafe { std::slice::from_raw_parts((v4.as_ptr() as *const u8).add(4) as *const MIB_TCPROW_OWNER_PID, n) };
+        for r in rows.iter().filter(|r| r.dwLocalAddr == 0 && r.dwState == MIB_TCP_STATE_LISTEN as u32) {
+            out.push(Listener { port: port_of(r.dwLocalPort), v6: false, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
+        }
+        // IPv6 는 없을 수 있다(꺼 둔 PC) — 못 읽으면 IPv4 만
+        if let Some(v6) = table(|p, s| unsafe { GetExtendedTcpTable(p, s, 0, AF_INET6 as u32, TCP_TABLE_OWNER_PID_LISTENER, 0) }) {
+            let n = unsafe { *(v6.as_ptr() as *const u32) } as usize;
+            let rows = unsafe { std::slice::from_raw_parts((v6.as_ptr() as *const u8).add(4) as *const MIB_TCP6ROW_OWNER_PID, n) };
+            for r in rows.iter().filter(|r| r.ucLocalAddr.iter().all(|&b| b == 0) && r.dwState == MIB_TCP_STATE_LISTEN as u32) {
+                out.push(Listener { port: port_of(r.dwLocalPort), v6: true, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
+            }
+        }
+        Ok(out)
+    }
+
     fn process_name(pid: u32) -> Option<String> {
         if pid == 0 {
             return None;
@@ -298,7 +342,10 @@ mod imp {
 
 #[cfg(not(windows))]
 mod imp {
-    use super::{Interface, PortOwner};
+    use super::{Interface, Listener, PortOwner};
+    pub fn open_listeners() -> Result<Vec<Listener>, String> {
+        Err(crate::tr!("Windows 에서만 읽을 수 있습니다", "Available on Windows only").into())
+    }
     pub fn interfaces() -> Vec<Interface> {
         Vec::new()
     }
@@ -366,6 +413,20 @@ mod tests {
             let msg = bind_error(&e, format!("127.0.0.1:{port}").parse().unwrap(), false);
             assert!(msg.starts_with(&format!("127.0.0.1:{port}")), "{msg}");
         }
+    }
+
+    /// (0.10.0) 0.0.0.0 에 연 포트는 목록에 나오고, 127.0.0.1 에 연 포트는 나오지 않는다
+    #[cfg(windows)]
+    #[test]
+    fn open_listeners_shows_wildcard_only() {
+        let any = std::net::TcpListener::bind("0.0.0.0:0").unwrap();
+        let lo = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let (pa, pl) = (any.local_addr().unwrap().port(), lo.local_addr().unwrap().port());
+        let list = open_listeners().unwrap();
+        let mine = list.iter().find(|l| l.port == pa && !l.v6).expect("0.0.0.0 포트가 목록에 없음");
+        assert_eq!(mine.pid, std::process::id());
+        assert!(mine.process.as_deref().is_none_or(|n| !n.contains('\\')));
+        assert!(!list.iter().any(|l| l.port == pl && l.pid == std::process::id()));
     }
 
     #[test]

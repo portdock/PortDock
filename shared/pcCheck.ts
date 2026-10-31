@@ -4,6 +4,7 @@
 // «문제 있음» 은 디스크가 스스로 경고 비트를 알릴 때(NVMe Critical Warning)만 쓴다. 업데이트를 끄라고 권하지 않는다.
 // (0.10.0) 블루스크린·갑자기 꺼짐(정지 코드 이름)·저장장치 수명·깨운 원인·배터리(있을 때만) 묶음이 붙었다. 바꾸기는 하지 않는다(바꾸는 곳 안내만).
 import type { Level, Text, Verdict } from "./portinfo.ts";
+import { exposureItems, type PcExposure } from "./exposure.ts";
 
 // ---------------------------------------------------------------- 백엔드 모양(crates/core/src/portinfo/mod.rs PcCheck)
 
@@ -110,6 +111,8 @@ export interface PcCheck {
   disks?: PcDisk[];
   wakes?: PcWake[];
   batteries?: PcBattery[];
+  /** (0.10.0) 현장 PC 노출 점검(shared/exposure.ts) — 0.9.x 백엔드엔 없다 */
+  exposure?: PcExposure;
   errors: string[];
   /** 화면 쪽 — 백엔드 호출 자체가 실패함(값을 하나도 못 읽음) */
   failed?: boolean;
@@ -157,7 +160,7 @@ export const PC_PURPOSE_TEXT: Record<PcPurpose, Text> = {
 /** Microsoft Learn «Configure policy settings on IoT devices» — 업데이트 재시작·사용 시간·빠른 시작 등을 장비용으로 다룬 공식 문서 */
 export const IOT_POLICY_URL = "https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/iot-ent-configure-policy-settings";
 
-export type PcGroup = "power" | "update" | "screen" | "events" | "crash" | "disk" | "wake" | "battery";
+export type PcGroup = "power" | "update" | "screen" | "events" | "crash" | "disk" | "wake" | "battery" | "exposure";
 export const PC_GROUP_TEXT: Record<PcGroup, Text> = {
   power: t("전원·절전", "Power and sleep"),
   update: t("업데이트·재시작", "Updates and restarts"),
@@ -167,6 +170,7 @@ export const PC_GROUP_TEXT: Record<PcGroup, Text> = {
   disk: t("저장장치 수명", "Storage health"),
   wake: t("무엇이 절전을 깨웠나", "What woke the PC"),
   battery: t("배터리", "Battery"),
+  exposure: t("현장 PC 노출(같은 망에서 닿는 것)", "Field PC exposure (reachable from the network)"),
 };
 
 /** 사이트 웹 도구 — 블루스크린 코드 사전(원인 후보·확인 순서) · 배터리 리포트 해석기 */
@@ -692,6 +696,9 @@ export function pcItems(pc: PcCheck, purpose: PcPurpose, fmtTime: (ms: number) =
     if (hp != null && hp < BATTERY_LOOK)
       look(last(), t(`완전 충전 용량이 설계의 ${hp}% — 새것보다 사용 시간이 짧습니다(${BATTERY_LOOK}% 아래를 «볼 것» 으로 봄). 제조사 보증·교체 기준을 봅니다.`, `Full charge capacity is ${hp}% of design — shorter runtime than new (below ${BATTERY_LOOK}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.`));
   });
+
+  // ---- (0.10.0) 현장 PC 노출 — 원격 데스크톱·SMBv1·방화벽·열린 포트·자동 로그온·자동 실행(용도와 상관없이)
+  items.push(...exposureItems(pc.exposure));
 
   return items;
 }

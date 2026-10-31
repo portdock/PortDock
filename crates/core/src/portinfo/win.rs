@@ -239,6 +239,18 @@ pub(super) fn query_value(k: &Key, name: &str) -> Result<Option<(u32, Vec<u8>)>,
     Ok(Some((ty, buf)))
 }
 
+/// (0.10.0) 값이 있는지만 — 내용은 받지 않는다(버퍼·크기 모두 널). 비밀번호 같은 값에 쓴다
+pub(super) fn value_exists(k: &Key, name: &str) -> Result<bool, u32> {
+    let w = wide(name);
+    // SAFETY: 종류·데이터·크기를 받지 않고 있는지만 묻는다
+    let r = unsafe { RegQueryValueExW(k.0, w.as_ptr(), std::ptr::null(), std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut()) };
+    match r {
+        ERROR_SUCCESS => Ok(true),
+        ERROR_FILE_NOT_FOUND => Ok(false),
+        e => Err(e),
+    }
+}
+
 /// 키 바로 아래 하위 키 이름들(최대 512개)
 pub(super) fn subkeys(k: &Key) -> Vec<String> {
     let mut out = Vec::new();

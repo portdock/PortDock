@@ -158,6 +158,18 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "값 감시·알람 (0.10.0 부터)",
+      id: "alarms",
+      body: [
+        "- 칸을 하나 누른 뒤 표 도구줄의 «🔔 감시» 로 그 칸(타입대로 읽은 값)에 조건을 겁니다. 조건이 걸린 칸에는 🔔 가 붙습니다. 연결해 있는 동안만 보고, «끊기» 를 누르면 열린 알람을 닫습니다(사용자가 끊은 것은 «통신 끊김» 이 아님). 읽기가 실패하거나 재연결을 기다리는 동안은 «통신 끊김» 초를 셉니다.",
+        "- 조건: 하한(이 값보다 작으면)·상한(이 값보다 크면)·변화 없음(멈춤) N초·통신 끊김 N초. 비운 칸은 보지 않습니다. «되돌아올 때 여유»(히스테리시스)를 넣으면 하한 알람은 «하한 + 여유» 이상, 상한 알람은 «상한 − 여유» 이하가 돼야 풀려, 경계에서 흔들리는 값에 알람이 깜빡이지 않습니다.",
+        "- 걸리면 그 줄이 빨갛게 강조되고, 위 «감시·알람» 목록에 조건·값·걸린 때·풀린 때·지속 시간이 남습니다. «확인» 을 누르면 다시 울리는 소리가 멈춥니다(«모두 확인», «끝난 것 지우기»). 창이 뒤에 있으면 작업 표시줄 단추가 깜빡입니다. 소리는 목록의 «소리» 로 끕니다. Windows 알림 센터로는 보내지 않습니다.",
+        "- «기록 CSV…» 로 파일을 고르면 걸림(raise)·풀림(clear, 지속 초)·확인(ack)·멈춤(stop)이 time,event,name,condition,value,duration_s 로 1초마다 덧붙습니다(값 기록과 같은 방식, 엑셀에서 바로 열림).",
+        "- 조건은 이 PC 의 앱 설정에 남아 다음에 켜도 그대로입니다. 판정은 화면에서만 하고 장비에는 아무것도 쓰지 않습니다.",
+        "- PortDock 은 안전 장치가 아닙니다 — 감시 보조용입니다. 설비 보호·인터록은 PLC·안전 회로가 맡아야 합니다.",
+      ],
+    },
+    {
       title: "Slave 와 같이 시험하기",
       body: [
         "장비 없이 이 프로그램을 익히거나, 마스터 쪽 설정·오류 처리를 미리 시험하려면 PortDock Modbus Slave 를 상대로 씁니다.",
@@ -362,6 +374,18 @@ export const help: HelpDoc = {
         "- «Log to file» (Ctrl+Shift+L) keeps writing the bytes sent and received with timestamps (the auto-log folder in Settings works too).",
         "- Value log (CSV): in «Value log ▾» on the table toolbar, «Start log…» appends time,table,address,name,value «Every poll» or «On change». Values are written as shown (type and display) and open directly in Excel.",
         "- Trend: click a cell and press «📈 Trend» to draw its value below (up to 6, the latest 600 values), with last and min–max.",
+      ],
+    },
+    {
+      title: "Watch and alarms (from 0.10.0)",
+      id: "alarms",
+      body: [
+        "- Click a cell, then «🔔 Watch» in the table toolbar to set conditions on it (the value decoded by type). Watched cells show 🔔. Watching runs only while connected; «Disconnect» closes open alarms (a disconnect you chose is not «communication lost»). Failed reads and waiting to reconnect count toward «communication lost» seconds.",
+        "- Conditions: low limit (alarm below), high limit (alarm above), no change (stuck) for N seconds, communication lost for N seconds. Empty boxes are skipped. With a «return margin» (hysteresis) a low alarm clears only at «low + margin» or above and a high alarm at «high − margin» or below, so a value wobbling at the limit does not make the alarm flicker.",
+        "- When one trips the row turns red and the «Watch & alarms» list above records the condition, value, raise and clear times and duration. «Ack» stops the repeating sound («Acknowledge all», «Clear ended»). If the window is behind others the taskbar button flashes. Turn the sound off with «Sound» in the list. Nothing is sent to the Windows notification center.",
+        "- «Log CSV…» appends raise, clear (with seconds), ack and stop lines as time,event,name,condition,value,duration_s every second (same way as the value log; opens directly in Excel).",
+        "- Conditions are kept in the app settings on this PC. Judging happens on screen only; nothing is written to the device.",
+        "- PortDock is not a safety device — it is a monitoring aid. Equipment protection and interlocks belong in the PLC and safety circuits.",
       ],
     },
     {

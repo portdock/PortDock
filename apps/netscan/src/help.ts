@@ -158,6 +158,16 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "노출 표시 (0.10.0 부터)",
+      id: "expose",
+      body: [
+        "- 찾은 장비의 열린 포트 가운데 Modbus TCP 502·MC 프로토콜 5006/5007·EtherNet/IP 44818·S7 102·OPC UA 4840·Telnet 23·FTP 21·HTTP 80(관리 페이지)이 있으면, IP 옆에 «노출» 표가 붙고 아래 칸에 안내가 나옵니다(HTTP 만 열렸으면 표 없이 아래 칸에만).",
+        "- 산업 프로토콜(Modbus·MC·EtherNet/IP·S7)에는 인증이 없습니다 — 같은 망의 누구나 읽고 쓸 수 있습니다. 장비 고장이 아니라 «누가 닿을 수 있나» 를 보라는 표시입니다.",
+        "- 확인 순서: 1) 설비망과 사무망이 스위치·VLAN·방화벽으로 나뉘어 있는지 2) 원격 접속 공유기·게이트웨이가 이 포트를 밖으로 넘기지 않는지(포트 포워딩) 3) 장비 설정에서 쓰지 않는 Telnet·FTP·HTTP 를 끌 수 있는지, 관리 페이지 기본 비밀번호를 바꿨는지 4) OPC UA 는 보안 모드 «None»·익명 로그인을 쓰는지.",
+        "- 이미 확인한 포트(«확인할 포트» 목록)만 보고 표시합니다. 이 표시 때문에 포트를 더 많이 스캔하지 않고, 장비 설정도 바꾸지 않습니다.",
+      ],
+    },
+    {
       title: "설정(⚙)",
       body: [
         "- «언어»·«테마»·«글자 크기».",
@@ -343,6 +353,16 @@ export const help: HelpDoc = {
         "- Windows PCs do not answer ping by default, so «no ping» is normal for them.",
         "- Only the listed ports are checked, but corporate security systems may still flag it as a port scan — tell your IT team before using it on an office network.",
         "- Wake-on-LAN sends a UDP broadcast. No Windows Firewall prompt appears; if it is blocked, it is usually by router/switch settings.",
+      ],
+    },
+    {
+      title: "Exposure notes (from 0.10.0)",
+      id: "expose",
+      body: [
+        "- If a device has Modbus TCP 502, MC protocol 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23, FTP 21 or HTTP 80 (admin page) open, an «Exposed» tag appears next to its IP and the panel below explains it (HTTP alone shows only in the panel).",
+        "- Industrial protocols (Modbus, MC, EtherNet/IP, S7) have no authentication — anyone on the same network can read and write. The tag is not a device fault; it asks «who can reach this?».",
+        "- What to check: 1) the equipment and office networks are separated by switches, VLANs or a firewall 2) a remote-access router or gateway does not forward these ports outside 3) unused Telnet, FTP or HTTP can be turned off in the device settings and the admin page's default password was changed 4) OPC UA does not use security mode «None» or anonymous login.",
+        "- Only ports already checked (the «Ports to check» list) are used. The notes never scan more ports and never change device settings.",
       ],
     },
     {

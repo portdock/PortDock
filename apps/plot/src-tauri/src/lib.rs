@@ -423,6 +423,14 @@ fn plot_record(app: State<App>, path: Option<String>, names: Vec<String>) -> Res
     Ok(())
 }
 
+/// 알람 기록(0.10.0) — 사용자가 저장 대화상자에서 고른 CSV 에 덧붙이기
+#[tauri::command(async)]
+fn append_text(path: String, text: String) -> Result<(), String> {
+    use std::io::Write;
+    let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&path).map_err(|e| format!("{path}: {e}"))?;
+    f.write_all(text.as_bytes()).map_err(|e| format!("{path}: {e}"))
+}
+
 /// 화면 데이터 CSV·설정 내보내기 — 사용자가 저장 대화상자에서 고른 경로만
 #[tauri::command(async)]
 fn write_text(path: String, text: String) -> Result<(), String> {
@@ -537,6 +545,7 @@ pub fn run() {
             plot_set_format,
             plot_record,
             write_text,
+            append_text,
             write_bytes,
             read_text
         ])

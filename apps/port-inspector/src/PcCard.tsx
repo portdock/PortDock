@@ -3,6 +3,7 @@
 import { tip } from "@shared/tips";
 import { fmtTime, LEVEL_TEXT } from "@shared/portinfo";
 import { PC_ADMIN_ONLY, PC_CANNOT_SEE, PC_GROUP_TEXT, PC_PURPOSE_TEXT, PC_PURPOSES, pcItems, type PcCheck, type PcGroup, type PcPurpose } from "@shared/pcCheck";
+import { EXPOSURE_LIMITS } from "@shared/exposure";
 import type { Key, Lang } from "./i18n";
 
 type T = (k: Key, v?: Record<string, string | number>) => string;
@@ -125,6 +126,12 @@ export function PcCard({
                 ))}
             </tbody>
           </table>
+          {g === "exposure" &&
+            EXPOSURE_LIMITS.map((c) => (
+              <div key={c.en} className="hint">
+                {c[lang]}
+              </div>
+            ))}
         </div>
       ))}
       {pc.errors.map((x) => (
