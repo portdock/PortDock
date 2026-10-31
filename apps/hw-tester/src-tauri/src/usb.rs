@@ -19,6 +19,8 @@ pub const MAX_DURATION: Duration = Duration::from_secs(24 * 3600);
 /// «반복 끊김 의심» — FLAP_WINDOW 안에 끊김 FLAP_DROPS 번 이상
 pub const FLAP_WINDOW_MS: u64 = 10 * 60_000;
 pub const FLAP_DROPS: usize = 3;
+/// 장치별로 기억하는 끊김 시각 상한 — 판정 창 밖의 것은 지우고, 창 안이라도 최근 것만
+const MAX_REMOVALS: usize = 1000;
 
 /// 화면으로 가는 장치 — 인스턴스 ID 없음
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -57,7 +59,10 @@ struct Known {
     id: String,
     dev: UsbDev,
     present: bool,
+    /// 판정 창(FLAP_WINDOW_MS) 안의 끊김 시각(최근 MAX_REMOVALS 개까지)
     removals: Vec<u64>,
+    /// 이번 기록에서 끊긴 수(전부)
+    drops: u32,
 }
 
 /// 번호 매기기·바뀐 것 찾기 — 순수 로직(시험)
@@ -76,7 +81,7 @@ impl Tracker {
             Some(i) => i,
             None => {
                 let n = self.known.len() as u32 + 1;
-                self.known.push(Known { id: d.id.clone(), dev: dev_of(n, d), present: false, removals: Vec::new() });
+                self.known.push(Known { id: d.id.clone(), dev: dev_of(n, d), present: false, removals: Vec::new(), drops: 0 });
                 self.known.len() - 1
             }
         }
@@ -103,15 +108,22 @@ impl Tracker {
         }
         k.present = true;
         k.dev = dev_of(k.dev.n, d);
-        Some((k.dev.clone(), true, k.removals.len() as u32, flapping(&k.removals, ts)))
+        Some((k.dev.clone(), true, k.drops, flapping(&k.removals, ts)))
     }
 
     /// 제거 — 있다고 알던 장치만(모르는 장치는 None)
     pub fn remove(&mut self, id: &str, ts: u64) -> Option<Change> {
         let k = self.known.iter_mut().find(|k| k.present && k.id.eq_ignore_ascii_case(id))?;
         k.present = false;
+        k.drops = k.drops.saturating_add(1);
+        // 판정 창 밖(지금보다 FLAP_WINDOW_MS 넘게 앞선 것)은 지우고, 넘치면 오래된 것부터
+        k.removals.retain(|&t| t.saturating_add(FLAP_WINDOW_MS) >= ts);
         k.removals.push(ts);
-        Some((k.dev.clone(), false, k.removals.len() as u32, flapping(&k.removals, ts)))
+        if k.removals.len() > MAX_REMOVALS {
+            let extra = k.removals.len() - MAX_REMOVALS;
+            k.removals.drain(..extra);
+        }
+        Some((k.dev.clone(), false, k.drops, flapping(&k.removals, ts)))
     }
 
     /// 목록 견주기 — 사라진 것은 제거, 새로 보인 것은 도착
@@ -132,6 +144,9 @@ impl Tracker {
 pub struct UsbRecorder {
     stop: Arc<AtomicBool>,
     thread: Option<std::thread::JoinHandle<()>>,
+    /// 기록 루프가 돈 횟수(시험 — 바쁜 대기가 없는지)
+    #[cfg_attr(not(test), allow(dead_code))]
+    loops: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl UsbRecorder {
@@ -182,6 +197,8 @@ fn apply(t: &mut Tracker, one: &dyn Fn(&str) -> Option<UsbDevice>, n: &UsbNotice
 pub fn start_with(src: Source, poll_notify: Duration, poll_only: Duration, sink: Sink) -> Result<UsbRecorder, String> {
     let stop = Arc::new(AtomicBool::new(false));
     let st = stop.clone();
+    let loops = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let lp = loops.clone();
     let thread = std::thread::Builder::new()
         .name("hw-usb".into())
         .spawn(move || {
@@ -195,19 +212,27 @@ pub fn start_with(src: Source, poll_notify: Duration, poll_only: Duration, sink:
             let send = |(dev, arrived, drops, flap): Change, ts: u64| sink(UsbEvent::Change { ts, dev, arrived, drops, flap });
             let mut reason = "user";
             let mut next = Instant::now() + poll;
+            // 알림 등록에 실패하면 보낼 곳(tx)이 이미 놓여 rx 가 끊긴 채다 — recv 가 기다리지 않으니 잠으로 기다린다
+            let mut alive = notify;
             while !st.load(Ordering::SeqCst) {
+                lp.fetch_add(1, Ordering::Relaxed);
                 if started.elapsed() >= MAX_DURATION {
                     reason = "limit";
                     break;
                 }
-                match rx.recv_timeout(Duration::from_millis(100)) {
-                    Ok(n) => {
-                        if let Some(c) = apply(&mut t, &*src.one, &n) {
-                            send(c, n.time);
+                let step = Duration::from_millis(100).min(next.saturating_duration_since(Instant::now()));
+                if alive {
+                    match rx.recv_timeout(step) {
+                        Ok(n) => {
+                            if let Some(c) = apply(&mut t, &*src.one, &n) {
+                                send(c, n.time);
+                            }
                         }
+                        Err(mpsc::RecvTimeoutError::Timeout) => {}
+                        Err(mpsc::RecvTimeoutError::Disconnected) => alive = false,
                     }
-                    Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(mpsc::RecvTimeoutError::Disconnected) => {}
+                } else {
+                    std::thread::sleep(step.max(Duration::from_millis(1)));
                 }
                 if Instant::now() >= next {
                     next = Instant::now() + poll;
@@ -231,7 +256,7 @@ pub fn start_with(src: Source, poll_notify: Duration, poll_only: Duration, sink:
             sink(UsbEvent::Stopped { ts: portdock_core::event::now_ms(), reason });
         })
         .map_err(|e| e.to_string())?;
-    Ok(UsbRecorder { stop, thread: Some(thread) })
+    Ok(UsbRecorder { stop, thread: Some(thread), loops })
 }
 
 pub fn start(sink: Sink) -> Result<UsbRecorder, String> {
@@ -401,6 +426,13 @@ mod tests {
         let got: Arc<Mutex<Vec<UsbEvent>>> = Arc::new(Mutex::new(Vec::new()));
         let g = got.clone();
         let mut r = start_with(src, Duration::from_millis(150), Duration::from_millis(50), Arc::new(move |e| g.lock().unwrap().push(e))).unwrap();
+        // 기록 스레드가 알림을 등록할 때까지(바쁜 PC 에서 늦을 수 있다)
+        for _ in 0..200 {
+            if tx_slot.lock().unwrap().is_some() && !got.lock().unwrap().is_empty() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
         std::thread::sleep(Duration::from_millis(60));
         // 알림으로 B 제거
         present.lock().unwrap().retain(|d| d.id != b.id);
@@ -418,6 +450,57 @@ mod tests {
         assert_eq!((changes[0].0, changes[0].1, changes[0].2), (2, false, 1_000));
         assert_eq!((changes[1].0, changes[1].1), (1, false));
         assert!(matches!(ev.last(), Some(UsbEvent::Stopped { reason: "user", .. })));
+    }
+
+    /// 알림 등록 실패 — 바쁜 대기 없이 목록 견주기만 돈다
+    #[test]
+    fn recorder_without_notify_does_not_spin() {
+        let a = usb(r"USB\VID_1234&PID_0001\A", "Example A", &[1]);
+        let present = Arc::new(Mutex::new(vec![a.clone()]));
+        let lists = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let (p1, l1) = (present.clone(), lists.clone());
+        let src = Source {
+            list: Box::new(move || {
+                l1.fetch_add(1, Ordering::Relaxed);
+                p1.lock().unwrap().clone()
+            }),
+            one: Box::new(|_| None),
+            watch: Box::new(|_tx| Err("등록 실패(시험)".into())),
+        };
+        let got: Arc<Mutex<Vec<UsbEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let g = got.clone();
+        let mut r = start_with(src, Duration::from_millis(150), Duration::from_millis(50), Arc::new(move |e| g.lock().unwrap().push(e))).unwrap();
+        std::thread::sleep(Duration::from_millis(120));
+        present.lock().unwrap().clear();
+        std::thread::sleep(Duration::from_millis(250));
+        let loops = r.loops.load(Ordering::Relaxed);
+        r.stop();
+        // 50ms 간격으로 370ms → 열 번 안팎. 바쁜 대기면 수십만 번
+        assert!(loops < 100, "loops {loops}");
+        assert!(lists.load(Ordering::Relaxed) >= 3);
+        let ev = got.lock().unwrap().clone();
+        assert!(matches!(&ev[0], UsbEvent::Snapshot { notify: false, .. }));
+        assert!(ev.iter().any(|e| matches!(e, UsbEvent::Change { dev, arrived: false, .. } if dev.n == 1)));
+    }
+
+    /// 끊김 시각 목록은 판정 창 밖을 지우고 상한을 넘지 않는다 — 끊김 수는 따로 센다
+    #[test]
+    fn removals_are_bounded() {
+        let d = usb(r"USB\VID_1234&PID_0005\Z", "Example Flappy", &[5]);
+        let mut t = Tracker::default();
+        t.first(vec![d.clone()]);
+        let mut last = None;
+        for i in 0..5000u64 {
+            last = t.remove(&d.id, i);
+            t.arrive(&d, i);
+        }
+        let (_, _, drops, flap) = last.unwrap();
+        assert_eq!(drops, 5000);
+        assert!(flap);
+        assert!(t.known[0].removals.len() <= MAX_REMOVALS);
+        // 창 밖으로 한참 뒤 — 옛 시각은 모두 지워진다
+        let (_, _, drops, flap) = t.remove(&d.id, 5000 + FLAP_WINDOW_MS + 10).unwrap();
+        assert_eq!((drops, flap, t.known[0].removals.len()), (5001, false, 1));
     }
 
     /// 이 PC 에서 실제로(관리자 없이) — 개수만 본다
