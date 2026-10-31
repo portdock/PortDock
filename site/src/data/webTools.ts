@@ -73,7 +73,9 @@ export interface WebTool {
     | "tools/conduit-fill/"
     | "tools/power-supply-sizing/"
     | "tools/io-list/"
-    | "tools/handover-pack/";
+    | "tools/handover-pack/"
+    | "tools/modbus-rtu-tcp/"
+    | "tools/modbus-practice/";
   name: L;
   blurb: L;
 }
@@ -431,6 +433,16 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/power-supply-sizing/",
     name: { ko: "24V DC 전원 용량 계산기", en: "24 V DC Power Supply Sizing Calculator" },
     blurb: { ko: "PLC·HMI·센서·밸브·릴레이 코일의 전류·돌입 전류·동시 사용률 → 합계, 여유를 둔 정격(흔한 정격에서), 돌입 피크 비교, 서킷 프로텍터 채널 나누기.", en: "Current, inrush and duty of PLCs, HMIs, sensors, valves and relay coils → total, rating with headroom (common sizes), inrush check and circuit protector channels." },
+  },
+  {
+    path: "tools/modbus-rtu-tcp/",
+    name: { ko: "Modbus RTU ↔ TCP 프레임 변환기", en: "Modbus RTU ↔ TCP Frame Converter" },
+    blurb: { ko: "RTU(국번+CRC) ↔ TCP(MBAP: 트랜잭션·길이·유닛 ID) ↔ ASCII(«:»·LRC·CR LF). 요청·응답 모두, 바이트별 색 풀이, 게이트웨이 유닛 ID 0·255 설명.", en: "RTU (address + CRC) ↔ TCP (MBAP: transaction, length, unit ID) ↔ ASCII (colon, LRC, CR LF). Requests and responses, color-coded bytes, gateway unit ID 0 and 255 explained." },
+  },
+  {
+    path: "tools/modbus-practice/",
+    name: { ko: "Modbus 연습장 (퀴즈)", en: "Modbus Practice Quiz" },
+    blurb: { ko: "신입·교육용 자동 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 해설·가이드 링크·점수.", en: "Auto-generated practice for beginners — read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. Explanations, guide links, score." },
   },
 ];
 

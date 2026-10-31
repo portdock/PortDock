@@ -1,0 +1,362 @@
+---
+// 웹 도구: Modbus 연습장(퀴즈) — 신입·교육용. 문제 생성·채점은 lib/modbusQuiz.ts(시드로 재현, 시험 있음).
+// 점수·연속 정답은 이 브라우저 localStorage 에만(try/catch). 서버로 보내지 않는다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { KINDS, KIND_NAMES } from "../lib/modbusQuiz";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/modbus-practice/";
+const GUIDE_SLUGS = ["modbus-rtu-frame", "modbus-address-notation", "modbus-exception-codes", "modbus-float-word-order"];
+const TOOL_PATHS = ["tools/modbus/", "tools/modbus-decoder/", "tools/checksum/", "tools/modbus-float/"];
+// 문제의 «관련 가이드·도구» 링크 이름과 주소 — 스크립트가 큰 데이터 파일을 읽지 않도록 필요한 것만 넘긴다
+const links = {
+  guides: Object.fromEntries(GUIDE_SLUGS.map((s) => [s, { name: GUIDES.find((g) => g.slug === s)!.title[lang], href: url(lang, `guides/${s}/`) }])),
+  tools: Object.fromEntries(TOOL_PATHS.map((p) => [p, { name: WEB_TOOLS.find((w) => w.path === p)!.name[lang], href: url(lang, p) }])),
+};
+const L = ko
+  ? {
+      title: "Modbus 연습장 (퀴즈)",
+      desc: "Modbus RTU 연습 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 자동 출제·해설.",
+      kind: "문제 종류",
+      mixed: "섞어서",
+      check: "정답 확인",
+      next: "다음 문제",
+      reset: "점수 지우기",
+      answerLabel: "답",
+      how: "문제는 이 브라우저 안에서 만들고 채점합니다. 점수는 이 브라우저에만 저장하고 어디에도 보내지 않습니다.",
+      faqTitle: "이렇게 쓰세요",
+      faq: [
+        ["누구를 위한 것인가요?", "Modbus RTU 를 막 배우는 신입·교육생, 또는 현장에 나가기 전에 감을 되살리려는 사람을 위한 것입니다. 문제마다 정답 확인 뒤 해설과 관련 가이드·웹 도구 링크가 나옵니다."],
+        ["같은 문제를 다른 사람에게 낼 수 있나요?", "문제 아래 «이 문제 링크» 를 복사해 보내면 같은 문제가 열립니다. 문제는 번호(시드) 하나로 만들어지므로 같은 번호면 같은 문제입니다."],
+        ["주관식 답은 어떻게 적나요?", "HEX 는 띄어쓰기·대소문자·0x 를 가리지 않습니다(01 03 00 00 00 0A C5 CD 와 0103000000 0ac5cd 는 같음). 값은 10진으로 적고, 0x 를 붙이면 HEX 로 읽습니다."],
+      ],
+      srcTitle: "근거",
+    }
+  : {
+      title: "Modbus Practice Quiz",
+      desc: "Modbus RTU practice: read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. With explanations.",
+      kind: "Question type",
+      mixed: "Mixed",
+      check: "Check answer",
+      next: "Next question",
+      reset: "Reset score",
+      answerLabel: "Answer",
+      how: "Questions are made and marked in your browser. The score is kept in this browser only and sent nowhere.",
+      faqTitle: "How to use it",
+      faq: [
+        ["Who is it for?", "New engineers and trainees learning Modbus RTU, or anyone refreshing before a site visit. After each answer you get an explanation and links to the matching guide and web tool."],
+        ["Can I give the same question to someone else?", "Copy «Link to this question» below the question and send it; it opens the same question. Each question is built from one number (a seed), so the same number gives the same question."],
+        ["How do I type a written answer?", "HEX ignores spaces, case and 0x (01 03 00 00 00 0A C5 CD equals 0103000000 0ac5cd). Values are decimal; prefix 0x to enter HEX."],
+      ],
+      srcTitle: "References",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 연습 문제 — RTU 요청·응답·CRC·예외 코드 퀴즈 — PortDock" : "Modbus Practice Quiz: RTU Frames, CRC, Exceptions — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="qz" data-lang={lang} data-links={JSON.stringify(links)}>
+      <div class="row">
+        <label class="fld" style="flex:0 1 260px">
+          {L.kind}
+          <select id="kind">
+            <option value="">{L.mixed}</option>
+            {KINDS.map((k) => <option value={k}>{KIND_NAMES[k][lang]}</option>)}
+          </select>
+        </label>
+        <p class="score" id="score" aria-live="polite"></p>
+      </div>
+      <section class="q" id="q">
+        <p class="q-kind note" id="qkind"></p>
+        <p class="q-prompt" id="qprompt"></p>
+        <pre class="q-shown mono" id="qshown" hidden></pre>
+        <div id="qchoices" class="q-choices" role="radiogroup"></div>
+        <label class="fld" id="qtextwrap" hidden>
+          {L.answerLabel}
+          <input id="qtext" class="mono" spellcheck="false" autocomplete="off" />
+        </label>
+        <div class="btns">
+          <button type="submit" class="btn primary" id="check">{L.check}</button>
+          <button type="button" class="btn" id="next">{L.next}</button>
+          <button type="button" class="btn tight" id="reset">{L.reset}</button>
+        </div>
+        <div id="result" aria-live="polite"></div>
+        <p class="note"><a id="qlink" href="#">{ko ? "이 문제 링크" : "Link to this question"}</a></p>
+      </section>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{ko ? "함께 보면 좋은 가이드" : "Guides to read alongside"}</h2>
+      <ul>
+        {
+          Object.values(links.guides).map((g) => (
+            <li>
+              <a href={g.href}>{g.name}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        <li>Modbus Application Protocol Specification V1.1b3 — {ko ? "함수 코드·요청/응답 모양·예외 코드" : "function codes, request/response layouts, exception codes"}</li>
+        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {ko ? "RTU 프레임·CRC(낮은 바이트 먼저)" : "RTU framing, CRC (low byte first)"}</li>
+        <li>IEEE 754 — {ko ? "float32. 레지스터 워드 순서(ABCD·CDAB)는 규격에 없어 장비마다 다릅니다" : "float32. The register word order (ABCD, CDAB) is not in the Modbus specification and varies by device"}</li>
+      </ul>
+      <p>
+        {ko ? "RTU·TCP·ASCII 프레임을 서로 바꿔 보려면 " : "To convert frames between RTU, TCP and ASCII use the "}
+        <a href={url(lang, "tools/modbus-rtu-tcp/")}>{ko ? "Modbus RTU ↔ TCP 프레임 변환기" : "Modbus RTU ↔ TCP Frame Converter"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .score {
+      margin: auto 0 8px;
+      font-weight: 600;
+    }
+    .q {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .q-prompt {
+      font-size: 17px;
+      margin: 4px 0 10px;
+    }
+    .q-shown {
+      background: var(--soft);
+      border-radius: 6px;
+      padding: 8px 10px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 16px;
+    }
+    .q-choices {
+      display: grid;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+    .q-choices :global(label) {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      overflow-wrap: anywhere;
+    }
+    .q-choices :global(label.right) {
+      border-color: var(--tx);
+      background: color-mix(in srgb, var(--tx) 12%, transparent);
+    }
+    .q-choices :global(label.wrong) {
+      border-color: #b42318;
+      background: color-mix(in srgb, #b42318 10%, transparent);
+    }
+    #result :global(.ok) {
+      color: var(--tx);
+      font-weight: 700;
+    }
+    #result :global(.no) {
+      color: #b42318;
+      font-weight: 700;
+    }
+    @media (prefers-color-scheme: dark) {
+      #result :global(.no) {
+        color: #f97066;
+      }
+    }
+  </style>
+  <script>
+    import { type Lang } from "../lib/checksum";
+    import { KIND_NAMES, KINDS, addResult, emptyScore, grade, makeQuestion, parseScore, type Kind, type Question, type Score } from "../lib/modbusQuiz";
+    const form = document.getElementById("qz") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const ko = lang === "ko";
+    const t = (k: string, e: string) => (ko ? k : e);
+    const links = JSON.parse(form.dataset.links ?? "{}") as { guides: Record<string, { name: string; href: string }>; tools: Record<string, { name: string; href: string }> };
+    const $ = (id: string) => document.getElementById(id)!;
+    const kindSel = $("kind") as HTMLSelectElement;
+    const choicesBox = $("qchoices");
+    const textWrap = $("qtextwrap");
+    const textIn = $("qtext") as HTMLInputElement;
+    const shown = $("qshown");
+    const result = $("result");
+    const scoreEl = $("score");
+    const qlink = $("qlink") as HTMLAnchorElement;
+    const KEY = "portdock.modbusPractice.score";
+
+    let score: Score = emptyScore();
+    try {
+      score = parseScore(localStorage.getItem(KEY));
+    } catch {
+      score = emptyScore();
+    }
+    const save = () => {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(score));
+      } catch {
+        // 저장 못 해도(사생활 보호 모드 등) 이 화면에서는 계속 센다
+      }
+    };
+    const showScore = () => {
+      scoreEl.textContent = t(`점수 ${score.right}/${score.tried} · 연속 ${score.streak} · 최고 ${score.best}`, `Score ${score.right}/${score.tried} · streak ${score.streak} · best ${score.best}`);
+    };
+
+    let q: Question;
+    let done = false;
+    const newSeed = () => {
+      const a = new Uint32Array(1);
+      crypto.getRandomValues(a);
+      return a[0] % 1_000_000_000;
+    };
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+
+    function show(seed: number, kind?: Kind) {
+      q = makeQuestion(seed, lang, kind);
+      done = false;
+      $("qkind").textContent = `${KIND_NAMES[q.kind][lang]} · #${q.seed}`;
+      $("qprompt").textContent = q.prompt;
+      shown.hidden = !q.shown;
+      shown.textContent = q.shown ?? "";
+      choicesBox.replaceChildren();
+      result.replaceChildren();
+      if (q.choices) {
+        textWrap.hidden = true;
+        q.choices.forEach((c, i) => {
+          const lab = el("label");
+          const r = document.createElement("input");
+          r.type = "radio";
+          r.name = "choice";
+          r.value = String(i);
+          const span = el("span", /^[0-9A-F]{2}( [0-9A-F]{2})+$/.test(c) ? "mono" : "", c);
+          lab.append(r, span);
+          choicesBox.append(lab);
+        });
+      } else {
+        textWrap.hidden = false;
+        textIn.value = "";
+        textIn.placeholder = q.placeholder ?? "";
+      }
+      const h = `#q=${q.seed}&k=${q.kind}`;
+      qlink.href = h;
+      try {
+        history.replaceState(null, "", h);
+      } catch {
+        // 주소를 못 바꿔도 문제는 그대로
+      }
+    }
+
+    function check() {
+      if (done) return;
+      let given: number | string;
+      if (q.choices) {
+        const sel = choicesBox.querySelector<HTMLInputElement>("input:checked");
+        if (!sel) {
+          result.replaceChildren(el("p", "note", t("보기를 하나 고르세요.", "Pick one of the choices.")));
+          return;
+        }
+        given = Number(sel.value);
+      } else {
+        given = textIn.value;
+        if (!given.trim()) {
+          result.replaceChildren(el("p", "note", t("답을 적으세요.", "Type your answer.")));
+          return;
+        }
+      }
+      const ok = grade(q, given);
+      done = true;
+      score = addResult(score, ok);
+      save();
+      showScore();
+      if (q.choices)
+        choicesBox.querySelectorAll("label").forEach((lab, i) => {
+          if (i === q.answerIndex) lab.classList.add("right");
+          else if (i === given) lab.classList.add("wrong");
+        });
+      const head = el("p");
+      head.append(el("span", ok ? "ok" : "no", ok ? t("정답", "Correct") : t("오답", "Not quite")));
+      if (!ok) head.append(document.createTextNode(` — ${t("정답", "answer")}: `), el("span", "mono", q.answer));
+      const ex = el("p", "", q.explain);
+      const more = el("p", "note");
+      const g = links.guides[q.guide];
+      const tool = links.tools[q.tool];
+      more.append(document.createTextNode(t("더 보기: ", "Read more: ")));
+      if (g) {
+        const a = el("a", "", g.name) as HTMLAnchorElement;
+        a.href = g.href;
+        more.append(a);
+      }
+      if (tool) {
+        const a = el("a", "", tool.name) as HTMLAnchorElement;
+        a.href = tool.href;
+        more.append(document.createTextNode(" · "), a);
+      }
+      result.replaceChildren(head, ex, more);
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      check();
+    });
+    $("next").addEventListener("click", () => show(newSeed(), (kindSel.value || undefined) as Kind | undefined));
+    kindSel.addEventListener("change", () => show(newSeed(), (kindSel.value || undefined) as Kind | undefined));
+    $("reset").addEventListener("click", () => {
+      score = emptyScore();
+      save();
+      showScore();
+    });
+    showScore();
+    // #q=<시드>&k=<종류> — 같은 문제 다시 열기(주소의 # 뒤라 서버로 가지 않는다)
+    const hp = new URLSearchParams(location.hash.slice(1));
+    const s = Number(hp.get("q"));
+    const k = hp.get("k") as Kind | null;
+    const kind = k && KINDS.includes(k) ? k : undefined;
+    if (kind) kindSel.value = kind;
+    show(Number.isInteger(s) && s >= 0 && hp.get("q") ? s : newSeed(), kind);
+  </script>
+</Base>
