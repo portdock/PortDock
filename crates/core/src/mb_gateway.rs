@@ -317,6 +317,9 @@ pub fn transact(port: &dyn Port, bus: &Bus, cfg: &GatewayConfig, route: Route, p
     }
     let frame = rtu_frame(unit, pdu);
     let tx = tx_time(frame.len(), baud);
+    // 2선식 변환기 에코: 보낸 프레임이 그대로 먼저 돌아오면 버린다(Modbus Master 와 같은 규칙).
+    // 05·06 은 정상 응답이 요청과 같아 가릴 수 없다 — 그대로 응답으로 본다
+    let echo = if matches!(pdu.first(), Some(0x05 | 0x06)) { Vec::new() } else { frame.clone() };
     bus.clear();
     if let Err(e) = port.send_from(frame, peer) {
         return Outcome::SendFailed(e);
@@ -333,6 +336,22 @@ pub fn transact(port: &dyn Port, bus: &Bus, cfg: &GatewayConfig, route: Route, p
     loop {
         let now = Instant::now();
         let quiet = g.1.is_some_and(|t| now.duration_since(t) >= silence);
+        if !echo.is_empty() && !g.0.is_empty() {
+            if g.0.starts_with(&echo) {
+                g.0.drain(..echo.len());
+                continue;
+            }
+            if echo.starts_with(&g.0) && !quiet {
+                // 에코가 아직 덜 왔다
+                g = wait_bus(&bus.cv, g, (deadline.saturating_duration_since(now)).min(Duration::from_millis(5)));
+                if Instant::now() >= deadline || stop.load(Ordering::SeqCst) {
+                    g.0.clear();
+                    *free_at = Instant::now() + gap;
+                    return Outcome::Timeout;
+                }
+                continue;
+            }
+        }
         match check_response(&g.0, unit, fc, quiet) {
             Check::Done(l) => {
                 let pdu = g.0[1..l - 2].to_vec();
@@ -566,11 +585,13 @@ pub(crate) mod tests {
         pub bus: Mutex<Option<Arc<Engine>>>,
         pub answer: fn(&[u8]) -> Option<Vec<u8>>,
         pub baud: u32,
+        /// 2선식 변환기처럼 보낸 것을 곧바로 되돌려 준다(에코)
+        pub echo: AtomicBool,
     }
 
     impl FakeRtu {
         pub(crate) fn new(baud: u32, answer: fn(&[u8]) -> Option<Vec<u8>>) -> Arc<Self> {
-            Arc::new(Self { sent: Mutex::new(Vec::new()), notes: Mutex::new(Vec::new()), bus: Mutex::new(None), answer, baud })
+            Arc::new(Self { sent: Mutex::new(Vec::new()), notes: Mutex::new(Vec::new()), bus: Mutex::new(None), answer, baud, echo: AtomicBool::new(false) })
         }
     }
 
@@ -600,11 +621,16 @@ pub(crate) mod tests {
     impl Port for FakeRtu {
         fn send_from(&self, bytes: Vec<u8>, peer: String) -> Result<(), String> {
             self.sent.lock().unwrap().push((bytes.clone(), peer, Instant::now()));
+            let echo = self.echo.load(Ordering::SeqCst);
+            if echo && let Some(eng) = self.bus.lock().unwrap().clone() {
+                eng.bus.feed(&bytes);
+            }
             if let Some(resp) = (self.answer)(&bytes) {
                 let eng = self.bus.lock().unwrap().clone();
                 if let Some(eng) = eng {
                     std::thread::spawn(move || {
-                        std::thread::sleep(Duration::from_millis(5));
+                        // 에코가 있으면 장비가 늦게 답하는 것처럼 — 버스가 조용해진 뒤에 응답
+                        std::thread::sleep(Duration::from_millis(if echo { 40 } else { 5 }));
                         // 응답을 두 번에 나눠 — USB 어댑터처럼
                         let (a, b) = resp.split_at(resp.len() / 2);
                         eng.bus.feed(a);
@@ -674,6 +700,20 @@ pub(crate) mod tests {
         assert_eq!(pdu, vec![0x03, 0x04, 0x00, 0x11, 0x00, 0x12]);
         assert!(rtt >= Duration::from_millis(5));
         assert_eq!(fake.sent.lock().unwrap()[0].0, rtu_frame(2, &[0x03, 0x00, 0x10, 0x00, 0x02]));
+        assert_eq!(crc, 0);
+    }
+
+    #[test]
+    fn transact_skips_two_wire_echo() {
+        let (eng, fake) = setup(GatewayConfig::default());
+        fake.echo.store(true, Ordering::SeqCst);
+        let stop = AtomicBool::new(false);
+        let mut free = Instant::now();
+        let mut crc = 0;
+        let out = transact(&*fake, &eng.bus, &eng.cfg, Route::Unit(2), &[0x03, 0x00, 0x10, 0x00, 0x02], "x".into(), &mut free, &stop, &mut crc);
+        let Outcome::Reply(pdu, _) = out else { panic!("{out:?}") };
+        // 에코(보낸 요청)가 아니라 장비 응답
+        assert_eq!(pdu, vec![0x03, 0x04, 0x00, 0x11, 0x00, 0x12]);
         assert_eq!(crc, 0);
     }
 
