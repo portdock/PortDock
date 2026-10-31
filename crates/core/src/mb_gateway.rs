@@ -5,7 +5,8 @@
 //! - RTU 버스는 반이중 — 요청은 모든 클라이언트를 통틀어 한 번에 하나씩 줄 세운다(`Engine::run`).
 //! - 보내기 전 3.5 문자 간격(19200 bps 초과는 1.75ms)을 지킨다 — 앞 응답·앞 요청의 끝에서부터.
 //! - 응답 타임아웃 → 예외 0x0B(게이트웨이 대상 응답 없음). 허용 국번 밖 → 예외 0x0A(경로 없음).
-//! - Unit ID 0 → 방송(응답을 기다리지 않음, 클라이언트에도 답하지 않음) 또는 기본 국번으로 바꿔 보내기(설정).
+//! - Unit ID 0 → 기본은 경로 없음(예외 0x0A). 사용자가 고를 때만 방송(응답을 기다리지 않음, 클라이언트에도 답하지 않음 —
+//!   «보낼 국번» 목록이 있으면 그 안에 0 이 있을 때만) 또는 기본 국번으로 바꿔 보내기.
 //! - CRC 가 맞지 않거나 다른 국번·함수의 응답은 버리고 계속 기다린다.
 //!
 //! 변환·줄 세우기·타임아웃 판정은 화면 없이 값만 — 시험은 이 파일 아래(가짜 직렬 포트로 왕복).
@@ -31,8 +32,10 @@ const BUS_MAX: usize = 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Unit0 {
-    /// RTU 방송(국번 0) — 응답을 기다리지 않는다
+    /// 보내지 않고 예외 0x0A(경로 없음) — 기본. 모르고 방송해 버스의 모든 장비에 쓰지 않게
     #[default]
+    NoRoute,
+    /// RTU 방송(국번 0) — 응답을 기다리지 않는다
     Broadcast,
     /// 기본 국번으로 바꿔 보낸다
     Default,
@@ -46,7 +49,7 @@ pub struct GatewayConfig {
     pub unit0: Unit0,
     /// Unit ID 0 을 «기본 국번» 으로 다룰 때의 국번(1~247)
     pub default_unit: u8,
-    /// 보낼 국번 «1-10, 17». 비우면 1~247 모두. 밖이면 예외 0x0A
+    /// 보낼 국번 «1-10, 17». 비우면 1~247 모두. 밖이면 예외 0x0A. 0 은 방송을 고른 경우에만 뜻이 있다(목록이 있으면 0 이 들어 있어야 방송)
     pub units: String,
     /// 방송 뒤 다음 요청까지 쉬는 시간(ms) — 장비가 방송을 처리할 틈
     pub broadcast_delay_ms: u32,
@@ -54,7 +57,7 @@ pub struct GatewayConfig {
 
 impl Default for GatewayConfig {
     fn default() -> Self {
-        Self { timeout_ms: 1000, unit0: Unit0::Broadcast, default_unit: 1, units: String::new(), broadcast_delay_ms: 100 }
+        Self { timeout_ms: 1000, unit0: Unit0::NoRoute, default_unit: 1, units: String::new(), broadcast_delay_ms: 100 }
     }
 }
 
@@ -128,9 +131,9 @@ pub fn rtu_frame(unit: u8, pdu: &[u8]) -> Vec<u8> {
     v
 }
 
-/// «1-10, 17» → 범위들. 비면 빈 목록(= 모두)
+/// «0, 1-10, 17» → 범위들. 비면 빈 목록(= 모두). 0 은 방송 허용 표시
 pub fn parse_units(s: &str) -> Result<Vec<RangeInclusive<u8>>, String> {
-    let bad = |p: &str| crate::tr!(format!("국번 «{p}» — 1~247 또는 «1-10» 모양으로"), format!("unit «{p}» — use 1–247 or a range like «1-10»"));
+    let bad = |p: &str| crate::tr!(format!("국번 «{p}» — 0~247 또는 «1-10» 모양으로"), format!("unit «{p}» — use 0–247 or a range like «1-10»"));
     let mut out = Vec::new();
     for part in s.split([',', ' ', ';']).map(str::trim).filter(|p| !p.is_empty()) {
         let (a, b) = match part.split_once('-') {
@@ -138,7 +141,7 @@ pub fn parse_units(s: &str) -> Result<Vec<RangeInclusive<u8>>, String> {
             None => (part, part),
         };
         let (Ok(a), Ok(b)) = (a.parse::<u8>(), b.parse::<u8>()) else { return Err(bad(part)) };
-        if a == 0 || b > 247 || a > b {
+        if b > 247 || a > b {
             return Err(bad(part));
         }
         out.push(a..=b);
@@ -159,7 +162,10 @@ pub enum Route {
 
 pub fn route(unit: u8, cfg: &GatewayConfig, allowed: &[RangeInclusive<u8>]) -> Route {
     let u = match (unit, cfg.unit0) {
-        (0, Unit0::Broadcast) => return Route::Broadcast,
+        (0, Unit0::NoRoute) => return Route::NoRoute,
+        (0, Unit0::Broadcast) => {
+            return if allowed.is_empty() || allowed.iter().any(|r| r.contains(&0)) { Route::Broadcast } else { Route::NoRoute };
+        }
         (0, Unit0::Default) => cfg.default_unit,
         (u, _) => u,
     };
@@ -318,8 +324,8 @@ pub fn transact(port: &dyn Port, bus: &Bus, cfg: &GatewayConfig, route: Route, p
     let frame = rtu_frame(unit, pdu);
     let tx = tx_time(frame.len(), baud);
     // 2선식 변환기 에코: 보낸 프레임이 그대로 먼저 돌아오면 버린다(Modbus Master 와 같은 규칙).
-    // 05·06 은 정상 응답이 요청과 같아 가릴 수 없다 — 그대로 응답으로 본다
-    let echo = if matches!(pdu.first(), Some(0x05 | 0x06)) { Vec::new() } else { frame.clone() };
+    // 05·06·08(진단 — 00 되돌려 주기 등)은 정상 응답이 요청과 같을 수 있어 가릴 수 없다 — 그대로 응답으로 본다
+    let echo = if matches!(pdu.first(), Some(0x05 | 0x06 | 0x08)) { Vec::new() } else { frame.clone() };
     bus.clear();
     if let Err(e) = port.send_from(frame, peer) {
         return Outcome::SendFailed(e);
@@ -538,7 +544,16 @@ pub(crate) mod tests {
     #[test]
     fn routes_unit0_and_allowed_units() {
         let mut cfg = GatewayConfig::default();
+        // 기본: Unit ID 0 은 경로 없음
+        assert_eq!(cfg.unit0, Unit0::NoRoute);
+        assert_eq!(route(0, &cfg, &[]), Route::NoRoute);
+        cfg.unit0 = Unit0::Broadcast;
         assert_eq!(route(0, &cfg, &[]), Route::Broadcast);
+        // 방송을 골라도 «보낼 국번» 목록이 있으면 0 이 그 안에 있을 때만
+        assert_eq!(route(0, &cfg, &parse_units("1-3").unwrap()), Route::NoRoute);
+        let with0 = parse_units("0, 1-3").unwrap();
+        assert_eq!(route(0, &cfg, &with0), Route::Broadcast);
+        assert_eq!(route(2, &cfg, &with0), Route::Unit(2));
         assert_eq!(route(5, &cfg, &[]), Route::Unit(5));
         assert_eq!(route(250, &cfg, &[]), Route::NoRoute);
         cfg.unit0 = Unit0::Default;
@@ -549,7 +564,7 @@ pub(crate) mod tests {
         assert_eq!(route(5, &cfg, &allowed), Route::NoRoute);
         assert_eq!(route(0, &cfg, &allowed), Route::Unit(7));
         assert!(parse_units("").unwrap().is_empty());
-        assert!(parse_units("0").is_err() && parse_units("5-2").is_err() && parse_units("248").is_err() && parse_units("x").is_err());
+        assert!(parse_units("0").is_ok() && parse_units("5-2").is_err() && parse_units("248").is_err() && parse_units("x").is_err());
     }
 
     #[test]
@@ -701,6 +716,21 @@ pub(crate) mod tests {
         assert!(rtt >= Duration::from_millis(5));
         assert_eq!(fake.sent.lock().unwrap()[0].0, rtu_frame(2, &[0x03, 0x00, 0x10, 0x00, 0x02]));
         assert_eq!(crc, 0);
+    }
+
+    /// FC08 진단(00 되돌려 주기) — 정상 응답이 요청과 바이트까지 같다. 에코로 지우지 않는다
+    #[test]
+    fn transact_fc08_reply_equal_to_request_is_kept() {
+        let eng = Arc::new(Engine::new(GatewayConfig::default()).unwrap());
+        let fake = FakeRtu::new(115_200, |req| (req[1] == 0x08).then(|| req.to_vec()));
+        *fake.bus.lock().unwrap() = Some(eng.clone());
+        let stop = AtomicBool::new(false);
+        let mut free = Instant::now();
+        let mut crc = 0;
+        let pdu = [0x08, 0x00, 0x00, 0x12, 0x34];
+        let out = transact(&*fake, &eng.bus, &eng.cfg, Route::Unit(1), &pdu, "x".into(), &mut free, &stop, &mut crc);
+        let Outcome::Reply(got, _) = out else { panic!("{out:?}") };
+        assert_eq!(got, pdu.to_vec());
     }
 
     #[test]
