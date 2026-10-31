@@ -57,7 +57,9 @@ export interface WebTool {
     | "tools/speaker-test/"
     | "tools/gamepad-test/"
     | "tools/mouse-test/"
-    | "tools/monitor-test/";
+    | "tools/monitor-test/"
+    | "tools/wiring/"
+    | "tools/system-diagram/";
   name: L;
   blurb: L;
 }
@@ -333,6 +335,16 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/monitor-test/",
     name: { ko: "모니터 불량화소·주사율 테스트", en: "Dead Pixel & Refresh Rate Test" },
     blurb: { ko: "전체 화면 단색(검정·흰색·빨강·초록·파랑·회색)으로 불량화소 보기, 그라데이션 밴딩, 주사율 추정, 잔상 패턴.", en: "Full-screen solid colors for dead or stuck pixels, gradient banding, refresh rate estimate, motion pattern for ghosting." },
+  },
+  {
+    path: "tools/wiring/",
+    name: { ko: "배선도 만들기", en: "Wiring Diagram Maker" },
+    blurb: { ko: "RS-485 2선·4선, RS-232 널 모뎀, 4-20mA 2·3·4선식, NPN/PNP 센서, 릴레이 출력 — 장비 수·국번에 맞춘 그림 + 확인 목록, SVG·PNG.", en: "RS-485 2/4-wire, RS-232 null modem, 4-20 mA 2/3/4-wire, NPN/PNP sensors, relay outputs — drawn for your devices and IDs, with a checklist, SVG/PNG." },
+  },
+  {
+    path: "tools/system-diagram/",
+    name: { ko: "시스템 구성도 그리기", en: "System Diagram Editor" },
+    blurb: { ko: "PC·PLC·HMI·인버터·스위치를 놓고 이더넷·RS-485 버스로 잇기. IP 중복·서브넷·국번 중복 점검, JSON·SVG·PNG, Net Scan CSV 불러오기.", en: "Place PCs, PLCs, HMIs, drives and switches, connect with Ethernet or RS-485 buses. Checks duplicate IPs, subnets and IDs; JSON, SVG, PNG; Net Scan CSV import." },
   },
 ];
 

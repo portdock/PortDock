@@ -1,0 +1,813 @@
+---
+// 웹 도구: 시스템 구성도 그리기 — 현장 장비·네트워크 구성도 편집기(끌어다 놓기, 이름·IP·국번·보율, 선 종류) + «구성 점검»
+// (IP 중복, 같은 스위치에 다른 서브넷, RS-485 국번 중복·보율/패리티 다름). 문서·점검·그리기는 lib/sysDiagram.ts(node --test).
+// 저장: JSON 내보내기/불러오기, 이 브라우저 localStorage 자동 저장(막혀 있으면 조용히 건너뜀), SVG·PNG·인쇄. 모두 브라우저 안 — 서버로 보내지 않는다.
+// Net Scan «CSV 저장» 파일을 불러와 장비로 만든다(MAC 은 넣지 않음).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { NODE_KINDS, NODE_NAME, LINK_KINDS, LINK_NAME, EXAMPLES } from "../lib/sysDiagram";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/system-diagram/";
+const L = ko
+  ? {
+      title: "시스템 구성도 그리기 — 현장 장비·네트워크 구성 점검",
+      h1: "시스템 구성도 그리기",
+      desc: "PC·PLC·HMI·인버터·스위치·USB-RS485 를 끌어다 놓고 이더넷·RS-485 버스·RS-232·CAN·4-20mA 로 이어 구성도를 그립니다. IP 중복·서브넷·국번 중복을 바로 점검합니다.",
+      seo: "시스템 구성도 그리기 — 네트워크·RS485 구성 점검 — PortDock",
+      docTitle: "구성도 이름",
+      add: "장비 넣기",
+      bus485: "RS-485 버스",
+      busCan: "CAN 버스",
+      connect: "선 잇기",
+      connectOn: "선 잇기 — 두 장비(또는 장비와 버스)를 차례로 누르세요. 다시 누르면 끝",
+      linkKind: "선 종류",
+      del: "고른 것 지우기",
+      example: "예시로 시작",
+      pick: "— 예시 고르기 —",
+      fresh: "빈 구성도",
+      freshAsk: "지금 구성도를 지우고 새로 시작할까요? (JSON 으로 저장해 두지 않았다면 사라집니다)",
+      saveJson: "JSON 저장",
+      openJson: "JSON 불러오기",
+      openScan: "Net Scan 결과(CSV) 불러오기",
+      saveSvg: "SVG 저장",
+      savePng: "PNG 저장",
+      print: "인쇄",
+      props: "고른 것",
+      none: "구성도에서 장비나 버스를 누르면 여기서 이름·IP·국번·보율을 고칩니다.",
+      name: "이름",
+      kind: "종류",
+      ip: "IP 주소",
+      mask: "서브넷 마스크(255.255.255.0 또는 /24)",
+      unit: "국번(RS-485)",
+      baud: "보율(bps)",
+      parity: "패리티",
+      pAny: "—",
+      pN: "없음(N)",
+      pE: "짝수(E)",
+      pO: "홀수(O)",
+      note: "메모",
+      len: "버스 길이(그림, px)",
+      links: "이어진 선",
+      label: "선 이름",
+      unlink: "선 빼기",
+      noLinks: "아직 이어진 선이 없습니다 — «선 잇기» 를 켜고 두 개를 차례로 누르세요.",
+      checks: "구성 점검",
+      allOk: "점검에서 걸린 것이 없습니다.",
+      privacy: "구성도는 이 브라우저 안에서만 그리고 어디에도 보내지 않습니다. 이 브라우저에 자동 저장되며(다른 PC·브라우저에서는 보이지 않음), 옮기려면 «JSON 저장» 을 쓰세요.",
+      storeOff: "이 브라우저는 자동 저장을 막아 두었습니다 — 닫기 전에 «JSON 저장» 을 하세요.",
+      keys: "키보드: 고른 것을 화살표로 10px 씩 옮기고 Delete 로 지웁니다.",
+      what: "무엇이 다른가",
+      whatP: [
+        "그림 그리기 도구는 많지만, 현장 구성도에서 실수가 나는 곳은 그림이 아니라 설정입니다. 이 도구는 그리는 동안 «구성 점검» 을 계속 돌립니다 — 같은 IP 가 두 곳에 있는지, 같은 스위치에 이어진 장비가 서로 다른 서브넷인지(라우터 없이는 통신 못 함), 같은 RS-485 버스에 국번이 겹치거나 보율·패리티가 다른 장비가 있는지 알려 줍니다.",
+        "RS-485·CAN 은 한 줄 «버스» 로 그리고 장비를 버스에 매답니다. 이더넷은 스위치·무선 AP 를 지나 같은 묶음으로 보고, 라우터·클라우드에서 끊어 봅니다.",
+        "PortDock Net Scan 의 «CSV 저장» 파일을 불러오면 찾은 장비가 스위치 아래에 놓입니다(종류는 열린 포트로 짐작 — 고쳐 쓰세요). 다 그리면 JSON 으로 저장해 다음에 이어서 고치고, SVG·PNG·인쇄로 보고서에 넣습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["서브넷 경고는 어떻게 판단하나요?", "이더넷·Wi-Fi 선으로 이어진 장비를 스위치·AP 를 지나 한 묶음으로 보고, 묶음 안의 IP 를 각자 마스크로 잘라 네트워크 주소가 다르면 알려 줍니다. 마스크를 하나도 적지 않았으면 /24(255.255.255.0)로 보고 그렇다고 적습니다. 라우터·클라우드 너머는 다른 묶음입니다."],
+        ["저장한 구성도는 어디에 있나요?", "이 브라우저의 저장소(localStorage)에만 자동 저장됩니다. 서버에는 올라가지 않으므로 다른 PC 로 옮기거나 남겨 두려면 «JSON 저장» 파일을 보관하세요."],
+        ["Net Scan 결과에서 MAC 주소도 가져오나요?", "아닙니다. IP·이름·제조사·열린 포트(서비스 이름)만 씁니다. 종류(PLC·라우터 등)는 열린 포트와 표시로 짐작하므로 틀릴 수 있습니다."],
+      ],
+      wiring: "배선도 만들기",
+      wiringNote: "장비 사이 실제 결선(종단·바이어스·핀 배치)은",
+    }
+  : {
+      title: "System Diagram Editor — Field Device & Network Checks",
+      h1: "System diagram editor",
+      desc: "Place PCs, PLCs, HMIs, drives and switches, link them by Ethernet, RS-485 bus, RS-232, CAN or 4-20 mA, and check duplicate IPs, subnets and slave IDs.",
+      seo: "System Diagram Editor: Network & RS-485 Checks — PortDock",
+      docTitle: "Diagram name",
+      add: "Add device",
+      bus485: "RS-485 bus",
+      busCan: "CAN bus",
+      connect: "Connect",
+      connectOn: "Connect — click two devices (or a device and a bus) in turn. Click again to stop",
+      linkKind: "Link type",
+      del: "Delete selected",
+      example: "Start from an example",
+      pick: "— pick an example —",
+      fresh: "Blank diagram",
+      freshAsk: "Clear this diagram and start over? (It is lost unless you saved it as JSON.)",
+      saveJson: "Save JSON",
+      openJson: "Open JSON",
+      openScan: "Import Net Scan result (CSV)",
+      saveSvg: "Save SVG",
+      savePng: "Save PNG",
+      print: "Print",
+      props: "Selected",
+      none: "Click a device or bus in the diagram to edit its name, IP, slave ID and baud rate here.",
+      name: "Name",
+      kind: "Type",
+      ip: "IP address",
+      mask: "Subnet mask (255.255.255.0 or /24)",
+      unit: "Slave ID (RS-485)",
+      baud: "Baud (bps)",
+      parity: "Parity",
+      pAny: "—",
+      pN: "None (N)",
+      pE: "Even (E)",
+      pO: "Odd (O)",
+      note: "Note",
+      len: "Bus length (drawing, px)",
+      links: "Links",
+      label: "Link label",
+      unlink: "Remove link",
+      noLinks: "No links yet — turn on «Connect» and click two items in turn.",
+      checks: "Configuration check",
+      allOk: "Nothing flagged.",
+      privacy: "The diagram is drawn only inside this browser and sent nowhere. It is autosaved in this browser (not visible on other PCs or browsers); use «Save JSON» to move it.",
+      storeOff: "This browser blocks autosave — use «Save JSON» before closing.",
+      keys: "Keyboard: arrow keys move the selection by 10 px, Delete removes it.",
+      what: "What makes it different",
+      whatP: [
+        "There are plenty of drawing tools, but field diagrams go wrong in the settings, not the shapes. This tool keeps running a configuration check while you draw — the same IP in two places, devices on one switch in different subnets (they cannot talk without a router), duplicate slave IDs or mismatched baud rate/parity on one RS-485 bus.",
+        "RS-485 and CAN are drawn as a single bus line with devices hanging off it. Ethernet is grouped through switches and wireless APs and split at routers and cloud nodes.",
+        "Import a PortDock Net Scan «Save CSV» file and the hosts it found are placed under a switch (types are guessed from open ports — adjust them). Save as JSON to continue later, and use SVG, PNG or print for reports.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How is the subnet warning decided?", "Devices joined by Ethernet or Wi-Fi links are grouped through switches and APs; each IP is masked with its own subnet mask and different network addresses in one group are flagged. If no mask is given at all, /24 (255.255.255.0) is assumed and the warning says so. Anything beyond a router or cloud node is a separate group."],
+        ["Where is my diagram saved?", "Only in this browser's storage (localStorage). Nothing is uploaded, so keep the «Save JSON» file to move or archive it."],
+        ["Does the Net Scan import bring MAC addresses?", "No. Only IP, name, vendor and open ports (service names) are used. The type (PLC, router …) is guessed from open ports and marks, so it may be wrong."],
+      ],
+      wiring: "wiring diagram maker",
+      wiringNote: "For the actual wiring between devices (termination, bias, pinouts) use the",
+    };
+const T = {
+  ...Object.fromEntries(["name", "kind", "ip", "mask", "unit", "baud", "parity", "pAny", "pN", "pE", "pO", "note", "len", "links", "label", "unlink", "noLinks", "allOk", "none", "storeOff", "freshAsk"].map((k) => [k, (L as Record<string, unknown>)[k] as string])),
+  bad: ko ? "불러오지 못했습니다" : "Could not open",
+  skipped: ko ? "일부 항목은 건너뛰었습니다" : "Some items were skipped",
+  scanAdded: ko ? "Net Scan 장비 {n}대를 넣었습니다" : "Added {n} hosts from Net Scan",
+  scanNone: ko ? "이 CSV 에서 장비를 찾지 못했습니다(Net Scan «CSV 저장» 파일인지 확인)" : "No hosts found in this CSV (is it a Net Scan «Save CSV» file?)",
+  pngFail: ko ? "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요." : "Could not make the PNG — try saving as SVG.",
+  footer: "portdock.dev/tools/system-diagram",
+};
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="card sd-tools" id="sd" data-lang={lang} data-t={JSON.stringify(T)}>
+      <div class="row sd-row">
+        <label class="fld sd-title">{L.docTitle}<input id="docTitle" maxlength="80" autocomplete="off" /></label>
+        <label class="fld">{L.example}<select id="example"><option value="">{L.pick}</option>{EXAMPLES.map((e) => <option value={e.id}>{e.name[lang]}</option>)}</select></label>
+        <button type="button" class="btn tight" id="fresh">{L.fresh}</button>
+      </div>
+      <div class="sd-palette" role="group" aria-label={L.add}>
+        <span class="sd-lbl">{L.add}</span>
+        {NODE_KINDS.map((k) => <button type="button" class="btn tight" data-add={k}>+ {NODE_NAME[k][lang]}</button>)}
+        <button type="button" class="btn tight" data-bus="rs485">+ {L.bus485}</button>
+        <button type="button" class="btn tight" data-bus="can">+ {L.busCan}</button>
+      </div>
+      <div class="sd-palette">
+        <label class="fld sd-inline">{L.linkKind}<select id="linkKind">{LINK_KINDS.map((k) => <option value={k}>{LINK_NAME[k][lang]}</option>)}</select></label>
+        <button type="button" class="btn tight" id="connect" aria-pressed="false">{L.connect}</button>
+        <button type="button" class="btn tight" id="delSel" disabled>{L.del}</button>
+      </div>
+      <p class="note" id="hint" hidden>{L.connectOn}</p>
+    </div>
+
+    <div class="sd-main">
+      <section class="card sd-canvas-wrap" id="sd-print">
+        <div class="sd-canvas" id="canvas" tabindex="0" aria-label={L.h1}></div>
+        <div class="btns sd-btns">
+          <button type="button" class="btn tight" id="bJson">{L.saveJson}</button>
+          <label class="btn tight sd-file">{L.openJson}<input type="file" id="fJson" accept=".json,application/json" /></label>
+          <label class="btn tight sd-file">{L.openScan}<input type="file" id="fScan" accept=".csv,text/csv" /></label>
+          <button type="button" class="btn tight" id="bSvg">{L.saveSvg}</button>
+          <button type="button" class="btn tight" id="bPng">{L.savePng}</button>
+          <button type="button" class="btn tight" id="bPrint">{L.print}</button>
+        </div>
+        <p class="note" id="msg" role="status"></p>
+        <h2 class="sd-h">{L.checks}</h2>
+        <ul class="sd-findings" id="findings" aria-live="polite"></ul>
+      </section>
+      <aside class="card sd-props" aria-label={L.props}>
+        <h2 class="sd-h">{L.props}</h2>
+        <div id="props"></div>
+      </aside>
+    </div>
+    <p class="note privacy">{L.privacy}</p>
+    <p class="note">{L.keys}</p>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <p>{L.wiringNote} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a>.</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .sd-tools {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sd-row {
+      align-items: flex-end;
+    }
+    .sd-row > .btn {
+      flex: 0 0 auto;
+    }
+    .sd-title {
+      flex: 2 1 240px;
+    }
+    .sd-palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .sd-lbl {
+      font-weight: 600;
+      font-size: 14px;
+      margin-right: 4px;
+    }
+    .sd-inline {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+    }
+    .sd-inline select {
+      width: auto;
+    }
+    #connect[aria-pressed="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+    .sd-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      margin-top: 16px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .sd-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .sd-canvas {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      max-height: 76vh;
+    }
+    .sd-canvas:focus-visible {
+      outline: 2px solid var(--accent);
+    }
+    .sd-canvas :global(svg) {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      user-select: none;
+      cursor: default;
+    }
+    @media (min-width: 700px) {
+      .sd-canvas :global(svg) {
+        touch-action: none;
+      }
+    }
+    .sd-canvas.linking :global(svg) {
+      cursor: crosshair;
+    }
+    .sd-btns {
+      margin-top: 10px;
+    }
+    .sd-file {
+      position: relative;
+      overflow: hidden;
+    }
+    .sd-file input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .sd-h {
+      font-size: 18px;
+      margin: 14px 0 6px;
+    }
+    .sd-props .sd-h {
+      margin-top: 0;
+    }
+    .sd-findings {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+      font-size: 14.5px;
+    }
+    .sd-findings :global(li) {
+      margin: 4px 0;
+    }
+    .sd-findings :global(button) {
+      all: unset;
+      cursor: pointer;
+      display: block;
+      padding: 4px 8px;
+      border-left: 4px solid var(--line);
+      border-radius: 4px;
+    }
+    .sd-findings :global(button:focus-visible) {
+      outline: 2px solid var(--accent);
+    }
+    .sd-findings :global(.fault) {
+      border-left-color: #b42318;
+    }
+    .sd-findings :global(.warn) {
+      border-left-color: #b54708;
+    }
+    #props :global(label.fld) {
+      margin-bottom: 8px;
+    }
+    #props :global(.lk) {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 6px;
+      align-items: center;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+    }
+    #props :global(.lk input) {
+      grid-column: 1 / -1;
+    }
+    @media print {
+      :global(body *) {
+        visibility: hidden;
+      }
+      #sd-print,
+      #sd-print :global(*) {
+        visibility: visible;
+      }
+      #sd-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: 0;
+      }
+      .sd-btns,
+      #msg {
+        display: none;
+      }
+      .sd-canvas {
+        max-height: none;
+        overflow: visible;
+        border: 0;
+      }
+    }
+  </style>
+  <script>
+    import {
+      EXAMPLES,
+      LINK_NAME,
+      NODE_KINDS,
+      NODE_NAME,
+      addLink,
+      addScanRows,
+      checkDoc,
+      emptyDoc,
+      freeSpot,
+      hitTest,
+      newId,
+      parseNetScanCsv,
+      removeItem,
+      toDrawing,
+      validateDoc,
+      type LinkKind,
+      type NodeKind,
+      type SysDoc,
+      type SysNode,
+      type SysBus,
+      type Finding,
+    } from "../lib/sysDiagram";
+    import { renderSvg, LIGHT, esc } from "../lib/diagramSvg";
+    import { saveText, savePng, screenPalette, onThemeChange, fileStamp, store } from "../lib/fileSave";
+
+    const root = document.getElementById("sd") as HTMLDivElement;
+    const lang = (root.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(root.dataset.t ?? "{}") as Record<string, string>;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const canvas = $<HTMLDivElement>("canvas");
+    const KEY = "portdock.systemDiagram.v1";
+
+    let doc: SysDoc = load();
+    let selected: string | null = null;
+    let pending: string | null = null;
+    let linking = false;
+    let printing = false;
+    let findings: Finding[] = [];
+    let drag: { id: string; dx: number; dy: number; moved: boolean } | null = null;
+
+    function load(): SysDoc {
+      const raw = store.get(KEY);
+      if (raw) {
+        try {
+          const v = validateDoc(JSON.parse(raw));
+          if (v.doc) return v.doc;
+        } catch {
+          /* 깨진 저장 — 예시로 */
+        }
+      }
+      return EXAMPLES[0].make(lang);
+    }
+    let saveTimer = 0;
+    function save() {
+      clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(() => {
+        if (!store.set(KEY, JSON.stringify(doc))) $("msg").textContent = T.storeOff;
+      }, 300);
+    }
+
+    // ---- 그리기
+    function draw() {
+      findings = checkDoc(doc, lang);
+      const flagged = new Set(findings.filter((f) => f.level !== "info").flatMap((f) => f.ids));
+      const svg = renderSvg(toDrawing(doc, lang, { selected, pending, flagged }), printing ? LIGHT : screenPalette(), {});
+      canvas.innerHTML = svg;
+      canvas.classList.toggle("linking", linking);
+      const fl = $("findings");
+      fl.innerHTML = findings.length
+        ? findings.map((f, i) => `<li><button type="button" class="${f.level}" data-f="${i}">${f.level === "fault" ? "✖ " : f.level === "warn" ? "⚠ " : "· "}${esc(f.text)}</button></li>`).join("")
+        : `<li>${esc(T.allOk)}</li>`;
+      $<HTMLButtonElement>("delSel").disabled = !selected;
+    }
+    function changed() {
+      draw();
+      save();
+    }
+
+    // ---- 고른 것 칸
+    const PAR = () => [
+      ["", T.pAny],
+      ["none", T.pN],
+      ["even", T.pE],
+      ["odd", T.pO],
+    ];
+    function field(label: string, value: string, on: (v: string) => void, opts?: { options?: string[][]; mono?: boolean; area?: boolean }) {
+      const l = document.createElement("label");
+      l.className = "fld";
+      l.append(label);
+      let el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+      if (opts?.options) {
+        const s = document.createElement("select");
+        for (const [v, t] of opts.options) s.append(new Option(t, v));
+        el = s;
+      } else if (opts?.area) {
+        const a = document.createElement("textarea");
+        a.rows = 2;
+        a.maxLength = 300;
+        el = a;
+      } else {
+        const i = document.createElement("input");
+        i.autocomplete = "off";
+        i.maxLength = 80;
+        if (opts?.mono) i.className = "mono";
+        el = i;
+      }
+      el.value = value;
+      el.addEventListener(opts?.options ? "change" : "input", () => on(el.value));
+      l.append(el);
+      return l;
+    }
+    const numOrUndef = (v: string) => {
+      const n = Number(v);
+      return v.trim() === "" || !Number.isFinite(n) ? undefined : Math.round(n);
+    };
+    function drawProps() {
+      const box = $("props");
+      box.replaceChildren();
+      const n = doc.nodes.find((x) => x.id === selected);
+      const b = doc.buses.find((x) => x.id === selected);
+      if (!n && !b) {
+        const p = document.createElement("p");
+        p.className = "note";
+        p.textContent = T.none;
+        box.append(p);
+        return;
+      }
+      const upd = (fn: () => void) => {
+        fn();
+        changed();
+      };
+      if (n) {
+        box.append(
+          field(T.name, n.name, (v) => upd(() => (n.name = v))),
+          field(T.kind, n.kind, (v) => upd(() => (n.kind = v as NodeKind)), { options: NODE_KINDS.map((k) => [k, NODE_NAME[k][lang]]) }),
+          field(T.ip, n.ip ?? "", (v) => upd(() => (v.trim() ? (n.ip = v.trim()) : delete n.ip)), { mono: true }),
+          field(T.mask, n.mask ?? "", (v) => upd(() => (v.trim() ? (n.mask = v.trim()) : delete n.mask)), { mono: true }),
+          field(T.unit, n.unit?.toString() ?? "", (v) => upd(() => {
+            const u = numOrUndef(v);
+            if (u === undefined) delete n.unit;
+            else n.unit = u;
+          }), { mono: true }),
+          field(T.baud, n.baud?.toString() ?? "", (v) => upd(() => {
+            const u = numOrUndef(v);
+            if (u === undefined || u <= 0) delete n.baud;
+            else n.baud = u;
+          }), { mono: true }),
+          field(T.parity, n.parity ?? "", (v) => upd(() => (v ? (n.parity = v as SysNode["parity"]) : delete n.parity)), { options: PAR() }),
+          field(T.note, n.note ?? "", (v) => upd(() => (v ? (n.note = v) : delete n.note)), { area: true }),
+        );
+      } else if (b) {
+        box.append(
+          field(T.name, b.name, (v) => upd(() => (b.name = v))),
+          field(T.baud, b.baud?.toString() ?? "", (v) => upd(() => {
+            const u = numOrUndef(v);
+            if (u === undefined || u <= 0) delete b.baud;
+            else b.baud = u;
+          }), { mono: true }),
+        );
+        if (b.kind === "rs485") box.append(field(T.parity, b.parity ?? "", (v) => upd(() => (v ? (b.parity = v as SysBus["parity"]) : delete b.parity)), { options: PAR() }));
+        box.append(field(T.len, String(b.len), (v) => upd(() => {
+          const u = numOrUndef(v);
+          if (u !== undefined) b.len = Math.max(120, Math.min(4000, u));
+        }), { mono: true }));
+      }
+      // 이어진 선
+      const h = document.createElement("p");
+      h.className = "fld-title";
+      h.style.fontWeight = "600";
+      h.textContent = T.links;
+      box.append(h);
+      const mine = doc.links.filter((l) => l.a === selected || l.b === selected);
+      if (!mine.length) {
+        const p = document.createElement("p");
+        p.className = "note";
+        p.textContent = T.noLinks;
+        box.append(p);
+      }
+      const nameOf = (id: string) => doc.nodes.find((x) => x.id === id)?.name || doc.buses.find((x) => x.id === id)?.name || id;
+      for (const l of mine) {
+        const row = document.createElement("div");
+        row.className = "lk";
+        const other = l.a === selected ? l.b : l.a;
+        const s = document.createElement("span");
+        s.textContent = `${LINK_NAME[l.kind][lang]} → ${nameOf(other)}`;
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "btn tight";
+        del.textContent = "×";
+        del.title = T.unlink;
+        del.setAttribute("aria-label", `${T.unlink}: ${s.textContent}`);
+        del.addEventListener("click", () => {
+          doc.links = doc.links.filter((x) => x.id !== l.id);
+          changed();
+          drawProps();
+        });
+        const lab = document.createElement("input");
+        lab.placeholder = T.label;
+        lab.setAttribute("aria-label", T.label);
+        lab.maxLength = 80;
+        lab.value = l.label ?? "";
+        lab.addEventListener("input", () => {
+          if (lab.value) l.label = lab.value;
+          else delete l.label;
+          changed();
+        });
+        row.append(s, del, lab);
+        box.append(row);
+      }
+    }
+    function select(id: string | null) {
+      selected = id;
+      drawProps();
+      draw();
+    }
+
+    // ---- 넣기
+    for (const b of document.querySelectorAll<HTMLButtonElement>("[data-add]")) {
+      b.addEventListener("click", () => {
+        const kind = b.dataset.add as NodeKind;
+        const id = newId(doc, "n");
+        const count = doc.nodes.filter((n) => n.kind === kind).length + 1;
+        doc.nodes.push({ id, kind, name: `${NODE_NAME[kind][lang]} ${count}`, ...freeSpot(doc) });
+        select(id);
+        save();
+      });
+    }
+    for (const b of document.querySelectorAll<HTMLButtonElement>("[data-bus]")) {
+      b.addEventListener("click", () => {
+        const kind = b.dataset.bus as "rs485" | "can";
+        const id = newId(doc, "b");
+        const y = doc.nodes.reduce((m, n) => Math.max(m, n.y + 100), doc.buses.reduce((m, x) => Math.max(m, x.y + 140), 80));
+        doc.buses.push({ id, kind, name: kind === "rs485" ? `RS-485 ${doc.buses.length + 1}` : `CAN ${doc.buses.length + 1}`, x: 40, y, len: 600, ...(kind === "rs485" ? { baud: 9600 } : { baud: 250000 }) });
+        select(id);
+        save();
+      });
+    }
+    $("connect").addEventListener("click", () => {
+      linking = !linking;
+      pending = null;
+      $("connect").setAttribute("aria-pressed", String(linking));
+      $("hint").hidden = !linking;
+      draw();
+    });
+    function deleteSelected() {
+      if (!selected) return;
+      doc = removeItem(doc, selected);
+      select(null);
+      save();
+    }
+    $("delSel").addEventListener("click", deleteSelected);
+
+    // ---- 누르기·끌기
+    function svgPoint(e: PointerEvent) {
+      const svg = canvas.querySelector("svg");
+      const m = svg?.getScreenCTM();
+      if (!svg || !m) return null;
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      return { x: p.x, y: p.y };
+    }
+    canvas.addEventListener("pointerdown", (e) => {
+      const p = svgPoint(e);
+      if (!p) return;
+      const hit = hitTest(doc, p.x, p.y);
+      if (linking) {
+        if (!hit) return;
+        if (!pending) {
+          pending = hit;
+          draw();
+          return;
+        }
+        const next = addLink(doc, $<HTMLSelectElement>("linkKind").value as LinkKind, pending, hit);
+        if (next) doc = next;
+        pending = null;
+        selected = hit;
+        drawProps();
+        changed();
+        return;
+      }
+      if (hit !== selected) select(hit);
+      if (!hit) return;
+      const n = doc.nodes.find((x) => x.id === hit);
+      const b = doc.buses.find((x) => x.id === hit);
+      const it = n ?? b!;
+      drag = { id: hit, dx: p.x - it.x, dy: p.y - it.y, moved: false };
+      canvas.querySelector("svg")?.setPointerCapture(e.pointerId);
+    });
+    let raf = 0;
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const p = svgPoint(e);
+      if (!p) return;
+      const it = doc.nodes.find((x) => x.id === drag!.id) ?? doc.buses.find((x) => x.id === drag!.id);
+      if (!it) return;
+      const snap = (v: number) => Math.max(0, Math.round(v / 10) * 10);
+      it.x = snap(p.x - drag.dx);
+      it.y = snap(p.y - drag.dy);
+      drag.moved = true;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(draw);
+    });
+    const endDrag = () => {
+      if (drag?.moved) save();
+      drag = null;
+    };
+    // 다시 그리면 svg 가 바뀌어 포인터 잡기가 풀리므로 창 전체에서 놓기를 받는다
+    window.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+    canvas.addEventListener("keydown", (e) => {
+      if (!selected) return;
+      const it = doc.nodes.find((x) => x.id === selected) ?? doc.buses.find((x) => x.id === selected);
+      if (!it) return;
+      const mv: Record<string, [number, number]> = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        deleteSelected();
+      } else if (mv[e.key]) {
+        e.preventDefault();
+        it.x = Math.max(0, it.x + mv[e.key][0]);
+        it.y = Math.max(0, it.y + mv[e.key][1]);
+        changed();
+      } else if (e.key === "Escape") {
+        pending = null;
+        select(null);
+      }
+    });
+    $("findings").addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-f]");
+      if (!b) return;
+      const f = findings[Number(b.dataset.f)];
+      if (f?.ids[0]) {
+        select(f.ids[0]);
+        canvas.focus();
+      }
+    });
+
+    // ---- 문서
+    function setDoc(d: SysDoc) {
+      doc = d;
+      selected = null;
+      pending = null;
+      $("docTitle").value = doc.title;
+      drawProps();
+      changed();
+    }
+    $("docTitle").addEventListener("input", () => {
+      doc.title = $("docTitle").value;
+      save();
+    });
+    $<HTMLSelectElement>("example").addEventListener("change", () => {
+      const ex = EXAMPLES.find((x) => x.id === $<HTMLSelectElement>("example").value);
+      if (ex) setDoc(ex.make(lang));
+      $<HTMLSelectElement>("example").value = "";
+    });
+    $("fresh").addEventListener("click", () => {
+      if (doc.nodes.length && !confirm(T.freshAsk)) return;
+      setDoc(emptyDoc());
+    });
+    const fname = (ext: string) => `portdock-system-diagram-${fileStamp()}.${ext}`;
+    $("bJson").addEventListener("click", () => saveText(JSON.stringify(doc, null, 2), fname("json"), "application/json"));
+    const exportSvg = () => renderSvg(toDrawing(doc, lang), LIGHT, { bg: true, title: true, footer: T.footer });
+    $("bSvg").addEventListener("click", () => saveText(exportSvg(), fname("svg"), "image/svg+xml"));
+    $("bPng").addEventListener("click", () => {
+      savePng(exportSvg(), fname("png")).catch(() => ($("msg").textContent = T.pngFail));
+    });
+    $("bPrint").addEventListener("click", () => window.print());
+    window.addEventListener("beforeprint", () => {
+      printing = true;
+      draw();
+    });
+    window.addEventListener("afterprint", () => {
+      printing = false;
+      draw();
+    });
+    const readFile = (input: HTMLInputElement, fn: (text: string) => void) => {
+      input.addEventListener("change", () => {
+        const f = input.files?.[0];
+        input.value = "";
+        if (!f) return;
+        if (f.size > 5 * 1024 * 1024) {
+          $("msg").textContent = `${T.bad}: > 5 MB`;
+          return;
+        }
+        f.text().then(fn, () => ($("msg").textContent = T.bad));
+      });
+    };
+    readFile($("fJson"), (text) => {
+      try {
+        const v = validateDoc(JSON.parse(text));
+        if (!v.doc) {
+          $("msg").textContent = `${T.bad}: ${v.errors.slice(0, 3).join("; ")}`;
+          return;
+        }
+        setDoc(v.doc);
+        $("msg").textContent = v.errors.length ? `${T.skipped}: ${v.errors.slice(0, 3).join("; ")}` : "";
+      } catch (e) {
+        $("msg").textContent = `${T.bad}: ${(e as Error).message}`;
+      }
+    });
+    readFile($("fScan"), (text) => {
+      const { rows } = parseNetScanCsv(text);
+      if (!rows.length) {
+        $("msg").textContent = T.scanNone;
+        return;
+      }
+      doc = addScanRows(doc, rows, lang);
+      $("msg").textContent = T.scanAdded.replace("{n}", String(rows.length));
+      changed();
+    });
+    onThemeChange(draw);
+    $("docTitle").value = doc.title;
+    drawProps();
+    draw();
+  </script>
+</Base>
