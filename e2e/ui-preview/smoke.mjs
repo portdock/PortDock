@@ -246,7 +246,8 @@ const RUN_BTN = "aside.side > button.btn.primary, aside.side > button.btn.danger
 /** 다 눌러 보기 시간 한도(ms) — 기본 본 화면 90초·뜬 창 40초. TCP 는 방식 탭·자동응답·중계·명령 목록까지 «모두 펼치기» 요소가 가장 많아
  *  90초 안에 idle·running 을 다 못 눌렀다(10/23, 361·471번) — 두 배로 */
 // Serial 도 0.3.0 에서 요소가 늘어(직접 입력·최근·복사·Master 로 열기) 본 화면 90초를 넘긴다 — TCP 와 같은 한도
-const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 }, serial: { budgetMs: 180000, modalBudgetMs: 80000 } };
+// Modbus Slave 도 0.10.0 장비 프로필 칸이 더해져 90초를 넘긴다 — 같은 한도
+const BUDGET = { tcp: { budgetMs: 180000, modalBudgetMs: 80000 }, serial: { budgetMs: 180000, modalBudgetMs: 80000 }, "modbus-slave": { budgetMs: 180000, modalBudgetMs: 80000 } };
 const STOP_RE = /^(끊기|멈춤|멈추기|받기 멈춤|듣기 멈춤|Disconnect|Stop|Stop listening|Stop receiving)$/;
 const VALID_TEXT = { serial: "01 03 00 00 00 0A", tcp: "STATUS?", udp: "01 02 03 04", simulator: "STATUS OK" };
 
