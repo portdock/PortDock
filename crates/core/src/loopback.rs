@@ -33,6 +33,25 @@ pub struct LoopConfig {
     /// 속도마다 1바이트 왕복 시간을 잴 횟수
     #[serde(default = "d_pings")]
     pub pings: usize,
+    /// (0.11.0) 보낼 무늬
+    #[serde(default)]
+    pub pattern: Pattern,
+    /// (0.11.0) 두 포트 시험 — 이 포트와 서로 이어 두고 port→peer, peer→port 를 차례로 잰다. 루프백에서만
+    #[serde(default)]
+    pub peer: Option<String>,
+}
+
+/// (0.11.0) 시험 무늬
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Pattern {
+    /// 속도마다 다른 의사 난수(기본)
+    #[default]
+    Random,
+    /// 0x00~0xFF 차례로 되풀이 — 바이트 값마다 한 번씩
+    Ramp,
+    /// 0x55·0xAA 번갈아 — 비트가 가장 자주 바뀌는 무늬
+    Alt,
 }
 
 fn d_bytes() -> usize {
@@ -102,6 +121,9 @@ pub struct BaudResult {
     pub flags: CommFlags,
     /// 첫 묶음에서 아무것도 돌아오지 않아 이 속도를 일찍 끝냈는지
     pub nothing_back: bool,
+    /// (0.11.0) 두 포트 시험의 방향(«COM3 → COM4») — 한 포트면 없음
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dir: Option<String>,
 }
 
 /// 에코 결과
@@ -183,6 +205,43 @@ fn pattern(seed: u32, n: usize) -> Vec<u8> {
         .collect()
 }
 
+/// 무늬대로 n 바이트
+pub fn make_pattern(p: Pattern, seed: u32, n: usize) -> Vec<u8> {
+    match p {
+        Pattern::Random => pattern(seed, n),
+        Pattern::Ramp => (0..n).map(|i| i as u8).collect(),
+        Pattern::Alt => (0..n).map(|i| if i % 2 == 0 { 0x55 } else { 0xAA }).collect(),
+    }
+}
+
+/// 두 포트를 하나의 통로로 — tx 로 보내고 rx 로 받는다
+struct Pair<'a> {
+    tx: &'a mut dyn Link,
+    rx: &'a mut dyn Link,
+}
+
+impl Link for Pair<'_> {
+    fn write_all(&mut self, b: &[u8]) -> std::io::Result<()> {
+        self.tx.write_all(b)
+    }
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.rx.read(buf)
+    }
+    fn set_baud(&mut self, baud: u32) -> Result<(), String> {
+        self.tx.set_baud(baud)?;
+        self.rx.set_baud(baud)
+    }
+    fn clear(&mut self) {
+        self.tx.clear();
+        self.rx.clear();
+    }
+    fn flags(&mut self) -> CommFlags {
+        let mut f = self.tx.flags();
+        f.merge(self.rx.flags());
+        f
+    }
+}
+
 /// want 바이트가 올 때까지(또는 기한까지) 읽는다
 fn read_until(link: &mut dyn Link, want: usize, deadline: Instant, out: &mut Vec<u8>) {
     let start = out.len();
@@ -209,7 +268,7 @@ fn loop_baud(link: &mut dyn Link, cfg: &LoopConfig, baud: u32, cancel: &AtomicBo
     link.clear();
     let _ = link.flags();
     let bytes = cfg.bytes.clamp(CHUNK, 65_536);
-    let data = pattern(baud, bytes);
+    let data = make_pattern(cfg.pattern, baud, bytes);
     let pings = cfg.pings.min(1_000);
     let total = bytes + pings;
     let mut got = Vec::with_capacity(bytes);
@@ -259,7 +318,7 @@ fn loop_baud(link: &mut dyn Link, cfg: &LoopConfig, baud: u32, cancel: &AtomicBo
         flags.merge(link.flags());
     }
     // 시험용 포트처럼 오류 표시를 못 읽는 포트는 read=false 로 남는다
-    Ok(Some(BaudResult { baud, sent, received: got.len(), same, changed, lost, extra, rtt: rtt_stats(&samples, ping_lost), flags, nothing_back }))
+    Ok(Some(BaudResult { baud, sent, received: got.len(), same, changed, lost, extra, rtt: rtt_stats(&samples, ping_lost), flags, nothing_back, dir: None }))
 }
 
 fn echo(link: &mut dyn Link, baud: u32) -> Result<EchoResult, String> {
@@ -318,6 +377,36 @@ pub fn run_on(link: &mut dyn Link, cfg: &LoopConfig, cancel: &AtomicBool, emit: 
                         emit(LoopEvent::Error { message: format!("{b} bps: {e}"), busy: false });
                         break;
                     }
+                }
+            }
+        }
+    }
+    emit(LoopEvent::Done { cancelled: cancel.load(Ordering::SeqCst), ms: t0.elapsed().as_millis() as u64 });
+}
+
+/// (0.11.0) 두 포트 시험 — 속도마다 a→b, b→a 를 잰다(둘을 서로 이어 둔 채로)
+pub fn run_pair(a: &mut dyn Link, b: &mut dyn Link, names: (&str, &str), cfg: &LoopConfig, cancel: &AtomicBool, emit: &mut dyn FnMut(LoopEvent)) {
+    let t0 = Instant::now();
+    let bauds: Vec<u32> = cfg.bauds.iter().copied().filter(|b| *b > 0).collect();
+    if bauds.is_empty() {
+        emit(LoopEvent::Error { message: crate::tr!("시험할 속도가 없습니다", "No baud rate to test").into(), busy: false });
+    }
+    'outer: for &baud in &bauds {
+        for fwd in [true, false] {
+            let (dir, mut link) = if fwd {
+                (format!("{} → {}", names.0, names.1), Pair { tx: &mut *a, rx: &mut *b })
+            } else {
+                (format!("{} → {}", names.1, names.0), Pair { tx: &mut *b, rx: &mut *a })
+            };
+            match loop_baud(&mut link, cfg, baud, cancel, emit) {
+                Ok(Some(mut r)) => {
+                    r.dir = Some(dir);
+                    emit(LoopEvent::Baud { result: r });
+                }
+                Ok(None) => break 'outer,
+                Err(e) => {
+                    emit(LoopEvent::Error { message: format!("{baud} bps: {e}"), busy: false });
+                    break 'outer;
                 }
             }
         }
@@ -406,6 +495,27 @@ fn open(port: &str, baud: u32) -> Result<SerialLink, (String, bool)> {
 /// 포트를 열어 시험한다(이 함수가 끝나면 포트를 닫는다). 다른 프로그램이 쓰는 중이면 Error{busy:true}
 pub fn run(cfg: &LoopConfig, cancel: &AtomicBool, emit: &mut dyn FnMut(LoopEvent)) {
     let first = cfg.bauds.first().copied().unwrap_or(9600);
+    let peer = cfg.peer.as_deref().map(str::trim).filter(|p| !p.is_empty());
+    if let (Mode::Loopback, Some(peer)) = (cfg.mode, peer) {
+        let port = cfg.port.trim();
+        if peer.eq_ignore_ascii_case(port) {
+            emit(LoopEvent::Error { message: crate::tr!("두 포트 시험에는 서로 다른 포트 두 개가 필요합니다", "The two-port test needs two different ports").into(), busy: false });
+            emit(LoopEvent::Done { cancelled: false, ms: 0 });
+            return;
+        }
+        match (open(port, first), open(peer, first)) {
+            (Ok(mut a), Ok(mut b)) => run_pair(&mut a, &mut b, (port, peer), cfg, cancel, emit),
+            (Err((message, busy)), _) => {
+                emit(LoopEvent::Error { message, busy });
+                emit(LoopEvent::Done { cancelled: false, ms: 0 });
+            }
+            (_, Err((message, busy))) => {
+                emit(LoopEvent::Error { message: format!("{peer}: {message}"), busy });
+                emit(LoopEvent::Done { cancelled: false, ms: 0 });
+            }
+        }
+        return;
+    }
     match open(cfg.port.trim(), first) {
         Ok(mut link) => run_on(&mut link, cfg, cancel, emit),
         Err((message, busy)) => {
@@ -470,7 +580,73 @@ mod tests {
     }
 
     fn cfg(mode: Mode, bauds: &[u32]) -> LoopConfig {
-        LoopConfig { port: "X".into(), mode, bauds: bauds.to_vec(), bytes: 64, pings: 3 }
+        LoopConfig { port: "X".into(), mode, bauds: bauds.to_vec(), bytes: 64, pings: 3, pattern: Pattern::Random, peer: None }
+    }
+
+    type Queue = std::rc::Rc<std::cell::RefCell<VecDeque<u8>>>;
+
+    /// 두 포트 시험용 반쪽 — 보낸 것은 상대 큐로, 읽기는 내 큐에서
+    struct Half {
+        inbox: Queue,
+        outbox: Queue,
+        /// TX 선이 끊김 — 보낸 것이 가지 않는다
+        dead: bool,
+    }
+
+    impl Link for Half {
+        fn write_all(&mut self, b: &[u8]) -> std::io::Result<()> {
+            if !self.dead {
+                self.outbox.borrow_mut().extend(b);
+            }
+            Ok(())
+        }
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let mut q = self.inbox.borrow_mut();
+            let n = buf.len().min(q.len());
+            if n == 0 {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            for (i, b) in q.drain(..n).enumerate() {
+                buf[i] = b;
+            }
+            Ok(n)
+        }
+        fn set_baud(&mut self, _baud: u32) -> Result<(), String> {
+            Ok(())
+        }
+        fn clear(&mut self) {
+            self.inbox.borrow_mut().clear();
+        }
+        fn flags(&mut self) -> CommFlags {
+            CommFlags::default()
+        }
+    }
+
+    #[test]
+    fn two_ports_both_ways_and_patterns() {
+        let ab: Queue = Default::default();
+        let ba: Queue = Default::default();
+        let mut a = Half { inbox: ba.clone(), outbox: ab.clone(), dead: false };
+        // B 의 TX 선이 끊김 — B→A 는 아무것도 오지 않는다
+        let mut b = Half { inbox: ab, outbox: ba, dead: true };
+        let c = LoopConfig { pattern: Pattern::Ramp, ..cfg(Mode::Loopback, &[9600]) };
+        let mut ev = Vec::new();
+        run_pair(&mut a, &mut b, ("COM3", "COM4"), &c, &AtomicBool::new(false), &mut |e| ev.push(e));
+        let rs: Vec<&BaudResult> = ev.iter().filter_map(|e| if let LoopEvent::Baud { result } = e { Some(result) } else { None }).collect();
+        assert_eq!(rs.len(), 2);
+        assert_eq!(rs[0].dir.as_deref(), Some("COM3 → COM4"));
+        assert_eq!((rs[0].same, rs[0].lost, rs[0].nothing_back), (64, 0, false));
+        assert_eq!(rs[1].dir.as_deref(), Some("COM4 → COM3"));
+        assert!(rs[1].nothing_back);
+        assert!(matches!(ev.last(), Some(LoopEvent::Done { cancelled: false, .. })));
+        // 무늬
+        assert_eq!(make_pattern(Pattern::Ramp, 1, 258)[255..], [255, 0, 1]);
+        assert_eq!(make_pattern(Pattern::Alt, 1, 3), vec![0x55, 0xAA, 0x55]);
+        assert_eq!(make_pattern(Pattern::Random, 9600, 8), pattern(9600, 8));
+        // 같은 포트 두 번은 오류
+        let mut ev = Vec::new();
+        run(&LoopConfig { peer: Some("com250".into()), port: "COM250".into(), ..cfg(Mode::Loopback, &[9600]) }, &AtomicBool::new(false), &mut |e| ev.push(e));
+        assert!(matches!(&ev[0], LoopEvent::Error { busy: false, .. }), "{ev:?}");
     }
 
     fn collect(link: &mut Fake, c: &LoopConfig) -> Vec<LoopEvent> {
@@ -559,7 +735,7 @@ mod tests {
     #[test]
     fn missing_port_is_an_error() {
         let mut ev = Vec::new();
-        run(&LoopConfig { port: "COM250".into(), mode: Mode::Loopback, bauds: vec![9600], bytes: 64, pings: 1 }, &AtomicBool::new(false), &mut |e| ev.push(e));
+        run(&LoopConfig { port: "COM250".into(), mode: Mode::Loopback, bauds: vec![9600], bytes: 64, pings: 1, pattern: Pattern::Random, peer: None }, &AtomicBool::new(false), &mut |e| ev.push(e));
         assert!(matches!(&ev[0], LoopEvent::Error { busy: false, .. }), "{ev:?}");
         assert!(matches!(ev.last(), Some(LoopEvent::Done { .. })));
     }
@@ -569,7 +745,9 @@ mod tests {
         let v = serde_json::to_value(LoopEvent::Error { message: "x".into(), busy: true }).unwrap();
         assert_eq!(v, serde_json::json!({ "type": "error", "message": "x", "busy": true }));
         let c: LoopConfig = serde_json::from_str(r#"{"port":"COM3","mode":"echo","bauds":[9600]}"#).unwrap();
-        assert_eq!((c.mode, c.bytes, c.pings), (Mode::Echo, 256, 20));
+        assert_eq!((c.mode, c.bytes, c.pings, c.pattern, c.peer), (Mode::Echo, 256, 20, Pattern::Random, None));
+        let c: LoopConfig = serde_json::from_str(r#"{"port":"COM3","mode":"loopback","bauds":[9600],"pattern":"alt","peer":"COM4"}"#).unwrap();
+        assert_eq!((c.pattern, c.peer.as_deref()), (Pattern::Alt, Some("COM4")));
         let f = serde_json::to_value(CommFlags { read: true, brk: true, ..Default::default() }).unwrap();
         assert_eq!(f["break"], true);
         assert_eq!(f["rxOver"], false);

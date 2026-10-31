@@ -1,15 +1,52 @@
-// 연결 시험(루프백·2선 RS-485 에코) — Port Inspector 와 Serial «연결 점검…» 이 함께 쓴다.
+// 연결 시험(루프백·두 포트·2선 RS-485 에코) — Port Inspector 와 Serial «연결 점검…» 이 함께 쓴다.
 // 시작 전에 «선에서 장비를 떼었나» 를 한 번 더 묻는다(시험 바이트가 장비에 명령으로 들어갈 수 있다).
+// 0.11.0: 두 포트 시험(변환기 두 개를 서로 이음), 무늬(0x00~0xFF·0x55/0xAA)·길이 고르기, 잇는 법 그림, 전체 판정.
 import { useEffect, useRef, useState } from "react";
-import { busyHint, echoVerdict, LEVEL_TEXT, LOOP_BAUDS, loopVerdict, type BaudResult, type EchoResult, type Lang, type LoopConfig, type LoopEvent, type LoopMode } from "./portinfo";
+import {
+  busyHint,
+  echoVerdict,
+  LEVEL_TEXT,
+  LOOP_BAUDS,
+  LOOP_OVERALL_TEXT,
+  loopOverall,
+  loopVerdict,
+  type BaudResult,
+  type EchoResult,
+  type Lang,
+  type LoopConfig,
+  type LoopEvent,
+  type LoopPattern,
+} from "./portinfo";
 import "./portcheck.css";
 
 const MORE_BAUDS = [1200, 2400, 4800, 230400, 460800, 921600];
+const LENGTHS = [64, 256, 1024, 4096];
 
 export interface LoopApi {
   start: (config: LoopConfig, onEvent: (e: LoopEvent) => void) => Promise<void>;
   cancel: () => Promise<void>;
+  /** 두 포트 시험(0.11.0)에 고를 다른 포트 이름들 — 없으면 두 포트 시험을 숨긴다 */
+  ports?: () => Promise<string[]>;
 }
+
+/** 화면의 시험 방식 — two 는 코어에 loopback + peer 로 보낸다 */
+type UiMode = "loopback" | "two" | "echo";
+
+/** 잇는 법 그림(글자로) */
+const WIRING: Record<UiMode, { ko: string; en: string }> = {
+  loopback: {
+    ko: ["RS-232 (DB9 암·수 어느 쪽이든)", "  2번(RX) ──┐", "  3번(TX) ──┘   2번과 3번 핀을 잇는다", "", "TTL 변환기", "  TX ──┐", "  RX ──┘   TX 와 RX 를 잇는다", "", "RS-485 는 한 포트로 할 수 없습니다 — «두 포트» 를 고르세요."].join("\n"),
+    en: ["RS-232 (DB9, either gender)", "  pin 2 (RX) ──┐", "  pin 3 (TX) ──┘   tie pin 2 to pin 3", "", "TTL adapter", "  TX ──┐", "  RX ──┘   tie TX to RX", "", "RS-485 cannot loop on one port — choose «Two ports»."].join("\n"),
+  },
+  two: {
+    ko: ["RS-232 (널 모뎀으로 엇갈려)", "  포트 A        포트 B", "  2번 RX ────── 3번 TX", "  3번 TX ────── 2번 RX", "  5번 GND ───── 5번 GND", "", "RS-485 (2선)", "  A(D+) ─────── A(D+)", "  B(D−) ─────── B(D−)", "  GND ──────── GND"].join("\n"),
+    en: ["RS-232 (crossed, null modem)", "  port A        port B", "  pin 2 RX ──── pin 3 TX", "  pin 3 TX ──── pin 2 RX", "  pin 5 GND ─── pin 5 GND", "", "RS-485 (2-wire)", "  A(D+) ─────── A(D+)", "  B(D−) ─────── B(D−)", "  GND ──────── GND"].join("\n"),
+  },
+  echo: {
+    ko: ["RS-485 변환기 하나 — 버스에서 장비를 뗀 채로", "  A(D+)  B(D−)  아무것도 잇지 않음"].join("\n"),
+    en: ["One RS-485 adapter — with the device removed from the bus", "  A(D+)  B(D−)  nothing connected"].join("\n"),
+  },
+};
 
 export interface LoopState {
   results: BaudResult[];
@@ -22,6 +59,18 @@ const T = {
     mode: "시험 방식",
     loop: "루프백 — TX·RX 를 이어 둠",
     loopHint: "DB9 는 2번(RX)–3번(TX), TTL 변환기는 TX–RX 를 잇습니다. 속도마다 바이트가 그대로 돌아오는지와 1바이트 왕복 시간을 잽니다.",
+    two: "두 포트 — 변환기 두 개를 서로 이음",
+    twoHint: "변환기·케이블 두 개를 서로 이어 두고, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. RS-485 변환기 점검에 씁니다. (0.11.0 부터)",
+    peer: "다른 포트",
+    peerNone: "다른 포트가 없습니다",
+    pattern: "무늬",
+    patRandom: "섞인 바이트",
+    patRamp: "0x00~0xFF 차례로",
+    patAlt: "0x55·0xAA 번갈아",
+    length: "길이(바이트)",
+    wiring: "잇는 법",
+    overall: "전체",
+    colDir: "방향",
     echo: "2선 RS-485 에코",
     echoHint: "버스에서 장비를 뗀 채로, 변환기가 보낸 바이트를 스스로 되받는지 봅니다.",
     bauds: "속도",
@@ -48,6 +97,18 @@ const T = {
     mode: "Test",
     loop: "Loopback — TX tied to RX",
     loopHint: "On a DB9 tie pin 2 (RX) to pin 3 (TX); on a TTL adapter tie TX to RX. Checks that bytes come back unchanged at each speed and measures the 1-byte round trip.",
+    two: "Two ports — two adapters wired to each other",
+    twoHint: "With two adapters/cables wired to each other, sends this port → the other and the other → this port at each speed and compares what arrives. Useful for checking RS-485 adapters. (from 0.11.0)",
+    peer: "Other port",
+    peerNone: "No other port",
+    pattern: "Pattern",
+    patRandom: "Mixed bytes",
+    patRamp: "0x00–0xFF in order",
+    patAlt: "0x55/0xAA alternating",
+    length: "Length (bytes)",
+    wiring: "How to wire",
+    overall: "Overall",
+    colDir: "Direction",
     echo: "2-wire RS-485 echo",
     echoHint: "With no device on the bus, checks whether the adapter receives the bytes it sends.",
     bauds: "Speeds",
@@ -99,7 +160,11 @@ export function LoopbackPanel({
   onRunning?: (running: boolean) => void;
 }) {
   const x = T[lang];
-  const [mode, setMode] = useState<LoopMode>("loopback");
+  const [mode, setMode] = useState<UiMode>("loopback");
+  const [pattern, setPattern] = useState<LoopPattern>("random");
+  const [bytes, setBytes] = useState(256);
+  const [peers, setPeers] = useState<string[] | null>(null);
+  const [peer, setPeer] = useState("");
   const [bauds, setBauds] = useState<number[]>(LOOP_BAUDS);
   const [echoBaud, setEchoBaud] = useState(9600);
   const [showMore, setShowMore] = useState(false);
@@ -143,10 +208,30 @@ export function LoopbackPanel({
     [],
   );
 
+  // 두 포트 시험을 고르면 다른 포트 목록을 읽는다
+  useEffect(() => {
+    if (mode !== "two" || !api.ports) return;
+    let live = true;
+    api
+      .ports()
+      .then((l) => {
+        if (!live) return;
+        const others = l.filter((p) => p.toUpperCase() !== (port ?? "").toUpperCase());
+        setPeers(others);
+        setPeer((cur) => (others.includes(cur) ? cur : (others[0] ?? "")));
+      })
+      .catch(() => live && setPeers([]));
+    return () => {
+      live = false;
+    };
+  }, [mode, port, api]);
+
   const list = [...LOOP_BAUDS, ...MORE_BAUDS].sort((a, b) => a - b);
   const shown = showMore ? list : LOOP_BAUDS;
   const toggle = (b: number) => setBauds((old) => (old.includes(b) ? old.filter((v) => v !== b) : [...old, b].sort((p, q) => p - q)));
-  const canStart = !!port && !running && !disabledReason && (mode === "echo" || bauds.length > 0);
+  const canStart = !!port && !running && !disabledReason && (mode === "echo" || bauds.length > 0) && (mode !== "two" || !!peer);
+  const overall = loopOverall(state.results);
+  const hasDir = state.results.some((r) => r.dir);
 
   async function go() {
     if (!port) return;
@@ -170,7 +255,11 @@ export function LoopbackPanel({
       }
     };
     try {
-      await api.start({ port, mode, bauds: mode === "echo" ? [echoBaud] : bauds }, onEvent);
+      const cfg: LoopConfig =
+        mode === "echo"
+          ? { port, mode: "echo", bauds: [echoBaud] }
+          : { port, mode: "loopback", bauds, bytes, pattern, peer: mode === "two" ? peer : null };
+      await api.start(cfg, onEvent);
     } catch (e) {
       if (id !== runRef.current) return;
       setState((s) => ({ ...s, error: String(e) }));
@@ -187,19 +276,66 @@ export function LoopbackPanel({
         <label className="inline">
           <input type="radio" name="loop-mode" checked={mode === "echo"} disabled={running} onChange={() => setMode("echo")} /> {x.echo}
         </label>
+        {api.ports && (
+          <label className="inline">
+            <input type="radio" name="loop-mode" checked={mode === "two"} disabled={running} onChange={() => setMode("two")} /> {x.two}
+          </label>
+        )}
       </div>
-      <div className="hint">{mode === "loopback" ? x.loopHint : x.echoHint}</div>
-      {mode === "loopback" ? (
-        <div className="loop-bauds" role="group" aria-label={x.bauds}>
-          {shown.map((b) => (
-            <label key={b} className="inline chip-check">
-              <input type="checkbox" checked={bauds.includes(b)} disabled={running} onChange={() => toggle(b)} /> {b}
+      <div className="hint">{mode === "loopback" ? x.loopHint : mode === "two" ? x.twoHint : x.echoHint}</div>
+      <details className="loop-wiring">
+        <summary>{x.wiring}</summary>
+        <pre className="mono">{WIRING[mode][lang]}</pre>
+      </details>
+      {mode === "two" && (
+        <label className="inline loop-peer">
+          {x.peer}
+          {peers && peers.length === 0 ? (
+            <span className="hint warn">{x.peerNone}</span>
+          ) : (
+            <select value={peer} disabled={running || !peers} onChange={(e) => setPeer(e.target.value)} aria-label={x.peer}>
+              {(peers ?? []).map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+      )}
+      {mode !== "echo" ? (
+        <>
+          <div className="loop-bauds" role="group" aria-label={x.bauds}>
+            {shown.map((b) => (
+              <label key={b} className="inline chip-check">
+                <input type="checkbox" checked={bauds.includes(b)} disabled={running} onChange={() => toggle(b)} /> {b}
+              </label>
+            ))}
+            <button type="button" className="link-btn" onClick={() => setShowMore(!showMore)} disabled={running}>
+              {showMore ? "−" : x.more}
+            </button>
+          </div>
+          <div className="loop-opts">
+            <label className="inline">
+              {x.pattern}
+              <select value={pattern} disabled={running} onChange={(e) => setPattern(e.target.value as LoopPattern)} aria-label={x.pattern}>
+                <option value="random">{x.patRandom}</option>
+                <option value="ramp">{x.patRamp}</option>
+                <option value="alt">{x.patAlt}</option>
+              </select>
             </label>
-          ))}
-          <button type="button" className="link-btn" onClick={() => setShowMore(!showMore)} disabled={running}>
-            {showMore ? "−" : x.more}
-          </button>
-        </div>
+            <label className="inline">
+              {x.length}
+              <select value={bytes} disabled={running} onChange={(e) => setBytes(Number(e.target.value))} aria-label={x.length}>
+                {LENGTHS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </>
       ) : (
         <label className="inline">
           {x.bauds}
@@ -250,11 +386,17 @@ export function LoopbackPanel({
           {busy && <div className="hint">{busyHint(lang, service ?? null)}</div>}
         </div>
       )}
+      {overall && !running && (
+        <div className="loop-overall">
+          {x.overall}: <span className={`lv lv-${overall}`}>{LOOP_OVERALL_TEXT[overall][lang]}</span>
+        </div>
+      )}
       {state.results.length > 0 && (
         <table className="grid loop-table">
           <thead>
             <tr>
               <th>{x.colBaud}</th>
+              {hasDir && <th>{x.colDir}</th>}
               <th>{x.colResult}</th>
               <th>{x.colBytes}</th>
               <th>{x.colRtt}</th>
@@ -265,8 +407,9 @@ export function LoopbackPanel({
             {state.results.map((r) => {
               const v = loopVerdict(r);
               return (
-                <tr key={r.baud}>
+                <tr key={`${r.baud}${r.dir ?? ""}`}>
                   <td className="mono">{r.baud}</td>
+                  {hasDir && <td className="mono">{r.dir ?? ""}</td>}
                   <td>
                     <span className={`lv lv-${v.level}`}>{LEVEL_TEXT[v.level][lang]}</span>
                     {v.notes.map((n, i) => (

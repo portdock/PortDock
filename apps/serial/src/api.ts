@@ -199,6 +199,8 @@ export const checkApi: PortCheckApi = {
     return invoke<void>("loop_start", { config, onEvent: ch });
   },
   cancel: () => invoke<void>("loop_cancel"),
+  // 두 포트 시험(0.11.0) — 고를 수 있는 다른 포트
+  ports: () => invoke<PortInfo[]>("list_ports").then((l) => l.map((p) => p.name)),
 };
 
 const FLOW = {

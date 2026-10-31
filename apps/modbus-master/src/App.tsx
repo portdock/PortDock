@@ -31,6 +31,7 @@ import {
   VALUE_LOG_HEADER,
   valueLogLines,
   writableFc,
+  lineLabel,
   type AddrMode,
   type Fc,
   type Format,
@@ -42,7 +43,9 @@ import {
 import { Traffic, type TrafficHandle } from "./Traffic";
 import { WriteDialog, TYPE_LABEL } from "./WriteDialog";
 import { PointDialog } from "./PointDialog";
-import { NO_SCAN, ScanDialog, type ScanState } from "./ScanDialog";
+import { NO_SCAN, ScanDialog, type ScanKind, type ScanState } from "./ScanDialog";
+import { DiagDialog } from "./DiagDialog";
+import type { DiagSample } from "@shared/commDiag";
 import { Trend, type TrendItem } from "./Trend";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
@@ -81,6 +84,8 @@ const APP = "PortDock Modbus Master";
 type Status = "idle" | "connecting" | "connected" | "disconnected" | "reconnecting" | "closed";
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
 const MAX_TRENDS = 6;
+/** 원인 후보(0.11.0)에 쓰는 최근 요청 수 */
+const DIAG_KEEP = 50;
 
 /** 표 하나의 마지막 읽기 */
 interface TableResult {
@@ -330,10 +335,21 @@ export default function App() {
   const vlogBuf = useRef("");
   const vlogPrev = useRef(new Map<number, Map<number, string>>());
 
+  // 원인 후보(0.11.0) — 최근 요청 결과 50개
+  const diagRef = useRef<DiagSample[]>([]);
+  const [diagBad, setDiagBad] = useState(0);
+  const diagSamples = useCallback(() => diagRef.current.slice(), []);
   const handlePolls = useCallback((polls: Extract<MasterEvent, { type: "batch" }>["polls"]) => {
     if (!polls.length) return;
     const next = { ...resultsRef.current };
     let trended = false;
+    for (const p of polls) {
+      const o = p.outcome;
+      diagRef.current.push({ result: o.result, code: o.result === "exception" ? o.code : undefined, echo: p.echo, partial: p.partial, got: p.got, otherUnit: p.otherUnit });
+    }
+    if (diagRef.current.length > DIAG_KEEP) diagRef.current.splice(0, diagRef.current.length - DIAG_KEEP);
+    const bad = diagRef.current.filter((s) => s.result !== "ok" && s.result !== "broadcast").length;
+    setDiagBad(bad);
     for (const p of polls) {
       const tb = tablesRef.current.find((x) => x.id === p.table);
       const prev = next[p.table];
@@ -411,6 +427,7 @@ export default function App() {
   // ---- 찾기·쓰기
   const [scan, setScan] = useState<ScanState>(NO_SCAN);
   const [showScan, setShowScan] = useState(false);
+  const [showDiag, setShowDiag] = useState(false);
   const pendingWrites = useRef(new Map<number, (o: Outcome, rttMs: number) => void>());
   const writeSeq = useRef(0);
 
@@ -447,6 +464,12 @@ export default function App() {
           break;
         case "scan-done":
           setScan((s) => ({ ...s, running: false, done: e.cancelled ? s.done : s.total, finished: { found: e.found, cancelled: e.cancelled, stopped: e.stopped } }));
+          break;
+        case "line-hit":
+          setScan((s) => ({ ...s, lineHits: [...s.lineHits, { baud: e.baud, parity: e.parity, stopBits: e.stopBits, unit: e.unit, outcome: e.outcome, rttMs: e.rttMs }] }));
+          break;
+        case "line-step":
+          if (e.garbled > 0) setScan((s) => ({ ...s, lineGarbled: [...s.lineGarbled, [lineLabel(e.baud, e.parity, e.stopBits), e.garbled]] }));
           break;
         case "status":
           setStatus(e.state);
@@ -802,7 +825,7 @@ export default function App() {
   });
 
   // ---- 찾기
-  async function startScan(kind: "ids" | "addrs", run: () => Promise<void>, unit = 1, fc: Fc = 3) {
+  async function startScan(kind: ScanKind, run: () => Promise<void>, unit = 1, fc: Fc = 3) {
     setScan({ ...NO_SCAN, kind, running: true, unit, fc });
     try {
       await run();
@@ -1176,6 +1199,14 @@ export default function App() {
         <button className="btn small" onClick={() => setShowScan(true)} data-tip={tip(lang, "mmScan")}>
           {t("scan")}
         </button>
+        <button className="btn small diag-open" onClick={() => setShowDiag(true)} data-tip={tip(lang, "mmDiag")}>
+          {t("diag")}
+        </button>
+        {diagBad > 0 && !showDiag && (
+          <button className="side-diag" onClick={() => setShowDiag(true)}>
+            {fill(t("diagSideBad"), { n: diagBad })}
+          </button>
+        )}
 
 
         <hr />
@@ -1583,6 +1614,19 @@ export default function App() {
           defaults={{ unit: sel.unit, fc: sel.fc, start: sel.start }}
           onStartIds={(c) => void startScan("ids", () => api.scanIds(c), 1, c.fc)}
           onStartAddrs={(c) => void startScan("addrs", () => api.scanAddrs(c), c.unit, c.fc)}
+          serial={transport === "serial"}
+          lineNow={transport === "serial" ? lineLabel(cfg.baud, cfg.parity, cfg.stopBits) : ""}
+          delayMs={timing.delayMs}
+          onStartLine={(c) => void startScan("line", () => api.scanLine(c), c.from, c.fc)}
+          onUseLine={(h, fc) => {
+            // 연결 설정을 바꾸면(아래 효과) 백엔드가 곧바로 그 설정으로 다시 맞춘다. 표는 이 국번으로
+            setCfg((c) => ({ ...c, baud: h.baud, parity: h.parity as SerialConfig["parity"], stopBits: h.stopBits, dataBits: 8 }));
+            const has = tables.find((x) => x.unit === h.unit && x.fc === fc);
+            if (has) setSelId(has.id);
+            else if (sel) patchTable(sel.id, { unit: h.unit });
+            toast.show(fill(t("lineApplied"), { s: lineLabel(h.baud, h.parity, h.stopBits), u: h.unit }));
+            setShowScan(false);
+          }}
           onCancel={() => api.scanCancel().catch(() => {})}
           onUseId={(unit, fc, a) => {
             addTable({ unit, fc, start: a, qty: Math.min(10, maxQty(fc), 65536 - a), name: "", points: [] });
@@ -1593,6 +1637,18 @@ export default function App() {
             setShowScan(false);
           }}
           onClose={() => setShowScan(false)}
+        />
+      )}
+      {showDiag && (
+        <DiagDialog
+          lang={lang}
+          samples={diagSamples}
+          wire={wire}
+          onClear={() => {
+            diagRef.current = [];
+            setDiagBad(0);
+          }}
+          onClose={() => setShowDiag(false)}
         />
       )}
       {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}

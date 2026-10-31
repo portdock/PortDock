@@ -25,6 +25,11 @@ import {
   toSpec,
   valueLogLines,
   VALUE_LOG_HEADER,
+  lineTries,
+  lineEstimateMs,
+  lineLabel,
+  fmtDuration,
+  LINE_FRAMINGS_ON,
 } from "./model.ts";
 
 test("새 표·저장값 고치기·백엔드 모양", () => {
@@ -194,4 +199,18 @@ test("RTU 국번 0 읽기 표 = 브로드캐스트(폴링 안 함)", () => {
   const list = [newTable([], { unit: 0 }), newTable([], { unit: 2 })];
   assert.equal(list.filter((t) => broadcastRead(t, "rtu")).length, 1);
   assert.equal(list.filter((t) => broadcastRead(t, "tcp")).length, 0);
+});
+
+test("통신 설정 찾기 — 조합 수·걸리는 시간 어림·이름", () => {
+  const p = { bauds: [9600, 19200], framings: LINE_FRAMINGS_ON, from: 1, to: 10, timeoutMs: 100 };
+  assert.equal(lineTries(p), 80);
+  assert.equal(lineTries({ ...p, to: 0 }), 0);
+  // 9600: 8바이트 = 9.17ms, 19200: 4.58ms — (100+20+tx)×10 + 50, 묶음 4개씩
+  const ms = lineEstimateMs(p, 20);
+  assert.equal(ms, Math.round(4 * (50 + 10 * (120 + 88000 / 9600)) + 4 * (50 + 10 * (120 + 88000 / 19200))));
+  assert.equal(lineLabel(9600, "even", 1), "9600 8E1");
+  assert.equal(lineLabel(115200, "none", 2), "115200 8N2");
+  assert.equal(fmtDuration(12_400, "ko"), "12초");
+  assert.equal(fmtDuration(185_000, "en"), "3 min 5 s");
+  assert.equal(fmtDuration(3_720_000, "ko"), "1시간 2분");
 });

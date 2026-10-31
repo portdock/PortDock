@@ -26,7 +26,7 @@ export const FEATURES = {
   serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master", "share", "sniff", ...COMMON_FEATURES],
   tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save", ...COMMON_FEATURES],
   udp: ["start", "send", "file_log", ...COMMON_FEATURES],
-  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log", ...COMMON_FEATURES],
+  "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "scan_line", "file_log", ...COMMON_FEATURES],
   "modbus-slave": ["start_serial", "start_tcp", "edit_values", "faults", "simulate", "file_log", ...COMMON_FEATURES],
   simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log", ...COMMON_FEATURES],
   scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block", ...COMMON_FEATURES],

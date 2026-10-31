@@ -1,5 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import type { Fc, TableStats } from "./model";
+import type { Fc, Framing, TableStats } from "./model";
 import { tally } from "@shared/usage";
 export { hex } from "@shared/format";
 
@@ -87,6 +87,11 @@ export interface PollResult {
   outcome: Outcome;
   rttMs: number;
   tries: number;
+  /** (0.11.0) 원인 후보 패널용 — 에코만 옴·덜 옴·받은 바이트 수·답한 다른 국번 */
+  echo?: boolean;
+  partial?: boolean;
+  got?: number;
+  otherUnit?: number;
 }
 
 export type MasterEvent =
@@ -95,7 +100,10 @@ export type MasterEvent =
   | { type: "scan-hit"; unit: number; outcome: Outcome; rttMs: number }
   | { type: "scan-ranges"; ranges: [number, number][] }
   | { type: "scan-progress"; done: number; total: number }
-  | { type: "scan-done"; kind: "ids" | "addrs"; found: number; cancelled: boolean; stopped: string | null }
+  | { type: "scan-done"; kind: "ids" | "addrs" | "line"; found: number; cancelled: boolean; stopped: string | null }
+  // 통신 설정 찾기(0.11.0)
+  | { type: "line-hit"; baud: number; parity: string; stopBits: number; unit: number; outcome: Outcome; rttMs: number }
+  | { type: "line-step"; baud: number; parity: string; stopBits: number; garbled: number }
   // 세션(연결) 사건
   | { type: "status"; state: "connected" | "disconnected" | "reconnecting" | "closed"; port: string; message: string | null }
   | { type: "error"; message: string };
@@ -120,6 +128,18 @@ export interface ScanIds {
   fc: Fc;
   addr: number;
   timeoutMs: number;
+}
+
+/** 통신 설정 찾기(0.11.0) — crates/core modbus_master ScanLine */
+export interface ScanLine {
+  bauds: number[];
+  framings: Framing[];
+  from: number;
+  to: number;
+  fc: Fc;
+  addr: number;
+  timeoutMs: number;
+  firstOnly: boolean;
 }
 
 export interface ScanAddrs {
@@ -191,6 +211,7 @@ export const api = {
   previewWrite: (req: WriteReq, wire: "tcp" | "rtu") => invoke<number[]>("preview_write", { req, wire }),
   scanIds: (config: ScanIds) => tally("scan_ids", invoke<void>("scan_ids", { config })),
   scanAddrs: (config: ScanAddrs) => tally("scan_addrs", invoke<void>("scan_addrs", { config })),
+  scanLine: (config: ScanLine) => tally("scan_line", invoke<void>("scan_line", { config })),
   scanCancel: () => invoke<void>("scan_cancel"),
   getStats: () => invoke<Stats>("get_stats"),
   resetStats: () => invoke<void>("reset_stats"),

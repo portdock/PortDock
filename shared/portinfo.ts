@@ -159,12 +159,17 @@ export interface NicList {
 }
 
 export type LoopMode = "loopback" | "echo";
+/** 시험 무늬(0.11.0) — random: 속도마다 다른 의사 난수, ramp: 0x00~0xFF 차례로, alt: 0x55·0xAA 번갈아 */
+export type LoopPattern = "random" | "ramp" | "alt";
 export interface LoopConfig {
   port: string;
   mode: LoopMode;
   bauds: number[];
   bytes?: number;
   pings?: number;
+  pattern?: LoopPattern;
+  /** 두 포트 시험(0.11.0) — 서로 이어 둔 다른 포트 */
+  peer?: string | null;
 }
 export interface CommFlags {
   read: boolean;
@@ -192,6 +197,8 @@ export interface BaudResult {
   rtt: Rtt | null;
   flags: CommFlags;
   nothingBack: boolean;
+  /** 두 포트 시험의 방향(«COM3 → COM4») */
+  dir?: string;
 }
 export interface EchoResult {
   baud: number;
@@ -380,6 +387,12 @@ export function comVerdict(c: ComNumbers | null, port: string | null): Verdict {
 export function loopVerdict(r: BaudResult): Verdict {
   const notes: Text[] = [];
   let level: Level = "ok";
+  if (r.nothingBack && r.dir) {
+    return {
+      level: "problem",
+      notes: [t("아무것도 오지 않았습니다 — 두 포트를 서로 이었는지(RS-232 는 TX–RX 엇갈림, RS-485 는 A–A·B–B), 속도를 받는 변환기인지 봅니다.", "Nothing arrived — check that the two ports are connected (RS-232 TX to RX crossed, RS-485 A–A and B–B) and both adapters accept this speed.")],
+    };
+  }
   if (r.nothingBack) {
     return { level: "problem", notes: [t("아무것도 돌아오지 않았습니다 — TX·RX 를 이었는지, 속도를 받는 변환기인지 봅니다.", "Nothing came back — check that TX and RX are tied and the adapter accepts this speed.")] };
   }
@@ -401,6 +414,20 @@ export function loopVerdict(r: BaudResult): Verdict {
   }
   return { level, notes };
 }
+
+/** 루프백 시험 전체(0.11.0) — 속도·방향마다 판정 중 가장 나쁜 것. 결과가 없으면 null */
+export function loopOverall(results: BaudResult[]): Level | null {
+  if (!results.length) return null;
+  return results.map((r) => loopVerdict(r).level).reduce(worst, "ok");
+}
+
+/** 시험 결과 전체의 말(0.11.0) — «문제 없음(이 시험 범위)» 처럼 시험한 범위만 말한다 */
+export const LOOP_OVERALL_TEXT: Record<Level, Text> = {
+  ok: t("문제 없음(이 시험 범위)", "No issue found (within this test)"),
+  look: t("볼 것", "Worth a look"),
+  problem: t("문제 있음", "Problem"),
+  unread: t("읽지 못함", "Could not read"),
+};
 
 export function echoVerdict(r: EchoResult): Verdict {
   if (r.echoed)
@@ -535,7 +562,7 @@ export function bundleText(lang: Lang, b: Bundle): string {
     if (b.loopError) out.push(b.loopError);
     for (const x of b.loop)
       out.push(
-        `${x.baud} bps: ${v(loopVerdict(x))} · ${ko ? "보냄" : "sent"} ${x.sent} · ${ko ? "같음" : "same"} ${x.same} · ${ko ? "잃음" : "lost"} ${x.lost} · ${ko ? "바뀜" : "changed"} ${x.changed}${x.rtt ? ` · RTT ${x.rtt.median.toFixed(1)}/${x.rtt.max.toFixed(1)} ms` : ""}`,
+        `${x.baud} bps${x.dir ? ` ${x.dir}` : ""}: ${v(loopVerdict(x))} · ${ko ? "보냄" : "sent"} ${x.sent} · ${ko ? "같음" : "same"} ${x.same} · ${ko ? "잃음" : "lost"} ${x.lost} · ${ko ? "바뀜" : "changed"} ${x.changed}${x.rtt ? ` · RTT ${x.rtt.median.toFixed(1)}/${x.rtt.max.toFixed(1)} ms` : ""}`,
       );
     if (b.echo) out.push(`${b.echo.baud} bps ${ko ? "에코" : "echo"}: ${v(echoVerdict(b.echo))}`);
   }

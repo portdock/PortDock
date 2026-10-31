@@ -1558,8 +1558,9 @@ async function netscan(cmd, a) {
 // ================================================================ Modbus Master (apps/modbus-master — 명령: apps/modbus-master/src-tauri/src/lib.rs)
 // 창 제목이 «… PortDock Modbus Master» 일 때만 이 부분이 받는다(open·close 같은 이름이 다른 앱과 겹친다).
 // 가짜 장비: 국번 1·2 는 모든 표의 0~199 에 답하고(밖은 예외 02), 17 은 늘 예외 01, 나머지는 무응답(타임아웃).
+// (0.11.0) 국번 5 는 2선 변환기 에코만 오고(원인 후보 «에코»), 통신 설정 찾기에서 장비는 19200 8E1 에 있다(19200 8N1 은 깨진 바이트).
 // 입력 레지스터 0 = 카운터, 1 = 사인, 보유 레지스터 10~11 = F32(CDAB) 온도, 코일 0 = 깜빡임.
-const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "preview_write", "scan_ids", "scan_addrs", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
+const MM_CMDS = new Set(["open", "open_tcp", "close", "reconfigure", "set_tables", "set_timing", "set_addr_style", "set_paused", "read_once", "write", "preview_write", "scan_ids", "scan_addrs", "scan_line", "scan_cancel", "get_stats", "reset_stats", "set_log", "append_text"]);
 const isMM = () => /Modbus Master/.test(document.title);
 const mmNewStats = () => ({ requests: 0, ok: 0, exceptions: 0, timeouts: 0, crc: 0, bad: 0, sendErrors: 0, avgMs: 0, maxMs: 0, lastMs: 0, _sum: 0, _n: 0 });
 const MMD = { coils: new Array(200).fill(0), discrete: Array.from({ length: 200 }, (_, i) => (i % 3 === 0 ? 1 : 0)), holding: Array.from({ length: 200 }, (_, i) => i * 10), input: new Array(200).fill(0) };
@@ -1609,7 +1610,7 @@ function mmTransact(unit, fc, start, qtyOrVals, table, timeoutMs = MMS.timing.ti
   }
   if (unit !== 1 && unit !== 2 && unit !== 17) {
     lines.push({ ts: ts + timeoutMs, dir: "ev", bytes: [], check: null, note: `TIMEOUT ${timeoutMs} ms · id${unit}`, table });
-    return { lines, outcome: { result: "timeout" }, rttMs: 0, ts };
+    return { lines, outcome: { result: "timeout" }, rttMs: 0, ts, echo: unit === 5 && MMS.wire !== "tcp" };
   }
   const rtt = 3 + Math.round(Math.random() * 9);
   const reply = (rpdu, sum, outcome) => {
@@ -1653,7 +1654,9 @@ function mmPoll(t, batch) {
   const r = mmTransact(t.unit, t.fc, t.start, t.qty, t.id);
   mmCount(t.id, r.outcome, r.rttMs);
   batch.lines.push(...r.lines);
-  batch.polls.push({ table: t.id, ts: r.ts, outcome: r.outcome, rttMs: r.rttMs, tries: 1 });
+  // (0.11.0) 원인 후보용 — 에코·덜 옴·받은 바이트 수
+  const got = r.lines.filter((l) => l.dir === "rx").reduce((n, l) => n + l.bytes.length, 0);
+  batch.polls.push({ table: t.id, ts: r.ts, outcome: r.outcome, rttMs: r.rttMs, tries: 1, ...(r.echo ? { echo: true } : {}), got });
 }
 function mmTick() {
   if (!MMS || MMS.scan) return;
@@ -1738,6 +1741,57 @@ function mmScanRun(kind, cfg) {
     if (r.outcome.result === "timeout") return finish(tr("세 번 이어서 응답이 없어 멈췄습니다 — 국번·통신 설정을 확인하세요", "Stopped after three requests in a row got no valid reply — check the slave ID and line settings"));
     if (a + n > 199 || i >= total) finish();
   }, 60);
+}
+/** 통신 설정 찾기(0.11.0) — 장비는 19200 8E1, 19200 8N1 은 깨진 바이트. 끝나면 처음 설정으로 되돌린다(가짜라 할 일 없음) */
+function mmLineRun(cfg) {
+  const s = S;
+  const units = Array.from({ length: cfg.to - cfg.from + 1 }, (_, i) => cfg.from + i);
+  const combos = [];
+  for (const b of cfg.bauds) for (const f of cfg.framings) combos.push({ baud: b, parity: f.parity, stopBits: f.stopBits });
+  const total = combos.length * units.length;
+  let ci = 0;
+  let ui = 0;
+  let done = 0;
+  let found = 0;
+  let garbled = 0;
+  let hitHere = false;
+  MMS.scan = { cancelled: false };
+  const job = MMS.scan;
+  const finish = (stopped = null) => {
+    clearInterval(job.timer);
+    if (MMS && MMS.scan === job) MMS.scan = null;
+    if (S === s) send({ type: "scan-done", kind: "line", found, cancelled: job.cancelled, stopped });
+  };
+  job.timer = setInterval(() => {
+    if (S !== s || !MMS) return clearInterval(job.timer);
+    if (job.cancelled) return finish();
+    const c = combos[ci];
+    const batch = { type: "batch", lines: [], polls: [] };
+    if (ui === 0) batch.lines.push({ ts: now(), dir: "ev", bytes: [], check: null, note: `LINE ${c.baud} 8${c.parity === "even" ? "E" : c.parity === "odd" ? "O" : "N"}${c.stopBits}` });
+    const right = c.baud === 19200 && c.parity === "even" && c.stopBits === 1;
+    const noisy = c.baud === 19200 && c.parity === "none" && c.stopBits === 1;
+    for (let k = 0; k < 8 && ui < units.length; k++, ui++, done++) {
+      const unit = units[ui];
+      if (right && (unit === 1 || unit === 2 || unit === 17)) {
+        const r = mmTransact(unit, cfg.fc, cfg.addr, 1, undefined, cfg.timeoutMs);
+        batch.lines.push(...r.lines);
+        if (r.outcome.result === "ok" || r.outcome.result === "exception") {
+          found++;
+          hitHere = true;
+          send({ type: "line-hit", baud: c.baud, parity: c.parity, stopBits: c.stopBits, unit, outcome: r.outcome, rttMs: r.rttMs });
+        }
+      } else if (noisy && (unit === 1 || unit === 2)) garbled++;
+    }
+    send(batch);
+    send({ type: "scan-progress", done, total });
+    if (ui < units.length) return;
+    send({ type: "line-step", baud: c.baud, parity: c.parity, stopBits: c.stopBits, garbled });
+    ui = 0;
+    garbled = 0;
+    ci++;
+    if (ci >= combos.length || (hitHere && cfg.firstOnly)) finish();
+    hitHere = false;
+  }, 40);
 }
 async function mmaster(cmd, a) {
   switch (cmd) {
@@ -1827,6 +1881,13 @@ async function mmaster(cmd, a) {
       if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
       if (MMS.scan) return fail(tr("이미 찾는 중입니다", "A scan is already running"));
       mmScanRun(cmd === "scan_ids" ? "ids" : "addrs", a.config);
+      return null;
+    case "scan_line":
+      if (!MMS) return fail(tr("연결돼 있지 않습니다", "Not connected"));
+      if (MMS.wire !== "rtu" || /:\d+$/.test(S?.port ?? "")) return fail(tr("통신 설정 찾기는 시리얼 연결에서만 됩니다", "Line-settings search works on a serial connection only"));
+      if (MMS.scan) return fail(tr("이미 찾는 중입니다", "A scan is already running"));
+      if (a.config.from < 1 || a.config.to < a.config.from) return fail(tr("국번 범위는 1~247, 시작 ≤ 끝입니다(0 은 브로드캐스트라 쓰지 않습니다)", "ID range must be 1–247 with start ≤ end (0 is broadcast and is not used)"));
+      mmLineRun(a.config);
       return null;
     case "scan_cancel":
       if (MMS?.scan) MMS.scan.cancelled = true;
@@ -2425,6 +2486,19 @@ async function pinsp(cmd, a) {
           await sleep(200);
           const back = c.port !== "COM1";
           out({ type: "echo", result: { baud: c.bauds[0], sent: 15, received: back ? 15 : 0, echoed: back, partial: false, firstMs: back ? 3.2 : null, flags } });
+        } else if (c.peer) {
+          // (0.11.0) 두 포트 — 방향마다 결과, 다른 포트가 COM1 이면 그쪽 TX 가 끊긴 것으로
+          for (const b of c.bauds) {
+            for (const [from, to] of [[c.port, c.peer], [c.peer, c.port]]) {
+              if (me.cancel) break;
+              await sleep(80);
+              out({ type: "progress", baud: b, done: 128, total: 276 });
+              const dead = from === "COM1";
+              const n = c.bytes ?? 256;
+              out({ type: "baud", result: dead ? { baud: b, sent: 32, received: 0, same: 0, changed: 0, lost: 32, extra: 0, rtt: null, flags, nothingBack: true, dir: `${from} → ${to}` } : { baud: b, sent: n, received: n, same: n, changed: 0, lost: 0, extra: 0, rtt: { samples: 20, lost: 0, min: 1.5, median: 2.1, max: 3.4 }, flags, nothingBack: false, dir: `${from} → ${to}` } });
+            }
+            if (me.cancel) break;
+          }
         } else {
           for (const b of c.bauds) {
             for (let p = 25; p <= 100; p += 25) {

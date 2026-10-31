@@ -301,7 +301,7 @@ const TIPS: Record<string, Tip> = {
   mmPauseAll: ["모든 표의 자동 폴링을 멈춥니다. «한 번 읽기»·쓰기·찾기는 됩니다.", "Pauses automatic polling of all tables. «Read once», writes and scans still work."],
   mmForceMulti: ["한 칸을 쓸 때도 «한 칸 쓰기»(FC06, 코일 FC05) 대신 «여러 칸 쓰기»(FC16, 코일 FC15)를 씁니다 — FC06·05 를 받지 않는 장비용.", "Writes even a single register/coil with «write multiple» (FC16, coils FC15) instead of «write single» (FC06, coils FC05) — for devices that reject FC06/05."],
   mmComm: ["응답 기다림·재시도·요청 간격과 «한 칸도 여러 칸 쓰기로». 대부분 기본값(1000ms·0·20ms·끔)이라 접어 두고 제목에 요약합니다. 기본값이 아니면 펼친 채 시작합니다.", "Response timeout, retries, delay between polls and «write single values with write multiple». Usually left at the defaults (1000 ms, 0, 20 ms, off), so it is collapsed with a summary; it starts expanded when something differs."],
-  mmScan: ["답하는 국번(1~247)이나 읽히는 주소 범위를 찾습니다. 찾는 동안 폴링은 멈춥니다.", "Finds Slave IDs that answer (1–247) or readable address ranges. Polling pauses while scanning."],
+  mmScan: ["답하는 국번(1~247)이나 읽히는 주소 범위, 모르는 통신 설정(속도·패리티 — 0.11.0 부터)을 찾습니다. 찾는 동안 폴링은 멈춥니다.", "Finds Slave IDs that answer (1–247), readable address ranges or unknown line settings (baud, parity — from 0.11.0). Polling pauses while scanning."],
   mmValueLog: ["읽은 값을 CSV 파일(time,table,address,name,value)에 계속 덧붙입니다. 엑셀에서 바로 열립니다.", "Keeps appending the values read to a CSV file (time,table,address,name,value). Opens directly in Excel."],
   mmVlEvery: ["읽을 때마다 모든 칸을 기록합니다.", "Logs every cell on every poll."],
   mmVlChange: ["지난번과 값이 달라진 칸만 기록합니다(파일이 작음).", "Logs only cells whose value changed (smaller files)."],
@@ -345,6 +345,11 @@ const TIPS: Record<string, Tip> = {
   mmScanAddrRange: ["찾을 주소 범위(0 기준, 끝 포함).", "Address range to probe (0-based, inclusive)."],
   mmScanFine: ["읽기에 실패한 덩어리를 한 칸씩 다시 읽어 정확한 경계를 찾습니다(요청이 늘어남).", "Re-reads failed blocks one address at a time to find exact edges (more requests)."],
   mmScanStart: ["찾기를 시작합니다. 결과에서 바로 표를 만들 수 있습니다.", "Starts the scan. You can create a table straight from a result."],
+  mmLineBauds: ["해 볼 속도. 많이 고를수록 오래 걸립니다(1200~115200).", "Baud rates to try. More choices take longer (1200–115200)."],
+  mmLineFramings: ["해 볼 패리티·정지 비트 묶음. 8N1·8E1 이 가장 흔합니다.", "Parity/stop-bit combinations to try. 8N1 and 8E1 are the most common."],
+  mmLineFirstOnly: ["답하는 설정을 하나 찾으면 나머지 속도는 해 보지 않습니다.", "Stops trying further speeds once one setting answers."],
+  mmLineUse: ["이 속도·패리티·정지 비트로 연결을 바꾸고 지금 표의 국번도 이 국번으로 바꿉니다.", "Switches the connection to this baud/parity/stop bits and sets the selected table's ID to this one."],
+  mmDiag: ["최근 요청 결과(응답 없음·에코·CRC 오류·잘림·예외·다른 국번)를 나눠 원인 후보와 확인 방법을 보입니다.", "Sorts recent results (no reply, echo, CRC error, truncated, exception, other ID) into possible causes and how to check them."],
 
   // ---- 쉽게 쓰기 2차(10/18)
   expandAll: ["켜면 접어 둔 칸(고급 연결·받기 설정·장애 주입·통계·찾는 방법 등)을 펼친 채 보입니다. 하나씩 접을 수는 있고, 끄면 칸마다 기억한 열림 상태로 돌아갑니다.", "Shows collapsed groups (advanced connection, receive settings, fault injection, statistics, scan options …) open. You can still fold one; turning it off returns to each group's remembered state."],

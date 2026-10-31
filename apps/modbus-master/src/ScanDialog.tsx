@@ -1,15 +1,48 @@
-// 찾기 창 — 국번 찾기(1~247 중 답하는 장비)와 주소 범위 찾기(읽히는 주소 모으기). 찾는 동안 폴링은 멈춘다.
-// 창을 닫아도 찾기는 계속되고, 왼쪽 상태 칸에 진행이 보인다.
+// 찾기 창 — 국번 찾기(1~247 중 답하는 장비), 주소 범위 찾기(읽히는 주소 모으기), 통신 설정 찾기(0.11.0 — 속도·패리티·국번).
+// 찾는 동안 폴링은 멈춘다. 창을 닫아도 찾기는 계속되고, 왼쪽 상태 칸에 진행이 보인다.
 import { useEffect, useState } from "react";
 import { NumInput } from "@shared/NumInput";
 import { tip } from "@shared/tips";
 import { useRestoreFocus } from "@shared/restoreFocus";
-import { outcomeText, type Outcome, type ScanAddrs, type ScanIds } from "./api";
+import { outcomeText, type Outcome, type ScanAddrs, type ScanIds, type ScanLine } from "./api";
 import { dict, fill, type Key, type Lang } from "./i18n";
-import { FCS, addrLabel, fmtMs, maxQty, minUnit, type AddrMode, type Fc } from "./model";
+import {
+  FCS,
+  LINE_BAUDS,
+  LINE_BAUDS_ON,
+  LINE_FRAMINGS,
+  LINE_FRAMINGS_ON,
+  addrLabel,
+  fmtDuration,
+  fmtMs,
+  framingKey,
+  lineEstimateMs,
+  lineLabel,
+  lineTries,
+  maxQty,
+  minUnit,
+  type AddrMode,
+  type Fc,
+  type Framing,
+} from "./model";
+
+/** 통신 설정 찾기에서 답한 조합 하나 */
+export interface LineHit {
+  baud: number;
+  parity: string;
+  stopBits: number;
+  unit: number;
+  outcome: Outcome;
+  rttMs: number;
+}
+
+/** 한 번에 해 볼 수 있는 최대 조합 — crates/core MAX_LINE_TRIES */
+const MAX_LINE_TRIES = 100_000;
+
+export type ScanKind = "ids" | "addrs" | "line";
 
 export interface ScanState {
-  kind: "ids" | "addrs" | null;
+  kind: ScanKind | null;
   running: boolean;
   done: number;
   total: number;
@@ -19,9 +52,12 @@ export interface ScanState {
   unit: number;
   fc: Fc;
   finished: { found: number; cancelled: boolean; stopped: string | null } | null;
+  /** 통신 설정 찾기(0.11.0): 답한 조합, 깨진 바이트만 온 설정(«9600 8N1», 횟수) */
+  lineHits: LineHit[];
+  lineGarbled: [string, number][];
 }
 
-export const NO_SCAN: ScanState = { kind: null, running: false, done: 0, total: 0, hits: [], ranges: [], unit: 1, fc: 3, finished: null };
+export const NO_SCAN: ScanState = { kind: null, running: false, done: 0, total: 0, hits: [], ranges: [], unit: 1, fc: 3, finished: null, lineHits: [], lineGarbled: [] };
 
 export function ScanDialog({
   lang,
@@ -30,11 +66,16 @@ export function ScanDialog({
   addrMode,
   wire,
   defaults,
+  serial,
+  lineNow,
+  delayMs,
   onStartIds,
   onStartAddrs,
+  onStartLine,
   onCancel,
   onUseId,
   onUseRange,
+  onUseLine,
   onClose,
 }: {
   lang: Lang;
@@ -45,18 +86,39 @@ export function ScanDialog({
   wire: "tcp" | "rtu";
   /** 지금 표의 국번·함수·시작 */
   defaults: { unit: number; fc: Fc; start: number };
+  /** 통신 설정 찾기(0.11.0) — 시리얼 연결인지, 지금 설정 이름(«9600 8N1»), 요청 간격(어림에) */
+  serial: boolean;
+  lineNow: string;
+  delayMs: number;
   onStartIds: (c: ScanIds) => void;
   onStartAddrs: (c: ScanAddrs) => void;
+  onStartLine: (c: ScanLine) => void;
   onCancel: () => void;
   onUseId: (unit: number, fc: Fc, addr: number) => void;
   onUseRange: (unit: number, fc: Fc, start: number, end: number) => void;
+  onUseLine: (h: LineHit, fc: Fc, addr: number) => void;
   onClose: () => void;
 }) {
   const t = (k: Key) => dict[lang][k];
   const back = useRestoreFocus<HTMLDivElement>();
-  const [tab, setTab] = useState<"ids" | "addrs">(scan.kind ?? "ids");
+  const [tab, setTab] = useState<ScanKind>(scan.kind ?? "ids");
   const [ids, setIds] = useState<ScanIds>({ from: 1, to: 247, fc: defaults.fc, addr: defaults.start, timeoutMs: 200 });
   const [ad, setAd] = useState<ScanAddrs>({ unit: defaults.unit, fc: defaults.fc, from: 0, to: 999, block: defaults.fc <= 2 ? 100 : 10, timeoutMs: 500, fine: true });
+  const [ln, setLn] = useState<ScanLine>({
+    bauds: LINE_BAUDS_ON,
+    framings: LINE_FRAMINGS_ON,
+    from: Math.max(1, defaults.unit),
+    to: Math.max(1, defaults.unit),
+    fc: defaults.fc,
+    addr: defaults.start,
+    timeoutMs: 150,
+    firstOnly: true,
+  });
+  const lineTotal = lineTries(ln);
+  const lineBad = lineTotal === 0 || lineTotal > MAX_LINE_TRIES || ln.to < ln.from;
+  const toggleBaud = (b: number) => setLn({ ...ln, bauds: ln.bauds.includes(b) ? ln.bauds.filter((x) => x !== b) : [...ln.bauds, b].sort((p, q) => p - q) });
+  const hasFraming = (f: Framing) => ln.framings.some((x) => framingKey(x) === framingKey(f));
+  const toggleFraming = (f: Framing) => setLn({ ...ln, framings: hasFraming(f) ? ln.framings.filter((x) => framingKey(x) !== framingKey(f)) : LINE_FRAMINGS.filter((x) => hasFraming(x) || framingKey(x) === framingKey(f)) });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -69,6 +131,8 @@ export function ScanDialog({
   const mine = scan.kind === tab;
   const pct = scan.total ? Math.round((scan.done / scan.total) * 100) : 0;
   const result = mine && scan.finished;
+  const startDisabled = !connected || scan.running || (tab === "ids" ? ids.to < ids.from : tab === "addrs" ? ad.to < ad.from : !serial || lineBad);
+  const start = () => (tab === "ids" ? onStartIds(ids) : tab === "addrs" ? onStartAddrs(ad) : onStartLine(ln));
   const fcSelect = (value: Fc, set: (f: Fc) => void, tipKey: string) => (
     <label data-tip={tip(lang, tipKey)}>
       {t("scanFc")}
@@ -93,13 +157,65 @@ export function ScanDialog({
         </div>
         <div className="modal-body">
           <span className="segs" role="tablist" aria-label={t("scanTitle")}>
-            {(["ids", "addrs"] as const).map((k) => (
+            {(["ids", "addrs", "line"] as const).map((k) => (
               <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "seg on" : "seg"} disabled={scan.running && scan.kind !== k} onClick={() => setTab(k)}>
-                {k === "ids" ? t("scanIds") : t("scanAddrs")}
+                {k === "ids" ? t("scanIds") : k === "addrs" ? t("scanAddrs") : t("scanLine")}
               </button>
             ))}
           </span>
-          {tab === "ids" ? (
+          {tab === "line" ? (
+            <>
+              <span className="hint">{t("lineHint")}</span>
+              <div className="notice warn line-warn" role="note">
+                {t("lineWarn")}
+              </div>
+              {!serial && <div className="hint warn">{t("lineSerialOnly")}</div>}
+              <fieldset className="line-set" data-tip={tip(lang, "mmLineBauds")}>
+                <legend>{t("lineBauds")}</legend>
+                {LINE_BAUDS.map((b) => (
+                  <label key={b} className="inline chip-check">
+                    <input type="checkbox" checked={ln.bauds.includes(b)} disabled={scan.running} onChange={() => toggleBaud(b)} /> {b}
+                  </label>
+                ))}
+              </fieldset>
+              <fieldset className="line-set" data-tip={tip(lang, "mmLineFramings")}>
+                <legend>{t("lineFramings")}</legend>
+                {LINE_FRAMINGS.map((f) => (
+                  <label key={framingKey(f)} className="inline chip-check">
+                    <input type="checkbox" checked={hasFraming(f)} disabled={scan.running} onChange={() => toggleFraming(f)} /> {lineLabel(0, f.parity, f.stopBits).slice(2)}
+                  </label>
+                ))}
+              </fieldset>
+              <div className="grid3">
+                <label data-tip={tip(lang, "mmScanRange")}>
+                  {t("scanFrom")}
+                  <NumInput min={1} max={247} value={ln.from} disabled={scan.running} onValue={(n) => setLn({ ...ln, from: n })} />
+                </label>
+                <label data-tip={tip(lang, "mmScanRange")}>
+                  {t("scanTo")}
+                  <NumInput min={1} max={247} value={ln.to} disabled={scan.running} onValue={(n) => setLn({ ...ln, to: n })} />
+                </label>
+                <label data-tip={tip(lang, "mmScanTimeout")}>
+                  {t("scanTimeout")}
+                  <NumInput min={10} max={60000} value={ln.timeoutMs} disabled={scan.running} onValue={(n) => setLn({ ...ln, timeoutMs: n })} />
+                </label>
+              </div>
+              <div className="grid2">
+                {fcSelect(ln.fc, (fc) => setLn({ ...ln, fc }), "mmScanFc")}
+                <label data-tip={tip(lang, "mmScanAddr")}>
+                  {t("scanAddr")} ({label(ln.fc, ln.addr)})
+                  <NumInput min={0} max={65535} value={ln.addr} disabled={scan.running} onValue={(n) => setLn({ ...ln, addr: n })} />
+                </label>
+              </div>
+              <label className="inline" data-tip={tip(lang, "mmLineFirstOnly")}>
+                <input type="checkbox" checked={ln.firstOnly} disabled={scan.running} onChange={(e) => setLn({ ...ln, firstOnly: e.target.checked })} /> {t("lineFirstOnly")}
+              </label>
+              <span className={lineBad && lineTotal > 0 ? "hint warn line-est" : "hint line-est"}>
+                {lineTotal > MAX_LINE_TRIES ? t("lineTooMany") : fill(t("lineEstimate"), { n: lineTotal, d: fmtDuration(lineEstimateMs(ln, delayMs), lang) })}
+                {serial && lineNow ? ` · ${fill(t("lineRestore"), { s: lineNow })}` : ""}
+              </span>
+            </>
+          ) : tab === "ids" ? (
             <>
               <span className="hint">{t("scanIdsHint")}</span>
               <div className="grid3">
@@ -164,13 +280,7 @@ export function ScanDialog({
                 {t("scanStop")}
               </button>
             ) : (
-              <button
-                className="btn small primary"
-                disabled={!connected || scan.running || (tab === "ids" ? ids.to < ids.from : ad.to < ad.from)}
-                title={connected ? "" : t("needConnect")}
-                data-tip={tip(lang, "mmScanStart")}
-                onClick={() => (tab === "ids" ? onStartIds(ids) : onStartAddrs(ad))}
-              >
+              <button className="btn small primary" disabled={startDisabled} title={connected ? "" : t("needConnect")} data-tip={tip(lang, "mmScanStart")} onClick={start}>
                 {t("scanStart")}
               </button>
             )}
@@ -183,7 +293,45 @@ export function ScanDialog({
             )}
           </div>
           {result && result.stopped && <div className="hint warn">{fill(t("scanStopped"), { a: result.stopped })}</div>}
-          {tab === "ids" ? (
+          {tab === "line" ? (
+            <div className="scan-list">
+              <div className="scan-sum">{mine && scan.lineHits.length ? fill(t("lineFound"), { n: scan.lineHits.length }) : t("scanNone")}</div>
+              {mine && scan.lineHits.length > 0 && (
+                <table className="rtable line-hits">
+                  <thead>
+                    <tr>
+                      <th>{t("lineColSetting")}</th>
+                      <th>{t("scanColId")}</th>
+                      <th>{t("scanColResult")}</th>
+                      <th>{t("scanColRtt")}</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scan.lineHits.map((h) => (
+                      <tr key={`${h.baud}/${h.parity}/${h.stopBits}/${h.unit}`}>
+                        <td className="mono">{lineLabel(h.baud, h.parity, h.stopBits)}</td>
+                        <td className="mono">{h.unit}</td>
+                        <td className={h.outcome.result === "ok" ? "okc" : "failc"}>{outcomeText(h.outcome, lang)}</td>
+                        <td className="mono">{fmtMs(h.rttMs)} ms</td>
+                        <td>
+                          <button className="btn small" data-tip={tip(lang, "mmLineUse")} onClick={() => onUseLine(h, ln.fc, ln.addr)}>
+                            {t("lineUse")}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {mine && scan.lineGarbled.length > 0 && (
+                <div className="scan-sum line-garbled">
+                  {fill(t("lineGarbled"), { s: scan.lineGarbled.map(([s, n]) => `${s} ×${n}`).join(", ") })}
+                  <div>{t("lineGarbledHint")}</div>
+                </div>
+              )}
+            </div>
+          ) : tab === "ids" ? (
             <div className="scan-list">
               <div className="scan-sum">{mine && scan.hits.length ? fill(t("scanFoundIds"), { n: scan.hits.length }) : t("scanNone")}</div>
               {mine && scan.hits.length > 0 && (
