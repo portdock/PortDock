@@ -70,7 +70,10 @@ export interface WebTool {
     | "tools/commissioning-checklist/"
     | "tools/cable-selection/"
     | "tools/awg-mm2/"
-    | "tools/conduit-fill/";
+    | "tools/conduit-fill/"
+    | "tools/power-supply-sizing/"
+    | "tools/io-list/"
+    | "tools/handover-pack/";
   name: L;
   blurb: L;
 }
@@ -413,6 +416,21 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/conduit-fill/",
     name: { ko: "전선관·덕트 점유율 계산기", en: "Conduit & Duct Fill Calculator" },
     blurb: { ko: "전선 외경·개수 → 단면 점유율 %. 전선관 NEC 53·31·40 %, 와이어웨이 20 %, 제어반 덕트 NFPA 79 50 % 와 비교, 최소 관 안지름·최대 가닥.", en: "Wire outer diameter and count → fill %. Compared with NEC conduit 53/31/40 %, wireway 20 %, panel duct NFPA 79 50 %; minimum conduit ID and max wires." },
+  },
+  {
+    path: "tools/io-list/",
+    name: { ko: "IO 리스트·통신 사양서 만들기", en: "I/O List & Communication Spec Maker" },
+    blurb: { ko: "장비별 통신(RTU·TCP·국번·IP·보율)과 태그·주소·함수·형식·워드 순서·스케일 표. 주소 겹침·국번 중복 점검, 장비 맵에서 가져오기, CSV(엑셀)·JSON·인쇄.", en: "Per-device communication (RTU/TCP, unit ID, IP, baud) with tags, addresses, functions, types, word order and scale. Overlap and duplicate-ID checks, device map import, CSV (Excel), JSON, print." },
+  },
+  {
+    path: "tools/handover-pack/",
+    name: { ko: "현장 문서 묶음 만들기(인수인계)", en: "Site Handover Pack Maker" },
+    blurb: { ko: "구성도 JSON·IO 리스트 JSON·시운전 점검표 CSV·연락처·메모 → 표지·목차가 붙은 인쇄용 문서 한 장. HTML 저장·PDF 인쇄, 브라우저 안에서만.", en: "Diagram JSON, I/O list JSON, commissioning checklist CSV, contacts and notes → one printable document with cover and contents. Save HTML or print to PDF, in your browser only." },
+  },
+  {
+    path: "tools/power-supply-sizing/",
+    name: { ko: "24V DC 전원 용량 계산기", en: "24 V DC Power Supply Sizing Calculator" },
+    blurb: { ko: "PLC·HMI·센서·밸브·릴레이 코일의 전류·돌입 전류·동시 사용률 → 합계, 여유를 둔 정격(흔한 정격에서), 돌입 피크 비교, 서킷 프로텍터 채널 나누기.", en: "Current, inrush and duty of PLCs, HMIs, sensors, valves and relay coils → total, rating with headroom (common sizes), inrush check and circuit protector channels." },
   },
 ];
 

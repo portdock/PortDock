@@ -1,0 +1,338 @@
+---
+// 웹 도구: 현장 문서 묶음(인수인계) — 구성도 JSON(/tools/system-diagram/)·IO 리스트 JSON(/tools/io-list/)·시운전 점검표 CSV(/tools/commissioning-checklist/)와
+// 표지·연락처·메모를 묶어 인쇄용 HTML 한 장(lib/handover.ts). 파일은 브라우저 안에서만 읽고, 표지·메모만 이 브라우저 localStorage 에 둔다.
+// 미리 보기는 sandbox iframe(srcdoc, 스크립트 없음). «HTML 파일로 저장» 은 Blob 다운로드, 인쇄는 그 iframe 을 인쇄(PDF 로 저장 안내).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/handover-pack/";
+const L = ko
+  ? {
+      title: "현장 문서 묶음 만들기(인수인계)",
+      seo: "인수인계 문서 만들기 — 구성도·IO 리스트·점검표 — PortDock",
+      desc: "시스템 구성도·IO 리스트·시운전 점검표 파일과 연락처·메모를 불러와 표지·목차가 붙은 인쇄용 문서 한 장으로 묶습니다. HTML 저장·인쇄(PDF), 브라우저 안에서만.",
+      cover: "표지",
+      site: "현장 이름",
+      sitePh: "예: 2라인 포장기",
+      date: "날짜",
+      author: "작성자",
+      files: "넣을 파일",
+      fSys: "구성도 JSON (시스템 구성도 그리기 → JSON 저장)",
+      fIo: "IO 리스트 JSON (IO 리스트 만들기 → JSON 저장)",
+      fChk: "시운전 점검표 CSV (점검표 만들기 → CSV 저장)",
+      remove: "빼기",
+      contacts: "연락처",
+      contactsPh: "예: 설비 담당 — 이름·전화\n제어 담당 — 이름·메일",
+      memo: "메모",
+      memoPh: "남은 일, 백업 위치, 비밀번호 보관 위치(비밀번호 자체는 적지 말 것) …",
+      preview: "미리 보기",
+      saveHtml: "HTML 파일로 저장",
+      print: "인쇄",
+      printNote: "인쇄 창에서 대상(프린터)을 «PDF 로 저장» 으로 고르면 PDF 파일이 됩니다.",
+      privacy: "이 페이지는 브라우저 안에서만 동작합니다. 불러온 파일과 적은 글은 서버로 가지 않습니다. 표지·연락처·메모만 이 브라우저(localStorage)에 남고, 불러온 파일은 페이지를 닫으면 사라집니다.",
+      what: "어떻게 쓰나",
+      whatP: [
+        "시운전·납품이 끝날 때 현장에 남길 문서를 한 장으로 묶습니다. 시스템 구성도 그리기에서 저장한 JSON, IO 리스트 만들기에서 저장한 JSON, 시운전 점검표에서 저장한 CSV 를 불러오고 표지·연락처·메모를 적습니다. 가진 파일만 넣어도 됩니다 — 들어 있는 자료만 목차에 나옵니다.",
+        "구성도는 그림(SVG)과 장비 표(이름·종류·IP·국번·보율)로, IO 리스트는 장비별 통신 설정과 신호 표로, 점검표는 완료 수와 남은 항목으로 들어갑니다. 구성도·IO 리스트의 점검 결과(IP·국번 중복, 주소 겹침)도 함께 붙습니다.",
+        "«HTML 파일로 저장» 한 파일은 인터넷 없이 어느 브라우저에서나 열리고, 인쇄하거나 PDF 로 저장할 수 있습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["파일이 서버에 올라가나요?", "아니요. 파일은 브라우저 안에서 읽고 문서도 브라우저 안에서 만듭니다. 저장한 HTML 파일은 내 PC 에만 생깁니다."],
+        ["점검표 CSV 를 엑셀에서 고쳤는데 읽히나요?", "머리 줄(단계·항목·완료·메모 또는 Stage·Item·Done·Note)이 남아 있으면 칸 순서가 바뀌어도 읽습니다. «완료» 칸은 예·yes·x·o·1 같은 표시를 완료로 봅니다."],
+        ["회사 양식으로 바꿀 수 있나요?", "저장한 HTML 은 보통 글이라 편집기나 워드에서 열어 고칠 수 있습니다. 표지 문구·로고는 회사 양식을 따르세요."],
+      ],
+      seeAlso: "파일 만들기:",
+      links: [
+        ["tools/system-diagram/", "시스템 구성도 그리기"],
+        ["tools/io-list/", "IO 리스트·통신 사양서 만들기"],
+        ["tools/commissioning-checklist/", "시운전·설치 점검표 만들기"],
+      ],
+    }
+  : {
+      title: "Site Handover Pack Maker",
+      seo: "Site Handover Pack: Diagram, I/O List, Checklist — PortDock",
+      desc: "Bundle your system diagram, I/O list, commissioning checklist, contacts and notes into one printable document. Save HTML or print to PDF, in your browser.",
+      cover: "Cover",
+      site: "Site name",
+      sitePh: "e.g. Line 2 packer",
+      date: "Date",
+      author: "Prepared by",
+      files: "Files to include",
+      fSys: "Diagram JSON (System diagram editor → Save JSON)",
+      fIo: "I/O list JSON (I/O list maker → Save JSON)",
+      fChk: "Commissioning checklist CSV (Checklist maker → Save CSV)",
+      remove: "Remove",
+      contacts: "Contacts",
+      contactsPh: "e.g. Maintenance — name, phone\nControls — name, email",
+      memo: "Notes",
+      memoPh: "Open items, where backups are, where passwords are kept (not the passwords) …",
+      preview: "Preview",
+      saveHtml: "Save as HTML file",
+      print: "Print",
+      printNote: "In the print dialog choose «Save as PDF» as the printer to get a PDF file.",
+      privacy: "This page runs entirely in your browser. Files you load and text you type never go to a server. Only the cover, contacts and notes stay in this browser (localStorage); loaded files are gone when you close the page.",
+      what: "How to use it",
+      whatP: [
+        "Bundle what you leave on site at the end of commissioning into one document. Load the JSON saved from the System diagram editor, the JSON from the I/O list maker and the CSV from the commissioning checklist, then fill in the cover, contacts and notes. Any subset works — only what you add appears in the contents.",
+        "The diagram becomes a picture (SVG) and a device table (name, type, IP, unit ID, baud); the I/O list becomes per-device communication settings and signal tables; the checklist becomes the done count and open items. Findings from the diagram and I/O list checks (duplicate IPs and IDs, overlapping addresses) are included too.",
+        "The saved HTML file opens in any browser without internet, and can be printed or saved as PDF.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Are my files uploaded?", "No. Files are read and the document is built inside your browser. The saved HTML file only exists on your PC."],
+        ["I edited the checklist CSV in Excel — will it load?", "As long as the header row (Stage, Item, Done, Note — or the Korean names) is there, column order does not matter. The Done column treats yes, x, o, 1 and similar marks as done."],
+        ["Can I use our company template?", "The saved HTML is plain text, so you can open it in an editor or Word and adjust it. Follow your company's template for cover wording and logos."],
+      ],
+      seeAlso: "Make the files:",
+      links: [
+        ["tools/system-diagram/", "System diagram editor"],
+        ["tools/io-list/", "I/O list & communication spec maker"],
+        ["tools/commissioning-checklist/", "Commissioning checklist maker"],
+      ],
+    };
+const T = {
+  remove: L.remove,
+  bad: ko ? "읽지 못함: " : "Could not read: ",
+  loaded: ko ? "불러옴" : "Loaded",
+  nodes: ko ? "장비" : "devices",
+  signals: ko ? "신호" : "signals",
+  items: ko ? "항목" : "items",
+  footer: ko ? "PortDock «현장 문서 묶음» 으로 브라우저 안에서 만든 문서 — portdock.dev" : "Made in the browser with the PortDock «Site handover pack» — portdock.dev",
+};
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card hp-form" id="hp" data-lang={lang} data-t={JSON.stringify(T)}>
+      <h2 class="hp-h">{L.cover}</h2>
+      <div class="row">
+        <label class="fld">{L.site}<input id="site" maxlength="120" placeholder={L.sitePh} autocomplete="off" /></label>
+        <label class="fld">{L.date}<input id="date" type="date" /></label>
+        <label class="fld">{L.author}<input id="author" maxlength="80" autocomplete="off" /></label>
+      </div>
+      <h2 class="hp-h">{L.files}</h2>
+      {
+        [
+          ["sys", L.fSys, ".json,application/json"],
+          ["io", L.fIo, ".json,application/json"],
+          ["chk", L.fChk, ".csv,text/csv"],
+        ].map(([id, label, accept]) => (
+          <div class="hp-file">
+            <label class="fld">
+              {label}
+              <input type="file" id={`f-${id}`} accept={accept} />
+            </label>
+            <span class="note" id={`s-${id}`} />
+            <button type="button" class="btn tight" data-rm={id} hidden>
+              {L.remove}
+            </button>
+          </div>
+        ))
+      }
+      <label class="fld">{L.contacts}<textarea id="contacts" rows="3" maxlength="4000" placeholder={L.contactsPh}></textarea></label>
+      <label class="fld">{L.memo}<textarea id="memo" rows="5" maxlength="20000" placeholder={L.memoPh}></textarea></label>
+      <p class="note privacy">{L.privacy}</p>
+    </form>
+
+    <section class="card hp-out">
+      <h2 class="hp-h">{L.preview}</h2>
+      <div class="btns">
+        <button type="button" class="btn tight" id="bSave">{L.saveHtml}</button>
+        <button type="button" class="btn tight" id="bPrint">{L.print}</button>
+      </div>
+      <p class="note">{L.printNote}</p>
+      <iframe id="pv" title={L.preview} sandbox="allow-same-origin allow-modals"></iframe>
+    </section>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.seeAlso}{" "}
+        {
+          L.links.map(([p, n], i) => (
+            <>
+              {i > 0 && " · "}
+              <a href={url(lang, p)}>{n}</a>
+            </>
+          ))
+        }
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .hp-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .hp-h {
+      font-size: 17px;
+      margin: 4px 0 4px;
+    }
+    .hp-file {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 6px 12px;
+    }
+    .hp-file .fld {
+      flex: 1 1 320px;
+    }
+    textarea {
+      width: 100%;
+      font: inherit;
+    }
+    .hp-out {
+      margin-top: 16px;
+    }
+    #pv {
+      width: 100%;
+      height: 720px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+  </style>
+  <script>
+    import { STORE_KEY, buildHtml, fileSlug, parseChecklistCsv, parseSaved, readIo, readSystem, type CheckRow, type Pack } from "../lib/handover";
+    import type { SysDoc } from "../lib/sysDiagram";
+    import type { IoDoc } from "../lib/ioList";
+    import { saveText, store, fileStamp } from "../lib/fileSave";
+
+    const form = document.getElementById("hp") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const pv = $<HTMLIFrameElement>("pv");
+
+    const s = parseSaved(store.get(STORE_KEY));
+    if (!s.cover.date) {
+      const d = new Date();
+      s.cover.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+    $("site").value = s.cover.site;
+    $("date").value = s.cover.date;
+    $("author").value = s.cover.author;
+    $<HTMLTextAreaElement>("contacts").value = s.contacts;
+    $<HTMLTextAreaElement>("memo").value = s.memo;
+
+    let sys: SysDoc | null = null;
+    let io: IoDoc | null = null;
+    let checks: CheckRow[] | null = null;
+
+    const pack = (): Pack => ({ cover: { site: $("site").value, date: $("date").value, author: $("author").value }, sys, io, checks, contacts: $<HTMLTextAreaElement>("contacts").value, memo: $<HTMLTextAreaElement>("memo").value });
+    const html = () => buildHtml(pack(), lang, { footer: T.footer });
+
+    let timer = 0;
+    function update() {
+      const p = pack();
+      store.set(STORE_KEY, JSON.stringify({ v: 1, cover: p.cover, contacts: p.contacts ?? "", memo: p.memo ?? "" }));
+      clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        pv.srcdoc = html();
+      }, 200);
+    }
+
+    function status(id: string, text: string, ok: boolean) {
+      $(`s-${id}`).textContent = text;
+      const rm = form.querySelector<HTMLButtonElement>(`[data-rm="${id}"]`);
+      if (rm) rm.hidden = !ok;
+    }
+
+    async function readFile(id: string) {
+      const inp = $(`f-${id}`);
+      const f = inp.files?.[0];
+      if (!f) return;
+      if (f.size > 10_000_000) {
+        status(id, T.bad + "file too large", false);
+        return;
+      }
+      const text = await f.text();
+      if (id === "sys") {
+        const r = readSystem(text);
+        sys = r.doc;
+        status(id, r.doc ? `${T.loaded}: ${f.name} — ${r.doc.nodes.length} ${T.nodes}` : T.bad + r.errors.join(", "), !!r.doc);
+      } else if (id === "io") {
+        const r = readIo(text);
+        io = r.doc;
+        status(id, r.doc ? `${T.loaded}: ${f.name} — ${r.doc.devices.length} ${T.nodes}, ${r.doc.devices.reduce((n, d) => n + d.signals.length, 0)} ${T.signals}` : T.bad + r.errors.join(", "), !!r.doc);
+      } else {
+        const r = parseChecklistCsv(text);
+        checks = r.rows.length ? r.rows : null;
+        status(id, r.rows.length ? `${T.loaded}: ${f.name} — ${r.rows.length} ${T.items}` : T.bad + (r.error ?? ""), r.rows.length > 0);
+      }
+      update();
+    }
+    for (const id of ["sys", "io", "chk"]) $(`f-${id}`).addEventListener("change", () => void readFile(id));
+    form.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-rm]");
+      if (!b) return;
+      const id = b.dataset.rm!;
+      if (id === "sys") sys = null;
+      else if (id === "io") io = null;
+      else checks = null;
+      $(`f-${id}`).value = "";
+      status(id, "", false);
+      update();
+    });
+    form.addEventListener("input", (e) => {
+      if ((e.target as HTMLInputElement).type !== "file") update();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    $("bSave").addEventListener("click", () => saveText(html(), `${fileSlug($("site").value)}-${fileStamp()}.html`, "text/html;charset=utf-8"));
+    $("bPrint").addEventListener("click", () => {
+      pv.srcdoc = html();
+      pv.addEventListener(
+        "load",
+        () => {
+          try {
+            pv.contentWindow?.focus();
+            pv.contentWindow?.print();
+          } catch {
+            window.print();
+          }
+        },
+        { once: true },
+      );
+    });
+    pv.srcdoc = html();
+  </script>
+</Base>

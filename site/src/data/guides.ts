@@ -823,7 +823,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["modbus-master", "modbus-slave"],
     related: ["modbus-address-notation", "modbus-function-codes", "modbus-no-response"],
-    webTools: ["tools/modbus-float/", "tools/modbus-decoder/", "tools/integer/"],
+    webTools: ["tools/modbus-float/", "tools/modbus-decoder/", "tools/integer/", "tools/io-list/"],
     devices: true,
     title: { ko: "Modbus 실수(float)·32비트 값 읽기 — 워드 순서 맞추는 순서", en: "Reading Modbus floats and 32-bit values — finding the word order" },
     seoTitle: { ko: "Modbus float·32비트 값 읽기 — 워드 순서 맞추기 — PortDock", en: "Modbus Float & 32-bit Values: Finding the Word Order — PortDock" },
@@ -1840,7 +1840,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["modbus-master", "serial"],
     related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable", "24v-power-supply-check", "npn-pnp-sensor-plc-input"],
-    webTools: ["tools/voltage-drop/", "tools/loop-load/", "tools/multimeter-check/", "tools/cable-selection/", "tools/awg-mm2/"],
+    webTools: ["tools/voltage-drop/", "tools/loop-load/", "tools/multimeter-check/", "tools/cable-selection/", "tools/awg-mm2/", "tools/power-supply-sizing/"],
     title: { ko: "24V DC 전압 강하 — 멀리 있는 센서·통신 장비의 전선 굵기 고르기", en: "24 V DC voltage drop — choosing wire size for remote sensors and devices" },
     seoTitle: { ko: "24V DC 전압 강하 계산과 전선 굵기 고르기 — PortDock", en: "24 V DC Voltage Drop: Choosing Wire Size (mm², AWG) — PortDock" },
     desc: {
@@ -6525,7 +6525,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["modbus-master", "plot"],
     related: ["24v-voltage-drop", "field-noise-communication-errors", "npn-pnp-sensor-plc-input", "4-20ma-loop", "commissioning-communication-checklist"],
-    webTools: ["tools/voltage-drop/", "tools/loop-load/"],
+    webTools: ["tools/power-supply-sizing/", "tools/voltage-drop/", "tools/loop-load/"],
     title: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 시 전압·0V 공통·퓨즈", en: "Checking a 24 V DC supply — capacity, inrush, voltage under load, 0 V common, fuses" },
     seoTitle: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 전압·퓨즈 — PortDock", en: "24 V DC Power Supply Checks: Capacity, Inrush, Fuses — PortDock" },
     desc: {
@@ -6781,7 +6781,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["modbus-master", "serial", "port-inspector", "plot"],
     related: ["rs485-wiring", "rs485-multimeter-check", "vfd-modbus-setup", "modbus-no-response", "modbus-rtu-timeout-polling", "24v-power-supply-check"],
-    webTools: ["tools/wiring/", "tools/system-diagram/", "tools/serial-timing/", "tools/modbus/"],
+    webTools: ["tools/wiring/", "tools/system-diagram/", "tools/serial-timing/", "tools/modbus/", "tools/io-list/", "tools/handover-pack/"],
     title: { ko: "장비 시운전 통신 점검 순서 — 배선·전원·통신 설정 저장·한 대씩·버스 전체·폴링·백업", en: "Commissioning communication step by step — wiring, power, saved settings, one device, the whole bus, polling" },
     seoTitle: { ko: "시운전 통신 점검 순서 (RS-485·Modbus) — PortDock", en: "RS-485 / Modbus Commissioning Checklist — PortDock" },
     desc: {
@@ -6949,7 +6949,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["port-inspector", "modbus-master", "netscan"],
     related: ["communication-fault-log", "commissioning-communication-checklist", "rs485-multimeter-check", "cable-shield-grounding", "24v-power-supply-check", "field-noise-communication-errors"],
-    webTools: ["tools/commissioning-checklist/", "tools/multimeter-check/", "tools/bsod-codes/", "tools/troubleshoot/", "tools/system-diagram/"],
+    webTools: ["tools/commissioning-checklist/", "tools/multimeter-check/", "tools/bsod-codes/", "tools/troubleshoot/", "tools/system-diagram/", "tools/handover-pack/"],
     title: { ko: "통신 설비 정기 점검(예방 보전) 순서 — 단자·케이블·오류율 추세·팬·UPS·PC 저장장치·백업·시간", en: "Preventive maintenance for communication equipment — terminals, error trends, fans, UPS, PC disks, backups" },
     seoTitle: { ko: "통신 설비 정기 점검·예방 보전 순서 — PortDock", en: "Industrial Communication Preventive Maintenance — PortDock" },
     desc: {
@@ -7345,7 +7345,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["modbus-master", "serial", "netscan"],
     related: ["vfd-modbus-setup", "modbus-no-response", "commissioning-communication-checklist", "communication-fault-log", "rs485-add-device", "remove-device-from-bus"],
-    webTools: ["tools/modbus/", "tools/commissioning-checklist/", "tools/wiring/", "tools/system-diagram/"],
+    webTools: ["tools/modbus/", "tools/commissioning-checklist/", "tools/wiring/", "tools/system-diagram/", "tools/io-list/", "tools/handover-pack/"],
     devices: true,
     title: { ko: "장비 교체할 때 설정 옮기기 — 모델·펌웨어, 파라미터 기록·비교, 국번·보율·종단, 레지스터 맵 차이, 저장 명령", en: "Moving settings when replacing a device — firmware, parameters, ID and baud, register map, save command" },
     seoTitle: { ko: "고장 장비 교체 시 통신 설정·파라미터 옮기기 — PortDock", en: "Replacing a Modbus Device: Carry Over Settings — PortDock" },

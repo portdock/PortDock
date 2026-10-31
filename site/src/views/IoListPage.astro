@@ -1,0 +1,638 @@
+---
+// 웹 도구: IO 리스트·통신 사양서 만들기 — 장비(통신 방식·국번/IP·보율/패리티)와 신호·레지스터 표 편집기(lib/ioList.ts).
+// 장비 맵(data/devices/*.json)은 이 사이트의 /devices/<제조사>/<모델>.json 을 읽어 가져온다(받기만, 입력은 보내지 않음).
+// 문서는 이 브라우저 localStorage 에 자동 저장(try/catch), JSON 저장·불러오기, CSV(엑셀용 BOM), 인쇄용 표.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { DEVICES } from "../data/devices";
+import { deviceName } from "@shared/devices";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/io-list/";
+const L = ko
+  ? {
+      title: "IO 리스트·통신 사양서 만들기",
+      seo: "IO 리스트·통신 사양서 만들기 — Modbus 레지스터 표 — PortDock",
+      desc: "장비별 통신 방식·국번·IP·보율과 태그·주소·함수·형식·워드 순서·스케일 표를 만들고 주소 겹침·국번 중복을 점검합니다. 장비 맵에서 가져오기, CSV·JSON·인쇄.",
+      docTitle: "문서 이름",
+      docPh: "예: 2라인 IO 리스트",
+      addDev: "장비 더하기",
+      fromMap: "장비 맵에서 가져오기",
+      mapPick: "장비 고르기",
+      prefix: "태그 앞글자(선택)",
+      importBtn: "가져오기",
+      example: "예시",
+      saveJson: "JSON 저장",
+      loadJson: "JSON 불러오기",
+      saveCsv: "CSV 저장(엑셀)",
+      print: "인쇄",
+      clear: "모두 지우기",
+      clearAsk: "문서를 모두 지울까요?",
+      check: "점검",
+      noFind: "점검에서 걸린 것이 없습니다.",
+      privacy: "이 페이지는 브라우저 안에서만 동작하고 입력한 내용을 서버로 보내지 않습니다. 문서는 이 브라우저(localStorage)에 자동 저장됩니다. 장비 맵 가져오기는 이 사이트의 공개 장비 데이터를 받기만 합니다.",
+      what: "어떻게 쓰나",
+      whatP: [
+        "장비마다 이름·위치·통신 방식(RTU·ASCII·TCP)·통신 선·국번·IP·보율·패리티를 적고, 아래 표에 태그·영역·주소·형식·워드 순서·스케일·단위·읽기/쓰기·설명을 적습니다. 주소는 통신선에 실리는 0 기준 주소이고, 매뉴얼 표기(40001 등)는 «매뉴얼 주소» 칸에 따로 둡니다.",
+        "«장비 맵에서 가져오기» 로 PortDock 장비 레지스터 맵의 통신 기본값과 레지스터를 한 번에 넣을 수 있습니다. 가져온 뒤 필요 없는 줄은 지우고 국번·선을 현장 값으로 바꿉니다.",
+        "점검은 같은 장비·같은 영역의 주소 겹침(32비트·실수는 두 레지스터), 태그 이름 중복, 같은 통신 선·같은 IP 의 국번 중복, 국번 범위(1~247), 같은 선의 보율·패리티 다름을 봅니다.",
+        "끝나면 CSV(엑셀에서 한글이 깨지지 않게 BOM 포함)·JSON 으로 저장하거나 인쇄합니다. JSON 은 «현장 문서 묶음» 에 넣어 인수인계 문서로 묶을 수 있습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["주소는 0 부터인가요, 1 부터인가요?", "이 표의 «주소» 는 통신선에 실리는 0 기준 주소입니다(홀딩 레지스터 40001 = 주소 0). 매뉴얼이 다른 꼴로 적으면 «매뉴얼 주소» 칸에 그대로 적어 둡니다."],
+        ["워드 순서는 무엇인가요?", "32비트 정수·실수가 레지스터 두 개에 나뉠 때 어느 쪽이 먼저인지입니다. ABCD 가 큰 쪽 먼저, CDAB 는 워드가 바뀐 순서입니다. 모르면 Modbus 실수 변환기로 네 순서를 한 번에 봅니다."],
+        ["입력한 내용은 어디에 저장되나요?", "이 브라우저의 localStorage 에만 저장됩니다. 다른 PC 로 옮기려면 JSON 저장 → 불러오기를 씁니다."],
+      ],
+      seeAlso: "함께 쓰기:",
+      links: [
+        ["tools/modbus-float/", "Modbus 실수 변환기"],
+        ["tools/modbus-blocks/", "Modbus 읽기 요청 묶기"],
+        ["tools/system-diagram/", "시스템 구성도 그리기"],
+        ["tools/handover-pack/", "현장 문서 묶음"],
+        ["devices/", "장비 레지스터 맵"],
+      ],
+    }
+  : {
+      title: "I/O List & Communication Spec Maker",
+      seo: "I/O List & Modbus Register Map Maker: CSV, Print — PortDock",
+      desc: "Devices with protocol, unit ID, IP and baud, plus tags, addresses, types, word order and scale. Overlap and ID checks, device map import, CSV, JSON, print.",
+      docTitle: "Document name",
+      docPh: "e.g. Line 2 I/O list",
+      addDev: "Add device",
+      fromMap: "Import from the device map",
+      mapPick: "Choose a device",
+      prefix: "Tag prefix (optional)",
+      importBtn: "Import",
+      example: "Example",
+      saveJson: "Save JSON",
+      loadJson: "Load JSON",
+      saveCsv: "Save CSV (Excel)",
+      print: "Print",
+      clear: "Clear all",
+      clearAsk: "Clear the whole document?",
+      check: "Checks",
+      noFind: "Nothing flagged.",
+      privacy: "This page runs in your browser and sends nothing you type to a server. The document is saved automatically in this browser (localStorage). Importing from the device map only downloads this site's public device data.",
+      what: "How to use it",
+      whatP: [
+        "For each device enter name, location, protocol (RTU, ASCII, TCP), line, unit ID, IP, baud and parity, then fill the table with tag, table, address, type, word order, scale, unit, access and description. Address is the 0-based address on the wire; the manual's notation (40001 …) goes in «Manual address».",
+        "«Import from the device map» fills in the communication defaults and registers from the PortDock register maps in one go. Delete rows you don't need and change the unit ID and line to the site's values.",
+        "Checks cover overlapping addresses in the same device and table (32-bit values and floats take two registers), duplicate tag names, duplicate unit IDs on the same line or IP, the ID range (1–247) and mixed baud/parity on one line.",
+        "When done, save CSV (with a BOM so Excel reads it correctly), JSON, or print. The JSON can go into the «Site handover pack» with the diagram and checklist.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Is the address 0-based or 1-based?", "«Address» here is the 0-based address on the wire (holding register 40001 = address 0). If the manual uses a different form, keep it in «Manual address»."],
+        ["What is word order?", "Which register comes first when a 32-bit integer or float is split over two. ABCD is high word first, CDAB is word-swapped. If unsure, the Modbus float converter shows all four orders at once."],
+        ["Where is my data stored?", "Only in this browser's localStorage. To move it to another PC, use Save JSON and Load JSON."],
+      ],
+      seeAlso: "Use with:",
+      links: [
+        ["tools/modbus-float/", "Modbus float converter"],
+        ["tools/modbus-blocks/", "Modbus read block planner"],
+        ["tools/system-diagram/", "System diagram editor"],
+        ["tools/handover-pack/", "Site handover pack"],
+        ["devices/", "Device register maps"],
+      ],
+    };
+const T = {
+  clearAsk: L.clearAsk,
+  noFind: L.noFind,
+  ui: ko
+    ? {
+        dev: "장비",
+        name: "이름",
+        loc: "위치",
+        proto: "통신",
+        line: "통신 선",
+        unit: "국번",
+        ip: "IP",
+        port: "포트",
+        baud: "보율",
+        parity: "패리티",
+        note: "메모",
+        delDev: "장비 지우기",
+        delDevAsk: "이 장비와 신호를 지울까요?",
+        addSig: "신호 더하기",
+        del: "×",
+        head: ["태그", "영역", "주소(0 기준)", "매뉴얼 주소", "함수", "형식", "워드 순서", "글자 수", "스케일", "단위", "읽기/쓰기", "설명", ""],
+        loadFail: "불러오지 못함: ",
+        mapFail: "장비 맵을 받지 못했습니다 — 연결을 확인하세요.",
+        imported: "가져왔습니다: ",
+        saved: "이 브라우저에 저장됨",
+        noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 사라집니다 — JSON 으로 저장하세요.",
+        auto: "(자동)",
+      }
+    : {
+        dev: "Device",
+        name: "Name",
+        loc: "Location",
+        proto: "Protocol",
+        line: "Line",
+        unit: "Unit ID",
+        ip: "IP",
+        port: "Port",
+        baud: "Baud",
+        parity: "Parity",
+        note: "Note",
+        delDev: "Remove device",
+        delDevAsk: "Remove this device and its signals?",
+        addSig: "Add signal",
+        del: "×",
+        head: ["Tag", "Table", "Address (0-based)", "Manual address", "Function", "Type", "Word order", "Length", "Scale", "Unit", "Access", "Description", ""],
+        loadFail: "Could not load: ",
+        mapFail: "Could not download the device map — check your connection.",
+        imported: "Imported: ",
+        saved: "Saved in this browser",
+        noStore: "This browser blocks storage, so this disappears on reload — save as JSON.",
+        auto: "(auto)",
+      },
+};
+const MAP = DEVICES.map((d) => ({ id: d.id, name: deviceName(d, lang), n: d.registers.length }));
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card io-form" id="io" data-lang={lang} data-t={JSON.stringify(T)}>
+      <label class="fld">{L.docTitle}<input id="title" maxlength="80" placeholder={L.docPh} autocomplete="off" /></label>
+      <div class="btns">
+        <button type="button" class="btn tight" id="bAdd">{L.addDev}</button>
+        <button type="button" class="btn tight" id="bEx">{L.example}</button>
+        <button type="button" class="btn tight" id="bJson">{L.saveJson}</button>
+        <label class="btn tight io-file">{L.loadJson}<input type="file" id="fJson" accept=".json,application/json" hidden /></label>
+        <button type="button" class="btn tight" id="bCsv">{L.saveCsv}</button>
+        <button type="button" class="btn tight" id="bPrint">{L.print}</button>
+        <button type="button" class="btn tight" id="bClear">{L.clear}</button>
+      </div>
+      <fieldset class="io-map">
+        <legend>{L.fromMap}</legend>
+        <div class="row">
+          <label class="fld">{L.mapPick}<select id="mapDev">{MAP.map((d) => <option value={d.id}>{d.name} ({d.n})</option>)}</select></label>
+          <label class="fld">{L.prefix}<input id="mapPrefix" class="mono" maxlength="12" placeholder="INV1" autocomplete="off" /></label>
+          <button type="button" class="btn tight" id="bImport">{L.importBtn}</button>
+        </div>
+      </fieldset>
+      <p class="note" id="msg" role="status"></p>
+      <div id="devs"></div>
+      <h2 class="io-h">{L.check}</h2>
+      <ul id="finds" class="io-finds"></ul>
+      <p class="note privacy">{L.privacy}</p>
+    </form>
+    <section id="io-print" class="io-print" aria-hidden="true"></section>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.seeAlso}{" "}
+        {
+          L.links.map(([p, n], i) => (
+            <>
+              {i > 0 && " · "}
+              <a href={url(lang, p)}>{n}</a>
+            </>
+          ))
+        }
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .io-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .io-file {
+      cursor: pointer;
+    }
+    .io-map {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .io-map .row {
+      align-items: flex-end;
+    }
+    .io-h {
+      font-size: 17px;
+      margin: 8px 0 0;
+    }
+    #devs :global(.io-dev) {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 10px 0;
+      background: var(--panel);
+    }
+    #devs :global(.io-dev.flag) {
+      border-color: var(--warn, #b7791f);
+    }
+    #devs :global(.io-dev h3) {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    #devs :global(.io-dgrid) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 6px 10px;
+    }
+    #devs :global(.io-dgrid label) {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      gap: 2px;
+    }
+    #devs :global(input),
+    #devs :global(select) {
+      width: 100%;
+      min-width: 0;
+      padding: 3px 5px;
+      font-size: 13.5px;
+    }
+    #devs :global(table) {
+      margin-top: 8px;
+    }
+    #devs :global(td) {
+      padding: 2px 3px;
+    }
+    #devs :global(tr.flag td) {
+      background: var(--soft);
+    }
+    #devs :global(td.c-tag) {
+      min-width: 130px;
+    }
+    #devs :global(td.c-desc) {
+      min-width: 160px;
+    }
+    #devs :global(td.c-n) {
+      min-width: 64px;
+    }
+    .io-finds :global(li.fault) {
+      color: var(--bad, #b91c1c);
+    }
+    .io-print {
+      display: none;
+    }
+    @media print {
+      :global(body *) {
+        visibility: hidden;
+      }
+      .io-print,
+      .io-print :global(*) {
+        visibility: visible;
+      }
+      .io-print {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        font-size: 11px;
+      }
+      .io-print :global(table) {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 8px;
+      }
+      .io-print :global(th),
+      .io-print :global(td) {
+        border: 1px solid #888;
+        padding: 2px 4px;
+        text-align: left;
+      }
+      .io-print :global(tr) {
+        break-inside: avoid;
+      }
+      .io-print :global(h3) {
+        margin: 10px 0 2px;
+        font-size: 13px;
+      }
+    }
+  </style>
+  <script>
+    import {
+      ACCESSES,
+      ORDERS,
+      PARITIES,
+      PROTOCOLS,
+      PROTOCOL_NAME,
+      PARITY_NAME,
+      ACCESS_NAME,
+      STORE_KEY,
+      TABLES,
+      TABLE_NAME,
+      TYPES,
+      checkDoc,
+      defaultFc,
+      emptyDoc,
+      esc,
+      exampleDoc,
+      fromDeviceMap,
+      newDeviceId,
+      nextAddress,
+      parseDoc,
+      toCsv,
+      toJson,
+      toTableHtml,
+      LIMITS,
+      type IoDoc,
+      type IoDevice,
+      type IoSignal,
+      type MapDevice,
+    } from "../lib/ioList";
+    import { saveText, store, fileStamp } from "../lib/fileSave";
+
+    const form = document.getElementById("io") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(form.dataset.t ?? "{}") as { clearAsk: string; noFind: string; ui: Record<string, string> & { head: string[] } };
+    const U = T.ui;
+    const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
+
+    const loaded = parseDoc(store.get(STORE_KEY) ?? "");
+    let doc: IoDoc = loaded.doc ?? exampleDoc(lang);
+
+    const opt = (v: string, name: string, cur: string | undefined) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(name)}</option>`;
+    const inp = (f: string, v: string | number | undefined, cls = "", extra = "") => `<input data-f="${f}" value="${esc(v === undefined ? "" : String(v))}"${cls ? ` class="${cls}"` : ""} ${extra} autocomplete="off"/>`;
+
+    function sigRow(s: IoSignal, si: number) {
+      const multi = s.type === "u32" || s.type === "s32" || s.type === "f32" || s.type === "f64";
+      return `<tr data-si="${si}">
+<td class="c-tag">${inp("tag", s.tag, "mono", `maxlength="${LIMITS.text}" aria-label="${esc(U.head[0])}"`)}</td>
+<td><select data-f="table" aria-label="${esc(U.head[1])}">${TABLES.map((t) => opt(t, TABLE_NAME[t][lang], s.table)).join("")}</select></td>
+<td class="c-n">${inp("address", s.address, "mono", `inputmode="numeric" aria-label="${esc(U.head[2])}"`)}</td>
+<td class="c-n">${inp("manual", s.manual, "mono", `maxlength="20" aria-label="${esc(U.head[3])}"`)}</td>
+<td class="c-n">${inp("fc", s.fc, "mono", `maxlength="20" placeholder="${esc(defaultFc(s))}" aria-label="${esc(U.head[4])}"`)}</td>
+<td><select data-f="type" aria-label="${esc(U.head[5])}">${TYPES.map((t) => opt(t, t, s.type)).join("")}</select></td>
+<td><select data-f="order" aria-label="${esc(U.head[6])}"${multi ? "" : " disabled"}>${opt("", "—", s.order ?? "")}${ORDERS.map((o) => opt(o, o, s.order)).join("")}</select></td>
+<td class="c-n">${inp("len", s.len, "mono", `inputmode="numeric" aria-label="${esc(U.head[7])}"${s.type === "string" ? "" : " disabled"}`)}</td>
+<td class="c-n">${inp("scale", s.scale, "mono", `inputmode="decimal" placeholder="1" aria-label="${esc(U.head[8])}"`)}</td>
+<td class="c-n">${inp("unit", s.unit, "", `maxlength="20" aria-label="${esc(U.head[9])}"`)}</td>
+<td><select data-f="access" aria-label="${esc(U.head[10])}">${ACCESSES.map((a) => opt(a, ACCESS_NAME[a][lang], s.access)).join("")}</select></td>
+<td class="c-desc">${inp("desc", s.desc, "", `maxlength="${LIMITS.desc}" aria-label="${esc(U.head[11])}"`)}</td>
+<td><button type="button" class="btn tight" data-act="delSig" aria-label="${esc(U.head[0])} ${esc(s.tag)} ${esc(U.del)}">${esc(U.del)}</button></td></tr>`;
+    }
+
+    function devCard(d: IoDevice, di: number) {
+      const tcp = d.protocol === "tcp";
+      return `<div class="io-dev" data-di="${di}">
+<h3>${esc(U.dev)} ${di + 1}${d.source ? ` <small class="note">· ${esc(d.source)}</small>` : ""}</h3>
+<div class="io-dgrid">
+<label>${esc(U.name)}${inp("name", d.name, "", `maxlength="${LIMITS.text}"`)}</label>
+<label>${esc(U.loc)}${inp("location", d.location, "", `maxlength="${LIMITS.text}"`)}</label>
+<label>${esc(U.proto)}<select data-f="protocol">${PROTOCOLS.map((p) => opt(p, PROTOCOL_NAME[p][lang], d.protocol)).join("")}</select></label>
+<label>${esc(U.unit)}${inp("unit", d.unit, "mono", 'inputmode="numeric"')}</label>
+${
+  tcp
+    ? `<label>${esc(U.ip)}${inp("ip", d.ip, "mono", 'maxlength="45" placeholder="192.168.0.10"')}</label><label>${esc(U.port)}${inp("port", d.port, "mono", 'inputmode="numeric" placeholder="502"')}</label>`
+    : `<label>${esc(U.line)}${inp("line", d.line, "", `maxlength="${LIMITS.text}" placeholder="COM3"`)}</label><label>${esc(U.baud)}${inp("baud", d.baud, "mono", 'inputmode="numeric" placeholder="9600"')}</label><label>${esc(U.parity)}<select data-f="parity">${opt("", "—", d.parity ?? "")}${PARITIES.map((p) => opt(p, PARITY_NAME[p][lang], d.parity)).join("")}</select></label>`
+}
+<label>${esc(U.note)}${inp("note", d.note, "", `maxlength="${LIMITS.desc}"`)}</label>
+</div>
+<div class="tbl"><table class="t"><thead><tr>${U.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${d.signals.map(sigRow).join("")}</tbody></table></div>
+<div class="btns"><button type="button" class="btn tight" data-act="addSig">${esc(U.addSig)}</button><button type="button" class="btn tight" data-act="delDev">${esc(U.delDev)}</button></div>
+</div>`;
+    }
+
+    function render() {
+      ($("title") as HTMLInputElement).value = doc.title;
+      $("devs").innerHTML = doc.devices.map(devCard).join("");
+      checks();
+    }
+
+    function checks() {
+      const f = checkDoc(doc, lang);
+      $("finds").innerHTML = f.length ? f.map((x) => `<li class="${x.level}">${esc(x.text)}</li>`).join("") : `<li>${esc(T.noFind)}</li>`;
+      const devFlag = new Set(f.map((x) => x.dev).filter(Boolean));
+      const sigFlag = new Set(f.filter((x) => x.sig).map((x) => `${x.sig![0]}#${x.sig![1]}`));
+      for (const el of document.querySelectorAll<HTMLElement>(".io-dev")) {
+        const d = doc.devices[Number(el.dataset.di)];
+        if (!d) continue;
+        el.classList.toggle("flag", devFlag.has(d.id));
+        for (const tr of el.querySelectorAll<HTMLElement>("tr[data-si]")) tr.classList.toggle("flag", sigFlag.has(`${d.id}#${tr.dataset.si}`));
+      }
+      save();
+    }
+
+    function save() {
+      const ok = store.set(STORE_KEY, JSON.stringify(doc));
+      $("msg").textContent = ok ? U.saved : U.noStore;
+    }
+
+    const optNum = (v: string, lo: number, hi: number, intOnly = true) => {
+      if (v.trim() === "") return undefined;
+      const n = Number(v);
+      if (!Number.isFinite(n) || (intOnly && !Number.isInteger(n)) || n < lo || n > hi) return undefined;
+      return n;
+    };
+
+    function applyDev(d: IoDevice, f: string, v: string): boolean {
+      switch (f) {
+        case "name":
+        case "location":
+        case "line":
+        case "ip":
+        case "note":
+          (d as unknown as Record<string, string | undefined>)[f] = v.slice(0, f === "note" ? LIMITS.desc : LIMITS.text) || undefined;
+          if (f === "name") d.name = v.slice(0, LIMITS.text);
+          return false;
+        case "unit":
+          d.unit = optNum(v, 0, 255);
+          return false;
+        case "port":
+          d.port = optNum(v, 1, 65535);
+          return false;
+        case "baud":
+          d.baud = optNum(v, 1, 10_000_000);
+          return false;
+        case "parity":
+          d.parity = (PARITIES as string[]).includes(v) ? (v as IoDevice["parity"]) : undefined;
+          return false;
+        case "protocol":
+          d.protocol = (PROTOCOLS as string[]).includes(v) ? (v as IoDevice["protocol"]) : "other";
+          return true;
+      }
+      return false;
+    }
+
+    function applySig(s: IoSignal, f: string, v: string): boolean {
+      switch (f) {
+        case "tag":
+        case "unit":
+        case "desc":
+        case "manual":
+        case "fc":
+          (s as unknown as Record<string, string | undefined>)[f] = v.slice(0, f === "desc" ? LIMITS.desc : f === "tag" ? LIMITS.text : 20) || undefined;
+          if (f === "tag") s.tag = v.slice(0, LIMITS.text);
+          return false;
+        case "address":
+          s.address = optNum(v, 0, 65535) ?? 0;
+          return false;
+        case "len":
+          s.len = optNum(v, 1, 250);
+          return false;
+        case "scale":
+          s.scale = optNum(v, -1e12, 1e12, false);
+          return false;
+        case "table":
+          s.table = v as IoSignal["table"];
+          if (s.table === "coils" || s.table === "discrete-inputs") s.type = "bit";
+          if (s.table === "discrete-inputs" || s.table === "input-registers") s.access = "r";
+          return true;
+        case "type":
+          s.type = v as IoSignal["type"];
+          if (s.type === "string" && !s.len) s.len = 2;
+          return true;
+        case "order":
+          s.order = (ORDERS as string[]).includes(v) ? (v as IoSignal["order"]) : undefined;
+          return false;
+        case "access":
+          s.access = v as IoSignal["access"];
+          return true;
+      }
+      return false;
+    }
+
+    function onEdit(e: Event) {
+      const el = e.target as HTMLInputElement | HTMLSelectElement;
+      const f = el.dataset.f;
+      const card = el.closest<HTMLElement>(".io-dev");
+      if (!f || !card) return;
+      const d = doc.devices[Number(card.dataset.di)];
+      if (!d) return;
+      const tr = el.closest<HTMLElement>("tr[data-si]");
+      let rerender = false;
+      if (tr) {
+        const s = d.signals[Number(tr.dataset.si)];
+        if (s) rerender = applySig(s, f, el.value);
+      } else rerender = applyDev(d, f, el.value);
+      if (rerender && e.type === "change") render();
+      else checks();
+    }
+    $("devs").addEventListener("input", onEdit);
+    $("devs").addEventListener("change", (e) => {
+      if ((e.target as HTMLElement).tagName === "SELECT") onEdit(e);
+    });
+    $("devs").addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-act]");
+      const card = b?.closest<HTMLElement>(".io-dev");
+      if (!b || !card) return;
+      const di = Number(card.dataset.di);
+      const d = doc.devices[di];
+      if (!d) return;
+      if (b.dataset.act === "addSig") {
+        if (doc.devices.reduce((n, x) => n + x.signals.length, 0) >= LIMITS.signals) return;
+        const last = d.signals[d.signals.length - 1];
+        const table = last?.table ?? "holding-registers";
+        d.signals.push({ tag: "", table, address: nextAddress(d, table), type: table === "coils" || table === "discrete-inputs" ? "bit" : "u16", access: "r" });
+      } else if (b.dataset.act === "delSig") {
+        const si = Number(b.closest<HTMLElement>("tr")?.dataset.si);
+        d.signals.splice(si, 1);
+      } else if (b.dataset.act === "delDev") {
+        if (!confirm(U.delDevAsk)) return;
+        doc.devices.splice(di, 1);
+      }
+      render();
+    });
+
+    $("title").addEventListener("input", () => {
+      doc.title = ($("title") as HTMLInputElement).value.slice(0, LIMITS.text);
+      save();
+    });
+    $("bAdd").addEventListener("click", () => {
+      if (doc.devices.length >= LIMITS.devices) return;
+      doc.devices.push({ id: newDeviceId(doc), name: "", protocol: "rtu", unit: 1, signals: [] });
+      render();
+    });
+    $("bEx").addEventListener("click", () => {
+      if (doc.devices.length && !confirm(T.clearAsk)) return;
+      doc = exampleDoc(lang);
+      render();
+    });
+    $("bClear").addEventListener("click", () => {
+      if (!confirm(T.clearAsk)) return;
+      doc = emptyDoc();
+      render();
+    });
+    const stem = () => `portdock-io-list-${fileStamp()}`;
+    $("bJson").addEventListener("click", () => saveText(toJson(doc), `${stem()}.json`, "application/json"));
+    $("bCsv").addEventListener("click", () => saveText("﻿" + toCsv(doc, lang), `${stem()}.csv`, "text/csv;charset=utf-8"));
+    $("bPrint").addEventListener("click", () => {
+      $("io-print").innerHTML = `<h2>${esc(doc.title || "IO list")}</h2>${toTableHtml(doc, lang, 3)}`;
+      window.print();
+    });
+    $("fJson").addEventListener("change", async () => {
+      const inpEl = $("fJson") as HTMLInputElement;
+      const file = inpEl.files?.[0];
+      inpEl.value = "";
+      if (!file) return;
+      if (file.size > 5_000_000) {
+        $("msg").textContent = U.loadFail + "file too large";
+        return;
+      }
+      const r = parseDoc(await file.text());
+      if (!r.doc) {
+        $("msg").textContent = U.loadFail + r.errors.join(", ");
+        return;
+      }
+      doc = r.doc;
+      render();
+      if (r.errors.length) $("msg").textContent = U.loadFail + r.errors.join(", ");
+    });
+    $("bImport").addEventListener("click", async () => {
+      const id = ($("mapDev") as HTMLSelectElement).value;
+      if (!/^[a-z0-9-]+\/[a-z0-9-]+$/.test(id) || doc.devices.length >= LIMITS.devices) return;
+      try {
+        const res = await fetch(`/devices/${id}.json`);
+        if (!res.ok) throw new Error(String(res.status));
+        const m = (await res.json()) as MapDevice;
+        const prefix = ($("mapPrefix") as HTMLInputElement).value.trim().replace(/[^A-Za-z0-9_]/g, "").toUpperCase();
+        const room = LIMITS.signals - doc.devices.reduce((n, x) => n + x.signals.length, 0);
+        const d = fromDeviceMap(m, lang, newDeviceId(doc), prefix);
+        d.signals = d.signals.slice(0, Math.max(0, room));
+        doc.devices.push(d);
+        render();
+        $("msg").textContent = `${U.imported}${d.name} (${d.signals.length})`;
+      } catch {
+        $("msg").textContent = U.mapFail;
+      }
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    render();
+  </script>
+</Base>

@@ -95,6 +95,9 @@
 | 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서, 유지보수 체크리스트·정기 점검표·예방 보전 점검, 증설 점검·장비 교체 체크리스트·철거 점검 | `/tools/commissioning-checklist/` (주소는 그대로) | «시운전·유지보수 체크리스트 (설치·증설·교체·제거)», 설명에 «작업 종류 × 구성 요소 → 단계별·인쇄·CSV» |
 | 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서 | `/tools/commissioning-checklist/` | «시운전·설치 점검표 만들기 (PLC·인버터·RS485)», 설명에 «구성 요소 고르면 단계별·인쇄·CSV» |
 | 케이블 선정·케이블 종류 선택, rs485 케이블 사양, 4-20mA 케이블, 열전대 보상도선, 케이블 체인 케이블, awg mm2 변환표·awg 환산, 전선관 점유율·전선관 굵기 선정·덕트 점유율 | `/tools/cable-selection/`·`/tools/awg-mm2/`·`/tools/conduit-fill/` | «케이블 선정 — 전원 굵기·RS485·4-20mA·랜 케이블», «AWG mm2 변환표 — 전선 굵기 환산·지름·저항», «전선관 점유율 계산 — 전선관·덕트 몇 가닥 (NEC 40%)» |
+| 24v 전원 용량 계산, smps 용량 선정, 파워서플라이 용량 계산, 돌입 전류 | `/tools/power-supply-sizing/` + 가이드 `24v-power-supply-check` | «24V 전원 용량 계산기 — SMPS 용량 선정·돌입 전류·여유율», 여유율 «일반적으로 20~30 %», 예시 값은 예시라고 밝힘 |
+| io 리스트 양식·만들기, 통신 사양서, 모드버스 레지스터 맵 엑셀 | `/tools/io-list/` | «IO 리스트·통신 사양서 만들기 — Modbus 레지스터 표», 설명에 «주소 겹침·국번 중복 점검·장비 맵에서 가져오기» |
+| 인수인계 문서·준공 서류, 시운전 결과 보고서, 현장 문서 정리 | `/tools/handover-pack/` | «인수인계 문서 만들기 — 구성도·IO 리스트·점검표», 설명에 «브라우저 안에서만·HTML·PDF» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -198,6 +201,9 @@
 | commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template, preventive maintenance checklist, control panel inspection checklist, equipment replacement / decommissioning checklist | `/en/tools/commissioning-checklist/` (URL unchanged) | «Commissioning & Maintenance Checklist: PLC, VFD, RS-485» |
 | commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template | `/en/tools/commissioning-checklist/` | «Commissioning Checklist Maker: PLC, VFD, RS-485, Network» |
 | cable selection guide, rs485 cable specification, 4-20ma cable type, thermocouple extension cable, drag chain cable, awg to mm2, wire gauge chart mm2, conduit fill calculator mm, wiring duct fill | `/en/tools/cable-selection/`, `/en/tools/awg-mm2/`, `/en/tools/conduit-fill/` | «Cable Selection: Wire Size, RS-485, 4–20 mA, Ethernet», «AWG to mm² Conversion Table: Diameter & Resistance», «Conduit Fill Calculator (mm): NEC 40 %, Panel Duct» |
+| 24v power supply sizing, power supply sizing calculator, din rail power supply calculator, inrush current | `/en/tools/power-supply-sizing/` + guide `24v-power-supply-check` | «24V Power Supply Sizing Calculator: Inrush, Margin» |
+| io list template, plc io list, modbus register map template, communication specification | `/en/tools/io-list/` | «I/O List & Modbus Register Map Maker: CSV, Print» |
+| handover documentation, commissioning report template, site handover pack | `/en/tools/handover-pack/` | «Site Handover Pack: Diagram, I/O List, Checklist» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |
