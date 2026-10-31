@@ -6942,4 +6942,791 @@ export const GUIDES: Guide[] = [
       { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "국번 1~247·0 브로드캐스트, 3.5문자 쉼, RS-485 배선(§3.4)", en: "addresses 1–247 and 0 broadcast, 3.5-character gap, RS-485 wiring (§3.4)" } },
     ],
   },
+  // 유지 보수·증설·제거(10/31). 근거: TI SLLA070D·SLLA272(단위 부하·종단·가지선), MODBUS over serial line V1.02 §3.4(32대·9600bps AWG26 1000 m·가지선 20 m),
+  // Modbus TCP 구현 가이드(접속 유지·동시 접속 수는 장비 몫), 야스카와 V1000·오므론 M1 매뉴얼(Enter 명령), apps/port-inspector·netscan·modbus-master help.ts.
+  {
+    slug: "communication-preventive-maintenance",
+    date: "2026-10-31",
+    tools: ["port-inspector", "modbus-master", "netscan"],
+    related: ["communication-fault-log", "commissioning-communication-checklist", "rs485-multimeter-check", "cable-shield-grounding", "24v-power-supply-check", "field-noise-communication-errors"],
+    webTools: ["tools/commissioning-checklist/", "tools/multimeter-check/", "tools/bsod-codes/", "tools/troubleshoot/", "tools/system-diagram/"],
+    title: { ko: "통신 설비 정기 점검(예방 보전) 순서 — 단자·케이블·오류율 추세·팬·UPS·PC 저장장치·백업·시간", en: "Preventive maintenance for communication equipment — terminals, error trends, fans, UPS, PC disks, backups" },
+    seoTitle: { ko: "통신 설비 정기 점검·예방 보전 순서 — PortDock", en: "Industrial Communication Preventive Maintenance — PortDock" },
+    desc: {
+      ko: "고장 전에 보는 통신 설비 정기 점검 — 단자·케이블·실드, 오류율 추세, 팬·필터·온도, UPS, 장비 PC 저장장치 수명·블루스크린 기록, 백업, 시간 동기화.",
+      en: "Routine checks before things break: terminals and shields, error-rate trends, fans and filters, UPS, PC disk health and crashes, backups, time sync.",
+    },
+    body: {
+      ko: [
+        { p: "통신 장애는 대개 갑자기 오지 않습니다. 단자가 조금씩 풀리고, 판넬 필터가 막혀 온도가 오르고, 오류가 하루 몇 개에서 몇십 개로 늘어난 뒤에 «통신이 끊겼다» 는 전화가 옵니다. 정기 점검의 목적은 이 추세를 먼저 보는 것입니다. 점검 주기는 설비의 중요도·환경(먼지·진동·온도)에 맞춰 현장에서 정하고, 같은 항목을 같은 방법으로 재서 지난번 값과 비교합니다." },
+        { h: "1. 단자·커넥터·케이블" },
+        {
+          ul: [
+            "통신 단자(A/B·SG·실드)와 장비 전원 단자의 조임 — 진동이 있는 설비는 나사 단자가 풀리기 쉽습니다. 조임 토크는 단자대 제조사 값을 따릅니다.",
+            "커넥터(DB9·RJ45·M12) 고정 나사·잠금, 케이블이 당겨져 커넥터에 힘이 걸리지 않는지.",
+            "케이블 피복 손상·꺾임·눌림, 움직이는 부분(케이블 베어)의 마모, 동력선과 같은 덕트로 새로 들어온 선이 없는지.",
+            "실드 접지가 처음 정한 위치(한쪽 또는 양쪽)대로 남아 있는지, 접지 단자 부식.",
+            "RS-485 는 전원을 끈 정비 시간에 A–B 저항(종단 둘이면 약 60 Ω)과 A·B–SG 단락을 한 번 재 두면, 다음 점검 때 같은 값인지 비교할 수 있습니다.",
+          ],
+        },
+        { h: "2. 오류율 추세" },
+        { p: "«통신이 되느냐» 보다 «요청 몇 개 중 몇 개가 실패하느냐» 를 봅니다. 마스터(PLC·HMI·PC 프로그램)에 통계가 있으면 장비별 타임아웃·CRC 오류 수를 점검 때마다 적습니다. 시운전 때 남긴 값이 기준입니다. 오류가 늘었으면 어느 장비, 어느 시각(설비가 도는 때인지)부터인지를 먼저 좁힙니다. 이더넷은 관리형 스위치의 포트별 오류 카운터(CRC·충돌)와 링크 속도·이중 모드가 바뀌지 않았는지도 봅니다." },
+        { h: "3. 판넬 환경 — 팬·필터·온도" },
+        {
+          ul: [
+            "판넬 팬이 도는지, 필터가 막히지 않았는지 — 막힌 필터는 판넬 안 온도를 올리고, 장비·전원 공급기의 수명을 줄입니다.",
+            "판넬 안 온도를 재서 장비 매뉴얼의 사용 온도 범위와 비교합니다. 한여름 오후처럼 가장 더울 때 한 번 재 두는 것이 좋습니다.",
+            "물기·응결·먼지 쌓임, 판넬 문 개스킷.",
+            "24 V 전원 공급기의 출력 전압을 부하가 걸린 상태에서 재서 지난 값과 비교합니다.",
+          ],
+        },
+        { h: "4. UPS" },
+        {
+          ul: [
+            "UPS 상태 표시·경보 기록, 배터리 교체 시기(제조사 권장 주기)와 자가 시험 결과.",
+            "UPS 에 물린 장비가 처음 계획과 같은지 — 나중에 더한 장비 때문에 부하가 늘면 정전 때 버티는 시간이 줄어듭니다.",
+            "PC 가 UPS 신호로 스스로 종료하도록 되어 있다면, 그 연결(USB·직렬·네트워크)이 아직 살아 있는지.",
+          ],
+        },
+        { h: "5. 장비 PC — 저장장치·블루스크린·꺼짐 기록" },
+        { p: "설비를 돌리는 PC 는 몇 년씩 켜져 있어 저장장치 마모와 예기치 않은 종료가 쌓입니다. Windows 이벤트 기록에는 블루스크린(정지 코드), 갑자기 꺼짐(Kernel-Power 41), 예기치 않은 종료(6008)가 남습니다. NVMe 디스크는 스스로 사용률·예비 영역·미디어 오류를 기록합니다. 점검 때마다 이 값을 적어 두면 «지난달부터 꺼짐이 늘었다», «사용률이 빠르게 오른다» 를 미리 볼 수 있습니다. 디스크 사용률이 높거나 미디어 오류가 생기면, 교체 전에 백업이 최신인지부터 확인합니다." },
+        { h: "6. 백업이 최신인지" },
+        {
+          ul: [
+            "PLC 프로그램·HMI 프로젝트·장비 파라미터·PC 프로그램 설정의 백업 날짜가 마지막 변경보다 뒤인지.",
+            "백업 파일이 그 PC 안에만 있지 않은지(다른 저장 위치에 사본).",
+            "백업을 실제로 열 수 있는지 — 한 번은 다른 PC 에서 열어 봅니다.",
+          ],
+        },
+        { h: "7. 시간 동기화" },
+        { p: "PC·PLC·HMI 의 시계가 서로 다르면, 장애가 났을 때 각 기록을 맞춰 볼 수 없습니다. 장비 PC 의 시간 동기화(Windows 시간 서비스)가 켜져 있는지, 마지막 동기화가 언제인지, PLC·HMI 시계가 PC 와 몇 초나 차이 나는지 봅니다. 폐쇄망이면 현장 안의 시간 서버를 쓰는지 확인합니다." },
+        { h: "8. 점검 기록 남기기" },
+        { p: "날짜, 점검한 사람, 항목마다 잰 값(오류 수·온도·전압·저항), 한 조치(조임·청소·교체)를 한 장에 남깁니다. 값이 지난번과 달라진 항목만 눈에 띄게 표시해 두면 다음 사람이 무엇부터 볼지 압니다. 장애가 났을 때의 기록 방법은 «통신 장애 기록·유지보수 일지» 글에 있습니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Port Inspector «이 PC»: 빠른 시작·절전·업데이트 재시작·시간 동기화와 최근 예기치 않은 종료·하드웨어 오류, (0.10.0 부터) 블루스크린 정지 코드·저장장치 수명(NVMe)을 관리자 권한 없이 읽습니다. 점검 때마다 결과를 저장해 비교합니다.",
+            "Modbus Master: 표마다 통계(요청·타임아웃·CRC·응답 시간)와 (0.10.0 부터) «원인 후보…» — 점검 때 한동안 폴링해 오류율을 적습니다.",
+            "Net Scan: 네트워크의 장비 목록을 CSV 로 저장해 두면 다음 점검 때 없어진 장비·새로 생긴 장비·IP 충돌 의심을 비교할 수 있습니다.",
+            "웹 도구 «시운전·설치 점검표 만들기»: 장비 종류를 고르면 단계별 점검표 — 체크·메모를 저장하고 인쇄·CSV 로 남깁니다.",
+            "웹 도구 «블루스크린 정지 코드 사전»: 기록에서 본 정지 코드의 원인 후보와 확인 순서.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Communication failures rarely come out of nowhere. Terminals loosen a little at a time, a panel filter clogs and the temperature rises, errors go from a few a day to dozens — and then someone calls to say «communication is down». The point of routine checks is to see that trend first. Set the interval on site from how critical the machine is and its environment (dust, vibration, heat), measure the same items the same way each time and compare with last time." },
+        { h: "1. Terminals, connectors, cables" },
+        {
+          ul: [
+            "Tightness of communication terminals (A/B, SG, shield) and device power terminals — screw terminals work loose on machines that vibrate. Use the terminal block maker's torque.",
+            "Connector (DB9, RJ45, M12) screws and latches; no cable pulling on a connector.",
+            "Damaged, kinked or crushed sheaths, wear in moving parts (cable carriers), and no new cable routed into a power duct.",
+            "The shield is still grounded where it was decided (one end or both), no corrosion at ground terminals.",
+            "On RS-485, measure A–B resistance once during a power-off maintenance window (about 60 Ω with two terminators) and A/B to SG for shorts, so the next check can compare.",
+          ],
+        },
+        { h: "2. Error-rate trend" },
+        { p: "Look at «how many requests out of how many fail» rather than «does it communicate». If the master (PLC, HMI or PC program) keeps statistics, write down timeouts and CRC errors per device at every check. The values saved at commissioning are the baseline. If errors have grown, narrow down which device and from what time (while the machine runs?) first. On Ethernet, also check a managed switch's per-port error counters (CRC, collisions) and that link speed and duplex have not changed." },
+        { h: "3. Panel environment — fans, filters, temperature" },
+        {
+          ul: [
+            "Panel fans run and filters are not clogged — a clogged filter raises the temperature inside and shortens the life of devices and power supplies.",
+            "Measure the temperature inside the panel and compare with the devices' operating range. Measuring once at the hottest time (a summer afternoon) is worthwhile.",
+            "Water, condensation, dust build-up, door gaskets.",
+            "Measure the 24 V supply output under load and compare with the last value.",
+          ],
+        },
+        { h: "4. UPS" },
+        {
+          ul: [
+            "UPS status and alarm history, battery replacement date (the maker's recommended interval) and self-test results.",
+            "The equipment on the UPS is still what was planned — devices added later increase the load and shorten the runtime in an outage.",
+            "If the PC shuts down on a UPS signal, that link (USB, serial or network) still works.",
+          ],
+        },
+        { h: "5. Equipment PC — disks, crashes, shutdowns" },
+        { p: "A PC that runs a machine stays on for years, so disk wear and unexpected shutdowns pile up. The Windows event logs record blue screens (stop codes), sudden power loss (Kernel-Power 41) and unexpected shutdowns (6008). NVMe disks keep their own wear, spare capacity and media error counts. Writing these down at each check lets you see «crashes have increased since last month» or «wear is climbing fast» in advance. If wear is high or media errors appear, first make sure the backups are current before replacing anything." },
+        { h: "6. Are the backups current?" },
+        {
+          ul: [
+            "The PLC program, HMI project, device parameters and PC program settings were backed up after the last change.",
+            "Backups are not kept only on that PC (a copy elsewhere).",
+            "A backup actually opens — try it once on another PC.",
+          ],
+        },
+        { h: "7. Time synchronisation" },
+        { p: "If the PC, PLC and HMI clocks disagree, their records cannot be lined up when something fails. Check that time synchronisation (Windows Time service) is on for the equipment PC, when it last synced, and how many seconds the PLC and HMI clocks differ from the PC. On an isolated network, check that a time server on site is used." },
+        { h: "8. Keep a record" },
+        { p: "One sheet per check: date, who checked, the measured values for each item (error counts, temperature, voltage, resistance) and what was done (tightened, cleaned, replaced). Mark the items whose values changed since last time so the next person knows where to start. How to record a fault when one happens is in «Logging communication faults and keeping a maintenance log»." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Port Inspector «This PC»: Fast Startup, power saving, update restarts, time sync and recent unexpected shutdowns and hardware errors, and (from 0.10.0) blue screen stop codes and disk health (NVMe), without admin rights. Save the result at each check to compare.",
+            "Modbus Master: per-table statistics (requests, timeouts, CRC, response time) and (from 0.10.0) «Possible causes…» — poll for a while at each check and write down the error rate.",
+            "Net Scan: save the device list as CSV, and at the next check compare for missing devices, new devices and possible IP conflicts.",
+            "«Commissioning Checklist Maker» web tool: pick device types for a step-by-step checklist — ticks and notes saved, print or CSV.",
+            "«Blue Screen (BSOD) Stop Code Lookup» web tool: possible causes and checks for a stop code you found in the logs.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA272 — The RS-485 Design Guide", url: "https://www.ti.com/lit/an/slla272c/slla272c.pdf", note: { ko: "종단·바이어스·접지 — 점검 때 재는 값의 뜻", en: "termination, biasing, grounding — what the measured values mean" } },
+      { title: "SEW-EURODRIVE — Shielding and routing bus cables", url: "https://download.sew-eurodrive.com/download/html/25870726/en-EN/32779984907.html", note: { ko: "버스 케이블 실드·동력선과 떨어뜨리기", en: "bus cable shielding and separation from power cables" } },
+      { title: "Microsoft Learn — Windows Time service tools and settings", url: "https://learn.microsoft.com/en-us/windows-server/networking/windows-time-service/windows-time-service-tools-and-settings", note: { ko: "w32tm 으로 동기화 상태·시간 원본 보기", en: "w32tm for sync status and time source" } },
+    ],
+  },
+  {
+    slug: "rs485-add-device",
+    date: "2026-10-31",
+    tools: ["modbus-master", "serial", "port-inspector"],
+    related: ["rs485-wiring", "rs485-bias-termination", "modbus-rtu-timeout-polling", "remove-device-from-bus", "ethernet-add-device", "rs485-multimeter-check"],
+    webTools: ["tools/wiring/", "tools/rs485/", "tools/serial-timing/", "tools/system-diagram/", "tools/multimeter-check/"],
+    devices: true,
+    title: { ko: "RS-485 버스에 장비 증설하기 — 국번·장비 수·길이·종단 위치·폴링 주기·마스터 설정", en: "Adding a device to an RS-485 bus — IDs, device count, length, terminator, polling cycle, master settings" },
+    seoTitle: { ko: "RS-485 장비 증설 체크 — 국번·종단·폴링 주기 — PortDock", en: "Adding a Device to an RS-485 / Modbus RTU Bus — PortDock" },
+    desc: {
+      ko: "돌던 RS-485 버스에 장비를 더할 때 — 국번 겹침, 단위 부하·장비 수, 길이·분기, 끝이 바뀌면 종단 옮기기, 늘어나는 폴링 주기, 마스터 설정, 증설 뒤 확인.",
+      en: "Adding a device to a working RS-485 bus: duplicate IDs, unit loads, length and stubs, moving the terminator, the longer polling cycle, checks afterwards.",
+    },
+    body: {
+      ko: [
+        { p: "잘 돌던 버스에 장비 한 대를 더했는데 다른 장비까지 통신이 흔들리는 일은 흔합니다. 새 장비 하나가 국번·종단·길이·폴링 시간 모두에 영향을 주기 때문입니다. 아래 순서로 미리 보고, 증설 뒤에는 새 장비만이 아니라 버스 전체를 다시 확인합니다." },
+        { h: "1. 국번 — 겹치지 않게" },
+        { p: "새 장비는 대개 공장 기본 국번(흔히 1)으로 옵니다. 그대로 버스에 물리면 같은 국번의 기존 장비와 동시에 답해 둘 다 CRC 오류·이상한 값이 됩니다. 버스에 붙이기 전에 PC 에 짧은 선으로 한 대만 이어 국번·보율·패리티를 버스와 같게 맞추고 저장합니다. 국번은 1~247 에서, 장비 목록 표에 없는 번호로 정합니다." },
+        { h: "2. 장비 수 — 단위 부하" },
+        { p: "표준 RS-485 송수신기 한 개는 1 단위 부하(입력 저항 약 12 kΩ)이고, 한 선로에 32 단위 부하까지 붙일 수 있습니다. 요즘 장비는 1/2·1/4·1/8 단위 부하 송수신기를 많이 써서 64·128·256대까지 가능하지만, 버스의 모든 장비가 그렇다는 보장은 없습니다. 장비 매뉴얼에서 «단위 부하» 또는 «최대 연결 대수» 를 확인하고, 마스터·변환기도 한 대로 셉니다. 바이어스 저항이 있는 장비가 여럿이면 그만큼 부하가 늘어나니, 바이어스는 한 곳에만 두는 것이 원칙입니다." },
+        { h: "3. 버스 길이와 분기" },
+        {
+          ul: [
+            "선을 늘리면 전체 길이를 다시 셉니다. Modbus 규격은 9600 bps·AWG26 이상 굵기에서 약 1000 m 를 예로 들고, 속도가 높을수록 짧아집니다.",
+            "새 장비는 버스 끝에 이어 붙이거나(데이지 체인) 중간 장비에서 들어갔다 나오게 겁니다. 기존 선 중간에서 T 로 따는 가지선은 되도록 짧게 — Modbus 규격은 가지선을 20 m 이하로 두라고 합니다.",
+            "판넬이 바뀌는 구간은 실드·SG 를 끊지 않고 이어 줍니다.",
+          ],
+        },
+        { h: "4. 종단 위치 — 끝이 바뀌면 옮기기" },
+        { p: "새 장비를 버스 끝 너머에 붙이면 버스의 끝이 바뀝니다. 옛 끝 장비의 종단을 끄고, 새 끝 장비에서 켜야 합니다. 둘 다 켜 두면 종단이 셋이 되어 신호가 약해지고(A–B 약 40 Ω), 옛 끝에만 두면 새 구간이 종단 없는 긴 가지선이 됩니다. 중간에 넣었으면 종단은 그대로 둡니다. 전원을 끄고 A–B 저항이 다시 약 60 Ω 인지 재 봅니다." },
+        { h: "5. 폴링 주기 — 얼마나 늘어나나" },
+        { p: "장비 한 대를 읽는 시간은 «요청 + 응답 전송 + 쉼 + 장비 처리 + 요청 간격» 입니다. 9600 bps(문자 11비트, 한 바이트 약 1.146 ms)에서 레지스터 10개를 읽는 예로 계산하면 이렇습니다." },
+        {
+          table: {
+            plain: true,
+            head: ["항목", "값"],
+            rows: [
+              ["요청 8 + 응답 25 바이트 = 33 바이트", "약 37.8 ms"],
+              ["쉼 t3.5 두 번(요청 뒤·응답 뒤)", "약 8.0 ms"],
+              ["장비 처리 시간(예: 10 ms — 매뉴얼 값)", "10 ms"],
+              ["요청 간격(예: 20 ms)", "20 ms"],
+              ["장비 한 대", "약 76 ms"],
+              ["6대 → 10대", "약 455 ms → 약 758 ms"],
+            ],
+          },
+        },
+        { p: "PLC·HMI 가 바라는 갱신 주기보다 길어지면 읽는 레지스터를 묶어 요청 수를 줄이거나, 보율을 올리거나(모든 장비가 지원할 때), 버스를 나눕니다. 응답하지 않는 장비가 하나라도 있으면 매 주기 «타임아웃 × (1 + 재시도)» 가 더해진다는 점도 계산에 넣습니다." },
+        { h: "6. 마스터 설정" },
+        {
+          ul: [
+            "PLC·HMI 의 통신 설정에 새 국번과 읽을 레지스터를 더합니다. 장비 종류가 다르면 함수 코드·주소 표기·워드 순서·배율이 기존 장비와 다를 수 있습니다.",
+            "타임아웃은 새 장비의 응답 시간을 보고 정합니다. 가장 느린 장비에 맞춥니다.",
+            "SCADA·기록 프로그램이 따로 있다면 그쪽 태그 목록도 함께 더합니다.",
+          ],
+        },
+        { h: "7. 증설 뒤 확인 순서" },
+        {
+          ul: [
+            "전원 끄고 A–B 저항(종단 수), A·B–SG 단락.",
+            "PC 에서 «국번 찾기» 로 표의 국번이 모두 답하고, 표에 없는 국번은 답하지 않는지.",
+            "설비를 돌리면서 한동안 폴링해 장비마다 타임아웃·CRC 오류 수를 증설 전 값과 비교합니다. 새 장비만이 아니라 기존 장비의 오류가 늘었는지 봅니다.",
+            "장비 목록 표·구성도·배선도에 새 장비(국번·위치·종단 위치)를 반영합니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: «국번·주소 찾기…» 의 «국번 찾기» 로 국번 겹침·빠짐 확인, 표마다 통계로 증설 전후 오류율 비교.",
+            "웹 도구 «시리얼 통신 시간 계산기»: 보율·바이트 수로 한 번 읽는 시간과 장비 수에 따른 주기를 계산합니다.",
+            "웹 도구 «RS-485 종단·바이어스 계산기»: 종단·바이어스 위치가 바뀐 뒤 쉬는 동안의 B − A 를 계산합니다.",
+            "웹 도구 «배선도 만들기»·«시스템 구성도 그리기»: 늘어난 장비 수·국번으로 다시 그리고, 국번 중복을 점검합니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "It is common to add one device to a bus that worked fine and have other devices start failing too. A new device affects IDs, termination, length and polling time all at once. Check the points below beforehand, and afterwards re-check the whole bus, not just the new device." },
+        { h: "1. IDs — no duplicates" },
+        { p: "A new device usually ships with a factory ID (often 1). Put it on the bus as it is and it answers together with the existing device with the same ID, giving CRC errors and strange values on both. Before connecting it to the bus, wire it alone to a PC with a short cable, set ID, baud and parity to match the bus, and save. Pick an ID from 1–247 that is not in the device table." },
+        { h: "2. Device count — unit loads" },
+        { p: "A standard RS-485 transceiver is 1 unit load (about 12 kΩ input resistance) and a line takes up to 32 unit loads. Many current devices use 1/2, 1/4 or 1/8 unit-load transceivers, allowing 64, 128 or 256 devices, but there is no guarantee every device on the bus does. Check «unit load» or «maximum number of devices» in each manual, and count the master and adapter as devices too. Every device with bias resistors adds load, so bias should be in one place only." },
+        { h: "3. Bus length and stubs" },
+        {
+          ul: [
+            "If you extend the cable, add up the total length again. The Modbus spec gives about 1000 m at 9600 bps with AWG26 or thicker as an example; higher speeds mean shorter lengths.",
+            "Connect the new device at the end of the bus (daisy chain), or loop in and out of it in the middle. Keep a T-branch off the existing cable as short as possible — the Modbus spec says stubs must stay under 20 m.",
+            "Where the bus passes between panels, carry the shield and SG through without breaks.",
+          ],
+        },
+        { h: "4. Terminator position — move it if the end moves" },
+        { p: "Add the new device beyond the old end and the end of the bus moves. Turn off the terminator at the old end device and turn it on at the new end device. Leave both on and there are three terminators, weakening the signal (A–B about 40 Ω); leave only the old one and the new section becomes a long unterminated stub. If you inserted the device in the middle, leave the terminators as they are. With the power off, check that A–B reads about 60 Ω again." },
+        { h: "5. Polling cycle — how much longer" },
+        { p: "Reading one device takes «request + reply transfer + gaps + device processing + delay between requests». For 10 registers at 9600 bps (11-bit characters, about 1.146 ms per byte):" },
+        {
+          table: {
+            plain: true,
+            head: ["Item", "Value"],
+            rows: [
+              ["8-byte request + 25-byte reply = 33 bytes", "about 37.8 ms"],
+              ["Two t3.5 gaps (after request and reply)", "about 8.0 ms"],
+              ["Device processing (e.g. 10 ms — from the manual)", "10 ms"],
+              ["Delay between requests (e.g. 20 ms)", "20 ms"],
+              ["One device", "about 76 ms"],
+              ["6 → 10 devices", "about 455 ms → about 758 ms"],
+            ],
+          },
+        },
+        { p: "If that exceeds the update interval the PLC or HMI needs, combine registers into fewer requests, raise the baud rate (if every device supports it) or split the bus. Also count that any device not answering adds «timeout × (1 + retries)» to every cycle." },
+        { h: "6. Master settings" },
+        {
+          ul: [
+            "Add the new ID and the registers to read to the PLC or HMI communication settings. A different device type may use different function codes, address notation, word order and scaling.",
+            "Set the timeout from the new device's response time, sized for the slowest device.",
+            "If there is a separate SCADA or logging program, add the tags there too.",
+          ],
+        },
+        { h: "7. Checks after adding" },
+        {
+          ul: [
+            "Power off: A–B resistance (terminator count) and A/B to SG shorts.",
+            "From a PC, «Slave ID scan»: every ID in the table answers and no ID outside it does.",
+            "Poll for a while with the machine running and compare timeouts and CRC errors per device with the values before the change — look at the existing devices too, not only the new one.",
+            "Update the device table, system diagram and wiring diagram with the new device (ID, location, terminator position).",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master: «Slave ID scan» in «Scan…» shows duplicate or missing IDs; per-table statistics compare error rates before and after.",
+            "«Serial Timing Calculator» web tool: time per read from baud and byte counts, and the cycle for your device count.",
+            "«RS-485 Termination & Bias Calculator» web tool: idle B − A after moving terminators or bias.",
+            "«Wiring Diagram Maker» and «System Diagram Editor» web tools: redraw for the new device count and IDs, with a duplicate-ID check.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA070D — RS-422 and RS-485 Standards Overview and System Configurations", url: "https://www.ti.com/lit/an/slla070d/slla070d.pdf", note: { ko: "32 단위 부하(약 12 kΩ), 1/8 단위 부하로 256대, 양 끝 종단", en: "32 unit loads (about 12 kΩ), 256 devices at 1/8 unit load, termination at both ends" } },
+      { title: "TI SLLA272 — The RS-485 Design Guide", url: "https://www.ti.com/lit/an/slla272c/slla272c.pdf", note: { ko: "가지선 길이·종단·바이어스", en: "stub length, termination, biasing" } },
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§3.4 — 중계기 없이 32대, 9600 bps·AWG26 에서 1000 m, 가지선 20 m 이하; 국번 1~247, 3.5문자 쉼", en: "§3.4 — 32 devices without repeater, 1000 m at 9600 bps with AWG26, stubs under 20 m; addresses 1–247, 3.5-character gap" } },
+    ],
+  },
+  {
+    slug: "ethernet-add-device",
+    date: "2026-10-31",
+    tools: ["netscan", "modbus-master", "port-inspector"],
+    related: ["plc-ip-subnet", "modbus-tcp-connection", "rs485-add-device", "remove-device-from-bus", "capture-plc-traffic-wireshark-pktmon", "commissioning-communication-checklist"],
+    webTools: ["tools/subnet/", "tools/system-diagram/", "tools/commissioning-checklist/", "tools/troubleshoot/"],
+    title: { ko: "이더넷(Modbus TCP·PLC) 장비 증설하기 — 빈 IP·IP 충돌·서브넷·스위치 포트·PoE·동시 접속 수·폴링 부하", en: "Adding an Ethernet device (Modbus TCP, PLC) — free IPs, conflicts, subnet, PoE, connection limits" },
+    seoTitle: { ko: "이더넷·Modbus TCP 장비 증설 — IP 충돌·동시 접속 — PortDock", en: "Adding a Modbus TCP / PLC Device to the Network — PortDock" },
+    desc: {
+      ko: "설비 네트워크에 PLC·Modbus TCP 장비를 더할 때 — 빈 IP 찾기와 IP 충돌, 서브넷·게이트웨이, 스위치 포트·PoE, 동시 접속 수 한계, 폴링 부하, 구성도 갱신.",
+      en: "Adding a PLC or Modbus TCP device to a machine network: a free IP without conflicts, subnet, switch ports and PoE, connection limits, polling load.",
+    },
+    body: {
+      ko: [
+        { p: "이더넷 장비는 선만 꽂으면 될 것 같지만, 증설 뒤 생기는 문제는 대부분 «IP 가 겹침», «서브넷이 다름», «장비가 받을 수 있는 접속 수를 넘음» 입니다. 특히 IP 충돌은 새 장비가 아니라 기존 장비가 간헐적으로 끊기는 모양으로 나타나 찾기 어렵습니다." },
+        { h: "1. 빈 IP 확인 — 그리고 충돌" },
+        {
+          ul: [
+            "구성도·IP 표에서 비어 있는 주소를 고릅니다. 표만 믿지 말고, 그 주소에 지금 아무 장비도 답하지 않는지 네트워크를 찾아 확인합니다.",
+            "꺼져 있는 장비, 정비 중이라 뺀 장비, 노트북처럼 가끔 붙는 장비도 그 IP 를 쓸 수 있습니다. IP 표에 «가끔 붙는 장비» 칸을 따로 둡니다.",
+            "새 장비의 공장 기본 IP(예: 192.168.0.1·192.168.1.10 같은 값)가 기존 장비와 같을 수 있습니다. 설비 네트워크에 꽂기 전에 PC 와 1:1 로 이어 IP 를 바꿉니다.",
+            "같은 IP 에 장비 둘이면 둘 다 번갈아 끊기고, 찾기 도구에서 같은 IP 의 MAC 이 바뀌어 보입니다.",
+          ],
+        },
+        { h: "2. 서브넷 마스크·게이트웨이" },
+        { p: "새 장비의 IP·서브넷 마스크가 같은 네트워크 안에 있어야 라우터 없이 서로 닿습니다. 예를 들어 192.168.1.0/24 네트워크라면 192.168.1.1~254 에서 고르고 마스크는 255.255.255.0 입니다. 게이트웨이는 다른 네트워크(사무실·원격 접속)와 통신해야 할 때만 쓰이지만, 장비에 따라 잘못된 게이트웨이가 문제를 만들기도 하니 현장 규칙대로 넣습니다." },
+        { h: "3. 스위치 포트·케이블·PoE" },
+        {
+          ul: [
+            "남은 스위치 포트가 있는지, 관리형 스위치면 그 포트의 VLAN·포트 보안 설정이 다른 설비 포트와 같은지.",
+            "구리 이더넷 한 구간은 일반적으로 100 m 까지입니다. 그보다 멀면 스위치를 하나 더 두거나 광으로 갑니다.",
+            "장비가 PoE 로 전원을 받는다면 그 포트가 PoE 를 주는지, 장비가 요구하는 PoE 등급(802.3af·at 등)과 스위치 전체 PoE 전력 예산이 남는지 매뉴얼에서 확인합니다.",
+            "링크 LED·링크 속도·이중 모드를 확인합니다. 한쪽만 고정 설정이면 이중 모드가 어긋나 오류가 쌓일 수 있습니다.",
+          ],
+        },
+        { h: "4. Modbus TCP 동시 접속 수" },
+        { p: "Modbus TCP 장비가 동시에 받는 TCP 접속 수는 규격이 정하지 않고 장비 능력에 맡깁니다. 작은 장비는 몇 개뿐인 경우가 많습니다. 새 장비를 PLC·HMI·SCADA·기록 PC 가 모두 읽게 하면 자리가 모자라 마지막에 붙는 쪽이 거절됩니다. 반대로 기존 장비를 새 클라이언트(새 HMI 등)가 더 읽게 되는 증설도 같은 문제를 만듭니다. 매뉴얼에서 최대 접속 수를 확인하고, 누가 몇 개를 쓰는지 표로 남깁니다. Modbus TCP 구현 가이드는 요청마다 접속을 열고 닫지 말고 유지하라고 권합니다 — 접속을 자주 여닫는 클라이언트는 장비 쪽 자리를 오래 붙잡을 수 있습니다." },
+        { h: "5. 폴링 부하" },
+        {
+          ul: [
+            "이더넷은 빠르지만 장비의 처리 능력은 그대로입니다. 여러 클라이언트가 짧은 주기로 읽으면 응답이 늦어지거나 일부가 타임아웃됩니다.",
+            "PLC 가 새 장비를 읽게 되면 PLC 의 통신 처리 시간·스캔 시간이 늘지 않았는지 봅니다.",
+            "Modbus 게이트웨이(TCP → RTU) 뒤에 장비를 더하면, 게이트웨이 뒤 시리얼 버스의 폴링 주기가 그대로 늘어납니다 — RS-485 증설과 같은 계산입니다.",
+          ],
+        },
+        { h: "6. 증설 뒤 확인과 구성도" },
+        {
+          ul: [
+            "네트워크를 다시 찾아 새 장비가 계획한 IP 로 보이고, IP 충돌 의심이 없는지.",
+            "새 장비를 PC 에서 한 번 읽어 보고(Modbus TCP 는 포트 502), PLC·HMI 에서 읽히는지.",
+            "기존 장비의 응답 시간·타임아웃이 증설 전과 같은지.",
+            "구성도·IP 표에 IP·MAC 뒤 네 자리·스위치 포트 번호·접속하는 클라이언트를 적습니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Net Scan: 서브넷의 장비를 찾아 IP·MAC·열린 포트를 보이고, 같은 IP 에서 MAC 이 바뀌면 «IP 충돌?» 로 표시합니다. 결과를 CSV 로 저장해 증설 전후를 비교합니다.",
+            "Modbus Master: Net Scan 의 장비 줄에서 «Modbus Master 로 열기», 표마다 응답 시간·타임아웃 통계.",
+            "Port Inspector «이 PC 랜카드»: 시험 PC 의 IP·서브넷·링크 상태를 읽기 전용으로 확인합니다.",
+            "웹 도구 «IP 서브넷 계산기»: IP·마스크로 네트워크 범위와 같은 네트워크인지 계산합니다.",
+            "웹 도구 «시스템 구성도 그리기»: 장비·스위치를 더해 IP 중복·서브넷 어긋남을 점검하고, Net Scan CSV 를 불러옵니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "An Ethernet device looks like plug-and-go, but most problems after adding one are «duplicate IP», «different subnet» or «more connections than the device accepts». An IP conflict in particular shows up as an existing device dropping now and then, not the new one, which makes it hard to find." },
+        { h: "1. Find a free IP — and avoid conflicts" },
+        {
+          ul: [
+            "Pick an unused address from the system diagram or IP table. Do not trust the table alone: scan the network to confirm nothing answers on that address now.",
+            "A device that is switched off, removed for maintenance, or connected only now and then (a laptop) may also use that IP. Keep a «sometimes connected» column in the IP table.",
+            "The new device's factory IP (values like 192.168.0.1 or 192.168.1.10) may match an existing device. Connect it 1:1 to a PC and change it before plugging it into the machine network.",
+            "Two devices on one IP both drop in turn, and a scanner sees the MAC change for that IP.",
+          ],
+        },
+        { h: "2. Subnet mask and gateway" },
+        { p: "The new device's IP and subnet mask must be on the same network for the devices to reach each other without a router. On 192.168.1.0/24, for example, pick from 192.168.1.1–254 with mask 255.255.255.0. The gateway only matters for talking to other networks (office, remote access), but a wrong gateway causes trouble on some devices, so set it per site rules." },
+        { h: "3. Switch ports, cables, PoE" },
+        {
+          ul: [
+            "A free switch port; on a managed switch, the port's VLAN and port security match the other machine ports.",
+            "A copper Ethernet segment is generally up to 100 m. Further than that, add a switch or go to fibre.",
+            "If the device is PoE-powered, check that the port supplies PoE, the PoE class the device needs (802.3af, at, etc.) and that the switch's total PoE power budget has room — from the manuals.",
+            "Check the link LED, link speed and duplex. If only one side is fixed, duplex can mismatch and errors pile up.",
+          ],
+        },
+        { h: "4. Modbus TCP connection limits" },
+        { p: "The number of simultaneous TCP connections a Modbus TCP device accepts is not set by the spec; it is up to the device, and small devices often allow only a few. If the PLC, HMI, SCADA and a logging PC all read the new device, there may not be enough slots and the last one to connect is refused. An expansion that adds a new client (a new HMI, say) reading existing devices causes the same problem. Check the maximum in the manual and keep a table of who uses how many. The Modbus TCP implementation guide recommends keeping a connection open rather than opening and closing it for every request — a client that reconnects often can hold slots on the device side for a long time." },
+        { h: "5. Polling load" },
+        {
+          ul: [
+            "Ethernet is fast, but the device's processing is not. Several clients polling at short intervals slow replies or cause some timeouts.",
+            "When the PLC starts reading a new device, check that its communication handling and scan time have not grown.",
+            "Adding devices behind a Modbus gateway (TCP to RTU) lengthens the polling cycle of the serial bus behind it exactly as on RS-485 — the same calculation.",
+          ],
+        },
+        { h: "6. Checks afterwards and the diagram" },
+        {
+          ul: [
+            "Scan the network again: the new device appears on the planned IP and there is no possible IP conflict.",
+            "Read the new device once from a PC (Modbus TCP is port 502), then from the PLC and HMI.",
+            "Existing devices' response times and timeouts are the same as before.",
+            "Record in the diagram and IP table: IP, last four MAC digits, switch port number and which clients connect.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Net Scan: finds devices on the subnet with IP, MAC and open ports, and marks «IP conflict?» when the MAC changes for an IP. Save results as CSV to compare before and after.",
+            "Modbus Master: «Open in Modbus Master» from a Net Scan device row; response time and timeout statistics per table.",
+            "Port Inspector «Network adapters on this PC»: read-only check of the test PC's IP, subnet and link state.",
+            "«IP Subnet Calculator» web tool: network range from IP and mask, and whether two addresses share a network.",
+            "«System Diagram Editor» web tool: add devices and switches, check duplicate IPs and subnet mismatches, import a Net Scan CSV.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications", note: { ko: "포트 502, 접속 관리 — 요청마다 여닫지 말고 유지, 동시 접속 수는 구현 몫", en: "port 502, connection management — keep connections open, the number of connections is implementation-defined" } },
+      { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: { ko: "스위치 네트워크에서 통신 기록 위치(미러링 포트)", en: "where to capture on a switched network (mirror port)" } },
+    ],
+  },
+  {
+    slug: "device-replacement-settings",
+    date: "2026-10-31",
+    tools: ["modbus-master", "serial", "netscan"],
+    related: ["vfd-modbus-setup", "modbus-no-response", "commissioning-communication-checklist", "communication-fault-log", "rs485-add-device", "remove-device-from-bus"],
+    webTools: ["tools/modbus/", "tools/commissioning-checklist/", "tools/wiring/", "tools/system-diagram/"],
+    devices: true,
+    title: { ko: "장비 교체할 때 설정 옮기기 — 모델·펌웨어, 파라미터 기록·비교, 국번·보율·종단, 레지스터 맵 차이, 저장 명령", en: "Moving settings when replacing a device — firmware, parameters, ID and baud, register map, save command" },
+    seoTitle: { ko: "고장 장비 교체 시 통신 설정·파라미터 옮기기 — PortDock", en: "Replacing a Modbus Device: Carry Over Settings — PortDock" },
+    desc: {
+      ko: "고장 난 인버터·계측기를 새것으로 바꿀 때 — 모델·펌웨어, 옛 파라미터 기록·비교, 국번·보율·종단 스위치, 레지스터 맵 차이, EEPROM 저장 명령, 교체 뒤 확인.",
+      en: "Swapping a failed drive or meter: model and firmware, recording and comparing parameters, ID, baud and terminator, register map changes, the save command.",
+    },
+    body: {
+      ko: [
+        { p: "교체 장비는 공장 기본값으로 옵니다. 옛 장비가 가지고 있던 국번·보율·종단 스위치와 운전 파라미터를 옮기지 않으면, 선을 그대로 다시 물려도 통신이 안 되거나 통신은 되는데 동작이 다릅니다. 가장 좋은 때는 고장 전입니다 — 교체할 일이 생기기 전에 설정을 기록해 두는 것이 이 글의 절반입니다." },
+        { h: "1. 같은 모델·같은 펌웨어인지" },
+        {
+          ul: [
+            "명판의 형식 번호 전체(용량·전압·옵션 기호까지)를 비교합니다. 같은 시리즈라도 용량이 다르면 파라미터 기본값과 범위가 다릅니다.",
+            "펌웨어(소프트웨어) 판을 비교합니다. 판이 바뀌면 파라미터가 늘거나, 레지스터 주소·배율이 바뀌기도 합니다. 제조사 변경 이력을 확인합니다.",
+            "통신 옵션 카드가 따로 있는 장비는 카드 모델·판도 봅니다.",
+            "후속 모델로 바꿀 때는 «호환 모드» 나 «구 모델 레지스터 맵» 설정이 있는지 매뉴얼에서 찾습니다.",
+          ],
+        },
+        { h: "2. 옛 장비 파라미터 기록하기" },
+        {
+          ul: [
+            "옛 장비가 아직 통신된다면, 기본값에서 바꾼 파라미터를 통신으로 읽어 파일로 남깁니다. 같은 레지스터를 새 장비에서 읽어 비교할 수 있습니다.",
+            "장비 제조사의 방법(로더 소프트웨어, 키패드 복사 기능, 메모리 카드)이 있으면 함께 씁니다.",
+            "통신이 안 되면 키패드로 «기본값에서 바뀐 파라미터만 보기» 같은 메뉴를 찾아 적습니다.",
+            "평소에 해 둘 것: 시운전·변경 때마다 바꾼 파라미터 목록(번호·값·날짜)을 남깁니다.",
+          ],
+        },
+        { h: "3. 통신 설정 — 국번·보율·패리티·종단" },
+        {
+          ul: [
+            "프로토콜 선택(Modbus RTU 가 따로 고르게 된 장비가 많음), 국번, 보율, 패리티·정지 비트를 옛 장비와 같게.",
+            "통신 타임아웃·통신 끊김 때 동작(정지·계속 운전·경보) 파라미터 — 안전과 바로 이어지는 값입니다.",
+            "운전 지령·주파수 지령의 출처(단자·통신·키패드) 파라미터.",
+            "종단 저항 스위치·점퍼: 옛 장비가 버스 끝이었다면 새 장비에서도 켜야 하고, 중간이었다면 꺼야 합니다. 기본값이 «켜짐» 인 장비가 있습니다.",
+            "이더넷 장비는 IP·서브넷·게이트웨이, 그리고 MAC 이 바뀌므로 MAC 으로 IP 를 주는 설정(DHCP 예약 등)이 있으면 그것도 고칩니다.",
+          ],
+        },
+        { h: "4. 레지스터 맵 차이" },
+        { p: "같은 모델이라도 펌웨어 판이 다르거나 후속 모델이면, 마스터가 읽는 레지스터의 주소·배율·워드 순서가 다를 수 있습니다. 옛 장비와 새 장비의 매뉴얼에서 마스터가 쓰는 레지스터만 골라 표로 비교합니다. 다르면 장비 쪽 호환 설정을 쓰거나, PLC·HMI 쪽 주소를 고쳐야 합니다. 바꾼 뒤에는 장비 화면에 보이는 값(주파수·전류 등)과 통신으로 읽은 값을 나란히 놓고 배율까지 맞는지 봅니다." },
+        { h: "5. 저장(EEPROM) 명령" },
+        { p: "장비에 따라 통신으로 쓴 파라미터는 RAM 에만 들어가고, 저장 명령을 따로 보내야 전원을 꺼도 남습니다. 예를 들어 야스카와 V1000 은 설정에 따라 Enter 명령(0900H/0910H)을 써야 반영되고, 오므론 3G3M1 은 06·10h 로 쓴 값이 EEPROM 에 남지 않아 0900h 에 1 을 써야 합니다. 반대로 비휘발성 메모리는 쓰기 횟수에 한계가 있는 장비가 있어, 주기적으로 바뀌는 값(속도 지령 등)을 저장 명령과 함께 계속 쓰면 안 된다고 적은 매뉴얼도 있습니다. 설정을 옮긴 뒤에는 전원을 한 번 껐다 켜서 값이 남았는지 봅니다." },
+        { h: "6. 교체 뒤 확인" },
+        {
+          ul: [
+            "새 장비 한 대만 PC 에 이어 국번·보율로 읽히는지 확인한 뒤 버스에 붙입니다.",
+            "옛 장비에서 기록한 파라미터와 새 장비의 값을 비교해 다른 줄이 없는지.",
+            "전원을 껐다 켠 뒤에도 값이 남았는지(저장 명령).",
+            "버스 전체를 한동안 폴링해 오류 수를 교체 전과 비교, 종단 수(A–B 약 60 Ω).",
+            "통신 끊김 때 동작을 안전한 상태에서 시험(선을 빼 보는 등) — 현장 안전 절차에 따라.",
+            "장비 목록 표에 새 장비의 형식·펌웨어 판·교체 날짜를 적습니다.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: (0.10.0 부터) 장비 설정 백업·비교·복원 — 옛 장비의 레지스터 값을 파일로 저장하고, 새 장비에서 읽은 값과 비교해 다른 줄을 보이며, 골라서 다시 쓸 수 있습니다. 쓰기 뒤의 저장 명령은 장비 매뉴얼대로 따로 보냅니다.",
+            "Modbus Master «장비 프로필…»: 내장 장비의 레지스터 표로 옛·새 장비가 같은 주소를 쓰는지 확인합니다. 사이트 «장비 레지스터 맵» 에서도 볼 수 있습니다.",
+            "Modbus Master «국번 찾기»·(0.10.0 부터) «통신 설정 찾기»: 새 장비의 공장 기본 국번·보율을 모를 때 찾습니다.",
+            "Net Scan: 이더넷 장비를 바꾼 뒤 같은 IP 에 새 MAC 이 보이는지, IP 충돌 의심이 없는지 확인합니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "A replacement device arrives with factory defaults. If the old device's ID, baud rate, terminator switch and operating parameters are not carried over, reconnecting the same wires gives either no communication or communication with different behaviour. The best time to prepare is before anything fails — recording settings before a replacement is needed is half of this article." },
+        { h: "1. Same model, same firmware?" },
+        {
+          ul: [
+            "Compare the full type number on the nameplate (capacity, voltage, option codes). Within one series, a different capacity has different parameter defaults and ranges.",
+            "Compare firmware (software) versions. A new version can add parameters or change register addresses and scaling. Check the maker's change history.",
+            "On devices with a separate communication option card, compare the card model and version too.",
+            "When moving to a successor model, look in the manual for a «compatibility mode» or «legacy register map» setting.",
+          ],
+        },
+        { h: "2. Record the old device's parameters" },
+        {
+          ul: [
+            "If the old device still communicates, read the parameters changed from default over the bus and save them to a file. You can then read the same registers from the new device and compare.",
+            "Use the maker's method as well if there is one (configuration software, keypad copy, memory card).",
+            "If it no longer communicates, look for a keypad menu like «show only parameters changed from default» and write them down.",
+            "Do this routinely: keep a list of changed parameters (number, value, date) at commissioning and after every change.",
+          ],
+        },
+        { h: "3. Communication settings — ID, baud, parity, terminator" },
+        {
+          ul: [
+            "Protocol selection (many devices have a separate Modbus RTU choice), ID, baud rate, parity and stop bits as on the old device.",
+            "Communication timeout and the action on communication loss (stop, keep running, alarm) — values tied directly to safety.",
+            "The source of run and frequency commands (terminals, comms, keypad).",
+            "Terminator switch or jumper: on if the old device was at the end of the bus, off if it was in the middle. Some devices ship with it on.",
+            "For Ethernet devices: IP, subnet, gateway — and since the MAC changes, update anything that assigns the IP by MAC (a DHCP reservation, say).",
+          ],
+        },
+        { h: "4. Register map differences" },
+        { p: "With a different firmware version or a successor model, the address, scaling or word order of the registers the master reads may differ. Take only the registers the master uses and compare them in a table from the old and new manuals. If they differ, use the device's compatibility setting or change the addresses on the PLC or HMI side. Afterwards, put the values on the device's display (frequency, current, etc.) next to the values read over the bus and check that the scaling matches too." },
+        { h: "5. The save (EEPROM) command" },
+        { p: "On some devices, parameters written over the bus go to RAM only and need a separate save command to survive a power cycle. For example, Yaskawa V1000 may need an Enter command (0900H/0910H) depending on its settings, and OMRON 3G3M1 does not keep values written with 06/10h in EEPROM until 1 is written to 0900h. Conversely, some devices' non-volatile memory has a limited number of writes, and some manuals say not to keep writing changing values (such as a speed reference) with the save command. After moving the settings, cycle the power once and confirm the values stayed." },
+        { h: "6. Checks after replacing" },
+        {
+          ul: [
+            "Connect the new device alone to a PC and confirm it reads at the ID and baud before putting it on the bus.",
+            "Compare the parameters recorded from the old device with the new one's values — no differing lines.",
+            "Values remain after a power cycle (the save command).",
+            "Poll the whole bus for a while and compare error counts with before the replacement; terminator count (A–B about 60 Ω).",
+            "Test the communication-loss action in a safe state (pulling the cable, say) — following site safety procedures.",
+            "Record the new device's type, firmware version and replacement date in the device table.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master: (from 0.10.0) device settings backup, compare and restore — save the old device's register values to a file, compare with values read from the new device to see the differing lines, and write chosen values back. Send the save command afterwards as the device manual says.",
+            "Modbus Master «Device profile…»: use a built-in device's register table to check that old and new devices use the same addresses. The site's «Device register maps» show them too.",
+            "Modbus Master «Slave ID scan» and (from 0.10.0) «Find line settings»: find the new device's factory ID and baud when you do not know them.",
+            "Net Scan: after replacing an Ethernet device, check that the IP now shows the new MAC and there is no possible IP conflict.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "YASKAWA V1000 Technical Manual SIEP C710606 18F", url: "https://www.yaskawa.com/delegate/getAttachment?documentId=SIEPC71060618&cmd=documents&documentName=SIEPC71060618.pdf", note: { ko: "H5 통신 설정, Enter 명령(0900H/0910H)", en: "H5 communication settings, Enter command (0900H/0910H)" } },
+      { title: "OMRON M1 Series Standard Type User's Manual I669-E1-03", url: "https://files.omron.eu/downloads/latest/manual/en/i669b_m1_series_standard_type_v1.0_users_manual_en.pdf", note: { ko: "8-5~8-6 통신 파라미터, 8-21 엔터 명령", en: "8-5 to 8-6 communication parameters, 8-21 Enter command" } },
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "국번 1~247, RS-485 종단(§3.4)", en: "addresses 1–247, RS-485 termination (§3.4)" } },
+    ],
+  },
+  {
+    slug: "remove-device-from-bus",
+    date: "2026-10-31",
+    tools: ["modbus-master", "netscan", "serial"],
+    related: ["rs485-add-device", "ethernet-add-device", "rs485-bias-termination", "cable-shield-grounding", "modbus-rtu-timeout-polling", "communication-fault-log"],
+    webTools: ["tools/wiring/", "tools/system-diagram/", "tools/multimeter-check/", "tools/rs485/"],
+    title: { ko: "통신 장비를 뺄 때(제거·철거) — 종단 옮기기, 폴링 목록에서 빼기, 남은 선·실드·접지, 문서 갱신", en: "Removing a device from a bus — moving the terminator, dropping it from polling, leftover cable, shield" },
+    seoTitle: { ko: "RS-485·이더넷 장비 제거·철거 순서 — PortDock", en: "Removing a Device from an RS-485 or Ethernet Network — PortDock" },
+    desc: {
+      ko: "장비 하나를 뺄 때 — 끝 장비면 종단 옮기기, 폴링 목록에서 빼기(남기면 매 주기 타임아웃), IP·국번 기록, 남은 선 정리, 실드·접지·바이어스 유지, 구성도 갱신.",
+      en: "Taking a device out: move the terminator if it was at the end, drop it from polling (or it times out every cycle), tidy leftover cable, keep the shield intact.",
+    },
+    body: {
+      ko: [
+        { p: "장비를 빼는 일은 더하는 일보다 쉬워 보이지만, 뺀 뒤에 남은 장비들의 통신이 느려지거나 끊기는 일이 생깁니다. 빠진 장비가 버스의 끝이었거나, 바이어스를 걸고 있었거나, 실드·SG 를 이어 주던 자리였거나, 마스터가 아직 그 장비를 찾고 있기 때문입니다." },
+        { h: "1. 빼기 전에: 그 장비가 맡던 것" },
+        {
+          ul: [
+            "버스의 끝이었나(종단 켜짐)? 바이어스 저항을 켜 둔 장비였나?",
+            "실드·SG 선이 그 장비 단자에서 이어지고(들어갔다 나가고) 있었나? 장비를 빼면서 단자에서 선을 풀면 뒤쪽 장비들의 SG·실드가 끊깁니다.",
+            "그 장비의 전원·24 V 를 다른 장비와 같이 쓰고 있었나?",
+            "PLC·HMI·SCADA·기록 PC 가운데 누가 그 장비를 읽고 쓰나? 그 값을 쓰는 프로그램·인터록이 있나?",
+          ],
+        },
+        { h: "2. 마스터 폴링 목록에서 빼기" },
+        { p: "장비를 빼고 마스터 설정을 그대로 두면, 마스터는 매 주기 그 국번에 묻고 응답을 기다립니다. 응답이 없으니 «타임아웃 × (1 + 재시도)» 만큼 주기가 늘어납니다. 예를 들어 타임아웃 1000 ms·재시도 1 이면 주기마다 약 2 초가 더해져 다른 장비들의 갱신이 그만큼 늦어지고, PLC·HMI 에는 통신 경보가 계속 남습니다. 장비를 빼기 전에(또는 바로 뒤에) PLC·HMI·SCADA 의 폴링 목록·태그에서 그 장비를 지우거나 끕니다. 그 값을 쓰던 프로그램 로직도 함께 정리합니다." },
+        { h: "3. 종단 옮기기" },
+        { p: "뺀 장비가 버스 끝이었다면 새 끝이 된 장비의 종단을 켭니다. 그대로 두면 종단이 하나뿐인 버스가 됩니다(A–B 약 120 Ω). 끝 장비를 빼면서 선만 남겨 두면, 그 선이 종단 없는 긴 가지선이 되기도 합니다 — 남은 선을 잘라내거나, 선 끝에 종단을 다는 대신 새 끝 장비에서 끝나게 정리합니다. 바이어스를 걸던 장비였다면 버스의 다른 한 곳(보통 마스터 쪽)에서 바이어스가 걸리는지 확인합니다." },
+        { h: "4. 남은 선·분기선 정리" },
+        {
+          ul: [
+            "중간 장비를 빼면 들어오는 선과 나가는 선을 같은 이름끼리(A–A, B–B, SG–SG) 이어 버스가 끊기지 않게 합니다. 단자대·커넥터로 잇고, 선을 꼬아 테이프로 감지 않습니다.",
+            "실드도 이어 줍니다 — 장비 단자에서 실드가 이어지던 자리였다면 빼면서 실드가 끊기기 쉽습니다.",
+            "더 이상 쓰지 않는 가지선은 버스 쪽에서 떼어냅니다. 끝이 열린 선을 버스에 매달아 두지 않습니다.",
+            "이더넷은 비게 된 스위치 포트를 표시하고, 관리형 스위치면 현장 규칙에 따라 포트를 끄거나 설명을 바꿉니다.",
+          ],
+        },
+        { h: "5. 접지·실드" },
+        { p: "장비 외함이나 판넬 접지를 통해 실드를 접지하던 구성이면, 장비를 빼면서 실드의 접지 점이 없어질 수 있습니다. 실드 접지 위치(한쪽 또는 양쪽)가 처음 계획대로 남아 있는지, 새로 생긴 이음매에서 실드가 끊기지 않았는지 봅니다." },
+        { h: "6. IP·국번 기록과 문서 갱신" },
+        {
+          ul: [
+            "뺀 장비의 국번·IP·MAC 뒤 네 자리와 날짜를 기록합니다. 나중에 같은 국번·IP 를 다른 장비에 줄 때, 그 장비가 창고에서 다시 돌아와 겹치는 일을 막습니다.",
+            "장비 목록 표·구성도·배선도·IP 표에서 지우거나 «철거» 로 표시합니다.",
+            "UPS·전원 공급기 부하 표가 있다면 거기서도 뺍니다.",
+          ],
+        },
+        { h: "7. 뺀 뒤 확인" },
+        {
+          ul: [
+            "전원 끄고 A–B 저항(종단 둘이면 약 60 Ω), A·B–SG 단락.",
+            "«국번 찾기» 로 남은 국번이 모두 답하는지, 뺀 국번이 목록에서 사라졌는지.",
+            "한동안 폴링해 남은 장비의 타임아웃·CRC 오류와 한 바퀴 시간이 빼기 전보다 나빠지지 않았는지.",
+            "이더넷은 네트워크를 다시 찾아 뺀 IP 가 비었는지.",
+          ],
+        },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: «국번 찾기» 로 남은 국번 확인, 표마다 통계로 빼기 전후 비교. 쓰지 않는 표는 지우거나 폴링에서 뺍니다.",
+            "Net Scan: 뺀 장비의 IP 가 더 이상 답하지 않는지, 결과 CSV 를 빼기 전과 비교합니다.",
+            "웹 도구 «멀티미터 측정값 점검기»: 뺀 뒤 잰 A–B 저항·쉬는 전압으로 종단·바이어스를 판정합니다.",
+            "웹 도구 «배선도 만들기»·«시스템 구성도 그리기»: 줄어든 장비로 다시 그려 보관합니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "Removing a device looks easier than adding one, but the remaining devices can slow down or drop out afterwards. The removed device may have been the end of the bus, provided the bias, carried the shield and SG through its terminals, or the master may still be asking for it." },
+        { h: "1. Before removing: what the device was doing" },
+        {
+          ul: [
+            "Was it the end of the bus (terminator on)? Did it have bias resistors switched on?",
+            "Did the shield and SG run through its terminals (in and out)? Unscrewing them as you remove the device cuts SG and shield for every device beyond it.",
+            "Did it share power or 24 V with other devices?",
+            "Which of the PLC, HMI, SCADA or logging PC reads or writes it? Do any programs or interlocks use its values?",
+          ],
+        },
+        { h: "2. Drop it from the master's polling" },
+        { p: "Remove the device but leave the master settings as they are, and the master keeps asking for that ID every cycle and waiting. With no reply, each cycle grows by «timeout × (1 + retries)». With a 1000 ms timeout and 1 retry, for instance, about 2 s is added per cycle, every other device updates that much later, and the PLC or HMI keeps a communication alarm up. Before removing the device (or right after), delete or disable it in the polling lists and tags of the PLC, HMI and SCADA, and tidy the program logic that used its values." },
+        { h: "3. Move the terminator" },
+        { p: "If the removed device was at the end of the bus, turn on the terminator at the device that is now the end. Otherwise the bus has only one terminator (A–B about 120 Ω). Removing an end device but leaving its cable can also turn that cable into a long unterminated stub — cut the leftover cable back so the bus ends at the new end device. If the device provided bias, check that the bus is still biased in one other place (usually at the master)." },
+        { h: "4. Leftover cable and stubs" },
+        {
+          ul: [
+            "When removing a device in the middle, join the incoming and outgoing cables name to name (A–A, B–B, SG–SG) so the bus is not broken. Use a terminal block or connector, not twisted wires and tape.",
+            "Join the shield too — if the shield used to continue at the device terminals, it is easily left broken.",
+            "Disconnect unused stubs at the bus. Do not leave open-ended cable hanging off the bus.",
+            "On Ethernet, label the freed switch port; on a managed switch, disable it or change its description per site rules.",
+          ],
+        },
+        { h: "5. Ground and shield" },
+        { p: "If the shield was grounded through the device housing or panel ground, removing the device can take away the shield's ground point. Check that the shield is still grounded where planned (one end or both) and that it is not broken at any new joint." },
+        { h: "6. Record the IP and ID, update documents" },
+        {
+          ul: [
+            "Record the removed device's ID, IP, last four MAC digits and the date. When the ID or IP is later given to another device, this prevents a clash if the old one comes back from storage.",
+            "Delete it, or mark it «removed», in the device table, system diagram, wiring diagram and IP table.",
+            "Remove it from any UPS or power supply load table too.",
+          ],
+        },
+        { h: "7. Checks afterwards" },
+        {
+          ul: [
+            "Power off: A–B resistance (about 60 Ω with two terminators), A/B to SG shorts.",
+            "«Slave ID scan»: every remaining ID answers and the removed one is gone.",
+            "Poll for a while and check that the remaining devices' timeouts, CRC errors and cycle time are no worse than before.",
+            "On Ethernet, scan again and confirm the removed IP is free.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master: «Slave ID scan» for the remaining IDs; per-table statistics to compare before and after. Delete unused tables or take them out of polling.",
+            "Net Scan: confirm the removed device's IP no longer answers, and compare the result CSV with the one from before.",
+            "«Multimeter Reading Checker» web tool: judge terminators and bias from A–B resistance and idle voltage measured afterwards.",
+            "«Wiring Diagram Maker» and «System Diagram Editor» web tools: redraw with fewer devices and keep it.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA272 — The RS-485 Design Guide", url: "https://www.ti.com/lit/an/slla272c/slla272c.pdf", note: { ko: "양 끝 종단, 가지선은 짧게, 바이어스", en: "termination at both ends, short stubs, biasing" } },
+      { title: "MODBUS over Serial Line Specification and Implementation Guide V1.02", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§3.4 — 버스 양 끝 종단, 바이어스 한 곳, 공통선·실드", en: "§3.4 — terminators at both ends, bias in one place, common and shield" } },
+      { title: "PI — Functional Bonding and Shielding of PROFIBUS and PROFINET (8.102)", url: "https://it.profibus.com/fileadmin/media/downloadsection/installation_guide/Earthing-Shielding_8102_V31_Sep22.pdf", note: { ko: "실드 연속성과 접지 점", en: "shield continuity and grounding points" } },
+    ],
+  },
+  {
+    slug: "communication-fault-log",
+    date: "2026-10-31",
+    tools: ["modbus-master", "netscan", "port-inspector", "serial"],
+    related: ["communication-preventive-maintenance", "capture-plc-traffic-wireshark-pktmon", "modbus-response-time-pcap", "field-noise-communication-errors", "modbus-no-response", "device-replacement-settings"],
+    webTools: ["tools/troubleshoot/", "tools/pcap-analyzer/", "tools/commissioning-checklist/", "tools/system-diagram/"],
+    title: { ko: "통신 장애 기록 남기기·유지보수 일지 — 언제·어디서·증상·측정값·조치, 통신 기록 보관, 바뀐 것 비교", en: "Logging communication faults and keeping a maintenance log — readings, captures, what changed" },
+    seoTitle: { ko: "통신 장애 기록·유지보수 일지 쓰는 법 — PortDock", en: "Communication Fault Log & Maintenance Log — PortDock" },
+    desc: {
+      ko: "간헐적인 통신 장애를 다음에 찾게 남기는 법 — 언제·어디서·증상·측정값·한 조치, 로그 파일·pcap 보관, 지난 기록과 바뀐 것 비교, 일지 칸 예시.",
+      en: "Recording intermittent faults so they can be found next time: when, where, symptoms, readings, actions, log files and pcaps, and comparing what changed.",
+    },
+    body: {
+      ko: [
+        { p: "간헐적인 통신 장애는 한 번에 원인을 찾기 어렵습니다. 대신 매번 같은 방식으로 기록해 두면, 세 번째쯤에는 «늘 2호기 컨베이어가 돌 때», «비 오는 날», «PC 업데이트 다음 날» 같은 공통점이 보입니다. 기록이 없으면 사람이 바뀔 때마다 같은 시도를 처음부터 다시 하게 됩니다." },
+        { h: "1. 무엇을 적나 — 한 건에 한 줄" },
+        {
+          table: {
+            plain: true,
+            head: ["칸", "예시"],
+            rows: [
+              ["언제(시작·끝)", "10-31 14:05 ~ 14:20, 약 15분. 시계 기준(PC·PLC 중 무엇)"],
+              ["어디서", "2호기 판넬, RS-485 버스 2, 국번 5 인버터"],
+              ["증상", "HMI «통신 이상» 경보, 국번 5 만 타임아웃, 다른 국번 읽힘"],
+              ["그때 설비 상태", "컨베이어 운전 중, 용접기 동작, 비 옴"],
+              ["측정값", "A–B 60 Ω, 쉬는 B − A 0.26 V, 판넬 온도 41 °C, 오류 수 요청 1000 중 37"],
+              ["한 조치", "단자 재조임 → 오류 0, 30분 관찰"],
+              ["결과·남은 일", "다음 점검 때 같은 단자 확인; 재발하면 실드 접지 확인"],
+              ["남긴 파일", "통신 기록 파일·pcap·사진의 파일 이름"],
+            ],
+          },
+        },
+        { p: "«원인» 칸을 따로 두기보다 «원인 후보» 와 «확인한 것·확인 못 한 것» 으로 나눠 적습니다. 조치하고 증상이 사라졌어도 우연일 수 있어, 같은 증상이 다시 생기는지 지켜본 기간도 함께 남깁니다." },
+        { h: "2. 측정값은 숫자로" },
+        { p: "«통신이 불안정» 보다 «요청 1000 중 타임아웃 37, CRC 오류 5» 가 다음 사람에게 쓸모 있습니다. 멀티미터 값·온도·오류 수는 단위와 함께, 잰 위치(어느 장비 단자)까지 적습니다. 같은 항목을 정기 점검 때도 같은 방법으로 재 두면 장애 때 값과 바로 비교할 수 있습니다." },
+        { h: "3. 통신 기록 보관" },
+        {
+          ul: [
+            "시리얼: 마스터나 통신 프로그램의 «파일로 기록» 을 켜 두면 주고받은 바이트가 시각과 함께 남습니다. 장애 시각 전후만 잘라 두어도 충분합니다.",
+            "이더넷: 미러링 포트나 PC 에서 통신 기록(pcap)을 받아 둡니다. 크기가 커지므로 장애 시각 앞뒤 몇 분만 남깁니다.",
+            "파일 이름에 날짜·시각·설비·버스를 넣고, 일지의 «남긴 파일» 칸과 맞춥니다.",
+            "기록은 PC 시계 기준이므로 PLC·HMI 시계와의 차이를 일지에 적습니다.",
+            "통신 기록에는 설비의 값이 그대로 들어 있으니, 밖으로 보낼 때는 현장 규칙을 따릅니다.",
+          ],
+        },
+        { h: "4. 바뀐 것 비교" },
+        { p: "«어제는 됐는데» 의 원인은 대개 무언가 바뀐 것입니다. 장애가 나면 지난번 기록과 지금을 비교합니다." },
+        {
+          ul: [
+            "네트워크: 시운전·정기 점검 때 저장한 장비 목록(IP·MAC·열린 포트)과 지금을 비교 — 없어진 장비, 새로 생긴 장비, MAC 이 바뀐 IP.",
+            "PC: 지난 점검 때 저장한 PC 점검 결과와 지금 — 드라이버 판, COM 번호, 절전 설정, 업데이트, 꺼짐 기록.",
+            "장비: 마지막으로 백업한 파라미터와 지금 값.",
+            "현장: 최근의 공사·증설·교체·청소, 새로 생긴 동력 장비, 옮긴 케이블.",
+          ],
+        },
+        { h: "5. 유지보수 일지" },
+        { p: "장애 기록과 같은 장부에 정기 점검·증설·교체·제거도 한 줄씩 남깁니다. «무엇을 언제 바꿨는지» 가 한 곳에 있어야 바뀐 것을 비교할 수 있습니다. 칸은 날짜·사람·설비·종류(점검·장애·증설·교체·제거)·내용·측정값·남긴 파일 정도면 충분합니다. 종이든 표 파일이든, 현장에 있는 누구나 찾을 수 있는 곳에 둡니다." },
+        { h: "PortDock 에서는" },
+        {
+          ul: [
+            "Modbus Master: «파일로 계속 저장» 으로 주고받은 바이트를 시각과 함께 남기고, 표마다 통계(요청·타임아웃·CRC)를 일지의 측정값으로 옮깁니다. (0.10.0 부터) «원인 후보…» 는 최근 요청 결과로 원인 후보와 확인 방법을 보입니다.",
+            "Serial: 받은 바이트를 HEX 로 기록 — 쓰레기 바이트·끊긴 프레임이 생긴 시각을 남깁니다.",
+            "Net Scan: 장비 목록을 CSV 로 저장해 기준으로 두고, 장애 때 다시 찾아 비교합니다. (0.10.0 부터 기준 목록과의 비교가 들어갑니다.)",
+            "Port Inspector: 장비 PC 점검 결과를 저장해 두고 장애 때 다시 읽어 비교합니다. (0.10.0 부터 점검 결과 비교가 들어갑니다.)",
+            "웹 도구 «고장 원인 찾기 도우미»: 증상에서 예/아니오로 원인 후보를 좁히고, 결과를 텍스트로 복사해 일지에 붙입니다.",
+            "웹 도구 «산업 통신 pcap 해석기»: 받아 둔 pcap 에서 Modbus TCP 응답 시간·예외·재전송을 브라우저 안에서 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "An intermittent communication fault is hard to pin down in one go. Record it the same way every time, though, and by the third occurrence a pattern tends to appear — «always while line 2's conveyor runs», «on rainy days», «the day after a PC update». Without records, every new person starts the same attempts from scratch." },
+        { h: "1. What to write — one line per event" },
+        {
+          table: {
+            plain: true,
+            head: ["Column", "Example"],
+            rows: [
+              ["When (start, end)", "10-31 14:05 to 14:20, about 15 min. Which clock (PC or PLC)"],
+              ["Where", "Line 2 panel, RS-485 bus 2, ID 5 drive"],
+              ["Symptom", "HMI «communication fault» alarm, only ID 5 times out, other IDs read"],
+              ["Machine state at the time", "Conveyor running, welder active, raining"],
+              ["Readings", "A–B 60 Ω, idle B − A 0.26 V, panel 41 °C, 37 errors per 1000 requests"],
+              ["Action taken", "Re-tightened terminals → 0 errors, watched for 30 min"],
+              ["Result, follow-up", "Check the same terminals at the next inspection; if it recurs, check shield grounding"],
+              ["Files kept", "Names of log files, pcaps and photos"],
+            ],
+          },
+        },
+        { p: "Rather than a single «cause» column, write «possible causes» and «what was checked / not checked». Even if the symptom went away after an action, it may be coincidence, so also note how long you watched for a recurrence." },
+        { h: "2. Readings as numbers" },
+        { p: "«37 timeouts and 5 CRC errors per 1000 requests» is more useful to the next person than «communication unstable». Write meter readings, temperatures and error counts with units and where they were measured (which device's terminals). If the same items are measured the same way at routine checks, fault-time values compare directly." },
+        { h: "3. Keep the communication records" },
+        {
+          ul: [
+            "Serial: turn on «log to file» in the master or comms program and the bytes sent and received are kept with timestamps. Cutting out the minutes around the fault is enough.",
+            "Ethernet: capture traffic (pcap) from a mirror port or the PC. Captures grow large, so keep a few minutes either side of the fault.",
+            "Put date, time, machine and bus in the file name, matching the «files kept» column.",
+            "Records use the PC clock, so note the difference from the PLC and HMI clocks in the log.",
+            "Captures contain the machine's values as they are; follow site rules before sending them outside.",
+          ],
+        },
+        { h: "4. Compare what changed" },
+        { p: "«It worked yesterday» usually means something changed. When a fault happens, compare the last records with now." },
+        {
+          ul: [
+            "Network: the device list (IP, MAC, open ports) saved at commissioning or the last check against now — missing devices, new devices, IPs whose MAC changed.",
+            "PC: the PC check results saved last time against now — driver versions, COM numbers, power settings, updates, shutdown history.",
+            "Devices: the last parameter backup against current values.",
+            "Site: recent construction, additions, replacements, cleaning, new power equipment, moved cables.",
+          ],
+        },
+        { h: "5. The maintenance log" },
+        { p: "Keep routine checks, additions, replacements and removals in the same log as faults, one line each. «What changed when» has to be in one place for comparison to work. Date, person, machine, type (check, fault, addition, replacement, removal), details, readings and files kept are enough columns. Paper or spreadsheet, keep it where anyone on site can find it." },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "Modbus Master: «Log to file» keeps the bytes sent and received with timestamps; copy per-table statistics (requests, timeouts, CRC) into the log as readings. (From 0.10.0) «Possible causes…» shows possible causes and checks from recent request results.",
+            "Serial: log received bytes in HEX — keep the times when garbage bytes or broken frames appeared.",
+            "Net Scan: save the device list as CSV as a baseline, and scan again at fault time to compare. (Comparison against a saved baseline arrives in 0.10.0.)",
+            "Port Inspector: save the equipment PC's check results and read again at fault time to compare. (Comparing check results arrives in 0.10.0.)",
+            "«Field Troubleshooting Wizard» web tool: narrow down possible causes from a symptom by yes/no, and copy the result as text into the log.",
+            "«Industrial pcap Analyzer» web tool: Modbus TCP response times, exceptions and retransmissions from a saved pcap, in your browser.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "Microsoft — Packet Monitor (Pktmon)", url: "https://learn.microsoft.com/en-us/windows-server/networking/technologies/pktmon/pktmon", note: { ko: "Windows 내장 통신 기록", en: "built-in packet capture in Windows" } },
+      { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: { ko: "스위치 네트워크에서 통신 기록 위치", en: "where to capture on a switched network" } },
+      { title: "Microsoft Learn — Windows Time service tools and settings", url: "https://learn.microsoft.com/en-us/windows-server/networking/windows-time-service/windows-time-service-tools-and-settings", note: { ko: "기록 시각을 맞추기 위한 시간 동기화", en: "time sync so record timestamps line up" } },
+    ],
+  },
 ];

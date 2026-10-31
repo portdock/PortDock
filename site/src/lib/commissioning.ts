@@ -49,7 +49,7 @@ export const ITEMS: Item[] = [
   { id: "all-terminals", stage: "off", for: "all", text: t("단자 조임·압착, 선 번호표가 배선도와 같은지", "Terminals tightened and crimped, wire markers match the wiring diagram") },
   { id: "all-shield", stage: "off", for: "all", text: t("접지(PE) 연결과 차폐선 처리 위치를 장비 매뉴얼·현장 규칙대로", "Protective earth connected and cable shields terminated as the manuals and site rules say") },
   { id: "all-leds", stage: "on", for: "all", text: t("전원 켠 뒤 상태 LED·오류 표시를 매뉴얼의 표와 맞춰 볼 것", "After power-on, compare status LEDs and error displays with the manual's table") },
-  { id: "all-settings", stage: "rec", for: "all", text: t("바꾼 설정값(통신·파라미터)을 표로 남기고 날짜·판 번호를 적을 것", "Record changed settings (communication, parameters) in a table with date and version") },
+  { id: "all-settings", stage: "rec", for: "all", text: t("바꾼 설정값(통신·파라미터)을 표로 남기고 날짜·판 번호를 적을 것", "Record changed settings (communication, parameters) in a table with date and version"), links: ["guides/communication-fault-log/"] },
   { id: "all-drawings", stage: "rec", for: "all", text: t("최종 배선도·구성도를 저장해 장비 옆·공유 위치에 둘 것", "Save the final wiring and system diagrams and keep a copy at the equipment and in the shared location"), links: ["tools/wiring/", "tools/system-diagram/"] },
 
   // ---- PC·산업용 PC
@@ -79,7 +79,7 @@ export const ITEMS: Item[] = [
   { id: "vfd-discharge", stage: "off", for: ["vfd"], text: t("전원을 끈 뒤에도 내부 콘덴서에 전압이 남음 — 매뉴얼의 대기 시간을 지킨 뒤 단자에 손댈 것", "The DC bus capacitors stay charged after power-off — wait the time given in the manual before touching terminals") },
   { id: "vfd-direction", stage: "on", for: ["vfd"], text: t("낮은 주파수에서 회전 방향·회전수 확인", "Check rotation direction and speed at low frequency"), links: ["tools/motor-speed/", "guides/vfd-frequency-rpm/"] },
   { id: "vfd-modbus", stage: "comm", for: ["vfd"], text: t("통신 설정(프로토콜·국번·보율·패리티)과 운전 지령 출처(단자/통신)를 확인하고 저장", "Check communication settings (protocol, address, baud, parity) and the run command source (terminals or comms), then save"), links: ["guides/vfd-modbus-setup/"] },
-  { id: "vfd-params", stage: "rec", for: ["vfd"], text: t("기본값에서 바꾼 파라미터 목록(번호·값)을 기록", "Record the list of parameters changed from default (number, value)") },
+  { id: "vfd-params", stage: "rec", for: ["vfd"], text: t("기본값에서 바꾼 파라미터 목록(번호·값)을 기록", "Record the list of parameters changed from default (number, value)"), links: ["guides/device-replacement-settings/"] },
 
   // ---- 전력 미터
   { id: "meter-ct-dir", stage: "off", for: ["meter"], text: t("CT 방향 표시(P1→P2 등)와 상 순서 — 전압과 CT 가 같은 상끼리 짝인지", "CT direction marks (P1→P2 etc.) and phase order — each CT is paired with the voltage of the same phase") },
