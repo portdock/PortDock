@@ -310,7 +310,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-17",
     tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs232-rs422-rs485", "rs485-bias-termination", "modbus-no-response", "usb-serial-latency", "modbus-rtu-frame", "cable-shield-grounding", "rs485-multimeter-check", "commissioning-communication-checklist"],
-    webTools: ["tools/rs485/", "tools/wiring/", "tools/multimeter-check/", "tools/troubleshoot/"],
+    webTools: ["tools/rs485/", "tools/wiring/", "tools/multimeter-check/", "tools/troubleshoot/", "tools/pinouts/"],
     seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
     title: { ko: "RS-485 배선 점검 — 응답이 없거나 깨질 때 먼저 볼 다섯 가지", en: "RS-485 wiring checks — five things to look at when replies are missing or garbled" },
     desc: {
@@ -1100,7 +1100,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["serial", "modbus-master"],
     related: ["rs485-wiring", "usb-serial-latency", "modbus-rtu-frame", "rs232-db9-null-modem"],
-    webTools: ["tools/web-serial/", "tools/uart-baud/"],
+    webTools: ["tools/web-serial/", "tools/uart-baud/", "tools/pinouts/"],
     title: { ko: "RS-232·RS-422·RS-485 차이 — 배선·거리·장비 수로 고르기", en: "RS-232 vs RS-422 vs RS-485 — choosing by wiring, distance and node count" },
     seoTitle: { ko: "RS232·RS422·RS485 차이 — 배선·거리·장비 수 비교 — PortDock", en: "RS-232 vs RS-422 vs RS-485: Wiring, Distance, Nodes — PortDock" },
     desc: {
@@ -1720,7 +1720,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["netscan", "modbus-master", "tcp"],
     related: ["modbus-tcp-connection", "modbus-no-response", "mc-protocol-test-without-plc"],
-    webTools: ["tools/subnet/"],
+    webTools: ["tools/subnet/", "tools/commissioning-checklist/"],
     title: { ko: "PLC·HMI IP 와 서브넷 마스크 — 같은 대역인지 판정하고 PC 를 붙이는 법", en: "PLC and HMI IP addresses and subnet masks — checking the subnet and joining it from a PC" },
     seoTitle: { ko: "PLC IP 서브넷 마스크 설정 — 같은 대역 판정 — PortDock", en: "PLC IP Address & Subnet Mask: Same Subnet Check — PortDock" },
     desc: {
@@ -2663,7 +2663,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["serial", "port-inspector"],
     related: ["rs232-rs422-rs485", "usb-serial-latency", "rs485-wiring"],
-    webTools: ["tools/ascii/", "tools/uart-baud/", "tools/web-serial/", "tools/wiring/", "tools/multimeter-check/"],
+    webTools: ["tools/ascii/", "tools/uart-baud/", "tools/web-serial/", "tools/wiring/", "tools/multimeter-check/", "tools/pinouts/"],
     title: { ko: "RS-232 DB9 핀 배치와 크로스(널 모뎀) 케이블 결선", en: "RS-232 DB9 pinout and null-modem (crossover) cable wiring" },
     seoTitle: { ko: "RS232 DB9 핀배치·크로스(널 모뎀) 케이블 결선도 — PortDock", en: "RS-232 DB9 Pinout & Null Modem Cable Wiring — PortDock" },
     desc: {
@@ -3978,7 +3978,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-29",
     tools: ["port-inspector", "serial", "modbus-master"],
     related: ["usb-serial-latency", "rs485-wiring", "modbus-no-response", "rs232-db9-null-modem", "field-noise-communication-errors"],
-    webTools: ["tools/serial-timing/", "tools/web-serial/", "tools/troubleshoot/"],
+    webTools: ["tools/serial-timing/", "tools/web-serial/", "tools/troubleshoot/", "tools/commissioning-checklist/"],
     title: { ko: "USB-시리얼 변환기가 자꾸 끊길 때 — 케이블·허브·절전·드라이버·COM 번호 점검 순서", en: "When a USB-serial adapter keeps disconnecting — cable, hub, power saving, driver and COM number checks" },
     seoTitle: { ko: "USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서 — PortDock", en: "USB-Serial Adapter Keeps Disconnecting: COM Port Drops — PortDock" },
     desc: {

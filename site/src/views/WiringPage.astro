@@ -107,6 +107,9 @@ const L = ko
       srcTitle: "출처",
       sys: "구성도 그리기",
       sysNote: "장비 여러 대·네트워크까지 한 장에 그리려면",
+      pinNote: "커넥터 핀 번호·선 색과 시운전 순서는",
+      pin: "커넥터 핀 배치 사전",
+      check: "시운전·설치 점검표 만들기",
     }
   : {
       title: "Wiring Diagram Maker — RS-485, RS-232, 4-20 mA, Sensors",
@@ -180,6 +183,9 @@ const L = ko
       srcTitle: "Sources",
       sys: "System diagram editor",
       sysNote: "To draw many devices and the network on one page, use the",
+      pinNote: "For connector pin numbers and wire colours, and the start-up steps, see the",
+      pin: "connector pinout reference",
+      check: "commissioning checklist maker",
     };
 const T = {
   copied: L.copied,
@@ -297,6 +303,7 @@ const SRC = [
       <p>
         {ko ? "다 이었는데 안 되면 " : "If it still does not work once wired, try the "}<a href={url(lang, "tools/troubleshoot/")}>{ko ? "고장 원인 찾기 도우미" : "field troubleshooting wizard"}</a>{ko ? " 로 원인 후보를 좁히고, 잰 값은 " : " to narrow down causes, and check readings with the "}<a href={url(lang, "tools/multimeter-check/")}>{ko ? "멀티미터 측정값 점검기" : "multimeter reading checker"}</a>{ko ? " 에 넣어 보세요." : "."}
       </p>
+      <p>{L.pinNote} <a href={url(lang, "tools/pinouts/")}>{L.pin}</a> · <a href={url(lang, "tools/commissioning-checklist/")}>{L.check}</a>.</p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (

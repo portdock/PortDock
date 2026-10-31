@@ -79,6 +79,8 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/system-diagram/": "draw",
   "tools/troubleshoot/": "diag",
   "tools/multimeter-check/": "diag",
+  "tools/pinouts/": "draw",
+  "tools/commissioning-checklist/": "draw",
 };
 
 export const groupOf = (path: string): GroupId => GROUP_OF[path as WebTool["path"]] ?? "etc";

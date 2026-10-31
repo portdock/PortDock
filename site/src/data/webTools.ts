@@ -65,7 +65,9 @@ export interface WebTool {
     | "tools/wiring/"
     | "tools/system-diagram/"
     | "tools/troubleshoot/"
-    | "tools/multimeter-check/";
+    | "tools/multimeter-check/"
+    | "tools/pinouts/"
+    | "tools/commissioning-checklist/";
   name: L;
   blurb: L;
 }
@@ -383,6 +385,16 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/multimeter-check/",
     name: { ko: "멀티미터 측정값 점검기", en: "Multimeter Reading Checker" },
     blurb: { ko: "RS-485 A–B 저항·쉬는 전압·공통 모드, 4-20mA(NE 43), 24 V 강하, NPN/PNP 출력, RS-232 TX, 접지 전위차 — 잰 값 → «문제 없음·볼 것·문제 있음».", en: "RS-485 A–B resistance, idle and common-mode voltage, 4–20 mA (NE 43), 24 V drop, NPN/PNP output, RS-232 TX, ground difference — reading in, verdict out." },
+  },
+  {
+    path: "tools/pinouts/",
+    name: { ko: "커넥터 핀 배치 사전", en: "Connector Pinout Reference" },
+    blurb: { ko: "DB9·DB25 RS-232, RJ45 T568A/B·이더넷, Modbus RJ45/DB9(규격), M12 A·D·X-코드, M8, USB-A/B/C, RS-485 단자 표기 — 수/암 정면 그림·선 색·출처, SVG 저장.", en: "DB9/DB25 RS-232, RJ45 T568A/B and Ethernet, Modbus RJ45/DB9 (spec), M12 A/D/X-coded, M8, USB-A/B/C, RS-485 terminal names — male/female front views, wire colours, sources, SVG." },
+  },
+  {
+    path: "tools/commissioning-checklist/",
+    name: { ko: "시운전·설치 점검표 만들기", en: "Commissioning Checklist Maker" },
+    blurb: { ko: "PC·PLC·HMI·인버터·전력 미터·4-20mA·RS-485·스위치·USB-시리얼을 고르면 설치 전 → 전원 → 통신 → 기록 단계별 점검표. 체크·메모 저장, 인쇄, CSV.", en: "Pick PC, PLC, HMI, drive, power meter, 4-20 mA, RS-485, switch, USB-serial and get a step-by-step checklist from installation to records. Ticks and notes saved, print, CSV." },
   },
 ];
 

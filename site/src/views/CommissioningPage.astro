@@ -1,0 +1,470 @@
+---
+// 웹 도구: 시운전·설치 점검표 만들기 — 구성 요소(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP·RS-485·스위치·USB-시리얼·원격 접속)를 고르면
+// 설치 전 → 전원 켜기 전 → 전원 켠 뒤 → 통신 → 기록·백업 단계별 점검표. 항목·내보내기는 lib/commissioning.ts(node --test).
+// 체크·메모는 이 브라우저 localStorage 에만(막혀 있으면 조용히 건너뜀). 인쇄용 CSS, 글·CSV 복사. 서버로 보내지 않는다.
+// 항목은 일반 지식만 — 특정 회사·고객 점검표가 아니다. 링크는 실제 가이드·웹 도구만(시험이 확인).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { COMPONENTS, ITEMS } from "../lib/commissioning";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/commissioning-checklist/";
+const L = ko
+  ? {
+      title: "시운전·설치 점검표 만들기 — PLC·인버터·RS-485·네트워크",
+      h1: "시운전·설치 점검표 만들기",
+      desc: "PC·PLC·HMI·인버터·RS-485·4-20mA 등 현장 구성을 고르면 설치 전부터 기록·백업까지 단계별 점검표를 만듭니다. 체크·메모 저장, 인쇄·CSV.",
+      intro: "현장 구성(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP 센서·RS-485·이더넷 스위치·USB-시리얼·원격 접속)을 고르면 설치 전부터 기록·백업까지 단계별 점검표를 만듭니다. 체크·메모는 이 브라우저에 저장되고, 인쇄·CSV 로 남길 수 있습니다.",
+      seo: "시운전 체크리스트·설치 점검표 만들기 (PLC·인버터·RS485) — PortDock",
+      siteName: "점검표 이름(현장·장비, 선택)",
+      sitePh: "예: 2라인 포장기",
+      comps: "구성 요소",
+      progress: "완료",
+      memo: "메모",
+      print: "인쇄",
+      copyText: "글 복사",
+      copyCsv: "CSV 복사",
+      saveCsv: "CSV 저장",
+      clear: "체크·메모 지우기",
+      clearAsk: "체크와 메모를 모두 지울까요?",
+      copied: "복사했습니다.",
+      copyFail: "복사하지 못했습니다 — 아래 글을 직접 골라 복사하세요.",
+      saved: "체크·메모는 이 브라우저에만 저장됩니다.",
+      noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 체크·메모가 사라집니다 — 끝나면 CSV 로 저장하세요.",
+      privacy: "이 페이지는 브라우저 안에서만 동작하고 아무것도 서버로 보내지 않습니다. 체크·메모는 이 브라우저(localStorage)에만 남습니다.",
+      what: "어떻게 쓰나",
+      whatP: [
+        "현장에 있는 구성 요소를 고르면 그에 맞는 점검 항목이 다섯 단계(설치 전, 전원 켜기 전, 전원 켠 뒤, 통신, 기록·백업)로 묶여 나옵니다. 공통 항목은 늘 들어 있습니다.",
+        "항목마다 관련 가이드·웹 도구 링크가 붙어 있습니다. 체크와 메모는 이 브라우저에 저장되므로 현장에서 휴대폰으로 열어 두고 하나씩 지워 나가도 됩니다. 끝나면 인쇄하거나 CSV 로 저장해 시운전 기록에 붙입니다.",
+        "항목은 일반적인 현장 지식으로 만든 출발점입니다. 장비 매뉴얼·현장 안전 규칙·고객 요구가 늘 우선이며, 전기 작업은 자격을 갖춘 사람이 합니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["체크한 내용은 어디에 저장되나요?", "이 브라우저의 localStorage 에만 저장됩니다. 서버로 가지 않으므로 다른 PC·휴대폰과 공유되지 않습니다. 남기려면 CSV 저장이나 인쇄를 쓰세요."],
+        ["회사 점검표 대신 써도 되나요?", "회사·현장의 정식 점검표가 있으면 그것이 우선입니다. 이 점검표는 빠뜨리기 쉬운 항목을 떠올리는 출발점으로 쓰세요."],
+        ["항목을 더하고 싶어요.", "메모 칸에 적거나 CSV 로 저장한 뒤 표 계산 프로그램에서 줄을 더하세요. 자주 필요한 항목은 아래 «의견 남기기» 로 알려 주시면 검토합니다."],
+      ],
+      seeAlso: "함께 쓰기:",
+      wiring: "배선도 만들기",
+      sys: "시스템 구성도 그리기",
+      pin: "커넥터 핀 배치 사전",
+    }
+  : {
+      title: "Commissioning Checklist Maker — PLC, Drives, RS-485, Network",
+      h1: "Commissioning checklist maker",
+      desc: "Pick PLC, HMI, drives, meters, 4-20 mA, RS-485, switches and more for a staged checklist from installation to records. Saves ticks; print or CSV.",
+      intro: "Pick what is on site (PC, PLC, HMI, drive, power meter, 4-20 mA, NPN/PNP sensors, RS-485, Ethernet switch, USB-serial, remote access) and get a step-by-step checklist from installation to records and backup. Ticks and notes are kept in this browser; print or save as CSV.",
+      seo: "Commissioning Checklist Maker: PLC, VFD, RS-485 — PortDock",
+      siteName: "Checklist name (site or machine, optional)",
+      sitePh: "e.g. Line 2 packer",
+      comps: "Components",
+      progress: "Done",
+      memo: "Note",
+      print: "Print",
+      copyText: "Copy text",
+      copyCsv: "Copy CSV",
+      saveCsv: "Save CSV",
+      clear: "Clear ticks and notes",
+      clearAsk: "Clear all ticks and notes?",
+      copied: "Copied.",
+      copyFail: "Could not copy — select the text below and copy it yourself.",
+      saved: "Ticks and notes are saved in this browser only.",
+      noStore: "This browser blocks storage, so ticks and notes disappear on reload — save as CSV when done.",
+      privacy: "This page runs entirely in your browser and sends nothing to a server. Ticks and notes stay in this browser (localStorage).",
+      what: "How to use it",
+      whatP: [
+        "Pick the components on site and the matching checks appear in five stages (before installation, before power-on, after power-on, communication, records and backup). Common checks are always included.",
+        "Each check links to related guides and web tools. Ticks and notes are saved in this browser, so you can keep it open on a phone on site and work down the list. When done, print it or save a CSV for the commissioning record.",
+        "The checks are a starting point built from general field practice. Equipment manuals, site safety rules and customer requirements always come first, and electrical work is done by a qualified person.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Where are my ticks stored?", "Only in this browser's localStorage. Nothing goes to a server, so they are not shared with other PCs or phones. Use Save CSV or Print to keep them."],
+        ["Can this replace our company checklist?", "If your company or site has an official checklist, that comes first. Use this one as a starting point for items that are easy to forget."],
+        ["I want to add items.", "Write them in the note fields, or save as CSV and add rows in a spreadsheet. If an item is commonly needed, tell us via «Leave feedback» below."],
+      ],
+      seeAlso: "Use with:",
+      wiring: "Wiring diagram maker",
+      sys: "System diagram editor",
+      pin: "Connector pinout reference",
+    };
+const T = {
+  progress: L.progress,
+  memo: L.memo,
+  clearAsk: L.clearAsk,
+  copied: L.copied,
+  copyFail: L.copyFail,
+  saved: L.saved,
+  noStore: L.noStore,
+};
+const linkPaths = [...new Set(ITEMS.flatMap((i) => i.links ?? []))];
+const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries(
+  linkPaths.map((p) => {
+    const g = GUIDES.find((x) => `guides/${x.slug}/` === p);
+    const w = WEB_TOOLS.find((x) => x.path === p);
+    return [p, { href: url(lang, p), name: g ? g.title[lang] : w ? w.name[lang] : p }];
+  }),
+);
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.intro}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card ck-form" id="ck" data-lang={lang} data-t={JSON.stringify(T)} data-links={JSON.stringify(LINKS)}>
+      <label class="fld">{L.siteName}<input id="title" maxlength="120" placeholder={L.sitePh} autocomplete="off" /></label>
+      <fieldset class="ck-comps">
+        <legend>{L.comps}</legend>
+        {
+          COMPONENTS.map((c) => (
+            <label class="ck-comp">
+              <input type="checkbox" name="comp" value={c.id} />
+              <span>{c.name[lang]}</span>
+            </label>
+          ))
+        }
+      </fieldset>
+      <p class="note privacy">{L.privacy}</p>
+    </form>
+
+    <section class="card ck-out" id="ck-print">
+      <h2 class="ck-title" id="outTitle"></h2>
+      <p class="ck-progress"><b id="prog"></b> <span class="ck-bar"><span id="bar"></span></span></p>
+      <div class="btns ck-btns">
+        <button type="button" class="btn tight" id="bPrint">{L.print}</button>
+        <button type="button" class="btn tight" id="bText">{L.copyText}</button>
+        <button type="button" class="btn tight" id="bCsv">{L.copyCsv}</button>
+        <button type="button" class="btn tight" id="bSaveCsv">{L.saveCsv}</button>
+        <button type="button" class="btn tight" id="bClear">{L.clear}</button>
+      </div>
+      <p class="note" id="msg" role="status"></p>
+      <textarea id="fallback" class="mono" rows="6" readonly hidden></textarea>
+      <div id="list"></div>
+    </section>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <p>
+        {L.seeAlso} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a> · <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a> · <a href={url(lang, "tools/pinouts/")}>{L.pin}</a>
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ck-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ck-comps {
+      border: 0;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .ck-comps legend {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .ck-comp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--panel);
+    }
+    .ck-comp input {
+      width: auto;
+      margin: 0;
+    }
+    .ck-comp:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--soft);
+      font-weight: 600;
+    }
+    .ck-out {
+      margin-top: 16px;
+    }
+    .ck-title {
+      margin: 0 0 6px;
+      font-size: 20px;
+    }
+    .ck-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 8px;
+    }
+    .ck-bar {
+      flex: 1 1 auto;
+      max-width: 320px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+    .ck-bar span {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      width: 0;
+    }
+    #fallback {
+      width: 100%;
+      margin: 8px 0;
+    }
+    #list :global(h3) {
+      font-size: 17px;
+      margin: 18px 0 6px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 4px;
+    }
+    #list :global(ol) {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    #list :global(li) {
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--line);
+    }
+    #list :global(.row) {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    #list :global(.row input) {
+      width: 20px;
+      height: 20px;
+      margin: 2px 0 0;
+      flex: 0 0 auto;
+    }
+    #list :global(li.done .txt) {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+    #list :global(.lk) {
+      font-size: 12.5px;
+      margin: 2px 0 0 30px;
+      color: var(--muted);
+    }
+    #list :global(.memo) {
+      margin: 4px 0 0 30px;
+      width: calc(100% - 30px);
+      font-size: 14px;
+      padding: 4px 8px;
+    }
+    #list :global(.memo-print) {
+      display: none;
+    }
+    @media print {
+      :global(body *) {
+        visibility: hidden;
+      }
+      #ck-print,
+      #ck-print :global(*) {
+        visibility: visible;
+      }
+      #ck-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: 0;
+        box-shadow: none;
+      }
+      .ck-btns,
+      #msg,
+      #fallback,
+      .ck-bar,
+      #list :global(.lk),
+      #list :global(.memo) {
+        display: none !important;
+      }
+      #list :global(.memo-print) {
+        display: block;
+        margin: 2px 0 0 30px;
+        font-size: 12px;
+      }
+      #list :global(li) {
+        break-inside: avoid;
+      }
+      #list :global(li.done .txt) {
+        text-decoration: none;
+        color: inherit;
+      }
+    }
+  </style>
+  <script>
+    import { COMPONENTS, buildChecklist, byStage, parseSaved, toCsv, toText, STORE_KEY, type CompId, type Saved } from "../lib/commissioning";
+    import { esc } from "../lib/diagramSvg";
+    import { saveText, store, fileStamp } from "../lib/fileSave";
+
+    const form = document.getElementById("ck") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
+    const LINKS = JSON.parse(form.dataset.links ?? "{}") as Record<string, { href: string; name: string }>;
+    const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
+    const defTitle = (lang === "ko" ? "시운전·설치 점검표" : "Commissioning checklist");
+
+    let s: Saved = parseSaved(store.get(STORE_KEY));
+    let canStore = true;
+
+    function save() {
+      canStore = store.set(STORE_KEY, JSON.stringify(s));
+      $("msg").textContent = canStore ? T.saved : T.noStore;
+    }
+
+    function syncForm() {
+      ($("title") as HTMLInputElement).value = s.title;
+      for (const c of form.querySelectorAll<HTMLInputElement>('input[name="comp"]')) c.checked = s.comps.includes(c.value as CompId);
+    }
+
+    function progress() {
+      const items = buildChecklist(s.comps);
+      const n = items.filter((i) => s.done[i.id]).length;
+      $("prog").textContent = `${T.progress} ${n}/${items.length}`;
+      ($("bar") as HTMLElement).style.width = items.length ? `${Math.round((n / items.length) * 100)}%` : "0";
+    }
+
+    function render() {
+      $("outTitle").textContent = s.title.trim() || defTitle;
+      const groups = byStage(buildChecklist(s.comps));
+      $("list").innerHTML = groups
+        .map(
+          (g, gi) =>
+            `<h3>${gi + 1}. ${esc(g.name[lang])}</h3><ol>${g.items
+              .map((it) => {
+                const done = !!s.done[it.id];
+                const links = (it.links ?? []).map((p) => LINKS[p]).filter(Boolean);
+                const memo = s.memo[it.id] ?? "";
+                return `<li data-id="${it.id}"${done ? ' class="done"' : ""}><label class="row"><input type="checkbox" data-id="${it.id}"${done ? " checked" : ""}/><span class="txt">${esc(it.text[lang])}</span></label>${
+                  links.length ? `<div class="lk">→ ${links.map((l) => `<a href="${esc(l.href)}">${esc(l.name)}</a>`).join(" · ")}</div>` : ""
+                }<input class="memo" data-id="${it.id}" maxlength="500" placeholder="${esc(T.memo)}" aria-label="${esc(T.memo)}: ${esc(it.text[lang])}" value="${esc(memo)}"/>${
+                  memo.trim() ? `<div class="memo-print">${esc(T.memo)}: ${esc(memo)}</div>` : ""
+                }</li>`;
+              })
+              .join("")}</ol>`,
+        )
+        .join("");
+      progress();
+    }
+
+    form.addEventListener("submit", (e) => e.preventDefault());
+    form.addEventListener("change", (e) => {
+      const el = e.target as HTMLInputElement;
+      if (el.name !== "comp") return;
+      s.comps = [...form.querySelectorAll<HTMLInputElement>('input[name="comp"]:checked')].map((c) => c.value as CompId).filter((c) => COMPONENTS.some((x) => x.id === c));
+      save();
+      render();
+    });
+    $("title").addEventListener("input", () => {
+      s.title = ($("title") as HTMLInputElement).value.slice(0, 120);
+      $("outTitle").textContent = s.title.trim() || defTitle;
+      save();
+    });
+    $("list").addEventListener("change", (e) => {
+      const el = e.target as HTMLInputElement;
+      const id = el.dataset.id;
+      if (!id) return;
+      if (el.type === "checkbox") {
+        if (el.checked) s.done[id] = true;
+        else delete s.done[id];
+        el.closest("li")?.classList.toggle("done", el.checked);
+        progress();
+        save();
+      }
+    });
+    $("list").addEventListener("input", (e) => {
+      const el = e.target as HTMLInputElement;
+      const id = el.dataset.id;
+      if (!id || !el.classList.contains("memo")) return;
+      const v = el.value.slice(0, 500);
+      if (v.trim()) s.memo[id] = v;
+      else delete s.memo[id];
+      // 인쇄용 메모 글도 맞춰 둔다
+      const li = el.closest("li");
+      let pm = li?.querySelector<HTMLElement>(".memo-print");
+      if (v.trim()) {
+        if (!pm && li) {
+          pm = document.createElement("div");
+          pm.className = "memo-print";
+          li.append(pm);
+        }
+        if (pm) pm.textContent = `${T.memo}: ${v}`;
+      } else pm?.remove();
+      save();
+    });
+
+    function copy(text: string) {
+      const fb = $("fallback") as HTMLTextAreaElement;
+      const fail = () => {
+        fb.hidden = false;
+        fb.value = text;
+        fb.select();
+        $("msg").textContent = T.copyFail;
+      };
+      if (!navigator.clipboard) return fail();
+      navigator.clipboard.writeText(text).then(() => {
+        fb.hidden = true;
+        $("msg").textContent = T.copied;
+      }, fail);
+    }
+    $("bPrint").addEventListener("click", () => window.print());
+    $("bText").addEventListener("click", () => copy(toText(s, lang)));
+    $("bCsv").addEventListener("click", () => copy(toCsv(s, lang)));
+    $("bSaveCsv").addEventListener("click", () => saveText("﻿" + toCsv(s, lang), `portdock-commissioning-${fileStamp()}.csv`, "text/csv;charset=utf-8"));
+    $("bClear").addEventListener("click", () => {
+      if (!confirm(T.clearAsk)) return;
+      s.done = {};
+      s.memo = {};
+      save();
+      render();
+    });
+
+    syncForm();
+    render();
+  </script>
+</Base>
