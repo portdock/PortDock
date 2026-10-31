@@ -55,10 +55,13 @@ fn two() -> u8 {
     2
 }
 
-/// 만들어 둔 제한 — 표마다 시작 주소 → (끝(제외), 읽기/쓰기)
+/// 표 하나의 칸 — 시작 주소 → [(끝(제외), 읽기/쓰기)] 짧은 것 먼저, 그리고 가장 긴 칸 길이
+type TableCells = (BTreeMap<u16, Vec<(u32, Access)>>, u32);
+
+/// 만들어 둔 제한 — 표마다 (시작 주소 → [(끝(제외), 읽기/쓰기)] 짧은 것 먼저, 가장 긴 칸 길이)
 #[derive(Debug, Clone, Default)]
 pub struct GuardMap {
-    by_table: BTreeMap<Table, BTreeMap<u16, (u32, Access)>>,
+    by_table: BTreeMap<Table, TableCells>,
     access: bool,
     deny: u8,
     unmapped: bool,
@@ -78,19 +81,33 @@ impl Guard {
     }
 
     pub fn build(&self) -> GuardMap {
-        let mut by_table: BTreeMap<Table, BTreeMap<u16, (u32, Access)>> = BTreeMap::new();
+        let mut by_table: BTreeMap<Table, TableCells> = BTreeMap::new();
         for c in &self.cells {
-            by_table.entry(c.table).or_default().insert(c.addr, (c.addr as u32 + c.count as u32, c.access));
+            let (m, longest) = by_table.entry(c.table).or_default();
+            let v = m.entry(c.addr).or_default();
+            v.push((c.addr as u32 + c.count as u32, c.access));
+            v.sort_by_key(|x| x.0);
+            *longest = (*longest).max(c.count as u32);
         }
         GuardMap { by_table, access: self.access, deny: self.deny_exception, unmapped: self.unmapped }
     }
 }
 
 impl GuardMap {
-    /// 주소 a 를 덮는 칸의 읽기/쓰기(없으면 None)
+    /// 주소 a 를 덮는 칸의 읽기/쓰기(없으면 None). 칸이 겹치면 a 에 가장 가까이 시작한(같으면 짧은) 칸 — 더 좁게 정한 것.
+    /// 바로 앞 칸 하나만 보지 않고, 가장 긴 칸 길이 안에서 뒤로 훑는다
     fn at(&self, t: Table, a: u16) -> Option<Access> {
-        let (_, &(end, acc)) = self.by_table.get(&t)?.range(..=a).next_back()?;
-        ((a as u32) < end).then_some(acc)
+        let (m, longest) = self.by_table.get(&t)?;
+        let a32 = a as u32;
+        for (&start, v) in m.range(..=a).rev() {
+            if start as u32 + longest <= a32 {
+                break;
+            }
+            if let Some(&(_, acc)) = v.iter().find(|(end, _)| a32 < *end) {
+                return Some(acc);
+            }
+        }
+        None
     }
 
     /// 마스터 요청 검사 — 범위 [start, start + qty). 쓰기면 write. Err(예외 코드)
@@ -352,6 +369,23 @@ mod tests {
         assert_eq!(holes_ok.allow(hr, 8, 1, true), Err(2));
         assert!(Guard { deny_exception: 4, ..g.clone() }.check().is_err());
         assert!(Guard { cells: vec![GuardCell { table: hr, addr: 65_535, count: 2, access: Access::R }], ..g }.check().is_err());
+    }
+
+    /// 칸이 겹치면 — 바깥 칸 안의 주소는 바깥 칸으로, 겹친 주소는 더 좁은 칸으로(«맵에 없음» 으로 잘못 보지 않는다)
+    #[test]
+    fn guard_overlapping_cells() {
+        let hr = Table::HoldingRegisters;
+        let cell = |addr, count, access| GuardCell { table: hr, addr, count, access };
+        let g = Guard { cells: vec![cell(100, 10, Access::Rw), cell(102, 1, Access::R), cell(200, 4, Access::W), cell(200, 1, Access::R)], access: true, deny_exception: 2, unmapped: true };
+        let m = g.build();
+        assert_eq!(m.allow(hr, 105, 1, true), Ok(()));
+        assert_eq!(m.allow(hr, 100, 10, false), Ok(()));
+        assert_eq!(m.allow(hr, 102, 1, true), Err(2));
+        assert_eq!(m.allow(hr, 103, 7, true), Ok(()));
+        assert_eq!(m.allow(hr, 110, 1, false), Err(2));
+        // 같은 시작 주소 둘 — 덮어쓰지 않는다(짧은 칸 먼저, 그 뒤는 긴 칸)
+        assert_eq!(m.allow(hr, 200, 1, true), Err(2));
+        assert_eq!(m.allow(hr, 201, 3, true), Ok(()));
     }
 
     #[test]

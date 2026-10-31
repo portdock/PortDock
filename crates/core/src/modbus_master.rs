@@ -405,7 +405,7 @@ fn no_line() -> String {
     crate::tr!("이 연결은 통신 설정을 바꿀 수 없습니다(시리얼에서만)", "This connection cannot change line settings (serial only)").into()
 }
 
-/// (0.10.0) 시리얼 통신 설정 하나 — 데이터 비트는 8 로 둔다(Modbus RTU)
+/// (0.10.0) 시리얼 통신 설정 하나 — 찾기 조합은 데이터 비트 8(Modbus RTU)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LineSetting {
@@ -414,6 +414,9 @@ pub struct LineSetting {
     pub parity: String,
     /// 1 | 2
     pub stop_bits: u8,
+    /// None = 데이터 비트 8(찾기 조합). Some = 처음 설정으로 되돌리기 — 데이터 비트·정지 비트까지 처음 그대로
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_bits: Option<u8>,
 }
 
 /// 통신 설정을 바꾸는 함수(세션의 reconfigure)
@@ -1432,7 +1435,7 @@ impl Worker {
                     cancelled = true;
                     break 'outer;
                 }
-                let line = LineSetting { baud, parity: f.parity.clone(), stop_bits: f.stop_bits };
+                let line = LineSetting { baud, parity: f.parity.clone(), stop_bits: f.stop_bits, data_bits: None };
                 if let Err(e) = self.link.set_line(&line) {
                     stopped = Some(e);
                     break 'outer;
@@ -2047,7 +2050,7 @@ mod tests {
         let link = LineFake { line: line.clone(), q: VecDeque::new() };
         let (sink, ev) = collect();
         let e = Engine::start(Box::new(link), Wire::Rtu, fast(1000, 3), AddrStyle::default(), vec![], sink);
-        let restore = LineSetting { baud: 9600, parity: "none".into(), stop_bits: 1 };
+        let restore = LineSetting { baud: 9600, parity: "none".into(), stop_bits: 1, data_bits: Some(8) };
         let cfg = ScanLine { bauds: vec![9600, 19200], framings: vec![fr("none", 1), fr("even", 1)], from: 4, to: 6, fc: 3, addr: 0, timeout_ms: 10, first_only: false, restore: Some(restore.clone()) };
         assert_eq!(cfg.tries(), 12);
         cfg.check_on(Wire::Rtu).unwrap();

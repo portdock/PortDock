@@ -75,13 +75,34 @@ pub fn message_last_value(msg: &str) -> Option<String> {
     Some(line[i + sep..].trim().to_string()).filter(|s| !s.is_empty())
 }
 
+/// 글 안의 사용자 폴더 경로 «C:\Users\이름\…»(또는 «\Device\HarddiskVolume3\Users\이름») 를 «~\…» 로 — 화면·보고서 복사에
+/// 사용자 이름이 나가지 않게. 대소문자 무시
+pub fn mask_user_dir(s: &str) -> String {
+    const KEY: &str = "\\users\\";
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(i) = rest.to_ascii_lowercase().find(KEY) {
+        // 경로 시작 — 앞쪽으로 빈칸·따옴표·괄호가 나올 때까지(드라이브 문자·\Device\… 까지 함께 지운다)
+        let start = rest[..i].rfind(|c: char| c.is_whitespace() || matches!(c, '\'' | '"' | '(' | '[' | '<' | '=')).map_or(0, |p| p + rest[p..].chars().next().map_or(1, char::len_utf8));
+        let after = &rest[i + KEY.len()..];
+        // 이름 끝 — 다음 «\» 나 따옴표, 없으면 빈칸까지
+        let end = after.find(['\\', '\'', '"']).or_else(|| after.find(char::is_whitespace)).unwrap_or(after.len());
+        out.push_str(&rest[..start]);
+        out.push('~');
+        rest = &after[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Power-Troubleshooter 1 → 깨어남 한 건. `message` = Windows 문구(못 만들면 None)
 pub fn wake_from_event(ev: &RawEvent, message: Option<&str>) -> PcWake {
     let nonempty = |v: Option<&str>| v.map(str::trim).filter(|s| !s.is_empty()).map(str::to_string);
     PcWake {
         time: data(ev, "WakeTime").and_then(iso_ms).or_else(|| iso_ms(&ev.time)).unwrap_or(0),
         sleep_time: data(ev, "SleepTime").and_then(iso_ms),
-        source: message.and_then(message_last_value),
+        // 문구 끝 줄에 실행 파일 전체 경로가 들 수 있다 — 사용자 폴더는 «~» 로
+        source: message.and_then(message_last_value).map(|s| mask_user_dir(&s)),
         source_type: data(ev, "WakeSourceType").and_then(|v| v.parse().ok()),
         device: nonempty(data(ev, "WakeSourceText")),
         // 타이머 주인은 실행 파일 경로일 수 있다 — 사용자 폴더가 남지 않게 파일 이름만
@@ -253,6 +274,11 @@ mod tests {
         assert_eq!(message_last_value("The system has returned from a low power state.\r\n\r\nSleep Time: \u{200e}2026\u{200e}-\u{200e}06-11T01:05:22Z\r\n\r\nWake Source: Power Button").as_deref(), Some("Power Button"));
         assert_eq!(message_last_value("시스템이 저전력 상태에서 다시 시작되었습니다.\n\n절전 모드 해제 원본: 장치 -USB 입력 장치").as_deref(), Some("장치 -USB 입력 장치"));
         assert_eq!(message_last_value("no colon here"), None);
+        // 사용자 폴더 가리기(예시 이름)
+        assert_eq!(mask_user_dir(r"Timer - C:\Users\Example User\AppData\Local\app.exe"), r"Timer - ~\AppData\Local\app.exe");
+        assert_eq!(mask_user_dir(r"\Device\HarddiskVolume3\users\sample\x.exe and 'D:\USERS\b'"), r"~\x.exe and '~'");
+        assert_eq!(mask_user_dir("Power Button"), "Power Button");
+        assert_eq!(mask_user_dir(r"C:\Program Files\Tool\t.exe"), r"C:\Program Files\Tool\t.exe");
         let e = ev(
             "<Data Name='SleepTime'>2026-06-11T01:05:22.0739833Z</Data><Data Name='WakeTime'>2026-06-11T01:20:31.1611153Z</Data><Data Name='WakeSourceType'>5</Data><Data Name='WakeSourceText'></Data><Data Name='WakeTimerOwner'>\\Device\\HarddiskVolume3\\Users\\Example\\AppData\\Local\\app.exe</Data>",
             "Microsoft-Windows-Power-Troubleshooter",

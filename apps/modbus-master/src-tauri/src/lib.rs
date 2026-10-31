@@ -95,11 +95,15 @@ fn forward(engine: Arc<Mutex<Option<Engine>>>, ch: Channel<Value>) -> impl Fn(Se
     }
 }
 
-/// 지금 설정에 속도·패리티·정지 비트만 바꾼 것(데이터 비트는 8 — Modbus RTU)
+/// 지금 설정에 속도·패리티·정지 비트만 바꾼 것. 찾기 조합(`data_bits` 없음)은 데이터 비트 8 — Modbus RTU.
+/// 지금 설정이 7비트여도 찾기 중에는 8비트로 시험한다(같은 속도·패리티라도)
 fn with_line(base: &SerialConfig, l: &LineSetting) -> SerialConfig {
-    // 처음 설정으로 되돌릴 때는 데이터 비트까지 그대로
-    if base.baud == l.baud && base.parity == l.parity && (base.stop_bits >= 2.0) == (l.stop_bits >= 2) {
-        return base.clone();
+    // 처음 설정으로 되돌릴 때는 데이터 비트·정지 비트(1.5 포함)까지 그대로
+    if let Some(bits) = l.data_bits {
+        if base.baud == l.baud && base.parity == l.parity && (base.stop_bits >= 2.0) == (l.stop_bits >= 2) {
+            return SerialConfig { data_bits: bits, ..base.clone() };
+        }
+        return SerialConfig { baud: l.baud, parity: l.parity.clone(), stop_bits: l.stop_bits as f32, data_bits: bits, ..base.clone() };
     }
     SerialConfig { baud: l.baud, parity: l.parity.clone(), stop_bits: l.stop_bits as f32, data_bits: 8, ..base.clone() }
 }
@@ -354,7 +358,7 @@ fn scan_addrs(app: State<App>, config: ScanAddrs) -> Result<(), String> {
 #[tauri::command]
 fn scan_line(app: State<App>, config: ScanLine) -> Result<(), String> {
     let base = lock(&app.serial).clone().ok_or_else(|| tr!("통신 설정 찾기는 시리얼 연결에서만 됩니다", "Line-settings search works on a serial connection only").to_string())?;
-    let restore = LineSetting { baud: base.baud, parity: base.parity.clone(), stop_bits: if base.stop_bits >= 2.0 { 2 } else { 1 } };
+    let restore = LineSetting { baud: base.baud, parity: base.parity.clone(), stop_bits: if base.stop_bits >= 2.0 { 2 } else { 1 }, data_bits: Some(base.data_bits) };
     with_engine(&app, |e| {
         config.check_on(e.wire())?;
         if e.scanning() {
@@ -558,11 +562,15 @@ mod tests {
         assert!(cfg.is_ok());
         // 통신 설정 찾기(0.11.0) — 속도·패리티·정지 비트만 바꾸고, 처음 설정이면 그대로
         let base: SerialConfig = serde_json::from_str(r#"{"port":"COM3","baud":9600,"dataBits":7,"parity":"even","stopBits":1,"flow":"none"}"#).unwrap();
-        let l = LineSetting { baud: 19200, parity: "none".into(), stop_bits: 2 };
+        let l = LineSetting { baud: 19200, parity: "none".into(), stop_bits: 2, data_bits: None };
         let c = with_line(&base, &l);
         assert_eq!((c.port.as_str(), c.baud, c.data_bits, c.parity.as_str(), c.stop_bits), ("COM3", 19200, 8, "none", 2.0));
-        let back = with_line(&base, &LineSetting { baud: 9600, parity: "even".into(), stop_bits: 1 });
-        assert_eq!(back.data_bits, 7);
+        // 찾기 조합이 지금 설정(7E1)과 속도·패리티가 같아도 8비트로 시험한다
+        let same = with_line(&base, &LineSetting { baud: 9600, parity: "even".into(), stop_bits: 1, data_bits: None });
+        assert_eq!(same.data_bits, 8);
+        // 되돌리기는 처음 데이터 비트 그대로
+        let back = with_line(&base, &LineSetting { baud: 9600, parity: "even".into(), stop_bits: 1, data_bits: Some(7) });
+        assert_eq!((back.data_bits, back.baud), (7, 9600));
         let sl: ScanLine = serde_json::from_str(r#"{"bauds":[9600],"framings":[{"parity":"none","stopBits":1}],"from":1,"to":10,"fc":3,"addr":0,"timeoutMs":100}"#).unwrap();
         assert_eq!((sl.tries(), sl.first_only, sl.restore.is_none()), (10, false, true));
         // 장비 설정 백업(0.10.0) — 범위 하나 읽기. RTU 국번 0 은 거절, 개수 한도는 core 의 read_pdu

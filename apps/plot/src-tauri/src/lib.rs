@@ -423,10 +423,22 @@ fn plot_record(app: State<App>, path: Option<String>, names: Vec<String>) -> Res
     Ok(())
 }
 
+/// 덧붙일 경로 검사 — 절대 경로·«..» 없음·확장자 .csv/.txt 만(저장 대화상자가 고른 CSV 모양이 아니면 거절)
+fn append_path_ok(path: &str) -> Result<(), String> {
+    use std::path::{Component, Path};
+    let p = Path::new(path);
+    let ext_ok = p.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("csv") || e.eq_ignore_ascii_case("txt"));
+    if !p.is_absolute() || p.components().any(|c| matches!(c, Component::ParentDir)) || !ext_ok {
+        return Err(tr!(format!("{path}: 덧붙일 수 있는 것은 .csv·.txt 파일(전체 경로)만입니다"), format!("{path}: only .csv/.txt files (full path) can be appended to")));
+    }
+    Ok(())
+}
+
 /// 알람 기록(0.10.0) — 사용자가 저장 대화상자에서 고른 CSV 에 덧붙이기
 #[tauri::command(async)]
 fn append_text(path: String, text: String) -> Result<(), String> {
     use std::io::Write;
+    append_path_ok(&path)?;
     let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&path).map_err(|e| format!("{path}: {e}"))?;
     f.write_all(text.as_bytes()).map_err(|e| format!("{path}: {e}"))
 }
@@ -558,6 +570,19 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 알람 기록 덧붙이기는 .csv/.txt 전체 경로만
+    #[test]
+    fn append_path_rules() {
+        let root = if cfg!(windows) { r"C:\Logs" } else { "/tmp/logs" };
+        let sep = std::path::MAIN_SEPARATOR;
+        assert!(append_path_ok(&format!("{root}{sep}plot-alarms.csv")).is_ok());
+        assert!(append_path_ok(&format!("{root}{sep}a.TXT")).is_ok());
+        assert!(append_path_ok("plot-alarms.csv").is_err());
+        assert!(append_path_ok(&format!("{root}{sep}..{sep}x.csv")).is_err());
+        assert!(append_path_ok(&format!("{root}{sep}start.bat")).is_err());
+        assert!(append_path_ok(&format!("{root}{sep}noext")).is_err());
+    }
 
     #[test]
     fn source_shapes() {
