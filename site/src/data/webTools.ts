@@ -373,7 +373,7 @@ export const WEB_TOOLS: WebTool[] = [
   {
     path: "tools/system-diagram/",
     name: { ko: "시스템 구성도 그리기", en: "System Diagram Editor" },
-    blurb: { ko: "PC·PLC·HMI·인버터·스위치를 놓고 이더넷·RS-485 버스로 잇기. IP 중복·서브넷·국번 중복 점검, JSON·SVG·PNG, Net Scan CSV 불러오기.", en: "Place PCs, PLCs, HMIs, drives and switches, connect with Ethernet or RS-485 buses. Checks duplicate IPs, subnets and IDs; JSON, SVG, PNG; Net Scan CSV import." },
+    blurb: { ko: "PC·PLC·HMI·인버터·스위치를 놓고 이더넷·RS-485 버스로 잇기. IP·서브넷·국번 중복, 종단·단위 부하·폴링 시간, 증설 전후 변경 비교, JSON·SVG·PNG, Net Scan CSV.", en: "Place PCs, PLCs, HMIs, drives and switches on Ethernet or RS-485 buses. Duplicate IPs, subnets, IDs, termination, unit loads, polling time, before/after comparison; JSON, SVG, PNG." },
   },
   // ---- 고장 찾기·점검
   {
@@ -393,8 +393,8 @@ export const WEB_TOOLS: WebTool[] = [
   },
   {
     path: "tools/commissioning-checklist/",
-    name: { ko: "시운전·설치 점검표 만들기", en: "Commissioning Checklist Maker" },
-    blurb: { ko: "PC·PLC·HMI·인버터·전력 미터·4-20mA·RS-485·스위치·USB-시리얼을 고르면 설치 전 → 전원 → 통신 → 기록 단계별 점검표. 체크·메모 저장, 인쇄, CSV.", en: "Pick PC, PLC, HMI, drive, power meter, 4-20 mA, RS-485, switch, USB-serial and get a step-by-step checklist from installation to records. Ticks and notes saved, print, CSV." },
+    name: { ko: "시운전·유지보수 점검표 만들기", en: "Commissioning & Maintenance Checklist" },
+    blurb: { ko: "신규 설치·정기 점검·증설·교체·제거 × PC·PLC·HMI·인버터·RS-485·스위치·24 V 전원 — 작업 전 → 전원 → 통신 → 기록 단계별 점검표. 체크·메모 저장, 인쇄, CSV.", en: "New install, routine inspection, expansion, replacement or removal × PC, PLC, HMI, drive, RS-485, switch, 24 V supply — a staged checklist. Ticks and notes saved, print, CSV." },
   },
 ];
 
