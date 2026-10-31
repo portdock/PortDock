@@ -37,8 +37,8 @@ export const TOOLS = [
   ["ping", "Ping one IPv4 address up to 10 times, optional TCP connect timing (read-only)"],
   ["net_adapters", "Network adapter settings, link speed, power saving, firewall profiles (read-only)"],
   ["device_map_get", "Built-in Modbus register maps of industrial devices (read-only)"],
-  ["modbus_write_sim", "Write to a Modbus TCP simulator on 127.0.0.1 only"],
-  ["mc_write_sim", "Write to an MC protocol PLC simulator on 127.0.0.1 only"],
+  ["modbus_write_sim", "Write to a Modbus TCP simulator on 127.0.0.1 only, after it identifies as PortDock (FC 2B/0E)"],
+  ["mc_write_sim", "Write to an MC protocol PLC simulator on 127.0.0.1 only (address check only)"],
 ];
 
 // (10/31) «Read-only» 만 적으면 쓰기 도구 2개(127.0.0.1 시뮬레이터)가 빠진다 — 레지스트리 description 은 100자 이하(시험)
@@ -59,7 +59,7 @@ export function manifestFor(version) {
     version,
     description: DESCRIPTION,
     long_description:
-      "Lets an AI client read this Windows PC's serial (COM) ports and network adapters (Port Inspector), listen on a serial port, and read Modbus RTU/TCP, Mitsubishi MC protocol (3E) and SCPI instruments. All tools only read, except two that write only to simulators on 127.0.0.1 (PortDock Modbus Slave, PLC Simulator). The check is by address only: if a program on this PC forwards 127.0.0.1 to another device (a TCP relay, gateway or tunnel), a write can reach a real device, so do not use the write tools while one runs. Every call is kept in a local session log; nothing is sent elsewhere.",
+      "Lets an AI client read this Windows PC's serial (COM) ports and network adapters (Port Inspector), listen on a serial port, and read Modbus RTU/TCP, Mitsubishi MC protocol (3E) and SCPI instruments. All tools only read, except two that write only to simulators on 127.0.0.1 (PortDock Modbus Slave, PLC Simulator). The Modbus write goes ahead only when the target identifies itself as PortDock (device identification FC 2B/0E); the MC write checks the address only, so do not use it while a program on this PC forwards 127.0.0.1 to a real PLC (a TCP relay or tunnel). Every call is kept in a local session log; nothing is sent elsewhere.",
     author: { name: "PortDock", url: SITE },
     repository: { type: "git", url: REPO },
     homepage: `${SITE}/en/guides/portdock-mcp/`,

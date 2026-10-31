@@ -650,6 +650,83 @@ pub struct ModbusWriteSimArgs {
     pub timeout_ms: Option<u64>,
 }
 
+/// 쓰기 전 확인에서 기대하는 장치 식별 제조사(VendorName) 머리 — PortDock Modbus Slave 의 기본값
+pub const SIM_VENDOR: &str = "PortDock";
+
+fn not_sim(why: &str) -> String {
+    format!(
+        "Refused: the target did not identify itself as a PortDock simulator ({why}). It may be a real device behind a Serial gateway or relay on this PC. \
+In PortDock Modbus Slave keep the device identification vendor «PortDock». / 거절: 이 대상은 PortDock 시뮬레이터로 자신을 밝히지 않음({why}) — \
+Serial 게이트웨이·중계를 거쳐 실장비일 수 있음. Modbus Slave 의 장치 식별 제조사를 PortDock 으로 두세요."
+    )
+}
+
+/// FC 2B/0E 응답 PDU → 제조사(객체 0). 모양이 틀리면 None
+fn vendor_of(pdu: &[u8]) -> Option<String> {
+    if pdu.len() < 7 || pdu[0] != 0x2B || pdu[1] != 0x0E {
+        return None;
+    }
+    let mut i = 7;
+    for _ in 0..pdu[6] {
+        let (id, len) = (*pdu.get(i)?, *pdu.get(i + 1)? as usize);
+        let v = pdu.get(i + 2..i + 2 + len)?;
+        if id == 0 {
+            return Some(String::from_utf8_lossy(v).into_owned());
+        }
+        i += 2 + len;
+    }
+    None
+}
+
+/// 쓰기 전에 같은 대상·국번에 장치 식별(FC 2B/0E, 코드 01 기본)을 묻는다 — 제조사가 «PortDock» 으로 시작할 때만 Ok.
+/// 예외·응답 없음·다른 제조사면 Err(까닭). 127.0.0.1 이 실장비로 이어지는 중계·게이트웨이를 막기 위한 두 번째 확인
+pub fn confirm_sim(addr: std::net::SocketAddr, unit: u8, timeout: Duration) -> Result<(), String> {
+    use std::io::Write;
+    let mut s = std::net::TcpStream::connect_timeout(&addr, timeout).map_err(|e| not_sim(&format!("no connection: {e}")))?;
+    let _ = s.set_read_timeout(Some(timeout));
+    let _ = s.set_write_timeout(Some(timeout));
+    let _ = s.set_nodelay(true);
+    let tid: u16 = 0x2B0E;
+    let mut req = Vec::with_capacity(11);
+    req.extend_from_slice(&tid.to_be_bytes());
+    req.extend_from_slice(&[0, 0, 0, 5, unit, 0x2B, 0x0E, 0x01, 0x00]);
+    s.write_all(&req).map_err(|e| not_sim(&format!("send failed: {e}")))?;
+    let deadline = Instant::now() + timeout;
+    let mut head = [0u8; 7];
+    let read_all = |s: &mut std::net::TcpStream, buf: &mut [u8]| -> Result<(), String> {
+        let mut got = 0;
+        while got < buf.len() {
+            if Instant::now() >= deadline {
+                return Err(not_sim("no response to Read Device Identification"));
+            }
+            match s.read(&mut buf[got..]) {
+                Ok(0) => return Err(not_sim("connection closed without a response")),
+                Ok(n) => got += n,
+                Err(e) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {
+                    return Err(not_sim("no response to Read Device Identification"));
+                }
+                Err(e) => return Err(not_sim(&format!("read failed: {e}"))),
+            }
+        }
+        Ok(())
+    };
+    read_all(&mut s, &mut head)?;
+    let len = u16::from_be_bytes([head[4], head[5]]) as usize;
+    if head[..2] != tid.to_be_bytes() || head[2..4] != [0, 0] || !(2..=254).contains(&len) {
+        return Err(not_sim("reply is not a matching Modbus TCP frame"));
+    }
+    let mut pdu = vec![0u8; len - 1];
+    read_all(&mut s, &mut pdu)?;
+    if pdu.first() == Some(&0xAB) {
+        return Err(not_sim(&format!("exception {:02X} to FC 2B/0E", pdu.get(1).copied().unwrap_or(0))));
+    }
+    match vendor_of(&pdu) {
+        Some(v) if v.starts_with(SIM_VENDOR) => Ok(()),
+        Some(v) => Err(not_sim(&format!("vendor «{}»", v.chars().take(40).collect::<String>()))),
+        None => Err(not_sim("no vendor name in the reply")),
+    }
+}
+
 pub fn modbus_write_sim(a: ModbusWriteSimArgs) -> Result<Value, String> {
     let addr = guard::loopback_addr(a.host.as_deref().unwrap_or("127.0.0.1"), a.tcp_port)?;
     let timeout = ms(a.timeout_ms, 1000, 100, 5000, "timeout_ms")?;
@@ -662,11 +739,13 @@ pub fn modbus_write_sim(a: ModbusWriteSimArgs) -> Result<Value, String> {
         return Err("coil values must be 0 or 1 / 코일 값은 0 또는 1".into());
     }
     let pdu = write_pdu(bits, a.address, &a.values, false)?;
+    // 주소만이 아니라 상대가 PortDock 시뮬레이터라고 밝힐 때만 쓴다
+    confirm_sim(addr, unit, timeout)?;
     let mut link = TcpLink::connect(addr, timeout)?;
     let mut out = modbus_exchange(Wire::Tcp, &mut link, unit, &pdu, timeout, 0);
     out["target"] = json!(addr.to_string());
     out["written"] = json!(a.values.len());
-    out["note"] = json!("Simulator on this PC only.");
+    out["note"] = json!("Simulator on this PC only (identified as PortDock by FC 2B/0E).");
     Ok(out)
 }
 
@@ -771,6 +850,37 @@ mod tests {
             assert_eq!(&m.table(Table::Coils)[5..8], &[1, 0, 1]);
         }
         assert!(modbus_write_sim(w("127.0.0.1", WriteTable::Coils, vec![2])).is_err());
+    }
+
+    /// 장치 식별 제조사가 PortDock 이 아니면·예외면·답이 없으면 쓰지 않는다
+    #[test]
+    fn modbus_write_sim_needs_portdock_vendor() {
+        use portdock_core::modbus_slave::DeviceId;
+        let w = |port: u16| ModbusWriteSimArgs { host: None, tcp_port: port, unit: None, table: WriteTable::HoldingRegisters, address: 5, values: vec![7], timeout_ms: Some(300) };
+        // 다른 제조사
+        let (addr, slave) = testsim::modbus_tcp();
+        slave.lock().unwrap().set_device(DeviceId { vendor: "ACME".into(), ..DeviceId::default() }).unwrap();
+        let e = modbus_write_sim(w(addr.port())).unwrap_err();
+        assert!(e.starts_with("Refused") && e.contains("ACME") && e.contains("PortDock"), "{e}");
+        assert_eq!(slave.lock().unwrap().models[&1].table(Table::HoldingRegisters)[5], 0, "nothing written");
+        // «PortDock …» 으로 시작하면 통과
+        slave.lock().unwrap().set_device(DeviceId { vendor: "PortDock Test".into(), ..DeviceId::default() }).unwrap();
+        assert_eq!(modbus_write_sim(w(addr.port())).unwrap()["result"], "ok");
+        // 2B 에 예외로 답하는 장비
+        let exc = testsim::modbus_raw(|f| {
+            let mut r = f[..7].to_vec();
+            r[4..6].copy_from_slice(&3u16.to_be_bytes());
+            r.extend_from_slice(&[f[7] | 0x80, 0x01]);
+            Some(r)
+        });
+        let e = modbus_write_sim(w(exc.port())).unwrap_err();
+        assert!(e.starts_with("Refused") && e.contains("exception 01"), "{e}");
+        // 답하지 않는 장비
+        let mute = testsim::modbus_raw(|_| None);
+        let e = modbus_write_sim(w(mute.port())).unwrap_err();
+        assert!(e.starts_with("Refused") && e.contains("no response"), "{e}");
+        assert_eq!(vendor_of(&[0x2B, 0x0E, 1, 0x81, 0, 0, 1, 0, 2, b'P', b'D']).as_deref(), Some("PD"));
+        assert_eq!(vendor_of(&[0x2B, 0x0E, 1, 0x81, 0, 0, 1, 0, 9, b'P']), None);
     }
 
     #[test]

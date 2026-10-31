@@ -37,7 +37,9 @@ test(".mcpb manifest: 0.3 · binary · Windows 전용 · 실행 파일 경로 ·
   const text = JSON.stringify(m);
   // «실장비 쓰기 도구 없음» 단정 대신 사실대로(판정은 주소로만 — 중계 프로그램 주의, docs/mcp.md 안전장치 1)
   assert.match(text, /127\.0\.0\.1/);
-  assert.match(text, /check is by address only/);
+  // (0.10.0) Modbus 쓰기는 장치 식별(FC 2B/0E)로 PortDock 인지 묻고, MC 쓰기는 주소로만
+  assert.match(text, /identifies itself as PortDock/);
+  assert.match(text, /checks the address only/);
   assert.doesNotMatch(text, /no tool that writes to real devices/);
   assert.doesNotMatch(text, /\bcontrol\b/i);
 });

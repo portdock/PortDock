@@ -51,6 +51,11 @@ pub fn modbus_tcp() -> (SocketAddr, Arc<Mutex<Slave>>) {
     (addr, slave)
 }
 
+/// Modbus TCP 로 받은 요청마다 `answer` 로 답하는 가짜 장비(None = 답하지 않음)
+pub fn modbus_raw(answer: fn(&[u8]) -> Option<Vec<u8>>) -> SocketAddr {
+    serve(move |s| frames(s, |b| (b.len() >= 6).then(|| 6 + u16::from_be_bytes([b[4], b[5]]) as usize), answer))
+}
+
 /// MC 3E 이진 서버 흉내(PLC Simulator 와 같은 core)
 pub fn mc_3e() -> (SocketAddr, Arc<Mutex<Server>>) {
     let server = Arc::new(Mutex::new(Server::with_seed(1)));
