@@ -11,7 +11,7 @@
 
 | 프로그램 | 하는 일 |
 |---|---|
-| **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬(9종 + 사용자 정의 CRC), Modbus RTU 풀이·요청 만들기, 자동응답, 시각이 찍힌 시험 기록. 0.10.0 부터 포트 나눔(COM ↔ TCP, raw·RFC 2217, 기본 127.0.0.1)과 Modbus RTU 엿듣기(듣기만 — CRC 로 프레임 자르기, 요청/응답 짝·응답 시간) |
+| **PortDock Serial** | 시리얼(COM) 송수신 — RS-232·RS-485·USB 시리얼, 신호선(DTR·RTS·CTS·DSR·RI·CD), USB 를 뽑았다 꽂아도 자동 재연결, 프레임 구분, 체크섬(9종 + 사용자 정의 CRC), Modbus RTU 풀이·요청 만들기, 자동응답, 시각이 찍힌 시험 기록. 0.10.0 부터 포트 나눔(COM ↔ TCP, raw·RFC 2217, 기본 127.0.0.1), Modbus TCP ↔ RTU 게이트웨이(SCADA·HMI 의 Modbus TCP 를 RS-485 장비로 — 한 번에 하나씩, 무응답은 예외 0B)과 Modbus RTU 엿듣기(듣기만 — CRC 로 프레임 자르기, 요청/응답 짝·응답 시간) |
 | **PortDock Modbus Slave** | Modbus 슬레이브 장비 흉내(시리얼 RTU·Modbus TCP·RTU over TCP) — 코일·레지스터 표(32비트·실수·문자열 칸), 값 자동 변화, 장애 주입, 내장 장비 프로필, CSV 레지스터 맵, 마스터의 요청 확인 |
 | **PortDock TCP** | TCP 클라이언트·서버·중계(모니터) — 여러 연결, 에코, 자동 재연결, Modbus TCP 프레임 구분, 중계 기록 pcapng 저장(Wireshark 로 열기), Modbus TCP·MC 요청/응답 짝·응답 시간·무응답 |
 | **PortDock UDP** | UDP 송수신 — 브로드캐스트, 멀티캐스트, 에코 |

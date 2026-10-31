@@ -34,6 +34,7 @@
 | 모드버스 함수 코드, modbus function code, FC03 FC16 차이 | `/guides/modbus-function-codes/` | «Modbus 함수 코드 정리 (FC01~06·0F·10·17)», 설명에 «개수 한도», «06 과 10» |
 | 모드버스 float 읽기, modbus 32비트 워드 순서, CDAB | `/guides/modbus-float-word-order/` | «Modbus float·32비트 값 읽기 — 워드 순서 맞추기», 설명에 «ABCD·CDAB» |
 | 모드버스 TCP 연결 안됨, modbus tcp 502, unit id | `/guides/modbus-tcp-connection/` | «Modbus TCP 연결 안 됨 — 502 포트·Unit ID 점검», 설명에 «방화벽·접속 수 제한» |
+| modbus tcp rtu 게이트웨이 프로그램, modbus tcp to rtu gateway software free | `/guides/modbus-tcp-rtu-gateway-pc/` | «PC 를 Modbus TCP ↔ RTU 게이트웨이로 쓰기», 설명에 «게이트웨이 장비 없이·예외 0B·0A» |
 | RS232 RS485 차이, RS422 RS485 차이 | `/guides/rs232-rs422-rs485/` | «RS232·RS422·RS485 차이 — 배선·거리·장비 수 비교» |
 | 4-20mA 원리, 4-20mA 단선, 2선식 4선식 차이 | `/guides/4-20ma-loop/` | «4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선)», 설명에 «NAMUR NE 43», «3.6 mA·21 mA» |
 | PT100 3선식, 측온저항체 2선식 3선식 4선식, 열전대 종류 | `/guides/pt100-thermocouple-wiring/` | «Pt100 2선·3선·4선식 차이와 열전대 K·J·T 고르기», 설명에 «냉접점 보정» |

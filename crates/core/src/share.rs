@@ -2,11 +2,13 @@
 //! - 포트에서 받은 바이트는 붙은 모든 클라이언트에게 그대로 보낸다(클라이언트마다 보내기 스레드 — 느린 클라이언트가 포트 읽기를 막지 않게,
 //!   밀린 몫이 넘치면 그 클라이언트만 끊는다).
 //! - 클라이언트가 보낸 바이트는 누구든 포트로 보낸다(여럿이 동시에 보내면 섞일 수 있다 — 화면이 알린다).
-//! - 방식: raw(그대로, 기본) 또는 RFC 2217(Telnet COM-PORT-OPTION — 원격에서 보율·패리티 등 바꾸기, `rfc2217`).
+//! - 방식: raw(그대로, 기본) 또는 RFC 2217(Telnet COM-PORT-OPTION — 원격에서 보율·패리티 등 바꾸기, `rfc2217`),
+//!   또는 Modbus TCP ↔ RTU 게이트웨이(`gateway` — MBAP 를 RTU 로 바꿔 한 번에 하나씩, `mb_gateway`).
 //! - 기본 묶을 주소는 127.0.0.1(이 PC 안). 0.0.0.0 은 화면에서 «다른 PC 에서 연결 허용» 을 켤 때만.
 //!
 //! 포트 쪽은 `Port` 로 받는다(실제는 `serial::Handle`, 시험은 가짜).
 
+use crate::mb_gateway::{self, Engine, GatewayConfig, GwStats, Parsed};
 use crate::rfc2217;
 use crate::serial::SerialConfig;
 use serde::{Deserialize, Serialize};
@@ -39,6 +41,11 @@ pub struct ShareConfig {
     pub rfc2217: bool,
     #[serde(default = "default_max")]
     pub max_clients: usize,
+    /// (0.10.0) Modbus TCP ↔ RTU 게이트웨이. 켜면 `rfc2217` 은 쓰지 않는다
+    #[serde(default)]
+    pub gateway: bool,
+    #[serde(default)]
+    pub gw: GatewayConfig,
 }
 
 /// 포트 쪽 — 보내기·설정 읽기/바꾸기·사건 줄
@@ -82,6 +89,8 @@ pub enum ShareEvent {
     Clients { clients: Vec<ClientInfo> },
     /// RFC 2217 로 포트 설정이 바뀜 — 화면의 설정 칸도 따라 바꾼다
     Config { config: SerialConfig },
+    /// 게이트웨이 통계(바뀌면, 많아도 0.25초에 한 번)
+    Gateway { stats: GwStats },
     /// 서버가 멈춤(오류 포함)
     Stopped { message: Option<String> },
 }
@@ -102,6 +111,7 @@ struct Inner {
     stop: AtomicBool,
     on_event: Box<dyn Fn(ShareEvent) + Send + Sync>,
     threads: Mutex<Vec<JoinHandle<()>>>,
+    gw: Option<Engine>,
 }
 
 pub struct Share {
@@ -121,12 +131,13 @@ impl Share {
         if host.is_empty() || cfg.port == 0 {
             return Err(crate::tr!("묶을 주소와 포트(1~65535)를 넣어 주세요", "Enter the bind address and port (1–65535)").into());
         }
-        let cfg = ShareConfig { host, max_clients: cfg.max_clients.clamp(1, MAX_CLIENTS), ..cfg };
+        let cfg = ShareConfig { host, max_clients: cfg.max_clients.clamp(1, MAX_CLIENTS), rfc2217: cfg.rfc2217 && !cfg.gateway, ..cfg };
+        let gw = if cfg.gateway { Some(Engine::new(cfg.gw.clone())?) } else { None };
         let addr = crate::tcp::resolve(&cfg.host, cfg.port)?;
         let listener = TcpListener::bind(addr).map_err(|e| crate::net::bind_error(&e, addr, false))?;
         listener.set_nonblocking(true).map_err(|e| e.to_string())?;
         let local = listener.local_addr().map_err(|e| e.to_string())?;
-        let mode = if cfg.rfc2217 { "RFC2217" } else { "raw" };
+        let mode = if cfg.gateway { "Modbus TCP → RTU" } else if cfg.rfc2217 { "RFC2217" } else { "raw" };
         port.note(crate::tr!(format!("SHARE LISTEN {local} ({mode}, 최대 {})", cfg.max_clients), format!("SHARE LISTEN {local} ({mode}, max {})", cfg.max_clients)));
         let inner = Arc::new(Inner {
             cfg,
@@ -136,7 +147,17 @@ impl Share {
             stop: AtomicBool::new(false),
             on_event: Box::new(on_event),
             threads: Mutex::new(Vec::new()),
+            gw,
         });
+        if inner.gw.is_some() {
+            let i = inner.clone();
+            let t = std::thread::spawn(move || {
+                let Some(gw) = i.gw.as_ref() else { return };
+                gw.run(&*i.port, &*i, &i.stop, &|stats| (i.on_event)(ShareEvent::Gateway { stats }));
+                (i.on_event)(ShareEvent::Gateway { stats: gw.stats() });
+            });
+            inner.threads.lock().unwrap().push(t);
+        }
         let i = inner.clone();
         let accept = std::thread::spawn(move || i.accept_loop(listener));
         Ok(Self { inner, accept: Some(accept), local })
@@ -155,6 +176,11 @@ impl Share {
 
     pub fn clients(&self) -> Vec<ClientInfo> {
         self.inner.list()
+    }
+
+    /// 게이트웨이 통계(게이트웨이 방식이 아니면 None)
+    pub fn gateway_stats(&self) -> Option<GwStats> {
+        self.inner.gw.as_ref().map(|g| g.stats())
     }
 
     /// 클라이언트 하나 끊기
@@ -259,6 +285,7 @@ impl Inner {
     fn read_loop(&self, id: u64, addr: &str, mut s: TcpStream, rfc: Option<Arc<Mutex<rfc2217::Server>>>, sent: &AtomicU64) -> String {
         let peer = peer_label(id, addr);
         let mut parser = rfc2217::Parser::default();
+        let mut mbap: Vec<u8> = Vec::new();
         let mut buf = [0u8; 4096];
         let mut failing = false;
         loop {
@@ -274,6 +301,21 @@ impl Inner {
                 Err(e) if matches!(e.kind(), ErrorKind::TimedOut | ErrorKind::WouldBlock | ErrorKind::Interrupted) => continue,
                 Err(e) => return crate::oserr::net(&e),
             };
+            if let Some(gw) = &self.gw {
+                sent.fetch_add(n as u64, Ordering::Relaxed);
+                mbap.extend_from_slice(&buf[..n]);
+                loop {
+                    match mb_gateway::parse_mbap(&mbap) {
+                        Parsed::Need => break,
+                        Parsed::Frame(m, used) => {
+                            mbap.drain(..used);
+                            gw.submit(id, m, &*self.port, self);
+                        }
+                        Parsed::Bad(why) => return why,
+                    }
+                }
+                continue;
+            }
             let data = match &rfc {
                 None => buf[..n].to_vec(),
                 Some(server) => {
@@ -331,6 +373,11 @@ impl Inner {
         if bytes.is_empty() {
             return;
         }
+        // 게이트웨이: 받은 바이트는 기다리는 요청의 응답 후보 — 클라이언트에게는 MBAP 로만 간다
+        if let Some(gw) = &self.gw {
+            gw.bus.feed(bytes);
+            return;
+        }
         let mut slow = Vec::new();
         {
             let clients = self.clients.lock().unwrap();
@@ -360,6 +407,17 @@ impl Inner {
         let label = peer_label(id, &c.addr);
         self.port.note(if why.is_empty() { format!("SHARE CLOSE {label}") } else { format!("SHARE CLOSE {label} — {why}") });
         self.announce();
+    }
+}
+
+impl mb_gateway::Clients for Inner {
+    fn alive(&self, id: u64) -> bool {
+        self.clients.lock().unwrap().contains_key(&id)
+    }
+    fn reply(&self, id: u64, bytes: Vec<u8>) {
+        if let Some(c) = self.clients.lock().unwrap().get(&id) {
+            let _ = c.tx.try_send(bytes);
+        }
     }
 }
 
@@ -435,12 +493,12 @@ mod tests {
     fn start(fake: &Arc<Fake>, rfc2217: bool, max: usize) -> (Share, Arc<Mutex<Vec<ShareEvent>>>) {
         let ev = Arc::new(Mutex::new(Vec::new()));
         let e2 = ev.clone();
-        let s = Share::start(ShareConfig { host: "127.0.0.1".into(), port: 0, rfc2217, max_clients: max }, fake.clone(), move |e| e2.lock().unwrap().push(e));
+        let s = Share::start(ShareConfig { host: "127.0.0.1".into(), port: 0, rfc2217, max_clients: max, gateway: false, gw: GatewayConfig::default() }, fake.clone(), move |e| e2.lock().unwrap().push(e));
         // 포트 0 은 «넣어 주세요» — 시험은 빈 포트를 먼저 잡아 쓴다
         assert!(s.is_err());
         let free = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
         let e2 = ev.clone();
-        let s = Share::start(ShareConfig { host: "127.0.0.1".into(), port: free, rfc2217, max_clients: max }, fake.clone(), move |e| e2.lock().unwrap().push(e)).unwrap();
+        let s = Share::start(ShareConfig { host: "127.0.0.1".into(), port: free, rfc2217, max_clients: max, gateway: false, gw: GatewayConfig::default() }, fake.clone(), move |e| e2.lock().unwrap().push(e)).unwrap();
         (s, ev)
     }
 
@@ -510,5 +568,74 @@ mod tests {
         (share.tap())(&[0xFF, 0x01]);
         assert_eq!(read_some(&mut c, 3), vec![0xFF, 0xFF, 0x01]);
         share.stop();
+    }
+
+    /// 가짜 직렬 포트 + RTU 장비 — 답을 세션의 읽기 스레드처럼 탭으로 넣는다
+    struct TapDevice {
+        tap: Arc<Mutex<Option<crate::serial::Tap>>>,
+        sent: Mutex<Vec<(Vec<u8>, String)>>,
+        inner: Arc<Fake>,
+    }
+
+    impl Port for TapDevice {
+        fn send_from(&self, bytes: Vec<u8>, peer: String) -> Result<(), String> {
+            self.sent.lock().unwrap().push((bytes.clone(), peer));
+            if let Some(resp) = crate::mb_gateway::tests::device(&bytes) {
+                let tap = self.tap.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_millis(5));
+                    if let Some(t) = tap.lock().unwrap().as_ref() {
+                        t(&resp);
+                    }
+                });
+            }
+            Ok(())
+        }
+        fn config(&self) -> SerialConfig {
+            SerialConfig { baud: 115_200, ..self.inner.config() }
+        }
+        fn reconfigure(&self, cfg: SerialConfig) -> Result<(), String> {
+            self.inner.reconfigure(cfg)
+        }
+        fn note(&self, text: String) {
+            self.inner.note(text)
+        }
+    }
+
+    /// 게이트웨이: TCP 클라이언트 둘 → 가짜 RTU 장비 → MBAP 응답. Modbus TCP 가 아니면 끊는다
+    #[test]
+    fn gateway_round_trip_over_tcp() {
+        use crate::mb_gateway::{mbap_bytes, rtu_frame};
+        let dev = Arc::new(TapDevice { tap: Arc::new(Mutex::new(None)), sent: Mutex::new(Vec::new()), inner: Fake::new() });
+        let free = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let ev = Arc::new(Mutex::new(Vec::new()));
+        let e2 = ev.clone();
+        let gw = GatewayConfig { timeout_ms: 100, ..Default::default() };
+        let cfg = ShareConfig { host: "127.0.0.1".into(), port: free, rfc2217: true, max_clients: 4, gateway: true, gw };
+        let share = Share::start(cfg, dev.clone(), move |e| e2.lock().unwrap().push(e)).unwrap();
+        *dev.tap.lock().unwrap() = Some(share.tap());
+        let mut a = TcpStream::connect(share.local_addr()).unwrap();
+        let mut b = TcpStream::connect(share.local_addr()).unwrap();
+        wait_for(|| share.clients().len() == 2);
+        // 요청을 두 번에 나눠 보내도 하나로 모은다
+        let ra = mbap_bytes(7, 1, &[0x03, 0x00, 0x00, 0x00, 0x01]);
+        a.write_all(&ra[..4]).unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+        a.write_all(&ra[4..]).unwrap();
+        b.write_all(&mbap_bytes(8, 5, &[0x03, 0x00, 0x00, 0x00, 0x01])).unwrap();
+        assert_eq!(read_some(&mut a, 11), mbap_bytes(7, 1, &[0x03, 0x02, 0x00, 0x01]));
+        assert_eq!(read_some(&mut b, 9), mbap_bytes(8, 5, &[0x83, 0x0B]));
+        let first = dev.sent.lock().unwrap()[0].clone();
+        assert_eq!(first.0, rtu_frame(1, &[0x03, 0x00, 0x00, 0x00, 0x01]));
+        assert!(first.1.contains("#1") && first.1.contains("FC03"), "{}", first.1);
+        let st = share.gateway_stats().unwrap();
+        assert_eq!((st.requests, st.responses, st.timeouts), (2, 1, 1));
+        // Modbus TCP 가 아닌 것 → 끊음
+        b.write_all(b"HELLO WORLD").unwrap();
+        wait_for(|| share.clients().len() == 1);
+        *dev.tap.lock().unwrap() = None;
+        share.stop();
+        assert!(ev.lock().unwrap().iter().any(|e| matches!(e, ShareEvent::Gateway { .. })));
+        assert!(dev.inner.notes.lock().unwrap().iter().any(|n| n.contains("Modbus TCP → RTU")));
     }
 }

@@ -72,6 +72,34 @@ export interface ShareConfig {
   port: number;
   rfc2217: boolean;
   maxClients: number;
+  /** (0.10.0) Modbus TCP ↔ RTU 게이트웨이 — 켜면 rfc2217 은 쓰지 않는다 */
+  gateway?: boolean;
+  gw?: GatewayConfig;
+}
+
+/** (0.10.0) 게이트웨이 설정 — core mb_gateway::GatewayConfig */
+export interface GatewayConfig {
+  timeoutMs: number;
+  unit0: "broadcast" | "default";
+  defaultUnit: number;
+  /** «1-10, 17» — 비우면 1~247 모두 */
+  units: string;
+  broadcastDelayMs: number;
+}
+
+/** (0.10.0) 게이트웨이 통계 — core mb_gateway::GwStats */
+export interface GwStats {
+  requests: number;
+  responses: number;
+  exceptions: number;
+  timeouts: number;
+  crcErrors: number;
+  noRoute: number;
+  broadcasts: number;
+  busy: number;
+  lastMs: number | null;
+  avgMs: number | null;
+  maxMs: number | null;
 }
 
 export interface ShareClient {
@@ -83,6 +111,7 @@ export interface ShareClient {
 export type ShareEvent =
   | { type: "clients"; clients: ShareClient[] }
   | { type: "config"; config: SerialConfig }
+  | { type: "gateway"; stats: GwStats }
   | { type: "stopped"; message: string | null };
 
 export interface Lines {
@@ -170,7 +199,7 @@ export const api = {
   shareStart: (id: string, config: ShareConfig, onEvent: (e: ShareEvent) => void) => {
     const ch = new Channel<ShareEvent>();
     ch.onmessage = onEvent;
-    return tally("share", invoke<string>("share_start", { id, config, onEvent: ch }));
+    return tally(config.gateway ? "mb_gateway" : "share", invoke<string>("share_start", { id, config, onEvent: ch }));
   },
   shareStop: () => invoke<void>("share_stop"),
   shareKick: (client: number) => invoke<void>("share_kick", { client }),

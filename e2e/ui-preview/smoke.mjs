@@ -2984,6 +2984,21 @@ async function runApp(app, port) {
           const mids = [...tb.children].filter((e) => __sm.vis(e) && !e.classList.contains('grow')).map((e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
           return { spread: Math.round(Math.max(...mids) - Math.min(...mids)), file: !!tb.querySelector('.file-log'), side: !!document.querySelector('aside.side .file-log'), delta: !!tb.querySelector('.delta-sel'), view: !!tb.querySelector('.view-opt-btn') };`);
         if (tb.spread > 12 || !tb.file || tb.side || tb.delta || !tb.view) await conv("serial-toolbar", `도구줄이 한 줄이 아니거나 칸 자리가 이상함: ${JSON.stringify(tb)}`);
+        // (0.10.0) 포트 나눔 방식 «Modbus TCP ↔ RTU 게이트웨이»: 포트 7000 → 502, 게이트웨이 칸(타임아웃·Unit ID 0·보낼 국번)이 보이고, raw 로 돌아오면 7000
+        const gw = await jsAsync(`
+          const w = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+          const p = document.querySelector('aside.side details.share-panel');
+          const mode = () => [...p.querySelectorAll('select')].find((x) => x.querySelector('option[value=gateway]'));
+          const port = () => p.querySelector('.grid2 input').value;
+          const a = { has: !!mode(), p0: port() };
+          if (!a.has) return a;
+          __sm.setVal(mode(), 'gateway'); await w();
+          a.p1 = port(); a.fields = p.querySelectorAll('select').length; a.units = !!p.querySelector('input.mono[type=text]');
+          __sm.setVal(mode(), 'raw'); await w();
+          a.p2 = port(); a.back = p.querySelectorAll('select').length;
+          return a;`);
+        if (gw.fatal) add("serial gateway mode", "smoke-error", gw.fatal);
+        else if (!gw.has || gw.p0 !== "7000" || gw.p1 !== "502" || gw.fields !== 2 || !gw.units || gw.p2 !== "7000" || gw.back !== 1) await conv("serial-gateway", `포트 나눔 «Modbus TCP ↔ RTU 게이트웨이» 방식 칸이 이상함: ${JSON.stringify(gw)}`);
       }
       // (10/18) TCP·UDP·Simulator·Master 첫 실행: 왼쪽(Simulator 는 «장비가 먼저 보내기») 접기 상태·요약, TCP·UDP 로그 보기 «둘 다», UDP 보내기 ASCII
       if (app === "tcp" || app === "udp" || app === "simulator" || app === "modbus-master") {

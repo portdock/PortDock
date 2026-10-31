@@ -531,6 +531,23 @@ const SERIAL_EXTRA = {
       ],
     },
     {
+      title: "Modbus TCP ↔ RTU 게이트웨이 (0.10.0 부터)",
+      id: "gateway",
+      body: [
+        "PC 를 Modbus TCP ↔ RTU 게이트웨이로 씁니다. SCADA·HMI·PC 프로그램이 Modbus TCP 로 붙으면, 요청(MBAP)을 RTU 프레임으로 바꿔 이 COM 포트(RS-485)의 장비로 보내고 응답을 다시 MBAP 로 돌려줍니다. 게이트웨이 장비를 따로 사지 않고, 관리자 권한 없이 됩니다.",
+        "- 1. 포트를 장비와 같은 속도·패리티로 «연결» 한 뒤 «포트 나눔 (TCP)» 을 펼치고 «방식» 을 «Modbus TCP ↔ RTU 게이트웨이» 로 고릅니다. TCP 포트는 502 로 바뀝니다(바꿀 수 있음). «나눔 시작».",
+        "- 2. 클라이언트(SCADA·HMI·Modbus Master)는 127.0.0.1:502 로 붙고, Unit ID 에 RTU 국번을 넣습니다. 트랜잭션 ID 는 응답에 그대로 돌아갑니다.",
+        "- 변환: MBAP(트랜잭션 ID·프로토콜 0·길이·Unit ID) + PDU → 국번(= Unit ID) + PDU + CRC. 응답은 CRC·국번·함수 코드를 보고 맞는 것만 MBAP 로 돌려줍니다. CRC 가 틀리거나 잘린 응답, 다른 국번의 응답은 버리고 계속 기다립니다(«깨진 응답» 으로 셈).",
+        "- 줄 세우기: RTU 버스는 반이중이라 모든 클라이언트의 요청을 한 줄로 세워 한 번에 하나씩 보냅니다(최대 64개 대기, 넘치면 예외 06). 보내기 전에 앞 프레임 끝에서 3.5 문자(19200 bps 초과는 1.75ms)를 쉽니다.",
+        "- 응답 타임아웃(기본 1000ms, 프레임이 다 나간 뒤부터) 안에 응답이 없으면 예외 0B(게이트웨이 대상 응답 없음). «보낼 국번» 을 적으면(예: 1-10, 17) 그 밖의 Unit ID 는 보내지 않고 예외 0A(경로 없음)로 바로 답합니다. 비우면 1~247 모두 보냅니다.",
+        "- Unit ID 0: «방송» 이면 RTU 국번 0 으로 보내고 응답을 기다리지 않습니다(클라이언트에도 답하지 않음 — 쓰기 함수에만 쓰세요). «기본 국번으로 보내기» 면 정한 국번으로 바꿔 보내고 응답을 돌려줍니다.",
+        "- 통신 기록: 버스로 나간 줄은 «TCP #1 → RTU 국번 3 FC03» 처럼 어느 클라이언트의 어떤 요청인지 붙습니다. 타임아웃·경로 없음·깨진 응답은 GW 사건 줄로 남습니다. 받기 «프레임 구분» 을 «Modbus RTU» 로 두면 응답 줄이 프레임마다 나뉩니다.",
+        "- 통계(나누는 동안 패널 아래): 요청·응답·장비 예외·타임아웃·경로 없음·깨진 응답·방송 수와 응답 시간(마지막·평균·최대 ms). 응답 시간은 PC 가 보낸 때부터 응답을 다 받은 때까지라 보내는 시간과 USB 지연이 들어 있습니다.",
+        "- 포트 502: Windows 는 1024 아래 포트도 관리자 권한 없이 엽니다. 다른 Modbus 서버(PortDock Modbus Slave 등)가 이미 쓰면 시작할 때 누가 쓰는지 알려 줍니다 — 다른 번호로 바꾸세요.",
+        "- 묶을 주소는 기본 127.0.0.1(이 PC 안). 다른 PC 의 SCADA 가 붙으려면 «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켭니다. 인증이 없으니 믿을 수 있는 망에서만 켜세요. 프로토콜 ID 가 0 이 아닌 등 Modbus TCP 가 아닌 연결은 끊습니다.",
+      ],
+    },
+    {
       title: "Modbus RTU 엿듣기 (듣기만) (0.10.0 부터)",
       id: "sniff",
       body: [
@@ -591,6 +608,23 @@ const SERIAL_EXTRA = {
         "- The bind address is 127.0.0.1 by default — only programs on this PC (including WSL2 mirrored networking). For WSL2 default (NAT), Docker or another PC, turn on «Allow other PCs to connect (0.0.0.0)» and use this PC's IP (Docker: host.docker.internal). There is no authentication — only on a network you trust.",
         "- Example: in WSL2, «socat pty,link=$HOME/ttyV0,raw,echo=0 tcp:<this PC IP>:7000» makes a virtual tty. In Python: serial.serial_for_url(\"rfc2217://<IP>:7000\", baudrate=9600).",
         "- A client that stops reading and overflows its backlog is disconnected on its own. Disconnecting the port or switching to listen-only also stops sharing.",
+      ],
+    },
+    {
+      title: "Modbus TCP ↔ RTU gateway (from 0.10.0)",
+      id: "gateway",
+      body: [
+        "Uses the PC as a Modbus TCP ↔ RTU gateway. When SCADA, an HMI or a PC program connects over Modbus TCP, its requests (MBAP) become RTU frames sent to the devices on this COM port (RS-485), and the replies go back as MBAP. No gateway box to buy, no administrator rights.",
+        "- 1. «Connect» the port with the devices' baud rate and parity, expand «Port sharing (TCP)» and set «Mode» to «Modbus TCP ↔ RTU gateway». The TCP port changes to 502 (you can change it). «Start sharing».",
+        "- 2. Clients (SCADA, HMI, Modbus Master) connect to 127.0.0.1:502 and put the RTU unit address in the Unit ID. The transaction ID comes back unchanged in the reply.",
+        "- Conversion: MBAP (transaction ID, protocol 0, length, Unit ID) + PDU → unit (= Unit ID) + PDU + CRC. A reply is returned as MBAP only when its CRC, unit and function code match. Replies with a bad CRC, cut short or from another unit are dropped and the wait goes on (counted as «broken replies»).",
+        "- Queueing: an RTU bus is half-duplex, so requests from all clients wait in one line and go out one at a time (up to 64 waiting; beyond that exception 06). Before each send the gateway keeps 3.5 characters (1.75 ms above 19200 bps) after the previous frame.",
+        "- No reply within the response timeout (default 1000 ms, counted after the frame has been sent) → exception 0B (gateway target failed to respond). If «Units to forward» is set (e.g. 1-10, 17), other Unit IDs are not sent and get exception 0A (gateway path unavailable) at once. Empty forwards all of 1–247.",
+        "- Unit ID 0: «Broadcast» sends RTU unit 0 and waits for no reply (the client gets none either — use it for write functions only). «Send to the default unit» rewrites it to the unit you set and returns its reply.",
+        "- Traffic log: lines sent to the bus are tagged like «TCP #1 → RTU unit 3 FC03» — which client, which request. Timeouts, no-route and broken replies are GW event lines. Set receive framing to «Modbus RTU» to split reply lines per frame.",
+        "- Statistics (below the panel while sharing): requests, responses, device exceptions, timeouts, no route, broken replies, broadcasts and response time (last/avg/max ms). Response time runs from the PC's send to the full reply, so it includes transmit time and USB latency.",
+        "- Port 502: Windows opens ports below 1024 without administrator rights. If another Modbus server (PortDock Modbus Slave etc.) already uses it, starting tells you which program — pick another number.",
+        "- The bind address is 127.0.0.1 (this PC) by default. For SCADA on another PC turn on «Allow other PCs to connect (0.0.0.0)». There is no authentication — only on a network you trust. Connections that are not Modbus TCP (protocol ID other than 0 etc.) are closed.",
       ],
     },
     {

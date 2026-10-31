@@ -111,7 +111,7 @@ fn set_framing(sessions: State<Sessions>, sniff: State<SniffSlot>, id: String, f
     sessions.0.with(&id, |s| s.set_framing(framing, rx_check))
 }
 
-// ---- (0.10.0) 포트 나눔 — 연 포트를 TCP 서버로(raw 또는 RFC 2217). 한 번에 하나
+// ---- (0.10.0) 포트 나눔 — 연 포트를 TCP 서버로(raw · RFC 2217 · Modbus TCP ↔ RTU 게이트웨이). 한 번에 하나
 
 #[derive(Default)]
 struct ShareSlot(std::sync::Mutex<Option<(String, Share)>>);
