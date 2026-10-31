@@ -1,0 +1,399 @@
+---
+// 웹 도구: MQTT 페이로드 디코더 — HEX·Base64·텍스트를 붙여 넣으면 JSON 정리, Sparkplug B(protobuf) 지표, 원시 MQTT 패킷(고정 헤더·PUBLISH 토픽·QoS·패킷 ID·v5 속성)을 푼다.
+// 풀이는 lib/mqttDecode.ts(외부 라이브러리 없음, 시험 있음). 브로커에 연결하지 않고, 붙여 넣은 내용은 어디에도 보내지 않는다. 광고는 본문 아래에만.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { LABELS } from "../lib/mqttDecode";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/mqtt-decoder/";
+// 예시 — 시험(mqttDecode.test.ts)과 같은 인코딩 규칙으로 만든 바이트(값은 지어낸 것)
+const SPB_HEX =
+  "08 80 C0 C1 BC A3 33 12 1D 0A 0B 4C 69 6E 65 31 2F 53 70 65 65 64 10 01 18 80 C0 C1 BC A3 33 20 09 65 00 50 B5 44 12 13 0A 0D 4C 69 6E 65 31 2F 52 75 6E 6E 69 6E 67 20 0B 70 01 12 12 0A 0B 4C 69 6E 65 31 2F 43 6F 75 6E 74 20 07 50 D2 09 18 05";
+const EXAMPLES: [string, string][] = [
+  ["JSON", '{"temp":21.5,"unit":"C","ts":1761868800000}'],
+  ["Sparkplug B (HEX)", SPB_HEX],
+  ["Sparkplug B (Base64)", "CIDAwbyjMxIdCgtMaW5lMS9TcGVlZBABGIDAwbyjMyAJZQBQtUQSEwoNTGluZTEvUnVubmluZyALcAESEgoLTGluZTEvQ291bnQgB1DSCRgF"],
+  ["PUBLISH spBv1.0", "30 6C 00 19 73 70 42 76 31 2E 30 2F 50 6C 61 6E 74 2F 4E 44 41 54 41 2F 45 64 67 65 31 " + SPB_HEX],
+  ["PUBLISH QoS 1 JSON", "32 28 00 0C 70 6C 61 6E 74 2F 6C 69 6E 65 31 2F 00 2A 7B 22 74 65 6D 70 22 3A 32 31 2E 35 2C 22 75 6E 69 74 22 3A 22 43 22 7D"],
+  ["CONNECT + CONNACK", "10 10 00 04 4D 51 54 54 04 02 00 3C 00 04 64 65 76 31 20 02 00 00"],
+];
+const L = ko
+  ? {
+      title: "MQTT 페이로드 디코더 (Sparkplug B)",
+      desc: "MQTT 메시지를 HEX·Base64·텍스트로 붙여 넣으면 JSON 을 정리하고, Sparkplug B 지표(이름·별칭·형·값·시각)와 원시 MQTT 패킷(토픽·QoS·패킷 ID)을 풀어 줍니다.",
+      input: "페이로드 또는 MQTT 패킷 (HEX·Base64·텍스트)",
+      help: "예: 08 80 C0 … · CIDAwb… · {\"temp\":21.5} · 30 6C 00 19 … — 패킷 여러 개를 이어 붙여도 됩니다.",
+      mode: "입력 형식",
+      modes: [["auto", "자동"], ["hex", "HEX"], ["base64", "Base64"], ["text", "텍스트(UTF-8)"]],
+      what: "풀이",
+      whats: [["auto", "자동(패킷이면 패킷)"], ["packet", "MQTT 패킷으로"], ["payload", "페이로드로만"]],
+      version: "MQTT 버전",
+      versions: [["auto", "자동(CONNECT 따라, 없으면 3.1.1)"], ["4", "3.1.1"], ["5", "5.0"]],
+      topic: "토픽 (페이로드만 붙여 넣을 때, 선택)",
+      topicHelp: "spBv1.0/… 이면 Sparkplug B 로 먼저 풉니다.",
+      examples: "예시",
+      privacy: "브로커에 연결하지 않습니다. 붙여 넣은 바이트는 이 브라우저 안에서만 풀고 어디에도 보내지 않습니다. CONNECT 의 암호는 길이만 보입니다.",
+      howTitle: "무엇을 푸나요",
+      how: [
+        ["JSON", "UTF-8 글이 { 나 [ 로 시작하고 JSON 으로 읽히면 들여쓰기해 보여 줍니다."],
+        ["Sparkplug B", "Eclipse Sparkplug 의 protobuf 페이로드(timestamp·metrics·seq)를 스키마 파일 없이 직접 읽습니다. 지표마다 이름·별칭·시각·형(Int16·Float·Boolean …)·값을 표로 보이고, Int8·Int16·Int32 처럼 uint32 로 실린 부호 있는 값은 형에 맞춰 바꿉니다. DATA 메시지처럼 형이 빠지고 별칭만 있으면 실린 칸으로 보여 줍니다."],
+        ["MQTT 패킷", "Wireshark 의 «Copy as Hex Stream» 이나 TCP 기록의 바이트를 넣으면 고정 헤더(종류·플래그·남은 길이)와 PUBLISH 의 토픽·QoS·RETAIN·DUP·패킷 ID, MQTT 5 속성, 그리고 페이로드를 다시 위 규칙으로 풉니다. CONNECT·CONNACK·SUBSCRIBE·SUBACK·PUBACK·PING·DISCONNECT 도 칸을 나눠 보입니다."],
+        ["그 밖", "글이면 글로, 다른 protobuf 면 필드 번호·형·값 나무로, 아니면 HEX 로 보여 줍니다."],
+      ] as [string, string][],
+      limitTitle: "한계",
+      limit: "MQTT 3.1.1 과 5.0 은 PUBLISH 모양이 같아 보여도 5.0 에는 속성 칸이 끼므로, 패킷만 있고 CONNECT 가 없으면 버전을 직접 골라야 맞게 풀릴 수 있습니다. 압축된 Sparkplug(algorithm 속성)·DataSet 의 행 값·Template 안쪽·BooleanArray 는 자세히 풀지 않습니다. TLS(8883) 로 암호화된 바이트는 풀 수 없습니다.",
+      appTitle: "PortDock 앱으로 더",
+      app1: "브로커와 클라이언트 사이에 끼워 실제로 오가는 바이트를 보려면",
+      app2: "의 중계(relay) 모드로 1883 연결을 지나가게 하고 HEX 기록을 복사해 여기에 붙여 넣습니다. «pcap 저장» 으로 저장한 파일은 Wireshark 로도 열 수 있습니다.",
+      srcTitle: "근거",
+      refs: [
+        ["https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html", "MQTT Version 3.1.1 (OASIS)", "2장 고정 헤더·남은 길이, 3장 패킷"],
+        ["https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html", "MQTT Version 5.0 (OASIS)", "2.2.2 속성, 이유 코드"],
+        ["https://sparkplug.eclipse.org/specification/", "Eclipse Sparkplug Specification", "3.0 의 sparkplug_b.proto·형 번호"],
+        ["https://protobuf.dev/programming-guides/encoding/", "Protocol Buffers — Encoding", "varint·wire type"],
+      ] as [string, string, string][],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["Sparkplug 의 .proto 파일이 필요한가요?", "아니요. Sparkplug B 3.0 의 Payload·Metric 필드 번호를 이 쪽이 직접 알고 있어 바이트만 있으면 됩니다."],
+        ["지표 이름이 없고 별칭(alias)만 나옵니다", "Sparkplug 는 NBIRTH·DBIRTH 에서 이름과 별칭을 한 번 알려 주고, 이후 DATA 에는 별칭만 싣기도 합니다. 같은 노드의 BIRTH 메시지를 풀어 별칭 번호에 맞는 이름을 찾으세요."],
+        ["timestamp 가 1970년으로 나옵니다", "Sparkplug 의 시각은 1970-01-01 UTC 부터의 밀리초입니다. 보내는 쪽이 초나 0 을 넣으면 그렇게 보입니다."],
+      ] as [string, string][],
+      m: {
+        as: { hex: "HEX 로 읽음", base64: "Base64 로 읽음", text: "텍스트(UTF-8)로 읽음" },
+        bytes: "바이트",
+        packets: "MQTT 패킷",
+        version: "버전",
+        packet: "패킷",
+        field: "항목",
+        value: "값",
+        payload: "페이로드",
+        notPacket: "MQTT 패킷으로 읽히지 않아 페이로드로 풀었습니다:",
+        json: "JSON",
+        text: "텍스트",
+        binary: "바이너리(HEX)",
+        empty: "빈 페이로드",
+        protobuf: "protobuf 필드(스키마 없이)",
+        spb: "Sparkplug B",
+        spbHead: "timestamp · seq · uuid",
+        cols: ["이름", "별칭", "형", "값", "시각"],
+        props: "속성",
+        flags: "표시",
+        err: { empty: "붙여 넣은 내용이 없습니다.", hex: "HEX 로 읽을 수 없습니다(16진 글자 두 개씩).", base64: "Base64 로 읽을 수 없습니다." },
+      },
+    }
+  : {
+      title: "MQTT Payload Decoder (Sparkplug B)",
+      desc: "Paste an MQTT message as HEX, Base64 or text to format JSON and decode Sparkplug B metrics (name, alias, type, value) and raw packets (topic, QoS, packet ID).",
+      input: "Payload or MQTT packet (HEX, Base64 or text)",
+      help: "e.g. 08 80 C0 … · CIDAwb… · {\"temp\":21.5} · 30 6C 00 19 … — several packets in a row are fine.",
+      mode: "Input format",
+      modes: [["auto", "Auto"], ["hex", "HEX"], ["base64", "Base64"], ["text", "Text (UTF-8)"]],
+      what: "Decode as",
+      whats: [["auto", "Auto (packet if it is one)"], ["packet", "MQTT packet"], ["payload", "Payload only"]],
+      version: "MQTT version",
+      versions: [["auto", "Auto (from CONNECT, else 3.1.1)"], ["4", "3.1.1"], ["5", "5.0"]],
+      topic: "Topic (when pasting only a payload, optional)",
+      topicHelp: "spBv1.0/… tries Sparkplug B first.",
+      examples: "Examples",
+      privacy: "No broker connection is made. The bytes you paste are decoded inside this browser and never sent anywhere. A CONNECT password is shown only as its length.",
+      howTitle: "What it decodes",
+      how: [
+        ["JSON", "UTF-8 text that starts with { or [ and parses as JSON is shown indented."],
+        ["Sparkplug B", "Reads the Eclipse Sparkplug protobuf payload (timestamp, metrics, seq) directly, without a schema file. Each metric's name, alias, time, type (Int16, Float, Boolean …) and value is listed; signed Int8/Int16/Int32 values carried as uint32 are converted by type. When a DATA message carries only an alias and no type, the value is shown from the field it came in."],
+        ["MQTT packets", "Paste bytes from Wireshark «Copy as Hex Stream» or a TCP log to see the fixed header (type, flags, remaining length), PUBLISH topic, QoS, RETAIN, DUP and packet ID, MQTT 5 properties, and the payload decoded again by the rules above. CONNECT, CONNACK, SUBSCRIBE, SUBACK, PUBACK, PING and DISCONNECT are split into fields too."],
+        ["Anything else", "Text is shown as text, other protobuf as a tree of field numbers, types and values, and the rest as HEX."],
+      ] as [string, string][],
+      limitTitle: "Limits",
+      limit: "MQTT 3.1.1 and 5.0 PUBLISH packets look alike, but 5.0 adds a properties field, so without a CONNECT in the bytes you may need to pick the version. Compressed Sparkplug payloads (algorithm property), DataSet row values, Template contents and BooleanArray are not decoded in detail. TLS-encrypted bytes (8883) cannot be decoded.",
+      appTitle: "More with the PortDock apps",
+      app1: "To see the bytes actually exchanged between a client and the broker, route the 1883 connection through the relay mode of",
+      app2: "and paste its HEX log here. Files saved with «Save as pcap» open in Wireshark as well.",
+      srcTitle: "References",
+      refs: [
+        ["https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html", "MQTT Version 3.1.1 (OASIS)", "chapter 2 fixed header and remaining length, chapter 3 packets"],
+        ["https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html", "MQTT Version 5.0 (OASIS)", "2.2.2 properties, reason codes"],
+        ["https://sparkplug.eclipse.org/specification/", "Eclipse Sparkplug Specification", "sparkplug_b.proto and data type numbers in 3.0"],
+        ["https://protobuf.dev/programming-guides/encoding/", "Protocol Buffers — Encoding", "varints and wire types"],
+      ] as [string, string, string][],
+      faqTitle: "FAQ",
+      faq: [
+        ["Do I need the Sparkplug .proto file?", "No. This page knows the Sparkplug B 3.0 Payload and Metric field numbers, so the bytes are enough."],
+        ["Metrics show only an alias, no name", "Sparkplug announces names and aliases once in NBIRTH/DBIRTH and may send only aliases in later DATA messages. Decode the node's BIRTH message to match alias numbers to names."],
+        ["The timestamp shows 1970", "Sparkplug times are milliseconds since 1970-01-01 UTC. If the sender puts seconds or 0 there, it looks like this."],
+      ] as [string, string][],
+      m: {
+        as: { hex: "read as HEX", base64: "read as Base64", text: "read as text (UTF-8)" },
+        bytes: "bytes",
+        packets: "MQTT packets",
+        version: "version",
+        packet: "Packet",
+        field: "Field",
+        value: "Value",
+        payload: "Payload",
+        notPacket: "Not readable as MQTT packets, decoded as a payload instead:",
+        json: "JSON",
+        text: "Text",
+        binary: "Binary (HEX)",
+        empty: "Empty payload",
+        protobuf: "protobuf fields (no schema)",
+        spb: "Sparkplug B",
+        spbHead: "timestamp · seq · uuid",
+        cols: ["Name", "Alias", "Type", "Value", "Time"],
+        props: "Properties",
+        flags: "Flags",
+        err: { empty: "Nothing to decode.", hex: "Not valid HEX (two hex digits per byte).", base64: "Not valid Base64." },
+      },
+    };
+const labels = Object.fromEntries(Object.entries(LABELS).map(([k, v]) => [k, v[lang]]));
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "MQTT 페이로드 디코더 — Sparkplug B·HEX 풀이 — PortDock" : "MQTT Payload Decoder: Sparkplug B & Hex Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="mq" data-lang={lang} data-msg={JSON.stringify(L.m)} data-labels={JSON.stringify(labels)} onsubmit="return false">
+      <label class="fld">
+        {L.input}
+        <textarea id="data" class="mono" rows="4" spellcheck="false" autocomplete="off">{EXAMPLES[3][1]}</textarea>
+        <span class="note">{L.help}</span>
+      </label>
+      <div class="row">
+        <label class="fld" style="flex:0 1 170px">
+          {L.mode}
+          <select id="mode">{L.modes.map(([v, n]) => <option value={v}>{n}</option>)}</select>
+        </label>
+        <label class="fld" style="flex:0 1 220px">
+          {L.what}
+          <select id="what">{L.whats.map(([v, n]) => <option value={v}>{n}</option>)}</select>
+        </label>
+        <label class="fld" style="flex:0 1 240px">
+          {L.version}
+          <select id="ver">{L.versions.map(([v, n]) => <option value={v}>{n}</option>)}</select>
+        </label>
+      </div>
+      <label class="fld">
+        {L.topic}
+        <input id="topic" class="mono" spellcheck="false" autocomplete="off" placeholder="spBv1.0/Plant/NDATA/Edge1" />
+        <span class="note">{L.topicHelp}</span>
+      </label>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {EXAMPLES.map(([n, d]) => <button type="button" class="btn tight" data-ex={d}>{n}</button>)}
+      </div>
+      <p class="note" style="margin:0">{L.privacy}</p>
+      <p class="err" id="err" role="alert"></p>
+      <div id="out" aria-live="polite"></div>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ul>{L.how.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
+      <h2>{L.limitTitle}</h2>
+      <p>{L.limit}</p>
+      <h2>{L.appTitle}</h2>
+      <p>
+        {L.app1} <a href={url(lang, "tcp/")}>PortDock TCP</a> {L.app2}
+      </p>
+      <p>
+        {ko ? "Modbus TCP·MC 프로토콜 캡처는 " : "For Modbus TCP and MC protocol captures, use the "}
+        <a href={url(lang, "tools/pcap-analyzer/")}>{ko ? "산업 통신 pcap 해석기" : "Industrial pcap Analyzer"}</a>{ko ? " 를 씁니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        {
+          L.refs.map(([u, t, n]) => (
+            <li>
+              <a href={u} rel="noopener">{t}</a> — {n}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    #out :global(h3) {
+      font-size: 16px;
+      margin: 16px 0 6px;
+    }
+    #out :global(.scroll) {
+      overflow-x: auto;
+    }
+    #out :global(table.t) {
+      font-size: 14px;
+    }
+    #out :global(td.pre),
+    #out :global(pre) {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+    }
+    #out :global(pre) {
+      background: var(--code-bg);
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin: 4px 0;
+    }
+    #out :global(.mq-pkt) {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 6px 12px 10px;
+      margin: 10px 0;
+    }
+    #out :global(.mq-tree) {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      margin: 0;
+      padding-left: 18px;
+    }
+  </style>
+  <script>
+    import { analyze, InputError, type Payload, type PbNode, type MqttPacket } from "../lib/mqttDecode";
+    const form = document.getElementById("mq") as HTMLFormElement;
+    const M = JSON.parse(form.dataset.msg ?? "{}");
+    const LB: Record<string, string> = JSON.parse(form.dataset.labels ?? "{}");
+    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
+    const data = document.getElementById("data") as HTMLTextAreaElement;
+    const mode = document.getElementById("mode") as HTMLSelectElement;
+    const what = document.getElementById("what") as HTMLSelectElement;
+    const ver = document.getElementById("ver") as HTMLSelectElement;
+    const topic = document.getElementById("topic") as HTMLInputElement;
+    const err = document.getElementById("err")!;
+    const out = document.getElementById("out")!;
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    function table(head: string[], rows: string[][], pre: number[] = []) {
+      const box = el("div", "scroll");
+      const tb = el("table", "t");
+      const hr = el("tr");
+      for (const h of head) hr.append(el("th", "", h));
+      const th = el("thead");
+      th.append(hr);
+      const body = el("tbody");
+      for (const r of rows) {
+        const tr = el("tr");
+        r.forEach((c, i) => tr.append(el("td", pre.includes(i) ? "pre" : "", c)));
+        body.append(tr);
+      }
+      tb.append(th, body);
+      box.append(tb);
+      return box;
+    }
+    function tree(nodes: PbNode[]) {
+      const ul = el("ul", "mq-tree");
+      for (const n of nodes) {
+        const li = el("li", "", `${n.field} (${n.wire}): ${n.value}`);
+        if (n.children) li.append(tree(n.children));
+        ul.append(li);
+      }
+      return ul;
+    }
+    function payload(p: Payload, into: HTMLElement) {
+      if (p.kind === "empty") into.append(el("p", "note", M.empty));
+      else if (p.kind === "json") into.append(el("h3", "", M.json), el("pre", "", p.pretty));
+      else if (p.kind === "text") into.append(el("h3", "", M.text), el("pre", "", p.text));
+      else if (p.kind === "binary") into.append(el("h3", "", M.binary), el("pre", "", p.hex));
+      else if (p.kind === "protobuf") into.append(el("h3", "", M.protobuf), tree(p.tree));
+      else {
+        const s = p.spb;
+        into.append(el("h3", "", M.spb));
+        const head = [s.timestamp && `timestamp ${s.timestamp}`, s.seq !== undefined && `seq ${s.seq}`, s.uuid && `uuid ${s.uuid}`, s.body !== undefined && `body ${s.body} B`].filter(Boolean).join(" · ");
+        if (head) into.append(el("p", "mono", head));
+        const rows = s.metrics.map((m) => {
+          const flags = [m.isHistorical && "historical", m.isTransient && "transient", m.hasMetadata && "metadata"].filter(Boolean).join(", ");
+          const props = m.properties?.map(([k, v]) => `${k}=${v}`).join(", ");
+          return [m.name ?? "", m.alias ?? "", m.typeName ?? "", m.value + (props ? `\n{${props}}` : "") + (flags ? `\n(${flags})` : ""), m.timestamp ?? ""];
+        });
+        into.append(table(M.cols, rows, [3]));
+      }
+    }
+    function packet(p: MqttPacket & { decoded?: Payload }) {
+      const box = el("div", "mq-pkt");
+      box.append(el("h3", "", `${M.packet} @${p.offset} — ${p.name}`));
+      box.append(table([M.field, M.value], p.fields.map((f) => [LB[f.k] ?? f.k, f.v + (f.note ? ` — ${f.note[lang]}` : "")]), [1]));
+      if (p.decoded) {
+        const pl = el("div");
+        payload(p.decoded, pl);
+        box.append(pl);
+      }
+      return box;
+    }
+    function run() {
+      err.textContent = "";
+      out.replaceChildren();
+      if (!data.value.trim()) return;
+      try {
+        const a = analyze(data.value, {
+          mode: mode.value as "auto",
+          what: what.value as "auto",
+          version: ver.value === "auto" ? "auto" : (Number(ver.value) as 4 | 5),
+          topic: topic.value.trim() || undefined,
+        });
+        const sum = `${a.bytes} ${M.bytes} · ${M.as[a.inputAs]}`;
+        if (a.kind === "packets") {
+          out.append(el("p", "note", `${sum} · ${M.packets} ${a.packets.length} · ${M.version} ${a.version === 5 ? "5.0" : "3.1.1"}`));
+          for (const p of a.packets) out.append(packet(p));
+        } else {
+          out.append(el("p", "note", sum));
+          if (a.packetError) out.append(el("p", "note", `${M.notPacket} ${a.packetError}`));
+          payload(a.payload, out);
+        }
+      } catch (e) {
+        err.textContent = e instanceof InputError ? (M.err[e.message] ?? e.message) : String(e);
+      }
+    }
+    for (const x of [data, topic]) x.addEventListener("input", run);
+    for (const x of [mode, what, ver]) x.addEventListener("change", run);
+    for (const b of form.querySelectorAll<HTMLButtonElement>("[data-ex]"))
+      b.addEventListener("click", () => {
+        data.value = b.dataset.ex ?? "";
+        run();
+      });
+    run();
+  </script>
+</Base>

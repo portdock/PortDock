@@ -1,0 +1,375 @@
+---
+// 웹 도구: 블루스크린 정지 코드 사전 — 코드·이름·이벤트 1001 메시지를 붙여 넣으면 뜻·원인 후보·볼 순서·Microsoft 문서 링크.
+// 자료와 찾기는 lib/bsod.ts(시험 있음). 붙여 넣은 글은 이 브라우저 안에서만 찾고 어디에도 보내지 않는다. 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { BUGCHECKS, codeText, msUrl, MS_LIST_URL, MS_USER_URL } from "../lib/bsod";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/bsod-codes/";
+const SAMPLE_1001 =
+  "The computer has rebooted from a bugcheck.  The bugcheck was: 0x00000133 (0x0000000000000001, 0x0000000000001e00, 0xfffff80000000000, 0x0000000000000000). A dump was saved in: C:\\WINDOWS\\MEMORY.DMP.";
+const L = ko
+  ? {
+      title: "블루스크린 정지 코드 사전",
+      desc: "0xD1·0x133·0x124 같은 블루스크린 코드나 이름, 이벤트 1001 메시지를 붙여 넣으면 뜻·원인 후보·볼 순서·Microsoft 문서를 보여 줍니다.",
+      input: "정지 코드·이름·이벤트 1001 메시지",
+      ph: "예: 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · 이벤트 1001 메시지 전체",
+      examples: "예시",
+      ex: ["0xD1", "WHEA", "블루스크린 화면 문구", "이벤트 1001 메시지"],
+      privacy: "붙여 넣은 글은 이 브라우저 안에서만 찾고 어디에도 보내지 않습니다.",
+      findTitle: "코드는 어디서 보나요",
+      find: [
+        "블루스크린 화면의 «중지 코드(Stop code)» 줄 — 이름(예: DPC_WATCHDOG_VIOLATION)과, 있으면 «실패한 작업(What failed)» 의 .sys 파일 이름을 적어 둡니다.",
+        "이미 다시 켜졌다면: 시작 → «이벤트 뷰어» → Windows 로그 → 시스템 → 오른쪽 «현재 로그 필터링» 에서 이벤트 ID 1001 을 넣습니다. 원본이 «BugCheck» 인 기록의 «일반» 탭 글(0x… (0x…, 0x…, 0x…, 0x…))을 통째로 복사해 위 칸에 붙여 넣으면 코드와 매개변수 4개를 뽑아 줍니다.",
+        "«신뢰성 모니터»(시작 → «안정성 기록 보기»)에서도 빨간 X 의 «Windows 가 예기치 않게 종료됨» 을 누르면 BCCode 가 보입니다. «BCCode: 133» 같은 줄도 그대로 붙여 넣으면 됩니다.",
+        "덤프 파일은 C:\\Windows\\Minidump\\ 와 C:\\Windows\\MEMORY.DMP 에 남습니다(설정에 따라 없을 수 있음). 이 쪽은 덤프 파일을 읽지 않습니다.",
+      ],
+      kp41Title: "Kernel-Power 41 은 원인이 아니라 결과입니다",
+      kp41: "이벤트 41(Kernel-Power, «시스템이 먼저 완전히 종료되지 않고 다시 부팅되었습니다»)은 «지난번에 깔끔하게 꺼지지 않았다» 는 기록일 뿐, 왜 꺼졌는지는 담지 않습니다. 41 의 BugcheckCode 가 0 이 아니면 블루스크린이 있었던 것이니 그 코드(10진수 — 예: 307 = 0x133)나 같은 시각의 1001 을 보세요. BugcheckCode 가 0 이면 블루스크린 기록 없이 꺼진 것이라, 전원 버튼을 길게 누름·정전·파워 서플라이·과열·메인보드 쪽 후보를 봅니다. 이벤트 6008(«예기치 않은 종료»)도 같은 «결과» 기록입니다.",
+      dec: "41 의 BugcheckCode(10진)",
+      decGo: "16진으로",
+      tableTitle: "자주 나오는 정지 코드",
+      cols: ["코드", "이름", "뜻", "Microsoft 문서"],
+      doc: "문서",
+      srcTitle: "근거",
+      src: "뜻·원인 후보·볼 순서는 Microsoft 의 버그 검사 코드 참조(Bug Check Code Reference) 문서를 읽고 이 사이트가 줄여 쓴 것입니다. 원인 후보는 흔히 보는 쪽일 뿐 하나로 정해 주지 않습니다. 매개변수의 자세한 뜻은 각 코드의 Microsoft 문서를 보세요.",
+      refs: [
+        [MS_LIST_URL, "Microsoft Learn — Bug Check Code Reference", "코드 전체 목록(개발자용, 영어 원문)"],
+        [MS_USER_URL, "Microsoft 지원 — 블루스크린 오류 해결", "사용자용 안내"],
+      ] as [string, string, string][],
+      appTitle: "PortDock 앱으로 더",
+      app1: "블루스크린·갑자기 꺼짐이 언제 몇 번 있었는지 한 화면에서 보려면",
+      app2: "의 «이 PC» 탭에서 «이 PC 설정 읽기» 를 누릅니다. 관리자 권한 없이 읽기 전용으로, 최근 예기치 않은 종료(Kernel-Power 41·EventLog 6008)와 하드웨어 오류(WHEA-Logger·disk·Ntfs) 기록의 건수·마지막 시각을 보여 줍니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["코드를 넣으면 원인을 알 수 있나요?", "코드는 «어떤 종류의 멈춤인지» 까지 알려 줍니다. 원인 후보와 볼 순서를 좁히는 데 쓰고, 화면에 적힌 .sys 이름·같은 시각의 이벤트 기록·코드가 매번 같은지를 함께 보세요. 정확한 원인은 덤프 분석(WinDbg)이 필요할 수 있습니다."],
+        ["0x0000007E 와 0x1000007E 는 다른가요?", "같은 뜻입니다. 0x10000000 이 붙은 판은 일부 Windows 가 매개변수 형식을 달리해서 쓴 것으로, 이 사전은 같은 항목으로 보여 줍니다."],
+        ["코드가 매번 다릅니다", "드라이버 하나보다 메모리·전원·온도·오버클럭 같은 하드웨어 쪽 후보가 큽니다. Windows 메모리 진단과 BIOS 기본값으로 먼저 비교해 보세요."],
+        ["ntoskrnl.exe 가 원인으로 나옵니다", "ntoskrnl.exe·hal.dll 은 Windows 커널 자체라 멈춘 곳으로 자주 찍히지만, 대개 다른 드라이버나 하드웨어 문제의 결과입니다. 그 이름만으로 Windows 를 다시 설치하기보다 같은 시각의 다른 기록을 먼저 보세요."],
+      ] as [string, string][],
+      // 화면에 그리는 결과 문구
+      msg: {
+        none: "코드나 이름을 찾지 못했습니다. 0x 로 시작하는 16진 코드(예: 0x0000001A), 이름 일부(예: MEMORY), 이벤트 1001 메시지를 넣어 보세요.",
+        unknown: "이 사전에 없는 코드입니다. Microsoft 의 전체 목록에서 찾아보세요:",
+        many: "이름이 여럿에 맞습니다 — 하나를 고르세요:",
+        variant: "0x10000000 이 붙은 판 — 같은 뜻으로 봅니다.",
+        meaning: "뜻",
+        causes: "원인 후보",
+        steps: "볼 순서",
+        params: "매개변수(이벤트 1001)",
+        files: "글에 적힌 파일",
+        filesNote: "멈춘 곳으로 적힌 드라이버가 첫 후보입니다. ntoskrnl.exe·hal.dll·win32k*.sys 같은 Windows 파일은 다른 문제의 결과로 찍히는 경우가 많습니다.",
+        doc: "Microsoft 문서(영어 원문, 개발자용)",
+        from: { "bugcheck-message": "이벤트 1001 메시지에서 찾음", keyword: "글 속의 코드 줄에서 찾음", hex: "코드로 찾음", name: "이름으로 찾음", none: "" },
+      },
+    }
+  : {
+      title: "Blue Screen (BSOD) Stop Code Lookup",
+      desc: "Paste a blue screen stop code (0xD1, 0x133, 0x124 …), its name or an Event 1001 message to see its meaning, likely causes, what to check and the Microsoft page.",
+      input: "Stop code, name or Event 1001 message",
+      ph: "e.g. 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · a whole Event 1001 message",
+      examples: "Examples",
+      ex: ["0xD1", "WHEA", "Blue screen text", "Event 1001 message"],
+      privacy: "What you paste is searched inside this browser and never sent anywhere.",
+      findTitle: "Where to find the code",
+      find: [
+        "On the blue screen, the «Stop code» line — note the name (such as DPC_WATCHDOG_VIOLATION) and, if shown, the .sys file under «What failed».",
+        "If the PC already restarted: Start → «Event Viewer» → Windows Logs → System → «Filter Current Log» on the right, and enter event ID 1001. Copy the whole «General» text of an entry whose source is «BugCheck» (0x… (0x…, 0x…, 0x…, 0x…)) into the box above — it pulls out the code and the four parameters.",
+        "In «Reliability Monitor» (Start → «View reliability history») click a red X «Windows was not properly shut down» to see the BCCode. A line like «BCCode: 133» can be pasted as is.",
+        "Dumps are kept in C:\\Windows\\Minidump\\ and C:\\Windows\\MEMORY.DMP (depending on settings). This page does not read dump files.",
+      ],
+      kp41Title: "Kernel-Power 41 is the result, not the cause",
+      kp41: "Event 41 (Kernel-Power, «The system has rebooted without cleanly shutting down first») only records that the last shutdown was not clean; it does not say why. If its BugcheckCode is not 0 there was a blue screen, so look at that code (decimal — e.g. 307 = 0x133) or the 1001 entry at the same time. If BugcheckCode is 0 the PC went off without a recorded blue screen: look at a held power button, a power outage, the power supply, overheating or the motherboard. Event 6008 («unexpected shutdown») is the same kind of after-the-fact record.",
+      dec: "BugcheckCode from event 41 (decimal)",
+      decGo: "To hex",
+      tableTitle: "Common stop codes",
+      cols: ["Code", "Name", "Meaning", "Microsoft page"],
+      doc: "page",
+      srcTitle: "References",
+      src: "Meanings, likely causes and checks are this site's own short summaries of Microsoft's Bug Check Code Reference. Likely causes are the usual suspects, not a single answer. For what each parameter means, see the Microsoft page for that code.",
+      refs: [
+        [MS_LIST_URL, "Microsoft Learn — Bug Check Code Reference", "the full code list (for developers)"],
+        [MS_USER_URL, "Microsoft Support — Troubleshoot blue screen errors", "guidance for users"],
+      ] as [string, string, string][],
+      appTitle: "More with the PortDock apps",
+      app1: "To see when and how often blue screens and sudden shutdowns happened, open the «This PC» tab of",
+      app2: "and press «Read this PC's settings». Read-only and without admin rights, it shows the count and last time of recent unexpected shutdowns (Kernel-Power 41, EventLog 6008) and hardware errors (WHEA-Logger, disk, Ntfs).",
+      faqTitle: "FAQ",
+      faq: [
+        ["Does the code tell me the cause?", "The code tells you what kind of stop it was. Use it to narrow the likely causes and checks, together with the .sys name on the screen, events at the same time and whether the code is the same every time. Finding the exact cause may need dump analysis (WinDbg)."],
+        ["Are 0x0000007E and 0x1000007E different?", "They mean the same. The version with 0x10000000 added is how some Windows versions report a different parameter format; this lookup shows the same entry."],
+        ["The code is different every time", "Hardware — memory, power, temperature, overclocking — is more likely than a single driver. Start with Windows Memory Diagnostic and BIOS defaults."],
+        ["ntoskrnl.exe is listed as the cause", "ntoskrnl.exe and hal.dll are the Windows kernel itself and often show up where the system stopped, but usually as the result of another driver or a hardware problem. Look at other records from the same time before reinstalling Windows over that name."],
+      ] as [string, string][],
+      msg: {
+        none: "No code or name found. Try a hex code starting with 0x (e.g. 0x0000001A), part of a name (e.g. MEMORY) or an Event 1001 message.",
+        unknown: "This code is not in this lookup. Look it up in Microsoft's full list:",
+        many: "The name matches several codes — pick one:",
+        variant: "The 0x10000000 variant — treated as the same code.",
+        meaning: "Meaning",
+        causes: "Likely causes",
+        steps: "What to check, in order",
+        params: "Parameters (Event 1001)",
+        files: "Files named in the text",
+        filesNote: "A driver named where it stopped is the first candidate. Windows files such as ntoskrnl.exe, hal.dll or win32k*.sys often show up as the result of another problem.",
+        doc: "Microsoft page (for developers)",
+        from: { "bugcheck-message": "found in an Event 1001 message", keyword: "found on a code line in the text", hex: "found by code", name: "found by name", none: "" },
+      },
+    };
+const EXAMPLES = ["0xD1", "WHEA_UNCORRECTABLE_ERROR", "Stop code: DPC WATCHDOG VIOLATION\nWhat failed: storahci.sys", SAMPLE_1001];
+const sorted = [...BUGCHECKS].sort((a, b) => (a.code >>> 0) - (b.code >>> 0));
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "블루스크린 코드 사전 — 정지 코드 뜻·원인 후보 — PortDock" : "BSOD Stop Code Lookup: Meaning & Likely Causes — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="bs" data-lang={lang} data-msg={JSON.stringify(L.msg)} onsubmit="return false">
+      <label class="fld">
+        {L.input}
+        <textarea id="q" class="mono" rows="3" spellcheck="false" autocomplete="off" placeholder={L.ph}>0xD1</textarea>
+      </label>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {EXAMPLES.map((e, i) => <button type="button" class="btn tight" data-ex={e}>{L.ex[i]}</button>)}
+      </div>
+      <p class="note" style="margin:0">{L.privacy}</p>
+      <div id="out" aria-live="polite"></div>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.findTitle}</h2>
+      <ol>{L.find.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.kp41Title}</h2>
+      <p>{L.kp41}</p>
+      <p class="dec-row">
+        <label>{L.dec} <input id="dec" class="mono" inputmode="numeric" autocomplete="off" placeholder="307" /></label>
+        <button type="button" class="btn tight" id="decGo">{L.decGo}</button>
+        <output id="decOut" class="mono"></output>
+      </p>
+      <h2>{L.tableTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.cols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              sorted.map((b) => (
+                <tr id={`c-${(b.code >>> 0).toString(16)}`}>
+                  <td class="mono">{codeText(b.code)}</td>
+                  <td class="mono bs-name">{b.name}</td>
+                  <td>{b.meaning[lang]}</td>
+                  <td>
+                    <a href={msUrl(b)} rel="noopener">{L.doc}</a>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2>{L.appTitle}</h2>
+      <p>
+        {L.app1} <a href={url(lang, "port-inspector/")}>PortDock Port Inspector</a> {L.app2}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <p>{L.src}</p>
+      <ul>
+        {
+          L.refs.map(([u, t, n]) => (
+            <li>
+              <a href={u} rel="noopener">{t}</a> — {n}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .scroll {
+      overflow-x: auto;
+    }
+    .bs-name {
+      overflow-wrap: anywhere;
+      font-size: 13px;
+    }
+    .dec-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+    }
+    .dec-row label {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .dec-row input {
+      width: 9em;
+    }
+    #out :global(.bs-head) {
+      margin: 6px 0 2px;
+      font-size: 20px;
+      overflow-wrap: anywhere;
+    }
+    #out :global(.bs-head .mono) {
+      margin-right: 8px;
+    }
+    #out :global(.bs-from) {
+      margin: 0 0 8px;
+    }
+    #out :global(h3) {
+      font-size: 15px;
+      margin: 12px 0 4px;
+    }
+    #out :global(ul),
+    #out :global(ol) {
+      margin: 0;
+      padding-left: 22px;
+      font-size: 15px;
+    }
+    #out :global(.bs-pick) {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    #out :global(.bs-params) {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+  <script>
+    import { findBugcheck, STEPS, codeText, msUrl, MS_LIST_URL, type BugCheck, type FindResult } from "../lib/bsod";
+    const form = document.getElementById("bs") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
+    const M = JSON.parse(form.dataset.msg ?? "{}");
+    const q = document.getElementById("q") as HTMLTextAreaElement;
+    const out = document.getElementById("out")!;
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    function link(href: string, text: string) {
+      const a = el("a", "", text);
+      a.href = href;
+      a.rel = "noopener";
+      return a;
+    }
+    function list(tag: "ul" | "ol", items: string[]) {
+      const l = el(tag);
+      for (const s of items) l.append(el("li", "", s));
+      return l;
+    }
+    function showEntry(b: BugCheck, r: FindResult) {
+      const h = el("p", "bs-head");
+      h.append(el("b", "mono", codeText(r.code ?? b.code)), el("b", "mono", b.name));
+      out.append(h);
+      if (r.how !== "none") out.append(el("p", "note bs-from", M.from[r.how] + (r.variant ? " · " + M.variant : "")));
+      out.append(el("h3", "", M.meaning), el("p", "", b.meaning[lang]));
+      out.append(el("h3", "", M.causes), list("ul", b.causes[lang]));
+      out.append(el("h3", "", M.steps), list("ol", b.steps.map((s) => STEPS[s][lang])));
+      const p = el("p");
+      p.append(link(msUrl(b), M.doc + " — bug-check-" + b.slug));
+      out.append(p);
+    }
+    function run() {
+      out.replaceChildren();
+      const r = findBugcheck(q.value);
+      if (r.bc) showEntry(r.bc, r);
+      else if (r.matches.length > 1) {
+        out.append(el("p", "", M.many));
+        const box = el("div", "bs-pick");
+        for (const b of r.matches) {
+          const btn = el("button", "btn tight", `${codeText(b.code)} ${b.name}`);
+          btn.type = "button";
+          btn.addEventListener("click", () => {
+            q.value = b.name;
+            run();
+          });
+          box.append(btn);
+        }
+        out.append(box);
+      } else if (r.code !== undefined) {
+        out.append(el("p", "bs-head mono", codeText(r.code)));
+        const p = el("p", "", M.unknown + " ");
+        p.append(link(MS_LIST_URL, "Bug Check Code Reference"));
+        out.append(p);
+      } else if (q.value.trim()) out.append(el("p", "err", M.none));
+      if (r.params) {
+        out.append(el("h3", "", M.params));
+        out.append(el("p", "mono bs-params", r.params.map((x, i) => `${i + 1}: ${x}`).join("  ·  ")));
+      }
+      if (r.files.length) {
+        out.append(el("h3", "", M.files));
+        out.append(el("p", "mono", r.files.join(", ")), el("p", "note", M.filesNote));
+      }
+    }
+    q.addEventListener("input", run);
+    for (const b of form.querySelectorAll<HTMLButtonElement>("[data-ex]"))
+      b.addEventListener("click", () => {
+        q.value = b.dataset.ex ?? "";
+        run();
+      });
+    // 주소 꼬리 #0xd1 · #c-d1 로 열면 그 코드를 찾아 둔다
+    const hash = decodeURIComponent(location.hash.slice(1)).replace(/^c-/, "");
+    if (hash && /^(0x)?[0-9a-f]{1,8}$/i.test(hash)) q.value = hash.startsWith("0x") ? hash : "0x" + hash;
+    run();
+    // 41 의 BugcheckCode(10진) → 16진
+    const dec = document.getElementById("dec") as HTMLInputElement;
+    const decOut = document.getElementById("decOut")!;
+    document.getElementById("decGo")!.addEventListener("click", () => {
+      const n = Number(dec.value.trim());
+      if (!Number.isInteger(n) || n < 0 || n > 0xffffffff) {
+        decOut.textContent = "–";
+        return;
+      }
+      decOut.textContent = codeText(n);
+      q.value = codeText(n);
+      run();
+    });
+  </script>
+</Base>

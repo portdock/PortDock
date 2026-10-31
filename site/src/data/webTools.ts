@@ -57,7 +57,11 @@ export interface WebTool {
     | "tools/speaker-test/"
     | "tools/gamepad-test/"
     | "tools/mouse-test/"
-    | "tools/monitor-test/";
+    | "tools/monitor-test/"
+    | "tools/bsod-codes/"
+    | "tools/battery-report/"
+    | "tools/barcode-scanner-test/"
+    | "tools/mqtt-decoder/";
   name: L;
   blurb: L;
 }
@@ -289,6 +293,16 @@ export const WEB_TOOLS: WebTool[] = [
     blurb: { ko: "Wireshark·pktmon 캡처 → Modbus TCP·MC 요청/응답 짝, 응답 시간, 무응답, 예외·종료 코드 집계. 브라우저 안에서만.", en: "Wireshark or pktmon capture → Modbus TCP and MC request/response pairs, response times, missing replies, exception and end codes. In your browser only." },
   },
   {
+    path: "tools/mqtt-decoder/",
+    name: { ko: "MQTT 페이로드 디코더 (Sparkplug B)", en: "MQTT Payload Decoder (Sparkplug B)" },
+    blurb: { ko: "HEX·Base64·텍스트 → JSON 정리, Sparkplug B 지표(이름·별칭·형·값), 원시 MQTT 패킷(헤더·토픽·QoS·패킷 ID) 풀이.", en: "HEX, Base64 or text → pretty JSON, Sparkplug B metrics (name, alias, type, value), raw MQTT packets (header, topic, QoS, packet ID)." },
+  },
+  {
+    path: "tools/barcode-scanner-test/",
+    name: { ko: "바코드 스캐너 테스트", en: "Barcode Scanner Test" },
+    blurb: { ko: "찍힌 글자와 Enter·Tab·GS, 글자 사이 ms(스캐너인지), 한글 입력 상태로 깨진 글자 되살리기, Caps Lock, GS1 AI 풀이.", en: "Scanned text with Enter, Tab and GS shown, ms between characters, text garbled by a Korean IME restored, Caps Lock, GS1 AIs." },
+  },
+  {
     path: "tools/pump-fan-affinity/",
     name: { ko: "펌프·팬 회전수와 동력 계산기", en: "Pump & Fan Speed vs Power Calculator" },
     blurb: { ko: "인버터 주파수 → 유량·압력·동력(상사 법칙), 한 해 전력량 차, 원하는 유량의 주파수.", en: "Drive frequency → flow, pressure and power (affinity laws), yearly energy difference, frequency for a target flow." },
@@ -333,6 +347,17 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/monitor-test/",
     name: { ko: "모니터 불량화소·주사율 테스트", en: "Dead Pixel & Refresh Rate Test" },
     blurb: { ko: "전체 화면 단색(검정·흰색·빨강·초록·파랑·회색)으로 불량화소 보기, 그라데이션 밴딩, 주사율 추정, 잔상 패턴.", en: "Full-screen solid colors for dead or stuck pixels, gradient banding, refresh rate estimate, motion pattern for ghosting." },
+  },
+  // ---- PC 점검(파일·글을 브라우저 안에서만 읽는다)
+  {
+    path: "tools/bsod-codes/",
+    name: { ko: "블루스크린 정지 코드 사전", en: "Blue Screen (BSOD) Stop Code Lookup" },
+    blurb: { ko: "0xD1·0x133·WHEA 같은 코드나 이벤트 1001 메시지를 붙여 넣으면 뜻·원인 후보·볼 순서·Microsoft 문서 링크.", en: "Paste a code like 0xD1 or 0x133, a name, or an Event 1001 message for its meaning, likely causes, what to check and the Microsoft page." },
+  },
+  {
+    path: "tools/battery-report/",
+    name: { ko: "노트북 배터리 리포트 해석기", en: "Laptop Battery Report Reader" },
+    blurb: { ko: "powercfg /batteryreport 의 HTML 을 끌어 놓으면 설계 대비 남은 용량 %, 충전 횟수, 용량 이력 그래프. 브라우저 안에서만.", en: "Drop the powercfg /batteryreport HTML for remaining capacity vs design, cycle count and a capacity history chart. In your browser only." },
   },
 ];
 

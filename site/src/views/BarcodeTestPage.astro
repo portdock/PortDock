@@ -1,0 +1,406 @@
+---
+// 웹 도구: 바코드 스캐너 테스트 — 키보드처럼 들어오는(키보드 웨지·HID) 스캐너를 입력 칸에 찍으면
+// 받은 글자(Enter·Tab·GS 같은 보이지 않는 문자 표시), 글자 사이 간격(스캐너인지 손 입력인지), 접두·접미, 한글 입력 상태로 깨진 글자 되살리기,
+// Caps Lock 영향, GS1 AI(01·10·17·21 …) 풀이를 보인다. 풀이는 lib/barcode.ts(시험 있음). 찍힌 값은 밖으로 보내지 않는다. 광고는 본문 아래에만.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+import "../styles/hw.css";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/barcode-scanner-test/";
+const L = ko
+  ? {
+      title: "바코드 스캐너 테스트",
+      desc: "바코드를 찍으면 받은 글자와 Enter·Tab·GS 같은 보이지 않는 문자, 글자 사이 간격(ms), 접두·접미, 한글 입력 상태로 깨진 글자, Caps Lock, GS1 내용을 보여 줍니다.",
+      box: "여기를 누르고 바코드를 찍으세요",
+      boxNote: "키보드처럼 들어오는(USB HID·키보드 웨지) 스캐너용입니다. 가상 COM 포트 모드 스캐너는 시리얼 터미널로 봅니다.",
+      idle: "끝 판정 간격",
+      idleNote: "Enter·Tab 이 붙지 않는 스캐너는 이만큼 입력이 없으면 한 번의 스캔으로 끝냅니다.",
+      clear: "기록 지우기",
+      privacy: "개인정보: 찍힌 값과 키 입력은 이 브라우저 안에서만 다루고 밖으로 보내지 않습니다.",
+      lastTitle: "마지막 스캔",
+      logTitle: "스캔 기록",
+      waiting: "아직 스캔이 없습니다.",
+      howTitle: "쓰는 법",
+      steps: [
+        "위 칸을 한 번 누르고 바코드를 찍습니다. 같은 바코드를 두세 번, 다른 바코드도 찍어 봅니다.",
+        "«받은 글자» 에서 끝에 ‹CR/Enter›·‹Tab› 이 붙는지 봅니다. 프로그램이 Enter 를 기다리는데 안 붙으면 스캐너 설정의 접미(suffix)를 바꿉니다.",
+        "글자 사이 간격이 수 ms 면 스캐너가 보낸 것, 100 ms 안팎이면 사람이 친 속도입니다. 스캐너인데 간격이 들쭉날쭉하면 USB 허브·원격 데스크톱·느린 PC 에서 글자가 빠질 수 있습니다.",
+        "두 번 이상 찍으면 모든 스캔에 같이 붙은 앞·뒤 글자를 «공통 접두·접미» 로 보여 줍니다.",
+      ],
+      hangulTitle: "한글로 깨질 때(«ㅁㅠㅊ»)",
+      hangul: "스캐너는 키보드처럼 «A 키를 눌렀다» 를 보냅니다. Windows 입력기가 한글 상태면 A 키가 «ㅁ» 이 되어 «ABC» 가 «ㅁㅠㅊ»(또는 «뮻»)로 들어옵니다. 한/영 키로 영문 상태로 바꾸고 찍거나, 스캐너 설정에서 키보드 언어·«한/영 자동 전환»·ALT 코드(ALT+숫자) 방식을 고르는 방법이 있습니다. 이 쪽은 키 위치로 원래 글자를 되살려 함께 보여 줍니다(미국 배열 기준).",
+      capsTitle: "Caps Lock",
+      caps: "스캐너는 대문자를 «Shift + 글쇠» 로 보냅니다. Caps Lock 이 켜져 있으면 대소문자가 뒤바뀌어 «Ab» 가 «aB» 로 들어올 수 있습니다. 스캐너 설정의 «Caps Lock 무시·자동» 옵션이나 Caps Lock 을 끄고 찍어 봅니다.",
+      gs1Title: "GS1 바코드(GS1-128·GS1 DataMatrix)",
+      gs1: "의약품·물류 바코드는 «(01) GTIN (17) 유효 기한 (10) 로트 (21) 일련번호» 처럼 AI(응용 식별자)와 값을 이어 씁니다. 길이가 정해지지 않은 칸(10·21 등) 뒤에는 FNC1 이 GS(0x1D) 문자로 들어와야 다음 칸과 나뉩니다. 키보드로 들어올 때 GS 는 Ctrl+] 로 오거나 아예 빠지기도 해서, 빠지면 칸이 붙어 읽힙니다 — 스캐너 설정에서 GS 대신 쓸 글자를 정할 수 있습니다.",
+      fieldTitle: "현장에서",
+      field: "MES·WMS·검사 프로그램에 스캔 값이 이상하게 들어갈 때, 스캐너 탓인지 PC 입력 상태 탓인지 먼저 가르는 데 씁니다.",
+      appTitle: "PortDock 앱으로 더",
+      app1: "스캐너가 가상 COM 포트(USB CDC·VCP) 모드면 키보드 입력이 아니라 시리얼로 들어옵니다. 그때는",
+      app2: "로 포트를 열어 HEX·끝 문자(CR·LF)를 보고,",
+      app3: "로 USB 시리얼 드라이버·COM 번호를 관리자 권한 없이 읽습니다.",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["스캐너가 아무것도 입력하지 않습니다", "칸을 먼저 눌러 커서가 있어야 합니다. 그래도 없으면 스캐너가 가상 COM 포트 모드일 수 있습니다(장치 관리자 → 포트(COM & LPT)에 보이면 그쪽)."],
+        ["숫자 일부가 빠지거나 순서가 바뀝니다", "글자 간격이 너무 짧으면 느린 PC·원격 데스크톱·가상 머신에서 놓칠 수 있습니다. 스캐너 설정의 «문자 간 지연(inter-character delay)» 을 늘려 봅니다."],
+        ["GS 가 안 보입니다", "많은 스캐너는 키보드 모드에서 GS 를 보내지 않거나 다른 글자로 바꿉니다. 스캐너 설정의 FNC1·GS 대체 문자를 보세요."],
+      ] as [string, string][],
+      m: {
+        received: "받은 글자",
+        intended: "키 위치로 되살린 글자(미국 배열)",
+        keys: "키",
+        median: "글자 간격 중앙값",
+        max: "가장 긴 간격",
+        span: "전체 시간",
+        verdict: "판정",
+        term: "끝 키",
+        none: "없음",
+        v: { scanner: "스캐너 속도", human: "손 입력 속도", unclear: "가리기 어려움", single: "글자 하나" },
+        hangul: "한글 입력 상태로 스캔된 것 같습니다 — 한/영 키로 영문으로 바꾸고 찍거나, 스캐너의 키보드 언어 설정을 바꿉니다. 아래는 키 위치로 되살린 값입니다.",
+        hangulKeys: "한글 → 2벌식 키(대소문자는 못 되살릴 수 있음)",
+        caps: "Caps Lock 이 켜진 채 들어와 대소문자가 바뀐 글자",
+        capsOn: "Caps Lock 이 켜져 있습니다.",
+        named: "글자가 아닌 키",
+        gs1: "GS1 풀이",
+        gs1Cols: ["AI", "이름", "값", "풀이"],
+        noSep: "GS(0x1D) 없이 가변 길이 칸이 끝까지 이어졌습니다 — GS 가 빠졌을 수 있습니다.",
+        rest: "풀지 못한 나머지",
+        retail: "확인 숫자",
+        ok: "맞음",
+        bad: "틀림 — 이어야 함:",
+        affix: "공통 접두·접미",
+        prefix: "접두",
+        suffix: "접미",
+        cols: ["#", "시각", "받은 글자", "글자 수", "간격 중앙값", "끝 키", "판정"],
+      },
+    }
+  : {
+      title: "Barcode Scanner Test",
+      desc: "Scan a barcode to see the text with Enter, Tab and GS shown, ms between characters, prefix and suffix, Korean IME garbling, Caps Lock effects and GS1 data.",
+      box: "Click here and scan a barcode",
+      boxNote: "For scanners that type like a keyboard (USB HID, keyboard wedge). Scanners in virtual COM port mode are checked with a serial terminal.",
+      idle: "End-of-scan gap",
+      idleNote: "For scanners without an Enter or Tab suffix, a scan ends after this much silence.",
+      clear: "Clear log",
+      privacy: "Privacy: scanned values and keystrokes stay inside this browser and are not sent anywhere.",
+      lastTitle: "Last scan",
+      logTitle: "Scan log",
+      waiting: "No scans yet.",
+      howTitle: "How to use",
+      steps: [
+        "Click the box once and scan. Scan the same barcode two or three times, then a different one.",
+        "In «Received», check whether ‹CR/Enter› or ‹Tab› is added at the end. If your program waits for Enter and none arrives, change the scanner's suffix setting.",
+        "A few ms between characters means the scanner sent it; around 100 ms is human typing speed. If a scanner's gaps are uneven, characters can be lost through USB hubs, remote desktop or a slow PC.",
+        "After two or more scans, characters added to every scan are shown as «Common prefix and suffix».",
+      ],
+      hangulTitle: "Garbled into Korean letters («ㅁㅠㅊ»)",
+      hangul: "A scanner sends key presses like a keyboard («the A key»). If the Windows input method is in Korean mode, the A key becomes «ㅁ», so «ABC» arrives as «ㅁㅠㅊ» (or «뮻»). Switch to English input before scanning, or set the scanner's keyboard language, automatic Hangul/English switching or ALT code (ALT+digits) mode. This page restores the original text from key positions (US layout).",
+      capsTitle: "Caps Lock",
+      caps: "Scanners send capitals as «Shift + key». With Caps Lock on, case can flip and «Ab» arrives as «aB». Use the scanner's «ignore Caps Lock / auto» option or turn Caps Lock off.",
+      gs1Title: "GS1 barcodes (GS1-128, GS1 DataMatrix)",
+      gs1: "Pharma and logistics barcodes chain AIs (application identifiers) and values, like «(01) GTIN (17) expiry (10) lot (21) serial». After a variable-length field (10, 21 …) FNC1 must arrive as a GS (0x1D) character to separate it from the next. Over a keyboard interface GS may come as Ctrl+] or be dropped, and fields then run together — scanners let you choose a replacement character for GS.",
+      fieldTitle: "In the field",
+      field: "When scans arrive wrong in an MES, WMS or inspection program, use this to tell a scanner problem from a PC input state problem first.",
+      appTitle: "More with the PortDock apps",
+      app1: "If the scanner is in virtual COM port (USB CDC/VCP) mode, data arrives as serial, not keystrokes. Open the port in",
+      app2: "to see HEX and line endings (CR, LF), and read the USB serial driver and COM number without admin rights in",
+      app3: ".",
+      faqTitle: "FAQ",
+      faq: [
+        ["The scanner types nothing", "Click the box first so it has the cursor. If still nothing, the scanner may be in virtual COM port mode (it appears under Device Manager → Ports (COM & LPT))."],
+        ["Some digits are missing or out of order", "Very short gaps can be missed on slow PCs, remote desktop or virtual machines. Increase the scanner's inter-character delay."],
+        ["I cannot see GS", "Many scanners do not send GS in keyboard mode or replace it with another character. Check the scanner's FNC1 / GS replacement setting."],
+      ] as [string, string][],
+      m: {
+        received: "Received",
+        intended: "Restored from key positions (US layout)",
+        keys: "Keys",
+        median: "Median gap",
+        max: "Longest gap",
+        span: "Total time",
+        verdict: "Looks like",
+        term: "End key",
+        none: "none",
+        v: { scanner: "scanner speed", human: "human typing", unclear: "unclear", single: "one character" },
+        hangul: "This looks scanned with Korean input on — switch to English input before scanning, or change the scanner's keyboard language. Below is the text restored from key positions.",
+        hangulKeys: "Korean → keys on a 2-set Korean layout (case may not be recoverable)",
+        caps: "Characters with flipped case because Caps Lock was on",
+        capsOn: "Caps Lock is on.",
+        named: "Non-character keys",
+        gs1: "GS1 data",
+        gs1Cols: ["AI", "Name", "Value", "Reading"],
+        noSep: "A variable-length field ran to the end without GS (0x1D) — the GS may have been dropped.",
+        rest: "Not decoded",
+        retail: "Check digit",
+        ok: "OK",
+        bad: "wrong — should be",
+        affix: "Common prefix and suffix",
+        prefix: "Prefix",
+        suffix: "Suffix",
+        cols: ["#", "Time", "Received", "Chars", "Median gap", "End key", "Looks like"],
+      },
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "바코드 스캐너 테스트 — Enter·간격·한글 깨짐 확인 — PortDock" : "Barcode Scanner Test Online: Suffix, Timing & GS1 — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card" id="bc" data-lang={lang} data-msg={JSON.stringify(L.m)}>
+      <p class="hw-privacy">{L.privacy}</p>
+      <label class="fld">
+        {L.box}
+        <input id="scan" class="mono bc-input" autocomplete="off" spellcheck="false" autocapitalize="off" />
+        <span class="note">{L.boxNote}</span>
+      </label>
+      <div class="hw-bar">
+        <label class="inl">{L.idle} <input type="number" id="idle" value="300" min="30" max="5000" step="10" style="width:6em" /> ms</label>
+        <button type="button" class="btn tight" id="clear">{L.clear}</button>
+      </div>
+      <p class="note" style="margin:0">{L.idleNote}</p>
+      <h2 class="bc-h">{L.lastTitle}</h2>
+      <div id="last"><p class="note">{L.waiting}</p></div>
+      <h2 class="bc-h">{L.logTitle}</h2>
+      <div id="affix"></div>
+      <div class="hw-log">
+        <table class="t">
+          <thead><tr>{L.m.cols.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="log"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.howTitle}</h2>
+      <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
+      <h2>{L.hangulTitle}</h2>
+      <p>{L.hangul}</p>
+      <h2>{L.capsTitle}</h2>
+      <p>{L.caps}</p>
+      <h2>{L.gs1Title}</h2>
+      <p>{L.gs1}</p>
+      <h2>{L.fieldTitle}</h2>
+      <p>{L.field} {ko ? "키보드 자체의 키 입력은" : "For the keyboard itself, use the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? " 에서 봅니다." : "."}</p>
+      <h2>{L.appTitle}</h2>
+      <p>
+        {L.app1} <a href={url(lang, "serial/")}>PortDock Serial</a> {L.app2} <a href={url(lang, "port-inspector/")}>PortDock Port Inspector</a>{L.app3}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .bc-input {
+      font-size: 20px;
+      padding: 12px;
+    }
+    .bc-h {
+      font-size: 16px;
+      margin: 4px 0 0;
+    }
+    #last :global(.bc-text),
+    #log :global(.bc-text) {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    #last :global(.bc-text) {
+      font-size: 18px;
+      padding: 8px 10px;
+      background: var(--code-bg);
+      border-radius: 8px;
+      margin: 2px 0 8px;
+    }
+    #last :global(.bc-ctrl),
+    #log :global(.bc-ctrl) {
+      color: var(--accent);
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+    #last :global(.bc-warn) {
+      border-left: 4px solid #e0b25a;
+      background: var(--soft);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+    }
+    #last :global(.bc-lbl) {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
+    #last :global(.scroll) {
+      overflow-x: auto;
+    }
+    #affix :global(p) {
+      margin: 4px 0;
+    }
+    #affix :global(.bc-text-inline) {
+      display: inline;
+      font-family: "Cascadia Mono", Consolas, monospace;
+    }
+  </style>
+  <script>
+    import { analyzeScan, commonAffix, visible, hangulToKeys, parseGs1, retailCode, type KeyEv, type ScanAnalysis } from "../lib/barcode";
+    const root = document.getElementById("bc")!;
+    const lang = (root.dataset.lang ?? "ko") as "ko" | "en";
+    const M = JSON.parse(root.dataset.msg ?? "{}");
+    const box = document.getElementById("scan") as HTMLInputElement;
+    const idle = document.getElementById("idle") as HTMLInputElement;
+    const last = document.getElementById("last")!;
+    const log = document.getElementById("log")!;
+    const affix = document.getElementById("affix")!;
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    /** 보이지 않는 글자는 색을 달리한 ‹이름› 으로 */
+    function vis(s: string, cls = "bc-text") {
+      const p = el("div", cls);
+      for (const part of visible(s)) p.append(part.ctrl ? el("span", "bc-ctrl", part.text) : document.createTextNode(part.text));
+      if (!s) p.append(el("span", "bc-ctrl", "–"));
+      return p;
+    }
+    const fmt = (x: number | null) => (x === null ? "–" : `${Math.round(x * 10) / 10} ms`);
+    const termName = (t: string | null) => (t === "\r" ? "Enter" : t === "\t" ? "Tab" : t === "\n" ? "LF" : M.none);
+    function stat(v: string, label: string) {
+      const d = el("div", "hw-stat");
+      d.append(el("b", "", v), el("span", "", label));
+      return d;
+    }
+
+    const scans: { a: ScanAnalysis; at: Date }[] = [];
+    let evs: KeyEv[] = [];
+    let timer: number | undefined;
+
+    function showLast(a: ScanAnalysis) {
+      last.replaceChildren();
+      last.append(el("p", "bc-lbl", M.received), vis(a.received));
+      if (a.intended && a.intended !== a.received) last.append(el("p", "bc-lbl", M.intended), vis(a.intended));
+      const stats = el("div", "hw-stats");
+      stats.append(stat(String(a.keys), M.keys), stat(fmt(a.median), M.median), stat(fmt(a.max), M.max), stat(`${Math.round(a.span)} ms`, M.span), stat(M.v[a.verdict], M.verdict), stat(termName(a.terminator), M.term));
+      last.append(stats);
+      if (a.hangul) {
+        const w = el("div", "bc-warn");
+        w.append(el("p", "", M.hangul));
+        w.append(el("p", "bc-lbl", M.hangulKeys), vis(hangulToKeys(a.received)));
+        last.append(w);
+      }
+      if (a.capsFlipped) last.append(el("p", "bc-warn", `${M.caps}: ${a.capsFlipped}`));
+      else if (a.capsOn) last.append(el("p", "note", M.capsOn));
+      if (a.named.length) last.append(el("p", "note", `${M.named}: ${a.named.join(", ")}`));
+      // GS1·확인 숫자는 되살린 글자(한글 깨짐이면)로 본다
+      const text = a.hangul ? a.intended : a.received;
+      const g = parseGs1(text);
+      if (g) {
+        last.append(el("p", "bc-lbl", M.gs1 + (g.symbology ? ` (]${g.symbology})` : "")));
+        const sc = el("div", "scroll");
+        const tb = el("table", "t");
+        const hr = el("tr");
+        for (const c of M.gs1Cols as string[]) hr.append(el("th", "", c));
+        const th = el("thead");
+        th.append(hr);
+        const body = el("tbody");
+        for (const f of g.fields) {
+          const tr = el("tr");
+          tr.append(el("td", "mono", `(${f.ai})`), el("td", "", f.name[lang]), el("td", "mono", f.value), el("td", f.bad ? "hw-suspect" : "", f.note?.[lang] ?? ""));
+          body.append(tr);
+        }
+        tb.append(th, body);
+        sc.append(tb);
+        last.append(sc);
+        if (g.noSeparator) last.append(el("p", "bc-warn", M.noSep));
+        if (g.rest) last.append(el("p", "note", `${M.rest}: ${g.rest}`));
+      } else {
+        const r = retailCode(text);
+        if (r) last.append(el("p", r.ok ? "" : "hw-suspect", `${r.kind} — ${M.retail}: ${r.ok ? M.ok : `${M.bad} ${r.expect}`}`));
+      }
+    }
+    function showLog() {
+      log.replaceChildren();
+      scans.forEach((s, i) => {
+        const tr = el("tr");
+        const td = el("td");
+        td.append(vis(s.a.received, "bc-text"));
+        tr.append(el("td", "", String(i + 1)), el("td", "mono", s.at.toLocaleTimeString()), td, el("td", "", String([...s.a.received].length)), el("td", "", fmt(s.a.median)), el("td", "", termName(s.a.terminator)), el("td", "", M.v[s.a.verdict]));
+        log.prepend(tr);
+      });
+      affix.replaceChildren();
+      const af = commonAffix(scans.map((s) => s.a.received));
+      if (af.prefix || af.suffix) {
+        const p = el("p");
+        p.append(el("b", "", M.affix + ": "));
+        if (af.prefix) p.append(document.createTextNode(M.prefix + " "), vis(af.prefix, "bc-text-inline"), document.createTextNode(" "));
+        if (af.suffix) p.append(document.createTextNode(M.suffix + " "), vis(af.suffix, "bc-text-inline"));
+        affix.append(p);
+      }
+    }
+    function finish() {
+      clearTimeout(timer);
+      timer = undefined;
+      if (!evs.length && !box.value) return;
+      const a = analyzeScan(evs, box.value);
+      evs = [];
+      box.value = "";
+      if (!a.keys && !a.received) return;
+      scans.push({ a, at: new Date() });
+      showLast(a);
+      showLog();
+    }
+    box.addEventListener("keydown", (e) => {
+      // 붙여 넣기·고르기 같은 단축키는 그대로 둔다
+      if ((e.ctrlKey || e.metaKey) && /^[vcxaz]$/i.test(e.key)) return;
+      evs.push({ t: e.timeStamp || performance.now(), key: e.key, code: e.code, shift: e.shiftKey, caps: e.getModifierState("CapsLock"), ctrl: e.ctrlKey, alt: e.altKey });
+      const end = e.key === "Enter" || e.key === "Tab";
+      if (end || (e.ctrlKey && e.code === "BracketRight")) e.preventDefault();
+      clearTimeout(timer);
+      // 끝 키면 IME 조합이 끝나 칸 값이 바뀐 뒤에 마무리
+      timer = window.setTimeout(finish, end ? 40 : Math.max(30, Number(idle.value) || 300));
+    });
+    box.addEventListener("paste", () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(finish, 50);
+    });
+    document.getElementById("clear")!.addEventListener("click", () => {
+      scans.length = 0;
+      showLog();
+      last.replaceChildren(el("p", "note", "–"));
+      box.focus();
+    });
+    box.focus();
+  </script>
+</Base>

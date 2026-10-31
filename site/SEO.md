@@ -96,6 +96,10 @@
 | 게임패드 테스트(사이트·윈도우11), 스틱 쏠림 | `/tools/gamepad-test/` | «게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인» |
 | 마우스 더블클릭 테스트·증상, 마우스 테스트, 폴링레이트 테스트·측정 | `/tools/mouse-test/` | «마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인» |
 | 불량화소 테스트, 모니터 주사율 확인·테스트 | `/tools/monitor-test/` | «불량화소 테스트 — 모니터 단색 화면·주사율 확인» |
+| 블루스크린 코드, 블루스크린 원인 확인, whea_uncorrectable_error, dpc_watchdog_violation, 이벤트 1001, kernel power 41 | `/tools/bsod-codes/` | «블루스크린 코드 사전 — 정지 코드 뜻·원인 후보», 본문에 «이벤트 1001 에서 코드 찾기»·«Kernel-Power 41 은 결과» |
+| 노트북 배터리 수명 확인, 배터리 리포트 보는법, powercfg batteryreport | `/tools/battery-report/` | «배터리 리포트 해석기 — 노트북 배터리 수명 확인», 명령 복사 단추 |
+| 바코드 스캐너 테스트(프로그램), 바코드 한글 깨짐, 바코드 엔터 | `/tools/barcode-scanner-test/` | «바코드 스캐너 테스트 — Enter·간격·한글 깨짐 확인» |
+| MQTT 디코더, Sparkplug B 디코딩, MQTT 패킷 분석 | `/tools/mqtt-decoder/` | «MQTT 페이로드 디코더 — Sparkplug B·HEX 풀이» |
 | 윈도우 마이크 안됨·인식 안됨, 마이크 권한, 마이크 독점 모드 | 가이드 `windows-microphone-not-working` → `/tools/mic-test/` | «윈도우 마이크 안 됨 — 권한·기본 장치·드라이버 순서» |
 | 키보드 채터링(뜻·현상·해결), 키보드 두번 입력 | 가이드 `keyboard-chatter-double-typing` → `/tools/keyboard-test/` | «키보드 채터링(두 번 입력) 확인과 원인 후보» |
 | 마우스 더블클릭 증상·현상·확인, 마우스 한번 클릭 두번 | 가이드 `mouse-double-click-problem` → `/tools/mouse-test/` | «마우스 더블클릭 증상 확인 — 채터링·드래그 끊김» |
@@ -189,6 +193,10 @@
 | gamepad tester, controller tester, stick drift test | `/en/tools/gamepad-test/` | «Gamepad Tester: Stick Drift & Dead Zone Test Online» |
 | mouse double click test, double click test, mouse test, polling rate test | `/en/tools/mouse-test/` | «Mouse Double Click Test: Chatter, Wheel & Polling Rate» |
 | dead pixel test, stuck pixel test, refresh rate test, test hz | `/en/tools/monitor-test/` | «Dead Pixel Test & Refresh Rate Check Online» |
+| bsod code lookup, blue screen error codes, whea uncorrectable error, dpc watchdog violation, event 1001 bugcheck, kernel power 41 | `/en/tools/bsod-codes/` | «BSOD Stop Code Lookup: Meaning & Likely Causes» |
+| battery report, battery health check, powercfg batteryreport, laptop battery health | `/en/tools/battery-report/` | «Battery Report Reader: Laptop Battery Health Check» |
+| barcode scanner test, test barcode scanner online, scanner suffix enter | `/en/tools/barcode-scanner-test/` | «Barcode Scanner Test Online: Suffix, Timing & GS1» |
+| mqtt payload decoder, sparkplug b decoder, mqtt packet decoder hex | `/en/tools/mqtt-decoder/` | «MQTT Payload Decoder: Sparkplug B & Hex Online» |
 | microphone not working windows 11, mic not detected, exclusive mode microphone | guide `windows-microphone-not-working` → `/en/tools/mic-test/` | «Microphone Not Working on Windows: What to Check» |
 | keyboard typing double letters, key chatter fix, keyboard double typing | guide `keyboard-chatter-double-typing` → `/en/tools/keyboard-test/` | «Keyboard Typing Double Letters: Key Chatter Check» |
 | mouse double clicking on single click, mouse double click problem | guide `mouse-double-click-problem` → `/en/tools/mouse-test/` | «Mouse Double Clicking on Single Click: How to Check» |
