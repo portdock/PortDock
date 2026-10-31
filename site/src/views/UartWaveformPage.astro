@@ -1,0 +1,358 @@
+---
+// 웹 도구: UART 파형 그리기 — 글자·HEX → 비트 파형(쉼 1, 시작 0, 데이터 LSB 먼저, 패리티, 정지 1/1.5/2), 보율 → 비트·프레임 시간,
+// TTL(0/3.3·5 V)·RS-232(반전, ±V) 표시, 측정한 가장 짧은 펄스 폭 → 가까운 표준 보율. 계산은 lib/uartWave.ts.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { STD_BAUDS } from "../lib/uartWave";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/uart-waveform/";
+const L = ko
+  ? {
+      title: "UART 파형 그리기 (비트·보율·RS-232 전압)",
+      desc: "글자나 HEX 를 넣으면 UART 비트 파형(시작·데이터 LSB 먼저·패리티·정지)을 TTL·RS-232 전압으로 그리고, 비트·프레임 시간과 측정한 펄스 폭으로 보율 추정까지 합니다.",
+      data: "보낼 데이터",
+      inMode: "입력 형식",
+      inModes: ["글자 (\\r \\n \\x02 이스케이프)", "HEX 바이트"],
+      baud: "보율 (bps)",
+      bits: "데이터 비트",
+      parity: "패리티",
+      parities: [["none", "없음 (N)"], ["even", "짝수 (E)"], ["odd", "홀수 (O)"], ["mark", "마크 (M, 항상 1)"], ["space", "스페이스 (S, 항상 0)"]],
+      stop: "정지 비트",
+      level: "전압 표시",
+      levels: [["ttl33", "TTL 3.3 V (1 = 3.3 V)"], ["ttl5", "TTL 5 V (1 = 5 V)"], ["rs5", "RS-232 ±5 V (1 = −5 V)"], ["rs12", "RS-232 ±12 V (1 = −12 V)"]],
+      res: "결과",
+      k: { fmt: "형식", bit: "1 비트 시간", frame: "1 프레임 시간", cps: "최대 글자/초", total: "전체 (바이트 사이 쉼 없음)", bytes: "바이트" },
+      shown: "그림은 앞 8 바이트까지",
+      pTitle: "펄스 폭으로 보율 추정",
+      pulse: "측정한 가장 짧은 펄스 폭 (µs)",
+      pHelp: "오실로스코프·로직 분석기에서 가장 짧은 High 또는 Low 구간. 'U'(0x55)를 보내면 모든 비트가 번갈아 나와 가장 짧은 펄스 = 1 비트입니다.",
+      pk: { raw: "1 ÷ 펄스 폭", std: "가까운 표준 보율", err: "차이" },
+      how: "그림과 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      fTitle: "UART 프레임",
+      f: [
+        "쉴 때 선은 1(mark)입니다. 시작 비트 0 이 오면 받는 쪽이 시계를 맞추고, 데이터 비트를 LSB(비트 0)부터 받습니다.",
+        "패리티: 짝수(E)는 데이터 + 패리티의 1 의 개수가 짝수가 되게, 홀수(O)는 홀수가 되게 합니다. 마크·스페이스는 늘 1·0 입니다.",
+        "정지 비트는 1 이고 1·1.5·2 비트 길이입니다. 다음 프레임의 시작 비트는 정지 비트 바로 뒤에 올 수 있습니다.",
+        "프레임 시간 = (1 + 데이터 + 패리티 + 정지) ÷ 보율. 8N1 이면 10 비트, 8E1 이면 11 비트입니다.",
+      ],
+      vTitle: "TTL 과 RS-232 전압",
+      v: [
+        "MCU 의 UART 핀(TTL·CMOS 레벨)은 1 = High(3.3 V·5 V), 0 = 0 V 입니다.",
+        "RS-232(TIA/EIA-232)는 반대입니다: 1(mark) 은 음전압, 0(space) 은 양전압. 드라이버는 ±5 ~ ±15 V 를 내고, 받는 쪽은 −3 V 아래를 1, +3 V 위를 0 으로 읽습니다. 그래서 쉬는 RS-232 선은 음전압이고, 시작 비트가 양전압으로 올라갑니다.",
+        "MCU 핀을 RS-232 포트(DB9)에 바로 이으면 안 됩니다 — 전압이 맞지 않고 반전도 안 되어 있습니다. MAX232 같은 트랜시버를 거칩니다.",
+        "USB-UART 변환기도 «TTL» 판과 «RS-232» 판이 있습니다. 오실로스코프로 쉬는 레벨이 양(TTL)인지 음(RS-232)인지 보면 구분됩니다.",
+      ],
+      stdTitle: "표준 보율과 1 비트 시간",
+      stdHead: ["보율", "1 비트 (µs)", "8N1 프레임 (µs)"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["오실로스코프로 보율을 어떻게 재나요?", "가장 짧은 펄스(1 비트)의 폭을 재고 1 ÷ 폭 을 셈합니다. 104 µs 면 약 9600 bps, 8.68 µs 면 약 115200 bps 입니다. 같은 값이 이어진 구간은 여러 비트이므로 가장 짧은 것을 봅니다."],
+        ["글자가 깨집니다", "원인 후보: 보율·데이터 비트·패리티·정지 비트가 양쪽에서 다름, TTL 과 RS-232 를 바로 이음(반전·전압), 클럭 오차. 보율 오차는 UART 보율 오차 계산기에서 봅니다."],
+        ["정지 비트 1.5 는 언제 쓰나요?", "주로 데이터 5 비트 설정에서 씁니다(PC UART 는 5 비트일 때 «2» 를 고르면 1.5 비트가 나옴). 요즘 장비에서는 드뭅니다."],
+      ],
+      srcTitle: "출처",
+      more: "보율 오차는",
+      moreLink: "UART 보율 오차 계산기",
+      more2: "Modbus 3.5 문자 시간은",
+      more2Link: "시리얼 통신 시간 계산기",
+      more3: "SPI·I2C·CAN 은",
+    }
+  : {
+      title: "UART Waveform Drawer (Bits, Baud, RS-232 Levels)",
+      desc: "Draw the UART bit waveform of text or hex (start, data LSB first, parity, stop) at TTL or RS-232 levels, with frame time and baud from a measured pulse.",
+      data: "Data to send",
+      inMode: "Input",
+      inModes: ["Text (\\r \\n \\x02 escapes)", "Hex bytes"],
+      baud: "Baud rate (bps)",
+      bits: "Data bits",
+      parity: "Parity",
+      parities: [["none", "None (N)"], ["even", "Even (E)"], ["odd", "Odd (O)"], ["mark", "Mark (M, always 1)"], ["space", "Space (S, always 0)"]],
+      stop: "Stop bits",
+      level: "Voltage display",
+      levels: [["ttl33", "TTL 3.3 V (1 = 3.3 V)"], ["ttl5", "TTL 5 V (1 = 5 V)"], ["rs5", "RS-232 ±5 V (1 = −5 V)"], ["rs12", "RS-232 ±12 V (1 = −12 V)"]],
+      res: "Results",
+      k: { fmt: "Format", bit: "Bit time", frame: "Frame time", cps: "Max characters/s", total: "Total (no gaps between bytes)", bytes: "Bytes" },
+      shown: "The drawing shows the first 8 bytes",
+      pTitle: "Estimate baud from a pulse width",
+      pulse: "Shortest measured pulse (µs)",
+      pHelp: "The shortest high or low on a scope or logic analyser. Sending 'U' (0x55) alternates every bit, so the shortest pulse is one bit.",
+      pk: { raw: "1 ÷ pulse width", std: "Nearest standard baud", err: "Difference" },
+      how: "Drawing and maths run in your browser; nothing you type is sent anywhere.",
+      fTitle: "The UART frame",
+      f: [
+        "The idle line is 1 (mark). A 0 start bit lets the receiver synchronise, then the data bits arrive LSB (bit 0) first.",
+        "Parity: even (E) makes the count of 1s in data + parity even, odd (O) makes it odd. Mark and space are always 1 and 0.",
+        "Stop bits are 1, lasting 1, 1.5 or 2 bit times. The next start bit may follow the stop bit immediately.",
+        "Frame time = (1 + data + parity + stop) ÷ baud. 8N1 is 10 bits, 8E1 is 11 bits.",
+      ],
+      vTitle: "TTL vs RS-232 levels",
+      v: [
+        "An MCU UART pin (TTL/CMOS level) has 1 = high (3.3 V or 5 V) and 0 = 0 V.",
+        "RS-232 (TIA/EIA-232) is inverted: 1 (mark) is negative, 0 (space) is positive. Drivers output ±5 to ±15 V; receivers read below −3 V as 1 and above +3 V as 0. An idle RS-232 line is negative and the start bit swings positive.",
+        "Never wire an MCU pin straight to an RS-232 (DB9) port — the voltages and polarity do not match. Use a transceiver such as a MAX232.",
+        "USB-UART adapters come in «TTL» and «RS-232» versions. On a scope, a positive idle level means TTL, a negative one RS-232.",
+      ],
+      stdTitle: "Standard baud rates and bit time",
+      stdHead: ["Baud", "1 bit (µs)", "8N1 frame (µs)"],
+      faqTitle: "FAQ",
+      faq: [
+        ["How do I measure the baud rate with a scope?", "Measure the shortest pulse (one bit) and take 1 ÷ width. 104 µs is about 9600 bps, 8.68 µs about 115200 bps. Runs of equal bits are several bits long, so use the shortest."],
+        ["I get garbled characters", "Likely causes: baud, data bits, parity or stop bits differ between the two sides; TTL wired straight to RS-232 (polarity and voltage); clock error. For baud error use the UART Baud Rate Error Calculator."],
+        ["When are 1.5 stop bits used?", "Mainly with 5 data bits (on PC UARTs, choosing «2» with 5 data bits gives 1.5). Rare in current equipment."],
+      ],
+      srcTitle: "Sources",
+      more: "For baud error, use the",
+      moreLink: "UART Baud Rate Error Calculator",
+      more2: "For the Modbus 3.5-character gap, use the",
+      more2Link: "Serial Timing Calculator",
+      more3: "For SPI, I2C and CAN:",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "Microchip, ATmega328P datasheet (7810D, 01/2015): §19.4 Frame Formats (figure 19-4), §19.4.1 Parity Bit Calculation", href: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf" },
+  { name: "Texas Instruments SLLA037A «Interface Circuits for TIA/EIA-232-F» — electrical specification figure (driver ±5 to ±15 V, receiver ±3 V; mark negative, space positive)", href: "https://www.ti.com/lit/pdf/slla037" },
+  { name: "Microsoft Learn, DCB structure (winbase.h) — ByteSize, Parity (NOPARITY, ODDPARITY, EVENPARITY, MARKPARITY, SPACEPARITY), StopBits (ONESTOPBIT, ONE5STOPBITS, TWOSTOPBITS)", href: "https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-dcb" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "UART 파형 그리기 — 비트·보율·RS-232 전압 — PortDock" : "UART Waveform Drawer: Bits, Baud & RS-232 Levels — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="uw">
+      <div class="row">
+        <label class="fld">{L.data}<input id="data" class="mono" value="A" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.inMode}<select id="hex"><option value="0" selected>{L.inModes[0]}</option><option value="1">{L.inModes[1]}</option></select></label>
+      </div>
+      <div class="row">
+        <label class="fld">{L.baud}<input id="baud" class="mono" value="9600" inputmode="decimal" list="bauds" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.bits}<select id="bits">{[5, 6, 7, 8].map((d) => <option value={d} selected={d === 8}>{d}</option>)}</select></label>
+        <label class="fld">{L.parity}<select id="parity">{L.parities.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+        <label class="fld">{L.stop}<select id="stop"><option value="1" selected>1</option><option value="1.5">1.5</option><option value="2">2</option></select></label>
+      </div>
+      <datalist id="bauds">{STD_BAUDS.map((b) => <option value={b} />)}</datalist>
+      <label class="fld">{L.level}<select id="level">{L.levels.map(([v, t]) => <option value={v}>{t}</option>)}</select></label>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl uw-fig" id="fig" aria-live="polite"></div>
+      <p class="note" id="shown"></p>
+      <div class="tbl">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{(["fmt", "bytes", "bit", "frame", "cps", "total"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <form class="calc card" id="pe" style="margin-top:16px">
+      <h2 class="uw-h">{L.pTitle}</h2>
+      <label class="fld">{L.pulse}<input id="pulse" class="mono" value="8.68" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      <p class="note">{L.pHelp}</p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <tbody>{(["raw", "std", "err"] as const).map((id) => <tr><td>{L.pk[id]}</td><td class="mono" data-p={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.f.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.vTitle}</h2>
+      <ul>{L.v.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.stdTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.stdHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{STD_BAUDS.map((b) => <tr><td class="mono">{b}</td><td class="mono">{+(1e6 / b).toFixed(3)}</td><td class="mono">{+(1e7 / b).toFixed(2)}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.more} <a href={url(lang, "tools/uart-baud/")}>{L.moreLink}</a>{ko ? ", " : "; "}
+        {L.more2} <a href={url(lang, "tools/serial-timing/")}>{L.more2Link}</a>{ko ? " 에서. " : ". "}
+        {L.more3} <a href={url(lang, "tools/spi/")}>{ko ? "SPI 모드 도우미" : "SPI Mode Helper"}</a> · <a href={url(lang, "tools/i2c/")}>{ko ? "I2C 도구" : "I2C Tools"}</a> · <a href={url(lang, "tools/can-decoder/")}>{ko ? "CAN 프레임 해석기" : "CAN Frame Decoder"}</a>
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .uw-h {
+      font-size: 18px;
+      margin: 0;
+    }
+    .uw-fig :global(svg) {
+      display: block;
+      min-width: 560px;
+      width: 100%;
+      height: auto;
+      color: var(--ink);
+    }
+  </style>
+  <script>
+    import { estimateBaud, frame, timing, toBytes, type Format, type Parity, type Stop } from "../lib/uartWave";
+    const ko = document.documentElement.lang === "ko";
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const NS = "http://www.w3.org/2000/svg";
+    const mk = (tag: string, attrs: Record<string, string | number>, text?: string) => {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+      if (text !== undefined) e.textContent = text;
+      return e;
+    };
+    const si = (s: number) =>
+      s >= 1 ? `${+s.toFixed(4)} s` : s >= 1e-3 ? `${+(s * 1e3).toFixed(4)} ms` : `${+(s * 1e6).toFixed(3)} µs`;
+    const LEVELS: Record<string, { one: number; zero: number; rs: boolean }> = {
+      ttl33: { one: 3.3, zero: 0, rs: false },
+      ttl5: { one: 5, zero: 0, rs: false },
+      rs5: { one: -5, zero: 5, rs: true },
+      rs12: { one: -12, zero: 12, rs: true },
+    };
+    const PCH: Record<Parity, string> = { none: "N", even: "E", odd: "O", mark: "M", space: "S" };
+    const shown = (b: number) => (b >= 0x21 && b <= 0x7e ? `'${String.fromCharCode(b)}'` : b === 0x20 ? "SP" : b === 13 ? "CR" : b === 10 ? "LF" : "");
+
+    function draw(bytes: number[], f: Format, lv: { one: number; zero: number; rs: boolean }) {
+      const U = 22; // 1 비트 폭
+      const X0 = 54;
+      const idle = 1.5;
+      const frames = bytes.map((b) => frame(b, f));
+      const total = idle * 2 + frames.reduce((a, fr) => a + fr.reduce((s, x) => s + x.w, 0), 0);
+      const width = X0 + total * U + 10;
+      const top = 34;
+      const A = 70;
+      const height = top + A + 52;
+      const hi = Math.max(lv.one, lv.zero);
+      const lo = Math.min(lv.one, lv.zero);
+      const yv = (v: number) => top + ((hi - v) / (hi - lo)) * A;
+      const svg = mk("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": ko ? "UART 비트 파형" : "UART bit waveform" });
+      // 축: 전압 표시
+      for (const v of [hi, lo, ...(lv.rs ? [0] : [])]) {
+        svg.append(mk("line", { x1: X0 - 4, x2: width - 6, y1: yv(v), y2: yv(v), stroke: "currentColor", opacity: v === 0 && lv.rs ? 0.35 : 0.15, "stroke-dasharray": "2 3" }));
+        svg.append(mk("text", { x: X0 - 8, y: yv(v) + 4, "font-size": 11, "text-anchor": "end", fill: "currentColor", "font-family": "monospace" }, `${v > 0 && lv.rs ? "+" : ""}${v} V`));
+      }
+      let t = 0;
+      const x = (tt: number) => X0 + tt * U;
+      let d = `M${x(0)},${yv(lv.one)} L${x(idle)},${yv(lv.one)} `;
+      svg.append(mk("text", { x: x(idle / 2), y: top - 8, "font-size": 10, "text-anchor": "middle", fill: "currentColor", opacity: 0.7 }, ko ? "쉼" : "idle"));
+      t = idle;
+      let prev = 1;
+      frames.forEach((fr, k) => {
+        const f0 = t;
+        for (const b of fr) {
+          const yy = yv(b.v ? lv.one : lv.zero);
+          if (b.v !== prev) d += `L${x(t)},${yv(prev ? lv.one : lv.zero)} L${x(t)},${yy} `;
+          d += `L${x(t + b.w)},${yy} `;
+          const lab = b.kind === "start" ? "St" : b.kind === "data" ? `D${b.n}` : b.kind === "parity" ? "P" : "Sp";
+          svg.append(mk("text", { x: x(t + b.w / 2), y: top + A + 16, "font-size": 10, "text-anchor": "middle", fill: "currentColor", opacity: b.kind === "data" ? 0.85 : 0.6, "font-family": "monospace" }, lab));
+          svg.append(mk("text", { x: x(t + b.w / 2), y: top + A + 30, "font-size": 10, "text-anchor": "middle", fill: "currentColor", opacity: 0.6, "font-family": "monospace" }, String(b.v)));
+          svg.append(mk("line", { x1: x(t), x2: x(t), y1: top - 2, y2: top + A + 4, stroke: "currentColor", opacity: 0.08 }));
+          prev = b.v;
+          t += b.w;
+        }
+        const by = bytes[k];
+        // 프레임 칸
+        svg.append(mk("rect", { x: x(f0), y: top - 22, width: (t - f0) * U, height: 14, rx: 3, fill: "var(--soft)", stroke: "var(--line)" }));
+        svg.append(mk("text", { x: x((f0 + t) / 2), y: top - 11, "font-size": 10, "text-anchor": "middle", fill: "currentColor", "font-family": "monospace" }, `0x${by.toString(16).toUpperCase().padStart(2, "0")} ${shown(by)}`.trim()));
+      });
+      if (prev !== 1) d += `L${x(t)},${yv(lv.zero)} L${x(t)},${yv(lv.one)} `;
+      d += `L${x(t + idle)},${yv(lv.one)}`;
+      svg.append(mk("path", { d, fill: "none", stroke: "var(--accent)", "stroke-width": 2 }));
+      svg.append(mk("text", { x: x(t + idle / 2), y: top - 8, "font-size": 10, "text-anchor": "middle", fill: "currentColor", opacity: 0.7 }, ko ? "쉼" : "idle"));
+      svg.append(mk("text", { x: 6, y: height - 6, "font-size": 10, fill: "currentColor", opacity: 0.7 }, lv.rs ? (ko ? "RS-232: 1 = 음전압, 0 = 양전압" : "RS-232: 1 = negative, 0 = positive") : ko ? "TTL: 1 = High, 0 = 0 V" : "TTL: 1 = high, 0 = 0 V"));
+      return svg;
+    }
+
+    const form = $<HTMLFormElement>("uw");
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    function run() {
+      const fig = $("fig");
+      fig.replaceChildren();
+      try {
+        const bytes = toBytes($("data").value, $<HTMLSelectElement>("hex").value === "1");
+        const f: Format = {
+          dataBits: Number($<HTMLSelectElement>("bits").value),
+          parity: $<HTMLSelectElement>("parity").value as Parity,
+          stop: Number($<HTMLSelectElement>("stop").value) as Stop,
+        };
+        const baud = Number($("baud").value.replace(",", "."));
+        const tm = timing(baud, f);
+        const over = bytes.some((b) => b >= 1 << f.dataBits);
+        const draw8 = bytes.slice(0, 8);
+        if (draw8.length) fig.append(draw(draw8, f, LEVELS[$<HTMLSelectElement>("level").value]));
+        $("shown").textContent = (bytes.length > 8 ? L_SHOWN + ". " : "") + (over ? (ko ? `${f.dataBits} 비트보다 큰 바이트는 위 비트가 잘립니다.` : `Bytes wider than ${f.dataBits} bits lose their upper bits.`) : "");
+        const fb = 1 + f.dataBits + (f.parity === "none" ? 0 : 1) + f.stop;
+        set("fmt", `${f.dataBits}${PCH[f.parity]}${f.stop} — ${fb} ${ko ? "비트/프레임" : "bits/frame"}`);
+        set("bytes", bytes.length ? bytes.map((b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ") : "—");
+        set("bit", si(tm.bit));
+        set("frame", si(tm.frame));
+        set("cps", `${+tm.cps.toFixed(2)}`);
+        set("total", bytes.length ? si(tm.frame * bytes.length) : "—");
+        $("err").textContent = "";
+      } catch {
+        $("err").textContent = ko ? "입력을 확인하세요 — 보율은 0 보다 크게, HEX 는 두 자리씩" : "Check the input — baud above 0, hex in pairs";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+      }
+    }
+    const L_SHOWN = ko ? "그림은 앞 8 바이트까지" : "The drawing shows the first 8 bytes";
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+
+    const pe = $<HTMLFormElement>("pe");
+    const setP = (k: string, v: string) => {
+      const td = pe.querySelector<HTMLElement>(`td[data-p="${k}"]`);
+      if (td) td.textContent = v;
+    };
+    function runP() {
+      try {
+        const w = Number($("pulse").value.replace(",", "."));
+        const e = estimateBaud(w);
+        setP("raw", `${+e.raw.toFixed(1)} bps`);
+        setP("std", `${e.std} bps`);
+        setP("err", `${e.errPct > 0 ? "+" : ""}${e.errPct.toFixed(2)} %` + (Math.abs(e.errPct) > 5 ? (ko ? " — 표준 보율과 멂: 펄스가 1 비트가 아니거나 표준 밖 보율일 수 있음" : " — far from a standard rate: the pulse may span several bits, or the rate is non-standard") : ""));
+      } catch {
+        for (const k of ["raw", "std", "err"]) setP(k, "");
+      }
+    }
+    pe.addEventListener("input", runP);
+    pe.addEventListener("submit", (e) => e.preventDefault());
+    runP();
+  </script>
+</Base>

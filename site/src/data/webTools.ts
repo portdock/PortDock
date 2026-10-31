@@ -81,7 +81,11 @@ export interface WebTool {
     | "tools/insulation-resistance/"
     | "tools/metric-threads/"
     | "tools/modbus-rtu-tcp/"
-    | "tools/modbus-practice/";
+    | "tools/modbus-practice/"
+    | "tools/can-decoder/"
+    | "tools/i2c/"
+    | "tools/spi/"
+    | "tools/uart-waveform/";
   name: L;
   blurb: L;
 }
@@ -480,6 +484,26 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/modbus-practice/",
     name: { ko: "Modbus 연습장 (퀴즈)", en: "Modbus Practice Quiz" },
     blurb: { ko: "신입·교육용 자동 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 해설·가이드 링크·점수.", en: "Auto-generated practice for beginners — read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. Explanations, guide links, score." },
+  },
+  {
+    path: "tools/can-decoder/",
+    name: { ko: "CAN 프레임 해석기 (J1939·CANopen)", en: "CAN Frame Decoder (J1939, CANopen)" },
+    blurb: { ko: "candump 줄·ID DLC 데이터·원시 비트열 → 표준·확장 ID, DLC(FD 길이), 스터핑 제거·CRC15, J1939 PGN·주소·SPN, CANopen COB-ID·NMT·SDO.", en: "candump lines, ID DLC data or raw bits → standard/extended ID, DLC (FD lengths), destuffing and CRC15, J1939 PGN, addresses and SPNs, CANopen COB-ID, NMT and SDO." },
+  },
+  {
+    path: "tools/i2c/",
+    name: { ko: "I2C 도구 (풀업 저항·주소표·바이트 풀이)", en: "I2C Tools (Pull-up, Addresses, Decoder)" },
+    blurb: { ko: "VDD·버스 용량·100k/400k/1M → 풀업 Rp 최소·최대(UM10204), 흔한 칩 7비트 주소표·8비트 변환, «S A0 A … P» 바이트 풀이.", en: "VDD, bus capacitance and 100k/400k/1M → pull-up Rp min and max (UM10204), 7-bit address table of common chips with 8-bit conversion, «S A0 A … P» decoder." },
+  },
+  {
+    path: "tools/spi/",
+    name: { ko: "SPI 모드 도우미 (CPOL·CPHA 파형)", en: "SPI Mode Helper (CPOL/CPHA Waveforms)" },
+    blurb: { ko: "모드 0~3 → SCK·MOSI·MISO·CS 파형과 샘플·시프트 엣지, 바이트 비트(MSB/LSB first), 전송 시간, 제조사별 표기(CKE·UCCKPH).", en: "Mode 0–3 → SCK, MOSI, MISO and CS waveforms with sample and shift edges, byte bits (MSB/LSB first), transfer time, vendor notations (CKE, UCCKPH)." },
+  },
+  {
+    path: "tools/uart-waveform/",
+    name: { ko: "UART 파형 그리기", en: "UART Waveform Drawer" },
+    blurb: { ko: "글자·HEX → 시작·데이터(LSB 먼저)·패리티·정지 비트 파형, TTL·RS-232 전압, 비트·프레임 시간, 펄스 폭 → 표준 보율 추정.", en: "Text or hex → start, data (LSB first), parity and stop bit waveform at TTL or RS-232 levels, bit and frame time, pulse width → standard baud." },
   },
 ];
 
