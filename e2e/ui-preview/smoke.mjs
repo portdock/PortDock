@@ -29,7 +29,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // ---- 페이지에 먼저 심는 갈고리: 잡히지 않은 예외·거부된 Promise·console.error 를 모은다
 const HOOK = `
 window.__smoke = { errors: [] };
-addEventListener('error', (e) => window.__smoke.errors.push('onerror: ' + (e.error && e.error.stack || e.message)));
+// «ResizeObserver loop completed…» 는 브라우저가 레이아웃이 한 프레임 밀릴 때 내는 무해한 알림(앱 코드는 ResizeObserver 를 쓰지 않음) — 예외로 세지 않는다
+addEventListener('error', (e) => { if (/^ResizeObserver loop/.test(e.message || '')) return; window.__smoke.errors.push('onerror: ' + (e.error && e.error.stack || e.message)); });
 addEventListener('unhandledrejection', (e) => window.__smoke.errors.push('unhandledrejection: ' + (e.reason && e.reason.stack || e.reason)));
 // 바깥 요청이 mock.js 의 가로채기를 빠져나가 CSP(vite.config)에 막히면 오류로 — 실제 Sentry 등으로 나갈 뻔한 것
 addEventListener('securitypolicyviolation', (e) => window.__smoke.errors.push('CSP blocked (바깥 요청이 가로채기를 빠져나감): ' + e.blockedURI));
