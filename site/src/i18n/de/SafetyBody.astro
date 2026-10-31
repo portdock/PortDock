@@ -1,0 +1,127 @@
+---
+// Sicherheitsgrundsätze (Deutsch) — gleicher Inhalt wie der koreanische/englische Text in views/SafetyPage.astro. Wegen der Links im Satz als Markup statt als Texttabelle.
+// Ändern sich die Grundlagen (SECURITY.md, Programmanleitungen) oder der koreanische/englische Text, hier mit anpassen.
+// Die Programme haben nur eine koreanische und englische Oberfläche — Bedienelemente stehen deshalb mit ihrem englischen Namen in Anführungszeichen.
+import { REPO } from "../../data/tools";
+import { link } from "../../lib/i18n";
+
+const lang = "de";
+const security = `${REPO}/blob/main/SECURITY.md`;
+const advisory = `${REPO}/security/advisories/new`;
+const dguv = "https://www.dguv.de/";
+---
+
+<h2>1. Prüfungen lesen nur</h2>
+<ul>
+  <li>Port Inspector (COM-Ports, Netzwerkadapter, „This PC“) und Hardware Tester lesen Einstellungen und Protokolle ohne Administratorrechte. Sie installieren keine Treiber und ändern weder Registrierungswerte noch Windows-Einstellungen.</li>
+  <li>Die Ergebnisse reichen nur bis „Worth a look“ (einen Blick wert), möglichen Ursachen und „Where to change“ (welcher Windows-Dialog). Jede Änderung nehmen Sie selbst in Windows vor.</li>
+  <li>
+    (ab 0.10.0) Auch die Prüfung der Angriffsfläche in Port Inspector „This PC“ (Remotedesktop, SMBv1, Firewall, auf allen Adressen lauschende Ports, automatische Anmeldung, USB-Autoplay) und die Markierung „Exposed“ in Net Scan lesen nur. Bei der automatischen Anmeldung wird nur geprüft, ob ein Kennwortwert vorhanden ist, nie sein Inhalt. Net Scan scannt für die Markierung keine zusätzlichen Ports. So lesen Sie das Ergebnis:
+    <a href={link(lang, "guides/field-pc-exposure-check/")}>Angriffsfläche eines Anlagen-PCs prüfen (Englisch)</a>
+  </li>
+</ul>
+
+<h2>2. Wo Server Verbindungen annehmen</h2>
+<p>
+  Modbus, MC-Protokoll, das LS-XGT-Protokoll, SCPI-Raw-Sockets und einfaches TCP/UDP haben keine Authentifizierung. Läuft ein PortDock-Server, kann jeder, der seinen Port erreicht, mit ihm kommunizieren. Deshalb hat jedes Programm folgende Standardadresse.
+</p>
+<table class="t">
+  <thead>
+    <tr>
+      <th scope="col">Programm</th>
+      <th scope="col">Standardadresse</th>
+      <th scope="col">Für andere PCs öffnen</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PLC Simulator (MC standardmäßig auf TCP 5000, ab 0.10.0 XGT auf TCP 2004 / UDP 2005)</td>
+      <td>127.0.0.1 (nur dieser PC)</td>
+      <td>Nur wenn Sie „Allow other PCs to connect (0.0.0.0)“ einschalten</td>
+    </tr>
+    <tr>
+      <td>Freigabe serieller Ports (ab 0.10.0 — standardmäßig raw oder RFC 2217 auf TCP 7000, Gateway Modbus TCP ↔ RTU auf TCP 502)</td>
+      <td>127.0.0.1 (nur dieser PC)</td>
+      <td>Ist „Allow other PCs to connect (0.0.0.0)“ eingeschaltet, fragt der Start noch einmal nach. Die Wahl wird nicht gespeichert, beim nächsten Start gilt wieder 127.0.0.1.</td>
+    </tr>
+    <tr>
+      <td>Modbus Slave (TCP) · TCP-Server und -Relay · Simulator</td>
+      <td>127.0.0.1 (nur dieser PC; Standard beim ersten Start ab 0.10.0 — mit früheren Versionen gespeicherte Einstellungen bleiben)</td>
+      <td>Nur wenn Sie im Adressfeld 0.0.0.0 (alle Netzwerkadapter) oder die Adresse eines Adapters wählen</td>
+    </tr>
+    <tr>
+      <td>UDP</td>
+      <td>0.0.0.0 (alle Netzwerkadapter)</td>
+      <td>Empfängt auf allen Adaptern, weil es die Antworten der Geräte erhalten muss. Im Adressfeld lässt sich die Adresse eines Adapters oder 127.0.0.1 einstellen.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Öffnen Sie Server nur in Netzen, denen Sie vertrauen, für andere PCs. Das Gateway reicht Lese- und Schreibzugriffe an die RS-485-Geräte weiter. Anfragen an Unit-ID 0 erhalten standardmäßig die Exception 0A (kein Pfad); nur wenn Sie „Broadcast“ wählen, gehen sie an alle Geräte am Bus. Die Grundlagen zum Trennen von Netzen und Schließen von Ports stehen in
+  <a href={link(lang, "guides/industrial-protocol-no-authentication/")}>Modbus, MC und XGT haben keine Authentifizierung (Englisch)</a>.
+</p>
+
+<h2>3. Schreiben auf Geräte</h2>
+<ul>
+  <li>
+    (ab 0.10.0) In „Settings backup &amp; restore“ (Sichern und Wiederherstellen von Einstellungen) von Modbus Master öffnet sich der Reiter zum Wiederherstellen (Schreiben) ohne Auswahl. „Write“ bleibt gesperrt, bis „Preview“ die aktuellen Werte gelesen hat, und es wird nichts geschrieben, wenn keine einzige Zelle gelesen werden konnte. Nach „Write“ drücken Sie noch einmal „Confirm write“, erst dann wird gesendet; danach wird jede Zelle zurückgelesen und als übereinstimmend, abweichend, Schreiben fehlgeschlagen oder nicht zurückgelesen angezeigt.
+  </li>
+  <li>Bei RTU ist das Wiederherstellen auf Adresse 0 (Broadcast — jedes Gerät am Bus übernimmt es) und auf die reservierten Adressen 248–255 gesperrt. Ebenso gesperrt sind Input-Register (04), Discrete Inputs (02) und Register, die im Geräteprofil als nur lesbar markiert sind.</li>
+  <li>In PLC Simulator fragt eine Massenbefüllung, die bereits belegte Zellen überschreiben würde, noch einmal nach.</li>
+  <li>Schreiben Sie nicht auf eine laufende Maschine. Viele Geräte brauchen einen eigenen „Speichern“-Befehl, damit Werte nach dem Ausschalten erhalten bleiben — prüfen Sie zuerst im Gerätehandbuch, welcher Bereich beschreibbar ist.</li>
+</ul>
+
+<h2>4. Schreibwerkzeuge für KI (MCP)</h2>
+<ul>
+  <li>Die beiden Schreibwerkzeuge von PortDock MCP (modbus_write_sim, mc_write_sim) akzeptieren nur Loopback-Adressen (127.0.0.1, ::1, localhost). Alle anderen Werkzeuge lesen nur.</li>
+  <li>
+    (ab 0.10.0) Das Modbus-Schreiben (modbus_write_sim) fragt zuerst die Identifikation des Ziels ab (FC 2B/0E) und schreibt nur, wenn der Herstellername mit „PortDock“ beginnt (Standard von PortDock Modbus Slave). So verweigert es Weiterleitungen an echte Geräte, etwa das Seriell-Gateway, das auf demselben PC auf 127.0.0.1:502 lauscht.
+  </li>
+  <li>
+    Das MC-Schreiben (mc_write_sim) wird nur anhand der Adresse geprüft. Leitet ein Programm auf diesem PC 127.0.0.1 an ein anderes Gerät weiter (TCP-Relay, Hersteller-Gateway, Tunnel), kann ein Schreibzugriff über einen KI-Client dieses Gerät erreichen — überlassen Sie das Schreiben keiner KI, solange ein solches Programm läuft. Einrichtung:
+    <a href={link(lang, "guides/portdock-mcp/")}>PortDock MCP verwenden (Englisch)</a>
+  </li>
+</ul>
+
+<h2>5. Was Ihren PC verlässt</h2>
+<ul>
+  <li>Gerätedaten gehen nur an die Ports und Adressen, die Sie wählen, und werden nirgendwohin sonst gesendet.</li>
+  <li>
+    <b>Nutzungsstatistik</b> ist standardmäßig aus und wird nur mit Ihrer Zustimmung gesendet (einmalige Frage beim ersten Start; in den Einstellungen abschaltbar). Gesendet werden nur Nutzungszahlen je Funktion, Laufzeit in Minuten, Programm- und Windows-Version, Anzeigesprache und Ausgabe (installiert/portabel) — nie Gerätedaten, IP-Adressen, Ports, COM-Namen, Dateipfade oder Namen von PC, Benutzer oder Gerät.
+  </li>
+  <li>
+    <b>„AI“-Kopie</b> legt nur den Vorschautext in die Zwischenablage. Benutzerordner, Windows-Standardnamen von PCs, die letzten 3 Bytes von MAC-Adressen und öffentliche IP-Adressen werden maskiert; private IP-Adressen bleiben standardmäßig stehen (die Vorschau kann auch sie maskieren). Beim Einfügen in einen KI-Chat geht der Text an diesen Dienst — prüfen Sie also vorher die Vorschau.
+  </li>
+  <li>
+    <b>Web-Tools</b> (Rechner, Telegramm-Decoder, pcap-Analyzer, Hardwaretests) verarbeiten Ihre Eingaben und die gewählten Dateien in diesem Browser und senden sie nie an einen Server.
+  </li>
+  <li>
+    Fehlerberichte, Updateprüfung und die übrigen Ausnahmen (Pings und DNS-Abfragen von Hardware Tester) stehen alle in der <a href={link(lang, "privacy/")}>Datenschutzerklärung</a>.
+  </li>
+</ul>
+
+<h2>6. Wertüberwachung und Alarme sind keine Sicherheitseinrichtungen</h2>
+<p>
+  Wertüberwachung und Alarme in Modbus Master und Plot helfen der Person, die auf den Bildschirm schaut. Geht der PC in den Ruhezustand oder bricht die Verbindung ab, lösen sie unter Umständen nicht aus. Menschen und Maschinen zu schützen ist Aufgabe dafür vorgesehener Sicherheitseinrichtungen — Not-Halt, Verriegelungen, Sicherheitsrelais —, und PortDock darf sie nicht ersetzen.
+</p>
+
+<h2>7. Elektrische Arbeiten</h2>
+<p>
+  PortDock und seine Anleitungen helfen bei der Prüfung der Kommunikation; sie lehren keine elektrischen Arbeiten. Arbeiten an Klemmen und Verdrahtung sind Sache von Elektrofachkräften — nach den fünf Sicherheitsregeln: freischalten, gegen Wiedereinschalten sichern (LOTO), Spannungsfreiheit mit einem Spannungsprüfer feststellen und so weiter. Folgen Sie den offiziellen Vorgaben, etwa der
+  <a href={dguv}>Deutschen Gesetzlichen Unfallversicherung (DGUV)</a> oder der zuständigen Stelle in Ihrem Land, und den Arbeitsanweisungen Ihres Betriebs.
+</p>
+
+<h2>8. Heruntergeladene Dateien prüfen</h2>
+<ul>
+  <li>Die veröffentlichten Dateien sind derzeit nicht codesigniert, daher kann Windows „Der Computer wurde durch Windows geschützt“ anzeigen — siehe <a href={link(lang, "code-signing/")}>Richtlinie zur Codesignatur (Englisch)</a></li>
+  <li>
+    Laden Sie nur von GitHub Releases herunter und vergleichen Sie mit den SHA256-Werten (SHA256SUMS.txt) und dem Scanergebnis von Microsoft Defender, die jedem Release beiliegen. So geht es:
+    <a href={link(lang, "download/#safe")}>Download → Ist das sicher?</a>
+  </li>
+</ul>
+
+<h2>9. Sicherheitsprobleme melden</h2>
+<p>
+  Bitte kein öffentliches Issue anlegen. Melden Sie Probleme vertraulich über <a href={advisory}>GitHub Security Advisories (Report a vulnerability)</a> oder per E-Mail (Betreff beginnt mit [security]). Umfang und Ablauf stehen in
+  <a href={security}>SECURITY.md</a>. PortDock wird von einer Person in ihrer Freizeit gepflegt — es gibt daher keinen zugesagten Termin für Korrekturen und keine Bug-Bounty.
+</p>

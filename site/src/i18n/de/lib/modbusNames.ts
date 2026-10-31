@@ -1,0 +1,28 @@
+// Modbus-Funktionsnamen und Datenbereiche (lib/modbusDecode.ts, shared/modbusBuild.ts) — gemeinsam für Anfrage-Ersteller und Decoder
+// Die Funktionsnamen bleiben wie in der Modbus-Spezifikation und deutschen Gerätehandbüchern englisch; nur Zusätze werden übersetzt.
+export default {
+  "Read Coils": "Read Coils (Coils lesen)",
+  "Read Discrete Inputs": "Read Discrete Inputs (Discrete Inputs lesen)",
+  "Read Holding Registers": "Read Holding Registers (Holding-Register lesen)",
+  "Read Input Registers": "Read Input Registers (Input-Register lesen)",
+  "Write Single Coil": "Write Single Coil (eine Coil schreiben)",
+  "Write Single Register": "Write Single Register (ein Register schreiben)",
+  "Write Multiple Coils": "Write Multiple Coils (mehrere Coils schreiben)",
+  "Write Multiple Registers": "Write Multiple Registers (mehrere Register schreiben)",
+  "Read/Write Multiple Registers": "Read/Write Multiple Registers (mehrere Register lesen/schreiben)",
+  "Read Exception Status (serial line only)": "Read Exception Status (nur serielle Leitung)",
+  "Diagnostics (serial line only)": "Diagnostics (Diagnose, nur serielle Leitung)",
+  "Get Comm Event Counter (serial line only)": "Get Comm Event Counter (nur serielle Leitung)",
+  "Get Comm Event Log (serial line only)": "Get Comm Event Log (nur serielle Leitung)",
+  "Report Server ID (serial line only)": "Report Server ID (nur serielle Leitung)",
+  "Read File Record": "Read File Record (Dateidatensatz lesen)",
+  "Write File Record": "Write File Record (Dateidatensatz schreiben)",
+  "Mask Write Register": "Mask Write Register (Register maskiert schreiben)",
+  "Read FIFO Queue": "Read FIFO Queue (FIFO-Warteschlange lesen)",
+  "Encapsulated Interface Transport": "Encapsulated Interface Transport (u. a. Geräteidentifikation)",
+  "Unknown function": "Unbekannte Funktion",
+  Coils: "Coils",
+  "Discrete inputs": "Discrete Inputs",
+  "Holding registers": "Holding-Register",
+  "Input registers": "Input-Register",
+};
