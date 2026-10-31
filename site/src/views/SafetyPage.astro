@@ -1,6 +1,6 @@
 ---
 // 안전 원칙 — PortDock 이 무엇을 하고 무엇을 하지 않는지 한 장으로. 사실의 근거:
-// SECURITY.md(범위 — 서버 기본 주소·게이트웨이 국번 0·MCP 쓰기 도구), apps/*/src/App.tsx(기본 주소 — Modbus Slave·TCP·Simulator·UDP 0.0.0.0, PLC Simulator·Serial 나눔 127.0.0.1),
+// SECURITY.md(범위 — 서버 기본 주소·게이트웨이 국번 0·MCP 쓰기 도구), apps/*/src/App.tsx(기본 주소 — 0.10.0 부터 Modbus Slave·TCP·Simulator 처음 127.0.0.1(저장된 설정은 그대로), UDP 0.0.0.0, PLC Simulator·Serial 나눔 127.0.0.1),
 // apps/serial/src/App.tsx startShare(0.0.0.0 으로 열 때 묻기), apps/modbus-master/src/backup.ts·BackupDialog.tsx(미리보기·쓰기 확인·다시 읽기·RTU 국번 0/248~255 막기),
 // crates/mcp/src/guard.rs·tools.rs(루프백만·FC 2B/0E 제조사 «PortDock»), shared/exposure.ts(노출 점검 — 고치지 않음), shared/usageText.ts(사용 통계), shared/aiCopy.ts(가림).
 // SECURITY.md 를 고치면 이 페이지도 함께 맞춘다.
@@ -79,9 +79,14 @@ const osha = "https://www.osha.gov/electrical";
                 <td>«다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜면 시작할 때 한 번 더 묻습니다. 이 선택은 기억하지 않아 다시 켜면 127.0.0.1 로 돌아갑니다.</td>
               </tr>
               <tr>
-                <td>Modbus Slave (TCP) · TCP 서버·중계 · Simulator · UDP</td>
+                <td>Modbus Slave (TCP) · TCP 서버·중계 · Simulator</td>
+                <td>127.0.0.1 (이 PC 안, 0.10.0 부터 처음 기본값 — 예전 판에서 저장된 설정은 그대로)</td>
+                <td>주소 칸에서 0.0.0.0(모든 랜카드)이나 랜카드 주소 하나를 고를 때만</td>
+              </tr>
+              <tr>
+                <td>UDP</td>
                 <td>0.0.0.0 (모든 랜카드)</td>
-                <td>주소 칸에 적은 주소에서 받습니다. 특정 랜카드 주소나 127.0.0.1 로 바꿀 수 있습니다.</td>
+                <td>장비가 보낸 답을 받아야 해 모든 랜카드에서 받습니다. 주소 칸에서 특정 랜카드 주소나 127.0.0.1 로 바꿀 수 있습니다.</td>
               </tr>
             </tbody>
           </table>
@@ -198,9 +203,14 @@ const osha = "https://www.osha.gov/electrical";
                 <td>With «Allow other PCs to connect (0.0.0.0)» on, starting asks once more. The choice is not remembered, so the next start is 127.0.0.1 again.</td>
               </tr>
               <tr>
-                <td>Modbus Slave (TCP) · TCP server and relay · Simulator · UDP</td>
+                <td>Modbus Slave (TCP) · TCP server and relay · Simulator</td>
+                <td>127.0.0.1 (this PC only; first-run default from 0.10.0 — settings saved by earlier versions are kept)</td>
+                <td>Only after you pick 0.0.0.0 (all network adapters) or one adapter's address in its address box</td>
+              </tr>
+              <tr>
+                <td>UDP</td>
                 <td>0.0.0.0 (all network adapters)</td>
-                <td>Listens on the address in its address box. You can change it to one adapter's address or 127.0.0.1.</td>
+                <td>Receives on every adapter because it has to get the devices' replies. You can change it to one adapter's address or 127.0.0.1 in the address box.</td>
               </tr>
             </tbody>
           </table>

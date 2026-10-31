@@ -39,7 +39,7 @@ export const help: HelpDoc = {
       body: [
         "- «시리얼(COM)»: «포트»·«속도(bps)»·«패리티» 를 고릅니다. 데이터 비트 8, 정지 비트 1, 흐름 제어 없음으로 엽니다. USB 를 뽑았다 꽂으면 저절로 다시 엽니다.",
         "- 목록에 없는 포트(모뎀으로 잡힌 포트·일부 가상 포트)는 «포트» 목록 맨 아래 «직접 입력…» 으로 이름(예: COM12)을 넣어 엽니다. 목록에는 Windows 의 SERIALCOMM 에 있는 포트도 함께 나옵니다.",
-        "- «TCP 서버 (상대가 연결)»: «주소»(보통 0.0.0.0)와 «포트» 로 기다립니다. 상위 프로그램이 이 PC 로 연결하는 경우입니다. 받은 연결에 각각 응답합니다.",
+        "- «TCP 서버 (상대가 연결)»: «주소»(0.10.0 부터 처음 127.0.0.1 — 다른 PC 의 프로그램이면 0.0.0.0 이나 랜카드 주소)와 «포트» 로 기다립니다. 상위 프로그램이 이 PC 로 연결하는 경우입니다. 받은 연결에 각각 응답합니다.",
         "- «TCP 클라이언트 (상대에 연결)»: «연결할 곳» 의 주소·포트로 연결합니다. 상위 프로그램이 서버로 기다리는 경우입니다. 끊기면 다시 연결합니다.",
         "- «UDP»: «받을 포트» 로 받고, 응답은 보낸 쪽으로 돌려줍니다. «보낼 곳» 은 장비가 먼저 보낼 때 아직 받은 것이 없으면 쓰입니다. 브로드캐스트 주소(255.255.255.255, x.x.x.255)로 보내려면 시작 전에 «브로드캐스트 허용» 을 켜세요.",
         "- 주소 칸 옆 «▾» 는 최근 연결 — 시작에 성공한 주소·포트가 최근 것부터 8개까지 남습니다(TCP 클라이언트 «연결할 곳», TCP 서버 «주소», UDP «보낼 곳» 이 따로). 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 연결 방식을 바꾸면 그 방식에서 마지막으로 쓴 주소·포트로 채워집니다.",
@@ -196,7 +196,7 @@ export const help: HelpDoc = {
       body: [
         "- «Serial (COM)»: choose «Port», «Baud rate» and «Parity». Opened as 8 data bits, 1 stop bit, no flow control. Unplugging and replugging USB reopens it automatically.",
         "- For a port that is not listed (ports Windows lists as modems, some virtual ports), choose «Type a port…» at the bottom of the «Port» list and enter its name (e.g. COM12). The list also includes ports registered in Windows SERIALCOMM.",
-        "- «TCP server (peer connects)»: listens on «Host» (usually 0.0.0.0) and «Port» for the host software to connect. Each connection gets its own replies.",
+        "- «TCP server (peer connects)»: listens on «Host» (from 0.10.0 127.0.0.1 on first run — 0.0.0.0 or an adapter's address for a program on another PC) and «Port» for the host software to connect. Each connection gets its own replies.",
         "- «TCP client (connect to peer)»: connects to the «Connect to» host and port when the host software is the server. It reconnects when disconnected.",
         "- «UDP»: receives on «Listen port» and replies to the sender. «Send to» is used for device-initiated messages before anything has been received. To send to a broadcast address (255.255.255.255, x.x.x.255), check «Allow broadcast» before starting.",
         "- The «▾» next to the host box lists recent connections — up to 8 host:port pairs that started successfully, newest first (kept separately for the TCP client «Connect to», the TCP server «Host» and the UDP «Send to»). Click one to fill the host and port; ✕ removes it. Switching transport fills in the last address used with that transport.",

@@ -56,8 +56,9 @@ const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
             <li>
               <b>네트워크에서 받는 서버(켤 때만)</b>: PLC Simulator(MC 는 기본 TCP 5000, 0.10.0 부터 LS XGT 는 TCP 2004·UDP 2005)와 Serial 의 포트 나눔(0.10.0 부터 — raw·RFC 2217 은
               기본 TCP 7000, Modbus TCP ↔ RTU 게이트웨이는 기본 TCP 502)은 기본으로 이 PC 안(127.0.0.1)에서만 접속을 받습니다. «다른 PC 에서 접속 허용 (0.0.0.0)» 을 켜면 같은 망의 다른
-              PC 가 인증 없이 접속해 디바이스 값을 읽고 쓰거나 COM 포트·RS-485 장비로 보낼 수 있습니다(이 프로토콜들에는 인증이 없음). Modbus Slave TCP·TCP 서버·중계·Simulator·UDP 는
-              입력한 주소에서 받고 기본은 0.0.0.0(모든 랜카드)입니다. 믿을 수 있는 망에서만 여세요.
+              PC 가 인증 없이 접속해 디바이스 값을 읽고 쓰거나 COM 포트·RS-485 장비로 보낼 수 있습니다(이 프로토콜들에는 인증이 없음). Modbus Slave TCP·TCP 서버·중계·Simulator 는
+              주소 칸의 주소에서 받고 0.10.0 부터 처음 기본은 127.0.0.1(이 PC 안)입니다 — 다른 PC 가 붙으려면 그 칸에서 0.0.0.0 이나 랜카드 주소를 고릅니다. UDP 는 장비가 보낸 답을 받아야 해 기본
+              0.0.0.0(모든 랜카드)입니다. 믿을 수 있는 망에서만 여세요.
             </li>
             <li>
               <b>PortDock MCP(AI 클라이언트용 서버)</b>: 도구 호출마다 세션 기록 한 줄(시각·도구·인자·대상·성공 여부·결과 앞부분·걸린 시간)을 이 PC 에 남깁니다. 위치는 exe 옆에
@@ -164,8 +165,8 @@ const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
               <b>Servers that listen on the network (only when you start them)</b>: PLC Simulator (MC on TCP 5000 by default, from 0.10.0 LS XGT on TCP 2004 / UDP 2005) and Serial port
               sharing (from 0.10.0 — raw or RFC 2217 on TCP 7000 by default, the Modbus TCP ↔ RTU gateway on TCP 502 by default) accept connections only from this PC (127.0.0.1) by default. If
               you turn on «Allow other PCs to connect (0.0.0.0)», other PCs on the same network can connect without authentication and read and write device values or send to the COM port and
-              RS-485 devices (these protocols have no authentication). Modbus Slave TCP, TCP server/relay, Simulator and UDP listen on the address you enter, 0.0.0.0 (all network adapters) by
-              default. Open them only on trusted networks.
+              RS-485 devices (these protocols have no authentication). Modbus Slave TCP, TCP server/relay and Simulator listen on the address in their address box — from 0.10.0 127.0.0.1 (this
+              PC only) on first run; for other PCs, pick 0.0.0.0 or an adapter's address there. UDP listens on 0.0.0.0 (all network adapters) by default because it has to receive device replies. Open them only on trusted networks.
             </li>
             <li>
               <b>PortDock MCP (server for AI clients)</b>: for every tool call it keeps one line in a session log on this PC (time, tool, arguments, target, success, the start of the

@@ -45,7 +45,7 @@ export const help: HelpDoc = {
       body: [
         "- «방식»: 위의 탭 [클라이언트 | 서버 | 중계] — 클라이언트(장비에 연결), 서버(장비가 연결), 중계(모니터, 아래 «중계(모니터)»). 방식마다 주소·포트를 따로 기억하므로 탭을 바꿔도 다른 방식의 주소(예: 클라이언트의 장비 IP)를 0.0.0.0 으로 덮어쓰지 않습니다. 실행 중에는 바꿀 수 없습니다.",
         "- «주소»(클라이언트): 연결할 장비의 IP 주소나 이름. 예: «192.168.0.10».",
-        "- «묶을 주소 (0.0.0.0 = 모든 랜카드)»(서버): 어느 랜카드로 연결을 받을지. 보통 0.0.0.0 으로 둡니다. 특정 랜카드만 쓰려면 그 PC 쪽 IP 를 넣습니다.",
+        "- «묶을 주소 (0.0.0.0 = 모든 랜카드)»(서버): 어느 랜카드로 연결을 받을지. (0.10.0 부터) 처음엔 127.0.0.1(이 PC 안)이고 예전에 저장된 값은 그대로입니다. 다른 PC·장비가 붙으려면 0.0.0.0(모든 랜카드)이나 그 랜카드의 이 PC IP 를 고릅니다.",
         "- «포트»: 클라이언트는 장비의 포트(예: Modbus TCP 502), 서버는 기다릴 포트. 서버에서 0 이면 운영체제가 빈 포트를 고릅니다.",
         "- 주소 칸 오른쪽 «▾»: 최근 연결 — 방식마다 따로(클라이언트·서버·중계의 듣는 주소·중계의 이어 줄 장비 B), 성공한 «주소:포트» 가 최근 것부터 8개까지 남습니다. 누르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 클라이언트는 연결됐을 때, 서버·중계는 듣기를 시작했을 때, 장비 B 는 처음 이어졌을 때 남기며 실패한 주소는 남기지 않습니다. 클라이언트 주소 칸에 글자를 치면 최근 주소가 자동 완성으로 나옵니다. 방식 탭을 바꾸면 그 방식의 마지막 기록으로 주소·포트를 채웁니다(기록이 없으면 그 방식에 쓰던 값). 실행 중에는 «▾» 도 잠깁니다.",
         "- «즉시 전송 (Nagle 끔)»(«고급 연결» 안): 작은 데이터를 모으지 않고 바로 보냅니다. 장비 시험에는 켜 두는 것이 좋습니다.",
@@ -269,7 +269,7 @@ export const help: HelpDoc = {
       body: [
         "- «Mode»: the tabs [Client | Server | Relay] — client (connect to the device), server (the device connects) or relay (monitor, see «Relay (monitor)» below). Each mode remembers its own address and port, so switching tabs never overwrites another mode's address (e.g. the client's device IP) with 0.0.0.0. It cannot change while running.",
         "- «Host» (client): IP address or name of the device, e.g. «192.168.0.10».",
-        "- «Bind address (0.0.0.0 = all NICs)» (server): which network card accepts connections. Usually 0.0.0.0. To use one card only, enter this PC's IP on that card.",
+        "- «Bind address (0.0.0.0 = all NICs)» (server): which network card accepts connections. (from 0.10.0) It starts as 127.0.0.1 (this PC only); a saved value is kept. For another PC or device to connect, pick 0.0.0.0 (all NICs) or this PC's IP on that card.",
         "- «Port»: for a client, the device's port (e.g. 502 for Modbus TCP); for a server, the port to listen on. A server port of 0 lets the OS pick a free port.",
         "- «▾» next to the address box: recent connections — kept per mode (client, server, the relay's listen address, and the relay's device B), up to 8 successful «host:port» entries, newest first. Click one to fill the address and port; ✕ removes it. A client entry is kept once connected, a server or relay entry once listening starts, and device B once it is first linked; failed addresses are not kept. Typing in the client address box suggests recent hosts. Switching mode tabs fills the address and port from that mode's latest entry (or the values that mode used before, if there is none). «▾» is locked while running.",
         "- «Send immediately (no Nagle)» (in «Advanced connection»): small data is sent at once instead of being collected. Best left on for device testing.",
@@ -464,7 +464,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       title: "중계(모니터) — HMI ⇄ PLC 사이에 끼워 기록",
       body: [
         "«방식» 의 «중계 (모니터 — A ⇄ 이 PC ⇄ B)» 는 이 PC 를 두 장비 사이에 끼웁니다. A(예: HMI·SCADA)가 B(예: PLC) 대신 이 PC 에 연결하면, 연결마다 B 로 새로 이어 주고 오가는 것을 모두 기록합니다.",
-        "- 1. «A 가 연결할 이 PC 주소»(보통 0.0.0.0)와 «포트»(예: 502), «이어 줄 장비 (B)» 의 주소·포트(PLC 의 IP·502)를 넣고 «듣기 시작».",
+        "- 1. «A 가 연결할 이 PC 주소»(A 가 다른 PC·HMI 면 0.0.0.0 이나 그쪽 랜카드 주소 — 0.10.0 부터 처음 기본은 127.0.0.1)와 «포트»(예: 502), «이어 줄 장비 (B)» 의 주소·포트(PLC 의 IP·502)를 넣고 «듣기 시작».",
         "- 2. A 의 연결 대상 IP 를 이 PC 주소로 바꿉니다(왼쪽 «이 PC 주소» 에서 확인). 연결이 오면 «RELAY A주소 ⇄ B주소» 줄이 남고 «이어진 쌍» 에 A 주소가 보입니다.",
         "- 기록의 방향: «A→B ▶» 는 A 가 B 로 보낸 것(파일 로그·복사에서는 RX), «◀ B→A» 는 B 의 응답(TX). 상대 칸은 A 의 주소. 방향마다 프레임 구분기를 따로 써서 한쪽이 쪼개 보내도 섞이지 않습니다.",
         "- 데이터는 받는 즉시 그대로 넘깁니다(프레임 구분·체크섬 검사는 기록에만 쓰고 넘기는 바이트는 바꾸지 않음). 자동응답·에코는 쓰지 않습니다.",
@@ -515,7 +515,7 @@ const TCP_EXTRA: Record<"ko" | "en", HelpSection[]> = {
       title: "Relay (monitor) — log HMI ⇄ PLC traffic",
       body: [
         "«Relay (monitor — A ⇄ this PC ⇄ B)» in «Mode» puts this PC between two devices. When A (e.g. an HMI/SCADA) connects to this PC instead of B (e.g. a PLC), each connection gets its own link to B and everything in between is logged.",
-        "- 1. Enter «This PC address for A to connect to» (usually 0.0.0.0) and «Port» (e.g. 502), and the «Device to relay to (B)» host and port (the PLC's IP, 502). Press «Start listening».",
+        "- 1. Enter «This PC address for A to connect to» (0.0.0.0 or the adapter on A's side when A is another PC or an HMI — from 0.10.0 it starts as 127.0.0.1) and «Port» (e.g. 502), and the «Device to relay to (B)» host and port (the PLC's IP, 502). Press «Start listening».",
         "- 2. Change A's target IP to this PC (see «This PC» on the left). On connect, «RELAY A-address ⇄ B-address» is logged and A's address appears under «Relayed pairs».",
         "- Directions: «A→B ▶» is what A sent to B (RX in file logs and copies), «◀ B→A» is B's answer (TX). The peer column is A's address. Each direction has its own framer, so a split on one side never mixes with the other.",
         "- Data is forwarded the moment it arrives (framing and checksum checks only affect the log, never the forwarded bytes). Auto reply and echo are not used.",

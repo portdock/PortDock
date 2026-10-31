@@ -5946,7 +5946,7 @@ export const GUIDES: Guide[] = [
         ] },
         { h: "4. Modbus Slave 로 연습" },
         { ul: [
-          "PortDock Modbus Slave 에서 연결 방식 «TCP 서버(Modbus TCP)» 를 고르고, 묶을 주소를 127.0.0.1 로 바꾸고(기본 0.0.0.0 은 다른 PC 도 붙을 수 있고 방화벽 창이 뜹니다) 빈 포트(예: 1502)로 시작한 뒤 보유 레지스터 몇 칸에 값을 넣습니다.",
+          "PortDock Modbus Slave 에서 연결 방식 «TCP 서버(Modbus TCP)» 를 고르고, 묶을 주소는 127.0.0.1 로 두고(0.10.0 부터 처음 기본값. 0.0.0.0 이면 다른 PC 도 붙을 수 있고 방화벽 창이 뜹니다 — 예전 판에서 저장된 설정이면 확인) 빈 포트(예: 1502)로 시작한 뒤 보유 레지스터 몇 칸에 값을 넣습니다.",
           "«127.0.0.1:1502 국번 1 에서 보유 레지스터 0 부터 4개 읽어 줘» → modbus_read(FC 03). «0~1 을 float(ABCD)로 풀어 줘» 처럼 풀이도 시킬 수 있습니다.",
           "장비 맵을 쓰려면 «오토닉스 MT4W 레지스터 맵에서 측정값 주소 알려 줘» → device_map_get. 주소·배율은 비공식 자료이므로 장비 매뉴얼로 한 번 더 봅니다.",
         ] },
@@ -6004,7 +6004,7 @@ export const GUIDES: Guide[] = [
         ] },
         { h: "4. Practise with Modbus Slave" },
         { ul: [
-          "In PortDock Modbus Slave choose «TCP server (Modbus TCP)», change the bind address to 127.0.0.1 (the default 0.0.0.0 lets other PCs connect and triggers a firewall prompt), start it on a free port (for example 1502) and put values in a few holding registers.",
+          "In PortDock Modbus Slave choose «TCP server (Modbus TCP)», keep the bind address at 127.0.0.1 (the first-run default from 0.10.0; 0.0.0.0 lets other PCs connect and triggers a firewall prompt — check it if an earlier version saved one), start it on a free port (for example 1502) and put values in a few holding registers.",
           "«Read 4 holding registers from 0 at 127.0.0.1:1502 unit 1» → modbus_read (FC 03). You can also ask it to decode 0–1 as a float (ABCD).",
           "For a device map: «Find the measured-value address in the Autonics MT4W map» → device_map_get. Addresses and scales are unofficial; check the device manual once more.",
         ] },
@@ -6083,7 +6083,7 @@ export const GUIDES: Guide[] = [
           "산업용 스위치에는 미러링이 없는 비관리형이 많습니다. 그때는 탭이나 PortDock TCP 중계를 씁니다.",
         ] },
         { h: "5. PortDock TCP 중계 — 미러 포트·드라이버 없이" },
-        { p: "HMI(또는 PC 프로그램)가 PLC 주소로 접속하는 구조라면, HMI 의 접속 대상만 «이 PC 의 IP:포트» 로 바꾸고 PortDock TCP 를 «중계» 로 두면 이 PC 가 둘 사이에서 바이트를 바꾸지 않고 넘기며 방향별로 기록합니다. 드라이버·미러 포트가 필요 없고 설치·실행에도 관리자 권한이 필요 없습니다. 다만 다른 PC·HMI 가 이 PC 에 붙으려면 중계를 처음 열 때 뜨는 윈도우 방화벽 허용 창에서 관리자 승인이 필요할 수 있고, 장비 설정을 바꿔야 하므로 시험 환경이나 정비 시간에 씁니다. 중계에서 «pcap 으로 저장» 을 켜면 사용자가 고른 파일에만 남고 밖으로 보내지 않습니다." },
+        { p: "HMI(또는 PC 프로그램)가 PLC 주소로 접속하는 구조라면, HMI 의 접속 대상만 «이 PC 의 IP:포트» 로 바꾸고 PortDock TCP 를 «중계» 로 두면 이 PC 가 둘 사이에서 바이트를 바꾸지 않고 넘기며 방향별로 기록합니다. 드라이버·미러 포트가 필요 없고 설치·실행에도 관리자 권한이 필요 없습니다. 중계의 «A 가 연결할 이 PC 주소» 는 0.10.0 부터 처음 127.0.0.1(이 PC 안)이라, HMI 가 다른 PC·장비면 그 칸에서 0.0.0.0(모든 랜카드)이나 HMI 쪽 랜카드 주소를 고릅니다. 또 다른 PC·HMI 가 이 PC 에 붙으려면 중계를 처음 열 때 뜨는 윈도우 방화벽 허용 창에서 관리자 승인이 필요할 수 있고, 장비 설정을 바꿔야 하므로 시험 환경이나 정비 시간에 씁니다. 중계에서 «pcap 으로 저장» 을 켜면 사용자가 고른 파일에만 남고 밖으로 보내지 않습니다." },
         { h: "6. 뜬 파일 보기" },
         { p: "Wireshark 로 열어도 되고, PortDock 웹 도구 «산업 통신 pcap 해석기» 에 끌어 놓으면 Modbus TCP·MC 3E/4E 의 요청·응답 짝, 응답 시간(최소·중앙·95%·최대), 무응답, 예외·종료 코드를 연결·장치별로 모아 줍니다. 파일은 그 브라우저 안에서만 처리하고 올리지 않습니다. 결과 읽는 법은 «Modbus 응답 시간 읽기» 글에 있습니다." },
         { p: "pcap 파일에는 같은 네트워크의 다른 통신(웹·파일 공유 등)과 IP·MAC 주소가 함께 들어갑니다. 다른 사람에게 보낼 때는 필요한 포트만 내보낸 파일을 보내세요." },
@@ -6130,7 +6130,7 @@ export const GUIDES: Guide[] = [
           "Many industrial switches are unmanaged and cannot mirror. Use a tap or the PortDock TCP relay then.",
         ] },
         { h: "5. PortDock TCP relay — no mirror port or driver" },
-        { p: "If the HMI (or a PC program) connects to the PLC's address, change only the HMI's target to «this PC's IP:port» and run PortDock TCP in «Relay» mode: the PC passes the bytes through unchanged and logs both directions. No driver or mirror port is needed, and installing and running it needs no admin rights. For another PC or the HMI to connect to this PC, though, the Windows Firewall prompt that appears the first time the relay listens may need administrator approval; and since you change a device setting, use it on a test setup or during maintenance. With «Save as pcap» on, the relay writes only to the file you choose and sends nothing out." },
+        { p: "If the HMI (or a PC program) connects to the PLC's address, change only the HMI's target to «this PC's IP:port» and run PortDock TCP in «Relay» mode: the PC passes the bytes through unchanged and logs both directions. No driver or mirror port is needed, and installing and running it needs no admin rights. The relay's «This PC address for A to connect to» starts as 127.0.0.1 (this PC only) from 0.10.0, so when the HMI is another PC or device, pick 0.0.0.0 (all adapters) or the address of the adapter on the HMI's side there. For another PC or the HMI to connect to this PC, the Windows Firewall prompt that appears the first time the relay listens may need administrator approval; and since you change a device setting, use it on a test setup or during maintenance. With «Save as pcap» on, the relay writes only to the file you choose and sends nothing out." },
         { h: "6. Looking at the file" },
         { p: "Open it in Wireshark, or drop it on the PortDock web tool «Industrial pcap Analyzer» to get Modbus TCP and MC 3E/4E request/response pairs, response times (min, median, 95%, max), missing replies and exception/end codes per connection and device. The file is processed only in that browser and never uploaded. How to read the results is in «Reading Modbus response times from a capture»." },
         { p: "A pcap file also holds other traffic on the same network (web, file sharing …) and IP and MAC addresses. Before sending one to someone, export only the ports they need." },
@@ -8081,7 +8081,7 @@ export const GUIDES: Guide[] = [
         { ul: [
           "서버 프로그램이 0.0.0.0 에서 받으면 PC 에 붙은 모든 랜카드(설비망·사무망·Wi-Fi)에서 접속을 받습니다. 시뮬레이터나 게이트웨이를 켜 둔 PC 라면 사무망 쪽에서도 닿을 수 있습니다.",
           "같은 PC 안에서만 쓰면 127.0.0.1, 설비망에서만 쓰면 설비망 랜카드의 주소 하나로 묶습니다.",
-          "PortDock 은 PLC Simulator·Serial 포트 나눔·Modbus TCP ↔ RTU 게이트웨이를 기본 127.0.0.1 에서 받고, Modbus Slave(TCP)·TCP 서버·Simulator·UDP 는 기본 0.0.0.0 에서 받습니다 — 주소 칸에서 바꿉니다. 자세한 표는 «안전 원칙» 페이지에.",
+          "PortDock 은 PLC Simulator·Serial 포트 나눔·Modbus TCP ↔ RTU 게이트웨이를 기본 127.0.0.1 에서 받고, Modbus Slave(TCP)·TCP 서버·중계·Simulator 도 0.10.0 부터 처음 기본이 127.0.0.1 이고 다른 PC 가 붙으려면 주소 칸에서 0.0.0.0 이나 랜카드 주소를 고릅니다. UDP 는 장비가 보낸 답을 받아야 해 기본 0.0.0.0 입니다. 자세한 표는 «안전 원칙» 페이지에.",
         ] },
         { h: "5. 기본 4 — 쓰지 않는 관리 포트는 닫는다" },
         { ul: [
@@ -8125,7 +8125,7 @@ export const GUIDES: Guide[] = [
         { ul: [
           "A server listening on 0.0.0.0 accepts connections on every adapter of the PC (equipment network, office network, Wi-Fi). A PC running a simulator or a gateway may then be reachable from the office side too.",
           "For use on the same PC only, bind to 127.0.0.1; for the equipment network only, bind to that adapter's single address.",
-          "PortDock's PLC Simulator, Serial port sharing and the Modbus TCP ↔ RTU gateway listen on 127.0.0.1 by default; Modbus Slave (TCP), TCP server, Simulator and UDP listen on 0.0.0.0 by default — change it in the address box. The full table is on the «Safety principles» page.",
+          "PortDock's PLC Simulator, Serial port sharing and the Modbus TCP ↔ RTU gateway listen on 127.0.0.1 by default; from 0.10.0 Modbus Slave (TCP), TCP server/relay and Simulator also start on 127.0.0.1 — pick 0.0.0.0 or an adapter's address in the address box for other PCs. UDP listens on 0.0.0.0 by default because it has to receive device replies. The full table is on the «Safety principles» page.",
         ] },
         { h: "5. Basic 4 — close unused admin ports" },
         { ul: [

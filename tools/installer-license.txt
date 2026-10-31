@@ -17,8 +17,10 @@ PortDock — 개인정보 안내 / Privacy notice
   TCP 7000)·Modbus TCP ↔ RTU 게이트웨이(기본 TCP 502), PLC Simulator
   (MC 기본 TCP 5000, XGT TCP 2004·UDP 2005)는 기본으로 127.0.0.1(이 PC)
   에서만 받고, «다른 PC 에서 연결 허용» 을 켤 때만 다른 PC 가 닿습니다.
-  Modbus Slave TCP·TCP 서버·중계·Simulator·UDP 는 입력한 주소에서
-  받습니다(기본 0.0.0.0 — 모든 랜카드). 산업 프로토콜이라 인증이 없으니
+  Modbus Slave TCP·TCP 서버·중계·Simulator 는 주소 칸의 주소에서
+  받습니다(0.10.0 부터 처음 기본 127.0.0.1 — 다른 PC 가 붙으려면 0.0.0.0
+  이나 랜카드 주소를 고름). UDP 는 장비의 답을 받아야 해 기본 0.0.0.0
+  (모든 랜카드)입니다. 산업 프로토콜이라 인증이 없으니
   믿을 수 있는 망에서만 여세요.
 - 이 PC 의 파일·앱 저장소에 쓰는 것(밖으로 보내지 않음, 앱 저장소는
   «설정 내보내기» 파일에도 들어감): Net Scan 기준 목록(장비마다 IP·MAC
@@ -69,8 +71,10 @@ installing or operating it.
   RTU gateway (TCP 502 by default) and PLC Simulator (MC on TCP 5000 by
   default, XGT on TCP 2004 / UDP 2005) listen on 127.0.0.1 (this PC)
   only, unless you turn on «Allow other PCs to connect». Modbus Slave
-  TCP, TCP server/relay, Simulator and UDP listen on the address you
-  enter (0.0.0.0, all network adapters, by default). Industrial
+  TCP, TCP server/relay and Simulator listen on the address in their
+  address box (from 0.10.0 127.0.0.1 on first run — pick 0.0.0.0 or an
+  adapter's address for other PCs). UDP listens on 0.0.0.0 (all network
+  adapters) by default to receive device replies. Industrial
   protocols have no authentication — open them on trusted networks only.
 - Written to files and app storage on this PC (never sent; app storage
   is also copied into «Export settings» files): Net Scan baselines (IP,
