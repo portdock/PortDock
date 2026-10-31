@@ -1,0 +1,443 @@
+---
+// 웹 도구(0.10.0): LS XGT 전용 프로토콜(FEnet) 프레임 해석기 — HEX 를 붙여 넣으면 머리·명령·변수·값·오류 코드를 풀어 준다.
+// 풀이는 lib/xgtDecode.ts(= crates/core/src/xgt.rs 와 같은 규칙, 시험으로 같은 답을 고정). 광고는 본문 아래에만(AdSlot).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { hex } from "../lib/checksum";
+import { buildXgtRequest, bcc, XGT_ERRORS, XGT_DEVICES } from "../lib/xgtDecode";
+import { XGT_MANUALS } from "../data/guides";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/xgt-decoder/";
+const L = ko
+  ? {
+      title: "LS XGT 전용 프로토콜(FEnet) 프레임 해석기",
+      desc: "LS XGT PLC 의 FEnet 전용 프로토콜(«LSIS-XGT», TCP 2004) 프레임을 HEX 로 붙여 넣으면 머리·명령·변수·값·오류 코드를 풀어 줍니다. 요청 만들기도.",
+      input: "프레임 (HEX 바이트)",
+      help: "예: 4C 53 49 53 2D 58 47 54 00 00 … — 프레임 하나씩. 요청·응답은 머리의 프레임 방향(h33·h11)으로 가립니다.",
+      pair: "짝 요청 (응답의 값에 변수 이름을 붙일 때, 선택)",
+      pairHelp: "응답에는 변수 이름이 없습니다. 그 응답을 부른 요청을 넣으면 블록·바이트마다 이름이 붙습니다.",
+      examples: "예시",
+      ex: ["개별 읽기 요청", "읽기 응답", "연속 읽기 요청", "비트 쓰기 요청", "오류 응답"],
+      how: "모든 풀이는 이 브라우저 안에서만 하고, 붙여 넣은 내용은 어디에도 보내지 않습니다.",
+      buildTitle: "요청 만들기",
+      buildNote: "회사 ID «LSIS-XGT», 프레임 방향 h33, BCC 를 채운 요청을 만듭니다.",
+      op: "명령",
+      ops: [
+        ["read", "h0054 개별 읽기"],
+        ["write", "h0058 개별 쓰기"],
+        ["read-cont", "h0054 연속 읽기 (바이트)"],
+        ["write-cont", "h0058 연속 쓰기 (바이트)"],
+      ],
+      vars: "변수 (쉼표로, 16개까지)",
+      varsHelp: "예: %MW100, %DW10 · 비트 %MX1603 = 워드 100 의 비트 3 · 연속은 %MB0 꼴 하나",
+      count: "데이터 수 (연속 읽기, 바이트)",
+      values: "쓸 값 (쉼표·띄어쓰기로)",
+      valuesHelp: "개별: 변수마다 하나(10진 또는 0x 16진, 비트는 0·1) · 연속: 바이트들",
+      invoke: "Invoke ID (10진)",
+      made: "만든 프레임",
+      toDecoder: "해석기에 넣기",
+      faqTitle: "자주 묻는 것",
+      errTitle: "오류 코드",
+      errCols: ["코드", "뜻", "PortDock PLC Simulator 가 이 코드로 답하는 경우"],
+      errSrc: "뜻은 LS ELECTRIC «XGT FEnet I/F Module User's Manual» V2.30 10.4(10-12쪽)의 설명을 줄인 것입니다. 어느 조건에 어느 코드를 쓸지는 PortDock PLC Simulator 가 고른 것이며, 실제 PLC 와 다를 수 있습니다.",
+      devTitle: "디바이스와 변수 이름",
+      devCols: ["글자", "이름", "변수 예"],
+      srcTitle: "근거",
+      notAffiliated: "LS ELECTRIC 의 공개 사용설명서(XGT FEnet·XGB FEnet)를 기준으로 만든 해석기이며, 제휴 관계가 아닙니다.",
+      faq: [
+        ["%MX1603 은 무엇인가요?", "비트 변수의 번호는 비트 단위입니다 — 워드 번호 × 16 + 비트 번호(10진). %MW100 의 비트 3 은 100 × 16 + 3 = 1603 이라 %MX1603 입니다. 사용설명서 8-12쪽은 %MW172 의 비트 C 를 %MX172C 가 아니라 %MX2764 로 쓰라고 적고 있습니다."],
+        ["BCC 는 어떻게 계산하나요?", "머리 20바이트 중 앞 19바이트(회사 ID ~ FEnet 위치)를 더한 값의 아래 8비트입니다. 사용설명서 XBL-EMTA 표 5-7·5-8·5-9 예시와 맞습니다(표 5-6 의 0x4E 만 머리 합 0x3C 와 다름). 해석기는 계산값을 함께 보여 줍니다."],
+        ["오류 코드가 1바이트인가요, 2바이트인가요?", "사용설명서 8.1.2 그림은 1바이트로, 8.2절 표와 10.4 는 오류 상태 뒤 2바이트 칸의 아래 바이트가 코드라고 적고 있습니다. 이 해석기와 PortDock PLC Simulator 는 2바이트(리틀 엔디언)로 읽고 씁니다."],
+        ["«PortDock PLC Simulator 가 답할 오류 코드» 는 무엇인가요?", "요청을 PortDock PLC Simulator(0.10.0 부터)의 처리 규칙으로 따져 본 결과입니다. 디바이스 크기를 넘는 번호(오류 4)는 앱에서 정한 크기에 따라 달라서 여기서는 따지지 않습니다. 실제 PLC 는 기종·설정에 따라 다르게 답할 수 있습니다."],
+      ],
+      guideNote: "PLC 없이 자기 프로그램의 통신을 시험하려면",
+    }
+  : {
+      title: "LS XGT Dedicated Protocol (FEnet) Frame Decoder",
+      desc: "Paste an LS XGT FEnet dedicated protocol frame («LSIS-XGT», TCP 2004) as HEX to decode the header, instruction, variables, values and error code.",
+      input: "Frame (HEX bytes)",
+      help: "e.g. 4C 53 49 53 2D 58 47 54 00 00 … — one frame at a time. Request and reply are told apart by the header's source of frame (h33/h11).",
+      pair: "Matching request (to label a reply's values, optional)",
+      pairHelp: "A reply carries no variable names. Add the request that produced it and each block or byte gets its name.",
+      examples: "Examples",
+      ex: ["Individual read request", "Read reply", "Continuous read request", "Bit write request", "Error reply"],
+      how: "Everything is decoded in your browser; nothing you paste is sent anywhere.",
+      buildTitle: "Build a request",
+      buildNote: "Builds a request with company ID «LSIS-XGT», source of frame h33 and the BCC filled in.",
+      op: "Instruction",
+      ops: [
+        ["read", "h0054 Read (individual)"],
+        ["write", "h0058 Write (individual)"],
+        ["read-cont", "h0054 Read (continuous, bytes)"],
+        ["write-cont", "h0058 Write (continuous, bytes)"],
+      ],
+      vars: "Variables (comma separated, up to 16)",
+      varsHelp: "e.g. %MW100, %DW10 · bit %MX1603 = bit 3 of word 100 · continuous takes one %MB0-style name",
+      count: "Number of data (continuous read, bytes)",
+      values: "Values to write (comma or space separated)",
+      valuesHelp: "Individual: one per variable (decimal or 0x hex, bits 0/1) · continuous: the bytes",
+      invoke: "Invoke ID (decimal)",
+      made: "Built frame",
+      toDecoder: "Decode it",
+      faqTitle: "FAQ",
+      errTitle: "Error codes",
+      errCols: ["Code", "Meaning", "When PortDock PLC Simulator answers with it"],
+      errSrc: "Meanings are shortened from LS ELECTRIC «XGT FEnet I/F Module User's Manual» V2.30 10.4 (p. 10-12). Which condition gets which code was chosen by PortDock PLC Simulator; a real PLC may differ.",
+      devTitle: "Devices and variable names",
+      devCols: ["Letter", "Name", "Example"],
+      srcTitle: "References",
+      notAffiliated: "Built from LS ELECTRIC's public user's manuals (XGT FEnet and XGB FEnet); not affiliated with LS ELECTRIC.",
+      faq: [
+        ["What is %MX1603?", "Bit variables are numbered in bits — word number × 16 + bit number (decimal). Bit 3 of %MW100 is 100 × 16 + 3 = 1603, so %MX1603. Manual p. 8-12 says to write bit C of %MW172 as %MX2764, not %MX172C."],
+        ["How is the BCC calculated?", "The low 8 bits of the sum of the first 19 of the 20 header bytes (company ID through FEnet position). This matches the examples in tables 5-7, 5-8 and 5-9 of the XBL-EMTA manual (only table 5-6's 0x4E differs from the header sum 0x3C). The decoder shows the computed value."],
+        ["Is the error code 1 byte or 2?", "The figure in manual 8.1.2 shows 1 byte; the tables in 8.2 and section 10.4 say the low byte of the 2-byte field after the error status is the code. This decoder and PortDock PLC Simulator read and write 2 bytes (little-endian)."],
+        ["What is «Error code PortDock PLC Simulator would return»?", "The request checked against PortDock PLC Simulator's handling rules (from 0.10.0). Numbers beyond the device size (error 4) depend on the size set in the app and are not checked here. A real PLC may answer differently depending on model and settings."],
+      ],
+      guideNote: "To test your own program's communication without a PLC, see",
+    };
+
+// 예시 — xgt.rs·xgtDecode.test.ts 와 같은 모양
+const readReq = hex(buildXgtRequest({ op: "read", vars: ["%DW100"], invoke: 1 }));
+const respHead = [0x4c, 0x53, 0x49, 0x53, 0x2d, 0x58, 0x47, 0x54, 0, 0, 0, 1, 0xa0, 0x11, 1, 0, 14, 0, 0];
+const resp = hex([...respHead, bcc(respHead), 0x55, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0x34, 0x12]);
+const nakHead = [0x4c, 0x53, 0x49, 0x53, 0x2d, 0x58, 0x47, 0x54, 0, 0, 0, 1, 0xa0, 0x11, 1, 0, 10, 0, 0];
+const nak = hex([...nakHead, bcc(nakHead), 0x55, 0, 2, 0, 0, 0, 0xff, 0xff, 4, 0]);
+const EXAMPLES: { name: string; data: string; pair?: string }[] = [
+  { name: L.ex[0], data: readReq },
+  { name: L.ex[1], data: resp, pair: readReq },
+  { name: L.ex[2], data: hex(buildXgtRequest({ op: "read-cont", vars: ["%DB200"], count: 6, invoke: 2 })) },
+  { name: L.ex[3], data: hex(buildXgtRequest({ op: "write", vars: ["%MX1603"], values: [1], invoke: 3 })) },
+  { name: L.ex[4], data: nak },
+];
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "LS XGT 전용 프로토콜(FEnet) 프레임 해석기 — PortDock" : "LS XGT Dedicated Protocol (FEnet) Frame Decoder Online — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="xgd" data-lang={lang}>
+      <label class="fld">
+        {L.input}
+        <textarea id="data" class="mono" rows="3" spellcheck="false" autocomplete="off">{EXAMPLES[0].data}</textarea>
+        <span class="note">{L.help}</span>
+      </label>
+      <label class="fld">
+        {L.pair}
+        <input id="pair" class="mono" spellcheck="false" autocomplete="off" />
+        <span class="note">{L.pairHelp}</span>
+      </label>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {EXAMPLES.map((e) => <button type="button" class="btn tight" data-ex={e.data} data-pair={e.pair ?? ""}>{e.name}</button>)}
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div id="out" aria-live="polite"></div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <form class="calc card" id="xgb" style="margin-top:20px">
+      <h2 style="margin-top:0">{L.buildTitle}</h2>
+      <p class="note">{L.buildNote}</p>
+      <div class="row">
+        <label class="fld" style="flex:1 1 240px">
+          {L.op}
+          <select id="b-op">{L.ops.map(([v, n]) => <option value={v}>{n}</option>)}</select>
+        </label>
+        <label class="fld" style="flex:0 1 160px">
+          {L.invoke}
+          <input id="b-invoke" class="mono" value="1" inputmode="numeric" autocomplete="off" />
+        </label>
+      </div>
+      <label class="fld">
+        {L.vars}
+        <input id="b-vars" class="mono" value="%MW100" spellcheck="false" autocomplete="off" />
+        <span class="note">{L.varsHelp}</span>
+      </label>
+      <label class="fld" id="b-count-box" hidden>
+        {L.count}
+        <input id="b-count" class="mono" value="4" inputmode="numeric" autocomplete="off" />
+      </label>
+      <label class="fld" id="b-values-box" hidden>
+        {L.values}
+        <input id="b-values" class="mono" spellcheck="false" autocomplete="off" />
+        <span class="note">{L.valuesHelp}</span>
+      </label>
+      <p class="err" id="b-err" role="alert"></p>
+      <div id="b-out" hidden>
+        <p class="note">{L.made}</p>
+        <pre class="mono" id="b-frame-out"></pre>
+        <button type="button" class="btn tight" id="b-use">{L.toDecoder}</button>
+      </div>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.errTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.errCols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              Object.entries(XGT_ERRORS).map(([code, e]) => (
+                <tr>
+                  <td class="mono">h{Number(code).toString(16).toUpperCase().padStart(4, "0")}</td>
+                  <td>{e[lang]}</td>
+                  <td>{ko ? e.whenKo : e.whenEn}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note">{L.errSrc}</p>
+      <h2>{L.devTitle}</h2>
+      <div class="scroll">
+        <table class="t">
+          <thead>
+            <tr>{L.devCols.map((c) => <th>{c}</th>)}</tr>
+          </thead>
+          <tbody>
+            {
+              XGT_DEVICES.map((d) => (
+                <tr>
+                  <td class="mono">{d.letter}</td>
+                  <td>{d[lang]}</td>
+                  <td class="mono">%{d.letter}X0 · %{d.letter}B0 · %{d.letter}W0 · %{d.letter}D0 · %{d.letter}L0</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        {
+          XGT_MANUALS.map((r) => (
+            <li>
+              <a href={r.url} rel="noopener">{r.title}</a> — {r.note[lang]}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="note">{L.notAffiliated}</p>
+      <p>
+        {L.guideNote} <a href={url(lang, "guides/xgt-protocol-test-without-plc/")}>{ko ? "PLC 없이 LS XGT 전용 프로토콜 통신 시험하기" : "Testing LS XGT dedicated protocol communication without a PLC"}</a>{ko ? " · " : " · "}<a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a>.
+      </p>
+      <p>
+        {ko ? "미쓰비시 MC 프로토콜(SLMP) 프레임은 " : "For Mitsubishi MC protocol (SLMP) frames use the "}
+        <a href={url(lang, "tools/mc-decoder/")}>{ko ? "MC 프로토콜(SLMP) 프레임 해석기" : "MC Protocol (SLMP) Frame Decoder"}</a>{ko ? " 를 쓰세요." : "."}
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .scroll {
+      overflow-x: auto;
+    }
+    #b-frame-out {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 4px 0 8px;
+    }
+    #out :global(.xgd-sum) {
+      margin: 0 0 8px;
+    }
+    #out :global(.xgd-ok) {
+      font-weight: 600;
+    }
+    #out :global(.xgd-bad) {
+      color: #b42318;
+      font-weight: 600;
+    }
+    #out :global(h2) {
+      font-size: 17px;
+      margin: 14px 0 6px;
+    }
+    #out :global(.xgd-notes) {
+      font-size: 14px;
+      margin: 6px 0 0;
+      padding-left: 20px;
+    }
+    #out :global(.scroll) {
+      overflow-x: auto;
+    }
+  </style>
+  <script>
+    import { type Lang, hex } from "../lib/checksum";
+    import { decodeXgt, buildXgtRequest, commandName, errText, type Field, type BuildOp } from "../lib/xgtDecode";
+    const form = document.getElementById("xgd") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const ko = lang === "ko";
+    const t = (k: string, e: string) => (ko ? k : e);
+    const data = document.getElementById("data") as HTMLTextAreaElement;
+    const pair = document.getElementById("pair") as HTMLInputElement;
+    const err = document.getElementById("err")!;
+    const out = document.getElementById("out")!;
+    const h = (n: number, w: number) => n.toString(16).toUpperCase().padStart(w, "0");
+
+    function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text) e.textContent = text;
+      return e;
+    }
+    function table(head: string[], rows: string[][], mono: number[] = []) {
+      const box = el("div", "scroll");
+      const tb = el("table", "t");
+      const tr = el("tr");
+      for (const x of head) tr.append(el("th", "", x));
+      tb.append(el("thead"));
+      tb.tHead!.append(tr);
+      const body = el("tbody");
+      for (const r of rows) {
+        const row = el("tr");
+        r.forEach((c, i) => row.append(el("td", mono.includes(i) ? "mono" : "", c)));
+        body.append(row);
+      }
+      tb.append(body);
+      box.append(tb);
+      return box;
+    }
+    const fieldTable = (fs: Field[]) =>
+      table(
+        [t("항목", "Field"), t("원래 값", "Raw"), t("뜻", "Meaning")],
+        fs.map((f) => [f.name, f.raw, f.value]),
+        [1],
+      );
+
+    function run() {
+      out.replaceChildren();
+      err.textContent = "";
+      if (!data.value.trim()) return;
+      let d;
+      try {
+        d = decodeXgt(data.value, { lang, pair: pair.value });
+      } catch (e) {
+        err.textContent = (e as Error).message;
+        return;
+      }
+      const sum = el("p", "xgd-sum");
+      const what = `h${h(d.command, 4)} ${commandName(d.command, d.dataType, lang)}`;
+      const res = d.dir === "response" && d.error !== undefined ? (d.error ? ` · NAK h${h(d.error, 4)} ${errText(d.error & 0xff, lang)}` : " · ACK") : "";
+      sum.append(el("b", "", `${d.dir === "request" ? t("요청", "Request") : t("응답", "Reply")} · ${what}${res}`));
+      out.append(sum);
+      if (d.simError !== undefined) {
+        const p = el("p", "xgd-sum");
+        p.append(document.createTextNode(t("PortDock PLC Simulator 가 답할 오류 코드: ", "Error code PortDock PLC Simulator would return: ")));
+        p.append(el("span", d.simError === 0 ? "xgd-ok" : "xgd-bad", d.simError === 0 ? t("없음(정상 응답)", "none (ACK)") : `h${h(d.simError, 4)} ${errText(d.simError, lang)}`));
+        out.append(p);
+      }
+      out.append(el("h2", "", t("머리 (20바이트)", "Header (20 bytes)")), fieldTable(d.header));
+      out.append(el("h2", "", t("명령·데이터", "Instruction and data")), fieldTable(d.body));
+      if (d.items.length) {
+        out.append(el("h2", "", t("값", "Values")));
+        out.append(table([t("변수", "Variable"), t("바이트", "Bytes"), t("10진", "Decimal"), "HEX"], d.items.map((i) => [i.addr, String(i.size), i.value, i.hex]), [0, 2, 3]));
+      }
+      if (d.notes.length) {
+        const ul = el("ul", "xgd-notes");
+        for (const n of d.notes) ul.append(el("li", "", n));
+        out.append(ul);
+      }
+    }
+    for (const b of form.querySelectorAll<HTMLButtonElement>("button[data-ex]")) {
+      b.addEventListener("click", () => {
+        data.value = b.dataset.ex ?? "";
+        pair.value = b.dataset.pair ?? "";
+        run();
+      });
+    }
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    // 다른 도구에서 넘긴 프레임 — 주소의 # 뒤라 서버로 가지 않는다(#frame=…&pair=…)
+    const hp = new URLSearchParams(location.hash.slice(1));
+    if (hp.get("frame")) {
+      data.value = hp.get("frame") ?? "";
+      pair.value = hp.get("pair") ?? "";
+    }
+    run();
+
+    // ---- 요청 만들기
+    const bform = document.getElementById("xgb") as HTMLFormElement;
+    const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const bOp = g<HTMLSelectElement>("b-op");
+    const bVars = g<HTMLInputElement>("b-vars");
+    const bCount = g<HTMLInputElement>("b-count");
+    const bValues = g<HTMLInputElement>("b-values");
+    const bInvoke = g<HTMLInputElement>("b-invoke");
+    const bErr = g<HTMLElement>("b-err");
+    const bOut = g<HTMLElement>("b-out");
+    const bText = g<HTMLElement>("b-frame-out");
+    function build() {
+      bErr.textContent = "";
+      bOut.hidden = true;
+      const op = bOp.value as BuildOp;
+      g<HTMLElement>("b-values-box").hidden = !op.startsWith("write");
+      g<HTMLElement>("b-count-box").hidden = op !== "read-cont";
+      try {
+        const invoke = Number(bInvoke.value.trim() || "0");
+        if (!(Number.isInteger(invoke) && invoke >= 0 && invoke <= 0xffff)) throw new Error(t("Invoke ID 는 0~65535", "Invoke ID must be 0–65535"));
+        const values = bValues.value
+          .split(/[\s,;]+/)
+          .filter(Boolean)
+          .map((v) => (/^0x[0-9a-f]+$/i.test(v) ? parseInt(v, 16) : /^\d+$/.test(v) ? Number(v) : NaN));
+        if (values.some((v) => Number.isNaN(v))) throw new Error(t("값은 10진 또는 0x 16진", "Values must be decimal or 0x hex"));
+        const u = buildXgtRequest({ op, vars: bVars.value.split(/[\s,;]+/), values, count: Number(bCount.value.trim()), invoke }, lang);
+        bText.textContent = hex(u);
+        bOut.hidden = false;
+      } catch (e) {
+        bErr.textContent = (e as Error).message;
+      }
+    }
+    bform.addEventListener("input", build);
+    bform.addEventListener("change", build);
+    bform.addEventListener("submit", (e) => e.preventDefault());
+    g<HTMLButtonElement>("b-use").addEventListener("click", () => {
+      data.value = bText.textContent ?? "";
+      pair.value = "";
+      run();
+      data.scrollIntoView({ block: "center" });
+    });
+    build();
+  </script>
+</Base>

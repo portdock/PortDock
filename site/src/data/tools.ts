@@ -528,6 +528,13 @@ export const TOOLS: Tool[] = [
         },
       },
       {
+        title: { ko: "LS XGT 전용 프로토콜 (0.10.0 부터)", en: "LS XGT dedicated protocol (from 0.10.0)" },
+        body: {
+          ko: "«프로토콜» 을 «XGT 전용» 으로 바꾸면 LS ELECTRIC XGT PLC 의 FEnet 전용 프로토콜(«LSIS-XGT» 머리, 기본 TCP 2004 · UDP 2005)에 답합니다. 읽기 h0054·쓰기 h0058 의 개별(%MX·%MB·%MW·%MD·%ML, 블록 16개까지)·연속(%MB 바이트, 1,400바이트까지), 디바이스 P·M·K·F·T·C·D·L·N, 오류 코드(1~6 · h75~h78) 응답. LS ELECTRIC 공개 사용설명서 기준 흉내 — 제휴 아님.",
+          en: "Switch «Protocol» to «XGT dedicated» and it answers the FEnet dedicated protocol of LS ELECTRIC XGT PLCs («LSIS-XGT» header, default TCP 2004 · UDP 2005): read h0054 and write h0058, individual (%MX, %MB, %MW, %MD, %ML, up to 16 blocks) and continuous (%MB bytes, up to 1,400 bytes), devices P, M, K, F, T, C, D, L, N, and error-code replies (1–6, h75–h78). Built from LS ELECTRIC's public user's manuals — not affiliated.",
+        },
+      },
+      {
         title: { ko: "조건 규칙 (0.6.0 부터)", en: "Condition rules (from 0.6.0)" },
         body: {
           ko: "«요청 비트가 켜지면 300 ms 뒤 완료 비트 켜기» 처럼 조건(비트 ON·OFF·에지, 워드 값 비교, 주기) → 지연(고정·무작위) → 동작(비트·워드 쓰기)을 정해 핸드셰이크를 흉내 냅니다. 래더 프로그램은 아닙니다.",
