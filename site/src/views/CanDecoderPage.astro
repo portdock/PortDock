@@ -1,0 +1,526 @@
+---
+// 웹 도구: CAN 프레임 해석기 — candump·cansend 줄, «ID DLC 데이터» HEX, 원시 비트열(스터핑 제거·CRC15) → ID·DLC·데이터,
+// 확장 ID 는 J1939(우선순위·PGN·주소·흔한 SPN), 표준 ID 는 CANopen(COB-ID 기능·노드·NMT·SDO) 풀이 후보. 풀이는 lib/canFrame.ts.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { FD_LEN, PGNS, SPNS, buildRaw } from "../lib/canFrame";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/can-decoder/";
+const rawEx = buildRaw({ id: 0x123, ext: false, rtr: false, dlc: 2, data: [0x11, 0x22] }).join("");
+const EXAMPLES = [
+  { name: ko ? "J1939 엔진 회전수" : "J1939 engine speed", v: "can0  0CF00400   [8]  FF FF FF 68 13 FF FF FF" },
+  { name: ko ? "J1939 차속(CCVS1)" : "J1939 CCVS1", v: "can0 18FEF100#0011223344556677" },
+  { name: ko ? "J1939 요청" : "J1939 request", v: "18EA00F9 3 00 EE 00" },
+  { name: ko ? "CANopen SDO 읽기" : "CANopen SDO read", v: "601 8 40 18 10 01 00 00 00 00\n581 8 43 18 10 01 78 56 34 12" },
+  { name: ko ? "CANopen NMT·하트비트" : "CANopen NMT, heartbeat", v: "000 2 01 00\n705 1 05" },
+  { name: ko ? "SDO 중단" : "SDO abort", v: "585#8000200000000206" },
+  { name: ko ? "원시 비트열" : "Raw bit stream", v: rawEx },
+];
+const L = ko
+  ? {
+      title: "CAN 프레임 해석기 (J1939·CANopen)",
+      desc: "candump 줄·ID DLC 데이터 HEX·원시 비트열을 넣으면 표준·확장 ID, DLC, 데이터, 비트 스터핑·CRC15 를 풀고 J1939 PGN·주소, CANopen COB-ID·SDO 까지 봅니다.",
+      input: "CAN 프레임 (한 줄에 하나)",
+      help: "candump «can0 18FEF100#0011…» · «can0 123 [2] 11 22» · «ID DLC 데이터» HEX «601 8 40 18 10 01 00 00 00 00» · 원시 비트열 «0 0010010…»(SOF 부터, 0 = 우성).",
+      kind: "ID 길이 («ID DLC 데이터» 꼴만)",
+      kinds: ["자동 (4자리 이상·0x7FF 초과면 확장)", "표준 11비트", "확장 29비트"],
+      proto: "상위 프로토콜 풀이",
+      protos: ["자동 (확장 → J1939, 표준 → CANopen)", "풀지 않음", "J1939", "CANopen"],
+      examples: "예시",
+      how: "풀이는 이 브라우저 안에서만 하고, 붙여 넣은 내용은 어디에도 보내지 않습니다. J1939·CANopen 풀이는 «그 버스가 그 프로토콜일 때» 의 후보입니다.",
+      dlcTitle: "DLC 와 데이터 길이",
+      dlcHead: ["DLC", "고전 CAN", "CAN FD"],
+      dlcNote: "고전 CAN 은 DLC 9~15 도 데이터가 8 바이트입니다. CAN FD 는 9 이상이 12·16·20·24·32·48·64 바이트를 뜻합니다. 이 해석기는 CAN FD 를 길이로만 보여 주고, 원시 비트열은 고전 CAN 만 풉니다.",
+      rawTitle: "원시 비트열 풀이 — 비트 스터핑과 CRC15",
+      raw: [
+        "SOF 부터 CRC 순서열 끝까지는 같은 값이 5개 이어지면 반대 값 비트(스터프 비트)가 하나 끼어듭니다. 해석기는 이 비트를 빼고 칸을 나눈 뒤, 뺀 위치를 보여 줍니다. 같은 값이 6개면 «스터핑 오류» 입니다.",
+        "CRC15 는 SOF·중재·제어·데이터 칸(스터프 비트 뺀 것)으로 다항식 0x4599(x¹⁵+x¹⁴+x¹⁰+x⁸+x⁷+x⁴+x³+1), 시작값 0 으로 계산해 받은 CRC 와 비교합니다.",
+        "CRC 구분자(1)·ACK 칸(누군가 받았으면 0)·ACK 구분자(1)·EOF(1 일곱 개)가 있으면 함께 봅니다. 로직 분석기에서 옮길 때는 버스 레벨(CANH−CANL 이 크면 우성 = 0)로 적습니다.",
+      ],
+      j1939Title: "J1939 — 29비트 ID 나누기",
+      j1939: [
+        "29비트 = 우선순위 3비트 · EDP 1 · DP 1 · PF(PDU 형식) 8 · PS(PDU 특정) 8 · SA(출발 주소) 8.",
+        "PF 가 240(0xF0) 미만이면 PDU1: PS 는 목적 주소(DA)이고 PGN 의 아래 8비트는 0 입니다. 예: 0x18EA00F9 → PGN 59904(0xEA00, 요청), DA 0x00, SA 0xF9.",
+        "PF 가 240 이상이면 PDU2: PS 는 그룹 확장으로 PGN 에 들어가고, 목적지는 전체(255)입니다. 예: 0x18FEF100 → 우선순위 6, PGN 65265(0xFEF1, CCVS1), SA 0x00.",
+        "PGN = EDP·DP·PF·(PDU2 면 PS). 값 칸은 리틀 엔디언이고, 맨 위 바이트 0xFE 는 오류, 0xFF 는 «없음(not available)» 입니다.",
+      ],
+      pgnTitle: "이 해석기가 이름을 아는 PGN",
+      pgnHead: ["PGN", "HEX", "약어", "이름"],
+      spnTitle: "값까지 푸는 SPN (공개 자료로 배율을 맞춘 것만)",
+      spnHead: ["SPN", "PGN", "이름", "바이트", "배율", "오프셋"],
+      coTitle: "CANopen — COB-ID 기본 배정 (CiA 301)",
+      coHead: ["COB-ID", "기능"],
+      coRows: [
+        ["0x000", "NMT 명령 (데이터: 명령, 노드 ID — 0 이면 전체)"],
+        ["0x080", "SYNC"],
+        ["0x081~0x0FF", "EMCY 긴급 (오류 코드 2바이트·오류 레지스터 1001h·제조사 5바이트)"],
+        ["0x100", "TIME"],
+        ["0x181~ / 0x281~ / 0x381~ / 0x481~", "TPDO1~4 (장치 → 버스)"],
+        ["0x201~ / 0x301~ / 0x401~ / 0x501~", "RPDO1~4 (버스 → 장치)"],
+        ["0x581~0x5FF", "SDO 응답 (서버 → 클라이언트)"],
+        ["0x601~0x67F", "SDO 요청 (클라이언트 → 서버)"],
+        ["0x701~0x77F", "NMT 오류 제어: 하트비트·부트업 (00 부트업, 04 정지, 05 운전, 7F 운전 전)"],
+        ["0x7E4·0x7E5", "LSS (CiA 305)"],
+      ],
+      sdoTitle: "SDO 명령 바이트",
+      sdo: [
+        "위 3비트가 명령: 요청 1 = 쓰기 시작(다운로드), 2 = 읽기 시작(업로드), 0·3 = 세그먼트, 4 = 중단(0x80), 5·6 = 블록.",
+        "빠른 전송(e = 1)·크기 표시(s = 1)면 n(비트 3~2) = 데이터가 없는 바이트 수: 쓰기 0x2F·0x2B·0x27·0x23 = 1·2·3·4 바이트, 읽기 응답 0x4F·0x4B·0x47·0x43 = 1·2·3·4 바이트.",
+        "바이트 1~2 = 인덱스(리틀 엔디언), 3 = 서브인덱스, 4~7 = 데이터 또는 중단 코드. 쓰기 성공 응답은 0x60, 읽기 요청은 0x40.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["candump 의 ID 가 3자리면 표준, 8자리면 확장인가요?", "네. can-utils 는 표준 ID 를 3자리, 확장 ID 를 8자리 HEX 로 적습니다. «ID DLC 데이터» 꼴은 자릿수가 들쭉날쭉하므로 «ID 길이» 칸에서 정할 수 있습니다."],
+        ["확장 ID 는 모두 J1939 인가요?", "아닙니다. 29비트 ID 를 쓰는 다른 프로토콜(NMEA 2000·ISOBUS 는 J1939 바탕, 그 밖의 제조사 고유 형식)도 있습니다. J1939 풀이는 그 버스가 J1939 일 때만 맞는 후보입니다."],
+        ["SPN 값이 없다고 나옵니다", "그 바이트가 0xFF(없음) 또는 0xFE(오류)입니다. 보내는 ECU 가 그 값을 지원하지 않거나 센서 문제일 수 있습니다. 여기 없는 SPN 은 J1939-71·제조사 문서에서 시작 바이트·배율을 확인할 것."],
+        ["CAN 통신 속도·샘플 포인트도 볼 수 있나요?", "비트 타이밍은 CAN 비트 타이밍 계산기에서 봅니다."],
+      ],
+      srcTitle: "출처",
+      timing: "비트 속도·샘플 포인트·TQ 는",
+      timingLink: "CAN 비트 타이밍 계산기",
+      timing2: "UART·SPI·I2C 는",
+    }
+  : {
+      title: "CAN Frame Decoder (J1939, CANopen)",
+      desc: "Decode candump lines, ID DLC data hex or raw bits: standard/extended ID, DLC, data, bit stuffing and CRC15, plus J1939 PGN/addresses and CANopen COB-ID/SDO.",
+      input: "CAN frames (one per line)",
+      help: "candump «can0 18FEF100#0011…» · «can0 123 [2] 11 22» · «ID DLC data» hex «601 8 40 18 10 01 00 00 00 00» · raw bits «0 0010010…» (from SOF, 0 = dominant).",
+      kind: "ID length («ID DLC data» form only)",
+      kinds: ["Auto (extended if 4+ digits or above 0x7FF)", "Standard 11-bit", "Extended 29-bit"],
+      proto: "Higher-layer protocol",
+      protos: ["Auto (extended → J1939, standard → CANopen)", "None", "J1939", "CANopen"],
+      examples: "Examples",
+      how: "Everything is decoded in your browser; nothing you paste is sent anywhere. J1939 and CANopen results are candidates that hold only if the bus really uses that protocol.",
+      dlcTitle: "DLC and data length",
+      dlcHead: ["DLC", "Classic CAN", "CAN FD"],
+      dlcNote: "In classic CAN, DLC 9–15 still means 8 data bytes. In CAN FD, 9 and above mean 12, 16, 20, 24, 32, 48 and 64 bytes. This decoder shows CAN FD by length only; raw bit streams are decoded for classic CAN only.",
+      rawTitle: "Raw bit streams — bit stuffing and CRC15",
+      raw: [
+        "From SOF to the end of the CRC sequence, after five equal bits the transmitter inserts one bit of the opposite value (a stuff bit). The decoder removes them before splitting the fields and lists where they were. Six equal bits is a stuff error.",
+        "CRC15 is computed over SOF, arbitration, control and data fields (stuff bits removed) with polynomial 0x4599 (x¹⁵+x¹⁴+x¹⁰+x⁸+x⁷+x⁴+x³+1), initial value 0, and compared with the received CRC.",
+        "If present, the CRC delimiter (1), ACK slot (0 if anyone received it), ACK delimiter (1) and EOF (seven 1s) are shown too. When copying from a logic analyser, write bus levels (dominant = 0).",
+      ],
+      j1939Title: "J1939 — splitting the 29-bit ID",
+      j1939: [
+        "29 bits = priority 3 · EDP 1 · DP 1 · PF (PDU format) 8 · PS (PDU specific) 8 · SA (source address) 8.",
+        "If PF is below 240 (0xF0) it is PDU1: PS is the destination address (DA) and the low 8 bits of the PGN are 0. Example: 0x18EA00F9 → PGN 59904 (0xEA00, Request), DA 0x00, SA 0xF9.",
+        "If PF is 240 or more it is PDU2: PS is the group extension and part of the PGN; the message goes to everyone (255). Example: 0x18FEF100 → priority 6, PGN 65265 (0xFEF1, CCVS1), SA 0x00.",
+        "PGN = EDP, DP, PF and (for PDU2) PS. Values are little-endian; a top byte of 0xFE means error, 0xFF means not available.",
+      ],
+      pgnTitle: "PGNs this decoder names",
+      pgnHead: ["PGN", "Hex", "Acronym", "Name"],
+      spnTitle: "SPNs decoded to values (only those with publicly checked scaling)",
+      spnHead: ["SPN", "PGN", "Name", "Byte", "Scale", "Offset"],
+      coTitle: "CANopen — predefined COB-IDs (CiA 301)",
+      coHead: ["COB-ID", "Function"],
+      coRows: [
+        ["0x000", "NMT command (data: command, node ID — 0 = all)"],
+        ["0x080", "SYNC"],
+        ["0x081–0x0FF", "EMCY (error code 2 bytes, error register 1001h, 5 manufacturer bytes)"],
+        ["0x100", "TIME"],
+        ["0x181– / 0x281– / 0x381– / 0x481–", "TPDO1–4 (device → bus)"],
+        ["0x201– / 0x301– / 0x401– / 0x501–", "RPDO1–4 (bus → device)"],
+        ["0x581–0x5FF", "SDO response (server → client)"],
+        ["0x601–0x67F", "SDO request (client → server)"],
+        ["0x701–0x77F", "NMT error control: heartbeat, boot-up (00 boot-up, 04 stopped, 05 operational, 7F pre-operational)"],
+        ["0x7E4, 0x7E5", "LSS (CiA 305)"],
+      ],
+      sdoTitle: "SDO command byte",
+      sdo: [
+        "The top 3 bits are the command: request 1 = initiate download (write), 2 = initiate upload (read), 0 and 3 = segments, 4 = abort (0x80), 5 and 6 = block transfer.",
+        "With expedited (e = 1) and size indicated (s = 1), n (bits 3–2) is the number of bytes without data: writes 0x2F, 0x2B, 0x27, 0x23 = 1, 2, 3, 4 bytes; read responses 0x4F, 0x4B, 0x47, 0x43 = 1, 2, 3, 4 bytes.",
+        "Bytes 1–2 = index (little-endian), 3 = sub-index, 4–7 = data or abort code. A successful write is answered with 0x60; a read request is 0x40.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Is a 3-digit candump ID standard and an 8-digit one extended?", "Yes. can-utils prints standard IDs as 3 hex digits and extended IDs as 8. For the «ID DLC data» form you can force the length with the ID length field."],
+        ["Is every extended ID J1939?", "No. Other protocols use 29-bit IDs too (NMEA 2000 and ISOBUS build on J1939; others are vendor formats). The J1939 breakdown only holds if the bus is J1939."],
+        ["An SPN shows as not available", "That byte is 0xFF (not available) or 0xFE (error). The sending ECU may not support it, or there may be a sensor fault. For SPNs not listed, check the start byte and scale in J1939-71 or the vendor document."],
+        ["Can I work out CAN bit rate and sample point here?", "Bit timing is in the CAN Bit Timing Calculator."],
+      ],
+      srcTitle: "Sources",
+      timing: "For bit rate, sample point and TQ, use the",
+      timingLink: "CAN Bit Timing Calculator",
+      timing2: "For UART, SPI and I2C:",
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "Bosch, CAN Specification Version 2.0 (1991) — Part A/B: frame fields, CRC, bit stuffing (NXP-hosted copy BCANPSV2.0)", href: "https://www.nxp.com/docs/en/reference-manual/BCANPSV2.pdf" },
+  { name: "Greg Cook, «Catalogue of parametrised CRC algorithms» — CRC-15/CAN (poly 0x4599, check 0x059E)", href: "https://reveng.sourceforge.io/crc-catalogue/1-15.htm" },
+  { name: "Linux can-utils — lib.c parse_canframe (candump/cansend notation)", href: "https://github.com/linux-can/can-utils/blob/master/lib.c" },
+  { name: "Murphy (Enovation Controls) PV100/PV101 «Implementation of SAE J1939 Parameters» 0710174 — PGN names (source: SAE J1939-71)", href: "https://www.enovationcontrols.com/uploaded/documents/pdfs/0710174.pdf" },
+  { name: "Woodward easYgen-3000XT Series J1939 Protocol — SPN ranges (110, 513, 100, 91, 247, 190)", href: "https://support.woodward.com/file.php/8090PAZXYXHXGT8089993AB4A0F/easYgen-3000XT-Series-1939-Protocol.pdf" },
+  { name: "TiePie engineering, SAE J1939 decoder — [61444.190] Engine_Speed, position 24, size 16, gain 0.125", href: "https://multichannel.help.tiepie.com/en/advanced-measurements/ios/j1939" },
+  { name: "ISOBUS data dictionary (isobus.net) — PGN labels shared with J1939 (e.g. 59392 ACKM)", href: "https://www.isobus.net/isobus/" },
+  { name: "Wikipedia, «CANopen» — predefined connection set, SDO protocol (summary of CiA 301)", href: "https://en.wikipedia.org/wiki/CANopen" },
+  { name: "CAN in Automation (CiA), CiA 301 «CANopen application layer and communication profile»", href: "https://www.can-cia.org/" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "CAN 프레임 해석기 — J1939 PGN·CANopen COB-ID·CRC — PortDock" : "CAN Frame Decoder: J1939 PGN, CANopen COB-ID, CRC — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="cf">
+      <label class="fld">{L.input}<textarea id="in" class="mono" rows="4" spellcheck="false" autocomplete="off">{EXAMPLES[0].v}</textarea></label>
+      <p class="note">{L.help}</p>
+      <div class="ex-row" role="group" aria-label={L.examples}>
+        <span class="note">{L.examples}</span>
+        {EXAMPLES.map((e) => <button type="button" class="btn tight" data-ex={e.v}>{e.name}</button>)}
+      </div>
+      <div class="row">
+        <label class="fld">{L.kind}<select id="kind"><option value="auto" selected>{L.kinds[0]}</option><option value="std">{L.kinds[1]}</option><option value="ext">{L.kinds[2]}</option></select></label>
+        <label class="fld">{L.proto}<select id="proto"><option value="auto" selected>{L.protos[0]}</option><option value="none">{L.protos[1]}</option><option value="j1939">{L.protos[2]}</option><option value="canopen">{L.protos[3]}</option></select></label>
+      </div>
+      <div id="out" aria-live="polite"></div>
+      <p class="note">{L.how}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.dlcTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.dlcHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{FD_LEN.map((n, d) => <tr><td class="mono">{d}</td><td class="mono">{Math.min(d, 8)}</td><td class="mono">{n}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.dlcNote}</p>
+      <h2>{L.rawTitle}</h2>
+      <ul>{L.raw.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.j1939Title}</h2>
+      <ul>{L.j1939.map((x) => <li>{x}</li>)}</ul>
+      <h3>{L.pgnTitle}</h3>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.pgnHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>
+            {
+              Object.entries(PGNS)
+                .map(([k, v]) => [Number(k), v] as const)
+                .sort((a, b) => a[0] - b[0])
+                .map(([p, v]) => (
+                  <tr>
+                    <td class="mono">{p}</td>
+                    <td class="mono">{"0x" + p.toString(16).toUpperCase()}</td>
+                    <td class="mono">{v.abbr}</td>
+                    <td>{v[lang]}</td>
+                  </tr>
+                ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h3>{L.spnTitle}</h3>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.spnHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>
+            {
+              SPNS.map((s) => (
+                <tr>
+                  <td class="mono">{s.spn}</td>
+                  <td class="mono">{s.pgn}</td>
+                  <td>{s[lang]}</td>
+                  <td class="mono">{s.len === 1 ? s.byte : `${s.byte}–${s.byte + s.len - 1}`}</td>
+                  <td class="mono">{s.scale} {s.unit}/bit</td>
+                  <td class="mono">{s.offset} {s.unit}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <h2>{L.coTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.coHead.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody>{L.coRows.map(([a, b]) => <tr><td class="mono">{a}</td><td>{b}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h3>{L.sdoTitle}</h3>
+      <ul>{L.sdo.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.timing} <a href={url(lang, "tools/can-bit-timing/")}>{L.timingLink}</a>{ko ? " 에서. " : ". "}
+        {L.timing2} <a href={url(lang, "tools/uart-waveform/")}>{ko ? "UART 파형 그리기" : "UART Waveform Drawer"}</a> · <a href={url(lang, "tools/spi/")}>{ko ? "SPI 모드 도우미" : "SPI Mode Helper"}</a> · <a href={url(lang, "tools/i2c/")}>{ko ? "I2C 도구" : "I2C Tools"}</a>
+      </p>
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    #out :global(.cf-frame) {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      margin-top: 6px;
+    }
+    #out :global(.cf-line) {
+      font-weight: 600;
+      margin: 0 0 4px;
+      overflow-wrap: anywhere;
+    }
+    #out :global(.cf-sub) {
+      font-weight: 600;
+      margin: 10px 0 2px;
+      font-size: 15px;
+    }
+    #out :global(.cf-bad) {
+      color: #b42318;
+      font-weight: 600;
+    }
+    #out :global(.cf-ok) {
+      color: var(--tx);
+      font-weight: 600;
+    }
+    #out :global(.cf-bits) {
+      word-break: break-all;
+      font-size: 13px;
+    }
+    #out :global(.cf-bits mark) {
+      background: color-mix(in srgb, var(--ev) 30%, transparent);
+      color: inherit;
+    }
+  </style>
+  <script>
+    import { CanError, HB_STATE, NMT_CMD, SDO_ABORT, canopenId, dlcLen, j1939, objectName, parseFrame, pgnInfo, sdo, spnValues, type CanFrame, type IdKind } from "../lib/canFrame";
+    const ko = document.documentElement.lang === "ko";
+    const lang = ko ? "ko" : "en";
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const H = (n: number, w = 2) => "0x" + n.toString(16).toUpperCase().padStart(w, "0");
+    const hx = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+    const T = ko
+      ? {
+          std: "표준 11비트", ext: "확장 29비트", fd: "CAN FD", rtr: "원격(RTR)", data: "데이터", fmt: "형식", id: "ID", dlc: "DLC → 길이", bytes: "데이터",
+          raw: "원시 비트열", bits: "넣은 비트", stuff: "스터프 비트", stuffAt: "위치", stuffErr: "스터핑 오류(같은 값 6개) — 위치", crc: "CRC15 받은 값 / 계산 값", crcOk: "맞음", crcBad: "다름",
+          delim: "CRC 구분자 · ACK · ACK 구분자", eof: "EOF 1 의 개수", ackNo: "ACK 칸이 1 — 받은 장치 없음",
+          j: "J1939 풀이 후보", pri: "우선순위", pgn: "PGN", pdu: "형식", sa: "출발 주소(SA)", da: "목적 주소(DA)", all: "전체(255)", edp: "EDP · DP", unknownPgn: "이름 모름(이 표에 없음)",
+          na: "없음(0xFF)", err: "오류 표시(0xFE)", short: "데이터 짧음", spn: "SPN 값",
+          co: "CANopen 풀이 후보", func: "기능", node: "노드 ID", none: "—",
+          F: { nmt: "NMT 명령", sync: "SYNC", emcy: "EMCY 긴급", time: "TIME", tpdo1: "TPDO1", rpdo1: "RPDO1", tpdo2: "TPDO2", rpdo2: "RPDO2", tpdo3: "TPDO3", rpdo3: "RPDO3", tpdo4: "TPDO4", rpdo4: "RPDO4", sdoTx: "SDO 응답(서버 → 클라이언트)", sdoRx: "SDO 요청(클라이언트 → 서버)", hb: "NMT 오류 제어(하트비트·부트업)", lss: "LSS", unknown: "기본 배정 밖(제조사·직접 배정)" },
+          cmd: "명령", target: "대상 노드", state: "상태", errCode: "오류 코드", errReg: "오류 레지스터(1001h)", mfr: "제조사 칸",
+          sdoK: { initDownload: "쓰기 시작(다운로드)", initDownloadResp: "쓰기 성공 응답", initUpload: "읽기 요청(업로드)", initUploadResp: "읽기 응답", downloadSeg: "쓰기 세그먼트", downloadSegResp: "쓰기 세그먼트 응답", uploadSeg: "읽기 세그먼트 요청", uploadSegResp: "읽기 세그먼트", abort: "중단(Abort)", block: "블록 전송", unknown: "모르는 명령" },
+          cs: "명령 바이트", obj: "객체", exp: "빠른 전송, 데이터", seg: "세그먼트 전송, 전체 길이", segN: "세그먼트 데이터", last: "마지막", toggle: "토글", abort: "중단 코드",
+          pdo: "PDO 데이터는 매핑(1600h~·1A00h~)을 알아야 풀 수 있습니다",
+          E: { empty: "", short: "비트가 모자랍니다", sof: "SOF(0)가 없습니다", hex: "HEX 바이트를 확인하세요", idlen: "candump ID 는 3자리(표준) 또는 8자리(확장)", idrange: "ID 가 범위를 넘습니다", len: "데이터가 너무 깁니다", fdlen: "CAN FD 길이는 0~8·12·16·20·24·32·48·64", dlc: "DLC 는 0~8", lenmismatch: "DLC 와 데이터 길이가 다릅니다", id: "ID 를 확인하세요" } as Record<string, string>,
+        }
+      : {
+          std: "Standard 11-bit", ext: "Extended 29-bit", fd: "CAN FD", rtr: "Remote (RTR)", data: "Data", fmt: "Format", id: "ID", dlc: "DLC → length", bytes: "Data",
+          raw: "Raw bit stream", bits: "Bits given", stuff: "Stuff bits", stuffAt: "at", stuffErr: "Stuff error (six equal bits) at", crc: "CRC15 received / computed", crcOk: "match", crcBad: "mismatch",
+          delim: "CRC delimiter · ACK · ACK delimiter", eof: "EOF 1s", ackNo: "ACK slot is 1 — no receiver acknowledged",
+          j: "J1939 candidate", pri: "Priority", pgn: "PGN", pdu: "Format", sa: "Source address (SA)", da: "Destination (DA)", all: "Global (255)", edp: "EDP · DP", unknownPgn: "Not in this table",
+          na: "Not available (0xFF)", err: "Error (0xFE)", short: "Data too short", spn: "SPN values",
+          co: "CANopen candidate", func: "Function", node: "Node ID", none: "—",
+          F: { nmt: "NMT command", sync: "SYNC", emcy: "EMCY", time: "TIME", tpdo1: "TPDO1", rpdo1: "RPDO1", tpdo2: "TPDO2", rpdo2: "RPDO2", tpdo3: "TPDO3", rpdo3: "RPDO3", tpdo4: "TPDO4", rpdo4: "RPDO4", sdoTx: "SDO response (server → client)", sdoRx: "SDO request (client → server)", hb: "NMT error control (heartbeat, boot-up)", lss: "LSS", unknown: "Outside the predefined set (vendor or custom)" },
+          cmd: "Command", target: "Target node", state: "State", errCode: "Error code", errReg: "Error register (1001h)", mfr: "Manufacturer field",
+          sdoK: { initDownload: "Initiate download (write)", initDownloadResp: "Download (write) confirmed", initUpload: "Initiate upload (read request)", initUploadResp: "Upload (read) response", downloadSeg: "Download segment", downloadSegResp: "Download segment response", uploadSeg: "Upload segment request", uploadSegResp: "Upload segment", abort: "Abort", block: "Block transfer", unknown: "Unknown command" },
+          cs: "Command byte", obj: "Object", exp: "Expedited, data", seg: "Segmented, total size", segN: "Segment data", last: "last", toggle: "toggle", abort: "Abort code",
+          pdo: "PDO data can only be decoded with its mapping (1600h–, 1A00h–)",
+          E: { empty: "", short: "Not enough bits", sof: "No SOF (0)", hex: "Check the hex bytes", idlen: "candump IDs are 3 digits (standard) or 8 (extended)", idrange: "ID out of range", len: "Data too long", fdlen: "CAN FD lengths are 0–8, 12, 16, 20, 24, 32, 48, 64", dlc: "DLC must be 0–8", lenmismatch: "DLC and data length differ", id: "Check the ID" } as Record<string, string>,
+        };
+    const el = (tag: string, cls?: string, text?: string) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    };
+    const kv = (rows: [string, string | Node][]) => {
+      const wrap = el("div", "tbl");
+      const t = el("table", "t kv");
+      const tb = el("tbody");
+      for (const [k, v] of rows) {
+        const tr = el("tr");
+        tr.append(el("td", "", k));
+        const td = el("td", "mono");
+        if (typeof v === "string") td.textContent = v;
+        else td.append(v);
+        tr.append(td);
+        tb.append(tr);
+      }
+      t.append(tb);
+      wrap.append(t);
+      return wrap;
+    };
+    const span = (cls: string, text: string) => el("span", cls, text);
+    function rawBits(f: CanFrame, line: string): HTMLElement {
+      const bits = line.replace(/[^01]/g, "");
+      const start = bits.indexOf("0");
+      const p = el("p", "mono cf-bits");
+      const at = new Set(f.raw!.stuffAt);
+      [...bits.slice(start)].forEach((b, i) => {
+        if (at.has(i)) p.append(el("mark", "", b));
+        else p.append(b);
+      });
+      return p;
+    }
+    function decodeLine(line: string, kind: IdKind, proto: string): HTMLElement {
+      const box = el("div", "cf-frame");
+      box.append(el("p", "cf-line mono", line.length > 90 ? line.slice(0, 87) + "…" : line));
+      let f: CanFrame;
+      try {
+        f = parseFrame(line, kind);
+      } catch (e) {
+        const code = e instanceof CanError ? e.code : "";
+        box.append(el("p", "err", (T.E[code] || (ko ? "읽을 수 없는 줄" : "Cannot read this line")) + (e instanceof CanError && e.detail ? ` (${e.detail})` : "")));
+        return box;
+      }
+      const len = f.rtr ? 0 : dlcLen(f.dlc, f.fd);
+      const fmt = [f.ext ? T.ext : T.std, f.fd ? T.fd : "", f.rtr ? T.rtr : T.data].filter(Boolean).join(" · ");
+      box.append(
+        kv([
+          [T.fmt, fmt],
+          [T.id, `${H(f.id, f.ext ? 8 : 3)} (${f.id})`],
+          [T.dlc, `${f.dlc} → ${f.rtr ? (ko ? `요청 길이 ${Math.min(f.dlc, 8)}` : `requested ${Math.min(f.dlc, 8)}`) : len}`],
+          ...(f.rtr ? [] : ([[T.bytes, hx(f.data) || T.none]] as [string, string][])),
+        ]),
+      );
+      if (f.raw) {
+        const r = f.raw;
+        box.append(el("p", "cf-sub", T.raw));
+        box.append(rawBits(f, line));
+        const crc = el("span");
+        crc.append(`${H(r.crcRx, 4)} / ${H(r.crcCalc, 4)} — `, span(r.crcOk ? "cf-ok" : "cf-bad", r.crcOk ? T.crcOk : T.crcBad));
+        const rows: [string, string | Node][] = [
+          [T.bits, String(r.bits)],
+          [T.stuff, `${r.stuffAt.length}${r.stuffAt.length ? ` — ${T.stuffAt} ${r.stuffAt.join(", ")}` : ""}`],
+          [T.crc, crc],
+        ];
+        if (r.stuffError !== undefined) rows.push([T.stuffErr, span("cf-bad", String(r.stuffError))]);
+        if (r.crcDelim !== undefined) rows.push([T.delim, [r.crcDelim, r.ack, r.ackDelim].filter((x) => x !== undefined).join(" · ") + (r.ack === 1 ? ` — ${T.ackNo}` : "")]);
+        if (r.eofOnes !== undefined) rows.push([T.eof, `${r.eofOnes} / 7`]);
+        box.append(kv(rows));
+      }
+      const useJ = proto === "j1939" || (proto === "auto" && f.ext);
+      const useC = proto === "canopen" || (proto === "auto" && !f.ext);
+      if (useJ) {
+        const j = j1939(f.id);
+        const info = pgnInfo(j.pgn);
+        box.append(el("p", "cf-sub", T.j));
+        const rows: [string, string][] = [
+          [T.pri, String(j.priority)],
+          [T.edp, `${j.edp} · ${j.dp}`],
+          [T.pdu, j.pdu === 1 ? `PDU1 (PF ${H(j.pf)} < 0xF0)` : `PDU2 (PF ${H(j.pf)} ≥ 0xF0)`],
+          [T.pgn, `${j.pgn} (${H(j.pgn, 4)}) — ${info ? `${info.abbr} ${info[lang]}` : T.unknownPgn}`],
+          [T.sa, `${H(j.sa)} (${j.sa})`],
+          [T.da, j.pdu === 1 ? `${H(j.da)} (${j.da})${j.da === 255 ? " — " + T.all : ""}` : T.all],
+        ];
+        if (j.pgn === 0xea00 && f.data.length >= 3) {
+          const rq = f.data[0] | (f.data[1] << 8) | (f.data[2] << 16);
+          const ri = pgnInfo(rq);
+          rows.push([ko ? "요청한 PGN" : "Requested PGN", `${rq} (${H(rq, 4)})${ri ? ` — ${ri.abbr}` : ""}`]);
+        }
+        const vals = spnValues(j.pgn, f.data);
+        for (const v of vals) {
+          const s = v.spec;
+          const txt =
+            v.status === "ok"
+              ? `${+v.value!.toFixed(4)} ${s.unit}  (raw ${v.raw})`
+              : v.status === "na" ? T.na : v.status === "error" ? T.err : T.short;
+          rows.push([`SPN ${s.spn} ${s[lang]}`, txt]);
+        }
+        box.append(kv(rows));
+      }
+      if (useC) {
+        if (f.id > 0x7ff) {
+          box.append(el("p", "note", ko ? "CANopen 은 11비트 COB-ID 만 풉니다." : "CANopen decoding needs an 11-bit COB-ID."));
+          return box;
+        }
+        const c = canopenId(f.id);
+        box.append(el("p", "cf-sub", T.co));
+        const rows: [string, string | Node][] = [
+          [T.func, `${T.F[c.func]} (${ko ? "기능 코드" : "function code"} ${c.fc})`],
+          [T.node, c.node ? `${c.node} (${H(c.node)})` : T.none],
+        ];
+        const d = f.data;
+        if (c.func === "nmt" && d.length >= 1) {
+          rows.push([T.cmd, `${H(d[0])} — ${NMT_CMD[d[0]]?.[lang] ?? "?"}`]);
+          if (d.length >= 2) rows.push([T.target, d[1] === 0 ? (ko ? "0 — 모든 노드" : "0 — all nodes") : String(d[1])]);
+        } else if (c.func === "hb" && d.length >= 1) {
+          const st = d[0] & 0x7f;
+          rows.push([T.state, `${H(d[0])} — ${HB_STATE[st]?.[lang] ?? "?"}${d[0] & 0x80 ? (ko ? " (토글 1 — 노드 가딩)" : " (toggle 1 — node guarding)") : ""}`]);
+        } else if (c.func === "emcy" && d.length >= 3) {
+          const code = d[0] | (d[1] << 8);
+          rows.push([T.errCode, `${H(code, 4)}${code === 0 ? (ko ? " — 오류 풀림(리셋)" : " — error reset / no error") : ""}`]);
+          rows.push([T.errReg, `${H(d[2])}`]);
+          if (d.length > 3) rows.push([T.mfr, hx(d.slice(3))]);
+        } else if (c.func === "sdoRx" || c.func === "sdoTx") {
+          const s = sdo(c.func === "sdoRx" ? "request" : "response", d);
+          if (s) {
+            rows.push([T.cs, `${H(d[0])} — ${T.sdoK[s.kind]}`]);
+            if (s.index !== undefined && s.kind !== "downloadSeg" && s.kind !== "uploadSegResp") {
+              const nm = objectName(s.index, lang);
+              rows.push([T.obj, `${H(s.index, 4)} sub ${H(s.sub!)}${nm ? ` — ${nm}` : ""}`]);
+            }
+            if (s.kind === "abort" && s.abort !== undefined) rows.push([T.abort, `${H(s.abort, 8)} — ${SDO_ABORT[s.abort]?.[lang] ?? "?"}`]);
+            if ((s.kind === "initDownload" || s.kind === "initUploadResp") && s.value !== undefined) {
+              if (s.expedited) rows.push([T.exp, `${hx(s.bytes!)} = ${s.value} (${H(s.value, s.n! * 2)})`]);
+              else rows.push([T.seg, `${s.value} ${ko ? "바이트" : "bytes"}`]);
+            }
+            if (s.bytes && (s.kind === "downloadSeg" || s.kind === "uploadSegResp")) {
+              rows.push([T.segN, `${hx(s.bytes)}  (${T.toggle} ${s.toggle}${s.last ? `, ${T.last}` : ""})`]);
+            }
+          }
+        } else if (c.func.includes("pdo")) {
+          rows.push([T.bytes, T.pdo]);
+        }
+        box.append(kv(rows));
+      }
+      return box;
+    }
+    function run() {
+      const out = $("out");
+      out.replaceChildren();
+      const kind = $<HTMLSelectElement>("kind").value as IdKind;
+      const proto = $<HTMLSelectElement>("proto").value;
+      const lines = $<HTMLTextAreaElement>("in").value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(0, 50);
+      for (const l of lines) out.append(decodeLine(l, kind, proto));
+    }
+    const form = $<HTMLFormElement>("cf");
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    for (const b of form.querySelectorAll<HTMLButtonElement>("button[data-ex]"))
+      b.addEventListener("click", () => {
+        $<HTMLTextAreaElement>("in").value = b.dataset.ex ?? "";
+        run();
+      });
+    run();
+  </script>
+</Base>

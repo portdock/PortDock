@@ -132,6 +132,10 @@
 | 마우스 더블클릭 증상·현상·확인, 마우스 한번 클릭 두번 | 가이드 `mouse-double-click-problem` → `/tools/mouse-test/` | «마우스 더블클릭 증상 확인 — 채터링·드래그 끊김» |
 | 블루투스 이어폰 끊김 pc·노트북·데스크탑, 블루투스 끊김 원인 | 가이드 `bluetooth-headphones-cutting-out-windows` → `/tools/speaker-test/` | «블루투스 이어폰 끊김 PC·노트북 — 확인 순서», 설명에 «USB 3.0·2.4 GHz·핸즈프리» |
 | 불량화소 확인·체크, 모니터 밴딩, 빛샘 | 가이드 `monitor-dead-pixel-banding` → `/tools/monitor-test/` | «모니터 불량화소·밴딩 확인하는 법» |
+| can 프레임 해석·분석, j1939 pgn 계산·변환, j1939 spn, canopen cob-id·sdo 명령, candump 해석 (자동완성 확인 안 함) | `/tools/can-decoder/` | «CAN 프레임 해석기 — J1939 PGN·CANopen COB-ID·CRC», 설명에 «candump·원시 비트열·스터핑·CRC15» |
+| i2c 풀업 저항 계산·값, i2c 주소 (표·확인), i2c 8비트 주소 7비트 변환 (자동완성 확인 안 함) | `/tools/i2c/` | «I2C 풀업 저항 계산·주소표·바이트 풀이», 설명에 «UM10204·100k/400k/1M» |
+| spi 모드 (0·1·2·3), cpol cpha, spi 타이밍도 (자동완성 확인 안 함) | `/tools/spi/` | «SPI 모드 0·1·2·3 — CPOL·CPHA 파형 그리기», 설명에 «샘플·시프트 엣지·제조사 표기» |
+| uart 파형·신호 보는 법, uart 프레임 구조, 오실로스코프 보율 측정, rs232 전압 레벨 (자동완성 확인 안 함) | `/tools/uart-waveform/` | «UART 파형 그리기 — 비트·보율·RS-232 전압», 설명에 «펄스 폭 → 보율 추정» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -253,6 +257,10 @@
 | mouse double clicking on single click, mouse double click problem | guide `mouse-double-click-problem` → `/en/tools/mouse-test/` | «Mouse Double Clicking on Single Click: How to Check» |
 | bluetooth headphones cutting out windows 11, bluetooth keeps disconnecting windows 11, bluetooth audio stuttering pc | guide `bluetooth-headphones-cutting-out-windows` → `/en/tools/speaker-test/` | «Bluetooth Headphones Cutting Out on Windows PC» |
 | how to check dead pixels, monitor banding, backlight bleed test | guide `monitor-dead-pixel-banding` → `/en/tools/monitor-test/` | «How to Check a Monitor for Dead Pixels & Banding» |
+| can frame decoder online, j1939 pgn calculator, j1939 id decoder, canopen cob-id, canopen sdo decoder, can bit stuffing crc | `/en/tools/can-decoder/` | «CAN Frame Decoder: J1939 PGN, CANopen COB-ID, CRC» |
+| i2c pull up resistor calculator, i2c pull-up value, i2c address list, i2c 7-bit 8-bit address | `/en/tools/i2c/` | «I2C Pull-up Resistor Calculator & Address Table» |
+| spi modes, cpol cpha, spi mode 0 1 2 3 timing diagram | `/en/tools/spi/` | «SPI Modes 0–3: CPOL & CPHA Timing Diagram» |
+| uart waveform, uart frame diagram, measure baud rate oscilloscope, rs232 voltage levels | `/en/tools/uart-waveform/` | «UART Waveform Drawer: Bits, Baud & RS-232 Levels» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.
@@ -313,6 +321,10 @@
 | 53 | 컨베이어 속도 계산·인버터 주파수 속도(한국어), conveyor speed calculator·conveyor speed to rpm(영어) — 자동완성 확인 안 함 | `/tools/conveyor-speed/` | 둘레 π·D(정의) + 모터 회전수 계산기와 같은 식(ABB Motor guide §9.3, YASKAWA E2-02 슬립 근사). 모터 용량(45)은 다루지 않음 | ✅ 10/30 |
 | 54 | 인버터 모드버스 설정·인버터 통신 설정·국번 패리티(한국어), vfd modbus setup·vfd modbus rtu parameters(영어) — 자동완성 확인 안 함 | 가이드 `vfd-modbus-setup` | 장비 맵의 제조사 매뉴얼 값(LS S100·FR-E800·V1000·ATV320·3G3M1·3G3JX)으로 프로토콜·국번 출하값(0·OFF 는 응답 없음)·재투입·운전/주파수 지령 출처·통신 끊김·저장 순서 | ✅ 10/30 |
 | 55 | 전력 미터 모드버스 값 이상·CT 비 2차 값(한국어), power meter modbus wrong values·modbus energy meter scaling(영어) — 자동완성 확인 안 함 | 가이드 `power-meter-modbus-values` | Acuvim-L 표 4-27(2차 값 × PT·CT 비)·FC16 예(Dword 상위 워드 먼저), GIMAC1000(실제 단위·Swap), 이스트론(float ABCD). CT 가이드·워드 순서 글과 겹치지 않게 «증상 → 원인» 표로 | ✅ 10/30 |
+| 56 | can 프레임 해석·j1939 pgn·canopen sdo(한국어), can frame decoder·j1939 pgn calculator·canopen sdo decoder(영어) — 자동완성 확인 안 함 | `/tools/can-decoder/` | 기존 `can-bit-timing` 과 겹치지 않게 프레임 풀이만. CRC-15/CAN 은 reveng 카탈로그 check 0x059E 를 시험으로, J1939 ID 규칙(PF < 240 PDU1)·SPN 190(TiePie 예: 위치 24·16비트·0.125)·Woodward 범위로 맞춘 SPN 6개만. PGN 이름은 Murphy PV100(SAE J1939-71 출처) 표. CANopen 은 CiA 301 요약(Wikipedia) — CiA 원문은 확인 못 함 | ✅ 11/01 |
+| 57 | i2c 풀업 저항 계산·i2c 주소(한국어), i2c pull up resistor calculator·i2c address list(영어) — 자동완성 확인 안 함 | `/tools/i2c/` | UM10204 §7.1 식·표 10 값을 시험으로 손계산과 대조(TI SLVA689 와 같은 식). 칩 주소 49줄은 데이터시트 값이지만 칩마다 원문을 이번에 다시 열어 보지는 않음 | ✅ 11/01 |
+| 58 | spi 모드·cpol cpha(한국어), spi modes·cpol cpha timing diagram(영어) — 자동완성 확인 안 함 | `/tools/spi/` | Linux spi-summary 정의(CPHA 0 = 앞 엣지 샘플)를 시험으로. MSP430 UCCKPH·PIC CKE 가 CPHA 의 반대라는 표기 차이 표 — PIC 은 링크할 원문을 고르지 않음 | ✅ 11/01 |
+| 59 | uart 파형·오실로스코프 보율 측정(한국어), uart waveform·measure baud rate oscilloscope(영어) — 자동완성 확인 안 함 | `/tools/uart-waveform/` | ATmega328P §19.4 프레임·패리티, TI SLLA037A 전압 그림(드라이버 ±5~15 V, 수신 ±3 V). 기존 `uart-baud`(오차)·`serial-timing`(3.5문자)과 서로 링크 | ✅ 11/01 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
