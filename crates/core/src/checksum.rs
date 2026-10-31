@@ -316,12 +316,30 @@ impl ChecksumKind {
 }
 
 pub fn crc16_modbus(data: &[u8]) -> u16 {
-    let mut crc: u16 = 0xFFFF;
-    for &b in data {
-        crc ^= b as u16;
-        for _ in 0..8 {
-            crc = if crc & 1 != 0 { (crc >> 1) ^ 0xA001 } else { crc >> 1 };
+    crc16_modbus_update(0xFFFF, data)
+}
+
+/// CRC16 Modbus 표(바이트 하나씩) — 엿듣기처럼 같은 버퍼를 여러 번 훑는 곳이 비트 단위보다 8배쯤 빠르게
+const MODBUS_TABLE: [u16; 256] = {
+    let mut t = [0u16; 256];
+    let mut i = 0;
+    while i < 256 {
+        let mut c = i as u16;
+        let mut k = 0;
+        while k < 8 {
+            c = if c & 1 != 0 { (c >> 1) ^ 0xA001 } else { c >> 1 };
+            k += 1;
         }
+        t[i] = c;
+        i += 1;
+    }
+    t
+};
+
+/// CRC16 Modbus 를 이어서 — `crc` 에 `data` 를 더한 값(처음은 0xFFFF)
+pub fn crc16_modbus_update(mut crc: u16, data: &[u8]) -> u16 {
+    for &b in data {
+        crc = (crc >> 8) ^ MODBUS_TABLE[((crc ^ b as u16) & 0xFF) as usize];
     }
     crc
 }
@@ -368,6 +386,22 @@ mod tests {
     fn known_check_values() {
         // 표준 «check» 값 (reveng 카탈로그)
         assert_eq!(crc16_modbus(CHECK), 0x4B37);
+        // 표 방식 = 비트 방식(여러 길이·값)
+        let bitwise = |d: &[u8]| {
+            let mut crc: u16 = 0xFFFF;
+            for &b in d {
+                crc ^= b as u16;
+                for _ in 0..8 {
+                    crc = if crc & 1 != 0 { (crc >> 1) ^ 0xA001 } else { crc >> 1 };
+                }
+            }
+            crc
+        };
+        let data: Vec<u8> = (0..300u32).map(|i| (i.wrapping_mul(2654435761) >> 13) as u8).collect();
+        for n in [0, 1, 2, 7, 64, 255, 300] {
+            assert_eq!(crc16_modbus(&data[..n]), bitwise(&data[..n]), "n={n}");
+        }
+        assert_eq!(crc16_modbus_update(crc16_modbus(&data[..100]), &data[100..]), crc16_modbus(&data));
         assert_eq!(crc16_1021(CHECK, 0xFFFF), 0x29B1);
         assert_eq!(crc16_1021(CHECK, 0x0000), 0x31C3);
         assert_eq!(crc8(CHECK), 0xF4);

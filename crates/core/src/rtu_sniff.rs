@@ -11,7 +11,7 @@
 //!
 //! 화면 없이 값만 — 자르기 시험은 이 파일 아래. 세션(`SniffSession`)은 포트를 읽기만 한다(쓰기 핸들은 열자마자 닫는다).
 
-use crate::checksum::crc16_modbus;
+use crate::checksum::{crc16_modbus, crc16_modbus_update};
 use crate::event::{EventSink, Frame, LogWriter, SessionEvent};
 use crate::framer::modbus_request_len;
 use crate::reqpair::{PairMark, Pairer, miss_note};
@@ -110,10 +110,14 @@ fn at(buf: &[u8], silent: bool, generic: bool) -> At {
         return At::Wait;
     }
     if generic {
-        for n in 4..=buf.len().min(MAX_ADU) {
-            if crc_ok(&buf[..n]) {
+        // CRC 를 이어 가며 — 길이마다 처음부터 다시 셈하지 않는다(잡음이 계속 들어올 때 CPU)
+        let end = buf.len().min(MAX_ADU);
+        let mut crc = crc16_modbus_update(0xFFFF, &buf[..2]);
+        for n in 4..=end {
+            if crc.to_le_bytes() == [buf[n - 2], buf[n - 1]] {
                 return At::Frame(n, Shape::Unknown);
             }
+            crc = crc16_modbus_update(crc, &buf[n - 2..n - 1]);
         }
     }
     let known = req.is_some() || rsp.is_some();
@@ -123,19 +127,27 @@ fn at(buf: &[u8], silent: bool, generic: bool) -> At {
     At::Bad
 }
 
-/// 다음에 떼어 낼 길이와 모양(None = CRC 가 맞는 프레임이 아닌 깨진 조각). 더 기다려야 하면 None
-fn next(buf: &[u8], silent: bool) -> Option<(usize, Option<Shape>)> {
+/// 다음에 떼어 낼 길이와 모양(None = CRC 가 맞는 프레임이 아닌 깨진 조각). 더 기다려야 하면 None.
+/// `bad[k]` = 자리 k 에서 시작하는 프레임은 없다고 이미 판정(바이트가 더 와도 바뀌지 않는다 — 길이 칸이 다 와서 CRC 가 틀림 등).
+/// 다시 맞추기가 읽기마다 같은 자리의 CRC 를 되풀이하지 않게 기억한다
+fn next(buf: &[u8], silent: bool, bad: &mut Vec<bool>) -> Option<(usize, Option<Shape>)> {
     if buf.is_empty() {
         return None;
     }
+    bad.resize(buf.len(), false);
     match at(buf, silent, true) {
         At::Frame(n, s) => Some((n, Some(s))),
         At::Wait => None,
         At::Bad => {
             // 다시 맞추기 — 뒤에서 CRC 가 맞는(길이를 아는) 프레임이 시작하는 첫 자리
             for k in 1..buf.len() {
-                if let At::Frame(..) = at(&buf[k..], false, false) {
-                    return Some((k, None));
+                if bad[k] {
+                    continue;
+                }
+                match at(&buf[k..], false, false) {
+                    At::Frame(..) => return Some((k, None)),
+                    At::Bad => bad[k] = true,
+                    At::Wait => {}
                 }
             }
             if silent {
@@ -173,11 +185,13 @@ pub struct Splitter {
     marks: Vec<(usize, Instant)>,
     last: Option<Instant>,
     silence: Duration,
+    /// 버퍼 자리별 «여기서 시작하는 프레임 없음» 판정(`next`)
+    bad: Vec<bool>,
 }
 
 impl Splitter {
     pub fn new(silence: Duration) -> Self {
-        Self { buf: Vec::new(), marks: Vec::new(), last: None, silence }
+        Self { buf: Vec::new(), marks: Vec::new(), last: None, silence, bad: Vec::new() }
     }
 
     pub fn feed(&mut self, data: &[u8], now: Instant) -> Vec<Piece> {
@@ -220,10 +234,12 @@ impl Splitter {
     }
 
     fn cut(&mut self, silent: bool, out: &mut Vec<Piece>) {
-        while let Some((n, shape)) = next(&self.buf, silent) {
+        while let Some((n, shape)) = next(&self.buf, silent, &mut self.bad) {
             let at = self.time_at(0);
             let rest_at = self.time_at(n);
             let bytes: Vec<u8> = self.buf.drain(..n).collect();
+            // 판정은 그 자리부터의 바이트에만 달렸다 — 앞을 떼어 내도 자리만 옮기면 그대로 맞다
+            self.bad.drain(..n.min(self.bad.len()));
             let mut marks: Vec<(usize, Instant)> = self.marks.iter().filter(|(o, _)| *o > n).map(|&(o, t)| (o - n, t)).collect();
             if !self.buf.is_empty() && marks.first().is_none_or(|m| m.0 != 0) {
                 marks.insert(0, (0, rest_at));
@@ -233,6 +249,7 @@ impl Splitter {
         }
         if self.buf.is_empty() {
             self.marks.clear();
+            self.bad.clear();
         }
     }
 }
@@ -512,6 +529,35 @@ mod tests {
         let b = rtu(&[0x05, 0x41, 0x99]);
         let got = cut_all(&[[a.clone(), b.clone()].concat()]);
         assert_eq!(got, vec![(a, Some(Shape::Unknown)), (b, Some(Shape::Unknown))]);
+    }
+
+    /// 속도가 틀려 잡음만 계속 들어와도 — 판정이 같고(기억한 판정 = 매번 새로 한 판정), 잡음 뒤 프레임을 찾는다
+    #[test]
+    fn long_noise_is_cut_and_resyncs_like_fresh() {
+        let mut x: u32 = 12345;
+        let mut noise: Vec<u8> = (0..6000)
+            .map(|_| {
+                x = x.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+                (x >> 16) as u8
+            })
+            .collect();
+        let req = rtu(&[0x01, 0x03, 0x00, 0x00, 0x00, 0x02]);
+        noise.extend_from_slice(&req);
+        let chunks: Vec<Vec<u8>> = noise.chunks(7).map(|c| c.to_vec()).collect();
+        let t0 = std::time::Instant::now();
+        let got = cut_all(&chunks);
+        assert!(t0.elapsed() < Duration::from_secs(5));
+        // 기억 없이 한 번에 자른 것과 같다
+        let mut fresh = Vec::new();
+        let mut buf = noise.clone();
+        while let Some((n, s)) = next(&buf, false, &mut Vec::new()) {
+            fresh.push((buf[..n].to_vec(), s));
+            buf.drain(..n);
+        }
+        let joined: Vec<u8> = got.iter().flat_map(|(b, _)| b.clone()).collect();
+        assert_eq!(joined, noise);
+        assert!(got.iter().any(|(b, s)| *b == req && s.is_some()), "frame after noise");
+        assert!(fresh.iter().any(|(b, s)| *b == req && s.is_some()));
     }
 
     #[test]
