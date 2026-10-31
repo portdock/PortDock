@@ -6,8 +6,8 @@ import type { Rule } from "./model.ts";
 import type { RuleStat } from "./RulesDialog";
 export { ascii, clock, hex } from "@shared/format";
 
-export { DEV_GROUPS, DEV_INFO, DEVS, MAX_SIZE, type DataCode, type Dev, type Format, type FrameKind } from "./devs.ts";
-import type { Dev, Format } from "./devs.ts";
+export { DEV_GROUPS, DEV_INFO, DEVS, devGroupsOf, isXgtDev, MAX_SIZE, XGT_DEVS, type DataCode, type Dev, type Format, type FrameKind, type Protocol } from "./devs.ts";
+import type { Dev, Format, Protocol } from "./devs.ts";
 
 export type Transport = "tcp" | "udp";
 
@@ -18,6 +18,10 @@ export interface NetConfig {
   port: number;
   format: Format;
   ownStationOnly: boolean;
+  /** (0.10.0) MC 또는 XGT 전용 프로토콜 */
+  protocol: Protocol;
+  /** (0.10.0) XGT 머리 BCC 가 틀리면 h77 로 답함 */
+  xgtCheckBcc: boolean;
 }
 
 export interface Frame {
@@ -111,6 +115,32 @@ export const COMMANDS: [number, string, string][] = [
   [0x0101, "형명 읽기", "Read Type Name"],
 ];
 
+/** (0.10.0) XGT 전용 프로토콜 명령 — [코드, 한국어, 영어](crates/core/src/xgt.rs) */
+export const XGT_COMMANDS: [number, string, string][] = [
+  [0x0054, "읽기(개별·연속)", "Read (individual/continuous)"],
+  [0x0058, "쓰기(개별·연속)", "Write (individual/continuous)"],
+];
+
+/**
+ * (0.10.0) XGT 오류 코드 — XGT FEnet I/F 모듈 사용설명서 V2.30 10.4(10-12쪽)의 설명을 줄인 것. [코드, 한국어, 영어]
+ */
+export const XGT_ERROR_CODES: [number, string, string][] = [
+  [0x0001, "블록 수 16 넘음", "More than 16 blocks"],
+  [0x0002, "데이터 형 틀림", "Wrong data type"],
+  [0x0003, "서비스하지 않는 디바이스", "Device not serviced"],
+  [0x0004, "디바이스 범위 밖", "Device area exceeded"],
+  [0x0005, "1,400바이트 넘음(블록)", "Over 1,400 bytes (block)"],
+  [0x0006, "1,400바이트 넘음(합)", "Over 1,400 bytes (total)"],
+  [0x0075, "머리 회사 ID 틀림", "Wrong company ID"],
+  [0x0076, "머리 길이 틀림", "Wrong header length"],
+  [0x0077, "머리 BCC 틀림", "Wrong header checksum"],
+  [0x0078, "명령 틀림", "Wrong instruction"],
+];
+
+/** (0.10.0) XGT 전용 서비스 포트 — TCP 2004 · UDP 2005(사용설명서 8.1.1) */
+export const XGT_PORT = { tcp: 2004, udp: 2005 } as const;
+export const MC_PORT = 5000;
+
 /** 형명 읽기 기본 흉내 값 — 실제 기종 이름이 아니다(crates/core/src/mc.rs DEFAULT_MODEL_NAME) */
 export const DEFAULT_MODEL_NAME = "PORTDOCK-SIM";
 
@@ -137,7 +167,7 @@ export const END_CODES: [number, string, string][] = [
 
 export const api = {
   /** 서버를 연다 — 실제로 묶인 주소를 돌려준다 */
-  start: (config: { transport: Transport; host: string; port: number; format: Format }, onEvent: (e: SessionEvent) => void) => {
+  start: (config: { transport: Transport; host: string; port: number; format: Format; protocol: Protocol }, onEvent: (e: SessionEvent) => void) => {
     const ch = new Channel<SessionEvent>();
     ch.onmessage = onEvent;
     return tally(config.transport === "udp" ? "start_udp" : "start_tcp", invoke<string>("start", { config, onEvent: ch }));
@@ -147,6 +177,7 @@ export const api = {
   setLog: (path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { path })),
   setFaults: (faults: Faults) => tally((faults.noResponse || faults.forceEndCode > 0 || faults.delayMs > 0 || faults.delayMaxMs > 0) && "faults", invoke<void>("set_faults", { faults })),
   setOptions: (options: ServerOptions) => invoke<void>("set_options", { options }),
+  setXgtOptions: (options: { checkBcc: boolean }) => invoke<void>("set_xgt_options", { options }),
   setLogOptions: (options: ReturnType<typeof logOptionsOf>) => invoke<void>("set_log_options", { options }),
   setRules: (rules: Rule[]) => tally(rules.some((r) => r.enabled) && "rules", invoke<void>("set_rules", { rules })),
   rulesState: (after: number) => invoke<RulesState>("rules_state", { after }),

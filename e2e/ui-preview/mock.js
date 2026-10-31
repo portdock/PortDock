@@ -2549,9 +2549,10 @@ window.__pdMock.loop = () => (PIL ? { config: PIL.config, done: PIL.done, cancel
 // 다섯 번에 한 번 «1401 D100 쓰기»(값이 1씩 오름)를 주고받는다. 일부러 실패하는 입력: 포트 445(사용 중), 주소 nohost(찾지 못함).
 // (0.6.0) 조건 규칙은 모양만 받아 두고, 시작한 동안 켠 규칙이 있으면 네 박자마다 첫 켠 규칙이 «실행» 된 것처럼(횟수·마지막 시각·RULE 줄)
 // 알린다 — 실제 조건 판단은 Rust(crates/core/src/mc_rules.rs) 시험이 본다. 흉내 운전 상태(RUN/STOP/PAUSE)는 그대로 돌려준다.
-const PLC_CMDS = new Set(["start", "stop", "kick", "set_log", "set_faults", "set_options", "set_sims", "set_size", "devices", "get_values", "set_values", "get_stats", "reset_stats", "set_rules", "rules_state", "reset_rule_counts", "set_run_mode"]);
+// (0.10.0) 프로토콜 «xgt» 로 시작하면 XGT 전용 프레임(crates/core/src/xgt.rs 모양)으로 «0054 %DW0 읽기»·«0058 %DW100 쓰기» 를 주고받는다.
+const PLC_CMDS = new Set(["start", "stop", "kick", "set_log", "set_faults", "set_options", "set_xgt_options", "set_sims", "set_size", "devices", "get_values", "set_values", "get_stats", "reset_stats", "set_rules", "rules_state", "reset_rule_counts", "set_run_mode"]);
 const isPLC = () => /PLC Simulator/.test(document.title);
-const PLC_DEV = { X: [0x9c, 1, 8192], Y: [0x9d, 1, 8192], M: [0x90, 1, 8192], L: [0x92, 1, 8192], F: [0x93, 1, 2048], B: [0xa0, 1, 8192], SM: [0x91, 1, 2048], D: [0xa8, 0, 12288], W: [0xb4, 0, 8192], R: [0xaf, 0, 32768], ZR: [0xb0, 0, 65536], SD: [0xa9, 0, 2048], TS: [0xc1, 1, 1024], TC: [0xc0, 1, 1024], TN: [0xc2, 0, 1024], CS: [0xc4, 1, 1024], CC: [0xc3, 1, 1024], CN: [0xc5, 0, 1024] };
+const PLC_DEV = { X: [0x9c, 1, 8192], Y: [0x9d, 1, 8192], M: [0x90, 1, 8192], L: [0x92, 1, 8192], F: [0x93, 1, 2048], B: [0xa0, 1, 8192], SM: [0x91, 1, 2048], D: [0xa8, 0, 12288], W: [0xb4, 0, 8192], R: [0xaf, 0, 32768], ZR: [0xb0, 0, 65536], SD: [0xa9, 0, 2048], TS: [0xc1, 1, 1024], TC: [0xc0, 1, 1024], TN: [0xc2, 0, 1024], CS: [0xc4, 1, 1024], CC: [0xc3, 1, 1024], CN: [0xc5, 0, 1024], "%PW": [0, 0, 2048], "%MW": [0, 0, 2048], "%KW": [0, 0, 2048], "%FW": [0, 0, 2048], "%TW": [0, 0, 2048], "%CW": [0, 0, 2048], "%DW": [0, 0, 12288], "%LW": [0, 0, 2048], "%NW": [0, 0, 2048] };
 const plcNewStats = () => ({ requests: 0, ok: 0, errors: 0, ignored: 0, noResponse: 0, writes: 0, perCmd: {}, perEnd: {} });
 const plc = {
   mem: new Map(),
@@ -2561,6 +2562,8 @@ const plc = {
   sims: new Map(),
   stats: plcNewStats(),
   format: { frame: "3e", code: "binary" },
+  protocol: "mc",
+  xgtOptions: { checkBcc: true },
   rules: [],
   ruleStats: new Map(),
   ruleNotes: [],
@@ -2594,9 +2597,67 @@ function plcFrame(f, body, resp, serial) {
   return [...sub, 0, 0xff, 0xff, 0x03, 0, body.length & 0xff, body.length >> 8, ...body];
 }
 const plcData = (dir, bytes, peer) => ({ ts: now(), dir, bytes, check: null, peer });
+/** (0.10.0) XGT 전용 프레임 — 머리 20바이트(회사 ID·PLC 정보·CPU hA0·방향·Invoke·길이·위치·BCC) + 몸체 */
+function xgtFrame(body, resp, invoke) {
+  const h = [...enc.encode("LSIS-XGT"), 0, 0, 0, resp ? (plc.runMode === "run" ? 1 : 2) : 0, 0xa0, resp ? 0x11 : 0x33, invoke & 0xff, invoke >> 8, body.length & 0xff, body.length >> 8, 0];
+  h.push(h.reduce((a, b) => (a + b) & 0xff, 0));
+  return [...h, ...body];
+}
+function xgtTick(s, p) {
+  const invoke = s.tick & 0xffff;
+  const write = s.tick % 5 === 0;
+  const d = plcTbl("%DW");
+  const st = plc.stats;
+  const fl = plc.faults;
+  const forced = fl && fl.forceEndCode > 0 ? fl.forceEndCode : 0;
+  const cmd = write ? "0058" : "0054";
+  st.requests++;
+  st.perCmd[cmd] = (st.perCmd[cmd] ?? 0) + 1;
+  const name = [...enc.encode(write ? "%DW100" : "%DW0")];
+  let req;
+  let rest;
+  let sumReq;
+  if (write) {
+    const v = ((d.get(100) ?? 0) + 1) & 0xffff;
+    req = [0x58, 0, 2, 0, 0, 0, 1, 0, name.length, 0, ...name, 2, 0, v & 0xff, v >> 8];
+    if (!forced) {
+      d.set(100, v);
+      st.writes++;
+    }
+    rest = [1, 0];
+    sumReq = tr("0058 개별 쓰기 WORD %DW100", "0058 Write (individual) WORD %DW100");
+  } else {
+    req = [0x54, 0, 2, 0, 0, 0, 1, 0, name.length, 0, ...name];
+    const v = d.get(0) ?? 0;
+    rest = [1, 0, 2, 0, v & 0xff, v >> 8];
+    sumReq = tr("0054 개별 읽기 WORD %DW0", "0054 Read (individual) WORD %DW0");
+  }
+  frames({ ...plcData("rx", xgtFrame(req, false, invoke), p.addr), sum: `${sumReq} · #${plcHx(invoke, 2)}` });
+  if (fl && fl.noResponse) {
+    st.noResponse++;
+    frames(ev(`NO-RESPONSE (fault) ${cmd}`));
+    return;
+  }
+  const rc = write ? 0x59 : 0x55;
+  const codeHex = plcHx(forced, 2);
+  if (forced) {
+    st.errors++;
+    st.perEnd[codeHex] = (st.perEnd[codeHex] ?? 0) + 1;
+    frames(ev(`NAK ${codeHex} ${tr("강제·기타", "forced/other")} — ${cmd} (fault)`));
+  } else st.ok++;
+  const body = [rc, 0, 2, 0, 0, 0, ...(forced ? [0xff, 0xff, forced & 0xff, forced >> 8] : [0, 0, ...rest])];
+  const sumTx = forced ? `00${rc.toString(16).toUpperCase()} NAK ${codeHex} ${tr("강제·기타", "forced/other")}` : `00${rc.toString(16).toUpperCase()} ACK · ${tr("블록", "blocks")} 1`;
+  const delay = fl ? (fl.delayMaxMs > fl.delayMs ? fl.delayMs + Math.floor(Math.random() * (fl.delayMaxMs - fl.delayMs + 1)) : fl.delayMs) : 0;
+  later(Math.min(delay, 400), () => frames({ ...plcData("tx", xgtFrame(body, true, invoke), p.addr), sum: `${sumTx} · #${plcHx(invoke, 2)}` }));
+}
 function plcTick() {
   const s = S;
   if (!s || !s.peers.length) return;
+  if (plc.protocol === "xgt") {
+    s.tick = (s.tick ?? 0) + 1;
+    if (s.tick % 4 === 0) plcRuleTick();
+    return xgtTick(s, s.peers[s.tick % s.peers.length]);
+  }
   s.tick = (s.tick ?? 0) + 1;
   const p = s.peers[s.tick % s.peers.length];
   const f = plc.format;
@@ -2655,6 +2716,7 @@ function plcStart(c, ch) {
   if (!c.host.trim() || !hostOk(c.host) || unresolvable(c.host)) return fail(`${c.host}:${c.port}: ${notFound()}`);
   if (c.port === 445) return fail(inUse(`${c.host}:${c.port}`));
   plc.format = { ...c.format };
+  plc.protocol = c.protocol === "xgt" ? "xgt" : "mc";
   const local = `${c.host.trim()}:${c.port || 50500}`;
   const s = newSession("plc", ch, { cfg: { ...c }, port: local, server: true, online: true });
   later(10, () => {
@@ -2688,6 +2750,9 @@ function plcsim(cmd, a) {
     case "set_faults":
       if ((a.faults.target?.probability ?? 100) > 100) return fail(tr("확률은 0~100% 입니다", "Probability is 0–100%"));
       plc.faults = { ...a.faults };
+      return null;
+    case "set_xgt_options":
+      plc.xgtOptions = { ...a.options };
       return null;
     case "set_options":
       if (typeof a.options.modelName === "string" && (a.options.modelName.length > 16 || !/^[\x20-\x7e]*$/.test(a.options.modelName))) return fail(tr("형명은 영문·숫자·기호(ASCII) 16글자까지입니다", "The model name is up to 16 ASCII characters"));

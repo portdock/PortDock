@@ -1,7 +1,16 @@
 // 한국어 기본, 영어 병행
 const ko = {
   helpTip: "도움말 (F1)",
-  lockedHint: "시작한 동안에는 방식·주소·포트·프레임을 바꿀 수 없습니다",
+  lockedHint: "시작한 동안에는 프로토콜·방식·주소·포트·프레임을 바꿀 수 없습니다",
+  protocol: "프로토콜",
+  protoMc: "MC 프로토콜 (미쓰비시 3E/4E)",
+  protoXgt: "XGT 전용 (LS FEnet) — 0.10.0 부터",
+  xgtLabel: "XGT 전용",
+  xgtHint: "LS XGT 전용 프로토콜(0.10.0 부터) — 기본 포트 TCP 2004 · UDP 2005. 변수는 %MW100(워드) · %MX1603(비트 = 워드 번호×16+비트, 10진) · %MB200(바이트) · %MD10 · %ML5, 연속 읽기·쓰기는 %MB0 꼴 바이트 변수. 공개 사용설명서 기준 흉내라 실제 PLC 와 다를 수 있습니다.",
+  xgtBcc: "머리 BCC 검사 (틀리면 오류 h77)",
+  clientCfgXgt: "회사 ID LSIS-XGT · 프레임 방향 h33",
+  devXgtRelay: "릴레이·입출력 영역(워드)",
+  first1Xgt: "왼쪽에서 프로토콜 «XGT 전용»·포트(TCP 2004)를 클라이언트와 맞춥니다",
   transport: "연결 방식",
   trTcp: "TCP 서버",
   trUdp: "UDP",
@@ -255,8 +264,17 @@ const ko = {
 };
 
 const en: Record<keyof typeof ko, string> = {
+  protocol: "Protocol",
+  protoMc: "MC protocol (Mitsubishi 3E/4E)",
+  protoXgt: "XGT dedicated (LS FEnet) — from 0.10.0",
+  xgtLabel: "XGT dedicated",
+  xgtHint: "LS XGT dedicated protocol (from 0.10.0) — default port TCP 2004 · UDP 2005. Variables: %MW100 (word) · %MX1603 (bit = word no. × 16 + bit, decimal) · %MB200 (byte) · %MD10 · %ML5; continuous read/write takes a byte variable such as %MB0. Emulated from the public user's manual, so it may behave differently from a real PLC.",
+  xgtBcc: "Check header BCC (error h77 if wrong)",
+  clientCfgXgt: "company ID LSIS-XGT · frame direction h33",
+  devXgtRelay: "Relay/I/O areas (words)",
+  first1Xgt: "On the left, match the protocol «XGT dedicated» and port (TCP 2004) with the client",
   helpTip: "Help (F1)",
-  lockedHint: "Transport, address, port and frame cannot change while started",
+  lockedHint: "Protocol, transport, address, port and frame cannot change while started",
   transport: "Transport",
   trTcp: "TCP server",
   trUdp: "UDP",

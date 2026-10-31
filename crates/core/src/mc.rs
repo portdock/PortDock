@@ -101,6 +101,26 @@ pub enum Dev {
     Cs,
     Cc,
     Cn,
+    // LS XGT 전용 프로토콜(xgt.rs, 0.10.0)의 워드 디바이스 — 이름이 MC 와 겹치지 않게 «%MW» 꼴로 주고받는다.
+    // 비트(%MX)·바이트(%MB)·더블워드(%MD)·롱워드(%ML)는 같은 워드 배열을 다른 단위로 본다
+    #[serde(rename = "%PW")]
+    XgP,
+    #[serde(rename = "%MW")]
+    XgM,
+    #[serde(rename = "%KW")]
+    XgK,
+    #[serde(rename = "%FW")]
+    XgF,
+    #[serde(rename = "%TW")]
+    XgT,
+    #[serde(rename = "%CW")]
+    XgC,
+    #[serde(rename = "%DW")]
+    XgD,
+    #[serde(rename = "%LW")]
+    XgL,
+    #[serde(rename = "%NW")]
+    XgN,
 }
 
 /// 디바이스 한 종류의 성질
@@ -143,9 +163,28 @@ pub const DEVICES: [DevInfo; 18] = [
     DevInfo { dev: Dev::Cn, name: "CN", code: 0xC5, bits: false, hex: false, default_size: 1024 },
 ];
 
+/// XGT 전용 프로토콜(xgt.rs)의 디바이스 — 모두 워드 배열(점 = 워드). MC 요청에서는 쓰지 않는다(코드 0 은 자리 채움).
+/// 원문(XGT FEnet I/F 모듈 사용설명서 V2.30 표 8.1.2·8.2.1·8.2.2절)에 나온 P·M·K·F·T·C·D·L·N 만.
+/// 기본 크기는 실제 기종의 상한이 아니라 이 흉내의 작은 값이다
+pub const XGT_DEVICES: [DevInfo; 9] = [
+    DevInfo { dev: Dev::XgP, name: "%PW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgM, name: "%MW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgK, name: "%KW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgF, name: "%FW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgT, name: "%TW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgC, name: "%CW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgD, name: "%DW", code: 0, bits: false, hex: false, default_size: 12288 },
+    DevInfo { dev: Dev::XgL, name: "%LW", code: 0, bits: false, hex: false, default_size: 2048 },
+    DevInfo { dev: Dev::XgN, name: "%NW", code: 0, bits: false, hex: false, default_size: 2048 },
+];
+
 impl Dev {
     pub fn info(self) -> &'static DevInfo {
-        DEVICES.iter().find(|d| d.dev == self).expect("DEVICES 에 모든 Dev")
+        DEVICES.iter().chain(XGT_DEVICES.iter()).find(|d| d.dev == self).expect("DEVICES·XGT_DEVICES 에 모든 Dev")
+    }
+    /// XGT 전용 프로토콜 디바이스인지
+    pub fn is_xgt(self) -> bool {
+        XGT_DEVICES.iter().any(|d| d.dev == self)
     }
     pub fn name(self) -> &'static str {
         self.info().name
@@ -335,7 +374,7 @@ pub struct Memory {
 
 impl Default for Memory {
     fn default() -> Self {
-        Self { data: DEVICES.iter().map(|d| (d.dev, vec![0; d.default_size as usize])).collect(), sims: BTreeMap::new() }
+        Self { data: DEVICES.iter().chain(XGT_DEVICES.iter()).map(|d| (d.dev, vec![0; d.default_size as usize])).collect(), sims: BTreeMap::new() }
     }
 }
 
@@ -413,7 +452,7 @@ impl Memory {
     }
 
     /// «읽을 때마다» 자동 변화 — [lo, hi) 에 걸친 것만
-    fn sims_on_read(&mut self, d: Dev, lo: u32, hi: u32, t: Duration, rng: &mut Rng) {
+    pub(crate) fn sims_on_read(&mut self, d: Dev, lo: u32, hi: u32, t: Duration, rng: &mut Rng) {
         let Some(list) = self.sims.get(&d) else { return };
         let due: Vec<SimSpec> = list.iter().filter(|r| r.spec.on_read() && r.spec.span().0 < hi && r.spec.span().1 > lo).map(|r| r.spec.clone()).collect();
         if let Some(v) = self.data.get_mut(&d) {
@@ -1095,13 +1134,26 @@ pub struct Outcome {
 }
 
 impl Outcome {
-    fn new(result: &'static str) -> Self {
+    pub(crate) fn new(result: &'static str) -> Self {
         Self { command: 0, sub: 0, result, end_code: None, written: false, delay_ms: 0, faulted: false, events: Vec::new() }
     }
 }
 
+/// 흉내 낼 프로토콜(0.10.0) — MC(SLMP 3E·4E) 또는 LS XGT 전용 프로토콜(xgt.rs)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Protocol {
+    #[default]
+    Mc,
+    Xgt,
+}
+
 pub struct Server {
     pub mem: Memory,
+    /// (0.10.0) 흉내 낼 프로토콜 — Xgt 면 handle 이 xgt.rs 로 넘긴다(format 은 MC 에만)
+    pub protocol: Protocol,
+    /// (0.10.0) XGT 전용 프로토콜 선택
+    pub xgt: crate::xgt::XgtOptions,
     pub format: Format,
     pub faults: Faults,
     pub options: Options,
@@ -1111,9 +1163,9 @@ pub struct Server {
     pub run_mode: RunMode,
     /// 모니터 등록(0801) — 서버 하나에 하나(연결마다 따로 두지 않는다 — 이 흉내의 단순화)
     monitor: Option<Points>,
-    rng: Rng,
+    pub(crate) rng: Rng,
     fault_count: u64,
-    t0: Instant,
+    pub(crate) t0: Instant,
 }
 
 impl Default for Server {
@@ -1131,6 +1183,8 @@ impl Server {
     fn with_rng(rng: Rng) -> Self {
         Self {
             mem: Memory::default(),
+            protocol: Protocol::Mc,
+            xgt: crate::xgt::XgtOptions::default(),
             format: Format::default(),
             faults: Faults::default(),
             options: Options::default(),
@@ -1266,6 +1320,9 @@ impl Server {
 
     /// 요청 프레임 하나(머리 포함)를 처리한다. 돌려주는 응답이 None 이면 아무것도 보내지 않는다
     pub fn handle(&mut self, frame: &[u8]) -> (Option<Vec<u8>>, Outcome) {
+        if self.protocol == Protocol::Xgt {
+            return crate::xgt::handle(self, frame);
+        }
         let fmt = self.format;
         let (h, body) = match parse_header(fmt, frame) {
             Ok(x) => x,
@@ -1314,7 +1371,7 @@ impl Server {
         (Some(resp), o)
     }
 
-    fn fault_applies(&mut self, cmd: u16, devs: Vec<Dev>) -> bool {
+    pub(crate) fn fault_applies(&mut self, cmd: u16, devs: Vec<Dev>) -> bool {
         if !self.faults.active() {
             return false;
         }
@@ -1333,7 +1390,7 @@ impl Server {
         p >= 100 || self.rng.unit() * 100.0 < p as f64
     }
 
-    fn pick_delay(&mut self) -> u64 {
+    pub(crate) fn pick_delay(&mut self) -> u64 {
         let (lo, hi) = (self.faults.delay_ms, self.faults.delay_max_ms);
         if hi > lo { self.rng.range(lo, hi) } else { lo }
     }

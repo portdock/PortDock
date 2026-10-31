@@ -3066,6 +3066,23 @@ async function runApp(app, port) {
       // (10/25) Serial «연결 점검…»(끊긴 상태 — 장치 요약·루프백)
       if (app === "serial") await serialPortCheck(false);
 
+      // (0.10.0) PLC Simulator 프로토콜 «XGT 전용» — 포트 2004·%DW 디바이스·3E/4E 숨김, «MC» 로 돌리면 5000·D
+      if (app === "plc-simulator") {
+        const x = await jsAsync(`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const sel = [...document.querySelectorAll('aside select')].find((s) => s.querySelector('option[value=xgt]'));
+          if (!sel) return { none: true };
+          const now = () => ({ port: ([...document.querySelectorAll('aside .grid2.net input')].pop() || {}).value, dw: [...document.querySelectorAll('.devbar .seg')].some((b) => b.textContent === '%DW'), d: [...document.querySelectorAll('.devbar .seg')].some((b) => b.textContent === 'D'), frame: !!document.querySelector('aside option[value="4e"]') });
+          __sm.setVal(sel, 'xgt');
+          await w();
+          const xgt = now();
+          __sm.setVal(sel, 'mc');
+          await w();
+          return { xgt, mc: now() };`);
+        if (x.fatal || x.none || x.xgt.port !== "2004" || !x.xgt.dw || x.xgt.d || x.xgt.frame || x.mc.port !== "5000" || !x.mc.d || x.mc.dw || !x.mc.frame) await conv("plc-xgt", `프로토콜 XGT 전용 전환이 이상함: ${JSON.stringify(x)}`);
+        await verify("plc xgt switch");
+      }
+
       // ---- 연결·시작
       const want = { serial: /연결됨|Connected/, "modbus-slave": /연결됨|Connected/, tcp: /연결됨|접속됨|Connected|듣는|Listening/, udp: /듣는|Listening|받는/, simulator: /연결됨|Connected|듣는|Listening/, netscan: /찾는 중|Scanning/, "modbus-master": /연결됨|Connected/, scpi: /연결됨|Connected/, plot: /받는 중|Receiving/, "plc-simulator": /듣는|Listening/ }[app];
       const runS = await clickRun("connect", (s) => s.btn !== idleBtn && want.test(s.status ?? ""));

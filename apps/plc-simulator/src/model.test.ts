@@ -94,7 +94,10 @@ test("마지막 시작 설정", () => {
     host: "127.0.0.1",
     port: 5000,
     format: { frame: "4e", code: "ascii" },
+    protocol: "mc",
   });
+  // (0.10.0) XGT 전용 프로토콜
+  assert.equal(cleanLastOk({ transport: "tcp", host: "127.0.0.1", port: 2004, format: { frame: "3e", code: "binary" }, protocol: "xgt" })?.protocol, "xgt");
   assert.equal(cleanLastOk({ transport: "serial", host: "x", port: 1, format: { frame: "3e", code: "binary" } }), null);
   assert.equal(cleanLastOk({ transport: "tcp", host: "", port: 1, format: { frame: "3e", code: "binary" } }), null);
   assert.equal(cleanLastOk({ transport: "tcp", host: "h", port: 70000, format: { frame: "3e", code: "binary" } }), null);

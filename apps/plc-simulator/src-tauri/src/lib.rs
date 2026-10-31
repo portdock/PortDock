@@ -1,10 +1,12 @@
 //! PortDock PLC Simulator — PC 가 PLC 의 이더넷 포트처럼 MC 프로토콜(SLMP 3E·4E, 이진·ASCII) 요청에 답한다.
 //! TCP 서버(여러 클라이언트) 또는 UDP. 디바이스 표는 연결과 따로 살아 있어서, 시작 전에 값을 넣어 둘 수 있다.
 //! 처리기는 crates/core/src/mc.rs — 공개 매뉴얼 기준 구현, 실제 PLC 와 동작이 다를 수 있다.
+//! 0.10.0 부터 LS XGT 전용 프로토콜(FEnet, TCP 2004 · UDP 2005)도 고를 수 있다 — crates/core/src/xgt.rs.
 
 use portdock_core::event::SessionEvent;
 use portdock_core::event::LogOptions;
-use portdock_core::mc::{self, Dev, Faults, Format, Options, Outcome, RunMode, Server};
+use portdock_core::mc::{self, Dev, Faults, Format, Options, Outcome, Protocol, RunMode, Server};
+use portdock_core::xgt;
 use portdock_core::mc_rules::{Fired, Rule, RuleStat};
 use portdock_core::regmap::SimSpec;
 use portdock_core::registry::{Registry, auto_remove_sink};
@@ -107,8 +109,8 @@ struct App {
 const MAIN: &str = "main";
 
 /// 요청 하나의 결과를 통계에 넣고, 사건 줄 문구를 돌려준다(원격 조작·바로 실행한 규칙 줄도 함께)
-fn record(st: &mut Stats, o: &Outcome) -> Option<String> {
-    let base = record_one(st, o);
+fn record(st: &mut Stats, o: &Outcome, p: Protocol) -> Option<String> {
+    let base = record_one(st, o, p);
     if o.events.is_empty() {
         return base;
     }
@@ -116,13 +118,18 @@ fn record(st: &mut Stats, o: &Outcome) -> Option<String> {
     Some(base.map_or(ev.clone(), |b| format!("{b} · {ev}")))
 }
 
-fn record_one(st: &mut Stats, o: &Outcome) -> Option<String> {
+fn record_one(st: &mut Stats, o: &Outcome, p: Protocol) -> Option<String> {
+    let xgt = p == Protocol::Xgt;
     if o.written {
         st.writes += 1;
     }
     if o.result == "ignored" {
         st.ignored += 1;
-        return Some(tr!("IGNORED 이 형식(3E/4E·이진/ASCII)의 요청이 아님", "IGNORED not a request in this format (3E/4E, binary/ASCII)").into());
+        return Some(if xgt {
+            tr!("IGNORED XGT 전용 프로토콜 요청(머리 20바이트·방향 h33)이 아님", "IGNORED not an XGT dedicated request (20-byte header, direction h33)").into()
+        } else {
+            tr!("IGNORED 이 형식(3E/4E·이진/ASCII)의 요청이 아님", "IGNORED not a request in this format (3E/4E, binary/ASCII)").into()
+        });
     }
     st.requests += 1;
     *st.per_cmd.entry(format!("{:04X}", o.command)).or_default() += 1;
@@ -139,7 +146,11 @@ fn record_one(st: &mut Stats, o: &Outcome) -> Option<String> {
             st.errors += 1;
             let code = o.end_code.unwrap_or(0);
             *st.per_end.entry(format!("{code:04X}")).or_default() += 1;
-            Some(format!("END {code:04X} {} — {:04X}{}", mc::end_code_text(code), o.command, if o.faulted { " (fault)" } else { "" }))
+            if xgt {
+                Some(format!("NAK {code:04X} {} — {:04X}{}", xgt::error_text(code), o.command, if o.faulted { " (fault)" } else { "" }))
+            } else {
+                Some(format!("END {code:04X} {} — {:04X}{}", mc::end_code_text(code), o.command, if o.faulted { " (fault)" } else { "" }))
+            }
         }
     }
 }
@@ -147,12 +158,12 @@ fn record_one(st: &mut Stats, o: &Outcome) -> Option<String> {
 /// 응답기 — TCP 는 연결마다 따로 기다리므로 지연 중에도 다음 요청을 받는다
 fn responder(server: Arc<Mutex<Server>>, stats: Arc<Mutex<Stats>>) -> Responder {
     Box::new(move |frame: &[u8]| {
-        let (bytes, o, jitter) = {
+        let (bytes, o, jitter, proto) = {
             let mut sv = server.lock().unwrap();
             let (b, o) = sv.handle(frame);
-            (b, o, sv.faults.delay_max_ms > sv.faults.delay_ms)
+            (b, o, sv.faults.delay_max_ms > sv.faults.delay_ms, sv.protocol)
         };
-        let mut note = record(&mut stats.lock().unwrap(), &o);
+        let mut note = record(&mut stats.lock().unwrap(), &o, proto);
         if jitter && o.delay_ms > 0 && bytes.is_some() {
             let d = format!("DELAY {} ms (fault)", o.delay_ms);
             note = Some(note.map_or(d.clone(), |n| format!("{n} · {d}")));
@@ -161,17 +172,19 @@ fn responder(server: Arc<Mutex<Server>>, stats: Arc<Mutex<Stats>>) -> Responder 
     })
 }
 
-/// 화면으로 보내는 통로 — 데이터 줄마다 MC 한 줄 풀이(«sum»)를 붙인다(받은 것 = 요청, 보낸 것 = 응답)
-fn forward(fmt: Format, ch: Channel<Value>) -> impl Fn(SessionEvent) + Send + Sync + 'static {
+/// 화면으로 보내는 통로 — 데이터 줄마다 MC·XGT 한 줄 풀이(«sum»)를 붙인다(받은 것 = 요청, 보낸 것 = 응답)
+fn forward(proto: Protocol, fmt: Format, ch: Channel<Value>) -> impl Fn(SessionEvent) + Send + Sync + 'static {
     move |e: SessionEvent| {
         let mut v = serde_json::to_value(&e).unwrap_or(Value::Null);
         if let SessionEvent::Frames { frames } = &e
             && let Some(arr) = v.get_mut("frames").and_then(|f| f.as_array_mut())
         {
             for (f, j) in frames.iter().zip(arr.iter_mut()) {
-                let s = match f.dir {
-                    "rx" => mc::describe_request(fmt, &f.bytes),
-                    "tx" => mc::describe_response(fmt, &f.bytes),
+                let s = match (f.dir, proto) {
+                    ("rx", Protocol::Mc) => mc::describe_request(fmt, &f.bytes),
+                    ("tx", Protocol::Mc) => mc::describe_response(fmt, &f.bytes),
+                    ("rx", Protocol::Xgt) => xgt::describe_request(&f.bytes),
+                    ("tx", Protocol::Xgt) => xgt::describe_response(&f.bytes),
                     _ => None,
                 };
                 if let Some(s) = s {
@@ -199,6 +212,9 @@ struct StartConfig {
     host: String,
     port: u16,
     format: Format,
+    /// (0.10.0) MC 또는 XGT 전용 프로토콜 — 없으면 MC
+    #[serde(default)]
+    protocol: Protocol,
 }
 
 /// 서버를 연다. 실제로 묶인 주소를 돌려준다(포트 0 이면 운영체제가 고른 포트)
@@ -209,16 +225,18 @@ fn start(app: State<App>, config: StartConfig, on_event: Channel<Value>) -> Resu
     {
         let mut sv = app.server.lock().unwrap();
         sv.format = config.format;
+        sv.protocol = config.protocol;
         // 새로 연 서버 — 모니터 등록은 처음부터
         sv.clear_monitor();
     }
-    let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, forward(config.format, on_event));
+    let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, forward(config.protocol, config.format, on_event));
+    let frame_mode = if config.protocol == Protocol::Xgt { xgt::frame_mode() } else { config.format.frame_mode() };
     let r = responder(app.server.clone(), app.stats.clone());
     let host = config.host.trim().to_string();
     let (link, local) = match config.transport {
         Transport::Tcp => {
             let cfg = TcpConfig { mode: TcpMode::Server, host, port: config.port, no_delay: true, auto_reconnect: false, reconnect_ms: 2_000, echo: false };
-            let s = TcpSession::start(cfg, config.format.frame_mode(), None, Some(r), sink)?;
+            let s = TcpSession::start(cfg, frame_mode, None, Some(r), sink)?;
             // TCP 는 점대점이라 선로 에코가 없다 — 같은 요청을 곧바로 다시 보내도 답하도록 시간 창은 끈다
             s.set_echo_guard(None);
             let local = s.local_addr().map(|a| a.to_string()).unwrap_or_default();
@@ -283,6 +301,12 @@ fn set_options(app: State<App>, options: Options) -> Result<(), String> {
     options.check()?;
     app.server.lock().unwrap().options = options;
     Ok(())
+}
+
+/// (0.10.0) XGT 전용 프로토콜 선택(머리 BCC 검사)
+#[tauri::command]
+fn set_xgt_options(app: State<App>, options: xgt::XgtOptions) {
+    app.server.lock().unwrap().xgt = options;
 }
 
 /// 파일 로그 형식·나누기·정리(설정 창) — 다음에 여는 파일부터
@@ -362,7 +386,7 @@ struct DevRow {
 #[tauri::command]
 fn devices(app: State<App>) -> Vec<DevRow> {
     let sv = app.server.lock().unwrap();
-    mc::DEVICES.iter().map(|d| DevRow { dev: d.dev, code: d.code, bits: d.bits, hex: d.hex, default_size: d.default_size, size: sv.mem.size(d.dev) }).collect()
+    mc::DEVICES.iter().chain(mc::XGT_DEVICES.iter()).map(|d| DevRow { dev: d.dev, code: d.code, bits: d.bits, hex: d.hex, default_size: d.default_size, size: sv.mem.size(d.dev) }).collect()
 }
 
 #[tauri::command]
@@ -524,6 +548,7 @@ pub fn run() {
             set_log,
             set_faults,
             set_options,
+            set_xgt_options,
             set_log_options,
             set_rules,
             rules_state,
@@ -584,6 +609,32 @@ mod tests {
         assert_eq!(server.lock().unwrap().run_mode, RunMode::Stop);
     }
 
+    /// (0.10.0) XGT 전용 프로토콜 — 쓰기·읽기·NAK 를 세고, 사건 줄은 NAK 코드로
+    #[test]
+    fn responder_xgt() {
+        let server = Arc::new(Mutex::new(Server::with_seed(1)));
+        server.lock().unwrap().protocol = Protocol::Xgt;
+        let stats = Arc::new(Mutex::new(Stats::default()));
+        let mut r = responder(server.clone(), stats.clone());
+        let req = |body: &[u8]| {
+            let mut h = xgt::COMPANY_XGT.to_vec();
+            h.extend([0, 0, 0xA0, 0x33, 1, 0]);
+            h.extend((body.len() as u16).to_le_bytes());
+            h.push(0);
+            h.push(xgt::bcc(&h));
+            h.extend(body);
+            h
+        };
+        assert!(r(&req(&[0x58, 0, 2, 0, 0, 0, 1, 0, 4, 0, b'%', b'D', b'W', b'5', 2, 0, 7, 0])).note.is_none());
+        assert_eq!(server.lock().unwrap().mem.get(Dev::XgD, 5, 1).unwrap(), [7]);
+        assert!(r(&req(&[0x54, 0, 2, 0, 0, 0, 1, 0, 4, 0, b'%', b'Z', b'W', b'5'])).note.unwrap().starts_with("NAK 0003"));
+        assert!(r(&[0u8; 4]).note.unwrap().starts_with("IGNORED"));
+        let st = stats.lock().unwrap().clone();
+        assert_eq!((st.requests, st.ok, st.errors, st.ignored, st.writes), (2, 1, 1, 1, 1));
+        assert_eq!(st.per_cmd.get("0058"), Some(&1));
+        assert_eq!(st.per_end.get("0003"), Some(&1));
+    }
+
     #[test]
     fn rule_log_keeps_latest() {
         let mut l = RuleLog::default();
@@ -597,7 +648,9 @@ mod tests {
     #[test]
     fn config_shape() {
         let c: StartConfig = serde_json::from_str(r#"{"transport":"udp","host":"127.0.0.1","port":5000,"format":{"frame":"4e","code":"ascii"}}"#).unwrap();
-        assert_eq!((c.transport, c.port, c.format.frame), (Transport::Udp, 5000, mc::FrameKind::E4));
+        assert_eq!((c.transport, c.port, c.format.frame, c.protocol), (Transport::Udp, 5000, mc::FrameKind::E4, Protocol::Mc));
+        let c: StartConfig = serde_json::from_str(r#"{"transport":"tcp","host":"127.0.0.1","port":2004,"format":{"frame":"3e","code":"binary"},"protocol":"xgt"}"#).unwrap();
+        assert_eq!(c.protocol, Protocol::Xgt);
     }
 
     /// 실제 소켓(127.0.0.1)으로 — TCP 요청이 쪼개져 오거나 둘이 붙어 와도 하나씩 답한다
