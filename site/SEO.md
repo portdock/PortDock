@@ -136,6 +136,7 @@
 | i2c 풀업 저항 계산·값, i2c 주소 (표·확인), i2c 8비트 주소 7비트 변환 (자동완성 확인 안 함) | `/tools/i2c/` | «I2C 풀업 저항 계산·주소표·바이트 풀이», 설명에 «UM10204·100k/400k/1M» |
 | spi 모드 (0·1·2·3), cpol cpha, spi 타이밍도 (자동완성 확인 안 함) | `/tools/spi/` | «SPI 모드 0·1·2·3 — CPOL·CPHA 파형 그리기», 설명에 «샘플·시프트 엣지·제조사 표기» |
 | uart 파형·신호 보는 법, uart 프레임 구조, 오실로스코프 보율 측정, rs232 전압 레벨 (자동완성 확인 안 함) | `/tools/uart-waveform/` | «UART 파형 그리기 — 비트·보율·RS-232 전압», 설명에 «펄스 폭 → 보율 추정» |
+| 로직 분석기 해석·saleae csv·pulseview csv 분석, vcd 파일 보기, uart 파형 해석·보율 확인, i2c 파형 해석·ack nack, spi 모드 확인, can 파형 해석(rx) | `/tools/logic-capture/` + 가이드 `uart-spi-i2c-can-rs485`·`i2c-troubleshooting`·`can-wiring-termination-check` | «로직 분석기 캡처 해석기 — UART·SPI·I2C·CAN», 설명에 «브라우저 안에서만», 가이드 «UART·SPI·I2C·CAN·RS-485 차이와 고르는 법», «I2C 안 될 때 — 풀업·주소·SDA 걸림·선 길이 점검», «CAN 종단 60 Ω 점검·접지·샘플 포인트·버스 오프» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -261,6 +262,7 @@
 | i2c pull up resistor calculator, i2c pull-up value, i2c address list, i2c 7-bit 8-bit address | `/en/tools/i2c/` | «I2C Pull-up Resistor Calculator & Address Table» |
 | spi modes, cpol cpha, spi mode 0 1 2 3 timing diagram | `/en/tools/spi/` | «SPI Modes 0–3: CPOL & CPHA Timing Diagram» |
 | uart waveform, uart frame diagram, measure baud rate oscilloscope, rs232 voltage levels | `/en/tools/uart-waveform/` | «UART Waveform Drawer: Bits, Baud & RS-232 Levels» |
+| logic analyzer csv decoder online, saleae csv export decode, pulseview csv, vcd viewer online, uart decoder from capture, i2c decoder ack nack, spi mode decoder, can bus decoder from logic analyzer, uart vs spi vs i2c vs can, i2c not working pull-up, i2c bus stuck sda low, can bus termination 60 ohm, can bus off | `/en/tools/logic-capture/` + guides `uart-spi-i2c-can-rs485`, `i2c-troubleshooting`, `can-wiring-termination-check` | «Logic Analyzer Capture Decoder: UART, SPI, I2C, CAN», guides «UART vs SPI vs I2C vs CAN vs RS-485: How to Choose», «I2C Not Working: Pull-ups, Address, Stuck SDA, Length», «CAN Termination 60 Ω Check, Ground, Bus-Off» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.
@@ -325,6 +327,7 @@
 | 57 | i2c 풀업 저항 계산·i2c 주소(한국어), i2c pull up resistor calculator·i2c address list(영어) — 자동완성 확인 안 함 | `/tools/i2c/` | UM10204 §7.1 식·표 10 값을 시험으로 손계산과 대조(TI SLVA689 와 같은 식). 칩 주소 49줄은 데이터시트 값이지만 칩마다 원문을 이번에 다시 열어 보지는 않음 | ✅ 11/01 |
 | 58 | spi 모드·cpol cpha(한국어), spi modes·cpol cpha timing diagram(영어) — 자동완성 확인 안 함 | `/tools/spi/` | Linux spi-summary 정의(CPHA 0 = 앞 엣지 샘플)를 시험으로. MSP430 UCCKPH·PIC CKE 가 CPHA 의 반대라는 표기 차이 표 — PIC 은 링크할 원문을 고르지 않음 | ✅ 11/01 |
 | 59 | uart 파형·오실로스코프 보율 측정(한국어), uart waveform·measure baud rate oscilloscope(영어) — 자동완성 확인 안 함 | `/tools/uart-waveform/` | ATmega328P §19.4 프레임·패리티, TI SLLA037A 전압 그림(드라이버 ±5~15 V, 수신 ±3 V). 기존 `uart-baud`(오차)·`serial-timing`(3.5문자)과 서로 링크 | ✅ 11/01 |
+| 56 | 로직 분석기 해석·UART·I2C·CAN 파형 해석(한국어), logic analyzer csv decoder·i2c not working·can termination 60 ohm(영어) — 자동완성 확인 안 함 | `/tools/logic-capture/` + 가이드 `uart-spi-i2c-can-rs485`·`i2c-troubleshooting`·`can-wiring-termination-check` | 해석 규칙: NXP UM10204 Rev. 7(§3.1.3~3.1.6·3.1.10·3.1.11, 풀업 식 §7.1, 버스 해제 §3.1.16, 표 10·11), Microchip AVR151 표 1-3(SPI 모드), ATmega328P USART 프레임, TI SLOA101B·SLLA270(CAN 프레임·오류 프레임·120 Ω·표 1 길이↔속도·−2~7 V), MCP2515 DS20001801J §5·§6(샘플 포인트·오류 상태·버스 오프 128 × 11비트). CRC-15 는 검사값 «123456789» → 0x059E 로 시험. 파일 형식: Saleae «Exporting Data»·sigrok wiki «File format:Csv»(예시 출력은 없어 머리 줄을 너그럽게 읽음). CiA 공개 요약·Bosch CAN 2.0 원문은 이번에 받지 못해(Bosch 주소 404) 쓰지 않음. 예시 캡처 세 개는 합성 | ✅ 11/01 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).

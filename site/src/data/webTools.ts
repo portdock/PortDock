@@ -85,7 +85,8 @@ export interface WebTool {
     | "tools/can-decoder/"
     | "tools/i2c/"
     | "tools/spi/"
-    | "tools/uart-waveform/";
+    | "tools/uart-waveform/"
+    | "tools/logic-capture/";
   name: L;
   blurb: L;
 }
@@ -504,6 +505,11 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/uart-waveform/",
     name: { ko: "UART 파형 그리기", en: "UART Waveform Drawer" },
     blurb: { ko: "글자·HEX → 시작·데이터(LSB 먼저)·패리티·정지 비트 파형, TTL·RS-232 전압, 비트·프레임 시간, 펄스 폭 → 표준 보율 추정.", en: "Text or hex → start, data (LSB first), parity and stop bit waveform at TTL or RS-232 levels, bit and frame time, pulse width → standard baud." },
+  },
+  {
+    path: "tools/logic-capture/",
+    name: { ko: "로직 분석기 캡처 해석기 (UART·SPI·I2C·CAN)", en: "Logic Analyzer Capture Decoder (UART, SPI, I2C, CAN)" },
+    blurb: { ko: "sigrok·PulseView CSV, Saleae Logic 2 CSV, VCD → 채널 골라 UART(보율 자동 추정)·SPI 모드 0~3·I2C 주소/ACK·CAN(스터핑·CRC) 해석, 미니 파형·표·CSV. 브라우저 안에서만.", en: "sigrok/PulseView CSV, Saleae Logic 2 CSV or VCD → pick channels and decode UART (baud detection), SPI modes 0–3, I2C address/ACK, CAN (stuffing, CRC); mini waveform, table, CSV. In your browser only." },
   },
 ];
 

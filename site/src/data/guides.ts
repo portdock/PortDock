@@ -8299,4 +8299,460 @@ export const GUIDES: Guide[] = [
       { title: "Microsoft — Windows Firewall overview", url: "https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/", note: { ko: "도메인·개인·공용 프로필", en: "domain, private and public profiles" } },
     ],
   },
+  // 근거: TI SLLA067C 표 1(CAN < 1 Mbps·< 400 m, RS-485 < 40 Mbps·< 1200 m, RS-232 < 20 m), TI SLLA270 표 1(CAN 길이 ↔ 속도)·§4(30 노드·스텁 0.3 m),
+  // NXP UM10204 Rev. 7(100 k·400 k·1 M·3.4 Mbit/s, 표 11 Cb 400·550 pF, §3.1.12 예약 주소 두 묶음 = 128 − 16 = 112 개), Microchip AVR151 표 1-3(SPI 모드).
+  {
+    slug: "uart-spi-i2c-can-rs485",
+    date: "2026-11-01",
+    tools: ["serial"],
+    related: ["rs232-rs422-rs485", "rs485-wiring", "i2c-troubleshooting", "can-wiring-termination-check", "usb-serial-latency"],
+    webTools: ["tools/logic-capture/", "tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/wiring/"],
+    title: { ko: "UART·SPI·I2C·CAN·RS-485 차이 — 거리·속도·장비 수·배선으로 고르기", en: "UART vs SPI vs I2C vs CAN vs RS-485 — choosing by distance, speed, device count and wiring" },
+    seoTitle: { ko: "UART·SPI·I2C·CAN·RS-485 차이와 고르는 법 — PortDock", en: "UART vs SPI vs I2C vs CAN vs RS-485: How to Choose — PortDock" },
+    desc: {
+      ko: "보드 안 칩끼리 쓰는 UART·SPI·I2C 와 장비 사이를 잇는 CAN·RS-485 를 선 수, 신호 방식, 장비 수, 속도, 거리, 종단으로 비교하고 상황별로 고르는 법을 정리했습니다.",
+      en: "UART, SPI and I2C link chips on a board; CAN and RS-485 link devices. Wires, signals, device count, speed, distance and termination compared.",
+    },
+    body: {
+      ko: [
+        { p: "다섯 가지 모두 «비트를 한 줄로 보내는» 직렬 통신이지만 쓰는 자리가 다릅니다. UART·SPI·I2C 는 보통 한 보드 안이나 아주 짧은 선으로 칩끼리 잇는 논리 레벨(3.3 V·5 V) 신호이고, CAN·RS-485 는 차동 신호로 수십~수백 m 떨어진 장비를 잇습니다. 아래 숫자는 표준을 정리한 제조사 공개 문서(TI SLLA067C·SLLA270, NXP UM10204)를 따릅니다." },
+        {
+          table: {
+            plain: true,
+            head: ["", "UART", "SPI", "I2C", "CAN", "RS-485"],
+            rows: [
+              ["선", "TX·RX·GND", "SCK·MOSI·MISO·GND + 장치마다 CS", "SCL·SDA·GND + 풀업 저항", "CAN_H·CAN_L (+ 공통 접지)", "A·B (+ SG)"],
+              ["신호", "단일 종단(논리 레벨)", "단일 종단", "열린 드레인 + 풀업", "차동(우성·열성)", "차동"],
+              ["클럭", "없음 — 양쪽이 보율을 맞춤", "SCK 선(마스터가 냄)", "SCL 선(마스터가 냄)", "없음 — 변화로 재동기화", "없음(그 위의 UART 프레임)"],
+              ["장비 수", "1:1", "마스터 1 + CS 선 수만큼", "주소로 구분(7비트 주소 중 예약 16개를 뺀 112개), 버스 용량이 먼저 한계", "ISO 11898: 30 노드", "32 단위 부하"],
+              ["속도", "양쪽이 약속(9600·115200 bit/s 등)", "규격 없음 — 칩 데이터시트의 SCK 최대", "100 k·400 k·1 M·3.4 Mbit/s", "1 Mbit/s 까지(CAN FD 데이터 구간은 더 빠름)", "40 Mbit/s 미만(짧을 때)"],
+              ["거리", "보드 안·짧은 선(규격 없음)", "보드 안·짧은 선(규격 없음)", "거리가 아니라 용량: 400 pF(1 Mbit/s 모드 550 pF)", "40 m @ 1 Mbit/s ~ 1000 m @ 50 kbit/s", "1200 m 미만(느릴 때)"],
+              ["종단", "없음", "없음", "풀업 저항 값", "양 끝 120 Ω", "양 끝 120 Ω"],
+            ],
+          },
+        },
+        { p: "거리와 속도는 동시에 최대로 쓸 수 없습니다. CAN 은 TI SLLA270 표 1 처럼 길이가 늘면 속도를 낮춰야 하고(40 m 1 Mbit/s, 100 m 500 kbit/s, 200 m 250 kbit/s, 500 m 100 kbit/s, 1000 m 50 kbit/s), RS-485 의 1200 m 도 느린 속도에서의 값입니다." },
+        { h: "보드 안: UART·SPI·I2C" },
+        {
+          ul: [
+            "UART — 선 두 개(+GND)로 1:1. 클럭 선이 없어 양쪽 보율·데이터 비트·패리티·정지 비트가 같아야 합니다. 디버그 콘솔, GPS·블루투스·셀룰러 모듈, USB-시리얼 변환기가 이 방식입니다. 보율이 조금 달라도 되는 범위는 «UART 보율 오차 계산기» 로 봅니다.",
+            "SPI — 마스터가 SCK 를 내고 MOSI·MISO 로 동시에 주고받습니다. 빠르고 단순하지만 장치마다 CS 선이 하나씩 늘어납니다. 모드(CPOL·CPHA)가 장치와 같아야 하며, 모드 0·3 은 SCK 가 올라갈 때, 1·2 는 내려갈 때 데이터를 읽습니다(Microchip AVR151 표 1-3). 플래시 메모리·ADC·디스플레이에 많습니다.",
+            "I2C — 선 두 개에 여러 장치를 주소로 붙입니다. 열린 드레인이라 풀업 저항이 꼭 있어야 하고, 선이 길어지면 용량이 늘어 올라가는 가장자리가 느려집니다(UM10204 표 11: 1 Mbit/s 모드 아래는 400 pF). 센서·EEPROM·RTC·전원 관리 칩에 많습니다. 안 될 때는 «I2C 가 안 될 때 점검 순서» 글을 봅니다.",
+          ],
+        },
+        { h: "장비 사이: CAN·RS-485" },
+        {
+          ul: [
+            "RS-485 — 전기 규격만 정합니다. 그 위에 UART 프레임을 실어 Modbus RTU 같은 «마스터가 묻고 슬레이브가 답하는» 프로토콜을 씁니다. 한 번에 한 장비만 말해야 하므로 순서는 마스터가 정합니다. 배선은 «RS-485 배선 점검» 글을 봅니다.",
+            "CAN — 전기 규격과 프레임·중재·오류 처리까지 컨트롤러가 합니다. 여러 노드가 동시에 보내도 ID 가 낮은(우선순위 높은) 프레임이 이기고, 수신 노드가 ACK 비트를 덮어써 받았음을 알립니다. 차량·이동 장비·모터 드라이브(CANopen)에 많습니다. 배선은 «CAN 배선·종단 점검» 글을 봅니다.",
+          ],
+        },
+        { h: "고르는 법" },
+        {
+          ul: [
+            "같은 보드의 센서 여러 개, 느려도 됨 → I2C(선 두 개). 빠른 데이터(플래시·ADC 연속 읽기) → SPI.",
+            "모듈 하나와 텍스트·명령을 주고받음, PC 와 연결 → UART(PC 쪽은 USB-시리얼 변환기).",
+            "수 m 넘게 떨어진 장비, 마스터 한 대가 차례로 묻는 구조 → RS-485(+ Modbus RTU).",
+            "여러 노드가 스스로 보내고 우선순위·오류 처리가 필요 → CAN.",
+            "UART·SPI·I2C 를 케이블로 길게 늘려야 한다면 → 차동 트랜시버(RS-485·CAN)로 바꾸는 쪽을 먼저 봅니다. I2C 를 늘리는 버퍼 칩도 있지만 용량 한도는 그대로 따져야 합니다.",
+          ],
+        },
+        { h: "헷갈리는 것" },
+        {
+          ul: [
+            "«UART» 와 «RS-232» 는 다릅니다. 프레임은 같지만 RS-232 는 ±전압에 논리가 거꾸로입니다. MCU 핀(3.3 V·5 V)과 PC 의 RS-232 포트를 바로 이으면 안 되고 레벨 변환기가 필요합니다.",
+            "3.3 V 장치와 5 V 장치를 섞을 때는 입력 문턱을 확인합니다. I2C 는 0.7 × VDD 이상을 1 로 읽어서, 5 V 장치는 3.5 V 이상이 필요합니다(UM10204 표 10).",
+            "SPI 신호 이름은 장치마다 다릅니다(MOSI·SDI·DIN, MISO·SDO·DOUT, CS·SS·nCS). 데이터시트의 방향(마스터 기준·장치 기준)을 보고 잇습니다.",
+            "CAN 과 RS-485 는 둘 다 차동이고 양 끝 120 Ω 종단이지만 트랜시버가 다르고 서로 섞을 수 없습니다.",
+          ],
+        },
+        { h: "PortDock 으로" },
+        {
+          ul: [
+            "«로직 분석기 캡처 해석기» 웹 도구: 로직 분석기로 뜬 CSV·VCD 를 브라우저에서 UART·SPI·I2C·CAN 으로 풉니다(설치·업로드 없음).",
+            "Serial: USB-시리얼 변환기로 UART·RS-232·RS-485 장비와 바이트를 주고받습니다.",
+            "«CAN 비트 타이밍 계산기»·«UART 보율 오차 계산기» 웹 도구로 설정 값을 맞춥니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "All five send bits one after another, but they live in different places. UART, SPI and I2C usually connect chips on one board, or over very short wires, with logic-level (3.3 V or 5 V) signals; CAN and RS-485 use differential signals to connect devices tens or hundreds of metres apart. The figures below follow manufacturers' public summaries of the standards (TI SLLA067C and SLLA270, NXP UM10204)." },
+        {
+          table: {
+            plain: true,
+            head: ["", "UART", "SPI", "I2C", "CAN", "RS-485"],
+            rows: [
+              ["Wires", "TX, RX, GND", "SCK, MOSI, MISO, GND + one CS per device", "SCL, SDA, GND + pull-up resistors", "CAN_H, CAN_L (+ common ground)", "A, B (+ SG)"],
+              ["Signal", "Single-ended (logic level)", "Single-ended", "Open drain + pull-up", "Differential (dominant/recessive)", "Differential"],
+              ["Clock", "None — both sides agree on the baud rate", "SCK line (from the master)", "SCL line (from the master)", "None — resynchronizes on edges", "None (UART frames on top)"],
+              ["Devices", "1:1", "1 master + as many as CS lines", "By address (112 of the 7-bit addresses after 16 reserved); bus capacitance usually limits first", "ISO 11898: 30 nodes", "32 unit loads"],
+              ["Speed", "Agreed by both sides (9600, 115200 bit/s …)", "No standard — the chip's maximum SCK", "100 k, 400 k, 1 M, 3.4 Mbit/s", "Up to 1 Mbit/s (CAN FD data phase is faster)", "< 40 Mbit/s (short lines)"],
+              ["Distance", "On board, short wires (no standard)", "On board, short wires (no standard)", "Capacitance, not length: 400 pF (550 pF in 1 Mbit/s mode)", "40 m at 1 Mbit/s to 1000 m at 50 kbit/s", "< 1200 m (at low speed)"],
+              ["Termination", "None", "None", "Pull-up value", "120 Ω at both ends", "120 Ω at both ends"],
+            ],
+          },
+        },
+        { p: "Distance and speed cannot both be at their maximum. For CAN, TI SLLA270 table 1 lowers the rate as the bus gets longer (40 m 1 Mbit/s, 100 m 500 kbit/s, 200 m 250 kbit/s, 500 m 100 kbit/s, 1000 m 50 kbit/s), and RS-485's 1200 m is also a low-speed figure." },
+        { h: "On the board: UART, SPI, I2C" },
+        {
+          ul: [
+            "UART — two wires (+GND), 1:1. With no clock line, both sides must use the same baud rate, data bits, parity and stop bits. Debug consoles, GPS, Bluetooth and cellular modules and USB-serial adapters work this way. Use the «UART Baud Rate Error Calculator» to see how far apart two baud rates may be.",
+            "SPI — the master drives SCK and data goes both ways on MOSI and MISO at once. Fast and simple, but each device needs its own CS line. The mode (CPOL, CPHA) must match the device: modes 0 and 3 read data on the rising SCK edge, modes 1 and 2 on the falling edge (Microchip AVR151 table 1-3). Common for flash memory, ADCs and displays.",
+            "I2C — several devices share two wires and are told apart by address. The lines are open drain, so pull-up resistors are required, and longer wires add capacitance that slows the rising edge (UM10204 table 11: 400 pF below the 1 Mbit/s mode). Common for sensors, EEPROMs, RTCs and power management chips. If it does not work, see «I2C troubleshooting, in order».",
+          ],
+        },
+        { h: "Between devices: CAN, RS-485" },
+        {
+          ul: [
+            "RS-485 — defines only the electrical layer. UART frames run over it with protocols like Modbus RTU, where a master asks and slaves answer. Only one device may talk at a time, so the master sets the order. For wiring, see «RS-485 wiring checks».",
+            "CAN — the controller handles the electrical layer plus framing, arbitration and error handling. When several nodes send at once, the frame with the lower ID (higher priority) wins, and receivers overwrite the ACK bit to say they got it. Common in vehicles, mobile machines and motor drives (CANopen). For wiring, see «CAN wiring and termination checks».",
+          ],
+        },
+        { h: "How to choose" },
+        {
+          ul: [
+            "Several sensors on the same board, speed not critical → I2C (two wires). Fast data (flash, continuous ADC reads) → SPI.",
+            "Text or commands with one module, or a link to a PC → UART (a USB-serial adapter on the PC side).",
+            "Devices more than a few metres apart, one master polling in turn → RS-485 (+ Modbus RTU).",
+            "Several nodes that send on their own and need priority and error handling → CAN.",
+            "If UART, SPI or I2C must run over a long cable → first look at switching to a differential transceiver (RS-485, CAN). Buffer chips can extend I2C, but the capacitance limit still applies.",
+          ],
+        },
+        { h: "Common mix-ups" },
+        {
+          ul: [
+            "«UART» is not «RS-232». The frame is the same, but RS-232 uses ± voltages with inverted logic. Do not wire an MCU pin (3.3 V or 5 V) straight to a PC's RS-232 port; use a level converter.",
+            "When mixing 3.3 V and 5 V devices, check input thresholds. I2C reads 1 at 0.7 × VDD or above, so a 5 V device needs at least 3.5 V (UM10204 table 10).",
+            "SPI signal names vary (MOSI, SDI, DIN; MISO, SDO, DOUT; CS, SS, nCS). Check whether the datasheet names them from the master's or the device's side.",
+            "CAN and RS-485 are both differential with 120 Ω at both ends, but the transceivers differ and cannot be mixed.",
+          ],
+        },
+        { h: "In PortDock" },
+        {
+          ul: [
+            "«Logic Analyzer Capture Decoder» web tool: decode CSV or VCD captures as UART, SPI, I2C or CAN in the browser (no install, no upload).",
+            "Serial: exchange bytes with UART, RS-232 and RS-485 devices through a USB-serial adapter.",
+            "«CAN Bit Timing Calculator» and «UART Baud Rate Error Calculator» web tools help get the settings right.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA067C — Comparing Bus Solutions", url: "https://www.ti.com/lit/an/slla067c/slla067c.pdf", note: { ko: "표 1 전기 인터페이스(CAN·RS-232·RS-485 속도·거리), §2.3 CAN", en: "table 1 electrical interfaces (CAN, RS-232, RS-485 rate and distance), §2.3 CAN" } },
+      { title: "TI SLLA270 — Controller Area Network Physical Layer Requirements", url: "https://www.ti.com/lit/an/slla270/slla270.pdf", note: { ko: "표 1 길이 ↔ 속도, 30 노드·스텁 0.3 m", en: "table 1 length vs rate, 30 nodes, 0.3 m stubs" } },
+      { title: "NXP UM10204 I2C-bus specification and user manual Rev. 7.0", url: "https://www.nxp.com/docs/en/user-guide/UM10204.pdf", note: { ko: "모드별 속도, §3.1.12 예약 주소, 표 10 입력 문턱, 표 11 버스 용량", en: "rates per mode, §3.1.12 reserved addresses, table 10 input thresholds, table 11 bus capacitance" } },
+      { title: "Microchip AVR151: Setup and Use of the SPI — 1.4 SPI Timing", url: "https://onlinedocs.microchip.com/oxy/GUID-6F1B86DC-C230-43D1-A405-0CC2E7EDF7EE-en-US-2/GUID-EAC2D943-F395-4D47-98C8-4EEBC798BFA2.html", note: { ko: "표 1-3 SPI 모드 0~3", en: "table 1-3 SPI modes 0–3" } },
+      { title: "TI SLLA070D — RS-422 and RS-485 Standards Overview and System Configurations", url: "https://www.ti.com/lit/an/slla070d/slla070d.pdf", note: { ko: "§2.2 RS-485 — 버스에 32 단위 부하까지", en: "§2.2 RS-485 — up to 32 unit loads on the bus" } },
+    ],
+  },
+  // 근거: NXP UM10204 Rev. 7 — §3.1.1(풀업), §3.1.10(7비트 주소 + R/W), §3.1.12(예약 주소), §3.1.16(버스 해제: SDA 걸림 → SCL 9 펄스, 안 되면 하드웨어 리셋·전원),
+  // 표 10(VIL 0.3 VDD, VIH 0.7 VDD, VOL 0.4 V @ 3 mA, IOL 3 mA·Fm+ 20 mA), 표 11(tr 1000·300·120 ns, Cb 400·550 pF), §7.1 식 (1)·(2), §7.2·7.5.
+  // 예시 값: (3.3 − 0.4) V ÷ 3 mA = 967 Ω, 300 ns ÷ (0.8473 × 100 pF) = 3.54 kΩ, 1000 ns ÷ (0.8473 × 100 pF) = 11.8 kΩ — 식대로 계산.
+  {
+    slug: "i2c-troubleshooting",
+    date: "2026-11-01",
+    tools: [],
+    related: ["uart-spi-i2c-can-rs485", "can-wiring-termination-check", "cable-shield-grounding", "field-noise-communication-errors"],
+    webTools: ["tools/logic-capture/", "tools/parallel-resistor/", "tools/multimeter-check/", "tools/pinouts/", "tools/troubleshoot/"],
+    title: { ko: "I2C 가 안 될 때 점검 순서 — 풀업·주소·전압 레벨·버스 걸림(SDA low) 풀기·선 길이", en: "I2C troubleshooting, in order — pull-ups, address, voltage levels, clearing a stuck SDA, wire length" },
+    seoTitle: { ko: "I2C 안 될 때 — 풀업·주소·SDA 걸림·선 길이 점검 — PortDock", en: "I2C Not Working: Pull-ups, Address, Stuck SDA, Length — PortDock" },
+    desc: {
+      ko: "I2C 장치가 NACK 만 하거나 버스가 멈출 때: 풀업 값 계산(UM10204 식), 7비트·8비트 주소, 3.3 V·5 V 문턱, SDA 가 0 에 걸리면 SCL 9 펄스, 버스 용량 400 pF.",
+      en: "I2C device only NACKs or the bus hangs? Pull-up sizing (UM10204), 7-bit vs 8-bit addresses, 3.3 V vs 5 V levels, nine SCL pulses for a stuck SDA, 400 pF.",
+    },
+    body: {
+      ko: [
+        { p: "I2C 는 선 두 개로 간단해 보이지만, 열린 드레인과 풀업으로 «1» 을 만들고 주소로 장치를 고르기 때문에 안 될 때 원인이 여러 곳에 있습니다. 아래 순서는 손이 덜 가는 것부터입니다. 수치는 NXP 의 I2C 규격서 UM10204 Rev. 7 을 따릅니다." },
+        {
+          table: {
+            plain: true,
+            head: ["증상", "원인 후보", "먼저 볼 것"],
+            rows: [
+              ["모든 장치가 NACK(주소 뒤 ACK 없음)", "풀업 없음, 주소 표기 혼동, 전원·GND 빠짐", "1·2단계"],
+              ["한 장치만 NACK", "주소 핀(A0·A1) 배선, 같은 주소 둘, 전압 레벨", "2·3단계"],
+              ["잘 되다가 멈춤, SDA 가 계속 0", "마스터가 읽는 도중 리셋되어 장치가 0 을 쥐고 있음", "4단계"],
+              ["선을 늘리니 가끔 깨짐", "버스 용량이 커져 올라가는 가장자리가 느림, 잡음", "1·5단계"],
+            ],
+          },
+        },
+        { h: "1. 풀업 저항" },
+        { p: "SCL·SDA 는 장치가 0 으로 끌어내리기만 하고 1 은 풀업이 만듭니다(UM10204 §3.1.1). 풀업이 없으면 선이 1 로 올라가지 않아 아무 장치도 답하지 않습니다. 전원을 끄고 SDA–VDD, SCL–VDD 저항을 재면 대략 풀업 값이 보입니다. 모듈마다 풀업이 달려 있으면 병렬로 합쳐져 너무 작아질 수 있으니 «병렬 저항 계산기» 로 합성 값을 봅니다." },
+        { p: "값은 두 식 사이에서 고릅니다(UM10204 §7.1). 너무 작으면 장치가 0 으로 끌어내리지 못하고, 너무 크면 선의 용량 때문에 1 로 올라가는 시간이 규격보다 길어집니다." },
+        { code: "Rp(최소) = (VDD − VOL(최대)) ÷ IOL      VOL = 0.4 V, IOL = 3 mA (Standard·Fast) / 20 mA (Fast-mode Plus)\nRp(최대) = tr ÷ (0.8473 × Cb)              tr = 1000 ns (100 kHz) / 300 ns (400 kHz) / 120 ns (1 MHz)" },
+        { p: "예: 3.3 V, 400 kHz, 버스 용량 100 pF 이면 Rp(최소) = (3.3 − 0.4) ÷ 3 mA ≈ 967 Ω, Rp(최대) = 300 ns ÷ (0.8473 × 100 pF) ≈ 3.54 kΩ 이라 그 사이 값을 씁니다. 같은 용량에서 100 kHz 면 최대가 약 11.8 kΩ 으로 넓어집니다. Cb 는 선·커넥터·핀 용량의 합이라 정확히 모르면 작은 쪽(빠른 쪽) 값으로 시작하고 파형으로 확인합니다." },
+        { h: "2. 주소" },
+        {
+          ul: [
+            "I2C 주소는 7비트이고, 첫 바이트는 «주소 7비트 + R/W 1비트» 입니다(§3.1.10). 데이터시트가 8비트 값(쓰기 0x90·읽기 0x91)으로 적었으면 7비트 주소는 0x48 입니다. 라이브러리가 어느 쪽을 받는지 확인합니다.",
+            "주소 핀(A0·A1·ADDR)을 띄워 두면 값이 정해지지 않습니다. 데이터시트대로 GND·VDD 에 잇습니다.",
+            "0000 xxx 와 1111 xxx 두 묶음(16개)은 예약 주소입니다(§3.1.12). 1111 0xx 로 시작하면 10비트 주소입니다.",
+            "같은 주소 장치가 둘이면 둘 다 답해 데이터가 섞입니다. 하나씩 빼 보며 찾습니다.",
+          ],
+        },
+        { h: "3. 전압 레벨" },
+        { p: "입력은 0.3 × VDD 아래를 0, 0.7 × VDD 위를 1 로 읽습니다(표 10). 3.3 V 로 풀업한 버스에 5 V 장치를 붙이면 1 의 문턱이 3.5 V 라 3.3 V 를 1 로 못 읽을 수 있습니다. 반대로 5 V 로 풀업하면 3.3 V 장치 입력의 최대 전압을 넘을 수 있습니다. 전원 전압이 다른 장치는 I2C 용 양방향 레벨 변환기로 나눕니다. 일부 옛 장치는 1.5 V·3.0 V 고정 문턱이라 데이터시트를 봅니다." },
+        { h: "4. 버스 걸림(SDA 가 0 에서 안 올라옴) 풀기" },
+        { p: "마스터가 읽기 도중 리셋되면, 장치는 보내던 비트가 0 인 채로 다음 클럭을 기다리며 SDA 를 계속 끌어내립니다. 이때 마스터는 시작 조건을 만들 수 없어 버스가 멈춘 것처럼 보입니다." },
+        {
+          ul: [
+            "SDA 가 0 에 걸렸으면 마스터가 SCL 을 9번 펄스합니다. 장치는 그 안에 SDA 를 놓아야 합니다(UM10204 §3.1.16). 놓으면 정지 조건을 보내고 다시 시작합니다.",
+            "MCU 의 I2C 주변 장치가 버스가 바쁘다며 펄스를 내지 않으면, 핀을 잠시 GPIO 로 바꿔 직접 펄스를 냅니다.",
+            "9 펄스로 안 풀리거나 SCL 이 0 에 걸렸으면 장치의 하드웨어 리셋 핀을 쓰거나 장치 전원을 껐다 켭니다(§3.1.16).",
+            "펌웨어가 켜질 때마다 이 순서를 먼저 하게 해 두면 현장에서 «재부팅해야 풀리는» 증상이 줄어듭니다.",
+          ],
+        },
+        { h: "5. 선 길이·용량·잡음" },
+        {
+          ul: [
+            "버스 용량 한도는 100·400 kHz 에서 400 pF, 1 MHz(Fast-mode Plus)에서 550 pF 입니다(표 11). 길이가 아니라 용량이 한도라, 쓰는 케이블의 m 당 용량(케이블 데이터시트)으로 따집니다.",
+            "용량을 넘으면 속도를 낮추거나, 구동 전류가 큰(Fast-mode Plus) 장치·버스 버퍼로 나누거나, 풀업을 바꿔 다는 방법이 있습니다(§7.2).",
+            "리본 케이블이 10 cm 를 넘으면 SDA·VDD·VSS·SCL 순서로 배선해 두 신호 사이에 전원선을 둡니다. 꼬임선이면 신호마다 VSS 와 꼬습니다(§7.5).",
+            "장비 밖으로 수 m 끌고 나가야 한다면 I2C 대신 RS-485·CAN 같은 차동 방식이나 I2C 용 차동 버퍼 칩을 봅니다.",
+          ],
+        },
+        { h: "6. 로직 분석기로 확인" },
+        {
+          ul: [
+            "SCL·SDA 를 뜨고 «로직 분석기 캡처 해석기» 에서 I2C 로 풀면 시작·반복 시작·정지, 주소·R/W·ACK/NACK, 데이터가 표로 나옵니다.",
+            "주소 바이트 뒤 NACK → 주소·전원·풀업. 데이터 중간 NACK → 장치가 그 레지스터·길이를 받지 않음(데이터시트의 쓰기 순서).",
+            "샘플 속도는 SCL 의 여러 배로 잡습니다. SCL 과 SDA 가 같은 샘플에서 바뀌면 시작·정지를 놓칠 수 있습니다.",
+            "가장자리가 둥글게 오래 올라가는지는 로직 분석기로는 안 보입니다. 오실로스코프로 올라가는 시간을 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "I2C looks simple with two wires, but because «1» comes from open-drain outputs and pull-ups, and devices are picked by address, a failure can come from several places. The steps below go from the least effort up. Figures follow NXP's I2C specification UM10204 Rev. 7." },
+        {
+          table: {
+            plain: true,
+            head: ["Symptom", "Likely causes", "Check first"],
+            rows: [
+              ["Every device NACKs (no ACK after the address)", "No pull-ups, address notation mix-up, missing power or GND", "Steps 1–2"],
+              ["One device NACKs", "Address pin (A0, A1) wiring, two devices at one address, voltage levels", "Steps 2–3"],
+              ["Works, then hangs with SDA stuck at 0", "The master reset mid-read and a device still holds a 0", "Step 4"],
+              ["Occasional errors after lengthening the wires", "More bus capacitance slows the rising edge; noise", "Steps 1, 5"],
+            ],
+          },
+        },
+        { h: "1. Pull-up resistors" },
+        { p: "Devices only pull SCL and SDA down; the pull-ups make the 1 (UM10204 §3.1.1). Without them the lines never rise and no device answers. With power off, measuring SDA–VDD and SCL–VDD roughly shows the pull-up value. If every module carries its own pull-ups they add up in parallel and can get too small — check the combined value with the «Parallel Resistor Calculator»." },
+        { p: "Pick a value between two limits (UM10204 §7.1). Too small and devices cannot pull the line low; too large and the line's capacitance makes the rise slower than the specification allows." },
+        { code: "Rp(min) = (VDD − VOL(max)) ÷ IOL      VOL = 0.4 V, IOL = 3 mA (Standard, Fast) / 20 mA (Fast-mode Plus)\nRp(max) = tr ÷ (0.8473 × Cb)           tr = 1000 ns (100 kHz) / 300 ns (400 kHz) / 120 ns (1 MHz)" },
+        { p: "Example: at 3.3 V, 400 kHz and 100 pF of bus capacitance, Rp(min) = (3.3 − 0.4) ÷ 3 mA ≈ 967 Ω and Rp(max) = 300 ns ÷ (0.8473 × 100 pF) ≈ 3.54 kΩ, so use a value in between. At 100 kHz the maximum widens to about 11.8 kΩ. Cb is the sum of wire, connector and pin capacitance; if unsure, start toward the smaller (faster) value and check the waveform." },
+        { h: "2. Address" },
+        {
+          ul: [
+            "I2C addresses are 7 bits, and the first byte is «7-bit address + R/W bit» (§3.1.10). If a datasheet gives 8-bit values (write 0x90, read 0x91), the 7-bit address is 0x48. Check which form your library expects.",
+            "A floating address pin (A0, A1, ADDR) has no defined value. Tie it to GND or VDD as the datasheet says.",
+            "The two groups 0000 xxx and 1111 xxx (16 addresses) are reserved (§3.1.12). A first byte starting 1111 0xx is 10-bit addressing.",
+            "Two devices at the same address both answer and the data collides. Remove them one at a time to find it.",
+          ],
+        },
+        { h: "3. Voltage levels" },
+        { p: "Inputs read below 0.3 × VDD as 0 and above 0.7 × VDD as 1 (table 10). A 5 V device on a bus pulled up to 3.3 V needs 3.5 V for a 1, so it may not see 3.3 V as 1. Pull up to 5 V instead and a 3.3 V device's input may be over its maximum. Separate devices with different supplies with a bidirectional I2C level shifter. Some legacy devices have fixed 1.5 V / 3.0 V thresholds; check the datasheet." },
+        { h: "4. Clearing a stuck bus (SDA held at 0)" },
+        { p: "If the master resets while reading, the device keeps holding SDA low, waiting for the next clock while sending a 0 bit. The master then cannot create a start condition and the bus looks hung." },
+        {
+          ul: [
+            "If SDA is stuck low, the master sends nine SCL pulses; the device should release SDA within them (UM10204 §3.1.16). Then send a stop and start again.",
+            "If the MCU's I2C peripheral refuses to clock because the bus is busy, switch the pins to GPIO briefly and toggle SCL by hand.",
+            "If nine pulses do not help, or SCL is the one stuck low, use the device's hardware reset or cycle its power (§3.1.16).",
+            "Doing this sequence at every firmware start-up removes many «only a reboot fixes it» field faults.",
+          ],
+        },
+        { h: "5. Wire length, capacitance, noise" },
+        {
+          ul: [
+            "The bus capacitance limit is 400 pF at 100 and 400 kHz and 550 pF at 1 MHz (Fast-mode Plus) (table 11). The limit is capacitance, not length, so work it out from the cable's capacitance per metre (cable datasheet).",
+            "Over the limit: lower the clock, split the bus with higher-drive (Fast-mode Plus) parts or bus buffers, or change the pull-ups (§7.2).",
+            "For ribbon cable over 10 cm, order the wires SDA, VDD, VSS, SCL so a supply line sits between the signals. With twisted pairs, twist each signal with VSS (§7.5).",
+            "If the bus must leave the box for several metres, look at a differential link (RS-485, CAN) or differential I2C buffer chips instead.",
+          ],
+        },
+        { h: "6. Checking with a logic analyzer" },
+        {
+          ul: [
+            "Capture SCL and SDA and decode them as I2C in the «Logic Analyzer Capture Decoder»: start, repeated start, stop, address, R/W, ACK/NACK and data appear in a table.",
+            "NACK right after the address → address, power, pull-ups. NACK in the middle of data → the device does not accept that register or length (see the datasheet's write sequence).",
+            "Sample several times faster than SCL. If SCL and SDA change in the same sample, a start or stop can be missed.",
+            "A logic analyzer cannot show a slow, rounded rising edge. Use an oscilloscope to see the rise time.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "NXP UM10204 I2C-bus specification and user manual Rev. 7.0", url: "https://www.nxp.com/docs/en/user-guide/UM10204.pdf", note: { ko: "§3.1.1 풀업, §3.1.10 주소·R/W, §3.1.12 예약 주소, §3.1.16 버스 해제, 표 10·11, §7.1 풀업 식, §7.2 용량 넘을 때, §7.5 배선", en: "§3.1.1 pull-ups, §3.1.10 address and R/W, §3.1.12 reserved addresses, §3.1.16 bus clear, tables 10–11, §7.1 pull-up equations, §7.2 above the capacitance limit, §7.5 wiring" } },
+    ],
+  },
+  // 근거: TI SLLA270 §4(ISO 11898: 1 Mbit/s 40 m·30 노드·스텁 0.3 m, 표 1 길이 ↔ 속도, §4.2 공통 모드 −2~7 V, §4.4 한 점 접지, §4.5 120 Ω 양 끝·분할 종단, 노드 안에 종단 두지 않기),
+  // TI SLOA101B §4.4(오류 프레임 우성 6비트 → 6~12비트, 구분자 열성 8비트), §5(열성 약 2.5 V, 우성 CAN_H 약 3.5 V·CAN_L 약 1.5 V, 분할 종단 4.7 nF),
+  // Microchip MCP2515 DS20001801J §5(비트 시간 = SyncSeg + PropSeg + PS1 + PS2, 샘플 포인트), §6.6·6.7(오류 활성 < 128, 오류 수동 ≥ 128, TEC > 255 버스 오프, 열성 11비트 128번으로 복귀, 경고 96).
+  // 60 Ω·40 Ω 은 120 Ω 두 개·세 개 병렬 계산.
+  {
+    slug: "can-wiring-termination-check",
+    date: "2026-11-01",
+    tools: [],
+    related: ["uart-spi-i2c-can-rs485", "rs485-bias-termination", "cable-shield-grounding", "field-noise-communication-errors", "rs485-multimeter-check"],
+    webTools: ["tools/can-bit-timing/", "tools/logic-capture/", "tools/multimeter-check/", "tools/wiring/", "tools/pinouts/", "tools/troubleshoot/"],
+    title: { ko: "CAN 배선·종단 점검 — 양 끝 120 Ω(전원 끄고 약 60 Ω), 공통 접지, 비트 타이밍·샘플 포인트, 오류 프레임·버스 오프", en: "CAN wiring and termination checks — 120 Ω ends (60 Ω power-off), ground, bit timing, error frames, bus-off" },
+    seoTitle: { ko: "CAN 종단 60 Ω 점검·접지·샘플 포인트·버스 오프 — PortDock", en: "CAN Termination 60 Ω Check, Ground, Bus-Off — PortDock" },
+    desc: {
+      ko: "CAN 이 안 되거나 오류가 날 때: 전원 끄고 CAN_H–CAN_L 저항(약 60 Ω), 전압, 공통 접지·스텁·길이, 비트 속도·샘플 포인트, 오류 프레임과 버스 오프.",
+      en: "CAN failing or showing errors? CAN_H–CAN_L resistance with power off (about 60 Ω), voltages, ground, stubs, bit rate and sample point, error frames and bus-off.",
+    },
+    body: {
+      ko: [
+        { p: "CAN 은 컨트롤러가 오류를 스스로 찾아 알리기 때문에, 배선이 조금만 틀려도 «통신은 되는데 오류 카운터가 오름» 이나 «한 노드가 버스에서 빠짐(버스 오프)» 으로 나타납니다. 아래 순서로 멀티미터부터 보고, 그다음 설정과 오류를 봅니다. 수치는 TI 응용 노트 SLLA270·SLOA101B(ISO 11898 정리)와 Microchip MCP2515 데이터시트를 따릅니다." },
+        { h: "1. 종단 저항 — 전원 끄고 CAN_H–CAN_L" },
+        { p: "ISO 11898 은 선로 양 끝에 120 Ω 종단을 하나씩 둡니다(SLLA270 §4.5). 모든 노드 전원을 끄고 아무 커넥터에서나 CAN_H 와 CAN_L 사이 저항을 재면 두 종단이 병렬로 보입니다." },
+        {
+          table: {
+            plain: true,
+            head: ["잰 값", "뜻", "할 일"],
+            rows: [
+              ["약 60 Ω", "120 Ω 두 개(양 끝) — 맞음", "다음 단계로"],
+              ["약 120 Ω", "한쪽 끝만 있음, 또는 선 중간이 끊겨 한쪽만 보임", "다른 끝 종단·단선 확인"],
+              ["약 40 Ω", "120 Ω 세 개 — 중간 노드에도 종단이 켜짐", "끝이 아닌 노드의 종단 스위치·저항 끄기"],
+              ["수 kΩ 이상", "종단 없음 또는 CAN_H/CAN_L 끊김", "양 끝 종단·배선"],
+              ["0 Ω 가까이", "CAN_H–CAN_L 단락", "커넥터·눌린 선"],
+            ],
+          },
+        },
+        {
+          ul: [
+            "트랜시버 입력도 병렬로 걸려 있어 조금 낮게 나올 수 있습니다. 크게 다르면 위 표의 경우를 먼저 의심합니다.",
+            "종단을 노드 안에 두면 그 노드를 뺐을 때 종단도 사라집니다. ISO 11898 은 노드에 두지 말라고 합니다(SLLA270 §4).",
+            "분할 종단은 60 Ω 두 개를 직렬로 하고 가운데를 콘덴서(고속 CAN 에서 흔히 4.7 nF)로 접지에 잇습니다(SLOA101B §5). 이때도 CAN_H–CAN_L 은 한쪽 끝마다 120 Ω 입니다.",
+          ],
+        },
+        { h: "2. 전압 — 전원 켜고" },
+        {
+          ul: [
+            "버스가 쉴 때(열성) CAN_H·CAN_L 은 둘 다 약 2.5 V, 우성일 때 CAN_H 약 3.5 V·CAN_L 약 1.5 V 로 차이가 약 2 V 입니다(SLOA101B §5).",
+            "통신 중 멀티미터는 평균을 보여 2.5~3 V 사이처럼 보일 수 있습니다. 한쪽이 0 V 나 전원 전압에 붙어 있으면 단락·트랜시버 고장을 의심합니다.",
+            "CAN_H 와 CAN_L 이 바뀌어 꽂힌 노드는 우성·열성을 거꾸로 봐서 받지 못하고, 그 노드가 내는 오류 플래그가 다른 노드의 통신도 끊을 수 있습니다. 커넥터 핀 배치를 노드마다 확인합니다.",
+          ],
+        },
+        { h: "3. 공통 접지·실드" },
+        {
+          ul: [
+            "노드 사이 접지 전위 차가 트랜시버의 공통 모드 범위를 넘으면 안 됩니다. ISO 11898 이 허용하는 범위는 −2 ~ 7 V 입니다(SLLA270 §4.2). 많은 상위 규격이 신호 쌍과 함께 전원·접지선을 같이 끌고 가라고 합니다.",
+            "실드는 한 점에서만 접지해 접지 루프 전류를 막습니다(SLLA270 §4.3·4.4). 자세한 것은 «통신선 차폐·접지» 글을 봅니다.",
+          ],
+        },
+        { h: "4. 길이·스텁·노드 수" },
+        {
+          ul: [
+            "ISO 11898 은 1 Mbit/s 에서 버스 40 m, 노드 30 개, 종단 없는 가지(스텁) 0.3 m 를 기준으로 합니다(SLLA270 §4).",
+            "길면 속도를 낮춥니다 — 100 m 500 kbit/s, 200 m 250 kbit/s, 500 m 100 kbit/s, 1000 m 50 kbit/s(SLLA270 표 1).",
+            "버스는 한 줄(데이지 체인)로 잇고, 별 모양으로 여러 갈래를 내지 않습니다. 긴 가지는 반사를 만듭니다.",
+          ],
+        },
+        { h: "5. 비트 속도·샘플 포인트" },
+        {
+          ul: [
+            "모든 노드의 비트 속도가 같아야 합니다. 한 노드만 다르면 그 노드가 보낼 때마다, 또는 받을 때마다 오류 프레임이 납니다.",
+            "비트 하나는 SyncSeg + PropSeg + PS1 + PS2 의 TQ 로 나뉘고, 샘플 포인트는 PS1 끝입니다(MCP2515 §5). 같은 비트 속도라도 노드마다 샘플 포인트가 크게 다르면 긴 버스에서 한쪽만 오류가 날 수 있습니다.",
+            "«CAN 비트 타이밍 계산기» 로 클럭·비트 속도·샘플 포인트에서 레지스터 값과 클럭 허용 오차를 구합니다.",
+          ],
+        },
+        { h: "6. 오류 프레임·버스 오프 읽기" },
+        {
+          ul: [
+            "오류를 찾은 노드는 우성 6비트(오류 플래그)를 보내 스터핑 규칙을 일부러 깹니다. 다른 노드도 따라 보내 6~12비트가 되고, 열성 8비트 구분자 뒤 프레임이 다시 보내집니다(SLOA101B §4.4).",
+            "노드마다 송신(TEC)·수신(REC) 오류 카운터가 있습니다. 둘 다 128 미만이면 오류 활성, 하나라도 128 이상이면 오류 수동(오류 플래그를 열성으로 보냄), TEC 가 255 를 넘으면 버스 오프로 버스에서 빠집니다. 버스 오프에서는 열성 11비트가 128번 나와야 돌아옵니다(MCP2515 §6.6·6.7). 카운터 96 이상은 경고입니다.",
+            "버스에 노드가 하나뿐이면 아무도 ACK 를 주지 않아 같은 프레임을 계속 다시 보내며 오류가 쌓입니다. 시험할 때는 받는 노드(또는 수신 모드 장치)를 하나 더 붙입니다.",
+            "오류 카운터가 천천히 오르면 잡음·접지·종단, 특정 노드가 보낼 때만 오르면 그 노드의 비트 속도·배선을 의심합니다.",
+          ],
+        },
+        { h: "7. 로직 분석기로 RX 보기" },
+        {
+          ul: [
+            "트랜시버와 컨트롤러 사이 RX 선을 뜨고 «로직 분석기 캡처 해석기» 에서 CAN 으로 풀면 ID·DLC·데이터·CRC 확인, ACK 없음, 스터핑 오류, 우성 6비트 이상(오류 프레임 후보)이 표로 나옵니다.",
+            "비트 속도를 모르면 «자동 추정» 으로 가장 짧은 펄스에서 구해 봅니다(스터핑 때문에 1비트 펄스가 자주 나옵니다).",
+            "CAN_H·CAN_L 의 전압 모양(반사·링잉)은 로직 분석기로 안 보입니다. 오실로스코프의 차동 측정으로 봅니다.",
+          ],
+        },
+      ],
+      en: [
+        { p: "CAN controllers detect and signal errors on their own, so a small wiring fault shows up as «it works but the error counters climb» or «one node drops off the bus (bus-off)». Go through the multimeter checks first, then the settings and errors. Figures follow TI application notes SLLA270 and SLOA101B (summaries of ISO 11898) and the Microchip MCP2515 datasheet." },
+        { h: "1. Termination — power off, CAN_H to CAN_L" },
+        { p: "ISO 11898 puts one 120 Ω terminator at each end of the line (SLLA270 §4.5). With every node powered off, measure between CAN_H and CAN_L at any connector and you see both terminators in parallel." },
+        {
+          table: {
+            plain: true,
+            head: ["Reading", "Meaning", "Action"],
+            rows: [
+              ["About 60 Ω", "Two 120 Ω (both ends) — correct", "Go on"],
+              ["About 120 Ω", "Only one end, or a break so only one side is seen", "Check the other end's terminator and for breaks"],
+              ["About 40 Ω", "Three 120 Ω — a middle node also terminates", "Turn off the terminator switch or resistor on non-end nodes"],
+              ["Several kΩ or more", "No termination, or CAN_H/CAN_L broken", "Both ends' terminators and wiring"],
+              ["Near 0 Ω", "CAN_H shorted to CAN_L", "Connectors, crushed cable"],
+            ],
+          },
+        },
+        {
+          ul: [
+            "Transceiver inputs are also in parallel, so the reading can be slightly lower. If it is far off, suspect the cases in the table first.",
+            "A terminator inside a node disappears when that node is removed. ISO 11898 says not to put it on a node (SLLA270 §4).",
+            "Split termination uses two 60 Ω resistors in series with the midpoint tied to ground through a capacitor (typically 4.7 nF for high-speed CAN) (SLOA101B §5). Each end is still 120 Ω between CAN_H and CAN_L.",
+          ],
+        },
+        { h: "2. Voltages — power on" },
+        {
+          ul: [
+            "At rest (recessive) CAN_H and CAN_L both sit near 2.5 V; when dominant, CAN_H is about 3.5 V and CAN_L about 1.5 V, a difference of about 2 V (SLOA101B §5).",
+            "During traffic a multimeter shows an average, somewhere between 2.5 and 3 V. A line stuck at 0 V or at the supply suggests a short or a failed transceiver.",
+            "A node with CAN_H and CAN_L swapped sees dominant and recessive the wrong way round and cannot receive, and the error flags it sends can disturb the other nodes too. Check the connector pinout at every node.",
+          ],
+        },
+        { h: "3. Common ground and shield" },
+        {
+          ul: [
+            "The ground difference between nodes must stay inside the transceivers' common-mode range; ISO 11898 allows −2 to 7 V (SLLA270 §4.2). Many higher-layer standards carry power and ground wires with the signal pair.",
+            "Ground the shield at one point to avoid ground loop currents (SLLA270 §4.3–4.4). See «Communication cable shields and grounding» for more.",
+          ],
+        },
+        { h: "4. Length, stubs, node count" },
+        {
+          ul: [
+            "ISO 11898's reference is a 40 m bus, 30 nodes and 0.3 m unterminated stubs at 1 Mbit/s (SLLA270 §4).",
+            "Longer buses need lower rates — 100 m 500 kbit/s, 200 m 250 kbit/s, 500 m 100 kbit/s, 1000 m 50 kbit/s (SLLA270 table 1).",
+            "Run the bus as one line (daisy chain), not as a star with several branches. Long branches cause reflections.",
+          ],
+        },
+        { h: "5. Bit rate and sample point" },
+        {
+          ul: [
+            "Every node must use the same bit rate. If one differs, error frames appear whenever it sends or receives.",
+            "A bit is divided into SyncSeg + PropSeg + PS1 + PS2 time quanta, and the sample point is the end of PS1 (MCP2515 §5). Even at the same bit rate, nodes with very different sample points can fail on one side of a long bus.",
+            "Use the «CAN Bit Timing Calculator» to get register values and oscillator tolerance from the clock, bit rate and sample point.",
+          ],
+        },
+        { h: "6. Reading error frames and bus-off" },
+        {
+          ul: [
+            "A node that detects an error sends six dominant bits (the error flag), deliberately breaking the stuffing rule. Other nodes follow, making 6 to 12 bits, and after an 8-bit recessive delimiter the frame is sent again (SLOA101B §4.4).",
+            "Each node has transmit (TEC) and receive (REC) error counters. Both below 128 is error-active; either at 128 or more is error-passive (error flags are sent recessive); TEC above 255 is bus-off and the node leaves the bus. From bus-off it returns after 128 occurrences of 11 recessive bits (MCP2515 §6.6–6.7). A counter at 96 or more is a warning.",
+            "A node alone on the bus gets no ACK from anyone, so it keeps resending the same frame and errors pile up. When testing, attach a second receiving node (or a device in listen mode).",
+            "Counters that creep up slowly point to noise, ground or termination; counters that rise only when one node sends point to that node's bit rate or wiring.",
+          ],
+        },
+        { h: "7. Looking at RX with a logic analyzer" },
+        {
+          ul: [
+            "Capture the RX line between the transceiver and the controller and decode it as CAN in the «Logic Analyzer Capture Decoder»: ID, DLC, data, CRC check, missing ACK, stuff errors and runs of six or more dominant bits (possible error frames) appear in a table.",
+            "If you do not know the bit rate, try «Detect», which works from the shortest pulses (stuffing makes one-bit pulses common).",
+            "A logic analyzer cannot show the CAN_H/CAN_L voltage shape (reflections, ringing). Use an oscilloscope with a differential measurement.",
+          ],
+        },
+      ],
+    },
+    refs: [
+      { title: "TI SLLA270 — Controller Area Network Physical Layer Requirements", url: "https://www.ti.com/lit/an/slla270/slla270.pdf", note: { ko: "§4 ISO 11898 기준(40 m·30 노드·스텁 0.3 m), 표 1 길이 ↔ 속도, §4.2 공통 모드, §4.3·4.4 실드·접지, §4.5 종단", en: "§4 ISO 11898 figures (40 m, 30 nodes, 0.3 m stubs), table 1 length vs rate, §4.2 common mode, §4.3–4.4 shield and ground, §4.5 termination" } },
+      { title: "TI SLOA101B — Introduction to the Controller Area Network (CAN)", url: "https://www.ti.com/lit/an/sloa101b/sloa101b.pdf", note: { ko: "§4.4 오류 검출·오류 프레임, §5 버스 전압·분할 종단", en: "§4.4 error checking and error frames, §5 bus voltages and split termination" } },
+      { title: "Microchip MCP2515 datasheet DS20001801J", url: "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf", note: { ko: "§5 비트 타이밍·샘플 포인트, §6.6·6.7 오류 상태·카운터·버스 오프 복귀", en: "§5 bit timing and sample point, §6.6–6.7 error states, counters, bus-off recovery" } },
+      { title: "NXP (Freescale) AN1798 — CAN Bit Timing Requirements", url: "https://cache.nxp.com/docs/en/application-note/AN1798.pdf", note: { ko: "비트 구간·클럭 허용 오차", en: "bit segments and oscillator tolerance" } },
+    ],
+  },
 ];
