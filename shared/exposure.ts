@@ -70,6 +70,8 @@ export function exposeLines(ports: number[], lang: "ko" | "en"): string[] {
 export interface PcListener {
   port: number;
   v6: boolean;
+  /** 묶인 주소 — 0.0.0.0 · :: (모든 주소)면 비어 있음. 루프백이 아닌 랜 주소 하나에 묶이면 그 주소(0.10.0 백엔드) */
+  addr?: string | null;
   pid: number;
   process?: string | null;
 }
@@ -168,29 +170,41 @@ export function exposureItems(x: PcExposure | undefined | null): PcItem[] {
     look(
       fw,
       fwOff.some((f) => f.current)
-        ? t("지금 쓰는 네트워크 프로필의 방화벽이 꺼져 있습니다 — 아래 «모든 주소에서 듣는 포트» 가 같은 망에 그대로 열립니다.", "The firewall is off for the network profile in use — the «ports listening on all addresses» below are open to the network as is.")
+        ? t("지금 쓰는 네트워크 프로필의 방화벽이 꺼져 있습니다 — 아래 «같은 망에서 닿는 TCP 포트» 가 같은 망에 그대로 열립니다.", "The firewall is off for the network profile in use — the «TCP ports reachable from the network» below are open to the network as is.")
         : t("쓰지 않는 프로필의 방화벽이 꺼져 있습니다 — 그 종류의 네트워크에 붙으면 막지 않습니다.", "The firewall is off for a profile not in use — it will not filter when the PC joins that kind of network."),
     );
 
-  // 0.0.0.0 · :: 에서 듣는 포트
-  const ports = [...new Map(x.listeners.map((l) => [l.port, l])).values()].sort((a, b) => a.port - b.port);
+  // 0.0.0.0 · :: 또는 이 PC 의 랜 주소(루프백 아님)에서 듣는 포트 — 같은 망에서 닿는다
+  const ports = [...new Map(x.listeners.map((l) => [`${l.port}|${l.addr ?? ""}`, l])).values()].sort((a, b) => a.port - b.port || (a.addr ?? "").localeCompare(b.addr ?? ""));
   const name = (l: PcListener) => (l.pid === 4 ? "System" : (l.process ?? `PID ${l.pid}`));
-  const shown = ports.slice(0, LISTEN_SHOW).map((l) => `${l.port} (${name(l)})`);
+  const at = (l: PcListener) => (l.addr ? ` @${l.addr}` : "");
+  const shown = ports.slice(0, LISTEN_SHOW).map((l) => `${l.port}${at(l)} (${name(l)})`);
   const more = ports.length - shown.length;
   const lis = add({
     id: "listeners",
-    label: t("모든 주소(0.0.0.0)에서 듣는 TCP 포트", "TCP ports listening on all addresses (0.0.0.0)"),
+    label: t("같은 망에서 닿는 TCP 포트(모든 주소 0.0.0.0·랜 주소)", "TCP ports reachable from the network (all addresses 0.0.0.0 or a LAN address)"),
     value: !x.listenersRead ? UNREAD : ports.length ? t(`${ports.length}개 — ${shown.join(", ")}${more > 0 ? ` 외 ${more}개` : ""}`, `${ports.length} — ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}`) : t("없음", "none"),
     level: x.listenersRead ? "ok" : "unread",
     where: t("Windows 보안 → 방화벽 및 네트워크 보호 → 고급 설정 → 인바운드 규칙 · 명령 프롬프트 netstat -ano", "Windows Security → Firewall & network protection → Advanced settings → Inbound rules · Command Prompt netstat -ano"),
   });
   const watched = ports.filter((l) => pcWatchPort(l.port));
-  if (watched.length)
+  const wAll = watched.filter((l) => !l.addr);
+  const wLan = watched.filter((l) => l.addr);
+  const tail = t(" 이 PC 가 서버(시뮬레이터·게이트웨이) 역할이 맞는지, 방화벽이 허용 범위를 좁혔는지 확인합니다.", " Check that this PC is meant to be a server (simulator, gateway) and that the firewall limits who can reach it.");
+  if (wAll.length)
     look(
       lis,
       t(
-        `이 PC 가 ${watched.map((l) => `${l.port} ${pcWatchPort(l.port)!.name}(${name(l)})`).join(", ")} 를 모든 주소에 열고 있습니다 — 같은 망의 누구나 연결할 수 있습니다. 이 PC 가 서버(시뮬레이터·게이트웨이) 역할이 맞는지, 방화벽이 허용 범위를 좁혔는지 확인합니다.`,
-        `This PC listens on ${watched.map((l) => `${l.port} ${pcWatchPort(l.port)!.name} (${name(l)})`).join(", ")} on all addresses — anyone on the network can connect. Check that this PC is meant to be a server (simulator, gateway) and that the firewall limits who can reach it.`,
+        `이 PC 가 ${wAll.map((l) => `${l.port} ${pcWatchPort(l.port)!.name}(${name(l)})`).join(", ")} 를 모든 주소에 열고 있습니다 — 같은 망의 누구나 연결할 수 있습니다.${tail.ko}`,
+        `This PC listens on ${wAll.map((l) => `${l.port} ${pcWatchPort(l.port)!.name} (${name(l)})`).join(", ")} on all addresses — anyone on the network can connect.${tail.en}`,
+      ),
+    );
+  if (wLan.length)
+    look(
+      lis,
+      t(
+        `${wLan.map((l) => `${l.port} ${pcWatchPort(l.port)!.name}(${name(l)})`).join(", ")} 는 이 PC 의 랜 주소(${[...new Set(wLan.map((l) => l.addr))].join(", ")})에 묶여 같은 망에서 닿습니다 — 127.0.0.1 이 아니므로 같은 망의 누구나 연결할 수 있습니다.${tail.ko}`,
+        `${wLan.map((l) => `${l.port} ${pcWatchPort(l.port)!.name} (${name(l)})`).join(", ")} ${wLan.length > 1 ? "are" : "is"} bound to this PC's LAN address (${[...new Set(wLan.map((l) => l.addr))].join(", ")}) and reachable from the network — it is not 127.0.0.1, so anyone on the network can connect.${tail.en}`,
       ),
     );
   if (x.listenersRead) {

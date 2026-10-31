@@ -51,7 +51,7 @@ struct App {
     conn: Arc<Registry<Conn>>,
     /// 연결마다 새로 만드는 일꾼
     engine: Arc<Mutex<Option<Engine>>>,
-    /// (0.11.0) 지금 시리얼 설정 — 통신 설정 찾기가 속도·패리티만 바꿔 쓰고, 끝나면 이 설정으로 되돌린다
+    /// (0.10.0) 지금 시리얼 설정 — 통신 설정 찾기가 속도·패리티만 바꿔 쓰고, 끝나면 이 설정으로 되돌린다
     serial: Arc<Mutex<Option<SerialConfig>>>,
 }
 
@@ -114,7 +114,7 @@ fn start_engine(app: &App, rx: std::sync::mpsc::Receiver<Vec<u8>>, wire: Wire, s
     let reg = app.conn.clone();
     let reg2 = app.conn.clone();
     let serial = app.serial.clone();
-    // 통신 설정 찾기(0.11.0) — 시리얼 세션의 속도·패리티를 잠깐 바꾼다(저장된 설정은 그대로 둔다)
+    // 통신 설정 찾기(0.10.0) — 시리얼 세션의 속도·패리티를 잠깐 바꾼다(저장된 설정은 그대로 둔다)
     let link = ChannelLink::new(move |b: &[u8]| reg.with(MAIN, |c| c.send(b)).map_err(|_| not_connected())?, rx).with_line(move |l: &LineSetting| {
         let base = lock(&serial).clone().ok_or_else(not_connected)?;
         let cfg = with_line(&base, l);
@@ -354,7 +354,7 @@ fn scan_addrs(app: State<App>, config: ScanAddrs) -> Result<(), String> {
     })?
 }
 
-/// (0.11.0) 통신 설정 찾기 — 시리얼에서만. 끝나면 지금 설정으로 되돌린다
+/// (0.10.0) 통신 설정 찾기 — 시리얼에서만. 끝나면 지금 설정으로 되돌린다
 #[tauri::command]
 fn scan_line(app: State<App>, config: ScanLine) -> Result<(), String> {
     let base = lock(&app.serial).clone().ok_or_else(|| tr!("통신 설정 찾기는 시리얼 연결에서만 됩니다", "Line-settings search works on a serial connection only").to_string())?;
@@ -560,7 +560,7 @@ mod tests {
         // TCP 설정을 JSON 으로 만들 수 있는지(칸이 늘어도)
         let cfg: Result<TcpConfig, _> = serde_json::from_value(serde_json::json!({ "mode": "client", "host": "h", "port": 502, "noDelay": true, "autoReconnect": true, "reconnectMs": 2000 }));
         assert!(cfg.is_ok());
-        // 통신 설정 찾기(0.11.0) — 속도·패리티·정지 비트만 바꾸고, 처음 설정이면 그대로
+        // 통신 설정 찾기(0.10.0) — 속도·패리티·정지 비트만 바꾸고, 처음 설정이면 그대로
         let base: SerialConfig = serde_json::from_str(r#"{"port":"COM3","baud":9600,"dataBits":7,"parity":"even","stopBits":1,"flow":"none"}"#).unwrap();
         let l = LineSetting { baud: 19200, parity: "none".into(), stop_bits: 2, data_bits: None };
         let c = with_line(&base, &l);

@@ -18,6 +18,8 @@ import {
   restoreRows,
   splitRange,
   verifyRows,
+  restoreUnitProblem,
+  previewReadAny,
   writePlan,
 } from "./backup.ts";
 
@@ -141,4 +143,33 @@ test("복원 — 고른 것만·막힌 줄 빼기·다시 읽기 범위·결과"
   );
   assert.deepEqual(v.map((x) => x.state), ["write-failed", "match", "differ"]);
   assert.deepEqual(verifyRows([{ row: plan[1].row, ok: true }], []).map((x) => x.state), ["unread"]);
+});
+
+test("복원 — 국번 0·RTU 예약 국번은 막고, 미리보기를 하나도 못 읽었으면 쓰지 않는다", () => {
+  assert.equal(restoreUnitProblem(0, "rtu"), "broadcast");
+  assert.equal(restoreUnitProblem(0, "tcp"), null, "TCP 의 0 은 미리보기에서 답이 있어야 쓴다(previewReadAny)");
+  assert.equal(restoreUnitProblem(1, "rtu"), null);
+  assert.equal(restoreUnitProblem(247, "rtu"), null);
+  assert.equal(restoreUnitProblem(248, "rtu"), "reserved");
+  assert.equal(restoreUnitProblem(255, "rtu"), "reserved");
+  assert.equal(restoreUnitProblem(255, "tcp"), null, "TCP 의 255 는 흔한 «국번 없음» 값");
+  // 브로드캐스트에는 답이 없으므로 미리보기 칸이 전부 비고 → 쓰기가 막힌다
+  // 파일에서 연 백업(TCP 국번 0)을 RTU 연결에서 열어도 같은 판정
+  const b = parseBackup(backupJson(makeBackup({ ...meta, unit: 0 }, [{ fc: 3, start: 0, qty: 1, values: [1] }])), "ko");
+  assert.equal(restoreUnitProblem(b.backup.unit, "rtu"), "broadcast");
+  assert.equal(previewReadAny(new Map([["3:0", null], ["3:1", null]])), false);
+  assert.equal(previewReadAny(new Map()), false);
+  assert.equal(previewReadAny(new Map([["3:0", null], ["3:1", [5]]])), true);
+});
+
+test("복원 — 멈춰서 보내지 않은 칸은 «쓰기 실패» 가 아니라 «멈춤»", () => {
+  const rows = restoreRows(makeBackup(meta, [{ fc: 3, start: 0, qty: 2, values: [1, 2] }]));
+  const v = verifyRows(
+    [
+      { row: rows[0], ok: true },
+      { row: rows[1], ok: "skipped" },
+    ],
+    [{ fc: 3, start: 0, qty: 2, values: [1, 0] }],
+  );
+  assert.deepEqual(v.map((x) => x.state), ["match", "skipped"]);
 });

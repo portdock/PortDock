@@ -153,12 +153,12 @@ export const help: HelpDoc = {
       id: "profile",
       body: [
         "실제 인버터·전력 미터·온도 조절기 없이 SCADA·HMI·직접 만든 프로그램을 시험할 때 씁니다. «장비 흉내…» 창에서 장비를 고를 때 아래 두 가지를 켜 두면(기본 켬) 지금 국번이 그 장비처럼 답합니다.",
-        "- «값 만들기·연결 규칙도 넣기»: 장비 종류에 맞춰 그럴듯한 값을 만듭니다. 전력 미터는 전압(상전압 220 V·선간 380 V)·전류·전력·역률·주파수가 잡음으로 조금씩 흔들리고, 전력량은 전력만큼 늘어납니다(내보낸 전력량은 0 그대로). 인버터는 운전 지령 칸에 정방향·역방향 비트(또는 0 이 아닌 값)를 쓰면 출력 주파수가 설정 주파수(시작 값 30 Hz)까지 초당 6 Hz 로 오르고, 0 을 쓰면 0 까지 내려갑니다. 출력 전류·전압·전력·속도는 출력 주파수에 비례하고(60 Hz 일 때 5 A·220 V·1.5 kW·1800 rpm), 전력량은 출력 전력을 누적합니다. 온도 조절기는 채널마다 PV 가 SV 로 초당 1 씩 다가갑니다.",
-        "- 장비 데이터에는 «운전 지령·주파수 설정·출력 주파수» 같은 역할이 적혀 있지 않아, 이름·단위·읽기/쓰기로 짐작합니다. 못 찾으면 알림에 그렇게 나오니 왼쪽 «장비 프로필» 의 «연결 규칙…» 에서 칸을 직접 고르세요.",
-        "- «읽기 전용·쓰기 전용 지키기, 맵에 없는 주소는 예외 02»: 마스터가 읽기 전용(R) 칸에 쓰거나 쓰기 전용(W) 칸을 읽으면 예외로 답하고 값은 바꾸지 않습니다(여러 칸 쓰기는 통째로 거절). 장비 데이터에는 이때 장비가 어떤 예외를 보내는지 적혀 있지 않아 02(기본)·03 중에서 고릅니다. 응답 범위 안이라도 장비 맵에 없는 주소(빈 번지)는 예외 02 — 끌 수 있습니다. 화면에서 값을 고치는 것은 막지 않습니다.",
-        "- 왼쪽 «장비 프로필» 칸: 지금 국번에 불러온 장비, 제한 켜기·끄기, 예외 코드, «연결 규칙…», «프로필 끄기»(칸 이름·형식·값은 그대로). 국번마다 따로이고 저장됩니다(«설정 내보내기» 에도 들어감).",
-        "- 표 칸 표시: ⇢ 연결 규칙의 결과 칸(마우스를 올리면 규칙), RO 읽기 전용·WO 쓰기 전용(제한을 켰을 때), ◷ 값 자동 변화. 목록 보기는 «자동 변화» 열에 함께 나옵니다.",
-        "- «연결 규칙…» 창 — 종류 셋: 따라가기(가감속) = 결과 칸이 «원본 × 배율» 로 초당 «빠르기»(결과 칸 원시 값) 만큼 다가갑니다. «운전 지령 칸» 을 고르면 그 칸이 운전일 때만 목표로, 아니면 0 으로 갑니다. «볼 비트» 는 10진수 비트 묶음(비트 1·2 = 6), 0 이면 «0 이 아님». 비례 = 원본 × 배율 + 더할 값. 누적 = 초마다 원본 × 배율을 더합니다(원본이 없으면 배율만큼 — 운전 시간 같은 칸).",
+        "- «값 만들기·칸 잇기 규칙도 넣기»: 장비 종류에 맞춰 그럴듯한 값을 만듭니다. 전력 미터는 전압(상전압 220 V·선간 380 V)·전류·전력·역률·주파수가 잡음으로 조금씩 흔들리고, 전력량은 전력만큼 늘어납니다(내보낸 전력량은 0 그대로). 인버터는 운전 지령 칸에 정방향·역방향 비트(또는 0 이 아닌 값)를 쓰면 출력 주파수가 설정 주파수(시작 값 30 Hz)까지 초당 6 Hz 로 오르고, 0 을 쓰면 0 까지 내려갑니다. 출력 전류·전압·전력·속도는 출력 주파수에 비례하고(60 Hz 일 때 5 A·220 V·1.5 kW·1800 rpm), 전력량은 출력 전력을 누적합니다. 온도 조절기는 채널마다 PV 가 SV 로 초당 1 씩 다가갑니다.",
+        "- 장비 데이터에는 «운전 지령·주파수 설정·출력 주파수» 같은 역할이 적혀 있지 않아, 이름·단위·읽기/쓰기로 짐작합니다. 못 찾으면 알림에 그렇게 나오니 왼쪽 «장비 프로필» 의 «칸 잇기 규칙…» 에서 칸을 직접 고르세요.",
+        "- «읽기 전용·쓰기 전용 지키기»: 마스터가 읽기 전용(R) 칸에 쓰거나 쓰기 전용(W) 칸을 읽으면 예외로 답하고 값은 바꾸지 않습니다(여러 칸 쓰기는 통째로 거절). 장비 데이터에는 이때 장비가 어떤 예외를 보내는지 적혀 있지 않아 02(기본)·03 중에서 고릅니다. 왼쪽 «장비 프로필» 의 «맵에 없는 주소는 예외 02» 는 기본 꺼짐입니다 — 응답 범위 안의 빈 번지를 0 으로 읽어 0.9 와 같게 답합니다. 켜면 실제 장비처럼 장비 맵에 없는 주소(빈 번지)에 예외 02 로 답합니다. 화면에서 값을 고치는 것은 막지 않습니다.",
+        "- 왼쪽 «장비 프로필» 칸: 지금 국번에 불러온 장비, 제한 켜기·끄기, 예외 코드, «칸 잇기 규칙…», «프로필 끄기»(칸 이름·형식·값은 그대로). 국번마다 따로이고 저장됩니다(«설정 내보내기» 에도 들어감).",
+        "- 표 칸 표시: ⇢ 칸 잇기 규칙의 결과 칸(마우스를 올리면 규칙), RO 읽기 전용·WO 쓰기 전용(제한을 켰을 때), ◷ 값 자동 변화. 목록 보기는 «자동 변화» 열에 함께 나옵니다.",
+        "- «칸 잇기 규칙…» 창 — 종류 셋: 따라가기(가감속) = 결과 칸이 «원본 × 배율» 로 초당 «빠르기»(결과 칸 원시 값) 만큼 다가갑니다. «운전 지령 칸» 을 고르면 그 칸이 운전일 때만 목표로, 아니면 0 으로 갑니다. «볼 비트» 는 10진수 비트 묶음(비트 1·2 = 6), 0 이면 «0 이 아님». 비례 = 원본 × 배율 + 더할 값. 누적 = 초마다 원본 × 배율을 더합니다(원본이 없으면 배율만큼 — 운전 시간 같은 칸).",
         "- 배율은 원시 값끼리 곱하는 수입니다. 0.01 Hz 칸 → 0.01 Hz 칸이면 1, 0.1 kW 를 0.1 kWh 로 누적하면 1/3600. 규칙은 백엔드가 0.1초마다(한 번에 최대 1초만큼) 돌려 창을 내려 두어도 움직이고, 마스터가 결과 칸에 쓴 값(예: 전력량 0 으로 지우기)부터 이어 갑니다.",
         "- 오류 주입과 함께 동작합니다 — 장애 주입이 걸린 요청은 장애가 먼저(예외 강제·무응답·지연), 그 밖의 요청에 제한이 걸립니다.",
         "- 이 값은 매뉴얼 표를 옮긴 것과 그럴듯한 가정입니다 — 실제 장비 동작(가감속 시간·제어 응답·상태 비트 등)과 다를 수 있습니다. 운전 상태 비트·알람은 흉내 내지 않습니다.",
@@ -195,6 +195,7 @@ export const help: HelpDoc = {
       body: [
         "- 마스터가 2B/0E(Read Device Identification)로 물으면 «제조사 (객체 0)»·«제품 코드 (객체 1)»·«버전 (객체 2)» 칸의 글로 답합니다. 모든 슬레이브가 같은 값을 씁니다.",
         "- 각 칸은 80바이트까지입니다(한글은 한 글자에 3바이트). 넘으면 칸이 빨개지고 저장하지 않습니다. 값은 저장되어 다음에 켜도 남습니다.",
+        "- PortDock MCP 의 modbus_write_sim(AI 가 시뮬레이터에 쓰는 도구)은 이 «제조사 (객체 0)» 가 PortDock 인 대상에만 씁니다 — 제조사를 바꾸면 그 도구로는 쓰지 않습니다.",
       ],
     },
     {
@@ -444,7 +445,7 @@ export const help: HelpDoc = {
         "Use it to test SCADA, HMI or your own program without a real inverter, power meter or temperature controller. When you pick a device in «Emulate device…» with the two options below on (the default), the current Slave ID answers like that device.",
         "- «Also add value generators and link rules»: makes plausible values for the device type. On power meters voltage (220 V phase, 380 V line-to-line), current, power, power factor and frequency drift slightly (noise) and energy grows with power (exported energy stays 0). On inverters, writing the forward/reverse bits (or any non-zero value) to the run command cell ramps the output frequency up to the frequency setting (30 Hz at start) at 6 Hz/s; writing 0 ramps it down to 0. Output current, voltage, power and speed are proportional to output frequency (5 A, 220 V, 1.5 kW, 1800 rpm at 60 Hz) and energy accumulates output power. On temperature controllers each channel's PV moves toward SV by 1 per second.",
         "- The device data does not mark roles such as «run command, frequency setting, output frequency», so they are guessed from names, units and R/W. If something is not found the message says so — pick the cells yourself in «Link rules…» under «Device profile» on the left.",
-        "- «Enforce read-only and write-only, exception 02 for addresses not in the map»: when the master writes a read-only (R) cell or reads a write-only (W) cell, the reply is an exception and nothing changes (a multi-register write is refused as a whole). The device data does not say which exception the device sends here, so choose 02 (default) or 03. Addresses not in the device map (gaps) give exception 02 even inside the answered range — this can be turned off. Editing values on screen is not blocked.",
+        "- «Enforce read-only and write-only»: when the master writes a read-only (R) cell or reads a write-only (W) cell, the reply is an exception and nothing changes (a multi-register write is refused as a whole). The device data does not say which exception the device sends here, so choose 02 (default) or 03. «Exception 02 for addresses not in the map» under «Device profile» on the left is off by default — gaps inside the answered range read as 0, as in 0.9. Turn it on to answer exception 02 for addresses not in the device map (gaps), like a real device. Editing values on screen is not blocked.",
         "- «Device profile» on the left: the device loaded into the current Slave ID, limits on/off, exception code, «Link rules…» and «Turn off profile» (cell names, types and values stay). Each Slave ID has its own and it is saved (also in «Export settings»).",
         "- Cell marks: ⇢ result cell of a link rule (hover for the rule), RO read-only and WO write-only (when limits are on), ◷ simulation. List view shows them in the «Simulation» column.",
         "- «Link rules…» — three kinds: Follow (ramp) = the result cell moves toward «source × gain» by «rate» (result cell raw value) per second. With a «Run command cell» it targets that only while running, otherwise 0. «Bits to check» is a decimal mask (bits 1 and 2 = 6); 0 means «not 0». Proportional = source × gain + offset. Accumulate = adds source × gain every second (without a source, the gain itself — for run-time counters).",
@@ -484,6 +485,7 @@ export const help: HelpDoc = {
       body: [
         "- When the master asks with 2B/0E (Read Device Identification), the reply uses «Vendor (object 0)», «Product code (object 1)» and «Revision (object 2)». All slaves share these values.",
         "- Each box holds up to 80 bytes (a Korean character takes 3). A longer value turns the box red and is not applied. The values are saved for the next start.",
+        "- PortDock MCP's modbus_write_sim (the tool an AI uses to write to a simulator) writes only to targets whose «Vendor (object 0)» is PortDock — change the vendor and that tool will not write.",
       ],
     },
     {

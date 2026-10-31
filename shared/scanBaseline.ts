@@ -149,10 +149,33 @@ export function parseBaseline(v: unknown): Baseline | null {
   };
 }
 
-/** 이름이 같으면 바꾸고, 새것을 앞에. 최대 `max` 개(오래된 것부터 버림) */
+const nameKey = (n: string) => n.trim().toLowerCase();
+
+/**
+ * 넣기 계획 — 넣는 항목은 저장 시각이 오래돼도(다른 PC 에서 받은 작년 기준 등) 늘 남기고 맨 앞에 둔다.
+ * 이름이 같은 것은 바꾸고(replaced), 넘치면 나머지 가운데 오래된 것부터 뺀다(dropped). 화면은 이 둘을 보고 먼저 묻는다
+ */
+export function upsertPlan<T extends { name: string; savedAt: number }>(list: T[], item: T, max = BASELINE_MAX): { list: T[]; dropped: T[]; replaced: T | null } {
+  const key = nameKey(item.name);
+  const replaced = list.find((x) => nameKey(x.name) === key) ?? null;
+  const rest = list.filter((x) => nameKey(x.name) !== key).sort((a, b) => b.savedAt - a.savedAt);
+  const room = Math.max(0, max - 1);
+  return { list: [item, ...rest.slice(0, room)], dropped: rest.slice(room), replaced };
+}
+
+/** 이름이 같으면 바꾸고, 넣는 것을 앞에. 최대 `max` 개(넣는 것 말고 오래된 것부터 버림) */
 export function upsertNamed<T extends { name: string; savedAt: number }>(list: T[], item: T, max = BASELINE_MAX): T[] {
-  const key = item.name.trim().toLowerCase();
-  return [item, ...list.filter((x) => x.name.trim().toLowerCase() !== key)].sort((a, b) => b.savedAt - a.savedAt).slice(0, max);
+  return upsertPlan(list, item, max).list;
+}
+
+/** 목록에 없는 이름 — 겹치면 «이름 (2)», «이름 (3)» … (불러온 파일이 같은 이름을 말없이 덮지 않게) */
+export function freeName(list: { name: string }[], name: string): string {
+  const taken = new Set(list.map((x) => nameKey(x.name)));
+  if (!taken.has(nameKey(name))) return name;
+  for (let k = 2; ; k++) {
+    const n = `${name} (${k})`;
+    if (!taken.has(nameKey(n))) return n;
+  }
 }
 
 /** MAC → 그 MAC 이 하나뿐인 장비(같은 MAC 이 여러 IP 면 넣지 않는다) */

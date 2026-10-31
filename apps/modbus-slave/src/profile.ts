@@ -1,9 +1,9 @@
-// 장비 프로필로 흉내(0.10.0) — 장비 데이터(data/devices) → 읽기/쓰기 제한·값 만들기(고정·잡음·누적)·연결 규칙.
+// 장비 프로필로 흉내(0.10.0) — 장비 데이터(data/devices) → 읽기/쓰기 제한·값 만들기(고정·잡음·누적)·칸 잇기 규칙.
 // 화면(React) 없는 부분. node --test apps/modbus-slave/src/profile.test.ts 로 시험한다.
 // 실행은 백엔드(crates/core/src/slave_profile.rs·regmap.rs)가 한다 — 여기서는 설정을 만들고 검사·설명한다.
 //
 // 장비 데이터에는 «운전 지령·주파수 설정·출력 주파수» 같은 역할 표시가 없다. 그래서 이름·단위·읽기/쓰기로 짐작한 규칙을 «짐작» 으로
-// 넣고, 사용자가 «연결 규칙» 창에서 칸을 바꾸거나 지우고 새로 만든다. 값은 그럴듯한 예시이지 실제 장비 동작이 아니다.
+// 넣고, 사용자가 «칸 잇기 규칙» 창에서 칸을 바꾸거나 지우고 새로 만든다. 값은 그럴듯한 예시이지 실제 장비 동작이 아니다.
 
 import { devRegs, type Device, type DevRegister } from "../../../shared/devices.ts";
 import { defaultSim, isBits, regsOf, type Lang, type Order, type Point, type SimCfg, type Table, type VType } from "./regmap.ts";
@@ -17,7 +17,7 @@ export interface CellRef {
 export type LinkKind = "approach" | "scale" | "integrate";
 export const LINK_KINDS: LinkKind[] = ["approach", "scale", "integrate"];
 
-/** 연결 규칙 하나(화면 저장 모양) — 종류에 맞는 칸만 쓴다 */
+/** 칸 잇기 규칙 하나(화면 저장 모양) — 종류에 맞는 칸만 쓴다 */
 export interface LinkCfg {
   kind: LinkKind;
   /** 결과 칸 */
@@ -49,7 +49,8 @@ export interface GuardCfg {
   /** 막을 때 예외(02·03) */
   code: 2 | 3;
 }
-export const DEFAULT_GUARD: GuardCfg = { access: true, unmapped: true, code: 2 };
+/** 맵에 없는 주소 → 예외 02 는 기본 끔 — 0.9 처럼 빈 번지를 0 으로 읽던 마스터 시험이 깨지지 않게(켜면 실제 장비처럼) */
+export const DEFAULT_GUARD: GuardCfg = { access: true, unmapped: false, code: 2 };
 
 /** 국번 하나의 장비 프로필 흉내 */
 export interface SlaveProfile {
@@ -102,7 +103,7 @@ export function accessAt(p: SlaveProfile | undefined, table: Table, addr: number
   return p?.cells.find((c) => c.table === table && addr >= c.addr && addr < c.addr + c.count)?.access;
 }
 
-// ------------------------------------------------------------------ 연결 규칙 → 백엔드
+// ------------------------------------------------------------------ 칸 잇기 규칙 → 백엔드
 
 /** 칸 → 백엔드 칸(형식은 그 자리 점, 없으면 u16·비트) */
 export function cellSpec(c: CellRef, point: Point | undefined): CellSpec | null {
@@ -279,7 +280,7 @@ const isHours = (r: DevRegister) => unitOf(r) === "h" && readable(r) && !writabl
 /** 알람·최대·피크 때 값 — 움직이지 않는다 */
 const frozen = (r: DevRegister) => /on alarm|peak|maximum|\bmax\b|giga|record|history|trip/i.test(en(r));
 
-/** 짐작 결과 — 넣을 원시 값, 칸마다 값 만들기, 연결 규칙, 짐작한 역할 설명 */
+/** 짐작 결과 — 넣을 원시 값, 칸마다 값 만들기, 칸 잇기 규칙, 짐작한 역할 설명 */
 export interface ProfilePlan {
   values: { table: Table; addr: number; value: number }[];
   sims: { table: Table; sim: SimCfg }[];
@@ -460,7 +461,7 @@ function tempPlan(d: Device, plan: ProfilePlan) {
   }
 }
 
-/** 장비 → 값·값 만들기·연결 규칙 짐작. 인버터·전력 미터·온도 조절기만, 나머지는 빈 계획(예시 값 그대로) */
+/** 장비 → 값·값 만들기·칸 잇기 규칙 짐작. 인버터·전력 미터·온도 조절기만, 나머지는 빈 계획(예시 값 그대로) */
 export function planProfile(d: Device): ProfilePlan {
   const plan: ProfilePlan = { values: [], sims: [], links: [], roles: [] };
   if (d.kind === "inverter") inverterPlan(d, plan);
@@ -500,7 +501,7 @@ export function cleanProfiles(v: unknown): Record<string, SlaveProfile> {
       device: p.device,
       name: typeof p.name === "string" ? p.name : p.device,
       cells,
-      guard: { access: g.access !== false, unmapped: g.unmapped !== false, code: g.code === 3 ? 3 : 2 },
+      guard: { access: g.access !== false, unmapped: g.unmapped === true, code: g.code === 3 ? 3 : 2 },
       links: links.map((l) => ({ ...l, src: l.src ?? null, run: l.run ?? null })),
     };
   }

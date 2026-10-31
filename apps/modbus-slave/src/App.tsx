@@ -309,7 +309,7 @@ export default function App() {
   const [points, setPoints] = useState<Record<string, Point[]>>(() => load("points", {}));
   const [sims, setSims] = useState<Record<string, SimCfg[]>>(() => load("sims", {}));
   const [device, setDevice] = useState<DeviceId>(() => ({ ...DEFAULT_DEVICE, ...load<Partial<DeviceId>>("device", {}) }));
-  // 장비 프로필로 흉내(0.10.0) — 국번마다 읽기/쓰기 제한·연결 규칙
+  // 장비 프로필로 흉내(0.10.0) — 국번마다 읽기/쓰기 제한·칸 잇기 규칙
   const [profiles, setProfiles] = useState<Record<string, SlaveProfile>>(() => cleanProfiles(load<unknown>("profiles", {})));
   const [showLinks, setShowLinks] = useState(false);
   const [profOpenSaved, setProfOpenSaved] = useState<boolean>(() => load("profOpen", false));
@@ -504,7 +504,7 @@ export default function App() {
     // 지운 슬레이브는 다음에 다시 더하면 처음부터 보낸다
     for (const k of Object.keys(pushed.current)) if (!ids.includes(Number(k.split(":")[0]))) delete pushed.current[k];
   }, [ready, ids, specsFor]);
-  // 장비 프로필(0.10.0) — 읽기/쓰기 제한·연결 규칙. 바뀐 국번만 보낸다(같은 내용이면 규칙의 시계가 처음부터 돌지 않게)
+  // 장비 프로필(0.10.0) — 읽기/쓰기 제한·칸 잇기 규칙. 바뀐 국번만 보낸다(같은 내용이면 규칙의 시계가 처음부터 돌지 않게)
   const pointAtFor = useCallback((id: number) => (c: CellRef) => points[key(id, c.table)]?.find((p) => p.addr === c.addr), [points]);
   const pushedProf = useRef<Record<number, string>>({});
   useEffect(() => {
@@ -530,7 +530,7 @@ export default function App() {
     for (const l of prof?.links ?? []) if (l.out.table === table) m.set(l.out.addr, l);
     return m;
   }, [prof, table]);
-  /** 칸 이름(연결 규칙 설명·고르기) — «HR 40010 출력 주파수 (×0.01 Hz)» */
+  /** 칸 이름(칸 잇기 규칙 설명·고르기) — «HR 40010 출력 주파수 (×0.01 Hz)» */
   const cellLabel = useCallback(
     (c: CellRef) => {
       const nm = points[key(selId, c.table)]?.find((p) => p.addr === c.addr)?.name ?? "";
@@ -875,7 +875,7 @@ export default function App() {
   async function applyDevice(d: Device, o: DeviceApplyOpts) {
     setShowDevice(false);
     try {
-      // 값 만들기·연결 규칙(0.10.0) — 짐작한 시작 값으로 예시 값을 바꾼다
+      // 값 만들기·칸 잇기 규칙(0.10.0) — 짐작한 시작 값으로 예시 값을 바꾼다
       const plan = o.behave ? planProfile(d) : null;
       const planVal = new Map((plan?.values ?? []).map((v) => [`${v.table}:${v.addr}`, v.value]));
       const rows = slaveRows(d, lang).map((r) => (planVal.has(`${r.table}:${r.address}`) ? { ...r, value: planVal.get(`${r.table}:${r.address}`)! } : r));
@@ -901,7 +901,7 @@ export default function App() {
         nextPoints[k] = mergePoints(points[k], list.map((r) => ({ addr: r.address, type: r.type, order: r.order, name: r.name, ...(r.type === "string" ? { len: r.len } : {}) })));
       }
       setPoints(nextPoints);
-      // 장비 프로필 — 값 만들기(잡음)는 칸 자동 변화로, 제한·연결 규칙은 국번마다
+      // 장비 프로필 — 값 만들기(잡음)는 칸 자동 변화로, 제한·칸 잇기 규칙은 국번마다
       const linkOuts = new Set((plan?.links ?? []).map((l) => `${l.out.table}:${l.out.addr}`));
       if (plan) {
         setSims((old) => {

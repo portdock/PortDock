@@ -71,6 +71,11 @@ test("이 PC — 원격 데스크톱·NLA·SMBv1·방화벽·산업 포트·자�
   assert.match(item(items, "rdp").value.en, /on \(port 3389\)/);
   assert.match(item(items, "listeners").notes[0].ko, /502 Modbus TCP\(gateway\.exe\)/);
   assert.ok(item(items, "listeners").notes.some((n) => /PID n/.test(n.ko)));
+  // 랜 주소 하나에 묶인 서버도 «같은 망에서 닿음» — 포트 옆에 묶인 주소
+  const lan = exposureItems({ ...quiet, listeners: [{ port: 502, v6: false, pid: 2000, process: "sim.exe", addr: "192.168.0.5" }] });
+  assert.match(item(lan, "listeners").value.ko, /502 @192\.168\.0\.5 \(sim\.exe\)/);
+  assert.equal(item(lan, "listeners").level, "look");
+  assert.match(item(lan, "listeners").notes[0].ko, /랜 주소\(192\.168\.0\.5\)에 묶여 같은 망에서 닿습니다/);
   assert.equal(item(items, "autoLogon").notes.length, 2);
   // 비밀번호 내용이 아니라 «있음» 만 말한다
   assert.match(item(items, "autoLogon").notes[1].en, /does not read its contents/);

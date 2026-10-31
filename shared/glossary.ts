@@ -77,7 +77,7 @@ export const TERMS = {
     en: ["Polling", "Repeating the same read request at a set interval to keep the values fresh."],
   },
   timeout: {
-    ko: ["타임아웃(기다림)", "응답을 기다리는 가장 긴 시간. 넘으면 «응답 없음» 으로 셉니다."],
+    ko: ["응답 기다림(타임아웃)", "응답을 기다리는 가장 긴 시간. 넘으면 «응답 없음» 으로 셉니다."],
     en: ["Timeout", "The longest time to wait for a reply. After that it counts as «no response»."],
   },
   ping: {

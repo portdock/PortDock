@@ -376,12 +376,28 @@ export function readBackRanges(rows: Pick<RestoreRow, "fc" | "addr" | "span">[])
   return out;
 }
 
-/** 쓴 뒤 다시 읽은 값과 견주기 — 줄마다 «맞음 / 다름 / 다시 읽지 못함» */
-export type VerifyState = "match" | "differ" | "unread" | "write-failed";
-export function verifyRows(written: { row: RestoreRow; ok: boolean }[], readBack: BackupBlock[]): { row: RestoreRow; state: VerifyState; got: number[] | null }[] {
+/** 복원(미리보기·쓰기)에 쓸 수 없는 국번 — RTU 의 0 은 브로드캐스트(버스의 모든 장비가 받는다), 248~255 는 예약.
+ *  손으로는 입력칸이 막지만 파일에서 연 백업의 국번(예: TCP 에서 국번 0 으로 받은 것)은 그대로 들어오므로 여기서 한 번 더 본다.
+ *  TCP 의 0 은 장비에 바로 붙으면 보통 국번이지만 게이트웨이 뒤라면 브로드캐스트일 수 있다 — 미리보기에서 한 칸이라도 답해야 쓰게 한다(previewReadAny) */
+export type UnitProblem = "broadcast" | "reserved";
+export function restoreUnitProblem(unit: number, wire: "tcp" | "rtu"): UnitProblem | null {
+  if (wire !== "rtu") return null;
+  if (unit === 0) return "broadcast";
+  if (unit >= 248) return "reserved";
+  return null;
+}
+
+/** 미리보기에서 한 칸이라도 지금 값을 읽었는지 — 하나도 못 읽었으면 국번·연결이 틀렸을 수 있어 «쓰기» 를 막는다 */
+export const previewReadAny = (preview: Map<string, number[] | null>) => [...preview.values()].some((v) => v !== null);
+
+/** 쓴 뒤 다시 읽은 값과 견주기 — 줄마다 «맞음 / 다름 / 다시 읽지 못함 / 쓰기 실패 / 멈춰서 쓰지 않음» */
+export type VerifyState = "match" | "differ" | "unread" | "write-failed" | "skipped";
+/** ok: 썼으면 true, 장비가 거절했으면 false, 멈춰서 보내지 않았으면 "skipped" */
+export function verifyRows(written: { row: RestoreRow; ok: boolean | "skipped" }[], readBack: BackupBlock[]): { row: RestoreRow; state: VerifyState; got: number[] | null }[] {
   const m = cellMap(readBack);
   return written.map(({ row, ok }) => {
     const got = regsAt(m, row.fc, row.addr, row.span);
+    if (ok === "skipped") return { row, state: "skipped" as const, got };
     if (!ok) return { row, state: "write-failed" as const, got };
     if (!got) return { row, state: "unread" as const, got };
     return { row, state: got.every((v, i) => v === row.values![i]) ? ("match" as const) : ("differ" as const), got };

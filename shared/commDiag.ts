@@ -36,7 +36,7 @@ export interface DiagLink {
 
 export interface Cause {
   id: CauseId;
-  /** problem = 요청이 대부분 이렇게 끝남, look = 일부 */
+  /** problem = 요청의 절반 이상이 이렇게 끝남, look = 일부 */
   level: "problem" | "look";
   /** 이 갈래로 나뉜 요청 수 */
   count: number;
@@ -117,7 +117,7 @@ function describe(id: CauseId, wire: "rtu" | "tcp"): Omit<Cause, "id" | "level" 
             ],
         checks: rtu
           ? [
-              t("«찾기» → «통신 설정 찾기» 로 속도·패리티·국번을 한 번에 훑어 봅니다(버스에 다른 마스터가 없을 때만).", "Use «Scan» → «Find line settings» to sweep baud, parity and ID at once (only when no other master is on the bus)."),
+              t("«국번·주소·설정 찾기…» → «통신 설정 찾기» 로 속도·패리티·국번을 한 번에 훑어 봅니다(버스에 다른 마스터가 없을 때만).", "Use «Scan…» → «Find line settings» to sweep baud, parity and ID at once (only when no other master is on the bus)."),
               t("A/B 를 바꿔 물려 봅니다 — 제조사마다 A/B 이름이 반대인 경우가 있습니다.", "Swap A and B — some vendors label them the other way round."),
               t("변환기 TX LED 가 깜박이는지, 장비 RX/통신 LED 가 반응하는지 봅니다.", "Check that the adapter's TX LED blinks and the device's RX/comm LED reacts."),
               t("Serial «연결 점검…» 의 루프백 시험으로 변환기·케이블 자체를 먼저 확인합니다.", "Run the loopback test in Serial «Check connection…» to rule out the adapter and cable first."),

@@ -80,7 +80,8 @@ export interface ShareConfig {
 /** (0.10.0) 게이트웨이 설정 — core mb_gateway::GatewayConfig */
 export interface GatewayConfig {
   timeoutMs: number;
-  unit0: "broadcast" | "default";
+  /** Unit ID 0: 경로 없음(예외 0A, 기본) / RTU 브로드캐스트 / 기본 국번으로 */
+  unit0: "noroute" | "broadcast" | "default";
   defaultUnit: number;
   /** «1-10, 17» — 비우면 1~247 모두 */
   units: string;

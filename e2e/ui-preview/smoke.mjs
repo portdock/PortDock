@@ -1232,13 +1232,14 @@ async function runApp(app, port) {
             await sleep(700);
             const r = await js("return { open: !!document.querySelector('.modal.dev-dlg'), toast: (document.querySelector('.toast') || {}).textContent || '', err: !!document.querySelector('.traffic-error'), names: [...document.querySelectorAll('.regs .reg .rname')].map((e) => e.textContent).filter(Boolean).length }");
             if (r.open || r.err || !/레지스터 \d+개를 국번|Loaded \d+ registers/.test(r.toast) || r.names < 1) await conv("slave-device", `장비 흉내 결과가 이상함: ${JSON.stringify(r)}`);
-            // (0.10.0) 첫 장비(전력 미터)는 값 만들기·연결 규칙이 붙고, 왼쪽 «장비 프로필» 칸 → «연결 규칙…» 창에 규칙 줄
-            if (!/연결 규칙 [1-9]\d*개|[1-9]\d* link rules/.test(r.toast)) await conv("slave-profile", `장비 프로필 알림에 연결 규칙이 없음: ${JSON.stringify(r.toast)}`);
-            const pr = await js("const s = [...document.querySelectorAll('aside.side details > summary')].find((x) => /장비 프로필|Device profile/.test(x.textContent)); if (!s) return null; const d = s.parentElement; d.open = true; const b = [...d.querySelectorAll('button')].find((x) => /연결 규칙|Link rules/.test(x.textContent)); if (!b) return { btn: false }; b.click(); return { btn: true, on: d.classList.contains('on'), checks: d.querySelectorAll('input[type=checkbox]:checked').length }");
+            // (0.10.0) 첫 장비(전력 미터)는 값 만들기·칸 잇기 규칙이 붙고, 왼쪽 «장비 프로필» 칸 → «칸 잇기 규칙…» 창에 규칙 줄
+            if (!/칸 잇기 규칙 [1-9]\d*개|[1-9]\d* link rules/.test(r.toast)) await conv("slave-profile", `장비 프로필 알림에 칸 잇기 규칙이 없음: ${JSON.stringify(r.toast)}`);
+            // 켜진 체크는 «읽기 전용·쓰기 전용 지키기» 하나 — «맵에 없는 주소는 예외 02» 는 기본 끔(0.9 처럼 빈 번지는 0)
+            const pr = await js("const s = [...document.querySelectorAll('aside.side details > summary')].find((x) => /장비 프로필|Device profile/.test(x.textContent)); if (!s) return null; const d = s.parentElement; d.open = true; const b = [...d.querySelectorAll('button')].find((x) => /칸 잇기 규칙|Link rules/.test(x.textContent)); if (!b) return { btn: false }; b.click(); return { btn: true, on: d.classList.contains('on'), checks: d.querySelectorAll('input[type=checkbox]:checked').length }");
             await sleep(300);
             const lk = await js("const d = document.querySelector('.modal.link-dlg'); const r = d ? { rows: d.querySelectorAll('.link-row').length, note: (d.querySelector('.hint.warn') || {}).textContent || '' } : null; if (d) [...d.querySelectorAll('.dlg-buttons .btn')].find((x) => !x.classList.contains('primary')).click(); return r");
             const marks = await js("return document.querySelectorAll('.regs .accmark, .regs .simmark').length");
-            if (!pr || !pr.btn || !pr.on || pr.checks < 2 || !lk || lk.rows < 1 || !/매뉴얼|manual/.test(lk.note) || marks < 1) await conv("slave-profile", `장비 프로필 칸·연결 규칙 창이 이상함: ${JSON.stringify({ pr, lk, marks })}`);
+            if (!pr || !pr.btn || !pr.on || pr.checks !== 1 || !lk || lk.rows < 1 || !/매뉴얼|manual/.test(lk.note) || marks < 1) await conv("slave-profile", `장비 프로필 칸·칸 잇기 규칙 창이 이상함: ${JSON.stringify({ pr, lk, marks })}`);
             if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-profile`);
             if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-slave-device-loaded`);
           }
@@ -3276,7 +3277,7 @@ async function runApp(app, port) {
         await verify("ns row menu");
         // (0.3.0) 고른 장비 «TCP 로 열기»(502·웹 말고 열린 포트)
         await openAppCheck("ns-open-tcp", ".detail-actions .open-tcp", (o) => o.app === "tcp" && /^192\.168\.0\.1[01]:\d+$/.test(o.connect ?? ""));
-        // (0.10.0) 기준 목록: 두 주소를 다 찾은 뒤 «기준과 비교» 탭 → MAC 안내 → 기준 저장(기준과 같음) →
+        // (0.10.0) 기준 목록: 두 주소를 다 찾은 뒤 «지난번과 비교» 탭 → MAC 안내 → 기준 저장(기준과 같음) →
         //          .10 의 MAC 을 바꾸고 .11 을 빼고 범위 밖 .12 를 더한 기준 파일을 불러와 비교(MAC 바뀜 빨강·새로 생김 초록·범위 밖 1) → AI 복사에 비교가 들어가고 MAC 뒤 3바이트는 가림
         const bl = await jsAsync(String.raw`
           const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
@@ -3286,7 +3287,7 @@ async function runApp(app, port) {
           __sm.setVal(document.querySelector('.cmp-bar input.bs-name'), 'smoke-base'); await w();
           document.querySelector('.cmp-bar .btn.primary').click(); await w(400);
           a.saved = document.querySelector('.cmp-bar select').value;
-          a.same = /기준과 같습니다|Same as the baseline/.test(document.querySelector('.cmp-notes').textContent);
+          a.same = /바뀐 것 없음|Nothing changed/.test(document.querySelector('.cmp-notes').textContent);
           const b = JSON.parse(localStorage.getItem('baselines'))[0];
           b.name = 'smoke-file';
           b.hosts = b.hosts.filter((h) => !h.ip.endsWith('.11')).map((h) => (h.ip.endsWith('.10') ? { ...h, mac: '02:00:5E:10:00:63' } : h));
