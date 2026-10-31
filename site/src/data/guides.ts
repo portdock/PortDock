@@ -4526,7 +4526,7 @@ export const GUIDES: Guide[] = [
         { h: "2. 자기 프로그램 설정" },
         { ul: [
           "접속 주소 127.0.0.1, 포트 2004(TCP).",
-          "머리 20바이트: 회사 ID «LSIS-XGT» + 00 00, PLC 정보 00 00, CPU 정보(요청은 쓰지 않음), 프레임 방향 h33, Invoke ID(응답에 그대로 돌아옴), 길이(머리 뒤 바이트 수), FEnet 위치, BCC(앞 19바이트 합).",
+          "머리 20바이트: 회사 ID «LSIS-XGT» + 00 00, PLC 정보 00 00, CPU 정보(요청에서는 무시 — 아래 예시는 A0), 프레임 방향 h33, Invoke ID(응답에 그대로 돌아옴), 길이(머리 뒤 바이트 수), FEnet 위치, BCC(앞 19바이트 합).",
           "숫자는 작은 자리 바이트부터(리틀 엔디언) — 명령 h0054 는 54 00, 길이 16 은 10 00.",
         ] },
         { h: "3. 첫 요청 — %DW100 한 워드 읽기" },
@@ -4601,7 +4601,7 @@ export const GUIDES: Guide[] = [
         { h: "2. Set up your program" },
         { ul: [
           "Connect to 127.0.0.1, port 2004 (TCP).",
-          "20-byte header: company ID «LSIS-XGT» + 00 00, PLC info 00 00, CPU info (not used in requests), source of frame h33, invoke ID (echoed in the reply), length (bytes after the header), FEnet position, BCC (sum of the first 19 bytes).",
+          "20-byte header: company ID «LSIS-XGT» + 00 00, PLC info 00 00, CPU info (ignored in requests — A0 in the example below), source of frame h33, invoke ID (echoed in the reply), length (bytes after the header), FEnet position, BCC (sum of the first 19 bytes).",
           "Numbers go low byte first (little-endian) — instruction h0054 is 54 00, length 16 is 10 00.",
         ] },
         { h: "3. First request — read one word %DW100" },
@@ -6849,7 +6849,7 @@ export const GUIDES: Guide[] = [
               ["약 60 Ω", "120 Ω 종단 두 개(양 끝) — 맞음"],
               ["약 120 Ω", "종단 하나뿐 — 한쪽 끝이 빠짐"],
               ["약 40 Ω 이하", "종단 셋 이상 — 중간 장비에도 켜져 있음"],
-              ["수 kΩ 이상", "종단 없음(송수신기 입력 저항만 보임)"],
+              ["수백 Ω~수 kΩ 이상", "종단 없음(송수신기 입력 저항만, 바이어스 저항이 전원 회로를 거쳐 보이면 1 kΩ 안팎)"],
               ["0 Ω 근처", "A–B 단락 — 배선·단자 확인"],
               ["약 75 Ω", "150 Ω 종단 두 개(Modbus 규격의 150 Ω 를 쓴 경우)"],
             ],
@@ -6905,7 +6905,7 @@ export const GUIDES: Guide[] = [
               ["About 60 Ω", "Two 120 Ω terminators (both ends) — as it should be"],
               ["About 120 Ω", "Only one terminator — one end missing"],
               ["About 40 Ω or less", "Three or more — middle devices are terminated too"],
-              ["Several kΩ or more", "No termination (only transceiver inputs)"],
+              ["Hundreds of Ω to several kΩ", "No termination (transceiver inputs only; about 1 kΩ if bias resistors show through the power circuit)"],
               ["Near 0 Ω", "A–B short — check wiring and terminals"],
               ["About 75 Ω", "Two 150 Ω terminators (the Modbus spec's 150 Ω)"],
             ],
@@ -7141,6 +7141,7 @@ export const GUIDES: Guide[] = [
     body: {
       ko: [
         { p: "통신 장애는 대개 갑자기 오지 않습니다. 단자가 조금씩 풀리고, 판넬 필터가 막혀 온도가 오르고, 오류가 하루 몇 개에서 몇십 개로 늘어난 뒤에 «통신이 끊겼다» 는 전화가 옵니다. 정기 점검의 목적은 이 추세를 먼저 보는 것입니다. 점검 주기는 설비의 중요도·환경(먼지·진동·온도)에 맞춰 현장에서 정하고, 같은 항목을 같은 방법으로 재서 지난번 값과 비교합니다." },
+        { p: "안전: 전원 단자·주회로(AC 220/380 V)를 만지는 작업은 자격을 갖춘 사람이 현장 규칙(작업 허가·잠금·표지)에 따라, 차단한 뒤 검전기로 전압이 없음을 확인하고 합니다. 인버터는 차단한 뒤에도 내부 콘덴서에 전압이 남으므로 매뉴얼에 적힌 방전 대기 시간(보통 수 분)을 기다립니다." },
         { h: "1. 단자·커넥터·케이블" },
         {
           ul: [
@@ -7197,6 +7198,7 @@ export const GUIDES: Guide[] = [
       ],
       en: [
         { p: "Communication failures rarely come out of nowhere. Terminals loosen a little at a time, a panel filter clogs and the temperature rises, errors go from a few a day to dozens — and then someone calls to say «communication is down». The point of routine checks is to see that trend first. Set the interval on site from how critical the machine is and its environment (dust, vibration, heat), measure the same items the same way each time and compare with last time." },
+        { p: "Safety: work on power terminals or the main circuit (AC 230/400 V) is done by a qualified person following site rules (permit, lock-out, tag-out) — isolate, then verify absence of voltage with a tester. A drive keeps voltage on its internal capacitors after isolation, so wait the discharge time given in its manual (usually several minutes)." },
         { h: "1. Terminals, connectors, cables" },
         {
           ul: [
@@ -7538,6 +7540,7 @@ export const GUIDES: Guide[] = [
     body: {
       ko: [
         { p: "교체 장비는 공장 기본값으로 옵니다. 옛 장비가 가지고 있던 국번·보율·종단 스위치와 운전 파라미터를 옮기지 않으면, 선을 그대로 다시 물려도 통신이 안 되거나 통신은 되는데 동작이 다릅니다. 가장 좋은 때는 고장 전입니다 — 교체할 일이 생기기 전에 설정을 기록해 두는 것이 이 글의 절반입니다." },
+        { p: "안전: 전원 단자·주회로(AC 220/380 V)를 만지는 작업은 자격을 갖춘 사람이 현장 규칙(작업 허가·잠금·표지)에 따라, 차단한 뒤 검전기로 전압이 없음을 확인하고 합니다. 인버터는 차단한 뒤에도 내부 콘덴서에 전압이 남으므로 매뉴얼에 적힌 방전 대기 시간(보통 수 분)을 기다립니다." },
         { h: "1. 같은 모델·같은 펌웨어인지" },
         {
           ul: [
@@ -7593,6 +7596,7 @@ export const GUIDES: Guide[] = [
       ],
       en: [
         { p: "A replacement device arrives with factory defaults. If the old device's ID, baud rate, terminator switch and operating parameters are not carried over, reconnecting the same wires gives either no communication or communication with different behaviour. The best time to prepare is before anything fails — recording settings before a replacement is needed is half of this article." },
+        { p: "Safety: work on power terminals or the main circuit (AC 230/400 V) is done by a qualified person following site rules (permit, lock-out, tag-out) — isolate, then verify absence of voltage with a tester. A drive keeps voltage on its internal capacitors after isolation, so wait the discharge time given in its manual (usually several minutes)." },
         { h: "1. Same model, same firmware?" },
         {
           ul: [
@@ -7668,6 +7672,7 @@ export const GUIDES: Guide[] = [
     body: {
       ko: [
         { p: "장비를 빼는 일은 더하는 일보다 쉬워 보이지만, 뺀 뒤에 남은 장비들의 통신이 느려지거나 끊기는 일이 생깁니다. 빠진 장비가 버스의 끝이었거나, 바이어스를 걸고 있었거나, 실드·SG 를 이어 주던 자리였거나, 마스터가 아직 그 장비를 찾고 있기 때문입니다." },
+        { p: "안전: 전원 단자·주회로(AC 220/380 V)를 만지는 작업은 자격을 갖춘 사람이 현장 규칙(작업 허가·잠금·표지)에 따라, 차단한 뒤 검전기로 전압이 없음을 확인하고 합니다. 인버터는 차단한 뒤에도 내부 콘덴서에 전압이 남으므로 매뉴얼에 적힌 방전 대기 시간(보통 수 분)을 기다립니다." },
         { h: "1. 빼기 전에: 그 장비가 맡던 것" },
         {
           ul: [
@@ -7721,6 +7726,7 @@ export const GUIDES: Guide[] = [
       ],
       en: [
         { p: "Removing a device looks easier than adding one, but the remaining devices can slow down or drop out afterwards. The removed device may have been the end of the bus, provided the bias, carried the shield and SG through its terminals, or the master may still be asking for it." },
+        { p: "Safety: work on power terminals or the main circuit (AC 230/400 V) is done by a qualified person following site rules (permit, lock-out, tag-out) — isolate, then verify absence of voltage with a tester. A drive keeps voltage on its internal capacitors after isolation, so wait the discharge time given in its manual (usually several minutes)." },
         { h: "1. Before removing: what the device was doing" },
         {
           ul: [

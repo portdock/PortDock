@@ -53,7 +53,7 @@ const L = ko
       faqTitle: "자주 묻는 것",
       faq: [
         ["코드를 넣으면 원인을 알 수 있나요?", "코드는 «어떤 종류의 멈춤인지» 까지 알려 줍니다. 원인 후보와 볼 순서를 좁히는 데 쓰고, 화면에 적힌 .sys 이름·같은 시각의 이벤트 기록·코드가 매번 같은지를 함께 보세요. 정확한 원인은 덤프 분석(WinDbg)이 필요할 수 있습니다."],
-        ["0x0000007E 와 0x1000007E 는 다른가요?", "같은 뜻입니다. 0x10000000 이 붙은 판은 일부 Windows 가 매개변수 형식을 달리해서 쓴 것으로, 이 사전은 같은 항목으로 보여 줍니다."],
+        ["0x0000007E 와 0x1000007E 는 다른가요?", "같은 뜻·같은 매개변수입니다(Microsoft 문서). 0x10000000 이 붙은 «-M» 판은 0x1000007E·0x1000007F·0x1000008E·0x100000EA 처럼 일부 코드에만 있고, 이 사전은 같은 항목으로 보여 줍니다."],
         ["코드가 매번 다릅니다", "드라이버 하나보다 메모리·전원·온도·오버클럭 같은 하드웨어 쪽 후보가 큽니다. Windows 메모리 진단과 BIOS 기본값으로 먼저 비교해 보세요."],
         ["ntoskrnl.exe 가 원인으로 나옵니다", "ntoskrnl.exe·hal.dll 은 Windows 커널 자체라 멈춘 곳으로 자주 찍히지만, 대개 다른 드라이버나 하드웨어 문제의 결과입니다. 그 이름만으로 Windows 를 다시 설치하기보다 같은 시각의 다른 기록을 먼저 보세요."],
       ] as [string, string][],
@@ -107,7 +107,7 @@ const L = ko
       faqTitle: "FAQ",
       faq: [
         ["Does the code tell me the cause?", "The code tells you what kind of stop it was. Use it to narrow the likely causes and checks, together with the .sys name on the screen, events at the same time and whether the code is the same every time. Finding the exact cause may need dump analysis (WinDbg)."],
-        ["Are 0x0000007E and 0x1000007E different?", "They mean the same. The version with 0x10000000 added is how some Windows versions report a different parameter format; this lookup shows the same entry."],
+        ["Are 0x0000007E and 0x1000007E different?", "Same meaning and same parameters (Microsoft docs). The «-M» variants with 0x10000000 added exist only for a few codes such as 0x1000007E, 0x1000007F, 0x1000008E and 0x100000EA; this lookup shows the same entry."],
         ["The code is different every time", "Hardware — memory, power, temperature, overclocking — is more likely than a single driver. Start with Windows Memory Diagnostic and BIOS defaults."],
         ["ntoskrnl.exe is listed as the cause", "ntoskrnl.exe and hal.dll are the Windows kernel itself and often show up where the system stopped, but usually as the result of another driver or a hardware problem. Look at other records from the same time before reinstalling Windows over that name."],
       ] as [string, string][],

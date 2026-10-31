@@ -47,6 +47,14 @@ test("영어 리포트: 용량 이력(기간·순서), 배터리 사용·수명 
   assert.equal(tr.endPct.toFixed(1), "84.5");
 });
 
+test("설치 배터리 값이 «-» 뿐인 노트북: 이력 표를 배터리 표로 잘못 읽지 않는다", () => {
+  const html = REPORT_EN.replace(/56,000 mWh\s*<\/td>/, "-</td>").replace(/47,320 mWh\s*<\/td>/, "-</td>");
+  assert.notEqual(html, REPORT_EN);
+  const r = parseBatteryReport(html);
+  assert.equal(r.batteries.length, 0);
+  assert.equal(r.history.length, 5);
+});
+
 test("영어 리포트: 최근 사용 — 날짜 이어받기, 빈 원본, mWh 없음(-), 배터리 사용 표(시간 칸)는 빼기", () => {
   const r = parseBatteryReport(REPORT_EN);
   assert.equal(r.recent.length, 6);

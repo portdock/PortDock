@@ -91,7 +91,9 @@ const FULL_RE = /FULL|완전|완충|COMPLÈTE|VOLL|COMPLETA|フル|满/i;
 const CYCLE_RE = /CYCLE|사이클|횟수|주기|ZYKLUS|CICLO|サイクル|循环/i;
 
 function installed(rows: Row[]): Battery[] | null {
-  const cap = rows.filter((r) => !r.head && r.cells.length >= 2 && mwh(r.cells[0]) === null && r.cells.slice(1).every((c) => mwh(c) !== null));
+  // 용량 이력 표(«기간 | 완전 충전 | 설계»)도 «이름표 + mWh» 꼴이라 — 첫 칸에 날짜가 있는 줄은 설치 배터리 줄이 아니다
+  // (설치 배터리 값을 «-» 로만 알리는 노트북에서 이력 표를 배터리 표로 잘못 읽던 것)
+  const cap = rows.filter((r) => !r.head && r.cells.length >= 2 && mwh(r.cells[0]) === null && !/\d{4}[-./]\d{1,2}[-./]\d{1,2}/.test(r.cells[0]) && r.cells.slice(1).every((c) => mwh(c) !== null));
   if (cap.length < 2) return null;
   const dRow = cap.find((r) => DESIGN_RE.test(r.cells[0])) ?? cap[0];
   const fRow = cap.find((r) => r !== dRow && FULL_RE.test(r.cells[0])) ?? cap.find((r) => r !== dRow)!;
