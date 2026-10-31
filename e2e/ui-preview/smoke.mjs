@@ -928,9 +928,11 @@ async function runApp(app, port) {
 
       // ---- 단축키: Ctrl+L 지우기, Ctrl+S 화면 저장, Ctrl+Shift+L 파일 기록, F4 끊기·다시 연결
       await blur();
+      // 받는 중이면 지운 뒤에도 새 줄이 들어온다(가짜 클라이언트 둘이 0.5초마다) — «지우기 전 시각» 의 줄이 남았는지로 본다
+      const tClear = await js("const d = new Date(); return d.getHours() * 3600000 + d.getMinutes() * 60000 + d.getSeconds() * 1000 + d.getMilliseconds();");
       await chord([Key.CONTROL], "l");
-      const left = await js(`return document.querySelectorAll('${ROW}').length`);
-      if (left > 2) await conv("ctrl-l", `Ctrl+L 뒤에도 로그가 ${left}줄`);
+      const left = await js(`const t0 = ${tClear}; return [...document.querySelectorAll('${ROW}')].filter((r) => { const m = r.textContent.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})/); if (!m) return true; const t = +m[1] * 3600000 + +m[2] * 60000 + +m[3] * 1000 + +m[4]; return t < t0 - 50; }).length`);
+      if (left > 0) await conv("ctrl-l", `Ctrl+L 뒤에도 지우기 전 로그가 ${left}줄`);
       if (!simple) {
         const n0 = await calls("plugin:dialog|save");
         await chord([Key.CONTROL], "s");
