@@ -1,14 +1,18 @@
 //! 이 PC 점검(장비 PC 설정) — 레지스트리·전원 계획·System 이벤트 로그를 읽기만 한다(KEY_READ · PowerRead* · EvtQuery).
 //! 바꾸는 호출은 없다. 외부 프로그램(powercfg·w32tm)도 띄우지 않는다.
-//! 관리자만 읽을 수 있는 것(`powercfg /requests`·Defender 예외·디스크 SMART)은 읽지 않는다.
+//! 관리자만 읽을 수 있는 것(`powercfg /requests`·Defender 예외·SATA 디스크 SMART 패스스루)은 읽지 않는다.
+//! (0.10.0) 블루스크린·갑자기 꺼짐(System 1001·41·6008 한 건씩) · 작은 메모리 덤프 폴더 목록(이름·시각·크기만 — 내용은 열지 않는다) ·
+//! 저장장치 수명(disk.rs) · 깨어난 기록(Power-Troubleshooter 1 — powercfg 를 띄우지 않는다) · 배터리(GetSystemPowerStatus → root\WMI)
 
 use super::parse::{self, file_name};
 use super::win::{Evt, Key, from_wide, open_key_in, os_err, query_value, render_xml, u16s, wide};
-use super::{PcCheck, PcEventCount, PcPowerValue, PcScreenSaver, PcTime, PcUpdate};
+use super::pchealth::{PC_CRASH_KEEP, PC_WAKE_KEEP, crash_from_event, crash_query, wake_from_event, wake_query};
+use super::win::scan_events_with;
+use super::{PcBattery, PcCheck, PcCrash, PcDump, PcEventCount, PcPowerValue, PcScreenSaver, PcTime, PcUpdate, PcWake};
 use crate::tr;
 use windows_sys::Win32::Foundation::{ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_ITEMS, ERROR_SUCCESS, HLOCAL, LocalFree};
 use windows_sys::Win32::System::EventLog::{EvtNext, EvtQuery, EvtQueryChannelPath, EvtQueryReverseDirection};
-use windows_sys::Win32::System::Power::{PowerGetActiveScheme, PowerReadACValueIndex, PowerReadDCValueIndex, PowerReadFriendlyName};
+use windows_sys::Win32::System::Power::{GetSystemPowerStatus, PowerGetActiveScheme, PowerReadACValueIndex, PowerReadDCValueIndex, PowerReadFriendlyName, SYSTEM_POWER_STATUS};
 use windows_sys::Win32::System::Registry::{HKEY, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, REG_DWORD, REG_EXPAND_SZ, REG_SZ};
 use windows_sys::core::GUID;
 
@@ -214,6 +218,71 @@ fn events(days: u32) -> Result<Vec<PcEventCount>, String> {
     Ok(parse::pc_event_counts(raw))
 }
 
+/// 블루스크린·갑자기 꺼짐 한 건씩(새것부터)
+fn crashes(days: u32) -> Result<Vec<PcCrash>, String> {
+    let mut out = Vec::new();
+    scan_events_with("System", &crash_query(days), false, &mut |e, _| {
+        if out.len() < PC_CRASH_KEEP
+            && let Some(c) = crash_from_event(&e)
+        {
+            out.push(c);
+        }
+    })?;
+    out.sort_by_key(|c| std::cmp::Reverse(c.time));
+    Ok(out)
+}
+
+/// 절전에서 깨어난 기록(새것부터) — Windows 문구의 «깨운 원본» 줄을 함께
+fn wakes(days: u32) -> Result<Vec<PcWake>, String> {
+    let mut out = Vec::new();
+    scan_events_with("System", &wake_query(days), true, &mut |e, msg| {
+        if out.len() < PC_WAKE_KEEP {
+            out.push(wake_from_event(&e, msg.as_deref()));
+        }
+    })?;
+    out.sort_by_key(|w| std::cmp::Reverse(w.time));
+    Ok(out)
+}
+
+/// %SystemRoot%\Minidump 의 .dmp — 이름·시각·크기만(새것부터, 최대 50). 폴더가 없으면 빈 목록
+fn dumps() -> Result<Vec<PcDump>, String> {
+    let root = std::env::var_os("SystemRoot").map(std::path::PathBuf::from).unwrap_or_else(|| r"C:\Windows".into());
+    let dir = root.join("Minidump");
+    let rd = match std::fs::read_dir(&dir) {
+        Ok(rd) => rd,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(e.to_string()),
+    };
+    let mut out: Vec<PcDump> = rd
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().to_string();
+            if !name.to_ascii_lowercase().ends_with(".dmp") {
+                return None;
+            }
+            let m = e.metadata().ok()?;
+            let time = m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_millis() as u64;
+            Some(PcDump { name, time, size: m.len() })
+        })
+        .collect();
+    out.sort_by_key(|d| std::cmp::Reverse(d.time));
+    out.truncate(50);
+    Ok(out)
+}
+
+/// 배터리 — 시스템 배터리가 없으면(데스크톱) 빈 목록
+fn batteries(errors: &mut Vec<String>) -> Vec<PcBattery> {
+    let mut st = SYSTEM_POWER_STATUS::default();
+    // SAFETY: 쓰기 가능한 구조체
+    if unsafe { GetSystemPowerStatus(&mut st) } == 0 || st.BatteryFlag == 255 || st.BatteryFlag & 128 != 0 {
+        return Vec::new();
+    }
+    super::wmi::batteries().unwrap_or_else(|e| {
+        errors.push(format!("{}: {e}", tr!("배터리", "Battery")));
+        Vec::new()
+    })
+}
+
 pub fn read(days: u32) -> PcCheck {
     let mut errors = Vec::new();
     let sp = open(HKEY_LOCAL_MACHINE, SESSION_POWER, &mut errors);
@@ -229,7 +298,24 @@ pub fn read(days: u32) -> PcCheck {
         errors.push(format!("{}: {e}", tr!("이벤트 로그 System", "Event log System")));
         Vec::new()
     });
-    PcCheck { read_at: crate::event::now_ms(), days, fast_startup, hibernate_enabled, scheme, power, update, reboot_pending, screen_saver, time, events, errors }
+    let crashes = crashes(days).unwrap_or_else(|e| {
+        errors.push(format!("{} (1001·41·6008): {e}", tr!("이벤트 로그 System", "Event log System")));
+        Vec::new()
+    });
+    let wakes = wakes(days).unwrap_or_else(|e| {
+        errors.push(format!("{} (Power-Troubleshooter): {e}", tr!("이벤트 로그 System", "Event log System")));
+        Vec::new()
+    });
+    let (dumps, dumps_read) = match dumps() {
+        Ok(d) => (d, true),
+        Err(e) => {
+            errors.push(format!("Minidump: {e}"));
+            (Vec::new(), false)
+        }
+    };
+    let disks = super::disk::read();
+    let batteries = batteries(&mut errors);
+    PcCheck { read_at: crate::event::now_ms(), days, fast_startup, hibernate_enabled, scheme, power, update, reboot_pending, screen_saver, time, events, crashes, dumps, dumps_read, disks, wakes, batteries, errors }
 }
 
 #[cfg(test)]
@@ -250,5 +336,25 @@ mod tests {
         }
         // 화면 보호기 파일 이름에 경로가 남지 않는다
         assert!(pc.screen_saver.program.as_deref().is_none_or(|p| !p.contains('\\')));
+        // (0.10.0) 블루스크린·꺼짐·깨어남·덤프는 새것부터, 경로가 남지 않는다
+        assert!(pc.crashes.windows(2).all(|w| w[0].time >= w[1].time));
+        assert!(pc.crashes.iter().all(|c| c.dump.as_deref().is_none_or(|d| !d.contains('\\'))));
+        assert!(pc.wakes.iter().all(|w| w.timer_owner.as_deref().is_none_or(|d| !d.contains('\\'))));
+        assert!(pc.dumps_read && pc.dumps.iter().all(|d| !d.name.contains('\\')));
+    }
+
+    /// 이 PC 의 저장장치·블루스크린·깨어남·배터리 읽기 — 관리자 없이. 이름·모델은 찍지 않는다(개수와 상태만)
+    #[test]
+    #[ignore = "이 PC 의 실제 기록을 읽는다 — cargo test -- --ignored 로"]
+    fn reads_health_without_admin() {
+        let pc = read(365);
+        assert!(pc.errors.is_empty(), "{} errors", pc.errors.len());
+        assert!(!pc.disks.is_empty());
+        for d in &pc.disks {
+            println!("디스크 {} {} {}", d.index, d.bus, d.state);
+        }
+        let codes: Vec<String> = pc.crashes.iter().map(|c| format!("{}:{:?}", c.kind, c.code.map(|x| format!("{x:#x}")))).collect();
+        let sources = pc.wakes.iter().filter(|w| w.source.is_some()).count();
+        println!("365일: 꺼짐·블루스크린 {} {codes:?} · 덤프 {} · 깨어남 {} (원본 읽음 {sources}) · 배터리 {}", pc.crashes.len(), pc.dumps.len(), pc.wakes.len(), pc.batteries.len());
     }
 }

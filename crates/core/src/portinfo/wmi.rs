@@ -287,6 +287,28 @@ pub fn firewall() -> Result<Vec<super::FirewallProfile>, String> {
     })
 }
 
+/// (0.10.0) 배터리 — root\WMI BatteryStaticData(설계 용량)·BatteryFullChargedCapacity(완전 충전 용량)·BatteryCycleCount(충전 횟수)를
+/// 인스턴스 이름으로 묶는다(이름은 돌려주지 않는다). 배터리가 없는 PC 는 WMI 가 «지원 안 함» 오류를 준다 — 부르는 쪽이 먼저 GetSystemPowerStatus 로 거른다
+pub fn batteries() -> Result<Vec<super::PcBattery>, String> {
+    let st = query(r"root\WMI", "SELECT InstanceName, DesignedCapacity FROM BatteryStaticData", &["InstanceName", "DesignedCapacity"])?;
+    let full = query(r"root\WMI", "SELECT InstanceName, FullChargedCapacity FROM BatteryFullChargedCapacity", &["InstanceName", "FullChargedCapacity"]).unwrap_or_default();
+    let cyc = query(r"root\WMI", "SELECT InstanceName, CycleCount FROM BatteryCycleCount", &["InstanceName", "CycleCount"]).unwrap_or_default();
+    let find = |rows: &[HashMap<String, Val>], name: &str, field: &str| rows.iter().find(|r| r.get("InstanceName").and_then(Val::str).as_deref() == Some(name)).and_then(|r| r.get(field)?.num());
+    Ok(st
+        .iter()
+        .filter_map(|r| {
+            let name = r.get("InstanceName")?.str()?;
+            Some(super::PcBattery {
+                design_mwh: r.get("DesignedCapacity").and_then(Val::num).filter(|v| *v > 0).map(|v| v as u64),
+                full_mwh: find(&full, &name, "FullChargedCapacity").filter(|v| *v > 0).map(|v| v as u64),
+                cycles: find(&cyc, &name, "CycleCount").filter(|v| *v > 0).map(|v| v as u32),
+            })
+        })
+        // 용량을 하나도 알리지 않는 항목(배터리 없는 PC 의 가상 배터리·UPS 등)은 뺀다
+        .filter(|b| b.design_mwh.is_some() || b.full_mwh.is_some())
+        .collect())
+}
+
 /// 기본 소리 끝점 ID 들 — (흐름 «render»·«capture», 역할 «console»·«comms», 끝점 ID «{0.0.0.00000000}.{guid}»).
 /// IMMDeviceEnumerator 로 ID 만 묻는다(소리 장치를 열지 않는다). 기본 장치가 없는 흐름·역할은 빠진다(소리 장치 없는 서버 등)
 pub fn default_audio() -> Result<Vec<(&'static str, &'static str, String)>, String> {

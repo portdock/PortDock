@@ -106,13 +106,13 @@ export function PcCard({
                             {" "}
                             <a
                               href={i.link}
-                              data-tip={tip(lang, "piPcSource")}
+                              data-tip={i.linkLabel ? undefined : tip(lang, "piPcSource")}
                               onClick={(e) => {
                                 e.preventDefault();
                                 link(i.link!);
                               }}
                             >
-                              {t("pcSource")}
+                              {i.linkLabel ? `${i.linkLabel[lang]} ↗` : t("pcSource")}
                             </a>
                           </>
                         )}

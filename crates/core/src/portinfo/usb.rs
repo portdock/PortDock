@@ -216,6 +216,16 @@ pub fn path(dn: u32) -> Option<UsbPath> {
     Some(out)
 }
 
+/// (0.10.0) USB 장치 노드 하나의 자리 — (루트 허브부터의 포트 번호들, 협상 속도, SuperSpeed 가능한데 낮게 붙음, 허브인지). USB 연결 기록이 쓴다
+pub fn place(dn: u32) -> (Vec<u32>, Option<&'static str>, bool, bool) {
+    let Some(p) = path(dn) else { return (Vec::new(), None, false, false) };
+    let ports: Vec<u32> = p.hops.iter().filter_map(|h| h.port).rev().collect();
+    match p.hops.first() {
+        Some(h) if h.kind == "device" || h.kind == "hub" => (ports, h.speed, h.below_capable, h.kind == "hub"),
+        _ => (ports, None, false, false),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

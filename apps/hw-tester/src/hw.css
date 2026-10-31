@@ -240,3 +240,14 @@ table.grid.ev-list tr.ev-wifiUp td {
 .rec-btn {
   min-width: 96px;
 }
+/* (0.10.0) USB 연결 기록 — 반복 끊김 의심 줄·걸리는 것 */
+table.grid.usb-table tr.flap td {
+  background: color-mix(in srgb, var(--fail) 10%, transparent);
+}
+section.card.usb-found li.warn {
+  color: var(--fail);
+}
+section.card.usb-past .row-inline {
+  gap: 10px;
+  align-items: center;
+}

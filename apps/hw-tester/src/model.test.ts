@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test apps/hw-tester/src/model.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { btApply, btText, longestLoss, recCsv, recText, sameChannel, signalNote, stats, summarize, validDnsName, validTarget, yMax } from "./model.ts";
+import { btApply, btText, longestLoss, portPath, usbApply, usbNotes, usbText, vidPid, recCsv, recText, sameChannel, signalNote, stats, summarize, validDnsName, validTarget, yMax } from "./model.ts";
 
 const BAN = /진단|검증|최적|정상|diagnos|verif|optimi/i;
 const ticks = (n, f) => Array.from({ length: n }, (_, i) => ({ ts: 1_700_000_000_000 + i * 1000, gw: null, net: null, dns: null, ...f(i) }));
@@ -111,4 +111,37 @@ test("그래프 y 상한", () => {
   assert.equal(yMax([3, 4, 5, -1]), 20);
   assert.equal(yMax([10, 20, 30, 60]), 100);
   assert.equal(yMax([5000]), 2000);
+});
+
+test("USB 연결 기록 — 표·반복 끊김·USB 2.0 속도·글(0.10.0)", () => {
+  // 예시 장치(실제 장치 아님)
+  const kb = { n: 1, name: "Example Keyboard", vid: 0x1234, pid: 1, hub: false, ports: [1], speed: "full", belowCapable: false };
+  const disk = { n: 2, name: "Example Disk", vid: 0x1234, pid: 2, hub: false, ports: [2, 3], speed: "high", belowCapable: true };
+  let st = usbApply([], [], { type: "snapshot", ts: 1000, devices: [kb, disk], notify: true });
+  assert.equal(st.rows.length, 2);
+  assert.ok(st.rows.every((r) => r.present && r.drops === 0));
+  st = usbApply(st.rows, st.log, { type: "change", ts: 2000, dev: kb, arrived: false, drops: 1, flap: false });
+  st = usbApply(st.rows, st.log, { type: "change", ts: 2100, dev: kb, arrived: true, drops: 1, flap: false });
+  st = usbApply(st.rows, st.log, { type: "change", ts: 3000, dev: kb, arrived: false, drops: 3, flap: true });
+  const r = st.rows.find((x) => x.n === 1);
+  assert.deepEqual([r.present, r.connects, r.drops, r.flap, r.last], [false, 1, 3, true, 3000]);
+  assert.equal(st.log.length, 3);
+  // 새 장치는 번호순으로 붙는다
+  st = usbApply(st.rows, st.log, { type: "change", ts: 4000, dev: { ...kb, n: 3, name: "Example Pad" }, arrived: true, drops: 0, flap: false });
+  assert.deepEqual(st.rows.map((x) => x.n), [1, 2, 3]);
+  for (const lang of ["ko", "en"]) {
+    const notes = usbNotes(st.rows, lang);
+    assert.equal(notes.length, 2);
+    assert.ok(notes.every((n) => !BAN.test(n)));
+    const text = usbText(lang, "PortDock Hardware Tester", "0.10.0", st.rows, st.log, 1000, {
+      days: 30,
+      devices: [{ name: "Example Mouse", vid: 0x1234, pid: 5, present: false, lastArrival: 500, lastRemoval: 900, firstInstall: 100 }],
+      events: [{ time: 800, id: 420, kind: "delete", name: "", vid: 0xabcd, pid: 9 }],
+      errors: [],
+    });
+    assert.ok(text.includes("1234:0002") && text.includes("2 › 3") && text.includes("ABCD:0009") && !BAN.test(text));
+  }
+  assert.ok(usbNotes(st.rows, "ko")[1].includes("USB 2.0"));
+  assert.equal(vidPid(null, null), "—");
+  assert.equal(portPath([]), "—");
 });

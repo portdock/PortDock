@@ -2235,6 +2235,24 @@ async function pinsp(cmd, a) {
         screenSaver: { active: true, program: null, timeout: null, secure: null },
         time: { type: "NTP", ntpServer: "time.windows.com,0x9", policy: false, serviceStart: 3 },
         events,
+        // (0.10.0) 블루스크린 1번(0x50)+41+6008, 덤프 1개, NVMe 1개(사용률 11%)·SATA 1개(관리자만), 깨어남 3번(장치 1번 → «볼 것»). 배터리 없음(데스크톱)
+        crashes: [
+          { time: now() - 3 * DAY, kind: "bugcheck", code: 0x50, params: "0xffffa00000001000, 0x0, 0xfffff80000001234, 0x2", dump: "MEMORY.DMP", powerButton: false },
+          { time: now() - 3 * DAY - 20_000, kind: "kernelPower", code: 0x50, params: null, dump: null, powerButton: false },
+          { time: now() - 3 * DAY - 5_000, kind: "unexpected", code: null, params: null, dump: null, powerButton: false },
+        ].filter((c) => now() - c.time <= a.days * DAY),
+        dumps: [{ name: "103126-10000-01.dmp", time: now() - 3 * DAY, size: 1_258_291 }],
+        dumpsRead: true,
+        disks: [
+          { index: 0, model: "Example NVMe SSD 1TB", bus: "nvme", state: "ok", error: null, health: { criticalWarning: 0, temperatureC: 42, availableSpare: 100, spareThreshold: 10, percentageUsed: 11, writtenGb: 38_500, powerCycles: 1_204, powerOnHours: 4_516, unsafeShutdowns: 37, mediaErrors: 0 } },
+          { index: 1, model: "Example SATA SSD 500GB", bus: "sata", state: "adminOnly", error: null, health: null },
+        ],
+        wakes: [
+          { time: now() - 2 * 3_600_000, sleepTime: now() - 3 * 3_600_000, source: tr("장치 -USB 입력 장치", "Device -USB Input Device"), sourceType: 4, device: tr("USB 입력 장치", "USB Input Device"), timerOwner: null },
+          { time: now() - DAY, sleepTime: now() - DAY - 7_200_000, source: tr("전원 단추", "Power Button"), sourceType: 1, device: null, timerOwner: null },
+          { time: now() - 2 * DAY, sleepTime: null, source: tr("전원 단추", "Power Button"), sourceType: 1, device: null, timerOwner: null },
+        ].filter((w) => now() - w.time <= a.days * DAY),
+        batteries: window.__pdMock.piBattery ? [{ designMwh: 50_000, fullMwh: 36_000, cycles: 412 }] : [],
         errors: [],
       };
     }
@@ -2614,7 +2632,15 @@ window.__pdMock.plc = () => ({ format: plc.format, faults: plc.faults, options: 
 // 끊김 기록: 시작하면 90박자 치 지난 기록을 한꺼번에 보내고(게이트웨이까지 손실 → «공유기 쪽»), 그 뒤 간격마다 하나씩.
 // 지난 기록 50번째에 Wi-Fi 끊김(이유 문구)·55번째에 다시 연결. 대상 «10.255.255.1» 은 인터넷 쪽만 늘 손실(«공유기 너머»).
 // 블루투스: 짝지은 장치 셋, 장치 1 이 1.2초마다 끊김·연결을 번갈아. 신호: window.__pdMock.hwSignal 로 상태를 바꿈(기본 ok).
-const HW_CMDS = new Set(["rec_start", "rec_stop", "bt_start", "bt_stop", "wifi_signal", "bt_audio"]);
+const HW_CMDS = new Set(["rec_start", "rec_stop", "bt_start", "bt_stop", "usb_start", "usb_stop", "usb_history", "wifi_signal", "bt_audio"]);
+// USB(0.10.0): 장치 넷(예시 이름), 장치 3(USB 3 디스크가 High-Speed — «USB 2.0 속도»)·장치 2 가 0.9초마다 빠졌다 꽂힘 → 세 번째 끊김부터 반복 끊김 의심
+let hwUsb = null;
+const HW_USB_DEVS = [
+  { n: 1, name: "Example Keyboard", vid: 0x1234, pid: 0x0001, hub: false, ports: [1], speed: "full", belowCapable: false },
+  { n: 2, name: "Example Barcode Scanner", vid: 0x1234, pid: 0x0002, hub: false, ports: [3, 2], speed: "full", belowCapable: false },
+  { n: 3, name: "Example USB Disk", vid: 0x1234, pid: 0x0003, hub: false, ports: [4], speed: "high", belowCapable: true },
+  { n: 4, name: "Example USB Hub", vid: 0x1234, pid: 0x0004, hub: true, ports: [3], speed: "high", belowCapable: false },
+];
 const HW_GW = "192.168.0.1";
 let hwRec = null;
 let hwBt = null;
@@ -2695,6 +2721,46 @@ async function hwsim(cmd, a) {
         hwBt.out({ type: "stopped", ts: now(), reason: "user" });
       }
       return null;
+    case "usb_start": {
+      if (hwUsb && !hwUsb.done) return fail(tr("이미 기록 중입니다", "Already recording"));
+      const out = hwOut(a.onEvent);
+      const me = { done: false, timer: 0, on: true, drops: 0, out };
+      hwUsb = me;
+      await sleep(30);
+      out({ type: "snapshot", ts: now(), devices: HW_USB_DEVS, notify: true });
+      me.timer = setInterval(() => {
+        if (me.done) return;
+        me.on = !me.on;
+        if (!me.on) me.drops++;
+        out({ type: "change", ts: now(), dev: HW_USB_DEVS[1], arrived: me.on, drops: me.drops, flap: me.drops >= 3 });
+      }, 900);
+      return null;
+    }
+    case "usb_stop":
+      if (hwUsb && !hwUsb.done) {
+        hwUsb.done = true;
+        clearInterval(hwUsb.timer);
+        hwUsb.out({ type: "stopped", ts: now(), reason: "user" });
+      }
+      return null;
+    case "usb_history": {
+      await sleep(80);
+      const DAY = 86_400_000;
+      return {
+        days: a.days,
+        devices: [
+          { name: "Example Barcode Scanner", vid: 0x1234, pid: 0x0002, present: true, lastArrival: now() - 40 * 60_000, lastRemoval: now() - 41 * 60_000, firstInstall: now() - 90 * DAY },
+          { name: "Example Mouse", vid: 0x1234, pid: 0x0005, present: false, lastArrival: now() - 2 * DAY, lastRemoval: now() - DAY, firstInstall: now() - 200 * DAY },
+          { name: "Example Keyboard", vid: 0x1234, pid: 0x0001, present: true, lastArrival: now() - 3 * DAY, lastRemoval: null, firstInstall: now() - 300 * DAY },
+        ],
+        events: [
+          { time: now() - 5 * DAY, id: 410, kind: "start", name: "Example USB Disk", vid: 0x1234, pid: 0x0003 },
+          { time: now() - 5 * DAY - 1000, id: 400, kind: "install", name: "Example USB Disk", vid: 0x1234, pid: 0x0003 },
+          { time: now() - 20 * DAY, id: 420, kind: "delete", name: "", vid: 0x1234, pid: 0x0009 },
+        ].filter((e) => now() - e.time <= a.days * DAY),
+        errors: [],
+      };
+    }
     case "wifi_signal": {
       await sleep(60);
       const st = window.__pdMock.hwSignal ?? "ok";
@@ -2733,4 +2799,4 @@ async function hwsim(cmd, a) {
   }
   return null;
 }
-window.__pdMock.hw = () => ({ rec: hwRec && { done: hwRec.done, i: hwRec.i }, bt: hwBt && { done: hwBt.done } });
+window.__pdMock.hw = () => ({ rec: hwRec && { done: hwRec.done, i: hwRec.i }, bt: hwBt && { done: hwBt.done }, usb: hwUsb && { done: hwUsb.done, drops: hwUsb.drops } });
