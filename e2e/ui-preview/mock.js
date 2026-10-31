@@ -1432,7 +1432,7 @@ const nsNics = () => [
 ];
 // 끝 숫자 → 장비(어느 대역이든 같은 끝 숫자에)
 const NS_DEVICES = {
-  1: { mac: "28:4E:E9:A9:62:7E", vendor: "mercury corperation", rtt: 1, ports: [80, 443], name: "router.local" },
+  1: { mac: "02:00:5E:10:00:01", vendor: "Example Networks", rtt: 1, ports: [80, 443], name: "router.local" },
   5: { me: true, mac: "02:00:5E:10:00:05", vendor: "GIGA-BYTE", rtt: 0, ports: [] },
   // .10 — 확인 단계에서 MAC 이 하나 더 보임(IP 충돌 의심, 0.2.0)
   10: { mac: "00:1B:1B:12:34:56", vendor: "Siemens", rtt: 2, ports: [102, 80, 502], ident: { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" }, conflict: ["00:1B:1B:12:34:56", "00:0B:29:0A:0B:99"] },

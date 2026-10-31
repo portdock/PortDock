@@ -1,6 +1,7 @@
 ---
 // 웹 도구: 미터 나사 탭 드릴·볼트 참고표 — ISO 보통·가는 나사(M2~M20) 피치, 탭 드릴(d − P), 육각 렌치(ISO 4762)·스패너(ISO 4032) 크기.
 // 자료·찾기는 lib/threads.ts(node --test). 체결 토크는 값을 넣지 않는다(«제조사 값 확인»). 모두 브라우저 안.
+import FaqBlock from "../components/FaqBlock.astro";
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
@@ -37,7 +38,7 @@ const L = ko
       torqueTitle: "체결 토크",
       torque:
         "볼트 체결 토크는 볼트 강도 등급(8.8·A2-70 등)·윤활·상대 재질에 따라 달라지고, 단자대·차단기·접촉기 단자는 제조사가 정한 토크가 따로 있습니다(제품 측면·데이터시트). 이 표에는 토크 값을 넣지 않았습니다 — 제조사 값을 확인하고 토크 드라이버로 조입니다.",
-      privacy: "이 페이지는 브라우저 안에서만 찾고 아무것도 보내지 않습니다.",
+      privacy: "이 페이지는 브라우저 안에서만 찾고 입력한 값은 서버로 보내지 않습니다.",
       srcTitle: "출처",
       seeFer: "단자 나사에 맞는 링 단자는",
       fer: "페룰·압착 단자 규격표",
@@ -62,7 +63,7 @@ const L = ko
       torqueTitle: "Tightening torque",
       torque:
         "Bolt torque depends on the property class (8.8, A2-70 and so on), lubrication and the mating material, and terminal blocks, breakers and contactors have their own maker-specified torque (printed on the part or in the data sheet). This chart has no torque values — check the maker's value and use a torque screwdriver.",
-      privacy: "This page looks things up inside your browser and sends nothing.",
+      privacy: "This page looks things up inside your browser; what you enter is not sent to a server.",
       srcTitle: "Sources",
       seeFer: "For ring terminals that fit a stud, see the",
       fer: "ferrule and crimp terminal chart",
@@ -71,6 +72,18 @@ const L = ko
     };
 const T = { bad: L.bad, k: L.k };
 const fineCell = (d: number, f: number[]) => f.map((p) => `${p} (${tapDrill(d, p)})`).join(", ");
+// 자주 묻는 것(FAQPage) — components/FaqBlock.astro
+const FAQ: [string, string][] = ko
+  ? [
+      ["탭 드릴 지름은 왜 «d − P» 인가요?", "절삭 탭의 대략값입니다(나사 지름 − 피치). 실제로는 가진 드릴 중 가까운 것을 쓰고 재질·나사 깊이에 따라 조금 바꿉니다. 성형(롤) 탭은 드릴 지름이 달라 탭 제조사 표를 봅니다."],
+      ["너트 스패너 크기가 표와 다른 경우가 있어요", "옛 규격 DIN 934 너트는 M10·M12·M14 에서 ISO 4032 와 스패너 크기가 다릅니다. 표의 «DIN 934» 값을 함께 봅니다."],
+      ["체결 토크는 왜 없나요?", "볼트 강도 등급·윤활·상대 재질에 따라 달라지고, 단자대·차단기·접촉기 단자는 제조사가 정한 토크가 따로 있어서입니다. 제품 측면 표시나 데이터시트 값을 따릅니다."],
+    ]
+  : [
+      ["Why is the tap drill «d − P»?", "It is the usual approximation for cutting taps (nominal diameter minus pitch). In practice use the nearest drill you have and adjust for material and thread depth. Forming (roll) taps need a different drill — see the tap maker's table."],
+      ["My spanner size does not match the chart", "Old DIN 934 nuts use different spanner sizes from ISO 4032 for M10, M12 and M14. Check the «DIN 934» value in the chart."],
+      ["Why is there no tightening torque?", "It depends on the bolt property class, lubrication and mating material, and terminal blocks, breakers and contactors have their own torque from the maker. Follow the product marking or data sheet."],
+    ];
 ---
 
 <Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
@@ -125,6 +138,7 @@ const fineCell = (d: number, f: number[]) => f.map((p) => `${p} (${tapDrill(d, p
       <h2>{L.torqueTitle}</h2>
       <p>{L.torque}</p>
       <p>{L.seeFer} <a href={url(lang, "tools/ferrules/")}>{L.fer}</a>. {L.seeUnits} <a href={url(lang, "tools/units/")}>{L.units}</a>.</p>
+      <FaqBlock lang={lang} items={FAQ} />
       <h2>{L.srcTitle}</h2>
       <ul>
         <li><a href="https://en.wikipedia.org/wiki/ISO_metric_screw_thread" rel="noopener" target="_blank">Wikipedia — ISO metric screw thread (ISO 261/262 preferred sizes, tap drill ≈ d − P, spanner sizes)</a></li>

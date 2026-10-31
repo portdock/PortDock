@@ -74,7 +74,7 @@ export const GUIDES: Guide[] = [
     slug: "modbus-rtu-frame",
     date: "2026-10-17",
     tools: ["serial", "modbus-master", "modbus-slave"],
-    related: ["modbus-address-notation", "modbus-function-codes", "modbus-no-response", "usb-serial-latency", "modbus-exception-codes"],
+    related: ["modbus-address-notation", "modbus-function-codes", "modbus-no-response", "usb-serial-latency", "modbus-exception-codes", "modbus-tcp-rtu-gateway-pc"],
     webTools: ["tools/modbus/", "tools/checksum/", "tools/modbus-rtu-tcp/", "tools/modbus-practice/"],
     devices: true,
     title: { ko: "Modbus RTU 프레임 읽는 법 — 요청·응답·예외·CRC", en: "Reading Modbus RTU frames — request, response, exception, CRC" },
@@ -958,7 +958,7 @@ export const GUIDES: Guide[] = [
     slug: "modbus-tcp-connection",
     date: "2026-10-22",
     tools: ["netscan", "modbus-master", "tcp"],
-    related: ["modbus-no-response", "plc-ip-subnet", "modbus-function-codes", "modbus-address-notation", "mc-protocol-test-without-plc"],
+    related: ["modbus-no-response", "plc-ip-subnet", "modbus-function-codes", "modbus-address-notation", "mc-protocol-test-without-plc", "modbus-tcp-rtu-gateway-pc"],
     webTools: ["tools/modbus-decoder/", "tools/subnet/", "tools/troubleshoot/", "tools/modbus-rtu-tcp/"],
     devices: true,
     title: { ko: "Modbus TCP 연결이 안 될 때 — 502 포트·Unit ID·접속 수 점검 순서", en: "Modbus TCP not connecting — checking port 502, unit ID and connection limits" },
@@ -1856,7 +1856,7 @@ export const GUIDES: Guide[] = [
     related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable", "24v-power-supply-check", "npn-pnp-sensor-plc-input"],
     webTools: ["tools/voltage-drop/", "tools/loop-load/", "tools/multimeter-check/", "tools/cable-selection/", "tools/awg-mm2/", "tools/power-supply-sizing/"],
     title: { ko: "24V DC 전압 강하 — 멀리 있는 센서·통신 장비의 전선 굵기 고르기", en: "24 V DC voltage drop — choosing wire size for remote sensors and devices" },
-    seoTitle: { ko: "24V DC 전압 강하 계산과 전선 굵기 고르기 — PortDock", en: "24 V DC Voltage Drop: Choosing Wire Size (mm², AWG) — PortDock" },
+    seoTitle: { ko: "24V DC 전선 굵기 고르는 법 — 먼 센서 전압 강하 — PortDock", en: "How to Choose 24 V DC Wire Size for Remote Sensors — PortDock" },
     desc: {
       ko: "멀리 있는 24 V 센서·RS-485 장비가 가끔 꺼지거나 응답이 끊길 때 — 왕복 선 저항으로 전압 강하를 계산해 굵기를 고르고, 기동 전류·공통선을 챙깁니다.",
       en: "A remote 24 V sensor or RS-485 device resets or drops off? Compute the drop from loop resistance, pick a wire size, and avoid inrush and shared-common traps.",
@@ -4502,8 +4502,8 @@ export const GUIDES: Guide[] = [
     title: { ko: "PLC 없이 LS XGT 전용 프로토콜 통신 시험하기 — FEnet 2004·변수 이름·흔한 실수", en: "Testing LS XGT dedicated protocol communication without a PLC — FEnet 2004, variable names, common mistakes" },
     seoTitle: { ko: "PLC 없이 LS XGT 전용 프로토콜(FEnet) 통신 시험하기 — PortDock", en: "Test the LS XGT Dedicated Protocol Without a PLC — PortDock" },
     desc: {
-      ko: "LS XGT PLC 와 FEnet 전용 프로토콜(TCP 2004)로 통신하는 PC 프로그램을 PLC 없이 시험하는 순서. %MW·%MX 번호, BCC, 오류 코드 같은 흔한 실수.",
-      en: "Test a PC program that talks to an LS XGT PLC over the FEnet dedicated protocol (TCP 2004) without the PLC. %MW/%MX numbering, BCC and error-code mistakes.",
+      ko: "LS XGT PLC 와 FEnet 전용 프로토콜(TCP 2004)로 통신하는 PC 프로그램을 PLC Simulator(0.10.0 부터)로 PLC 없이 시험하는 순서. %MW·%MX 번호, BCC, 오류 코드 실수.",
+      en: "Test a PC program that talks to an LS XGT PLC over FEnet (TCP 2004) without the PLC, using PLC Simulator (from 0.10.0). %MW/%MX numbering, BCC, error codes.",
     },
     body: {
       ko: [
@@ -5921,7 +5921,7 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
-        { p: "쓰기 도구 두 개는 이 PC 주소(127.0.0.1·::1·localhost)만 받고, 다른 주소는 연결하기 전에 거절합니다. 판정은 주소로만 합니다 — 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·SSH 터널 등)을 띄워 두면 127.0.0.1 로 쓴 값이 실제 장비까지 갈 수 있으니, 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 않습니다. 모든 호출은 이 PC 의 세션 기록(%LOCALAPPDATA%\\dev.portdock\\mcp-log, 휴대 폴더가 있으면 그 안)에 남고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 전체는 1분에 120번까지입니다." },
+        { p: "쓰기 도구 두 개는 이 PC 주소(127.0.0.1·::1·localhost)만 받고, 다른 주소는 연결하기 전에 거절합니다. 0.10.0 부터 modbus_write_sim 은 쓰기 전에 장치 식별(FC 2B/0E)을 묻고 제조사가 «PortDock» 으로 시작할 때만 씁니다(PortDock Modbus Slave 의 기본값) — PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502)나 중계를 거친 실장비는 거절합니다. mc_write_sim 은 주소로만 판정합니다(Serial 게이트웨이는 Modbus 만 넘김) — 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·벤더 게이트웨이·SSH 터널 등)을 띄워 두면 127.0.0.1 로 쓴 값이 실제 장비까지 갈 수 있으니, 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 않습니다. 모든 호출은 이 PC 의 세션 기록(%LOCALAPPDATA%\\dev.portdock\\mcp-log, 휴대 폴더가 있으면 그 안)에 남고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 전체는 1분에 120번까지입니다." },
         { h: "1. 설치" },
         { ul: [
           "Claude Desktop: 릴리스의 PortDock-MCP.mcpb 를 내려받아 열면 설치 화면이 나옵니다. 오류 문구 언어(en·ko)를 고를 수 있습니다.",
@@ -5955,7 +5955,7 @@ export const GUIDES: Guide[] = [
         { h: "주의" },
         { ul: [
           "도구 결과는 사용 중인 AI 클라이언트로 넘어갑니다. 회사 장비 값을 다룬다면 그 클라이언트의 데이터 정책을 먼저 확인합니다.",
-          "쓰기 도구는 주소만 봅니다. 이 PC 에서 실제 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)을 띄운 채 쓰기 도구를 쓰지 않습니다.",
+          "쓰기 도구는 이 PC 주소만 받습니다. modbus_write_sim 은 대상이 장치 식별(FC 2B/0E)에 «PortDock» 으로 시작하는 제조사로 답할 때만 씁니다(0.10.0 부터) — PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502) 너머 실장비에는 쓰지 않습니다. mc_write_sim 은 주소만 보므로(Serial 게이트웨이는 Modbus 만 넘김), 이 PC 에서 실제 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)을 띄운 채 쓰지 않습니다.",
           "장비가 보낸 글(예: *IDN? 응답)은 데이터일 뿐입니다. 서버도 클라이언트에게 그렇게 알립니다.",
           "AI 가 읽은 값의 뜻을 단정하지 않게, 단위·배율·주소 표기(40001 등)는 장비 매뉴얼로 맞춰 봅니다.",
         ] },
@@ -5979,7 +5979,7 @@ export const GUIDES: Guide[] = [
             ],
           },
         },
-        { p: "The two write tools accept only this PC's address (127.0.0.1, ::1, localhost) and refuse any other target before connecting. The check is by address only — if a program on this PC forwards to another device (a TCP relay, a gateway, an SSH tunnel …), a value written to 127.0.0.1 can reach a real device, so do not use the write tools while such a program is running. Every call is kept in a session log on this PC (%LOCALAPPDATA%\\dev.portdock\\mcp-log, or inside the portable folder) and never sent anywhere. The same target is called at most once per 100 ms, and 120 calls per minute overall." },
+        { p: "The two write tools accept only this PC's address (127.0.0.1, ::1, localhost) and refuse any other target before connecting. From 0.10.0 modbus_write_sim first asks for the device identification (FC 2B/0E) and writes only if the vendor name begins with «PortDock» (PortDock Modbus Slave's default) — real devices behind PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default) or a relay are refused. mc_write_sim is checked by address only (the Serial gateway passes Modbus only) — if a program on this PC forwards to another device (a TCP relay, a vendor gateway, an SSH tunnel …), a value written to 127.0.0.1 can reach a real device, so do not use the write tools while such a program is running. Every call is kept in a session log on this PC (%LOCALAPPDATA%\\dev.portdock\\mcp-log, or inside the portable folder) and never sent anywhere. The same target is called at most once per 100 ms, and 120 calls per minute overall." },
         { h: "1. Install" },
         { ul: [
           "Claude Desktop: download PortDock-MCP.mcpb from the release and open it to get the install screen. You can choose the message language (en or ko).",
@@ -6013,7 +6013,7 @@ export const GUIDES: Guide[] = [
         { h: "Cautions" },
         { ul: [
           "Tool results go to the AI client you use. If you handle company device values, check that client's data policy first.",
-          "The write tools only look at the address. Do not use them while a program on this PC forwards to real devices (PortDock TCP relay, a vendor gateway, an SSH tunnel …).",
+          "The write tools accept only this PC's address. modbus_write_sim writes only when the target answers the device identification (FC 2B/0E) with a vendor name beginning with «PortDock» (from 0.10.0), so it does not write to real devices behind PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default). mc_write_sim only looks at the address (the Serial gateway passes Modbus only) — do not use it while a program on this PC forwards to real devices (PortDock TCP relay, a vendor gateway, an SSH tunnel …).",
           "Text sent by devices (such as an *IDN? reply) is only data, and the server tells the client so.",
           "Do not let the AI settle what a value means on its own — match units, scale and address notation (40001 and so on) against the device manual.",
         ] },
@@ -6709,7 +6709,7 @@ export const GUIDES: Guide[] = [
     related: ["24v-voltage-drop", "field-noise-communication-errors", "npn-pnp-sensor-plc-input", "4-20ma-loop", "commissioning-communication-checklist"],
     webTools: ["tools/power-supply-sizing/", "tools/voltage-drop/", "tools/loop-load/", "tools/panel-heat/"],
     title: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 시 전압·0V 공통·퓨즈", en: "Checking a 24 V DC supply — capacity, inrush, voltage under load, 0 V common, fuses" },
-    seoTitle: { ko: "24V DC 전원 점검 — 용량·돌입 전류·부하 전압·퓨즈 — PortDock", en: "24 V DC Power Supply Checks: Capacity, Inrush, Fuses — PortDock" },
+    seoTitle: { ko: "24V DC 전원 점검 순서 — 부하 전압·0V 공통·퓨즈 — PortDock", en: "24 V DC Supply Check Steps: Load Voltage, 0 V, Fuses — PortDock" },
     desc: {
       ko: "판넬 24V 전원이 모자라거나 흔들려 장비가 재시작하고 통신 오류처럼 보일 때 — 용량 합계, 돌입 전류, 부하 때 전압 재기, 0V 공통, 퓨즈·서킷 프로텍터 확인 순서.",
       en: "When a 24 V supply sags, devices restart and it looks like a communication fault — capacity, inrush, voltage under load, the 0 V common, fuses and protectors.",
@@ -6963,7 +6963,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["modbus-master", "serial", "port-inspector", "plot"],
     related: ["rs485-wiring", "rs485-multimeter-check", "vfd-modbus-setup", "modbus-no-response", "modbus-rtu-timeout-polling", "24v-power-supply-check"],
-    webTools: ["tools/wiring/", "tools/system-diagram/", "tools/serial-timing/", "tools/modbus/", "tools/io-list/", "tools/handover-pack/", "tools/cable-labels/"],
+    webTools: ["tools/commissioning-checklist/", "tools/wiring/", "tools/system-diagram/", "tools/serial-timing/", "tools/modbus/", "tools/io-list/", "tools/handover-pack/", "tools/cable-labels/"],
     title: { ko: "장비 시운전 통신 점검 순서 — 배선·전원·통신 설정 저장·한 대씩·버스 전체·폴링·백업", en: "Commissioning communication step by step — wiring, power, saved settings, one device, the whole bus, polling" },
     seoTitle: { ko: "시운전 통신 점검 순서 (RS-485·Modbus) — PortDock", en: "RS-485 / Modbus Commissioning Checklist — PortDock" },
     desc: {
@@ -7131,7 +7131,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["port-inspector", "modbus-master", "netscan"],
     related: ["communication-fault-log", "commissioning-communication-checklist", "rs485-multimeter-check", "cable-shield-grounding", "24v-power-supply-check", "field-noise-communication-errors"],
-    webTools: ["tools/commissioning-checklist/", "tools/multimeter-check/", "tools/bsod-codes/", "tools/troubleshoot/", "tools/system-diagram/", "tools/handover-pack/", "tools/insulation-resistance/", "tools/panel-heat/"],
+    webTools: ["tools/commissioning-checklist/", "tools/multimeter-check/", "tools/bsod-codes/", "tools/troubleshoot/", "tools/system-diagram/", "tools/handover-pack/", "tools/insulation-resistance/", "tools/panel-heat/", "tools/metric-threads/"],
     title: { ko: "통신 설비 정기 점검(예방 보전) 순서 — 단자·케이블·오류율 추세·팬·UPS·PC 저장장치·백업·시간", en: "Preventive maintenance for communication equipment — terminals, error trends, fans, UPS, PC disks, backups" },
     seoTitle: { ko: "통신 설비 정기 점검·예방 보전 순서 — PortDock", en: "Industrial Communication Preventive Maintenance — PortDock" },
     desc: {
@@ -7264,7 +7264,7 @@ export const GUIDES: Guide[] = [
     slug: "rs485-add-device",
     date: "2026-10-31",
     tools: ["modbus-master", "serial", "port-inspector"],
-    related: ["rs485-wiring", "rs485-bias-termination", "modbus-rtu-timeout-polling", "remove-device-from-bus", "ethernet-add-device", "rs485-multimeter-check"],
+    related: ["rs485-wiring", "rs485-bias-termination", "modbus-rtu-timeout-polling", "remove-device-from-bus", "ethernet-add-device", "rs485-multimeter-check", "modbus-tcp-rtu-gateway-pc"],
     webTools: ["tools/wiring/", "tools/rs485/", "tools/serial-timing/", "tools/system-diagram/", "tools/multimeter-check/"],
     devices: true,
     title: { ko: "RS-485 버스에 장비 증설하기 — 국번·장비 수·길이·종단 위치·폴링 주기·마스터 설정", en: "Adding a device to an RS-485 bus — IDs, device count, length, terminator, polling cycle, master settings" },
@@ -7924,12 +7924,12 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["serial", "modbus-master"],
     related: ["modbus-tcp-connection", "modbus-exception-codes", "modbus-rtu-timeout-polling", "rs485-wiring", "modbus-no-response"],
-    webTools: ["tools/modbus-decoder/", "tools/serial-timing/"],
+    webTools: ["tools/modbus-rtu-tcp/", "tools/modbus-decoder/", "tools/serial-timing/"],
     title: { ko: "PC 를 Modbus TCP ↔ RTU 게이트웨이로 쓰기", en: "Using a PC as a Modbus TCP ↔ RTU gateway" },
     seoTitle: { ko: "무료 Modbus TCP ↔ RTU 게이트웨이 — PC 로 쓰기 — PortDock", en: "Free Modbus TCP to RTU Gateway Software for Windows — PortDock" },
     desc: {
-      ko: "게이트웨이 장비 없이 PC 의 COM 포트로 SCADA·HMI(Modbus TCP)와 RS-485 RTU 장비를 잇는 법. 한 번에 하나씩, 무응답 예외 0B·경로 없음 0A, Unit ID 0.",
-      en: "Bridge Modbus TCP SCADA or HMIs to RS-485 RTU devices through the PC's COM port, no gateway box: one request at a time, exceptions 0B/0A, Unit ID 0.",
+      ko: "PortDock Serial(0.10.0 부터)로 게이트웨이 장비 없이 PC 의 COM 포트로 SCADA·HMI(Modbus TCP)와 RS-485 RTU 장비를 잇는 법. 한 번에 하나씩, 예외 0B·0A, Unit ID 0.",
+      en: "Bridge Modbus TCP SCADA/HMIs to RS-485 RTU devices via the PC's COM port with PortDock Serial (from 0.10.0): one request at a time, exceptions 0B/0A, unit ID 0.",
     },
     body: {
       ko: [
@@ -7970,7 +7970,7 @@ export const GUIDES: Guide[] = [
           "한 장비가 꺼져 있으면 그 국번 요청마다 타임아웃만큼 버스가 멈춥니다. 쓰지 않는 국번은 «보낼 국번» 에서 빼거나 폴링을 멈춥니다.",
         ] },
         { h: "5. Unit ID 0 과 방송" },
-        { p: "RTU 에서 국번 0 은 방송 — 모든 장비가 쓰기를 받고 아무도 답하지 않습니다. 게이트웨이 설정 «Unit ID 0» 이 «방송» 이면 국번 0 으로 보내고 응답을 기다리지 않으며 클라이언트에도 답하지 않습니다(쓰기 함수에만 씁니다). 어떤 SCADA 는 Unit ID 를 늘 0 으로 보내는데, 그때는 «기본 국번으로 보내기» 로 바꾸고 장비 국번을 적습니다." },
+        { p: "RTU 에서 국번 0 은 방송 — 모든 장비가 쓰기를 받고 아무도 답하지 않습니다. 게이트웨이는 기본으로 Unit ID 0 요청을 RS-485 로 넘기지 않고 예외 0A(경로 없음)로 답합니다 — 버스의 모든 장비에 잘못 쓰는 일을 막으려는 것입니다. 설정 «Unit ID 0» 을 «방송» 으로 바꾸면(«보낼 국번» 목록을 적었다면 0 도 넣어야 함) 국번 0 으로 보내고 응답을 기다리지 않으며 클라이언트에도 답하지 않습니다(쓰기 함수에만 씁니다). 어떤 SCADA 는 Unit ID 를 늘 0 으로 보내는데, 그때는 «기본 국번으로 보내기» 로 바꾸고 장비 국번을 적습니다." },
         { h: "6. 기록과 통계 읽기" },
         { ul: [
           "통신 기록의 보낸 줄에는 «TCP #1 → RTU 국번 3 FC03» 처럼 어느 클라이언트의 어떤 요청인지 붙습니다. 바로 아래 받은 줄이 그 응답입니다.",
@@ -8019,7 +8019,7 @@ export const GUIDES: Guide[] = [
           "If one device is off, every request to it holds the bus for the full timeout. Remove unused addresses from «Units to forward» or stop polling them.",
         ] },
         { h: "5. Unit ID 0 and broadcast" },
-        { p: "In RTU, address 0 is broadcast — every device takes the write and nobody replies. With «Unit ID 0» set to «Broadcast» the gateway sends to address 0, waits for no reply and sends none to the client (use it for write functions only). Some SCADA packages always send Unit ID 0; for those choose «Send to the default unit» and enter the device address." },
+        { p: "In RTU, address 0 is broadcast — every device takes the write and nobody replies. By default the gateway does not pass Unit ID 0 on to RS-485 and answers with exception 0A (no route), so a stray request cannot write to every device on the bus. With «Unit ID 0» set to «Broadcast» (and, if you set an allowed-unit list, 0 included in it) the gateway sends to address 0, waits for no reply and sends none to the client (use it for write functions only). Some SCADA packages always send Unit ID 0; for those choose «Send to the default unit» and enter the device address." },
         { h: "6. Reading the log and statistics" },
         { ul: [
           "Sent lines in the traffic log are tagged like «TCP #1 → RTU unit 3 FC03» — which client, which request. The received line just below is its reply.",

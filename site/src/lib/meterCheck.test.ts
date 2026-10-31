@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { expectedOhm, groundDiff, ITEMS, LEVEL_NAME, loopCurrent, loopPercent, parseReading, rs232TxIdle, rs485CommonMode, rs485Idle, rs485Ohm, sensorOutput, supplyUnderLoad, verdictText } from "./meterCheck.ts";
+import { expectedOhm, groundDiff, ITEMS, LEVEL_NAME, RC_TERM, loopCurrent, loopPercent, parseReading, rs232TxIdle, rs485CommonMode, rs485Idle, rs485Ohm, sensorOutput, supplyUnderLoad, verdictText } from "./meterCheck.ts";
 import { probeSvg } from "./meterFig.ts";
 
 const lv = (v: { level: string }) => v.level;
@@ -40,6 +40,18 @@ test("RS-485 저항: 60 Ω 문제 없음, 120 Ω 한쪽만, 수 kΩ·OL 종단 �
   assert.equal(lv(rs485Ohm({ ohm: 30, ...bus })), "fault");
   assert.match(rs485Ohm({ ohm: 1, ...bus }).msg.ko, /단락/);
   assert.equal(lv(rs485Ohm({ ohm: NaN, ...bus })), "warn");
+});
+
+test("RS-485 저항: RC 종단(1 nF + 120 Ω)은 직류로 안 보임 — 종단 없음 값이면 문제 없음, 저항 종단이 보이면 볼 것", () => {
+  const rc = { nodes: 3, rTerm: RC_TERM, rBias: 0 };
+  assert.equal(lv(rs485Ohm({ ohm: 4000, ...rc })), "ok");
+  assert.equal(lv(rs485Ohm({ ohm: Infinity, ...rc })), "ok");
+  assert.match(rs485Ohm({ ohm: 4000, ...rc }).more.map((m) => m.ko).join(" "), /직류/);
+  assert.equal(lv(rs485Ohm({ ohm: 117, ...rc })), "warn");
+  assert.match(rs485Ohm({ ohm: 117, ...rc }).msg.en, /resistor termination/);
+  assert.equal(lv(rs485Ohm({ ohm: 1, ...rc })), "fault");
+  // 저항 종단으로 고르고 «종단 없음» 이 나오면 RC 일 수 있다는 안내
+  assert.ok(rs485Ohm({ ohm: 5000, ...bus }).more.some((m) => /RC/.test(m.ko) && /DC/.test(m.en)));
 });
 
 test("RS-485 쉬는 전압: +200 mV 이상 / ±200 mV 안 / −200 mV 이하", () => {

@@ -1,6 +1,6 @@
 # 장비 Modbus 레지스터 맵 (data/devices)
 
-국산 산업 장비(인버터·온도 조절기·전력 미터 등)의 Modbus 레지스터 맵을 장비 하나에 JSON 파일 하나로 모았습니다.
+국산·해외 산업 장비(인버터·온도 조절기·전력 미터 등 — LS ELECTRIC·오토닉스·한영넉스부터 Siemens·Schneider Electric·Danfoss·Eastron 까지)의 Modbus 레지스터 맵을 장비 하나에 JSON 파일 하나로 모았습니다.
 PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 흉내…», 홈페이지 `/devices/` 가 이 파일들을 빌드 때 그대로 읽습니다.
 
 > **사실 정보만 담았습니다.** 주소·형식·단위·배율·읽기/쓰기·함수 코드는 제조사가 공개한 매뉴얼에서 직접 확인한 것만 넣었고, 장비마다 문서 이름·판·쪽과 확인일(`sources`)을 붙였습니다. 매뉴얼 문장은 옮기지 않았습니다.

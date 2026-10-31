@@ -7,7 +7,7 @@ export const mcpHelp: HelpDoc = {
       title: "이 프로그램은",
       body: [
         "PortDock MCP(portdock-mcp.exe)는 AI 클라이언트(Claude Desktop·Claude Code·VS Code·Cursor 등 MCP 를 쓰는 프로그램)가 띄우는 서버입니다. 창이 없고, 클라이언트와 표준 입출력(stdio)으로만 이야기합니다.",
-        "AI 는 이 서버의 도구로 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비에서 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기 도구는 이 PC 주소(127.0.0.1)만 받아, 이 PC 에서 도는 시뮬레이터로 연습할 때 씁니다. 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄워 두면 실제 장비에 닿을 수 있으니 주의하세요.",
+        "AI 는 이 서버의 도구로 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비에서 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기 도구는 이 PC 주소(127.0.0.1)만 받아, 이 PC 에서 도는 시뮬레이터로 연습할 때 씁니다. modbus_write_sim 은 대상이 PortDock 이라고 밝힐 때만 씁니다(0.10.0 부터). 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502)·터널)을 띄워 두면 mc_write_sim 의 쓰기는 실제 장비에 닿을 수 있으니 주의하세요.",
       ],
     },
     {
@@ -40,7 +40,8 @@ export const mcpHelp: HelpDoc = {
         "- modbus_write_sim — 코일(0F)·보유 레지스터(10) 쓰기. PortDock Modbus Slave 를 이 PC 에서 Modbus TCP 로 띄워 연습할 때.",
         "- mc_write_sim — MC 3E 일괄 쓰기(1401). PortDock PLC Simulator 를 이 PC 에서 띄워 연습할 때.",
         "- 대상이 127.0.0.1·::1·localhost 가 아니면 연결하기 전에 거절합니다. 이름 풀이를 하지 않으므로 이름으로 다른 주소를 가리킬 수 없습니다.",
-        "- 판정은 주소로만 합니다. 이 PC 에서 127.0.0.1 을 다른 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)이 떠 있으면 쓴 값이 실제 장비까지 갈 수 있으니, 그때는 쓰기 도구를 쓰지 않습니다.",
+        "- modbus_write_sim 은 쓰기 전에 장비 정보 읽기(FC 2B/0E)로 제조사를 묻고, «PortDock» 으로 시작할 때만 씁니다(0.10.0 부터). PortDock Modbus Slave 의 기본 장비 정보가 «PortDock» 이고, 화면에서 바꾸면 쓰기를 거절합니다. 그래서 PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502)처럼 실제 RS-485 장비로 넘겨 주는 곳에는 쓰지 않습니다.",
+        "- mc_write_sim 은 주소로만 판정합니다(Serial 게이트웨이는 Modbus 만 넘겨 MC 쓰기는 그쪽으로 가지 않음). 이 PC 에서 127.0.0.1 을 다른 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)이 떠 있으면 쓴 값이 실제 장비까지 갈 수 있으니, 그때는 쓰기 도구를 쓰지 않습니다.",
         "- Modbus Slave 로 연습할 때는 묶을 주소를 127.0.0.1 로 둡니다(기본 0.0.0.0 은 다른 PC 도 붙을 수 있음).",
       ],
     },
@@ -67,7 +68,7 @@ export const mcpHelp: HelpDoc = {
       title: "About",
       body: [
         "PortDock MCP (portdock-mcp.exe) is a server started by an AI client (Claude Desktop, Claude Code, VS Code, Cursor or any program that uses MCP). It has no window and talks to the client over standard input/output (stdio) only.",
-        "With its tools the AI reads this PC's COM ports and network adapters, and reads Modbus, MC protocol and SCPI values from devices you name. The write tools accept only this PC's address (127.0.0.1) and are for practising with simulators running here. If a program on this PC forwards to another device (a TCP relay, gateway or tunnel), a write can reach a real device — be careful.",
+        "With its tools the AI reads this PC's COM ports and network adapters, and reads Modbus, MC protocol and SCPI values from devices you name. The write tools accept only this PC's address (127.0.0.1) and are for practising with simulators running here. modbus_write_sim writes only to a target that identifies itself as PortDock (from 0.10.0). If a program on this PC forwards to another device (a TCP relay, PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default) or a tunnel), an mc_write_sim write can reach a real device — be careful.",
       ],
     },
     {
@@ -100,7 +101,8 @@ export const mcpHelp: HelpDoc = {
         "- modbus_write_sim — writes coils (0F) or holding registers (10). For practising with PortDock Modbus Slave running as Modbus TCP on this PC.",
         "- mc_write_sim — MC 3E batch write (1401). For practising with PortDock PLC Simulator on this PC.",
         "- Any target other than 127.0.0.1, ::1 or localhost is refused before connecting. Names are not resolved, so a name cannot point the tools elsewhere.",
-        "- The check is by address only. If a program on this PC forwards 127.0.0.1 to another device (PortDock TCP relay, a vendor gateway, an SSH tunnel …), written values can reach a real device — do not use the write tools then.",
+        "- modbus_write_sim first asks for the device identification (FC 2B/0E) and writes only if the vendor name begins with «PortDock» (from 0.10.0). PortDock Modbus Slave reports «PortDock» by default; if you change it on screen, writes are refused. So it does not write through a forwarder to real RS-485 devices such as PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default).",
+        "- mc_write_sim is checked by address only (the Serial gateway passes Modbus only, so MC writes do not go through it). If a program on this PC forwards 127.0.0.1 to another device (PortDock TCP relay, a vendor gateway, an SSH tunnel …), written values can reach a real device — do not use the write tools then.",
         "- When practising with Modbus Slave, set its bind address to 127.0.0.1 (the default 0.0.0.0 lets other PCs connect).",
       ],
     },

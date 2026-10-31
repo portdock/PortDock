@@ -171,6 +171,7 @@ test("CONNECT(3.1.1)·CONNACK·SUBSCRIBE·SUBACK·PINGREQ 이어진 흐름, 암�
   assert.equal(f0.password, "6 B");
   assert.ok(!JSON.stringify(d.packets[0].fields).includes("secret"));
   assert.equal(f0.keepAlive, "60");
+  assert.match(f0.connectFlags, /clean session/); // 3.1.1 이름
   const ack = d.packets[1].fields.find((x) => x.k === "returnCode")!;
   assert.equal(ack.note!.en, "Not authorized");
   assert.equal(d.packets[2].fields.find((x) => x.k === "filters")!.v, "plant/+/temp (QoS 1)");
@@ -188,6 +189,10 @@ test("MQTT 5: CONNECT 수준 5 로 자동, PUBLISH 속성(Content Type·User Pro
   const all = u8([0x10, connBody.length, ...connBody, 0x30, pubBody.length, ...pubBody]);
   const d = decodePackets(all);
   assert.equal(d.version, 5);
+  // MQTT 5.0 §3.1.2.4: bit1 은 «Clean Start»(3.1.1 의 Clean Session 이 아님)
+  const cf = d.packets[0].fields.find((x) => x.k === "connectFlags")!.v;
+  assert.match(cf, /clean start/);
+  assert.ok(!/clean session/.test(cf));
   const pr = d.packets[1].fields.find((x) => x.k === "props")!.v;
   assert.equal(pr, 'Content Type: "application/json"\nTopic Alias: 2\nUser Property: "k" = "v"');
   assert.equal(decodePayload(d.packets[1].payload!).kind, "json");

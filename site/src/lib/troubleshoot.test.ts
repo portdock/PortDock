@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { TREE } from "../data/troubleshoot.ts";
 import { WEB_TOOLS } from "../data/webTools.ts";
 import { TEMPLATES } from "./wiring.ts";
-import { ITEMS } from "./meterCheck.ts";
+import { expectedOhm, ITEMS, rs232TxIdle } from "./meterCheck.ts";
 import { allPaths, checkTree, isQuestion, linkPath, parseHash, toHash, toText, walk } from "./troubleshoot.ts";
 
 // guides.ts·tools.ts 는 별칭(@shared)을 써서 node 로 바로 못 불러온다 — 글에서 슬러그·id 를 읽는다
@@ -118,4 +118,18 @@ test("linkPath", () => {
   assert.equal(linkPath({ k: "guide", to: "rs485-wiring" }), "guides/rs485-wiring/");
   assert.equal(linkPath({ k: "app", to: "serial" }), "serial/");
   assert.equal(linkPath({ k: "web", to: "tools/wiring/", hash: "tpl=rs232" }), "tools/wiring/#tpl=rs232");
+});
+
+test("측정 기준이 멀티미터 점검기와 같음 — RS-232 쉬는 전압, RS-485 종단 없음 저항", () => {
+  const all = JSON.stringify(TREE);
+  // RS-232: −5~−15 V 가 문제 없음, −3~−5 V 는 «볼 것»(meterCheck.rs232TxIdle 과 같은 경계)
+  assert.ok(!/−3~−15 V|−3 to −15 V/.test(all), "−3~−15 V 를 정상처럼 적지 않음");
+  assert.match(all, /−5~−15 V/);
+  assert.equal(rs232TxIdle(-10).level, "ok");
+  assert.equal(rs232TxIdle(-4).level, "warn");
+  // RS-485 종단 없음: 32대면 12 kΩ/32 = 375 Ω — «수 kΩ» 만으로 적지 않고 «수백 Ω» 부터
+  assert.ok(expectedOhm(0, { nodes: 32, rTerm: 120, rBias: 0 }) < 1000);
+  assert.match(all, /수백 Ω~수 kΩ 이상\(없음/);
+  assert.match(all, /hundreds of Ω to several kΩ or more \(none/);
+  assert.match(all, /RC 종단\(1 nF \+ 120 Ω\)/);
 });

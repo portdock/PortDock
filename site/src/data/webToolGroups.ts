@@ -82,7 +82,7 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/troubleshoot/": "diag",
   "tools/multimeter-check/": "diag",
   "tools/pinouts/": "draw",
-  "tools/commissioning-checklist/": "draw",
+  "tools/commissioning-checklist/": "diag",
   "tools/cable-selection/": "elec",
   "tools/awg-mm2/": "elec",
   "tools/conduit-fill/": "elec",
@@ -96,6 +96,8 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/metric-threads/": "field",
   "tools/modbus-rtu-tcp/": "comm",
   "tools/modbus-practice/": "comm",
+  "tools/pump-fan-affinity/": "elec",
+  "tools/conveyor-speed/": "mech",
 };
 
 export const groupOf = (path: string): GroupId => GROUP_OF[path as WebTool["path"]] ?? "etc";

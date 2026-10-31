@@ -6,12 +6,15 @@ import { renderSvg, LIGHT, DARK, legendLayout, esc } from "./diagramSvg.ts";
 
 const base = { conv: "ab" as const, dev: "ab" as const, lengthM: 100, baud: 9600, parity: "even" as const, bias: true };
 
-test("RS-485 2선: 끝 두 곳에만 종단(120 Ω 글 둘), 장비 수만큼 상자 + 변환기", () => {
+test("RS-485 2선: 끝 두 곳에만 종단(바이어스 켬 → 150 Ω 또는 1 nF+120 Ω 글 둘), 장비 수만큼 상자 + 변환기", () => {
   const r = rs485TwoWire({ ...base, devices: [{ name: "A", unit: 1 }, { name: "B", unit: 2 }, { name: "C", unit: 3 }] }, "ko");
   const boxes = r.drawing.shapes.filter((s) => s.k === "box");
   assert.equal(boxes.length, 4);
-  const ohm = r.drawing.shapes.filter((s) => s.k === "text" && s.t === "120 Ω");
-  assert.equal(ohm.length, 2);
+  // Modbus V1.02 §3.4.5: 바이어스를 쓰면 150 Ω 또는 1 nF + 120 Ω 직렬
+  assert.equal(r.drawing.shapes.filter((s) => s.k === "text" && s.t === "150 Ω").length, 2);
+  assert.equal(r.drawing.shapes.filter((s) => s.k === "text" && s.t === "또는 1 nF+120 Ω").length, 2);
+  assert.ok(r.checks.some((c) => c.text.includes("1 nF + 120 Ω") && c.src?.includes("§3.4.5")));
+  assert.ok(r.checks.some((c) => c.text.includes("32 → 28") && c.src?.includes("§3.4.6")));
   // 종단 2 + 바이어스 2 = 저항 4
   assert.equal(r.drawing.shapes.filter((s) => s.k === "res").length, 4);
   assert.equal(r.warnings.length, 0);
@@ -22,6 +25,8 @@ test("RS-485 2선: 끝 두 곳에만 종단(120 Ω 글 둘), 장비 수만큼 �
 test("RS-485 2선: 바이어스 끄면 저항 2개, 단자 표기 다르면 안내", () => {
   const r = rs485TwoWire({ ...base, bias: false, dev: "d", devices: [{ name: "A", unit: 1 }] }, "en");
   assert.equal(r.drawing.shapes.filter((s) => s.k === "res").length, 2);
+  assert.equal(r.drawing.shapes.filter((s) => s.k === "text" && s.t === "120 Ω").length, 2);
+  assert.ok(!r.drawing.shapes.some((s) => s.k === "text" && /1 nF/.test(s.t)));
   assert.ok(r.warnings.some((w) => w.level === "info" && w.text.includes("D+")));
   const terms = r.drawing.shapes.filter((s) => s.k === "term").map((s) => (s.k === "term" ? s.label : ""));
   assert.deepEqual(terms, ["B", "A", "SG", "D+", "D−", "SG"]);
@@ -35,6 +40,12 @@ test("RS-485 2선: 국번 중복·범위, 길이·보율 경고", () => {
   assert.ok(r.warnings.some((w) => w.level === "warn" && w.text.includes("868")));
   const far = rs485TwoWire({ ...base, lengthM: 1500, devices: [{ name: "A", unit: 1 }] }, "ko");
   assert.ok(far.warnings.some((w) => w.level === "fault" && w.text.includes("1200")));
+  // 1000~1200 m @ 9600: TIA 일반값 안이지만 Modbus §3.4.3(9600·AWG26 → 1000 m)은 넘음
+  const mid = rs485TwoWire({ ...base, lengthM: 1100, devices: [{ name: "A", unit: 1 }] }, "en");
+  assert.ok(mid.warnings.some((w) => w.level === "warn" && w.text.includes("1000 m") && w.src?.includes("§3.4.3")));
+  assert.equal(rs485TwoWire({ ...base, lengthM: 1000, devices: [{ name: "A", unit: 1 }] }, "ko").warnings.length, 0);
+  const mid4 = rs485FourWire({ devices: [{ name: "A", unit: 1 }], labels: "txrx", lengthM: 1100, baud: 9600, parity: "none" }, "ko");
+  assert.ok(mid4.warnings.some((w) => w.text.includes("1000 m")));
 });
 
 test("장비 맵 값과 맞지 않는 보율·패리티·국번 범위", () => {
@@ -52,12 +63,13 @@ test("RS-485 2선: 8대까지만 그린다", () => {
   assert.ok(r.warnings.some((w) => w.level === "info"));
 });
 
-test("RS-485 4선: 마스터 TX 는 장비 RX 와 같은 줄, 종단 셋", () => {
+test("RS-485 4선: 마스터 TX 는 장비 RX 와 같은 줄, 두 쌍 모두 양 끝 종단(Modbus §3.4.5)", () => {
   const r = rs485FourWire({ devices: [{ name: "A", unit: 1 }, { name: "B", unit: 2 }], labels: "txrx", lengthM: 50, baud: 9600, parity: "none" }, "ko");
   const terms = r.drawing.shapes.filter((s) => s.k === "term").map((s) => (s.k === "term" ? s.label : ""));
   assert.deepEqual(terms.slice(0, 5), ["TX+", "TX−", "RX+", "RX−", "SG"]);
   assert.deepEqual(terms.slice(5, 10), ["RX+", "RX−", "TX+", "TX−", "SG"]);
-  assert.equal(r.drawing.shapes.filter((s) => s.k === "res").length, 3);
+  assert.equal(r.drawing.shapes.filter((s) => s.k === "res").length, 4);
+  assert.ok(r.checks.some((c) => c.src?.includes("§3.4.5") && c.text.includes("양 끝")));
 });
 
 test("RS-232: 널 모뎀 3선은 3→2·2→3·5–5, 핸드셰이크 포함은 7↔8·4→6·1", () => {

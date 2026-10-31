@@ -193,3 +193,19 @@ test("그리기: 예시 → SVG, 고른 것 강조, 범례는 쓴 선 종류만"
   const bus = toDrawing(EXAMPLES[0].make("ko"), "ko");
   assert.ok(bus.shapes.some((s) => s.k === "wire" && s.w === 6));
 });
+
+test("단위 부하: 32 넘으면 볼 것, 29~32 는 바이어스를 쓰면 28 로 줄어든다는 안내(Modbus §3.4.6)", () => {
+  const bus = (n: number) =>
+    doc({
+      nodes: Array.from({ length: n }, (_, i) => ({ id: `s${i}`, kind: "sensor" as const, name: `S${i}`, x: 0, y: 0, unit: i + 1 })),
+      buses: [{ id: "b", kind: "rs485", name: "B", x: 0, y: 0, len: 100 }],
+      links: Array.from({ length: n }, (_, i) => ({ id: `l${i}`, kind: "rs485" as const, a: `s${i}`, b: "b" })),
+    });
+  const ul = (n: number) => checkDoc(bus(n), "ko").filter((x) => x.text.includes("단위 부하"));
+  assert.equal(ul(28).length, 0);
+  assert.equal(ul(30).length, 1);
+  assert.equal(ul(30)[0].level, "info");
+  assert.match(ul(30)[0].text, /28/);
+  assert.equal(ul(33)[0].level, "warn");
+  assert.match(checkDoc(bus(33), "en").find((x) => x.text.includes("unit loads"))!.text, /28 with biasing/);
+});

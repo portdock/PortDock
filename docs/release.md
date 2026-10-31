@@ -29,6 +29,12 @@
 ## 순서
 
 1. **버전 올리기** — 모든 `apps/*/src-tauri/tauri.conf.json`(12개) 의 `version`, 루트 `Cargo.toml` 의 `[workspace.package] version`, `apps/*/package.json` 의 `version` 을 같은 값으로. (워크플로가 태그와 `tauri.conf.json` 버전이 다르면 멈춘다.)
+   함께 올릴 곳(0.9.0 커밋도 이 묶음을 고쳤다):
+   - `shared/version.ts` 의 `VERSION` — 화면·복사 글에 쓰는 값(`tools/packages.test.mjs` 가 package.json 과 같은지 본다)
+   - `crates/mcp/server.json` — `node tools/mcp.mjs server-json --draft` 로 다시 쓴다(해시 자리 0 인 초안, 공개 뒤 «릴리스 뒤 사람이 할 일» 에서 실제 해시)
+   - `.github/ISSUE_TEMPLATE/bug.yml` 의 버전 칸 `placeholder`
+   - `package-lock.json`·`Cargo.lock` 의 PortDock 패키지 버전 — `npm install`·`cargo build` 로 따라 바뀐다
+   - 공개 뒤에는 화면 글의 «(0.10.0 부터)»·«(from 0.10.0)» 같은 새 기능 표시를 지운다(코드 주석의 표시는 남겨도 된다). 찾기: `git grep -nE "0\.10\.0 부터|[Ff]rom 0\.10\.0"`
 2. **제3자 고지 새로 만들기** — 의존성이 바뀌었으면 결과가 달라진다.
    ```powershell
    node tools/notices.mjs          # THIRD_PARTY_NOTICES.txt 다시 만들기

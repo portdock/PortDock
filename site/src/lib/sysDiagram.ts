@@ -111,6 +111,8 @@ export const LIMITS = { nodes: 200, buses: 20, links: 400, text: 80, note: 300 }
 export const UNIT_LOADS = [1, 0.5, 0.25, 0.125];
 /** 표준 송수신기(1 단위 부하) 기준 한 버스 한도 */
 export const UL_MAX = 32;
+/** 바이어스를 쓰면 줄이는 장비 수 — Modbus over serial line V1.02 §3.4.6 */
+export const BIAS_UL = 4;
 /** 장비당 읽는 레지스터 수를 적지 않았을 때 */
 export const DEFAULT_REGS = 10;
 /** 폴링 어림에 쓰는 슬레이브 응답 지연(초) — 시리얼 통신 시간 계산기 기본값과 같다 */
@@ -475,8 +477,17 @@ export function checkDoc(doc: SysDoc, lang: Lang): Finding[] {
         out.push({
           level: "warn",
           text: t(
-            `«${nm(bus)}» 단위 부하 합 ${fmtUl(st.unitLoads)} (${uniq.length}대) — 표준 기준 32 를 넘습니다. 1/8 단위 부하 송수신기인지 확인하거나 중계기로 나눌 것.`,
-            `«${nm(bus)}» totals ${fmtUl(st.unitLoads)} unit loads (${uniq.length} devices) — over the standard 32. Check for 1/8 unit-load transceivers or split with a repeater.`,
+            `«${nm(bus)}» 단위 부하 합 ${fmtUl(st.unitLoads)} (${uniq.length}대) — 표준 기준 32 를 넘습니다(바이어스를 쓰면 Modbus 규격은 4 줄여 28). 1/8 단위 부하 송수신기인지 확인하거나 중계기로 나눌 것.`,
+            `«${nm(bus)}» totals ${fmtUl(st.unitLoads)} unit loads (${uniq.length} devices) — over the standard 32 (28 with biasing, per the Modbus spec). Check for 1/8 unit-load transceivers or split with a repeater.`,
+          ),
+          ids: [bus.id],
+        });
+      else if (st.unitLoads > UL_MAX - BIAS_UL)
+        out.push({
+          level: "info",
+          text: t(
+            `«${nm(bus)}» 단위 부하 합 ${fmtUl(st.unitLoads)} — 32 안이지만, 바이어스(풀업·풀다운)를 쓰면 Modbus 규격은 최대 장비 수를 4 줄입니다(28, §3.4.6).`,
+            `«${nm(bus)}» totals ${fmtUl(st.unitLoads)} unit loads — within 32, but with biasing (pull-up/pull-down) the Modbus spec lowers the maximum by 4 (28, §3.4.6).`,
           ),
           ids: [bus.id],
         });

@@ -2,6 +2,7 @@
 // 웹 도구: 멀티미터 측정값 점검기 — 현장에서 잰 값을 넣으면 «문제 없음(이 측정 범위) / 볼 것 / 문제 있음» 과 까닭.
 // 판정은 lib/meterCheck.ts(node --test), 측정 그림은 lib/meterFig.ts(빌드 때 SVG). 모두 브라우저 안 — 서버로 보내지 않는다.
 // 항목마다 id 가 있어 고장 원인 찾기 도우미에서 #rs485-ohm 처럼 바로 온다.
+import FaqBlock from "../components/FaqBlock.astro";
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
@@ -74,12 +75,12 @@ const ITEMS_UI: Item[] = [
       ? "모든 장비 전원을 끄고, 선은 그대로 둔 채 아무 장비의 A–B 단자 사이를 저항(Ω)으로 잽니다. 장비 수와 바이어스 저항을 넣으면 예상값과 비교합니다."
       : "Power off every device, leave the wiring as it is, and measure resistance (Ω) across A–B at any device. Enter the device count and bias resistors to compare with expected values.",
     basis: ko
-      ? "종단 120 Ω 두 개가 나란히면 60 Ω. 수신기 하나는 일반적으로 12 kΩ(단위 부하), 바이어스 저항은 전원이 꺼지면 전원 회로를 거쳐 직렬로 보일 수 있습니다. Modbus 규격: 종단은 양 끝에만."
-      : "Two 120 Ω terminations in parallel make 60 Ω. A receiver is typically 12 kΩ (one unit load); bias resistors can appear in series through a powered-off supply. Modbus spec: termination at both ends only.",
+      ? "종단 120 Ω 두 개가 나란히면 60 Ω. 수신기 하나는 일반적으로 12 kΩ(단위 부하), 바이어스 저항은 전원이 꺼지면 전원 회로를 거쳐 직렬로 보일 수 있습니다. Modbus 규격: 종단은 양 끝에만(150 Ω 또는 1 nF + 120 Ω 직렬). RC 종단(1 nF 직렬)은 직류를 막아 멀티미터로는 보이지 않습니다."
+      : "Two 120 Ω terminations in parallel make 60 Ω. A receiver is typically 12 kΩ (one unit load); bias resistors can appear in series through a powered-off supply. Modbus spec: termination at both ends only (150 Ω, or 1 nF + 120 Ω in series). RC termination (1 nF in series) blocks DC, so a multimeter cannot see it.",
     fields: [
       { f: "ohm", label: ko ? "잰 값(Ω, OL 가능)" : "Reading (Ω, OL allowed)", kind: "num", value: "60" },
       { f: "nodes", label: ko ? "트랜시버 수(변환기 포함)" : "Transceivers (incl. adapter)", kind: "num", value: "3" },
-      { f: "rTerm", label: ko ? "종단 저항" : "Terminator", kind: "sel", opts: [["120", "120 Ω"], ["150", "150 Ω"]] },
+      { f: "rTerm", label: ko ? "종단 저항" : "Terminator", kind: "sel", opts: [["120", "120 Ω"], ["150", "150 Ω"], ["-1", ko ? "1 nF + 120 Ω (RC)" : "1 nF + 120 Ω (RC)"]] },
       { f: "rBias", label: ko ? "바이어스 저항(하나)" : "Bias resistor (each)", kind: "sel", opts: [["0", ko ? "없음·모름" : "None / unknown"], ["470", "470 Ω"], ["560", "560 Ω"], ["680", "680 Ω"], ["1000", "1 kΩ"]] },
     ],
   },
@@ -151,6 +152,18 @@ const SRC = [
   { name: "Vaisala PR-33 — Default mA output value (NAMUR NE 43)", href: "https://docs.vaisala.com/r/M212411EN-B/en-US/GUID-E40476FD-D92F-4BE2-ABBD-CF64B0D2D65A" },
   { name: "Endress+Hauser RMA42 Operating Instructions (BA00287R) — NE 43", href: "https://portal.endress.com/wa001/dla/5000557/8076/000/08/BA00287REN_0516.pdf" },
 ];
+// 자주 묻는 것(FAQPage) — components/FaqBlock.astro
+const FAQ: [string, string][] = ko
+  ? [
+      ["A–B 저항을 전원을 켠 채 재도 되나요?", "아니요. 모든 장비 전원을 끄고 잽니다. 전원이 있으면 측정기가 틀린 값을 보이고 장비나 측정기가 상할 수 있습니다."],
+      ["종단을 달았는데 «종단 없음» 으로 나와요", "RC 종단(1 nF + 120 Ω 직렬)은 콘덴서가 직류를 막아 멀티미터로는 보이지 않습니다. «종단 저항» 칸에서 RC 를 고르거나 끝 장비의 종단 스위치·부품을 눈으로 봅니다. 장비 안 종단이 전원을 켤 때만 붙는 제품도 있습니다."],
+      ["«문제 없음(이 측정 범위)» 이면 통신도 되나요?", "잰 값 하나에서 문제가 보이지 않는다는 뜻입니다. 통신 설정·국번·극성·노이즈 같은 다른 원인 후보는 고장 원인 찾기 도우미로 이어서 봅니다."],
+    ]
+  : [
+      ["Can I measure A–B resistance with power on?", "No. Power off every device first. With power on the meter shows wrong values and the device or meter can be damaged."],
+      ["I fitted termination but it reads «no termination»", "RC termination (1 nF + 120 Ω in series) blocks DC with its capacitor, so a multimeter cannot see it. Choose RC in the «Terminator» field, or look at the end devices' termination switches and parts. Some devices also switch in internal termination only when powered."],
+      ["Does «No issue found (in this measurement)» mean communication will work?", "It means this one reading shows no problem. For other possible causes — settings, slave IDs, polarity, noise — continue with the troubleshooting helper."],
+    ];
 ---
 
 <Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
@@ -204,6 +217,7 @@ const SRC = [
 
     <section class="prose">
       <p>{L.tsNote} <a href={url(lang, "tools/troubleshoot/")}>{L.ts}</a>. {L.wdNote} <a href={url(lang, "tools/wiring/")}>{L.wd}</a>. {L.rsNote} <a href={url(lang, "tools/rs485/")}>{L.rs}</a>.</p>
+      <FaqBlock lang={lang} items={FAQ} />
       <h2>{L.srcTitle}</h2>
       <ul>
         {SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}

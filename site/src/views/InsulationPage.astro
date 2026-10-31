@@ -1,6 +1,7 @@
 ---
 // 웹 도구: 절연 저항 판정 — 회로 종류(SELV·PELV / 500 V 이하 / 500 V 초과)·측정 전압·잰 값(MΩ) → «문제 없음(이 측정 범위)/볼 것/문제 있음».
 // 기준표·판정은 lib/insulation.ts(node --test — 전기설비기술기준 제52조·IEC 60364-6 표 6.1). 모두 브라우저 안 — 서버로 보내지 않는다.
+import FaqBlock from "../components/FaqBlock.astro";
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
@@ -98,6 +99,18 @@ const L = ko
       log: "commissioning checklist maker",
     };
 const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, v[lang]])) };
+// 자주 묻는 것(FAQPage) — components/FaqBlock.astro
+const FAQ: [string, string][] = ko
+  ? [
+      ["24 V 제어 회로도 500 V 로 재나요?", "아니요. SELV·PELV(특별저압) 회로는 규정 시험 전압 250 V 로 잽니다. 500 V 를 걸면 회로에 남은 전자 부품이 상할 수 있고, PLC·인버터·전원 장치 같은 장비는 떼어 내거나 단자를 풀고 잽니다."],
+      ["최소값만 넘으면 괜찮은가요?", "최소값은 합격선일 뿐입니다. 같은 회로를 같은 조건·같은 시간(예: 1분)에 잰 지난 값보다 크게 떨어졌다면 습기·먼지·피복 손상의 시작일 수 있으니 기록해 추세를 봅니다."],
+      ["여러 회로를 묶어 쟀더니 낮게 나와요", "차단기·단자대에서 구간을 나눠 다시 재어 낮은 구간을 좁힙니다. 재기 전에는 차단·검전·잠금을 하고, 잰 뒤에는 케이블을 방전한 다음 손댑니다."],
+    ]
+  : [
+      ["Do I test a 24 V control circuit at 500 V?", "No. SELV and PELV (extra-low voltage) circuits are tested at the specified 250 V. 500 V can damage electronic parts left in the circuit; disconnect PLCs, drives, power supplies and similar equipment before testing."],
+      ["Is a reading above the minimum always fine?", "The minimum is only the pass line. If the value has dropped a lot compared with earlier readings taken the same way and at the same time (e.g. 1 minute), moisture, dust or insulation damage may be starting — log it and watch the trend."],
+      ["Several circuits measured together read low", "Split them at breakers or terminal blocks and measure again to narrow down the low section. Isolate, verify absence of voltage and lock out before testing, and discharge the cable afterwards before touching it."],
+    ];
 ---
 
 <Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
@@ -146,6 +159,7 @@ const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(
       <h2>{L.lTitle}</h2>
       <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
       <p>{L.seeMm} <a href={url(lang, "tools/multimeter-check/")}>{L.mm}</a>. {L.seeLog} <a href={url(lang, "tools/commissioning-checklist/")}>{L.log}</a>.</p>
+      <FaqBlock lang={lang} items={FAQ} />
       <h2>{L.srcTitle}</h2>
       <ul>
         <li><a href="https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B8%B0%EC%88%A0%EA%B8%B0%EC%A4%80" rel="noopener" target="_blank">{ko ? "전기설비기술기준(산업통상자원부 고시) 제52조 저압전로의 절연성능 — 국가법령정보센터" : "Korean Electrical Equipment Technical Standards, Article 52 (insulation of low-voltage circuits) — law.go.kr"}</a></li>
