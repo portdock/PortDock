@@ -34,6 +34,8 @@ test("Net Scan — 확인한 포트 가운데 인증 없는 산업 프로토콜�
     [80, 502, 44818],
   );
   assert.deepEqual(exposedPorts([443, 1883, 5025]), []);
+  // (0.11.0) 방송으로 찾기에 답한 BACnet/IP(UDP 47808)도 인증 없는 산업 프로토콜
+  assert.match(exposeLines([47808], "ko")[0], /^47808 BACnet\/IP — 산업 프로토콜 열림/);
   const ko = exposeLines([502, 102, 23, 80, 4840], "ko");
   assert.equal(ko.length, 4);
   assert.match(ko[0], /^102 S7 \(ISO-TSAP\) · 502 Modbus TCP — 산업 프로토콜 열림/);

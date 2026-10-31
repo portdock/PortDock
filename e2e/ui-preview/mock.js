@@ -1385,7 +1385,7 @@ mockIPC(
 // ================================================================ Net Scan (apps/netscan — 명령: apps/netscan/src-tauri/src/lib.rs)
 // 위 공용 세션(S)과 따로 논다. 범위의 주소를 0.5초에 하나씩 «찾는다»(/24 는 2분 남짓 — 다 눌러 보기 동안 계속 찾는 중이도록).
 // 일부러 실패하는 입력: 범위 4096개 초과, 감시 장비 «nohost»(찾지 못함), 감시 IP 끝이 .99(늘 시간 초과).
-const NETSCAN = new Set(["list_nics", "range_info", "scan_start", "scan_cancel", "modbus_ident", "wake", "open_web", "open_master", "monitor_start", "monitor_stop", "monitor_set_log"]);
+const NETSCAN = new Set(["list_nics", "range_info", "scan_start", "scan_cancel", "modbus_ident", "discover", "wake", "open_web", "open_master", "monitor_start", "monitor_stop", "monitor_set_log"]);
 const nsIp = (s) => {
   const p = s.trim().split(".");
   if (p.length !== 4 || !p.every((x) => /^\d{1,3}$/.test(x) && Number(x) <= 255)) throw `${tr("IP 주소가 아닙니다", "Not an IP address")}: «${s.trim()}»`;
@@ -1562,6 +1562,27 @@ async function netscan(cmd, a) {
       await sleep(300);
       if (a.ip.endsWith(".10")) return { unit: 1, vendor: "PortDock", product: "SIM-PLC", revision: "1.0" };
       return fail(`${tr("예외", "exception")} 01 (${tr("지원하지 않는 기능", "illegal function")})`);
+    // (0.11.0) 방송으로 찾기 — 랜카드 대역의 .30 이 EtherNet/IP(Rockwell PLC), .60 은 방송에만 답하는 BACnet 장치(라우터 뒤 장치 하나 더)
+    case "discover": {
+      await sleep(Math.min(a.config.waitMs ?? 2000, 800));
+      if (!a.config.enip && !a.config.bacnet) return fail(tr("EtherNet/IP 와 BACnet 가운데 하나는 켜야 합니다", "Turn on EtherNet/IP or BACnet (at least one)"));
+      if (window.__pdMock.discoverFail) return fail(tr("보내지 못했습니다", "Could not send"));
+      const net = a.config.nicIp.replace(/\.\d+$/, "");
+      const bc = `${net}.255`;
+      const sent = [...(a.config.enip ? [`${bc}:44818`] : []), ...(a.config.bacnet ? [`${bc}:47808`] : [])];
+      if (window.__pdMock.discoverNone) return { enip: [], bacnet: [], sent, notes: [] };
+      return {
+        enip: a.config.enip ? [{ ip: `${net}.30`, addr: null, vendorId: 1, deviceType: 0x0e, productCode: 166, revision: "33.011", productName: "1769-L33ER/A LOGIX5333ER", status: 0x0030, state: 3 }] : [],
+        bacnet: a.config.bacnet
+          ? [
+              { ip: `${net}.60`, port: 47808, instance: 260001, vendorId: 5, maxApdu: 1476, segmentation: 0, network: null, mac: null },
+              { ip: `${net}.60`, port: 47808, instance: 12, vendorId: 260, maxApdu: 480, segmentation: 3, network: 5, mac: "0C" },
+            ]
+          : [],
+        sent,
+        notes: [],
+      };
+    }
     case "wake": {
       if (!/^([0-9a-f]{2}[:-]?){5}[0-9a-f]{2}$/i.test(a.mac.replace(/[.\s]/g, ""))) return fail(`${tr("MAC 주소 형식이 아닙니다", "Not a MAC address")}: «${a.mac}»`);
       const bc = a.nicIp ? a.nicIp.replace(/\.\d+$/, ".255") : null;

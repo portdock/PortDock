@@ -1,6 +1,7 @@
 //! PortDock Net Scan — 산업 네트워크에서 장비 IP 찾기(핑·ARP), MAC 제조사, 산업 포트 판정, Modbus 장비 정보, 장기 핑, WoL.
 //! 관리자 권한·드라이버 없이. 범용 포트 스캔은 하지 않는다(정해 둔 산업 포트만).
 
+pub mod discover;
 pub mod modbus_id;
 pub mod monitor;
 pub mod oui;
@@ -72,6 +73,13 @@ fn scan_cancel(app: State<App>) {
 fn modbus_ident(ip: String, port: Option<u16>) -> Result<modbus_id::Ident, String> {
     let ip = parse_ip(&ip)?;
     modbus_id::ident((ip, port.unwrap_or(502)).into(), Duration::from_millis(1500))
+}
+
+/// (0.11.0) 방송으로 산업 장비 찾기 — EtherNet/IP ListIdentity(UDP 44818)·BACnet Who-Is(UDP 47808)를 고른 랜카드의 방송 주소로.
+/// 사용자가 누를 때만 부른다. 기다린 뒤 모은 답을 한 번에 돌려준다
+#[tauri::command(async)]
+fn discover(config: discover::DiscoverConfig) -> Result<discover::DiscoverResult, String> {
+    discover::discover(&config)
 }
 
 /// Wake-on-LAN — nic_ip 랜카드로(그 대역 브로드캐스트 + 255.255.255.255)
@@ -264,6 +272,7 @@ pub fn run() {
             scan_start,
             scan_cancel,
             modbus_ident,
+            discover,
             wake,
             open_web,
             open_master,

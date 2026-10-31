@@ -28,6 +28,7 @@ import { dict, fill, type Key, type Lang } from "./i18n";
 import { chipOn, chipPorts, csvCell, DEFAULT_PORTS, defaultRange, extraPorts, ipNum, isIndustrial, parsePorts, PORT_CHIPS, samePortSet, serviceLabel, serviceTip, stamp, subnetFit, subnetNote, tcpOpenPorts, togglePortChip } from "./net";
 import { LogMenu, type MenuItem } from "@shared/LogMenu";
 import { MonitorView, useMonitor } from "./Monitor";
+import { bacnetLine, bcastOf, discAi, DISC_CSV_HEAD, discChips, discCsv, discPorts, discSummary, enipLine, mergeDisc, type Disc } from "./discover";
 import { BaselineView, useBaselines, type ScanNow } from "./Baseline";
 import "./App.css";
 
@@ -46,9 +47,14 @@ interface Cfg {
   names: boolean;
   modbusId: boolean;
   threads: number;
+  /** 방송으로 찾기(0.11.0) */
+  discEnip: boolean;
+  discBacnet: boolean;
+  discWaitMs: number;
+  discTries: number;
 }
 
-const DEFAULT_CFG: Cfg = { nic: "", range: "", arp: true, ping: true, timeoutMs: 800, portsOn: true, portsText: DEFAULT_PORTS, portTimeoutMs: 400, names: true, modbusId: true, threads: 64 };
+const DEFAULT_CFG: Cfg = { nic: "", range: "", arp: true, ping: true, timeoutMs: 800, portsOn: true, portsText: DEFAULT_PORTS, portTimeoutMs: 400, names: true, modbusId: true, threads: 64, discEnip: true, discBacnet: true, discWaitMs: 2000, discTries: 2 };
 
 type Phase = "idle" | "scanning" | "checking" | "done" | "cancelled";
 type SortKey = "ip" | "mac" | "vendor" | "name" | "rtt" | "services";
@@ -60,7 +66,8 @@ interface Lite {
   name: string | null;
 }
 type History = Record<string, { at: number; hosts: Lite[] }>;
-type Row = Host & { gone?: boolean };
+/** gone: 지난번엔 있었는데 이번엔 없음 · bcast: 방송으로만 찾음(핑·ARP 로는 아직 못 봄) */
+type Row = Host & { gone?: boolean; bcast?: boolean };
 
 const nicKey = (n: Nic, a: NicAddr) => `${n.id}|${a.ip}`;
 
@@ -172,6 +179,10 @@ export default function App() {
   ]
     .filter(Boolean)
     .join(" · ");
+  // 방송으로 찾기(0.11.0) — 접어 둔 옵션
+  const [discOpenSaved, setDiscOpenSaved] = useState<boolean>(() => load("discOpen", false));
+  useEffect(() => store("discOpen", discOpenSaved), [discOpenSaved]);
+  const [discOpen, setDiscOpen] = useFold(discOpenSaved, setDiscOpenSaved, settings.expandAll);
   // 처음 쓰는 순서 카드(결과가 빈 자리) — «다시 보지 않기» 를 누르면 예전 한 줄 안내로
   const [firstDone, setFirstDone] = useState<boolean>(() => load("firstHintDone", false));
   useEffect(() => store("firstHintDone", firstDone), [firstDone]);
@@ -287,8 +298,33 @@ export default function App() {
   async function stopScan() {
     await api.scanCancel().catch(() => {});
   }
+  // ---- 방송으로 찾기(0.11.0) — IP 별로 모아 두고 찾은 장비 표에 합친다(«지우기» 까지 남음)
+  const [disc, setDisc] = useState<Map<string, Disc>>(() => new Map());
+  const [discBusy, setDiscBusy] = useState(false);
+  const [discMsg, setDiscMsg] = useState<{ text: string; warn: boolean } | null>(null);
+  const discBad = !cfg.discEnip && !cfg.discBacnet;
+  async function runDiscover() {
+    if (!sel || discBusy || discBad) return;
+    setDiscBusy(true);
+    setDiscMsg(null);
+    try {
+      const r = await api.discover({ nicIp: sel.addr.ip, prefix: sel.addr.prefix, enip: cfg.discEnip, bacnet: cfg.discBacnet, waitMs: cfg.discWaitMs, tries: cfg.discTries });
+      setDisc((m) => mergeDisc(m, r));
+      const none = r.enip.length + r.bacnet.length === 0;
+      setDiscMsg({ text: [discSummary(r, lang), ...r.notes, ...(none ? [t("discNone")] : [])].join("\n"), warn: none || r.notes.length > 0 });
+      setTab("results");
+    } catch (e) {
+      setDiscMsg({ text: `${String(e)}\n${t("discFail")}`, warn: true });
+    } finally {
+      setDiscBusy(false);
+    }
+  }
+  const discBcast = sel ? (bcastOf(sel.addr.ip, sel.addr.prefix) ?? "—") : "—";
+
   function clearResults() {
     if (scanning) return;
+    setDisc(new Map());
+    setDiscMsg(null);
     hostsRef.current = new Map();
     setGone([]);
     setSelected(null);
@@ -308,16 +344,24 @@ export default function App() {
   const gateway = sel?.nic.gateway ?? null;
   const isNew = (ip: string) => !!prevRef.current && !prevRef.current.has(ip);
   const allRows: Row[] = useMemo(
-    () => [...hostsRef.current.values(), ...gone.map((g) => ({ ...g, randomMac: false, rtt: null, arp: false, ports: [], modbus: null, me: false, done: true, conflict: [], gone: true }))],
+    () => [
+      ...hostsRef.current.values(),
+      // 방송에만 답한 장비(핑·ARP 로는 아직 못 봄) — IP 만 있는 줄
+      ...[...disc.keys()].filter((ip) => !hostsRef.current.has(ip)).map((ip) => ({ ip, mac: null, vendor: null, randomMac: false, rtt: null, arp: false, name: null, ports: [], modbus: null, me: false, done: true, conflict: [], bcast: true })),
+      ...gone.filter((g) => !disc.has(g.ip)).map((g) => ({ ...g, randomMac: false, rtt: null, arp: false, ports: [], modbus: null, me: false, done: true, conflict: [], gone: true })),
+    ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [version, gone],
+    [version, gone, disc],
   );
+  /** 노출 표시에 넣는 포트 — 확인한 TCP 포트 + 방송에 답한 프로토콜(44818·47808) */
+  const exposePorts = (h: Row) => [...h.ports, ...discPorts(disc.get(h.ip))];
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = allRows.filter((h) => {
-      if (indOnly && !h.ports.some(isIndustrial)) return false;
+      const dp = discPorts(disc.get(h.ip));
+      if (indOnly && !h.ports.some(isIndustrial) && !dp.length) return false;
       if (!q) return true;
-      const hay = [h.ip, h.mac, ...h.conflict, h.vendor, h.name, h.modbus?.vendor, h.modbus?.product, ...h.ports.map(serviceLabel), ...h.ports.map(String)].filter(Boolean).join(" ").toLowerCase();
+      const hay = [h.ip, h.mac, ...h.conflict, h.vendor, h.name, h.modbus?.vendor, h.modbus?.product, ...h.ports.map(serviceLabel), ...h.ports.map(String), ...dp.map(String), ...discChips(disc.get(h.ip), lang).map((c) => c.text)].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
     const val = (h: Row): number | string => {
@@ -333,7 +377,7 @@ export default function App() {
         case "rtt":
           return h.rtt ?? 1e9;
         case "services":
-          return -h.ports.filter(isIndustrial).length * 100 - h.ports.length;
+          return -(h.ports.filter(isIndustrial).length + discPorts(disc.get(h.ip)).length) * 100 - h.ports.length;
       }
     };
     return list.sort((a, b) => {
@@ -341,7 +385,8 @@ export default function App() {
       const y = val(b);
       return (x < y ? -1 : x > y ? 1 : ipNum(a.ip) - ipNum(b.ip)) * sort.dir;
     });
-  }, [allRows, query, indOnly, sort]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRows, query, indOnly, sort, disc, lang]);
   const newCount = prevRef.current ? [...hostsRef.current.keys()].filter(isNew).length : 0;
   const conflictCount = [...hostsRef.current.values()].filter((h) => h.conflict.length > 1).length;
   const head = (key: SortKey, label: string) => (
@@ -453,7 +498,7 @@ export default function App() {
     if (!allRows.length) return;
     const path = await save({ defaultPath: `portdock-netscan-${stamp()}.csv`, filters: [{ name: "CSV", extensions: ["csv"] }] });
     if (!path) return;
-    const headRow = ["ip", "mac", "vendor", "name", "rtt_ms", "found_by", "open_ports", "services", "modbus_vendor", "modbus_product", "modbus_revision", "mark", "conflict_macs"];
+    const headRow = ["ip", "mac", "vendor", "name", "rtt_ms", "found_by", "open_ports", "services", "modbus_vendor", "modbus_product", "modbus_revision", "mark", "conflict_macs", ...DISC_CSV_HEAD];
     const lines = rows.map((h) =>
       [
         h.ip,
@@ -461,7 +506,7 @@ export default function App() {
         h.vendor,
         h.name,
         h.rtt,
-        h.gone ? "" : [h.arp && "arp", h.rtt != null && "ping", h.me && "self"].filter(Boolean).join("+"),
+        h.gone ? "" : [h.arp && "arp", h.rtt != null && "ping", h.me && "self", disc.has(h.ip) && "broadcast"].filter(Boolean).join("+"),
         h.ports.join(" "),
         h.ports.map(serviceLabel).join(" "),
         h.modbus?.vendor,
@@ -469,6 +514,7 @@ export default function App() {
         h.modbus?.revision,
         h.gone ? "gone" : [isNew(h.ip) && "new", h.me && "self", h.ip === gateway && "gateway", h.conflict.length > 1 && "ip-conflict"].filter(Boolean).join(" "),
         h.conflict.join(" "),
+        ...discCsv(disc.get(h.ip)),
       ]
         .map(csvCell)
         .join(","),
@@ -493,6 +539,8 @@ export default function App() {
         h.rtt != null ? `${h.rtt}ms` : "-",
         h.ports.length ? `ports ${h.ports.join(",")}` : "",
         h.modbus ? `modbus ${[h.modbus.vendor, h.modbus.product, h.modbus.revision].filter(Boolean).join(" ")}` : "",
+        // (0.11.0) 방송으로 찾은 것 — 일련번호는 백엔드가 넘기지 않는다
+        discAi(disc.get(h.ip)),
         h.gone ? "gone" : [h.me && "self", h.ip === gateway && "gateway", h.conflict.length > 1 && "ip-conflict"].filter(Boolean).join(" "),
       ]
         .filter(Boolean)
@@ -745,6 +793,39 @@ export default function App() {
             </>
           )}
         </details>
+        {/* 방송으로 찾기(0.11.0) — 누를 때만 보낸다 */}
+        <details className="adv panel disc" open={discOpen} onToggle={(e) => setDiscOpen((e.target as HTMLDetailsElement).open)}>
+          <summary data-tip={tip(lang, "nsDisc")}>
+            <span className="sum-title">{t("disc")}</span>
+            {!discOpen && (
+              <span className="sum-note">
+                {[cfg.discEnip && "EtherNet/IP", cfg.discBacnet && "BACnet"].filter(Boolean).join("+") || "—"} · {t("discSum", { w: cfg.discWaitMs, n: cfg.discTries })}
+              </span>
+            )}
+          </summary>
+          <label className="inline" data-tip={tip(lang, "nsDiscEnip")}>
+            <input type="checkbox" checked={cfg.discEnip} disabled={discBusy} onChange={(e) => setCfg({ discEnip: e.target.checked })} /> {t("discEnip")}
+          </label>
+          <label className="inline" data-tip={tip(lang, "nsDiscBacnet")}>
+            <input type="checkbox" checked={cfg.discBacnet} disabled={discBusy} onChange={(e) => setCfg({ discBacnet: e.target.checked })} /> {t("discBacnet")}
+          </label>
+          {discBad && <div className="interlock">{t("discNeedOne")}</div>}
+          <div className="grid2">
+            <label data-tip={tip(lang, "nsDiscWait")}>
+              {t("discWait")}
+              <NumInput min={300} max={10000} value={cfg.discWaitMs} disabled={discBusy} onValue={(v) => setCfg({ discWaitMs: v })} />
+            </label>
+            <label data-tip={tip(lang, "nsDiscTries")}>
+              {t("discTries")}
+              <NumInput min={1} max={3} value={cfg.discTries} disabled={discBusy} onValue={(v) => setCfg({ discTries: v })} />
+            </label>
+          </div>
+          <div className="hint">{t("discHint", { b: discBcast })}</div>
+        </details>
+        <button className="btn small disc-btn" onClick={() => void runDiscover()} disabled={!sel || discBusy || discBad} data-tip={sel ? tip(lang, "nsDisc") : t("discNoNic")}>
+          {discBusy ? t("discBusy") : t("discRun")}
+        </button>
+        {discMsg && <div className={discMsg.warn ? "hint warn disc-msg" : "hint disc-msg"}>{discMsg.text}</div>}
         <div className="hint">{t("firewallHint")}</div>
       </aside>
 
@@ -859,7 +940,7 @@ export default function App() {
                           {h.gone ? <span className="mark gone">{t("markGone")}</span> : isNew(h.ip) ? <span className="mark new">{t("markNew")}</span> : null}
                           {h.me && <span className="mark me">{t("me")}</span>}
                           {h.ip === gateway && <span className="mark gw">{t("gateway")}</span>}
-                          {!h.gone && <ExposeMark ports={h.ports} lang={lang} />}
+                          {!h.gone && <ExposeMark ports={exposePorts(h)} lang={lang} />}
                           {h.conflict.length > 1 && (
                             <span className="mark conflict" title={t("conflictLine", { a: h.conflict.join(" · ") })}>
                               {t("markConflict")}
@@ -903,6 +984,12 @@ export default function App() {
                               {[h.modbus.vendor, h.modbus.product].filter(Boolean).join(" ")}
                             </span>
                           )}
+                          {!h.gone &&
+                            discChips(disc.get(h.ip), lang).map((c) => (
+                              <span key={c.text} className="chip svc ind disc" title={c.title}>
+                                {c.text}
+                              </span>
+                            ))}
                         </td>
                       </tr>
                     ))}
@@ -1014,7 +1101,17 @@ export default function App() {
                     </div>
                   )}
                   {selHost.conflict.length > 1 && <div className="hint warn">{t("conflictLine", { a: selHost.conflict.join(" · ") })}</div>}
-                  <ExposeNote ports={selHost.ports} lang={lang} />
+                  <ExposeNote ports={selHost.gone ? selHost.ports : exposePorts(selHost)} lang={lang} />
+                  {!selHost.gone && disc.get(selHost.ip) && (
+                    <div className="disc-lines" data-tip={tip(lang, "nsDisc")}>
+                      {disc.get(selHost.ip)!.enip && <div className="ident mono">{enipLine(disc.get(selHost.ip)!.enip!, lang)}</div>}
+                      {disc.get(selHost.ip)!.bacnet.map((b) => (
+                        <div key={b.instance} className="ident mono">
+                          {bacnetLine(b, lang)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {selHost.modbus && (
                     <div className="ident mono">
                       {t("identVendor")}: {selHost.modbus.vendor || "—"} · {t("identProduct")}: {selHost.modbus.product || "—"} · {t("identRevision")}: {selHost.modbus.revision || "—"} · {t("identUnit")} {selHost.modbus.unit}

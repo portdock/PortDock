@@ -691,3 +691,20 @@ button.chip {
 .chip.mb-copy:focus-visible {
   outline: 1px solid var(--accent);
 }
+
+/* ---- 방송으로 찾기(0.11.0) */
+.disc-btn {
+  align-self: flex-start;
+}
+.disc-msg {
+  white-space: pre-line;
+}
+.chip.svc.disc {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.disc-lines .ident {
+  margin-top: 2px;
+}

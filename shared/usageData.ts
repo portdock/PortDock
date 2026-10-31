@@ -19,6 +19,7 @@ export function ingestUrl(key: string = APTABASE_KEY): string | null {
  * 모든 프로그램에 같은 이름으로 있는 기능 — «앱마다 3~10개» 규칙은 앱 고유 기능에만 센다(공용 단추 하나 때문에 고유 기능을 빼지 않게).
  * ai_copy: «AI 에게 물어보기용 복사»(0.8.0)
  * modbus-master device_backup: 장비 설정 백업·비교·복원 창에서 장비를 읽거나 쓴 횟수(0.10.0)
+ * netscan discover: «방송으로 찾기»(EtherNet/IP·BACnet)를 누른 횟수(0.11.0)
  * modbus-slave device_profile: «장비 프로필로 흉내» 의 읽기/쓰기 제한을 엔진에 건 횟수(0.10.0)
  */
 export const COMMON_FEATURES = ["ai_copy"] as const;
@@ -33,7 +34,7 @@ export const FEATURES = {
   simulator: ["start_serial", "start_tcp", "start_udp", "send", "file_log", ...COMMON_FEATURES],
   scpi: ["connect_tcp", "connect_serial", "write", "query", "read", "save_block", ...COMMON_FEATURES],
   plot: ["start", "record", "export", "alarms", ...COMMON_FEATURES],
-  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor", "baseline_save", "baseline_compare", ...COMMON_FEATURES],
+  netscan: ["scan", "modbus_ident", "wake", "open_web", "open_master", "open_in_tcp", "monitor", "baseline_save", "baseline_compare", "discover", ...COMMON_FEATURES],
   "port-inspector": ["port_report", "com_numbers", "events", "nics", "pc_check", "wireless", "loopback", "open_in_serial", "snapshot_save", "snapshot_compare", ...COMMON_FEATURES],
   "plc-simulator": ["start_tcp", "start_udp", "edit_values", "faults", "simulate", "file_log", "save_state", "load_state", "rules", "fill_write", ...COMMON_FEATURES],
   "hw-tester": ["net_record", "csv_save", "wifi_signal", "bt_record", "bt_audio", "test_tone", "usb_record", "usb_history", ...COMMON_FEATURES],

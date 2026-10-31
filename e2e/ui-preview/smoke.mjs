@@ -3332,6 +3332,42 @@ async function runApp(app, port) {
           await conv("ns-baseline", `기준 목록 비교가 이상함: ${JSON.stringify({ ...bl, ai: (bl.ai ?? "").slice(-400) })}`);
         if (combo.full) await shot(app, `${combo.name}-baseline`);
         await verify("ns baseline");
+        // (0.11.0) 방송으로 찾기 — 누르면 결과 탭으로 돌아와 .30(EtherNet/IP, 벤더 이름·노출 표)·.60(BACnet 둘, 방송에만 답한 줄)이 표에 합쳐지고,
+        //          아래 칸에 BACnet 줄·«47808 BACnet/IP» 노출 안내, 알림에 보낸 곳(…255:44818), 일련번호 칸은 CSV 머리에 없음
+        const dv = await jsAsync(String.raw`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          const btn = document.querySelector('aside .disc-btn');
+          if (!btn || btn.disabled) return { btn: false };
+          btn.click();
+          let row30 = null, row60 = null;
+          const find = (end) => [...document.querySelectorAll('.hosts tbody tr')].find((tr) => tr.querySelector('.ip-cell').firstChild.textContent.endsWith(end));
+          for (let i = 0; i < 40 && !((row30 = find('.30')) && (row60 = find('.60'))); i++) await w();
+          const a = { btn: true, row30: !!row30, row60: !!row60, msg: (document.querySelector('aside .disc-msg') || {}).textContent || '' };
+          if (!row30 || !row60) return a;
+          a.chips30 = [...row30.querySelectorAll('.chip.disc')].map((c) => c.textContent);
+          a.expose30 = !!row30.querySelector('.mark.expose');
+          a.chips60 = [...row60.querySelectorAll('.chip.disc')].map((c) => c.textContent);
+          row60.click(); await w();
+          a.lines = [...document.querySelectorAll('.detail-bar .disc-lines .ident')].map((x) => x.textContent);
+          a.note = (document.querySelector('.detail-bar .expose-note') || {}).textContent || '';
+          return a;`);
+        if (dv.fatal) add("ns discover", "smoke-error", dv.fatal);
+        else if (
+          !dv.btn ||
+          !dv.row30 ||
+          !dv.row60 ||
+          !/:44818/.test(dv.msg) ||
+          !/:47808/.test(dv.msg) ||
+          !(dv.chips30 || []).some((c) => /^EtherNet\/IP · Rockwell Automation\/Allen-Bradley 1769-L33ER/.test(c)) ||
+          !dv.expose30 ||
+          JSON.stringify(dv.chips60) !== JSON.stringify(["BACnet #12", "BACnet #260001"]) ||
+          (dv.lines || []).length !== 2 ||
+          !/(라우터 뒤 망|behind router, network) 5 \/ 0C/.test((dv.lines || [])[0] ?? "") ||
+          !/47808 BACnet\/IP/.test(dv.note)
+        )
+          await conv("ns-discover", `방송으로 찾기 결과가 이상함: ${JSON.stringify(dv)}`);
+        if (combo.name === "ko-light") await shot(app, `${combo.name}-discover`);
+        await verify("ns discover");
         await load(port, combo);
         await clickRun("ns scan again", (s) => s.btn !== idleBtn);
       }

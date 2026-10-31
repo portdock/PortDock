@@ -158,6 +158,20 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "방송으로 찾기 (EtherNet/IP·BACnet)",
+      id: "discover",
+      body: [
+        "(0.11.0 부터) IP 를 모르는 EtherNet/IP 장비·BACnet/IP 장치를 방송 한 번으로 찾습니다. 왼쪽 «방송으로 찾기» 를 누를 때만 보냅니다.",
+        "- 보내는 것: 고른 랜카드의 방송 주소(예: 192.168.0.255)로 EtherNet/IP «ListIdentity»(UDP 44818, 캡슐화 명령 0x0063, 24바이트)와 BACnet «Who-Is»(UDP 47808, 범위 없음, 8바이트). «보내는 횟수» 만큼(1~3번) 기다리는 동안 나눠 보냅니다. 둘 다 읽기 요청이라 장비 설정을 바꾸지 않습니다.",
+        "- EtherNet/IP 답: 벤더(흔한 40곳은 이름, 나머지는 번호)·장비 종류·제품 코드·제품 이름·버전·장비가 알린 IP. 장비가 보내는 일련번호는 화면·CSV·AI 복사에 넣지 않습니다.",
+        "- BACnet 답(I-Am): 장치 인스턴스·벤더 ID·최대 APDU·분할 지원. 라우터 뒤(MS/TP 등) 장치면 망 번호·주소가 붙습니다.",
+        "- 결과는 «찾은 장비» 표에 합칩니다 — 핑·ARP 로 찾은 장비면 그 줄에 칩이 붙고, 방송에만 답한 장비는 IP 만 있는 줄로 더해집니다. «지우기» 까지 남습니다. 답한 장비에는 «노출» 표가 붙습니다(EtherNet/IP·BACnet 모두 인증 없는 산업 프로토콜).",
+        "- 방송은 라우터를 넘지 않아 같은 대역의 장비만 답합니다. 다른 대역은 «찾을 범위» 로 찾고 44818 포트를 확인합니다.",
+        "- 답이 없으면: Windows 방화벽이 처음에 «액세스 허용» 을 물었다면 이 네트워크 종류(개인·공용)를 허용해야 답을 받습니다(관리자 권한이 필요할 수 있음 — 이 프로그램은 방화벽 규칙을 바꾸지 않습니다). BACnet 장치는 I-Am 을 47808 로 방송하는 경우가 많아, 이 PC 의 47808 을 다른 BACnet 프로그램이 쓰고 있으면 임시 포트로 보내고 그런 답은 못 받을 수 있다고 알립니다.",
+        "- 회사 네트워크에서는 방송 패킷도 보안 장비에 보일 수 있으니 담당자에게 먼저 알리세요.",
+      ],
+    },
+    {
       title: "노출 표시",
       id: "expose",
       body: [
@@ -165,6 +179,7 @@ export const help: HelpDoc = {
         "- 산업 프로토콜(Modbus·MC·EtherNet/IP·S7·IEC 60870-5-104·DNP3)에는 인증이 없습니다 — 같은 망의 누구나 읽고 쓸 수 있습니다. 장비 고장이 아니라 «누가 닿을 수 있나» 를 보라는 표시입니다.",
         "- 확인 순서: 1) 설비망과 사무망이 스위치·VLAN·방화벽으로 나뉘어 있는지 2) 원격 접속 공유기·게이트웨이가 이 포트를 밖으로 넘기지 않는지(포트 포워딩) 3) 장비 설정에서 쓰지 않는 Telnet·FTP·VNC·HTTP 를 끌 수 있는지, 관리 페이지 기본 비밀번호를 바꿨는지 4) OPC UA 는 보안 모드 «None»·익명 로그인을 쓰는지.",
         "- 이미 확인한 포트(«확인할 포트» 목록)만 보고 표시합니다. 이 표시 때문에 포트를 더 많이 스캔하지 않고, 장비 설정도 바꾸지 않습니다.",
+        "- (0.11.0 부터) «방송으로 찾기» 에 답한 장비도 같은 표시를 받습니다 — EtherNet/IP(44818)·BACnet/IP(UDP 47808).",
       ],
     },
     {
@@ -356,6 +371,20 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "Broadcast discovery (EtherNet/IP, BACnet)",
+      id: "discover",
+      body: [
+        "(from 0.11.0) Finds EtherNet/IP devices and BACnet/IP devices whose IP you do not know with a single broadcast. Nothing is sent until you press «Discover by broadcast» on the left.",
+        "- What is sent: EtherNet/IP «ListIdentity» (UDP 44818, encapsulation command 0x0063, 24 bytes) and BACnet «Who-Is» (UDP 47808, unbounded, 8 bytes) to the selected adapter's broadcast address (e.g. 192.168.0.255), spread over the wait time «Times to send» times (1–3). Both are read-only requests and change no device settings.",
+        "- EtherNet/IP answers: vendor (name for 40 common vendors, otherwise the number), device type, product code, product name, revision and the IP the device reports. The serial number the device sends is never shown, exported to CSV or put in the AI copy.",
+        "- BACnet answers (I-Am): device instance, vendor ID, max APDU and segmentation support. Devices behind a router (MS/TP etc.) also show the network number and address.",
+        "- Results are merged into the «Found devices» table — a device already found by ping/ARP gets chips on its row; a device that only answered the broadcast is added as an IP-only row. They stay until «Clear». Answering devices get the «Exposed» tag (EtherNet/IP and BACnet are both industrial protocols without authentication).",
+        "- Broadcasts do not cross routers, so only devices on the same subnet answer. For other subnets, scan with «Range to scan» and check port 44818.",
+        "- No answers: if Windows Firewall asked to «Allow access» the first time, the network type in use (private/public) must be allowed to receive answers (this may need administrator rights — this program does not change firewall rules). Many BACnet devices broadcast I-Am to port 47808; if another BACnet program uses 47808 on this PC, a temporary port is used and you are told such answers may be missed.",
+        "- On a company network, broadcast packets can also show up on security equipment — tell the network administrator first.",
+      ],
+    },
+    {
       title: "Exposure notes",
       id: "expose",
       body: [
@@ -363,6 +392,7 @@ export const help: HelpDoc = {
         "- Industrial protocols (Modbus, MC, EtherNet/IP, S7, IEC 60870-5-104, DNP3) have no authentication — anyone on the same network can read and write. The tag is not a device fault; it asks «who can reach this?».",
         "- What to check: 1) the equipment and office networks are separated by switches, VLANs or a firewall 2) a remote-access router or gateway does not forward these ports outside 3) unused Telnet, FTP, VNC or HTTP can be turned off in the device settings and the admin page's default password was changed 4) OPC UA does not use security mode «None» or anonymous login.",
         "- Only ports already checked (the «Ports to check» list) are used. The notes never scan more ports and never change device settings.",
+        "- (from 0.11.0) Devices that answered «Broadcast discovery» get the same notes — EtherNet/IP (44818) and BACnet/IP (UDP 47808).",
       ],
     },
     {

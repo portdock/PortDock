@@ -27,6 +27,8 @@ export const EXPOSE_PORTS: ExposePort[] = [
   { port: 102, name: "S7 (ISO-TSAP)", kind: "noAuth" },
   { port: 2404, name: "IEC 60870-5-104", kind: "noAuth" },
   { port: 20000, name: "DNP3", kind: "noAuth" },
+  // (0.11.0) UDP — Net Scan «방송으로 찾기» 에 답한 장치만(TCP 포트 확인에는 없음)
+  { port: 47808, name: "BACnet/IP", kind: "noAuth" },
   { port: 4840, name: "OPC UA", kind: "opcua" },
   { port: 23, name: "Telnet", kind: "plain" },
   { port: 21, name: "FTP", kind: "plain" },

@@ -1,5 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { tally } from "@shared/usage";
+import type { DiscoverConfig, DiscoverResult } from "./discover";
 
 export interface NicAddr {
   ip: string;
@@ -91,6 +92,8 @@ export const api = {
   },
   scanCancel: () => invoke<void>("scan_cancel"),
   modbusIdent: (ip: string, port?: number) => tally("modbus_ident", invoke<Ident>("modbus_ident", { ip, port: port ?? null })),
+  /** (0.11.0) 방송으로 찾기 — 기다린 뒤 모은 답(EtherNet/IP·BACnet) */
+  discover: (config: DiscoverConfig) => tally("discover", invoke<DiscoverResult>("discover", { config })),
   wake: (mac: string, nicIp: string | null, prefix: number | null) => tally("wake", invoke<string[]>("wake", { mac, nicIp, prefix })),
   openWeb: (ip: string, port: number | null, https: boolean) => tally("open_web", invoke<void>("open_web", { ip, port, https })),
   /** Modbus Master 로 열기(0.2.0) — false 면 이 PC 에서 Master 를 찾지 못함 */
