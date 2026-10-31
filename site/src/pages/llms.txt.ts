@@ -33,6 +33,7 @@ export const GET: APIRoute = ({ site }) => {
     "",
     ...TOOLS.map((t) => `- [${t.name}](${abs(url("en", `${t.id}/`))}): ${t.tagline.en}${t.upcoming ? " (not released yet)" : ""}`),
     `- [Download](${abs(url("en", "download/"))}): installers, portable zips, Scoop and winget`,
+    `- [Safety principles](${abs(url("en", "safety/"))}): what the programs only read, default server addresses, write safeguards, AI (MCP) write limits and what is sent`,
     "",
     ...groupedWebTools().flatMap((g) => [`## Web tools — ${g.name.en}`, "", ...g.tools.map((w) => `- [${w.name.en}](${abs(url("en", w.path))}): ${w.blurb.en}`), ""]),
     "## Guides",
