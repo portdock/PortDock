@@ -90,13 +90,14 @@ export function BackupDialog(p: BackupDialogProps) {
   // 지금 다루는 백업(방금 읽었거나 파일에서 연 것)
   const [base, setBase] = useState<{ backup: Backup; name: string } | null>(null);
   const alive = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // 개발 모드(StrictMode)는 효과를 «붙임 → 떼기 → 다시 붙임» 으로 두 번 돌린다 — 다시 붙을 때 살아 있다고 되돌린다
+    alive.current = true;
+    return () => {
       alive.current = false;
       stop.current = true;
-    },
-    [],
-  );
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && p.onClose();
     window.addEventListener("keydown", onKey);
