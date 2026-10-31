@@ -30,7 +30,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: 랜카드, 찾을 범위, «찾기»/«멈춤», 상태와 진행 막대. 그 아래 «찾는 방법·포트 (고급)» 은 접혀 있고 제목 옆에 지금 설정이 «ARP+핑 · 포트 22개 · Modbus 정보 · 이름» 처럼 요약됩니다. 기본값과 다르면 «(바꿈)» 이 붙고, 다음에 켤 때 펼친 채로 시작합니다. 제목을 누르면 ARP·핑·핑 기다림·동시에·이름 찾기·산업 포트 확인·확인할 포트·포트 기다림·Modbus 장비 정보 읽기가 펼쳐집니다(펼친 상태는 기억). 핑과 ARP 를 둘 다 끄거나 포트 목록이 틀리면 저절로 펼쳐집니다.",
-        "- 가운데 위 탭: «찾은 장비»(결과 표), «지난번과 비교»(0.10.0 부터), «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
+        "- 가운데 위 탭: «찾은 장비»(결과 표), «지난번과 비교», «핑 감시». 핑 감시는 다른 탭을 보는 동안에도 계속 돕니다(탭에 ● 또는 «n ↓» 표시).",
         "- «찾은 장비» 도구줄: 거르기 칸, «산업 포트 열린 것만», «새로 n»·«사라짐 n», «CSV 저장», «지우기».",
         "- 표 아래 칸: 고른 장비의 정보와 할 일 버튼.",
         ...windowLines("ko"),
@@ -111,7 +111,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "지난번과 비교 — 기준 (0.10.0 부터)",
+      title: "지난번과 비교 — 기준",
       id: "baseline",
       body: [
         "유지보수·증설·제거 뒤 «지난번과 무엇이 달라졌나» 를 봅니다. 장비 구성이 맞을 때 찾은 목록을 기준으로 저장해 두고, 다음에 찾은 결과와 비교합니다.",
@@ -158,7 +158,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "노출 표시 (0.10.0 부터)",
+      title: "노출 표시",
       id: "expose",
       body: [
         "- 찾은 장비의 열린 포트 가운데 Modbus TCP 502·MC 프로토콜 5006/5007·EtherNet/IP 44818·S7 102·IEC 60870-5-104 2404·DNP3 20000·OPC UA 4840·Telnet 23·FTP 21·VNC 5900·HTTP 80(관리 페이지)이 있으면, IP 옆에 «노출» 표가 붙고 아래 칸에 안내가 나옵니다(HTTP 만 열렸으면 표 없이 아래 칸에만).",
@@ -228,7 +228,7 @@ export const help: HelpDoc = {
       title: "Layout",
       body: [
         "- Left: adapter, range, «Scan»/«Stop», status and progress bar. Below them «Discovery & ports (advanced)» is collapsed, with the current settings summarized next to its title, e.g. «ARP+ping · 22 ports · Modbus ID · names». Non-default settings add «(changed)» and the section starts expanded next time. Click the title to show ARP, ping, ping wait, parallel, name lookup, industrial port check, ports to check, port wait and Modbus ID reading (the state is remembered). It expands by itself when both ping and ARP are off or the port list is invalid.",
-        "- Tabs: «Devices» (results), «Compare with last time» (from 0.10.0) and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
+        "- Tabs: «Devices» (results), «Compare with last time» and «Ping monitor». The monitor keeps running while you look at the other tab (● or «n ↓» on the tab).",
         "- «Devices» toolbar: filter box, «Industrial ports only», «New n» / «Gone n», «Save CSV», «Clear».",
         "- Below the table: details and actions for the selected device.",
         ...windowLines("en"),
@@ -309,7 +309,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Compare with last time — baselines (from 0.10.0)",
+      title: "Compare with last time — baselines",
       id: "baseline",
       body: [
         "After maintenance, additions or removals, see «what changed since last time». Save the device list as a baseline while the setup is right, then compare later scans with it.",
@@ -356,7 +356,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Exposure notes (from 0.10.0)",
+      title: "Exposure notes",
       id: "expose",
       body: [
         "- If a device has Modbus TCP 502, MC protocol 5006/5007, EtherNet/IP 44818, S7 102, IEC 60870-5-104 2404, DNP3 20000, OPC UA 4840, Telnet 23, FTP 21, VNC 5900 or HTTP 80 (admin page) open, an «Exposed» tag appears next to its IP and the panel below explains it (HTTP alone shows only in the panel).",

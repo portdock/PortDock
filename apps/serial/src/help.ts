@@ -516,7 +516,7 @@ export const help: HelpDoc = {
 const SERIAL_EXTRA = {
   ko: [
     {
-      title: "포트 나눔 (COM ↔ TCP) (0.10.0 부터)",
+      title: "포트 나눔 (COM ↔ TCP)",
       id: "share",
       body: [
         "연 COM 포트를 TCP 서버로 내보내, 다른 프로그램·WSL2·Docker 컨테이너·다른 PC 가 TCP 로 붙어 같은 포트를 씁니다. 가상 COM 드라이버를 깔지 않고, 관리자 권한 없이 됩니다(«다른 PC 에서 연결 허용» 을 처음 켤 때 윈도우 방화벽 창은 관리자 권한이 들 수 있음).",
@@ -531,7 +531,7 @@ const SERIAL_EXTRA = {
       ],
     },
     {
-      title: "Modbus TCP ↔ RTU 게이트웨이 (0.10.0 부터)",
+      title: "Modbus TCP ↔ RTU 게이트웨이",
       id: "gateway",
       body: [
         "PC 를 Modbus TCP ↔ RTU 게이트웨이로 씁니다. SCADA·HMI·PC 프로그램이 Modbus TCP 로 붙으면, 요청(MBAP)을 RTU 프레임으로 바꿔 이 COM 포트(RS-485)의 장비로 보내고 응답을 다시 MBAP 로 돌려줍니다. 게이트웨이 장비를 따로 사지 않고, 관리자 권한 없이 됩니다.",
@@ -549,7 +549,7 @@ const SERIAL_EXTRA = {
       ],
     },
     {
-      title: "Modbus RTU 엿듣기 (듣기만) (0.10.0 부터)",
+      title: "Modbus RTU 엿듣기 (듣기만)",
       id: "sniff",
       body: [
         "RS-485 버스에 끼운 어댑터로 마스터(PLC·HMI)와 슬레이브(장비) 사이의 Modbus RTU 통신을 보내지 않고 듣기만 합니다. 다른 프로그램이 이미 연 포트를 엿보는 것은 아닙니다(그건 드라이버가 필요) — 버스에 따로 물린 어댑터가 필요합니다.",
@@ -569,8 +569,8 @@ const SERIAL_EXTRA = {
       body: [
         "- 왼쪽 «포트» 아래 «연결 점검…» 은 고른 포트의 장치 이름·VID:PID·칩·드라이버(제공자·버전·날짜·서비스 이름)·장치 관리자 문제 코드와 해 볼 것·FTDI 지연 타이머·USB 절전 설정을 관리자 권한 없이 읽어 «문제 없음(읽은 범위) / 볼 것 / 문제 있음» 으로 보입니다. 아무것도 바꾸지 않습니다.",
         "- 연결 시험: TX·RX 를 이어 두면(DB9 2–3번) 속도마다 바이트가 그대로 돌아오는지와 1바이트 왕복 시간(ms)을 재고, 2선 RS-485 변환기는 보낸 것을 되받는지(에코)를 봅니다. 시험은 포트를 따로 열므로 연결을 끊은 뒤에 하고, 시작 전에 «선·버스에서 장비를 떼었나» 를 한 번 더 묻습니다.",
-        "- 두 포트 시험(0.10.0 부터): 변환기·케이블 두 개를 서로 이어 두고(RS-232 는 널 모뎀으로 2–3번 엇갈림·5번 GND, RS-485 는 A–A·B–B·GND) «다른 포트» 를 고르면, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. 한 포트로 시험할 수 없는 RS-485 변환기를 점검할 때 씁니다.",
-        "- 무늬·길이(0.10.0 부터): 섞인 바이트(기본)·0x00~0xFF 차례로(바이트 값마다 한 번씩)·0x55/0xAA 번갈아(비트가 가장 자주 바뀜) 가운데 고르고, 길이는 64~4096 바이트입니다. «잇는 법» 을 펼치면 핀을 잇는 그림이 글자로 나옵니다. 시험이 끝나면 위에 전체 판정(«문제 없음(이 시험 범위) / 볼 것 / 문제 있음»)이 나옵니다.",
+        "- 두 포트 시험: 변환기·케이블 두 개를 서로 이어 두고(RS-232 는 널 모뎀으로 2–3번 엇갈림·5번 GND, RS-485 는 A–A·B–B·GND) «다른 포트» 를 고르면, 속도마다 이 포트 → 다른 포트, 다른 포트 → 이 포트로 보내 받은 것과 비교합니다. 한 포트로 시험할 수 없는 RS-485 변환기를 점검할 때 씁니다.",
+        "- 무늬·길이: 섞인 바이트(기본)·0x00~0xFF 차례로(바이트 값마다 한 번씩)·0x55/0xAA 번갈아(비트가 가장 자주 바뀜) 가운데 고르고, 길이는 64~4096 바이트입니다. «잇는 법» 을 펼치면 핀을 잇는 그림이 글자로 나옵니다. 시험이 끝나면 위에 전체 판정(«문제 없음(이 시험 범위) / 볼 것 / 문제 있음»)이 나옵니다.",
         "- 다른 프로그램이 포트를 쓰는 중이면 «사용 중» 과 함께, Process Explorer «Find Handle» 로 쥔 프로그램을 찾는 법이 나옵니다.",
         "- A/B 뒤바뀜·종단·바이어스·접지는 PC 가 볼 수 없어 늘 따로 적고 가이드 링크를 붙입니다. 연결 기록·COM 번호 예약·숨은 장치까지 보려면 PortDock Port Inspector 를 씁니다.",
       ],
@@ -597,7 +597,7 @@ const SERIAL_EXTRA = {
   ],
   en: [
     {
-      title: "Port sharing (COM ↔ TCP) (from 0.10.0)",
+      title: "Port sharing (COM ↔ TCP)",
       id: "share",
       body: [
         "Exposes the open COM port as a TCP server so other programs, WSL2, Docker containers or another PC can connect over TCP and use the same port. No virtual COM driver to install, no administrator rights (the Windows Firewall prompt the first time you allow other PCs may need them).",
@@ -612,7 +612,7 @@ const SERIAL_EXTRA = {
       ],
     },
     {
-      title: "Modbus TCP ↔ RTU gateway (from 0.10.0)",
+      title: "Modbus TCP ↔ RTU gateway",
       id: "gateway",
       body: [
         "Uses the PC as a Modbus TCP ↔ RTU gateway. When SCADA, an HMI or a PC program connects over Modbus TCP, its requests (MBAP) become RTU frames sent to the devices on this COM port (RS-485), and the replies go back as MBAP. No gateway box to buy, no administrator rights.",
@@ -630,7 +630,7 @@ const SERIAL_EXTRA = {
       ],
     },
     {
-      title: "Modbus RTU listen-only (sniff) (from 0.10.0)",
+      title: "Modbus RTU listen-only (sniff)",
       id: "sniff",
       body: [
         "Listens to Modbus RTU traffic between a master (PLC, HMI) and slaves (devices) through an adapter attached to the RS-485 bus — without sending anything. It does not peek at a port another program already has open (that needs a driver) — you need a separate adapter on the bus.",
@@ -650,8 +650,8 @@ const SERIAL_EXTRA = {
       body: [
         "- «Check connection…» under «Ports» on the left reads the chosen port's device name, VID:PID, chip, driver (provider, version, date, service name), Device Manager problem code and what to try, FTDI latency timer and USB power saving — without administrator rights — and marks them «No issue found (in what was read) / Worth a look / Problem». Nothing is changed.",
         "- Connection test: with TX tied to RX (DB9 pins 2–3) it checks that bytes come back unchanged at each speed and measures the 1-byte round trip (ms); for a 2-wire RS-485 adapter it checks whether it receives what it sends (echo). The test opens the port itself, so disconnect first; before starting it asks once more whether devices are off the line/bus.",
-        "- Two-port test (from 0.10.0): with two adapters/cables wired to each other (RS-232 crossed with a null modem — pins 2–3 swapped, pin 5 GND; RS-485 A–A, B–B, GND) choose «Other port»; at each speed it sends this port → the other and the other → this port and compares what arrives. Use it for RS-485 adapters, which cannot loop on one port.",
-        "- Pattern and length (from 0.10.0): mixed bytes (default), 0x00–0xFF in order (every byte value once) or 0x55/0xAA alternating (the most bit changes), 64–4096 bytes. «How to wire» shows the pin wiring as text. When the test ends an overall verdict appears on top («No issue found (within this test) / Worth a look / Problem»).",
+        "- Two-port test: with two adapters/cables wired to each other (RS-232 crossed with a null modem — pins 2–3 swapped, pin 5 GND; RS-485 A–A, B–B, GND) choose «Other port»; at each speed it sends this port → the other and the other → this port and compares what arrives. Use it for RS-485 adapters, which cannot loop on one port.",
+        "- Pattern and length: mixed bytes (default), 0x00–0xFF in order (every byte value once) or 0x55/0xAA alternating (the most bit changes), 64–4096 bytes. «How to wire» shows the pin wiring as text. When the test ends an overall verdict appears on top («No issue found (within this test) / Worth a look / Problem»).",
         "- If another program has the port open you get «busy» plus how to find that program with «Find Handle» in Process Explorer.",
         "- A/B swaps, termination, bias and ground cannot be seen from the PC, so they are always listed with guide links. For history, COM number reservations and hidden devices use PortDock Port Inspector.",
       ],

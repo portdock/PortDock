@@ -95,7 +95,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "값 감시·알람 (0.10.0 부터)",
+      title: "값 감시·알람",
       id: "alarms",
       body: [
         "- 채널 표의 «감시» 칸 🔔 로 그 채널에 조건을 겁니다. 받는 중에만 보고, 받은 줄마다 판단합니다. «통신 끊김» 은 그 초 동안 데이터 줄이 하나도 오지 않을 때입니다. «멈춤» 으로 센서·펌웨어가 같은 값만 보내는 것을 알아챕니다.",
@@ -250,7 +250,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Watch and alarms (from 0.10.0)",
+      title: "Watch and alarms",
       id: "alarms",
       body: [
         "- Use 🔔 in the «Watch» column of the channel table to set conditions on a channel. Watching runs only while receiving and judges every row received. «Communication lost» means no data row arrived for that many seconds. «Stuck» catches a sensor or firmware that keeps sending the same value.",

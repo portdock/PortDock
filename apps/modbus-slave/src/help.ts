@@ -17,7 +17,7 @@ export const help: HelpDoc = {
       title: "처음 쓰는 순서",
       id: "start",
       body: [
-        "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 «포트» 와 «속도(bps)»·«데이터 비트»·«패리티»·«정지 비트» 를 마스터와 똑같이, TCP 면 «묶을 주소»(0.10.0 부터 처음 127.0.0.1 — 다른 PC 의 마스터면 0.0.0.0 이나 랜카드 주소)와 «포트»(보통 502)를 정합니다.",
+        "- 1. 왼쪽 «연결 방식» 을 고릅니다. 시리얼이면 «포트» 와 «속도(bps)»·«데이터 비트»·«패리티»·«정지 비트» 를 마스터와 똑같이, TCP 면 «묶을 주소»(처음 127.0.0.1 — 다른 PC 의 마스터면 0.0.0.0 이나 랜카드 주소)와 «포트»(보통 502)를 정합니다.",
         "- 2. «국번(슬레이브 ID)» 에 마스터가 부를 국번(기본 1)이 있는지 확인합니다. 없으면 1~247 을 넣고 «추가» 를 누릅니다. 이 도움말에서는 줄여 «국번» 이라고 부릅니다.",
         "- 3. 가운데 위에서 표(예: «보유 레지스터»)를 고르고, 칸에 값을 넣어 둡니다. 연결 전에 넣어 둬도 됩니다. 32비트 값·실수·이름이 필요하면 칸의 ⋯(또는 오른쪽 버튼)으로 «칸 설정» 을 엽니다. 위 «표시» 목록의 «형식 지정…» 도 고른 칸의 «칸 설정» 을 엽니다.",
         "- 4. «연결»(TCP 는 «시작»)을 누르면 마스터 요청이 오는 대로 바로 답합니다. 주고받은 내용과 풀이(«id1 FC03 HR 0..9 (10)»)는 아래 «통신 기록» 에 찍힙니다.",
@@ -57,7 +57,7 @@ export const help: HelpDoc = {
       body: [
         "- «TCP 서버 (Modbus TCP)»: 이 PC 가 Modbus TCP 장비가 됩니다. 요청 앞의 MBAP 머리(트랜잭션 ID · 프로토콜 ID 0 · 길이 · Unit ID)를 읽고, 응답에 트랜잭션 ID·Unit ID 를 그대로 돌려줍니다. MBAP 의 Unit ID 칸이 곧 국번입니다. CRC 는 없습니다.",
         "- «TCP 서버 (RTU over TCP)»: 시리얼과 똑같은 RTU 프레임(국번 + PDU + CRC)을 TCP 로 주고받습니다. 시리얼 서버(게이트웨이)를 거치는 장비를 흉내 낼 때 씁니다.",
-        "- «묶을 주소»: 들을 랜카드 주소. (0.10.0 부터) 처음엔 127.0.0.1 이고 예전에 저장된 값은 그대로입니다. 다른 PC 의 마스터가 붙으려면 0.0.0.0(모든 랜카드)이나 그 랜카드의 주소를 고릅니다. 마스터에는 이 PC 의 IP(예: 192.168.0.10)와 포트를 넣습니다. 이 PC 안에서만 연습할 때(같은 PC 의 Modbus Master·AI 의 PortDock MCP 쓰기 도구)는 127.0.0.1 로 두면 다른 PC 가 붙지 못합니다.",
+        "- «묶을 주소»: 들을 랜카드 주소. 처음엔 127.0.0.1 이고 예전에 저장된 값은 그대로입니다. 다른 PC 의 마스터가 붙으려면 0.0.0.0(모든 랜카드)이나 그 랜카드의 주소를 고릅니다. 마스터에는 이 PC 의 IP(예: 192.168.0.10)와 포트를 넣습니다. 이 PC 안에서만 연습할 때(같은 PC 의 Modbus Master·AI 의 PortDock MCP 쓰기 도구)는 127.0.0.1 로 두면 다른 PC 가 붙지 못합니다.",
         "- «포트»: 기본 502. 0 이면 운영체제가 빈 포트를 고르고, 상태 칸에 실제 주소가 나옵니다. 포트가 이미 쓰이면 «포트가 이미 사용 중» 으로 시작하지 못합니다.",
         "- 시작에 성공한 «묶을 주소:포트» 는 최근 것부터 8개까지 남습니다. «묶을 주소» 옆 «▾» 를 눌러 고르면 주소·포트 칸을 채우고, ✕ 로 하나씩 지웁니다. 주소 칸에 글자를 넣으면 최근 주소가 자동 완성으로 뜹니다.",
         "- «시작» 하면 «듣는 중 — 마스터의 연결을 기다리는 중» 이 되고, 상태 칸 아래에 «연결된 클라이언트 n» 이 보입니다(마우스를 올리면 주소). 여러 마스터가 동시에 붙어도 각각 답합니다(최대 64).",
@@ -131,7 +131,7 @@ export const help: HelpDoc = {
         "- «바꾸는 간격(ms)»(50~3,600,000)마다 바꾸거나, «마스터가 읽을 때마다 바꾸기» 를 켜면 마스터가 그 칸을 읽을 때(01~04·17) 바꿉니다.",
         "- 프로그램 안쪽(백엔드)에서 돌기 때문에 창을 내려 두어도 값이 바뀝니다. 형식(F32·CDAB 등)을 정한 칸은 그 형식으로 바꿔 넣습니다. 문자열 칸에는 쓸 수 없습니다.",
         "- 마스터가 쓴 값은 다음 변화 때까지 남고, 증가·감소는 그 값부터 이어 갑니다. 범위 밖 값을 쓰면 증가는 최소부터(감소는 최대부터) 다시 시작합니다.",
-        "- 잡음(천천히 흔들림, 0.10.0 부터): 지금 값에서 «폭» 안의 아무 만큼 움직이되 «최소»~«최대» 를 넘지 않습니다. 범위 밖 값이면 가운데부터 시작합니다 — 전압·전류처럼 조금씩 흔들리는 측정값에 씁니다.",
+        "- 잡음(천천히 흔들림): 지금 값에서 «폭» 안의 아무 만큼 움직이되 «최소»~«최대» 를 넘지 않습니다. 범위 밖 값이면 가운데부터 시작합니다 — 전압·전류처럼 조금씩 흔들리는 측정값에 씁니다.",
         "- 자동 변화 설정도 표 값과 함께 저장되고, JSON 으로 내보내면 같이 들어갑니다(CSV 에는 값·형식·이름만).",
       ],
     },
@@ -149,7 +149,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "장비 프로필로 흉내 (0.10.0 부터)",
+      title: "장비 프로필로 흉내",
       id: "profile",
       body: [
         "실제 인버터·전력 미터·온도 조절기 없이 SCADA·HMI·직접 만든 프로그램을 시험할 때 씁니다. «장비 흉내…» 창에서 장비를 고를 때 아래 두 가지를 켜 두면(기본 켬) 지금 국번이 그 장비처럼 답합니다.",
@@ -307,7 +307,7 @@ export const help: HelpDoc = {
       title: "Getting started",
       id: "start",
       body: [
-        "- 1. Choose the «Connection» on the left. For serial, set «Port», «Baud rate», «Data bits», «Parity» and «Stop bits» exactly as on the master; for TCP, set the «Bind address» (from 0.10.0 127.0.0.1 on first run — for a master on another PC, 0.0.0.0 or an adapter's address) and «Port» (usually 502).",
+        "- 1. Choose the «Connection» on the left. For serial, set «Port», «Baud rate», «Data bits», «Parity» and «Stop bits» exactly as on the master; for TCP, set the «Bind address» (127.0.0.1 on first run — for a master on another PC, 0.0.0.0 or an adapter's address) and «Port» (usually 502).",
         "- 2. Check that «Slave ID» contains the ID the master polls (default 1). If not, enter 1–247 and click «Add».",
         "- 3. Pick a table at the top (e.g. «Holding registers») and enter values. You can do this before connecting. For 32-bit values, floats or names, open «Cell settings» with a cell's ⋯ (or right-click). The «Typed…» entry in the «Format» list also opens «Cell settings» for the selected cell.",
         "- 4. Click «Connect» («Start» for TCP). Master requests are answered at once. Traffic and its decode («id1 FC03 HR 0..9 (10)») appear in «Traffic» at the bottom.",
@@ -347,7 +347,7 @@ export const help: HelpDoc = {
       body: [
         "- «TCP server (Modbus TCP)»: the PC becomes a Modbus TCP device. It reads the MBAP header (transaction ID · protocol ID 0 · length · Unit ID) and echoes the transaction ID and Unit ID in replies. The MBAP Unit ID field is the Slave ID. There is no CRC.",
         "- «TCP server (RTU over TCP)»: exchanges the same RTU frames as serial (ID + PDU + CRC) over TCP. Use it to mimic a device behind a serial device server (gateway).",
-        "- «Bind address»: the local adapter to listen on. (from 0.10.0) It starts as 127.0.0.1; a saved value is kept. For a master on another PC, pick 0.0.0.0 (all adapters) or that adapter's address. On the master, enter this PC's IP (e.g. 192.168.0.10) and the port. When practising only on this PC (Modbus Master on the same PC, the PortDock MCP write tools from an AI), set it to 127.0.0.1 so other PCs cannot connect.",
+        "- «Bind address»: the local adapter to listen on. It starts as 127.0.0.1; a saved value is kept. For a master on another PC, pick 0.0.0.0 (all adapters) or that adapter's address. On the master, enter this PC's IP (e.g. 192.168.0.10) and the port. When practising only on this PC (Modbus Master on the same PC, the PortDock MCP write tools from an AI), set it to 127.0.0.1 so other PCs cannot connect.",
         "- «Port»: 502 by default. 0 lets the OS pick a free port; the real address appears in the status box. If the port is taken, starting fails with «Port already in use».",
         "- Up to 8 «bind address:port» pairs that started successfully are kept, newest first. Click «▾» next to «Bind address» and pick one to fill the address and port; ✕ removes an entry. Typing in the address box also suggests recent addresses.",
         "- After «Start» the status reads «Listening — waiting for the master to connect» with «n client(s) connected» below it (hover for the addresses). Several masters can connect at once and each is answered (up to 64).",
@@ -421,7 +421,7 @@ export const help: HelpDoc = {
         "- The value changes every «Update every (ms)» (50–3,600,000), or, with «Change on every master read», each time the master reads that cell (01–04, 17).",
         "- It runs inside the program (backend), so values keep changing while the window is minimized. Typed cells (F32, CDAB, …) are written in their type. Strings cannot be simulated.",
         "- A value written by the master stays until the next change; increment/decrement continue from it. If the master writes a value outside the range, increment restarts from min (decrement from max).",
-        "- Noise (slow drift, from 0.10.0): moves from the current value by a random amount within «Step» without leaving «Min»–«Max». A value outside the range restarts from the middle — for readings such as voltage or current that wander slightly.",
+        "- Noise (slow drift): moves from the current value by a random amount within «Step» without leaving «Min»–«Max». A value outside the range restarts from the middle — for readings such as voltage or current that wander slightly.",
         "- Simulation settings are saved with the table values and included in JSON exports (CSV carries values, types and names only).",
       ],
     },
@@ -439,7 +439,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Emulate with a device profile (from 0.10.0)",
+      title: "Emulate with a device profile",
       id: "profile",
       body: [
         "Use it to test SCADA, HMI or your own program without a real inverter, power meter or temperature controller. When you pick a device in «Emulate device…» with the two options below on (the default), the current Slave ID answers like that device.",

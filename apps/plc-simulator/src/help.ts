@@ -21,7 +21,7 @@ export const help: HelpDoc = {
         "블록 읽기·쓰기, 모니터 등록·실행, 원격 RUN·STOP·PAUSE·래치 클리어·리셋, 형명 읽기에도 답하고, «조건 규칙» 으로 «요청 비트가 켜지면 잠시 뒤 완료 비트 켜기» 같은 핸드셰이크를 흉내 냅니다.",
         "미쓰비시 공개 매뉴얼(SLMP/MC) 기준 구현 — 제휴 아님, 실제 PLC 와 동작이 다를 수 있음. 래더 프로그램은 돌리지 않습니다(값은 표에 넣은 그대로, 또는 «값 자동 변화» 로만 바뀝니다).",
         "응답 지연·무응답·종료 코드 오류를 일부러 만들어 클라이언트의 오류 처리도 시험할 수 있습니다.",
-        "(0.10.0 부터) 왼쪽 «프로토콜» 에서 «XGT 전용» 을 고르면 LS ELECTRIC XGT PLC 의 FEnet 전용 프로토콜(TCP 2004 · UDP 2005)에도 답합니다 — 아래 «XGT 전용 프로토콜» 절.",
+        " 왼쪽 «프로토콜» 에서 «XGT 전용» 을 고르면 LS ELECTRIC XGT PLC 의 FEnet 전용 프로토콜(TCP 2004 · UDP 2005)에도 답합니다 — 아래 «XGT 전용 프로토콜» 절.",
       ],
     },
     {
@@ -88,7 +88,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "XGT 전용 프로토콜 (0.10.0 부터)",
+      title: "XGT 전용 프로토콜",
       id: "xgt",
       body: [
         "- 왼쪽 «프로토콜» 에서 «XGT 전용 (LS FEnet)» 을 고르면 LS ELECTRIC XGT PLC 의 FEnet 모듈처럼 «LSIS-XGT» 머리 요청에 답합니다. 포트는 기본값이면 TCP 2004 · UDP 2005 로 바뀝니다(사용설명서 8.1.1).",
@@ -273,7 +273,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "XGT dedicated protocol (from 0.10.0)",
+      title: "XGT dedicated protocol",
       id: "xgt",
       body: [
         "- Choosing «XGT dedicated (LS FEnet)» under «Protocol» on the left makes it answer «LSIS-XGT» header requests like the FEnet module of an LS ELECTRIC XGT PLC. If the port is still a default it switches to TCP 2004 · UDP 2005 (user's manual 8.1.1).",

@@ -143,7 +143,7 @@ const ko = {
   // 이 PC
   cardPc: "이 PC (장비 PC 설정)",
   pcLoad: "이 PC 설정 읽기",
-  pcIntro: "빠른 시작·절전·업데이트 재시작·재시작 대기·화면 보호기·시간 동기화와 최근 예기치 않은 종료·하드웨어 오류, (0.10.0 부터) 블루스크린 정지 코드·저장장치 수명·절전을 깨운 원인·배터리, 현장 PC 노출(원격 데스크톱·SMBv1·방화벽·모든 주소에 연 포트·자동 로그온·USB 자동 실행)을 관리자 권한 없이 읽습니다.",
+  pcIntro: "빠른 시작·절전·업데이트 재시작·재시작 대기·화면 보호기·시간 동기화와 최근 예기치 않은 종료·하드웨어 오류, 블루스크린 정지 코드·저장장치 수명·절전을 깨운 원인·배터리, 현장 PC 노출(원격 데스크톱·SMBv1·방화벽·모든 주소에 연 포트·자동 로그온·USB 자동 실행)을 관리자 권한 없이 읽습니다.",
   pcPurpose: "용도",
   pcDays: "기록 기간",
   pcNoteGeneral: "«일반 PC» 는 설정 값을 적기만 하고, 예기치 않은 종료·하드웨어 오류 기록과 현장 PC 노출만 «볼 것» 으로 표시합니다. 장비를 돌리는 PC 라면 용도를 «장비 PC» 로 고릅니다.",
@@ -345,7 +345,7 @@ const en: Record<keyof typeof ko, string> = {
   nicCannot: "What the PC cannot see (network)",
   cardPc: "This PC (equipment PC settings)",
   pcLoad: "Read this PC's settings",
-  pcIntro: "Reads fast startup, sleep, update restarts, pending restarts, screen saver and time sync, plus recent unexpected shutdowns and hardware errors and (from 0.10.0) blue screen stop codes, storage health, what woke the PC, the battery and field PC exposure (Remote Desktop, SMBv1, firewall, ports open on all addresses, automatic sign-in, USB AutoPlay), without administrator rights.",
+  pcIntro: "Reads fast startup, sleep, update restarts, pending restarts, screen saver and time sync, plus recent unexpected shutdowns and hardware errors and blue screen stop codes, storage health, what woke the PC, the battery and field PC exposure (Remote Desktop, SMBv1, firewall, ports open on all addresses, automatic sign-in, USB AutoPlay), without administrator rights.",
   pcPurpose: "Use",
   pcDays: "Record period",
   pcNoteGeneral: "«General PC» only lists the settings and marks just unexpected shutdowns, hardware error records and field PC exposure «Worth a look». For a PC that runs equipment, pick «Equipment PC».",

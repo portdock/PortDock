@@ -58,7 +58,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "USB 연결·끊김 기록 (0.10.0 부터)",
+      title: "USB 연결·끊김 기록",
       id: "usb",
       body: [
         "- «띠링–또롱» 연결음이 되풀이될 때 어느 USB 장치가 끊기는지 찾습니다. «기록 시작» 을 누른 동안 Windows 장치 알림으로 USB 장치가 꽂히고 빠진 시각을 남기고, 놓친 것이 없게 3초마다 목록을 한 번 더 견줍니다.",
@@ -161,7 +161,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "USB connect/disconnect log (from 0.10.0)",
+      title: "USB connect/disconnect log",
       id: "usb",
       body: [
         "- Finds which USB device drops when the connect/disconnect sound keeps repeating. While recording it logs the time each USB device is plugged in or removed (Windows device notifications) and compares the device list every 3 s so nothing is missed.",

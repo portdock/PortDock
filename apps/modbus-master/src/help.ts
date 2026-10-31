@@ -11,7 +11,7 @@ export const help: HelpDoc = {
         "PortDock Modbus Master 는 Modbus 장비(PLC·인버터·계측기·센서·HMI 대신 시험할 장비)에 먼저 묻는 «마스터(폴링 도구)» 입니다. 시리얼 RTU 와 Modbus TCP, RTU over TCP 를 씁니다.",
         "- 표(탭) 여러 개를 각각 다른 국번(슬레이브 ID)·함수(01·02·03·04)·주소·주기로 읽습니다.",
         "- 값은 U16·S16·U32·S32·F32·F64·문자열, 워드·바이트 순서(ABCD·CDAB·BADC·DCBA), HEX·BIN 으로 보고, 칸마다 이름을 붙입니다.",
-        "- 칸을 두 번 눌러 씁니다(05·06·0F·10). 국번 찾기·주소 범위 찾기, 요청·응답 HEX 와 풀이, 표마다 통계, 값 CSV 기록, 추세 그림이 있습니다. 장비 설정을 파일로 백업·비교·복원합니다(0.10.0 부터).",
+        "- 칸을 두 번 눌러 씁니다(05·06·0F·10). 국번 찾기·주소 범위 찾기, 요청·응답 HEX 와 풀이, 표마다 통계, 값 CSV 기록, 추세 그림이 있습니다. 장비 설정을 파일로 백업·비교·복원합니다.",
         "- 무료(GPL-3.0)이고 화면은 한국어·영어입니다.",
       ],
     },
@@ -33,7 +33,7 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소·설정 찾기…», «원인 후보…», «설정 백업·복원…»(0.10.0 부터), «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
+        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소·설정 찾기…», «원인 후보…», «설정 백업·복원…», «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
         "- «통신 세부»·«통계» 는 평소 접혀 있고 제목 옆에 요약(«기다림 1000ms · 재시도 0 · 간격 20ms», «요청 n · 오류 m»)이 보입니다. 통신 세부가 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위: 표 탭(⏸ = 폴링 안 함, ● = 마지막 읽기 실패, 숫자 = 오류 누적 수 — 지금 실패 중이면 빨강, 아니면 회색), 표 설정(이름·국번·함수·시작·개수·주기·폴링·한 번 읽기), 보기 설정(표시·주소 표기·칸/목록·📈 추세·CSV).",
         "- 가운데: 값 칸. 지난 읽기와 달라진 칸은 잠깐 색이 바뀝니다. 마지막 읽기가 실패하면 칸이 흐려지고(앞 값) 이유가 위에 나옵니다.",
@@ -108,7 +108,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "통신 설정 찾기 (0.10.0 부터)",
+      title: "통신 설정 찾기",
       id: "line-scan",
       body: [
         "- 장비의 속도·패리티·국번을 모를 때 씁니다. «국번·주소·설정 찾기…» 창의 «통신 설정 찾기» 에서 해 볼 속도(1200~115200)와 패리티·정지 비트(8N1·8N2·8E1·8O1·8E2·8O2)를 고르고, 국번 범위·함수·주소를 정합니다.",
@@ -121,7 +121,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "«응답 없음» 원인 후보 (0.10.0 부터)",
+      title: "«응답 없음» 원인 후보",
       id: "diag",
       body: [
         "- 왼쪽 «원인 후보…» 를 누르면 최근 요청 50개(폴링·한 번 읽기)의 결과를 나눠, 많이 나온 갈래부터 원인 후보와 확인 방법을 보입니다. 실패가 있으면 왼쪽에 «최근 실패 n번 — 원인 후보 보기» 가 나옵니다.",
@@ -134,7 +134,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "장비 설정 백업·비교·복원 (0.10.0 부터)",
+      title: "장비 설정 백업·비교·복원",
       id: "backup",
       body: [
         "- 장비를 바꾸거나 고치기 전에 설정 레지스터를 파일로 남기고, 새 장비에 같은 값을 다시 쓸 때 씁니다. 왼쪽 «설정 백업·복원…» 으로 엽니다.",
@@ -158,7 +158,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "값 감시·알람 (0.10.0 부터)",
+      title: "값 감시·알람",
       id: "alarms",
       body: [
         "- 칸을 하나 누른 뒤 표 도구줄의 «🔔 감시» 로 그 칸(타입대로 읽은 값)에 조건을 겁니다. 조건이 걸린 칸에는 🔔 가 붙습니다. 연결해 있는 동안만 보고, «끊기» 를 누르면 열린 알람을 닫습니다(사용자가 끊은 것은 «통신 끊김» 이 아님). 읽기가 실패하거나 재연결을 기다리는 동안은 «통신 끊김» 초를 셉니다.",
@@ -230,7 +230,7 @@ export const help: HelpDoc = {
         "PortDock Modbus Master is a Modbus «master» (poll tool) that asks devices — PLCs, drives, meters, sensors — for data, instead of an HMI. It speaks serial RTU, Modbus TCP and RTU over TCP.",
         "- Several tables (tabs), each with its own Slave ID, function (01/02/03/04), addresses and poll interval.",
         "- Values as U16, S16, U32, S32, F32, F64 or strings with word/byte order (ABCD, CDAB, BADC, DCBA), HEX/BIN, and a name per address.",
-        "- Double-click a cell to write (05/06/0F/10). Slave ID and address range scans, request/response HEX with decoding, per-table statistics, CSV value logging and trend lines. Device settings backup, compare and restore to a file (from 0.10.0).",
+        "- Double-click a cell to write (05/06/0F/10). Slave ID and address range scans, request/response HEX with decoding, per-table statistics, CSV value logging and trend lines. Device settings backup, compare and restore to a file.",
         "- Free (GPL-3.0), Korean and English UI.",
       ],
     },
@@ -252,7 +252,7 @@ export const help: HelpDoc = {
     {
       title: "Layout",
       body: [
-        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», «Possible causes…», «Settings backup & restore…» (from 0.10.0), the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
+        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», «Possible causes…», «Settings backup & restore…», the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
         "- «Communication details» and «Statistics» are collapsed with a summary next to the title («timeout 1000 ms · retries 0 · delay 20 ms», «n requests · m errors»). Communication details start expanded when they differ from the defaults; the open state is remembered.",
         "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, Slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
         "- Middle: value cells. Cells that changed since the previous read flash briefly. If the last read failed, the cells are dimmed (previous values) and the reason is shown above.",
@@ -327,7 +327,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Find line settings (from 0.10.0)",
+      title: "Find line settings",
       id: "line-scan",
       body: [
         "- For when the device's baud, parity and ID are unknown. In «Scan…», open «Find line settings», pick the baud rates (1200–115200) and parity/stop bits (8N1, 8N2, 8E1, 8O1, 8E2, 8O2) to try, and set the ID range, function and address.",
@@ -340,7 +340,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "«No response» — possible causes (from 0.10.0)",
+      title: "«No response» — possible causes",
       id: "diag",
       body: [
         "- «Possible causes…» on the left sorts the last 50 request results (polling and read once) and shows possible causes and how to check them, most frequent first. When there are failures, «n recent failures — see possible causes» appears on the left.",
@@ -353,7 +353,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Device settings backup, compare, restore (from 0.10.0)",
+      title: "Device settings backup, compare, restore",
       id: "backup",
       body: [
         "- Use it to keep a device's setting registers in a file before replacing or servicing it, and to write the same values into the new device. Open it with «Settings backup & restore…» on the left.",
@@ -377,7 +377,7 @@ export const help: HelpDoc = {
       ],
     },
     {
-      title: "Watch and alarms (from 0.10.0)",
+      title: "Watch and alarms",
       id: "alarms",
       body: [
         "- Click a cell, then «🔔 Watch» in the table toolbar to set conditions on it (the value decoded by type). Watched cells show 🔔. Watching runs only while connected; «Disconnect» closes open alarms (a disconnect you chose is not «communication lost»). Failed reads and waiting to reconnect count toward «communication lost» seconds.",
