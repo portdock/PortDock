@@ -360,6 +360,7 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/battery-report/",
     name: { ko: "노트북 배터리 리포트 해석기", en: "Laptop Battery Report Reader" },
     blurb: { ko: "powercfg /batteryreport 의 HTML 을 끌어 놓으면 설계 대비 남은 용량 %, 충전 횟수, 용량 이력 그래프. 브라우저 안에서만.", en: "Drop the powercfg /batteryreport HTML for remaining capacity vs design, cycle count and a capacity history chart. In your browser only." },
+  },
   {
     path: "tools/wiring/",
     name: { ko: "배선도 만들기", en: "Wiring Diagram Maker" },
