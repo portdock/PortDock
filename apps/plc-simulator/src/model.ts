@@ -1,7 +1,7 @@
 // PLC Simulator 화면 규칙 — React·Tauri 없는 부분(시험: node --test apps/plc-simulator/src/model.test.ts).
 // 디바이스 번호 표기(X·Y·B·W·ZR 는 16진), 비트 ↔ 워드 묶기, 저장 파일(JSON) 검사, 장애 대상 글 읽기, 마지막 시작 설정,
 // (0.6.0) 워드 ASCII·바이트 보기, 범위 채우기·문자열 써 넣기, 조건 규칙(주소 «D100.3» 읽기·검사·요약·예제·범위로 여러 개).
-import { DEV_INFO, DEVS, MAX_SIZE, type Dev, type Format } from "./devs.ts";
+import { DEV_INFO, DEVS, MAX_SIZE, type Dev, type Format, type Protocol } from "./devs.ts";
 
 export const isDev = (v: unknown): v is Dev => typeof v === "string" && (DEVS as string[]).includes(v);
 
@@ -175,6 +175,8 @@ export interface LastOk {
   host: string;
   port: number;
   format: Format;
+  /** (0.10.0) 없으면 MC */
+  protocol?: Protocol;
 }
 
 export function cleanLastOk(v: unknown): LastOk | null {
@@ -185,7 +187,7 @@ export function cleanLastOk(v: unknown): LastOk | null {
   if (typeof o.host !== "string" || !o.host.trim()) return null;
   if (typeof o.port !== "number" || !Number.isInteger(o.port) || o.port < 0 || o.port > 65535) return null;
   if (!f || (f.frame !== "3e" && f.frame !== "4e") || (f.code !== "binary" && f.code !== "ascii")) return null;
-  return { transport: o.transport, host: o.host.trim(), port: o.port, format: { frame: f.frame, code: f.code } };
+  return { transport: o.transport, host: o.host.trim(), port: o.port, format: { frame: f.frame, code: f.code }, protocol: o.protocol === "xgt" ? "xgt" : "mc" };
 }
 
 /** 이 PC 안에서만 듣는 주소인지(127.x·localhost) — 아니면 다른 PC 에서 붙을 수 있다 */

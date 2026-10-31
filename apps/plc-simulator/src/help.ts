@@ -7,6 +7,9 @@ import { logHandlingLines, settingsLines, shortcutLines, windowLines } from "@sh
 const SLMP = "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080956eng/sh080956engl.pdf";
 const MC = "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080008/sh080008ab.pdf";
 const ETH = "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh081257eng/sh081257engaf.pdf";
+// (0.10.0) LS ELECTRIC 공개 사용설명서 — XGT FEnet V2.30 8장·10.4, XGB FEnet(XBL-EMTA) V1.8 5.2
+const XGT_FENET = "https://www.ls-electric.com/upload/customer/download/f8a96bfb-6212-4a0f-8d07-a1ba8868240f/User's%20Manual_XGT%20FEnet_V2.30.pdf";
+const XGB_FENET = "https://sol.ls-electric.com/uploads/document/16735978115430/User_s%20Manual_XBL-EMTA_ENG_V1.8_202210.pdf";
 
 export const help: HelpDoc = {
   ko: [
@@ -18,6 +21,7 @@ export const help: HelpDoc = {
         "블록 읽기·쓰기, 모니터 등록·실행, 원격 RUN·STOP·PAUSE·래치 클리어·리셋, 형명 읽기에도 답하고, «조건 규칙» 으로 «요청 비트가 켜지면 잠시 뒤 완료 비트 켜기» 같은 핸드셰이크를 흉내 냅니다.",
         "미쓰비시 공개 매뉴얼(SLMP/MC) 기준 구현 — 제휴 아님, 실제 PLC 와 동작이 다를 수 있음. 래더 프로그램은 돌리지 않습니다(값은 표에 넣은 그대로, 또는 «값 자동 변화» 로만 바뀝니다).",
         "응답 지연·무응답·종료 코드 오류를 일부러 만들어 클라이언트의 오류 처리도 시험할 수 있습니다.",
+        "(0.10.0 부터) 왼쪽 «프로토콜» 에서 «XGT 전용» 을 고르면 LS ELECTRIC XGT PLC 의 FEnet 전용 프로토콜(TCP 2004 · UDP 2005)에도 답합니다 — 아래 «XGT 전용 프로토콜» 절.",
       ],
     },
     {
@@ -81,6 +85,21 @@ export const help: HelpDoc = {
         "- 비트 디바이스는 «비트» 보기(체크칸)와 «워드(16점)» 보기(16점을 한 워드로 — 번호가 작은 점이 비트 0, 클라이언트가 워드 단위로 읽는 값과 같음)를 고릅니다.",
         "- 32비트 값: 번호가 작은 워드가 아래 자리입니다(예: D200 = 아래 16비트, D201 = 위 16비트). «칸 설정» 의 순서 기본값이 그래서 CDAB 입니다. 실수(F32)도 같습니다.",
         "- 롱 타이머·롱 카운터·인덱스 레지스터·링크 다이렉트 같은 다른 디바이스는 없습니다 — 그 코드는 C05B 로 답합니다.",
+      ],
+    },
+    {
+      title: "XGT 전용 프로토콜 (0.10.0 부터)",
+      id: "xgt",
+      body: [
+        "- 왼쪽 «프로토콜» 에서 «XGT 전용 (LS FEnet)» 을 고르면 LS ELECTRIC XGT PLC 의 FEnet 모듈처럼 «LSIS-XGT» 머리 요청에 답합니다. 포트는 기본값이면 TCP 2004 · UDP 2005 로 바뀝니다(사용설명서 8.1.1).",
+        "- 구현한 명령: 읽기 h0054(응답 h0055)·쓰기 h0058(응답 h0059). 데이터 형 BIT h00 · BYTE h01 · WORD h02 · DWORD h03 · LWORD h04 는 «개별»(블록 16개까지), h14 는 «연속»(바이트 변수, 1,400바이트까지). 상태 읽기(h00B0)는 아직 없어 오류 h78 로 답합니다.",
+        "- 디바이스: %PW · %MW · %KW · %FW · %LW · %NW · %DW · %TW · %CW — 모두 워드 표입니다. 변수 이름은 «%» + 디바이스 글자 + 형 글자(X·B·W·D·L) + 10진 번호.",
+        "- 번호 단위는 형마다 다릅니다: %MW100 = 워드 100, %MX1603 = 워드 100 의 비트 3(비트 번호 = 워드×16+비트 — 사용설명서 8-12쪽, «%MX100.3»·«%MX1003» 같은 16진 꼴은 받지 않음), %MB200 = 워드 100 의 아래 바이트(%MB201 = 위 바이트), %MD50 = 워드 100~101, %ML25 = 워드 100~103(낮은 워드 먼저). 바이트 = 워드×2 는 사용설명서 예(%DW1234 = %DB2468)를, 더블·롱워드는 같은 규칙을 따른 이 흉내의 선택입니다.",
+        "- 바이트 순서는 리틀 엔디언(h0054 → 54 00). 응답 머리: 회사 ID 는 요청 것(LSIS-XGT 또는 LGIS-GLOFA), 프레임 방향 h11, Invoke ID 는 요청 것, PLC 정보 위 바이트 = RUN 1 · STOP/PAUSE 2, CPU 정보 hA0(XGK), BCC = 앞 19바이트 합.",
+        "- 오류 응답(NAK): 오류 상태 hFFFF + 오류 코드 2바이트. 1 블록 수 16 넘음 · 2 데이터 형 틀림(형 글자와 데이터 형 칸이 다름, 쓰기 데이터 크기가 형과 다름 포함) · 3 서비스하지 않는 디바이스·잘못된 이름 · 4 크기 밖 · 5 연속 1,400바이트 넘음 · h75 회사 ID · h76 길이 칸이 실제와 다름 · h77 BCC 틀림(«머리 BCC 검사» 를 끄면 보지 않음) · h78 모르는 명령. 어느 조건에 어느 코드를 쓸지는 이 프로그램이 고른 것입니다.",
+        "- 흉내의 단순화: T·C 의 접점과 현재값을 따로 두지 않고(같은 워드 표), 기종·디바이스마다 받지 않는 형 조합도 모두 받습니다. 형명·자기 국·모니터 같은 MC 전용 설정은 XGT 에선 숨습니다.",
+        "- 조건 규칙·값 자동 변화·채우기·저장은 XGT 디바이스에도 됩니다 — 규칙 주소는 «%MW100.3»(워드 안 비트)·«%DW10» 처럼 씁니다. 장애 주입의 «명령» 칸에는 0054·0058, «디바이스» 칸에는 %DW 같은 이름을 넣습니다.",
+        `- 근거: LS ELECTRIC «XGT FEnet I/F Module User's Manual» V2.30 8장(8-1~8-14쪽)·10.4(10-12쪽) ${XGT_FENET} · «XGB FEnet I/F Module XBL-EMTA» V1.8 5.2(5-3~5-7쪽) ${XGB_FENET}. 공개 사용설명서 기준 구현 — 제휴 아님, 실제 PLC 와 다를 수 있습니다. 사용설명서는 저장소에 넣지 않았습니다.`,
       ],
     },
     {
@@ -251,6 +270,21 @@ export const help: HelpDoc = {
         "- Bit devices can be viewed as «Bits» (checkboxes) or «Words (16 points)» (16 points per word — the lowest number is bit 0, the same value a client reads in word units).",
         "- 32-bit values: the lower-numbered word holds the low part (e.g. D200 = low 16 bits, D201 = high 16 bits), so the default order in «Cell settings» is CDAB. Floats (F32) work the same way.",
         "- Other devices (long timers/counters, index registers, link direct devices …) are not available — their codes get C05B.",
+      ],
+    },
+    {
+      title: "XGT dedicated protocol (from 0.10.0)",
+      id: "xgt",
+      body: [
+        "- Choosing «XGT dedicated (LS FEnet)» under «Protocol» on the left makes it answer «LSIS-XGT» header requests like the FEnet module of an LS ELECTRIC XGT PLC. If the port is still a default it switches to TCP 2004 · UDP 2005 (user's manual 8.1.1).",
+        "- Implemented: Read h0054 (response h0055) and Write h0058 (response h0059). Data types BIT h00 · BYTE h01 · WORD h02 · DWORD h03 · LWORD h04 are «individual» (up to 16 blocks); h14 is «continuous» (byte variable, up to 1,400 bytes). Status read (h00B0) is not there yet and gets error h78.",
+        "- Devices: %PW · %MW · %KW · %FW · %LW · %NW · %DW · %TW · %CW — all word tables. A variable name is «%» + device letter + type letter (X·B·W·D·L) + decimal number.",
+        "- The number unit depends on the type: %MW100 = word 100, %MX1603 = bit 3 of word 100 (bit number = word × 16 + bit — manual p. 8-12; hex forms such as «%MX100.3» are not accepted), %MB200 = low byte of word 100 (%MB201 = high byte), %MD50 = words 100–101, %ML25 = words 100–103 (low word first). Byte = word × 2 follows the manual's example (%DW1234 = %DB2468); double and long words follow the same rule as this emulator's choice.",
+        "- Byte order is little-endian (h0054 → 54 00). Response header: the request's company ID (LSIS-XGT or LGIS-GLOFA), frame direction h11, the request's invoke ID, PLC info high byte = RUN 1 · STOP/PAUSE 2, CPU info hA0 (XGK), BCC = sum of the first 19 bytes.",
+        "- Error response (NAK): error status hFFFF + 2-byte error code. 1 more than 16 blocks · 2 wrong data type (type letter differs from the data type field, or write data size differs from the type) · 3 device not serviced / bad name · 4 out of size · 5 continuous over 1,400 bytes · h75 company ID · h76 length field differs from the actual length · h77 wrong BCC (ignored when «Check header BCC» is off) · h78 unknown instruction. Which code is used for which condition is this program's choice.",
+        "- Simplifications: timer/counter contacts and current values are not kept apart (one word table), and every type/device combination is accepted even where a real CPU would refuse it. MC-only settings (type name, own station, monitor) are hidden for XGT.",
+        "- Condition rules, value simulation, fill and save also work on XGT devices — write rule addresses as «%MW100.3» (bit in a word) or «%DW10». In fault injection, put 0054·0058 in «Commands» and names such as %DW in «Devices».",
+        `- Sources: LS ELECTRIC «XGT FEnet I/F Module User's Manual» V2.30 chapter 8 (pp. 8-1–8-14) and 10.4 (p. 10-12) ${XGT_FENET} · «XGB FEnet I/F Module XBL-EMTA» V1.8 5.2 (pp. 5-3–5-7) ${XGB_FENET}. Built from the public manuals — not affiliated; a real PLC may behave differently. The manuals are not included in the repository.`,
       ],
     },
     {

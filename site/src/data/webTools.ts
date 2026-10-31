@@ -48,6 +48,7 @@ export interface WebTool {
     | "tools/gige-bandwidth/"
     | "tools/energy-pulse/"
     | "tools/mc-decoder/"
+    | "tools/xgt-decoder/"
     | "tools/pcap-analyzer/"
     | "tools/pump-fan-affinity/"
     | "tools/conveyor-speed/"
@@ -305,6 +306,11 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/mc-decoder/",
     name: { ko: "MC 프로토콜(SLMP) 프레임 해석기", en: "MC Protocol (SLMP) Frame Decoder" },
     blurb: { ko: "3E·4E, 이진·ASCII 프레임 → 머리 칸·명령·디바이스·값·종료 코드. 짝 요청으로 응답 값 풀이, 요청 만들기.", en: "3E/4E binary or ASCII frames → header, command, device, values and end code. Pair a reply with its request; build requests." },
+  },
+  {
+    path: "tools/xgt-decoder/",
+    name: { ko: "LS XGT 전용 프로토콜(FEnet) 프레임 해석기", en: "LS XGT Dedicated Protocol (FEnet) Frame Decoder" },
+    blurb: { ko: "(0.10.0 부터) «LSIS-XGT» 머리 프레임 → 머리 칸·BCC·명령·변수(%MW·%MX·%DB)·값·오류 코드. 짝 요청으로 응답 값 풀이, 요청 만들기.", en: "(from 0.10.0) «LSIS-XGT» header frames → header fields, BCC, instruction, variables (%MW, %MX, %DB), values and error code. Pair a reply with its request; build requests." },
   },
   {
     path: "tools/pcap-analyzer/",

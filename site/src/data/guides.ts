@@ -55,6 +55,20 @@ export const MC_MANUALS: { title: string; url: string; note: Record<Lang, string
   },
 ];
 
+/** (0.10.0) LS ELECTRIC XGT 전용 프로토콜(FEnet) 공개 사용설명서 — 웹 도구 «XGT 프레임 해석기» 와 가이드가 함께 쓴다 */
+export const XGT_MANUALS: { title: string; url: string; note: Record<Lang, string> }[] = [
+  {
+    title: "LS ELECTRIC XGT FEnet I/F Module User's Manual V2.30",
+    url: "https://www.ls-electric.com/upload/customer/download/f8a96bfb-6212-4a0f-8d07-a1ba8868240f/User's%20Manual_XGT%20FEnet_V2.30.pdf",
+    note: { ko: "8장 전용 통신(8-1~8-14쪽: 포트 2004·2005, 머리, 명령 h0054·h0058, 데이터 형, 개별·연속 읽기쓰기), 10.4 오류 코드(10-12쪽)", en: "chapter 8 dedicated communication (pp. 8-1–8-14: ports 2004/2005, header, instructions h0054/h0058, data types, individual and continuous read/write), 10.4 error codes (p. 10-12)" },
+  },
+  {
+    title: "LS ELECTRIC XGB FEnet I/F Module XBL-EMTA User's Manual V1.8",
+    url: "https://sol.ls-electric.com/uploads/document/16735978115430/User_s%20Manual_XBL-EMTA_ENG_V1.8_202210.pdf",
+    note: { ko: "5.2 XGT 전용 프로토콜(5-3~5-7쪽): 머리 표, 회사 ID 두 가지, 바이트 주소 = 워드 × 2, 요청·응답 프레임 예시(표 5-6~5-9)", en: "5.2 XGT dedicated protocol (pp. 5-3–5-7): header table, two company IDs, byte address = word × 2, request/response frame examples (tables 5-6–5-9)" },
+  },
+];
+
 export const GUIDES: Guide[] = [
   {
     slug: "modbus-rtu-frame",
@@ -4339,7 +4353,7 @@ export const GUIDES: Guide[] = [
     slug: "mc-protocol-test-without-plc",
     date: "2026-10-29",
     tools: ["plc-simulator", "tcp"],
-    related: ["mc-protocol-3e-binary-frame", "mc-protocol-end-codes", "mc-protocol-device-numbers", "plc-ip-subnet", "modbus-tcp-connection"],
+    related: ["mc-protocol-3e-binary-frame", "mc-protocol-end-codes", "mc-protocol-device-numbers", "xgt-protocol-test-without-plc", "plc-ip-subnet", "modbus-tcp-connection"],
     webTools: ["tools/mc-decoder/", "tools/subnet/"],
     title: { ko: "PLC 없이 MC 프로토콜 통신 시험하기 — 시뮬레이터·127.0.0.1·흔한 실수", en: "Testing MC protocol communication without a PLC — simulator, 127.0.0.1, common mistakes" },
     seoTitle: { ko: "PLC 없이 MC 프로토콜 통신 시험하기 — PortDock", en: "Test MC Protocol (SLMP) Without a PLC: Common Mistakes — PortDock" },
@@ -4476,6 +4490,174 @@ export const GUIDES: Guide[] = [
       ],
     },
     refs: MC_MANUALS,
+  },
+  {
+    // (0.10.0) 근거: crates/core/src/xgt.rs(머리·오류 코드 조건·번호 단위), apps/plc-simulator/src/help.ts «XGT 전용 프로토콜» 절,
+    // LS ELECTRIC 사용설명서(XGT_MANUALS). 예시 바이트는 lib/xgtDecode.ts buildXgtRequest·시험으로 계산.
+    slug: "xgt-protocol-test-without-plc",
+    date: "2026-10-31",
+    tools: ["plc-simulator", "tcp"],
+    related: ["mc-protocol-test-without-plc", "plc-ip-subnet", "modbus-tcp-connection"],
+    webTools: ["tools/xgt-decoder/", "tools/subnet/"],
+    title: { ko: "PLC 없이 LS XGT 전용 프로토콜 통신 시험하기 — FEnet 2004·변수 이름·흔한 실수", en: "Testing LS XGT dedicated protocol communication without a PLC — FEnet 2004, variable names, common mistakes" },
+    seoTitle: { ko: "PLC 없이 LS XGT 전용 프로토콜(FEnet) 통신 시험하기 — PortDock", en: "Test the LS XGT Dedicated Protocol Without a PLC — PortDock" },
+    desc: {
+      ko: "LS XGT PLC 와 FEnet 전용 프로토콜(TCP 2004)로 통신하는 PC 프로그램을 PLC 없이 시험하는 순서. %MW·%MX 번호, BCC, 오류 코드 같은 흔한 실수.",
+      en: "Test a PC program that talks to an LS XGT PLC over the FEnet dedicated protocol (TCP 2004) without the PLC. %MW/%MX numbering, BCC and error-code mistakes.",
+    },
+    body: {
+      ko: [
+        { p: "LS ELECTRIC XGT PLC 의 값을 PC 프로그램(C#·C++ 상위 프로그램, 데이터 수집, HMI)에서 읽고 쓸 때 FEnet 모듈의 XGT 전용 프로토콜을 많이 씁니다. PortDock PLC Simulator 는 0.10.0 부터 이 프로토콜에도 답합니다. 이 글은 같은 PC 에서 자기 프로그램과 시뮬레이터를 127.0.0.1 로 잇는 순서와, 처음에 자주 막히는 곳을 정리합니다." },
+        { h: "1. 시뮬레이터 설정" },
+        {
+          table: {
+            head: ["설정", "고를 것"],
+            plain: true,
+            rows: [
+              ["프로토콜", "«XGT 전용 (LS FEnet)» (0.10.0 부터)"],
+              ["연결 방식", "TCP 서버 또는 UDP — 자기 프로그램이 쓰는 쪽"],
+              ["포트", "TCP 2004 · UDP 2005 — 사용설명서 8.1.1 의 전용 서비스 포트. 프로토콜을 바꾸면 기본값으로 바뀝니다"],
+              ["묶을 주소", "127.0.0.1(기본) — 이 PC 안의 프로그램만 붙습니다"],
+              ["머리 BCC 검사", "기본 켬 — BCC 가 틀린 요청에 오류 h77"],
+            ],
+          },
+        },
+        { p: "가운데 위에서 디바이스 %DW 를 고르고 %DW100 에 0x1234(4660)를 넣은 뒤 «시작»(F4)을 누릅니다. 디바이스는 P·M·K·F·T·C·D·L·N 이 모두 워드 표(%PW·%MW…)이고, 비트·바이트·더블워드는 같은 표를 다른 단위로 읽습니다." },
+        { h: "2. 자기 프로그램 설정" },
+        { ul: [
+          "접속 주소 127.0.0.1, 포트 2004(TCP).",
+          "머리 20바이트: 회사 ID «LSIS-XGT» + 00 00, PLC 정보 00 00, CPU 정보(요청은 쓰지 않음), 프레임 방향 h33, Invoke ID(응답에 그대로 돌아옴), 길이(머리 뒤 바이트 수), FEnet 위치, BCC(앞 19바이트 합).",
+          "숫자는 작은 자리 바이트부터(리틀 엔디언) — 명령 h0054 는 54 00, 길이 16 은 10 00.",
+        ] },
+        { h: "3. 첫 요청 — %DW100 한 워드 읽기" },
+        { code: "4C 53 49 53 2D 58 47 54 00 00 00 00 A0 33 01 00 10 00 00 3F 54 00 02 00 00 00 01 00 06 00 25 44 57 31 30 30" },
+        { p: "앞 20바이트가 머리, 그 뒤가 개별 읽기(명령 54 00, 데이터 형 WORD 02 00, 예약 00 00, 블록 수 01 00, 변수 길이 06 00, «%DW100») 입니다. 시뮬레이터의 %DW100 이 0x1234 면 응답은 이렇습니다." },
+        { code: "4C 53 49 53 2D 58 47 54 00 00 00 01 A0 11 01 00 0E 00 00 1C 55 00 02 00 00 00 00 00 01 00 02 00 34 12" },
+        { p: "프레임 방향이 h11, Invoke ID 01 00 은 요청 것 그대로, PLC 정보 위 바이트 01 은 RUN 입니다. 몸체는 명령 55 00(읽기 응답), 오류 상태 00 00(정상), 블록 수 1, 데이터 크기 2, 값 34 12 입니다. 시뮬레이터의 통신 기록에는 «0054 개별 읽기 WORD %DW100 · #0001», «0055 ACK · 블록 1 · #0001» 같은 풀이가 붙습니다." },
+        { ul: [
+          "자기 프로그램이 아직 없으면 PortDock TCP 의 클라이언트로 위 바이트를 HEX 로 보내 응답을 볼 수 있습니다.",
+          "자기 프로그램이 보낸 바이트가 맞는지 보려면 웹 도구 «LS XGT 전용 프로토콜 프레임 해석기» 에 붙여 넣습니다. 머리 칸·변수·값을 풀고, 시뮬레이터가 어떤 오류 코드로 답할지도 보여 줍니다.",
+        ] },
+        { h: "변수 이름과 번호 단위" },
+        {
+          table: {
+            head: ["변수", "뜻(시뮬레이터 기준)"],
+            plain: true,
+            rows: [
+              ["%MW100", "M 워드 100"],
+              ["%MX1603", "M 워드 100 의 비트 3 — 비트 번호 = 워드 × 16 + 비트(10진). 사용설명서 8-12쪽: %MX172C 가 아니라 %MX2764"],
+              ["%MB200 · %MB201", "M 워드 100 의 아래 · 위 바이트 — 바이트 번호 = 워드 × 2(사용설명서 XBL-EMTA 5.2.4: %DW1234 = %DB2468)"],
+              ["%MD50 · %ML25", "M 워드 100~101 · 100~103(낮은 워드 먼저) — 더블·롱워드도 같은 규칙으로 본 시뮬레이터의 선택"],
+              ["%DB0 연속 6", "연속 읽기·쓰기는 바이트 변수만, 1,400바이트까지 — %DW0~%DW2"],
+            ],
+          },
+        },
+        { h: "흔한 실수" },
+        {
+          table: {
+            head: ["증상", "볼 것"],
+            plain: true,
+            rows: [
+              ["접속이 안 됨", "시뮬레이터를 시작했는지, 포트가 2004 인지. 127.0.0.1 은 같은 PC 에서만 붙습니다. 다른 PC 라면 «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜고 윈도우 방화벽에서 이 프로그램을 허용합니다"],
+              ["요청은 들어오는데(RX) 응답이 없음", "EV 줄에 «IGNORED» 가 있으면 머리 20바이트보다 짧거나 프레임 방향이 h33 이 아닙니다. 시뮬레이터가 «MC 프로토콜» 로 시작되어 있지 않은지도 봅니다"],
+              ["오류 h77", "머리 BCC 가 앞 19바이트 합과 다릅니다. 자기 프로그램이 BCC 를 채우지 않는다면 «머리 BCC 검사» 를 끄고 시험할 수 있습니다(사용설명서 XBL-EMTA 표 5-6 예시도 머리 합과 다름)"],
+              ["오류 h76", "머리의 길이 칸이 실제 뒤따르는 바이트 수와 다르거나, 블록 수만큼 변수가 없습니다"],
+              ["오류 h75", "회사 ID 가 «LSIS-XGT» + 00 00(또는 «LGIS-GLOFA»)가 아닙니다"],
+              ["오류 2", "데이터 형 칸과 변수의 형 글자(X·B·W·D·L)가 다르거나, 쓰기 데이터 크기가 형과 다릅니다. 연속(h14)은 %MB 꼴만"],
+              ["오류 3", "디바이스 글자가 P·M·K·F·T·C·D·L·N 이 아니거나 «%MX100.3» 처럼 번호가 10진 숫자가 아닙니다"],
+              ["오류 4", "디바이스 크기를 넘는 번호입니다. 시뮬레이터 «크기» 를 늘립니다(비트는 워드 × 16 이라 금방 커집니다)"],
+              ["오류 h78", "읽기 h0054·쓰기 h0058 이 아닌 명령입니다(상태 읽기 h00B0 은 아직 없음)"],
+              ["값이 엉뚱한 칸에 나옴", "비트 %MX 를 16진 «워드.비트» 로 쓰지 않았는지, 바이트 번호를 워드 번호로 쓰지 않았는지 봅니다"],
+            ],
+          },
+        },
+        { h: "오류 처리도 시험하기" },
+        { ul: [
+          "«응답 지연(ms)» 으로 시간 초과 설정을, «응답 안 함» 으로 재시도 처리를 봅니다.",
+          "«종료 코드로 답함» 에서 XGT 오류 코드(1~6 · h75~h78)를 고르면 그 코드로 NAK(오류 상태 FFFF)를 보냅니다. 이때 쓰기는 반영하지 않습니다.",
+          "명령 칸에 0054·0058, 디바이스 칸에 %DW 처럼 넣어 대상을 좁힐 수 있습니다.",
+        ] },
+        { h: "시뮬레이터로 알 수 없는 것" },
+        { p: "PortDock PLC Simulator 는 LS ELECTRIC 의 공개 사용설명서에 적힌 프레임 형식으로만 만들었고 실기와 견주지 않았습니다. 래더 프로그램은 돌리지 않으며, T·C 의 접점과 현재값을 따로 두지 않고, 기종·디바이스마다 받지 않는 형 조합도 받습니다. 어느 조건에 어느 오류 코드를 쓸지, 응답 머리의 PLC 정보·CPU 정보 값도 실제와 다를 수 있습니다. 통신 부분을 미리 맞춰 두는 도구로 쓰고, 마지막 시험은 실제 PLC 로 합니다. 공장망에서 실제 PLC 와 같은 IP·포트로 띄우지 마세요." },
+        { p: "이 글은 LS ELECTRIC 의 공개 사용설명서(XGT FEnet·XGB FEnet)를 기준으로 썼으며, 제휴 관계가 아닙니다." },
+      ],
+      en: [
+        { p: "PC programs (C#/C++ host software, data collection, HMIs) often read and write LS ELECTRIC XGT PLC values through the FEnet module's XGT dedicated protocol. From 0.10.0 PortDock PLC Simulator answers this protocol too. This guide connects your program and the simulator on one PC through 127.0.0.1 and lists where people usually get stuck at first." },
+        { h: "1. Set up the simulator" },
+        {
+          table: {
+            head: ["Setting", "Choose"],
+            plain: true,
+            rows: [
+              ["Protocol", "«XGT dedicated (LS FEnet)» (from 0.10.0)"],
+              ["Transport", "TCP server or UDP — whichever your program uses"],
+              ["Port", "TCP 2004 · UDP 2005 — the dedicated service ports in manual 8.1.1. Switching the protocol sets them if the port is still a default"],
+              ["Bind address", "127.0.0.1 (default) — only programs on this PC can connect"],
+              ["Check header BCC", "On by default — a request with a wrong BCC gets error h77"],
+            ],
+          },
+        },
+        { p: "Pick device %DW at the top, put 0x1234 (4660) in %DW100 and press «Start» (F4). Devices P, M, K, F, T, C, D, L and N are all word tables (%PW, %MW …); bits, bytes and double words read the same table in other units." },
+        { h: "2. Set up your program" },
+        { ul: [
+          "Connect to 127.0.0.1, port 2004 (TCP).",
+          "20-byte header: company ID «LSIS-XGT» + 00 00, PLC info 00 00, CPU info (not used in requests), source of frame h33, invoke ID (echoed in the reply), length (bytes after the header), FEnet position, BCC (sum of the first 19 bytes).",
+          "Numbers go low byte first (little-endian) — instruction h0054 is 54 00, length 16 is 10 00.",
+        ] },
+        { h: "3. First request — read one word %DW100" },
+        { code: "4C 53 49 53 2D 58 47 54 00 00 00 00 A0 33 01 00 10 00 00 3F 54 00 02 00 00 00 01 00 06 00 25 44 57 31 30 30" },
+        { p: "The first 20 bytes are the header; the rest is an individual read (instruction 54 00, data type WORD 02 00, reserved 00 00, 1 block 01 00, variable length 06 00, «%DW100»). If %DW100 holds 0x1234 in the simulator, the reply is:" },
+        { code: "4C 53 49 53 2D 58 47 54 00 00 00 01 A0 11 01 00 0E 00 00 1C 55 00 02 00 00 00 00 00 01 00 02 00 34 12" },
+        { p: "Source of frame is h11, invoke ID 01 00 is the request's, and the PLC info high byte 01 means RUN. The body is instruction 55 00 (read response), error status 00 00 (normal), 1 block, data size 2 and the value 34 12. The simulator's traffic log decodes it as «0054 Read (individual) WORD %DW100 · #0001» and «0055 ACK · blocks 1 · #0001»." },
+        { ul: [
+          "No program yet? Send the bytes above as HEX with the client in PortDock TCP and watch the reply.",
+          "To see whether the bytes your program sends are right, paste them into the web tool «LS XGT Dedicated Protocol Frame Decoder». It decodes the header, variables and values and shows which error code the simulator would return.",
+        ] },
+        { h: "Variable names and number units" },
+        {
+          table: {
+            head: ["Variable", "Meaning (in the simulator)"],
+            plain: true,
+            rows: [
+              ["%MW100", "M word 100"],
+              ["%MX1603", "bit 3 of M word 100 — bit number = word × 16 + bit (decimal). Manual p. 8-12: %MX2764, not %MX172C"],
+              ["%MB200 · %MB201", "low · high byte of M word 100 — byte number = word × 2 (XBL-EMTA manual 5.2.4: %DW1234 = %DB2468)"],
+              ["%MD50 · %ML25", "M words 100–101 · 100–103 (low word first) — the simulator's choice, following the same rule"],
+              ["%DB0, continuous 6", "Continuous read/write takes a byte variable only, up to 1,400 bytes — %DW0–%DW2"],
+            ],
+          },
+        },
+        { h: "Common mistakes" },
+        {
+          table: {
+            head: ["Symptom", "Check"],
+            plain: true,
+            rows: [
+              ["Cannot connect", "Is the simulator started and the port 2004? 127.0.0.1 accepts this PC only. For another PC, turn on «Allow other PCs to connect (0.0.0.0)» and allow the program in Windows Firewall"],
+              ["Requests arrive (RX) but no reply", "An EV «IGNORED» line means the frame is shorter than the 20-byte header or the source of frame is not h33. Also check that the simulator is not started in «MC protocol»"],
+              ["Error h77", "The header BCC differs from the sum of the first 19 bytes. If your program leaves the BCC empty, test with «Check header BCC» off (the XBL-EMTA manual's table 5-6 example also differs from the header sum)"],
+              ["Error h76", "The header length field differs from the bytes that follow, or there are fewer variables than the block count"],
+              ["Error h75", "The company ID is not «LSIS-XGT» + 00 00 (or «LGIS-GLOFA»)"],
+              ["Error 2", "The data type field and the variable's type letter (X/B/W/D/L) differ, or the write data size differs from the type. Continuous (h14) takes %MB-style names only"],
+              ["Error 3", "The device letter is not P/M/K/F/T/C/D/L/N, or the number is not decimal (as in «%MX100.3»)"],
+              ["Error 4", "A number beyond the device size. Increase «Size» in the simulator (bits are word × 16, so they grow quickly)"],
+              ["Error h78", "An instruction other than read h0054 and write h0058 (status read h00B0 is not there yet)"],
+              ["Values land in the wrong place", "Check that %MX bits are not written as hex «word.bit», and byte numbers are not used as word numbers"],
+            ],
+          },
+        },
+        { h: "Test the error handling too" },
+        { ul: [
+          "«Response delay (ms)» exercises your timeout; «Do not respond» your retry handling.",
+          "Pick an XGT error code (1–6, h75–h78) in «Reply with end code» to get a NAK (error status FFFF) with that code. Writes are not applied then.",
+          "Narrow the target with 0054/0058 in Commands and names such as %DW in Devices.",
+        ] },
+        { h: "What a simulator cannot tell you" },
+        { p: "PortDock PLC Simulator follows only the frame formats in LS ELECTRIC's public manuals and has not been compared with real hardware. No ladder program runs, timer/counter contacts and current values are not kept apart, and type/device combinations a real CPU refuses are accepted. Which error code is used for which condition, and the PLC info and CPU info values in the reply header, may differ from a real PLC. Use it to get the communication side ready and do the final test on the real PLC. Never run it on a plant network with the same IP and port as a real PLC." },
+        { p: "This guide is based on LS ELECTRIC's public user's manuals (XGT FEnet and XGB FEnet); it is not affiliated with LS ELECTRIC." },
+      ],
+    },
+    refs: XGT_MANUALS,
   },
   {
     // 근거: crates/core/src/mc.rs(머리 모양·오류 정보·비트 4비트 묶음, 시험의 매뉴얼 예), 예시 바이트는 lib/mcDecode.test.ts 와 같다.

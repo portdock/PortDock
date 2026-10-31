@@ -34,6 +34,7 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/can-bit-timing/": "comm",
   "tools/modbus-blocks/": "comm",
   "tools/mc-decoder/": "comm",
+  "tools/xgt-decoder/": "comm",
   "tools/pcap-analyzer/": "comm",
   "tools/mqtt-decoder/": "comm",
   "tools/barcode-scanner-test/": "comm",

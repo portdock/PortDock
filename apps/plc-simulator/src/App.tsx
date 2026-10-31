@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
 import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
-import { api, DEFAULT_MODEL_NAME, DEV_GROUPS, DEV_INFO, DEVS, END_CODES, type Dev, type Faults, type Frame, type NetConfig, type Peer, type RunMode, type SessionEvent, type Stats } from "./api";
+import { api, DEFAULT_MODEL_NAME, DEV_INFO, DEVS, devGroupsOf, END_CODES, isXgtDev, MC_PORT, XGT_ERROR_CODES, XGT_PORT, type Dev, type Protocol, type Faults, type Frame, type NetConfig, type Peer, type RunMode, type SessionEvent, type Stats } from "./api";
 import { decodeValue, encodeValue, formatValue, isPlainPoint, layout, mergePoints, parseValue, pointRegs, simSummary, simToSpec, type Item, type Point, type SimCfg, type SimSpec, type VType } from "../../modbus-slave/src/regmap";
 import {
   addrText,
@@ -67,11 +67,17 @@ type BitView = "bit" | "word";
 
 const APP = "PortDock PLC Simulator";
 const MAX_VIEW = 2000;
-const DEFAULT_NET: NetConfig = { transport: "tcp", host: "127.0.0.1", port: 5000, format: { frame: "3e", code: "binary" }, ownStationOnly: false };
+const DEFAULT_NET: NetConfig = { transport: "tcp", host: "127.0.0.1", port: 5000, format: { frame: "3e", code: "binary" }, ownStationOnly: false, protocol: "mc", xgtCheckBcc: true };
 const NO_FAULTS: Faults = { delayMs: 0, delayMaxMs: 0, noResponse: false, forceEndCode: 0, target: { commands: [], devices: [], everyNth: 1, probability: 100 } };
 const defaultView = (d: Dev): View => ({ start: 0, count: DEV_INFO[d].bits ? 64 : 100 });
 const sizesDefault = () => Object.fromEntries(DEVS.map((d) => [d, DEV_INFO[d].size])) as Record<Dev, number>;
-const fmtLabel = (f: { frame: string; code: string }, lang: Lang) => `${f.frame.toUpperCase()} ${f.code === "ascii" ? "ASCII" : dict[lang].codeBinary}`;
+const fmtLabel = (f: { frame: string; code: string }, lang: Lang, p: Protocol = "mc") => (p === "xgt" ? dict[lang].xgtLabel : `${f.frame.toUpperCase()} ${f.code === "ascii" ? "ASCII" : dict[lang].codeBinary}`);
+/** (0.10.0) 프로토콜·연결 방식을 바꿀 때 포트가 기본값이면 그 프로토콜의 기본 포트로(MC 5000 · XGT TCP 2004 · UDP 2005) */
+function retarget(n: NetConfig, protocol: Protocol, transport: "tcp" | "udp"): NetConfig {
+  const defaults: number[] = [MC_PORT, XGT_PORT.tcp, XGT_PORT.udp];
+  const port = defaults.includes(n.port) ? (protocol === "xgt" ? XGT_PORT[transport] : MC_PORT) : n.port;
+  return { ...n, protocol, transport, port };
+}
 
 function usePersist(k: string, v: unknown) {
   useEffect(() => store(k, v), [k, v]);
@@ -87,6 +93,8 @@ function loadNet(): NetConfig {
     port: Number.isInteger(v.port) && (v.port as number) >= 0 && (v.port as number) <= 65535 ? (v.port as number) : DEFAULT_NET.port,
     format: { frame: f?.frame === "4e" ? "4e" : "3e", code: f?.code === "ascii" ? "ascii" : "binary" },
     ownStationOnly: v.ownStationOnly === true,
+    protocol: v.protocol === "xgt" ? "xgt" : "mc",
+    xgtCheckBcc: v.xgtCheckBcc !== false,
   };
 }
 
@@ -298,6 +306,15 @@ export default function App() {
     if (ready) api.setOptions({ ownStationOnly: net.ownStationOnly, modelName: ident.modelName, modelCode: ident.modelCode }).catch((e) => setError(String(e)));
   }, [ready, net.ownStationOnly, ident]);
   useEffect(() => {
+    if (ready) api.setXgtOptions({ checkBcc: net.xgtCheckBcc }).catch((e) => setError(String(e)));
+  }, [ready, net.xgtCheckBcc]);
+  // (0.10.0) 프로토콜을 바꾸면 그 프로토콜의 디바이스로
+  const xgt = net.protocol === "xgt";
+  useEffect(() => {
+    if (isXgtDev(dev) !== xgt) setDev(xgt ? "%DW" : "D");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xgt]);
+  useEffect(() => {
     if (ready) api.setRules(rules).catch((e) => setError(String(e)));
   }, [ready, rules]);
   // 파일 로그 형식·나누기·정리(설정 창) — 다음 파일부터
@@ -482,31 +499,34 @@ export default function App() {
   const rulesOn = rules.filter((r) => r.enabled).length;
 
   /** 첫 실행 카드 «예제 채우기» — D0~D7 = 1~8(이름 둘), D8~D9 = F32 CDAB 23.5 «온도», M0~M7 = 1·0 */
+  // (0.10.0) XGT 면 %DW0~ 과 %MW0(비트 0·2·4·6 = %MX0·2·4·6)
   async function fillExample() {
-    const d = await api.getValues("D", 0, 10).catch(() => null);
-    const m = await api.getValues("M", 0, 8).catch(() => null);
+    const DD: Dev = xgt ? "%DW" : "D";
+    const MM: Dev = xgt ? "%MW" : "M";
+    const d = await api.getValues(DD, 0, 10).catch(() => null);
+    const m = await api.getValues(MM, 0, xgt ? 1 : 8).catch(() => null);
     if (((d && d.some((x) => x)) || (m && m.some((x) => x))) && !(await ask(t("askExample"), { title: APP, kind: "warning" }))) return;
     const regs = [1, 2, 3, 4, 5, 6, 7, 8, ...encodeValue(23.5, "f32", "CDAB")];
-    const bits = [1, 0, 1, 0, 1, 0, 1, 0];
+    const bits = xgt ? [packWord([1, 0, 1, 0, 1, 0, 1, 0])] : [1, 0, 1, 0, 1, 0, 1, 0];
     try {
-      await api.setValues("D", 0, regs);
-      await api.setValues("M", 0, bits);
+      await api.setValues(DD, 0, regs);
+      await api.setValues(MM, 0, bits);
     } catch (e) {
       setError(String(e));
       return;
     }
-    remember("D", 0, regs);
-    remember("M", 0, bits);
+    remember(DD, 0, regs);
+    remember(MM, 0, bits);
     setPoints((o) => ({
       ...o,
-      D: mergePoints(o.D, [
+      [DD]: mergePoints(o[DD], [
         { addr: 0, type: "u16", order: "ABCD", name: t("exStatus") },
         { addr: 1, type: "u16", order: "ABCD", name: t("exSetpoint") },
         { addr: 8, type: "f32", order: "CDAB", name: t("exTemp") },
       ]),
     }));
-    setDev("D");
-    setViews((o) => ({ ...o, D: { start: 0, count: o.D?.count ?? 100 } }));
+    setDev(DD);
+    setViews((o) => ({ ...o, [DD]: { start: 0, count: o[DD]?.count ?? 100 } }));
     toast.show(t("exampleDone"));
     refresh();
   }
@@ -592,14 +612,14 @@ export default function App() {
     setConnectErr(null);
     setStatusMsg(null);
     try {
-      const at = await api.start({ transport: n.transport, host: n.host.trim(), port: n.port, format: n.format }, onEvent);
+      const at = await api.start({ transport: n.transport, host: n.host.trim(), port: n.port, format: n.format, protocol: n.protocol }, onEvent);
       setLocal(at || null);
       setStatus((s) => (s === "idle" || s === "closed" ? "listening" : s));
       setConnected(true);
       recent.remember(joinHostPort(n.host.trim(), n.port));
-      saveLastOk({ transport: n.transport, host: n.host.trim(), port: n.port, format: n.format });
+      saveLastOk({ transport: n.transport, host: n.host.trim(), port: n.port, format: n.format, protocol: n.protocol });
       if (auto) {
-        addEv(t("autoConnected").replace("{a}", `${n.transport.toUpperCase()} ${joinHostPort(n.host.trim(), n.port)} · ${fmtLabel(n.format, lang)}`));
+        addEv(t("autoConnected").replace("{a}", `${n.transport.toUpperCase()} ${joinHostPort(n.host.trim(), n.port)} · ${fmtLabel(n.format, lang, n.protocol)}`));
         if (faultOn) addEv(t("autoFaults"));
       }
       if (settings.autoLog && settings.logFolder) {
@@ -727,11 +747,11 @@ export default function App() {
   // ---- 창 제목·요약
   const where = local || joinHostPort(net.host.trim(), net.port);
   const peersText = t(net.transport === "udp" ? "senders" : "clients").replace("{n}", String(peers.length));
-  useWindowTitle(windowTitle(APP, connected ? [`${net.transport.toUpperCase()} ${where}`, fmtLabel(net.format, lang), peersText] : [], !!logPath));
+  useWindowTitle(windowTitle(APP, connected ? [`${net.transport.toUpperCase()} ${where}`, fmtLabel(net.format, lang, net.protocol), peersText] : [], !!logPath));
   const statusKey = `status_${status}` as Key;
   // 클라이언트에 넣을 주소 — 모든 랜카드(0.0.0.0)로 들으면 같은 PC 기준 127.0.0.1
   const clientAddr = `${!net.host.trim() || net.host.trim() === "0.0.0.0" ? "127.0.0.1" : net.host.trim()}:${net.port}`;
-  const summaryLine = `${net.transport.toUpperCase()} ${where} · ${fmtLabel(net.format, lang)} · ${t(statusKey)}${connected ? ` · ${peersText}` : ""}`;
+  const summaryLine = `${net.transport.toUpperCase()} ${where} · ${fmtLabel(net.format, lang, net.protocol)} · ${t(statusKey)}${connected ? ` · ${peersText}` : ""}`;
   const runLabel = connected ? t("stop") : t("start");
   const open = !isLoopback(net.host);
   const dlgItem = cellDlg == null ? undefined : items.find((x) => x.addr === cellDlg);
@@ -835,29 +855,40 @@ export default function App() {
           </span>
         </div>
 
+        <label data-tip={tip(lang, "plcProtocol")}>
+          {t("protocol")}
+          <select value={net.protocol} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setNet(retarget(net, e.target.value === "xgt" ? "xgt" : "mc", net.transport))}>
+            <option value="mc">{t("protoMc")}</option>
+            <option value="xgt">{t("protoXgt")}</option>
+          </select>
+        </label>
         <label data-tip={tip(lang, "plcTransport")}>
           {t("transport")}
-          <select value={net.transport} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setNet({ ...net, transport: e.target.value === "udp" ? "udp" : "tcp" })}>
+          <select value={net.transport} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setNet(retarget(net, net.protocol, e.target.value === "udp" ? "udp" : "tcp"))}>
             <option value="tcp">{t("trTcp")}</option>
             <option value="udp">{t("trUdp")}</option>
           </select>
         </label>
-        <div className="grid2">
-          <label data-tip={tip(lang, "plcFrame")}>
-            {t("frame")}
-            <select value={net.format.frame} disabled={connected} onChange={(e) => setNet({ ...net, format: { ...net.format, frame: e.target.value === "4e" ? "4e" : "3e" } })}>
-              <option value="3e">3E</option>
-              <option value="4e">4E</option>
-            </select>
-          </label>
-          <label data-tip={tip(lang, "plcCode")}>
-            {t("code")}
-            <select value={net.format.code} disabled={connected} onChange={(e) => setNet({ ...net, format: { ...net.format, code: e.target.value === "ascii" ? "ascii" : "binary" } })}>
-              <option value="binary">{t("codeBinary")}</option>
-              <option value="ascii">{t("codeAscii")}</option>
-            </select>
-          </label>
-        </div>
+        {xgt ? (
+          <span className="hint">{t("xgtHint")}</span>
+        ) : (
+          <div className="grid2">
+            <label data-tip={tip(lang, "plcFrame")}>
+              {t("frame")}
+              <select value={net.format.frame} disabled={connected} onChange={(e) => setNet({ ...net, format: { ...net.format, frame: e.target.value === "4e" ? "4e" : "3e" } })}>
+                <option value="3e">3E</option>
+                <option value="4e">4E</option>
+              </select>
+            </label>
+            <label data-tip={tip(lang, "plcCode")}>
+              {t("code")}
+              <select value={net.format.code} disabled={connected} onChange={(e) => setNet({ ...net, format: { ...net.format, code: e.target.value === "ascii" ? "ascii" : "binary" } })}>
+                <option value="binary">{t("codeBinary")}</option>
+                <option value="ascii">{t("codeAscii")}</option>
+              </select>
+            </label>
+          </div>
+        )}
         <div className="grid2 net">
           <div className="host-cell">
             <label data-tip={tip(lang, "plcBind")}>
@@ -884,9 +915,15 @@ export default function App() {
           <input type="checkbox" checked={open} disabled={connected} onChange={(e) => setNet({ ...net, host: e.target.checked ? "0.0.0.0" : "127.0.0.1" })} /> {t("allowOthers")}
         </label>
         {!net.host.trim() ? <div className="interlock">{t("hostEmpty")}</div> : open ? <div className="hint warn open-warn">{t("openHint")}</div> : !connected && <span className="hint">{t("localOnlyHint")}</span>}
-        <label className="inline" data-tip={tip(lang, "plcOwnStation")}>
-          <input type="checkbox" checked={net.ownStationOnly} onChange={(e) => setNet({ ...net, ownStationOnly: e.target.checked })} /> {t("ownStation")}
-        </label>
+        {xgt ? (
+          <label className="inline" data-tip={tip(lang, "plcXgtBcc")}>
+            <input type="checkbox" checked={net.xgtCheckBcc} onChange={(e) => setNet({ ...net, xgtCheckBcc: e.target.checked })} /> {t("xgtBcc")}
+          </label>
+        ) : (
+          <label className="inline" data-tip={tip(lang, "plcOwnStation")}>
+            <input type="checkbox" checked={net.ownStationOnly} onChange={(e) => setNet({ ...net, ownStationOnly: e.target.checked })} /> {t("ownStation")}
+          </label>
+        )}
         <button data-tip={withKey(tip(lang, connected ? "plcStop" : "plcStart"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? stop : start} disabled={runDisabled}>
           {runLabel}
         </button>
@@ -916,7 +953,7 @@ export default function App() {
               <CopyButton lang={lang} getText={() => clientAddr} />
             </div>
             <div className="hint">
-              {net.transport.toUpperCase()} · {fmtLabel(net.format, lang)} · {t("clientCfgStation")}
+              {net.transport.toUpperCase()} · {fmtLabel(net.format, lang, net.protocol)} · {t(xgt ? "clientCfgXgt" : "clientCfgStation")}
               {open ? ` · ${t("clientCfgOther")}` : ""}
             </div>
           </div>
@@ -956,18 +993,22 @@ export default function App() {
             ))}
           </span>
           <span className="hint">{runMode === "run" ? t("runModeHint") : t("runModeStopHint")}</span>
-          <div className="grid2">
-            <label data-tip={tip(lang, "plcModelName")}>
-              {t("modelName")}
-              <input className={identBad.name ? "mono bad" : "mono"} value={identText.name} maxLength={16} spellCheck={false} onChange={(e) => setIdentField("name", e.target.value)} />
-            </label>
-            <label data-tip={tip(lang, "plcModelCode")}>
-              {t("modelCode")}
-              <input className={identBad.code ? "mono bad" : "mono"} value={identText.code} maxLength={4} spellCheck={false} onChange={(e) => setIdentField("code", e.target.value)} />
-            </label>
-          </div>
-          <span className="hint">{t("modelHint")}</span>
-          {(stats?.monitorPoints ?? 0) > 0 && <span className="hint">{t("monitorNow").replace("{n}", String(stats?.monitorPoints ?? 0))}</span>}
+          {!xgt && (
+            <>
+              <div className="grid2">
+                <label data-tip={tip(lang, "plcModelName")}>
+                  {t("modelName")}
+                  <input className={identBad.name ? "mono bad" : "mono"} value={identText.name} maxLength={16} spellCheck={false} onChange={(e) => setIdentField("name", e.target.value)} />
+                </label>
+                <label data-tip={tip(lang, "plcModelCode")}>
+                  {t("modelCode")}
+                  <input className={identBad.code ? "mono bad" : "mono"} value={identText.code} maxLength={4} spellCheck={false} onChange={(e) => setIdentField("code", e.target.value)} />
+                </label>
+              </div>
+              <span className="hint">{t("modelHint")}</span>
+              {(stats?.monitorPoints ?? 0) > 0 && <span className="hint">{t("monitorNow").replace("{n}", String(stats?.monitorPoints ?? 0))}</span>}
+            </>
+          )}
         </details>
         {runMode !== "run" && (
           <div className="hint warn" role="status">
@@ -992,7 +1033,7 @@ export default function App() {
             {t("forceEnd")}
             <select value={endPick} onChange={(e) => pickEnd(e.target.value)}>
               <option value="0">{t("faultsOff")}</option>
-              {END_CODES.map(([c, ko, en]) => (
+              {(xgt ? XGT_ERROR_CODES : END_CODES).map(([c, ko, en]) => (
                 <option key={c} value={String(c)}>
                   {hex4(c)} {lang === "ko" ? ko : en}
                 </option>
@@ -1007,7 +1048,7 @@ export default function App() {
                 <input
                   className={parseEndCode(endText) == null ? "bad mono" : "mono"}
                   value={endText}
-                  placeholder="C051"
+                  placeholder={xgt ? "0004" : "C051"}
                   spellCheck={false}
                   onChange={(e) => {
                     setEndText(e.target.value);
@@ -1125,8 +1166,8 @@ export default function App() {
           </button>
         </NarrowBar>
         <div className="toolbar devbar" role="group" aria-label={t("device")}>
-          {DEV_GROUPS.map((g, gi) => (
-            <span key={gi} className="segs" role="group" aria-label={t(gi === 0 ? "devBits" : gi === 1 ? "devWords" : "devTimers")}>
+          {devGroupsOf(net.protocol).map((g, gi) => (
+            <span key={gi} className="segs" role="group" aria-label={t(gi === 0 ? (xgt ? "devXgtRelay" : "devBits") : gi === 1 ? "devWords" : "devTimers")}>
               {g.map((d) => (
                 <button key={d} className={dev === d ? "seg on" : "seg"} aria-pressed={dev === d} onClick={() => setDev(d)} title={`${d} — ${DEV_INFO[d].bits ? t("devBits") : t("devWords")}${DEV_INFO[d].hex ? ` · ${t("hexBase")}` : ""}`}>
                   {d}
@@ -1227,7 +1268,7 @@ export default function App() {
             ) : (
               <FirstCard lang={lang} className="tlog-empty" title={t("firstTitle")} onHide={() => setFirstDone(true)} links={[{ id: "start", label: t("firstTitle") }]} onHelp={setShowHelp}>
                 <div className="first-steps">
-                  <span>① {t("first1")}</span> <span>② {t("first2")}</span> <span>③ {t("first3")}</span>
+                  <span>① {t(xgt ? "first1Xgt" : "first1")}</span> <span>② {t("first2")}</span> <span>③ {t("first3")}</span>
                 </div>
                 <div className="first-picks">
                   <button type="button" className="btn small first-example" onClick={fillExample} data-tip={tip(lang, "plcExample")}>

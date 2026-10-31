@@ -216,7 +216,7 @@ export function Traffic({
               const f = filter.at(r.index);
               if (!f || f.seq == null) return null;
               const seq = f.seq;
-              const bad = !!f.sum && /— [0-9A-F]{4} |(종료|End) (?!0000)[0-9A-F]{4}/.test(f.sum);
+              const bad = !!f.sum && /— [0-9A-F]{4} |(종료|End) (?!0000)[0-9A-F]{4}| NAK /.test(f.sum);
               return (
                 <div
                   key={r.key}
