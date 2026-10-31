@@ -57,6 +57,8 @@ export const api = {
   setFormat: (format: Format) => invoke<void>("plot_set_format", { format }),
   record: (path: string | null, names: string[]) => tally(path ? "record" : null, invoke<void>("plot_record", { path, names })),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
+  /** 알람 기록(0.10.0) — 사용자가 고른 CSV 에 덧붙이기 */
+  appendText: (path: string, text: string) => invoke<void>("append_text", { path, text }),
   writeBytes: (path: string, data: number[]) => tally("export", invoke<void>("write_bytes", { path, data })),
   readText: (path: string) => invoke<string>("read_text", { path }),
   /** 명령줄 인자(0.3.0) — 처음 한 번만, 실행 파일 이름 뺀 것 */

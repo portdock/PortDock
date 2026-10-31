@@ -536,6 +536,21 @@ button.chip:hover {
   color: var(--fail);
   font-weight: 600;
 }
+/* (0.10.0) 노출 표시 — 인증 없는 산업 프로토콜·평문 로그인 포트가 열림 */
+.mark.expose {
+  background: color-mix(in srgb, #e6c34d 22%, transparent);
+  color: inherit;
+  font-weight: 600;
+}
+.expose-note {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 3px solid #c79100;
+  background: color-mix(in srgb, #e6c34d 14%, transparent);
+  border-radius: 0 5px 5px 0;
+  display: grid;
+  gap: 3px;
+}
 .chip.conflict {
   border-color: var(--fail);
   color: var(--fail);

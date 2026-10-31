@@ -1,0 +1,88 @@
+/* (0.10.0) 값 감시·알람 — 목록·조건 창·줄 강조(앱은 .alarm-hit / .alarm-mark 를 칸·줄에 붙인다) */
+.alarm-panel {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--panel);
+}
+.alarm-panel.on {
+  border-color: var(--fail);
+}
+.alarm-panel.loud {
+  background: color-mix(in srgb, var(--fail) 8%, var(--panel));
+}
+.alarm-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.alarm-head .grow {
+  flex: 1;
+}
+.alarm-state {
+  color: var(--muted);
+}
+.alarm-state.on {
+  color: var(--fail);
+  font-weight: 600;
+}
+.alarm-list {
+  max-height: 160px;
+  overflow: auto;
+}
+.alarm-list table {
+  width: 100%;
+}
+.alarm-list tr.ended {
+  color: var(--muted);
+}
+.alarm-list tr.open:not(.acked) td {
+  font-weight: 600;
+}
+.al-kind {
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: calc(var(--fs, 13px) * 0.85);
+  background: color-mix(in srgb, var(--fail) 14%, transparent);
+  color: var(--fail);
+}
+.al-kind.al-stuck,
+.al-kind.al-lost {
+  background: color-mix(in srgb, #e6c34d 22%, transparent);
+  color: inherit;
+}
+.alarm-safety {
+  font-size: calc(var(--fs, 13px) * 0.85);
+}
+.alarm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px 10px;
+}
+.alarm-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.alarm-dlg-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.alarm-dlg-btns .grow {
+  flex: 1;
+}
+/* 앱 쪽 — 걸린 칸·줄 */
+.alarm-hit {
+  outline: 2px solid var(--fail);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--fail) 14%, transparent) !important;
+}
+.alarm-mark {
+  font-size: calc(var(--fs, 13px) * 0.8);
+}

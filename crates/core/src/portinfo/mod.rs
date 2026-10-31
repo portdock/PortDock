@@ -47,6 +47,8 @@ mod disk;
 mod usblive;
 #[cfg(windows)]
 mod wmi;
+#[cfg(windows)]
+mod exposure;
 
 use serde::Serialize;
 pub use tables::{Chip, Problem, Text};
@@ -457,6 +459,8 @@ pub struct PcCheck {
     pub wakes: Vec<PcWake>,
     /// (0.10.0) 배터리 — 없는 PC(데스크톱)면 빈 목록
     pub batteries: Vec<PcBattery>,
+    /// (0.10.0) 현장 PC 노출 점검(원격 데스크톱·SMBv1·방화벽·열린 포트·자동 로그온·자동 실행)
+    pub exposure: PcExposure,
     /// 읽지 못한 것 «무엇: 이유»
     pub errors: Vec<String>,
 }
@@ -557,6 +561,37 @@ pub struct PcBattery {
     pub full_mwh: Option<u64>,
     /// 충전 횟수(알리지 않는 배터리는 None 또는 0)
     pub cycles: Option<u32>,
+}
+
+/// (0.10.0) 현장 PC 노출 점검 — 같은 망의 다른 PC 가 이 PC 에 닿을 수 있는 설정(읽기만, 관리자 권한 없이).
+/// 값을 읽지 못하면 None. 자동 로그온 비밀번호는 값이 «있는지» 만 묻고 내용은 읽지 않는다
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PcExposure {
+    /// 원격 데스크톱 막힘(Terminal Server fDenyTSConnections — 1 막힘 · 0 허용)
+    pub rdp_deny: Option<u32>,
+    /// 네트워크 수준 인증(RDP-Tcp UserAuthentication — 1 요구 · 0 요구 안 함)
+    pub rdp_nla: Option<u32>,
+    /// 원격 데스크톱 포트(RDP-Tcp PortNumber)
+    pub rdp_port: Option<u32>,
+    /// SMBv1 클라이언트(mrxsmb10 서비스) «absent»(설치 안 됨) · «disabled»(시작 유형 사용 안 함) · «enabled»
+    pub smb1_client: Option<&'static str>,
+    /// SMBv1 서버(srv 서비스 · LanmanServer\Parameters SMB1) — 같은 세 값
+    pub smb1_server: Option<&'static str>,
+    /// 방화벽 프로필 켜짐(랜카드 점검과 같은 INetFwPolicy2 읽기)
+    pub firewall: Vec<FirewallProfile>,
+    /// 0.0.0.0 · :: 에서 듣는 TCP 포트
+    pub listeners: Vec<crate::net::Listener>,
+    /// 듣는 포트 표를 읽었는지
+    pub listeners_read: bool,
+    /// 자동 로그온(Winlogon AutoAdminLogon = «1»)
+    pub auto_logon: Option<bool>,
+    /// Winlogon DefaultPassword 값이 있는지(내용은 읽지 않는다)
+    pub auto_logon_password: Option<bool>,
+    /// 자동 실행(AutoPlay) 끔 — 지금 사용자 AutoplayHandlers DisableAutoplay = 1
+    pub autoplay_off: Option<bool>,
+    /// 정책 NoDriveTypeAutoRun(HKLM 먼저, 없으면 HKCU) — 0x04 비트가 이동식 드라이브
+    pub autorun_policy: Option<u32>,
 }
 
 /// Wi-Fi 어댑터 하나

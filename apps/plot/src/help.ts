@@ -95,6 +95,18 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "값 감시·알람 (0.10.0 부터)",
+      id: "alarms",
+      body: [
+        "- 채널 표의 «감시» 칸 🔔 로 그 채널에 조건을 겁니다. 받는 중에만 보고, 받은 줄마다 판단합니다. «통신 끊김» 은 그 초 동안 데이터 줄이 하나도 오지 않을 때입니다. «멈춤» 으로 센서·펌웨어가 같은 값만 보내는 것을 알아챕니다.",
+        "- 조건: 하한(이 값보다 작으면)·상한(이 값보다 크면)·변화 없음(멈춤) N초·통신 끊김 N초. 비운 칸은 보지 않습니다. «되돌아올 때 여유»(히스테리시스)를 넣으면 하한 알람은 «하한 + 여유» 이상, 상한 알람은 «상한 − 여유» 이하가 돼야 풀려, 경계에서 흔들리는 값에 알람이 깜빡이지 않습니다.",
+        "- 걸리면 그 줄이 빨갛게 강조되고, 위 «감시·알람» 목록에 조건·값·걸린 때·풀린 때·지속 시간이 남습니다. «확인» 을 누르면 다시 울리는 소리가 멈춥니다(«모두 확인», «끝난 것 지우기»). 창이 뒤에 있으면 작업 표시줄 단추가 깜빡입니다. 소리는 목록의 «소리» 로 끕니다. Windows 알림 센터로는 보내지 않습니다.",
+        "- «기록 CSV…» 로 파일을 고르면 걸림(raise)·풀림(clear, 지속 초)·확인(ack)·멈춤(stop)이 time,event,name,condition,value,duration_s 로 1초마다 덧붙습니다(값 기록과 같은 방식, 엑셀에서 바로 열림).",
+        "- 조건은 이 PC 의 앱 설정에 남아 다음에 켜도 그대로입니다. 판정은 화면에서만 하고 장비에는 아무것도 쓰지 않습니다.",
+        "- PortDock 은 안전 장치가 아닙니다 — 감시 보조용입니다. 설비 보호·인터록은 PLC·안전 회로가 맡아야 합니다.",
+      ],
+    },
+    {
       title: "기록과 저장",
       body: [
         "- «● CSV 기록»(Ctrl+Shift+L): 받는 동안 모든 값을 파일에 바로 씁니다 — 시각(로컬, ms), elapsed_s(기록 시작부터 초), 채널. 첫 줄은 채널 이름(그때의 이름). 엑셀에서 한글이 깨지지 않게 BOM 을 붙입니다. 그래프를 멈추거나 버퍼에서 밀려나도 파일에는 남고, 1초마다 디스크에 씁니다.",
@@ -235,6 +247,18 @@ export const help: HelpDoc = {
         "- «Channels» tab: show/hide, color (the 8 defaults stay distinct for color-vision deficiency; channels 9+ reuse them dashed), name (empty uses the device's name or CH1…), axis (left/right), the latest value and the min, max and mean of the visible range.",
         "- «Raw input» tab: the last 300 lines. Failed lines in red with the reason, events such as connect/disconnect in gray. Binary frames as HEX.",
         "- Counters on the left: rows, failed, rows per second, bytes. If the screen could not keep up and rows were dropped, that is shown separately (the CSV recording still has them all).",
+      ],
+    },
+    {
+      title: "Watch and alarms (from 0.10.0)",
+      id: "alarms",
+      body: [
+        "- Use 🔔 in the «Watch» column of the channel table to set conditions on a channel. Watching runs only while receiving and judges every row received. «Communication lost» means no data row arrived for that many seconds. «Stuck» catches a sensor or firmware that keeps sending the same value.",
+        "- Conditions: low limit (alarm below), high limit (alarm above), no change (stuck) for N seconds, communication lost for N seconds. Empty boxes are skipped. With a «return margin» (hysteresis) a low alarm clears only at «low + margin» or above and a high alarm at «high − margin» or below, so a value wobbling at the limit does not make the alarm flicker.",
+        "- When one trips the row turns red and the «Watch & alarms» list above records the condition, value, raise and clear times and duration. «Ack» stops the repeating sound («Acknowledge all», «Clear ended»). If the window is behind others the taskbar button flashes. Turn the sound off with «Sound» in the list. Nothing is sent to the Windows notification center.",
+        "- «Log CSV…» appends raise, clear (with seconds), ack and stop lines as time,event,name,condition,value,duration_s every second (same way as the value log; opens directly in Excel).",
+        "- Conditions are kept in the app settings on this PC. Judging happens on screen only; nothing is written to the device.",
+        "- PortDock is not a safety device — it is a monitoring aid. Equipment protection and interlocks belong in the PLC and safety circuits.",
       ],
     },
     {

@@ -315,7 +315,8 @@ pub fn read(days: u32) -> PcCheck {
     };
     let disks = super::disk::read();
     let batteries = batteries(&mut errors);
-    PcCheck { read_at: crate::event::now_ms(), days, fast_startup, hibernate_enabled, scheme, power, update, reboot_pending, screen_saver, time, events, crashes, dumps, dumps_read, disks, wakes, batteries, errors }
+    let exposure = super::exposure::read(&mut errors);
+    PcCheck { read_at: crate::event::now_ms(), days, fast_startup, hibernate_enabled, scheme, power, update, reboot_pending, screen_saver, time, events, crashes, dumps, dumps_read, disks, wakes, batteries, exposure, errors }
 }
 
 #[cfg(test)]

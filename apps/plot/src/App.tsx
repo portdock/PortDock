@@ -32,6 +32,9 @@ import { portUsable, setManualPort } from "@shared/portPick";
 import { lastOkOf, launchFilled, plotLaunch } from "./launch";
 import { loadLastOk, saveLastOk, useAutoStart } from "@shared/autoStart";
 import { useKeepAwake } from "@shared/useKeepAwake";
+import { useAlarms } from "@shared/useAlarms";
+import { AlarmPanel } from "@shared/AlarmPanel";
+import { AlarmRuleDialog } from "@shared/AlarmRuleDialog";
 import "./App.css";
 
 const APP = "PortDock Plot";
@@ -350,12 +353,32 @@ export default function App() {
   }, []);
   const evLine = useCallback((text: string, ok = true): RawLine => ({ ts: Date.now(), text, ok, ev: true }), []);
 
+  // 값 감시·알람(0.10.0) — 열쇠 «ch:채널»(0부터). 받는 중에만 본다
+  const chNames = useRef<string[]>([]);
+  const alarmLabel = useCallback((key: string) => chNames.current[Number(key.slice(3))] ?? key, []);
+  const al = useAlarms({ storeKey: "alarms", lang, running, labelOf: alarmLabel, writeText: api.writeText, appendText: api.appendText, feature: "alarms", fileStem: "plot", onError: setError });
+  const alRef = useRef(al);
+  alRef.current = al;
+  const [alarmCh, setAlarmCh] = useState<number | null>(null);
+
   const stopRef = useRef<() => Promise<void>>(async () => {});
   const onEvent = useCallback(
     (e: PlotEvent) => {
       switch (e.type) {
         case "data": {
           for (let i = 0; i < e.rows.length; i++) ring.push(e.t[i], e.rows[i]);
+          // 감시·알람(0.10.0) — 조건이 걸린 채널만, 받은 줄마다
+          const a = alRef.current;
+          if (a.rules.size && e.rows.length) {
+            const now = Date.now();
+            for (const r of a.rules.values()) {
+              const ch = Number(r.key.slice(3));
+              for (const row of e.rows) {
+                const v = row[ch];
+                if (v != null && Number.isFinite(v)) a.feed(r.key, now, v);
+              }
+            }
+          }
           if (e.rows.length && !originRef.current) {
             originRef.current = e.t[0];
             setOrigin(e.t[0]);
@@ -481,6 +504,7 @@ export default function App() {
     return { name: channelName(i, c.name, deviceNames[i]), color: c.color || channelColor(i, dark), show: c.show !== false, axis: c.axis === "R" ? "R" : "L" };
   });
   const names = channels.map((c) => c.name);
+  chNames.current = names;
   const anyRight = channels.some((c) => c.axis === "R");
   const span = view.mode === "time" ? view.seconds * 1000 : view.points;
 
@@ -977,6 +1001,7 @@ export default function App() {
             )}
           </div>
         )}
+        <AlarmPanel al={al} lang={lang} labelOf={alarmLabel} fmtValue={fmtNum} />
         <Plot ring={ring} handle={plotApi} channels={channels} mode={view.mode} span={span} yL={yL} yR={yR} frozen={frozen} onFreeze={onFreeze} origin={origin} t={T} empty={firstCard} />
         <Splitter lang={lang} onHeight={setLowerH} />
         <section className="lower" style={lowerH ? { height: lowerH } : undefined}>
@@ -1028,11 +1053,12 @@ export default function App() {
                       <th className="num-col">{T.colMin}</th>
                       <th className="num-col">{T.colMax}</th>
                       <th className="num-col">{T.colMean}</th>
+                      <th>{T.colWatch}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map(({ c: ch, i, s, last }) => (
-                      <tr key={i} className={ch.show ? "" : "off"}>
+                      <tr key={i} className={`${ch.show ? "" : "off"}${al.active.has(`ch:${i}`) ? " alarm-hit" : ""}`}>
                         <td>
                           <input type="checkbox" aria-label={`${T.colShow} ${ch.name}`} checked={ch.show} data-tip={tip(lang, "plShow")} onChange={(e) => setCh(i, { show: e.target.checked })} />
                         </td>
@@ -1061,6 +1087,11 @@ export default function App() {
                         <td className="mono num-col">{fmtNum(s.min)}</td>
                         <td className="mono num-col">{fmtNum(s.max)}</td>
                         <td className="mono num-col">{fmtNum(s.mean)}</td>
+                        <td>
+                          <button className={al.rules.has(`ch:${i}`) ? "btn small on ch-watch" : "btn small ghost ch-watch"} aria-label={`${T.colWatch} ${ch.name}`} data-tip={tip(lang, "plAlarm")} onClick={() => setAlarmCh(i)}>
+                            🔔
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1075,6 +1106,19 @@ export default function App() {
         </section>
       </main>
 
+      {alarmCh != null && (
+        <AlarmRuleDialog
+          lang={lang}
+          keyId={`ch:${alarmCh}`}
+          label={names[alarmCh] ?? `ch:${alarmCh}`}
+          rule={al.rules.get(`ch:${alarmCh}`)}
+          onSave={(r) => {
+            al.setRule(`ch:${alarmCh}`, r);
+            setAlarmCh(null);
+          }}
+          onClose={() => setAlarmCh(null)}
+        />
+      )}
       {showHelp && <HelpDialog doc={help} lang={lang} app={APP} start={typeof showHelp === "string" ? showHelp : null} onClose={() => setShowHelp(false)} />}
       {showSettings && (
         <SettingsDialog app={APP} version={VERSION} settings={settings} update={update} reset={reset} onClose={() => setShowSettings(false)} writeText={api.writeText} readText={api.readText} busy={running || !!recPath} conn run />
