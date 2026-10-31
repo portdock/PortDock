@@ -1,0 +1,685 @@
+---
+// 웹 도구: 배선도 만들기 — 상황(RS-485 2선·4선/RS-422, RS-232 DB9, 4-20mA, NPN/PNP 센서, 릴레이·TR 출력)을 고르면 SVG 배선도 + 확인 목록.
+// 도형·확인 목록 계산은 lib/wiring.ts(node --test), 그리기는 lib/diagramSvg.ts, 저장은 lib/fileSave.ts. 모두 브라우저 안 — 서버로 보내지 않는다.
+// 장비 레지스터 맵(data/devices)에서 RS-485 장비를 고르면 이름·국번·보율·패리티를 채운다. 장비 페이지의 «배선도 만들기» 는 #tpl=rs485-2w&ref=<id> 로 넘어온다.
+// 특정 장비의 실제 단자 번호는 데이터에 없으므로 그리지 않는다(일반 표기 + «매뉴얼의 단자 번호 확인»).
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { DEVICES } from "../data/devices";
+import { deviceName } from "@shared/devices";
+import { TEMPLATES, TEMPLATE_NAME, LABEL_SETS } from "../lib/wiring";
+import { BAUDS } from "../lib/serialTiming";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/wiring/";
+// 시리얼(RTU·ASCII) 장비만 — 이름·통신 기본값만 넘긴다(레지스터는 넣지 않음)
+const DEVS = DEVICES.filter((d) => d.protocols.some((p) => p !== "tcp")).map((d) => ({
+  id: d.id,
+  n: deviceName(d, lang),
+  b: d.comm.bauds ?? (d.comm.baud ? [d.comm.baud] : []),
+  d: d.comm.baud,
+  p: d.comm.parity,
+  db: d.comm.dataBits,
+  sb: d.comm.stopBits,
+  u: d.comm.unit,
+  r: d.comm.unitRange,
+}));
+const LBL: Record<string, string> = { ab: "A / B", d: "D+ / D−", trx: "TRX+ / TRX−", "485": "485+ / 485−", d10: "D1 / D0" };
+const L = ko
+  ? {
+      title: "배선도 만들기 — RS-485·RS-232·4-20mA·센서",
+      h1: "배선도 만들기",
+      desc: "RS-485 2선·4선, RS-232 널 모뎀, 4-20mA 2·3·4선식, NPN/PNP 센서, 릴레이 출력 배선도를 장비 수·이름·국번에 맞춰 그리고 확인 목록과 함께 SVG·PNG 로 저장합니다.",
+      seo: "배선도 만들기 — RS485·RS232·4-20mA·NPN/PNP 결선도 — PortDock",
+      tpl: "상황",
+      devs: "장비(최대 8대)",
+      devName: "이름",
+      unit: "국번",
+      add: "장비 추가",
+      del: "빼기",
+      fromMap: "장비 맵에서 고르기",
+      pick: "— 장비 고르기 —",
+      addMap: "넣기",
+      len: "케이블 길이(m)",
+      baud: "보율(bps)",
+      parity: "패리티",
+      pN: "없음(N)",
+      pE: "짝수(E)",
+      pO: "홀수(O)",
+      conv: "변환기 단자 표기",
+      dev: "장비 단자 표기",
+      bias: "변환기 쪽 바이어스(페일세이프) 켬",
+      four: "단자 표기",
+      fTx: "TX+ / TX− / RX+ / RX−",
+      fMb: "TXD1 / TXD0 / RXD1 / RXD0",
+      mode: "케이블",
+      mNull3: "널 모뎀 3선 — DTE ↔ DTE, 핸드셰이크 없음",
+      mFull: "널 모뎀 — DTE ↔ DTE, RTS/CTS·DTR/DSR 포함",
+      mStraight: "스트레이트 — DTE ↔ DCE",
+      lb: "커넥터 안 자기 잇기(RTS–CTS, DTR–DSR–DCD)",
+      loop: "트랜스미터",
+      l2: "2선식(루프 전원)",
+      l3: "3선식",
+      l4: "4선식(전원 별도)",
+      supply: "루프 전원(V)",
+      r: "수신 저항(Ω)",
+      sensor: "센서 출력",
+      count: "센서 수(1~4)",
+      out: "출력 종류",
+      oRelay: "릴레이",
+      oNpn: "TR NPN(싱크형)",
+      oPnp: "TR PNP(소스형)",
+      load: "부하",
+      ldc: "DC 코일(솔레노이드·릴레이)",
+      lac: "AC 코일",
+      saveSvg: "SVG 저장",
+      savePng: "PNG 저장",
+      print: "인쇄",
+      link: "주소 복사",
+      copied: "주소를 복사했습니다 — 이 주소를 열면 같은 그림이 나옵니다(장비 이름·국번이 주소에 들어 있음).",
+      checks: "확인 목록",
+      warn: "경고",
+      privacy: "그림과 입력은 이 브라우저 안에서만 만들고 어디에도 보내지 않습니다. 설정은 주소의 # 뒤에만 담겨 서버로 가지 않습니다.",
+      terms: "그림의 단자 이름은 일반 표기입니다 — 실제 단자 번호·위치는 장비 매뉴얼의 단자 번호를 확인하세요.",
+      what: "무엇을 그리나",
+      whatP: [
+        "현장에서 자주 묻는 여섯 가지 배선을 고르면 그 자리에서 배선도를 그립니다. RS-485 는 장비 수(최대 8대)·이름·국번·단자 표기를 바꿀 수 있고, 끝 두 곳 종단과 변환기 쪽 바이어스, 공통(SG) 선을 함께 그립니다.",
+        "그림 옆 확인 목록은 배선할 때 볼 것만 적었습니다. 국번이 겹치거나 케이블 길이가 보율에 비해 길면 경고가 뜹니다. 장비 레지스터 맵에 있는 장비를 고르면 그 장비가 받는 보율·패리티와 다른지 알려 줍니다.",
+        "다 그렸으면 SVG(문서에 넣기 좋음)·PNG(메신저로 보내기 좋음)로 저장하거나 인쇄합니다. «주소 복사» 로 같은 그림을 다른 사람에게 보낼 수 있습니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["A 와 B 중 어느 쪽이 + 인가요?", "Modbus 규격은 D1(B)을 +, D0(A)를 − 쪽으로 정하지만, 제조사마다 A 를 + 로 적기도 합니다. 그래서 이 그림은 단자 이름 대신 D1·D0 줄에 잇는 모양으로 그립니다. 응답이 전혀 없으면 두 선을 바꿔 보세요 — 극성이 반대여도 장비는 상하지 않습니다."],
+        ["종단 저항은 몇 개 다나요?", "선로 양 끝 두 곳에 하나씩, 모두 두 개입니다. 중간 장비에는 달지 않습니다. 장비에 종단 스위치가 있으면 끝에 있는 장비만 켭니다."],
+        ["장비 단자 번호는 왜 안 나오나요?", "같은 모델이라도 판·옵션 보드에 따라 단자 번호가 다르고, 장비 레지스터 맵 데이터에는 단자 정보가 없습니다. 틀린 번호를 그리지 않으려고 일반 표기만 씁니다."],
+        ["NPN 센서인데 PLC 입력이 «싱크» 라고 적혀 있어요.", "싱크·소스라는 이름은 제조사마다 반대로 쓰입니다. 이름보다 입력 COM 을 +24 V 에 잇는지(NPN 용), 0 V 에 잇는지(PNP 용)를 PLC 매뉴얼의 결선 그림으로 확인하세요."],
+      ],
+      more: "더 읽기",
+      srcTitle: "출처",
+      sys: "구성도 그리기",
+      sysNote: "장비 여러 대·네트워크까지 한 장에 그리려면",
+    }
+  : {
+      title: "Wiring Diagram Maker — RS-485, RS-232, 4-20 mA, Sensors",
+      h1: "Wiring diagram maker",
+      desc: "RS-485 2/4-wire, RS-232 null modem, 4-20 mA 2/3/4-wire, NPN/PNP sensor and relay output wiring for your devices and IDs, with a checklist. Save SVG or PNG.",
+      seo: "Wiring Diagram Maker: RS-485, RS-232, 4-20 mA, NPN/PNP — PortDock",
+      tpl: "Situation",
+      devs: "Devices (up to 8)",
+      devName: "Name",
+      unit: "Slave ID",
+      add: "Add device",
+      del: "Remove",
+      fromMap: "Pick from the device map",
+      pick: "— pick a device —",
+      addMap: "Add",
+      len: "Cable length (m)",
+      baud: "Baud (bps)",
+      parity: "Parity",
+      pN: "None (N)",
+      pE: "Even (E)",
+      pO: "Odd (O)",
+      conv: "Adapter terminal names",
+      dev: "Device terminal names",
+      bias: "Bias (failsafe) on at the adapter",
+      four: "Terminal names",
+      fTx: "TX+ / TX− / RX+ / RX−",
+      fMb: "TXD1 / TXD0 / RXD1 / RXD0",
+      mode: "Cable",
+      mNull3: "Null modem, 3 wires — DTE ↔ DTE, no handshake",
+      mFull: "Null modem — DTE ↔ DTE, with RTS/CTS and DTR/DSR",
+      mStraight: "Straight — DTE ↔ DCE",
+      lb: "Loop handshake inside each connector (RTS–CTS, DTR–DSR–DCD)",
+      loop: "Transmitter",
+      l2: "2-wire (loop powered)",
+      l3: "3-wire",
+      l4: "4-wire (separately powered)",
+      supply: "Loop supply (V)",
+      r: "Receiver resistor (Ω)",
+      sensor: "Sensor output",
+      count: "Sensors (1–4)",
+      out: "Output type",
+      oRelay: "Relay",
+      oNpn: "Transistor NPN (sinking)",
+      oPnp: "Transistor PNP (sourcing)",
+      load: "Load",
+      ldc: "DC coil (solenoid / relay)",
+      lac: "AC coil",
+      saveSvg: "Save SVG",
+      savePng: "Save PNG",
+      print: "Print",
+      link: "Copy link",
+      copied: "Link copied — opening it shows the same diagram (device names and IDs are in the link).",
+      checks: "Checklist",
+      warn: "Warnings",
+      privacy: "The diagram and your input are built inside this browser and sent nowhere. Settings live only after the # in the address, which never reaches the server.",
+      terms: "Terminal names in the drawing are generic — check the terminal numbers in each device manual.",
+      what: "What it draws",
+      whatP: [
+        "Pick one of six common field wiring jobs and the diagram is drawn on the spot. For RS-485 you can set the number of devices (up to 8), names, slave IDs and terminal naming; termination at both ends, bias at the adapter and the common (SG) wire are drawn too.",
+        "The checklist next to the drawing lists only what to look at while wiring. Duplicate IDs or a cable too long for the baud rate raise a warning. Devices picked from the register map are checked against the baud rates and parity they support.",
+        "Save as SVG (good for documents) or PNG (good for chat), or print. «Copy link» sends the same diagram to someone else.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Which of A and B is +?", "The Modbus specification names D1 (B) the + side and D0 (A) the − side, but some vendors label A as +. That is why the drawing connects terminals to the D1 and D0 lines rather than by letter. If nothing answers, swap the two wires — reversed polarity does not damage devices."],
+        ["How many termination resistors?", "Two — one at each physical end of the line, none in the middle. If devices have a termination switch, turn it on only at the end devices."],
+        ["Why are device terminal numbers not shown?", "Terminal numbers differ between versions and option boards, and the register map data has no terminal information. Generic names are used so no wrong numbers are drawn."],
+        ["My sensor is NPN but the PLC input says «sink».", "Sink and source are used in opposite ways by different vendors. Check the PLC manual's wiring figure for whether input COM goes to +24 V (for NPN) or 0 V (for PNP)."],
+      ],
+      more: "Read more",
+      srcTitle: "Sources",
+      sys: "System diagram editor",
+      sysNote: "To draw many devices and the network on one page, use the",
+    };
+const T = {
+  copied: L.copied,
+  checks: L.checks,
+  warn: L.warn,
+  devName: L.devName,
+  unit: L.unit,
+  del: L.del,
+  pngFail: ko ? "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요." : "Could not make the PNG — try saving as SVG.",
+  footer: "portdock.dev/tools/wiring",
+};
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const SRC = [
+  { name: "MODBUS over serial line specification and implementation guide V1.02 (2006) — §2.2, §3.3, §3.4", href: "https://www.modbus.org/modbus-specifications" },
+  { name: "Texas Instruments, RS-422 and RS-485 Standards Overview and System Configurations (SLLA070D, 2010)", href: "https://www.ti.com/lit/an/slla070d/slla070d.pdf" },
+  { name: "The Linux Documentation Project — Serial-HOWTO §19, Text-Terminal-HOWTO §12", href: "https://tldp.org/HOWTO/Text-Terminal-HOWTO-12.html" },
+];
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card wd-form" id="wd" data-lang={lang} data-devs={JSON.stringify(DEVS)} data-t={JSON.stringify(T)}>
+      <fieldset class="wd-tpls">
+        <legend>{L.tpl}</legend>
+        {
+          TEMPLATES.map((t, i) => (
+            <label class="wd-tpl">
+              <input type="radio" name="tpl" value={t} checked={i === 0} />
+              <span>{TEMPLATE_NAME[t][lang]}</span>
+            </label>
+          ))
+        }
+      </fieldset>
+
+      <div data-for="rs485-2w rs485-4w" class="wd-sec">
+        <p class="fld-title">{L.devs}</p>
+        <div id="devs" class="wd-devs"></div>
+        <div class="row wd-addrow">
+          <button type="button" class="btn tight" id="addDev">+ {L.add}</button>
+          <label class="fld wd-map">{L.fromMap}<select id="devMap"><option value="">{L.pick}</option>{DEVS.map((d) => <option value={d.id}>{d.n}</option>)}</select></label>
+          <button type="button" class="btn tight" id="addMap">{L.addMap}</button>
+        </div>
+        <div class="row">
+          <label class="fld">{L.len}<input id="len" class="mono" value="100" inputmode="numeric" autocomplete="off" /></label>
+          <label class="fld">{L.baud}<input id="baud" class="mono" value="9600" list="bauds" inputmode="numeric" autocomplete="off" /><datalist id="bauds">{BAUDS.map((b) => <option value={b} />)}</datalist></label>
+          <label class="fld">{L.parity}<select id="parity"><option value="none">{L.pN}</option><option value="even" selected>{L.pE}</option><option value="odd">{L.pO}</option></select></label>
+        </div>
+        <div class="row" data-for="rs485-2w">
+          <label class="fld">{L.conv}<select id="conv">{Object.keys(LABEL_SETS).map((k) => <option value={k}>{LBL[k]}</option>)}</select></label>
+          <label class="fld">{L.dev}<select id="lbl">{Object.keys(LABEL_SETS).map((k) => <option value={k}>{LBL[k]}</option>)}</select></label>
+          <label class="chk"><input type="checkbox" id="bias" checked /> {L.bias}</label>
+        </div>
+        <div class="row" data-for="rs485-4w">
+          <label class="fld">{L.four}<select id="four"><option value="txrx">{L.fTx}</option><option value="modbus">{L.fMb}</option></select></label>
+        </div>
+      </div>
+
+      <div data-for="rs232" class="wd-sec row">
+        <label class="fld">{L.mode}<select id="rs232"><option value="null3">{L.mNull3}</option><option value="nullFull">{L.mFull}</option><option value="straight">{L.mStraight}</option></select></label>
+        <label class="chk"><input type="checkbox" id="lb" /> {L.lb}</label>
+      </div>
+
+      <div data-for="4-20ma" class="wd-sec row">
+        <label class="fld">{L.loop}<select id="loop"><option value="2w">{L.l2}</option><option value="3w">{L.l3}</option><option value="4w">{L.l4}</option></select></label>
+        <label class="fld">{L.supply}<input id="supply" class="mono" value="24" inputmode="decimal" autocomplete="off" /></label>
+        <label class="fld">{L.r}<input id="rRecv" class="mono" value="250" list="rs" inputmode="decimal" autocomplete="off" /><datalist id="rs"><option value="250" /><option value="500" /><option value="100" /></datalist></label>
+      </div>
+
+      <div data-for="npn-pnp" class="wd-sec row">
+        <label class="fld">{L.sensor}<select id="sensor"><option value="npn">NPN</option><option value="pnp">PNP</option></select></label>
+        <label class="fld">{L.count}<input id="count" type="number" min="1" max="4" value="2" /></label>
+      </div>
+
+      <div data-for="output" class="wd-sec row">
+        <label class="fld">{L.out}<select id="out"><option value="npn">{L.oNpn}</option><option value="pnp">{L.oPnp}</option><option value="relay">{L.oRelay}</option></select></label>
+        <label class="fld">{L.load}<select id="load"><option value="dc">{L.ldc}</option><option value="ac">{L.lac}</option></select></label>
+      </div>
+      <p class="note privacy">{L.privacy}</p>
+    </form>
+
+    <section class="card wd-out" id="wd-print" aria-live="polite">
+      <div class="wd-svg" id="svg"></div>
+      <div class="btns wd-btns">
+        <button type="button" class="btn tight" id="bSvg">{L.saveSvg}</button>
+        <button type="button" class="btn tight" id="bPng">{L.savePng}</button>
+        <button type="button" class="btn tight" id="bPrint">{L.print}</button>
+        <button type="button" class="btn tight" id="bLink">{L.link}</button>
+      </div>
+      <p class="note" id="msg" role="status"></p>
+      <div id="warns"></div>
+      <h2 class="wd-h">{L.checks}</h2>
+      <ol id="checks" class="wd-checks"></ol>
+      <div id="tables"></div>
+      <p class="note">{L.terms}</p>
+    </section>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <p>{L.sysNote} <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a>.</p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <h2>{L.srcTitle}</h2>
+      <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .wd-tpls {
+      border: 0;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .wd-tpls legend {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .wd-tpl {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--panel);
+    }
+    .wd-tpl input {
+      width: auto;
+      margin: 0;
+    }
+    .wd-tpl:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--soft);
+      font-weight: 600;
+    }
+    .wd-sec {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .wd-sec.row {
+      flex-direction: row;
+    }
+    .fld-title {
+      margin: 0;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .wd-devs {
+      display: grid;
+      gap: 6px;
+    }
+    .wd-devs :global(.dev) {
+      display: grid;
+      grid-template-columns: 1fr 90px auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .wd-devs :global(.dev small) {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: -4px;
+    }
+    .wd-addrow {
+      align-items: flex-end;
+    }
+    .wd-addrow > .btn {
+      flex: 0 0 auto;
+    }
+    .wd-map {
+      flex: 1 1 260px;
+    }
+    label.chk {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+    }
+    label.chk input {
+      width: auto;
+    }
+    .wd-out {
+      margin-top: 16px;
+    }
+    .wd-svg {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .wd-svg :global(svg) {
+      display: block;
+      width: 100%;
+      min-width: 560px;
+      height: auto;
+    }
+    .wd-btns {
+      margin-top: 10px;
+    }
+    .wd-h {
+      font-size: 18px;
+      margin: 16px 0 6px;
+    }
+    .wd-checks {
+      margin: 0;
+      padding-left: 22px;
+      font-size: 15px;
+    }
+    .wd-checks :global(li) {
+      margin: 4px 0;
+    }
+    .wd-checks :global(.src),
+    #warns :global(.src) {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    #warns :global(p) {
+      margin: 6px 0;
+    }
+    #tables :global(table) {
+      margin-top: 10px;
+    }
+    #tables :global(caption) {
+      text-align: left;
+      font-weight: 600;
+      padding-bottom: 4px;
+    }
+    @media print {
+      :global(body *) {
+        visibility: hidden;
+      }
+      #wd-print,
+      #wd-print :global(*) {
+        visibility: visible;
+      }
+      #wd-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: 0;
+      }
+      .wd-btns,
+      #msg {
+        display: none;
+      }
+      .wd-svg :global(svg) {
+        min-width: 0;
+      }
+    }
+  </style>
+  <script>
+    import { build, parseHash, toHash, MAX_DEVICES, type WiringState, type Rs485Device, type TemplateId, type Note } from "../lib/wiring";
+    import { renderSvg, LIGHT, esc } from "../lib/diagramSvg";
+    import { saveText, savePng, screenPalette, onThemeChange, fileStamp } from "../lib/fileSave";
+
+    interface DevItem {
+      id: string;
+      n: string;
+      b: number[];
+      d?: number;
+      p?: "none" | "even" | "odd";
+      db?: number;
+      sb?: number;
+      u?: number;
+      r?: [number, number];
+    }
+    const form = document.getElementById("wd") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const DEVS = JSON.parse(form.dataset.devs ?? "[]") as DevItem[];
+    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const devBox = $<HTMLDivElement>("devs");
+    let state: WiringState = parseHash(location.hash, lang);
+    let lastSvg = "";
+    let printing = false;
+
+    const fromMap = (d: DevItem, unit?: number): Rs485Device => ({
+      name: d.n,
+      unit: unit ?? d.u ?? 1,
+      ...(d.b.length ? { bauds: d.b } : {}),
+      ...(d.p ? { parity: d.p } : {}),
+      ...(d.db ? { dataBits: d.db } : {}),
+      ...(d.sb ? { stopBits: d.sb } : {}),
+      ...(d.r ? { unitRange: d.r } : {}),
+      ref: d.id,
+    });
+
+    // 장비 페이지에서 넘어온 경우(#ref=제조사/모델) — 장비 목록을 그 장비 하나로, 보율·패리티는 장비 기본값으로
+    const first = parseHash(location.hash, lang);
+    if (first.ref && !new URLSearchParams(location.hash.slice(1)).has("d")) {
+      const d = DEVS.find((x) => x.id === first.ref);
+      if (d) {
+        state.devices = [fromMap(d)];
+        if (d.d) state.baud = d.d;
+        else if (d.b.length) state.baud = d.b[0];
+        if (d.p) state.parity = d.p;
+      }
+    }
+
+    function nextUnit() {
+      const used = new Set(state.devices.map((d) => d.unit));
+      for (let u = 1; u <= 247; u++) if (!used.has(u)) return u;
+      return 1;
+    }
+
+    function drawDevs() {
+      devBox.replaceChildren();
+      state.devices.forEach((d, i) => {
+        const row = document.createElement("div");
+        row.className = "dev";
+        const name = document.createElement("input");
+        name.value = d.name;
+        name.maxLength = 40;
+        name.setAttribute("aria-label", `${T.devName} ${i + 1}`);
+        name.addEventListener("input", () => {
+          state.devices[i].name = name.value;
+          // 이름을 고치면 장비 맵 값은 그대로(같은 장비라고 보고) 둔다
+          render();
+        });
+        const unit = document.createElement("input");
+        unit.className = "mono";
+        unit.inputMode = "numeric";
+        unit.value = String(d.unit);
+        unit.setAttribute("aria-label", `${T.unit} ${i + 1}`);
+        unit.addEventListener("input", () => {
+          const v = Number(unit.value);
+          state.devices[i].unit = Number.isFinite(v) ? Math.round(v) : 0;
+          render();
+        });
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "btn tight";
+        del.textContent = "×";
+        del.title = T.del;
+        del.setAttribute("aria-label", `${T.del}: ${d.name}`);
+        del.disabled = state.devices.length <= 1;
+        del.addEventListener("click", () => {
+          state.devices.splice(i, 1);
+          drawDevs();
+          render();
+        });
+        row.append(name, unit, del);
+        if (d.bauds?.length || d.parity) {
+          const s = document.createElement("small");
+          const p = d.parity === "even" ? "E" : d.parity === "odd" ? "O" : d.parity === "none" ? "N" : "?";
+          s.textContent = `${d.ref ?? ""} · ${d.bauds?.join("/") ?? "?"} bps · ${d.dataBits ?? 8}${p}${d.stopBits ?? 1}${d.unitRange ? ` · ${T.unit} ${d.unitRange[0]}–${d.unitRange[1]}` : ""}`;
+          row.append(s);
+        }
+        devBox.append(row);
+      });
+      $<HTMLButtonElement>("addDev").disabled = state.devices.length >= MAX_DEVICES;
+      $<HTMLButtonElement>("addMap").disabled = state.devices.length >= MAX_DEVICES;
+    }
+
+    function syncForm() {
+      for (const r of form.querySelectorAll<HTMLInputElement>('input[name="tpl"]')) r.checked = r.value === state.tpl;
+      $("len").value = String(state.len);
+      $("baud").value = String(state.baud);
+      $<HTMLSelectElement>("parity").value = state.parity;
+      $<HTMLSelectElement>("conv").value = state.conv;
+      $<HTMLSelectElement>("lbl").value = state.dev;
+      $("bias").checked = state.bias;
+      $<HTMLSelectElement>("four").value = state.four;
+      $<HTMLSelectElement>("rs232").value = state.rs232;
+      $("lb").checked = state.loopback;
+      $<HTMLSelectElement>("loop").value = state.loop;
+      $("supply").value = String(state.supply);
+      $("rRecv").value = String(state.rRecv);
+      $<HTMLSelectElement>("sensor").value = state.sensor;
+      $("count").value = String(state.count);
+      $<HTMLSelectElement>("out").value = state.out;
+      $<HTMLSelectElement>("load").value = state.load;
+      drawDevs();
+    }
+
+    const num = (id: string, d: number, lo: number, hi: number) => {
+      const v = Number($(id).value);
+      return $(id).value.trim() !== "" && Number.isFinite(v) && v >= lo && v <= hi ? v : d;
+    };
+    function readForm() {
+      const tpl = form.querySelector<HTMLInputElement>('input[name="tpl"]:checked')?.value as TemplateId | undefined;
+      if (tpl) state.tpl = tpl;
+      state.len = num("len", state.len, 0, 100000);
+      state.baud = num("baud", state.baud, 50, 10000000);
+      state.parity = $<HTMLSelectElement>("parity").value as WiringState["parity"];
+      state.conv = $<HTMLSelectElement>("conv").value as WiringState["conv"];
+      state.dev = $<HTMLSelectElement>("lbl").value as WiringState["dev"];
+      state.bias = $("bias").checked;
+      state.four = $<HTMLSelectElement>("four").value as WiringState["four"];
+      state.rs232 = $<HTMLSelectElement>("rs232").value as WiringState["rs232"];
+      state.loopback = $("lb").checked;
+      state.loop = $<HTMLSelectElement>("loop").value as WiringState["loop"];
+      state.supply = num("supply", state.supply, 1, 1000);
+      state.rRecv = num("rRecv", state.rRecv, 0.001, 1e6);
+      state.sensor = $<HTMLSelectElement>("sensor").value as WiringState["sensor"];
+      state.count = num("count", state.count, 1, 4);
+      state.out = $<HTMLSelectElement>("out").value as WiringState["out"];
+      state.load = $<HTMLSelectElement>("load").value as WiringState["load"];
+    }
+
+    const noteHtml = (n: Note) => `${esc(n.text)}${n.src ? ` <span class="src">— ${esc(n.src)}</span>` : ""}`;
+    function render() {
+      // 고른 상황의 칸만 보이기
+      for (const el of form.querySelectorAll<HTMLElement>("[data-for]")) el.hidden = !(el.dataset.for ?? "").split(" ").includes(state.tpl);
+      $("lb").closest("label")!.hidden = state.rs232 !== "null3";
+      const r = build(state, lang);
+      lastSvg = renderSvg(r.drawing, printing ? LIGHT : screenPalette(), { title: true });
+      $("svg").innerHTML = lastSvg;
+      $("warns").innerHTML = r.warnings.map((w) => `<p class="verdict ${w.level === "fault" ? "fault" : w.level === "warn" ? "warn" : ""}">${noteHtml(w)}</p>`).join("");
+      $("checks").innerHTML = r.checks.map((c) => `<li>${noteHtml(c)}</li>`).join("");
+      $("tables").innerHTML = r.tables
+        .map((t) => `<div class="tbl"><table class="t"><caption>${esc(t.caption)}</caption><thead><tr>${t.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${t.rows.map((row) => `<tr>${row.map((c) => `<td class="mono">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`)
+        .join("");
+      history.replaceState(null, "", "#" + toHash(state));
+    }
+
+    form.addEventListener("input", (e) => {
+      if ((e.target as HTMLElement).closest("#devs")) return;
+      readForm();
+      render();
+    });
+    form.addEventListener("change", (e) => {
+      if ((e.target as HTMLElement).closest("#devs") || (e.target as HTMLElement).id === "devMap") return;
+      readForm();
+      render();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    $("addDev").addEventListener("click", () => {
+      if (state.devices.length >= MAX_DEVICES) return;
+      const u = nextUnit();
+      state.devices.push({ name: lang === "ko" ? `장비 ${u}` : `Device ${u}`, unit: u });
+      drawDevs();
+      render();
+    });
+    $("addMap").addEventListener("click", () => {
+      const sel = $<HTMLSelectElement>("devMap");
+      const d = DEVS.find((x) => x.id === sel.value);
+      if (!d || state.devices.length >= MAX_DEVICES) return;
+      const used = new Set(state.devices.map((x) => x.unit));
+      const u = d.u && !used.has(d.u) ? d.u : nextUnit();
+      state.devices.push(fromMap(d, u));
+      sel.value = "";
+      drawDevs();
+      render();
+    });
+
+    const base = () => `portdock-wiring-${state.tpl}-${fileStamp()}`;
+    const exportSvg = () => renderSvg(build(state, lang).drawing, LIGHT, { bg: true, title: true, footer: T.footer });
+    $("bSvg").addEventListener("click", () => saveText(exportSvg(), `${base()}.svg`, "image/svg+xml"));
+    $("bPng").addEventListener("click", () => {
+      savePng(exportSvg(), `${base()}.png`).catch(() => ($("msg").textContent = T.pngFail));
+    });
+    $("bPrint").addEventListener("click", () => window.print());
+    window.addEventListener("beforeprint", () => {
+      printing = true;
+      render();
+    });
+    window.addEventListener("afterprint", () => {
+      printing = false;
+      render();
+    });
+    $("bLink").addEventListener("click", () => {
+      const u = location.href;
+      navigator.clipboard?.writeText(u).then(
+        () => ($("msg").textContent = T.copied),
+        () => ($("msg").textContent = u),
+      );
+    });
+    onThemeChange(render);
+    syncForm();
+    render();
+  </script>
+</Base>

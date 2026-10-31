@@ -310,7 +310,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-17",
     tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs232-rs422-rs485", "rs485-bias-termination", "modbus-no-response", "usb-serial-latency", "modbus-rtu-frame"],
-    webTools: ["tools/rs485/"],
+    webTools: ["tools/rs485/", "tools/wiring/"],
     seoTitle: { ko: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지 — PortDock", en: "RS-485 Wiring Checks: No Reply or Garbled Data — PortDock" },
     title: { ko: "RS-485 배선 점검 — 응답이 없거나 깨질 때 먼저 볼 다섯 가지", en: "RS-485 wiring checks — five things to look at when replies are missing or garbled" },
     desc: {
@@ -1231,7 +1231,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["modbus-master", "plot"],
     related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order", "pressure-units"],
-    webTools: ["tools/4-20ma/", "tools/loop-load/"],
+    webTools: ["tools/4-20ma/", "tools/loop-load/", "tools/wiring/"],
     title: { ko: "4–20mA 신호 기초와 고장 찾기 — 2선식·4선식·라이브 제로·단선 판정", en: "4–20 mA basics and troubleshooting — 2-wire, 4-wire, live zero, open loop" },
     seoTitle: { ko: "4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선) — PortDock", en: "4–20 mA Loop Basics & Troubleshooting (2-Wire, 4-Wire) — PortDock" },
     desc: {
@@ -2663,7 +2663,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["serial", "port-inspector"],
     related: ["rs232-rs422-rs485", "usb-serial-latency", "rs485-wiring"],
-    webTools: ["tools/ascii/", "tools/uart-baud/", "tools/web-serial/"],
+    webTools: ["tools/ascii/", "tools/uart-baud/", "tools/web-serial/", "tools/wiring/"],
     title: { ko: "RS-232 DB9 핀 배치와 크로스(널 모뎀) 케이블 결선", en: "RS-232 DB9 pinout and null-modem (crossover) cable wiring" },
     seoTitle: { ko: "RS232 DB9 핀배치·크로스(널 모뎀) 케이블 결선도 — PortDock", en: "RS-232 DB9 Pinout & Null Modem Cable Wiring — PortDock" },
     desc: {

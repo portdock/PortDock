@@ -213,6 +213,15 @@ const ld = {
         {L("장비 없이 프로그램을 시험하려면 ", "To test your program without the device, ")}<a href={url(lang, `${slave.id}/`)}>{slave.name}</a>{L(" 의 «장비 흉내…» 로 같은 맵(예시 값)을 띄웁니다.", "'s «Emulate device…» serves the same map with example values.")}
       </li>
     </ol>
+    {
+      dev.protocols.some((p) => p !== "tcp") && (
+        <p>
+          {L("RS-485 배선은 ", "To draw the RS-485 wiring, open the ")}
+          <a href={`${url(lang, "tools/wiring/")}#tpl=rs485-2w&ref=${dev.id}`}>{L("배선도 만들기", "wiring diagram maker")}</a>
+          {L(" 에서 이 장비의 이름·국번·보율·패리티로 미리 채운 그림을 그릴 수 있습니다(단자 번호는 매뉴얼 확인).", " pre-filled with this device's name, slave ID, baud rate and parity (check terminal numbers in the manual).")}
+        </p>
+      )
+    }
 
     <h2>{L("JSON 내려받기", "Download JSON")}</h2>
     <ul>

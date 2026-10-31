@@ -3,11 +3,12 @@
 import { WEB_TOOLS, type WebTool } from "./webTools";
 import type { L } from "./tools";
 
-export type GroupId = "comm" | "net" | "signal" | "elec" | "mech" | "units" | "hw" | "etc";
+export type GroupId = "comm" | "net" | "draw" | "signal" | "elec" | "mech" | "units" | "hw" | "etc";
 
 export const GROUPS: { id: GroupId; name: L }[] = [
   { id: "comm", name: { ko: "통신·Modbus", en: "Serial and Modbus" } },
   { id: "net", name: { ko: "네트워크", en: "Network" } },
+  { id: "draw", name: { ko: "배선·구성도", en: "Wiring and diagrams" } },
   { id: "signal", name: { ko: "신호·센서", en: "Signals and sensors" } },
   { id: "elec", name: { ko: "전기·모터", en: "Electrical and motors" } },
   { id: "mech", name: { ko: "기계·공압", en: "Mechanical and pneumatics" } },
@@ -73,6 +74,8 @@ const GROUP_OF: Partial<Record<WebTool["path"], GroupId>> = {
   "tools/monitor-test/": "hw",
   "tools/bsod-codes/": "hw",
   "tools/battery-report/": "hw",
+  "tools/wiring/": "draw",
+  "tools/system-diagram/": "draw",
 };
 
 export const groupOf = (path: string): GroupId => GROUP_OF[path as WebTool["path"]] ?? "etc";
