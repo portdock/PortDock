@@ -8,6 +8,13 @@
 // 3. 남은 지금 것 = «새로 생김», 남은 기준 것 = «사라짐» — 단 이번에 찾은 범위 밖의 기준 장비는 «범위 밖» 으로 따로 센다
 // 열린 포트는 짝이 맞은 장비만, 두 번 다 확인한 포트만 비교한다(이번에 확인하지 않은 포트가 «닫힘» 으로 보이지 않게).
 
+/** 저장 시각을 이 PC 의 지역 시간으로 «YYYY-MM-DD HH:MM» (toISOString 은 UTC 라 한국에선 9시간 어긋남) */
+function localStamp(t: number | string): string {
+  const d = new Date(t);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export type DiffLang = "ko" | "en";
 
 /** 기준·지금 목록의 장비 한 대 — Net Scan Host 의 일부 */
@@ -340,8 +347,8 @@ export function diffText(base: Baseline, d: ScanDiff, lang: DiffLang, max = 150)
   const ko = lang === "ko";
   const out = [
     ko
-      ? `## 기준과 비교 — «${base.name}» (${base.range}, 저장 ${new Date(base.savedAt).toISOString().slice(0, 16).replace("T", " ")})`
-      : `## Compared with baseline «${base.name}» (${base.range}, saved ${new Date(base.savedAt).toISOString().slice(0, 16).replace("T", " ")})`,
+      ? `## 기준과 비교 «${base.name}» (${base.range}, 저장 ${localStamp(base.savedAt)})`
+      : `## Compared with baseline «${base.name}» (${base.range}, saved ${localStamp(base.savedAt)})`,
   ];
   out.push(diffSummary(d, lang));
   if (!d.portsCompared) out.push(ko ? "(열린 포트는 비교하지 않음 — 두 번 다 확인한 포트 없음)" : "(open ports not compared — no port checked both times)");

@@ -1536,6 +1536,12 @@ async function runApp(app, port) {
         }
         // (0.10.0) 장비 설정 백업·비교·복원: 창이 열리고 → 읽어서 백업(가짜 장비 국번 1) → 요약 → 비교(지금 장비) → 복원 탭은 경고가 있고 처음엔 아무 칸도 고르지 않음
         {
+          // 백업은 연결된 장비에서 읽는다 — 앞 단계(통신 설정 찾기)가 끊긴 상태로 끝나므로 연결부터
+          const wasRunning = await js("return !!document.querySelector('aside.side > button.btn.danger')");
+          if (!wasRunning) {
+            await js("document.querySelector('aside.side > button.btn.primary').click()");
+            for (let i = 0; i < 20 && !(await js("return !!document.querySelector('aside.side > button.btn.danger')")); i++) await w(100);
+          }
           await js("document.querySelector('aside .backup-open').click()");
           await w(300);
           if (!(await js("return !!document.querySelector('.modal.backup-dlg')"))) await conv("mm-backup", "«설정 백업·복원…» 창이 열리지 않음");
@@ -1564,6 +1570,10 @@ async function runApp(app, port) {
               await conv("mm-backup", `장비 설정 백업 창이 이상함: ${JSON.stringify(bk)}`);
             await js("document.querySelector('.backup-dlg .modal-head .btn').click()");
             await w(200);
+          }
+          if (!wasRunning) {
+            await js("document.querySelector('aside.side > button.btn.danger')?.click()");
+            await w(300);
           }
           await verify("mm backup");
         }

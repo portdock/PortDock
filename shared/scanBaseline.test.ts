@@ -15,6 +15,9 @@ const h = (ip, mac, ports = [], o = {}) => ({
 });
 const PORTS = [80, 502];
 
+/** 지역 시간 «YYYY-MM-DD HH:MM» — 저장 시각은 이 PC 의 시간대로 보인다 */
+const localHm = (t: number) => { const d = new Date(t); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+
 test("normMac — 구분자·대소문자 무관, 6바이트만", () => {
   assert.equal(normMac("02-00-5e-10-00-0a"), "02:00:5E:10:00:0A");
   assert.equal(normMac("0200.5e10.000a"), "02:00:5E:10:00:0A");
@@ -159,7 +162,7 @@ test("CSV·AI 글 — AI 글은 aiCopy 가 MAC 뒤 3바이트를 가린다", () 
   assert.match(csv, /^change,change_text,ip,old_ip,mac,old_mac/);
   assert.match(csv, /macChanged,MAC 바뀜,192\.168\.0\.20,,02:00:5E:10:00:15,02:00:5E:10:00:14/);
   const text = diffText(base, d, "en");
-  assert.match(text, /Compared with baseline «b» \(r, saved 2026-10-31 09:00\)/);
+  assert.ok(text.includes(`Compared with baseline «b» (r, saved ${localHm(Date.UTC(2026, 9, 31, 9, 0))})`), text);
   const masked = maskForAi(text);
   assert.ok(!masked.includes("02:00:5E:10:00:15"));
   assert.match(masked, /02:00:5E:xx:xx:xx/);
