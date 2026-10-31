@@ -964,6 +964,37 @@ async function handle(cmd, a) {
       }
       return r;
     }
+    // (0.10.0) Modbus RTU 엿듣기 — 듣기만. 요청·응답 짝(짝 번호·응답 시간)을 붙인 가짜 줄
+    case "sniff_open": {
+      const cfgs = a.configs ?? [];
+      const r = await openSerial("serial", cfgs[0] ?? {}, a.onEvent, { sniff: true });
+      if (S?.kind === "serial") {
+        frames(ev(tr("SNIFF OPEN (듣기만 — 보내지 않음)", "SNIFF OPEN (listen only — sends nothing)")));
+        let id = 0;
+        every(900, () => {
+          if (!S?.online) return;
+          id++;
+          const req = withCrc([1, 3, 0, 0, 0, 2]);
+          const rsp = withCrc([1, 3, 4, 0, (id * 7) & 0xff, 0, 200]);
+          frames({ ...data("rx", req, true), pair: { id, role: "req", proto: "modbus", what: "FC03" } }, { ...data("rx", rsp, true), pair: { id, role: "rsp", proto: "modbus", what: "FC03", rtMs: 4.2 + (id % 5) } });
+        });
+      }
+      return r;
+    }
+    // (0.10.0) 포트 나눔 — 묶인 주소를 돌려주고 빈 클라이언트 목록을 알린다
+    case "share_start": {
+      if (!S) return fail(NO_SESSION());
+      const host = a.config?.host ?? "127.0.0.1";
+      const addr = `${host}:${a.config?.port ?? 7000}`;
+      frames(ev(`SHARE LISTEN ${addr} (${a.config?.rfc2217 ? "RFC2217" : "raw"})`));
+      a.onEvent?.onmessage?.({ type: "clients", clients: [] });
+      return addr;
+    }
+    case "share_stop":
+      if (S) frames(ev("SHARE STOP"));
+      return null;
+    case "share_kick":
+      return null;
     case "close_session":
       if (S && S.port === a.id) endSession(a.id);
       return null;

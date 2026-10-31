@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/mbPair.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { crc16Modbus, exceptionText, pairInLog, rtuRequest, tcpRequest, valueRows } from "./mbPair.ts";
+import { crc16Modbus, exceptionText, pairByMark, pairInLog, rtuRequest, tcpRequest, valueRows } from "./mbPair.ts";
 import { mbapWrap } from "./mbap.ts";
 
 const crc = (b) => {
@@ -111,4 +111,16 @@ test("Modbus TCP — 트랜잭션 ID 로 짝, 같은 상대만", () => {
   assert.equal(pairInLog([tx(q1), rx(mbapWrap(7, [1, 0x83, 2]))], 1, "tcp").code, 2);
   // 중계: 요청이 RX(HMI 에서), 응답이 TX(HMI 로)
   assert.ok(pairInLog([rx(q1), tx(a1)], 1, "tcp"));
+});
+
+test("(0.10.0) 엿듣기: 같은 방향 줄도 짝 번호로 요청을 찾아 푼다", () => {
+  const req = { dir: "rx", bytes: crc([1, 3, 0, 0, 0, 2]), pair: { id: 7, role: "req" } };
+  const other = { dir: "rx", bytes: crc([2, 3, 0, 0, 0, 1]), pair: { id: 8, role: "req" } };
+  const rsp = { dir: "rx", bytes: crc([1, 3, 4, 0, 10, 0, 20]), pair: { id: 7, role: "rsp" } };
+  const p = pairByMark([req, other, rsp], 2);
+  assert.equal(p.kind, "regs");
+  assert.deepEqual(p.regs, [10, 20]);
+  // 짝 번호 없는 줄·요청 줄은 null
+  assert.equal(pairByMark([req, { dir: "rx", bytes: rsp.bytes }], 1), null);
+  assert.equal(pairByMark([req], 0), null);
 });

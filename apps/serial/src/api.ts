@@ -5,6 +5,7 @@ import type { LogFormat } from "@shared/settings";
 import type { LoopConfig, LoopEvent, PortReport } from "@shared/portinfo";
 import type { PortCheckApi } from "@shared/PortCheckDialog";
 import { tally } from "@shared/usage";
+import type { PairMark } from "@shared/pairStats";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 
 export type TextMode = "hex" | "ascii";
@@ -57,7 +58,32 @@ export interface Frame {
   rsp?: number | null;
   /** 트리거 색 */
   mark?: string | null;
+  /** (0.10.0) 포트 나눔: 보낸 TCP 클라이언트 · 엿듣기(두 포트): 들은 포트 */
+  peer?: string;
+  /** (0.10.0) 엿듣기: 요청/응답 짝(core reqpair) */
+  pair?: PairMark;
+  /** 화면에서 붙임 — 이 요청이 끝내 무응답 */
+  missed?: boolean;
 }
+
+/** (0.10.0) 포트 나눔 설정 — core share::ShareConfig */
+export interface ShareConfig {
+  host: string;
+  port: number;
+  rfc2217: boolean;
+  maxClients: number;
+}
+
+export interface ShareClient {
+  id: number;
+  addr: string;
+  sent: number;
+}
+
+export type ShareEvent =
+  | { type: "clients"; clients: ShareClient[] }
+  | { type: "config"; config: SerialConfig }
+  | { type: "stopped"; message: string | null };
 
 export interface Lines {
   cts: boolean;
@@ -134,6 +160,20 @@ export const api = {
     return tally("connect", invoke<void>("open_session", { config, framing: frameModeToRust(framing), rxCheck, onEvent: ch }));
   },
   close: (id: string) => invoke<void>("close_session", { id }),
+  /** (0.10.0) Modbus RTU 엿듣기(듣기만) — 포트 1개, 또는 RS-232 Y 케이블의 두 포트 */
+  sniffOpen: (configs: SerialConfig[], onEvent: (e: SessionEvent) => void) => {
+    const ch = new Channel<SessionEvent>();
+    ch.onmessage = onEvent;
+    return tally("sniff", invoke<void>("sniff_open", { configs, onEvent: ch }));
+  },
+  /** (0.10.0) 포트 나눔 — 묶인 주소를 돌려준다 */
+  shareStart: (id: string, config: ShareConfig, onEvent: (e: ShareEvent) => void) => {
+    const ch = new Channel<ShareEvent>();
+    ch.onmessage = onEvent;
+    return tally("share", invoke<string>("share_start", { id, config, onEvent: ch }));
+  },
+  shareStop: () => invoke<void>("share_stop"),
+  shareKick: (client: number) => invoke<void>("share_kick", { client }),
   setFraming: (id: string, framing: FrameMode, rxCheck: unknown) => invoke<void>("set_framing", { id, framing: frameModeToRust(framing), rxCheck }),
   reconfigure: (id: string, config: SerialConfig) => invoke<void>("reconfigure", { id, config }),
   setLog: (id: string, path: string | null) => tally(path ? "file_log" : null, invoke<void>("set_log", { id, path })),

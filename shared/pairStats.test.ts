@@ -1,4 +1,4 @@
-// @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test apps/tcp/src/pairStats.test.ts
+// @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/pairStats.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fmtMs, pairCell, percentile, RtBag, rtStats, statsText } from "./pairStats.ts";

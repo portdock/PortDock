@@ -516,6 +516,36 @@ export const help: HelpDoc = {
 const SERIAL_EXTRA = {
   ko: [
     {
+      title: "포트 나눔 (COM ↔ TCP) (0.10.0 부터)",
+      id: "share",
+      body: [
+        "연 COM 포트를 TCP 서버로 내보내, 다른 프로그램·WSL2·Docker 컨테이너·다른 PC 가 TCP 로 붙어 같은 포트를 씁니다. 가상 COM 드라이버를 깔지 않고, 관리자 권한 없이 됩니다(«다른 PC 에서 연결 허용» 을 처음 켤 때 윈도우 방화벽 창은 관리자 권한이 들 수 있음).",
+        "- 1. 포트에 «연결» 한 뒤 왼쪽 «포트 나눔 (TCP)» 을 펼칩니다. «TCP 포트»(기본 7000)·«방식»·«최대 클라이언트»(기본 4, 최대 16)를 정하고 «나눔 시작».",
+        "- 2. 붙을 주소가 보입니다: raw 는 socket://127.0.0.1:7000, RFC 2217 은 rfc2217://127.0.0.1:7000 (pyserial 의 serial_for_url 에 그대로 넣을 수 있는 모양).",
+        "- 3. 받은 데이터는 붙은 모든 클라이언트에게 갑니다. 클라이언트가 보낸 것은 포트로 나가고, 통신 기록에 TX ▶ 줄과 «TCP 클라이언트 N (주소)» 로 남습니다. 붙고 끊긴 것은 SHARE 사건 줄로.",
+        "- 보내기는 누구든 됩니다. 여럿이 함께 보내면 바이트가 섞일 수 있으니 보내는 쪽은 하나만 두세요. 이 화면의 보내기도 그대로 됩니다.",
+        "- raw: 바이트를 그대로. RFC 2217: Telnet COM-PORT-OPTION — 원격 프로그램이 보율·데이터 비트·패리티·정지 비트·흐름 제어·DTR·RTS 를 바꾸면 포트에 바로 적용되고(사건 줄 «RFC2217 baud 9600→115200 ← TCP 클라이언트 1»), 왼쪽 설정 칸도 따라 바뀝니다. 데이터 안의 0xFF 는 두 번(FF FF) 보냅니다. 선 상태·모뎀 상태 알림과 Break 는 아직 보내지 않습니다.",
+        "- 묶을 주소는 기본 127.0.0.1 — 이 PC 안의 프로그램(WSL2 미러 네트워킹 포함)만 붙습니다. WSL2 기본(NAT)·Docker·다른 PC 는 «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜고 이 PC 의 IP(Docker 는 host.docker.internal)로 붙습니다. 인증이 없으니 믿을 수 있는 망에서만 켜세요.",
+        "- 예: WSL2 에서 «socat pty,link=$HOME/ttyV0,raw,echo=0 tcp:<이 PC IP>:7000» 으로 가상 tty 를 만들 수 있습니다. 파이썬은 serial.serial_for_url(\"rfc2217://<IP>:7000\", baudrate=9600).",
+        "- 클라이언트가 받아 가지 않아 밀린 데이터가 넘치면 그 클라이언트만 끊습니다. 포트를 끊거나 엿듣기로 바꾸면 나눔도 멈춥니다.",
+      ],
+    },
+    {
+      title: "Modbus RTU 엿듣기 (듣기만) (0.10.0 부터)",
+      id: "sniff",
+      body: [
+        "RS-485 버스에 끼운 어댑터로 마스터(PLC·HMI)와 슬레이브(장비) 사이의 Modbus RTU 통신을 보내지 않고 듣기만 합니다. 다른 프로그램이 이미 연 포트를 엿보는 것은 아닙니다(그건 드라이버가 필요) — 버스에 따로 물린 어댑터가 필요합니다.",
+        "- 1. 왼쪽 연결 설정에서 포트·속도·패리티를 버스와 같게 맞추고 «Modbus RTU 엿듣기 (듣기만)» 를 켠 뒤 «엿듣기 시작».",
+        "- 2. 이 모드에서는 보내기·반복·파일 보내기·Break·자동응답이 모두 막히고, 보내기 줄 위에 «듣기만» 띠가 보입니다.",
+        "- 프레임 자르기: USB 어댑터·OS 가 바이트를 묶거나 쪼개 3.5 문자 간격이 뭉개지므로 CRC 로 자릅니다 — 함수 코드로 요청·응답 길이를 보고 CRC 가 맞는 곳에서 끊고, 맞지 않으면 뒤에서 CRC 가 맞는 프레임이 시작하는 곳을 찾아 앞을 «틀림» 조각으로 떼어 냅니다(다시 맞추기). 30ms(느린 속도는 3.5 문자) 넘게 조용하면 남은 것을 내보냅니다.",
+        "- 줄마다 짝 칸: 요청 «#12 FC03 →», 응답 «#12 3.25 ms», 예외 «#12 3.1 ms EXC 02»(빨강). 버스에 마스터는 하나라 응답 전에 새 요청이 오거나 3초 안에 응답이 없으면 «무응답». 국번 0(방송)은 응답을 기다리지 않습니다.",
+        "- 상태줄 통계: 짝 수·무응답·오류 응답·응답 시간 최소·중앙·95%·최대(ms). CRC 가 틀린 줄 수는 도구줄 «틀림». «지우기» 로 처음부터.",
+        "- 응답 시간은 읽기가 돌아온 시각 기준이라 USB 지연(대개 1~16ms)만큼 오차가 있습니다. 응답 줄을 누르면 «상세» 에 짝인 요청과 주소 붙은 값이 보입니다.",
+        "- RS-232: Y 케이블로 TX·RX 를 USB 변환기 두 개에 받습니다 — «두 번째 포트» 를 고르면 두 포트를 같은 설정으로 열고 한 시간축에 합치며, 줄마다 들은 포트를 적습니다.",
+        "- 기록 저장: «파일로 계속 저장» 이 그대로 됩니다(설정의 로그 형식을 CSV 로 하면 표 프로그램에서 열기 쉬움). «화면 내용 저장» 도 됩니다.",
+      ],
+    },
+    {
       title: "연결 점검…",
       id: "portcheck",
       body: [
@@ -546,6 +576,36 @@ const SERIAL_EXTRA = {
     },
   ],
   en: [
+    {
+      title: "Port sharing (COM ↔ TCP) (from 0.10.0)",
+      id: "share",
+      body: [
+        "Exposes the open COM port as a TCP server so other programs, WSL2, Docker containers or another PC can connect over TCP and use the same port. No virtual COM driver to install, no administrator rights (the Windows Firewall prompt the first time you allow other PCs may need them).",
+        "- 1. «Connect» to the port, then expand «Port sharing (TCP)» on the left. Set «TCP port» (default 7000), «Mode» and «Max clients» (default 4, up to 16), then «Start sharing».",
+        "- 2. The address to connect to is shown: socket://127.0.0.1:7000 for raw, rfc2217://127.0.0.1:7000 for RFC 2217 (the form pyserial's serial_for_url accepts).",
+        "- 3. Received data goes to every connected client. What a client sends goes out of the port and is logged as a TX ▶ line tagged «TCP client N (address)». Connects and disconnects are SHARE event lines.",
+        "- Any client can send. If several send at once their bytes can interleave — keep a single sender. Sending from this window still works.",
+        "- raw: bytes as they are. RFC 2217: Telnet COM-PORT-OPTION — when a remote program changes baud, data bits, parity, stop bits, flow control, DTR or RTS it applies to the port at once (event line «RFC2217 baud 9600→115200 ← TCP client 1») and the settings on the left follow. 0xFF in the data is sent twice (FF FF). Line/modem state notifications and Break are not sent yet.",
+        "- The bind address is 127.0.0.1 by default — only programs on this PC (including WSL2 mirrored networking). For WSL2 default (NAT), Docker or another PC, turn on «Allow other PCs to connect (0.0.0.0)» and use this PC's IP (Docker: host.docker.internal). There is no authentication — only on a network you trust.",
+        "- Example: in WSL2, «socat pty,link=$HOME/ttyV0,raw,echo=0 tcp:<this PC IP>:7000» makes a virtual tty. In Python: serial.serial_for_url(\"rfc2217://<IP>:7000\", baudrate=9600).",
+        "- A client that stops reading and overflows its backlog is disconnected on its own. Disconnecting the port or switching to listen-only also stops sharing.",
+      ],
+    },
+    {
+      title: "Modbus RTU listen-only (sniff) (from 0.10.0)",
+      id: "sniff",
+      body: [
+        "Listens to Modbus RTU traffic between a master (PLC, HMI) and slaves (devices) through an adapter attached to the RS-485 bus — without sending anything. It does not peek at a port another program already has open (that needs a driver) — you need a separate adapter on the bus.",
+        "- 1. On the left, match port, baud and parity to the bus, turn on «Modbus RTU listen-only (sniff)» and press «Start listening».",
+        "- 2. In this mode send, repeat, file send, Break and auto-reply are all blocked, and a «Listen only» strip appears above the send bar.",
+        "- Framing: USB adapters and the OS batch or split reads, blurring the 3.5-character gap, so frames are cut by CRC — the function code gives the request/reply lengths and the frame ends where the CRC matches; if nothing matches, the next point where a CRC-valid frame starts is found and everything before it becomes a «fail» fragment (resync). After 30 ms of silence (3.5 characters at slow speeds) what is left is flushed.",
+        "- Pair column on each line: request «#12 FC03 →», reply «#12 3.25 ms», exception «#12 3.1 ms EXC 02» (red). There is one master per bus, so a new request before the reply, or no reply within 3 s, marks «no reply». Unit 0 (broadcast) does not wait for a reply.",
+        "- Status bar statistics: pairs, no-replies, error replies, reply time min/median/95%/max (ms). Lines with a bad CRC are counted by «fail» in the toolbar. «Clear» starts over.",
+        "- Reply times use the moment each read returned, so they carry the USB latency (usually 1–16 ms) as error. Clicking a reply line shows the paired request and the addressed values in «Details».",
+        "- RS-232: a Y cable feeds TX and RX to two USB adapters — pick «Second port» to open both with the same settings and merge them on one timeline, each line tagged with its port.",
+        "- Saving: «Log to file» works as usual (set the log format to CSV in Settings for spreadsheets), and so does «Save screen».",
+      ],
+    },
     {
       title: "Check connection…",
       id: "portcheck",

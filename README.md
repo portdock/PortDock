@@ -11,7 +11,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 
 | Tool | What it does |
 |---|---|
-| **PortDock Serial** | Serial (COM) terminal — RS-232/RS-485/USB serial, signal lines (DTR/RTS/CTS/DSR/RI/CD), auto-reconnect after a USB replug, framing, checksums (nine types plus custom CRC), Modbus RTU decoding and request builder, auto-reply, timestamped test logs |
+| **PortDock Serial** | Serial (COM) terminal — RS-232/RS-485/USB serial, signal lines (DTR/RTS/CTS/DSR/RI/CD), auto-reconnect after a USB replug, framing, checksums (nine types plus custom CRC), Modbus RTU decoding and request builder, auto-reply, timestamped test logs; from 0.10.0 port sharing (COM ↔ TCP, raw or RFC 2217, 127.0.0.1 by default) and Modbus RTU listen-only sniffing (CRC framing, request/reply pairs, reply times) |
 | **PortDock Modbus Slave** | Modbus slave simulator over serial RTU, Modbus TCP or RTU over TCP — coil and register tables (32-bit, float and string cells), value simulation, fault injection, built-in device profiles, CSV register maps, and the master's requests as they arrive |
 | **PortDock TCP** | TCP client, server and relay (monitor) — multiple peers, echo, auto-reconnect, Modbus TCP framing, relay capture saved as pcapng (open in Wireshark), Modbus TCP and MC request/reply pairs with response time and no-reply count |
 | **PortDock UDP** | UDP sender/receiver — broadcast, multicast, echo |

@@ -21,7 +21,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SerialConfig {
     pub port: String,
@@ -88,7 +88,12 @@ enum Job {
     Paced { id: u64, bytes: Vec<u8>, pace: Pace },
     /// Break 신호(ms)
     Break(u32),
+    /// (0.10.0) 포트 나눔 — TCP 클라이언트가 보낸 것. 기록 줄의 상대 칸에 누가 보냈는지 남긴다
+    From(Vec<u8>, String),
 }
+
+/// (0.10.0) 받은 바이트를 그대로 받아 가는 곳(포트 나눔 — TCP 클라이언트들에게). 읽기 스레드에서 불리므로 막지 말 것
+pub type Tap = Box<dyn Fn(&[u8]) + Send>;
 
 /// DCB 확장 — serialport(4.10)가 다루지 않는 값. 계산은 순수 함수로(시험), 적용은 윈도우에서만
 pub mod dcb {
@@ -254,6 +259,8 @@ struct Shared {
     log: Mutex<Option<LogWriter>>,
     rules: Mutex<Vec<Rule>>,
     responder: Mutex<Option<Responder>>,
+    /// (0.10.0) 포트 나눔 — 받은 바이트(프레임으로 끊기 전)를 넘길 곳
+    tap: Mutex<Option<Tap>>,
     /// 마지막으로 응답기·규칙이 보낸 것 — RS-485 에코 창에 쓴다.
     /// 에코 창: 응답기·규칙이 보낸 바이트가 그대로(바이트까지 같게) 되돌아오고, 그 첫 바이트가
     /// 송신 시작(지연 응답은 예약 시각)부터 «송신 시간(문자당 11비트) + 50ms» 안이면 에코로 보고 다시 답하지 않는다.
@@ -326,6 +333,11 @@ fn parity_of(c: &SerialConfig) -> Parity {
 
 fn stop_of(c: &SerialConfig) -> StopBits {
     if c.stop_bits >= 1.75 { StopBits::Two } else { StopBits::One }
+}
+
+/// (0.10.0) 엿듣기 — 읽기 핸들만 쓴다(쓰기 핸들은 바로 닫는다). 설정 적용·오류 문구는 보통 열기와 같다
+pub(crate) fn open_reader(cfg: &SerialConfig) -> Result<Port, String> {
+    open(cfg).map(|o| o.reader)
 }
 
 fn open(cfg: &SerialConfig) -> Result<Opened, String> {
@@ -435,6 +447,7 @@ impl Shared {
             log: Mutex::new(None),
             rules: Mutex::new(Vec::new()),
             responder: Mutex::new(responder),
+            tap: Mutex::new(None),
             last_reply: Mutex::new(ReplyGuard::new()),
             delayed: Delayer::new(),
             gone: AtomicBool::new(false),
@@ -508,35 +521,18 @@ impl Session {
 
     /// 연결을 끊지 않고 속도·패리티 등을 바꾼다. 바뀐 항목을 로그에 남긴다.
     pub fn reconfigure(&self, new: SerialConfig) -> Result<(), String> {
-        let old = self.shared.cfg.lock().unwrap().clone();
-        let changes = diff(&old, &new);
-        if changes.is_empty() {
-            return Ok(());
-        }
-        // 쓰기 핸들 자물쇠를 쥔 채 설정까지 바꾼다 — 재연결이 핸들을 넣는 순간과 겹쳐도
-        // 둘 중 하나가 새 설정을 포트에 적용한다(install_writer 참고). 순서: writer → cfg
-        let mut w = self.shared.writer.lock().unwrap();
-        let mut fallback = None;
-        let online = match w.as_mut() {
-            Some(out) => {
-                let (soft, n) = apply(out, &new)?;
-                self.shared.soft_rts.store(soft, Ordering::SeqCst);
-                fallback = n;
-                true
-            }
-            None => false,
-        };
-        let mut cfg = self.shared.cfg.lock().unwrap();
-        let port_name = cfg.port.clone();
-        *cfg = SerialConfig { port: port_name, ..new };
-        drop(cfg);
-        drop(w);
-        let later = if online { "" } else { crate::tr!(" (다시 연결될 때 적용)", " (applies on reconnect)") };
-        note(&self.shared, format!("SET {}{later}", changes.join(", ")));
-        if let Some(n) = fallback {
-            note(&self.shared, n);
-        }
-        Ok(())
+        reconfigure(&self.shared, new)
+    }
+
+    /// (0.10.0) 포트 나눔 — 받은 바이트를 넘길 곳을 꽂거나(Some) 뺀다(None)
+    pub fn set_tap(&self, tap: Option<Tap>) {
+        *self.shared.tap.lock().unwrap() = tap;
+    }
+
+    /// (0.10.0) 포트 나눔이 이 세션에 보내고 설정을 바꾸는 손잡이
+    pub fn handle(&self) -> Result<Handle, String> {
+        let tx = self.tx.clone().ok_or_else(|| crate::tr!("세션이 닫혔습니다", "The session is closed").to_string())?;
+        Ok(Handle { shared: self.shared.clone(), tx })
     }
 
     fn enqueue(&self, job: Job) -> Result<(), String> {
@@ -593,11 +589,83 @@ impl Session {
 
     pub fn stop(mut self) {
         self.shared.stop.store(true, Ordering::SeqCst);
+        // 포트 나눔이 꽂은 것을 뺀다(서로 쥐고 있어 남지 않게)
+        *self.shared.tap.lock().unwrap() = None;
         self.shared.delayed.close();
         drop(self.tx.take()); // 쓰기 스레드가 큐 끝을 보고 나온다
         for t in [self.writer.take(), self.reader.take(), self.watcher.take()].into_iter().flatten() {
             let _ = t.join();
         }
+    }
+}
+
+/// 연결을 끊지 않고 속도·패리티 등을 바꾼다. 바뀐 항목을 로그에 남긴다.
+fn reconfigure(shared: &Shared, new: SerialConfig) -> Result<(), String> {
+    let old = shared.cfg.lock().unwrap().clone();
+    let changes = diff(&old, &new);
+    if changes.is_empty() {
+        return Ok(());
+    }
+    // 쓰기 핸들 자물쇠를 쥔 채 설정까지 바꾼다 — 재연결이 핸들을 넣는 순간과 겹쳐도
+    // 둘 중 하나가 새 설정을 포트에 적용한다(install_writer 참고). 순서: writer → cfg
+    let mut w = shared.writer.lock().unwrap();
+    let mut fallback = None;
+    let online = match w.as_mut() {
+        Some(out) => {
+            let (soft, n) = apply(out, &new)?;
+            shared.soft_rts.store(soft, Ordering::SeqCst);
+            fallback = n;
+            true
+        }
+        None => false,
+    };
+    let mut cfg = shared.cfg.lock().unwrap();
+    let port_name = cfg.port.clone();
+    *cfg = SerialConfig { port: port_name, ..new };
+    drop(cfg);
+    drop(w);
+    let later = if online { "" } else { crate::tr!(" (다시 연결될 때 적용)", " (applies on reconnect)") };
+    note(shared, format!("SET {}{later}", changes.join(", ")));
+    if let Some(n) = fallback {
+        note(shared, n);
+    }
+    Ok(())
+}
+
+/// (0.10.0) 포트 나눔의 손잡이 — 세션을 쥐지 않고 보내기·설정 바꾸기·사건 줄만
+pub struct Handle {
+    shared: Arc<Shared>,
+    tx: SyncSender<Job>,
+}
+
+impl Handle {
+    /// 보내기 대기열에 넣는다. `peer` = 기록 줄 상대 칸(«TCP 클라이언트 1 (127.0.0.1:50211)»)
+    pub fn send_from(&self, bytes: Vec<u8>, peer: String) -> Result<(), String> {
+        if self.shared.stop.load(Ordering::SeqCst) {
+            return Err(crate::tr!("세션이 닫혔습니다", "The session is closed").into());
+        }
+        if self.shared.writer.lock().unwrap().is_none() {
+            return Err(crate::tr!("포트가 끊겨 있습니다", "The port is disconnected").into());
+        }
+        match self.tx.try_send(Job::From(bytes, peer)) {
+            Ok(()) => Ok(()),
+            Err(TrySendError::Full(_)) => Err(queue_full()),
+            Err(TrySendError::Disconnected(_)) => Err(crate::tr!("세션이 닫혔습니다", "The session is closed").into()),
+        }
+    }
+
+    /// 지금 설정
+    pub fn config(&self) -> SerialConfig {
+        self.shared.cfg.lock().unwrap().clone()
+    }
+
+    pub fn reconfigure(&self, new: SerialConfig) -> Result<(), String> {
+        reconfigure(&self.shared, new)
+    }
+
+    /// 사건 줄 하나
+    pub fn note(&self, text: String) {
+        note(&self.shared, text);
     }
 }
 
@@ -648,6 +716,10 @@ fn describe_framing(m: &FrameMode) -> String {
 }
 
 /// 바뀐 항목 목록 «baud 9600→115200»
+pub fn changes(a: &SerialConfig, b: &SerialConfig) -> Vec<String> {
+    diff(a, b)
+}
+
 fn diff(a: &SerialConfig, b: &SerialConfig) -> Vec<String> {
     let mut out = Vec::new();
     let mut d = |k: &str, x: String, y: String| {
@@ -737,6 +809,9 @@ fn reader_loop(
         let mut lost: Option<String> = match p.read(&mut buf) {
             Ok(0) => None,
             Ok(n) => {
+                if let Some(t) = s.tap.lock().unwrap().as_ref() {
+                    t(&buf[..n]);
+                }
                 let frames = s.framer.lock().unwrap().feed(&buf[..n], Instant::now());
                 push_rx(&s, frames, &replies);
                 None
@@ -826,7 +901,17 @@ fn writer_loop(rx: Receiver<Job>, s: Arc<Shared>, events: EventSink) {
             Job::Bytes(bytes) => {
                 let w = transmit(&s, &bytes, 0, &|| false);
                 if w.sent > 0 {
-                    push_tx(&s, &bytes[..w.sent]);
+                    push_tx(&s, &bytes[..w.sent], None);
+                }
+                if let Some(message) = w.error {
+                    events.send(SessionEvent::Error { message });
+                }
+                w.stopping
+            }
+            Job::From(bytes, peer) => {
+                let w = transmit(&s, &bytes, 0, &|| false);
+                if w.sent > 0 {
+                    push_tx(&s, &bytes[..w.sent], Some(peer));
                 }
                 if let Some(message) = w.error {
                     events.send(SessionEvent::Error { message });
@@ -842,8 +927,8 @@ fn writer_loop(rx: Receiver<Job>, s: Arc<Shared>, events: EventSink) {
     }
 }
 
-fn push_tx(s: &Shared, bytes: &[u8]) {
-    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes.to_vec(), check: None, note: None, peer: None, pair: None });
+fn push_tx(s: &Shared, bytes: &[u8], peer: Option<String>) {
+    s.pending.lock().unwrap().push(Frame { ts: now_ms(), dir: "tx", bytes: bytes.to_vec(), check: None, note: None, peer, pair: None });
 }
 
 /// 한 덩어리를 보낸 결과
@@ -988,7 +1073,7 @@ fn run_paced(s: &Shared, events: &EventSink, id: u64, bytes: &[u8], pace: Pace) 
         let piece = &bytes[r];
         let w = transmit(s, piece, pace.char_delay_ms, &cancel);
         if w.sent > 0 {
-            push_tx(s, &piece[..w.sent]);
+            push_tx(s, &piece[..w.sent], None);
         }
         sent += w.sent as u64;
         if w.error.is_some() || w.stopping || w.cancelled {
@@ -1452,6 +1537,29 @@ mod tests {
         assert!(accepted >= SEND_QUEUE_MAX, "accepted {accepted}");
         assert_eq!(err, queue_full());
         session.stop();
+    }
+
+    /// (0.10.0) 포트 나눔 손잡이: 보낸 줄의 상대 칸에 누가 보냈는지, 설정 바꾸기, 닫으면 꽂은 것을 뺀다
+    #[test]
+    fn share_handle_sends_with_peer_and_reconfigures() {
+        let baud = Arc::new(Mutex::new(9600));
+        let shared = shared_with(cfg(), Fake::open(&baud));
+        let (session, _) = live(shared.clone());
+        let h = session.handle().unwrap();
+        h.send_from(b"AT".to_vec(), "TCP client 1 (127.0.0.1:5000)".into()).unwrap();
+        wait_for(|| !tx_frames(&shared).is_empty());
+        let peer = shared.pending.lock().unwrap().iter().find(|f| f.dir == "tx").and_then(|f| f.peer.clone());
+        assert_eq!(peer.as_deref(), Some("TCP client 1 (127.0.0.1:5000)"));
+        let mut new = h.config();
+        new.baud = 19_200;
+        h.reconfigure(new).unwrap();
+        assert_eq!(*baud.lock().unwrap(), 19_200);
+        assert_eq!(h.config().baud, 19_200);
+        session.set_tap(Some(Box::new(|_: &[u8]| {})));
+        assert!(shared.tap.lock().unwrap().is_some());
+        session.stop();
+        assert!(shared.tap.lock().unwrap().is_none());
+        assert!(h.send_from(vec![1], "x".into()).is_err());
     }
 
     /// 재연결로 포트를 다시 연 뒤 핸들을 넣기 전에 설정을 바꿨다면, 넣을 때 새 설정이 포트에 적용된다

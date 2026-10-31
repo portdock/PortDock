@@ -73,7 +73,7 @@ import { saveName } from "@shared/fileName";
 import { openInApp } from "@shared/openApp";
 import { count } from "@shared/usage";
 import { tcpLaunch } from "./launch";
-import { pairCell, RtBag, rtStats, statsText } from "./pairStats";
+import { pairCell, RtBag, rtStats, statsText } from "@shared/pairStats";
 
 const arRelayNote = (lang: Lang) => ar(lang, "relayNote");
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));

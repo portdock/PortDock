@@ -140,6 +140,26 @@ export function pairInLog(frames: PairFrame[], idx: number, wire: Wire, back = 2
   return null;
 }
 
+/** (0.10.0) 엿듣기 줄 — 백엔드가 붙인 짝 번호(요청·응답이 같은 방향으로 들어온다) */
+export interface MarkFrame {
+  bytes: number[];
+  pair?: { id: number; role: string };
+}
+
+/** (0.10.0) 엿듣기: frames[idx](응답)와 같은 짝 번호의 요청을 거슬러 찾아 푼다. 최대 back 줄까지 */
+export function pairByMark(frames: MarkFrame[], idx: number, back = 400): MbPaired | null {
+  const resp = frames[idx];
+  const id = resp?.pair?.role === "rsp" ? resp.pair.id : null;
+  if (id == null) return null;
+  for (let j = idx - 1; j >= 0 && j >= idx - back; j--) {
+    const f = frames[j];
+    if (f.pair?.id !== id || f.pair.role !== "req") continue;
+    const req = rtuRequest(f.bytes);
+    return req ? rtuReply(req, resp.bytes) : null;
+  }
+  return null;
+}
+
 // ---- 값 풀이
 export type WordFmt = "u16" | "s16" | "hex" | "f32abcd" | "f32cdab";
 export const WORD_FMTS: WordFmt[] = ["u16", "s16", "hex", "f32abcd", "f32cdab"];

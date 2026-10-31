@@ -41,6 +41,8 @@ enum Key {
     Mc3 { fmt: mc::Format },
     /// 4E: 일련번호
     Mc4 { fmt: mc::Format, serial: u16 },
+    /// (0.10.0) Modbus RTU 엿듣기: 국번·함수(예외 비트 뺀 것)
+    Rtu { unit: u8, fc: u8 },
 }
 
 struct Pending {
@@ -142,6 +144,39 @@ impl Pairer {
         Some(PairMark { id: p.id, role: "rsp", proto: proto_of(key), what: p.what, rt_ms: Some(ms(at.saturating_duration_since(p.at))), error })
     }
 
+    /// (0.10.0) Modbus RTU 엿듣기의 요청. 버스에 마스터는 하나라 새 요청이 오면 기다리던 RTU 요청은 모두 무응답.
+    /// 국번 0(방송)은 응답이 없는 것이 규격이라 기다리지 않는다
+    pub fn rtu_request(&mut self, unit: u8, fc: u8, at: Instant, next: &mut u64) -> (PairMark, Vec<PairMark>) {
+        let mut missed = Vec::new();
+        while let Some(i) = self.pending.iter().position(|p| matches!(p.key, Key::Rtu { .. })) {
+            let p = self.pending.remove(i).expect("index");
+            let waited = at.saturating_duration_since(p.at);
+            missed.push(Self::miss(p, waited));
+        }
+        *next += 1;
+        let id = *next;
+        let what = format!("FC{fc:02X}");
+        if unit != 0 {
+            self.pending.push_back(Pending { id, key: Key::Rtu { unit, fc }, what: what.clone(), at });
+        }
+        (PairMark { id, role: "req", proto: "modbus", what, rt_ms: None, error: None }, missed)
+    }
+
+    /// (0.10.0) 이 국번·함수의 RTU 요청이 답을 기다리는지(05·06 처럼 요청과 응답 모양이 같을 때 가른다)
+    pub fn rtu_waiting(&self, unit: u8, fc: u8) -> bool {
+        let key = Key::Rtu { unit, fc: fc & 0x7F };
+        self.pending.iter().any(|p| p.key == key)
+    }
+
+    /// (0.10.0) Modbus RTU 엿듣기의 응답. `fc` 는 받은 그대로(예외면 0x80 이 켜짐), `exc` = 예외 코드
+    pub fn rtu_response(&mut self, unit: u8, fc: u8, exc: Option<u8>, at: Instant) -> Option<PairMark> {
+        let key = Key::Rtu { unit, fc: fc & 0x7F };
+        let i = self.pending.iter().position(|p| p.key == key)?;
+        let p = self.pending.remove(i).expect("index");
+        let error = (fc & 0x80 != 0).then(|| format!("EXC {:02X}", exc.unwrap_or(0)));
+        Some(PairMark { id: p.id, role: "rsp", proto: "modbus", what: p.what, rt_ms: Some(ms(at.saturating_duration_since(p.at))), error })
+    }
+
     /// 기다린 시간이 넘은 요청들 → 무응답
     pub fn expire(&mut self, now: Instant) -> Vec<PairMark> {
         let mut out = Vec::new();
@@ -167,7 +202,7 @@ impl Pairer {
 
 fn proto_of(k: Key) -> &'static str {
     match k {
-        Key::Modbus { .. } => "modbus",
+        Key::Modbus { .. } | Key::Rtu { .. } => "modbus",
         _ => "mc",
     }
 }
@@ -303,5 +338,31 @@ mod tests {
         let (z, _) = p.request(&ra, t0, &mut n).unwrap();
         let rr = format!("D00000FF03FF00{:04X}0000{}", 4 + 4, "0007").into_bytes();
         assert_eq!(p.response(&rr, t0 + Duration::from_millis(1)).unwrap().id, z.id);
+    }
+
+    #[test]
+    fn rtu_pairs_on_one_bus_and_new_request_misses_old() {
+        let t0 = Instant::now();
+        let mut p = Pairer::default();
+        let mut n = 0;
+        let (r1, missed) = p.rtu_request(1, 3, t0, &mut n);
+        assert_eq!((r1.id, r1.role, r1.what.as_str()), (1, "req", "FC03"));
+        assert!(missed.is_empty());
+        assert!(p.rtu_waiting(1, 3) && !p.rtu_waiting(2, 3));
+        let r = p.rtu_response(1, 3, None, t0 + Duration::from_millis(12)).unwrap();
+        assert_eq!((r.id, r.role, r.rt_ms), (1, "rsp", Some(12.0)));
+        // 답 없는 요청 다음에 새 요청 → 앞 것은 무응답
+        p.rtu_request(2, 3, t0, &mut n);
+        let (r3, missed) = p.rtu_request(1, 6, t0 + Duration::from_millis(500), &mut n);
+        assert_eq!(r3.id, 3);
+        assert_eq!(missed.len(), 1);
+        assert_eq!((missed[0].id, missed[0].role), (2, "miss"));
+        // 예외 응답
+        let e = p.rtu_response(1, 0x86, Some(2), t0 + Duration::from_millis(510)).unwrap();
+        assert_eq!(e.error.as_deref(), Some("EXC 02"));
+        // 방송(국번 0)은 기다리지 않는다
+        p.rtu_request(0, 6, t0, &mut n);
+        assert!(!p.rtu_waiting(0, 6));
+        assert!(p.expire(t0 + Duration::from_secs(10)).is_empty());
     }
 }

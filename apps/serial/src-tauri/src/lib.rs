@@ -8,6 +8,8 @@ use portdock_core::framer::FrameMode;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session, SessionEvent};
 use portdock_core::autoreply::{self, AutoReply, RulePreview, RuleSpec, RulesResult};
+use portdock_core::rtu_sniff::SniffSession;
+use portdock_core::share::{Share, ShareConfig, ShareEvent};
 use portdock_core::{modbus, ports};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -89,16 +91,98 @@ fn open_session(
 }
 
 #[tauri::command(async)]
-fn close_session(sessions: State<Sessions>, id: String) {
+fn close_session(sessions: State<Sessions>, shares: State<ShareSlot>, sniff: State<SniffSlot>, id: String) {
+    stop_share(&sessions, &shares, Some(&id));
+    if let Some(s) = take_sniff(&sniff, &id) {
+        s.stop();
+    }
     if let Some(s) = sessions.0.take(&id) {
         s.stop();
     }
 }
 
 #[tauri::command(async)]
-fn set_framing(sessions: State<Sessions>, id: String, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
+fn set_framing(sessions: State<Sessions>, sniff: State<SniffSlot>, id: String, framing: FrameMode, rx_check: Option<ChecksumKind>) -> Result<(), String> {
+    // 엿듣기는 프레임을 CRC 로 스스로 자른다 — 받기 설정은 쓰지 않는다
+    if sniff_has(&sniff, &id) {
+        return Ok(());
+    }
     sessions.1.set_terminator(framing.terminator());
     sessions.0.with(&id, |s| s.set_framing(framing, rx_check))
+}
+
+// ---- (0.10.0) 포트 나눔 — 연 포트를 TCP 서버로(raw 또는 RFC 2217). 한 번에 하나
+
+#[derive(Default)]
+struct ShareSlot(std::sync::Mutex<Option<(String, Share)>>);
+
+fn stop_share(sessions: &Sessions, shares: &ShareSlot, only: Option<&str>) {
+    let taken = {
+        let mut g = shares.0.lock().unwrap_or_else(|e| e.into_inner());
+        if g.as_ref().is_some_and(|(id, _)| only.is_none_or(|o| o == id)) { g.take() } else { None }
+    };
+    if let Some((id, share)) = taken {
+        let _ = sessions.0.with(&id, |s| s.set_tap(None));
+        share.stop();
+    }
+}
+
+/// 나눔 시작 — 실제로 묶인 주소(«127.0.0.1:7000»)를 돌려준다
+#[tauri::command(async)]
+fn share_start(sessions: State<Sessions>, shares: State<ShareSlot>, id: String, config: ShareConfig, on_event: Channel<ShareEvent>) -> Result<String, String> {
+    stop_share(&sessions, &shares, None);
+    let handle = sessions.0.with(&id, |s| s.handle())??;
+    let share = Share::start(config, Arc::new(handle), move |e| {
+        let _ = on_event.send(e);
+    })?;
+    let local = share.local_addr().to_string();
+    sessions.0.with(&id, |s| s.set_tap(Some(share.tap())))?;
+    *shares.0.lock().unwrap_or_else(|e| e.into_inner()) = Some((id, share));
+    Ok(local)
+}
+
+#[tauri::command(async)]
+fn share_stop(sessions: State<Sessions>, shares: State<ShareSlot>) {
+    stop_share(&sessions, &shares, None);
+}
+
+#[tauri::command]
+fn share_kick(shares: State<ShareSlot>, client: u64) {
+    if let Some((_, s)) = shares.0.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
+        s.kick(client);
+    }
+}
+
+// ---- (0.10.0) Modbus RTU 엿듣기(듣기만) — 포트 1개(RS-485) 또는 2개(RS-232 Y 케이블). 보내는 명령은 받지 않는다
+
+#[derive(Default)]
+struct SniffSlot(std::sync::Mutex<Option<SniffSession>>);
+
+fn sniff_has(sniff: &SniffSlot, id: &str) -> bool {
+    sniff.0.lock().unwrap_or_else(|e| e.into_inner()).as_ref().is_some_and(|s| s.id() == id && !s.is_done())
+}
+
+fn take_sniff(sniff: &SniffSlot, id: &str) -> Option<SniffSession> {
+    let mut g = sniff.0.lock().unwrap_or_else(|e| e.into_inner());
+    if g.as_ref().is_some_and(|s| s.id() == id) { g.take() } else { None }
+}
+
+#[tauri::command(async)]
+fn sniff_open(sessions: State<Sessions>, sniff: State<SniffSlot>, configs: Vec<SerialConfig>, on_event: Channel<SessionEvent>) -> Result<(), String> {
+    for c in &configs {
+        if sessions.0.with(&c.port, |_| ()).is_ok() {
+            return Err(tr!(format!("{}: 이미 연결 중입니다 — 끊은 뒤 엿들으세요", c.port), format!("{}: already connected — disconnect first", c.port)));
+        }
+    }
+    let old = sniff.0.lock().unwrap_or_else(|e| e.into_inner()).take();
+    if let Some(s) = old {
+        s.stop();
+    }
+    let s = SniffSession::start(configs, portdock_core::event::EventSink::new(move |e| {
+        let _ = on_event.send(e);
+    }))?;
+    *sniff.0.lock().unwrap_or_else(|e| e.into_inner()) = Some(s);
+    Ok(())
 }
 
 // ---- 자동응답(Simulator 와 같은 규칙) — 세션은 늘 응답기를 꽂고, «켜기» 가 꺼져 있으면 지나간다
@@ -136,12 +220,22 @@ fn preview_rule(sessions: State<Sessions>, rule: RuleSpec, sample: String) -> Re
 
 /// 연결 중 설정 변경(속도·패리티·DTR/RTS 등). 포트 이름은 바꾸지 않는다.
 #[tauri::command(async)]
-fn reconfigure(sessions: State<Sessions>, id: String, config: SerialConfig) -> Result<(), String> {
+fn reconfigure(sessions: State<Sessions>, sniff: State<SniffSlot>, id: String, config: SerialConfig) -> Result<(), String> {
+    if let Some(s) = sniff.0.lock().unwrap_or_else(|e| e.into_inner()).as_ref().filter(|s| s.id() == id) {
+        return if portdock_core::serial::changes(&s.configs()[0], &config).is_empty() {
+            Ok(())
+        } else {
+            Err(tr!("엿듣기 중에는 설정을 바꿀 수 없습니다 — 멈춘 뒤 바꾸세요", "Settings cannot change while listening — stop first").into())
+        };
+    }
     sessions.0.with(&id, |s| s.reconfigure(config))?
 }
 
 #[tauri::command(async)]
-fn set_log(sessions: State<Sessions>, id: String, path: Option<String>) -> Result<(), String> {
+fn set_log(sessions: State<Sessions>, sniff: State<SniffSlot>, id: String, path: Option<String>) -> Result<(), String> {
+    if let Some(s) = sniff.0.lock().unwrap_or_else(|e| e.into_inner()).as_ref().filter(|s| s.id() == id) {
+        return s.set_log(path);
+    }
     sessions.0.with(&id, |s| s.set_log(path))?
 }
 
@@ -348,6 +442,8 @@ pub fn run() {
         })
         .manage(Sessions::default())
         .manage(LoopTest::default())
+        .manage(ShareSlot::default())
+        .manage(SniffSlot::default())
         .invoke_handler(tauri::generate_handler![
             pi_report,
             loop_start,
@@ -378,7 +474,8 @@ pub fn run() {
             decode_modbus,
             verify_checksum,
             write_text, read_text,
-            set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule
+            set_rules, set_auto_reply, set_match_options, get_hits, reset_hits, preview_rule,
+            share_start, share_stop, share_kick, sniff_open
         ])
         .run(tauri::generate_context!());
     if let Err(e) = result {
