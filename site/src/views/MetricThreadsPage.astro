@@ -1,0 +1,188 @@
+---
+// 웹 도구: 미터 나사 탭 드릴·볼트 참고표 — ISO 보통·가는 나사(M2~M20) 피치, 탭 드릴(d − P), 육각 렌치(ISO 4762)·스패너(ISO 4032) 크기.
+// 자료·찾기는 lib/threads.ts(node --test). 체결 토크는 값을 넣지 않는다(«제조사 값 확인»). 모두 브라우저 안.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { THREADS, tapDrill } from "../lib/threads";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/metric-threads/";
+const SPANNERS = [...new Set(THREADS.flatMap((r) => [r.spanner, ...(r.spannerDin ? [r.spannerDin] : [])]))].sort((a, b) => a - b);
+const KEYS = [...new Set(THREADS.map((r) => r.hexKey))].sort((a, b) => a - b);
+const L = ko
+  ? {
+      h1: "미터 나사 탭 드릴·볼트 참고표",
+      desc: "M2~M20 미터 보통·가는 나사의 피치와 탭 드릴 지름(d − P), 육각 구멍 볼트의 렌치(ISO 4762)·육각 너트 스패너(ISO 4032) 크기를 찾습니다.",
+      seo: "미터 나사 탭 드릴 표·육각 렌치 스패너 크기 (M2~M20) — PortDock",
+      find: "나사로 찾기",
+      thread: "나사 (예: M8, M10x1.25)",
+      bad: "표에 없는 나사입니다 — M2·M2.5·M3·M4·M5·M6·M8·M10·M12·M14·M16·M18·M20 과 그 보통·가는 피치를 넣으세요.",
+      k: { p: "피치", kind: "종류", coarse: "보통 나사", fine: "가는 나사", drill: "탭 드릴 ≈ d − P", key: "육각 렌치 (ISO 4762 볼트)", sp: "스패너 (ISO 4032 너트·ISO 4014/4017 볼트)", din: "DIN 934 (옛 규격)" },
+      rev: "공구 크기로 찾기",
+      bySp: "스패너 (mm)",
+      byKey: "육각 렌치 (mm)",
+      tTitle: "미터 나사 표 (M2~M20)",
+      tHead: ["나사", "보통 피치", "탭 드릴", "가는 피치 (탭 드릴)", "육각 렌치", "스패너"],
+      tNote:
+        "탭 드릴 d − P 는 절삭 탭의 대략값입니다. 실제로는 가진 드릴 중 가까운 것을 쓰고, 재질·나사 깊이에 따라 조금 바꿉니다. 성형(롤) 탭은 드릴 지름이 다르므로 탭 제조사 표를 봅니다. 스패너 크기는 ISO 4032 값이며, DIN 934 옛 너트는 M10 17·M12 19·M14 22 mm 입니다.",
+      torqueTitle: "체결 토크",
+      torque:
+        "볼트 체결 토크는 볼트 강도 등급(8.8·A2-70 등)·윤활·상대 재질에 따라 달라지고, 단자대·차단기·접촉기 단자는 제조사가 정한 토크가 따로 있습니다(제품 측면·데이터시트). 이 표에는 토크 값을 넣지 않았습니다 — 제조사 값을 확인하고 토크 드라이버로 조입니다.",
+      privacy: "이 페이지는 브라우저 안에서만 찾고 아무것도 보내지 않습니다.",
+      srcTitle: "출처",
+      seeFer: "단자 나사에 맞는 링 단자는",
+      fer: "페룰·압착 단자 규격표",
+      seeUnits: "인치·mm 단위 바꾸기는",
+      units: "단위 변환기",
+    }
+  : {
+      h1: "Metric Thread Tap Drill & Bolt Chart",
+      desc: "Pitch and tap drill size (d − P) for M2–M20 coarse and fine metric threads, plus hex key (ISO 4762) and spanner (ISO 4032) sizes. Look up by thread or tool.",
+      seo: "Metric Tap Drill Chart, Hex Key & Spanner Sizes — PortDock",
+      find: "Look up a thread",
+      thread: "Thread (e.g. M8, M10x1.25)",
+      bad: "Not in the table — enter M2, M2.5, M3, M4, M5, M6, M8, M10, M12, M14, M16, M18 or M20 with its coarse or fine pitch.",
+      k: { p: "Pitch", kind: "Type", coarse: "Coarse", fine: "Fine", drill: "Tap drill ≈ d − P", key: "Hex key (ISO 4762 cap screw)", sp: "Spanner (ISO 4032 nut, ISO 4014/4017 bolt)", din: "DIN 934 (old standard)" },
+      rev: "Look up by tool size",
+      bySp: "Spanner (mm)",
+      byKey: "Hex key (mm)",
+      tTitle: "Metric thread chart (M2–M20)",
+      tHead: ["Thread", "Coarse pitch", "Tap drill", "Fine pitch (tap drill)", "Hex key", "Spanner"],
+      tNote:
+        "The tap drill d − P is an approximation for cutting taps. In practice use the nearest drill you have and adjust for material and thread depth. Forming (roll) taps need a different drill size — see the tap maker's chart. Spanner sizes are ISO 4032; old DIN 934 nuts are 17 mm for M10, 19 mm for M12 and 22 mm for M14.",
+      torqueTitle: "Tightening torque",
+      torque:
+        "Bolt torque depends on the property class (8.8, A2-70 and so on), lubrication and the mating material, and terminal blocks, breakers and contactors have their own maker-specified torque (printed on the part or in the data sheet). This chart has no torque values — check the maker's value and use a torque screwdriver.",
+      privacy: "This page looks things up inside your browser and sends nothing.",
+      srcTitle: "Sources",
+      seeFer: "For ring terminals that fit a stud, see the",
+      fer: "ferrule and crimp terminal chart",
+      seeUnits: "For inch and mm conversion, use the",
+      units: "unit converter",
+    };
+const T = { bad: L.bad, k: L.k };
+const fineCell = (d: number, f: number[]) => f.map((p) => `${p} (${tapDrill(d, p)})`).join(", ");
+---
+
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="th" data-t={JSON.stringify(T)}>
+      <h2>{L.find}</h2>
+      <div class="row">
+        <label class="fld">{L.thread}<input id="q" class="mono" value="M8" autocomplete="off" spellcheck="false" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite"><table class="t kv"><tbody id="out"></tbody></table></div>
+      <h2>{L.rev}</h2>
+      <div class="row">
+        <label class="fld">{L.bySp}<select id="sp"><option value="">—</option>{SPANNERS.map((s) => <option value={String(s)}>{s}</option>)}</select></label>
+        <label class="fld">{L.byKey}<select id="key"><option value="">—</option>{KEYS.map((s) => <option value={String(s)}>{s}</option>)}</select></label>
+      </div>
+      <p class="th-rev" id="rev" aria-live="polite"></p>
+      <p class="note">{L.privacy}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>
+            {
+              THREADS.map((r) => (
+                <tr>
+                  <td class="mono">M{r.d}</td>
+                  <td class="mono">{r.coarse}</td>
+                  <td class="mono">{tapDrill(r.d, r.coarse)}</td>
+                  <td class="mono">{fineCell(r.d, r.fine)}</td>
+                  <td class="mono">{r.hexKey}</td>
+                  <td class="mono">{r.spanner}{r.spannerDin ? ` (DIN ${r.spannerDin})` : ""}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.torqueTitle}</h2>
+      <p>{L.torque}</p>
+      <p>{L.seeFer} <a href={url(lang, "tools/ferrules/")}>{L.fer}</a>. {L.seeUnits} <a href={url(lang, "tools/units/")}>{L.units}</a>.</p>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/ISO_metric_screw_thread" rel="noopener" target="_blank">Wikipedia — ISO metric screw thread (ISO 261/262 preferred sizes, tap drill ≈ d − P, spanner sizes)</a></li>
+        <li><a href="https://engineersedge.com/iso_socket_head_screw.htm" rel="noopener" target="_blank">Engineers Edge — ISO 4762 socket head cap screw dimensions</a></li>
+        <li><a href="https://eshop.wuerth.de/Hexagon-Socket-Head-Cap-Screw-SCR-CYL-ISO4762-A2-70-IH12-M14X65/009414%2065.sku/en/US/EUR/" rel="noopener" target="_blank">Würth — ISO 4762 / DIN 912 M14 (hex socket 12 mm)</a></li>
+        <li>ISO 4032 — {ko ? "육각 너트(스타일 1)" : "Hexagon regular nuts (style 1)"}; DIN 934 — {ko ? "옛 육각 너트" : "former hexagon nut standard"}</li>
+      </ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .th-rev {
+      font-weight: 600;
+    }
+  </style>
+  <script>
+    import { byHexKey, bySpanner, parseThread, tapDrill } from "../lib/threads";
+    const form = document.getElementById("th") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { bad: string; k: Record<string, string> };
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as unknown as E;
+    const row = (k: string, v: string) => {
+      const tr = document.createElement("tr");
+      const a = document.createElement("td");
+      a.textContent = k;
+      const b = document.createElement("td");
+      b.textContent = v;
+      tr.append(a, b);
+      return tr;
+    };
+    function render() {
+      const r = parseThread($("q").value);
+      const out = $<HTMLElement>("out");
+      if (!r.ok) {
+        $<HTMLElement>("err").textContent = T.bad;
+        out.replaceChildren();
+      } else {
+        $<HTMLElement>("err").textContent = "";
+        const kids = [
+          row(T.k.p, `${r.p} mm`),
+          row(T.k.kind, r.fine ? T.k.fine : T.k.coarse),
+          row(T.k.drill, `${tapDrill(r.d, r.p)} mm`),
+          row(T.k.key, `${r.row.hexKey} mm`),
+          row(T.k.sp, `${r.row.spanner} mm`),
+        ];
+        if (r.row.spannerDin) kids.push(row(T.k.din, `${r.row.spannerDin} mm`));
+        out.replaceChildren(...kids);
+      }
+      const sp = ($("sp") as unknown as HTMLSelectElement).value;
+      const key = ($("key") as unknown as HTMLSelectElement).value;
+      const parts: string[] = [];
+      if (sp) parts.push(`${sp} mm → ${bySpanner(Number(sp)).map((x) => `M${x.d}${x.spannerDin === Number(sp) ? " (DIN 934)" : ""}`).join(", ")}`);
+      if (key) parts.push(`${key} mm → ${byHexKey(Number(key)).map((x) => `M${x.d}`).join(", ")}`);
+      $<HTMLElement>("rev").textContent = parts.join(" · ");
+    }
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    render();
+  </script>
+</Base>

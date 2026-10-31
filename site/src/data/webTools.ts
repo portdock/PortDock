@@ -73,7 +73,12 @@ export interface WebTool {
     | "tools/conduit-fill/"
     | "tools/power-supply-sizing/"
     | "tools/io-list/"
-    | "tools/handover-pack/";
+    | "tools/handover-pack/"
+    | "tools/cable-labels/"
+    | "tools/ferrules/"
+    | "tools/panel-heat/"
+    | "tools/insulation-resistance/"
+    | "tools/metric-threads/";
   name: L;
   blurb: L;
 }
@@ -431,6 +436,32 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/power-supply-sizing/",
     name: { ko: "24V DC 전원 용량 계산기", en: "24 V DC Power Supply Sizing Calculator" },
     blurb: { ko: "PLC·HMI·센서·밸브·릴레이 코일의 전류·돌입 전류·동시 사용률 → 합계, 여유를 둔 정격(흔한 정격에서), 돌입 피크 비교, 서킷 프로텍터 채널 나누기.", en: "Current, inrush and duty of PLCs, HMIs, sensors, valves and relay coils → total, rating with headroom (common sizes), inrush check and circuit protector channels." },
+  },
+  // ---- 현장 공구
+  {
+    path: "tools/cable-labels/",
+    name: { ko: "케이블·단자 라벨 만들기", en: "Cable & Terminal Label Maker" },
+    blurb: { ko: "W001~W120·X1:1~X1:40 연번, IO 이름 붙여넣기, 양끝 «A→B» 라벨 — A4 라벨 용지(행·열·여백 mm) 인쇄, 라벨 프린터용 CSV·텍스트.", en: "Sequences (W001–W120, X1:1–X1:40), pasted I/O names, two-end «A→B» labels — print on A4 label sheets (rows, columns, margins in mm) or export CSV and text for label printers." },
+  },
+  {
+    path: "tools/ferrules/",
+    name: { ko: "페룰·압착 단자 규격표", en: "Ferrule & Crimp Terminal Chart" },
+    blurb: { ko: "mm²·AWG → 페룰 칼라 색(DIN 46228-4·프랑스 색 체계), 색 → 굵기, 링 단자 등급(1.25·2·5.5)·나사 크기. 출처 확인한 값만.", en: "mm² or AWG → ferrule collar colour (DIN 46228-4 and French code), colour → size, ring terminal class (1.25, 2, 5.5) and stud. Sourced values only." },
+  },
+  {
+    path: "tools/panel-heat/",
+    name: { ko: "제어반 발열·환기 팬 계산기", en: "Enclosure Heat & Fan Sizing Calculator" },
+    blurb: { ko: "장비 손실 W 합, 외함 크기·설치 방식(IEC 60890) → 자연 방열, 필요한 팬 풍량 m³/h(해발 보정), 쿨러·히터 출력.", en: "Device heat loss total, enclosure size and installation (IEC 60890) → natural dissipation, fan airflow in m³/h (altitude-corrected), cooling unit and heater output." },
+  },
+  {
+    path: "tools/insulation-resistance/",
+    name: { ko: "절연 저항 판정", en: "Insulation Resistance Checker" },
+    blurb: { ko: "SELV·PELV / 500 V 이하 / 500 V 초과 회로의 측정 전압·MΩ → 제52조·IEC 60364-6 최소값(0.5·1 MΩ)과 비교, 재기 전 안전 순서.", en: "SELV/PELV, ≤ 500 V or > 500 V circuit, test voltage and MΩ → compared with IEC 60364-6 minimums (0.5 and 1 MΩ), plus safety steps before testing." },
+  },
+  {
+    path: "tools/metric-threads/",
+    name: { ko: "미터 나사 탭 드릴·볼트 참고표", en: "Metric Thread Tap Drill & Bolt Chart" },
+    blurb: { ko: "M2~M20 보통·가는 나사 피치, 탭 드릴(d − P), 육각 렌치(ISO 4762)·스패너(ISO 4032) 크기, 공구 크기 → 나사.", en: "M2–M20 coarse and fine pitch, tap drill (d − P), hex key (ISO 4762) and spanner (ISO 4032) sizes, tool size → thread." },
   },
 ];
 

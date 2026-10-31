@@ -98,6 +98,8 @@
 | 24v 전원 용량 계산, smps 용량 선정, 파워서플라이 용량 계산, 돌입 전류 | `/tools/power-supply-sizing/` + 가이드 `24v-power-supply-check` | «24V 전원 용량 계산기 — SMPS 용량 선정·돌입 전류·여유율», 여유율 «일반적으로 20~30 %», 예시 값은 예시라고 밝힘 |
 | io 리스트 양식·만들기, 통신 사양서, 모드버스 레지스터 맵 엑셀 | `/tools/io-list/` | «IO 리스트·통신 사양서 만들기 — Modbus 레지스터 표», 설명에 «주소 겹침·국번 중복 점검·장비 맵에서 가져오기» |
 | 인수인계 문서·준공 서류, 시운전 결과 보고서, 현장 문서 정리 | `/tools/handover-pack/` | «인수인계 문서 만들기 — 구성도·IO 리스트·점검표», 설명에 «브라우저 안에서만·HTML·PDF» |
+| 케이블 라벨 만들기·전선 번호 라벨 인쇄, 단자대 번호 라벨, 수축 튜브 라벨 csv, 라벨 용지 a4 배치, 페룰 색상표·봉형 단자 규격, din 46228 색, 링 단자 규격(1.25-4) | `/tools/cable-labels/`·`/tools/ferrules/` | «케이블 라벨·단자 번호 만들기 (A4 인쇄·CSV)», «페룰 색상표 (DIN 46228-4·프랑스)·링 단자 규격» |
+| 제어반 발열 계산·판넬 발열량, 판넬 환기 팬 풍량 계산, 제어반 쿨러 용량, 절연저항 기준·측정값 판정(0.5·1 MΩ, 메거 250 500 V), 탭 드릴 표·m8 탭 기리, 육각 렌치·스패너 사이즈 | `/tools/panel-heat/`·`/tools/insulation-resistance/`·`/tools/metric-threads/` | «제어반 발열 계산·환기 팬 풍량 계산기 (IEC 60890)», «절연저항 기준·판정 (KEC 제52조·0.5·1 MΩ)», «미터 나사 탭 드릴 표·육각 렌치 스패너 크기 (M2~M20)» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -204,6 +206,8 @@
 | 24v power supply sizing, power supply sizing calculator, din rail power supply calculator, inrush current | `/en/tools/power-supply-sizing/` + guide `24v-power-supply-check` | «24V Power Supply Sizing Calculator: Inrush, Margin» |
 | io list template, plc io list, modbus register map template, communication specification | `/en/tools/io-list/` | «I/O List & Modbus Register Map Maker: CSV, Print» |
 | handover documentation, commissioning report template, site handover pack | `/en/tools/handover-pack/` | «Site Handover Pack: Diagram, I/O List, Checklist» |
+| wire marker / cable label maker, terminal block labels, heat shrink label csv, a4 label sheet layout, ferrule color chart, din 46228-4 ferrule colours, french ferrule colour code, ring terminal sizes | `/en/tools/cable-labels/`, `/en/tools/ferrules/` | «Cable Label & Wire Marker Maker: A4 Sheets, CSV», «Ferrule Color Chart (DIN 46228-4, French) & Ring Lugs» |
+| enclosure heat load calculator, control panel heat dissipation, enclosure fan sizing cfm m3/h, iec 60890 surface area, insulation resistance minimum values, megger test 500 v 1 mohm, metric tap drill chart, hex key size chart, spanner size m8 | `/en/tools/panel-heat/`, `/en/tools/insulation-resistance/`, `/en/tools/metric-threads/` | «Enclosure Heat Load & Fan Sizing Calculator (IEC 60890)», «Insulation Resistance Minimum Values (IEC 60364-6)», «Metric Tap Drill Chart, Hex Key & Spanner Sizes» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |

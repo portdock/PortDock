@@ -1,0 +1,274 @@
+---
+// 웹 도구: 페룰(봉형 단자)·압착 단자 규격표 — 단면적(mm²·AWG) → DIN 46228-4 색·프랑스 색, 링 단자 등급(JST 식 1.25·2·5.5)·나사 크기.
+// 자료·찾기는 lib/ferrules.ts(node --test, 출처 확인한 값만). 피복 벗김 길이·체결 토크는 «제조사 표 확인». 모두 브라우저 안.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { COLOR_HEX, COLOR_NAME, FERRULES, LUG_CLASSES, STUDS, awgLabel, awgToMm2, type Color } from "../lib/ferrules";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/ferrules/";
+const L = ko
+  ? {
+      h1: "페룰·압착 단자 규격표",
+      desc: "전선 단면적(mm²·AWG)으로 페룰(봉형 단자) 칼라 색을 DIN 46228-4 와 프랑스 색 체계로 찾고, 링 단자 등급(1.25·2·5.5)과 나사 크기를 고릅니다.",
+      seo: "페룰 색상표 (DIN 46228-4·프랑스)·링 단자 규격 — PortDock",
+      find: "전선 굵기로 찾기",
+      unit: "단위",
+      units: [
+        ["mm2", "mm²"],
+        ["awg", "AWG"],
+      ],
+      size: "굵기",
+      stud: "나사(링 단자)",
+      byColor: "색으로 찾기 — 이 페룰은 몇 mm²?",
+      sys: "색 체계",
+      sysDin: "DIN 46228-4",
+      sysFr: "프랑스 색 체계",
+      color: "칼라 색",
+      none: "이 색은 이 체계의 0.5~50 mm² 에 없습니다.",
+      noFer: "표의 굵기(0.5·0.75·1·1.5·2.5·4·6·10·16·25·35·50 mm²)가 아닙니다 — 전선의 공칭 단면적을 넣으세요.",
+      noLug: "링 단자 등급 1.25·2·5.5 (0.25~6.6 mm²) 밖입니다 — 단자 제조사 표를 보세요.",
+      both: "두 등급 범위가 겹칩니다 — 단자 제조사 표의 범위를 보고 고를 것.",
+      kDin: "DIN 46228-4 색",
+      kFr: "프랑스 색",
+      kAwg: "대응 AWG(Weidmüller)",
+      kArea: "AWG 면적",
+      kLug: "링 단자",
+      sleeve: "절연 슬리브 흔한 색",
+      tTitle: "페룰 칼라 색 — DIN 46228-4 와 프랑스 색 체계",
+      tHead: ["mm²", "AWG", "DIN 46228-4", "프랑스"],
+      tNote:
+        "같은 굵기라도 체계에 따라 색이 다릅니다(예: 2.5 mm² 는 DIN 파랑, 프랑스 회색). 같은 상자·같은 현장에서는 한 체계로 맞추고, 색만 믿지 말고 상자·페룰에 적힌 mm² 를 함께 볼 것. 제조사 고유 색 체계도 따로 있습니다. 0.5 mm² 아래·50 mm² 위의 색은 DIN 46228-4 에 없어 넣지 않았습니다. 두 가닥용(트윈) 페룰은 색이 다를 수 있어 제조사 표를 볼 것.",
+      lTitle: "링 단자 — 전선 등급과 나사",
+      lHead: ["등급", "전선 범위 mm²", "AWG", "흔한 슬리브 색", "이름 예"],
+      lNote:
+        "«R1.25-4» 는 전선 등급 1.25(0.25~1.65 mm²)·나사 M4 용 링 단자라는 뜻입니다(JST 식 이름). 범위가 겹치는 1.5 mm² 같은 굵기는 두 등급 모두 쓸 수 있어 제조사 표로 고릅니다. Y(포크) 단자도 등급·나사 크기는 같은 방식으로 고르지만 이름은 제조사마다 다릅니다. 등급·나사 조합이 모두 나오는 것은 아니니 제조사 표에서 있는지 볼 것. 압착 공구는 단자 제조사가 정한 것을 씁니다.",
+      sTitle: "피복 벗김 길이·체결 토크",
+      sText:
+        "피복 벗김 길이는 페룰 금속 슬리브 길이(제품마다 6·8·10·12·18 mm 등)와 제조사 권장값을 따릅니다 — 제조사 카탈로그의 «stripping length» 값을 볼 것. 단자대 체결 토크도 단자대 제조사의 값(단자대 측면·데이터시트)을 따르며, 이 표에는 지어낸 값을 넣지 않았습니다.",
+      privacy: "이 페이지는 브라우저 안에서만 찾고 아무것도 보내지 않습니다.",
+      srcTitle: "출처",
+      seeLbl: "케이블 번호 라벨은",
+      lbl: "케이블·단자 라벨 만들기",
+      seeVd: "전선 굵기를 정하려면",
+      vd: "전압 강하·전선 굵기 계산기",
+    }
+  : {
+      h1: "Ferrule & Crimp Terminal Chart",
+      desc: "Find bootlace ferrule collar colours by wire size (mm² or AWG) in the DIN 46228-4 and French colour codes, and pick ring terminal sizes (1.25, 2, 5.5) by stud.",
+      seo: "Ferrule Color Chart (DIN 46228-4, French) & Ring Lugs — PortDock",
+      find: "Find by wire size",
+      unit: "Unit",
+      units: [
+        ["mm2", "mm²"],
+        ["awg", "AWG"],
+      ],
+      size: "Size",
+      stud: "Stud (ring terminal)",
+      byColor: "Find by colour — what size is this ferrule?",
+      sys: "Colour code",
+      sysDin: "DIN 46228-4",
+      sysFr: "French colour code",
+      color: "Collar colour",
+      none: "This colour is not used for 0.5–50 mm² in this code.",
+      noFer: "Not a size in the table (0.5, 0.75, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50 mm²) — enter the nominal cross-section.",
+      noLug: "Outside ring terminal sizes 1.25, 2 and 5.5 (0.25–6.6 mm²) — see the terminal maker's chart.",
+      both: "Two size ranges overlap — choose with the terminal maker's chart.",
+      kDin: "DIN 46228-4 colour",
+      kFr: "French colour",
+      kAwg: "Matching AWG (Weidmüller)",
+      kArea: "AWG area",
+      kLug: "Ring terminal",
+      sleeve: "common sleeve colour",
+      tTitle: "Ferrule collar colours — DIN 46228-4 and French code",
+      tHead: ["mm²", "AWG", "DIN 46228-4", "French"],
+      tNote:
+        "The same size can have different colours by code (2.5 mm² is blue in DIN and grey in the French code). Stick to one code per box and site, and check the mm² printed on the box or ferrule rather than trusting colour alone. Makers also have their own colour codes. Colours below 0.5 mm² and above 50 mm² are not in DIN 46228-4 and are left out. Twin (two-wire) ferrules can use different colours — see the maker's chart.",
+      lTitle: "Ring terminals — wire size class and stud",
+      lHead: ["Class", "Wire range mm²", "AWG", "Common sleeve colour", "Name example"],
+      lNote:
+        "«R1.25-4» means a ring terminal for wire class 1.25 (0.25–1.65 mm²) and an M4 stud (JST-style naming). Sizes in an overlap such as 1.5 mm² fit both classes, so choose with the maker's chart. Fork (Y) terminals are chosen the same way, but naming differs by maker. Not every class and stud combination is made, so check the maker's chart. Use the crimp tool specified by the terminal maker.",
+      sTitle: "Strip length and tightening torque",
+      sText:
+        "Strip length follows the ferrule's metal sleeve length (6, 8, 10, 12, 18 mm and so on) and the maker's recommendation — check the «stripping length» in the catalogue. Terminal block tightening torque follows the terminal block maker's value (printed on the block or in its data sheet); this chart does not make up values.",
+      privacy: "This page looks things up inside your browser and sends nothing.",
+      srcTitle: "Sources",
+      seeLbl: "For cable number labels, use the",
+      lbl: "cable and terminal label maker",
+      seeVd: "To choose a wire size, use the",
+      vd: "voltage drop and wire size calculator",
+    };
+const sw = (c: Color) => `<span class="sw" style="background:${COLOR_HEX[c]}"></span>${COLOR_NAME[c][lang]}`;
+const COLORS: Color[] = ["white", "grey", "red", "black", "blue", "yellow", "orange", "green", "brown", "ivory"];
+const T = {
+  none: L.none,
+  noFer: L.noFer,
+  noLug: L.noLug,
+  both: L.both,
+  k: { din: L.kDin, fr: L.kFr, awg: L.kAwg, area: L.kArea, lug: L.kLug, sleeve: L.sleeve },
+  colors: Object.fromEntries(COLORS.map((c) => [c, COLOR_NAME[c][lang]])),
+};
+const SRC = [
+  { name: "Wikipedia (de) — Aderendhülse: Farbcodes DIN 46228-4 / Frankreich", href: "https://de.wikipedia.org/wiki/Aderendh%C3%BClse" },
+  { name: "Weidmüller — Wire-end ferrules (product brochure: DIN 46228-1/4, AWG table, stripping length per article)", href: "https://assets.dam.weidmueller.com/assets/api/adbb75f5-316f-41db-81c0-dd7dfacff88b/Original/MB_wire_end_ferrules_EN_WEB.pdf" },
+  { name: "Würth — Wire end ferrule with plastic sleeve according to DIN 46228 Part 4", href: "https://eshop.wurth.ae/Wire-end-ferrule-with-plastic-sleeve-according-to-DIN-46228-Part-4-WENDFER-DIN46228-CU-J2N-BLACK-15X80/0557300151.sku/en/US/AED" },
+  { name: "Schneider Electric — DZ5CE cable ends (French colour code, e.g. DZ5CE042 orange 4 mm²)", href: "https://eshop.se.com/th/schneider-electric-dz5-az5-ar1-at1-cable-ends-dz5ce042-dz5ce042.html" },
+  { name: "RS Components — JST R1.25-4 ring terminal (0.25–1.65 mm², M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6048294" },
+  { name: "RS Components — JST R2-4 ring terminal (16–14 AWG, M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6048323" },
+  { name: "RS Components — JST FV5.5-4 ring terminal (2.6–6.6 mm², M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6881290" },
+];
+---
+
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="fe" data-t={JSON.stringify(T)} data-lang={lang}>
+      <h2>{L.find}</h2>
+      <div class="row">
+        <label class="fld">{L.unit}<select id="unit">{L.units.map(([v, n]) => <option value={v}>{n}</option>)}</select></label>
+        <label class="fld">{L.size}
+          <select id="mm2">{FERRULES.map((r) => <option value={String(r.mm2)} selected={r.mm2 === 1.5}>{r.mm2} mm²</option>)}</select>
+          <select id="awg" hidden>{FERRULES.map((r) => <option value={String(r.awg)} selected={r.awg === 16}>AWG {awgLabel(r.awg)}</option>)}</select>
+        </label>
+        <label class="fld">{L.stud}<select id="stud">{STUDS.map((s) => <option value={String(s)} selected={s === 4}>M{s}</option>)}</select></label>
+      </div>
+      <div class="tbl" aria-live="polite"><table class="t kv"><tbody id="out"></tbody></table></div>
+      <p class="note" id="lugNote"></p>
+      <h2>{L.byColor}</h2>
+      <div class="row">
+        <label class="fld">{L.sys}<select id="sys"><option value="din">{L.sysDin}</option><option value="fr">{L.sysFr}</option></select></label>
+        <label class="fld">{L.color}<select id="color">{COLORS.map((c) => <option value={c}>{COLOR_NAME[c][lang]}</option>)}</select></label>
+      </div>
+      <p class="fe-by" id="byOut" aria-live="polite"></p>
+      <p class="note">{L.privacy}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.tTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{FERRULES.map((r) => <tr><td class="mono">{r.mm2}</td><td class="mono">{awgLabel(r.awg)}</td><td set:html={sw(r.din)} /><td set:html={sw(r.fr)} /></tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.tNote}</p>
+      <h2>{L.lTitle}</h2>
+      <div class="tbl">
+        <table class="t">
+          <thead><tr>{L.lHead.map((x) => <th>{x}</th>)}</tr></thead>
+          <tbody>{LUG_CLASSES.map((c) => <tr><td class="mono">{c.cls}</td><td class="mono">{c.minMm2}–{c.maxMm2}</td><td class="mono">{c.awg}</td><td set:html={sw(c.sleeve)} /><td class="mono">R{c.cls}-4 (M4)</td></tr>)}</tbody>
+        </table>
+      </div>
+      <p>{L.lNote}</p>
+      <h2>{L.sTitle}</h2>
+      <p>{L.sText}</p>
+      <p>{L.seeLbl} <a href={url(lang, "tools/cable-labels/")}>{L.lbl}</a>. {L.seeVd} <a href={url(lang, "tools/voltage-drop/")}>{L.vd}</a>.</p>
+      <h2>{L.srcTitle}</h2>
+      <ul>
+        {SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}
+        <li>ASTM B258 — {ko ? "AWG 지름 식 d = 0.127 mm × 92^((36 − n)/39)" : "AWG diameter d = 0.127 mm × 92^((36 − n)/39)"} ({ko ? "AWG 24 면적" : "AWG 24 area"} {awgToMm2(24).toFixed(3)} mm²)</li>
+      </ul>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    :global(.sw) {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+      vertical-align: -2px;
+      margin-right: 6px;
+    }
+    .fe-by {
+      font-weight: 600;
+    }
+  </style>
+  <script>
+    import { COLOR_HEX, awgLabel, awgToMm2, ferruleByAwg, ferruleByMm2, lugClassesFor, ringName, sizesByColor, type Color } from "../lib/ferrules";
+    const form = document.getElementById("fe") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as {
+      none: string;
+      noFer: string;
+      noLug: string;
+      both: string;
+      k: Record<string, string>;
+      colors: Record<string, string>;
+    };
+    const $ = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
+
+    function swatch(c: Color): HTMLElement {
+      const span = document.createElement("span");
+      const s = document.createElement("span");
+      s.className = "sw";
+      s.style.background = COLOR_HEX[c];
+      span.append(s, T.colors[c]);
+      return span;
+    }
+    function row(k: string, v: string | HTMLElement) {
+      const tr = document.createElement("tr");
+      const a = document.createElement("td");
+      a.textContent = k;
+      const b = document.createElement("td");
+      b.append(v);
+      tr.append(a, b);
+      return tr;
+    }
+
+    function render() {
+      const unit = $<HTMLSelectElement>("unit").value;
+      $<HTMLSelectElement>("mm2").hidden = unit !== "mm2";
+      $<HTMLSelectElement>("awg").hidden = unit !== "awg";
+      const r = unit === "mm2" ? ferruleByMm2(Number($<HTMLSelectElement>("mm2").value)) : ferruleByAwg(Number($<HTMLSelectElement>("awg").value));
+      const out = $("out");
+      const note = $("lugNote");
+      if (!r) {
+        out.replaceChildren(row("", T.noFer));
+        return;
+      }
+      const stud = Number($<HTMLSelectElement>("stud").value);
+      const kids = [
+        row("mm²", String(r.mm2)),
+        row(T.k.awg, `${awgLabel(r.awg)} (${T.k.area} ${awgToMm2(r.awg).toFixed(2)} mm²)`),
+        row(T.k.din, swatch(r.din)),
+        row(T.k.fr, swatch(r.fr)),
+      ];
+      const lugs = lugClassesFor(r.mm2);
+      if (lugs.length) kids.push(row(T.k.lug, lugs.map((c) => `${ringName(c.cls, stud)} (${c.minMm2}–${c.maxMm2} mm², ${T.k.sleeve}: ${T.colors[c.sleeve]})`).join(" / ")));
+      out.replaceChildren(...kids);
+      note.textContent = !lugs.length ? T.noLug : lugs.length > 1 ? T.both : "";
+    }
+    function renderColor() {
+      const sys = $<HTMLSelectElement>("sys").value === "fr" ? "fr" : "din";
+      const c = $<HTMLSelectElement>("color").value as Color;
+      const sizes = sizesByColor(sys, c);
+      $("byOut").textContent = sizes.length ? sizes.map((s) => `${s} mm²`).join(" · ") : T.none;
+    }
+    form.addEventListener("change", () => {
+      render();
+      renderColor();
+    });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    render();
+    renderColor();
+  </script>
+</Base>
