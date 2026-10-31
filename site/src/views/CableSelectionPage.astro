@@ -1,0 +1,316 @@
+---
+// 웹 도구: 케이블 선정 도우미 — 용도를 고르면 케이블 종류·조건·근거, 전원은 전압 강하로 굵기(lib/wire.ts 재사용), 통신은 길이 확인(lib/cableSelect.ts).
+// 허용 전류표 수치는 원문(KS C IEC 60364-5-52 부속서 B)을 확인하지 못해 싣지 않는다 — 전압 강하만 계산하고 허용 전류는 따로 확인하라고 적는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { USES } from "../lib/cableSelect";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/cable-selection/";
+const linkName = (l: string) => (l.startsWith("guides/") ? GUIDES.find((g) => `guides/${g.slug}/` === l)?.title[lang] : WEB_TOOLS.find((w) => w.path === l)?.name[lang]) ?? l;
+const L = ko
+  ? {
+      title: "케이블 선정 도우미",
+      desc: "전원·RS-485·RS-232·4-20mA·열전대·이더넷·서보·케이블 체인 — 용도를 고르면 케이블 종류와 조건, 전원은 전압 강하로 굵기, 통신은 길이를 확인합니다.",
+      use: "용도",
+      cable: "권하는 케이블",
+      check: "고를 때·깔 때 볼 것",
+      src: "근거",
+      links: "같이 볼 것",
+      sys: "회로",
+      dc: "직류(2선)",
+      p1: "단상 교류(2선)",
+      p3: "3상 교류(3선, 선간)",
+      v: "전원 전압(V)",
+      i: "전류(A)",
+      len: "편도 거리(m)",
+      pct: "허용 강하율(%)",
+      mat: "도체",
+      cu: "구리",
+      al: "알루미늄",
+      temp: "도체 온도(°C)",
+      baud: "보율(bps)",
+      pf: "케이블 정전 용량(pF/m, 데이터시트)",
+      speed: "속도",
+      res: "계산",
+      k: { need: "강하율을 맞추는 최소 단면적", iec: "IEC 공칭 단면적(이상)", awg: "AWG(이상)", drop: "그 굵기의 전압 강하", load: "부하 쪽 전압" },
+      none: "IEC 계열(300 mm²)보다 굵어야 합니다 — 병렬 케이블·전압 올리기·거리 줄이기를 검토",
+      amp: "허용 전류는 계산하지 않습니다 — 공사 방법·주위 온도·묶음에 따라 크게 달라서, KS C IEC 60364-5-52 부속서 B 표(KEC 232.5.2)나 케이블 제조사 자료로 따로 확인합니다. 설계는 자격자가 확인합니다.",
+      how: "값을 바꾸면 바로 다시 계산합니다. 계산은 이 브라우저 안에서만 하고, 입력한 값은 어디에도 보내지 않습니다.",
+      err: "숫자를 확인하세요 — 전압·허용 강하율·보율·정전 용량은 0 보다 커야 합니다",
+      rs485Max: "대략 길이 한계",
+      rs232Max: "2500 pF 까지의 길이",
+      ethCat: "최소 등급",
+      limitTitle: "이 도구가 다루지 않는 것",
+      limits: [
+        "허용 전류·보호 장치 협조: 전선 굵기의 다른 절반입니다. 이 도구는 전압 강하만 계산합니다.",
+        "단락 시 열적 강도·보호 도체(PE) 굵기·접지 방식: 그 나라 규정(KEC·IEC 60364)을 따릅니다.",
+        "특정 장비의 케이블 사양: 장비·드라이브 매뉴얼이 정한 값이 이 도구의 일반 기준보다 우선합니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["RS-485 에 랜선(UTP)을 써도 되나요?", "꼬임쌍이라 짧은 거리에서는 동작하는 경우가 많지만, 랜선의 특성 임피던스는 100 Ω 이고 차폐가 없는 것이 많습니다. 길거나 노이즈가 많은 곳은 RS-485 용 차폐 꼬임쌍 케이블을 쓰고 종단 저항을 케이블 값에 맞춥니다."],
+        ["24 V 센서 전원선 굵기는 어떻게 정하나요?", "전류·편도 거리·허용 강하율을 넣으면 최소 단면적과 그 이상의 IEC 규격을 보입니다. 예: 2 A·50 m·5 % 면 약 2.87 mm² 이상 → 4 mm². 부하 쪽 전압이 장비의 최소 입력 전압보다 높은지 함께 봅니다."],
+        ["RS-232 는 몇 m 까지 되나요?", "규격(TIA-232)은 길이가 아니라 선로 용량 2500 pF 미만으로 정합니다. 일반 케이블로 약 15~20 m 이고, 케이블 pF/m 이 낮으면 더 갈 수 있습니다. 그보다 멀면 RS-485/422 변환이 확실합니다."],
+      ],
+    }
+  : {
+      title: "Cable Selection Helper",
+      desc: "Power, RS-485, RS-232, 4–20 mA, thermocouple, Ethernet, servo, cable chain: cable type and conditions by use, wire size from voltage drop, length checks.",
+      use: "Use",
+      cable: "Recommended cable",
+      check: "What to check when choosing and laying",
+      src: "Sources",
+      links: "See also",
+      sys: "Circuit",
+      dc: "DC (2-wire)",
+      p1: "Single-phase AC (2-wire)",
+      p3: "Three-phase AC (3-wire, line-to-line)",
+      v: "Supply voltage (V)",
+      i: "Current (A)",
+      len: "One-way length (m)",
+      pct: "Allowed drop (%)",
+      mat: "Conductor",
+      cu: "Copper",
+      al: "Aluminium",
+      temp: "Conductor temperature (°C)",
+      baud: "Baud rate (bps)",
+      pf: "Cable capacitance (pF/m, datasheet)",
+      speed: "Speed",
+      res: "Calculation",
+      k: { need: "Minimum cross-section for the allowed drop", iec: "IEC nominal size (at least)", awg: "AWG (at least)", drop: "Voltage drop at that size", load: "Voltage at the load" },
+      none: "Larger than the IEC series (300 mm²) — consider parallel cables, a higher voltage or a shorter run",
+      amp: "Ampacity is not calculated — it varies widely with installation method, ambient temperature and grouping. Check it separately in IEC 60364-5-52 Annex B, your local code (NEC, …) or the cable maker's data. Have a qualified person confirm the design.",
+      how: "Results update as you type. Everything runs in your browser; nothing you type is sent anywhere.",
+      err: "Check the numbers — voltage, allowed drop, baud rate and capacitance must be greater than 0",
+      rs485Max: "Rough length limit",
+      rs232Max: "Length up to 2500 pF",
+      ethCat: "Minimum category",
+      limitTitle: "What this does not cover",
+      limits: [
+        "Ampacity and protective device coordination: the other half of cable sizing. This tool calculates voltage drop only.",
+        "Short-circuit withstand, protective earth (PE) size, earthing systems: follow your local code (IEC 60364, NEC, …).",
+        "Cable specs for a particular device: the device or drive manual overrides the general rules here.",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["Can I use LAN cable (UTP) for RS-485?", "It is twisted pair, so it often works over short runs, but LAN cable is 100 Ω and often unshielded. For long or noisy runs, use shielded twisted-pair cable made for RS-485 and match the terminations to it."],
+        ["How do I size a 24 V sensor supply cable?", "Enter current, one-way length and allowed drop for the minimum cross-section and the next IEC size. Example: 2 A, 50 m, 5 % needs about 2.87 mm² → 4 mm². Also check the voltage at the load against the device's minimum input voltage."],
+        ["How far can RS-232 go?", "The spec (TIA-232) limits line capacitance to under 2500 pF, not length. With ordinary cable that is about 15 to 20 m; low-capacitance cable goes further. Beyond that, converting to RS-485/422 is the sure way."],
+      ],
+    };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id), rs485: ["rs485"], rs232: ["rs232"], ethernet: ["ethernet"] };
+---
+
+<Base lang={lang} title={L.title} seoTitle={ko ? "케이블 선정 — 전원 굵기·RS485·4-20mA·랜 케이블 — PortDock" : "Cable Selection: Wire Size, RS-485, 4–20 mA, Ethernet — PortDock"} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="cs" data-t={JSON.stringify({ none: L.none, err: L.err })} data-kinds={JSON.stringify(kinds)}>
+      <div class="row">
+        <label class="fld">
+          {L.use}
+          <select id="use">{USES.map((u) => <option value={u.id}>{u.name[lang]}</option>)}</select>
+        </label>
+      </div>
+      <fieldset class="row" data-kind="power" style="border:0;padding:0;margin:0">
+        <label class="fld">
+          {L.sys}
+          <select id="sys"><option value="dc">{L.dc}</option><option value="1ph">{L.p1}</option><option value="3ph">{L.p3}</option></select>
+        </label>
+        <label class="fld">{L.v}<input id="v" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.i}<input id="i" class="mono" value="2" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.len}<input id="len" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pct}<input id="pct" class="mono" value="5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">
+          {L.mat}
+          <select id="mat"><option value="cu">{L.cu}</option><option value="al">{L.al}</option></select>
+        </label>
+        <label class="fld">{L.temp}<input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </fieldset>
+      <fieldset class="row" data-kind="rs485" style="border:0;padding:0;margin:0" hidden>
+        <label class="fld">
+          {L.baud}
+          <select id="baud">{[9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000].map((b) => <option value={b}>{b}</option>)}</select>
+        </label>
+        <label class="fld">{L.len}<input id="len485" class="mono" value="300" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </fieldset>
+      <fieldset class="row" data-kind="rs232" style="border:0;padding:0;margin:0" hidden>
+        <label class="fld">{L.len}<input id="len232" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+        <label class="fld">{L.pf}<input id="pf" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </fieldset>
+      <fieldset class="row" data-kind="ethernet" style="border:0;padding:0;margin:0" hidden>
+        <label class="fld">
+          {L.speed}
+          <select id="speed"><option value="100M">100 Mbps</option><option value="1G" selected>1 Gbps</option><option value="10G">10 Gbps</option></select>
+        </label>
+        <label class="fld">{L.len}<input id="lenEth" class="mono" value="60" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
+      </fieldset>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite" id="calcBox">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody id="calc"></tbody>
+        </table>
+      </div>
+      <div id="verdicts" aria-live="polite"></div>
+      <p class="note" data-kind="power">{L.amp}</p>
+      <p class="note">{L.how}</p>
+      <template id="lbl" data-k={JSON.stringify({ ...L.k, rs485Max: L.rs485Max, rs232Max: L.rs232Max, ethCat: L.ethCat })}></template>
+    </form>
+
+    {
+      USES.map((u) => (
+        <section class="card" data-use={u.id} id={u.id} style="margin-top:16px">
+          <h2>{u.name[lang]}</h2>
+          <h3>{L.cable}</h3>
+          <ul>{u.cable.map((x) => <li>{x[lang]}</li>)}</ul>
+          <h3>{L.check}</h3>
+          <ul>{u.check.map((x) => <li>{x[lang]}</li>)}</ul>
+          <h3>{L.src}</h3>
+          <ul>{u.src.map((x) => <li>{x[lang]}</li>)}</ul>
+          <h3>{L.links}</h3>
+          <ul>{u.links.map((l) => <li><a href={url(lang, l)}>{linkName(l)}</a></li>)}</ul>
+        </section>
+      ))
+    }
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
+      <p>
+        {ko ? "AWG 와 mm² 를 바꾸려면 " : "To convert AWG and mm², use the "}<a href={url(lang, "tools/awg-mm2/")}>{ko ? "AWG ↔ mm² 변환표" : "AWG to mm² table"}</a>{ko ? ", 전선관·덕트에 몇 가닥 들어가는지는 " : "; for how many wires fit in a conduit or duct, the "}<a href={url(lang, "tools/conduit-fill/")}>{ko ? "전선관·덕트 점유율 계산기" : "conduit and duct fill calculator"}</a>{ko ? ", 전압 강하를 자세히 보려면 " : "; for a detailed voltage drop, the "}<a href={url(lang, "tools/voltage-drop/")}>{ko ? "전압 강하·전선 굵기 계산기" : "voltage drop calculator"}</a>{ko ? " 를 씁니다." : "."}
+      </p>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <script>
+    import { USES, ethernetCheck, powerSize, rs232Check, rs485Check, type EthSpeed, type Note } from "../lib/cableSelect";
+    import type { Material, System } from "../lib/wire";
+    const form = document.getElementById("cs") as HTMLFormElement;
+    const T = JSON.parse(form.dataset.t ?? "{}") as { none: string; err: string };
+    const K = JSON.parse((document.getElementById("lbl") as HTMLElement).dataset.k ?? "{}") as Record<string, string>;
+    const lang = document.documentElement.lang === "ko" ? "ko" : "en";
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+    const num = (id: string) => {
+      const s = $(id).value.trim();
+      const n = s === "" ? NaN : Number(s);
+      return Math.abs(n) > 1e12 ? NaN : n;
+    };
+    const fx = (x: number, d = 3) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const calc = $<HTMLElement>("calc");
+    const box = $<HTMLElement>("calcBox");
+    const verdicts = $<HTMLElement>("verdicts");
+    function rows(list: [string, string][]) {
+      calc.replaceChildren(
+        ...list.map(([k, v]) => {
+          const tr = document.createElement("tr");
+          const a = document.createElement("td");
+          const b = document.createElement("td");
+          a.textContent = K[k] ?? k;
+          b.textContent = v;
+          b.className = "mono";
+          tr.append(a, b);
+          return tr;
+        }),
+      );
+    }
+    function notes(list: Note[]) {
+      verdicts.replaceChildren(
+        ...list.map((n) => {
+          const p = document.createElement("p");
+          p.className = `verdict ${n.level}`;
+          p.textContent = n.text[lang];
+          return p;
+        }),
+      );
+    }
+    function run() {
+      const id = $<HTMLSelectElement>("use").value;
+      const use = USES.find((u) => u.id === id) ?? USES[0];
+      for (const el of document.querySelectorAll<HTMLElement>("[data-use]")) el.hidden = el.dataset.use !== use.id;
+      for (const el of form.querySelectorAll<HTMLElement>("[data-kind]")) el.hidden = el.dataset.kind !== use.input;
+      const err = $("err");
+      err.textContent = "";
+      box.hidden = use.input === "none";
+      try {
+        if (use.input === "power") {
+          const r = powerSize({ system: $<HTMLSelectElement>("sys").value as System, volts: num("v"), amps: num("i"), lengthM: num("len"), pct: num("pct"), material: $<HTMLSelectElement>("mat").value as Material, tempC: num("temp") });
+          rows([
+            ["need", `${fx(r.need)} mm²`],
+            ["iec", r.iec !== undefined ? `${r.iec} mm²` : T.none],
+            ["awg", r.awgLabel ?? "—"],
+            ["drop", r.dropAtIec ? `${fx(r.dropAtIec.drop)} V (${fx(r.dropAtIec.pct, 2)} %)` : "—"],
+            ["load", r.dropAtIec ? `${fx(r.dropAtIec.atLoad)} V` : "—"],
+          ]);
+          notes([]);
+        } else if (use.input === "rs485") {
+          const r = rs485Check(num("baud"), num("len485"));
+          rows([["rs485Max", `${Math.round(r.max)} m`]]);
+          notes(r.notes);
+        } else if (use.input === "rs232") {
+          const r = rs232Check(num("len232"), num("pf"));
+          rows([["rs232Max", `${fx(r.max, 1)} m`]]);
+          notes(r.notes);
+        } else if (use.input === "ethernet") {
+          const r = ethernetCheck($<HTMLSelectElement>("speed").value as EthSpeed, num("lenEth"));
+          rows([["ethCat", r.cat]]);
+          notes(r.notes);
+        } else {
+          rows([]);
+          notes([]);
+        }
+      } catch {
+        err.textContent = T.err;
+        rows([]);
+        notes([]);
+      }
+    }
+    $<HTMLSelectElement>("use").addEventListener("change", () => {
+      history.replaceState(null, "", `#${$<HTMLSelectElement>("use").value}`);
+    });
+    const h = location.hash.slice(1);
+    if (USES.some((u) => u.id === h)) $<HTMLSelectElement>("use").value = h;
+    form.addEventListener("input", run);
+    form.addEventListener("change", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    run();
+  </script>
+</Base>

@@ -259,6 +259,9 @@ const SRC = [
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+      <p>
+        {ko ? "RS-485 케이블(꼬임쌍·차폐·특성 임피던스) 고르기는 " : "For choosing RS-485 cable (twisted pair, shield, impedance), see the "}<a href={url(lang, "tools/cable-selection/#rs485")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+      </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />

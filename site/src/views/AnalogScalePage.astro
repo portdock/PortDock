@@ -265,6 +265,9 @@ const NE43_REFS = [
       <p>
         {ko ? "MCU ADC 로 직접 받을 때(비트·기준 전압·션트 저항)는" : "To read the signal with an MCU ADC directly (bits, reference, shunt), use the"} <a href={url(lang, "tools/adc/")}>{ko ? "ADC 분해능·스케일링 계산기" : "ADC Resolution & Scaling Calculator"}</a>{ko ? " 를 쓰세요." : "."}
       </p>
+      <p>
+        {ko ? "4-20mA 신호선(차폐 꼬임쌍) 고르기는 " : "For choosing 4–20 mA signal cable (shielded twisted pair), see the "}<a href={url(lang, "tools/cable-selection/#analog")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+      </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />

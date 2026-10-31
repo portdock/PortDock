@@ -184,6 +184,9 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
           </>
         ))
       }
+      <p>
+        {ko ? "커넥터에 맞는 케이블(이더넷 등급·RS-485·RS-232 길이)은 " : "For the cable behind the connector (Ethernet category, RS-485, RS-232 length), see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+      </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />

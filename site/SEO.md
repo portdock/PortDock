@@ -93,6 +93,8 @@
 | rs485 통신 안됨 원인, 모드버스 응답 없음 원인, 4-20mA 값 이상, npn pnp 센서 입력 안들어옴, usb 장치 계속 끊김, 멀티미터로 rs485 점검·종단 저항 측정(60옴), 4-20mA 측정 방법, 24v 전압 강하 측정 | `/tools/troubleshoot/`·`/tools/multimeter-check/` | «통신·배선 고장 원인 찾기 — RS485·Modbus·4-20mA·센서», «멀티미터 측정값 점검 — RS485 저항·4-20mA·24V 강하» |
 | db9 핀배치·rs232 핀맵, rj45 568b 배열·랜선 색 순서, m12 4핀 선 색·m12 핀배치, m8 3핀, usb c 핀배치, rs485 a b 극성·d+ d- | `/tools/pinouts/` | «커넥터 핀 배치 사전 — DB9 RS232·RJ45·M12·M8·USB 핀배치», 설명에 «수/암 정면 그림·선 색·출처» |
 | 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서, 유지보수 체크리스트·정기 점검표·예방 보전 점검, 증설 점검·장비 교체 체크리스트·철거 점검 | `/tools/commissioning-checklist/` (주소는 그대로) | «시운전·유지보수 체크리스트 (설치·증설·교체·제거)», 설명에 «작업 종류 × 구성 요소 → 단계별·인쇄·CSV» |
+| 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서 | `/tools/commissioning-checklist/` | «시운전·설치 점검표 만들기 (PLC·인버터·RS485)», 설명에 «구성 요소 고르면 단계별·인쇄·CSV» |
+| 케이블 선정·케이블 종류 선택, rs485 케이블 사양, 4-20mA 케이블, 열전대 보상도선, 케이블 체인 케이블, awg mm2 변환표·awg 환산, 전선관 점유율·전선관 굵기 선정·덕트 점유율 | `/tools/cable-selection/`·`/tools/awg-mm2/`·`/tools/conduit-fill/` | «케이블 선정 — 전원 굵기·RS485·4-20mA·랜 케이블», «AWG mm2 변환표 — 전선 굵기 환산·지름·저항», «전선관 점유율 계산 — 전선관·덕트 몇 가닥 (NEC 40%)» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -194,6 +196,8 @@
 | rs485 troubleshooting, modbus no response troubleshooting, 4-20ma troubleshooting, npn pnp sensor not detected, usb keeps disconnecting, rs485 termination resistance measurement 60 ohm, measure 4-20ma with multimeter, rs232 voltage levels | `/en/tools/troubleshoot/`, `/en/tools/multimeter-check/` | «Field Troubleshooting Wizard: RS-485, Modbus, 4–20 mA», «Multimeter Reading Checker: RS-485, 4–20 mA, 24 V» |
 | db9 pinout, rs232 pinout, rj45 pinout t568b, m12 pinout colors, m8 3 pin pinout, usb c pinout, rs485 a b polarity | `/en/tools/pinouts/` | «Connector Pinout Reference: DB9 RS-232, RJ45, M12, M8, USB» |
 | commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template, preventive maintenance checklist, control panel inspection checklist, equipment replacement / decommissioning checklist | `/en/tools/commissioning-checklist/` (URL unchanged) | «Commissioning & Maintenance Checklist: PLC, VFD, RS-485» |
+| commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template | `/en/tools/commissioning-checklist/` | «Commissioning Checklist Maker: PLC, VFD, RS-485, Network» |
+| cable selection guide, rs485 cable specification, 4-20ma cable type, thermocouple extension cable, drag chain cable, awg to mm2, wire gauge chart mm2, conduit fill calculator mm, wiring duct fill | `/en/tools/cable-selection/`, `/en/tools/awg-mm2/`, `/en/tools/conduit-fill/` | «Cable Selection: Wire Size, RS-485, 4–20 mA, Ethernet», «AWG to mm² Conversion Table: Diameter & Resistance», «Conduit Fill Calculator (mm): NEC 40 %, Panel Duct» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |

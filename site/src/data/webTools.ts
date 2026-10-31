@@ -67,7 +67,10 @@ export interface WebTool {
     | "tools/troubleshoot/"
     | "tools/multimeter-check/"
     | "tools/pinouts/"
-    | "tools/commissioning-checklist/";
+    | "tools/commissioning-checklist/"
+    | "tools/cable-selection/"
+    | "tools/awg-mm2/"
+    | "tools/conduit-fill/";
   name: L;
   blurb: L;
 }
@@ -395,6 +398,21 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/commissioning-checklist/",
     name: { ko: "시운전·유지보수 점검표 만들기", en: "Commissioning & Maintenance Checklist" },
     blurb: { ko: "신규 설치·정기 점검·증설·교체·제거 × PC·PLC·HMI·인버터·RS-485·스위치·24 V 전원 — 작업 전 → 전원 → 통신 → 기록 단계별 점검표. 체크·메모 저장, 인쇄, CSV.", en: "New install, routine inspection, expansion, replacement or removal × PC, PLC, HMI, drive, RS-485, switch, 24 V supply — a staged checklist. Ticks and notes saved, print, CSV." },
+  },
+  {
+    path: "tools/cable-selection/",
+    name: { ko: "케이블 선정 도우미", en: "Cable Selection Helper" },
+    blurb: { ko: "AC·DC 24 V 전원, RS-485·RS-232, 4-20mA, 열전대·RTD, 이더넷, 서보, 케이블 체인 — 용도별 케이블 종류·조건, 전원은 전압 강하로 굵기, 통신은 길이 확인.", en: "AC and 24 V DC power, RS-485, RS-232, 4–20 mA, thermocouples and RTDs, Ethernet, servo, cable chains — cable type and conditions by use; size from voltage drop, length checks for comms." },
+  },
+  {
+    path: "tools/awg-mm2/",
+    name: { ko: "AWG ↔ mm² 변환표", en: "AWG to mm² Conversion Table" },
+    blurb: { ko: "AWG 0000~40 지름·단면적(ASTM B258 공식), 가까운 미터 규격(IEC 60228), 구리 Ω/km. AWG·mm² 어느 쪽이든 넣어 바꾸기.", en: "AWG 0000 to 40 diameter and area (ASTM B258 formula), nearest metric size (IEC 60228), copper Ω/km. Convert either way." },
+  },
+  {
+    path: "tools/conduit-fill/",
+    name: { ko: "전선관·덕트 점유율 계산기", en: "Conduit & Duct Fill Calculator" },
+    blurb: { ko: "전선 외경·개수 → 단면 점유율 %. 전선관 NEC 53·31·40 %, 와이어웨이 20 %, 제어반 덕트 NFPA 79 50 % 와 비교, 최소 관 안지름·최대 가닥.", en: "Wire outer diameter and count → fill %. Compared with NEC conduit 53/31/40 %, wireway 20 %, panel duct NFPA 79 50 %; minimum conduit ID and max wires." },
   },
 ];
 

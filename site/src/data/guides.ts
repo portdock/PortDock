@@ -1100,7 +1100,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["serial", "modbus-master"],
     related: ["rs485-wiring", "usb-serial-latency", "modbus-rtu-frame", "rs232-db9-null-modem"],
-    webTools: ["tools/web-serial/", "tools/uart-baud/", "tools/pinouts/"],
+    webTools: ["tools/web-serial/", "tools/uart-baud/", "tools/pinouts/", "tools/cable-selection/"],
     title: { ko: "RS-232·RS-422·RS-485 차이 — 배선·거리·장비 수로 고르기", en: "RS-232 vs RS-422 vs RS-485 — choosing by wiring, distance and node count" },
     seoTitle: { ko: "RS232·RS422·RS485 차이 — 배선·거리·장비 수 비교 — PortDock", en: "RS-232 vs RS-422 vs RS-485: Wiring, Distance, Nodes — PortDock" },
     desc: {
@@ -1231,7 +1231,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["modbus-master", "plot"],
     related: ["pt100-thermocouple-wiring", "24v-voltage-drop", "modbus-float-word-order", "pressure-units", "cable-shield-grounding"],
-    webTools: ["tools/4-20ma/", "tools/loop-load/", "tools/wiring/", "tools/multimeter-check/", "tools/troubleshoot/"],
+    webTools: ["tools/4-20ma/", "tools/loop-load/", "tools/wiring/", "tools/multimeter-check/", "tools/troubleshoot/", "tools/cable-selection/"],
     title: { ko: "4–20mA 신호 기초와 고장 찾기 — 2선식·4선식·라이브 제로·단선 판정", en: "4–20 mA basics and troubleshooting — 2-wire, 4-wire, live zero, open loop" },
     seoTitle: { ko: "4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선) — PortDock", en: "4–20 mA Loop Basics & Troubleshooting (2-Wire, 4-Wire) — PortDock" },
     desc: {
@@ -1390,7 +1390,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-22",
     tools: ["modbus-master", "plot"],
     related: ["4-20ma-loop", "modbus-float-word-order", "ntc-thermistor-temperature"],
-    webTools: ["tools/temperature/"],
+    webTools: ["tools/temperature/", "tools/cable-selection/"],
     devices: true,
     title: { ko: "Pt100 2선·3선·4선식 차이와 열전대 종류 고르기", en: "Pt100 2-, 3- and 4-wire connections, and choosing a thermocouple type" },
     seoTitle: { ko: "Pt100 2선·3선·4선식 차이와 열전대 K·J·T 고르기 — PortDock", en: "Pt100 2-, 3-, 4-Wire and Thermocouple Types Compared — PortDock" },
@@ -1840,7 +1840,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["modbus-master", "serial"],
     related: ["4-20ma-loop", "rs485-wiring", "rs485-bias-termination", "motor-current-breaker-cable", "24v-power-supply-check", "npn-pnp-sensor-plc-input"],
-    webTools: ["tools/voltage-drop/", "tools/loop-load/", "tools/multimeter-check/"],
+    webTools: ["tools/voltage-drop/", "tools/loop-load/", "tools/multimeter-check/", "tools/cable-selection/", "tools/awg-mm2/"],
     title: { ko: "24V DC 전압 강하 — 멀리 있는 센서·통신 장비의 전선 굵기 고르기", en: "24 V DC voltage drop — choosing wire size for remote sensors and devices" },
     seoTitle: { ko: "24V DC 전압 강하 계산과 전선 굵기 고르기 — PortDock", en: "24 V DC Voltage Drop: Choosing Wire Size (mm², AWG) — PortDock" },
     desc: {
@@ -2058,7 +2058,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-23",
     tools: ["modbus-master"],
     related: ["vfd-frequency-rpm", "24v-voltage-drop", "pressure-units"],
-    webTools: ["tools/motor-current/", "tools/voltage-drop/", "tools/units/"],
+    webTools: ["tools/motor-current/", "tools/voltage-drop/", "tools/units/", "tools/cable-selection/", "tools/awg-mm2/", "tools/conduit-fill/"],
     deviceKinds: ["inverter", "power-meter"],
     title: { ko: "모터 정격 전류 읽기와 차단기·전선 고르기 기초 (kW → A)", en: "Motor rated current, breakers and cables — the basics (kW to amps)" },
     seoTitle: { ko: "모터 정격 전류 계산(kW→A)과 차단기·전선 기초 — PortDock", en: "Motor Full Load Current (kW to A), Breakers, Cables — PortDock" },
@@ -6080,7 +6080,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["serial", "modbus-master", "port-inspector"],
     related: ["rs485-wiring", "field-noise-communication-errors", "rs485-multimeter-check", "rs485-bias-termination", "4-20ma-loop"],
-    webTools: ["tools/wiring/", "tools/rs485/"],
+    webTools: ["tools/wiring/", "tools/rs485/", "tools/cable-selection/"],
     title: { ko: "통신선 차폐(실드)·접지 — 한쪽 접지와 양쪽 접지, 접지 루프, SG 선", en: "Communication cable shields and grounding — one end or both, ground loops, the signal ground wire" },
     seoTitle: { ko: "통신선 실드 접지 한쪽 vs 양쪽, 접지 루프, SG 선 — PortDock", en: "Cable Shield Grounding: One End or Both, Ground Loops — PortDock" },
     desc: {
@@ -6218,7 +6218,7 @@ export const GUIDES: Guide[] = [
     date: "2026-10-31",
     tools: ["modbus-master", "plot", "serial"],
     related: ["cable-shield-grounding", "rs485-wiring", "24v-power-supply-check", "modbus-no-response", "rs485-multimeter-check", "usb-serial-disconnects"],
-    webTools: ["tools/rs485/", "tools/serial-timing/", "tools/wiring/"],
+    webTools: ["tools/rs485/", "tools/serial-timing/", "tools/wiring/", "tools/cable-selection/", "tools/conduit-fill/"],
     title: { ko: "현장 노이즈로 통신이 끊길 때 원인 찾기 — 인버터·서보 근처, 시간대·부하 따라 나는 오류", en: "When field noise breaks communication — near drives and servos, errors that follow time or load" },
     seoTitle: { ko: "인버터·서보 노이즈로 RS-485 통신 오류 날 때 원인 찾기 — PortDock", en: "RS-485 Errors from Drive and Servo Noise — PortDock" },
     desc: {
