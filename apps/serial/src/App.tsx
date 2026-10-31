@@ -19,6 +19,8 @@ import {
   type SessionEvent,
   type ShareClient,
   type ShareConfig,
+  type GatewayConfig,
+  type GwStats,
   type TextMode,
   summary,
 } from "./api";
@@ -97,7 +99,14 @@ function PairCell({ p, missed, lang }: { p: NonNullable<Frame["pair"]>; missed: 
   );
 }
 
-const DEFAULT_SHARE: ShareConfig = { host: "127.0.0.1", port: 7000, rfc2217: false, maxClients: 4 };
+const DEFAULT_GW: GatewayConfig = { timeoutMs: 1000, unit0: "broadcast", defaultUnit: 1, units: "", broadcastDelayMs: 100 };
+const DEFAULT_SHARE: ShareConfig = { host: "127.0.0.1", port: 7000, rfc2217: false, maxClients: 4, gateway: false, gw: DEFAULT_GW };
+/** 포트 나눔 방식 바꾸기 — 게이트웨이는 기본 502, 다른 방식은 기본 7000(사용자가 바꾼 번호는 그대로) */
+function shareMode(c: ShareConfig, mode: string): ShareConfig {
+  const gateway = mode === "gateway";
+  const port = gateway && c.port === 7000 ? 502 : !gateway && c.port === 502 ? 7000 : c.port;
+  return { ...c, gateway, rfc2217: mode === "rfc2217", port };
+}
 type ViewMode = "hex" | "ascii" | "both";
 /** 가운데 칸: 줄(프레임) 로그 또는 터미널 보기 */
 type Screen = "log" | "term";
@@ -203,7 +212,13 @@ export default function App() {
   const rtBag = useRef(new RtBag());
   const reqById = useRef(new Map<number, Frame>());
   // (0.10.0) 포트 나눔(COM ↔ TCP)
-  const [shareCfg, setShareCfg] = useState<ShareConfig>(() => ({ ...DEFAULT_SHARE, ...load<Partial<ShareConfig>>("share", {}) }));
+  const [shareCfg, setShareCfg] = useState<ShareConfig>(() => {
+    const s = load<Partial<ShareConfig>>("share", {});
+    return { ...DEFAULT_SHARE, ...s, gw: { ...DEFAULT_GW, ...(s.gw ?? {}) } };
+  });
+  const gwCfg = shareCfg.gw ?? DEFAULT_GW;
+  const setGw = (p: Partial<GatewayConfig>) => setShareCfg((c) => ({ ...c, gw: { ...(c.gw ?? DEFAULT_GW), ...p } }));
+  const [gwStats, setGwStats] = useState<GwStats | null>(null);
   useEffect(() => store("share", shareCfg), [shareCfg]);
   const [shareAddr, setShareAddr] = useState<string | null>(null);
   const [shareClients, setShareClients] = useState<ShareClient[]>([]);
@@ -987,6 +1002,7 @@ export default function App() {
     try {
       const addr = await api.shareStart(sessionId, shareCfg, (e) => {
         if (e.type === "clients") setShareClients(e.clients);
+        else if (e.type === "gateway") setGwStats(e.stats);
         else if (e.type === "config") {
           // RFC 2217 로 원격이 바꾼 설정을 화면에도 — 다시 보내도 같은 값이라 포트는 그대로
           const c = e.config;
@@ -998,6 +1014,7 @@ export default function App() {
       });
       setShareAddr(addr);
       setShareClients([]);
+      setGwStats(null);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -1387,11 +1404,46 @@ export default function App() {
           </div>
           <label data-tip={tip(lang, "shareMode")}>
             {t("shareMode")}
-            <select value={shareCfg.rfc2217 ? "rfc2217" : "raw"} disabled={!!shareAddr} onChange={(e) => setShareCfg({ ...shareCfg, rfc2217: e.target.value === "rfc2217" })}>
+            <select value={shareCfg.gateway ? "gateway" : shareCfg.rfc2217 ? "rfc2217" : "raw"} disabled={!!shareAddr} onChange={(e) => setShareCfg(shareMode(shareCfg, e.target.value))}>
               <option value="raw">{t("shareRaw")}</option>
               <option value="rfc2217">{t("shareRfc")}</option>
+              <option value="gateway">{t("shareGw")}</option>
             </select>
           </label>
+          {/* (0.10.0) Modbus TCP ↔ RTU 게이트웨이 설정 */}
+          {shareCfg.gateway && (
+            <>
+              <div className="grid2">
+                <label data-tip={tip(lang, "gwTimeout")}>
+                  {t("gwTimeout")}
+                  <NumInput min={20} max={60000} value={gwCfg.timeoutMs} disabled={!!shareAddr} onValue={(n) => setGw({ timeoutMs: n })} />
+                </label>
+                <label data-tip={tip(lang, "gwUnit0")}>
+                  {t("gwUnit0")}
+                  <select value={gwCfg.unit0} disabled={!!shareAddr} onChange={(e) => setGw({ unit0: e.target.value === "default" ? "default" : "broadcast" })}>
+                    <option value="broadcast">{t("gwUnit0Broadcast")}</option>
+                    <option value="default">{t("gwUnit0Default")}</option>
+                  </select>
+                </label>
+                {gwCfg.unit0 === "default" ? (
+                  <label data-tip={tip(lang, "gwUnit0")}>
+                    {t("gwDefaultUnit")}
+                    <NumInput min={1} max={247} value={gwCfg.defaultUnit} disabled={!!shareAddr} onValue={(n) => setGw({ defaultUnit: n })} />
+                  </label>
+                ) : (
+                  <label data-tip={tip(lang, "gwBcastDelay")}>
+                    {t("gwBcastDelay")}
+                    <NumInput min={0} max={10000} value={gwCfg.broadcastDelayMs} disabled={!!shareAddr} onValue={(n) => setGw({ broadcastDelayMs: n })} />
+                  </label>
+                )}
+                <label data-tip={tip(lang, "gwUnits")}>
+                  {t("gwUnits")}
+                  <input type="text" className="mono" value={gwCfg.units} placeholder={t("gwUnitsPh")} disabled={!!shareAddr} onChange={(e) => setGw({ units: e.target.value })} />
+                </label>
+              </div>
+              {!shareAddr && <div className="hint">{t("gwPortHint")}</div>}
+            </>
+          )}
           <label className="inline" data-tip={tip(lang, "shareAllowOthers")}>
             <input type="checkbox" checked={shareOpen} disabled={!!shareAddr} onChange={(e) => setShareCfg({ ...shareCfg, host: e.target.checked ? "0.0.0.0" : "127.0.0.1" })} /> {t("allowOthers")}
           </label>
@@ -1408,7 +1460,7 @@ export default function App() {
           {shareAddr && (
             <>
               <div className="hint mono">
-                {t("shareUrl")}: {shareCfg.rfc2217 ? `rfc2217://${shareTarget}` : `socket://${shareTarget}`}
+                {t("shareUrl")}: {shareCfg.gateway ? `Modbus TCP ${shareTarget}` : shareCfg.rfc2217 ? `rfc2217://${shareTarget}` : `socket://${shareTarget}`}
               </div>
               {shareOpen && <div className="hint">{t("shareOther")}</div>}
               {shareClients.length === 0 ? (
@@ -1425,7 +1477,18 @@ export default function App() {
                   ))}
                 </ul>
               )}
-              <div className="hint">{t("shareClash")}</div>
+              {shareCfg.gateway && gwStats && (
+                <div className="hint mono gw-stats">
+                  {fill(t("gwStats"), { r: gwStats.requests, ok: gwStats.responses, ex: gwStats.exceptions, to: gwStats.timeouts, nr: gwStats.noRoute, crc: gwStats.crcErrors, bc: gwStats.broadcasts })}
+                  {gwStats.avgMs != null && (
+                    <>
+                      <br />
+                      {fill(t("gwRtt"), { l: gwStats.lastMs ?? "-", a: gwStats.avgMs, m: gwStats.maxMs ?? "-" })}
+                    </>
+                  )}
+                </div>
+              )}
+              <div className="hint">{t(shareCfg.gateway ? "gwClash" : "shareClash")}</div>
             </>
           )}
         </details>

@@ -986,8 +986,11 @@ async function handle(cmd, a) {
       if (!S) return fail(NO_SESSION());
       const host = a.config?.host ?? "127.0.0.1";
       const addr = `${host}:${a.config?.port ?? 7000}`;
-      frames(ev(`SHARE LISTEN ${addr} (${a.config?.rfc2217 ? "RFC2217" : "raw"})`));
+      frames(ev(`SHARE LISTEN ${addr} (${a.config?.gateway ? "Modbus TCP → RTU" : a.config?.rfc2217 ? "RFC2217" : "raw"})`));
       a.onEvent?.onmessage?.({ type: "clients", clients: [] });
+      // (0.10.0) 게이트웨이: 통계 한 번(요청 12 · 응답 10 · 장비 예외 1 · 타임아웃 1)
+      if (a.config?.gateway)
+        a.onEvent?.onmessage?.({ type: "gateway", stats: { requests: 12, responses: 10, exceptions: 1, timeouts: 1, crcErrors: 0, noRoute: 0, broadcasts: 0, busy: 0, lastMs: 18.4, avgMs: 17.9, maxMs: 25.2 } });
       return addr;
     }
     case "share_stop":
