@@ -1,6 +1,7 @@
 ---
-// 웹 도구: 시운전·설치 점검표 만들기 — 구성 요소(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP·RS-485·스위치·USB-시리얼·원격 접속)를 고르면
-// 설치 전 → 전원 켜기 전 → 전원 켠 뒤 → 통신 → 기록·백업 단계별 점검표. 항목·내보내기는 lib/commissioning.ts(node --test).
+// 웹 도구: 시운전·유지보수 점검표 만들기 — 작업 종류(신규 설치·정기 점검·증설·교체·제거)와
+// 구성 요소(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP·RS-485·스위치·USB-시리얼·24 V 전원·원격 접속)를 고르면
+// 단계별 점검표. 항목·내보내기는 lib/commissioning.ts(node --test). 주소는 처음 그대로(tools/commissioning-checklist/).
 // 체크·메모는 이 브라우저 localStorage 에만(막혀 있으면 조용히 건너뜀). 인쇄용 CSS, 글·CSV 복사. 서버로 보내지 않는다.
 // 항목은 일반 지식만 — 특정 회사·고객 점검표가 아니다. 링크는 실제 가이드·웹 도구만(시험이 확인).
 import Base from "../layouts/Base.astro";
@@ -8,9 +9,10 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { COMPONENTS, ITEMS } from "../lib/commissioning";
+import { COMPONENTS, ITEMS, WORKS } from "../lib/commissioning";
 import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
+import { TOOLS } from "../data/tools";
 import { type Lang } from "../data/tools";
 import { url } from "../lib/i18n";
 
@@ -22,11 +24,12 @@ const ko = lang === "ko";
 const PATH = "tools/commissioning-checklist/";
 const L = ko
   ? {
-      title: "시운전·설치 점검표 만들기 — PLC·인버터·RS-485·네트워크",
-      h1: "시운전·설치 점검표 만들기",
-      desc: "PC·PLC·HMI·인버터·RS-485·4-20mA 등 현장 구성을 고르면 설치 전부터 기록·백업까지 단계별 점검표를 만듭니다. 체크·메모 저장, 인쇄·CSV.",
-      intro: "현장 구성(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP 센서·RS-485·이더넷 스위치·USB-시리얼·원격 접속)을 고르면 설치 전부터 기록·백업까지 단계별 점검표를 만듭니다. 체크·메모는 이 브라우저에 저장되고, 인쇄·CSV 로 남길 수 있습니다.",
-      seo: "시운전 체크리스트·설치 점검표 만들기 (PLC·인버터·RS485) — PortDock",
+      title: "시운전·유지보수 점검표 만들기 — 설치·정기 점검·증설·교체·제거",
+      h1: "시운전·유지보수 점검표 만들기",
+      desc: "신규 설치·정기 점검·증설·교체·제거 중 작업과 PLC·인버터·RS-485 등 구성을 고르면 단계별 점검표를 만듭니다. 체크·메모 저장, 인쇄·CSV.",
+      intro: "작업 종류(신규 설치·정기 점검·증설·교체·제거)와 현장 구성(PC·PLC·HMI·인버터·전력 미터·4-20mA·NPN/PNP 센서·RS-485·이더넷 스위치·USB-시리얼·24 V 전원·원격 접속)을 고르면 단계별 점검표를 만듭니다. 체크·메모는 이 브라우저에 저장되고, 인쇄·CSV 로 남길 수 있습니다.",
+      seo: "시운전·유지보수 체크리스트 (설치·증설·교체·제거) — PortDock",
+      work: "작업 종류",
       siteName: "점검표 이름(현장·장비, 선택)",
       sitePh: "예: 2라인 포장기",
       comps: "구성 요소",
@@ -45,7 +48,8 @@ const L = ko
       privacy: "이 페이지는 브라우저 안에서만 동작하고 아무것도 서버로 보내지 않습니다. 체크·메모는 이 브라우저(localStorage)에만 남습니다.",
       what: "어떻게 쓰나",
       whatP: [
-        "현장에 있는 구성 요소를 고르면 그에 맞는 점검 항목이 다섯 단계(설치 전, 전원 켜기 전, 전원 켠 뒤, 통신, 기록·백업)로 묶여 나옵니다. 공통 항목은 늘 들어 있습니다.",
+        "먼저 작업 종류를 고릅니다. 신규 설치는 설치 전부터 기록·백업까지, 정기 점검은 단자·케이블·팬·UPS·PC 저장장치·통신 오류 추세, 증설은 국번·IP 빈자리·단위 부하·종단 위치·폴링 시간·전원 용량, 교체는 옛 장비 설정 기록·모델·펌웨어·국번·종단 옮기기, 제거는 종단을 새 끝으로·폴링 목록에서 빼기·남은 선·IP·국번 반납을 봅니다.",
+        "그다음 현장에 있는 구성 요소를 고르면 그에 맞는 점검 항목이 다섯 단계(작업 전·전원 끄고·전원 켠 뒤·통신·기록)로 묶여 나옵니다. 공통 항목은 늘 들어 있습니다. 증설·제거 전후는 «시스템 구성도 그리기» 의 «변경 비교» 로 바뀐 장비·종단·단위 부하·폴링 시간을 함께 볼 수 있습니다.",
         "항목마다 관련 가이드·웹 도구 링크가 붙어 있습니다. 체크와 메모는 이 브라우저에 저장되므로 현장에서 휴대폰으로 열어 두고 하나씩 지워 나가도 됩니다. 끝나면 인쇄하거나 CSV 로 저장해 시운전 기록에 붙입니다.",
         "항목은 일반적인 현장 지식으로 만든 출발점입니다. 장비 매뉴얼·현장 안전 규칙·고객 요구가 늘 우선이며, 전기 작업은 자격을 갖춘 사람이 합니다.",
       ],
@@ -53,6 +57,7 @@ const L = ko
       faq: [
         ["체크한 내용은 어디에 저장되나요?", "이 브라우저의 localStorage 에만 저장됩니다. 서버로 가지 않으므로 다른 PC·휴대폰과 공유되지 않습니다. 남기려면 CSV 저장이나 인쇄를 쓰세요."],
         ["회사 점검표 대신 써도 되나요?", "회사·현장의 정식 점검표가 있으면 그것이 우선입니다. 이 점검표는 빠뜨리기 쉬운 항목을 떠올리는 출발점으로 쓰세요."],
+        ["작업 종류를 바꾸면 체크가 사라지나요?", "아니요. 작업 종류마다 체크·메모를 따로 저장합니다. 다시 그 작업을 고르면 그대로 나옵니다."],
         ["항목을 더하고 싶어요.", "메모 칸에 적거나 CSV 로 저장한 뒤 표 계산 프로그램에서 줄을 더하세요. 자주 필요한 항목은 아래 «의견 남기기» 로 알려 주시면 검토합니다."],
       ],
       seeAlso: "함께 쓰기:",
@@ -61,11 +66,12 @@ const L = ko
       pin: "커넥터 핀 배치 사전",
     }
   : {
-      title: "Commissioning Checklist Maker — PLC, Drives, RS-485, Network",
-      h1: "Commissioning checklist maker",
-      desc: "Pick PLC, HMI, drives, meters, 4-20 mA, RS-485, switches and more for a staged checklist from installation to records. Saves ticks; print or CSV.",
-      intro: "Pick what is on site (PC, PLC, HMI, drive, power meter, 4-20 mA, NPN/PNP sensors, RS-485, Ethernet switch, USB-serial, remote access) and get a step-by-step checklist from installation to records and backup. Ticks and notes are kept in this browser; print or save as CSV.",
-      seo: "Commissioning Checklist Maker: PLC, VFD, RS-485 — PortDock",
+      title: "Commissioning & Maintenance Checklist — Install, Expand, Replace, Remove",
+      h1: "Commissioning and maintenance checklist maker",
+      desc: "Pick the job (new install, routine inspection, expansion, replacement, removal) and what is on site for a staged checklist. Saves ticks; print or CSV.",
+      intro: "Pick the job (new installation, routine inspection, expansion, replacement or removal) and what is on site (PC, PLC, HMI, drive, power meter, 4-20 mA, NPN/PNP sensors, RS-485, Ethernet switch, USB-serial, 24 V supply, remote access) and get a step-by-step checklist. Ticks and notes are kept in this browser; print or save as CSV.",
+      seo: "Commissioning & Maintenance Checklist: PLC, VFD, RS-485 — PortDock",
+      work: "Job",
       siteName: "Checklist name (site or machine, optional)",
       sitePh: "e.g. Line 2 packer",
       comps: "Components",
@@ -84,7 +90,8 @@ const L = ko
       privacy: "This page runs entirely in your browser and sends nothing to a server. Ticks and notes stay in this browser (localStorage).",
       what: "How to use it",
       whatP: [
-        "Pick the components on site and the matching checks appear in five stages (before installation, before power-on, after power-on, communication, records and backup). Common checks are always included.",
+        "First pick the job. New installation runs from preparation to records and backup; routine inspection covers terminals, cables, fans, UPS, PC storage and communication error trends; expansion covers free addresses and IPs, unit loads, termination position, polling time and supply capacity; replacement covers recording the old device's settings, model and firmware, and carrying over address and termination; removal covers moving termination to the new end, taking the address out of the poll list, leftover wiring and freeing IPs and addresses.",
+        "Then pick the components on site and the matching checks appear in five stages (preparation, power off, powered, communication, records). Common checks are always included. Before and after an expansion or removal, «Compare changes» in the System diagram editor shows changed devices, termination, unit loads and polling time.",
         "Each check links to related guides and web tools. Ticks and notes are saved in this browser, so you can keep it open on a phone on site and work down the list. When done, print it or save a CSV for the commissioning record.",
         "The checks are a starting point built from general field practice. Equipment manuals, site safety rules and customer requirements always come first, and electrical work is done by a qualified person.",
       ],
@@ -92,6 +99,7 @@ const L = ko
       faq: [
         ["Where are my ticks stored?", "Only in this browser's localStorage. Nothing goes to a server, so they are not shared with other PCs or phones. Use Save CSV or Print to keep them."],
         ["Can this replace our company checklist?", "If your company or site has an official checklist, that comes first. Use this one as a starting point for items that are easy to forget."],
+        ["Do my ticks disappear when I switch the job?", "No. Ticks and notes are kept separately for each job and come back when you pick that job again."],
         ["I want to add items.", "Write them in the note fields, or save as CSV and add rows in a spreadsheet. If an item is commonly needed, tell us via «Leave feedback» below."],
       ],
       seeAlso: "Use with:",
@@ -100,6 +108,7 @@ const L = ko
       pin: "Connector pinout reference",
     };
 const T = {
+  titles: Object.fromEntries(WORKS.map((w) => [w.id, w.title[lang]])),
   progress: L.progress,
   memo: L.memo,
   clearAsk: L.clearAsk,
@@ -113,7 +122,8 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
   linkPaths.map((p) => {
     const g = GUIDES.find((x) => `guides/${x.slug}/` === p);
     const w = WEB_TOOLS.find((x) => x.path === p);
-    return [p, { href: url(lang, p), name: g ? g.title[lang] : w ? w.name[lang] : p }];
+    const a = TOOLS.find((x) => `${x.id}/` === p);
+    return [p, { href: url(lang, p), name: g ? g.title[lang] : w ? w.name[lang] : a ? a.name : p }];
   }),
 );
 const ld = {
@@ -134,6 +144,17 @@ const ld = {
   </header>
   <div class="wrap" style="padding-top:24px">
     <form class="calc card ck-form" id="ck" data-lang={lang} data-t={JSON.stringify(T)} data-links={JSON.stringify(LINKS)}>
+      <fieldset class="ck-comps ck-works">
+        <legend>{L.work}</legend>
+        {
+          WORKS.map((w) => (
+            <label class="ck-comp" title={w.hint[lang]}>
+              <input type="radio" name="work" value={w.id} />
+              <span>{w.name[lang]}</span>
+            </label>
+          ))
+        }
+      </fieldset>
       <label class="fld">{L.siteName}<input id="title" maxlength="120" placeholder={L.sitePh} autocomplete="off" /></label>
       <fieldset class="ck-comps">
         <legend>{L.comps}</legend>
@@ -338,16 +359,17 @@ const ld = {
     }
   </style>
   <script>
-    import { COMPONENTS, buildChecklist, byStage, parseSaved, toCsv, toText, STORE_KEY, type CompId, type Saved } from "../lib/commissioning";
+    import { COMPONENTS, WORK_IDS, buildChecklist, byStage, itemKey, parseSaved, toCsv, toText, STORE_KEY, type CompId, type Saved, type WorkId } from "../lib/commissioning";
     import { esc } from "../lib/diagramSvg";
     import { saveText, store, fileStamp } from "../lib/fileSave";
 
     const form = document.getElementById("ck") as HTMLFormElement;
     const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
-    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
+    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string> & { titles: Record<string, string> };
     const LINKS = JSON.parse(form.dataset.links ?? "{}") as Record<string, { href: string; name: string }>;
     const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
-    const defTitle = (lang === "ko" ? "시운전·설치 점검표" : "Commissioning checklist");
+    const defTitle = () => T.titles[s.work] ?? "";
+    const key = (id: string) => itemKey(s.work, id);
 
     let s: Saved = parseSaved(store.get(STORE_KEY));
     let canStore = true;
@@ -360,26 +382,27 @@ const ld = {
     function syncForm() {
       ($("title") as HTMLInputElement).value = s.title;
       for (const c of form.querySelectorAll<HTMLInputElement>('input[name="comp"]')) c.checked = s.comps.includes(c.value as CompId);
+      for (const r of form.querySelectorAll<HTMLInputElement>('input[name="work"]')) r.checked = r.value === s.work;
     }
 
     function progress() {
-      const items = buildChecklist(s.comps);
-      const n = items.filter((i) => s.done[i.id]).length;
+      const items = buildChecklist(s.comps, s.work);
+      const n = items.filter((i) => s.done[key(i.id)]).length;
       $("prog").textContent = `${T.progress} ${n}/${items.length}`;
       ($("bar") as HTMLElement).style.width = items.length ? `${Math.round((n / items.length) * 100)}%` : "0";
     }
 
     function render() {
-      $("outTitle").textContent = s.title.trim() || defTitle;
-      const groups = byStage(buildChecklist(s.comps));
+      $("outTitle").textContent = s.title.trim() || defTitle();
+      const groups = byStage(buildChecklist(s.comps, s.work), s.work);
       $("list").innerHTML = groups
         .map(
           (g, gi) =>
             `<h3>${gi + 1}. ${esc(g.name[lang])}</h3><ol>${g.items
               .map((it) => {
-                const done = !!s.done[it.id];
+                const done = !!s.done[key(it.id)];
                 const links = (it.links ?? []).map((p) => LINKS[p]).filter(Boolean);
-                const memo = s.memo[it.id] ?? "";
+                const memo = s.memo[key(it.id)] ?? "";
                 return `<li data-id="${it.id}"${done ? ' class="done"' : ""}><label class="row"><input type="checkbox" data-id="${it.id}"${done ? " checked" : ""}/><span class="txt">${esc(it.text[lang])}</span></label>${
                   links.length ? `<div class="lk">→ ${links.map((l) => `<a href="${esc(l.href)}">${esc(l.name)}</a>`).join(" · ")}</div>` : ""
                 }<input class="memo" data-id="${it.id}" maxlength="500" placeholder="${esc(T.memo)}" aria-label="${esc(T.memo)}: ${esc(it.text[lang])}" value="${esc(memo)}"/>${
@@ -395,6 +418,12 @@ const ld = {
     form.addEventListener("submit", (e) => e.preventDefault());
     form.addEventListener("change", (e) => {
       const el = e.target as HTMLInputElement;
+      if (el.name === "work") {
+        if (WORK_IDS.has(el.value as WorkId)) s.work = el.value as WorkId;
+        save();
+        render();
+        return;
+      }
       if (el.name !== "comp") return;
       s.comps = [...form.querySelectorAll<HTMLInputElement>('input[name="comp"]:checked')].map((c) => c.value as CompId).filter((c) => COMPONENTS.some((x) => x.id === c));
       save();
@@ -402,7 +431,7 @@ const ld = {
     });
     $("title").addEventListener("input", () => {
       s.title = ($("title") as HTMLInputElement).value.slice(0, 120);
-      $("outTitle").textContent = s.title.trim() || defTitle;
+      $("outTitle").textContent = s.title.trim() || defTitle();
       save();
     });
     $("list").addEventListener("change", (e) => {
@@ -410,8 +439,8 @@ const ld = {
       const id = el.dataset.id;
       if (!id) return;
       if (el.type === "checkbox") {
-        if (el.checked) s.done[id] = true;
-        else delete s.done[id];
+        if (el.checked) s.done[key(id)] = true;
+        else delete s.done[key(id)];
         el.closest("li")?.classList.toggle("done", el.checked);
         progress();
         save();
@@ -422,8 +451,8 @@ const ld = {
       const id = el.dataset.id;
       if (!id || !el.classList.contains("memo")) return;
       const v = el.value.slice(0, 500);
-      if (v.trim()) s.memo[id] = v;
-      else delete s.memo[id];
+      if (v.trim()) s.memo[key(id)] = v;
+      else delete s.memo[key(id)];
       // 인쇄용 메모 글도 맞춰 둔다
       const li = el.closest("li");
       let pm = li?.querySelector<HTMLElement>(".memo-print");
@@ -458,8 +487,10 @@ const ld = {
     $("bSaveCsv").addEventListener("click", () => saveText("﻿" + toCsv(s, lang), `portdock-commissioning-${fileStamp()}.csv`, "text/csv;charset=utf-8"));
     $("bClear").addEventListener("click", () => {
       if (!confirm(T.clearAsk)) return;
-      s.done = {};
-      s.memo = {};
+      // 지금 작업 종류의 체크·메모만 지운다
+      const mine = (k: string) => (s.work === "install" ? !k.includes(":") : k.startsWith(`${s.work}:`));
+      for (const k of Object.keys(s.done)) if (mine(k)) delete s.done[k];
+      for (const k of Object.keys(s.memo)) if (mine(k)) delete s.memo[k];
       save();
       render();
     });

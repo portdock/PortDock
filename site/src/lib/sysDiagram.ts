@@ -3,10 +3,15 @@
 // 점검 규칙:
 //   - IP 중복, IP·마스크 모양
 //   - 이더넷·Wi-Fi 로 이어진 «같은 L2 묶음»(스위치·무선 AP 는 지나가고, 라우터·클라우드에서 끊음) 안에서 네트워크 주소가 다르면 경고(subnet.ts 와 같은 계산)
-//   - RS-485·CAN 버스: 같은 버스의 국번 중복, 국번 1~247(Modbus), 장비 보율·패리티가 버스와 다름, 버스에 마스터(USB-RS485·게이트웨이) 둘 이상, 32대 넘음
+//   - RS-485·CAN 버스: 같은 버스의 국번 중복, 국번 1~247(Modbus), 장비 보율·패리티가 버스와 다름, 버스에 마스터(USB-RS485·게이트웨이) 둘 이상
+//   - RS-485 단위 부하 합이 32 를 넘음(장비마다 1·1/2·1/4·1/8, 없으면 1)
+//   - RS-485 종단: 종단 정보(장비 «종단 켬»·버스 끝 종단)를 하나라도 적었으면 — 버스 위 장비 순서(닿는 x)로 양 끝에 종단이 있는지, 중간 장비에 켜져 있는지
 //   - 아무 선도 없는 장비
+// 버스 요약(busStats): 장비 수·단위 부하·종단 위치·한 바퀴 폴링 어림(serialTiming.ts 의 poll 계산식 재사용).
+// JSON 스키마는 version 1 그대로 — 새 칸(term·ul·regs·termStart·termEnd)은 모두 고를 수 있는 칸이라 옛 파일도 그대로 열린다.
 import type { Drawing, Ink, LegendItem, Shape } from "./diagramSvg.ts";
 import { maskOf, parseIp, parseMask, ipStr } from "./subnet.ts";
+import { poll, QTY_MAX, type CharFormat } from "./serialTiming.ts";
 
 export type Lang = "ko" | "en";
 export type NodeKind = "pc" | "ipc" | "plc" | "hmi" | "inverter" | "meter" | "sensor" | "switch" | "usb485" | "gateway" | "ap" | "router" | "cloud" | "other";
@@ -62,6 +67,12 @@ export interface SysNode {
   baud?: number;
   parity?: Parity;
   note?: string;
+  /** RS-485: 이 장비의 종단 저항을 켰나(버스 끝 장비) */
+  term?: boolean;
+  /** RS-485: 단위 부하(1·0.5·0.25·0.125) — 없으면 1 */
+  ul?: number;
+  /** 폴링 어림: 이 장비에서 한 바퀴에 읽는 레지스터 수 — 없으면 DEFAULT_REGS */
+  regs?: number;
 }
 export interface SysBus {
   id: string;
@@ -72,6 +83,9 @@ export interface SysBus {
   len: number;
   baud?: number;
   parity?: Parity;
+  /** RS-485: 버스 왼쪽·오른쪽 끝에 따로 단 종단(장비 밖 종단 저항) */
+  termStart?: boolean;
+  termEnd?: boolean;
 }
 export interface SysLink {
   id: string;
@@ -93,6 +107,14 @@ export const FORMAT = "portdock-system-diagram";
 export const NODE_W = 150;
 export const NODE_H = 66;
 export const LIMITS = { nodes: 200, buses: 20, links: 400, text: 80, note: 300 };
+/** 고를 수 있는 단위 부하 */
+export const UNIT_LOADS = [1, 0.5, 0.25, 0.125];
+/** 표준 송수신기(1 단위 부하) 기준 한 버스 한도 */
+export const UL_MAX = 32;
+/** 장비당 읽는 레지스터 수를 적지 않았을 때 */
+export const DEFAULT_REGS = 10;
+/** 폴링 어림에 쓰는 슬레이브 응답 지연(초) — 시리얼 통신 시간 계산기 기본값과 같다 */
+export const DEFAULT_SLAVE_DELAY = 0.01;
 
 export const emptyDoc = (title = ""): SysDoc => ({ format: FORMAT, version: 1, title, nodes: [], buses: [], links: [] });
 
@@ -160,6 +182,11 @@ export function validateDoc(raw: unknown): Validated {
     if (PARITIES.includes(n.parity as Parity)) node.parity = n.parity as Parity;
     const note = str(n.note, LIMITS.note);
     if (note) node.note = note;
+    if (n.term === true) node.term = true;
+    const ul = finite(n.ul);
+    if (ul !== undefined && UNIT_LOADS.includes(ul)) node.ul = ul;
+    const regs = finite(n.regs);
+    if (regs !== undefined && regs >= 1) node.regs = Math.min(10000, Math.round(regs));
     doc.nodes.push(node);
   });
   buses.slice(0, LIMITS.buses).forEach((b, i) => {
@@ -177,6 +204,8 @@ export function validateDoc(raw: unknown): Validated {
     const baud = finite(b.baud);
     if (baud !== undefined && baud > 0) bus.baud = Math.round(baud);
     if (PARITIES.includes(b.parity as Parity)) bus.parity = b.parity as Parity;
+    if (b.termStart === true) bus.termStart = true;
+    if (b.termEnd === true) bus.termEnd = true;
     doc.buses.push(bus);
   });
   const busIds = new Set(doc.buses.map((b) => b.id));
@@ -276,6 +305,112 @@ export function l2Groups(doc: SysDoc): string[][] {
   return groups;
 }
 
+// ---------------------------------------------------------------- 버스 요약
+
+export interface BusTerm {
+  /** 버스 위 x */
+  x: number;
+  /** 장비 id, 버스 끝 종단이면 버스 id */
+  id: string;
+  /** "node" | "start" | "end" */
+  at: "node" | "start" | "end";
+}
+export interface BusStat {
+  bus: SysBus;
+  /** 이어진 장비(버스 위 닿는 x 순) */
+  devices: SysNode[];
+  slaves: SysNode[];
+  masters: SysNode[];
+  unitLoads: number;
+  baud: number;
+  /** 버스·장비 어디에도 보율이 없어 9600 으로 봤나 */
+  baudAssumed: boolean;
+  parity: Parity;
+  /** regs 를 적지 않아 DEFAULT_REGS 로 본 슬레이브 수 */
+  regsAssumed: number;
+  /** 한 바퀴 폴링 어림(초) — RS-485 슬레이브가 없으면 0 */
+  cycle: number;
+  /** 종단 위치 — termKnown 이 false 면 비어 있다 */
+  terms: BusTerm[];
+  /** 종단 정보를 하나라도 적었나(옛 파일·안 적은 버스는 종단 점검을 하지 않는다) */
+  termKnown: boolean;
+  /** 버스 양 끝 장비(닿는 x 가장 작은·큰) */
+  left: SysNode | null;
+  right: SysNode | null;
+}
+
+/** 버스 위 장비 목록(중복 없이, 닿는 x 순 — 같으면 id 순) */
+export function busDevices(doc: SysDoc, bus: SysBus): SysNode[] {
+  const byId = new Map(doc.nodes.map((n) => [n.id, n]));
+  const on = doc.links.filter((l) => l.a === bus.id || l.b === bus.id).map((l) => byId.get(l.a === bus.id ? l.b : l.a)).filter((n): n is SysNode => !!n);
+  const uniq = [...new Map(on.map((n) => [n.id, n])).values()];
+  return uniq.sort((a, b) => busTouchX(bus, a) - busTouchX(bus, b) || (a.id < b.id ? -1 : 1));
+}
+
+/** 한 장비 폴링 시간 — 125 개씩 나눠 FC03 으로 읽는다고 보고 serialTiming.poll 로 계산 */
+export function devicePollTime(regs: number, baud: number, parity: Parity): number {
+  const n = Math.max(1, Math.round(regs));
+  const k = Math.ceil(n / QTY_MAX[3]);
+  // RTU 문자 형식(11 비트): 패리티 있으면 정지 1, 없으면 정지 2
+  const format: CharFormat = { dataBits: 8, parity, stopBits: parity === "none" ? 2 : 1 };
+  return poll({ baud, format, fc: 3, qty: Math.ceil(n / k), slaveDelay: DEFAULT_SLAVE_DELAY, masterGap: 0, transactions: k }).cycle;
+}
+
+export function busStats(doc: SysDoc, bus: SysBus): BusStat {
+  const devices = busDevices(doc, bus);
+  const masters = devices.filter((n) => MASTER_KINDS.includes(n.kind));
+  const slaves = devices.filter((n) => !MASTER_KINDS.includes(n.kind));
+  const unitLoads = devices.reduce((s, n) => s + (n.ul ?? 1), 0);
+  const devBaud = devices.find((n) => n.baud)?.baud;
+  const baud = bus.baud ?? devBaud ?? 9600;
+  const parity: Parity = bus.parity ?? devices.find((n) => n.parity)?.parity ?? "none";
+  let regsAssumed = 0;
+  let cycle = 0;
+  if (bus.kind === "rs485")
+    for (const n of slaves) {
+      if (n.regs === undefined) regsAssumed++;
+      cycle += devicePollTime(n.regs ?? DEFAULT_REGS, baud, parity);
+    }
+  const terms: BusTerm[] = [];
+  if (bus.kind === "rs485") {
+    if (bus.termStart) terms.push({ x: bus.x, id: bus.id, at: "start" });
+    for (const n of devices) if (n.term) terms.push({ x: busTouchX(bus, n), id: n.id, at: "node" });
+    if (bus.termEnd) terms.push({ x: bus.x + bus.len, id: bus.id, at: "end" });
+  }
+  return {
+    bus,
+    devices,
+    slaves,
+    masters,
+    unitLoads,
+    baud,
+    baudAssumed: !bus.baud && !devBaud,
+    parity,
+    regsAssumed,
+    cycle,
+    terms,
+    termKnown: terms.length > 0,
+    left: devices[0] ?? null,
+    right: devices[devices.length - 1] ?? null,
+  };
+}
+
+/** 종단 점검 — 양 끝에 하나씩, 중간에는 없게. 종단 정보를 적지 않은 버스·장비 둘 미만이면 빈 목록 */
+export function termProblems(st: BusStat): { side: "left" | "right" | "middle" | "double"; ids: string[] }[] {
+  if (!st.termKnown || st.devices.length < 2) return [];
+  const minX = busTouchX(st.bus, st.left!);
+  const maxX = busTouchX(st.bus, st.right!);
+  const atLeft = st.terms.filter((t) => t.x <= minX + 1);
+  const atRight = st.terms.filter((t) => t.x >= maxX - 1);
+  const out: { side: "left" | "right" | "middle" | "double"; ids: string[] }[] = [];
+  if (!atLeft.length) out.push({ side: "left", ids: [st.left!.id] });
+  if (!atRight.length) out.push({ side: "right", ids: [st.right!.id] });
+  for (const side of [atLeft, atRight]) if (side.length > 1) out.push({ side: "double", ids: side.map((t) => t.id) });
+  const mid = st.terms.filter((t) => t.x > minX + 1 && t.x < maxX - 1);
+  if (mid.length) out.push({ side: "middle", ids: mid.map((t) => t.id) });
+  return out;
+}
+
 export function checkDoc(doc: SysDoc, lang: Lang): Finding[] {
   const ko = lang === "ko";
   const t = (k: string, e: string) => (ko ? k : e);
@@ -335,7 +470,27 @@ export function checkDoc(doc: SysDoc, lang: Lang): Finding[] {
         if (u < 1 || u > 247) out.push({ level: "warn", text: t(`«${list.map(nm).join(", ")}» 국번 ${u} — Modbus 국번은 1~247 입니다.`, `«${list.map(nm).join(", ")}» ID ${u} — Modbus slave IDs are 1–247.`), ids: list.map((n) => n.id) });
       }
       if (masters.length > 1) out.push({ level: "warn", text: t(`«${nm(bus)}» 버스에 마스터(변환기·게이트웨이)가 ${masters.length}개입니다 — Modbus RTU 는 한 버스에 마스터 하나입니다.`, `«${nm(bus)}» has ${masters.length} masters (adapters/gateways) — Modbus RTU allows one master per bus.`), ids: [bus.id, ...masters.map((n) => n.id)] });
-      if (uniq.length > 32) out.push({ level: "warn", text: t(`«${nm(bus)}» 에 ${uniq.length}대 — 일반적으로 중계기 없이 32대(단위 부하)까지입니다.`, `«${nm(bus)}» has ${uniq.length} devices — generally 32 unit loads without a repeater.`), ids: [bus.id] });
+      const st = busStats(doc, bus);
+      if (st.unitLoads > UL_MAX)
+        out.push({
+          level: "warn",
+          text: t(
+            `«${nm(bus)}» 단위 부하 합 ${fmtUl(st.unitLoads)} (${uniq.length}대) — 표준 기준 32 를 넘습니다. 1/8 단위 부하 송수신기인지 확인하거나 중계기로 나눌 것.`,
+            `«${nm(bus)}» totals ${fmtUl(st.unitLoads)} unit loads (${uniq.length} devices) — over the standard 32. Check for 1/8 unit-load transceivers or split with a repeater.`,
+          ),
+          ids: [bus.id],
+        });
+      const name = (id: string) => (id === bus.id ? t("버스 끝 종단", "bus-end terminator") : nm(byId.get(id)!));
+      for (const p of termProblems(st)) {
+        const end = p.side === "left" ? st.left! : st.right!;
+        const text =
+          p.side === "middle"
+            ? t(`«${nm(bus)}»: ${p.ids.map(name).join(", ")} 은(는) 버스 끝이 아닌데 종단이 켜져 있습니다 — 중간 장비 종단은 끕니다.`, `«${nm(bus)}»: termination is on at ${p.ids.map(name).join(", ")}, which is not at a bus end — switch it off on middle devices.`)
+            : p.side === "double"
+              ? t(`«${nm(bus)}»: 같은 끝에 종단이 둘입니다(${p.ids.map(name).join(", ")}) — 끝마다 하나만.`, `«${nm(bus)}»: two terminators at the same end (${p.ids.map(name).join(", ")}) — one per end.`)
+              : t(`«${nm(bus)}»: ${p.side === "left" ? "왼쪽" : "오른쪽"} 끝(«${nm(end)}» 쪽)에 종단이 없습니다 — 버스 양 끝 두 곳에 종단.`, `«${nm(bus)}»: no termination at the ${p.side} end («${nm(end)}») — terminate both ends of the bus.`);
+        out.push({ level: "warn", text, ids: [bus.id, ...p.ids.filter((x) => x !== bus.id)] });
+      }
     }
     for (const n of slaves) {
       if (bus.baud && n.baud && n.baud !== bus.baud) out.push({ level: "warn", text: t(`«${nm(n)}» 보율 ${n.baud} 이(가) «${nm(bus)}» 버스(${bus.baud})와 다릅니다.`, `«${nm(n)}» baud ${n.baud} differs from bus «${nm(bus)}» (${bus.baud}).`), ids: [n.id, bus.id] });
@@ -349,6 +504,9 @@ export function checkDoc(doc: SysDoc, lang: Lang): Finding[] {
   return out;
 }
 
+/** 단위 부하 보기 — 0.125 → 0.125, 33 → 33 */
+export const fmtUl = (v: number) => String(Math.round(v * 1000) / 1000);
+
 // ---------------------------------------------------------------- 그리기
 
 export interface DrawOpts {
@@ -358,15 +516,20 @@ export interface DrawOpts {
   pending?: string | null;
   /** 점검에서 문제가 있는 id(테두리 경고색) */
   flagged?: Set<string>;
+  /** 변경 비교: 더해진·바뀐 노드·버스 id(테두리 색) */
+  added?: Set<string>;
+  changed?: Set<string>;
+  /** 변경 비교: 빠진 장비 — 옛 자리에 점선 상자로 */
+  ghosts?: SysNode[];
 }
 
 /** 버스 위에서 노드가 닿는 x — 노드 가운데를 버스 양 끝 안으로 */
 export const busTouchX = (bus: SysBus, n: SysNode) => Math.max(bus.x + 8, Math.min(bus.x + bus.len - 8, n.x + NODE_W / 2));
 
-export function bounds(doc: SysDoc) {
+export function bounds(doc: SysDoc, extra: SysNode[] = []) {
   let w = 720;
   let h = 420;
-  for (const n of doc.nodes) {
+  for (const n of [...doc.nodes, ...extra]) {
     w = Math.max(w, n.x + NODE_W + 40);
     h = Math.max(h, n.y + NODE_H + 40);
   }
@@ -410,14 +573,24 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
       if (tag) labels.push({ k: "text", x: lx, y: ly, t: tag, anchor: "middle", size: 11, c: "muted", bg: true });
     }
   }
+  for (const g of o.ghosts ?? []) {
+    S.push({ k: "box", x: g.x, y: g.y, w: NODE_W, h: NODE_H, title: `− ${(g.name || NODE_NAME[g.kind][lang]).slice(0, 18)}`, sub: lang === "ko" ? "빠짐" : "removed", fill: "bg", stroke: "warn", dash: true });
+  }
   for (const b of doc.buses) {
     const st = LINK_STYLE[b.kind];
     const sel = o.selected === b.id || o.pending === b.id;
-    S.push({ k: "wire", pts: [[b.x, b.y], [b.x + b.len, b.y]], c: sel ? "accent" : st.c, w: 6 });
+    const diffInk: Ink | null = o.added?.has(b.id) ? "gnd" : o.changed?.has(b.id) ? "aux" : null;
+    S.push({ k: "wire", pts: [[b.x, b.y], [b.x + b.len, b.y]], c: sel ? "accent" : (diffInk ?? st.c), w: 6 });
     if (b.kind === "rs485") {
-      // 양 끝 종단 표시
-      S.push({ k: "text", x: b.x - 4, y: b.y + 4, t: "Ω", anchor: "end", size: 11, c: "muted", bold: true });
-      S.push({ k: "text", x: b.x + b.len + 4, y: b.y + 4, t: "Ω", size: 11, c: "muted", bold: true });
+      const bs = busStats(doc, b);
+      if (bs.termKnown) {
+        // 적어 둔 종단 자리(장비 닿는 곳·버스 끝)
+        for (const tm of bs.terms) S.push({ k: "text", x: tm.at === "start" ? tm.x - 4 : tm.at === "end" ? tm.x + 4 : tm.x, y: tm.at === "node" ? b.y - 8 : b.y + 4, t: "Ω", anchor: tm.at === "start" ? "end" : tm.at === "end" ? "start" : "middle", size: 12, c: "ink", bold: true, bg: tm.at === "node" });
+      } else {
+        // 종단을 적지 않았으면 «양 끝에 둔다» 는 뜻으로 흐리게
+        S.push({ k: "text", x: b.x - 4, y: b.y + 4, t: "Ω", anchor: "end", size: 11, c: "muted", bold: true });
+        S.push({ k: "text", x: b.x + b.len + 4, y: b.y + 4, t: "Ω", size: 11, c: "muted", bold: true });
+      }
     }
     const comm = [b.baud ? `${b.baud}` : "", b.kind === "rs485" && b.parity ? { none: "N", even: "E", odd: "O" }[b.parity] : ""].filter(Boolean).join(" ");
     labels.push({ k: "text", x: b.x + 6, y: b.y + 20, t: `${b.name || LINK_NAME[b.kind][lang]}${comm ? ` · ${comm}` : ""}`, size: 11.5, c: o.flagged?.has(b.id) ? "warn" : "ink", bold: true, bg: true });
@@ -430,6 +603,7 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
     if (n.ip) bits.push(n.ip + (n.mask ? (n.mask.startsWith("/") ? n.mask : parseMask(n.mask) !== null ? `/${parseMask(n.mask)}` : "") : ""));
     if (n.unit !== undefined) bits.push(lang === "ko" ? `국번 ${n.unit}` : `ID ${n.unit}`);
     if (n.baud) bits.push(`${n.baud}${n.parity ? { none: "N", even: "E", odd: "O" }[n.parity] : ""}`);
+    if (n.term) bits.push("Ω");
     S.push({
       k: "box",
       x: n.x,
@@ -439,14 +613,14 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
       title: (n.name || sub).slice(0, 20),
       sub,
       sub2: bits.join(" · ").slice(0, 30) || undefined,
-      stroke: sel ? "accent" : flagged ? "warn" : "line",
+      stroke: sel ? "accent" : flagged ? "warn" : o.added?.has(n.id) ? "gnd" : o.changed?.has(n.id) ? "aux" : "line",
       dash: o.pending === n.id,
     });
   }
   S.push(...labels);
   const used = new Set<LinkKind>([...doc.links.map((l) => l.kind), ...doc.buses.map((b) => b.kind)]);
   const legend: LegendItem[] = LINK_KINDS.filter((k) => used.has(k)).map((k) => ({ c: LINK_STYLE[k].c, label: LINK_NAME[k][lang], dash: LINK_STYLE[k].dash }));
-  const { w, h } = bounds(doc);
+  const { w, h } = bounds(doc, o.ghosts);
   return { w, h, title: doc.title || (lang === "ko" ? "시스템 구성도" : "System diagram"), shapes: S, legend };
 }
 
@@ -514,10 +688,10 @@ export const EXAMPLES: { id: string; name: Record<Lang, string>; make: (lang: La
         title: ko ? "PC + USB-RS485 + 인버터 3대" : "PC + USB-RS485 + 3 inverters",
         nodes: [
           { id: "pc", kind: "pc", name: ko ? "점검 PC" : "Test PC", x: 40, y: 40, note: ko ? "PortDock Modbus Master" : "PortDock Modbus Master" },
-          { id: "cv", kind: "usb485", name: "USB-RS485", x: 40, y: 170, baud: 9600, parity: "even" },
+          { id: "cv", kind: "usb485", name: "USB-RS485", x: 40, y: 170, baud: 9600, parity: "even", term: true },
           { id: "i1", kind: "inverter", name: ko ? "컨베이어 1" : "Conveyor 1", x: 250, y: 330, unit: 1, baud: 9600, parity: "even" },
           { id: "i2", kind: "inverter", name: ko ? "컨베이어 2" : "Conveyor 2", x: 440, y: 330, unit: 2, baud: 9600, parity: "even" },
-          { id: "i3", kind: "inverter", name: ko ? "팬" : "Fan", x: 630, y: 330, unit: 3, baud: 9600, parity: "even" },
+          { id: "i3", kind: "inverter", name: ko ? "팬" : "Fan", x: 630, y: 330, unit: 3, baud: 9600, parity: "even", term: true },
         ],
         buses: [{ id: "b1", kind: "rs485", name: "RS-485 #1", x: 100, y: 290, len: 700, baud: 9600, parity: "even" }],
         links: [
@@ -573,9 +747,9 @@ export const EXAMPLES: { id: string; name: Record<Lang, string>; make: (lang: La
           { id: "cl", kind: "cloud", name: ko ? "감시 서버" : "Monitoring server", x: 300, y: 20 },
           { id: "rt", kind: "router", name: ko ? "공장 라우터" : "Plant router", x: 300, y: 130, ip: "192.168.1.1", mask: "/24" },
           { id: "gw", kind: "gateway", name: "Modbus TCP ↔ RTU", x: 300, y: 250, ip: "192.168.1.50", mask: "/24", baud: 9600, parity: "none" },
-          { id: "m1", kind: "meter", name: ko ? "수전반 미터" : "Main meter", x: 120, y: 420, unit: 1, baud: 9600, parity: "none" },
+          { id: "m1", kind: "meter", name: ko ? "수전반 미터" : "Main meter", x: 120, y: 420, unit: 1, baud: 9600, parity: "none", term: true },
           { id: "m2", kind: "meter", name: ko ? "라인 A 미터" : "Line A meter", x: 300, y: 420, unit: 2, baud: 9600, parity: "none" },
-          { id: "m3", kind: "meter", name: ko ? "라인 B 미터" : "Line B meter", x: 480, y: 420, unit: 3, baud: 9600, parity: "none" },
+          { id: "m3", kind: "meter", name: ko ? "라인 B 미터" : "Line B meter", x: 480, y: 420, unit: 3, baud: 9600, parity: "none", term: true },
         ],
         buses: [{ id: "b1", kind: "rs485", name: "RS-485", x: 80, y: 380, len: 600, baud: 9600, parity: "none" }],
         links: [
