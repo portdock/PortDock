@@ -4,7 +4,7 @@
 use portdock_core::event::SessionEvent;
 use portdock_core::framer::FrameMode;
 use portdock_core::modbus::{AddrStyle, Wire};
-use portdock_core::modbus_master::{ChannelLink, Engine, MasterEvent, PollSpec, ScanAddrs, ScanIds, Stats, Timing, forwarding_responder, frame, write_pdu};
+use portdock_core::modbus_master::{ChannelLink, Engine, LineSetting, MasterEvent, PollSpec, ScanAddrs, ScanIds, ScanLine, Stats, Timing, forwarding_responder, frame, write_pdu};
 use portdock_core::ports;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session};
@@ -51,6 +51,8 @@ struct App {
     conn: Arc<Registry<Conn>>,
     /// 연결마다 새로 만드는 일꾼
     engine: Arc<Mutex<Option<Engine>>>,
+    /// (0.11.0) 지금 시리얼 설정 — 통신 설정 찾기가 속도·패리티만 바꿔 쓰고, 끝나면 이 설정으로 되돌린다
+    serial: Arc<Mutex<Option<SerialConfig>>>,
 }
 
 const MAIN: &str = "main";
@@ -93,11 +95,36 @@ fn forward(engine: Arc<Mutex<Option<Engine>>>, ch: Channel<Value>) -> impl Fn(Se
     }
 }
 
+/// 지금 설정에 속도·패리티·정지 비트만 바꾼 것(데이터 비트는 8 — Modbus RTU)
+fn with_line(base: &SerialConfig, l: &LineSetting) -> SerialConfig {
+    // 처음 설정으로 되돌릴 때는 데이터 비트까지 그대로
+    if base.baud == l.baud && base.parity == l.parity && (base.stop_bits >= 2.0) == (l.stop_bits >= 2) {
+        return base.clone();
+    }
+    SerialConfig { baud: l.baud, parity: l.parity.clone(), stop_bits: l.stop_bits as f32, data_bits: 8, ..base.clone() }
+}
+
 /// 일꾼을 세운다 — 보내기는 보관함의 연결로, 받기는 세션 응답기가 넘겨준 조각으로
 fn start_engine(app: &App, rx: std::sync::mpsc::Receiver<Vec<u8>>, wire: Wire, setup: Setup, ch: Channel<Value>) -> Result<(), String> {
     setup.timing.check()?;
     let reg = app.conn.clone();
-    let link = ChannelLink::new(move |b: &[u8]| reg.with(MAIN, |c| c.send(b)).map_err(|_| not_connected())?, rx);
+    let reg2 = app.conn.clone();
+    let serial = app.serial.clone();
+    // 통신 설정 찾기(0.11.0) — 시리얼 세션의 속도·패리티를 잠깐 바꾼다(저장된 설정은 그대로 둔다)
+    let link = ChannelLink::new(move |b: &[u8]| reg.with(MAIN, |c| c.send(b)).map_err(|_| not_connected())?, rx).with_line(move |l: &LineSetting| {
+        let base = lock(&serial).clone().ok_or_else(not_connected)?;
+        let cfg = with_line(&base, l);
+        let mode = FrameMode::ModbusRtu { baud: cfg.baud };
+        reg2.with(MAIN, |c| match c {
+            Conn::Serial(s) => {
+                s.reconfigure(cfg)?;
+                s.set_framing(mode, None);
+                Ok(())
+            }
+            Conn::Tcp(_) => Err(tr!("통신 설정 찾기는 시리얼에서만 됩니다", "Line-settings search works on serial only").to_string()),
+        })
+        .map_err(|_| not_connected())?
+    });
     let sink = Arc::new(move |e: MasterEvent| {
         let _ = ch.send(serde_json::to_value(&e).unwrap_or(Value::Null));
     });
@@ -123,7 +150,8 @@ fn open(app: State<App>, config: SerialConfig, setup: Setup, on_event: Channel<V
     let sink = auto_remove_sink(reg.clone(), MAIN.into(), opening.generation, forward(app.engine.clone(), on_event.clone()));
     let (responder, rx) = forwarding_responder();
     let mode = FrameMode::ModbusRtu { baud: config.baud };
-    let s = Session::start(config, mode, None, Some(responder), sink)?;
+    let s = Session::start(config.clone(), mode, None, Some(responder), sink)?;
+    *lock(&app.serial) = Some(config);
     opening.finish(Conn::Serial(s));
     start_engine(&app, rx, Wire::Rtu, setup, on_event)
 }
@@ -167,6 +195,7 @@ fn open_tcp(app: State<App>, config: NetConfig, setup: Setup, on_event: Channel<
     }))
     .map_err(|e| e.to_string())?;
     let s = TcpSession::start(cfg, mode, None, Some(responder), sink)?;
+    *lock(&app.serial) = None;
     opening.finish(Conn::Tcp(s));
     start_engine(&app, rx, config.wire, setup, on_event)
 }
@@ -187,14 +216,22 @@ fn close(app: State<App>) {
 #[tauri::command(async)]
 fn reconfigure(app: State<App>, config: SerialConfig) -> Result<(), String> {
     let mode = FrameMode::ModbusRtu { baud: config.baud };
-    app.conn.with(MAIN, |c| match c {
-        Conn::Serial(s) => {
-            s.reconfigure(config)?;
-            s.set_framing(mode, None);
-            Ok(())
+    let keep = config.clone();
+    app.conn.with(MAIN, |c| -> Result<(), String> {
+        match c {
+            Conn::Serial(s) => {
+                s.reconfigure(config)?;
+                s.set_framing(mode, None);
+                Ok(())
+            }
+            Conn::Tcp(_) => Ok(()),
         }
-        Conn::Tcp(_) => Ok(()),
-    })?
+    })??;
+    let mut cur = lock(&app.serial);
+    if cur.is_some() {
+        *cur = Some(keep);
+    }
+    Ok(())
 }
 
 fn with_engine<R>(app: &App, f: impl FnOnce(&Engine) -> R) -> Result<R, String> {
@@ -280,6 +317,21 @@ fn scan_addrs(app: State<App>, config: ScanAddrs) -> Result<(), String> {
             return Err(tr!("이미 찾는 중입니다", "A scan is already running").to_string());
         }
         e.scan_addrs(config);
+        Ok(())
+    })?
+}
+
+/// (0.11.0) 통신 설정 찾기 — 시리얼에서만. 끝나면 지금 설정으로 되돌린다
+#[tauri::command]
+fn scan_line(app: State<App>, config: ScanLine) -> Result<(), String> {
+    let base = lock(&app.serial).clone().ok_or_else(|| tr!("통신 설정 찾기는 시리얼 연결에서만 됩니다", "Line-settings search works on a serial connection only").to_string())?;
+    let restore = LineSetting { baud: base.baud, parity: base.parity.clone(), stop_bits: if base.stop_bits >= 2.0 { 2 } else { 1 } };
+    with_engine(&app, |e| {
+        config.check_on(e.wire())?;
+        if e.scanning() {
+            return Err(tr!("이미 찾는 중입니다", "A scan is already running").to_string());
+        }
+        e.scan_line(ScanLine { restore: Some(restore), ..config });
         Ok(())
     })?
 }
@@ -442,6 +494,7 @@ pub fn run() {
             preview_write,
             scan_ids,
             scan_addrs,
+            scan_line,
             scan_cancel,
             get_stats,
             reset_stats,
@@ -473,5 +526,14 @@ mod tests {
         // TCP 설정을 JSON 으로 만들 수 있는지(칸이 늘어도)
         let cfg: Result<TcpConfig, _> = serde_json::from_value(serde_json::json!({ "mode": "client", "host": "h", "port": 502, "noDelay": true, "autoReconnect": true, "reconnectMs": 2000 }));
         assert!(cfg.is_ok());
+        // 통신 설정 찾기(0.11.0) — 속도·패리티·정지 비트만 바꾸고, 처음 설정이면 그대로
+        let base: SerialConfig = serde_json::from_str(r#"{"port":"COM3","baud":9600,"dataBits":7,"parity":"even","stopBits":1,"flow":"none"}"#).unwrap();
+        let l = LineSetting { baud: 19200, parity: "none".into(), stop_bits: 2 };
+        let c = with_line(&base, &l);
+        assert_eq!((c.port.as_str(), c.baud, c.data_bits, c.parity.as_str(), c.stop_bits), ("COM3", 19200, 8, "none", 2.0));
+        let back = with_line(&base, &LineSetting { baud: 9600, parity: "even".into(), stop_bits: 1 });
+        assert_eq!(back.data_bits, 7);
+        let sl: ScanLine = serde_json::from_str(r#"{"bauds":[9600],"framings":[{"parity":"none","stopBits":1}],"from":1,"to":10,"fc":3,"addr":0,"timeoutMs":100}"#).unwrap();
+        assert_eq!((sl.tries(), sl.first_only, sl.restore.is_none()), (10, false, true));
     }
 }

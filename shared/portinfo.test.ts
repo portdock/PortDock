@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/portinfo.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bundleJson, bundleText, comVerdict, deviceVerdict, echoVerdict, historyVerdict, loopVerdict, powerVerdict, settingsVerdict, busyHint, guideUrl, fmtSpeed } from "./portinfo.ts";
+import { bundleJson, bundleText, comVerdict, deviceVerdict, echoVerdict, historyVerdict, loopVerdict, loopOverall, LOOP_OVERALL_TEXT, powerVerdict, settingsVerdict, busyHint, guideUrl, fmtSpeed } from "./portinfo.ts";
 
 const report = (o = {}) => ({
   entry: { port: "COM5", name: "USB Serial Port (COM5)", instanceId: "FTDIBUS\\VID_0403+PID_6001+A1\\0000", present: true, vid: 0x0403, pid: 0x6001, problem: null, class: "Ports" },
@@ -70,6 +70,15 @@ test("루프백·에코", () => {
   const e = { baud: 9600, sent: 15, received: 15, echoed: true, partial: false, firstMs: 3, flags };
   assert.equal(echoVerdict(e).level, "look");
   assert.equal(echoVerdict({ ...e, echoed: false, received: 0 }).level, "ok");
+  // 두 포트(0.11.0) — 방향이 있으면 «서로 이었는지» 안내, 전체는 가장 나쁜 것
+  const two = loopVerdict({ ...ok, nothingBack: true, dir: "COM3 → COM4" });
+  assert.equal(two.level, "problem");
+  assert.ok(two.notes[0].ko.includes("A–A"));
+  assert.equal(loopOverall([]), null);
+  assert.equal(loopOverall([ok, ok]), "ok");
+  assert.equal(loopOverall([ok, { ...ok, rtt: { ...ok.rtt, median: 16 } }]), "look");
+  assert.equal(loopOverall([ok, { ...ok, lost: 1 }, { ...ok, extra: 2 }]), "problem");
+  assert.equal(LOOP_OVERALL_TEXT.ok.ko, "문제 없음(이 시험 범위)");
 });
 
 test("결과 글 — 볼 수 없는 것을 늘 적고, 사용자 폴더를 가리며, 금지 낱말을 쓰지 않는다", () => {

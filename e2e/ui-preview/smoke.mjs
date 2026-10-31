@@ -1468,6 +1468,40 @@ async function runApp(app, port) {
         await w(300);
         if ((await js("return document.querySelectorAll('.tabs .tab').length")) !== tabsA + 1 || (await js("return !!document.querySelector('.scan-dlg')"))) await conv("mm-scan", "찾은 국번으로 표를 만들지 못함");
         await verify("mm scan");
+        // (0.11.0) 통신 설정 찾기: 국번 1~2, 기본 속도·묶음, «찾으면 멈춤» → 가짜 장비는 19200 8E1(19200 8N1 은 깨짐) → 이 설정으로 연결
+        {
+          await js("[...document.querySelectorAll('aside .btn.small')].find((b) => /찾기|Scan/.test(b.textContent)).click()");
+          await w(300);
+          await js("document.querySelectorAll('.scan-dlg .segs .seg')[2].click()");
+          await w(200);
+          await js("const ins = document.querySelectorAll('.scan-dlg .grid3 input'); __sm.setVal(ins[0], '1'); __sm.setVal(ins[1], '2');");
+          await w(200);
+          const est = await js("return (document.querySelector('.scan-dlg .line-est') || {}).textContent || ''");
+          if (!/요청 32개|32 requests/.test(est)) await conv("mm-line", `통신 설정 찾기 어림 글이 이상함: ${JSON.stringify(est)}`);
+          if (!(await js("return !!document.querySelector('.scan-dlg .line-warn')"))) await conv("mm-line", "다른 마스터 경고가 없음");
+          await js("document.querySelector('.scan-dlg .scan-run .btn.primary').click()");
+          await w(1500);
+          const ln = await js("return { rows: [...document.querySelectorAll('.scan-dlg .line-hits tbody tr')].map((r) => r.querySelector('td').textContent + '/' + r.querySelectorAll('td')[1].textContent), garbled: (document.querySelector('.scan-dlg .line-garbled') || {}).textContent || '', done: !document.querySelector('.scan-dlg .scan-run .btn.danger') }");
+          if (ln.rows.join(",") !== "19200 8E1/1,19200 8E1/2" || !/19200 8N1/.test(ln.garbled) || !ln.done) await conv("mm-line", `통신 설정 찾기 결과가 이상함: ${JSON.stringify(ln)}`);
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-line`);
+          await js("document.querySelector('.scan-dlg .line-hits tbody tr .btn').click()");
+          await w(500);
+          const after = await js("return { open: !!document.querySelector('.scan-dlg'), baud: document.querySelector('input[list=bauds]')?.value, toast: (document.querySelector('.toast') || {}).textContent || '' }");
+          if (after.open || after.baud !== "19200" || !/19200 8E1/.test(after.toast)) await conv("mm-line", `«이 설정으로 연결» 결과가 이상함: ${JSON.stringify(after)}`);
+          await verify("mm line settings");
+        }
+        // (0.11.0) 원인 후보: 창이 열리고, 후보가 있으면 링크는 모두 사이트(portdock.dev) 주소
+        {
+          await js("document.querySelector('aside .diag-open').click()");
+          await w(300);
+          if (!(await js("return !!document.querySelector('.modal.diag-dlg')"))) await conv("mm-diag", "«원인 후보…» 창이 열리지 않음");
+          const dg = await js("return { causes: [...document.querySelectorAll('.diag-dlg .diag-cause')].map((c) => c.dataset.cause), links: [...document.querySelectorAll('.diag-dlg .diag-links a')].map((a) => a.getAttribute('href')) }");
+          if (dg.links.some((h) => !/^https:\/\/portdock\.dev\//.test(h))) await conv("mm-diag", `원인 후보 링크가 사이트 밖: ${JSON.stringify(dg.links)}`);
+          if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-diag`);
+          await js("document.querySelector('.diag-dlg .modal-head .btn').click()");
+          await w(200);
+          await verify("mm diagnosis");
+        }
         // (10/19) 장비 프로필: 창 → 목록·레지스터 표·주의 문구 → 찾기 → 불러오기 → 안내한 수만큼 표가 더해지고 이름에 단위가 붙는다 → 더한 표 지우기
         {
           const tabsB = await js("return document.querySelectorAll('.tabs .tab').length");
@@ -2298,6 +2332,13 @@ async function runApp(app, port) {
       await sleep(150);
       await startLoop("echo COM5");
       await expectJs("echo COM5", "const e = document.querySelector('.loop-echo'); return !!e && /lv-look/.test(e.querySelector('.lv').className)", 3000);
+      // (0.11.0) 두 포트 시험: 다른 포트를 고르고 속도마다 양쪽 방향 → 방향 칸·전체 판정
+      await js("[...document.querySelectorAll('.loop-modes input[type=radio]')][2].click()");
+      await expectJs("two-port peers", "const s = document.querySelector('.loop-peer select'); return !!s && s.options.length > 0 && !!s.value", 2000);
+      await expectJs("two-port wiring", "return (document.querySelector('.loop-wiring pre')?.textContent || '').includes('A(D+)')");
+      await startLoop("two-port COM5");
+      await expectJs("two-port rows", "const r = [...document.querySelectorAll('.loop-table tbody tr')]; return r.length === 10 && r.every((x) => /→/.test(x.children[1].textContent)) && !!document.querySelector('.loop-overall .lv') && !document.querySelector('.loop-actions .btn.danger')", 8000);
+      if (combo.full) await shot(app, `${combo.name}-loop-two`);
       await js("[...document.querySelectorAll('.loop-modes input[type=radio]')][0].click()");
       // 시험 중 멈춤
       await startLoop("loop cancel");

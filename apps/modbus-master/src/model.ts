@@ -367,3 +367,61 @@ export const errorCount = (s: TableStats | undefined) => (s ? s.exceptions + s.t
 
 /** «12.3» / «<1» */
 export const fmtMs = (ms: number) => (ms <= 0 ? "—" : ms < 1 ? "<1" : ms < 100 ? ms.toFixed(1) : String(Math.round(ms)));
+
+// ---- 통신 설정 찾기(0.11.0)
+
+export type Parity = "none" | "even" | "odd";
+export interface Framing {
+  parity: Parity;
+  stopBits: 1 | 2;
+}
+/** 고를 수 있는 속도(기본으로 켜 둘 것은 LINE_BAUDS_ON) */
+export const LINE_BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
+export const LINE_BAUDS_ON = [9600, 19200, 38400, 115200];
+/** 패리티·정지 비트 묶음 — 8N1·8N2·8E1·8O1 이 흔하다 */
+export const LINE_FRAMINGS: Framing[] = [
+  { parity: "none", stopBits: 1 },
+  { parity: "none", stopBits: 2 },
+  { parity: "even", stopBits: 1 },
+  { parity: "odd", stopBits: 1 },
+  { parity: "even", stopBits: 2 },
+  { parity: "odd", stopBits: 2 },
+];
+export const LINE_FRAMINGS_ON = LINE_FRAMINGS.slice(0, 4);
+export const framingKey = (f: Framing) => `${f.parity}/${f.stopBits}`;
+/** «9600 8E1» */
+export const lineLabel = (baud: number, parity: string, stopBits: number) => `${baud} 8${parity === "even" ? "E" : parity === "odd" ? "O" : "N"}${stopBits}`;
+
+export interface LineScanPlan {
+  bauds: number[];
+  framings: Framing[];
+  from: number;
+  to: number;
+  timeoutMs: number;
+}
+/** 보낼 요청 수(속도 × 묶음 × 국번) — crates/core ScanLine::tries 와 같은 셈 */
+export const lineTries = (p: LineScanPlan) => p.bauds.length * p.framings.length * Math.max(0, p.to - p.from + 1);
+/** 설정을 바꾸는 데 드는 시간 어림(ms) */
+const LINE_SWITCH_MS = 50;
+/**
+ * 가장 오래 걸릴 때의 어림(ms) — 모두 응답이 없다고 보고: 요청마다 (기다림 + 요청 간격 + 8바이트 보내는 시간),
+ * 설정마다 바꾸는 시간. 장비가 답하면 그만큼 빨라진다
+ */
+export function lineEstimateMs(p: LineScanPlan, delayMs: number): number {
+  const units = Math.max(0, p.to - p.from + 1);
+  let ms = 0;
+  for (const b of p.bauds) {
+    const tx = (8 * 11 * 1000) / b;
+    ms += p.framings.length * (LINE_SWITCH_MS + units * (p.timeoutMs + delayMs + tx));
+  }
+  return Math.round(ms);
+}
+/** «1시간 2분», «3분 5초», «12초» */
+export function fmtDuration(ms: number, lang: Lang): string {
+  const s = Math.max(1, Math.round(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  if (lang === "ko") return h ? `${h}시간 ${m}분` : m ? `${m}분 ${r}초` : `${r}초`;
+  return h ? `${h} h ${m} min` : m ? `${m} min ${r} s` : `${r} s`;
+}

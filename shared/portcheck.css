@@ -50,6 +50,7 @@
 }
 .loop-modes,
 .loop-bauds,
+.loop-opts,
 .loop-actions {
   display: flex;
   flex-wrap: wrap;
@@ -107,6 +108,24 @@
 }
 .loop-echo {
   padding: 4px 0;
+}
+/* 0.11.0 — 잇는 법 그림·전체 판정 */
+.loop-wiring summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.loop-wiring pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: pre;
+  overflow-x: auto;
+}
+.loop-overall {
+  font-weight: 600;
 }
 
 .cannot-see {

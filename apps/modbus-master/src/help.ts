@@ -33,7 +33,7 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소 찾기…», «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
+        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소·설정 찾기…», «원인 후보…», «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
         "- «통신 세부»·«통계» 는 평소 접혀 있고 제목 옆에 요약(«기다림 1000ms · 재시도 0 · 간격 20ms», «요청 n · 오류 m»)이 보입니다. 통신 세부가 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위: 표 탭(⏸ = 폴링 안 함, ● = 마지막 읽기 실패, 숫자 = 오류 누적 수 — 지금 실패 중이면 빨강, 아니면 회색), 표 설정(이름·국번·함수·시작·개수·주기·폴링·한 번 읽기), 보기 설정(표시·주소 표기·칸/목록·📈 추세·CSV).",
         "- 가운데: 값 칸. 지난 읽기와 달라진 칸은 잠깐 색이 바뀝니다. 마지막 읽기가 실패하면 칸이 흐려지고(앞 값) 이유가 위에 나옵니다.",
@@ -101,10 +101,36 @@ export const help: HelpDoc = {
     {
       title: "찾기 — 국번·주소 범위",
       body: [
-        "- «국번·주소 찾기…» 창의 «국번 찾기»: 국번마다 정한 함수·주소 한 칸을 읽어 답하는 국번을 모읍니다. 예외로 답해도 «장비가 있음» 으로 봅니다. 기다림(기본 200ms) × 국번 수만큼 걸립니다.",
+        "- «국번·주소·설정 찾기…» 창의 «국번 찾기»: 국번마다 정한 함수·주소 한 칸을 읽어 답하는 국번을 모읍니다. 예외로 답해도 «장비가 있음» 으로 봅니다. 기다림(기본 200ms) × 국번 수만큼 걸립니다.",
         "- «주소 범위 찾기»: 시작~끝을 «한 번에» 개씩 읽어 읽히는 범위를 모읍니다. 덩어리가 예외면 한 칸씩 다시 확인합니다(끄면 덩어리째 건너뜀). 예외 01 이거나 세 번 이어서 응답이 없으면 스스로 멈춥니다.",
         "- 찾은 줄의 «이 국번으로 표 만들기»·«이 범위로 표 만들기» 로 바로 표를 만듭니다.",
         "- 찾는 동안에는 폴링이 멈춥니다(같은 선에 요청을 섞지 않게). 창을 닫아도 찾기는 계속되고 왼쪽 상태 칸에 진행이 보입니다.",
+      ],
+    },
+    {
+      title: "통신 설정 찾기 (0.11.0 부터)",
+      id: "line-scan",
+      body: [
+        "- 장비의 속도·패리티·국번을 모를 때 씁니다. «국번·주소·설정 찾기…» 창의 «통신 설정 찾기» 에서 해 볼 속도(1200~115200)와 패리티·정지 비트(8N1·8N2·8E1·8O1·8E2·8O2)를 고르고, 국번 범위·함수·주소를 정합니다.",
+        "- 속도 × 패리티·정지 비트마다 포트 설정을 바꿔, 국번마다 짧은 읽기 요청을 한 번씩 보냅니다(재시도 없음). 맞는 응답이나 예외 응답이 오면 표에 남깁니다 — 예외도 «그 설정에 장비가 있음» 입니다.",
+        "- 국번 0(브로드캐스트)은 쓰지 않습니다. 시리얼(RTU) 연결에서만 됩니다.",
+        "- 창에 요청 수와 «아무도 답하지 않으면 걸리는 시간» 어림이 나옵니다. 장비 국번을 알면 범위를 그 국번 하나로 좁히면 빠릅니다. «기다림(ms)» 은 조합 하나를 기다리는 시간입니다.",
+        "- «답하는 설정을 찾으면 멈춤» 을 켜 두면 첫 설정에서 끝냅니다. 바이트는 왔지만 깨진(CRC 오류) 설정은 표 아래에 따로 적습니다 — 속도·패리티가 비슷하지만 다르거나 선에 잡음이 있을 수 있습니다.",
+        "- 끝나면(멈춰도) 포트를 처음 설정으로 되돌립니다. 찾은 줄의 «이 설정으로 연결» 을 누르면 왼쪽 연결 설정이 그 속도·패리티·정지 비트로 바뀌고 지금 표의 국번도 바뀝니다.",
+        "- 주의: 버스에 다른 마스터(PLC·HMI)가 있으면 쓰지 마세요. 속도를 바꿔 가며 보내는 동안 다른 마스터의 통신을 깨뜨릴 수 있습니다.",
+      ],
+    },
+    {
+      title: "«응답 없음» 원인 후보 (0.11.0 부터)",
+      id: "diag",
+      body: [
+        "- 왼쪽 «원인 후보…» 를 누르면 최근 요청 50개(폴링·한 번 읽기)의 결과를 나눠, 많이 나온 갈래부터 원인 후보와 확인 방법을 보입니다. 실패가 있으면 왼쪽에 «최근 실패 n번 — 원인 후보 보기» 가 나옵니다.",
+        "- 바이트가 전혀 오지 않음: 국번·속도·패리티·A/B 극성·배선·전원·COM 포트 후보.",
+        "- 보낸 것만 그대로 되돌아옴(에코): 2선 RS-485 변환기의 에코 — 변환기까지는 선이 살아 있고 장비가 답하지 않는 경우.",
+        "- 바이트는 오는데 CRC 오류: 속도·패리티 불일치, 잡음, 종단·바이어스, 다른 마스터.",
+        "- 짧게 잘린 프레임: 응답 기다림이 짧음, USB 지연 타이머, 방향 전환이 늦은 변환기.",
+        "- 예외 응답: 통신은 됨 — 예외 코드의 뜻(주소·개수·함수)을 함께 보입니다. 다른 국번이 답함: 국번 설정·같은 국번 장비 둘·다른 마스터.",
+        "- 후보마다 사이트의 가이드와 «고장 원인 찾기 도우미» 링크가 있습니다. «글로 복사» 로 내용을 복사해 동료나 AI 에게 물을 수 있습니다. 원인을 정해 주는 것이 아니라 후보입니다.",
       ],
     },
     {
@@ -202,7 +228,7 @@ export const help: HelpDoc = {
     {
       title: "Layout",
       body: [
-        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
+        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», «Possible causes…», the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
         "- «Communication details» and «Statistics» are collapsed with a summary next to the title («timeout 1000 ms · retries 0 · delay 20 ms», «n requests · m errors»). Communication details start expanded when they differ from the defaults; the open state is remembered.",
         "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, Slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
         "- Middle: value cells. Cells that changed since the previous read flash briefly. If the last read failed, the cells are dimmed (previous values) and the reason is shown above.",
@@ -274,6 +300,32 @@ export const help: HelpDoc = {
         "- «Address range scan»: reads From–To in blocks and collects the readable ranges. A block that fails is re-checked one address at a time (turn off to skip whole blocks). It stops on exception 01 or three silent requests in a row.",
         "- «New table for this ID» / «New table for this range» creates a table from a result.",
         "- Polling pauses while scanning (requests are not mixed on one line). Closing the dialog keeps the scan running; progress shows in the status box on the left.",
+      ],
+    },
+    {
+      title: "Find line settings (from 0.11.0)",
+      id: "line-scan",
+      body: [
+        "- For when the device's baud, parity and ID are unknown. In «Scan…», open «Find line settings», pick the baud rates (1200–115200) and parity/stop bits (8N1, 8N2, 8E1, 8O1, 8E2, 8O2) to try, and set the ID range, function and address.",
+        "- For each baud × parity/stop bits the port is reconfigured and one short read is sent to each ID (no retries). A valid reply or an exception reply is listed — an exception still means «a device is there with this setting».",
+        "- ID 0 (broadcast) is never used. Works on a serial (RTU) connection only.",
+        "- The dialog shows the number of requests and an estimate of the time if nothing answers. If you know the ID, narrow the range to that one ID to make it fast. «Timeout (ms)» is the wait per combination.",
+        "- With «Stop at the first setting that answers» on, it ends at the first setting found. Settings that only got garbled bytes (CRC errors) are noted under the table — the baud/parity may be close but wrong, or the line noisy.",
+        "- When it ends (or is stopped) the port goes back to the original setting. «Connect with this setting» on a result switches the connection on the left to that baud/parity/stop bits and sets the selected table's ID.",
+        "- Caution: do not use this when another master (PLC, HMI) is on the bus. Sending at changing speeds can break its traffic.",
+      ],
+    },
+    {
+      title: "«No response» — possible causes (from 0.11.0)",
+      id: "diag",
+      body: [
+        "- «Possible causes…» on the left sorts the last 50 request results (polling and read once) and shows possible causes and how to check them, most frequent first. When there are failures, «n recent failures — see possible causes» appears on the left.",
+        "- No bytes at all: ID, baud, parity, A/B polarity, wiring, power or COM port.",
+        "- Only the request came back (echo): a 2-wire RS-485 adapter echo — the line works up to the adapter and the device does not answer.",
+        "- Bytes arrive but fail CRC: baud/parity mismatch, noise, termination/bias, another master.",
+        "- Truncated frames: a short response timeout, USB latency timer, a slow-switching adapter.",
+        "- Exception reply: communication works — the meaning of each code (address, count, function) is shown. A different ID answered: ID setting, two devices with one ID, another master.",
+        "- Each cause links to site guides and the «Troubleshooting helper». «Copy as text» copies it to ask a colleague or an AI. These are candidates, not a final answer.",
       ],
     },
     {

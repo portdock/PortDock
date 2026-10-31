@@ -1354,3 +1354,79 @@ details.panel > summary .sum-note.bad {
   flex: 1;
   min-width: 0;
 }
+
+/* 통신 설정 찾기(0.11.0) */
+.scan-dlg .line-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 4px 8px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.scan-dlg .line-set legend {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.scan-dlg .line-warn {
+  margin: 0;
+}
+.scan-dlg .line-garbled {
+  border-top: 1px solid var(--line);
+  white-space: normal;
+}
+
+/* 원인 후보(0.11.0) */
+.modal.diag-dlg {
+  width: min(680px, calc(100vw - 32px));
+}
+.diag-dlg .modal-body {
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+}
+.diag-cause {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin: 6px 0;
+}
+.diag-cause.problem {
+  border-left: 4px solid var(--fail);
+}
+.diag-cause.look {
+  border-left: 4px solid #c79100;
+}
+.diag-cause h4 {
+  margin: 0 0 4px;
+  font-size: var(--fs, 13px);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.diag-cause h4 .diag-n {
+  color: var(--muted);
+  font-weight: normal;
+}
+.diag-cause ul {
+  margin: 2px 0 6px;
+  padding-left: 18px;
+}
+.diag-cause .diag-sub {
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.diag-cause .diag-links a {
+  margin-right: 10px;
+}
+.side-diag {
+  color: var(--fail);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  font: inherit;
+}

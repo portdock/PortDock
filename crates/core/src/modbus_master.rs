@@ -395,7 +395,29 @@ pub trait Link: Send {
     fn recv(&mut self, wait: Duration) -> Option<Vec<u8>>;
     /// 쌓인 것을 버린다(새 요청 직전)
     fn clear(&mut self) {}
+    /// (0.11.0) 시리얼 속도·패리티·정지 비트를 바꾼다(통신 설정 찾기). 바꿀 수 없는 통로(TCP)는 오류
+    fn set_line(&mut self, _line: &LineSetting) -> Result<(), String> {
+        Err(no_line())
+    }
 }
+
+fn no_line() -> String {
+    crate::tr!("이 연결은 통신 설정을 바꿀 수 없습니다(시리얼에서만)", "This connection cannot change line settings (serial only)").into()
+}
+
+/// (0.11.0) 시리얼 통신 설정 하나 — 데이터 비트는 8 로 둔다(Modbus RTU)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LineSetting {
+    pub baud: u32,
+    /// "none" | "even" | "odd"
+    pub parity: String,
+    /// 1 | 2
+    pub stop_bits: u8,
+}
+
+/// 통신 설정을 바꾸는 함수(세션의 reconfigure)
+pub type LineFn = Box<dyn FnMut(&LineSetting) -> Result<(), String> + Send>;
 
 /// 바이트를 내보내는 함수(세션의 send)
 pub type SendFn = Box<dyn FnMut(&[u8]) -> Result<(), String> + Send>;
@@ -404,11 +426,18 @@ pub type SendFn = Box<dyn FnMut(&[u8]) -> Result<(), String> + Send>;
 pub struct ChannelLink {
     send: SendFn,
     rx: Receiver<Vec<u8>>,
+    line: Option<LineFn>,
 }
 
 impl ChannelLink {
     pub fn new(send: impl FnMut(&[u8]) -> Result<(), String> + Send + 'static, rx: Receiver<Vec<u8>>) -> Self {
-        Self { send: Box::new(send), rx }
+        Self { send: Box::new(send), rx, line: None }
+    }
+
+    /// (0.11.0) 통신 설정을 바꿀 수 있는 통로로(시리얼 세션)
+    pub fn with_line(mut self, f: impl FnMut(&LineSetting) -> Result<(), String> + Send + 'static) -> Self {
+        self.line = Some(Box::new(f));
+        self
     }
 }
 
@@ -431,6 +460,13 @@ impl Link for ChannelLink {
 
     fn clear(&mut self) {
         while self.rx.try_recv().is_ok() {}
+    }
+
+    fn set_line(&mut self, line: &LineSetting) -> Result<(), String> {
+        match self.line.as_mut() {
+            Some(f) => f(line),
+            None => Err(no_line()),
+        }
     }
 }
 
@@ -492,6 +528,10 @@ pub struct Try {
     pub outcome: Outcome,
     /// 보낸 뒤 응답이 다 올 때까지(ms) — 응답이 없으면 0
     pub rtt_ms: f64,
+    /// (0.11.0) 보낸 것이 그대로 먼저 되돌아왔는지(2선 RS-485 에코 — 버리고 응답을 기다렸다)
+    pub echo: bool,
+    /// (0.11.0) 응답이 끝까지 오지 않았는지(바이트는 왔지만 덜 옴)
+    pub partial: bool,
 }
 
 /// 거래 하나(재시도 포함)
@@ -561,7 +601,7 @@ impl Master {
         let gap = Duration::from_millis(timing.delay_ms);
         let mut done = |outcome: Outcome, response: Vec<u8>, rtt: Option<Duration>, extra_gap: Duration| {
             self.next_ok = Some(Instant::now() + gap.max(extra_gap));
-            Try { ts, request: sent.clone(), rx_ts: if rtt.is_some() { now_ms() } else { 0 }, response, outcome, rtt_ms: rtt.map_or(0.0, |d| d.as_secs_f64() * 1000.0) }
+            Try { ts, request: sent.clone(), rx_ts: if rtt.is_some() { now_ms() } else { 0 }, response, outcome, rtt_ms: rtt.map_or(0.0, |d| d.as_secs_f64() * 1000.0), echo: false, partial: false }
         };
         if let Err(why) = link.send(&sent) {
             return done(Outcome::SendError { why }, Vec::new(), None, Duration::ZERO);
@@ -572,16 +612,22 @@ impl Master {
         }
         let deadline = t0 + Duration::from_millis(timing.timeout_ms);
         let mut buf: Vec<u8> = Vec::new();
+        let mut echo = false;
         loop {
             match take(self.wire, tid, unit, pdu, &sent, &buf) {
                 Take::More => {}
                 Take::Skip(n) => {
+                    if n == sent.len() && buf.starts_with(&sent) {
+                        echo = true;
+                    }
                     buf.drain(..n.min(buf.len()));
                     continue;
                 }
                 Take::Done(n, outcome) => {
                     buf.truncate(n);
-                    return done(outcome, buf, Some(t0.elapsed()), Duration::ZERO);
+                    let mut t = done(outcome, buf, Some(t0.elapsed()), Duration::ZERO);
+                    t.echo = echo;
+                    return t;
                 }
             }
             let now = Instant::now();
@@ -596,12 +642,19 @@ impl Master {
         if !buf.is_empty() {
             if let Take::Done(n, outcome) = take_at(self.wire, tid, unit, pdu, &[], &buf, true) {
                 buf.truncate(n);
-                return done(outcome, buf, Some(t0.elapsed()), Duration::ZERO);
+                let mut t = done(outcome, buf, Some(t0.elapsed()), Duration::ZERO);
+                t.echo = echo;
+                return t;
             }
             let why = crate::tr!(format!("응답이 끝까지 오지 않음 ({}바이트만 옴)", buf.len()), format!("Incomplete response (only {} bytes)", buf.len()));
-            return done(Outcome::Bad { why }, buf, Some(t0.elapsed()), Duration::ZERO);
+            let mut t = done(Outcome::Bad { why }, buf, Some(t0.elapsed()), Duration::ZERO);
+            t.echo = echo;
+            t.partial = true;
+            return t;
         }
-        done(Outcome::Timeout, Vec::new(), None, Duration::ZERO)
+        let mut t = done(Outcome::Timeout, Vec::new(), None, Duration::ZERO);
+        t.echo = echo;
+        t
     }
 }
 
@@ -738,6 +791,68 @@ pub struct ScanAddrs {
     pub fine: bool,
 }
 
+/// (0.11.0) 통신 설정 찾기 — 속도 × (패리티·정지 비트) × 국번 범위로 짧은 읽기를 보내 답하는 조합을 찾는다.
+/// 국번 0(브로드캐스트)은 쓰지 않는다. 시리얼 RTU 에서만
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanLine {
+    pub bauds: Vec<u32>,
+    /// (패리티, 정지 비트) 묶음 — 예: none/1, none/2, even/1, odd/1
+    pub framings: Vec<Framing>,
+    pub from: u8,
+    pub to: u8,
+    pub fc: u8,
+    pub addr: u16,
+    /// 조합(국번 하나)마다 기다리는 시간(ms)
+    pub timeout_ms: u64,
+    /// 답하는 설정을 하나 찾으면 멈춘다
+    #[serde(default)]
+    pub first_only: bool,
+    /// 끝나면 되돌릴 설정(부른 쪽이 채운다 — 없으면 마지막 설정에 머문다)
+    #[serde(default)]
+    pub restore: Option<LineSetting>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Framing {
+    pub parity: String,
+    pub stop_bits: u8,
+}
+
+/// 통신 설정 찾기에 한 번에 해 볼 수 있는 최대 조합 수(속도 × 묶음 × 국번)
+pub const MAX_LINE_TRIES: u32 = 100_000;
+
+impl ScanLine {
+    pub fn check_on(&self, wire: Wire) -> Result<(), String> {
+        if wire != Wire::Rtu {
+            return Err(crate::tr!("통신 설정 찾기는 시리얼(RTU)에서만 됩니다", "Line-settings search works on serial (RTU) only").into());
+        }
+        if self.from < 1 || self.to < self.from || self.to > 247 {
+            return Err(crate::tr!("국번 범위는 1~247, 시작 ≤ 끝입니다(0 은 브로드캐스트라 쓰지 않습니다)", "ID range must be 1–247 with start ≤ end (0 is broadcast and is not used)").into());
+        }
+        if self.bauds.is_empty() || self.bauds.iter().any(|b| !(50..=20_000_000).contains(b)) {
+            return Err(crate::tr!("속도를 하나 이상 고르세요(50~20000000)", "Pick at least one baud rate (50–20000000)").into());
+        }
+        if self.framings.is_empty() || self.framings.iter().any(|f| !matches!(f.parity.as_str(), "none" | "even" | "odd") || !matches!(f.stop_bits, 1 | 2)) {
+            return Err(crate::tr!("패리티(N·E·O)·정지 비트(1·2)를 하나 이상 고르세요", "Pick at least one parity (N/E/O) and stop-bit (1/2) combination").into());
+        }
+        if !is_read_fc(self.fc) {
+            return Err(crate::tr!("읽기 함수(01~04)만 씁니다", "Only read functions (01–04) are used").into());
+        }
+        if self.tries() > MAX_LINE_TRIES {
+            return Err(crate::tr!(format!("조합이 너무 많습니다({}) — {} 이하로 줄이세요", self.tries(), MAX_LINE_TRIES), format!("Too many combinations ({}) — keep it at {} or fewer", self.tries(), MAX_LINE_TRIES)));
+        }
+        Ok(())
+    }
+
+    /// 보낼 요청 수(속도 × 묶음 × 국번)
+    pub fn tries(&self) -> u32 {
+        let units = (self.to as u32).saturating_sub(self.from as u32) + 1;
+        self.bauds.len() as u32 * self.framings.len() as u32 * units
+    }
+}
+
 /// 읽기·찾기에 쓸 수 있는 가장 작은 국번 — RTU 의 0 은 브로드캐스트(답이 없음, 쓰기에서만), Modbus TCP 의 0 은 보통 유닛
 pub fn min_unit(wire: Wire) -> u8 {
     if wire == Wire::Tcp { 0 } else { 1 }
@@ -796,6 +911,29 @@ pub struct PollResult {
     pub outcome: Outcome,
     pub rtt_ms: f64,
     pub tries: u8,
+    /// (0.11.0) 원인 후보 패널용 — 마지막 시도에서 에코가 왔는지
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub echo: bool,
+    /// (0.11.0) 응답이 덜 왔는지(잘린 프레임)
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub partial: bool,
+    /// (0.11.0) 받은 바이트 수(마지막 시도)
+    pub got: usize,
+    /// (0.11.0) 다른 국번이 답했으면 그 국번
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub other_unit: Option<u8>,
+}
+
+/// 응답의 국번이 보낸 국번과 다르면 그 국번(CRC·MBAP 가 맞은 응답만 — 모양 틀림으로 끝난 것)
+pub fn other_unit(wire: Wire, unit: u8, t: &Try) -> Option<u8> {
+    if !matches!(t.outcome, Outcome::Bad { .. }) || t.partial {
+        return None;
+    }
+    let got = match wire {
+        Wire::Rtu => *t.response.first()?,
+        Wire::Tcp => *t.response.get(6)?,
+    };
+    (got != unit).then_some(got)
 }
 
 /// 화면으로 보내는 사건
@@ -813,6 +951,10 @@ pub enum MasterEvent {
     ScanProgress { done: u32, total: u32 },
     /// 찾기 끝. stopped 는 스스로 멈춘 이유(예외 01·연속 무응답)
     ScanDone { kind: &'static str, found: u32, cancelled: bool, stopped: Option<String> },
+    /// (0.11.0) 통신 설정 찾기: 이 설정·국번에서 맞는 응답(정상 또는 예외 — 예외도 «장비가 있음»)
+    LineHit { baud: u32, parity: String, stop_bits: u8, unit: u8, outcome: Outcome, rtt_ms: f64 },
+    /// (0.11.0) 통신 설정 찾기: 설정 하나를 마침. garbled = 바이트는 왔지만 깨진(CRC·모양 틀림) 응답 수
+    LineStep { baud: u32, parity: String, stop_bits: u8, garbled: u32 },
 }
 
 /// 표 하나의 통계
@@ -882,6 +1024,7 @@ enum Job {
     Write { token: u64, table: u32, unit: u8, pdu: Vec<u8> },
     ScanIds(ScanIds),
     ScanAddrs(ScanAddrs),
+    ScanLine(ScanLine),
 }
 
 pub type Sink = Arc<dyn Fn(MasterEvent) + Send + Sync>;
@@ -970,6 +1113,12 @@ impl Engine {
         self.scan_cancel.store(false, Ordering::SeqCst);
         self.scanning.store(true, Ordering::SeqCst);
         self.job(Job::ScanAddrs(cfg));
+    }
+    /// (0.11.0) 통신 설정 찾기 — 통로가 설정을 바꿀 수 있어야 한다(시리얼)
+    pub fn scan_line(&self, cfg: ScanLine) {
+        self.scan_cancel.store(false, Ordering::SeqCst);
+        self.scanning.store(true, Ordering::SeqCst);
+        self.job(Job::ScanLine(cfg));
     }
     pub fn cancel_scan(&self) {
         self.scan_cancel.store(true, Ordering::SeqCst);
@@ -1134,7 +1283,8 @@ impl Worker {
         if let Outcome::Ok { values } = &mut outcome {
             values.truncate(spec.qty as usize);
         }
-        self.polls.push(PollResult { table: id, ts: t.ts, outcome, rtt_ms: t.rtt_ms, tries: ex.tries.len() as u8 });
+        let other = other_unit(self.master.wire, spec.unit, t);
+        self.polls.push(PollResult { table: id, ts: t.ts, outcome, rtt_ms: t.rtt_ms, tries: ex.tries.len() as u8, echo: t.echo, partial: t.partial, got: t.response.len(), other_unit: other });
     }
 
     fn job(&mut self, j: Job) {
@@ -1156,6 +1306,7 @@ impl Worker {
             }
             Job::ScanIds(cfg) => self.scan_ids(&cfg),
             Job::ScanAddrs(cfg) => self.scan_addrs(&cfg),
+            Job::ScanLine(cfg) => self.scan_line(&cfg),
         }
     }
 
@@ -1259,6 +1410,80 @@ impl Worker {
             }
         }
         self.scan_done("ids", found, cancelled, None);
+    }
+
+    fn scan_line(&mut self, cfg: &ScanLine) {
+        let pdu = match read_pdu(cfg.fc, cfg.addr, 1) {
+            Ok(p) => p,
+            Err(e) => {
+                self.scan_done("line", 0, false, Some(e));
+                return;
+            }
+        };
+        let (from, to) = (cfg.from.max(1), cfg.to.max(cfg.from.max(1)));
+        let total = cfg.tries();
+        let timing = self.scan_timing(cfg.timeout_ms);
+        let (mut done, mut found) = (0u32, 0u32);
+        let mut cancelled = false;
+        let mut stopped = None;
+        'outer: for &baud in &cfg.bauds {
+            for f in &cfg.framings {
+                if self.cancelled() {
+                    cancelled = true;
+                    break 'outer;
+                }
+                let line = LineSetting { baud, parity: f.parity.clone(), stop_bits: f.stop_bits };
+                if let Err(e) = self.link.set_line(&line) {
+                    stopped = Some(e);
+                    break 'outer;
+                }
+                let p = match f.parity.as_str() {
+                    "even" => 'E',
+                    "odd" => 'O',
+                    _ => 'N',
+                };
+                self.lines.push(Line { ts: now_ms(), dir: "ev", bytes: Vec::new(), check: None, note: Some(format!("LINE {baud} 8{p}{}", f.stop_bits)), sum: None, table: None });
+                let mut garbled = 0u32;
+                let mut hit_here = false;
+                for unit in from..=to {
+                    if self.cancelled() {
+                        cancelled = true;
+                        break 'outer;
+                    }
+                    let ex = self.exchange(NO_TABLE, unit, &pdu, Some(timing));
+                    let t = ex.last();
+                    match &t.outcome {
+                        Outcome::SendError { why } => {
+                            stopped = Some(why.clone());
+                            break 'outer;
+                        }
+                        Outcome::Ok { .. } | Outcome::Exception { .. } => {
+                            found += 1;
+                            hit_here = true;
+                            let (outcome, rtt_ms) = (t.outcome.clone(), t.rtt_ms);
+                            self.emit(MasterEvent::LineHit { baud, parity: f.parity.clone(), stop_bits: f.stop_bits, unit, outcome, rtt_ms });
+                        }
+                        Outcome::Timeout | Outcome::Broadcast => {}
+                        Outcome::Crc { .. } | Outcome::Bad { .. } => garbled += 1,
+                    }
+                    done += 1;
+                    if done % 4 == 0 || done == total {
+                        self.emit(MasterEvent::ScanProgress { done, total });
+                    }
+                }
+                self.emit(MasterEvent::LineStep { baud, parity: f.parity.clone(), stop_bits: f.stop_bits, garbled });
+                if hit_here && cfg.first_only {
+                    break 'outer;
+                }
+            }
+        }
+        // 처음 설정으로 되돌린다(«이 설정으로 연결» 은 화면이 따로 한다)
+        if let Some(r) = &cfg.restore
+            && let Err(e) = self.link.set_line(r)
+        {
+            stopped.get_or_insert(e);
+        }
+        self.scan_done("line", found, cancelled, stopped);
     }
 
     fn scan_addrs(&mut self, cfg: &ScanAddrs) {
@@ -1775,6 +2000,118 @@ mod tests {
         let last = ev.lock().unwrap().iter().rev().find_map(|e| if let MasterEvent::ScanProgress { done, total } = e { Some((*done, *total)) } else { None });
         assert_eq!(last, Some((20, 20)));
         e.stop();
+    }
+
+    /// 설정을 바꿀 수 있는 가짜 통로 — 장비는 19200 8E1 국번 5 에만 맞게 답하고, 19200 8N1 에선 깨진 바이트를 보낸다
+    struct LineFake {
+        line: Arc<Mutex<Vec<LineSetting>>>,
+        q: VecDeque<Vec<u8>>,
+    }
+
+    impl Link for LineFake {
+        fn send(&mut self, bytes: &[u8]) -> Result<(), String> {
+            let now = self.line.lock().unwrap().last().cloned();
+            let Some(l) = now else { return Ok(()) };
+            if l.baud == 19200 && bytes[0] == 5 {
+                match (l.parity.as_str(), l.stop_bits) {
+                    ("even", 1) => self.q.push_back(with_crc(&[5, 3, 2, 0, 7])),
+                    ("none", 1) => self.q.push_back(vec![0x5A, 0xF3, 0x11, 0x00]),
+                    _ => {}
+                }
+            }
+            Ok(())
+        }
+        fn recv(&mut self, wait: Duration) -> Option<Vec<u8>> {
+            let r = self.q.pop_front();
+            if r.is_none() {
+                std::thread::sleep(wait.min(Duration::from_millis(1)));
+            }
+            r
+        }
+        fn clear(&mut self) {
+            self.q.clear();
+        }
+        fn set_line(&mut self, line: &LineSetting) -> Result<(), String> {
+            self.line.lock().unwrap().push(line.clone());
+            Ok(())
+        }
+    }
+
+    fn fr(p: &str, s: u8) -> Framing {
+        Framing { parity: p.into(), stop_bits: s }
+    }
+
+    #[test]
+    fn line_scan_finds_baud_parity_and_id() {
+        let line = Arc::new(Mutex::new(Vec::new()));
+        let link = LineFake { line: line.clone(), q: VecDeque::new() };
+        let (sink, ev) = collect();
+        let e = Engine::start(Box::new(link), Wire::Rtu, fast(1000, 3), AddrStyle::default(), vec![], sink);
+        let restore = LineSetting { baud: 9600, parity: "none".into(), stop_bits: 1 };
+        let cfg = ScanLine { bauds: vec![9600, 19200], framings: vec![fr("none", 1), fr("even", 1)], from: 4, to: 6, fc: 3, addr: 0, timeout_ms: 10, first_only: false, restore: Some(restore.clone()) };
+        assert_eq!(cfg.tries(), 12);
+        cfg.check_on(Wire::Rtu).unwrap();
+        e.scan_line(cfg);
+        let done = wait_for(&ev, |e| matches!(e, MasterEvent::ScanDone { .. }));
+        assert_eq!(done, MasterEvent::ScanDone { kind: "line", found: 1, cancelled: false, stopped: None });
+        let evs = ev.lock().unwrap().clone();
+        let hits: Vec<(u32, String, u8, u8)> = evs.iter().filter_map(|e| if let MasterEvent::LineHit { baud, parity, stop_bits, unit, .. } = e { Some((*baud, parity.clone(), *stop_bits, *unit)) } else { None }).collect();
+        assert_eq!(hits, vec![(19200, "even".to_string(), 1, 5)]);
+        // 19200 8N1 은 깨진 바이트 한 번
+        let garbled: Vec<(u32, String, u32)> = evs.iter().filter_map(|e| if let MasterEvent::LineStep { baud, parity, garbled, .. } = e { Some((*baud, parity.clone(), *garbled)) } else { None }).collect();
+        assert_eq!(garbled, vec![(9600, "none".into(), 0), (9600, "even".into(), 0), (19200, "none".into(), 1), (19200, "even".into(), 0)]);
+        // 네 설정을 차례로 해 보고 처음 설정으로 되돌렸다
+        let seen = line.lock().unwrap().clone();
+        assert_eq!(seen.len(), 5);
+        assert_eq!(seen.last(), Some(&restore));
+        e.stop();
+    }
+
+    #[test]
+    fn line_scan_first_only_and_checks() {
+        let line = Arc::new(Mutex::new(Vec::new()));
+        let link = LineFake { line: line.clone(), q: VecDeque::new() };
+        let (sink, ev) = collect();
+        let e = Engine::start(Box::new(link), Wire::Rtu, fast(1000, 0), AddrStyle::default(), vec![], sink);
+        e.scan_line(ScanLine { bauds: vec![19200, 38400], framings: vec![fr("even", 1), fr("odd", 1)], from: 5, to: 5, fc: 3, addr: 0, timeout_ms: 10, first_only: true, restore: None });
+        let done = wait_for(&ev, |e| matches!(e, MasterEvent::ScanDone { .. }));
+        assert!(matches!(done, MasterEvent::ScanDone { found: 1, cancelled: false, .. }));
+        assert_eq!(line.lock().unwrap().len(), 1);
+        e.stop();
+        // TCP·국번 0·빈 목록은 받지 않는다
+        let ok = ScanLine { bauds: vec![9600], framings: vec![fr("none", 1)], from: 1, to: 247, fc: 3, addr: 0, timeout_ms: 50, first_only: false, restore: None };
+        assert!(ok.check_on(Wire::Rtu).is_ok());
+        assert!(ok.check_on(Wire::Tcp).is_err());
+        assert!(ScanLine { from: 0, ..ok.clone() }.check_on(Wire::Rtu).is_err());
+        assert!(ScanLine { bauds: vec![], ..ok.clone() }.check_on(Wire::Rtu).is_err());
+        assert!(ScanLine { framings: vec![fr("mark", 1)], ..ok.clone() }.check_on(Wire::Rtu).is_err());
+        assert!(ScanLine { fc: 6, ..ok.clone() }.check_on(Wire::Rtu).is_err());
+        // 바꿀 수 없는 통로면 멈춘 이유로
+        let (link, _) = Script::new(|_| vec![]);
+        let (sink, ev) = collect();
+        let e = Engine::start(Box::new(link), Wire::Rtu, Timing::default(), AddrStyle::default(), vec![], sink);
+        e.scan_line(ok);
+        let done = wait_for(&ev, |e| matches!(e, MasterEvent::ScanDone { .. }));
+        assert!(matches!(done, MasterEvent::ScanDone { found: 0, stopped: Some(_), .. }), "{done:?}");
+        e.stop();
+    }
+
+    #[test]
+    fn try_flags_echo_partial_and_other_unit() {
+        // 에코만 오고 장비는 답하지 않음
+        let (mut link, _) = Script::new(|b| vec![b.to_vec()]);
+        let ex = Master::new(Wire::Rtu, fast(20, 0)).transact(&mut link, 1, &read_pdu(3, 0, 1).unwrap());
+        assert_eq!(ex.outcome(), &Outcome::Timeout);
+        assert!(ex.last().echo && !ex.last().partial);
+        // 덜 온 응답
+        let (mut link, _) = Script::new(|b| vec![vec![b[0], 3, 2]]);
+        let ex = Master::new(Wire::Rtu, fast(20, 0)).transact(&mut link, 1, &read_pdu(3, 0, 1).unwrap());
+        assert!(ex.last().partial && !ex.last().echo);
+        assert_eq!(other_unit(Wire::Rtu, 1, ex.last()), None);
+        // 다른 국번이 답함
+        let (mut link, _) = Script::new(|_| vec![with_crc(&[9, 3, 2, 0, 1])]);
+        let ex = Master::new(Wire::Rtu, fast(20, 0)).transact(&mut link, 1, &read_pdu(3, 0, 1).unwrap());
+        assert_eq!(other_unit(Wire::Rtu, 1, ex.last()), Some(9));
     }
 
     #[test]
