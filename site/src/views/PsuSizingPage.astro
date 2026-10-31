@@ -1,0 +1,400 @@
+---
+// 웹 도구: 24V DC 전원 용량 계산기 — 부하 목록(정상·돌입 전류·동시 사용률) → 합계·여유를 둔 필요 정격·돌입 피크 비교·흔한 정격·채널 나누기(lib/psuSizing.ts).
+// 값은 사용자가 매뉴얼에서 넣는다(예시는 예시라고 밝힘). 부하 목록은 이 브라우저 localStorage 에만(try/catch). 서버로 보내지 않는다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { KINDS, STD_RATINGS } from "../lib/psuSizing";
+import { type Lang } from "../data/tools";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/power-supply-sizing/";
+const L = ko
+  ? {
+      title: "24V DC 전원 용량 계산기",
+      seo: "24V 전원 용량 계산기 — SMPS 용량 선정·돌입 전류·여유율 — PortDock",
+      desc: "PLC·HMI·센서·밸브·릴레이 코일의 소비 전류·돌입 전류·동시 사용률로 24V DC 전원(SMPS) 합계와 여유를 둔 정격을 계산하고 서킷 프로텍터 채널 나누기를 제안합니다.",
+      loads: "부하 목록",
+      head: ["종류", "이름", "개수", "정상 전류 mA(1개)", "돌입 전류 mA(1개, 모르면 비움)", "동시 사용률 %", ""],
+      add: "줄 더하기",
+      example: "예시 채우기",
+      clear: "모두 지우기",
+      clearAsk: "부하 목록을 모두 지울까요?",
+      del: "지우기",
+      opts: "설정",
+      v: "전원 전압(V)",
+      margin: "여유율 %(일반적으로 20~30)",
+      peak: "전원 피크 정격 %(매뉴얼, 모르면 100)",
+      ch: "서킷 프로텍터 채널 정격(A)",
+      res: "결과",
+      k: {
+        allOn: "모두 켜졌을 때 합계",
+        steady: "동시 사용률 반영 합계",
+        watts: "전력",
+        need: "여유를 둔 필요 정격",
+        peak: "켤 때 피크(모든 부하가 함께 켜질 때)",
+        rating: "고른 정격(흔한 정격 중)",
+        load: "그 정격의 부하율",
+      },
+      noRating: "흔한 정격(40 A)보다 큼 — 전원을 나누세요",
+      peakUp: (a: string, b: string) => `돌입 피크 때문에 정격을 ${a} A → ${b} A 로 올렸습니다. 전원 매뉴얼의 피크(부스트) 정격과 지속 시간을 보고 «피크 정격 %» 를 넣으면 다시 고릅니다.`,
+      okText: (r: string, p: string) => `${r} A 전원이면 정상 부하율 ${p} % 입니다.`,
+      chTitle: "서킷 프로텍터 채널 나누기 제안",
+      chNote: "묶음(제어·통신 / 센서·표시 / 밸브·릴레이·팬)을 섞지 않고, 모두 켜졌을 때 전류로 채널 정격 × (1 − 여유율)을 넘지 않게 채웠습니다.",
+      chCol: ["채널", "묶음", "부하", "전류(모두 켜짐)", "켤 때 피크"],
+      tooBig: "한 개만으로 채널 한도를 넘는 부하 — 채널 정격을 올리거나 따로 보호: ",
+      bad: "숫자를 확인하세요 — 전압·채널 정격은 0 보다 크고, 여유율은 0~89, 피크 정격은 100~1000 % 입니다.",
+      saved: "부하 목록은 이 브라우저에만 저장됩니다.",
+      noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 목록이 사라집니다.",
+      privacy: "이 페이지는 브라우저 안에서만 계산하고 아무것도 서버로 보내지 않습니다.",
+      exampleNote: "«예시 채우기» 의 값은 예시입니다. 실제 값은 장비 매뉴얼의 소비 전류(최대값)·돌입 전류를 넣으세요.",
+      fTitle: "계산식",
+      formula: [
+        "한 줄 전류 = 개수 × 정상 전류 × 동시 사용률",
+        "합계 = 줄 전류의 합,  전력 = 합계 × 전원 전압",
+        "필요 정격 = 합계 ÷ (1 − 여유율)   (여유율 25 % 면 정격의 75 % 까지만 씀)",
+        "켤 때 피크 = Σ 개수 × max(돌입 전류, 정상 전류)",
+        "고른 정격: 필요 정격 이상이고, 정격 × 피크 정격 % ≥ 켤 때 피크인 가장 작은 흔한 정격",
+      ],
+      fNote: `흔한 정격 목록: ${STD_RATINGS.join(" · ")} A — DIN 레일 24 V 전원에서 자주 보이는 값이고 제조사·계열마다 다릅니다.`,
+      limitTitle: "이 계산이 다루지 않는 것",
+      limits: [
+        "돌입 시간: 돌입 전류는 보통 아주 짧아 전원 출력 커패시터가 받아 주기도 하고, 반대로 전원이 과부하 보호에 들어가기도 합니다. 전원 매뉴얼의 피크 정격과 지속 시간, 과부하 동작(전류 제한·hiccup)을 봅니다.",
+        "온도 감소: 판넬 안 온도가 높으면 전원이 낼 수 있는 전류가 줄어듭니다(감소 특성 곡선). 그 몫만큼 여유율을 키웁니다.",
+        "동시 사용률은 추정입니다. 밸브가 한꺼번에 켜지는 공정(원점 복귀·비상 정지 해제)이 있으면 100 % 로 봅니다.",
+        "서킷 프로텍터 트립 특성: 채널이 돌입에 떨어지지 않는지는 그 보호기의 매뉴얼(지연·설정 가능 여부)로 봅니다.",
+      ],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["여유율은 얼마나 두나요?", "일반적으로 20~30 % 를 둡니다. 판넬 온도가 높거나 나중에 장비를 더할 계획이면 더 둡니다. 이 계산기는 «정격의 (100 − 여유율) % 까지만 쓴다» 로 셉니다."],
+        ["돌입 전류 값을 모르면?", "비워 두면 정상 전류로 셉니다. HMI·PC 처럼 전원부 커패시터가 큰 장비와 솔레노이드·릴레이는 매뉴얼에 돌입 값이 있는지 찾아 보세요."],
+        ["전원을 두 대로 나누는 게 나을 때는?", "밸브·모터처럼 켜고 끌 때 처짐을 만드는 부하와 PLC·통신 장비를 따로 먹이면, 한쪽 처짐이 다른 쪽 재시작으로 번지지 않습니다. 채널 나누기 제안이 같은 묶음 구분을 씁니다."],
+      ],
+      seeAlso: "함께 쓰기:",
+      vd: "전압 강하·전선 굵기 계산기",
+      guide: "24V DC 전원 점검 가이드",
+      loop: "4–20mA 루프 부하 계산기",
+    }
+  : {
+      title: "24 V DC Power Supply Sizing Calculator",
+      seo: "24V Power Supply Sizing Calculator: Inrush, Margin — PortDock",
+      desc: "Size a 24 V DC supply from the current, inrush and duty of PLCs, HMIs, sensors, valves, relays: total, rating with headroom, inrush check, protector channels.",
+      loads: "Loads",
+      head: ["Type", "Name", "Qty", "Current mA (each)", "Inrush mA (each, blank if unknown)", "Duty %", ""],
+      add: "Add row",
+      example: "Fill example",
+      clear: "Clear all",
+      clearAsk: "Clear all loads?",
+      del: "Remove",
+      opts: "Settings",
+      v: "Supply voltage (V)",
+      margin: "Headroom % (typically 20–30)",
+      peak: "Supply peak rating % (manual, 100 if unknown)",
+      ch: "Circuit protector channel rating (A)",
+      res: "Results",
+      k: {
+        allOn: "Total with everything on",
+        steady: "Total with duty applied",
+        watts: "Power",
+        need: "Rating needed with headroom",
+        peak: "Peak at power-on (all loads together)",
+        rating: "Chosen rating (common sizes)",
+        load: "Load on that rating",
+      },
+      noRating: "Larger than common sizes (40 A) — split into several supplies",
+      peakUp: (a: string, b: string) => `The rating went up from ${a} A to ${b} A because of the inrush peak. Enter the supply's peak (boost) rating from its manual in «peak rating %» to choose again.`,
+      okText: (r: string, p: string) => `A ${r} A supply runs at ${p} % of its rating.`,
+      chTitle: "Suggested circuit protector channels",
+      chNote: "Groups (control and communication / sensors and indicators / valves, relays and fans) are not mixed, and each channel is filled up to channel rating × (1 − headroom) using the everything-on current.",
+      chCol: ["Channel", "Group", "Loads", "Current (all on)", "Peak at power-on"],
+      tooBig: "Loads over a channel's limit on their own — raise the channel rating or protect separately: ",
+      bad: "Check the numbers — voltage and channel rating must be above 0, headroom 0–89 and peak rating 100–1000 %.",
+      saved: "The load list is saved in this browser only.",
+      noStore: "This browser blocks storage, so the list disappears on reload.",
+      privacy: "This page calculates entirely in your browser and sends nothing to a server.",
+      exampleNote: "The «Fill example» values are examples. Enter the maximum current and inrush from each device's manual.",
+      fTitle: "Formulas",
+      formula: [
+        "Row current = qty × current × duty",
+        "Total = sum of rows,  power = total × supply voltage",
+        "Rating needed = total ÷ (1 − headroom)   (25 % headroom uses up to 75 % of the rating)",
+        "Peak at power-on = Σ qty × max(inrush, current)",
+        "Chosen rating: the smallest common size ≥ rating needed whose rating × peak % ≥ the power-on peak",
+      ],
+      fNote: `Common sizes: ${STD_RATINGS.join(" · ")} A — values often seen on DIN-rail 24 V supplies; they differ by maker and series.`,
+      limitTitle: "What this does not cover",
+      limits: [
+        "Inrush duration: inrush is usually very short, so the supply's output capacitors may absorb it — or the supply may enter overload protection. Check the supply's peak rating, its duration and overload behaviour (current limit, hiccup) in the manual.",
+        "Temperature derating: supplies deliver less current when the panel is hot (derating curve). Add headroom for it.",
+        "Duty is an estimate. If valves can all switch on together (homing, releasing an emergency stop), use 100 %.",
+        "Protector trip behaviour: whether a channel trips on inrush depends on the protector's manual (delay, adjustable types).",
+      ],
+      faqTitle: "FAQ",
+      faq: [
+        ["How much headroom?", "Typically 20–30 %. Add more for a hot panel or planned expansion. This calculator uses «load up to (100 − headroom) % of the rating»."],
+        ["What if I don't know the inrush?", "Leave it blank and the steady current is used. For HMIs and PCs with large input capacitors, and for solenoids and relays, look for an inrush figure in the manual."],
+        ["When is it better to use two supplies?", "Feeding loads that cause dips when switching (valves, motors) separately from the PLC and communication keeps a dip on one side from restarting the other. The channel suggestion uses the same grouping."],
+      ],
+      seeAlso: "Use with:",
+      vd: "Voltage drop & wire size calculator",
+      guide: "24 V DC supply check guide",
+      loop: "4–20 mA loop load calculator",
+    };
+const T = {
+  head: L.head,
+  del: L.del,
+  clearAsk: L.clearAsk,
+  noRating: L.noRating,
+  chCol: L.chCol,
+  tooBig: L.tooBig,
+  bad: L.bad,
+  saved: L.saved,
+  noStore: L.noStore,
+};
+const PEAK_T = { up: L.peakUp("{a}", "{b}"), ok: L.okText("{r}", "{p}") };
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <h1>{L.title}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <form class="calc card" id="ps" data-lang={lang} data-t={JSON.stringify(T)} data-p={JSON.stringify(PEAK_T)} data-kinds={JSON.stringify(KINDS.map((k) => ({ id: k.id, name: k.name[lang], group: k.group })))}>
+      <h2 class="ps-h">{L.loads}</h2>
+      <div class="tbl">
+        <table class="t ps-t">
+          <thead><tr>{L.head.map((h) => <th>{h}</th>)}</tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="btns">
+        <button type="button" class="btn tight" id="bAdd">{L.add}</button>
+        <button type="button" class="btn tight" id="bEx">{L.example}</button>
+        <button type="button" class="btn tight" id="bClear">{L.clear}</button>
+      </div>
+      <p class="note">{L.exampleNote}</p>
+      <h2 class="ps-h">{L.opts}</h2>
+      <div class="row">
+        <label class="fld">{L.v}<input id="v" class="mono" value="24" inputmode="decimal" autocomplete="off" /></label>
+        <label class="fld">{L.margin}<input id="margin" class="mono" value="25" inputmode="decimal" autocomplete="off" /></label>
+        <label class="fld">{L.peak}<input id="peak" class="mono" value="100" inputmode="decimal" autocomplete="off" /></label>
+        <label class="fld">{L.ch}<input id="ch" class="mono" value="4" inputmode="decimal" autocomplete="off" /></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="tbl" aria-live="polite">
+        <table class="t kv">
+          <caption class="note" style="text-align:left">{L.res}</caption>
+          <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
+        </table>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <h3>{L.chTitle}</h3>
+      <p class="note">{L.chNote}</p>
+      <div class="tbl" id="chs"></div>
+      <p class="note" id="msg" role="status"></p>
+      <p class="note privacy">{L.privacy}</p>
+    </form>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.fTitle}</h2>
+      <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
+      <p>{L.fNote}</p>
+      <h2>{L.limitTitle}</h2>
+      <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+      <p>
+        {L.seeAlso} <a href={url(lang, "tools/voltage-drop/")}>{L.vd}</a> · <a href={url(lang, "guides/24v-power-supply-check/")}>{L.guide}</a> · <a href={url(lang, "tools/loop-load/")}>{L.loop}</a>
+      </p>
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ps-h {
+      font-size: 17px;
+      margin: 4px 0 8px;
+    }
+    .ps-t :global(input),
+    .ps-t :global(select) {
+      width: 100%;
+      min-width: 60px;
+      padding: 4px 6px;
+      font-size: 14px;
+    }
+    .ps-t :global(td) {
+      padding: 4px;
+    }
+  </style>
+  <script>
+    import { DEFAULT_OPTS, EXAMPLE, GROUP_NAME, STORE_KEY, checkOpts, parseSaved, sizeSupply, splitChannels, type Load, type LoadKind, type Opts } from "../lib/psuSizing";
+    import { esc } from "../lib/diagramSvg";
+    import { store } from "../lib/fileSave";
+
+    const form = document.getElementById("ps") as HTMLFormElement;
+    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string> & { head: string[]; chCol: string[] };
+    const P = JSON.parse(form.dataset.p ?? "{}") as { up: string; ok: string };
+    const KINDS = JSON.parse(form.dataset.kinds ?? "[]") as { id: LoadKind; name: string; group: string }[];
+    const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
+
+    const saved = parseSaved(store.get(STORE_KEY));
+    let loads: Load[] = saved ? saved.loads : EXAMPLE(lang);
+    const o0: Opts = saved ? saved.opts : DEFAULT_OPTS;
+    $("v").value = String(o0.volts);
+    $("margin").value = String(o0.margin);
+    $("peak").value = String(o0.peakPct);
+    $("ch").value = String(o0.channelA);
+
+    const fx = (x: number, d = 2) => {
+      const s = x.toFixed(d);
+      return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+    };
+    const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
+
+    function renderRows() {
+      $("rows").innerHTML = loads
+        .map(
+          (l, i) => `<tr data-i="${i}">
+<td><select data-f="kind" aria-label="${esc(T.head[0])}">${KINDS.map((k) => `<option value="${k.id}"${k.id === l.kind ? " selected" : ""}>${esc(k.name)}</option>`).join("")}</select></td>
+<td><input data-f="name" maxlength="80" value="${esc(l.name)}" aria-label="${esc(T.head[1])}"/></td>
+<td><input data-f="qty" class="mono" inputmode="numeric" value="${l.qty || ""}" aria-label="${esc(T.head[2])}"/></td>
+<td><input data-f="ma" class="mono" inputmode="decimal" value="${l.ma || ""}" aria-label="${esc(T.head[3])}"/></td>
+<td><input data-f="inrushMa" class="mono" inputmode="decimal" value="${l.inrushMa || ""}" aria-label="${esc(T.head[4])}"/></td>
+<td><input data-f="duty" class="mono" inputmode="decimal" value="${l.duty}" aria-label="${esc(T.head[5])}"/></td>
+<td><button type="button" class="btn tight" data-del="${i}">${esc(T.del)}</button></td></tr>`,
+        )
+        .join("");
+    }
+
+    function opts(): Opts {
+      return { volts: num($("v").value), margin: num($("margin").value), peakPct: num($("peak").value), channelA: num($("ch").value) };
+    }
+    function save(o: Opts) {
+      const ok = store.set(STORE_KEY, JSON.stringify({ v: 1, loads, opts: checkOpts(o) ? DEFAULT_OPTS : o }));
+      $("msg").textContent = ok ? T.saved : T.noStore;
+    }
+    const set = (k: string, v: string) => {
+      const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
+      if (td) td.textContent = v;
+    };
+
+    function run() {
+      const o = opts();
+      save(o);
+      const verdict = $("verdict");
+      if (checkOpts(o)) {
+        $("err").textContent = T.bad;
+        verdict.textContent = "";
+        $("chs").innerHTML = "";
+        for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
+        return;
+      }
+      $("err").textContent = "";
+      const r = sizeSupply(loads, o);
+      set("allOn", `${fx(r.allOnA, 3)} A`);
+      set("steady", `${fx(r.steadyA, 3)} A`);
+      set("watts", `${fx(r.watts, 1)} W`);
+      set("need", `${fx(r.needA, 3)} A`);
+      set("peak", `${fx(r.peakA, 3)} A`);
+      set("rating", r.ratingA ? `${r.ratingA} A (${fx(r.ratingA * o.volts, 0)} W)` : T.noRating);
+      set("load", r.loadPct !== undefined ? `${fx(r.loadPct, 1)} %` : "—");
+      if (!r.ratingA) {
+        verdict.className = "verdict fault";
+        verdict.textContent = T.noRating;
+      } else if (r.ratingBySteadyA !== undefined && r.ratingA > r.ratingBySteadyA) {
+        verdict.className = "verdict warn";
+        verdict.textContent = P.up.replace("{a}", String(r.ratingBySteadyA)).replace("{b}", String(r.ratingA));
+      } else {
+        verdict.className = "verdict ok";
+        verdict.textContent = P.ok.replace("{r}", String(r.ratingA)).replace("{p}", fx(r.loadPct ?? 0, 1));
+      }
+      const s = splitChannels(loads, o);
+      const label = (i: number) => loads[i].name.trim() || KINDS.find((k) => k.id === loads[i].kind)?.name || "";
+      const rows = s.channels
+        .map(
+          (c, i) =>
+            `<tr><td class="mono">${i + 1}</td><td>${esc(GROUP_NAME[c.group][lang])}</td><td>${c.parts.map((p) => `${esc(label(p.row))} × ${p.qty}`).join(", ")}</td><td class="mono">${fx(c.amps, 3)} A</td><td class="mono">${fx(c.peakA, 3)} A</td></tr>`,
+        )
+        .join("");
+      $("chs").innerHTML =
+        (rows ? `<table class="t"><thead><tr>${T.chCol.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>` : "") +
+        (s.tooBig.length ? `<p class="verdict warn">${esc(T.tooBig)}${s.tooBig.map((i) => esc(label(i))).join(", ")}</p>` : "");
+    }
+
+    $("rows").addEventListener("input", (e) => {
+      const el = e.target as HTMLInputElement | HTMLSelectElement;
+      const i = Number(el.closest("tr")?.dataset.i);
+      const f = el.dataset.f as keyof Load | undefined;
+      if (!f || !loads[i]) return;
+      if (f === "kind") loads[i].kind = el.value as LoadKind;
+      else if (f === "name") loads[i].name = el.value.slice(0, 80);
+      else {
+        const n = num(el.value);
+        (loads[i][f] as number) = Number.isFinite(n) ? n : f === "duty" ? 100 : 0;
+      }
+      run();
+    });
+    $("rows").addEventListener("change", (e) => {
+      const el = e.target as HTMLSelectElement;
+      if (el.dataset.f !== "kind") return;
+      const i = Number(el.closest("tr")?.dataset.i);
+      if (loads[i]) loads[i].kind = el.value as LoadKind;
+      run();
+    });
+    $("rows").addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-del]");
+      if (!b) return;
+      loads.splice(Number(b.dataset.del), 1);
+      renderRows();
+      run();
+    });
+    $("bAdd").addEventListener("click", () => {
+      if (loads.length >= 200) return;
+      loads.push({ kind: "sensor", name: "", qty: 1, ma: 0, inrushMa: 0, duty: 100 });
+      renderRows();
+      run();
+    });
+    $("bEx").addEventListener("click", () => {
+      loads = EXAMPLE(lang);
+      renderRows();
+      run();
+    });
+    $("bClear").addEventListener("click", () => {
+      if (!confirm(T.clearAsk)) return;
+      loads = [];
+      renderRows();
+      run();
+    });
+    for (const id of ["v", "margin", "peak", "ch"]) $(id).addEventListener("input", run);
+    form.addEventListener("submit", (e) => e.preventDefault());
+    renderRows();
+    run();
+  </script>
+</Base>

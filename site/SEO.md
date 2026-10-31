@@ -93,6 +93,9 @@
 | rs485 통신 안됨 원인, 모드버스 응답 없음 원인, 4-20mA 값 이상, npn pnp 센서 입력 안들어옴, usb 장치 계속 끊김, 멀티미터로 rs485 점검·종단 저항 측정(60옴), 4-20mA 측정 방법, 24v 전압 강하 측정 | `/tools/troubleshoot/`·`/tools/multimeter-check/` | «통신·배선 고장 원인 찾기 — RS485·Modbus·4-20mA·센서», «멀티미터 측정값 점검 — RS485 저항·4-20mA·24V 강하» |
 | db9 핀배치·rs232 핀맵, rj45 568b 배열·랜선 색 순서, m12 4핀 선 색·m12 핀배치, m8 3핀, usb c 핀배치, rs485 a b 극성·d+ d- | `/tools/pinouts/` | «커넥터 핀 배치 사전 — DB9 RS232·RJ45·M12·M8·USB 핀배치», 설명에 «수/암 정면 그림·선 색·출처» |
 | 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서 | `/tools/commissioning-checklist/` | «시운전·설치 점검표 만들기 (PLC·인버터·RS485)», 설명에 «구성 요소 고르면 단계별·인쇄·CSV» |
+| 24v 전원 용량 계산, smps 용량 선정, 파워서플라이 용량 계산, 돌입 전류 | `/tools/power-supply-sizing/` + 가이드 `24v-power-supply-check` | «24V 전원 용량 계산기 — SMPS 용량 선정·돌입 전류·여유율», 여유율 «일반적으로 20~30 %», 예시 값은 예시라고 밝힘 |
+| io 리스트 양식·만들기, 통신 사양서, 모드버스 레지스터 맵 엑셀 | `/tools/io-list/` | «IO 리스트·통신 사양서 만들기 — Modbus 레지스터 표», 설명에 «주소 겹침·국번 중복 점검·장비 맵에서 가져오기» |
+| 인수인계 문서·준공 서류, 시운전 결과 보고서, 현장 문서 정리 | `/tools/handover-pack/` | «인수인계 문서 만들기 — 구성도·IO 리스트·점검표», 설명에 «브라우저 안에서만·HTML·PDF» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -194,6 +197,9 @@
 | rs485 troubleshooting, modbus no response troubleshooting, 4-20ma troubleshooting, npn pnp sensor not detected, usb keeps disconnecting, rs485 termination resistance measurement 60 ohm, measure 4-20ma with multimeter, rs232 voltage levels | `/en/tools/troubleshoot/`, `/en/tools/multimeter-check/` | «Field Troubleshooting Wizard: RS-485, Modbus, 4–20 mA», «Multimeter Reading Checker: RS-485, 4–20 mA, 24 V» |
 | db9 pinout, rs232 pinout, rj45 pinout t568b, m12 pinout colors, m8 3 pin pinout, usb c pinout, rs485 a b polarity | `/en/tools/pinouts/` | «Connector Pinout Reference: DB9 RS-232, RJ45, M12, M8, USB» |
 | commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template | `/en/tools/commissioning-checklist/` | «Commissioning Checklist Maker: PLC, VFD, RS-485, Network» |
+| 24v power supply sizing, power supply sizing calculator, din rail power supply calculator, inrush current | `/en/tools/power-supply-sizing/` + guide `24v-power-supply-check` | «24V Power Supply Sizing Calculator: Inrush, Margin» |
+| io list template, plc io list, modbus register map template, communication specification | `/en/tools/io-list/` | «I/O List & Modbus Register Map Maker: CSV, Print» |
+| handover documentation, commissioning report template, site handover pack | `/en/tools/handover-pack/` | «Site Handover Pack: Diagram, I/O List, Checklist» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |

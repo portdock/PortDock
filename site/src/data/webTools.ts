@@ -67,7 +67,10 @@ export interface WebTool {
     | "tools/troubleshoot/"
     | "tools/multimeter-check/"
     | "tools/pinouts/"
-    | "tools/commissioning-checklist/";
+    | "tools/commissioning-checklist/"
+    | "tools/power-supply-sizing/"
+    | "tools/io-list/"
+    | "tools/handover-pack/";
   name: L;
   blurb: L;
 }
@@ -395,6 +398,21 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/commissioning-checklist/",
     name: { ko: "시운전·설치 점검표 만들기", en: "Commissioning Checklist Maker" },
     blurb: { ko: "PC·PLC·HMI·인버터·전력 미터·4-20mA·RS-485·스위치·USB-시리얼을 고르면 설치 전 → 전원 → 통신 → 기록 단계별 점검표. 체크·메모 저장, 인쇄, CSV.", en: "Pick PC, PLC, HMI, drive, power meter, 4-20 mA, RS-485, switch, USB-serial and get a step-by-step checklist from installation to records. Ticks and notes saved, print, CSV." },
+  },
+  {
+    path: "tools/io-list/",
+    name: { ko: "IO 리스트·통신 사양서 만들기", en: "I/O List & Communication Spec Maker" },
+    blurb: { ko: "장비별 통신(RTU·TCP·국번·IP·보율)과 태그·주소·함수·형식·워드 순서·스케일 표. 주소 겹침·국번 중복 점검, 장비 맵에서 가져오기, CSV(엑셀)·JSON·인쇄.", en: "Per-device communication (RTU/TCP, unit ID, IP, baud) with tags, addresses, functions, types, word order and scale. Overlap and duplicate-ID checks, device map import, CSV (Excel), JSON, print." },
+  },
+  {
+    path: "tools/handover-pack/",
+    name: { ko: "현장 문서 묶음 만들기(인수인계)", en: "Site Handover Pack Maker" },
+    blurb: { ko: "구성도 JSON·IO 리스트 JSON·시운전 점검표 CSV·연락처·메모 → 표지·목차가 붙은 인쇄용 문서 한 장. HTML 저장·PDF 인쇄, 브라우저 안에서만.", en: "Diagram JSON, I/O list JSON, commissioning checklist CSV, contacts and notes → one printable document with cover and contents. Save HTML or print to PDF, in your browser only." },
+  },
+  {
+    path: "tools/power-supply-sizing/",
+    name: { ko: "24V DC 전원 용량 계산기", en: "24 V DC Power Supply Sizing Calculator" },
+    blurb: { ko: "PLC·HMI·센서·밸브·릴레이 코일의 전류·돌입 전류·동시 사용률 → 합계, 여유를 둔 정격(흔한 정격에서), 돌입 피크 비교, 서킷 프로텍터 채널 나누기.", en: "Current, inrush and duty of PLCs, HMIs, sensors, valves and relay coils → total, rating with headroom (common sizes), inrush check and circuit protector channels." },
   },
 ];
 
