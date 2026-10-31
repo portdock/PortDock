@@ -28,7 +28,7 @@ export const help: HelpDoc = {
       title: "화면 구성",
       body: [
         "- 왼쪽: COM 포트 목록(지금 있는 것이 먼저, COM 번호순). 문제 코드가 있는 장치는 빨간 번호, 지금 없는 장치는 «지금 없음», Ports 장치 목록에 없는 COM(모뎀·가상 COM 드라이버 등)은 «장치 정보 없음» 이 붙습니다. ↻ 로 목록을 다시 읽습니다.",
-        "- 가운데 맨 위 탭: «COM 포트»(아래 카드들)와 «무선 (Wi-Fi·블루투스)» — 무선 탭은 고른 COM 포트와 상관없이 이 PC 의 Wi-Fi·블루투스를 봅니다(«무선» 절).",
+        "- 가운데 맨 위 탭: «COM 포트»(아래 카드들), «무선 (Wi-Fi·블루투스)», «지난번과 비교»(0.10.0 부터 — «지난번과 비교» 절) — 무선 탭은 고른 COM 포트와 상관없이 이 PC 의 Wi-Fi·블루투스를 봅니다(«무선» 절).",
         "- 가운데 위 도구줄: 고른 포트와 전체 결과(카드 가운데 가장 무거운 것), 읽은 시각, «다시 읽기»(F4), «텍스트 복사», «JSON 복사», «저장…».",
         "- 카드는 머리를 눌러 접고 펼칩니다(카드마다 기억). 설정의 «모두 펼치기» 를 켜면 모두 펼친 채 시작합니다.",
         "- 맨 아래 «PC 가 볼 수 없는 것» 상자와 portdock.dev 가이드 링크는 늘 보입니다.",
@@ -163,6 +163,18 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "지난번과 비교 — 점검 결과 저장 (0.10.0 부터)",
+      id: "compare",
+      body: [
+        "유지보수 때 «지난번과 무엇이 달라졌나» 를 봅니다. «지난번과 비교» 탭에서 이름(예: 3호기 정기점검)을 넣고 «지금 상태 저장» 을 누르면 지금 상태를 새로 읽어 저장하고, 다음에 저장본을 골라 «지금과 비교» 를 누르면 다시 읽어 바뀐 것만 표로 보입니다.",
+        "- 읽는 것: 지금 연결된 COM 포트 목록과 포트마다 드라이버(제공자·버전·날짜·INF)·USB 위치(허브 포트 사슬)·USB 속도·Windows 포트 기본값·장치 설정(FTDI 지연 타이머 등)·«PC 가 이 장치를 끌 수 있음», 랜카드(연결·링크 속도·이중·IPv4·게이트웨이·네트워크 프로필·절전·고급 속성), «이 PC» 설정(빠른 시작·절전·USB 선택적 절전·업데이트·재시작 대기·화면 보호기·시간 동기화)과 블루스크린·갑자기 꺼짐 기록, NVMe 디스크의 경고 비트·미디어 오류·사용률. 이벤트 로그를 훑어 몇 초 걸릴 수 있습니다.",
+        "- 보이는 예: COM3 → COM7(COM 번호 바뀜), 드라이버 버전·날짜 바뀜(Windows 업데이트?), USB 위치 바뀜(다른 포트에 꽂음), 점보 프레임 꺼짐, 랜카드 절전 켜짐, 절전·업데이트 설정 바뀜, 새 블루스크린 기록, 새로 생긴·사라진 장치·랜카드. «새로 생김» 초록, «사라짐» 빨강, «바뀜» 노랑.",
+        "- 같은 장치 알아보기: 장치 인스턴스 ID 에는 일련번호가 들어 있어 쓰지 않고, VID:PID 와 USB 허브 포트 사슬로 알아봅니다. 같은 변환기를 다른 USB 포트에 꽂아도 VID:PID 가 양쪽에 하나뿐이면 같은 장치로 보고 «USB 위치 바뀜» 으로 적습니다.",
+        "- 저장본에 넣지 않는 것: 장치 일련번호·인스턴스 ID, PC 이름, 사용자 폴더(«~» 로 가림), 연결한 네트워크 이름, 통계 카운터, 디스크 온도. 랜카드 IP 주소는 들어 있습니다. 이 PC 의 앱 저장소에 20개까지 남고 어디에도 보내지 않습니다. «파일로 저장…»·«파일에서 불러오기…» 로 JSON 파일을 주고받습니다.",
+        "- 한쪽에서 읽지 못한 묶음(예: 이 PC)은 비교하지 않고 그렇다고 적습니다. «글로 복사»·«비교 CSV» 로 결과를 남기고, 머리줄 «AI» 복사에도 비교 결과가 들어갑니다. 아무것도 바꾸지 않습니다.",
+      ],
+    },
+    {
       title: "PC 가 볼 수 없는 것",
       id: "cannot",
       body: [
@@ -241,7 +253,7 @@ export const help: HelpDoc = {
       title: "Screen layout",
       body: [
         "- Left: the COM port list (connected first, by COM number). Devices with a problem code show a red number, devices not connected now show «not connected», and COMs not in the port device list (modems, virtual COM drivers …) show «no device info». ↻ reloads the list.",
-        "- Tabs at the very top of the middle: «COM ports» (the cards below) and «Wireless (Wi-Fi, Bluetooth)» — the wireless tab looks at this PC's Wi-Fi and Bluetooth regardless of the chosen COM port (see «Wireless»).",
+        "- Tabs at the very top of the middle: «COM ports» (the cards below), «Wireless (Wi-Fi, Bluetooth)» and «Compare with last time» (from 0.10.0 — see that section) — the wireless tab looks at this PC's Wi-Fi and Bluetooth regardless of the chosen COM port (see «Wireless»).",
         "- Top toolbar: the chosen port and the overall result (the heaviest of the cards), read time, «Refresh» (F4), «Copy text», «Copy JSON», «Save…».",
         "- Click a card header to fold or unfold it (remembered per card). With «Expand all» in Settings every card starts open.",
         "- The «What the PC cannot see» box with portdock.dev guide links is always shown at the bottom.",
@@ -373,6 +385,18 @@ export const help: HelpDoc = {
         "- «Copy text», «Copy JSON» and «Save…» on this tab contain only the wireless results and hide Bluetooth audio device names as «Device 1» and so on. The screen still shows the names.",
         "- What the PC cannot see: the network name, signal, channel and nearby Wi-Fi, the router and provider side and internet speed, 2.4 GHz interference (microwave ovens, USB 3 devices), the headset's battery and firmware, and the list of paired devices. The Windows wireless report (netsh wlan show wlanreport) needs administrator rights and is not read.",
         "- To log when and how often drops happen over time, use the «Wi-Fi / internet drop log» tab in PortDock Hardware Tester (also noted at the bottom of this tab).",
+      ],
+    },
+    {
+      title: "Compare with last time — saved checks (from 0.10.0)",
+      id: "compare",
+      body: [
+        "For maintenance: «what changed since last time?». In the «Compare with last time» tab, type a name (e.g. Machine 3 routine check) and press «Save current state» to read and save the current state; later pick it and press «Compare with now» to read again and see only the changes in a table.",
+        "- What is read: the connected COM ports, and per port the driver (provider, version, date, INF), USB location (hub port chain), USB speed, Windows port default, device settings (FTDI latency timer etc.) and «PC may turn this device off»; network adapters (connected, link speed, duplex, IPv4, gateway, network profile, power saving, advanced properties); «This PC» settings (fast startup, sleep, USB selective suspend, updates, pending restart, screen saver, time sync), blue screen and sudden shutdown records, and NVMe disk critical warning, media errors and percentage used. Scanning the event logs can take a few seconds.",
+        "- Examples: COM3 → COM7 (COM number changed), driver version or date changed (Windows Update?), USB location changed (plugged into another port), jumbo frames turned off, adapter power saving turned on, sleep or update settings changed, a new blue screen record, devices or adapters that appeared or disappeared. «New» green, «Missing» red, «Changed» yellow.",
+        "- Recognising the same device: the device instance ID contains the serial number, so it is not used; devices are matched by VID:PID and the USB hub port chain. The same adapter plugged into another USB port is still the same device when its VID:PID is unique on both sides, shown as «USB location changed».",
+        "- Not stored: device serial numbers and instance IDs, the PC name, the user folder (shown as «~»), connected network names, statistics counters, disk temperature. Adapter IP addresses are included. Up to 20 are kept in the app's storage on this PC and nothing is sent anywhere. «Save to file…» and «Load from file…» exchange JSON files.",
+        "- An area that could not be read on one side (e.g. This PC) is not compared, and that is stated. «Copy as text» and «Comparison CSV» keep the result; the header «AI» copy includes it too. Nothing is changed.",
       ],
     },
     {

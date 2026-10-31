@@ -2351,6 +2351,31 @@ async function runApp(app, port) {
       await clickText(".tabs .seg", ko ? "COM 포트" : "COM ports");
       await expectJs("back to ports", "return document.querySelectorAll('details.card').length === 9 && /COM5/.test(document.querySelector('.toolbar .sel-title').textContent)");
 
+      // ---- (0.10.0) 지난번과 비교 — 지금 상태 저장 → 그대로 비교(바뀐 것 없음) → COM3 드라이버 버전을 바꾼 뒤 비교(«바뀜» 노랑, 새로 생김·사라짐 없음).
+      //      저장본(localStorage)에 인스턴스 ID 의 일련번호 조각이 없고, 비교 결과 글에 금지어가 없다
+      await clickText(".tabs .seg", ko ? "지난번과 비교" : "Compare with last time");
+      await expectJs("compare tab", `return !!document.querySelector('.cmp-pane') && /${ko ? "일련번호" : "serial numbers"}/.test(document.querySelector('.cmp-notes').textContent)`);
+      await js("__sm.setVal(document.querySelector('.cmp-bar input.sn-name'), 'smoke-1')");
+      await clickText(".cmp-bar .btn", ko ? "지금 상태 저장" : "Save current state");
+      await expectJs("snapshot saved", "return document.querySelector('.cmp-bar select').value === 'smoke-1'", 6000);
+      await expectJs("snapshot private", "const s = localStorage.getItem('snapshots') || ''; return s.includes('smoke-1') && !s.includes('PD000001') && !s.includes('2A1B3C') && !s.includes('ROOT_HUB30')");
+      await clickText(".cmp-bar .btn", ko ? "지금과 비교" : "Compare with now");
+      await expectJs("snapshot same", "return !!document.querySelector('.sn-same')", 6000);
+      await js("window.__pdMock.piDriverVer = { COM3: '3.9.2025.1' }");
+      await clickText(".cmp-bar .btn", ko ? "지금과 비교" : "Compare with now");
+      await expectJs(
+        "snapshot changed",
+        `const rows = [...document.querySelectorAll('.sn-table tbody tr')];
+        return rows.some((r) => /3\\.9\\.2024\\.9/.test(r.textContent) && /3\\.9\\.2025\\.1/.test(r.textContent) && !!r.querySelector('.chg-changed'))
+          && !document.querySelector('.sn-table .chg-new, .sn-table .chg-gone') && !${BAN}.test(document.querySelector('.cmp-pane').innerText)`,
+        6000,
+      );
+      if (combo.full) await shot(app, `${combo.name}-compare`);
+      await js("window.__pdMock.piDriverVer = null");
+      await verify("snapshot compare");
+      await clickText(".tabs .seg", ko ? "COM 포트" : "COM ports");
+      await expectJs("back to ports 2", "return document.querySelectorAll('details.card').length === 9");
+
       // ---- 연결 시험: 루프백(묻고 시작) → 속도 5개 «볼 것»(왕복 16ms)
       const startLoop = async (step) => {
         await clickText(".loop-panel .loop-actions .btn.primary", ko ? "시험 시작" : "Start test");
@@ -3173,6 +3198,53 @@ async function runApp(app, port) {
         await verify("ns row menu");
         // (0.3.0) 고른 장비 «TCP 로 열기»(502·웹 말고 열린 포트)
         await openAppCheck("ns-open-tcp", ".detail-actions .open-tcp", (o) => o.app === "tcp" && /^192\.168\.0\.1[01]:\d+$/.test(o.connect ?? ""));
+        // (0.10.0) 기준 목록: 두 주소를 다 찾은 뒤 «기준과 비교» 탭 → MAC 안내 → 기준 저장(기준과 같음) →
+        //          .10 의 MAC 을 바꾸고 .11 을 빼고 범위 밖 .12 를 더한 기준 파일을 불러와 비교(MAC 바뀜 빨강·새로 생김 초록·범위 밖 1) → AI 복사에 비교가 들어가고 MAC 뒤 3바이트는 가림
+        const bl = await jsAsync(String.raw`
+          const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+          for (let i = 0; i < 80 && document.querySelector('aside.side .btn.danger'); i++) await w();
+          document.querySelector('.tabs .tab-compare').click(); await w();
+          const a = { pane: !!document.querySelector('.cmp-pane'), macNote: (document.querySelector('.cmp-mac-note') || {}).textContent || '' };
+          __sm.setVal(document.querySelector('.cmp-bar input.bs-name'), 'smoke-base'); await w();
+          document.querySelector('.cmp-bar .btn.primary').click(); await w(400);
+          a.saved = document.querySelector('.cmp-bar select').value;
+          a.same = /기준과 같습니다|Same as the baseline/.test(document.querySelector('.cmp-notes').textContent);
+          const b = JSON.parse(localStorage.getItem('baselines'))[0];
+          b.name = 'smoke-file';
+          b.hosts = b.hosts.filter((h) => !h.ip.endsWith('.11')).map((h) => (h.ip.endsWith('.10') ? { ...h, mac: '02:00:5E:10:00:63' } : h));
+          b.hosts.push({ ip: '192.168.0.12', mac: '02:00:5E:10:00:0C', vendor: null, name: null, ports: [] });
+          window.__pdMock.files.set('C:\\smoke\\base.json', JSON.stringify(b));
+          window.__pdMock.dialog.open = 'C:\\smoke\\base.json';
+          [...document.querySelectorAll('.cmp-bar .btn')].find((x) => /파일에서|Load from file/.test(x.textContent)).click(); await w(500);
+          window.__pdMock.dialog.open = null;
+          a.loaded = document.querySelector('.cmp-bar select').value;
+          a.rows = [...document.querySelectorAll('.bs-table tbody tr')].map((tr) => tr.className + ' ' + tr.querySelector('.chg').className + ' ' + tr.cells[1].textContent);
+          a.outside = /192\.168\.0\.10-192\.168\.0\.11/.test(document.querySelector('.cmp-notes').textContent);
+          a.badge = (document.querySelector('.tabs .tab-compare .tab-n') || {}).textContent || '';
+          document.querySelector('.brand-tools .ai-copy-btn').click(); await w(400);
+          const ta = document.querySelector('.modal.ai-copy textarea.report-preview');
+          a.ai = ta ? ta.value : '';
+          __sm.key(window, 'Escape'); await w();
+          return a;`);
+        if (bl.fatal) add("ns baseline", "smoke-error", bl.fatal);
+        else if (
+          !bl.pane ||
+          !/MAC/.test(bl.macNote) ||
+          bl.saved !== "smoke-base" ||
+          !bl.same ||
+          bl.loaded !== "smoke-file" ||
+          !bl.rows.some((x) => /row-macChanged .*chg-macChanged.* 192\.168\.0\.10$/.test(x)) ||
+          !bl.rows.some((x) => /row-new .*chg-new.* 192\.168\.0\.11$/.test(x)) ||
+          bl.rows.some((x) => /row-gone/.test(x)) ||
+          !bl.outside ||
+          bl.badge !== "2" ||
+          !/(기준과 비교|Compared with baseline) «smoke-file»/.test(bl.ai) ||
+          /02:00:5E:10:00:63/.test(bl.ai) ||
+          !/02:00:5E:xx:xx:xx/.test(bl.ai)
+        )
+          await conv("ns-baseline", `기준 목록 비교가 이상함: ${JSON.stringify({ ...bl, ai: (bl.ai ?? "").slice(-400) })}`);
+        if (combo.full) await shot(app, `${combo.name}-baseline`);
+        await verify("ns baseline");
         await load(port, combo);
         await clickRun("ns scan again", (s) => s.btn !== idleBtn);
       }

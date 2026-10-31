@@ -2244,7 +2244,8 @@ function piReport(d) {
     location: d.vid ? "Port_#0002.Hub_#0001" : null,
     hardwareIds: d.vid ? [`USB\\VID_${hex2(d.vid >> 8)}${hex2(d.vid & 255)}&PID_${hex2(d.pid >> 8)}${hex2(d.pid & 255)}`] : ["ACPI\\PNP0501"],
     chip: d.chip,
-    driver: { provider: d.provider, version: d.ver, date: now() - 400 * DAY, inf: d.inf, service: d.svc },
+    // (0.10.0) «지난번과 비교» 시험 — __pdMock.piDriverVer = { COM3: "…" } 면 그 포트의 드라이버 버전을 바꿔 돌려준다
+    driver: { provider: d.provider, version: window.__pdMock.piDriverVer?.[d.port] ?? d.ver, date: now() - 400 * DAY, inf: d.inf, service: d.svc },
     status: {
       present: d.present,
       started: d.present && !d.problem,

@@ -14,6 +14,10 @@ export const api = {
   nics: () => tally("nics", invoke<NicList>("pi_nics")),
   pc: (days: number) => tally("pc_check", invoke<PcCheck>("pi_pc", { days })),
   wireless: (days: number) => tally("wireless", invoke<Wireless>("pi_wireless", { days })),
+  // 점검 결과 저장·비교(0.10.0) — 같은 명령을 사용 통계 없이(저장·비교 한 번이 포트마다 세지 않게)
+  reportQuiet: (id: string) => invoke<PortReport>("pi_report", { id }),
+  nicsQuiet: () => invoke<NicList>("pi_nics"),
+  pcQuiet: (days: number) => invoke<PcCheck>("pi_pc", { days }),
   writeText: (path: string, text: string) => invoke<void>("write_text", { path, text }),
   readText: (path: string) => invoke<string>("read_text", { path }),
 };
