@@ -1,0 +1,28 @@
+// Nomes das funções e áreas de dados Modbus (lib/modbusDecode.ts e shared/modbusBuild.ts) — usados pelo gerador de requisição e pelo decodificador
+// Termos: coils (bobinas), entradas discretas, holding registers, registradores de entrada — como nos manuais de inversores e CLPs em português
+export default {
+  "Read Coils": "Leitura de coils",
+  "Read Discrete Inputs": "Leitura de entradas discretas",
+  "Read Holding Registers": "Leitura de holding registers",
+  "Read Input Registers": "Leitura de registradores de entrada",
+  "Write Single Coil": "Escrita de um coil",
+  "Write Single Register": "Escrita de um registrador",
+  "Write Multiple Coils": "Escrita de múltiplos coils",
+  "Write Multiple Registers": "Escrita de múltiplos registradores",
+  "Read/Write Multiple Registers": "Leitura/escrita de múltiplos registradores",
+  "Read Exception Status (serial line only)": "Leitura do status de exceção (só linha serial)",
+  "Diagnostics (serial line only)": "Diagnóstico (só linha serial)",
+  "Get Comm Event Counter (serial line only)": "Contador de eventos de comunicação (só linha serial)",
+  "Get Comm Event Log (serial line only)": "Registro de eventos de comunicação (só linha serial)",
+  "Report Server ID (serial line only)": "Identificação do escravo (só linha serial)",
+  "Read File Record": "Leitura de registro de arquivo",
+  "Write File Record": "Escrita de registro de arquivo",
+  "Mask Write Register": "Escrita com máscara em registrador",
+  "Read FIFO Queue": "Leitura de fila FIFO",
+  "Encapsulated Interface Transport": "Transporte de interface encapsulada (identificação do equipamento etc.)",
+  "Unknown function": "Função desconhecida",
+  Coils: "Coils",
+  "Discrete inputs": "Entradas discretas",
+  "Holding registers": "Holding registers",
+  "Input registers": "Registradores de entrada",
+};
