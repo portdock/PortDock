@@ -81,7 +81,8 @@ export interface WebTool {
     | "tools/insulation-resistance/"
     | "tools/metric-threads/"
     | "tools/modbus-rtu-tcp/"
-    | "tools/modbus-practice/";
+    | "tools/modbus-practice/"
+    | "tools/logic-capture/";
   name: L;
   blurb: L;
 }
@@ -480,6 +481,11 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/modbus-practice/",
     name: { ko: "Modbus 연습장 (퀴즈)", en: "Modbus Practice Quiz" },
     blurb: { ko: "신입·교육용 자동 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 해설·가이드 링크·점수.", en: "Auto-generated practice for beginners — read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. Explanations, guide links, score." },
+  },
+  {
+    path: "tools/logic-capture/",
+    name: { ko: "로직 분석기 캡처 해석기 (UART·SPI·I2C·CAN)", en: "Logic Analyzer Capture Decoder (UART, SPI, I2C, CAN)" },
+    blurb: { ko: "sigrok·PulseView CSV, Saleae Logic 2 CSV, VCD → 채널 골라 UART(보율 자동 추정)·SPI 모드 0~3·I2C 주소/ACK·CAN(스터핑·CRC) 해석, 미니 파형·표·CSV. 브라우저 안에서만.", en: "sigrok/PulseView CSV, Saleae Logic 2 CSV or VCD → pick channels and decode UART (baud detection), SPI modes 0–3, I2C address/ACK, CAN (stuffing, CRC); mini waveform, table, CSV. In your browser only." },
   },
 ];
 
