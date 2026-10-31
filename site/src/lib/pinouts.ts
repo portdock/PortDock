@@ -9,7 +9,8 @@
 //   - M12·M8 의 원형 정면 배치(어느 위치가 몇 번인지)는 제조사 도면마다 그리는 방향이 달라 그리지 않는다 — 번호 목록 그림만.
 import { LIGHT, esc, type Palette } from "./diagramSvg.ts";
 
-export type Lang = "ko" | "en";
+import { msg as trMsg, tx as trTx, type Lang } from "./tr.ts";
+export type { Lang };
 export type L = { ko: string; en: string };
 
 /** 선 색 — 줄무늬는 «흰 바탕 + 색 줄» */
@@ -597,12 +598,14 @@ export function checkPins(c: Connector): string[] {
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_/·()]+/g, "");
 
 /** 찾기 — 낱말(빈칸으로 나눈 모두가 들어 있어야)·묶음 */
-export function filterConnectors(q: string, cat: Category | "" = "", list: Connector[] = CONNECTORS): Connector[] {
+export function filterConnectors(q: string, cat: Category | "" = "", list: Connector[] = CONNECTORS, lang?: Lang): Connector[] {
   const words = q.trim().split(/\s+/).map(norm).filter(Boolean);
   return list.filter((c) => {
     if (cat && c.cat !== cat) return false;
     if (!words.length) return true;
-    const hay = norm([c.id, c.name.ko, c.name.en, c.sum.ko, c.sum.en, ...c.tags, ...c.pins.flatMap((p) => [p.sig.ko, p.sig.en])].join(" "));
+    // 추가 언어(ja 등) 쪽이면 그 언어 이름·설명도 찾는다
+    const extra = lang && lang !== "ko" && lang !== "en" ? [trTx(c.name, lang), trTx(c.sum, lang), ...c.pins.map((p) => trTx(p.sig, lang))] : [];
+    const hay = norm([c.id, c.name.ko, c.name.en, c.sum.ko, c.sum.en, ...c.tags, ...c.pins.flatMap((p) => [p.sig.ko, p.sig.en]), ...extra].join(" "));
     return words.every((w) => hay.includes(w));
   });
 }
@@ -684,7 +687,7 @@ export interface SvgOpts {
 /** 커넥터 정면 그림(SVG 글). 핀마다 data-pin 이 붙어 있어 화면에서 눌러 강조할 수 있다 */
 export function pinoutSvg(c: Connector, view: ViewId, o: SvgOpts): string {
   const pal = o.pal ?? LIGHT;
-  const L = (x: L) => x[o.lang];
+  const L = (x: L) => trTx(x, o.lang);
   const pinOf = new Map(c.pins.map((p) => [p.n, p]));
   const body: string[] = [];
   let W = 360;
@@ -716,17 +719,16 @@ export function pinoutSvg(c: Connector, view: ViewId, o: SvgOpts): string {
   } else if (c.kind === "rj45") {
     W = 380;
     H = 296;
-    const ko = o.lang === "ko";
     // 몸통(위쪽 빈자리에 신호 이름을 세로로 쓴다)
     body.push(`<rect x="80" y="110" width="220" height="120" rx="6" fill="${pal.panel}" stroke="${pal.ink}" stroke-width="2"/>`);
     if (view === "plug") {
       body.push(`<rect x="150" y="230" width="80" height="34" fill="${pal.panel}" stroke="${pal.ink}" stroke-width="1.6"/>`);
-      body.push(label(190, 282, ko ? "케이블" : "cable", 11, pal.muted));
-      body.push(label(190, 222, ko ? "끝(꽂는 쪽)은 위 · 걸쇠는 뒤쪽" : "tip up · latch at the back", 10.5, pal.muted));
+      body.push(label(190, 282, trMsg(o.lang, "케이블", "cable"), 11, pal.muted));
+      body.push(label(190, 222, trMsg(o.lang, "끝(꽂는 쪽)은 위 · 걸쇠는 뒤쪽", "tip up · latch at the back"), 10.5, pal.muted));
     } else {
       body.push(`<rect x="160" y="214" width="60" height="16" fill="${pal.bg}" stroke="${pal.ink}" stroke-width="1.6"/>`);
-      body.push(label(190, 252, ko ? "걸쇠 홈(아래)" : "latch slot (down)", 11, pal.muted));
-      body.push(label(190, 200, ko ? "접점은 구멍 안 위쪽" : "contacts at the top inside", 10.5, pal.muted));
+      body.push(label(190, 252, trMsg(o.lang, "걸쇠 홈(아래)", "latch slot (down)"), 11, pal.muted));
+      body.push(label(190, 200, trMsg(o.lang, "접점은 구멍 안 위쪽", "contacts at the top inside"), 10.5, pal.muted));
     }
     for (const { id, x } of pinXY(c, view)) {
       const p = pinOf.get(id);
@@ -799,16 +801,15 @@ export function pinoutSvg(c: Connector, view: ViewId, o: SvgOpts): string {
 
 /** 표 한 줄(화면·복사 공용) — 번호, 신호, 설명, 색, 추가 칸 */
 export function rowCells(c: Connector, p: Pin, lang: Lang): string[] {
-  const cells = [p.n, p.sig[lang], p.desc?.[lang] ?? ""];
-  if (c.pins.some((q) => q.color)) cells.push(p.color ? WIRE[p.color].name[lang] : "");
-  for (const x of p.x ?? []) cells.push(x[lang]);
+  const cells = [p.n, trTx(p.sig, lang), p.desc ? trTx(p.desc, lang) : ""];
+  if (c.pins.some((q) => q.color)) cells.push(p.color ? trTx(WIRE[p.color].name, lang) : "");
+  for (const x of p.x ?? []) cells.push(trTx(x, lang));
   return cells;
 }
 
 export function headCells(c: Connector, lang: Lang): string[] {
-  const ko = lang === "ko";
-  const h = [ko ? "핀" : "Pin", ko ? "신호" : "Signal", ko ? "설명" : "Description"];
-  if (c.pins.some((q) => q.color)) h.push(c.colorCol?.[lang] ?? (ko ? "선 색" : "Colour"));
-  for (const x of c.cols ?? []) h.push(x[lang]);
+  const h = [trMsg(lang, "핀", "Pin"), trMsg(lang, "신호", "Signal"), trMsg(lang, "설명", "Description")];
+  if (c.pins.some((q) => q.color)) h.push(c.colorCol ? trTx(c.colorCol, lang) : trMsg(lang, "선 색", "Colour"));
+  for (const x of c.cols ?? []) h.push(trTx(x, lang));
   return h;
 }

@@ -2,7 +2,8 @@
 // 01·02 바이트 수 3 은 둘 다)으로 풀고, 모양이 둘 다 맞으면 두 해석을 다 돌려준다. 시험값도 그쪽 것을 쓴다(modbusDecode.test.ts).
 // 근거: Modbus Application Protocol Specification V1.1b3(함수·예외·개수 한도), Modbus over Serial Line V1.02(RTU 프레임·국번·CRC),
 // Modbus Messaging on TCP/IP Implementation Guide V1.0b(MBAP 머리).
-import { crc16Modbus, hex, type Lang } from "./checksum.ts";
+import { crc16Modbus, hex } from "./checksum.ts";
+import { msg, tx, type Lang } from "./tr.ts";
 
 export type WireMode = "auto" | "rtu" | "tcp";
 /** 데이터 표 — co 코일 · di 입력 접점 · hr 보유 레지스터 · ir 입력 레지스터 */
@@ -51,7 +52,6 @@ export interface Decoded {
   notes: string[];
 }
 
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 const h2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");
 const h4 = (n: number) => "0x" + n.toString(16).toUpperCase().padStart(4, "0");
 const u16 = (b: number[], i: number) => (b[i] << 8) | b[i + 1];
@@ -82,7 +82,7 @@ export const DECODED_FUNCS = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0f, 0x10, 0x
 
 export function funcName(fc: number, lang: Lang) {
   const f = FUNCS[fc & 0x7f];
-  return f ? f[lang] : msg(lang, "알 수 없는 함수", "Unknown function");
+  return f ? tx(f, lang) : msg(lang, "알 수 없는 함수", "Unknown function");
 }
 
 /** 예외 코드(Application Protocol V1.1b3 §7). 07·09 는 이 판에 정의가 없다 */
@@ -175,7 +175,7 @@ export function decodePdu(pdu: number[], lang: Lang): Reading[] {
     if (n !== 2) issues.push(t(`예외 응답 PDU 는 2바이트여야 합니다(지금 ${n})`, `An exception response PDU is 2 bytes (got ${n})`));
     if (code !== undefined && !e) issues.push(t(`예외 코드 ${h2(code)} 는 규격에 없습니다`, `Exception code ${h2(code)} is not in the specification`));
     const fields = [f(t("함수", "Function"), 0, 1, `${h2(fc)} = ${h2(fc & 0x7f)} | 80 — ${funcName(fc, lang)}`)];
-    if (code !== undefined) fields.push(f(t("예외 코드", "Exception code"), 1, 1, `${h2(code)} ${e?.name ?? "?"}${e ? " — " + e[lang] : ""}`));
+    if (code !== undefined) fields.push(f(t("예외 코드", "Exception code"), 1, 1, `${h2(code)} ${e?.name ?? "?"}${e ? " — " + tx(e, lang) : ""}`));
     out.push({ role: "exception", title: t("예외 응답", "Exception response"), fields, tables: [], issues });
     return out;
   }
@@ -203,8 +203,8 @@ export function decodePdu(pdu: number[], lang: Lang): Reading[] {
     return {
       role: "response",
       title: t("응답으로 보면", "As a response"),
-      fields: [fcField, f(t("바이트 수", "Byte count"), 1, 1, String(pdu[1])), f(t("데이터", "Data"), 2, data.length, t(`${values.length} ${bit ? "비트" : "개 레지스터"}`, `${values.length} ${bit ? "bits" : "registers"}`))],
-      tables: [{ space, start: null, values, caption: SPACE[space][lang] }],
+      fields: [fcField, f(t("바이트 수", "Byte count"), 1, 1, String(pdu[1])), f(t("데이터", "Data"), 2, data.length, (bit ? t(`${values.length} 비트`, `${values.length} bits`) : t(`${values.length} 개 레지스터`, `${values.length} registers`)))],
+      tables: [{ space, start: null, values, caption: tx(SPACE[space], lang) }],
       issues,
     };
   };
@@ -236,7 +236,7 @@ export function decodePdu(pdu: number[], lang: Lang): Reading[] {
         role: "echo",
         title: t("요청 또는 응답 — 정상 응답은 요청을 그대로 되돌립니다", "Request or response — a normal response echoes the request"),
         fields: [fcField, f(t("주소", "Address"), 1, 2, `${a} (${plcAddr(space, a)})`), f(t("값", "Value"), 3, 2, shown)],
-        tables: fc === 0x06 ? [{ space, start: a, values: [v], caption: SPACE[space][lang] }] : [],
+        tables: fc === 0x06 ? [{ space, start: a, values: [v], caption: tx(SPACE[space], lang) }] : [],
         issues,
       });
       break;
@@ -273,9 +273,9 @@ export function decodePdu(pdu: number[], lang: Lang): Reading[] {
             f(t("시작 주소", "Start address"), 1, 2, `${a} (${plcAddr(space, a)})`),
             f(t("개수", "Quantity"), 3, 2, String(q)),
             f(t("바이트 수", "Byte count"), 5, 1, String(pdu[5])),
-            f(t("쓸 값", "Values"), 6, data.length, t(`${values.length} ${bit ? "비트" : "개 레지스터"}`, `${values.length} ${bit ? "bits" : "registers"}`)),
+            f(t("쓸 값", "Values"), 6, data.length, (bit ? t(`${values.length} 비트`, `${values.length} bits`) : t(`${values.length} 개 레지스터`, `${values.length} registers`))),
           ],
-          tables: [{ space, start: a, values, caption: SPACE[space][lang] }],
+          tables: [{ space, start: a, values, caption: tx(SPACE[space], lang) }],
           issues,
         });
       }

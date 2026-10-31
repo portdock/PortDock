@@ -8,18 +8,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { CONNECTORS, CATEGORIES } from "../lib/pinouts";
+import { tx } from "../lib/tr";
+import { isCore } from "../i18n/langs";
 import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link, webToolText, isTranslated } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/pinouts/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "커넥터 핀 배치 사전 — DB9·RJ45·M12·M8·USB·RS-485",
       h1: "커넥터 핀 배치 사전",
@@ -57,8 +60,12 @@ const L = ko
       sys: "시스템 구성도 그리기",
       check: "시운전·유지보수 점검표 만들기",
       seeAlso: "함께 쓰기:",
+      cablePre: "커넥터에 맞는 케이블(이더넷 등급·RS-485·RS-232 길이)은 ",
+      cableLink: "케이블 선정 도우미",
+      cablePost: " 를 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Connector Pinout Reference — DB9, RJ45, M12, M8, USB, RS-485",
       h1: "Connector pinout reference",
       desc: "Pin numbers, signals and wire colours for DB9/DB25, RJ45, Modbus RJ45/DB9, M12, M8 and USB, with male/female front views, tables and sources.",
@@ -95,7 +102,11 @@ const L = ko
       sys: "System diagram editor",
       check: "Commissioning and maintenance checklist",
       seeAlso: "Use with:",
-    };
+      cablePre: "For the cable behind the connector (Ethernet category, RS-485, RS-232 length), see the ",
+      cableLink: "cable selection helper",
+      cablePost: ".",
+    }
+  : dict(lang).pages.pinouts;
 const T = {
   copied: L.copied,
   notes: L.notes,
@@ -114,16 +125,19 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
   linkPaths.map((p) => {
     const g = GUIDES.find((x) => `guides/${x.slug}/` === p);
     const w = WEB_TOOLS.find((x) => x.path === p);
-    return [p, { href: url(lang, p), name: g ? g.title[lang] : w ? w.name[lang] : p }];
+    // 추가 언어 쪽: 번역된 웹 도구는 그 언어 이름, 나머지(가이드 등)는 영어판 이름·주소
+    const nl = isCore(lang) ? lang : isTranslated(lang, p) ? null : "en";
+    const name = nl === null && w ? webToolText(w, lang).name : g ? g.title[nl ?? "en"] : w ? w.name[nl ?? "en"] : p;
+    return [p, { href: link(lang, p), name }];
   }),
 );
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["pinouts"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.intro}</p>
     </div>
@@ -133,15 +147,15 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
       <label class="fld">{L.search}<input id="q" type="search" placeholder={L.searchPh} autocomplete="off" /></label>
       <div class="pp-cats" role="group" aria-label={L.search}>
         <button type="button" class="pp-chip" data-cat="" aria-pressed="true">{L.all}</button>
-        {CATEGORIES.map((c) => <button type="button" class="pp-chip" data-cat={c.id} aria-pressed="false">{c.name[lang]}</button>)}
+        {CATEGORIES.map((c) => <button type="button" class="pp-chip" data-cat={c.id} aria-pressed="false">{tx(c.name, lang)}</button>)}
       </div>
       <ul class="pp-list" id="list">
         {
           CONNECTORS.map((c) => (
             <li data-id={c.id} data-cat={c.cat}>
               <button type="button" class="pp-item" data-id={c.id}>
-                <b>{c.name[lang]}</b>
-                <small>{c.sum[lang]}</small>
+                <b>{tx(c.name, lang)}</b>
+                <small>{tx(c.sum, lang)}</small>
               </button>
             </li>
           ))
@@ -172,8 +186,8 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
       <p>
-        {L.seeAlso} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a> · <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a> ·{" "}
-        <a href={url(lang, "tools/commissioning-checklist/")}>{L.check}</a>
+        {L.seeAlso} <a href={link(lang, "tools/wiring/")}>{L.wiring}</a> · <a href={link(lang, "tools/system-diagram/")}>{L.sys}</a> ·{" "}
+        <a href={link(lang, "tools/commissioning-checklist/")}>{L.check}</a>
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -185,7 +199,7 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
         ))
       }
       <p>
-        {ko ? "커넥터에 맞는 케이블(이더넷 등급·RS-485·RS-232 길이)은 " : "For the cable behind the connector (Ethernet category, RS-485, RS-232 length), see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+        {L.cablePre}<a href={link(lang, "tools/cable-selection/")}>{L.cableLink}</a>{L.cablePost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -329,9 +343,10 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
     import { CONNECTORS, VIEWS, VIEW_NAME, WIRE, connectorById, filterConnectors, headCells, rowCells, pinoutSvg, type Category, type Connector, type ViewId } from "../lib/pinouts";
     import { LIGHT, esc } from "../lib/diagramSvg";
     import { saveText, screenPalette, onThemeChange } from "../lib/fileSave";
+    import { tx, type Lang } from "../lib/tr";
 
     const root = document.getElementById("pp") as HTMLElement;
-    const lang = (root.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (root.dataset.lang ?? "ko") as Lang;
     const T = JSON.parse(root.dataset.t ?? "{}") as Record<string, string>;
     const LINKS = JSON.parse(root.dataset.links ?? "{}") as Record<string, { href: string; name: string }>;
     const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
@@ -359,7 +374,7 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
     }
 
     function drawList() {
-      const ids = new Set(filterConnectors(($("q") as HTMLInputElement).value, cat).map((c) => c.id));
+      const ids = new Set(filterConnectors(($("q") as HTMLInputElement).value, cat, undefined, lang).map((c) => c.id));
       let shown = 0;
       for (const li of $("list").querySelectorAll<HTMLElement>("li")) {
         const on = ids.has(li.dataset.id ?? "");
@@ -396,14 +411,14 @@ const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries
     }
 
     function drawDetail() {
-      $("cName").textContent = cur.name[lang];
-      $("cSum").textContent = cur.sum[lang];
+      $("cName").textContent = tx(cur.name, lang);
+      $("cSum").textContent = tx(cur.sum, lang);
       $("views").innerHTML = VIEWS[cur.kind]
-        .map((v) => `<button type="button" class="pp-chip" data-view="${v}" aria-pressed="${v === view}">${esc(VIEW_NAME[v][lang])}</button>`)
+        .map((v) => `<button type="button" class="pp-chip" data-view="${v}" aria-pressed="${v === view}">${esc(tx(VIEW_NAME[v], lang))}</button>`)
         .join("");
       drawSvg();
       drawTable();
-      const notes = [...cur.notes.map((n) => n[lang]), ...(cur.colorNote ? [cur.colorNote[lang]] : [])];
+      const notes = [...cur.notes.map((n) => tx(n, lang)), ...(cur.colorNote ? [tx(cur.colorNote, lang)] : [])];
       const links = (cur.links ?? []).map((p) => LINKS[p]).filter(Boolean);
       $("extra").innerHTML =
         `<h3>${esc(T.notes)}</h3><ul>${notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` +

@@ -1,0 +1,47 @@
+---
+// 추가 언어(ja 등) 쪽 하나를 그린다 — pages/<언어>/[...path].astro 가 부른다. 쪽 이름 → 화면(views/) 표.
+// 번역 범위(scope.ts)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
+import type { ExtraLang } from "./langs";
+import { SCOPE, type PageId, type ScopePath } from "./scope";
+import Home from "../views/Home.astro";
+import ToolsIndex from "../views/ToolsIndex.astro";
+import DownloadPage from "../views/DownloadPage.astro";
+import SafetyPage from "../views/SafetyPage.astro";
+import PrivacyPage from "../views/PrivacyPage.astro";
+import AnalogScalePage from "../views/AnalogScalePage.astro";
+import ModbusPage from "../views/ModbusPage.astro";
+import ModbusDecoderPage from "../views/ModbusDecoderPage.astro";
+import ModbusFloatPage from "../views/ModbusFloatPage.astro";
+import McDecoderPage from "../views/McDecoderPage.astro";
+import Rs485Page from "../views/Rs485Page.astro";
+import SerialTimingPage from "../views/SerialTimingPage.astro";
+import ChecksumPage from "../views/ChecksumPage.astro";
+import SubnetPage from "../views/SubnetPage.astro";
+import PinoutsPage from "../views/PinoutsPage.astro";
+
+interface Props {
+  lang: ExtraLang;
+  path: ScopePath;
+}
+const VIEWS = {
+  home: Home,
+  tools: ToolsIndex,
+  download: DownloadPage,
+  safety: SafetyPage,
+  privacy: PrivacyPage,
+  analog: AnalogScalePage,
+  modbus: ModbusPage,
+  modbusDecoder: ModbusDecoderPage,
+  modbusFloat: ModbusFloatPage,
+  mcDecoder: McDecoderPage,
+  rs485: Rs485Page,
+  serialTiming: SerialTimingPage,
+  checksum: ChecksumPage,
+  subnet: SubnetPage,
+  pinouts: PinoutsPage,
+} satisfies Record<PageId, unknown>;
+const { lang, path } = Astro.props;
+const View = VIEWS[SCOPE[path]];
+---
+
+<View lang={lang} />

@@ -8,14 +8,14 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { bias, roughMaxLength } from "../lib/rs485";
 import { BAUDS } from "../lib/serialTiming";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/rs485/";
 const mv = (v: number) => `${Math.round(v * 1000)} mV`;
 // 정적 표: 흔한 조합의 유휴 전압
@@ -28,9 +28,11 @@ const COMBOS = [
   { vcc: 3.3, r: 560, t: 120 },
   { vcc: 3.3, r: 390, t: 120 },
 ].map((c) => ({ ...c, v: bias({ vcc: c.vcc, rUp: c.r, rDown: c.r, ends: ["r", "r"], rTerm: c.t }).vIdle }));
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "RS-485 종단·바이어스 저항 계산기",
+      seo: "RS485 종단·바이어스 저항 계산기 (120Ω·페일세이프) — PortDock",
       desc: "바이어스(페일세이프) 풀업·풀다운과 120·150 Ω 종단이 만드는 유휴 차동 전압이 수신기 문턱 200 mV 를 넘는지, 저항 전력과 보율별 길이 한계를 계산합니다.",
       vcc: "바이어스 전원(V)",
       up: "풀업 Ω (B/D1 → 전원)",
@@ -92,9 +94,20 @@ const L = ko
       ],
       guideNote: "배선 전체 점검 순서는",
       guideLink: "RS485 통신이 안 될 때 — 배선 점검 다섯 가지",
+      figAlt: "RS-485 바이어스: B(D1) 선은 풀업 저항으로 5 V 에, A(D0) 선은 풀다운 저항으로 공통에 연결되고, 양 끝 종단 저항 두 개가 A–B 사이에서 바이어스 전류의 길이 되는 회로",
+      figCap: "바이어스 전류는 풀업 → 종단 저항(병렬) → 풀다운으로 흐르고, 종단 양단 전압이 유휴 차동 전압이 됩니다.",
+      /** 앞 · 멀티미터 링크 · 가운데 · 고장 찾기 링크 · 가운데 · 배선도 링크 · 뒤 */
+      more: ["현장에서 A–B 저항(약 60 Ω)·쉬는 전압(+200 mV)을 재 봤다면 ", "멀티미터 측정값 점검기", " 에 넣어 보고, 응답이 없으면 ", "고장 원인 찾기 도우미", " 를 따라가 보세요. 배선 그림은 ", "배선도 만들기", " 로 그리면 됩니다."],
+      cablePre: "RS-485 케이블(꼬임쌍·차폐·특성 임피던스) 고르기는 ",
+      cableLink: "케이블 선정 도우미",
+      cablePost: " 를 보세요.",
+      noDc: "직류 경로 없음",
+      badNum: "숫자를 확인하세요 — 저항과 보율은 0 보다 크고, 전압은 0 이상이어야 합니다",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "RS-485 Termination & Bias Resistor Calculator",
+      seo: "RS-485 Bias & Termination Resistor Calculator — PortDock",
       desc: "Do failsafe bias resistors and 120/150 Ω termination keep the idle line above the 200 mV receiver threshold? Plus resistor power and cable length vs baud.",
       vcc: "Bias supply (V)",
       up: "Pull-up Ω (B/D1 → supply)",
@@ -156,7 +169,16 @@ const L = ko
       ],
       guideNote: "For the full wiring checklist see",
       guideLink: "RS-485 wiring checks: no reply or garbled data",
-    };
+      figAlt: "RS-485 biasing: B (D1) pulled up to 5 V and A (D0) pulled down to common, with the two end terminators across A–B carrying the bias current",
+      figCap: "Bias current flows pull-up → terminators (in parallel) → pull-down; the voltage across the terminators is the idle differential voltage.",
+      more: ["If you have measured A–B resistance (about 60 Ω) or idle voltage (+200 mV) on site, enter it in the ", "multimeter reading checker", "; if nothing replies, follow the ", "field troubleshooting wizard", ". For a wiring drawing, use the ", "wiring diagram maker", "."],
+      cablePre: "For choosing RS-485 cable (twisted pair, shield, impedance), see the ",
+      cableLink: "cable selection helper",
+      cablePost: ".",
+      noDc: "no DC path",
+      badNum: "Check the numbers — resistances and baud above 0, voltage 0 or more",
+    }
+  : dict(lang).pages.rs485;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -168,17 +190,17 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "RS485 종단·바이어스 저항 계산기 (120Ω·페일세이프) — PortDock" : "RS-485 Bias & Termination Resistor Calculator — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="rb" data-t={JSON.stringify({ ok: L.ok, ng: L.ng, inRange: L.inRange, outRange: L.outRange })}>
+    <form class="calc card" id="rb" data-t={JSON.stringify({ ok: L.ok, ng: L.ng, inRange: L.inRange, outRange: L.outRange, noDc: L.noDc, badNum: L.badNum })}>
       <div class="row">
         <label class="fld">{L.vcc}<input id="vcc" class="mono" value="5" list="vccs" inputmode="decimal" spellcheck="false" autocomplete="off" /><datalist id="vccs"><option value="5" /><option value="3.3" /></datalist></label>
         <label class="fld">{L.up}<input id="up" class="mono" value="560" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -208,8 +230,9 @@ const SRC = [
       <h2>{L.whyTitle}</h2>
       {L.why.map((p) => <p>{p}</p>)}
       <figure class="fig">
-        <img src={`/img/guides/rs485-bias.${lang}.svg`} width="780" height="300" alt={ko ? "RS-485 바이어스: B(D1) 선은 풀업 저항으로 5 V 에, A(D0) 선은 풀다운 저항으로 공통에 연결되고, 양 끝 종단 저항 두 개가 A–B 사이에서 바이어스 전류의 길이 되는 회로" : "RS-485 biasing: B (D1) pulled up to 5 V and A (D0) pulled down to common, with the two end terminators across A–B carrying the bias current"} loading="lazy" decoding="async" />
-        <figcaption>{ko ? "바이어스 전류는 풀업 → 종단 저항(병렬) → 풀다운으로 흐르고, 종단 양단 전압이 유휴 차동 전압이 됩니다." : "Bias current flows pull-up → terminators (in parallel) → pull-down; the voltage across the terminators is the idle differential voltage."}</figcaption>
+        {/* 그림 글자는 한국어·영어 두 벌만 — 추가 언어 쪽은 영어 그림 */}
+        <img src={`/img/guides/rs485-bias.${lang === "ko" ? "ko" : "en"}.svg`} width="780" height="300" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
       </figure>
       <h2>{L.fTitle}</h2>
       <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
@@ -252,15 +275,15 @@ const SRC = [
         ))
       }
       <p>
-        {L.guideNote} <a href={url(lang, "guides/rs485-wiring/")}>{L.guideLink}</a>.
+        {L.guideNote} <a href={link(lang, "guides/rs485-wiring/")}>{L.guideLink}</a>{ui(lang).period}
       </p>
       <p>
-        {ko ? "현장에서 A–B 저항(약 60 Ω)·쉬는 전압(+200 mV)을 재 봤다면 " : "If you have measured A–B resistance (about 60 Ω) or idle voltage (+200 mV) on site, enter it in the "}<a href={url(lang, "tools/multimeter-check/#rs485-ohm")}>{ko ? "멀티미터 측정값 점검기" : "multimeter reading checker"}</a>{ko ? " 에 넣어 보고, 응답이 없으면 " : "; if nothing replies, follow the "}<a href={url(lang, "tools/troubleshoot/#s=rs485")}>{ko ? "고장 원인 찾기 도우미" : "field troubleshooting wizard"}</a>{ko ? " 를 따라가 보세요. 배선 그림은 " : ". For a wiring drawing, use the "}<a href={url(lang, "tools/wiring/")}>{ko ? "배선도 만들기" : "wiring diagram maker"}</a>{ko ? " 로 그리면 됩니다." : "."}
+        {L.more[0]}<a href={link(lang, "tools/multimeter-check/#rs485-ohm")}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, "tools/troubleshoot/#s=rs485")}>{L.more[3]}</a>{L.more[4]}<a href={link(lang, "tools/wiring/")}>{L.more[5]}</a>{L.more[6]}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
       <p>
-        {ko ? "RS-485 케이블(꼬임쌍·차폐·특성 임피던스) 고르기는 " : "For choosing RS-485 cable (twisted pair, shield, impedance), see the "}<a href={url(lang, "tools/cable-selection/#rs485")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+        {L.cablePre}<a href={link(lang, "tools/cable-selection/#rs485")}>{L.cableLink}</a>{L.cablePost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -269,7 +292,7 @@ const SRC = [
   <script>
     import { bias, maxBiasR, roughMaxLength, type TermKind } from "../lib/rs485";
     const form = document.getElementById("rb") as HTMLFormElement;
-    const T = JSON.parse(form.dataset.t ?? "{}") as { ok: string; ng: string; inRange: string; outRange: string };
+    const T = JSON.parse(form.dataset.t ?? "{}") as { ok: string; ng: string; inRange: string; outRange: string; noDc: string; badNum: string };
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim();
@@ -281,7 +304,6 @@ const SRC = [
       const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
       if (td) td.textContent = v;
     };
-    const ko = document.documentElement.lang === "ko";
     const fx = (x: number, d = 1) => {
       const s = x.toFixed(d);
       return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
@@ -299,7 +321,7 @@ const SRC = [
         if (!(baud > 0)) throw new Error();
         const r = bias({ vcc, rUp: up, rDown: down, ends: [$<HTMLSelectElement>("e1").value as TermKind, $<HTMLSelectElement>("e2").value as TermKind], rTerm: num("rt") });
         err.textContent = "";
-        set("rLine", r.rLine === Infinity ? (ko ? "직류 경로 없음" : "no DC path") : `${fx(r.rLine)} Ω`);
+        set("rLine", r.rLine === Infinity ? T.noDc : `${fx(r.rLine)} Ω`);
         set("vIdle", `${Math.round(r.vIdle * 1000)} mV`);
         set("iBias", `${fx(r.iBias * 1000, 2)} mA`);
         set("pUp", watt(r.pUp));
@@ -313,7 +335,7 @@ const SRC = [
         v2.className = "verdict " + (inR ? "ok" : "warn");
         v2.textContent = inR ? T.inRange : T.outRange;
       } catch {
-        err.textContent = ko ? "숫자를 확인하세요 — 저항과 보율은 0 보다 크고, 전압은 0 이상이어야 합니다" : "Check the numbers — resistances and baud above 0, voltage 0 or more";
+        err.textContent = T.badNum;
         v1.textContent = "";
         v2.textContent = "";
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";

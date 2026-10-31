@@ -3,14 +3,17 @@
 // 갈래마다 프로그램 1~3개(앞이 대표). 웹 도구로 보내는 갈래(통신 기록 분석·PC 하드웨어 테스트)도 있다.
 // 프로그램 설명은 tools.ts 의 tagline 을 그대로 쓴다(코드에 있는 기능만).
 // toRow: 내려받기 쪽에서는 프로그램 이름이 소개 쪽이 아니라 그 쪽 표의 줄(#dl-<id>, MCP 는 #mcp-dl)로 간다.
-import { toolById, isApp, type Lang, type Tool } from "../data/tools";
-import { url } from "../lib/i18n";
+// 추가 언어(ja 등)의 문구는 i18n/<언어>/common.ts 의 pick(갈래 id 로 찾는다), 프로그램 소개 쪽 링크는 영어판으로 간다.
+import { toolById, isApp, type Tool } from "../data/tools";
+import { url, link, appTagline } from "../lib/i18n";
+import { dict } from "../i18n";
+import { isCore, type SiteLang } from "../i18n/langs";
 import { appIcon } from "../lib/appIcons";
 import { WEB_TOOLS } from "../data/webTools";
 import { groupOf } from "../data/webToolGroups";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   /** 제목 id(쪽 안에서 겹치지 않게) */
   id?: string;
   /** 프로그램 링크를 내려받기 표의 줄로 */
@@ -18,18 +21,21 @@ interface Props {
 }
 const { lang, id = "pick-app", toRow = false } = Astro.props;
 const ko = lang === "ko";
+const x = isCore(lang) ? null : dict(lang).common.pick;
 const hwCount = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw").length;
 
 type Item = { app: Tool["id"]; note?: { ko: string; en: string } } | { web: string; name: { ko: string; en: string }; note: { ko: string; en: string } };
-const PATHS: { q: { ko: string; en: string }; items: Item[] }[] = [
-  { q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, items: [{ app: "serial" }, { app: "plot" }] },
-  { q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, items: [{ app: "modbus-master" }, { app: "modbus-slave" }] },
-  { q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, items: [{ app: "netscan" }, { app: "tcp" }, { app: "udp" }] },
-  { q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, items: [{ app: "plc-simulator" }, { app: "simulator" }, { app: "modbus-slave" }] },
-  { q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, items: [{ app: "scpi" }, { app: "plot" }] },
-  { q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, items: [{ app: "port-inspector" }, { app: "hw-tester" }] },
-  { q: { ko: "AI 에서 장비 읽기 (MCP)", en: "Read devices from an AI client (MCP)" }, items: [{ app: "mcp" }] },
+type PathId = "serial" | "modbus" | "net" | "sim" | "scpi" | "pc" | "mcp" | "pcap";
+const PATHS: { id: PathId; q: { ko: string; en: string }; items: Item[] }[] = [
+  { id: "serial", q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, items: [{ app: "serial" }, { app: "plot" }] },
+  { id: "modbus", q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, items: [{ app: "modbus-master" }, { app: "modbus-slave" }] },
+  { id: "net", q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, items: [{ app: "netscan" }, { app: "tcp" }, { app: "udp" }] },
+  { id: "sim", q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, items: [{ app: "plc-simulator" }, { app: "simulator" }, { app: "modbus-slave" }] },
+  { id: "scpi", q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, items: [{ app: "scpi" }, { app: "plot" }] },
+  { id: "pc", q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, items: [{ app: "port-inspector" }, { app: "hw-tester" }] },
+  { id: "mcp", q: { ko: "AI 에서 장비 읽기 (MCP)", en: "Read devices from an AI client (MCP)" }, items: [{ app: "mcp" }] },
   {
+    id: "pcap",
     q: { ko: "통신 기록 분석 (pcap) — 응답 시간·무응답", en: "Analyse a traffic capture (pcap) — response times, missing replies" },
     items: [
       { web: "tools/pcap-analyzer/", name: { ko: "pcap 해석기", en: "pcap Analyzer" }, note: { ko: "Wireshark·pktmon 캡처를 브라우저에서 바로(설치 없음) — Modbus TCP·MC 요청/응답 짝", en: "Wireshark or pktmon captures in your browser, no install — Modbus TCP and MC request/response pairs" } },
@@ -38,37 +44,44 @@ const PATHS: { q: { ko: string; en: string }; items: Item[] }[] = [
   },
 ];
 for (const it of PATHS.flatMap((p) => p.items)) if ("web" in it && !WEB_TOOLS.some((w) => w.path === it.web)) throw new Error(`PickApp: 없는 웹 도구 ${it.web}`);
-const appHref = (x: Tool) => (toRow ? (isApp(x) ? `#dl-${x.id}` : "#mcp-dl") : url(lang, `${x.id}/`));
+const appHref = (t: Tool) => (toRow ? (isApp(t) ? `#dl-${t.id}` : "#mcp-dl") : link(lang, `${t.id}/`));
+// 갈래 질문·딸린 설명 — 추가 언어는 사전에서(웹 도구는 영어판으로: pcap 해석기는 번역 범위 밖)
+const qText = (p: (typeof PATHS)[number]) => (x ? x.q[p.id] : p.q[lang as "ko" | "en"]);
+const noteText = (p: (typeof PATHS)[number], it: Item) => {
+  if (!x) return "app" in it ? (it.note ?? toolById(it.app).tagline)[lang as "ko" | "en"] : it.note[lang as "ko" | "en"];
+  if ("web" in it) return x.pcapNote;
+  return it.note ? x.notes[`${p.id}:${it.app}` as keyof typeof x.notes] : appTagline(toolById(it.app), lang);
+};
 ---
 
 <section class="pick-app" aria-labelledby={id}>
-  <h2 id={id}>{ko ? "무엇을 하려나요?" : "What do you want to do?"}</h2>
+  <h2 id={id}>{x ? x.title : ko ? "무엇을 하려나요?" : "What do you want to do?"}</h2>
   <div class="pick-grid">
     {
       PATHS.map((p) => (
         <div class="card">
-          <h3>{p.q[lang]}</h3>
+          <h3>{qText(p)}</h3>
           <ul>
             {p.items.map((it) =>
               "app" in it ? (
                 (() => {
-                  const x = toolById(it.app);
+                  const a = toolById(it.app);
                   return (
                     <li>
-                      <a href={appHref(x)} data-row={toRow ? x.id : undefined}>
-                        {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="20" height="20" loading="lazy" decoding="async" />}
-                        <b>{x.name.replace("PortDock ", "")}</b>
+                      <a href={appHref(a)} data-row={toRow ? a.id : undefined}>
+                        {appIcon(a.id) && <img class="app-icon sm" src={appIcon(a.id)} alt="" width="20" height="20" loading="lazy" decoding="async" />}
+                        <b>{a.name.replace("PortDock ", "")}</b>
                       </a>
-                      <small>{(it.note ?? x.tagline)[lang]}</small>
+                      <small>{noteText(p, it)}</small>
                     </li>
                   );
                 })()
               ) : (
                 <li>
-                  <a href={url(lang, it.web)}>
-                    <b>{it.name[lang]}</b>
+                  <a href={link(lang, it.web)}>
+                    <b>{x ? x.pcapName : it.name[lang as "ko" | "en"]}</b>
                   </a>
-                  <small>{it.note[lang]}</small>
+                  <small>{noteText(p, it)}</small>
                 </li>
               ),
             )}
@@ -77,11 +90,11 @@ const appHref = (x: Tool) => (toRow ? (isApp(x) ? `#dl-${x.id}` : "#mcp-dl") : u
       ))
     }
     <div class="card">
-      <h3>{ko ? "마이크·키보드·마우스·웹캠·모니터 시험" : "Test a mic, keyboard, mouse, webcam or monitor"}</h3>
+      <h3>{x ? x.hwTitle : ko ? "마이크·키보드·마우스·웹캠·모니터 시험" : "Test a mic, keyboard, mouse, webcam or monitor"}</h3>
       <ul>
         <li>
-          <a href={url(lang, "tools/#g-hw")}><b>{ko ? "PC 하드웨어 테스트" : "PC hardware tests"}</b></a>
-          <small>{ko ? `윈도우 프로그램이 아니라 브라우저에서 바로(설치 없음) — ${hwCount}종` : `Not a Windows program — runs in your browser, no install (${hwCount} tests)`}</small>
+          <a href={x ? url("en", "tools/#g-hw") : url(lang, "tools/#g-hw")}><b>{x ? x.hwName : ko ? "PC 하드웨어 테스트" : "PC hardware tests"}</b></a>
+          <small>{x ? x.hwNote(hwCount) : ko ? `윈도우 프로그램이 아니라 브라우저에서 바로(설치 없음) — ${hwCount}종` : `Not a Windows program — runs in your browser, no install (${hwCount} tests)`}</small>
         </li>
       </ul>
     </div>

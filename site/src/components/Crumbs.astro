@@ -1,11 +1,11 @@
 ---
 // 빵부스러기 — 화면 줄(PortDock / 가이드 / …)과 검색엔진용 BreadcrumbList(JSON-LD)를 같은 목록에서 만든다.
 // 첫 칸은 늘 첫 화면, 마지막 칸은 지금 페이지(링크 없음).
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { ui, url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   /** 첫 화면 다음부터 — path 는 언어를 뺀 경로(예: "guides/"). 마지막 칸(지금 페이지)도 path 를 준다 */
   items: { name: string; path: string }[];
 }
@@ -23,7 +23,7 @@ const ld = {
 };
 ---
 
-<nav class="crumb" aria-label={lang === "ko" ? "현재 위치" : "Breadcrumb"}>
+<nav class="crumb" aria-label={ui(lang).breadcrumb}>
   <ol>
     {
       all.map((c, i) =>

@@ -6,15 +6,35 @@
 // SECURITY.md 를 고치면 이 페이지도 함께 맞춘다.
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { REPO, type Lang } from "../data/tools";
-import { UI, url } from "../lib/i18n";
+import { REPO } from "../data/tools";
+import { ui, url } from "../lib/i18n";
+import { dict } from "../i18n";
+import { PROSE } from "../i18n/prose";
+import type { SiteLang } from "../i18n/langs";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
+const L =
+  lang === "ko"
+    ? {
+        desc: "PortDock 이 하는 일과 하지 않는 일: 점검은 읽기 전용, 서버별 기본 주소, 장비에 쓸 때의 확인, AI(MCP) 쓰기 제한, 보내는 것, 파일 확인과 보안 신고.",
+        h1: "PortDock 안전 원칙 — 하는 일과 하지 않는 일",
+        intro:
+          "현장 장비 옆에서 쓰는 도구라, 무엇을 읽기만 하고 무엇을 쓰는지, 어디서 접속을 받는지, 무엇을 밖으로 보내는지 한 장에 적습니다. 자세한 근거는 저장소의 SECURITY.md 와 각 프로그램 사용법에 있습니다.",
+      }
+    : lang === "en"
+      ? {
+          desc: "What PortDock does and does not do: read-only checks, default server addresses, write safeguards, AI (MCP) write limits, what is sent and security reports.",
+          h1: "PortDock safety principles — what it does and does not do",
+          intro:
+            "These tools sit next to real equipment, so this page lists in one place what is only read and what is written, where connections are accepted and what leaves your PC. The details are in the repository's SECURITY.md and each program's guide.",
+        }
+      : dict(lang).pages.safety;
+// 추가 언어의 본문(문장 안에 링크가 있어 마크업으로) — i18n/<언어>/SafetyBody.astro
+const Body = lang === "ko" || lang === "en" ? null : PROSE[lang].safety;
 const security = `${REPO}/blob/main/SECURITY.md`;
 const advisory = `${REPO}/security/advisories/new`;
 const kosha = "https://www.kosha.or.kr/";
@@ -24,25 +44,21 @@ const osha = "https://www.osha.gov/electrical";
 <Base
   lang={lang}
   title={t.safety}
-  description={ko
-    ? "PortDock 이 하는 일과 하지 않는 일: 점검은 읽기 전용, 서버별 기본 주소, 장비에 쓸 때의 확인, AI(MCP) 쓰기 제한, 보내는 것, 파일 확인과 보안 신고."
-    : "What PortDock does and does not do: read-only checks, default server addresses, write safeguards, AI (MCP) write limits, what is sent and security reports."}
+  description={L.desc}
   path="safety/"
 >
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: t.safety, path: "safety/" }]} />
-      <h1>{ko ? "PortDock 안전 원칙 — 하는 일과 하지 않는 일" : "PortDock safety principles — what it does and does not do"}</h1>
-      <p>
-        {ko
-          ? "현장 장비 옆에서 쓰는 도구라, 무엇을 읽기만 하고 무엇을 쓰는지, 어디서 접속을 받는지, 무엇을 밖으로 보내는지 한 장에 적습니다. 자세한 근거는 저장소의 SECURITY.md 와 각 프로그램 사용법에 있습니다."
-          : "These tools sit next to real equipment, so this page lists in one place what is only read and what is written, where connections are accepted and what leaves your PC. The details are in the repository's SECURITY.md and each program's guide."}
-      </p>
+      <h1>{L.h1}</h1>
+      <p>{L.intro}</p>
     </div>
   </header>
   <div class="wrap prose" style="padding-top:20px">
     {
-      ko ? (
+      Body ? (
+        <Body />
+      ) : lang === "ko" ? (
         <>
           <h2>1. 점검은 읽기만 합니다</h2>
           <ul>

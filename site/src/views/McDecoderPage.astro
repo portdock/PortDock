@@ -8,19 +8,22 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { hex } from "../lib/checksum";
 import { buildRequest, frameText, END_CODES, MC_DEVICES } from "../lib/mcDecode";
+import { msg, tx } from "../lib/tr";
 import { MC_MANUALS } from "../data/guides";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/mc-decoder/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "MC 프로토콜(SLMP) 프레임 해석기",
+      seo: "MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이 — PortDock",
       desc: "MC 프로토콜(SLMP) 3E·4E 프레임을 HEX 나 ASCII 로 붙여 넣으면 머리 칸·명령·디바이스·점 수·값·종료 코드를 풀어 줍니다. 요청 프레임 만들기도 함께.",
       input: "프레임 (HEX 바이트 또는 ASCII 글자)",
       help: "예: 50 00 00 FF FF 03 00 0C 00 … · 500000FF03FF000018… — 프레임 하나씩. 이진·ASCII 와 3E·4E, 요청·응답은 서브헤더와 길이 칸으로 가립니다.",
@@ -73,9 +76,20 @@ const L = ko
       ],
       guideNote: "칸마다 풀이는 가이드",
       appNote: "PLC 없이 자기 프로그램의 통신을 시험하려면",
+      binaryShort: "이진",
+      guide1: "MC 프로토콜 3E 이진 프레임 읽는 법",
+      guideMid: ", 종료 코드는 ",
+      guide2: "MC 종료 코드 확인 순서",
+      guidePost: " 를 보세요.",
+      guide3: "PLC 없이 MC 프로토콜 통신 시험하기",
+      pcapPre: "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) ",
+      pcapLink: "산업 통신 pcap 해석기",
+      pcapPost: " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "MC Protocol (SLMP) Frame Decoder",
+      seo: "MC Protocol (SLMP) Frame Decoder: 3E/4E Online — PortDock",
       desc: "Paste an MC protocol (SLMP) 3E or 4E frame as HEX or ASCII to decode the header, command, device, points, values and end code. It can build requests too.",
       input: "Frame (HEX bytes or ASCII characters)",
       help: "e.g. 50 00 00 FF FF 03 00 0C 00 … · 500000FF03FF000018… — one frame at a time. Binary/ASCII, 3E/4E and request/response are told apart by the subheader and length field.",
@@ -128,7 +142,17 @@ const L = ko
       ],
       guideNote: "For a field-by-field walkthrough see",
       appNote: "To test your own program's communication without a PLC, use",
-    };
+      binaryShort: "Binary",
+      guide1: "Reading an MC protocol 3E binary frame",
+      guideMid: "; for end codes see ",
+      guide2: "MC protocol end codes: what to check",
+      guidePost: ".",
+      guide3: "Testing MC protocol communication without a PLC",
+      pcapPre: "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the ",
+      pcapLink: "Industrial pcap Analyzer",
+      pcapPost: ". Clicking a row there opens that frame in this decoder.",
+    }
+  : dict(lang).pages.mcDecoder;
 
 // 예시 — mc.rs 시험의 매뉴얼 예와 같은 프레임
 const B = (o: Parameters<typeof buildRequest>[0]) => frameText(buildRequest(o), o.code);
@@ -149,11 +173,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이 — PortDock" : "MC Protocol (SLMP) Frame Decoder: 3E/4E Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["checksum", "mc"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -203,7 +227,7 @@ const ld = {
         </label>
         <label class="fld" style="flex:0 1 140px">
           {L.code}
-          <select id="b-code"><option value="binary">{ko ? "이진" : "Binary"}</option><option value="ascii">ASCII</option></select>
+          <select id="b-code"><option value="binary">{L.binaryShort}</option><option value="ascii">ASCII</option></select>
         </label>
       </div>
       <div class="row">
@@ -261,8 +285,8 @@ const ld = {
               Object.entries(END_CODES).map(([code, e]) => (
                 <tr>
                   <td class="mono">{Number(code).toString(16).toUpperCase()}</td>
-                  <td>{e[lang]}</td>
-                  <td>{ko ? e.whenKo : e.whenEn}</td>
+                  <td>{tx(e, lang)}</td>
+                  <td>{msg(lang, e.whenKo, e.whenEn)}</td>
                 </tr>
               ))
             }
@@ -281,7 +305,7 @@ const ld = {
               MC_DEVICES.map((d) => (
                 <tr>
                   <td class="mono">{d.name}</td>
-                  <td>{d[lang]}</td>
+                  <td>{tx(d, lang)}</td>
                   <td class="mono">{d.code.toString(16).toUpperCase()}</td>
                   <td>{d.hex ? L.hexNo : L.decNo}</td>
                   <td>{d.bits ? L.bit : L.word}</td>
@@ -296,22 +320,22 @@ const ld = {
         {
           MC_MANUALS.map((r) => (
             <li>
-              <a href={r.url} rel="noopener">{r.title}</a> — {r.note[lang]}
+              <a href={r.url} rel="noopener">{r.title}</a> — {tx(r.note, lang)}
             </li>
           ))
         }
       </ul>
       <p class="note">{L.notAffiliated}</p>
       <p>
-        {L.guideNote} <a href={url(lang, "guides/mc-protocol-3e-binary-frame/")}>{ko ? "MC 프로토콜 3E 이진 프레임 읽는 법" : "Reading an MC protocol 3E binary frame"}</a>{ko ? ", 종료 코드는 " : "; for end codes see "}
-        <a href={url(lang, "guides/mc-protocol-end-codes/")}>{ko ? "MC 종료 코드 확인 순서" : "MC protocol end codes: what to check"}</a>{ko ? " 를 보세요." : "."}
+        {L.guideNote} <a href={link(lang, "guides/mc-protocol-3e-binary-frame/")}>{L.guide1}</a>{L.guideMid}
+        <a href={link(lang, "guides/mc-protocol-end-codes/")}>{L.guide2}</a>{L.guidePost}
       </p>
       <p>
-        {L.appNote} <a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a>{ko ? " — " : " — "}<a href={url(lang, "guides/mc-protocol-test-without-plc/")}>{ko ? "PLC 없이 MC 프로토콜 통신 시험하기" : "Testing MC protocol communication without a PLC"}</a>.
+        {L.appNote} <a href={link(lang, "plc-simulator/")}>PortDock PLC Simulator</a> — <a href={link(lang, "guides/mc-protocol-test-without-plc/")}>{L.guide3}</a>{ui(lang).period}
       </p>
       <p>
-        {ko ? "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) " : "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the "}
-        <a href={url(lang, "tools/pcap-analyzer/")}>{ko ? "산업 통신 pcap 해석기" : "Industrial pcap Analyzer"}</a>{ko ? " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다." : ". Clicking a row there opens that frame in this decoder."}
+        {L.pcapPre}
+        <a href={link(lang, "tools/pcap-analyzer/")}>{L.pcapLink}</a>{L.pcapPost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -356,12 +380,11 @@ const ld = {
     }
   </style>
   <script>
-    import { type Lang } from "../lib/checksum";
+    import { msg, type Lang } from "../lib/tr";
     import { decodeMc, buildRequest, frameText, devByName, parseStart, endText, type Field, type Item, type McMode, type BuildOp, type McFrame, type McCode } from "../lib/mcDecode";
     const form = document.getElementById("mcd") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const t = (k: string, e: string) => msg(lang, k, e);
     const data = document.getElementById("data") as HTMLTextAreaElement;
     const pair = document.getElementById("pair") as HTMLInputElement;
     const mode = document.getElementById("mode") as HTMLSelectElement;

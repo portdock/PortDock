@@ -7,17 +7,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { ORDERS } from "../lib/modbusFloat";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus 실수 변환기",
+      seo: "Modbus 실수(float) 변환기 — 레지스터 바이트 순서 — PortDock",
       desc: "Modbus 레지스터 2개·4개를 IEEE 754 float32·float64 와 int32·uint32 로 풀고, 실수를 레지스터 값으로 바꿉니다. ABCD·CDAB·BADC·DCBA 네 순서를 한 표로 비교합니다.",
       decodeTitle: "레지스터 → 값",
       encodeTitle: "값 → 레지스터",
@@ -60,8 +63,10 @@ const L = ko
       ],
       appNote: "장비에서 레지스터를 직접 읽어 보려면",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus Float Converter",
+      seo: "Modbus Float Converter — Registers ↔ IEEE 754 — PortDock",
       desc: "Decode 2 or 4 Modbus registers as IEEE 754 float32/float64 or int32/uint32, and back. Compare ABCD, CDAB, BADC and DCBA byte orders in one table.",
       decodeTitle: "Registers → value",
       encodeTitle: "Value → registers",
@@ -103,7 +108,8 @@ const L = ko
         ["I get NaN or Infinity", "In IEEE 754, an exponent with all bits set means infinity when the fraction is zero and NaN otherwise. Either the order is wrong or the device sent it on purpose; see the manual for its error-value rules."],
       ],
       appNote: "To read the registers from a device directly, use",
-    };
+    }
+  : dict(lang).pages.modbusFloat;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -111,11 +117,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 실수(float) 변환기 — 레지스터 바이트 순서 — PortDock" : "Modbus Float Converter — Registers ↔ IEEE 754 — PortDock"} description={L.desc} path="tools/modbus-float/" ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path="tools/modbus-float/" ads libText={["modbusFloat"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/modbus-float/" }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: "tools/modbus-float/" }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -150,7 +156,7 @@ const ld = {
                   <td>
                     <b class="mono">{o.order}</b>
                     <br />
-                    <span class="note">{o[lang]}</span>
+                    <span class="note">{tx(o, lang)}</span>
                   </td>
                   <td class="mono b" />
                   <td class="mono f" />
@@ -196,7 +202,7 @@ const ld = {
                   <td>
                     <b class="mono">{o.order}</b>
                     <br />
-                    <span class="note">{o[lang]}</span>
+                    <span class="note">{tx(o, lang)}</span>
                   </td>
                   <td class="mono h" />
                   <td class="mono d" />
@@ -219,7 +225,7 @@ const ld = {
         {L.manual.map((p) => <li>{p}</li>)}
       </ul>
       <p>
-        {L.addrPre} <a href={url(lang, "guides/modbus-address-notation/")}>{L.addrGuide}</a> {L.addrPost} <a href={url(lang, "tools/modbus/")}>{L.reqTool}</a>{L.reqPost}
+        {L.addrPre} <a href={link(lang, "guides/modbus-address-notation/")}>{L.addrGuide}</a> {L.addrPost} <a href={link(lang, "tools/modbus/")}>{L.reqTool}</a>{L.reqPost}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -231,7 +237,7 @@ const ld = {
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+        {L.appNote} <a href={link(lang, "modbus-master/")}>PortDock Modbus Master</a>{ui(lang).period}
       </p>
     </section>
     <UseNotice lang={lang} />

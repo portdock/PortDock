@@ -3,10 +3,15 @@
 //   --assets: 실제 릴리스 자산 이름(한 줄에 하나 — 예: gh api repos/portdock/PortDock/releases/latest --jq '.assets[].name')과도 대조. 없으면 release.yml 기준만
 // 실패(종료 코드 1): 릴리스 내려받기 링크(/releases/latest/download/<이름>)가 release.yml 이 만드는 파일 이름에 없음, 제목·설명 없음·중복·너무 김, h1 이 하나가 아님, 제목 단계 건너뜀, img alt 없음,
 //   canonical·hreflang 이 SITE 와 다름, x-default 가 영어판(hreflang en)과 다름, JSON-LD 파싱 실패·필수 필드 없음, 깨진 내부 링크, sitemap 누락, robots.txt 의 Sitemap 줄 없음.
+//   여러 언어(site/src/i18n/langs.ts·scope.ts): hreflang 은 서로 짝이 맞아야 하고(A 가 B 를 가리키면 B 도 같은 묶음), 쪽 자신의 언어를 포함해야 하며,
+//   추가 언어(ja 등)는 번역 범위(scope.ts)의 쪽에만 — 빌드 결과·sitemap 의 /<언어>/ 주소가 번역 범위 목록과 같아야 한다. sitemap 의 xhtml:link 도 있는 쪽만 가리켜야 한다.
 // 길이 기준(대략): 검색 결과 제목 약 600px, 설명 약 920px. 한글·한자 한 글자 = 2칸, 나머지 = 1칸으로 세어 제목 66칸·설명 160칸까지.
 import fs from "node:fs";
 import path from "node:path";
 import { releaseAssetNames } from "./release-assets.mjs";
+// 언어 목록·번역 범위는 사이트 소스 한 곳에서(node 가 .ts 를 그대로 읽는다 — 타입 지우기)
+import { LANGS, LANG_META, EXTRA_LANGS } from "../site/src/i18n/langs.ts";
+import { extraPages } from "../site/src/i18n/scope.ts";
 
 const argv = process.argv.slice(2);
 const ai = argv.indexOf("--assets");
@@ -120,6 +125,9 @@ const descs = new Map();
 const indexable = [];
 const ldCount = {};
 const linkTargets = new Set();
+/** 쪽 경로 → { hreflang: href } (짝 검사용) */
+const altsOf = new Map();
+const HREFLANGS = new Set([...LANGS.map((l) => LANG_META[l].hreflang), "x-default"]);
 const dlLinks = new Map();
 let biggest = { file: "", size: 0 };
 
@@ -159,6 +167,11 @@ for (const f of htmlFiles) {
       else if (!h[1].startsWith(SITE + "/")) err(file, `hreflang ${want} 이 사이트 주소가 아님: ${h[1]}`);
       else linkTargets.add(new URL(h[1]).pathname + "|" + file);
     }
+    for (const [l] of hl) if (!HREFLANGS.has(l)) err(file, `모르는 hreflang ${l}(site/src/i18n/langs.ts 에 없음)`);
+    if (new Set(hl.map(([l]) => l)).size !== hl.length) err(file, "hreflang 이 겹칩니다");
+    const mine = hl.find(([l]) => l === lang);
+    if (lang && (!mine || mine[1] !== SITE + pagePath(f))) err(file, `hreflang 에 이 쪽 자신(${lang} → ${SITE + pagePath(f)})이 없음`);
+    altsOf.set(pagePath(f), Object.fromEntries(hl));
     // x-default = 영어판(한국어·영어 어느 쪽도 아닌 방문자는 영어판으로)
     const xd = hl.find(([l]) => l === "x-default");
     const en = hl.find(([l]) => l === "en");
@@ -220,6 +233,19 @@ for (const lt of linkTargets) {
 }
 for (const [p, from] of broken) err(from.slice(0, 3).join(", ") + (from.length > 3 ? ` 외 ${from.length - 3}` : ""), `깨진 내부 링크 ${p}`);
 
+// hreflang 짝: 이 쪽이 가리키는 다른 언어판도 똑같은 묶음을 적어야 한다(한쪽만 가리키면 검색엔진이 무시)
+const sameAlts = (a, b) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+for (const [p, alts] of altsOf) {
+  for (const [l, href] of Object.entries(alts)) {
+    if (l === "x-default" || !href.startsWith(SITE + "/")) continue;
+    const q = new URL(href).pathname;
+    const other = altsOf.get(q);
+    if (!other) err(p, `hreflang ${l} → ${q} 가 색인 쪽이 아님(없거나 noindex)`);
+    else if (!sameAlts(alts, other)) err(p, `hreflang 짝이 안 맞음: ${q} 의 묶음이 다름`);
+  }
+}
+let extraCount = 0;
+
 // sitemap: 색인할 페이지가 모두 들어 있고, 없는 페이지는 없어야 한다
 const smFiles = files.filter((f) => /sitemap-\d+\.xml$/.test(f));
 if (!smFiles.length) err("sitemap", "sitemap-0.xml 없음");
@@ -231,6 +257,27 @@ for (const u of inSitemap) {
   else if (!exists(new URL(u).pathname)) err("sitemap", `없는 페이지: ${u}`);
 }
 for (const p of indexable) if (!inSitemap.has(SITE + p)) err("sitemap", `빠진 페이지: ${p}`);
+
+// 추가 언어: 번역 범위(scope.ts) = 빌드된 /<언어>/ 쪽 = sitemap 의 /<언어>/ 주소
+const want = new Set(extraPages());
+for (const l of EXTRA_LANGS) {
+  const built = new Set(indexable.filter((p) => p.startsWith(`/${l}/`)));
+  const listed = new Set([...inSitemap].map((u) => u.slice(SITE.length)).filter((p) => p.startsWith(`/${l}/`)));
+  for (const p of want) if (p.startsWith(`/${l}/`)) {
+    if (!built.has(p)) err(`${l}`, `번역 범위의 쪽이 빌드되지 않음: ${p}`);
+    if (!listed.has(p)) err("sitemap", `번역 범위의 쪽이 sitemap 에 없음: ${p}`);
+  }
+  for (const p of built) if (!want.has(p)) err(`${l}`, `번역 범위(scope.ts) 밖의 쪽: ${p}`);
+  for (const p of listed) if (!want.has(p)) err("sitemap", `번역 범위(scope.ts) 밖의 ${l} 주소: ${p}`);
+  extraCount += built.size;
+}
+// sitemap 의 xhtml:link(언어별 대응 쪽)도 실제로 있는 쪽만 가리켜야 한다
+const LOCALE_OK = new Set(LANGS.map((l) => LANG_META[l].locale));
+for (const f of smFiles)
+  for (const m of fs.readFileSync(f, "utf8").matchAll(/<xhtml:link rel="alternate" hreflang="([^"]+)" href="([^"]+)"\/>/g)) {
+    if (!LOCALE_OK.has(m[1])) err("sitemap", `모르는 hreflang ${m[1]}`);
+    if (!m[2].startsWith(SITE + "/") || !exists(new URL(m[2]).pathname)) err("sitemap", `xhtml:link 가 없는 쪽을 가리킴: ${m[2]}`);
+  }
 
 // 데이터 묶음: /data/version.json 이 적은 파일이 실제로 있고 sitemap 에도 있어야 한다(쪽이 아니라 저절로 들어가지 않음 — astro.config.mjs customPages)
 const verFile = path.join(dist, "data", "version.json");
@@ -259,6 +306,7 @@ const kb = Math.round(biggest.size / 1024);
 console.log(`사이트 검사: ${htmlFiles.length}쪽(색인 ${indexable.length}) · SITE ${SITE} · 가장 큰 HTML ${biggest.file} ${kb}KB`);
 console.log(`릴리스 내려받기 링크: 파일 ${dlLinks.size}종${real ? ` · 실제 자산 ${real.size}개와 대조` : ""}`);
 console.log(`구조화 데이터: ${Object.entries(ldCount).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
+console.log(`언어: ${LANGS.join(" · ")} — 추가 언어 쪽 ${extraCount}(번역 범위 ${want.size}) · hreflang 짝 ${altsOf.size}쪽 검사`);
 for (const w of warns) console.warn(`주의 ${w}`);
 if (errors.length) {
   for (const e of errors) console.error(`✗ ${e}`);

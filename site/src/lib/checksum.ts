@@ -1,4 +1,5 @@
 // 웹 계산기용 — crates/core/src/checksum.rs · codec.rs 를 그대로 옮긴 것. 둘이 어긋나지 않게 같은 시험값으로 검사한다(checksum.test.ts).
+import { msg, type Lang as SiteLang } from "./tr.ts";
 
 export type ChecksumKind = "crc16-modbus" | "crc16-ccitt" | "crc16-xmodem" | "crc8" | "lrc" | "bcc" | "sum8" | "sum16";
 
@@ -76,11 +77,11 @@ export function compute(kind: ChecksumKind, data: Uint8Array | number[]): number
   }
 }
 
+/** 한국어·영어만 쓰는 다른 라이브러리용 — 이 파일의 함수는 추가 언어(ja 등)도 받는다(lib/tr.ts) */
 export type Lang = "ko" | "en";
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 
 /** «01 03 0A», «01030A», «0x01,0x03,0x0A» */
-export function parseHex(text: string, lang: Lang = "ko"): number[] {
+export function parseHex(text: string, lang: SiteLang = "ko"): number[] {
   const out: number[] = [];
   for (const token of text.split(/[\s,;-]+/)) {
     const t = token.replace(/^(0x)+/, "").replace(/^(0X)+/, "");
@@ -94,7 +95,7 @@ export function parseHex(text: string, lang: Lang = "ko"): number[] {
 }
 
 /** 글자 그대로(UTF-8) + \r \n \t \0 \\ \xNN */
-export function parseAscii(text: string, lang: Lang = "ko"): number[] {
+export function parseAscii(text: string, lang: SiteLang = "ko"): number[] {
   const out: number[] = [];
   const enc = new TextEncoder();
   const cs = [...text];
