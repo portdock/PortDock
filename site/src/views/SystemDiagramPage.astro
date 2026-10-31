@@ -80,6 +80,9 @@ const L = ko
       ],
       wiring: "배선도 만들기",
       wiringNote: "장비 사이 실제 결선(종단·바이어스·핀 배치)은",
+      checkNote: "구성대로 시운전 점검 순서를 만들거나 커넥터 핀을 찾으려면",
+      check: "시운전·설치 점검표 만들기",
+      pin: "커넥터 핀 배치 사전",
     }
   : {
       title: "System Diagram Editor — Field Device & Network Checks",
@@ -142,6 +145,9 @@ const L = ko
       ],
       wiring: "wiring diagram maker",
       wiringNote: "For the actual wiring between devices (termination, bias, pinouts) use the",
+      checkNote: "To turn this setup into a start-up checklist, or to look up connector pins, use the",
+      check: "commissioning checklist maker",
+      pin: "connector pinout reference",
     };
 const T = {
   ...Object.fromEntries(["name", "kind", "ip", "mask", "unit", "baud", "parity", "pAny", "pN", "pE", "pO", "note", "len", "links", "label", "unlink", "noLinks", "allOk", "none", "storeOff", "freshAsk"].map((k) => [k, (L as Record<string, unknown>)[k] as string])),
@@ -218,6 +224,7 @@ const ld = {
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
       <p>{L.wiringNote} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a>.</p>
+      <p>{L.checkNote} <a href={url(lang, "tools/commissioning-checklist/")}>{L.check}</a> · <a href={url(lang, "tools/pinouts/")}>{L.pin}</a>.</p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (

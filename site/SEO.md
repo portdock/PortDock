@@ -90,6 +90,8 @@
 | PLC 없이 통신 테스트, MC 프로토콜 시뮬레이터, 가상 PLC, 미쓰비시 X Y 16진 | 가이드 `mc-protocol-test-without-plc`·`mc-protocol-device-numbers` → `/plc-simulator/` | «PLC 없이 MC 프로토콜 통신 시험하기», «MC 프로토콜 디바이스 번호 — X·Y 16진·D·W·ZR» |
 | 와이어샤크 모드버스, 모드버스 패킷 분석, modbus pcap, 모드버스 응답 시간, PLC 통신 캡처, 포트 미러링, pktmon | `/tools/pcap-analyzer/` + 가이드 `capture-plc-traffic-wireshark-pktmon`·`modbus-response-time-pcap` | «산업 통신 pcap 해석기 — Modbus·MC 응답 시간», 설명에 «Wireshark·pktmon», «무응답·예외·종료 코드», 가이드 «Wireshark·pktmon 으로 PLC 통신 캡처 — 포트 미러링»·«Modbus 응답 시간·무응답 읽기» |
 | rs485 배선도·결선도, rs232 크로스 결선, 4-20mA 2선식 3선식 배선, npn pnp 센서 plc 배선, 시스템 구성도·네트워크 구성도 그리기 | `/tools/wiring/`·`/tools/system-diagram/` | «배선도 만들기 — RS485·RS232·4-20mA·NPN/PNP 결선도», «시스템 구성도 그리기 — 네트워크·RS485 구성 점검» |
+| db9 핀배치·rs232 핀맵, rj45 568b 배열·랜선 색 순서, m12 4핀 선 색·m12 핀배치, m8 3핀, usb c 핀배치, rs485 a b 극성·d+ d- | `/tools/pinouts/` | «커넥터 핀 배치 사전 — DB9 RS232·RJ45·M12·M8·USB 핀배치», 설명에 «수/암 정면 그림·선 색·출처» |
+| 시운전 체크리스트·설치 점검표, plc 시운전 순서, 인버터 시운전 점검, rs485 통신 점검 순서 | `/tools/commissioning-checklist/` | «시운전·설치 점검표 만들기 (PLC·인버터·RS485)», 설명에 «구성 요소 고르면 단계별·인쇄·CSV» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -188,6 +190,8 @@
 | test mc protocol without plc, slmp simulator, dummy plc, mitsubishi x y hex numbering | guides `mc-protocol-test-without-plc`, `mc-protocol-device-numbers` → `/en/plc-simulator/` | «Test MC Protocol (SLMP) Without a PLC», «MC Protocol Device Numbers: Hex X/Y, D, W, ZR» |
 | modbus pcap analysis, modbus pcap analyzer, pcap analyzer online, wireshark modbus response time, wireshark mc protocol, capture plc traffic, port mirroring plc, pktmon pcapng | `/en/tools/pcap-analyzer/` + guides `capture-plc-traffic-wireshark-pktmon`, `modbus-response-time-pcap` | «Industrial pcap Analyzer: Modbus TCP & MC Timing», guides «Capture PLC Traffic with Wireshark or pktmon: Port Mirroring», «Modbus Response Time & Missing Replies from a pcap» |
 | rs485 wiring diagram, rs232 null modem wiring, 4-20ma 2 wire 3 wire wiring, npn pnp sensor plc wiring, system diagram / network diagram maker | `/en/tools/wiring/`, `/en/tools/system-diagram/` | «Wiring Diagram Maker: RS-485, RS-232, 4-20 mA, NPN/PNP», «System Diagram Editor: Network & RS-485 Checks» |
+| db9 pinout, rs232 pinout, rj45 pinout t568b, m12 pinout colors, m8 3 pin pinout, usb c pinout, rs485 a b polarity | `/en/tools/pinouts/` | «Connector Pinout Reference: DB9 RS-232, RJ45, M12, M8, USB» |
+| commissioning checklist, plc commissioning checklist, vfd commissioning checklist, installation checklist template | `/en/tools/commissioning-checklist/` | «Commissioning Checklist Maker: PLC, VFD, RS-485, Network» |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |
