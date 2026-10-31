@@ -7,14 +7,14 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { BAUDS, fmtTime, poll, timing, type CharFormat } from "../lib/serialTiming";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/serial-timing/";
 const E1: CharFormat = { dataBits: 8, parity: "even", stopBits: 1 };
 // 정적 표: 보율별 문자 시간·t3.5·FC03 10 레지스터 한 거래(슬레이브 처리 0) — 8E1(11 비트)
@@ -23,9 +23,11 @@ const rows = BAUDS.map((b) => {
   const p = poll({ baud: b, format: E1, fc: 3, qty: 10, slaveDelay: 0, masterGap: 0, transactions: 1 });
   return { b, char: fmtTime(t.char), t15: fmtTime(t.t15), t35: fmtTime(t.t35), fixed: t.fixed, cps: Math.floor(t.charsPerSec), tr: fmtTime(p.transaction) };
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "시리얼 통신 시간 계산기",
+      seo: "시리얼 통신 시간 계산기 — 보율·Modbus 3.5문자·폴링 — PortDock",
       desc: "보율·패리티·정지 비트로 문자 시간, Modbus RTU 의 3.5 문자(t3.5)·1.5 문자(t1.5), 요청·응답 전송 시간, 장비 여러 대 폴링 주기와 응답 타임아웃 하한을 계산합니다.",
       baud: "보율(bps)",
       data: "데이터 비트",
@@ -93,9 +95,12 @@ const L = ko
       ],
       appNote: "실제 요청·응답 시각과 간격은",
       appNote2: "의 통신 기록에서 볼 수 있습니다.",
+      badNum: "숫자를 확인하세요 — 개수는 함수별 한도(03·04: 125, 10: 123, 01·02: 2000, 0F: 1968) 안, 시간은 0 이상",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Serial Timing Calculator",
+      seo: "Serial Timing Calculator: Baud, Modbus t3.5, Polling — PortDock",
       desc: "From baud, parity and stop bits: character time, Modbus RTU 3.5- and 1.5-character times, request/response time, polling cycle and minimum response timeout.",
       baud: "Baud rate (bps)",
       data: "Data bits",
@@ -163,7 +168,9 @@ const L = ko
       ],
       appNote: "Real request/response timestamps and gaps are visible in the traffic log of",
       appNote2: ".",
-    };
+      badNum: "Check the numbers — quantity within the function's limit (03/04: 125, 10: 123, 01/02: 2000, 0F: 1968), times ≥ 0",
+    }
+  : dict(lang).pages.serialTiming;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -177,17 +184,17 @@ const FCS = [1, 2, 3, 4, 5, 6, 15, 16];
 const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "시리얼 통신 시간 계산기 — 보율·Modbus 3.5문자·폴링 — PortDock" : "Serial Timing Calculator: Baud, Modbus t3.5, Polling — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="st" data-lang={lang} data-t={JSON.stringify({ bytes: L.bytes, notRtu: L.notRtu, fixed: L.fixedNote, usb: L.usb })}>
+    <form class="calc card" id="st" data-lang={lang} data-t={JSON.stringify({ bytes: L.bytes, notRtu: L.notRtu, fixed: L.fixedNote, usb: L.usb, badNum: L.badNum })}>
       <div class="row">
         <label class="fld">
           {L.baud}
@@ -294,7 +301,7 @@ const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>{L.appNote2}
+        {L.appNote} <a href={link(lang, "modbus-master/")}>PortDock Modbus Master</a>{L.appNote2}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -305,7 +312,7 @@ const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
   <script>
     import { bitsPerChar, EXCEPTION_BYTES, bytesTime, fmtTime, isRtuFormat, poll, type CharFormat, type Fc, type Parity } from "../lib/serialTiming";
     const form = document.getElementById("st") as HTMLFormElement;
-    const T = JSON.parse(form.dataset.t ?? "{}") as { bytes: string; notRtu: string; fixed: string };
+    const T = JSON.parse(form.dataset.t ?? "{}") as { bytes: string; notRtu: string; fixed: string; badNum: string };
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim();
@@ -343,7 +350,7 @@ const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
         w2.className = "verdict" + (r.t.fixed ? " ok" : "");
         w2.textContent = r.t.fixed ? T.fixed : "";
       } catch {
-        err.textContent = (document.documentElement.lang === "ko" ? "숫자를 확인하세요 — 개수는 함수별 한도(03·04: 125, 10: 123, 01·02: 2000, 0F: 1968) 안, 시간은 0 이상" : "Check the numbers — quantity within the function's limit (03/04: 125, 10: 123, 01/02: 2000, 0F: 1968), times ≥ 0");
+        err.textContent = T.badNum;
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

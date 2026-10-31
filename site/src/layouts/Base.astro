@@ -1,12 +1,15 @@
 ---
-// 모든 페이지의 틀 — 머리줄·바닥글·언어 전환·검색엔진 태그(hreflang·OG)
+// 모든 페이지의 틀 — 머리줄·바닥글·언어 고르기·검색엔진 태그(hreflang·OG)
+// hreflang·언어 고르기에는 이 쪽이 실제로 있는 언어만 나온다(i18n/scope.ts). 추가 언어(ja 등) 쪽에서 번역이 없는 쪽으로 가는 링크는 영어판으로 간다.
 import "../styles/site.css";
-import { TOOLS, REPO, type Lang } from "../data/tools";
-import { UI, url, otherLang } from "../lib/i18n";
+import { TOOLS, REPO } from "../data/tools";
+import { ui, url, link, langsOf, appTagline } from "../lib/i18n";
+import { LANG_META, isExtra, type SiteLang } from "../i18n/langs";
+import { libCatalog, type LibSection } from "../i18n";
 import { SPONSOR_URL } from "@shared/links";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   title: string;
   description?: string;
   /** 언어를 뺀 경로 — 예: "serial/" */
@@ -19,13 +22,18 @@ interface Props {
   noindex?: boolean;
   /** og:type — 가이드 글은 article */
   ogType?: "website" | "article";
+  /** 브라우저 스크립트가 쓰는 계산 라이브러리 문구 묶음(추가 언어 쪽에서만 넣는다 — lib/tr.ts) */
+  libText?: readonly LibSection[];
 }
-const { lang, title, description, path, ads = false, seoTitle, noindex = false, ogType = "website" } = Astro.props;
-const t = UI[lang];
+const { lang, title, description, path, ads = false, seoTitle, noindex = false, ogType = "website", libText = [] } = Astro.props;
+const t = ui(lang);
 const site = Astro.site!;
 const here = new URL(url(lang, path), site).href;
-const koUrl = new URL(url("ko", path), site).href;
+// 이 쪽이 있는 언어들 — 서로 모두 가리킨다(빠지면 검색엔진이 무시한다)
+const alternates = langsOf(path).map((l) => ({ lang: l, href: new URL(url(l, path), site).href }));
 const enUrl = new URL(url("en", path), site).href;
+const go = (p = "") => link(lang, p);
+const libJson = isExtra(lang) && libText.length ? JSON.stringify(libCatalog(lang, libText)).replace(/</g, "\\u003c") : "";
 const desc = description ?? t.siteDesc;
 const fullTitle = seoTitle ?? (title === "PortDock" ? "PortDock" : `${title} — PortDock`);
 // 공유 미리보기 그림 — 언어별(만드는 법: site/og/make.mjs)
@@ -39,7 +47,7 @@ import { ADSENSE_CLIENT } from "../lib/ads";
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html lang={LANG_META[lang].hreflang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -53,9 +61,8 @@ import { ADSENSE_CLIENT } from "../lib/ads";
       ) : (
         <>
           <link rel="canonical" href={here} />
-          <link rel="alternate" hreflang="ko" href={koUrl} />
-          <link rel="alternate" hreflang="en" href={enUrl} />
-          {/* 한국어·영어 어느 쪽도 아닌 방문자는 영어판으로(인도·동남아·그 밖은 영어판이 받는다) */}
+          {alternates.map((a) => <link rel="alternate" hreflang={LANG_META[a.lang].hreflang} href={a.href} />)}
+          {/* 고른 언어판이 없는 방문자는 영어판으로(인도·동남아·그 밖은 영어판이 받는다) */}
           <link rel="alternate" hreflang="x-default" href={enUrl} />
         </>
       )
@@ -71,7 +78,7 @@ import { ADSENSE_CLIENT } from "../lib/ads";
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={t.siteDesc} />
-    <meta property="og:locale" content={lang === "ko" ? "ko_KR" : "en_US"} />
+    <meta property="og:locale" content={LANG_META[lang].og} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0b6e75" />
     {naverVerify && <meta name="naver-site-verification" content={naverVerify} />}
@@ -85,10 +92,10 @@ import { ADSENSE_CLIENT } from "../lib/ads";
     }
   </head>
   <body>
-    <a class="skip" href="#main">{lang === "ko" ? "본문으로" : "Skip to content"}</a>
+    <a class="skip" href="#main">{t.skip}</a>
     <header class="top">
       <div class="wrap bar">
-        <a class="brand" href={url(lang)}>
+        <a class="brand" href={go()}>
           <img src="/favicon.svg" alt="" width="26" height="26" />
           <span>PortDock</span>
         </a>
@@ -100,23 +107,36 @@ import { ADSENSE_CLIENT } from "../lib/ads";
               {
                 TOOLS.map((x) => (
                   <li>
-                    <a href={url(lang, `${x.id}/`)}>
+                    <a href={go(`${x.id}/`)}>
                       <b>{x.name.replace("PortDock ", "")}</b>
-                      <small>{x.tagline[lang]}</small>
+                      <small>{appTagline(x, lang)}</small>
                     </a>
                   </li>
                 ))
               }
-              <li class="menu-foot"><a href={url(lang, "download/")}>{t.download} →</a></li>
-              <li><a href={url(lang, "safety/")}>{t.safety}</a></li>
+              <li class="menu-foot"><a href={go("download/")}>{t.download} →</a></li>
+              <li><a href={go("safety/")}>{t.safety}</a></li>
             </ul>
           </details>
-          <a href={url(lang, "tools/")} title={t.webToolsNote}>{t.webTools}</a>
-          <a href={url(lang, "guides/")}>{t.guides}</a>
-          <a href={url(lang, "devices/")}>{t.devices}</a>
-          <a href={url(lang, "download/")}>{t.download}</a>
-          <a href={url(lang, "contact/")}>{t.contact}</a>
-          <a class="lang" href={url(otherLang(lang), path)} hreflang={otherLang(lang)} lang={otherLang(lang)}>{t.langName}</a>
+          <a href={go("tools/")} title={t.webToolsNote}>{t.webTools}</a>
+          <a href={go("guides/")}>{t.guides}</a>
+          <a href={go("devices/")}>{t.devices}</a>
+          <a href={go("download/")}>{t.download}</a>
+          <a href={go("contact/")}>{t.contact}</a>
+          <details class="menu lang">
+            <summary aria-label={t.langMenu} lang={LANG_META[lang].hreflang}>{LANG_META[lang].name}</summary>
+            <ul>
+              {
+                alternates.map((a) => (
+                  <li>
+                    <a href={url(a.lang, path)} hreflang={LANG_META[a.lang].hreflang} lang={LANG_META[a.lang].hreflang} aria-current={a.lang === lang ? "true" : undefined}>
+                      {LANG_META[a.lang].name}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </details>
         </nav>
       </div>
     </header>
@@ -133,21 +153,21 @@ import { ADSENSE_CLIENT } from "../lib/ads";
           {
             TOOLS.map((x) => (
               <li>
-                <a href={url(lang, `${x.id}/`)}>{x.name}</a>
+                <a href={go(`${x.id}/`)}>{x.name}</a>
               </li>
             ))
           }
         </ul>
         <ul>
-          <li><a href={url(lang, "tools/")}>{t.webTools}</a></li>
-          <li><a href={url(lang, "guides/")}>{t.guides}</a></li>
-          <li><a href={url(lang, "data/")}>{t.data}</a></li>
-          <li><a href={url(lang, "download/")}>{t.download}</a></li>
-          <li><a href={url(lang, "contact/")}>{t.contact}</a></li>
-          <li><a href={url(lang, "terms/")}>{t.terms}</a></li>
-          <li><a href={url(lang, "privacy/")}>{t.privacy}</a></li>
-          <li><a href={url(lang, "code-signing/")}>{t.codeSigning}</a></li>
-          <li><a href={url(lang, "safety/")}>{t.safety}</a></li>
+          <li><a href={go("tools/")}>{t.webTools}</a></li>
+          <li><a href={go("guides/")}>{t.guides}</a></li>
+          <li><a href={go("data/")}>{t.data}</a></li>
+          <li><a href={go("download/")}>{t.download}</a></li>
+          <li><a href={go("contact/")}>{t.contact}</a></li>
+          <li><a href={go("terms/")}>{t.terms}</a></li>
+          <li><a href={go("privacy/")}>{t.privacy}</a></li>
+          <li><a href={go("code-signing/")}>{t.codeSigning}</a></li>
+          <li><a href={go("safety/")}>{t.safety}</a></li>
         </ul>
         <ul>
           <li><a href={REPO}>{t.source}</a></li>
@@ -157,6 +177,7 @@ import { ADSENSE_CLIENT } from "../lib/ads";
         </ul>
       </div>
     </footer>
+    {libJson && <script type="application/json" id="pd-lib-i18n" data-lang={lang} set:html={libJson} />}
     {analyticsToken && <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: analyticsToken })} />}
   </body>
 </html>

@@ -8,22 +8,25 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { crc16Modbus, hex } from "../lib/checksum";
 import { EXCEPTIONS } from "../lib/modbusDecode";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/modbus-decoder/";
 const rtu = (b: number[]) => {
   const c = crc16Modbus(b);
   return hex([...b, c & 0xff, c >> 8]);
 };
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus 프레임 해석기",
+      seo: "Modbus 프레임 해석기 — RTU·TCP HEX 풀이 (온라인) — PortDock",
       desc: "Modbus RTU·TCP 프레임의 HEX 를 붙여 넣으면 국번·함수·주소·값·CRC 와 MBAP 머리, 예외 코드까지 풀어 줍니다. 레지스터 값은 10진·HEX·40001 표기 표로 보여 줍니다.",
       input: "프레임 바이트 (HEX)",
       help: "예: 01 03 00 00 00 0A C5 CD · 01030000000AC5CD · 0x01,0x03 — 프레임 하나씩",
@@ -48,9 +51,18 @@ const L = ko
       appNote: "장비와 주고받는 통신을 줄마다 풀어 보려면",
       guide: "Modbus RTU 프레임 읽는 법",
       guide2: "Modbus 주소 표기(0 기준·40001)",
+      src: ["함수 코드·요청/응답 모양·개수 한도·예외 코드", "RTU 프레임·국번(0 브로드캐스트, 1~247)·CRC", "MBAP 머리(트랜잭션·프로토콜·길이·유닛 ID)"],
+      guidePre: "바이트 하나하나의 풀이는 가이드 ",
+      guideMid: ", 주소 표기는 ",
+      guidePost: " 를 보세요.",
+      pcapPre: "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) ",
+      pcapLink: "산업 통신 pcap 해석기",
+      pcapPost: " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus Frame Decoder",
+      seo: "Modbus Frame Decoder: RTU & TCP Hex Parser (Online) — PortDock",
       desc: "Paste a Modbus RTU or TCP frame in HEX to decode slave ID, function, values, CRC, MBAP header and exception codes. Registers shown as decimal, HEX and 40001.",
       input: "Frame bytes (HEX)",
       help: "e.g. 01 03 00 00 00 0A C5 CD · 01030000000AC5CD · 0x01,0x03 — one frame at a time",
@@ -75,7 +87,15 @@ const L = ko
       appNote: "To decode live traffic line by line while talking to a device, use",
       guide: "Reading Modbus RTU frames",
       guide2: "Modbus address notation (0-based vs 40001)",
-    };
+      src: ["function codes, request/response layouts, quantity limits, exception codes", "RTU framing, addresses (0 broadcast, 1–247), CRC", "MBAP header (transaction, protocol, length, unit ID)"],
+      guidePre: "For a byte-by-byte walkthrough see ",
+      guideMid: "; for addresses see ",
+      guidePost: ".",
+      pcapPre: "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the ",
+      pcapLink: "Industrial pcap Analyzer",
+      pcapPost: ". Clicking a row there opens that frame in this decoder.",
+    }
+  : dict(lang).pages.modbusDecoder;
 const EXAMPLES = [
   rtu([0x01, 0x03, 0x00, 0x00, 0x00, 0x0a]),
   rtu([0x01, 0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]),
@@ -91,11 +111,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 프레임 해석기 — RTU·TCP HEX 풀이 (온라인) — PortDock" : "Modbus Frame Decoder: RTU & TCP Hex Parser (Online) — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["checksum", "modbusNames", "modbusDecode"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -155,7 +175,7 @@ const ld = {
                 <tr>
                   <td class="mono">{Number(code).toString(16).toUpperCase().padStart(2, "0")}</td>
                   <td>{e.name}</td>
-                  <td>{e[lang]}</td>
+                  <td>{tx(e, lang)}</td>
                 </tr>
               ))
             }
@@ -165,21 +185,21 @@ const ld = {
       <p class="note">{L.exSrc}</p>
       <h2>{L.srcTitle}</h2>
       <ul>
-        <li>Modbus Application Protocol Specification V1.1b3 — {ko ? "함수 코드·요청/응답 모양·개수 한도·예외 코드" : "function codes, request/response layouts, quantity limits, exception codes"}</li>
-        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {ko ? "RTU 프레임·국번(0 브로드캐스트, 1~247)·CRC" : "RTU framing, addresses (0 broadcast, 1–247), CRC"}</li>
-        <li>Modbus Messaging on TCP/IP Implementation Guide V1.0b — {ko ? "MBAP 머리(트랜잭션·프로토콜·길이·유닛 ID)" : "MBAP header (transaction, protocol, length, unit ID)"}</li>
+        <li>Modbus Application Protocol Specification V1.1b3 — {L.src[0]}</li>
+        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {L.src[1]}</li>
+        <li>Modbus Messaging on TCP/IP Implementation Guide V1.0b — {L.src[2]}</li>
       </ul>
       <p>
-        {ko ? "바이트 하나하나의 풀이는 가이드 " : "For a byte-by-byte walkthrough see "}
-        <a href={url(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{ko ? ", 주소 표기는 " : "; for addresses see "}
-        <a href={url(lang, "guides/modbus-address-notation/")}>{L.guide2}</a>{ko ? " 를 보세요." : "."}
+        {L.guidePre}
+        <a href={link(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{L.guideMid}
+        <a href={link(lang, "guides/modbus-address-notation/")}>{L.guide2}</a>{L.guidePost}
       </p>
       <p>
-        {L.appNote} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+        {L.appNote} <a href={link(lang, "modbus-master/")}>PortDock Modbus Master</a>{ui(lang).period}
       </p>
       <p>
-        {ko ? "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) " : "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the "}
-        <a href={url(lang, "tools/pcap-analyzer/")}>{ko ? "산업 통신 pcap 해석기" : "Industrial pcap Analyzer"}</a>{ko ? " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다." : ". Clicking a row there opens that frame in this decoder."}
+        {L.pcapPre}
+        <a href={link(lang, "tools/pcap-analyzer/")}>{L.pcapLink}</a>{L.pcapPost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -231,12 +251,12 @@ const ld = {
     }
   </style>
   <script>
-    import { parseHex, hex, type Lang } from "../lib/checksum";
+    import { parseHex, hex } from "../lib/checksum";
+    import { msg, type Lang } from "../lib/tr";
     import { decodeFrame, tableRows, isBitSpace, type Field, type Table, type WireMode } from "../lib/modbusDecode";
     const form = document.getElementById("dec") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const t = (k: string, e: string) => msg(lang, k, e);
     const data = document.getElementById("data") as HTMLTextAreaElement;
     const mode = document.getElementById("mode") as HTMLSelectElement;
     const start = document.getElementById("start") as HTMLInputElement;

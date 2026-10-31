@@ -7,18 +7,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { COUNT_PRESETS, SIGNALS } from "../lib/analogScale";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/4-20ma/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "4–20mA 환산 계산기",
+      seo: "4–20mA 환산 계산기 — 전류·공학값·%·PLC 카운트 — PortDock",
       desc: "4–20mA·0–10V 신호를 공학값·%·PLC 아날로그 카운트(0–27648, 0–32000 등)로 서로 환산합니다. 4·8·12·16·20mA 환산표와 NE 43 범위 경고도 보여 줍니다.",
       signal: "신호 종류",
       engLo: "공학값 하한",
@@ -58,9 +61,17 @@ const L = ko
         ["카운트에서 공학값을 바로 구하려면?", "카운트 칸에 PLC 값을 넣으면 공학값·전류·% 가 나옵니다. 식으로는 공학값 = 하한 + (카운트 − 카운트 하한) ÷ (카운트 상한 − 카운트 하한) × (상한 − 하한) 입니다."],
       ],
       appNote: "센서 값을 시리얼·Modbus 로 읽어 그래프로 보려면",
+      adcPre: "MCU ADC 로 직접 받을 때(비트·기준 전압·션트 저항)는",
+      adcLink: "ADC 분해능·스케일링 계산기",
+      adcPost: " 를 쓰세요.",
+      cablePre: "4-20mA 신호선(차폐 꼬임쌍) 고르기는 ",
+      cableLink: "케이블 선정 도우미",
+      cablePost: " 를 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "4–20 mA Scaling Calculator",
+      seo: "4–20 mA Scaling Calculator: mA, %, Engineering Units — PortDock",
       desc: "Convert 4–20 mA, 0–20 mA, 0–10 V and 1–5 V signals to engineering units, percent and PLC analog counts (0–27648, 0–32000…), with a 4/8/12/16/20 mA table.",
       signal: "Signal type",
       engLo: "Engineering low",
@@ -100,7 +111,14 @@ const L = ko
         ["How do I get the engineering value from a count?", "Type the PLC value in the Count field to get the engineering value, current and percent. As a formula: value = low + (count − count low) ÷ (count high − count low) × (high − low)."],
       ],
       appNote: "To read sensor values over serial or Modbus and plot them live, use",
-    };
+      adcPre: "To read the signal with an MCU ADC directly (bits, reference, shunt), use the",
+      adcLink: "ADC Resolution & Scaling Calculator",
+      adcPost: ".",
+      cablePre: "For choosing 4–20 mA signal cable (shielded twisted pair), see the ",
+      cableLink: "cable selection helper",
+      cablePost: ".",
+    }
+  : dict(lang).pages.analog;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -113,17 +131,17 @@ const NE43_REFS = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "4–20mA 환산 계산기 — 전류·공학값·%·PLC 카운트 — PortDock" : "4–20 mA Scaling Calculator: mA, %, Engineering Units — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["analog"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="as" data-lang={lang} data-presets={JSON.stringify(COUNT_PRESETS.map((p) => ({ id: p.id, ranges: p.ranges, note: p[lang] })))}>
+    <form class="calc card" id="as" data-lang={lang} data-presets={JSON.stringify(COUNT_PRESETS.map((p) => ({ id: p.id, ranges: p.ranges, note: tx(p, lang) })))}>
       <div class="row">
         <label class="fld">
           {L.signal}
@@ -225,7 +243,7 @@ const NE43_REFS = [
               COUNT_PRESETS.map((p) => (
                 <tr>
                   <td>{p.label}</td>
-                  <td>{p[lang]}</td>
+                  <td>{tx(p, lang)}</td>
                   <td>
                     <a href={p.url} rel="noopener" target="_blank">{p.src}</a>
                   </td>
@@ -260,13 +278,13 @@ const NE43_REFS = [
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "plot/")}>PortDock Plot</a>.
+        {L.appNote} <a href={link(lang, "plot/")}>PortDock Plot</a>{ui(lang).period}
       </p>
       <p>
-        {ko ? "MCU ADC 로 직접 받을 때(비트·기준 전압·션트 저항)는" : "To read the signal with an MCU ADC directly (bits, reference, shunt), use the"} <a href={url(lang, "tools/adc/")}>{ko ? "ADC 분해능·스케일링 계산기" : "ADC Resolution & Scaling Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.adcPre} <a href={link(lang, "tools/adc/")}>{L.adcLink}</a>{L.adcPost}
       </p>
       <p>
-        {ko ? "4-20mA 신호선(차폐 꼬임쌍) 고르기는 " : "For choosing 4–20 mA signal cable (shielded twisted pair), see the "}<a href={url(lang, "tools/cable-selection/#analog")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 를 보세요." : "."}
+        {L.cablePre}<a href={link(lang, "tools/cable-selection/#analog")}>{L.cableLink}</a>{L.cablePost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -298,6 +316,7 @@ const NE43_REFS = [
   </style>
   <script>
     import { convert, countStatus, fmt, num, signalOf, signalStatus, table, type CountRange, type Field, type Lang, type Scale, type SignalKind } from "../lib/analogScale";
+    import { tx } from "../lib/tr";
     const form = document.getElementById("as") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
     const presets = JSON.parse(form.dataset.presets ?? "[]") as { id: string; ranges: Partial<Record<SignalKind, CountRange>>; note: string }[];
@@ -310,7 +329,7 @@ const NE43_REFS = [
     const rangeOf = () => presets.find((p) => p.id === preSel.value)?.ranges[sigSel.value as SignalKind];
     function setStatus(el: HTMLElement, s: { level: string; ko: string; en: string } | null) {
       el.className = "st" + (s ? " " + s.level : "");
-      el.textContent = s ? s[lang] : "";
+      el.textContent = s ? tx(s, lang) : "";
     }
     /** 신호에 맞는 프리셋만 고를 수 있게 하고, 고른 프리셋의 범위를 카운트 칸에 넣는다 */
     function syncPreset() {

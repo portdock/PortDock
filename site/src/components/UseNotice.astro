@@ -1,46 +1,37 @@
 ---
 // 이용 안내(짧은 면책) — 웹 도구·가이드·장비 레지스터 맵 페이지의 본문 끝(광고 칸 아래가 아니라 본문 안 마지막)에 둔다.
-// 문구는 여기 한 곳에서만 고친다. 전체 내용은 이용 안내 페이지(terms/).
+// 문구는 lib/i18n.ts 의 UI(추가 언어는 i18n/<언어>/ui.ts) 한 곳에서만 고친다. 전체 내용은 이용 안내 페이지(terms/).
 // 약관규제법 7조 1호: 고의·중과실 책임까지 빼는 문구는 무효 — «어떠한 경우에도 책임지지 않음» 같은 표현은 쓰지 않는다.
-import { type Lang, REPO } from "../data/tools";
-import { url } from "../lib/i18n";
+import { REPO } from "../data/tools";
+import { ui, link } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
+const t = ui(lang);
 // «도움이 됐나요?» — 서버 없이 GitHub Discussions(의견)·이슈(틀린 곳)로 잇는다
 const pageTitle = Astro.url.pathname;
-const ideaUrl = `${REPO}/discussions/new?category=ideas&title=${encodeURIComponent((ko ? "의견: " : "Feedback: ") + pageTitle)}`;
+const ideaUrl = `${REPO}/discussions/new?category=ideas&title=${encodeURIComponent(t.feedbackPrefix + pageTitle)}`;
+const [fixPre, fixContact, fixMid, fixIssue, fixPost] = t.noticeFix;
 ---
 
-<aside class="feedback" aria-label={ko ? "의견 보내기" : "Feedback"}>
+<aside class="feedback" aria-label={t.feedbackAria}>
   <p>
-    <b>{ko ? "이 페이지가 도움이 됐나요?" : "Was this page helpful?"}</b>
-    {ko ? " 좋았던 점·아쉬운 점·더 있었으면 하는 계산을 알려 주세요." : " Tell us what worked, what was missing, or which calculation you would like next."}
+    <b>{t.feedbackQ}</b>
+    {t.feedbackBody}
   </p>
   <p class="feedback-links">
-    <a class="btn tight" href={ideaUrl} rel="noopener">{ko ? "의견 남기기" : "Leave feedback"}</a>
-    <a class="btn tight" href={`${REPO}/issues/new/choose`} rel="noopener">{ko ? "틀린 곳 알리기" : "Report a mistake"}</a>
-    <a href={url(lang, "contact/")}>{ko ? "메일로 문의" : "Email us"}</a>
+    <a class="btn tight" href={ideaUrl} rel="noopener">{t.feedbackIdea}</a>
+    <a class="btn tight" href={`${REPO}/issues/new/choose`} rel="noopener">{t.feedbackIssue}</a>
+    <a href={link(lang, "contact/")}>{t.feedbackMail}</a>
   </p>
 </aside>
 
-<aside class="use-notice" aria-label={ko ? "이용 안내" : "Use notice"}>
-  {
-    ko ? (
-      <p>
-        <b>이용 안내</b> — 이 페이지의 계산과 자료는 참고용입니다. 실제 값은 장비 모델·펌웨어·설정에 따라 다를 수 있으니, 설계·시공·운전 전에는 해당 장비 매뉴얼과 관련 규격·법령을 확인하고 전기·안전
-        작업은 자격을 갖춘 사람의 확인을 받으세요. 틀린 곳은 <a href={url(lang, "contact/")}>문의</a>나 <a href={`${REPO}/issues`}>GitHub 이슈</a>로 알려 주시면 고칩니다.{" "}
-        <a href={url(lang, "terms/")}>이용 안내 전체</a>
-      </p>
-    ) : (
-      <p>
-        <b>Use notice</b> — The calculations and data on this page are for reference. Real values can differ by model, firmware and settings, so check the equipment manual and the applicable
-        standards and regulations before design, installation or operation, and have electrical and safety work checked by a qualified person. Found a mistake? Tell us through the{" "}
-        <a href={url(lang, "contact/")}>contact page</a> or a <a href={`${REPO}/issues`}>GitHub issue</a> and we will fix it. <a href={url(lang, "terms/")}>Full terms of use</a>
-      </p>
-    )
-  }
+<aside class="use-notice" aria-label={t.noticeAria}>
+  <p>
+    <b>{t.noticeHead}</b> — {t.noticeBody}{fixPre}<a href={link(lang, "contact/")}>{fixContact}</a>{fixMid}<a href={`${REPO}/issues`}>{fixIssue}</a>{fixPost}{" "}
+    <a href={link(lang, "terms/")}>{t.noticeAll}</a>
+  </p>
 </aside>

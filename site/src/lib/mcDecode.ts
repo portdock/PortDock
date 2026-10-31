@@ -5,7 +5,8 @@
 // 시험(mcDecode.test.ts)은 mc.rs 시험의 매뉴얼 예시 프레임을 그대로 쓴다.
 // 근거(공개 매뉴얼, 링크만): SLMP Reference Manual SH(NA)-080956ENG 4장·5.2·5.9, MELSEC Communication Protocol Reference Manual
 // SH-080008 5장, 종료 코드 MELSEC iQ-R Ethernet User's Manual (Application) SH-081257ENG 3.5. 0.6.0 명령은 SLMP 5.2·5.6.
-import { parseHex, hex, type Lang } from "./checksum.ts";
+import { parseHex, hex } from "./checksum.ts";
+import { msg, tx, type Lang } from "./tr.ts";
 
 export type McMode = "auto" | "binary" | "ascii";
 export type McFrame = "3e" | "4e";
@@ -126,7 +127,6 @@ class McErr {
   }
 }
 
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 const h = (n: number, w: number) => n.toString(16).toUpperCase().padStart(w, "0");
 const text = (u: number[]) => String.fromCharCode(...u);
 
@@ -191,7 +191,7 @@ function subName(cmd: number, sub: number, lang: Lang) {
 }
 
 export const endText = (code: number, lang: Lang = "ko") =>
-  code === 0 ? msg(lang, "완료", "completed") : END_CODES[code] ? END_CODES[code][lang] : msg(lang, "이 해석기에 설명이 없는 코드 — 매뉴얼의 오류 코드 표에서 찾으세요", "not described here — look it up in the manual's error code list");
+  code === 0 ? msg(lang, "완료", "completed") : END_CODES[code] ? tx(END_CODES[code], lang) : msg(lang, "이 해석기에 설명이 없는 코드 — 매뉴얼의 오류 코드 표에서 찾으세요", "not described here — look it up in the manual's error code list");
 
 // ---------------------------------------------------------------- 읽기(이진: 작은 자리 바이트 먼저 / ASCII: 16진 글자 큰 자리 먼저)
 
@@ -254,7 +254,7 @@ class Rd {
 }
 
 function devValue(d: DevInfo, no: number, lang: Lang) {
-  const base = `${addrText(d, no)} — ${d.name} ${d[lang]} (${msg(lang, "코드", "code")} ${h(d.code, 2)}`;
+  const base = `${addrText(d, no)} — ${d.name} ${tx(d, lang)} (${msg(lang, "코드", "code")} ${h(d.code, 2)}`;
   return d.hex ? `${base}, ${msg(lang, `16진 번호 = 10진 ${no}`, `hex number = ${no} decimal`)})` : `${base})`;
 }
 

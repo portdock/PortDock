@@ -1,12 +1,13 @@
-import type { Lang } from "../data/tools";
+// 공용 문구(머리줄·바닥글·내려받기·이용 안내 등) — 한국어·영어는 여기, 추가 언어는 i18n/<언어>/ui.ts(ui() 가 고른다).
+// 주소·언어 목록은 i18n/langs.ts, 번역 범위는 i18n/scope.ts.
+import { isCore, type SiteLang } from "../i18n/langs.ts";
+import { DICTS } from "../i18n/index.ts";
+import type { Tool } from "../data/tools";
+import type { WebTool } from "../data/webTools";
+import type { GroupId } from "../data/webToolGroups";
 
-/** 언어별 주소 — 한국어는 /, 영어는 /en/ */
-export const url = (lang: Lang, path = "") => {
-  const p = path.replace(/^\/+/, "");
-  return lang === "ko" ? `/${p}` : `/en/${p}`;
-};
-/** 같은 페이지의 다른 언어 주소 */
-export const otherLang = (lang: Lang): Lang => (lang === "ko" ? "en" : "ko");
+export { url } from "../i18n/langs.ts";
+export { link, langsOf, isTranslated } from "../i18n/scope.ts";
 
 export const UI = {
   ko: {
@@ -30,7 +31,6 @@ export const UI = {
     license: "라이선스",
     source: "소스 코드",
     issues: "버그 신고",
-    langName: "English",
     heroTitle: "현장 장비 시험을 위한\n작고 정확한 통신 도구",
     heroSub: "시리얼(COM), Modbus, TCP, UDP, 장비 시뮬레이터, 네트워크 장비 찾기, SCPI 계측기, 실시간 그래프, COM 포트 점검, PLC(MC 프로토콜) 흉내, Wi-Fi·블루투스 끊김 기록을 목적별 작은 프로그램으로. 무료·오픈소스(GPL-3.0), 윈도우 10·11.",
     trust: ["프로그램에 광고 없음", "끼워팔기 없음", "설치판·휴대판", "소스 공개"],
@@ -73,6 +73,34 @@ export const UI = {
     ],
     webview: "실행에 Microsoft Edge WebView2 가 필요합니다(윈도우 11 기본 포함). 인터넷이 없는 PC 는 WebView2 를 함께 넣은 «오프라인 설치판» 을 받으세요.",
     footerLine: "PortDock — 현장 하드웨어 시험용 통신 도구. GPL-3.0.",
+    skip: "본문으로",
+    langMenu: "언어",
+    breadcrumb: "현재 위치",
+    open: "열기",
+    inEnglish: "",
+    /** 문장 끝 마침표(링크 뒤에 붙는 것) */
+    period: ".",
+    allToolsEn: "",
+    feedbackAria: "의견 보내기",
+    feedbackQ: "이 페이지가 도움이 됐나요?",
+    feedbackBody: " 좋았던 점·아쉬운 점·더 있었으면 하는 계산을 알려 주세요.",
+    feedbackPrefix: "의견: ",
+    feedbackIdea: "의견 남기기",
+    feedbackIssue: "틀린 곳 알리기",
+    feedbackMail: "메일로 문의",
+    noticeAria: "이용 안내",
+    noticeHead: "이용 안내",
+    noticeBody:
+      "이 페이지의 계산과 자료는 참고용입니다. 실제 값은 장비 모델·펌웨어·설정에 따라 다를 수 있으니, 설계·시공·운전 전에는 해당 장비 매뉴얼과 관련 규격·법령을 확인하고 전기·안전 작업은 자격을 갖춘 사람의 확인을 받으세요.",
+    /** 앞 글 · 문의 링크 · 가운데 · 이슈 링크 · 뒤 글 */
+    noticeFix: [" 틀린 곳은 ", "문의", "나 ", "GitHub 이슈", "로 알려 주시면 고칩니다."],
+    noticeAll: "이용 안내 전체",
+    readNext: "이어 읽기",
+    dlPrograms: "PortDock 프로그램 내려받기(무료, 윈도우)",
+    moreTools: (n: number) => `다른 웹 도구 ${n}개 더 보기`,
+    filterEmpty: "맞는 항목이 없습니다. 다른 낱말로 찾아 보세요.",
+    /** {n} 자리에 수 */
+    filterCount: "{n}개",
   },
   en: {
     siteDesc: "Free Windows tools for field hardware: serial, Modbus, TCP/UDP, PLC (MC) simulator, SCPI, plotter, COM port, Wi-Fi drop logs. Web calculators and PC tests too.",
@@ -94,7 +122,6 @@ export const UI = {
     license: "License",
     source: "Source code",
     issues: "Report a bug",
-    langName: "한국어",
     heroTitle: "Small, precise communication tools\nfor testing hardware",
     heroSub: "Serial (COM), Modbus, TCP, UDP, a device simulator, a network device finder, an SCPI instrument terminal, a live plotter, a COM port inspector, a PLC (MC protocol) simulator and a Wi-Fi/Bluetooth drop recorder — one small program per job. Free and open source (GPL-3.0), Windows 10 and 11.",
     trust: ["No ads in the apps", "No bundles", "Installer or portable", "Open source"],
@@ -137,5 +164,58 @@ export const UI = {
     ],
     webview: "Requires Microsoft Edge WebView2 (included in Windows 11). For offline PCs, get the «offline installer» with WebView2 bundled.",
     footerLine: "PortDock — communication tools for hardware testing. GPL-3.0.",
+    skip: "Skip to content",
+    langMenu: "Language",
+    breadcrumb: "Breadcrumb",
+    open: "Open",
+    inEnglish: "",
+    /** 문장 끝 마침표(링크 뒤에 붙는 것) */
+    period: ".",
+    allToolsEn: "",
+    feedbackAria: "Feedback",
+    feedbackQ: "Was this page helpful?",
+    feedbackBody: " Tell us what worked, what was missing, or which calculation you would like next.",
+    feedbackPrefix: "Feedback: ",
+    feedbackIdea: "Leave feedback",
+    feedbackIssue: "Report a mistake",
+    feedbackMail: "Email us",
+    noticeAria: "Use notice",
+    noticeHead: "Use notice",
+    noticeBody:
+      "The calculations and data on this page are for reference. Real values can differ by model, firmware and settings, so check the equipment manual and the applicable standards and regulations before design, installation or operation, and have electrical and safety work checked by a qualified person.",
+    noticeFix: [" Found a mistake? Tell us through the ", "contact page", " or a ", "GitHub issue", " and we will fix it."],
+    noticeAll: "Full terms of use",
+    readNext: "Read next",
+    dlPrograms: "Download the PortDock programs (free, Windows)",
+    moreTools: (n: number) => `${n} more web tools`,
+    filterEmpty: "Nothing matches. Try another word.",
+    filterCount: "{n}",
   },
 } as const;
+
+/** 문자열 틀(as const)을 «같은 모양의 아무 문자열» 로 — 추가 언어 사전이 맞춰야 하는 모양 */
+export type Widen<T> = T extends string
+  ? string
+  : T extends (...a: infer A) => infer R
+    ? (...a: A) => Widen<R>
+    : T extends readonly (infer U)[]
+      ? readonly Widen<U>[]
+      : { readonly [K in keyof T]: Widen<T[K]> };
+export type UiText = Widen<(typeof UI)["en"]>;
+
+/** 이 언어의 공용 문구 */
+export const ui = (lang: SiteLang): UiText => (isCore(lang) ? UI[lang] : DICTS[lang].ui);
+
+/** 프로그램 한 줄 소개 — 추가 언어는 i18n/<언어>/common.ts 의 apps */
+export const appTagline = (x: Tool, lang: SiteLang): string => (isCore(lang) ? x.tagline[lang] : DICTS[lang].common.apps[x.id]);
+
+/** 웹 도구 이름·한 줄 소개 — 추가 언어는 번역 범위(scope.ts)의 도구만 있다(i18n/<언어>/common.ts 의 webTools) */
+export const webToolText = (w: WebTool, lang: SiteLang): { name: string; blurb: string } => {
+  if (isCore(lang)) return { name: w.name[lang], blurb: w.blurb[lang] };
+  const x = (DICTS[lang].common.webTools as Partial<Record<string, { name: string; blurb: string }>>)[w.path];
+  if (!x) throw new Error(`${lang}: 번역 범위 밖 웹 도구 ${w.path}`);
+  return x;
+};
+
+/** 웹 도구 묶음 이름 */
+export const groupName = (g: { id: GroupId; name: { ko: string; en: string } }, lang: SiteLang): string => (isCore(lang) ? g.name[lang] : DICTS[lang].common.groups[g.id]);

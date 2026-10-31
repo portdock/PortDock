@@ -6,17 +6,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { MB_FUNCS } from "@shared/modbusBuild";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus RTU 요청 만들기",
+      seo: "Modbus RTU 요청 만들기 — CRC 포함 계산기 — PortDock",
       desc: "국번·함수·주소·개수를 넣으면 CRC 까지 붙은 Modbus RTU 요청 바이트를 만들어 줍니다. 40001 같은 PLC 표기도 바로 넣을 수 있습니다.",
       slave: "국번(슬레이브 ID)",
       fc: "함수",
@@ -33,9 +36,14 @@ const L = ko
       faqTitle: "읽는 법",
       appNote: "만든 요청을 장비에 바로 보내 보려면",
       guide: "Modbus RTU 프레임 읽는 법",
+      guidePre: "자세한 바이트 풀이는 가이드 ",
+      guidePost: " 를 보세요.",
+      normal: "정상 응답",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus RTU Request Builder",
+      seo: "Modbus RTU Request Builder with CRC (Online) — PortDock",
       desc: "Enter Slave ID, function, address and quantity to get a complete Modbus RTU request including CRC. PLC notation such as 40001 works too.",
       slave: "Slave ID",
       fc: "Function",
@@ -52,19 +60,23 @@ const L = ko
       faqTitle: "How to read it",
       appNote: "To send it to a device right away, use",
       guide: "Reading Modbus RTU frames",
-    };
+      guidePre: "For a byte-by-byte walkthrough see ",
+      guidePost: ".",
+      normal: "normal response",
+    }
+  : dict(lang).pages.modbus;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus RTU 요청 만들기 — CRC 포함 계산기 — PortDock" : "Modbus RTU Request Builder with CRC (Online) — PortDock"} description={L.desc} path="tools/modbus/" ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path="tools/modbus/" ads libText={["modbusBuild"]}>
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/modbus/" }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: "tools/modbus/" }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="mb" data-lang={lang} data-bytes={L.reqLen} data-values={L.values} data-coilvals={L.coilVals} data-qty={L.qty}>
+    <form class="calc card" id="mb" data-lang={lang} data-bytes={L.reqLen} data-normal={L.normal} data-values={L.values} data-coilvals={L.coilVals} data-qty={L.qty}>
       <div class="row">
         <label class="fld">
           {L.slave}
@@ -73,7 +85,7 @@ const L = ko
         <label class="fld" style="flex:2 1 260px">
           {L.fc}
           <select id="fc">
-            {MB_FUNCS.map((f) => <option value={f.code} selected={f.code === 3}>{f.code.toString(16).toUpperCase().padStart(2, "0")} — {f[lang]}</option>)}
+            {MB_FUNCS.map((f) => <option value={f.code} selected={f.code === 3}>{f.code.toString(16).toUpperCase().padStart(2, "0")} — {tx(f, lang)}</option>)}
           </select>
         </label>
       </div>
@@ -109,11 +121,11 @@ const L = ko
     <section class="prose">
       <h2>{L.faqTitle}</h2>
       <p>
-        {ko ? "자세한 바이트 풀이는 가이드 " : "For a byte-by-byte walkthrough see "}
-        <a href={url(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{ko ? " 를 보세요." : "."}
+        {L.guidePre}
+        <a href={link(lang, "guides/modbus-rtu-frame/")}>{L.guide}</a>{L.guidePost}
       </p>
       <p>
-        {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
+        {L.appNote} <a href={link(lang, "serial/")}>PortDock Serial</a>{ui(lang).period}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -132,8 +144,12 @@ const L = ko
   <script>
     import { buildRequest, convertAddrText, mbFuncInfo, type AddrMode, type MbLang } from "@shared/modbusBuild";
     import { compute, hex } from "../lib/checksum";
+    import { fromEn, type Lang } from "../lib/tr";
     const form = document.getElementById("mb") as HTMLFormElement;
-    const lang = (form.dataset.lang ?? "ko") as MbLang;
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    // 공용 코드(shared/modbusBuild.ts, 앱과 같이 씀)는 한국어·영어만 — 추가 언어는 영어 문장을 번역 표로 바꾼다(lib/tr.ts)
+    const mbLang: MbLang = lang === "ko" ? "ko" : "en";
+    const tr = (s: string | null) => (s ? fromEn(s, lang) : "");
     const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
     const fcSel = document.getElementById("fc") as HTMLSelectElement;
     let mode: AddrMode = "zero";
@@ -152,10 +168,10 @@ const L = ko
       ($("qtyLabel") as unknown as HTMLElement).textContent = f.write ? (f.bit ? form.dataset.coilvals! : form.dataset.values!) : form.dataset.qty!;
       const r = buildRequest(
         { slave: Number($("slave").value), fc, addrText: $("addr").value, addrMode: mode, qty: Number($("qty").value), valuesText: $("qty").value },
-        lang,
+        mbLang,
       );
-      document.getElementById("note")!.textContent = r.note ?? "";
-      document.getElementById("err")!.textContent = r.error ?? "";
+      document.getElementById("note")!.textContent = tr(r.note);
+      document.getElementById("err")!.textContent = tr(r.error);
       const out = document.getElementById("out")!;
       const meta = document.getElementById("meta")!;
       if (!r.bytes) {
@@ -166,7 +182,7 @@ const L = ko
       const full = [...r.bytes, ...compute("crc16-modbus", r.bytes)];
       out.textContent = hex(full);
       const rl = Number($("slave").value) === 0 ? 0 : respLen(fc, r.qty);
-      meta.textContent = `${full.length} ${form.dataset.bytes}` + (rl ? ` · ${lang === "ko" ? "정상 응답" : "normal response"} ${rl} ${form.dataset.bytes}` : "");
+      meta.textContent = `${full.length} ${form.dataset.bytes}` + (rl ? ` · ${form.dataset.normal} ${rl} ${form.dataset.bytes}` : "");
     }
     fcSel.addEventListener("change", () => {
       const fc = Number(fcSel.value);

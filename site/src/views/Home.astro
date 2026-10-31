@@ -1,9 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
-import { TOOLS, RELEASED_TOOLS, REPO, type Lang } from "../data/tools";
+import { TOOLS, RELEASED_TOOLS, REPO } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { DEVICES } from "../data/devices";
-import { UI, url } from "../lib/i18n";
+import { ui, url, link, appTagline, webToolText } from "../lib/i18n";
+import { dict } from "../i18n";
+import { SCOPE_TOOLS } from "../i18n/scope";
+import { isCore, type SiteLang } from "../i18n/langs";
 import { WEB_TOOLS, webToolByPath } from "../data/webTools";
 import { POPULAR_WEB_TOOLS } from "../data/webToolGroups";
 import { appIcon } from "../lib/appIcons";
@@ -13,25 +16,92 @@ import PickApp from "../components/PickApp.astro";
 import { groupOf } from "../data/webToolGroups";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
+const core = isCore(lang);
+// 그림은 한국어·영어 두 벌 — 추가 언어 쪽은 영어 그림
+const imgLang = lang === "ko" ? "ko" : "en";
 const home = new URL(url(lang), Astro.site).href;
 const root = new URL("/", Astro.site).href;
 // 첫 화면은 짧게 — 웹 도구·가이드는 몇 개만 보이고 «모두 보기» 로 잇는다
-const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
+// 추가 언어 쪽은 그 언어로 번역한 웹 도구만
+const popular = core ? POPULAR_WEB_TOOLS.map(webToolByPath) : SCOPE_TOOLS.map((p) => webToolByPath(p as (typeof POPULAR_WEB_TOOLS)[number]));
 // 현장 글 6편 + PC 문제 글 2편(마이크·블루투스로 들어온 사람도 «내 사이트» 로 보이게)
 const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order", "bluetooth-headphones-cutting-out-windows", "windows-microphone-not-working"];
 const hwTests = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw");
-const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
+// 가이드는 한국어·영어만 — 추가 언어 쪽은 영어판 가이드 목록으로 잇는다
+const featured = core ? FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined) : [];
 // 윈도우 프로그램 12종 + MCP 서버(창 없음) — 13 과 12 가 섞여 보이지 않게 둘을 나눠 적는다
 const nApps = RELEASED_TOOLS.filter((t) => t.id !== "mcp").length;
 const mcpKo = nApps < RELEASED_TOOLS.length ? " + MCP" : "";
-const sub = ko
-  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${nApps}종${nApps < RELEASED_TOOLS.length ? "과 AI 용 MCP 서버" : ""}, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${WEB_TOOLS.length}개.`
-  : `${nApps} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices${nApps < RELEASED_TOOLS.length ? " and an MCP server for AI" : ""} — plus ${WEB_TOOLS.length} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`;
+const mcp = nApps < RELEASED_TOOLS.length;
+const nWeb = WEB_TOOLS.length;
+const L =
+  lang === "ko"
+    ? {
+        seo: "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램",
+        desc: `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 프로그램 ${nApps}종${mcpKo}. 오픈소스.`,
+        sub: `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${nApps}종${mcp ? "과 AI 용 MCP 서버" : ""}, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${nWeb}개.`,
+        dl: "프로그램 내려받기",
+        dlSmall: "무료 · 윈도우 10·11",
+        web: "웹 도구 바로 쓰기",
+        webSmall: "설치 없이",
+        pcPre: "PC 문제라면: ",
+        pcHw: "마이크·키보드·마우스·웹캠 테스트(브라우저)",
+        pcTester: "Wi-Fi·블루투스 끊김 기록(Hardware Tester)",
+        heroAlt: "PortDock Serial 화면 — 받은 바이트 기록과 Modbus 응답 풀이",
+        heroCap: "PortDock Serial — 화면 예시(가짜 데이터)",
+        appsTitle: `윈도우 프로그램 ${nApps}종${mcpKo}`,
+        appsLead: "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요.",
+        screen: "화면",
+        soon: "곧 공개",
+        webTitle: "웹 도구 — 설치 없이 바로",
+        webLead: "현장 계산기와 PC 하드웨어 테스트를 브라우저에서 바로 씁니다. 입력한 값은 어디에도 보내지 않습니다.",
+        hwTitle: `PC 하드웨어 테스트 ${hwTests.length}종`,
+        hwBody: "",
+        allWeb: `웹 도구 ${nWeb}개 모두 보기`,
+        guidesTitle: "가이드와 장비 레지스터 맵",
+        read: "읽기",
+        devTitle: `산업 장비 Modbus 레지스터 맵 ${DEVICES.length}종`,
+        devBody: "인버터·온도 조절기·전력 미터 — 매뉴얼 출처, JSON",
+        guidesEnTitle: "",
+        guidesEnBody: "",
+        allGuides: `가이드 ${GUIDES.length}편 모두 보기`,
+      }
+    : lang === "en"
+      ? {
+          seo: "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows",
+          desc: `${nApps} free Windows test tools${mcpKo}: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`,
+          sub: `${nApps} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices${mcp ? " and an MCP server for AI" : ""} — plus ${nWeb} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`,
+          dl: "Download the programs",
+          dlSmall: "free · Windows 10/11",
+          web: "Use the web tools",
+          webSmall: "no install",
+          pcPre: "PC trouble? ",
+          pcHw: "Mic, keyboard, mouse and webcam tests (browser)",
+          pcTester: "Wi-Fi and Bluetooth drop log (Hardware Tester)",
+          heroAlt: "PortDock Serial screen — received bytes and a decoded Modbus reply",
+          heroCap: "PortDock Serial — example screen (sample data)",
+          appsTitle: `${nApps} Windows programs${mcpKo}`,
+          appsLead: "One small program per job — get only what you need.",
+          screen: "screen",
+          soon: "Coming soon",
+          webTitle: "Web tools — no install",
+          webLead: "Field calculators and PC hardware tests, right in your browser. Nothing you type is sent anywhere.",
+          hwTitle: `${hwTests.length} PC hardware tests`,
+          hwBody: "",
+          allWeb: `All ${nWeb} web tools`,
+          guidesTitle: "Guides and device register maps",
+          read: "Read",
+          devTitle: `Modbus register maps for ${DEVICES.length} industrial devices`,
+          devBody: "Inverters, temperature controllers, power meters — sources, JSON",
+          guidesEnTitle: "",
+          guidesEnBody: "",
+          allGuides: `All ${GUIDES.length} guides`,
+        }
+      : dict(lang).pages.home({ nApps, mcp, nWeb: SCOPE_TOOLS.length, nHw: hwTests.length, nDevices: DEVICES.length, nGuides: GUIDES.length });
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {
@@ -58,10 +128,8 @@ const ld = [
 <Base
   lang={lang}
   title="PortDock"
-  seoTitle={ko ? "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램" : "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows"}
-  description={ko
-    ? `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 프로그램 ${nApps}종${mcpKo}. 오픈소스.`
-    : `${nApps} free Windows test tools${mcpKo}: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`}
+  seoTitle={L.seo}
+  description={L.desc}
   path=""
 >
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
@@ -69,38 +137,38 @@ const ld = [
     <div class="wrap">
       <div>
         <h1>{t.heroTitle}</h1>
-        <p class="sub">{sub}</p>
+        <p class="sub">{L.sub}</p>
         <div class="btns hero-btns">
-          <a class="btn primary big" href={url(lang, "download/")}>{ko ? "프로그램 내려받기" : "Download the programs"} <small>{ko ? "무료 · 윈도우 10·11" : "free · Windows 10/11"}</small></a>
-          <a class="btn big" href={url(lang, "tools/")}>{ko ? "웹 도구 바로 쓰기" : "Use the web tools"} <small>{ko ? "설치 없이" : "no install"}</small></a>
+          <a class="btn primary big" href={url(lang, "download/")}>{L.dl} <small>{L.dlSmall}</small></a>
+          <a class="btn big" href={url(lang, "tools/")}>{L.web} <small>{L.webSmall}</small></a>
         </div>
         <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
         <p class="hero-pc">
-          {ko ? "PC 문제라면: " : "PC trouble? "}
-          <a href={url(lang, "tools/#g-hw")}>{ko ? "마이크·키보드·마우스·웹캠 테스트(브라우저)" : "Mic, keyboard, mouse and webcam tests (browser)"}</a>
+          {L.pcPre}
+          <a href={core ? url(lang, "tools/#g-hw") : url("en", "tools/#g-hw")}>{L.pcHw}</a>
           {" · "}
-          <a href={url(lang, "hw-tester/")}>{ko ? "Wi-Fi·블루투스 끊김 기록(Hardware Tester)" : "Wi-Fi and Bluetooth drop log (Hardware Tester)"}</a>
+          <a href={link(lang, "hw-tester/")}>{L.pcTester}</a>
         </p>
       </div>
       <figure class="shot hero-shot">
-        <img src={`/img/apps/serial.${lang}.webp`} width="1200" height="760" alt={ko ? "PortDock Serial 화면 — 받은 바이트 기록과 Modbus 응답 풀이" : "PortDock Serial screen — received bytes and a decoded Modbus reply"} fetchpriority="high" decoding="async" />
-        <figcaption>{ko ? "PortDock Serial — 화면 예시(가짜 데이터)" : "PortDock Serial — example screen (sample data)"}</figcaption>
+        <img src={`/img/apps/serial.${imgLang}.webp`} width="1200" height="760" alt={L.heroAlt} fetchpriority="high" decoding="async" />
+        <figcaption>{L.heroCap}</figcaption>
       </figure>
     </div>
   </section>
 
   <section class="block" id="tools">
     <div class="wrap">
-      <h2>{ko ? `윈도우 프로그램 ${nApps}종${mcpKo}` : `${nApps} Windows programs${mcpKo}`}</h2>
-      <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
+      <h2>{L.appsTitle}</h2>
+      <p class="lead">{L.appsLead}</p>
       <PickApp lang={lang} />
       <div class="shots3">
         {["modbus-master", "netscan", "plot"].map((id) => {
           const x = toolById(id);
           return (
-            <a class="shot-card" href={url(lang, `${x.id}/`)}>
-              <img src={`/img/apps/${x.id}.${lang}.webp`} width="1200" height="760" alt={ko ? `${x.name} 화면` : `${x.name} screen`} loading="lazy" decoding="async" />
-              <span>{x.name.replace("PortDock ", "")} — {x.tagline[lang]}</span>
+            <a class="shot-card" href={link(lang, `${x.id}/`)}>
+              <img src={`/img/apps/${x.id}.${imgLang}.webp`} width="1200" height="760" alt={`${x.name} ${L.screen}`} loading="lazy" decoding="async" />
+              <span>{x.name.replace("PortDock ", "")} — {appTagline(x, lang)}</span>
             </a>
           );
         })}
@@ -108,14 +176,14 @@ const ld = [
       <div class="grid apps">
         {
           TOOLS.map((x) => (
-            <a class="card app-card" href={url(lang, `${x.id}/`)}>
+            <a class="card app-card" href={link(lang, `${x.id}/`)}>
               {appIcon(x.id) && <img class="app-icon" src={appIcon(x.id)} alt="" width="40" height="40" loading="lazy" decoding="async" />}
               <div>
                 <h3>
                   {x.name.replace("PortDock ", "")}
-                  {x.upcoming && <small class="soon-badge">{ko ? "곧 공개" : "Coming soon"}</small>}
+                  {x.upcoming && <small class="soon-badge">{L.soon}</small>}
                 </h3>
-                <p>{x.tagline[lang]}</p>
+                <p>{appTagline(x, lang)}</p>
               </div>
             </a>
           ))
@@ -126,23 +194,23 @@ const ld = [
 
   <section class="block alt" id="web-tools">
     <div class="wrap">
-      <h2>{ko ? "웹 도구 — 설치 없이 바로" : "Web tools — no install"}</h2>
-      <p class="lead">{ko ? "현장 계산기와 PC 하드웨어 테스트를 브라우저에서 바로 씁니다. 입력한 값은 어디에도 보내지 않습니다." : "Field calculators and PC hardware tests, right in your browser. Nothing you type is sent anywhere."}</p>
+      <h2>{L.webTitle}</h2>
+      <p class="lead">{L.webLead}</p>
       <div class="grid compact">
-        <a class="card hw-card" href={url(lang, "tools/#g-hw")}>
-          <h3>{ko ? `PC 하드웨어 테스트 ${hwTests.length}종` : `${hwTests.length} PC hardware tests`}</h3>
-          <p>{hwTests.map((w) => w.name[lang].replace(/ (테스트|test|Test|tester|Tester).*$/, "")).join(" · ")}</p>
+        <a class="card hw-card" href={core ? url(lang, "tools/#g-hw") : url("en", "tools/#g-hw")}>
+          <h3>{L.hwTitle}</h3>
+          <p>{core ? hwTests.map((w) => w.name[lang as "ko" | "en"].replace(/ (테스트|test|Test|tester|Tester).*$/, "")).join(" · ") : L.hwBody}</p>
         </a>
         {
           popular.map((w) => (
             <a class="card" href={url(lang, w.path)}>
-              <h3>{w.name[lang]}</h3>
-              <p>{w.blurb[lang]}</p>
+              <h3>{webToolText(w, lang).name}</h3>
+              <p>{webToolText(w, lang).blurb}</p>
             </a>
           ))
         }
       </div>
-      <p class="more-link"><a class="btn" href={url(lang, "tools/")}>{ko ? `웹 도구 ${WEB_TOOLS.length}개 모두 보기` : `All ${WEB_TOOLS.length} web tools`} →</a></p>
+      <p class="more-link"><a class="btn" href={url(lang, "tools/")}>{L.allWeb} →</a></p>
     </div>
   </section>
 
@@ -164,23 +232,32 @@ const ld = [
 
   <section class="block">
     <div class="wrap">
-      <h2>{ko ? "가이드와 장비 레지스터 맵" : "Guides and device register maps"}</h2>
+      <h2>{L.guidesTitle}</h2>
       <div class="grid">
         {
           featured.map((g) => (
             <a class="card" href={url(lang, `guides/${g.slug}/`)}>
-              <h3>{g.title[lang]}</h3>
-              <span class="go">{ko ? "읽기" : "Read"} →</span>
+              <h3>{g.title[lang as "ko" | "en"]}</h3>
+              <span class="go">{L.read} →</span>
             </a>
           ))
         }
-        <a class="card" href={url(lang, "devices/")}>
-          <h3>{ko ? `산업 장비 Modbus 레지스터 맵 ${DEVICES.length}종` : `Modbus register maps for ${DEVICES.length} industrial devices`}</h3>
-          <p>{ko ? "인버터·온도 조절기·전력 미터 — 매뉴얼 출처, JSON" : "Inverters, temperature controllers, power meters — sources, JSON"}</p>
+        {
+          !core && (
+            <a class="card" href={url("en", "guides/")} hreflang="en">
+              <h3>{L.guidesEnTitle}</h3>
+              <p>{L.guidesEnBody}</p>
+              <span class="go">{t.more} →</span>
+            </a>
+          )
+        }
+        <a class="card" href={link(lang, "devices/")}>
+          <h3>{L.devTitle}</h3>
+          <p>{L.devBody}</p>
           <span class="go">{t.more} →</span>
         </a>
       </div>
-      <p class="more-link"><a class="btn" href={url(lang, "guides/")}>{ko ? `가이드 ${GUIDES.length}편 모두 보기` : `All ${GUIDES.length} guides`} →</a></p>
+      <p class="more-link"><a class="btn" href={link(lang, "guides/")}>{L.allGuides} →</a></p>
     </div>
   </section>
 
@@ -191,7 +268,7 @@ const ld = [
           <h2>{t.ctaTitle}</h2>
           <p>{t.ctaBody}</p>
         </div>
-        <a class="btn" href={url(lang, "contact/")}>{t.ctaBtn}</a>
+        <a class="btn" href={link(lang, "contact/")}>{t.ctaBtn}</a>
       </div>
     </div>
   </section>

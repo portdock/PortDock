@@ -7,17 +7,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { CHECKSUMS } from "../lib/checksum";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "CRC·체크섬 계산기",
+      seo: "CRC16 Modbus·체크섬 계산기 (온라인) — PortDock",
       desc: "CRC16 Modbus·CCITT·XMODEM, CRC8, LRC, BCC(XOR), SUM8, SUM16 을 한 번에 계산합니다. HEX 와 ASCII(\\r \\n \\xNN) 입력, 붙일 순서까지 보여 줍니다.",
       input: "데이터",
       mode: "입력 방식",
@@ -38,8 +41,10 @@ const L = ko
         ["LRC 는 Modbus ASCII 의 LRC 와 같나요?", "같은 식(바이트 합의 2의 보수)을 원시 바이트에 적용합니다. Modbus ASCII 에서는 문자를 바이트로 바꾼 뒤 계산하세요."],
       ],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "CRC & Checksum Calculator",
+      seo: "CRC16 Modbus & Checksum Calculator Online — PortDock",
       desc: "Compute CRC16 Modbus/CCITT/XMODEM, CRC8, LRC, BCC (XOR), SUM8 and SUM16 at once. HEX or ASCII (\\r \\n \\xNN) input, shown in transmission byte order.",
       input: "Data",
       mode: "Input",
@@ -59,7 +64,8 @@ const L = ko
         ["My CRC16 CCITT differs from another calculator", "CCITT has variants by initial value. «CRC16 CCITT» here uses init 0xFFFF (CCITT-FALSE) and «CRC16 XMODEM» uses 0x0000. Kermit is a bit-reversed variant."],
         ["Is LRC the same as Modbus ASCII LRC?", "Same formula (two's complement of the byte sum) applied to raw bytes. For Modbus ASCII, convert the characters to bytes first."],
       ],
-    };
+    }
+  : dict(lang).pages.checksum;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -67,11 +73,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "CRC16 Modbus·체크섬 계산기 (온라인) — PortDock" : "CRC16 Modbus & Checksum Calculator Online — PortDock"} description={L.desc} path="tools/checksum/" ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path="tools/checksum/" ads libText={["checksum"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: "tools/checksum/" }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: "tools/checksum/" }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -105,7 +111,7 @@ const ld = {
                 <td>
                   <b>{c.label}</b>
                   <br />
-                  <span class="note">{c[lang]}</span>
+                  <span class="note">{tx(c, lang)}</span>
                 </td>
                 <td class="mono v" />
                 <td class="mono f" />
@@ -130,14 +136,15 @@ const ld = {
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "serial/")}>{L.appLink}</a>.
+        {L.appNote} <a href={link(lang, "serial/")}>{L.appLink}</a>{ui(lang).period}
       </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path="tools/checksum/" />
   </div>
   <script>
-    import { compute, hex, parseAscii, parseHex, type ChecksumKind, type Lang } from "../lib/checksum";
+    import { compute, hex, parseAscii, parseHex, type ChecksumKind } from "../lib/checksum";
+    import type { Lang } from "../lib/tr";
     const root = document.getElementById("calc")!;
     const lang = (root.dataset.lang ?? "ko") as Lang;
     const mode = document.getElementById("mode") as HTMLSelectElement;

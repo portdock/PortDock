@@ -7,18 +7,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { PREFIX_TABLE } from "../lib/subnet";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { dict } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/subnet/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "IP 서브넷 계산기",
+      seo: "IP 서브넷 계산기 — 마스크·대역·PLC 와 PC 같은 대역 확인 — PortDock",
       desc: "IP 주소와 서브넷 마스크(255.255.255.0·/24)로 네트워크·브로드캐스트 주소와 쓸 수 있는 범위를 내고, PC 와 PLC·HMI 가 같은 대역인지 양쪽 마스크로 판정합니다.",
       a: "A — PC 주소",
       am: "A 마스크",
@@ -62,8 +64,10 @@ const L = ko
       appNote: "같은 대역의 장비를 실제로 찾으려면",
       appNote2: "으로 ARP·핑 검색을 합니다.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "IP Subnet Calculator",
+      seo: "IP Subnet Calculator: Mask, Range, PLC & PC Subnet — PortDock",
       desc: "From an IP and mask (255.255.255.0 or /24): network, broadcast and usable range, and whether a PC and a PLC or HMI share a subnet, checked with both masks.",
       a: "A — PC address",
       am: "A mask",
@@ -106,7 +110,8 @@ const L = ko
       ],
       appNote: "To find the devices on that subnet, run an ARP and ping sweep with",
       appNote2: ".",
-    };
+    }
+  : dict(lang).pages.subnet;
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -114,11 +119,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "IP 서브넷 계산기 — 마스크·대역·PLC 와 PC 같은 대역 확인 — PortDock" : "IP Subnet Calculator: Mask, Range, PLC & PC Subnet — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["subnet"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -174,7 +179,7 @@ const ld = {
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "netscan/")}>PortDock Net Scan</a>{L.appNote2}
+        {L.appNote} <a href={link(lang, "netscan/")}>PortDock Net Scan</a>{L.appNote2}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -182,9 +187,10 @@ const ld = {
   </div>
   <script>
     import { KIND_LABEL, bin, ipStr, pair, parseCidr, parseIp, subnet, type Lang } from "../lib/subnet";
+    import { msg, tx } from "../lib/tr";
     const form = document.getElementById("sn") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
+    const t = (ko: string, en: string) => msg(lang, ko, en);
     const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
     const set = (k: string, v: string) => {
       const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
@@ -196,7 +202,7 @@ const ld = {
       box.replaceChildren();
       const A = parseCidr($("a").value, $("am").value);
       if (!A) {
-        err.textContent = ko ? "A 주소나 마스크를 확인하세요(예: 192.168.1.200 · 255.255.255.0 또는 24)" : "Check A's address or mask (e.g. 192.168.1.200 · 255.255.255.0 or 24)";
+        err.textContent = t("A 주소나 마스크를 확인하세요(예: 192.168.1.200 · 255.255.255.0 또는 24)", "Check A's address or mask (e.g. 192.168.1.200 · 255.255.255.0 or 24)");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
         return;
       }
@@ -208,7 +214,7 @@ const ld = {
       set("bc", ipStr(s.broadcast));
       set("range", `${ipStr(s.first)} ~ ${ipStr(s.last)}`);
       set("hosts", s.hosts.toLocaleString("en-US"));
-      set("kind", KIND_LABEL[s.kind][lang]);
+      set("kind", tx(KIND_LABEL[s.kind], lang));
       set("binIp", bin(s.ip));
       set("binMask", bin(s.mask));
       const bText = $("b").value.trim();
@@ -216,7 +222,7 @@ const ld = {
       const gwText = $("gw").value.trim();
       const gw = gwText ? parseIp(gwText) : undefined;
       if ((bText && !B) || gw === null) {
-        err.textContent = ko ? "B 주소·마스크나 게이트웨이를 확인하세요" : "Check B's address/mask or the gateway";
+        err.textContent = t("B 주소·마스크나 게이트웨이를 확인하세요", "Check B's address/mask or the gateway");
         return;
       }
       err.textContent = "";
@@ -229,9 +235,10 @@ const ld = {
         el.textContent = text;
         box.append(el);
       };
-      line("", ko ? `A ${ipStr(A.ip)}/${A.prefix} 의 네트워크 ${ipStr(s.network)} → B ${p.aSeesB ? "같은 서브넷" : "다른 네트워크"}` : `A ${ipStr(A.ip)}/${A.prefix}, network ${ipStr(s.network)} → B is ${p.aSeesB ? "local" : "remote"}`);
-      line("", ko ? `B ${ipStr(B.ip)}/${B.prefix} 의 네트워크 ${ipStr(nb.network)} → A ${p.bSeesA ? "같은 서브넷" : "다른 네트워크"}` : `B ${ipStr(B.ip)}/${B.prefix}, network ${ipStr(nb.network)} → A is ${p.bSeesA ? "local" : "remote"}`);
-      for (const m of p.messages) line(m.level, m[lang]);
+      const [a, an, b, bn] = [`${ipStr(A.ip)}/${A.prefix}`, ipStr(s.network), `${ipStr(B.ip)}/${B.prefix}`, ipStr(nb.network)];
+      line("", p.aSeesB ? t(`A ${a} 의 네트워크 ${an} → B 같은 서브넷`, `A ${a}, network ${an} → B is local`) : t(`A ${a} 의 네트워크 ${an} → B 다른 네트워크`, `A ${a}, network ${an} → B is remote`));
+      line("", p.bSeesA ? t(`B ${b} 의 네트워크 ${bn} → A 같은 서브넷`, `B ${b}, network ${bn} → A is local`) : t(`B ${b} 의 네트워크 ${bn} → A 다른 네트워크`, `B ${b}, network ${bn} → A is remote`));
+      for (const m of p.messages) line(m.level, tx(m, lang));
     }
     form.addEventListener("input", run);
     form.addEventListener("submit", (e) => e.preventDefault());

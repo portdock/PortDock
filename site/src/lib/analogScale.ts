@@ -2,7 +2,8 @@
 // 모두 일차식(선형 환산)이라 범위 밖 값도 그대로 늘려 계산하고, 범위 밖이면 상태로 알린다.
 // 프리셋 숫자·NE 43 경계는 공식 문서에서 확인한 것만 넣는다(출처는 각 항목의 src, 화면 아래 «출처» 에도 적는다).
 
-export type Lang = "ko" | "en";
+import { msg, type Lang } from "./tr.ts";
+export type { Lang };
 export type SignalKind = "4-20mA" | "0-20mA" | "0-10V" | "1-5V";
 
 export interface Signal {
@@ -124,7 +125,6 @@ export function fromRatio(s: Scale, r: number): Values {
 
 /** 한 칸에 넣은 값에서 네 값 — 범위 폭이 0 이거나 숫자가 아니면 오류 */
 export function convert(s: Scale, from: Field, v: number, lang: Lang = "ko"): Values {
-  const ko = lang === "ko";
   for (const [n, x] of [
     ["v", v],
     ["engLo", s.engLo],
@@ -132,9 +132,9 @@ export function convert(s: Scale, from: Field, v: number, lang: Lang = "ko"): Va
     ["countLo", s.countLo],
     ["countHi", s.countHi],
   ] as const)
-    if (!Number.isFinite(x)) throw new Error(ko ? (n === "v" ? "숫자를 넣으세요" : "범위에 숫자를 넣으세요") : n === "v" ? "Enter a number" : "Enter numbers for the ranges");
-  if (s.engLo === s.engHi) throw new Error(ko ? "공학값 하한과 상한이 같습니다" : "Engineering low and high are equal");
-  if (s.countLo === s.countHi) throw new Error(ko ? "카운트 하한과 상한이 같습니다" : "Count low and high are equal");
+    if (!Number.isFinite(x)) throw new Error(n === "v" ? msg(lang, "숫자를 넣으세요", "Enter a number") : msg(lang, "범위에 숫자를 넣으세요", "Enter numbers for the ranges"));
+  if (s.engLo === s.engHi) throw new Error(msg(lang, "공학값 하한과 상한이 같습니다", "Engineering low and high are equal"));
+  if (s.countLo === s.countHi) throw new Error(msg(lang, "카운트 하한과 상한이 같습니다", "Count low and high are equal"));
   const g = signalOf(s.signal);
   const r =
     from === "sig" ? ratio(g.lo, g.hi, v) : from === "eng" ? ratio(s.engLo, s.engHi, v) : from === "pct" ? v / 100 : ratio(s.countLo, s.countHi, v);

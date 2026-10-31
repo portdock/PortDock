@@ -132,6 +132,19 @@ kbd,
   padding: 3px 10px;
   font-size: 13px;
 }
+/* 언어 고르기 — 이 쪽이 있는 언어만 목록에 */
+.top nav .lang summary {
+  padding: 0;
+}
+.top nav .lang ul {
+  left: auto;
+  right: 0;
+  width: max-content;
+  min-width: 120px;
+}
+.top nav .lang a[aria-current] {
+  font-weight: 700;
+}
 .menu {
   position: relative;
 }

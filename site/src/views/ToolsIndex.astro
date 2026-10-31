@@ -1,52 +1,78 @@
 ---
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { type Lang } from "../data/tools";
 import { WEB_TOOLS } from "../data/webTools";
 import { groupedWebTools } from "../data/webToolGroups";
 import ListFilter from "../components/ListFilter.astro";
-import { url } from "../lib/i18n";
+import { ui, url, webToolText, groupName, isTranslated } from "../lib/i18n";
+import { dict } from "../i18n";
+import { isCore, type SiteLang } from "../i18n/langs";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
-const name = ko ? "웹 도구" : "Web tools";
-const groups = groupedWebTools();
+const n = WEB_TOOLS.length;
+const L =
+  lang === "ko"
+    ? {
+        seo: "온라인 Modbus·CRC·4–20mA·모터·단위 변환 계산기 — PortDock",
+        desc: "브라우저 현장 도구: Modbus 해석·CRC16·웹 시리얼, 배선도·구성도·점검표, 고장 원인 찾기, RS485·4–20mA·Pt100, 전압 강하, 서브넷, 모터, CAN·UART 보율.",
+        lead: `설치 없이 브라우저에서 바로 쓰는 현장 계산기·PC 하드웨어 테스트 ${n}개. 입력한 값은 어디에도 보내지 않습니다.`,
+        filter: "도구 찾기 — 예: crc, 4-20, 모터, 서브넷",
+        cats: "종류",
+        moreEn: "",
+        moreEnLink: "",
+      }
+    : lang === "en"
+      ? {
+          seo: "Online Modbus, CRC, 4–20 mA, Motor & Unit Calculators — PortDock",
+          desc: "Browser field tools: Modbus decoder, CRC16, web serial, wiring and system diagrams, checklists, troubleshooting, RS-485, 4–20 mA, RTD, voltage drop, subnets.",
+          lead: `${n} field calculators and PC hardware tests that run right in your browser. Nothing you type is sent anywhere.`,
+          filter: "Find a tool — e.g. crc, 4-20, motor, subnet",
+          cats: "Categories",
+          moreEn: "",
+          moreEnLink: "",
+        }
+      : dict(lang).pages.tools;
+// 추가 언어 쪽은 그 언어로 번역한 웹 도구만(나머지는 영어판 목록으로 잇는다)
+const groups = groupedWebTools()
+  .map((g) => ({ ...g, tools: g.tools.filter((x) => isTranslated(lang, x.path)) }))
+  .filter((g) => g.tools.length);
+const shown = groups.reduce((a, g) => a + g.tools.length, 0);
+const name = ui(lang).webTools;
 ---
 
 <Base
   lang={lang}
   title={name}
-  seoTitle={ko ? "온라인 Modbus·CRC·4–20mA·모터·단위 변환 계산기 — PortDock" : "Online Modbus, CRC, 4–20 mA, Motor & Unit Calculators — PortDock"}
-  description={ko
-    ? "브라우저 현장 도구: Modbus 해석·CRC16·웹 시리얼, 배선도·구성도·점검표, 고장 원인 찾기, RS485·4–20mA·Pt100, 전압 강하, 서브넷, 모터, CAN·UART 보율."
-    : "Browser field tools: Modbus decoder, CRC16, web serial, wiring and system diagrams, checklists, troubleshooting, RS-485, 4–20 mA, RTD, voltage drop, subnets."}
+  seoTitle={L.seo}
+  description={L.desc}
   path="tools/"
 >
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name, path: "tools/" }]} />
       <h1>{name}</h1>
-      <p>{ko ? `설치 없이 브라우저에서 바로 쓰는 현장 계산기·PC 하드웨어 테스트 ${WEB_TOOLS.length}개. 입력한 값은 어디에도 보내지 않습니다.` : `${WEB_TOOLS.length} field calculators and PC hardware tests that run right in your browser. Nothing you type is sent anywhere.`}</p>
+      <p>{L.lead}</p>
+      {!isCore(lang) && <p class="note">{L.moreEn} <a href={url("en", "tools/")} hreflang="en">{L.moreEnLink}</a></p>}
     </div>
   </header>
   <div class="wrap list-page" id="wt-list">
-    <ListFilter lang={lang} target="wt-list" total={WEB_TOOLS.length} placeholder={ko ? "도구 찾기 — 예: crc, 4-20, 모터, 서브넷" : "Find a tool — e.g. crc, 4-20, motor, subnet"} />
-    <nav class="chips" aria-label={ko ? "종류" : "Categories"}>
-      {groups.map((g) => <a href={`#g-${g.id}`}>{g.name[lang]} <small>{g.tools.length}</small></a>)}
+    <ListFilter lang={lang} target="wt-list" total={shown} placeholder={L.filter} />
+    <nav class="chips" aria-label={L.cats}>
+      {groups.map((g) => <a href={`#g-${g.id}`}>{groupName(g, lang)} <small>{g.tools.length}</small></a>)}
     </nav>
     {
       groups.map((g) => (
         <section class="list-group" id={`g-${g.id}`} data-filter-group>
-          <h2>{g.name[lang]}</h2>
+          <h2>{groupName(g, lang)}</h2>
           <div class="grid">
             {g.tools.map((x) => (
               <a class="card" href={url(lang, x.path)} data-filter-item>
-                <h3>{x.name[lang]}</h3>
-                <p>{x.blurb[lang]}</p>
-                <span class="go">{ko ? "열기" : "Open"} →</span>
+                <h3>{webToolText(x, lang).name}</h3>
+                <p>{webToolText(x, lang).blurb}</p>
+                <span class="go">{ui(lang).open} →</span>
               </a>
             ))}
           </div>

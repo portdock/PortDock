@@ -1,6 +1,6 @@
 # PortDock 홈페이지 (portdock.dev · 도메인 전에는 portdock.pages.dev)
 
-Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`. 결정 근거는 비공개 검토 문서에 있다.
+Astro 7 정적 사이트 → Cloudflare Pages. 한국어 `/`, 영어 `/en/`, 추가 언어(일본어 `/ja/` 등)는 번역 범위의 쪽만 — 구조와 새 언어 붙이는 법은 [I18N.md](I18N.md). 결정 근거는 비공개 검토 문서에 있다.
 
 - 개발: `npm run dev -w portdock-site` · 빌드: `npm run build:site` (→ `site/dist`) · 검사: `npx astro check` · 계산기 시험: `npm test -w portdock-site`
 - 사용법 페이지는 앱의 `apps/<도구>/src/help.ts` 를 그대로 읽는다 — 앱 도움말을 고치면 사이트도 바뀐다.

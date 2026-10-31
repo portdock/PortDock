@@ -2,18 +2,33 @@
 // 개인정보처리방침 — 사이트(방문 통계·광고·문의)와 프로그램(오류 보고·사용 통계·새 버전 확인)을 함께 적는다. 애드센스 심사의 쿠키 고지 요건 포함.
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { type Lang } from "../data/tools";
-import { UI, url } from "../lib/i18n";
+import { ui, url } from "../lib/i18n";
+import { dict } from "../i18n";
+import { PROSE } from "../i18n/prose";
+import type { SiteLang } from "../i18n/langs";
 import { CONTACT_EMAIL } from "@shared/links";
 import EmailOff from "../components/EmailOff.astro";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
 const updated = "2026-10-31";
+const L =
+  lang === "ko"
+    ? {
+        desc: "PortDock 프로그램은 통신 내용을 보내지 않고 오류 보고·통계·새 버전 확인은 허락할 때만. «AI» 복사·핑·MCP, 사이트 통계·광고 쿠키·문의.",
+        effective: `시행일 ${updated}`,
+      }
+    : lang === "en"
+      ? {
+          desc: "PortDock never sends your traffic; error reports, stats and update checks only with your permission. AI copy, pings, MCP; site analytics, ads, contact.",
+          effective: `Effective ${updated}`,
+        }
+      : dict(lang).pages.privacy(updated);
+// 추가 언어의 본문(문장 안에 링크가 있어 마크업으로) — i18n/<언어>/PrivacyBody.astro
+const Body = lang === "ko" || lang === "en" ? null : PROSE[lang].privacy;
 // 문의 양식은 빌드 변수 PUBLIC_TURNSTILE_SITE_KEY 가 있을 때만 생긴다(ContactPage.astro) — 없으면 메일·GitHub 로만 받으므로 그 문장만 적는다
 const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
 ---
@@ -21,21 +36,21 @@ const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
 <Base
   lang={lang}
   title={t.privacy}
-  description={ko
-    ? "PortDock 프로그램은 통신 내용을 보내지 않고 오류 보고·통계·새 버전 확인은 허락할 때만. «AI» 복사·핑·MCP, 사이트 통계·광고 쿠키·문의."
-    : "PortDock never sends your traffic; error reports, stats and update checks only with your permission. AI copy, pings, MCP; site analytics, ads, contact."}
+  description={L.desc}
   path="privacy/"
 >
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: t.privacy, path: "privacy/" }]} />
       <h1>{t.privacy}</h1>
-      <p>{ko ? `시행일 ${updated}` : `Effective ${updated}`}</p>
+      <p>{L.effective}</p>
     </div>
   </header>
   <div class="wrap prose" style="padding-top:20px">
     {
-      ko ? (
+      Body ? (
+        <Body />
+      ) : lang === "ko" ? (
         <>
           <h2>1. 프로그램(PortDock 도구)</h2>
           <ul>

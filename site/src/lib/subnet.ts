@@ -3,7 +3,8 @@
 // 근거: CIDR 표기 RFC 4632, 사설 주소 RFC 1918(10/8·172.16/12·192.168/16), 링크 로컬 RFC 3927(169.254/16),
 //       /31 두 주소 모두 호스트 RFC 3021, 루프백 127/8·멀티캐스트 224/4·제한 브로드캐스트 255.255.255.255 RFC 1122·RFC 5771·RFC 919.
 
-export type Lang = "ko" | "en";
+import type { Lang } from "./tr.ts";
+export type { Lang };
 
 /** "192.168.1.10" → 32비트 부호 없는 정수. 틀리면 null */
 export function parseIp(s: string): number | null {
@@ -70,7 +71,7 @@ export function kindOf(ip: number): Kind {
   return "public";
 }
 
-export const KIND_LABEL: Record<Kind, Record<Lang, string>> = {
+export const KIND_LABEL: Record<Kind, { ko: string; en: string }> = {
   private: { ko: "사설 주소(RFC 1918) — 공장·사무실 안쪽 네트워크", en: "Private (RFC 1918) — internal plant or office network" },
   public: { ko: "공인 주소", en: "Public address" },
   loopback: { ko: "루프백(127.x) — 이 PC 자신", en: "Loopback (127.x) — this PC itself" },

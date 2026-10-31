@@ -1,19 +1,108 @@
 ---
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, isApp, MCP_FILES, latest, type Lang } from "../data/tools";
+import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, isApp, MCP_FILES, latest } from "../data/tools";
 import { VERSION, SIZE, SHA256SUMS } from "../data/release";
 import PickApp from "../components/PickApp.astro";
-import { UI, url } from "../lib/i18n";
+import { ui, link, appTagline } from "../lib/i18n";
+import { dict } from "../i18n";
+import { isCore, type SiteLang } from "../i18n/langs";
 import { SPONSOR_URL } from "@shared/links";
 import { appIcon } from "../lib/appIcons";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
+const n = RELEASED_TOOLS.length;
+const size = (k: keyof typeof SIZE) => (isCore(lang) ? SIZE[k][lang] : dict(lang).common.size[k]);
+const L =
+  lang === "ko"
+    ? {
+        seo: `내려받기 — 무료 통신 테스트 도구 ${n}종 (윈도우) — PortDock`,
+        desc: `시리얼·Modbus·TCP·UDP·시뮬레이터·Net Scan·SCPI·Plot·Port Inspector·PLC Simulator·Hardware Tester ${n}종 설치판·휴대판. 무료.`,
+        safeLink: "아래 «안전 확인»",
+        safePost: " 을 보세요.",
+        version: `현재 버전 ${VERSION} · 프로그램 ${n}개 모두 같은 버전`,
+        whatsNew: "변경 내역",
+        onlyPhone: "윈도우 PC 용 프로그램입니다. 휴대폰에서 받으면 실행할 수 없으니, 이 쪽 주소를 PC 로 보내 PC 에서 받으세요.",
+        getLatest: `최신 ${VERSION} 받기 — 프로그램 표로 ↓`,
+        pickTitle: "어느 걸 받아야 하나요?",
+        pickSetup: "대부분은 이것. 인터넷이 되는 PC 에 설치합니다(관리자 권한 필요 없음).",
+        pickOffline: "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다.",
+        pickPortable: "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다.",
+        mcpNote: "AI 클라이언트용 PortDock MCP 는 파일 종류가 달라 표 아래에 따로 있습니다.",
+        q1: "1. 이 PC 에 설치해도 되나요?",
+        yes: "예",
+        q1No: "아니요 / 설치 없이 쓰고 싶어요",
+        q2: "2. 이 PC 가 인터넷에 연결돼 있나요?",
+        no: "아니요",
+        get: "받기",
+        about: "소개",
+        mcpDesktop: "Claude Desktop 용 (.mcpb)",
+        mcpZip: "exe (.zip) — VS Code·Cursor·Claude Code 등",
+        mcpExplain: "설치판·휴대판 구분이 없고 WebView2 도 필요 없습니다. .mcpb 는 Claude Desktop 에서 열면 설치되고, 다른 클라이언트는 zip 을 풀어 portdock-mcp.exe 경로를 설정에 적습니다.",
+        sizes: `파일 크기는 프로그램마다 조금씩 다릅니다(${VERSION} 기준 어림값). `,
+        hashEx: "파일 값 확인 예(받은 폴더에서 PowerShell):",
+        hashPre: "나온 Hash 값을 ",
+        hashPost: " (최신 릴리스) 에서 같은 파일 이름이 적힌 줄의 앞 64자와 비교합니다. 대소문자는 상관없고, 한 글자라도 다르면 받은 파일을 지우고 GitHub 릴리스에서 다시 받으세요.",
+        sumsLine: "SHA256SUMS.txt 의 줄 모양: <64자 값>  <파일 이름>",
+        reqTitle: "필요한 것",
+        reqOs: "윈도우 10 또는 11, 64비트",
+        reqSetup: "설치판: 관리자 권한 없이 사용자 계정에 설치됩니다. 삭제는 «설정 → 앱» 에서.",
+        reqPortable: "휴대판: zip 을 풀어 exe 를 실행합니다. 설정·기록은 exe 옆 portdock-data 폴더에 남아 USB 로 옮겨 쓸 수 있습니다. 같은 폴더에 두고 쓰면 방화벽 허용을 다시 묻지 않습니다.",
+        scoopPre: "Scoop 으로(휴대판): ",
+        scoopMid: " — 앱 이름은 ",
+        scoopPost: " 에 있습니다.",
+        sponsorPre: "PortDock 은 무료입니다. 도움이 되셨다면 ",
+        sponsorLink: "후원으로 개발을 도와주세요",
+        pickOut: "→ 이것을 받으세요: ",
+        pickPortableNote: " (휴대판은 WebView2 가 있는 PC 에서만 실행됩니다 — 윈도우 11 은 기본 포함)",
+      }
+    : lang === "en"
+      ? {
+          seo: `Download — ${n} Free Hardware Test Tools for Windows — PortDock`,
+          desc: `Installer, offline or portable: Serial, Modbus Master/Slave, TCP, UDP, Simulator, Net Scan, SCPI, Plot, Port Inspector, PLC Simulator, Hardware Tester.`,
+          safeLink: "see «Is it safe?» below",
+          safePost: ".",
+          version: `Current version ${VERSION} · all ${n} programs share it`,
+          whatsNew: "What's new",
+          onlyPhone: "These are Windows PC programs and will not run on a phone — send this page's address to your PC and download there.",
+          getLatest: `Get the latest ${VERSION} — jump to the table ↓`,
+          pickTitle: "Which one should I get?",
+          pickSetup: "Most people. Installs on a PC with internet (no admin rights needed).",
+          pickOffline: "PCs without internet (plant floor, closed networks). WebView2 is bundled.",
+          pickPortable: "No install — carry it on a USB stick. Unzip and run.",
+          mcpNote: "PortDock MCP (for AI clients) uses different files — see below the table.",
+          q1: "1. Can you install software on this PC?",
+          yes: "Yes",
+          q1No: "No / I'd rather not install",
+          q2: "2. Is this PC connected to the internet?",
+          no: "No",
+          get: "Get",
+          about: "About",
+          mcpDesktop: "For Claude Desktop (.mcpb)",
+          mcpZip: "exe (.zip) — VS Code, Cursor, Claude Code …",
+          mcpExplain: "No installer/portable split and no WebView2. Open the .mcpb in Claude Desktop to install; for other clients, unzip and put the path of portdock-mcp.exe in their settings.",
+          sizes: `Sizes vary slightly by program (approximate, ${VERSION}). `,
+          hashEx: "Hash check example (PowerShell, in the download folder):",
+          hashPre: "Compare the Hash it prints with ",
+          hashPost: " (latest release): find the line with the same file name and compare the 64 characters before it. Case does not matter; if any character differs, delete the file and download it again from GitHub Releases.",
+          sumsLine: "Each line in SHA256SUMS.txt: <64-character hash>  <file name>",
+          reqTitle: "Requirements",
+          reqOs: "Windows 10 or 11, 64-bit",
+          reqSetup: "Installer: installs per user without admin rights. Uninstall from «Settings → Apps».",
+          reqPortable: "Portable: unzip and run the exe. Settings and reports stay in the portdock-data folder next to it, so you can carry it on a USB stick. Keep it in the same folder to avoid repeated firewall prompts.",
+          scoopPre: "With Scoop (portable edition): ",
+          scoopMid: " — app names are listed in ",
+          scoopPost: ".",
+          sponsorPre: "PortDock is free. If it helps you, ",
+          sponsorLink: "please consider sponsoring its development",
+          pickOut: "→ Get this one: ",
+          pickPortableNote: " (the portable edition needs WebView2 on the PC — included in Windows 11)",
+        }
+      : dict(lang).pages.download({ version: VERSION, n });
 // 표·«어느 걸 받아야 하나요?» 는 설치판·오프라인·휴대판이 있는 윈도우 앱만. MCP 는 파일 종류가 달라(.mcpb·.zip) 표 아래 따로
 const APPS = TOOLS.filter(isApp);
 const MCP = TOOLS.filter((x) => !isApp(x));
@@ -22,24 +111,22 @@ const MCP = TOOLS.filter((x) => !isApp(x));
 <Base
   lang={lang}
   title={t.download}
-  seoTitle={ko ? `내려받기 — 무료 통신 테스트 도구 ${RELEASED_TOOLS.length}종 (윈도우) — PortDock` : `Download — ${RELEASED_TOOLS.length} Free Hardware Test Tools for Windows — PortDock`}
-  description={ko
-    ? `시리얼·Modbus·TCP·UDP·시뮬레이터·Net Scan·SCPI·Plot·Port Inspector·PLC Simulator·Hardware Tester ${RELEASED_TOOLS.length}종 설치판·휴대판. 무료.`
-    : `Installer, offline or portable: Serial, Modbus Master/Slave, TCP, UDP, Simulator, Net Scan, SCPI, Plot, Port Inspector, PLC Simulator, Hardware Tester.`}
+  seoTitle={L.seo}
+  description={L.desc}
   path="download/"
 >
   <header class="page-head">
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: t.download, path: "download/" }]} />
       <h1>{t.download}</h1>
-      <p>{t.dlNote} — <a href="#safe">{ko ? "아래 «안전 확인»" : "see «Is it safe?» below"}</a>{ko ? " 을 보세요." : "."}</p>
-      {RELEASED && <p class="note">{ko ? `현재 버전 ${VERSION} · 프로그램 ${RELEASED_TOOLS.length}개 모두 같은 버전` : `Current version ${VERSION} · all ${RELEASED_TOOLS.length} programs share it`} · <a href={`${RELEASES}/latest`}>{ko ? "변경 내역" : "What's new"} →</a></p>}
-      <p class="note only-phone">{ko ? "윈도우 PC 용 프로그램입니다. 휴대폰에서 받으면 실행할 수 없으니, 이 쪽 주소를 PC 로 보내 PC 에서 받으세요." : "These are Windows PC programs and will not run on a phone — send this page's address to your PC and download there."}</p>
+      <p>{t.dlNote} — <a href="#safe">{L.safeLink}</a>{L.safePost}</p>
+      {RELEASED && <p class="note">{L.version} · <a href={`${RELEASES}/latest`}>{L.whatsNew} →</a></p>}
+      <p class="note only-phone">{L.onlyPhone}</p>
       {
         RELEASED && (
           <p class="btns dl-jump">
-            <a class="btn primary" href="#dl-table">{ko ? `최신 ${VERSION} 받기 — 프로그램 표로 ↓` : `Get the latest ${VERSION} — jump to the table ↓`}</a>
-            {MCP.length > 0 && <a class="btn" href="#mcp-dl">{ko ? "PortDock MCP ↓" : "PortDock MCP ↓"}</a>}
+            <a class="btn primary" href="#dl-table">{L.getLatest}</a>
+            {MCP.length > 0 && <a class="btn" href="#mcp-dl">PortDock MCP ↓</a>}
           </p>
         )
       }
@@ -51,30 +138,30 @@ const MCP = TOOLS.filter((x) => !isApp(x));
     <PickApp lang={lang} toRow />
     {/* 어느 걸 받을지 — 질문 2개. 스크립트가 없어도 세 줄 안내는 그대로 읽힌다 */}
     <section class="pick card" id="pick" aria-labelledby="pick-h">
-      <h2 id="pick-h">{ko ? "어느 걸 받아야 하나요?" : "Which one should I get?"}</h2>
+      <h2 id="pick-h">{L.pickTitle}</h2>
       <ul class="pick-list">
-        <li data-pick="setup"><b>{t.dlSetup}</b> <small>({SIZE.setup[lang]})</small> — {ko ? "대부분은 이것. 인터넷이 되는 PC 에 설치합니다(관리자 권한 필요 없음)." : "Most people. Installs on a PC with internet (no admin rights needed)."}</li>
-        <li data-pick="offline"><b>{t.dlOffline}</b> <small>({SIZE.offline[lang]})</small> — {ko ? "인터넷이 없는 PC(현장·폐쇄망). 실행에 필요한 WebView2 를 함께 넣었습니다." : "PCs without internet (plant floor, closed networks). WebView2 is bundled."}</li>
-        <li data-pick="portable"><b>{t.dlPortable}</b> <small>({SIZE.portable[lang]})</small> — {ko ? "설치하지 않고 USB 로 들고 다니며 쓸 때. 압축을 풀어 바로 실행합니다." : "No install — carry it on a USB stick. Unzip and run."}</li>
+        <li data-pick="setup"><b>{t.dlSetup}</b> <small>({size("setup")})</small> — {L.pickSetup}</li>
+        <li data-pick="offline"><b>{t.dlOffline}</b> <small>({size("offline")})</small> — {L.pickOffline}</li>
+        <li data-pick="portable"><b>{t.dlPortable}</b> <small>({size("portable")})</small> — {L.pickPortable}</li>
       </ul>
-      {MCP.length > 0 && <p class="note">{ko ? "AI 클라이언트용 PortDock MCP 는 파일 종류가 달라 표 아래에 따로 있습니다." : "PortDock MCP (for AI clients) uses different files — see below the table."} <a href="#mcp-dl">PortDock MCP ↓</a></p>}
-      <form class="pick-q" hidden>
+      {MCP.length > 0 && <p class="note">{L.mcpNote} <a href="#mcp-dl">PortDock MCP ↓</a></p>}
+      <form class="pick-q" hidden data-t={JSON.stringify({ setup: t.dlSetup, offline: t.dlOffline, portable: t.dlPortable, out: L.pickOut, portableNote: L.pickPortableNote })}>
         <fieldset>
-          <legend>{ko ? "1. 이 PC 에 설치해도 되나요?" : "1. Can you install software on this PC?"}</legend>
-          <label><input type="radio" name="inst" value="y" checked /> {ko ? "예" : "Yes"}</label>
-          <label><input type="radio" name="inst" value="n" /> {ko ? "아니요 / 설치 없이 쓰고 싶어요" : "No / I'd rather not install"}</label>
+          <legend>{L.q1}</legend>
+          <label><input type="radio" name="inst" value="y" checked /> {L.yes}</label>
+          <label><input type="radio" name="inst" value="n" /> {L.q1No}</label>
         </fieldset>
         <fieldset>
-          <legend>{ko ? "2. 이 PC 가 인터넷에 연결돼 있나요?" : "2. Is this PC connected to the internet?"}</legend>
-          <label><input type="radio" name="net" value="y" checked /> {ko ? "예" : "Yes"}</label>
-          <label><input type="radio" name="net" value="n" /> {ko ? "아니요" : "No"}</label>
+          <legend>{L.q2}</legend>
+          <label><input type="radio" name="net" value="y" checked /> {L.yes}</label>
+          <label><input type="radio" name="net" value="n" /> {L.no}</label>
         </fieldset>
         <p class="pick-out" aria-live="polite"></p>
       </form>
     </section>
     <table class="t dl-table" id="dl-table" data-pick="setup">
       <thead>
-        <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}<br /><small>{SIZE.setup[lang]}</small></th><th class="c-offline">{t.dlOffline}<br /><small>{SIZE.offline[lang]}</small></th><th class="c-portable">{t.dlPortable}<br /><small>{SIZE.portable[lang]}</small></th><th>{t.docs}</th></tr>
+        <tr><th>{t.tools}</th><th class="c-setup">{t.dlSetup}<br /><small>{size("setup")}</small></th><th class="c-offline">{t.dlOffline}<br /><small>{size("offline")}</small></th><th class="c-portable">{t.dlPortable}<br /><small>{size("portable")}</small></th><th>{t.docs}</th></tr>
       </thead>
       <tbody>
         {
@@ -83,21 +170,21 @@ const MCP = TOOLS.filter((x) => !isApp(x));
               <td class="dl-name">
                 {appIcon(x.id) && <img class="app-icon sm" src={appIcon(x.id)} alt="" width="28" height="28" loading="lazy" decoding="async" />}
                 <span>
-                  <a href={url(lang, `${x.id}/`)}><b>{x.name}</b></a>
+                  <a href={link(lang, `${x.id}/`)}><b>{x.name}</b></a>
                   <br />
-                  <span class="note">{x.tagline[lang]}</span>
+                  <span class="note">{appTagline(x, lang)}</span>
                 </span>
               </td>
               {downloadable(x) ? (
                 <>
-                  <td class="c-setup" data-label={t.dlSetup}><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{ko ? "받기" : "Get"}</a></td>
-                  <td class="c-offline" data-label={t.dlOffline}><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{ko ? "받기" : "Get"}</a></td>
-                  <td class="c-portable" data-label={t.dlPortable}><a class="btn" href={latest(`${x.file}-portable.zip`)}>{ko ? "받기" : "Get"}</a></td>
+                  <td class="c-setup" data-label={t.dlSetup}><a class="btn primary" href={latest(`${x.file}-setup.exe`)}>{L.get}</a></td>
+                  <td class="c-offline" data-label={t.dlOffline}><a class="btn" href={latest(`${x.file}-setup-offline.exe`)}>{L.get}</a></td>
+                  <td class="c-portable" data-label={t.dlPortable}><a class="btn" href={latest(`${x.file}-portable.zip`)}>{L.get}</a></td>
                 </>
               ) : (
                 <td colspan="3"><span class="note">{x.upcoming ? t.dlUpcoming : t.dlSoon}</span></td>
               )}
-              <td class="dl-docs"><a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
+              <td class="dl-docs"><a href={link(lang, `${x.id}/docs/`)}>{t.docs}</a></td>
             </tr>
           ))
         }
@@ -107,49 +194,47 @@ const MCP = TOOLS.filter((x) => !isApp(x));
       MCP.map((x) => (
         <section class="card" id="mcp-dl" aria-labelledby="mcp-dl-h">
           <h2 id="mcp-dl-h">{x.name}</h2>
-          <p class="note">{x.tagline[lang]} · <a href={url(lang, `${x.id}/`)}>{ko ? "소개" : "About"}</a> · <a href={url(lang, `${x.id}/docs/`)}>{t.docs}</a></p>
+          <p class="note">{appTagline(x, lang)} · <a href={link(lang, `${x.id}/`)}>{L.about}</a> · <a href={link(lang, `${x.id}/docs/`)}>{t.docs}</a></p>
           {downloadable(x) ? (
             <div class="dl-list">
-              <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{ko ? "Claude Desktop 용 (.mcpb)" : "For Claude Desktop (.mcpb)"}</a>
-              <a class="btn" href={latest(MCP_FILES.zip)}>{ko ? "exe (.zip) — VS Code·Cursor·Claude Code 등" : "exe (.zip) — VS Code, Cursor, Claude Code …"}</a>
+              <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{L.mcpDesktop}</a>
+              <a class="btn" href={latest(MCP_FILES.zip)}>{L.mcpZip}</a>
             </div>
           ) : (
             <p class="note">{x.upcoming ? t.dlUpcoming : t.dlSoon}</p>
           )}
-          <p class="note">{ko ? "설치판·휴대판 구분이 없고 WebView2 도 필요 없습니다. .mcpb 는 Claude Desktop 에서 열면 설치되고, 다른 클라이언트는 zip 을 풀어 portdock-mcp.exe 경로를 설정에 적습니다." : "No installer/portable split and no WebView2. Open the .mcpb in Claude Desktop to install; for other clients, unzip and put the path of portdock-mcp.exe in their settings."}</p>
+          <p class="note">{L.mcpExplain}</p>
         </section>
       ))
     }
-    <p class="note">{ko ? `파일 크기는 프로그램마다 조금씩 다릅니다(${VERSION} 기준 어림값). ` : `Sizes vary slightly by program (approximate, ${VERSION}). `}<a href={RELEASES}>{t.dlAll} →</a></p>
+    <p class="note">{L.sizes}<a href={RELEASES}>{t.dlAll} →</a></p>
 
     <section class="prose" id="safe">
       <h2>{t.safeTitle}</h2>
       <ul>{t.safe.map((s) => <li>{s}</li>)}</ul>
-      <p class="note">{ko ? "파일 값 확인 예(받은 폴더에서 PowerShell):" : "Hash check example (PowerShell, in the download folder):"}</p>
+      <p class="note">{L.hashEx}</p>
       <pre class="result">Get-FileHash .\PortDock-Serial-setup.exe -Algorithm SHA256</pre>
       <p>
-        {ko ? "나온 Hash 값을 " : "Compare the Hash it prints with "}
+        {L.hashPre}
         <a href={SHA256SUMS}>SHA256SUMS.txt</a>
-        {ko
-          ? " (최신 릴리스) 에서 같은 파일 이름이 적힌 줄의 앞 64자와 비교합니다. 대소문자는 상관없고, 한 글자라도 다르면 받은 파일을 지우고 GitHub 릴리스에서 다시 받으세요."
-          : " (latest release): find the line with the same file name and compare the 64 characters before it. Case does not matter; if any character differs, delete the file and download it again from GitHub Releases."}
+        {L.hashPost}
       </p>
-      <pre class="result">{ko ? "SHA256SUMS.txt 의 줄 모양: <64자 값>  <파일 이름>" : "Each line in SHA256SUMS.txt: <64-character hash>  <file name>"}</pre>
-      <p><a href={url(lang, "code-signing/")}>{t.codeSigning} →</a> · <a href={url(lang, "safety/")}>{t.safety} →</a></p>
-      <h2>{ko ? "필요한 것" : "Requirements"}</h2>
+      <pre class="result">{L.sumsLine}</pre>
+      <p><a href={link(lang, "code-signing/")}>{t.codeSigning} →</a> · <a href={link(lang, "safety/")}>{t.safety} →</a></p>
+      <h2>{L.reqTitle}</h2>
       <ul>
-        <li>{ko ? "윈도우 10 또는 11, 64비트" : "Windows 10 or 11, 64-bit"}</li>
+        <li>{L.reqOs}</li>
         <li>{t.webview}</li>
-        <li>{ko ? "설치판: 관리자 권한 없이 사용자 계정에 설치됩니다. 삭제는 «설정 → 앱» 에서." : "Installer: installs per user without admin rights. Uninstall from «Settings → Apps»."}</li>
-        <li>{ko ? "휴대판: zip 을 풀어 exe 를 실행합니다. 설정·기록은 exe 옆 portdock-data 폴더에 남아 USB 로 옮겨 쓸 수 있습니다. 같은 폴더에 두고 쓰면 방화벽 허용을 다시 묻지 않습니다." : "Portable: unzip and run the exe. Settings and reports stay in the portdock-data folder next to it, so you can carry it on a USB stick. Keep it in the same folder to avoid repeated firewall prompts."}</li>
+        <li>{L.reqSetup}</li>
+        <li>{L.reqPortable}</li>
         <li>
-          {ko ? "Scoop 으로(휴대판): " : "With Scoop (portable edition): "}
+          {L.scoopPre}
           <code>scoop bucket add portdock https://github.com/portdock/scoop-bucket</code>
           {" → "}
           <code>scoop install portdock/portdock-serial</code>
-          {ko ? " — 앱 이름은 " : " — app names are listed in "}
+          {L.scoopMid}
           <a href="https://github.com/portdock/scoop-bucket#install">scoop-bucket</a>
-          {ko ? " 에 있습니다." : "."}
+          {L.scoopPost}
         </li>
       </ul>
       {
@@ -157,8 +242,8 @@ const MCP = TOOLS.filter((x) => !isApp(x));
           <>
             <h2>{t.sponsor}</h2>
             <p>
-              {ko ? "PortDock 은 무료입니다. 도움이 되셨다면 " : "PortDock is free. If it helps you, "}
-              <a href={SPONSOR_URL}>{ko ? "후원으로 개발을 도와주세요" : "please consider sponsoring its development"} →</a>
+              {L.sponsorPre}
+              <a href={SPONSOR_URL}>{L.sponsorLink} →</a>
             </p>
           </>
         )
@@ -189,10 +274,8 @@ const MCP = TOOLS.filter((x) => !isApp(x));
     const table = document.querySelector<HTMLElement>(".dl-table");
     const list = document.querySelector<HTMLElement>(".pick-list");
     if (form && table && list) {
-      const ko = document.documentElement.lang === "ko";
-      const NAME: Record<string, string> = ko
-        ? { setup: "설치판 (.exe)", offline: "오프라인 설치판", portable: "휴대판 (.zip)" }
-        : { setup: "Installer (.exe)", offline: "Offline installer", portable: "Portable (.zip)" };
+      // 문구는 쪽 언어로 data-t 에 담아 둔다
+      const T = JSON.parse(form.dataset.t ?? "{}") as Record<"setup" | "offline" | "portable" | "out" | "portableNote", string>;
       form.hidden = false;
       const run = () => {
         const inst = (form.elements.namedItem("inst") as RadioNodeList).value;
@@ -201,7 +284,7 @@ const MCP = TOOLS.filter((x) => !isApp(x));
         table.dataset.pick = pick;
         for (const li of list.querySelectorAll<HTMLElement>("li")) li.classList.toggle("on", li.dataset.pick === pick);
         const out = form.querySelector(".pick-out")!;
-        out.textContent = (ko ? "→ 이것을 받으세요: " : "→ Get this one: ") + NAME[pick] + (pick === "portable" && net === "n" ? (ko ? " (휴대판은 WebView2 가 있는 PC 에서만 실행됩니다 — 윈도우 11 은 기본 포함)" : " (the portable edition needs WebView2 on the PC — included in Windows 11)") : "");
+        out.textContent = T.out + T[pick] + (pick === "portable" && net === "n" ? T.portableNote : "");
       };
       form.addEventListener("change", run);
       run();

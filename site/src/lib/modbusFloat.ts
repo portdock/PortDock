@@ -2,7 +2,8 @@
 // 레지스터 하나 안의 바이트는 Modbus 규격대로 높은 바이트 먼저(Modbus Application Protocol V1.1b3 4.2 «big-Endian»).
 // 32·64비트 값을 레지스터에 어떤 순서로 싣는지는 규격에 없어서 장비마다 다르다 — 그래서 네 순서를 한꺼번에 보여 준다.
 
-export type Lang = "ko" | "en";
+import { fromEn, type Lang } from "./tr.ts";
+export type { Lang };
 
 /** 값 바이트를 A(가장 높은 바이트)…D 라 할 때 선 위(레지스터 순서대로) 바이트 배치 */
 export type ByteOrder = "ABCD" | "DCBA" | "BADC" | "CDAB";
@@ -41,24 +42,24 @@ const tokens = (text: string) => text.split(/[\s,;]+/).filter(Boolean);
 
 /** 레지스터 값 읽기 — HEX(«41C8 0000», «41C80000», «0x41C8,0x0000») 또는 10진(«16840 0», 음수는 2의 보수) */
 export function parseRegisters(text: string, mode: "hex" | "dec", lang: Lang = "ko"): number[] {
-  const m = msg[lang];
+  const m = msg[lang === "ko" ? "ko" : "en"];
   const out: number[] = [];
   for (const raw of tokens(text)) {
     if (mode === "hex") {
       const t = raw.replace(/^0x/i, "");
-      if (!/^[0-9a-f]+$/i.test(t)) throw new Error(m.hexTok(raw));
+      if (!/^[0-9a-f]+$/i.test(t)) throw new Error(fromEn(m.hexTok(raw), lang));
       if (t.length <= 4) out.push(parseInt(t, 16));
       else if (t.length % 4 === 0) for (let i = 0; i < t.length; i += 4) out.push(parseInt(t.slice(i, i + 4), 16));
-      else throw new Error(m.hexTok(raw));
+      else throw new Error(fromEn(m.hexTok(raw), lang));
     } else {
-      if (!/^-?\d+$/.test(raw)) throw new Error(m.decTok(raw));
+      if (!/^-?\d+$/.test(raw)) throw new Error(fromEn(m.decTok(raw), lang));
       const v = Number(raw);
-      if (v < -32768 || v > 65535) throw new Error(m.decTok(raw));
+      if (v < -32768 || v > 65535) throw new Error(fromEn(m.decTok(raw), lang));
       out.push(v < 0 ? v + 0x10000 : v);
     }
   }
-  if (!out.length) throw new Error(m.empty);
-  if (out.length !== 2 && out.length !== 4) throw new Error(m.count(out.length));
+  if (!out.length) throw new Error(fromEn(m.empty, lang));
+  if (out.length !== 2 && out.length !== 4) throw new Error(fromEn(m.count(out.length), lang));
   return out;
 }
 
@@ -104,15 +105,15 @@ export const typeBytes = (t: ValueType) => (t.endsWith("64") ? 8 : 4);
 
 /** 값 → 값 바이트(높은 바이트 먼저) */
 export function encodeValue(text: string, type: ValueType, lang: Lang = "ko"): number[] {
-  const m = msg[lang];
+  const m = msg[lang === "ko" ? "ko" : "en"];
   const s = text.trim();
-  if (!s) throw new Error(m.num);
+  if (!s) throw new Error(fromEn(m.num, lang));
   const n = typeBytes(type);
   const dv = new DataView(new ArrayBuffer(n));
   if (type === "float32" || type === "float64") {
     const low = s.toLowerCase();
     const v = /^[+-]?(inf|infinity)$/.test(low) ? (low.startsWith("-") ? -Infinity : Infinity) : low === "nan" ? NaN : Number(s);
-    if (Number.isNaN(v) && low !== "nan") throw new Error(m.num);
+    if (Number.isNaN(v) && low !== "nan") throw new Error(fromEn(m.num, lang));
     if (type === "float32") dv.setFloat32(0, v);
     else dv.setFloat64(0, v);
   } else {
@@ -123,12 +124,12 @@ export function encodeValue(text: string, type: ValueType, lang: Lang = "ko"): n
       v = BigInt(s.replace(/^[+-]/, ""));
       if (neg) v = -v;
     } catch {
-      throw new Error(/^[+-]?\d*\.\d*(e[+-]?\d+)?$/i.test(s) ? m.intOnly : m.num);
+      throw new Error(fromEn(/^[+-]?\d*\.\d*(e[+-]?\d+)?$/i.test(s) ? m.intOnly : m.num, lang));
     }
     const bits = BigInt(n * 8);
     const min = type.startsWith("int") ? -(1n << (bits - 1n)) : 0n;
     const max = type.startsWith("int") ? (1n << (bits - 1n)) - 1n : (1n << bits) - 1n;
-    if (v < min || v > max) throw new Error(m.range(type));
+    if (v < min || v > max) throw new Error(fromEn(m.range(type), lang));
     if (n === 4) dv.setUint32(0, Number(BigInt.asUintN(32, v)));
     else dv.setBigUint64(0, BigInt.asUintN(64, v));
   }
