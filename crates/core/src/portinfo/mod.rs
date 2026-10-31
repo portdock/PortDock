@@ -580,7 +580,7 @@ pub struct PcExposure {
     pub smb1_server: Option<&'static str>,
     /// 방화벽 프로필 켜짐(랜카드 점검과 같은 INetFwPolicy2 읽기)
     pub firewall: Vec<FirewallProfile>,
-    /// 0.0.0.0 · :: 에서 듣는 TCP 포트
+    /// 같은 망에서 닿게 듣는 TCP 포트(0.0.0.0 · :: · 루프백이 아닌 특정 주소)
     pub listeners: Vec<crate::net::Listener>,
     /// 듣는 포트 표를 읽었는지
     pub listeners_read: bool,

@@ -81,25 +81,43 @@ pub fn port_owner(port: u16, udp: bool) -> Option<PortOwner> {
     imp::port_owner(port, udp)
 }
 
-/// (0.10.0) 모든 주소(0.0.0.0 · ::)에서 듣고 있는 TCP 포트 하나 — 이 PC 노출 점검(Port Inspector «이 PC»)
+/// (0.10.0) 같은 망에서 닿을 수 있게 듣고 있는 TCP 포트 하나 — 모든 주소(0.0.0.0 · ::) 또는 루프백이 아닌 특정 주소.
+/// 이 PC 노출 점검(Port Inspector «이 PC»)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Listener {
     pub port: u16,
     /// IPv6(::) 에서 듣는지
     pub v6: bool,
+    /// 묶인 주소 — 모든 주소(0.0.0.0 · ::)면 None, 특정 주소(예: 랜카드 주소 하나)면 그 주소
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub addr: Option<String>,
     pub pid: u32,
     /// 실행 파일 이름(경로 뺌). 관리자 권한 없이 열 수 없는 프로세스면 None
     #[serde(skip_serializing_if = "Option::is_none")]
     pub process: Option<String>,
 }
 
-/// (0.10.0) 0.0.0.0 · :: 에서 듣고 있는 TCP 포트들(포트 순). 127.0.0.1 처럼 이 PC 안에서만 받는 것은 뺀다. 표를 읽지 못하면 Err
+/// (0.10.0) 같은 망에서 닿을 수 있게 듣고 있는 TCP 포트들(포트 순) — 0.0.0.0 · :: 와 루프백이 아닌 특정 주소(묶인 주소를 `addr` 에).
+/// 127.0.0.1 · ::1 처럼 이 PC 안에서만 받는 것은 뺀다. 표를 읽지 못하면 Err
 pub fn open_listeners() -> Result<Vec<Listener>, String> {
     let mut v = imp::open_listeners()?;
-    v.sort_by_key(|l| (l.port, l.v6));
-    v.dedup_by_key(|l| (l.port, l.v6, l.pid));
+    v.sort_by(|a, b| (a.port, a.v6, &a.addr).cmp(&(b.port, b.v6, &b.addr)));
+    v.dedup_by(|a, b| (a.port, a.v6, &a.addr, a.pid) == (b.port, b.v6, &b.addr, b.pid));
     Ok(v)
+}
+
+/// 듣는 주소 → 목록에 넣을지와 `addr` 칸. 루프백(127.0.0.0/8 · ::1 · ::ffff:127.x)이면 None(넣지 않음),
+/// 모든 주소면 Some(None), 그 밖의 특정 주소면 Some(Some(주소))
+pub fn exposed_addr(ip: std::net::IpAddr) -> Option<Option<String>> {
+    let ip = ip.to_canonical();
+    if ip.is_loopback() {
+        None
+    } else if ip.is_unspecified() {
+        Some(None)
+    } else {
+        Some(Some(ip.to_string()))
+    }
 }
 
 /// 윈도우 자신(System, PID 4)이 쥐는 포트 — 445 파일 공유·135/139 등. 끌 수 없으니 다른 포트를 고르라고 한다
@@ -302,15 +320,18 @@ mod imp {
         let v4 = table(|p, s| unsafe { GetExtendedTcpTable(p, s, 0, AF_INET as u32, TCP_TABLE_OWNER_PID_LISTENER, 0) }).ok_or("GetExtendedTcpTable (IPv4)")?;
         let n = unsafe { *(v4.as_ptr() as *const u32) } as usize;
         let rows = unsafe { std::slice::from_raw_parts((v4.as_ptr() as *const u8).add(4) as *const MIB_TCPROW_OWNER_PID, n) };
-        for r in rows.iter().filter(|r| r.dwLocalAddr == 0 && r.dwState == MIB_TCP_STATE_LISTEN as u32) {
-            out.push(Listener { port: port_of(r.dwLocalPort), v6: false, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
+        for r in rows.iter().filter(|r| r.dwState == MIB_TCP_STATE_LISTEN as u32) {
+            // dwLocalAddr 는 네트워크 바이트 순서 그대로
+            let Some(addr) = super::exposed_addr(Ipv4Addr::from(r.dwLocalAddr.to_ne_bytes()).into()) else { continue };
+            out.push(Listener { port: port_of(r.dwLocalPort), v6: false, addr, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
         }
         // IPv6 는 없을 수 있다(꺼 둔 PC) — 못 읽으면 IPv4 만
         if let Some(v6) = table(|p, s| unsafe { GetExtendedTcpTable(p, s, 0, AF_INET6 as u32, TCP_TABLE_OWNER_PID_LISTENER, 0) }) {
             let n = unsafe { *(v6.as_ptr() as *const u32) } as usize;
             let rows = unsafe { std::slice::from_raw_parts((v6.as_ptr() as *const u8).add(4) as *const MIB_TCP6ROW_OWNER_PID, n) };
-            for r in rows.iter().filter(|r| r.ucLocalAddr.iter().all(|&b| b == 0) && r.dwState == MIB_TCP_STATE_LISTEN as u32) {
-                out.push(Listener { port: port_of(r.dwLocalPort), v6: true, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
+            for r in rows.iter().filter(|r| r.dwState == MIB_TCP_STATE_LISTEN as u32) {
+                let Some(addr) = super::exposed_addr(std::net::Ipv6Addr::from(r.ucLocalAddr).into()) else { continue };
+                out.push(Listener { port: port_of(r.dwLocalPort), v6: true, addr, pid: r.dwOwningPid, process: name(r.dwOwningPid) });
             }
         }
         Ok(out)
@@ -415,7 +436,36 @@ mod tests {
         }
     }
 
-    /// (0.10.0) 0.0.0.0 에 연 포트는 목록에 나오고, 127.0.0.1 에 연 포트는 나오지 않는다
+    #[test]
+    fn exposed_addr_rule() {
+        use std::net::{IpAddr, Ipv6Addr};
+        let v4 = |a, b, c, d| IpAddr::from(Ipv4Addr::new(a, b, c, d));
+        assert_eq!(exposed_addr(v4(127, 0, 0, 1)), None);
+        assert_eq!(exposed_addr(v4(127, 5, 6, 7)), None);
+        assert_eq!(exposed_addr(IpAddr::from(Ipv6Addr::LOCALHOST)), None);
+        assert_eq!(exposed_addr(IpAddr::from(Ipv4Addr::new(127, 0, 0, 1).to_ipv6_mapped())), None);
+        assert_eq!(exposed_addr(v4(0, 0, 0, 0)), Some(None));
+        assert_eq!(exposed_addr(IpAddr::from(Ipv6Addr::UNSPECIFIED)), Some(None));
+        assert_eq!(exposed_addr(v4(192, 168, 0, 10)), Some(Some("192.168.0.10".into())));
+        assert_eq!(exposed_addr(IpAddr::from(Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1))), Some(Some("fe80::1".into())));
+    }
+
+    /// (0.10.0) 랜카드 주소 하나에 묶은 포트도 그 주소와 함께 나온다(루프백 아닌 랜카드가 없으면 건너뜀)
+    #[cfg(windows)]
+    #[test]
+    fn open_listeners_shows_specific_lan_address() {
+        let Some(ip) = interfaces().into_iter().filter(|i| !i.loopback).find_map(|i| i.ipv4.parse::<Ipv4Addr>().ok().filter(|ip| !ip.is_loopback() && !ip.is_unspecified())) else {
+            return;
+        };
+        let Ok(l) = std::net::TcpListener::bind((ip, 0)) else { return };
+        let port = l.local_addr().unwrap().port();
+        let list = open_listeners().unwrap();
+        let mine = list.iter().find(|l| l.port == port && !l.v6).expect("특정 주소에 묶은 포트가 목록에 없음");
+        assert!(mine.addr.as_deref() == Some(ip.to_string().as_str()));
+        assert_eq!(mine.pid, std::process::id());
+    }
+
+    /// (0.10.0) 0.0.0.0 에 연 포트는 목록에 나오고(addr 없음), 127.0.0.1 에 연 포트는 나오지 않는다
     #[cfg(windows)]
     #[test]
     fn open_listeners_shows_wildcard_only() {
@@ -425,6 +475,7 @@ mod tests {
         let list = open_listeners().unwrap();
         let mine = list.iter().find(|l| l.port == pa && !l.v6).expect("0.0.0.0 포트가 목록에 없음");
         assert_eq!(mine.pid, std::process::id());
+        assert!(mine.addr.is_none());
         assert!(mine.process.as_deref().is_none_or(|n| !n.contains('\\')));
         assert!(!list.iter().any(|l| l.port == pl && l.pid == std::process::id()));
     }
