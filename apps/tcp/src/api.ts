@@ -5,7 +5,7 @@ import type { MbapInfo } from "@shared/MbapDetail";
 import type { Pace, Progress } from "@shared/FileSend";
 import type { LogFormat } from "@shared/settings";
 import { tally } from "@shared/usage";
-import type { PairMark } from "./pairStats";
+import type { PairMark } from "@shared/pairStats";
 export { ascii, CHECKSUMS, clock, hex, type ChecksumKind } from "@shared/format";
 export type { FrameMode } from "@shared/framing";
 

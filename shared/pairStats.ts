@@ -1,5 +1,5 @@
-// 중계 기록의 요청/응답 짝 열·응답 시간 통계(0.8.0) — 짝 맞추기는 core reqpair.rs 가 하고, 화면은 표시·통계만.
-// 화면 없이 값만 — node --test apps/tcp/src/pairStats.test.ts
+// 요청/응답 짝 열·응답 시간 통계(0.8.0 TCP 중계, 0.10.0 Serial 엿듣기) — 짝 맞추기는 core reqpair.rs 가 하고, 화면은 표시·통계만.
+// 화면 없이 값만 — node --test shared/pairStats.test.ts
 
 /** core reqpair::PairMark 와 같은 모양 */
 export interface PairMark {

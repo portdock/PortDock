@@ -755,3 +755,58 @@ details.panel > summary .sum-note {
 .port-check-btn {
   white-space: nowrap;
 }
+
+/* (0.10.0) 엿듣기 짝 칸·통계 — TCP 중계와 같은 모양 */
+.pair-stats {
+  margin-left: 10px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+}
+.pair {
+  flex: none;
+  min-width: 96px;
+  font-family: var(--mono);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: nowrap;
+}
+.pair.req {
+  color: var(--muted);
+}
+.pair.rsp {
+  color: var(--ok);
+}
+.pair.err,
+.pair.miss {
+  color: var(--fail);
+  font-weight: 600;
+}
+.peeraddr {
+  flex: none;
+  color: var(--muted);
+  font-size: calc(var(--fs, 13px) * 0.923);
+  white-space: nowrap;
+}
+/* (0.10.0) 포트 나눔 */
+.share-on {
+  margin-left: 8px;
+  color: var(--accent);
+}
+.share-clients {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+}
+.share-clients li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sniff-banner {
+  font-weight: 600;
+}

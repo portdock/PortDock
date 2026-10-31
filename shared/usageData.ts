@@ -23,7 +23,7 @@ export const COMMON_FEATURES = ["ai_copy"] as const;
 
 /** 프로그램마다 세는 기능 — 값·주소·내용 없이 횟수만. 이름은 이 목록에서만(끝의 공용 기능 포함) */
 export const FEATURES = {
-  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master", ...COMMON_FEATURES],
+  serial: ["connect", "send", "send_file", "file_log", "send_break", "port_check", "open_in_master", "share", "sniff", ...COMMON_FEATURES],
   tcp: ["start", "relay", "send", "send_file", "file_log", "open_in_master", "pcap_save", ...COMMON_FEATURES],
   udp: ["start", "send", "file_log", ...COMMON_FEATURES],
   "modbus-master": ["connect_serial", "connect_tcp", "modbus_read", "modbus_write", "scan_ids", "scan_addrs", "file_log", ...COMMON_FEATURES],

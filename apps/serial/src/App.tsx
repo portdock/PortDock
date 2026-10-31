@@ -17,9 +17,12 @@ import {
   type SendSpec,
   type SerialConfig,
   type SessionEvent,
+  type ShareClient,
+  type ShareConfig,
   type TextMode,
   summary,
 } from "./api";
+import { pairCell, RtBag, rtStats, statsText } from "@shared/pairStats";
 import { tip } from "@shared/tips";
 import { ReportButton } from "@shared/ReportDialog";
 import { AiCopyButton } from "@shared/AiCopyButton";
@@ -76,13 +79,25 @@ import { FirstCard } from "@shared/FirstCard";
 import { applyPreset, isPresetId, PRESET_IDS, presetDiff, type PresetField, type PresetId, type PresetState } from "@shared/serialPresets";
 import { serialExamples } from "@shared/examples";
 import { MbValues } from "@shared/MbValues";
-import { pairInLog, rtuCrcOk, type AddrNotation } from "@shared/mbPair";
+import { pairByMark, pairInLog, rtuCrcOk, type AddrNotation } from "@shared/mbPair";
 import { dict, type Key, type Lang } from "./i18n";
 import "./App.css";
 
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
 
 type Status = "idle" | "connected" | "disconnected" | "reconnecting" | "closed";
+
+/** (0.10.0) 엿듣기 줄의 짝 칸 — 요청 «#12 FC03 →», 응답 «#12 3.25 ms», 무응답 (TCP 중계와 같은 모양) */
+function PairCell({ p, missed, lang }: { p: NonNullable<Frame["pair"]>; missed: boolean; lang: Lang }) {
+  const c = pairCell(p, lang, missed);
+  return (
+    <span className={c.cls} data-tip={tip(lang, "pairCol")}>
+      {c.text}
+    </span>
+  );
+}
+
+const DEFAULT_SHARE: ShareConfig = { host: "127.0.0.1", port: 7000, rfc2217: false, maxClients: 4 };
 type ViewMode = "hex" | "ascii" | "both";
 /** 가운데 칸: 줄(프레임) 로그 또는 터미널 보기 */
 type Screen = "log" | "term";
@@ -178,6 +193,21 @@ export default function App() {
   const [cfg, setCfg] = useState<SerialConfig>(loadCfg);
   useEffect(() => store("cfg", cfg), [cfg]);
   const rs485On = cfg.rs485 !== "off" && cfg.flow !== "hardware";
+  // (0.10.0) Modbus RTU 엿듣기(듣기만) — 켜 두면 «연결» 이 듣기만 하는 세션을 연다. 두 번째 포트 = RS-232 Y 케이블
+  const [sniffMode, setSniffMode] = useState<boolean>(() => load("sniffMode", false));
+  useEffect(() => store("sniffMode", sniffMode), [sniffMode]);
+  const [port2, setPort2] = useState<string>(() => load("sniffPort2", ""));
+  useEffect(() => store("sniffPort2", port2), [port2]);
+  const [sniffing, setSniffing] = useState(false);
+  // 짝 통계 — 응답 시간·무응답·예외. 요청 줄을 번호로 기억해 무응답이면 그 줄에 표시
+  const rtBag = useRef(new RtBag());
+  const reqById = useRef(new Map<number, Frame>());
+  // (0.10.0) 포트 나눔(COM ↔ TCP)
+  const [shareCfg, setShareCfg] = useState<ShareConfig>(() => ({ ...DEFAULT_SHARE, ...load<Partial<ShareConfig>>("share", {}) }));
+  useEffect(() => store("share", shareCfg), [shareCfg]);
+  const [shareAddr, setShareAddr] = useState<string | null>(null);
+  const [shareClients, setShareClients] = useState<ShareClient[]>([]);
+  const [shareBusy, setShareBusy] = useState(false);
   // 왼쪽 칸 «고급 연결»(흐름 제어·RS-485·DTR·RTS) — 대부분 안 쓰니 접는다. 기본값이 아니면 펼친 채 시작, 열림 상태는 기억
   const advConnChanged = cfg.flow !== "none" || rs485On || cfg.dtr || cfg.rts;
   const [advConnOpenSaved, setAdvConnOpenSaved] = useState<boolean>(() => advConnChanged || load("advConnOpen", false));
@@ -371,6 +401,25 @@ export default function App() {
             }
           }
           if (f.check === false) counters.current.fail++;
+          // (0.10.0) 엿듣기 짝: 요청은 기다리는 목록에, 응답은 응답 시간 통에, 무응답은 그 요청 줄에 표시
+          const p = f.pair;
+          if (p) {
+            const waiting = reqById.current;
+            if (p.role === "req") {
+              waiting.set(p.id, f);
+              if (waiting.size > 5000) waiting.delete(waiting.keys().next().value as number);
+            } else {
+              const q = waiting.get(p.id);
+              waiting.delete(p.id);
+              if (p.role === "rsp") {
+                if (p.rtMs != null) rtBag.current.add(p.rtMs);
+                if (p.error) rtBag.current.errors++;
+              } else {
+                rtBag.current.misses++;
+                if (q) q.missed = true;
+              }
+            }
+          }
         }
         screenBytes.current = trimFrames(arr, maxLines.current, screenBytes.current);
         setVersion((v) => v + 1);
@@ -404,6 +453,9 @@ export default function App() {
           setSessionId(null);
           setLogPath(null);
           setLines(null);
+          setSniffing(false);
+          setShareAddr(null);
+          setShareClients([]);
           const j = fileJobRef.current;
           if (j && !j.done) setFileJob({ ...j, done: true, cancelled: true });
         }
@@ -447,7 +499,15 @@ export default function App() {
     setConnectErr(null);
     setPortNotice(null);
     try {
-      await api.open(cfg, effectiveFraming, rxWire, onEvent);
+      if (sniffMode) {
+        // 듣기만 — 받기 설정은 쓰지 않고(CRC 로 자름), 두 번째 포트는 같은 속도·패리티로
+        if (port2 && port2.toLowerCase() === cfg.port.toLowerCase()) throw new Error(t("sniffSame"));
+        await api.sniffOpen(port2 ? [cfg, { ...cfg, port: port2 }] : [cfg], onEvent);
+        setSniffing(true);
+      } else {
+        await api.open(cfg, effectiveFraming, rxWire, onEvent);
+        setSniffing(false);
+      }
       setSessionId(cfg.port);
       baseTs.current = Date.now();
       const p = ports.find((x) => x.name === cfg.port);
@@ -472,6 +532,9 @@ export default function App() {
     if (!sessionId) return;
     await api.close(sessionId);
     setSessionId(null);
+    setSniffing(false);
+    setShareAddr(null);
+    setShareClients([]);
     setStatus("closed");
     setStatusMsg(null);
     setLogPath(null);
@@ -550,6 +613,8 @@ export default function App() {
   function clearLog() {
     framesRef.current = [];
     counters.current = { rx: 0, tx: 0, fail: 0 };
+    rtBag.current.reset();
+    reqById.current.clear();
     meter.current.reset();
     deltaSt.current = newDeltaState();
     term.current.clear();
@@ -698,7 +763,8 @@ export default function App() {
 
   // ---- 인터락
   // 재연결 대기 중에는 세션은 있어도 보낼 수 없다
-  const online = sessionId != null && status === "connected";
+  // 엿듣기(듣기만) 중에는 어떤 보내기도 막는다
+  const online = sessionId != null && status === "connected" && !sniffing;
   // 반복 간격이 실제 송신 시간(+ 문자 간 지연)보다 짧으면 앞 송신이 끝나기 전에 쌓인다 → 최소 간격으로 올려 보낸다
   const repBytes = repeatSpec?.bytes ?? previewBytes;
   const txMs = repBytes ? serialTxMs(repBytes.length, cfg.baud, cfg.dataBits, cfg.parity === "none" ? "none" : "odd", Math.ceil(cfg.stopBits)) + charDelay * repBytes.length : 0;
@@ -766,7 +832,7 @@ export default function App() {
   const mbSpec = (bytes: number[]): SendSpec => ({ text: hex(bytes), mode: "hex", checksum: "crc16-modbus", suffix: "", ck: null });
   // 상세의 «요청과 짝» — 고른 줄을 응답으로 보고 바로 앞 요청(TX)과 짝지어 «40001 = 1812 (0x0714)». 주소 표기는 «Modbus 요청» 창이 쓰던 것
   const selIdx = selFrame && frames.length ? (selFrame.seq ?? 0) - (frames[0].seq ?? 0) : -1;
-  const paired = useMemo(() => (selFrame && selFrame.dir !== "ev" ? pairInLog(framesRef.current, selIdx, "rtu") : null), [selFrame, selIdx]);
+  const paired = useMemo(() => (selFrame && selFrame.dir !== "ev" ? (selFrame.pair ? pairByMark(framesRef.current, selIdx) : pairInLog(framesRef.current, selIdx, "rtu")) : null), [selFrame, selIdx]);
   const mbNotation = useMemo<AddrNotation>(() => (load<{ addrMode?: string }>("mbForm", {}).addrMode === "plc" ? "plc" : "zero"), [showMb]); // eslint-disable-line react-hooks/exhaustive-deps
   // 기억한 요청의 응답이 오면 그 줄을 고른다(따라가기는 그대로)
   useEffect(() => {
@@ -856,7 +922,7 @@ export default function App() {
   useEffect(() => {
     if (!connected) setConnEditSaved(false);
   }, [connected]);
-  const statusKey = `status_${status}` as Key;
+  const statusKey = (sniffing && status === "connected" ? "sniffing" : `status_${status}`) as Key;
   // 끊기면 작업 표시줄 깜빡임 — 장치가 끊김·재연결 대기, 또는 자동 재연결이 꺼져 이유와 함께 닫힘(사용자가 끊은 닫힘은 이유 없음)
   useLostAlert(status === "disconnected" || status === "reconnecting" || (status === "closed" && statusMsg != null), settings.lostAlert);
   // 연결·파일 기록 중 절전 막기(0.3.0, 설정 켬일 때만)
@@ -906,7 +972,41 @@ export default function App() {
   const parityCh = parityChar(cfg.parity);
   useWindowTitle(windowTitle("PortDock Serial", connected ? [`${livePort ?? cfg.port} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits}`, t(statusKey)] : [], !!logPath));
   const summaryLine = connected ? `${summary({ ...cfg, port: livePort ?? cfg.port }, lang)} · ${t(statusKey)}` : `${cfg.port || t("noPorts")} ${cfg.baud} ${cfg.dataBits}${parityCh}${cfg.stopBits} · ${t(statusKey)}`;
-  const sendWhy = t(connected ? "ilOffline" : "whyNotConnected");
+  const sendWhy = t(sniffing ? "sniffNoSend" : connected ? "ilOffline" : "whyNotConnected");
+  const pairStatsLine = sniffing || rtBag.current.values.length > 0 || rtBag.current.misses > 0 ? statsText(rtStats(rtBag.current.values), rtBag.current.misses, rtBag.current.errors, lang) : null;
+
+  // ---- (0.10.0) 포트 나눔
+  async function startShare() {
+    if (!sessionId || shareBusy) return;
+    setShareBusy(true);
+    setError(null);
+    try {
+      const addr = await api.shareStart(sessionId, shareCfg, (e) => {
+        if (e.type === "clients") setShareClients(e.clients);
+        else if (e.type === "config") {
+          // RFC 2217 로 원격이 바꾼 설정을 화면에도 — 다시 보내도 같은 값이라 포트는 그대로
+          const c = e.config;
+          setCfg((o) => ({ ...o, baud: c.baud, dataBits: c.dataBits, parity: c.parity, stopBits: c.stopBits, flow: c.flow, dtr: c.dtr, rts: c.rts }));
+        } else {
+          setShareAddr(null);
+          setShareClients([]);
+        }
+      });
+      setShareAddr(addr);
+      setShareClients([]);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setShareBusy(false);
+    }
+  }
+  async function stopShare() {
+    await api.shareStop().catch((e) => setError(String(e)));
+    setShareAddr(null);
+    setShareClients([]);
+  }
+  const shareOpen = shareCfg.host.trim() !== "127.0.0.1";
+  const shareTarget = shareAddr ? (shareOpen ? shareAddr.replace(/^0\.0\.0\.0/, "<IP>") : shareAddr) : `${shareCfg.host}:${shareCfg.port}`;
   // 접힌 제목에 보일 지금 값 — 기본값이면 짧게
   const advConnSummary =
     [
@@ -969,9 +1069,9 @@ export default function App() {
             <span className="mono" title={t("lockedHint")}>
               {summary({ ...cfg, port: livePort ?? cfg.port }, lang)}
             </span>
-            <button type="button" className="btn small conn-change" onClick={() => setConnEdit(!connEdit)} aria-expanded={connEdit} data-tip={tip(lang, "connChange")}>
+            {!sniffing && <button type="button" className="btn small conn-change" onClick={() => setConnEdit(!connEdit)} aria-expanded={connEdit} data-tip={tip(lang, "connChange")}>
               {connEdit ? t("connFold") : t("connChange")}
-            </button>
+            </button>}
           </div>
         )}
         {(!connected || connEdit) && (
@@ -1146,8 +1246,32 @@ export default function App() {
         </>
         )}
 
+        {/* (0.10.0) Modbus RTU 엿듣기(듣기만) — 켜면 «연결» 이 보내지 않는 세션을 연다 */}
+        <label className="inline sniff-toggle" data-tip={tip(lang, "sniffMode")}>
+          <input type="checkbox" checked={sniffMode} disabled={connected} title={connected ? t("lockedHint") : ""} onChange={(e) => setSniffMode(e.target.checked)} /> {t("sniffMode")}
+        </label>
+        {sniffMode && !connected && (
+          <>
+            <div className="hint">{t("sniffHint")}</div>
+            <label data-tip={tip(lang, "sniffPort2")}>
+              {t("sniffPort2")}
+              <select value={port2} onChange={(e) => setPort2(e.target.value)}>
+                <option value="">{t("sniffPort2None")}</option>
+                {ports
+                  .filter((p) => p.name !== cfg.port)
+                  .map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                {port2 && !ports.some((p) => p.name === port2) && <option value={port2}>{port2}</option>}
+              </select>
+            </label>
+            {port2 && <div className="hint">{t("sniffPort2Hint")}</div>}
+          </>
+        )}
         <button data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)} className={connected ? "btn danger" : "btn primary"} onClick={connected ? disconnect : connect} disabled={runDisabled}>
-          {connected ? t("disconnect") : t("connect")}
+          {sniffMode || sniffing ? t(connected ? "sniffStop" : "sniffStart") : connected ? t("disconnect") : t("connect")}
         </button>
         {connected && <span className="lock-note">🔒 {t("lockedHint")}</span>}
         {connectErr && !connected ? (
@@ -1238,13 +1362,75 @@ export default function App() {
             />
           </label>
           {rxCheck && (rxCk?.skipHead || rxCk?.beforeEnd || rxCk?.swap || rxCheck === "crc") ? <div className="hint">{checksumDesc(rxCheck, rxCk, lang)}</div> : null}
+          {sniffMode && <div className="hint warn">{t("sniffRxNote")}</div>}
+        </details>
+
+        {/* (0.10.0) 포트 나눔 — 연 포트를 TCP 서버로. 기본 127.0.0.1, 다른 PC 는 사용자가 켤 때만 */}
+        <details className="adv panel share-panel" open={!!shareAddr || undefined}>
+          <summary data-tip={tip(lang, "share")}>
+            <span className="sum-title">{t("shareTitle")}</span>
+            <span className="sum-note">{shareAddr ? fill(t("shareOn"), { a: shareAddr, n: shareClients.length }) : t("shareOff")}</span>
+          </summary>
+          <div className="grid2">
+            <label data-tip={tip(lang, "sharePort")}>
+              {t("sharePort")}
+              <NumInput min={1} max={65535} value={shareCfg.port} disabled={!!shareAddr} onValue={(n) => setShareCfg({ ...shareCfg, port: n })} />
+            </label>
+            <label data-tip={tip(lang, "shareMax")}>
+              {t("shareMax")}
+              <NumInput min={1} max={16} value={shareCfg.maxClients} disabled={!!shareAddr} onValue={(n) => setShareCfg({ ...shareCfg, maxClients: n })} />
+            </label>
+          </div>
+          <label data-tip={tip(lang, "shareMode")}>
+            {t("shareMode")}
+            <select value={shareCfg.rfc2217 ? "rfc2217" : "raw"} disabled={!!shareAddr} onChange={(e) => setShareCfg({ ...shareCfg, rfc2217: e.target.value === "rfc2217" })}>
+              <option value="raw">{t("shareRaw")}</option>
+              <option value="rfc2217">{t("shareRfc")}</option>
+            </select>
+          </label>
+          <label className="inline" data-tip={tip(lang, "shareAllowOthers")}>
+            <input type="checkbox" checked={shareOpen} disabled={!!shareAddr} onChange={(e) => setShareCfg({ ...shareCfg, host: e.target.checked ? "0.0.0.0" : "127.0.0.1" })} /> {t("allowOthers")}
+          </label>
+          {shareOpen ? <div className="hint warn open-warn">{t("shareOpenHint")}</div> : <span className="hint">{t("shareLocalHint")}</span>}
+          <button
+            className={shareAddr ? "btn small danger" : "btn small primary"}
+            onClick={shareAddr ? stopShare : startShare}
+            disabled={shareBusy || (!shareAddr && (!online || sniffing))}
+            data-tip={sniffing ? t("shareSniffWhy") : !connected && !shareAddr ? t("shareWhy") : tip(lang, "share")}
+          >
+            {shareAddr ? t("shareStop") : t("shareStart")}
+          </button>
+          {!shareAddr && (sniffing ? <span className="hint">{t("shareSniffWhy")}</span> : !connected && <span className="hint">{t("shareWhy")}</span>)}
+          {shareAddr && (
+            <>
+              <div className="hint mono">
+                {t("shareUrl")}: {shareCfg.rfc2217 ? `rfc2217://${shareTarget}` : `socket://${shareTarget}`}
+              </div>
+              {shareOpen && <div className="hint">{t("shareOther")}</div>}
+              {shareClients.length === 0 ? (
+                <div className="hint">{t("shareNoClients")}</div>
+              ) : (
+                <ul className="share-clients">
+                  {shareClients.map((c) => (
+                    <li key={c.id} className="mono">
+                      #{c.id} {c.addr}
+                      <button type="button" className="btn small ghost" onClick={() => void api.shareKick(c.id)} aria-label={t("shareKick")} title={t("shareKick")}>
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="hint">{t("shareClash")}</div>
+            </>
+          )}
         </details>
       </aside>
 
       <main className="main">
         <NarrowBar tools={headTools} lang={lang} open={showSide} onToggle={() => setShowSide(!showSide)} dot={connectErr && !connected ? "s-disconnected" : `s-${status}`} summary={summaryLine}>
           <button className={connected ? "btn small danger" : "btn small primary"} onClick={connected ? disconnect : connect} disabled={runDisabled} data-tip={withKey(tip(lang, connected ? "disconnect" : "connect"), KEYS.connect)}>
-            {connected ? t("disconnect") : t("connect")}
+            {sniffMode || sniffing ? t(connected ? "sniffStop" : "sniffStart") : connected ? t("disconnect") : t("connect")}
           </button>
         </NarrowBar>
         <div className="toolbar">
@@ -1312,6 +1498,16 @@ export default function App() {
           {logPath && (
             <span className="rec" title={logPath}>
               ● REC
+            </span>
+          )}
+          {shareAddr && (
+            <span className="share-on mono" title={shareAddr}>
+              ⇄ TCP {shareClients.length}
+            </span>
+          )}
+          {pairStatsLine && (
+            <span className="pair-stats mono" data-tip={tip(lang, "pairStats")}>
+              {pairStatsLine}
             </span>
           )}
           <span className="grow" />
@@ -1391,6 +1587,8 @@ export default function App() {
                         <span className="ts">{fmt(f.ts)}</span>
                         {dt}
                         <span className="dir">{f.dir === "rx" ? "RX ◀" : "TX ▶"}</span>
+                        {f.pair && <PairCell p={f.pair} missed={!!f.missed} lang={lang} />}
+                        {f.peer && <span className="peeraddr">{f.peer}</span>}
                         <span className="data">
                           {view !== "ascii" && <span className="hex">{hex(f.bytes)}</span>}
                           {view !== "hex" && <span className="asc">{ascii(f.bytes)}</span>}
@@ -1433,6 +1631,11 @@ export default function App() {
         )}
 
         <div className="sendbar">
+          {sniffing && (
+            <div className="notice warn sniff-banner" role="status">
+              {t("sniffBanner")}
+            </div>
+          )}
           <div className="sendrow">
             {/* 바꾸면 같은 바이트의 새 표기로 옮기고, 켜진 체크섬은 아래 알림줄로(HEX 에 쓰던 체크섬이 ASCII 명령에 모르고 붙지 않게) */}
             <select value={spec.mode} onChange={(e) => modeSwitch.changeMode(e.target.value as TextMode)} data-tip={ui(lang, "sendModeTip")} aria-label="HEX / ASCII">
