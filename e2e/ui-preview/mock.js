@@ -2351,7 +2351,12 @@ async function pinsp(cmd, a) {
       const started = tr("장치가 시작되었습니다.", "Device started.");
       const ev = (ago, id, kind, msg) => ({ time: now() - ago, id, provider: "Microsoft-Windows-Kernel-PnP", kind, level: kind === "problem" ? 3 : 4, message: `${d.instanceId} ${msg}`, device: d.instanceId });
       const list = [ev(2 * 3_600_000, 410, "start", started), ev(DAY, 410, "start", started), ev(40 * DAY, 400, "install", tr("장치가 구성되었습니다.", "Device configured."))];
-      if (d.port === "COM5") for (let i = 0; i < 3; i++) list.push(ev(3 * DAY + i * 600_000, 410, "start", started));
+      // 3일 전 «같은 날» 세 번 — 정오 기준(자정 무렵에 돌리면 두 날로 갈라져 «하루 3번» 이 안 되던 것)
+      if (d.port === "COM5") {
+        const noon = new Date(now() - 3 * DAY);
+        noon.setHours(12, 0, 0, 0);
+        for (let i = 0; i < 3; i++) list.push(ev(now() - noon.getTime() - i * 600_000, 410, "start", started));
+      }
       if (d.problem) list.push(ev(3_000_000, 411, "problem", tr("장치를 시작하는 동안 문제가 발생했습니다.", "Device had a problem starting.")));
       return { events: list.filter((e) => now() - e.time <= a.days * DAY).sort((x, y) => y.time - x.time), days: a.days, errors: [] };
     }
