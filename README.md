@@ -87,7 +87,7 @@ Settings → *Export settings* saves everything to one JSON file you can move to
 
 ## Checks
 
-Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all twelve apps, 287 Node tests (`shared/`, apps, tools), the device register map check (55 devices, 2268 registers), `cargo clippy` with warnings as errors, 402 Rust tests (398 run, 4 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+Every push and pull request is checked on Windows ([ci.yml](.github/workflows/ci.yml)): frontend build and type check of all twelve apps, 287 Node tests (`shared/`, apps, tools), the device register map check (67 devices, 2684 registers), `cargo clippy` with warnings as errors, 402 Rust tests (398 run, 4 ignored), third-party notice and installer text checks, and the website check, tests and build followed by a check of the built pages (titles, links, structured data, sitemap). How the code is organised: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · how to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Build from source
 

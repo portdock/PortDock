@@ -1,0 +1,811 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "autonics/dpu1",
+  "manufacturer": {
+    "ko": "오토닉스",
+    "en": "Autonics"
+  },
+  "model": "DPU1 Series",
+  "kind": "other",
+  "title": {
+    "ko": "오토닉스 DPU1 시리즈 단상 디지털 전력 조정기 (RS485 모델)",
+    "en": "Autonics DPU1 Series single-phase digital power controller (RS485 models)"
+  },
+  "summary": {
+    "ko": "SCR 전력 조정기. 입력 레지스터(출력 전압·부하 전류·전력·주파수), 홀딩 레지스터(통신 제어 입력·기동/한계·경보·제어 방식, FC 03/06/16).",
+    "en": "SCR power controller. Input registers (output voltage, load current, power, frequency); holding registers (communication control input, start/limits, alarms, control method; FC 03/06/16)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 38400,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "통신 매뉴얼은 «300001 (0000)» 꼴 — 1 기준 참조 번호 + 괄호 안 16진 통신 주소. 각 표 첫 항목이 (0000) 이라 괄호 값을 0 기준 통신선 주소로 썼다 (통신 매뉴얼 p.23~31).",
+        "en": "The communication manual writes «300001 (0000)»: 1-based reference number plus hex communication address in parentheses. Each table starts at (0000), so the parenthesized value is used as the 0-based wire address (comm manual pp.23-31)."
+      },
+      {
+        "ko": "통신 사양(제품 매뉴얼 p.3): 속도 4800/9600/19200/38400(출하) bps, 데이터 8비트·짝수 패리티·정지 1비트 고정. 국번 Addr 출하 1(1~99), 통신 쓰기 ComW 출하 EnA (제품 매뉴얼 p.6).",
+        "en": "Communication spec (product manual p.3): 4800/9600/19200/38400 (default) bps; 8 data bits, even parity, 1 stop bit fixed. Address Addr default 1 (1-99); communication write ComW default EnA (product manual p.6)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "300001 (0000)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.23"
+    },
+    {
+      "table": "input-registers",
+      "address": 1,
+      "manualAddress": "300002 (0001)",
+      "type": "u16",
+      "name": {
+        "ko": "부하 전류",
+        "en": "Load current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.23"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "300003 (0002)",
+      "type": "u16",
+      "name": {
+        "ko": "전력",
+        "en": "Power"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.23"
+    },
+    {
+      "table": "input-registers",
+      "address": 3,
+      "manualAddress": "300004 (0003)",
+      "type": "u16",
+      "name": {
+        "ko": "부하율",
+        "en": "Load status"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.23"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "300005 (0004)",
+      "type": "u16",
+      "name": {
+        "ko": "전원 주파수",
+        "en": "Power frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.23"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "400001 (0000)",
+      "type": "u16",
+      "name": {
+        "ko": "기준값(통신 제어 입력)",
+        "en": "Reference value (communication control input)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "400002 (0001)",
+      "type": "u16",
+      "name": {
+        "ko": "기동 제한 시간",
+        "en": "Start limit time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "400003 (0002)",
+      "type": "u16",
+      "name": {
+        "ko": "기동 제한",
+        "en": "Start limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 110
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "400004 (0003)",
+      "type": "u16",
+      "name": {
+        "ko": "소프트 스타트 시간",
+        "en": "Soft start time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "400005 (0004)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 상한",
+        "en": "Output high-limit value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 110
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "400006 (0005)",
+      "type": "u16",
+      "name": {
+        "ko": "출력 하한",
+        "en": "Output low-limit value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 110
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "400007 (0006)",
+      "type": "u16",
+      "name": {
+        "ko": "원격 설정점 1",
+        "en": "Remote SP1"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12,
+      "manualAddress": "400013 (000C)",
+      "type": "u16",
+      "name": {
+        "ko": "소프트 업 시간",
+        "en": "Soft up time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "400014 (000D)",
+      "type": "u16",
+      "name": {
+        "ko": "소프트 다운 시간",
+        "en": "Soft down time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "400015 (000E)",
+      "type": "u16",
+      "name": {
+        "ko": "전류 제한",
+        "en": "Current limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 110
+      },
+      "ref": "p.27"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "400016 (000F)",
+      "type": "u16",
+      "name": {
+        "ko": "과전류 경보값",
+        "en": "Overcurrent alarm value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "400017 (0010)",
+      "type": "u16",
+      "name": {
+        "ko": "과전류 지연 시간",
+        "en": "Overcurrent delay time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "400018 (0011)",
+      "type": "u16",
+      "name": {
+        "ko": "과전압 경보값",
+        "en": "Overvoltage alarm value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 19,
+      "manualAddress": "400020 (0013)",
+      "type": "u16",
+      "name": {
+        "ko": "히터 단선 경보값",
+        "en": "Heater break alarm value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 10,
+        "max": 500
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 20,
+      "manualAddress": "400021 (0014)",
+      "type": "u16",
+      "name": {
+        "ko": "표시 내용",
+        "en": "Display value content"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "부하 전압(출하)",
+          "en": "Load voltage (default)"
+        },
+        {
+          "value": 1,
+          "ko": "부하 전류",
+          "en": "Load current"
+        },
+        {
+          "value": 2,
+          "ko": "부하 전력",
+          "en": "Load power"
+        },
+        {
+          "value": 3,
+          "ko": "제어 입력",
+          "en": "Control input"
+        }
+      ],
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 22,
+      "manualAddress": "400023 (0016)",
+      "type": "u16",
+      "name": {
+        "ko": "비례 상수",
+        "en": "Proportional constant"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 2000
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 23,
+      "manualAddress": "400024 (0017)",
+      "type": "u16",
+      "name": {
+        "ko": "적분 상수",
+        "en": "Integral constant"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0.1,
+        "max": 999.9
+      },
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 24,
+      "manualAddress": "400025 (0018)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 방식",
+        "en": "Control method"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정주기 제어",
+          "en": "Fixed cycle control"
+        },
+        {
+          "value": 1,
+          "ko": "가변 주기 제어",
+          "en": "Variable cycle control"
+        },
+        {
+          "value": 2,
+          "ko": "ON/OFF 제어",
+          "en": "ON/OFF control"
+        },
+        {
+          "value": 3,
+          "ko": "위상 제어(출하)",
+          "en": "Phase control (default)"
+        },
+        {
+          "value": 4,
+          "ko": "정전압 피드백",
+          "en": "Constant voltage feedback"
+        },
+        {
+          "value": 5,
+          "ko": "정전류 피드백",
+          "en": "Constant current feedback"
+        },
+        {
+          "value": 6,
+          "ko": "정전력 피드백",
+          "en": "Constant power feedback"
+        }
+      ],
+      "ref": "p.28"
+    },
+    {
+      "table": "holding-registers",
+      "address": 25,
+      "manualAddress": "400026 (0019)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 1",
+        "en": "Digital input 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "다중 설정점",
+          "en": "Multi setting point"
+        },
+        {
+          "value": 1,
+          "ko": "단일 설정점 1",
+          "en": "Single setting point 1"
+        },
+        {
+          "value": 2,
+          "ko": "단일 설정점 2",
+          "en": "Single setting point 2"
+        },
+        {
+          "value": 3,
+          "ko": "단일 설정점 3",
+          "en": "Single setting point 3"
+        },
+        {
+          "value": 4,
+          "ko": "리셋",
+          "en": "Reset"
+        },
+        {
+          "value": 5,
+          "ko": "HOLD",
+          "en": "HOLD"
+        }
+      ],
+      "ref": "p.29"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "400029 (001C)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 입력 종류",
+        "en": "Control input type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "4-20 mA(출하)",
+          "en": "4-20 mA (default)"
+        },
+        {
+          "value": 1,
+          "ko": "0-20 mA",
+          "en": "0-20 mA"
+        },
+        {
+          "value": 2,
+          "ko": "1-5 VDC",
+          "en": "1-5 VDC"
+        },
+        {
+          "value": 3,
+          "ko": "0-5 VDC",
+          "en": "0-5 VDC"
+        },
+        {
+          "value": 4,
+          "ko": "0-10 VDC",
+          "en": "0-10 VDC"
+        },
+        {
+          "value": 5,
+          "ko": "SSR 접점",
+          "en": "SSR contact"
+        },
+        {
+          "value": 6,
+          "ko": "RS485 통신",
+          "en": "RS485 communication"
+        }
+      ],
+      "ref": "p.29"
+    },
+    {
+      "table": "holding-registers",
+      "address": 30,
+      "manualAddress": "400031 (001E)",
+      "type": "u16",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operation status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "Bit1~9 중 하나 이상 발생",
+          "en": "At least one of bits 1-9"
+        },
+        {
+          "bit": 1,
+          "ko": "150 % 넘는 과전류",
+          "en": "Over 150 % overcurrent"
+        },
+        {
+          "bit": 2,
+          "ko": "110 % 넘는 과전류",
+          "en": "Over 110 % overcurrent"
+        },
+        {
+          "bit": 3,
+          "ko": "과전압",
+          "en": "Overvoltage"
+        },
+        {
+          "bit": 4,
+          "ko": "온도 이상",
+          "en": "Temperature error"
+        },
+        {
+          "bit": 5,
+          "ko": "퓨즈 단선",
+          "en": "Fuse break"
+        },
+        {
+          "bit": 7,
+          "ko": "무부하",
+          "en": "No load"
+        },
+        {
+          "bit": 8,
+          "ko": "SCR 이상",
+          "en": "SCR error"
+        },
+        {
+          "bit": 9,
+          "ko": "주파수 이상",
+          "en": "Frequency error"
+        },
+        {
+          "bit": 12,
+          "ko": "1 운전·0 정지",
+          "en": "1 run, 0 stop"
+        },
+        {
+          "bit": 13,
+          "ko": "1 수동·0 자동",
+          "en": "1 manual, 0 auto"
+        },
+        {
+          "bit": 14,
+          "ko": "1 디지털 입력",
+          "en": "1 digital input"
+        }
+      ],
+      "description": {
+        "ko": "저장 안 됨(Save N)",
+        "en": "Not saved (Save N)"
+      },
+      "ref": "p.30"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "배율(Weight)·단위·저장 여부는 통신 매뉴얼 표 그대로(×0.1 → scale 0.1). 기기에서 설정할 수 없는 파라미터도 통신으로는 바꿀 수 있다(p.31). DPU3(3상)은 입력 레지스터 배치가 달라 이 파일에 넣지 않았다.",
+      "en": "Weights, units and save flags are as in the comm manual tables (×0.1 → scale 0.1). Parameters not settable on the device can still be changed via communication (p.31). DPU3 (3-phase) has a different input register layout and is not in this file."
+    }
+  ],
+  "sources": [
+    {
+      "title": "DPU Series DPU Communication (RS485) Communication Manual MCY-DPUC1-V1.3_EN",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "MCY-DPUC1-V1.3_EN",
+        "en": "MCY-DPUC1-V1.3_EN"
+      },
+      "url": "https://www.autonics.com/glb/common/download/510419",
+      "pages": {
+        "ko": "p.11~21 Modbus RTU, p.23~31 매핑 표(DPU1) (인쇄 쪽 = PDF 쪽)",
+        "en": "pp.11-21 Modbus RTU, pp.23-31 mapping table (DPU1) (printed page = PDF page)"
+      },
+      "checked": "2026-10-31"
+    },
+    {
+      "title": "Single-Phase / 3-Phase Digital Power Controllers DPU1 / DPU3 Series PRODUCT MANUAL TCD220050AH",
+      "publisher": "Autonics",
+      "edition": {
+        "ko": "TCD220050AH (2026-10-20)",
+        "en": "TCD220050AH (2026-10-20)"
+      },
+      "url": "https://www.autonics.com/glb/common/download/529443",
+      "pages": {
+        "ko": "p.3 통신 사양, p.6 통신 파라미터",
+        "en": "p.3 communication spec, p.6 communication parameters"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}

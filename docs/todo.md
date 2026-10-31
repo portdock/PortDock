@@ -51,7 +51,7 @@
 사이트 설정에서 지킬 것: `Base.astro` 의 검색엔진 소유 확인 meta 값은 지우지 않는다 · `PUBLIC_CF_ANALYTICS_TOKEN` 은 비워 둔다(Pages 자동 주입과 두 번 셈) · @portdock.dev 로 메일을 보내게 되면 SPF·DKIM 을 그 서비스에 맞게 바꾼다(지금은 `v=spf1 -all`·DMARC reject).
 
 ## 4. 장비 레지스터 맵 — 확장 규칙과 후보
-지금 55종·2268개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
+지금 67종·2684개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
 
 규칙:
 - 공식 매뉴얼(또는 제조사 공식 응용 노트)에서 확인한 값만. 출처 문서 번호·판·쪽을 남긴다.
@@ -62,12 +62,13 @@
 다음 후보:
 | 장비 | 막힌 것 |
 |---|---|
-| 델타 MS300·VFD-E·C2000 | 최신판 PDF 내려받기가 사람 확인에 막힘 |
+| 델타 MS300·VFD-E·C2000·DTB | 다운로드 센터가 사람 확인(Cloudflare)에 막힘 |
 | 슈나이더 ATV31 | ATV312 와 거의 같아 미룸(공식 Modbus 매뉴얼은 있음) |
 | 야스카와 GA500 | 매뉴얼 로그인 필요 |
 | 후지 FRENIC-Ace E3 · FRENIC 출하 통신값 | 공식 자료에서 못 찾음 |
-| 오토닉스 TF3 | 공식 다운로드 링크를 못 얻음 |
-| 지멘스 SINAMICS V20, ABB ACS310·ACS355·ACS580, LS iS7·iG5A·iE5·iC5 | 숫자 프레임 예 없음 |
+| LS iS7·iG5A·iE5·iC5 | 숫자 프레임 예 없음(공통 영역 표는 있음 — 같은 회사 S100·G100 은 «주소 −1» 이라 짐작으로 넣지 않음) |
+| ABB ACS310·ACS355·ACS580 | library.abb.com 이 자동 내려받기를 막음(403) |
+| 셀렉 MFM384, 슈나이더 PM5100 | 공식 PDF 경로를 못 얻음(셀렉 사이트는 스크립트로만 목록) |
 
 ## 5. 시험용 장비 (아직 없음)
 `docs/test-plan.md` 의 💰 항목은 아래 장비가 있어야 한다. 없으면 각 항목 괄호 안의 대안(가상 COM 쌍·Simulator)으로.

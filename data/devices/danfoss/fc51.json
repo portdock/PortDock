@@ -1,0 +1,882 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "danfoss/fc51",
+  "manufacturer": {
+    "ko": "댄포스",
+    "en": "Danfoss"
+  },
+  "model": "FC 51",
+  "models": [
+    "VLT Micro Drive FC 51"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "댄포스 VLT Micro Drive FC 51 인버터 (내장 RS485 Modbus RTU)",
+    "en": "Danfoss VLT Micro Drive FC 51 (built-in RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "운전은 코일로 — 코일 1~16 제어 워드, 17~32 속도 지령, 33~48 상태 워드, 49~64 출력 주파수(FC 프로필). 파라미터는 홀딩 레지스터 «10 × 파라미터 번호»(예 3-03 → 3030, 통신 주소 3029).",
+    "en": "Control via coils: 1-16 control word, 17-32 speed reference, 33-48 status word, 49-64 output frequency (FC profile). Parameters are holding registers '10 × parameter number' (e.g. 3-03 → 3030, wire address 3029)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "코일·레지스터 번호는 1 기준이고 통신선 주소는 번호 − 1: 코일 33 → 32, 코일 65 → 64(40h), 레지스터 3030 → 3029(0BD5h) (p.76 표 8.18 주, p.77~78 예). 40001 은 주소 0.",
+        "en": "Coil and register numbers are 1-based; wire address = number − 1: coil 33 → 32, coil 65 → 64 (40h), register 3030 → 3029 (0BD5h) (p.76 Table 8.18 note, pp.77-78 examples). 40001 is address 0."
+      },
+      {
+        "ko": "Modbus 로 쓰려면 8-30 프로토콜 = Modbus RTU, 8-31 국번 1~247, 8-32 속도 2400~115200, 8-33 패리티/정지 비트 — 출하 «짝수 패리티·정지 1비트» (p.72 표 8.11). 출하 속도·국번은 이 문서에 없다.",
+        "en": "For Modbus set 8-30 Protocol = Modbus RTU, 8-31 Address 1-247, 8-32 Baud Rate 2400-115200, 8-33 Parity/Stop Bits (default even parity, 1 stop bit) (p.72 Table 8.11). Default baud and address are not in this document."
+      },
+      {
+        "ko": "함수 코드 01·03·05·06·0F·10·0B·11·08 (p.75 표 8.19~8.20). 32비트 파라미터는 레지스터 2개(FC 10 으로 쓴다), 글자 파라미터는 최대 10 레지스터 (p.77).",
+        "en": "Function codes 01, 03, 05, 06, 0F, 10, 0B, 11, 08 (p.75 Tables 8.19-8.20). 32-bit parameters use 2 registers (write with FC 10); text parameters up to 10 registers (p.77)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "coil 1",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 0: 프리셋 지령 선택 LSB",
+        "en": "Control word bit 0: Preset reference LSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "coil 2",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 1: 프리셋 지령 선택 MSB",
+        "en": "Control word bit 1: Preset reference MSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "coil 3",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 2: DC 제동 안 함",
+        "en": "Control word bit 2: No DC brake"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "DC 제동",
+          "en": "DC brake"
+        },
+        {
+          "value": 1,
+          "ko": "DC 제동 안 함",
+          "en": "No DC brake"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "coil 4",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 3: 코스트 정지 안 함",
+        "en": "Control word bit 3: No coast stop"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "코스트 정지",
+          "en": "Coast stop"
+        },
+        {
+          "value": 1,
+          "ko": "코스트 정지 안 함",
+          "en": "No coast stop"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "coil 5",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 4: 급정지 안 함",
+        "en": "Control word bit 4: No quick stop"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "급정지",
+          "en": "Quick stop"
+        },
+        {
+          "value": 1,
+          "ko": "급정지 안 함",
+          "en": "No quick stop"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 5,
+      "manualAddress": "coil 6",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 5: 주파수 고정 안 함",
+        "en": "Control word bit 5: No freeze frequency"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "주파수 고정",
+          "en": "Freeze frequency"
+        },
+        {
+          "value": 1,
+          "ko": "주파수 고정 안 함",
+          "en": "No freeze frequency"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "coil 7",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 6: 기동",
+        "en": "Control word bit 6: Start"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "램프 정지",
+          "en": "Ramp stop"
+        },
+        {
+          "value": 1,
+          "ko": "기동",
+          "en": "Start"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 7,
+      "manualAddress": "coil 8",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 7: 리셋",
+        "en": "Control word bit 7: Reset"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "리셋 안 함",
+          "en": "No reset"
+        },
+        {
+          "value": 1,
+          "ko": "리셋",
+          "en": "Reset"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 8,
+      "manualAddress": "coil 9",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 8: 조그",
+        "en": "Control word bit 8: Jog"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "조그 안 함",
+          "en": "No jog"
+        },
+        {
+          "value": 1,
+          "ko": "조그",
+          "en": "Jog"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 9,
+      "manualAddress": "coil 10",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 9: 램프 2",
+        "en": "Control word bit 9: Ramp 2"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "램프 1",
+          "en": "Ramp 1"
+        },
+        {
+          "value": 1,
+          "ko": "램프 2",
+          "en": "Ramp 2"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 10,
+      "manualAddress": "coil 11",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 10: 데이터 유효",
+        "en": "Control word bit 10: Data valid"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "데이터 무효",
+          "en": "Data not valid"
+        },
+        {
+          "value": 1,
+          "ko": "데이터 유효",
+          "en": "Data valid"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 11,
+      "manualAddress": "coil 12",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 11: 릴레이 1 켜짐",
+        "en": "Control word bit 11: Relay 1 on"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "릴레이 1 꺼짐",
+          "en": "Relay 1 off"
+        },
+        {
+          "value": 1,
+          "ko": "릴레이 1 켜짐",
+          "en": "Relay 1 on"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 12,
+      "manualAddress": "coil 13",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 12: 릴레이 2 켜짐",
+        "en": "Control word bit 12: Relay 2 on"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "릴레이 2 꺼짐",
+          "en": "Relay 2 off"
+        },
+        {
+          "value": 1,
+          "ko": "릴레이 2 켜짐",
+          "en": "Relay 2 on"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 13,
+      "manualAddress": "coil 14",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 13: 셋업 선택 LSB",
+        "en": "Control word bit 13: Set-up LSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 15,
+      "manualAddress": "coil 16",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 15: 역회전",
+        "en": "Control word bit 15: Reversing"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "역회전 안 함",
+          "en": "No reversing"
+        },
+        {
+          "value": 1,
+          "ko": "역회전",
+          "en": "Reversing"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.16"
+    },
+    {
+      "table": "coils",
+      "address": 32,
+      "manualAddress": "coil 33",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 0: 제어 준비",
+        "en": "Status word bit 0: Control ready"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "제어 준비 안 됨",
+          "en": "Control not ready"
+        },
+        {
+          "value": 1,
+          "ko": "제어 준비",
+          "en": "Control ready"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 33,
+      "manualAddress": "coil 34",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 1: 인버터 준비",
+        "en": "Status word bit 1: Frequency converter ready"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "인버터 준비 안 됨",
+          "en": "Frequency converter not ready"
+        },
+        {
+          "value": 1,
+          "ko": "인버터 준비",
+          "en": "Frequency converter ready"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 34,
+      "manualAddress": "coil 35",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 2: 안전 회로 닫힘",
+        "en": "Status word bit 2: Safety closed"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "코스트 정지",
+          "en": "Coast stop"
+        },
+        {
+          "value": 1,
+          "ko": "안전 회로 닫힘",
+          "en": "Safety closed"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 35,
+      "manualAddress": "coil 36",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 3: 알람",
+        "en": "Status word bit 3: Alarm"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "알람 없음",
+          "en": "No alarm"
+        },
+        {
+          "value": 1,
+          "ko": "알람",
+          "en": "Alarm"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 39,
+      "manualAddress": "coil 40",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 7: 경고",
+        "en": "Status word bit 7: Warning"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "경고 없음",
+          "en": "No warning"
+        },
+        {
+          "value": 1,
+          "ko": "경고",
+          "en": "Warning"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 40,
+      "manualAddress": "coil 41",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 8: 지령 도달",
+        "en": "Status word bit 8: At reference"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "지령 도달 안 함",
+          "en": "Not at reference"
+        },
+        {
+          "value": 1,
+          "ko": "지령 도달",
+          "en": "At reference"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 41,
+      "manualAddress": "coil 42",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 9: 자동(Auto) 모드",
+        "en": "Status word bit 9: Auto mode"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "수동(Hand) 모드",
+          "en": "Hand mode"
+        },
+        {
+          "value": 1,
+          "ko": "자동(Auto) 모드",
+          "en": "Auto mode"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 42,
+      "manualAddress": "coil 43",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 10: 주파수 범위 안",
+        "en": "Status word bit 10: In frequency range"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "주파수 범위 밖",
+          "en": "Out of frequency range"
+        },
+        {
+          "value": 1,
+          "ko": "주파수 범위 안",
+          "en": "In frequency range"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 43,
+      "manualAddress": "coil 44",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 11: 운전 중",
+        "en": "Status word bit 11: Running"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stopped"
+        },
+        {
+          "value": 1,
+          "ko": "운전 중",
+          "en": "Running"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 45,
+      "manualAddress": "coil 46",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 13: 전압 경고",
+        "en": "Status word bit 13: Voltage warning"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "전압 경고 없음",
+          "en": "No voltage warning"
+        },
+        {
+          "value": 1,
+          "ko": "전압 경고",
+          "en": "Voltage warning"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 46,
+      "manualAddress": "coil 47",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 14: 전류 한계",
+        "en": "Status word bit 14: Current limit"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "전류 한계 아님",
+          "en": "Not in current limit"
+        },
+        {
+          "value": 1,
+          "ko": "전류 한계",
+          "en": "Current limit"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 47,
+      "manualAddress": "coil 48",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 비트 15: 과열 경고",
+        "en": "Status word bit 15: Thermal warning"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "과열 경고 없음",
+          "en": "No thermal warning"
+        },
+        {
+          "value": 1,
+          "ko": "과열 경고",
+          "en": "Thermal warning"
+        }
+      ],
+      "ref": "p.74 표 8.15·8.17"
+    },
+    {
+      "table": "coils",
+      "address": 64,
+      "manualAddress": "coil 65",
+      "type": "bit",
+      "name": {
+        "ko": "파라미터 쓰기 저장 위치",
+        "en": "Parameter write control"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RAM 에만",
+          "en": "RAM only"
+        },
+        {
+          "value": 1,
+          "ko": "RAM 과 EEPROM",
+          "en": "RAM and EEPROM"
+        }
+      ],
+      "ref": "p.74 표 8.15"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "40007",
+      "type": "u16",
+      "name": {
+        "ko": "마지막 고장 코드",
+        "en": "Last fault code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.75 표 8.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "40008",
+      "type": "u16",
+      "name": {
+        "ko": "마지막 오류 레지스터",
+        "en": "Last error register"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "마지막 오류가 난 레지스터 주소",
+        "en": "Address of the register where the last error occurred"
+      },
+      "ref": "p.75 표 8.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "40009",
+      "type": "u16",
+      "name": {
+        "ko": "인덱스 포인터",
+        "en": "Index pointer"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6
+      ],
+      "description": {
+        "ko": "배열 파라미터를 읽고 쓰기 전에 인덱스를 넣는다 (p.76 8.9.3)",
+        "en": "Set the array index before reading or writing an array parameter (p.76, 8.9.3)"
+      },
+      "ref": "p.75 표 8.18"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "코일 17~32(속도 지령, 0~FFFF = -200~200 %)과 49~64(출력 주파수·피드백)는 16비트 값을 코일 16개로 나눈 것이라 넣지 않았다. 파라미터별 형식·변환 지수는 Programming Guide 에 있는데 공식 경로로 받지 못해 파라미터 레지스터는 넣지 않았다 — 규칙(10 × 번호, 주소는 −1)만 위에 적었다.",
+      "en": "Coils 17-32 (speed reference, 0-FFFF = -200 to 200 %) and 49-64 (output frequency / feedback) split a 16-bit value over 16 coils and are left out. Per-parameter types and conversion indexes are in the Programming Guide, which could not be obtained from an official link, so parameter registers are not listed; only the rule (10 × number, address −1) is given above."
+    },
+    {
+      "ko": "제어 워드 비트 15(코일 15)는 표에 «–». 상태 워드 비트 4~6·12(코일 37~39·45)는 «Not used».",
+      "en": "Control word bit 15 (coil 15) is '–' in the table. Status word bits 4-6 and 12 (coils 37-39, 45) are 'Not used'."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Design Guide VLT Micro Drive FC 51 (MG02K402)",
+      "publisher": "Danfoss A/S",
+      "edition": {
+        "ko": "MG02K402, 01/2016 (문서 번호 AJ361178983102en-000401)",
+        "en": "MG02K402, 01/2016 (document AJ361178983102en-000401)"
+      },
+      "url": "https://assets.danfoss.com/documents/273509/AJ361178983102en-000401.pdf",
+      "pages": {
+        "ko": "8.6~8.10 Modbus RTU 인쇄 p.72~80 (PDF 74~82)",
+        "en": "8.6-8.10 Modbus RTU printed pp.72-80 (PDF 74-82)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}

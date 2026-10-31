@@ -32,7 +32,7 @@ PortDock CSV(`table,address,type,order,name,value`)로는 `table`·`address`·`t
 ### modbus-schema 로 내보내기
 [nielsbasjes/modbus-schema](https://github.com/nielsbasjes/modbus-schema)(Apache-2.0)의 «이름 붙은 정확한 주소»(`hr:5`, 0 기준)와 같은 주소 체계라 바로 바꿀 수 있습니다.
 ```
-node tools/devices-check.mjs --modbus-schema ls-electric/ig5a > ig5a.yaml
+node tools/devices-check.mjs --modbus-schema ls-electric/s100 > s100.yaml
 ```
 (`BADC`·`DCBA` 처럼 바이트를 바꾸는 순서는 건너뛰고 주석으로 남깁니다.)
 

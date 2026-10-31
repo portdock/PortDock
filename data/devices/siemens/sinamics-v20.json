@@ -1,0 +1,924 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "siemens/sinamics-v20",
+  "manufacturer": {
+    "ko": "지멘스",
+    "en": "Siemens"
+  },
+  "model": "SINAMICS V20",
+  "kind": "inverter",
+  "title": {
+    "ko": "지멘스 SINAMICS V20 인버터 (RS485 Modbus RTU)",
+    "en": "Siemens SINAMICS V20 converter (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "RS485 의 출하 프로토콜은 USS — Modbus 로 쓰려면 P2023 = 2 뒤 전원을 다시 켠다. 홀딩 레지스터만(FC 03·06·16), 40001 꼴 번호. 운전은 40100 STW/40101 HSW 또는 40004~40007 비트별 지령.",
+    "en": "The RS485 factory protocol is USS; set P2023 = 2 and power-cycle for Modbus. Holding registers only (FC 03, 06, 16), 40001-style numbers. Control via 40100 STW / 40101 HSW or the per-bit commands 40004-40007."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      93750,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 125,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매핑 표는 «Register No.» 를 두 칸으로 적는다 — 0 ↔ 40001, 99 ↔ 40100 (p.177~180). 앞 칸이 통신선 주소(= 번호 − 40001). 숫자 프레임 예는 없고 이 두 칸 표가 근거다.",
+        "en": "The mapping table lists 'Register No.' in two columns: 0 ↔ 40001, 99 ↔ 40100 (pp.177-180). The first column is the wire address (= number − 40001). There is no numeric frame example; this two-column table is the evidence."
+      },
+      {
+        "ko": "출하값: P2023 = 1(USS) — Modbus 는 2, 바꾼 뒤 전원 재투입. P2010 = 6(9600 bps), P2021 국번 1(1~247), P2034 = 2(짝수 패리티), P2035 = 1(정지 1비트), P2022 응답 시간 1000 ms (p.176, 파라미터 목록 p.275). 정지 2비트면 패리티는 없음으로.",
+        "en": "Defaults: P2023 = 1 (USS); Modbus = 2, then power-cycle. P2010 = 6 (9600 bps), P2021 address 1 (1-247), P2034 = 2 (even parity), P2035 = 1 (1 stop bit), P2022 reply timeout 1000 ms (p.176, parameter list p.275). With 2 stop bits parity must be none."
+      },
+      {
+        "ko": "FC 03·06·16 만 지원. 한 번에 읽기 125·쓰기 123 레지스터까지 (p.174~175). 통신으로 운전하려면 P0700 = 5, 주파수 지령은 P1000 = 5.",
+        "en": "Only FC 03, 06, 16. Up to 125 registers per read and 123 per write (pp.174-175). For control set P0700 = 5 and P1000 = 5."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "40001",
+      "type": "u16",
+      "name": {
+        "ko": "워치독 시간",
+        "en": "Watchdog time"
+      },
+      "unit": "ms",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 65535
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "40003",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령(HSW)",
+        "en": "Frequency setpoint (HSW)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "40004",
+      "type": "u16",
+      "name": {
+        "ko": "운전 허가(STW:3)",
+        "en": "Run enable (STW:3)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "1",
+          "en": "1"
+        }
+      ],
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "40005",
+      "type": "u16",
+      "name": {
+        "ko": "정·역방향 지령(STW:11)",
+        "en": "Forward/reverse command (STW:11)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "1",
+          "en": "1"
+        }
+      ],
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "40006",
+      "type": "u16",
+      "name": {
+        "ko": "기동 지령(STW:0)",
+        "en": "Start command (STW:0)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "1",
+          "en": "1"
+        }
+      ],
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "40007",
+      "type": "u16",
+      "name": {
+        "ko": "고장 확인(STW:7)",
+        "en": "Fault acknowledgement (STW:7)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "0",
+          "en": "0"
+        },
+        {
+          "value": 1,
+          "ko": "1",
+          "en": "1"
+        }
+      ],
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "40010",
+      "type": "u16",
+      "name": {
+        "ko": "전류 한계(P0640)",
+        "en": "Current limit (P0640)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 10.0,
+        "max": 400.0
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 10,
+      "manualAddress": "40011",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간(P1120)",
+        "en": "Acceleration time (P1120)"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 650.0
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "40012",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간(P1121)",
+        "en": "Deceleration time (P1121)"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 650.0
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "40016",
+      "type": "u16",
+      "name": {
+        "ko": "기준 주파수(P2000)",
+        "en": "Reference frequency (P2000)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1.0,
+        "max": 550.0
+      },
+      "ref": "p.177"
+    },
+    {
+      "table": "holding-registers",
+      "address": 23,
+      "manualAddress": "40024",
+      "type": "s16",
+      "name": {
+        "ko": "출력 주파수(r0024)",
+        "en": "Frequency output (r0024)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 24,
+      "manualAddress": "40025",
+      "type": "s16",
+      "name": {
+        "ko": "속도(r0022)",
+        "en": "Speed (r0022)"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 25,
+      "manualAddress": "40026",
+      "type": "u16",
+      "name": {
+        "ko": "전류 필터값(r0027)",
+        "en": "Current filtered (r0027)"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 26,
+      "manualAddress": "40027",
+      "type": "s16",
+      "name": {
+        "ko": "토크(r0031)",
+        "en": "Torque (r0031)"
+      },
+      "unit": "Nm",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 27,
+      "manualAddress": "40028",
+      "type": "u16",
+      "name": {
+        "ko": "실제 전력(r0032)",
+        "en": "Actual power (r0032)"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 28,
+      "manualAddress": "40029",
+      "type": "u16",
+      "name": {
+        "ko": "총 전력량(r0039)",
+        "en": "Total kWh (r0039)"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 29,
+      "manualAddress": "40030",
+      "type": "u16",
+      "name": {
+        "ko": "DC 버스 전압(r0026)",
+        "en": "DC bus voltage (r0026)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 30,
+      "manualAddress": "40031",
+      "type": "s16",
+      "name": {
+        "ko": "주파수 기준값(r0020)",
+        "en": "Reference (r0020)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 32,
+      "manualAddress": "40033",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압(r0025)",
+        "en": "Voltage output (r0025)"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 33,
+      "manualAddress": "40034",
+      "type": "u16",
+      "name": {
+        "ko": "정·역방향(ZSW:14)",
+        "en": "Forward/reverse (ZSW:14)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "FWD / REV",
+        "en": "FWD / REV"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 34,
+      "manualAddress": "40035",
+      "type": "u16",
+      "name": {
+        "ko": "정지/운전(ZSW:2)",
+        "en": "Stop/run (ZSW:2)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "STOP / RUN",
+        "en": "STOP / RUN"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 37,
+      "manualAddress": "40038",
+      "type": "u16",
+      "name": {
+        "ko": "인에이블(ZSW:0)",
+        "en": "Enabled (ZSW:0)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "ON / OFF",
+        "en": "ON / OFF"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 38,
+      "manualAddress": "40039",
+      "type": "u16",
+      "name": {
+        "ko": "운전 준비(ZSW:1)",
+        "en": "Ready to run (ZSW:1)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "READY / OFF",
+        "en": "READY / OFF"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "40054",
+      "type": "u16",
+      "name": {
+        "ko": "고장(ZSW:3)",
+        "en": "Fault (ZSW:3)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "FAULT / OFF",
+        "en": "FAULT / OFF"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 54,
+      "manualAddress": "40055",
+      "type": "u16",
+      "name": {
+        "ko": "마지막 고장(r0947[0])",
+        "en": "Last fault (r0947[0])"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 32767
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 58,
+      "manualAddress": "40059",
+      "type": "u16",
+      "name": {
+        "ko": "경고(ZSW:7)",
+        "en": "Warning (ZSW:7)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "WARN / OK",
+        "en": "WARN / OK"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 59,
+      "manualAddress": "40060",
+      "type": "u16",
+      "name": {
+        "ko": "마지막 경고(r2110)",
+        "en": "Last warning (r2110)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 32767
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 99,
+      "manualAddress": "40100",
+      "type": "u16",
+      "name": {
+        "ko": "제어 워드 STW(PZD 1)",
+        "en": "Control word STW (PZD 1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "비트 뜻은 r0054 (매뉴얼 파라미터 목록)",
+        "en": "Bit meanings: r0054 (parameter list)"
+      },
+      "ref": "p.178"
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "40101",
+      "type": "u16",
+      "name": {
+        "ko": "속도 지령 HSW(PZD 2)",
+        "en": "Speed setpoint HSW (PZD 2)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 109,
+      "manualAddress": "40110",
+      "type": "u16",
+      "name": {
+        "ko": "상태 워드 ZSW(PZD 1)",
+        "en": "Status word ZSW (PZD 1)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "비트 뜻은 r0052 (매뉴얼 파라미터 목록)",
+        "en": "Bit meanings: r0052 (parameter list)"
+      },
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 110,
+      "manualAddress": "40111",
+      "type": "u16",
+      "name": {
+        "ko": "실제 속도 HIW(PZD 2)",
+        "en": "Actual speed HIW (PZD 2)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 239,
+      "manualAddress": "40240",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 1(r0722.0)",
+        "en": "Digital input 1 (r0722.0)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "HIGH / LOW",
+        "en": "HIGH / LOW"
+      },
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 240,
+      "manualAddress": "40241",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력 2(r0722.1)",
+        "en": "Digital input 2 (r0722.1)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "HIGH / LOW",
+        "en": "HIGH / LOW"
+      },
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 259,
+      "manualAddress": "40260",
+      "type": "s16",
+      "name": {
+        "ko": "아날로그 입력 1(r0754[0])",
+        "en": "Analog input 1 (r0754[0])"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -300.0,
+        "max": 300.0
+      },
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 299,
+      "manualAddress": "40300",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 모델(r0201)",
+        "en": "Inverter model (r0201)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 300,
+      "manualAddress": "40301",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 버전(r0018)",
+        "en": "Inverter version (r0018)"
+      },
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 341,
+      "manualAddress": "40342",
+      "type": "s16",
+      "name": {
+        "ko": "출력 주파수(r0024)",
+        "en": "Frequency output (r0024)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 344,
+      "manualAddress": "40345",
+      "type": "u16",
+      "name": {
+        "ko": "전류 필터값(r0027)",
+        "en": "Current filtered (r0027)"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 346,
+      "manualAddress": "40347",
+      "type": "u16",
+      "name": {
+        "ko": "실제 전력(r0032)",
+        "en": "Actual power (r0032)"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 399,
+      "manualAddress": "40400",
+      "type": "u16",
+      "name": {
+        "ko": "고장 1(r0947[0])",
+        "en": "Fault 1 (r0947[0])"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 32767
+      },
+      "ref": "p.179"
+    },
+    {
+      "table": "holding-registers",
+      "address": 407,
+      "manualAddress": "40408",
+      "type": "u16",
+      "name": {
+        "ko": "경고(r2110[0])",
+        "en": "Warning (r2110[0])"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 32767
+      },
+      "ref": "p.180"
+    },
+    {
+      "table": "holding-registers",
+      "address": 498,
+      "manualAddress": "40499",
+      "type": "u16",
+      "name": {
+        "ko": "파라미터 오류 코드",
+        "en": "Parameter error code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 254
+      },
+      "ref": "p.180"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "«Scaling factor» 는 원시 값 = 실제 값 × 계수라 scale 은 그 역수로 적었다(100 → 0.01). 40055 과 40400(마지막 고장)·40024 와 40342(출력 주파수) 처럼 같은 값이 두 곳에 있다. «HIGH/LOW» 같은 표시 글은 비트 하나의 두 상태다.",
+      "en": "'Scaling factor' means raw = value × factor, so scale is its inverse (100 → 0.01). Some values appear twice (e.g. 40055 and 40400 last fault, 40024 and 40342 output frequency). Texts like 'HIGH/LOW' are the two states of one bit."
+    },
+    {
+      "ko": "새 판(12/2024) 간이 설명서의 매핑 표(p.31)도 40026·40100·40322·40342~40348·40400 등을 같은 번호·배율로 적는다. 05/2022 전체 설명서는 받을 수 없어(403) 01/2018 판을 썼다.",
+      "en": "The newer compact instructions (12/2024) list 40026, 40100, 40322, 40342-40348, 40400 etc. with the same numbers and scaling (p.31). The 05/2022 full instructions could not be downloaded (403), so the 01/2018 edition is used."
+    }
+  ],
+  "sources": [
+    {
+      "title": "SINAMICS V20 Inverter Operating Instructions",
+      "publisher": "Siemens AG",
+      "edition": {
+        "ko": "01/2018, A5E34559884-009",
+        "en": "01/2018, A5E34559884-009"
+      },
+      "url": "https://cache.industry.siemens.com/dl/files/193/109756193/att_942991/v1/V20_op_instr_0118_en-US.pdf",
+      "pages": {
+        "ko": "7.2 MODBUS 통신 p.173~180 (PDF 173~180), 파라미터 목록 P2034·P2035 p.275",
+        "en": "7.2 MODBUS communication pp.173-180 (PDF 173-180); parameter list P2034/P2035 p.275"
+      },
+      "checked": "2026-10-31"
+    },
+    {
+      "title": "SINAMICS V20 Converter Compact Operating Instructions",
+      "publisher": "Siemens AG",
+      "edition": {
+        "ko": "A5E52951737A AB, 12/2024",
+        "en": "A5E52951737A AB, 12/2024"
+      },
+      "url": "https://cache.industry.siemens.com/dl/files/915/109977915/att_1309695/v1/V20_cmpct_op_instr_1224_en-US.pdf",
+      "pages": {
+        "ko": "7.12 통신 파라미터·매핑 표 인쇄 p.30~31 (PDF 32~33)",
+        "en": "7.12 communication parameters and mapping table printed pp.30-31 (PDF 32-33)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}

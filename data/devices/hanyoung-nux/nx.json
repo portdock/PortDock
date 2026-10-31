@@ -1,0 +1,1157 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "hanyoung-nux/nx",
+  "manufacturer": {
+    "ko": "한영넉스",
+    "en": "Hanyoung Nux"
+  },
+  "model": "NX Series",
+  "models": [
+    "NX1",
+    "NX2",
+    "NX3",
+    "NX4",
+    "NX7",
+    "NX9"
+  ],
+  "kind": "temperature-controller",
+  "title": {
+    "ko": "한영넉스 NX 시리즈 디지털 온도 조절기",
+    "en": "Hanyoung Nux NX series digital temperature controller"
+  },
+  "summary": {
+    "ko": "RS485/RS422. Modbus RTU/ASCII 에서 D-레지스터를 FC 03 으로 읽고 FC 06/16 으로 쓴다. 출하 프로토콜은 PC-LINK 라 Modbus 로 쓰려면 P-rS 를 바꿔야 한다.",
+    "en": "RS485/RS422. Modbus RTU/ASCII access to D-registers: FC 03 read, FC 06/16 write. The factory protocol is PC-LINK, so P-rS must be changed for Modbus."
+  },
+  "protocols": [
+    "rtu",
+    "ascii"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      14400,
+      19200
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      99
+    ],
+    "maxRegisters": 32,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "통신선 주소 = D 레지스터 번호(10진)를 16진으로 그대로. 근거: 통신 사양서 Modbus 예(PDF p.27-31)가 SV1(D0301)을 012D 로 보낸다 — 11 03 01 2D 00 03 96 AE, CRC 다시 계산해 맞음. 같은 문서 p.26 의 «40001 을 빼서 012C» 설명은 예와 어긋나 따르지 않았다.",
+        "en": "Wire address = D-register number (decimal) written in hex as is. Evidence: the protocol document's Modbus examples (PDF pp.27-31) send SV1 (D0301) as 012D: 11 03 01 2D 00 03 96 AE, CRC recomputed and correct. The same document's p.26 text (subtract 40001 to get 012C) contradicts the examples and is not followed."
+      },
+      {
+        "ko": "출하값(인쇄 p.31, PDF p.32): 프로토콜 P-rS = 0(PC-LINK) — Modbus RTU 는 3, ASCII 는 2. 속도 bPS = 4(9600), 패리티 1(EVEN), 정지 1비트, 데이터 8비트, 주소 1, 응답 시간 0. 국번 1~99, 최대 31대.",
+        "en": "Factory defaults (printed p.31, PDF p.32): protocol P-rS = 0 (PC-LINK); Modbus RTU = 3, ASCII = 2. Speed bPS = 4 (9600), parity 1 (EVEN), 1 stop bit, 8 data bits, address 1, response time 0. Addresses 1-99, up to 31 units."
+      },
+      {
+        "ko": "NX1 DC 형은 PC-LINK·PC-LINK SUM 만 지원하고 Modbus 를 고를 수 없다(인쇄 p.31). FC 03 은 최대 32개, FC 16 은 최대 16개, FC 08 진단 지원, 주소 0 은 브로드캐스트(응답 없음) (통신 사양서 PDF p.20-25).",
+        "en": "The NX1 DC model supports only PC-LINK / PC-LINK SUM, not Modbus (printed p.31). FC 03 reads up to 32 registers, FC 16 writes up to 16; FC 08 diagnostics; address 0 is broadcast with no reply (protocol document PDF pp.20-25)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "D0001",
+      "type": "s16",
+      "name": {
+        "ko": "NPV 현재 온도(PV)",
+        "en": "NPV present value (PV)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "D0002",
+      "type": "s16",
+      "name": {
+        "ko": "NSV 현재 설정값(SV)",
+        "en": "NSV current set value (SV)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "D0004",
+      "type": "s16",
+      "name": {
+        "ko": "S SV 현재 설정값",
+        "en": "S SV current setting value"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "D0005",
+      "type": "s16",
+      "name": {
+        "ko": "MVOUT 제어 출력값",
+        "en": "MVOUT control output value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "일반형 OUT1, 가열·냉각형은 합계",
+        "en": "OUT1 for standard type; total for heating/cooling type"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 6,
+      "manualAddress": "D0006",
+      "type": "s16",
+      "name": {
+        "ko": "CH1OUT OUT1 제어 출력값",
+        "en": "CH1OUT OUT1 control output value"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "D0007",
+      "type": "s16",
+      "name": {
+        "ko": "CH2OUT OUT2 제어 출력값(가열·냉각형)",
+        "en": "CH2OUT OUT2 control output value (heating/cooling)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8,
+      "manualAddress": "D0008",
+      "type": "u16",
+      "name": {
+        "ko": "PIDNO 적용 중인 SV·PID 그룹 번호",
+        "en": "PIDNO SV and PID group in use"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 1,
+        "max": 3
+      },
+      "description": {
+        "ko": "ZONE 끔이면 SV·PID 그룹 1~3, 켬이면 PID 그룹 1~3",
+        "en": "With ZONE off: SV and PID group 1-3; with ZONE on: PID group 1-3"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "D0009",
+      "type": "u16",
+      "name": {
+        "ko": "ALMSTS 경보 1·2 상태",
+        "en": "ALMSTS alarm 1 and 2 status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "경보1 끔·경보2 끔",
+          "en": "Alarm 1 off, alarm 2 off"
+        },
+        {
+          "value": 1,
+          "ko": "경보1 켬·경보2 끔",
+          "en": "Alarm 1 on, alarm 2 off"
+        },
+        {
+          "value": 2,
+          "ko": "경보1 끔·경보2 켬",
+          "en": "Alarm 1 off, alarm 2 on"
+        },
+        {
+          "value": 3,
+          "ko": "경보1 켬·경보2 켬",
+          "en": "Alarm 1 on, alarm 2 on"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 14,
+      "manualAddress": "D0014",
+      "type": "u16",
+      "name": {
+        "ko": "H1CM 히터 단선 경보 전류 측정값",
+        "en": "H1CM heater break current measured value"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "D0016",
+      "type": "u16",
+      "name": {
+        "ko": "ADESTS AD 오류 상태",
+        "en": "ADESTS AD error status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "AD 변환 오류",
+          "en": "AD conversion error"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "D0017",
+      "type": "u16",
+      "name": {
+        "ko": "ERRSTS 입력 오류 상태",
+        "en": "ERRSTS input error status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "센서 단선(Burn-out)",
+          "en": "Sensor burn-out"
+        },
+        {
+          "bit": 1,
+          "ko": "RJC 오류",
+          "en": "RJC error"
+        },
+        {
+          "bit": 2,
+          "ko": "입력 범위 초과",
+          "en": "Input out of range"
+        },
+        {
+          "bit": 3,
+          "ko": "입력 범위 미만",
+          "en": "Less than input range"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 18,
+      "manualAddress": "D0018",
+      "type": "u16",
+      "name": {
+        "ko": "AT_STS 오토튜닝 상태",
+        "en": "AT_STS auto-tuning status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "AT 끝",
+          "en": "AT end"
+        },
+        {
+          "value": 9999,
+          "ko": "AT 진행 중",
+          "en": "AT in progress"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 102,
+      "manualAddress": "D0102",
+      "type": "u16",
+      "name": {
+        "ko": "ZONE 존 기능",
+        "en": "ZONE zone function"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "켬",
+          "en": "On"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 103,
+      "manualAddress": "D0103",
+      "type": "u16",
+      "name": {
+        "ko": "FUZZY 퍼지 기능",
+        "en": "FUZZY fuzzy function"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "켬",
+          "en": "On"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 106,
+      "manualAddress": "D0106",
+      "type": "u16",
+      "name": {
+        "ko": "DI.SL 외부 접점 입력(DI) 기능",
+        "en": "DI.SL external contact input (DI) function"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "켬",
+          "en": "On"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 121,
+      "manualAddress": "D0121",
+      "type": "u16",
+      "name": {
+        "ko": "MANMV 수동 출력값",
+        "en": "MANMV manual output value"
+      },
+      "unit": "%",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 300,
+      "manualAddress": "D0300",
+      "type": "u16",
+      "name": {
+        "ko": "SVNO 설정값 번호 선택",
+        "en": "SVNO set value number"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 3
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 301,
+      "manualAddress": "D0301",
+      "type": "s16",
+      "name": {
+        "ko": "SV1 설정값 1",
+        "en": "SV1 set value 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 302,
+      "manualAddress": "D0302",
+      "type": "s16",
+      "name": {
+        "ko": "SV2 설정값 2",
+        "en": "SV2 set value 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 303,
+      "manualAddress": "D0303",
+      "type": "s16",
+      "name": {
+        "ko": "SV3 설정값 3",
+        "en": "SV3 set value 3"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 305,
+      "manualAddress": "D0305",
+      "type": "u16",
+      "name": {
+        "ko": "AT MODE 오토튜닝 방식",
+        "en": "AT MODE auto-tuning mode"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "표준 자동 계산",
+          "en": "Standard automatic calculation"
+        },
+        {
+          "value": 1,
+          "ko": "낮은 측정값(PV) 형 자동 계산",
+          "en": "Low PV type automatic calculation"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 306,
+      "manualAddress": "D0306",
+      "type": "u16",
+      "name": {
+        "ko": "AT 오토튜닝",
+        "en": "AT auto-tuning"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 4
+      },
+      "description": {
+        "ko": "0 끔, 1~4",
+        "en": "0 off, 1-4"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 310,
+      "manualAddress": "D0310",
+      "type": "u16",
+      "name": {
+        "ko": "1.P PID 그룹 1 비례대",
+        "en": "1.P PID group 1 proportional band"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999.9
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 311,
+      "manualAddress": "D0311",
+      "type": "u16",
+      "name": {
+        "ko": "1.I PID 그룹 1 적분 시간",
+        "en": "1.I PID group 1 integral time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 6000
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 312,
+      "manualAddress": "D0312",
+      "type": "u16",
+      "name": {
+        "ko": "1.D PID 그룹 1 미분 시간",
+        "en": "1.D PID group 1 derivative time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 6000
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 313,
+      "manualAddress": "D0313",
+      "type": "s16",
+      "name": {
+        "ko": "1.MR PID 그룹 1 수동 리셋",
+        "en": "1.MR PID group 1 manual reset"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -5.0,
+        "max": 105.0
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 400,
+      "manualAddress": "D0400",
+      "type": "u16",
+      "name": {
+        "ko": "HBA 히터 단선 경보 전류 설정",
+        "en": "HBA heater break alarm current"
+      },
+      "unit": "A",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "description": {
+        "ko": "0 끔, 1~50 A",
+        "en": "0 off, 1-50 A"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 410,
+      "manualAddress": "D0410",
+      "type": "u16",
+      "name": {
+        "ko": "A1TY 경보 1 종류",
+        "en": "A1TY alarm 1 type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 21
+      },
+      "description": {
+        "ko": "0 끔, 1~21",
+        "en": "0 off, 1-21"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 411,
+      "manualAddress": "D0411",
+      "type": "u16",
+      "name": {
+        "ko": "A2TY 경보 2 종류",
+        "en": "A2TY alarm 2 type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 21
+      },
+      "description": {
+        "ko": "0 끔, 1~21",
+        "en": "0 off, 1-21"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 416,
+      "manualAddress": "D0416",
+      "type": "s16",
+      "name": {
+        "ko": "AL-1 경보 1 설정값",
+        "en": "AL-1 alarm 1 set value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 417,
+      "manualAddress": "D0417",
+      "type": "s16",
+      "name": {
+        "ko": "AL-2 경보 2 설정값",
+        "en": "AL-2 alarm 2 set value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 600,
+      "manualAddress": "D0600",
+      "type": "u16",
+      "name": {
+        "ko": "OUT 출력 종류",
+        "en": "OUT output type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 12
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 601,
+      "manualAddress": "D0601",
+      "type": "u16",
+      "name": {
+        "ko": "o.ACT 출력 동작",
+        "en": "o.ACT output action"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "역동작(가열)",
+          "en": "Reverse action (heating)"
+        },
+        {
+          "value": 1,
+          "ko": "정동작(냉각)",
+          "en": "Forward action (cooling)"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 602,
+      "manualAddress": "D0602",
+      "type": "u16",
+      "name": {
+        "ko": "CT 제어 주기",
+        "en": "CT cycle time"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 1000
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 607,
+      "manualAddress": "D0607",
+      "type": "s16",
+      "name": {
+        "ko": "OL-H 출력 상한",
+        "en": "OL-H output upper limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 608,
+      "manualAddress": "D0608",
+      "type": "s16",
+      "name": {
+        "ko": "OL-L 출력 하한",
+        "en": "OL-L output lower limit"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 610,
+      "manualAddress": "D0610",
+      "type": "u16",
+      "name": {
+        "ko": "INP 입력 종류",
+        "en": "INP input type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 31
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 611,
+      "manualAddress": "D0611",
+      "type": "u16",
+      "name": {
+        "ko": "UNIT 온도 단위",
+        "en": "UNIT temperature unit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "℃",
+          "en": "°C"
+        },
+        {
+          "value": 1,
+          "ko": "℉",
+          "en": "°F"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 612,
+      "manualAddress": "D0612",
+      "type": "s16",
+      "name": {
+        "ko": "FR-H 범위 상한",
+        "en": "FR-H range upper limit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 613,
+      "manualAddress": "D0613",
+      "type": "s16",
+      "name": {
+        "ko": "FR-L 범위 하한",
+        "en": "FR-L range lower limit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 614,
+      "manualAddress": "D0614",
+      "type": "u16",
+      "name": {
+        "ko": "DP-P 소수점 위치(전압 입력)",
+        "en": "DP-P decimal point position (voltage input)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "소수점 없음",
+          "en": "No decimal point"
+        },
+        {
+          "value": 1,
+          "ko": "소수 1자리",
+          "en": "1 decimal place"
+        },
+        {
+          "value": 2,
+          "ko": "소수 2자리",
+          "en": "2 decimal places"
+        },
+        {
+          "value": 3,
+          "ko": "소수 3자리",
+          "en": "3 decimal places"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 617,
+      "manualAddress": "D0617",
+      "type": "u16",
+      "name": {
+        "ko": "FILT 측정값 필터",
+        "en": "FILT measured value filter"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "description": {
+        "ko": "0 끔",
+        "en": "0 off"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 618,
+      "manualAddress": "D0618",
+      "type": "s16",
+      "name": {
+        "ko": "BIAS 측정값 보정",
+        "en": "BIAS measured value bias"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "소수점은 입력 종류·범위 설정에 따른다(표 주 *1: 100.0 ℃ 는 1000, 소수점 없으면 100) — scale 없음",
+        "en": "Decimals follow the input type and range (table note *1: 100.0 °C is sent as 1000, 100 without decimals), so no fixed scale"
+      },
+      "ref": "인쇄 p.41 (PDF p.42)"
+    },
+    {
+      "table": "holding-registers",
+      "address": 619,
+      "manualAddress": "D0619",
+      "type": "u16",
+      "name": {
+        "ko": "B.OUT 입력 단선 시 동작",
+        "en": "B.OUT action on input break"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "끔",
+          "en": "Off"
+        },
+        {
+          "value": 1,
+          "ko": "UP",
+          "en": "UP"
+        },
+        {
+          "value": 2,
+          "ko": "DOWN",
+          "en": "DOWN"
+        }
+      ],
+      "ref": "인쇄 p.41 (PDF p.42)"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "표 주 *2 가 붙은 값(출력값·비례대·수동 리셋·출력 한계)은 소수 1자리(scale 0.1). *1 이 붙은 온도 계열 값은 입력 종류·소수점 설정에 따라 달라 scale 을 두지 않았다. 범위의 EU(0~100 %) 는 입력 범위 기준 비율.",
+      "en": "Values marked *2 (outputs, proportional band, manual reset, output limits) have one decimal (scale 0.1). Temperature-type values marked *1 depend on input type and decimal setting, so they have no fixed scale. EU(0-100 %) ranges are relative to the input range."
+    },
+    {
+      "ko": "뺀 레지스터: 0013 OUT2_IND(값 뜻이 표에 없음), 0104 ARW·0604 HYS(같은 칸에 단위·소수점이 두 가지), 2·3 PID 그룹과 0108~0110 램프·0500~0502 전송 출력 등. 매뉴얼 PDF 는 글꼴이 깨져 글자로 뽑히지 않아 쪽 그림을 보고 옮겼다.",
+      "en": "Left out: 0013 OUT2_IND (value meanings not given), 0104 ARW and 0604 HYS (two different units/decimals in one cell), PID groups 2-3, ramp 0108-0110, retransmission 0500-0502 and others. The manual PDF's fonts do not extract as text, so values were read from the rendered pages."
+    }
+  ],
+  "sources": [
+    {
+      "title": "NX Series Digital Temperature controllers 2nd Edition operation manual",
+      "publisher": "HANYOUNG NUX",
+      "edition": {
+        "ko": "2nd Edition (PDF 만든 날 2022-06-10), 파일명 NX_user_en.pdf",
+        "en": "2nd Edition (PDF created 2022-06-10); file name NX_user_en.pdf"
+      },
+      "url": "https://www.hanyoungnux.com/data/main_view.php?down=2744(NX_user_en).pdf&file_name=NX_user_en.pdf",
+      "pages": {
+        "ko": "인쇄 p.31 통신 그룹(PDF p.32), 인쇄 p.41 D 레지스터 표(PDF p.42)",
+        "en": "Printed p.31 communication group (PDF p.32), printed p.41 D-register table (PDF p.42)"
+      },
+      "checked": "2026-10-31"
+    },
+    {
+      "title": "온도조절계용 통신사양서 (모델: UX-100, NX, HX, PX, NP-100, NP-200, RT9 시리즈)",
+      "publisher": "한영넉스 기술연구소",
+      "edition": {
+        "ko": "2015년 08월 19일 UPDATE, 파일명 한영온도조절계통신사양서_150819.pdf",
+        "en": "Updated 2015-08-19 (Korean-language document)"
+      },
+      "url": "https://www.hanyoungnux.co.kr/data/main.php?down=1001.pdf&file_name=%ED%95%9C%EC%98%81%EC%98%A8%EB%8F%84%EC%A1%B0%EC%A0%88%EA%B3%84%ED%86%B5%EC%8B%A0%EC%82%AC%EC%96%91%EC%84%9C_150819.pdf",
+      "pages": {
+        "ko": "PDF p.20-25 Modbus 개요·함수 코드·오류, p.26 주소 지정, p.27-31 프레임 예 (인쇄 쪽 = PDF 쪽)",
+        "en": "PDF pp.20-25 Modbus overview, function codes, errors; p.26 addressing; pp.27-31 frame examples (printed = PDF page)"
+      },
+      "checked": "2026-10-31"
+    }
+  ]
+}
