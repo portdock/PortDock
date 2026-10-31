@@ -1430,3 +1430,72 @@ details.panel > summary .sum-note.bad {
   text-decoration: underline;
   font: inherit;
 }
+
+/* 장비 설정 백업·비교·복원(0.10.0) */
+.modal.backup-dlg {
+  width: min(760px, calc(100vw - 32px));
+}
+.backup-dlg .modal-body {
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+}
+.backup-dlg .row2 {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.backup-dlg .grid2 {
+  align-items: end;
+}
+.bk-ranges,
+.bk-table {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  max-height: 300px;
+  overflow: auto;
+}
+.bk-ranges .rtable td {
+  vertical-align: middle;
+}
+.bk-ranges select,
+.bk-ranges input.bk-start {
+  width: 100%;
+  min-width: 0;
+}
+.bk-ranges input.bk-start {
+  max-width: 110px;
+}
+.bk-failed ul {
+  margin: 2px 0 0;
+  padding-left: 18px;
+  color: var(--fail);
+}
+.bk-base {
+  overflow-wrap: anywhere;
+}
+.rtable tr.bk-diff td.rval {
+  color: var(--fail);
+  font-weight: 600;
+}
+.rtable tr.bk-blocked td {
+  color: var(--muted);
+}
+.rtable td.bk-change {
+  font-weight: 600;
+}
+.bk-why {
+  font-size: calc(var(--fs, 13px) * 0.846);
+}
+.bk-st.match {
+  color: var(--ok, #2e7d32);
+}
+.bk-st.differ,
+.bk-st.write-failed {
+  color: var(--fail);
+  font-weight: 600;
+}
+.bk-st.unread {
+  color: #c79100;
+}
+.bk-err {
+  white-space: pre-line;
+}

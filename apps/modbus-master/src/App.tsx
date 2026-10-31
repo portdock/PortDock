@@ -45,6 +45,7 @@ import { WriteDialog, TYPE_LABEL } from "./WriteDialog";
 import { PointDialog } from "./PointDialog";
 import { NO_SCAN, ScanDialog, type ScanKind, type ScanState } from "./ScanDialog";
 import { DiagDialog } from "./DiagDialog";
+import { BackupDialog } from "./BackupDialog";
 import type { DiagSample } from "@shared/commDiag";
 import { Trend, type TrendItem } from "./Trend";
 import { tip } from "@shared/tips";
@@ -84,6 +85,8 @@ const APP = "PortDock Modbus Master";
 type Status = "idle" | "connecting" | "connected" | "disconnected" | "reconnecting" | "closed";
 const BAUDS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
 const MAX_TRENDS = 6;
+/** 표와 상관없는 거래(장비 설정 백업·복원)의 표 번호 — crates/core modbus_master NO_TABLE(u32 최댓값) */
+const NO_TABLE = 0xffffffff;
 /** 원인 후보(0.10.0)에 쓰는 최근 요청 수 */
 const DIAG_KEEP = 50;
 
@@ -428,6 +431,7 @@ export default function App() {
   const [scan, setScan] = useState<ScanState>(NO_SCAN);
   const [showScan, setShowScan] = useState(false);
   const [showDiag, setShowDiag] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
   const pendingWrites = useRef(new Map<number, (o: Outcome, rttMs: number) => void>());
   const writeSeq = useRef(0);
 
@@ -744,6 +748,34 @@ export default function App() {
       }),
     [toast],
   );
+  // ---- 장비 설정 백업·비교·복원(0.10.0) — 표와 상관없는 읽기·쓰기(결과는 «write» 사건, 같은 token)
+  const awaitToken = useCallback((send: (token: number) => Promise<void>) => {
+    return new Promise<Outcome>((resolve) => {
+      const token = ++writeSeq.current;
+      pendingWrites.current.set(token, (o) => resolve(o));
+      send(token).catch((e) => {
+        pendingWrites.current.delete(token);
+        resolve({ result: "send-error", why: String(e) });
+      });
+    });
+  }, []);
+  const readBlock = useCallback((unit: number, fc: Fc, start: number, qty: number) => awaitToken((token) => api.readBlock(token, { unit, fc, start, qty })), [awaitToken]);
+  const writeCells = useCallback(
+    (unit: number, bits: boolean, start: number, values: number[], multi: boolean) => awaitToken((token) => api.write(token, NO_TABLE, { unit, bits, start, values, forceMulti: multi })),
+    [awaitToken],
+  );
+  async function saveBackupText(name: string, text: string, kind: "json" | "csv") {
+    const path = await save({ defaultPath: name, filters: kind === "json" ? [{ name: "JSON", extensions: ["json"] }] : [{ name: "CSV (Excel)", extensions: ["csv"] }] });
+    if (!path) return null;
+    await api.writeText(path, text);
+    return path;
+  }
+  async function openBackupText() {
+    const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }] });
+    if (!path || Array.isArray(path)) return null;
+    return { text: await api.readText(path), name: path.split(/[\\/]/).pop() ?? path };
+  }
+
   function savePoint(a: number, p: Point | null) {
     const list = sel.points.filter((q) => q.addr !== a);
     const plain = !p || (p.type === "u16" && !p.name && p.order === "ABCD");
@@ -1202,6 +1234,9 @@ export default function App() {
         <button className="btn small diag-open" onClick={() => setShowDiag(true)} data-tip={tip(lang, "mmDiag")}>
           {t("diag")}
         </button>
+        <button className="btn small backup-open" onClick={() => setShowBackup(true)} data-tip={tip(lang, "mmBackup")}>
+          {t("bkOpen")}
+        </button>
         {diagBad > 0 && !showDiag && (
           <button className="side-diag" onClick={() => setShowDiag(true)}>
             {fill(t("diagSideBad"), { n: diagBad })}
@@ -1649,6 +1684,23 @@ export default function App() {
             setDiagBad(0);
           }}
           onClose={() => setShowDiag(false)}
+        />
+      )}
+      {showBackup && (
+        <BackupDialog
+          lang={lang}
+          connected={connected}
+          wire={wire}
+          addrMode={addrMode}
+          defaults={{ unit: sel.unit, fc: sel.fc, start: sel.start, qty: sel.qty, format: sel.format, name: sel.name, points: isBitFc(sel.fc) ? [] : sel.points }}
+          comm={transport === "serial" ? { transport, baud: cfg.baud, dataBits: cfg.dataBits, parity: cfg.parity, stopBits: cfg.stopBits } : { transport, host: net.host.trim(), port: net.port }}
+          app={`${APP} ${VERSION}`}
+          forceMulti={forceMulti}
+          readBlock={readBlock}
+          writeCells={writeCells}
+          saveText={saveBackupText}
+          openText={openBackupText}
+          onClose={() => setShowBackup(false)}
         />
       )}
       {showDevice && <DeviceDialog lang={lang} mode="master" onApply={applyDevice} onClose={() => setShowDevice(false)} />}

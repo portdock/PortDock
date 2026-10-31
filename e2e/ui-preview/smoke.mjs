@@ -1502,6 +1502,39 @@ async function runApp(app, port) {
           await w(200);
           await verify("mm diagnosis");
         }
+        // (0.10.0) 장비 설정 백업·비교·복원: 창이 열리고 → 읽어서 백업(가짜 장비 국번 1) → 요약 → 비교(지금 장비) → 복원 탭은 경고가 있고 처음엔 아무 칸도 고르지 않음
+        {
+          await js("document.querySelector('aside .backup-open').click()");
+          await w(300);
+          if (!(await js("return !!document.querySelector('.modal.backup-dlg')"))) await conv("mm-backup", "«설정 백업·복원…» 창이 열리지 않음");
+          else {
+            const bk = await jsAsync(`
+              const w = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+              const dlg = document.querySelector('.modal.backup-dlg');
+              const r = { ranges: dlg.querySelectorAll('.bk-range').length };
+              dlg.querySelector('.bk-run').click();
+              for (let i = 0; i < 40 && !dlg.querySelector('.bk-sum'); i++) await w(100);
+              r.sum = (dlg.querySelector('.bk-sum') || {}).textContent || '';
+              r.json = !!dlg.querySelector('.bk-save-json');
+              const tabs = [...dlg.querySelectorAll('.bk-tabs .seg')];
+              tabs[1].click(); await w(150);
+              dlg.querySelector('.bk-cmp-run').click();
+              for (let i = 0; i < 40 && !dlg.querySelector('.bk-cmp-sum'); i++) await w(100);
+              r.cmp = (dlg.querySelector('.bk-cmp-sum') || {}).textContent || '';
+              tabs[2].click(); await w(150);
+              r.warn = !!dlg.querySelector('.bk-warn');
+              r.boxes = dlg.querySelectorAll('.bk-restore tbody input[type=checkbox]').length;
+              r.checked = dlg.querySelectorAll('.bk-restore tbody input[type=checkbox]:checked').length;
+              r.writeOff = dlg.querySelector('.bk-write').disabled;
+              return r;`);
+            if (combo.name === "ko-light" || combo.name === "en-dark") await shot(app, `${combo.name}-mm-backup`);
+            if (bk.ranges < 1 || !/범위 \d+개를 읽었습니다|Read \d+ ranges/.test(bk.sum) || !bk.json || !/견줌|Compared with/.test(bk.cmp) || !bk.warn || bk.boxes < 1 || bk.checked !== 0 || !bk.writeOff)
+              await conv("mm-backup", `장비 설정 백업 창이 이상함: ${JSON.stringify(bk)}`);
+            await js("document.querySelector('.backup-dlg .modal-head .btn').click()");
+            await w(200);
+          }
+          await verify("mm backup");
+        }
         // (10/19) 장비 프로필: 창 → 목록·레지스터 표·주의 문구 → 찾기 → 불러오기 → 안내한 수만큼 표가 더해지고 이름에 단위가 붙는다 → 더한 표 지우기
         {
           const tabsB = await js("return document.querySelectorAll('.tabs .tab').length");

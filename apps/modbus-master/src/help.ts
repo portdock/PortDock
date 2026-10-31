@@ -11,7 +11,7 @@ export const help: HelpDoc = {
         "PortDock Modbus Master 는 Modbus 장비(PLC·인버터·계측기·센서·HMI 대신 시험할 장비)에 먼저 묻는 «마스터(폴링 도구)» 입니다. 시리얼 RTU 와 Modbus TCP, RTU over TCP 를 씁니다.",
         "- 표(탭) 여러 개를 각각 다른 국번(슬레이브 ID)·함수(01·02·03·04)·주소·주기로 읽습니다.",
         "- 값은 U16·S16·U32·S32·F32·F64·문자열, 워드·바이트 순서(ABCD·CDAB·BADC·DCBA), HEX·BIN 으로 보고, 칸마다 이름을 붙입니다.",
-        "- 칸을 두 번 눌러 씁니다(05·06·0F·10). 국번 찾기·주소 범위 찾기, 요청·응답 HEX 와 풀이, 표마다 통계, 값 CSV 기록, 추세 그림이 있습니다.",
+        "- 칸을 두 번 눌러 씁니다(05·06·0F·10). 국번 찾기·주소 범위 찾기, 요청·응답 HEX 와 풀이, 표마다 통계, 값 CSV 기록, 추세 그림이 있습니다. 장비 설정을 파일로 백업·비교·복원합니다(0.10.0 부터).",
         "- 무료(GPL-3.0)이고 화면은 한국어·영어입니다.",
       ],
     },
@@ -33,7 +33,7 @@ export const help: HelpDoc = {
     {
       title: "화면 구성",
       body: [
-        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소·설정 찾기…», «원인 후보…», «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
+        "- 왼쪽: 연결 방식·포트(또는 IP), «통신 세부» 접기(응답 기다림·재시도·요청 간격·«한 칸도 여러 칸 쓰기로»), 연결 버튼과 상태, «모든 폴링 멈춤», «국번·주소·설정 찾기…», «원인 후보…», «설정 백업·복원…»(0.10.0 부터), «통계 (전체)» 접기. 값 기록(CSV)은 가운데 표 도구줄의 «값 기록 ▾». 통신 기록 위 막대를 끌면 높이가 바뀌고 기억됩니다(두 번 누르면 처음대로).",
         "- «통신 세부»·«통계» 는 평소 접혀 있고 제목 옆에 요약(«기다림 1000ms · 재시도 0 · 간격 20ms», «요청 n · 오류 m»)이 보입니다. 통신 세부가 기본값과 다르면 펼친 채 시작하고, 열고 닫은 상태는 기억합니다.",
         "- 가운데 위: 표 탭(⏸ = 폴링 안 함, ● = 마지막 읽기 실패, 숫자 = 오류 누적 수 — 지금 실패 중이면 빨강, 아니면 회색), 표 설정(이름·국번·함수·시작·개수·주기·폴링·한 번 읽기), 보기 설정(표시·주소 표기·칸/목록·📈 추세·CSV).",
         "- 가운데: 값 칸. 지난 읽기와 달라진 칸은 잠깐 색이 바뀝니다. 마지막 읽기가 실패하면 칸이 흐려지고(앞 값) 이유가 위에 나옵니다.",
@@ -134,6 +134,18 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "장비 설정 백업·비교·복원 (0.10.0 부터)",
+      id: "backup",
+      body: [
+        "- 장비를 바꾸거나 고치기 전에 설정 레지스터를 파일로 남기고, 새 장비에 같은 값을 다시 쓸 때 씁니다. 왼쪽 «설정 백업·복원…» 으로 엽니다.",
+        "- «백업»: 읽을 범위(함수 01·02·03·04, 시작, 개수)를 여러 줄로 정합니다. «장비 프로필» 을 고르고 «프로필 범위로 채우기» 를 누르면 그 장비의 읽을 수 있는 레지스터로 범위가 채워집니다(이름·형식 포함). «읽어서 백업» 은 범위를 차례로 읽습니다 — 125개(비트 2000개)가 넘는 범위는 나눠 읽고, 32비트·실수 칸은 반으로 자르지 않습니다. 실패한 범위는 이유(예외·응답 없음)와 함께 따로 보입니다.",
+        "- 저장: «JSON 으로 저장»(비교·복원에 쓰는 파일), «CSV 로 저장 (엑셀)»(표 CSV 와 같은 모양 — Modbus Slave 에 불러오면 같은 값으로 장비를 흉내 냅니다). 파일에는 메모·국번·통신 설정(속도·패리티 또는 장비 IP·포트)·읽은 시각·앱 판만 넣습니다. PC 이름·사용자 폴더·COM 이름은 넣지 않습니다.",
+        "- «비교»: 백업(방금 읽었거나 «백업 파일 열기…» 로 연 것)을 지금 장비 값(다시 읽기) 또는 다른 백업 파일과 칸마다 견줍니다. «다른 칸만 보기» 가 기본이고, 표시(U16·S16·HEX·BIN)와 칸 형식(F32·워드 순서)은 값 칸과 같습니다.",
+        "- «복원(쓰기)»: 백업에서 쓸 칸을 고릅니다 — 처음엔 아무것도 고르지 않습니다. 입력 레지스터(04)·접점(02)은 쓸 수 없다고 표시하고, 장비 프로필에서 읽기 전용인 칸은 고를 수 없습니다. «미리보기» 로 지금 값을 읽어 쓸 값과 나란히 본 뒤 «쓰기» → «쓰기 확인» 을 한 번 더 눌러야 씁니다. 칸마다 요청 하나(06·10, 코일 05·0F)로 쓰고, 쓴 뒤 다시 읽어 칸마다 «맞음 / 다름 / 쓰기 실패» 를 보입니다.",
+        "- 주의: 운전 중 장비에 쓰지 마세요. 장비 매뉴얼의 쓰기 가능 범위와 저장(EEPROM) 명령을 확인하세요 — 많은 장비는 따로 «저장» 명령을 보내야 전원을 꺼도 값이 남고, 쓰기 횟수에 한도가 있는 장비도 있습니다.",
+      ],
+    },
+    {
       title: "통계·기록·추세",
       body: [
         "- 표 위 줄: 이 표의 요청·정상·타임아웃·CRC·예외 수와 평균·최대 응답 시간. 왼쪽 «통계(전체)» 는 찾기·쓰기를 포함한 전체입니다. «초기화» 로 0.",
@@ -206,7 +218,7 @@ export const help: HelpDoc = {
         "PortDock Modbus Master is a Modbus «master» (poll tool) that asks devices — PLCs, drives, meters, sensors — for data, instead of an HMI. It speaks serial RTU, Modbus TCP and RTU over TCP.",
         "- Several tables (tabs), each with its own Slave ID, function (01/02/03/04), addresses and poll interval.",
         "- Values as U16, S16, U32, S32, F32, F64 or strings with word/byte order (ABCD, CDAB, BADC, DCBA), HEX/BIN, and a name per address.",
-        "- Double-click a cell to write (05/06/0F/10). Slave ID and address range scans, request/response HEX with decoding, per-table statistics, CSV value logging and trend lines.",
+        "- Double-click a cell to write (05/06/0F/10). Slave ID and address range scans, request/response HEX with decoding, per-table statistics, CSV value logging and trend lines. Device settings backup, compare and restore to a file (from 0.10.0).",
         "- Free (GPL-3.0), Korean and English UI.",
       ],
     },
@@ -228,7 +240,7 @@ export const help: HelpDoc = {
     {
       title: "Layout",
       body: [
-        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», «Possible causes…», the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
+        "- Left: connection and port (or IP), the «Communication details» section (response timeout, retries, delay between polls, «write single values with write multiple»), connect button and status, «Pause all polling», «Scan…», «Possible causes…», «Settings backup…» (from 0.10.0), the «Statistics (all)» section. The value log (CSV) is «Value log ▾» on the table toolbar. Drag the bar above the traffic to resize it (remembered; double-click to reset).",
         "- «Communication details» and «Statistics» are collapsed with a summary next to the title («timeout 1000 ms · retries 0 · delay 20 ms», «n requests · m errors»). Communication details start expanded when they differ from the defaults; the open state is remembered.",
         "- Top middle: table tabs (⏸ = not polling, ● = last read failed, number = errors so far — red while failing now, grey otherwise), table settings (name, Slave ID, function, start, count, interval, poll, read once) and view settings (display, addresses, grid/list, 📈 trend, CSV).",
         "- Middle: value cells. Cells that changed since the previous read flash briefly. If the last read failed, the cells are dimmed (previous values) and the reason is shown above.",
@@ -326,6 +338,18 @@ export const help: HelpDoc = {
         "- Truncated frames: a short response timeout, USB latency timer, a slow-switching adapter.",
         "- Exception reply: communication works — the meaning of each code (address, count, function) is shown. A different ID answered: ID setting, two devices with one ID, another master.",
         "- Each cause links to site guides and the «Troubleshooting helper». «Copy as text» copies it to ask a colleague or an AI. These are candidates, not a final answer.",
+      ],
+    },
+    {
+      title: "Device settings backup, compare, restore (from 0.10.0)",
+      id: "backup",
+      body: [
+        "- Use it to keep a device's setting registers in a file before replacing or servicing it, and to write the same values into the new device. Open it with «Settings backup…» on the left.",
+        "- «Back up»: set one or more ranges to read (function 01/02/03/04, start, count). Pick a «Device profile» and press «Fill ranges from profile» to fill the ranges from that device's readable registers (names and types included). «Read and back up» reads the ranges in turn — ranges over 125 (2000 bits) are read in parts, and 32-bit or float cells are never cut in half. Ranges that fail are listed with the reason (exception, no response).",
+        "- Saving: «Save as JSON» (the file used for compare and restore) and «Save as CSV (Excel)» (the same layout as the table CSV — load it into Modbus Slave to emulate the device with the same values). The file holds only the note, Slave ID, line settings (baud/parity or device IP/port), read time and app version. No PC name, user folder or COM name.",
+        "- «Compare»: compares the backup (just read, or opened with «Open backup file…») cell by cell with the device now (read again) or with another backup file. «Only differences» is on by default; the display (U16, S16, HEX, BIN) and cell types (F32, word order) work as in the value grid.",
+        "- «Restore (write)»: pick the cells to write from the backup — nothing is picked at first. Input registers (04) and discrete inputs (02) are marked as not writable, and registers that the device profile marks read-only cannot be picked. «Preview» reads the current values next to the values to write; then «Write» → «Confirm write» must be pressed once more. Each cell is one request (06/10, coils 05/0F); afterwards it reads back and shows «Match / Differs / Write failed» per cell.",
+        "- Caution: do not write to a running machine. Check the device manual for the writable ranges and the save (EEPROM) command — many devices keep values after power-off only after a separate «save» command, and some limit the number of writes.",
       ],
     },
     {

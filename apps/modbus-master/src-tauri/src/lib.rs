@@ -4,7 +4,7 @@
 use portdock_core::event::SessionEvent;
 use portdock_core::framer::FrameMode;
 use portdock_core::modbus::{AddrStyle, Wire};
-use portdock_core::modbus_master::{ChannelLink, Engine, LineSetting, MasterEvent, PollSpec, ScanAddrs, ScanIds, ScanLine, Stats, Timing, forwarding_responder, frame, write_pdu};
+use portdock_core::modbus_master::{ChannelLink, Engine, LineSetting, MasterEvent, NO_TABLE, PollSpec, ScanAddrs, ScanIds, ScanLine, Stats, Timing, forwarding_responder, frame, read_pdu, write_pdu};
 use portdock_core::ports;
 use portdock_core::registry::{Registry, auto_remove_sink};
 use portdock_core::serial::{SerialConfig, Session};
@@ -289,6 +289,35 @@ fn write(app: State<App>, token: u64, table: u32, req: WriteReq) -> Result<(), S
     with_engine(&app, |e| e.write(token, table, req.unit, pdu))
 }
 
+/// (0.10.0) 장비 설정 백업 — 범위 하나 읽기 요청(표 없음)
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReadReq {
+    unit: u8,
+    fc: u8,
+    start: u16,
+    qty: u16,
+}
+
+/// 범위 하나 읽기 요청 PDU — RTU 국번 0 은 브로드캐스트라 답이 없어 받지 않는다
+fn read_block_pdu(req: &ReadReq, wire: Wire) -> Result<Vec<u8>, String> {
+    if wire == Wire::Rtu && req.unit == 0 {
+        return Err(tr!("국번 0 은 브로드캐스트라 읽을 수 없습니다", "Slave ID 0 is broadcast and cannot be read").to_string());
+    }
+    read_pdu(req.fc, req.start, req.qty)
+}
+
+/// (0.10.0) 장비 설정 백업·비교·복원의 읽기 — 결과는 쓰기와 같은 «write» 사건(같은 token, 값은 outcome)으로 온다.
+/// 폴링 표와 상관없는 거래라 표 통계에는 들어가지 않는다(전체 통계에만)
+#[tauri::command]
+fn read_block(app: State<App>, token: u64, req: ReadReq) -> Result<(), String> {
+    with_engine(&app, |e| {
+        let pdu = read_block_pdu(&req, e.wire())?;
+        e.write(token, NO_TABLE, req.unit, pdu);
+        Ok(())
+    })?
+}
+
 /// 쓰기 창의 미리보기 — 보낼 바이트(RTU: CRC 포함, TCP: MBAP 의 트랜잭션 번호는 0 으로)
 #[tauri::command]
 fn preview_write(req: WriteReq, wire: Wire) -> Result<Vec<u8>, String> {
@@ -491,6 +520,7 @@ pub fn run() {
             set_paused,
             read_once,
             write,
+            read_block,
             preview_write,
             scan_ids,
             scan_addrs,
@@ -535,5 +565,12 @@ mod tests {
         assert_eq!(back.data_bits, 7);
         let sl: ScanLine = serde_json::from_str(r#"{"bauds":[9600],"framings":[{"parity":"none","stopBits":1}],"from":1,"to":10,"fc":3,"addr":0,"timeoutMs":100}"#).unwrap();
         assert_eq!((sl.tries(), sl.first_only, sl.restore.is_none()), (10, false, true));
+        // 장비 설정 백업(0.10.0) — 범위 하나 읽기. RTU 국번 0 은 거절, 개수 한도는 core 의 read_pdu
+        let r: ReadReq = serde_json::from_str(r#"{"unit":1,"fc":3,"start":100,"qty":125}"#).unwrap();
+        assert_eq!(read_block_pdu(&r, Wire::Rtu).unwrap(), vec![3, 0, 100, 0, 125]);
+        assert!(read_block_pdu(&ReadReq { qty: 126, ..r.clone() }, Wire::Tcp).is_err());
+        assert!(read_block_pdu(&ReadReq { unit: 0, ..r.clone() }, Wire::Rtu).is_err());
+        assert!(read_block_pdu(&ReadReq { unit: 0, ..r.clone() }, Wire::Tcp).is_ok());
+        assert!(read_block_pdu(&ReadReq { fc: 6, ..r }, Wire::Tcp).is_err());
     }
 }

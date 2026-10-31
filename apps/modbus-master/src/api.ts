@@ -208,6 +208,8 @@ export const api = {
   setPaused: (paused: boolean) => invoke<void>("set_paused", { paused }),
   readOnce: (table: number) => tally("modbus_read", invoke<void>("read_once", { table })),
   write: (token: number, table: number, req: WriteReq) => tally("modbus_write", invoke<void>("write", { token, table, req })),
+  /** (0.10.0) 장비 설정 백업 — 범위 하나 읽기. 결과는 «write» 사건(같은 token) */
+  readBlock: (token: number, req: { unit: number; fc: Fc; start: number; qty: number }) => invoke<void>("read_block", { token, req }),
   previewWrite: (req: WriteReq, wire: "tcp" | "rtu") => invoke<number[]>("preview_write", { req, wire }),
   scanIds: (config: ScanIds) => tally("scan_ids", invoke<void>("scan_ids", { config })),
   scanAddrs: (config: ScanAddrs) => tally("scan_addrs", invoke<void>("scan_addrs", { config })),
