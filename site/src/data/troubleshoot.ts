@@ -99,7 +99,7 @@ export const TREE: TreeData = {
       checks: [
         { ko: "장비 파라미터 화면에서 통신 항목을 읽어 적고, 프로그램 값과 한 줄씩 대조하기", en: "Write down the communication parameters from the device screen and compare them line by line with the program" },
         { ko: "인버터는 «운전 지령 출처»·«통신 프로토콜 선택» 파라미터도 같이 보기", en: "For drives, also check the «run command source» and «protocol select» parameters" },
-        { ko: "모르는 보율이면 Modbus Master 의 국번·보율 찾기로 훑어보기", en: "If the baud rate is unknown, sweep IDs and bauds with Modbus Master's scan" },
+        { ko: "모르는 보율이면 Modbus Master 로 훑어보기 — 국번 찾기, 보율·패리티까지는 «통신 설정 찾기»(0.10.0 부터)", en: "If the baud rate is unknown, sweep with Modbus Master — slave ID scan, and baud/parity with «line settings search» (from 0.10.0)" },
       ],
       links: [
         { k: "guide", to: "modbus-no-response" },
@@ -1142,7 +1142,7 @@ export const TREE: TreeData = {
       ],
       checks: [
         { ko: "뒷면 포트나 전원 어댑터가 있는 허브로 옮겨 쓰기", en: "Use a rear port or a self-powered hub" },
-        { ko: "Hardware Tester 기록으로 포트를 옮긴 뒤 끊김이 사라졌는지 확인", en: "Confirm with the Hardware Tester log that drops stopped after moving ports" },
+        { ko: "Hardware Tester 의 USB 연결·끊김 기록으로 포트를 옮긴 뒤 끊김이 사라졌는지 확인(0.10.0 부터)", en: "Confirm with the Hardware Tester USB connect/disconnect log that drops stopped after moving ports (from 0.10.0)" },
       ],
       links: [
         { k: "app", to: "hw-tester" },

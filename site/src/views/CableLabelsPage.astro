@@ -2,6 +2,7 @@
 // 웹 도구: 케이블·단자 라벨 만들기 — 연번(W001~W120, X1:1~X1:40)·붙여넣은 장비 IO 이름·양끝 «A→B» 쌍 라벨,
 // A4 라벨 용지 배치(행·열·여백 mm) 미리보기와 인쇄, 라벨 프린터·열수축 튜브 프린터용 CSV·텍스트 내보내기.
 // 목록·배치·내보내기는 lib/cableLabels.ts(node --test). 모두 브라우저 안 — 서버로 보내지 않는다.
+import FaqBlock from "../components/FaqBlock.astro";
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
@@ -155,6 +156,18 @@ const L = ko
 const T = { copied: L.copied, copyFail: L.copyFail };
 const SUM_TPL = L.sum(111111, 222222, 333333, 444444);
 const P0 = SHEET_PRESETS[1].s;
+// 자주 묻는 것(FAQPage) — components/FaqBlock.astro
+const FAQ: [string, string][] = ko
+  ? [
+      ["라벨 용지에 위치가 맞지 않게 찍혀요", "인쇄 창에서 «실제 크기(100 %)»·여백 «없음» 으로 고르고, 먼저 보통 종이에 찍어 라벨 용지에 겹쳐 봅니다. 어긋나면 «용지·배치» 의 위·왼쪽 여백과 가로·세로 간격(mm)을 고칩니다. 용지 예에 없는 용지는 «직접 입력» 으로 너비·높이·행·열을 넣습니다."],
+      ["반쯤 쓴 라벨 용지를 다시 쓸 수 있나요?", "네. «첫 장에서 이미 쓴 칸» 에 이미 떼어 낸 칸 수를 넣으면 그 다음 칸부터 찍습니다."],
+      ["라벨 프린터로 찍으려면?", "«CSV 저장» 으로 라벨 목록을 내보내 라벨 프린터 프로그램에서 불러옵니다. 양끝 라벨에서 «B 끝 라벨은 «B→A» 로 뒤집기» 를 켜면 B 끝에 붙일 라벨이 «B→A» 로 찍힙니다."],
+    ]
+  : [
+      ["The labels print in the wrong place on the sheet", "In the print dialog choose «Actual size (100 %)» and margins «None», then print on plain paper first and hold it over the label sheet. If it is off, adjust the top/left margins and horizontal/vertical gaps (mm) under «Sheet and layout». For a sheet not in the presets, choose «Custom» and enter width, height, rows and columns."],
+      ["Can I reuse a partly used label sheet?", "Yes. Enter the number of labels already peeled off in «Cells already used on the first sheet» and printing starts at the next cell."],
+      ["How do I print on a label printer?", "Use «Save CSV» and import the list in the label printer software. For two-end labels, turn on «Reverse the B-end label to «B→A»» so the label for the B end reads «B→A»."],
+    ];
 ---
 
 <Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
@@ -232,6 +245,7 @@ const P0 = SHEET_PRESETS[1].s;
       <ul>{L.how.map((x) => <li>{x}</li>)}</ul>
       <h2>{L.noteTitle}</h2>
       <ul>{L.notes.map((x) => <li>{x}</li>)}</ul>
+      <FaqBlock lang={lang} items={FAQ} />
       <p>{L.seeWiring} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a>. {L.seeFer} <a href={url(lang, "tools/ferrules/")}>{L.fer}</a>.</p>
     </section>
     <UseNotice lang={lang} />

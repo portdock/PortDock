@@ -584,7 +584,7 @@ export const TOOLS: Tool[] = [
     id: "hw-tester",
     name: "PortDock Hardware Tester",
     file: "PortDock-Hardware-Tester",
-    tagline: { ko: "와이파이·인터넷 끊김·지연 기록, 블루투스·USB 연결·끊김 기록", en: "Wi-Fi and internet drop/latency recorder with Bluetooth and USB connection logs" },
+    tagline: { ko: "와이파이·인터넷 끊김·지연 기록, 블루투스·USB(0.10.0 부터) 연결·끊김 기록", en: "Wi-Fi and internet drop/latency recorder with Bluetooth and USB (from 0.10.0) connection logs" },
     seo: {
       title: { ko: "PortDock Hardware Tester — 와이파이 끊김·핑 기록 (무료)", en: "PortDock Hardware Tester — Wi-Fi Drop & Ping Logger (Free)" },
       desc: {
@@ -651,8 +651,8 @@ export const TOOLS: Tool[] = [
       },
     },
     summary: {
-      ko: "AI 클라이언트(Claude Desktop·VS Code·Cursor 등)가 띄우는 창 없는 MCP 서버입니다. AI 가 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비의 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기 도구는 이 PC 주소(127.0.0.1)만 받아 시뮬레이터 연습용입니다. 다만 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄워 두면 실제 장비에 닿을 수 있으니 주의하세요.",
-      en: "A windowless MCP server started by AI clients (Claude Desktop, VS Code, Cursor …). The AI reads this PC's COM ports and network adapters and reads Modbus, MC protocol and SCPI values from devices you name. The write tools accept only this PC's address (127.0.0.1) and are meant for simulators. Note that if a program on this PC forwards to another device (a TCP relay, gateway or tunnel), a write can reach a real device.",
+      ko: "AI 클라이언트(Claude Desktop·VS Code·Cursor 등)가 띄우는 창 없는 MCP 서버입니다. AI 가 이 PC 의 COM 포트·랜카드를 읽고, 사용자가 알려 준 장비의 Modbus·MC 프로토콜·SCPI 값을 읽습니다. 쓰기 도구는 이 PC 주소(127.0.0.1)만 받아 시뮬레이터 연습용입니다. 0.10.0 부터 Modbus 쓰기는 대상이 «PortDock» 이라고 밝힐 때만 씁니다. MC 쓰기는 주소로만 보므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄워 두면 실제 장비에 닿을 수 있으니 주의하세요.",
+      en: "A windowless MCP server started by AI clients (Claude Desktop, VS Code, Cursor …). The AI reads this PC's COM ports and network adapters and reads Modbus, MC protocol and SCPI values from devices you name. The write tools accept only this PC's address (127.0.0.1) and are meant for simulators. From 0.10.0 Modbus writes go only to a target that identifies itself as PortDock. MC writes are checked by address only, so if a program on this PC forwards to another device (a TCP relay, gateway or tunnel), a write can reach a real device.",
     },
     who: [
       { ko: "COM 포트·USB 변환기 문제를 AI 에게 함께 보게 하려는 분", en: "Anyone who wants an AI assistant to look at COM port and USB adapter problems with them" },
@@ -661,7 +661,7 @@ export const TOOLS: Tool[] = [
     ],
     features: [
       { title: { ko: "읽기 도구 9개", en: "Nine read tools" }, body: { ko: "COM 포트 목록, Port Inspector 보고서, 시리얼 듣기(보내지 않음), Modbus 읽기(FC 01~04), MC 3E 일괄 읽기, SCPI 질의, 핑, 랜카드, 장비 레지스터 맵.", en: "COM port list, Port Inspector report, serial listening (sends nothing), Modbus reads (FC 01–04), MC 3E batch read, SCPI queries, ping, network adapters and device register maps." } },
-      { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다(판정은 주소로만 — 중계 프로그램을 띄운 채 쓰지 마세요).", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting (the check is by address only — do not use it with a relay program running)." } },
+      { title: { ko: "쓰기는 127.0.0.1 시뮬레이터만", en: "Writes only to 127.0.0.1 simulators" }, body: { ko: "Modbus Slave·PLC Simulator 를 이 PC 에서 띄워 «쓰고 → 읽어 확인» 을 연습합니다. 다른 주소는 연결 전에 거절합니다. 0.10.0 부터 Modbus 쓰기는 대상이 장치 식별(FC 2B/0E)로 «PortDock» 이라고 밝힐 때만 — MC 쓰기는 주소로만 보니 중계 프로그램을 띄운 채 쓰지 마세요.", en: "Practise «write, then read back» with Modbus Slave or PLC Simulator on this PC. Any other address is refused before connecting. From 0.10.0 Modbus writes also require the target to identify itself as «PortDock» (FC 2B/0E); MC writes are checked by address only, so do not use them with a relay program running." } },
       { title: { ko: "SCPI 는 질의만", en: "SCPI queries only" }, body: { ko: "«?» 로 끝나는 질의 하나만 보내고, *TST?·*CAL?·*RST 처럼 상태를 바꿀 수 있는 것은 거절합니다. 측정을 새로 시작하는 READ?·MEAS…? 는 기본으로 거절하고, 사용자가 허락해 allow_measure 를 켠 호출만 보냅니다(0.8.0 부터). 마지막 값만 읽으려면 FETC?.", en: "Sends one query ending with «?»; ones that can change state, such as *TST?, *CAL? and *RST, are refused. READ? and MEAS…?, which start a new measurement, are refused by default and sent only when you allow it with allow_measure (since 0.8.0). Use FETC? to read just the last value." } },
       { title: { ko: "세션 기록·속도 제한", en: "Session log and rate limits" }, body: { ko: "모든 호출을 이 PC 에 JSONL 로 남기고 밖으로 보내지 않습니다. 같은 대상은 100ms 에 한 번, 1분에 120번까지.", en: "Every call is kept on this PC as JSON lines and never sent out. The same target at most once per 100 ms, 120 calls a minute." } },
       { title: { ko: "개인정보 가림", en: "Personal data masked" }, body: { ko: "결과의 사용자 폴더 경로는 «~», MAC 주소는 «xx-…», 네트워크 이름은 «(hidden)» 으로 바꿉니다.", en: "User folder paths in results become «~», MAC addresses «xx-…» and network names «(hidden)»." } },
@@ -675,7 +675,7 @@ export const TOOLS: Tool[] = [
     faq: [
       {
         q: { ko: "AI 가 장비 설정을 바꿀 수 있나요?", en: "Can the AI change device settings?" },
-        a: { ko: "쓰기 도구 두 개는 대상이 127.0.0.1·localhost(이 PC)일 때만 동작하고, 다른 주소는 연결 전에 거절합니다. 판정은 주소로만 하므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·SSH 터널 등)을 띄워 두면 실제 장비에 닿을 수 있습니다 — 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 마세요.", en: "The two write tools only work when the target is 127.0.0.1 or localhost (this PC); any other address is refused before connecting. The check is by address only, so if a program on this PC forwards to another device (a TCP relay, gateway, SSH tunnel …), a write can reach a real device — do not use the write tools while such a program is running." },
+        a: { ko: "쓰기 도구 두 개는 대상이 127.0.0.1·localhost(이 PC)일 때만 동작하고, 다른 주소는 연결 전에 거절합니다. 0.10.0 부터 modbus_write_sim 은 대상이 장치 식별(FC 2B/0E)에 «PortDock» 으로 시작하는 제조사로 답할 때만 쓰므로, PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502) 너머 실장비에는 쓰지 않습니다. mc_write_sim 은 주소로만 판정하므로, 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·벤더 게이트웨이·SSH 터널 등)을 띄워 두면 실제 장비에 닿을 수 있습니다 — 그런 프로그램이 떠 있을 때는 쓰기 도구를 쓰지 마세요.", en: "The two write tools only work when the target is 127.0.0.1 or localhost (this PC); any other address is refused before connecting. From 0.10.0 modbus_write_sim writes only when the target answers the device identification (FC 2B/0E) with a vendor name beginning with «PortDock», so it does not write to real devices behind PortDock Serial's Modbus TCP ↔ RTU gateway (127.0.0.1:502 by default). mc_write_sim is checked by address only, so if a program on this PC forwards to another device (a TCP relay, vendor gateway, SSH tunnel …), a write can reach a real device — do not use the write tools while such a program is running." },
       },
       {
         q: { ko: "무엇을 바깥으로 보내나요?", en: "What does it send out?" },

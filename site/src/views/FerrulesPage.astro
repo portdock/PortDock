@@ -1,6 +1,7 @@
 ---
 // 웹 도구: 페룰(봉형 단자)·압착 단자 규격표 — 단면적(mm²·AWG) → DIN 46228-4 색·프랑스 색, 링 단자 등급(JST 식 1.25·2·5.5)·나사 크기.
 // 자료·찾기는 lib/ferrules.ts(node --test, 출처 확인한 값만). 피복 벗김 길이·체결 토크는 «제조사 표 확인». 모두 브라우저 안.
+import FaqBlock from "../components/FaqBlock.astro";
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
@@ -55,7 +56,7 @@ const L = ko
       sTitle: "피복 벗김 길이·체결 토크",
       sText:
         "피복 벗김 길이는 페룰 금속 슬리브 길이(제품마다 6·8·10·12·18 mm 등)와 제조사 권장값을 따릅니다 — 제조사 카탈로그의 «stripping length» 값을 볼 것. 단자대 체결 토크도 단자대 제조사의 값(단자대 측면·데이터시트)을 따르며, 이 표에는 지어낸 값을 넣지 않았습니다.",
-      privacy: "이 페이지는 브라우저 안에서만 찾고 아무것도 보내지 않습니다.",
+      privacy: "이 페이지는 브라우저 안에서만 찾고 입력한 값은 서버로 보내지 않습니다.",
       srcTitle: "출처",
       seeLbl: "케이블 번호 라벨은",
       lbl: "케이블·단자 라벨 만들기",
@@ -100,7 +101,7 @@ const L = ko
       sTitle: "Strip length and tightening torque",
       sText:
         "Strip length follows the ferrule's metal sleeve length (6, 8, 10, 12, 18 mm and so on) and the maker's recommendation — check the «stripping length» in the catalogue. Terminal block tightening torque follows the terminal block maker's value (printed on the block or in its data sheet); this chart does not make up values.",
-      privacy: "This page looks things up inside your browser and sends nothing.",
+      privacy: "This page looks things up inside your browser; what you enter is not sent to a server.",
       srcTitle: "Sources",
       seeLbl: "For cable number labels, use the",
       lbl: "cable and terminal label maker",
@@ -126,6 +127,18 @@ const SRC = [
   { name: "RS Components — JST R2-4 ring terminal (16–14 AWG, M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6048323" },
   { name: "RS Components — JST FV5.5-4 ring terminal (2.6–6.6 mm², M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6881290" },
 ];
+// 자주 묻는 것(FAQPage) — components/FaqBlock.astro
+const FAQ: [string, string][] = ko
+  ? [
+      ["같은 굵기인데 페룰 색이 상자마다 다른 이유는?", "색 체계가 둘이기 때문입니다 — DIN 46228-4 와 프랑스 색 체계는 같은 mm² 에 다른 색을 씁니다(예: 2.5 mm² 는 DIN 파랑, 프랑스 회색). 한 현장에서는 한 체계로 맞추고, 색만 믿지 말고 상자·페룰에 적힌 mm² 를 함께 봅니다."],
+      ["«R1.25-4» 는 무슨 뜻인가요?", "전선 등급 1.25(0.25~1.65 mm²)와 나사 M4 용 링 단자라는 뜻입니다(JST 식 이름). 범위가 겹치는 굵기는 두 등급 모두 쓸 수 있으니 단자 제조사 표로 고릅니다."],
+      ["피복 벗김 길이와 조임 토크는?", "제품마다 다릅니다. 피복 벗김 길이는 페룰 금속 슬리브 길이와 제조사 카탈로그의 «stripping length», 조임 토크는 단자대 제조사가 정한 값을 따릅니다."],
+    ]
+  : [
+      ["Why do ferrules of the same size come in different colours?", "There are two colour systems — DIN 46228-4 and the French system use different colours for the same mm² (for example 2.5 mm² is blue in DIN and grey in the French system). Stick to one system on a site and check the mm² printed on the box or ferrule, not just the colour."],
+      ["What does «R1.25-4» mean?", "A ring terminal for wire class 1.25 (0.25–1.65 mm²) and an M4 screw (JST-style naming). Where the ranges overlap, both classes fit — choose from the terminal maker's table."],
+      ["What strip length and tightening torque should I use?", "It depends on the product. Strip length follows the ferrule's metal sleeve length and the maker's «stripping length»; torque follows the terminal block maker's value."],
+    ];
 ---
 
 <Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
@@ -180,6 +193,7 @@ const SRC = [
       <h2>{L.sTitle}</h2>
       <p>{L.sText}</p>
       <p>{L.seeLbl} <a href={url(lang, "tools/cable-labels/")}>{L.lbl}</a>. {L.seeVd} <a href={url(lang, "tools/voltage-drop/")}>{L.vd}</a>.</p>
+      <FaqBlock lang={lang} items={FAQ} />
       <h2>{L.srcTitle}</h2>
       <ul>
         {SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}

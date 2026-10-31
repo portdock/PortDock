@@ -103,6 +103,16 @@
 | 제어반 발열 계산·판넬 발열량, 판넬 환기 팬 풍량 계산, 제어반 쿨러 용량, 절연저항 기준·측정값 판정(0.5·1 MΩ, 메거 250 500 V), 탭 드릴 표·m8 탭 기리, 육각 렌치·스패너 사이즈 | `/tools/panel-heat/`·`/tools/insulation-resistance/`·`/tools/metric-threads/` | «제어반 발열 계산·환기 팬 풍량 계산기 (IEC 60890)», «절연저항 기준·판정 (KEC 제52조·0.5·1 MΩ)», «미터 나사 탭 드릴 표·육각 렌치 스패너 크기 (M2~M20)» |
 | 모드버스 rtu tcp 변환, modbus rtu to tcp, mbap 헤더 계산, 모드버스 게이트웨이 unit id, 모드버스 ascii lrc | `/tools/modbus-rtu-tcp/` | «Modbus RTU ↔ TCP 변환기 — MBAP·CRC·ASCII LRC (온라인)», 설명에 «요청·응답·게이트웨이 유닛 ID 0·255» |
 | 모드버스 공부·연습 문제, 모드버스 교육 자료, 모드버스 퀴즈, 모드버스 crc 순서 | `/tools/modbus-practice/` | «Modbus 연습 문제 — RTU 요청·응답·CRC·예외 코드 퀴즈», 설명에 «신입·교육용·해설» |
+| 통신선 실드 접지·한쪽 접지 양쪽 접지, 접지 루프 | 가이드 `cable-shield-grounding` | «통신선 차폐(실드)·접지 — 한쪽 접지와 양쪽 접지, 접지 루프, SG 선» |
+| 인버터 노이즈 통신 끊김, 서보 노이즈 rs485 오류 | 가이드 `field-noise-communication-errors` | «현장 노이즈로 통신이 끊길 때 원인 찾기» |
+| npn pnp 센서 plc 입력 배선, 싱크 소스 차이, 2선식 센서 누설 전류 | 가이드 `npn-pnp-sensor-plc-input` | «NPN·PNP 센서와 PLC 입력 배선 — 싱크/소스, 공통(COM)» |
+| rs485 멀티미터 점검, 종단 저항 측정 60옴, 바이어스 전압 | 가이드 `rs485-multimeter-check` + `/tools/multimeter-check/` | «멀티미터로 RS-485 버스 점검하기 — 종단 저항·바이어스 전압» |
+| 시운전 통신 점검 순서, 인버터 통신 시운전 | 가이드 `commissioning-communication-checklist` ↔ `/tools/commissioning-checklist/` | «장비 시운전 통신 점검 순서» |
+| 통신 설비 정기 점검, 예방 보전 체크 | 가이드 `communication-preventive-maintenance` | «통신 설비 정기 점검(예방 보전) 순서» |
+| rs485 장비 추가·증설, 이더넷 장비 증설 ip 충돌, 장비 교체 설정 백업, 장비 철거 종단 | 가이드 `rs485-add-device`·`ethernet-add-device`·`device-replacement-settings`·`remove-device-from-bus` | «RS-485 버스에 장비 증설하기», «이더넷(Modbus TCP·PLC) 장비 증설하기», «장비 교체할 때 설정 옮기기», «통신 장비를 뺄 때» |
+| 통신 장애 기록·유지보수 일지 양식 | 가이드 `communication-fault-log` | «통신 장애 기록 남기기·유지보수 일지» |
+| 모드버스 게이트웨이 pc, modbus tcp rtu 게이트웨이 프로그램 | 가이드 `modbus-tcp-rtu-gateway-pc` ↔ `/tools/modbus-rtu-tcp/` | «PC 를 Modbus TCP ↔ RTU 게이트웨이로 쓰기» — 설명문에 «(0.10.0 부터)» |
+| ls xgt 전용 프로토콜, fenet 2004, xgt 프레임 해석, plc 없이 xgt 시험 | `/tools/xgt-decoder/` + 가이드 `xgt-protocol-test-without-plc` | «LS XGT 전용 프로토콜(FEnet) 프레임 해석기», «PLC 없이 LS XGT 전용 프로토콜 통신 시험하기» — 앱 기능에만 «(0.10.0 부터)» |
 | 마이크 테스트(윈도우·듣기·녹음), 노트북/컴퓨터 마이크 테스트 | `/tools/mic-test/` | «마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음)» |
 | 키보드 테스트(사이트·웹), 키보드 채터링 테스트, 키보드 동시입력 테스트 | `/tools/keyboard-test/` | «키보드 테스트 — 채터링·동시 입력(롤오버) 확인», 설명에 «한국어 106» |
 | 웹캠 테스트(사이트·노트북·윈도우) | `/tools/webcam-test/` | «웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음)» |
@@ -213,6 +223,14 @@
 | enclosure heat load calculator, control panel heat dissipation, enclosure fan sizing cfm m3/h, iec 60890 surface area, insulation resistance minimum values, megger test 500 v 1 mohm, metric tap drill chart, hex key size chart, spanner size m8 | `/en/tools/panel-heat/`, `/en/tools/insulation-resistance/`, `/en/tools/metric-threads/` | «Enclosure Heat Load & Fan Sizing Calculator (IEC 60890)», «Insulation Resistance Minimum Values (IEC 60364-6)», «Metric Tap Drill Chart, Hex Key & Spanner Sizes» |
 | modbus rtu to tcp converter, mbap header calculator, modbus gateway unit id, modbus ascii lrc | `/en/tools/modbus-rtu-tcp/` | «Modbus RTU to TCP Converter: MBAP, CRC, ASCII LRC» |
 | modbus quiz, modbus practice questions, modbus training exercises, modbus crc byte order | `/en/tools/modbus-practice/` | «Modbus Practice Quiz: RTU Frames, CRC, Exceptions» |
+| shield grounding one end or both ends, communication cable ground loop | guide `cable-shield-grounding` | «Communication cable shields and grounding» |
+| vfd noise modbus errors, rs485 noise near servo drives | guide `field-noise-communication-errors` | «When field noise breaks communication» |
+| npn pnp sensor plc input wiring, sinking sourcing inputs, 2 wire sensor leakage current | guide `npn-pnp-sensor-plc-input` | «Wiring NPN and PNP sensors to PLC inputs» |
+| rs485 multimeter test, rs485 termination resistance 60 ohm, bias voltage | guide `rs485-multimeter-check` + `/en/tools/multimeter-check/` | «Checking an RS-485 bus with a multimeter» |
+| commissioning communication checklist, vfd modbus commissioning | guide `commissioning-communication-checklist` ↔ `/en/tools/commissioning-checklist/` | «Commissioning communication step by step» |
+| preventive maintenance communication, rs485 adding a device, ethernet device ip conflict, replacing a modbus device settings, removing a device rs485 termination, maintenance log template | guides `communication-preventive-maintenance`, `rs485-add-device`, `ethernet-add-device`, `device-replacement-settings`, `remove-device-from-bus`, `communication-fault-log` | each guide's title |
+| modbus gateway software pc, modbus tcp to rtu gateway windows | guide `modbus-tcp-rtu-gateway-pc` ↔ `/en/tools/modbus-rtu-tcp/` | «Using a PC as a Modbus TCP ↔ RTU gateway» — description says «from 0.10.0» |
+| ls xgt dedicated protocol, fenet port 2004, xgt frame decoder, test xgt without plc | `/en/tools/xgt-decoder/` + guide `xgt-protocol-test-without-plc` | «LS XGT Dedicated Protocol (FEnet) Frame Decoder» — «from 0.10.0» only on the app feature |
 | mic test, microphone test, mic test online | `/en/tools/mic-test/` | «Mic Test: Level, Noise Floor & Playback Online» |
 | keyboard tester, keyboard test, key chatter test, keyboard ghosting test | `/en/tools/keyboard-test/` | «Keyboard Tester: Key Chatter & Rollover Test Online» |
 | webcam test | `/en/tools/webcam-test/` | «Webcam Test: Check Actual Resolution & FPS Online» |

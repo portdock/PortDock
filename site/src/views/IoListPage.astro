@@ -393,18 +393,18 @@ const ld = {
     function sigRow(s: IoSignal, si: number) {
       const multi = s.type === "u32" || s.type === "s32" || s.type === "f32" || s.type === "f64";
       return `<tr data-si="${si}">
-<td class="c-tag">${inp("tag", s.tag, "mono", `maxlength="${LIMITS.text}" aria-label="${esc(U.head[0])}"`)}</td>
-<td><select data-f="table" aria-label="${esc(U.head[1])}">${TABLES.map((t) => opt(t, TABLE_NAME[t][lang], s.table)).join("")}</select></td>
-<td class="c-n">${inp("address", s.address, "mono", `inputmode="numeric" aria-label="${esc(U.head[2])}"`)}</td>
-<td class="c-n">${inp("manual", s.manual, "mono", `maxlength="20" aria-label="${esc(U.head[3])}"`)}</td>
-<td class="c-n">${inp("fc", s.fc, "mono", `maxlength="20" placeholder="${esc(defaultFc(s))}" aria-label="${esc(U.head[4])}"`)}</td>
-<td><select data-f="type" aria-label="${esc(U.head[5])}">${TYPES.map((t) => opt(t, t, s.type)).join("")}</select></td>
-<td><select data-f="order" aria-label="${esc(U.head[6])}"${multi ? "" : " disabled"}>${opt("", "—", s.order ?? "")}${ORDERS.map((o) => opt(o, o, s.order)).join("")}</select></td>
-<td class="c-n">${inp("len", s.len, "mono", `inputmode="numeric" aria-label="${esc(U.head[7])}"${s.type === "string" ? "" : " disabled"}`)}</td>
-<td class="c-n">${inp("scale", s.scale, "mono", `inputmode="decimal" placeholder="1" aria-label="${esc(U.head[8])}"`)}</td>
-<td class="c-n">${inp("unit", s.unit, "", `maxlength="20" aria-label="${esc(U.head[9])}"`)}</td>
-<td><select data-f="access" aria-label="${esc(U.head[10])}">${ACCESSES.map((a) => opt(a, ACCESS_NAME[a][lang], s.access)).join("")}</select></td>
-<td class="c-desc">${inp("desc", s.desc, "", `maxlength="${LIMITS.desc}" aria-label="${esc(U.head[11])}"`)}</td>
+<td class="c-tag">${inp("tag", s.tag, "mono", `maxlength="${LIMITS.text}" aria-label="${esc(U.head[0])} ${si + 1}"`)}</td>
+<td><select data-f="table" aria-label="${esc(U.head[1])} ${si + 1}">${TABLES.map((t) => opt(t, TABLE_NAME[t][lang], s.table)).join("")}</select></td>
+<td class="c-n">${inp("address", s.address, "mono", `inputmode="numeric" aria-label="${esc(U.head[2])} ${si + 1}"`)}</td>
+<td class="c-n">${inp("manual", s.manual, "mono", `maxlength="20" aria-label="${esc(U.head[3])} ${si + 1}"`)}</td>
+<td class="c-n">${inp("fc", s.fc, "mono", `maxlength="20" placeholder="${esc(defaultFc(s))}" aria-label="${esc(U.head[4])} ${si + 1}"`)}</td>
+<td><select data-f="type" aria-label="${esc(U.head[5])} ${si + 1}">${TYPES.map((t) => opt(t, t, s.type)).join("")}</select></td>
+<td><select data-f="order" aria-label="${esc(U.head[6])} ${si + 1}"${multi ? "" : " disabled"}>${opt("", "—", s.order ?? "")}${ORDERS.map((o) => opt(o, o, s.order)).join("")}</select></td>
+<td class="c-n">${inp("len", s.len, "mono", `inputmode="numeric" aria-label="${esc(U.head[7])} ${si + 1}"${s.type === "string" ? "" : " disabled"}`)}</td>
+<td class="c-n">${inp("scale", s.scale, "mono", `inputmode="decimal" placeholder="1" aria-label="${esc(U.head[8])} ${si + 1}"`)}</td>
+<td class="c-n">${inp("unit", s.unit, "", `maxlength="20" aria-label="${esc(U.head[9])} ${si + 1}"`)}</td>
+<td><select data-f="access" aria-label="${esc(U.head[10])} ${si + 1}">${ACCESSES.map((a) => opt(a, ACCESS_NAME[a][lang], s.access)).join("")}</select></td>
+<td class="c-desc">${inp("desc", s.desc, "", `maxlength="${LIMITS.desc}" aria-label="${esc(U.head[11])} ${si + 1}"`)}</td>
 <td><button type="button" class="btn tight" data-act="delSig" aria-label="${esc(U.head[0])} ${esc(s.tag)} ${esc(U.del)}">${esc(U.del)}</button></td></tr>`;
     }
 

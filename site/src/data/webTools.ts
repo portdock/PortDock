@@ -310,7 +310,7 @@ export const WEB_TOOLS: WebTool[] = [
   {
     path: "tools/xgt-decoder/",
     name: { ko: "LS XGT 전용 프로토콜(FEnet) 프레임 해석기", en: "LS XGT Dedicated Protocol (FEnet) Frame Decoder" },
-    blurb: { ko: "(0.10.0 부터) «LSIS-XGT» 머리 프레임 → 머리 칸·BCC·명령·변수(%MW·%MX·%DB)·값·오류 코드. 짝 요청으로 응답 값 풀이, 요청 만들기.", en: "(from 0.10.0) «LSIS-XGT» header frames → header fields, BCC, instruction, variables (%MW, %MX, %DB), values and error code. Pair a reply with its request; build requests." },
+    blurb: { ko: "«LSIS-XGT» 머리 프레임 → 머리 칸·BCC·명령·변수(%MW·%MX·%DB)·값·오류 코드. 짝 요청으로 응답 값 풀이, 요청 만들기. PLC Simulator 의 XGT 흉내(0.10.0 부터)와 짝.", en: "«LSIS-XGT» header frames → header fields, BCC, instruction, variables (%MW, %MX, %DB), values and error code. Pair a reply with its request; build requests. Pairs with PLC Simulator's XGT mode (from 0.10.0)." },
   },
   {
     path: "tools/pcap-analyzer/",

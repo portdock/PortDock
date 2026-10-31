@@ -1,0 +1,24 @@
+---
+// 자주 묻는 것 — 보이는 질문·답과 FAQPage 구조화 데이터를 한 번에(같은 글이 두 곳에 들어가 어긋나지 않게)
+interface Props {
+  lang: "ko" | "en";
+  items: [string, string][];
+}
+const { lang, items } = Astro.props;
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: items.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(ld)} />
+<h2>{lang === "ko" ? "자주 묻는 것" : "FAQ"}</h2>
+{
+  items.map(([q, a]) => (
+    <>
+      <h3>{q}</h3>
+      <p>{a}</p>
+    </>
+  ))
+}

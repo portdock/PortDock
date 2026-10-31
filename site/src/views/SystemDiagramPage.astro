@@ -62,7 +62,12 @@ const L = ko
       links: "이어진 선",
       label: "선 이름",
       unlink: "선 빼기",
-      noLinks: "아직 이어진 선이 없습니다 — «선 잇기» 를 켜고 두 개를 차례로 누르세요.",
+      noLinks: "아직 이어진 선이 없습니다 — «선 잇기» 를 켜고 두 개를 차례로 누르거나, 아래 «이을 대상» 에서 고르세요.",
+      pickItem: "고를 장비·버스(키보드로 고르기)",
+      pickNone: "— 고르지 않음 —",
+      linkTo: "이을 대상(위 «선 종류» 로)",
+      linkBtn: "잇기",
+      linkFail: "이 둘은 이 선 종류로 이을 수 없습니다 — «선 종류» 를 바꿔 보세요.",
       checks: "구성 점검",
       allOk: "점검에서 걸린 것이 없습니다.",
       term: "종단(이 장비에서 켬 — 버스 끝 장비)",
@@ -160,7 +165,12 @@ const L = ko
       links: "Links",
       label: "Link label",
       unlink: "Remove link",
-      noLinks: "No links yet — turn on «Connect» and click two items in turn.",
+      noLinks: "No links yet — turn on «Connect» and click two items in turn, or choose one under «Connect to» below.",
+      pickItem: "Pick a device or bus (keyboard)",
+      pickNone: "— none —",
+      linkTo: "Connect to (with the «link kind» above)",
+      linkBtn: "Connect",
+      linkFail: "These two cannot be joined with this link kind — try another «link kind».",
       checks: "Configuration check",
       allOk: "Nothing flagged.",
       term: "Termination (on at this device — bus-end devices)",
@@ -219,7 +229,7 @@ const L = ko
     };
 const T = {
   ...Object.fromEntries(
-    ["name", "kind", "ip", "mask", "unit", "baud", "parity", "pAny", "pN", "pE", "pO", "note", "len", "links", "label", "unlink", "noLinks", "allOk", "none", "storeOff", "freshAsk", "term", "tOff", "tOn", "ul", "regs", "termStart", "termEnd", "assumed", "noBase", "baseInfo", "same", "dAdded", "dRemoved", "dChanged", "copied"].map((k) => [
+    ["name", "kind", "ip", "mask", "unit", "baud", "parity", "pAny", "pN", "pE", "pO", "note", "len", "links", "label", "unlink", "noLinks", "pickNone", "linkTo", "linkBtn", "linkFail", "allOk", "none", "storeOff", "freshAsk", "term", "tOff", "tOn", "ul", "regs", "termStart", "termEnd", "assumed", "noBase", "baseInfo", "same", "dAdded", "dRemoved", "dChanged", "copied"].map((k) => [
       k,
       (L as Record<string, unknown>)[k] as string,
     ]),
@@ -291,6 +301,7 @@ const ld = {
       </section>
       <aside class="card sd-props" aria-label={L.props}>
         <h2 class="sd-h">{L.props}</h2>
+        <label class="fld">{L.pickItem}<select id="pickItem"></select></label>
         <div id="props"></div>
       </aside>
     </div>
@@ -307,7 +318,7 @@ const ld = {
       <p class="note" id="baseInfo" role="status"></p>
       <div id="diff"></div>
       <p class="note" id="diffLegend" hidden>{L.legend}</p>
-      <textarea id="diffFallback" class="mono" rows="6" readonly hidden></textarea>
+      <textarea id="diffFallback" class="mono" rows="6" readonly hidden aria-label={L.copyDiff}></textarea>
     </section>
     <p class="note privacy">{L.privacy}</p>
     <p class="note">{L.keys}</p>
@@ -494,6 +505,28 @@ const ld = {
       color: #7c3aed;
       font-weight: 600;
     }
+    /* 어두운 화면: 위 색은 대비가 모자라(2.6~3.5) 밝은 색으로 — 멀티미터 점검기와 같은 방식 */
+    @media (prefers-color-scheme: dark) {
+      .sd-findings :global(.fault) {
+        border-left-color: #ff8a80;
+      }
+      .sd-findings :global(.warn) {
+        border-left-color: #fbbf24;
+      }
+      .sd-table :global(.warn),
+      #diff :global(.warn) {
+        color: #fbbf24;
+      }
+      #diff :global(.added) {
+        color: #4ade80;
+      }
+      #diff :global(.removed) {
+        color: #ff8a80;
+      }
+      #diff :global(.changed) {
+        color: #c4b5fd;
+      }
+    }
     #diff :global(ul) {
       padding-left: 18px;
       margin: 8px 0;
@@ -648,6 +681,7 @@ const ld = {
         ? findings.map((f, i) => `<li><button type="button" class="${f.level}" data-f="${i}">${f.level === "fault" ? "✖ " : f.level === "warn" ? "⚠ " : "· "}${esc(f.text)}</button></li>`).join("")
         : `<li>${esc(T.allOk)}</li>`;
       $<HTMLButtonElement>("delSel").disabled = !selected;
+      fillPick();
       drawBusSum();
       drawDiff();
     }
@@ -842,7 +876,45 @@ const ld = {
         row.append(s, del, lab);
         box.append(row);
       }
+      // 이을 대상 — 마우스 없이 선 잇기
+      const others = allItems().filter((id) => id !== selected);
+      if (others.length) {
+        const row = document.createElement("div");
+        row.className = "lk";
+        const to = field(T.linkTo, others[0], () => {}, { options: others.map((id) => [id, itemName(id)]) });
+        const go = document.createElement("button");
+        go.type = "button";
+        go.className = "btn tight";
+        go.textContent = T.linkBtn;
+        go.addEventListener("click", () => {
+          const target = to.querySelector("select")!.value;
+          const next = selected ? addLink(doc, $<HTMLSelectElement>("linkKind").value as LinkKind, selected, target) : null;
+          if (!next) {
+            $("msg").textContent = T.linkFail;
+            return;
+          }
+          doc = next;
+          changed();
+          drawProps();
+        });
+        row.append(to, go);
+        box.append(row);
+      }
     }
+    // 키보드로 고르기 — 캔버스를 누르지 않고도 장비·버스를 고른다(접근성)
+    const itemName = (id: string) => doc.nodes.find((x) => x.id === id)?.name || doc.buses.find((x) => x.id === id)?.name || id;
+    const allItems = () => [...doc.nodes.map((n) => n.id), ...doc.buses.map((b) => b.id)];
+    function fillPick() {
+      const sel = $<HTMLSelectElement>("pickItem");
+      const opts: [string, string][] = [["", T.pickNone], ...allItems().map((id): [string, string] => [id, itemName(id)])];
+      const sig = JSON.stringify(opts);
+      if (sel.dataset.sig !== sig) {
+        sel.replaceChildren(...opts.map(([v, t]) => new Option(t, v)));
+        sel.dataset.sig = sig;
+      }
+      sel.value = selected ?? "";
+    }
+    $("pickItem").addEventListener("change", (e) => select((e.target as HTMLSelectElement).value || null));
     function select(id: string | null) {
       selected = id;
       drawProps();

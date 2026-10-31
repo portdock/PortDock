@@ -45,7 +45,7 @@ const L = ko
       copyFail: "복사하지 못했습니다 — 아래 글을 직접 골라 복사하세요.",
       saved: "체크·메모는 이 브라우저에만 저장됩니다.",
       noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 체크·메모가 사라집니다 — 끝나면 CSV 로 저장하세요.",
-      privacy: "이 페이지는 브라우저 안에서만 동작하고 아무것도 서버로 보내지 않습니다. 체크·메모는 이 브라우저(localStorage)에만 남습니다.",
+      privacy: "이 페이지는 브라우저 안에서만 동작하고 입력한 값·체크·메모는 서버로 보내지 않습니다. 체크·메모는 이 브라우저(localStorage)에만 남습니다.",
       what: "어떻게 쓰나",
       whatP: [
         "먼저 작업 종류를 고릅니다. 신규 설치는 설치 전부터 기록·백업까지, 정기 점검은 단자·케이블·팬·UPS·PC 저장장치·통신 오류 추세, 증설은 국번·IP 빈자리·단위 부하·종단 위치·폴링 시간·전원 용량, 교체는 옛 장비 설정 기록·모델·펌웨어·국번·종단 옮기기, 제거는 종단을 새 끝으로·폴링 목록에서 빼기·남은 선·IP·국번 반납을 봅니다.",
@@ -87,7 +87,7 @@ const L = ko
       copyFail: "Could not copy — select the text below and copy it yourself.",
       saved: "Ticks and notes are saved in this browser only.",
       noStore: "This browser blocks storage, so ticks and notes disappear on reload — save as CSV when done.",
-      privacy: "This page runs entirely in your browser and sends nothing to a server. Ticks and notes stay in this browser (localStorage).",
+      privacy: "This page runs entirely in your browser; the values, ticks and notes you enter are not sent to a server. Ticks and notes stay in this browser (localStorage).",
       what: "How to use it",
       whatP: [
         "First pick the job. New installation runs from preparation to records and backup; routine inspection covers terminals, cables, fans, UPS, PC storage and communication error trends; expansion covers free addresses and IPs, unit loads, termination position, polling time and supply capacity; replacement covers recording the old device's settings, model and firmware, and carrying over address and termination; removal covers moving termination to the new end, taking the address out of the poll list, leftover wiring and freeing IPs and addresses.",
@@ -181,7 +181,7 @@ const ld = {
         <button type="button" class="btn tight" id="bClear">{L.clear}</button>
       </div>
       <p class="note" id="msg" role="status"></p>
-      <textarea id="fallback" class="mono" rows="6" readonly hidden></textarea>
+      <textarea id="fallback" class="mono" rows="6" readonly hidden aria-label={L.copyText}></textarea>
       <div id="list"></div>
     </section>
 

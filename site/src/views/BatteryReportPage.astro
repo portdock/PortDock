@@ -102,7 +102,7 @@ const L = ko
         ["It says there is no battery", "The report was made on a PC without a battery (such as a desktop), or Windows could not read the battery. Open the HTML in a browser and see whether the «Installed batteries» table is empty."],
         ["Remaining is above 100 %", "New batteries sometimes measure slightly above the design value. That is not a sign of a problem."],
         ["It jumps up and down within days", "Full charge capacity is an estimate from the battery's management chip; without an occasional full discharge and charge the value is updated in jumps. Look at the overall trend in the history chart."],
-        ["Is the file uploaded?", "No. The file is read as text inside this browser to find the tables; nothing is sent to a server."],
+        ["Is the file uploaded?", "No. The file is read as text inside this browser to find the tables; the file is not sent to any server."],
       ] as [string, string][],
       msg: {
         notReport: "No battery tables found — check that this is the HTML from powercfg /batteryreport and that it was made on a PC with a battery.",

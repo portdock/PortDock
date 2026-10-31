@@ -26,9 +26,12 @@ const popular = POPULAR_WEB_TOOLS.map(webToolByPath);
 const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order", "bluetooth-headphones-cutting-out-windows", "windows-microphone-not-working"];
 const hwTests = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw");
 const featured = FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined);
+// 윈도우 프로그램 12종 + MCP 서버(창 없음) — 13 과 12 가 섞여 보이지 않게 둘을 나눠 적는다
+const nApps = RELEASED_TOOLS.filter((t) => t.id !== "mcp").length;
+const mcpKo = nApps < RELEASED_TOOLS.length ? " + MCP" : "";
 const sub = ko
-  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${RELEASED_TOOLS.length}종, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${WEB_TOOLS.length}개.`
-  : `${RELEASED_TOOLS.length} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices — plus ${WEB_TOOLS.length} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`;
+  ? `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${nApps}종${nApps < RELEASED_TOOLS.length ? "과 AI 용 MCP 서버" : ""}, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${WEB_TOOLS.length}개.`
+  : `${nApps} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices${nApps < RELEASED_TOOLS.length ? " and an MCP server for AI" : ""} — plus ${WEB_TOOLS.length} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`;
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {
@@ -57,8 +60,8 @@ const ld = [
   title="PortDock"
   seoTitle={ko ? "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램" : "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows"}
   description={ko
-    ? `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 도구 ${RELEASED_TOOLS.length}종. 오픈소스.`
-    : `${RELEASED_TOOLS.length} free Windows test tools: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`}
+    ? `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 프로그램 ${nApps}종${mcpKo}. 오픈소스.`
+    : `${nApps} free Windows test tools${mcpKo}: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`}
   path=""
 >
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
@@ -88,7 +91,7 @@ const ld = [
 
   <section class="block" id="tools">
     <div class="wrap">
-      <h2>{ko ? `윈도우 프로그램 ${RELEASED_TOOLS.length}종` : `${RELEASED_TOOLS.length} Windows programs`}</h2>
+      <h2>{ko ? `윈도우 프로그램 ${nApps}종${mcpKo}` : `${nApps} Windows programs${mcpKo}`}</h2>
       <p class="lead">{ko ? "목적별로 나뉜 작은 프로그램입니다. 필요한 것만 받아 쓰세요." : "One small program per job — get only what you need."}</p>
       <PickApp lang={lang} />
       <div class="shots3">

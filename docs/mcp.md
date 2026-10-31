@@ -19,7 +19,7 @@ AI 클라이언트(Claude Desktop·Claude Code·VS Code·Cursor 등 MCP 를 쓰�
 | `ping` | ICMP 핑 최대 10번(간격 200ms 이상), 선택: TCP 연결 시간 | 없음 |
 | `net_adapters` | 랜카드 속도·이중·IPv4·고급 속성·절전·오류 수·프로필 종류·방화벽 프로필 | 없음 |
 | `device_map_get` | 장비 레지스터 맵(data/devices) 찾기·하나 가져오기(표·이름으로 거르기). 리소스 `portdock://devices/{maker}/{model}` 로도 | 없음 |
-| `modbus_write_sim` | Modbus TCP 쓰기(0F·10) — **127.0.0.1·::1·localhost 만**, 0.10.0 부터 대상이 FC 2B/0E 로 제조사 «PortDock» 을 밝힐 때만(PortDock Modbus Slave 연습용) | 이 PC 시뮬레이터만 |
+| `modbus_write_sim` | Modbus TCP 쓰기(0F·10) — **127.0.0.1·::1·localhost 만**(PortDock Modbus Slave 연습용) | 이 PC 시뮬레이터만 |
 | `mc_write_sim` | MC 3E 일괄 쓰기(1401) — **127.0.0.1·::1·localhost 만**(PortDock PLC Simulator 연습용) | 이 PC 시뮬레이터만 |
 
 리소스: `portdock://devices/{maker}/{model}`(장비 맵 JSON), `portdock://session/log`(이번 세션 기록).
@@ -28,10 +28,7 @@ AI 클라이언트(Claude Desktop·Claude Code·VS Code·Cursor 등 MCP 를 쓰�
 
 ## 안전장치
 
-1. **쓰기는 이 PC 주소만.** 쓰기 두 개는 대상 주소가 루프백(127.0.0.0/8·::1·글자 그대로 «localhost»)이 아니면 **연결하기 전에** 거절한다. 이름 풀이를 하지 않으므로 DNS 로 루프백을 흉내 내도 통하지 않는다. 다만 주소 판정만으로는 이 PC 에서 127.0.0.1 을 다른 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, **PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이 — 기본 127.0.0.1:502**, 벤더 게이트웨이, SSH 터널 등)을 막지 못한다.
-   - **`modbus_write_sim` 은 상대가 PortDock 인지 묻는다(0.10.0 부터).** 쓰기 전에 같은 연결로 장비 정보 읽기(FC 2B/0E, 기본 장비 정보)를 보내 제조사(객체 0)가 «PortDock» 일 때만 0F·10 을 보낸다. PortDock Modbus Slave 의 기본 장비 정보가 «PortDock / Modbus Slave» 다(화면에서 바꾸면 쓰기가 거절된다). 게이트웨이·중계 너머 실장비는 자기 제조사로 답하거나 2B 를 모르는 예외로 답하므로 쓰지 않는다. Modbus 의 관례대로 AI 가 `tcp_port` 에 502 를 넣어 Serial 게이트웨이에 닿는 경우를 막으려는 것이다.
-   - `mc_write_sim` 은 주소로만 판정한다 — 중계 프로그램이 떠 있으면 쓴 값이 실제 장비까지 간다.
-   - 그래서 «실장비에 쓰는 도구 없음» 이라고 단정하지 않고, 사이트·가이드·README·manifest·서버 안내 모두 «127.0.0.1 만 받음 + `modbus_write_sim` 은 PortDock 이라고 밝히는 대상만 + 중계 프로그램 주의» 로 적는다.
+1. **쓰기는 이 PC 주소만.** 쓰기 두 개는 대상 주소가 루프백(127.0.0.0/8·::1·글자 그대로 «localhost»)이 아니면 **연결하기 전에** 거절한다. 이름 풀이를 하지 않으므로 DNS 로 루프백을 흉내 내도 통하지 않는다. 다만 판정은 **주소로만** 한다 — 이 PC 에서 127.0.0.1 을 다른 장비로 넘겨 주는 프로그램(PortDock TCP 의 중계, 벤더 게이트웨이, SSH 터널 등)이 떠 있으면 쓴 값이 실제 장비까지 간다. 그래서 «실장비에 쓰는 도구 없음» 이라고 단정하지 않고, 사이트·가이드·README·manifest·서버 안내 모두 «127.0.0.1 만 받음 + 중계 프로그램 주의» 로 적는다.
 2. **도구 설명·주석**: 읽기 도구는 설명 첫머리에 «Read-only (읽기 전용).», 주석 `readOnlyHint: true`·`destructiveHint: false`. `scpi_query` 는 기본(거부 목록·측정 시작 거절)이 읽기라 `readOnlyHint: true` 이고, `allow_measure: true` 면 측정을 새로 시작해 계측기 상태가 바뀐다는 것을 설명에 적는다. 쓰기 둘은 «Simulator only (시뮬레이터 전용).»
 3. **세션 기록**: 모든 호출(거절 포함)을 JSONL 한 줄로 — 인자 형식이 틀렸거나(필수 인자 없음·형 틀림 — rmcp 가 handler 전에 돌려보냄) 없는 도구 이름이라 실행되지 않은 호출도 `server.rs` 의 `call_tool` 이 `ok: false`·요약 «not run — …» 으로 남긴다(0.7.0 뒤, 인자는 2000바이트까지) — 시각·도구·인자·대상·성공 여부·결과 앞 300자·걸린 ms. 폴더는 exe 옆 `portdock-data\mcp-log`(있을 때), 아니면 `%LOCALAPPDATA%\dev.portdock\mcp-log`, `PORTDOCK_MCP_LOG_DIR` 로 바꿀 수 있음. 날짜별 파일, 30일 지나면 지움. **밖으로 보내지 않는다**(사용 통계·오류 보고와 묶지 않음).
 4. **속도 제한**: 같은 대상(주소:포트·COM)은 100ms 에 한 번, 전체는 1분에 120번.
