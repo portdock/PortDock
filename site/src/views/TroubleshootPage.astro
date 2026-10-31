@@ -1,0 +1,492 @@
+---
+// 웹 도구: 고장 원인 찾기 도우미 — 증상을 고르고 예/아니오로 답하면 원인 후보·확인 방법(멀티미터 값)·관련 가이드·웹 도구·앱으로 좁힌다.
+// 질문 나무는 data/troubleshoot.ts, 걷기·텍스트는 lib/troubleshoot.ts(node --test 로 나무 모양과 링크를 검사). 모두 브라우저 안 — 서버로 보내지 않는다.
+// 상태는 주소 # (증상 + 답 번호)에만 둔다 — 링크를 보내면 같은 자리가 열린다.
+import Base from "../layouts/Base.astro";
+import AdSlot from "../components/AdSlot.astro";
+import Crumbs from "../components/Crumbs.astro";
+import WebToolLinks from "../components/WebToolLinks.astro";
+import UseNotice from "../components/UseNotice.astro";
+import { TREE } from "../data/troubleshoot";
+import { GUIDES } from "../data/guides";
+import { WEB_TOOLS } from "../data/webTools";
+import { TOOLS, type Lang } from "../data/tools";
+import { isQuestion, linkPath } from "../lib/troubleshoot";
+import { ITEM_NAME, type ItemId } from "../lib/meterCheck";
+import { TEMPLATE_NAME } from "../lib/wiring";
+import { url } from "../lib/i18n";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const ko = lang === "ko";
+const PATH = "tools/troubleshoot/";
+
+// 링크 경로 → 이 언어의 이름(화면·복사 글에 쓴다)
+const names: Record<string, string> = {};
+for (const n of TREE.nodes) {
+  if (isQuestion(n)) continue;
+  for (const l of n.links) {
+    const p = linkPath(l);
+    if (l.k === "guide") names[p] = GUIDES.find((g) => g.slug === l.to)!.title[lang];
+    else if (l.k === "app") names[p] = TOOLS.find((x) => x.id === l.to)!.name;
+    else {
+      const base = WEB_TOOLS.find((w) => w.path === l.to)!.name[lang];
+      let sub = "";
+      if (l.hash && l.to === "tools/multimeter-check/") sub = ITEM_NAME[l.hash as ItemId][lang];
+      if (l.hash && l.to === "tools/wiring/") sub = TEMPLATE_NAME[l.hash.slice(4) as keyof typeof TEMPLATE_NAME][lang];
+      names[p] = sub ? `${base} — ${sub}` : base;
+    }
+  }
+}
+const kinds = { guide: ko ? "가이드" : "Guide", web: ko ? "웹 도구" : "Web tool", app: ko ? "프로그램" : "App" };
+
+const L = ko
+  ? {
+      title: "고장 원인 찾기 도우미 — RS-485·Modbus·4-20mA·센서",
+      h1: "고장 원인 찾기 도우미",
+      desc: "RS-485·Modbus 응답 없음, RS-232, Modbus TCP, USB-시리얼 끊김, 4-20mA, NPN/PNP 센서, MC 프로토콜 — 증상을 고르고 예/아니오로 답해 원인 후보를 좁힙니다.",
+      seo: "통신·배선 고장 원인 찾기 — RS485·Modbus·4-20mA·센서 — PortDock",
+      pick: "증상 고르기",
+      trail: "답한 것",
+      back: "한 단계 뒤로",
+      restart: "처음부터",
+      copy: "텍스트로 복사",
+      copied: "복사했습니다 — AI 나 동료에게 그대로 붙여 넣으면 됩니다.",
+      copyFail: "복사하지 못했습니다 — 아래 글을 직접 골라 복사하세요.",
+      goHere: "여기로",
+      causes: "원인 후보",
+      checks: "확인 방법",
+      links: "이어서 볼 것",
+      caveat: "원인 후보일 뿐입니다 — 현장에서 재 보고 하나씩 지워 가세요.",
+      privacy: "질문과 답은 이 브라우저 안에서만 처리하며 어디에도 보내지 않습니다. 고른 답은 주소의 # 뒤에만 남고, # 뒤는 서버로 가지 않습니다.",
+      noJs: "이 도우미는 JavaScript 가 켜져 있어야 움직입니다. 아래 «다루는 증상» 에서 관련 가이드로 바로 갈 수 있습니다.",
+      what: "어떻게 쓰나",
+      whatP: [
+        "증상을 하나 고르면 질문이 하나씩 나옵니다. 아는 대로 «예/아니오» 를 누르면 끝에서 원인 후보, 확인 방법(멀티미터로 잴 곳과 일반적인 값), 관련 가이드·웹 도구·PortDock 프로그램을 보여 줍니다.",
+        "지나온 답은 «답한 것» 목록에 쌓이고, 아무 줄이나 눌러 그 질문으로 되돌아갈 수 있습니다. «텍스트로 복사» 는 증상·답·원인 후보를 한 덩어리 글로 만들어 AI 에게 묻거나 동료에게 보낼 때 그대로 붙여 넣을 수 있게 합니다.",
+        "잰 값이 무엇을 뜻하는지는 멀티미터 측정값 점검기에 넣어 보고, 배선 그림이 필요하면 배선도 만들기로 그리면 됩니다.",
+      ],
+      covers: "다루는 증상",
+      mm: "멀티미터 측정값 점검기",
+      mmNote: "잰 값을 판정하려면",
+      wd: "배선도 만들기",
+      wdNote: "배선 그림은",
+      rs: "RS-485 종단·바이어스 계산기",
+      rsNote: "종단·바이어스 저항 값은",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["답을 모르는 질문이 나오면?", "모르는 쪽(대개 «아니오»)을 고르면 그 확인 방법이 결과에 나옵니다. 확인한 뒤 «답한 것» 에서 그 질문을 눌러 다시 답하면 됩니다."],
+        ["결과가 원인을 알려 주나요?", "아닙니다. 흔한 원인 후보를 좁혀 주고 무엇을 재 볼지 알려 줄 뿐입니다. 현장 측정·장비 매뉴얼이 먼저입니다."],
+        ["질문이 우리 현장과 맞지 않습니다.", "아래 «의견 남기기» 로 증상과 상황을 알려 주시면 질문을 더하겠습니다."],
+      ],
+    }
+  : {
+      title: "Field Troubleshooting Wizard — RS-485, Modbus, 4–20 mA, Sensors",
+      h1: "Field Troubleshooting Wizard",
+      desc: "RS-485/Modbus no reply, RS-232, Modbus TCP, USB-serial drops, 4–20 mA, NPN/PNP sensors, MC protocol — answer yes or no to narrow down possible causes.",
+      seo: "Field Troubleshooting Wizard: RS-485, Modbus, 4–20 mA — PortDock",
+      pick: "Pick a symptom",
+      trail: "Your answers",
+      back: "Back one step",
+      restart: "Start over",
+      copy: "Copy as text",
+      copied: "Copied — paste it as is into an AI chat or a message to a colleague.",
+      copyFail: "Could not copy — select the text below and copy it yourself.",
+      goHere: "Go back here",
+      causes: "Possible causes",
+      checks: "How to check",
+      links: "See also",
+      caveat: "These are possible causes only — measure on site and rule them out one by one.",
+      privacy: "Questions and answers are handled inside this browser and sent nowhere. Your answers live only after the # in the address, which never reaches the server.",
+      noJs: "This wizard needs JavaScript. You can still jump to the related guides under «Symptoms covered» below.",
+      what: "How to use it",
+      whatP: [
+        "Pick a symptom and questions appear one at a time. Answer «Yes» or «No» as far as you know; at the end you get possible causes, how to check them (where to put the meter and typical values) and related guides, web tools and PortDock apps.",
+        "Every answer is listed under «Your answers»; click any line to go back to that question. «Copy as text» turns the symptom, answers and causes into one block of text to paste into an AI chat or send to a colleague.",
+        "To judge a reading, enter it in the multimeter reading checker; for a wiring drawing, use the wiring diagram maker.",
+      ],
+      covers: "Symptoms covered",
+      mm: "multimeter reading checker",
+      mmNote: "To judge a measured value, use the",
+      wd: "wiring diagram maker",
+      wdNote: "For wiring drawings, use the",
+      rs: "RS-485 termination and bias calculator",
+      rsNote: "To size termination and bias resistors, use the",
+      faqTitle: "FAQ",
+      faq: [
+        ["What if I don't know the answer to a question?", "Choose the side you can't confirm (usually «No») and the result tells you how to check it. Then click that question under «Your answers» and answer again."],
+        ["Does the result tell me the cause?", "No. It narrows down common possible causes and tells you what to measure. On-site measurements and the device manual come first."],
+        ["The questions don't fit my site.", "Use «Leave feedback» below to describe the symptom and setup, and we will add questions."],
+      ],
+    };
+const T = {
+  copied: L.copied,
+  copyFail: L.copyFail,
+  goHere: L.goHere,
+  causes: L.causes,
+  checks: L.checks,
+  links: L.links,
+  caveat: L.caveat,
+  kinds,
+};
+// 증상마다 결과에 나오는 가이드(겹침 없이) — JS 없이도 읽히는 목록
+const byId = new Map(TREE.nodes.map((n) => [n.id, n]));
+const guidesFor = (start: string) => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const go = (id: string, d: number) => {
+    const n = byId.get(id);
+    if (!n || d > 30 || seen.has(id)) return;
+    seen.add(id);
+    if (isQuestion(n)) n.opts.forEach((o) => go(o.next, d + 1));
+    else for (const l of n.links) if (l.k === "guide" && !out.includes(l.to)) out.push(l.to);
+  };
+  go(start, 0);
+  return out.slice(0, 4);
+};
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+---
+
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <header class="page-head">
+    <div class="wrap">
+      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <h1>{L.h1}</h1>
+      <p>{L.desc}</p>
+    </div>
+  </header>
+  <div class="wrap" style="padding-top:24px">
+    <div class="calc card ts" id="ts" data-lang={lang} data-names={JSON.stringify(names)} data-t={JSON.stringify(T)}>
+      <section id="ts-pick">
+        <h2 class="ts-h">{L.pick}</h2>
+        <div class="ts-syms">
+          {TREE.symptoms.map((s, i) => <button type="button" class="btn ts-sym" data-s={s.id}><span class="ts-n">{i + 1}</span> {s.name[lang]}</button>)}
+        </div>
+        <noscript><p class="note">{L.noJs}</p></noscript>
+      </section>
+      <section id="ts-flow" hidden>
+        <p class="ts-symname" id="ts-sym"></p>
+        <div id="ts-trail-box">
+          <h3 class="ts-h3">{L.trail}</h3>
+          <ol id="ts-trail" class="ts-trail"></ol>
+        </div>
+        <div id="ts-q" class="ts-q" aria-live="polite">
+          <p class="ts-qtext" id="ts-qtext"></p>
+          <p class="note" id="ts-hint"></p>
+          <div class="btns" id="ts-opts"></div>
+        </div>
+        <div id="ts-res" class="ts-res" hidden aria-live="polite"></div>
+        <div class="btns ts-nav">
+          <button type="button" class="btn tight" id="ts-back">← {L.back}</button>
+          <button type="button" class="btn tight" id="ts-restart">{L.restart}</button>
+          <button type="button" class="btn tight" id="ts-copy">{L.copy}</button>
+        </div>
+        <p class="note" id="ts-msg" role="status"></p>
+        <textarea id="ts-text" class="mono ts-text" rows="8" readonly hidden></textarea>
+      </section>
+      <p class="note privacy">{L.privacy}</p>
+    </div>
+
+    <AdSlot />
+
+    <section class="prose">
+      <h2>{L.what}</h2>
+      {L.whatP.map((p) => <p>{p}</p>)}
+      <p>{L.mmNote} <a href={url(lang, "tools/multimeter-check/")}>{L.mm}</a>. {L.wdNote} <a href={url(lang, "tools/wiring/")}>{L.wd}</a>. {L.rsNote} <a href={url(lang, "tools/rs485/")}>{L.rs}</a>.</p>
+      <h2>{L.covers}</h2>
+      <ul>
+        {
+          TREE.symptoms.map((s) => (
+            <li>
+              <b>{s.name[lang]}</b> — {guidesFor(s.start).map((g, i) => (
+                <>
+                  {i > 0 && ", "}
+                  <a href={url(lang, `guides/${g}/`)}>{GUIDES.find((x) => x.slug === g)!.title[lang]}</a>
+                </>
+              ))}
+            </li>
+          ))
+        }
+      </ul>
+      <h2>{L.faqTitle}</h2>
+      {
+        L.faq.map(([q, a]) => (
+          <>
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </>
+        ))
+      }
+    </section>
+    <UseNotice lang={lang} />
+    <WebToolLinks lang={lang} path={PATH} />
+  </div>
+  <style>
+    .ts-h {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+    .ts-syms {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 8px;
+    }
+    .ts-sym {
+      text-align: left;
+      justify-content: flex-start;
+      white-space: normal;
+      height: auto;
+      line-height: 1.35;
+      padding: 10px 12px;
+    }
+    .ts-n {
+      display: inline-block;
+      min-width: 1.6em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .ts-symname {
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .ts-h3 {
+      font-size: 14px;
+      margin: 8px 0 4px;
+      color: var(--muted);
+    }
+    .ts-trail {
+      margin: 0 0 12px;
+      padding-left: 22px;
+      font-size: 14px;
+    }
+    .ts-trail li {
+      margin: 2px 0;
+    }
+    .ts-trail button {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--accent);
+      cursor: pointer;
+      font: inherit;
+      text-decoration: underline;
+      text-align: left;
+    }
+    .ts-trail b {
+      color: var(--ink);
+    }
+    .ts-q {
+      border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 12px;
+      margin: 8px 0 12px;
+    }
+    .ts-qtext {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    #ts-hint:empty {
+      display: none;
+    }
+    .ts-res {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin: 8px 0 12px;
+      background: var(--soft);
+    }
+    .ts-res h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+    .ts-res h4 {
+      margin: 10px 0 4px;
+      font-size: 14px;
+    }
+    .ts-res ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .ts-res .kind {
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+    .ts-nav {
+      margin-top: 8px;
+    }
+    .ts-text {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+  <script>
+    import { TREE } from "../data/troubleshoot";
+    import { isQuestion, linkPath, parseHash, toHash, toText, walk, type Lang } from "../lib/troubleshoot";
+    const root = document.getElementById("ts")!;
+    const lang = (root.dataset.lang ?? "ko") as Lang;
+    const names = JSON.parse(root.dataset.names ?? "{}") as Record<string, string>;
+    const T = JSON.parse(root.dataset.t ?? "{}") as { copied: string; copyFail: string; goHere: string; causes: string; checks: string; links: string; caveat: string; kinds: Record<string, string> };
+    const $ = (id: string) => document.getElementById(id)!;
+    const pick = $("ts-pick");
+    const flow = $("ts-flow");
+    const symEl = $("ts-sym");
+    const trail = $("ts-trail");
+    const trailBox = $("ts-trail-box");
+    const qBox = $("ts-q");
+    const qText = $("ts-qtext");
+    const hint = $("ts-hint");
+    const opts = $("ts-opts");
+    const res = $("ts-res");
+    const msg = $("ts-msg");
+    const text = $("ts-text") as HTMLTextAreaElement;
+    const prefix = lang === "en" ? "/en/" : "/";
+    let sym = "";
+    let picks: number[] = [];
+
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, txt?: string, cls?: string) => {
+      const e = document.createElement(tag);
+      if (txt !== undefined) e.textContent = txt;
+      if (cls) e.className = cls;
+      return e;
+    };
+
+    function save() {
+      try {
+        history.replaceState(null, "", sym ? "#" + toHash(sym, picks) : location.pathname + location.search);
+      } catch {
+        /* 주소를 못 바꿔도 화면은 그대로 */
+      }
+    }
+
+    function render(focus = false) {
+      msg.textContent = "";
+      text.hidden = true;
+      const w = sym ? walk(TREE, sym, picks) : null;
+      if (!w) {
+        sym = "";
+        picks = [];
+        pick.hidden = false;
+        flow.hidden = true;
+        save();
+        return;
+      }
+      picks = w.steps.map((s) => s.pick);
+      pick.hidden = true;
+      flow.hidden = false;
+      symEl.textContent = w.symptom.name[lang];
+      trail.replaceChildren(
+        ...w.steps.map((s, i) => {
+          const li = el("li");
+          const b = el("button", s.q.q[lang]);
+          b.type = "button";
+          b.title = T.goHere;
+          b.addEventListener("click", () => {
+            picks = picks.slice(0, i);
+            save();
+            render(true);
+          });
+          li.append(b, " → ", el("b", s.q.opts[s.pick].a[lang]));
+          return li;
+        }),
+      );
+      trailBox.hidden = w.steps.length === 0;
+      ($("ts-back") as HTMLButtonElement).disabled = false;
+      if (isQuestion(w.at)) {
+        const q = w.at;
+        qBox.hidden = false;
+        res.hidden = true;
+        qText.textContent = q.q[lang];
+        hint.textContent = q.hint?.[lang] ?? "";
+        opts.replaceChildren(
+          ...q.opts.map((o, i) => {
+            const b = el("button", o.a[lang], "btn" + (q.opts.length === 2 && i === 0 ? " primary" : ""));
+            b.type = "button";
+            b.addEventListener("click", () => {
+              picks = [...picks, i];
+              save();
+              render(true);
+            });
+            return b;
+          }),
+        );
+        if (focus) (opts.firstElementChild as HTMLElement | null)?.focus();
+      } else {
+        const r = w.at;
+        qBox.hidden = true;
+        res.hidden = false;
+        const ul = (items: string[]) => {
+          const u = el("ul");
+          u.append(...items.map((x) => el("li", x)));
+          return u;
+        };
+        const links = el("ul");
+        links.append(
+          ...r.links.map((l) => {
+            const li = el("li");
+            const p = linkPath(l);
+            const a = el("a", names[p] ?? p);
+            a.href = prefix + p;
+            li.append(el("span", T.kinds[l.k], "kind"), a);
+            return li;
+          }),
+        );
+        res.replaceChildren(el("h3", r.title[lang]), el("h4", T.causes), ul(r.causes.map((c) => c[lang])), el("h4", T.checks), ul(r.checks.map((c) => c[lang])), el("h4", T.links), links, el("p", T.caveat, "note"));
+        if (focus) res.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    for (const b of pick.querySelectorAll<HTMLButtonElement>("[data-s]"))
+      b.addEventListener("click", () => {
+        sym = b.dataset.s ?? "";
+        picks = [];
+        save();
+        render(true);
+        flow.scrollIntoView({ block: "nearest" });
+      });
+    $("ts-back").addEventListener("click", () => {
+      if (picks.length === 0) sym = "";
+      else picks = picks.slice(0, -1);
+      save();
+      render(true);
+    });
+    $("ts-restart").addEventListener("click", () => {
+      sym = "";
+      picks = [];
+      save();
+      render();
+    });
+    $("ts-copy").addEventListener("click", async () => {
+      const w = walk(TREE, sym, picks);
+      if (!w) return;
+      const s = toText(w, lang, names, location.origin + prefix);
+      text.value = s;
+      try {
+        await navigator.clipboard.writeText(s);
+        msg.textContent = T.copied;
+        text.hidden = true;
+      } catch {
+        msg.textContent = T.copyFail;
+        text.hidden = false;
+        text.select();
+      }
+    });
+    const fromHash = () => {
+      const h = parseHash(location.hash);
+      if (h && TREE.symptoms.some((s) => s.id === h.s)) {
+        sym = h.s;
+        picks = h.a;
+      }
+      render();
+    };
+    window.addEventListener("hashchange", fromHash);
+    fromHash();
+  </script>
+</Base>

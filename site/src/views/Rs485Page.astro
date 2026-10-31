@@ -254,6 +254,9 @@ const SRC = [
       <p>
         {L.guideNote} <a href={url(lang, "guides/rs485-wiring/")}>{L.guideLink}</a>.
       </p>
+      <p>
+        {ko ? "현장에서 A–B 저항(약 60 Ω)·쉬는 전압(+200 mV)을 재 봤다면 " : "If you have measured A–B resistance (about 60 Ω) or idle voltage (+200 mV) on site, enter it in the "}<a href={url(lang, "tools/multimeter-check/#rs485-ohm")}>{ko ? "멀티미터 측정값 점검기" : "multimeter reading checker"}</a>{ko ? " 에 넣어 보고, 응답이 없으면 " : "; if nothing replies, follow the "}<a href={url(lang, "tools/troubleshoot/#s=rs485")}>{ko ? "고장 원인 찾기 도우미" : "field troubleshooting wizard"}</a>{ko ? " 를 따라가 보세요. 배선 그림은 " : ". For a wiring drawing, use the "}<a href={url(lang, "tools/wiring/")}>{ko ? "배선도 만들기" : "wiring diagram maker"}</a>{ko ? " 로 그리면 됩니다." : "."}
+      </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
     </section>

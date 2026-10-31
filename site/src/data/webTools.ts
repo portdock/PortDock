@@ -63,7 +63,9 @@ export interface WebTool {
     | "tools/barcode-scanner-test/"
     | "tools/mqtt-decoder/"
     | "tools/wiring/"
-    | "tools/system-diagram/";
+    | "tools/system-diagram/"
+    | "tools/troubleshoot/"
+    | "tools/multimeter-check/";
   name: L;
   blurb: L;
 }
@@ -370,6 +372,17 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/system-diagram/",
     name: { ko: "시스템 구성도 그리기", en: "System Diagram Editor" },
     blurb: { ko: "PC·PLC·HMI·인버터·스위치를 놓고 이더넷·RS-485 버스로 잇기. IP 중복·서브넷·국번 중복 점검, JSON·SVG·PNG, Net Scan CSV 불러오기.", en: "Place PCs, PLCs, HMIs, drives and switches, connect with Ethernet or RS-485 buses. Checks duplicate IPs, subnets and IDs; JSON, SVG, PNG; Net Scan CSV import." },
+  },
+  // ---- 고장 찾기·점검
+  {
+    path: "tools/troubleshoot/",
+    name: { ko: "고장 원인 찾기 도우미", en: "Field Troubleshooting Wizard" },
+    blurb: { ko: "RS-485·RS-232·Modbus TCP·USB-시리얼·4-20mA·NPN/PNP 센서·MC 프로토콜·USB 끊김 — 예/아니오로 좁혀 원인 후보·멀티미터 확인값·가이드. 텍스트로 복사.", en: "RS-485, RS-232, Modbus TCP, USB-serial, 4–20 mA, NPN/PNP sensors, MC protocol, USB drops — narrow down by yes/no to possible causes, meter checks and guides. Copy as text." },
+  },
+  {
+    path: "tools/multimeter-check/",
+    name: { ko: "멀티미터 측정값 점검기", en: "Multimeter Reading Checker" },
+    blurb: { ko: "RS-485 A–B 저항·쉬는 전압·공통 모드, 4-20mA(NE 43), 24 V 강하, NPN/PNP 출력, RS-232 TX, 접지 전위차 — 잰 값 → «문제 없음·볼 것·문제 있음».", en: "RS-485 A–B resistance, idle and common-mode voltage, 4–20 mA (NE 43), 24 V drop, NPN/PNP output, RS-232 TX, ground difference — reading in, verdict out." },
   },
 ];
 
