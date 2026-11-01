@@ -16,7 +16,6 @@ export default {
   "Not transmitting · device may be unplugged": "Bez nadawania · urządzenie może być odłączone",
   "USB shell": "Obudowa USB",
   Equipment: "Urządzenie",
-  Device: "Urządzenie", // tylko do scalenia z main 5d1837b (tam klucz to Equipment)
   "Both powered · DC and AC": "Oba zasilone · DC i AC",
   "Break the loop at one point, meter in series (mA jack)": "Rozłącz pętlę w jednym miejscu, miernik szeregowo (gniazdo mA)",
   Supply: "Zasilacz",
