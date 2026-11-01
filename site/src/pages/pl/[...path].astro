@@ -1,0 +1,10 @@
+---
+// 폴란드어 쪽 — 번역 범위(i18n/scope.ts)의 쪽만 /pl/… 로 만든다(site/I18N.md).
+import LangPage from "../../i18n/LangPage.astro";
+import { staticPaths } from "../../i18n/scope";
+
+export const getStaticPaths = staticPaths;
+const { path } = Astro.props;
+---
+
+<LangPage lang="pl" path={path} />

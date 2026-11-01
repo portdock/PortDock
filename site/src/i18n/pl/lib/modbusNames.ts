@@ -1,0 +1,28 @@
+// Modbus 함수 이름·데이터 영역(lib/modbusDecode.ts·shared/modbusBuild.ts) — Modbus 요청 만들기·해석기가 함께 쓴다
+// 용어: cewki (Coils), wejścia dyskretne, rejestry Holding, rejestry wejściowe
+export default {
+  "Read Coils": "Odczyt cewek",
+  "Read Discrete Inputs": "Odczyt wejść dyskretnych",
+  "Read Holding Registers": "Odczyt rejestrów Holding",
+  "Read Input Registers": "Odczyt rejestrów wejściowych",
+  "Write Single Coil": "Zapis pojedynczej cewki",
+  "Write Single Register": "Zapis pojedynczego rejestru",
+  "Write Multiple Coils": "Zapis wielu cewek",
+  "Write Multiple Registers": "Zapis wielu rejestrów",
+  "Read/Write Multiple Registers": "Odczyt/zapis wielu rejestrów",
+  "Read Exception Status (serial line only)": "Odczyt statusu wyjątku (tylko łącze szeregowe)",
+  "Diagnostics (serial line only)": "Diagnostyka (tylko łącze szeregowe)",
+  "Get Comm Event Counter (serial line only)": "Licznik zdarzeń komunikacji (tylko łącze szeregowe)",
+  "Get Comm Event Log (serial line only)": "Dziennik zdarzeń komunikacji (tylko łącze szeregowe)",
+  "Report Server ID (serial line only)": "Raport identyfikatora urządzenia (tylko łącze szeregowe)",
+  "Read File Record": "Odczyt rekordu pliku",
+  "Write File Record": "Zapis rekordu pliku",
+  "Mask Write Register": "Zapis rejestru z maską",
+  "Read FIFO Queue": "Odczyt kolejki FIFO",
+  "Encapsulated Interface Transport": "Transport interfejsu enkapsulowanego (identyfikacja urządzenia itp.)",
+  "Unknown function": "Nieznana funkcja",
+  Coils: "Cewki",
+  "Discrete inputs": "Wejścia dyskretne",
+  "Holding registers": "Rejestry Holding",
+  "Input registers": "Rejestry wejściowe",
+};
