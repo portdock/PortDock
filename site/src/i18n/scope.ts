@@ -65,6 +65,7 @@ export const MORE: Partial<Record<ExtraLang, readonly Scope2Path[]>> = {
   fr: SCOPE2_PATHS,
   it: SCOPE2_PATHS,
   tr: SCOPE2_PATHS,
+  vi: SCOPE2_PATHS,
 };
 
 const bare = (path: string) => path.replace(/^\/+/, "").replace(/[#?].*$/, "");

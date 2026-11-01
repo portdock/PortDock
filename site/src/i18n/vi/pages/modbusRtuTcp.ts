@@ -1,0 +1,30 @@
+// Chuyển đổi khung Modbus RTU ↔ TCP (views/ModbusRtuTcpPage.astro) — gói 2
+// Thuật ngữ: địa chỉ trạm, Unit ID, header MBAP, mã giao dịch (transaction ID), gateway, broadcast
+export default {
+  title: "Chuyển đổi khung Modbus RTU ↔ TCP",
+  seo: "Chuyển Modbus RTU sang TCP: MBAP, CRC, ASCII LRC — PortDock",
+  desc: "Chuyển Modbus RTU (địa chỉ + CRC) sang Modbus TCP có header MBAP và ngược lại, cả chế độ ASCII (dấu hai chấm, LRC). Từng byte được tô màu và giải thích.",
+  input: "Khung (HEX cho RTU và TCP, văn bản bắt đầu bằng «:» cho ASCII)",
+  help: "ví dụ 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — lệnh hỏi hoặc phản hồi, mỗi lần một khung",
+  mode: "Định dạng đầu vào",
+  auto: "Tự nhận dạng",
+  tid: "Mã giao dịch (khi chuyển sang TCP, 0–65535)",
+  tidHelp: "Với phản hồi, nhập số của lệnh hỏi tương ứng.",
+  examples: "Ví dụ",
+  ex: ["Lệnh hỏi RTU 03", "Phản hồi RTU 03", "Lệnh hỏi TCP", "Ngoại lệ TCP", "Lệnh hỏi ASCII", "Ghi RTU 10"],
+  how: "Mọi thứ được chuyển đổi trong trình duyệt; các byte bạn dán không được gửi đi đâu.",
+  faqTitle: "Câu hỏi thường gặp",
+  srcTitle: "Nguồn tham khảo",
+  faq: [
+    ["Khung RTU và khung TCP khác nhau thế nào?", "PDU ở giữa (mã hàm và dữ liệu) giống hệt nhau. RTU thêm 1 byte địa chỉ trạm ở đầu và 2 byte CRC16 (byte thấp trước) ở cuối. TCP không có CRC mà đặt header MBAP 7 byte ở đầu: mã giao dịch (2), mã giao thức (2, luôn bằng 0), độ dài (2) và Unit ID (1). Độ dài đếm các byte từ Unit ID đến hết."],
+    ["Qua gateway thì dùng Unit ID nào?", "Gateway TCP sang RTU (serial device server) dùng Unit ID nhận được làm địa chỉ trạm ở phía serial, nên hãy nhập địa chỉ của thiết bị phía sau nó (1 đến 247). Địa chỉ 0 là broadcast trên đường serial, nên tùy gateway nó được chuyển tới mọi thiết bị (không có phản hồi) hoặc coi là gửi cho chính gateway. 255 (FF) là giá trị khuyên dùng cho thiết bị TCP được gọi trực tiếp; gateway thường không chuyển tiếp nó sang serial hoặc tự trả lời. Hãy xem tài liệu của gateway để biết chính xác."],
+    ["Mã giao dịch được chọn thế nào?", "Bên gửi lệnh hỏi tự chọn và thiết bị trả lại đúng số đó trong phản hồi; thường tăng thêm một sau mỗi lệnh hỏi. RTU không có trường này nên nó bị bỏ khi chuyển TCP sang RTU, còn khi chuyển RTU sang TCP thì dùng giá trị trong ô ở trên."],
+    ["Chế độ ASCII là gì?", "Là chế độ truyền còn lại của Modbus over Serial Line. Địa chỉ, PDU và LRC được gửi thành hai ký tự HEX chữ hoa cho mỗi byte, có «:» (3A) ở đầu và CR LF (0D 0A) ở cuối. LRC là bù hai 8 bit của tổng các byte từ địa chỉ đến cuối PDU. Nó mang cùng PDU với RTU nên hai dạng chuyển trực tiếp cho nhau được."],
+    ["Báo CRC hoặc LRC sai", "Các byte cuối được coi là CRC (hoặc LRC) và bỏ đi, phần còn lại được chuyển đổi, và giá trị đúng được hiển thị. Nếu bạn chỉ dán địa chỉ và PDU mà không có CRC, hãy giữ định dạng RTU rồi thêm CRC đúng, hoặc lấy nó từ công cụ tính CRC và checksum."],
+  ] as [string, string][],
+  guide: "Kết nối Modbus TCP và header MBAP (tiếng Anh)",
+  guide2: "Đọc khung Modbus RTU (tiếng Anh)",
+  src: ["Header MBAP (giao dịch, giao thức, độ dài, Unit ID), Unit ID ở gateway", "Đóng khung RTU và ASCII, địa chỉ (0 broadcast, 1–247), CRC và LRC", "PDU (mã hàm và dữ liệu), phản hồi ngoại lệ"],
+  seeG: ["Header MBAP và sự cố kết nối: xem ", "; các byte RTU: xem ", "."],
+  seeT: ["Để giải mã chi tiết giá trị và địa chỉ 40001, dùng ", "công cụ giải mã khung Modbus", "; để luyện tập bằng câu hỏi, thử ", "bài trắc nghiệm luyện Modbus (tiếng Anh)", "."],
+};
