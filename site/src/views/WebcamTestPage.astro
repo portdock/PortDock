@@ -7,27 +7,31 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/webcam-test/";
 const RES = [
-  ["", ko ? "브라우저 기본" : "Browser default"],
+  ["", lang === "ko" ? "브라우저 기본" : lang === "en" ? "Browser default" : page3(lang, "webcamTest").resDefault],
   ["640x480", "640×480"],
   ["1280x720", "1280×720 (720p)"],
   ["1920x1080", "1920×1080 (1080p)"],
   ["2560x1440", "2560×1440"],
   ["3840x2160", "3840×2160 (4K)"],
 ];
-const L = ko
+const MORE_LINKS = ["tools/gige-bandwidth/", "tools/mic-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "웹캠 테스트",
+      seo: "웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음) — PortDock",
       desc: "설치 없이 브라우저에서 웹캠 미리보기, 요청한 해상도와 실제로 받은 해상도·fps 측정, 카메라 고르기. 영상은 저장하거나 어디로 보내지 않습니다.",
       start: "카메라 켜기",
       stop: "끄기",
@@ -69,7 +73,7 @@ const L = ko
       },
       fieldTitle: "장비 PC 에서도",
       field: "현장 PC 에 붙인 USB 카메라(화상 지원·간이 모니터링용)가 어떤 해상도·fps 로 잡히는지 볼 때도 씁니다. 산업용 GigE 카메라는 웹캠처럼 브라우저에 잡히지 않습니다 — 대역폭은",
-      gigeLink: "GigE 카메라 대역폭 계산기",
+      more: [" ", "GigE 카메라 대역폭 계산기", ". 마이크는 ", "마이크 테스트", " 에서 봅니다."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["영상이 서버로 가나요?", "아니요. 영상은 이 쪽의 미리보기 칸에만 붙고, 저장·녹화·캡처·업로드를 하지 않습니다. 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
@@ -77,8 +81,10 @@ const L = ko
         ["화면이 좌우로 뒤집혀 보입니다", "셀카처럼 보이게 «거울처럼 좌우 뒤집기» 가 켜져 있습니다. 끄면 상대방이 보는 방향 그대로입니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Webcam Test",
+      seo: "Webcam Test: Check Actual Resolution & FPS Online — PortDock",
       desc: "Test your webcam in the browser: live preview, requested vs actual resolution, measured fps and a camera picker. Video is never saved or sent anywhere.",
       start: "Turn on camera",
       stop: "Turn off",
@@ -120,14 +126,18 @@ const L = ko
       },
       fieldTitle: "On equipment PCs too",
       field: "Use it to see what resolution and fps a USB camera on a shop-floor PC (remote support or simple monitoring) actually delivers. Industrial GigE cameras do not show up in a browser like webcams — for their bandwidth, see the",
-      gigeLink: "GigE camera bandwidth calculator",
+      more: [" ", "GigE camera bandwidth calculator", ". For the microphone, use the ", "mic test", "."],
       faqTitle: "FAQ",
       faq: [
         ["Is the video sent to a server?", "No. The video is attached only to the preview on this page and is never saved, recorded, captured or uploaded. This tool's code makes no network requests."],
         ["My 1080p webcam shows 720p", "Set «Requested resolution» to 1920×1080. If it stays smaller, the USB 2.0 port or hub bandwidth, the driver or another app's settings may be the cause. Try another USB port to compare."],
         ["The picture is flipped left to right", "«Mirror image» is on so it looks like a selfie. Turn it off to see what the other side sees."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "webcamTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -136,11 +146,11 @@ const ld = {
 const msgs = JSON.stringify({ err: L.err, unknown: L.unknown, devDefault: L.devDefault, idle: L.idle, live: L.live, fpsDefault: L.fpsDefault });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "웹캠 테스트 — 실제 해상도·fps 확인 (설치 없음) — PortDock" : "Webcam Test: Check Actual Resolution & FPS Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["hwSignal", "inputTiming"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -188,7 +198,7 @@ const msgs = JSON.stringify({ err: L.err, unknown: L.unknown, devDefault: L.devD
       </ul>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} <a href={url(lang, "tools/gige-bandwidth/")}>{L.gigeLink}</a>. {ko ? "마이크는" : "For the microphone, use the"} <a href={url(lang, "tools/mic-test/")}>{ko ? "마이크 테스트" : "mic test"}</a>{ko ? " 에서 봅니다." : "."}
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

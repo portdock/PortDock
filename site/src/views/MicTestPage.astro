@@ -8,19 +8,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/mic-test/";
-const L = ko
+const MORE_LINKS = ["tools/speaker-test/", "tools/webcam-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "마이크 테스트",
+      seo: "마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음) — PortDock",
       desc: "설치 없이 브라우저에서 마이크 입력 레벨·실제 샘플레이트·잡음 바닥·클리핑을 보고, 에코 제거를 켜고 끄며 비교하고, 5초 녹음을 들어 봅니다. 소리는 보내지 않습니다.",
       start: "마이크 켜기",
       stop: "끄기",
@@ -69,6 +73,7 @@ const L = ko
       },
       fieldTitle: "장비 PC 에서도",
       field: "현장 PC·HMI 패널에 붙인 헤드셋·인터컴 마이크, 화상 지원용 노트북 마이크도 같은 방법으로 봅니다. 설치가 막힌 PC 에서도 브라우저만 있으면 됩니다.",
+      more: [" 스피커 쪽은 ", "스피커 좌우 테스트", ", 카메라는 ", "웹캠 테스트", "."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["권한을 줬는데 레벨이 전혀 안 움직입니다", "윈도우 소리 설정에서 그 마이크가 음소거이거나 레벨이 0 인지, 헤드셋의 음소거 스위치가 켜져 있는지 보세요. «입력 장치» 에서 다른 장치를 골라 비교해도 좋습니다."],
@@ -76,8 +81,10 @@ const L = ko
         ["에코 제거를 켜면 왜 소리가 달라지나요?", "브라우저가 스피커 소리를 지우고 잡음을 줄이며 음량을 자동으로 맞추기 때문입니다. 화상 회의 앱이 쓰는 소리에 가깝고, 꺼 두면 마이크 그대로의 소리입니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Mic Test",
+      seo: "Mic Test: Level, Noise Floor & Playback Online — PortDock",
       desc: "Check your mic in the browser: live level, actual sample rate, noise floor, clipping, echo cancellation on/off and a 5-second local playback. Nothing is sent.",
       start: "Turn on mic",
       stop: "Turn off",
@@ -126,13 +133,18 @@ const L = ko
       },
       fieldTitle: "On equipment PCs too",
       field: "Use the same steps for headset or intercom mics on shop-floor PCs and HMI panels, or a laptop mic used for remote support. It only needs a browser, so it works where installing software is blocked.",
+      more: [" For the output side, see the ", "left/right speaker test", "; for the camera, the ", "webcam test", "."],
       faqTitle: "FAQ",
       faq: [
         ["I granted permission but the level does not move", "Check whether the mic is muted or at level 0 in Windows sound settings, or whether the headset's mute switch is on. Picking another device under «Input device» helps compare."],
         ["Is my recording sent to a server?", "No. Sound is handled inside this browser and this tool's code makes no network requests. The recording stays in the tab's memory and disappears when you close the page."],
         ["Why does it sound different with echo cancellation on?", "The browser removes speaker sound, reduces noise and adjusts the level automatically. That is close to what video call apps hear; with them off you hear the raw microphone."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "micTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -141,11 +153,11 @@ const ld = {
 const msgs = JSON.stringify({ err: L.err, on: L.on, off: L.off, unknown: L.unknown, devDefault: L.devDefault, rec: L.rec, recNow: L.recNow, idle: L.idle, live: L.live });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "마이크 테스트 — 입력 레벨·잡음·녹음 듣기 (설치 없음) — PortDock" : "Mic Test: Level, Noise Floor & Playback Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["hwSignal"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -202,7 +214,7 @@ const msgs = JSON.stringify({ err: L.err, on: L.on, off: L.off, unknown: L.unkno
       </ul>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "스피커 쪽은" : "For the output side, see the"} <a href={url(lang, "tools/speaker-test/")}>{ko ? "스피커 좌우 테스트" : "left/right speaker test"}</a>{ko ? ", 카메라는 " : "; for the camera, the "}<a href={url(lang, "tools/webcam-test/")}>{ko ? "웹캠 테스트" : "webcam test"}</a>.
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

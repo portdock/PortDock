@@ -8,19 +8,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/speaker-test/";
-const L = ko
+const MORE_LINKS = ["tools/db/", "tools/mic-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "스피커 좌우 테스트",
+      seo: "스피커 좌우 테스트 — 왼쪽·오른쪽·5.1 채널·위상 확인 — PortDock",
       desc: "왼쪽·오른쪽·양쪽 소리, 5.1·7.1 채널별 소리, 위상(극성) 반전 비교, 주파수 스윕과 톤, 출력 장치 고르기. 설치 없이 브라우저에서 바로 들어 봅니다.",
       warn: "음량 주의: 처음엔 아래 음량을 낮게 두고, 헤드폰은 귀에서 조금 떼고 시작하세요. 높은 주파수·큰 음량은 귀와 트위터(고음 스피커)를 다치게 할 수 있습니다.",
       vol: "음량",
@@ -56,6 +60,7 @@ const L = ko
       ],
       fieldTitle: "장비 PC 에서도",
       field: "현장 PC 의 경고음 스피커, 산업용 패널 PC 의 내장 스피커, 회의실 스피커의 좌우 배선을 볼 때도 씁니다.",
+      more: [" 소리 크기 단위는 ", "dB·dBm 변환기", ", 마이크는 ", "마이크 테스트", "."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["양쪽 버튼을 눌러도 한쪽에서만 납니다", "케이블이 끝까지 꽂혀 있는지, 스피커 하나의 전원·음량을 먼저 보세요. 윈도우 설정 → 시스템 → 소리 → 출력 장치 → 왼쪽·오른쪽 균형이 한쪽으로 치우쳐 있는지도 확인하세요."],
@@ -63,8 +68,10 @@ const L = ko
         ["소리 파일을 내려받나요?", "아니요. 모든 소리는 이 브라우저가 그 자리에서 만들고, 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Left/Right Speaker Test",
+      seo: "Left Right Speaker Test: Stereo, 5.1 & Polarity Online — PortDock",
       desc: "Play sound on the left, right or both speakers, per channel for 5.1 and 7.1, check polarity, run a frequency sweep or tone and pick an output device.",
       warn: "Volume warning: start with the volume below turned down and headphones held a little away from your ears. High frequencies at high volume can hurt your ears and tweeters.",
       vol: "Volume",
@@ -100,13 +107,18 @@ const L = ko
       ],
       fieldTitle: "On equipment PCs too",
       field: "It also helps with alarm speakers on shop-floor PCs, built-in speakers on panel PCs, and the left/right wiring of meeting-room speakers.",
+      more: [" For sound level units, see the ", "dB & dBm converter", "; for the microphone, the ", "mic test", "."],
       faqTitle: "FAQ",
       faq: [
         ["Both buttons play on one side only", "Check that the cable is fully inserted and the other speaker has power and volume. Also look at Settings → System → Sound → output device → left/right balance in Windows."],
         ["I do not see 5.1 channel buttons", "If the browser opens the output as 2 channels, no channel buttons appear. Set the device's speaker configuration to 5.1 or 7.1 in Windows sound settings and reload the page. From channel 5 on, 7.1 order differs between drivers and browsers, so those are shown by number."],
         ["Does it download sound files?", "No. Every sound is generated on the spot by this browser, and this tool's code makes no network requests."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "speakerTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -115,11 +127,11 @@ const ld = {
 const msgs = JSON.stringify({ outDefault: L.outDefault, playing: L.playing, lang });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "스피커 좌우 테스트 — 왼쪽·오른쪽·5.1 채널·위상 확인 — PortDock" : "Left Right Speaker Test: Stereo, 5.1 & Polarity Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["hwSignal"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -170,7 +182,7 @@ const msgs = JSON.stringify({ outDefault: L.outDefault, playing: L.playing, lang
       <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "소리 크기 단위는" : "For sound level units, see the"} <a href={url(lang, "tools/db/")}>{ko ? "dB·dBm 변환기" : "dB & dBm converter"}</a>{ko ? ", 마이크는 " : "; for the microphone, the "}<a href={url(lang, "tools/mic-test/")}>{ko ? "마이크 테스트" : "mic test"}</a>.
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -199,10 +211,11 @@ const msgs = JSON.stringify({ outDefault: L.outDefault, playing: L.playing, lang
   </style>
   <script>
     import { channelLabel, fmtHz, sliderToFreq, sweepFreqAt } from "../lib/hwSignal";
+    import type { Lang } from "../lib/tr";
 
     const root = document.getElementById("spk")!;
     const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
-    const lang = M.lang === "en" ? "en" : "ko";
+    const lang = (M.lang || "ko") as Lang;
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const vol = $<HTMLInputElement>("vol");
     const kindSel = $<HTMLSelectElement>("kind");

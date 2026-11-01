@@ -8,26 +8,27 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { tx } from "../lib/tr";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import { MOUSE_BUTTONS } from "../lib/inputTiming";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/mouse-test/";
-const WHEEL = [
-  ["up", ko ? "휠 위" : "Wheel up"],
-  ["down", ko ? "휠 아래" : "Wheel down"],
-  ["left", ko ? "휠 왼쪽" : "Wheel left"],
-  ["right", ko ? "휠 오른쪽" : "Wheel right"],
-];
-const L = ko
+const WHEEL_NAME = lang === "ko" ? ["휠 위", "휠 아래", "휠 왼쪽", "휠 오른쪽"] : lang === "en" ? ["Wheel up", "Wheel down", "Wheel left", "Wheel right"] : page3(lang, "mouseTest").wheel;
+const WHEEL = ["up", "down", "left", "right"].map((d, i) => [d, WHEEL_NAME[i]]);
+const MORE_LINKS = ["tools/keyboard-test/", "tools/monitor-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "마우스 더블클릭 테스트",
+      seo: "마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인 — PortDock",
       desc: "버튼 5개·휠 4방향을 눌러 보고, 더블클릭 간격(ms)과 의도하지 않은 더블클릭(채터링) 의심, 드래그 끊김, 폴링 레이트 추정치를 봅니다. 설치 없이 브라우저에서.",
       area: "이 칸 안에서 누르고, 굴리고, 끌어 보세요",
       thr: "채터링 임계값",
@@ -67,6 +68,7 @@ const L = ko
       ],
       fieldTitle: "장비 PC 에서도",
       field: "현장 PC·산업용 패널 PC 에 붙은 마우스·트랙볼이 클릭을 두 번 넣거나 드래그가 끊겨 작업 화면에서 잘못 눌리는지 확인할 때도 씁니다.",
+      more: [" 키보드는 ", "키보드 테스트", ", 화면 주사율은 ", "모니터 불량화소·주사율 테스트", "."],
       mobile: "휴대폰·태블릿의 터치는 마우스 버튼·휠이 없어 이 시험에 맞지 않습니다. 컴퓨터에서 여세요.",
       faqTitle: "자주 묻는 것",
       faq: [
@@ -75,8 +77,10 @@ const L = ko
         ["폴링 레이트가 마우스 설정보다 낮게 나옵니다", "브라우저 추정치라 실제보다 낮게 나올 수 있습니다. 특히 1000 Hz 이상은 브라우저가 이벤트를 합쳐 보내 숫자가 흔들립니다. 마우스를 더 빠르게 계속 움직이면 조금 더 가깝게 나옵니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Mouse Double Click Test",
+      seo: "Mouse Double Click Test: Chatter, Wheel & Polling Rate — PortDock",
       desc: "Test five buttons and four wheel directions, see double-click intervals in ms, spot unintended double clicks and drag breaks, and estimate polling rate.",
       area: "Click, scroll and drag inside this box",
       thr: "Chatter threshold",
@@ -116,6 +120,7 @@ const L = ko
       ],
       fieldTitle: "On equipment PCs too",
       field: "Use it on shop-floor and panel PCs to check whether a mouse or trackball double-clicks on its own or drops drags, causing wrong presses on operator screens.",
+      more: [" For keyboards, use the ", "keyboard tester", "; for screen refresh rate, the ", "dead pixel & refresh rate test", "."],
       mobile: "Touch screens on phones and tablets have no mouse buttons or wheel, so this test does not fit them. Open it on a computer.",
       faqTitle: "FAQ",
       faq: [
@@ -123,7 +128,11 @@ const L = ko
         ["Back and forward buttons leave the page", "Outside the box the browser uses them to navigate. Press them inside the box, where they are blocked."],
         ["The polling rate is lower than my mouse setting", "It is a browser estimate and can read low. Above 1000 Hz especially, browsers merge events and the number wobbles. Moving the mouse faster and continuously gets a little closer."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "mouseTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -132,11 +141,11 @@ const ld = {
 const msgs = JSON.stringify({ lang, evDown: L.evDown, evUp: L.evUp, sFast: L.sFast, sBounce: L.sBounce, pollMax: L.pollMax });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인 — PortDock" : "Mouse Double Click Test: Chatter, Wheel & Polling Rate — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["inputTiming"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -153,7 +162,7 @@ const msgs = JSON.stringify({ lang, evDown: L.evDown, evUp: L.evUp, sFast: L.sFa
         {
           MOUSE_BUTTONS.map((b) => (
             <div class="mt-b" id={`b${b.b}`}>
-              <b>{b[lang]}</b>
+              <b>{tx(b, lang)}</b>
               <span>{L.count} <em class="mono" data-f="n">0</em></span>
               <span>{L.lastDbl} <em class="mono" data-f="last">–</em></span>
               <span>{L.minDbl} <em class="mono" data-f="min">–</em></span>
@@ -201,7 +210,7 @@ const msgs = JSON.stringify({ lang, evDown: L.evDown, evUp: L.evUp, sFast: L.sFa
       <ul>{L.poll2.map((s) => <li>{s}</li>)}</ul>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "키보드는" : "For keyboards, use the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? ", 화면 주사율은 " : "; for screen refresh rate, the "}<a href={url(lang, "tools/monitor-test/")}>{ko ? "모니터 불량화소·주사율 테스트" : "dead pixel & refresh rate test"}</a>.
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

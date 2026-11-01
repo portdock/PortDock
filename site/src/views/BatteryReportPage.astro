@@ -7,20 +7,22 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/battery-report/";
 const CMD = 'powercfg /batteryreport /output "%USERPROFILE%\\Downloads\\battery-report.html"';
 const PS = 'powercfg /batteryreport /output "$env:USERPROFILE\\Downloads\\battery-report.html"';
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "노트북 배터리 리포트 해석기",
+      seo: "배터리 리포트 해석기 — 노트북 배터리 수명 확인 — PortDock",
       desc: "powercfg /batteryreport 로 만든 배터리 리포트(HTML)를 끌어 놓으면 설계 용량 대비 남은 비율·충전 횟수·용량 이력 그래프를 보여 줍니다. 파일은 브라우저 안에서만.",
       step1: "1. 리포트 만들기",
       step1Note: "시작 → «터미널» 또는 «명령 프롬프트» 를 열고(관리자 권한 없이) 아래 명령을 붙여 넣습니다. 다운로드 폴더에 battery-report.html 이 생깁니다.",
@@ -71,8 +73,10 @@ const L = ko
         sampleNote: "지어낸 예시입니다 — 실제 노트북 값이 아닙니다.",
       },
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Laptop Battery Report Reader",
+      seo: "Battery Report Reader: Laptop Battery Health Check — PortDock",
       desc: "Drop the powercfg /batteryreport HTML to see remaining capacity vs design, cycle count and a capacity history chart. The file stays in your browser.",
       step1: "1. Create the report",
       step1Note: "Open «Terminal» or «Command Prompt» from Start (no admin rights needed) and paste the command. battery-report.html appears in your Downloads folder.",
@@ -122,7 +126,8 @@ const L = ko
         loaded: "File",
         sampleNote: "Made-up sample — not real laptop values.",
       },
-    };
+    }
+  : page3(lang, "batteryReport");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -130,11 +135,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "배터리 리포트 해석기 — 노트북 배터리 수명 확인 — PortDock" : "Battery Report Reader: Laptop Battery Health Check — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["batteryReport"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -175,7 +180,7 @@ const ld = {
       <ul>{L.read.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
       <h2>{L.appTitle}</h2>
       <p>
-        {L.app1} <a href={url(lang, "port-inspector/")}>PortDock Port Inspector</a> {L.app2}
+        {L.app1} <a href={link(lang, "port-inspector/")}>PortDock Port Inspector</a> {L.app2}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -318,15 +323,15 @@ const ld = {
   <script>
     import { parseBatteryReport, totalHealth, chart, trend, NotBatteryReport, type BatteryReport } from "../lib/batteryReport";
     import { REPORT_EN, REPORT_KO } from "../lib/batteryFixture";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("br") as HTMLFormElement;
-    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
-    const ko = lang === "ko";
+    const lang = (form.dataset.lang ?? "ko") as Lang;
     const M = JSON.parse(form.dataset.msg ?? "{}");
     const out = document.getElementById("out")!;
     const err = document.getElementById("err")!;
     const drop = document.getElementById("drop") as HTMLLabelElement;
     const fileIn = document.getElementById("file") as HTMLInputElement;
-    const nf = new Intl.NumberFormat(ko ? "ko-KR" : "en-US");
+    const nf = new Intl.NumberFormat(lang === "ko" ? "ko-KR" : lang === "en" ? "en-US" : lang);
     const pct = (x: number) => (Number.isFinite(x) ? x.toFixed(1) : "–");
 
     function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = "") {
@@ -385,7 +390,7 @@ const ld = {
         s.append(svg("text", { x: String(W - 10), y: String(H - 6), "text-anchor": "end" }, last.end ?? last.start));
         out.append(s, el("p", "note", M.histNote));
         const t = trend(r.history);
-        if (t) out.append(el("p", "", ko ? `${t.from} → ${t.to}: 설계 대비 ${pct(t.startPct)} % → ${pct(t.endPct)} %` : `${t.from} → ${t.to}: ${pct(t.startPct)} % → ${pct(t.endPct)} % of design`));
+        if (t) out.append(el("p", "", msg(lang, `${t.from} → ${t.to}: 설계 대비 ${pct(t.startPct)} % → ${pct(t.endPct)} %`, `${t.from} → ${t.to}: ${pct(t.startPct)} % → ${pct(t.endPct)} % of design`)));
       }
       out.append(el("h3", "", M.recentTitle));
       if (!r.recent.length) out.append(el("p", "note", M.noRecent));

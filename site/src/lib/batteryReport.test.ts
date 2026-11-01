@@ -107,3 +107,11 @@ test("그래프 점: 처음은 왼쪽, 끝은 오른쪽, 큰 값이 위", () => 
   assert.ok(d.every((y) => y === d[0]) && d[0] < pts[0][1], "설계 선은 가로·맨 위");
   assert.equal(chart([], 10, 10).full, "");
 });
+
+test("일본어 머리글(設計容量·フル充電容量·サイクル カウント)이어도 영어 리포트와 같은 값 — 머리글이 아니라 표 모양으로 읽는다", () => {
+  const ja = REPORT_EN.replace(/DESIGN CAPACITY/g, "設計容量").replace(/FULL CHARGE CAPACITY/g, "フル充電容量").replace(/CYCLE COUNT/g, "サイクル カウント").replace(/PERIOD/g, "期間");
+  const en = parseBatteryReport(REPORT_EN);
+  const r = parseBatteryReport(ja);
+  assert.deepEqual(r.batteries, en.batteries);
+  assert.deepEqual(r.history, en.history);
+});

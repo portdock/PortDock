@@ -7,19 +7,23 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/barcode-scanner-test/";
-const L = ko
+const MORE_LINKS = ["tools/keyboard-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "바코드 스캐너 테스트",
+      seo: "바코드 스캐너 테스트 — Enter·간격·한글 깨짐 확인 — PortDock",
       desc: "바코드를 찍으면 받은 글자와 Enter·Tab·GS 같은 보이지 않는 문자, 글자 사이 간격(ms), 접두·접미, 한글 입력 상태로 깨진 글자, Caps Lock, GS1 내용을 보여 줍니다.",
       box: "여기를 누르고 바코드를 찍으세요",
       boxNote: "키보드처럼 들어오는(USB HID·키보드 웨지) 스캐너용입니다. 가상 COM 포트 모드 스캐너는 시리얼 터미널로 봅니다.",
@@ -45,6 +49,7 @@ const L = ko
       gs1: "의약품·물류 바코드는 «(01) GTIN (17) 유효 기한 (10) 로트 (21) 일련번호» 처럼 AI(응용 식별자)와 값을 이어 씁니다. 길이가 정해지지 않은 칸(10·21 등) 뒤에는 FNC1 이 GS(0x1D) 문자로 들어와야 다음 칸과 나뉩니다. 키보드로 들어올 때 GS 는 Ctrl+] 로 오거나 아예 빠지기도 해서, 빠지면 칸이 붙어 읽힙니다 — 스캐너 설정에서 GS 대신 쓸 글자를 정할 수 있습니다.",
       fieldTitle: "현장에서",
       field: "MES·WMS·검사 프로그램에 스캔 값이 이상하게 들어갈 때, 스캐너 탓인지 PC 입력 상태 탓인지 먼저 가르는 데 씁니다.",
+      more: [" 키보드 자체의 키 입력은 ", "키보드 테스트", " 에서 봅니다."],
       appTitle: "PortDock 앱으로 더",
       app1: "스캐너가 가상 COM 포트(USB CDC·VCP) 모드면 키보드 입력이 아니라 시리얼로 들어옵니다. 그때는",
       app2: "로 포트를 열어 HEX·끝 문자(CR·LF)를 보고,",
@@ -84,8 +89,10 @@ const L = ko
         cols: ["#", "시각", "받은 글자", "글자 수", "간격 중앙값", "끝 키", "판정"],
       },
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Barcode Scanner Test",
+      seo: "Barcode Scanner Test Online: Suffix, Timing & GS1 — PortDock",
       desc: "Scan a barcode to see the text with Enter, Tab and GS shown, ms between characters, prefix and suffix, Korean IME garbling, Caps Lock effects and GS1 data.",
       box: "Click here and scan a barcode",
       boxNote: "For scanners that type like a keyboard (USB HID, keyboard wedge). Scanners in virtual COM port mode are checked with a serial terminal.",
@@ -111,6 +118,7 @@ const L = ko
       gs1: "Pharma and logistics barcodes chain AIs (application identifiers) and values, like «(01) GTIN (17) expiry (10) lot (21) serial». After a variable-length field (10, 21 …) FNC1 must arrive as a GS (0x1D) character to separate it from the next. Over a keyboard interface GS may come as Ctrl+] or be dropped, and fields then run together — scanners let you choose a replacement character for GS.",
       fieldTitle: "In the field",
       field: "When scans arrive wrong in an MES, WMS or inspection program, use this to tell a scanner problem from a PC input state problem first.",
+      more: [" For the keyboard itself, use the ", "keyboard tester", "."],
       appTitle: "More with the PortDock apps",
       app1: "If the scanner is in virtual COM port (USB CDC/VCP) mode, data arrives as serial, not keystrokes. Open the port in",
       app2: "to see HEX and line endings (CR, LF), and read the USB serial driver and COM number without admin rights in",
@@ -149,7 +157,11 @@ const L = ko
         suffix: "Suffix",
         cols: ["#", "Time", "Received", "Chars", "Median gap", "End key", "Looks like"],
       },
-    };
+    }
+  : (() => {
+      const d = page3(lang, "barcodeTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -157,11 +169,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "바코드 스캐너 테스트 — Enter·간격·한글 깨짐 확인 — PortDock" : "Barcode Scanner Test Online: Suffix, Timing & GS1 — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["barcode"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -203,10 +215,10 @@ const ld = {
       <h2>{L.gs1Title}</h2>
       <p>{L.gs1}</p>
       <h2>{L.fieldTitle}</h2>
-      <p>{L.field} {ko ? "키보드 자체의 키 입력은" : "For the keyboard itself, use the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? " 에서 봅니다." : "."}</p>
+      <p>{L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}</p>
       <h2>{L.appTitle}</h2>
       <p>
-        {L.app1} <a href={url(lang, "serial/")}>PortDock Serial</a> {L.app2} <a href={url(lang, "port-inspector/")}>PortDock Port Inspector</a>{L.app3}
+        {L.app1} <a href={link(lang, "serial/")}>PortDock Serial</a> {L.app2} <a href={link(lang, "port-inspector/")}>PortDock Port Inspector</a>{L.app3}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -273,8 +285,9 @@ const ld = {
   </style>
   <script>
     import { analyzeScan, commonAffix, visible, hangulToKeys, parseGs1, retailCode, type KeyEv, type ScanAnalysis } from "../lib/barcode";
+    import { tx, type Lang } from "../lib/tr";
     const root = document.getElementById("bc")!;
-    const lang = (root.dataset.lang ?? "ko") as "ko" | "en";
+    const lang = (root.dataset.lang ?? "ko") as Lang;
     const M = JSON.parse(root.dataset.msg ?? "{}");
     const box = document.getElementById("scan") as HTMLInputElement;
     const idle = document.getElementById("idle") as HTMLInputElement;
@@ -337,7 +350,7 @@ const ld = {
         const body = el("tbody");
         for (const f of g.fields) {
           const tr = el("tr");
-          tr.append(el("td", "mono", `(${f.ai})`), el("td", "", f.name[lang]), el("td", "mono", f.value), el("td", f.bad ? "hw-suspect" : "", f.note?.[lang] ?? ""));
+          tr.append(el("td", "mono", `(${f.ai})`), el("td", "", tx(f.name, lang)), el("td", "mono", f.value), el("td", f.bad ? "hw-suspect" : "", f.note ? tx(f.note, lang) : ""));
           body.append(tr);
         }
         tb.append(th, body);

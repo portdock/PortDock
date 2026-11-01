@@ -6,8 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_LANGS, EXTRA_LANGS, LANGS, LANG_META, url } from "../i18n/langs.ts";
-import { MORE, SCOPE, SCOPE2, SCOPE_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id } from "../i18n/scope.ts";
-import { DICTS, DICTS2 } from "../i18n/index.ts";
+import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Scope2Path, type Scope3Path } from "../i18n/scope.ts";
+import { DICTS, DICTS2, DICTS3 } from "../i18n/index.ts";
 import { fromEn, misses, msg } from "./tr.ts";
 import { decodeFrame } from "./modbusDecode.ts";
 import { decodeMc, buildRequest as buildMc, endText } from "./mcDecode.ts";
@@ -27,6 +27,12 @@ import { CHIPS } from "./i2c.ts";
 import { USES, ethernetCheck, rs232Check, rs485Check } from "./cableSelect.ts";
 import { buildFrame, convertNotes, parseFrame as parseMbFrame } from "./modbusConvert.ts";
 import { XGT_DEVICES, XGT_ERRORS, buildXgtRequest, decodeXgt, errText, errWhen } from "./xgtDecode.ts";
+import { STANDARD_BUTTONS, channelLabel } from "./hwSignal.ts";
+import { MOUSE_BUTTONS } from "./inputTiming.ts";
+import { LAYOUTS } from "./keyboardLayout.ts";
+import { BUGCHECKS, STEPS, causesOf } from "./bsod.ts";
+import { parseGs1 } from "./barcode.ts";
+import { tx } from "./tr.ts";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -41,7 +47,7 @@ test("언어 목록 — ko 는 루트, 나머지는 /<언어>/, 이름·hreflang
 
 test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마다 pages/<언어>/[...path].astro 가 있다", () => {
   const page = (rel: string) => [path.join(SRC, "pages", rel + "index.astro"), path.join(SRC, "pages", rel.replace(/\/$/, "") + ".astro")].some((f) => fs.existsSync(f));
-  for (const p of [...SCOPE_PATHS, ...SCOPE2_PATHS]) {
+  for (const p of [...SCOPE_PATHS, ...LATER_PATHS]) {
     assert.ok(page(p), `한국어 쪽 없음: ${p}`);
     assert.ok(page("en/" + p), `영어 쪽 없음: en/${p}`);
   }
@@ -53,7 +59,7 @@ test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마�
   for (const l of EXTRA_LANGS) {
     assert.deepEqual(
       staticPaths(l).map((x) => x.props.path),
-      [...SCOPE_PATHS, ...SCOPE2_PATHS.filter((p) => MORE[l]?.includes(p))],
+      [...SCOPE_PATHS, ...LATER_PATHS.filter((p) => MORE[l]?.includes(p))],
     );
     // 주소 파일이 언어를 넘기는지(복사하고 lang 을 안 바꾸면 다른 언어의 범위로 만든다)
     const file = fs.readFileSync(path.join(SRC, "pages", l, "[...path].astro"), "utf8");
@@ -61,10 +67,10 @@ test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마�
     assert.match(file, new RegExp(`lang="${l}"`), `pages/${l}/[...path].astro 의 lang 이 ${l} 이 아님`);
   }
   assert.equal(extraPages().length, EXTRA_LANGS.reduce((n, l) => n + pathsOf(l).length, 0));
-  // MORE 는 2차 묶음 경로만, 겹침 없이
+  // MORE 는 1차 밖 묶음(2차·3차) 경로만, 겹침 없이
   for (const [l, list] of Object.entries(MORE)) {
     assert.ok((EXTRA_LANGS as readonly string[]).includes(l), `MORE 의 ${l} 이 EXTRA_LANGS 에 없음`);
-    for (const p of list ?? []) assert.ok(p in SCOPE2, `MORE.${l}: 2차 묶음 밖 경로 ${p}`);
+    for (const p of list ?? []) assert.ok(p in LATER, `MORE.${l}: 2차·3차 묶음 밖 경로 ${p}`);
     assert.equal(new Set(list).size, list?.length ?? 0, `MORE.${l}: 겹친 경로`);
   }
 });
@@ -76,14 +82,14 @@ test("번역된 쪽에만 그 언어가 붙고, 나머지 링크는 영어판으
     assert.ok(isTranslated(l, "download/#safe"));
     assert.equal(link(l, "guides/rs485-wiring/"), "/en/guides/rs485-wiring/");
     assert.equal(link(l, "tools/subnet/"), `/${l}/tools/subnet/`);
-    // 2차 묶음: 그 언어가 번역한 쪽만
-    for (const p of SCOPE2_PATHS) {
+    // 2차·3차 묶음: 그 언어가 번역한 쪽만
+    for (const p of LATER_PATHS) {
       const has = MORE[l]?.includes(p) ?? false;
       assert.equal(isTranslated(l, p + "#x"), has);
       assert.equal(link(l, p), has ? `/${l}/${p}` : `/en/${p}`);
     }
   }
-  for (const p of SCOPE2_PATHS) assert.deepEqual(langsOf(p), [...CORE_LANGS, ...EXTRA_LANGS.filter((l) => MORE[l]?.includes(p))]);
+  for (const p of LATER_PATHS) assert.deepEqual(langsOf(p), [...CORE_LANGS, ...EXTRA_LANGS.filter((l) => MORE[l]?.includes(p))]);
 });
 
 /** 사전의 모양(열쇠·배열 길이·글 종류) — 함수는 시험 값으로 불러서 결과의 모양 */
@@ -199,7 +205,7 @@ const LIB2: Record<Page2Id, string[]> = {
   cableSelection: ["lib/cableSelect.ts"],
 };
 /** 그 언어가 번역한 2차 묶음 쪽 이름 */
-const pages2Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).map((p) => SCOPE2[p]);
+const pages2Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).filter((p): p is Scope2Path => p in SCOPE2).map((p) => SCOPE2[p]);
 
 test("계산 라이브러리 문구 — 번역 범위 도구의 영어 문장마다 추가 언어 번역이 있다", () => {
   for (const l of EXTRA_LANGS) {
@@ -313,7 +319,7 @@ test("2차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 �
       assert.ok(pg, `${l}: 2차 묶음 쪽 글 없음 — ${id}`);
       assert.deepEqual(shape(pg), shape((ja2.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
     }
-    for (const p of MORE[l] ?? []) {
+    for (const p of (MORE[l] ?? []).filter((x) => x in SCOPE2)) {
       const w = (d.webTools as Record<string, { name: string; blurb: string } | undefined>)[p];
       assert.ok(w?.name.trim() && w.blurb.trim(), `${l}: 도구 이름·소개 없음 — ${p}`);
     }
@@ -500,6 +506,140 @@ test("2차 묶음 계산 라이브러리 — 추가 언어로 돌려도 영어�
         decodeXgt("4c 53", { lang: l });
       } catch {
         /* 짧은 프레임 */
+      }
+    }
+  }
+  assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
+});
+
+// ---------------------------------------------------------------- 3차 묶음(scope.ts SCOPE3 · MORE) — PC 하드웨어 테스트 웹 도구 10개
+
+const VIEW3: Record<Page3Id, string> = {
+  micTest: "MicTestPage",
+  keyboardTest: "KeyboardTestPage",
+  webcamTest: "WebcamTestPage",
+  speakerTest: "SpeakerTestPage",
+  mouseTest: "MouseTestPage",
+  gamepadTest: "GamepadTestPage",
+  monitorTest: "MonitorTestPage",
+  bsodCodes: "BsodCodesPage",
+  batteryReport: "BatteryReportPage",
+  barcodeTest: "BarcodeTestPage",
+};
+/** 화면(서버)이 쓰는 라이브러리 — 브라우저 스크립트가 가져오는 것은 clientOf 가 따로 찾는다 */
+const LIB3: Record<Page3Id, string[]> = {
+  micTest: [],
+  keyboardTest: ["lib/keyboardLayout.ts"],
+  webcamTest: [],
+  speakerTest: ["lib/hwSignal.ts"],
+  mouseTest: ["lib/inputTiming.ts"],
+  gamepadTest: ["lib/hwSignal.ts"],
+  monitorTest: [],
+  bsodCodes: ["lib/bsod.ts"],
+  batteryReport: ["lib/batteryReport.ts"],
+  barcodeTest: ["lib/barcode.ts"],
+};
+/** 개인정보 줄(components/HwPrivacy.astro)을 쓰는 쪽 */
+const HW3: readonly Page3Id[] = ["micTest", "keyboardTest", "webcamTest", "speakerTest", "mouseTest", "gamepadTest", "monitorTest"];
+/** 그 언어가 번역한 3차 묶음 쪽 이름 */
+const pages3Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).filter((p): p is Scope3Path => p in SCOPE3).map((p) => SCOPE3[p]);
+const allLibs = (l: (typeof EXTRA_LANGS)[number]) => ({ ...DICTS[l].lib, ...DICTS2[l]?.lib, ...DICTS3[l]?.lib }) as Record<string, Record<string, string>>;
+
+test("3차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·도구 이름·개인정보 줄이 있다", () => {
+  const ja3 = DICTS3.ja!;
+  assert.deepEqual(Object.keys(ja3.pages).sort(), Object.values(SCOPE3).sort(), "ja 3차 묶음 쪽 글 = SCOPE3");
+  assert.deepEqual(Object.keys(ja3.webTools).sort(), [...SCOPE3_PATHS].sort(), "ja 3차 묶음 도구 이름 = SCOPE3");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages3Of(l);
+    if (!ids.length) continue;
+    const d = DICTS3[l];
+    assert.ok(d, `${l}: MORE 에 3차 묶음 쪽이 있는데 i18n/index.ts DICTS3 에 ${l} 사전이 없음`);
+    for (const id of ids) {
+      const pg: unknown = (d.pages as Record<string, unknown>)[id];
+      assert.ok(pg, `${l}: 3차 묶음 쪽 글 없음 — ${id}`);
+      assert.deepEqual(shape(pg), shape((ja3.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
+    }
+    for (const p of (MORE[l] ?? []).filter((x) => x in SCOPE3)) {
+      const w = (d.webTools as Record<string, { name: string; blurb: string } | undefined>)[p];
+      assert.ok(w?.name.trim() && w.blurb.trim(), `${l}: 도구 이름·소개 없음 — ${p}`);
+    }
+    if (ids.some((id) => HW3.includes(id))) assert.deepEqual(shape(d.hwPrivacy), shape(ja3.hwPrivacy), `${l}: hwPrivacy 가 없거나 ja 와 모양이 다름`);
+    const empty: string[] = [];
+    const walkS = (v: unknown, at: string) => {
+      if (typeof v === "function") return walkS((v as (a: unknown) => unknown)(CTX), at);
+      if (typeof v === "string") {
+        if (!v.trim() && !/\.(more|ads|tester)\.|from\.none$/.test(at)) empty.push(at);
+        return;
+      }
+      if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
+    };
+    for (const id of ids) walkS((d.pages as Record<string, object>)[id], `${l}.${id}`);
+    assert.deepEqual(empty, [], `${l}: 빈 문구`);
+  }
+});
+
+test("3차 묶음 문구 — 1차·2차 묶음에 같은 영어 문장이 있으면 같은 번역, {n} 은 {} 수 안에서", () => {
+  for (const l of EXTRA_LANGS) {
+    const before: Record<string, string> = Object.assign({}, ...Object.values(DICTS[l].lib), ...Object.values(DICTS2[l]?.lib ?? {}));
+    const seen = new Map<string, [string, string]>();
+    for (const [sec, cat] of Object.entries(DICTS3[l]?.lib ?? {}))
+      for (const [k, v] of Object.entries(cat as Record<string, string>)) {
+        assert.ok(!(k in before) || before[k] === v, `${l}: «${k}» 가 1·2차 묶음과 3차 ${sec} 에서 다름`);
+        const prev = seen.get(k);
+        assert.ok(!prev || prev[1] === v, `${l}: «${k}» 가 ${prev?.[0]} 와 ${sec} 에서 다름`);
+        seen.set(k, [sec, v]);
+        assert.ok((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d)\}/g)].map((x) => Number(x[1]))) + 1, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
+      }
+  }
+});
+
+test("3차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 스크립트가 쓰는 문장은 그 쪽이 싣는 묶음(libText)에 있다", () => {
+  const tmp = path.join(SRC, "..", "node_modules", ".i18n-test-client3.ts");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages3Of(l);
+    if (!ids.length) continue;
+    const libs = allLibs(l);
+    const all: Record<string, string> = Object.assign({}, ...Object.values(libs));
+    const missing = ids.flatMap((id) => [`views/${VIEW3[id]}.astro`, ...LIB3[id]].flatMap((f) => englishOf(path.join(SRC, f)).filter((en) => !(en in all)).map((en) => `${f}: ${en}`)));
+    assert.deepEqual(missing, [], `${l}: 번역 없는 문장`);
+    for (const id of ids) {
+      const sections = libTextOf(VIEW3[id]);
+      for (const s of sections) assert.ok(libs[s], `${l}: ${VIEW3[id]} 의 libText «${s}» 묶음이 없음`);
+      const shipped: Record<string, string> = Object.assign({}, ...sections.map((s) => libs[s] ?? {}));
+      const c = clientOf(VIEW3[id]);
+      fs.writeFileSync(tmp, c.code);
+      const need = [...englishOf(tmp), ...c.libs.flatMap((f) => englishOf(path.join(SRC, f)))];
+      const notShipped = [...new Set(need)].filter((en) => !(en in shipped));
+      assert.deepEqual(notShipped, [], `${l}: ${VIEW3[id]} 브라우저 스크립트 문장이 libText ${JSON.stringify(sections)} 에 없음`);
+    }
+  }
+  fs.rmSync(tmp, { force: true });
+});
+
+test("3차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(블루스크린 코드 전부·GS1 AI 전부·채널·버튼 이름)", () => {
+  misses.clear();
+  for (const l of EXTRA_LANGS) {
+    const ids = pages3Of(l);
+    if (ids.includes("speakerTest")) for (const n of [2, 6, 8]) for (let i = 0; i < n; i++) channelLabel(i, n, l);
+    if (ids.includes("gamepadTest")) for (const b of STANDARD_BUTTONS) tx(b, l);
+    if (ids.includes("mouseTest")) for (const b of MOUSE_BUTTONS) tx(b, l);
+    if (ids.includes("keyboardTest")) for (const k of LAYOUTS) tx(k, l);
+    if (ids.includes("bsodCodes")) {
+      for (const s of Object.values(STEPS)) tx(s, l);
+      for (const b of BUGCHECKS) {
+        tx(b.meaning, l);
+        causesOf(b, l);
+      }
+    }
+    if (ids.includes("batteryReport")) msg(l, "x", "2026-01-01 → 2026-06-01: 98.2 % → 91.0 % of design");
+    if (ids.includes("barcodeTest")) {
+      const ais = ["00", "01", "02", "10", "11", "12", "13", "15", "16", "17", "20", "21", "22", "240", "241", "30", "37", "400", "410", "414", "3100", "3101", "3102", "3103", "3104", "3105", "99"];
+      const val = (ai: string) => (["11", "12", "13", "15", "16"].includes(ai) ? "260115" : ai === "17" ? "261100" : ai === "00" ? "106141412345678908" : ai === "01" ? "09506000134352" : ai === "02" ? "09506000134353" : ai.startsWith("310") ? "001250" : "AB12");
+      const r = parseGs1(ais.map((a) => `(${a})${val(a)}`).join(""));
+      assert.ok(r && r.fields.length === ais.length, "GS1 괄호 꼴 풀이");
+      for (const f of r!.fields) {
+        tx(f.name, l);
+        if (f.note) tx(f.note, l);
       }
     }
   }
