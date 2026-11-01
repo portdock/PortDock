@@ -12,7 +12,8 @@ import { msg, tx } from "../lib/tr";
 import { MC_MANUALS } from "../data/guides";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
@@ -152,7 +153,11 @@ const L =
       pcapLink: "Industrial pcap Analyzer",
       pcapPost: ". Clicking a row there opens that frame in this decoder.",
     }
-  : dict(lang).pages.mcDecoder;
+  : (() => {
+      // pcap 해석기(4차 묶음)가 그 언어로 번역됐으면 링크 글을 그 언어 이름으로(사전의 글은 «(영어)» 표시가 붙은 이름)
+      const d = dict(lang).pages.mcDecoder;
+      return { ...d, pcapLink: isTranslated(lang, "tools/pcap-analyzer/") ? pageName(lang, "tools/pcap-analyzer/") : d.pcapLink };
+    })();
 
 // 예시 — mc.rs 시험의 매뉴얼 예와 같은 프레임
 const B = (o: Parameters<typeof buildRequest>[0]) => frameText(buildRequest(o), o.code);

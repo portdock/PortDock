@@ -11,7 +11,8 @@ import { EXCEPTIONS } from "../lib/modbusDecode";
 import { tx } from "../lib/tr";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
@@ -95,7 +96,11 @@ const L =
       pcapLink: "Industrial pcap Analyzer",
       pcapPost: ". Clicking a row there opens that frame in this decoder.",
     }
-  : dict(lang).pages.modbusDecoder;
+  : (() => {
+      // pcap 해석기(4차 묶음)가 그 언어로 번역됐으면 링크 글을 그 언어 이름으로(사전의 글은 «(영어)» 표시가 붙은 이름)
+      const d = dict(lang).pages.modbusDecoder;
+      return { ...d, pcapLink: isTranslated(lang, "tools/pcap-analyzer/") ? pageName(lang, "tools/pcap-analyzer/") : d.pcapLink };
+    })();
 const EXAMPLES = [
   rtu([0x01, 0x03, 0x00, 0x00, 0x00, 0x0a]),
   rtu([0x01, 0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]),

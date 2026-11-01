@@ -7,14 +7,16 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { LABELS } from "../lib/mqttDecode";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { weave } from "../i18n/names";
+import { tx } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/mqtt-decoder/";
 // 예시 — 시험(mqttDecode.test.ts)과 같은 인코딩 규칙으로 만든 바이트(값은 지어낸 것)
 const SPB_HEX =
@@ -27,9 +29,11 @@ const EXAMPLES: [string, string][] = [
   ["PUBLISH QoS 1 JSON", "32 28 00 0C 70 6C 61 6E 74 2F 6C 69 6E 65 31 2F 00 2A 7B 22 74 65 6D 70 22 3A 32 31 2E 35 2C 22 75 6E 69 74 22 3A 22 43 22 7D"],
   ["CONNECT + CONNACK", "10 10 00 04 4D 51 54 54 04 02 00 3C 00 04 64 65 76 31 20 02 00 00"],
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "MQTT 페이로드 디코더 (Sparkplug B)",
+      seo: "MQTT 페이로드 디코더 — Sparkplug B·HEX 풀이 — PortDock",
       desc: "MQTT 메시지를 HEX·Base64·텍스트로 붙여 넣으면 JSON 을 정리하고, Sparkplug B 지표(이름·별칭·형·값·시각)와 원시 MQTT 패킷(토픽·QoS·패킷 ID)을 풀어 줍니다.",
       input: "페이로드 또는 MQTT 패킷 (HEX·Base64·텍스트)",
       help: "예: 08 80 C0 … · CIDAwb… · {\"temp\":21.5} · 30 6C 00 19 … — 패킷 여러 개를 이어 붙여도 됩니다.",
@@ -90,9 +94,12 @@ const L = ko
         flags: "표시",
         err: { empty: "붙여 넣은 내용이 없습니다.", hex: "HEX 로 읽을 수 없습니다(16진 글자 두 개씩).", base64: "Base64 로 읽을 수 없습니다." },
       },
+      pcap: ["Modbus TCP·MC 프로토콜 캡처는 ", "산업 통신 pcap 해석기", " 를 씁니다."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "MQTT Payload Decoder (Sparkplug B)",
+      seo: "MQTT Payload Decoder: Sparkplug B & Hex Online — PortDock",
       desc: "Paste an MQTT message as HEX, Base64 or text to format JSON and decode Sparkplug B metrics (name, alias, type, value) and raw packets (topic, QoS, packet ID).",
       input: "Payload or MQTT packet (HEX, Base64 or text)",
       help: "e.g. 08 80 C0 … · CIDAwb… · {\"temp\":21.5} · 30 6C 00 19 … — several packets in a row are fine.",
@@ -153,8 +160,13 @@ const L = ko
         flags: "Flags",
         err: { empty: "Nothing to decode.", hex: "Not valid HEX (two hex digits per byte).", base64: "Not valid Base64." },
       },
-    };
-const labels = Object.fromEntries(Object.entries(LABELS).map(([k, v]) => [k, v[lang]]));
+      pcap: ["For Modbus TCP and MC protocol captures, use the ", "Industrial pcap Analyzer", "."],
+    }
+  : (() => {
+      const d = page4(lang, "mqttDecoder");
+      return { ...d, pcap: weave(lang, d.pcap, ["tools/pcap-analyzer/"]) };
+    })();
+const labels = Object.fromEntries(Object.entries(LABELS).map(([k, v]) => [k, tx(v, lang)]));
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -162,11 +174,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "MQTT 페이로드 디코더 — Sparkplug B·HEX 풀이 — PortDock" : "MQTT Payload Decoder: Sparkplug B & Hex Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["mqttDecode"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -215,11 +227,11 @@ const ld = {
       <p>{L.limit}</p>
       <h2>{L.appTitle}</h2>
       <p>
-        {L.app1} <a href={url(lang, "tcp/")}>PortDock TCP</a> {L.app2}
+        {L.app1} <a href={link(lang, "tcp/")}>PortDock TCP</a> {L.app2}
       </p>
       <p>
-        {ko ? "Modbus TCP·MC 프로토콜 캡처는 " : "For Modbus TCP and MC protocol captures, use the "}
-        <a href={url(lang, "tools/pcap-analyzer/")}>{ko ? "산업 통신 pcap 해석기" : "Industrial pcap Analyzer"}</a>{ko ? " 를 씁니다." : "."}
+        {L.pcap[0]}
+        <a href={link(lang, "tools/pcap-analyzer/")}>{L.pcap[1]}</a>{L.pcap[2]}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -289,10 +301,11 @@ const ld = {
   </style>
   <script>
     import { analyze, InputError, type Payload, type PbNode, type MqttPacket } from "../lib/mqttDecode";
+    import { tx, type Lang } from "../lib/tr";
     const form = document.getElementById("mq") as HTMLFormElement;
     const M = JSON.parse(form.dataset.msg ?? "{}");
     const LB: Record<string, string> = JSON.parse(form.dataset.labels ?? "{}");
-    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "ko") as Lang;
     const data = document.getElementById("data") as HTMLTextAreaElement;
     const mode = document.getElementById("mode") as HTMLSelectElement;
     const what = document.getElementById("what") as HTMLSelectElement;
@@ -355,7 +368,7 @@ const ld = {
     function packet(p: MqttPacket & { decoded?: Payload }) {
       const box = el("div", "mq-pkt");
       box.append(el("h3", "", `${M.packet} @${p.offset} — ${p.name}`));
-      box.append(table([M.field, M.value], p.fields.map((f) => [LB[f.k] ?? f.k, f.v + (f.note ? ` — ${f.note[lang]}` : "")]), [1]));
+      box.append(table([M.field, M.value], p.fields.map((f) => [LB[f.k] ?? f.k, f.v + (f.note ? ` — ${tx(f.note, lang)}` : "")]), [1]));
       if (p.decoded) {
         const pl = el("div");
         payload(p.decoded, pl);

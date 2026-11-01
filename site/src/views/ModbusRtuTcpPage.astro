@@ -9,7 +9,8 @@ import UseNotice from "../components/UseNotice.astro";
 import { buildFrame } from "../lib/modbusConvert";
 import { page2 } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
@@ -75,7 +76,12 @@ const L =
       seeG: ["For the MBAP header and connection problems see ", "; for the RTU bytes see ", "."],
       seeT: ["To decode values and 40001 addresses in detail use the ", "Modbus Frame Decoder", "; to practise with questions try the ", "Modbus Practice Quiz", "."],
     }
-  : page2(lang, "modbusRtuTcp");
+  : (() => {
+      const d = page2(lang, "modbusRtuTcp");
+      // Modbus 연습장(4차 묶음)이 그 언어로 번역됐으면 링크 글을 그 언어 이름으로(사전의 글은 «(영어)» 표시가 붙은 이름)
+      const practice = "tools/modbus-practice/";
+      return { ...d, seeT: [d.seeT[0], d.seeT[1], d.seeT[2], isTranslated(lang, practice) ? pageName(lang, practice) : d.seeT[3], d.seeT[4]] };
+    })();
 const pdus: [number, number[]][] = [
   [1, [0x03, 0x00, 0x00, 0x00, 0x0a]],
   [1, [0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]],

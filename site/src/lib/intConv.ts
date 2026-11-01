@@ -3,50 +3,51 @@
 // 그레이 코드(g = b XOR (b >> 1)). Modbus 레지스터 하나 안의 바이트는 높은 바이트 먼저(Modbus Application Protocol V1.1b3 §4.2),
 // 32비트 값을 레지스터 두 개에 싣는 순서는 장비마다 달라 네 순서를 모두 보여 준다(실수(float)는 «Modbus 실수 변환기» 몫).
 
+import { msg, type Lang } from "./tr.ts";
+
 export type Width = 8 | 16 | 32;
-export type Lang = "ko" | "en";
+export type { Lang };
 export type InMode = "dec" | "hex" | "bin" | "bcd";
 
+// 오류 문구 — 한국어·영어는 여기, 추가 언어는 영어 문장으로 찾는다(lib/tr.ts, 사전 i18n/<언어>/lib/intConv.ts)
 const M = {
-  ko: {
-    empty: "값을 넣으세요.",
-    bad: (m: InMode) => ({ dec: "10진 정수가 아닙니다.", hex: "HEX 가 아닙니다(0~9, A~F).", bin: "2진수가 아닙니다(0·1).", bcd: "BCD 로 넣을 10진 정수(0 이상)가 아닙니다." })[m],
-    range: (w: Width) => `${w}비트 범위를 벗어났습니다.`,
-  },
-  en: {
-    empty: "Enter a value.",
-    bad: (m: InMode) => ({ dec: "Not a decimal integer.", hex: "Not hexadecimal (0–9, A–F).", bin: "Not binary (0/1).", bcd: "Not a non-negative decimal integer to encode as BCD." })[m],
-    range: (w: Width) => `Out of range for ${w} bits.`,
-  },
+  empty: (lang: Lang) => msg(lang, "값을 넣으세요.", "Enter a value."),
+  bad: (m: InMode, lang: Lang) =>
+    ({
+      dec: msg(lang, "10진 정수가 아닙니다.", "Not a decimal integer."),
+      hex: msg(lang, "HEX 가 아닙니다(0~9, A~F).", "Not hexadecimal (0–9, A–F)."),
+      bin: msg(lang, "2진수가 아닙니다(0·1).", "Not binary (0/1)."),
+      bcd: msg(lang, "BCD 로 넣을 10진 정수(0 이상)가 아닙니다.", "Not a non-negative decimal integer to encode as BCD."),
+    })[m],
+  range: (w: Width, lang: Lang) => msg(lang, `${w}비트 범위를 벗어났습니다.`, `Out of range for ${w} bits.`),
 };
 
 const mask = (w: Width) => (w === 32 ? 0xffffffff : (1 << w) - 1);
 
 /** 입력 → n비트 패턴(부호 없는 수). 10진은 −2^(n−1) ~ 2^n − 1 을 받고 음수는 2의 보수로 */
 export function parseBits(text: string, mode: InMode, w: Width, lang: Lang = "ko"): number {
-  const m = M[lang];
   const s = text.trim().replace(/[\s_]/g, "");
-  if (!s) throw new Error(m.empty);
+  if (!s) throw new Error(M.empty(lang));
   let v: number;
   if (mode === "dec") {
-    if (!/^[-+]?\d+$/.test(s)) throw new Error(m.bad(mode));
+    if (!/^[-+]?\d+$/.test(s)) throw new Error(M.bad(mode, lang));
     v = Number(s);
-    if (v < -(2 ** (w - 1)) || v > 2 ** w - 1) throw new Error(m.range(w));
+    if (v < -(2 ** (w - 1)) || v > 2 ** w - 1) throw new Error(M.range(w, lang));
     if (v < 0) v += 2 ** w;
   } else if (mode === "hex") {
     const t = s.replace(/^0x/i, "").replace(/h$/i, "");
-    if (!/^[0-9a-f]+$/i.test(t)) throw new Error(m.bad(mode));
+    if (!/^[0-9a-f]+$/i.test(t)) throw new Error(M.bad(mode, lang));
     v = parseInt(t, 16);
-    if (v > 2 ** w - 1) throw new Error(m.range(w));
+    if (v > 2 ** w - 1) throw new Error(M.range(w, lang));
   } else if (mode === "bin") {
     const t = s.replace(/^0b/i, "");
-    if (!/^[01]+$/.test(t)) throw new Error(m.bad(mode));
+    if (!/^[01]+$/.test(t)) throw new Error(M.bad(mode, lang));
     v = parseInt(t, 2);
-    if (v > 2 ** w - 1) throw new Error(m.range(w));
+    if (v > 2 ** w - 1) throw new Error(M.range(w, lang));
   } else {
-    if (!/^\d+$/.test(s)) throw new Error(m.bad(mode));
+    if (!/^\d+$/.test(s)) throw new Error(M.bad(mode, lang));
     const b = bcdEncode(Number(s));
-    if (b === undefined || b > 2 ** w - 1) throw new Error(m.range(w));
+    if (b === undefined || b > 2 ** w - 1) throw new Error(M.range(w, lang));
     v = b;
   }
   return v;

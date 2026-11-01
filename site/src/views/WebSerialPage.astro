@@ -9,18 +9,20 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { CHECKSUMS } from "../lib/checksum";
 import { BAUDS } from "../lib/webSerial";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/web-serial/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "웹 시리얼 터미널",
+      seo: "웹 시리얼 터미널 — 브라우저에서 COM 포트 열기 — PortDock",
       desc: "Web Serial 을 지원하는 브라우저(Chrome·Edge 등)에서 COM 포트를 열어 장비와 주고받습니다. HEX·ASCII 보기, 시각 표시, 체크섬·끝 문자 붙이기, 로그 저장.",
       noSupport: "이 브라우저에서는 Web Serial API 를 쓸 수 없습니다. 데스크톱 Chrome·Edge 같은 지원 브라우저에서 https 주소로 열어 주세요. 브라우저 없이 쓰려면",
       appLink: "PortDock Serial(무료, 윈도우)",
@@ -81,9 +83,12 @@ const L = ko
         txErr: "보내기 실패",
         saved: "저장",
       },
+      end: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Web Serial Terminal",
+      seo: "Web Serial Terminal: Open a COM Port in Your Browser — PortDock",
       desc: "Open a COM port from a browser that supports Web Serial (Chrome, Edge and others) and talk to a device. HEX/ASCII view, timestamps, checksum and line endings.",
       noSupport: "The Web Serial API is not available in this browser. Open this page over https in a supporting browser such as desktop Chrome or Edge. To work without a browser, use",
       appLink: "PortDock Serial (free, Windows)",
@@ -144,7 +149,9 @@ const L = ko
         txErr: "send failed",
         saved: "saved",
       },
-    };
+      end: ".",
+    }
+  : page4(lang, "webSerial");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -153,11 +160,11 @@ const ld = {
 const msgs = JSON.stringify({ ...L.ev, bytes: L.bytes, idle: L.idle });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "웹 시리얼 터미널 — 브라우저에서 COM 포트 열기 — PortDock" : "Web Serial Terminal: Open a COM Port in Your Browser — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["checksum", "webSerial"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -165,7 +172,7 @@ const msgs = JSON.stringify({ ...L.ev, bytes: L.bytes, idle: L.idle });
   <div class="wrap" style="padding-top:24px">
     <div class="calc card" id="ws" data-lang={lang} data-msg={msgs}>
       <p class="err" id="nosup" hidden>
-        {L.noSupport} <a href={url(lang, "serial/")}>{L.appLink}</a>.
+        {L.noSupport} <a href={link(lang, "serial/")}>{L.appLink}</a>{L.end}
       </p>
       <div class="row" id="cfg">
         <label class="fld">
@@ -275,7 +282,7 @@ const msgs = JSON.stringify({ ...L.ev, bytes: L.bytes, idle: L.idle });
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "serial/")}>PortDock Serial</a>.
+        {L.appNote} <a href={link(lang, "serial/")}>PortDock Serial</a>{L.end}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -334,7 +341,8 @@ const msgs = JSON.stringify({ ...L.ev, bytes: L.bytes, idle: L.idle });
   </style>
   <script>
     import { buildTx, formatEntry, logFileName, logToText, optionsLabel, portOptions, RxFramer, trimLog, type Entry, type Eol, type SendMode, type Split, type View } from "../lib/webSerial";
-    import { hex, type ChecksumKind, type Lang } from "../lib/checksum";
+    import { hex, type ChecksumKind } from "../lib/checksum";
+    import type { Lang } from "../lib/tr";
 
     // Web Serial 의 필요한 만큼만(WICG 명세) — TypeScript 기본 DOM 타입에는 아직 없다
     interface SerialPortLike extends EventTarget {
