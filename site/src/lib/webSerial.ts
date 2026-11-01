@@ -1,10 +1,10 @@
 // 웹 시리얼 터미널의 브라우저 API 를 쓰지 않는 부분 — 설정 검사·보낼 바이트 만들기·받은 바이트 끊기·표시·로그 글.
 // Web Serial 호출(navigator.serial)은 views/WebSerialPage.astro 의 <script> 에만 둔다. 시험: webSerial.test.ts
 // 설정 값의 범위는 WICG Web Serial 명세의 SerialOptions(MDN SerialPort.open() 과 같음)를 따른다.
-import { compute, hex, parseAscii, parseHex, toEscaped, type ChecksumKind, type Lang } from "./checksum.ts";
+import { compute, hex, parseAscii, parseHex, toEscaped, type ChecksumKind } from "./checksum.ts";
+import { msg, type Lang } from "./tr.ts";
 
 export type { Lang };
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 
 /** 화면에 내놓는 보레이트 — 다른 값은 직접 입력(명세는 0 보다 큰 정수면 받는다) */
 export const BAUDS = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];

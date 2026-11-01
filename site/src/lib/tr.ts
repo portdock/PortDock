@@ -1,6 +1,6 @@
 // 계산 라이브러리(lib/*.ts)의 문구 — 한국어·영어는 코드 안에 두 갈래(msg(lang, ko, en))로 두고,
 // 그 밖의 언어(ja 등)는 «영어 문장 → 번역» 표(i18n/<언어>/lib.ts)에서 찾는다. 계산 코드는 언어가 늘어도 고치지 않는다.
-// 표의 열쇠에 {} 를 두면 그 자리에 무엇이 와도 맞고(숫자·주소 등), 번역에서 {0} {1} … 로 그 값을 순서와 상관없이 쓴다.
+// 표의 열쇠에 {} 를 두면 그 자리에 무엇이 와도 맞고(숫자·주소 등), 번역에서 {0} {1} … {10} … 로 그 값을 순서와 상관없이 쓴다.
 // 끼워 넣은 값이 표에 그대로 있는 영어 문구(함수 이름 등)면 그 값도 번역한다.
 //   예: "Byte count {} does not match quantity {} (should be {})" → "バイト数 {0} が個数 {1} と合いません({2} のはず)"
 // 서버(빌드)에서는 i18n/index.ts 가 표를 모두 등록하고, 브라우저에서는 Base.astro 가 쪽에 넣은
@@ -53,7 +53,7 @@ export function fromEn(en: string, lang: Lang): string {
     const m = p.re.exec(en);
     // 끼워 넣은 값이 그 자체로 표에 있는 영어 문구면(함수 이름 등) 그것도 바꾼다
     if (m)
-      return p.to.replace(/\{(\d)\}/g, (_, i: string) => {
+      return p.to.replace(/\{(\d+)\}/g, (_, i: string) => {
         const v = m[Number(i) + 1] ?? "";
         return c?.exact.get(v) ?? v;
       });

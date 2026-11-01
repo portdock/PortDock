@@ -7,7 +7,7 @@
 import { decodeLayers, readCapture, ACK, FIN, RST, SYN, type CaptureInfo, type RawPacket, type Tcp } from "./pcapRead.ts";
 import { funcName, EXCEPTIONS } from "./modbusDecode.ts";
 import { commandName, endText, MC_DEVICES, devByName, addrText } from "./mcDecode.ts";
-import type { Lang } from "./checksum.ts";
+import { msg, type Lang } from "./tr.ts";
 
 export type Proto = "modbus" | "mc";
 export type Status = "ok" | "exception" | "timeout" | "closed" | "cut" | "orphan";
@@ -458,7 +458,7 @@ interface ConvState {
 export function analyzeCapture(buf: Uint8Array, opts: Partial<AnalyzeOpts> = {}, onProgress?: (f: number) => void): Analysis {
   const o: AnalyzeOpts = { ...DEFAULT_OPTS, ...opts };
   const lang = o.lang;
-  const t = (ko: string, en: string) => (lang === "ko" ? ko : en);
+  const t = (ko: string, en: string) => msg(lang, ko, en);
   const timeoutNs = o.timeoutMs * 1e6;
   const rowCap = o.rowCap ?? 20000;
   const pointCap = o.pointCap ?? 4000;
@@ -976,24 +976,24 @@ const hexOf = (u?: Uint8Array) => (u ? Array.from(u, (b) => b.toString(16).toUpp
 
 /** 거래 표 → CSV(첫 줄 머리). withAddr = 연결의 IP:포트 칸 넣기 */
 export function toCsv(a: Analysis, opts: { withAddr: boolean; withBytes: boolean; lang: Lang }): string {
-  const ko = opts.lang === "ko";
+  const t = (ko: string, en: string) => msg(opts.lang, ko, en);
   const convOf = new Map(a.convs.map((c) => [c.id, c]));
   const head = [
-    ko ? "연결" : "conv",
-    ...(opts.withAddr ? [ko ? "클라이언트" : "client", ko ? "서버" : "server"] : []),
-    ko ? "프로토콜" : "protocol",
-    ko ? "시각(s)" : "time_s",
-    ko ? "요청 패킷" : "req_no",
-    ko ? "응답 패킷" : "resp_no",
-    ko ? "국번" : "unit",
-    ko ? "함수·명령" : "function",
-    ko ? "주소" : "address",
-    ko ? "개수" : "quantity",
-    ko ? "트랜잭션·일련번호" : "tid_serial",
-    ko ? "응답 시간(ms)" : "response_ms",
-    ko ? "결과" : "status",
-    ko ? "코드" : "code",
-    ...(opts.withBytes ? [ko ? "요청 바이트" : "request_hex", ko ? "응답 바이트" : "response_hex"] : []),
+    t("연결", "conv"),
+    ...(opts.withAddr ? [t("클라이언트", "client"), t("서버", "server")] : []),
+    t("프로토콜", "protocol"),
+    t("시각(s)", "time_s"),
+    t("요청 패킷", "req_no"),
+    t("응답 패킷", "resp_no"),
+    t("국번", "unit"),
+    t("함수·명령", "function"),
+    t("주소", "address"),
+    t("개수", "quantity"),
+    t("트랜잭션·일련번호", "tid_serial"),
+    t("응답 시간(ms)", "response_ms"),
+    t("결과", "status"),
+    t("코드", "code"),
+    ...(opts.withBytes ? [t("요청 바이트", "request_hex"), t("응답 바이트", "response_hex")] : []),
   ];
   const lines = [head.map(csvCell).join(",")];
   for (const r of a.rows) {

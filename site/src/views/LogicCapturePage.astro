@@ -8,52 +8,47 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import { sampleUartCsv, sampleI2cCsv, sampleCanVcd } from "../lib/logicSample";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/logic-capture/";
 const kb = (s: string) => Math.max(1, Math.round(s.length / 1024));
+const REL = ["tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/multimeter-check/", "tools/troubleshoot/"];
 const SAMPLES = [
   {
     href: "/tools/logic-capture/sample-uart.csv",
     file: "portdock-sample-uart.csv",
     size: kb(sampleUartCsv()),
     preset: { dec: "uart", "uart-ch": "Channel 0", "uart-ch2": "Channel 1", baud: "9600", parity: "even" },
-    ko: "UART (Saleae CSV)",
-    en: "UART (Saleae CSV)",
-    noteKo: "9600 8E1, 요청·응답 두 채널, 패리티 틀린 바이트 하나",
-    noteEn: "9600 8E1, request and reply channels, one byte with a parity error",
+    label: "UART (Saleae CSV)",
   },
   {
     href: "/tools/logic-capture/sample-i2c.csv",
     file: "portdock-sample-i2c.csv",
     size: kb(sampleI2cCsv()),
     preset: { dec: "i2c", "i2c-scl": "SCL", "i2c-sda": "SDA" },
-    ko: "I2C (sigrok CSV)",
-    en: "I2C (sigrok CSV)",
-    noteKo: "100 kHz, 쓰기 → 반복 시작 → 읽기, 없는 주소 NACK",
-    noteEn: "100 kHz, write → repeated start → read, NACK from a missing address",
+    label: "I2C (sigrok CSV)",
   },
   {
     href: "/tools/logic-capture/sample-can-spi.vcd",
     file: "portdock-sample-can-spi.vcd",
     size: kb(sampleCanVcd()),
     preset: { dec: "can", "can-ch": "CAN_RX", bitrate: "500000", "spi-sck": "SCK", "spi-mosi": "MOSI", "spi-miso": "MISO", "spi-cs": "CS" },
-    ko: "CAN + SPI (VCD)",
-    en: "CAN + SPI (VCD)",
-    noteKo: "CAN 500 kbit/s 세 프레임(하나는 ACK 없음), SPI 모드 0 JEDEC ID 읽기",
-    noteEn: "CAN 500 kbit/s, three frames (one without ACK); SPI mode 0 JEDEC ID read",
+    label: "CAN + SPI (VCD)",
   },
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "로직 분석기 캡처 해석기 (UART·SPI·I2C·CAN)",
+      seo: "로직 분석기 캡처 해석기 — UART·SPI·I2C·CAN — PortDock",
       desc: "sigrok·PulseView CSV, Saleae Logic 2 CSV, VCD 캡처를 끌어 놓고 채널을 골라 UART·SPI·I2C·CAN 을 풉니다. 파형과 해석 표, CSV 복사. 브라우저 안에서만.",
       drop: "캡처 파일을 여기에 끌어 놓거나 눌러서 고르세요",
       dropNote: ".csv(sigrok·PulseView·Saleae Logic 2) · .vcd — 200MB 까지",
@@ -66,9 +61,25 @@ const L = ko
       thr: "아날로그 열 문턱 (V)",
       thrHelp: "0/1 이 아닌 숫자 열은 이 값보다 크면 1",
       cancel: "취소",
+      sampleNotes: ["9600 8E1, 요청·응답 두 채널, 패리티 틀린 바이트 하나", "100 kHz, 쓰기 → 반복 시작 → 읽기, 없는 주소 NACK", "CAN 500 kbit/s 세 프레임(하나는 ACK 없음), SPI 모드 0 JEDEC ID 읽기"],
+      dl: (kb: number) => `내려받기 ${kb}KB`,
+      u: { decoder: "해석기", ch2: "둘째 채널 (선택)", baud: "보율", detect: "자동 추정", dataBits: "데이터 비트", parity: "패리티", pN: "없음 (N)", pE: "짝수 (E)", pO: "홀수 (O)", pM: "마크 (M)", pS: "스페이스 (S)", stopBits: "정지 비트", invert: "반전(쉴 때 0 — RS-232 레벨 그대로 뜬 선)", mode: "모드 (CPOL·CPHA)", order: "비트 순서", msb: "MSB 먼저", lsb: "LSB 먼저", wordBits: "워드 비트", csLow: "CS 는 0 일 때 켜짐", canCh: "RX 채널 (트랜시버 ↔ 컨트롤러)", bitrate: "비트 속도 (bit/s)", sp: "샘플 포인트 %", canInv: "반전(우성이 1 로 뜬 선)", zIn: "확대", zOut: "축소", fit: "전체", left: "왼쪽으로", right: "오른쪽으로", hint: "끌어서 옮기기 · Ctrl + 휠로 확대·축소 · 표의 줄을 누르면 그 자리로", decoded: "해석 결과", copyText: "글 복사", copyCsv: "CSV 복사", saveCsv: "CSV 저장", onlyErr: "오류만", more: "더 보기", faqTitle: "자주 묻는 것", relTitle: "함께 쓰는 도구", srcTitle: "근거", notAffiliated: "Saleae 는 Saleae, Inc. 의 상표이며, PortDock 은 Saleae·sigrok 프로젝트와 제휴 관계가 아닙니다. 예시 파일은 이 페이지용으로 만든 합성 파형입니다.", channel: "채널", head: ["시각", "채널", "종류", "값", "오류"] },
+      relNames: ["UART 보율 오차 계산기", "CAN 비트 타이밍 계산기", "커넥터 핀 배치", "멀티미터 점검", "통신 고장 찾기"],
+      relNotes: ["추정한 보율이 표준과 얼마나 다른지, MCU 분주비로 맞는지", "샘플 포인트·TQ 설정", "어느 핀에 프로브를 댈지", "파형 전에 전압·저항부터", "UART 를 USB-시리얼로 직접 주고받기"],
+      refNotes: [
+        "디지털 채널은 값이 바뀔 때만 한 줄, 마지막 샘플도 한 줄",
+        "주석 문자 «;», 머리 주석, 1열 시간 선택",
+        "§3.1.3~3.1.6 데이터·시작/정지·바이트·ACK, §3.1.10·3.1.11 주소·R/W·10비트 주소",
+        "표 1-3 모드 0~3 의 CPOL·CPHA, 읽는 가장자리",
+        "시작 비트·5~9 데이터 비트(LSB 먼저)·패리티·정지 비트",
+        "§3 표준·확장 프레임 칸, §4.4 스터핑·오류 프레임(우성 6비트)",
+        "§5 비트 타이밍·재동기화, §6 CRC·ACK·형식·스터핑 오류",
+      ],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Logic Analyzer Capture Decoder (UART, SPI, I2C, CAN)",
+      seo: "Logic Analyzer Capture Decoder: UART, SPI, I2C, CAN — PortDock",
       desc: "Drop a sigrok/PulseView CSV, Saleae Logic 2 CSV or VCD capture and decode UART, SPI, I2C or CAN. Waveform, decode table, CSV copy. In your browser only.",
       drop: "Drop a capture file here, or click to choose one",
       dropNote: ".csv (sigrok, PulseView, Saleae Logic 2) · .vcd — up to 200 MB",
@@ -81,8 +92,24 @@ const L = ko
       thr: "Analog column threshold (V)",
       thrHelp: "numeric columns other than 0/1 read 1 above this",
       cancel: "Cancel",
-    };
-const FAQ: [string, string][] = ko
+      sampleNotes: ["9600 8E1, request and reply channels, one byte with a parity error", "100 kHz, write → repeated start → read, NACK from a missing address", "CAN 500 kbit/s, three frames (one without ACK); SPI mode 0 JEDEC ID read"],
+      dl: (kb: number) => `download ${kb} KB`,
+      u: { decoder: "Decoder", ch2: "Second channel (optional)", baud: "Baud rate", detect: "Detect", dataBits: "Data bits", parity: "Parity", pN: "None (N)", pE: "Even (E)", pO: "Odd (O)", pM: "Mark (M)", pS: "Space (S)", stopBits: "Stop bits", invert: "Inverted (idle low — e.g. a raw RS-232 level line)", mode: "Mode (CPOL, CPHA)", order: "Bit order", msb: "MSB first", lsb: "LSB first", wordBits: "Word bits", csLow: "CS active low", canCh: "RX channel (transceiver ↔ controller)", bitrate: "Bit rate (bit/s)", sp: "Sample point %", canInv: "Inverted (dominant captured as 1)", zIn: "Zoom in", zOut: "Zoom out", fit: "Fit", left: "Pan left", right: "Pan right", hint: "Drag to pan · Ctrl + wheel to zoom · click a table row to jump there", decoded: "Decoded", copyText: "Copy text", copyCsv: "Copy CSV", saveCsv: "Save CSV", onlyErr: "Errors only", more: "Show more", faqTitle: "FAQ", relTitle: "Tools that go with it", srcTitle: "References", notAffiliated: "Saleae is a trademark of Saleae, Inc.; PortDock is not affiliated with Saleae or the sigrok project. The sample files are synthetic waveforms made for this page.", channel: "Channel", head: ["Time", "Ch.", "Kind", "Value", "Error"] },
+      relNames: ["UART Baud Rate Error Calculator", "CAN Bit Timing Calculator", "Connector pinouts", "Multimeter checks", "Communication troubleshooter"],
+      relNotes: ["how far a detected baud rate is from standard, and whether an MCU divisor can hit it", "sample point and TQ settings", "where to clip the probes", "voltage and resistance before waveforms", "talk to the UART directly through a USB-serial adapter"],
+      refNotes: [
+        "digital channels get a row only when data changes; the last sample always gets a row",
+        "comment character «;», header comments, optional time column",
+        "§3.1.3–3.1.6 data, START/STOP, byte format, ACK; §3.1.10–3.1.11 address, R/W, 10-bit addressing",
+        "table 1-3: CPOL, CPHA and capture edge for modes 0–3",
+        "start bit, 5–9 data bits (LSB first), parity, stop bits",
+        "§3 standard and extended frame fields, §4.4 stuffing and error frames (6 dominant bits)",
+        "§5 bit timing and resynchronization, §6 CRC, ACK, form and stuff errors",
+      ],
+    }
+  : { ...page4(lang, "logicCapture"), relNames: REL.map((p) => pageName(lang, p)) };
+const FAQ: [string, string][] =
+  lang === "ko"
   ? [
       ["어떤 파일을 읽나요?", "Saleae Logic 2 의 «Export raw data» CSV(첫 열 Time [s], 채널마다 한 열, 값이 바뀔 때만 한 줄), sigrok-cli·PulseView 의 CSV(«;» 주석, 시간 열이 있거나 없거나 — 없으면 주석의 Samplerate 나 위 칸의 샘플 속도로 시각을 셈), VCD(Value Change Dump: $timescale·$var 와 #시각 값 바뀜)를 읽습니다. VCD 의 여러 비트 변수는 비트마다 채널로 나누고, x 는 앞 값, z 는 1(풀업)로 봅니다. 200MB, 변화 2천만 개까지."],
       ["보율 자동 추정은 어떻게 하나요?", "그 채널에서 가장 짧은 펄스 무리를 1비트로 보고, 12비트보다 짧은 펄스 전체를 비트 수로 나눠 다듬은 뒤 표준 보율과 3% 안이면 그 값을 넣습니다. 캡처에 0·1 이 한 비트씩 바뀌는 곳이 없으면(예: 같은 글자만 반복) 실제의 절반으로 잡힐 수 있으니, 해석 결과에 프레임 오류가 많으면 두 배 보율도 넣어 보세요."],
@@ -91,23 +118,25 @@ const FAQ: [string, string][] = ko
       ["SPI 에 CS 선이 없으면요?", "CS 를 «없음» 으로 두면 캡처 처음부터 비트를 세어 워드로 묶습니다. 캡처가 워드 중간에서 시작하면 묶음이 어긋나므로 CS 를 함께 뜨는 것이 좋습니다. CS 를 켤 때 SCK 수준이 고른 모드의 CPOL 과 다르면 표에 알림이 붙습니다."],
       ["파일이 서버로 가나요?", "아니요. 파일은 이 브라우저의 Web Worker 에서 읽고 풀며, 이 페이지는 «예시로 해 보기» 를 누를 때 이 사이트의 예시 파일을 받는 것 말고는 네트워크 요청을 하지 않습니다."],
     ]
-  : [
+  : lang === "en"
+  ? [
       ["Which files can it read?", "Saleae Logic 2 «Export raw data» CSV (first column Time [s], one column per channel, a row only when a value changes), sigrok-cli / PulseView CSV («;» comments, with or without a time column — without one, times come from the Samplerate comment or the sample rate field above) and VCD (Value Change Dump: $timescale, $var and #time value changes). Multi-bit VCD variables are split into one channel per bit; x keeps the previous value and z reads as 1 (pulled up). Up to 200 MB and 20 million transitions."],
       ["How does baud rate detection work?", "It takes the shortest group of pulses on the channel as one bit, refines it over all pulses shorter than 12 bits, and fills in a standard baud rate if one is within 3 %. If the capture never toggles one bit at a time (for example the same character repeated) it can land on half the real rate, so if the result shows many framing errors, try double the baud rate."],
       ["How fast must the sample rate be?", "A transition can be off by up to one sample. With 10 samples per bit that is 0.1 bit, with 4 samples 0.25 bit. This tool reads UART at the middle of each bit and CAN at the sample point, so the error has to stay well below that. For I2C, if SCL and SDA change in the same sample a start or stop can be missed."],
       ["Which CAN line should I capture?", "Capture the RX line between the CAN transceiver and the controller (logic 0/1). Dominant = 0, recessive = 1. CAN_H and CAN_L are differential, so capturing one of them with a logic analyzer does not give proper thresholds. Enter the bit rate (or use «Detect», based on the shortest pulse). CAN FD frames are only marked «CAN FD — not decoded»."],
       ["What if my SPI capture has no CS line?", "With CS set to «none», bits are counted from the start of the capture and grouped into words. If the capture starts mid-word the grouping is off, so capture CS too. If SCK is not at the selected mode's CPOL level when CS turns on, the table marks it."],
       ["Is the file sent to a server?", "No. The file is read and decoded by a Web Worker in this browser. The page makes no network request except fetching this site's sample file when you click «Try a sample»."],
-    ];
+    ]
+  : page4(lang, "logicCapture").faq;
 const REFS = [
-  { title: "Saleae — Exporting Data (Logic 2)", url: "https://www.saleae.com/support/logic-software/saving-and-exporting-data/exporting-data", note: ko ? "디지털 채널은 값이 바뀔 때만 한 줄, 마지막 샘플도 한 줄" : "digital channels get a row only when data changes; the last sample always gets a row" },
-  { title: "sigrok wiki — File format:Csv", url: "https://sigrok.org/wiki/File_format:Csv", note: ko ? "주석 문자 «;», 머리 주석, 1열 시간 선택" : "comment character «;», header comments, optional time column" },
-  { title: "NXP UM10204 I2C-bus specification and user manual Rev. 7.0", url: "https://www.nxp.com/docs/en/user-guide/UM10204.pdf", note: ko ? "§3.1.3~3.1.6 데이터·시작/정지·바이트·ACK, §3.1.10·3.1.11 주소·R/W·10비트 주소" : "§3.1.3–3.1.6 data, START/STOP, byte format, ACK; §3.1.10–3.1.11 address, R/W, 10-bit addressing" },
-  { title: "Microchip AVR151: Setup and Use of the SPI — 1.4 SPI Timing", url: "https://onlinedocs.microchip.com/oxy/GUID-6F1B86DC-C230-43D1-A405-0CC2E7EDF7EE-en-US-2/GUID-EAC2D943-F395-4D47-98C8-4EEBC798BFA2.html", note: ko ? "표 1-3 모드 0~3 의 CPOL·CPHA, 읽는 가장자리" : "table 1-3: CPOL, CPHA and capture edge for modes 0–3" },
-  { title: "Microchip ATmega328P datasheet (7810D) — USART Frame Formats", url: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf", note: ko ? "시작 비트·5~9 데이터 비트(LSB 먼저)·패리티·정지 비트" : "start bit, 5–9 data bits (LSB first), parity, stop bits" },
-  { title: "TI SLOA101B — Introduction to the Controller Area Network (CAN)", url: "https://www.ti.com/lit/an/sloa101b/sloa101b.pdf", note: ko ? "§3 표준·확장 프레임 칸, §4.4 스터핑·오류 프레임(우성 6비트)" : "§3 standard and extended frame fields, §4.4 stuffing and error frames (6 dominant bits)" },
-  { title: "Microchip MCP2515 datasheet DS20001801J", url: "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf", note: ko ? "§5 비트 타이밍·재동기화, §6 CRC·ACK·형식·스터핑 오류" : "§5 bit timing and resynchronization, §6 CRC, ACK, form and stuff errors" },
-];
+  { title: "Saleae — Exporting Data (Logic 2)", url: "https://www.saleae.com/support/logic-software/saving-and-exporting-data/exporting-data" },
+  { title: "sigrok wiki — File format:Csv", url: "https://sigrok.org/wiki/File_format:Csv" },
+  { title: "NXP UM10204 I2C-bus specification and user manual Rev. 7.0", url: "https://www.nxp.com/docs/en/user-guide/UM10204.pdf" },
+  { title: "Microchip AVR151: Setup and Use of the SPI — 1.4 SPI Timing", url: "https://onlinedocs.microchip.com/oxy/GUID-6F1B86DC-C230-43D1-A405-0CC2E7EDF7EE-en-US-2/GUID-EAC2D943-F395-4D47-98C8-4EEBC798BFA2.html" },
+  { title: "Microchip ATmega328P datasheet (7810D) — USART Frame Formats", url: "https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf" },
+  { title: "TI SLOA101B — Introduction to the Controller Area Network (CAN)", url: "https://www.ti.com/lit/an/sloa101b/sloa101b.pdf" },
+  { title: "Microchip MCP2515 datasheet DS20001801J", url: "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP2515-Stand-Alone-CAN-Controller-with-SPI-20001801J.pdf" },
+].map((r, i) => ({ ...r, note: L.refNotes[i] }));
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -117,11 +146,11 @@ const opt = (v: string | number, label?: string) => ({ v: String(v), label: labe
 const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 800000, 1000000];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "로직 분석기 캡처 해석기 — UART·SPI·I2C·CAN — PortDock" : "Logic Analyzer Capture Decoder: UART, SPI, I2C, CAN — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["logic"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -136,13 +165,13 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
       <div class="samples">
         <b>{L.sampleTitle}</b>
         {
-          SAMPLES.map((s) => (
+          SAMPLES.map((s, i) => (
             <span class="sample">
               <button type="button" class="btn tight" data-sample={s.href} data-name={s.file} data-preset={JSON.stringify(s.preset)}>
-                {ko ? s.ko : s.en}
+                {s.label}
               </button>
               <span class="note">
-                {ko ? s.noteKo : s.noteEn} · <a href={s.href} download={s.file}>{ko ? `내려받기 ${s.size}KB` : `download ${s.size} KB`}</a>
+                {L.sampleNotes[i]} · <a href={s.href} download={s.file}>{L.dl(s.size)}</a>
               </span>
             </span>
           ))
@@ -175,7 +204,7 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
       <div id="warns"></div>
       <div class="row">
         <label class="fld">
-          {ko ? "해석기" : "Decoder"}
+          {L.u.decoder}
           <select id="dec">
             <option value="uart">UART</option>
             <option value="spi">SPI</option>
@@ -185,32 +214,32 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
         </label>
       </div>
       <div class="dec row" data-dec="uart">
-        <label class="fld">{ko ? "채널" : "Channel"}<select class="chsel" id="uart-ch"></select></label>
-        <label class="fld">{ko ? "둘째 채널 (선택)" : "Second channel (optional)"}<select class="chsel" id="uart-ch2" data-none="1"></select></label>
+        <label class="fld">{L.u.channel}<select class="chsel" id="uart-ch"></select></label>
+        <label class="fld">{L.u.ch2}<select class="chsel" id="uart-ch2" data-none="1"></select></label>
         <label class="fld">
-          {ko ? "보율" : "Baud rate"}
-          <span class="inl"><input id="baud" class="mono" value="9600" inputmode="numeric" autocomplete="off" /><button type="button" class="btn tight" id="baud-auto">{ko ? "자동 추정" : "Detect"}</button></span>
+          {L.u.baud}
+          <span class="inl"><input id="baud" class="mono" value="9600" inputmode="numeric" autocomplete="off" /><button type="button" class="btn tight" id="baud-auto">{L.u.detect}</button></span>
           <span class="note" id="baud-note"></span>
         </label>
         <label class="fld">
-          {ko ? "데이터 비트" : "Data bits"}
+          {L.u.dataBits}
           <select id="bits">{[5, 6, 7, 8, 9].map((n) => <option value={n} selected={n === 8}>{n}</option>)}</select>
         </label>
         <label class="fld">
-          {ko ? "패리티" : "Parity"}
+          {L.u.parity}
           <select id="parity">
-            <option value="none">{ko ? "없음 (N)" : "None (N)"}</option>
-            <option value="even">{ko ? "짝수 (E)" : "Even (E)"}</option>
-            <option value="odd">{ko ? "홀수 (O)" : "Odd (O)"}</option>
-            <option value="mark">{ko ? "마크 (M)" : "Mark (M)"}</option>
-            <option value="space">{ko ? "스페이스 (S)" : "Space (S)"}</option>
+            <option value="none">{L.u.pN}</option>
+            <option value="even">{L.u.pE}</option>
+            <option value="odd">{L.u.pO}</option>
+            <option value="mark">{L.u.pM}</option>
+            <option value="space">{L.u.pS}</option>
           </select>
         </label>
         <label class="fld">
-          {ko ? "정지 비트" : "Stop bits"}
+          {L.u.stopBits}
           <select id="stop"><option value="1">1</option><option value="1.5">1.5</option><option value="2">2</option></select>
         </label>
-        <label class="chk"><input type="checkbox" id="invert" /> {ko ? "반전(쉴 때 0 — RS-232 레벨 그대로 뜬 선)" : "Inverted (idle low — e.g. a raw RS-232 level line)"}</label>
+        <label class="chk"><input type="checkbox" id="invert" /> {L.u.invert}</label>
       </div>
       <div class="dec row" data-dec="spi" hidden>
         <label class="fld">SCK<select class="chsel" id="spi-sck"></select></label>
@@ -218,7 +247,7 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
         <label class="fld">MISO<select class="chsel" id="spi-miso" data-none="1"></select></label>
         <label class="fld">CS<select class="chsel" id="spi-cs" data-none="1"></select></label>
         <label class="fld">
-          {ko ? "모드 (CPOL·CPHA)" : "Mode (CPOL, CPHA)"}
+          {L.u.mode}
           <select id="spi-mode">
             <option value="0">0 (0,0)</option>
             <option value="1">1 (0,1)</option>
@@ -227,58 +256,58 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
           </select>
         </label>
         <label class="fld">
-          {ko ? "비트 순서" : "Bit order"}
-          <select id="spi-order"><option value="msb">{ko ? "MSB 먼저" : "MSB first"}</option><option value="lsb">{ko ? "LSB 먼저" : "LSB first"}</option></select>
+          {L.u.order}
+          <select id="spi-order"><option value="msb">{L.u.msb}</option><option value="lsb">{L.u.lsb}</option></select>
         </label>
-        <label class="fld">{ko ? "워드 비트" : "Word bits"}<input id="spi-bits" class="mono" value="8" inputmode="numeric" /></label>
-        <label class="chk"><input type="checkbox" id="spi-cslow" checked /> {ko ? "CS 는 0 일 때 켜짐" : "CS active low"}</label>
+        <label class="fld">{L.u.wordBits}<input id="spi-bits" class="mono" value="8" inputmode="numeric" /></label>
+        <label class="chk"><input type="checkbox" id="spi-cslow" checked /> {L.u.csLow}</label>
       </div>
       <div class="dec row" data-dec="i2c" hidden>
         <label class="fld">SCL<select class="chsel" id="i2c-scl"></select></label>
         <label class="fld">SDA<select class="chsel" id="i2c-sda"></select></label>
       </div>
       <div class="dec row" data-dec="can" hidden>
-        <label class="fld">{ko ? "RX 채널 (트랜시버 ↔ 컨트롤러)" : "RX channel (transceiver ↔ controller)"}<select class="chsel" id="can-ch"></select></label>
+        <label class="fld">{L.u.canCh}<select class="chsel" id="can-ch"></select></label>
         <label class="fld">
-          {ko ? "비트 속도 (bit/s)" : "Bit rate (bit/s)"}
-          <span class="inl"><input id="bitrate" class="mono" list="bitrates" value="500000" inputmode="numeric" autocomplete="off" /><button type="button" class="btn tight" id="br-auto">{ko ? "자동 추정" : "Detect"}</button></span>
+          {L.u.bitrate}
+          <span class="inl"><input id="bitrate" class="mono" list="bitrates" value="500000" inputmode="numeric" autocomplete="off" /><button type="button" class="btn tight" id="br-auto">{L.u.detect}</button></span>
           <datalist id="bitrates">{BITRATES.map((b) => <option value={opt(b).v} />)}</datalist>
           <span class="note" id="br-note"></span>
         </label>
-        <label class="fld">{ko ? "샘플 포인트 %" : "Sample point %"}<input id="sp" class="mono" value="75" inputmode="decimal" /></label>
-        <label class="chk"><input type="checkbox" id="can-inv" /> {ko ? "반전(우성이 1 로 뜬 선)" : "Inverted (dominant captured as 1)"}</label>
+        <label class="fld">{L.u.sp}<input id="sp" class="mono" value="75" inputmode="decimal" /></label>
+        <label class="chk"><input type="checkbox" id="can-inv" /> {L.u.canInv}</label>
       </div>
       <p class="err" id="dec-err" role="alert"></p>
     </section>
 
     <div id="out" aria-live="polite" hidden>
       <div class="wavebar">
-        <button type="button" class="btn tight" data-z="in" aria-label={ko ? "확대" : "Zoom in"}>＋</button>
-        <button type="button" class="btn tight" data-z="out" aria-label={ko ? "축소" : "Zoom out"}>－</button>
-        <button type="button" class="btn tight" data-z="all">{ko ? "전체" : "Fit"}</button>
-        <button type="button" class="btn tight" data-z="left" aria-label={ko ? "왼쪽으로" : "Pan left"}>◀</button>
-        <button type="button" class="btn tight" data-z="right" aria-label={ko ? "오른쪽으로" : "Pan right"}>▶</button>
+        <button type="button" class="btn tight" data-z="in" aria-label={L.u.zIn}>＋</button>
+        <button type="button" class="btn tight" data-z="out" aria-label={L.u.zOut}>－</button>
+        <button type="button" class="btn tight" data-z="all">{L.u.fit}</button>
+        <button type="button" class="btn tight" data-z="left" aria-label={L.u.left}>◀</button>
+        <button type="button" class="btn tight" data-z="right" aria-label={L.u.right}>▶</button>
         <span class="note" id="span"></span>
       </div>
       <div id="wavebox"></div>
-      <p class="note">{ko ? "끌어서 옮기기 · Ctrl + 휠로 확대·축소 · 표의 줄을 누르면 그 자리로" : "Drag to pan · Ctrl + wheel to zoom · click a table row to jump there"}</p>
-      <h2 id="sum-h" tabindex="-1">{ko ? "해석 결과" : "Decoded"}</h2>
+      <p class="note">{L.u.hint}</p>
+      <h2 id="sum-h" tabindex="-1">{L.u.decoded}</h2>
       <p id="sum"></p>
       <div class="wavebar">
-        <button type="button" class="btn tight" id="copy-text">{ko ? "글 복사" : "Copy text"}</button>
-        <button type="button" class="btn tight" id="copy-csv">{ko ? "CSV 복사" : "Copy CSV"}</button>
-        <button type="button" class="btn tight" id="save-csv">{ko ? "CSV 저장" : "Save CSV"}</button>
-        <label class="chk"><input type="checkbox" id="only-err" /> {ko ? "오류만" : "Errors only"}</label>
+        <button type="button" class="btn tight" id="copy-text">{L.u.copyText}</button>
+        <button type="button" class="btn tight" id="copy-csv">{L.u.copyCsv}</button>
+        <button type="button" class="btn tight" id="save-csv">{L.u.saveCsv}</button>
+        <label class="chk"><input type="checkbox" id="only-err" /> {L.u.onlyErr}</label>
         <span class="note" id="copied" role="status"></span>
       </div>
-      <div class="scroll"><table class="t" id="tbl"><thead><tr><th class="num">{ko ? "시각" : "Time"}</th><th>{ko ? "채널" : "Ch."}</th><th>{ko ? "종류" : "Kind"}</th><th>{ko ? "값" : "Value"}</th><th>{ko ? "오류" : "Error"}</th></tr></thead><tbody></tbody></table></div>
-      <button type="button" class="btn tight" id="more" hidden>{ko ? "더 보기" : "Show more"}</button>
+      <div class="scroll"><table class="t" id="tbl"><thead><tr><th class="num">{L.u.head[0]}</th><th>{L.u.head[1]}</th><th>{L.u.head[2]}</th><th>{L.u.head[3]}</th><th>{L.u.head[4]}</th></tr></thead><tbody></tbody></table></div>
+      <button type="button" class="btn tight" id="more" hidden>{L.u.more}</button>
     </div>
 
     <AdSlot />
 
     <section class="prose">
-      <h2>{ko ? "자주 묻는 것" : "FAQ"}</h2>
+      <h2>{L.u.faqTitle}</h2>
       {
         FAQ.map(([q, a]) => (
           <>
@@ -287,16 +316,16 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
           </>
         ))
       }
-      <h2>{ko ? "함께 쓰는 도구" : "Tools that go with it"}</h2>
+      <h2>{L.u.relTitle}</h2>
       <ul>
-        <li><a href={url(lang, "tools/uart-baud/")}>{ko ? "UART 보율 오차 계산기" : "UART Baud Rate Error Calculator"}</a> — {ko ? "추정한 보율이 표준과 얼마나 다른지, MCU 분주비로 맞는지" : "how far a detected baud rate is from standard, and whether an MCU divisor can hit it"}</li>
-        <li><a href={url(lang, "tools/can-bit-timing/")}>{ko ? "CAN 비트 타이밍 계산기" : "CAN Bit Timing Calculator"}</a> — {ko ? "샘플 포인트·TQ 설정" : "sample point and TQ settings"}</li>
-        <li><a href={url(lang, "tools/pinouts/")}>{ko ? "커넥터 핀 배치" : "Connector pinouts"}</a> — {ko ? "어느 핀에 프로브를 댈지" : "where to clip the probes"}</li>
-        <li><a href={url(lang, "tools/multimeter-check/")}>{ko ? "멀티미터 점검" : "Multimeter checks"}</a> — {ko ? "파형 전에 전압·저항부터" : "voltage and resistance before waveforms"}</li>
-        <li><a href={url(lang, "tools/troubleshoot/")}>{ko ? "통신 고장 찾기" : "Communication troubleshooter"}</a></li>
-        <li><a href={url(lang, "serial/")}>PortDock Serial</a> — {ko ? "UART 를 USB-시리얼로 직접 주고받기" : "talk to the UART directly through a USB-serial adapter"}</li>
+        <li><a href={link(lang, REL[0])}>{L.relNames[0]}</a> — {L.relNotes[0]}</li>
+        <li><a href={link(lang, REL[1])}>{L.relNames[1]}</a> — {L.relNotes[1]}</li>
+        <li><a href={link(lang, REL[2])}>{L.relNames[2]}</a> — {L.relNotes[2]}</li>
+        <li><a href={link(lang, REL[3])}>{L.relNames[3]}</a> — {L.relNotes[3]}</li>
+        <li><a href={link(lang, REL[4])}>{L.relNames[4]}</a></li>
+        <li><a href={link(lang, "serial/")}>PortDock Serial</a> — {L.relNotes[4]}</li>
       </ul>
-      <h2>{ko ? "근거" : "References"}</h2>
+      <h2>{L.u.srcTitle}</h2>
       <ul>
         {
           REFS.map((r) => (
@@ -306,7 +335,7 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
           ))
         }
       </ul>
-      <p class="note">{ko ? "Saleae 는 Saleae, Inc. 의 상표이며, PortDock 은 Saleae·sigrok 프로젝트와 제휴 관계가 아닙니다. 예시 파일은 이 페이지용으로 만든 합성 파형입니다." : "Saleae is a trademark of Saleae, Inc.; PortDock is not affiliated with Saleae or the sigrok project. The sample files are synthetic waveforms made for this page."}</p>
+      <p class="note">{L.u.notAffiliated}</p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
@@ -513,11 +542,11 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
     import { decodeUart, decodeSpi, decodeI2c, decodeCan, estimateBaud, kindText, valueText, errText, itemsCsv, itemsText, type Item, type Parity } from "../lib/logicDecode";
     import type { WorkerOut } from "../lib/logicWorker";
     import { saveText } from "../lib/fileSave";
+    import { msg, type Lang } from "../lib/tr";
 
     const form = document.getElementById("lc") as HTMLFormElement;
-    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const t = (k: string, e: string) => msg(lang, k, e);
     const MAX = 200 * 1024 * 1024;
     const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const fileIn = g<HTMLInputElement>("file");
@@ -532,7 +561,7 @@ const BITRATES = [10000, 20000, 50000, 83333, 100000, 125000, 250000, 500000, 80
     const decErr = g<HTMLElement>("dec-err");
     const wavebox = g<HTMLElement>("wavebox");
     const tbody = g<HTMLTableElement>("tbl").tBodies[0];
-    const nf = new Intl.NumberFormat(ko ? "ko-KR" : "en-US");
+    const nf = new Intl.NumberFormat(lang === "ko" ? "ko-KR" : lang === "en" ? "en-US" : lang);
     const size = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
     let worker: Worker | null = null;

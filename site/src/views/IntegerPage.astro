@@ -5,18 +5,21 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/integer/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "정수·진수 변환기",
+      seo: "정수·진수 변환기 — HEX·10진·2의 보수·BCD·엔디언 — PortDock",
       desc: "HEX·10진·2진 값을 8·16·32비트로 바꿉니다. 부호 있는 값(2의 보수), BCD, 그레이 코드, Modbus 레지스터 바이트 순서(ABCD·CDAB 등)까지 한 화면에서.",
       width: "비트 수",
       mode: "입력 형식",
@@ -53,9 +56,12 @@ const L = ko
       srcTitle: "출처",
       fNote: "레지스터 두·네 개를 float32·float64 로 읽으려면",
       fLink: "Modbus 실수 변환기",
+      fEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Integer & Base Converter",
+      seo: "Hex to Decimal: Signed, Two's Complement, BCD, Endian — PortDock",
       desc: "Convert hex, decimal and binary at 8, 16 or 32 bits: signed (two's complement), BCD, Gray code and Modbus register byte orders (ABCD, CDAB…).",
       width: "Bits",
       mode: "Input format",
@@ -92,7 +98,9 @@ const L = ko
       srcTitle: "Sources",
       fNote: "To read two or four registers as float32 or float64, use the",
       fLink: "Modbus Float Converter",
-    };
+      fEnd: ".",
+    }
+  : { ...page4(lang, "integer"), fLink: pageName(lang, "tools/modbus-float/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -101,17 +109,17 @@ const ld = {
 const SRC = [{ name: "MODBUS Application Protocol Specification V1.1b3 (2012): §4.2 Data Encoding (big-endian within a register)", href: "https://www.modbus.org/modbus-specifications" }];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "정수·진수 변환기 — HEX·10진·2의 보수·BCD·엔디언 — PortDock" : "Hex to Decimal: Signed, Two's Complement, BCD, Endian — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["intConv"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ic">
+    <form class="calc card" id="ic" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.mode}<select id="mode">{(["hex", "dec", "bin", "bcd"] as const).map((m) => <option value={m}>{L.modes[m]}</option>)}</select></label>
         <label class="fld">{L.width}<select id="w"><option value="8">8</option><option value="16" selected>16</option><option value="32">32</option></select></label>
@@ -155,7 +163,7 @@ const SRC = [{ name: "MODBUS Application Protocol Specification V1.1b3 (2012): �
         ))
       }
       <p>
-        {L.fNote} <a href={url(lang, "tools/modbus-float/")}>{L.fLink}</a>.
+        {L.fNote} <a href={link(lang, "tools/modbus-float/")}>{L.fLink}</a>{L.fEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -165,8 +173,9 @@ const SRC = [{ name: "MODBUS Application Protocol Specification V1.1b3 (2012): �
   </div>
   <script>
     import { ORDERS, bytesOf, fromWire, parseBits, signed, toWire, view, type InMode, type Width } from "../lib/intConv";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("ic") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const set = (k: string, v: string) => {
       const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
@@ -180,13 +189,13 @@ const SRC = [{ name: "MODBUS Application Protocol Specification V1.1b3 (2012): �
       const tb = $("ord");
       tb.replaceChildren();
       try {
-        const bits = parseBits($("v").value, mode, w, ko ? "ko" : "en");
+        const bits = parseBits($("v").value, mode, w, lang);
         const v = view(bits, w);
         set("u", String(v.unsigned));
         set("s", String(v.signed));
         set("hex", `0x${v.hex}`);
         set("bin", v.bin);
-        set("bcd", v.bcd !== undefined ? String(v.bcd) : ko ? "BCD 아님 (9 를 넘는 자리)" : "not BCD (a digit above 9)");
+        set("bcd", v.bcd !== undefined ? String(v.bcd) : msg(lang, "BCD 아님 (9 를 넘는 자리)", "not BCD (a digit above 9)"));
         set("gray", `0x${hexW(v.gray, w)}`);
         set("ungray", `0x${hexW(v.grayDecoded, w)} = ${v.grayDecoded}`);
         $("err").textContent = "";

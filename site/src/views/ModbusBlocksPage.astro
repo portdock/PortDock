@@ -8,14 +8,15 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { cost, onePerItem, parseList, plan } from "../lib/modbusPlan";
 import { fmtTime } from "../lib/serialTiming";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/modbus-blocks/";
 const SPEC = "https://www.modbus.org/modbus-specifications";
 const EXAMPLE = "40001\n40002\n40003-40006\n40021*2\n40023*2\n40101\n30001*2\n30003*2\n00001-00016";
@@ -28,9 +29,11 @@ const gRows = [0, 10, 100].map((g) => {
   const c = cost(r, 9600, F, 0.01);
   return [String(g), String(c.requests), String(r.reduce((s, x) => s + x.unused, 0)), `${c.rtuBytes}`, fmtTime(c.rtuCycle)];
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus 읽기 요청 묶기 계산기",
+      seo: "Modbus 읽기 요청 묶기 — 125개 한도·빈 주소·폴링 시간 — PortDock",
       desc: "읽을 Modbus 주소 목록(40001·30001 표기)을 함수 코드별로 모아 125개 한도·허용 빈칸 안에서 요청 몇 개로 묶고, RTU 한 바퀴 시간과 바이트를 비교합니다.",
       list: "읽을 주소 (한 줄에 하나, 쉼표로도 나눔)",
       listHelp: "40001 · 40001-40010(범위) · 40021*2(2칸짜리 32비트 값) · hr 100 / ir 0x10*2 / co 5 / di 0(표 이름 + 0 기준 주소). # 뒤는 메모.",
@@ -89,9 +92,12 @@ const L = ko
       srcTitle: "근거",
       src: "MODBUS Application Protocol Specification V1.1b3(2012-04-26) — §4.4 주소 모델(번호 X 는 PDU 주소 X−1, p.7–8), §6.1·6.2 읽기 1~2000(p.11–12), §6.3·6.4 읽기 1~125(p.15–16), 각 함수의 요청·응답 모양. 3.5문자 시간은 MODBUS over Serial Line V1.02 §2.5.1.1. 규격 문서는",
       srcLink: "Modbus Organization 규격 페이지",
+      ends: [".", ".", ".", ".", "."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus Read Request Planner",
+      seo: "Modbus Read Request Planner: 125 Limit, Poll Time — PortDock",
       desc: "Group Modbus addresses (40001/30001 notation) into read requests by function code within the 125-register limit and an allowed gap; compare poll time and bytes.",
       list: "Addresses to read (one per line, or comma-separated)",
       listHelp: "40001 · 40001-40010 (range) · 40021*2 (a two-register 32-bit value) · hr 100 / ir 0x10*2 / co 5 / di 0 (table + 0-based address). Text after # is a comment.",
@@ -150,7 +156,19 @@ const L = ko
       srcTitle: "Basis",
       src: "MODBUS Application Protocol Specification V1.1b3 (2012-04-26) — §4.4 addressing model (number X is PDU address X−1, pp. 7–8), §6.1/6.2 reads of 1–2000 (pp. 11–12), §6.3/6.4 reads of 1–125 (pp. 15–16), and each function's request and response layout. The 3.5-character time is from MODBUS over Serial Line V1.02 §2.5.1.1. The specifications are on the",
       srcLink: "Modbus Organization specifications page",
-    };
+      ends: [".", ".", ".", ".", "."],
+    }
+  : (() => {
+      const d = page4(lang, "modbusBlocks");
+      return {
+        ...d,
+        tNote: d.tNote(sep.requests, sep.rtuBytes, fmtTime(sep.rtuCycle)),
+        tLink: pageName(lang, "tools/modbus/"),
+        sLink: pageName(lang, "tools/serial-timing/"),
+        gLink: pageName(lang, "guides/modbus-exception-codes/"),
+        dLink: d.dLink + ui(lang).inEnglish,
+      };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -158,17 +176,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 읽기 요청 묶기 — 125개 한도·빈 주소·폴링 시간 — PortDock" : "Modbus Read Request Planner: 125 Limit, Poll Time — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["modbusBlocks"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="mb">
+    <form class="calc card" id="mb" data-lang={lang}>
       <label class="fld">{L.list}<textarea id="list" class="mono" rows="9" spellcheck="false" autocomplete="off">{EXAMPLE}</textarea></label>
       <p class="note">{L.listHelp}</p>
       <div class="row">
@@ -226,10 +244,10 @@ const ld = {
         ))
       }
       <p>
-        {L.tNote2} <a href={url(lang, "tools/modbus/")}>{L.tLink}</a>. {L.sNote} <a href={url(lang, "tools/serial-timing/")}>{L.sLink}</a>. {L.gNote} <a href={url(lang, "guides/modbus-exception-codes/")}>{L.gLink}</a>. {L.dNote} <a href={url(lang, "devices/")}>{L.dLink}</a>.
+        {L.tNote2} <a href={link(lang, "tools/modbus/")}>{L.tLink}</a>{L.ends[0]} {L.sNote} <a href={link(lang, "tools/serial-timing/")}>{L.sLink}</a>{L.ends[1]} {L.gNote} <a href={link(lang, "guides/modbus-exception-codes/")}>{L.gLink}</a>{L.ends[2]} {L.dNote} <a href={link(lang, "devices/")}>{L.dLink}</a>{L.ends[3]}
       </p>
       <h2>{L.srcTitle}</h2>
-      <p>{L.src} <a href={SPEC} rel="noopener">{L.srcLink}</a>.</p>
+      <p>{L.src} <a href={SPEC} rel="noopener">{L.srcLink}</a>{L.ends[4]}</p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
@@ -237,8 +255,9 @@ const ld = {
   <script>
     import { cost, onePerItem, parseList, plan, plcText, ParseError } from "../lib/modbusPlan";
     import { fmtTime, type CharFormat } from "../lib/serialTiming";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("mb") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const int = (id: string) => {
       const s = $(id).value.trim();
@@ -293,12 +312,8 @@ const ld = {
       } catch (e) {
         const bad = e instanceof ParseError ? e.token : "";
         $("err").textContent = bad
-          ? ko
-            ? `읽을 수 없는 줄: «${bad}» — 40001, 40001-40010, 40021*2, hr 100 꼴로 적으세요`
-            : `Cannot read «${bad}» — use forms like 40001, 40001-40010, 40021*2 or hr 100`
-          : ko
-            ? "숫자를 확인하세요 — 빈칸은 0 이상, 최대 수는 1 이상(규격보다 크면 규격 한도), 한 값의 칸 수는 최대 수 이하"
-            : "Check the numbers — gap 0 or more, max 1 or more (capped at the spec limit), and no single value larger than the max";
+          ? msg(lang, `읽을 수 없는 줄: «${bad}» — 40001, 40001-40010, 40021*2, hr 100 꼴로 적으세요`, `Cannot read «${bad}» — use forms like 40001, 40001-40010, 40021*2 or hr 100`)
+          : msg(lang, "숫자를 확인하세요 — 빈칸은 0 이상, 최대 수는 1 이상(규격보다 크면 규격 한도), 한 값의 칸 수는 최대 수 이하", "Check the numbers — gap 0 or more, max 1 or more (capped at the spec limit), and no single value larger than the max");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

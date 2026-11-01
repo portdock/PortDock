@@ -5,7 +5,8 @@
 // toRow: 내려받기 쪽에서는 프로그램 이름이 소개 쪽이 아니라 그 쪽 표의 줄(#dl-<id>, MCP 는 #mcp-dl)로 간다.
 // 추가 언어(ja 등)의 문구는 i18n/<언어>/common.ts 의 pick(갈래 id 로 찾는다), 프로그램 소개 쪽 링크는 영어판으로 간다.
 import { toolById, isApp, type Tool } from "../data/tools";
-import { url, link, appTagline } from "../lib/i18n";
+import { url, link, appTagline, isTranslated } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 import { dict } from "../i18n";
 import { isCore, type SiteLang } from "../i18n/langs";
 import { appIcon } from "../lib/appIcons";
@@ -45,7 +46,7 @@ const PATHS: { id: PathId; q: { ko: string; en: string }; items: Item[] }[] = [
 ];
 for (const it of PATHS.flatMap((p) => p.items)) if ("web" in it && !WEB_TOOLS.some((w) => w.path === it.web)) throw new Error(`PickApp: 없는 웹 도구 ${it.web}`);
 const appHref = (t: Tool) => (toRow ? (isApp(t) ? `#dl-${t.id}` : "#mcp-dl") : link(lang, `${t.id}/`));
-// 갈래 질문·딸린 설명 — 추가 언어는 사전에서(웹 도구는 영어판으로: pcap 해석기는 번역 범위 밖)
+// 갈래 질문·딸린 설명 — 추가 언어는 사전에서(pcap 해석기 이름은 그 언어로 번역됐으면 pageName(), 아니면 사전의 «(영어)» 표시 이름)
 const qText = (p: (typeof PATHS)[number]) => (x ? x.q[p.id] : p.q[lang as "ko" | "en"]);
 const noteText = (p: (typeof PATHS)[number], it: Item) => {
   if (!x) return "app" in it ? (it.note ?? toolById(it.app).tagline)[lang as "ko" | "en"] : it.note[lang as "ko" | "en"];
@@ -79,7 +80,7 @@ const noteText = (p: (typeof PATHS)[number], it: Item) => {
               ) : (
                 <li>
                   <a href={link(lang, it.web)}>
-                    <b>{x ? x.pcapName : it.name[lang as "ko" | "en"]}</b>
+                    <b>{x ? (isTranslated(lang, it.web) ? pageName(lang, it.web) : x.pcapName) : it.name[lang as "ko" | "en"]}</b>
                   </a>
                   <small>{noteText(p, it)}</small>
                 </li>

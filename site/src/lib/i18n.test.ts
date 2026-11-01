@@ -6,8 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_LANGS, EXTRA_LANGS, LANGS, LANG_META, url } from "../i18n/langs.ts";
-import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Scope2Path, type Scope3Path } from "../i18n/scope.ts";
-import { DICTS, DICTS2, DICTS3 } from "../i18n/index.ts";
+import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE4, SCOPE_PATHS, SCOPE4_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Page4Id, type Scope2Path, type Scope3Path, type Scope4Path } from "../i18n/scope.ts";
+import { DICTS, DICTS2, DICTS3, DICTS4 } from "../i18n/index.ts";
 import { fromEn, misses, msg } from "./tr.ts";
 import { decodeFrame } from "./modbusDecode.ts";
 import { decodeMc, buildRequest as buildMc, endText } from "./mcDecode.ts";
@@ -33,6 +33,16 @@ import { LAYOUTS } from "./keyboardLayout.ts";
 import { BUGCHECKS, STEPS, causesOf } from "./bsod.ts";
 import { parseGs1 } from "./barcode.ts";
 import { tx } from "./tr.ts";
+import { ASCII } from "./ascii.ts";
+import { parseBits } from "./intConv.ts";
+import { KINDS, KIND_NAMES, makeQuestion } from "./modbusQuiz.ts";
+import { LABELS, analyze as analyzeMqtt } from "./mqttDecode.ts";
+import { analyzeCapture, toCsv } from "./pcapAnalyze.ts";
+import { samplePcapng } from "./pcapSample.ts";
+import { buildTx, portOptions } from "./webSerial.ts";
+import { parseCapture } from "./logicCapture.ts";
+import { decodeUart, errText as logicErrText, itemsCsv, itemsText, kindText, valueText, type Item } from "./logicDecode.ts";
+import { sampleUartCsv } from "./logicSample.ts";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -223,7 +233,7 @@ test("계산 라이브러리 문구 — 묶음끼리 같은 영어 문장을 다
         const prev = seen.get(k);
         assert.ok(!prev || prev[1] === v, `${l}: «${k}» 가 ${prev?.[0]} 와 ${sec} 에서 다름`);
         seen.set(k, [sec, v]);
-        assert.equal((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d)\}/g)].map((x) => Number(x[1]))) + 1, true, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
+        assert.equal((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d+)\}/g)].map((x) => Number(x[1]))) + 1, true, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
       }
   }
 });
@@ -588,7 +598,7 @@ test("3차 묶음 문구 — 1차·2차 묶음에 같은 영어 문장이 있으
         const prev = seen.get(k);
         assert.ok(!prev || prev[1] === v, `${l}: «${k}» 가 ${prev?.[0]} 와 ${sec} 에서 다름`);
         seen.set(k, [sec, v]);
-        assert.ok((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d)\}/g)].map((x) => Number(x[1]))) + 1, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
+        assert.ok((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d+)\}/g)].map((x) => Number(x[1]))) + 1, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
       }
   }
 });
@@ -641,6 +651,173 @@ test("3차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
         tx(f.name, l);
         if (f.note) tx(f.note, l);
       }
+    }
+  }
+  assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
+});
+
+// ---------------------------------------------------------------- 4차 묶음(scope.ts SCOPE4 · MORE) — 통신 웹 도구 11개
+
+const VIEW4: Record<Page4Id, string> = {
+  ascii: "AsciiPage",
+  hexAscii: "HexAsciiPage",
+  integer: "IntegerPage",
+  modbusBlocks: "ModbusBlocksPage",
+  modbusPractice: "ModbusPracticePage",
+  mqttDecoder: "MqttDecoderPage",
+  pcapAnalyzer: "PcapAnalyzerPage",
+  spi: "SpiPage",
+  uartWaveform: "UartWaveformPage",
+  webSerial: "WebSerialPage",
+  logicCapture: "LogicCapturePage",
+};
+/** 화면(서버)이 쓰는 라이브러리 — 브라우저 스크립트가 가져오는 것은 clientOf 가 따로 찾는다 */
+const LIB4: Record<Page4Id, string[]> = {
+  ascii: ["lib/ascii.ts"],
+  hexAscii: ["lib/checksum.ts"],
+  integer: ["lib/intConv.ts"],
+  modbusBlocks: ["lib/modbusPlan.ts", "lib/serialTiming.ts"],
+  modbusPractice: ["lib/modbusQuiz.ts"],
+  mqttDecoder: ["lib/mqttDecode.ts"],
+  pcapAnalyzer: ["lib/pcapAnalyze.ts", "lib/pcapRead.ts"],
+  spi: ["lib/spi.ts"],
+  uartWaveform: ["lib/uartWave.ts"],
+  webSerial: ["lib/webSerial.ts", "lib/checksum.ts"],
+  logicCapture: ["lib/logicDecode.ts", "lib/logicCapture.ts"],
+};
+/** 그 언어가 번역한 4차 묶음 쪽 이름 */
+const pages4Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).filter((p): p is Scope4Path => p in SCOPE4).map((p) => SCOPE4[p]);
+const allLibs4 = (l: (typeof EXTRA_LANGS)[number]) => ({ ...allLibs(l), ...DICTS4[l]?.lib }) as Record<string, Record<string, string>>;
+
+test("4차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·도구 이름이 있다", () => {
+  const ja4 = DICTS4.ja!;
+  assert.deepEqual(Object.keys(ja4.pages).sort(), Object.values(SCOPE4).sort(), "ja 4차 묶음 쪽 글 = SCOPE4");
+  assert.deepEqual(Object.keys(ja4.webTools).sort(), [...SCOPE4_PATHS].sort(), "ja 4차 묶음 도구 이름 = SCOPE4");
+  // ASCII 표의 이름 칸 — 이름이 있는 줄(제어 문자·SP·DEL)마다 기준판에 그 언어 이름
+  assert.deepEqual(Object.keys(ja4.pages.ascii!.names).sort(), ASCII.filter((r) => r.name).map((r) => r.sym).sort(), "ja ascii.names = 이름 있는 ASCII 줄");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages4Of(l);
+    if (!ids.length) continue;
+    const d = DICTS4[l];
+    assert.ok(d, `${l}: MORE 에 4차 묶음 쪽이 있는데 i18n/index.ts DICTS4 에 ${l} 사전이 없음`);
+    for (const id of ids) {
+      const pg: unknown = (d.pages as Record<string, unknown>)[id];
+      assert.ok(pg, `${l}: 4차 묶음 쪽 글 없음 — ${id}`);
+      assert.deepEqual(shape(pg), shape((ja4.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
+    }
+    for (const p of (MORE[l] ?? []).filter((x) => x in SCOPE4)) {
+      const w = (d.webTools as Record<string, { name: string; blurb: string } | undefined>)[p];
+      assert.ok(w?.name.trim() && w.blurb.trim(), `${l}: 도구 이름·소개 없음 — ${p}`);
+    }
+    const empty: string[] = [];
+    const walkS = (v: unknown, at: string) => {
+      if (typeof v === "function") return walkS((v as (...a: unknown[]) => unknown)(1, 2, "3"), at);
+      if (typeof v === "string") {
+        if (!v.trim()) empty.push(at);
+        return;
+      }
+      if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
+    };
+    for (const id of ids) walkS((d.pages as Record<string, object>)[id], `${l}.${id}`);
+    assert.deepEqual(empty, [], `${l}: 빈 문구`);
+  }
+});
+
+test("4차 묶음 문구 — 1·2·3차 묶음에 같은 영어 문장이 있으면 같은 번역, {n} 은 {} 수 안에서", () => {
+  for (const l of EXTRA_LANGS) {
+    const before: Record<string, string> = Object.assign({}, ...Object.values(allLibs(l)));
+    const seen = new Map<string, [string, string]>();
+    for (const [sec, cat] of Object.entries(DICTS4[l]?.lib ?? {}))
+      for (const [k, v] of Object.entries(cat as Record<string, string>)) {
+        assert.ok(!(k in before) || before[k] === v, `${l}: «${k}» 가 1·2·3차 묶음과 4차 ${sec} 에서 다름`);
+        const prev = seen.get(k);
+        assert.ok(!prev || prev[1] === v, `${l}: «${k}» 가 ${prev?.[0]} 와 ${sec} 에서 다름`);
+        seen.set(k, [sec, v]);
+        assert.ok((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d+)\}/g)].map((x) => Number(x[1]))) + 1, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
+      }
+  }
+});
+
+test("4차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 스크립트가 쓰는 문장은 그 쪽이 싣는 묶음(libText)에 있다", () => {
+  const tmp = path.join(SRC, "..", "node_modules", ".i18n-test-client4.ts");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages4Of(l);
+    if (!ids.length) continue;
+    const libs = allLibs4(l);
+    const all: Record<string, string> = Object.assign({}, ...Object.values(libs));
+    const missing = ids.flatMap((id) => [`views/${VIEW4[id]}.astro`, ...LIB4[id]].flatMap((f) => englishOf(path.join(SRC, f)).filter((en) => !(en in all)).map((en) => `${f}: ${en}`)));
+    assert.deepEqual(missing, [], `${l}: 번역 없는 문장`);
+    for (const id of ids) {
+      const sections = libTextOf(VIEW4[id]);
+      for (const s of sections) assert.ok(libs[s], `${l}: ${VIEW4[id]} 의 libText «${s}» 묶음이 없음`);
+      const shipped: Record<string, string> = Object.assign({}, ...sections.map((s) => libs[s] ?? {}));
+      const c = clientOf(VIEW4[id]);
+      fs.writeFileSync(tmp, c.code);
+      const need = [...englishOf(tmp), ...c.libs.flatMap((f) => englishOf(path.join(SRC, f)))];
+      const notShipped = [...new Set(need)].filter((en) => !(en in shipped));
+      assert.deepEqual(notShipped, [], `${l}: ${VIEW4[id]} 브라우저 스크립트 문장이 libText ${JSON.stringify(sections)} 에 없음`);
+      // 화면 스크립트가 언어를 data-lang 으로 받는지(document.documentElement.lang === "ko" 로 고르면 추가 언어가 영어로 나온다)
+      assert.ok(!/documentElement\.lang/.test(c.code), `${l}: ${VIEW4[id]} 화면 스크립트가 documentElement.lang 으로 언어를 고름`);
+    }
+  }
+  fs.rmSync(tmp, { force: true });
+});
+
+test("4차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(예시 입력·문제·캡처)", () => {
+  misses.clear();
+  for (const l of EXTRA_LANGS) {
+    const ids = pages4Of(l);
+    if (ids.includes("integer"))
+      for (const [v, m] of [["", "hex"], ["zz", "hex"], ["1.5", "dec"], ["2", "bin"], ["-1", "bcd"], ["70000", "dec"], ["1FFFF", "hex"]] as const) assert.throws(() => parseBits(v, m, 16, l));
+    if (ids.includes("modbusPractice")) {
+      for (const k of KINDS) tx(KIND_NAMES[k], l);
+      for (let s = 1; s <= 60; s++) for (const k of KINDS) JSON.stringify(makeQuestion(s * 7919 + 13, l, k));
+    }
+    if (ids.includes("mqttDecoder")) {
+      for (const v of Object.values(LABELS)) tx(v, l);
+      const conn = "10 18 00 04 4D 51 54 54 04 C2 00 3C 00 04 64 65 76 31 00 01 75 00 01 70";
+      const pub = "32 28 00 0C 70 6C 61 6E 74 2F 6C 69 6E 65 31 2F 00 2A 7B 22 74 65 6D 70 22 3A 32 31 2E 35 2C 22 75 6E 69 74 22 3A 22 43 22 7D";
+      for (const input of [conn, "10 10 00 04 4D 51 54 54 04 02 00 3C 00 04 64 65 76 31 20 02 00 00", ...[0, 1, 2, 3, 4, 5].map((rc) => `20 02 00 0${rc}`), pub]) {
+        const a = analyzeMqtt(input);
+        if (a.kind === "packets") for (const p of a.packets) for (const f of p.fields) if (f.note) tx(f.note, l);
+      }
+    }
+    if (ids.includes("pcapAnalyzer")) {
+      const a = analyzeCapture(samplePcapng(), { lang: l, mcPorts: [5000] });
+      assert.ok(a.rows.length > 0, "예시 캡처에서 거래를 찾음");
+      toCsv(a, { withAddr: true, withBytes: true, lang: l });
+      // 화면에 나오는 함수 이름·종료 코드(1차 묶음 번역) — 영어 함수 이름이 남지 않는다
+      for (const r of a.rows) assert.ok(!/Read Holding|Batch read|Unknown function/.test(r.fnName + (r.codeName ?? "")), `${l}: 거래 표에 영어 — ${r.fnName} ${r.codeName}`);
+    }
+    if (ids.includes("webSerial")) {
+      for (const f of [{ baud: "x" }, { dataBits: "6" }, { stopBits: "3" }, { parity: "mark" }, { flow: "soft" }]) assert.throws(() => portOptions({ baud: "9600", dataBits: "8", stopBits: "1", parity: "none", flow: "none", ...f }, l));
+      for (const [txt, mode] of [["0G", "hex"], ["123", "hex"], ["\\q", "ascii"], ["\\xZZ", "ascii"]] as const) assert.throws(() => buildTx(txt, mode, "none", "none", l));
+    }
+    if (ids.includes("logicCapture")) {
+      const c = parseCapture(sampleUartCsv());
+      const real = decodeUart(c.channels[0], c.start, c.end, { baud: 9600, dataBits: 8, parity: "even", stopBits: 1, invert: false });
+      assert.ok(real.length > 0, "예시 UART 캡처를 풂");
+      const errs = ["parity", "frame", "glitch", "partial", "mode", "stuff", "errflag", "crc", "form", "noack", "fd"] as const;
+      const items: Item[] = [
+        { t0: 0, t1: 1, kind: "byte", v: 0x41, err: ["parity"] },
+        { t0: 0, t1: 1, kind: "break", v: 0, err: ["frame"] },
+        { t0: 0, t1: 1, kind: "word", v: 0x9f, miso: 0xef, err: [] },
+        { t0: 0, t1: 0, kind: "cs", on: true, err: [] },
+        { t0: 0, t1: 0, kind: "cs", on: false, err: ["mode"] },
+        { t0: 0, t1: 0, kind: "start", err: [] },
+        { t0: 0, t1: 0, kind: "restart", err: [] },
+        { t0: 0, t1: 0, kind: "stop", err: [] },
+        { t0: 0, t1: 1, kind: "addr", addr: 0x50, rw: 1, ack: true, err: [] },
+        { t0: 0, t1: 1, kind: "addr", addr: 0x150, rw: 0, tenBit: true, ack: false, err: [] },
+        { t0: 0, t1: 1, kind: "data", v: 0x12, ack: false, err: [] },
+        { t0: 0, t1: 1, kind: "frame", id: 0x18ff50e5, ext: true, rtr: true, dlc: 0, crc: 0x1234, crcCalc: 0x4321, err: [...errs] },
+        ...real,
+      ];
+      for (const it of items) kindText(it, l), valueText(it, l, 8), logicErrText(it, l);
+      itemsCsv(items, l, 8);
+      itemsText(items, l, 8);
+      const shown = items.map((it) => [kindText(it, l), valueText(it, l, 8), logicErrText(it, l)].join(" ")).join(" ");
+      assert.ok(!/remote|calc|\bext\b|\bread\b|\bwrite\b|10-bit|CS on|no ACK/.test(shown), `${l}: 로직 해석 글에 영어`);
     }
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");

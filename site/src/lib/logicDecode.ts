@@ -8,6 +8,7 @@
 //    첫 바이트 = 7비트 주소 + R/W, 11110xx 는 10비트 주소 — NXP UM10204 Rev. 7 §3.1.3~3.1.6·3.1.10·3.1.11.
 //  - CAN: 우성 0·열성 1, SOF·ID 11(29)·RTR·IDE·r0·DLC·데이터·CRC 15·구분자·ACK·EOF 7, 같은 값 5비트 뒤 반대 비트 끼움(스터핑),
 //    CRC 다항식 0x4599 — TI SLOA101B §3·4, Microchip MCP2515 데이터시트 DS20001801J §2·§6. 재동기화는 열성→우성 변화에서.
+import { msg, tx, type Lang } from "./tr.ts";
 import { lowerBound, upperBound, valueAt, valueBefore, levelAfter, type Sig } from "./logicCapture.ts";
 
 export type Kind = "byte" | "break" | "word" | "cs" | "start" | "restart" | "stop" | "addr" | "data" | "frame";
@@ -506,7 +507,7 @@ export function decodeCan(s: Sig, start: number, end: number, o: CanOpts): Item[
 
 // ---------------------------------------------------------------- 글로
 
-export type Lang = "ko" | "en";
+export type { Lang };
 const hex = (v: number, w = 2) => v.toString(16).toUpperCase().padStart(w, "0");
 const printable = (v: number) => (v >= 0x20 && v < 0x7f ? `'${String.fromCharCode(v)}'` : v === 0x0d ? "\\r" : v === 0x0a ? "\\n" : v === 0x09 ? "\\t" : "");
 
@@ -525,33 +526,33 @@ export const ERR_TEXT: Record<Err, { ko: string; en: string }> = {
 };
 
 export function kindText(it: Item, lang: Lang): string {
-  const ko = lang === "ko";
+  const t = (ko: string, en: string) => msg(lang, ko, en);
   switch (it.kind) {
     case "byte":
-      return ko ? "바이트" : "Byte";
+      return t("바이트", "Byte");
     case "break":
-      return ko ? "브레이크" : "Break";
+      return t("브레이크", "Break");
     case "word":
-      return ko ? "워드" : "Word";
+      return t("워드", "Word");
     case "cs":
-      return it.on ? (ko ? "CS 켜짐" : "CS on") : ko ? "CS 꺼짐" : "CS off";
+      return it.on ? t("CS 켜짐", "CS on") : t("CS 꺼짐", "CS off");
     case "start":
-      return ko ? "시작" : "Start";
+      return t("시작", "Start");
     case "restart":
-      return ko ? "반복 시작" : "Repeated start";
+      return t("반복 시작", "Repeated start");
     case "stop":
-      return ko ? "정지" : "Stop";
+      return t("정지", "Stop");
     case "addr":
-      return ko ? "주소" : "Address";
+      return t("주소", "Address");
     case "data":
-      return ko ? "데이터" : "Data";
+      return t("데이터", "Data");
     case "frame":
-      return ko ? "프레임" : "Frame";
+      return t("프레임", "Frame");
   }
 }
 
 export function valueText(it: Item, lang: Lang, bits = 8): string {
-  const ko = lang === "ko";
+  const t = (ko: string, en: string) => msg(lang, ko, en);
   const w = Math.max(2, Math.ceil(bits / 4));
   switch (it.kind) {
     case "byte":
@@ -564,19 +565,19 @@ export function valueText(it: Item, lang: Lang, bits = 8): string {
       return p.join(" · ");
     }
     case "addr": {
-      const a = it.tenBit ? `0x${hex(it.addr ?? 0, 3)} (${ko ? "10비트" : "10-bit"})` : `0x${hex(it.addr ?? 0)}`;
-      return `${a} ${it.rw ? (ko ? "읽기" : "read") : ko ? "쓰기" : "write"} · ${it.ack ? "ACK" : "NACK"}`;
+      const a = it.tenBit ? `0x${hex(it.addr ?? 0, 3)} (${t("10비트", "10-bit")})` : `0x${hex(it.addr ?? 0)}`;
+      return `${a} ${it.rw ? t("읽기", "read") : t("쓰기", "write")} · ${it.ack ? "ACK" : "NACK"}`;
     }
     case "data":
       return `0x${hex(it.v ?? 0)}${it.ack === undefined ? "" : it.ack ? " · ACK" : " · NACK"}`;
     case "frame": {
       if (it.id === undefined) return "";
-      const id = it.ext ? `0x${hex(it.id, 8)} (${ko ? "확장" : "ext"})` : `0x${hex(it.id, 3)}`;
+      const id = it.ext ? `0x${hex(it.id, 8)} (${t("확장", "ext")})` : `0x${hex(it.id, 3)}`;
       const p = [`ID ${id}`];
       if (it.dlc !== undefined) p.push(`DLC ${it.dlc}`);
-      if (it.rtr) p.push(ko ? "원격(RTR)" : "remote (RTR)");
+      if (it.rtr) p.push(t("원격(RTR)", "remote (RTR)"));
       if (it.data && it.data.length) p.push(it.data.map((x) => hex(x)).join(" "));
-      if (it.crc !== undefined) p.push(`CRC 0x${hex(it.crc, 4)}${it.crcCalc !== undefined && it.crcCalc !== it.crc ? ` (${ko ? "계산" : "calc"} 0x${hex(it.crcCalc, 4)})` : ""}`);
+      if (it.crc !== undefined) p.push(`CRC 0x${hex(it.crc, 4)}${it.crcCalc !== undefined && it.crcCalc !== it.crc ? ` (${t("계산", "calc")} 0x${hex(it.crcCalc, 4)})` : ""}`);
       if (it.dlc !== undefined && !it.err.includes("noack") && !it.err.includes("partial")) p.push("ACK");
       return p.join(" · ");
     }
@@ -585,7 +586,7 @@ export function valueText(it: Item, lang: Lang, bits = 8): string {
   }
 }
 
-export const errText = (it: Item, lang: Lang) => it.err.map((e) => ERR_TEXT[e][lang]).join(", ");
+export const errText = (it: Item, lang: Lang) => it.err.map((e) => tx(ERR_TEXT[e], lang)).join(", ");
 
 /** 짧은 글 — 칸 사이를 탭으로(복사해 표 프로그램에 붙이기 좋게) */
 export function itemsText(items: Item[], lang: Lang, bits = 8): string {
@@ -596,8 +597,8 @@ export function itemsText(items: Item[], lang: Lang, bits = 8): string {
 
 const csvCell = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 export function itemsCsv(items: Item[], lang: Lang, bits = 8): string {
-  const ko = lang === "ko";
-  const head = ko ? ["시작(s)", "끝(s)", "채널", "종류", "값", "오류"] : ["start_s", "end_s", "channel", "kind", "value", "error"];
+  const t = (ko: string, en: string) => msg(lang, ko, en);
+  const head = [t("시작(s)", "start_s"), t("끝(s)", "end_s"), t("채널", "channel"), t("종류", "kind"), t("값", "value"), t("오류", "error")];
   const lines = [head.join(",")];
   for (const it of items) lines.push([it.t0.toFixed(9), it.t1.toFixed(9), it.ch ?? "", kindText(it, lang), valueText(it, lang, bits), errText(it, lang)].map(csvCell).join(","));
   return lines.join("\r\n") + "\r\n";

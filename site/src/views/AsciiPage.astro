@@ -6,18 +6,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { ASCII, bin7, hex2, isControl } from "../lib/ascii";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/ascii/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "ASCII 코드표·제어 문자",
+      seo: "ASCII 코드표·제어 문자표 (STX·ETX·ACK·CR·LF) — PortDock",
       desc: "ASCII 0~127 의 10진·HEX·2진 값과 글자, STX·ETX·ACK·NAK·ENQ·CR·LF·XON·XOFF 같은 제어 문자의 이름과 캐럿·이스케이프 표기를 한 표로. 시리얼 통신 프레임 읽기용.",
       find: "찾기 (글자·10진·HEX·약어·이름 — 예: A, 13, 0x0D, STX, 줄 바꿈)",
       count: (n: number) => `${n}개 보임`,
@@ -50,9 +53,12 @@ const L = ko
       srcTitle: "출처",
       hexNote: "바이트를 글자로 바꾸거나 글자를 바이트로 바꾸려면",
       hexLink: "HEX ↔ ASCII 변환기",
+      hexEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "ASCII Table & Control Characters",
+      seo: "ASCII Table with Control Characters (Hex, STX, CR, LF) — PortDock",
       desc: "ASCII 0–127 in decimal, hex, binary and text, with names, caret and escape notation for control characters like STX, ETX, ACK, NAK, CR, LF, XON and XOFF.",
       find: "Find (character, decimal, hex, abbreviation or name — e.g. A, 13, 0x0D, STX, line feed)",
       count: (n: number) => `${n} shown`,
@@ -85,7 +91,11 @@ const L = ko
       srcTitle: "Sources",
       hexNote: "To turn bytes into text or text into bytes, use the",
       hexLink: "HEX ↔ ASCII Converter",
-    };
+      hexEnd: ".",
+    }
+  : { ...page4(lang, "ascii"), hexLink: pageName(lang, "tools/hex-ascii/") };
+/** 이름 칸 — 한국어·추가 언어는 «그 언어 이름 — RFC 20 영어 이름» */
+const nameOf = (r: (typeof ASCII)[number]) => (!r.name ? "" : lang === "ko" ? `${r.ko} — ${r.name}` : lang === "en" ? r.name : `${(page4(lang, "ascii").names as Record<string, string>)[r.sym]} — ${r.name}`);
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -97,17 +107,17 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "ASCII 코드표·제어 문자표 (STX·ETX·ACK·CR·LF) — PortDock" : "ASCII Table with Control Characters (Hex, STX, CR, LF) — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ascii"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="as">
+    <form class="calc card" id="as" data-lang={lang}>
       <label class="fld">{L.find}<input id="q" class="mono" spellcheck="false" autocomplete="off" /></label>
       <p class="note" id="cnt" aria-live="polite"></p>
       <div class="tbl">
@@ -121,7 +131,7 @@ const SRC = [
                   <td class="mono">{hex2(r.code)}</td>
                   <td class="mono">{bin7(r.code)}</td>
                   <td class="mono">{isControl(r.code) || r.code === 32 ? <b>{r.sym}</b> : r.sym}</td>
-                  <td>{r.name ? (ko ? `${r.ko} — ${r.name}` : r.name) : ""}</td>
+                  <td>{nameOf(r)}</td>
                   <td class="mono">{[r.caret, r.esc].filter(Boolean).join("  ")}</td>
                 </tr>
               ))
@@ -154,7 +164,7 @@ const SRC = [
         ))
       }
       <p>
-        {L.hexNote} <a href={url(lang, "tools/hex-ascii/")}>{L.hexLink}</a>.
+        {L.hexNote} <a href={link(lang, "tools/hex-ascii/")}>{L.hexLink}</a>{L.hexEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -164,14 +174,18 @@ const SRC = [
   </div>
   <script>
     import { filterAscii } from "../lib/ascii";
+    import { msg, type Lang } from "../lib/tr";
     const q = document.getElementById("q") as HTMLInputElement;
     const cnt = document.getElementById("cnt")!;
     const rows = [...document.querySelectorAll<HTMLTableRowElement>("#as tr[data-c]")];
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("as")?.dataset.lang ?? "en") as Lang;
     function run() {
       const keep = new Set(filterAscii(q.value).map((r) => r.code));
+      // 추가 언어: 이름 칸(그 언어 이름)으로도 찾는다 — 한국어·영어는 filterAscii 만
+      const s = q.value.trim().toLowerCase();
+      if (lang !== "ko" && lang !== "en" && s.length >= 2) for (const tr of rows) if (tr.cells[4]?.textContent?.toLowerCase().includes(s)) keep.add(Number(tr.dataset.c));
       for (const tr of rows) tr.hidden = !keep.has(Number(tr.dataset.c));
-      cnt.textContent = q.value.trim() ? (ko ? `${keep.size}개 보임` : `${keep.size} shown`) : "";
+      cnt.textContent = q.value.trim() ? msg(lang, `${keep.size}개 보임`, `${keep.size} shown`) : "";
     }
     q.addEventListener("input", run);
     document.getElementById("as")!.addEventListener("submit", (e) => e.preventDefault());

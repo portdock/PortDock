@@ -4,7 +4,7 @@
 // 근거(링크만): MQTT 3.1.1 (OASIS 2014) 2·3장, MQTT 5.0 (OASIS 2019) 2.2.2·3장, Eclipse Sparkplug 3.0 sparkplug_b.proto,
 // Protocol Buffers Encoding (protobuf.dev/programming-guides/encoding). 연결·전송은 하지 않는다 — 붙여 넣은 바이트만 푼다.
 
-export type Lang = "ko" | "en";
+export type { Lang } from "./tr.ts";
 type L2 = { ko: string; en: string };
 
 // ---------------------------------------------------------------- 입력 → 바이트

@@ -1,7 +1,8 @@
 // 웹 도구 «Modbus 연습장» — 신입·교육용 문제를 시드로 만들고 채점한다. 같은 시드 → 같은 문제(modbusQuiz.test.ts).
 // 프레임은 checksum.ts(CRC16), 예외 코드 뜻은 modbusDecode.ts(EXCEPTIONS), 실수 순서는 modbusFloat.ts 를 그대로 쓴다.
-// 링크는 실제 가이드 slug·웹 도구 경로만(시험이 확인).
-import { crc16Modbus, hex, parseHex, type Lang } from "./checksum.ts";
+// 링크는 실제 가이드 slug·웹 도구 경로만(시험이 확인). 문구는 t(ko, en) — 추가 언어는 영어 문장으로 찾는다(lib/tr.ts).
+import { crc16Modbus, hex, parseHex } from "./checksum.ts";
+import { msg, tx, type Lang } from "./tr.ts";
 import { EXCEPTIONS, funcName } from "./modbusDecode.ts";
 import { encodeRegisters, decodeRegisters, formatFloat, regHex, type ByteOrder } from "./modbusFloat.ts";
 
@@ -65,7 +66,6 @@ const withCrc = (b: number[]) => {
   const c = crc16Modbus(b);
   return [...b, c & 0xff, c >> 8];
 };
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 
 /** 정답 + 오답 보기를 섞는다(같은 글은 한 번만) */
 function choicesOf(r: Rand, right: string, wrong: string[]): { choices: string[]; answerIndex: number } {
@@ -156,7 +156,7 @@ function exception(r: Rand, lang: Lang, seed: number): Question {
   const fc = pick(r, [0x01, 0x03, 0x04, 0x06, 0x10]);
   const code = pick(r, EXC_CODES);
   const frame = withCrc([unit, fc | 0x80, code]);
-  const label = (c: number) => `${h2(c)} ${EXCEPTIONS[c].name} — ${EXCEPTIONS[c][lang]}`;
+  const label = (c: number) => `${h2(c)} ${EXCEPTIONS[c].name} — ${tx(EXCEPTIONS[c], lang)}`;
   const right = label(code);
   const wrong = shuffle(r, EXC_CODES.filter((c) => c !== code)).map(label);
   return {
@@ -225,14 +225,16 @@ function floatOrder(r: Rand, lang: Lang, seed: number): Question {
     shown: regHex(regs),
     ...choicesOf(r, right, wrong),
     answer: right,
-    explain: t(
+    explain:
       order === "ABCD"
-        ? `ABCD 는 첫 레지스터가 높은 워드라 ${regHex(regs).replace(" ", "")} 을 그대로 IEEE 754 float32 로 읽습니다 = ${right}. 순서를 CDAB 로 잘못 잡으면 ${read("CDAB")} 처럼 엉뚱한 값이 나옵니다.`
-        : `CDAB 는 첫 레지스터가 낮은 워드라 두 레지스터를 바꿔 ${regHex([regs[1], regs[0]]).replace(" ", "")} 을 float32 로 읽습니다 = ${right}. 그대로(ABCD) 읽으면 ${read("ABCD")} 처럼 엉뚱한 값이 나옵니다.`,
-      order === "ABCD"
-        ? `ABCD means the first register is the high word, so read ${regHex(regs).replace(" ", "")} as IEEE 754 float32 = ${right}. Taking it as CDAB gives a nonsense value such as ${read("CDAB")}.`
-        : `CDAB means the first register is the low word, so swap them and read ${regHex([regs[1], regs[0]]).replace(" ", "")} as float32 = ${right}. Reading it as-is (ABCD) gives a nonsense value such as ${read("ABCD")}.`,
-    ),
+        ? t(
+            `ABCD 는 첫 레지스터가 높은 워드라 ${regHex(regs).replace(" ", "")} 을 그대로 IEEE 754 float32 로 읽습니다 = ${right}. 순서를 CDAB 로 잘못 잡으면 ${read("CDAB")} 처럼 엉뚱한 값이 나옵니다.`,
+            `ABCD means the first register is the high word, so read ${regHex(regs).replace(" ", "")} as IEEE 754 float32 = ${right}. Taking it as CDAB gives a nonsense value such as ${read("CDAB")}.`,
+          )
+        : t(
+            `CDAB 는 첫 레지스터가 낮은 워드라 두 레지스터를 바꿔 ${regHex([regs[1], regs[0]]).replace(" ", "")} 을 float32 로 읽습니다 = ${right}. 그대로(ABCD) 읽으면 ${read("ABCD")} 처럼 엉뚱한 값이 나옵니다.`,
+            `CDAB means the first register is the low word, so swap them and read ${regHex([regs[1], regs[0]]).replace(" ", "")} as float32 = ${right}. Reading it as-is (ABCD) gives a nonsense value such as ${read("ABCD")}.`,
+          ),
     guide: "modbus-float-word-order",
     tool: "tools/modbus-float/",
   };

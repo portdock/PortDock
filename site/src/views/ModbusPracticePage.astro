@@ -7,27 +7,29 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { KINDS, KIND_NAMES } from "../lib/modbusQuiz";
-import { GUIDES } from "../data/guides";
-import { WEB_TOOLS } from "../data/webTools";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName, weave } from "../i18n/names";
+import { tx } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/modbus-practice/";
 const GUIDE_SLUGS = ["modbus-rtu-frame", "modbus-address-notation", "modbus-exception-codes", "modbus-float-word-order"];
 const TOOL_PATHS = ["tools/modbus/", "tools/modbus-decoder/", "tools/checksum/", "tools/modbus-float/"];
 // 문제의 «관련 가이드·도구» 링크 이름과 주소 — 스크립트가 큰 데이터 파일을 읽지 않도록 필요한 것만 넘긴다
 const links = {
-  guides: Object.fromEntries(GUIDE_SLUGS.map((s) => [s, { name: GUIDES.find((g) => g.slug === s)!.title[lang], href: url(lang, `guides/${s}/`) }])),
-  tools: Object.fromEntries(TOOL_PATHS.map((p) => [p, { name: WEB_TOOLS.find((w) => w.path === p)!.name[lang], href: url(lang, p) }])),
+  guides: Object.fromEntries(GUIDE_SLUGS.map((s) => [s, { name: pageName(lang, `guides/${s}/`), href: link(lang, `guides/${s}/`) }])),
+  tools: Object.fromEntries(TOOL_PATHS.map((p) => [p, { name: pageName(lang, p), href: link(lang, p) }])),
 };
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus 연습장 (퀴즈)",
+      seo: "Modbus 연습 문제 — RTU 요청·응답·CRC·예외 코드 퀴즈 — PortDock",
       desc: "Modbus RTU 연습 문제 — 읽기 요청 HEX, 응답에서 40003 값, 예외 83 02 의 뜻, CRC 바이트 순서, float ABCD·CDAB. 자동 출제·해설.",
       kind: "문제 종류",
       mixed: "섞어서",
@@ -43,9 +45,15 @@ const L = ko
         ["주관식 답은 어떻게 적나요?", "HEX 는 띄어쓰기·대소문자·0x 를 가리지 않습니다(01 03 00 00 00 0A C5 CD 와 0103000000 0ac5cd 는 같음). 값은 10진으로 적고, 0x 를 붙이면 HEX 로 읽습니다."],
       ],
       srcTitle: "근거",
+      qlink: "이 문제 링크",
+      guidesTitle: "함께 보면 좋은 가이드",
+      src: ["함수 코드·요청/응답 모양·예외 코드", "RTU 프레임·CRC(낮은 바이트 먼저)", "float32. 레지스터 워드 순서(ABCD·CDAB)는 규격에 없어 장비마다 다릅니다"],
+      rtu: ["RTU·TCP·ASCII 프레임을 서로 바꿔 보려면 ", "Modbus RTU ↔ TCP 프레임 변환기", " 를 쓰세요."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus Practice Quiz",
+      seo: "Modbus Practice Quiz: RTU Frames, CRC, Exceptions — PortDock",
       desc: "Modbus RTU practice: read request HEX, the value of 40003 in a response, exception 83 02, CRC byte order, float ABCD vs CDAB. With explanations.",
       kind: "Question type",
       mixed: "Mixed",
@@ -61,7 +69,15 @@ const L = ko
         ["How do I type a written answer?", "HEX ignores spaces, case and 0x (01 03 00 00 00 0A C5 CD equals 0103000000 0ac5cd). Values are decimal; prefix 0x to enter HEX."],
       ],
       srcTitle: "References",
-    };
+      qlink: "Link to this question",
+      guidesTitle: "Guides to read alongside",
+      src: ["function codes, request/response layouts, exception codes", "RTU framing, CRC (low byte first)", "float32. The register word order (ABCD, CDAB) is not in the Modbus specification and varies by device"],
+      rtu: ["To convert frames between RTU, TCP and ASCII use the ", "Modbus RTU ↔ TCP Frame Converter", "."],
+    }
+  : (() => {
+      const d = page4(lang, "modbusPractice");
+      return { ...d, rtu: weave(lang, d.rtu, ["tools/modbus-rtu-tcp/"]) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -69,11 +85,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus 연습 문제 — RTU 요청·응답·CRC·예외 코드 퀴즈 — PortDock" : "Modbus Practice Quiz: RTU Frames, CRC, Exceptions — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["modbusNames", "modbusDecode", "modbusQuiz"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -85,7 +101,7 @@ const ld = {
           {L.kind}
           <select id="kind">
             <option value="">{L.mixed}</option>
-            {KINDS.map((k) => <option value={k}>{KIND_NAMES[k][lang]}</option>)}
+            {KINDS.map((k) => <option value={k}>{tx(KIND_NAMES[k], lang)}</option>)}
           </select>
         </label>
         <p class="score" id="score" aria-live="polite"></p>
@@ -105,7 +121,7 @@ const ld = {
           <button type="button" class="btn tight" id="reset">{L.reset}</button>
         </div>
         <div id="result" aria-live="polite"></div>
-        <p class="note"><a id="qlink" href="#">{ko ? "이 문제 링크" : "Link to this question"}</a></p>
+        <p class="note"><a id="qlink" href="#">{L.qlink}</a></p>
       </section>
       <p class="note">{L.how}</p>
     </form>
@@ -122,7 +138,7 @@ const ld = {
           </>
         ))
       }
-      <h2>{ko ? "함께 보면 좋은 가이드" : "Guides to read alongside"}</h2>
+      <h2>{L.guidesTitle}</h2>
       <ul>
         {
           Object.values(links.guides).map((g) => (
@@ -134,13 +150,13 @@ const ld = {
       </ul>
       <h2>{L.srcTitle}</h2>
       <ul>
-        <li>Modbus Application Protocol Specification V1.1b3 — {ko ? "함수 코드·요청/응답 모양·예외 코드" : "function codes, request/response layouts, exception codes"}</li>
-        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {ko ? "RTU 프레임·CRC(낮은 바이트 먼저)" : "RTU framing, CRC (low byte first)"}</li>
-        <li>IEEE 754 — {ko ? "float32. 레지스터 워드 순서(ABCD·CDAB)는 규격에 없어 장비마다 다릅니다" : "float32. The register word order (ABCD, CDAB) is not in the Modbus specification and varies by device"}</li>
+        <li>Modbus Application Protocol Specification V1.1b3 — {L.src[0]}</li>
+        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {L.src[1]}</li>
+        <li>IEEE 754 — {L.src[2]}</li>
       </ul>
       <p>
-        {ko ? "RTU·TCP·ASCII 프레임을 서로 바꿔 보려면 " : "To convert frames between RTU, TCP and ASCII use the "}
-        <a href={url(lang, "tools/modbus-rtu-tcp/")}>{ko ? "Modbus RTU ↔ TCP 프레임 변환기" : "Modbus RTU ↔ TCP Frame Converter"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.rtu[0]}
+        <a href={link(lang, "tools/modbus-rtu-tcp/")}>{L.rtu[1]}</a>{L.rtu[2]}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -206,12 +222,11 @@ const ld = {
     }
   </style>
   <script>
-    import { type Lang } from "../lib/checksum";
+    import { msg, tx, type Lang } from "../lib/tr";
     import { KIND_NAMES, KINDS, addResult, emptyScore, grade, makeQuestion, parseScore, type Kind, type Question, type Score } from "../lib/modbusQuiz";
     const form = document.getElementById("qz") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const t = (k: string, e: string) => msg(lang, k, e);
     const links = JSON.parse(form.dataset.links ?? "{}") as { guides: Record<string, { name: string; href: string }>; tools: Record<string, { name: string; href: string }> };
     const $ = (id: string) => document.getElementById(id)!;
     const kindSel = $("kind") as HTMLSelectElement;
@@ -259,7 +274,7 @@ const ld = {
     function show(seed: number, kind?: Kind) {
       q = makeQuestion(seed, lang, kind);
       done = false;
-      $("qkind").textContent = `${KIND_NAMES[q.kind][lang]} · #${q.seed}`;
+      $("qkind").textContent = `${tx(KIND_NAMES[q.kind], lang)} · #${q.seed}`;
       $("qprompt").textContent = q.prompt;
       shown.hidden = !q.shown;
       shown.textContent = q.shown ?? "";

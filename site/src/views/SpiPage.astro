@@ -7,19 +7,28 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { modeInfo, notations } from "../lib/spi";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { msg } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/spi/";
-const edgeName = (e: string) => (ko ? (e === "rising" ? "상승 ↑" : "하강 ↓") : e === "rising" ? "rising ↑" : "falling ↓");
-const L = ko
+const edgeName = (e: string) => (e === "rising" ? msg(lang, "상승 ↑", "rising ↑") : msg(lang, "하강 ↓", "falling ↓"));
+const MORE = [
+  { path: "tools/uart-waveform/", nameKo: "UART 파형 그리기", nameEn: "UART Waveform Drawer" },
+  { path: "tools/i2c/", nameKo: "I2C 도구", nameEn: "I2C Tools" },
+  { path: "tools/can-decoder/", nameKo: "CAN 프레임 해석기", nameEn: "CAN Frame Decoder" },
+];
+const L =
+  lang === "ko"
   ? {
       title: "SPI 모드 도우미 (CPOL·CPHA 파형)",
+      seo: "SPI 모드 0·1·2·3 — CPOL·CPHA 파형 그리기 — PortDock",
       desc: "SPI 모드 0~3 을 고르면 SCK·MOSI·MISO·CS 파형과 샘플·시프트 엣지를 그리고, 바이트의 비트(MSB/LSB first), 전송 시간, 제조사별 CPOL·CPHA 표기 차이를 보여 줍니다.",
       mode: "SPI 모드",
       mosi: "MOSI 바이트 (HEX, 최대 4)",
@@ -53,8 +62,10 @@ const L = ko
       srcTitle: "출처",
       more: "UART·I2C·CAN 은",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "SPI Mode Helper (CPOL/CPHA Waveforms)",
+      seo: "SPI Modes 0–3: CPOL & CPHA Timing Diagram — PortDock",
       desc: "Pick SPI mode 0–3 to draw SCK, MOSI, MISO and CS with sample and shift edges, a byte's bits (MSB/LSB first), transfer time and vendor names for CPOL/CPHA.",
       mode: "SPI mode",
       mosi: "MOSI bytes (hex, up to 4)",
@@ -87,7 +98,8 @@ const L = ko
       ],
       srcTitle: "Sources",
       more: "For UART, I2C and CAN:",
-    };
+    }
+  : page4(lang, "spi");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -100,17 +112,17 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "SPI 모드 0·1·2·3 — CPOL·CPHA 파형 그리기 — PortDock" : "SPI Modes 0–3: CPOL & CPHA Timing Diagram — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["spi"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="sp">
+    <form class="calc card" id="sp" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.mode}<select id="mode">{[0, 1, 2, 3].map((m) => <option value={m} selected={m === 0}>{`${m} — CPOL ${m >> 1}, CPHA ${m & 1}`}</option>)}</select></label>
         <label class="fld">{L.order}<select id="order"><option value="msb" selected>{L.orders[0]}</option><option value="lsb">{L.orders[1]}</option></select></label>
@@ -197,7 +209,7 @@ const SRC = [
         ))
       }
       <p>
-        {L.more} <a href={url(lang, "tools/uart-waveform/")}>{ko ? "UART 파형 그리기" : "UART Waveform Drawer"}</a> · <a href={url(lang, "tools/i2c/")}>{ko ? "I2C 도구" : "I2C Tools"}</a> · <a href={url(lang, "tools/can-decoder/")}>{ko ? "CAN 프레임 해석기" : "CAN Frame Decoder"}</a>
+        {L.more} {MORE.map((m, i) => <>{i > 0 && " · "}<a href={link(lang, m.path)}>{lang === "ko" ? m.nameKo : lang === "en" ? m.nameEn : pageName(lang, m.path)}</a></>)}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -229,9 +241,10 @@ const SRC = [
   </style>
   <script>
     import { modeInfo, parseBytes, transferTime, wave } from "../lib/spi";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const form = $<HTMLFormElement>("sp");
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const NS = "http://www.w3.org/2000/svg";
     const mk = (tag: string, attrs: Record<string, string | number>, text?: string) => {
       const e = document.createElementNS(NS, tag);
@@ -243,7 +256,7 @@ const SRC = [
       const td = form.querySelector<HTMLElement>(`td[data-k="${k}"]`);
       if (td) td.textContent = v;
     };
-    const edge = (e: string) => (ko ? (e === "rising" ? "상승 ↑" : "하강 ↓") : e === "rising" ? "rising ↑" : "falling ↓");
+    const edge = (e: string) => (e === "rising" ? msg(lang, "상승 ↑", "rising ↑") : msg(lang, "하강 ↓", "falling ↓"));
     const si = (s: number) =>
       s >= 1 ? `${+s.toFixed(4)} s` : s >= 1e-3 ? `${+(s * 1e3).toFixed(4)} ms` : `${+(s * 1e6).toFixed(3)} µs`;
 
@@ -258,7 +271,7 @@ const SRC = [
       const A = 26; // 높이
       const height = 210;
       const x = (t: number) => X0 + (t + lead) * U;
-      const svg = mk("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": ko ? `SPI 모드 ${mode} 파형` : `SPI mode ${mode} waveform` });
+      const svg = mk("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": msg(lang, `SPI 모드 ${mode} 파형`, `SPI mode ${mode} waveform`) });
       svg.append(mk("rect", { x: 0, y: 0, width, height, fill: "none" }));
       // 엣지 세로선
       for (const e of w.edges) {
@@ -323,7 +336,7 @@ const SRC = [
       // 바이트 경계 표시
       for (let k = 1; k * 8 < w.bits.length; k++) {
         const b = w.bits[k * 8];
-        svg.append(mk("text", { x: x(b.t0) + 2, y: rows.cs - A - 6, "font-size": 10, fill: "currentColor", opacity: 0.7 }, ko ? `${k + 1}번째 바이트` : `byte ${k + 1}`));
+        svg.append(mk("text", { x: x(b.t0) + 2, y: rows.cs - A - 6, "font-size": 10, fill: "currentColor", opacity: 0.7 }, msg(lang, `${k + 1}번째 바이트`, `byte ${k + 1}`)));
       }
       return svg;
     }
@@ -345,7 +358,7 @@ const SRC = [
         set("idle", m.cpol ? "High" : "Low");
         set("sample", edge(m.sample));
         set("shift", edge(m.shift));
-        set("first", m.cpha === 0 ? (ko ? "CS 가 내려갈 때(첫 엣지 전)" : "When CS goes low (before the first edge)") : ko ? "첫 SCK 엣지에서" : "On the first SCK edge");
+        set("first", m.cpha === 0 ? msg(lang, "CS 가 내려갈 때(첫 엣지 전)", "When CS goes low (before the first edge)") : msg(lang, "첫 SCK 엣지에서", "On the first SCK edge"));
         const hz = Number($("clk").value.replace(",", ".")) * 1e6;
         const n = Number($("n").value);
         if (hz > 0 && n >= 0 && Number.isFinite(hz) && Number.isFinite(n)) {
@@ -358,7 +371,7 @@ const SRC = [
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "HEX 바이트를 확인하세요(예: 9F 00 00)" : "Check the hex bytes (e.g. 9F 00 00)";
+        $("err").textContent = msg(lang, "HEX 바이트를 확인하세요(예: 9F 00 00)", "Check the hex bytes (e.g. 9F 00 00)");
       }
     }
     form.addEventListener("input", run);

@@ -9,21 +9,25 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page4 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import { samplePcapng } from "../lib/pcapSample";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/pcap-analyzer/";
 const SAMPLE = "/tools/pcap-analyzer/sample.pcapng";
 const sampleKb = Math.max(1, Math.round(samplePcapng().length / 1024));
-const L = ko
+const GUIDE_PATHS = ["guides/capture-plc-traffic-wireshark-pktmon/", "guides/modbus-response-time-pcap/"];
+const L =
+  lang === "ko"
   ? {
       title: "산업 통신 pcap 해석기",
+      seo: "산업 통신 pcap 해석기 — Modbus·MC 응답 시간 — PortDock",
       desc: "Wireshark·pktmon 으로 뜬 .pcap·.pcapng 를 끌어 놓으면 Modbus TCP·MC(3E·4E)의 요청·응답 짝, 응답 시간, 무응답, 예외·종료 코드를 연결·장치별로 보여 줍니다.",
       drop: "캡처 파일을 여기에 끌어 놓거나 눌러서 고르세요",
       dropNote: ".pcap · .pcapng · .cap — 200MB 까지",
@@ -61,9 +65,21 @@ const L = ko
       relPlc: "PLC 없이 MC 프로토콜 시험",
       srcTitle: "근거",
       notAffiliated: "Wireshark 는 Wireshark Foundation 의 상표이며, PortDock 은 Wireshark·Microsoft·미쓰비시 전기와 제휴 관계가 아닙니다. 이 도구는 장비 통신의 모니터·시험·문제 찾기를 돕는 것이며, 남의 통신을 가로채는 기능은 없습니다.",
+      guides: ["Wireshark·pktmon 으로 PLC 통신 기록 뜨기 — 포트 미러링·관리자 권한·스위치 한계", "Modbus 응답 시간 읽기 — 해석기 결과 보는 법"],
+      relNames: ["Modbus 프레임 해석기", "MC 프로토콜(SLMP) 프레임 해석기"],
+      refNotes: [
+        "스위치·미러 포트·탭, 미러 포트의 패킷 손실",
+        "pcapng 변환, 여러 구성 요소의 같은 패킷, --component-id",
+        "pcap 형식(마이크로초·나노초 매직)",
+        "SHB·IDB·EPB·SPB, if_tsresol",
+        "MBAP 머리·트랜잭션 ID",
+        "3E·4E 머리, 4E 일련번호, 종료 코드",
+      ],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Industrial pcap Analyzer",
+      seo: "Industrial pcap Analyzer: Modbus TCP & MC Timing — PortDock",
       desc: "Drop a Wireshark or pktmon .pcap/.pcapng to see Modbus TCP and MC (3E/4E) request/response pairs, response times, missing replies and exception codes.",
       drop: "Drop a capture file here, or click to choose one",
       dropNote: ".pcap · .pcapng · .cap — up to 200 MB",
@@ -101,15 +117,34 @@ const L = ko
       relPlc: "test MC protocol without a PLC",
       srcTitle: "References",
       notAffiliated: "Wireshark is a trademark of the Wireshark Foundation; PortDock is not affiliated with Wireshark, Microsoft or Mitsubishi Electric. This tool helps with monitoring, testing and troubleshooting device communication; it has no feature for intercepting other people's traffic.",
-    };
+      guides: ["Capturing PLC traffic with Wireshark or pktmon: port mirroring, admin rights, switch limits", "Reading Modbus response times from a capture"],
+      relNames: ["Modbus Frame Decoder", "MC Protocol (SLMP) Frame Decoder"],
+      refNotes: [
+        "switches, mirror ports and taps; packet loss on mirror ports",
+        "pcapng conversion, the same packet from several components, --component-id",
+        "pcap format (microsecond and nanosecond magic)",
+        "SHB, IDB, EPB, SPB, if_tsresol",
+        "MBAP header, transaction ID",
+        "3E/4E header, 4E serial number, end code",
+      ],
+    }
+  : (() => {
+      const d = page4(lang, "pcapAnalyzer");
+      return {
+        ...d,
+        sampleDl: d.sampleDl(sampleKb),
+        guides: GUIDE_PATHS.map((p) => pageName(lang, p)),
+        relNames: [pageName(lang, "tools/modbus-decoder/"), pageName(lang, "tools/mc-decoder/")],
+      };
+    })();
 const REFS = [
-  { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: ko ? "스위치·미러 포트·탭, 미러 포트의 패킷 손실" : "switches, mirror ports and taps; packet loss on mirror ports" },
-  { title: "Microsoft — pktmon etl2pcap", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-etl2pcap", note: ko ? "pcapng 변환, 여러 구성 요소의 같은 패킷, --component-id" : "pcapng conversion, the same packet from several components, --component-id" },
-  { title: "tcpdump — pcap-savefile(5)", url: "https://www.tcpdump.org/manpages/pcap-savefile.5.txt", note: ko ? "pcap 형식(마이크로초·나노초 매직)" : "pcap format (microsecond and nanosecond magic)" },
-  { title: "IETF — PCAP Next Generation (pcapng) Capture File Format", url: "https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/", note: ko ? "SHB·IDB·EPB·SPB, if_tsresol" : "SHB, IDB, EPB, SPB, if_tsresol" },
-  { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications", note: ko ? "MBAP 머리·트랜잭션 ID" : "MBAP header, transaction ID" },
-  { title: "SLMP Reference Manual SH(NA)-080956ENG", url: "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080956eng/sh080956engl.pdf", note: ko ? "3E·4E 머리, 4E 일련번호, 종료 코드" : "3E/4E header, 4E serial number, end code" },
-];
+  { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet" },
+  { title: "Microsoft — pktmon etl2pcap", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-etl2pcap" },
+  { title: "tcpdump — pcap-savefile(5)", url: "https://www.tcpdump.org/manpages/pcap-savefile.5.txt" },
+  { title: "IETF — PCAP Next Generation (pcapng) Capture File Format", url: "https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/" },
+  { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications" },
+  { title: "SLMP Reference Manual SH(NA)-080956ENG", url: "https://dl.mitsubishielectric.com/dl/fa/document/manual/plc/sh080956eng/sh080956engl.pdf" },
+].map((r, i) => ({ ...r, note: L.refNotes[i] }));
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -117,17 +152,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "산업 통신 pcap 해석기 — Modbus·MC 응답 시간 — PortDock" : "Industrial pcap Analyzer: Modbus TCP & MC Timing — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["modbusDecode", "mc", "pcap"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pa" data-lang={lang} data-mb={url(lang, "tools/modbus-decoder/")} data-mc={url(lang, "tools/mc-decoder/")} data-sample={SAMPLE} data-picked={L.picked}>
+    <form class="calc card" id="pa" data-lang={lang} data-mb={link(lang, "tools/modbus-decoder/")} data-mc={link(lang, "tools/mc-decoder/")} data-sample={SAMPLE} data-picked={L.picked}>
       <label class="drop" id="drop">
         <input type="file" id="file" accept=".pcap,.pcapng,.cap,.ntar,application/vnd.tcpdump.pcap" />
         <b id="drop-title">{L.drop}</b>
@@ -182,16 +217,16 @@ const ld = {
       }
       <h2>{L.guideTitle}</h2>
       <ul>
-        <li><a href={url(lang, "guides/capture-plc-traffic-wireshark-pktmon/")}>{ko ? "Wireshark·pktmon 으로 PLC 통신 기록 뜨기 — 포트 미러링·관리자 권한·스위치 한계" : "Capturing PLC traffic with Wireshark or pktmon: port mirroring, admin rights, switch limits"}</a></li>
-        <li><a href={url(lang, "guides/modbus-response-time-pcap/")}>{ko ? "Modbus 응답 시간 읽기 — 해석기 결과 보는 법" : "Reading Modbus response times from a capture"}</a></li>
+        <li><a href={link(lang, GUIDE_PATHS[0])}>{L.guides[0]}</a></li>
+        <li><a href={link(lang, GUIDE_PATHS[1])}>{L.guides[1]}</a></li>
       </ul>
       <h2>{L.relTitle}</h2>
       <ul>
-        <li><a href={url(lang, "tools/modbus-decoder/")}>{ko ? "Modbus 프레임 해석기" : "Modbus Frame Decoder"}</a> — {L.relMb}</li>
-        <li><a href={url(lang, "tools/mc-decoder/")}>{ko ? "MC 프로토콜(SLMP) 프레임 해석기" : "MC Protocol (SLMP) Frame Decoder"}</a> — {L.relMc}</li>
-        <li><a href={url(lang, "tcp/")}>PortDock TCP</a> — {L.relTcp}</li>
-        <li><a href={url(lang, "modbus-slave/")}>PortDock Modbus Slave</a> — {L.relSlave}</li>
-        <li><a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a> — {L.relPlc}</li>
+        <li><a href={link(lang, "tools/modbus-decoder/")}>{L.relNames[0]}</a> — {L.relMb}</li>
+        <li><a href={link(lang, "tools/mc-decoder/")}>{L.relNames[1]}</a> — {L.relMc}</li>
+        <li><a href={link(lang, "tcp/")}>PortDock TCP</a> — {L.relTcp}</li>
+        <li><a href={link(lang, "modbus-slave/")}>PortDock Modbus Slave</a> — {L.relSlave}</li>
+        <li><a href={link(lang, "plc-simulator/")}>PortDock PLC Simulator</a> — {L.relPlc}</li>
       </ul>
       <h2>{L.srcTitle}</h2>
       <ul>
@@ -416,11 +451,13 @@ const ld = {
     import { toCsv, decoderLink, parsePorts, STATUS_ORDER } from "../lib/pcapAnalyze";
     import { LINK_NAMES } from "../lib/pcapRead";
     import type { WorkerOut } from "../lib/pcapWorker";
-
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("pa") as HTMLFormElement;
-    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const lang = (form.dataset.lang ?? "ko") as Lang;
+    const t = (k: string, e: string) => msg(lang, k, e);
+    const locale = lang === "ko" ? "ko-KR" : lang === "en" ? "en-US" : lang;
+    // 추가 언어: Worker 안에는 쪽의 문구 표(pd-lib-i18n)가 없으므로 함께 넘긴다
+    const catalog = lang === "ko" || lang === "en" ? undefined : (JSON.parse(document.getElementById("pd-lib-i18n")?.textContent || "{}") as Record<string, string>);
     const MAX = 200 * 1024 * 1024;
     const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const fileIn = g<HTMLInputElement>("file");
@@ -446,7 +483,7 @@ const ld = {
       cut: t("캡처 끝(판단 못 함)", "Capture ended (unknown)"),
       orphan: t("짝 없는 응답", "Unmatched response"),
     };
-    const nf = new Intl.NumberFormat(ko ? "ko-KR" : "en-US");
+    const nf = new Intl.NumberFormat(locale);
     const n = (v: number) => nf.format(v);
     const ms = (v: number | null) => (v === null ? "—" : v >= 100 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3));
     const sec = (nsv: number) => (nsv / 1e9).toFixed(6);
@@ -554,7 +591,7 @@ const ld = {
         stop();
         err.textContent = t(`처리 중 오류: ${e.message}`, `Error while processing: ${e.message}`);
       };
-      w.postMessage({ file: f, opts: o });
+      w.postMessage({ file: f, opts: o, catalog });
     }
 
     fileIn.addEventListener("change", () => {
@@ -639,7 +676,7 @@ const ld = {
 
       // ---- 요약
       const o = a.overall;
-      const start = a.start ? new Date(a.start.sec * 1000).toLocaleString(ko ? "ko-KR" : "en-US") : "—";
+      const start = a.start ? new Date(a.start.sec * 1000).toLocaleString(locale) : "—";
       const tiles: [string, string][] = [
         [n(a.convs.length), t("산업 통신 연결", "Industrial connections")],
         [n(o.requests), t("요청", "Requests")],
