@@ -122,7 +122,7 @@ export const de: Partial<Record<Key, string>> = {
   diagLevelProblem: "die Hälfte oder mehr",
   diagLevelLook: "einige",
   diagSideBad: "{n} Fehlschläge zuletzt — mögliche Ursachen ansehen",
-  bkOpen: "Einstellungen sichern & wiederherstellen…",
+  bkOpen: "Einstellungen sichern/laden…",
   bkTitle: "Geräteeinstellungen sichern, vergleichen, wiederherstellen",
   bkTabBackup: "Sichern",
   bkTabCompare: "Vergleichen",

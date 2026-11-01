@@ -9,6 +9,7 @@ import { Builder, By, Key } from "selenium-webdriver";
 import edge from "selenium-webdriver/edge.js";
 import fs from "node:fs";
 import path from "node:path";
+import { UI } from "../../shared/uiText.ts";
 
 const OUT = process.env.OUT ?? "shots/smoke";
 fs.mkdirSync(OUT, { recursive: true });
@@ -23,9 +24,11 @@ const COMBOS = [
   { name: "en-dark", lang: "en", theme: "dark", full: true },
   { name: "ko-dark", lang: "ko", theme: "dark", full: false },
   { name: "en-light", lang: "en", theme: "light", full: false },
-  // (0.11.0) 일본어 — 화면만 훑는다(jaScan): 넘침·단추 글 잘림(최소 창·좁은 창 760)·설정 창·도움말 «영어뿐» 한 줄. COMBO=ja-light 로 따로 돌릴 수 있다
-  { name: "ja-light", lang: "ja", theme: "light", full: false, scanOnly: true },
+  // (0.11.0) 추가 언어 10개 — 화면만 훑는다(langScan): 넘침·단추 글 잘림(최소 창·좁은 창 760)·설정 창·도움말 «영어뿐» 한 줄. COMBO=de-light 처럼 따로 돌릴 수 있다
+  ...["ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"].map((lang, i) => ({ name: `${lang}-${i % 2 ? "dark" : "light"}`, lang, theme: i % 2 ? "dark" : "light", full: false, scanOnly: true })),
 ];
+// 설정 단추 이름(언어별) — 공용 사전에서
+const SETTINGS_LABEL = Object.fromEntries(COMBOS.map((c) => [c.lang, UI[c.lang].settings]));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- 페이지에 먼저 심는 갈고리: 잡히지 않은 예외·거부된 Promise·console.error 를 모은다
@@ -2972,8 +2975,8 @@ async function runApp(app, port) {
       await fitWindow();
     }
 
-    /** (0.11.0) 추가 언어(ja) 화면 훑기 — 글이 길어진 단추가 넘치거나 잘리지 않는지, 설정 창·도움말이 그 언어로 뜨는지 */
-    async function jaScan() {
+    /** (0.11.0) 추가 언어 화면 훑기 — 글이 길어진 단추가 넘치거나 잘리지 않는지, 설정 창·도움말이 그 언어로 뜨는지 */
+    async function langScan() {
       // 보이는 단추 중 글이 상자보다 넓은 것(잘림·줄 넘침) — 아이콘 단추(글 2자 이하)는 뺀다
       const clipped = `return [...document.querySelectorAll('button, .btn, select')].filter((e) => __sm.vis(e) && (e.textContent || '').trim().length > 2 && e.scrollWidth > e.clientWidth + 1).map((e) => __sm.name(e) + ' ' + e.scrollWidth + '>' + e.clientWidth).slice(0, 20)`;
       const checkButtons = async (step) => {
@@ -2981,40 +2984,41 @@ async function runApp(app, port) {
         for (const x of c) add(step, "overflow", `단추 글이 넘침: ${x}`);
         if (c.length) findings[findings.length - 1].shot = await shot(app, `${combo.name}-${step}`);
       };
+      const L = combo.lang, SET = SETTINGS_LABEL[L];
       await load(port, combo);
       await fitWindow();
       await load(port, combo);
-      await verify("ja load");
-      await expectJs("ja lang", "return document.documentElement.lang === 'ja' && !!document.querySelector('button[aria-label=\"設定\"]')");
-      await checkButtons("ja buttons");
+      await verify(`${L} load`);
+      await expectJs(`${L} lang`, `return document.documentElement.lang === '${L}' && !!document.querySelector('button[aria-label=${JSON.stringify(SET)}]')`);
+      await checkButtons(`${L} buttons`);
       await shot(app, `${combo.name}-load`);
-      // 설정 창 — 언어 고르기에 日本語, 창 안 단추
-      await js("const b = document.querySelector('button[aria-label=\"設定\"]'); b && b.click()");
+      // 설정 창 — 언어 고르기에 그 언어, 창 안 단추
+      await js(`const b = document.querySelector('button[aria-label=${JSON.stringify(SET)}]'); b && (b.focus(), b.click())`);
       await sleep(300);
-      await expectJs("ja settings", "return [...document.querySelectorAll('.modal select option')].some((o) => o.value === 'ja' && o.selected)");
-      await checkButtons("ja settings buttons");
+      await expectJs(`${L} settings`, `return [...document.querySelectorAll('.modal select option')].some((o) => o.value === '${L}' && o.selected)`);
+      await checkButtons(`${L} settings buttons`);
       await shot(app, `${combo.name}-settings`);
       await keys(Key.ESCAPE);
-      await verify("ja settings close", { expectFocus: true });
-      // 도움말 — 본문은 영어, «ヘルプは英語のみ» 한 줄
-      await js("const b = document.querySelector('button[aria-label=\"ヘルプ (F1)\"]'); b && b.click()");
+      await verify(`${L} settings close`, { expectFocus: true });
+      // 도움말 — 본문은 영어, «도움말은 영어» 한 줄(그 언어로)
+      await js("const b = [...document.querySelectorAll('button[aria-label]')].find((x) => /\(F1\)/.test(x.getAttribute('aria-label'))); b && (b.focus(), b.click())");
       await sleep(300);
-      await expectJs("ja help", "return !!document.querySelector('.modal.help .help-en-only')");
+      await expectJs(`${L} help`, "return !!document.querySelector('.modal.help .help-en-only')");
       await keys(Key.ESCAPE);
-      await verify("ja help close");
+      await verify(`${L} help close`);
       // 좁은 창 760 — 접힌 요약 줄·머리 단추
       await d.manage().window().setRect({ width: 760, height: 600 });
       const [iw, ih] = await d.executeScript("return [innerWidth, innerHeight]");
       if (iw !== 760 || ih !== 600) await d.manage().window().setRect({ width: 760 + (760 - iw), height: 600 + (600 - ih) });
       await sleep(400);
-      await verify("ja narrow 760");
-      await checkButtons("ja narrow buttons");
+      await verify(`${L} narrow 760`);
+      await checkButtons(`${L} narrow buttons`);
       await shot(app, `${combo.name}-narrow-760`);
       await fitWindow();
     }
 
     try {
-      if (combo.scanOnly) await jaScan();
+      if (combo.scanOnly) await langScan();
       else if (app === "port-inspector") await inspectorFlow();
       else if (app === "hw-tester") await hwFlow();
       else {
