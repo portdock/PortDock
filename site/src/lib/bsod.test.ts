@@ -92,3 +92,10 @@ test("일본어 Windows 문구 — 블루스크린 화면 «停止コード»·�
   assert.equal(r.how, "bugcheck-message");
   assert.equal(r.params?.length, 4);
 });
+
+test("독일어·폴란드어 블루스크린 화면 문구 — «Stoppcode»·«Kod zatrzymania»", () => {
+  assert.equal(findBugcheck("Stoppcode: DPC_WATCHDOG_VIOLATION\nWas ist fehlgeschlagen: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Stoppcode: 133").code, 0x133);
+  assert.equal(findBugcheck("Kod zatrzymania: CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("Kod zatrzymania: 0x133").code, 0x133);
+});
