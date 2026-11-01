@@ -638,8 +638,7 @@ const TIPS: Record<string, Tip> = {
 };
 
 /** 추가 언어의 말풍선 — 열쇠별 한 줄. 없는 열쇠는 영어 */
-const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS, es: ES_TIPS, pt: PT_TIPS };
-const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS, fr: FR_TIPS, it: IT_TIPS };
+const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS, es: ES_TIPS, pt: PT_TIPS, fr: FR_TIPS, it: IT_TIPS };
 
 export function tip(lang: Lang, key: string) {
   const t = TIPS[key];
