@@ -24,6 +24,7 @@ import {
 } from "./portinfo";
 import "./portcheck.css";
 import { JA_PORTCHECK } from "./ja/dialogs.ts";
+import { TR_PORTCHECK } from "./tr/dialogs.ts";
 
 const T = {
   ko: {
@@ -83,7 +84,7 @@ const T = {
 };
 
 export type PortCheckTextKey = keyof typeof T.ko;
-const TL = dicts(T.ko, T.en, { ja: JA_PORTCHECK });
+const TL = dicts(T.ko, T.en, { ja: JA_PORTCHECK, tr: TR_PORTCHECK });
 
 export interface PortCheckApi extends LoopApi {
   report: (id: string) => Promise<PortReport>;
