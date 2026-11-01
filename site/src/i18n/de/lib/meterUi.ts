@@ -15,7 +15,8 @@ export default {
   "PC-side DB9 (DTE)": "DB9 am PC (DTE)",
   "Not transmitting · device may be unplugged": "Kein Senden · Gerät darf abgesteckt sein",
   "USB shell": "USB-Schirm",
-  Device: "Gerät",
+  Equipment: "Gerät",
+  Device: "Gerät", // nur bis zum Zusammenführen mit main 5d1837b (dort heißt der Schlüssel Equipment)
   "Both powered · DC and AC": "Beide versorgt · DC und AC",
   "Break the loop at one point, meter in series (mA jack)": "Schleife an einer Stelle auftrennen, Messgerät in Reihe (mA-Buchse)",
   Supply: "Versorgung",

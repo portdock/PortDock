@@ -1,0 +1,28 @@
+// Sprawdzanie odczytów multimetru (views/MultimeterCheckPage.astro) — 2. pakiet
+export default {
+  title: "Sprawdzanie odczytów multimetru — RS-485, 4–20 mA, 24 V, czujniki",
+  h1: "Sprawdzanie odczytów multimetru",
+  desc: "RS-485: rezystancja A–B, napięcie spoczynkowe, 4–20 mA (NE 43), spadek 24 V, wyjście NPN/PNP, TX RS-232, różnica mas — wpisz odczyt, dostaniesz ocenę i powód.",
+  seo: "Odczyty multimetru: RS-485, 4–20 mA, 24 V — PortDock",
+  jump: "Punkty",
+  how: "Jak mierzyć",
+  basis: "Podstawa",
+  copy: "Kopiuj wynik",
+  copied: "Skopiowano.",
+  privacy: "Wpisane wartości są liczone tylko w tej przeglądarce i nigdzie nie są wysyłane.",
+  general: "Wartości to powszechnie stosowane liczby z norm — jeśli instrukcja urządzenia podaje inne, obowiązuje instrukcja. Podczas pomiaru pamiętaj o stanie zasilania i ryzyku porażenia prądem.",
+  ts: "kreatora diagnozy usterek",
+  tsNote: "Aby zacząć od objawu i dowiedzieć się, co zmierzyć, użyj",
+  wd: "kreatora schematów połączeń",
+  wdNote: "Aby narysować okablowanie, użyj",
+  rs: "kalkulatora terminacji i polaryzacji RS-485",
+  rsNote: "Rezystory terminujące i polaryzujące dobierzesz za pomocą",
+  srcTitle: "Źródła",
+  faqTitle: "Najczęstsze pytania",
+  end: ".",
+  faq: [
+    ["Czy mogę mierzyć rezystancję A–B przy włączonym zasilaniu?", "Nie. Najpierw wyłącz zasilanie wszystkich urządzeń. Pod napięciem miernik pokaże błędne wartości, a urządzenie lub miernik mogą ulec uszkodzeniu."],
+    ["Założyłem terminację, a wynik to „bez terminacji”", "Terminacja RC (1 nF + 120 Ω szeregowo) przez kondensator nie przepuszcza prądu stałego, więc multimetr jej nie widzi. Wybierz RC w polu „Rezystor terminujący” albo obejrzyj przełączniki i elementy terminacji w urządzeniach końcowych. Niektóre urządzenia włączają też wewnętrzną terminację tylko pod zasilaniem."],
+    ["Czy „Bez uwag (w tym pomiarze)” znaczy, że komunikacja zadziała?", "Znaczy, że ten jeden odczyt nie wskazuje problemu. Inne możliwe przyczyny — ustawienia, adresy, polaryzację, zakłócenia — sprawdzaj dalej w kreatorze diagnozy usterek."],
+  ] as [string, string][],
+};
