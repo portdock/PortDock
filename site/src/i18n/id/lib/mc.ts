@@ -3,8 +3,8 @@
 export default {
   bits: "bit",
   words: "word",
-  Read: "Batch read (baca berurutan)",
-  Write: "Batch write (tulis berurutan)",
+  Read: "Baca berurutan (batch)",
+  Write: "Tulis berurutan (batch)",
   "Read Random": "Random read (baca acak)",
   "Write Random": "Random write (tulis acak)",
   Loopback: "Uji loopback",
