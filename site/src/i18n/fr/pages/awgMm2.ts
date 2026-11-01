@@ -1,0 +1,37 @@
+// awgMm2 — français (source : version anglaise de views/AwgMm2Page.astro). Clés, longueurs de tableaux et formes de fonctions comme dans la version de référence ja.
+export default {
+    title: "Table de conversion AWG ↔ mm²",
+    seo: "AWG en mm² : diamètre et résistance — PortDock",
+    desc: "Diamètre et section de l’AWG 0000 à 40 (formule ASTM B258), section métrique mm² la plus proche (IEC 60228) et cuivre en Ω/km à 20 °C. Dans les deux sens.",
+    inAwg: "AWG (p. ex. 18, 2/0, 0000)",
+    inMm: "Section en mm²",
+    res: "Résultat",
+    k: { d: "Diamètre (équivalent massif)", area: "Section", ohm: "Résistance du cuivre à 20 °C (un conducteur)", near: "Section métrique la plus proche", awgNear: "AWG le plus proche", awgUp: "AWG de section égale ou supérieure" },
+    how: "Les résultats se mettent à jour pendant la saisie. Tout s’exécute dans votre navigateur ; rien de ce que vous saisissez n’est envoyé.",
+    err: "Saisissez un AWG de 0000 à 50 (la notation 2/0 fonctionne) et une section supérieure à 0",
+    fTitle: "Formules",
+    formula: [
+      "Diamètre d = 0.127 mm × 92^((36 − n) ÷ 39)   (n : numéro AWG ; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Section A = π ÷ 4 × d²",
+      "Résistance R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (cuivre, 20 °C)",
+    ],
+    fNote: "La formule AWG vient de l’ASTM B258 ; la résistivité du cuivre est la valeur du cuivre recuit selon l’IEC 60028. Tous les 6 numéros, le diamètre double ; tous les 3 numéros, la section double à peu près.",
+    limitTitle: "Lire la table",
+    limits: [
+      "Les tailles AWG et métriques ne coïncident jamais exactement. Le « plus proche » se fait par le rapport des sections ; un écart négatif signifie que la section métrique est plus petite — quand l’intensité admissible ou la chute de tension est juste, prenez la taille égale ou supérieure.",
+      "Les diamètres sont ceux d’un conducteur massif. Un câble souple de même section est plus large, et l’isolant s’ajoute — pour le remplissage des conduits et goulottes, utilisez le diamètre extérieur du fabricant.",
+      "Résistance réelle du câble : l’IEC 60228 fixe des valeurs maximales par classe de conducteur (massif, câblé, souple) ; les conducteurs câblés et étamés sont un peu plus élevés.",
+      "L’intensité admissible ne découle pas de la seule taille (mode de pose, température ambiante, groupement) et n’est pas indiquée ici.",
+    ],
+    awgTitle: "Table AWG (0000 à 40)",
+    awgHead: ["AWG", "Diamètre mm", "Section mm²", "Ω/km (cuivre 20 °C)", "mm² le plus proche (écart)"],
+    mmTitle: "Sections métriques (IEC 60228)",
+    mmHead: ["Section mm²", "Diamètre mm (équivalent massif)", "Ω/km (cuivre 20 °C)", "AWG le plus proche", "AWG égal ou supérieur"],
+    faqTitle: "Questions fréquentes",
+    faq: [
+      ["Combien de mm² fait 18 AWG ?", "Environ 0.823 mm² (diamètre 1.024 mm). La section métrique la plus proche est 0.75 mm², un peu plus petite. 16 AWG font environ 1.31 mm², 14 AWG environ 2.08 mm², 12 AWG environ 3.31 mm²."],
+      ["Quel AWG correspond à 1.5 mm² ?", "15 AWG (1.65 mm²) est le plus proche, mais il est peu courant ; le remplaçant habituel en jauges américaines est donc 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) est plus petit que 1.5 mm²."],
+      ["Que signifient 4/0 et 2/0 ?", "Les jauges au-delà de 0 répètent le zéro : 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG font environ 107 mm²."],
+    ],
+    more: ["Pour dimensionner un câble selon la longueur et le courant : ", " ; pour les types de câbles selon l’usage : ", " ; pour le nombre de fils dans un conduit : ", "."],
+};
