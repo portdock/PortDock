@@ -77,3 +77,17 @@ test("판정 글·장비 통신 기본값·예시 명령·용어 — pl", async 
   const { term } = await import("./glossary.ts");
   assert.equal(term("checksum", "pl")[0], "Suma kontrolna");
 });
+
+test("판정 글·장비 통신 기본값·예시 명령·용어 — es", async () => {
+  assert.equal(txt(LEVEL_TEXT.look, "es"), "Revisar");
+  assert.equal(txt(dur(90 * 60), "es"), "1 h 30 min");
+  assert.equal(txt(T("x", "Problem code 10: Worth a look"), "es"), "Código de problema 10: Revisar");
+  const d = { comm: { baud: 9600, dataBits: 8, parity: "none", stopBits: 1, unit: 1, addressing: "zero" } };
+  assert.equal(commLine(d, "es"), "9600 8N1 · ID de esclavo 1 · el manual usa direcciones en base 0");
+  const { serialExamples, isExampleName } = await import("./examples.ts");
+  const ex = serialExamples("at", "es");
+  assert.equal(ex[0].name, "p. ej. AT (comprobar respuesta)");
+  assert.ok(ex.every((c) => isExampleName(c.name)));
+  const { term } = await import("./glossary.ts");
+  assert.equal(term("polling", "es")[0], "Sondeo");
+});

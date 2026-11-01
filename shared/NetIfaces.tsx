@@ -9,6 +9,7 @@ import "./net.css";
 import { JA_IFACE } from "./ja/dialogs.ts";
 import { DE_IFACE } from "./de/dialogs.ts";
 import { PL_IFACE } from "./pl/dialogs.ts";
+import { ES_IFACE } from "./es/dialogs.ts";
 
 export interface NetIface {
   name: string;
@@ -49,7 +50,7 @@ const L = {
 };
 
 export type IfaceTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_IFACE, de: DE_IFACE, pl: PL_IFACE });
+const LL = dicts(L.ko, L.en, { ja: JA_IFACE, de: DE_IFACE, pl: PL_IFACE, es: ES_IFACE });
 
 export const ifaceText = (lang: Lang, k: keyof (typeof L)["ko"], a = "", b = "") => LL[lang][k].replace("{a}", a).replace("{b}", b);
 
