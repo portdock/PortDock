@@ -46,6 +46,5 @@ export default {
   adcLink: "Tính độ phân giải và scaling ADC (tiếng Anh)",
   adcPost: ".",
   cablePre: "Để chọn cáp tín hiệu 4–20 mA (cặp xoắn có chống nhiễu), xem ",
-  cableLink: "Hỗ trợ chọn cáp (tiếng Anh)",
   cablePost: ".",
 };

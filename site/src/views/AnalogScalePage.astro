@@ -11,12 +11,14 @@ import { tx } from "../lib/tr";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
 import { ui, link } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
 }
 const { lang } = Astro.props;
 const PATH = "tools/4-20ma/";
+// 추가 언어: 다른 웹 도구로 가는 링크 글은 names.ts pageName() — 번역 여부에 따라 그 언어 이름 또는 영어 이름+«(英語)»
 const L =
   lang === "ko"
   ? {
@@ -118,7 +120,7 @@ const L =
       cableLink: "cable selection helper",
       cablePost: ".",
     }
-  : dict(lang).pages.analog;
+  : { ...dict(lang).pages.analog, cableLink: pageName(lang, "tools/cable-selection/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

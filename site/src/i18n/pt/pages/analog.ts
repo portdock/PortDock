@@ -46,6 +46,5 @@ export default {
   adcLink: "calculadora de resolução e escala de ADC (em inglês)",
   adcPost: ".",
   cablePre: "Para escolher o cabo do sinal 4–20 mA (par trançado blindado), veja o ",
-  cableLink: "guia de seleção de cabos",
   cablePost: ".",
 };

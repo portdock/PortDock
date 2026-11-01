@@ -46,6 +46,5 @@ export default {
   adcLink: "kalkulator resolusi dan skala ADC (bahasa Inggris)",
   adcPost: ".",
   cablePre: "Untuk memilih kabel sinyal 4–20 mA (twisted pair berpelindung), lihat ",
-  cableLink: "panduan pemilihan kabel (bahasa Inggris)",
   cablePost: ".",
 };

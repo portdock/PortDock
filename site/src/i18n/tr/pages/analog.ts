@@ -46,6 +46,5 @@ export default {
   adcLink: "ADC çözünürlük ve ölçekleme hesaplayıcı (İngilizce)",
   adcPost: ".",
   cablePre: "4–20 mA sinyal kablosu seçimi (ekranlı bükümlü çift) için bkz. ",
-  cableLink: "kablo seçim yardımcısı (İngilizce)",
   cablePost: ".",
 };

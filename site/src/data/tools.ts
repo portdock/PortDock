@@ -695,6 +695,16 @@ export const toolById = (id: string) => TOOLS.find((t) => t.id === id)!;
 export const downloadable = (t: Tool) => RELEASED && !t.upcoming;
 /** 설치판·오프라인 설치판·휴대판 3종이 있는 윈도우 앱인지(MCP 는 아님) */
 export const isApp = (t: Tool) => t.assets !== "mcp";
+
+/** 앱 화면 언어 — 모든 윈도우 앱 공통(shared/lang.ts 의 고를 수 있는 언어 ko·en·ja, 앱마다 i18n.ja.ts). 도움말 본문은 ko·en 두 판 */
+const SCREEN_LANG = {
+  title: { ko: "일본어 화면 (0.11.0 부터)", en: "Japanese screen (from 0.11.0)" },
+  body: {
+    ko: "화면 언어를 한국어·영어·일본어 가운데 고릅니다(머리줄·설정). 처음엔 Windows 표시 언어를 따르고, 그 밖의 언어면 영어로 시작합니다. 일본어 화면에서도 도움말과 일부 결과 문구는 영어입니다.",
+    en: "Pick Korean, English or Japanese for the screen (header or Settings). The first start follows the Windows display language; any other language starts in English. On the Japanese screen, help and some result text stay in English.",
+  },
+};
+for (const t of TOOLS) if (isApp(t)) t.features.push(SCREEN_LANG);
 /** MCP 내려받기 파일 — release.yml «MCP zip·.mcpb» 와 같은 이름 */
 export const MCP_FILES = { mcpb: "PortDock-MCP.mcpb", zip: "PortDock-MCP.zip" } as const;
 /** 내려받을 수 있는 도구 — 첫 화면 «윈도우 프로그램 N종» 같은 숫자에 쓴다 */

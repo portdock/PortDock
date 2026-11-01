@@ -46,6 +46,5 @@ export default {
   adcLink: "ADC 分解能・スケーリング計算ツール(英語)",
   adcPost: " を使ってください。",
   cablePre: "4-20mA の信号線(シールド付きツイストペア)の選び方は ",
-  cableLink: "ケーブル選定ガイド(英語)",
   cablePost: " をご覧ください。",
 };

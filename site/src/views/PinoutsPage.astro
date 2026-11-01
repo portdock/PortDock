@@ -9,18 +9,17 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { CONNECTORS, CATEGORIES } from "../lib/pinouts";
 import { tx } from "../lib/tr";
-import { isCore } from "../i18n/langs";
-import { GUIDES } from "../data/guides";
-import { WEB_TOOLS } from "../data/webTools";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link, webToolText, isTranslated } from "../lib/i18n";
+import { ui, link } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
 }
 const { lang } = Astro.props;
 const PATH = "tools/pinouts/";
+// 추가 언어: 다른 웹 도구로 가는 링크 글은 names.ts pageName() — 번역 여부에 따라 그 언어 이름 또는 영어 이름+«(英語)»
 const L =
   lang === "ko"
   ? {
@@ -106,7 +105,7 @@ const L =
       cableLink: "cable selection helper",
       cablePost: ".",
     }
-  : dict(lang).pages.pinouts;
+  : { ...dict(lang).pages.pinouts, wiring: pageName(lang, "tools/wiring/"), cableLink: pageName(lang, "tools/cable-selection/") };
 const T = {
   copied: L.copied,
   notes: L.notes,
@@ -119,18 +118,9 @@ const ld = {
   "@type": "FAQPage",
   mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
 };
-// 링크 이름(가이드·웹 도구) — 화면 스크립트에 넘긴다
+// 링크 이름(가이드·웹 도구) — 화면 스크립트에 넘긴다. 추가 언어 쪽: 번역된 웹 도구는 그 언어 이름, 나머지는 영어 이름+«(英語)»(names.ts)
 const linkPaths = [...new Set(CONNECTORS.flatMap((c) => c.links ?? []))];
-const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries(
-  linkPaths.map((p) => {
-    const g = GUIDES.find((x) => `guides/${x.slug}/` === p);
-    const w = WEB_TOOLS.find((x) => x.path === p);
-    // 추가 언어 쪽: 번역된 웹 도구는 그 언어 이름, 나머지(가이드 등)는 영어판 이름·주소
-    const nl = isCore(lang) ? lang : isTranslated(lang, p) ? null : "en";
-    const name = nl === null && w ? webToolText(w, lang).name : g ? g.title[nl ?? "en"] : w ? w.name[nl ?? "en"] : p;
-    return [p, { href: link(lang, p), name }];
-  }),
-);
+const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries(linkPaths.map((p) => [p, { href: link(lang, p), name: pageName(lang, p) }]));
 ---
 
 <Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["pinouts"]}>

@@ -26,7 +26,7 @@ export default (c: HomeCtx) => ({
   heroAlt: "Ekran PortDock Serial — odebrane bajty i rozłożona odpowiedź Modbus",
   heroCap: "PortDock Serial — przykładowy ekran (dane przykładowe, interfejs po angielsku)",
   appsTitle: `${c.nApps} programów na Windows${c.mcp ? " + MCP" : ""}`,
-  appsLead: "Jeden mały program do jednego zadania — pobierz tylko to, czego potrzebujesz. Interfejs programów jest po koreańsku i po angielsku.",
+  appsLead: "Jeden mały program do jednego zadania — pobierz tylko to, czego potrzebujesz. Interfejs programów jest po koreańsku, angielsku i japońsku (japoński od wersji 0.11.0).",
   screen: "— zrzut ekranu",
   soon: "Wkrótce",
   webTitle: "Narzędzia online — bez instalacji",

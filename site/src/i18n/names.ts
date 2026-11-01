@@ -18,3 +18,12 @@ export function pageName(lang: SiteLang, path: string): string {
   if (isCore(lang)) return w.name[lang];
   return isTranslated(lang, path) ? webToolText(w, lang).name : w.name.en + ui(lang).inEnglish;
 }
+
+/**
+ * 문장 조각 사이에 쪽 이름 링크 글을 끼운다: [a, b, c] + [p1, p2] → [a, pageName(p1), b, pageName(p2), c].
+ * 추가 언어 사전은 링크 글을 갖지 않고 앞뒤 조각만 둔다 — 링크 글의 «(英語)» 표시는 번역 여부(scope.ts)로 정해진다.
+ */
+export function weave(lang: SiteLang, parts: readonly string[], paths: readonly string[]): string[] {
+  if (parts.length !== paths.length + 1) throw new Error(`weave: 조각 ${parts.length}개, 링크 ${paths.length}개`);
+  return parts.flatMap((s, i) => (i < paths.length ? [s, pageName(lang, paths[i])] : [s]));
+}

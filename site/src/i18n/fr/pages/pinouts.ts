@@ -32,11 +32,9 @@ export default {
     ["En RS-485, est-ce A ou B le fil + ?", "La spécification Modbus fait de D1 (B) le fil le plus haut pour le 1 binaire (OFF) et de D0 (A) le plus bas. Certains constructeurs marquent pourtant A comme +, on ne peut donc pas se fier aux seules lettres. Si rien ne répond, inversez les deux fils."],
     ["Pourquoi n’y a-t-il pas de dessin des positions de broches du M12 ?", "Les constructeurs dessinent mâle/femelle et avant/arrière dans des orientations différentes : seuls les numéros, signaux et couleurs sont listés pour éviter de dessiner de mauvaises positions. Vérifiez les positions sur le plan de la fiche technique du connecteur ou du capteur."],
   ],
-  wiring: "Éditeur de schémas de câblage (en anglais)",
   sys: "Éditeur de schémas de système (en anglais)",
   check: "Liste de contrôle de mise en service et de maintenance (en anglais)",
   seeAlso: "À utiliser avec :",
   cablePre: "Pour le câble derrière le connecteur (catégorie Ethernet, longueurs RS-485 et RS-232), voir le ",
-  cableLink: "guide de choix des câbles (en anglais)",
   cablePost: ".",
 };

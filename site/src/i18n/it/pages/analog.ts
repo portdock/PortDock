@@ -46,6 +46,5 @@ export default {
   adcLink: "calcolatore di risoluzione e scalatura ADC (in inglese)",
   adcPost: ".",
   cablePre: "Per scegliere il cavo di segnale 4–20 mA (twistato e schermato) vedete la ",
-  cableLink: "guida alla scelta dei cavi (in inglese)",
   cablePost: ".",
 };

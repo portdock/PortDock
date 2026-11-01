@@ -32,11 +32,9 @@ export default {
     ["RS-485’te + hat A mı, B mi?", "Modbus şartnamesine göre ikili 1’de (OFF) gerilimi yüksek olan hat D1 (B), düşük olan D0’dır (A). Ancak bazı üreticiler A’yı + olarak etiketler, bu yüzden yalnızca harflere güvenilmez. Hiçbir cihaz yanıt vermiyorsa iki teli yer değiştirin."],
     ["M12 için neden pin yeri çizimi yok?", "Üreticiler erkek/dişi ve ön/arka görünümleri farklı yönlerde çizer; yanlış yer çizmemek için yalnızca numaralar, sinyaller ve renkler listelenir. Pin yerlerini konnektörün veya sensörün veri sayfasındaki çizimden kontrol edin."],
   ],
-  wiring: "Kablolama şeması çizici (İngilizce)",
   sys: "Sistem şeması düzenleyici (İngilizce)",
   check: "Devreye alma ve bakım kontrol listesi (İngilizce)",
   seeAlso: "Birlikte kullanın:",
   cablePre: "Konnektörün arkasındaki kablo için (Ethernet kategorisi, RS-485, RS-232 uzunluğu) bkz. ",
-  cableLink: "kablo seçim yardımcısı (İngilizce)",
   cablePost: ".",
 };

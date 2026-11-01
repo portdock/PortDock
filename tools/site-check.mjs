@@ -6,6 +6,7 @@
 //   여러 언어(site/src/i18n/langs.ts·scope.ts): hreflang 은 서로 짝이 맞아야 하고(A 가 B 를 가리키면 B 도 같은 묶음), 쪽 자신의 언어를 포함해야 하며,
 //   추가 언어(ja 등)는 그 언어의 번역 범위(scope.ts — 1차 묶음 SCOPE 공통 + 언어별 2차 묶음 MORE[언어])의 쪽에만 — 빌드 결과·sitemap 의 /<언어>/ 주소가
 //   언어마다 그 목록과 같아야 한다(extraPages()). sitemap 의 xhtml:link 도 있는 쪽만 가리켜야 한다.
+//   추가 언어 쪽에서 그 언어로 번역된 쪽(/<언어>/…)으로 가는 링크 글에 «(英語)» 같은 영어 표시(ui.ts inEnglish)가 없어야 한다.
 // 길이 기준(대략): 검색 결과 제목 약 600px, 설명 약 920px. 한글·한자 한 글자 = 2칸, 나머지 = 1칸으로 세어 제목 66칸·설명 160칸까지.
 import fs from "node:fs";
 import path from "node:path";
@@ -272,6 +273,38 @@ for (const l of EXTRA_LANGS) {
   for (const p of listed) if (!want.has(p)) err("sitemap", `번역 범위(scope.ts) 밖의 ${l} 주소: ${p}`);
   extraCount += built.size;
 }
+// 추가 언어 쪽의 링크 글: 그 언어로 번역된 쪽(/<언어>/…)으로 가는 링크에 «(英語)» 같은 영어 표시가 붙으면 안 된다.
+// 표시는 i18n/names.ts pageName() 이 번역 여부로 붙인다 — 사전 글에 박아 두면 번역 범위가 늘 때 낡는다.
+// 표시 글은 각 언어 사전(i18n/<언어>/ui.ts 의 inEnglish). 화면 스크립트가 그리는 링크(data-links JSON 의 href·name)도 본다.
+let markChecked = 0;
+for (const l of EXTRA_LANGS) {
+  const src = fs.readFileSync(new URL(`../site/src/i18n/${l}/ui.ts`, import.meta.url), "utf8");
+  const mark = src.match(/inEnglish:\s*"([^"]*)"/)?.[1]?.trim();
+  if (!mark) {
+    err(`site/src/i18n/${l}/ui.ts`, "inEnglish 를 찾지 못함");
+    continue;
+  }
+  const own = (href) => href.startsWith(`/${l}/`) || href.startsWith(`${SITE}/${l}/`);
+  for (const f of htmlFiles) {
+    const file = rel(f);
+    if (!file.startsWith(`${l}/`)) continue;
+    const html = fs.readFileSync(f, "utf8");
+    const found = [];
+    for (const m of html.matchAll(/<a(\s[^>]*)?>([\s\S]*?)<\/a>/gi)) {
+      const href = attr(`<a${m[1] ?? ""}>`, "href") ?? "";
+      if (!own(href)) continue;
+      markChecked++;
+      const text = decode(m[2].replace(/<[^>]*>/g, ""));
+      if (text.includes(mark)) found.push(`${href} «${text.trim()}»`);
+    }
+    for (const m of decode(html).matchAll(/"href":"([^"]*)","name":"([^"]*)"/g)) {
+      if (!own(m[1])) continue;
+      markChecked++;
+      if (m[2].includes(mark)) found.push(`${m[1]} «${m[2]}»`);
+    }
+    for (const x of found) err(file, `번역된 쪽으로 가는 링크에 영어 표시 ${mark}: ${x} — 링크 글은 names.ts pageName() 으로`);
+  }
+}
 // sitemap 의 xhtml:link(언어별 대응 쪽)도 실제로 있는 쪽만 가리켜야 한다
 const LOCALE_OK = new Set(LANGS.map((l) => LANG_META[l].locale));
 for (const f of smFiles)
@@ -307,7 +340,7 @@ const kb = Math.round(biggest.size / 1024);
 console.log(`사이트 검사: ${htmlFiles.length}쪽(색인 ${indexable.length}) · SITE ${SITE} · 가장 큰 HTML ${biggest.file} ${kb}KB`);
 console.log(`릴리스 내려받기 링크: 파일 ${dlLinks.size}종${real ? ` · 실제 자산 ${real.size}개와 대조` : ""}`);
 console.log(`구조화 데이터: ${Object.entries(ldCount).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
-console.log(`언어: ${LANGS.join(" · ")} — 추가 언어 쪽 ${extraCount}(번역 범위 ${want.size}) · hreflang 짝 ${altsOf.size}쪽 검사`);
+console.log(`언어: ${LANGS.join(" · ")} — 추가 언어 쪽 ${extraCount}(번역 범위 ${want.size}) · hreflang 짝 ${altsOf.size}쪽 검사 · 자기 언어 링크 글 ${markChecked}개(영어 표시 없음)`);
 for (const w of warns) console.warn(`주의 ${w}`);
 if (errors.length) {
   for (const e of errors) console.error(`✗ ${e}`);

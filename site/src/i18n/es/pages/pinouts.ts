@@ -32,11 +32,9 @@ export default {
     ["En RS-485, ¿la línea + es A o B?", "La especificación Modbus hace que D1 (B) sea la línea más alta para el 1 binario (OFF) y D0 (A) la más baja. Pero algunos fabricantes marcan A como +, así que no basta con las letras. Si nada responde, intercambie los dos hilos."],
     ["¿Por qué no hay dibujo de las posiciones de los pines del M12?", "Cada fabricante dibuja macho/hembra y frente/dorso con orientaciones distintas, así que, para no dibujar posiciones equivocadas, solo se listan números, señales y colores. Consulte las posiciones de los pines en el plano de la hoja de datos del conector o del sensor."],
   ],
-  wiring: "Generador de diagramas de cableado",
   sys: "Editor de esquemas del sistema (en inglés)",
   check: "Lista de verificación de puesta en marcha y mantenimiento (en inglés)",
   seeAlso: "Úselo junto con:",
   cablePre: "Para el cable detrás del conector (categoría Ethernet, RS-485, longitud RS-232), vea la ",
-  cableLink: "guía de selección de cables",
   cablePost: ".",
 };

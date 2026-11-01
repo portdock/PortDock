@@ -46,6 +46,5 @@ export default {
   adcLink: "calculadora de resolución y escalado de ADC (en inglés)",
   adcPost: ".",
   cablePre: "Para elegir el cable de señal de 4–20 mA (par trenzado apantallado), vea la ",
-  cableLink: "guía de selección de cables",
   cablePost: ".",
 };

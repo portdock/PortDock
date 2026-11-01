@@ -32,11 +32,9 @@ export default {
     ["Ist bei RS-485 A oder B die Plus-Leitung?", "Nach der Modbus-Spezifikation ist D1 (B) bei binär 1 (OFF) die höhere Leitung und D0 (A) die niedrigere. Manche Hersteller beschriften jedoch A als +, auf die Buchstaben allein ist also kein Verlass. Antwortet nichts, tauschen Sie die beiden Adern."],
     ["Warum gibt es für M12 keine Zeichnung der Pinpositionen?", "Hersteller zeichnen Stecker/Buchse und Vorder-/Rückseite in unterschiedlicher Ausrichtung. Damit keine falschen Positionen entstehen, werden nur Nummern, Signale und Farben aufgelistet. Die Pinpositionen entnehmen Sie der Zeichnung im Datenblatt des Steckverbinders oder Sensors."],
   ],
-  wiring: "Verdrahtungsplan-Editor (Englisch)",
   sys: "Editor für Anlagenübersichten (Englisch)",
   check: "Checkliste für Inbetriebnahme und Wartung (Englisch)",
   seeAlso: "Dazu passend:",
   cablePre: "Zum passenden Kabel (Ethernet-Kategorie, RS-485, RS-232-Länge) siehe die ",
-  cableLink: "Hilfe zur Kabelauswahl (Englisch)",
   cablePost: ".",
 };

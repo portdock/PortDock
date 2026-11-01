@@ -32,11 +32,9 @@ export default {
     ["Pada RS-485, A atau B yang jalur +?", "Spesifikasi Modbus menjadikan D1 (B) jalur yang lebih tinggi untuk biner 1 (OFF) dan D0 (A) yang lebih rendah. Namun sebagian pabrikan memberi label + pada A, jadi huruf saja tidak bisa dipercaya. Jika tidak ada yang menjawab, tukar kedua kabel."],
     ["Mengapa tidak ada gambar posisi pin M12?", "Pabrikan menggambar male/female dan depan/belakang dengan orientasi berbeda, jadi hanya nomor, sinyal, dan warna yang dicantumkan agar tidak menggambar posisi yang salah. Periksa posisi pin di gambar datasheet konektor atau sensornya."],
   ],
-  wiring: "Pembuat diagram pengawatan (bahasa Inggris)",
   sys: "Editor diagram sistem (bahasa Inggris)",
   check: "Daftar periksa commissioning dan perawatan (bahasa Inggris)",
   seeAlso: "Pakai bersama:",
   cablePre: "Untuk kabel di balik konektor (kategori Ethernet, RS-485, panjang RS-232), lihat ",
-  cableLink: "panduan pemilihan kabel (bahasa Inggris)",
   cablePost: ".",
 };

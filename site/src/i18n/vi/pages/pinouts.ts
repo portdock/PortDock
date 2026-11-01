@@ -32,11 +32,9 @@ export default {
     ["Với RS-485, A hay B là dây +?", "Theo đặc tả Modbus, D1 (B) là dây có điện áp cao hơn khi ở mức nhị phân 1 (OFF) và D0 (A) là dây thấp hơn. Tuy vậy có hãng ghi A là +, nên không thể chỉ dựa vào chữ cái. Nếu không có gì phản hồi, hãy đảo hai dây."],
     ["Vì sao không có hình vị trí chân M12?", "Mỗi hãng vẽ đầu đực/đầu cái và mặt trước/mặt sau theo hướng khác nhau, nên chỉ liệt kê số chân, tín hiệu và màu để tránh vẽ sai vị trí. Vị trí chân hãy xem hình trong datasheet của đầu nối hoặc cảm biến."],
   ],
-  wiring: "Công cụ vẽ sơ đồ đấu dây (tiếng Anh)",
   sys: "Công cụ vẽ sơ đồ hệ thống (tiếng Anh)",
   check: "Danh sách kiểm tra chạy thử và bảo trì (tiếng Anh)",
   seeAlso: "Dùng kèm:",
   cablePre: "Để chọn cáp phía sau đầu nối (loại cáp Ethernet, RS-485, chiều dài RS-232), xem ",
-  cableLink: "Hỗ trợ chọn cáp (tiếng Anh)",
   cablePost: ".",
 };

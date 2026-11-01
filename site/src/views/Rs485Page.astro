@@ -11,6 +11,7 @@ import { BAUDS } from "../lib/serialTiming";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
 import { ui, link } from "../lib/i18n";
+import { pageName, weave } from "../i18n/names";
 
 interface Props {
   lang: SiteLang;
@@ -28,6 +29,7 @@ const COMBOS = [
   { vcc: 3.3, r: 560, t: 120 },
   { vcc: 3.3, r: 390, t: 120 },
 ].map((c) => ({ ...c, v: bias({ vcc: c.vcc, rUp: c.r, rDown: c.r, ends: ["r", "r"], rTerm: c.t }).vIdle }));
+// 추가 언어: 다른 웹 도구로 가는 링크 글은 names.ts pageName() — 번역 여부에 따라 그 언어 이름 또는 영어 이름+«(英語)»
 const L =
   lang === "ko"
   ? {
@@ -178,7 +180,10 @@ const L =
       noDc: "no DC path",
       badNum: "Check the numbers — resistances and baud above 0, voltage 0 or more",
     }
-  : dict(lang).pages.rs485;
+  : (() => {
+      const d = dict(lang).pages.rs485;
+      return { ...d, more: weave(lang, d.more, ["tools/multimeter-check/", "tools/troubleshoot/", "tools/wiring/"]), cableLink: pageName(lang, "tools/cable-selection/") };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

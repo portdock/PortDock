@@ -45,7 +45,6 @@ export default {
   adcPre: "Jeśli odczytujesz sygnał bezpośrednio przetwornikiem ADC mikrokontrolera (liczba bitów, napięcie odniesienia, bocznik), użyj",
   adcLink: "kalkulatora rozdzielczości i skalowania ADC (po angielsku)",
   adcPost: ".",
-  cablePre: "Jak dobrać przewód sygnałowy 4–20 mA (skrętka ekranowana), opisuje ",
-  cableLink: "pomocnik doboru kabli (po angielsku)",
+  cablePre: "Przewód sygnałowy 4–20 mA (skrętka ekranowana) dobierzesz w narzędziu ",
   cablePost: ".",
 };

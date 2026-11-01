@@ -33,7 +33,7 @@ export default {
     ["Reconnexion automatique", "Débranchez puis rebranchez un adaptateur USB : PortDock retrouve le même appareil, se reconnecte et note l’heure de la coupure."],
     ["Une ligne, un message", "Découpage des trames par silence, caractère de fin, longueur fixe ou Modbus RTU : plus de données fusionnées ou coupées en deux."],
     ["Voir avant d’envoyer", "Les octets exacts qui partiront, somme de contrôle et fin de ligne comprises, s’affichent pendant la saisie."],
-    ["Interface en coréen et en anglais", "Les écrans, messages d’erreur et l’aide des logiciels existent en coréen et en anglais, avec une info-bulle sur chaque commande."],
+    ["Interface en coréen, anglais et japonais", "Les écrans des logiciels existent en coréen, en anglais et en japonais (japonais à partir de la 0.11.0 ; l’aide en coréen et en anglais), avec une info-bulle sur chaque commande."],
   ],
   ctaTitle: "Une question, un bogue, une idée ?",
   ctaBody: "Posez une question d’utilisation, signalez un bogue, proposez un outil web ou un guide, ou corrigez une table de registres d’appareil.",

@@ -46,6 +46,5 @@ export default {
   adcLink: "Rechner für ADC-Auflösung und Skalierung (Englisch)",
   adcPost: ".",
   cablePre: "Zur Auswahl der Signalleitung für 4–20 mA (geschirmt, verdrillt) siehe die ",
-  cableLink: "Hilfe zur Kabelauswahl (Englisch)",
   cablePost: ".",
 };

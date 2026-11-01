@@ -46,6 +46,5 @@ export default {
   adcLink: "calculateur de résolution ADC (en anglais)",
   adcPost: ".",
   cablePre: "Pour choisir le câble du signal 4–20 mA (paire torsadée blindée), voir le ",
-  cableLink: "guide de choix des câbles (en anglais)",
   cablePost: ".",
 };
