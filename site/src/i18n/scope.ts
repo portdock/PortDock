@@ -134,8 +134,8 @@ export const SCOPE_TOOLS = SCOPE_PATHS.filter((p) => p.startsWith("tools/") && p
 export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
   ja: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],
   id: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],
-  fr: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
-  it: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
+  fr: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],
+  it: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],
   de: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
   pl: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
   es: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],

@@ -931,6 +931,9 @@ test("5차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 
   fs.rmSync(tmp, { force: true });
 });
 
+/** 5차 묶음 «영어가 남았나» 검사에서 빼는 그 언어의 낱말 — 영어와 철자가 같은 제 나라 말(fr «thermocouple de type K») */
+const NATIVE5: Partial<Record<string, RegExp>> = { fr: /\b(?:type|thermocouple)\b/gi };
+
 test("5차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(단위 이름·범위 오류·계산 결과 문장)", () => {
   misses.clear();
   for (const l of EXTRA_LANGS) {
@@ -940,7 +943,7 @@ test("5차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
     for (const id of ids)
       for (const en of englishOf(path.join(SRC, "views", VIEW5[id] + ".astro"))) {
         const out = fromEn(en.replace(/\{\}/g, "12.5"), l);
-        assert.ok(!/\b(?:the|and|must|above|below|check|over|nearest|count|gives|left|within|exceeds|type|thermocouple|number|inverting)\b/i.test(out), `${l}: ${VIEW5[id]} «${en}» → «${out}» 에 영어`);
+        assert.ok(!/\b(?:the|and|must|above|below|check|over|nearest|count|gives|left|within|exceeds|type|thermocouple|number|inverting)\b/i.test(out.replace(NATIVE5[l] ?? /$^/, "")), `${l}: ${VIEW5[id]} «${en}» → «${out}» 에 영어`);
       }
     // 단위 이름 — 단위 기호(ft·lbf·kgf·Btu·IT)만 남는다
     if (ids.includes("pressure") || ids.includes("units"))
@@ -971,7 +974,7 @@ test("5차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
         run(() => tcTemperature(t, 999, l));
         run(() => tcFromMeasured(t, 999, 25, l));
       }
-      for (const m of errs) assert.ok(!/[Oo]utside|range|measured|cold junction|temperature|type/.test(m), `${l}: 온도 범위 오류에 영어 — ${m}`);
+      for (const m of errs) assert.ok(!/[Oo]utside|range|measured|cold junction|temperature|type/.test(m.replace(NATIVE5[l] ?? /$^/, "")), `${l}: 온도 범위 오류에 영어 — ${m}`);
     }
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
