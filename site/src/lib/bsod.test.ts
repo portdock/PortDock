@@ -92,3 +92,9 @@ test("일본어 Windows 문구 — 블루스크린 화면 «停止コード»·�
   assert.equal(r.how, "bugcheck-message");
   assert.equal(r.params?.length, 4);
 });
+
+test("인도네시아어 Windows 문구 — 블루스크린 화면 «Kode penghentian»", () => {
+  assert.equal(findBugcheck("Kode penghentian: DPC_WATCHDOG_VIOLATION\nApa yang gagal: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Kode penghentian:CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("Kode penghentian: 133").code, 0x133);
+});
