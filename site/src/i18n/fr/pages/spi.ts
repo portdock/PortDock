@@ -1,0 +1,38 @@
+// SPI 모드 도우미(views/SpiPage.astro) — 4차 묶음. more 는 UART·I2C·CAN 도구 링크 앞의 글(링크 글은 pageName())
+// 용어: front montant / descendant, front d’échantillonnage, front de décalage, état de repos, chronogramme
+export default {
+  title: "Aide aux modes SPI (chronogrammes CPOL/CPHA)",
+  seo: "Modes SPI 0 à 3 : chronogramme CPOL et CPHA — PortDock",
+  desc: "Mode SPI 0 à 3 : chronogramme SCK, MOSI, MISO et CS, fronts d’échantillonnage et de décalage, ordre des bits, durée et notations CPOL/CPHA.",
+  mode: "Mode SPI",
+  mosi: "Octets MOSI (hexa, 4 au plus)",
+  miso: "Octets MISO (hexa, vide = inconnus)",
+  order: "Ordre des bits",
+  orders: ["MSB en premier (habituel)", "LSB en premier"],
+  clk: "Horloge SCK (MHz)",
+  n: "Octets à envoyer",
+  res: "Résultats",
+  k: { cp: "CPOL · CPHA", idle: "Niveau de repos de SCK", sample: "Front d’échantillonnage (lecture)", shift: "Front de décalage (changement)", first: "Apparition du premier bit", time: "Durée de transfert (sans pause entre octets)", rate: "Débit utile" },
+  legend: ["Front d’échantillonnage", "Front de décalage"],
+  how: "Le tracé et les calculs s’exécutent dans votre navigateur ; rien de ce que vous saisissez n’est envoyé.",
+  mTitle: "Tableau des modes",
+  mHead: ["Mode", "CPOL", "CPHA", "SCK au repos", "Échantillonnage", "Décalage"],
+  nTitle: "Notations des fabricants",
+  nHead: ["Mode", "Générique (CPOL/CPHA)", "Linux spidev", "Arduino SPI", "TI MSP430 USCI", "Microchip PIC MSSP"],
+  nNote: "UCCKPH sur MSP430 et CKE sur PIC sont l’inverse de CPHA — UCCKPH = 1 ou CKE = 1 signifie « capture sur le premier front » (CPHA 0). Vérifiez avec la description du registre dans la fiche technique (quel front capture, quel front change).",
+  wTitle: "Que signifie CPHA",
+  w: [
+    "CPOL est le niveau de SCK au repos (0 = bas, 1 = haut). Le passage repos → actif est le « front avant », le retour est le « front arrière ».",
+    "CPHA 0 : échantillonnage sur le front avant, changement sur le front arrière. Le premier bit doit donc être présent sur la ligne avant le premier front — dès que CS passe à l’état bas.",
+    "CPHA 1 : le bit est placé sur le front avant et échantillonné sur le front arrière.",
+    "Si les deux côtés n’utilisent pas le même mode, les bits sont décalés d’une position ou seul le premier octet est faux. Choisissez le mode d’après le chronogramme de la fiche technique de l’appareil : niveau de repos de SCK et front de SCK qui verrouille les données.",
+  ],
+  faqTitle: "Questions fréquentes",
+  faq: [
+    ["Quel mode est le plus courant ?", "Les modes 0 et 3. Tous deux échantillonnent sur le front montant, si bien que beaucoup d’appareils acceptent l’un ou l’autre. Le chronogramme de la fiche technique fait foi."],
+    ["Les données lues sont décalées d’un bit", "Causes possibles : CPHA différent de celui de l’appareil, horloge trop rapide pour le délai de sortie de l’appareil sur MISO, câblage long. Baissez l’horloge et voyez si le problème persiste."],
+    ["Faut-il remonter CS après chaque octet ?", "Cela dépend de l’appareil. Ceux qui reçoivent une commande sur plusieurs octets (mémoires flash, par exemple) exigent que CS reste bas pendant toute la commande. Ce tracé garde CS bas pendant tous les octets."],
+  ],
+  srcTitle: "Sources",
+  more: "Pour l’UART, l’I2C et le CAN :",
+};
