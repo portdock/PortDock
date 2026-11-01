@@ -9,10 +9,13 @@ import EsSafety from "./es/SafetyBody.astro";
 import EsPrivacy from "./es/PrivacyBody.astro";
 import PtSafety from "./pt/SafetyBody.astro";
 import PtPrivacy from "./pt/PrivacyBody.astro";
+import PlSafety from "./pl/SafetyBody.astro";
+import PlPrivacy from "./pl/PrivacyBody.astro";
 
 export const PROSE = {
   ja: { safety: JaSafety, privacy: JaPrivacy },
   de: { safety: DeSafety, privacy: DePrivacy },
   es: { safety: EsSafety, privacy: EsPrivacy },
   pt: { safety: PtSafety, privacy: PtPrivacy },
+  pl: { safety: PlSafety, privacy: PlPrivacy },
 } satisfies Record<ExtraLang, { safety: unknown; privacy: unknown }>;
