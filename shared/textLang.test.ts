@@ -13,7 +13,7 @@ test("ko·en 은 그대로, ja 는 사전, 다른 언어·없는 글은 영어",
   assert.equal(txt(LEVEL_TEXT.look, "ko"), "볼 것");
   assert.equal(txt(LEVEL_TEXT.look, "en"), "Worth a look");
   assert.equal(txt(LEVEL_TEXT.look, "ja"), "確認推奨");
-  assert.equal(txt(LEVEL_TEXT.look, "de"), "Worth a look");
+  assert.equal(txt(LEVEL_TEXT.look, "vi"), "Worth a look");
   // 백엔드 문구(사전에 없음)는 ja 에서 영어
   assert.equal(txt(T("장치를 시작할 수 없습니다", "This device cannot start."), "ja"), "This device cannot start.");
 });
@@ -44,8 +44,22 @@ test("예시 명령·용어·닫기 확인 — ja", async () => {
   const ja = serialExamples("at", "ja");
   assert.equal(ja[0].name, "例: AT(応答の確認)");
   assert.ok(ja.every((c) => isExampleName(c.name)));
-  assert.equal(serialExamples("at", "de")[0].name, "e.g. AT (check reply)");
+  assert.equal(serialExamples("at", "vi")[0].name, "e.g. AT (check reply)");
   const { term } = await import("./glossary.ts");
   assert.equal(term("jitter", "ja")[0], "ジッター ms");
-  assert.equal(term("jitter", "de")[0], "Jitter ms");
+  assert.equal(term("jitter", "vi")[0], "Jitter ms");
+});
+
+test("판정 글·장비 통신 기본값·예시 명령·용어 — de", async () => {
+  assert.equal(txt(LEVEL_TEXT.look, "de"), "Ansehen");
+  assert.equal(txt(dur(90 * 60), "de"), "1 Std. 30 Min.");
+  assert.equal(txt(T("x", "Problem code 10: Worth a look"), "de"), "Problemcode 10: Ansehen");
+  const d = { comm: { baud: 9600, dataBits: 8, parity: "none", stopBits: 1, unit: 1, addressing: "zero" } };
+  assert.equal(commLine(d, "de"), "9600 8N1 · Slave-Adresse 1 · Handbuch nutzt 0-basierte Adressen");
+  const { serialExamples, isExampleName } = await import("./examples.ts");
+  const ex = serialExamples("at", "de");
+  assert.equal(ex[0].name, "z. B. AT (Antwort prüfen)");
+  assert.ok(ex.every((c) => isExampleName(c.name)));
+  const { term } = await import("./glossary.ts");
+  assert.equal(term("checksum", "de")[0], "Prüfsumme");
 });
