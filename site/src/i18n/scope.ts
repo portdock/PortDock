@@ -114,7 +114,7 @@ export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
   id: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
   fr: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
   it: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
-  de: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
+  de: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
   pl: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
   es: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
   pt: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
