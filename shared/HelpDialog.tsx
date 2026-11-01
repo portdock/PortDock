@@ -3,6 +3,8 @@ import { autoSendAvailable, ISSUES_URL, REPORT_EMAIL } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
 import { baseLang, dicts, type Lang } from "./lang";
 import { JA_HELP_UI } from "./ja/parts";
+import { ES_HELP_UI } from "./es/parts";
+import { PT_HELP_UI } from "./pt/parts";
 
 export interface HelpSection {
   title: string;
@@ -68,7 +70,7 @@ const REPORT_HELP: Record<"ko" | "en", HelpSection> = {
 const UI_KO = { title: "도움말", search: "찾기…", close: "닫기", none: "찾는 내용이 없습니다", enOnly: "" };
 export type HelpUiKey = keyof typeof UI_KO;
 const UI_EN: typeof UI_KO = { title: "Help", search: "Search…", close: "Close", none: "No matches", enOnly: "" };
-const UI = dicts(UI_KO, UI_EN, { ja: JA_HELP_UI });
+const UI = dicts(UI_KO, UI_EN, { ja: JA_HELP_UI, es: ES_HELP_UI, pt: PT_HELP_UI });
 
 /** 섹션 목록(왼쪽) + 본문(오른쪽). 찾기 칸으로 걸러 보고, Esc 로 닫는다. start 를 주면 그 id 의 절을 열고 시작한다 */
 export function HelpDialog({ doc, lang, app, onClose, start }: { doc: HelpDoc; lang: Lang; app: string; onClose: () => void; start?: string | null }) {

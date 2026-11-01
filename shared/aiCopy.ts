@@ -13,6 +13,8 @@ import { ascii, hex } from "./format.ts";
 import { hideUserPaths } from "./redact.ts";
 import { dicts, type Lang } from "./lang.ts";
 import { JA_AI_COPY } from "./ja/aiCopy.ts";
+import { ES_AI_COPY } from "./es/aiCopy.ts";
+import { PT_AI_COPY } from "./pt/aiCopy.ts";
 
 /** 질문 틀·머리말은 화면 언어(0.11.0 — 번역이 없는 언어는 영어). 기록·설정 줄은 그대로 */
 export type AiLang = Lang;
@@ -140,7 +142,7 @@ const en: AiText = {
     cutText: "…(cut — too long)",
     masked: (ip: HideIp) => `_Hidden by PortDock: user folder, PC name (DESKTOP-… etc.), last 3 bytes of MAC addresses, ${ip === "all" ? "all IP addresses" : "public IP addresses"} («[IP-n]»)._`,
 };
-const T = dicts(ko, en, { ja: JA_AI_COPY });
+const T = dicts(ko, en, { ja: JA_AI_COPY, es: ES_AI_COPY, pt: PT_AI_COPY });
 
 // ---- 가림
 

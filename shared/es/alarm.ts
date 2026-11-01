@@ -1,0 +1,50 @@
+// 스페인어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const ES_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Vigilancia y alarmas",
+  activeN: "{n} activas",
+  noAlarm: "Sin alarmas activas — vigilando {n} condición(es)",
+  notRunning: "La vigilancia empieza al conectar ({n} condición(es))",
+  ackAll: "Reconocer todas",
+  ack: "Reconocer",
+  acked: "Reconocida",
+  clearEnded: "Borrar terminadas",
+  sound: "Sonido",
+  logStart: "Registro CSV…",
+  logOn: "● {n} líneas registradas",
+  logStop: "Detener registro",
+  logTitle: "Guardar registro de alarmas",
+  ongoing: "en curso",
+  colKind: "Condición",
+  colName: "Qué",
+  colValue: "Valor",
+  colStart: "Activada",
+  colEnd: "Despejada",
+  colDur: "Duración",
+  safety: "PortDock no es un dispositivo de seguridad — es una ayuda de supervisión. La protección del equipo y los enclavamientos corresponden al PLC y a los circuitos de seguridad.",
+  dlgTitle: "Condiciones de vigilancia — {a}",
+  lo: "Límite bajo (alarma por debajo)",
+  hi: "Límite alto (alarma por encima)",
+  stuck: "Segundos sin cambio (bloqueado)",
+  lost: "Segundos sin comunicación",
+  hyst: "Margen de retorno (histéresis)",
+  hystHint: "Una alarma baja se despeja con «bajo + margen» o más, una alta con «alto − margen» o menos — así un valor que oscila en el límite no hace parpadear la alarma.",
+  emptyHint: "Deje una casilla vacía para omitir esa condición. Los valores se juzgan según el número que se ve en pantalla (decodificado por tipo).",
+  save: "Guardar",
+  remove: "Quitar condiciones",
+  close: "Cerrar",
+  errLoHi: "El límite bajo debe ser menor que el alto.",
+  errSecs: "Los segundos deben ser 1–86400.",
+  errHyst: "El margen es un número de 0 o más.",
+  errNum: "Escriba un número.",
+  errEmpty: "Escriba al menos una condición o pulse «Quitar condiciones».",
+};
+
+export const ES_KIND: Record<AlarmKind, string> = {
+  lo: "Bajo",
+  hi: "Alto",
+  stuck: "Bloqueado",
+  lost: "Sin com.",
+};
