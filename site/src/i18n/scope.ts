@@ -132,7 +132,7 @@ export const SCOPE_TOOLS = SCOPE_PATHS.filter((p) => p.startsWith("tools/") && p
  * 예: 5차 묶음까지 끝낸 언어는 [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS].
  */
 export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
-  ja: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
+  ja: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS],
   id: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
   fr: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
   it: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS],
