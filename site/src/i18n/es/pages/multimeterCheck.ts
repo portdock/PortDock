@@ -1,0 +1,28 @@
+// Comprobador de lecturas del multímetro (views/MultimeterCheckPage.astro) — 2.º lote
+export default {
+  title: "Comprobador de lecturas del multímetro: RS-485, 4-20 mA, 24 V",
+  h1: "Comprobador de lecturas del multímetro",
+  desc: "Resistencia y tensión en reposo A–B de RS-485, 4–20 mA (NE 43), caída de 24 V, salida NPN/PNP, TX de RS-232, diferencia de tierras: valoración y motivo.",
+  seo: "Lecturas del multímetro: RS-485, 4–20 mA y 24 V — PortDock",
+  jump: "Medidas",
+  how: "Cómo medir",
+  basis: "Base",
+  copy: "Copiar resultado",
+  copied: "Copiado.",
+  privacy: "Los valores que introduce se calculan dentro de este navegador y no se envían a ningún sitio.",
+  general: "Los valores son las cifras normalizadas de uso habitual: si el manual del equipo dice otra cosa, manda el manual. Al medir, tenga en cuenta si hay tensión y el riesgo de descarga eléctrica.",
+  ts: "asistente de diagnóstico de averías",
+  tsNote: "Para partir de un síntoma y averiguar qué medir, use el",
+  wd: "generador de diagramas de cableado",
+  wdNote: "Para dibujar el cableado, use el",
+  rs: "calculadora de terminación y polarización RS-485",
+  rsNote: "Para dimensionar las resistencias de terminación y polarización, use la",
+  srcTitle: "Fuentes",
+  faqTitle: "Preguntas frecuentes",
+  end: ".",
+  faq: [
+    ["¿Puedo medir la resistencia A–B con alimentación?", "No. Primero quite la alimentación de todos los equipos. Con tensión, el multímetro muestra valores erróneos y el equipo o el multímetro pueden dañarse."],
+    ["Puse la terminación, pero sale «sin terminación»", "La terminación RC (1 nF + 120 Ω en serie) bloquea la CC con su condensador, así que el multímetro no la ve. Elija RC en el campo «Terminación» o revise los interruptores y componentes de terminación de los equipos de los extremos. Además, algunos equipos solo conectan la terminación interna cuando tienen alimentación."],
+    ["¿«Sin problemas detectados (en esta medida)» significa que la comunicación funcionará?", "Significa que esta lectura concreta no muestra ningún problema. Para otras causas posibles (configuración, direcciones de esclavo, polaridad, ruido) siga con el asistente de diagnóstico de averías."],
+  ] as [string, string][],
+};

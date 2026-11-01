@@ -1,0 +1,30 @@
+// Conversor de tramas Modbus RTU ↔ TCP (views/ModbusRtuTcpPage.astro) — 2.º lote
+// Términos: dirección de esclavo, identificador de unidad (Unit ID), identificador de transacción, pasarela, difusión
+export default {
+  title: "Conversor de tramas Modbus RTU ↔ TCP",
+  seo: "Conversor Modbus RTU a TCP: MBAP, CRC y LRC ASCII — PortDock",
+  desc: "Convierta Modbus RTU (dirección + CRC) a Modbus TCP con cabecera MBAP y al revés, además del modo ASCII (dos puntos, LRC). Cada byte coloreado y explicado.",
+  input: "Trama (HEX para RTU y TCP, texto que empieza por «:» para ASCII)",
+  help: "p. ej. 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — peticiones o respuestas, una trama cada vez",
+  mode: "Formato de entrada",
+  auto: "Detección automática",
+  tid: "Identificador de transacción (al convertir a TCP, 0–65535)",
+  tidHelp: "Para una respuesta, introduzca el número de su petición.",
+  examples: "Ejemplos",
+  ex: ["Petición RTU 03", "Respuesta RTU 03", "Petición TCP", "Excepción TCP", "Petición ASCII", "Escritura RTU 10"],
+  how: "Todo se convierte en su navegador; los bytes que pega no se envían a ningún sitio.",
+  faqTitle: "Preguntas frecuentes",
+  srcTitle: "Referencias",
+  faq: [
+    ["¿Qué diferencia hay entre una trama RTU y una TCP?", "La PDU central (código de función y datos) es idéntica. RTU añade delante una dirección de esclavo de 1 byte y al final un CRC16 de 2 bytes (byte bajo primero). TCP no tiene CRC y pone delante una cabecera MBAP de 7 bytes: identificador de transacción (2), identificador de protocolo (2, siempre 0), longitud (2) e identificador de unidad (1). La longitud cuenta los bytes desde el identificador de unidad hasta el final."],
+    ["¿Qué identificador de unidad uso a través de una pasarela?", "Una pasarela TCP a RTU (servidor de dispositivos serie) usa el identificador de unidad que recibe como dirección de esclavo en el lado serie, así que introduzca la dirección del equipo que hay detrás (de 1 a 247). La dirección 0 es una difusión en una línea serie, así que, según la pasarela, se reenvía a todos los equipos (sin respuesta) o se toma como la propia pasarela. 255 (FF) es el valor recomendado para un equipo TCP al que se dirige directamente; una pasarela normalmente no lo reenvía a la línea serie, o lo responde ella misma. Consulte el comportamiento exacto en el manual de la pasarela."],
+    ["¿Cómo se elige el identificador de transacción?", "Lo elige quien envía la petición y el equipo devuelve el mismo número en su respuesta; normalmente se incrementa en uno por petición. RTU no tiene ese campo, así que se descarta al convertir de TCP a RTU, y al convertir de RTU a TCP se usa el valor de la casilla de arriba."],
+    ["¿Qué es el modo ASCII?", "El otro modo de transmisión de Modbus sobre línea serie. La dirección, la PDU y el LRC se envían como dos caracteres HEX en mayúsculas por byte, con «:» (3A) delante y CR LF (0D 0A) al final. El LRC es el complemento a dos de 8 bits de la suma de los bytes desde la dirección hasta el final de la PDU. Lleva la misma PDU que RTU, así que los dos se convierten directamente."],
+    ["Dice que el CRC o el LRC es incorrecto", "Los últimos bytes se toman como CRC (o LRC) y se quitan, el resto se convierte y se muestra el valor correcto. Si pegó solo la dirección y la PDU sin CRC, deje el formato en RTU y añada el CRC correcto, u obténgalo con la calculadora de CRC y checksum."],
+  ],
+  guide: "Conexiones Modbus TCP y la cabecera MBAP (en inglés)",
+  guide2: "Cómo leer tramas Modbus RTU (en inglés)",
+  src: ["Cabecera MBAP (transacción, protocolo, longitud, identificador de unidad), identificador de unidad en pasarelas", "Tramas RTU y ASCII, direcciones (0 difusión, 1–247), CRC y LRC", "PDU (código de función y datos), respuestas de excepción"],
+  seeG: ["Para la cabecera MBAP y los problemas de conexión, consulte ", "; para los bytes RTU, ", "."],
+  seeT: ["Para decodificar en detalle los valores y las direcciones 40001, use el ", "decodificador de tramas Modbus", "; para practicar con preguntas, pruebe el ", "cuestionario de práctica de Modbus (en inglés)", "."],
+};
