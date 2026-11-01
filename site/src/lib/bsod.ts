@@ -285,8 +285,8 @@ export interface FindResult {
 const HEX_TOKEN = /0x([0-9a-f]{1,16})\b/i;
 // 1001(BugCheck) 메시지: «…: 0x00000133 (0x…, 0x…, 0x…, 0x…)» — 언어와 상관없이 «코드 (매개변수 4개)» 모양
 const BUGCHECK_LINE = /0x([0-9a-f]{1,16})\s*\(\s*(0x[0-9a-f]+)\s*,\s*(0x[0-9a-f]+)\s*,\s*(0x[0-9a-f]+)\s*,\s*(0x[0-9a-f]+)\s*\)/i;
-// WER·미니덤프 요약: «BCCode: 133», «P1: 133», «Bugcheck code: 0x…», «Stop code: 0x…», «정지 코드: …», «버그 검사: …», 일본어 «停止コード: …»·«バグチェック: …»
-const KEYWORD = /(?:BCCode|\bP1|bug\s*check(?:\s*code)?|bugcheck(?:\s*code)?|stop\s*code|정지\s*코드|중지\s*코드|버그\s*검사(?:\s*코드)?|停止\s*コード|バグ\s*チェック(?:\s*コード)?)\s*[:=：]?\s*(?:0x)?([0-9a-f]{1,16})\b/i;
+// WER·미니덤프 요약: «BCCode: 133», «P1: 133», «Bugcheck code: 0x…», «Stop code: 0x…», «정지 코드: …», «버그 검사: …», 일본어 «停止コード: …»·«バグチェック: …», 인도네시아어 «Kode penghentian: …»
+const KEYWORD = /(?:BCCode|\bP1|bug\s*check(?:\s*code)?|bugcheck(?:\s*code)?|stop\s*code|정지\s*코드|중지\s*코드|버그\s*검사(?:\s*코드)?|停止\s*コード|バグ\s*チェック(?:\s*コード)?|kode\s*penghentian)\s*[:=：]?\s*(?:0x)?([0-9a-f]{1,16})\b/i;
 
 const normName = (s: string) => s.toUpperCase().replace(/[\s-]+/g, "_").replace(/[^A-Z0-9_]/g, "");
 
@@ -305,7 +305,7 @@ export function findBugcheck(input: string): FindResult {
   // «BugCheck 1001» 처럼 이벤트 ID 를 적은 것은 코드가 아니다
   if (kw && !(kw[1] === "1001" && !/0x1001/i.test(kw[0]))) return done(parseInt(kw[1], 16), "keyword");
   // 이름(전체 또는 일부) — «DRIVER_IRQL», «dpc watchdog», 블루스크린 화면의 «Stop code: DPC WATCHDOG VIOLATION»
-  const n = normName(text.replace(/^.*?(?:stop\s*code|정지\s*코드|중지\s*코드|停止\s*コード)\s*[:：]?/i, ""));
+  const n = normName(text.replace(/^.*?(?:stop\s*code|정지\s*코드|중지\s*코드|停止\s*コード|kode\s*penghentian)\s*[:：]?/i, ""));
   if (n.length >= 4 && /[A-Z]{3}/.test(n)) {
     const exact = BUGCHECKS.find((b) => b.name === n || n.includes(b.name));
     if (exact) return { code: exact.code >>> 0, bc: exact, variant: false, files, matches: [exact], how: "name" };
