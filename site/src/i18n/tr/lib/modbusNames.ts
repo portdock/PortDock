@@ -1,0 +1,28 @@
+// Modbus fonksiyon adları ve veri alanları (lib/modbusDecode.ts, shared/modbusBuild.ts) — istek oluşturucu ve çözücü için ortak
+// Fonksiyon adları Modbus şartnamesinde ve Türkçe cihaz kılavuzlarında olduğu gibi İngilizce kalır; yalnızca açıklama eklenir.
+export default {
+  "Read Coils": "Read Coils (coil okuma)",
+  "Read Discrete Inputs": "Read Discrete Inputs (discrete input okuma)",
+  "Read Holding Registers": "Read Holding Registers (holding register okuma)",
+  "Read Input Registers": "Read Input Registers (input register okuma)",
+  "Write Single Coil": "Write Single Coil (tek coil yazma)",
+  "Write Single Register": "Write Single Register (tek register yazma)",
+  "Write Multiple Coils": "Write Multiple Coils (çoklu coil yazma)",
+  "Write Multiple Registers": "Write Multiple Registers (çoklu register yazma)",
+  "Read/Write Multiple Registers": "Read/Write Multiple Registers (çoklu register okuma/yazma)",
+  "Read Exception Status (serial line only)": "Read Exception Status (yalnızca seri hat)",
+  "Diagnostics (serial line only)": "Diagnostics (tanılama, yalnızca seri hat)",
+  "Get Comm Event Counter (serial line only)": "Get Comm Event Counter (yalnızca seri hat)",
+  "Get Comm Event Log (serial line only)": "Get Comm Event Log (yalnızca seri hat)",
+  "Report Server ID (serial line only)": "Report Server ID (yalnızca seri hat)",
+  "Read File Record": "Read File Record (dosya kaydı okuma)",
+  "Write File Record": "Write File Record (dosya kaydı yazma)",
+  "Mask Write Register": "Mask Write Register (maskeli register yazma)",
+  "Read FIFO Queue": "Read FIFO Queue (FIFO kuyruğu okuma)",
+  "Encapsulated Interface Transport": "Encapsulated Interface Transport (cihaz tanımlama vb.)",
+  "Unknown function": "Bilinmeyen fonksiyon",
+  Coils: "Coil’ler",
+  "Discrete inputs": "Discrete input’lar",
+  "Holding registers": "Holding register’lar",
+  "Input registers": "Input register’lar",
+};
