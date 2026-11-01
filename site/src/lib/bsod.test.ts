@@ -124,3 +124,10 @@ test("스페인어·포르투갈어 Windows 문구 — 블루스크린 화면 «
   assert.equal(findBugcheck("codigo de detencion: 133").code, 0x133);
   assert.equal(findBugcheck("Código de parada: 0x0000009F").code, 0x9f);
 });
+
+test("독일어·폴란드어 블루스크린 화면 문구 — «Stoppcode»·«Kod zatrzymania»", () => {
+  assert.equal(findBugcheck("Stoppcode: DPC_WATCHDOG_VIOLATION\nWas ist fehlgeschlagen: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Stoppcode: 133").code, 0x133);
+  assert.equal(findBugcheck("Kod zatrzymania: CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("Kod zatrzymania: 0x133").code, 0x133);
+});
