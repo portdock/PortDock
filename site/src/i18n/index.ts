@@ -23,6 +23,8 @@ import tr2 from "./tr/batch2.ts";
 import vi2 from "./vi/batch2.ts";
 import ja3 from "./ja/batch3.ts";
 import id3 from "./id/batch3.ts";
+import fr3 from "./fr/batch3.ts";
+import it3 from "./it/batch3.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 import type { Page2Id, Page3Id } from "./scope.ts";
@@ -52,7 +54,7 @@ export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, 
 /** 2차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS2: Partial<Record<ExtraLang, Batch2Part>> = { ja: ja2, id: id2, fr: fr2, it: it2, de: de2, pl: pl2, es: es2, pt: pt2, tr: tr2, vi: vi2 };
 /** 3차 묶음을 (일부라도) 옮긴 언어 */
-export const DICTS3: Partial<Record<ExtraLang, Batch3Part>> = { ja: ja3, id: id3 };
+export const DICTS3: Partial<Record<ExtraLang, Batch3Part>> = { ja: ja3, id: id3, fr: fr3, it: it3 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
