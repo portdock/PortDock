@@ -1,0 +1,30 @@
+// Modbus RTU ↔ TCP 프레임 변환기(views/ModbusRtuTcpPage.astro) — 2차 묶음
+// 용어: adresse esclave, identifiant d’unité (Unit ID), identifiant de transaction, en-tête MBAP, passerelle, diffusion
+export default {
+  title: "Convertisseur de trames Modbus RTU ↔ TCP",
+  seo: "Conversion Modbus RTU ↔ TCP : MBAP, CRC, LRC ASCII — PortDock",
+  desc: "Convertit une trame Modbus RTU (adresse + CRC) en Modbus TCP avec en-tête MBAP et inversement, ainsi qu’en ASCII (LRC). Chaque octet coloré et expliqué.",
+  input: "Trame (HEX pour RTU et TCP, texte commençant par « : » pour ASCII)",
+  help: "par ex. 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — requêtes ou réponses, une trame à la fois",
+  mode: "Format d’entrée",
+  auto: "Détection automatique",
+  tid: "Identifiant de transaction (pour la conversion vers TCP, 0–65535)",
+  tidHelp: "Pour une réponse, saisissez le numéro de sa requête.",
+  examples: "Exemples",
+  ex: ["Requête RTU 03", "Réponse RTU 03", "Requête TCP", "Exception TCP", "Requête ASCII", "Écriture RTU 10"],
+  how: "Toute la conversion se fait dans votre navigateur ; les octets collés ne sont envoyés nulle part.",
+  faqTitle: "Questions fréquentes",
+  srcTitle: "Références",
+  faq: [
+    ["Quelle différence entre une trame RTU et une trame TCP ?", "Le PDU du milieu (code fonction et données) est identique. Le RTU ajoute devant une adresse esclave de 1 octet et à la fin un CRC16 de 2 octets (octet de poids faible en premier). Le TCP n’a pas de CRC et place devant un en-tête MBAP de 7 octets : identifiant de transaction (2), identifiant de protocole (2, toujours 0), longueur (2) et identifiant d’unité (1). La longueur compte les octets de l’identifiant d’unité jusqu’à la fin."],
+    ["Quel identifiant d’unité utiliser à travers une passerelle ?", "Une passerelle TCP vers RTU (serveur de ports série) utilise l’identifiant d’unité reçu comme adresse esclave côté série : saisissez donc l’adresse de l’appareil situé derrière (1 à 247). L’adresse 0 est une diffusion sur une ligne série : selon la passerelle, elle est transmise à tous les appareils (sans réponse) ou prise comme la passerelle elle-même. 255 (FF) est la valeur recommandée pour un appareil TCP adressé directement ; une passerelle ne la transmet en général pas vers la ligne série, ou y répond elle-même. Vérifiez le comportement exact dans la notice de la passerelle."],
+    ["Comment l’identifiant de transaction est-il choisi ?", "L’émetteur de la requête le choisit et l’appareil renvoie le même numéro dans sa réponse ; on l’augmente en général de un à chaque requête. Le RTU n’a pas ce champ : il est retiré lors de la conversion TCP vers RTU, et la valeur du champ ci-dessus est utilisée lors de la conversion RTU vers TCP."],
+    ["Qu’est-ce que le mode ASCII ?", "L’autre mode de transmission de Modbus sur ligne série. L’adresse, le PDU et le LRC sont envoyés sous forme de deux caractères HEX majuscules par octet, avec « : » (3A) au début et CR LF (0D 0A) à la fin. Le LRC est le complément à deux sur 8 bits de la somme des octets, de l’adresse à la fin du PDU. Il transporte le même PDU que le RTU : les deux se convertissent directement."],
+    ["Le CRC ou le LRC est signalé comme faux", "Les derniers octets sont pris pour le CRC (ou le LRC) et retirés, le reste est converti et la valeur correcte est affichée. Si vous n’avez collé que l’adresse et le PDU sans CRC, laissez le format sur RTU et ajoutez le CRC correct, ou obtenez-le avec le calculateur de CRC et somme de contrôle."],
+  ],
+  guide: "Connexions Modbus TCP et en-tête MBAP (en anglais)",
+  guide2: "Lire les trames Modbus RTU (en anglais)",
+  src: ["en-tête MBAP (transaction, protocole, longueur, identifiant d’unité), identifiant d’unité sur les passerelles", "trames RTU et ASCII, adresses (0 diffusion, 1–247), CRC et LRC", "PDU (code fonction et données), réponses d’exception"],
+  seeG: ["Pour l’en-tête MBAP et les problèmes de connexion, voyez le guide ", " ; pour les octets RTU, voyez ", "."],
+  seeT: ["Pour décoder en détail les valeurs et les adresses 40001, utilisez le ", "décodeur de trames Modbus", " ; pour vous entraîner avec des questions, essayez le ", "quiz d’entraînement Modbus (en anglais)", "."],
+};

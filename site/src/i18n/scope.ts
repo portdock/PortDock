@@ -62,6 +62,8 @@ export const SCOPE_TOOLS = SCOPE_PATHS.filter((p) => p.startsWith("tools/") && p
 export const MORE: Partial<Record<ExtraLang, readonly Scope2Path[]>> = {
   ja: SCOPE2_PATHS,
   id: SCOPE2_PATHS,
+  fr: SCOPE2_PATHS,
+  it: SCOPE2_PATHS,
 };
 
 const bare = (path: string) => path.replace(/^\/+/, "").replace(/[#?].*$/, "");
