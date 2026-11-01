@@ -12,13 +12,16 @@ import { IT_TEXT } from "./it/text.ts";
 import { ID_TEXT } from "./id/text.ts";
 import { VI_TEXT } from "./vi/text.ts";
 import { TR_TEXT } from "./tr/text.ts";
+import { DE_TEXT } from "./de/text.ts";
+import { PL_TEXT } from "./pl/text.ts";
+import { ES_TEXT } from "./es/text.ts";
 
 export interface KoEn {
   ko: string;
   en: string;
 }
 
-const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, pt: PT_TEXT, fr: FR_TEXT, vi: VI_TEXT, tr: TR_TEXT, it: IT_TEXT, id: ID_TEXT };
+const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, de: DE_TEXT, es: ES_TEXT, pt: PT_TEXT, pl: PL_TEXT, fr: FR_TEXT, vi: VI_TEXT, tr: TR_TEXT, it: IT_TEXT, id: ID_TEXT };
 
 interface Pattern {
   re: RegExp;

@@ -27,6 +27,9 @@ import { IT_LOOP, IT_WIRING } from "./it/dialogs.ts";
 import { ID_LOOP, ID_WIRING } from "./id/dialogs.ts";
 import { VI_LOOP, VI_WIRING } from "./vi/dialogs.ts";
 import { TR_LOOP, TR_WIRING } from "./tr/dialogs.ts";
+import { DE_LOOP, DE_WIRING } from "./de/dialogs.ts";
+import { PL_LOOP, PL_WIRING } from "./pl/dialogs.ts";
+import { ES_LOOP, ES_WIRING } from "./es/dialogs.ts";
 
 const MORE_BAUDS = [1200, 2400, 4800, 230400, 460800, 921600];
 const LENGTHS = [64, 256, 1024, 4096];
@@ -151,9 +154,9 @@ const T = {
 };
 
 export type LoopTextKey = keyof typeof T.ko;
-const TL = dicts(T.ko, T.en, { ja: JA_LOOP, pt: PT_LOOP, fr: FR_LOOP, vi: VI_LOOP, tr: TR_LOOP, it: IT_LOOP, id: ID_LOOP });
+const TL = dicts(T.ko, T.en, { ja: JA_LOOP, de: DE_LOOP, es: ES_LOOP, pt: PT_LOOP, pl: PL_LOOP, fr: FR_LOOP, vi: VI_LOOP, tr: TR_LOOP, it: IT_LOOP, id: ID_LOOP });
 const wiringOf = (k: "ko" | "en") => ({ loopback: WIRING.loopback[k], two: WIRING.two[k], echo: WIRING.echo[k] });
-const WIRING_T = dicts(wiringOf("ko"), wiringOf("en"), { ja: JA_WIRING, pt: PT_WIRING, fr: FR_WIRING, vi: VI_WIRING, tr: TR_WIRING, it: IT_WIRING, id: ID_WIRING });
+const WIRING_T = dicts(wiringOf("ko"), wiringOf("en"), { ja: JA_WIRING, de: DE_WIRING, es: ES_WIRING, pt: PT_WIRING, pl: PL_WIRING, fr: FR_WIRING, vi: VI_WIRING, tr: TR_WIRING, it: IT_WIRING, id: ID_WIRING });
 
 function flagText(lang: Lang, r: { flags: BaudResult["flags"] }) {
   const f = r.flags;

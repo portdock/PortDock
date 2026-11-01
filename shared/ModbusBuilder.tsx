@@ -21,6 +21,9 @@ import { IT_MB_BUILDER } from "./it/modbus.ts";
 import { ID_MB_BUILDER } from "./id/modbus.ts";
 import { VI_MB_BUILDER } from "./vi/modbus.ts";
 import { TR_MB_BUILDER } from "./tr/modbus.ts";
+import { DE_MB_BUILDER } from "./de/modbus.ts";
+import { PL_MB_BUILDER } from "./pl/modbus.ts";
+import { ES_MB_BUILDER } from "./es/modbus.ts";
 
 const L = {
   ko: {
@@ -105,7 +108,7 @@ const L = {
 };
 
 export type MbBuilderTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_MB_BUILDER, pt: PT_MB_BUILDER, fr: FR_MB_BUILDER, vi: VI_MB_BUILDER, tr: TR_MB_BUILDER, it: IT_MB_BUILDER, id: ID_MB_BUILDER });
+const LL = dicts(L.ko, L.en, { ja: JA_MB_BUILDER, de: DE_MB_BUILDER, es: ES_MB_BUILDER, pt: PT_MB_BUILDER, pl: PL_MB_BUILDER, fr: FR_MB_BUILDER, vi: VI_MB_BUILDER, tr: TR_MB_BUILDER, it: IT_MB_BUILDER, id: ID_MB_BUILDER });
 
 const PLC_LABEL: Record<string, string> = { "0": "00001", "1": "10001", "3": "30001", "4": "40001" };
 const fc2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");

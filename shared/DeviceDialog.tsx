@@ -15,6 +15,9 @@ import { IT_DEVICE } from "./it/dialogs.ts";
 import { ID_DEVICE } from "./id/dialogs.ts";
 import { VI_DEVICE } from "./vi/dialogs.ts";
 import { TR_DEVICE } from "./tr/dialogs.ts";
+import { DE_DEVICE } from "./de/dialogs.ts";
+import { PL_DEVICE } from "./pl/dialogs.ts";
+import { ES_DEVICE } from "./es/dialogs.ts";
 
 export interface DeviceApplyOpts {
   /** 통신 설정(속도·데이터·패리티·정지)도 맞추기 */
@@ -91,7 +94,7 @@ const TX = {
 };
 
 export type DeviceTextKey = keyof typeof TX.ko;
-const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE, pt: PT_DEVICE, fr: FR_DEVICE, vi: VI_DEVICE, tr: TR_DEVICE, it: IT_DEVICE, id: ID_DEVICE });
+const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE, de: DE_DEVICE, es: ES_DEVICE, pt: PT_DEVICE, pl: PL_DEVICE, fr: FR_DEVICE, vi: VI_DEVICE, tr: TR_DEVICE, it: IT_DEVICE, id: ID_DEVICE });
 type TKey = keyof typeof TX.ko;
 
 const fillT = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));

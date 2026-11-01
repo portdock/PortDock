@@ -27,10 +27,10 @@ test("판정 글 대부분이 ja 사전에 있다(자리표시뿐인 열쇠 빼�
   assert.deepEqual(missing.filter((k) => !/^AUOptions | KB$/.test(k)), []);
 });
 
-// 추가 언어 사전도 ja 와 같은 검사(열쇠가 소스에 있음·자리표시·한글 없음·빠진 열쇠 없음)
-for (const [lang, file, name] of [["pt", "../shared/pt/text.ts", "PT_TEXT"], ["fr", "../shared/fr/text.ts", "FR_TEXT"], ["it", "../shared/it/text.ts", "IT_TEXT"]]) {
-  test(`${lang} 사전 — 열쇠·자리표시·빠진 열쇠`, async () => {
-    const dict = (await import(file))[name];
+// 추가 언어 사전 — ja 와 같은 검사(열쇠가 소스에 있음·자리표시·한글 없음·자리표시뿐 아닌 열쇠는 다 있음)
+for (const lang of ["de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]) {
+  test(`${lang} 사전 — 열쇠·자리표시가 소스와 맞고, 판정 글이 다 있다`, async () => {
+    const dict = (await import(`../shared/${lang}/text.ts`))[`${lang.toUpperCase()}_TEXT`];
     const all = allKeys();
     for (const [k, v] of Object.entries(dict)) {
       assert.ok(all.has(k), `${lang}: 소스에 없는 열쇠: ${k}`);
