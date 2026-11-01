@@ -1,0 +1,28 @@
+// Multimetre ölçüm denetleyicisi (views/MultimeterCheckPage.astro) — 2. paket
+export default {
+  title: "Multimetre ölçüm denetleyicisi — RS-485, 4-20 mA, 24 V, sensörler",
+  h1: "Multimetre ölçüm denetleyicisi",
+  desc: "RS-485 A–B direnci ve boşta gerilim, 4-20 mA (NE 43), 24 V gerilim düşümü, NPN/PNP çıkış, RS-232 TX, toprak farkı — ölçümü girin, yorumu ve nedenini görün.",
+  seo: "Multimetre ölçümü yorumlama: RS-485, 4-20 mA, 24 V — PortDock",
+  jump: "Ölçümler",
+  how: "Nasıl ölçülür",
+  basis: "Dayanak",
+  copy: "Sonucu kopyala",
+  copied: "Kopyalandı.",
+  privacy: "Girdiğiniz değerler bu tarayıcının içinde hesaplanır ve hiçbir yere gönderilmez.",
+  general: "Değerler yaygın kullanılan standart rakamlardır — cihaz kılavuzu farklı bir şey söylüyorsa kılavuz geçerlidir. Ölçüm yaparken besleme durumuna ve elektrik çarpmasına dikkat edin.",
+  ts: "saha arıza bulma sihirbazı",
+  tsNote: "Bir belirtiden başlayıp neyi ölçeceğinizi bulmak için:",
+  wd: "bağlantı şeması çizici",
+  wdNote: "Bağlantıyı çizmek için:",
+  rs: "RS-485 sonlandırma ve bias hesaplayıcı",
+  rsNote: "Sonlandırma ve bias dirençlerini boyutlandırmak için:",
+  srcTitle: "Kaynaklar",
+  faqTitle: "Sık sorulan sorular",
+  end: ".",
+  faq: [
+    ["A–B direncini besleme açıkken ölçebilir miyim?", "Hayır. Önce tüm cihazların beslemesini kesin. Besleme açıkken multimetre yanlış değer gösterir; cihaz ya da multimetre zarar görebilir."],
+    ["Sonlandırma taktım ama «sonlandırma yok» çıkıyor", "RC sonlandırma (seri 1 nF + 120 Ω) kondansatörü yüzünden DC geçirmez; bu yüzden multimetre onu göremez. «Sonlandırma» alanında RC’yi seçin ya da uçtaki cihazların sonlandırma anahtarlarına ve parçalarına bakın. Bazı cihazlar dahili sonlandırmayı da yalnızca beslemedeyken devreye alır."],
+    ["«Sorun bulunmadı (bu ölçümde)» iletişimin çalışacağı anlamına mı gelir?", "Yalnızca bu tek ölçümde bir sorun görünmediği anlamına gelir. Diğer olası nedenler — ayarlar, slave adresleri, kutuplama, gürültü — için arıza bulma sihirbazıyla devam edin."],
+  ] as [string, string][],
+};

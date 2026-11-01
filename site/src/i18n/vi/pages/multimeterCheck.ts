@@ -1,0 +1,28 @@
+// Kiểm tra giá trị đo đồng hồ vạn năng (views/MultimeterCheckPage.astro) — gói 2
+export default {
+  title: "Kiểm tra số đo đồng hồ vạn năng — RS-485, 4-20 mA, 24 V, cảm biến",
+  h1: "Kiểm tra giá trị đo đồng hồ vạn năng",
+  desc: "Điện trở A–B và điện áp nghỉ RS-485, 4-20 mA (NE 43), sụt áp 24 V, ngõ ra NPN/PNP, RS-232 TX, chênh lệch đất — nhập số đo, nhận nhận định và lý do.",
+  seo: "Đọc số đo đồng hồ vạn năng: RS-485, 4-20 mA, 24 V — PortDock",
+  jump: "Các mục",
+  how: "Cách đo",
+  basis: "Căn cứ",
+  copy: "Sao chép kết quả",
+  copied: "Đã sao chép.",
+  privacy: "Giá trị bạn nhập được tính ngay trong trình duyệt này và không gửi đi đâu.",
+  general: "Các giá trị là số liệu chuẩn hay dùng — nếu tài liệu thiết bị ghi khác thì theo tài liệu. Khi đo, hãy chú ý trạng thái nguồn và nguy cơ điện giật.",
+  ts: "trợ lý tìm nguyên nhân sự cố",
+  tsNote: "Để bắt đầu từ triệu chứng và biết cần đo gì, dùng",
+  wd: "công cụ vẽ sơ đồ đấu dây",
+  wdNote: "Để vẽ sơ đồ đấu dây, dùng",
+  rs: "công cụ tính điện trở đầu cuối và phân cực RS-485",
+  rsNote: "Để chọn điện trở đầu cuối và phân cực, dùng",
+  srcTitle: "Nguồn tham khảo",
+  faqTitle: "Câu hỏi thường gặp",
+  end: ".",
+  faq: [
+    ["Có đo điện trở A–B khi đang có nguồn được không?", "Không. Hãy tắt nguồn mọi thiết bị trước. Khi có nguồn, đồng hồ sẽ hiện sai và có thể làm hỏng thiết bị hoặc đồng hồ."],
+    ["Đã lắp đầu cuối mà kết quả là «không có đầu cuối»", "Đầu cuối RC (1 nF + 120 Ω nối tiếp) có tụ chặn DC nên đồng hồ vạn năng không thấy được. Hãy chọn RC ở ô «Điện trở đầu cuối», hoặc xem công tắc và linh kiện đầu cuối ở các thiết bị hai đầu. Một số thiết bị cũng chỉ đóng đầu cuối bên trong khi có nguồn."],
+    ["«Không thấy vấn đề (trong phép đo này)» có nghĩa là truyền thông sẽ chạy?", "Chỉ có nghĩa là số đo này không cho thấy vấn đề. Với các nguyên nhân khác — cài đặt, địa chỉ trạm, cực tính, nhiễu — hãy tiếp tục với trợ lý tìm nguyên nhân sự cố."],
+  ] as [string, string][],
+};

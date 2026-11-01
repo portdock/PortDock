@@ -1,0 +1,30 @@
+// Modbus RTU ↔ TCP çerçeve dönüştürücü (views/ModbusRtuTcpPage.astro) — 2. paket
+// Terimler: slave adresi, Unit ID, MBAP başlığı, işlem kimliği (Transaction ID), ağ geçidi (gateway), broadcast
+export default {
+  title: "Modbus RTU ↔ TCP çerçeve dönüştürücü",
+  seo: "Modbus RTU’dan TCP’ye dönüştürücü: MBAP, CRC, ASCII LRC — PortDock",
+  desc: "Modbus RTU’yu (adres + CRC) MBAP başlıklı Modbus TCP’ye ve tersine, ayrıca ASCII moduna (iki nokta, LRC) dönüştürün. Her bayt renkli ve açıklamalı.",
+  input: "Çerçeve (RTU ve TCP için HEX, ASCII için «:» ile başlayan metin)",
+  help: "ör. 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — istek ya da yanıt, her seferinde bir çerçeve",
+  mode: "Giriş biçimi",
+  auto: "Otomatik algıla",
+  tid: "İşlem kimliği (TCP’ye dönüştürürken, 0–65535)",
+  tidHelp: "Bir yanıt için ilgili isteğin numarasını girin.",
+  examples: "Örnekler",
+  ex: ["RTU 03 isteği", "RTU 03 yanıtı", "TCP isteği", "TCP istisnası", "ASCII isteği", "RTU 10 yazma"],
+  how: "Her şey tarayıcınızda dönüştürülür; yapıştırdığınız baytlar hiçbir yere gönderilmez.",
+  faqTitle: "Sık sorulan sorular",
+  srcTitle: "Kaynaklar",
+  faq: [
+    ["RTU ve TCP çerçevesi arasındaki fark nedir?", "Ortadaki PDU (fonksiyon kodu ve veri) aynıdır. RTU öne 1 baytlık slave adresi, sona 2 baytlık CRC16 (önce düşük bayt) ekler. TCP’de CRC yoktur; öne 7 baytlık MBAP başlığı gelir: işlem kimliği (2), protokol kimliği (2, her zaman 0), uzunluk (2) ve Unit ID (1). Uzunluk, Unit ID’den sona kadarki baytları sayar."],
+    ["Ağ geçidi üzerinden hangi Unit ID’yi kullanırım?", "TCP’den RTU’ya bir ağ geçidi (seri cihaz sunucusu), aldığı Unit ID’yi seri taraftaki slave adresi olarak kullanır; bu yüzden arkasındaki cihazın adresini (1–247) girin. Seri hatta 0 adresi broadcast’tir; ağ geçidine göre tüm cihazlara iletilir (yanıt gelmez) ya da ağ geçidinin kendisine yönelik sayılır. 255 (FF), doğrudan adreslenen bir TCP cihazı için önerilen değerdir; ağ geçidi bunu genellikle seri hatta iletmez ya da kendisi yanıtlar. Tam davranış için ağ geçidinin kılavuzuna bakın."],
+    ["İşlem kimliği nasıl seçilir?", "İsteği gönderen seçer ve cihaz yanıtında aynı numarayı döndürür; genellikle her istekte bir artırılır. RTU’da böyle bir alan yoktur; bu yüzden TCP’den RTU’ya dönüştürürken atılır, RTU’dan TCP’ye dönüştürürken yukarıdaki kutudaki değer kullanılır."],
+    ["ASCII modu nedir?", "Modbus over Serial Line’ın diğer iletim modudur. Adres, PDU ve LRC bayt başına iki büyük harfli HEX karakteri olarak gönderilir; önde «:» (3A), sonda CR LF (0D 0A) bulunur. LRC, adresten PDU’nun sonuna kadarki baytların toplamının 8 bitlik ikiye tümleyenidir. RTU ile aynı PDU’yu taşır; bu yüzden ikisi doğrudan birbirine dönüşür."],
+    ["CRC ya da LRC yanlış diyor", "Son baytlar CRC (ya da LRC) sayılıp çıkarılır, geri kalanı dönüştürülür ve doğru değer gösterilir. Yalnızca adresi ve PDU’yu CRC olmadan yapıştırdıysanız biçimi RTU’da bırakıp doğru CRC’yi ekleyin ya da CRC ve sağlama toplamı hesaplayıcısından alın."],
+  ] as [string, string][],
+  guide: "Modbus TCP bağlantıları ve MBAP başlığı (İngilizce)",
+  guide2: "Modbus RTU çerçevelerini okumak (İngilizce)",
+  src: ["MBAP başlığı (işlem, protokol, uzunluk, Unit ID), ağ geçitlerinde Unit ID", "RTU ve ASCII çerçeveleme, adresler (0 broadcast, 1–247), CRC ve LRC", "PDU (fonksiyon kodu ve veri), istisna yanıtları"],
+  seeG: ["MBAP başlığı ve bağlantı sorunları için: ", "; RTU baytları için: ", "."],
+  seeT: ["Değerleri ve 40001 adreslerini ayrıntılı çözmek için ", "Modbus çerçeve çözücüyü", " kullanın; sorularla alıştırma için ", "Modbus alıştırma testini (İngilizce)", " deneyin."],
+};
