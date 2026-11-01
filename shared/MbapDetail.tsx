@@ -5,6 +5,7 @@ import type { Lang } from "./uiText";
 import "./modbus.css";
 import { JA_MBAP } from "./ja/modbus.ts";
 import { DE_MBAP } from "./de/modbus.ts";
+import { PL_MBAP } from "./pl/modbus.ts";
 
 export interface ModbusInfo {
   slave: number;
@@ -32,7 +33,7 @@ const L = {
 };
 
 export type MbapTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_MBAP, de: DE_MBAP });
+const LL = dicts(L.ko, L.en, { ja: JA_MBAP, de: DE_MBAP, pl: PL_MBAP });
 
 export function MbapDetail({ lang, info }: { lang: Lang; info: MbapInfo }) {
   const t = LL[lang];
