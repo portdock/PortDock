@@ -1,0 +1,50 @@
+// 프랑스어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const FR_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Surveillance et alarmes",
+  activeN: "{n} active(s)",
+  noAlarm: "Aucune alarme active — {n} condition(s) surveillée(s)",
+  notRunning: "La surveillance démarre à la connexion ({n} condition(s))",
+  ackAll: "Tout acquitter",
+  ack: "Acquitter",
+  acked: "Acquittée",
+  clearEnded: "Effacer les terminées",
+  sound: "Son",
+  logStart: "Journal CSV…",
+  logOn: "● {n} lignes journalisées",
+  logStop: "Arrêter le journal",
+  logTitle: "Enregistrer le journal des alarmes",
+  ongoing: "en cours",
+  colKind: "Condition",
+  colName: "Quoi",
+  colValue: "Valeur",
+  colStart: "Apparue",
+  colEnd: "Disparue",
+  colDur: "Durée",
+  safety: "PortDock n’est pas un dispositif de sécurité — c’est une aide à la surveillance. La protection des équipements et les verrouillages relèvent de l’automate et des circuits de sécurité.",
+  dlgTitle: "Conditions de surveillance — {a}",
+  lo: "Limite basse (alarme en dessous)",
+  hi: "Limite haute (alarme au-dessus)",
+  stuck: "Sans changement (figé), secondes",
+  lost: "Perte de communication, secondes",
+  hyst: "Marge de retour (hystérésis)",
+  hystHint: "Une alarme basse disparaît à «basse + marge» ou au-dessus, une alarme haute à «haute − marge» ou en dessous — une valeur qui oscille à la limite ne fait donc pas clignoter l’alarme.",
+  emptyHint: "Laissez un champ vide pour ignorer cette condition. Les valeurs sont jugées sur le nombre affiché (décodé selon le type).",
+  save: "Enregistrer",
+  remove: "Retirer les conditions",
+  close: "Fermer",
+  errLoHi: "La limite basse doit être inférieure à la limite haute.",
+  errSecs: "Les secondes vont de 1 à 86400.",
+  errHyst: "La marge est un nombre supérieur ou égal à 0.",
+  errNum: "Saisissez un nombre.",
+  errEmpty: "Saisissez au moins une condition, ou appuyez sur «Retirer les conditions».",
+};
+
+export const FR_KIND: Record<AlarmKind, string> = {
+  lo: "Basse",
+  hi: "Haute",
+  stuck: "Figée",
+  lost: "Comm. perdue",
+};

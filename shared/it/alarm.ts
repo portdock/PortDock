@@ -1,0 +1,50 @@
+// 이탈리아어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const IT_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Sorveglianza e allarmi",
+  activeN: "{n} attivi",
+  noAlarm: "Nessun allarme attivo — {n} condizioni sorvegliate",
+  notRunning: "La sorveglianza inizia alla connessione ({n} condizioni)",
+  ackAll: "Riconosci tutti",
+  ack: "Riconosci",
+  acked: "Riconosciuto",
+  clearEnded: "Cancella terminati",
+  sound: "Suono",
+  logStart: "Log CSV…",
+  logOn: "● Registrate {n} righe",
+  logStop: "Ferma log",
+  logTitle: "Salva log allarmi",
+  ongoing: "in corso",
+  colKind: "Condizione",
+  colName: "Cosa",
+  colValue: "Valore",
+  colStart: "Comparso",
+  colEnd: "Rientrato",
+  colDur: "Durata",
+  safety: "PortDock non è un dispositivo di sicurezza — è un aiuto alla sorveglianza. Protezione delle macchine e interblocchi spettano al PLC e ai circuiti di sicurezza.",
+  dlgTitle: "Condizioni di sorveglianza — {a}",
+  lo: "Limite basso (allarme sotto)",
+  hi: "Limite alto (allarme sopra)",
+  stuck: "Nessun cambiamento (bloccato), secondi",
+  lost: "Comunicazione persa, secondi",
+  hyst: "Margine di rientro (isteresi)",
+  hystHint: "Un allarme basso rientra a «basso + margine» o sopra, un allarme alto a «alto − margine» o sotto — così un valore che oscilla al limite non fa lampeggiare l’allarme.",
+  emptyHint: "Lascia un campo vuoto per saltare quella condizione. I valori sono giudicati sul numero mostrato a schermo (decodificato secondo il tipo).",
+  save: "Salva",
+  remove: "Rimuovi condizioni",
+  close: "Chiudi",
+  errLoHi: "Il limite basso deve essere inferiore al limite alto.",
+  errSecs: "I secondi vanno da 1 a 86400.",
+  errHyst: "Il margine è un numero pari o superiore a 0.",
+  errNum: "Inserisci un numero.",
+  errEmpty: "Inserisci almeno una condizione, oppure premi «Rimuovi condizioni».",
+};
+
+export const IT_KIND: Record<AlarmKind, string> = {
+  lo: "Basso",
+  hi: "Alto",
+  stuck: "Bloccato",
+  lost: "Comunic. persa",
+};

@@ -3,6 +3,8 @@ import { dicts } from "../../../shared/lang.ts";
 import { ja } from "./i18n.ja.ts";
 import { es } from "./i18n.es.ts";
 import { pt } from "./i18n.pt.ts";
+import { fr } from "./i18n.fr.ts";
+import { it } from "./i18n.it.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -531,5 +533,5 @@ const en: Record<keyof typeof ko, string> = {
 };
 
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja, es, pt });
+export const dict = dicts(ko, en, { ja, es, pt, fr, it });
 export type Key = keyof typeof ko;

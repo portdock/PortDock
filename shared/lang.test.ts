@@ -26,6 +26,18 @@ import { PT_AR } from "./pt/autoReply.ts";
 import { PT_ALARM } from "./pt/alarm.ts";
 import { PT_AI_COPY } from "./pt/aiCopy.ts";
 import * as PT_PARTS from "./pt/parts.ts";
+import { FR_UI } from "./fr/ui.ts";
+import { FR_IO } from "./fr/io.ts";
+import { FR_AR } from "./fr/autoReply.ts";
+import { FR_ALARM } from "./fr/alarm.ts";
+import { FR_AI_COPY } from "./fr/aiCopy.ts";
+import * as FR_PARTS from "./fr/parts.ts";
+import { IT_UI } from "./it/ui.ts";
+import { IT_IO } from "./it/io.ts";
+import { IT_AR } from "./it/autoReply.ts";
+import { IT_ALARM } from "./it/alarm.ts";
+import { IT_AI_COPY } from "./it/aiCopy.ts";
+import * as IT_PARTS from "./it/parts.ts";
 import { tip, TIP_KEYS, TIP_MORE } from "./tips.ts";
 import { buildAiCopy } from "./aiCopy.ts";
 
@@ -54,7 +66,7 @@ test("언어 목록 — 사이트와 같은 12개, 이름이 다 있고 고를 �
   assert.deepEqual([...LANGS], ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
   for (const l of LANGS) assert.ok(LANG_NAMES[l]);
   for (const l of UI_LANGS) assert.ok((LANGS as readonly string[]).includes(l));
-  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "es", "pt"]);
+  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "es", "pt", "fr", "it"]);
 });
 
 test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 없는 언어 → en)", () => {
@@ -66,6 +78,8 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.equal(detectLang("es-419"), "es");
   assert.equal(detectLang("pt-BR"), "pt");
   assert.equal(detectLang("pt-PT"), "pt");
+  assert.equal(detectLang("fr-FR"), "fr");
+  assert.equal(detectLang("it-IT"), "it");
   assert.equal(detectLang("en-US"), "en");
   assert.equal(detectLang("de-DE"), "en");
   assert.equal(detectLang(""), "en");
@@ -74,6 +88,8 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.ok(isUiLang("es"));
   assert.ok(isUiLang("pt"));
   assert.ok(!isUiLang("de"));
+  assert.ok(isUiLang("fr"));
+  assert.ok(isUiLang("it"));
   assert.ok(!isUiLang("ja-JP"));
   assert.equal(baseLang("ja"), "en");
   assert.equal(baseLang("ko"), "ko");
@@ -174,4 +190,56 @@ test("AI 복사 — 질문 틀은 화면 언어(ja), 번역이 없는 언어는 
   const de = buildAiCopy({ lang: "de", app: "PortDock Serial", log: [] }).text;
   const en = buildAiCopy({ lang: "en", app: "PortDock Serial", log: [] }).text;
   assert.equal(de, en);
+});
+
+// 프랑스어(fr) — 일본어와 같은 검사
+test("프랑스어 사전 — 공용·앱 12개·말풍선·AI 복사", async () => {
+  checkMore("fr/uiText", UI.en, FR_UI);
+  checkMore("fr/ioText", IO.en, FR_IO);
+  checkMore("fr/autoReplyText", AR_TEXT.en, FR_AR);
+  checkMore("fr/alarmText", ALARM_TEXT.en, FR_ALARM);
+  checkMore("fr/usageText", USAGE_TEXT.en, FR_PARTS.FR_USAGE);
+  for (const [name, more] of Object.entries(FR_PARTS)) {
+    for (const [k, v] of Object.entries(more)) if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
+  }
+  assert.equal(UI.fr.settings, FR_UI.settings);
+  for (const app of APPS) {
+    const { dict } = (await import(`../apps/${app}/src/i18n.ts`)) as { dict: Record<string, Record<string, string>> };
+    const { fr } = (await import(`../apps/${app}/src/i18n.fr.ts`)) as { fr: Record<string, string> };
+    checkMore(`fr/${app}`, dict.en, fr);
+    assert.ok(Object.keys(fr).length > 0, `${app}: 프랑스어 사전이 비었음`);
+    for (const k of Object.keys(dict.en)) assert.equal(dict.fr[k], fr[k] || dict.en[k], `fr/${app}.${k}`);
+  }
+  const tfr = TIP_MORE.fr!;
+  const ten = Object.fromEntries(TIP_KEYS.map((k) => [k, tip("en", k)!]));
+  checkMore("fr/tips", ten, tfr);
+  for (const k of TIP_KEYS) assert.equal(tip("fr", k), tfr[k] || tip("en", k));
+  const t = buildAiCopy({ lang: "fr", app: "PortDock Serial", log: [] }).text;
+  assert.ok(t.includes(FR_AI_COPY.situation!), t);
+});
+
+// 이탈리아어(it) — 일본어와 같은 검사
+test("이탈리아어 사전 — 공용·앱 12개·말풍선·AI 복사", async () => {
+  checkMore("it/uiText", UI.en, IT_UI);
+  checkMore("it/ioText", IO.en, IT_IO);
+  checkMore("it/autoReplyText", AR_TEXT.en, IT_AR);
+  checkMore("it/alarmText", ALARM_TEXT.en, IT_ALARM);
+  checkMore("it/usageText", USAGE_TEXT.en, IT_PARTS.IT_USAGE);
+  for (const [name, more] of Object.entries(IT_PARTS)) {
+    for (const [k, v] of Object.entries(more)) if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
+  }
+  assert.equal(UI.it.settings, IT_UI.settings);
+  for (const app of APPS) {
+    const { dict } = (await import(`../apps/${app}/src/i18n.ts`)) as { dict: Record<string, Record<string, string>> };
+    const { it } = (await import(`../apps/${app}/src/i18n.it.ts`)) as { it: Record<string, string> };
+    checkMore(`it/${app}`, dict.en, it);
+    assert.ok(Object.keys(it).length > 0, `${app}: 이탈리아어 사전이 비었음`);
+    for (const k of Object.keys(dict.en)) assert.equal(dict.it[k], it[k] || dict.en[k], `it/${app}.${k}`);
+  }
+  const tit = TIP_MORE.it!;
+  const ten = Object.fromEntries(TIP_KEYS.map((k) => [k, tip("en", k)!]));
+  checkMore("it/tips", ten, tit);
+  for (const k of TIP_KEYS) assert.equal(tip("it", k), tit[k] || tip("en", k));
+  const t = buildAiCopy({ lang: "it", app: "PortDock Serial", log: [] }).text;
+  assert.ok(t.includes(IT_AI_COPY.situation!), t);
 });

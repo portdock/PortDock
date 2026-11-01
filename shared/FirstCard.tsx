@@ -9,6 +9,8 @@ import { dicts } from "./lang";
 import { JA_FIRST } from "./ja/parts";
 import { ES_FIRST } from "./es/parts";
 import { PT_FIRST } from "./pt/parts";
+import { FR_FIRST } from "./fr/parts";
+import { IT_FIRST } from "./it/parts";
 import "./firstcard.css";
 
 const ko = {
@@ -24,7 +26,7 @@ const en: typeof ko = {
     narrow: "The window is narrow, so the left panel is folded — «left» below means the panel behind the «⚙ {b}» button at the top left.",
     open: "Open the left panel",
 };
-const L = dicts(ko, en, { ja: JA_FIRST, es: ES_FIRST, pt: PT_FIRST });
+const L = dicts(ko, en, { ja: JA_FIRST, es: ES_FIRST, pt: PT_FIRST, fr: FR_FIRST, it: IT_FIRST });
 
 export interface FirstCardLink {
   label: string;
