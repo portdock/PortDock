@@ -3,8 +3,10 @@
 // 수치는 사용자가 매뉴얼에서 넣는다 — 예시 값(EXAMPLE)은 «예시» 로만 쓰고, 돌입 전류·피크 정격·지속 시간은 제조사마다 달라 기본값을 두지 않는다.
 // 여유율 m: 부하 ≤ 정격 × (1 − m) — 정격의 (100 − m) % 까지만 쓴다. 일반적으로 20~30 % 를 둔다(기본 25 %).
 
-export type Lang = "ko" | "en";
-type L = Record<Lang, string>;
+import { tx, type Lang } from "./tr.ts";
+
+export type { Lang };
+type L = { ko: string; en: string };
 
 /** 부하 종류 — 채널을 나눌 때 묶음을 가른다 */
 export type LoadKind = "plc" | "hmi" | "comm" | "rio" | "sensor" | "lamp" | "valve" | "relay" | "fan" | "other";
@@ -227,7 +229,7 @@ export const DEFAULT_OPTS: Opts = { volts: 24, margin: 25, peakPct: 100, channel
 
 /** 예시 — 값은 «예시» 이고 실제는 장비 매뉴얼의 소비 전류·돌입 전류를 넣는다 */
 export const EXAMPLE = (lang: Lang): Load[] => {
-  const n = (k: LoadKind) => KINDS.find((x) => x.id === k)!.name[lang];
+  const n = (k: LoadKind) => tx(KINDS.find((x) => x.id === k)!.name, lang);
   return [
     { kind: "plc", name: n("plc"), qty: 1, ma: 600, inrushMa: 0, duty: 100 },
     { kind: "hmi", name: n("hmi"), qty: 1, ma: 500, inrushMa: 0, duty: 100 },

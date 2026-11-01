@@ -6,20 +6,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { gaugeTable, metricRows, awgLabel } from "../lib/wireGauge";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/awg-mm2/";
 const f3 = (x: number) => (x >= 100 ? x.toFixed(1) : x >= 10 ? x.toFixed(2) : x >= 0.1 ? x.toFixed(3) : x.toFixed(4));
 const pm = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(0)} %`;
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "AWG ↔ mm² 변환표·전선 표",
+      seo: "AWG mm2 변환표 — 지름·단면적·저항 — PortDock",
       desc: "AWG 0000~40 의 지름·단면적을 ASTM B258 공식으로 계산하고, 가까운 미터 규격(IEC 60228 mm²)과 구리 20 °C 저항(Ω/km)을 붙인 표. AWG·mm² 어느 쪽이든 넣어 바꿉니다.",
       inAwg: "AWG (예: 18, 2/0, 0000)",
       inMm: "단면적 mm²",
@@ -51,9 +54,13 @@ const L = ko
         ["1.5 mm² 는 몇 AWG 인가요?", "15 AWG(1.65 mm²)가 가장 가깝지만 15 AWG 는 흔하지 않아, 미국 규격 전선으로 바꾸면 보통 14 AWG(2.08 mm²)를 씁니다. 16 AWG(1.31 mm²)는 1.5 mm² 보다 가늡니다."],
         ["4/0 이나 2/0 은 무엇인가요?", "0 보다 굵은 AWG 는 0 을 겹쳐 씁니다: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG 는 약 107 mm² 입니다."],
       ],
+      more: ["굵기를 거리·전류로 정하려면 ", ", 용도별 케이블 종류는 ", ", 전선관에 몇 가닥 들어가는지는 ", " 를 씁니다."],
+      moreLinks: ["전압 강하·전선 굵기 계산기", "케이블 선정 도우미", "전선관·덕트 점유율 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "AWG to mm² Conversion Table",
+      seo: "AWG to mm² Conversion Table: Diameter & Resistance — PortDock",
       desc: "AWG 0000 to 40 diameter and area (ASTM B258 formula), nearest metric mm² size (IEC 60228) and copper Ω/km at 20 °C. Convert either way.",
       inAwg: "AWG (e.g. 18, 2/0, 0000)",
       inMm: "Cross-section mm²",
@@ -85,7 +92,10 @@ const L = ko
         ["What AWG is 1.5 mm²?", "15 AWG (1.65 mm²) is nearest, but 15 AWG is uncommon, so the usual US-gauge substitute is 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) is smaller than 1.5 mm²."],
         ["What do 4/0 and 2/0 mean?", "Gauges larger than 0 repeat the zero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG is about 107 mm²."],
       ],
-    };
+      more: ["To size a wire from length and current, use the ", "; for cable types by use, the ", "; for how many wires fit in a conduit, the ", "."],
+      moreLinks: ["voltage drop calculator", "cable selection helper", "conduit and duct fill calculator"],
+    }
+  : { ...page6(lang, "awgMm2"), moreLinks: ["tools/voltage-drop/", "tools/cable-selection/", "tools/conduit-fill/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -96,11 +106,11 @@ const mmRows = metricRows();
 const nm = (n: number | undefined) => (n === undefined ? "—" : awgLabel(n));
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "AWG mm2 변환표 — 지름·단면적·저항 — PortDock" : "AWG to mm² Conversion Table: Diameter & Resistance — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -157,7 +167,7 @@ const nm = (n: number | undefined) => (n === undefined ? "—" : awgLabel(n));
         ))
       }
       <p>
-        {ko ? "굵기를 거리·전류로 정하려면 " : "To size a wire from length and current, use the "}<a href={url(lang, "tools/voltage-drop/")}>{ko ? "전압 강하·전선 굵기 계산기" : "voltage drop calculator"}</a>{ko ? ", 용도별 케이블 종류는 " : "; for cable types by use, the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? ", 전선관에 몇 가닥 들어가는지는 " : "; for how many wires fit in a conduit, the "}<a href={url(lang, "tools/conduit-fill/")}>{ko ? "전선관·덕트 점유율 계산기" : "conduit and duct fill calculator"}</a>{ko ? " 를 씁니다." : "."}
+        {L.more[0]}<a href={link(lang, "tools/voltage-drop/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/cable-selection/")}>{L.moreLinks[1]}</a>{L.more[2]}<a href={link(lang, "tools/conduit-fill/")}>{L.moreLinks[2]}</a>{L.more[3]}
       </p>
     </section>
     <UseNotice lang={lang} />

@@ -7,23 +7,26 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { intervalFromPower, pulseHz } from "../lib/energyPulse";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/energy-pulse/";
 const SI = "https://www.bipm.org/en/publications/si-brochure";
 const fmtS = (s: number) => (s >= 60 ? `${+(s / 60).toPrecision(3)} min` : s >= 1 ? `${+s.toPrecision(3)} s` : `${+(s * 1000).toPrecision(3)} ms`);
 // 펄스 정수별 표 — 전력마다 펄스 간격
 const KW = [0.1, 1, 10, 100];
 const tRows = [100, 400, 1000, 3200, 10000].map((c) => [`${c}`, `${+(1000 / c).toPrecision(4)} Wh`, ...KW.map((kw) => fmtS(intervalFromPower(c, kw))), `${+pulseHz(c, 100).toPrecision(3)} Hz`]);
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "전력량계 펄스 계산기",
+      seo: "전력량계 펄스 계산기 — imp/kWh·kW 환산·CT 배율 — PortDock",
       desc: "전력량계 펄스 정수(imp/kWh)와 펄스 간격·개수로 순시 전력(kW)·전력량(kWh)을 구하고, CT·PT 배율과 PLC 카운터가 받을 펄스 주파수·펄스 폭을 확인합니다.",
       c: "펄스 정수 (imp/kWh)",
       t: "펄스 간격 (초)",
@@ -72,18 +75,16 @@ const L = ko
         ["CT 200/5 를 쓰면 배율은?", "200 ÷ 5 = 40 입니다. PT 가 6600/110 이면 60 을 더 곱해 2400 입니다."],
         ["PLC 일반 입력으로 펄스를 셀 수 있나요?", "최대 전력에서의 펄스 주파수가 입력의 응답(필터) 시간과 스캔 주기로 놓치지 않을 만큼 낮아야 합니다. 위 «최대 전력에서 펄스 주파수» 와 PLC 입력 사양을 비교하세요."],
       ],
-      ctNote: "CT 비·2차 전류·부담은",
-      ctLink: "CT 비 계산기",
-      pNote: "kW·kVA·역률은",
-      pLink: "3상 전력 계산기",
-      dNote: "Modbus 로 전력량을 읽는 전력 미터 주소는",
-      dLink: "장비 레지스터 맵",
       srcTitle: "근거",
       src: "정의식입니다 — 1 kWh 는 1 kW 로 1시간(3600 s) 쓴 에너지이고, 시간 단위 h = 3600 s 는 SI 브로슈어의 «SI 와 함께 쓰는 단위» 표에 있습니다. 배율은 변성비의 곱입니다. 펄스 정수·펄스 폭·1차/2차 기준은 제품마다 다르므로 계량기 설명서 값을 넣습니다.",
       srcLink: "BIPM SI 브로슈어",
+      see: ["CT 비·2차 전류·부담은 ", ". kW·kVA·역률은 ", ". Modbus 로 전력량을 읽는 전력 미터 주소는 ", "."],
+      seeLinks: ["CT 비 계산기", "3상 전력 계산기", "장비 레지스터 맵"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Energy Meter Pulse Calculator",
+      seo: "Energy Meter Pulse Calculator: imp/kWh to kW — PortDock",
       desc: "Power (kW) and energy (kWh) from a meter's pulse constant (imp/kWh), pulse interval or count; CT/VT multiplier and the pulse rate a PLC counter must handle.",
       c: "Pulse constant (imp/kWh)",
       t: "Pulse interval (s)",
@@ -132,16 +133,13 @@ const L = ko
         ["What is the multiplier with a 200/5 CT?", "200 ÷ 5 = 40. With a 6600/110 VT, multiply by another 60 for 2400."],
         ["Can a plain PLC input count the pulses?", "Only if the pulse rate at maximum power is low enough for the input filter time and scan time not to miss pulses. Compare «Pulse rate at maximum power» above with the PLC input specification."],
       ],
-      ctNote: "For CT ratio, secondary current and burden, use the",
-      ctLink: "CT Ratio Calculator",
-      pNote: "For kW, kVA and power factor, use the",
-      pLink: "Three-Phase Power Calculator",
-      dNote: "For power meter addresses read over Modbus, see the",
-      dLink: "device register maps",
       srcTitle: "Basis",
       src: "These are definitions: 1 kWh is the energy of 1 kW for one hour (3600 s), and the hour h = 3600 s is listed in the SI Brochure table of non-SI units accepted for use with the SI. The multiplier is the product of the transformer ratios. Pulse constant, pulse width and primary/secondary basis vary by product, so enter the values from the meter's manual.",
       srcLink: "BIPM SI Brochure",
-    };
+      see: ["For CT ratio, secondary current and burden, use the ", ". For kW, kVA and power factor, use the ", ". For power meter addresses read over Modbus, see the ", "."],
+      seeLinks: ["CT Ratio Calculator", "Three-Phase Power Calculator", "device register maps"],
+    }
+  : { ...page6(lang, "energyPulse"), seeLinks: [pageName(lang, "tools/ct-ratio/"), pageName(lang, "tools/three-phase-power/"), page6(lang, "energyPulse").devLink + ui(lang).inEnglish] };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -149,17 +147,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "전력량계 펄스 계산기 — imp/kWh·kW 환산·CT 배율 — PortDock" : "Energy Meter Pulse Calculator: imp/kWh to kW — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["energyPulse"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ep">
+    <form class="calc card" id="ep" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.c}<input id="c" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.t}<input id="t" class="mono" value="9" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -215,7 +213,7 @@ const ld = {
         ))
       }
       <p>
-        {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>. {L.pNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pLink}</a>. {L.dNote} <a href={url(lang, "devices/")}>{L.dLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/ct-ratio/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/three-phase-power/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "devices/")}>{L.seeLinks[2]}</a>{L.see[3]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src} <a href={SI} rel="noopener">{L.srcLink}</a>.</p>
@@ -224,8 +222,9 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { fromCount, multiplier, powerFromInterval, pulseCheck, whPerPulse } from "../lib/energyPulse";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("ep")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("ep") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -247,8 +246,8 @@ const ld = {
         const sec = $<HTMLSelectElement>("side").value === "sec";
         const m = multiplier(num("ct1"), num("ct2"), num("pt1"), num("pt2"));
         const k = sec ? m : 1;
-        set("wh", `${p4(whPerPulse(c))} Wh${sec ? (ko ? ` (1차 ${p4(whPerPulse(c) * m)} Wh)` : ` (primary ${p4(whPerPulse(c) * m)} Wh)`) : ""}`);
-        set("mul", `${p4(m)}${sec ? "" : ko ? " (펄스에는 곱하지 않음)" : " (not applied to pulses)"}`);
+        set("wh", `${p4(whPerPulse(c))} Wh${sec ? (msg(lang, ` (1차 ${p4(whPerPulse(c) * m)} Wh)`, ` (primary ${p4(whPerPulse(c) * m)} Wh)`)) : ""}`);
+        set("mul", `${p4(m)}${sec ? "" : msg(lang, " (펄스에는 곱하지 않음)", " (not applied to pulses)")}`);
         set("p", kw(powerFromInterval(c, num("t")) * k));
         const o = fromCount(c, num("n"), num("win"));
         set("e", kwh(o.kwh * k));
@@ -256,10 +255,10 @@ const ld = {
         // 최대 전력(1차)을 펄스 쪽(2차면 배율로 나눔)으로 바꿔 주파수를 낸다
         const chk = pulseCheck(c, num("max") / k, num("w"));
         set("hz", `${p4(chk.hz)} Hz / ${p4(chk.periodMs)} ms`);
-        set("ok", chk.overlap ? (ko ? "아니요 — 최대 전력에서 펄스가 붙을 수 있음" : "No — pulses may run together at maximum power") : ko ? "예" : "Yes");
+        set("ok", chk.overlap ? (msg(lang, "아니요 — 최대 전력에서 펄스가 붙을 수 있음", "No — pulses may run together at maximum power")) : msg(lang, "예", "Yes"));
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 펄스 정수·간격·시간·CT·PT·최대 전력·펄스 폭은 0 보다 크고, 펄스 수는 0 이상 정수" : "Check the numbers — constant, interval, time, CT, VT, maximum power and pulse width above 0; pulse count a whole number 0 or more";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 펄스 정수·간격·시간·CT·PT·최대 전력·펄스 폭은 0 보다 크고, 펄스 수는 0 이상 정수", "Check the numbers — constant, interval, time, CT, VT, maximum power and pulse width above 0; pulse count a whole number 0 or more");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

@@ -7,14 +7,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { ledResistor, ledStandard, withResistor } from "../lib/led";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/led-resistor/";
 const ohmS = (r: number) => (r >= 1e3 ? `${+(r / 1e3).toPrecision(4)} kΩ` : `${+r.toPrecision(4)} Ω`);
 const mw = (p: number) => `${+(p * 1e3).toPrecision(3)} mW`;
@@ -25,9 +26,11 @@ const tRows = [5, 12, 24].map((vs) => {
   const w = withResistor(vs, 2, e);
   return [`${vs} V`, ohmS(o.r), ohmS(e), `${+(w.i * 1e3).toPrecision(3)} mA`, mw(w.pr)];
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "LED 저항 계산기",
+      seo: "LED 저항 계산기 — 5 V·12 V·24 V LED 저항 값 — PortDock",
       desc: "전원 전압·LED 순방향 전압(Vf)·전류·직렬 개수로 LED 저항 값과 전력을 계산하고, E12·E24 표준 값일 때의 전류를 보여 줍니다. 5·12·24 V 표시등.",
       vs: "전원 전압 Vs (V)",
       vf: "LED 순방향 전압 Vf (V, 하나)",
@@ -68,15 +71,15 @@ const L = ko
         ["LED 를 직렬로 여러 개 달면?", "Vf 를 개수만큼 더해 뺍니다. 12 V 에 Vf 3 V LED 3개, 20 mA 면 (12 − 9) ÷ 0.02 = 150 Ω 입니다."],
         ["계산값이 표준 값에 없으면?", "바로 위 표준 값을 쓰면 전류가 목표보다 조금 작아집니다. 위 «바로 위 표준 값 / 그때 전류» 칸이 그 값입니다."],
       ],
-      pNote: "두 저항으로 원하는 값을 만들려면",
-      pLink: "합성 저항 계산기",
-      vNote: "긴 배선에서 전압이 얼마나 떨어지는지는",
-      vLink: "전압 강하·전선 굵기 계산기",
       srcTitle: "근거",
       src: "저항·전류·전력은 옴의 법칙(정의식)으로 계산합니다. E12·E24 표준 값은 Vishay 문서 28372(IEC 60063 의 표)에서 옮긴 값입니다. LED 의 Vf·If 와 저항의 정격 전력은 각 데이터시트를 보세요.",
+      see: ["두 저항으로 원하는 값을 만들려면 ", ". 긴 배선에서 전압이 얼마나 떨어지는지는 ", "."],
+      seeLinks: ["합성 저항 계산기", "전압 강하·전선 굵기 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "LED Resistor Calculator",
+      seo: "LED Resistor Calculator: 5 V, 12 V, 24 V, Series LEDs — PortDock",
       desc: "LED series resistor and its power from supply voltage, forward voltage (Vf), current and LEDs in series, and the current with an E12/E24 value. 5, 12, 24 V.",
       vs: "Supply voltage Vs (V)",
       vf: "LED forward voltage Vf (V, each)",
@@ -117,13 +120,12 @@ const L = ko
         ["What about several LEDs in series?", "Subtract Vf once per LED. Three LEDs with Vf 3 V on 12 V at 20 mA: (12 − 9) ÷ 0.02 = 150 Ω."],
         ["What if the result is not a standard value?", "Use the next standard value up and the current comes out slightly below target. That is the «Next value up / current» row above."],
       ],
-      pNote: "To make a value from two resistors, use the",
-      pLink: "Parallel & Series Resistor Calculator",
-      vNote: "For voltage drop over long wiring, use the",
-      vLink: "Voltage Drop & Wire Size Calculator",
       srcTitle: "Basis",
       src: "Resistance, current and power follow Ohm's law (definitions). E12 and E24 values come from Vishay document 28372 (the IEC 60063 tables). Check the LED's Vf and If and the resistor's power rating in their datasheets.",
-    };
+      see: ["To make a value from two resistors, use the ", ". For voltage drop over long wiring, use the ", "."],
+      seeLinks: ["Parallel & Series Resistor Calculator", "Voltage Drop & Wire Size Calculator"],
+    }
+  : { ...page6(lang, "ledResistor"), seeLinks: ["tools/parallel-resistor/", "tools/voltage-drop/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -131,17 +133,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "LED 저항 계산기 — 5 V·12 V·24 V LED 저항 값 — PortDock" : "LED Resistor Calculator: 5 V, 12 V, 24 V, Series LEDs — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ledResistor"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="led">
+    <form class="calc card" id="led" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.vs}<input id="vs" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.vf}<input id="vf" class="mono" value="2.0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -187,7 +189,7 @@ const ld = {
         ))
       }
       <p>
-        {L.pNote} <a href={url(lang, "tools/parallel-resistor/")}>{L.pLink}</a>. {L.vNote} <a href={url(lang, "tools/voltage-drop/")}>{L.vLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/parallel-resistor/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/voltage-drop/")}>{L.seeLinks[1]}</a>{L.see[2]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -196,9 +198,10 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { ledResistor, ledStandard, withResistor } from "../lib/led";
     import type { ESeries } from "../lib/divider";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("led")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("led") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -232,7 +235,7 @@ const ld = {
         set("pl", watt(wu.pLed));
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 전원·Vf·전류는 0 보다 크고, 개수는 1~100 정수, 전원은 개수 × Vf 보다 커야 합니다" : "Check the numbers — supply, Vf and current above 0, count a whole number 1–100, supply above count × Vf";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 전원·Vf·전류는 0 보다 크고, 개수는 1~100 정수, 전원은 개수 × Vf 보다 커야 합니다", "Check the numbers — supply, Vf and current above 0, count a whole number 1–100, supply above count × Vf");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

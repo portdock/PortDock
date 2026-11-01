@@ -7,18 +7,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { POLES, syncRpm } from "../lib/motor";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/motor-speed/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "인버터 주파수 ↔ 모터 회전수 계산기",
+      seo: "인버터 주파수 ↔ 모터 회전수 계산기 — 극수·슬립 — PortDock",
       desc: "인버터 주파수(Hz)·극수로 동기 속도를, 명판 회전수로 슬립을 구해 실제 회전수(근삿값)와 감속기 출력 회전수, 원하는 rpm 에 필요한 Hz 를 계산합니다.",
       hz: "출력 주파수(Hz)",
       poles: "극수",
@@ -60,11 +63,17 @@ const L = ko
         ["극수를 모르면?", "명판의 정격 주파수와 정격 회전수로 추정할 수 있습니다. 정격 회전수보다 조금 큰 동기 속도를 찾으면 됩니다(60 Hz 에서 3500대 → 2극, 1700대 → 4극, 1100대 → 6극)."],
       ],
       srcTitle: "출처",
-      mcNote: "모터 정격 전류·토크는",
-      mcLink: "모터 전류 계산기",
+      more: ["엔코더로 실제 회전수를 재려면 ", " 를 쓰세요. 볼스크류 이송 속도에 필요한 모터 회전수·토크는 ", "."],
+      moreLinks: ["엔코더 펄스 ↔ rpm 계산기", "볼스크류 토크·모터 선정 계산기"],
+      figAlt: "60 Hz 4극 모터: 동기 속도 1800 r/min, 정격 회전수 1750 r/min, 차이 50 r/min 이 슬립. 30 Hz 에서는 동기 900 r/min, 같은 슬립을 빼면 약 850 r/min",
+      figCap: "주파수를 바꾸면 동기 속도가 비례해 바뀌고, 실제 회전수는 슬립만큼 낮습니다.",
+      see: ["모터 정격 전류·토크는 ", "."],
+      seeLinks: ["모터 전류 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "VFD Frequency ↔ Motor RPM Calculator",
+      seo: "VFD Hz to RPM Calculator: Poles, Slip, Gear Ratio — PortDock",
       desc: "Synchronous speed from drive Hz and poles, slip from the nameplate, approximate actual and gearbox output speed, and the Hz needed for a target rpm.",
       hz: "Output frequency (Hz)",
       poles: "Poles",
@@ -106,9 +115,14 @@ const L = ko
         ["What if I do not know the number of poles?", "Estimate it from the nameplate rated frequency and speed: find the synchronous speed just above the rated speed (at 60 Hz, 3500s → 2 poles, 1700s → 4 poles, 1100s → 6 poles)."],
       ],
       srcTitle: "Sources",
-      mcNote: "For the motor's rated current and torque, use the",
-      mcLink: "Motor Current Calculator",
-    };
+      more: ["To measure the real speed with an encoder, use the ", ". For the motor speed and torque a ball screw axis needs, use the ", "."],
+      moreLinks: ["Encoder Pulses ↔ RPM Calculator", "Ball Screw Torque & Motor Sizing Calculator"],
+      figAlt: "4-pole motor at 60 Hz: synchronous 1800 r/min, rated 1750 r/min, the 50 r/min difference is slip. At 30 Hz: synchronous 900 r/min, about 850 r/min with the same slip",
+      figCap: "Synchronous speed scales with frequency; the actual speed is lower by the slip.",
+      see: ["For the motor's rated current and torque, use the ", "."],
+      seeLinks: ["Motor Current Calculator"],
+    }
+  : { ...page6(lang, "motorSpeed"), seeLinks: ["tools/motor-current/"].map((p) => pageName(lang, p)), moreLinks: ["tools/encoder/", "tools/ball-screw/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -121,20 +135,20 @@ const SRC = [
   { name: "LS ELECTRIC LSLV-S300 User's Manual: 5.1.2.3 Changing Unit of Speed (DRV-32), Formula 16", href: "https://www.ls-electric.com/" },
 ];
 const rows = POLES.map((p) => [p, ...[50, 60, 10, 30, 90].map((f) => syncRpm(f, p))]);
-const fig = `/img/guides/motor-slip.${lang}.svg`;
+const fig = `/img/guides/motor-slip.${lang === "ko" ? "ko" : "en"}.svg`;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "인버터 주파수 ↔ 모터 회전수 계산기 — 극수·슬립 — PortDock" : "VFD Hz to RPM Calculator: Poles, Slip, Gear Ratio — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["motorSpeed"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ms">
+    <form class="calc card" id="ms" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.rHz}<select id="rhz"><option value="60" selected>60 Hz</option><option value="50">50 Hz</option></select></label>
         <label class="fld">{L.rRpm}<input id="rrpm" class="mono" value="1750" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -165,8 +179,8 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
     <section class="prose">
       <h2>{L.fTitle}</h2>
       <figure class="fig">
-        <img src={fig} width="780" height="280" alt={ko ? "60 Hz 4극 모터: 동기 속도 1800 r/min, 정격 회전수 1750 r/min, 차이 50 r/min 이 슬립. 30 Hz 에서는 동기 900 r/min, 같은 슬립을 빼면 약 850 r/min" : "4-pole motor at 60 Hz: synchronous 1800 r/min, rated 1750 r/min, the 50 r/min difference is slip. At 30 Hz: synchronous 900 r/min, about 850 r/min with the same slip"} loading="lazy" decoding="async" />
-        <figcaption>{ko ? "주파수를 바꾸면 동기 속도가 비례해 바뀌고, 실제 회전수는 슬립만큼 낮습니다." : "Synchronous speed scales with frequency; the actual speed is lower by the slip."}</figcaption>
+        <img src={fig} width="780" height="280" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
       </figure>
       <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
       <p>{L.fNote}</p>
@@ -191,10 +205,10 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
         ))
       }
       <p>
-        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/motor-current/")}>{L.seeLinks[0]}</a>{L.see[1]}
       </p>
       <p>
-        {ko ? "엔코더로 실제 회전수를 재려면" : "To measure the real speed with an encoder, use the"} <a href={url(lang, "tools/encoder/")}>{ko ? "엔코더 펄스 ↔ rpm 계산기" : "Encoder Pulses ↔ RPM Calculator"}</a>{ko ? " 를 쓰세요." : "."} {ko ? "볼스크류 이송 속도에 필요한 모터 회전수·토크는" : "For the motor speed and torque a ball screw axis needs, use the"} <a href={url(lang, "tools/ball-screw/")}>{ko ? "볼스크류 토크·모터 선정 계산기" : "Ball Screw Torque & Motor Sizing Calculator"}</a>.
+        {L.more[0]}<a href={link(lang, "tools/encoder/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/ball-screw/")}>{L.moreLinks[1]}</a>{L.more[2]}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -203,6 +217,7 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { guessPoles, hzFor, ratedSlip, speedAt } from "../lib/motor";
     const form = document.getElementById("ms") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
@@ -220,13 +235,13 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
       const s = x.toFixed(d);
       return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("ms")!.dataset.lang ?? "en") as Lang;
     function run() {
       const rhz = Number($<HTMLSelectElement>("rhz").value);
       const rrpm = num("rrpm");
       const poles = Number($<HTMLSelectElement>("poles").value);
       const g = Number.isFinite(rrpm) ? guessPoles(rhz, rrpm) : undefined;
-      $("guess").textContent = g !== undefined ? `${ko ? "명판 회전수로 본 극수" : "Poles implied by the nameplate speed"}: ${g}${g !== poles ? (ko ? " — 고른 극수와 다름" : " — differs from the selected poles") : ""}` : "";
+      $("guess").textContent = g !== undefined ? `${msg(lang, "명판 회전수로 본 극수", "Poles implied by the nameplate speed")}: ${g}${g !== poles ? (msg(lang, " — 고른 극수와 다름", " — differs from the selected poles")) : ""}` : "";
       try {
         const s = ratedSlip(rhz, rrpm, poles);
         const hz = num("hz");
@@ -235,16 +250,16 @@ const fig = `/img/guides/motor-slip.${lang}.svg`;
         set("ns", `${fx(r.ns)} r/min`);
         set("slip", `${fx(s.rpm)} r/min · ${fx(s.s * 100, 2)} % · ${fx(s.hz, 2)} Hz`);
         set("n", `${fx(r.n)} r/min`);
-        set("out", `${fx(r.out, 2)} r/min (${ko ? "동기 기준" : "synchronous"} ${fx(r.outSync, 2)})`);
+        set("out", `${fx(r.out, 2)} r/min (${msg(lang, "동기 기준", "synchronous")} ${fx(r.outSync, 2)})`);
         $("err").textContent = "";
         const t = num("tgt");
         if (Number.isFinite(t) && t >= 0) {
           const need = hzFor(t, poles, s.rpm, ratio);
           const sync = hzFor(t, poles, 0, ratio);
-          $("tout").textContent = `${ko ? "필요한 출력 주파수" : "Required output frequency"} ≈ ${fx(need, 2)} Hz (${ko ? "슬립 보상 시" : "with slip compensation"} ${fx(sync, 2)} Hz)`;
+          $("tout").textContent = `${msg(lang, "필요한 출력 주파수", "Required output frequency")} ≈ ${fx(need, 2)} Hz (${msg(lang, "슬립 보상 시", "with slip compensation")} ${fx(sync, 2)} Hz)`;
         } else $("tout").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 정격 회전수는 0 보다 크고 동기 속도 이하, 감속비는 0 보다 커야 합니다" : "Check the numbers — rated speed above 0 and not above synchronous speed, gear ratio above 0";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 정격 회전수는 0 보다 크고 동기 속도 이하, 감속비는 0 보다 커야 합니다", "Check the numbers — rated speed above 0 and not above synchronous speed, gear ratio above 0");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
         $("tout").textContent = "";
       }

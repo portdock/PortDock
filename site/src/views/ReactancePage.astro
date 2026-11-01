@@ -7,21 +7,24 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { xc } from "../lib/reactance";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/reactance/";
 const ohmS = (r: number) => (r >= 1e6 ? `${+(r / 1e6).toPrecision(4)} MΩ` : r >= 1e3 ? `${+(r / 1e3).toPrecision(4)} kΩ` : `${+r.toPrecision(4)} Ω`);
 const caps: [string, number][] = [["100 nF", 100e-9], ["1 µF", 1e-6], ["10 µF", 10e-6], ["100 µF", 100e-6], ["1000 µF", 1e-3]];
 const xRows = caps.map(([n, c]) => [n, ohmS(xc(50, c)), ohmS(xc(60, c)), ohmS(xc(1000, c))]);
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "리액턴스·LC 공진 계산기",
+      seo: "리액턴스 계산기 — 용량성·유도성, LC 공진 주파수 — PortDock",
       desc: "주파수에서 용량성 리액턴스 Xc·유도성 리액턴스 XL, 원하는 리액턴스에 맞는 C·L, LC 공진 주파수와 특성 임피던스, 콘덴서 전류·무효 전력을 계산합니다.",
       f: "주파수 f (Hz)",
       c: "콘덴서 C",
@@ -61,15 +64,15 @@ const L = ko
         ["LC 공진 주파수는 어떻게 구하나요?", "f0 = 1 ÷ (2π √(LC)) 입니다. 10 µH 와 100 nF 면 약 159 kHz 이고, 이때 Xc 와 XL 이 모두 10 Ω 으로 같습니다."],
         ["리액턴스와 저항은 어떻게 더하나요?", "직렬 R 과 X 의 크기는 √(R² + X²) 입니다(위상이 90° 다르므로 그냥 더하지 않음). 이 계산기는 리액턴스만 보여 줍니다."],
       ],
-      rcNote: "RC 시정수·1차 저역 필터 차단 주파수는",
-      rcLink: "RC 시정수·차단 주파수 계산기",
-      pfNote: "역률 개선 콘덴서 용량(kvar → µF)은",
-      pfLink: "역률 개선 콘덴서 계산기",
       srcTitle: "근거",
       src: "Xc·XL·공진 주파수·특성 임피던스·콘덴서 전류와 무효 전력은 모두 교류 회로의 정의식으로 계산합니다. 부품의 허용차·등가 직렬 저항은 각 데이터시트를 보세요.",
+      see: ["RC 시정수·1차 저역 필터 차단 주파수는 ", ". 역률 개선 콘덴서 용량(kvar → µF)은 ", "."],
+      seeLinks: ["RC 시정수·차단 주파수 계산기", "역률 개선 콘덴서 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Reactance & LC Resonance Calculator",
+      seo: "Reactance Calculator: Xc, XL & LC Resonance — PortDock",
       desc: "Capacitive reactance Xc and inductive reactance XL at a frequency, C or L for a target reactance, LC resonant frequency, and capacitor current and kvar.",
       f: "Frequency f (Hz)",
       c: "Capacitor C",
@@ -109,13 +112,12 @@ const L = ko
         ["How do I find the LC resonant frequency?", "f0 = 1 ÷ (2π √(LC)). 10 µH with 100 nF gives about 159 kHz, where Xc and XL are both 10 Ω."],
         ["How do reactance and resistance add?", "For R and X in series the magnitude is √(R² + X²) — they are 90° apart, so they do not simply add. This calculator shows reactance only."],
       ],
-      rcNote: "For the RC time constant and first-order low-pass cut-off, use the",
-      rcLink: "RC Time Constant & Cut-off Calculator",
-      pfNote: "For power factor capacitor sizing (kvar → µF), use the",
-      pfLink: "Power Factor Correction Capacitor Calculator",
       srcTitle: "Basis",
       src: "Xc, XL, resonant frequency, characteristic impedance, capacitor current and reactive power are all computed from AC circuit definitions. Check part tolerances and equivalent series resistance in their datasheets.",
-    };
+      see: ["For the RC time constant and first-order low-pass cut-off, use the ", ". For power factor capacitor sizing (kvar → µF), use the ", "."],
+      seeLinks: ["RC Time Constant & Cut-off Calculator", "Power Factor Correction Capacitor Calculator"],
+    }
+  : { ...page6(lang, "reactance"), seeLinks: ["tools/rc-filter/", "tools/pf-capacitor/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -123,17 +125,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "리액턴스 계산기 — 용량성·유도성, LC 공진 주파수 — PortDock" : "Reactance Calculator: Xc, XL & LC Resonance — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["reactance"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="xr">
+    <form class="calc card" id="xr" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.f}<input id="f" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.c}<input id="c" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -182,7 +184,7 @@ const ld = {
         ))
       }
       <p>
-        {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>. {L.pfNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pfLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/rc-filter/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/pf-capacitor/")}>{L.seeLinks[1]}</a>{L.see[2]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -191,8 +193,9 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { capLoad, cForXc, f0, lForXl, xc, xl, z0 } from "../lib/reactance";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("xr")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("xr") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -238,7 +241,7 @@ const ld = {
       }, Number.isNaN(U));
       tryset("cx", () => farad(cForXc(f, X)), Number.isNaN(X));
       tryset("lx", () => henry(lForXl(f, X)), Number.isNaN(X));
-      $("err").textContent = bad ? (ko ? "숫자를 확인하세요 — 주파수·C·L·U·X 는 0 보다 큰 값" : "Check the numbers — f, C, L, U and X must be above 0") : "";
+      $("err").textContent = bad ? (msg(lang, "숫자를 확인하세요 — 주파수·C·L·U·X 는 0 보다 큰 값", "Check the numbers — f, C, L, U and X must be above 0")) : "";
     }
     form.addEventListener("input", run);
     form.addEventListener("change", run);

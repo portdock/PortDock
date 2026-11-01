@@ -7,14 +7,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { bestCombos, parallel } from "../lib/resistors";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/parallel-resistor/";
 const ohmS = (r: number) => (r >= 1e6 ? `${+(r / 1e6).toPrecision(4)} MΩ` : r >= 1e3 ? `${+(r / 1e3).toPrecision(4)} kΩ` : `${+r.toPrecision(4)} Ω`);
 // 정적 예시 표 — 같은 값 n 개 병렬은 R ÷ n, 자주 쓰는 두 값 병렬
@@ -26,9 +27,11 @@ const exRows = [
   [100e3, 10e3],
 ].map((rs) => [rs.map(ohmS).join(" ∥ "), ohmS(parallel(rs))]);
 const ex6k = bestCombos(6040, "E24", "both", 3).map((c) => [c.mode === "series" ? `${ohmS(c.a)} + ${ohmS(c.b)}` : `${ohmS(c.a)} ∥ ${ohmS(c.b)}`, ohmS(c.value), `${c.err >= 0 ? "+" : ""}${c.err.toFixed(2)} %`]);
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "합성 저항 계산기 (직렬·병렬)",
+      seo: "합성 저항 계산기 — 저항 병렬·직렬 계산 — PortDock",
       desc: "저항 여러 개의 직렬·병렬 합성 저항, 병렬 전류 몫, 원하는 값을 만드는 짝 저항, E12·E24·E96 표준 값 두 개로 원하는 저항을 만드는 조합을 계산합니다.",
       list: "저항 값들 — 빈칸·쉼표로 나눔 (예: 10k 4k7 2.2k, 단위 없으면 Ω)",
       res: "결과",
@@ -76,15 +79,15 @@ const L = ko
         ["표준 값에 없는 저항은 어떻게 만드나요?", "두 표준 값을 직렬 또는 병렬로 이어 맞춥니다. 위 «표준 값 두 개 조합» 이 E12·E24·E96 에서 오차가 작은 순으로 보여 줍니다. 한 개 표준 값으로 이미 충분히 가까우면 그쪽이 간단합니다."],
         ["4k7·2M2 같은 표기는?", "단위 글자가 소수점 자리에 오는 표기입니다. 4k7 = 4.7 kΩ, 2M2 = 2.2 MΩ, 0R47 = 0.47 Ω. 이 계산기는 그 표기도 읽습니다."],
       ],
-      dNote: "분압 비를 맞추는 조합은",
-      dLink: "분압 저항 계산기",
-      ledNote: "LED 전류 제한 저항은",
-      ledLink: "LED 저항 계산기",
       srcTitle: "근거",
       src: "직렬·병렬 합성과 짝 찾기는 정의식(옴의 법칙·키르히호프 법칙)으로 계산합니다. E12·E24·E96 표준 값은 Vishay 문서 28372(IEC 60063 의 표)에서 옮긴 값을 분압 저항 계산기와 함께 씁니다.",
+      see: ["분압 비를 맞추는 조합은 ", ". LED 전류 제한 저항은 ", "."],
+      seeLinks: ["분압 저항 계산기", "LED 저항 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Parallel & Series Resistor Calculator",
+      seo: "Parallel & Series Resistor Calculator (E12, E24, E96) — PortDock",
       desc: "Total resistance in series and parallel, current sharing, the partner resistor for a target value, and E12/E24/E96 pairs for values not in the series.",
       list: "Resistor values — separated by spaces or commas (e.g. 10k 4k7 2.2k; no unit = Ω)",
       res: "Results",
@@ -132,13 +135,12 @@ const L = ko
         ["How do I make a value that is not a standard value?", "Join two standard values in series or parallel. «Two standard values» above lists E12, E24 or E96 pairs by error. If one standard value is already close enough, that is simpler."],
         ["What do 4k7 and 2M2 mean?", "The unit letter stands where the decimal point goes: 4k7 = 4.7 kΩ, 2M2 = 2.2 MΩ, 0R47 = 0.47 Ω. This calculator reads that notation too."],
       ],
-      dNote: "For pairs that set a divider ratio, use the",
-      dLink: "Voltage Divider Calculator",
-      ledNote: "For an LED current-limiting resistor, use the",
-      ledLink: "LED Resistor Calculator",
       srcTitle: "Basis",
       src: "Series and parallel totals and the partner value are computed from circuit definitions (Ohm's and Kirchhoff's laws). E12, E24 and E96 values come from Vishay document 28372 (the IEC 60063 tables), shared with the Voltage Divider Calculator.",
-    };
+      see: ["For pairs that set a divider ratio, use the ", ". For an LED current-limiting resistor, use the ", "."],
+      seeLinks: ["Voltage Divider Calculator", "LED Resistor Calculator"],
+    }
+  : { ...page6(lang, "resistor"), seeLinks: ["tools/voltage-divider/", "tools/led-resistor/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -146,17 +148,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "합성 저항 계산기 — 저항 병렬·직렬 계산 — PortDock" : "Parallel & Series Resistor Calculator (E12, E24, E96) — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["resistor"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="rp">
+    <form class="calc card" id="rp" data-lang={lang}>
       <div class="row">
         <label class="fld" style="flex:2 1 320px">{L.list}<input id="rs" class="mono" value="10k 4k7" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.v}<input id="v" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -227,7 +229,7 @@ const ld = {
         ))
       }
       <p>
-        {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.ledNote} <a href={url(lang, "tools/led-resistor/")}>{L.ledLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/voltage-divider/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/led-resistor/")}>{L.seeLinks[1]}</a>{L.see[2]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -236,9 +238,10 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { bestCombos, parallel, parallelCurrents, parallelPartner, parallelShares, parseOhm, parseOhms, series, seriesPartner } from "../lib/resistors";
     import { nearestE, type ESeries } from "../lib/divider";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("rp")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("rp") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const set = (k: string, v: string) => {
@@ -272,7 +275,7 @@ const ld = {
         set("pv", pv);
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "저항 값을 확인하세요 — 0 보다 큰 값을 빈칸이나 쉼표로 나눠 넣습니다(예: 10k 4k7)" : "Check the values — numbers above 0 separated by spaces or commas (e.g. 10k 4k7)";
+        $("err").textContent = msg(lang, "저항 값을 확인하세요 — 0 보다 큰 값을 빈칸이나 쉼표로 나눠 넣습니다(예: 10k 4k7)", "Check the values — numbers above 0 separated by spaces or commas (e.g. 10k 4k7)");
         for (const k of ["ser", "par", "share", "pv"]) set(k, "");
       }
       // 2) 만들기
@@ -294,7 +297,7 @@ const ld = {
         }
         const one = nearestE(t, s);
         const e1 = ((one - t) / t) * 100;
-        $("single").textContent = `${ko ? "표준 값 하나로는" : "With one standard value"}: ${ohm(one)} (${e1 >= 0 ? "+" : ""}${e1.toFixed(2)} %)`;
+        $("single").textContent = `${msg(lang, "표준 값 하나로는", "With one standard value")}: ${ohm(one)} (${e1 >= 0 ? "+" : ""}${e1.toFixed(2)} %)`;
         const r1 = parseOhms($("rs").value)[0];
         try {
           set("pp", ohm(parallelPartner(r1, t)));
@@ -308,7 +311,7 @@ const ld = {
         }
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "만들 저항 값을 확인하세요 — 0 보다 큰 값(예: 6.04k)" : "Check the target — a value above 0 (e.g. 6.04k)";
+        $("err2").textContent = msg(lang, "만들 저항 값을 확인하세요 — 0 보다 큰 값(예: 6.04k)", "Check the target — a value above 0 (e.g. 6.04k)");
         $("single").textContent = "";
         set("pp", "");
         set("sp", "");

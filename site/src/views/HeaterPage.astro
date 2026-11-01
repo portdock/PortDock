@@ -7,14 +7,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { btuLbFToKJ, heatUpKw, heaterCurrent, lbPerGalToKgPerL } from "../lib/heater";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/heater-power/";
 const CP_W = btuLbFToKJ(1); // 물 1.0 Btu/lb·°F (Tempco)
 const RHO_W = lbPerGalToKgPerL(8.34); // 물 8.34 lb/gal (Tempco)
@@ -23,9 +24,11 @@ const k2 = (x: number) => (x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.
 const tRows = [50, 100, 200, 500, 1000].map((l) => [`${l} L`, ...[10, 20, 40, 60].map((dt) => k2(heatUpKw(l * RHO_W, CP_W, dt, 1)))]);
 // 전류 표 — 단상 220 V, 3상 380·440 V
 const iRows = [1, 3, 6, 10, 20, 30].map((kw) => [`${kw} kW`, ...[[220, 1], [380, 3], [440, 3]].map(([v, ph]) => heaterCurrent(kw * 1000, v, ph as 1 | 3).toFixed(1))]);
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "히터 용량 계산기 (kW·가열 시간·전류)",
+      seo: "히터 용량 계산기 — kW·가열 시간·3상 히터 전류 — PortDock",
       desc: "질량·비열·온도 상승·가열 시간으로 히터 용량(kW)을 계산하고, 흐르는 물·기름을 데우는 kW, 단상·3상 히터 전류와 전압이 다를 때의 출력까지 봅니다.",
       sys: "단위",
       syss: [["si", "SI (kg·kJ/kg·K·°C·L/min)"], ["us", "미국 (lb·Btu/lb·°F·°F·gal/min)"]],
@@ -83,17 +86,16 @@ const L = ko
         ["3상 히터 전류는?", "A = W ÷ (√3 × 선간 전압) 입니다. 10 kW 를 3상 380 V 에 쓰면 약 15.2 A, 단상 220 V 면 약 45.5 A 입니다."],
         ["흐르는 물을 데우는 히터 용량은?", "kW = 유량(kg/s) × 비열 × 온도 상승 입니다. Tempco 예: 물 5 gal/min(약 18.9 L/min)을 50 → 100 °F(27.8 °C) 올리면 안전율 20 % 포함 44 kW 입니다."],
       ],
-      cNote: "히터 전선 굵기와 전압 강하는",
-      cLink: "전압 강하·전선 굵기 계산기",
-      tNote2: "온도 센서 값은",
-      tLink: "열전대·Pt100 온도 변환기",
-      gNote: "3상 전력·전류 관계는",
-      gLink: "3상 전력 계산기",
       srcTitle: "근거",
       src: "식·안전율·예는 히터 제조사 Tempco 의 «Engineering Data»(tempco.com 카탈로그 16-2 가열 열량, 16-5 물 가열 표, 16-6 액체·기체 kW 와 물 5 gal/min 예·순환 히터 유량표, 16-9 전압별 출력, 16-10 단상·3상 전류표)에서 옮겼고, 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 1 Btu/lb·°F = 4.1868 kJ/kg·K, 1 kWh = 3412.14 Btu(NIST SP 811). 물질별 비열·밀도는 그 물질의 자료를, 히터 전류·차단기·전선은 전기 설비 기준과 히터 사양을 보세요.",
+      fluidNote: "비열·안전율은 위 칸 값을 씁니다.",
+      see: ["히터 전선 굵기와 전압 강하는 ", ". 3상 전력·전류 관계는 ", ". 온도 센서 값은 ", "."],
+      seeLinks: ["전압 강하·전선 굵기 계산기", "3상 전력 계산기", "열전대·Pt100 온도 변환기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Heater Power Calculator (kW, Heat-up Time, Amps)",
+      seo: "Heater kW Calculator: Heat-up Time, Flow, 3-Phase Amps — PortDock",
       desc: "Heater kW from mass, specific heat, temperature rise and heat-up time, kW for flowing water or oil, single- and three-phase current, output at other voltages.",
       sys: "Units",
       syss: [["si", "SI (kg, kJ/kg·K, °C, L/min)"], ["us", "US (lb, Btu/lb·°F, °F, gal/min)"]],
@@ -151,15 +153,13 @@ const L = ko
         ["What is the current of a three-phase heater?", "A = W ÷ (√3 × line voltage). 10 kW on 480 V three-phase is about 12.0 A; on 240 V three-phase about 24.1 A, and on 240 V single-phase 41.7 A (Tempco's table)."],
         ["How do I size a heater for flowing water?", "kW = flow (kg/s) × specific heat × temperature rise. Tempco's example: 5 gal/min of water from 50 to 100 °F with a 20 % safety factor needs 44 kW."],
       ],
-      cNote: "For heater cable size and voltage drop, use the",
-      cLink: "Voltage Drop & Wire Size Calculator",
-      tNote2: "For temperature sensor values, use the",
-      tLink: "Thermocouple & Pt100 Converter",
-      gNote: "For three-phase power and current, use the",
-      gLink: "Three-Phase Power Calculator",
       srcTitle: "Basis",
       src: "Formulas, safety factors and examples are from heater maker Tempco's «Engineering Data» (tempco.com catalogue pages 16-2 heat requirements, 16-5 water heating table, 16-6 liquids and gases with the 5 gal/min water example and circulation heater flow chart, 16-9 wattage at other voltages, 16-10 single- and three-phase amperage table). Tests check that this calculator reproduces them. 1 Btu/lb·°F = 4.1868 kJ/kg·K and 1 kWh = 3412.14 Btu (NIST SP 811). Use your material's own specific heat and density, and electrical codes and the heater's specification for current, breakers and wiring.",
-    };
+      fluidNote: "Specific heat and safety factor come from the fields above.",
+      see: ["For heater cable size and voltage drop, use the ", ". For three-phase power and current, use the ", ". For temperature sensor values, use the ", "."],
+      seeLinks: ["Voltage Drop & Wire Size Calculator", "Three-Phase Power Calculator", "Thermocouple & Pt100 Converter"],
+    }
+  : { ...page6(lang, "heater"), seeLinks: ["tools/voltage-drop/", "tools/three-phase-power/", "tools/temperature/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -167,17 +167,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "히터 용량 계산기 — kW·가열 시간·3상 히터 전류 — PortDock" : "Heater kW Calculator: Heat-up Time, Flow, 3-Phase Amps — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["heater"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ht">
+    <form class="calc card" id="ht" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.sys}<select id="sys">{L.syss.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
       </div>
@@ -201,7 +201,7 @@ const ld = {
         <label class="fld"><span data-si={L.rho.si} data-us={L.rho.us}>{L.rho.si}</span><input id="rho" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld"><span data-si={L.dt.si} data-us={L.dt.us}>{L.dt.si}</span><input id="dt2" class="mono" value="30" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
-      <p class="note">{ko ? "비열·안전율은 위 칸 값을 씁니다." : "Specific heat and safety factor come from the fields above."}</p>
+      <p class="note">{L.fluidNote}</p>
       <p class="err" id="err2" role="alert"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv"><tbody>{Object.entries(L.k2).map(([id, name]) => <tr><td>{name}</td><td data-k2={id}></td></tr>)}</tbody></table>
@@ -256,7 +256,7 @@ const ld = {
         ))
       }
       <p>
-        {L.cNote} <a href={url(lang, "tools/voltage-drop/")}>{L.cLink}</a>. {L.gNote} <a href={url(lang, "tools/three-phase-power/")}>{L.gLink}</a>. {L.tNote2} <a href={url(lang, "tools/temperature/")}>{L.tLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/voltage-drop/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/three-phase-power/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "tools/temperature/")}>{L.seeLinks[2]}</a>{L.see[3]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -265,8 +265,9 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { btuLbFToKJ, dFtoK, flowKw, galToL, heatKwh, heatUpHours, heatUpKw, heaterCurrent, lbPerGalToKgPerL, lbToKg, lpmToKgs, wattsAt, type Phase } from "../lib/heater";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("ht")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("ht") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -316,7 +317,7 @@ const ld = {
         set("data-k1", "t", t >= 1 ? `${p4(t)} h` : `${p4(t * 60)} min`);
         $("err1").textContent = "";
       } catch {
-        $("err1").textContent = ko ? "숫자를 확인하세요 — 질량·비열·온도 상승·시간·가진 히터는 0 보다 크고, 안전율은 1~10" : "Check the numbers — mass, specific heat, temperature rise, time and heater above 0, safety factor 1–10";
+        $("err1").textContent = msg(lang, "숫자를 확인하세요 — 질량·비열·온도 상승·시간·가진 히터는 0 보다 크고, 안전율은 1~10", "Check the numbers — mass, specific heat, temperature rise, time and heater above 0, safety factor 1–10");
         clear("data-k1");
       }
       try {
@@ -327,7 +328,7 @@ const ld = {
         set("data-k2", "kwsf", kw(flowKw(ms, cp, dt, sf)));
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "숫자를 확인하세요 — 유량·밀도·온도 상승과 위의 비열은 0 보다 크고, 안전율은 1~10" : "Check the numbers — flow, density, temperature rise and the specific heat above must be above 0, safety factor 1–10";
+        $("err2").textContent = msg(lang, "숫자를 확인하세요 — 유량·밀도·온도 상승과 위의 비열은 0 보다 크고, 안전율은 1~10", "Check the numbers — flow, density, temperature rise and the specific heat above must be above 0, safety factor 1–10");
         clear("data-k2");
       }
       try {
@@ -341,7 +342,7 @@ const ld = {
         set("data-k3", "ia", `${p4(heaterCurrent(wa, va, ph))} A`);
         $("err3").textContent = "";
       } catch {
-        $("err3").textContent = ko ? "숫자를 확인하세요 — 정격·전압은 0 보다 커야 합니다" : "Check the numbers — rating and voltages must be above 0";
+        $("err3").textContent = msg(lang, "숫자를 확인하세요 — 정격·전압은 0 보다 커야 합니다", "Check the numbers — rating and voltages must be above 0");
         clear("data-k3");
       }
     }

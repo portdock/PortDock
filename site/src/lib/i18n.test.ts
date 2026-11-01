@@ -6,8 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_LANGS, EXTRA_LANGS, LANGS, LANG_META, url } from "../i18n/langs.ts";
-import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE4, SCOPE5, SCOPE_PATHS, SCOPE5_PATHS, SCOPE4_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Page4Id, type Page5Id, type Scope2Path, type Scope3Path, type Scope4Path, type Scope5Path } from "../i18n/scope.ts";
-import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5 } from "../i18n/index.ts";
+import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE4, SCOPE5, SCOPE6, SCOPE_PATHS, SCOPE6_PATHS, SCOPE5_PATHS, SCOPE4_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Page4Id, type Page5Id, type Page6Id, type Scope2Path, type Scope3Path, type Scope4Path, type Scope5Path, type Scope6Path } from "../i18n/scope.ts";
+import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6 } from "../i18n/index.ts";
 import { fromEn, misses, msg } from "./tr.ts";
 import { decodeFrame } from "./modbusDecode.ts";
 import { decodeMc, buildRequest as buildMc, endText } from "./mcDecode.ts";
@@ -44,6 +44,8 @@ import { parseCapture } from "./logicCapture.ts";
 import { decodeUart, errText as logicErrText, itemsCsv, itemsText, kindText, valueText, type Item } from "./logicDecode.ts";
 import { sampleUartCsv } from "./logicSample.ts";
 import { UNITS } from "./units.ts";
+import { KINDS as PSU_KINDS, GROUP_NAME as PSU_GROUPS } from "./psuSizing.ts";
+import { DUCT_RULES } from "./conduitFill.ts";
 import { TC_TYPES, rtdResistance, rtdTemperature, tcEmf, tcFromMeasured, tcTemperature } from "./temperature.ts";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -90,7 +92,7 @@ test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마�
 test("번역된 쪽에만 그 언어가 붙고, 나머지 링크는 영어판으로", () => {
   for (const l of EXTRA_LANGS) {
     assert.deepEqual(langsOf("tools/checksum/"), [...CORE_LANGS, ...EXTRA_LANGS]);
-    assert.deepEqual(langsOf("tools/motor-speed/"), [...CORE_LANGS]);
+    assert.deepEqual(langsOf("tools/ball-screw/"), [...CORE_LANGS]);
     assert.ok(isTranslated(l, "download/#safe"));
     assert.equal(link(l, "guides/rs485-wiring/"), "/en/guides/rs485-wiring/");
     assert.equal(link(l, "tools/subnet/"), `/${l}/tools/subnet/`);
@@ -976,6 +978,136 @@ test("5차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
       }
       for (const m of errs) assert.ok(!/[Oo]utside|range|measured|cold junction|temperature|type/.test(m.replace(NATIVE5[l] ?? /$^/, "")), `${l}: 온도 범위 오류에 영어 — ${m}`);
     }
+  }
+  assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
+});
+
+// ---------------------------------------------------------------- 6차 묶음(scope.ts SCOPE6 · MORE) — 전기 웹 도구 15개
+
+const VIEW6: Record<Page6Id, string> = {
+  awgMm2: "AwgMm2Page",
+  conduitFill: "ConduitFillPage",
+  ctRatio: "CtRatioPage",
+  energyPulse: "EnergyPulsePage",
+  heater: "HeaterPage",
+  ledResistor: "LedResistorPage",
+  motorCurrent: "MotorCurrentPage",
+  motorSpeed: "MotorSpeedPage",
+  resistor: "ResistorPage",
+  pfCapacitor: "PfCapacitorPage",
+  psuSizing: "PsuSizingPage",
+  affinity: "AffinityPage",
+  reactance: "ReactancePage",
+  power: "PowerPage",
+  voltageDrop: "VoltageDropPage",
+};
+/** 화면(서버)이 쓰는 라이브러리 — 브라우저 스크립트가 가져오는 것은 clientOf 가 따로 찾는다 */
+const LIB6: Record<Page6Id, string[]> = {
+  awgMm2: ["lib/wireGauge.ts"],
+  conduitFill: ["lib/conduitFill.ts"],
+  ctRatio: ["lib/ct.ts"],
+  energyPulse: ["lib/energyPulse.ts"],
+  heater: ["lib/heater.ts"],
+  ledResistor: ["lib/led.ts"],
+  motorCurrent: ["lib/motor.ts"],
+  motorSpeed: ["lib/motor.ts"],
+  resistor: ["lib/resistors.ts"],
+  pfCapacitor: ["lib/power.ts"],
+  psuSizing: ["lib/psuSizing.ts"],
+  affinity: ["lib/affinity.ts"],
+  reactance: ["lib/reactance.ts"],
+  power: ["lib/power.ts"],
+  voltageDrop: ["lib/wire.ts"],
+};
+/** 그 언어가 번역한 6차 묶음 쪽 이름 */
+const pages6Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).filter((p): p is Scope6Path => p in SCOPE6).map((p) => SCOPE6[p]);
+const allLibs6 = (l: (typeof EXTRA_LANGS)[number]) => ({ ...allLibs5(l), ...DICTS6[l]?.lib }) as Record<string, Record<string, string>>;
+
+test("6차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·도구 이름이 있다", () => {
+  const ja6 = DICTS6.ja!;
+  assert.deepEqual(Object.keys(ja6.pages).sort(), Object.values(SCOPE6).sort(), "ja 6차 묶음 쪽 글 = SCOPE6");
+  assert.deepEqual(Object.keys(ja6.webTools).sort(), [...SCOPE6_PATHS].sort(), "ja 6차 묶음 도구 이름 = SCOPE6");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages6Of(l);
+    if (!ids.length) continue;
+    const d = DICTS6[l];
+    assert.ok(d, `${l}: MORE 에 6차 묶음 쪽이 있는데 i18n/index.ts DICTS6 에 ${l} 사전이 없음`);
+    for (const id of ids) {
+      const pg: unknown = (d.pages as Record<string, unknown>)[id];
+      assert.ok(pg, `${l}: 6차 묶음 쪽 글 없음 — ${id}`);
+      assert.deepEqual(shape(pg), shape((ja6.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
+    }
+    for (const p of (MORE[l] ?? []).filter((x) => x in SCOPE6)) {
+      const w = (d.webTools as Record<string, { name: string; blurb: string } | undefined>)[p];
+      assert.ok(w?.name.trim() && w.blurb.trim(), `${l}: 도구 이름·소개 없음 — ${p}`);
+    }
+    const empty: string[] = [];
+    const walkS = (v: unknown, at: string) => {
+      if (typeof v === "string") {
+        if (!v.trim() && !/\.head\.6$/.test(at)) empty.push(at);
+        return;
+      }
+      if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
+    };
+    for (const id of ids) walkS((d.pages as Record<string, object>)[id], `${l}.${id}`);
+    assert.deepEqual(empty, [], `${l}: 빈 문구`);
+  }
+});
+
+test("6차 묶음 문구 — 1~5차 묶음에 같은 영어 문장이 있으면 같은 번역, {n} 은 {} 수 안에서", () => {
+  for (const l of EXTRA_LANGS) {
+    const before: Record<string, string> = Object.assign({}, ...Object.values(allLibs5(l)));
+    const seen = new Map<string, [string, string]>();
+    for (const [sec, cat] of Object.entries(DICTS6[l]?.lib ?? {}))
+      for (const [k, v] of Object.entries(cat as Record<string, string>)) {
+        assert.ok(!(k in before) || before[k] === v, `${l}: «${k}» 가 1~5차 묶음과 6차 ${sec} 에서 다름`);
+        const prev = seen.get(k);
+        assert.ok(!prev || prev[1] === v, `${l}: «${k}» 가 ${prev?.[0]} 와 ${sec} 에서 다름`);
+        seen.set(k, [sec, v]);
+        assert.ok((k.match(/\{\}/g) ?? []).length >= Math.max(-1, ...[...v.matchAll(/\{(\d+)\}/g)].map((x) => Number(x[1]))) + 1, `${l}: «${k}» 의 {n} 이 {} 수보다 큼`);
+      }
+  }
+});
+
+test("6차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 스크립트가 쓰는 문장은 그 쪽이 싣는 묶음(libText)에 있다", () => {
+  const tmp = path.join(SRC, "..", "node_modules", ".i18n-test-client6.ts");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages6Of(l);
+    if (!ids.length) continue;
+    const libs = allLibs6(l);
+    const all: Record<string, string> = Object.assign({}, ...Object.values(libs));
+    const missing = ids.flatMap((id) => [`views/${VIEW6[id]}.astro`, ...LIB6[id]].flatMap((f) => englishOf(path.join(SRC, f)).filter((en) => !(en in all)).map((en) => `${f}: ${en}`)));
+    assert.deepEqual(missing, [], `${l}: 번역 없는 문장`);
+    for (const id of ids) {
+      const sections = libTextOf(VIEW6[id]);
+      for (const s of sections) assert.ok(libs[s], `${l}: ${VIEW6[id]} 의 libText «${s}» 묶음이 없음`);
+      const shipped: Record<string, string> = Object.assign({}, ...sections.map((s) => libs[s] ?? {}));
+      const c = clientOf(VIEW6[id]);
+      fs.writeFileSync(tmp, c.code);
+      const need = [...englishOf(tmp), ...c.libs.flatMap((f) => englishOf(path.join(SRC, f)))];
+      const notShipped = [...new Set(need)].filter((en) => !(en in shipped));
+      assert.deepEqual(notShipped, [], `${l}: ${VIEW6[id]} 브라우저 스크립트 문장이 libText ${JSON.stringify(sections)} 에 없음`);
+      assert.ok(!/documentElement\.lang/.test(c.code), `${l}: ${VIEW6[id]} 화면 스크립트가 documentElement.lang 으로 언어를 고름`);
+    }
+  }
+  fs.rmSync(tmp, { force: true });
+});
+
+test("6차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(결과·오류 문장, 부하 종류·덕트 기준 이름)", () => {
+  misses.clear();
+  const EN = /\b(?:the|and|must|above|below|check|over|more|with|reads|differs|primary|applied|pulses|gives|lagging|leading|reactive|left|synchronous|required|efficiency|power|factor|control|sensors?|valves?|relays?|panel|wireway|edition|nonmetallic)\b/i;
+  for (const l of EXTRA_LANGS) {
+    const ids = pages6Of(l);
+    if (!ids.length) continue;
+    // 화면의 결과·오류 문장 — {} 자리에 예시 값을 넣어 돌린다
+    for (const id of ids)
+      for (const en of englishOf(path.join(SRC, "views", VIEW6[id] + ".astro"))) {
+        const out = fromEn(en.replace(/\{\}/g, "12.5"), l);
+        assert.ok(!EN.test(out), `${l}: ${VIEW6[id]} «${en}» → «${out}» 에 영어`);
+      }
+    if (ids.includes("psuSizing"))
+      for (const n of [...PSU_KINDS.map((k) => k.name), ...Object.values(PSU_GROUPS)]) assert.ok(!EN.test(tx(n, l)) && tx(n, l) !== n.en || !/[a-z]{3}/.test(n.en), `${l}: 부하 종류 «${n.en}» → «${tx(n, l)}»`);
+    if (ids.includes("conduitFill")) for (const r of DUCT_RULES) for (const n of [r.name, r.src]) assert.ok(!EN.test(tx(n, l)), `${l}: 덕트 기준 «${n.en}» → «${tx(n, l)}»`);
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
 });

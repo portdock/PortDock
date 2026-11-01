@@ -8,14 +8,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { leadOhm, va } from "../lib/ct";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/ct-ratio/";
 // 선 굵기·편도 길이별 왕복 선 부담(20 °C 구리) — 5 A·1 A
 const leadRows = [1.5, 2.5, 4].flatMap((a) => [5, 10, 20, 50].map((m) => {
@@ -24,9 +25,11 @@ const leadRows = [1.5, 2.5, 4].flatMap((a) => [5, 10, 20, 50].map((m) => {
 }));
 // 원문: ABB Library 의 1VAP420003-TG(문서 ID 로 내려받으면 이 주소로 감, 10/24 확인 — 끝 쪽에 «1VAP420003-TG December 2004 Rev. A»)
 const ABB_IT_GUIDE = "https://library.e.abb.com/public/e2462bd7f816437ac1256f9a007629cf/ITTechInfoAppGuide.pdf";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "CT 비·2차 전류·부담 계산기",
+      seo: "CT 비 계산기 — 2차 전류·CT 부담 계산 — PortDock",
       desc: "변류기(CT) 비로 1차 ↔ 2차 전류를 바꾸고, 왕복 선 저항과 계기 부담(VA)을 더한 전체 부담(VA·Ω)을 CT 정격 부담과 비교합니다. 1 A·5 A 2차.",
       ipn: "CT 1차 정격 (A)",
       isn: "CT 2차 정격",
@@ -78,18 +81,16 @@ const L = ko
         ["CT 비 오차는 어떻게 보나요?", "같은 때 잰 1차·2차 전류로 실제 비를 내고 표시 비로 나누면 비 보정 계수(RCF)입니다. ABB 가이드의 예처럼 실제 20.2 : 1, 표시 20 : 1 이면 RCF 1.01, 비 오차 1 % 이고, 계기는 1 % 낮게 읽습니다."],
         ["1 A 와 5 A 2차 중 무엇을 쓰나요?", "ABB 가이드는 CT 의 보통 출력을 1~5 A 로 적습니다(p.4). 같은 선에서 1 A 2차의 선 부담은 5 A 의 1/25 이라 배선이 긴 곳에 유리합니다. 계기 입력이 어느 쪽을 받는지 먼저 확인합니다."],
       ],
-      pNote: "전력 미터에서 읽은 전류·전력으로 kVA·역률을 볼 때는",
-      pLink: "3상 전력 계산기",
-      wNote: "선 굵기별 저항·전압 강하는",
-      wLink: "전압 강하·전선 굵기 계산기",
-      gNote: "CT 비 설정·부담·2차 개방을 정리한 글:",
-      gLink: "CT 비·2차 전류·부담 기초",
       srcTitle: "근거",
       srcLink: "ABB 가이드 원문 PDF (ABB Library)",
       src: "CT 비·RCF·표준 부담·2차 개방 주의는 ABB «Instrument Transformers — Technical Information and Application Guide»(1VAP420003-TG, December 2004 Rev. A) p.4·5·10·13·26 을 따랐습니다. VA = I²R 은 정의식, 구리 저항률은 IEC 60028(1/58 Ω·mm²/m, 0.00393 /°C)로 전압 강하 계산기와 같습니다. 계기 입력 부담은 각 계기 사양서를 보세요.",
+      see: ["CT 비 설정·부담·2차 개방을 정리한 글: ", ". 전력 미터에서 읽은 전류·전력으로 kVA·역률을 볼 때는 ", ". 선 굵기별 저항·전압 강하는 ", "."],
+      seeLinks: ["CT 비·2차 전류·부담 기초", "3상 전력 계산기", "전압 강하·전선 굵기 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "CT Ratio, Secondary Current & Burden Calculator",
+      seo: "CT Ratio & Burden Calculator: Secondary Current, VA — PortDock",
       desc: "Primary ↔ secondary current by CT ratio, and total burden (VA, Ω) from round-trip leads and the meter against the CT rating. For 1 A and 5 A secondaries.",
       ipn: "CT rated primary (A)",
       isn: "CT rated secondary",
@@ -141,16 +142,13 @@ const L = ko
         ["How do I check CT ratio error?", "Divide the actual ratio (primary and secondary measured together) by the marked ratio: that is the ratio correction factor (RCF). As in ABB's example, 20.2 : 1 actual against 20 : 1 marked is RCF 1.01, a 1 % ratio error, and the meter reads 1 % low."],
         ["1 A or 5 A secondary?", "ABB's guide gives typical CT outputs of 1–5 A (p.4). On the same wire a 1 A secondary has 1/25 of the lead burden of 5 A, which helps on long runs. Check which input your meter takes first."],
       ],
-      pNote: "For kVA and power factor from a meter's current and power, use the",
-      pLink: "Three-Phase Power Calculator",
-      wNote: "For wire resistance and voltage drop by size, use the",
-      wLink: "Voltage Drop & Wire Size Calculator",
-      gNote: "Guide on CT ratio settings, burden and open secondaries:",
-      gLink: "CT ratio, secondary current and burden basics",
       srcTitle: "Basis",
       srcLink: "ABB guide PDF (ABB Library)",
       src: "CT ratio, RCF, standard burdens and the open-secondary warning follow ABB «Instrument Transformers — Technical Information and Application Guide» (1VAP420003-TG, December 2004 Rev. A) pp.4, 5, 10, 13, 26. VA = I²R is a definition; copper resistivity follows IEC 60028 (1/58 Ω·mm²/m, 0.00393 /°C) as in the voltage drop calculator. Meter input burdens come from each meter's datasheet.",
-    };
+      see: ["Guide on CT ratio settings, burden and open secondaries: ", ". For kVA and power factor from a meter's current and power, use the ", ". For wire resistance and voltage drop by size, use the ", "."],
+      seeLinks: ["CT ratio, secondary current and burden basics", "Three-Phase Power Calculator", "Voltage Drop & Wire Size Calculator"],
+    }
+  : { ...page6(lang, "ctRatio"), seeLinks: ["guides/ct-ratio-burden/", "tools/three-phase-power/", "tools/voltage-drop/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -158,17 +156,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "CT 비 계산기 — 2차 전류·CT 부담 계산 — PortDock" : "CT Ratio & Burden Calculator: Secondary Current, VA — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ctRatio"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ct">
+    <form class="calc card" id="ct" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.ipn}<input id="ipn" class="mono" value="200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.isn}<select id="isn"><option value="5" selected>5 A</option><option value="1">1 A</option></select></label>
@@ -249,7 +247,7 @@ const ld = {
         ))
       }
       <p>
-        {L.gNote} <a href={url(lang, "guides/ct-ratio-burden/")}>{L.gLink}</a>. {L.pNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pLink}</a>. {L.wNote} <a href={url(lang, "tools/voltage-drop/")}>{L.wLink}</a>.
+        {L.see[0]}<a href={link(lang, "guides/ct-ratio-burden/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/three-phase-power/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "tools/voltage-drop/")}>{L.seeLinks[2]}</a>{L.see[3]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -259,8 +257,9 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { burden, loadPct, ratio, ratioError, toPrimary, toSecondary } from "../lib/ct";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("ct")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("ct") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -292,7 +291,7 @@ const ld = {
         set("pri", Number.isNaN(is) ? "" : `${p4(toPrimary(is, ipn, isn))} A`);
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 정격은 0 보다 크고, 전류는 0 이상" : "Check the numbers — ratings above 0, currents 0 or more";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 정격은 0 보다 크고, 전류는 0 이상", "Check the numbers — ratings above 0, currents 0 or more");
         clear(["ratio", "sec", "load", "pri"]);
       }
       // 2) 부담
@@ -304,22 +303,22 @@ const ld = {
         set("lva", `${p4(b.leadVa)} VA`);
         set("mo", `${p4(b.meterOhm)} Ω`);
         set("tot", `${p4(b.totalOhm)} Ω = ${p4(b.totalVa)} VA`);
-        set("pct", b.pctOfRated == null ? "" : `${p4(b.pctOfRated)} %${b.pctOfRated > 100 ? (ko ? " — 정격 부담을 넘음" : " — over the rated burden") : ""}`);
+        set("pct", b.pctOfRated == null ? "" : `${p4(b.pctOfRated)} %${b.pctOfRated > 100 ? (msg(lang, " — 정격 부담을 넘음", " — over the rated burden")) : ""}`);
         set("v", `${p4(b.volts)} V`);
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "부담 칸을 확인하세요 — 거리·VA·저항은 0 이상, 굵기·정격 부담은 0 보다 커야 합니다" : "Check the burden fields — distance, VA and resistance 0 or more; size and rated burden above 0";
+        $("err2").textContent = msg(lang, "부담 칸을 확인하세요 — 거리·VA·저항은 0 이상, 굵기·정격 부담은 0 보다 커야 합니다", "Check the burden fields — distance, VA and resistance 0 or more; size and rated burden above 0");
         clear(["lo", "lva", "mo", "tot", "pct", "v"]);
       }
       // 3) RCF
       try {
         const e = ratioError(num("mp"), num("ms"), ipn, isn);
         set("rcf", p4(e.rcf));
-        set("re", `${e.pct >= 0 ? "+" : ""}${p4(e.pct)} %${e.pct > 0 ? (ko ? " (계기가 낮게 읽음)" : " (meter reads low)") : e.pct < 0 ? (ko ? " (계기가 높게 읽음)" : " (meter reads high)") : ""}`);
+        set("re", `${e.pct >= 0 ? "+" : ""}${p4(e.pct)} %${e.pct > 0 ? (msg(lang, " (계기가 낮게 읽음)", " (meter reads low)")) : e.pct < 0 ? (msg(lang, " (계기가 높게 읽음)", " (meter reads high)")) : ""}`);
         set("corr", `× ${p4(e.rcf)}`);
         $("err3").textContent = "";
       } catch {
-        $("err3").textContent = ko ? "잰 전류와 CT 정격을 확인하세요 — 모두 0 보다 커야 합니다" : "Check the measured currents and CT rating — all above 0";
+        $("err3").textContent = msg(lang, "잰 전류와 CT 정격을 확인하세요 — 모두 0 보다 커야 합니다", "Check the measured currents and CT rating — all above 0");
         clear(["rcf", "re", "corr"]);
       }
     }

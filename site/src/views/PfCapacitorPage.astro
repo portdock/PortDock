@@ -9,18 +9,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { kFactor } from "../lib/power";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/pf-capacitor/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "역률 개선 콘덴서 용량 계산기 (kvar·µF)",
+      seo: "역률 개선 콘덴서 용량 계산기 — kvar·µF·Δ/Y — PortDock",
       desc: "부하 kW 와 지금 역률·목표 역률로 역률 개선 콘덴서 용량(kvar)을 구하고, 3상 Δ·Y 결선 콘덴서 하나의 µF, 개선 전후 전류·kVA 를 계산합니다. 50·60 Hz.",
       phase: "전원",
       p3: "3상 (선간 전압)",
@@ -70,16 +73,14 @@ const L = ko
         ["Δ 와 Y 중 무엇이 나은가요?", "같은 kvar 를 내려면 Y 는 콘덴서마다 Δ 의 3배 용량이 필요하지만 걸리는 전압은 1/√3 입니다. 시중 3상 콘덴서는 정격 전압·kvar 로 팔리므로 제품의 정격 전압이 선간 전압에 맞는지 봅니다."],
         ["역률을 1.0 으로 맞추면 좋은가요?", "부하가 줄면 진상이 되고, 모터에 직접 단 경우 자기 여자 위험이 있어 보통 그보다 낮게 잡습니다. 위 «목표를 얼마로 잡나» 를 보세요."],
       ],
-      pwNote: "kVA·kW·kvar·전류를 서로 바꾸려면",
-      pwLink: "3상 전력 계산기",
-      mcNote: "모터 정격 전류는",
-      mcLink: "모터 전류 계산기",
-      xNote: "콘덴서 하나의 리액턴스·전류는",
-      xLink: "리액턴스·LC 공진 계산기",
       srcTitle: "출처",
+      see: ["kVA·kW·kvar·전류를 서로 바꾸려면 ", ". 모터 정격 전류는 ", ". 콘덴서 하나의 리액턴스·전류는 ", "."],
+      seeLinks: ["3상 전력 계산기", "모터 전류 계산기", "리액턴스·LC 공진 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Power Factor Correction Capacitor Calculator (kvar, µF)",
+      seo: "Power Factor Correction Capacitor Calculator: kvar, µF — PortDock",
       desc: "Capacitor kvar to raise a kW load from cos φ1 to cos φ2, µF per capacitor for delta or star banks, and current and kVA before and after. 50 or 60 Hz.",
       phase: "Supply",
       p3: "Three-phase (line-to-line)",
@@ -129,14 +130,11 @@ const L = ko
         ["Delta or star?", "For the same kvar, star needs three times the capacitance per capacitor but sees 1/√3 of the voltage. Three-phase capacitor units are sold by rated voltage and kvar, so check the unit's rated voltage against the line voltage."],
         ["Should I correct to exactly 1.0?", "It turns leading when the load drops, and at a motor it risks self-excitation, so targets are usually lower. See «Choosing the target» above."],
       ],
-      pwNote: "To convert kVA, kW, kvar and amps, use the",
-      pwLink: "Three-Phase Power Calculator",
-      mcNote: "For a motor's rated current, use the",
-      mcLink: "Motor Current Calculator",
-      xNote: "For one capacitor's reactance and current, use the",
-      xLink: "Reactance & LC Resonance Calculator",
       srcTitle: "Sources",
-    };
+      see: ["To convert kVA, kW, kvar and amps, use the ", ". For a motor's rated current, use the ", ". For one capacitor's reactance and current, use the ", "."],
+      seeLinks: ["Three-Phase Power Calculator", "Motor Current Calculator", "Reactance & LC Resonance Calculator"],
+    }
+  : { ...page6(lang, "pfCapacitor"), seeLinks: ["tools/three-phase-power/", "tools/motor-current/", "tools/reactance/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -150,17 +148,17 @@ const PF1 = [0.6, 0.65, 0.7, 0.75, 0.8];
 const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFactor(p, t).toFixed(3))]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "역률 개선 콘덴서 용량 계산기 — kvar·µF·Δ/Y — PortDock" : "Power Factor Correction Capacitor Calculator: kvar, µF — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["pfCapacitor"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pc">
+    <form class="calc card" id="pc" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option></select></label>
         <label class="fld">{L.v}<input id="v" class="mono" value="400" list="volts" inputmode="decimal" spellcheck="false" autocomplete="off" />
@@ -220,7 +218,7 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
         ))
       }
       <p>
-        {L.pwNote} <a href={url(lang, "tools/three-phase-power/")}>{L.pwLink}</a>. {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/three-phase-power/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/motor-current/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "tools/reactance/")}>{L.seeLinks[2]}</a>{L.see[3]}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -229,8 +227,9 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { capacitor, pfAfter, type Conn, type Ph } from "../lib/power";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("pc")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("pc") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -274,11 +273,11 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
           const pf = pfAfter(p, pf1, inst);
           vd.className = `verdict ${q >= 0 ? "ok" : "fault"}`;
           vd.textContent = q >= 0
-            ? ko ? `${fx(inst)} kvar 를 달면 역률 ${fx(pf, 3)} (지상) — 남는 무효 전력 ${fx(q)} kvar` : `${fx(inst)} kvar gives power factor ${fx(pf, 3)} (lagging) — ${fx(q)} kvar reactive left`
-            : ko ? `${fx(inst)} kvar 는 과보상 — 역률 ${fx(pf, 3)} 진상(무효 전력 ${fx(-q)} kvar 가 거꾸로 남음)` : `${fx(inst)} kvar over-compensates — power factor ${fx(pf, 3)} leading (${fx(-q)} kvar the other way)`;
+            ? msg(lang, `${fx(inst)} kvar 를 달면 역률 ${fx(pf, 3)} (지상) — 남는 무효 전력 ${fx(q)} kvar`, `${fx(inst)} kvar gives power factor ${fx(pf, 3)} (lagging) — ${fx(q)} kvar reactive left`)
+            : msg(lang, `${fx(inst)} kvar 는 과보상 — 역률 ${fx(pf, 3)} 진상(무효 전력 ${fx(-q)} kvar 가 거꾸로 남음)`, `${fx(inst)} kvar over-compensates — power factor ${fx(pf, 3)} leading (${fx(-q)} kvar the other way)`);
         }
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — kW·전압은 0 보다 크고, 역률은 0 초과 1 이하, 목표는 지금보다 높아야 합니다" : "Check the numbers — kW and voltage above 0, power factors above 0 and at most 1, target at least the present value";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — kW·전압은 0 보다 크고, 역률은 0 초과 1 이하, 목표는 지금보다 높아야 합니다", "Check the numbers — kW and voltage above 0, power factors above 0 and at most 1, target at least the present value");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

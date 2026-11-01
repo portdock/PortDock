@@ -7,19 +7,22 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { AWGS, IEC_SIZES, awg, awgName, resistance } from "../lib/wire";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/voltage-drop/";
 const f3 = (x: number) => (x >= 100 ? x.toFixed(1) : x >= 10 ? x.toFixed(2) : x.toFixed(3));
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "전압 강하·전선 굵기 계산기",
+      seo: "전압 강하 계산기 — 전선 굵기(mm²·AWG)·24V DC — PortDock",
       desc: "직류 24 V 센서 전원부터 단상·3상까지, 전류·거리·전선 굵기(mm²·AWG)로 전압 강하와 강하율을 계산하고 허용 강하율에 맞는 최소 굵기와 최대 거리를 찾습니다.",
       sys: "회로",
       dc: "직류(2선)",
@@ -76,12 +79,15 @@ const L = ko
         ["거리는 왕복으로 넣나요, 편도로 넣나요?", "편도(전원에서 부하까지 케이블 길이)를 넣습니다. 직류·단상은 계산 안에서 가는 선과 오는 선 두 가닥을 곱합니다."],
         ["AWG 와 mm² 는 어떻게 바꾸나요?", "ASTM B258 식 d = 0.127 × 92^((36 − AWG) ÷ 39) mm 로 지름을 구하고 단면적 = π ÷ 4 × d² 입니다. 18 AWG ≈ 0.82 mm², 16 AWG ≈ 1.31 mm², 14 AWG ≈ 2.08 mm² 입니다."],
       ],
-      appNote: "4–20mA 루프처럼 전원 전압이 빠듯한 신호 배선은",
-      appLink: "4–20mA 루프 부하 계산기",
-      appNote2: "로 전송기 쪽 전압까지 확인합니다.",
+      more: ["용도별 케이블 종류(전원·통신·아날로그)는 ", " · ", " 를 보세요."],
+      moreLinks: ["케이블 선정 도우미", "AWG ↔ mm² 변환표"],
+      see: ["4–20mA 루프처럼 전원 전압이 빠듯한 신호 배선은 ", " 로 전송기 쪽 전압까지 확인합니다."],
+      seeLinks: ["4–20mA 루프 부하 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Voltage Drop & Wire Size Calculator",
+      seo: "Voltage Drop Calculator: Wire Size mm² & AWG, 24 V DC — PortDock",
       desc: "Voltage drop and % for DC (24 V supplies), single- and three-phase from current, distance and wire size (mm² or AWG), plus minimum size and maximum length.",
       sys: "Circuit",
       dc: "DC (2-wire)",
@@ -138,10 +144,12 @@ const L = ko
         ["Do I enter the round-trip or one-way length?", "One way — the cable length from supply to load. For DC and single-phase the calculation counts both conductors itself."],
         ["How do AWG and mm² convert?", "ASTM B258: d = 0.127 × 92^((36 − AWG) ÷ 39) mm and area = π ÷ 4 × d². 18 AWG ≈ 0.82 mm², 16 AWG ≈ 1.31 mm², 14 AWG ≈ 2.08 mm²."],
       ],
-      appNote: "For signal wiring with a tight supply budget, such as 4–20 mA loops, use the",
-      appLink: "4–20 mA Loop Load Calculator",
-      appNote2: "to check the voltage left at the transmitter.",
-    };
+      more: ["For cable types by use (power, communication, analog), see the ", ", ", "."],
+      moreLinks: ["cable selection helper", "AWG to mm² table"],
+      see: ["For signal wiring with a tight supply budget, such as 4–20 mA loops, use the ", " to check the voltage left at the transmitter."],
+      seeLinks: ["4–20 mA Loop Load Calculator"],
+    }
+  : { ...page6(lang, "voltageDrop"), seeLinks: ["tools/loop-load/"].map((p) => pageName(lang, p)), moreLinks: ["tools/cable-selection/", "tools/awg-mm2/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -154,17 +162,17 @@ const awgRows = AWGS.map((n) => {
 });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "전압 강하 계산기 — 전선 굵기(mm²·AWG)·24V DC — PortDock" : "Voltage Drop Calculator: Wire Size mm² & AWG, 24 V DC — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["voltageDrop"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="vd" data-t={JSON.stringify({ over: L.over, under: L.under, none: L.none })}>
+    <form class="calc card" id="vd" data-lang={lang} data-t={JSON.stringify({ over: L.over, under: L.under, none: L.none })}>
       <div class="row">
         <label class="fld">
           {L.sys}
@@ -256,16 +264,17 @@ const awgRows = AWGS.map((n) => {
         ))
       }
       <p>
-        {L.appNote} <a href={url(lang, "tools/loop-load/")}>{L.appLink}</a>{" "}{L.appNote2}
+        {L.see[0]}<a href={link(lang, "tools/loop-load/")}>{L.seeLinks[0]}</a>{L.see[1]}
       </p>
       <p>
-        {ko ? "용도별 케이블 종류(전원·통신·아날로그)는 " : "For cable types by use (power, communication, analog), see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " · " : ", "}<a href={url(lang, "tools/awg-mm2/")}>{ko ? "AWG ↔ mm² 변환표" : "AWG to mm² table"}</a>{ko ? " 를 보세요." : "."}
+        {L.more[0]}<a href={link(lang, "tools/cable-selection/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/awg-mm2/")}>{L.moreLinks[1]}</a>{L.more[2]}
       </p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { awgName, maxLength, minArea, nextAwg, nextIec, voltageDrop, type Material, type System } from "../lib/wire";
     const form = document.getElementById("vd") as HTMLFormElement;
     const T = JSON.parse(form.dataset.t ?? "{}") as { over: string; under: string; none: string };
@@ -284,7 +293,7 @@ const awgRows = AWGS.map((n) => {
       const s = x.toFixed(d);
       return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("vd")!.dataset.lang ?? "en") as Lang;
     function run() {
       const err = $("err");
       const verdict = $("verdict");
@@ -310,7 +319,7 @@ const awgRows = AWGS.map((n) => {
         verdict.className = "verdict " + (r.pct > pct ? "fault" : "ok");
         verdict.textContent = `${r.pct > pct ? T.over : T.under} (${fx(r.pct, 2)} % / ${fx(pct, 2)} %)`;
       } catch {
-        err.textContent = ko ? "숫자를 확인하세요 — 전압·단면적·허용 강하율은 0 보다 커야 합니다" : "Check the numbers — voltage, cross-section and allowed drop must be greater than 0";
+        err.textContent = msg(lang, "숫자를 확인하세요 — 전압·단면적·허용 강하율은 0 보다 커야 합니다", "Check the numbers — voltage, cross-section and allowed drop must be greater than 0");
         verdict.textContent = "";
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }

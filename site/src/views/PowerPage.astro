@@ -8,18 +8,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { fromKva } from "../lib/power";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/three-phase-power/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "3상 전력 계산기 (kVA·kW·kvar·A·역률)",
+      seo: "3상 전력 계산기 — kVA·kW·kvar·전류·역률 — PortDock",
       desc: "3상·단상 전압과 전류·kW·kVA 중 하나, 역률로 피상·유효·무효 전력과 전류를 계산합니다. kW 와 kVA(또는 kvar)로 역률 구하기, 전압별 kVA ↔ A 표까지.",
       phase: "전원",
       p3: "3상 (선간 전압)",
@@ -61,16 +64,14 @@ const L = ko
         ["kW 와 A 로 역률을 알 수 있나요?", "전압도 알면 됩니다: 역률 = kW × 1000 ÷ (√3 × V × I). 위 «역률 구하기» 에 kW 와 kVA(= √3 × V × I ÷ 1000)를 넣어도 같습니다."],
         ["단상 220 V 에서 2.2 kVA 는?", "2200 ÷ 220 = 10 A 입니다(전원을 «단상» 으로)."],
       ],
-      mcNote: "모터 출력(kW·HP)·효율로 전류를 구하려면",
-      mcLink: "모터 전류 계산기",
-      pcNote: "역률을 콘덴서로 올리려면",
-      pcLink: "역률 개선 콘덴서 계산기",
-      ctNote: "전력 미터의 CT 비·2차 전류·부담은",
-      ctLink: "CT 비·2차 전류·부담 계산기",
       srcTitle: "출처",
+      more: ["모터 출력(kW·HP)·효율로 전류를 구하려면 ", ". 역률을 콘덴서로 올리려면 ", ". 전력 미터의 CT 비·2차 전류·부담은 ", ". 히터 용량(kW)과 히터 전류는 ", "."],
+      moreLinks: ["모터 전류 계산기", "역률 개선 콘덴서 계산기", "CT 비·2차 전류·부담 계산기", "히터 용량 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Three-Phase Power Calculator (kVA, kW, kvar, A, PF)",
+      seo: "Three-Phase Power Calculator: kVA, kW, kvar, Amps — PortDock",
       desc: "Three- or single-phase: from voltage, one of amps, kW or kVA, and power factor, get apparent, real and reactive power and current. Power factor from kW and kVA.",
       phase: "Supply",
       p3: "Three-phase (line-to-line)",
@@ -112,14 +113,11 @@ const L = ko
         ["Can I get the power factor from kW and amps?", "With the voltage, yes: power factor = kW × 1000 ÷ (√3 × V × I). Entering kW and kVA (= √3 × V × I ÷ 1000) under «Find the power factor» gives the same."],
         ["What is 2.2 kVA at 220 V single-phase?", "2200 ÷ 220 = 10 A (set the supply to single-phase)."],
       ],
-      mcNote: "To get current from motor output (kW, HP) and efficiency, use the",
-      mcLink: "Motor Current Calculator",
-      pcNote: "To raise the power factor with capacitors, use the",
-      pcLink: "Power Factor Correction Capacitor Calculator",
-      ctNote: "For a power meter's CT ratio, secondary current and burden, use the",
-      ctLink: "CT Ratio & Burden Calculator",
       srcTitle: "Sources",
-    };
+      more: ["To get current from motor output (kW, HP) and efficiency, use the ", ". To raise the power factor with capacitors, use the ", ". For a power meter's CT ratio, secondary current and burden, use the ", ". For heater kW and heater current, use the ", "."],
+      moreLinks: ["Motor Current Calculator", "Power Factor Correction Capacitor Calculator", "CT Ratio & Burden Calculator", "Heater Power Calculator"],
+    }
+  : { ...page6(lang, "power"), moreLinks: ["tools/motor-current/", "tools/pf-capacitor/", "tools/ct-ratio/", "tools/heater-power/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -133,17 +131,17 @@ const KVAS = [1, 5, 10, 30, 50, 100, 300, 500, 1000];
 const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => fromKva("3", v, k, 1).amps.toFixed(k < 10 ? 2 : 1))]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "3상 전력 계산기 — kVA·kW·kvar·전류·역률 — PortDock" : "Three-Phase Power Calculator: kVA, kW, kvar, Amps — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["power"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pw">
+    <form class="calc card" id="pw" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option></select></label>
         <label class="fld">{L.v}<input id="v" class="mono" value="380" list="volts" inputmode="decimal" spellcheck="false" autocomplete="off" />
@@ -200,7 +198,7 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
         ))
       }
       <p>
-        {L.mcNote} <a href={url(lang, "tools/motor-current/")}>{L.mcLink}</a>. {L.pcNote} <a href={url(lang, "tools/pf-capacitor/")}>{L.pcLink}</a>. {L.ctNote} <a href={url(lang, "tools/ct-ratio/")}>{L.ctLink}</a>. {ko ? "히터 용량(kW)과 히터 전류는" : "For heater kW and heater current, use the"} <a href={url(lang, "tools/heater-power/")}>{ko ? "히터 용량 계산기" : "Heater Power Calculator"}</a>.
+        {L.more[0]}<a href={link(lang, "tools/motor-current/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/pf-capacitor/")}>{L.moreLinks[1]}</a>{L.more[2]}<a href={link(lang, "tools/ct-ratio/")}>{L.moreLinks[2]}</a>{L.more[3]}<a href={link(lang, "tools/heater-power/")}>{L.moreLinks[3]}</a>{L.more[4]}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -209,8 +207,9 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { fromAmps, fromKva, fromKw, pfFromKwKva, pfFromKwKvar, type Ph } from "../lib/power";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("pw")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("pw") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -242,7 +241,7 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
         set("deg", `${fx(r.deg, 2)}°`);
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 전압은 0 보다 크고, 역률은 0 초과 1 이하입니다" : "Check the numbers — voltage above 0, power factor above 0 and at most 1";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 전압은 0 보다 크고, 역률은 0 초과 1 이하입니다", "Check the numbers — voltage above 0, power factor above 0 and at most 1");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
       const out = $("pout");
@@ -251,9 +250,9 @@ const rows = KVAS.map((k) => [String(k), ...[220, 380, 400, 440].map((v) => from
         const kvar = num("qkvar");
         const pf = Number.isFinite(kvar) ? pfFromKwKvar(kw, kvar) : pfFromKwKva(kw, num("qkva"));
         const s = Number.isFinite(kvar) ? Math.hypot(kw, kvar) : num("qkva");
-        out.textContent = `${ko ? "역률" : "Power factor"} ${fx(pf, 4)} (φ ${fx((Math.acos(pf) * 180) / Math.PI, 2)}°)  ·  S ${fx(s)} kVA  ·  Q ${fx(Math.sqrt(Math.max(0, s * s - kw * kw)))} kvar`;
+        out.textContent = `${msg(lang, "역률", "Power factor")} ${fx(pf, 4)} (φ ${fx((Math.acos(pf) * 180) / Math.PI, 2)}°)  ·  S ${fx(s)} kVA  ·  Q ${fx(Math.sqrt(Math.max(0, s * s - kw * kw)))} kvar`;
       } catch {
-        out.textContent = ko ? "kW 는 0 보다 크고 kVA 이하여야 합니다" : "kW must be above 0 and not above kVA";
+        out.textContent = msg(lang, "kW 는 0 보다 크고 kVA 이하여야 합니다", "kW must be above 0 and not above kVA");
       }
     }
     form.addEventListener("input", run);

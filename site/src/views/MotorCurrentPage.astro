@@ -7,18 +7,21 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/motor-current/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "모터 전류 계산기 (kW → A)",
+      seo: "모터 전류 계산기 — 3상 kW → A·효율·역률 — PortDock",
       desc: "3상·단상·직류 모터의 출력(kW·HP)·전압·효율·역률로 정격 전류와 입력 전력·kVA 를 계산하고, 명판의 전류로 효율을 거꾸로 확인합니다. 정격 토크까지.",
       phase: "전원",
       p3: "3상(선간 전압)",
@@ -75,11 +78,18 @@ const L = ko
         ["HP 모터도 되나요?", "출력 단위를 hp(550 ft·lbf/s ≈ 0.7457 kW)나 PS(미터 마력 ≈ 0.7355 kW)로 바꾸면 됩니다."],
       ],
       srcTitle: "출처",
-      vdNote: "전선 길이에 따른 전압 강하는",
-      vdLink: "전압 강하·전선 굵기 계산기",
+      more: ["측정한 kW·kVA·전류·역률을 서로 바꾸려면 ", ", 역률을 콘덴서로 올리려면 ", " 를 쓰세요."],
+      moreLinks: ["3상 전력 계산기", "역률 개선 콘덴서 계산기"],
+      kecSrc: "한국전기설비규정(KEC), 공고 제2025-227호 — 212.4.1, 232.5",
+      figAlt: "모터 전류 계산 흐름: 명판 출력 7.5 kW 를 효율 0.9 로 나눠 입력 8.33 kW, 역률 0.85 로 나눠 9.80 kVA, √3 × 380 V 로 나눠 14.9 A",
+      figCap: "축 출력에서 효율·역률·전압 순으로 나눠 전류를 얻습니다(3상 7.5 kW 예).",
+      see: ["전선 길이에 따른 전압 강하는 ", "."],
+      seeLinks: ["전압 강하·전선 굵기 계산기"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Motor Current Calculator (kW to Amps)",
+      seo: "Motor Current Calculator: kW to Amps, 3-Phase, HP — PortDock",
       desc: "Motor current, input power and kVA from output (kW or HP), voltage, efficiency and power factor — three-phase, single-phase or DC. Nameplate efficiency, torque.",
       phase: "Supply",
       p3: "Three-phase (line-to-line)",
@@ -136,9 +146,15 @@ const L = ko
         ["Does it work for HP motors?", "Set the output unit to hp (550 ft·lbf/s ≈ 0.7457 kW) or PS (metric, ≈ 0.7355 kW)."],
       ],
       srcTitle: "Sources",
-      vdNote: "For voltage drop over the cable length, use the",
-      vdLink: "Voltage Drop & Wire Size Calculator",
-    };
+      more: ["To convert measured kW, kVA, amps and power factor, use the ", "; to raise the power factor with capacitors, the ", "."],
+      moreLinks: ["Three-Phase Power Calculator", "Power Factor Correction Capacitor Calculator"],
+      kecSrc: "Korea Electro-technical Code (KEC), notice 2025-227 — 212.4.1, 232.5",
+      figAlt: "Motor current chain: 7.5 kW output ÷ efficiency 0.9 = 8.33 kW input ÷ power factor 0.85 = 9.80 kVA ÷ (√3 × 380 V) = 14.9 A",
+      figCap: "From shaft output, divide by efficiency, power factor and voltage to get the current (three-phase 7.5 kW example).",
+      see: ["For voltage drop over the cable length, use the ", "."],
+      seeLinks: ["Voltage Drop & Wire Size Calculator"],
+    }
+  : { ...page6(lang, "motorCurrent"), seeLinks: ["tools/voltage-drop/"].map((p) => pageName(lang, p)), moreLinks: ["tools/three-phase-power/", "tools/pf-capacitor/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -147,22 +163,22 @@ const ld = {
 const SRC = [
   { name: "ABB, Technical guide No. 7 — Dimensioning of a drive system (3AFE64362569 Rev D), «Induction (AC) motor»: eq. 3.13–3.16, examples 3.3–3.4", href: "https://library.e.abb.com/public/e555e5106a3c44e882f48b75a44f6807/Technical_guide_No_7_3AFE64362569_RevD_EN_lowres.pdf" },
   { name: "ABB, Low voltage motors — Motor guide (2019): §3.8 Tolerances, §4 Power factor, §4.5 Starting", href: "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf" },
-  { name: ko ? "한국전기설비규정(KEC), 공고 제2025-227호 — 212.4.1, 232.5" : "Korea Electro-technical Code (KEC), notice 2025-227 — 212.4.1, 232.5", href: "https://www.law.go.kr/admRulSc.do?menuId=5&query=%ED%95%9C%EA%B5%AD%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B7%9C%EC%A0%95" },
+  { name: L.kecSrc, href: "https://www.law.go.kr/admRulSc.do?menuId=5&query=%ED%95%9C%EA%B5%AD%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B7%9C%EC%A0%95" },
 ];
-const fig = `/img/guides/motor-current-chain.${lang}.svg`;
+const fig = `/img/guides/motor-current-chain.${lang === "ko" ? "ko" : "en"}.svg`;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "모터 전류 계산기 — 3상 kW → A·효율·역률 — PortDock" : "Motor Current Calculator: kW to Amps, 3-Phase, HP — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["motorCurrent"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="mc">
+    <form class="calc card" id="mc" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.phase}<select id="ph"><option value="3" selected>{L.p3}</option><option value="1">{L.p1}</option><option value="dc">{L.dc}</option></select></label>
         <label class="fld">{L.pw}<input id="p" class="mono" value="7.5" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -202,8 +218,8 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
     <section class="prose">
       <h2>{L.fTitle}</h2>
       <figure class="fig">
-        <img src={fig} width="780" height="250" alt={ko ? "모터 전류 계산 흐름: 명판 출력 7.5 kW 를 효율 0.9 로 나눠 입력 8.33 kW, 역률 0.85 로 나눠 9.80 kVA, √3 × 380 V 로 나눠 14.9 A" : "Motor current chain: 7.5 kW output ÷ efficiency 0.9 = 8.33 kW input ÷ power factor 0.85 = 9.80 kVA ÷ (√3 × 380 V) = 14.9 A"} loading="lazy" decoding="async" />
-        <figcaption>{ko ? "축 출력에서 효율·역률·전압 순으로 나눠 전류를 얻습니다(3상 7.5 kW 예)." : "From shaft output, divide by efficiency, power factor and voltage to get the current (three-phase 7.5 kW example)."}</figcaption>
+        <img src={fig} width="780" height="250" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
       </figure>
       <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
       <p>{L.fNote}</p>
@@ -214,10 +230,10 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
       <h2>{L.cbTitle}</h2>
       <ul>{L.cb.map((x) => <li>{x}</li>)}</ul>
       <p>
-        {L.vdNote} <a href={url(lang, "tools/voltage-drop/")}>{L.vdLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/voltage-drop/")}>{L.seeLinks[0]}</a>{L.see[1]}
       </p>
       <p>
-        {ko ? "측정한 kW·kVA·전류·역률을 서로 바꾸려면" : "To convert measured kW, kVA, amps and power factor, use the"} <a href={url(lang, "tools/three-phase-power/")}>{ko ? "3상 전력 계산기" : "Three-Phase Power Calculator"}</a>{ko ? ", 역률을 콘덴서로 올리려면 " : "; to raise the power factor with capacitors, the "}<a href={url(lang, "tools/pf-capacitor/")}>{ko ? "역률 개선 콘덴서 계산기" : "Power Factor Correction Capacitor Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.more[0]}<a href={link(lang, "tools/three-phase-power/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/pf-capacitor/")}>{L.moreLinks[1]}</a>{L.more[2]}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -235,6 +251,7 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { efficiencyFrom, motorCurrent, torqueNm, type Phase } from "../lib/motor";
     import { convert } from "../lib/units";
     const form = document.getElementById("mc") as HTMLFormElement;
@@ -253,7 +270,7 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
       const s = x.toFixed(d);
       return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("mc")!.dataset.lang ?? "en") as Lang;
     function run() {
       const phase = $<HTMLSelectElement>("ph").value as Phase;
       $("pf").disabled = phase === "dc";
@@ -270,13 +287,13 @@ const fig = `/img/guides/motor-current-chain.${lang}.svg`;
         set("torque", rpm > 0 ? `${fx(torqueNm(kw, rpm))} N·m (${fx(torqueNm(kw, rpm) / 9.80665)} kgf·m)` : "—");
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 전압은 0 보다 크고, 효율은 0~100 %, 역률은 0~1" : "Check the numbers — voltage above 0, efficiency 0–100 %, power factor 0–1";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 전압은 0 보다 크고, 효율은 0~100 %, 역률은 0~1", "Check the numbers — voltage above 0, efficiency 0–100 %, power factor 0–1");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
       try {
         const e = efficiencyFrom({ phase, kw: num("ckw"), volts: num("cv"), amps: num("ca"), pf: num("cpf") });
         if (!Number.isFinite(e)) throw new Error();
-        $("cout").textContent = `${ko ? "효율" : "Efficiency"} η = ${fx(e * 100, 1)} %${e > 1 ? (ko ? " — 100 % 를 넘음: 값 확인" : " — above 100 %: check the values") : ""}`;
+        $("cout").textContent = `${msg(lang, "효율", "Efficiency")} η = ${fx(e * 100, 1)} %${e > 1 ? (msg(lang, " — 100 % 를 넘음: 값 확인", " — above 100 %: check the values")) : ""}`;
       } catch {
         $("cout").textContent = "";
       }

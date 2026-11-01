@@ -7,14 +7,16 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { DUCT_RULES } from "../lib/conduitFill";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/conduit-fill/";
 const ROWS: [string, string][] = [
   ["3.0", "10"],
@@ -22,9 +24,11 @@ const ROWS: [string, string][] = [
   ["", ""],
   ["", ""],
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "전선관·덕트 점유율 계산기",
+      seo: "전선관 점유율 계산 — 전선관·덕트 몇 가닥 (NEC 40%) — PortDock",
       desc: "전선 외경과 개수로 전선관·덕트 점유율 % 를 계산하고, 전선관 NEC 53·31·40 %, 와이어웨이 20 %, 제어반 덕트 NFPA 79 50 % 와 비교합니다.",
       mode: "넣을 곳",
       conduit: "전선관(원형)",
@@ -65,9 +69,13 @@ const L = ko
         ["왜 2가닥이 31 % 로 가장 낮나요?", "흔한 설명은 두 가닥이 관 안에서 나란히 서면 관 지름 방향을 채워 당길 때 끼기 쉽다는 것입니다. 표는 1가닥(53 %)·3가닥 이상(40 %)보다 낮게 둡니다."],
         ["제어반 배선 덕트는 몇 % 까지 채우나요?", "NFPA 79 는 덕트 내부 단면적의 50 % 이하를 둡니다. 나중에 배선을 더할 여유도 이 정도에서 남깁니다."],
       ],
+      more: ["전선 굵기를 고르려면 ", " 와 ", " 를, 통신선과 동력선을 같은 덕트에 넣어도 되는지는 ", " 를 봅니다."],
+      moreLinks: ["케이블 선정 도우미", "AWG ↔ mm² 변환표", "현장 노이즈 가이드"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Conduit & Duct Fill Calculator",
+      seo: "Conduit Fill Calculator (mm): NEC 40 %, Panel Duct — PortDock",
       desc: "Conduit or duct fill % from wire diameters and counts, against NEC conduit fill (53/31/40 %), wireways (20 %) and NFPA 79 panel duct (50 %).",
       mode: "Where",
       conduit: "Conduit (round)",
@@ -108,7 +116,10 @@ const L = ko
         ["Why is two conductors the lowest at 31 %?", "The usual explanation is that two conductors side by side span the conduit's diameter and can jam when pulled; the table sets the limit lower than for one (53 %) or three or more (40 %)."],
         ["How full can panel wiring duct be?", "NFPA 79 limits fill to 50 % of the duct's interior area, which also leaves room for wiring added later."],
       ],
-    };
+      more: ["To pick wire sizes, see the ", " and the ", "; whether signal and power cables may share a duct is covered in ", "."],
+      moreLinks: ["cable selection helper", "AWG to mm² table", "the field noise guide"],
+    }
+  : { ...page6(lang, "conduitFill"), moreLinks: ["tools/cable-selection/", "tools/awg-mm2/", "guides/field-noise-communication-errors/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -116,11 +127,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "전선관 점유율 계산 — 전선관·덕트 몇 가닥 (NEC 40%) — PortDock" : "Conduit Fill Calculator (mm): NEC 40 %, Panel Duct — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -137,7 +148,7 @@ const ld = {
         <label class="fld" data-mode="duct" hidden>{L.h}<input id="h" class="mono" value="60" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld" data-mode="duct" hidden>
           {L.rule}
-          <select id="rule">{DUCT_RULES.map((r) => <option value={r.id}>{r.name[lang]}</option>)}</select>
+          <select id="rule">{DUCT_RULES.map((r) => <option value={r.id}>{tx(r.name, lang)}</option>)}</select>
         </label>
       </div>
       <p class="note">{L.wires}</p>
@@ -185,7 +196,7 @@ const ld = {
         ))
       }
       <p>
-        {ko ? "전선 굵기를 고르려면 " : "To pick wire sizes, see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " 와 " : " and the "}<a href={url(lang, "tools/awg-mm2/")}>{ko ? "AWG ↔ mm² 변환표" : "AWG to mm² table"}</a>{ko ? " 를, 통신선과 동력선을 같은 덕트에 넣어도 되는지는 " : "; whether signal and power cables may share a duct is covered in "}<a href={url(lang, "guides/field-noise-communication-errors/")}>{ko ? "현장 노이즈 가이드" : "the field noise guide"}</a>{ko ? " 를 봅니다." : "."}
+        {L.more[0]}<a href={link(lang, "tools/cable-selection/")}>{L.moreLinks[0]}</a>{L.more[1]}<a href={link(lang, "tools/awg-mm2/")}>{L.moreLinks[1]}</a>{L.more[2]}<a href={link(lang, "guides/field-noise-communication-errors/")}>{L.moreLinks[2]}</a>{L.more[3]}
       </p>
     </section>
     <UseNotice lang={lang} />

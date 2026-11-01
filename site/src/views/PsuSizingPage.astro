@@ -7,16 +7,19 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { KINDS, STD_RATINGS } from "../lib/psuSizing";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import type { SiteLang } from "../i18n/langs";
+import { page6 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/power-supply-sizing/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "24V DC 전원 용량 계산기",
       seo: "24V 전원 용량 계산기 — SMPS 용량 선정·돌입 전류·여유율 — PortDock",
@@ -82,7 +85,8 @@ const L = ko
       guide: "24V DC 전원 점검 가이드",
       loop: "4–20mA 루프 부하 계산기",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "24 V DC Power Supply Sizing Calculator",
       seo: "24V Power Supply Sizing Calculator: Inrush, Margin — PortDock",
       desc: "Size a 24 V DC supply from the current, inrush and duty of PLCs, HMIs, sensors, valves, relays: total, rating with headroom, inrush check, protector channels.",
@@ -146,7 +150,8 @@ const L = ko
       vd: "Voltage drop & wire size calculator",
       guide: "24 V DC supply check guide",
       loop: "4–20 mA loop load calculator",
-    };
+    }
+  : { ...page6(lang, "psuSizing"), vd: pageName(lang, "tools/voltage-drop/"), guide: pageName(lang, "guides/24v-power-supply-check/"), loop: pageName(lang, "tools/loop-load/") };
 const T = {
   head: L.head,
   del: L.del,
@@ -166,17 +171,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["psuSizing"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ps" data-lang={lang} data-t={JSON.stringify(T)} data-p={JSON.stringify(PEAK_T)} data-kinds={JSON.stringify(KINDS.map((k) => ({ id: k.id, name: k.name[lang], group: k.group })))}>
+    <form class="calc card" id="ps" data-lang={lang} data-t={JSON.stringify(T)} data-p={JSON.stringify(PEAK_T)} data-kinds={JSON.stringify(KINDS.map((k) => ({ id: k.id, name: tx(k.name, lang), group: k.group })))}>
       <h2 class="ps-h">{L.loads}</h2>
       <div class="tbl">
         <table class="t ps-t">
@@ -230,7 +235,7 @@ const ld = {
         ))
       }
       <p>
-        {L.seeAlso} <a href={url(lang, "tools/voltage-drop/")}>{L.vd}</a> · <a href={url(lang, "guides/24v-power-supply-check/")}>{L.guide}</a> · <a href={url(lang, "tools/loop-load/")}>{L.loop}</a>
+        {L.seeAlso} <a href={link(lang, "tools/voltage-drop/")}>{L.vd}</a> · <a href={link(lang, "guides/24v-power-supply-check/")}>{L.guide}</a> · <a href={link(lang, "tools/loop-load/")}>{L.loop}</a>
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -253,12 +258,13 @@ const ld = {
     }
   </style>
   <script>
+    import { tx, type Lang } from "../lib/tr";
     import { DEFAULT_OPTS, EXAMPLE, GROUP_NAME, STORE_KEY, checkOpts, parseSaved, sizeSupply, splitChannels, type Load, type LoadKind, type Opts } from "../lib/psuSizing";
     import { esc } from "../lib/diagramSvg";
     import { store } from "../lib/fileSave";
 
     const form = document.getElementById("ps") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string> & { head: string[]; chCol: string[] };
     const P = JSON.parse(form.dataset.p ?? "{}") as { up: string; ok: string };
     const KINDS = JSON.parse(form.dataset.kinds ?? "[]") as { id: LoadKind; name: string; group: string }[];
@@ -340,7 +346,7 @@ const ld = {
       const rows = s.channels
         .map(
           (c, i) =>
-            `<tr><td class="mono">${i + 1}</td><td>${esc(GROUP_NAME[c.group][lang])}</td><td>${c.parts.map((p) => `${esc(label(p.row))} × ${p.qty}`).join(", ")}</td><td class="mono">${fx(c.amps, 3)} A</td><td class="mono">${fx(c.peakA, 3)} A</td></tr>`,
+            `<tr><td class="mono">${i + 1}</td><td>${esc(tx(GROUP_NAME[c.group], lang))}</td><td>${c.parts.map((p) => `${esc(label(p.row))} × ${p.qty}`).join(", ")}</td><td class="mono">${fx(c.amps, 3)} A</td><td class="mono">${fx(c.peakA, 3)} A</td></tr>`,
         )
         .join("");
       $("chs").innerHTML =
