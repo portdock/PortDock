@@ -1,0 +1,37 @@
+// awgMm2 — Deutsch (Quelle: englische Fassung von views/AwgMm2Page.astro). Schlüssel, Arraylängen und Funktionsformen wie im Referenzpaket ja.
+export default {
+    title: "AWG-mm²-Umrechnungstabelle",
+    seo: "AWG in mm² umrechnen: Durchmesser und Widerstand — PortDock",
+    desc: "Durchmesser und Querschnitt von AWG 0000 bis 40 (Formel nach ASTM B258), nächste metrische mm²-Größe (IEC 60228) und Kupferwiderstand in Ω/km bei 20 °C.",
+    inAwg: "AWG (z. B. 18, 2/0, 0000)",
+    inMm: "Querschnitt in mm²",
+    res: "Ergebnis",
+    k: { d: "Durchmesser (Volldraht-Äquivalent)", area: "Querschnitt", ohm: "Kupferwiderstand bei 20 °C (ein Leiter)", near: "Nächste metrische Größe", awgNear: "Nächstes AWG", awgUp: "AWG mit gleichem oder größerem Querschnitt" },
+    how: "Die Ergebnisse ändern sich sofort bei der Eingabe. Alles läuft in Ihrem Browser; Ihre Eingaben werden nirgendwohin gesendet.",
+    err: "AWG 0000 bis 50 eingeben (die Schreibweise 2/0 funktioniert) und einen Querschnitt größer als 0",
+    fTitle: "Formeln",
+    formula: [
+      "Durchmesser d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: AWG-Nummer; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Querschnitt A = π ÷ 4 × d²",
+      "Widerstand R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (Kupfer, 20 °C)",
+    ],
+    fNote: "Die AWG-Formel stammt aus ASTM B258; der spezifische Widerstand von Kupfer ist der Wert für weichgeglühtes Kupfer nach IEC 60028. Alle 6 Stufen verdoppelt sich der Durchmesser, alle 3 Stufen ungefähr der Querschnitt.",
+    limitTitle: "Die Tabelle richtig lesen",
+    limits: [
+      "AWG und metrische Größen stimmen nie genau überein. «Nächste» richtet sich nach dem Verhältnis der Querschnitte; eine negative Differenz heißt, dass die metrische Größe kleiner ist — wenn Strombelastbarkeit oder Spannungsabfall knapp sind, nehmen Sie die gleiche oder größere Größe.",
+      "Die Durchmesser gelten für einen Volldraht. Eine Litze mit gleichem Querschnitt ist breiter, und die Isolierung kommt dazu — für den Füllgrad von Rohren und Kanälen nehmen Sie den Außendurchmesser des Herstellers.",
+      "Realer Kabelwiderstand: IEC 60228 legt je Leiterklasse (eindrähtig, mehrdrähtig, feindrähtig) Höchstwerte fest; mehrdrähtige und verzinnte Leiter liegen etwas höher.",
+      "Die Strombelastbarkeit folgt nicht allein aus der Größe (Verlegeart, Umgebungstemperatur, Häufung) und ist hier nicht aufgeführt.",
+    ],
+    awgTitle: "AWG-Tabelle (0000 bis 40)",
+    awgHead: ["AWG", "Durchmesser mm", "Querschnitt mm²", "Ω/km (Kupfer 20 °C)", "Nächste mm² (Differenz)"],
+    mmTitle: "Metrische Größen (IEC 60228)",
+    mmHead: ["Querschnitt mm²", "Durchmesser mm (Volldraht-Äquivalent)", "Ω/km (Kupfer 20 °C)", "Nächstes AWG", "AWG gleich oder größer"],
+    faqTitle: "Häufige Fragen",
+    faq: [
+      ["Wie viele mm² sind 18 AWG?", "Etwa 0.823 mm² (1.024 mm Durchmesser). Die nächste metrische Größe ist 0.75 mm², etwas kleiner. 16 AWG sind etwa 1.31 mm², 14 AWG etwa 2.08 mm², 12 AWG etwa 3.31 mm²."],
+      ["Welches AWG entspricht 1.5 mm²?", "15 AWG (1.65 mm²) liegt am nächsten, ist aber unüblich; der übliche Ersatz in US-Größen ist daher 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) ist kleiner als 1.5 mm²."],
+      ["Was bedeuten 4/0 und 2/0?", "Größen über 0 wiederholen die Null: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG sind etwa 107 mm²."],
+    ],
+    more: ["Den Querschnitt aus Länge und Strom bestimmen: ", "; Kabeltypen nach Verwendung: ", "; wie viele Leitungen in ein Rohr passen: ", "."],
+};
