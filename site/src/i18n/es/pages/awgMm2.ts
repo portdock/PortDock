@@ -1,0 +1,37 @@
+// Tabla AWG ↔ mm² (views/AwgMm2Page.astro) — 6.º lote. more = fragmentos de texto entre enlaces (enlaces: caída de tensión · selección de cable · tubo/canal)
+export default {
+    title: "Tabla de conversión AWG a mm²",
+    seo: "Tabla AWG a mm²: diámetro y resistencia — PortDock",
+    desc: "Diámetro y área de AWG 0000 a 40 (fórmula ASTM B258), sección métrica más cercana (IEC 60228) y Ω/km del cobre a 20 °C. Convierte en ambos sentidos.",
+    inAwg: "AWG (p. ej. 18, 2/0, 0000)",
+    inMm: "Sección mm²",
+    res: "Resultado",
+    k: { d: "Diámetro (equivalente macizo)", area: "Sección", ohm: "Resistencia del cobre a 20 °C (un conductor)", near: "Sección métrica más cercana", awgNear: "AWG más cercano", awgUp: "AWG de igual o mayor área" },
+    how: "Los resultados se actualizan mientras escribe. Todo se calcula en su navegador; nada de lo que escribe se envía a ningún sitio.",
+    err: "Introduzca un AWG de 0000 a 50 (vale la notación 2/0) y una sección mayor que 0",
+    fTitle: "Fórmulas",
+    formula: [
+      "Diámetro d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: número AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Área A = π ÷ 4 × d²",
+      "Resistencia R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (cobre, 20 °C)",
+    ],
+    fNote: "La fórmula AWG procede de ASTM B258; la resistividad del cobre es el valor del cobre recocido de IEC 60028. Cada 6 calibres el diámetro se duplica; cada 3 calibres el área se duplica aproximadamente.",
+    limitTitle: "Cómo leer la tabla",
+    limits: [
+      "Las secciones AWG y métricas nunca coinciden exactamente. «Más cercana» se calcula por la relación de áreas; una diferencia negativa significa que la sección métrica es menor: si la capacidad de corriente o la caída de tensión van justas, elija la igual o mayor.",
+      "Los diámetros son los de un conductor macizo. Un cable trenzado de la misma área es más ancho y el aislamiento añade más: para el llenado de tubos y canales use el diámetro exterior del fabricante.",
+      "Resistencia real del cable: IEC 60228 fija valores máximos por clase de conductor (macizo, trenzado, flexible); los conductores trenzados y estañados son algo más altos.",
+      "La capacidad de corriente no se deduce solo de la sección (método de instalación, temperatura ambiente, agrupamiento) y no se indica aquí.",
+    ],
+    awgTitle: "Tabla AWG (0000 a 40)",
+    awgHead: ["AWG", "Diámetro mm", "Área mm²", "Ω/km (cobre 20 °C)", "mm² más cercano (diferencia)"],
+    mmTitle: "Secciones métricas (IEC 60228)",
+    mmHead: ["Área mm²", "Diámetro mm (equiv. macizo)", "Ω/km (cobre 20 °C)", "AWG más cercano", "AWG igual o mayor"],
+    faqTitle: "Preguntas frecuentes",
+    faq: [
+      ["¿Cuántos mm² son 18 AWG?", "Unos 0.823 mm² (1.024 mm de diámetro). La sección métrica más cercana es 0.75 mm², algo menor. 16 AWG son unos 1.31 mm², 14 AWG unos 2.08 mm² y 12 AWG unos 3.31 mm²."],
+      ["¿Qué AWG es 1.5 mm²?", "El más cercano es 15 AWG (1.65 mm²), pero 15 AWG es poco habitual, así que el sustituto habitual en calibres estadounidenses es 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) es menor que 1.5 mm²."],
+      ["¿Qué significan 4/0 y 2/0?", "Los calibres mayores que 0 repiten el cero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG son unos 107 mm²."],
+    ],
+    more: ["Para dimensionar un cable según longitud y corriente, use la ", "; para los tipos de cable según el uso, la ", "; para cuántos cables caben en un tubo, la ", "."],
+};

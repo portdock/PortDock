@@ -1,0 +1,37 @@
+// Tabela AWG ↔ mm² (views/AwgMm2Page.astro) — 6º lote. more = trechos de texto entre os links (links: queda de tensão · seleção de cabo · eletroduto)
+export default {
+    title: "Tabela de conversão AWG para mm²",
+    seo: "Tabela AWG para mm²: diâmetro e resistência — PortDock",
+    desc: "Diâmetro e área de AWG 0000 a 40 (fórmula ASTM B258), seção métrica mais próxima (IEC 60228) e Ω/km do cobre a 20 °C. Converte nos dois sentidos.",
+    inAwg: "AWG (ex.: 18, 2/0, 0000)",
+    inMm: "Seção mm²",
+    res: "Resultado",
+    k: { d: "Diâmetro (equivalente sólido)", area: "Seção", ohm: "Resistência do cobre a 20 °C (um condutor)", near: "Seção métrica mais próxima", awgNear: "AWG mais próximo", awgUp: "AWG de área igual ou maior" },
+    how: "Os resultados são atualizados enquanto você digita. Tudo é calculado no seu navegador; nada do que você digita é enviado a lugar nenhum.",
+    err: "Informe um AWG de 0000 a 50 (a notação 2/0 funciona) e uma seção maior que 0",
+    fTitle: "Fórmulas",
+    formula: [
+      "Diâmetro d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: número AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Área A = π ÷ 4 × d²",
+      "Resistência R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (cobre, 20 °C)",
+    ],
+    fNote: "A fórmula AWG vem da ASTM B258; a resistividade do cobre é o valor do cobre recozido da IEC 60028. A cada 6 bitolas o diâmetro dobra; a cada 3 bitolas a área aproximadamente dobra.",
+    limitTitle: "Como ler a tabela",
+    limits: [
+      "As seções AWG e métricas nunca coincidem exatamente. «Mais próxima» é pela razão de áreas; uma diferença negativa significa que a seção métrica é menor: se a capacidade de corrente ou a queda de tensão estiver apertada, escolha a igual ou maior.",
+      "Os diâmetros são de um condutor sólido. Um cabo encordoado de mesma área é mais largo e a isolação acrescenta mais: para o preenchimento de eletrodutos e calhas use o diâmetro externo do fabricante.",
+      "Resistência real do cabo: a IEC 60228 define valores máximos por classe de condutor (sólido, encordoado, flexível); condutores encordoados e estanhados são um pouco mais altos.",
+      "A capacidade de corrente não decorre só da seção (método de instalação, temperatura ambiente, agrupamento) e não é indicada aqui.",
+    ],
+    awgTitle: "Tabela AWG (0000 a 40)",
+    awgHead: ["AWG", "Diâmetro mm", "Área mm²", "Ω/km (cobre 20 °C)", "mm² mais próximo (diferença)"],
+    mmTitle: "Seções métricas (IEC 60228)",
+    mmHead: ["Área mm²", "Diâmetro mm (equiv. sólido)", "Ω/km (cobre 20 °C)", "AWG mais próximo", "AWG igual ou maior"],
+    faqTitle: "Perguntas frequentes",
+    faq: [
+      ["Quantos mm² são 18 AWG?", "Cerca de 0.823 mm² (1.024 mm de diâmetro). A seção métrica mais próxima é 0.75 mm², um pouco menor. 16 AWG são cerca de 1.31 mm², 14 AWG cerca de 2.08 mm² e 12 AWG cerca de 3.31 mm²."],
+      ["Qual AWG é 1.5 mm²?", "O mais próximo é 15 AWG (1.65 mm²), mas 15 AWG é incomum, então o substituto usual na bitola americana é 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) é menor que 1.5 mm²."],
+      ["O que significam 4/0 e 2/0?", "As bitolas maiores que 0 repetem o zero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG são cerca de 107 mm²."],
+    ],
+    more: ["Para dimensionar um fio pelo comprimento e pela corrente, use a ", "; para os tipos de cabo por aplicação, o ", "; para quantos fios cabem em um eletroduto, a ", "."],
+};
