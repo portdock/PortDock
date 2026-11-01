@@ -8,6 +8,7 @@ import { ui, type Lang } from "./uiText";
 import { dicts } from "./lang";
 import { JA_FIRST } from "./ja/parts";
 import { ES_FIRST } from "./es/parts";
+import { PT_FIRST } from "./pt/parts";
 import "./firstcard.css";
 
 const ko = {
@@ -23,7 +24,7 @@ const en: typeof ko = {
     narrow: "The window is narrow, so the left panel is folded — «left» below means the panel behind the «⚙ {b}» button at the top left.",
     open: "Open the left panel",
 };
-const L = dicts(ko, en, { ja: JA_FIRST, es: ES_FIRST });
+const L = dicts(ko, en, { ja: JA_FIRST, es: ES_FIRST, pt: PT_FIRST });
 
 export interface FirstCardLink {
   label: string;

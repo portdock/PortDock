@@ -4,6 +4,7 @@ import { ReportDialog } from "./ReportDialog";
 import { detectLang, dicts, isUiLang, type Lang } from "./lang";
 import { JA_BOUNDARY } from "./ja/parts";
 import { ES_BOUNDARY } from "./es/parts";
+import { PT_BOUNDARY } from "./pt/parts";
 
 const ko = {
   title: "화면 오류가 났습니다",
@@ -24,7 +25,7 @@ const en: typeof ko = {
   resetArm: "Really reset — click again",
   reset: "Reset settings",
 };
-const T = dicts(ko, en, { ja: JA_BOUNDARY, es: ES_BOUNDARY });
+const T = dicts(ko, en, { ja: JA_BOUNDARY, es: ES_BOUNDARY, pt: PT_BOUNDARY });
 
 /**
  * 이 프로그램의 화면 설정(명령 목록·표 등 포함)을 지우고 다시 연다 — 깨진 저장값 때문에 열자마자 같은 곳에서

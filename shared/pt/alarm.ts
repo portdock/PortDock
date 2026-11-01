@@ -1,0 +1,50 @@
+// 포르투갈어(브라질) — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const PT_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Vigilância e alarmes",
+  activeN: "{n} ativos",
+  noAlarm: "Nenhum alarme ativo — vigiando {n} condição(ões)",
+  notRunning: "A vigilância começa quando você conectar ({n} condição(ões))",
+  ackAll: "Reconhecer todos",
+  ack: "Reconhecer",
+  acked: "Reconhecido",
+  clearEnded: "Limpar encerrados",
+  sound: "Som",
+  logStart: "Log CSV…",
+  logOn: "● {n} linhas gravadas",
+  logStop: "Parar log",
+  logTitle: "Salvar log de alarmes",
+  ongoing: "em curso",
+  colKind: "Condição",
+  colName: "O quê",
+  colValue: "Valor",
+  colStart: "Disparou",
+  colEnd: "Normalizou",
+  colDur: "Duração",
+  safety: "O PortDock não é um dispositivo de segurança — é um auxílio de monitoramento. A proteção do equipamento e os intertravamentos cabem ao CLP e aos circuitos de segurança.",
+  dlgTitle: "Condições de vigilância — {a}",
+  lo: "Limite baixo (alarme abaixo)",
+  hi: "Limite alto (alarme acima)",
+  stuck: "Segundos sem mudança (travado)",
+  lost: "Segundos sem comunicação",
+  hyst: "Margem de retorno (histerese)",
+  hystHint: "Um alarme baixo normaliza em «baixo + margem» ou acima, um alto em «alto − margem» ou abaixo — assim um valor oscilando no limite não faz o alarme piscar.",
+  emptyHint: "Deixe um campo vazio para pular aquela condição. Os valores são avaliados pelo número exibido na tela (decodificado pelo tipo).",
+  save: "Salvar",
+  remove: "Remover condições",
+  close: "Fechar",
+  errLoHi: "O limite baixo deve ser menor que o alto.",
+  errSecs: "Os segundos devem ser 1–86400.",
+  errHyst: "A margem é um número de 0 ou mais.",
+  errNum: "Informe um número.",
+  errEmpty: "Informe pelo menos uma condição ou clique em «Remover condições».",
+};
+
+export const PT_KIND: Record<AlarmKind, string> = {
+  lo: "Baixo",
+  hi: "Alto",
+  stuck: "Travado",
+  lost: "Sem com.",
+};

@@ -20,6 +20,12 @@ import { ES_AR } from "./es/autoReply.ts";
 import { ES_ALARM } from "./es/alarm.ts";
 import { ES_AI_COPY } from "./es/aiCopy.ts";
 import * as ES_PARTS from "./es/parts.ts";
+import { PT_UI } from "./pt/ui.ts";
+import { PT_IO } from "./pt/io.ts";
+import { PT_AR } from "./pt/autoReply.ts";
+import { PT_ALARM } from "./pt/alarm.ts";
+import { PT_AI_COPY } from "./pt/aiCopy.ts";
+import * as PT_PARTS from "./pt/parts.ts";
 import { tip, TIP_KEYS, TIP_MORE } from "./tips.ts";
 import { buildAiCopy } from "./aiCopy.ts";
 
@@ -48,7 +54,7 @@ test("언어 목록 — 사이트와 같은 12개, 이름이 다 있고 고를 �
   assert.deepEqual([...LANGS], ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
   for (const l of LANGS) assert.ok(LANG_NAMES[l]);
   for (const l of UI_LANGS) assert.ok((LANGS as readonly string[]).includes(l));
-  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "es"]);
+  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "es", "pt"]);
 });
 
 test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 없는 언어 → en)", () => {
@@ -58,12 +64,15 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.equal(detectLang("es-ES"), "es");
   assert.equal(detectLang("es-MX"), "es");
   assert.equal(detectLang("es-419"), "es");
+  assert.equal(detectLang("pt-BR"), "pt");
+  assert.equal(detectLang("pt-PT"), "pt");
   assert.equal(detectLang("en-US"), "en");
   assert.equal(detectLang("de-DE"), "en");
   assert.equal(detectLang(""), "en");
   assert.equal(detectLang(undefined), "en");
   assert.ok(isUiLang("ja"));
   assert.ok(isUiLang("es"));
+  assert.ok(isUiLang("pt"));
   assert.ok(!isUiLang("de"));
   assert.ok(!isUiLang("ja-JP"));
   assert.equal(baseLang("ja"), "en");
@@ -104,6 +113,17 @@ test("공용 사전 — 일본어 열쇠가 영어의 부분집합, 빈 값 없�
     }
   }
   assert.equal(UI.es.settings, ES_UI.settings);
+  checkMore("uiText/pt", UI.en, PT_UI);
+  checkMore("ioText/pt", IO.en, PT_IO);
+  checkMore("autoReplyText/pt", AR_TEXT.en, PT_AR);
+  checkMore("alarmText/pt", ALARM_TEXT.en, PT_ALARM);
+  checkMore("usageText/pt", USAGE_TEXT.en, PT_PARTS.PT_USAGE);
+  for (const [name, more] of Object.entries(PT_PARTS)) {
+    for (const [k, v] of Object.entries(more)) {
+      if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
+    }
+  }
+  assert.equal(UI.pt.settings, PT_UI.settings);
   // 모든 언어의 사전이 영어와 같은 열쇠를 갖는다
   for (const l of LANGS) assert.deepEqual(Object.keys(UI[l]).sort(), Object.keys(UI.en).sort(), l);
 });
@@ -121,6 +141,10 @@ test("앱 12개 사전 — 일본어 열쇠가 영어의 부분집합, 빈 값·
     checkMore(`${app}/es`, dict.en, es);
     assert.ok(Object.keys(es).length > 0, `${app}: 스페인어 사전이 비었음`);
     for (const k of Object.keys(dict.en)) assert.equal(dict.es[k], es[k] || dict.en[k], `${app}/es.${k}`);
+    const { pt } = (await import(`../apps/${app}/src/i18n.pt.ts`)) as { pt: Record<string, string> };
+    checkMore(`${app}/pt`, dict.en, pt);
+    assert.ok(Object.keys(pt).length > 0, `${app}: 포르투갈어 사전이 비었음`);
+    for (const k of Object.keys(dict.en)) assert.equal(dict.pt[k], pt[k] || dict.en[k], `${app}/pt.${k}`);
   }
 });
 
@@ -132,6 +156,9 @@ test("말풍선 — 일본어 열쇠가 영어 열쇠의 부분집합, 없는 �
   const es = TIP_MORE.es!;
   checkMore("tips/es", en, es);
   for (const k of TIP_KEYS) assert.equal(tip("es", k), es[k] || tip("en", k));
+  const pt = TIP_MORE.pt!;
+  checkMore("tips/pt", en, pt);
+  for (const k of TIP_KEYS) assert.equal(tip("pt", k), pt[k] || tip("en", k));
   assert.equal(tip("de", "baud"), tip("en", "baud"));
   assert.equal(tip("ja", "없는 열쇠"), undefined);
 });
@@ -142,6 +169,8 @@ test("AI 복사 — 질문 틀은 화면 언어(ja), 번역이 없는 언어는 
   assert.ok(ja.includes("PortDock Serial"));
   const es = buildAiCopy({ lang: "es", app: "PortDock Serial", log: [] }).text;
   assert.ok(es.includes(ES_AI_COPY.situation!), es);
+  const pt = buildAiCopy({ lang: "pt", app: "PortDock Serial", log: [] }).text;
+  assert.ok(pt.includes(PT_AI_COPY.situation!), pt);
   const de = buildAiCopy({ lang: "de", app: "PortDock Serial", log: [] }).text;
   const en = buildAiCopy({ lang: "en", app: "PortDock Serial", log: [] }).text;
   assert.equal(de, en);
