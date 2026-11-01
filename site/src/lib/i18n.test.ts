@@ -947,7 +947,10 @@ test("5차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
       for (const us of Object.values(UNITS))
         for (const u of us) {
           const out = tx(u.name, l);
-          assert.ok(!/[a-z]{3}/.test(out.replace(/\b(?:ft|lbf|kgf|Btu)\b/g, "")), `${l}: 단위 이름 «${u.name.en}» → «${out}»`);
+          // 라틴 문자 언어는 영어 이름과 달라야 한다(한 낱말 SI·인명 단위 pascal·watt·kelvin·Celsius … 는 같아도 됨)
+          const latin = /[a-z]{3}/.test(tx(UNITS.pressure[0].name, l));
+          if (latin) assert.ok(out !== u.name.en || !/[\s-]/.test(u.name.en), `${l}: 단위 이름 «${u.name.en}» → «${out}»`);
+          else assert.ok(!/[a-z]{3}/.test(out.replace(/\b(?:ft|lbf|kgf|Btu)\b/g, "")), `${l}: 단위 이름 «${u.name.en}» → «${out}»`);
         }
     // 온도 범위 오류 — 열전대 형마다, 냉접점 보정 «측정 mV» 글까지
     if (ids.includes("temperature")) {
