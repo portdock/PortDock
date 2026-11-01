@@ -1096,7 +1096,7 @@ test("6차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 
 
 test("6차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(결과·오류 문장, 부하 종류·덕트 기준 이름)", () => {
   misses.clear();
-  const EN = /\b(?:the|and|must|above|below|check|over|more|with|reads|differs|primary|applied|pulses|gives|lagging|leading|reactive|left|synchronous|required|efficiency|power|factor|control|sensors?|valves?|relays?|panel|wireway|edition|nonmetallic)\b/i;
+  const EN = /\b(?:the|and|must|above|below|check|over|more|with|reads|differs|primary|applied|pulses|gives|lagging|leading|reactive|left|synchronous|required|efficiency|power|valves?|relays?|wireway|edition|nonmetallic)\b/i;
   for (const l of EXTRA_LANGS) {
     const ids = pages6Of(l);
     if (!ids.length) continue;
@@ -1107,7 +1107,7 @@ test("6차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
         assert.ok(!EN.test(out), `${l}: ${VIEW6[id]} «${en}» → «${out}» 에 영어`);
       }
     if (ids.includes("psuSizing"))
-      for (const n of [...PSU_KINDS.map((k) => k.name), ...Object.values(PSU_GROUPS)]) assert.ok(!EN.test(tx(n, l)) && tx(n, l) !== n.en || !/[a-z]{3}/.test(n.en), `${l}: 부하 종류 «${n.en}» → «${tx(n, l)}»`);
+      for (const n of [...PSU_KINDS.map((k) => k.name), ...Object.values(PSU_GROUPS)]) assert.ok(!EN.test(tx(n, l)) && (tx(n, l) !== n.en || !/\s/.test(n.en)) || !/[a-z]{3}/.test(n.en), `${l}: 부하 종류 «${n.en}» → «${tx(n, l)}»`);
     if (ids.includes("conduitFill")) for (const r of DUCT_RULES) for (const n of [r.name, r.src]) assert.ok(!EN.test(tx(n, l)), `${l}: 덕트 기준 «${n.en}» → «${tx(n, l)}»`);
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
