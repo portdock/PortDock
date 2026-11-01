@@ -1,0 +1,28 @@
+// Nomi delle funzioni Modbus e aree dati (lib/modbusDecode.ts, shared/modbusBuild.ts) — comuni al generatore di richieste e al decodificatore
+// I nomi delle funzioni restano in inglese come nella specifica Modbus e nei manuali italiani; si traduce solo la spiegazione.
+export default {
+  "Read Coils": "Read Coils (lettura coil)",
+  "Read Discrete Inputs": "Read Discrete Inputs (lettura discrete input)",
+  "Read Holding Registers": "Read Holding Registers (lettura holding register)",
+  "Read Input Registers": "Read Input Registers (lettura input register)",
+  "Write Single Coil": "Write Single Coil (scrittura di una coil)",
+  "Write Single Register": "Write Single Register (scrittura di un registro)",
+  "Write Multiple Coils": "Write Multiple Coils (scrittura di più coil)",
+  "Write Multiple Registers": "Write Multiple Registers (scrittura di più registri)",
+  "Read/Write Multiple Registers": "Read/Write Multiple Registers (lettura/scrittura di più registri)",
+  "Read Exception Status (serial line only)": "Read Exception Status (solo linea seriale)",
+  "Diagnostics (serial line only)": "Diagnostics (diagnostica, solo linea seriale)",
+  "Get Comm Event Counter (serial line only)": "Get Comm Event Counter (solo linea seriale)",
+  "Get Comm Event Log (serial line only)": "Get Comm Event Log (solo linea seriale)",
+  "Report Server ID (serial line only)": "Report Server ID (solo linea seriale)",
+  "Read File Record": "Read File Record (lettura record di file)",
+  "Write File Record": "Write File Record (scrittura record di file)",
+  "Mask Write Register": "Mask Write Register (scrittura di registro con maschera)",
+  "Read FIFO Queue": "Read FIFO Queue (lettura coda FIFO)",
+  "Encapsulated Interface Transport": "Encapsulated Interface Transport (tra l'altro identificazione del dispositivo)",
+  "Unknown function": "Funzione sconosciuta",
+  Coils: "Coil",
+  "Discrete inputs": "Discrete input",
+  "Holding registers": "Holding register",
+  "Input registers": "Input register",
+};

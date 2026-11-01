@@ -1,0 +1,12 @@
+// Italiano — testi delle librerie di calcolo (lib/*.ts) per gruppi. Una pagina carica solo i gruppi di libText in Base.astro (lib/tr.ts)
+import checksum from "./lib/checksum.ts";
+import modbusNames from "./lib/modbusNames.ts";
+import modbusBuild from "./lib/modbusBuild.ts";
+import modbusDecode from "./lib/modbusDecode.ts";
+import modbusFloat from "./lib/modbusFloat.ts";
+import analog from "./lib/analog.ts";
+import subnet from "./lib/subnet.ts";
+import mc from "./lib/mc.ts";
+import pinouts from "./lib/pinouts.ts";
+
+export default { checksum, modbusNames, modbusBuild, modbusDecode, modbusFloat, analog, subnet, mc, pinouts };
