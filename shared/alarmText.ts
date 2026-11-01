@@ -1,6 +1,7 @@
 // (0.10.0) 값 감시·알람 화면 글 — Modbus Master·Plot 이 함께 쓴다(shared/AlarmPanel.tsx·AlarmRuleDialog.tsx)
 import { dicts, type Lang } from "./lang.ts";
 import { JA_ALARM, JA_KIND } from "./ja/alarm.ts";
+import { DE_ALARM, DE_KIND } from "./de/alarm.ts";
 import type { AlarmKind } from "./alarm.ts";
 
 const ko = {
@@ -85,7 +86,7 @@ const en: Record<AlarmTextKey, string> = {
   errEmpty: "Enter at least one condition, or press «Remove conditions».",
 };
 
-export const ALARM_TEXT = dicts(ko, en, { ja: JA_ALARM });
+export const ALARM_TEXT = dicts(ko, en, { ja: JA_ALARM, de: DE_ALARM });
 
 export function alarmText(lang: Lang, k: AlarmTextKey, v?: Record<string, string | number>): string {
   let s = ALARM_TEXT[lang][k];
@@ -94,7 +95,8 @@ export function alarmText(lang: Lang, k: AlarmTextKey, v?: Record<string, string
 }
 
 /** 조건 종류 이름 — 추가 언어(JA_KIND 등)에 없으면 영어 */
-export const kindLabel = (k: AlarmKind, lang: Lang) => (lang === "ko" || lang === "en" ? KIND_LABEL[k][lang] : lang === "ja" ? JA_KIND[k] : KIND_LABEL[k].en);
+const KIND_MORE: { [L in Lang]?: Record<AlarmKind, string> } = { ja: JA_KIND, de: DE_KIND };
+export const kindLabel = (k: AlarmKind, lang: Lang) => (lang === "ko" || lang === "en" ? KIND_LABEL[k][lang] : KIND_MORE[lang]?.[k] ?? KIND_LABEL[k].en);
 
 export const KIND_LABEL: Record<AlarmKind, { ko: string; en: string }> = {
   lo: { ko: "하한", en: "Low" },

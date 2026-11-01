@@ -9,6 +9,7 @@ import { tip } from "./tips";
 import { count } from "./usage";
 import { dicts, type Lang } from "./lang";
 import { JA_AI_UI } from "./ja/parts";
+import { DE_AI_UI } from "./de/parts";
 
 const ko = {
     button: "AI 에 묻기 — 복사만, 보내지 않음: 지금 상황을 AI 채팅에 붙여 넣을 글로 클립보드에",
@@ -53,7 +54,7 @@ const en: typeof ko = {
     copyFail: "Could not copy — another program may be holding the clipboard",
     close: "Close",
 };
-const UI = dicts(ko, en, { ja: JA_AI_UI });
+const UI = dicts(ko, en, { ja: JA_AI_UI, de: DE_AI_UI });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 /** 연결 설정으로 넣을 저장값 — 문제 보고와 같은 허용 목록에서 화면·언어 설정은 뺀다 */

@@ -3,6 +3,7 @@ import type { Lang } from "./lang.ts";
 import { IO_TIPS } from "./tipsIo.ts";
 import { PROFILE_TIPS } from "./tipsProfile.ts";
 import { JA_TIPS } from "./ja/tips.ts";
+import { DE_TIPS } from "./de/tips.ts";
 
 type Tip = [ko: string, en: string];
 
@@ -634,7 +635,7 @@ const TIPS: Record<string, Tip> = {
 };
 
 /** 추가 언어의 말풍선 — 열쇠별 한 줄. 없는 열쇠는 영어 */
-const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS };
+const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS, de: DE_TIPS };
 
 export function tip(lang: Lang, key: string) {
   const t = TIPS[key];

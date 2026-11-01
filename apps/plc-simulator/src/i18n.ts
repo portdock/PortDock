@@ -1,6 +1,7 @@
 // 한국어 기본, 영어 병행
 import { dicts } from "../../../shared/lang.ts";
 import { ja } from "./i18n.ja.ts";
+import { de } from "./i18n.de.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -529,5 +530,5 @@ const en: Record<keyof typeof ko, string> = {
 };
 
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja });
+export const dict = dicts(ko, en, { ja, de });
 export type Key = keyof typeof ko;
