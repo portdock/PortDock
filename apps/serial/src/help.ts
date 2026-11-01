@@ -198,7 +198,7 @@ export const help: HelpDoc = {
         "- 프레임 구분이 «Modbus RTU» 이거나 줄 끝의 CRC16 Modbus 가 맞으면 «상세» 에 Modbus 풀이(국번, 함수 코드, 시작 주소·개수 같은 항목, «값», CRC «정상»/«틀림»)가 함께 나옵니다. 그 밖의 줄은 «Modbus 로 볼 수 없음 (CRC 불일치)» 한 줄만 나옵니다.",
         "- «상세» 제목 옆 «복사» 는 상세 칸에 보이는 글(바이트 수·HEX·ASCII·Modbus 풀이)을 그대로 클립보드에 복사합니다.",
         "- «요청과 짝»: 고른 줄이 응답이면 바로 앞의 반대 방향 요청(RX 응답이면 TX 요청)과 짝지어 «국번 1 · FC03 … · 40001~40010 (10개)» 와 «40001 = 1812 (0x0714)» 같은 값 표를 보입니다. 국번·함수·바이트 수·CRC 가 맞을 때만 짝짓고, 가장 가까운 요청이 맞지 않거나 같은 요청의 응답이 이미 있었으면 짝짓지 않습니다. 명령 목록·반복으로 보낸 요청도 됩니다. 쓰기 응답은 «정상 — 장비가 쓰기를 받았습니다».",
-        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», 그 밖은 «<1B>» 처럼 보입니다. 0x80 이상은 설정의 «글자 인코딩»(UTF-8·CP949·Latin-1·ASCII)으로 읽고, 읽을 수 없으면 «<C7>» 처럼 보입니다.",
+        "- ASCII 보기에서 제어 문자는 «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», 그 밖은 «<1B>» 처럼 보입니다. 0x80 이상은 설정의 «글자 인코딩»(UTF-8·CP949·Shift_JIS·Latin-1·ASCII)으로 읽고, 읽을 수 없으면 «<C7>» 처럼 보입니다.",
       ],
     },
     {
@@ -450,7 +450,7 @@ export const help: HelpDoc = {
         "- Clicking a log line shows its byte count, HEX and ASCII in «Detail» on the right (following continues).",
         "- If framing is «Modbus RTU» or the line ends with a valid CRC16 Modbus, «Detail» also shows the Modbus decoding (Slave ID, function code, fields such as start address and count, «Values», CRC «OK»/«FAIL»). Other lines show just «Not a Modbus frame (CRC mismatch)».",
         "- «Copy» next to the «Detail» heading copies the text shown in the detail pane (byte count, HEX, ASCII, Modbus decoding) to the clipboard.",
-        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», others as «<1B>» and so on. Bytes 0x80 and up are read with «Text encoding» in Settings (UTF-8, CP949, Latin-1, ASCII); unreadable ones show as «<C7>».",
+        "- In ASCII view, control characters appear as «<CR>», «<LF>», «<TAB>», «<STX>», «<ETX>», «<ACK>», «<NAK>», others as «<1B>» and so on. Bytes 0x80 and up are read with «Text encoding» in Settings (UTF-8, CP949, Shift_JIS, Latin-1, ASCII); unreadable ones show as «<C7>».",
       ],
     },
     {

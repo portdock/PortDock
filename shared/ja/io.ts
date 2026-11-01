@@ -29,7 +29,7 @@ export const JA_IO: Partial<Record<IoKey, string>> = {
   ckNeedKind: "先にチェックサムの種類を選んでください",
   ioSection: "文字・ファイルのログ",
   encoding: "文字コード(表示・ASCII 送信)",
-  encodingHint: "受信した文字の表示・コピー・保存と ASCII 送信の変換に使います。韓国の機器では CP949 がよく使われます。その文字コードにない文字は «送信するバイト列» に表示します。",
+  encodingHint: "受信した文字の表示・コピー・保存と ASCII 送信の変換に使います。日本の機器では Shift_JIS(CP932、0.11.0 から)、韓国の機器では CP949 がよく使われます。その文字コードにない文字は «送信するバイト列» に表示します。",
   logFormat: "ファイルのログ形式",
   fmtHex: "HEX(従来どおり)",
   fmtAscii: "ASCII(文字)",

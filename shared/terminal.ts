@@ -13,7 +13,7 @@ export interface Seg {
 
 type Style = Omit<Seg, "text">;
 
-const LABEL: Record<Encoding, string | null> = { "utf-8": "utf-8", cp949: "euc-kr", latin1: null, ascii: null };
+const LABEL: Record<Encoding, string | null> = { "utf-8": "utf-8", cp949: "euc-kr", cp932: "shift_jis", latin1: null, ascii: null };
 
 export class TermBuffer {
   private done: Seg[][] = [];

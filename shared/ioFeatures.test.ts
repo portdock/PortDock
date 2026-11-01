@@ -34,6 +34,18 @@ test("글자 보기 — 백엔드 codec::text_view 와 같은 규칙", () => {
   assert.equal(ascii(enc("😀"), "utf-8"), "😀");
 });
 
+test("글자 보기 — Shift_JIS(CP932), 백엔드 codec 시험과 같은 바이트", () => {
+  // 「テスト」 = 83 65 83 58 83 67(백엔드 parse_ascii_with 가 만드는 바이트)
+  assert.equal(ascii([0x83, 0x65, 0x83, 0x58, 0x83, 0x67], "cp932"), "テスト");
+  assert.equal(ascii([0x93, 0xfa, 0xb1, 0x41], "cp932"), "日ｱA");
+  assert.equal(ascii([0x80, 0xa0, 0xfd, 0x83], "cp932"), "<80><A0><FD><83>");
+  const t = new TermBuffer();
+  t.setEncoding("cp932");
+  t.feed([0x83, 0x65, 0x83]);
+  t.feed([0x58, 0x83, 0x67, 0x0d, 0x0a]);
+  assert.equal(t.lines()[0].map((s) => s.text).join(""), "テスト");
+});
+
 test("체크섬 JSON — 옵션 없으면 예전 문자열, 옵션·범용 CRC 는 spec", () => {
   assert.equal(checksumToRust(null), null);
   assert.equal(checksumToRust("crc16-modbus", {}), "crc16-modbus");
