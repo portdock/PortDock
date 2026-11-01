@@ -1,0 +1,37 @@
+// awgMm2 — polski (źródło: angielska wersja views/AwgMm2Page.astro). Klucze, długości tablic i kształty funkcji jak w wersji wzorcowej ja.
+export default {
+    title: "Tabela przeliczeń AWG ↔ mm²",
+    seo: "AWG na mm²: średnica i rezystancja — PortDock",
+    desc: "Średnica i przekrój od AWG 0000 do 40 (wzór ASTM B258), najbliższy rozmiar metryczny mm² (IEC 60228) i rezystancja miedzi w Ω/km przy 20 °C. W obie strony.",
+    inAwg: "AWG (np. 18, 2/0, 0000)",
+    inMm: "Przekrój w mm²",
+    res: "Wynik",
+    k: { d: "Średnica (odpowiednik drutu pełnego)", area: "Przekrój", ohm: "Rezystancja miedzi przy 20 °C (jeden przewód)", near: "Najbliższy rozmiar metryczny", awgNear: "Najbliższe AWG", awgUp: "AWG o takim samym lub większym przekroju" },
+    how: "Wyniki zmieniają się w trakcie wpisywania. Wszystko działa w Twojej przeglądarce; nic, co wpiszesz, nie jest nigdzie wysyłane.",
+    err: "Wpisz AWG od 0000 do 50 (zapis 2/0 działa) i przekrój większy od 0",
+    fTitle: "Wzory",
+    formula: [
+      "Średnica d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: numer AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Przekrój A = π ÷ 4 × d²",
+      "Rezystancja R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (miedź, 20 °C)",
+    ],
+    fNote: "Wzór na AWG pochodzi z ASTM B258; rezystywność miedzi to wartość dla miedzi wyżarzonej wg IEC 60028. Co 6 numerów średnica podwaja się, co 3 numery przekrój mniej więcej się podwaja.",
+    limitTitle: "Jak czytać tabelę",
+    limits: [
+      "AWG i rozmiary metryczne nigdy nie pokrywają się dokładnie. «Najbliższy» liczy się według stosunku przekrojów; ujemna różnica oznacza, że rozmiar metryczny jest mniejszy — gdy obciążalność prądowa lub spadek napięcia są na granicy, wybierz rozmiar równy lub większy.",
+      "Średnice dotyczą drutu pełnego. Linka o tym samym przekroju jest szersza, a izolacja dodaje jeszcze więcej — do wypełnienia rur i koryt użyj średnicy zewnętrznej z danych producenta.",
+      "Rzeczywista rezystancja kabla: IEC 60228 podaje wartości maksymalne dla klas żył (jednodrutowa, wielodrutowa, giętka); żyły wielodrutowe i cynowane mają nieco więcej.",
+      "Obciążalność prądowa nie wynika z samego rozmiaru (sposób ułożenia, temperatura otoczenia, wiązki) i nie jest tu podana.",
+    ],
+    awgTitle: "Tabela AWG (0000 do 40)",
+    awgHead: ["AWG", "Średnica mm", "Przekrój mm²", "Ω/km (miedź 20 °C)", "Najbliższe mm² (różnica)"],
+    mmTitle: "Rozmiary metryczne (IEC 60228)",
+    mmHead: ["Przekrój mm²", "Średnica mm (odpowiednik drutu pełnego)", "Ω/km (miedź 20 °C)", "Najbliższe AWG", "AWG równe lub większe"],
+    faqTitle: "Najczęstsze pytania",
+    faq: [
+      ["Ile mm² to 18 AWG?", "Około 0.823 mm² (średnica 1.024 mm). Najbliższy rozmiar metryczny to 0.75 mm², nieco mniejszy. 16 AWG to około 1.31 mm², 14 AWG około 2.08 mm², 12 AWG około 3.31 mm²."],
+      ["Jakie AWG odpowiada 1.5 mm²?", "Najbliższe jest 15 AWG (1.65 mm²), ale rzadko się je spotyka, więc zwykle zastępuje się je 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) jest mniejsze niż 1.5 mm²."],
+      ["Co oznaczają 4/0 i 2/0?", "Rozmiary większe niż 0 powtarzają zero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG to około 107 mm²."],
+    ],
+    more: ["Dobór przekroju z długości i prądu: ", "; rodzaje kabli według zastosowania: ", "; ile przewodów zmieści się w rurze: ", "."],
+};
