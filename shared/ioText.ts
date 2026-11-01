@@ -2,6 +2,7 @@
 import { dicts, type Lang } from "./lang.ts";
 import { JA_IO } from "./ja/io.ts";
 import { DE_IO } from "./de/io.ts";
+import { PL_IO } from "./pl/io.ts";
 
 const ko = {
   // ---- 체크섬 옵션
@@ -261,7 +262,7 @@ const en: typeof ko = {
   evTrgLog: " — file log stopped",
 };
 
-export const IO = dicts(ko, en, { ja: JA_IO, de: DE_IO });
+export const IO = dicts(ko, en, { ja: JA_IO, de: DE_IO, pl: PL_IO });
 export type IoKey = keyof typeof ko;
 
 export function io(lang: Lang, k: IoKey, v: Record<string, string | number> = {}) {

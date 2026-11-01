@@ -20,6 +20,12 @@ import { DE_AR } from "./de/autoReply.ts";
 import { DE_ALARM } from "./de/alarm.ts";
 import { DE_AI_COPY } from "./de/aiCopy.ts";
 import * as DE_PARTS from "./de/parts.ts";
+import { PL_UI } from "./pl/ui.ts";
+import { PL_IO } from "./pl/io.ts";
+import { PL_AR } from "./pl/autoReply.ts";
+import { PL_ALARM } from "./pl/alarm.ts";
+import { PL_AI_COPY } from "./pl/aiCopy.ts";
+import * as PL_PARTS from "./pl/parts.ts";
 import { tip, TIP_KEYS, TIP_MORE } from "./tips.ts";
 import { buildAiCopy } from "./aiCopy.ts";
 
@@ -51,7 +57,7 @@ test("언어 목록 — 사이트와 같은 12개, 이름이 다 있고 고를 �
   assert.deepEqual([...LANGS], ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
   for (const l of LANGS) assert.ok(LANG_NAMES[l]);
   for (const l of UI_LANGS) assert.ok((LANGS as readonly string[]).includes(l));
-  assert.deepEqual([...UI_LANGS].slice(0, 4), ["ko", "en", "ja", "de"]);
+  assert.deepEqual([...UI_LANGS].slice(0, 5), ["ko", "en", "ja", "de", "pl"]);
 });
 
 test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 없는 언어 → en)", () => {
@@ -60,6 +66,7 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.equal(detectLang("ja"), "ja");
   assert.equal(detectLang("en-US"), "en");
   assert.equal(detectLang("de-DE"), "de");
+  assert.equal(detectLang("pl-PL"), "pl");
   if (NOUI) assert.equal(detectLang(`${NOUI}-XX`), "en");
   assert.equal(detectLang(""), "en");
   assert.equal(detectLang(undefined), "en");
@@ -81,6 +88,7 @@ test("번역이 없는 열쇠·빈 값은 영어로 떨어진다", () => {
   // 실제 사전 — 일본어가 없는 언어는 영어 그대로
   if (NOUI) assert.equal(UI[NOUI].settings, "Settings");
   assert.equal(UI.de.settings, "Einstellungen");
+  assert.equal(UI.pl.settings, "Ustawienia");
   assert.equal(UI.ja.settings, "設定");
 });
 
@@ -95,7 +103,12 @@ test("공용 사전 — 일본어 열쇠가 영어의 부분집합, 빈 값 없�
   checkMore("autoReplyText/de", AR_TEXT.en, DE_AR);
   checkMore("alarmText/de", ALARM_TEXT.en, DE_ALARM);
   checkMore("usageText/de", USAGE_TEXT.en, DE_PARTS.DE_USAGE);
-  for (const [name, more] of [...Object.entries(JA_PARTS), ...Object.entries(DE_PARTS)]) {
+  checkMore("uiText/pl", UI.en, PL_UI);
+  checkMore("ioText/pl", IO.en, PL_IO);
+  checkMore("autoReplyText/pl", AR_TEXT.en, PL_AR);
+  checkMore("alarmText/pl", ALARM_TEXT.en, PL_ALARM);
+  checkMore("usageText/pl", USAGE_TEXT.en, PL_PARTS.PL_USAGE);
+  for (const [name, more] of [...Object.entries(JA_PARTS), ...Object.entries(DE_PARTS), ...Object.entries(PL_PARTS)]) {
     for (const [k, v] of Object.entries(more)) {
       if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
     }
@@ -117,6 +130,10 @@ test("앱 12개 사전 — 일본어 열쇠가 영어의 부분집합, 빈 값·
     checkMore(`${app}/de`, dict.en, de);
     assert.ok(Object.keys(de).length > 0, `${app}: 독일어 사전이 비었음`);
     for (const k of Object.keys(dict.en)) assert.equal(dict.de[k], de[k] || dict.en[k], `${app}/de.${k}`);
+    const { pl } = (await import(`../apps/${app}/src/i18n.pl.ts`)) as { pl: Record<string, string> };
+    checkMore(`${app}/pl`, dict.en, pl);
+    assert.ok(Object.keys(pl).length > 0, `${app}: 폴란드어 사전이 비었음`);
+    for (const k of Object.keys(dict.en)) assert.equal(dict.pl[k], pl[k] || dict.en[k], `${app}/pl.${k}`);
   }
 });
 
@@ -128,6 +145,9 @@ test("말풍선 — 일본어 열쇠가 영어 열쇠의 부분집합, 없는 �
   const de = TIP_MORE.de!;
   checkMore("tips/de", en, de);
   for (const k of TIP_KEYS) assert.equal(tip("de", k), de[k] || tip("en", k));
+  const pl = TIP_MORE.pl!;
+  checkMore("tips/pl", en, pl);
+  for (const k of TIP_KEYS) assert.equal(tip("pl", k), pl[k] || tip("en", k));
   if (NOUI) assert.equal(tip(NOUI, "baud"), tip("en", "baud"));
   assert.equal(tip("ja", "없는 열쇠"), undefined);
 });
@@ -138,6 +158,8 @@ test("AI 복사 — 질문 틀은 화면 언어(ja), 번역이 없는 언어는 
   assert.ok(ja.includes("PortDock Serial"));
   const de = buildAiCopy({ lang: "de", app: "PortDock Serial", log: [] }).text;
   assert.ok(de.includes(DE_AI_COPY.situation!), de);
+  const pl = buildAiCopy({ lang: "pl", app: "PortDock Serial", log: [] }).text;
+  assert.ok(pl.includes(PL_AI_COPY.situation!), pl);
   const en = buildAiCopy({ lang: "en", app: "PortDock Serial", log: [] }).text;
   if (NOUI) assert.equal(buildAiCopy({ lang: NOUI, app: "PortDock Serial", log: [] }).text, en);
 });

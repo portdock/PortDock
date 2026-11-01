@@ -2,6 +2,7 @@
 import { dicts } from "../../../shared/lang.ts";
 import { ja } from "./i18n.ja.ts";
 import { de } from "./i18n.de.ts";
+import { pl } from "./i18n.pl.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -523,4 +524,4 @@ const en: typeof ko = {
 
 export type Key = keyof typeof ko;
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja, de });
+export const dict = dicts(ko, en, { ja, de, pl });
