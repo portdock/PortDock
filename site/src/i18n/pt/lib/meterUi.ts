@@ -28,9 +28,6 @@ export default {
     "Sem transmitir · o equipamento pode estar desconectado",
   "USB shell":
     "Carcaça USB",
-  // 기준 main 5d1837b 부터 그림의 SG/PE 묶음 이름은 «Equipment». «Device» 는 이 브랜치 기준판(ja) 모양을 맞추려고 남긴 줄 — 1차 MC 사전과 같은 번역(합친 뒤 지워도 됨)
-  "Device":
-    "Dispositivo",
   "Equipment":
     "Equipamento",
   "Both powered · DC and AC":
