@@ -314,3 +314,27 @@ test("pt 공용 창·용어 — 예시 이름·낱말 열쇠가 영어에 있고
     for (const [k, v] of Object.entries(more)) if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
   }
 });
+
+// 공용 창·용어·Modbus 사전(dialogs·glossary·modbus) — 프랑스어
+test("fr 공용 창·용어 — 예시 이름·낱말 열쇠가 영어에 있고 빈 값 없음", async () => {
+  const { TERMS } = await import("./glossary.ts");
+  const { serialExamples, tcpExamples, udpExamples, scpiExamples } = await import("./examples.ts");
+  const enNames = new Set(
+    [...serialExamples("general", "en"), ...serialExamples("at", "en"), ...serialExamples("modbus", "en"), ...tcpExamples(true, "en"), ...tcpExamples(false, "en"), ...udpExamples("en"), ...scpiExamples("en")].map((c) => c.name.replace(/^e\.g\. /, "")),
+  );
+  const D = await import("./fr/dialogs.ts");
+  for (const [k, v] of Object.entries(D.FR_EXAMPLES)) {
+    assert.ok(enNames.has(k), `fr 예시: 영어에 없는 이름 «${k}»`);
+    assert.ok(v.trim() !== "");
+  }
+  const { FR_TERMS } = await import("./fr/glossary.ts");
+  for (const [k, v] of Object.entries(FR_TERMS)) {
+    assert.ok(k in TERMS, `fr 용어: 없는 열쇠 «${k}»`);
+    assert.ok(v.length === 2 && v.every((x) => x.trim() !== ""), `fr 용어 ${k}: 빈 값`);
+  }
+  const M = await import("./fr/modbus.ts");
+  for (const [name, more] of [...Object.entries(D), ...Object.entries(M)]) {
+    if (typeof more === "string") continue;
+    for (const [k, v] of Object.entries(more)) if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
+  }
+});
