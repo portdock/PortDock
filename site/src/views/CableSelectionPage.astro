@@ -7,21 +7,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { USES } from "../lib/cableSelect";
-import { GUIDES } from "../data/guides";
-import { WEB_TOOLS } from "../data/webTools";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import { pageName } from "../i18n/names";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/cable-selection/";
-const linkName = (l: string) => (l.startsWith("guides/") ? GUIDES.find((g) => `guides/${g.slug}/` === l)?.title[lang] : WEB_TOOLS.find((w) => w.path === l)?.name[lang]) ?? l;
-const L = ko
+const linkName = (l: string) => pageName(lang, l);
+const L =
+  lang === "ko"
   ? {
       title: "케이블 선정 도우미",
+      seo: "케이블 선정 — 전원 굵기·RS485·4-20mA·랜 케이블 — PortDock",
       desc: "전원·RS-485·RS-232·4-20mA·열전대·이더넷·서보·케이블 체인 — 용도를 고르면 케이블 종류와 조건, 전원은 전압 강하로 굵기, 통신은 길이를 확인합니다.",
       use: "용도",
       cable: "권하는 케이블",
@@ -64,9 +66,12 @@ const L = ko
         ["24 V 센서 전원선 굵기는 어떻게 정하나요?", "전류·편도 거리·허용 강하율을 넣으면 최소 단면적과 그 이상의 IEC 규격을 보입니다. 예: 2 A·50 m·5 % 면 약 2.87 mm² 이상 → 4 mm². 부하 쪽 전압이 장비의 최소 입력 전압보다 높은지 함께 봅니다."],
         ["RS-232 는 몇 m 까지 되나요?", "규격(TIA-232)은 길이가 아니라 선로 용량 2500 pF 미만으로 정합니다. 일반 케이블로 약 15~20 m 이고, 케이블 pF/m 이 낮으면 더 갈 수 있습니다. 그보다 멀면 RS-485/422 변환이 확실합니다."],
       ],
+      more: ["AWG 와 mm² 를 바꾸려면 ", "AWG ↔ mm² 변환표", ", 전선관·덕트에 몇 가닥 들어가는지는 ", "전선관·덕트 점유율 계산기", ", 전압 강하를 자세히 보려면 ", "전압 강하·전선 굵기 계산기", " 를 씁니다."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Cable Selection Helper",
+      seo: "Cable Selection: Wire Size, RS-485, 4–20 mA, Ethernet — PortDock",
       desc: "Power, RS-485, RS-232, 4–20 mA, thermocouple, Ethernet, servo, cable chain: cable type and conditions by use, wire size from voltage drop, length checks.",
       use: "Use",
       cable: "Recommended cable",
@@ -109,7 +114,9 @@ const L = ko
         ["How do I size a 24 V sensor supply cable?", "Enter current, one-way length and allowed drop for the minimum cross-section and the next IEC size. Example: 2 A, 50 m, 5 % needs about 2.87 mm² → 4 mm². Also check the voltage at the load against the device's minimum input voltage."],
         ["How far can RS-232 go?", "The spec (TIA-232) limits line capacitance to under 2500 pF, not length. With ordinary cable that is about 15 to 20 m; low-capacitance cable goes further. Beyond that, converting to RS-485/422 is the sure way."],
       ],
-    };
+      more: ["To convert AWG and mm², use the ", "AWG to mm² table", "; for how many wires fit in a conduit or duct, the ", "conduit and duct fill calculator", "; for a detailed voltage drop, the ", "voltage drop calculator", "."],
+    }
+  : page2(lang, "cableSelection");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -118,21 +125,21 @@ const ld = {
 const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id), rs485: ["rs485"], rs232: ["rs232"], ethernet: ["ethernet"] };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "케이블 선정 — 전원 굵기·RS485·4-20mA·랜 케이블 — PortDock" : "Cable Selection: Wire Size, RS-485, 4–20 mA, Ethernet — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["cableSelect"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="cs" data-t={JSON.stringify({ none: L.none, err: L.err })} data-kinds={JSON.stringify(kinds)}>
+    <form class="calc card" id="cs" data-lang={lang} data-t={JSON.stringify({ none: L.none, err: L.err })} data-kinds={JSON.stringify(kinds)}>
       <div class="row">
         <label class="fld">
           {L.use}
-          <select id="use">{USES.map((u) => <option value={u.id}>{u.name[lang]}</option>)}</select>
+          <select id="use">{USES.map((u) => <option value={u.id}>{tx(u.name, lang)}</option>)}</select>
         </label>
       </div>
       <fieldset class="row" data-kind="power" style="border:0;padding:0;margin:0">
@@ -184,15 +191,15 @@ const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id),
     {
       USES.map((u) => (
         <section class="card" data-use={u.id} id={u.id} style="margin-top:16px">
-          <h2>{u.name[lang]}</h2>
+          <h2>{tx(u.name, lang)}</h2>
           <h3>{L.cable}</h3>
-          <ul>{u.cable.map((x) => <li>{x[lang]}</li>)}</ul>
+          <ul>{u.cable.map((x) => <li>{tx(x, lang)}</li>)}</ul>
           <h3>{L.check}</h3>
-          <ul>{u.check.map((x) => <li>{x[lang]}</li>)}</ul>
+          <ul>{u.check.map((x) => <li>{tx(x, lang)}</li>)}</ul>
           <h3>{L.src}</h3>
-          <ul>{u.src.map((x) => <li>{x[lang]}</li>)}</ul>
+          <ul>{u.src.map((x) => <li>{tx(x, lang)}</li>)}</ul>
           <h3>{L.links}</h3>
-          <ul>{u.links.map((l) => <li><a href={url(lang, l)}>{linkName(l)}</a></li>)}</ul>
+          <ul>{u.links.map((l) => <li><a href={link(lang, l)}>{linkName(l)}</a></li>)}</ul>
         </section>
       ))
     }
@@ -203,7 +210,7 @@ const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id),
       <h2>{L.limitTitle}</h2>
       <ul>{L.limits.map((x) => <li>{x}</li>)}</ul>
       <p>
-        {ko ? "AWG 와 mm² 를 바꾸려면 " : "To convert AWG and mm², use the "}<a href={url(lang, "tools/awg-mm2/")}>{ko ? "AWG ↔ mm² 변환표" : "AWG to mm² table"}</a>{ko ? ", 전선관·덕트에 몇 가닥 들어가는지는 " : "; for how many wires fit in a conduit or duct, the "}<a href={url(lang, "tools/conduit-fill/")}>{ko ? "전선관·덕트 점유율 계산기" : "conduit and duct fill calculator"}</a>{ko ? ", 전압 강하를 자세히 보려면 " : "; for a detailed voltage drop, the "}<a href={url(lang, "tools/voltage-drop/")}>{ko ? "전압 강하·전선 굵기 계산기" : "voltage drop calculator"}</a>{ko ? " 를 씁니다." : "."}
+        {L.more[0]}<a href={link(lang, "tools/awg-mm2/")}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, "tools/conduit-fill/")}>{L.more[3]}</a>{L.more[4]}<a href={link(lang, "tools/voltage-drop/")}>{L.more[5]}</a>{L.more[6]}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -221,10 +228,11 @@ const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id),
   <script>
     import { USES, ethernetCheck, powerSize, rs232Check, rs485Check, type EthSpeed, type Note } from "../lib/cableSelect";
     import type { Material, System } from "../lib/wire";
+    import { tx, type Lang } from "../lib/tr";
     const form = document.getElementById("cs") as HTMLFormElement;
     const T = JSON.parse(form.dataset.t ?? "{}") as { none: string; err: string };
     const K = JSON.parse((document.getElementById("lbl") as HTMLElement).dataset.k ?? "{}") as Record<string, string>;
-    const lang = document.documentElement.lang === "ko" ? "ko" : "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim();
@@ -257,7 +265,7 @@ const kinds = { power: USES.filter((u) => u.input === "power").map((u) => u.id),
         ...list.map((n) => {
           const p = document.createElement("p");
           p.className = `verdict ${n.level}`;
-          p.textContent = n.text[lang];
+          p.textContent = tx(n.text, lang);
           return p;
         }),
       );

@@ -7,18 +7,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { buildFrame } from "../lib/modbusConvert";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/modbus-rtu-tcp/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Modbus RTU ↔ TCP 프레임 변환기",
+      seo: "Modbus RTU ↔ TCP 변환기 — MBAP·CRC·ASCII LRC (온라인) — PortDock",
       desc: "Modbus RTU(국번+CRC)를 MBAP 머리가 붙은 TCP 프레임으로, TCP 를 RTU 로 바꿉니다. ASCII(«:»·LRC)와도 서로 바꾸고 바이트마다 색으로 풀어 줍니다.",
       input: "프레임 (RTU·TCP 는 HEX, ASCII 는 «:» 로 시작하는 글자)",
       help: "예: 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — 요청·응답 모두, 프레임 하나씩",
@@ -40,9 +42,14 @@ const L = ko
       ],
       guide: "Modbus TCP 연결·MBAP 머리",
       guide2: "Modbus RTU 프레임 읽는 법",
+      src: ["MBAP 머리(트랜잭션·프로토콜·길이·유닛 ID), 게이트웨이의 유닛 ID", "RTU·ASCII 프레임, 국번(0 브로드캐스트, 1~247), CRC·LRC", "PDU(함수 코드·데이터), 예외 응답"],
+      seeG: ["MBAP 머리와 연결 문제는 가이드 ", ", RTU 바이트 풀이는 ", " 를 보세요."],
+      seeT: ["값 표·40001 주소까지 자세히 풀려면 ", "Modbus 프레임 해석기", ", 문제로 익히려면 ", "Modbus 연습장", " 을 쓰세요."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Modbus RTU ↔ TCP Frame Converter",
+      seo: "Modbus RTU to TCP Converter: MBAP, CRC, ASCII LRC — PortDock",
       desc: "Convert Modbus RTU (address + CRC) to Modbus TCP with an MBAP header and back, plus ASCII mode (colon, LRC). Every byte color-coded and explained.",
       input: "Frame (HEX for RTU and TCP, text starting with «:» for ASCII)",
       help: "e.g. 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — requests or responses, one frame at a time",
@@ -64,7 +71,11 @@ const L = ko
       ],
       guide: "Modbus TCP connections and the MBAP header",
       guide2: "Reading Modbus RTU frames",
-    };
+      src: ["MBAP header (transaction, protocol, length, unit ID), unit ID at gateways", "RTU and ASCII framing, addresses (0 broadcast, 1–247), CRC and LRC", "PDU (function code and data), exception responses"],
+      seeG: ["For the MBAP header and connection problems see ", "; for the RTU bytes see ", "."],
+      seeT: ["To decode values and 40001 addresses in detail use the ", "Modbus Frame Decoder", "; to practise with questions try the ", "Modbus Practice Quiz", "."],
+    }
+  : page2(lang, "modbusRtuTcp");
 const pdus: [number, number[]][] = [
   [1, [0x03, 0x00, 0x00, 0x00, 0x0a]],
   [1, [0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]],
@@ -84,11 +95,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "Modbus RTU ↔ TCP 변환기 — MBAP·CRC·ASCII LRC (온라인) — PortDock" : "Modbus RTU to TCP Converter: MBAP, CRC, ASCII LRC — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["checksum", "modbusNames", "modbusDecode", "modbusConvert"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -139,19 +150,19 @@ const ld = {
       }
       <h2>{L.srcTitle}</h2>
       <ul>
-        <li>Modbus Messaging on TCP/IP Implementation Guide V1.0b — {ko ? "MBAP 머리(트랜잭션·프로토콜·길이·유닛 ID), 게이트웨이의 유닛 ID" : "MBAP header (transaction, protocol, length, unit ID), unit ID at gateways"}</li>
-        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {ko ? "RTU·ASCII 프레임, 국번(0 브로드캐스트, 1~247), CRC·LRC" : "RTU and ASCII framing, addresses (0 broadcast, 1–247), CRC and LRC"}</li>
-        <li>Modbus Application Protocol Specification V1.1b3 — {ko ? "PDU(함수 코드·데이터), 예외 응답" : "PDU (function code and data), exception responses"}</li>
+        <li>Modbus Messaging on TCP/IP Implementation Guide V1.0b — {L.src[0]}</li>
+        <li>Modbus over Serial Line Specification and Implementation Guide V1.02 — {L.src[1]}</li>
+        <li>Modbus Application Protocol Specification V1.1b3 — {L.src[2]}</li>
       </ul>
       <p>
-        {ko ? "MBAP 머리와 연결 문제는 가이드 " : "For the MBAP header and connection problems see "}
-        <a href={url(lang, "guides/modbus-tcp-connection/")}>{L.guide}</a>{ko ? ", RTU 바이트 풀이는 " : "; for the RTU bytes see "}
-        <a href={url(lang, "guides/modbus-rtu-frame/")}>{L.guide2}</a>{ko ? " 를 보세요." : "."}
+        {L.seeG[0]}
+        <a href={link(lang, "guides/modbus-tcp-connection/")}>{L.guide}</a>{L.seeG[1]}
+        <a href={link(lang, "guides/modbus-rtu-frame/")}>{L.guide2}</a>{L.seeG[2]}
       </p>
       <p>
-        {ko ? "값 표·40001 주소까지 자세히 풀려면 " : "To decode values and 40001 addresses in detail use the "}
-        <a href={url(lang, "tools/modbus-decoder/")}>{ko ? "Modbus 프레임 해석기" : "Modbus Frame Decoder"}</a>{ko ? ", 문제로 익히려면 " : "; to practise with questions try the "}
-        <a href={url(lang, "tools/modbus-practice/")}>{ko ? "Modbus 연습장" : "Modbus Practice Quiz"}</a>{ko ? " 을 쓰세요." : "."}
+        {L.seeT[0]}
+        <a href={link(lang, "tools/modbus-decoder/")}>{L.seeT[1]}</a>{L.seeT[2]}
+        <a href={link(lang, "tools/modbus-practice/")}>{L.seeT[3]}</a>{L.seeT[4]}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -222,13 +233,12 @@ const ld = {
     }
   </style>
   <script>
-    import { type Lang } from "../lib/checksum";
+    import { msg, type Lang } from "../lib/tr";
     import { buildFrame, convertNotes, parseFrame, type Format, type InFormat, type Segment } from "../lib/modbusConvert";
     import { decodePdu } from "../lib/modbusDecode";
     const form = document.getElementById("cv") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const t = (k: string, e: string) => msg(lang, k, e);
     const data = document.getElementById("data") as HTMLTextAreaElement;
     const mode = document.getElementById("mode") as HTMLSelectElement;
     const tidIn = document.getElementById("tid") as HTMLInputElement;

@@ -3,7 +3,7 @@
 import LangPage from "../../i18n/LangPage.astro";
 import { staticPaths } from "../../i18n/scope";
 
-export const getStaticPaths = staticPaths;
+export const getStaticPaths = () => staticPaths("de");
 const { path } = Astro.props;
 ---
 

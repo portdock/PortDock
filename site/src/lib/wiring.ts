@@ -8,11 +8,12 @@
 import type { Drawing, LegendItem, Shape, Ink } from "./diagramSvg.ts";
 import { roughMaxLength } from "./rs485.ts";
 
-export type Lang = "ko" | "en";
+import { msg, tx as say, type Lang } from "./tr.ts";
+export type { Lang };
 export type TemplateId = "rs485-2w" | "rs485-4w" | "rs232" | "4-20ma" | "npn-pnp" | "output";
 export const TEMPLATES: TemplateId[] = ["rs485-2w", "rs485-4w", "rs232", "4-20ma", "npn-pnp", "output"];
 
-export const TEMPLATE_NAME: Record<TemplateId, Record<Lang, string>> = {
+export const TEMPLATE_NAME: Record<TemplateId, { ko: string; en: string }> = {
   "rs485-2w": { ko: "RS-485 2선 멀티드롭", en: "RS-485 2-wire multidrop" },
   "rs485-4w": { ko: "RS-485 4선 / RS-422", en: "RS-485 4-wire / RS-422" },
   rs232: { ko: "RS-232 DB9", en: "RS-232 DB9" },
@@ -122,8 +123,7 @@ function clampDevices<T>(list: T[]): T[] {
 }
 
 export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const devs = clampDevices(x.devices.length ? x.devices : [{ name: t("장비 1", "Device 1"), unit: 1 }]);
   const nodes = [{ name: x.master || t("PC + USB-RS485", "PC + USB-RS485"), unit: 0 } as Rs485Device, ...devs];
   const left = 150;
@@ -249,7 +249,7 @@ export function rs485TwoWire(x: Rs485Input, lang: Lang): WiringResult {
     { level: "info", text: t("보율·데이터 비트·패리티·정지 비트는 버스의 모든 장비가 같아야 하고, 국번(1~247)은 겹치지 않아야 합니다.", "Baud, data bits, parity and stop bits must match on every device; slave IDs (1–247) must be unique."), src: SRC_MODBUS },
     { level: "info", text: t("일반적으로 표준 송수신기 기준 중계기 없이 32대(단위 부하)까지입니다.", "Generally up to 32 unit loads per segment without a repeater with standard transceivers."), src: `${SRC_MODBUS} §3.4` },
   ];
-  return { drawing: { w, h: yG + 64, title: TEMPLATE_NAME["rs485-2w"][lang], shapes: S, legend }, checks, warnings, tables: [] };
+  return { drawing: { w, h: yG + 64, title: say(TEMPLATE_NAME["rs485-2w"], lang), shapes: S, legend }, checks, warnings, tables: [] };
 }
 
 // ---------------------------------------------------------------- RS-485 4선 / RS-422
@@ -270,8 +270,7 @@ export interface FourWireInput {
 }
 
 export function rs485FourWire(x: FourWireInput, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const devs = clampDevices(x.devices.length ? x.devices : [{ name: t("장비 1", "Device 1"), unit: 1 }]);
   const nodes = [{ name: x.master || "PC + USB-RS422/485", unit: 0 } as Rs485Device, ...devs];
   const L = FOUR_LABELS[x.labels];
@@ -337,7 +336,7 @@ export function rs485FourWire(x: FourWireInput, lang: Lang): WiringResult {
     { level: "warn", text: t("+/− 표기와 TX/RX 기준(자기 기준인지 상대 기준인지)은 제조사마다 다릅니다 — 장비 매뉴얼의 단자 번호를 확인합니다.", "+/− naming and whether TX/RX are named from the device's own side vary by vendor — check the manual's terminal numbers.") },
     { level: "info", text: t("Common(SG)을 함께 잇습니다.", "Connect Common (SG) as well."), src: `${SRC_MODBUS} §3.3` },
   ];
-  return { drawing: { w, h: ys[4] + 44, title: TEMPLATE_NAME["rs485-4w"][lang], shapes: S, legend }, checks, warnings, tables: [] };
+  return { drawing: { w, h: ys[4] + 44, title: say(TEMPLATE_NAME["rs485-4w"], lang), shapes: S, legend }, checks, warnings, tables: [] };
 }
 
 // ---------------------------------------------------------------- RS-232 DB9
@@ -382,8 +381,7 @@ export function rs232Pairs(mode: Rs232Mode): { a: number; b: number; use: "data"
 }
 
 export function rs232(x: Rs232Input, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const S: Shape[] = [];
   const w = 760;
   const boxW = 170;
@@ -449,7 +447,7 @@ export function rs232(x: Rs232Input, lang: Lang): WiringResult {
     { level: "info", text: t("루프백 시험: PC 쪽 커넥터의 2번과 3번을 이어 보낸 바이트가 돌아오면 PC 포트·변환기는 동작합니다.", "Loopback test: tie pins 2 and 3 at the PC connector; if bytes come back, the port and adapter work.") },
     { level: "info", text: t("시중 케이블은 결선이 다른 것도 있습니다 — 케이블 결선도와 장비 매뉴얼의 단자 번호를 확인합니다.", "Commercial cables are not all wired alike — check the cable diagram and the device manual's pin numbers.") },
   ];
-  return { drawing: { w, h, title: `${TEMPLATE_NAME.rs232[lang]} — ${modeName}`, shapes: S, legend }, checks, warnings: [], tables };
+  return { drawing: { w, h, title: `${say(TEMPLATE_NAME.rs232, lang)} — ${modeName}`, shapes: S, legend }, checks, warnings: [], tables };
 }
 
 // ---------------------------------------------------------------- 4-20mA
@@ -473,8 +471,7 @@ const fx = (v: number, d = 2) => {
 };
 
 export function loop420(x: LoopInput, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const S: Shape[] = [];
   const w = 760;
   // 상자: 전원(왼쪽 아래), 트랜스미터(왼쪽 위), PLC AI(오른쪽)
@@ -563,7 +560,7 @@ export function loop420(x: LoopInput, lang: Lang): WiringResult {
     { level: "info", text: t("단자 이름(AI+·I+·V+·COM)과 번호는 PLC·트랜스미터 매뉴얼의 단자 번호를 확인합니다.", "Terminal names (AI+, I+, V+, COM) and numbers vary — check the PLC and transmitter manuals.") },
   ];
   const tables: Table[] = [{ caption: t(`수신 저항 ${fx(x.rRecv, 1)} Ω 양단 전압`, `Voltage across ${fx(x.rRecv, 1)} Ω`), head: ["mA", "V", "%"], rows: loopRows(x.rRecv).map((r) => [String(r.mA), fx(r.v, 3), String(((r.mA - 4) / 16) * 100)]) }];
-  return { drawing: { w, h: 320, title: `${TEMPLATE_NAME["4-20ma"][lang]} — ${kindName}`, shapes: S, legend }, checks, warnings, tables };
+  return { drawing: { w, h: 320, title: `${say(TEMPLATE_NAME["4-20ma"], lang)} — ${kindName}`, shapes: S, legend }, checks, warnings, tables };
 }
 
 // ---------------------------------------------------------------- NPN/PNP 센서 → PLC DI
@@ -577,8 +574,7 @@ export interface SensorInput {
 export const comTo = (type: "npn" | "pnp") => (type === "npn" ? "+24V" : "0V");
 
 export function sensors(x: SensorInput, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const n = Math.max(1, Math.min(4, Math.round(x.count) || 1));
   const S: Shape[] = [];
   const w = 780;
@@ -642,7 +638,7 @@ export function sensors(x: SensorInput, lang: Lang): WiringResult {
     { level: "info", text: t("센서 전원과 PLC 입력 전원의 0 V 가 같아야 합니다(전원이 둘이면 0 V 를 잇기).", "The sensor supply and PLC input supply must share 0 V (tie the 0 V lines if there are two supplies).") },
     { level: "info", text: t("입력 단자 번호(X0·I0.0·%IX0 등)와 COM 묶음은 PLC 매뉴얼의 단자 번호를 확인합니다.", "Input names (X0, I0.0, %IX0 …) and COM groups vary — check the PLC manual's terminal numbers.") },
   ];
-  return { drawing: { w, h: hh + 12, title: `${TEMPLATE_NAME["npn-pnp"][lang]} — ${x.type.toUpperCase()}`, shapes: S, legend }, checks, warnings: [], tables: [] };
+  return { drawing: { w, h: hh + 12, title: `${say(TEMPLATE_NAME["npn-pnp"], lang)} — ${x.type.toUpperCase()}`, shapes: S, legend }, checks, warnings: [], tables: [] };
 }
 
 // ---------------------------------------------------------------- 릴레이·TR 출력 → 부하
@@ -653,8 +649,7 @@ export interface OutputInput {
 }
 
 export function output(x: OutputInput, lang: Lang): WiringResult {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const S: Shape[] = [];
   const w = 760;
   const yP = 40;
@@ -733,7 +728,7 @@ export function output(x: OutputInput, lang: Lang): WiringResult {
     { level: "info", text: t("출력 한 점·COM 묶음의 최대 전류, 릴레이 접점 정격(전압·전류·수명)을 PLC 매뉴얼에서 확인합니다.", "Check the PLC manual for maximum current per point and per COM group, and relay contact ratings (voltage, current, life).") },
     { level: "info", text: t("단자 이름(Y0·Q0.0·%QX0 등)과 번호는 PLC 매뉴얼의 단자 번호를 확인합니다.", "Output names (Y0, Q0.0, %QX0 …) vary — check the PLC manual's terminal numbers.") },
   ];
-  return { drawing: { w, h: yZ + 30, title: `${TEMPLATE_NAME.output[lang]} — ${outName}`, shapes: S, legend }, checks, warnings, tables: [] };
+  return { drawing: { w, h: yZ + 30, title: `${say(TEMPLATE_NAME.output, lang)} — ${outName}`, shapes: S, legend }, checks, warnings, tables: [] };
 }
 
 // ---------------------------------------------------------------- 주소(#…) ↔ 입력
@@ -762,7 +757,7 @@ export interface WiringState {
 
 export const DEFAULT_STATE = (lang: Lang): WiringState => ({
   tpl: "rs485-2w",
-  devices: [1, 2, 3].map((u) => ({ name: lang === "ko" ? `인버터 ${u}` : `Inverter ${u}`, unit: u })),
+  devices: [1, 2, 3].map((u) => ({ name: msg(lang, `인버터 ${u}`, `Inverter ${u}`), unit: u })),
   conv: "ab",
   dev: "ab",
   four: "txrx",

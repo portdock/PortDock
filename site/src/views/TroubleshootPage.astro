@@ -8,41 +8,48 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { TREE } from "../data/troubleshoot";
-import { GUIDES } from "../data/guides";
-import { WEB_TOOLS } from "../data/webTools";
-import { TOOLS, type Lang } from "../data/tools";
-import { isQuestion, linkPath } from "../lib/troubleshoot";
+import { TOOLS } from "../data/tools";
+import { isQuestion, linkPath, localize, say } from "../lib/troubleshoot";
 import { ITEM_NAME, type ItemId } from "../lib/meterCheck";
 import { TEMPLATE_NAME } from "../lib/wiring";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { isExtra, type SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/troubleshoot/";
+// 추가 언어: 나무 글 표(i18n/<언어>/troubleshootTree.ts)를 붙인 나무 — 화면과 브라우저 스크립트(#ts-tree)가 같이 쓴다
+const treeText = isExtra(lang) ? page2(lang, "troubleshoot").tree : undefined;
+const tree = treeText ? localize(TREE, treeText) : TREE;
 
 // 링크 경로 → 이 언어의 이름(화면·복사 글에 쓴다)
 const names: Record<string, string> = {};
+// 추가 언어: 링크 경로 → 주소(번역이 없는 쪽은 영어판). 한국어·영어는 스크립트가 앞에 /·/en/ 을 붙인다
+const hrefs: Record<string, string> = {};
 for (const n of TREE.nodes) {
   if (isQuestion(n)) continue;
   for (const l of n.links) {
     const p = linkPath(l);
-    if (l.k === "guide") names[p] = GUIDES.find((g) => g.slug === l.to)!.title[lang];
+    hrefs[p] = link(lang, p);
+    if (l.k === "guide") names[p] = pageName(lang, `guides/${l.to}/`);
     else if (l.k === "app") names[p] = TOOLS.find((x) => x.id === l.to)!.name;
     else {
-      const base = WEB_TOOLS.find((w) => w.path === l.to)!.name[lang];
+      const base = pageName(lang, l.to);
       let sub = "";
-      if (l.hash && l.to === "tools/multimeter-check/") sub = ITEM_NAME[l.hash as ItemId][lang];
-      if (l.hash && l.to === "tools/wiring/") sub = TEMPLATE_NAME[l.hash.slice(4) as keyof typeof TEMPLATE_NAME][lang];
+      if (l.hash && l.to === "tools/multimeter-check/") sub = tx(ITEM_NAME[l.hash as ItemId], lang);
+      if (l.hash && l.to === "tools/wiring/") sub = tx(TEMPLATE_NAME[l.hash.slice(4) as keyof typeof TEMPLATE_NAME], lang);
       names[p] = sub ? `${base} — ${sub}` : base;
     }
   }
 }
-const kinds = { guide: ko ? "가이드" : "Guide", web: ko ? "웹 도구" : "Web tool", app: ko ? "프로그램" : "App" };
 
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "고장 원인 찾기 도우미 — RS-485·Modbus·4-20mA·센서",
       h1: "고장 원인 찾기 도우미",
@@ -81,8 +88,11 @@ const L = ko
         ["결과가 원인을 알려 주나요?", "아닙니다. 흔한 원인 후보를 좁혀 주고 무엇을 재 볼지 알려 줄 뿐입니다. 현장 측정·장비 매뉴얼이 먼저입니다."],
         ["질문이 우리 현장과 맞지 않습니다.", "아래 «의견 남기기» 로 증상과 상황을 알려 주시면 질문을 더하겠습니다."],
       ],
+      kinds: { guide: "가이드", web: "웹 도구", app: "프로그램" },
+      end: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Field Troubleshooting Wizard — RS-485, Modbus, 4–20 mA, Sensors",
       h1: "Field Troubleshooting Wizard",
       desc: "RS-485/Modbus no reply, RS-232, Modbus TCP, USB-serial drops, 4–20 mA, NPN/PNP sensors, MC protocol — answer yes or no to narrow down possible causes.",
@@ -120,7 +130,10 @@ const L = ko
         ["Does the result tell me the cause?", "No. It narrows down common possible causes and tells you what to measure. On-site measurements and the device manual come first."],
         ["The questions don't fit my site.", "Use «Leave feedback» below to describe the symptom and setup, and we will add questions."],
       ],
-    };
+      kinds: { guide: "Guide", web: "Web tool", app: "App" },
+      end: ".",
+    }
+  : page2(lang, "troubleshoot");
 const T = {
   copied: L.copied,
   copyFail: L.copyFail,
@@ -129,10 +142,10 @@ const T = {
   checks: L.checks,
   links: L.links,
   caveat: L.caveat,
-  kinds,
+  kinds: L.kinds,
 };
 // 증상마다 결과에 나오는 가이드(겹침 없이) — JS 없이도 읽히는 목록
-const byId = new Map(TREE.nodes.map((n) => [n.id, n]));
+const byId = new Map(tree.nodes.map((n) => [n.id, n]));
 const guidesFor = (start: string) => {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -153,21 +166,22 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["troubleshoot"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <div class="calc card ts" id="ts" data-lang={lang} data-names={JSON.stringify(names)} data-t={JSON.stringify(T)}>
+    <div class="calc card ts" id="ts" data-lang={lang} data-names={JSON.stringify(names)} data-hrefs={treeText ? JSON.stringify(hrefs) : undefined} data-t={JSON.stringify(T)}>
+      {treeText && <script type="application/json" id="ts-tree" set:html={JSON.stringify(treeText).replace(/</g, "\\u003c")} />}
       <section id="ts-pick">
         <h2 class="ts-h">{L.pick}</h2>
         <div class="ts-syms">
-          {TREE.symptoms.map((s, i) => <button type="button" class="btn ts-sym" data-s={s.id}><span class="ts-n">{i + 1}</span> {s.name[lang]}</button>)}
+          {tree.symptoms.map((s, i) => <button type="button" class="btn ts-sym" data-s={s.id}><span class="ts-n">{i + 1}</span> {say(s.name, lang)}</button>)}
         </div>
         <noscript><p class="note">{L.noJs}</p></noscript>
       </section>
@@ -199,16 +213,16 @@ const ld = {
     <section class="prose">
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
-      <p>{L.mmNote} <a href={url(lang, "tools/multimeter-check/")}>{L.mm}</a>. {L.wdNote} <a href={url(lang, "tools/wiring/")}>{L.wd}</a>. {L.rsNote} <a href={url(lang, "tools/rs485/")}>{L.rs}</a>.</p>
+      <p>{L.mmNote} <a href={link(lang, "tools/multimeter-check/")}>{L.mm}</a>{L.end} {L.wdNote} <a href={link(lang, "tools/wiring/")}>{L.wd}</a>{L.end} {L.rsNote} <a href={link(lang, "tools/rs485/")}>{L.rs}</a>{L.end}</p>
       <h2>{L.covers}</h2>
       <ul>
         {
-          TREE.symptoms.map((s) => (
+          tree.symptoms.map((s) => (
             <li>
-              <b>{s.name[lang]}</b> — {guidesFor(s.start).map((g, i) => (
+              <b>{say(s.name, lang)}</b> — {guidesFor(s.start).map((g, i) => (
                 <>
                   {i > 0 && ", "}
-                  <a href={url(lang, `guides/${g}/`)}>{GUIDES.find((x) => x.slug === g)!.title[lang]}</a>
+                  <a href={link(lang, `guides/${g}/`)}>{pageName(lang, `guides/${g}/`)}</a>
                 </>
               ))}
             </li>
@@ -328,11 +342,15 @@ const ld = {
     }
   </style>
   <script>
-    import { TREE } from "../data/troubleshoot";
-    import { isQuestion, linkPath, parseHash, toHash, toText, walk, type Lang } from "../lib/troubleshoot";
+    import { TREE as BASE_TREE } from "../data/troubleshoot";
+    import { isQuestion, linkPath, localize, parseHash, say, toHash, toText, walk, type Lang, type TreeText } from "../lib/troubleshoot";
     const root = document.getElementById("ts")!;
     const lang = (root.dataset.lang ?? "ko") as Lang;
     const names = JSON.parse(root.dataset.names ?? "{}") as Record<string, string>;
+    // 추가 언어 쪽에만 있는 나무 글 표·링크 주소
+    const textEl = document.getElementById("ts-tree");
+    const TREE = textEl ? localize(BASE_TREE, JSON.parse(textEl.textContent || "{}") as TreeText) : BASE_TREE;
+    const hrefs = root.dataset.hrefs ? (JSON.parse(root.dataset.hrefs) as Record<string, string>) : null;
     const T = JSON.parse(root.dataset.t ?? "{}") as { copied: string; copyFail: string; goHere: string; causes: string; checks: string; links: string; caveat: string; kinds: Record<string, string> };
     const $ = (id: string) => document.getElementById(id)!;
     const pick = $("ts-pick");
@@ -348,6 +366,7 @@ const ld = {
     const msg = $("ts-msg");
     const text = $("ts-text") as HTMLTextAreaElement;
     const prefix = lang === "en" ? "/en/" : "/";
+    const hrefOf = (p: string) => hrefs?.[p] ?? prefix + p;
     let sym = "";
     let picks: number[] = [];
 
@@ -381,11 +400,11 @@ const ld = {
       picks = w.steps.map((s) => s.pick);
       pick.hidden = true;
       flow.hidden = false;
-      symEl.textContent = w.symptom.name[lang];
+      symEl.textContent = say(w.symptom.name, lang);
       trail.replaceChildren(
         ...w.steps.map((s, i) => {
           const li = el("li");
-          const b = el("button", s.q.q[lang]);
+          const b = el("button", say(s.q.q, lang));
           b.type = "button";
           b.title = T.goHere;
           b.addEventListener("click", () => {
@@ -393,7 +412,7 @@ const ld = {
             save();
             render(true);
           });
-          li.append(b, " → ", el("b", s.q.opts[s.pick].a[lang]));
+          li.append(b, " → ", el("b", say(s.q.opts[s.pick].a, lang)));
           return li;
         }),
       );
@@ -403,11 +422,11 @@ const ld = {
         const q = w.at;
         qBox.hidden = false;
         res.hidden = true;
-        qText.textContent = q.q[lang];
-        hint.textContent = q.hint?.[lang] ?? "";
+        qText.textContent = say(q.q, lang);
+        hint.textContent = q.hint ? say(q.hint, lang) : "";
         opts.replaceChildren(
           ...q.opts.map((o, i) => {
-            const b = el("button", o.a[lang], "btn" + (q.opts.length === 2 && i === 0 ? " primary" : ""));
+            const b = el("button", say(o.a, lang), "btn" + (q.opts.length === 2 && i === 0 ? " primary" : ""));
             b.type = "button";
             b.addEventListener("click", () => {
               picks = [...picks, i];
@@ -433,12 +452,12 @@ const ld = {
             const li = el("li");
             const p = linkPath(l);
             const a = el("a", names[p] ?? p);
-            a.href = prefix + p;
+            a.href = hrefOf(p);
             li.append(el("span", T.kinds[l.k], "kind"), a);
             return li;
           }),
         );
-        res.replaceChildren(el("h3", r.title[lang]), el("h4", T.causes), ul(r.causes.map((c) => c[lang])), el("h4", T.checks), ul(r.checks.map((c) => c[lang])), el("h4", T.links), links, el("p", T.caveat, "note"));
+        res.replaceChildren(el("h3", say(r.title, lang)), el("h4", T.causes), ul(r.causes.map((c) => say(c, lang))), el("h4", T.checks), ul(r.checks.map((c) => say(c, lang))), el("h4", T.links), links, el("p", T.caveat, "note"));
         if (focus) res.scrollIntoView({ block: "nearest" });
       }
     }
@@ -466,7 +485,7 @@ const ld = {
     $("ts-copy").addEventListener("click", async () => {
       const w = walk(TREE, sym, picks);
       if (!w) return;
-      const s = toText(w, lang, names, location.origin + prefix);
+      const s = toText(w, lang, names, (p) => location.origin + hrefOf(p));
       text.value = s;
       try {
         await navigator.clipboard.writeText(s);

@@ -8,18 +8,20 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
 import { ITEMS, ITEM_NAME, LEVEL_NAME, type ItemId } from "../lib/meterCheck";
 import { probeSvg } from "../lib/meterFig";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { msg, tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/multimeter-check/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "멀티미터 측정값 점검기 — RS-485·4-20mA·24V·센서",
       h1: "멀티미터 측정값 점검기",
@@ -39,8 +41,16 @@ const L = ko
       rs: "RS-485 종단·바이어스 계산기",
       rsNote: "종단·바이어스 저항 값을 정하려면",
       srcTitle: "출처",
+      faqTitle: "자주 묻는 것",
+      end: ".",
+      faq: [
+        ["A–B 저항을 전원을 켠 채 재도 되나요?", "아니요. 모든 장비 전원을 끄고 잽니다. 전원이 있으면 측정기가 틀린 값을 보이고 장비나 측정기가 상할 수 있습니다."],
+        ["종단을 달았는데 «종단 없음» 으로 나와요", "RC 종단(1 nF + 120 Ω 직렬)은 콘덴서가 직류를 막아 멀티미터로는 보이지 않습니다. «종단 저항» 칸에서 RC 를 고르거나 끝 장비의 종단 스위치·부품을 눈으로 봅니다. 장비 안 종단이 전원을 켤 때만 붙는 제품도 있습니다."],
+        ["«문제 없음(이 측정 범위)» 이면 통신도 되나요?", "잰 값 하나에서 문제가 보이지 않는다는 뜻입니다. 통신 설정·국번·극성·노이즈 같은 다른 원인 후보는 고장 원인 찾기 도우미로 이어서 봅니다."],
+      ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Multimeter Reading Checker — RS-485, 4–20 mA, 24 V, Sensors",
       h1: "Multimeter Reading Checker",
       desc: "RS-485 A–B resistance and idle voltage, 4–20 mA (NE 43), 24 V drop, NPN/PNP output, RS-232 TX, ground difference — enter a reading, get a verdict and why.",
@@ -59,7 +69,15 @@ const L = ko
       rs: "RS-485 termination and bias calculator",
       rsNote: "To size termination and bias resistors, use the",
       srcTitle: "Sources",
-    };
+      faqTitle: "FAQ",
+      end: ".",
+      faq: [
+        ["Can I measure A–B resistance with power on?", "No. Power off every device first. With power on the meter shows wrong values and the device or meter can be damaged."],
+        ["I fitted termination but it reads «no termination»", "RC termination (1 nF + 120 Ω in series) blocks DC with its capacitor, so a multimeter cannot see it. Choose RC in the «Terminator» field, or look at the end devices' termination switches and parts. Some devices also switch in internal termination only when powered."],
+        ["Does «No issue found (in this measurement)» mean communication will work?", "It means this one reading shows no problem. For other possible causes — settings, slave IDs, polarity, noise — continue with the troubleshooting helper."],
+      ] as [string, string][],
+    }
+  : page2(lang, "multimeterCheck");
 
 type Field = { f: string; label: string; kind: "num" | "sel"; value?: string; opts?: [string, string][]; unit?: string };
 interface Item {
@@ -71,34 +89,28 @@ interface Item {
 const ITEMS_UI: Item[] = [
   {
     id: "rs485-ohm",
-    how: ko
-      ? "모든 장비 전원을 끄고, 선은 그대로 둔 채 아무 장비의 A–B 단자 사이를 저항(Ω)으로 잽니다. 장비 수와 바이어스 저항을 넣으면 예상값과 비교합니다."
-      : "Power off every device, leave the wiring as it is, and measure resistance (Ω) across A–B at any device. Enter the device count and bias resistors to compare with expected values.",
-    basis: ko
-      ? "종단 120 Ω 두 개가 나란히면 60 Ω. 수신기 하나는 일반적으로 12 kΩ(단위 부하), 바이어스 저항은 전원이 꺼지면 전원 회로를 거쳐 직렬로 보일 수 있습니다. Modbus 규격: 종단은 양 끝에만(150 Ω 또는 1 nF + 120 Ω 직렬). RC 종단(1 nF 직렬)은 직류를 막아 멀티미터로는 보이지 않습니다."
-      : "Two 120 Ω terminations in parallel make 60 Ω. A receiver is typically 12 kΩ (one unit load); bias resistors can appear in series through a powered-off supply. Modbus spec: termination at both ends only (150 Ω, or 1 nF + 120 Ω in series). RC termination (1 nF in series) blocks DC, so a multimeter cannot see it.",
+    how: msg(lang, "모든 장비 전원을 끄고, 선은 그대로 둔 채 아무 장비의 A–B 단자 사이를 저항(Ω)으로 잽니다. 장비 수와 바이어스 저항을 넣으면 예상값과 비교합니다.", "Power off every device, leave the wiring as it is, and measure resistance (Ω) across A–B at any device. Enter the device count and bias resistors to compare with expected values."),
+    basis: msg(lang, "종단 120 Ω 두 개가 나란히면 60 Ω. 수신기 하나는 일반적으로 12 kΩ(단위 부하), 바이어스 저항은 전원이 꺼지면 전원 회로를 거쳐 직렬로 보일 수 있습니다. Modbus 규격: 종단은 양 끝에만(150 Ω 또는 1 nF + 120 Ω 직렬). RC 종단(1 nF 직렬)은 직류를 막아 멀티미터로는 보이지 않습니다.", "Two 120 Ω terminations in parallel make 60 Ω. A receiver is typically 12 kΩ (one unit load); bias resistors can appear in series through a powered-off supply. Modbus spec: termination at both ends only (150 Ω, or 1 nF + 120 Ω in series). RC termination (1 nF in series) blocks DC, so a multimeter cannot see it."),
     fields: [
-      { f: "ohm", label: ko ? "잰 값(Ω, OL 가능)" : "Reading (Ω, OL allowed)", kind: "num", value: "60" },
-      { f: "nodes", label: ko ? "트랜시버 수(변환기 포함)" : "Transceivers (incl. adapter)", kind: "num", value: "3" },
-      { f: "rTerm", label: ko ? "종단 저항" : "Terminator", kind: "sel", opts: [["120", "120 Ω"], ["150", "150 Ω"], ["-1", ko ? "1 nF + 120 Ω (RC)" : "1 nF + 120 Ω (RC)"]] },
-      { f: "rBias", label: ko ? "바이어스 저항(하나)" : "Bias resistor (each)", kind: "sel", opts: [["0", ko ? "없음·모름" : "None / unknown"], ["470", "470 Ω"], ["560", "560 Ω"], ["680", "680 Ω"], ["1000", "1 kΩ"]] },
+      { f: "ohm", label: msg(lang, "잰 값(Ω, OL 가능)", "Reading (Ω, OL allowed)"), kind: "num", value: "60" },
+      { f: "nodes", label: msg(lang, "트랜시버 수(변환기 포함)", "Transceivers (incl. adapter)"), kind: "num", value: "3" },
+      { f: "rTerm", label: msg(lang, "종단 저항", "Terminator"), kind: "sel", opts: [["120", "120 Ω"], ["150", "150 Ω"], ["-1", msg(lang, "1 nF + 120 Ω (RC)", "1 nF + 120 Ω (RC)")]] },
+      { f: "rBias", label: msg(lang, "바이어스 저항(하나)", "Bias resistor (each)"), kind: "sel", opts: [["0", msg(lang, "없음·모름", "None / unknown")], ["470", "470 Ω"], ["560", "560 Ω"], ["680", "680 Ω"], ["1000", "1 kΩ"]] },
     ],
   },
   {
     id: "rs485-idle",
-    how: ko
-      ? "전원을 켜고 폴링을 멈춘 채(아무도 보내지 않을 때), 빨강을 B(D1·+), 검정을 A(D0·−)에 대고 직류 전압을 잽니다."
-      : "With power on and polling stopped (nobody transmitting), put red on B (D1·+) and black on A (D0·−) and measure DC volts.",
-    basis: ko ? "TIA/EIA-485: 수신기는 차동 ±200 mV 이상이면 상태가 정해집니다. 쉬는 동안 + 쪽이면 «1»(마크)." : "TIA/EIA-485: receivers have a defined state beyond ±200 mV differential. Positive while idle means «1» (mark).",
+    how: msg(lang, "전원을 켜고 폴링을 멈춘 채(아무도 보내지 않을 때), 빨강을 B(D1·+), 검정을 A(D0·−)에 대고 직류 전압을 잽니다.", "With power on and polling stopped (nobody transmitting), put red on B (D1·+) and black on A (D0·−) and measure DC volts."),
+    basis: msg(lang, "TIA/EIA-485: 수신기는 차동 ±200 mV 이상이면 상태가 정해집니다. 쉬는 동안 + 쪽이면 «1»(마크).", "TIA/EIA-485: receivers have a defined state beyond ±200 mV differential. Positive while idle means «1» (mark)."),
     fields: [
       { f: "v", label: "B − A", kind: "num", value: "350" },
-      { f: "unit", label: ko ? "단위" : "Unit", kind: "sel", opts: [["mV", "mV"], ["V", "V"]] },
+      { f: "unit", label: msg(lang, "단위", "Unit"), kind: "sel", opts: [["mV", "mV"], ["V", "V"]] },
     ],
   },
   {
     id: "rs485-cm",
-    how: ko ? "전원을 켜고 ① A 와 SG(공통·0 V), ② B 와 SG 사이 직류 전압을 따로 잽니다. 한쪽만 넣어도 됩니다." : "Power on, then measure DC volts ① from A to SG (common · 0 V) and ② from B to SG. Entering only one is fine.",
-    basis: ko ? "TIA/EIA-485: 수신기 공통 모드 입력 범위 −7~+12 V. 보통은 0~5 V 사이." : "TIA/EIA-485: receiver common-mode range −7 to +12 V; usually between 0 and 5 V.",
+    how: msg(lang, "전원을 켜고 ① A 와 SG(공통·0 V), ② B 와 SG 사이 직류 전압을 따로 잽니다. 한쪽만 넣어도 됩니다.", "Power on, then measure DC volts ① from A to SG (common · 0 V) and ② from B to SG. Entering only one is fine."),
+    basis: msg(lang, "TIA/EIA-485: 수신기 공통 모드 입력 범위 −7~+12 V. 보통은 0~5 V 사이.", "TIA/EIA-485: receiver common-mode range −7 to +12 V; usually between 0 and 5 V."),
     fields: [
       { f: "a", label: "A − SG (V)", kind: "num", value: "2.2" },
       { f: "b", label: "B − SG (V)", kind: "num", value: "2.6" },
@@ -106,46 +118,46 @@ const ITEMS_UI: Item[] = [
   },
   {
     id: "loop-ma",
-    how: ko ? "루프를 한 곳 끊고 멀티미터의 mA 단자로 직렬로 넣어 잽니다. 또는 수신 저항(예: 250 Ω) 양단 전압 ÷ 저항." : "Break the loop at one point and insert the meter in series on its mA jack — or divide the voltage across the receiver resistor (e.g. 250 Ω) by its value.",
-    basis: ko ? "NAMUR NE 43: 측정 정보 3.8~20.5 mA, 고장 신호 3.6 mA 이하·21 mA 이상. 4 mA = 0 %, 20 mA = 100 %." : "NAMUR NE 43: measurement 3.8–20.5 mA, failure signal ≤ 3.6 mA or ≥ 21 mA. 4 mA = 0 %, 20 mA = 100 %.",
-    fields: [{ f: "ma", label: ko ? "전류(mA)" : "Current (mA)", kind: "num", value: "12" }],
+    how: msg(lang, "루프를 한 곳 끊고 멀티미터의 mA 단자로 직렬로 넣어 잽니다. 또는 수신 저항(예: 250 Ω) 양단 전압 ÷ 저항.", "Break the loop at one point and insert the meter in series on its mA jack — or divide the voltage across the receiver resistor (e.g. 250 Ω) by its value."),
+    basis: msg(lang, "NAMUR NE 43: 측정 정보 3.8~20.5 mA, 고장 신호 3.6 mA 이하·21 mA 이상. 4 mA = 0 %, 20 mA = 100 %.", "NAMUR NE 43: measurement 3.8–20.5 mA, failure signal ≤ 3.6 mA or ≥ 21 mA. 4 mA = 0 %, 20 mA = 100 %."),
+    fields: [{ f: "ma", label: msg(lang, "전류(mA)", "Current (mA)"), kind: "num", value: "12" }],
   },
   {
     id: "supply-24v",
-    how: ko ? "밸브·릴레이 같은 부하를 켠 채로, 전원 장치가 아니라 멀리 있는 장비의 +24V–0V 단자에서 잽니다." : "With loads such as valves and relays switched on, measure +24V–0V at the far device, not at the supply.",
-    basis: ko ? "IEC 61131-2: 24 V DC 전원은 일반적으로 −15 %~+20 %(20.4~28.8 V) 를 허용합니다. 강하 5 % 이하면 여유가 있습니다." : "IEC 61131-2: 24 V DC supplies are generally allowed −15 % to +20 % (20.4–28.8 V). A drop of 5 % or less leaves margin.",
+    how: msg(lang, "밸브·릴레이 같은 부하를 켠 채로, 전원 장치가 아니라 멀리 있는 장비의 +24V–0V 단자에서 잽니다.", "With loads such as valves and relays switched on, measure +24V–0V at the far device, not at the supply."),
+    basis: msg(lang, "IEC 61131-2: 24 V DC 전원은 일반적으로 −15 %~+20 %(20.4~28.8 V) 를 허용합니다. 강하 5 % 이하면 여유가 있습니다.", "IEC 61131-2: 24 V DC supplies are generally allowed −15 % to +20 % (20.4–28.8 V). A drop of 5 % or less leaves margin."),
     fields: [
-      { f: "nom", label: ko ? "정격(V)" : "Nominal (V)", kind: "num", value: "24" },
-      { f: "meas", label: ko ? "잰 값(V)" : "Measured (V)", kind: "num", value: "22.9" },
+      { f: "nom", label: msg(lang, "정격(V)", "Nominal (V)"), kind: "num", value: "24" },
+      { f: "meas", label: msg(lang, "잰 값(V)", "Measured (V)"), kind: "num", value: "22.9" },
     ],
   },
   {
     id: "sensor-out",
-    how: ko ? "센서를 PLC 입력에 이은 채로, 출력선(보통 검정)과 0 V(파랑) 사이 직류 전압을 센서가 켜졌을 때·꺼졌을 때 각각 잽니다." : "With the sensor connected to the PLC input, measure DC volts between the output (usually black) and 0 V (blue), once with the sensor ON and once OFF.",
-    basis: ko ? "IEC 61131-2 24 V DC 입력: 켜짐 15 V(형식 1)·11 V(형식 2·3) 이상, 꺼짐 5 V 이하. NPN 은 PLC 입력 전압 = 전원 − 출력." : "IEC 61131-2 24 V DC inputs: ON ≥ 15 V (type 1) or ≥ 11 V (types 2/3), OFF ≤ 5 V. For NPN, input voltage = supply − output.",
+    how: msg(lang, "센서를 PLC 입력에 이은 채로, 출력선(보통 검정)과 0 V(파랑) 사이 직류 전압을 센서가 켜졌을 때·꺼졌을 때 각각 잽니다.", "With the sensor connected to the PLC input, measure DC volts between the output (usually black) and 0 V (blue), once with the sensor ON and once OFF."),
+    basis: msg(lang, "IEC 61131-2 24 V DC 입력: 켜짐 15 V(형식 1)·11 V(형식 2·3) 이상, 꺼짐 5 V 이하. NPN 은 PLC 입력 전압 = 전원 − 출력.", "IEC 61131-2 24 V DC inputs: ON ≥ 15 V (type 1) or ≥ 11 V (types 2/3), OFF ≤ 5 V. For NPN, input voltage = supply − output."),
     fields: [
-      { f: "type", label: ko ? "센서 종류" : "Sensor type", kind: "sel", opts: [["npn", "NPN"], ["pnp", "PNP"]] },
-      { f: "state", label: ko ? "센서 상태(LED)" : "Sensor state (LED)", kind: "sel", opts: [["on", ko ? "켜짐" : "ON"], ["off", ko ? "꺼짐" : "OFF"]] },
-      { f: "v", label: ko ? "출력–0V (V)" : "Output–0V (V)", kind: "num", value: "0.8" },
-      { f: "sup", label: ko ? "센서 전원(V)" : "Sensor supply (V)", kind: "num", value: "24" },
+      { f: "type", label: msg(lang, "센서 종류", "Sensor type"), kind: "sel", opts: [["npn", "NPN"], ["pnp", "PNP"]] },
+      { f: "state", label: msg(lang, "센서 상태(LED)", "Sensor state (LED)"), kind: "sel", opts: [["on", msg(lang, "켜짐", "ON")], ["off", msg(lang, "꺼짐", "OFF")]] },
+      { f: "v", label: msg(lang, "출력–0V (V)", "Output–0V (V)"), kind: "num", value: "0.8" },
+      { f: "sup", label: msg(lang, "센서 전원(V)", "Sensor supply (V)"), kind: "num", value: "24" },
     ],
   },
   {
     id: "rs232-tx",
-    how: ko ? "아무것도 보내지 않을 때 PC 쪽 DB9 의 3번(TXD)과 5번(GND) 사이 직류 전압을 잽니다. 일부 변환기는 포트를 연 뒤에야 전압을 냅니다." : "While nothing is sent, measure DC volts between pin 3 (TXD) and pin 5 (GND) of the PC-side DB9. Some adapters only drive TX once the port is open.",
-    basis: ko ? "TIA-232: 송신은 쉬는 동안(마크) −5~−15 V, 수신 문턱 ±3 V, 최대 ±25 V. +3.3·+5 V 는 TTL UART." : "TIA-232: idle (mark) output −5 to −15 V, receiver threshold ±3 V, max ±25 V. +3.3/+5 V indicates a TTL UART.",
-    fields: [{ f: "v", label: ko ? "TXD–GND (V)" : "TXD–GND (V)", kind: "num", value: "-9" }],
+    how: msg(lang, "아무것도 보내지 않을 때 PC 쪽 DB9 의 3번(TXD)과 5번(GND) 사이 직류 전압을 잽니다. 일부 변환기는 포트를 연 뒤에야 전압을 냅니다.", "While nothing is sent, measure DC volts between pin 3 (TXD) and pin 5 (GND) of the PC-side DB9. Some adapters only drive TX once the port is open."),
+    basis: msg(lang, "TIA-232: 송신은 쉬는 동안(마크) −5~−15 V, 수신 문턱 ±3 V, 최대 ±25 V. +3.3·+5 V 는 TTL UART.", "TIA-232: idle (mark) output −5 to −15 V, receiver threshold ±3 V, max ±25 V. +3.3/+5 V indicates a TTL UART."),
+    fields: [{ f: "v", label: msg(lang, "TXD–GND (V)", "TXD–GND (V)"), kind: "num", value: "-9" }],
   },
   {
     id: "ground-diff",
-    how: ko ? "PC 의 USB 외함(또는 PC 접지)과 장비의 SG·PE 사이를 직류(V⎓)·교류(V~)로 각각 잽니다. 큰 값을 넣습니다." : "Measure between the PC's USB shell (or PC ground) and the device SG/PE, in both DC (V⎓) and AC (V~). Enter the larger.",
-    basis: ko ? "일반적인 기준: 1 V 미만이면 무난, 수 V 면 RS-485 공통 모드 여유가 줄고 비절연 USB·RS-232 에 전류가 흐를 수 있습니다." : "Rule of thumb: under 1 V is comfortable; a few volts shrinks the RS-485 common-mode margin and drives current through non-isolated USB and RS-232.",
-    fields: [{ f: "v", label: ko ? "전위차(V)" : "Difference (V)", kind: "num", value: "0.3" }],
+    how: msg(lang, "PC 의 USB 외함(또는 PC 접지)과 장비의 SG·PE 사이를 직류(V⎓)·교류(V~)로 각각 잽니다. 큰 값을 넣습니다.", "Measure between the PC's USB shell (or PC ground) and the device SG/PE, in both DC (V⎓) and AC (V~). Enter the larger."),
+    basis: msg(lang, "일반적인 기준: 1 V 미만이면 무난, 수 V 면 RS-485 공통 모드 여유가 줄고 비절연 USB·RS-232 에 전류가 흐를 수 있습니다.", "Rule of thumb: under 1 V is comfortable; a few volts shrinks the RS-485 common-mode margin and drives current through non-isolated USB and RS-232."),
+    fields: [{ f: "v", label: msg(lang, "전위차(V)", "Difference (V)"), kind: "num", value: "0.3" }],
   },
 ];
 // 순서·빠짐 확인(빌드 때)
 if (ITEMS_UI.map((x) => x.id).join() !== ITEMS.join()) throw new Error("ITEMS_UI 와 ITEMS 가 다릅니다");
-const T = { copied: L.copied, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, v[lang]])), names: Object.fromEntries(ITEMS.map((i) => [i, ITEM_NAME[i][lang]])) };
+const T = { copied: L.copied, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, tx(v, lang)])), names: Object.fromEntries(ITEMS.map((i) => [i, tx(ITEM_NAME[i], lang)])) };
 const SRC = [
   { name: "MODBUS over serial line specification and implementation guide V1.02 (2006) — §3.4.5, §3.4.6", href: "https://www.modbus.org/modbus-specifications" },
   { name: "Texas Instruments, RS-422 and RS-485 Standards Overview and System Configurations (SLLA070D, 2010)", href: "https://www.ti.com/lit/an/slla070d/slla070d.pdf" },
@@ -153,39 +165,29 @@ const SRC = [
   { name: "Endress+Hauser RMA42 Operating Instructions (BA00287R) — NE 43", href: "https://portal.endress.com/wa001/dla/5000557/8076/000/08/BA00287REN_0516.pdf" },
 ];
 // 자주 묻는 것(FAQPage) — components/FaqBlock.astro
-const FAQ: [string, string][] = ko
-  ? [
-      ["A–B 저항을 전원을 켠 채 재도 되나요?", "아니요. 모든 장비 전원을 끄고 잽니다. 전원이 있으면 측정기가 틀린 값을 보이고 장비나 측정기가 상할 수 있습니다."],
-      ["종단을 달았는데 «종단 없음» 으로 나와요", "RC 종단(1 nF + 120 Ω 직렬)은 콘덴서가 직류를 막아 멀티미터로는 보이지 않습니다. «종단 저항» 칸에서 RC 를 고르거나 끝 장비의 종단 스위치·부품을 눈으로 봅니다. 장비 안 종단이 전원을 켤 때만 붙는 제품도 있습니다."],
-      ["«문제 없음(이 측정 범위)» 이면 통신도 되나요?", "잰 값 하나에서 문제가 보이지 않는다는 뜻입니다. 통신 설정·국번·극성·노이즈 같은 다른 원인 후보는 고장 원인 찾기 도우미로 이어서 봅니다."],
-    ]
-  : [
-      ["Can I measure A–B resistance with power on?", "No. Power off every device first. With power on the meter shows wrong values and the device or meter can be damaged."],
-      ["I fitted termination but it reads «no termination»", "RC termination (1 nF + 120 Ω in series) blocks DC with its capacitor, so a multimeter cannot see it. Choose RC in the «Terminator» field, or look at the end devices' termination switches and parts. Some devices also switch in internal termination only when powered."],
-      ["Does «No issue found (in this measurement)» mean communication will work?", "It means this one reading shows no problem. For other possible causes — settings, slave IDs, polarity, noise — continue with the troubleshooting helper."],
-    ];
+const FAQ: [string, string][] = L.faq;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["meterCheck"]}>
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
     <nav class="chips" aria-label={L.jump}>
-      {ITEMS_UI.map((it) => <a href={`#${it.id}`}>{ITEM_NAME[it.id][lang]}</a>)}
+      {ITEMS_UI.map((it) => <a href={`#${it.id}`}>{tx(ITEM_NAME[it.id], lang)}</a>)}
     </nav>
     <p class="note privacy">{L.privacy} {L.general}</p>
     <div id="mm" data-lang={lang} data-t={JSON.stringify(T)}>
       {
         ITEMS_UI.map((it) => (
           <section class="calc card mm" id={it.id} data-item={it.id}>
-            <h2 class="mm-h">{ITEM_NAME[it.id][lang]}</h2>
+            <h2 class="mm-h">{tx(ITEM_NAME[it.id], lang)}</h2>
             <div class="mm-grid">
-              <figure class="mm-fig" set:html={probeSvg(it.id, lang, `${L.how}: ${ITEM_NAME[it.id][lang]}`)} />
+              <figure class="mm-fig" set:html={probeSvg(it.id, lang, `${L.how}: ${tx(ITEM_NAME[it.id], lang)}`)} />
               <div>
                 <p class="mm-how"><b>{L.how}</b> — {it.how}</p>
                 <div class="row">
@@ -216,13 +218,13 @@ const FAQ: [string, string][] = ko
     <AdSlot />
 
     <section class="prose">
-      <p>{L.tsNote} <a href={url(lang, "tools/troubleshoot/")}>{L.ts}</a>. {L.wdNote} <a href={url(lang, "tools/wiring/")}>{L.wd}</a>. {L.rsNote} <a href={url(lang, "tools/rs485/")}>{L.rs}</a>.</p>
-      <FaqBlock lang={lang} items={FAQ} />
+      <p>{L.tsNote} <a href={link(lang, "tools/troubleshoot/")}>{L.ts}</a>{L.end} {L.wdNote} <a href={link(lang, "tools/wiring/")}>{L.wd}</a>{L.end} {L.rsNote} <a href={link(lang, "tools/rs485/")}>{L.rs}</a>{L.end}</p>
+      <FaqBlock lang={lang} items={FAQ} title={L.faqTitle} />
       <h2>{L.srcTitle}</h2>
       <ul>
         {SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}
-        <li>IEC 61131-2 — {ko ? "프로그래머블 컨트롤러: 장비 요구 사항(24 V DC 전원·디지털 입력 형식)" : "Programmable controllers: equipment requirements (24 V DC supply, digital input types)"}</li>
-        <li>TIA-232-F — {ko ? "직렬 이진 데이터 교환 인터페이스(신호 전압)" : "Interface for serial binary data interchange (signal levels)"}</li>
+        <li>IEC 61131-2 — {msg(lang, "프로그래머블 컨트롤러: 장비 요구 사항(24 V DC 전원·디지털 입력 형식)", "Programmable controllers: equipment requirements (24 V DC supply, digital input types)")}</li>
+        <li>TIA-232-F — {msg(lang, "직렬 이진 데이터 교환 인터페이스(신호 전압)", "Interface for serial binary data interchange (signal levels)")}</li>
       </ul>
     </section>
     <UseNotice lang={lang} />
@@ -320,6 +322,7 @@ const FAQ: [string, string][] = ko
   </style>
   <script>
     import { groundDiff, loopCurrent, parseReading, rs232TxIdle, rs485CommonMode, rs485Idle, rs485Ohm, sensorOutput, supplyUnderLoad, verdictText, type ItemId, type Lang, type Verdict } from "../lib/meterCheck";
+    import { tx } from "../lib/tr";
     const root = document.getElementById("mm")!;
     const lang = (root.dataset.lang ?? "ko") as Lang;
     const T = JSON.parse(root.dataset.t ?? "{}") as { copied: string; level: Record<string, string>; names: Record<string, string> };
@@ -360,7 +363,7 @@ const FAQ: [string, string][] = ko
         badge.textContent = T.level[v.level];
         const msg = document.createElement("span");
         msg.className = "mm-msg";
-        msg.textContent = v.msg[lang];
+        msg.textContent = tx(v.msg, lang);
         const p = document.createElement("p");
         p.style.margin = "0";
         p.append(badge, msg);
@@ -369,7 +372,7 @@ const FAQ: [string, string][] = ko
           const dl = document.createElement("dl");
           for (const x of v.values) {
             const dt = document.createElement("dt");
-            dt.textContent = x.k[lang];
+            dt.textContent = tx(x.k, lang);
             const dd = document.createElement("dd");
             dd.textContent = x.v;
             dl.append(dt, dd);
@@ -380,7 +383,7 @@ const FAQ: [string, string][] = ko
           const ul = document.createElement("ul");
           for (const m of v.more) {
             const li = document.createElement("li");
-            li.textContent = m[lang];
+            li.textContent = tx(m, lang);
             ul.append(li);
           }
           kids.push(ul);

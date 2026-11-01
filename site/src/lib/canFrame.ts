@@ -11,7 +11,8 @@
 //   CANopen: CiA 301 의 기본 연결 집합(predefined connection set) — COB-ID = 기능 코드(4비트) × 128 + 노드 ID(1~127), SDO 명령 바이트.
 //   candump/cansend 표기: Linux can-utils lib.c parse_canframe(3자리 = 표준, 8자리 = 확장, «R» = 원격, «##» = CAN FD).
 
-export type Lang = "ko" | "en";
+import { msg, type Lang } from "./tr.ts";
+export type { Lang };
 
 export interface CanFrame {
   id: number;
@@ -510,7 +511,6 @@ export const SDO_ABORT: Record<number, { ko: string; en: string }> = {
 
 /** 흔한 객체(CiA 301 통신 영역) */
 export function objectName(index: number, lang: Lang): string {
-  const ko = lang === "ko";
   const fixed: Record<number, [string, string]> = {
     0x1000: ["장치 형식(Device type)", "Device type"],
     0x1001: ["오류 레지스터(Error register)", "Error register"],
@@ -526,14 +526,14 @@ export function objectName(index: number, lang: Lang): string {
     0x1017: ["생산자 하트비트 시간(ms)", "Producer heartbeat time (ms)"],
     0x1018: ["식별 객체(Identity: 제조사·제품·판·일련번호)", "Identity object"],
   };
-  if (fixed[index]) return fixed[index][ko ? 0 : 1];
-  if (index >= 0x1400 && index <= 0x15ff) return ko ? `RPDO${index - 0x1400 + 1} 통신 매개변수` : `RPDO${index - 0x1400 + 1} communication parameter`;
-  if (index >= 0x1600 && index <= 0x17ff) return ko ? `RPDO${index - 0x1600 + 1} 매핑` : `RPDO${index - 0x1600 + 1} mapping`;
-  if (index >= 0x1800 && index <= 0x19ff) return ko ? `TPDO${index - 0x1800 + 1} 통신 매개변수` : `TPDO${index - 0x1800 + 1} communication parameter`;
-  if (index >= 0x1a00 && index <= 0x1bff) return ko ? `TPDO${index - 0x1a00 + 1} 매핑` : `TPDO${index - 0x1a00 + 1} mapping`;
-  if (index >= 0x2000 && index <= 0x5fff) return ko ? "제조사 고유 영역" : "Manufacturer-specific area";
-  if (index >= 0x6000 && index <= 0x9fff) return ko ? "장치 프로파일 영역(CiA 4xx)" : "Standardized device profile area (CiA 4xx)";
-  if (index >= 0x1000 && index <= 0x1fff) return ko ? "통신 프로파일 영역" : "Communication profile area";
+  if (fixed[index]) return msg(lang, ...fixed[index]);
+  if (index >= 0x1400 && index <= 0x15ff) return msg(lang, `RPDO${index - 0x1400 + 1} 통신 매개변수`, `RPDO${index - 0x1400 + 1} communication parameter`);
+  if (index >= 0x1600 && index <= 0x17ff) return msg(lang, `RPDO${index - 0x1600 + 1} 매핑`, `RPDO${index - 0x1600 + 1} mapping`);
+  if (index >= 0x1800 && index <= 0x19ff) return msg(lang, `TPDO${index - 0x1800 + 1} 통신 매개변수`, `TPDO${index - 0x1800 + 1} communication parameter`);
+  if (index >= 0x1a00 && index <= 0x1bff) return msg(lang, `TPDO${index - 0x1a00 + 1} 매핑`, `TPDO${index - 0x1a00 + 1} mapping`);
+  if (index >= 0x2000 && index <= 0x5fff) return msg(lang, "제조사 고유 영역", "Manufacturer-specific area");
+  if (index >= 0x6000 && index <= 0x9fff) return msg(lang, "장치 프로파일 영역(CiA 4xx)", "Standardized device profile area (CiA 4xx)");
+  if (index >= 0x1000 && index <= 0x1fff) return msg(lang, "통신 프로파일 영역", "Communication profile area");
   return "";
 }
 

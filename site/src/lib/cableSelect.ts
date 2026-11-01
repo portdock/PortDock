@@ -11,7 +11,7 @@
 import { awgName, minArea, nextAwg, nextIec, voltageDrop, type Material, type System } from "./wire.ts";
 import { roughMaxLength } from "./rs485.ts";
 
-export type Lang = "ko" | "en";
+export type { Lang } from "./tr.ts";
 type L = { ko: string; en: string };
 const t = (ko: string, en: string): L => ({ ko, en });
 

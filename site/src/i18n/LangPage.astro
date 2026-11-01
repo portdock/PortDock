@@ -1,8 +1,8 @@
 ---
 // 추가 언어(ja 등) 쪽 하나를 그린다 — pages/<언어>/[...path].astro 가 부른다. 쪽 이름 → 화면(views/) 표.
-// 번역 범위(scope.ts)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
+// 번역 범위(scope.ts SCOPE·SCOPE2)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
 import type { ExtraLang } from "./langs";
-import { SCOPE, type PageId, type ScopePath } from "./scope";
+import { pageOf, type AnyPageId, type AnyScopePath } from "./scope";
 import Home from "../views/Home.astro";
 import ToolsIndex from "../views/ToolsIndex.astro";
 import DownloadPage from "../views/DownloadPage.astro";
@@ -18,10 +18,20 @@ import SerialTimingPage from "../views/SerialTimingPage.astro";
 import ChecksumPage from "../views/ChecksumPage.astro";
 import SubnetPage from "../views/SubnetPage.astro";
 import PinoutsPage from "../views/PinoutsPage.astro";
+import WiringPage from "../views/WiringPage.astro";
+import TroubleshootPage from "../views/TroubleshootPage.astro";
+import MultimeterCheckPage from "../views/MultimeterCheckPage.astro";
+import CanDecoderPage from "../views/CanDecoderPage.astro";
+import CanTimingPage from "../views/CanTimingPage.astro";
+import I2cPage from "../views/I2cPage.astro";
+import UartBaudPage from "../views/UartBaudPage.astro";
+import ModbusRtuTcpPage from "../views/ModbusRtuTcpPage.astro";
+import XgtDecoderPage from "../views/XgtDecoderPage.astro";
+import CableSelectionPage from "../views/CableSelectionPage.astro";
 
 interface Props {
   lang: ExtraLang;
-  path: ScopePath;
+  path: AnyScopePath;
 }
 const VIEWS = {
   home: Home,
@@ -39,9 +49,20 @@ const VIEWS = {
   checksum: ChecksumPage,
   subnet: SubnetPage,
   pinouts: PinoutsPage,
-} satisfies Record<PageId, unknown>;
+  // 2차 묶음(scope.ts SCOPE2 — 언어별로 번역된 쪽만 그려진다)
+  wiring: WiringPage,
+  troubleshoot: TroubleshootPage,
+  multimeterCheck: MultimeterCheckPage,
+  canDecoder: CanDecoderPage,
+  canTiming: CanTimingPage,
+  i2c: I2cPage,
+  uartBaud: UartBaudPage,
+  modbusRtuTcp: ModbusRtuTcpPage,
+  xgtDecoder: XgtDecoderPage,
+  cableSelection: CableSelectionPage,
+} satisfies Record<AnyPageId, unknown>;
 const { lang, path } = Astro.props;
-const View = VIEWS[SCOPE[path]];
+const View = VIEWS[pageOf(path)];
 ---
 
 <View lang={lang} />

@@ -6,17 +6,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { BITRATES } from "../lib/canTiming";
-import { type Lang } from "../data/tools";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/can-bit-timing/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "CAN 비트 타이밍 계산기",
+      seo: "CAN 비트 타이밍 계산기 — 샘플 포인트·TQ·프리스케일러 — PortDock",
       desc: "CAN 클럭·비트 속도·목표 샘플 포인트로 프리스케일러, TQ 수, PROP_SEG·PHASE_SEG1·PHASE_SEG2·SJW 조합을 찾고 조합마다 클럭 허용 오차를 계산합니다(고전 CAN).",
       clk: "CAN 클럭 (MHz)",
       rate: "비트 속도 (bit/s)",
@@ -65,8 +68,10 @@ const L = ko
       ],
       srcTitle: "출처",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "CAN Bit Timing Calculator",
+      seo: "CAN Bit Timing Calculator: Sample Point, TQ, Prescaler — PortDock",
       desc: "From CAN clock, bit rate and sample point, find the prescaler, time quanta, PROP_SEG, PHASE_SEG1/2 and SJW, with each one's oscillator tolerance.",
       clk: "CAN clock (MHz)",
       rate: "Bit rate (bit/s)",
@@ -114,7 +119,8 @@ const L = ko
         ["Does it handle the CAN FD data phase?", "No — it uses classic CAN (CAN 2.0) rules. The CAN FD data phase has other ranges and transmitter delay compensation; follow the chip manual."],
       ],
       srcTitle: "Sources",
-    };
+    }
+  : page2(lang, "canTiming");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -124,20 +130,21 @@ const SRC = [
   { name: "NXP (Freescale), AN1798 Rev. 4 «CAN Bit Timing Requirements»: §2.1 table 1, §2.4, §3 eq. (8)–(11), §4 steps and examples 1–2", href: "https://cache.nxp.com/docs/en/application-note/AN1798.pdf" },
   { name: "Microchip, SAM9X60 datasheet §50.7.4.1 «CAN Bit Timing Configuration»", href: "https://onlinedocs.microchip.com/oxy/GUID-4D282FC5-82FC-4934-8BAD-D4A5D8422E6C-en-US-7/GUID-8FAD80F3-8BD3-4A27-A2EB-736FC7248AD4.html" },
 ];
-const fig = `/img/guides/can-bit-timing.${lang}.svg`;
+// 그림은 한국어·영어 두 벌 — 추가 언어는 영어 그림
+const fig = `/img/guides/can-bit-timing.${lang === "ko" ? "ko" : "en"}.svg`;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "CAN 비트 타이밍 계산기 — 샘플 포인트·TQ·프리스케일러 — PortDock" : "CAN Bit Timing Calculator: Sample Point, TQ, Prescaler — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["canTiming"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ct">
+    <form class="calc card" id="ct" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.clk}<input id="clk" class="mono" value="8" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.rate}<input id="rate" class="mono" value="125000" list="rates" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -198,8 +205,9 @@ const fig = `/img/guides/can-bit-timing.${lang}.svg`;
   </div>
   <script>
     import { searchTimings } from "../lib/canTiming";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("ct") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim().replace(",", ".");
@@ -232,10 +240,10 @@ const fig = `/img/guides/can-bit-timing.${lang}.svg`;
         });
         $("err").textContent = "";
         if (!r.length) {
-          $("cnt").textContent = ko ? "조건에 맞는 조합이 없습니다 — 프리스케일러 최대·허용 속도 오차를 늘리거나 클럭을 바꿔 보세요." : "No combination fits — raise the maximum prescaler or allowed rate error, or change the clock.";
+          $("cnt").textContent = msg(lang, "조건에 맞는 조합이 없습니다 — 프리스케일러 최대·허용 속도 오차를 늘리거나 클럭을 바꿔 보세요.", "No combination fits — raise the maximum prescaler or allowed rate error, or change the clock.");
           return;
         }
-        $("cnt").textContent = r.length > 15 ? (ko ? `조합 ${r.length}개 중 샘플 포인트가 가까운 순으로 15개` : `15 of ${r.length} combinations, closest sample point first`) : "";
+        $("cnt").textContent = r.length > 15 ? msg(lang, `조합 ${r.length}개 중 샘플 포인트가 가까운 순으로 15개`, `15 of ${r.length} combinations, closest sample point first`) : "";
         for (const t of r.slice(0, 15)) {
           const tr = document.createElement("tr");
           for (const c of [
@@ -259,7 +267,7 @@ const fig = `/img/guides/can-bit-timing.${lang}.svg`;
           tb.append(tr);
         }
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 클럭·비트 속도는 0 보다 크고, 샘플 포인트는 0~100 %, 프리스케일러 최대는 1 이상" : "Check the numbers — clock and bit rate above 0, sample point 0–100 %, maximum prescaler at least 1";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 클럭·비트 속도는 0 보다 크고, 샘플 포인트는 0~100 %, 프리스케일러 최대는 1 이상", "Check the numbers — clock and bit rate above 0, sample point 0–100 %, maximum prescaler at least 1");
       }
     }
     form.addEventListener("input", run);

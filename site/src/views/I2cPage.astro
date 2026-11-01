@@ -7,14 +7,16 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { CHIPS, SPEC } from "../lib/i2c";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import { pageName } from "../i18n/names";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { msg, tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/i2c/";
 const h2 = (n: number) => "0x" + n.toString(16).toUpperCase().padStart(2, "0");
 const addrText = (a: number[]) => {
@@ -29,14 +31,16 @@ const addrText = (a: number[]) => {
   return runs.join(", ");
 };
 const EXAMPLES = [
-  { name: ko ? "EEPROM 랜덤 읽기" : "EEPROM random read", v: "S 0xA0 A 0x00 A Sr 0xA1 A 0x12 N P" },
-  { name: ko ? "RTC 시각 읽기" : "RTC time read", v: "S D0 A 00 A Sr D1 A 45 A 30 A 12 N P" },
-  { name: ko ? "주소 NACK" : "Address NACK", v: "S 0x78 N P" },
-  { name: ko ? "HEX 나열" : "Plain hex", v: "78 00 AF" },
+  { name: msg(lang, "EEPROM 랜덤 읽기", "EEPROM random read"), v: "S 0xA0 A 0x00 A Sr 0xA1 A 0x12 N P" },
+  { name: msg(lang, "RTC 시각 읽기", "RTC time read"), v: "S D0 A 00 A Sr D1 A 45 A 30 A 12 N P" },
+  { name: msg(lang, "주소 NACK", "Address NACK"), v: "S 0x78 N P" },
+  { name: msg(lang, "HEX 나열", "Plain hex"), v: "78 00 AF" },
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "I2C 도구 (풀업 저항·주소표·바이트 풀이)",
+      seo: "I2C 풀업 저항 계산·주소표·바이트 풀이 — PortDock",
       desc: "I2C 풀업 저항 최소·최대(VDD·버스 용량·100k/400k/1M), 흔한 칩 7비트 주소표와 8비트 쓰기·읽기 주소 변환, S·주소·ACK·NACK·P 바이트 풀이를 한 곳에서.",
       pTitle: "풀업 저항 계산",
       vdd: "VDD (V)",
@@ -91,8 +95,10 @@ const L = ko
       srcTitle: "출처",
       more: "UART·SPI·CAN 은",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "I2C Tools (Pull-up Resistor, Addresses, Decoder)",
+      seo: "I2C Pull-up Resistor Calculator & Address Table — PortDock",
       desc: "I2C pull-up resistor min/max from VDD, bus capacitance and 100k/400k/1M mode, 7-bit addresses of common chips, 8-bit address conversion and a byte decoder.",
       pTitle: "Pull-up resistor",
       vdd: "VDD (V)",
@@ -146,7 +152,14 @@ const L = ko
       ],
       srcTitle: "Sources",
       more: "For UART, SPI and CAN:",
-    };
+    }
+  : page2(lang, "i2c");
+const MORE = [
+  { path: "tools/uart-waveform/", nameKo: "UART 파형 그리기", nameEn: "UART Waveform Drawer" },
+  { path: "tools/spi/", nameKo: "SPI 모드 도우미", nameEn: "SPI Mode Helper" },
+  { path: "tools/can-decoder/", nameKo: "CAN 프레임 해석기", nameEn: "CAN Frame Decoder" },
+  { path: "tools/uart-baud/", nameKo: "UART 보율 오차 계산기", nameEn: "UART Baud Rate Error Calculator" },
+];
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -158,17 +171,17 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "I2C 풀업 저항 계산·주소표·바이트 풀이 — PortDock" : "I2C Pull-up Resistor Calculator & Address Table — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["i2c"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pu">
+    <form class="calc card" id="pu" data-lang={lang}>
       <h2 class="i2-h">{L.pTitle}</h2>
       <div class="row">
         <label class="fld">{L.vdd}<input id="vdd" class="mono" value="3.3" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -205,7 +218,7 @@ const SRC = [
       <p class="err" id="dc-err" role="alert"></p>
       <div class="tbl" aria-live="polite">
         <table class="t">
-          <thead><tr>{(ko ? ["#", "칸", "바이트", "풀이", "ACK"] : ["#", "Field", "Byte", "Meaning", "ACK"]).map((h) => <th>{h}</th>)}</tr></thead>
+          <thead><tr>{["#", msg(lang, "칸", "Field"), msg(lang, "바이트", "Byte"), msg(lang, "풀이", "Meaning"), "ACK"].map((h) => <th>{h}</th>)}</tr></thead>
           <tbody id="dc-tb"></tbody>
         </table>
       </div>
@@ -220,7 +233,7 @@ const SRC = [
       <ul>{L.tips.map((f) => <li>{f}</li>)}</ul>
       <div class="tbl">
         <table class="t">
-          <thead><tr><th>{ko ? "모드" : "Mode"}</th><th>{ko ? "최대 속도" : "Max rate"}</th><th>tr</th><th>IOL (VOL 0.4 V)</th><th>Cb max</th></tr></thead>
+          <thead><tr><th>{msg(lang, "모드", "Mode")}</th><th>{msg(lang, "최대 속도", "Max rate")}</th><th>tr</th><th>IOL (VOL 0.4 V)</th><th>Cb max</th></tr></thead>
           <tbody>{Object.values(SPEC).map((s) => <tr><td>{s.name}</td><td class="mono">{s.khz} kHz</td><td class="mono">{s.trNs} ns</td><td class="mono">{s.iolMa} mA</td><td class="mono">{s.cbMaxPf} pF</td></tr>)}</tbody>
         </table>
       </div>
@@ -229,7 +242,7 @@ const SRC = [
       <div class="tbl">
         <table class="t">
           <thead><tr>{L.cHead.map((h) => <th>{h}</th>)}</tr></thead>
-          <tbody>{CHIPS.map((c) => <tr><td>{c.chip}</td><td>{c.kind[lang]}</td><td class="mono">{addrText(c.addrs)}</td><td>{c.pins[lang]}</td></tr>)}</tbody>
+          <tbody>{CHIPS.map((c) => <tr><td>{c.chip}</td><td>{tx(c.kind, lang)}</td><td class="mono">{addrText(c.addrs)}</td><td>{tx(c.pins, lang)}</td></tr>)}</tbody>
         </table>
       </div>
       <h2>{L.rTitle}</h2>
@@ -249,7 +262,7 @@ const SRC = [
         ))
       }
       <p>
-        {L.more} <a href={url(lang, "tools/uart-waveform/")}>{ko ? "UART 파형 그리기" : "UART Waveform Drawer"}</a> · <a href={url(lang, "tools/spi/")}>{ko ? "SPI 모드 도우미" : "SPI Mode Helper"}</a> · <a href={url(lang, "tools/can-decoder/")}>{ko ? "CAN 프레임 해석기" : "CAN Frame Decoder"}</a> · <a href={url(lang, "tools/uart-baud/")}>{ko ? "UART 보율 오차 계산기" : "UART Baud Rate Error Calculator"}</a>
+        {L.more} {MORE.map((m, i) => <>{i > 0 && " · "}<a href={link(lang, m.path)}>{lang === "ko" ? m.nameKo : lang === "en" ? m.nameEn : pageName(lang, m.path)}</a></>)}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -278,7 +291,8 @@ const SRC = [
   </style>
   <script>
     import { addr8, analyze, chipsAt, pullup, reserved, tokenize, type Mode } from "../lib/i2c";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("pu")?.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const H = (n: number) => "0x" + n.toString(16).toUpperCase().padStart(2, "0");
     const num = (id: string) => {
@@ -316,7 +330,7 @@ const SRC = [
         const r = pullup(vdd, cb, mode);
         set("min", ohm(r.rpMin));
         set("max", ohm(r.rpMax));
-        set("vol", `${r.vol.toFixed(2)} V · ${r.iolMa} mA${r.lowVdd ? (ko ? " (VDD ≤ 2 V 줄)" : " (VDD ≤ 2 V row)") : ""}`);
+        set("vol", `${r.vol.toFixed(2)} V · ${r.iolMa} mA${r.lowVdd ? (msg(lang, " (VDD ≤ 2 V 줄)", " (VDD ≤ 2 V row)")) : ""}`);
         const s = { sm: [1000, 400], fm: [300, 400], fmp: [120, 550] }[mode];
         set("tr", `${s[0]} ns · ${s[1]} pF`);
         const picks: string[] = [];
@@ -325,15 +339,15 @@ const SRC = [
             const v = Math.round(m * dec);
             if (v >= r.rpMin && v <= r.rpMax) picks.push(ohm(v) + (E12.has(m) ? "" : "*"));
           }
-        set("pick", picks.length ? picks.slice(0, 12).join(", ") + (picks.some((p) => p.endsWith("*")) ? (ko ? "   (* = E24 만)" : "   (* = E24 only)") : "") : "—");
+        set("pick", picks.length ? picks.slice(0, 12).join(", ") + (picks.some((p) => p.endsWith("*")) ? (msg(lang, "   (* = E24 만)", "   (* = E24 only)")) : "") : "—");
         const msgs: string[] = [];
-        if (r.overCb) msgs.push(ko ? `버스 용량이 이 모드의 최대 ${s[1]} pF 를 넘습니다` : `Bus capacitance exceeds the ${s[1]} pF maximum for this mode`);
-        if (!r.ok) msgs.push(ko ? "최소가 최대보다 큽니다 — 이 용량·속도로는 맞는 풀업이 없습니다(속도를 낮추거나 용량을 줄이거나 버퍼)" : "Minimum exceeds maximum — no pull-up fits this capacitance and speed (slow down, reduce capacitance or add a buffer)");
+        if (r.overCb) msgs.push(msg(lang, `버스 용량이 이 모드의 최대 ${s[1]} pF 를 넘습니다`, `Bus capacitance exceeds the ${s[1]} pF maximum for this mode`));
+        if (!r.ok) msgs.push(msg(lang, "최소가 최대보다 큽니다 — 이 용량·속도로는 맞는 풀업이 없습니다(속도를 낮추거나 용량을 줄이거나 버퍼)", "Minimum exceeds maximum — no pull-up fits this capacitance and speed (slow down, reduce capacitance or add a buffer)"));
         vd.className = `verdict ${msgs.length ? "warn" : "ok"}`;
-        vd.textContent = msgs.length ? msgs.join(". ") : ko ? `${ohm(r.rpMin)} ~ ${ohm(r.rpMax)} 사이의 저항을 고릅니다` : `Pick a resistor between ${ohm(r.rpMin)} and ${ohm(r.rpMax)}`;
+        vd.textContent = msgs.length ? msgs.join(". ") : msg(lang, `${ohm(r.rpMin)} ~ ${ohm(r.rpMax)} 사이의 저항을 고릅니다`, `Pick a resistor between ${ohm(r.rpMin)} and ${ohm(r.rpMax)}`);
         $("pu-err").textContent = "";
       } catch {
-        $("pu-err").textContent = ko ? "숫자를 확인하세요 — VDD 와 Cb 는 0 보다 커야 합니다" : "Check the numbers — VDD and Cb must be above 0";
+        $("pu-err").textContent = msg(lang, "숫자를 확인하세요 — VDD 와 Cb 는 0 보다 커야 합니다", "Check the numbers — VDD and Cb must be above 0");
         for (const td of pu.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }
@@ -350,23 +364,23 @@ const SRC = [
       const bits = $<HTMLSelectElement>("abits").value;
       const v = /^[0-9a-f]{1,2}$/i.test(s) ? parseInt(s, 16) : NaN;
       if (!Number.isFinite(v) || (bits === "7" && v > 0x7f)) {
-        out.textContent = ko ? "HEX 로 넣으세요(7비트는 0x00~0x7F)" : "Enter hex (7-bit is 0x00–0x7F)";
+        out.textContent = msg(lang, "HEX 로 넣으세요(7비트는 0x00~0x7F)", "Enter hex (7-bit is 0x00–0x7F)");
         return;
       }
       const a7 = bits === "7" ? v : v >> 1;
       const w = addr8(a7);
       const lines = [
-        `${ko ? "7비트" : "7-bit"} ${H(a7)} (${a7})   →   ${ko ? "쓰기" : "write"} ${H(w.write)}   ${ko ? "읽기" : "read"} ${H(w.read)}`,
-        `${ko ? "2진" : "binary"} ${a7.toString(2).padStart(7, "0")} + R/W`,
+        `${msg(lang, "7비트", "7-bit")} ${H(a7)} (${a7})   →   ${msg(lang, "쓰기", "write")} ${H(w.write)}   ${msg(lang, "읽기", "read")} ${H(w.read)}`,
+        `${msg(lang, "2진", "binary")} ${a7.toString(2).padStart(7, "0")} + R/W`,
       ];
-      if (bits === "8") lines.push(ko ? `넣은 0x… 의 맨 아래 비트 = ${v & 1 ? "1 (읽기)" : "0 (쓰기)"}` : `Lowest bit of the value = ${v & 1 ? "1 (read)" : "0 (write)"}`);
+      if (bits === "8") lines.push(msg(lang, `넣은 0x… 의 맨 아래 비트 = ${v & 1 ? "1 (읽기)" : "0 (쓰기)"}`, `Lowest bit of the value = ${v & 1 ? "1 (read)" : "0 (write)"}`));
       const rs = reserved(a7);
-      if (rs) lines.push((ko ? "예약 주소: " : "Reserved: ") + RES_NAMES[rs][ko ? 0 : 1]);
+      if (rs) lines.push((msg(lang, "예약 주소: ", "Reserved: ")) + msg(lang, ...RES_NAMES[rs]));
       const cs = chipsAt(a7);
       lines.push(
         cs.length
-          ? (ko ? "이 주소를 쓸 수 있는 칩: " : "Chips that can use this address: ") + cs.map((c) => c.chip).join(" / ")
-          : ko ? "이 표의 칩 중에는 없습니다" : "No chip in this table",
+          ? (msg(lang, "이 주소를 쓸 수 있는 칩: ", "Chips that can use this address: ")) + cs.map((c) => c.chip).join(" / ")
+          : msg(lang, "이 표의 칩 중에는 없습니다", "No chip in this table"),
       );
       out.textContent = lines.join("\n");
     }
@@ -388,39 +402,39 @@ const SRC = [
           let mean = "";
           if (s.kind === "start") {
             field = "S";
-            mean = ko ? "시작(START)" : "START";
+            mean = msg(lang, "시작(START)", "START");
           } else if (s.kind === "restart") {
             field = "Sr";
-            mean = ko ? "반복 시작(Repeated START) — 방향을 바꿀 때" : "Repeated START — to change direction";
+            mean = msg(lang, "반복 시작(Repeated START) — 방향을 바꿀 때", "Repeated START — to change direction");
           } else if (s.kind === "stop") {
             field = "P";
-            mean = ko ? "정지(STOP)" : "STOP";
+            mean = msg(lang, "정지(STOP)", "STOP");
           } else if (s.kind === "lone") {
             field = s.ack ? "A" : "N";
-            mean = ko ? "앞에 바이트가 없는 ACK/NACK" : "ACK/NACK without a byte before it";
+            mean = msg(lang, "앞에 바이트가 없는 ACK/NACK", "ACK/NACK without a byte before it");
           } else if (s.kind === "addr") {
-            field = ko ? "주소" : "Address";
-            const rs = s.reserved ? ` — ${RES_NAMES[s.reserved][ko ? 0 : 1]}` : "";
+            field = msg(lang, "주소", "Address");
+            const rs = s.reserved ? ` — ${msg(lang, ...RES_NAMES[s.reserved])}` : "";
             const cs = chipsAt(s.addr!);
-            mean = `${ko ? "7비트" : "7-bit"} ${H(s.addr!)} + ${s.rw === "W" ? (ko ? "쓰기(W)" : "write (W)") : ko ? "읽기(R)" : "read (R)"}${rs}${cs.length ? ` — ${cs.slice(0, 3).map((c) => c.chip).join(" / ")}${cs.length > 3 ? " …" : ""}` : ""}`;
+            mean = `${msg(lang, "7비트", "7-bit")} ${H(s.addr!)} + ${s.rw === "W" ? (msg(lang, "쓰기(W)", "write (W)")) : msg(lang, "읽기(R)", "read (R)")}${rs}${cs.length ? ` — ${cs.slice(0, 3).map((c) => c.chip).join(" / ")}${cs.length > 3 ? " …" : ""}` : ""}`;
           } else if (s.kind === "addr10") {
-            field = ko ? "10비트 주소" : "10-bit address";
-            mean = s.addr !== undefined ? `${ko ? "주소" : "address"} 0x${s.addr.toString(16).toUpperCase().padStart(3, "0")} + ${s.rw}` : `1111 0XX + ${s.rw}`;
+            field = msg(lang, "10비트 주소", "10-bit address");
+            mean = s.addr !== undefined ? `${msg(lang, "주소", "address")} 0x${s.addr.toString(16).toUpperCase().padStart(3, "0")} + ${s.rw}` : `1111 0XX + ${s.rw}`;
           } else {
-            field = ko ? `데이터 ${s.n! + 1}` : `Data ${s.n! + 1}`;
-            mean = s.from === "slave" ? (ko ? "장치 → 마스터(읽음)" : "device → master (read)") : ko ? "마스터 → 장치(씀)" : "master → device (write)";
-            if (s.from === "master" && s.n === 0) mean += ko ? " — 보통 레지스터·메모리 주소" : " — often a register/memory address";
+            field = msg(lang, `데이터 ${s.n! + 1}`, `Data ${s.n! + 1}`);
+            mean = s.from === "slave" ? (msg(lang, "장치 → 마스터(읽음)", "device → master (read)")) : msg(lang, "마스터 → 장치(씀)", "master → device (write)");
+            if (s.from === "master" && s.n === 0) mean += msg(lang, " — 보통 레지스터·메모리 주소", " — often a register/memory address");
           }
           let ack = "";
           let bad = false;
           if (s.ack !== undefined) {
             ack = s.ack ? "ACK" : "NACK";
             if (!s.ack && (s.kind === "addr" || s.kind === "addr10")) {
-              ack += ko ? " — 응답한 장치 없음" : " — no device answered";
+              ack += msg(lang, " — 응답한 장치 없음", " — no device answered");
               bad = true;
-            } else if (!s.ack && s.from === "slave") ack += ko ? " — 마스터가 마지막 바이트에 보내는 정상 끝" : " — master ends the read (expected on the last byte)";
+            } else if (!s.ack && s.from === "slave") ack += msg(lang, " — 마스터가 마지막 바이트에 보내는 정상 끝", " — master ends the read (expected on the last byte)");
             else if (!s.ack && s.from === "master") {
-              ack += ko ? " — 장치가 받지 않음" : " — device refused the byte";
+              ack += msg(lang, " — 장치가 받지 않음", " — device refused the byte");
               bad = true;
             }
           }
@@ -440,7 +454,7 @@ const SRC = [
           tb.append(tr);
         });
       } catch (e) {
-        $("dc-err").textContent = (ko ? "읽을 수 없는 칸: " : "Cannot read: ") + (e instanceof Error ? e.message : "");
+        $("dc-err").textContent = (msg(lang, "읽을 수 없는 칸: ", "Cannot read: ")) + (e instanceof Error ? e.message : "");
       }
     }
     dc.addEventListener("input", runDc);

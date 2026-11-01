@@ -3,7 +3,8 @@
 // ASCII: «:» + (국번 + PDU + LRC) 를 HEX 글자 2자씩 + CR LF. LRC = 바이트 합의 2의 보수.
 // 근거: Modbus over Serial Line V1.02(RTU·ASCII 프레임, CRC·LRC), Modbus Messaging on TCP/IP Implementation Guide V1.0b(MBAP·유닛 ID).
 // CRC·LRC 계산은 checksum.ts(crates/core 와 같은 시험값), PDU 풀이는 modbusDecode.ts 의 decodePdu 를 그대로 쓴다.
-import { compute, crc16Modbus, hex, parseHex, type Lang } from "./checksum.ts";
+import { compute, crc16Modbus, hex, parseHex } from "./checksum.ts";
+import { msg, type Lang } from "./tr.ts";
 import { decodePdu, funcName, type Reading } from "./modbusDecode.ts";
 
 export type Format = "rtu" | "tcp" | "ascii";
@@ -46,7 +47,6 @@ export interface Built {
   segments: Segment[];
 }
 
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
 const h2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");
 const u16 = (b: number[], i: number) => (b[i] << 8) | b[i + 1];
 

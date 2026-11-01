@@ -4,7 +4,8 @@
 // 시험(xgtDecode.test.ts)은 xgt.rs 시험과 같은 프레임(사용설명서 예시 포함)을 쓴다.
 // 근거(공개 사용설명서, 링크만): LS ELECTRIC «XGT FEnet I/F Module User's Manual» V2.30 8장(8-1~8-14쪽)·10.4(10-12쪽),
 // «XGB FEnet I/F Module XBL-EMTA» V1.8 5.2(5-3~5-7쪽).
-import { parseHex, hex, type Lang } from "./checksum.ts";
+import { parseHex, hex } from "./checksum.ts";
+import { msg, type Lang } from "./tr.ts";
 
 export interface Field {
   name: string;
@@ -43,7 +44,15 @@ export const XGT_ERRORS: Record<number, { ko: string; en: string; whenKo: string
   0x0078: { ko: "명령 틀림", en: "Wrong instruction", whenKo: "명령이 h0054·h0058 이 아님(상태 읽기 h00B0 포함)", whenEn: "Instruction other than h0054/h0058 (status read h00B0 included)" },
 };
 
-export const errText = (code: number, lang: Lang = "ko") => XGT_ERRORS[code]?.[lang] ?? (lang === "ko" ? "모르는 오류 코드" : "unknown error code");
+export const errText = (code: number, lang: Lang = "ko") => {
+  const e = XGT_ERRORS[code];
+  return e ? msg(lang, e.ko, e.en) : msg(lang, "모르는 오류 코드", "unknown error code");
+};
+/** 오류 코드를 앱이 내는 경우 */
+export const errWhen = (code: number, lang: Lang = "ko") => {
+  const e = XGT_ERRORS[code];
+  return e ? msg(lang, e.whenKo, e.whenEn) : "";
+};
 
 /** 디바이스 — 사용설명서 표 8.1.2·8.2.1·8.2.2절에 나온 것 */
 export const XGT_DEVICES: { letter: string; ko: string; en: string }[] = [
@@ -146,31 +155,29 @@ class Rd {
   }
 }
 
-const typeName = (code: number, lang: Lang) => (code === CONTINUOUS ? (lang === "ko" ? "연속(블록)" : "continuous (block)") : (KIND_NAME[kindOf(code) as Kind] ?? (lang === "ko" ? "모르는 형" : "unknown type")));
+const typeName = (code: number, lang: Lang) => (code === CONTINUOUS ? msg(lang, "연속(블록)", "continuous (block)") : (KIND_NAME[kindOf(code) as Kind] ?? msg(lang, "모르는 형", "unknown type")));
 export const commandName = (cmd: number, dtype: number, lang: Lang = "ko") => {
-  const ko = lang === "ko";
   const cont = dtype === CONTINUOUS;
   switch (cmd) {
     case 0x54:
-      return cont ? (ko ? "연속 읽기 요청" : "Read request (continuous)") : ko ? "개별 읽기 요청" : "Read request (individual)";
+      return cont ? (msg(lang, "연속 읽기 요청", "Read request (continuous)")) : msg(lang, "개별 읽기 요청", "Read request (individual)");
     case 0x55:
-      return ko ? "읽기 응답" : "Read response";
+      return msg(lang, "읽기 응답", "Read response");
     case 0x58:
-      return cont ? (ko ? "연속 쓰기 요청" : "Write request (continuous)") : ko ? "개별 쓰기 요청" : "Write request (individual)";
+      return cont ? (msg(lang, "연속 쓰기 요청", "Write request (continuous)")) : msg(lang, "개별 쓰기 요청", "Write request (individual)");
     case 0x59:
-      return ko ? "쓰기 응답" : "Write response";
+      return msg(lang, "쓰기 응답", "Write response");
     case 0xb0:
-      return ko ? "상태 읽기 요청" : "Status request";
+      return msg(lang, "상태 읽기 요청", "Status request");
     case 0xb1:
-      return ko ? "상태 읽기 응답" : "Status response";
+      return msg(lang, "상태 읽기 응답", "Status response");
     default:
-      return ko ? "모르는 명령" : "unknown instruction";
+      return msg(lang, "모르는 명령", "unknown instruction");
   }
 };
 
 /** 요청 몸체 풀이 — 오류면 그 코드를 던진다(xgt.rs parse 와 같은 순서) */
 function parseRequest(body: number[], lang: Lang, out: Field[], vars: Var[]): void {
-  const ko = lang === "ko";
   const r = new Rd(body);
   const cmd = r.u16();
   const dtype = r.u16();
@@ -179,15 +186,15 @@ function parseRequest(body: number[], lang: Lang, out: Field[], vars: Var[]): vo
   const write = cmd === 0x58;
   const at = () => hex(body.slice(r.i - 2, r.i));
   const blocks = r.u16();
-  out.push({ name: ko ? "블록 수" : "Number of blocks", raw: at(), value: String(blocks) });
+  out.push({ name: msg(lang, "블록 수", "Number of blocks"), raw: at(), value: String(blocks) });
   const readVar = (k: number) => {
     const n = r.u16();
-    out.push({ name: `${ko ? "변수 길이" : "Variable length"} ${k}`, raw: at(), value: `${n} ${ko ? "글자" : "chars"}` });
+    out.push({ name: `${msg(lang, "변수 길이", "Variable length")} ${k}`, raw: at(), value: `${n} ${msg(lang, "글자", "chars")}` });
     if (n === 0 || n > MAX_NAME) throw 0x0003;
     const bytes = r.take(n);
     const text = String.fromCharCode(...bytes);
     const v = parseVar(text);
-    out.push({ name: `${ko ? "변수" : "Variable"} ${k}`, raw: hex(bytes), value: typeof v === "number" ? `«${text}»` : `${v.text} → ${varWords(v)}` });
+    out.push({ name: `${msg(lang, "변수", "Variable")} ${k}`, raw: hex(bytes), value: typeof v === "number" ? `«${text}»` : `${v.text} → ${varWords(v)}` });
     if (typeof v === "number") throw v;
     vars.push(v);
     return v;
@@ -197,11 +204,11 @@ function parseRequest(body: number[], lang: Lang, out: Field[], vars: Var[]): vo
     const v = readVar(1);
     if (v.kind !== "B") throw 0x0002;
     const n = r.u16();
-    out.push({ name: ko ? "데이터 수" : "Number of data", raw: at(), value: `${n} ${ko ? "바이트" : "bytes"} (%${v.dev}B${v.index}–%${v.dev}B${v.index + Math.max(n, 1) - 1})` });
+    out.push({ name: msg(lang, "데이터 수", "Number of data"), raw: at(), value: `${n} ${msg(lang, "바이트", "bytes")} (%${v.dev}B${v.index}–%${v.dev}B${v.index + Math.max(n, 1) - 1})` });
     if (n > MAX_BYTES) throw 0x0005;
     if (write) {
       const d = r.take(n);
-      out.push({ name: ko ? "쓸 데이터" : "Data to write", raw: hex(d), value: `${n} ${ko ? "바이트" : "bytes"}` });
+      out.push({ name: msg(lang, "쓸 데이터", "Data to write"), raw: hex(d), value: `${n} ${msg(lang, "바이트", "bytes")}` });
     }
   } else {
     const kind = kindOf(dtype);
@@ -214,10 +221,10 @@ function parseRequest(body: number[], lang: Lang, out: Field[], vars: Var[]): vo
     if (write) {
       for (let k = 1; k <= blocks; k++) {
         const n = r.u16();
-        out.push({ name: `${ko ? "데이터 크기" : "Data size"} ${k}`, raw: at(), value: `${n} ${ko ? "바이트" : "bytes"}` });
+        out.push({ name: `${msg(lang, "데이터 크기", "Data size")} ${k}`, raw: at(), value: `${n} ${msg(lang, "바이트", "bytes")}` });
         if (n !== KIND_SIZE[kind]) throw 0x0002;
         const d = r.take(n);
-        out.push({ name: `${ko ? "쓸 값" : "Value"} ${k} (${vars[k - 1].text})`, raw: hex(d), value: kind === "X" ? (d[0] & 1 ? "ON (1)" : "OFF (0)") : `${valueOf(d)} (0x${h(Number(le(d, 0, Math.min(n, 4))), Math.min(n, 4) * 2)}${n === 8 ? "…" : ""})` });
+        out.push({ name: `${msg(lang, "쓸 값", "Value")} ${k} (${vars[k - 1].text})`, raw: hex(d), value: kind === "X" ? (d[0] & 1 ? "ON (1)" : "OFF (0)") : `${valueOf(d)} (0x${h(Number(le(d, 0, Math.min(n, 4))), Math.min(n, 4) * 2)}${n === 8 ? "…" : ""})` });
       }
     }
   }
@@ -229,9 +236,8 @@ function parseRequest(body: number[], lang: Lang, out: Field[], vars: Var[]): vo
  */
 export function decodeXgt(input: string, opts: { lang?: Lang; pair?: string } = {}): XgtDecoded {
   const lang = opts.lang ?? "ko";
-  const ko = lang === "ko";
   const b = parseHex(input, lang);
-  if (b.length < HEADER_LEN + 2) throw new Error(ko ? `머리 20바이트 + 명령 2바이트보다 짧습니다(${b.length}바이트)` : `Shorter than the 20-byte header + 2-byte instruction (${b.length} bytes)`);
+  if (b.length < HEADER_LEN + 2) throw new Error(msg(lang, `머리 20바이트 + 명령 2바이트보다 짧습니다(${b.length}바이트)`, `Shorter than the 20-byte header + 2-byte instruction (${b.length} bytes)`));
   const company = b.slice(0, 10);
   const companyOk = COMPANY_XGT.every((x, i) => x === company[i]) || COMPANY_GLOFA.every((x, i) => x === company[i]);
   const companyText = String.fromCharCode(...company.filter((c) => c >= 0x20 && c < 0x7f));
@@ -248,25 +254,25 @@ export function decodeXgt(input: string, opts: { lang?: Lang; pair?: string } = 
   const cpuName = ({ 0xa0: "XGK", 0xa4: "XGI", 0xa8: "XGR", 0xb0: "XGB (MK)", 0xb4: "XGB (IEC)" } as Record<number, string>)[cpu];
   const state = ({ 1: "RUN", 2: "STOP", 4: "ERROR", 8: "DEBUG" } as Record<number, string>)[(plcInfo >> 8) & 0x1f];
   const header: Field[] = [
-    { name: ko ? "회사 ID" : "Company ID", raw: hex(company), value: companyOk ? `«${companyText}»` : `«${companyText}» — ${ko ? "LSIS-XGT·LGIS-GLOFA 가 아님(오류 h75)" : "not LSIS-XGT/LGIS-GLOFA (error h75)"}` },
+    { name: msg(lang, "회사 ID", "Company ID"), raw: hex(company), value: companyOk ? `«${companyText}»` : `«${companyText}» — ${msg(lang, "LSIS-XGT·LGIS-GLOFA 가 아님(오류 h75)", "not LSIS-XGT/LGIS-GLOFA (error h75)")}` },
     {
-      name: ko ? "PLC 정보" : "PLC info",
+      name: msg(lang, "PLC 정보", "PLC info"),
       raw: hex(b.slice(10, 12)),
-      value: dir === "request" ? (ko ? "요청은 쓰지 않음(h00)" : "not used in requests (h00)") : `CPU TYPE ${plcInfo & 0x3f} · ${plcInfo & 0x40 ? (ko ? "이중화 슬레이브" : "redundant slave") : ko ? "단독·이중화 마스터" : "single/redundant master"} · ${plcInfo & 0x80 ? (ko ? "CPU 오류" : "CPU error") : ko ? "CPU 정상 동작" : "CPU running normally"} · ${state ?? (ko ? "상태 " : "state ") + ((plcInfo >> 8) & 0x1f)}`,
+      value: dir === "request" ? (msg(lang, "요청은 쓰지 않음(h00)", "not used in requests (h00)")) : `CPU TYPE ${plcInfo & 0x3f} · ${plcInfo & 0x40 ? (msg(lang, "이중화 슬레이브", "redundant slave")) : msg(lang, "단독·이중화 마스터", "single/redundant master")} · ${plcInfo & 0x80 ? (msg(lang, "CPU 오류", "CPU error")) : msg(lang, "CPU 정상 동작", "CPU running normally")} · ${state ?? (msg(lang, "상태 ", "state ")) + ((plcInfo >> 8) & 0x1f)}`,
     },
-    { name: ko ? "CPU 정보" : "CPU info", raw: h(cpu, 2), value: cpuName ?? (ko ? "모름" : "unknown") },
-    { name: ko ? "프레임 방향" : "Source of frame", raw: h(src, 2), value: src === 0x33 ? (ko ? "클라이언트 → PLC (요청)" : "client → PLC (request)") : src === 0x11 ? (ko ? "PLC → 클라이언트 (응답)" : "PLC → client (response)") : ko ? "h33·h11 이 아님" : "neither h33 nor h11" },
+    { name: msg(lang, "CPU 정보", "CPU info"), raw: h(cpu, 2), value: cpuName ?? (msg(lang, "모름", "unknown")) },
+    { name: msg(lang, "프레임 방향", "Source of frame"), raw: h(src, 2), value: src === 0x33 ? (msg(lang, "클라이언트 → PLC (요청)", "client → PLC (request)")) : src === 0x11 ? (msg(lang, "PLC → 클라이언트 (응답)", "PLC → client (response)")) : msg(lang, "h33·h11 이 아님", "neither h33 nor h11") },
     { name: "Invoke ID", raw: hex(b.slice(14, 16)), value: `${invoke} (0x${h(invoke, 4)})` },
-    { name: ko ? "길이" : "Length", raw: hex(b.slice(16, 18)), value: length === body.length ? `${length} ${ko ? "바이트 (맞음)" : "bytes (matches)"}` : `${length} — ${ko ? `실제 ${body.length}바이트(오류 h76)` : `actually ${body.length} bytes (error h76)`}` },
-    { name: ko ? "FEnet 위치" : "FEnet position", raw: h(pos, 2), value: `${ko ? "베이스" : "base"} ${pos >> 4} · ${ko ? "슬롯" : "slot"} ${pos & 0x0f}` },
-    { name: "BCC", raw: h(b[19], 2), value: b[19] === sum ? (ko ? "맞음(앞 19바이트 합)" : "correct (sum of the first 19 bytes)") : `${ko ? "다름 — 계산값" : "differs — computed"} ${h(sum, 2)}${dir === "request" ? (ko ? " (오류 h77)" : " (error h77)") : ""}` },
+    { name: msg(lang, "길이", "Length"), raw: hex(b.slice(16, 18)), value: length === body.length ? `${length} ${msg(lang, "바이트 (맞음)", "bytes (matches)")}` : `${length} — ${msg(lang, `실제 ${body.length}바이트(오류 h76)`, `actually ${body.length} bytes (error h76)`)}` },
+    { name: msg(lang, "FEnet 위치", "FEnet position"), raw: h(pos, 2), value: `${msg(lang, "베이스", "base")} ${pos >> 4} · ${msg(lang, "슬롯", "slot")} ${pos & 0x0f}` },
+    { name: "BCC", raw: h(b[19], 2), value: b[19] === sum ? (msg(lang, "맞음(앞 19바이트 합)", "correct (sum of the first 19 bytes)")) : `${msg(lang, "다름 — 계산값", "differs — computed")} ${h(sum, 2)}${dir === "request" ? (msg(lang, " (오류 h77)", " (error h77)")) : ""}` },
   ];
   const cmd = le(body, 0);
   const dtype = body.length >= 4 ? le(body, 2) : 0;
   const bodyFields: Field[] = [
-    { name: ko ? "명령" : "Instruction", raw: hex(body.slice(0, 2)), value: `h${h(cmd, 4)} ${commandName(cmd, dtype, lang)}` },
-    { name: ko ? "데이터 형" : "Data type", raw: hex(body.slice(2, 4)), value: `h${h(dtype, 4)} ${typeName(dtype, lang)}` },
-    { name: ko ? "예약" : "Reserved", raw: hex(body.slice(4, 6)), value: ko ? "쓰지 않음" : "don't care" },
+    { name: msg(lang, "명령", "Instruction"), raw: hex(body.slice(0, 2)), value: `h${h(cmd, 4)} ${commandName(cmd, dtype, lang)}` },
+    { name: msg(lang, "데이터 형", "Data type"), raw: hex(body.slice(2, 4)), value: `h${h(dtype, 4)} ${typeName(dtype, lang)}` },
+    { name: msg(lang, "예약", "Reserved"), raw: hex(body.slice(4, 6)), value: msg(lang, "쓰지 않음", "don't care") },
   ];
   const vars: Var[] = [];
   const items: Item[] = [];
@@ -283,9 +289,9 @@ export function decodeXgt(input: string, opts: { lang?: Lang; pair?: string } = 
       if (!sim) sim = e;
     }
     out.simError = sim;
-    if (src !== 0x33) notes.push(ko ? "프레임 방향이 h33 이 아니라 PortDock PLC Simulator 는 답하지 않습니다." : "Source of frame is not h33, so PortDock PLC Simulator does not answer it.");
-    if (sim === 0x0077) notes.push(ko ? "BCC 만 틀렸다면 앱의 «머리 BCC 검사» 를 끄고 시험할 수 있습니다(사용설명서 XBL-EMTA 표 5-6 예시도 BCC 가 머리 합과 다름)." : "If only the BCC is wrong you can test with «Check header BCC» off in the app (the XBL-EMTA manual's table 5-6 example also differs from the header sum).");
-    notes.push(ko ? "범위 밖(오류 4)은 앱에서 정한 디바이스 크기에 따라 달라 여기서는 따지지 않습니다." : "Out of range (error 4) depends on the device sizes set in the app and is not checked here.");
+    if (src !== 0x33) notes.push(msg(lang, "프레임 방향이 h33 이 아니라 PortDock PLC Simulator 는 답하지 않습니다.", "Source of frame is not h33, so PortDock PLC Simulator does not answer it."));
+    if (sim === 0x0077) notes.push(msg(lang, "BCC 만 틀렸다면 앱의 «머리 BCC 검사» 를 끄고 시험할 수 있습니다(사용설명서 XBL-EMTA 표 5-6 예시도 BCC 가 머리 합과 다름).", "If only the BCC is wrong you can test with «Check header BCC» off in the app (the XBL-EMTA manual's table 5-6 example also differs from the header sum)."));
+    notes.push(msg(lang, "범위 밖(오류 4)은 앱에서 정한 디바이스 크기에 따라 달라 여기서는 따지지 않습니다.", "Out of range (error 4) depends on the device sizes set in the app and is not checked here."));
     return out;
   }
   // 응답
@@ -293,16 +299,16 @@ export function decodeXgt(input: string, opts: { lang?: Lang; pair?: string } = 
   try {
     r.take(6);
     const status = r.u16();
-    bodyFields.push({ name: ko ? "오류 상태" : "Error status", raw: hex(body.slice(6, 8)), value: status === 0 ? (ko ? "h0000 정상(ACK)" : "h0000 normal (ACK)") : `h${h(status, 4)} ${ko ? "오류(NAK)" : "error (NAK)"}` });
+    bodyFields.push({ name: msg(lang, "오류 상태", "Error status"), raw: hex(body.slice(6, 8)), value: status === 0 ? (msg(lang, "h0000 정상(ACK)", "h0000 normal (ACK)")) : `h${h(status, 4)} ${msg(lang, "오류(NAK)", "error (NAK)")}` });
     if (status !== 0) {
       const code = r.u16();
       out.error = code;
-      bodyFields.push({ name: ko ? "오류 코드" : "Error code", raw: hex(body.slice(8, 10)), value: `h${h(code, 4)} ${errText(code & 0xff, lang)}` });
+      bodyFields.push({ name: msg(lang, "오류 코드", "Error code"), raw: hex(body.slice(8, 10)), value: `h${h(code, 4)} ${errText(code & 0xff, lang)}` });
       return out;
     }
     out.error = 0;
     const blocks = r.u16();
-    bodyFields.push({ name: ko ? "블록 수" : "Number of blocks", raw: hex(body.slice(8, 10)), value: String(blocks) });
+    bodyFields.push({ name: msg(lang, "블록 수", "Number of blocks"), raw: hex(body.slice(8, 10)), value: String(blocks) });
     if (cmd === 0x59) return out;
     const pv: Var[] = [];
     if (opts.pair?.trim()) {
@@ -310,29 +316,29 @@ export function decodeXgt(input: string, opts: { lang?: Lang; pair?: string } = 
         const p = decodeXgt(opts.pair, { lang });
         if (p.dir === "request") pv.push(...p.vars);
       } catch {
-        notes.push(ko ? "짝 요청을 풀지 못했습니다." : "Could not decode the matching request.");
+        notes.push(msg(lang, "짝 요청을 풀지 못했습니다.", "Could not decode the matching request."));
       }
     }
     if (dtype === CONTINUOUS) {
       const n = r.u16();
-      bodyFields.push({ name: ko ? "데이터 수" : "Number of data", raw: hex(body.slice(10, 12)), value: `${n} ${ko ? "바이트" : "bytes"}` });
+      bodyFields.push({ name: msg(lang, "데이터 수", "Number of data"), raw: hex(body.slice(10, 12)), value: `${n} ${msg(lang, "바이트", "bytes")}` });
       const d = r.take(n);
       const v = pv[0];
       d.forEach((x, k) => items.push({ addr: v ? `%${v.dev}B${v.index + k}` : `+${k}`, size: 1, value: String(x), hex: h(x, 2) }));
-      if (!v) notes.push(ko ? "짝 요청을 넣으면 바이트마다 변수 이름이 붙습니다." : "Add the matching request to label each byte with its variable.");
+      if (!v) notes.push(msg(lang, "짝 요청을 넣으면 바이트마다 변수 이름이 붙습니다.", "Add the matching request to label each byte with its variable."));
     } else {
       for (let k = 0; k < blocks; k++) {
         const n = r.u16();
         const d = r.take(n);
         const v = pv[k];
-        items.push({ addr: v ? v.text : `${ko ? "블록" : "block"} ${k + 1}`, size: n, value: valueOf(d), hex: [...d].reverse().map((x) => h(x, 2)).join("") });
+        items.push({ addr: v ? v.text : `${msg(lang, "블록", "block")} ${k + 1}`, size: n, value: valueOf(d), hex: [...d].reverse().map((x) => h(x, 2)).join("") });
       }
-      if (!pv.length && blocks) notes.push(ko ? "응답에는 변수 이름이 없습니다 — 짝 요청을 넣으면 블록마다 이름이 붙습니다." : "A reply carries no variable names — add the matching request to label each block.");
+      if (!pv.length && blocks) notes.push(msg(lang, "응답에는 변수 이름이 없습니다 — 짝 요청을 넣으면 블록마다 이름이 붙습니다.", "A reply carries no variable names — add the matching request to label each block."));
     }
-    if (r.i !== body.length) notes.push(ko ? `뒤에 ${body.length - r.i}바이트가 남습니다.` : `${body.length - r.i} bytes left over at the end.`);
+    if (r.i !== body.length) notes.push(msg(lang, `뒤에 ${body.length - r.i}바이트가 남습니다.`, `${body.length - r.i} bytes left over at the end.`));
   } catch (e) {
     if (typeof e !== "number") throw e;
-    notes.push(ko ? "응답 몸체가 블록·데이터 크기보다 짧습니다." : "The reply body is shorter than its blocks and data sizes.");
+    notes.push(msg(lang, "응답 몸체가 블록·데이터 크기보다 짧습니다.", "The reply body is shorter than its blocks and data sizes."));
   }
   return out;
 }
@@ -341,37 +347,36 @@ export type BuildOp = "read" | "write" | "read-cont" | "write-cont";
 
 /** 요청 만들기 — 머리(LSIS-XGT·방향 h33·BCC 계산) + 몸체 */
 export function buildXgtRequest(o: { op: BuildOp; vars: string[]; values?: number[]; count?: number; invoke?: number }, lang: Lang = "ko"): number[] {
-  const ko = lang === "ko";
   const u16 = (n: number) => [n & 0xff, (n >> 8) & 0xff];
   const cont = o.op.endsWith("cont");
   const write = o.op.startsWith("write");
   const vs = o.vars.map((t) => t.trim()).filter(Boolean);
-  if (!vs.length) throw new Error(ko ? "변수를 넣으세요(예: %MW100)" : "Enter a variable (e.g. %MW100)");
-  if (vs.length > (cont ? 1 : MAX_BLOCKS)) throw new Error(ko ? (cont ? "연속은 변수 하나(%MB0 꼴)" : "변수는 16개까지") : cont ? "Continuous takes one variable (%MB0 style)" : "Up to 16 variables");
+  if (!vs.length) throw new Error(msg(lang, "변수를 넣으세요(예: %MW100)", "Enter a variable (e.g. %MW100)"));
+  if (vs.length > (cont ? 1 : MAX_BLOCKS)) throw new Error(cont ? msg(lang, "연속은 변수 하나(%MB0 꼴)", "Continuous takes one variable (%MB0 style)") : msg(lang, "변수는 16개까지", "Up to 16 variables"));
   const parsed = vs.map((t) => {
     const v = parseVar(t);
     if (typeof v === "number") throw new Error(`«${t}»: ${errText(v, lang)}`);
     return v;
   });
   const kind = parsed[0].kind;
-  if (parsed.some((v) => v.kind !== kind)) throw new Error(ko ? "변수의 형 글자(X·B·W·D·L)가 모두 같아야 합니다" : "All variables must have the same type letter (X/B/W/D/L)");
-  if (cont && kind !== "B") throw new Error(ko ? "연속은 바이트 변수(%MB0 꼴)만" : "Continuous takes a byte variable (%MB0 style) only");
+  if (parsed.some((v) => v.kind !== kind)) throw new Error(msg(lang, "변수의 형 글자(X·B·W·D·L)가 모두 같아야 합니다", "All variables must have the same type letter (X/B/W/D/L)"));
+  if (cont && kind !== "B") throw new Error(msg(lang, "연속은 바이트 변수(%MB0 꼴)만", "Continuous takes a byte variable (%MB0 style) only"));
   const body = [...u16(write ? 0x58 : 0x54), ...u16(cont ? CONTINUOUS : KIND_CODE[kind]), 0, 0, ...u16(parsed.length)];
   for (const v of parsed) body.push(...u16(v.text.length), ...[...v.text].map((c) => c.charCodeAt(0)));
   const values = o.values ?? [];
   if (cont) {
     const n = write ? values.length : (o.count ?? 0);
-    if (!(n >= 1 && n <= MAX_BYTES)) throw new Error(ko ? "데이터 수는 1~1400 바이트" : "Number of data must be 1–1400 bytes");
+    if (!(n >= 1 && n <= MAX_BYTES)) throw new Error(msg(lang, "데이터 수는 1~1400 바이트", "Number of data must be 1–1400 bytes"));
     body.push(...u16(n));
     if (write) {
-      if (values.some((x) => !(Number.isInteger(x) && x >= 0 && x <= 0xff))) throw new Error(ko ? "연속 쓰기 값은 바이트(0~255)" : "Continuous write values are bytes (0–255)");
+      if (values.some((x) => !(Number.isInteger(x) && x >= 0 && x <= 0xff))) throw new Error(msg(lang, "연속 쓰기 값은 바이트(0~255)", "Continuous write values are bytes (0–255)"));
       body.push(...values);
     }
   } else if (write) {
-    if (values.length !== parsed.length) throw new Error(ko ? `값을 변수 수(${parsed.length})만큼 넣으세요` : `Enter one value per variable (${parsed.length})`);
+    if (values.length !== parsed.length) throw new Error(msg(lang, `값을 변수 수(${parsed.length})만큼 넣으세요`, `Enter one value per variable (${parsed.length})`));
     const size = KIND_SIZE[kind];
     for (const x of values) {
-      if (!Number.isInteger(x) || x < 0 || (size < 8 && x >= 2 ** (8 * size)) || (kind === "X" && x > 1)) throw new Error(ko ? `값 ${x} 이(가) ${KIND_NAME[kind]} 범위 밖` : `Value ${x} is out of range for ${KIND_NAME[kind]}`);
+      if (!Number.isInteger(x) || x < 0 || (size < 8 && x >= 2 ** (8 * size)) || (kind === "X" && x > 1)) throw new Error(msg(lang, `값 ${x} 이(가) ${KIND_NAME[kind]} 범위 밖`, `Value ${x} is out of range for ${KIND_NAME[kind]}`));
       body.push(...u16(size));
       for (let k = 0; k < size; k++) body.push(Number((BigInt(x) >> BigInt(8 * k)) & 0xffn));
     }

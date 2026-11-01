@@ -6,18 +6,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { AVR_REC, avrRange } from "../lib/uartBaud";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/uart-baud/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "UART 보율 오차 계산기",
+      seo: "UART 보율 오차 계산기 — MCU 클럭·UBRR·분주비 — PortDock",
       desc: "MCU 클럭과 오버샘플링으로 보율 분주비(AVR UBRR 등)·실제 보율·오차 %를 계산하고, 데이터 비트 수에 따른 수신 허용 범위와 표준 보율 표를 함께 봅니다.",
       clk: "UART 클럭 (MHz)",
       baud: "원하는 보율 (bps)",
@@ -59,9 +61,12 @@ const L = ko
       srcTitle: "출처",
       stNote: "보율로 문자 시간·Modbus 3.5문자를 보려면",
       stLink: "시리얼 통신 시간 계산기",
+      stEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "UART Baud Rate Error Calculator",
+      seo: "UART Baud Rate Error Calculator: MCU Clock, UBRR — PortDock",
       desc: "MCU clock and oversampling → baud divisor (AVR UBRR etc.), actual baud rate and error %, receiver tolerance by frame length, standard baud table.",
       clk: "UART clock (MHz)",
       baud: "Target baud rate (bps)",
@@ -103,7 +108,9 @@ const L = ko
       srcTitle: "Sources",
       stNote: "For character time and the Modbus 3.5-character gap at a baud rate, use the",
       stLink: "Serial Timing Calculator",
-    };
+      stEnd: ".",
+    }
+  : page2(lang, "uartBaud");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -120,17 +127,17 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
 });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "UART 보율 오차 계산기 — MCU 클럭·UBRR·분주비 — PortDock" : "UART Baud Rate Error Calculator: MCU Clock, UBRR — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["uartBaud"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ub">
+    <form class="calc card" id="ub" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.clk}<input id="clk" class="mono" value="16" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.baud}<input id="baud" class="mono" value="115200" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -186,7 +193,7 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
         ))
       }
       <p>
-        {L.stNote} <a href={url(lang, "tools/serial-timing/")}>{L.stLink}</a>.
+        {L.stNote} <a href={link(lang, "tools/serial-timing/")}>{L.stLink}</a>{L.stEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -196,8 +203,9 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
   </div>
   <script>
     import { AVR_REC, BAUDS, avrRange, avrUbrr, baudFor } from "../lib/uartBaud";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("ub") as HTMLFormElement;
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
       const s = $(id).value.trim().replace(",", ".");
@@ -242,8 +250,8 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
           const ok = Math.abs(r.errPct) <= rec;
           vd.className = `verdict ${ok ? "ok" : "warn"}`;
           vd.textContent = ok
-            ? ko ? `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 안` : `Error ${sg(r.errPct)} % — within the AVR recommended max receiver error ±${rec.toFixed(1)} %`
-            : ko ? `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 밖. 클럭·오버샘플링을 바꾸거나 보율을 낮추세요` : `Error ${sg(r.errPct)} % — outside the AVR recommended ±${rec.toFixed(1)} %. Change clock or oversampling, or lower the baud rate`;
+            ? msg(lang, `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 안`, `Error ${sg(r.errPct)} % — within the AVR recommended max receiver error ±${rec.toFixed(1)} %`)
+            : msg(lang, `오차 ${sg(r.errPct)} % — AVR 권장 최대 수신 오차 ±${rec.toFixed(1)} % 밖. 클럭·오버샘플링을 바꾸거나 보율을 낮추세요`, `Error ${sg(r.errPct)} % — outside the AVR recommended ±${rec.toFixed(1)} %. Change clock or oversampling, or lower the baud rate`);
         }
         for (const b of BAUDS) {
           const x = baudFor(f, b, os, frac);
@@ -259,7 +267,7 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 클럭과 보율은 0 보다 커야 합니다" : "Check the numbers — clock and baud rate must be above 0";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 클럭과 보율은 0 보다 커야 합니다", "Check the numbers — clock and baud rate must be above 0");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

@@ -6,8 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_LANGS, EXTRA_LANGS, LANGS, LANG_META, url } from "../i18n/langs.ts";
-import { SCOPE, SCOPE_PATHS, extraPages, isTranslated, langsOf, link, staticPaths } from "../i18n/scope.ts";
-import { DICTS } from "../i18n/index.ts";
+import { MORE, SCOPE, SCOPE2, SCOPE_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id } from "../i18n/scope.ts";
+import { DICTS, DICTS2 } from "../i18n/index.ts";
 import { fromEn, misses, msg } from "./tr.ts";
 import { decodeFrame } from "./modbusDecode.ts";
 import { decodeMc, buildRequest as buildMc, endText } from "./mcDecode.ts";
@@ -17,6 +17,16 @@ import { convert, signalStatus, countStatus } from "./analogScale.ts";
 import { pair, parseCidr } from "./subnet.ts";
 import { CONNECTORS, VIEWS, headCells, rowCells, pinoutSvg } from "./pinouts.ts";
 import { buildRequest as buildMb } from "../../../shared/modbusBuild.ts";
+import { TREE } from "../data/troubleshoot.ts";
+import { allPaths, checkText, localize, say, toText, walk } from "./troubleshoot.ts";
+import { DEFAULT_STATE, TEMPLATES, TEMPLATE_NAME, build as buildWiring, type WiringState } from "./wiring.ts";
+import { ITEMS, ITEM_NAME, LEVEL_NAME, groundDiff, loopCurrent, rs232TxIdle, rs485CommonMode, rs485Idle, rs485Ohm, sensorOutput, supplyUnderLoad, verdictText } from "./meterCheck.ts";
+import { probeSvg } from "./meterFig.ts";
+import { HB_STATE, NMT_CMD, PGNS, SDO_ABORT, SPNS, objectName } from "./canFrame.ts";
+import { CHIPS } from "./i2c.ts";
+import { USES, ethernetCheck, rs232Check, rs485Check } from "./cableSelect.ts";
+import { buildFrame, convertNotes, parseFrame as parseMbFrame } from "./modbusConvert.ts";
+import { XGT_DEVICES, XGT_ERRORS, buildXgtRequest, decodeXgt, errText, errWhen } from "./xgtDecode.ts";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -31,7 +41,7 @@ test("언어 목록 — ko 는 루트, 나머지는 /<언어>/, 이름·hreflang
 
 test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마다 pages/<언어>/[...path].astro 가 있다", () => {
   const page = (rel: string) => [path.join(SRC, "pages", rel + "index.astro"), path.join(SRC, "pages", rel.replace(/\/$/, "") + ".astro")].some((f) => fs.existsSync(f));
-  for (const p of SCOPE_PATHS) {
+  for (const p of [...SCOPE_PATHS, ...SCOPE2_PATHS]) {
     assert.ok(page(p), `한국어 쪽 없음: ${p}`);
     assert.ok(page("en/" + p), `영어 쪽 없음: en/${p}`);
   }
@@ -39,12 +49,24 @@ test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마�
   // 거꾸로: 추가 언어 폴더가 있는데 EXTRA_LANGS 에 빠진 경우(사이트맵·hreflang 에 안 나온다)
   for (const d of fs.readdirSync(path.join(SRC, "pages"), { withFileTypes: true }))
     if (d.isDirectory() && /^[a-z]{2}(-[a-z]{2})?$/.test(d.name) && d.name !== "en") assert.ok((EXTRA_LANGS as readonly string[]).includes(d.name), `pages/${d.name} 가 있는데 langs.ts EXTRA_LANGS 에 없음`);
-  // getStaticPaths 가 만드는 주소 = 번역 범위
-  assert.deepEqual(
-    staticPaths().map((x) => x.props.path),
-    SCOPE_PATHS,
-  );
-  assert.equal(extraPages().length, EXTRA_LANGS.length * SCOPE_PATHS.length);
+  // getStaticPaths 가 만드는 주소 = 그 언어의 번역 범위(1차 전부 + MORE[언어])
+  for (const l of EXTRA_LANGS) {
+    assert.deepEqual(
+      staticPaths(l).map((x) => x.props.path),
+      [...SCOPE_PATHS, ...SCOPE2_PATHS.filter((p) => MORE[l]?.includes(p))],
+    );
+    // 주소 파일이 언어를 넘기는지(복사하고 lang 을 안 바꾸면 다른 언어의 범위로 만든다)
+    const file = fs.readFileSync(path.join(SRC, "pages", l, "[...path].astro"), "utf8");
+    assert.match(file, new RegExp(`staticPaths\\("${l}"\\)`), `pages/${l}/[...path].astro 가 staticPaths("${l}") 를 부르지 않음`);
+    assert.match(file, new RegExp(`lang="${l}"`), `pages/${l}/[...path].astro 의 lang 이 ${l} 이 아님`);
+  }
+  assert.equal(extraPages().length, EXTRA_LANGS.reduce((n, l) => n + pathsOf(l).length, 0));
+  // MORE 는 2차 묶음 경로만, 겹침 없이
+  for (const [l, list] of Object.entries(MORE)) {
+    assert.ok((EXTRA_LANGS as readonly string[]).includes(l), `MORE 의 ${l} 이 EXTRA_LANGS 에 없음`);
+    for (const p of list ?? []) assert.ok(p in SCOPE2, `MORE.${l}: 2차 묶음 밖 경로 ${p}`);
+    assert.equal(new Set(list).size, list?.length ?? 0, `MORE.${l}: 겹친 경로`);
+  }
 });
 
 test("번역된 쪽에만 그 언어가 붙고, 나머지 링크는 영어판으로", () => {
@@ -54,7 +76,14 @@ test("번역된 쪽에만 그 언어가 붙고, 나머지 링크는 영어판으
     assert.ok(isTranslated(l, "download/#safe"));
     assert.equal(link(l, "guides/rs485-wiring/"), "/en/guides/rs485-wiring/");
     assert.equal(link(l, "tools/subnet/"), `/${l}/tools/subnet/`);
+    // 2차 묶음: 그 언어가 번역한 쪽만
+    for (const p of SCOPE2_PATHS) {
+      const has = MORE[l]?.includes(p) ?? false;
+      assert.equal(isTranslated(l, p + "#x"), has);
+      assert.equal(link(l, p), has ? `/${l}/${p}` : `/en/${p}`);
+    }
   }
+  for (const p of SCOPE2_PATHS) assert.deepEqual(langsOf(p), [...CORE_LANGS, ...EXTRA_LANGS.filter((l) => MORE[l]?.includes(p))]);
 });
 
 /** 사전의 모양(열쇠·배열 길이·글 종류) — 함수는 시험 값으로 불러서 결과의 모양 */
@@ -144,6 +173,33 @@ function englishOf(file: string): string[] {
 
 // 번역 범위의 웹 도구가 쓰는 라이브러리와 화면 스크립트
 const LIB_FILES = ["lib/checksum.ts", "lib/analogScale.ts", "lib/modbusDecode.ts", "lib/modbusFloat.ts", "lib/mcDecode.ts", "lib/subnet.ts", "lib/pinouts.ts", "views/ModbusDecoderPage.astro", "views/McDecoderPage.astro", "views/SubnetPage.astro"];
+// 2차 묶음 — 쪽마다 화면(views)과 그 화면이 쓰는 라이브러리(그 언어가 MORE 에 그 쪽을 넣었을 때만 본다)
+const VIEW2: Record<Page2Id, string> = {
+  wiring: "WiringPage",
+  troubleshoot: "TroubleshootPage",
+  multimeterCheck: "MultimeterCheckPage",
+  canDecoder: "CanDecoderPage",
+  canTiming: "CanTimingPage",
+  i2c: "I2cPage",
+  uartBaud: "UartBaudPage",
+  modbusRtuTcp: "ModbusRtuTcpPage",
+  xgtDecoder: "XgtDecoderPage",
+  cableSelection: "CableSelectionPage",
+};
+const LIB2: Record<Page2Id, string[]> = {
+  wiring: ["lib/wiring.ts"],
+  troubleshoot: ["lib/troubleshoot.ts"],
+  multimeterCheck: ["lib/meterCheck.ts", "lib/meterFig.ts"],
+  canDecoder: ["lib/canFrame.ts"],
+  canTiming: [],
+  i2c: ["lib/i2c.ts"],
+  uartBaud: [],
+  modbusRtuTcp: ["lib/modbusConvert.ts"],
+  xgtDecoder: ["lib/xgtDecode.ts"],
+  cableSelection: ["lib/cableSelect.ts"],
+};
+/** 그 언어가 번역한 2차 묶음 쪽 이름 */
+const pages2Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).map((p) => SCOPE2[p]);
 
 test("계산 라이브러리 문구 — 번역 범위 도구의 영어 문장마다 추가 언어 번역이 있다", () => {
   for (const l of EXTRA_LANGS) {
@@ -238,4 +294,214 @@ test("공용 Modbus 요청 만들기(shared/modbusBuild.ts) — 영어 안내 �
       `${l}: 번역 없는 문장`,
     );
   }
+});
+
+// ---------------------------------------------------------------- 2차 묶음(scope.ts SCOPE2 · MORE)
+
+test("2차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·도구 이름이 있다", () => {
+  const ja2 = DICTS2.ja!;
+  // 기준판은 2차 묶음 전부
+  assert.deepEqual(Object.keys(ja2.pages).sort(), Object.values(SCOPE2).sort(), "ja 2차 묶음 쪽 글 = SCOPE2");
+  assert.deepEqual(Object.keys(ja2.webTools).sort(), [...SCOPE2_PATHS].sort(), "ja 2차 묶음 도구 이름 = SCOPE2");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages2Of(l);
+    if (!ids.length) continue;
+    const d = DICTS2[l];
+    assert.ok(d, `${l}: MORE 에 쪽이 있는데 i18n/index.ts DICTS2 에 ${l} 사전이 없음`);
+    for (const id of ids) {
+      const pg: unknown = (d.pages as Record<string, unknown>)[id];
+      assert.ok(pg, `${l}: 2차 묶음 쪽 글 없음 — ${id}`);
+      assert.deepEqual(shape(pg), shape((ja2.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
+    }
+    for (const p of MORE[l] ?? []) {
+      const w = (d.webTools as Record<string, { name: string; blurb: string } | undefined>)[p];
+      assert.ok(w?.name.trim() && w.blurb.trim(), `${l}: 도구 이름·소개 없음 — ${p}`);
+    }
+    const empty: string[] = [];
+    const walkS = (v: unknown, at: string) => {
+      if (typeof v === "function") return walkS((v as (a: unknown) => unknown)(CTX), at);
+      if (typeof v === "string") {
+        if (!v.trim()) empty.push(at);
+        return;
+      }
+      if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
+    };
+    for (const id of ids) walkS({ ...(d.pages as Record<string, object>)[id], tree: undefined }, `${l}.${id}`);
+    assert.deepEqual(empty, [], `${l}: 빈 문구`);
+  }
+});
+
+test("2차 묶음 — 고장 원인 찾기 나무 글 표가 나무(data/troubleshoot.ts)와 맞는다", () => {
+  for (const l of EXTRA_LANGS) {
+    if (!pages2Of(l).includes("troubleshoot")) continue;
+    const text = DICTS2[l]!.pages.troubleshoot!.tree;
+    assert.deepEqual(checkText(TREE, text), [], `${l}: 나무 글 표`);
+    // 걸어 본 모든 길에서 영어가 남지 않음(글이 다 붙었는지)
+    const tree = localize(TREE, text);
+    for (const s of tree.symptoms) assert.ok(s.name.x, `${l}: 증상 ${s.id}`);
+    for (const p of allPaths(tree)) {
+      const w = walk(tree, p.symptom, p.picks)!;
+      for (const st of w.steps) assert.ok(st.q.q.x && st.q.opts[st.pick].a.x, `${l}: ${st.q.id}`);
+      const txt = toText(w, l, {}, "https://portdock.dev/");
+      assert.ok(!/Possible causes|How to check|Symptom/.test(txt), `${l}: 복사 글에 영어 머리말`);
+    }
+    assert.equal(say(TREE.symptoms[0].name, l), TREE.symptoms[0].name.en, "localize 안 한 나무는 영어");
+  }
+});
+
+/** 화면 파일에서 Base 에 넘긴 libText 묶음 */
+const libTextOf = (view: string): string[] => {
+  const s = fs.readFileSync(path.join(SRC, "views", view + ".astro"), "utf8");
+  const m = /libText=\{\[([^\]]*)\]\}/.exec(s);
+  return m ? [...m[1].matchAll(/"(\w+)"/g)].map((x) => x[1]) : [];
+};
+/** 화면의 브라우저 스크립트 부분(<script> … </script>, 구조화 데이터 제외)과 그 스크립트가 가져오는 lib 파일 */
+const clientOf = (view: string): { code: string; libs: string[] } => {
+  const s = fs.readFileSync(path.join(SRC, "views", view + ".astro"), "utf8");
+  const i = s.lastIndexOf("\n  <script>\n");
+  if (i < 0) return { code: "", libs: [] };
+  const code = s.slice(i, s.indexOf("</script>", i));
+  return { code, libs: [...code.matchAll(/from "\.\.\/lib\/(\w+)"/g)].map((m) => `lib/${m[1]}.ts`).filter((f) => f !== "lib/tr.ts") };
+};
+
+test("2차 묶음 — 쪽의 영어 문장마다 번역이 있고, 브라우저 스크립트가 쓰는 문장은 그 쪽이 싣는 묶음(libText)에 있다", () => {
+  const tmp = path.join(SRC, "..", "node_modules", ".i18n-test-client.ts");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages2Of(l);
+    if (!ids.length) continue;
+    const all: Record<string, string> = Object.assign({}, ...Object.values(DICTS[l].lib), ...Object.values(DICTS2[l]!.lib));
+    const missing = ids.flatMap((id) => [`views/${VIEW2[id]}.astro`, ...LIB2[id]].flatMap((f) => englishOf(path.join(SRC, f)).filter((en) => !(en in all)).map((en) => `${f}: ${en}`)));
+    assert.deepEqual(missing, [], `${l}: 번역 없는 문장`);
+    for (const id of ids) {
+      const libs = { ...(DICTS[l].lib as Record<string, Record<string, string>>), ...(DICTS2[l]!.lib as Record<string, Record<string, string>>) };
+      const sections = libTextOf(VIEW2[id]);
+      for (const s of sections) assert.ok(libs[s], `${l}: ${VIEW2[id]} 의 libText «${s}» 묶음이 없음`);
+      const shipped: Record<string, string> = Object.assign({}, ...sections.map((s) => libs[s] ?? {}));
+      const c = clientOf(VIEW2[id]);
+      fs.writeFileSync(tmp, c.code);
+      const need = [...englishOf(tmp), ...c.libs.flatMap((f) => englishOf(path.join(SRC, f)))];
+      const notShipped = [...new Set(need)].filter((en) => !(en in shipped));
+      assert.deepEqual(notShipped, [], `${l}: ${VIEW2[id]} 브라우저 스크립트 문장이 libText ${JSON.stringify(sections)} 에 없음`);
+    }
+  }
+  fs.rmSync(tmp, { force: true });
+});
+
+test("2차 묶음 계산 라이브러리 — 추가 언어로 돌려도 영어가 남지 않는다(예시 입력)", () => {
+  misses.clear();
+  for (const l of EXTRA_LANGS) {
+    const ids = pages2Of(l);
+    if (ids.includes("wiring")) {
+      const base = DEFAULT_STATE(l);
+      const states: Partial<WiringState>[] = [
+        {},
+        { devices: [{ name: "X", unit: 1 }, { name: "Y", unit: 1 }, { name: "Z", unit: 300, bauds: [19200], parity: "none", unitRange: [1, 99] }], len: 1500, baud: 115200, conv: "d", dev: "ab" },
+        { len: 1100, bias: false },
+        { tpl: "rs485-4w", len: 1500 },
+        { tpl: "rs485-4w", baud: 115200, devices: [{ name: "Q", unit: 2 }, { name: "R", unit: 2, bauds: [9600], parity: "odd" }] },
+        { tpl: "rs232", rs232: "null3" },
+        { tpl: "rs232", rs232: "nullFull", loopback: true },
+        { tpl: "rs232", rs232: "straight" },
+        { tpl: "4-20ma", loop: "2w", supply: 12, rRecv: 500 },
+        { tpl: "4-20ma", loop: "3w" },
+        { tpl: "4-20ma", loop: "4w", rRecv: 0 },
+        { tpl: "npn-pnp", sensor: "npn", count: 4 },
+        { tpl: "npn-pnp", sensor: "pnp", count: 1 },
+        { tpl: "output", out: "relay", load: "ac" },
+        { tpl: "output", out: "npn", load: "dc" },
+        { tpl: "output", out: "pnp", load: "ac" },
+      ];
+      for (const s of states) {
+        const r = buildWiring({ ...base, ...s }, l);
+        JSON.stringify(r);
+      }
+      for (const t of TEMPLATES) fromEn(TEMPLATE_NAME[t].en, l);
+    }
+    if (ids.includes("multimeterCheck")) {
+      const vs = [
+        ...[0, 59, 61, 118, 200, 2000, 30, Infinity].flatMap((ohm) => [120, -1].map((rTerm) => rs485Ohm({ ohm, nodes: 3, rTerm, rBias: 560 }))),
+        ...[0.5, 0.1, -0.5].map(rs485Idle),
+        rs485CommonMode(2, 3), rs485CommonMode(11, 13), rs485CommonMode(-8, 0), rs485CommonMode(NaN, NaN),
+        ...[0, -1, 2, 3.7, 3.9, 12, 20.2, 20.7, 22].map(loopCurrent),
+        ...[[24, 30], [24, 23.5], [24, 22], [24, 19]].map(([a, b]) => supplyUnderLoad(a, b)),
+        ...(["npn", "pnp"] as const).flatMap((t) => (["on", "off"] as const).flatMap((st) => [0.5, 8, 13, 23, 31].map((v) => sensorOutput(t, st, v, 24)))),
+        ...[-30, -20, -9, -4, 0, 4, 9].map(rs232TxIdle),
+        ...[0.3, 3, 9].map(groundDiff),
+      ];
+      for (const v of vs) verdictText("x", "y", v, l);
+      for (const i of ITEMS) {
+        fromEn(ITEM_NAME[i].en, l);
+        probeSvg(i, l, "x");
+      }
+      for (const v of Object.values(LEVEL_NAME)) fromEn(v.en, l);
+    }
+    if (ids.includes("canDecoder")) {
+      for (const v of [...Object.values(PGNS), ...Object.values(NMT_CMD), ...Object.values(HB_STATE), ...Object.values(SDO_ABORT), ...SPNS]) fromEn(v.en, l);
+      for (const ix of [0x1000, 0x1001, 0x1003, 0x1005, 0x1008, 0x1009, 0x100a, 0x1010, 0x1011, 0x1014, 0x1016, 0x1017, 0x1018, 0x1400, 0x1600, 0x1800, 0x1a00, 0x2000, 0x6000, 0x1f00]) objectName(ix, l);
+    }
+    if (ids.includes("i2c")) for (const c of CHIPS) fromEn(c.kind.en, l), fromEn(c.pins.en, l);
+    if (ids.includes("cableSelection")) {
+      for (const u of USES) for (const x of [u.name, ...u.cable, ...u.check, ...u.src]) fromEn(x.en, l);
+      for (const r of [rs485Check(9600, 100), rs485Check(115200, 900), rs485Check(9600, 1100), rs485Check(9600, 1300), rs232Check(10, 100), rs232Check(20, 100), rs232Check(40, 100), ethernetCheck("1G", 50), ethernetCheck("10G", 95), ethernetCheck("100M", 120)])
+        for (const n of r.notes) fromEn(n.text.en, l);
+    }
+    if (ids.includes("modbusRtuTcp")) {
+      for (const [txt, fmt] of [
+        ["01 03 00 00 00 0A C5 CD", "auto"],
+        ["01 03 00 00 00 0A 00 00", "auto"],
+        ["00 01 00 00 00 06 01 03 00 00 00 0A", "auto"],
+        ["00 01 00 05 00 09 00 03 00 00 00 0A", "tcp"],
+        [":01030000000AF2\\r\\n", "auto"],
+        [":01030000000aF0", "ascii"],
+        ["00 01 00 00 00 03 FF 08 00", "auto"],
+      ] as const) {
+        const p = parseMbFrame(txt, fmt, l);
+        for (const f of ["rtu", "tcp", "ascii"] as const) {
+          JSON.stringify(buildFrame(f, p.unit, p.pdu, 7, l));
+          convertNotes(p, f, l);
+        }
+      }
+      for (const bad of ["", "0", ":0", ":0G", "01 02"]) {
+        try {
+          parseMbFrame(bad, "auto", l);
+        } catch {
+          /* 오류 문구도 번역 대상 */
+        }
+      }
+    }
+    if (ids.includes("xgtDecoder")) {
+      for (const c of Object.keys(XGT_ERRORS)) errText(Number(c), l), errWhen(Number(c), l);
+      for (const d of XGT_DEVICES) fromEn(d.en, l);
+      const hx = (u: number[]) => u.map((x) => x.toString(16).padStart(2, "0")).join(" ");
+      const reqs = [
+        buildXgtRequest({ op: "read", vars: ["%DW100", "%DW101"], invoke: 1 }),
+        buildXgtRequest({ op: "read-cont", vars: ["%DB200"], count: 6 }),
+        buildXgtRequest({ op: "write", vars: ["%MX1603"], values: [1] }),
+        buildXgtRequest({ op: "write", vars: ["%DL1"], values: [123456789] }),
+        buildXgtRequest({ op: "write-cont", vars: ["%MB0"], values: [1, 2, 3] }),
+      ];
+      for (const r of reqs) JSON.stringify(decodeXgt(hx(r), { lang: l }));
+      const head = [0x4c, 0x53, 0x49, 0x53, 0x2d, 0x58, 0x47, 0x54, 0, 0, 0, 1, 0xa0, 0x11, 1, 0, 14, 0, 0];
+      const sum = (b: number[]) => b.reduce((a, x) => (a + x) & 0xff, 0);
+      JSON.stringify(decodeXgt(hx([...head, sum(head), 0x55, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0x34, 0x12]), { lang: l, pair: hx(reqs[0]) }));
+      JSON.stringify(decodeXgt(hx([...head, sum(head), 0x55, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0x34, 0x12]), { lang: l }));
+      const nak = [...head.slice(0, 16), 10, 0, 0];
+      JSON.stringify(decodeXgt(hx([...nak, sum(nak), 0x55, 0, 2, 0, 0, 0, 0xff, 0xff, 4, 0]), { lang: l }));
+      const badHead = [0x4c, 0x47, 0x49, 0x53, 0, 0, 0, 0, 0, 0, 0, 0, 0xa0, 0x33, 1, 0, 9, 0, 0x12];
+      JSON.stringify(decodeXgt(hx([...badHead, 0, 0x54, 0, 2, 0, 0, 0, 1, 0, 3, 0]), { lang: l }));
+      for (const o of [{ op: "read" as const, vars: [] }, { op: "read-cont" as const, vars: ["%MB0", "%MB1"] }, { op: "read" as const, vars: ["%MW1", "%MD2"] }, { op: "read-cont" as const, vars: ["%MW0"], count: 2 }, { op: "read-cont" as const, vars: ["%MB0"], count: 0 }, { op: "write" as const, vars: ["%MW1"], values: [] }, { op: "write" as const, vars: ["%MW1"], values: [70000] }, { op: "read" as const, vars: ["%ZW1"] }]) {
+        try {
+          buildXgtRequest(o, l);
+        } catch {
+          /* 오류 문구도 번역 대상 */
+        }
+      }
+      try {
+        decodeXgt("4c 53", { lang: l });
+      } catch {
+        /* 짧은 프레임 */
+      }
+    }
+  }
+  assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
 });

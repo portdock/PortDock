@@ -1,9 +1,9 @@
 ---
-// 일본어 쪽 — 번역 범위(i18n/scope.ts)의 쪽만 /ja/… 로 만든다. 새 언어는 이 파일을 pages/<언어>/ 로 복사하고 lang 만 바꾼다(site/I18N.md).
+// 일본어 쪽 — 이 언어의 번역 범위(i18n/scope.ts: 1차 SCOPE + MORE.ja)의 쪽만 /ja/… 로 만든다. 새 언어는 이 파일을 pages/<언어>/ 로 복사하고 staticPaths("ja")·lang="ja" 두 곳을 바꾼다(site/I18N.md).
 import LangPage from "../../i18n/LangPage.astro";
 import { staticPaths } from "../../i18n/scope";
 
-export const getStaticPaths = staticPaths;
+export const getStaticPaths = () => staticPaths("ja");
 const { path } = Astro.props;
 ---
 

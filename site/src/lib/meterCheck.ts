@@ -10,7 +10,8 @@
 //   RS-232: TIA-232-F — 송신 ±5~±15 V(부하 상태), 수신 문턱 ±3 V, 쉬는 상태(마크)는 음전압, 최대 ±25 V
 // 이 모듈은 «문제 없음(이 측정 범위)» 까지만 말한다 — 잰 범위 안에서 문제가 보이지 않는다는 뜻이다.
 
-export type Lang = "ko" | "en";
+import { tx, type Lang } from "./tr.ts";
+export type { Lang };
 export type Level = "ok" | "warn" | "fault";
 export interface T {
   ko: string;
@@ -522,8 +523,8 @@ export function groundDiff(v: number): Verdict {
 // ---------------------------------------------------------------- 텍스트로
 
 export function verdictText(title: string, input: string, v: Verdict, lang: Lang) {
-  const lines = [`${title}: ${input}`, `→ ${LEVEL_NAME[v.level][lang]} — ${v.msg[lang]}`];
-  for (const x of v.values ?? []) lines.push(`  ${x.k[lang]}: ${x.v}`);
-  for (const m of v.more) lines.push(`  - ${m[lang]}`);
+  const lines = [`${title}: ${input}`, `→ ${tx(LEVEL_NAME[v.level], lang)} — ${tx(v.msg, lang)}`];
+  for (const x of v.values ?? []) lines.push(`  ${tx(x.k, lang)}: ${x.v}`);
+  for (const m of v.more) lines.push(`  - ${tx(m, lang)}`);
   return lines.join("\n");
 }

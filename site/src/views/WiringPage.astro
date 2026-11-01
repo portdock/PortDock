@@ -12,19 +12,20 @@ import { DEVICES } from "../data/devices";
 import { deviceName } from "@shared/devices";
 import { TEMPLATES, TEMPLATE_NAME, LABEL_SETS } from "../lib/wiring";
 import { BAUDS } from "../lib/serialTiming";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { msg, tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/wiring/";
 // 시리얼(RTU·ASCII) 장비만 — 이름·통신 기본값만 넘긴다(레지스터는 넣지 않음)
 const DEVS = DEVICES.filter((d) => d.protocols.some((p) => p !== "tcp")).map((d) => ({
   id: d.id,
-  n: deviceName(d, lang),
+  n: deviceName(d, lang === "ko" ? "ko" : "en"),
   b: d.comm.bauds ?? (d.comm.baud ? [d.comm.baud] : []),
   d: d.comm.baud,
   p: d.comm.parity,
@@ -34,7 +35,8 @@ const DEVS = DEVICES.filter((d) => d.protocols.some((p) => p !== "tcp")).map((d)
   r: d.comm.unitRange,
 }));
 const LBL: Record<string, string> = { ab: "A / B", d: "D+ / D−", trx: "TRX+ / TRX−", "485": "485+ / 485−", d10: "D1 / D0" };
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "배선도 만들기 — RS-485·RS-232·4-20mA·센서",
       h1: "배선도 만들기",
@@ -110,8 +112,13 @@ const L = ko
       pinNote: "커넥터 핀 번호·선 색과 시운전 순서는",
       pin: "커넥터 핀 배치 사전",
       check: "시운전·유지보수 점검표 만들기",
+      end: ".",
+      tsMore: ["다 이었는데 안 되면 ", "고장 원인 찾기 도우미", " 로 원인 후보를 좁히고, 잰 값은 ", "멀티미터 측정값 점검기", " 에 넣어 보세요."],
+      cable: ["선 종류·굵기는 ", "케이블 선정 도우미", " · ", "전선관·덕트 점유율 계산기", " 를 보세요."],
+      pngFail: "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Wiring Diagram Maker — RS-485, RS-232, 4-20 mA, Sensors",
       h1: "Wiring diagram maker",
       desc: "RS-485 2/4-wire, RS-232 null modem, 4-20 mA 2/3/4-wire, NPN/PNP sensor and relay output wiring for your devices and IDs, with a checklist. Save SVG or PNG.",
@@ -186,7 +193,12 @@ const L = ko
       pinNote: "For connector pin numbers and wire colours, and the start-up steps, see the",
       pin: "connector pinout reference",
       check: "commissioning and maintenance checklist",
-    };
+      end: ".",
+      tsMore: ["If it still does not work once wired, try the ", "field troubleshooting wizard", " to narrow down causes, and check readings with the ", "multimeter reading checker", "."],
+      cable: ["For cable types and sizes, see the ", "cable selection helper", ", ", "conduit and duct fill calculator", "."],
+      pngFail: "Could not make the PNG — try saving as SVG.",
+    }
+  : page2(lang, "wiring");
 const T = {
   copied: L.copied,
   checks: L.checks,
@@ -194,7 +206,7 @@ const T = {
   devName: L.devName,
   unit: L.unit,
   del: L.del,
-  pngFail: ko ? "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요." : "Could not make the PNG — try saving as SVG.",
+  pngFail: L.pngFail,
   footer: "portdock.dev/tools/wiring",
 };
 const ld = {
@@ -209,11 +221,11 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["wiring"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
@@ -226,7 +238,7 @@ const SRC = [
           TEMPLATES.map((t, i) => (
             <label class="wd-tpl">
               <input type="radio" name="tpl" value={t} checked={i === 0} />
-              <span>{TEMPLATE_NAME[t][lang]}</span>
+              <span>{tx(TEMPLATE_NAME[t], lang)}</span>
             </label>
           ))
         }
@@ -299,11 +311,11 @@ const SRC = [
     <section class="prose">
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
-      <p>{L.sysNote} <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a>.</p>
+      <p>{L.sysNote} <a href={link(lang, "tools/system-diagram/")}>{L.sys}</a>{L.end}</p>
       <p>
-        {ko ? "다 이었는데 안 되면 " : "If it still does not work once wired, try the "}<a href={url(lang, "tools/troubleshoot/")}>{ko ? "고장 원인 찾기 도우미" : "field troubleshooting wizard"}</a>{ko ? " 로 원인 후보를 좁히고, 잰 값은 " : " to narrow down causes, and check readings with the "}<a href={url(lang, "tools/multimeter-check/")}>{ko ? "멀티미터 측정값 점검기" : "multimeter reading checker"}</a>{ko ? " 에 넣어 보세요." : "."}
+        {L.tsMore[0]}<a href={link(lang, "tools/troubleshoot/")}>{L.tsMore[1]}</a>{L.tsMore[2]}<a href={link(lang, "tools/multimeter-check/")}>{L.tsMore[3]}</a>{L.tsMore[4]}
       </p>
-      <p>{L.pinNote} <a href={url(lang, "tools/pinouts/")}>{L.pin}</a> · <a href={url(lang, "tools/commissioning-checklist/")}>{L.check}</a>.</p>
+      <p>{L.pinNote} <a href={link(lang, "tools/pinouts/")}>{L.pin}</a> · <a href={link(lang, "tools/commissioning-checklist/")}>{L.check}</a>{L.end}</p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (
@@ -316,7 +328,7 @@ const SRC = [
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
       <p>
-        {ko ? "선 종류·굵기는 " : "For cable types and sizes, see the "}<a href={url(lang, "tools/cable-selection/")}>{ko ? "케이블 선정 도우미" : "cable selection helper"}</a>{ko ? " · " : ", "}<a href={url(lang, "tools/conduit-fill/")}>{ko ? "전선관·덕트 점유율 계산기" : "conduit and duct fill calculator"}</a>{ko ? " 를 보세요." : "."}
+        {L.cable[0]}<a href={link(lang, "tools/cable-selection/")}>{L.cable[1]}</a>{L.cable[2]}<a href={link(lang, "tools/conduit-fill/")}>{L.cable[3]}</a>{L.cable[4]}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -476,6 +488,7 @@ const SRC = [
   <script>
     import { build, parseHash, toHash, MAX_DEVICES, type WiringState, type Rs485Device, type TemplateId, type Note } from "../lib/wiring";
     import { renderSvg, LIGHT, esc } from "../lib/diagramSvg";
+    import { msg, type Lang } from "../lib/tr";
     import { saveText, savePng, screenPalette, onThemeChange, fileStamp } from "../lib/fileSave";
 
     interface DevItem {
@@ -490,7 +503,7 @@ const SRC = [
       r?: [number, number];
     }
     const form = document.getElementById("wd") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const DEVS = JSON.parse(form.dataset.devs ?? "[]") as DevItem[];
     const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
@@ -653,7 +666,7 @@ const SRC = [
     $("addDev").addEventListener("click", () => {
       if (state.devices.length >= MAX_DEVICES) return;
       const u = nextUnit();
-      state.devices.push({ name: lang === "ko" ? `장비 ${u}` : `Device ${u}`, unit: u });
+      state.devices.push({ name: msg(lang, `장비 ${u}`, `Device ${u}`), unit: u });
       drawDevs();
       render();
     });

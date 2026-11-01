@@ -7,20 +7,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { hex } from "../lib/checksum";
-import { buildXgtRequest, bcc, XGT_ERRORS, XGT_DEVICES } from "../lib/xgtDecode";
+import { buildXgtRequest, bcc, errText, errWhen, XGT_ERRORS, XGT_DEVICES } from "../lib/xgtDecode";
 import { XGT_MANUALS } from "../data/guides";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/xgt-decoder/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "LS XGT 전용 프로토콜(FEnet) 프레임 해석기",
+      seo: "LS XGT 전용 프로토콜(FEnet) 프레임 해석기 — PortDock",
       desc: "LS XGT PLC 의 FEnet 전용 프로토콜(«LSIS-XGT», TCP 2004) 프레임을 HEX 로 붙여 넣으면 머리·명령·변수·값·오류 코드를 풀어 줍니다. 요청 만들기도.",
       input: "프레임 (HEX 바이트)",
       help: "예: 4C 53 49 53 2D 58 47 54 00 00 … — 프레임 하나씩. 요청·응답은 머리의 프레임 방향(h33·h11)으로 가립니다.",
@@ -61,9 +64,14 @@ const L = ko
         ["«PortDock PLC Simulator 가 답할 오류 코드» 는 무엇인가요?", "요청을 PortDock PLC Simulator(0.10.0 부터)의 처리 규칙으로 따져 본 결과입니다. 디바이스 크기를 넘는 번호(오류 4)는 앱에서 정한 크기에 따라 달라서 여기서는 따지지 않습니다. 실제 PLC 는 기종·설정에 따라 다르게 답할 수 있습니다."],
       ],
       guideNote: "PLC 없이 자기 프로그램의 통신을 시험하려면",
+      guideLink: "PLC 없이 LS XGT 전용 프로토콜 통신 시험하기",
+      guideEnd: ".",
+      mc: ["미쓰비시 MC 프로토콜(SLMP) 프레임은 ", "MC 프로토콜(SLMP) 프레임 해석기", " 를 쓰세요."],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "LS XGT Dedicated Protocol (FEnet) Frame Decoder",
+      seo: "LS XGT Dedicated Protocol (FEnet) Frame Decoder Online — PortDock",
       desc: "Paste an LS XGT FEnet dedicated protocol frame («LSIS-XGT», TCP 2004) as HEX to decode the header, instruction, variables, values and error code.",
       input: "Frame (HEX bytes)",
       help: "e.g. 4C 53 49 53 2D 58 47 54 00 00 … — one frame at a time. Request and reply are told apart by the header's source of frame (h33/h11).",
@@ -104,7 +112,11 @@ const L = ko
         ["What is «Error code PortDock PLC Simulator would return»?", "The request checked against PortDock PLC Simulator's handling rules (from 0.10.0). Numbers beyond the device size (error 4) depend on the size set in the app and are not checked here. A real PLC may answer differently depending on model and settings."],
       ],
       guideNote: "To test your own program's communication without a PLC, see",
-    };
+      guideLink: "Testing LS XGT dedicated protocol communication without a PLC",
+      guideEnd: ".",
+      mc: ["For Mitsubishi MC protocol (SLMP) frames use the ", "MC Protocol (SLMP) Frame Decoder", "."],
+    }
+  : page2(lang, "xgtDecoder");
 
 // 예시 — xgt.rs·xgtDecode.test.ts 와 같은 모양
 const readReq = hex(buildXgtRequest({ op: "read", vars: ["%DW100"], invoke: 1 }));
@@ -126,11 +138,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "LS XGT 전용 프로토콜(FEnet) 프레임 해석기 — PortDock" : "LS XGT Dedicated Protocol (FEnet) Frame Decoder Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["checksum", "xgt"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -211,11 +223,11 @@ const ld = {
           </thead>
           <tbody>
             {
-              Object.entries(XGT_ERRORS).map(([code, e]) => (
+              Object.keys(XGT_ERRORS).map((code) => (
                 <tr>
                   <td class="mono">h{Number(code).toString(16).toUpperCase().padStart(4, "0")}</td>
-                  <td>{e[lang]}</td>
-                  <td>{ko ? e.whenKo : e.whenEn}</td>
+                  <td>{errText(Number(code), lang)}</td>
+                  <td>{errWhen(Number(code), lang)}</td>
                 </tr>
               ))
             }
@@ -234,7 +246,7 @@ const ld = {
               XGT_DEVICES.map((d) => (
                 <tr>
                   <td class="mono">{d.letter}</td>
-                  <td>{d[lang]}</td>
+                  <td>{tx(d, lang)}</td>
                   <td class="mono">%{d.letter}X0 · %{d.letter}B0 · %{d.letter}W0 · %{d.letter}D0 · %{d.letter}L0</td>
                 </tr>
               ))
@@ -247,18 +259,18 @@ const ld = {
         {
           XGT_MANUALS.map((r) => (
             <li>
-              <a href={r.url} rel="noopener">{r.title}</a> — {r.note[lang]}
+              <a href={r.url} rel="noopener">{r.title}</a> — {tx(r.note, lang)}
             </li>
           ))
         }
       </ul>
       <p class="note">{L.notAffiliated}</p>
       <p>
-        {L.guideNote} <a href={url(lang, "guides/xgt-protocol-test-without-plc/")}>{ko ? "PLC 없이 LS XGT 전용 프로토콜 통신 시험하기" : "Testing LS XGT dedicated protocol communication without a PLC"}</a>{ko ? " · " : " · "}<a href={url(lang, "plc-simulator/")}>PortDock PLC Simulator</a>.
+        {L.guideNote} <a href={link(lang, "guides/xgt-protocol-test-without-plc/")}>{L.guideLink}</a>{" · "}<a href={link(lang, "plc-simulator/")}>PortDock PLC Simulator</a>{L.guideEnd}
       </p>
       <p>
-        {ko ? "미쓰비시 MC 프로토콜(SLMP) 프레임은 " : "For Mitsubishi MC protocol (SLMP) frames use the "}
-        <a href={url(lang, "tools/mc-decoder/")}>{ko ? "MC 프로토콜(SLMP) 프레임 해석기" : "MC Protocol (SLMP) Frame Decoder"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.mc[0]}
+        <a href={link(lang, "tools/mc-decoder/")}>{L.mc[1]}</a>{L.mc[2]}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -308,12 +320,12 @@ const ld = {
     }
   </style>
   <script>
-    import { type Lang, hex } from "../lib/checksum";
+    import { hex } from "../lib/checksum";
+    import { msg, type Lang } from "../lib/tr";
     import { decodeXgt, buildXgtRequest, commandName, errText, type Field, type BuildOp } from "../lib/xgtDecode";
     const form = document.getElementById("xgd") as HTMLFormElement;
     const lang = (form.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
-    const t = (k: string, e: string) => (ko ? k : e);
+    const t = (k: string, e: string) => msg(lang, k, e);
     const data = document.getElementById("data") as HTMLTextAreaElement;
     const pair = document.getElementById("pair") as HTMLInputElement;
     const err = document.getElementById("err")!;

@@ -7,28 +7,32 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { FD_LEN, PGNS, SPNS, buildRaw } from "../lib/canFrame";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { page2 } from "../i18n";
+import { pageName } from "../i18n/names";
+import type { SiteLang } from "../i18n/langs";
+import { ui, link } from "../lib/i18n";
+import { msg, tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/can-decoder/";
 const rawEx = buildRaw({ id: 0x123, ext: false, rtr: false, dlc: 2, data: [0x11, 0x22] }).join("");
 const EXAMPLES = [
-  { name: ko ? "J1939 엔진 회전수" : "J1939 engine speed", v: "can0  0CF00400   [8]  FF FF FF 68 13 FF FF FF" },
-  { name: ko ? "J1939 차속(CCVS1)" : "J1939 CCVS1", v: "can0 18FEF100#0011223344556677" },
-  { name: ko ? "J1939 요청" : "J1939 request", v: "18EA00F9 3 00 EE 00" },
-  { name: ko ? "CANopen SDO 읽기" : "CANopen SDO read", v: "601 8 40 18 10 01 00 00 00 00\n581 8 43 18 10 01 78 56 34 12" },
-  { name: ko ? "CANopen NMT·하트비트" : "CANopen NMT, heartbeat", v: "000 2 01 00\n705 1 05" },
-  { name: ko ? "SDO 중단" : "SDO abort", v: "585#8000200000000206" },
-  { name: ko ? "원시 비트열" : "Raw bit stream", v: rawEx },
+  { name: msg(lang, "J1939 엔진 회전수", "J1939 engine speed"), v: "can0  0CF00400   [8]  FF FF FF 68 13 FF FF FF" },
+  { name: msg(lang, "J1939 차속(CCVS1)", "J1939 CCVS1"), v: "can0 18FEF100#0011223344556677" },
+  { name: msg(lang, "J1939 요청", "J1939 request"), v: "18EA00F9 3 00 EE 00" },
+  { name: msg(lang, "CANopen SDO 읽기", "CANopen SDO read"), v: "601 8 40 18 10 01 00 00 00 00\n581 8 43 18 10 01 78 56 34 12" },
+  { name: msg(lang, "CANopen NMT·하트비트", "CANopen NMT, heartbeat"), v: "000 2 01 00\n705 1 05" },
+  { name: msg(lang, "SDO 중단", "SDO abort"), v: "585#8000200000000206" },
+  { name: msg(lang, "원시 비트열", "Raw bit stream"), v: rawEx },
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "CAN 프레임 해석기 (J1939·CANopen)",
+      seo: "CAN 프레임 해석기 — J1939 PGN·CANopen COB-ID·CRC — PortDock",
       desc: "candump 줄·ID DLC 데이터 HEX·원시 비트열을 넣으면 표준·확장 ID, DLC, 데이터, 비트 스터핑·CRC15 를 풀고 J1939 PGN·주소, CANopen COB-ID·SDO 까지 봅니다.",
       input: "CAN 프레임 (한 줄에 하나)",
       help: "candump «can0 18FEF100#0011…» · «can0 123 [2] 11 22» · «ID DLC 데이터» HEX «601 8 40 18 10 01 00 00 00 00» · 원시 비트열 «0 0010010…»(SOF 부터, 0 = 우성).",
@@ -89,9 +93,12 @@ const L = ko
       timing: "비트 속도·샘플 포인트·TQ 는",
       timingLink: "CAN 비트 타이밍 계산기",
       timing2: "UART·SPI·I2C 는",
+      timingEnd: " 에서. ",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "CAN Frame Decoder (J1939, CANopen)",
+      seo: "CAN Frame Decoder: J1939 PGN, CANopen COB-ID, CRC — PortDock",
       desc: "Decode candump lines, ID DLC data hex or raw bits: standard/extended ID, DLC, data, bit stuffing and CRC15, plus J1939 PGN/addresses and CANopen COB-ID/SDO.",
       input: "CAN frames (one per line)",
       help: "candump «can0 18FEF100#0011…» · «can0 123 [2] 11 22» · «ID DLC data» hex «601 8 40 18 10 01 00 00 00 00» · raw bits «0 0010010…» (from SOF, 0 = dominant).",
@@ -152,7 +159,14 @@ const L = ko
       timing: "For bit rate, sample point and TQ, use the",
       timingLink: "CAN Bit Timing Calculator",
       timing2: "For UART, SPI and I2C:",
-    };
+      timingEnd: ". ",
+    }
+  : page2(lang, "canDecoder");
+const MORE = [
+  { path: "tools/uart-waveform/", nameKo: "UART 파형 그리기", nameEn: "UART Waveform Drawer" },
+  { path: "tools/spi/", nameKo: "SPI 모드 도우미", nameEn: "SPI Mode Helper" },
+  { path: "tools/i2c/", nameKo: "I2C 도구", nameEn: "I2C Tools" },
+];
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -171,17 +185,17 @@ const SRC = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "CAN 프레임 해석기 — J1939 PGN·CANopen COB-ID·CRC — PortDock" : "CAN Frame Decoder: J1939 PGN, CANopen COB-ID, CRC — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["canFrame"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="cf">
+    <form class="calc card" id="cf" data-lang={lang}>
       <label class="fld">{L.input}<textarea id="in" class="mono" rows="4" spellcheck="false" autocomplete="off">{EXAMPLES[0].v}</textarea></label>
       <p class="note">{L.help}</p>
       <div class="ex-row" role="group" aria-label={L.examples}>
@@ -225,7 +239,7 @@ const SRC = [
                     <td class="mono">{p}</td>
                     <td class="mono">{"0x" + p.toString(16).toUpperCase()}</td>
                     <td class="mono">{v.abbr}</td>
-                    <td>{v[lang]}</td>
+                    <td>{tx(v, lang)}</td>
                   </tr>
                 ))
             }
@@ -242,7 +256,7 @@ const SRC = [
                 <tr>
                   <td class="mono">{s.spn}</td>
                   <td class="mono">{s.pgn}</td>
-                  <td>{s[lang]}</td>
+                  <td>{tx(s, lang)}</td>
                   <td class="mono">{s.len === 1 ? s.byte : `${s.byte}–${s.byte + s.len - 1}`}</td>
                   <td class="mono">{s.scale} {s.unit}/bit</td>
                   <td class="mono">{s.offset} {s.unit}</td>
@@ -271,8 +285,8 @@ const SRC = [
         ))
       }
       <p>
-        {L.timing} <a href={url(lang, "tools/can-bit-timing/")}>{L.timingLink}</a>{ko ? " 에서. " : ". "}
-        {L.timing2} <a href={url(lang, "tools/uart-waveform/")}>{ko ? "UART 파형 그리기" : "UART Waveform Drawer"}</a> · <a href={url(lang, "tools/spi/")}>{ko ? "SPI 모드 도우미" : "SPI Mode Helper"}</a> · <a href={url(lang, "tools/i2c/")}>{ko ? "I2C 도구" : "I2C Tools"}</a>
+        {L.timing} <a href={link(lang, "tools/can-bit-timing/")}>{L.timingLink}</a>{L.timingEnd}
+        {L.timing2} {MORE.map((m, i) => <>{i > 0 && " · "}<a href={link(lang, m.path)}>{lang === "ko" ? m.nameKo : lang === "en" ? m.nameEn : pageName(lang, m.path)}</a></>)}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -321,40 +335,110 @@ const SRC = [
   </style>
   <script>
     import { CanError, HB_STATE, NMT_CMD, SDO_ABORT, canopenId, dlcLen, j1939, objectName, parseFrame, pgnInfo, sdo, spnValues, type CanFrame, type IdKind } from "../lib/canFrame";
-    const ko = document.documentElement.lang === "ko";
-    const lang = ko ? "ko" : "en";
+    import { msg, tx, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("cf")?.dataset.lang ?? "en") as Lang;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const H = (n: number, w = 2) => "0x" + n.toString(16).toUpperCase().padStart(w, "0");
     const hx = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
-    const T = ko
-      ? {
-          std: "표준 11비트", ext: "확장 29비트", fd: "CAN FD", rtr: "원격(RTR)", data: "데이터", fmt: "형식", id: "ID", dlc: "DLC → 길이", bytes: "데이터",
-          raw: "원시 비트열", bits: "넣은 비트", stuff: "스터프 비트", stuffAt: "위치", stuffErr: "스터핑 오류(같은 값 6개) — 위치", crc: "CRC15 받은 값 / 계산 값", crcOk: "맞음", crcBad: "다름",
-          delim: "CRC 구분자 · ACK · ACK 구분자", eof: "EOF 1 의 개수", ackNo: "ACK 칸이 1 — 받은 장치 없음",
-          j: "J1939 풀이 후보", pri: "우선순위", pgn: "PGN", pdu: "형식", sa: "출발 주소(SA)", da: "목적 주소(DA)", all: "전체(255)", edp: "EDP · DP", unknownPgn: "이름 모름(이 표에 없음)",
-          na: "없음(0xFF)", err: "오류 표시(0xFE)", short: "데이터 짧음", spn: "SPN 값",
-          co: "CANopen 풀이 후보", func: "기능", node: "노드 ID", none: "—",
-          F: { nmt: "NMT 명령", sync: "SYNC", emcy: "EMCY 긴급", time: "TIME", tpdo1: "TPDO1", rpdo1: "RPDO1", tpdo2: "TPDO2", rpdo2: "RPDO2", tpdo3: "TPDO3", rpdo3: "RPDO3", tpdo4: "TPDO4", rpdo4: "RPDO4", sdoTx: "SDO 응답(서버 → 클라이언트)", sdoRx: "SDO 요청(클라이언트 → 서버)", hb: "NMT 오류 제어(하트비트·부트업)", lss: "LSS", unknown: "기본 배정 밖(제조사·직접 배정)" },
-          cmd: "명령", target: "대상 노드", state: "상태", errCode: "오류 코드", errReg: "오류 레지스터(1001h)", mfr: "제조사 칸",
-          sdoK: { initDownload: "쓰기 시작(다운로드)", initDownloadResp: "쓰기 성공 응답", initUpload: "읽기 요청(업로드)", initUploadResp: "읽기 응답", downloadSeg: "쓰기 세그먼트", downloadSegResp: "쓰기 세그먼트 응답", uploadSeg: "읽기 세그먼트 요청", uploadSegResp: "읽기 세그먼트", abort: "중단(Abort)", block: "블록 전송", unknown: "모르는 명령" },
-          cs: "명령 바이트", obj: "객체", exp: "빠른 전송, 데이터", seg: "세그먼트 전송, 전체 길이", segN: "세그먼트 데이터", last: "마지막", toggle: "토글", abort: "중단 코드",
-          pdo: "PDO 데이터는 매핑(1600h~·1A00h~)을 알아야 풀 수 있습니다",
-          E: { empty: "", short: "비트가 모자랍니다", sof: "SOF(0)가 없습니다", hex: "HEX 바이트를 확인하세요", idlen: "candump ID 는 3자리(표준) 또는 8자리(확장)", idrange: "ID 가 범위를 넘습니다", len: "데이터가 너무 깁니다", fdlen: "CAN FD 길이는 0~8·12·16·20·24·32·48·64", dlc: "DLC 는 0~8", lenmismatch: "DLC 와 데이터 길이가 다릅니다", id: "ID 를 확인하세요" } as Record<string, string>,
-        }
-      : {
-          std: "Standard 11-bit", ext: "Extended 29-bit", fd: "CAN FD", rtr: "Remote (RTR)", data: "Data", fmt: "Format", id: "ID", dlc: "DLC → length", bytes: "Data",
-          raw: "Raw bit stream", bits: "Bits given", stuff: "Stuff bits", stuffAt: "at", stuffErr: "Stuff error (six equal bits) at", crc: "CRC15 received / computed", crcOk: "match", crcBad: "mismatch",
-          delim: "CRC delimiter · ACK · ACK delimiter", eof: "EOF 1s", ackNo: "ACK slot is 1 — no receiver acknowledged",
-          j: "J1939 candidate", pri: "Priority", pgn: "PGN", pdu: "Format", sa: "Source address (SA)", da: "Destination (DA)", all: "Global (255)", edp: "EDP · DP", unknownPgn: "Not in this table",
-          na: "Not available (0xFF)", err: "Error (0xFE)", short: "Data too short", spn: "SPN values",
-          co: "CANopen candidate", func: "Function", node: "Node ID", none: "—",
-          F: { nmt: "NMT command", sync: "SYNC", emcy: "EMCY", time: "TIME", tpdo1: "TPDO1", rpdo1: "RPDO1", tpdo2: "TPDO2", rpdo2: "RPDO2", tpdo3: "TPDO3", rpdo3: "RPDO3", tpdo4: "TPDO4", rpdo4: "RPDO4", sdoTx: "SDO response (server → client)", sdoRx: "SDO request (client → server)", hb: "NMT error control (heartbeat, boot-up)", lss: "LSS", unknown: "Outside the predefined set (vendor or custom)" },
-          cmd: "Command", target: "Target node", state: "State", errCode: "Error code", errReg: "Error register (1001h)", mfr: "Manufacturer field",
-          sdoK: { initDownload: "Initiate download (write)", initDownloadResp: "Download (write) confirmed", initUpload: "Initiate upload (read request)", initUploadResp: "Upload (read) response", downloadSeg: "Download segment", downloadSegResp: "Download segment response", uploadSeg: "Upload segment request", uploadSegResp: "Upload segment", abort: "Abort", block: "Block transfer", unknown: "Unknown command" },
-          cs: "Command byte", obj: "Object", exp: "Expedited, data", seg: "Segmented, total size", segN: "Segment data", last: "last", toggle: "toggle", abort: "Abort code",
-          pdo: "PDO data can only be decoded with its mapping (1600h–, 1A00h–)",
-          E: { empty: "", short: "Not enough bits", sof: "No SOF (0)", hex: "Check the hex bytes", idlen: "candump IDs are 3 digits (standard) or 8 (extended)", idrange: "ID out of range", len: "Data too long", fdlen: "CAN FD lengths are 0–8, 12, 16, 20, 24, 32, 48, 64", dlc: "DLC must be 0–8", lenmismatch: "DLC and data length differ", id: "Check the ID" } as Record<string, string>,
-        };
+    const T = {
+        std: msg(lang, "표준 11비트", "Standard 11-bit"),
+        ext: msg(lang, "확장 29비트", "Extended 29-bit"),
+        fd: "CAN FD",
+        rtr: msg(lang, "원격(RTR)", "Remote (RTR)"),
+        data: msg(lang, "데이터", "Data"),
+        fmt: msg(lang, "형식", "Format"),
+        id: "ID",
+        dlc: msg(lang, "DLC → 길이", "DLC → length"),
+        bytes: msg(lang, "데이터", "Data"),
+        raw: msg(lang, "원시 비트열", "Raw bit stream"),
+        bits: msg(lang, "넣은 비트", "Bits given"),
+        stuff: msg(lang, "스터프 비트", "Stuff bits"),
+        stuffAt: msg(lang, "위치", "at"),
+        stuffErr: msg(lang, "스터핑 오류(같은 값 6개) — 위치", "Stuff error (six equal bits) at"),
+        crc: msg(lang, "CRC15 받은 값 / 계산 값", "CRC15 received / computed"),
+        crcOk: msg(lang, "맞음", "match"),
+        crcBad: msg(lang, "다름", "mismatch"),
+        delim: msg(lang, "CRC 구분자 · ACK · ACK 구분자", "CRC delimiter · ACK · ACK delimiter"),
+        eof: msg(lang, "EOF 1 의 개수", "EOF 1s"),
+        ackNo: msg(lang, "ACK 칸이 1 — 받은 장치 없음", "ACK slot is 1 — no receiver acknowledged"),
+        j: msg(lang, "J1939 풀이 후보", "J1939 candidate"),
+        pri: msg(lang, "우선순위", "Priority"),
+        pgn: "PGN",
+        pdu: msg(lang, "형식", "Format"),
+        sa: msg(lang, "출발 주소(SA)", "Source address (SA)"),
+        da: msg(lang, "목적 주소(DA)", "Destination (DA)"),
+        all: msg(lang, "전체(255)", "Global (255)"),
+        edp: "EDP · DP",
+        unknownPgn: msg(lang, "이름 모름(이 표에 없음)", "Not in this table"),
+        na: msg(lang, "없음(0xFF)", "Not available (0xFF)"),
+        err: msg(lang, "오류 표시(0xFE)", "Error (0xFE)"),
+        short: msg(lang, "데이터 짧음", "Data too short"),
+        spn: msg(lang, "SPN 값", "SPN values"),
+        co: msg(lang, "CANopen 풀이 후보", "CANopen candidate"),
+        func: msg(lang, "기능", "Function"),
+        node: msg(lang, "노드 ID", "Node ID"),
+        none: "—",
+        F: {
+          nmt: msg(lang, "NMT 명령", "NMT command"),
+          sync: "SYNC",
+          emcy: msg(lang, "EMCY 긴급", "EMCY"),
+          time: "TIME",
+          tpdo1: "TPDO1",
+          rpdo1: "RPDO1",
+          tpdo2: "TPDO2",
+          rpdo2: "RPDO2",
+          tpdo3: "TPDO3",
+          rpdo3: "RPDO3",
+          tpdo4: "TPDO4",
+          rpdo4: "RPDO4",
+          sdoTx: msg(lang, "SDO 응답(서버 → 클라이언트)", "SDO response (server → client)"),
+          sdoRx: msg(lang, "SDO 요청(클라이언트 → 서버)", "SDO request (client → server)"),
+          hb: msg(lang, "NMT 오류 제어(하트비트·부트업)", "NMT error control (heartbeat, boot-up)"),
+          lss: "LSS",
+          unknown: msg(lang, "기본 배정 밖(제조사·직접 배정)", "Outside the predefined set (vendor or custom)"),
+        },
+        cmd: msg(lang, "명령", "Command"),
+        target: msg(lang, "대상 노드", "Target node"),
+        state: msg(lang, "상태", "State"),
+        errCode: msg(lang, "오류 코드", "Error code"),
+        errReg: msg(lang, "오류 레지스터(1001h)", "Error register (1001h)"),
+        mfr: msg(lang, "제조사 칸", "Manufacturer field"),
+        sdoK: {
+          initDownload: msg(lang, "쓰기 시작(다운로드)", "Initiate download (write)"),
+          initDownloadResp: msg(lang, "쓰기 성공 응답", "Download (write) confirmed"),
+          initUpload: msg(lang, "읽기 요청(업로드)", "Initiate upload (read request)"),
+          initUploadResp: msg(lang, "읽기 응답", "Upload (read) response"),
+          downloadSeg: msg(lang, "쓰기 세그먼트", "Download segment"),
+          downloadSegResp: msg(lang, "쓰기 세그먼트 응답", "Download segment response"),
+          uploadSeg: msg(lang, "읽기 세그먼트 요청", "Upload segment request"),
+          uploadSegResp: msg(lang, "읽기 세그먼트", "Upload segment"),
+          abort: msg(lang, "중단(Abort)", "Abort"),
+          block: msg(lang, "블록 전송", "Block transfer"),
+          unknown: msg(lang, "모르는 명령", "Unknown command"),
+        },
+        cs: msg(lang, "명령 바이트", "Command byte"),
+        obj: msg(lang, "객체", "Object"),
+        exp: msg(lang, "빠른 전송, 데이터", "Expedited, data"),
+        seg: msg(lang, "세그먼트 전송, 전체 길이", "Segmented, total size"),
+        segN: msg(lang, "세그먼트 데이터", "Segment data"),
+        last: msg(lang, "마지막", "last"),
+        toggle: msg(lang, "토글", "toggle"),
+        abort: msg(lang, "중단 코드", "Abort code"),
+        pdo: msg(lang, "PDO 데이터는 매핑(1600h~·1A00h~)을 알아야 풀 수 있습니다", "PDO data can only be decoded with its mapping (1600h–, 1A00h–)"),
+        E: {
+          empty: "",
+          short: msg(lang, "비트가 모자랍니다", "Not enough bits"),
+          sof: msg(lang, "SOF(0)가 없습니다", "No SOF (0)"),
+          hex: msg(lang, "HEX 바이트를 확인하세요", "Check the hex bytes"),
+          idlen: msg(lang, "candump ID 는 3자리(표준) 또는 8자리(확장)", "candump IDs are 3 digits (standard) or 8 (extended)"),
+          idrange: msg(lang, "ID 가 범위를 넘습니다", "ID out of range"),
+          len: msg(lang, "데이터가 너무 깁니다", "Data too long"),
+          fdlen: msg(lang, "CAN FD 길이는 0~8·12·16·20·24·32·48·64", "CAN FD lengths are 0–8, 12, 16, 20, 24, 32, 48, 64"),
+          dlc: msg(lang, "DLC 는 0~8", "DLC must be 0–8"),
+          lenmismatch: msg(lang, "DLC 와 데이터 길이가 다릅니다", "DLC and data length differ"),
+          id: msg(lang, "ID 를 확인하세요", "Check the ID"),
+        } as Record<string, string>,
+      };
     const el = (tag: string, cls?: string, text?: string) => {
       const e = document.createElement(tag);
       if (cls) e.className = cls;
@@ -398,7 +482,7 @@ const SRC = [
         f = parseFrame(line, kind);
       } catch (e) {
         const code = e instanceof CanError ? e.code : "";
-        box.append(el("p", "err", (T.E[code] || (ko ? "읽을 수 없는 줄" : "Cannot read this line")) + (e instanceof CanError && e.detail ? ` (${e.detail})` : "")));
+        box.append(el("p", "err", (T.E[code] || (msg(lang, "읽을 수 없는 줄", "Cannot read this line"))) + (e instanceof CanError && e.detail ? ` (${e.detail})` : "")));
         return box;
       }
       const len = f.rtr ? 0 : dlcLen(f.dlc, f.fd);
@@ -407,7 +491,7 @@ const SRC = [
         kv([
           [T.fmt, fmt],
           [T.id, `${H(f.id, f.ext ? 8 : 3)} (${f.id})`],
-          [T.dlc, `${f.dlc} → ${f.rtr ? (ko ? `요청 길이 ${Math.min(f.dlc, 8)}` : `requested ${Math.min(f.dlc, 8)}`) : len}`],
+          [T.dlc, `${f.dlc} → ${f.rtr ? (msg(lang, `요청 길이 ${Math.min(f.dlc, 8)}`, `requested ${Math.min(f.dlc, 8)}`)) : len}`],
           ...(f.rtr ? [] : ([[T.bytes, hx(f.data) || T.none]] as [string, string][])),
         ]),
       );
@@ -437,14 +521,14 @@ const SRC = [
           [T.pri, String(j.priority)],
           [T.edp, `${j.edp} · ${j.dp}`],
           [T.pdu, j.pdu === 1 ? `PDU1 (PF ${H(j.pf)} < 0xF0)` : `PDU2 (PF ${H(j.pf)} ≥ 0xF0)`],
-          [T.pgn, `${j.pgn} (${H(j.pgn, 4)}) — ${info ? `${info.abbr} ${info[lang]}` : T.unknownPgn}`],
+          [T.pgn, `${j.pgn} (${H(j.pgn, 4)}) — ${info ? `${info.abbr} ${tx(info, lang)}` : T.unknownPgn}`],
           [T.sa, `${H(j.sa)} (${j.sa})`],
           [T.da, j.pdu === 1 ? `${H(j.da)} (${j.da})${j.da === 255 ? " — " + T.all : ""}` : T.all],
         ];
         if (j.pgn === 0xea00 && f.data.length >= 3) {
           const rq = f.data[0] | (f.data[1] << 8) | (f.data[2] << 16);
           const ri = pgnInfo(rq);
-          rows.push([ko ? "요청한 PGN" : "Requested PGN", `${rq} (${H(rq, 4)})${ri ? ` — ${ri.abbr}` : ""}`]);
+          rows.push([msg(lang, "요청한 PGN", "Requested PGN"), `${rq} (${H(rq, 4)})${ri ? ` — ${ri.abbr}` : ""}`]);
         }
         const vals = spnValues(j.pgn, f.data);
         for (const v of vals) {
@@ -453,31 +537,31 @@ const SRC = [
             v.status === "ok"
               ? `${+v.value!.toFixed(4)} ${s.unit}  (raw ${v.raw})`
               : v.status === "na" ? T.na : v.status === "error" ? T.err : T.short;
-          rows.push([`SPN ${s.spn} ${s[lang]}`, txt]);
+          rows.push([`SPN ${s.spn} ${tx(s, lang)}`, txt]);
         }
         box.append(kv(rows));
       }
       if (useC) {
         if (f.id > 0x7ff) {
-          box.append(el("p", "note", ko ? "CANopen 은 11비트 COB-ID 만 풉니다." : "CANopen decoding needs an 11-bit COB-ID."));
+          box.append(el("p", "note", msg(lang, "CANopen 은 11비트 COB-ID 만 풉니다.", "CANopen decoding needs an 11-bit COB-ID.")));
           return box;
         }
         const c = canopenId(f.id);
         box.append(el("p", "cf-sub", T.co));
         const rows: [string, string | Node][] = [
-          [T.func, `${T.F[c.func]} (${ko ? "기능 코드" : "function code"} ${c.fc})`],
+          [T.func, `${T.F[c.func]} (${msg(lang, "기능 코드", "function code")} ${c.fc})`],
           [T.node, c.node ? `${c.node} (${H(c.node)})` : T.none],
         ];
         const d = f.data;
         if (c.func === "nmt" && d.length >= 1) {
-          rows.push([T.cmd, `${H(d[0])} — ${NMT_CMD[d[0]]?.[lang] ?? "?"}`]);
-          if (d.length >= 2) rows.push([T.target, d[1] === 0 ? (ko ? "0 — 모든 노드" : "0 — all nodes") : String(d[1])]);
+          rows.push([T.cmd, `${H(d[0])} — ${NMT_CMD[d[0]] ? tx(NMT_CMD[d[0]], lang) : "?"}`]);
+          if (d.length >= 2) rows.push([T.target, d[1] === 0 ? (msg(lang, "0 — 모든 노드", "0 — all nodes")) : String(d[1])]);
         } else if (c.func === "hb" && d.length >= 1) {
           const st = d[0] & 0x7f;
-          rows.push([T.state, `${H(d[0])} — ${HB_STATE[st]?.[lang] ?? "?"}${d[0] & 0x80 ? (ko ? " (토글 1 — 노드 가딩)" : " (toggle 1 — node guarding)") : ""}`]);
+          rows.push([T.state, `${H(d[0])} — ${HB_STATE[st] ? tx(HB_STATE[st], lang) : "?"}${d[0] & 0x80 ? (msg(lang, " (토글 1 — 노드 가딩)", " (toggle 1 — node guarding)")) : ""}`]);
         } else if (c.func === "emcy" && d.length >= 3) {
           const code = d[0] | (d[1] << 8);
-          rows.push([T.errCode, `${H(code, 4)}${code === 0 ? (ko ? " — 오류 풀림(리셋)" : " — error reset / no error") : ""}`]);
+          rows.push([T.errCode, `${H(code, 4)}${code === 0 ? (msg(lang, " — 오류 풀림(리셋)", " — error reset / no error")) : ""}`]);
           rows.push([T.errReg, `${H(d[2])}`]);
           if (d.length > 3) rows.push([T.mfr, hx(d.slice(3))]);
         } else if (c.func === "sdoRx" || c.func === "sdoTx") {
@@ -488,10 +572,10 @@ const SRC = [
               const nm = objectName(s.index, lang);
               rows.push([T.obj, `${H(s.index, 4)} sub ${H(s.sub!)}${nm ? ` — ${nm}` : ""}`]);
             }
-            if (s.kind === "abort" && s.abort !== undefined) rows.push([T.abort, `${H(s.abort, 8)} — ${SDO_ABORT[s.abort]?.[lang] ?? "?"}`]);
+            if (s.kind === "abort" && s.abort !== undefined) rows.push([T.abort, `${H(s.abort, 8)} — ${SDO_ABORT[s.abort] ? tx(SDO_ABORT[s.abort], lang) : "?"}`]);
             if ((s.kind === "initDownload" || s.kind === "initUploadResp") && s.value !== undefined) {
               if (s.expedited) rows.push([T.exp, `${hx(s.bytes!)} = ${s.value} (${H(s.value, s.n! * 2)})`]);
-              else rows.push([T.seg, `${s.value} ${ko ? "바이트" : "bytes"}`]);
+              else rows.push([T.seg, `${s.value} ${msg(lang, "바이트", "bytes")}`]);
             }
             if (s.bytes && (s.kind === "downloadSeg" || s.kind === "uploadSegResp")) {
               rows.push([T.segN, `${hx(s.bytes)}  (${T.toggle} ${s.toggle}${s.last ? `, ${T.last}` : ""})`]);

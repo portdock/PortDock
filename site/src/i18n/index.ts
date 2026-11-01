@@ -11,20 +11,44 @@ import vi from "./vi/index.ts";
 import tr from "./tr/index.ts";
 import it from "./it/index.ts";
 import id from "./id/index.ts";
+import ja2 from "./ja/batch2.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
+import type { Page2Id } from "./scope.ts";
 
+/** 1차 묶음 사전(모든 추가 언어) */
 export type Dict = typeof ja;
-export type LibSection = keyof Dict["lib"];
+/** 2차 묶음 사전(i18n/<언어>/batch2.ts) — 기준판 ja 의 모양 */
+export type Batch2 = typeof ja2;
+/** 2차 묶음은 쪽 단위로 일부만 있어도 된다 — scope.ts MORE[언어] 의 쪽은 다 있어야 한다(시험이 본다) */
+export interface Batch2Part {
+  webTools: Partial<Batch2["webTools"]>;
+  lib: Partial<Batch2["lib"]>;
+  pages: Partial<Batch2["pages"]>;
+}
+export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
+/** 2차 묶음을 (일부라도) 옮긴 언어 */
+export const DICTS2: Partial<Record<ExtraLang, Batch2Part>> = { ja: ja2 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
 
+/** 2차 묶음 쪽 글 — 번역 범위(scope.ts MORE)에 있는 쪽만 그려지므로 없으면 빌드를 멈춘다 */
+export function page2<K extends Page2Id>(lang: ExtraLang, id: K): Batch2["pages"][K] {
+  const p = DICTS2[lang]?.pages[id];
+  if (!p) throw new Error(`${lang}: 2차 묶음 쪽 글 없음 — ${id}`);
+  return p as Batch2["pages"][K];
+}
+
+const libOf = (lang: ExtraLang): Record<string, Catalog> => ({ ...(DICTS2[lang]?.lib as Record<string, Catalog> | undefined), ...(DICTS[lang].lib as Record<string, Catalog>) });
+
 /** 계산 라이브러리 문구 표(고른 묶음만) — 쪽에 넣어 브라우저 스크립트가 쓴다 */
-export const libCatalog = (lang: ExtraLang, sections: readonly LibSection[]): Catalog =>
-  Object.assign({}, ...sections.map((s) => DICTS[lang].lib[s] as Catalog));
+export const libCatalog = (lang: ExtraLang, sections: readonly LibSection[]): Catalog => {
+  const all = libOf(lang);
+  return Object.assign({}, ...sections.map((s) => all[s] ?? {}));
+};
 
 // 빌드 중 화면을 그릴 때(서버)도 라이브러리가 번역을 찾을 수 있게 모두 등록
-for (const [lang, d] of Object.entries(DICTS)) registerCatalog(lang, Object.assign({}, ...Object.values(d.lib)) as Catalog);
+for (const lang of Object.keys(DICTS) as ExtraLang[]) registerCatalog(lang, Object.assign({}, ...Object.values(libOf(lang))) as Catalog);

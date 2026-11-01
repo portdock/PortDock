@@ -4,7 +4,8 @@
 // 실패(종료 코드 1): 릴리스 내려받기 링크(/releases/latest/download/<이름>)가 release.yml 이 만드는 파일 이름에 없음, 제목·설명 없음·중복·너무 김, h1 이 하나가 아님, 제목 단계 건너뜀, img alt 없음,
 //   canonical·hreflang 이 SITE 와 다름, x-default 가 영어판(hreflang en)과 다름, JSON-LD 파싱 실패·필수 필드 없음, 깨진 내부 링크, sitemap 누락, robots.txt 의 Sitemap 줄 없음.
 //   여러 언어(site/src/i18n/langs.ts·scope.ts): hreflang 은 서로 짝이 맞아야 하고(A 가 B 를 가리키면 B 도 같은 묶음), 쪽 자신의 언어를 포함해야 하며,
-//   추가 언어(ja 등)는 번역 범위(scope.ts)의 쪽에만 — 빌드 결과·sitemap 의 /<언어>/ 주소가 번역 범위 목록과 같아야 한다. sitemap 의 xhtml:link 도 있는 쪽만 가리켜야 한다.
+//   추가 언어(ja 등)는 그 언어의 번역 범위(scope.ts — 1차 묶음 SCOPE 공통 + 언어별 2차 묶음 MORE[언어])의 쪽에만 — 빌드 결과·sitemap 의 /<언어>/ 주소가
+//   언어마다 그 목록과 같아야 한다(extraPages()). sitemap 의 xhtml:link 도 있는 쪽만 가리켜야 한다.
 // 길이 기준(대략): 검색 결과 제목 약 600px, 설명 약 920px. 한글·한자 한 글자 = 2칸, 나머지 = 1칸으로 세어 제목 66칸·설명 160칸까지.
 import fs from "node:fs";
 import path from "node:path";
@@ -258,7 +259,7 @@ for (const u of inSitemap) {
 }
 for (const p of indexable) if (!inSitemap.has(SITE + p)) err("sitemap", `빠진 페이지: ${p}`);
 
-// 추가 언어: 번역 범위(scope.ts) = 빌드된 /<언어>/ 쪽 = sitemap 의 /<언어>/ 주소
+// 추가 언어: 그 언어의 번역 범위(scope.ts pathsOf — 1차 + MORE[언어]) = 빌드된 /<언어>/ 쪽 = sitemap 의 /<언어>/ 주소
 const want = new Set(extraPages());
 for (const l of EXTRA_LANGS) {
   const built = new Set(indexable.filter((p) => p.startsWith(`/${l}/`)));
