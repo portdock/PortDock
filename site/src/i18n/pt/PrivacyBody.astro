@@ -1,0 +1,90 @@
+---
+// Texto da política de privacidade (português do Brasil) — mesmo conteúdo do texto em coreano e inglês de views/PrivacyPage.astro. Fica em marcação porque as frases têm links.
+// Se o texto em coreano/inglês mudar, ajuste aqui também.
+import { CONTACT_EMAIL } from "@shared/links";
+import EmailOff from "../../components/EmailOff.astro";
+import { link } from "../../lib/i18n";
+
+const lang = "pt";
+// O formulário de contato só existe quando há a variável de build PUBLIC_TURNSTILE_SITE_KEY (ContactPage.astro)
+const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
+---
+
+<h2>1. Os programas (ferramentas PortDock)</h2>
+<ul>
+  <li>Os programas nunca enviam seu tráfego, comandos, regras ou configurações para lugar nenhum. As configurações ficam neste PC. A comunicação com os equipamentos (serial, TCP, UDP, Modbus, SCPI, protocolo MC, busca de equipamentos na rede) vai só para as portas, endereços e sub-redes que você escolhe.</li>
+  <li>
+    <b>Registro de quedas e latência do Hardware Tester</b>: só enquanto «Iniciar gravação» está ligado, ele faz ping no gateway (roteador) e em um endereço da internet escolhido por você (1.1.1.1 = Cloudflare por padrão; 8.8.8.8 = Google ou um endereço seu) e, a cada 5 s, consulta um nome (example.com por padrão; deixe vazio para não consultar) no servidor DNS configurado neste PC. Como em qualquer acesso à internet, quem recebe vê o endereço de conexão (IP) deste PC. Os destinos ficam sempre visíveis na tela, e nada é enviado depois que você para. O registro só fica no PC se você salvá-lo em CSV.
+  </li>
+  <li>
+    <b>Visualização do sinal Wi-Fi do Hardware Tester (só quando você aperta)</b>: lê a intensidade do sinal, a velocidade do enlace, a banda, o canal e quantas redes próximas usam cada canal. A partir do Windows 11 24H2, o Windows exige permissão de localização para ler esses valores — o programa não lê a localização (coordenadas), e os nomes de rede (SSID) e endereços dos pontos de acesso (BSSID) nunca são lidos nem salvos. Todo o resto funciona se você recusar.
+  </li>
+  <li>
+    <b>Nomes de dispositivos Bluetooth</b>: o registro de conexões do Hardware Tester e a aba «Sem fio» do Port Inspector mostram os nomes só na tela; textos salvos, copiados e exportados usam «Dispositivo N». Os nomes nunca são enviados.
+  </li>
+  <li>
+    <b>Servidores que escutam na rede (só quando você os inicia)</b>: o PLC Simulator (MC em TCP 5000 por padrão; a partir da 0.10.0, LS XGT em TCP 2004 / UDP 2005) e o compartilhamento da porta serial (a partir da 0.10.0 — raw ou RFC 2217 em TCP 7000 por padrão, gateway Modbus TCP ↔ RTU em TCP 502 por padrão) aceitam por padrão só conexões deste PC (127.0.0.1). Se você ligar «Permitir conexões de outros PCs (0.0.0.0)», outros PCs da mesma rede podem se conectar sem autenticação e ler e escrever valores dos equipamentos ou enviar dados para a porta COM e os equipamentos RS-485 (esses protocolos não têm autenticação). O Modbus Slave TCP, o servidor/relay TCP e o Simulator escutam no endereço do campo de endereço — a partir da 0.10.0, 127.0.0.1 (só este PC) na primeira execução; para outros PCs, escolha ali 0.0.0.0 ou o endereço de uma placa de rede. O UDP escuta por padrão em 0.0.0.0 (todas as placas de rede) porque precisa receber as respostas dos equipamentos. Abra-os só em redes de confiança.
+  </li>
+  <li>
+    <b>PortDock MCP (servidor para clientes de IA)</b>: a cada chamada de ferramenta, grava uma linha num registro de sessão neste PC (hora, ferramenta, argumentos, destino, sucesso, início do resultado, duração). O registro fica em portdock-data\mcp-log quando há uma pasta portdock-data ao lado do exe; caso contrário, em %LOCALAPPDATA%\dev.portdock\mcp-log, e arquivos com mais de 30 dias são apagados. Caminhos de pastas de usuário são mascarados como «~» e endereços MAC como «xx-…». O PortDock MCP nunca envia esse registro e não envia relatórios de erro nem estatísticas de uso. Porém, <b>os resultados das ferramentas (os valores de portas e equipamentos lidos) vão para o cliente de IA que você usa, e esse cliente pode enviá-los aos servidores da empresa dele (o modelo de IA)</b> — daí em diante vale a política de privacidade desse cliente e dessa empresa.
+  </li>
+  <li>
+    <b>Cópia «AI» (cópia para perguntar à IA, 0.8.0 — o botão «AI» na barra de título dos 12 programas)</b>: monta um texto para um chat de IA com o programa, as configurações de conexão, os erros desta sessão e o tráfego recente (ou os resultados da verificação), mostra como prévia, e «Copiar» o coloca <b>apenas na área de transferência</b>. O PortDock não envia esse texto para lugar nenhum. <b>Ao colá-lo num chat de IA (por exemplo ChatGPT, Claude ou Gemini), ele vai para esse serviço de IA e passa a valer a política de privacidade desse serviço.</b> No texto, caminhos de pastas de usuário viram «~», nomes de PC padrão do Windows (DESKTOP-… etc.) e nomes de PC em caminhos UNC são mascarados, os 3 últimos bytes dos endereços MAC viram «xx» e IPs públicos viram números como «[IP-1]». IPs privados (192.168.x.x, 10.x.x.x …) não podem ser rastreados de fora e muitas vezes são necessários para achar causas como «PC e equipamento em sub-redes diferentes», por isso ficam visíveis por padrão; ligue «Ocultar também IPs privados» na prévia para mascará-los. O tráfego recente pode ser retirado na prévia, e o texto é limitado a 8.000 caracteres (as linhas mais antigas saem primeiro). Confira na prévia os dados do equipamento e da empresa antes de colar.
+  </li>
+  <li>
+    <b>«Salvar como pcap» do relay TCP (0.8.0)</b>: quando ligado, os bytes repassados nos dois sentidos são gravados só no arquivo .pcapng que você escolher. O arquivo fica neste PC e nunca é enviado. Um pcap contém endereços IP, portas e o conteúdo do tráfego, então tenha cuidado antes de compartilhá-lo.
+  </li>
+  <li>
+    <b>Verificações e registros salvos neste PC (a partir da 0.10.0)</b>: nunca são enviados; ficam só no armazenamento do programa (também copiados nos arquivos de «Exportar configurações») ou nos arquivos que você escolher — linhas de base do Net Scan (IP, endereço MAC completo, nome do host e portas abertas de cada equipamento), verificações salvas do Port Inspector (até 20, incluindo IPs das placas de rede e gateway — sem números de série de dispositivos, nome do PC e nomes das redes conectadas), backups de parâmetros de equipamentos do Modbus Master (JSON/CSV), registros CSV de alarmes do Modbus Master e do Plot e o registro de conexão/desconexão USB do Hardware Tester (nomes de dispositivos e VID:PID — sem números de série). Eles revelam como sua rede está montada, então tenha cuidado antes de compartilhá-los.
+  </li>
+  <li>
+    <b>Relatórios de erro</b> só são enviados quando você aperta enviar na janela de relatório «!» ou define «Relatórios automáticos de erro» como «Enviar automaticamente» (o padrão é «Perguntar após uma falha»; «Nunca enviar» desliga). Contêm a causa do erro (texto da exceção, local) e as versões do programa e do Windows. Tráfego e configurações de IP não entram, a menos que você marque explicitamente «tráfego recente».
+  </li>
+  <li>Os relatórios vão para o Sentry (Functional Software, Inc.), são usados só para corrigir bugs, são apagados após 30 dias, ficam armazenados na região da UE (Alemanha) do Sentry, e endereços IP não são guardados.</li>
+  <li>
+    <b>Estatísticas de uso (opcionais, desligadas por padrão)</b>: o programa pergunta uma vez na primeira execução e só envia estatísticas se você escolher «Enviar» ou ligar «Enviar estatísticas de uso» nas Configurações. Fechar a pergunta sem escolher significa que nada é enviado. Ao fechar a janela, envia o nome e a versão do programa, a versão do Windows (10/11), o idioma da tela, os minutos com o programa aberto, quantas vezes cada função foi usada (conectar, enviar, ler … — só contagens) e se é a versão instalada ou portátil. Nunca envia tráfego, endereços IP, portas, nomes de COM, caminhos de arquivo ou nomes de PC, usuário ou equipamento, e não cria nenhum ID ligado à sua instalação ou ao seu PC (só um número aleatório que muda a cada execução). Se você estiver offline ou o envio falhar, os dados são descartados em vez de guardados no PC.
+  </li>
+  <li>
+    As estatísticas de uso vão para a região da UE do Aptabase (Technov Solutions SRL, Romênia) e são usadas só para decidir o que melhorar. O Aptabase deduz o país e a região a partir do endereço IP da conexão, mas não guarda o endereço em si, e o número diário anônimo de visitante que ele usa muda a cada 24 horas. O Aptabase guarda as estatísticas por até 5 anos; como elas não podem ser ligadas a uma pessoa, não é possível localizar registros individuais para apagar.
+  </li>
+  <li>
+    <b>Verificação de atualizações (opcional, desligada por padrão)</b>: só se você ligar «Verificar novas versões (uma vez por dia)» nas Configurações, o programa consulta a API do GitHub (api.github.com) uma vez por dia pela versão mais recente do PortDock. A requisição não leva dados (nem cookies, nem identificadores); como em qualquer requisição web, o GitHub vê o endereço IP da conexão. Se houver versão mais nova, só aparece uma barra de aviso — nada é baixado nem instalado. O GitHub trata a requisição conforme a
+    <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+  </li>
+</ul>
+
+<h2>2. Este site</h2>
+<ul>
+  <li><b>Análise de acesso</b>: o Cloudflare Web Analytics conta as visualizações de página sem cookies nem identificadores pessoais.</li>
+  <li>
+    <b>Anúncios</b>: as páginas de ferramentas web, guias e mapas de registradores de cada equipamento podem mostrar anúncios do Google AdSense. O Google e seus parceiros podem usar cookies para exibir anúncios com base em visitas anteriores. Você pode desativar os anúncios personalizados nas
+    <a href="https://adssettings.google.com">Configurações de anúncios do Google</a>; veja também as <a href="https://policies.google.com/technologies/ads">políticas de publicidade do Google</a>. As páginas de download, de produtos e de documentação não têm anúncios.
+  </li>
+  <li>
+    <b>Ferramentas web</b>: o analisador de pcap, os decodificadores de quadros, as calculadoras e os testes de hardware (microfone, webcam, teclado …) processam o arquivo que você escolhe, os valores que você digita e o som do microfone ou a imagem da câmera só dentro deste navegador e não enviam nada. O código das ferramentas nunca manda esse conteúdo pela rede. Os scripts de análise e de anúncios da mesma página (acima) rodam separadamente e não recebem o conteúdo de arquivos nem o que você digita.
+  </li>
+  {
+    hasForm ? (
+      <li><b>Formulário de contato</b>: seu nome, e-mail e mensagem são usados só para responder e apagados em até um ano. O Cloudflare Turnstile é usado contra spam.</li>
+    ) : (
+      <li><b>Contato</b>: o site não tem formulário de contato; as mensagens chegam por e-mail ou pelo GitHub (issues, Discussions). Endereços de e-mail e mensagens são usados só para responder e apagados em até um ano após a resposta. O que é postado no GitHub continua público no GitHub.</li>
+    )
+  }
+</ul>
+
+<h2>3. Operadores e transferência internacional</h2>
+<ul>
+  <li>Cloudflare, Inc. (EUA) — hospedagem, análise de acesso{hasForm ? ", proteção contra spam, entrega dos e-mails de contato" : ""}</li>
+  <li>Google LLC (EUA) — anúncios nas páginas de ferramentas web, guias e mapas de registradores de equipamentos</li>
+  <li>Functional Software, Inc. (Sentry; empresa dos EUA, dados na região da UE) — relatórios de erro dos programas (só com sua permissão)</li>
+  <li>Technov Solutions SRL (Aptabase; Romênia, dados na região da UE) — estatísticas de uso dos programas (só se você ligar)</li>
+  <li>GitHub, Inc. (EUA) — recebe a requisição de verificação de atualizações (só se você ligar)</li>
+  <li>Destinos do ping e do DNS do Hardware Tester — o endereço da internet que você escolhe (1.1.1.1, o padrão, é da Cloudflare; 8.8.8.8 é do Google) e o servidor DNS deste PC recebem os pings e as consultas (só durante a gravação; são destinos que você escolheu contatar, não operadores)</li>
+  <li>O cliente de IA ao qual você conecta o PortDock MCP e a empresa por trás dele (por exemplo os fabricantes do Claude Desktop, VS Code ou Cursor) — recebem os resultados das ferramentas (um cliente escolhido por você, não um operador do PortDock; vale a política dele)</li>
+  <li>O serviço de IA em que você cola o texto da cópia «AI» — recebe o texto que você mesmo cola (o PortDock não envia e esse serviço não é um operador; vale a política dele)</li>
+</ul>
+
+<h2>4. Contato</h2>
+<p>
+  Para dúvidas sobre privacidade ou pedidos de exclusão, escreva para <EmailOff><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></EmailOff> ou use a <a href={link(lang, "contact/")}>página de contato (em inglês)</a>.
+</p>

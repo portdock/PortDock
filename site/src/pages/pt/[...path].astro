@@ -1,0 +1,10 @@
+---
+// Páginas em português (Brasil) — só as páginas do escopo de tradução (i18n/scope.ts) viram /pt/… (site/I18N.md).
+import LangPage from "../../i18n/LangPage.astro";
+import { staticPaths } from "../../i18n/scope";
+
+export const getStaticPaths = staticPaths;
+const { path } = Astro.props;
+---
+
+<LangPage lang="pt" path={path} />
