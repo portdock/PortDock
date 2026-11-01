@@ -29,6 +29,7 @@ import { usageAvailable } from "./usage";
 import { UsageAsk } from "./UsageAsk";
 import { dicts, type Lang } from "./lang";
 import { JA_REPORT } from "./ja/parts";
+import { ID_REPORT } from "./id/parts";
 import { VI_REPORT } from "./vi/parts";
 import { TR_REPORT } from "./tr/parts";
 
@@ -116,7 +117,7 @@ const en: typeof ko = {
     crashSend: "Send now",
     crashAlways: "From now on, send automatically without asking",
 };
-const UI = dicts(ko, en, { ja: JA_REPORT, tr: TR_REPORT, vi: VI_REPORT });
+const UI = dicts(ko, en, { ja: JA_REPORT, tr: TR_REPORT, vi: VI_REPORT, id: ID_REPORT });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 export function ReportDialog({

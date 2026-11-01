@@ -1,6 +1,7 @@
 // 사용 통계 문구 — 묻는 카드·설정 칸·도움말이 같은 목록을 쓴다
 import { dicts } from "./lang.ts";
 import { JA_USAGE } from "./ja/parts.ts";
+import { ID_USAGE } from "./id/parts.ts";
 import { VI_USAGE } from "./vi/parts.ts";
 import { TR_USAGE } from "./tr/parts.ts";
 
@@ -31,4 +32,4 @@ const en: UsageText = {
     setting: "Send usage statistics (anonymous, on close)",
     hint: "Sends only feature use counts, minutes open, program/Windows version, display language and installed/portable edition. Traffic, IP addresses, ports, COM names, file paths and PC/user/device names are never sent. Receiver: Aptabase (EU).",
 };
-export const USAGE_TEXT = dicts(ko, en, { ja: JA_USAGE, tr: TR_USAGE, vi: VI_USAGE });
+export const USAGE_TEXT = dicts(ko, en, { ja: JA_USAGE, tr: TR_USAGE, vi: VI_USAGE, id: ID_USAGE });

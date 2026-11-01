@@ -13,6 +13,7 @@ import { ascii, hex } from "./format.ts";
 import { hideUserPaths } from "./redact.ts";
 import { dicts, type Lang } from "./lang.ts";
 import { JA_AI_COPY } from "./ja/aiCopy.ts";
+import { ID_AI_COPY } from "./id/aiCopy.ts";
 import { VI_AI_COPY } from "./vi/aiCopy.ts";
 import { TR_AI_COPY } from "./tr/aiCopy.ts";
 
@@ -142,7 +143,7 @@ const en: AiText = {
     cutText: "…(cut — too long)",
     masked: (ip: HideIp) => `_Hidden by PortDock: user folder, PC name (DESKTOP-… etc.), last 3 bytes of MAC addresses, ${ip === "all" ? "all IP addresses" : "public IP addresses"} («[IP-n]»)._`,
 };
-const T = dicts(ko, en, { ja: JA_AI_COPY, tr: TR_AI_COPY, vi: VI_AI_COPY });
+const T = dicts(ko, en, { ja: JA_AI_COPY, tr: TR_AI_COPY, vi: VI_AI_COPY, id: ID_AI_COPY });
 
 // ---- 가림
 

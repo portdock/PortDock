@@ -1,6 +1,7 @@
 // 자동응답 칸(Simulator 규칙·Serial·TCP·UDP «자동응답») 문구 — 한 곳에서 두 언어로.
 import { dicts, type Lang } from "./lang.ts";
 import { JA_AR } from "./ja/autoReply.ts";
+import { ID_AR } from "./id/autoReply.ts";
 import { VI_AR } from "./vi/autoReply.ts";
 import { TR_AR } from "./tr/autoReply.ts";
 
@@ -171,7 +172,7 @@ const en: typeof ko = {
 };
 
 export type ArKey = keyof typeof ko;
-export const AR_TEXT = dicts(ko, en, { ja: JA_AR, tr: TR_AR, vi: VI_AR });
+export const AR_TEXT = dicts(ko, en, { ja: JA_AR, tr: TR_AR, vi: VI_AR, id: ID_AR });
 
 /** 문구 + {a}·{n} 채우기 */
 export function ar(lang: Lang, k: ArKey, v: Record<string, string | number> = {}) {

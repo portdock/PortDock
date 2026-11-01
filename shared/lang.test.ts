@@ -42,7 +42,7 @@ test("언어 목록 — 사이트와 같은 12개, 이름이 다 있고 고를 �
   assert.deepEqual([...LANGS], ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
   for (const l of LANGS) assert.ok(LANG_NAMES[l]);
   for (const l of UI_LANGS) assert.ok((LANGS as readonly string[]).includes(l));
-  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "vi", "tr"]);
+  assert.deepEqual([...UI_LANGS], ["ko", "en", "ja", "vi", "tr", "id"]);
 });
 
 test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 없는 언어 → en)", () => {
@@ -52,6 +52,7 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.equal(detectLang("en-US"), "en");
   assert.equal(detectLang("tr-TR"), "tr");
   assert.equal(detectLang("vi-VN"), "vi");
+  assert.equal(detectLang("id-ID"), "id");
   assert.equal(detectLang("de-DE"), "en");
   assert.equal(detectLang(""), "en");
   assert.equal(detectLang(undefined), "en");
@@ -120,7 +121,7 @@ test("AI 복사 — 질문 틀은 화면 언어(ja), 번역이 없는 언어는 
 });
 
 // 일본어 다음에 붙인 언어(원천은 영어) — 일본어와 같은 검사를 언어마다
-const MORE_LANGS = ["tr", "vi"] as const;
+const MORE_LANGS = ["tr", "vi", "id"] as const;
 
 for (const l of MORE_LANGS) {
   const U = l.toUpperCase();

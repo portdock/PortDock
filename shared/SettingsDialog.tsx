@@ -15,6 +15,7 @@ import { USAGE_TEXT } from "./usageText";
 import { writeSharedConsent } from "./consent";
 import { dicts, LANG_NAMES, UI_LANGS } from "./lang";
 import { JA_SETTINGS } from "./ja/parts";
+import { ID_SETTINGS } from "./id/parts";
 import { VI_SETTINGS } from "./vi/parts";
 import { TR_SETTINGS } from "./tr/parts";
 
@@ -138,7 +139,7 @@ const en: typeof ko = {
     updateCheck: "Check for new versions (once a day)",
     updateCheckHint: "When on, asks GitHub (api.github.com) once a day for the latest release only and shows a notice at the bottom of the window if a newer version exists. No data is sent; nothing is downloaded or installed.",
 };
-const T = dicts(ko, en, { ja: JA_SETTINGS, tr: TR_SETTINGS, vi: VI_SETTINGS });
+const T = dicts(ko, en, { ja: JA_SETTINGS, tr: TR_SETTINGS, vi: VI_SETTINGS, id: ID_SETTINGS });
 
 export function SettingsDialog({
   app,

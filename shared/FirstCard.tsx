@@ -7,6 +7,7 @@ import { OPEN_SIDE_EVENT, useNarrow } from "./NarrowBar";
 import { ui, type Lang } from "./uiText";
 import { dicts } from "./lang";
 import { JA_FIRST } from "./ja/parts";
+import { ID_FIRST } from "./id/parts";
 import { VI_FIRST } from "./vi/parts";
 import { TR_FIRST } from "./tr/parts";
 import "./firstcard.css";
@@ -24,7 +25,7 @@ const en: typeof ko = {
     narrow: "The window is narrow, so the left panel is folded — «left» below means the panel behind the «⚙ {b}» button at the top left.",
     open: "Open the left panel",
 };
-const L = dicts(ko, en, { ja: JA_FIRST, tr: TR_FIRST, vi: VI_FIRST });
+const L = dicts(ko, en, { ja: JA_FIRST, tr: TR_FIRST, vi: VI_FIRST, id: ID_FIRST });
 
 export interface FirstCardLink {
   label: string;

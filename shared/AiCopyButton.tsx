@@ -9,6 +9,7 @@ import { tip } from "./tips";
 import { count } from "./usage";
 import { dicts, type Lang } from "./lang";
 import { JA_AI_UI } from "./ja/parts";
+import { ID_AI_UI } from "./id/parts";
 import { VI_AI_UI } from "./vi/parts";
 import { TR_AI_UI } from "./tr/parts";
 
@@ -55,7 +56,7 @@ const en: typeof ko = {
     copyFail: "Could not copy — another program may be holding the clipboard",
     close: "Close",
 };
-const UI = dicts(ko, en, { ja: JA_AI_UI, tr: TR_AI_UI, vi: VI_AI_UI });
+const UI = dicts(ko, en, { ja: JA_AI_UI, tr: TR_AI_UI, vi: VI_AI_UI, id: ID_AI_UI });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 /** 연결 설정으로 넣을 저장값 — 문제 보고와 같은 허용 목록에서 화면·언어 설정은 뺀다 */

@@ -1,6 +1,7 @@
 // Serial·TCP·UDP 공통 기능(이력·단축키·간격 열·인코딩·처리량·반복 횟수·파일 보내기·로그 형식·트리거·체크섬 옵션·터미널)의 문구.
 import { dicts, type Lang } from "./lang.ts";
 import { JA_IO } from "./ja/io.ts";
+import { ID_IO } from "./id/io.ts";
 import { VI_IO } from "./vi/io.ts";
 import { TR_IO } from "./tr/io.ts";
 
@@ -262,7 +263,7 @@ const en: typeof ko = {
   evTrgLog: " — file log stopped",
 };
 
-export const IO = dicts(ko, en, { ja: JA_IO, tr: TR_IO, vi: VI_IO });
+export const IO = dicts(ko, en, { ja: JA_IO, tr: TR_IO, vi: VI_IO, id: ID_IO });
 export type IoKey = keyof typeof ko;
 
 export function io(lang: Lang, k: IoKey, v: Record<string, string | number> = {}) {
