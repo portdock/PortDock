@@ -1,0 +1,628 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "lovato/dmg7000",
+  "manufacturer": {
+    "ko": "로바토",
+    "en": "Lovato Electric"
+  },
+  "model": "DMG7000",
+  "models": [
+    "DMG7500",
+    "DMG8000",
+    "DMG9000"
+  ],
+  "kind": "power-meter",
+  "title": {
+    "ko": "로바토 DMG7000·7500·8000·9000 전력 분석계 (Modbus RTU·ASCII·TCP)",
+    "en": "Lovato DMG7000/7500/8000/9000 power analyzers (Modbus RTU, ASCII, TCP)"
+  },
+  "summary": {
+    "ko": "표 주소는 1 기준(프레임 = 표 − 1). 계측값 32비트 빅 엔디언, 전압 V/100·전류 A/10000·주파수 Hz/1000. 명령 0x2FF0, 저장 0x2F03.",
+    "en": "Table addresses are 1-based (frame = table − 1). Measurements are 32-bit big-endian: voltage V/100, current A/10000, frequency Hz/1000. Commands 0x2FF0, save 0x2F03."
+  },
+  "protocols": [
+    "rtu",
+    "ascii",
+    "tcp"
+  ],
+  "comm": {
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "maxRegisters": 120,
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 표의 주소는 1 기준이다 — 저장 명령 0x2F03 의 예가 01 06 2F 02 00 05, 메뉴 선택 0x5000 이 01 06 4F FF, 파라미터 값 0x5004 가 01 06 50 03 (p.8~9). address = 표 주소 − 1. 계측값 표도 같은 표 체계라 같은 규칙으로 옮겼다(계측값의 숫자 프레임 예는 문서에 없다).",
+        "en": "Addressing: table addresses are 1-based — saving with 0x2F03 is shown as 01 06 2F 02 00 05, menu selection 0x5000 as 01 06 4F FF and parameter value 0x5004 as 01 06 50 03 (pp.8-9). address = table address − 1. Measurement tables use the same convention and were converted the same way (the document has no numeric frame example for measurements)."
+      },
+      {
+        "ko": "RTU·ASCII·TCP. 바이트·워드 모두 빅 엔디언(상위 워드 먼저) → ABCD, 한 번에 120레지스터까지, FC 03·04·06·10·11 (p.1). 출하 통신값은 이 문서에 없다(DMG 파라미터 P07 참고).",
+        "en": "RTU, ASCII and TCP. Bytes and words big-endian (high word first) → ABCD, up to 120 registers, FC 03, 04, 06, 10 and 11 (p.1). Factory communication settings are not in this document (see DMG parameter group P07)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 1,
+      "manualAddress": "0x0002",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 상전압",
+        "en": "L1 phase voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 3,
+      "manualAddress": "0x0004",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 상전압",
+        "en": "L2 phase voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 5,
+      "manualAddress": "0x0006",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 상전압",
+        "en": "L3 phase voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 7,
+      "manualAddress": "0x0008",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 전류",
+        "en": "L1 current"
+      },
+      "unit": "A",
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 9,
+      "manualAddress": "0x000A",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 전류",
+        "en": "L2 current"
+      },
+      "unit": "A",
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 11,
+      "manualAddress": "0x000C",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 전류",
+        "en": "L3 current"
+      },
+      "unit": "A",
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.2"
+    },
+    {
+      "table": "input-registers",
+      "address": 13,
+      "manualAddress": "0x000E",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1-L2 전압",
+        "en": "L1-L2 voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 15,
+      "manualAddress": "0x0010",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2-L3 전압",
+        "en": "L2-L3 voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 17,
+      "manualAddress": "0x0012",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3-L1 전압",
+        "en": "L3-L1 voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 37,
+      "manualAddress": "0x0026",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 역률",
+        "en": "L1 power factor"
+      },
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 39,
+      "manualAddress": "0x0028",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 역률",
+        "en": "L2 power factor"
+      },
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 41,
+      "manualAddress": "0x002A",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 역률",
+        "en": "L3 power factor"
+      },
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 49,
+      "manualAddress": "0x0032",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 51,
+      "manualAddress": "0x0034",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "등가 상전압",
+        "en": "Equivalent phase voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 53,
+      "manualAddress": "0x0036",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "등가 선간전압",
+        "en": "Equivalent phase-to-phase voltage"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 55,
+      "manualAddress": "0x0038",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "등가 전류",
+        "en": "Equivalent current"
+      },
+      "unit": "A",
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 63,
+      "manualAddress": "0x0040",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "등가 역률",
+        "en": "Equivalent power factor"
+      },
+      "scale": 0.0001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 65,
+      "manualAddress": "0x0042",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "선간전압 불평형",
+        "en": "VLL unbalance"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 67,
+      "manualAddress": "0x0044",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "상전압 불평형",
+        "en": "VLN unbalance"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 69,
+      "manualAddress": "0x0046",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 불평형",
+        "en": "Current unbalance"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 83,
+      "manualAddress": "0x0054",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 전압 THD",
+        "en": "THD L1 voltage"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 85,
+      "manualAddress": "0x0056",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 전압 THD",
+        "en": "THD L2 voltage"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 87,
+      "manualAddress": "0x0058",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 전압 THD",
+        "en": "THD L3 voltage"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 89,
+      "manualAddress": "0x005A",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L1 전류 THD",
+        "en": "THD L1 current"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 91,
+      "manualAddress": "0x005C",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L2 전류 THD",
+        "en": "THD L2 current"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "input-registers",
+      "address": 93,
+      "manualAddress": "0x005E",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "L3 전류 THD",
+        "en": "THD L3 current"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12271,
+      "manualAddress": "0x2FF0",
+      "type": "u16",
+      "name": {
+        "ko": "명령",
+        "en": "Commands"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "최대·최소 리셋",
+          "en": "Reset MAX-MIN"
+        },
+        {
+          "value": 1,
+          "ko": "최대 수요 리셋",
+          "en": "Reset MAX demand"
+        },
+        {
+          "value": 2,
+          "ko": "부분·요금제 전력량 리셋",
+          "en": "Reset partial and tariff energy counters"
+        },
+        {
+          "value": 3,
+          "ko": "부분 시간 계수 리셋",
+          "en": "Reset partial hour counters"
+        },
+        {
+          "value": 4,
+          "ko": "계수기 리셋",
+          "en": "Reset counters"
+        },
+        {
+          "value": 5,
+          "ko": "경보 리셋",
+          "en": "Reset alarms"
+        },
+        {
+          "value": 6,
+          "ko": "한계값 리셋",
+          "en": "Reset limit thresholds"
+        },
+        {
+          "value": 8,
+          "ko": "설정 초기화(뒤에 재시작 필요)",
+          "en": "Setup to default (reboot afterwards)"
+        },
+        {
+          "value": 12,
+          "ko": "이벤트 목록 리셋",
+          "en": "Reset event list"
+        }
+      ],
+      "ref": "p.9"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12034,
+      "manualAddress": "0x2F03",
+      "type": "u16",
+      "name": {
+        "ko": "플래시 저장·재시작",
+        "en": "Save to flash and reboot"
+      },
+      "access": "w",
+      "fc": [
+        6
+      ],
+      "values": [
+        {
+          "value": 5,
+          "ko": "저장 후 재시작(응답 없음)",
+          "en": "Save and reboot (no response)"
+        }
+      ],
+      "description": {
+        "ko": "예 01 06 2F 02 00 05 E0 DD (p.9)",
+        "en": "Example 01 06 2F 02 00 05 E0 DD (p.9)"
+      },
+      "ref": "p.8~9"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "계측값 표의 FC 는 03·04 둘 다(«FUNCTION 0x03 – 0x04», p.2). 전력(kW/100000 등)은 표에 각주 (1)이 붙어 있는데 각주 내용을 문서에서 찾지 못해 넣지 않았다. 전력량은 4워드(Unsigned Long)라 PortDock 형식(u32 까지)으로 옮기지 않았다.",
+      "en": "Measurement tables allow FC 03 and 04 ('FUNCTION 0x03 – 0x04', p.2). Powers (kW/100000 etc.) carry a footnote (1) whose text was not found, so they are left out. Energies are 4 words (Unsigned Long) and are not converted to PortDock types (up to u32)."
+    },
+    {
+      "ko": "EASY BRANCH 측정점(EXS4…)은 DMG 국번 다음 번호를 차례로 갖는다(예 DMG 1, BRN01 2) (p.2). 쪽 번호는 PDF 쪽(영어·폴란드어 한 문서).",
+      "en": "EASY BRANCH points (EXS4…) take the node numbers after the DMG (e.g. DMG 1, BRN01 2) (p.2). Pages are PDF pages (English/Polish document)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "POWER ANALYZERS Modbus manual DMG7000-7500-8000-9000 EXS40000-EXS4001",
+      "publisher": "Lovato Electric",
+      "edition": {
+        "ko": "I676 GB PL 03 22",
+        "en": "I676 GB PL 03 22"
+      },
+      "url": "https://datasheet.lovatoelectric.com/DOWNLOAD/Technical/TechInstructions/28.%20CONTATORI%20DI%20ENERGIA%20E%20ANALIZZATORI%20DI%20RETE/I676GBPL03_22.pdf",
+      "pages": {
+        "ko": "프로토콜 사양 PDF p.1, 레지스터 표 p.2~8, 파라미터 설정·명령 p.8~9",
+        "en": "Protocol specifications PDF p.1, register tables pp.2-8, parameter setup and commands pp.8-9"
+      },
+      "checked": "2026-11-01"
+    }
+  ]
+}

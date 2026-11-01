@@ -51,7 +51,7 @@
 사이트 설정에서 지킬 것: `Base.astro` 의 검색엔진 소유 확인 meta 값은 지우지 않는다 · `PUBLIC_CF_ANALYTICS_TOKEN` 은 비워 둔다(Pages 자동 주입과 두 번 셈) · @portdock.dev 로 메일을 보내게 되면 SPF·DKIM 을 그 서비스에 맞게 바꾼다(지금은 `v=spf1 -all`·DMARC reject).
 
 ## 4. 장비 레지스터 맵 — 확장 규칙과 후보
-지금 67종·2684개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
+지금 77종·2987개(`data/devices/`, 검사 `node tools/devices-check.mjs`).
 
 규칙:
 - 공식 매뉴얼(또는 제조사 공식 응용 노트)에서 확인한 값만. 출처 문서 번호·판·쪽을 남긴다.
@@ -68,7 +68,12 @@
 | 후지 FRENIC-Ace E3 · FRENIC 출하 통신값 | 공식 자료에서 못 찾음 |
 | LS iS7·iG5A·iE5·iC5 | 숫자 프레임 예 없음(공통 영역 표는 있음 — 같은 회사 S100·G100 은 «주소 −1» 이라 짐작으로 넣지 않음) |
 | ABB ACS310·ACS355·ACS580 | library.abb.com 이 자동 내려받기를 막음(403) |
-| 셀렉 MFM384, 슈나이더 PM5100 | 공식 PDF 경로를 못 얻음(셀렉 사이트는 스크립트로만 목록) |
+| 셀렉 MFM384, 슈나이더 PM5100 | 공식 PDF 경로를 못 얻음(PM5100 맵은 se.com FAQ 첨부 xls 뿐이고 FAQ 쪽이 자동 접근에 403)(셀렉 사이트는 스크립트로만 목록) |
+| 지멘스 SENTRON PAC3200·PAC4200·PAC2200 | PAC4200 시스템 매뉴얼(A5E02316180B-05)은 받았으나 «Offset» 이 0·1 기준인지 적힌 곳·숫자 프레임 예가 없음(RTU 는 별도 «PAC RS485 Expansion Module» 매뉴얼) |
+| 히타치 WJ200 | 제조사 공식 PDF 경로를 못 찾음(대리점 사본뿐) |
+| 소코멕 DIRIS A-10, 피닉스 EEM-MA, 야니차 UMG 96 | 공식 통신 표가 자료실 화면(스크립트) 뒤에 있어 파일 경로를 못 얻음 |
+| WEG CFW500·CFW300 | 영어 Modbus 매뉴얼은 대리점 사본, static.weg.net 은 스페인어·포르투갈어만(CFW500 스페인어 경로는 404). CFW503 은 영어 공식판으로 넣음 |
+| INVT GD200A 모니터 3000H~ · 로바토 DMG 전력·전력량 | GD200A 표는 범위만 있고 단위 없음 / DMG 전력은 각주 (1) 내용 못 찾음, 전력량은 4워드라 형식 밖 — 해당 칸만 뺌 |
 
 ## 5. 시험용 장비 (아직 없음)
 `docs/test-plan.md` 의 💰 항목은 아래 장비가 있어야 한다. 없으면 각 항목 괄호 안의 대안(가상 COM 쌍·Simulator)으로.

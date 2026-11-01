@@ -1,0 +1,778 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "carlo-gavazzi/wm15",
+  "manufacturer": {
+    "ko": "카를로 가바치",
+    "en": "Carlo Gavazzi"
+  },
+  "model": "WM15",
+  "kind": "power-meter",
+  "title": {
+    "ko": "카를로 가바치 WM15 패널형 전력 분석계 (RS485 Modbus RTU)",
+    "en": "Carlo Gavazzi WM15 panel power analyzer (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "96×96 패널 계측기. 계측값 INT32(워드 하위 먼저)·배율(V×10, A×1000, W×10, kWh×10). FC 03·04 같은 결과, 설정은 06·10.",
+    "en": "96x96 panel meter. Measurements INT32 (low word first) with weights (V×10, A×1000, W×10, kWh×10). FC 03 and 04 give the same result; settings via 06 and 10."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      9600,
+      19200,
+      38400,
+      57600,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "CDAB",
+    "maxRegisters": 125,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "매뉴얼은 «Modicom address»(300001 꼴)와 «Physical address»(프레임에 넣는 워드 주소, 0000h 꼴)를 함께 적는다 (p.4). address 는 Physical address(= Modicom − 300001).",
+        "en": "The manual gives both the 'Modicom address' (300001 style) and the 'Physical address' (word address in the frame, 0000h style) (p.4). address is the physical address (= Modicom − 300001)."
+      },
+      {
+        "ko": "FC 03·04 같은 결과, 한 번에 125워드까지 읽기, 06·10(123워드까지) 쓰기 (p.4~6). 출하 국번 1·9600 bps·패리티 없음·정지 1비트 (p.18).",
+        "en": "FC 03 and 04 give the same result, up to 125 words per read; writes with 06 and 10 (up to 123 words) (pp.4-6). Defaults: address 1, 9600 bps, no parity, 1 stop bit (p.18)."
+      },
+      {
+        "ko": "INT32 는 워드 하위 먼저(LSW→MSW) (p.8) → CDAB.",
+        "en": "INT32: words LSW→MSW (p.8) → CDAB."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "input-registers",
+      "address": 0,
+      "manualAddress": "300001 (0000h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1-N 전압",
+        "en": "V L1-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 2,
+      "manualAddress": "300003 (0002h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2-N 전압",
+        "en": "V L2-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 4,
+      "manualAddress": "300005 (0004h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3-N 전압",
+        "en": "V L3-N"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 6,
+      "manualAddress": "300007 (0006h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1-L2 전압",
+        "en": "V L1-L2"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 8,
+      "manualAddress": "300009 (0008h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2-L3 전압",
+        "en": "V L2-L3"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 10,
+      "manualAddress": "300011 (000Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3-L1 전압",
+        "en": "V L3-L1"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 12,
+      "manualAddress": "300013 (000Ch)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1 전류",
+        "en": "A L1"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 14,
+      "manualAddress": "300015 (000Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2 전류",
+        "en": "A L2"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 16,
+      "manualAddress": "300017 (0010h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3 전류",
+        "en": "A L3"
+      },
+      "unit": "A",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 18,
+      "manualAddress": "300019 (0012h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L1 유효전력",
+        "en": "W L1"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 20,
+      "manualAddress": "300021 (0014h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L2 유효전력",
+        "en": "W L2"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 22,
+      "manualAddress": "300023 (0016h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "L3 유효전력",
+        "en": "W L3"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 36,
+      "manualAddress": "300037 (0024h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "상전압 평균(시스템)",
+        "en": "V L-N sys"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 38,
+      "manualAddress": "300039 (0026h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "선간전압 평균(시스템)",
+        "en": "V L-L sys"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 40,
+      "manualAddress": "300041 (0028h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력 합계",
+        "en": "W sys"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 42,
+      "manualAddress": "300043 (002Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "피상전력 합계",
+        "en": "VA sys"
+      },
+      "unit": "VA",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 44,
+      "manualAddress": "300045 (002Ch)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "무효전력 합계",
+        "en": "var sys"
+      },
+      "unit": "var",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 46,
+      "manualAddress": "300047 (002Eh)",
+      "type": "s16",
+      "name": {
+        "ko": "L1 역률",
+        "en": "PF L1"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 47,
+      "manualAddress": "300048 (002Fh)",
+      "type": "s16",
+      "name": {
+        "ko": "L2 역률",
+        "en": "PF L2"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 48,
+      "manualAddress": "300049 (0030h)",
+      "type": "s16",
+      "name": {
+        "ko": "L3 역률",
+        "en": "PF L3"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 49,
+      "manualAddress": "300050 (0031h)",
+      "type": "s16",
+      "name": {
+        "ko": "역률(시스템)",
+        "en": "PF sys"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "description": {
+        "ko": "음수 = 내보내는 유효전력, 양수 = 받는 유효전력. 진상·지상은 0076h~0079h",
+        "en": "Negative = exported active power, positive = imported. Lead/lag in 0076h-0079h"
+      },
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 50,
+      "manualAddress": "300051 (0032h)",
+      "type": "s16",
+      "name": {
+        "ko": "상 순서",
+        "en": "Phase sequence"
+      },
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "values": [
+        {
+          "value": -1,
+          "ko": "L1-L3-L2",
+          "en": "L1-L3-L2"
+        },
+        {
+          "value": 0,
+          "ko": "L1-L2-L3",
+          "en": "L1-L2-L3"
+        }
+      ],
+      "description": {
+        "ko": "3상에서만 뜻이 있다",
+        "en": "Meaningful only in a 3-phase system"
+      },
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 51,
+      "manualAddress": "300052 (0033h)",
+      "type": "s16",
+      "name": {
+        "ko": "주파수",
+        "en": "Hz"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 52,
+      "manualAddress": "300053 (0034h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력량(+) 누계",
+        "en": "kWh (+) TOT"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 54,
+      "manualAddress": "300055 (0036h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "무효전력량(+) 누계",
+        "en": "kvarh (+) TOT"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 56,
+      "manualAddress": "300057 (0038h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력 수요(시스템)",
+        "en": "W sys DMD"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 58,
+      "manualAddress": "300059 (003Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력 최대 수요(시스템)",
+        "en": "W sys DMD MAX"
+      },
+      "unit": "W",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 78,
+      "manualAddress": "300079 (004Eh)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "유효전력량(−) 누계",
+        "en": "kWh (-) TOT"
+      },
+      "unit": "kWh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 80,
+      "manualAddress": "300081 (0050h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "무효전력량(−) 누계",
+        "en": "kvarh (-) TOT"
+      },
+      "unit": "kvarh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 86,
+      "manualAddress": "300087 (0056h)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "피상전력량 누계",
+        "en": "kVAh TOT"
+      },
+      "unit": "kVAh",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "input-registers",
+      "address": 90,
+      "manualAddress": "300091 (005Ah)",
+      "type": "s32",
+      "order": "CDAB",
+      "name": {
+        "ko": "운전 시간",
+        "en": "Run hour meter"
+      },
+      "unit": "h",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        4
+      ],
+      "ref": "p.9 표 4.1-1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8192,
+      "manualAddress": "308193 (2000h)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 국번",
+        "en": "RS485 instrument address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 1",
+        "en": "Default 1"
+      },
+      "ref": "p.18 표 5.4-1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8193,
+      "manualAddress": "308194 (2001h)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 통신 속도",
+        "en": "RS485 baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "9600 bps (출하)",
+          "en": "9.6 kbps (default)"
+        },
+        {
+          "value": 2,
+          "ko": "19200 bps",
+          "en": "19.2 kbps"
+        },
+        {
+          "value": 3,
+          "ko": "38400 bps",
+          "en": "38.4 kbps"
+        },
+        {
+          "value": 4,
+          "ko": "57600 bps",
+          "en": "57.6 kbps"
+        },
+        {
+          "value": 5,
+          "ko": "115200 bps",
+          "en": "115.2 kbps"
+        }
+      ],
+      "ref": "p.18 표 5.4-1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8194,
+      "manualAddress": "308195 (2002h)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 패리티",
+        "en": "RS485 parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "없음 (출하)",
+          "en": "No parity (default)"
+        },
+        {
+          "value": 2,
+          "ko": "짝수",
+          "en": "Even parity"
+        }
+      ],
+      "ref": "p.18 표 5.4-1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8195,
+      "manualAddress": "308196 (2003h)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 정지 비트",
+        "en": "RS485 stop bit"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1비트 (출하)",
+          "en": "1 stop bit (default)"
+        },
+        {
+          "value": 1,
+          "ko": "2비트",
+          "en": "2 stop bits"
+        }
+      ],
+      "description": {
+        "ko": "짝수 패리티면 1 로 고정",
+        "en": "Fixed to 1 with even parity"
+      },
+      "ref": "p.18 표 5.4-1"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "시리얼 RS485 가 없는 형(OX·OXPF)에는 통신 설정 레지스터가 없다 (p.18).",
+      "en": "Models without serial RS485 (OX/OXPF) do not have the serial configuration registers (p.18)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "WM15 Communication Protocol",
+      "publisher": "Carlo Gavazzi",
+      "edition": {
+        "ko": "Version 1.2 (2019-12-20)",
+        "en": "Version 1.2 (2019-12-20)"
+      },
+      "url": "https://www.gavazziautomation.com/fileadmin/images/PIM/OTHERSTUFF/COMPRO/WM15_CP.pdf",
+      "pages": {
+        "ko": "2 Modbus 함수 p.4~6, 3.1 데이터 형식 p.8, 표 4.1-1 p.9, 표 5.4-1 p.18",
+        "en": "2 Modbus functions pp.4-6, 3.1 data format p.8, Table 4.1-1 p.9, Table 5.4-1 p.18"
+      },
+      "checked": "2026-11-01"
+    }
+  ]
+}
