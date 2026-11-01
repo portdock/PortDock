@@ -1,0 +1,88 @@
+---
+// Gizlilik politikası (Türkçe) — views/PrivacyPage.astro içindeki Korece/İngilizce metinle aynı içerik. Cümle içinde bağlantılar olduğu için metin tablosu yerine işaretleme (markup).
+// Korece/İngilizce metin değişirse burayı da güncelleyin.
+// Programların arayüzü yalnızca Korece ve İngilizcedir — bu yüzden denetimler İngilizce adlarıyla tırnak içinde yazılır.
+import { CONTACT_EMAIL } from "@shared/links";
+import EmailOff from "../../components/EmailOff.astro";
+import { link } from "../../lib/i18n";
+
+const lang = "tr";
+// İletişim formu yalnızca derleme değişkeni PUBLIC_TURNSTILE_SITE_KEY tanımlıysa vardır (ContactPage.astro)
+const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
+---
+
+<h2>1. Programlar (PortDock araçları)</h2>
+<ul>
+  <li>Programlar trafiğinizi, komutlarınızı, kurallarınızı ve ayarlarınızı hiçbir yere göndermez. Ayarlar bu PC’de kalır. Cihaz haberleşmesi (seri port, TCP, UDP, Modbus, SCPI, MC protokolü, ağda cihaz bulma) yalnızca sizin seçtiğiniz portlara, adreslere ve alt ağlara gider.</li>
+  <li>
+    <b>Hardware Tester’ın kopma ve gecikme kaydı</b>: yalnızca “Start recording” açıkken ağ geçidine (yönlendiriciye) ve seçtiğiniz bir internet adresine (varsayılan 1.1.1.1 = Cloudflare; 8.8.8.8 = Google ya da kendi adresiniz) ping atar ve 5 saniyede bir, bu PC’de ayarlı DNS sunucusuna bir ad sorar (varsayılan example.com; atlamak için boş bırakın). Her internet isteğinde olduğu gibi alıcılar bu PC’nin bağlantı adresini (IP) görür. Hedefler her zaman gösterilir ve durdurduktan sonra hiçbir şey gönderilmez. Kayıt yalnızca CSV olarak kaydederseniz PC’de kalır.
+  </li>
+  <li>
+    <b>Hardware Tester’ın Wi-Fi sinyal görünümü (yalnızca düğmeye bastığınızda)</b>: sinyal gücünü, bağlantı hızını, frekans bandını, kanalı ve her kanalı yakındaki kaç ağın paylaştığını okur. Windows 11 24H2’den itibaren Windows bu değerleri okumak için konum izni ister — program konum (koordinat) okumaz; ağ adları (SSID) ve erişim noktası adresleri (BSSID) asla okunmaz ve kaydedilmez. İzni reddederseniz diğer her şey çalışmaya devam eder.
+  </li>
+  <li>
+    <b>Bluetooth cihaz adları</b>: Hardware Tester’ın bağlantı kaydı ve Port Inspector’ın “Wireless” sekmesi adları yalnızca ekranda gösterir; kaydedilen, kopyalanan ve dışa aktarılan metinde “Device N” kullanılır. Adlar asla gönderilmez.
+  </li>
+  <li>
+    <b>Ağda dinleyen sunucular (yalnızca siz başlattığınızda)</b>: PLC Simulator (varsayılan olarak MC TCP 5000’de, 0.10.0 sürümünden itibaren LS XGT TCP 2004 / UDP 2005’te) ve seri port paylaşımı (0.10.0 sürümünden itibaren — varsayılan olarak TCP 7000’de raw veya RFC 2217, TCP 502’de Modbus TCP ↔ RTU ağ geçidi) varsayılan olarak yalnızca bu PC’den (127.0.0.1) gelen bağlantıları kabul eder. “Allow other PCs to connect (0.0.0.0)” seçeneğini açarsanız aynı ağdaki diğer PC’ler kimlik doğrulama olmadan bağlanabilir, cihaz değerlerini okuyup yazabilir ya da COM portuna ve RS-485 cihazlarına gönderebilir (bu protokollerde kimlik doğrulama yoktur). Modbus Slave TCP, TCP sunucu/aktarıcı ve Simulator kendi adres kutusundaki adreste dinler — 0.10.0 sürümünden itibaren ilk çalıştırmada 127.0.0.1 (yalnızca bu PC); diğer PC’ler için orada 0.0.0.0 ya da bir bağdaştırıcının adresini seçin. UDP, cihaz yanıtlarını alması gerektiği için varsayılan olarak 0.0.0.0’da (tüm ağ bağdaştırıcıları) dinler. Bunları yalnızca güvendiğiniz ağlarda açın.
+  </li>
+  <li>
+    <b>PortDock MCP (yapay zekâ istemcileri için sunucu)</b>: her araç çağrısı için bu PC’deki bir oturum kaydına bir satır yazar (zaman, araç, argümanlar, hedef, başarı, sonucun başı, süre). Kayıt, exe’nin yanında portdock-data klasörü varsa portdock-data\mcp-log içinde, yoksa %LOCALAPPDATA%\dev.portdock\mcp-log içinde durur; 30 günden eski dosyalar silinir. Kullanıcı klasörü yolları “~”, MAC adresleri “xx-…” olarak gizlenir. PortDock MCP bu kaydı hiçbir yere göndermez, hata raporu ya da kullanım istatistiği de göndermez. Ancak <b>araç sonuçları (okunan port ve cihaz değerleri) kullandığınız yapay zekâ istemcisine gider ve bu istemci onları şirketinin sunucularına (yapay zekâ modeline) gönderebilir</b> — oradan sonrası için o istemcinin ve şirketin gizlilik politikası geçerlidir.
+  </li>
+  <li>
+    <b>“AI” kopyası (yapay zekâya sormak için kopyalama, 0.8.0 — 12 uygulamanın başlık çubuğundaki “AI” düğmesi)</b>: programdan, bağlantı ayarlarından, bu oturumdaki hatalardan ve son trafikten (ya da denetim sonuçlarından) bir yapay zekâ sohbeti için metin oluşturur, önizleme olarak gösterir; “Copy” onu <b>yalnızca panoya</b> koyar. PortDock bu metni hiçbir yere göndermez. <b>Metni bir yapay zekâ sohbetine (örneğin ChatGPT, Claude veya Gemini) yapıştırdığınızda o yapay zekâ hizmetine gider ve o hizmetin gizlilik politikası geçerli olur.</b> Metinde kullanıcı klasörü yolları “~” olur, Windows’un varsayılan PC adları (DESKTOP-… vb.) ve UNC yollarındaki PC adları gizlenir, MAC adreslerinin son 3 baytı “xx”, genel IP adresleri ise “[IP-1]” gibi numaralar olur. Özel IP adresleri (192.168.x.x, 10.x.x.x …) dışarıdan izlenemez ve “PC ile cihaz farklı alt ağlarda” gibi nedenleri görmek için çoğu zaman gerekir; bu yüzden varsayılan olarak kalır. Önizlemede “Hide private IPs too” seçeneğini açarsanız onlar da gizlenir. Son trafik önizlemede çıkarılabilir ve metin 8.000 karakterle sınırlıdır (önce en eski satırlar silinir). Yapıştırmadan önce önizlemedeki cihaz ve şirket bilgilerini kontrol edin.
+  </li>
+  <li>
+    <b>TCP aktarıcıda “Save as pcap” (0.8.0)</b>: açıkken iki yöndeki aktarılan baytlar yalnızca seçtiğiniz .pcapng dosyasına yazılır. Dosya bu PC’de kalır ve hiçbir yere gönderilmez. Bir pcap dosyası IP adreslerini, portları ve trafik içeriğini barındırır; paylaşmadan önce dikkatli olun.
+  </li>
+  <li>
+    <b>Bu PC’de kaydedilen denetimler ve kayıtlar (0.10.0 sürümünden itibaren)</b>: asla gönderilmez; yalnızca uygulamanın deposuna (“Export settings” dosyalarına da kopyalanır) ya da seçtiğiniz dosyalara yazılır — Net Scan referans verileri (her cihazın IP’si, tam MAC adresi, ana bilgisayar adı ve açık portları), Port Inspector’ın kaydedilen denetimleri (en fazla 20; ağ bağdaştırıcısı IP’leri ve ağ geçidi dahil — cihaz seri numaraları, PC adı ve bağlı ağ adları hariç), Modbus Master cihaz ayarı yedekleri (JSON/CSV), Modbus Master ve Plot’taki alarm CSV kayıtları ve Hardware Tester’ın USB takma/çıkarma kaydı (cihaz adları ve VID:PID — seri numarası yok). Bunlar ağınızın nasıl kurulduğunu gösterir; paylaşmadan önce dikkatli olun.
+  </li>
+  <li>
+    <b>Hata raporları</b> yalnızca “!” rapor penceresinde gönder düğmesine bastığınızda ya da “Automatic error reports” seçeneğini “Send automatically” yaptığınızda gönderilir (varsayılan “Ask after a crash”, yani çöktükten sonra sor; “Never send” kapatır). Hatanın nedenini (istisna metni ve yeri) ve program/Windows sürümlerini içerir. Trafik ve IP ayarları, “recent traffic” kutusunu açıkça işaretlemedikçe eklenmez.
+  </li>
+  <li>Raporlar Sentry’ye (Functional Software, Inc.) gider, yalnızca hataları düzeltmek için kullanılır, 30 gün sonra silinir ve Sentry’nin AB (Almanya) bölgesinde saklanır; IP adresleri saklanmaz.</li>
+  <li>
+    <b>Kullanım istatistikleri (isteğe bağlı, varsayılan olarak kapalı)</b>: program ilk çalıştırmada bir kez sorar ve yalnızca “Send”i seçerseniz ya da Ayarlar’da “Send usage statistics”i açarsanız istatistik gönderir. Soruyu seçim yapmadan kapatırsanız hiçbir şey gönderilmez. Pencereyi kapattığınızda şunlar gönderilir: program adı ve sürümü, Windows sürümü (10/11), arayüz dili, programın kaç dakika açık kaldığı, her özelliğin kaç kez kullanıldığı (bağlanma, gönderme, okuma … — yalnızca sayılar) ve kurulu mu taşınabilir mi olduğu. Trafik, IP adresleri, portlar, COM adları, dosya yolları ya da PC/kullanıcı/cihaz adları asla gönderilmez ve kurulumunuza ya da PC’nize bağlı bir kimlik oluşturulmaz (yalnızca her çalıştırmada değişen rastgele bir sayı). Çevrimdışıysanız ya da gönderme başarısız olursa veri PC’de saklanmak yerine atılır.
+  </li>
+  <li>
+    Kullanım istatistikleri Aptabase’in (Technov Solutions SRL, Romanya) AB bölgesine gider ve yalnızca neyin geliştirileceğine karar vermek için kullanılır. Aptabase ülke ve bölgeyi bağlantının IP adresinden çıkarır ama adresin kendisini saklamaz; kullandığı anonim günlük ziyaretçi numarası 24 saatte bir değişir. Aptabase istatistikleri 5 yıla kadar saklar; bir kişiyle ilişkilendirilemedikleri için tek tek kayıtlar silinmek üzere bulunamaz.
+  </li>
+  <li>
+    <b>Güncelleme denetimi (isteğe bağlı, varsayılan olarak kapalı)</b>: yalnızca Ayarlar’da “Check for new versions (once a day)” seçeneğini açarsanız program günde bir kez GitHub API’sine (api.github.com) PortDock’un en son sürümünü sorar. İstek hiçbir veri taşımaz (çerez ya da kimlik yok); her web isteğinde olduğu gibi GitHub bağlantının IP adresini görür. Daha yeni bir sürüm varsa yalnızca bir bildirim çubuğu çıkar — hiçbir şey indirilmez ya da kurulmaz. GitHub isteği şu belgeye göre işler:
+    <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+  </li>
+</ul>
+<h2>2. Bu web sitesi</h2>
+<ul>
+  <li><b>İstatistik</b>: Cloudflare Web Analytics sayfa görüntülemelerini çerez ve kişisel tanımlayıcı olmadan sayar.</li>
+  <li>
+    <b>Reklamlar</b>: Web aracı, kılavuz ve cihaz bazında register haritası sayfalarında Google AdSense reklamları görünebilir. Google ve iş ortakları önceki ziyaretlere dayalı reklam göstermek için çerez kullanabilir. Kişiselleştirilmiş reklamları
+    <a href="https://adssettings.google.com">Google Reklam Ayarları</a>’ndan kapatabilirsiniz; ayrıca bkz. <a href="https://policies.google.com/technologies/ads">Google’ın reklam politikaları</a>. İndirme, ürün ve belge sayfalarında reklam yoktur.
+  </li>
+  <li>
+    <b>Web araçları</b>: pcap çözümleyici, çerçeve çözücüler, hesaplayıcılar ve donanım testleri (mikrofon, web kamerası, klavye …) seçtiğiniz dosyayı, girdiğiniz değerleri ve mikrofon sesini ya da kamera görüntüsünü yalnızca bu tarayıcının içinde işler ve hiçbir şey yüklemez. Araçların kodu bu içerikleri asla ağ üzerinden göndermez. Aynı sayfadaki istatistik ve reklam betikleri (yukarıda) ayrı çalışır ve dosya ya da giriş içeriği almaz.
+  </li>
+  {
+    hasForm ? (
+      <li><b>İletişim formu</b>: adınız, e-posta adresiniz ve mesajınız yalnızca yanıt vermek için kullanılır ve bir yıl içinde silinir. İstenmeyen mesajlara karşı Cloudflare Turnstile kullanılır.</li>
+    ) : (
+      <li><b>İletişim</b>: sitede iletişim formu yoktur; mesajlar e-postayla ya da GitHub (issues, Discussions) üzerinden gelir. E-posta adresleri ve mesajlar yalnızca yanıt vermek için kullanılır ve yanıttan sonra bir yıl içinde silinir. GitHub’daki gönderiler GitHub’da herkese açık kalır.</li>
+    )
+  }
+</ul>
+<h2>3. Veri işleyenler ve yurt dışına aktarım</h2>
+<ul>
+  <li>Cloudflare, Inc. (ABD) — barındırma, istatistik{hasForm ? ", istenmeyen mesaj koruması, iletişim e-postalarının iletimi" : ""}</li>
+  <li>Google LLC (ABD) — web aracı, kılavuz ve cihaz register haritası sayfalarındaki reklamlar</li>
+  <li>Functional Software, Inc. (Sentry; ABD şirketi, veri bölgesi AB) — program hata raporları (yalnızca izninizle)</li>
+  <li>Technov Solutions SRL (Aptabase; Romanya, veri bölgesi AB) — program kullanım istatistikleri (yalnızca siz açarsanız)</li>
+  <li>GitHub, Inc. (ABD) — güncelleme denetimi isteğini alır (yalnızca siz açarsanız)</li>
+  <li>Hardware Tester’ın ping ve DNS hedefleri — seçtiğiniz internet adresi (varsayılan 1.1.1.1 Cloudflare’dir, 8.8.8.8 Google’dır) ve bu PC’nin DNS sunucusu ping’leri ve sorguları alır (yalnızca kayıt sürerken; bunlar sizin iletişim kurmayı seçtiğiniz taraflardır, veri işleyen değildir)</li>
+  <li>PortDock MCP’yi bağladığınız yapay zekâ istemcisi ve arkasındaki şirket (örneğin Claude Desktop, VS Code veya Cursor’ın üreticileri) — araç sonuçlarını alır (sizin seçtiğiniz bir istemcidir, PortDock’un veri işleyeni değildir; kendi politikası geçerlidir)</li>
+  <li>“AI” kopyası metnini yapıştırdığınız yapay zekâ hizmeti — sizin kendiniz yapıştırdığınız metni alır (PortDock göndermez ve bu bir veri işleyen değildir; o hizmetin politikası geçerlidir)</li>
+</ul>
+<h2>4. İletişim</h2>
+<p>
+  Gizlilikle ilgili sorular veya silme talepleri için <EmailOff><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></EmailOff> adresine e-posta gönderin ya da <a href={link(lang, "contact/")}>iletişim sayfasını (İngilizce)</a> kullanın.
+</p>

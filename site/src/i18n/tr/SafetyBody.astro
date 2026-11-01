@@ -1,0 +1,128 @@
+---
+// Güvenlik ilkeleri (Türkçe) — views/SafetyPage.astro içindeki Korece/İngilizce metinle aynı içerik. Cümle içinde bağlantılar olduğu için metin tablosu yerine işaretleme (markup).
+// Dayanaklar (SECURITY.md, program kılavuzları) ya da Korece/İngilizce metin değişirse burayı da güncelleyin.
+// Programların arayüzü yalnızca Korece ve İngilizcedir — bu yüzden denetimler İngilizce adlarıyla tırnak içinde yazılır.
+// Resmî kurum bağlantısı: T.C. Çalışma ve Sosyal Güvenlik Bakanlığı İş Sağlığı ve Güvenliği Genel Müdürlüğü (İSGGM), www.csgb.gov.tr/isggm/ (2026-11-01’de açılıp doğrulandı)
+import { REPO } from "../../data/tools";
+import { link } from "../../lib/i18n";
+
+const lang = "tr";
+const security = `${REPO}/blob/main/SECURITY.md`;
+const advisory = `${REPO}/security/advisories/new`;
+const isggm = "https://www.csgb.gov.tr/isggm/";
+---
+
+<h2>1. Denetimler yalnızca okur</h2>
+<ul>
+  <li>Port Inspector (COM portları, ağ bağdaştırıcıları, “This PC”) ve Hardware Tester, ayarları ve kayıtları yönetici yetkisi olmadan okur. Sürücü kurmaz, kayıt defteri (registry) değerlerini ya da Windows ayarlarını değiştirmez.</li>
+  <li>Sonuçlar yalnızca “Worth a look” (bakmaya değer), olası nedenler ve “Where to change” (hangi Windows ekranı) düzeyine kadar gider. Her değişikliği Windows’ta kendiniz yaparsınız.</li>
+  <li>
+    (0.10.0 sürümünden itibaren) Port Inspector “This PC” içindeki dışa açıklık denetimi (Uzak Masaüstü, SMBv1, güvenlik duvarı, tüm adreslerde dinleyen portlar, otomatik oturum açma, USB otomatik kullan) ve Net Scan’in “Exposed” etiketi de yalnızca okur. Otomatik oturum açmada yalnızca bir parola değerinin var olup olmadığına bakılır, içeriğine asla bakılmaz. Net Scan bu etiket için ek port taramaz. Sonucun nasıl okunacağı:
+    <a href={link(lang, "guides/field-pc-exposure-check/")}>Saha PC’sinin dışa açıklık denetimini okumak (İngilizce)</a>
+  </li>
+</ul>
+
+<h2>2. Sunucuların bağlantı kabul ettiği yerler</h2>
+<p>
+  Modbus, MC protokolü, LS XGT’ye özel protokol, SCPI raw soketleri ve düz TCP/UDP’de kimlik doğrulama yoktur. Bir PortDock sunucusu açıldığında portuna ulaşabilen herkes onunla haberleşebilir; bu yüzden her programın aşağıdaki gibi bir varsayılan adresi vardır.
+</p>
+<table class="t">
+  <thead>
+    <tr>
+      <th scope="col">Program</th>
+      <th scope="col">Varsayılan adres</th>
+      <th scope="col">Diğer PC’lere açmak</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PLC Simulator (varsayılan olarak MC TCP 5000’de, 0.10.0 sürümünden itibaren XGT TCP 2004 / UDP 2005’te)</td>
+      <td>127.0.0.1 (yalnızca bu PC)</td>
+      <td>Yalnızca “Allow other PCs to connect (0.0.0.0)” seçeneğini açtıktan sonra</td>
+    </tr>
+    <tr>
+      <td>Seri port paylaşımı (0.10.0 sürümünden itibaren — varsayılan olarak TCP 7000’de raw veya RFC 2217, TCP 502’de Modbus TCP ↔ RTU ağ geçidi)</td>
+      <td>127.0.0.1 (yalnızca bu PC)</td>
+      <td>“Allow other PCs to connect (0.0.0.0)” açıkken başlatma bir kez daha onay ister. Seçim hatırlanmaz, sonraki başlatmada yine 127.0.0.1 olur.</td>
+    </tr>
+    <tr>
+      <td>Modbus Slave (TCP) · TCP sunucu ve aktarıcı (relay) · Simulator</td>
+      <td>127.0.0.1 (yalnızca bu PC; 0.10.0 sürümünden itibaren ilk çalıştırma varsayılanı — önceki sürümlerin kaydettiği ayarlar korunur)</td>
+      <td>Yalnızca adres kutusunda 0.0.0.0 (tüm ağ bağdaştırıcıları) ya da bir bağdaştırıcının adresini seçtikten sonra</td>
+    </tr>
+    <tr>
+      <td>UDP</td>
+      <td>0.0.0.0 (tüm ağ bağdaştırıcıları)</td>
+      <td>Cihazların yanıtlarını alması gerektiği için tüm bağdaştırıcılarda dinler. Adres kutusundan tek bir bağdaştırıcının adresine ya da 127.0.0.1’e değiştirebilirsiniz.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Sunucuları diğer PC’lere yalnızca güvendiğiniz ağlarda açın. Ağ geçidi okuma ve yazmaları RS-485 cihazlarına iletir. Unit ID 0’a giden istekler varsayılan olarak 0A istisnası (yol yok) alır; yalnızca “Broadcast” seçerseniz hattaki tüm cihazlara gider. Ağları ayırmanın ve portları kapatmanın temelleri şurada:
+  <a href={link(lang, "guides/industrial-protocol-no-authentication/")}>Modbus, MC ve XGT’de kimlik doğrulama yok (İngilizce)</a>.
+</p>
+
+<h2>3. Cihazlara yazma</h2>
+<ul>
+  <li>
+    (0.10.0 sürümünden itibaren) Modbus Master’ın “Settings backup &amp; restore” (ayar yedekleme ve geri yükleme) bölümünde geri yükleme (yazma) sekmesi hiçbir şey seçili olmadan açılır. “Preview” mevcut değerleri okuyana kadar “Write” kapalı kalır ve tek bir hücre bile okunamadıysa hiçbir şey yazılmaz. “Write”tan sonra bir şey gönderilmeden önce bir kez daha “Confirm write”a basarsınız; ardından her hücre geri okunur ve eşleşiyor, farklı, yazma başarısız ya da geri okunmadı olarak gösterilir.
+  </li>
+  <li>RTU’da adres 0’a (broadcast — hattaki her cihaz bunu alır) ya da ayrılmış 248–255 adreslerine geri yükleme engellenir. Input register’lar (04), discrete input’lar (02) ve cihaz profilinde salt okunur işaretlenmiş register’lar da engellenir.</li>
+  <li>PLC Simulator’da, zaten değer içeren hücrelerin üzerine yazacak bir toplu doldurma bir kez daha onay ister.</li>
+  <li>Çalışan bir makineye yazmayın. Birçok cihaz, değerlerin enerji kesildikten sonra da korunması için ayrı bir “kaydet” komutu ister — önce cihaz kılavuzundan yazılabilir aralığı kontrol edin.</li>
+</ul>
+
+<h2>4. Yapay zekâ (MCP) yazma araçları</h2>
+<ul>
+  <li>PortDock MCP’nin iki yazma aracı (modbus_write_sim, mc_write_sim) yalnızca loopback adreslerini (127.0.0.1, ::1, localhost) kabul eder. Diğer tüm araçlar yalnızca okur.</li>
+  <li>
+    (0.10.0 sürümünden itibaren) Modbus yazması (modbus_write_sim) önce hedeften kimlik bilgisini ister (FC 2B/0E) ve yalnızca üretici adı “PortDock” ile başlıyorsa (PortDock Modbus Slave’in varsayılanı) yazar. Böylece aynı PC’de 127.0.0.1:502’de dinleyen seri ağ geçidi gibi gerçek cihazlara iletim yapan programları reddeder.
+  </li>
+  <li>
+    MC yazması (mc_write_sim) yalnızca adrese göre denetlenir. Bu PC’deki bir program 127.0.0.1’i başka bir cihaza yönlendiriyorsa (TCP aktarıcı, üretici ağ geçidi, tünel), bir yapay zekâ istemcisi üzerinden yapılan yazma o cihaza ulaşabilir — böyle bir program çalışırken yazma işini yapay zekâya bırakmayın. Kurulum:
+    <a href={link(lang, "guides/portdock-mcp/")}>PortDock MCP’yi kullanmak (İngilizce)</a>
+  </li>
+</ul>
+
+<h2>5. PC’nizden ne çıkar</h2>
+<ul>
+  <li>Cihaz trafiği yalnızca sizin seçtiğiniz portlara ve adreslere gider, başka hiçbir yere gönderilmez.</li>
+  <li>
+    <b>Kullanım istatistikleri</b> varsayılan olarak kapalıdır ve yalnızca onay verirseniz gönderilir (ilk çalıştırmada bir kez sorulur; ayarlardan kapatabilirsiniz). Yalnızca özellik kullanım sayıları, açık kalma süresi (dakika), program/Windows sürümü, arayüz dili ve kurulu/taşınabilir sürüm bilgisi gönderilir — trafik, IP adresleri, portlar, COM adları, dosya yolları ya da PC/kullanıcı/cihaz adları asla gönderilmez.
+  </li>
+  <li>
+    <b>“AI” kopyası</b> önizleme metnini yalnızca panoya koyar. Kullanıcı klasörleri, Windows’un varsayılan PC adları, MAC adreslerinin son 3 baytı ve genel IP adresleri gizlenir; özel IP adresleri varsayılan olarak kalır (önizleme bunları da gizleyebilir). Bir yapay zekâ sohbetine yapıştırınca metin o hizmete gider; bu yüzden önce önizlemeyi kontrol edin.
+  </li>
+  <li>
+    <b>Web araçları</b> (hesaplayıcılar, çerçeve çözücüler, pcap çözümleyici, donanım testleri) girdiklerinizi ve seçtiğiniz dosyaları bu tarayıcının içinde işler ve asla bir sunucuya göndermez.
+  </li>
+  <li>
+    Hata raporları, güncelleme denetimi ve diğer istisnalar (Hardware Tester’ın ping ve DNS sorguları) <a href={link(lang, "privacy/")}>gizlilik politikasında</a> tek tek yazılıdır.
+  </li>
+</ul>
+
+<h2>6. Değer izleme ve alarmlar güvenlik donanımı değildir</h2>
+<p>
+  Modbus Master ve Plot’taki değer izleme ve alarmlar ekrana bakan kişiye yardımcı olur. PC uyku moduna geçerse ya da bağlantı koparsa devreye girmeyebilirler. İnsanları ve makineleri korumak, bunun için tasarlanmış güvenlik donanımlarının — acil stop, kilitlemeler (interlock), güvenlik röleleri — işidir ve PortDock bunların yerine kullanılmamalıdır.
+</p>
+
+<h2>7. Elektrik işleri</h2>
+<p>
+  PortDock ve kılavuzları haberleşme kontrollerine yardımcı olur; elektrik işlerini öğretmez. Klemens ve kablolama üzerindeki işler, beslemeyi ayırıp kilitledikten ve etiketledikten (LOTO) sonra ve gerilim olmadığını bir gerilim test cihazıyla doğruladıktan sonra yetkin kişilerce yapılmalıdır. Türkiye’de
+  <a href={isggm}>T.C. Çalışma ve Sosyal Güvenlik Bakanlığı İş Sağlığı ve Güvenliği Genel Müdürlüğü (İSGGM)</a> ya da ülkenizdeki ilgili kurumun resmî rehberlerine ve işyerinizin talimatlarına uyun.
+</p>
+
+<h2>8. İndirilen dosyaları kontrol etmek</h2>
+<ul>
+  <li>Yayımlanan dosyalar şu anda kod imzalı değil, bu yüzden Windows “Windows bilgisayarınızı korudu” uyarısı gösterebilir — bkz. <a href={link(lang, "code-signing/")}>kod imzalama politikası (İngilizce)</a></li>
+  <li>
+    Yalnızca GitHub Releases’tan indirin ve her sürümle birlikte yayımlanan SHA256 değerleri (SHA256SUMS.txt) ve Microsoft Defender tarama sonucuyla karşılaştırın. Nasıl yapılır:
+    <a href={link(lang, "download/#safe")}>İndir → Güvenli mi?</a>
+  </li>
+</ul>
+
+<h2>9. Güvenlik sorunu bildirmek</h2>
+<p>
+  Lütfen herkese açık bir issue açmayın. Sorunları <a href={advisory}>GitHub security advisories (Report a vulnerability)</a> üzerinden ya da e-postayla (konu [security] ile başlasın) gizli olarak bildirin. Kapsam ve süreç
+  <a href={security}>SECURITY.md</a> dosyasında yazılıdır. PortDock’u bir kişi boş zamanlarında sürdürür; bu yüzden garanti edilen bir düzeltme tarihi ve hata ödülü (bug bounty) yoktur.
+</p>
