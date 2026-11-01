@@ -15,7 +15,7 @@ export default {
   "PC-side DB9 (DTE)": "PC 側の DB9(DTE)",
   "Not transmitting · device may be unplugged": "送信していないとき · 機器を外したままでも可",
   "USB shell": "USB シェル",
-  Device: "デバイス",
+  Equipment: "機器",
   "Both powered · DC and AC": "両方とも電源オン · 直流・交流それぞれ",
   "Break the loop at one point, meter in series (mA jack)": "ループを 1 か所切り、テスターを直列に(mA 端子)",
   Supply: "電源",

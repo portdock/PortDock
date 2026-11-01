@@ -46,7 +46,7 @@ function figOf(id: Exclude<ItemId, "loop-ma">, lang: Lang): Fig {
       return {
         terms: [
           { label: msg(lang, "USB 외함", "USB shell"), group: "PC" },
-          { label: "SG / PE", group: msg(lang, "장비", "Device") },
+          { label: "SG / PE", group: msg(lang, "장비", "Equipment") },
         ],
         red: [0],
         black: 1,

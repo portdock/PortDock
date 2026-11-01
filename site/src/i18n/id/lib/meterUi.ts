@@ -15,7 +15,7 @@ export default {
   "PC-side DB9 (DTE)": "DB9 sisi PC (DTE)",
   "Not transmitting · device may be unplugged": "Tidak mengirim · perangkat boleh dilepas",
   "USB shell": "Selubung USB",
-  Device: "Device",
+  Equipment: "Perangkat",
   "Both powered · DC and AC": "Keduanya menyala · DC dan AC",
   "Break the loop at one point, meter in series (mA jack)": "Putus loop di satu titik, multimeter seri (jack mA)",
   Supply: "Catu daya",

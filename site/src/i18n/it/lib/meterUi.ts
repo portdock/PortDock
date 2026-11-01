@@ -14,7 +14,7 @@ export default {
   "PC-side DB9 (DTE)": "DB9 lato PC (DTE)",
   "Not transmitting · device may be unplugged": "Non in trasmissione · il dispositivo può essere scollegato",
   "USB shell": "Schermo USB",
-  Device: "Dispositivo",
+  Equipment: "Dispositivo",
   "Both powered · DC and AC": "Entrambi alimentati · DC e AC",
   "Break the loop at one point, meter in series (mA jack)": "Aprire il loop in un punto, multimetro in serie (boccola mA)",
   Supply: "Alim.",

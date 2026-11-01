@@ -14,7 +14,7 @@ export default {
   "PC-side DB9 (DTE)": "DB9 côté PC (DTE)",
   "Not transmitting · device may be unplugged": "Pas d’émission · l’appareil peut être débranché",
   "USB shell": "Blindage USB",
-  Device: "Appareil",
+  Equipment: "Appareil",
   "Both powered · DC and AC": "Les deux sous tension · DC et AC",
   "Break the loop at one point, meter in series (mA jack)": "Ouvrir la boucle en un point, multimètre en série (borne mA)",
   Supply: "Alim.",
