@@ -28,7 +28,7 @@ test("판정 글 대부분이 ja 사전에 있다(자리표시뿐인 열쇠 빼�
 });
 
 // 추가 언어 사전도 ja 와 같은 검사(열쇠가 소스에 있음·자리표시·한글 없음·빠진 열쇠 없음)
-for (const [lang, file, name] of [["pt", "../shared/pt/text.ts", "PT_TEXT"], ["fr", "../shared/fr/text.ts", "FR_TEXT"]]) {
+for (const [lang, file, name] of [["pt", "../shared/pt/text.ts", "PT_TEXT"], ["fr", "../shared/fr/text.ts", "FR_TEXT"], ["it", "../shared/it/text.ts", "IT_TEXT"]]) {
   test(`${lang} 사전 — 열쇠·자리표시·빠진 열쇠`, async () => {
     const dict = (await import(file))[name];
     const all = allKeys();

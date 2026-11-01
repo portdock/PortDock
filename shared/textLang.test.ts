@@ -79,3 +79,18 @@ test("fr — 판정 글·통신 기본값·예시 명령·용어", async () => {
   assert.equal(term("jitter", "fr")[0], "Gigue ms");
   assert.equal(termsSection("fr", ["gap"]).title, "Termes");
 });
+
+test("it — 판정 글·통신 기본값·예시 명령·용어", async () => {
+  assert.equal(txt(LEVEL_TEXT.look, "it"), "Da controllare");
+  assert.equal(txt(T("x", "Problem code 10: Worth a look"), "it"), "Codice problema 10: Da controllare");
+  assert.equal(txt(dur(90 * 60), "it"), "1 h 30 min");
+  const d = { comm: { baud: 9600, dataBits: 8, parity: "none", stopBits: 1, unit: 1, addressing: "zero" } };
+  assert.equal(commLine(d, "it"), "9600 8N1 · Slave 1 · il manuale conta gli indirizzi da 0");
+  const { serialExamples, isExampleName } = await import("./examples.ts");
+  const ex = serialExamples("at", "it");
+  assert.equal(ex[0].name, "es. AT (verifica risposta)");
+  assert.ok(ex.every((c) => isExampleName(c.name)));
+  const { term, termsSection } = await import("./glossary.ts");
+  assert.equal(term("jitter", "it")[0], "Jitter ms");
+  assert.equal(termsSection("it", ["gap"]).title, "Termini");
+});

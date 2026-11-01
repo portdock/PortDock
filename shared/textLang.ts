@@ -8,13 +8,14 @@ import type { Lang } from "./lang.ts";
 import { JA_TEXT } from "./ja/text.ts";
 import { PT_TEXT } from "./pt/text.ts";
 import { FR_TEXT } from "./fr/text.ts";
+import { IT_TEXT } from "./it/text.ts";
 
 export interface KoEn {
   ko: string;
   en: string;
 }
 
-const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, pt: PT_TEXT, fr: FR_TEXT };
+const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, pt: PT_TEXT, fr: FR_TEXT, it: IT_TEXT };
 
 interface Pattern {
   re: RegExp;

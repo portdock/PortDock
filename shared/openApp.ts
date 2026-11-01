@@ -9,6 +9,7 @@ import type { Lang } from "./uiText";
 import { JA_OPEN_APP } from "./ja/dialogs.ts";
 import { PT_OPEN_APP } from "./pt/dialogs.ts";
 import { FR_OPEN_APP } from "./fr/dialogs.ts";
+import { IT_OPEN_APP } from "./it/dialogs.ts";
 
 /** 열 프로그램과 넘길 값 — Rust launch::Target 과 같은 모양 */
 export type OpenTarget =
@@ -39,7 +40,7 @@ const T = {
 };
 
 export type OpenAppTextKey = keyof typeof T.ko;
-const TL = dicts(T.ko, T.en, { ja: JA_OPEN_APP, pt: PT_OPEN_APP, fr: FR_OPEN_APP });
+const TL = dicts(T.ko, T.en, { ja: JA_OPEN_APP, pt: PT_OPEN_APP, fr: FR_OPEN_APP, it: IT_OPEN_APP });
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (m, k: string) => v[k] ?? m);
 
 /**

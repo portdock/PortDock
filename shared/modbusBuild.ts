@@ -5,6 +5,7 @@ import { dicts, type Lang } from "./lang.ts";
 import { JA_MB_BUILD } from "./ja/modbus.ts";
 import { PT_MB_BUILD } from "./pt/modbus.ts";
 import { FR_MB_BUILD } from "./fr/modbus.ts";
+import { IT_MB_BUILD } from "./it/modbus.ts";
 /** 화면 언어 — 이 글은 한국어·영어 두 판(다른 언어는 영어) */
 export type MbLang = Lang;
 /** 0 기준 주소(0~65535) 또는 PLC 식 표기(00001·10001·30001·40001) */
@@ -117,7 +118,7 @@ const M = {
 
 export type MbBuildTextKey = keyof typeof M.ko;
 export type MbBuildText = (typeof M)["ko"];
-const ML = dicts(M.ko, M.en, { ja: JA_MB_BUILD, pt: PT_MB_BUILD, fr: FR_MB_BUILD });
+const ML = dicts(M.ko, M.en, { ja: JA_MB_BUILD, pt: PT_MB_BUILD, fr: FR_MB_BUILD, it: IT_MB_BUILD });
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 
