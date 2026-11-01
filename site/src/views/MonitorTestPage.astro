@@ -7,32 +7,37 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/monitor-test/";
 // 전체 화면에서 차례로 보일 화면 — [이름, CSS 배경]
+const SCREEN_NAME = lang === "ko" ? ["검정", "흰색", "빨강", "초록", "파랑", "회색 25 %", "회색 50 %", "회색 75 %", "회색 그라데이션", "RGB 그라데이션"] : lang === "en" ? ["Black", "White", "Red", "Green", "Blue", "Gray 25%", "Gray 50%", "Gray 75%", "Gray gradient", "RGB gradients"] : page3(lang, "monitorTest").screens;
 const SCREENS: [string, string][] = [
-  [ko ? "검정" : "Black", "#000000"],
-  [ko ? "흰색" : "White", "#ffffff"],
-  [ko ? "빨강" : "Red", "#ff0000"],
-  [ko ? "초록" : "Green", "#00ff00"],
-  [ko ? "파랑" : "Blue", "#0000ff"],
-  [ko ? "회색 25 %" : "Gray 25%", "#404040"],
-  [ko ? "회색 50 %" : "Gray 50%", "#808080"],
-  [ko ? "회색 75 %" : "Gray 75%", "#bfbfbf"],
-  [ko ? "회색 그라데이션" : "Gray gradient", "linear-gradient(90deg,#000,#fff)"],
-  [ko ? "RGB 그라데이션" : "RGB gradients", "linear-gradient(90deg,#000,#f00) 0 0/100% 33.4% no-repeat,linear-gradient(90deg,#000,#0f0) 0 50%/100% 33.4% no-repeat,linear-gradient(90deg,#000,#00f) 0 100%/100% 33.4% no-repeat"],
+  [SCREEN_NAME[0], "#000000"],
+  [SCREEN_NAME[1], "#ffffff"],
+  [SCREEN_NAME[2], "#ff0000"],
+  [SCREEN_NAME[3], "#00ff00"],
+  [SCREEN_NAME[4], "#0000ff"],
+  [SCREEN_NAME[5], "#404040"],
+  [SCREEN_NAME[6], "#808080"],
+  [SCREEN_NAME[7], "#bfbfbf"],
+  [SCREEN_NAME[8], "linear-gradient(90deg,#000,#fff)"],
+  [SCREEN_NAME[9], "linear-gradient(90deg,#000,#f00) 0 0/100% 33.4% no-repeat,linear-gradient(90deg,#000,#0f0) 0 50%/100% 33.4% no-repeat,linear-gradient(90deg,#000,#00f) 0 100%/100% 33.4% no-repeat"],
 ];
-const L = ko
+const MORE_LINKS = ["tools/webcam-test/", "tools/mouse-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "모니터 불량화소·주사율 테스트",
+      seo: "불량화소 테스트 — 모니터 단색 화면·주사율 확인 — PortDock",
       desc: "전체 화면 단색(검정·흰색·빨강·초록·파랑·회색)으로 불량화소를 찾고, 그라데이션 밴딩, 주사율 추정, 잔상용 움직이는 막대를 봅니다. 설치 없이 브라우저에서.",
       full: "전체 화면 색 보기",
       fullHint: "클릭·스페이스·→ 다음 색 · ← 앞 색 · Esc 나가기",
@@ -59,6 +64,7 @@ const L = ko
       ],
       fieldTitle: "장비 PC 에서도",
       field: "현장 HMI·패널 PC·검사 장비 모니터를 들이거나 바꿀 때, 불량화소와 밝기 얼룩을 설치 전에 살펴볼 때도 씁니다. 판단 기준(허용 불량화소 수)은 제조사 보증 조건을 보세요.",
+      more: [" 카메라·입력 장치는 ", "웹캠 테스트", "·", "마우스 더블클릭 테스트", " 에서 봅니다."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["불량화소가 몇 개면 교환되나요?", "제조사·제품마다 다릅니다(무결점 보증 제품도 있고, 개수·위치 기준을 두는 곳도 있습니다). 이 쪽에서 찾은 위치를 사진으로 남기고 보증 조건을 확인하세요."],
@@ -66,8 +72,10 @@ const L = ko
         ["전체 화면이 안 됩니다", "아이폰 Safari 처럼 전체 화면 API 가 없는 브라우저에서는 화면을 덮는 칸으로 대신합니다. 주소창이 보이면 화면을 가로로 돌리거나 스크롤해 숨기세요."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Dead Pixel & Refresh Rate Test",
+      seo: "Dead Pixel Test & Refresh Rate Check Online — PortDock",
       desc: "Find dead or stuck pixels with full-screen black, white, red, green, blue and gray, check gradient banding, estimate refresh rate and watch a ghosting bar.",
       full: "Full-screen colors",
       fullHint: "Click, Space or → next · ← previous · Esc exit",
@@ -94,13 +102,18 @@ const L = ko
       ],
       fieldTitle: "On equipment PCs too",
       field: "Use it when receiving or replacing HMI, panel PC or inspection monitors to check pixels and uniformity before installation. For how many defects are acceptable, see the manufacturer's warranty terms.",
+      more: [" For cameras and input devices, see the ", "webcam test", " and the ", "mouse double click test", "."],
       faqTitle: "FAQ",
       faq: [
         ["How many dead pixels qualify for a replacement?", "It varies by maker and product (some promise zero defects, others set counts and positions). Photograph what you find here and check the warranty terms."],
         ["The refresh rate differs from my monitor setting", "First check Settings → Display → Advanced display in Windows. This is a browser estimate, so several monitors, variable refresh or power saving can change it. Keep the tab in front without moving the mouse for a few seconds and it settles."],
         ["Full screen does not work", "Browsers without the Fullscreen API (such as Safari on iPhone) get a page-covering layer instead. If the address bar shows, rotate to landscape or scroll to hide it."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "monitorTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -109,11 +122,11 @@ const ld = {
 const msgs = JSON.stringify({ motionStart: L.motionStart, motionStop: L.motionStop, perFrame: L.perFrame, fullHint: L.fullHint });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "불량화소 테스트 — 모니터 단색 화면·주사율 확인 — PortDock" : "Dead Pixel Test & Refresh Rate Check Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["inputTiming"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -157,7 +170,7 @@ const msgs = JSON.stringify({ motionStart: L.motionStart, motionStop: L.motionSt
       <ol>{L.steps.map((s) => <li>{s}</li>)}</ol>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "카메라·입력 장치는" : "For cameras and input devices, see the"} <a href={url(lang, "tools/webcam-test/")}>{ko ? "웹캠 테스트" : "webcam test"}</a>{ko ? "·" : " and the "}<a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

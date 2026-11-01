@@ -7,20 +7,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { BUGCHECKS, codeText, msUrl, MS_LIST_URL, MS_USER_URL } from "../lib/bsod";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import { tx } from "../lib/tr";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/bsod-codes/";
 const SAMPLE_1001 =
   "The computer has rebooted from a bugcheck.  The bugcheck was: 0x00000133 (0x0000000000000001, 0x0000000000001e00, 0xfffff80000000000, 0x0000000000000000). A dump was saved in: C:\\WINDOWS\\MEMORY.DMP.";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "블루스크린 정지 코드 사전",
+      seo: "블루스크린 코드 사전 — 정지 코드 뜻·원인 후보 — PortDock",
       desc: "0xD1·0x133·0x124 같은 블루스크린 코드나 이름, 이벤트 1001 메시지를 붙여 넣으면 뜻·원인 후보·볼 순서·Microsoft 문서를 보여 줍니다.",
       input: "정지 코드·이름·이벤트 1001 메시지",
       ph: "예: 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · 이벤트 1001 메시지 전체",
@@ -73,8 +76,10 @@ const L = ko
         from: { "bugcheck-message": "이벤트 1001 메시지에서 찾음", keyword: "글 속의 코드 줄에서 찾음", hex: "코드로 찾음", name: "이름으로 찾음", none: "" },
       },
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Blue Screen (BSOD) Stop Code Lookup",
+      seo: "BSOD Stop Code Lookup: Meaning & Likely Causes — PortDock",
       desc: "Paste a blue screen stop code (0xD1, 0x133, 0x124 …), its name or an Event 1001 message to see its meaning, likely causes, what to check and the Microsoft page.",
       input: "Stop code, name or Event 1001 message",
       ph: "e.g. 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · a whole Event 1001 message",
@@ -125,7 +130,8 @@ const L = ko
         doc: "Microsoft page (for developers)",
         from: { "bugcheck-message": "found in an Event 1001 message", keyword: "found on a code line in the text", hex: "found by code", name: "found by name", none: "" },
       },
-    };
+    }
+  : page3(lang, "bsodCodes");
 const EXAMPLES = ["0xD1", "WHEA_UNCORRECTABLE_ERROR", "Stop code: DPC WATCHDOG VIOLATION\nWhat failed: storahci.sys", SAMPLE_1001];
 const sorted = [...BUGCHECKS].sort((a, b) => (a.code >>> 0) - (b.code >>> 0));
 const ld = {
@@ -135,11 +141,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "블루스크린 코드 사전 — 정지 코드 뜻·원인 후보 — PortDock" : "BSOD Stop Code Lookup: Meaning & Likely Causes — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["bsod"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -182,7 +188,7 @@ const ld = {
                 <tr id={`c-${(b.code >>> 0).toString(16)}`}>
                   <td class="mono">{codeText(b.code)}</td>
                   <td class="mono bs-name">{b.name}</td>
-                  <td>{b.meaning[lang]}</td>
+                  <td>{tx(b.meaning, lang)}</td>
                   <td>
                     <a href={msUrl(b)} rel="noopener">{L.doc}</a>
                   </td>
@@ -194,7 +200,7 @@ const ld = {
       </div>
       <h2>{L.appTitle}</h2>
       <p>
-        {L.app1} <a href={url(lang, "port-inspector/")}>PortDock Port Inspector</a> {L.app2}
+        {L.app1} <a href={link(lang, "port-inspector/")}>PortDock Port Inspector</a> {L.app2}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -280,9 +286,10 @@ const ld = {
     }
   </style>
   <script>
-    import { findBugcheck, STEPS, codeText, msUrl, MS_LIST_URL, type BugCheck, type FindResult } from "../lib/bsod";
+    import { findBugcheck, STEPS, codeText, msUrl, MS_LIST_URL, causesOf, type BugCheck, type FindResult } from "../lib/bsod";
+    import { tx, type Lang } from "../lib/tr";
     const form = document.getElementById("bs") as HTMLFormElement;
-    const lang = (form.dataset.lang ?? "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "ko") as Lang;
     const M = JSON.parse(form.dataset.msg ?? "{}");
     const q = document.getElementById("q") as HTMLTextAreaElement;
     const out = document.getElementById("out")!;
@@ -309,9 +316,9 @@ const ld = {
       h.append(el("b", "mono", codeText(r.code ?? b.code)), el("b", "mono", b.name));
       out.append(h);
       if (r.how !== "none") out.append(el("p", "note bs-from", M.from[r.how] + (r.variant ? " · " + M.variant : "")));
-      out.append(el("h3", "", M.meaning), el("p", "", b.meaning[lang]));
-      out.append(el("h3", "", M.causes), list("ul", b.causes[lang]));
-      out.append(el("h3", "", M.steps), list("ol", b.steps.map((s) => STEPS[s][lang])));
+      out.append(el("h3", "", M.meaning), el("p", "", tx(b.meaning, lang)));
+      out.append(el("h3", "", M.causes), list("ul", causesOf(b, lang)));
+      out.append(el("h3", "", M.steps), list("ol", b.steps.map((s) => tx(STEPS[s], lang))));
       const p = el("p");
       p.append(link(msUrl(b), M.doc + " — bug-check-" + b.slug));
       out.append(p);

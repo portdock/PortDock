@@ -21,9 +21,10 @@ import es2 from "./es/batch2.ts";
 import pt2 from "./pt/batch2.ts";
 import tr2 from "./tr/batch2.ts";
 import vi2 from "./vi/batch2.ts";
+import ja3 from "./ja/batch3.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
-import type { Page2Id } from "./scope.ts";
+import type { Page2Id, Page3Id } from "./scope.ts";
 
 /** 1차 묶음 사전(모든 추가 언어) */
 export type Dict = typeof ja;
@@ -35,11 +36,22 @@ export interface Batch2Part {
   lib: Partial<Batch2["lib"]>;
   pages: Partial<Batch2["pages"]>;
 }
-export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"];
+/** 3차 묶음 사전(i18n/<언어>/batch3.ts) — 기준판 ja 의 모양 */
+export type Batch3 = typeof ja3;
+/** 3차 묶음도 쪽 단위로 일부만 있어도 된다. hwPrivacy 는 하드웨어 테스트 쪽(마이크·키보드·웹캠·스피커·마우스·게임패드·모니터)이 함께 쓰는 개인정보 줄 */
+export interface Batch3Part {
+  webTools: Partial<Batch3["webTools"]>;
+  lib: Partial<Batch3["lib"]>;
+  pages: Partial<Batch3["pages"]>;
+  hwPrivacy?: Batch3["hwPrivacy"];
+}
+export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"] | keyof Batch3["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
 /** 2차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS2: Partial<Record<ExtraLang, Batch2Part>> = { ja: ja2, id: id2, fr: fr2, it: it2, de: de2, pl: pl2, es: es2, pt: pt2, tr: tr2, vi: vi2 };
+/** 3차 묶음을 (일부라도) 옮긴 언어 */
+export const DICTS3: Partial<Record<ExtraLang, Batch3Part>> = { ja: ja3 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
@@ -51,7 +63,25 @@ export function page2<K extends Page2Id>(lang: ExtraLang, id: K): Batch2["pages"
   return p as Batch2["pages"][K];
 }
 
-const libOf = (lang: ExtraLang): Record<string, Catalog> => ({ ...(DICTS2[lang]?.lib as Record<string, Catalog> | undefined), ...(DICTS[lang].lib as Record<string, Catalog>) });
+/** 3차 묶음 쪽 글 — page2 와 같음 */
+export function page3<K extends Page3Id>(lang: ExtraLang, id: K): Batch3["pages"][K] {
+  const p = DICTS3[lang]?.pages[id];
+  if (!p) throw new Error(`${lang}: 3차 묶음 쪽 글 없음 — ${id}`);
+  return p as Batch3["pages"][K];
+}
+
+/** 3차 묶음 하드웨어 테스트 쪽의 개인정보 줄(components/HwPrivacy.astro) */
+export function hwPrivacy(lang: ExtraLang): Batch3["hwPrivacy"] {
+  const p = DICTS3[lang]?.hwPrivacy;
+  if (!p) throw new Error(`${lang}: 3차 묶음 hwPrivacy 없음`);
+  return p;
+}
+
+const libOf = (lang: ExtraLang): Record<string, Catalog> => ({
+  ...(DICTS3[lang]?.lib as Record<string, Catalog> | undefined),
+  ...(DICTS2[lang]?.lib as Record<string, Catalog> | undefined),
+  ...(DICTS[lang].lib as Record<string, Catalog>),
+});
 
 /** 계산 라이브러리 문구 표(고른 묶음만) — 쪽에 넣어 브라우저 스크립트가 쓴다 */
 export const libCatalog = (lang: ExtraLang, sections: readonly LibSection[]): Catalog => {

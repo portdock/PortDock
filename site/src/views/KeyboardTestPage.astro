@@ -8,22 +8,28 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { tx } from "../lib/tr";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import { LAYOUTS } from "../lib/keyboardLayout";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/keyboard-test/";
-const L = ko
+const MORE_LINKS = ["tools/mouse-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "키보드 테스트 (채터링·동시 입력)",
+      seo: "키보드 테스트 — 채터링·동시 입력(롤오버) 확인 — PortDock",
       desc: "누른 키를 한국어 106·ANSI·ISO 배열에 표시하고 동시 입력 수, 키별 횟수, 채터링 의심(ms), 누름 시간을 봅니다. 브라우저가 못 받는 키도 안내합니다.",
       mobile: "휴대폰·태블릿의 화면 키보드는 키 위치(code)를 알려 주지 않아 이 시험에 맞지 않습니다. 컴퓨터에 키보드를 꽂고 여세요(블루투스·USB 키보드를 태블릿에 연결한 경우는 됩니다).",
+      kbAria: "화면 키보드",
       layout: "배열",
       thr: "채터링 임계값",
       grab: "키 입력 가로채기",
@@ -69,6 +75,7 @@ const L = ko
       ] as [string, string][],
       fieldTitle: "장비 PC 에서도",
       field: "설치가 막힌 현장 PC·산업용 패널 PC 의 키보드, 바코드 스캐너처럼 키보드로 들어오는 장치가 어떤 키를 얼마나 빨리 보내는지 볼 때도 쓸 수 있습니다(스캐너는 자동 입력이라 «채터링 의심» 이 붙을 수 있습니다).",
+      more: [" 마우스 버튼 채터링은 ", "마우스 더블클릭 테스트", " 에서 봅니다."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["키를 한 번 눌렀는데 두 글자가 입력됩니다", "기록에서 그 키의 «누름» 이 두 번 나오고 간격이 수 ms~수십 ms 면 스위치 채터링을 의심할 수 있습니다. 키캡을 빼고 먼지를 털거나, 교체형 스위치라면 바꿔 보고 다시 시험하세요."],
@@ -76,10 +83,13 @@ const L = ko
         ["입력한 키가 어딘가로 전송되나요?", "아니요. 이 도구의 코드는 네트워크 요청을 하지 않으며, 누른 키는 이 브라우저 탭 안에서만 셉니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Keyboard Tester (Chatter & Rollover)",
+      seo: "Keyboard Tester: Key Chatter & Rollover Test Online — PortDock",
       desc: "Pressed keys on a Korean 106, ANSI or ISO layout with rollover count, presses per key, chatter suspects in ms and hold time, plus keys browsers cannot see.",
       mobile: "On-screen keyboards on phones and tablets do not report key positions (code), so this test does not fit them. Open it on a computer with a keyboard (a USB or Bluetooth keyboard on a tablet works).",
+      kbAria: "On-screen keyboard",
       layout: "Layout",
       thr: "Chatter threshold",
       grab: "Capture keys",
@@ -125,13 +135,18 @@ const L = ko
       ] as [string, string][],
       fieldTitle: "On equipment PCs too",
       field: "It also helps on shop-floor and panel PCs where installing software is blocked, and with keyboard-wedge devices such as barcode scanners to see which keys they send and how fast (scanners type automatically, so they can trigger chatter suspects).",
+      more: [" For mouse button chatter, use the ", "mouse double click test", "."],
       faqTitle: "FAQ",
       faq: [
         ["One press types two characters", "If the log shows two «down» rows for that key a few to a few tens of milliseconds apart, switch chatter is a likely suspect. Remove the keycap and clean it, or swap a hot-swap switch, and test again."],
         ["Some keys do not light up when I press several together", "That is the keyboard's rollover limit or anti-ghosting range. Office keyboards often manage 2–3 keys in some combinations, and the basic USB mode allows six regular keys. This page counts exactly what the keyboard sends."],
         ["Are my keystrokes sent anywhere?", "No. This tool's code makes no network requests, and keys are counted only inside this browser tab."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "keyboardTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -140,11 +155,11 @@ const ld = {
 const msgs = JSON.stringify({ evDown: L.evDown, evUp: L.evUp, evUpOnly: L.evUpOnly, sFast: L.sFast, sBounce: L.sBounce, blur: L.blur });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "키보드 테스트 — 채터링·동시 입력(롤오버) 확인 — PortDock" : "Keyboard Tester: Key Chatter & Rollover Test Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["keyboardLayout", "inputTiming"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -155,7 +170,7 @@ const msgs = JSON.stringify({ evDown: L.evDown, evUp: L.evUp, evUpOnly: L.evUpOn
       <p class="note kt-mobile">{L.mobile}</p>
       <div class="hw-bar">
         <label class="inl">{L.layout}
-          <select id="layout">{LAYOUTS.map((l) => <option value={l.id}>{l[lang]}</option>)}</select>
+          <select id="layout">{LAYOUTS.map((l) => <option value={l.id}>{tx(l, lang)}</option>)}</select>
         </label>
         <label class="inl">{L.thr} <input type="number" id="thr" value="30" min="1" max="500" step="1" style="width:5em" /> ms</label>
         <label class="inl"><input type="checkbox" id="grab" checked /> {L.grab}</label>
@@ -172,7 +187,7 @@ const msgs = JSON.stringify({ evDown: L.evDown, evUp: L.evUp, evUpOnly: L.evUpOn
         <div class="hw-stat"><b id="vHold">–</b><span>{L.hold}</span></div>
       </div>
       <div class="kb-scroll" tabindex="0" id="kbFocus">
-        <div class="kb" id="kb" aria-label={ko ? "화면 키보드" : "On-screen keyboard"}></div>
+        <div class="kb" id="kb" aria-label={L.kbAria}></div>
       </div>
       <p class="note" style="margin:0">{L.gray}</p>
       <div class="hw-bar"><b style="font-size:14px">{L.others}:</b> <span id="others" class="mono note">–</span></div>
@@ -196,7 +211,7 @@ const msgs = JSON.stringify({ evDown: L.evDown, evUp: L.evUp, evUpOnly: L.evUpOn
       <ul>{L.block.map(([k, v]) => <li><b>{k}</b> — {v}</li>)}</ul>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "마우스 버튼 채터링은" : "For mouse button chatter, use the"} <a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

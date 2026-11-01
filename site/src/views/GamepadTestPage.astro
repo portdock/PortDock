@@ -8,19 +8,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import HwPrivacy from "../components/HwPrivacy.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page3 } from "../i18n";
+import { weave } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 import "../styles/hw.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/gamepad-test/";
-const L = ko
+const MORE_LINKS = ["tools/keyboard-test/", "tools/mouse-test/"];
+const L =
+  lang === "ko"
   ? {
       title: "게임패드 테스트 (스틱 쏠림·데드존)",
+      seo: "게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인 — PortDock",
       desc: "게임패드 버튼·트리거·축 값을 실시간으로 보고, 스틱을 놓았을 때의 쏠림(드리프트) 수치와 궤적, 데드존을 적용한 결과, 진동을 확인합니다. 설치 없음.",
       wait: "게임패드를 연결하고 아무 버튼이나 한 번 누르세요. 브라우저는 버튼이 눌리기 전에는 게임패드를 페이지에 보여 주지 않습니다.",
       noApi: "이 브라우저에서는 Gamepad API 를 쓸 수 없습니다. https 주소로, 최신 Chrome·Edge·Firefox·Safari 에서 여세요.",
@@ -59,6 +63,7 @@ const L = ko
       ],
       fieldTitle: "장비 PC 에서도",
       field: "로봇·카메라 짐벌·시험 장비를 게임패드로 조그하는 현장에서, 패드의 축 방향·데드존이 장비 설정과 맞는지 미리 볼 때도 씁니다.",
+      more: [" 키보드·마우스는 ", "키보드 테스트", "·", "마우스 더블클릭 테스트", " 에서 봅니다."],
       faqTitle: "자주 묻는 것",
       faq: [
         ["연결했는데 아무것도 안 나옵니다", "버튼을 한 번 눌러 보세요. 그래도 안 나오면 윈도우 «게임 컨트롤러 설정»(joy.cpl)에 보이는지, 다른 USB 포트·케이블을 써 보세요. 일부 패드는 X-input/D-input 전환 스위치가 있습니다."],
@@ -66,8 +71,10 @@ const L = ko
         ["게임패드 정보가 어디로 전송되나요?", "아니요. 값은 이 브라우저 탭 안에서만 그리고, 이 도구의 코드는 네트워크 요청을 하지 않습니다."],
       ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Gamepad Tester (Stick Drift & Dead Zone)",
+      seo: "Gamepad Tester: Stick Drift & Dead Zone Test Online — PortDock",
       desc: "See gamepad buttons, triggers and axes live, measure stick drift at rest with a trace, preview a dead zone and try rumble. Nothing to install.",
       wait: "Connect a gamepad and press any button once. Browsers do not expose a gamepad to the page until a button is pressed.",
       noApi: "The Gamepad API is not available in this browser. Open the page over https in a current Chrome, Edge, Firefox or Safari.",
@@ -106,13 +113,18 @@ const L = ko
       ],
       fieldTitle: "On equipment PCs too",
       field: "Where robots, camera gimbals or test rigs are jogged with a gamepad, use it to check axis directions and dead zone against the machine settings beforehand.",
+      more: [" For keyboards and mice, see the ", "keyboard tester", " and ", "mouse double click test", "."],
       faqTitle: "FAQ",
       faq: [
         ["I connected it but nothing appears", "Press a button once. If it still does not appear, check whether Windows «Game controllers» (joy.cpl) sees it and try another USB port or cable. Some pads have an X-input/D-input switch."],
         ["The stick is not 0 when released", "Small values are common. Measure with «Measure drift» and set the game's dead zone a little larger. Above 0.1, or if it keeps growing, check the stick hardware."],
         ["Is my gamepad data sent anywhere?", "No. Values are drawn inside this browser tab only, and this tool's code makes no network requests."],
       ] as [string, string][],
-    };
+    }
+  : (() => {
+      const d = page3(lang, "gamepadTest");
+      return { ...d, more: weave(lang, d.more, MORE_LINKS) };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -121,11 +133,11 @@ const ld = {
 const msgs = JSON.stringify({ lang, left: L.left, right: L.right, dRes: L.dRes, dMean: L.dMean, dDz: L.dDz, rumble: L.rumble, rumbleNo: L.rumbleNo, btn: L.btn, axes: L.axes, mapping: L.mapping, std: L.std, nonStd: L.nonStd, measuring: L.measuring, drift: L.drift });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "게임패드 테스트 — 스틱 쏠림(드리프트)·데드존 확인 — PortDock" : "Gamepad Tester: Stick Drift & Dead Zone Test Online — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["hwSignal"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -153,7 +165,7 @@ const msgs = JSON.stringify({ lang, left: L.left, right: L.right, dRes: L.dRes, 
       <ul>{L.limit.map((s) => <li>{s}</li>)}</ul>
       <h2>{L.fieldTitle}</h2>
       <p>
-        {L.field} {ko ? "키보드·마우스는" : "For keyboards and mice, see the"} <a href={url(lang, "tools/keyboard-test/")}>{ko ? "키보드 테스트" : "keyboard tester"}</a>{ko ? "·" : " and "}<a href={url(lang, "tools/mouse-test/")}>{ko ? "마우스 더블클릭 테스트" : "mouse double click test"}</a>{ko ? " 에서 봅니다." : "."}
+        {L.field}{L.more[0]}<a href={link(lang, MORE_LINKS[0])}>{L.more[1]}</a>{L.more[2]}<a href={link(lang, MORE_LINKS[1])}>{L.more[3]}</a>{L.more[4]}
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -235,10 +247,11 @@ const msgs = JSON.stringify({ lang, left: L.left, right: L.right, dRes: L.dRes, 
   </style>
   <script>
     import { driftSummary, radialDeadzone, STANDARD_BUTTONS } from "../lib/hwSignal";
+    import { tx, type Lang } from "../lib/tr";
 
     const root = document.getElementById("gp")!;
     const M = JSON.parse(root.dataset.msg ?? "{}") as Record<string, string>;
-    const lang = M.lang === "en" ? "en" : "ko";
+    const lang = (M.lang || "ko") as Lang;
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const padsEl = $("pads");
     const dzIn = $<HTMLInputElement>("dz");
@@ -316,7 +329,7 @@ const msgs = JSON.stringify({ lang, left: L.left, right: L.right, dRes: L.dRes, 
       const btns = gp.buttons.map((_, i) => {
         const b = document.createElement("div");
         b.className = "b";
-        b.textContent = gp.mapping === "standard" && STANDARD_BUTTONS[i] ? `${i} ${STANDARD_BUTTONS[i][lang]}` : `${M.btn} ${i}`;
+        b.textContent = gp.mapping === "standard" && STANDARD_BUTTONS[i] ? `${i} ${tx(STANDARD_BUTTONS[i], lang)}` : `${M.btn} ${i}`;
         b.append(document.createElement("i"));
         btnsEl.append(b);
         return b;

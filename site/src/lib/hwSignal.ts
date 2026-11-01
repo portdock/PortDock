@@ -6,6 +6,8 @@
 //   - 데드존: 원형(radial) 데드존 — 반지름 dz 안은 0, 밖은 (r − dz)/(1 − dz) 로 다시 늘인다.
 //   - getUserMedia 오류 이름: Media Capture and Streams 명세(NotAllowedError·NotFoundError·NotReadableError·OverconstrainedError).
 
+import { msg, type Lang } from "./tr.ts";
+
 /** 로그 스윕에서 시각 t(초)의 주파수 */
 export function sweepFreqAt(f0: number, f1: number, dur: number, t: number): number {
   if (!(f0 > 0 && f1 > 0 && dur > 0)) throw new RangeError("sweep");
@@ -154,13 +156,17 @@ export const clipped = (peak: number) => peak >= 0.999;
  * 출력 채널 이름 — Web Audio 명세의 «speakers» 배치: 2채널 L·R, 6채널(5.1) L·R·C·LFE·SL·SR.
  * 8채널(7.1)의 5번부터 순서는 명세가 정하지 않아(드라이버·브라우저마다 다름) 번호만 붙인다.
  */
-export function channelLabel(i: number, n: number, lang: "ko" | "en"): string {
-  const ko = lang === "ko";
-  const two = ko ? ["왼쪽(L)", "오른쪽(R)"] : ["Left (L)", "Right (R)"];
-  const six = ko
-    ? ["앞 왼쪽(L)", "앞 오른쪽(R)", "가운데(C)", "우퍼(LFE)", "뒤 왼쪽(SL)", "뒤 오른쪽(SR)"]
-    : ["Front left (L)", "Front right (R)", "Center (C)", "Subwoofer (LFE)", "Surround left (SL)", "Surround right (SR)"];
+export function channelLabel(i: number, n: number, lang: Lang): string {
+  const two = [msg(lang, "왼쪽(L)", "Left (L)"), msg(lang, "오른쪽(R)", "Right (R)")];
+  const six = [
+    msg(lang, "앞 왼쪽(L)", "Front left (L)"),
+    msg(lang, "앞 오른쪽(R)", "Front right (R)"),
+    msg(lang, "가운데(C)", "Center (C)"),
+    msg(lang, "우퍼(LFE)", "Subwoofer (LFE)"),
+    msg(lang, "뒤 왼쪽(SL)", "Surround left (SL)"),
+    msg(lang, "뒤 오른쪽(SR)", "Surround right (SR)"),
+  ];
   if (n <= 2 && i < 2) return two[i];
   if (n >= 6 && i < (n === 6 ? 6 : 4)) return six[i];
-  return ko ? `채널 ${i + 1}` : `Channel ${i + 1}`;
+  return msg(lang, `채널 ${i + 1}`, `Channel ${i + 1}`);
 }
