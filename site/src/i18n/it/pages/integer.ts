@@ -1,0 +1,42 @@
+// 정수·진수 변환기(views/IntegerPage.astro) — 4차 묶음
+// Termini: complemento a due, con segno / senza segno, byte più significativo, codice Gray
+export default {
+  title: "Convertitore di interi e basi numeriche",
+  seo: "Hex ↔ decimale: con segno, complemento a due, BCD — PortDock",
+  desc: "Convertite hex, decimale e binario a 8, 16 o 32 bit: con segno (complemento a due), BCD, codice Gray e ordine dei byte dei registri Modbus (ABCD, CDAB…).",
+  width: "Bit",
+  mode: "Formato di input",
+  modes: { hex: "Esadecimale", dec: "Decimale (negativo = complemento a due)", bin: "Binario", bcd: "Decimale → BCD" },
+  val: "Valore",
+  res: "Risultati",
+  k: { u: "Decimale senza segno", s: "Decimale con segno (complemento a due)", hex: "Esadecimale", bin: "Binario", bcd: "Letto come BCD", gray: "Binario → codice Gray", ungray: "Codice Gray → binario" },
+  notBcd: "non è BCD (una cifra maggiore di 9)",
+  ordTitle: "Ordine dei byte",
+  ordHead: ["Ordine", "Inviato come", "Se l'input è arrivato in quest'ordine (senza segno / con segno)"],
+  how: "I risultati si aggiornano mentre scrivete. Tutto avviene nel browser; nulla di ciò che scrivete viene inviato.",
+  sTitle: "Complemento a due — quando un numero negativo appare come 65535",
+  s: [
+    "Un registro contiene 16 bit, da 0 a 65535. Un dispositivo che invia un numero negativo imposta il bit più alto; letto come «intero a 16 bit con segno» diventa valore − 65536.",
+    "Per esempio FFFF = 65535 = −1 e FE0C = 65036 = −500. Verificate se il tipo di dato nel manuale è INT16 (con segno) o UINT16 (senza segno).",
+    "I valori a 32 bit funzionano allo stesso modo: valore − 4294967296. Quale registro viene prima si vede nella tabella dell'ordine dei byte.",
+  ],
+  bTitle: "BCD — esadecimale che si legge come decimale",
+  b: [
+    "Il BCD memorizza ogni cifra decimale in 4 bit (0–9). 1234 diventa 0x1234, che in decimale vale 4660. Valori di orologi e contatori e alcune istruzioni dei PLC usano il BCD.",
+    "Un nibble da A a F indica che non è BCD. 16 bit contengono 0–9999, 32 bit 0–99999999.",
+  ],
+  gTitle: "Codice Gray",
+  g: "Codice in cui valori vicini differiscono di un solo bit (g = b XOR (b ≫ 1)). 0–7 diventano 000, 001, 011, 010, 110, 111, 101, 100. Gli encoder assoluti lo usano come formato di uscita; se il manuale dell'encoder indica un'uscita in codice Gray, usate il valore «Codice Gray → binario» come posizione.",
+  oTitle: "Come leggere la tabella dell'ordine dei byte",
+  o: "«Inviato come» mostra i byte quando questo valore è inviato in quell'ordine. A è il byte più significativo. All'interno di un registro Modbus il byte alto viene prima (specifica §4.2), ma l'ordine dei due registri di un valore a 32 bit dipende dal dispositivo. Inserite i byte ricevuti in esadecimale e cercate nella colonna «se l'input è arrivato in quest'ordine» la riga che corrisponde all'esempio del manuale: quello è l'ordine del dispositivo.",
+  faqTitle: "Domande frequenti",
+  faq: [
+    ["Quanto vale FFFF esadecimale in decimale?", "65535 come 16 bit senza segno, −1 come 16 bit con segno (complemento a due). Dipende dal tipo di dato del dispositivo."],
+    ["Come si converte un numero negativo in esadecimale?", "Impostate il formato di input su «Decimale» e scrivete per esempio −500: si ottiene l'esadecimale in complemento a due per la larghezza scelta (FE0C a 16 bit)."],
+    ["In che cosa il BCD differisce dall'esadecimale?", "L'esadecimale scrive il valore in base 16; il BCD memorizza ogni cifra decimale in 4 bit. Il valore 1234 è 04D2 in esadecimale e 1234 (0x1234) in BCD."],
+    ["E i numeri in virgola mobile?", "Per i valori IEEE 754 a 32 e 64 bit, il convertitore float Modbus mostra tutti e quattro gli ordini dei byte."],
+  ],
+  srcTitle: "Fonti",
+  fNote: "Per leggere due o quattro registri come float32 o float64, usate il",
+  fEnd: ".",
+};
