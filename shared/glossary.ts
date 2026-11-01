@@ -8,6 +8,9 @@ import { JA_TERMS } from "./ja/glossary.ts";
 import { PT_TERMS } from "./pt/glossary.ts";
 import { FR_TERMS } from "./fr/glossary.ts";
 import { IT_TERMS } from "./it/glossary.ts";
+import { ID_TERMS } from "./id/glossary.ts";
+import { VI_TERMS } from "./vi/glossary.ts";
+import { TR_TERMS } from "./tr/glossary.ts";
 
 /** 낱말 하나 — [이름, 설명] 한·영 */
 interface Term {
@@ -145,9 +148,9 @@ export const TERMS = {
 export type TermId = keyof typeof TERMS;
 
 /** 추가 언어 낱말([이름, 설명]) — 없으면 영어 */
-const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS, pt: PT_TERMS, fr: FR_TERMS, it: IT_TERMS };
+const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS, pt: PT_TERMS, fr: FR_TERMS, vi: VI_TERMS, tr: TR_TERMS, it: IT_TERMS, id: ID_TERMS };
 /** «용어» 절 제목 — 추가 언어 */
-const TITLE: Partial<Record<Lang, string>> = { ja: "用語", pt: "Termos", fr: "Termes", it: "Termini" };
+const TITLE: Partial<Record<Lang, string>> = { ja: "用語", pt: "Termos", fr: "Termes", vi: "Thuật ngữ", tr: "Terimler", it: "Termini", id: "Istilah" };
 
 /** 낱말 하나 [이름, 설명] — 화면 언어로 */
 export const term = (id: TermId, lang: Lang): [string, string] => MORE[lang]?.[id] ?? TERMS[id][baseLang(lang)];

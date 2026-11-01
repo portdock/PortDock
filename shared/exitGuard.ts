@@ -6,6 +6,9 @@ import { JA_EXIT } from "./ja/dialogs.ts";
 import { PT_EXIT } from "./pt/dialogs.ts";
 import { FR_EXIT } from "./fr/dialogs.ts";
 import { IT_EXIT } from "./it/dialogs.ts";
+import { ID_EXIT } from "./id/dialogs.ts";
+import { VI_EXIT } from "./vi/dialogs.ts";
+import { TR_EXIT } from "./tr/dialogs.ts";
 import { useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
@@ -15,7 +18,7 @@ const MSG = {
   ko: "연결 중이거나 파일에 기록하는 중입니다. 닫으면 연결이 끊기고 기록이 멈춥니다. 닫을까요?",
   en: "A connection or file log is active. Closing will disconnect and stop logging. Close anyway?",
 };
-const MSG_L = dicts({ msg: MSG.ko }, { msg: MSG.en }, { ja: { msg: JA_EXIT }, pt: { msg: PT_EXIT }, fr: { msg: FR_EXIT }, it: { msg: IT_EXIT } });
+const MSG_L = dicts({ msg: MSG.ko }, { msg: MSG.en }, { ja: { msg: JA_EXIT }, pt: { msg: PT_EXIT }, fr: { msg: FR_EXIT }, vi: { msg: VI_EXIT }, tr: { msg: TR_EXIT }, it: { msg: IT_EXIT }, id: { msg: ID_EXIT } });
 
 export function useExitGuard(active: boolean, enabled: boolean, lang: Lang, title: string) {
   const cur = useRef({ active, enabled, lang, title });

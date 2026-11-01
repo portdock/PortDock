@@ -342,6 +342,57 @@ for (const l of MORE_LANGS) {
     const text = buildAiCopy({ lang: l, app: "PortDock Serial", log: [] }).text;
     assert.ok(text.includes(ai.situation), text);
   });
+
+  test(`추가 언어 ${l} — 공용 창·Modbus·용어·판정 글 사전이 일본어(기준판) 열쇠를 다 갖고, 자리표시가 같다`, async () => {
+    // 공용 창(dialogs)·Modbus(modbus) — 내보낸 사전마다 일본어 짝과 열쇠·자리표시 비교
+    for (const mod of ["dialogs", "modbus"]) {
+      const ja = await import(`./ja/${mod}.ts`);
+      const mine = await import(`./${l}/${mod}.ts`);
+      for (const [name, jv] of Object.entries(ja)) {
+        const mv = mine[name.replace(/^JA_/, `${U}_`)];
+        assert.ok(mv, `${l}/${mod}: ${name} 짝이 없음`);
+        if (typeof jv === "string") {
+          assert.ok(typeof mv === "string" && mv.trim() !== "", `${l}/${name}: 빈 값`);
+          continue;
+        }
+        for (const [k, v] of Object.entries(jv as Record<string, unknown>)) {
+          assert.ok(k in mv, `${l}/${name}: 일본어에 있는 열쇠 «${k}» 가 없음`);
+          const m = mv[k];
+          if (typeof v === "string") {
+            assert.ok(typeof m === "string" && m.trim() !== "", `${l}/${name}.${k}: 빈 값`);
+            assert.deepEqual(holes(m), holes(v), `${l}/${name}.${k}: 자리표시가 다름`);
+          } else assert.deepEqual(Object.keys(m).sort(), Object.keys(v as object).sort(), `${l}/${name}.${k}`);
+        }
+      }
+    }
+    // 예시 명령 — 앞말이 붙고 예시 이름으로 알아본다
+    const { serialExamples, scpiExamples, isExampleName } = await import("./examples.ts");
+    const { [`${U}_EXAMPLE_PREFIX`]: prefix, [`${U}_EXAMPLES`]: names } = await import(`./${l}/dialogs.ts`);
+    const exs = [...serialExamples("at", l), ...scpiExamples(l)];
+    assert.ok(exs.every((c) => c.name.startsWith(prefix) && isExampleName(c.name)));
+    assert.equal(serialExamples("at", l)[0].name, prefix + names["AT (check reply)"]);
+    // 용어
+    const { term, TERMS } = await import("./glossary.ts");
+    const { JA_TERMS } = await import("./ja/glossary.ts");
+    const terms = (await import(`./${l}/glossary.ts`))[`${U}_TERMS`];
+    for (const id of Object.keys(JA_TERMS)) assert.ok(terms[id]?.[0]?.trim() && terms[id]?.[1]?.trim(), `${l}: 용어 «${id}» 가 없음`);
+    for (const id of Object.keys(TERMS)) assert.deepEqual(term(id, l), terms[id] ?? TERMS[id].en);
+    // 판정 글(txt) — 일본어에 있는 열쇠는 다 있고, 값의 자리표시는 열쇠의 것만, 한글·가나 섞임 없음
+    const { JA_TEXT } = await import("./ja/text.ts");
+    const tx = (await import(`./${l}/text.ts`))[`${U}_TEXT`];
+    for (const k of Object.keys(JA_TEXT)) assert.ok(k in tx, `${l}/text: 열쇠 «${k}» 가 없음`);
+    for (const [k, v] of Object.entries(tx as Record<string, string>)) {
+      assert.ok(k in JA_TEXT, `${l}/text: 일본어에 없는 열쇠 «${k}»`);
+      assert.ok(v.trim(), `${l}/text: 빈 값 ${k}`);
+      const kh = new Set(holes(k));
+      for (const h of holes(v)) assert.ok(kh.has(h), `${l}/text: ${k} → 값에 없는 자리 {${h}}`);
+      assert.ok(!/[가-힣぀-ヿ]/.test(v), `${l}/text: 한글·가나 섞임 ${v}`);
+    }
+    const { txt } = await import("./textLang.ts");
+    const { LEVEL_TEXT } = await import("./portinfo.ts");
+    assert.equal(txt(LEVEL_TEXT.look, l), tx["Worth a look"]);
+    assert.equal(txt({ ko: "x", en: "Problem code 10: Worth a look" }, l), tx["Problem code {a}: {b}"].replace("{a}", "10").replace("{b}", tx["Worth a look"]));
+  });
 }
 
 // 공용 창·용어·Modbus 사전(dialogs·glossary·modbus) — 포르투갈어

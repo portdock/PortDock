@@ -7,6 +7,9 @@ import { JA_MBAP } from "./ja/modbus.ts";
 import { PT_MBAP } from "./pt/modbus.ts";
 import { FR_MBAP } from "./fr/modbus.ts";
 import { IT_MBAP } from "./it/modbus.ts";
+import { ID_MBAP } from "./id/modbus.ts";
+import { VI_MBAP } from "./vi/modbus.ts";
+import { TR_MBAP } from "./tr/modbus.ts";
 
 export interface ModbusInfo {
   slave: number;
@@ -34,7 +37,7 @@ const L = {
 };
 
 export type MbapTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_MBAP, pt: PT_MBAP, fr: FR_MBAP, it: IT_MBAP });
+const LL = dicts(L.ko, L.en, { ja: JA_MBAP, pt: PT_MBAP, fr: FR_MBAP, vi: VI_MBAP, tr: TR_MBAP, it: IT_MBAP, id: ID_MBAP });
 
 export function MbapDetail({ lang, info }: { lang: Lang; info: MbapInfo }) {
   const t = LL[lang];

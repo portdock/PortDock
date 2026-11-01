@@ -20,11 +20,14 @@ import { JA_EXAMPLE_PREFIX, JA_EXAMPLES } from "./ja/dialogs.ts";
 import { PT_EXAMPLE_PREFIX, PT_EXAMPLES } from "./pt/dialogs.ts";
 import { FR_EXAMPLE_PREFIX, FR_EXAMPLES } from "./fr/dialogs.ts";
 import { IT_EXAMPLE_PREFIX, IT_EXAMPLES } from "./it/dialogs.ts";
+import { ID_EXAMPLE_PREFIX, ID_EXAMPLES } from "./id/dialogs.ts";
+import { VI_EXAMPLE_PREFIX, VI_EXAMPLES } from "./vi/dialogs.ts";
+import { TR_EXAMPLE_PREFIX, TR_EXAMPLES } from "./tr/dialogs.ts";
 
 const hex = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 const P = { ko: "예: ", en: "e.g. " };
 // 추가 언어: 이름 앞말과 영어 이름 → 그 언어 이름(없으면 영어). 이름은 아래에서 한국어가 아니면 영어로 넘어온다
-const MORE: Partial<Record<Lang, { prefix: string; names: Record<string, string> }>> = { ja: { prefix: JA_EXAMPLE_PREFIX, names: JA_EXAMPLES }, pt: { prefix: PT_EXAMPLE_PREFIX, names: PT_EXAMPLES }, fr: { prefix: FR_EXAMPLE_PREFIX, names: FR_EXAMPLES }, it: { prefix: IT_EXAMPLE_PREFIX, names: IT_EXAMPLES } };
+const MORE: Partial<Record<Lang, { prefix: string; names: Record<string, string> }>> = { ja: { prefix: JA_EXAMPLE_PREFIX, names: JA_EXAMPLES }, pt: { prefix: PT_EXAMPLE_PREFIX, names: PT_EXAMPLES }, fr: { prefix: FR_EXAMPLE_PREFIX, names: FR_EXAMPLES }, it: { prefix: IT_EXAMPLE_PREFIX, names: IT_EXAMPLES }, tr: { prefix: TR_EXAMPLE_PREFIX, names: TR_EXAMPLES }, vi: { prefix: VI_EXAMPLE_PREFIX, names: VI_EXAMPLES }, id: { prefix: ID_EXAMPLE_PREFIX, names: ID_EXAMPLES } };
 const ex = (lang: Lang, name: string, text: string, mode: "hex" | "ascii", checksum: ChecksumKind | null, suffix: string): ExampleCmd => {
   const m = MORE[lang];
   const label = lang === "ko" ? P.ko + name : m ? m.prefix + (m.names[name] ?? name) : P.en + name;

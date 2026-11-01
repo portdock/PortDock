@@ -10,6 +10,9 @@ import { JA_IFACE } from "./ja/dialogs.ts";
 import { PT_IFACE } from "./pt/dialogs.ts";
 import { FR_IFACE } from "./fr/dialogs.ts";
 import { IT_IFACE } from "./it/dialogs.ts";
+import { ID_IFACE } from "./id/dialogs.ts";
+import { VI_IFACE } from "./vi/dialogs.ts";
+import { TR_IFACE } from "./tr/dialogs.ts";
 
 export interface NetIface {
   name: string;
@@ -50,7 +53,7 @@ const L = {
 };
 
 export type IfaceTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_IFACE, pt: PT_IFACE, fr: FR_IFACE, it: IT_IFACE });
+const LL = dicts(L.ko, L.en, { ja: JA_IFACE, pt: PT_IFACE, fr: FR_IFACE, vi: VI_IFACE, tr: TR_IFACE, it: IT_IFACE, id: ID_IFACE });
 
 export const ifaceText = (lang: Lang, k: keyof (typeof L)["ko"], a = "", b = "") => LL[lang][k].replace("{a}", a).replace("{b}", b);
 
