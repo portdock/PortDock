@@ -1,0 +1,997 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "invt/gd20",
+  "manufacturer": {
+    "ko": "INVT",
+    "en": "INVT"
+  },
+  "model": "GD20",
+  "models": [
+    "Goodrive20"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "INVT Goodrive20(GD20) 인버터 (RS485 Modbus RTU)",
+    "en": "INVT Goodrive20 (GD20) VFD (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "내장 RS485 Modbus RTU/ASCII. 운전 지령 2000H, 주파수 2001H, 상태 2100H, 모니터 3000H~, 파라미터 Pxx.yy = xxyyH.",
+    "en": "Built-in RS485 Modbus RTU/ASCII. Command 2000H, frequency 2001H, status 2100H, monitors from 3000H, parameter Pxx.yy = xxyyH."
+  },
+  "protocols": [
+    "rtu",
+    "ascii"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      1200,
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 16,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 읽기 예 01 03 21 00 00 01 은 2100H(상태 워드 1), 쓰기 예 03 06 20 00 00 01 은 2000H(운전 지령) — 표의 16진 주소가 그대로 프레임 주소 (p.138~140). 파라미터 Pxx.yy 는 xx·yy 를 16진 바이트로 — P05.05 = 0505H, P10.01 = 0A01H (p.131).",
+        "en": "Addressing: read example 01 03 21 00 00 01 reads 2100H (status word 1), write example 03 06 20 00 00 01 writes 2000H (command) — the hex address in the table is the frame address (pp.138-140). Parameter Pxx.yy maps xx and yy to hex bytes: P05.05 = 0505H, P10.01 = 0A01H (p.131)."
+      },
+      {
+        "ko": "출하: P14.00 국번 1, P14.01 = 4(19200 bps), P14.02 = 1(RTU E,8,1) (p.99~100). FC 03·06·10, 한 번에 16워드까지 (p.125~).",
+        "en": "Defaults: P14.00 address 1, P14.01 = 4 (19200 bps), P14.02 = 1 (RTU E,8,1) (pp.99-100). FC 03, 06 and 10, up to 16 words per request (p.125 onward)."
+      },
+      {
+        "ko": "값은 배율 정수(필드버스 비율) — 설정 범위·초기값의 소수 자리로 정한다(소수 1자리면 ×10) (p.135). 파라미터 주소의 상위 바이트를 1 로 바꾸면(예 8007H) EEPROM 이 아닌 RAM 에만 쓴다(쓰기 전용) (p.131~132).",
+        "en": "Values are scaled integers ('fieldbus ratio'), set by the decimals of the setting range or default (one decimal = ×10) (p.135). Setting the high bit of a parameter address (e.g. 8007H) writes RAM only, not EEPROM (write-only) (pp.131-132)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "P00.01 (0001H)",
+      "type": "u16",
+      "name": {
+        "ko": "운전 지령 채널",
+        "en": "Running command channel"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "키패드",
+          "en": "Keypad"
+        },
+        {
+          "value": 1,
+          "ko": "단자",
+          "en": "Terminal"
+        },
+        {
+          "value": 2,
+          "ko": "통신",
+          "en": "Communication"
+        }
+      ],
+      "ref": "p.31~32"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "P00.03 (0003H)",
+      "type": "u16",
+      "name": {
+        "ko": "최대 출력 주파수",
+        "en": "Max. output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "쓰기 예: 100 Hz → 2710H (03 06 00 03 27 10)",
+        "en": "Write example: 100 Hz → 2710H (03 06 00 03 27 10)"
+      },
+      "ref": "p.31~32"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3584,
+      "manualAddress": "P14.00 (0E00H)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 주소(국번)",
+        "en": "Local communication address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "ref": "p.99~101"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3585,
+      "manualAddress": "P14.01 (0E01H)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Communication baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "1200 bps",
+          "en": "1200 bps"
+        },
+        {
+          "value": 1,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 2,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 3,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 4,
+          "ko": "19200 bps (출하)",
+          "en": "19200 bps (default)"
+        },
+        {
+          "value": 5,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 6,
+          "ko": "57600 bps",
+          "en": "57600 bps"
+        }
+      ],
+      "ref": "p.99~101"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3586,
+      "manualAddress": "P14.02 (0E02H)",
+      "type": "u16",
+      "name": {
+        "ko": "데이터 형식",
+        "en": "Data bit check"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "RTU N,8,1",
+          "en": "RTU N,8,1"
+        },
+        {
+          "value": 1,
+          "ko": "RTU E,8,1 (출하)",
+          "en": "RTU E,8,1 (default)"
+        },
+        {
+          "value": 2,
+          "ko": "RTU O,8,1",
+          "en": "RTU O,8,1"
+        },
+        {
+          "value": 3,
+          "ko": "RTU N,8,2",
+          "en": "RTU N,8,2"
+        },
+        {
+          "value": 4,
+          "ko": "RTU E,8,2",
+          "en": "RTU E,8,2"
+        },
+        {
+          "value": 5,
+          "ko": "RTU O,8,2",
+          "en": "RTU O,8,2"
+        }
+      ],
+      "description": {
+        "ko": "6~17 은 ASCII 형식",
+        "en": "6-17 are ASCII formats"
+      },
+      "ref": "p.99~101"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3588,
+      "manualAddress": "P14.04 (0E04H)",
+      "type": "u16",
+      "name": {
+        "ko": "RS485 통신 타임아웃",
+        "en": "RS485 communication timeout"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "description": {
+        "ko": "0.0 = 쓰지 않음. 넘으면 «CE» 고장",
+        "en": "0.0 = disabled; exceeding it reports 'CE'"
+      },
+      "ref": "p.101"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8192,
+      "manualAddress": "2000H",
+      "type": "u16",
+      "name": {
+        "ko": "통신 운전 지령",
+        "en": "Communication control command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "정방향 운전",
+          "en": "Forward running"
+        },
+        {
+          "value": 2,
+          "ko": "역방향 운전",
+          "en": "Reverse running"
+        },
+        {
+          "value": 3,
+          "ko": "정방향 조그",
+          "en": "Forward jogging"
+        },
+        {
+          "value": 4,
+          "ko": "역방향 조그",
+          "en": "Reverse jogging"
+        },
+        {
+          "value": 5,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 6,
+          "ko": "프리런 정지",
+          "en": "Coast to stop"
+        },
+        {
+          "value": 7,
+          "ko": "고장 리셋",
+          "en": "Fault reset"
+        },
+        {
+          "value": 8,
+          "ko": "조그 정지",
+          "en": "Jogging stop"
+        }
+      ],
+      "description": {
+        "ko": "P00.01 = 2(통신) 일 때. 쓰기 예 03 06 20 00 00 01 = 정방향 운전 (p.139)",
+        "en": "With P00.01 = 2 (communication). Write example 03 06 20 00 00 01 = forward running (p.139)"
+      },
+      "ref": "p.132~134, p.139"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8193,
+      "manualAddress": "2001H",
+      "type": "u16",
+      "name": {
+        "ko": "통신 주파수 설정",
+        "en": "Communication setting frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "0 ~ Fmax",
+        "en": "0 to Fmax"
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8194,
+      "manualAddress": "2002H",
+      "type": "u16",
+      "name": {
+        "ko": "PID 지령",
+        "en": "PID reference"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8195,
+      "manualAddress": "2003H",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8196,
+      "manualAddress": "2004H",
+      "type": "s16",
+      "name": {
+        "ko": "토크 설정(모터 정격 전류 대비)",
+        "en": "Torque setting (% of motor rated current)"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -300,
+        "max": 300
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8197,
+      "manualAddress": "2005H",
+      "type": "u16",
+      "name": {
+        "ko": "정방향 상한 주파수",
+        "en": "Forward upper limit frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8198,
+      "manualAddress": "2006H",
+      "type": "u16",
+      "name": {
+        "ko": "역방향 상한 주파수",
+        "en": "Reverse upper limit frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8202,
+      "manualAddress": "200AH",
+      "type": "u16",
+      "name": {
+        "ko": "가상 입력 단자 지령",
+        "en": "Virtual input terminal command"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 511
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8205,
+      "manualAddress": "200DH",
+      "type": "s16",
+      "name": {
+        "ko": "AO 출력 설정 1",
+        "en": "AO output setting 1"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -100,
+        "max": 100
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8448,
+      "manualAddress": "2100H",
+      "type": "u16",
+      "name": {
+        "ko": "상태 워드 1",
+        "en": "Status word 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "정방향 운전",
+          "en": "Forward running"
+        },
+        {
+          "value": 3,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 4,
+          "ko": "고장",
+          "en": "Fault"
+        },
+        {
+          "value": 5,
+          "ko": "POFF 상태",
+          "en": "POFF state"
+        },
+        {
+          "value": 6,
+          "ko": "예비 여자",
+          "en": "Pre-exciting"
+        }
+      ],
+      "description": {
+        "ko": "0002H 는 원문 표에 0001H 와 같은 «Forward running» 으로 적혀 있어 뺐다. 읽기 예 01 03 21 00 00 01 → 00 03 = 정지 (p.138~139)",
+        "en": "0002H is printed with the same text as 0001H ('Forward running'), so it is omitted. Read example 01 03 21 00 00 01 → 00 03 = stop (pp.138-139)"
+      },
+      "ref": "p.132~134, p.138"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8449,
+      "manualAddress": "2101H",
+      "type": "u16",
+      "name": {
+        "ko": "상태 워드 2",
+        "en": "Status word 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "직류 버스 전압 확립",
+          "en": "Bus voltage established"
+        },
+        {
+          "bit": 3,
+          "ko": "동기 모터(0 = 유도 모터)",
+          "en": "Synchronous motor (0 = asynchronous)"
+        },
+        {
+          "bit": 4,
+          "ko": "과부하 예비 경보",
+          "en": "Overload pre-alarm"
+        }
+      ],
+      "description": {
+        "ko": "bit1~2 모터 1~4, bit5~6 = 00 키패드·01 단자·10 통신 제어",
+        "en": "bit1-2 motor 1-4; bit5-6 = 00 keypad, 01 terminal, 10 communication control"
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8450,
+      "manualAddress": "2102H",
+      "type": "u16",
+      "name": {
+        "ko": "고장 코드",
+        "en": "Fault code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "고장 없음",
+          "en": "No fault"
+        },
+        {
+          "value": 4,
+          "ko": "가속 중 과전류(OC1)",
+          "en": "Overcurrent during acceleration (OC1)"
+        },
+        {
+          "value": 5,
+          "ko": "감속 중 과전류(OC2)",
+          "en": "Overcurrent during deceleration (OC2)"
+        },
+        {
+          "value": 6,
+          "ko": "정속 중 과전류(OC3)",
+          "en": "Overcurrent at constant speed (OC3)"
+        },
+        {
+          "value": 7,
+          "ko": "가속 중 과전압(OV1)",
+          "en": "Overvoltage during acceleration (OV1)"
+        },
+        {
+          "value": 8,
+          "ko": "감속 중 과전압(OV2)",
+          "en": "Overvoltage during deceleration (OV2)"
+        },
+        {
+          "value": 9,
+          "ko": "정속 중 과전압(OV3)",
+          "en": "Overvoltage at constant speed (OV3)"
+        },
+        {
+          "value": 10,
+          "ko": "버스 저전압(UV)",
+          "en": "Bus undervoltage (UV)"
+        },
+        {
+          "value": 11,
+          "ko": "모터 과부하(OL1)",
+          "en": "Motor overload (OL1)"
+        },
+        {
+          "value": 12,
+          "ko": "인버터 과부하(OL2)",
+          "en": "VFD overload (OL2)"
+        },
+        {
+          "value": 18,
+          "ko": "RS485 통신 고장(CE)",
+          "en": "RS485 communication fault (CE)"
+        }
+      ],
+      "description": {
+        "ko": "코드 목록은 P07.27 고장 종류와 같다",
+        "en": "Codes follow the P07.27 fault type list"
+      },
+      "ref": "p.132~134, p.73"
+    },
+    {
+      "table": "holding-registers",
+      "address": 8451,
+      "manualAddress": "2103H",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 식별 코드",
+        "en": "VFD identifying code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "GD20 = 0x0106",
+        "en": "GD20 = 0x0106"
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12288,
+      "manualAddress": "3000H",
+      "type": "u16",
+      "name": {
+        "ko": "운전 주파수(출력 주파수)",
+        "en": "Running frequency (output frequency)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12289,
+      "manualAddress": "3001H",
+      "type": "u16",
+      "name": {
+        "ko": "설정 주파수",
+        "en": "Set frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12290,
+      "manualAddress": "3002H",
+      "type": "u16",
+      "name": {
+        "ko": "직류 버스 전압",
+        "en": "Bus voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12291,
+      "manualAddress": "3003H",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12292,
+      "manualAddress": "3004H",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류",
+        "en": "Output current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12293,
+      "manualAddress": "3005H",
+      "type": "u16",
+      "name": {
+        "ko": "회전 속도",
+        "en": "Rotating speed"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12294,
+      "manualAddress": "3006H",
+      "type": "s16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -300,
+        "max": 300
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12295,
+      "manualAddress": "3007H",
+      "type": "s16",
+      "name": {
+        "ko": "출력 토크",
+        "en": "Output torque"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -250,
+        "max": 250
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12296,
+      "manualAddress": "3008H",
+      "type": "s16",
+      "name": {
+        "ko": "PID 설정",
+        "en": "PID setting"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -100,
+        "max": 100
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12297,
+      "manualAddress": "3009H",
+      "type": "s16",
+      "name": {
+        "ko": "PID 피드백",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -100,
+        "max": 100
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12298,
+      "manualAddress": "300AH",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 상태",
+        "en": "Input state"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 511
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12299,
+      "manualAddress": "300BH",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 상태",
+        "en": "Output state"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 511
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12300,
+      "manualAddress": "300CH",
+      "type": "u16",
+      "name": {
+        "ko": "AI1",
+        "en": "AI 1"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 10
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12301,
+      "manualAddress": "300DH",
+      "type": "u16",
+      "name": {
+        "ko": "AI2",
+        "en": "AI 2"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": 0,
+        "max": 10
+      },
+      "ref": "p.132~134"
+    },
+    {
+      "table": "holding-registers",
+      "address": 12302,
+      "manualAddress": "300EH",
+      "type": "s16",
+      "name": {
+        "ko": "AI3",
+        "en": "AI 3"
+      },
+      "unit": "V",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -10,
+        "max": 10
+      },
+      "ref": "p.132~134"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "인쇄 쪽 번호 = PDF 쪽 − 5.",
+      "en": "Printed page = PDF page − 5."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Goodrive20 Series VFD Manual (GD20 VFD Manual)",
+      "publisher": "INVT",
+      "edition": {
+        "ko": "V2.1 (2025-09)",
+        "en": "V2.1 (2025-09)"
+      },
+      "url": "https://www.invt.com/uploads/file1/20250902/GD20%20VFD%20Manual_V2.1.pdf",
+      "pages": {
+        "ko": "P00 인쇄 p.31~32, P07.27 p.73, P14 p.99~101, 7 통신 프로토콜 p.117~140(주소 표 7.4.2 p.132~134, 예 7.5 p.138~140)",
+        "en": "P00 printed pp.31-32, P07.27 p.73, P14 pp.99-101, 7 communication protocol pp.117-140 (address table 7.4.2 pp.132-134, examples 7.5 pp.138-140)"
+      },
+      "checked": "2026-11-01"
+    }
+  ]
+}

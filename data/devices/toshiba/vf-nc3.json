@@ -1,0 +1,822 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "toshiba/vf-nc3",
+  "manufacturer": {
+    "ko": "도시바",
+    "en": "TOSHIBA"
+  },
+  "model": "VF-nC3",
+  "models": [
+    "VF-nC3M"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "도시바 TOSVERT VF-nC3 인버터 (RS485 Modbus RTU)",
+    "en": "Toshiba TOSVERT VF-nC3 inverter (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "VF-S15 와 같은 방식 — f829 = 1 로 Modbus RTU, 통신 번호(16진)가 주소. 지령 FA00·FA01, 모니터 FD00~.",
+    "en": "Same scheme as VF-S15: f829 = 1 for Modbus RTU, the hex communication number is the address. Commands FA00/FA01, monitors from FD00."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 8,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 통신 번호(16진)가 그대로 프레임 주소 — 읽기 예 01 03 FD 00 00 01(p.25), 쓰기 예 01 06 FA 01 17 70(p.30).",
+        "en": "Addressing: the hex communication number is the frame address — read example 01 03 FD 00 00 01 (p.25), write example 01 06 FA 01 17 70 (p.30)."
+      },
+      {
+        "ko": "출하: 도시바 프로토콜(f829 = 0, Modbus 는 1 뒤 리셋), 19200 bps(f800 = 4), 짝수 패리티(f801 = 1), 인버터 번호 0 (p.4, p.40). 인버터는 정지 비트 1개로 받고 2개로 보낸다 (p.4).",
+        "en": "Defaults: Toshiba protocol (f829 = 0; set 1 and reset for Modbus), 19200 bps (f800 = 4), even parity (f801 = 1), inverter number 0 (p.4, p.40). The inverter receives 1 stop bit and sends 2 (p.4)."
+      },
+      {
+        "ko": "FC 03(보통 1워드, 직접 블록 읽기 2~8워드)·06·10 (p.24, p.28). 없는 통신 번호는 블록 읽기에서 8000h 로 온다.",
+        "en": "FC 03 (normally 1 word; direct block read 2-8 words), 06 and 10 (p.24, p.28). Missing communication numbers return 8000h in block reads."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 2048,
+      "manualAddress": "0800 (f800)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 3,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 4,
+          "ko": "19200 bps (출하)",
+          "en": "19200 bps (default)"
+        },
+        {
+          "value": 5,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2049,
+      "manualAddress": "0801 (f801)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티",
+        "en": "Parity"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "없음",
+          "en": "None"
+        },
+        {
+          "value": 1,
+          "ko": "짝수 (출하)",
+          "en": "Even (default)"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "Odd"
+        }
+      ],
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2050,
+      "manualAddress": "0802 (f802)",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 번호(국번)",
+        "en": "Inverter number (slave ID)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 247
+      },
+      "description": {
+        "ko": "출하 0 — Modbus 에서는 1~247 로",
+        "en": "Default 0; use 1-247 for Modbus"
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2051,
+      "manualAddress": "0803 (f803)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 타임아웃 시간",
+        "en": "Communication time-out time"
+      },
+      "unit": "s",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2052,
+      "manualAddress": "0804 (f804)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 타임아웃 동작",
+        "en": "Communication time-out action"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "경보만 (출하)",
+          "en": "Alarm only (default)"
+        },
+        {
+          "value": 1,
+          "ko": "트립(프리런 정지)",
+          "en": "Trip (coast stop)"
+        },
+        {
+          "value": 2,
+          "ko": "트립(감속 정지)",
+          "en": "Trip (slowdown stop)"
+        }
+      ],
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2089,
+      "manualAddress": "0829 (f829)",
+      "type": "u16",
+      "name": {
+        "ko": "통신 프로토콜 선택",
+        "en": "Communication protocol"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "도시바 (출하)",
+          "en": "TOSHIBA (default)"
+        },
+        {
+          "value": 1,
+          "ko": "Modbus RTU",
+          "en": "MODBUS-RTU"
+        }
+      ],
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64000,
+      "manualAddress": "FA00",
+      "type": "u16",
+      "name": {
+        "ko": "통신 지령",
+        "en": "Communication command"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 7,
+          "ko": "직류 제동(1 = 강제 직류 제동)",
+          "en": "DC braking (1 = forced DC braking)"
+        },
+        {
+          "bit": 8,
+          "ko": "조그 운전",
+          "en": "Jog run"
+        },
+        {
+          "bit": 9,
+          "ko": "정·역 선택(0 정방향, 1 역방향)",
+          "en": "Forward/reverse (0 forward, 1 reverse)"
+        },
+        {
+          "bit": 10,
+          "ko": "운전/정지(1 = 운전)",
+          "en": "Run/stop (1 = run)"
+        },
+        {
+          "bit": 11,
+          "ko": "프리런 정지 지령(1 = 프리런 정지)",
+          "en": "Coast stop command (1 = coast stop)"
+        },
+        {
+          "bit": 12,
+          "ko": "비상 정지(늘 유효, «E» 트립)",
+          "en": "Emergency stop (always enabled, 'E' trip)"
+        },
+        {
+          "bit": 13,
+          "ko": "고장 리셋(인버터는 응답하지 않음)",
+          "en": "Fault reset (the inverter returns no reply)"
+        },
+        {
+          "bit": 14,
+          "ko": "주파수 우선(1 = 통신 주파수 지령 유효, fmod 무관)",
+          "en": "Frequency priority (1 = communication frequency enabled regardless of fmod)"
+        },
+        {
+          "bit": 15,
+          "ko": "지령 우선(1 = 통신 운전 지령 유효, cmod 무관)",
+          "en": "Command priority (1 = communication commands enabled regardless of cmod)"
+        }
+      ],
+      "ref": "p.44 표 1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64001,
+      "manualAddress": "FA01",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령(통신)",
+        "en": "Frequency command (communication)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "description": {
+        "ko": "쓰기 예 01 06 FA 01 17 70 = 60.00 Hz (p.30)",
+        "en": "Write example 01 06 FA 01 17 70 = 60.00 Hz (p.30)"
+      },
+      "ref": "p.45, p.30"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64263,
+      "manualAddress": "FB07",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 시리즈 형식",
+        "en": "Inverter series type"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "VF-nC3 은 208",
+        "en": "208 for VF-nC3"
+      },
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64656,
+      "manualAddress": "FC90",
+      "type": "u16",
+      "name": {
+        "ko": "트립 코드",
+        "en": "Trip code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64657,
+      "manualAddress": "FC91",
+      "type": "u16",
+      "name": {
+        "ko": "경보 정보 1",
+        "en": "Alarm information 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64768,
+      "manualAddress": "FD00",
+      "type": "u16",
+      "name": {
+        "ko": "출력 주파수",
+        "en": "Output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "읽기 예 01 03 FD 00 00 01 → 17 70 = 60.00 Hz (p.25)",
+        "en": "Read example 01 03 FD 00 00 01 → 17 70 = 60.00 Hz (p.25)"
+      },
+      "ref": "p.61, p.25"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64769,
+      "manualAddress": "FD01",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 1",
+        "en": "Inverter status 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "고장 FL 출력(1 = 출력 중)",
+          "en": "Failure FL (1 = output in progress)"
+        },
+        {
+          "bit": 1,
+          "ko": "트립(1 = 트립, 재시도·트립 유지 포함)",
+          "en": "Failure (1 = tripped, incl. retry and trip retention)"
+        },
+        {
+          "bit": 2,
+          "ko": "경보(1 = 경보 발생)",
+          "en": "Alarm (1 = alarm issued)"
+        },
+        {
+          "bit": 3,
+          "ko": "주회로 저전압(1 = 저전압)",
+          "en": "Main circuit undervoltage (1 = undervoltage)"
+        },
+        {
+          "bit": 7,
+          "ko": "직류 제동(1 = 강제 직류 제동)",
+          "en": "DC braking (1 = forced DC braking)"
+        },
+        {
+          "bit": 8,
+          "ko": "조그 운전",
+          "en": "Jog run"
+        },
+        {
+          "bit": 9,
+          "ko": "정·역(0 정방향, 1 역방향)",
+          "en": "Forward/reverse (0 forward, 1 reverse)"
+        },
+        {
+          "bit": 10,
+          "ko": "운전/정지(1 = 운전)",
+          "en": "Run/stop (1 = run)"
+        },
+        {
+          "bit": 11,
+          "ko": "프리런 정지(ST=OFF 이면 1)",
+          "en": "Coast stop (1 = ST=OFF)"
+        },
+        {
+          "bit": 12,
+          "ko": "비상 정지 상태",
+          "en": "Emergency stop status"
+        },
+        {
+          "bit": 13,
+          "ko": "대기(ST=ON, RUN=ON 포함)",
+          "en": "Standby (incl. ST=ON and RUN=ON)"
+        },
+        {
+          "bit": 14,
+          "ko": "대기(초기화 끝, 고장·경보 정지 아님)",
+          "en": "Standby (initialised, not stopped by fault or alarm)"
+        }
+      ],
+      "ref": "p.50"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64770,
+      "manualAddress": "FD02",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 지령값",
+        "en": "Frequency command value"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64771,
+      "manualAddress": "FD03",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류(정격 대비)",
+        "en": "Output current (% of rating)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64772,
+      "manualAddress": "FD04",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전압(직류 검출)",
+        "en": "Input voltage (DC detection)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64773,
+      "manualAddress": "FD05",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압",
+        "en": "Output voltage"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64774,
+      "manualAddress": "FD06",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 정보",
+        "en": "Input terminal information"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64775,
+      "manualAddress": "FD07",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 정보",
+        "en": "Output terminal information"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64789,
+      "manualAddress": "FD15",
+      "type": "u16",
+      "name": {
+        "ko": "보정 주파수",
+        "en": "Compensated frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64790,
+      "manualAddress": "FD16",
+      "type": "u16",
+      "name": {
+        "ko": "추정 속도",
+        "en": "Estimated speed"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64802,
+      "manualAddress": "FD22",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백 값",
+        "en": "PID feedback value"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64803,
+      "manualAddress": "FD23",
+      "type": "u16",
+      "name": {
+        "ko": "모터 과부하율(OL2)",
+        "en": "Motor overload factor (OL2)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64804,
+      "manualAddress": "FD24",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 과부하율(OL1)",
+        "en": "Inverter overload factor (OL1)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64806,
+      "manualAddress": "FD26",
+      "type": "u16",
+      "name": {
+        "ko": "모터 부하율",
+        "en": "Motor load factor"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64807,
+      "manualAddress": "FD27",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 부하율",
+        "en": "Inverter load factor"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64809,
+      "manualAddress": "FD29",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전력",
+        "en": "Input power"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 64816,
+      "manualAddress": "FD30",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전력",
+        "en": "Output power"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65040,
+      "manualAddress": "FE10",
+      "type": "u16",
+      "name": {
+        "ko": "지난 트립 1(최근)",
+        "en": "Past trip 1 (latest)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65044,
+      "manualAddress": "FE14",
+      "type": "u16",
+      "name": {
+        "ko": "누적 운전 시간",
+        "en": "Cumulative operation time"
+      },
+      "unit": "h",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65077,
+      "manualAddress": "FE35",
+      "type": "u16",
+      "name": {
+        "ko": "VI 입력(RR/S4 입력)",
+        "en": "VI input (RR/S4 input)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65136,
+      "manualAddress": "FE70",
+      "type": "u16",
+      "name": {
+        "ko": "정격 전류",
+        "en": "Rated current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65137,
+      "manualAddress": "FE71",
+      "type": "u16",
+      "name": {
+        "ko": "정격 전압",
+        "en": "Rated voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.61"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "인쇄 쪽 번호 = PDF 쪽 − 1. FD06·FD07·FC90·FC91 의 비트·코드 뜻은 매뉴얼 7.2 절(p.48~)에 있다.",
+      "en": "Printed page = PDF page − 1. Bit and code meanings of FD06, FD07, FC90 and FC91 are in section 7.2 (p.48 onward)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "TOSVERT VF-nC3 Series RS485 Communication Function Instruction Manual",
+      "publisher": "Toshiba",
+      "edition": {
+        "ko": "E6581657 (PDF 2020-06)",
+        "en": "E6581657 (PDF 2020-06)"
+      },
+      "url": "https://toshiba.com/tic/wp-content/uploads/NC3_RS485_Communication_Manual.pdf",
+      "pages": {
+        "ko": "2 전송 사양 인쇄 p.4, 5 Modbus RTU p.23~32, 6 통신 파라미터 p.40, 7 지령·모니터 p.44~50, 모니터 파라미터 p.61",
+        "en": "2 transmission specs printed p.4, 5 Modbus RTU pp.23-32, 6 communication parameters p.40, 7 commands and monitoring pp.44-50, monitor parameters p.61"
+      },
+      "checked": "2026-11-01"
+    }
+  ]
+}

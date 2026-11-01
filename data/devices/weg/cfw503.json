@@ -1,0 +1,809 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "weg/cfw503",
+  "manufacturer": {
+    "ko": "WEG",
+    "en": "WEG"
+  },
+  "model": "CFW503",
+  "kind": "inverter",
+  "title": {
+    "ko": "WEG CFW503 인버터 (RS485 Modbus RTU)",
+    "en": "WEG CFW503 frequency inverter (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "파라미터 번호가 곧 홀딩 레지스터 주소(오프셋 0). 상태 P0680, 제어 워드 P0682, 속도 지령 P0683(8192 = 정격 주파수).",
+    "en": "Parameter number = holding register address (zero offset). Status P0680, control word P0682, speed reference P0683 (8192 = rated frequency)."
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 모든 파라미터가 16비트 홀딩 레지스터이고 오프셋 0 — 파라미터 번호 = 레지스터 주소(P0100 = 100 = 0064h, P0680 = 680) (5.2.1, p.5-1). 40000 을 더해 적는 마스터도 있다.",
+        "en": "Addressing: every parameter is a 16-bit holding register with zero offset — parameter number = register address (P0100 = 100 = 0064h, P0680 = 680) (5.2.1, p.5-1). Some masters add a 40000 base."
+      },
+      {
+        "ko": "출하: P0308 = 1, P0310 = 1(19200 bps), P0311 = 1(8E1), P0312 = 2(Modbus RTU) (p.4-4~4-6). FC 01·02·03·04·05·06·0F·10·2B (표 5.1). 값은 소수점 없이 정수로 오고 소수 자리는 프로그래밍 매뉴얼에 있다 (p.5-2).",
+        "en": "Defaults: P0308 = 1, P0310 = 1 (19200 bps), P0311 = 1 (8E1), P0312 = 2 (Modbus RTU) (pp.4-4 to 4-6). FC 01, 02, 03, 04, 05, 06, 0F, 10 and 2B (Table 5.1). Values are integers without decimals; decimal places are in the programming manual (p.5-2)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 220,
+      "manualAddress": "P0220",
+      "type": "u16",
+      "name": {
+        "ko": "LOC/REM 선택 소스",
+        "en": "LOC/REM selection source"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "늘 LOC",
+          "en": "Always LOC"
+        },
+        {
+          "value": 1,
+          "ko": "늘 REM",
+          "en": "Always REM"
+        },
+        {
+          "value": 2,
+          "ko": "HMI 키 LOC (출하)",
+          "en": "HMI key LOC (default)"
+        },
+        {
+          "value": 3,
+          "ko": "HMI 키 REM",
+          "en": "HMI key REM"
+        },
+        {
+          "value": 4,
+          "ko": "DIx",
+          "en": "DIx"
+        },
+        {
+          "value": 5,
+          "ko": "시리얼/USB LOC",
+          "en": "Serial/USB LOC"
+        },
+        {
+          "value": 6,
+          "ko": "시리얼/USB REM",
+          "en": "Serial/USB REM"
+        }
+      ],
+      "ref": "p.4-1"
+    },
+    {
+      "table": "holding-registers",
+      "address": 222,
+      "manualAddress": "P0222",
+      "type": "u16",
+      "name": {
+        "ko": "REM 주파수 지령 선택",
+        "en": "REM reference selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "HMI 키",
+          "en": "HMI keys"
+        },
+        {
+          "value": 1,
+          "ko": "AI1",
+          "en": "AI1"
+        },
+        {
+          "value": 9,
+          "ko": "시리얼/USB",
+          "en": "Serial/USB"
+        },
+        {
+          "value": 11,
+          "ko": "CO/DN/PB/Eth",
+          "en": "CO/DN/PB/Eth"
+        },
+        {
+          "value": 12,
+          "ko": "SoftPLC",
+          "en": "SoftPLC"
+        }
+      ],
+      "description": {
+        "ko": "출하 0. 9 = P0683 사용",
+        "en": "Default 0. 9 uses P0683"
+      },
+      "ref": "p.4-2"
+    },
+    {
+      "table": "holding-registers",
+      "address": 226,
+      "manualAddress": "P0226",
+      "type": "u16",
+      "name": {
+        "ko": "REM 회전 방향 선택",
+        "en": "REM rotation selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정방향",
+          "en": "Clockwise"
+        },
+        {
+          "value": 1,
+          "ko": "역방향",
+          "en": "Counterclockwise"
+        },
+        {
+          "value": 2,
+          "ko": "HMI 키(정방향) (출하)",
+          "en": "HMI key (FWD) (default)"
+        },
+        {
+          "value": 5,
+          "ko": "시리얼/USB(정)",
+          "en": "Serial/USB (F)"
+        },
+        {
+          "value": 6,
+          "ko": "시리얼/USB(역)",
+          "en": "Serial/USB (R)"
+        }
+      ],
+      "ref": "p.4-3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 227,
+      "manualAddress": "P0227",
+      "type": "u16",
+      "name": {
+        "ko": "REM 운전/정지 선택",
+        "en": "REM run/stop selection"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "HMI 키 (출하)",
+          "en": "HMI keys (default)"
+        },
+        {
+          "value": 1,
+          "ko": "DIx",
+          "en": "DIx"
+        },
+        {
+          "value": 2,
+          "ko": "시리얼/USB",
+          "en": "Serial/USB"
+        },
+        {
+          "value": 4,
+          "ko": "CO/DN/PB/Eth",
+          "en": "CO/DN/PB/Eth"
+        },
+        {
+          "value": 5,
+          "ko": "SoftPLC",
+          "en": "SoftPLC"
+        }
+      ],
+      "ref": "p.4-3"
+    },
+    {
+      "table": "holding-registers",
+      "address": 308,
+      "manualAddress": "P0308",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 주소(국번)",
+        "en": "Serial address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 255
+      },
+      "description": {
+        "ko": "출하 1",
+        "en": "Default 1"
+      },
+      "ref": "p.4-4"
+    },
+    {
+      "table": "holding-registers",
+      "address": 310,
+      "manualAddress": "P0310",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 통신 속도",
+        "en": "Serial baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "9600 bps",
+          "en": "9600 bit/s"
+        },
+        {
+          "value": 1,
+          "ko": "19200 bps (출하)",
+          "en": "19200 bit/s (default)"
+        },
+        {
+          "value": 2,
+          "ko": "38400 bps",
+          "en": "38400 bit/s"
+        }
+      ],
+      "ref": "p.4-5"
+    },
+    {
+      "table": "holding-registers",
+      "address": 311,
+      "manualAddress": "P0311",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 바이트 형식",
+        "en": "Serial bytes configuration"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "8비트·없음·1",
+          "en": "8 bits, no, 1"
+        },
+        {
+          "value": 1,
+          "ko": "8비트·짝수·1 (출하)",
+          "en": "8 bits, even, 1 (default)"
+        },
+        {
+          "value": 2,
+          "ko": "8비트·홀수·1",
+          "en": "8 bits, odd, 1"
+        },
+        {
+          "value": 3,
+          "ko": "8비트·없음·2",
+          "en": "8 bits, no, 2"
+        },
+        {
+          "value": 4,
+          "ko": "8비트·짝수·2",
+          "en": "8 bits, even, 2"
+        },
+        {
+          "value": 5,
+          "ko": "8비트·홀수·2",
+          "en": "8 bits, odd, 2"
+        }
+      ],
+      "ref": "p.4-5"
+    },
+    {
+      "table": "holding-registers",
+      "address": 312,
+      "manualAddress": "P0312",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 프로토콜",
+        "en": "Serial protocol"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "HMI-1",
+          "en": "HMI-1"
+        },
+        {
+          "value": 1,
+          "ko": "SymbiNet-1",
+          "en": "SymbiNet-1"
+        },
+        {
+          "value": 2,
+          "ko": "Modbus RTU-1 (출하)",
+          "en": "Modbus RTU-1 (default)"
+        },
+        {
+          "value": 3,
+          "ko": "BACnet-1",
+          "en": "BACnet-1"
+        }
+      ],
+      "ref": "p.4-6"
+    },
+    {
+      "table": "holding-registers",
+      "address": 313,
+      "manualAddress": "P0313",
+      "type": "u16",
+      "name": {
+        "ko": "통신 오류 동작",
+        "en": "Communication error action"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "동작 없음",
+          "en": "Inactive"
+        },
+        {
+          "value": 1,
+          "ko": "램프 정지 (출하)",
+          "en": "Ramp stop (default)"
+        },
+        {
+          "value": 2,
+          "ko": "전체 해제(프리런)",
+          "en": "General disable"
+        },
+        {
+          "value": 3,
+          "ko": "LOC 로",
+          "en": "Go to LOC"
+        },
+        {
+          "value": 4,
+          "ko": "LOC 로·허가 유지",
+          "en": "LOC keep enabled"
+        },
+        {
+          "value": 5,
+          "ko": "고장 발생",
+          "en": "Cause fault"
+        }
+      ],
+      "ref": "p.4-7"
+    },
+    {
+      "table": "holding-registers",
+      "address": 314,
+      "manualAddress": "P0314",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 워치독",
+        "en": "Serial watchdog"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 999
+      },
+      "description": {
+        "ko": "0 = 쓰지 않음(출하). 넘으면 A128 경보와 P0313 동작",
+        "en": "0 = disabled (default); on timeout alarm A128 and the P0313 action"
+      },
+      "ref": "p.4-7"
+    },
+    {
+      "table": "holding-registers",
+      "address": 316,
+      "manualAddress": "P0316",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼 인터페이스 상태",
+        "en": "Serial interface status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "비활성",
+          "en": "Inactive"
+        },
+        {
+          "value": 1,
+          "ko": "활성",
+          "en": "Active"
+        },
+        {
+          "value": 2,
+          "ko": "워치독 오류",
+          "en": "Watchdog error"
+        }
+      ],
+      "ref": "p.4-8"
+    },
+    {
+      "table": "holding-registers",
+      "address": 680,
+      "manualAddress": "P0680",
+      "type": "u16",
+      "name": {
+        "ko": "논리 상태 워드",
+        "en": "Logical status"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "운전 지령 있었음",
+          "en": "Run command"
+        },
+        {
+          "bit": 2,
+          "ko": "화재 모드",
+          "en": "Fire mode"
+        },
+        {
+          "bit": 4,
+          "ko": "급정지",
+          "en": "Quick stop"
+        },
+        {
+          "bit": 5,
+          "ko": "제2 램프",
+          "en": "2nd ramp"
+        },
+        {
+          "bit": 6,
+          "ko": "설정 모드(운전 불가)",
+          "en": "Config. mode"
+        },
+        {
+          "bit": 7,
+          "ko": "경보",
+          "en": "Alarm"
+        },
+        {
+          "bit": 8,
+          "ko": "운전 중",
+          "en": "Running"
+        },
+        {
+          "bit": 9,
+          "ko": "운전 허가",
+          "en": "Enabled"
+        },
+        {
+          "bit": 10,
+          "ko": "정방향",
+          "en": "Forward"
+        },
+        {
+          "bit": 11,
+          "ko": "조그",
+          "en": "JOG"
+        },
+        {
+          "bit": 12,
+          "ko": "원격(REM)",
+          "en": "Remote"
+        },
+        {
+          "bit": 13,
+          "ko": "저전압",
+          "en": "Undervoltage"
+        },
+        {
+          "bit": 14,
+          "ko": "PID 자동",
+          "en": "Automatic PID"
+        },
+        {
+          "bit": 15,
+          "ko": "고장",
+          "en": "Fault"
+        }
+      ],
+      "ref": "p.4-8~4-9"
+    },
+    {
+      "table": "holding-registers",
+      "address": 681,
+      "manualAddress": "P0681",
+      "type": "s16",
+      "name": {
+        "ko": "속도(13비트, 출력 주파수 눈금)",
+        "en": "Speed at 13 bits (output frequency scale)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "8192 = 모터 정격 주파수(P0403). 음수 = 역방향",
+        "en": "8192 = motor rated frequency (P0403); negative = reverse"
+      },
+      "ref": "p.4-9"
+    },
+    {
+      "table": "holding-registers",
+      "address": 682,
+      "manualAddress": "P0682",
+      "type": "u16",
+      "name": {
+        "ko": "시리얼/USB 제어 워드",
+        "en": "Serial/USB control"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "운전(1)/정지(0)",
+          "en": "Run (1) / stop (0)"
+        },
+        {
+          "bit": 1,
+          "ko": "전체 허가",
+          "en": "General enable"
+        },
+        {
+          "bit": 2,
+          "ko": "정방향(0 = 역방향)",
+          "en": "Run forward (0 = reverse)"
+        },
+        {
+          "bit": 3,
+          "ko": "조그",
+          "en": "JOG enable"
+        },
+        {
+          "bit": 4,
+          "ko": "원격(REM)",
+          "en": "Remote"
+        },
+        {
+          "bit": 5,
+          "ko": "제2 램프",
+          "en": "2nd ramp"
+        },
+        {
+          "bit": 6,
+          "ko": "급정지",
+          "en": "Quick stop"
+        },
+        {
+          "bit": 7,
+          "ko": "고장 리셋",
+          "en": "Fault reset"
+        }
+      ],
+      "ref": "p.4-10~4-11"
+    },
+    {
+      "table": "holding-registers",
+      "address": 683,
+      "manualAddress": "P0683",
+      "type": "s16",
+      "name": {
+        "ko": "시리얼/USB 속도 지령(13비트)",
+        "en": "Serial/USB speed reference (13 bits)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "8192 = 정격 주파수(P0403). 예 60 Hz 모터에 30 Hz = 4096",
+        "en": "8192 = rated frequency (P0403). E.g. 30 Hz on a 60 Hz motor = 4096"
+      },
+      "ref": "p.4-11~4-12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 695,
+      "manualAddress": "P0695",
+      "type": "u16",
+      "name": {
+        "ko": "DO 값",
+        "en": "DOx value"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "bits": [
+        {
+          "bit": 0,
+          "ko": "DO1",
+          "en": "DO1"
+        },
+        {
+          "bit": 1,
+          "ko": "DO2",
+          "en": "DO2"
+        },
+        {
+          "bit": 2,
+          "ko": "DO3",
+          "en": "DO3"
+        },
+        {
+          "bit": 3,
+          "ko": "DO4",
+          "en": "DO4"
+        },
+        {
+          "bit": 4,
+          "ko": "DO5",
+          "en": "DO5"
+        }
+      ],
+      "ref": "p.4-12"
+    },
+    {
+      "table": "holding-registers",
+      "address": 696,
+      "manualAddress": "P0696",
+      "type": "s16",
+      "name": {
+        "ko": "AO 값 1",
+        "en": "AOx value 1"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "7FFFh(32767) = 100 %",
+        "en": "7FFFh (32767) = 100 %"
+      },
+      "ref": "p.4-13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 697,
+      "manualAddress": "P0697",
+      "type": "s16",
+      "name": {
+        "ko": "AO 값 2",
+        "en": "AOx value 2"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "7FFFh(32767) = 100 %",
+        "en": "7FFFh (32767) = 100 %"
+      },
+      "ref": "p.4-13"
+    },
+    {
+      "table": "holding-registers",
+      "address": 698,
+      "manualAddress": "P0698",
+      "type": "s16",
+      "name": {
+        "ko": "AO 값 3",
+        "en": "AOx value 3"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "7FFFh(32767) = 100 %. CFW503 의 AO3 은 주파수 출력(FO)",
+        "en": "7FFFh (32767) = 100 %. On CFW503 analog output 3 is the frequency output (FO)"
+      },
+      "ref": "p.4-13"
+    }
+  ],
+  "notes": [
+    {
+      "ko": "통신으로 운전하려면 P0220~P0228 에서 해당 소스를 시리얼/USB 로 (p.4-1~). 모니터 파라미터(출력 전류 등)의 소수 자리는 이 문서에 없어 넣지 않았다. 쪽 번호는 인쇄 «4-1» 꼴(PDF p.15 = 4-1).",
+      "en": "To control via the network set the sources in P0220-P0228 to Serial/USB (p.4-1 onward). Monitoring parameters (output current etc.) are left out because their decimals are not in this document. Pages are printed '4-1' style (PDF p.15 = 4-1)."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Modbus RTU CFW503 User's Guide",
+      "publisher": "WEG",
+      "edition": {
+        "ko": "10012735606 Revision 00 (05/2025)",
+        "en": "10012735606 Revision 00 (05/2025)"
+      },
+      "url": "https://static.weg.net/medias/downloadcenter/h58/h92/WEG-CFW503-manual-modbus-rtu-communication-manual-10012735606-en.pdf",
+      "pages": {
+        "ko": "4 파라미터 인쇄 p.4-1~4-13, 5 Modbus RTU 슬레이브 p.5-1~5-2",
+        "en": "4 parameters printed pp.4-1 to 4-13, 5 Modbus RTU slave pp.5-1 to 5-2"
+      },
+      "checked": "2026-11-01"
+    }
+  ]
+}
