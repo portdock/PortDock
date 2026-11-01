@@ -1,0 +1,50 @@
+// 독일어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const DE_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Überwachung & Alarme",
+  activeN: "{n} aktiv",
+  noAlarm: "Kein aktiver Alarm — {n} Bedingung(en) überwacht",
+  notRunning: "Überwachung beginnt beim Verbinden ({n} Bedingung(en))",
+  ackAll: "Alle quittieren",
+  ack: "Quitt.",
+  acked: "Quittiert",
+  clearEnded: "Beendete löschen",
+  sound: "Ton",
+  logStart: "CSV-Log…",
+  logOn: "● {n} Zeilen protokolliert",
+  logStop: "Log stoppen",
+  logTitle: "Alarmlog speichern",
+  ongoing: "läuft",
+  colKind: "Bedingung",
+  colName: "Was",
+  colValue: "Wert",
+  colStart: "Gekommen",
+  colEnd: "Gegangen",
+  colDur: "Dauer",
+  safety: "PortDock ist keine Sicherheitseinrichtung, sondern eine Überwachungshilfe. Anlagenschutz und Verriegelungen gehören in die SPS und die Sicherheitskreise.",
+  dlgTitle: "Überwachungsbedingungen — {a}",
+  lo: "Untergrenze (Alarm darunter)",
+  hi: "Obergrenze (Alarm darüber)",
+  stuck: "Keine Änderung (eingefroren), Sekunden",
+  lost: "Kommunikationsverlust, Sekunden",
+  hyst: "Rückkehrabstand (Hysterese)",
+  hystHint: "Ein Unterschreitungsalarm geht ab «Untergrenze + Abstand», ein Überschreitungsalarm ab «Obergrenze − Abstand» — so flackert der Alarm nicht, wenn der Wert an der Grenze schwankt.",
+  emptyHint: "Ein leeres Feld überspringt diese Bedingung. Bewertet wird die Zahl, wie sie auf dem Bildschirm steht (nach Typ dekodiert).",
+  save: "Speichern",
+  remove: "Bedingungen entfernen",
+  close: "Schließen",
+  errLoHi: "Die Untergrenze muss unter der Obergrenze liegen.",
+  errSecs: "Sekunden: 1–86400.",
+  errHyst: "Der Abstand ist eine Zahl ab 0.",
+  errNum: "Eine Zahl eingeben.",
+  errEmpty: "Mindestens eine Bedingung eingeben oder «Bedingungen entfernen» drücken.",
+};
+
+export const DE_KIND: Record<AlarmKind, string> = {
+  lo: "Unten",
+  hi: "Oben",
+  stuck: "Fest",
+  lost: "Verlust",
+};

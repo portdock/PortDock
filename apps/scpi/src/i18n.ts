@@ -5,6 +5,8 @@ import { es } from "./i18n.es.ts";
 import { pt } from "./i18n.pt.ts";
 import { fr } from "./i18n.fr.ts";
 import { it } from "./i18n.it.ts";
+import { de } from "./i18n.de.ts";
+import { pl } from "./i18n.pl.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -305,7 +307,7 @@ const en: Record<keyof typeof ko, string> = {
 
 export type Key = keyof typeof ko;
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja, es, pt, fr, it });
+export const dict = dicts(ko, en, { ja, de, es, pt, pl, fr, it });
 
 /** «{a}» 자리 채우기 */
 export function fill(text: string, v: Record<string, string | number> = {}) {

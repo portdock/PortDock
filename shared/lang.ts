@@ -14,7 +14,7 @@ export const LANGS = ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr"
 export type Lang = (typeof LANGS)[number];
 
 /** 설정·머리줄 언어 고르기에 나오는 언어 — 앱 화면 사전이 있는 것만(나머지는 구조만 있음) */
-export const UI_LANGS: readonly Lang[] = ["ko", "en", "ja", "es", "pt", "fr", "it"];
+export const UI_LANGS: readonly Lang[] = ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "it"];
 
 /** 언어 고르기에 보이는 이름(그 언어로) */
 export const LANG_NAMES: Record<Lang, string> = {

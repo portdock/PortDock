@@ -33,6 +33,8 @@ import { ES_REPORT } from "./es/parts";
 import { PT_REPORT } from "./pt/parts";
 import { FR_REPORT } from "./fr/parts";
 import { IT_REPORT } from "./it/parts";
+import { DE_REPORT } from "./de/parts";
+import { PL_REPORT } from "./pl/parts";
 
 const LOG_LINES = 200;
 
@@ -118,7 +120,7 @@ const en: typeof ko = {
     crashSend: "Send now",
     crashAlways: "From now on, send automatically without asking",
 };
-const UI = dicts(ko, en, { ja: JA_REPORT, es: ES_REPORT, pt: PT_REPORT, fr: FR_REPORT, it: IT_REPORT });
+const UI = dicts(ko, en, { ja: JA_REPORT, de: DE_REPORT, es: ES_REPORT, pt: PT_REPORT, pl: PL_REPORT, fr: FR_REPORT, it: IT_REPORT });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 export function ReportDialog({

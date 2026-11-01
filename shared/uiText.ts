@@ -5,6 +5,8 @@ import { ES_UI } from "./es/ui.ts";
 import { PT_UI } from "./pt/ui.ts";
 import { FR_UI } from "./fr/ui.ts";
 import { IT_UI } from "./it/ui.ts";
+import { DE_UI } from "./de/ui.ts";
+import { PL_UI } from "./pl/ui.ts";
 export type { Lang } from "./lang.ts";
 
 const ko = {
@@ -185,7 +187,7 @@ const en: typeof ko = {
   language: "Language",
 };
 
-export const UI = dicts(ko, en, { ja: JA_UI, es: ES_UI, pt: PT_UI, fr: FR_UI, it: IT_UI });
+export const UI = dicts(ko, en, { ja: JA_UI, de: DE_UI, es: ES_UI, pt: PT_UI, pl: PL_UI, fr: FR_UI, it: IT_UI });
 export type UiKey = keyof typeof ko;
 
 /** 공용 문구 + {a}·{n} 채우기 */

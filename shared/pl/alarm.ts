@@ -1,0 +1,50 @@
+// 폴란드어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const PL_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Nadzór i alarmy",
+  activeN: "Aktywne: {n}",
+  noAlarm: "Brak aktywnych alarmów — nadzorowane warunki: {n}",
+  notRunning: "Nadzór rusza po połączeniu (warunki: {n})",
+  ackAll: "Potwierdź wszystkie",
+  ack: "Potwierdź",
+  acked: "Potwierdzony",
+  clearEnded: "Usuń zakończone",
+  sound: "Dźwięk",
+  logStart: "Log CSV…",
+  logOn: "● Zapisano linii: {n}",
+  logStop: "Zatrzymaj log",
+  logTitle: "Zapisz log alarmów",
+  ongoing: "trwa",
+  colKind: "Warunek",
+  colName: "Co",
+  colValue: "Wartość",
+  colStart: "Wystąpił",
+  colEnd: "Ustąpił",
+  colDur: "Czas trwania",
+  safety: "PortDock nie jest urządzeniem bezpieczeństwa — to pomoc przy nadzorze. Ochrona maszyn i blokady należą do PLC i obwodów bezpieczeństwa.",
+  dlgTitle: "Warunki nadzoru — {a}",
+  lo: "Dolna granica (alarm poniżej)",
+  hi: "Górna granica (alarm powyżej)",
+  stuck: "Brak zmian (zamrożenie), sekundy",
+  lost: "Utrata komunikacji, sekundy",
+  hyst: "Margines powrotu (histereza)",
+  hystHint: "Alarm dolny ustępuje od «dolna + margines», górny od «górna − margines» — dzięki temu wartość wahająca się przy granicy nie powoduje migania alarmu.",
+  emptyHint: "Puste pole pomija dany warunek. Oceniana jest liczba widoczna na ekranie (zdekodowana według typu).",
+  save: "Zapisz",
+  remove: "Usuń warunki",
+  close: "Zamknij",
+  errLoHi: "Dolna granica musi być niższa od górnej.",
+  errSecs: "Sekundy: 1–86400.",
+  errHyst: "Margines to liczba ≥ 0.",
+  errNum: "Wpisz liczbę.",
+  errEmpty: "Wpisz co najmniej jeden warunek lub naciśnij «Usuń warunki».",
+};
+
+export const PL_KIND: Record<AlarmKind, string> = {
+  lo: "Dół",
+  hi: "Góra",
+  stuck: "Zamroż.",
+  lost: "Utrata",
+};

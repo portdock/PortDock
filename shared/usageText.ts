@@ -5,6 +5,8 @@ import { ES_USAGE } from "./es/parts.ts";
 import { PT_USAGE } from "./pt/parts.ts";
 import { FR_USAGE } from "./fr/parts.ts";
 import { IT_USAGE } from "./it/parts.ts";
+import { DE_USAGE } from "./de/parts.ts";
+import { PL_USAGE } from "./pl/parts.ts";
 
 const ko = {
     title: "사용 통계를 보낼까요?",
@@ -33,4 +35,4 @@ const en: UsageText = {
     setting: "Send usage statistics (anonymous, on close)",
     hint: "Sends only feature use counts, minutes open, program/Windows version, display language and installed/portable edition. Traffic, IP addresses, ports, COM names, file paths and PC/user/device names are never sent. Receiver: Aptabase (EU).",
 };
-export const USAGE_TEXT = dicts(ko, en, { ja: JA_USAGE, es: ES_USAGE, pt: PT_USAGE, fr: FR_USAGE, it: IT_USAGE });
+export const USAGE_TEXT = dicts(ko, en, { ja: JA_USAGE, de: DE_USAGE, es: ES_USAGE, pt: PT_USAGE, pl: PL_USAGE, fr: FR_USAGE, it: IT_USAGE });
