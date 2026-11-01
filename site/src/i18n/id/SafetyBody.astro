@@ -1,0 +1,128 @@
+---
+// Isi prinsip keamanan (bahasa Indonesia) — isinya sama dengan teks Korea/Inggris di views/SafetyPage.astro. Karena ada tautan di dalam kalimat, disimpan sebagai markup, bukan tabel teks.
+// Jika dasar (SECURITY.md, panduan program) atau teks Korea/Inggris berubah, sesuaikan juga di sini.
+// Tampilan program hanya bahasa Korea dan Inggris — nama tombol ditulis dengan nama bahasa Inggrisnya dalam tanda kutip.
+import { REPO } from "../../data/tools";
+import { link } from "../../lib/i18n";
+
+const lang = "id";
+const security = `${REPO}/blob/main/SECURITY.md`;
+const advisory = `${REPO}/security/advisories/new`;
+// Situs resmi Kementerian Ketenagakerjaan RI (diperiksa 2026-11-01)
+const kemnaker = "https://kemnaker.go.id/";
+---
+
+<h2>1. Pemeriksaan hanya membaca</h2>
+<ul>
+  <li>Port Inspector (port COM, adaptor jaringan, «This PC») dan Hardware Tester membaca pengaturan dan log tanpa hak administrator. Keduanya tidak memasang driver dan tidak mengubah nilai registry maupun pengaturan Windows.</li>
+  <li>Hasilnya hanya sampai «Worth a look» (layak diperiksa), kemungkinan penyebab, dan «Where to change» (layar Windows mana). Perubahan apa pun Anda lakukan sendiri di Windows.</li>
+  <li>
+    (mulai 0.10.0) Pemeriksaan keterbukaan di Port Inspector «This PC» (Remote Desktop, SMBv1, firewall, port yang mendengarkan di semua alamat, login otomatis, USB AutoPlay) dan tanda «Exposed» di Net Scan juga hanya membaca. Untuk login otomatis, yang diperiksa hanya ada tidaknya nilai kata sandi, tidak pernah isinya. Net Scan tidak memindai port tambahan untuk tanda itu. Cara membacanya:
+    <a href={link(lang, "guides/field-pc-exposure-check/")}>Membaca pemeriksaan keterbukaan PC lapangan (bahasa Inggris)</a>
+  </li>
+</ul>
+
+<h2>2. Di mana server menerima koneksi</h2>
+<p>
+  Modbus, MC protocol, protokol khusus LS XGT, socket raw SCPI, dan TCP/UDP biasa tidak punya autentikasi. Begitu server PortDock menyala, siapa pun yang bisa menjangkau port-nya bisa berkomunikasi dengannya. Karena itu setiap program punya alamat bawaan seperti di bawah.
+</p>
+<table class="t">
+  <thead>
+    <tr>
+      <th scope="col">Program</th>
+      <th scope="col">Alamat bawaan</th>
+      <th scope="col">Membukanya untuk PC lain</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PLC Simulator (MC di TCP 5000 secara bawaan, mulai 0.10.0 XGT di TCP 2004 / UDP 2005)</td>
+      <td>127.0.0.1 (hanya PC ini)</td>
+      <td>Hanya setelah Anda menyalakan «Allow other PCs to connect (0.0.0.0)»</td>
+    </tr>
+    <tr>
+      <td>Berbagi port serial (mulai 0.10.0 — raw atau RFC 2217 di TCP 7000, gateway Modbus TCP ↔ RTU di TCP 502 secara bawaan)</td>
+      <td>127.0.0.1 (hanya PC ini)</td>
+      <td>Jika «Allow other PCs to connect (0.0.0.0)» menyala, saat mulai program bertanya sekali lagi. Pilihan ini tidak diingat, jadi saat mulai berikutnya kembali ke 127.0.0.1.</td>
+    </tr>
+    <tr>
+      <td>Modbus Slave (TCP) · server dan relay TCP · Simulator</td>
+      <td>127.0.0.1 (hanya PC ini; bawaan saat pertama dijalankan mulai 0.10.0 — pengaturan yang disimpan versi sebelumnya tetap dipakai)</td>
+      <td>Hanya setelah Anda memilih 0.0.0.0 (semua adaptor jaringan) atau alamat satu adaptor di kolom alamat</td>
+    </tr>
+    <tr>
+      <td>UDP</td>
+      <td>0.0.0.0 (semua adaptor jaringan)</td>
+      <td>Menerima di semua adaptor karena harus menerima jawaban perangkat. Di kolom alamat bisa diganti ke alamat satu adaptor atau 127.0.0.1.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Buka server untuk PC lain hanya di jaringan yang Anda percayai. Gateway meneruskan pembacaan dan penulisan ke perangkat RS-485. Request ke Unit ID 0 secara bawaan mendapat exception 0A (tidak ada jalur); hanya jika Anda memilih «Broadcast», request itu dikirim ke semua perangkat di bus. Dasar-dasar memisahkan jaringan dan menutup port ada di
+  <a href={link(lang, "guides/industrial-protocol-no-authentication/")}>Modbus, MC, dan XGT tidak punya autentikasi (bahasa Inggris)</a>.
+</p>
+
+<h2>3. Menulis ke perangkat</h2>
+<ul>
+  <li>
+    (mulai 0.10.0) Di «Settings backup &amp; restore» (cadangkan dan pulihkan pengaturan) pada Modbus Master, tab pemulihan (penulisan) terbuka tanpa ada yang dipilih. «Write» tetap nonaktif sampai «Preview» membaca nilai saat ini, dan tidak ada yang ditulis jika tidak satu sel pun bisa dibaca. Setelah «Write», Anda menekan «Confirm write» sekali lagi sebelum apa pun dikirim; sesudahnya setiap sel dibaca ulang dan ditampilkan sebagai cocok, berbeda, gagal ditulis, atau tidak terbaca ulang.
+  </li>
+  <li>Pada RTU, pemulihan ke alamat 0 (broadcast — semua perangkat di bus menerimanya) dan ke alamat cadangan 248–255 diblokir. Input register (04), discrete input (02), dan register yang ditandai hanya baca di profil perangkat juga diblokir.</li>
+  <li>Di PLC Simulator, pengisian massal yang akan menimpa sel yang sudah berisi nilai meminta konfirmasi sekali lagi.</li>
+  <li>Jangan menulis ke mesin yang sedang berjalan. Banyak perangkat memerlukan perintah «simpan» tersendiri agar nilai tetap ada setelah daya dimatikan — periksa dulu rentang yang boleh ditulis di manual perangkat.</li>
+</ul>
+
+<h2>4. Alat tulis untuk AI (MCP)</h2>
+<ul>
+  <li>Dua alat tulis PortDock MCP (modbus_write_sim, mc_write_sim) hanya menerima alamat loopback (127.0.0.1, ::1, localhost). Semua alat lainnya hanya membaca.</li>
+  <li>
+    (mulai 0.10.0) Penulisan Modbus (modbus_write_sim) lebih dulu menanyakan identifikasi target (FC 2B/0E) dan hanya menulis jika nama vendornya diawali «PortDock» (bawaan PortDock Modbus Slave). Dengan begitu alat ini menolak penerus ke perangkat sungguhan, seperti gateway Serial yang mendengarkan di 127.0.0.1:502 di PC yang sama.
+  </li>
+  <li>
+    Penulisan MC (mc_write_sim) hanya diperiksa menurut alamatnya. Jika ada program di PC ini yang meneruskan 127.0.0.1 ke perangkat lain (relay TCP, gateway pabrikan, tunnel), penulisan lewat klien AI bisa sampai ke perangkat itu — jangan serahkan penulisan kepada AI selama program semacam itu berjalan. Pengaturan:
+    <a href={link(lang, "guides/portdock-mcp/")}>Memakai PortDock MCP (bahasa Inggris)</a>
+  </li>
+</ul>
+
+<h2>5. Apa yang keluar dari PC Anda</h2>
+<ul>
+  <li>Komunikasi perangkat hanya dikirim ke port dan alamat yang Anda pilih, dan tidak pernah dikirim ke tempat lain.</li>
+  <li>
+    <b>Statistik penggunaan</b> mati secara bawaan dan hanya dikirim jika Anda setuju (ditanyakan sekali saat pertama dijalankan; bisa dimatikan di pengaturan). Yang dikirim hanya jumlah pemakaian fitur, lama program terbuka dalam menit, versi program/Windows, bahasa tampilan, dan edisi terpasang/portabel — tidak pernah isi komunikasi, alamat IP, port, nama COM, jalur berkas, atau nama PC/pengguna/perangkat.
+  </li>
+  <li>
+    <b>Salinan «AI»</b> hanya menaruh teks pratinjau di clipboard. Folder pengguna, nama PC bawaan Windows, 3 byte terakhir alamat MAC, dan IP publik disamarkan; IP privat secara bawaan tetap tampil (pratinjau juga bisa menyamarkannya). Menempelkannya ke chat AI berarti mengirimnya ke layanan itu, jadi periksa dulu pratinjaunya.
+  </li>
+  <li>
+    <b>Alat web</b> (kalkulator, dekoder frame, penganalisis pcap, uji perangkat keras) memproses apa yang Anda ketik dan berkas yang Anda pilih di dalam browser ini dan tidak pernah mengirimnya ke server.
+  </li>
+  <li>
+    Laporan galat, pemeriksaan pembaruan, dan pengecualian lainnya (ping dan pencarian DNS oleh Hardware Tester) semuanya tercantum di <a href={link(lang, "privacy/")}>kebijakan privasi</a>.
+  </li>
+</ul>
+
+<h2>6. Pemantauan nilai dan alarm bukan alat keselamatan</h2>
+<p>
+  Pemantauan nilai dan alarm di Modbus Master dan Plot membantu orang yang melihat layar. Jika PC tertidur (sleep) atau koneksi putus, keduanya bisa tidak berbunyi. Melindungi orang dan mesin adalah tugas alat keselamatan yang semestinya — tombol emergency stop, interlock, relai keselamatan — dan PortDock tidak boleh menggantikannya.
+</p>
+
+<h2>7. Pekerjaan listrik</h2>
+<p>
+  PortDock dan panduannya membantu pemeriksaan komunikasi; keduanya tidak mengajarkan pekerjaan listrik. Pekerjaan pada terminal dan pengawatan adalah tugas orang yang berkompeten, setelah suplai diputus dan dikunci (LOTO) dan dipastikan tidak bertegangan dengan alat uji tegangan. Ikuti ketentuan resmi keselamatan dan kesehatan kerja (K3), misalnya dari
+  <a href={kemnaker}>Kementerian Ketenagakerjaan Republik Indonesia</a> atau lembaga keselamatan di negara Anda, serta prosedur kerja di lokasi Anda.
+</p>
+
+<h2>8. Memeriksa berkas yang diunduh</h2>
+<ul>
+  <li>Berkas yang dirilis saat ini belum ditandatangani kode, jadi Windows bisa menampilkan «Windows melindungi PC Anda» — lihat <a href={link(lang, "code-signing/")}>kebijakan penandatanganan kode (bahasa Inggris)</a>.</li>
+  <li>
+    Unduh hanya dari GitHub Releases dan bandingkan dengan nilai SHA256 (SHA256SUMS.txt) serta hasil pemindaian Microsoft Defender yang disertakan di setiap rilis. Caranya:
+    <a href={link(lang, "download/#safe")}>Unduh → Apakah aman?</a>
+  </li>
+</ul>
+
+<h2>9. Melaporkan masalah keamanan</h2>
+<p>
+  Mohon jangan membuka issue publik. Laporkan secara tertutup lewat <a href={advisory}>GitHub security advisories (Report a vulnerability)</a> atau email (subjek diawali [security]). Cakupan dan apa yang bisa diharapkan ada di
+  <a href={security}>SECURITY.md</a>. PortDock dikelola satu orang di waktu luangnya, jadi tidak ada jaminan tanggal perbaikan dan tidak ada bug bounty.
+</p>

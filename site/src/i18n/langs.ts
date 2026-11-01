@@ -5,7 +5,7 @@
 
 export const CORE_LANGS = ["ko", "en"] as const;
 /** 번역이 끝나 공개하는 추가 언어 — 순서가 언어 고르기 목록 순서 */
-export const EXTRA_LANGS = ["ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it"] as const;
+export const EXTRA_LANGS = ["ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"] as const;
 export const LANGS = [...CORE_LANGS, ...EXTRA_LANGS] as const;
 
 export type CoreLang = (typeof CORE_LANGS)[number];
@@ -35,6 +35,7 @@ export const LANG_META: Record<SiteLang, LangMeta> = {
   vi: { name: "Tiếng Việt", hreflang: "vi", locale: "vi-VN", og: "vi_VN" },
   tr: { name: "Türkçe", hreflang: "tr", locale: "tr-TR", og: "tr_TR" },
   it: { name: "Italiano", hreflang: "it", locale: "it-IT", og: "it_IT" },
+  id: { name: "Bahasa Indonesia", hreflang: "id", locale: "id-ID", og: "id_ID" },
 };
 
 export const isCore = (lang: string): lang is CoreLang => (CORE_LANGS as readonly string[]).includes(lang);

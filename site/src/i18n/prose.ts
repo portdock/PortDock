@@ -19,6 +19,8 @@ import TrSafety from "./tr/SafetyBody.astro";
 import TrPrivacy from "./tr/PrivacyBody.astro";
 import ItSafety from "./it/SafetyBody.astro";
 import ItPrivacy from "./it/PrivacyBody.astro";
+import IdSafety from "./id/SafetyBody.astro";
+import IdPrivacy from "./id/PrivacyBody.astro";
 
 export const PROSE = {
   ja: { safety: JaSafety, privacy: JaPrivacy },
@@ -30,4 +32,5 @@ export const PROSE = {
   vi: { safety: ViSafety, privacy: ViPrivacy },
   tr: { safety: TrSafety, privacy: TrPrivacy },
   it: { safety: ItSafety, privacy: ItPrivacy },
+  id: { safety: IdSafety, privacy: IdPrivacy },
 } satisfies Record<ExtraLang, { safety: unknown; privacy: unknown }>;

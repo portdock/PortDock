@@ -1,0 +1,88 @@
+---
+// Isi kebijakan privasi (bahasa Indonesia) — isinya sama dengan teks Korea/Inggris di views/PrivacyPage.astro. Karena ada tautan di dalam kalimat, disimpan sebagai markup, bukan tabel teks.
+// Jika teks Korea/Inggris berubah, sesuaikan juga di sini.
+// Tampilan program hanya bahasa Korea dan Inggris — nama tombol ditulis dengan nama bahasa Inggrisnya dalam tanda kutip.
+import { CONTACT_EMAIL } from "@shared/links";
+import EmailOff from "../../components/EmailOff.astro";
+import { link } from "../../lib/i18n";
+
+const lang = "id";
+// Formulir kontak hanya ada jika variabel build PUBLIC_TURNSTILE_SITE_KEY diisi (ContactPage.astro)
+const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
+---
+
+<h2>1. Program (alat PortDock)</h2>
+<ul>
+  <li>Program tidak pernah mengirim isi komunikasi, perintah, aturan, atau pengaturan Anda ke mana pun. Pengaturan tetap tersimpan di PC ini. Komunikasi dengan perangkat (serial, TCP, UDP, Modbus, SCPI, MC protocol, pencarian perangkat jaringan) hanya dikirim ke port, alamat, dan subnet yang Anda pilih.</li>
+  <li>
+    <b>Log putus dan latensi Hardware Tester</b>: hanya selama «Start recording» menyala, program melakukan ping ke gateway (router) dan ke satu alamat internet pilihan Anda (bawaan 1.1.1.1 = Cloudflare; 8.8.8.8 = Google, atau alamat Anda sendiri), dan setiap 5 detik menanyakan satu nama (bawaan example.com; kosongkan untuk melewatinya) ke server DNS yang diatur di PC ini. Seperti setiap permintaan internet, pihak penerima melihat alamat koneksi (IP) PC ini. Tujuannya selalu ditampilkan, dan tidak ada yang dikirim setelah Anda berhenti. Log hanya tersimpan di PC jika Anda menyimpannya sebagai CSV.
+  </li>
+  <li>
+    <b>Tampilan sinyal Wi-Fi Hardware Tester (hanya saat Anda menekannya)</b>: membaca kekuatan sinyal, kecepatan tautan, pita frekuensi, kanal, dan berapa banyak jaringan di sekitar yang memakai tiap kanal. Mulai Windows 11 24H2, Windows mewajibkan izin lokasi untuk membaca nilai-nilai ini — program tidak membaca lokasi (koordinat), dan nama jaringan (SSID) serta alamat access point (BSSID) tidak pernah dibaca atau disimpan. Jika Anda menolak, semua fungsi lainnya tetap berjalan.
+  </li>
+  <li>
+    <b>Nama perangkat Bluetooth</b>: log koneksi Hardware Tester dan tab «Wireless» di Port Inspector hanya menampilkan nama di layar; teks yang disimpan, disalin, dan diekspor memakai «Device N». Nama tidak pernah dikirim.
+  </li>
+  <li>
+    <b>Server yang mendengarkan di jaringan (hanya jika Anda menjalankannya)</b>: PLC Simulator (MC di TCP 5000 secara bawaan, mulai 0.10.0 LS XGT di TCP 2004 / UDP 2005) dan berbagi port serial (mulai 0.10.0 — raw atau RFC 2217 di TCP 7000 secara bawaan, gateway Modbus TCP ↔ RTU di TCP 502 secara bawaan) secara bawaan hanya menerima koneksi dari PC ini (127.0.0.1). Jika Anda menyalakan «Allow other PCs to connect (0.0.0.0)», PC lain di jaringan yang sama bisa tersambung tanpa autentikasi dan membaca serta menulis nilai perangkat, atau mengirim ke port COM dan perangkat RS-485 (protokol-protokol ini tidak punya autentikasi). Modbus Slave TCP, server/relay TCP, dan Simulator mendengarkan di alamat pada kolom alamatnya — mulai 0.10.0 saat pertama dijalankan 127.0.0.1 (hanya PC ini); untuk PC lain, pilih 0.0.0.0 atau alamat satu adaptor di sana. UDP secara bawaan mendengarkan di 0.0.0.0 (semua adaptor jaringan) karena harus menerima jawaban perangkat. Buka hanya di jaringan yang tepercaya.
+  </li>
+  <li>
+    <b>PortDock MCP (server untuk klien AI)</b>: untuk setiap pemanggilan alat, program menulis satu baris di log sesi di PC ini (waktu, alat, argumen, target, berhasil atau tidak, awal hasil, durasi). Log berada di portdock-data\mcp-log jika ada folder portdock-data di sebelah exe, jika tidak di %LOCALAPPDATA%\dev.portdock\mcp-log, dan berkas yang lebih tua dari 30 hari dihapus. Jalur folder pengguna disamarkan menjadi «~» dan alamat MAC menjadi «xx-…». PortDock MCP tidak pernah mengirim log ini ke mana pun dan tidak mengirim laporan galat maupun statistik penggunaan. Namun, <b>hasil alat (nilai port dan perangkat yang dibacanya) dikirim ke klien AI yang Anda pakai, dan klien itu bisa mengirimnya ke server perusahaannya (model AI)</b> — sejak itu berlaku kebijakan privasi klien dan perusahaan tersebut.
+  </li>
+  <li>
+    <b>Salinan «AI» (salinan untuk bertanya ke AI, 0.8.0 — tombol «AI» di bilah judul 12 aplikasi)</b>: menyusun teks untuk chat AI dari program, pengaturan koneksi, galat di sesi ini, dan lalu lintas terbaru (atau hasil pemeriksaan), menampilkannya sebagai pratinjau, dan «Copy» menaruhnya <b>hanya di clipboard</b>. PortDock tidak mengirim teks ini ke mana pun. <b>Begitu Anda menempelkannya ke chat AI (misalnya ChatGPT, Claude, atau Gemini), teks itu terkirim ke layanan AI tersebut dan berlaku kebijakan privasi layanan itu.</b> Di dalam teks, jalur folder pengguna menjadi «~», nama PC bawaan Windows (DESKTOP-… dll.) dan nama PC di jalur UNC disamarkan, 3 byte terakhir alamat MAC menjadi «xx», dan IP publik menjadi nomor seperti «[IP-1]». IP privat (192.168.x.x, 10.x.x.x …) tidak bisa dilacak dari luar dan sering diperlukan untuk menemukan penyebab seperti «PC dan perangkat beda subnet», jadi secara bawaan tetap tampil; nyalakan «Hide private IPs too» di pratinjau untuk ikut menyamarkannya. Lalu lintas terbaru bisa dihilangkan di pratinjau, dan teks dibatasi 8.000 karakter (baris tertua dibuang lebih dulu). Periksa rincian perangkat dan perusahaan di pratinjau sebelum menempel.
+  </li>
+  <li>
+    <b>«Save as pcap» di relay TCP (0.8.0)</b>: jika dinyalakan, byte yang diteruskan di kedua arah hanya ditulis ke berkas .pcapng yang Anda pilih. Berkas itu tetap di PC ini dan tidak pernah dikirim ke mana pun. Berkas pcap berisi alamat IP, port, dan isi komunikasi, jadi berhati-hatilah sebelum membagikannya.
+  </li>
+  <li>
+    <b>Pemeriksaan dan log yang disimpan di PC ini (mulai 0.10.0)</b>: tidak pernah dikirim; hanya ditulis ke penyimpanan aplikasi (juga ikut disalin ke berkas «Export settings») atau ke berkas pilihan Anda — data acuan Net Scan (IP, alamat MAC lengkap, nama host, dan port terbuka tiap perangkat), pemeriksaan tersimpan Port Inspector (hingga 20, termasuk IP adaptor jaringan dan gateway — tanpa nomor seri perangkat, nama PC, dan nama jaringan yang tersambung), cadangan pengaturan perangkat dari Modbus Master (JSON/CSV), log alarm CSV di Modbus Master dan Plot, serta log sambung/putus USB Hardware Tester (nama perangkat dan VID:PID — tanpa nomor seri). Data ini menunjukkan susunan jaringan Anda, jadi berhati-hatilah sebelum membagikannya.
+  </li>
+  <li>
+    <b>Laporan galat</b> hanya dikirim jika Anda menekan kirim di jendela laporan «!» atau mengatur «Automatic error reports» ke «Send automatically» (bawaannya «Ask after a crash», yaitu bertanya setelah crash; «Never send» mematikannya). Isinya penyebab galat (teks dan lokasi exception) serta versi program/Windows. Isi komunikasi dan pengaturan IP tidak disertakan kecuali Anda secara tegas mencentang «recent traffic».
+  </li>
+  <li>Laporan dikirim ke Sentry (Functional Software, Inc.), hanya dipakai untuk memperbaiki bug, dihapus setelah 30 hari, disimpan di region UE Sentry (Jerman), dan alamat IP tidak disimpan.</li>
+  <li>
+    <b>Statistik penggunaan (opsional, mati secara bawaan)</b>: program bertanya sekali saat pertama dijalankan dan hanya mengirim statistik jika Anda memilih «Send» atau menyalakan «Send usage statistics» di Pengaturan. Menutup pertanyaan tanpa memilih berarti tidak ada yang dikirim. Saat Anda menutup jendela, yang dikirim adalah nama dan versi program, versi Windows (10/11), bahasa tampilan, berapa menit program terbuka, berapa kali tiap fitur dipakai (sambung, kirim, baca … — hanya angka), dan apakah edisinya terpasang atau portabel. Isi komunikasi, alamat IP, port, nama COM, jalur berkas, atau nama PC/pengguna/perangkat tidak pernah dikirim, dan tidak dibuat ID yang terikat pada instalasi atau PC Anda (hanya angka acak yang berubah setiap kali dijalankan). Jika Anda offline atau pengiriman gagal, data dibuang dan tidak disimpan di PC.
+  </li>
+  <li>
+    Statistik penggunaan dikirim ke region UE Aptabase (Technov Solutions SRL, Rumania) dan hanya dipakai untuk memutuskan apa yang perlu diperbaiki. Aptabase menentukan negara dan wilayah dari alamat IP koneksi, tetapi tidak menyimpan alamat itu sendiri, dan nomor pengunjung harian anonim yang dipakainya berganti setiap 24 jam. Aptabase menyimpan statistik hingga 5 tahun; karena tidak bisa dikaitkan dengan seseorang, catatan perorangan tidak bisa dicari untuk dihapus.
+  </li>
+  <li>
+    <b>Pemeriksaan pembaruan (opsional, mati secara bawaan)</b>: hanya jika Anda menyalakan «Check for new versions (once a day)» di Pengaturan, program menanyakan rilis terbaru PortDock ke API GitHub (api.github.com) sekali sehari. Permintaan itu tidak membawa data (tanpa cookie atau pengenal); seperti setiap permintaan web, GitHub melihat alamat IP koneksi. Jika ada versi yang lebih baru, hanya muncul bilah pemberitahuan — tidak ada yang diunduh atau dipasang. GitHub menangani permintaan itu menurut
+    <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+  </li>
+</ul>
+<h2>2. Situs web ini</h2>
+<ul>
+  <li><b>Statistik</b>: Cloudflare Web Analytics menghitung tampilan halaman tanpa cookie dan tanpa pengenal pribadi.</li>
+  <li>
+    <b>Iklan</b>: halaman alat web, panduan, dan peta register per perangkat bisa menampilkan iklan Google AdSense. Google dan mitranya bisa memakai cookie untuk menampilkan iklan berdasarkan kunjungan sebelumnya. Anda bisa menolak iklan yang dipersonalisasi di
+    <a href="https://adssettings.google.com">Setelan Iklan Google</a>; lihat juga <a href="https://policies.google.com/technologies/ads">kebijakan iklan Google</a>. Halaman unduhan, produk, dan dokumentasi tidak memuat iklan.
+  </li>
+  <li>
+    <b>Alat web</b>: penganalisis pcap, dekoder frame, kalkulator, dan uji perangkat keras (mikrofon, webcam, keyboard …) memproses berkas yang Anda pilih, nilai yang Anda masukkan, serta suara mikrofon atau gambar kamera hanya di dalam browser ini dan tidak mengunggah apa pun. Kode alat tidak pernah mengirim isi tersebut lewat jaringan. Skrip statistik dan iklan di halaman yang sama (di atas) berjalan terpisah dan tidak menerima isi berkas atau masukan.
+  </li>
+  {
+    hasForm ? (
+      <li><b>Formulir kontak</b>: nama, email, dan pesan Anda hanya dipakai untuk membalas dan dihapus dalam satu tahun. Cloudflare Turnstile dipakai untuk mencegah spam.</li>
+    ) : (
+      <li><b>Kontak</b>: situs ini tidak punya formulir kontak; pesan diterima lewat email atau GitHub (issue, Discussions). Alamat email dan pesan hanya dipakai untuk membalas dan dihapus dalam satu tahun setelah dibalas. Tulisan di GitHub tetap publik di GitHub.</li>
+    )
+  }
+</ul>
+<h2>3. Pemroses data dan transfer ke luar negeri</h2>
+<ul>
+  <li>Cloudflare, Inc. (AS) — hosting dan statistik situs{hasForm ? ", pencegahan spam, pengiriman email kontak" : ""}</li>
+  <li>Google LLC (AS) — iklan di halaman alat web, panduan, dan peta register perangkat</li>
+  <li>Functional Software, Inc. (Sentry; perusahaan AS, region data UE) — laporan galat program (hanya dengan izin Anda)</li>
+  <li>Technov Solutions SRL (Aptabase; Rumania, region data UE) — statistik penggunaan program (hanya jika Anda menyalakannya)</li>
+  <li>GitHub, Inc. (AS) — menerima permintaan pemeriksaan pembaruan (hanya jika Anda menyalakannya)</li>
+  <li>Tujuan ping dan DNS Hardware Tester — alamat internet pilihan Anda (bawaan 1.1.1.1 adalah Cloudflare, 8.8.8.8 adalah Google) dan server DNS PC ini menerima ping dan pertanyaan DNS (hanya selama perekaman; ini mitra komunikasi pilihan Anda, bukan pemroses data)</li>
+  <li>Klien AI yang Anda sambungkan ke PortDock MCP dan perusahaan pembuatnya (misalnya perusahaan di balik Claude Desktop, VS Code, atau Cursor) — menerima hasil alat (klien pilihan Anda, bukan pemroses data PortDock; berlaku kebijakan perusahaan itu)</li>
+  <li>Layanan AI tempat Anda menempelkan teks salinan «AI» — menerima teks yang Anda tempel sendiri (PortDock tidak mengirimnya, dan layanan itu bukan pemroses data; berlaku kebijakan layanan itu)</li>
+</ul>
+<h2>4. Kontak</h2>
+<p>
+  Untuk pertanyaan privasi atau permintaan penghapusan, kirim email ke <EmailOff><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></EmailOff> atau gunakan <a href={link(lang, "contact/")}>halaman kontak (bahasa Inggris)</a>.
+</p>

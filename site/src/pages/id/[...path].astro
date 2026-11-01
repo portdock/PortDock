@@ -1,0 +1,10 @@
+---
+// Halaman bahasa Indonesia — hanya halaman dalam cakupan terjemahan (i18n/scope.ts) sebagai /id/… (site/I18N.md).
+import LangPage from "../../i18n/LangPage.astro";
+import { staticPaths } from "../../i18n/scope";
+
+export const getStaticPaths = staticPaths;
+const { path } = Astro.props;
+---
+
+<LangPage lang="id" path={path} />
