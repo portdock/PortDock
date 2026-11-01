@@ -1,0 +1,28 @@
+// Modbus 함수 이름·데이터 영역(lib/modbusDecode.ts·shared/modbusBuild.ts) — Modbus 요청 만들기·해석기가 함께 쓴다
+// 용어: bobines, entrées TOR, registres de maintien, registres d'entrée (프랑스어 PLC 매뉴얼 표기)
+export default {
+  "Read Coils": "Lecture de bobines",
+  "Read Discrete Inputs": "Lecture d’entrées TOR",
+  "Read Holding Registers": "Lecture de registres de maintien",
+  "Read Input Registers": "Lecture de registres d’entrée",
+  "Write Single Coil": "Écriture d’une bobine",
+  "Write Single Register": "Écriture d’un registre",
+  "Write Multiple Coils": "Écriture de plusieurs bobines",
+  "Write Multiple Registers": "Écriture de plusieurs registres",
+  "Read/Write Multiple Registers": "Lecture/écriture de plusieurs registres",
+  "Read Exception Status (serial line only)": "Lecture de l’état d’exception (liaison série uniquement)",
+  "Diagnostics (serial line only)": "Diagnostic (liaison série uniquement)",
+  "Get Comm Event Counter (serial line only)": "Lecture du compteur d’événements de communication (liaison série uniquement)",
+  "Get Comm Event Log (serial line only)": "Lecture du journal d’événements de communication (liaison série uniquement)",
+  "Report Server ID (serial line only)": "Identification de l’esclave (liaison série uniquement)",
+  "Read File Record": "Lecture d’enregistrement de fichier",
+  "Write File Record": "Écriture d’enregistrement de fichier",
+  "Mask Write Register": "Écriture masquée d’un registre",
+  "Read FIFO Queue": "Lecture de file FIFO",
+  "Encapsulated Interface Transport": "Transport d’interface encapsulée (identification de l’appareil, etc.)",
+  "Unknown function": "Fonction inconnue",
+  Coils: "Bobines",
+  "Discrete inputs": "Entrées TOR",
+  "Holding registers": "Registres de maintien",
+  "Input registers": "Registres d’entrée",
+};

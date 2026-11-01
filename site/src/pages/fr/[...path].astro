@@ -1,0 +1,10 @@
+---
+// 프랑스어 쪽 — 번역 범위(i18n/scope.ts)의 쪽만 /fr/… 로 만든다. 새 언어는 이 파일을 pages/<언어>/ 로 복사하고 lang 만 바꾼다(site/I18N.md).
+import LangPage from "../../i18n/LangPage.astro";
+import { staticPaths } from "../../i18n/scope";
+
+export const getStaticPaths = staticPaths;
+const { path } = Astro.props;
+---
+
+<LangPage lang="fr" path={path} />

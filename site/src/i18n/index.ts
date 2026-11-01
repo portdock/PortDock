@@ -6,13 +6,14 @@ import de from "./de/index.ts";
 import es from "./es/index.ts";
 import pt from "./pt/index.ts";
 import pl from "./pl/index.ts";
+import fr from "./fr/index.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 
 export type Dict = typeof ja;
 export type LibSection = keyof Dict["lib"];
 
-export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl };
+export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];

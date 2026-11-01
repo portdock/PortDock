@@ -1,0 +1,127 @@
+---
+// 안전 원칙 본문(프랑스어) — views/SafetyPage.astro 의 한국어·영어 본문과 같은 내용. 문장 안에 링크가 있어 문구 표가 아니라 마크업으로 둔다.
+// 근거(SECURITY.md·각 프로그램 사용법)나 한국어·영어 본문을 고치면 여기도 맞춘다.
+// 프로그램 화면은 한국어·영어뿐이라 단추·칸 이름은 영어 그대로 « » 안에 둔다.
+import { REPO } from "../../data/tools";
+import { link } from "../../lib/i18n";
+
+const lang = "fr";
+const security = `${REPO}/blob/main/SECURITY.md`;
+const advisory = `${REPO}/security/advisories/new`;
+const inrs = "https://www.inrs.fr/";
+---
+
+<h2>1. Les contrôles ne font que lire</h2>
+<ul>
+  <li>Port Inspector (ports COM, cartes réseau, « This PC ») et Hardware Tester lisent les réglages et les journaux sans droits d’administrateur. Ils n’installent aucun pilote et ne modifient ni le registre ni les paramètres de Windows.</li>
+  <li>Les résultats s’arrêtent à « Worth a look » (points à vérifier), aux causes possibles et à « Where to change » (quel écran de Windows). C’est vous qui faites les modifications dans Windows.</li>
+  <li>
+    (à partir de 0.10.0) Le contrôle d’exposition de Port Inspector « This PC » (Bureau à distance, SMBv1, pare-feu, ports à l’écoute sur toutes les adresses, ouverture de session automatique, exécution automatique USB) et l’étiquette « Exposed » de Net Scan ne font eux aussi que lire. Pour l’ouverture de session automatique, seule la présence d’une valeur de mot de passe est vérifiée, jamais son contenu. Net Scan ne lance aucun balayage de ports supplémentaire pour cette étiquette. Comment la lire :
+    <a href={link(lang, "guides/field-pc-exposure-check/")}>lire le contrôle d’exposition d’un PC de terrain (en anglais)</a>
+  </li>
+</ul>
+
+<h2>2. Où les serveurs acceptent les connexions</h2>
+<p>
+  Modbus, le protocole MC, le protocole dédié LS XGT, les sockets SCPI et le TCP/UDP simple n’ont pas d’authentification. Dès qu’un serveur PortDock est lancé, quiconque peut joindre son port peut dialoguer avec lui : chaque logiciel a donc l’adresse d’écoute par défaut suivante.
+</p>
+<table class="t">
+  <thead>
+    <tr>
+      <th scope="col">Logiciel</th>
+      <th scope="col">Adresse par défaut</th>
+      <th scope="col">Ouverture aux autres PC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PLC Simulator (MC sur TCP 5000 par défaut, XGT sur TCP 2004 / UDP 2005 à partir de 0.10.0)</td>
+      <td>127.0.0.1 (ce PC uniquement)</td>
+      <td>Seulement après avoir activé « Allow other PCs to connect (0.0.0.0) » (autoriser les autres PC à se connecter)</td>
+    </tr>
+    <tr>
+      <td>Partage de port série (à partir de 0.10.0 — raw ou RFC 2217 sur TCP 7000, passerelle Modbus TCP ↔ RTU sur TCP 502 par défaut)</td>
+      <td>127.0.0.1 (ce PC uniquement)</td>
+      <td>Avec « Allow other PCs to connect (0.0.0.0) » activé, le démarrage demande une nouvelle confirmation. Ce choix n’est pas mémorisé : au démarrage suivant, l’adresse revient à 127.0.0.1.</td>
+    </tr>
+    <tr>
+      <td>Modbus Slave (TCP) · serveur et relais TCP · Simulator</td>
+      <td>127.0.0.1 (ce PC uniquement ; valeur par défaut au premier lancement à partir de 0.10.0 — les réglages enregistrés par les versions précédentes sont conservés)</td>
+      <td>Seulement après avoir choisi 0.0.0.0 (toutes les cartes réseau) ou l’adresse d’une carte dans le champ d’adresse</td>
+    </tr>
+    <tr>
+      <td>UDP</td>
+      <td>0.0.0.0 (toutes les cartes réseau)</td>
+      <td>Réception sur toutes les cartes, car il faut recevoir les réponses des appareils. Vous pouvez choisir l’adresse d’une carte ou 127.0.0.1 dans le champ d’adresse.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  N’ouvrez les serveurs aux autres PC que sur des réseaux de confiance. La passerelle transmet lectures et écritures aux appareils RS-485. Les requêtes vers l’identifiant d’unité 0 reçoivent par défaut l’exception 0A (pas de chemin) ; elles ne partent vers tous les appareils du bus que si vous choisissez « Broadcast ». Les bases pour segmenter les réseaux et fermer les ports sont dans
+  <a href={link(lang, "guides/industrial-protocol-no-authentication/")}>Modbus, MC et XGT n’ont pas d’authentification (en anglais)</a>.
+</p>
+
+<h2>3. Écrire dans les appareils</h2>
+<ul>
+  <li>
+    (à partir de 0.10.0) Dans « Settings backup &amp; restore » (sauvegarde et restauration des paramètres) de Modbus Master, l’onglet de restauration (écriture) s’ouvre sans aucune sélection. « Write » reste inactif tant que « Preview » n’a pas lu les valeurs actuelles, et rien n’est écrit si aucune cellule n’a pu être lue. Après « Write », il faut encore appuyer sur « Confirm write » avant tout envoi ; ensuite, chaque cellule est relue et marquée identique, différente, échec d’écriture ou non relue.
+  </li>
+  <li>En RTU, la restauration vers l’adresse 0 (diffusion — tous les appareils du bus la prennent en compte) ou vers les adresses réservées 248 à 255 est bloquée. Les registres d’entrée (04), les entrées TOR (02) et les registres marqués en lecture seule dans le profil de l’appareil sont bloqués aussi.</li>
+  <li>Dans PLC Simulator, un remplissage qui écraserait des cellules contenant déjà des valeurs demande une confirmation supplémentaire.</li>
+  <li>N’écrivez pas dans une machine en fonctionnement. Beaucoup d’appareils exigent une commande d’« enregistrement » distincte pour conserver les valeurs après coupure : vérifiez d’abord la plage modifiable dans la notice de l’appareil.</li>
+</ul>
+
+<h2>4. Outils d’écriture pour l’IA (MCP)</h2>
+<ul>
+  <li>Les deux outils d’écriture de PortDock MCP (modbus_write_sim, mc_write_sim) n’acceptent que les adresses de bouclage (127.0.0.1, ::1, localhost). Tous les autres outils sont en lecture seule.</li>
+  <li>
+    (à partir de 0.10.0) L’écriture Modbus (modbus_write_sim) demande d’abord son identification à la cible (FC 2B/0E) et n’écrit que si le nom du fabricant commence par « PortDock » (valeur par défaut de PortDock Modbus Slave). Elle refuse donc les relais vers des appareils réels, comme la passerelle série à l’écoute sur 127.0.0.1:502 sur le même PC.
+  </li>
+  <li>
+    L’écriture MC (mc_write_sim) n’est contrôlée que par l’adresse. Si un logiciel de ce PC relaie 127.0.0.1 vers un autre appareil (relais TCP, passerelle constructeur, tunnel), une écriture passée par un client IA peut atteindre cet appareil — ne confiez pas d’écritures à une IA tant qu’un tel logiciel fonctionne. Configuration :
+    <a href={link(lang, "guides/portdock-mcp/")}>utiliser PortDock MCP (en anglais)</a>
+  </li>
+</ul>
+
+<h2>5. Ce qui sort de votre PC</h2>
+<ul>
+  <li>Les échanges avec les appareils vont uniquement vers les ports et adresses que vous choisissez et ne sont jamais envoyés ailleurs.</li>
+  <li>
+    Les <b>statistiques d’utilisation</b> sont désactivées par défaut et ne sont envoyées qu’avec votre accord (demandé une fois au premier lancement ; désactivables dans les paramètres). Seuls sont envoyés le nombre d’utilisations par fonction, les minutes d’ouverture, la version du logiciel et de Windows, la langue d’affichage et le type d’édition (installée ou portable) — jamais les échanges, adresses IP, ports, noms de ports COM, chemins de fichiers ni noms de PC, d’utilisateurs ou d’appareils.
+  </li>
+  <li>
+    La <b>copie « AI »</b> place seulement le texte de l’aperçu dans le presse-papiers. Les dossiers utilisateur, les noms de PC Windows par défaut, les 3 derniers octets des adresses MAC et les IP publiques sont masqués ; les IP privées sont conservées par défaut (l’aperçu permet aussi de les masquer). Une fois collé dans une discussion avec une IA, le texte part vers ce service : vérifiez d’abord l’aperçu.
+  </li>
+  <li>
+    Les <b>outils web</b> (calculateurs, décodeurs de trames, analyseur pcap, tests du matériel) traitent ce que vous saisissez et les fichiers que vous choisissez dans ce navigateur, sans jamais les envoyer à un serveur.
+  </li>
+  <li>
+    Les rapports d’erreur, la recherche de mises à jour et les autres exceptions (ping et requêtes DNS de Hardware Tester) sont tous décrits dans la <a href={link(lang, "privacy/")}>politique de confidentialité</a>.
+  </li>
+</ul>
+
+<h2>6. La surveillance des valeurs et les alarmes ne sont pas des dispositifs de sécurité</h2>
+<p>
+  La surveillance des valeurs et les alarmes de Modbus Master et de Plot aident la personne qui regarde l’écran. Si le PC se met en veille ou si la liaison tombe, elles peuvent ne pas se déclencher. La protection des personnes et des machines revient à de vrais dispositifs de sécurité — arrêts d’urgence, verrouillages, relais de sécurité — et PortDock ne doit pas les remplacer.
+</p>
+
+<h2>7. Travaux électriques</h2>
+<p>
+  PortDock et ses guides aident à contrôler les communications ; ils n’enseignent pas les travaux électriques. Les interventions sur les bornes et le câblage sont réservées à des personnes habilitées, après séparation et condamnation de l’alimentation (consignation, LOTO) et vérification d’absence de tension au détecteur. Suivez les recommandations officielles comme celles de
+  <a href={inrs}>l’INRS</a> ou de l’organisme de prévention de votre pays, ainsi que les procédures de votre site.
+</p>
+
+<h2>8. Vérifier les fichiers téléchargés</h2>
+<ul>
+  <li>Les fichiers publiés ne sont pas signés pour l’instant : Windows peut donc afficher « Windows a protégé votre ordinateur » — voir la <a href={link(lang, "code-signing/")}>politique de signature du code (en anglais)</a>.</li>
+  <li>
+    Téléchargez uniquement depuis la page des versions GitHub et comparez avec les empreintes SHA256 (SHA256SUMS.txt) et le résultat de l’analyse Microsoft Defender publiés avec chaque version. Méthode :
+    <a href={link(lang, "download/#safe")}>Télécharger → Est-ce sûr ?</a>
+  </li>
+</ul>
+
+<h2>9. Signaler un problème de sécurité</h2>
+<p>
+  N’ouvrez pas d’issue publique. Signalez-le en privé via les <a href={advisory}>avis de sécurité GitHub (Report a vulnerability)</a> ou par e-mail (objet commençant par [security]). Le périmètre et la marche à suivre sont dans
+  <a href={security}>SECURITY.md</a>. PortDock est maintenu par une seule personne sur son temps libre : aucune date de correction n’est garantie et il n’y a pas de prime aux bogues.
+</p>
