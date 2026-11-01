@@ -10,7 +10,7 @@ import { USES } from "../lib/cableSelect";
 import { page2 } from "../i18n";
 import { pageName } from "../i18n/names";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 import { tx } from "../lib/tr";
 
 interface Props {
@@ -116,7 +116,15 @@ const L =
       ],
       more: ["To convert AWG and mm², use the ", "AWG to mm² table", "; for how many wires fit in a conduit or duct, the ", "conduit and duct fill calculator", "; for a detailed voltage drop, the ", "voltage drop calculator", "."],
     }
-  : page2(lang, "cableSelection");
+  : (() => {
+      // 6차 묶음 도구(AWG·전선관·전압 강하)가 그 언어로 번역됐으면 링크 글을 pageName() 으로(사전의 «(영어)» 표시가 빠진다)
+      const d = page2(lang, "cableSelection");
+      const more = [...d.more];
+      ["tools/awg-mm2/", "tools/conduit-fill/", "tools/voltage-drop/"].forEach((p, i) => {
+        if (isTranslated(lang, p)) more[2 * i + 1] = pageName(lang, p);
+      });
+      return { ...d, more };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

@@ -14,7 +14,8 @@ import { TEMPLATES, TEMPLATE_NAME, LABEL_SETS } from "../lib/wiring";
 import { BAUDS } from "../lib/serialTiming";
 import { page2 } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
+import { pageName } from "../i18n/names";
 import { msg, tx } from "../lib/tr";
 
 interface Props {
@@ -198,7 +199,13 @@ const L =
       cable: ["For cable types and sizes, see the ", "cable selection helper", ", ", "conduit and duct fill calculator", "."],
       pngFail: "Could not make the PNG — try saving as SVG.",
     }
-  : page2(lang, "wiring");
+  : (() => {
+      // 전선관 점유율 계산기(6차 묶음)가 그 언어로 번역됐으면 링크 글을 pageName() 으로
+      const d = page2(lang, "wiring");
+      const cable = [...d.cable];
+      if (isTranslated(lang, "tools/conduit-fill/")) cable[3] = pageName(lang, "tools/conduit-fill/");
+      return { ...d, cable };
+    })();
 const T = {
   copied: L.copied,
   checks: L.checks,

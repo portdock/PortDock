@@ -1043,8 +1043,9 @@ test("6차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 �
     }
     const empty: string[] = [];
     const walkS = (v: unknown, at: string) => {
+      // 빈 글이어도 되는 칸: 24V 전원 표의 지우기 단추 머리글(head[6]), 히터 비열 고르기의 «직접 입력» 값(presets[0][0])
       if (typeof v === "string") {
-        if (!v.trim() && !/\.head\.6$/.test(at)) empty.push(at);
+        if (!v.trim() && !/\.(?:head\.6|presets\.0\.0)$/.test(at)) empty.push(at);
         return;
       }
       if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
