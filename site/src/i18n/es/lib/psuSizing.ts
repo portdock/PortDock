@@ -4,7 +4,7 @@ export default {
   "HMI / touch panel": "HMI / pantalla táctil",
   "Converter / switch": "Convertidor / switch",
   "Remote I/O": "E/S remotas",
-  "Sensor": "Captador",
+  "Sensor": "Sensor",
   "Indicator / beacon": "Indicador / baliza",
   "Solenoid valve": "Electroválvula",
   "Relay / contactor coil": "Bobina de relé / contactor",
