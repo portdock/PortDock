@@ -1,0 +1,37 @@
+// AWG – mm² dönüşüm tablosu (views/AwgMm2Page.astro) — 6. grup. Terimler: kesit, dolu iletken çapı, bakır direnci
+export default {
+  title: "AWG – mm² Dönüşüm Tablosu",
+  seo: "AWG – mm² Dönüşüm Tablosu: Çap ve Direnç — PortDock",
+  desc: "AWG 0000–40 çap ve kesit (ASTM B258 formülü), en yakın metrik mm² boyutu (IEC 60228) ve 20 °C'de bakır Ω/km değeri. İki yönde dönüştürür.",
+  inAwg: "AWG (örn. 18, 2/0, 0000)",
+  inMm: "Kesit mm²",
+  res: "Sonuç",
+  k: { d: "Çap (dolu iletken eşdeğeri)", area: "Kesit", ohm: "20 °C'de bakır direnci (tek iletken)", near: "En yakın metrik boyut", awgNear: "En yakın AWG", awgUp: "Eşit veya daha büyük kesitli AWG" },
+  how: "Sonuçlar siz yazdıkça güncellenir. Her şey tarayıcınızda çalışır; yazdığınız hiçbir şey bir yere gönderilmez.",
+  err: "AWG 0000–50 (2/0 gösterimi çalışır) ve 0'dan büyük bir kesit girin",
+  fTitle: "Formüller",
+  formula: [
+    "Çap d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: AWG numarası; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+    "Kesit A = π ÷ 4 × d²",
+    "Direnç R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (bakır, 20 °C)",
+  ],
+  fNote: "AWG formülü ASTM B258'den; bakırın özdirenci IEC 60028'deki tavlanmış bakır değeridir. Her 6 numarada çap iki katına, her 3 numarada kesit yaklaşık iki katına çıkar.",
+  limitTitle: "Tabloyu okuma",
+  limits: [
+    "AWG ile metrik boyutlar hiçbir zaman tam örtüşmez. «En yakın» kesit oranına göre bulunur; eksi fark metrik boyutun daha küçük olduğu anlamına gelir — akım taşıma kapasitesi veya gerilim düşümü sınırdaysa eşit ya da daha büyük boyutu seçin.",
+    "Çaplar dolu iletken içindir. Aynı kesitteki çok telli iletken daha kalındır, yalıtım da ekler — boru ve kanal doluluğu için üreticinin dış çapını kullanın.",
+    "Gerçek kablo direnci: IEC 60228 iletken sınıfına (dolu, çok telli, esnek) göre en büyük değerleri verir; çok telli ve kalaylı iletkenlerde biraz daha yüksektir.",
+    "Akım taşıma kapasitesi yalnızca boyuttan çıkmaz (döşeme yöntemi, ortam sıcaklığı, gruplama) ve burada yer almaz.",
+  ],
+  awgTitle: "AWG tablosu (0000–40)",
+  awgHead: ["AWG", "Çap mm", "Kesit mm²", "Ω/km (bakır 20 °C)", "En yakın mm² (fark)"],
+  mmTitle: "Metrik boyutlar (IEC 60228)",
+  mmHead: ["Kesit mm²", "Çap mm (dolu eşdeğer)", "Ω/km (bakır 20 °C)", "En yakın AWG", "Eşit veya büyük AWG"],
+  faqTitle: "Sık sorulanlar",
+  faq: [
+    ["18 AWG kaç mm²'dir?", "Yaklaşık 0.823 mm² (çap 1.024 mm). En yakın metrik boyut 0.75 mm²'dir, biraz daha küçük. 16 AWG yaklaşık 1.31 mm², 14 AWG yaklaşık 2.08 mm², 12 AWG yaklaşık 3.31 mm²'dir."],
+    ["1.5 mm² kaç AWG eder?", "En yakını 15 AWG'dir (1.65 mm²), ancak 15 AWG pek kullanılmaz; ABD ölçülerinde olağan karşılık 14 AWG'dir (2.08 mm²). 16 AWG (1.31 mm²) 1.5 mm²'den küçüktür."],
+    ["4/0 ve 2/0 ne demek?", "0'dan büyük numaralar sıfırı tekrarlar: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG yaklaşık 107 mm²'dir."],
+  ],
+  more: ["Uzunluk ve akıma göre kablo kesiti seçmek için ", "; kullanım yerine göre kablo türleri için ", "; bir boruya kaç iletken sığacağı için ", " aracına bakın."],
+};
