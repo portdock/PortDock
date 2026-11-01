@@ -1,8 +1,9 @@
 // 상세 칸의 Modbus TCP(MBAP) 풀이 — TCP 앱. 백엔드 `decode_mbap`(core tcp.rs, modbus.rs 풀이를 그대로)
-import { baseLang } from "./lang.ts";
+import { dicts } from "./lang.ts";
 import { mbFunc, mbWord } from "./mbwords";
 import type { Lang } from "./uiText";
 import "./modbus.css";
+import { JA_MBAP } from "./ja/modbus.ts";
 
 export interface ModbusInfo {
   slave: number;
@@ -29,8 +30,11 @@ const L = {
   en: { tid: "Transaction ID", len: "Length field", lenBad: "length field does not match", unit: "Unit ID (Slave ID)", values: "Values", head: "Modbus TCP" },
 };
 
+export type MbapTextKey = keyof typeof L.ko;
+const LL = dicts(L.ko, L.en, { ja: JA_MBAP });
+
 export function MbapDetail({ lang, info }: { lang: Lang; info: MbapInfo }) {
-  const t = L[baseLang(lang)];
+  const t = LL[lang];
   const m = info.modbus;
   return (
     <div className="modbus">

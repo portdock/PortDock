@@ -1,6 +1,7 @@
 // Serial «연결 점검…» — 지금 고른 포트의 장치·드라이버·문제 코드·지연 타이머·절전 요약과 연결 시험(루프백·에코).
 // Port Inspector 와 같은 코어(crates/core portinfo·loopback)와 같은 판정(shared/portinfo.ts)을 쓴다. 읽기만 한다.
-import { baseLang } from "./lang.ts";
+import { dicts } from "./lang.ts";
+import { txt } from "./textLang.ts";
 import { useEffect, useState, type ReactNode } from "react";
 import { VERSION } from "./version";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -22,6 +23,7 @@ import {
   type Verdict,
 } from "./portinfo";
 import "./portcheck.css";
+import { JA_PORTCHECK } from "./ja/dialogs.ts";
 
 const T = {
   ko: {
@@ -80,6 +82,9 @@ const T = {
   },
 };
 
+export type PortCheckTextKey = keyof typeof T.ko;
+const TL = dicts(T.ko, T.en, { ja: JA_PORTCHECK });
+
 export interface PortCheckApi extends LoopApi {
   report: (id: string) => Promise<PortReport>;
 }
@@ -88,7 +93,7 @@ function Head({ title, v, lang }: { title: string; v?: Verdict; lang: Lang }) {
   return (
     <h4>
       {title}
-      {v && <span className={`lv lv-${v.level}`}>{LEVEL_TEXT[v.level][baseLang(lang)]}</span>}
+      {v && <span className={`lv lv-${v.level}`}>{txt(LEVEL_TEXT[v.level], lang)}</span>}
     </h4>
   );
 }
@@ -97,7 +102,7 @@ function Notes({ v, lang }: { v: Verdict; lang: Lang }) {
   return v.notes.length ? (
     <ul className="card-notes">
       {v.notes.map((n, i) => (
-        <li key={i}>{n[baseLang(lang)]}</li>
+        <li key={i}>{txt(n, lang)}</li>
       ))}
     </ul>
   ) : null;
@@ -117,7 +122,7 @@ function KV({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 export function PortCheckDialog({ lang, app, port, connected, api, onClose }: { lang: Lang; app: string; port: string; connected: boolean; api: PortCheckApi; onClose: () => void }) {
-  const x = T[baseLang(lang)];
+  const x = TL[lang];
   const back = useRestoreFocus<HTMLDivElement>();
   const [report, setReport] = useState<PortReport | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -188,8 +193,8 @@ export function PortCheckDialog({ lang, app, port, connected, api, onClose }: { 
                     [x.driver, [r.driver.provider, r.driver.version, r.driver.date ? `(${fmtTime(r.driver.date, false)})` : null, r.driver.service].filter(Boolean).join(" ") || null],
                     ...(r.status.problem
                       ? ([
-                          [x.problem, `${r.status.problem.code} — ${r.status.problem.meaning[baseLang(lang)]}`],
-                          [x.action, r.status.problem.action[baseLang(lang)]],
+                          [x.problem, `${r.status.problem.code} — ${txt(r.status.problem.meaning, lang)}`],
+                          [x.action, txt(r.status.problem.action, lang)],
                         ] as [string, ReactNode][])
                       : []),
                   ]}
@@ -220,7 +225,7 @@ export function PortCheckDialog({ lang, app, port, connected, api, onClose }: { 
             <b>{x.cannot}</b>
             <ul>
               {CANNOT_SEE.map((c) => (
-                <li key={c.en}>{c[baseLang(lang)]}</li>
+                <li key={c.en}>{txt(c, lang)}</li>
               ))}
             </ul>
             <div className="guide-links">
@@ -234,7 +239,7 @@ export function PortCheckDialog({ lang, app, port, connected, api, onClose }: { 
                     void openUrl(guideUrl(lang, g.slug)).catch(() => {});
                   }}
                 >
-                  {g.title[baseLang(lang)]}
+                  {txt(g.title, lang)}
                 </a>
               ))}
             </div>

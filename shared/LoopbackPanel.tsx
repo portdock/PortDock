@@ -1,7 +1,8 @@
 // 연결 시험(루프백·두 포트·2선 RS-485 에코) — Port Inspector 와 Serial «연결 점검…» 이 함께 쓴다.
 // 시작 전에 «선에서 장비를 떼었나» 를 한 번 더 묻는다(시험 바이트가 장비에 명령으로 들어갈 수 있다).
 // 0.10.0: 두 포트 시험(변환기 두 개를 서로 이음), 무늬(0x00~0xFF·0x55/0xAA)·길이 고르기, 잇는 법 그림, 전체 판정.
-import { baseLang } from "./lang.ts";
+import { dicts } from "./lang.ts";
+import { txt } from "./textLang.ts";
 import { useEffect, useRef, useState } from "react";
 import {
   busyHint,
@@ -19,6 +20,7 @@ import {
   type LoopPattern,
 } from "./portinfo";
 import "./portcheck.css";
+import { JA_LOOP, JA_WIRING } from "./ja/dialogs.ts";
 
 const MORE_BAUDS = [1200, 2400, 4800, 230400, 460800, 921600];
 const LENGTHS = [64, 256, 1024, 4096];
@@ -90,6 +92,10 @@ const T = {
     colFlags: "오류 표시",
     flagsNone: "없음",
     flagsUnread: "읽지 못함",
+    flagFrame: "프레임",
+    flagParity: "패리티",
+    flagOverrun: "넘침",
+    flagRxOver: "버퍼 넘침",
     flagsNote: "오류 표시는 드라이버가 올려 줄 때만 보입니다 — «없음» 이 오류가 없었다는 보증은 아닙니다. 왕복 시간은 USB 지연·드라이버·프로그램 시간을 모두 더한 값입니다.",
     echoBack: "돌아온 바이트",
     firstMs: "첫 바이트까지",
@@ -128,17 +134,27 @@ const T = {
     colFlags: "Error flags",
     flagsNone: "none",
     flagsUnread: "not read",
+    flagFrame: "framing",
+    flagParity: "parity",
+    flagOverrun: "overrun",
+    flagRxOver: "buffer overflow",
     flagsNote: "Error flags show only when the driver raises them — «none» does not guarantee there were no errors. Round-trip time includes USB latency, driver and program time.",
     echoBack: "Bytes back",
     firstMs: "First byte after",
   },
 };
 
+export type LoopTextKey = keyof typeof T.ko;
+const TL = dicts(T.ko, T.en, { ja: JA_LOOP });
+const wiringOf = (k: "ko" | "en") => ({ loopback: WIRING.loopback[k], two: WIRING.two[k], echo: WIRING.echo[k] });
+const WIRING_T = dicts(wiringOf("ko"), wiringOf("en"), { ja: JA_WIRING });
+
 function flagText(lang: Lang, r: { flags: BaudResult["flags"] }) {
   const f = r.flags;
-  if (!f.read) return T[baseLang(lang)].flagsUnread;
-  const on = [f.frame && (lang === "ko" ? "프레임" : "framing"), f.parity && (lang === "ko" ? "패리티" : "parity"), f.overrun && (lang === "ko" ? "넘침" : "overrun"), f.rxOver && (lang === "ko" ? "버퍼 넘침" : "buffer overflow"), f.break && "break"].filter(Boolean);
-  return on.length ? on.join(", ") : T[baseLang(lang)].flagsNone;
+  const x = TL[lang];
+  if (!f.read) return x.flagsUnread;
+  const on = [f.frame && x.flagFrame, f.parity && x.flagParity, f.overrun && x.flagOverrun, f.rxOver && x.flagRxOver, f.break && "break"].filter(Boolean);
+  return on.length ? on.join(", ") : x.flagsNone;
 }
 
 export function LoopbackPanel({
@@ -160,7 +176,7 @@ export function LoopbackPanel({
   onState?: (s: LoopState) => void;
   onRunning?: (running: boolean) => void;
 }) {
-  const x = T[baseLang(lang)];
+  const x = TL[lang];
   const [mode, setMode] = useState<UiMode>("loopback");
   const [pattern, setPattern] = useState<LoopPattern>("random");
   const [bytes, setBytes] = useState(256);
@@ -286,7 +302,7 @@ export function LoopbackPanel({
       <div className="hint">{mode === "loopback" ? x.loopHint : mode === "two" ? x.twoHint : x.echoHint}</div>
       <details className="loop-wiring">
         <summary>{x.wiring}</summary>
-        <pre className="mono">{WIRING[mode][baseLang(lang)]}</pre>
+        <pre className="mono">{WIRING_T[lang][mode]}</pre>
       </details>
       {mode === "two" && (
         <label className="inline loop-peer">
@@ -389,7 +405,7 @@ export function LoopbackPanel({
       )}
       {overall && !running && (
         <div className="loop-overall">
-          {x.overall}: <span className={`lv lv-${overall}`}>{LOOP_OVERALL_TEXT[overall][baseLang(lang)]}</span>
+          {x.overall}: <span className={`lv lv-${overall}`}>{txt(LOOP_OVERALL_TEXT[overall], lang)}</span>
         </div>
       )}
       {state.results.length > 0 && (
@@ -412,10 +428,10 @@ export function LoopbackPanel({
                   <td className="mono">{r.baud}</td>
                   {hasDir && <td className="mono">{r.dir ?? ""}</td>}
                   <td>
-                    <span className={`lv lv-${v.level}`}>{LEVEL_TEXT[v.level][baseLang(lang)]}</span>
+                    <span className={`lv lv-${v.level}`}>{txt(LEVEL_TEXT[v.level], lang)}</span>
                     {v.notes.map((n, i) => (
                       <div key={i} className="hint">
-                        {n[baseLang(lang)]}
+                        {txt(n, lang)}
                       </div>
                     ))}
                   </td>
@@ -436,7 +452,7 @@ export function LoopbackPanel({
           const v = echoVerdict(state.echo);
           return (
             <div className="loop-echo">
-              <span className={`lv lv-${v.level}`}>{LEVEL_TEXT[v.level][baseLang(lang)]}</span> {v.notes.map((n) => n[baseLang(lang)]).join(" ")}
+              <span className={`lv lv-${v.level}`}>{txt(LEVEL_TEXT[v.level], lang)}</span> {v.notes.map((n) => txt(n, lang)).join(" ")}
               <div className="hint mono">
                 {state.echo.baud} bps · {x.echoBack} {state.echo.received}/{state.echo.sent}
                 {state.echo.firstMs != null ? ` · ${x.firstMs} ${state.echo.firstMs.toFixed(1)} ms` : ""} · {x.colFlags}: {flagText(lang, state.echo)}

@@ -1,4 +1,5 @@
-import { baseLang, LANG_NAMES, UI_LANGS } from "@shared/lang";
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
+import { txt } from "@shared/textLang";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -18,7 +19,7 @@ import { count } from "@shared/usage";
 import { KEYS, useShortcuts, withKey } from "@shared/shortcuts";
 import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
-import { TERMS } from "@shared/glossary";
+import { term } from "@shared/glossary";
 import { NarrowBar, SideBackdrop, SideClose, SideTools } from "@shared/NarrowBar";
 import { ui } from "@shared/uiText";
 import { api } from "./api";
@@ -500,7 +501,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_net")}</b>
-          {hasData && <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][baseLang(lang)]}</span>}
+          {hasData && <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{txt(LEVEL_TEXT[summary.level], lang)}</span>}
           <span className="grow" />
           {recording ? (
             <button className="btn danger rec-btn" onClick={stopRec} data-tip={tip(lang, "hwRecStop")}>
@@ -597,12 +598,12 @@ export default function App() {
           {hasData && (
             <section className="card summary">
               <div className="sub-title">
-                {t("summary")} <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][baseLang(lang)]}</span>
+                {t("summary")} <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{txt(LEVEL_TEXT[summary.level], lang)}</span>
                 {info && <span className="hint"> · {t("since", { t: clock(info.startedAt) })}</span>}
               </div>
               <ul className="card-notes">
                 {summary.notes.map((n, i) => (
-                  <li key={i}>{n[baseLang(lang)]}</li>
+                  <li key={i}>{txt(n, lang)}</li>
                 ))}
               </ul>
               <table className="grid stats">
@@ -612,10 +613,10 @@ export default function App() {
                     <th>{t("colSent")}</th>
                     <th>{t("colLoss")}</th>
                     <th>{t("colAvg")}</th>
-                    <th data-tip={TERMS.p95[baseLang(lang)][1]}>95%</th>
+                    <th data-tip={term("p95", lang)[1]}>95%</th>
                     <th>{t("colMax")}</th>
-                    <th data-tip={TERMS.jitter[baseLang(lang)][1]}>{t("colJitter")}</th>
-                    <th data-tip={TERMS.lossRun[baseLang(lang)][1]}>{t("colRun")}</th>
+                    <th data-tip={term("jitter", lang)[1]}>{t("colJitter")}</th>
+                    <th data-tip={term("lossRun", lang)[1]}>{t("colRun")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -647,7 +648,7 @@ export default function App() {
           <div className="cannot-see">
             <ul>
               {CAVEATS.map((c) => (
-                <li key={c.en}>{c[baseLang(lang)]}</li>
+                <li key={c.en}>{txt(c, lang)}</li>
               ))}
             </ul>
             <div className="hint">{t("readOnlyNet")}</div>
@@ -660,7 +661,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_signal")}</b>
-          {sigNote?.level && <span className={`lv lv-${sigNote.level}`}>{sigNote.level === "ok" ? LEVEL_TEXT.ok[baseLang(lang)] : LEVEL_TEXT.look[baseLang(lang)]}</span>}
+          {sigNote?.level && <span className={`lv lv-${sigNote.level}`}>{sigNote.level === "ok" ? txt(LEVEL_TEXT.ok, lang) : txt(LEVEL_TEXT.look, lang)}</span>}
           <span className="grow" />
           <button className={`btn ${sigOn ? "danger" : "primary"} sig-btn`} onClick={() => setSigOn(!sigOn)} data-tip={tip(lang, "hwSignal")}>
             {sigOn ? `■ ${t("sigStop")}` : `▶ ${t("sigStart")}`}
@@ -672,7 +673,7 @@ export default function App() {
           {sig && (
             <>
               <section className={`card sig-state st-${sig.state}`}>
-                <div className="sub-title">{SIGNAL_STATE_TEXT[sig.state][baseLang(lang)]}</div>
+                <div className="sub-title">{txt(SIGNAL_STATE_TEXT[sig.state], lang)}</div>
                 {sig.state === "denied" && (
                   <>
                     <ol className="plain-ol">
@@ -712,7 +713,7 @@ export default function App() {
                     ))}
                   </dl>
                 )}
-                {sigNote && <div className="hint">{sigNote.text[baseLang(lang)]}</div>}
+                {sigNote && <div className="hint">{txt(sigNote.text, lang)}</div>}
               </section>
               {sigHist.length > 0 && <Chart series={[{ label: t("kQuality"), color: "--accent", points: sigHist }]} marks={[]} spanMs={SIGNAL_KEEP_MS} now={sigHist[sigHist.length - 1]?.ts ?? Date.now()} unit="%" fixedMax={100} ariaLabel={t("kQuality")} empty="" />}
               {sig.channels.length > 0 && (
@@ -851,7 +852,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_usb")}</b>
-          {usbStarted != null && <span className={`lv lv-${usbFound.length ? "look" : "ok"}`}>{usbFound.length ? LEVEL_TEXT.look[baseLang(lang)] : LEVEL_TEXT.ok[baseLang(lang)]}</span>}
+          {usbStarted != null && <span className={`lv lv-${usbFound.length ? "look" : "ok"}`}>{usbFound.length ? txt(LEVEL_TEXT.look, lang) : txt(LEVEL_TEXT.ok, lang)}</span>}
           <span className="grow" />
           {usbRec ? (
             <button className="btn danger rec-btn" onClick={stopUsb} data-tip={tip(lang, "hwUsbStop")}>
@@ -915,7 +916,7 @@ export default function App() {
                           </td>
                           <td className="mono nowrap">{vidPid(r.vid, r.pid)}</td>
                           <td className="mono nowrap">{portPath(r.ports)}</td>
-                          <td className={r.belowCapable ? "warn" : ""}>{r.speed ? USB_SPEED_TEXT[r.speed][baseLang(lang)] : "—"}</td>
+                          <td className={r.belowCapable ? "warn" : ""}>{r.speed ? txt(USB_SPEED_TEXT[r.speed], lang) : "—"}</td>
                           <td className="nowrap">{r.present ? t("usbNow") : t("usbGone")}</td>
                           <td className={`num${r.drops ? " warn" : ""}`}>
                             {r.drops}
@@ -1019,7 +1020,7 @@ export default function App() {
                           <td className="mono nowrap">{stampShort(e.time)}</td>
                           <td className="nowrap">{e.id}</td>
                           <td>
-                            {USB_EVENT_TEXT[e.kind][baseLang(lang)]} — {e.name || vidPid(e.vid, e.pid)}
+                            {txt(USB_EVENT_TEXT[e.kind], lang)} — {e.name || vidPid(e.vid, e.pid)}
                           </td>
                         </tr>
                       ))}

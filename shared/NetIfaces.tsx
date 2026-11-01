@@ -1,11 +1,12 @@
 // 이 PC 의 랜카드 IPv4 주소 — 서버·UDP 받을 주소·멀티캐스트 랜카드 칸을 «목록에서 고르기 + 직접 적기» 로.
 // 백엔드 명령 `interfaces`(core net.rs, GetAdaptersAddresses) — TCP·UDP 앱.
-import { baseLang } from "./lang.ts";
+import { dicts } from "./lang.ts";
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { tip } from "./tips";
 import type { Lang } from "./uiText";
 import "./net.css";
+import { JA_IFACE } from "./ja/dialogs.ts";
 
 export interface NetIface {
   name: string;
@@ -45,7 +46,10 @@ const L = {
   },
 };
 
-export const ifaceText = (lang: Lang, k: keyof (typeof L)["ko"], a = "", b = "") => L[baseLang(lang)][k].replace("{a}", a).replace("{b}", b);
+export type IfaceTextKey = keyof typeof L.ko;
+const LL = dicts(L.ko, L.en, { ja: JA_IFACE });
+
+export const ifaceText = (lang: Lang, k: keyof (typeof L)["ko"], a = "", b = "") => LL[lang][k].replace("{a}", a).replace("{b}", b);
 
 /** 랜카드 목록 — 처음에 한 번, «다시 읽기» 로 또. 백엔드가 없으면(미리보기 등) 빈 목록 */
 export function useInterfaces() {
@@ -61,7 +65,7 @@ export function useInterfaces() {
 
 /** 주소 칸에 붙는 고르기 목록(datalist). `any` 면 0.0.0.0 을 맨 앞에 */
 export function IfaceOptions({ id, lang, list, any = true, loopback = true }: { id: string; lang: Lang; list: NetIface[]; any?: boolean; loopback?: boolean }) {
-  const t = L[baseLang(lang)];
+  const t = LL[lang];
   const seen = new Set<string>();
   return (
     <datalist id={id}>
@@ -89,7 +93,7 @@ export function ifaceProblem(lang: Lang, host: string, list: NetIface[]): string
 
 /** «이 PC 주소» 목록 — 연결된 랜카드만(루프백 빼고), 누르면 그 주소를 고른다 */
 export function IfaceList({ lang, list, loaded, onPick, refresh, disabled }: { lang: Lang; list: NetIface[]; loaded: boolean; onPick?: (ip: string) => void; refresh: () => void; disabled?: boolean }) {
-  const t = L[baseLang(lang)];
+  const t = LL[lang];
   const shown = list.filter((i) => i.up && !i.loopback);
   return (
     <div className="ifaces">

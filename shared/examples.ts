@@ -15,14 +15,21 @@ export interface ExampleCmd {
   ck: null;
   key: null;
 }
-import { baseLang, type Lang } from "./lang.ts";
+import { type Lang } from "./lang.ts";
+import { JA_EXAMPLE_PREFIX, JA_EXAMPLES } from "./ja/dialogs.ts";
 
 const hex = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 const P = { ko: "예: ", en: "e.g. " };
-const ex = (lang: Lang, name: string, text: string, mode: "hex" | "ascii", checksum: ChecksumKind | null, suffix: string): ExampleCmd => ({ name: P[baseLang(lang)] + name, text, mode, checksum, suffix, ck: null, key: null });
+// 추가 언어: 이름 앞말과 영어 이름 → 그 언어 이름(없으면 영어). 이름은 아래에서 한국어가 아니면 영어로 넘어온다
+const MORE: Partial<Record<Lang, { prefix: string; names: Record<string, string> }>> = { ja: { prefix: JA_EXAMPLE_PREFIX, names: JA_EXAMPLES } };
+const ex = (lang: Lang, name: string, text: string, mode: "hex" | "ascii", checksum: ChecksumKind | null, suffix: string): ExampleCmd => {
+  const m = MORE[lang];
+  const label = lang === "ko" ? P.ko + name : m ? m.prefix + (m.names[name] ?? name) : P.en + name;
+  return { name: label, text, mode, checksum, suffix, ck: null, key: null };
+};
 
-/** 이름이 예시 이름인지(«예: »·«e.g. » 로 시작) */
-export const isExampleName = (n: string) => n.startsWith(P.ko) || n.startsWith(P.en);
+/** 이름이 예시 이름인지(«예: »·«e.g. »·추가 언어 앞말로 시작) */
+export const isExampleName = (n: string) => n.startsWith(P.ko) || n.startsWith(P.en) || Object.values(MORE).some((m) => !!m && n.startsWith(m.prefix));
 
 const at = (lang: Lang) => [
   ex(lang, lang === "ko" ? "AT (응답 확인)" : "AT (check reply)", "AT", "ascii", null, "\\r\\n"),

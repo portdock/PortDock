@@ -1,12 +1,14 @@
 // 장비 프로필 고르기 창 — Modbus Master «장비 프로필 불러오기…», Modbus Slave «장비 흉내 불러오기…».
 // 내장 목록(빌드 때 data/devices 를 묶음)에서 장비를 고르면 레지스터·통신 기본값·출처를 보여 주고, 고른 선택지로 onApply 를 부른다.
-import { baseLang } from "./lang.ts";
+import { baseLang, dicts } from "./lang.ts";
+import { txt } from "./textLang.ts";
 import { useEffect, useMemo, useState } from "react";
 import { tip } from "./tips";
 import { useRestoreFocus } from "./restoreFocus";
 import { DEVICES } from "./deviceData";
 import { commLine, devRegs, KIND_TEXT, matchDevice, pollGroups, readFc, type Device, type Lang } from "./devices";
 import "./devices.css";
+import { JA_DEVICE } from "./ja/dialogs.ts";
 
 export interface DeviceApplyOpts {
   /** 통신 설정(속도·데이터·패리티·정지)도 맞추기 */
@@ -81,6 +83,9 @@ const TX = {
     slaveNote: "These values are taken from the manual's tables — real device behaviour (ramp times, etc.) may differ.",
   },
 };
+
+export type DeviceTextKey = keyof typeof TX.ko;
+const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE });
 type TKey = keyof typeof TX.ko;
 
 const fillT = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));
@@ -99,7 +104,7 @@ export function DeviceDialog({
   onApply: (d: Device, opts: DeviceApplyOpts) => void;
   onClose: () => void;
 }) {
-  const t = (k: TKey, v: Record<string, string | number> = {}) => fillT(TX[baseLang(lang)][k], v);
+  const t = (k: TKey, v: Record<string, string | number> = {}) => fillT(TXL[lang][k], v);
   const back = useRestoreFocus<HTMLDivElement>();
   const [q, setQ] = useState("");
   const list = useMemo(() => DEVICES.filter((d) => matchDevice(d, q)), [q]);
@@ -144,7 +149,7 @@ export function DeviceDialog({
                     <b>
                       {d.manufacturer[baseLang(lang)]} {d.model}
                     </b>
-                    <span className="hint">{KIND_TEXT[d.kind][baseLang(lang)]}</span>
+                    <span className="hint">{txt(KIND_TEXT[d.kind], lang)}</span>
                   </button>
                 </li>
               ))}

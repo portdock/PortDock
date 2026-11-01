@@ -1,6 +1,6 @@
 // «이 PC» 카드 — 장비 PC 로 쓸 때 볼 설정(빠른 시작·절전·업데이트·재시작 대기·화면 보호기·시간 동기화)과 최근 기록
 // 판정은 shared/pcCheck.ts(순수 함수). 이 화면은 읽기만 한다 — 바꾸는 곳만 안내한다.
-import { baseLang } from "@shared/lang";
+import { txt } from "@shared/textLang";
 import { tip } from "@shared/tips";
 import { fmtTime, LEVEL_TEXT } from "@shared/portinfo";
 import { PC_ADMIN_ONLY, PC_CANNOT_SEE, PC_GROUP_TEXT, PC_PURPOSE_TEXT, PC_PURPOSES, pcItems, type PcCheck, type PcGroup, type PcPurpose } from "@shared/pcCheck";
@@ -41,7 +41,7 @@ export function PcCard({
         <select className="pc-purpose" value={purpose} onChange={(e) => setPurpose(e.target.value as PcPurpose)} aria-label={t("pcPurpose")}>
           {PC_PURPOSES.map((p) => (
             <option key={p} value={p}>
-              {PC_PURPOSE_TEXT[p][baseLang(lang)]}
+              {txt(PC_PURPOSE_TEXT[p], lang)}
             </option>
           ))}
         </select>
@@ -86,23 +86,23 @@ export function PcCard({
       )}
       {groups.map((g) => (
         <div key={g} className={`pc-group pc-group-${g}`}>
-          <div className="sub-title">{PC_GROUP_TEXT[g][baseLang(lang)]}</div>
+          <div className="sub-title">{txt(PC_GROUP_TEXT[g], lang)}</div>
           <table className="grid pc-items">
             <tbody>
               {items
                 .filter((i) => i.group === g)
                 .map((i) => (
                   <tr key={i.id} className={`pc-${i.id}`}>
-                    <td className="pc-label">{i.label[baseLang(lang)]}</td>
+                    <td className="pc-label">{txt(i.label, lang)}</td>
                     <td>
-                      <div>{i.value[baseLang(lang)]}</div>
+                      <div>{txt(i.value, lang)}</div>
                       {i.notes.map((n, k) => (
                         <div key={k} className={i.level === "look" ? "pc-note look" : "hint"}>
-                          {n[baseLang(lang)]}
+                          {txt(n, lang)}
                         </div>
                       ))}
                       <div className="hint pc-where">
-                        {t("pcWhere")}: {i.where[baseLang(lang)]}
+                        {t("pcWhere")}: {txt(i.where, lang)}
                         {i.link && (
                           <>
                             {" "}
@@ -114,14 +114,14 @@ export function PcCard({
                                 link(i.link!);
                               }}
                             >
-                              {i.linkLabel ? `${i.linkLabel[baseLang(lang)]} ↗` : t("pcSource")}
+                              {i.linkLabel ? `${txt(i.linkLabel, lang)} ↗` : t("pcSource")}
                             </a>
                           </>
                         )}
                       </div>
                     </td>
                     <td className="pc-lv">
-                      <span className={`lv lv-${i.level}`}>{LEVEL_TEXT[i.level][baseLang(lang)]}</span>
+                      <span className={`lv lv-${i.level}`}>{txt(LEVEL_TEXT[i.level], lang)}</span>
                     </td>
                   </tr>
                 ))}
@@ -130,7 +130,7 @@ export function PcCard({
           {g === "exposure" &&
             EXPOSURE_LIMITS.map((c) => (
               <div key={c.en} className="hint">
-                {c[baseLang(lang)]}
+                {txt(c, lang)}
               </div>
             ))}
         </div>
@@ -143,13 +143,13 @@ export function PcCard({
       <div className="sub-title">{t("pcAdminOnly")}</div>
       <ul className="plain hint pc-admin">
         {PC_ADMIN_ONLY.map((c) => (
-          <li key={c.en}>{c[baseLang(lang)]}</li>
+          <li key={c.en}>{txt(c, lang)}</li>
         ))}
       </ul>
       <div className="sub-title">{t("pcCannot")}</div>
       <ul className="plain hint">
         {PC_CANNOT_SEE.map((c) => (
-          <li key={c.en}>{c[baseLang(lang)]}</li>
+          <li key={c.en}>{txt(c, lang)}</li>
         ))}
       </ul>
       <div className="hint">{t("pcReadOnly")}</div>

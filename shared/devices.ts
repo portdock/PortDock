@@ -4,6 +4,7 @@
 
 export type { Lang } from "./lang.ts";
 import { baseLang, type Lang } from "./lang.ts";
+import { txt } from "./textLang.ts";
 export type DevTable = "coils" | "discrete-inputs" | "input-registers" | "holding-registers";
 export type DevType = "bit" | "u16" | "s16" | "u32" | "s32" | "f32" | "f64" | "string";
 export type DevOrder = "ABCD" | "CDAB" | "BADC" | "DCBA";
@@ -261,13 +262,13 @@ export function commLine(d: Device, lang: Lang): string {
   // 데이터·패리티·정지가 다 있으면 «8E1», 아니면 아는 것만(매뉴얼에 없는 값은 비운다)
   if (c.dataBits && c.parity && c.stopBits) parts.push(`${c.baud ?? ""} ${c.dataBits}${p}${c.stopBits}`.trim());
   else {
-    const par = c.parity && { none: { ko: "패리티 없음", en: "no parity" }, even: { ko: "짝수 패리티", en: "even parity" }, odd: { ko: "홀수 패리티", en: "odd parity" } }[c.parity][baseLang(lang)];
-    const known = [c.baud && String(c.baud), c.dataBits && (lang === "ko" ? `데이터 ${c.dataBits}` : `${c.dataBits} data bits`), par, c.stopBits && (lang === "ko" ? `정지 ${c.stopBits}` : `${c.stopBits} stop`)].filter(Boolean);
+    const par = c.parity && { none: { ko: "패리티 없음", en: "no parity" }, even: { ko: "짝수 패리티", en: "even parity" }, odd: { ko: "홀수 패리티", en: "odd parity" } }[c.parity];
+    const known = [c.baud && String(c.baud), c.dataBits && txt({ ko: `데이터 ${c.dataBits}`, en: `${c.dataBits} data bits` }, lang), par && txt(par, lang), c.stopBits && txt({ ko: `정지 ${c.stopBits}`, en: `${c.stopBits} stop` }, lang)].filter(Boolean);
     if (known.length) parts.push(known.join(" "));
   }
-  if (c.unit != null) parts.push(lang === "ko" ? `국번 ${c.unit}` : `Slave ID ${c.unit}`);
+  if (c.unit != null) parts.push(txt({ ko: `국번 ${c.unit}`, en: `Slave ID ${c.unit}` }, lang));
   if (c.tcpPort) parts.push(`TCP ${c.tcpPort}`);
   const am = { zero: { ko: "매뉴얼 주소 0 기준", en: "manual uses 0-based addresses" }, one: { ko: "매뉴얼 주소 1 기준", en: "manual uses 1-based addresses" }, plc: { ko: "매뉴얼 주소 40001 꼴", en: "manual uses 40001-style addresses" } }[c.addressing];
-  parts.push(am[baseLang(lang)]);
+  parts.push(txt(am, lang));
   return parts.join(" · ");
 }

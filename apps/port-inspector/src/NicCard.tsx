@@ -1,6 +1,6 @@
 // «이 PC 랜카드» 카드 — 링크·이중·IPv4 + 랜카드 점검(고급 설정·절전·오류·프로필·방화벽, 용도별 판정)
 // 판정·제조사 예는 shared/nicCheck.ts(순수 함수). 이 화면은 읽기만 한다 — 바꾸는 곳만 안내한다.
-import { baseLang } from "@shared/lang";
+import { txt } from "@shared/textLang";
 import { tip } from "@shared/tips";
 import { fmtSpeed, LEVEL_TEXT, type NicList, type NicProp, type NicSummary } from "@shared/portinfo";
 import { keyProps, NIC_CANNOT_SEE, NIC_PURPOSES, NIC_WHERE, nicVerdict, PROFILE_TEXT, PURPOSE_TEXT, rangeText, VENDOR_EXAMPLES, type NicPurpose } from "@shared/nicCheck";
@@ -34,7 +34,7 @@ function PropRow({ p, label, lang, t, vendor, link }: { p: NicProp; label?: stri
                   >
                     {e.vendor}
                   </a>
-                  : {e.text[baseLang(lang)]}
+                  : {txt(e.text, lang)}
                 </div>
               ))
             : "—"}
@@ -55,7 +55,7 @@ function Nic({ n, list, purpose, lang, t, link }: { n: NicSummary; list: NicList
     [t("nicLink"), `${n.up ? fmtSpeed(n.speed) : t("nicDown")}${n.fullDuplex == null ? "" : ` · ${n.fullDuplex ? t("full") : t("half")}`}`],
     ["IPv4", `${n.ipv4.join(", ") || "—"}${n.gateway ? ` · GW ${n.gateway}` : ""}`],
   ];
-  if (n.profile !== undefined) rows.push([t("nicProfile"), n.profile ? `${PROFILE_TEXT[n.profile][baseLang(lang)]}${n.network ? ` (${n.network})` : ""}` : t("nicNoProfile")]);
+  if (n.profile !== undefined) rows.push([t("nicProfile"), n.profile ? `${txt(PROFILE_TEXT[n.profile], lang)}${n.network ? ` (${n.network})` : ""}` : t("nicNoProfile")]);
   if (fw) rows.push([t("nicFwThis"), onOff(fw.enabled)]);
   if (n.canTurnOff !== undefined) rows.push([t("nicCanOff"), `${onOff(n.canTurnOff)}${n.pnpCapabilities != null ? ` · PnPCapabilities ${n.pnpCapabilities}` : ""}`]);
   if (n.stats) {
@@ -76,12 +76,12 @@ function Nic({ n, list, purpose, lang, t, link }: { n: NicSummary; list: NicList
       <div className="nic-head">
         <b>{n.name}</b>
         <span className="hint ellipsis">{n.description}</span>
-        <span className={`lv lv-${v.level}`}>{LEVEL_TEXT[v.level][baseLang(lang)]}</span>
+        <span className={`lv lv-${v.level}`}>{txt(LEVEL_TEXT[v.level], lang)}</span>
       </div>
       {v.notes.length > 0 && (
         <ul className="card-notes">
           {v.notes.map((x, i) => (
-            <li key={i}>{x[baseLang(lang)]}</li>
+            <li key={i}>{txt(x, lang)}</li>
           ))}
         </ul>
       )}
@@ -101,14 +101,14 @@ function Nic({ n, list, purpose, lang, t, link }: { n: NicSummary; list: NicList
               <thead>{head}</thead>
               <tbody>
                 {k.rows.map((r) => (
-                  <PropRow key={r.prop.keyword} p={r.prop} label={r.label[baseLang(lang)]} lang={lang} t={t} vendor={camera ? r.id : undefined} link={link} />
+                  <PropRow key={r.prop.keyword} p={r.prop} label={txt(r.label, lang)} lang={lang} t={t} vendor={camera ? r.id : undefined} link={link} />
                 ))}
               </tbody>
             </table>
           ) : (
             <div className="hint">{t("nicNoAdv")}</div>
           )}
-          {k.rows.length > 0 && k.missing.length > 0 && <div className="hint">{t("nicMissing", { list: k.missing.map((m) => m[baseLang(lang)]).join(", ") })}</div>}
+          {k.rows.length > 0 && k.missing.length > 0 && <div className="hint">{t("nicMissing", { list: k.missing.map((m) => txt(m, lang)).join(", ") })}</div>}
           {k.others.length > 0 && (
             <details className="nic-others">
               <summary>{t("nicOthers", { n: k.others.length })}</summary>
@@ -152,7 +152,7 @@ export function NicCard({
       <select value={purpose} onChange={(e) => setPurpose(e.target.value as NicPurpose)} aria-label={t("nicPurpose")}>
         {NIC_PURPOSES.map((p) => (
           <option key={p} value={p}>
-            {PURPOSE_TEXT[p][baseLang(lang)]}
+            {txt(PURPOSE_TEXT[p], lang)}
           </option>
         ))}
       </select>
@@ -176,7 +176,7 @@ export function NicCard({
       {nics.firewall && nics.firewall.length > 0 && (
         <div className="hint">
           {t("nicFirewall")}:{" "}
-          {nics.firewall.map((f) => `${PROFILE_TEXT[f.profile][baseLang(lang)]} ${f.enabled == null ? "—" : f.enabled ? t("on") : t("off")}${f.current ? ` (${t("nicCurrent")})` : ""}`).join(" · ")}
+          {nics.firewall.map((f) => `${txt(PROFILE_TEXT[f.profile], lang)} ${f.enabled == null ? "—" : f.enabled ? t("on") : t("off")}${f.current ? ` (${t("nicCurrent")})` : ""}`).join(" · ")}
         </div>
       )}
       {nics.nics.map((n) => (
@@ -202,17 +202,17 @@ export function NicCard({
               >
                 {e.vendor}
               </a>
-              : {e.text[baseLang(lang)]}
+              : {txt(e.text, lang)}
             </span>
           ))}
         </div>
       )}
       <div className="hint">{t("nicsNote")}</div>
-      <div className="hint">{NIC_WHERE[baseLang(lang)]}</div>
+      <div className="hint">{txt(NIC_WHERE, lang)}</div>
       <div className="sub-title">{t("nicCannot")}</div>
       <ul className="plain hint">
         {NIC_CANNOT_SEE.map((c) => (
-          <li key={c.en}>{c[baseLang(lang)]}</li>
+          <li key={c.en}>{txt(c, lang)}</li>
         ))}
       </ul>
     </>

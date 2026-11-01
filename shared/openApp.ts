@@ -1,11 +1,12 @@
 // 다른 PortDock 프로그램으로 열기(0.3.0) — 백엔드 open_app(crates/core/src/launch.rs Target)을 부르고,
 // 이 PC 에서 찾지 못하면 넘길 값(주소·포트 이름)을 복사하고 내려받기 페이지를 알린다.
-import { baseLang } from "./lang.ts";
+import { dicts } from "./lang.ts";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { copyText } from "./logCopy";
 import type { ToastApi } from "./Toast";
 import type { Lang } from "./uiText";
+import { JA_OPEN_APP } from "./ja/dialogs.ts";
 
 /** 열 프로그램과 넘길 값 — Rust launch::Target 과 같은 모양 */
 export type OpenTarget =
@@ -34,6 +35,9 @@ const T = {
     get: "Download page",
   },
 };
+
+export type OpenAppTextKey = keyof typeof T.ko;
+const TL = dicts(T.ko, T.en, { ja: JA_OPEN_APP });
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (m, k: string) => v[k] ?? m);
 
 /**
@@ -44,7 +48,7 @@ export async function openInApp(target: OpenTarget, copy: string, lang: Lang, to
   const name = APP_TITLE[target.app];
   try {
     if (await invoke<boolean>("open_app", { target })) {
-      toast.show(fill(T[baseLang(lang)].opened, { a: name, b: copy }), { ms: 6000 });
+      toast.show(fill(TL[lang].opened, { a: name, b: copy }), { ms: 6000 });
       return true;
     }
   } catch (e) {
@@ -53,6 +57,6 @@ export async function openInApp(target: OpenTarget, copy: string, lang: Lang, to
   }
   await copyText(copy);
   const url = appPage(target.app, lang);
-  toast.show(fill(T[baseLang(lang)].missing, { a: name, b: copy }), { ms: 12000, action: { label: T[baseLang(lang)].get, run: () => void openUrl(url).catch(() => {}) } });
+  toast.show(fill(TL[lang].missing, { a: name, b: copy }), { ms: 12000, action: { label: TL[lang].get, run: () => void openUrl(url).catch(() => {}) } });
   return false;
 }
