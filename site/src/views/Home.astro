@@ -145,7 +145,7 @@ const ld = [
         <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
         <p class="hero-pc">
           {L.pcPre}
-          <a href={core ? url(lang, "tools/#g-hw") : url("en", "tools/#g-hw")}>{L.pcHw}</a>
+          <a href={url(lang, "tools/#g-hw")}>{L.pcHw}</a>
           {" · "}
           <a href={link(lang, "hw-tester/")}>{L.pcTester}</a>
         </p>
@@ -197,7 +197,7 @@ const ld = [
       <h2>{L.webTitle}</h2>
       <p class="lead">{L.webLead}</p>
       <div class="grid compact">
-        <a class="card hw-card" href={core ? url(lang, "tools/#g-hw") : url("en", "tools/#g-hw")}>
+        <a class="card hw-card" href={url(lang, "tools/#g-hw")}>
           <h3>{L.hwTitle}</h3>
           <p>{core ? hwTests.map((w) => w.name[lang as "ko" | "en"].replace(/ (테스트|test|Test|tester|Tester).*$/, "")).join(" · ") : L.hwBody}</p>
         </a>

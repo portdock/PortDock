@@ -32,7 +32,7 @@ export default {
   ] as [string, string, string][],
   appTitle: "PortDock uygulamalarıyla daha fazlası",
   app1: "Mavi ekranların ve ani kapanmaların ne zaman ve kaç kez olduğunu görmek için",
-  app2: "uygulamasında «This PC» sekmesini açıp «Read this PC's settings»e basın (adlar uygulamanın İngilizce arayüzündeki gibidir). Salt okunur ve yönetici hakkı olmadan, yakın zamandaki beklenmedik kapanmaların (Kernel-Power 41, EventLog 6008) ve donanım hatalarının (WHEA-Logger, disk, Ntfs) sayısını ve son zamanını gösterir.",
+  app2: "uygulamasında «This PC» sekmesini açıp «Read this PC's settings»e basın (adlar uygulamanın İngilizce arayüzündeki gibidir; arayüz 0.11.0 sürümünden itibaren Türkçe de). Salt okunur ve yönetici hakkı olmadan, yakın zamandaki beklenmedik kapanmaların (Kernel-Power 41, EventLog 6008) ve donanım hatalarının (WHEA-Logger, disk, Ntfs) sayısını ve son zamanını gösterir.",
   faqTitle: "Sık sorulan sorular",
   faq: [
     ["Kod bana nedeni söyler mi?", "Kod, durmanın türünü söyler. Ekrandaki .sys adı, aynı zamandaki olaylar ve kodun her seferinde aynı olup olmadığıyla birlikte olası nedenleri ve kontrolleri daraltmak için kullanın. Kesin nedeni bulmak döküm analizi (WinDbg) gerektirebilir."],

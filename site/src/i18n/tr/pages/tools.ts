@@ -5,6 +5,6 @@ export default {
   lead: "Saha için haberleşme ve hesaplama araçları; kurulum olmadan doğrudan tarayıcıda çalışır. Girdiğiniz hiçbir şey bir yere gönderilmez.",
   filter: "Araç arayın — ör. crc, 4-20, modbus, alt ağ",
   cats: "Kategoriler",
-  moreEn: "Şimdilik araçların yalnızca bir kısmı Türkçe. Motorlar, elektrik, PC donanım testleri ve diğer araçlar için",
+  moreEn: "Şimdilik araçların yalnızca bir kısmı Türkçe. Motorlar, elektrik ve diğer araçlar için",
   moreEnLink: "İngilizce listeye bakın",
 };

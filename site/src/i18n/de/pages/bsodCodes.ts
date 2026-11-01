@@ -32,7 +32,7 @@ export default {
   ] as [string, string, string][],
   appTitle: "Mehr mit den PortDock-Programmen",
   app1: "Wann und wie oft Bluescreens und plötzliches Ausschalten vorkamen, sehen Sie auf der Registerkarte „This PC“ von",
-  app2: "über „Read this PC's settings“. Nur lesend und ohne Administratorrechte zeigt sie Anzahl und letzten Zeitpunkt unerwarteter Abschaltungen (Kernel-Power 41, EventLog 6008) und Hardwarefehler (WHEA-Logger, disk, Ntfs) der letzten Zeit (Programmoberfläche auf Englisch oder Koreanisch).",
+  app2: "über „Read this PC's settings“. Nur lesend und ohne Administratorrechte zeigt sie Anzahl und letzten Zeitpunkt unerwarteter Abschaltungen (Kernel-Power 41, EventLog 6008) und Hardwarefehler (WHEA-Logger, disk, Ntfs) der letzten Zeit (Programmoberfläche auf Englisch oder Koreanisch, ab 0.11.0 auch auf Deutsch).",
   faqTitle: "Häufige Fragen",
   faq: [
     ["Verrät mir der Code die Ursache?", "Der Code sagt, welche Art von Stopp es war. Damit grenzen Sie mögliche Ursachen und Prüfschritte ein, zusammen mit dem .sys-Namen auf dem Bildschirm, Ereignissen zur selben Zeit und der Frage, ob der Code jedes Mal gleich ist. Für die genaue Ursache kann eine Abbildanalyse (WinDbg) nötig sein."],

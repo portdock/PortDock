@@ -33,7 +33,7 @@ export default {
     ["Si riconnette da solo", "Scollegate e ricollegate un adattatore USB: PortDock ritrova lo stesso dispositivo e registra quando si è interrotta la connessione."],
     ["Una riga, un messaggio", "I telegrammi vengono separati per pausa, carattere terminatore, lunghezza fissa o Modbus RTU: niente più dati incollati o spezzati."],
     ["Vedere prima di inviare", "Mentre scrivete compaiono i byte esatti che verranno inviati, compresi checksum e fine riga."],
-    ["Coreano, inglese e giapponese", "Le schermate dei programmi sono in coreano, inglese e giapponese (giapponese dalla 0.11.0; la guida in coreano e in inglese), con un suggerimento su ogni comando."],
+    ["Anche in italiano", "Dalla 0.11.0 le schermate dei programmi sono in 12 lingue, tra cui l'italiano (la 0.10.0 in coreano e inglese; la guida in inglese), con un suggerimento su ogni comando."],
   ],
   ctaTitle: "Domande, errori o idee?",
   ctaBody: "Chiedete come funziona qualcosa, segnalate un errore, proponete uno strumento web o una guida, oppure correggete la mappa dei registri di un dispositivo.",

@@ -72,7 +72,7 @@ export default {
     pcapName: "Analizator pcap (po angielsku)",
     pcapNote: "Zapisy z Wiresharka lub pktmon w przeglądarce, bez instalacji — pary zapytanie/odpowiedź Modbus TCP i MC",
     hwTitle: "Test mikrofonu, klawiatury, myszy, kamery internetowej lub monitora",
-    hwName: "Testy sprzętu PC (po angielsku)",
+    hwName: "Testy sprzętu PC",
     hwNote: (n: number) => `To nie program na Windows — działa w przeglądarce, bez instalacji (testy: ${n})`,
   },
 

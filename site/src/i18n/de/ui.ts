@@ -33,7 +33,7 @@ export default {
     ["Verbindet sich neu", "USB-Adapter ab- und wieder anstecken: PortDock findet dasselbe Gerät wieder und protokolliert, wann die Verbindung abriss."],
     ["Eine Zeile, eine Nachricht", "Telegramme werden nach Pausenzeit, Endezeichen, fester Länge oder Modbus RTU getrennt — keine zusammengeklebten oder zerrissenen Daten mehr."],
     ["Sehen, was gesendet wird", "Die tatsächlich gesendeten Bytes samt Prüfsumme und Zeilenende erscheinen schon während der Eingabe."],
-    ["Koreanisch, Englisch, Japanisch", "Die Programmoberfläche gibt es auf Koreanisch, Englisch und Japanisch (Japanisch ab 0.11.0, Hilfe auf Koreanisch und Englisch), mit Tooltips an jedem Bedienelement."],
+    ["Oberfläche auch auf Deutsch", "Ab 0.11.0 gibt es die Programmoberfläche in 12 Sprachen, darunter Deutsch (0.10.0: Koreanisch und Englisch; Hilfe auf Englisch), mit Tooltips an jedem Bedienelement."],
   ],
   ctaTitle: "Fragen, Fehler oder Ideen?",
   ctaBody: "Fragen Sie, wie etwas funktioniert, melden Sie einen Fehler, schlagen Sie ein Web-Tool oder eine Anleitung vor oder korrigieren Sie eine Register-Map.",

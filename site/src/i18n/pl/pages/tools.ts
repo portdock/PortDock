@@ -5,6 +5,6 @@ export default {
   lead: "Kalkulatory i narzędzia komunikacyjne, które działają od razu w przeglądarce, bez instalacji. Nic z tego, co wpiszesz, nie jest nigdzie wysyłane.",
   filter: "Szukaj narzędzia — np. crc, 4-20, modbus, podsieć",
   cats: "Kategorie",
-  moreEn: "Po polsku jest na razie tylko część narzędzi. Pozostałe — silniki, elektryka, testy sprzętu PC i inne — znajdziesz na",
+  moreEn: "Po polsku jest na razie tylko część narzędzi. Pozostałe — silniki, elektryka i inne — znajdziesz na",
   moreEnLink: "liście po angielsku",
 };

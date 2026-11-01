@@ -25,7 +25,7 @@ export default {
   ] as [string, string][],
   appTitle: "Lebih lanjut dengan aplikasi PortDock",
   app1: "Jika laptop dipakai sebagai PC mesin atau PC lapangan, pengaturan tidur, USB selective suspend, pengaktifan cepat (Fast Startup), dan kebijakan restart setelah pembaruan dapat dibaca tanpa hak admin di",
-  app2: "lewat «This PC» → «Read this PC's settings» (hanya membaca; layar aplikasi berbahasa Inggris atau Korea).",
+  app2: "lewat «This PC» → «Read this PC's settings» (hanya membaca; layar aplikasi berbahasa Inggris atau Korea, mulai 0.11.0 juga bahasa Indonesia).",
   faqTitle: "Pertanyaan umum",
   faq: [
     ["Pada persentase berapa baterai harus diganti?", "Tidak ada satu ambang. Periksa syarat garansi dan penggantian dari pembuat laptop Anda. Secara praktis, lihat apakah waktu pakai sebenarnya masih cukup untuk pekerjaan Anda."],

@@ -32,7 +32,7 @@ export default {
   ] as [string, string, string][],
   appTitle: "Lebih lanjut dengan aplikasi PortDock",
   app1: "Untuk melihat kapan dan seberapa sering layar biru dan mati mendadak terjadi, buka tab «This PC» di",
-  app2: "lalu tekan «Read this PC's settings». Hanya membaca dan tanpa hak admin, aplikasi ini menampilkan jumlah dan waktu terakhir pematian tak terduga baru-baru ini (Kernel-Power 41, EventLog 6008) dan kesalahan perangkat keras (WHEA-Logger, disk, Ntfs). Layar aplikasi berbahasa Inggris (atau Korea).",
+  app2: "lalu tekan «Read this PC's settings». Hanya membaca dan tanpa hak admin, aplikasi ini menampilkan jumlah dan waktu terakhir pematian tak terduga baru-baru ini (Kernel-Power 41, EventLog 6008) dan kesalahan perangkat keras (WHEA-Logger, disk, Ntfs). Layar aplikasi berbahasa Inggris (atau Korea), mulai 0.11.0 juga bahasa Indonesia.",
   faqTitle: "Pertanyaan umum",
   faq: [
     ["Apakah kodenya memberi tahu penyebabnya?", "Kode memberi tahu jenis penghentiannya. Gunakan untuk mempersempit kemungkinan penyebab dan pemeriksaan, bersama nama .sys di layar, peristiwa pada waktu yang sama, dan apakah kodenya selalu sama. Menemukan penyebab pastinya mungkin perlu analisis dump (WinDbg)."],

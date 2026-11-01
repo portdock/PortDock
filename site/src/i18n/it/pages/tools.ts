@@ -5,6 +5,6 @@ export default {
   lead: "Strumenti di comunicazione e di calcolo per il cantiere che funzionano nel browser senza installazione. Quello che digitate non viene inviato da nessuna parte.",
   filter: "Cerca uno strumento — es. crc, 4-20, modbus, subnet",
   cats: "Categorie",
-  moreEn: "Per ora in italiano c'è solo una parte degli strumenti. Motori, impianti elettrici, test dell'hardware del PC e altri strumenti sono nell'",
+  moreEn: "Per ora in italiano c'è solo una parte degli strumenti. Motori, impianti elettrici e altri strumenti sono nell'",
   moreEnLink: "elenco in inglese",
 };

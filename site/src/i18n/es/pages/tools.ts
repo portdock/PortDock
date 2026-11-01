@@ -5,6 +5,6 @@ export default {
   lead: "Herramientas de comunicación y cálculo para campo que funcionan en el navegador, sin instalar. Nada de lo que escribe se envía a ningún sitio.",
   filter: "Buscar herramienta — p. ej.: crc, 4-20, modbus, subred",
   cats: "Categorías",
-  moreEn: "Por ahora solo algunas herramientas están en español. Las demás (motores, electricidad, pruebas de hardware del PC…) están en la",
+  moreEn: "Por ahora solo algunas herramientas están en español. Las demás (motores, electricidad…) están en la",
   moreEnLink: "lista en inglés",
 };

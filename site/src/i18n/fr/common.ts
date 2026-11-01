@@ -72,7 +72,7 @@ export default {
     pcapName: "Analyseur pcap (en anglais)",
     pcapNote: "Captures Wireshark ou pktmon directement dans le navigateur, sans installation — paires requête/réponse Modbus TCP et MC",
     hwTitle: "Tester un micro, un clavier, une souris, une webcam ou un écran",
-    hwName: "Tests du matériel PC (en anglais)",
+    hwName: "Tests du matériel PC",
     hwNote: (n: number) => `Pas un logiciel Windows : fonctionne dans le navigateur, sans installation (${n} tests)`,
   },
 

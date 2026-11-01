@@ -5,6 +5,6 @@ export default {
   lead: "Des outils de communication et de calcul pour le terrain, à utiliser directement dans le navigateur, sans installation. Rien de ce que vous saisissez n’est envoyé.",
   filter: "Chercher un outil — ex. crc, 4-20, modbus, sous-réseau",
   cats: "Catégories",
-  moreEn: "La version française ne couvre encore qu’une partie des outils. Pour les autres (moteurs, électricité, tests du matériel PC…), voir la",
+  moreEn: "La version française ne couvre encore qu’une partie des outils. Pour les autres (moteurs, électricité…), voir la",
   moreEnLink: "liste en anglais",
 };

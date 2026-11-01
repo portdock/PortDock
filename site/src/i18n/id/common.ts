@@ -72,7 +72,7 @@ export default {
     pcapName: "Penganalisis pcap (bahasa Inggris)",
     pcapNote: "Rekaman Wireshark atau pktmon langsung di browser, tanpa instalasi — pasangan request/respons Modbus TCP dan MC",
     hwTitle: "Uji mikrofon, keyboard, mouse, webcam, atau monitor",
-    hwName: "Uji perangkat keras PC (bahasa Inggris)",
+    hwName: "Uji perangkat keras PC",
     hwNote: (n: number) => `Bukan program Windows — langsung di browser, tanpa instalasi (${n} uji)`,
   },
 

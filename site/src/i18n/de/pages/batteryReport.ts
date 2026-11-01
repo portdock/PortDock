@@ -25,7 +25,7 @@ export default {
   ] as [string, string][],
   appTitle: "Mehr mit den PortDock-Programmen",
   app1: "Dient ein Laptop als Anlagen- oder Feld-PC, lassen sich Energiesparmodus, selektives USB-Energiesparen, Schnellstart und die Neustartrichtlinie nach Updates ohne Administratorrechte auslesen in",
-  app2: "unter „This PC“ → „Read this PC's settings“ (nur lesend, Programmoberfläche auf Englisch oder Koreanisch).",
+  app2: "unter „This PC“ → „Read this PC's settings“ (nur lesend, Programmoberfläche auf Englisch oder Koreanisch, ab 0.11.0 auch auf Deutsch).",
   faqTitle: "Häufige Fragen",
   faq: [
     ["Ab wie viel Prozent sollte ich tauschen?", "Einen festen Grenzwert gibt es nicht. Die Garantie- und Austauschbedingungen des Laptopherstellers prüfen. In der Praxis zählt, ob die tatsächliche Laufzeit für Ihre Arbeit noch reicht."],

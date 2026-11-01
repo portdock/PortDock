@@ -72,7 +72,7 @@ export default {
     pcapName: "Trình phân tích pcap (tiếng Anh)",
     pcapNote: "Mở bản ghi Wireshark hoặc pktmon ngay trên trình duyệt, không cần cài — ghép cặp hỏi/đáp Modbus TCP và MC",
     hwTitle: "Kiểm tra micro, bàn phím, chuột, webcam và màn hình",
-    hwName: "Kiểm tra phần cứng PC (tiếng Anh)",
+    hwName: "Kiểm tra phần cứng PC",
     hwNote: (n: number) => `Không phải chương trình Windows mà chạy ngay trên trình duyệt (không cần cài) — ${n} bài kiểm tra`,
   },
 

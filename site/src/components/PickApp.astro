@@ -93,7 +93,7 @@ const noteText = (p: (typeof PATHS)[number], it: Item) => {
       <h3>{x ? x.hwTitle : ko ? "마이크·키보드·마우스·웹캠·모니터 시험" : "Test a mic, keyboard, mouse, webcam or monitor"}</h3>
       <ul>
         <li>
-          <a href={x ? url("en", "tools/#g-hw") : url(lang, "tools/#g-hw")}><b>{x ? x.hwName : ko ? "PC 하드웨어 테스트" : "PC hardware tests"}</b></a>
+          <a href={url(lang, "tools/#g-hw")}><b>{x ? x.hwName : ko ? "PC 하드웨어 테스트" : "PC hardware tests"}</b></a>
           <small>{x ? x.hwNote(hwCount) : ko ? `윈도우 프로그램이 아니라 브라우저에서 바로(설치 없음) — ${hwCount}종` : `Not a Windows program — runs in your browser, no install (${hwCount} tests)`}</small>
         </li>
       </ul>

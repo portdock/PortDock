@@ -5,6 +5,6 @@ export default {
   lead: "Alat komunikasi dan kalkulator lapangan yang langsung berjalan di browser tanpa instalasi. Apa pun yang Anda ketik tidak dikirim ke mana pun.",
   filter: "Cari alat — mis. crc, 4-20, modbus, subnet",
   cats: "Kategori",
-  moreEn: "Baru sebagian alat yang tersedia dalam bahasa Indonesia. Alat motor, listrik, uji perangkat keras PC, dan lainnya ada di",
+  moreEn: "Baru sebagian alat yang tersedia dalam bahasa Indonesia. Alat motor, listrik, dan lainnya ada di",
   moreEnLink: "daftar bahasa Inggris",
 };

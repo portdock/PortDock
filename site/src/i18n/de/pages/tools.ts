@@ -5,6 +5,6 @@ export default {
   lead: "Kommunikations- und Rechentools für die Praxis, die ohne Installation direkt im Browser laufen. Ihre Eingaben werden nirgendwohin gesendet.",
   filter: "Tool suchen — z. B. crc, 4-20, modbus, subnetz",
   cats: "Kategorien",
-  moreEn: "Auf Deutsch gibt es bisher nur einen Teil der Tools. Motoren, Elektrik, PC-Hardwaretests und weitere Tools finden Sie in der",
+  moreEn: "Auf Deutsch gibt es bisher nur einen Teil der Tools. Motoren, Elektrik und weitere Tools finden Sie in der",
   moreEnLink: "englischen Liste",
 };

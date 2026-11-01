@@ -5,6 +5,6 @@ export default {
   lead: "Công cụ truyền thông và tính toán cho hiện trường, chạy ngay trên trình duyệt, không cần cài. Những gì bạn nhập không được gửi đi đâu.",
   filter: "Tìm công cụ — ví dụ crc, 4-20, modbus, subnet",
   cats: "Danh mục",
-  moreEn: "Hiện mới có một phần công cụ bằng tiếng Việt. Công cụ về động cơ, điện, kiểm tra phần cứng PC và các công cụ khác có trong",
+  moreEn: "Hiện mới có một phần công cụ bằng tiếng Việt. Công cụ về động cơ, điện và các công cụ khác có trong",
   moreEnLink: "danh sách tiếng Anh",
 };

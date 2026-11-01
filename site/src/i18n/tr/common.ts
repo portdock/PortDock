@@ -72,7 +72,7 @@ export default {
     pcapName: "pcap çözümleyici (İngilizce)",
     pcapNote: "Wireshark veya pktmon kayıtları doğrudan tarayıcıda, kurulum yok — Modbus TCP ve MC istek/yanıt çiftleri",
     hwTitle: "Mikrofon, klavye, fare, web kamerası veya monitör testi",
-    hwName: "PC donanım testleri (İngilizce)",
+    hwName: "PC donanım testleri",
     hwNote: (n: number) => `Windows programı değil, doğrudan tarayıcıda çalışır, kurulum yok (${n} test)`,
   },
 

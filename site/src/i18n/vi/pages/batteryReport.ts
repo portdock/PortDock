@@ -25,7 +25,7 @@ export default {
   ] as [string, string][],
   appTitle: "Thêm với ứng dụng PortDock",
   app1: "Khi laptop được dùng làm PC thiết bị hoặc PC hiện trường, các thiết lập ngủ, tạm ngưng chọn lọc USB, Khởi động nhanh và chính sách khởi động lại sau cập nhật có thể đọc mà không cần quyền quản trị trong",
-  app2: "ở «This PC» → «Read this PC's settings» (chỉ đọc; tên mục theo giao diện tiếng Anh của ứng dụng).",
+  app2: "ở «This PC» → «Read this PC's settings» (chỉ đọc; tên mục theo giao diện tiếng Anh của ứng dụng, từ 0.11.0 giao diện có cả tiếng Việt).",
   faqTitle: "Câu hỏi thường gặp",
   faq: [
     ["Còn bao nhiêu phần trăm thì nên thay pin?", "Không có ngưỡng chung. Hãy xem điều kiện bảo hành và thay pin của hãng laptop. Trên thực tế, hãy xem thời gian dùng thực tế có còn đủ cho công việc không."],

@@ -72,7 +72,7 @@ export default {
     pcapName: "pcap-Analyzer (Englisch)",
     pcapNote: "Mitschnitte von Wireshark oder pktmon direkt im Browser, ohne Installation — Anfrage/Antwort-Paare für Modbus TCP und MC",
     hwTitle: "Mikrofon, Tastatur, Maus, Webcam und Monitor testen",
-    hwName: "PC-Hardwaretests (Englisch)",
+    hwName: "PC-Hardwaretests",
     hwNote: (n: number) => `Kein Windows-Programm, sondern direkt im Browser (ohne Installation) — ${n} Tests`,
   },
 

@@ -72,7 +72,7 @@ export default {
     pcapName: "pcap 解析ツール(英語)",
     pcapNote: "Wireshark・pktmon のキャプチャをブラウザで直接(インストール不要)— Modbus TCP・MC の要求/応答の組",
     hwTitle: "マイク・キーボード・マウス・Web カメラ・モニターの試験",
-    hwName: "PC ハードウェアテスト(英語)",
+    hwName: "PC ハードウェアテスト",
     hwNote: (n: number) => `Windows ソフトではなくブラウザですぐ使えます(インストール不要)— ${n} 種類`,
   },
 

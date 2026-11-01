@@ -33,7 +33,7 @@ export default {
     ["Sam łączy się ponownie", "Po odłączeniu i ponownym podłączeniu konwertera USB PortDock odnajduje to samo urządzenie i zapisuje, kiedy połączenie zostało przerwane."],
     ["Jedna linia — jedna wiadomość", "Ramki dzielone po przerwie w transmisji, znaku końca, stałej długości lub według Modbus RTU — koniec ze sklejonymi i porozrywanymi danymi."],
     ["Widzisz, zanim wyślesz", "Już podczas wpisywania widać dokładnie te bajty, które zostaną wysłane, razem z sumą kontrolną i znakiem końca linii."],
-    ["Po koreańsku, angielsku i japońsku", "Ekrany programów po koreańsku, angielsku i japońsku (japoński od wersji 0.11.0, pomoc po koreańsku i angielsku), z podpowiedzią przy każdym elemencie."],
+    ["Także po polsku", "Od wersji 0.11.0 ekrany programów w 12 językach, w tym po polsku (0.10.0 po koreańsku i angielsku, pomoc po angielsku), z podpowiedzią przy każdym elemencie."],
   ],
   ctaTitle: "Pytania, błędy, pomysły?",
   ctaBody: "Zapytaj, jak coś działa, zgłoś błąd, zaproponuj narzędzie online lub poradnik albo popraw mapę rejestrów urządzenia.",
