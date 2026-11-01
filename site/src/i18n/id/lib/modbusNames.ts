@@ -1,0 +1,28 @@
+// Nama fungsi dan area data Modbus (lib/modbusDecode.ts, shared/modbusBuild.ts) — dipakai bersama oleh pembuat request dan dekoder
+// Nama fungsi tetap dalam bahasa Inggris seperti di spesifikasi Modbus dan manual perangkat; hanya penjelasannya yang diterjemahkan.
+export default {
+  "Read Coils": "Read Coils (baca coil)",
+  "Read Discrete Inputs": "Read Discrete Inputs (baca discrete input)",
+  "Read Holding Registers": "Read Holding Registers (baca holding register)",
+  "Read Input Registers": "Read Input Registers (baca input register)",
+  "Write Single Coil": "Write Single Coil (tulis satu coil)",
+  "Write Single Register": "Write Single Register (tulis satu register)",
+  "Write Multiple Coils": "Write Multiple Coils (tulis banyak coil)",
+  "Write Multiple Registers": "Write Multiple Registers (tulis banyak register)",
+  "Read/Write Multiple Registers": "Read/Write Multiple Registers (baca/tulis banyak register)",
+  "Read Exception Status (serial line only)": "Read Exception Status (hanya jalur serial)",
+  "Diagnostics (serial line only)": "Diagnostics (diagnostik, hanya jalur serial)",
+  "Get Comm Event Counter (serial line only)": "Get Comm Event Counter (hanya jalur serial)",
+  "Get Comm Event Log (serial line only)": "Get Comm Event Log (hanya jalur serial)",
+  "Report Server ID (serial line only)": "Report Server ID (hanya jalur serial)",
+  "Read File Record": "Read File Record (baca record berkas)",
+  "Write File Record": "Write File Record (tulis record berkas)",
+  "Mask Write Register": "Mask Write Register (tulis register dengan mask)",
+  "Read FIFO Queue": "Read FIFO Queue (baca antrean FIFO)",
+  "Encapsulated Interface Transport": "Encapsulated Interface Transport (termasuk identifikasi perangkat)",
+  "Unknown function": "Fungsi tidak dikenal",
+  Coils: "Coil (bit keluaran baca-tulis)",
+  "Discrete inputs": "Discrete input (bit masukan hanya baca)",
+  "Holding registers": "Holding register (register baca-tulis)",
+  "Input registers": "Input register (register hanya baca)",
+};
