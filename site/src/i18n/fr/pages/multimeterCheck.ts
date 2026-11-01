@@ -1,0 +1,28 @@
+// 테스터(멀티미터) 측정값 점검기(views/MultimeterCheckPage.astro) — 2차 묶음
+export default {
+  title: "Contrôle des mesures au multimètre — RS-485, 4–20 mA, 24 V, capteurs",
+  h1: "Contrôle des mesures au multimètre",
+  desc: "Résistance et tension A–B en RS-485, 4–20 mA (NE 43), chute du 24 V, sortie NPN/PNP, TX RS-232, écart de masse — saisissez une mesure : verdict et explication.",
+  seo: "Interpréter une mesure au multimètre : RS-485, 4–20 mA, 24 V",
+  jump: "Rubriques",
+  how: "Comment mesurer",
+  basis: "Référence",
+  copy: "Copier le résultat",
+  copied: "Copié.",
+  privacy: "Les valeurs saisies sont calculées dans ce navigateur et ne sont envoyées nulle part.",
+  general: "Les valeurs sont celles des normes couramment utilisées — si la notice de l’appareil dit autre chose, la notice prévaut. Pendant la mesure, faites attention à l’état de l’alimentation et au risque d’électrocution.",
+  ts: "le guide de recherche de panne",
+  tsNote: "Pour partir d’un symptôme et savoir quoi mesurer, utilisez",
+  wd: "le générateur de schémas de câblage",
+  wdNote: "Pour dessiner le câblage, utilisez",
+  rs: "le calcul de terminaison et polarisation RS-485",
+  rsNote: "Pour dimensionner les résistances de terminaison et de polarisation, utilisez",
+  srcTitle: "Sources",
+  faqTitle: "Questions fréquentes",
+  end: ".",
+  faq: [
+    ["Puis-je mesurer la résistance A–B sous tension ?", "Non. Mettez d’abord tous les appareils hors tension. Sous tension, le multimètre affiche des valeurs fausses et l’appareil ou le multimètre peut être endommagé."],
+    ["J’ai mis une terminaison mais la mesure indique « sans terminaison »", "La terminaison RC (1 nF + 120 Ω en série) bloque le continu par son condensateur : un multimètre ne la voit pas. Choisissez RC dans le champ « Terminaison », ou regardez les commutateurs et composants de terminaison des appareils d’extrémité. Certains appareils n’activent aussi leur terminaison interne que sous tension."],
+    ["« Aucun problème relevé (dans cette mesure) » veut-il dire que la communication fonctionnera ?", "Cela veut dire que cette mesure-là ne montre aucun problème. Pour les autres causes possibles — réglages, adresses esclaves, polarité, bruit — poursuivez avec le guide de recherche de panne."],
+  ] as [string, string][],
+};
