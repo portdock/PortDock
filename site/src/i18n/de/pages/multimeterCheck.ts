@@ -1,0 +1,28 @@
+// Multimeter-Messwertprüfung (views/MultimeterCheckPage.astro) — 2. Paket
+export default {
+  title: "Multimeter-Messwertprüfung — RS-485, 4–20 mA, 24 V, Sensoren",
+  h1: "Multimeter-Messwertprüfung",
+  desc: "RS-485 A–B: Widerstand, Ruhespannung, 4–20 mA (NE 43), 24-V-Spannungsfall, NPN/PNP-Ausgang, RS-232 TX, Massedifferenz — Messwert eingeben, Bewertung mit Grund.",
+  seo: "Multimeter-Messwerte prüfen: RS-485, 4–20 mA, 24 V — PortDock",
+  jump: "Prüfpunkte",
+  how: "So messen",
+  basis: "Grundlage",
+  copy: "Ergebnis kopieren",
+  copied: "Kopiert.",
+  privacy: "Ihre Eingaben werden nur in diesem Browser berechnet und nirgendwohin gesendet.",
+  general: "Die Werte sind allgemein übliche Normwerte — nennt das Gerätehandbuch etwas anderes, gilt das Handbuch. Achten Sie beim Messen auf den Schaltzustand und die Gefahr eines elektrischen Schlags.",
+  ts: "Fehlersuche-Assistenten",
+  tsNote: "Um von einem Fehlerbild auszugehen und herauszufinden, was zu messen ist, nutzen Sie den",
+  wd: "Schaltplan-Generator",
+  wdNote: "Um die Verdrahtung zu zeichnen, nutzen Sie den",
+  rs: "RS-485-Rechner für Busabschluss und Bias",
+  rsNote: "Abschluss- und Bias-Widerstände bemessen Sie mit dem",
+  srcTitle: "Quellen",
+  faqTitle: "Häufige Fragen",
+  end: ".",
+  faq: [
+    ["Darf ich den Widerstand A–B bei eingeschalteter Versorgung messen?", "Nein. Zuerst alle Geräte spannungsfrei schalten. Bei anliegender Versorgung zeigt das Messgerät falsche Werte, und Gerät oder Messgerät können beschädigt werden."],
+    ["Ich habe einen Abschluss gesetzt, aber es heißt „kein Abschluss“", "Ein RC-Abschluss (1 nF + 120 Ω in Reihe) sperrt mit seinem Kondensator Gleichstrom, daher sieht ihn das Multimeter nicht. Im Feld „Abschlusswiderstand“ RC wählen oder die Abschlussschalter und Bauteile der Endgeräte ansehen. Manche Geräte schalten den internen Abschluss außerdem nur bei anliegender Versorgung zu."],
+    ["Heißt „Kein Befund (in dieser Messung)“, dass die Kommunikation funktioniert?", "Es heißt, dass dieser eine Messwert kein Problem zeigt. Für andere mögliche Ursachen — Einstellungen, Slave-Adressen, Polarität, Störungen — mit dem Fehlersuche-Assistenten weitermachen."],
+  ] as [string, string][],
+};
