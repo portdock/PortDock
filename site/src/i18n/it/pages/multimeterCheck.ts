@@ -1,0 +1,28 @@
+// 테스터(멀티미터) 측정값 점검기(views/MultimeterCheckPage.astro) — 2차 묶음
+export default {
+  title: "Controllo delle letture del multimetro — RS-485, 4–20 mA, 24 V, sensori",
+  h1: "Controllo delle letture del multimetro",
+  desc: "Resistenza e tensione A–B RS-485, 4–20 mA (NE 43), caduta dei 24 V, uscita NPN/PNP, TX RS-232, differenza di massa — inserite una lettura: giudizio e motivo.",
+  seo: "Interpretare le letture del multimetro: RS-485, 4–20 mA, 24 V",
+  jump: "Voci",
+  how: "Come misurare",
+  basis: "Riferimento",
+  copy: "Copia il risultato",
+  copied: "Copiato.",
+  privacy: "I valori inseriti vengono calcolati in questo browser e non vengono inviati da nessuna parte.",
+  general: "I valori sono quelli delle norme di uso comune — se il manuale del dispositivo dice altro, vale il manuale. Durante la misura fate attenzione allo stato dell'alimentazione e al rischio di scossa elettrica.",
+  ts: "la guida alla ricerca guasti",
+  tsNote: "Per partire da un sintomo e capire cosa misurare, usate",
+  wd: "il generatore di schemi di cablaggio",
+  wdNote: "Per disegnare il cablaggio, usate",
+  rs: "il calcolatore di terminazione e polarizzazione RS-485",
+  rsNote: "Per dimensionare le resistenze di terminazione e polarizzazione, usate",
+  srcTitle: "Fonti",
+  faqTitle: "Domande frequenti",
+  end: ".",
+  faq: [
+    ["Posso misurare la resistenza A–B con i dispositivi accesi?", "No. Spegnete prima tutti i dispositivi. Con l'alimentazione inserita il multimetro mostra valori sbagliati e il dispositivo o il multimetro possono danneggiarsi."],
+    ["Ho montato la terminazione ma risulta «senza terminazione»", "La terminazione RC (1 nF + 120 Ω in serie) blocca la continua con il condensatore, quindi un multimetro non la vede. Scegliete RC nel campo «Terminazione», oppure controllate selettori e componenti di terminazione dei dispositivi alle estremità. Alcuni dispositivi inoltre inseriscono la terminazione interna solo quando sono alimentati."],
+    ["«Nessun problema rilevato (in questa misura)» significa che la comunicazione funzionerà?", "Significa che questa singola lettura non mostra problemi. Per altre cause possibili — impostazioni, indirizzi slave, polarità, rumore — proseguite con la guida alla ricerca guasti."],
+  ] as [string, string][],
+};

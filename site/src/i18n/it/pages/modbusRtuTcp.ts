@@ -1,0 +1,30 @@
+// Modbus RTU ↔ TCP 프레임 변환기(views/ModbusRtuTcpPage.astro) — 2차 묶음
+// Termini: indirizzo slave, Unit ID, identificativo di transazione, intestazione MBAP, gateway, broadcast
+export default {
+  title: "Convertitore di frame Modbus RTU ↔ TCP",
+  seo: "Convertitore Modbus RTU ↔ TCP: MBAP, CRC, LRC ASCII — PortDock",
+  desc: "Converte Modbus RTU (indirizzo + CRC) in Modbus TCP con intestazione MBAP e viceversa, più la modalità ASCII (due punti, LRC). Ogni byte colorato e spiegato.",
+  input: "Frame (HEX per RTU e TCP, testo che inizia con «:» per ASCII)",
+  help: "es. 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — richieste o risposte, un frame alla volta",
+  mode: "Formato d'ingresso",
+  auto: "Rilevamento automatico",
+  tid: "Identificativo di transazione (per la conversione in TCP, 0–65535)",
+  tidHelp: "Per una risposta inserite il numero della sua richiesta.",
+  examples: "Esempi",
+  ex: ["Richiesta RTU 03", "Risposta RTU 03", "Richiesta TCP", "Eccezione TCP", "Richiesta ASCII", "Scrittura RTU 10"],
+  how: "Tutta la conversione avviene nel vostro browser; i byte incollati non vengono inviati da nessuna parte.",
+  faqTitle: "Domande frequenti",
+  srcTitle: "Riferimenti",
+  faq: [
+    ["Che differenza c'è tra un frame RTU e uno TCP?", "Il PDU centrale (codice funzione e dati) è identico. L'RTU aggiunge davanti un indirizzo slave di 1 byte e alla fine un CRC16 di 2 byte (prima il byte basso). Il TCP non ha CRC e mette davanti un'intestazione MBAP di 7 byte: identificativo di transazione (2), identificativo di protocollo (2, sempre 0), lunghezza (2) e Unit ID (1). La lunghezza conta i byte dallo Unit ID alla fine."],
+    ["Quale Unit ID uso attraverso un gateway?", "Un gateway da TCP a RTU (device server seriale) usa lo Unit ID ricevuto come indirizzo slave sul lato seriale, quindi inserite l'indirizzo del dispositivo che sta dietro (da 1 a 247). L'indirizzo 0 è un broadcast su una linea seriale, quindi a seconda del gateway viene inoltrato a tutti i dispositivi (senza risposta) o preso come il gateway stesso. 255 (FF) è il valore raccomandato per un dispositivo TCP indirizzato direttamente; un gateway di solito non lo inoltra alla linea seriale, oppure risponde lui. Verificate il comportamento esatto nel manuale del gateway."],
+    ["Come si sceglie l'identificativo di transazione?", "Lo sceglie chi invia la richiesta e il dispositivo restituisce lo stesso numero nella risposta; di solito aumenta di uno a ogni richiesta. L'RTU non ha questo campo, quindi viene eliminato nella conversione da TCP a RTU, e nella conversione da RTU a TCP si usa il valore del campo qui sopra."],
+    ["Cos'è la modalità ASCII?", "L'altra modalità di trasmissione di Modbus su linea seriale. Indirizzo, PDU e LRC vengono inviati come due caratteri HEX maiuscoli per byte, con «:» (3A) all'inizio e CR LF (0D 0A) alla fine. L'LRC è il complemento a due a 8 bit della somma dei byte dall'indirizzo alla fine del PDU. Trasporta lo stesso PDU dell'RTU, quindi i due si convertono direttamente."],
+    ["Dice che il CRC o l'LRC è sbagliato", "Gli ultimi byte vengono presi come CRC (o LRC) e rimossi, il resto viene convertito e viene mostrato il valore corretto. Se avete incollato solo indirizzo e PDU senza CRC, lasciate il formato su RTU e aggiungete il CRC corretto, oppure ricavatelo con il calcolatore di CRC e checksum."],
+  ],
+  guide: "Connessioni Modbus TCP e intestazione MBAP (in inglese)",
+  guide2: "Come leggere i frame Modbus RTU (in inglese)",
+  src: ["intestazione MBAP (transazione, protocollo, lunghezza, Unit ID), Unit ID nei gateway", "framing RTU e ASCII, indirizzi (0 broadcast, 1–247), CRC e LRC", "PDU (codice funzione e dati), risposte di eccezione"],
+  seeG: ["Per l'intestazione MBAP e i problemi di connessione vedete la guida ", "; per i byte RTU vedete ", "."],
+  seeT: ["Per decodificare in dettaglio valori e indirizzi 40001 usate il ", "decodificatore di frame Modbus", "; per esercitarvi con domande provate il ", "quiz di esercitazione Modbus (in inglese)", "."],
+};
