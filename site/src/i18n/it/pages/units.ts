@@ -1,0 +1,41 @@
+// Convertitore di unità industriali (views/UnitsPage.astro) — 5차 묶음. 영어판에서 옮김.
+// 용어: portata volumetrica, coppia, potenza, cavallo vapore (CV, metrico) / horsepower (hp, 550 ft·lbf/s), tonnellata di refrigerazione, differenza di temperatura
+// press 는 링크 앞 글, pressEnd 는 링크 뒤 글. 단위 이름은 lib/units
+export default {
+  title: "Convertitore di unità industriali — portata, coppia, potenza, temperatura",
+  seo: "Convertitore unità: portata, coppia, kW in CV, °C — PortDock",
+  desc: "Unità che si mescolano sul campo: portata m³/h, L/min, gpm; coppia N·m, kgf·cm, lbf·ft; potenza kW, hp, CV, kcal/h, tonnellate frigorifere; °C, °F, K.",
+  qty: "Grandezza",
+  q: { flow: "Portata (volume)", torque: "Coppia", power: "Potenza / cavalli", temperature: "Temperatura" },
+  val: "Valore",
+  unit: "Unità",
+  diff: "Converti come «differenza» di temperatura (un aumento di 10 °C = un aumento di 18 °F)",
+  res: "In tutte le unità",
+  press: "Per la pressione (bar, psi, kPa, mmH₂O):",
+  how: "I risultati si aggiornano mentre scrivete. Tutto gira nel vostro browser; nulla di ciò che inserite viene inviato.",
+  fTitle: "Definizioni e fattori",
+  formula: [
+    "1 L = 1 dm³ = 0.001 m³,   1 m³/h = 16.667 L/min",
+    "Gallone USA = 231 in³ = 3.785 411 784 L,   gallone imperiale = 4.546 09 L",
+    "1 kgf = 9.806 65 N,   1 lbf = 0.453 592 37 kg × 9.806 65 m/s² ≈ 4.448 222 N",
+    "1 kgf·m = 9.806 65 N·m,   1 lbf·ft ≈ 1.355 818 N·m",
+    "1 hp = 550 ft·lbf/s ≈ 745.70 W,   1 CV (PS) = 75 kgf·m/s = 735.498 75 W",
+    "1 kcal/h = 4186.8 J ÷ 3600 s = 1.163 W,   1 tonnellata di refrigerazione = 12 000 Btu/h ≈ 3516.85 W",
+    "°F = °C × 9/5 + 32,   K = °C + 273.15,   °R = K × 9/5",
+  ],
+  fNote: "Si usano due cavalli: l'horsepower imperiale/USA (hp, 550 ft·lbf/s ≈ 0.7457 kW) e il cavallo vapore metrico (CV, PS, 75 kgf·m/s ≈ 0.7355 kW), che differiscono di circa l'1.4 %. Le kcal usano la caloria internazionale (4.1868 J). La tonnellata di refrigerazione cambia da paese a paese; qui si usa solo quella USA (12 000 Btu/h).",
+  hpTitle: "kW ↔ cavalli (taglie di motori, valori calcolati)",
+  hpHead: ["kW", "hp (550 ft·lbf/s)", "CV (metrico)"],
+  hpNote: "Valori calcolati. Le potenze nominali dei motori esistono in serie kW e in serie in cavalli separate, quindi l'«HP» di una targa non coincide con questa tabella fino ai decimali.",
+  flTitle: "Tabella delle portate",
+  tqTitle: "Tabella delle coppie",
+  faqTitle: "Domande frequenti",
+  faq: [
+    ["Quanti cavalli sono 1 kW?", "Circa 1.341 hp (imperiale/USA) o 1.360 CV (metrico). Al contrario, 1 hp ≈ 0.7457 kW e 1 CV ≈ 0.7355 kW."],
+    ["Come si convertono i kgf·cm in N·m?", "1 kgf·cm = 0.098 066 5 N·m, quindi moltiplicate i N·m per circa 10.197 per ottenere i kgf·cm. Esempio: 1.27 N·m ≈ 12.95 kgf·cm."],
+    ["Da m³/h a L/min?", "1 m³/h = 1000 L ÷ 60 min ≈ 16.667 L/min. Una pompa da 60 L/min sposta 3.6 m³/h."],
+    ["Si possono convertire i Nm³/h (normali)?", "No. Il Nm³/h è un volume di gas riferito a temperatura e pressione di riferimento, quindi per passare a m³/h servono temperatura e pressione reali e le condizioni di riferimento di quel Nm³, che cambiano tra settori e costruttori — verificate la specifica del misuratore di portata."],
+  ],
+  srcTitle: "Fonti",
+  pressEnd: ".",
+};
