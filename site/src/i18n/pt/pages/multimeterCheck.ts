@@ -1,0 +1,28 @@
+// Verificador de leituras do multímetro (views/MultimeterCheckPage.astro) — 2º lote
+export default {
+  title: "Verificador de leituras do multímetro: RS-485, 4-20 mA, 24 V",
+  h1: "Verificador de leituras do multímetro",
+  desc: "Resistência e tensão em repouso A–B do RS-485, 4–20 mA (NE 43), queda de 24 V, saída NPN/PNP, TX do RS-232, diferença de terra — avaliação e motivo.",
+  seo: "Leituras do multímetro: RS-485, 4–20 mA e 24 V — PortDock",
+  jump: "Medições",
+  how: "Como medir",
+  basis: "Base",
+  copy: "Copiar resultado",
+  copied: "Copiado.",
+  privacy: "Os valores que você informa são calculados dentro deste navegador e não são enviados para lugar nenhum.",
+  general: "Os valores são os números normalizados de uso comum — se o manual do equipamento disser outra coisa, vale o manual. Ao medir, preste atenção ao estado da alimentação e ao risco de choque elétrico.",
+  ts: "assistente de diagnóstico de falhas",
+  tsNote: "Para partir de um sintoma e descobrir o que medir, use o",
+  wd: "gerador de diagramas de ligação",
+  wdNote: "Para desenhar a ligação, use o",
+  rs: "calculadora de terminação e polarização RS-485",
+  rsNote: "Para dimensionar os resistores de terminação e polarização, use a",
+  srcTitle: "Fontes",
+  faqTitle: "Perguntas frequentes",
+  end: ".",
+  faq: [
+    ["Posso medir a resistência A–B com tudo ligado?", "Não. Desligue antes todos os equipamentos. Energizado, o multímetro mostra valores errados e o equipamento ou o multímetro podem ser danificados."],
+    ["Coloquei a terminação, mas aparece «sem terminação»", "A terminação RC (1 nF + 120 Ω em série) bloqueia CC com o capacitor, então o multímetro não a enxerga. Escolha RC no campo «Terminação» ou confira as chaves e componentes de terminação dos equipamentos das pontas. Além disso, alguns equipamentos só ligam a terminação interna quando energizados."],
+    ["«Nenhum problema encontrado (nesta medição)» quer dizer que a comunicação vai funcionar?", "Quer dizer que esta leitura sozinha não mostra problema. Para outras causas possíveis — configuração, endereços de escravo, polaridade, ruído — continue com o assistente de diagnóstico de falhas."],
+  ] as [string, string][],
+};
