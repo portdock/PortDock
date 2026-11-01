@@ -96,7 +96,7 @@ export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
   de: SCOPE2_PATHS,
   pl: SCOPE2_PATHS,
   es: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
-  pt: SCOPE2_PATHS,
+  pt: [...SCOPE2_PATHS, ...SCOPE3_PATHS],
   tr: SCOPE2_PATHS,
   vi: SCOPE2_PATHS,
 };

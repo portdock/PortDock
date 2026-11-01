@@ -1,0 +1,58 @@
+// Dicionário de códigos de parada da tela azul (views/BsodCodesPage.astro) — 3º lote. Significado, causas possíveis e passos dos 39 códigos em lib/bsod
+// Nomes do Windows em português do Brasil: Visualizador de Eventos, Logs do Windows, Monitor de Confiabilidade, «Código de parada»
+import { MS_LIST_URL, MS_USER_URL } from "../../../lib/bsod.ts";
+
+export default {
+  title: "Códigos de erro da tela azul (BSOD)",
+  seo: "Códigos da tela azul (BSOD): significado e causas — PortDock",
+  desc: "Cole um código da tela azul (0xD1, 0x133…), o nome dele ou uma mensagem do evento 1001: significado, causas possíveis, o que verificar e a página da Microsoft.",
+  input: "Código de parada, nome ou mensagem do evento 1001",
+  ph: "ex.: 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · uma mensagem inteira do evento 1001",
+  examples: "Exemplos",
+  ex: ["0xD1", "WHEA", "Texto da tela azul", "Mensagem do evento 1001"],
+  privacy: "O que você cola é pesquisado dentro deste navegador e nunca é enviado para lugar nenhum.",
+  findTitle: "Onde encontrar o código",
+  find: [
+    "Na tela azul, a linha «Código de parada» (Stop code): anote o nome (como DPC_WATCHDOG_VIOLATION) e, se aparecer, o arquivo .sys indicado abaixo como o que falhou.",
+    "Se o PC já reiniciou: Iniciar → «Visualizador de Eventos» → Logs do Windows → Sistema → «Filtrar Log Atual» à direita, e digite a ID do evento 1001. Copie todo o texto da guia «Geral» de uma entrada com fonte «BugCheck» (0x… (0x…, 0x…, 0x…, 0x…)) para a caixa acima — o código e os quatro parâmetros são extraídos.",
+    "No «Monitor de Confiabilidade» (Iniciar → «Exibir histórico de confiabilidade»), clique em um X vermelho «O Windows não foi desligado corretamente» para ver o BCCode. Uma linha como «BCCode: 133» pode ser colada como está.",
+    "Os despejos ficam em C:\\Windows\\Minidump\\ e C:\\Windows\\MEMORY.DMP (dependendo das configurações). Esta página não lê arquivos de despejo.",
+  ],
+  kp41Title: "Kernel-Power 41 é o resultado, não a causa",
+  kp41: "O evento 41 (Kernel-Power, «O sistema foi reinicializado sem ser desligado corretamente primeiro») só registra que o último desligamento não foi limpo; não diz por quê. Se o BugcheckCode dele não for 0, houve uma tela azul: veja esse código (em decimal — ex.: 307 = 0x133) ou a entrada 1001 do mesmo horário. Se o BugcheckCode for 0, o PC desligou sem tela azul registrada: verifique se o botão liga/desliga foi segurado, queda de energia, a fonte, superaquecimento ou a placa-mãe. O evento 6008 («o desligamento anterior do sistema foi inesperado») é o mesmo tipo de registro posterior.",
+  dec: "BugcheckCode do evento 41 (decimal)",
+  decGo: "Para hexadecimal",
+  tableTitle: "Códigos de parada comuns",
+  cols: ["Código", "Nome", "Significado", "Página da Microsoft"],
+  doc: "página",
+  srcTitle: "Referências",
+  src: "Os significados, causas possíveis e verificações são resumos curtos próprios deste site a partir da referência de códigos de verificação de bugs da Microsoft (Bug Check Code Reference). As causas possíveis são os suspeitos de sempre, não uma resposta única. Para o significado de cada parâmetro, veja a página da Microsoft daquele código.",
+  refs: [
+    [MS_LIST_URL, "Microsoft Learn — Bug Check Code Reference", "a lista completa de códigos (para desenvolvedores)"],
+    [MS_USER_URL, "Suporte da Microsoft — Solucionar erros de tela azul", "orientação para usuários"],
+  ] as [string, string, string][],
+  appTitle: "Mais com os aplicativos PortDock",
+  app1: "Para ver quando e com que frequência houve telas azuis e desligamentos repentinos, abra a guia «This PC» do",
+  app2: "e clique em «Read this PC's settings». Somente leitura e sem permissão de administrador, ele mostra a quantidade e o último horário dos desligamentos inesperados recentes (Kernel-Power 41, EventLog 6008) e dos erros de hardware (WHEA-Logger, disk, Ntfs).",
+  faqTitle: "Perguntas frequentes",
+  faq: [
+    ["O código me diz a causa?", "O código diz que tipo de parada foi. Use-o para restringir as causas possíveis e as verificações, junto com o nome .sys na tela, os eventos do mesmo horário e se o código é sempre o mesmo. Achar a causa exata pode exigir análise do despejo (WinDbg)."],
+    ["0x0000007E e 0x1000007E são diferentes?", "Mesmo significado e mesmos parâmetros (documentação da Microsoft). As variantes «-M» com 0x10000000 somado só existem para alguns códigos, como 0x1000007E, 0x1000007F, 0x1000008E e 0x100000EA; este dicionário mostra a mesma entrada."],
+    ["O código é diferente a cada vez", "O hardware (memória, energia, temperatura, overclock) é mais provável que um único driver. Comece pelo Diagnóstico de Memória do Windows e pelos padrões da BIOS."],
+    ["Aparece ntoskrnl.exe como causa", "ntoskrnl.exe e hal.dll são o próprio kernel do Windows e costumam aparecer onde o sistema parou, mas normalmente como resultado de outro driver ou de um problema de hardware. Veja outros registros do mesmo horário antes de reinstalar o Windows por causa desse nome."],
+  ] as [string, string][],
+  msg: {
+    none: "Nenhum código ou nome encontrado. Tente um código hexadecimal começando com 0x (ex.: 0x0000001A), parte de um nome (ex.: MEMORY) ou uma mensagem do evento 1001.",
+    unknown: "Este código não está neste dicionário. Procure na lista completa da Microsoft:",
+    many: "O nome corresponde a vários códigos — escolha um:",
+    variant: "A variante com 0x10000000 — tratada como o mesmo código.",
+    meaning: "Significado",
+    causes: "Causas possíveis",
+    steps: "O que verificar, em ordem",
+    params: "Parâmetros (evento 1001)",
+    files: "Arquivos citados no texto",
+    filesNote: "Um driver citado onde parou é o primeiro candidato. Arquivos do Windows como ntoskrnl.exe, hal.dll ou win32k*.sys costumam aparecer como resultado de outro problema.",
+    doc: "Página da Microsoft (para desenvolvedores)",
+    from: { "bugcheck-message": "encontrado em uma mensagem do evento 1001", keyword: "encontrado em uma linha de código do texto", hex: "encontrado pelo código", name: "encontrado pelo nome", none: "" },
+  },
+};
