@@ -92,3 +92,10 @@ test("일본어 Windows 문구 — 블루스크린 화면 «停止コード»·�
   assert.equal(r.how, "bugcheck-message");
   assert.equal(r.params?.length, 4);
 });
+
+test("스페인어·포르투갈어 Windows 문구 — 블루스크린 화면 «Código de detención»·«Código de parada»", () => {
+  assert.equal(findBugcheck("Código de detención: DPC_WATCHDOG_VIOLATION\nQué falló: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Código de parada: CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("codigo de detencion: 133").code, 0x133);
+  assert.equal(findBugcheck("Código de parada: 0x0000009F").code, 0x9f);
+});
