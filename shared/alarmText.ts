@@ -2,6 +2,7 @@
 import { dicts, type Lang } from "./lang.ts";
 import { JA_ALARM, JA_KIND } from "./ja/alarm.ts";
 import { FR_ALARM, FR_KIND } from "./fr/alarm.ts";
+import { IT_ALARM, IT_KIND } from "./it/alarm.ts";
 import type { AlarmKind } from "./alarm.ts";
 
 const ko = {
@@ -86,7 +87,7 @@ const en: Record<AlarmTextKey, string> = {
   errEmpty: "Enter at least one condition, or press «Remove conditions».",
 };
 
-export const ALARM_TEXT = dicts(ko, en, { ja: JA_ALARM, fr: FR_ALARM });
+export const ALARM_TEXT = dicts(ko, en, { ja: JA_ALARM, fr: FR_ALARM, it: IT_ALARM });
 
 export function alarmText(lang: Lang, k: AlarmTextKey, v?: Record<string, string | number>): string {
   let s = ALARM_TEXT[lang][k];
@@ -95,7 +96,7 @@ export function alarmText(lang: Lang, k: AlarmTextKey, v?: Record<string, string
 }
 
 /** 조건 종류 이름 — 추가 언어(JA_KIND 등)에 없으면 영어 */
-const KIND_MORE: { [L in Lang]?: Record<AlarmKind, string> } = { ja: JA_KIND, fr: FR_KIND };
+const KIND_MORE: { [L in Lang]?: Record<AlarmKind, string> } = { ja: JA_KIND, fr: FR_KIND, it: IT_KIND };
 export const kindLabel = (k: AlarmKind, lang: Lang) => (lang === "ko" || lang === "en" ? KIND_LABEL[k][lang] : KIND_MORE[lang]?.[k] ?? KIND_LABEL[k].en);
 
 export const KIND_LABEL: Record<AlarmKind, { ko: string; en: string }> = {

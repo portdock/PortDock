@@ -30,6 +30,7 @@ import { UsageAsk } from "./UsageAsk";
 import { dicts, type Lang } from "./lang";
 import { JA_REPORT } from "./ja/parts";
 import { FR_REPORT } from "./fr/parts";
+import { IT_REPORT } from "./it/parts";
 
 const LOG_LINES = 200;
 
@@ -115,7 +116,7 @@ const en: typeof ko = {
     crashSend: "Send now",
     crashAlways: "From now on, send automatically without asking",
 };
-const UI = dicts(ko, en, { ja: JA_REPORT, fr: FR_REPORT });
+const UI = dicts(ko, en, { ja: JA_REPORT, fr: FR_REPORT, it: IT_REPORT });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 export function ReportDialog({

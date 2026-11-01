@@ -2,6 +2,7 @@
 import { dicts, type Lang } from "./lang.ts";
 import { JA_AR } from "./ja/autoReply.ts";
 import { FR_AR } from "./fr/autoReply.ts";
+import { IT_AR } from "./it/autoReply.ts";
 
 const ko = {
   // ---- 규칙 카드
@@ -170,7 +171,7 @@ const en: typeof ko = {
 };
 
 export type ArKey = keyof typeof ko;
-export const AR_TEXT = dicts(ko, en, { ja: JA_AR, fr: FR_AR });
+export const AR_TEXT = dicts(ko, en, { ja: JA_AR, fr: FR_AR, it: IT_AR });
 
 /** 문구 + {a}·{n} 채우기 */
 export function ar(lang: Lang, k: ArKey, v: Record<string, string | number> = {}) {

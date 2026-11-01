@@ -2,6 +2,7 @@
 import { dicts, type Lang } from "./lang.ts";
 import { JA_UI } from "./ja/ui.ts";
 import { FR_UI } from "./fr/ui.ts";
+import { IT_UI } from "./it/ui.ts";
 export type { Lang } from "./lang.ts";
 
 const ko = {
@@ -182,7 +183,7 @@ const en: typeof ko = {
   language: "Language",
 };
 
-export const UI = dicts(ko, en, { ja: JA_UI, fr: FR_UI });
+export const UI = dicts(ko, en, { ja: JA_UI, fr: FR_UI, it: IT_UI });
 export type UiKey = keyof typeof ko;
 
 /** 공용 문구 + {a}·{n} 채우기 */
