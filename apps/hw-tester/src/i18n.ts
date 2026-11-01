@@ -1,6 +1,7 @@
 // 한국어 기본, 영어 병행
 import { dicts } from "../../../shared/lang.ts";
 import { ja } from "./i18n.ja.ts";
+import { fr } from "./i18n.fr.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -332,7 +333,7 @@ const en: typeof ko = {
 
 export type Key = keyof typeof ko;
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja });
+export const dict = dicts(ko, en, { ja, fr });
 
 /** «{n}개» 처럼 자리 채우기 */
 export function fill(text: string, v: Record<string, string | number> = {}) {
