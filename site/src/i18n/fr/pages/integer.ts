@@ -1,0 +1,42 @@
+// 정수·진수 변환기(views/IntegerPage.astro) — 4차 묶음
+// 용어: complément à deux, signé / non signé, poids fort / poids faible, code Gray
+export default {
+  title: "Convertisseur d’entiers et de bases",
+  seo: "Hexa ↔ décimal : signé, complément à deux, BCD — PortDock",
+  desc: "Convertissez hexa, décimal et binaire sur 8, 16 ou 32 bits : signé (complément à deux), BCD, code Gray et ordre des octets des registres Modbus (ABCD, CDAB…).",
+  width: "Bits",
+  mode: "Format d’entrée",
+  modes: { hex: "Hexadécimal", dec: "Décimal (négatif = complément à deux)", bin: "Binaire", bcd: "Décimal → BCD" },
+  val: "Valeur",
+  res: "Résultats",
+  k: { u: "Décimal non signé", s: "Décimal signé (complément à deux)", hex: "Hexadécimal", bin: "Binaire", bcd: "Lu en BCD", gray: "Binaire → code Gray", ungray: "Code Gray → binaire" },
+  notBcd: "pas du BCD (un chiffre supérieur à 9)",
+  ordTitle: "Ordre des octets",
+  ordHead: ["Ordre", "Envoyé sous la forme", "Si la saisie est arrivée dans cet ordre (non signé / signé)"],
+  how: "Les résultats se mettent à jour pendant la saisie. Tout s’exécute dans votre navigateur ; rien de ce que vous saisissez n’est envoyé.",
+  sTitle: "Complément à deux — quand un nombre négatif s’affiche 65535",
+  s: [
+    "Un registre contient 16 bits, de 0 à 65535. Un appareil qui envoie un nombre négatif met le bit de poids fort à 1 ; lu en « entier signé 16 bits », il vaut valeur − 65536.",
+    "Par exemple FFFF = 65535 = −1 et FE0C = 65036 = −500. Vérifiez si le type de donnée du manuel est INT16 (signé) ou UINT16 (non signé).",
+    "Les valeurs 32 bits fonctionnent de la même façon : valeur − 4294967296. L’ordre des deux registres se lit dans le tableau d’ordre des octets.",
+  ],
+  bTitle: "BCD — de l’hexa qui se lit comme du décimal",
+  b: [
+    "Le BCD code chaque chiffre décimal sur 4 bits (0 à 9). 1234 devient 0x1234, soit 4660 en décimal. Les valeurs d’horloge et de compteur et certaines instructions d’automate utilisent le BCD.",
+    "Un quartet de A à F signifie que ce n’est pas du BCD. 16 bits contiennent de 0 à 9999, 32 bits de 0 à 99999999.",
+  ],
+  gTitle: "Code Gray",
+  g: "Code dans lequel deux valeurs voisines ne diffèrent que d’un bit (g = b XOR (b ≫ 1)). 0 à 7 s’écrivent 000, 001, 011, 010, 110, 111, 101, 100. Les codeurs absolus l’utilisent comme format de sortie ; si le manuel du codeur indique une sortie en code Gray, prenez la valeur « Code Gray → binaire » comme position.",
+  oTitle: "Lire le tableau d’ordre des octets",
+  o: "« Envoyé sous la forme » donne les octets quand cette valeur est envoyée dans cet ordre. A est l’octet de poids fort. Dans un registre Modbus, l’octet de poids fort vient en premier (spécification §4.2), mais l’ordre des deux registres d’une valeur 32 bits dépend de l’appareil. Saisissez les octets reçus en hexa et cherchez dans la colonne « si la saisie est arrivée dans cet ordre » la ligne qui correspond à l’exemple du manuel : c’est l’ordre de l’appareil.",
+  faqTitle: "Questions fréquentes",
+  faq: [
+    ["Combien vaut FFFF en décimal ?", "65535 en non signé 16 bits, −1 en signé 16 bits (complément à deux). Cela dépend du type de donnée de l’appareil."],
+    ["Comment convertir un nombre négatif en hexa ?", "Choisissez le format d’entrée « Décimal » et saisissez par exemple −500 : vous obtenez l’hexa en complément à deux pour la largeur choisie (FE0C sur 16 bits)."],
+    ["Quelle différence entre BCD et hexa ?", "L’hexa écrit la valeur en base 16 ; le BCD code chaque chiffre décimal sur 4 bits. La valeur 1234 s’écrit 04D2 en hexa et 1234 (0x1234) en BCD."],
+    ["Et les nombres à virgule flottante ?", "Pour les valeurs IEEE 754 sur 32 et 64 bits, le convertisseur de flottants Modbus affiche les quatre ordres d’octets."],
+  ],
+  srcTitle: "Sources",
+  fNote: "Pour lire deux ou quatre registres en float32 ou float64, utilisez le",
+  fEnd: ".",
+};

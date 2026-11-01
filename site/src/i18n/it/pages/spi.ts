@@ -1,0 +1,38 @@
+// SPI 모드 도우미(views/SpiPage.astro) — 4차 묶음. more 는 UART·I2C·CAN 도구 링크 앞의 글(링크 글은 pageName())
+// Termini: fronte di salita / discesa, fronte di campionamento, fronte di shift, livello di riposo, forma d'onda
+export default {
+  title: "Aiuto modalità SPI (forme d'onda CPOL/CPHA)",
+  seo: "Modalità SPI 0–3: diagramma temporale CPOL e CPHA — PortDock",
+  desc: "Modalità SPI 0–3: forme d'onda SCK, MOSI, MISO e CS con fronti di campionamento e shift, ordine dei bit, tempo di trasferimento e notazioni CPOL/CPHA.",
+  mode: "Modalità SPI",
+  mosi: "Byte MOSI (esadecimali, fino a 4)",
+  miso: "Byte MISO (esadecimali, vuoto = sconosciuti)",
+  order: "Ordine dei bit",
+  orders: ["MSB first (di solito)", "LSB first"],
+  clk: "Clock SCK (MHz)",
+  n: "Byte da inviare",
+  res: "Risultati",
+  k: { cp: "CPOL · CPHA", idle: "Livello di riposo di SCK", sample: "Fronte di campionamento (lettura)", shift: "Fronte di shift (cambio)", first: "Comparsa del primo bit", time: "Tempo di trasferimento (senza pause tra i byte)", rate: "Throughput" },
+  legend: ["Fronte di campionamento", "Fronte di shift"],
+  how: "Disegno e calcoli avvengono nel browser; nulla di ciò che scrivete viene inviato.",
+  mTitle: "Tabella delle modalità",
+  mHead: ["Modalità", "CPOL", "CPHA", "SCK a riposo", "Campionamento", "Shift"],
+  nTitle: "Notazioni dei produttori",
+  nHead: ["Modalità", "Generica (CPOL/CPHA)", "Linux spidev", "Arduino SPI", "TI MSP430 USCI", "Microchip PIC MSSP"],
+  nNote: "UCCKPH dell'MSP430 e CKE del PIC sono l'inverso di CPHA — UCCKPH = 1 o CKE = 1 significa «cattura sul primo fronte» (CPHA 0). Verificate con la descrizione del registro nel datasheet (quale fronte cattura, quale fronte cambia).",
+  wTitle: "Che cosa significa CPHA",
+  w: [
+    "CPOL è il livello di SCK a riposo (0 = basso, 1 = alto). Il passaggio riposo → attivo è il «fronte iniziale», il ritorno è il «fronte finale».",
+    "CPHA 0: campionamento sul fronte iniziale, cambio sul fronte finale. Il primo bit deve quindi essere già sulla linea prima del primo fronte — non appena CS va basso.",
+    "CPHA 1: il bit viene messo in uscita sul fronte iniziale e campionato sul fronte finale.",
+    "Se i due lati usano modalità diverse, i bit slittano di una posizione oppure solo il primo byte è sbagliato. Scegliete la modalità in base al diagramma temporale del datasheet del dispositivo: livello di riposo di SCK e fronte di SCK su cui i dati vengono acquisiti.",
+  ],
+  faqTitle: "Domande frequenti",
+  faq: [
+    ["Qual è la modalità più comune?", "Le modalità 0 e 3. Entrambe campionano sul fronte di salita, perciò molti dispositivi accettano l'una o l'altra. Fa fede il diagramma temporale del datasheet del dispositivo."],
+    ["I dati letti sono spostati di un bit", "Cause possibili: CPHA diverso da quello del dispositivo, clock troppo veloce rispetto al ritardo di uscita del dispositivo su MISO, cablaggio lungo. Abbassate il clock e verificate se il problema persiste."],
+    ["Devo alzare CS dopo ogni byte?", "Dipende dal dispositivo. Quelli che ricevono un comando su più byte (per esempio le memorie flash) richiedono che CS resti basso per tutto il comando. Questo disegno tiene CS basso per tutti i byte."],
+  ],
+  srcTitle: "Fonti",
+  more: "Per UART, I2C e CAN:",
+};
