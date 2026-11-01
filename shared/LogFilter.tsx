@@ -5,6 +5,7 @@ import { tip } from "./tips";
 import "./filterbar.css";
 import { dicts, type Lang } from "./lang";
 import { JA_FILTER } from "./ja/parts";
+import { VI_FILTER } from "./vi/parts";
 import { TR_FILTER } from "./tr/parts";
 
 const ko = {
@@ -38,7 +39,7 @@ const en: typeof ko = {
     none: "none",
     shown: "{a}/{b} lines",
 };
-const L = dicts(ko, en, { ja: JA_FILTER, tr: TR_FILTER });
+const L = dicts(ko, en, { ja: JA_FILTER, tr: TR_FILTER, vi: VI_FILTER });
 
 /** 찾기·거르기 상태와 결과. frames 는 앱의 framesRef.current, version 은 새 줄이 올 때마다 바뀌는 값 */
 export function useLogFilter<F extends LogFrame>(frames: F[], version: number) {

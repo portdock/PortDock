@@ -1,0 +1,50 @@
+// 베트남어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const VI_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Theo dõi & cảnh báo",
+  activeN: "{n} đang xảy ra",
+  noAlarm: "Không có cảnh báo — đang theo dõi {n} điều kiện",
+  notRunning: "Theo dõi bắt đầu khi kết nối ({n} điều kiện)",
+  ackAll: "Xác nhận tất cả",
+  ack: "Xác nhận",
+  acked: "Đã xác nhận",
+  clearEnded: "Xóa mục đã hết",
+  sound: "Âm thanh",
+  logStart: "Ghi CSV…",
+  logOn: "● Đã ghi {n} dòng",
+  logStop: "Dừng ghi",
+  logTitle: "Lưu nhật ký cảnh báo",
+  ongoing: "đang diễn ra",
+  colKind: "Điều kiện",
+  colName: "Mục",
+  colValue: "Giá trị",
+  colStart: "Phát sinh",
+  colEnd: "Hết",
+  colDur: "Thời lượng",
+  safety: "PortDock không phải thiết bị an toàn — chỉ là công cụ hỗ trợ giám sát. Bảo vệ thiết bị và khóa liên động phải nằm trong PLC và mạch an toàn.",
+  dlgTitle: "Điều kiện theo dõi — {a}",
+  lo: "Giới hạn dưới (cảnh báo khi thấp hơn)",
+  hi: "Giới hạn trên (cảnh báo khi cao hơn)",
+  stuck: "Số giây không đổi (đứng)",
+  lost: "Số giây mất truyền thông",
+  hyst: "Biên trở lại (trễ)",
+  hystHint: "Cảnh báo dưới hết khi từ «dưới + biên» trở lên, cảnh báo trên hết khi từ «trên − biên» trở xuống — để giá trị dao động quanh giới hạn không làm cảnh báo bật tắt liên tục.",
+  emptyHint: "Để trống ô để bỏ qua điều kiện đó. Giá trị được xét theo số hiện trên màn hình (đã giải mã theo kiểu).",
+  save: "Lưu",
+  remove: "Bỏ điều kiện",
+  close: "Đóng",
+  errLoHi: "Giới hạn dưới phải nhỏ hơn giới hạn trên.",
+  errSecs: "Số giây phải là 1–86400.",
+  errHyst: "Biên là số từ 0 trở lên.",
+  errNum: "Hãy nhập một số.",
+  errEmpty: "Nhập ít nhất một điều kiện, hoặc nhấn «Bỏ điều kiện».",
+};
+
+export const VI_KIND: Record<AlarmKind, string> = {
+  lo: "Dưới",
+  hi: "Trên",
+  stuck: "Đứng",
+  lost: "Mất",
+};

@@ -1,6 +1,7 @@
 // 공용 화면 조각(따라가기·로그 메뉴·명령 목록·알림·단축키·좁은 창)의 문구 — 모든 프로그램이 같은 말을 쓴다.
 import { dicts, type Lang } from "./lang.ts";
 import { JA_UI } from "./ja/ui.ts";
+import { VI_UI } from "./vi/ui.ts";
 import { TR_UI } from "./tr/ui.ts";
 export type { Lang } from "./lang.ts";
 
@@ -182,7 +183,7 @@ const en: typeof ko = {
   language: "Language",
 };
 
-export const UI = dicts(ko, en, { ja: JA_UI, tr: TR_UI });
+export const UI = dicts(ko, en, { ja: JA_UI, tr: TR_UI, vi: VI_UI });
 export type UiKey = keyof typeof ko;
 
 /** 공용 문구 + {a}·{n} 채우기 */
