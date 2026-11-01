@@ -10,6 +10,7 @@ import { tip } from "./tips";
 import type { Lang } from "./uiText";
 import "./modbus.css";
 import { JA_MB_VALUES } from "./ja/modbus.ts";
+import { PT_MB_VALUES } from "./pt/modbus.ts";
 
 const L = {
   ko: {
@@ -39,7 +40,7 @@ const L = {
 };
 
 export type MbValuesTextKey = keyof typeof L.ko;
-const LL = dicts<(typeof L)["ko"]>(L.ko, L.en, { ja: JA_MB_VALUES });
+const LL = dicts<(typeof L)["ko"]>(L.ko, L.en, { ja: JA_MB_VALUES, pt: PT_MB_VALUES });
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 

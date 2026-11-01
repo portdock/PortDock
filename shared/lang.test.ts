@@ -290,3 +290,27 @@ test("이탈리아어 사전 — 공용·앱 12개·말풍선·AI 복사", async
   const t = buildAiCopy({ lang: "it", app: "PortDock Serial", log: [] }).text;
   assert.ok(t.includes(IT_AI_COPY.situation!), t);
 });
+
+// 공용 창·용어·Modbus 사전(dialogs·glossary·modbus) — 포르투갈어
+test("pt 공용 창·용어 — 예시 이름·낱말 열쇠가 영어에 있고 빈 값 없음", async () => {
+  const { TERMS } = await import("./glossary.ts");
+  const { serialExamples, tcpExamples, udpExamples, scpiExamples } = await import("./examples.ts");
+  const enNames = new Set(
+    [...serialExamples("general", "en"), ...serialExamples("at", "en"), ...serialExamples("modbus", "en"), ...tcpExamples(true, "en"), ...tcpExamples(false, "en"), ...udpExamples("en"), ...scpiExamples("en")].map((c) => c.name.replace(/^e\.g\. /, "")),
+  );
+  const D = await import("./pt/dialogs.ts");
+  for (const [k, v] of Object.entries(D.PT_EXAMPLES)) {
+    assert.ok(enNames.has(k), `pt 예시: 영어에 없는 이름 «${k}»`);
+    assert.ok(v.trim() !== "");
+  }
+  const { PT_TERMS } = await import("./pt/glossary.ts");
+  for (const [k, v] of Object.entries(PT_TERMS)) {
+    assert.ok(k in TERMS, `pt 용어: 없는 열쇠 «${k}»`);
+    assert.ok(v.length === 2 && v.every((x) => x.trim() !== ""), `pt 용어 ${k}: 빈 값`);
+  }
+  const M = await import("./pt/modbus.ts");
+  for (const [name, more] of [...Object.entries(D), ...Object.entries(M)]) {
+    if (typeof more === "string") continue;
+    for (const [k, v] of Object.entries(more)) if (typeof v === "string") assert.ok(v.trim() !== "", `${name}.${k}: 빈 값`);
+  }
+});
