@@ -1,0 +1,37 @@
+// Tabel konversi AWG ↔ mm² (views/AwgMm2Page.astro) — batch 6. Istilah: luas penampang, diameter penghantar pejal, resistansi tembaga
+export default {
+  title: "Tabel Konversi AWG ke mm²",
+  seo: "Tabel Konversi AWG ke mm²: Diameter & Resistansi — PortDock",
+  desc: "Diameter dan luas penampang AWG 0000 sampai 40 (rumus ASTM B258), ukuran mm² metrik terdekat (IEC 60228), dan Ω/km tembaga pada 20 °C. Konversi dua arah.",
+  inAwg: "AWG (mis. 18, 2/0, 0000)",
+  inMm: "Luas penampang mm²",
+  res: "Hasil",
+  k: { d: "Diameter (setara penghantar pejal)", area: "Luas penampang", ohm: "Resistansi tembaga pada 20 °C (satu penghantar)", near: "Ukuran metrik terdekat", awgNear: "AWG terdekat", awgUp: "AWG dengan luas sama atau lebih besar" },
+  how: "Hasil diperbarui saat Anda mengetik. Semuanya berjalan di peramban Anda; tidak ada yang Anda ketik dikirim ke mana pun.",
+  err: "Masukkan AWG 0000 sampai 50 (notasi 2/0 dapat dipakai) dan luas penampang lebih dari 0",
+  fTitle: "Rumus",
+  formula: [
+    "Diameter d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: nomor AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+    "Luas A = π ÷ 4 × d²",
+    "Resistansi R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (tembaga, 20 °C)",
+  ],
+  fNote: "Rumus AWG berasal dari ASTM B258; resistivitas tembaga adalah nilai tembaga lunak menurut IEC 60028. Setiap 6 nomor diameter menjadi dua kali; setiap 3 nomor luas penampang kira-kira menjadi dua kali.",
+  limitTitle: "Cara membaca tabel",
+  limits: [
+    "Ukuran AWG dan metrik tidak pernah persis sama. «Terdekat» ditentukan menurut rasio luas; selisih negatif berarti ukuran metriknya lebih kecil — bila kemampuan hantar arus atau jatuh tegangan mepet, pilih ukuran yang sama atau lebih besar.",
+    "Diameter berlaku untuk penghantar pejal. Kabel serabut dengan luas yang sama lebih tebal, dan isolasi menambah lagi — gunakan diameter luar dari pabrikan untuk pengisian pipa dan saluran.",
+    "Resistansi kabel sebenarnya: IEC 60228 menetapkan nilai maksimum menurut kelas penghantar (pejal, serabut, fleksibel); penghantar serabut dan berlapis timah sedikit lebih tinggi.",
+    "Kemampuan hantar arus tidak dapat ditentukan hanya dari ukuran (cara pemasangan, suhu sekitar, pengelompokan) dan tidak dicantumkan di sini.",
+  ],
+  awgTitle: "Tabel AWG (0000 sampai 40)",
+  awgHead: ["AWG", "Diameter mm", "Luas mm²", "Ω/km (tembaga 20 °C)", "mm² terdekat (selisih)"],
+  mmTitle: "Ukuran metrik (IEC 60228)",
+  mmHead: ["Luas mm²", "Diameter mm (setara pejal)", "Ω/km (tembaga 20 °C)", "AWG terdekat", "AWG sama atau lebih besar"],
+  faqTitle: "Tanya jawab",
+  faq: [
+    ["18 AWG berapa mm²?", "Sekitar 0.823 mm² (diameter 1.024 mm). Ukuran metrik terdekat adalah 0.75 mm², sedikit lebih kecil. 16 AWG sekitar 1.31 mm², 14 AWG sekitar 2.08 mm², 12 AWG sekitar 3.31 mm²."],
+    ["1.5 mm² setara AWG berapa?", "Yang terdekat 15 AWG (1.65 mm²), tetapi 15 AWG jarang dipakai, sehingga pengganti lazim pada ukuran AS adalah 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) lebih kecil dari 1.5 mm²."],
+    ["Apa arti 4/0 dan 2/0?", "Nomor yang lebih besar dari 0 mengulang angka nol: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG sekitar 107 mm²."],
+  ],
+  more: ["Untuk menentukan ukuran kabel dari panjang dan arus, gunakan ", "; untuk jenis kabel menurut penggunaan, ", "; untuk berapa banyak kabel muat dalam satu pipa, ", "."],
+};
