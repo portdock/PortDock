@@ -7,6 +7,9 @@ import { fr } from "./i18n.fr.ts";
 import { it } from "./i18n.it.ts";
 import { de } from "./i18n.de.ts";
 import { pl } from "./i18n.pl.ts";
+import { tr } from "./i18n.tr.ts";
+import { vi } from "./i18n.vi.ts";
+import { id } from "./i18n.id.ts";
 
 const ko = {
   helpTip: "도움말 (F1)",
@@ -535,5 +538,5 @@ const en: Record<keyof typeof ko, string> = {
 };
 
 export type { Lang } from "../../../shared/lang.ts";
-export const dict = dicts(ko, en, { ja, de, es, pt, pl, fr, it });
+export const dict = dicts(ko, en, { ja, de, es, pt, pl, fr, vi, tr, it, id });
 export type Key = keyof typeof ko;

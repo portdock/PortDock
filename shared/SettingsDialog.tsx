@@ -21,6 +21,9 @@ import { FR_SETTINGS } from "./fr/parts";
 import { IT_SETTINGS } from "./it/parts";
 import { DE_SETTINGS } from "./de/parts";
 import { PL_SETTINGS } from "./pl/parts";
+import { ID_SETTINGS } from "./id/parts";
+import { VI_SETTINGS } from "./vi/parts";
+import { TR_SETTINGS } from "./tr/parts";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
 const REPO = REPO_URL;
@@ -142,7 +145,7 @@ const en: typeof ko = {
     updateCheck: "Check for new versions (once a day)",
     updateCheckHint: "When on, asks GitHub (api.github.com) once a day for the latest release only and shows a notice at the bottom of the window if a newer version exists. No data is sent; nothing is downloaded or installed.",
 };
-const T = dicts(ko, en, { ja: JA_SETTINGS, de: DE_SETTINGS, es: ES_SETTINGS, pt: PT_SETTINGS, pl: PL_SETTINGS, fr: FR_SETTINGS, it: IT_SETTINGS });
+const T = dicts(ko, en, { ja: JA_SETTINGS, de: DE_SETTINGS, es: ES_SETTINGS, pt: PT_SETTINGS, pl: PL_SETTINGS, fr: FR_SETTINGS, vi: VI_SETTINGS, tr: TR_SETTINGS, it: IT_SETTINGS, id: ID_SETTINGS });
 
 export function SettingsDialog({
   app,

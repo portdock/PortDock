@@ -19,6 +19,9 @@ import { FR_AI_COPY } from "./fr/aiCopy.ts";
 import { IT_AI_COPY } from "./it/aiCopy.ts";
 import { DE_AI_COPY } from "./de/aiCopy.ts";
 import { PL_AI_COPY } from "./pl/aiCopy.ts";
+import { ID_AI_COPY } from "./id/aiCopy.ts";
+import { VI_AI_COPY } from "./vi/aiCopy.ts";
+import { TR_AI_COPY } from "./tr/aiCopy.ts";
 
 /** 질문 틀·머리말은 화면 언어(0.11.0 — 번역이 없는 언어는 영어). 기록·설정 줄은 그대로 */
 export type AiLang = Lang;
@@ -146,7 +149,7 @@ const en: AiText = {
     cutText: "…(cut — too long)",
     masked: (ip: HideIp) => `_Hidden by PortDock: user folder, PC name (DESKTOP-… etc.), last 3 bytes of MAC addresses, ${ip === "all" ? "all IP addresses" : "public IP addresses"} («[IP-n]»)._`,
 };
-const T = dicts(ko, en, { ja: JA_AI_COPY, de: DE_AI_COPY, es: ES_AI_COPY, pt: PT_AI_COPY, pl: PL_AI_COPY, fr: FR_AI_COPY, it: IT_AI_COPY });
+const T = dicts(ko, en, { ja: JA_AI_COPY, de: DE_AI_COPY, es: ES_AI_COPY, pt: PT_AI_COPY, pl: PL_AI_COPY, fr: FR_AI_COPY, vi: VI_AI_COPY, tr: TR_AI_COPY, it: IT_AI_COPY, id: ID_AI_COPY });
 
 // ---- 가림
 

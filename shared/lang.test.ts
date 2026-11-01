@@ -11,7 +11,7 @@ import { USAGE_TEXT } from "./usageText.ts";
 import { JA_UI } from "./ja/ui.ts";
 import { JA_IO } from "./ja/io.ts";
 import { JA_AR } from "./ja/autoReply.ts";
-import { JA_ALARM } from "./ja/alarm.ts";
+import { JA_ALARM, JA_KIND as JA_ALARM_KIND } from "./ja/alarm.ts";
 import { JA_AI_COPY } from "./ja/aiCopy.ts";
 import * as JA_PARTS from "./ja/parts.ts";
 import { ES_UI } from "./es/ui.ts";
@@ -81,7 +81,7 @@ test("언어 목록 — 사이트와 같은 12개, 이름이 다 있고 고를 �
   assert.deepEqual([...LANGS], ["ko", "en", "ja", "de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
   for (const l of LANGS) assert.ok(LANG_NAMES[l]);
   for (const l of UI_LANGS) assert.ok((LANGS as readonly string[]).includes(l));
-  assert.deepEqual([...UI_LANGS].slice(0, 3), ["ko", "en", "ja"]);
+  assert.deepEqual([...UI_LANGS], [...LANGS]);
 });
 
 test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 없는 언어 → en)", () => {
@@ -99,6 +99,10 @@ test("Windows 표시 언어 → 처음 화면 언어(ja-JP → ja, 고를 수 �
   assert.equal(detectLang("de-DE"), "de");
   assert.equal(detectLang("pl-PL"), "pl");
   if (NOUI) assert.equal(detectLang(`${NOUI}-XX`), "en");
+  assert.equal(detectLang("tr-TR"), "tr");
+  assert.equal(detectLang("vi-VN"), "vi");
+  assert.equal(detectLang("id-ID"), "id");
+  assert.equal(detectLang("xx-XX"), "en");
   assert.equal(detectLang(""), "en");
   assert.equal(detectLang(undefined), "en");
   assert.ok(isUiLang("ja"));
@@ -290,3 +294,52 @@ test("이탈리아어 사전 — 공용·앱 12개·말풍선·AI 복사", async
   const t = buildAiCopy({ lang: "it", app: "PortDock Serial", log: [] }).text;
   assert.ok(t.includes(IT_AI_COPY.situation!), t);
 });
+
+// 일본어 다음에 붙인 언어(원천은 영어) — 일본어와 같은 검사를 언어마다
+const MORE_LANGS = ["tr", "vi", "id"] as const;
+
+for (const l of MORE_LANGS) {
+  const U = l.toUpperCase();
+  test(`추가 언어 ${l} — 공용·앱 12개·말풍선 사전이 영어의 부분집합, 빈 값·자리표시 차이 없음`, async () => {
+    const ui = (await import(`./${l}/ui.ts`))[`${U}_UI`];
+    const io = (await import(`./${l}/io.ts`))[`${U}_IO`];
+    const ar = (await import(`./${l}/autoReply.ts`))[`${U}_AR`];
+    const al = await import(`./${l}/alarm.ts`);
+    const ai = (await import(`./${l}/aiCopy.ts`))[`${U}_AI_COPY`];
+    const parts = await import(`./${l}/parts.ts`);
+    const tips = (await import(`./${l}/tips.ts`))[`${U}_TIPS`];
+    checkMore(`${l}/uiText`, UI.en, ui);
+    checkMore(`${l}/ioText`, IO.en, io);
+    checkMore(`${l}/autoReplyText`, AR_TEXT.en, ar);
+    checkMore(`${l}/alarmText`, ALARM_TEXT.en, al[`${U}_ALARM`]);
+    checkMore(`${l}/usageText`, USAGE_TEXT.en, parts[`${U}_USAGE`]);
+    for (const [name, more] of Object.entries(parts)) {
+      for (const [k, v] of Object.entries(more as Record<string, unknown>)) {
+        if (typeof v === "string") assert.ok(v.trim() !== "", `${l}/${name}.${k}: 빈 값`);
+      }
+    }
+    // 공용 부품 사전 — 일본어(기준판)에 있는 열쇠는 다 있다
+    for (const [name, more] of Object.entries(JA_PARTS)) {
+      const mine = parts[name.replace(/^JA_/, `${U}_`)];
+      assert.ok(mine, `${l}: ${name} 짝이 없음`);
+      for (const k of Object.keys(more)) assert.ok(k in mine, `${l}/${name}: 일본어에 있는 열쇠 «${k}» 가 없음`);
+    }
+    assert.deepEqual(Object.keys(al[`${U}_KIND`]).sort(), Object.keys(JA_ALARM_KIND).sort());
+    assert.ok(ui.settings && UI[l].settings === ui.settings);
+    // 앱 12개
+    for (const app of APPS) {
+      const { dict } = (await import(`../apps/${app}/src/i18n.ts`)) as { dict: Record<string, Record<string, string>> };
+      const more = (await import(`../apps/${app}/src/i18n.${l}.ts`))[l] as Record<string, string>;
+      checkMore(`${app}/${l}`, dict.en, more);
+      assert.ok(Object.keys(more).length > 0, `${app}: ${l} 사전이 비었음`);
+      for (const k of Object.keys(dict.en)) assert.equal(dict[l][k], more[k] || dict.en[k], `${app}.${k}`);
+    }
+    // 말풍선
+    const en = Object.fromEntries(TIP_KEYS.map((k) => [k, tip("en", k)!]));
+    checkMore(`${l}/tips`, en, tips);
+    for (const k of TIP_KEYS) assert.equal(tip(l, k), tips[k] || tip("en", k));
+    // AI 복사 질문 틀은 화면 언어
+    const text = buildAiCopy({ lang: l, app: "PortDock Serial", log: [] }).text;
+    assert.ok(text.includes(ai.situation), text);
+  });
+}

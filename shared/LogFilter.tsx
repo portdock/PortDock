@@ -11,6 +11,9 @@ import { FR_FILTER } from "./fr/parts";
 import { IT_FILTER } from "./it/parts";
 import { DE_FILTER } from "./de/parts";
 import { PL_FILTER } from "./pl/parts";
+import { ID_FILTER } from "./id/parts";
+import { VI_FILTER } from "./vi/parts";
+import { TR_FILTER } from "./tr/parts";
 
 const ko = {
     find: "찾기 (Ctrl+F) — 01 03 또는 글자",
@@ -43,7 +46,7 @@ const en: typeof ko = {
     none: "none",
     shown: "{a}/{b} lines",
 };
-const L = dicts(ko, en, { ja: JA_FILTER, de: DE_FILTER, es: ES_FILTER, pt: PT_FILTER, pl: PL_FILTER, fr: FR_FILTER, it: IT_FILTER });
+const L = dicts(ko, en, { ja: JA_FILTER, de: DE_FILTER, es: ES_FILTER, pt: PT_FILTER, pl: PL_FILTER, fr: FR_FILTER, vi: VI_FILTER, tr: TR_FILTER, it: IT_FILTER, id: ID_FILTER });
 
 /** 찾기·거르기 상태와 결과. frames 는 앱의 framesRef.current, version 은 새 줄이 올 때마다 바뀌는 값 */
 export function useLogFilter<F extends LogFrame>(frames: F[], version: number) {

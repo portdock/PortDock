@@ -17,11 +17,14 @@ import { FR_UPDATE } from "./fr/parts";
 import { IT_UPDATE } from "./it/parts";
 import { DE_UPDATE } from "./de/parts";
 import { PL_UPDATE } from "./pl/parts";
+import { ID_UPDATE } from "./id/parts";
+import { VI_UPDATE } from "./vi/parts";
+import { TR_UPDATE } from "./tr/parts";
 
 const ko = { msg: "새 버전 {a} 이 있습니다(지금 {b}).", open: "릴리스 페이지", later: "이 버전은 그만 알리기", close: "닫기(다음에 켤 때 다시)" };
 export type UpdateTextKey = keyof typeof ko;
 const en: typeof ko = { msg: "Version {a} is available (you have {b}).", open: "Release page", later: "Don't remind me about this version", close: "Close (shown again next start)" };
-const T = dicts(ko, en, { ja: JA_UPDATE, de: DE_UPDATE, es: ES_UPDATE, pt: PT_UPDATE, pl: PL_UPDATE, fr: FR_UPDATE, it: IT_UPDATE });
+const T = dicts(ko, en, { ja: JA_UPDATE, de: DE_UPDATE, es: ES_UPDATE, pt: PT_UPDATE, pl: PL_UPDATE, fr: FR_UPDATE, vi: VI_UPDATE, tr: TR_UPDATE, it: IT_UPDATE, id: ID_UPDATE });
 
 function readSettings(): { on: boolean; lang: Lang } {
   try {

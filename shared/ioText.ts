@@ -7,6 +7,9 @@ import { FR_IO } from "./fr/io.ts";
 import { IT_IO } from "./it/io.ts";
 import { DE_IO } from "./de/io.ts";
 import { PL_IO } from "./pl/io.ts";
+import { ID_IO } from "./id/io.ts";
+import { VI_IO } from "./vi/io.ts";
+import { TR_IO } from "./tr/io.ts";
 
 const ko = {
   // ---- 체크섬 옵션
@@ -266,7 +269,7 @@ const en: typeof ko = {
   evTrgLog: " — file log stopped",
 };
 
-export const IO = dicts(ko, en, { ja: JA_IO, de: DE_IO, es: ES_IO, pt: PT_IO, pl: PL_IO, fr: FR_IO, it: IT_IO });
+export const IO = dicts(ko, en, { ja: JA_IO, de: DE_IO, es: ES_IO, pt: PT_IO, pl: PL_IO, fr: FR_IO, vi: VI_IO, tr: TR_IO, it: IT_IO, id: ID_IO });
 export type IoKey = keyof typeof ko;
 
 export function io(lang: Lang, k: IoKey, v: Record<string, string | number> = {}) {

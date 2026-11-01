@@ -7,6 +7,9 @@ import { FR_UI } from "./fr/ui.ts";
 import { IT_UI } from "./it/ui.ts";
 import { DE_UI } from "./de/ui.ts";
 import { PL_UI } from "./pl/ui.ts";
+import { ID_UI } from "./id/ui.ts";
+import { VI_UI } from "./vi/ui.ts";
+import { TR_UI } from "./tr/ui.ts";
 export type { Lang } from "./lang.ts";
 
 const ko = {
@@ -187,7 +190,7 @@ const en: typeof ko = {
   language: "Language",
 };
 
-export const UI = dicts(ko, en, { ja: JA_UI, de: DE_UI, es: ES_UI, pt: PT_UI, pl: PL_UI, fr: FR_UI, it: IT_UI });
+export const UI = dicts(ko, en, { ja: JA_UI, de: DE_UI, es: ES_UI, pt: PT_UI, pl: PL_UI, fr: FR_UI, vi: VI_UI, tr: TR_UI, it: IT_UI, id: ID_UI });
 export type UiKey = keyof typeof ko;
 
 /** 공용 문구 + {a}·{n} 채우기 */

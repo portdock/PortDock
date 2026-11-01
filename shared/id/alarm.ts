@@ -1,0 +1,50 @@
+// 인도네시아어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const ID_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "Pantau & alarm",
+  activeN: "{n} aktif",
+  noAlarm: "Tidak ada alarm aktif — memantau {n} kondisi",
+  notRunning: "Pemantauan dimulai saat tersambung ({n} kondisi)",
+  ackAll: "Akui semua",
+  ack: "Akui",
+  acked: "Diakui",
+  clearEnded: "Hapus yang selesai",
+  sound: "Suara",
+  logStart: "Log CSV…",
+  logOn: "● {n} baris tercatat",
+  logStop: "Stop log",
+  logTitle: "Simpan log alarm",
+  ongoing: "berlangsung",
+  colKind: "Kondisi",
+  colName: "Apa",
+  colValue: "Nilai",
+  colStart: "Muncul",
+  colEnd: "Pulih",
+  colDur: "Durasi",
+  safety: "PortDock bukan perangkat keselamatan — hanya alat bantu pemantauan. Proteksi peralatan dan interlock tempatnya di PLC dan rangkaian keselamatan.",
+  dlgTitle: "Kondisi pantau — {a}",
+  lo: "Batas bawah (alarm jika di bawah)",
+  hi: "Batas atas (alarm jika di atas)",
+  stuck: "Detik tanpa perubahan (macet)",
+  lost: "Detik komunikasi hilang",
+  hyst: "Margin kembali (histeresis)",
+  hystHint: "Alarm bawah pulih pada «bawah + margin» atau lebih, alarm atas pada «atas − margin» atau kurang — agar nilai yang bergoyang di batas tidak membuat alarm berkedip.",
+  emptyHint: "Kosongkan kotak untuk melewati kondisi itu. Nilai dinilai sebagai angka yang tampil di layar (diuraikan sesuai tipe).",
+  save: "Simpan",
+  remove: "Hapus kondisi",
+  close: "Tutup",
+  errLoHi: "Batas bawah harus lebih kecil dari batas atas.",
+  errSecs: "Detik harus 1–86400.",
+  errHyst: "Margin adalah angka 0 atau lebih.",
+  errNum: "Isi sebuah angka.",
+  errEmpty: "Isi minimal satu kondisi, atau tekan «Hapus kondisi».",
+};
+
+export const ID_KIND: Record<AlarmKind, string> = {
+  lo: "Bawah",
+  hi: "Atas",
+  stuck: "Macet",
+  lost: "Hilang",
+};

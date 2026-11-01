@@ -1,0 +1,50 @@
+// 튀르키예어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const TR_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "İzleme ve alarmlar",
+  activeN: "{n} etkin",
+  noAlarm: "Etkin alarm yok — {n} koşul izleniyor",
+  notRunning: "İzleme bağlanınca başlar ({n} koşul)",
+  ackAll: "Tümünü onayla",
+  ack: "Onayla",
+  acked: "Onaylandı",
+  clearEnded: "Bitenleri temizle",
+  sound: "Ses",
+  logStart: "CSV kaydet…",
+  logOn: "● {n} satır kaydedildi",
+  logStop: "Kaydı durdur",
+  logTitle: "Alarm kaydını kaydet",
+  ongoing: "sürüyor",
+  colKind: "Koşul",
+  colName: "Ne",
+  colValue: "Değer",
+  colStart: "Oluştu",
+  colEnd: "Bitti",
+  colDur: "Süre",
+  safety: "PortDock bir güvenlik cihazı değildir — izlemeye yardımcıdır. Ekipman koruması ve kilitlemeler PLC'de ve güvenlik devrelerinde olmalıdır.",
+  dlgTitle: "İzleme koşulları — {a}",
+  lo: "Alt sınır (altında alarm)",
+  hi: "Üst sınır (üstünde alarm)",
+  stuck: "Değişmeme (takılma) saniyesi",
+  lost: "Haberleşme kaybı saniyesi",
+  hyst: "Dönüş payı (histerezis)",
+  hystHint: "Alt alarm «alt + pay» veya üstünde, üst alarm «üst − pay» veya altında temizlenir — böylece sınırda dalgalanan değer alarmı titretmez.",
+  emptyHint: "Bir koşulu atlamak için kutusunu boş bırakın. Değerler ekranda görünen sayı (tipe göre çözülmüş) olarak değerlendirilir.",
+  save: "Kaydet",
+  remove: "Koşulları kaldır",
+  close: "Kapat",
+  errLoHi: "Alt sınır üst sınırdan küçük olmalı.",
+  errSecs: "Saniye 1–86400 olmalı.",
+  errHyst: "Pay 0 veya daha büyük bir sayıdır.",
+  errNum: "Bir sayı girin.",
+  errEmpty: "En az bir koşul girin veya «Koşulları kaldır»a basın.",
+};
+
+export const TR_KIND: Record<AlarmKind, string> = {
+  lo: "Alt",
+  hi: "Üst",
+  stuck: "Takılı",
+  lost: "Kopuk",
+};
