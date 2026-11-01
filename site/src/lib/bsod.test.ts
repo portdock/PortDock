@@ -83,7 +83,13 @@ test("0x1000007E 처럼 0x10000000 이 붙은 판은 같은 항목, 사전에 �
   assert.equal(findBugcheck("hello").how, "none");
 });
 
-test("일본어 Windows 문구 — 블루스크린 화면 «停止コード»·이벤트 1001 «バグチェック» 메시지·«停止コード: 133»", () => {
+test("베트남어 Windows 문구 — 블루스크린 화면 «Mã dừng»", () => {
+  assert.equal(findBugcheck("Mã dừng: DPC_WATCHDOG_VIOLATION").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Mã dừng: CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("Mã dừng: 133").code, 0x133);
+});
+
+test("일본어 Windows 문구 —블루스크린 화면 «停止コード»·이벤트 1001 «バグチェック» 메시지·«停止コード: 133»", () => {
   assert.equal(findBugcheck("停止コード: DPC_WATCHDOG_VIOLATION\n失敗した内容: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
   assert.equal(findBugcheck("停止コード:CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
   assert.equal(findBugcheck("停止コード: 133").code, 0x133);
