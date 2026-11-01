@@ -15,6 +15,9 @@ import type { Lang } from "./uiText";
 import "./modbus.css";
 import "./firstcard.css";
 import { JA_MB_BUILDER } from "./ja/modbus.ts";
+import { PT_MB_BUILDER } from "./pt/modbus.ts";
+import { FR_MB_BUILDER } from "./fr/modbus.ts";
+import { IT_MB_BUILDER } from "./it/modbus.ts";
 
 const L = {
   ko: {
@@ -99,7 +102,7 @@ const L = {
 };
 
 export type MbBuilderTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_MB_BUILDER });
+const LL = dicts(L.ko, L.en, { ja: JA_MB_BUILDER, pt: PT_MB_BUILDER, fr: FR_MB_BUILDER, it: IT_MB_BUILDER });
 
 const PLC_LABEL: Record<string, string> = { "0": "00001", "1": "10001", "3": "30001", "4": "40001" };
 const fc2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");

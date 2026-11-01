@@ -5,6 +5,9 @@ import type { HelpSection } from "./HelpDialog";
 
 import { baseLang, type Lang } from "./lang.ts";
 import { JA_TERMS } from "./ja/glossary.ts";
+import { PT_TERMS } from "./pt/glossary.ts";
+import { FR_TERMS } from "./fr/glossary.ts";
+import { IT_TERMS } from "./it/glossary.ts";
 
 /** 낱말 하나 — [이름, 설명] 한·영 */
 interface Term {
@@ -142,7 +145,9 @@ export const TERMS = {
 export type TermId = keyof typeof TERMS;
 
 /** 추가 언어 낱말([이름, 설명]) — 없으면 영어 */
-const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS };
+const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS, pt: PT_TERMS, fr: FR_TERMS, it: IT_TERMS };
+/** «용어» 절 제목 — 추가 언어 */
+const TITLE: Partial<Record<Lang, string>> = { ja: "用語", pt: "Termos", fr: "Termes", it: "Termini" };
 
 /** 낱말 하나 [이름, 설명] — 화면 언어로 */
 export const term = (id: TermId, lang: Lang): [string, string] => MORE[lang]?.[id] ?? TERMS[id][baseLang(lang)];
@@ -150,7 +155,7 @@ export const term = (id: TermId, lang: Lang): [string, string] => MORE[lang]?.[i
 /** «용어» 절 — 고른 낱말만, 고른 순서대로. id «terms» */
 export function termsSection(lang: Lang, ids: readonly TermId[]): HelpSection {
   return {
-    title: lang === "ko" ? "용어" : lang === "ja" ? "用語" : "Terms",
+    title: lang === "ko" ? "용어" : (TITLE[lang] ?? "Terms"),
     id: "terms",
     body: ids.map((id) => {
       const [name, desc] = term(id, lang);

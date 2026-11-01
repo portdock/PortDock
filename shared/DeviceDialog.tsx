@@ -9,6 +9,9 @@ import { DEVICES } from "./deviceData";
 import { commLine, devRegs, KIND_TEXT, matchDevice, pollGroups, readFc, type Device, type Lang } from "./devices";
 import "./devices.css";
 import { JA_DEVICE } from "./ja/dialogs.ts";
+import { PT_DEVICE } from "./pt/dialogs.ts";
+import { FR_DEVICE } from "./fr/dialogs.ts";
+import { IT_DEVICE } from "./it/dialogs.ts";
 
 export interface DeviceApplyOpts {
   /** 통신 설정(속도·데이터·패리티·정지)도 맞추기 */
@@ -85,7 +88,7 @@ const TX = {
 };
 
 export type DeviceTextKey = keyof typeof TX.ko;
-const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE });
+const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE, pt: PT_DEVICE, fr: FR_DEVICE, it: IT_DEVICE });
 type TKey = keyof typeof TX.ko;
 
 const fillT = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));

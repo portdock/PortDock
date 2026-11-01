@@ -26,3 +26,20 @@ test("판정 글 대부분이 ja 사전에 있다(자리표시뿐인 열쇠 빼�
   const missing = [...allKeys().keys()].filter((k) => !(k in JA_TEXT) && /[A-Za-z]{2}/.test(k.replace(/\{[a-z]\}/g, "")));
   assert.deepEqual(missing.filter((k) => !/^AUOptions | KB$/.test(k)), []);
 });
+
+// 추가 언어 사전도 ja 와 같은 검사(열쇠가 소스에 있음·자리표시·한글 없음·빠진 열쇠 없음)
+for (const [lang, file, name] of [["pt", "../shared/pt/text.ts", "PT_TEXT"], ["fr", "../shared/fr/text.ts", "FR_TEXT"], ["it", "../shared/it/text.ts", "IT_TEXT"]]) {
+  test(`${lang} 사전 — 열쇠·자리표시·빠진 열쇠`, async () => {
+    const dict = (await import(file))[name];
+    const all = allKeys();
+    for (const [k, v] of Object.entries(dict)) {
+      assert.ok(all.has(k), `${lang}: 소스에 없는 열쇠: ${k}`);
+      assert.ok(v.trim(), `${lang}: 빈 값: ${k}`);
+      const kh = new Set(holes(k));
+      for (const h of holes(v)) assert.ok(kh.has(h), `${lang}: ${k} → 값에 없는 자리 {${h}}`);
+      assert.ok(!/[가-힣぀-ヿ]/.test(v), `${lang}: 한글·가나 섞임: ${v}`);
+    }
+    const missing = [...all.keys()].filter((k) => !(k in dict) && /[A-Za-z]{2}/.test(k.replace(/\{[a-z]\}/g, "")));
+    assert.deepEqual(missing.filter((k) => !/^AUOptions | KB$/.test(k)), []);
+  });
+}
