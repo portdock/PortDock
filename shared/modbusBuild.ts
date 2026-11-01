@@ -3,6 +3,7 @@
 
 import { dicts, type Lang } from "./lang.ts";
 import { JA_MB_BUILD } from "./ja/modbus.ts";
+import { ID_MB_BUILD } from "./id/modbus.ts";
 import { VI_MB_BUILD } from "./vi/modbus.ts";
 import { TR_MB_BUILD } from "./tr/modbus.ts";
 /** 화면 언어 — 이 글은 한국어·영어 두 판(다른 언어는 영어) */
@@ -117,7 +118,7 @@ const M = {
 
 export type MbBuildTextKey = keyof typeof M.ko;
 export type MbBuildText = (typeof M)["ko"];
-const ML = dicts(M.ko, M.en, { ja: JA_MB_BUILD, tr: TR_MB_BUILD, vi: VI_MB_BUILD });
+const ML = dicts(M.ko, M.en, { ja: JA_MB_BUILD, tr: TR_MB_BUILD, vi: VI_MB_BUILD, id: ID_MB_BUILD });
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 

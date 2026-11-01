@@ -7,6 +7,7 @@ import { tip } from "./tips";
 import type { Lang } from "./uiText";
 import "./net.css";
 import { JA_IFACE } from "./ja/dialogs.ts";
+import { ID_IFACE } from "./id/dialogs.ts";
 import { VI_IFACE } from "./vi/dialogs.ts";
 import { TR_IFACE } from "./tr/dialogs.ts";
 
@@ -49,7 +50,7 @@ const L = {
 };
 
 export type IfaceTextKey = keyof typeof L.ko;
-const LL = dicts(L.ko, L.en, { ja: JA_IFACE, tr: TR_IFACE, vi: VI_IFACE });
+const LL = dicts(L.ko, L.en, { ja: JA_IFACE, tr: TR_IFACE, vi: VI_IFACE, id: ID_IFACE });
 
 export const ifaceText = (lang: Lang, k: keyof (typeof L)["ko"], a = "", b = "") => LL[lang][k].replace("{a}", a).replace("{b}", b);
 

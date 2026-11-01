@@ -21,6 +21,7 @@ import {
 } from "./portinfo";
 import "./portcheck.css";
 import { JA_LOOP, JA_WIRING } from "./ja/dialogs.ts";
+import { ID_LOOP, ID_WIRING } from "./id/dialogs.ts";
 import { VI_LOOP, VI_WIRING } from "./vi/dialogs.ts";
 import { TR_LOOP, TR_WIRING } from "./tr/dialogs.ts";
 
@@ -147,9 +148,9 @@ const T = {
 };
 
 export type LoopTextKey = keyof typeof T.ko;
-const TL = dicts(T.ko, T.en, { ja: JA_LOOP, tr: TR_LOOP, vi: VI_LOOP });
+const TL = dicts(T.ko, T.en, { ja: JA_LOOP, tr: TR_LOOP, vi: VI_LOOP, id: ID_LOOP });
 const wiringOf = (k: "ko" | "en") => ({ loopback: WIRING.loopback[k], two: WIRING.two[k], echo: WIRING.echo[k] });
-const WIRING_T = dicts(wiringOf("ko"), wiringOf("en"), { ja: JA_WIRING, tr: TR_WIRING, vi: VI_WIRING });
+const WIRING_T = dicts(wiringOf("ko"), wiringOf("en"), { ja: JA_WIRING, tr: TR_WIRING, vi: VI_WIRING, id: ID_WIRING });
 
 function flagText(lang: Lang, r: { flags: BaudResult["flags"] }) {
   const f = r.flags;
