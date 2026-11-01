@@ -1,0 +1,50 @@
+// 일본어 — 값 감시·알람(alarmText.ts). 원천은 영어판, 빠진 열쇠는 영어로 보인다.
+import type { AlarmTextKey } from "../alarmText.ts";
+import type { AlarmKind } from "../alarm.ts";
+
+export const JA_ALARM: Partial<Record<AlarmTextKey, string>> = {
+  title: "監視・アラーム",
+  activeN: "発生中 {n}",
+  noAlarm: "発生中のアラームなし — {n} 件の条件を監視中",
+  notRunning: "接続すると監視を始めます(条件 {n} 件)",
+  ackAll: "すべて確認",
+  ack: "確認",
+  acked: "確認済み",
+  clearEnded: "解除済みを消去",
+  sound: "音",
+  logStart: "CSV に記録…",
+  logOn: "● {n} 行を記録",
+  logStop: "記録停止",
+  logTitle: "アラームの記録を保存",
+  ongoing: "継続中",
+  colKind: "条件",
+  colName: "対象",
+  colValue: "値",
+  colStart: "発生",
+  colEnd: "解除",
+  colDur: "継続時間",
+  safety: "PortDock は安全装置ではなく、監視の補助です。設備の保護とインターロックは PLC と安全回路で行ってください。",
+  dlgTitle: "監視条件 — {a}",
+  lo: "下限(下回るとアラーム)",
+  hi: "上限(上回るとアラーム)",
+  stuck: "変化なし(固着)秒",
+  lost: "通信断 秒",
+  hyst: "復帰の余裕(ヒステリシス)",
+  hystHint: "下限アラームは «下限 + 余裕» 以上で、上限アラームは «上限 − 余裕» 以下で解除します。しきい値付近で揺れる値でアラームがちらつかないようにします。",
+  emptyHint: "空欄の条件は使いません。値は画面に表示される数値(型で解釈した値)で判定します。",
+  save: "保存",
+  remove: "条件を削除",
+  close: "閉じる",
+  errLoHi: "下限は上限より小さくしてください。",
+  errSecs: "秒は 1~86400 の範囲で入れてください。",
+  errHyst: "余裕は 0 以上の数値です。",
+  errNum: "数値を入れてください。",
+  errEmpty: "条件を 1 つ以上入れるか、«条件を削除» を押してください。",
+};
+
+export const JA_KIND: Record<AlarmKind, string> = {
+  lo: "下限",
+  hi: "上限",
+  stuck: "固着",
+  lost: "通信断",
+};

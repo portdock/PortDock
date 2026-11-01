@@ -1,6 +1,7 @@
 // (0.10.0) 값 감시·알람 — 조건(앱 설정에 저장)·감시 상태·알람 목록·소리·작업 표시줄 깜빡임·기록 CSV(1초마다 덧붙임).
 // 판정은 shared/alarm.ts(시험 있음). Windows 알림 플러그인은 쓰지 않는다 — 앱 안 목록 + 소리(선택) + 창이 뒤에 있으면 작업 표시줄 깜빡임.
 // PortDock 은 안전 장치가 아니다 — 감시 보조용.
+import type { Lang } from "./lang.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow, UserAttentionType } from "@tauri-apps/api/window";
@@ -74,7 +75,7 @@ export interface Alarms {
  */
 export function useAlarms(o: {
   storeKey: string;
-  lang: "ko" | "en";
+  lang: Lang;
   running: boolean;
   labelOf: (key: string) => string;
   writeText: (path: string, text: string) => Promise<void>;

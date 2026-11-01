@@ -1,5 +1,6 @@
 // «무선» 탭(0.5.0)의 카드 내용 — Wi-Fi·블루투스 항목 표. 판정은 shared/wireless.ts(순수 함수).
 // 이 화면은 읽기만 한다 — 바꾸는 곳만 안내한다. 블루투스 오디오 장치 이름은 화면에만 보인다(복사·저장에서는 가림).
+import { baseLang } from "@shared/lang";
 import { tip } from "@shared/tips";
 import { fmtTime, LEVEL_TEXT } from "@shared/portinfo";
 import { wlItems, type Wireless, type WlGroup } from "@shared/wireless";
@@ -16,16 +17,16 @@ export function WirelessItems({ lang, t, w, group, link }: { lang: Lang; t: T; w
       <tbody>
         {items.map((i) => (
           <tr key={i.id} className={`wl-${i.id}`}>
-            <td className="pc-label">{i.label[lang]}</td>
+            <td className="pc-label">{i.label[baseLang(lang)]}</td>
             <td>
-              <div>{i.value[lang]}</div>
+              <div>{i.value[baseLang(lang)]}</div>
               {i.notes.map((n, k) => (
                 <div key={k} className={i.level === "look" ? "pc-note look" : "hint"}>
-                  {n[lang]}
+                  {n[baseLang(lang)]}
                 </div>
               ))}
               <div className="hint pc-where">
-                {t("pcWhere")}: {i.where[lang]}
+                {t("pcWhere")}: {i.where[baseLang(lang)]}
                 {i.link && (
                   <>
                     {" "}
@@ -44,7 +45,7 @@ export function WirelessItems({ lang, t, w, group, link }: { lang: Lang; t: T; w
               </div>
             </td>
             <td className="pc-lv">
-              <span className={`lv lv-${i.level}`}>{LEVEL_TEXT[i.level][lang]}</span>
+              <span className={`lv lv-${i.level}`}>{LEVEL_TEXT[i.level][baseLang(lang)]}</span>
             </td>
           </tr>
         ))}

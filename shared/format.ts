@@ -1,4 +1,5 @@
 // PortDock 공용 화면 도우미 — 모든 프로그램이 같은 표기를 쓴다.
+import type { Lang } from "./lang.ts";
 
 export const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 
@@ -116,7 +117,7 @@ export const CHECKSUMS: { kind: ChecksumKind; label: string }[] = [
   { kind: "crc32", label: "CRC-32" },
 ];
 export const CUSTOM_CRC = { kind: "crc" as ChecksumKind, label: "CRC (custom)" };
-export const checksumLabel = (k: ChecksumKind, lang: "ko" | "en" = "en") =>
+export const checksumLabel = (k: ChecksumKind, lang: Lang = "en") =>
   k === "crc" ? (lang === "ko" ? "CRC (사용자 정의)" : "CRC (custom)") : (CHECKSUMS.find((c) => c.kind === k)?.label ?? k);
 
 /** 범용 CRC 매개변수(reveng 표기) */
@@ -164,7 +165,7 @@ export function checksumLen(k: ChecksumKind, ck?: CkOpts | null) {
 export const ckOptsActive = (ck?: CkOpts | null) => !!ck && ((ck.skipHead ?? 0) > 0 || (ck.beforeEnd ?? 0) > 0 || !!ck.swap);
 
 /** CRC 매개변수가 너비에 맞는지 — 틀리면 이유 */
-export function crcProblem(p: CrcParams, lang: "ko" | "en" = "ko"): string | null {
+export function crcProblem(p: CrcParams, lang: Lang = "ko"): string | null {
   const max = p.width === 32 ? 0xffffffff : (1 << p.width) - 1;
   for (const [k, v] of [
     ["poly", p.poly],
@@ -189,7 +190,7 @@ export function checksumToRust(kind: ChecksumKind | null, ck?: CkOpts | null): u
 }
 
 /** 체크섬 표시 — «CRC16 Modbus», 옵션이 있으면 «… · 앞 1 · ETX 앞 1 · ⇄» */
-export function checksumDesc(kind: ChecksumKind, ck: CkOpts | null | undefined, lang: "ko" | "en") {
+export function checksumDesc(kind: ChecksumKind, ck: CkOpts | null | undefined, lang: Lang) {
   const parts = [checksumLabel(kind, lang)];
   if (kind === "crc" && ck?.crc) parts[0] = `CRC-${ck.crc.width} 0x${ck.crc.poly.toString(16).toUpperCase()}`;
   if ((ck?.skipHead ?? 0) > 0) parts.push(lang === "ko" ? `앞 ${ck!.skipHead} 빼고` : `skip ${ck!.skipHead}`);

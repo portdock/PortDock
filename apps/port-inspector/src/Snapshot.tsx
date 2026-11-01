@@ -1,6 +1,7 @@
 // «지난번과 비교» 탭(0.10.0) — 지금 점검 결과(COM 포트·드라이버·USB 위치·랜카드 설정·이 PC 설정)를 이름 붙여 저장하고
 // 나중에 다시 읽은 것과 비교해 바뀐 것만 보인다. 스냅샷 모양·비교는 shared/inspectSnapshot.ts(시험 있음).
 // 기준에는 장치 일련번호(인스턴스 ID)·PC 이름·사용자 폴더·네트워크 이름을 넣지 않는다.
+import { baseLang } from "@shared/lang";
 import { useEffect, useState } from "react";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
@@ -244,7 +245,7 @@ export function SnapshotView({ lang, t, sn, pcDays, toast }: { lang: Lang; t: T;
               const n = result.diff.changes.filter((c) => c.change === k).length;
               return n ? (
                 <span key={k} className={`chg chg-${k}`}>
-                  {SNAP_CHANGE_TEXT[k][lang]} {n}
+                  {SNAP_CHANGE_TEXT[k][baseLang(lang)]} {n}
                 </span>
               ) : null;
             })}
@@ -261,7 +262,7 @@ export function SnapshotView({ lang, t, sn, pcDays, toast }: { lang: Lang; t: T;
         {result && result.diff.skipped.length > 0 && (
           <div className="hint">
             {t("snSkipped", {
-              a: result.diff.skipped.map((s) => SECTION_TEXT[s][lang]).join(", "),
+              a: result.diff.skipped.map((s) => SECTION_TEXT[s][baseLang(lang)]).join(", "),
             })}
           </div>
         )}
@@ -282,13 +283,13 @@ export function SnapshotView({ lang, t, sn, pcDays, toast }: { lang: Lang; t: T;
             {result.diff.changes.map((c, i) => (
               <tr key={i} className={`row-${c.change}`}>
                 <td>
-                  <span className={`chg chg-${c.change}`}>{SNAP_CHANGE_TEXT[c.change][lang]}</span>
+                  <span className={`chg chg-${c.change}`}>{SNAP_CHANGE_TEXT[c.change][baseLang(lang)]}</span>
                 </td>
-                <td>{SECTION_TEXT[c.section][lang]}</td>
-                <td>{c.target[lang]}</td>
-                <td>{c.field[lang]}</td>
-                <td className="mono">{c.before[lang]}</td>
-                <td className="mono">{c.after[lang]}</td>
+                <td>{SECTION_TEXT[c.section][baseLang(lang)]}</td>
+                <td>{c.target[baseLang(lang)]}</td>
+                <td>{c.field[baseLang(lang)]}</td>
+                <td className="mono">{c.before[baseLang(lang)]}</td>
+                <td className="mono">{c.after[baseLang(lang)]}</td>
               </tr>
             ))}
           </tbody>

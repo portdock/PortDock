@@ -3,6 +3,7 @@
 // 정답은 현장마다 다르다 — 사무용 PC 엔 켜 두는 게 맞는 값(업데이트·절전)이 대부분이라, 설정 값은 «장비 PC» 를 고른 뒤에만 «볼 것» 을 붙인다.
 // «문제 있음» 은 디스크가 스스로 경고 비트를 알릴 때(NVMe Critical Warning)만 쓴다. 업데이트를 끄라고 권하지 않는다.
 // (0.10.0) 블루스크린·갑자기 꺼짐(정지 코드 이름)·저장장치 수명·깨운 원인·배터리(있을 때만) 묶음이 붙었다. 바꾸기는 하지 않는다(바꾸는 곳 안내만).
+import { baseLang, type Lang } from "./lang.ts";
 import type { Level, Text, Verdict } from "./portinfo.ts";
 import { exposureItems, type PcExposure } from "./exposure.ts";
 
@@ -728,26 +729,26 @@ export const PC_CANNOT_SEE: Text[] = [
 ];
 
 /** 결과 글(복사·저장)의 «이 PC» 부분. `v` = 판정을 «[볼 것] …» 으로 바꾸는 함수(portinfo.ts bundleText 가 넘긴다) */
-export function pcLines(lang: "ko" | "en", pc: PcCheck, purpose: PcPurpose, v: (x: Verdict) => string, fmtTime: (ms: number) => string, levelText: (l: Level) => string): string[] {
+export function pcLines(lang: Lang, pc: PcCheck, purpose: PcPurpose, v: (x: Verdict) => string, fmtTime: (ms: number) => string, levelText: (l: Level) => string): string[] {
   const ko = lang === "ko";
   const out: string[] = [];
-  out.push(`${ko ? "용도" : "Use"}: ${PC_PURPOSE_TEXT[purpose][lang]}`);
+  out.push(`${ko ? "용도" : "Use"}: ${PC_PURPOSE_TEXT[purpose][baseLang(lang)]}`);
   out.push(v(pcVerdict(pc, purpose, fmtTime)));
   if (pc.scheme) out.push(`${ko ? "전원 계획" : "Power plan"}: ${pc.scheme}`);
   let group: PcGroup | null = null;
   for (const i of pcItems(pc, purpose, fmtTime)) {
     if (i.group !== group) {
       group = i.group;
-      out.push("", `### ${PC_GROUP_TEXT[group][lang]}`);
+      out.push("", `### ${PC_GROUP_TEXT[group][baseLang(lang)]}`);
     }
-    out.push(`- ${i.label[lang]}: ${i.value[lang]} [${levelText(i.level)}]`);
-    for (const n of i.notes) out.push(`  - ${n[lang]}`);
-    if (i.linkLabel && i.link) out.push(`  - ${i.linkLabel[lang]}: ${i.link}`);
+    out.push(`- ${i.label[baseLang(lang)]}: ${i.value[baseLang(lang)]} [${levelText(i.level)}]`);
+    for (const n of i.notes) out.push(`  - ${n[baseLang(lang)]}`);
+    if (i.linkLabel && i.link) out.push(`  - ${i.linkLabel[baseLang(lang)]}: ${i.link}`);
   }
   if (pc.errors.length) out.push(`${ko ? "읽지 못함" : "Not read"}: ${pc.errors.join(" / ")}`);
   out.push("", ko ? "관리자만 읽을 수 있음 — 읽지 않음:" : "Administrator only — not read:");
-  for (const c of PC_ADMIN_ONLY) out.push(`- ${c[lang]}`);
+  for (const c of PC_ADMIN_ONLY) out.push(`- ${c[baseLang(lang)]}`);
   out.push("", ko ? "PC 가 볼 수 없는 것(이 PC 설정):" : "What the PC cannot see (PC settings):");
-  for (const c of PC_CANNOT_SEE) out.push(`- ${c[lang]}`);
+  for (const c of PC_CANNOT_SEE) out.push(`- ${c[baseLang(lang)]}`);
   return out;
 }

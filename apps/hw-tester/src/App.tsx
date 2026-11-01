@@ -1,3 +1,4 @@
+import { baseLang, LANG_NAMES, UI_LANGS } from "@shared/lang";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -96,7 +97,7 @@ const SPANS: { s: number | null; key: Key }[] = [
 ];
 /** Microsoft Learn — Wi-Fi 신호·주변 AP 가 위치 권한에 묶인 까닭 */
 const WIFI_LOCATION_URL = "https://learn.microsoft.com/en-us/windows/win32/nativewifi/wi-fi-access-location-changes";
-const webToolUrl = (lang: Lang, slug: string) => `https://portdock.dev/${lang === "en" ? "en/" : ""}tools/${slug}/`;
+const webToolUrl = (lang: Lang, slug: string) => `https://portdock.dev/${lang === "ko" ? "" : "en/"}tools/${slug}/`;
 const SIGNAL_POLL_MS = 2000;
 const SIGNAL_KEEP_MS = 10 * 60_000;
 
@@ -499,7 +500,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_net")}</b>
-          {hasData && <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][lang]}</span>}
+          {hasData && <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][baseLang(lang)]}</span>}
           <span className="grow" />
           {recording ? (
             <button className="btn danger rec-btn" onClick={stopRec} data-tip={tip(lang, "hwRecStop")}>
@@ -596,12 +597,12 @@ export default function App() {
           {hasData && (
             <section className="card summary">
               <div className="sub-title">
-                {t("summary")} <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][lang]}</span>
+                {t("summary")} <span className={`lv lv-${summary.level === "short" ? "unread" : summary.level}`}>{LEVEL_TEXT[summary.level][baseLang(lang)]}</span>
                 {info && <span className="hint"> · {t("since", { t: clock(info.startedAt) })}</span>}
               </div>
               <ul className="card-notes">
                 {summary.notes.map((n, i) => (
-                  <li key={i}>{n[lang]}</li>
+                  <li key={i}>{n[baseLang(lang)]}</li>
                 ))}
               </ul>
               <table className="grid stats">
@@ -611,10 +612,10 @@ export default function App() {
                     <th>{t("colSent")}</th>
                     <th>{t("colLoss")}</th>
                     <th>{t("colAvg")}</th>
-                    <th data-tip={TERMS.p95[lang][1]}>95%</th>
+                    <th data-tip={TERMS.p95[baseLang(lang)][1]}>95%</th>
                     <th>{t("colMax")}</th>
-                    <th data-tip={TERMS.jitter[lang][1]}>{t("colJitter")}</th>
-                    <th data-tip={TERMS.lossRun[lang][1]}>{t("colRun")}</th>
+                    <th data-tip={TERMS.jitter[baseLang(lang)][1]}>{t("colJitter")}</th>
+                    <th data-tip={TERMS.lossRun[baseLang(lang)][1]}>{t("colRun")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -646,7 +647,7 @@ export default function App() {
           <div className="cannot-see">
             <ul>
               {CAVEATS.map((c) => (
-                <li key={c.en}>{c[lang]}</li>
+                <li key={c.en}>{c[baseLang(lang)]}</li>
               ))}
             </ul>
             <div className="hint">{t("readOnlyNet")}</div>
@@ -659,7 +660,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_signal")}</b>
-          {sigNote?.level && <span className={`lv lv-${sigNote.level}`}>{sigNote.level === "ok" ? LEVEL_TEXT.ok[lang] : LEVEL_TEXT.look[lang]}</span>}
+          {sigNote?.level && <span className={`lv lv-${sigNote.level}`}>{sigNote.level === "ok" ? LEVEL_TEXT.ok[baseLang(lang)] : LEVEL_TEXT.look[baseLang(lang)]}</span>}
           <span className="grow" />
           <button className={`btn ${sigOn ? "danger" : "primary"} sig-btn`} onClick={() => setSigOn(!sigOn)} data-tip={tip(lang, "hwSignal")}>
             {sigOn ? `■ ${t("sigStop")}` : `▶ ${t("sigStart")}`}
@@ -671,7 +672,7 @@ export default function App() {
           {sig && (
             <>
               <section className={`card sig-state st-${sig.state}`}>
-                <div className="sub-title">{SIGNAL_STATE_TEXT[sig.state][lang]}</div>
+                <div className="sub-title">{SIGNAL_STATE_TEXT[sig.state][baseLang(lang)]}</div>
                 {sig.state === "denied" && (
                   <>
                     <ol className="plain-ol">
@@ -711,7 +712,7 @@ export default function App() {
                     ))}
                   </dl>
                 )}
-                {sigNote && <div className="hint">{sigNote.text[lang]}</div>}
+                {sigNote && <div className="hint">{sigNote.text[baseLang(lang)]}</div>}
               </section>
               {sigHist.length > 0 && <Chart series={[{ label: t("kQuality"), color: "--accent", points: sigHist }]} marks={[]} spanMs={SIGNAL_KEEP_MS} now={sigHist[sigHist.length - 1]?.ts ?? Date.now()} unit="%" fixedMax={100} ariaLabel={t("kQuality")} empty="" />}
               {sig.channels.length > 0 && (
@@ -850,7 +851,7 @@ export default function App() {
       <>
         <div className="toolbar">
           <b className="sel-title">{t("tab_usb")}</b>
-          {usbStarted != null && <span className={`lv lv-${usbFound.length ? "look" : "ok"}`}>{usbFound.length ? LEVEL_TEXT.look[lang] : LEVEL_TEXT.ok[lang]}</span>}
+          {usbStarted != null && <span className={`lv lv-${usbFound.length ? "look" : "ok"}`}>{usbFound.length ? LEVEL_TEXT.look[baseLang(lang)] : LEVEL_TEXT.ok[baseLang(lang)]}</span>}
           <span className="grow" />
           {usbRec ? (
             <button className="btn danger rec-btn" onClick={stopUsb} data-tip={tip(lang, "hwUsbStop")}>
@@ -914,7 +915,7 @@ export default function App() {
                           </td>
                           <td className="mono nowrap">{vidPid(r.vid, r.pid)}</td>
                           <td className="mono nowrap">{portPath(r.ports)}</td>
-                          <td className={r.belowCapable ? "warn" : ""}>{r.speed ? USB_SPEED_TEXT[r.speed][lang] : "—"}</td>
+                          <td className={r.belowCapable ? "warn" : ""}>{r.speed ? USB_SPEED_TEXT[r.speed][baseLang(lang)] : "—"}</td>
                           <td className="nowrap">{r.present ? t("usbNow") : t("usbGone")}</td>
                           <td className={`num${r.drops ? " warn" : ""}`}>
                             {r.drops}
@@ -1018,7 +1019,7 @@ export default function App() {
                           <td className="mono nowrap">{stampShort(e.time)}</td>
                           <td className="nowrap">{e.id}</td>
                           <td>
-                            {USB_EVENT_TEXT[e.kind][lang]} — {e.name || vidPid(e.vid, e.pid)}
+                            {USB_EVENT_TEXT[e.kind][baseLang(lang)]} — {e.name || vidPid(e.vid, e.pid)}
                           </td>
                         </tr>
                       ))}
@@ -1153,9 +1154,12 @@ export default function App() {
   // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
   const headTools = (
     <>
-            <select className="lang" aria-label={lang === "ko" ? "언어" : "Language"} value={lang} onChange={(e) => update({ lang: e.target.value as Lang })}>
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
+            <select className="lang" aria-label={ui(lang, "language")} value={lang} onChange={(e) => update({ lang: e.target.value as Lang })}>
+              {UI_LANGS.map((l) => (
+                <option key={l} value={l}>
+                  {LANG_NAMES[l]}
+                </option>
+              ))}
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />

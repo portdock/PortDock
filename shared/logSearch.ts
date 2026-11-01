@@ -1,5 +1,6 @@
 // 로그 찾기·거르기 — 화면(React) 없는 부분. 보기 거르기라 원래 기록은 건드리지 않는다.
 // 10만 줄에서도 버티게: 새로 붙은 줄만 검사하고(증분), 앞에서 잘린 줄은 결과에서 덜어 낸다.
+import type { Lang } from "./lang.ts";
 
 export interface LogFrame {
   ts: number;
@@ -164,7 +165,7 @@ export function screenText(opts: {
   hex: (b: number[]) => string;
   ascii: (b: number[]) => string;
   filterDesc: string | null;
-  lang: "ko" | "en";
+  lang: Lang;
   peers?: boolean;
   /** 시각 뒤에 넣을 열(간격·응답 시간) */
   col?: (f: LogFrame) => string;

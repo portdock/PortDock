@@ -1,7 +1,8 @@
 // (0.10.0) 알람 목록 — 걸린 때·풀린 때·지속 시간·확인 단추, 모두 확인·끝난 것 지우기·소리·기록 CSV. 감시 조건이 있거나 알람이 남아 있을 때만 보인다.
+import type { Lang } from "./lang.ts";
 import { useEffect, useState } from "react";
 import { fmtSpan, ruleSummary } from "./alarm.ts";
-import { alarmText, KIND_LABEL, type AlarmTextKey } from "./alarmText.ts";
+import { alarmText, kindLabel, type AlarmTextKey } from "./alarmText.ts";
 import type { Alarms } from "./useAlarms";
 import "./alarm.css";
 
@@ -11,7 +12,7 @@ const hms = (ts: number) => {
   return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
 };
 
-export function AlarmPanel({ al, lang, labelOf, fmtValue = String }: { al: Alarms; lang: "ko" | "en"; labelOf: (key: string) => string; fmtValue?: (v: number) => string }) {
+export function AlarmPanel({ al, lang, labelOf, fmtValue = String }: { al: Alarms; lang: Lang; labelOf: (key: string) => string; fmtValue?: (v: number) => string }) {
   const T = (k: AlarmTextKey, v?: Record<string, string | number>) => alarmText(lang, k, v);
   const open = al.entries.filter((e) => e.end == null);
   const [now, setNow] = useState(() => Date.now());
@@ -63,7 +64,7 @@ export function AlarmPanel({ al, lang, labelOf, fmtValue = String }: { al: Alarm
                 return (
                   <tr key={e.id} className={`${e.end == null ? "open" : "ended"}${e.acked ? " acked" : ""}`}>
                     <td>
-                      <span className={`al-kind al-${e.kind}`}>{KIND_LABEL[e.kind][lang]}</span>
+                      <span className={`al-kind al-${e.kind}`}>{kindLabel(e.kind, lang)}</span>
                     </td>
                     <td className="ellipsis-cell" title={rule ? ruleSummary(rule) : undefined}>
                       {labelOf(e.key)}

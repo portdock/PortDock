@@ -15,7 +15,9 @@ function localStamp(t: number | string): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export type DiffLang = "ko" | "en";
+import { baseLang, type Lang } from "./lang.ts";
+/** 화면 언어 — 이 글은 한국어·영어 두 판(다른 언어는 영어) */
+export type DiffLang = Lang;
 
 /** 기준·지금 목록의 장비 한 대 — Net Scan Host 의 일부 */
 export interface BaseHost {
@@ -354,13 +356,13 @@ const cell = (v: unknown) => {
 /** 비교 결과 CSV(머리 줄 포함, BOM 없음) — `same` 은 넣지 않으려면 걸러서 넘긴다 */
 export function diffCsv(rows: HostDiff[], lang: DiffLang): string {
   const head = ["change", "change_text", "ip", "old_ip", "mac", "old_mac", "vendor", "old_vendor", "name", "open_ports", "opened", "closed"];
-  const lines = rows.map((r) => [r.change, CHANGE_TEXT[r.change][lang], r.ip, r.oldIp, r.mac, r.oldMac, r.vendor, r.oldVendor, r.name, r.ports.join(" "), r.opened.join(" "), r.closed.join(" ")].map(cell).join(","));
+  const lines = rows.map((r) => [r.change, CHANGE_TEXT[r.change][baseLang(lang)], r.ip, r.oldIp, r.mac, r.oldMac, r.vendor, r.oldVendor, r.name, r.ports.join(" "), r.opened.join(" "), r.closed.join(" ")].map(cell).join(","));
   return [head.join(","), ...lines].join("\r\n") + "\r\n";
 }
 
 /** 한 줄 요약 «MAC 바뀜 1 · 새로 생김 2 · …»(0 은 뺀다, 같음 포함) */
 export function diffSummary(d: ScanDiff, lang: DiffLang): string {
-  const parts = CHANGE_ORDER.filter((c) => d.counts[c] > 0).map((c) => `${CHANGE_TEXT[c][lang]} ${d.counts[c]}`);
+  const parts = CHANGE_ORDER.filter((c) => d.counts[c] > 0).map((c) => `${CHANGE_TEXT[c][baseLang(lang)]} ${d.counts[c]}`);
   if (d.outside) parts.push(lang === "ko" ? `범위 밖 ${d.outside}` : `outside range ${d.outside}`);
   return parts.join(" · ") || (lang === "ko" ? "비교할 장비 없음" : "nothing to compare");
 }
@@ -376,7 +378,7 @@ export function diffText(base: Baseline, d: ScanDiff, lang: DiffLang, max = 150)
   out.push(diffSummary(d, lang));
   if (!d.portsCompared) out.push(ko ? "(열린 포트는 비교하지 않음 — 두 번 다 확인한 포트 없음)" : "(open ports not compared — no port checked both times)");
   const changed = d.rows.filter((r) => r.change !== "same");
-  for (const r of changed.slice(0, max)) out.push(`- ${CHANGE_TEXT[r.change][lang]}: ${r.ip} ${r.mac ?? "-"} ${r.vendor ?? "-"}${diffDetail(r, lang) ? ` · ${diffDetail(r, lang)}` : ""}`);
+  for (const r of changed.slice(0, max)) out.push(`- ${CHANGE_TEXT[r.change][baseLang(lang)]}: ${r.ip} ${r.mac ?? "-"} ${r.vendor ?? "-"}${diffDetail(r, lang) ? ` · ${diffDetail(r, lang)}` : ""}`);
   if (changed.length > max) out.push(`… +${changed.length - max}`);
   return out.join("\n");
 }

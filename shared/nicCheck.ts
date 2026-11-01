@@ -2,6 +2,7 @@
 // «문제 없음(읽은 범위) / 볼 것 / 문제 있음 / 읽지 못함» 으로 나누는 순수 함수와 결과 글.
 // 권장값은 PortDock 이 정하지 않는다 — 카메라 제조사 공개 문서의 예를 출처와 함께 나란히 둘 뿐이고, 제조사끼리 다르면 둘 다 둔다.
 // «문제 있음» 은 쓰지 않는다(랜카드 설정만으로 명백히 틀렸다고 말할 수 있는 값이 없다). 바꾸기는 하지 않는다(장치 관리자 안내만).
+import { baseLang, type Lang } from "./lang.ts";
 import type { FirewallProfile, Level, NicList, NicProp, NicSummary, Text, Verdict } from "./portinfo.ts";
 
 export type NicPurpose = "general" | "camera" | "plc";
@@ -193,14 +194,14 @@ export const NIC_WHERE = t(
   "Where to change: Device Manager → Network adapters → this adapter → Properties → «Advanced» and «Power Management» tabs (administrator). PortDock only reads.",
 );
 
-const onOff = (lang: "ko" | "en", v: boolean | null | undefined) => (v == null ? (lang === "ko" ? "읽지 못함" : "not read") : v ? (lang === "ko" ? "켜짐" : "on") : lang === "ko" ? "꺼짐" : "off");
+const onOff = (lang: Lang, v: boolean | null | undefined) => (v == null ? (lang === "ko" ? "읽지 못함" : "not read") : v ? (lang === "ko" ? "켜짐" : "on") : lang === "ko" ? "꺼짐" : "off");
 
 /** 결과 글(복사·저장)의 랜카드 부분. `v` = 판정을 «[볼 것] …» 으로 바꾸는 함수(portinfo.ts bundleText 가 넘긴다) */
-export function nicLines(lang: "ko" | "en", list: NicList, purpose: NicPurpose, v: (x: Verdict) => string, fmtSpeed: (n: number | null) => string): string[] {
+export function nicLines(lang: Lang, list: NicList, purpose: NicPurpose, v: (x: Verdict) => string, fmtSpeed: (n: number | null) => string): string[] {
   const ko = lang === "ko";
   const out: string[] = [];
-  out.push(`${ko ? "용도" : "Use"}: ${PURPOSE_TEXT[purpose][lang]}`);
-  if (list.firewall?.length) out.push(`${ko ? "방화벽" : "Firewall"}: ${list.firewall.map((f) => `${PROFILE_TEXT[f.profile][lang]}${f.current ? "*" : ""} ${onOff(lang, f.enabled)}`).join(" · ")}${ko ? " (* 지금 쓰는 프로필)" : " (* in use)"}`);
+  out.push(`${ko ? "용도" : "Use"}: ${PURPOSE_TEXT[purpose][baseLang(lang)]}`);
+  if (list.firewall?.length) out.push(`${ko ? "방화벽" : "Firewall"}: ${list.firewall.map((f) => `${PROFILE_TEXT[f.profile][baseLang(lang)]}${f.current ? "*" : ""} ${onOff(lang, f.enabled)}`).join(" · ")}${ko ? " (* 지금 쓰는 프로필)" : " (* in use)"}`);
   const advRead = !list.errors.some((e) => /AdvancedProperty/.test(e));
   for (const n of list.nics) {
     out.push("", `### ${n.name} — ${n.description}`);
@@ -208,7 +209,7 @@ export function nicLines(lang: "ko" | "en", list: NicList, purpose: NicPurpose, 
     out.push(
       `${ko ? "링크" : "Link"}: ${n.up ? fmtSpeed(n.speed) : ko ? "연결 안 됨" : "not connected"}${n.fullDuplex == null ? "" : n.fullDuplex ? (ko ? " 전이중" : " full duplex") : ko ? " 반이중" : " half duplex"} · ${n.ipv4.join(", ") || "—"}${n.gateway ? ` · GW ${n.gateway}` : ""}`,
     );
-    if (n.profile !== undefined) out.push(`${ko ? "네트워크 프로필" : "Network profile"}: ${n.profile ? `${PROFILE_TEXT[n.profile][lang]}${n.network ? ` (${n.network})` : ""}` : "—"}`);
+    if (n.profile !== undefined) out.push(`${ko ? "네트워크 프로필" : "Network profile"}: ${n.profile ? `${PROFILE_TEXT[n.profile][baseLang(lang)]}${n.network ? ` (${n.network})` : ""}` : "—"}`);
     if (n.canTurnOff !== undefined) out.push(`${ko ? "PC 가 끌 수 있음" : "PC may turn off"}: ${onOff(lang, n.canTurnOff)}${n.pnpCapabilities != null ? ` · PnPCapabilities ${n.pnpCapabilities}` : ""}`);
     if (n.stats) out.push(`${ko ? "받기 오류·버림" : "Receive errors / discards"}: ${n.stats.inErrors} / ${n.stats.inDiscards} · ${ko ? "보내기 오류·버림" : "send errors / discards"}: ${n.stats.outErrors} / ${n.stats.outDiscards}`);
     for (const p of n.advanced ?? []) out.push(`${p.keyword} (${p.name}) = ${p.display ?? "—"} [${p.raw ?? (ko ? `기본 ${p.default ?? "—"}` : `default ${p.default ?? "—"}`)}]${rangeText(p) ? ` (${rangeText(p)})` : ""}`);
@@ -216,10 +217,10 @@ export function nicLines(lang: "ko" | "en", list: NicList, purpose: NicPurpose, 
   if (purpose === "camera") {
     out.push("", ko ? "카메라 제조사 문서 예(PortDock 의 권장 아님):" : "Camera vendor examples (not PortDock recommendations):");
     for (const k of [...KEY_PROPS.map((x) => ({ id: x.id, label: x.label })), { id: "firewall", label: t("방화벽", "Firewall") }])
-      for (const e of VENDOR_EXAMPLES[k.id] ?? []) out.push(`- ${k.label[lang]} · ${e.vendor}: ${e.text[lang]} — ${e.url}`);
+      for (const e of VENDOR_EXAMPLES[k.id] ?? []) out.push(`- ${k.label[baseLang(lang)]} · ${e.vendor}: ${e.text[baseLang(lang)]} — ${e.url}`);
   }
   if (list.errors.length) out.push(`${ko ? "읽지 못함" : "Not read"}: ${list.errors.join(" / ")}`);
   out.push("", ko ? "PC 가 볼 수 없는 것(랜카드):" : "What the PC cannot see (network):");
-  for (const c of NIC_CANNOT_SEE) out.push(`- ${c[lang]}`);
+  for (const c of NIC_CANNOT_SEE) out.push(`- ${c[baseLang(lang)]}`);
   return out;
 }

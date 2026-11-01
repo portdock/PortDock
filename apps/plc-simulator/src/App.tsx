@@ -1,3 +1,4 @@
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
 import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
@@ -826,9 +827,12 @@ export default function App() {
   // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
   const headTools = (
     <>
-            <select className="lang" aria-label={lang === "ko" ? "언어" : "Language"} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
+            <select className="lang" aria-label={ui(lang, "language")} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+              {UI_LANGS.map((l) => (
+                <option key={l} value={l}>
+                  {LANG_NAMES[l]}
+                </option>
+              ))}
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />

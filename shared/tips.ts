@@ -1,6 +1,8 @@
 // 말풍선 설명 — 화면 칸 이름(i18n 키)마다 «무엇인지 + 언제 쓰는지». 모든 프로그램 공통.
-import { IO_TIPS } from "./tipsIo";
-import { PROFILE_TIPS } from "./tipsProfile";
+import type { Lang } from "./lang.ts";
+import { IO_TIPS } from "./tipsIo.ts";
+import { PROFILE_TIPS } from "./tipsProfile.ts";
+import { JA_TIPS } from "./ja/tips.ts";
 
 type Tip = [ko: string, en: string];
 
@@ -631,9 +633,17 @@ const TIPS: Record<string, Tip> = {
   sniffPort2: [" RS-232 는 Y 케이블로 TX·RX 를 두 포트에 받습니다 — 한 포트는 A→B, 다른 포트는 B→A. 같은 속도·패리티로 열고 두 포트의 줄을 한 시간축으로 합칩니다. RS-485 는 비워 둡니다.", " For RS-232, a Y cable feeds TX and RX to two ports — one receives A→B, the other B→A. Both open with the same baud/parity and their lines merge on one timeline. Leave empty for RS-485."],
 };
 
-export function tip(lang: "ko" | "en", key: string) {
+/** 추가 언어의 말풍선 — 열쇠별 한 줄. 없는 열쇠는 영어 */
+const MORE: { [L in Lang]?: Record<string, string> } = { ja: JA_TIPS };
+
+export function tip(lang: Lang, key: string) {
   const t = TIPS[key];
-  return t ? t[lang === "ko" ? 0 : 1] : undefined;
+  if (!t) return undefined;
+  if (lang === "ko") return t[0];
+  return MORE[lang]?.[key] || t[1];
 }
+
+/** 시험용 — 추가 언어 말풍선 사전 */
+export const TIP_MORE = MORE;
 
 export const TIP_KEYS = Object.keys(TIPS);

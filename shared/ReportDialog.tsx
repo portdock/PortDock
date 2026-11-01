@@ -27,11 +27,13 @@ import { readSharedConsent, writeSharedConsent } from "./consent";
 import { sharedConsentPatch } from "./usageData.ts";
 import { usageAvailable } from "./usage";
 import { UsageAsk } from "./UsageAsk";
+import { dicts, type Lang } from "./lang";
+import { JA_REPORT } from "./ja/parts";
 
 const LOG_LINES = 200;
 
-const UI = {
-  ko: {
+// 화면 문구만 화면 언어 — 보고서 본문(buildReport)은 개발자가 읽으므로 영어 고정
+const ko = {
     button: "문제 보고 — 개발자에게 오류·버그 보내기",
     title: "문제 보고",
     intro: "이 PC 에서 보고서를 만들어 아래에 보여 줍니다. 자동으로 보내지 않습니다. 내용을 확인한 뒤 보내는 방법을 고르세요.",
@@ -70,8 +72,9 @@ const UI = {
     sendFail: "보내지 못했습니다(인터넷 연결 확인). «파일로 저장» 해 두었다가 나중에 보내 주세요.",
     crashSend: "지금 보내기",
     crashAlways: "앞으로는 묻지 않고 자동으로 보내기",
-  },
-  en: {
+};
+export type ReportTextKey = keyof typeof ko;
+const en: typeof ko = {
     button: "Report a problem — send errors and bugs to the developer",
     title: "Report a problem",
     intro: "A report is built on this PC and shown below. Nothing is sent automatically. Review it, then choose how to send it.",
@@ -110,9 +113,8 @@ const UI = {
     sendFail: "Could not send (check the internet connection). «Save to file» and send it later.",
     crashSend: "Send now",
     crashAlways: "From now on, send automatically without asking",
-  },
 };
-type Lang = "ko" | "en";
+const UI = dicts(ko, en, { ja: JA_REPORT });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 export function ReportDialog({

@@ -1,5 +1,6 @@
 // 칸 설정 창(Modbus Slave CellDialog 와 같은 모양, PLC 말로) — 이름·형식(u16~f64·문자열)·워드/바이트 순서·값 자동 변화.
 // 형식·자동 변화 규칙은 Modbus Slave 의 regmap 을 그대로 쓴다(백엔드 crates/core regmap 과 같은 규칙). 32비트 기본 순서는 CDAB(아래 워드 먼저).
+import { baseLang } from "@shared/lang";
 import { useEffect, useState } from "react";
 import { NumInput } from "@shared/NumInput";
 import { tip } from "@shared/tips";
@@ -33,7 +34,7 @@ const TYPE_LABEL: Record<VType, { ko: string; en: string }> = {
   f64: { ko: "F64 실수 (4워드)", en: "F64 double (4 words)" },
   string: { ko: "문자열", en: "String" },
 };
-const typeLabel = (t: VType, lang: Lang) => TYPE_LABEL[t][lang];
+const typeLabel = (t: VType, lang: Lang) => TYPE_LABEL[t][baseLang(lang)];
 
 /** 숫자 칸(음수·소수) — 글자 그대로 두고 저장할 때 읽는다 */
 function FloatInput({ value, onChange, label, tipKey, lang }: { value: string; onChange: (s: string) => void; label: string; tipKey: string; lang: Lang }) {

@@ -1,5 +1,6 @@
 // 자동응답 칸(Simulator 규칙·Serial·TCP·UDP «자동응답») 문구 — 한 곳에서 두 언어로.
-import type { Lang } from "./uiText";
+import { dicts, type Lang } from "./lang.ts";
+import { JA_AR } from "./ja/autoReply.ts";
 
 const ko = {
   // ---- 규칙 카드
@@ -168,7 +169,7 @@ const en: typeof ko = {
 };
 
 export type ArKey = keyof typeof ko;
-export const AR_TEXT = { ko, en };
+export const AR_TEXT = dicts(ko, en, { ja: JA_AR });
 
 /** 문구 + {a}·{n} 채우기 */
 export function ar(lang: Lang, k: ArKey, v: Record<string, string | number> = {}) {

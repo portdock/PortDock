@@ -3,7 +3,8 @@
 // 개인 정보: Wi-Fi 이름(SSID)·AP 주소는 백엔드가 읽지 않는다. 블루투스 장치 이름은 화면에만 — 저장·복사 글은 «장치 N» 만 쓴다.
 // USB 는 제품 이름·VID:PID·허브 포트만 받는다(장치 일련번호가 든 인스턴스 ID 는 백엔드 밖으로 나오지 않는다).
 
-export type Lang = "ko" | "en";
+export type { Lang } from "../../../shared/lang.ts";
+import { baseLang, type Lang } from "../../../shared/lang.ts";
 export interface Text {
   ko: string;
   en: string;
@@ -475,7 +476,7 @@ export function usbText(lang: Lang, app: string, version: string, rows: readonly
     out.push("");
     for (const r of rows)
       out.push(
-        `${devLabel(lang, r.n)}: ${r.name} · ${vidPid(r.vid, r.pid)} · ${ko ? "포트" : "port"} ${portPath(r.ports)}${r.speed ? ` · ${USB_SPEED_TEXT[r.speed][lang]}` : ""}${r.belowCapable ? (ko ? " · USB 3 가능" : " · USB 3 capable") : ""} · ${r.present ? (ko ? "연결됨" : "connected") : ko ? "끊김" : "disconnected"} · ${ko ? "끊김" : "drops"} ${r.drops}${r.flap ? (ko ? " · 반복 끊김 의심" : " · suspected repeated drops") : ""}`,
+        `${devLabel(lang, r.n)}: ${r.name} · ${vidPid(r.vid, r.pid)} · ${ko ? "포트" : "port"} ${portPath(r.ports)}${r.speed ? ` · ${USB_SPEED_TEXT[r.speed][baseLang(lang)]}` : ""}${r.belowCapable ? (ko ? " · USB 3 가능" : " · USB 3 capable") : ""} · ${r.present ? (ko ? "연결됨" : "connected") : ko ? "끊김" : "disconnected"} · ${ko ? "끊김" : "drops"} ${r.drops}${r.flap ? (ko ? " · 반복 끊김 의심" : " · suspected repeated drops") : ""}`,
       );
   }
   if (log.length) {
@@ -486,7 +487,7 @@ export function usbText(lang: Lang, app: string, version: string, rows: readonly
     out.push("", ko ? `지난 기록(앱을 켜기 전, Windows 장치 기록 — 최근 분리 순):` : `Earlier records (before the app started, Windows device records — latest removal first):`);
     for (const d of past.devices.slice(0, 20))
       out.push(`- ${d.name} · ${vidPid(d.vid, d.pid)} · ${ko ? "마지막 연결" : "last arrival"} ${d.lastArrival ? stamp(d.lastArrival) : "—"} · ${ko ? "마지막 분리" : "last removal"} ${d.lastRemoval ? stamp(d.lastRemoval) : "—"}${d.present ? (ko ? " · 지금 연결됨" : " · connected now") : ""}`);
-    for (const e of past.events.slice(0, 30)) out.push(`- ${stamp(e.time)} · ${e.id} ${USB_EVENT_TEXT[e.kind][lang]} · ${e.name || vidPid(e.vid, e.pid)}`);
+    for (const e of past.events.slice(0, 30)) out.push(`- ${stamp(e.time)} · ${e.id} ${USB_EVENT_TEXT[e.kind][baseLang(lang)]} · ${e.name || vidPid(e.vid, e.pid)}`);
   }
   return out.join("\n") + "\n";
 }
@@ -530,14 +531,14 @@ export function recText(lang: Lang, app: string, version: string, info: RecInfo 
     out.push(`${ko ? "시작" : "Started"}: ${stamp(info.startedAt)} · ${ko ? "간격" : "interval"} ${info.intervalMs / 1000} s`);
     out.push(`${ko ? "게이트웨이" : "Gateway"} ${info.gateway ?? "—"} · ${ko ? "인터넷 대상" : "Internet target"} ${info.target} · DNS ${info.dnsName || "—"}`);
   }
-  out.push(`${ko ? "결과" : "Result"}: ${LEVEL_TEXT[s.level][lang]}`);
-  for (const n of s.notes) out.push(`- ${n[lang]}`);
+  out.push(`${ko ? "결과" : "Result"}: ${LEVEL_TEXT[s.level][baseLang(lang)]}`);
+  for (const n of s.notes) out.push(`- ${n[baseLang(lang)]}`);
   out.push("", statLine(lang, ko ? "게이트웨이" : "Gateway", s.gw), statLine(lang, ko ? "인터넷" : "Internet", s.net), statLine(lang, "DNS", s.dns));
   if (wifi.length) {
     out.push("", ko ? "Wi-Fi 사건(Windows 기록):" : "Wi-Fi events (Windows log):");
     for (const w of wifi) out.push(`${stamp(w.ts)}  ${w.connected ? (ko ? "연결" : "connected") : ko ? "끊김" : "disconnected"}${w.reason ? ` — ${w.reason}` : ""}${w.code != null ? ` (0x${w.code.toString(16)})` : ""}`);
   }
-  out.push("", ...CAVEATS.map((c) => `* ${c[lang]}`));
+  out.push("", ...CAVEATS.map((c) => `* ${c[baseLang(lang)]}`));
   return out.join("\n") + "\n";
 }
 

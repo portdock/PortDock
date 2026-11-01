@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   // ---- 왼쪽: 포트 목록
@@ -410,9 +413,9 @@ const en: Record<keyof typeof ko, string> = {
   emptyGuide: "Pick a COM port on the left. If the list is empty, turn on «Show devices not connected now».",
 };
 
-export type Lang = "ko" | "en";
 export type Key = keyof typeof ko;
-export const dict = { ko, en };
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });
 
 /** «{n}개» 처럼 자리 채우기 */
 export function fill(text: string, v: Record<string, string | number> = {}) {

@@ -2,7 +2,8 @@
 // 순수 함수(화면·통신 없음) — Modbus Master 의 원인 후보 패널이 쓴다. 단정하지 않는다: 늘 «후보».
 // 실행 시험: node --test shared/commDiag.test.ts
 
-export type Lang = "ko" | "en";
+export type { Lang } from "./lang.ts";
+import { baseLang, type Lang } from "./lang.ts";
 export interface Text {
   ko: string;
   en: string;
@@ -57,7 +58,7 @@ export interface Diagnosis {
   causes: Cause[];
 }
 
-const site = (lang: Lang) => `https://portdock.dev/${lang === "en" ? "en/" : ""}`;
+const site = (lang: Lang) => `https://portdock.dev/${lang === "ko" ? "" : "en/"}`;
 export const guideLink = (slug: string, label: Text): DiagLink => ({ label, url: (lang) => `${site(lang)}guides/${slug}/` });
 /** 사이트의 고장 원인 찾기 도우미 */
 export const TROUBLESHOOT: DiagLink = { label: t("고장 원인 찾기 도우미", "Troubleshooting helper"), url: (lang) => `${site(lang)}tools/troubleshoot/` };
@@ -276,7 +277,7 @@ export function diagnose(samples: DiagSample[], wire: "rtu" | "tcp" = "rtu"): Di
 
 /** 원인 후보 패널을 글로(복사·AI 에 붙여 넣기) */
 export function diagnosisText(d: Diagnosis, lang: Lang, exceptionText?: (code: number) => string): string {
-  const L = (x: Text) => x[lang];
+  const L = (x: Text) => x[baseLang(lang)];
   const ko = lang === "ko";
   const out = [ko ? `최근 요청 ${d.total}개 — 응답 받음 ${d.ok}개` : `Last ${d.total} requests — ${d.ok} OK`];
   for (const c of d.causes) {

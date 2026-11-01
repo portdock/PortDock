@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   lockedHint: "연결 방식·포트·주소·속도는 실행 중에 바꿀 수 없습니다. 프레임 구분·응답 규칙·비교 옵션은 바로 적용됩니다.",
@@ -198,6 +201,6 @@ const en: typeof ko = {
   stopLog: "Stop logging",
 };
 
-export type Lang = "ko" | "en";
 export type Key = keyof typeof ko;
-export const dict = { ko, en };
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });

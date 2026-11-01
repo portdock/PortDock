@@ -1,3 +1,4 @@
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { VERSION } from "@shared/version";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -1063,13 +1064,16 @@ export default function App() {
   // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
   const headTools = (
     <>
-          <select className="lang" value={lang} aria-label={lang === "ko" ? "언어" : "Language"} onChange={(e) => {
+          <select className="lang" value={lang} aria-label={ui(lang, "language")} onChange={(e) => {
             const l = e.target.value as Lang;
             setLang(l);
             store("lang", l);
           }}>
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
+            {UI_LANGS.map((l) => (
+              <option key={l} value={l}>
+                {LANG_NAMES[l]}
+              </option>
+            ))}
           </select>
           <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock Serial" lang={lang} frames={() => framesRef.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />

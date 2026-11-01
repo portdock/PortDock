@@ -13,6 +13,8 @@ import { useRestoreFocus } from "./restoreFocus";
 import { usageAvailable } from "./usage";
 import { USAGE_TEXT } from "./usageText";
 import { writeSharedConsent } from "./consent";
+import { dicts, LANG_NAMES, UI_LANGS } from "./lang";
+import { JA_SETTINGS } from "./ja/parts";
 
 // 정보(About) 칸의 링크 — opener 권한(capabilities/default.json)이 이 주소들만 연다
 const REPO = REPO_URL;
@@ -27,8 +29,7 @@ const LINKS = {
   sponsor: SPONSOR_URL,
 };
 
-const T = {
-  ko: {
+const ko = {
     title: "설정",
     lang: "언어",
     theme: "테마",
@@ -80,8 +81,9 @@ const T = {
     checkUpdateHint: "최신 릴리스 페이지를 브라우저로 엽니다.",
     updateCheck: "새 버전 확인(하루 한 번)",
     updateCheckHint: "켜면 하루 한 번 GitHub(api.github.com)에 최신 릴리스만 묻고, 새 버전이면 창 아래에 알립니다. 보내는 데이터는 없고 내려받기·설치는 하지 않습니다.",
-  },
-  en: {
+};
+export type SettingsTextKey = keyof typeof ko;
+const en: typeof ko = {
     title: "Settings",
     lang: "Language",
     theme: "Theme",
@@ -133,8 +135,8 @@ const T = {
     checkUpdateHint: "Opens the latest release page in your browser.",
     updateCheck: "Check for new versions (once a day)",
     updateCheckHint: "When on, asks GitHub (api.github.com) once a day for the latest release only and shows a notice at the bottom of the window if a newer version exists. No data is sent; nothing is downloaded or installed.",
-  },
 };
+const T = dicts(ko, en, { ja: JA_SETTINGS });
 
 export function SettingsDialog({
   app,
@@ -229,8 +231,11 @@ export function SettingsDialog({
           <label>
             {t.lang}
             <select value={settings.lang} onChange={(e) => update({ lang: e.target.value as Settings["lang"] })}>
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
+              {UI_LANGS.map((l) => (
+                <option key={l} value={l}>
+                  {LANG_NAMES[l]}
+                </option>
+              ))}
             </select>
           </label>
           <label>

@@ -7,11 +7,10 @@ import { configSnapshot, envOnce, recentErrors, type EnvInfo } from "./report";
 import { useRestoreFocus } from "./restoreFocus";
 import { tip } from "./tips";
 import { count } from "./usage";
+import { dicts, type Lang } from "./lang";
+import { JA_AI_UI } from "./ja/parts";
 
-type Lang = "ko" | "en";
-
-const UI = {
-  ko: {
+const ko = {
     button: "AI 에 묻기 — 복사만, 보내지 않음: 지금 상황을 AI 채팅에 붙여 넣을 글로 클립보드에",
     title: "AI 에게 물어보기용 복사",
     introLog: "프로그램·연결 설정·이번 실행의 오류·최근 통신 기록을 AI 채팅에 붙여 넣기 좋은 글(질문 틀 포함)로 만듭니다.",
@@ -31,8 +30,9 @@ const UI = {
     copied: "복사했습니다 — AI 채팅 입력칸에 붙여 넣고(Ctrl+V) «상황» 칸을 채워 주세요.",
     copyFail: "복사하지 못했습니다 — 클립보드를 다른 프로그램이 쓰고 있을 수 있습니다",
     close: "닫기",
-  },
-  en: {
+};
+export type AiUiKey = keyof typeof ko;
+const en: typeof ko = {
     button: "Ask AI — copy only, nothing is sent: the current situation as text for an AI chat, on the clipboard",
     title: "Copy for asking AI",
     introLog: "Builds text for an AI chat (with a question template): program, connection settings, errors in this session and recent traffic.",
@@ -52,8 +52,8 @@ const UI = {
     copied: "Copied — paste it into the AI chat (Ctrl+V) and fill in «Situation».",
     copyFail: "Could not copy — another program may be holding the clipboard",
     close: "Close",
-  },
 };
+const UI = dicts(ko, en, { ja: JA_AI_UI });
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(v[k] ?? ""));
 
 /** 연결 설정으로 넣을 저장값 — 문제 보고와 같은 허용 목록에서 화면·언어 설정은 뺀다 */

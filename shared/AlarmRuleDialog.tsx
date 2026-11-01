@@ -1,4 +1,5 @@
 // (0.10.0) 감시 조건 창 — 값 하나의 하한·상한·멈춤 초·끊김 초·되돌아올 때 여유. 비운 칸은 보지 않는다.
+import type { Lang } from "./lang.ts";
 import { useEffect, useState } from "react";
 import { useRestoreFocus } from "./restoreFocus";
 import { emptyRule, ruleProblem, ruleUsed, type AlarmRule } from "./alarm.ts";
@@ -14,7 +15,7 @@ export function AlarmRuleDialog({
   onSave,
   onClose,
 }: {
-  lang: "ko" | "en";
+  lang: Lang;
   keyId: string;
   /** 무엇을 보는지(제목) */
   label: string;

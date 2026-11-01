@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   // ---- 왼쪽: 랜카드·범위·방법
@@ -369,9 +372,9 @@ const en: typeof ko = {
   close: "Close",
 };
 
-export type Lang = "ko" | "en";
 export type Key = keyof typeof ko;
-export const dict = { ko, en };
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });
 
 /** «{n}대» 처럼 자리 채우기 */
 export function fill(text: string, v: Record<string, string | number> = {}) {

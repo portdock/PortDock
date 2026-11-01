@@ -3,11 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_FILTER, filterActive, LogIndex, looksHex, lowerBound, parseQuery, type DirFilter, type FilterState, type LogFrame, type QueryMode } from "./logSearch";
 import { tip } from "./tips";
 import "./filterbar.css";
+import { dicts, type Lang } from "./lang";
+import { JA_FILTER } from "./ja/parts";
 
-type Lang = "ko" | "en";
-
-const L = {
-  ko: {
+const ko = {
     find: "찾기 (Ctrl+F) — 01 03 또는 글자",
     auto: "자동",
     hex: "HEX",
@@ -21,8 +20,9 @@ const L = {
     badHex: "HEX 가 아님",
     none: "없음",
     shown: "{a}/{b}줄 보임",
-  },
-  en: {
+};
+export type FilterTextKey = keyof typeof ko;
+const en: typeof ko = {
     find: "Find (Ctrl+F) — 01 03 or text",
     auto: "Auto",
     hex: "HEX",
@@ -36,8 +36,8 @@ const L = {
     badHex: "not HEX",
     none: "none",
     shown: "{a}/{b} lines",
-  },
 };
+const L = dicts(ko, en, { ja: JA_FILTER });
 
 /** 찾기·거르기 상태와 결과. frames 는 앱의 framesRef.current, version 은 새 줄이 올 때마다 바뀌는 값 */
 export function useLogFilter<F extends LogFrame>(frames: F[], version: number) {

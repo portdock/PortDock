@@ -1,3 +1,4 @@
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExposeMark, ExposeNote } from "./Exposure";
 import { VERSION } from "@shared/version";
@@ -427,7 +428,7 @@ export default function App() {
         void navigator.clipboard.writeText(`${ip}:502`).catch(() => {});
       })
       .catch((e) => toast.show(String(e), { error: true }));
-  const masterUrl = `https://portdock.dev/${lang === "en" ? "en/" : ""}modbus-master/`;
+  const masterUrl = `https://portdock.dev/${lang === "ko" ? "" : "en/"}modbus-master/`;
   // TCP 로 열기(0.3.0) — 502·웹 말고 열린 포트를 PortDock TCP 클라이언트로. 포트가 여럿이면 메뉴로 고른다
   const [tcpMenu, setTcpMenu] = useState<{ x: number; y: number; ip: string } | null>(null);
   const openTcp = (ip: string, port: number) => {
@@ -613,9 +614,12 @@ export default function App() {
   // 머리줄 도구 — 넓은 창은 왼쪽 칸 머리, 좁은 창은 요약 줄(NarrowBar)에 그린다(한 번에 한 곳)
   const headTools = (
     <>
-            <select className="lang" aria-label={lang === "ko" ? "언어" : "Language"} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
+            <select className="lang" aria-label={ui(lang, "language")} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+              {UI_LANGS.map((l) => (
+                <option key={l} value={l}>
+                  {LANG_NAMES[l]}
+                </option>
+              ))}
             </select>
             <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
             <ReportButton app={APP} lang={lang} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />

@@ -1,5 +1,6 @@
 // 다른 PortDock 프로그램으로 열기(0.3.0) — 백엔드 open_app(crates/core/src/launch.rs Target)을 부르고,
 // 이 PC 에서 찾지 못하면 넘길 값(주소·포트 이름)을 복사하고 내려받기 페이지를 알린다.
+import { baseLang } from "./lang.ts";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { copyText } from "./logCopy";
@@ -19,7 +20,7 @@ export const APP_TITLE: Record<OpenTarget["app"], string> = {
 };
 
 /** 사이트의 그 프로그램 페이지(내려받기 링크가 있다) */
-export const appPage = (app: OpenTarget["app"], lang: Lang) => `https://portdock.dev/${lang === "en" ? "en/" : ""}${app}/`;
+export const appPage = (app: OpenTarget["app"], lang: Lang) => `https://portdock.dev/${lang === "ko" ? "" : "en/"}${app}/`;
 
 const T = {
   ko: {
@@ -43,7 +44,7 @@ export async function openInApp(target: OpenTarget, copy: string, lang: Lang, to
   const name = APP_TITLE[target.app];
   try {
     if (await invoke<boolean>("open_app", { target })) {
-      toast.show(fill(T[lang].opened, { a: name, b: copy }), { ms: 6000 });
+      toast.show(fill(T[baseLang(lang)].opened, { a: name, b: copy }), { ms: 6000 });
       return true;
     }
   } catch (e) {
@@ -52,6 +53,6 @@ export async function openInApp(target: OpenTarget, copy: string, lang: Lang, to
   }
   await copyText(copy);
   const url = appPage(target.app, lang);
-  toast.show(fill(T[lang].missing, { a: name, b: copy }), { ms: 12000, action: { label: T[lang].get, run: () => void openUrl(url).catch(() => {}) } });
+  toast.show(fill(T[baseLang(lang)].missing, { a: name, b: copy }), { ms: 12000, action: { label: T[baseLang(lang)].get, run: () => void openUrl(url).catch(() => {}) } });
   return false;
 }

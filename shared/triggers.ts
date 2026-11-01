@@ -3,6 +3,7 @@
 //   HEX   — «01 03 ?? **»: ?? = 아무 1바이트, ** = 0바이트 이상
 //   ASCII — «ERR?*»: ? = 아무 1바이트(글자), * = 0바이트 이상, \r \n \t \0 \\ \xNN 이스케이프(\x3F 는 글자 그대로의 ?)
 // 줄 안 어디에든 있으면(포함) 맞는다.
+import type { Lang } from "./lang.ts";
 import { parseAsciiText, parseHexText } from "./notation.ts";
 
 export type Tok = number | null | "*";
@@ -31,7 +32,7 @@ export function newTrigger(id: number, mode: "hex" | "ascii" = "ascii"): Trigger
 }
 
 /** 패턴 → 토큰. 틀리면 이유를 던진다(빈 패턴도) */
-export function compilePattern(pattern: string, mode: "hex" | "ascii", lang: "ko" | "en" = "ko"): Tok[] {
+export function compilePattern(pattern: string, mode: "hex" | "ascii", lang: Lang = "ko"): Tok[] {
   const ko = lang === "ko";
   if (!pattern.trim()) throw new Error(ko ? "패턴이 비어 있습니다" : "The pattern is empty");
   const out: Tok[] = [];
@@ -106,7 +107,7 @@ export interface Compiled {
   error: string | null;
 }
 
-export function compileAll(list: Trigger[], lang: "ko" | "en"): Compiled[] {
+export function compileAll(list: Trigger[], lang: Lang): Compiled[] {
   return list.map((t) => {
     try {
       return { t, toks: compilePattern(t.pattern, t.mode, lang), error: null };

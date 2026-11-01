@@ -1,4 +1,5 @@
 // Modbus 풀이 문구(한국어) — Serial·TCP 상세 칸이 함께 쓴다(예전 apps/serial/src/mbwords.ts).
+import type { Lang } from "./lang.ts";
 import { MB_FUNCS } from "./modbusBuild";
 // Modbus 풀이(백엔드는 영어 키로 준다)를 화면 언어로
 const KO: Record<string, string> = {
@@ -23,7 +24,7 @@ const KO: Record<string, string> = {
 // 영어는 백엔드 키 그대로 — 국번만 «Slave ID» 로 맞춘다(용어 통일 10/18)
 const EN: Record<string, string> = { slave: "Slave ID" };
 
-export function mbWord(k: string, lang: "ko" | "en") {
+export function mbWord(k: string, lang: Lang) {
   return lang === "ko" ? (KO[k] ?? k) : (EN[k] ?? k);
 }
 
@@ -33,7 +34,7 @@ const FUNC_KO: Record<number, string> = {
   0x17: "레지스터 읽기·쓰기",
 };
 
-export function mbFunc(code: number, en: string, lang: "ko" | "en") {
+export function mbFunc(code: number, en: string, lang: Lang) {
   const k = FUNC_KO[code & 0x7f];
   return lang === "ko" && k ? `${k} (${en})` : en;
 }

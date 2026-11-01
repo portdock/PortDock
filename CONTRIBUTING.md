@@ -72,7 +72,7 @@ node tools/privacy-check.mjs site/dist
 
 ### Code conventions (as seen in the repository)
 
-- **Two languages for every UI string.** Each `apps/<tool>/src/i18n.ts` has a Korean `ko` object and `const en: typeof ko`, so a key missing in English is a type error (`apps/serial/src/i18n.ts`: "새 문구는 두 언어를 함께 넣는다" — add new strings in both languages). Help text in `apps/<tool>/src/help.ts` is a `HelpDoc` with `ko` and `en` sections. Rust messages shown to the user use `tr!("한국어", "English")` (`crates/core/src/i18n.rs`).
+- **Two languages for every UI string.** Each `apps/<tool>/src/i18n.ts` has a Korean `ko` object and `const en: typeof ko`, so a key missing in English is a type error (`apps/serial/src/i18n.ts`: "새 문구는 두 언어를 함께 넣는다" — add new strings in both languages). Help text in `apps/<tool>/src/help.ts` is a `HelpDoc` with `ko` and `en` sections. Rust messages shown to the user use `tr!("한국어", "English")` (`crates/core/src/i18n.rs`). From 0.11.0 more screen languages come from separate, partial dictionaries (`apps/<tool>/src/i18n.ja.ts`, `shared/ja/`) translated from English; a missing key falls back to English, and the language list lives in `shared/lang.ts` (`node --test shared/lang.test.ts` checks the keys).
 - **Help is also the website.** `site/src/data/tools.ts` imports each app's `help.ts` and the site renders it as the usage page, so editing in-app help changes portdock.dev too.
 - **Logic placement.** Communication and parsing go into `crates/core` (no Tauri there); app `src-tauri/src/lib.rs` files only wrap it as Tauri commands. Shared UI code goes into `shared/` (imported as `@shared/...`). UI-independent TypeScript has `node --test` tests next to it (`*.test.ts`, starting with `// @ts-nocheck`); Rust tests are `#[cfg(test)]` modules in the same file.
 - **Clippy warnings fail CI** (`-D warnings`, all targets).
@@ -135,7 +135,7 @@ PortDock 은 Tauri 2·Rust·React/TS 로 만든 윈도우용 통신 시험 도�
 **CI 밖 점검** — 실기 점검표 [docs/test-plan.md](docs/test-plan.md)(공통 C1–C44 + 앱별, ⏸ 는 가상 COM 쌍·실제 장비 필요). 화면 자동 조작 [e2e/README.md](e2e/README.md): tauri-driver 로 실제 앱을 띄워 누르는 점검, 가짜 백엔드로 화면만 띄워 모든 칸을 누르는 `ui-preview/smoke.mjs`(한·영 × 밝게·어둡게, 바깥 전송 막힘).
 
 **코드 규칙**
-- 화면 문구는 한·영 둘 다 — `apps/<앱>/src/i18n.ts` 의 `en: typeof ko`, 도움말 `help.ts` 도 ko·en. Rust 사용자 문구는 `tr!(한국어, 영어)`.
+- 화면 문구는 한·영 둘 다 — `apps/<앱>/src/i18n.ts` 의 `en: typeof ko`, 도움말 `help.ts` 도 ko·en. Rust 사용자 문구는 `tr!(한국어, 영어)`. (0.11.0) 추가 언어는 영어판을 옮긴 따로 된 사전(`i18n.ja.ts`·`shared/ja/`)에 일부만 있어도 되고, 없는 열쇠는 영어로 — 언어 목록은 `shared/lang.ts` 한 곳.
 - 앱 도움말(`help.ts`)을 고치면 사이트 사용법 페이지도 바뀐다(`site/src/data/tools.ts` 가 그대로 읽음).
 - 통신·해석은 `crates/core`, 앱 `src-tauri` 는 명령 감싸기만, 공용 화면은 `shared/`.
 - clippy 경고는 CI 실패.

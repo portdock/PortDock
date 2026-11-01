@@ -1,5 +1,6 @@
 // 요청/응답 짝 열·응답 시간 통계(0.8.0 TCP 중계, 0.10.0 Serial 엿듣기) — 짝 맞추기는 core reqpair.rs 가 하고, 화면은 표시·통계만.
 // 화면 없이 값만 — node --test shared/pairStats.test.ts
+import type { Lang } from "./lang.ts";
 
 /** core reqpair::PairMark 와 같은 모양 */
 export interface PairMark {
@@ -64,7 +65,7 @@ export class RtBag {
 }
 
 /** 짝 열 한 칸 — 요청 «#12 FC03 →», 응답 «#12 3.25 ms», 오류 응답 «#12 3.25 ms EXC 02», 무응답이 된 요청 «#12 FC03 무응답» */
-export function pairCell(p: PairMark, lang: "ko" | "en", missed = false): { text: string; cls: string } {
+export function pairCell(p: PairMark, lang: Lang, missed = false): { text: string; cls: string } {
   if (p.role === "req") return missed ? { text: `#${p.id} ${p.what} ${lang === "ko" ? "무응답" : "no reply"}`, cls: "pair miss" } : { text: `#${p.id} ${p.what} →`, cls: "pair req" };
   if (p.role === "rsp") {
     const t = `#${p.id} ${fmtMs(p.rtMs ?? 0)} ms`;
@@ -74,7 +75,7 @@ export function pairCell(p: PairMark, lang: "ko" | "en", missed = false): { text
 }
 
 /** 통계 한 줄 «짝 120 · 무응답 2 · 오류 1 · 응답 ms 최소 1.2 · 중앙 3.4 · 95% 8 · 최대 15» */
-export function statsText(s: RtStats | null, misses: number, errors: number, lang: "ko" | "en"): string {
+export function statsText(s: RtStats | null, misses: number, errors: number, lang: Lang): string {
   const ko = lang === "ko";
   const head = [`${ko ? "짝" : "pairs"} ${s?.n ?? 0}`, `${ko ? "무응답" : "no reply"} ${misses}`];
   if (errors) head.push(`${ko ? "오류 응답" : "error replies"} ${errors}`);

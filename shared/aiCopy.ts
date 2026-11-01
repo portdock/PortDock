@@ -11,8 +11,11 @@
 //   설정(hideIp: "all")이면 사설 IP 도 번호로 바꾼다. IPv6 는 루프백(::1)·링크 로컬(fe80::)만 남기고 번호로 바꾼다.
 import { ascii, hex } from "./format.ts";
 import { hideUserPaths } from "./redact.ts";
+import { dicts, type Lang } from "./lang.ts";
+import { JA_AI_COPY } from "./ja/aiCopy.ts";
 
-export type AiLang = "ko" | "en";
+/** 질문 틀·머리말은 화면 언어(0.11.0 — 번역이 없는 언어는 영어). 기록·설정 줄은 그대로 */
+export type AiLang = Lang;
 /** IP 가림 — public: 공인 IP 만(기본) · all: 사설 IP 까지 */
 export type HideIp = "public" | "all";
 /** (10/31) 질문 틀 종류 — 통신 앱(장비·배선) · Hardware Tester(PC·무선 환경) · Net Scan(네트워크 장비 찾기) · Port Inspector(포트·드라이버) */
@@ -66,8 +69,7 @@ export interface AiCopyResult {
   cutText: boolean;
 }
 
-const T = {
-  ko: {
+const ko = {
     ask: (app: string) => `다음은 ${app} 의 기록입니다. 문제 원인 후보와 확인 순서를 알려 주세요.`,
     ask2: "장비 설정·배선·PC 설정 가운데 무엇부터 볼지, 기록에서 근거가 되는 줄을 짚어 주세요. 확실하지 않으면 무엇을 더 확인하면 되는지 알려 주세요.",
     situation: "## 상황 (붙여 넣은 뒤 직접 적어 주세요)",
@@ -101,8 +103,9 @@ const T = {
     cutLines: (n: number, max: number) => `(길이 ${max.toLocaleString("en-US")}자에 맞추려고 오래된 줄 ${n}개를 뺐습니다)`,
     cutText: "…(길어서 뒤를 잘랐습니다)",
     masked: (ip: HideIp) => `_PortDock 이 가린 것: 사용자 폴더·PC 이름(DESKTOP-… 등)·MAC 뒤 3바이트·${ip === "all" ? "모든 IP 주소" : "공인 IP 주소"}(«[IP-n]»)._`,
-  },
-  en: {
+};
+export type AiText = typeof ko;
+const en: AiText = {
     ask: (app: string) => `Below is a log from ${app}. Please list likely causes of the problem and the order to check them.`,
     ask2: "Say whether to look at the device settings, the wiring or the PC first, and point to the log lines that support it. If unsure, tell me what else to check.",
     situation: "## Situation (fill in after pasting)",
@@ -136,8 +139,8 @@ const T = {
     cutLines: (n: number, max: number) => `(${n} older lines removed to fit ${max.toLocaleString("en-US")} characters)`,
     cutText: "…(cut — too long)",
     masked: (ip: HideIp) => `_Hidden by PortDock: user folder, PC name (DESKTOP-… etc.), last 3 bytes of MAC addresses, ${ip === "all" ? "all IP addresses" : "public IP addresses"} («[IP-n]»)._`,
-  },
 };
+const T = dicts(ko, en, { ja: JA_AI_COPY });
 
 // ---- 가림
 

@@ -1,11 +1,12 @@
 // 보내기 칸 표기 바꾸기 — HEX ↔ ASCII 를 바꿀 때 «같은 바이트» 의 새 표기로 옮긴다.
 // 읽는 규칙은 백엔드 codec(parse_hex·parse_ascii, crates/core/src/codec.rs)과 같다.
+import type { Lang } from "./lang.ts";
 export type TextMode = "hex" | "ascii";
 
 const enc = new TextEncoder();
 
 /** codec::parse_hex — 공백 , ; - 로 나누고 0x 허용, 짝수 자리. 틀리면 이유를 던진다 */
-export function parseHexText(text: string, lang: "ko" | "en" = "ko"): number[] {
+export function parseHexText(text: string, lang: Lang = "ko"): number[] {
   const out: number[] = [];
   for (const token of text.split(/[\s,;-]+/)) {
     const t = token.replace(/^(0x)+/, "").replace(/^(0X)+/, "");
@@ -19,7 +20,7 @@ export function parseHexText(text: string, lang: "ko" | "en" = "ko"): number[] {
 }
 
 /** codec::parse_ascii — 글자는 UTF-8, \r \n \t \0 \\ \xNN 이스케이프 */
-export function parseAsciiText(text: string, lang: "ko" | "en" = "ko"): number[] {
+export function parseAsciiText(text: string, lang: Lang = "ko"): number[] {
   const out: number[] = [];
   const cs = [...text];
   for (let i = 0; i < cs.length; i++) {
@@ -68,7 +69,7 @@ export function toAsciiText(b: number[]) {
 /**
  * 표기 바꾸기 — 같은 바이트를 새 모드로. 읽을 수 없으면(틀린 HEX 등) error 에 이유, text 는 원래 그대로.
  */
-export function convertNotation(text: string, from: TextMode, to: TextMode, lang: "ko" | "en" = "ko"): { text: string; error: string | null } {
+export function convertNotation(text: string, from: TextMode, to: TextMode, lang: Lang = "ko"): { text: string; error: string | null } {
   if (from === to || !text) return { text, error: null };
   try {
     const bytes = from === "hex" ? parseHexText(text, lang) : parseAsciiText(text, lang);

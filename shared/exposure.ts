@@ -2,6 +2,7 @@
 // - Net Scan: 찾은 장비의 열린 포트(이미 확인한 것만) 가운데 인증 없는 산업 프로토콜·평문 관리 포트 → 안내 칸
 // - Port Inspector «이 PC»: 원격 데스크톱·SMBv1·방화벽·0.0.0.0 에 연 포트·자동 로그온·자동 실행(crates/core/src/portinfo/exposure.rs 가 읽은 값)
 // React·Tauri 없는 부분(시험: node --test shared/exposure.test.ts)
+import { baseLang, type Lang } from "./lang.ts";
 import type { Level, Text } from "./portinfo.ts";
 import type { PcItem } from "./pcCheck.ts";
 
@@ -56,13 +57,13 @@ const KIND_TEXT: Record<ExposeKind, Text> = {
 export const exposeKindText = (k: ExposeKind) => KIND_TEXT[k];
 
 /** Net Scan 안내 칸의 줄들 — 종류마다 한 줄 «502 Modbus TCP · 102 S7 — 산업 프로토콜 열림 …». 없으면 빈 목록 */
-export function exposeLines(ports: number[], lang: "ko" | "en"): string[] {
+export function exposeLines(ports: number[], lang: Lang): string[] {
   const hits = exposedPorts(ports);
   const kinds: ExposeKind[] = ["noAuth", "opcua", "plain", "web"];
   return kinds
     .map((k) => {
       const ps = hits.filter((h) => h.kind === k);
-      return ps.length ? `${ps.map((h) => `${h.port} ${h.name}`).join(" · ")} — ${KIND_TEXT[k][lang]}` : "";
+      return ps.length ? `${ps.map((h) => `${h.port} ${h.name}`).join(" · ")} — ${KIND_TEXT[k][baseLang(lang)]}` : "";
     })
     .filter(Boolean);
 }

@@ -1,3 +1,4 @@
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VERSION } from "@shared/version";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
@@ -555,15 +556,18 @@ export default function App() {
     <>
           <select
             className="lang"
-            aria-label={lang === "ko" ? "언어" : "Language"}
+            aria-label={ui(lang, "language")}
             value={lang}
             onChange={(e) => {
               setLang(e.target.value as Lang);
               store("lang", e.target.value);
             }}
           >
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
+            {UI_LANGS.map((l) => (
+              <option key={l} value={l}>
+                {LANG_NAMES[l]}
+              </option>
+            ))}
           </select>
           <PinButton lang={lang} on={settings.alwaysOnTop} onToggle={(v) => update({ alwaysOnTop: v })} />
           <ReportButton app="PortDock Simulator" lang={lang} frames={() => traffic.current} autoReport={settings.autoReport} setAutoReport={(v) => update({ autoReport: v })} usageAsked={settings.usageAsked} onUsage={(on) => update({ usageStats: on, usageAsked: true })} />
