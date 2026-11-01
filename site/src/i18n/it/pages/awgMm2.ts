@@ -1,0 +1,37 @@
+// Tabella AWG ↔ mm² (views/AwgMm2Page.astro) — 6º lotto. more = frammenti di testo tra i link (link: caduta di tensione · scelta del cavo · tubo/canalina)
+export default {
+    title: "Tabella di conversione AWG in mm²",
+    seo: "Tabella AWG in mm²: diametro e resistenza — PortDock",
+    desc: "Diametro e area da AWG 0000 a 40 (formula ASTM B258), sezione metrica più vicina (IEC 60228) e Ω/km del rame a 20 °C. Converte in entrambe le direzioni.",
+    inAwg: "AWG (es. 18, 2/0, 0000)",
+    inMm: "Sezione mm²",
+    res: "Risultato",
+    k: { d: "Diametro (equivalente pieno)", area: "Sezione", ohm: "Resistenza del rame a 20 °C (un conduttore)", near: "Sezione metrica più vicina", awgNear: "AWG più vicino", awgUp: "AWG di area uguale o maggiore" },
+    how: "I risultati si aggiornano mentre scrivete. Tutto gira nel vostro browser; nulla di ciò che inserite viene inviato.",
+    err: "Inserite un AWG da 0000 a 50 (vale la notazione 2/0) e una sezione maggiore di 0",
+    fTitle: "Formule",
+    formula: [
+      "Diametro d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: numero AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+      "Area A = π ÷ 4 × d²",
+      "Resistenza R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (rame, 20 °C)",
+    ],
+    fNote: "La formula AWG deriva dalla ASTM B258; la resistività del rame è il valore del rame ricotto della IEC 60028. Ogni 6 numeri AWG il diametro raddoppia; ogni 3 l'area raddoppia circa.",
+    limitTitle: "Come leggere la tabella",
+    limits: [
+      "Le sezioni AWG e metriche non coincidono mai esattamente. «Più vicina» è calcolata sul rapporto tra le aree; una differenza negativa significa che la sezione metrica è minore: se portata o caduta di tensione sono al limite, scegliete quella uguale o maggiore.",
+      "I diametri sono quelli di un conduttore pieno. Un cavo a trefoli della stessa area è più largo e l'isolante ne aggiunge altro: per il riempimento di tubi e canali usate il diametro esterno del costruttore.",
+      "Resistenza reale del cavo: la IEC 60228 fissa valori massimi per classe di conduttore (pieno, a trefoli, flessibile); i conduttori a trefoli e stagnati sono un po' più alti.",
+      "La portata non dipende dalla sola sezione (modo di posa, temperatura ambiente, raggruppamento) e qui non è indicata.",
+    ],
+    awgTitle: "Tabella AWG (da 0000 a 40)",
+    awgHead: ["AWG", "Diametro mm", "Area mm²", "Ω/km (rame 20 °C)", "mm² più vicino (differenza)"],
+    mmTitle: "Sezioni metriche (IEC 60228)",
+    mmHead: ["Area mm²", "Diametro mm (equiv. pieno)", "Ω/km (rame 20 °C)", "AWG più vicino", "AWG uguale o maggiore"],
+    faqTitle: "Domande frequenti",
+    faq: [
+      ["Quanti mm² sono 18 AWG?", "Circa 0.823 mm² (1.024 mm di diametro). La sezione metrica più vicina è 0.75 mm², un po' minore. 16 AWG sono circa 1.31 mm², 14 AWG circa 2.08 mm² e 12 AWG circa 3.31 mm²."],
+      ["Che AWG è 1.5 mm²?", "Il più vicino è 15 AWG (1.65 mm²), ma 15 AWG è poco comune, quindi il sostituto abituale nei calibri americani è 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) è minore di 1.5 mm²."],
+      ["Che cosa significano 4/0 e 2/0?", "I calibri maggiori di 0 ripetono lo zero: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG sono circa 107 mm²."],
+    ],
+    more: ["Per dimensionare un cavo in base a lunghezza e corrente usate il ", "; per i tipi di cavo secondo l'uso, la ", "; per quanti cavi entrano in un tubo, la ", "."],
+};
