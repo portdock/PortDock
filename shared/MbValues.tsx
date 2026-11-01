@@ -1,5 +1,6 @@
 // 상세 칸의 «요청과 짝지은 값» — 응답 줄을 고르면 바로 앞 요청(국번·함수·시작·개수)과 짝지어 «40001 = 1812 (0x0714)» 로 보인다.
 // Serial(RTU)·TCP(Modbus TCP) 공통. 짝짓기는 shared/mbPair.ts, 함수 이름은 shared/mbwords.ts.
+import { baseLang } from "./lang.ts";
 import { useEffect, useState } from "react";
 import { exceptionText, valueRows, WORD_FMTS, type AddrNotation, type MbPaired, type WordFmt } from "./mbPair";
 import { mbFunc } from "./mbwords";
@@ -40,7 +41,7 @@ const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w
 
 /** notation: 처음 주소 표기(«Modbus 요청» 창에서 쓰던 표기). 값 형식·표기는 기억한다 */
 export function MbValues({ lang, paired, notation }: { lang: Lang; paired: MbPaired; notation: AddrNotation }) {
-  const t = L[lang];
+  const t = L[baseLang(lang)];
   const [fmt, setFmt] = useState<WordFmt>(() => {
     const v = load<string>("mbValFmt", "u16");
     return (WORD_FMTS as string[]).includes(v) ? (v as WordFmt) : "u16";

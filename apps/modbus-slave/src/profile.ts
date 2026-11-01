@@ -5,6 +5,7 @@
 // 장비 데이터에는 «운전 지령·주파수 설정·출력 주파수» 같은 역할 표시가 없다. 그래서 이름·단위·읽기/쓰기로 짐작한 규칙을 «짐작» 으로
 // 넣고, 사용자가 «칸 잇기 규칙» 창에서 칸을 바꾸거나 지우고 새로 만든다. 값은 그럴듯한 예시이지 실제 장비 동작이 아니다.
 
+import { baseLang } from "../../../shared/lang.ts";
 import { devRegs, type Device, type DevRegister } from "../../../shared/devices.ts";
 import { defaultSim, isBits, regsOf, type Lang, type Order, type Point, type SimCfg, type Table, type VType } from "./regmap.ts";
 
@@ -171,13 +172,13 @@ const LM = {
   },
 };
 
-export const linkKindName = (k: LinkKind, lang: Lang) => LM[lang][k];
+export const linkKindName = (k: LinkKind, lang: Lang) => LM[baseLang(lang)][k];
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 const sameCell = (a: CellRef | null, b: CellRef | null) => !!a && !!b && a.table === b.table && a.addr === b.addr;
 
 /** 설정 검사 — 틀리면 이유 */
 export function linkCheck(l: LinkCfg, lang: Lang): string | null {
-  const m = LM[lang];
+  const m = LM[baseLang(lang)];
   if (!l.out) return m.noOut;
   if ((l.kind === "approach" || l.kind === "scale") && !l.src) return m.noSrc;
   if (sameCell(l.out, l.src) || sameCell(l.out, l.run)) return m.same;
@@ -198,7 +199,7 @@ const num = (x: number) => String(Number(x.toPrecision(6)));
 
 /** 한 줄 설명 — label 은 칸 → «출력 주파수 (×0.01 Hz)» */
 export function linkSummary(l: LinkCfg, label: (c: CellRef) => string, lang: Lang): string {
-  const m = LM[lang];
+  const m = LM[baseLang(lang)];
   const out = label(l.out);
   const src = l.src ? label(l.src) : "";
   if (l.kind === "approach") {

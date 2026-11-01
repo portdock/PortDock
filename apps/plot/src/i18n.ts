@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   close: "닫기",
@@ -276,8 +279,8 @@ const en: Dict = {
   lostClosed: "The session closed",
 };
 
-export type Lang = "ko" | "en";
-export const dict: Record<Lang, Dict> = { ko, en };
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });
 
 /** «{a}» 자리 채우기 */
 export function fill(s: string, v: Record<string, string | number>) {

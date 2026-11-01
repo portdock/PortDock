@@ -1,5 +1,6 @@
 // 장비 프로필 고르기 창 — Modbus Master «장비 프로필 불러오기…», Modbus Slave «장비 흉내 불러오기…».
 // 내장 목록(빌드 때 data/devices 를 묶음)에서 장비를 고르면 레지스터·통신 기본값·출처를 보여 주고, 고른 선택지로 onApply 를 부른다.
+import { baseLang } from "./lang.ts";
 import { useEffect, useMemo, useState } from "react";
 import { tip } from "./tips";
 import { useRestoreFocus } from "./restoreFocus";
@@ -98,7 +99,7 @@ export function DeviceDialog({
   onApply: (d: Device, opts: DeviceApplyOpts) => void;
   onClose: () => void;
 }) {
-  const t = (k: TKey, v: Record<string, string | number> = {}) => fillT(TX[lang][k], v);
+  const t = (k: TKey, v: Record<string, string | number> = {}) => fillT(TX[baseLang(lang)][k], v);
   const back = useRestoreFocus<HTMLDivElement>();
   const [q, setQ] = useState("");
   const list = useMemo(() => DEVICES.filter((d) => matchDevice(d, q)), [q]);
@@ -141,9 +142,9 @@ export function DeviceDialog({
                 <li key={d.id}>
                   <button type="button" role="option" aria-selected={d.id === dev?.id} className={d.id === dev?.id ? "dev-item on" : "dev-item"} onClick={() => setSelId(d.id)}>
                     <b>
-                      {d.manufacturer[lang]} {d.model}
+                      {d.manufacturer[baseLang(lang)]} {d.model}
                     </b>
-                    <span className="hint">{KIND_TEXT[d.kind][lang]}</span>
+                    <span className="hint">{KIND_TEXT[d.kind][baseLang(lang)]}</span>
                   </button>
                 </li>
               ))}
@@ -152,9 +153,9 @@ export function DeviceDialog({
             {dev && (
               <div className="dev-detail">
                 <div>
-                  <b>{dev.title[lang]}</b> <span className="hint">· {t("regs", { n: dev.registers.length })}</span>
+                  <b>{dev.title[baseLang(lang)]}</b> <span className="hint">· {t("regs", { n: dev.registers.length })}</span>
                 </div>
-                {dev.summary && <div className="hint">{dev.summary[lang]}</div>}
+                {dev.summary && <div className="hint">{dev.summary[baseLang(lang)]}</div>}
                 <div className="hint">
                   {t("comm")}: {commLine(dev, lang)}
                 </div>
@@ -171,9 +172,9 @@ export function DeviceDialog({
                     </thead>
                     <tbody>
                       {dev.registers.map((r) => (
-                        <tr key={`${r.table}:${r.address}`} title={r.description?.[lang] ?? ""}>
+                        <tr key={`${r.table}:${r.address}`} title={r.description?.[baseLang(lang)] ?? ""}>
                           <td className="mono">{r.manualAddress}</td>
-                          <td>{r.name[lang]}</td>
+                          <td>{r.name[baseLang(lang)]}</td>
                           <td className="mono">
                             {r.type.toUpperCase()}
                             {devRegs(r) > 1 && (r.order ?? dev.comm.order ?? "ABCD") !== "ABCD" ? ` ${r.order ?? dev.comm.order}` : ""}
@@ -190,7 +191,7 @@ export function DeviceDialog({
                     <summary>{t("notes")}</summary>
                     <ul>
                       {[...(dev.comm.notes ?? []), ...(dev.notes ?? [])].map((n, i) => (
-                        <li key={i}>{n[lang]}</li>
+                        <li key={i}>{n[baseLang(lang)]}</li>
                       ))}
                     </ul>
                   </details>
@@ -201,8 +202,8 @@ export function DeviceDialog({
                     <span key={i}>
                       {i > 0 && " · "}
                       {s.title}
-                      {s.edition ? ` (${s.edition[lang]})` : ""}
-                      {s.pages ? `, ${s.pages[lang]}` : ""}
+                      {s.edition ? ` (${s.edition[baseLang(lang)]})` : ""}
+                      {s.pages ? `, ${s.pages[baseLang(lang)]}` : ""}
                     </span>
                   ))}
                 </div>

@@ -1,6 +1,7 @@
 // 무선 점검(Port Inspector «무선» 탭, 0.5.0) — Wi-Fi·블루투스 읽은 값을 «문제 없음(읽은 범위) / 볼 것 / 읽지 못함» 으로 나누는
 // 순수 함수와 결과 글(복사·저장). «문제 있음» 은 쓰지 않는다 — 끊김 이유·절전·핸즈프리는 원인 후보일 뿐이다. 고치지 않는다(바꾸는 곳 안내만).
 // 개인 정보: 네트워크 이름(SSID)은 백엔드가 읽지 않는다. 블루투스 오디오 장치 이름은 화면에만 보이고, 결과 글·JSON 에서는 «장치 1» 로 가린다.
+import { baseLang } from "./lang.ts";
 import { fmtTime, LEVEL_TEXT, USB_KIND_TEXT, USB_SPEED_TEXT, type Lang, type Level, type Problem, type Text, type UsbPath, type Verdict } from "./portinfo.ts";
 import { hideUserPaths } from "./redact.ts";
 
@@ -327,7 +328,7 @@ export function wlItems(w: Wireless, fmt: (ms: number) => string = (ms) => fmtTi
     if (r.usbPath) {
       const hops = r.usbPath.hops;
       const hubs = hops.filter((h) => h.kind === "hub");
-      const chain = (lang: Lang) => hops.map((h) => `${USB_KIND_TEXT[h.kind][lang]}${h.kind === "hub" ? ` ${h.name}` : ""}${h.speed ? ` (${USB_SPEED_TEXT[h.speed][lang]})` : ""}`).join(" → ");
+      const chain = (lang: Lang) => hops.map((h) => `${USB_KIND_TEXT[h.kind][baseLang(lang)]}${h.kind === "hub" ? ` ${h.name}` : ""}${h.speed ? ` (${USB_SPEED_TEXT[h.speed][baseLang(lang)]})` : ""}`).join(" → ");
       const up = add({
         id: `btUsbPath${n || ""}`,
         group: "bt",
@@ -351,10 +352,10 @@ export function wlItems(w: Wireless, fmt: (ms: number) => string = (ms) => fmtTi
     const svText = (lang: Lang) =>
       bt.services
         .map((s) => {
-          const nm = SERVICE_NAME[s.name]?.[lang] ?? s.name;
+          const nm = SERVICE_NAME[s.name]?.[baseLang(lang)] ?? s.name;
           if (!s.found) return `${nm}: ${lang === "ko" ? "없음" : "not present"}`;
-          const st = s.state ? STATE_TEXT[s.state][lang] : lang === "ko" ? "읽지 못함" : "not read";
-          return `${nm}: ${st}${s.startType != null ? ` · ${START_TEXT[s.startType]?.[lang] ?? s.startType}` : ""}`;
+          const st = s.state ? STATE_TEXT[s.state][baseLang(lang)] : lang === "ko" ? "읽지 못함" : "not read";
+          return `${nm}: ${st}${s.startType != null ? ` · ${START_TEXT[s.startType]?.[baseLang(lang)] ?? s.startType}` : ""}`;
         })
         .join(" / ");
     const svUnread = failed || !bt.services.length;
@@ -391,7 +392,7 @@ export function wlItems(w: Wireless, fmt: (ms: number) => string = (ms) => fmtTi
     const FLOW: Record<BtAudio["flow"], Text> = { render: t("출력", "output"), capture: t("입력", "input") };
     const line = (a: BtAudio, lang: Lang) => {
       const marks = [a.defaultConsole && (lang === "ko" ? "기본 장치" : "default device"), a.defaultComms && (lang === "ko" ? "기본 통신 장치" : "default communication device")].filter(Boolean);
-      return `${nameOf(a, lang)} — ${FLOW[a.flow][lang]} · ${KIND[a.kind][lang]}${marks.length ? ` · ${marks.join(", ")}` : ""}`;
+      return `${nameOf(a, lang)} — ${FLOW[a.flow][baseLang(lang)]} · ${KIND[a.kind][baseLang(lang)]}${marks.length ? ` · ${marks.join(", ")}` : ""}`;
     };
     const au = add({
       id: "btAudio",
@@ -436,22 +437,22 @@ export const WL_CANNOT_SEE: Text[] = [
 export function wirelessText(lang: Lang, app: string, version: string, w: Wireless): string {
   const ko = lang === "ko";
   const out: string[] = [];
-  const lv = (l: Level) => LEVEL_TEXT[l][lang];
+  const lv = (l: Level) => LEVEL_TEXT[l][baseLang(lang)];
   out.push(`# ${app} ${version} — ${fmtTime(Date.now())}`);
   out.push(ko ? `무선(Wi-Fi·블루투스) — 관리자·위치 권한 없이 읽은 값입니다(최근 ${w.days}일). 블루투스 오디오 장치 이름은 가렸습니다.` : `Wireless (Wi-Fi, Bluetooth) — values read without administrator or location permission (last ${w.days} days). Bluetooth audio device names are hidden.`);
   const items = wlItems(w, (ms) => fmtTime(ms), true);
   for (const g of ["wifi", "bt"] as WlGroup[]) {
-    out.push("", `## ${WL_GROUP_TEXT[g][lang]} [${lv(wlVerdict(w, g).level)}]`);
+    out.push("", `## ${WL_GROUP_TEXT[g][baseLang(lang)]} [${lv(wlVerdict(w, g).level)}]`);
     for (const i of items.filter((x) => x.group === g)) {
-      out.push(`- ${i.label[lang]}: ${i.value[lang]} [${lv(i.level)}]`);
-      for (const n of i.notes) out.push(`  - ${n[lang]}`);
+      out.push(`- ${i.label[baseLang(lang)]}: ${i.value[baseLang(lang)]} [${lv(i.level)}]`);
+      for (const n of i.notes) out.push(`  - ${n[baseLang(lang)]}`);
     }
   }
   if (w.errors.length) out.push("", `${ko ? "읽지 못함" : "Not read"}: ${w.errors.join(" / ")}`);
   out.push("", ko ? "관리자만 읽을 수 있음 — 읽지 않음:" : "Administrator only — not read:");
-  for (const c of WL_ADMIN_ONLY) out.push(`- ${c[lang]}`);
+  for (const c of WL_ADMIN_ONLY) out.push(`- ${c[baseLang(lang)]}`);
   out.push("", ko ? "PC 가 볼 수 없는 것(무선):" : "What the PC cannot see (wireless):");
-  for (const c of WL_CANNOT_SEE) out.push(`- ${c[lang]}`);
+  for (const c of WL_CANNOT_SEE) out.push(`- ${c[baseLang(lang)]}`);
   return hideUserPaths(out.join("\n")) + "\n";
 }
 

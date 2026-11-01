@@ -120,6 +120,12 @@ html .dump {
   margin: 0 10px;
   max-width: 260px;
 }
+/* 도움말 본문이 영어뿐인 화면 언어(ja 등)에서 머리 아래 한 줄 */
+.help-en-only {
+  margin: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--line);
+}
 .help-body {
   flex: 1;
   min-height: 0;

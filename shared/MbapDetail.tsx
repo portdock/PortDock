@@ -1,4 +1,5 @@
 // 상세 칸의 Modbus TCP(MBAP) 풀이 — TCP 앱. 백엔드 `decode_mbap`(core tcp.rs, modbus.rs 풀이를 그대로)
+import { baseLang } from "./lang.ts";
 import { mbFunc, mbWord } from "./mbwords";
 import type { Lang } from "./uiText";
 import "./modbus.css";
@@ -29,7 +30,7 @@ const L = {
 };
 
 export function MbapDetail({ lang, info }: { lang: Lang; info: MbapInfo }) {
-  const t = L[lang];
+  const t = L[baseLang(lang)];
   const m = info.modbus;
   return (
     <div className="modbus">

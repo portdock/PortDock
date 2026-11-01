@@ -1,7 +1,9 @@
 // Modbus RTU 요청 만들기 — 화면(React) 없이 바이트만 만든다. CRC 는 붙이지 않는다(보내기 줄의 «체크섬: CRC16 Modbus» 가 붙임).
 // node --test shared/modbusBuild.test.ts 로 시험한다(Node 24 는 타입을 지우고 바로 돌린다 — enum 같은 TS 전용 문법은 쓰지 않는다).
 
-export type MbLang = "ko" | "en";
+import { baseLang, type Lang } from "./lang.ts";
+/** 화면 언어 — 이 글은 한국어·영어 두 판(다른 언어는 영어) */
+export type MbLang = Lang;
 /** 0 기준 주소(0~65535) 또는 PLC 식 표기(00001·10001·30001·40001) */
 export type AddrMode = "zero" | "plc";
 
@@ -117,7 +119,7 @@ const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w
  * zero 인데 함수에 맞는 앞자리의 5자리(30001~39999·40001~49999)면 오류가 아니라 안내(note + plcGuess) — 현장에서 가장 흔한 «40001 을 0 기준 칸에» 실수
  */
 export function parseAddr(text: string, fc: number, mode: AddrMode, lang: MbLang = "ko"): { addr: number | null; error: string | null; note: string | null; plcGuess?: boolean } {
-  const m = M[lang];
+  const m = M[baseLang(lang)];
   const t = text.trim().replace(/[\s_]/g, "");
   const bad = (error: string) => ({ addr: null, error, note: null });
   if (!t) return bad(m.addrEmpty);
@@ -165,7 +167,7 @@ export function convertAddrText(text: string, from: { fc: number; mode: AddrMode
 
 /** 값 칸 해석 — 쉼표·공백으로 나눔, 10진수·0x16진수. 코일은 1/0(ON/OFF 도 됨), 레지스터는 음수를 2의 보수로 */
 export function parseValues(text: string, fc: number, lang: MbLang = "ko"): { values: number[] | null; error: string | null } {
-  const m = M[lang];
+  const m = M[baseLang(lang)];
   const f = mbFuncInfo(fc);
   if (!f || !f.write) return { values: null, error: m.func };
   const toks = text.split(/[\s,;]+/).filter(Boolean);
@@ -217,7 +219,7 @@ export interface MbResult {
 
 /** 칸 전체 → 요청 바이트. 가장 먼저 걸린 오류 하나만 돌려준다 */
 export function buildRequest(form: MbForm, lang: MbLang = "ko"): MbResult {
-  const m = M[lang];
+  const m = M[baseLang(lang)];
   const f = mbFuncInfo(form.fc);
   const out = (error: string | null, extra: Partial<MbResult> = {}): MbResult => ({ bytes: null, error, note: null, addr: null, qty: 0, ...extra });
   if (!f) return out(m.func);

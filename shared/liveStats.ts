@@ -1,4 +1,5 @@
 // 줄 사이 간격·응답 시간 열과 처리량(bytes/s)·«마지막 수신 n초 전» — Serial·TCP·UDP 공통(화면 없는 부분).
+import type { Lang } from "./lang.ts";
 
 /** 간격 열: 끔 · 직전 줄(RX·TX)과의 간격 · 응답 시간(마지막 TX → 이 RX) */
 export type DeltaMode = "off" | "prev" | "resp";
@@ -95,7 +96,7 @@ export function fmtRate(n: number) {
 }
 
 /** «3초 전», «2분 전» — 없으면 «—» */
-export function fmtAgo(ts: number | null, now: number, lang: "ko" | "en") {
+export function fmtAgo(ts: number | null, now: number, lang: Lang) {
   if (ts == null) return "—";
   const s = Math.max(0, Math.floor((now - ts) / 1000));
   if (s < 60) return lang === "ko" ? `${s}초 전` : `${s} s ago`;

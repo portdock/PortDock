@@ -102,3 +102,10 @@ test("새 버전 확인(0.3.0) — 기본 끔, 참일 때만 켬, 가져온 설�
   assert.equal(s.updateCheck, false);
   assert.equal(s.keepAwake, true);
 });
+
+test("화면 언어 — 고를 수 있는 언어(ja 포함)만 남고, 나머지는 기본값", () => {
+  assert.equal(sanitize({ lang: "ja" }).lang, "ja");
+  assert.equal(sanitize({ lang: "en" }).lang, "en");
+  assert.equal(sanitize({ lang: "de" }).lang, DEFAULTS.lang);
+  assert.equal(sanitize({ lang: "ja-JP" }).lang, DEFAULTS.lang);
+});

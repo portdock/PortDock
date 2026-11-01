@@ -1,5 +1,6 @@
 // «기준과 비교» 탭(0.10.0) — 찾은 장비 목록을 이름 붙여 기준으로 저장(이 PC 의 앱 저장소, 원하면 JSON 파일)하고
 // 이번 찾기 결과와 비교한다. 비교 로직은 shared/scanBaseline.ts(시험 있음).
+import { baseLang } from "@shared/lang";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ask, open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { load, store } from "@shared/framing";
@@ -225,8 +226,8 @@ export function BaselineView({ lang, t, now, bs, toast, onError }: { lang: Lang;
             {counts
               .filter((c) => diff.counts[c] > 0)
               .map((c) => (
-                <span key={c} className={`chg chg-${c}`} title={CHANGE_TEXT[c].hint[lang]}>
-                  {CHANGE_TEXT[c][lang]} {diff.counts[c]}
+                <span key={c} className={`chg chg-${c}`} title={CHANGE_TEXT[c].hint[baseLang(lang)]}>
+                  {CHANGE_TEXT[c][baseLang(lang)]} {diff.counts[c]}
                 </span>
               ))}
             <span className="grow" />
@@ -256,15 +257,15 @@ export function BaselineView({ lang, t, now, bs, toast, onError }: { lang: Lang;
             {rows.map((r) => (
               <tr key={`${r.change}-${r.ip}-${r.mac ?? ""}`} className={`row-${r.change}`}>
                 <td>
-                  <span className={`chg chg-${r.change}`} title={CHANGE_TEXT[r.change].hint[lang]}>
-                    {CHANGE_TEXT[r.change][lang]}
+                  <span className={`chg chg-${r.change}`} title={CHANGE_TEXT[r.change].hint[baseLang(lang)]}>
+                    {CHANGE_TEXT[r.change][baseLang(lang)]}
                   </span>
                 </td>
                 <td className="mono">{r.ip}</td>
                 <td className="mono">{r.mac ?? "—"}</td>
                 <td>{r.vendor ?? ""}</td>
                 <td>{r.name ?? ""}</td>
-                <td className="mono">{diffDetail(r, lang) || (r.change === "same" ? "" : CHANGE_TEXT[r.change].hint[lang])}</td>
+                <td className="mono">{diffDetail(r, lang) || (r.change === "same" ? "" : CHANGE_TEXT[r.change].hint[baseLang(lang)])}</td>
               </tr>
             ))}
           </tbody>

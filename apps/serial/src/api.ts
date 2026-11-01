@@ -1,3 +1,4 @@
+import { baseLang, type Lang } from "../../../shared/lang.ts";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { checksumToRust, type ChecksumKind, type CkOpts, type Encoding } from "@shared/format";
 import type { Pace, Progress } from "@shared/FileSend";
@@ -241,7 +242,7 @@ const FLOW = {
 export const parityChar = (p: SerialConfig["parity"]) => ({ odd: "O", even: "E", mark: "M", space: "S", none: "N" })[p] ?? "N";
 
 /** «COM3 · 9600 8N1 · 흐름 제어 없음» (+ « · RS-485») */
-export function summary(c: SerialConfig, lang: "ko" | "en" = "en") {
+export function summary(c: SerialConfig, lang: Lang = "en") {
   const rs = c.rs485 && c.rs485 !== "off" && c.flow !== "hardware" ? " · RS-485" : "";
-  return `${c.port} · ${c.baud} ${c.dataBits}${parityChar(c.parity)}${c.stopBits} · ${FLOW[lang][c.flow]}${rs}`;
+  return `${c.port} · ${c.baud} ${c.dataBits}${parityChar(c.parity)}${c.stopBits} · ${FLOW[baseLang(lang)][c.flow]}${rs}`;
 }

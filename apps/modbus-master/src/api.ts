@@ -1,3 +1,4 @@
+import type { Lang } from "../../../shared/lang.ts";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { Fc, Framing, TableStats } from "./model";
 import { tally } from "@shared/usage";
@@ -166,7 +167,7 @@ export const EXCEPTIONS: Record<number, [string, string, string]> = {
 };
 
 /** 결과를 사람이 읽는 한 줄로 — 예외는 뜻과 할 일까지 */
-export function outcomeText(o: Outcome, lang: "ko" | "en"): string {
+export function outcomeText(o: Outcome, lang: Lang): string {
   const ko = lang === "ko";
   switch (o.result) {
     case "ok":

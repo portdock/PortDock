@@ -5,22 +5,24 @@
 import type { ReactNode } from "react";
 import { OPEN_SIDE_EVENT, useNarrow } from "./NarrowBar";
 import { ui, type Lang } from "./uiText";
+import { dicts } from "./lang";
+import { JA_FIRST } from "./ja/parts";
 import "./firstcard.css";
 
-const L = {
-  ko: {
+const ko = {
     hide: "다시 보지 않기",
     help: "도움말:",
     narrow: "창이 좁아 왼쪽 칸이 접혀 있습니다 — 아래에서 «왼쪽» 은 맨 위 왼쪽 «⚙ {b}» 단추로 펼치는 칸입니다.",
     open: "왼쪽 칸 펼치기",
-  },
-  en: {
+};
+export type FirstTextKey = keyof typeof ko;
+const en: typeof ko = {
     hide: "Don't show again",
     help: "Help:",
     narrow: "The window is narrow, so the left panel is folded — «left» below means the panel behind the «⚙ {b}» button at the top left.",
     open: "Open the left panel",
-  },
 };
+const L = dicts(ko, en, { ja: JA_FIRST });
 
 export interface FirstCardLink {
   label: string;

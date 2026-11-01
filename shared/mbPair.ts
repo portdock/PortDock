@@ -2,6 +2,7 @@
 // Serial(RTU, CRC 검사)·TCP(Modbus TCP, 트랜잭션 ID)가 함께 쓴다. 화면 없이 값만 — node --test shared/mbPair.test.ts.
 // 규칙: 응답 줄과 방향이 반대인 가장 가까운 Modbus 요청(같은 상대)을 찾고, 국번·함수·길이(바이트 수)가 맞고,
 // 그 요청 뒤로 같은 요청에 맞는 응답이 먼저 오지 않았을 때만 짝이다(RTU 는 가장 가까운 요청이 아니면 짝 없음, TCP 는 트랜잭션 ID 로 찾는다).
+import type { Lang } from "./lang.ts";
 import { mbFuncInfo, plcText } from "./modbusBuild.ts";
 
 export type Wire = "rtu" | "tcp";
@@ -215,7 +216,7 @@ const EXC: Record<number, [string, string]> = {
   10: ["게이트웨이 경로 없음", "Gateway Path Unavailable"],
   11: ["게이트웨이 대상 응답 없음", "Gateway Target Device Failed to Respond"],
 };
-export function exceptionText(code: number, lang: "ko" | "en"): string {
+export function exceptionText(code: number, lang: Lang): string {
   const c = code.toString(16).toUpperCase().padStart(2, "0");
   const e = EXC[code];
   if (!e) return lang === "ko" ? `${c} 알 수 없는 예외` : `${c} unknown exception`;

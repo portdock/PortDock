@@ -2,7 +2,8 @@
 // 화면(React) 없는 부분 — node --test shared/devices.test.ts 로 시험한다(Node 24 는 타입을 지우고 바로 돌린다).
 // 데이터 자체는 빌드 때 shared/deviceData.ts 가 묶는다.
 
-export type Lang = "ko" | "en";
+export type { Lang } from "./lang.ts";
+import { baseLang, type Lang } from "./lang.ts";
 export type DevTable = "coils" | "discrete-inputs" | "input-registers" | "holding-registers";
 export type DevType = "bit" | "u16" | "s16" | "u32" | "s32" | "f32" | "f64" | "string";
 export type DevOrder = "ABCD" | "CDAB" | "BADC" | "DCBA";
@@ -99,7 +100,7 @@ const scaleText = (s: number | undefined) => (s == null || s === 1 ? "" : String
 export function pointName(r: DevRegister, lang: Lang): string {
   const sc = scaleText(r.scale);
   const u = [sc && `×${sc}`, r.unit].filter(Boolean).join(" ");
-  return (u ? `${r.name[lang]} (${u})` : r.name[lang]).slice(0, 80);
+  return (u ? `${r.name[baseLang(lang)]} (${u})` : r.name[baseLang(lang)]).slice(0, 80);
 }
 
 /**
@@ -114,7 +115,7 @@ export function refText(ref: string, lang: Lang): string {
   return lang === "ko" ? ref : REF_WORDS_EN.reduce((s, [ko, en]) => s.split(ko).join(en), ref);
 }
 
-export const deviceName = (d: Device, lang: Lang) => `${d.manufacturer[lang]} ${d.model}`;
+export const deviceName = (d: Device, lang: Lang) => `${d.manufacturer[baseLang(lang)]} ${d.model}`;
 
 /** 목록 찾기 — 제조사·모델·형번·제목·종류에 모든 낱말이 들어 있으면 */
 export function matchDevice(d: Device, q: string): boolean {
@@ -260,13 +261,13 @@ export function commLine(d: Device, lang: Lang): string {
   // 데이터·패리티·정지가 다 있으면 «8E1», 아니면 아는 것만(매뉴얼에 없는 값은 비운다)
   if (c.dataBits && c.parity && c.stopBits) parts.push(`${c.baud ?? ""} ${c.dataBits}${p}${c.stopBits}`.trim());
   else {
-    const par = c.parity && { none: { ko: "패리티 없음", en: "no parity" }, even: { ko: "짝수 패리티", en: "even parity" }, odd: { ko: "홀수 패리티", en: "odd parity" } }[c.parity][lang];
+    const par = c.parity && { none: { ko: "패리티 없음", en: "no parity" }, even: { ko: "짝수 패리티", en: "even parity" }, odd: { ko: "홀수 패리티", en: "odd parity" } }[c.parity][baseLang(lang)];
     const known = [c.baud && String(c.baud), c.dataBits && (lang === "ko" ? `데이터 ${c.dataBits}` : `${c.dataBits} data bits`), par, c.stopBits && (lang === "ko" ? `정지 ${c.stopBits}` : `${c.stopBits} stop`)].filter(Boolean);
     if (known.length) parts.push(known.join(" "));
   }
   if (c.unit != null) parts.push(lang === "ko" ? `국번 ${c.unit}` : `Slave ID ${c.unit}`);
   if (c.tcpPort) parts.push(`TCP ${c.tcpPort}`);
   const am = { zero: { ko: "매뉴얼 주소 0 기준", en: "manual uses 0-based addresses" }, one: { ko: "매뉴얼 주소 1 기준", en: "manual uses 1-based addresses" }, plc: { ko: "매뉴얼 주소 40001 꼴", en: "manual uses 40001-style addresses" } }[c.addressing];
-  parts.push(am[lang]);
+  parts.push(am[baseLang(lang)]);
   return parts.join(" · ");
 }

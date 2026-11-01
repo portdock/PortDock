@@ -7,6 +7,7 @@
 // 사용자 폴더 경로는 «~» 로 가린다(hideUserPaths). 랜카드 이름·IPv4 주소·게이트웨이 주소는 들어간다(화면 안내 snPrivacy).
 // 장치는 인스턴스 ID 대신 «VID:PID + USB 포트 사슬(또는 위치)» 로 알아본다 — 같은 변환기를 다른 USB 포트에 꽂으면
 // VID:PID 가 양쪽에 하나뿐일 때 같은 장치로 보고 «USB 위치 바뀜» 으로 적는다.
+import { baseLang, type Lang } from "./lang.ts";
 import { hideUserPaths } from "./redact.ts";
 import { effective } from "./nicCheck.ts";
 import { pcItems, type PcCheck } from "./pcCheck.ts";
@@ -426,19 +427,19 @@ function comparePc(base: SnapPc, now: SnapPc, out: SnapChange[]) {
 // ---------------------------------------------------------------- 글
 
 /** 비교 결과 글(복사·AI) */
-export function snapDiffText(lang: "ko" | "en", base: Snapshot, now: Snapshot, d: SnapDiff): string {
+export function snapDiffText(lang: Lang, base: Snapshot, now: Snapshot, d: SnapDiff): string {
   const ko = lang === "ko";
   const out = [ko ? `## 지난 점검과 비교 — «${base.name}» (${fmtTime(base.savedAt)}) → 지금 (${fmtTime(now.savedAt)})` : `## Compared with baseline «${base.name}» (${fmtTime(base.savedAt)}) → now (${fmtTime(now.savedAt)})`];
   if (!d.changes.length) out.push(ko ? "바뀐 것 없음(읽은 범위)" : "Nothing changed (within what was read)");
-  for (const c of d.changes) out.push(`- [${SNAP_CHANGE_TEXT[c.change][lang]}] ${SECTION_TEXT[c.section][lang]} · ${c.target[lang]} · ${c.field[lang]}: ${c.before[lang]} → ${c.after[lang]}`);
+  for (const c of d.changes) out.push(`- [${SNAP_CHANGE_TEXT[c.change][baseLang(lang)]}] ${SECTION_TEXT[c.section][baseLang(lang)]} · ${c.target[baseLang(lang)]} · ${c.field[baseLang(lang)]}: ${c.before[baseLang(lang)]} → ${c.after[baseLang(lang)]}`);
   if (d.skipped.length) out.push(ko ? `(한쪽에서 읽지 않아 비교하지 않음: ${d.skipped.map((s) => SECTION_TEXT[s].ko).join(", ")})` : `(Not compared — not read on one side: ${d.skipped.map((s) => SECTION_TEXT[s].en).join(", ")})`);
   return out.join("\n");
 }
 
 /** 비교 결과 CSV(머리 줄 포함, BOM 없음) */
-export function snapDiffCsv(lang: "ko" | "en", d: SnapDiff): string {
+export function snapDiffCsv(lang: Lang, d: SnapDiff): string {
   const cell = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const head = ["change", "area", "item", "value", "before", "after"];
-  const lines = d.changes.map((c) => [SNAP_CHANGE_TEXT[c.change][lang], SECTION_TEXT[c.section][lang], c.target[lang], c.field[lang], c.before[lang], c.after[lang]].map(cell).join(","));
+  const lines = d.changes.map((c) => [SNAP_CHANGE_TEXT[c.change][baseLang(lang)], SECTION_TEXT[c.section][baseLang(lang)], c.target[baseLang(lang)], c.field[baseLang(lang)], c.before[baseLang(lang)], c.after[baseLang(lang)]].map(cell).join(","));
   return [head.join(","), ...lines].join("\r\n") + "\r\n";
 }

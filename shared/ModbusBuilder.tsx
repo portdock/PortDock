@@ -1,6 +1,7 @@
 // «Modbus 요청 만들기» — 국번(TCP 는 MBAP 의 Unit ID 칸)·함수·주소·개수(값)로 요청 바이트를 만든다. Serial(RTU)·TCP(Modbus TCP) 공통.
 // RTU: CRC 는 보내기 줄의 체크섬(CRC16 Modbus)이 붙인다. TCP: MBAP 머리(트랜잭션·프로토콜 0·길이·유닛)를 붙이고 CRC 는 없다.
 // onSend 를 넘기면(Serial) «보내기» 가 기본 버튼·Enter 가 되고 «입력칸에 넣기»·«목록에 추가» 는 보조. 안 넘기면 «입력칸에 넣기» 가 기본.
+import { baseLang } from "./lang.ts";
 import { useEffect, useMemo, useState } from "react";
 import { buildRequest, convertAddrText, MB_FUNCS, mbFuncInfo, type AddrMode, type MbForm } from "./modbusBuild";
 import { buildTcpRequest } from "./mbap";
@@ -125,7 +126,7 @@ export function ModbusBuilder({
   /** 창 아래 «따라하기 보기» — 도움말의 따라하기 절을 연다(넘기지 않으면 링크 없음) */
   onHelp?: () => void;
 }) {
-  const t = L[lang];
+  const t = L[baseLang(lang)];
   const tcp = wire === "tcp";
   const [form, setForm] = useState<MbForm>(() => load("mbForm", { slave: 1, fc: 3, addrText: "0", addrMode: "zero", qty: 10, valuesText: "" }));
   useEffect(() => store("mbForm", form), [form]);

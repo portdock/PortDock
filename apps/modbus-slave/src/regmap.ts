@@ -2,7 +2,8 @@
 // 화면(React) 없는 부분. 숫자 규칙은 백엔드 crates/core/src/regmap.rs 와 같다.
 // node --test apps/modbus-slave/src/regmap.test.ts 로 시험한다(Node 24 는 타입을 지우고 바로 돌린다 — enum 같은 TS 전용 문법은 쓰지 않는다).
 
-export type Lang = "ko" | "en";
+export type { Lang } from "../../../shared/lang.ts";
+import { baseLang, type Lang } from "../../../shared/lang.ts";
 export type Table = "coils" | "discrete-inputs" | "holding-registers" | "input-registers";
 export const TABLE_IDS: Table[] = ["coils", "discrete-inputs", "holding-registers", "input-registers"];
 export const isBits = (t: Table) => t === "coils" || t === "discrete-inputs";
@@ -355,11 +356,11 @@ const SM = {
   },
 };
 
-export const simKindName = (k: SimKindName, lang: Lang) => SM[lang][k];
+export const simKindName = (k: SimKindName, lang: Lang) => SM[baseLang(lang)][k];
 
 /** 설정 검사 — 틀리면 이유 */
 export function simCheck(s: SimCfg, lang: Lang): string | null {
-  const m = SM[lang];
+  const m = SM[baseLang(lang)];
   const nums = [s.step, s.min, s.max, s.amp, s.offset, s.waveMs, s.periodMs];
   if (nums.some((x) => typeof x !== "number" || !Number.isFinite(x))) return m.num;
   if (s.periodMs !== 0 && (s.periodMs < 50 || s.periodMs > 3_600_000)) return m.period;
@@ -371,7 +372,7 @@ export function simCheck(s: SimCfg, lang: Lang): string | null {
 
 /** 한 줄 설명(말풍선·목록 보기) — «증가 +1 (0~100, 끝에서 처음으로) · 1000ms 마다» */
 export function simSummary(s: SimCfg, lang: Lang): string {
-  const m = SM[lang];
+  const m = SM[baseLang(lang)];
   const when = s.periodMs === 0 ? m.onRead : m.every.replace("{a}", String(s.periodMs));
   let what: string;
   switch (s.kind) {
@@ -564,7 +565,7 @@ const TYPE_ALIASES: Record<string, VType> = {
  * 빈 type 은 u16(비트 표는 bit), 빈 order 는 ABCD, 빈 value 는 «값은 그대로».
  */
 export function parseCsv(text: string, lang: Lang = "ko"): { rows: CsvRow[]; errors: string[] } {
-  const m = CM[lang];
+  const m = CM[baseLang(lang)];
   const body = text.replace(/^﻿/, "");
   const first = body.split(/\r?\n/, 1)[0] ?? "";
   const sep = first.includes(",") ? "," : first.includes(";") ? ";" : first.includes("\t") ? "\t" : ",";

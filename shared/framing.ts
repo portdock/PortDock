@@ -1,4 +1,5 @@
 // 프레임 구분 설정 — 화면 모양과 Rust(serde) 모양 사이 변환
+import type { Lang } from "./lang.ts";
 
 export type FrameMode =
   | { kind: "gap"; gapMs: number }
@@ -36,7 +37,7 @@ const TERM_NAMES: Record<string, number[]> = {
  * 끝 문자 칸 해석 — 백엔드 parse_hex 와 같은 규칙(공백 , ; - 로 나눔, 0x 허용, 짝수 자리, «0D0A» 처럼 붙여 써도 됨)
  * + 이름(CR LF CRLF NUL STX ETX \r \n). 틀리면 bytes 는 비우고 error 에 이유.
  */
-export function parseTerminator(text: string, lang: "ko" | "en" = "ko"): { bytes: number[]; error: string | null } {
+export function parseTerminator(text: string, lang: Lang = "ko"): { bytes: number[]; error: string | null } {
   const ko = lang === "ko";
   const bytes: number[] = [];
   for (const token of text.split(/[\s,;-]+/)) {

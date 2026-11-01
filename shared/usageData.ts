@@ -2,6 +2,7 @@
 //
 // 받는 곳은 Aptabase(EU) 의 수집 주소 하나. 라이브러리·플러그인 없이 창을 닫을 때 POST 한 번.
 // 보내는 것은 아래 허용 목록에 있는 이름·속성뿐이고, 목록 밖이면 그 사건을 통째로 버린다.
+import { LANGS } from "./lang.ts";
 
 /**
  * Aptabase 앱 키(«A-EU-…»). 비워 두면 통계 기능 전체가 숨는다(묻는 카드·설정 칸·전송 모두).
@@ -75,7 +76,8 @@ export const SDK_VERSION = "portdock-usage@1";
 export const MAX_MINUTES = 7 * 24 * 60;
 export const MAX_COUNT = 1_000_000;
 const WINDOWS = ["10", "11", "?"];
-const LANGS = ["ko", "en"];
+// 화면 언어 코드만(0.11.0 — shared/lang.ts 의 목록). «ja-JP» 같은 지역 꼴·낯선 값은 «en»
+const LANG_CODES: readonly string[] = LANGS;
 const EDITIONS = ["installed", "portable"];
 
 /** Aptabase 형식의 세션 id — «시작 시각(초) × 10⁸ + 무작위» (서버가 7일 넘은 세션을 버리는 기준) */
@@ -93,7 +95,7 @@ const intIn = (v: unknown, lo: number, hi: number) => typeof v === "number" && N
  */
 export function allowed(e: UsageEvent): boolean {
   const s = e.systemProps;
-  if (!s || s.osName !== "Windows" || !WINDOWS.includes(s.osVersion) || !LANGS.includes(s.locale)) return false;
+  if (!s || s.osName !== "Windows" || !WINDOWS.includes(s.osVersion) || !LANG_CODES.includes(s.locale)) return false;
   if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(s.appVersion) || s.sdkVersion !== SDK_VERSION || typeof s.isDebug !== "boolean") return false;
   if (!/^\d{1,20}$/.test(e.sessionId) || Number.isNaN(Date.parse(e.timestamp))) return false;
   const p = e.props ?? {};
@@ -119,7 +121,7 @@ export function buildBatch(s: UsageSession): UsageEvent[] {
     isDebug: s.debug === true,
     osName: "Windows",
     osVersion: WINDOWS.includes(s.windows) ? s.windows : "?",
-    locale: LANGS.includes(s.lang) ? s.lang : "en",
+    locale: LANG_CODES.includes(s.lang) ? s.lang : "en",
     appVersion: s.version,
     sdkVersion: SDK_VERSION,
   };

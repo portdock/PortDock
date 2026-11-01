@@ -1,5 +1,6 @@
 // «응답 없음» 원인 후보 창(0.10.0) — 최근 요청 결과(폴링·한 번 읽기)를 shared/commDiag 로 나눠 원인 후보·확인 방법·가이드 링크를 보인다.
 // 읽기만 한다(보내는 요청 없음). 창이 열려 있는 동안 1초마다 새로 나눈다.
+import { baseLang } from "@shared/lang";
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { tip } from "@shared/tips";
@@ -46,7 +47,7 @@ export function DiagDialog({ lang, samples, wire, onClear, onClose }: { lang: La
             d.causes.map((c) => (
               <section key={c.id} className={`diag-cause ${c.level}`} data-cause={c.id}>
                 <h4>
-                  <span>{c.title[lang]}</span>
+                  <span>{c.title[baseLang(lang)]}</span>
                   <span className="diag-n">
                     {fill(t("diagCount"), { n: c.count })}/{d.total} · {c.level === "problem" ? t("diagLevelProblem") : t("diagLevelLook")}
                   </span>
@@ -65,13 +66,13 @@ export function DiagDialog({ lang, samples, wire, onClear, onClose }: { lang: La
                 <div className="diag-sub">{t("diagCandidates")}</div>
                 <ul>
                   {c.candidates.map((x, i) => (
-                    <li key={i}>{x[lang]}</li>
+                    <li key={i}>{x[baseLang(lang)]}</li>
                   ))}
                 </ul>
                 <div className="diag-sub">{t("diagChecks")}</div>
                 <ul>
                   {c.checks.map((x, i) => (
-                    <li key={i}>{x[lang]}</li>
+                    <li key={i}>{x[baseLang(lang)]}</li>
                   ))}
                 </ul>
                 <div className="diag-links">
@@ -85,7 +86,7 @@ export function DiagDialog({ lang, samples, wire, onClear, onClose }: { lang: La
                         open(l.url(lang));
                       }}
                     >
-                      {l.label[lang]}
+                      {l.label[baseLang(lang)]}
                     </a>
                   ))}
                 </div>

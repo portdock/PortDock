@@ -3,7 +3,7 @@
 // 시험: node --test shared/glossary.test.ts
 import type { HelpSection } from "./HelpDialog";
 
-type Lang = "ko" | "en";
+import { baseLang, type Lang } from "./lang.ts";
 
 /** 낱말 하나 — [이름, 설명] 한·영 */
 interface Term {
@@ -146,7 +146,7 @@ export function termsSection(lang: Lang, ids: readonly TermId[]): HelpSection {
     title: lang === "ko" ? "용어" : "Terms",
     id: "terms",
     body: ids.map((id) => {
-      const [name, desc] = TERMS[id][lang];
+      const [name, desc] = TERMS[id][baseLang(lang)];
       return `- ${name}: ${desc}`;
     }),
   };

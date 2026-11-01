@@ -47,6 +47,11 @@ test("언어·윈도우 값이 낯설면 정해진 값으로", () => {
   assert.equal(s.systemProps.osVersion, "?");
 });
 
+test("새 화면 언어(ja 등)는 언어 코드 그대로 보낸다", () => {
+  assert.equal(buildBatch({ ...base, lang: "ja" })[0].systemProps.locale, "ja");
+  assert.equal(buildBatch({ ...base, lang: "ja-JP" })[0].systemProps.locale, "en");
+});
+
 test("버전 꼴이 틀리면(경로·이름이 섞일 수 있는 자리) 통째로 버린다", () => {
   assert.deepEqual(buildBatch({ ...base, version: "0.3.0 (kim-pc)" }), []);
 });

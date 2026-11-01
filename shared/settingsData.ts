@@ -1,4 +1,5 @@
 // 공통 설정의 모양·기본값·고치기·내보내기/가져오기 — React·Tauri 없는 부분(시험: node --test shared/settingsData.test.ts)
+import { detectLang, isUiLang, type Lang } from "./lang.ts";
 import { isEncoding, type Encoding } from "./format.ts";
 
 export type Theme = "system" | "light" | "dark";
@@ -9,7 +10,7 @@ export type TimeFormat = "local" | "local-date" | "utc" | "elapsed";
 export type LogFormat = "hex" | "ascii" | "hex-ascii" | "csv";
 
 export interface Settings {
-  lang: "ko" | "en";
+  lang: Lang;
   theme: Theme;
   /** 글자 크기(px) */
   fontSize: number;
@@ -53,7 +54,7 @@ export interface Settings {
 }
 
 export const DEFAULTS: Settings = {
-  lang: typeof navigator !== "undefined" && navigator.language.startsWith("ko") ? "ko" : "en",
+  lang: detectLang(typeof navigator !== "undefined" ? navigator.language : ""),
   theme: "system",
   fontSize: 13,
   timeFormat: "local",
@@ -91,7 +92,7 @@ export function sanitize(s: Partial<Settings>): Settings {
   if (!["system", "light", "dark"].includes(v.theme)) v.theme = "system";
   if (!["local", "local-date", "utc", "elapsed"].includes(v.timeFormat)) v.timeFormat = "local";
   if (!["ask", "on", "off"].includes(v.autoReport)) v.autoReport = "ask";
-  if (v.lang !== "ko" && v.lang !== "en") v.lang = DEFAULTS.lang;
+  if (!isUiLang(v.lang)) v.lang = DEFAULTS.lang;
   v.alwaysOnTop = v.alwaysOnTop === true;
   v.keepAwake = v.keepAwake === true;
   v.autoConnect = v.autoConnect === true;
@@ -131,7 +132,7 @@ const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v ==
  * — 남이 준 파일로 몰래 켜지지 않게.
  * 도구별 값(명령 목록·표 등)은 읽는 쪽(`load`)이 종류를 보고, 그래도 화면이 깨지면 오류 화면의 «설정 초기화» 로 빠져나온다
  */
-export function importAll(app: string, json: string, lang: "ko" | "en" = "ko") {
+export function importAll(app: string, json: string, lang: Lang = "ko") {
   const notOurs = () => new Error(lang === "ko" ? "PortDock 설정 파일이 아닙니다" : "Not a PortDock settings file");
   let body: unknown;
   try {

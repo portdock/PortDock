@@ -5,7 +5,8 @@ import { hideUserPaths } from "./redact.ts";
 import { nicLines, type NicPurpose } from "./nicCheck.ts";
 import { pcLines, type PcCheck, type PcPurpose } from "./pcCheck.ts";
 
-export type Lang = "ko" | "en";
+export type { Lang } from "./lang.ts";
+import { baseLang, type Lang } from "./lang.ts";
 export interface Text {
   ko: string;
   en: string;
@@ -443,7 +444,7 @@ export function echoVerdict(r: EchoResult): Verdict {
 // ---------------------------------------------------------------- 볼 수 없는 것·안내
 
 /** 사이트 가이드 주소 */
-export const guideUrl = (lang: Lang, slug: string) => `https://portdock.dev/${lang === "en" ? "en/" : ""}guides/${slug}/`;
+export const guideUrl = (lang: Lang, slug: string) => `https://portdock.dev/${lang === "ko" ? "" : "en/"}guides/${slug}/`;
 
 export const CANNOT_SEE: Text[] = [
   t("RS-485 A/B(+/−) 뒤바뀜 — 제조사마다 이름이 다릅니다.", "RS-485 A/B (+/−) swapped — makers label them differently."),
@@ -502,7 +503,7 @@ export interface Bundle {
   pcPurpose?: PcPurpose;
 }
 
-const L = (lang: Lang, x: Text) => x[lang];
+const L = (lang: Lang, x: Text) => x[baseLang(lang)];
 const yn = (lang: Lang, v: boolean | null | undefined) => (v == null ? (lang === "ko" ? "읽지 못함" : "not read") : v ? (lang === "ko" ? "켜짐" : "on") : lang === "ko" ? "꺼짐" : "off");
 
 /** 문제 보고에 붙일 글 — 사용자 폴더 경로는 가린다 */

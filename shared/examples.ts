@@ -15,11 +15,11 @@ export interface ExampleCmd {
   ck: null;
   key: null;
 }
-type Lang = "ko" | "en";
+import { baseLang, type Lang } from "./lang.ts";
 
 const hex = (b: number[]) => b.map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 const P = { ko: "예: ", en: "e.g. " };
-const ex = (lang: Lang, name: string, text: string, mode: "hex" | "ascii", checksum: ChecksumKind | null, suffix: string): ExampleCmd => ({ name: P[lang] + name, text, mode, checksum, suffix, ck: null, key: null });
+const ex = (lang: Lang, name: string, text: string, mode: "hex" | "ascii", checksum: ChecksumKind | null, suffix: string): ExampleCmd => ({ name: P[baseLang(lang)] + name, text, mode, checksum, suffix, ck: null, key: null });
 
 /** 이름이 예시 이름인지(«예: »·«e.g. » 로 시작) */
 export const isExampleName = (n: string) => n.startsWith(P.ko) || n.startsWith(P.en);

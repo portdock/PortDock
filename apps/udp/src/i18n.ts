@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   lockedHint: "받는 주소·포트·브로드캐스트·멀티캐스트는 실행 중에 바꿀 수 없습니다. 보낼 곳·에코·체크섬 검사는 바로 적용됩니다.",
@@ -165,6 +168,6 @@ const en: typeof ko = {
   firewallHint: "The first start may show a Windows Firewall prompt (admin rights).",
 };
 
-export type Lang = "ko" | "en";
 export type Key = keyof typeof ko;
-export const dict = { ko, en };
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });

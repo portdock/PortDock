@@ -1,4 +1,5 @@
 // 칸 설정 창 — 이름·형식(u16~f64·문자열)·워드/바이트 순서·값 자동 변화를 한 번에 고친다.
+import { baseLang } from "@shared/lang";
 import { useEffect, useState } from "react";
 import { NumInput } from "@shared/NumInput";
 import { tip } from "@shared/tips";
@@ -32,7 +33,7 @@ const TYPE_LABEL: Record<VType, { ko: string; en: string }> = {
   f64: { ko: "F64 실수 (4칸)", en: "F64 double (4 regs)" },
   string: { ko: "문자열", en: "String" },
 };
-export const typeLabel = (t: VType, lang: Lang) => TYPE_LABEL[t][lang];
+export const typeLabel = (t: VType, lang: Lang) => TYPE_LABEL[t][baseLang(lang)];
 
 /** 숫자 칸(음수·소수) — 글자 그대로 두고 저장할 때 읽는다 */
 function FloatInput({ value, onChange, label, tipKey, lang }: { value: string; onChange: (s: string) => void; label: string; tipKey: string; lang: Lang }) {

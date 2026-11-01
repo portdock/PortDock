@@ -1,5 +1,7 @@
 // 공용 화면 조각(따라가기·로그 메뉴·명령 목록·알림·단축키·좁은 창)의 문구 — 모든 프로그램이 같은 말을 쓴다.
-export type Lang = "ko" | "en";
+import { dicts, type Lang } from "./lang.ts";
+import { JA_UI } from "./ja/ui.ts";
+export type { Lang } from "./lang.ts";
 
 const ko = {
   // ---- 따라가기
@@ -92,6 +94,8 @@ const ko = {
   copyDetail: "복사",
   copiedShort: "복사함",
   copyFailShort: "복사 못 함",
+  // ---- 언어 고르기(0.11.0)
+  language: "언어",
 };
 
 const en: typeof ko = {
@@ -174,9 +178,10 @@ const en: typeof ko = {
   copyDetail: "Copy",
   copiedShort: "Copied",
   copyFailShort: "Copy failed",
+  language: "Language",
 };
 
-export const UI = { ko, en };
+export const UI = dicts(ko, en, { ja: JA_UI });
 export type UiKey = keyof typeof ko;
 
 /** 공용 문구 + {a}·{n} 채우기 */

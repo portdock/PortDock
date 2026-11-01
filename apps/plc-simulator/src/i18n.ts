@@ -1,4 +1,7 @@
 // 한국어 기본, 영어 병행
+import { dicts } from "../../../shared/lang.ts";
+import { ja } from "./i18n.ja.ts";
+
 const ko = {
   helpTip: "도움말 (F1)",
   lockedHint: "시작한 동안에는 프로토콜·방식·주소·포트·프레임을 바꿀 수 없습니다",
@@ -525,6 +528,6 @@ const en: Record<keyof typeof ko, string> = {
   fdDone: "Wrote {n} cells from {a}",
 };
 
-export const dict = { ko, en };
-export type Lang = keyof typeof dict;
+export type { Lang } from "../../../shared/lang.ts";
+export const dict = dicts(ko, en, { ja });
 export type Key = keyof typeof ko;
