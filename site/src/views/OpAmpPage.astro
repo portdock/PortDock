@@ -7,14 +7,16 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { bandwidth, db, idealGain } from "../lib/opamp";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { msg } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/op-amp-gain/";
 const ohm = (r: number) => (r >= 1e6 ? `${r / 1e6}M` : r >= 1e3 ? `${r / 1e3}k` : `${r}`);
 const hz = (f: number) => (f >= 1e6 ? `${+(f / 1e6).toPrecision(3)} MHz` : f >= 1e3 ? `${+(f / 1e3).toPrecision(3)} kHz` : `${+f.toPrecision(3)} Hz`);
@@ -31,11 +33,13 @@ const pairs: [string, number, number][] = [
 ];
 const tRows = pairs.map(([t, rf, rg]) => {
   const g = idealGain(t as "noninv" | "inv", rf, rg);
-  return [t === "noninv" ? (ko ? "비반전" : "Non-inverting") : ko ? "반전" : "Inverting", `${ohm(rf)} / ${ohm(rg)}`, `${+g.toPrecision(4)}`, `${db(g).toFixed(1)} dB`, hz(bandwidth(1e6, rf, rg))];
+  return [t === "noninv" ? msg(lang, "비반전", "Non-inverting") : msg(lang, "반전", "Inverting"), `${ohm(rf)} / ${ohm(rg)}`, `${+g.toPrecision(4)}`, `${db(g).toFixed(1)} dB`, hz(bandwidth(1e6, rf, rg))];
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "op amp 증폭률 계산기 (비반전·반전·차동)",
+      seo: "op amp 증폭률 계산기 — 비반전·반전·차동 이득·dB — PortDock",
       desc: "Rf·Rg 로 op amp 비반전·반전·차동 증폭기의 이득·dB·출력 전압을 계산하고, 개루프 이득에 의한 오차, 대역폭, 원하는 이득의 표준 저항 값까지 봅니다.",
       topo: "회로",
       topos: [["noninv", "비반전 (1 + Rf/Rg)"], ["inv", "반전 (−Rf/Rin)"], ["diff", "차동 (Rf/Rin × (E2 − E1))"]],
@@ -94,9 +98,13 @@ const L = ko
       rLink: "합성 저항 계산기",
       srcTitle: "근거",
       src: "식은 Texas Instruments «Handbook of Operational Amplifier Applications»(SBOA092B) p.15·17·18(비반전·반전), p.23~25(가산·차동), p.27~28(그림 30 — 유한 이득 예 −9.987), p.31(dB), p.36~37(그림 40·41 — 대역폭)에서 옮겼고, 이 계산기가 그 예를 다시 내는지 시험으로 확인했습니다. 표준 저항 값은 Vishay 28372(IEC 60063 표). 개루프 이득·GBW·공통 모드 범위는 쓰는 op amp 의 데이터시트를 보세요.",
+      aEnd: ".",
+      rEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Op Amp Gain Calculator (Non-inverting, Inverting, Differential)",
+      seo: "Op Amp Gain Calculator: Non-inverting, Inverting, dB — PortDock",
       desc: "Op amp gain, dB and output for non-inverting, inverting and differential circuits from Rf and Rg, with open-loop gain error, bandwidth and E-series pairs.",
       topo: "Circuit",
       topos: [["noninv", "Non-inverting (1 + Rf/Rg)"], ["inv", "Inverting (−Rf/Rin)"], ["diff", "Differential (Rf/Rin × (E2 − E1))"]],
@@ -155,7 +163,10 @@ const L = ko
       rLink: "Parallel & Series Resistor Calculator",
       srcTitle: "Basis",
       src: "Formulas are from Texas Instruments' «Handbook of Operational Amplifier Applications» (SBOA092B) pp.15, 17, 18 (non-inverting, inverting), pp.23–25 (summing, differential), pp.27–28 (figure 30 — finite-gain example −9.987), p.31 (dB) and pp.36–37 (figures 40, 41 — bandwidth). Tests check that this calculator reproduces its example. Standard resistor values: Vishay 28372 (IEC 60063 tables). For open-loop gain, GBW and common-mode range, check your op amp's datasheet.",
-    };
+      aEnd: ".",
+      rEnd: ".",
+    }
+  : { ...page5(lang, "opAmp"), aLink: pageName(lang, "tools/adc/"), rLink: pageName(lang, "tools/parallel-resistor/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -163,17 +174,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "op amp 증폭률 계산기 — 비반전·반전·차동 이득·dB — PortDock" : "Op Amp Gain Calculator: Non-inverting, Inverting, dB — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["opAmp"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="oa">
+    <form class="calc card" id="oa" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.topo}<select id="topo">{L.topos.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
         <label class="fld">{L.rf}<input id="rf" class="mono" value="100k" spellcheck="false" autocomplete="off" /></label>
@@ -232,7 +243,7 @@ const ld = {
         ))
       }
       <p>
-        {L.aNote} <a href={url(lang, "tools/adc/")}>{L.aLink}</a>. {L.rNote} <a href={url(lang, "tools/parallel-resistor/")}>{L.rLink}</a>.
+        {L.aNote} <a href={link(lang, "tools/adc/")}>{L.aLink}</a>{L.aEnd} {L.rNote} <a href={link(lang, "tools/parallel-resistor/")}>{L.rLink}</a>{L.rEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -242,9 +253,10 @@ const ld = {
   </div>
   <script>
     import { bandwidth, db, diffPinVoltage, idealGain, noiseGain, realGain, rfFor, vout, type Topology } from "../lib/opamp";
+    import { msg, type Lang } from "../lib/tr";
     import { parseOhm } from "../lib/resistors";
     import type { ESeries } from "../lib/divider";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("oa")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("oa") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -284,7 +296,7 @@ const ld = {
         set("data-k", "pin", t === "diff" ? volt(diffPinVoltage(rf, rg, num("vin"))) : t === "noninv" ? volt(num("vin")) : "0 V");
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — Rf·Rg 는 0 보다 큰 저항(예 10k, 4k7), 전압은 숫자, 개루프 이득·GBW 는 0 보다 커야 합니다" : "Check the numbers — Rf and Rg are resistances above 0 (e.g. 10k, 4k7), voltages numeric, open-loop gain and GBW above 0";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — Rf·Rg 는 0 보다 큰 저항(예 10k, 4k7), 전압은 숫자, 개루프 이득·GBW 는 0 보다 커야 합니다", "Check the numbers — Rf and Rg are resistances above 0 (e.g. 10k, 4k7), voltages numeric, open-loop gain and GBW above 0");
         clear("data-k");
       }
       try {
@@ -295,7 +307,7 @@ const ld = {
         set("data-k2", "ge", `${p4(o.gain)} / ${p4((o.gain / target - 1) * 100)} %`);
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "목표 이득은 0 보다 커야 하고(비반전은 1 보다 커야 함), 위 Rg 가 맞아야 합니다" : "Target gain must be above 0 (above 1 for non-inverting) and Rg above must be valid";
+        $("err2").textContent = msg(lang, "목표 이득은 0 보다 커야 하고(비반전은 1 보다 커야 함), 위 Rg 가 맞아야 합니다", "Target gain must be above 0 (above 1 for non-inverting) and Rg above must be valid");
         clear("data-k2");
       }
     }

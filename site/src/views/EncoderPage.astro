@@ -6,18 +6,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { MULTS, pulseHz } from "../lib/encoder";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/encoder/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "엔코더 펄스 ↔ rpm 계산기",
+      seo: "엔코더 펄스 ↔ rpm 계산기 — PPR·체배·응답 주파수 — PortDock",
       desc: "엔코더 PPR·체배(1·2·4)로 회전수 ↔ 출력 주파수·카운트 속도, 센 카운트로 rpm, 최대 응답 주파수로 최대 rpm, 1카운트 각도·이동 거리를 계산합니다.",
       ppr: "분해능 PPR (한 바퀴 펄스, 한 상)",
       mult: "체배",
@@ -66,9 +69,13 @@ const L = ko
       msLink: "인버터 주파수 ↔ 모터 회전수",
       icNote: "그레이 코드 출력을 2진으로 바꾸려면",
       icLink: "정수·진수 변환기",
+      msEnd: ".",
+      icEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Encoder Pulses ↔ RPM Calculator",
+      seo: "Encoder Pulses to RPM Calculator: PPR, ×4, Frequency — PortDock",
       desc: "Encoder PPR and ×1/×2/×4 decoding → output frequency and count rate, rpm from counted pulses, max rpm from response frequency, angle per count.",
       ppr: "Resolution PPR (pulses per revolution, one channel)",
       mult: "Decoding",
@@ -117,7 +124,10 @@ const L = ko
       msLink: "VFD Frequency ↔ Motor RPM",
       icNote: "To convert Gray code output to binary, use the",
       icLink: "Integer & Base Converter",
-    };
+      msEnd: ".",
+      icEnd: ".",
+    }
+  : { ...page5(lang, "encoder"), msLink: pageName(lang, "tools/motor-speed/"), icLink: pageName(lang, "tools/integer/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -127,17 +137,17 @@ const PPRS = [100, 360, 500, 1000, 1024, 2048, 2500, 5000];
 const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseHz(r, p) / 1000).toFixed(3))]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "엔코더 펄스 ↔ rpm 계산기 — PPR·체배·응답 주파수 — PortDock" : "Encoder Pulses to RPM Calculator: PPR, ×4, Frequency — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["encoder"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="en">
+    <form class="calc card" id="en" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.ppr}<input id="ppr" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.mult}<select id="mult">{MULTS.map((m, i) => <option value={m} selected={m === 4}>{L.multOpt[i]}</option>)}</select></label>
@@ -191,7 +201,7 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
         ))
       }
       <p>
-        {L.msNote} <a href={url(lang, "tools/motor-speed/")}>{L.msLink}</a>. {L.icNote} <a href={url(lang, "tools/integer/")}>{L.icLink}</a>.
+        {L.msNote} <a href={link(lang, "tools/motor-speed/")}>{L.msLink}</a>{L.msEnd} {L.icNote} <a href={link(lang, "tools/integer/")}>{L.icLink}</a>{L.icEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -201,7 +211,8 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
   </div>
   <script>
     import { countRate, degPerCount, distPerCount, maxRpm, pulseHz, rpmFromCounts } from "../lib/encoder";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("en")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("en") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -240,7 +251,7 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
         }
         const cnt = num("cnt");
         const gate = num("gate");
-        set("c2r", Number.isFinite(cnt) && gate > 0 ? `${fx(rpmFromCounts(cnt, ppr, mult, gate / 1000), 3)} rpm (${ko ? "1카운트" : "1 count"} = ${fx(rpmFromCounts(1, ppr, mult, gate / 1000), 4)} rpm)` : "");
+        set("c2r", Number.isFinite(cnt) && gate > 0 ? `${fx(rpmFromCounts(cnt, ppr, mult, gate / 1000), 3)} rpm (${msg(lang, "1카운트", "1 count")} = ${fx(rpmFromCounts(1, ppr, mult, gate / 1000), 4)} rpm)` : "");
         const fmax = num("fmax") * 1000;
         if (fmax > 0) {
           const m = maxRpm(fmax, ppr);
@@ -249,13 +260,13 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
             const ok = Math.abs(rpm) <= m; // 역회전(음수)도 같은 주파수
             vd.className = `verdict ${ok ? "ok" : "fault"}`;
             vd.textContent = ok
-              ? ko ? `${fx(rpm, 1)} rpm 은 최대 응답 주파수 안(한 상 ${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)})` : `${fx(rpm, 1)} rpm is within the response frequency (${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)} per channel)`
-              : ko ? `${fx(rpm, 1)} rpm 은 최대 응답 주파수를 넘습니다(한 상 ${hz(pulseHz(rpm, ppr))} > ${hz(fmax)}) — PPR 을 낮추거나 더 빠른 입력이 필요합니다` : `${fx(rpm, 1)} rpm exceeds the response frequency (${hz(pulseHz(rpm, ppr))} > ${hz(fmax)} per channel) — lower the PPR or use a faster input`;
+              ? msg(lang, `${fx(rpm, 1)} rpm 은 최대 응답 주파수 안(한 상 ${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)})`, `${fx(rpm, 1)} rpm is within the response frequency (${hz(pulseHz(rpm, ppr))} ≤ ${hz(fmax)} per channel)`)
+              : msg(lang, `${fx(rpm, 1)} rpm 은 최대 응답 주파수를 넘습니다(한 상 ${hz(pulseHz(rpm, ppr))} > ${hz(fmax)}) — PPR 을 낮추거나 더 빠른 입력이 필요합니다`, `${fx(rpm, 1)} rpm exceeds the response frequency (${hz(pulseHz(rpm, ppr))} > ${hz(fmax)} per channel) — lower the PPR or use a faster input`);
           }
         } else set("max", "");
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — PPR 은 0 보다 커야 합니다" : "Check the numbers — PPR must be above 0";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — PPR 은 0 보다 커야 합니다", "Check the numbers — PPR must be above 0");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

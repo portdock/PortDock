@@ -7,19 +7,23 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { UNITS, convert, fmt } from "../lib/units";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { tx } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/units/";
 const QTY = ["flow", "torque", "power", "temperature"] as const;
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "산업 단위 변환기 — 유량·토크·전력·온도",
+      seo: "단위 변환기 — 유량·토크·kW 마력·온도 (산업용) — PortDock",
       desc: "현장에서 섞여 쓰는 단위를 한 번에 바꿉니다: 유량 m³/h·L/min·gpm, 토크 N·m·kgf·cm·lbf·ft, 전력 kW·마력(HP·PS)·kcal/h·냉동톤, 온도 °C·°F·K.",
       qty: "양",
       q: { flow: "유량(부피)", torque: "토크", power: "전력·마력", temperature: "온도" },
@@ -54,9 +58,12 @@ const L = ko
         ["Nm³/h(노멀) 도 바꿀 수 있나요?", "아니요. Nm³/h 는 «기준 온도·압력으로 환산한 기체 부피» 라서 m³/h 로 바꾸려면 실제 온도·압력과 그 Nm³ 의 기준 조건이 필요합니다. 기준 조건은 업계·제조사마다 다르니 유량계 사양서에서 확인합니다."],
       ],
       srcTitle: "출처",
+      pressEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Industrial Unit Converter — Flow, Torque, Power, Temperature",
+      seo: "Unit Converter: Flow, Torque, kW to HP, Temperature — PortDock",
       desc: "Units that get mixed on site: flow m³/h, L/min, gpm; torque N·m, kgf·cm, lbf·ft; power kW, horsepower (hp, PS), kcal/h, refrigeration tons; °C, °F, K.",
       qty: "Quantity",
       q: { flow: "Flow (volume)", torque: "Torque", power: "Power / horsepower", temperature: "Temperature" },
@@ -91,7 +98,9 @@ const L = ko
         ["Can it convert Nm³/h (normal)?", "No. Nm³/h is a gas volume referred to standard temperature and pressure, so converting to m³/h needs the actual temperature and pressure and the reference conditions of that Nm³, which differ between industries and makers — check the flowmeter specification."],
       ],
       srcTitle: "Sources",
-    };
+      pressEnd: ".",
+    }
+  : { ...page5(lang, "units"), pressLink: pageName(lang, "tools/pressure/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -109,20 +118,20 @@ const flowRows = [1, 5, 10, 50, 100].map((v) => FLOW_COLS.map((c) => fmt(convert
 const TQ_COLS = ["Nm", "kgfcm", "kgfm", "lbfft", "lbfin"];
 const tsym = (id: string) => UNITS.torque.find((u) => u.id === id)!.sym;
 const tqRows = [0.1, 1, 10, 100].map((v) => TQ_COLS.map((c) => fmt(convert("torque", v, "Nm", c), 5)));
-const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id: u.id, sym: u.sym, name: u.name[lang] }))]));
+const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id: u.id, sym: u.sym, name: tx(u.name, lang) }))]));
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "단위 변환기 — 유량·토크·kW 마력·온도 (산업용) — PortDock" : "Unit Converter: Flow, Torque, kW to HP, Temperature — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["units"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="uc" data-units={JSON.stringify(unitData)}>
+    <form class="calc card" id="uc" data-lang={lang} data-units={JSON.stringify(unitData)}>
       <div class="row">
         <label class="fld">{L.qty}<select id="q">{QTY.map((q) => <option value={q} selected={q === "power"}>{L.q[q]}</option>)}</select></label>
         <label class="fld">{L.val}<input id="v" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -136,7 +145,7 @@ const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id
           <tbody id="out"></tbody>
         </table>
       </div>
-      <p class="note">{L.press} <a href={url(lang, "tools/pressure/")}>{L.pressLink}</a>.</p>
+      <p class="note">{L.press} <a href={link(lang, "tools/pressure/")}>{L.pressLink}</a>{L.pressEnd}</p>
       <p class="note">{L.how}</p>
     </form>
 
@@ -189,10 +198,11 @@ const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id
   </div>
   <script>
     import { convert, fmt, type Qty } from "../lib/units";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("uc") as HTMLFormElement;
     const U = JSON.parse(form.dataset.units ?? "{}") as Record<string, { id: string; sym: string; name: string }[]>;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("uc")!.dataset.lang ?? "en") as Lang;
     const DEF: Record<string, string> = { flow: "m3h", torque: "Nm", power: "kW", temperature: "C" };
     function fillUnits() {
       const q = $<HTMLSelectElement>("q").value;
@@ -228,7 +238,7 @@ const unitData = Object.fromEntries(QTY.map((q) => [q, UNITS[q].map((u) => ({ id
         for (const td of cells) td.textContent = fmt(convert(q, v, from, td.dataset.k!, diff), 7);
         $("err").textContent = "";
       } catch {
-        $("err").textContent = q === "temperature" ? (ko ? "숫자를 확인하세요 — 절대 영도(−273.15 °C)보다 낮을 수 없습니다" : "Check the number — it cannot be below absolute zero (−273.15 °C)") : ko ? "숫자를 확인하세요" : "Check the number";
+        $("err").textContent = q === "temperature" ? (msg(lang, "숫자를 확인하세요 — 절대 영도(−273.15 °C)보다 낮을 수 없습니다", "Check the number — it cannot be below absolute zero (−273.15 °C)")) : msg(lang, "숫자를 확인하세요", "Check the number");
         for (const td of cells) td.textContent = "";
       }
     }

@@ -7,18 +7,22 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { RTD_R0, RTD_T_MAX, RTD_T_MIN, TC_TYPES, tcInvTempRange, tcTempRange } from "../lib/temperature";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { msg } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/temperature/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "Pt100·열전대 온도 환산",
+      seo: "Pt100·열전대 온도 환산 — 저항·mV 계산기·표 — PortDock",
       desc: "Pt100·Pt1000 저항과 K·J·T·E·N·R·S·B 열전대 mV 를 온도와 서로 바꿉니다. IEC 60751·NIST ITS-90 식, 냉접점 보정, 온도표 생성까지 브라우저에서.",
       rtdTitle: "측온저항체 (RTD)",
       sensor: "센서",
@@ -52,9 +56,19 @@ const L = ko
           "NIST 는 온도 → mV 기준 함수의 역함수를 구간별 근사식으로 냅니다. 이 도구는 그 근사식이 덮는 구간에서만 mV → 온도를 계산합니다. 예: K형 -200~1372 °C, B형 250~1820 °C.",
         ],
       ],
+      src1: "측온저항체: IEC 60751 의 Callendar–Van Dusen 식. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (0 °C 이상은 C = 0). 0 °C 이상의 저항 → 온도는 2차식의 근, 0 °C 아래는 반복 계산으로 풉니다.",
+      src2: ["열전대: NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175)가 공개한 기준 함수 E = Σ cᵢ·tⁱ (K형은 0 °C 위에 a₀·exp(a₁·(t − a₂)²) 를 더함)와 역함수 계수를", " 의 형별 파일에서 그대로 옮겼습니다. mV → 온도는 역함수로 첫 값을 잡은 뒤 기준 함수에 맞춰 다듬습니다. 이 도구의 온도 → mV 는 NIST 표(0.001 mV) 전부와 같은 값을 냅니다."],
+      rngHead: ["온도 → mV", "mV → 온도"],
+      mmNote: "온도 조절기·변환기의 값을 Modbus 로 읽어 보려면",
+      mmEnd: ".",
+      nNote: "NTC 서미스터(B 값·Steinhart–Hart)는",
+      nLink: "NTC 서미스터 계산기",
+      nEnd: " 를 쓰세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Pt100 & Thermocouple Converter",
+      seo: "Pt100 & Thermocouple Calculator: Ω, mV ↔ °C — PortDock",
       desc: "Convert Pt100/Pt1000 resistance and type K, J, T, E, N, R, S, B thermocouple mV to temperature and back. IEC 60751 and NIST ITS-90, with cold junction.",
       rtdTitle: "Resistance thermometer (RTD)",
       sensor: "Sensor",
@@ -88,7 +102,16 @@ const L = ko
           "NIST publishes the inverse of the temperature → mV reference function as piecewise approximations. This tool converts mV → temperature only where those approximations apply, e.g. type K −200 to 1372 °C, type B 250 to 1820 °C.",
         ],
       ],
-    };
+      src1: "RTD: the Callendar–Van Dusen equation of IEC 60751. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (C = 0 at or above 0 °C). Resistance → temperature uses the quadratic root at or above 0 °C and iteration below.",
+      src2: ["Thermocouples: the reference functions E = Σ cᵢ·tⁱ (type K adds a₀·exp(a₁·(t − a₂)²) above 0 °C) and inverse coefficients published in the NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175), copied from the per-type files at", ". mV → temperature starts from the inverse function and is refined against the reference function. Temperature → mV here matches every entry of the NIST tables (0.001 mV)."],
+      rngHead: ["Temperature → mV", "mV → temperature"],
+      mmNote: "To read temperature controllers or transmitters over Modbus, use",
+      mmEnd: ".",
+      nNote: "For NTC thermistors (B value, Steinhart–Hart), use the",
+      nLink: "NTC Thermistor Calculator",
+      nEnd: ".",
+    }
+  : { ...page5(lang, "temperature"), nLink: pageName(lang, "tools/ntc/") };
 const tcRanges = Object.fromEntries(TC_TYPES.map((t) => [t, { ref: tcTempRange(t), inv: tcInvTempRange(t) }]));
 const ld = {
   "@context": "https://schema.org",
@@ -100,15 +123,16 @@ const ld = {
 <Base
   lang={lang}
   title={L.title}
-  seoTitle={ko ? "Pt100·열전대 온도 환산 — 저항·mV 계산기·표 — PortDock" : "Pt100 & Thermocouple Calculator: Ω, mV ↔ °C — PortDock"}
+  seoTitle={L.seo}
   description={L.desc}
   path={PATH}
   ads
+  libText={["temperature"]}
 >
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -140,7 +164,7 @@ const ld = {
         <label class="fld" style="flex:0 0 160px">
           {L.type}
           <select id="ty">
-            {TC_TYPES.map((t) => <option value={t}>{ko ? `${t}형` : `Type ${t}`}</option>)}
+            {TC_TYPES.map((t) => <option value={t}>{msg(lang, `${t}형`, `Type ${t}`)}</option>)}
           </select>
         </label>
         <label class="fld">
@@ -169,7 +193,7 @@ const ld = {
           {L.sensor}
           <select id="ts">
             {RTD_R0.map((r) => <option value={`pt${r}`}>Pt{r}</option>)}
-            {TC_TYPES.map((t) => <option value={t} selected={t === "K"}>{ko ? `${t}형 열전대` : `Type ${t} thermocouple`}</option>)}
+            {TC_TYPES.map((t) => <option value={t} selected={t === "K"}>{msg(lang, `${t}형 열전대`, `Type ${t} thermocouple`)}</option>)}
           </select>
         </label>
         <label class="fld">
@@ -192,31 +216,13 @@ const ld = {
 
     <section class="prose">
       <h2>{L.srcTitle}</h2>
-      {
-        ko ? (
-          <>
-            <p>
-              측온저항체: IEC 60751 의 Callendar–Van Dusen 식. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (0 °C 이상은 C = 0). 0 °C 이상의 저항 → 온도는 2차식의 근, 0 °C 아래는 반복 계산으로 풉니다.
-            </p>
-            <p>
-              열전대: NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175)가 공개한 기준 함수 E = Σ cᵢ·tⁱ (K형은 0 °C 위에 a₀·exp(a₁·(t − a₂)²) 를 더함)와 역함수 계수를{" "}
-              <a href="https://its90.nist.gov/ThermoDownloads" rel="noopener">its90.nist.gov</a> 의 형별 파일에서 그대로 옮겼습니다. mV → 온도는 역함수로 첫 값을 잡은 뒤 기준 함수에 맞춰 다듬습니다. 이 도구의 온도 → mV 는 NIST 표(0.001 mV) 전부와 같은 값을 냅니다.
-            </p>
-          </>
-        ) : (
-          <>
-            <p>
-              RTD: the Callendar–Van Dusen equation of IEC 60751. R(t) = R0·[1 + A·t + B·t² + C·(t − 100)·t³], A = 3.9083×10⁻³, B = −5.775×10⁻⁷, C = −4.183×10⁻¹² (C = 0 at or above 0 °C). Resistance → temperature uses the quadratic root at or above 0 °C and iteration below.
-            </p>
-            <p>
-              Thermocouples: the reference functions E = Σ cᵢ·tⁱ (type K adds a₀·exp(a₁·(t − a₂)²) above 0 °C) and inverse coefficients published in the NIST ITS-90 Thermocouple Database (NIST SRD 60, NIST Monograph 175), copied from the per-type files at{" "}
-              <a href="https://its90.nist.gov/ThermoDownloads" rel="noopener">its90.nist.gov</a>. mV → temperature starts from the inverse function and is refined against the reference function. Temperature → mV here matches every entry of the NIST tables (0.001 mV).
-            </p>
-          </>
-        )
-      }
+      <p>{L.src1}</p>
+      <p>
+        {L.src2[0]}{" "}
+        <a href="https://its90.nist.gov/ThermoDownloads" rel="noopener">its90.nist.gov</a>{L.src2[1]}
+      </p>
       <table class="t">
-        <thead><tr><th>{L.type}</th><th>{ko ? "온도 → mV" : "Temperature → mV"}</th><th>{ko ? "mV → 온도" : "mV → temperature"}</th></tr></thead>
+        <thead><tr><th>{L.type}</th><th>{L.rngHead[0]}</th><th>{L.rngHead[1]}</th></tr></thead>
         <tbody>
           {
             TC_TYPES.map((t) => (
@@ -239,10 +245,10 @@ const ld = {
         ))
       }
       <p>
-        {ko ? "온도 조절기·변환기의 값을 Modbus 로 읽어 보려면" : "To read temperature controllers or transmitters over Modbus, use"} <a href={url(lang, "modbus-master/")}>PortDock Modbus Master</a>.
+        {L.mmNote} <a href={link(lang, "modbus-master/")}>PortDock Modbus Master</a>{L.mmEnd}
       </p>
       <p>
-        {ko ? "NTC 서미스터(B 값·Steinhart–Hart)는" : "For NTC thermistors (B value, Steinhart–Hart), use the"} <a href={url(lang, "tools/ntc/")}>{ko ? "NTC 서미스터 계산기" : "NTC Thermistor Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.nNote} <a href={link(lang, "tools/ntc/")}>{L.nLink}</a>{L.nEnd}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -264,17 +270,17 @@ const ld = {
     }
   </style>
   <script>
-    import { fixed as fmt, rtdResistance, rtdTemperature, steps, tcEmf, tcFromMeasured, tcMeasured, tcTempRange, RTD_T_MAX, RTD_T_MIN, type Lang, type TcType } from "../lib/temperature";
+    import { fixed as fmt, rtdResistance, rtdTemperature, steps, tcEmf, tcFromMeasured, tcMeasured, tcTempRange, RTD_T_MAX, RTD_T_MIN, type TcType } from "../lib/temperature";
+    import { msg, type Lang } from "../lib/tr";
     const root = document.getElementById("temp")!;
     const lang = (root.dataset.lang ?? "ko") as Lang;
-    const ko = lang === "ko";
     const ranges = JSON.parse(root.dataset.ranges ?? "{}") as Record<TcType, { ref: [number, number]; inv: [number, number] }>;
     const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as T;
     /** 숫자 읽기 — 쉼표 소수점도 받는다 */
     function num(el: HTMLInputElement): number {
       const s = el.value.trim().replace(",", ".");
       const v = s === "" ? NaN : Number(s);
-      if (!Number.isFinite(v)) throw new Error(ko ? `숫자가 아닙니다: «${el.value}»` : `Not a number: «${el.value}»`);
+      if (!Number.isFinite(v)) throw new Error(msg(lang, `숫자가 아닙니다: «${el.value}»`, `Not a number: «${el.value}»`));
       return v;
     }
 
@@ -385,7 +391,7 @@ const ld = {
         for (const t of steps(RTD_T_MIN, RTD_T_MAX, step)) rows.push(`<tr><td class="mono">${t}</td><td class="mono">${fmt(rtdResistance(t, R0), 3)}</td></tr>`);
       } else {
         const t0 = s as TcType;
-        th.textContent = ko ? `${t0}형 (mV)` : `Type ${t0} (mV)`;
+        th.textContent = msg(lang, `${t0}형 (mV)`, `Type ${t0} (mV)`);
         const [lo, hi] = tcTempRange(t0);
         for (const t of steps(lo, hi, step)) rows.push(`<tr><td class="mono">${t}</td><td class="mono">${fmt(tcEmf(t0, t), 3)}</td></tr>`);
       }

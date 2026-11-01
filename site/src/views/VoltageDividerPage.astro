@@ -7,18 +7,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { E_BASE } from "../lib/divider";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/voltage-divider/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "분압 저항 계산기 (E12·E24·E96)",
+      seo: "분압 저항 계산기 — E12·E24·E96 표준값·부하 — PortDock",
       desc: "입력·출력 전압으로 분압 저항을 구하고 E12·E24·E96 표준 저항 값 조합을 오차순으로 고릅니다. 부하 저항, 흐르는 전류·전력, 출력 저항, 허용차 범위까지.",
       vin: "입력 전압 Vin (V)",
       vout: "원하는 출력 Vout (V)",
@@ -73,9 +76,14 @@ const L = ko
       rpNote: "비가 아니라 저항 하나의 값을 두 개로 맞추려면",
       rpLink: "합성 저항 계산기 (직렬·병렬)",
       srcTitle: "출처",
+      adcEnd: ".",
+      ntcEnd: ".",
+      rpEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Voltage Divider Calculator (E12, E24, E96)",
+      seo: "Voltage Divider Calculator: E12, E24, E96 Resistors — PortDock",
       desc: "Divider resistors for a target output voltage and the closest E12, E24 or E96 standard pairs. Load resistance, current, power, output impedance, tolerance.",
       vin: "Input voltage Vin (V)",
       vout: "Target output Vout (V)",
@@ -130,7 +138,11 @@ const L = ko
       rpNote: "To make one resistance value from two resistors (rather than a ratio), use the",
       rpLink: "Parallel & Series Resistor Calculator",
       srcTitle: "Sources",
-    };
+      adcEnd: ".",
+      ntcEnd: ".",
+      rpEnd: ".",
+    }
+  : { ...page5(lang, "voltageDivider"), adcLink: pageName(lang, "tools/adc/"), ntcLink: pageName(lang, "tools/ntc/"), rpLink: pageName(lang, "tools/parallel-resistor/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -145,17 +157,17 @@ const e96rows: number[][] = [];
 for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v) => v / 100));
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "분압 저항 계산기 — E12·E24·E96 표준값·부하 — PortDock" : "Voltage Divider Calculator: E12, E24, E96 Resistors — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["voltageDivider"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="vd">
+    <form class="calc card" id="vd" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.vin}<input id="vin" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.vout}<input id="vout" class="mono" value="3.3" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -217,7 +229,7 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
         ))
       }
       <p>
-        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.ntcNote} <a href={url(lang, "tools/ntc/")}>{L.ntcLink}</a>. {L.rpNote} <a href={url(lang, "tools/parallel-resistor/")}>{L.rpLink}</a>.
+        {L.adcNote} <a href={link(lang, "tools/adc/")}>{L.adcLink}</a>{L.adcEnd} {L.ntcNote} <a href={link(lang, "tools/ntc/")}>{L.ntcLink}</a>{L.ntcEnd} {L.rpNote} <a href={link(lang, "tools/parallel-resistor/")}>{L.rpLink}</a>{L.rpEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -227,7 +239,8 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
   </div>
   <script>
     import { bestPairs, divOut, solveR2, tolRange, type ESeries } from "../lib/divider";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("vd")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("vd") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -265,9 +278,9 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
           tbody.append(tr);
         }
         // 비가 아주 작거나 크면(예: 1000 V → 1 mV) 합계 범위 안에 조합이 없다 — 빈 표만 남기지 않는다(10/23)
-        $("err").textContent = ps.length ? "" : ko ? "이 합계 저항 범위(⅓ ~ 3배)에서는 맞는 조합이 없습니다 — 합계 저항이나 전압을 바꿔 보세요" : "No pair fits this total-resistance range (⅓ to 3×) — change the total or the voltages";
+        $("err").textContent = ps.length ? "" : msg(lang, "이 합계 저항 범위(⅓ ~ 3배)에서는 맞는 조합이 없습니다 — 합계 저항이나 전압을 바꿔 보세요", "No pair fits this total-resistance range (⅓ to 3×) — change the total or the voltages");
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 출력은 0 보다 크고 입력보다 작아야 합니다" : "Check the numbers — the output must be above 0 and below the input";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 출력은 0 보다 크고 입력보다 작아야 합니다", "Check the numbers — the output must be above 0 and below the input");
       }
       try {
         const r1 = num("r1") * 1000;
@@ -294,7 +307,7 @@ for (let i = 0; i < 96; i += 12) e96rows.push(E_BASE.E96.slice(i, i + 12).map((v
         } else set("tol", "");
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "입력 전압과 저항 값을 확인하세요 — 저항은 0 보다 커야 합니다" : "Check the input voltage and resistor values — resistors must be above 0";
+        $("err2").textContent = msg(lang, "입력 전압과 저항 값을 확인하세요 — 저항은 0 보다 커야 합니다", "Check the input voltage and resistor values — resistors must be above 0");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

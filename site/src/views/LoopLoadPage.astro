@@ -7,19 +7,22 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { IEC_SIZES, AWGS, awg, awgName } from "../lib/wire";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/loop-load/";
 const SIZES = [...IEC_SIZES.filter((a) => a <= 2.5).map((a) => ({ v: a, n: `${a} mm²` })), ...AWGS.filter((n) => n >= 14 && n <= 24).map((n) => ({ v: awg(n).area, n: `${awgName(n)} (${awg(n).area.toFixed(3)} mm²)` }))];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "4–20mA 루프 부하 계산기",
+      seo: "4–20mA 루프 부하 계산기 — 전원 전압·250Ω·케이블 거리 — PortDock",
       desc: "2선식 4–20mA 루프의 전원 전압으로 입력 저항(250 Ω)·선 저항·표시기를 감당할 수 있는지, 전송기에 남는 전압과 최대 부하 저항·최대 케이블 거리를 계산합니다.",
       supply: "루프 전원(V)",
       txMin: "전송기 최소 동작 전압(V)",
@@ -69,9 +72,14 @@ const L = ko
       ],
       scaleNote: "전류를 공학값·PLC 카운트로 바꾸려면",
       scaleLink: "4–20mA 환산 계산기",
+      figAlt: "2선식 4–20mA 루프: 24 V 전원에서 전송기, 선 저항, 250 Ω 입력 저항을 지나 돌아오는 직렬 회로와 각 부분의 전압 몫",
+      figCap: "전원 전압은 전송기·선·입력 저항이 나눠 씁니다. 20 mA 에서 250 Ω 이 5 V, 0.75 mm² 선 편도 1 km(왕복 약 46 Ω)가 약 0.9 V 를 쓰면 전송기에 약 18.1 V 가 남습니다.",
+      scaleEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "4–20 mA Loop Load Calculator",
+      seo: "4–20 mA Loop Load Calculator: Supply, 250 Ω, Cable — PortDock",
       desc: "Can a 2-wire 4–20 mA loop supply drive the 250 Ω input, cable and indicators? Voltage left at the transmitter, maximum load resistance and cable length.",
       supply: "Loop supply (V)",
       txMin: "Transmitter minimum voltage (V)",
@@ -121,26 +129,30 @@ const L = ko
       ],
       scaleNote: "To convert the current to engineering units or PLC counts, use the",
       scaleLink: "4–20 mA Scaling Calculator",
-    };
+      figAlt: "Two-wire 4–20 mA loop: a 24 V supply, the transmitter, cable resistance and a 250 Ω input resistor in series, with the voltage share of each part",
+      figCap: "The supply is shared by the transmitter, cable and input resistor. At 20 mA, 250 Ω takes 5 V and 1 km of 0.75 mm² cable (about 46 Ω out and back) about 0.9 V, leaving about 18.1 V for the transmitter.",
+      scaleEnd: ".",
+    }
+  : { ...page5(lang, "loopLoad"), scaleLink: pageName(lang, "tools/4-20ma/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: L.faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
 };
-const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
+const fig = `/img/guides/4-20ma-budget.${lang === "ko" ? "ko" : "en"}.svg`;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "4–20mA 루프 부하 계산기 — 전원 전압·250Ω·케이블 거리 — PortDock" : "4–20 mA Loop Load Calculator: Supply, 250 Ω, Cable — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["loopLoad"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ll" data-t={JSON.stringify({ ok: L.ok, ng: L.ng })}>
+    <form class="calc card" id="ll" data-lang={lang} data-t={JSON.stringify({ ok: L.ok, ng: L.ng })}>
       <div class="row">
         <label class="fld">{L.supply}<input id="supply" class="mono" value="24" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.txMin}<input id="txMin" class="mono" value="12" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -174,8 +186,8 @@ const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
 
     <section class="prose">
       <figure class="fig">
-        <img src={fig} width="780" height="300" alt={ko ? "2선식 4–20mA 루프: 24 V 전원에서 전송기, 선 저항, 250 Ω 입력 저항을 지나 돌아오는 직렬 회로와 각 부분의 전압 몫" : "Two-wire 4–20 mA loop: a 24 V supply, the transmitter, cable resistance and a 250 Ω input resistor in series, with the voltage share of each part"} loading="lazy" decoding="async" />
-        <figcaption>{ko ? "전원 전압은 전송기·선·입력 저항이 나눠 씁니다. 20 mA 에서 250 Ω 이 5 V, 0.75 mm² 선 편도 1 km(왕복 약 46 Ω)가 약 0.9 V 를 쓰면 전송기에 약 18.1 V 가 남습니다." : "The supply is shared by the transmitter, cable and input resistor. At 20 mA, 250 Ω takes 5 V and 1 km of 0.75 mm² cable (about 46 Ω out and back) about 0.9 V, leaving about 18.1 V for the transmitter."}</figcaption>
+        <img src={fig} width="780" height="300" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
       </figure>
       <h2>{L.fTitle}</h2>
       <ul>{L.formula.map((f) => <li class="mono">{f}</li>)}</ul>
@@ -194,7 +206,7 @@ const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
         ))
       }
       <p>
-        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>.
+        {L.scaleNote} <a href={link(lang, "tools/4-20ma/")}>{L.scaleLink}</a>{L.scaleEnd}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -202,6 +214,7 @@ const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
   </div>
   <script>
     import { loop } from "../lib/loopLoad";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("ll") as HTMLFormElement;
     const T = JSON.parse(form.dataset.t ?? "{}") as { ok: string; ng: string };
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
@@ -219,7 +232,7 @@ const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
       const s = x.toFixed(d);
       return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("ll")!.dataset.lang ?? "en") as Lang;
     function run() {
       const err = $("err");
       const verdict = $("verdict");
@@ -248,7 +261,7 @@ const fig = `/img/guides/4-20ma-budget.${lang}.svg`;
         verdict.className = "verdict " + (r.ok ? "ok" : "fault");
         verdict.textContent = r.ok ? T.ok : T.ng;
       } catch {
-        err.textContent = ko ? "숫자를 확인하세요 — 전류는 0 보다 크고, 저항·전압 강하는 0 이상" : "Check the numbers — current above 0, resistances and drops 0 or more";
+        err.textContent = msg(lang, "숫자를 확인하세요 — 전류는 0 보다 크고, 저항·전압 강하는 0 이상", "Check the numbers — current above 0, resistances and drops 0 or more");
         verdict.textContent = "";
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }

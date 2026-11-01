@@ -7,18 +7,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { SIGS, lsb, snrIdeal } from "../lib/adc";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/adc/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "ADC 분해능·스케일링 계산기",
+      seo: "ADC 분해능 계산기 — LSB·4–20mA·0–10V 스케일링 — PortDock",
       desc: "ADC 비트 수와 기준 전압으로 1 LSB·코드 ↔ 전압을 계산하고, 4–20mA(션트 저항)·0–10V(분압) 입력을 공학값으로 환산해 1카운트가 몇 bar·°C 인지 보여 줍니다.",
       aTitle: "ADC",
       bits: "분해능 (비트)",
@@ -78,9 +81,17 @@ const L = ko
       rcNote: "입력 필터는",
       rcLink: "RC 시정수·차단 주파수 계산기",
       srcTitle: "출처",
+      aEnd: ".",
+      dEnd: ".",
+      rcEnd: ".",
+      oNote: "작은 신호를 ADC 범위로 키우는 증폭기는",
+      oLink: "op amp 증폭률 계산기",
+      oEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "ADC Resolution & Scaling Calculator",
+      seo: "ADC Resolution Calculator: LSB, 4–20 mA, 0–10 V Scaling — PortDock",
       desc: "ADC bits and reference → 1 LSB and code ↔ voltage. Scale 4–20 mA (shunt) or 0–10 V (divider) inputs to engineering units and see what a count is worth.",
       aTitle: "ADC",
       bits: "Resolution (bits)",
@@ -140,7 +151,14 @@ const L = ko
       rcNote: "For the input filter, use the",
       rcLink: "RC Time Constant & Cut-off Calculator",
       srcTitle: "Sources",
-    };
+      aEnd: ".",
+      dEnd: ".",
+      rcEnd: ".",
+      oNote: "To amplify a small signal to the ADC range, use the",
+      oLink: "Op Amp Gain Calculator",
+      oEnd: ".",
+    }
+  : { ...page5(lang, "adc"), aLink: pageName(lang, "tools/4-20ma/"), dLink: pageName(lang, "tools/voltage-divider/"), rcLink: pageName(lang, "tools/rc-filter/"), oLink: pageName(lang, "tools/op-amp-gain/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -154,17 +172,17 @@ const mv = (v: number) => (v >= 1e-3 ? `${+(v * 1e3).toPrecision(4)} mV` : `${+(
 const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleString("en-US"), mv(lsb(3.3, b)), mv(lsb(5, b)), mv(lsb(10, b)), `${snrIdeal(b).toFixed(2)} dB`]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "ADC 분해능 계산기 — LSB·4–20mA·0–10V 스케일링 — PortDock" : "ADC Resolution Calculator: LSB, 4–20 mA, 0–10 V Scaling — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["adc"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="ad" data-kc={L.kc} data-kv={L.kv}>
+    <form class="calc card" id="ad" data-lang={lang} data-kc={L.kc} data-kv={L.kv}>
       <h2>{L.aTitle}</h2>
       <div class="row">
         <label class="fld">{L.bits}<input id="bits" class="mono" value="12" list="bitlist" inputmode="numeric" spellcheck="false" autocomplete="off" />
@@ -224,7 +242,7 @@ const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleStr
         ))
       }
       <p>
-        {L.aNote} <a href={url(lang, "tools/4-20ma/")}>{L.aLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.rcNote} <a href={url(lang, "tools/rc-filter/")}>{L.rcLink}</a>. {ko ? "작은 신호를 ADC 범위로 키우는 증폭기는" : "To amplify a small signal to the ADC range, use the"} <a href={url(lang, "tools/op-amp-gain/")}>{ko ? "op amp 증폭률 계산기" : "Op Amp Gain Calculator"}</a>.
+        {L.aNote} <a href={link(lang, "tools/4-20ma/")}>{L.aLink}</a>{L.aEnd} {L.dNote} <a href={link(lang, "tools/voltage-divider/")}>{L.dLink}</a>{L.dEnd} {L.rcNote} <a href={link(lang, "tools/rc-filter/")}>{L.rcLink}</a>{L.rcEnd} {L.oNote} <a href={link(lang, "tools/op-amp-gain/")}>{L.oLink}</a>{L.oEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -234,7 +252,8 @@ const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleStr
   </div>
   <script>
     import { SIGS, codeToEng, codeToSig, codes, lsb, qRms, scale, snrIdeal, toCode, toVolt, type ScaleIn } from "../lib/adc";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("ad")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("ad") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -292,14 +311,14 @@ const rows = [8, 10, 12, 14, 16, 24].map((b) => [String(b), (2 ** b).toLocaleStr
         set("sigv", Number.isFinite(code) ? `${sig(codeToSig(x, code))} ${su}` : "");
         if (r.clipped) {
           vd.className = "verdict fault";
-          vd.textContent = ko ? `상한이 잘림 — ${s.hi} ${su} 가 ${volt(r.vHi)} 로 기준 전압 끝에 닿습니다. 션트·분압비를 줄이거나 기준 전압을 올리세요` : `Top clipped — ${s.hi} ${su} gives ${volt(r.vHi)}, at the reference limit. Lower the shunt or ratio, or raise the reference`;
+          vd.textContent = msg(lang, `상한이 잘림 — ${s.hi} ${su} 가 ${volt(r.vHi)} 로 기준 전압 끝에 닿습니다. 션트·분압비를 줄이거나 기준 전압을 올리세요`, `Top clipped — ${s.hi} ${su} gives ${volt(r.vHi)}, at the reference limit. Lower the shunt or ratio, or raise the reference`);
         } else {
           vd.className = "verdict ok";
-          vd.textContent = ko ? `상한 ${volt(r.vHi)} — 기준 전압의 ${fx(r.headroom, 1)} % 가 여유로 남습니다` : `High end ${volt(r.vHi)} — ${fx(r.headroom, 1)} % of the reference left as headroom`;
+          vd.textContent = msg(lang, `상한 ${volt(r.vHi)} — 기준 전압의 ${fx(r.headroom, 1)} % 가 여유로 남습니다`, `High end ${volt(r.vHi)} — ${fx(r.headroom, 1)} % of the reference left as headroom`);
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 비트는 1~32 정수, 기준 전압·배율은 0 보다 크고, 공학값 하한·상한은 달라야 합니다" : "Check the numbers — bits 1–32 (integer), reference and scale above 0, engineering low and high must differ";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 비트는 1~32 정수, 기준 전압·배율은 0 보다 크고, 공학값 하한·상한은 달라야 합니다", "Check the numbers — bits 1–32 (integer), reference and scale above 0, engineering low and high must differ");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

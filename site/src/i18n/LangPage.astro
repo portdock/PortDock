@@ -1,6 +1,6 @@
 ---
 // 추가 언어(ja 등) 쪽 하나를 그린다 — pages/<언어>/[...path].astro 가 부른다. 쪽 이름 → 화면(views/) 표.
-// 번역 범위(scope.ts SCOPE·SCOPE2·SCOPE3·SCOPE4)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
+// 번역 범위(scope.ts SCOPE·SCOPE2~SCOPE5)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
 import type { ExtraLang } from "./langs";
 import { pageOf, type AnyPageId, type AnyScopePath } from "./scope";
 import Home from "../views/Home.astro";
@@ -49,6 +49,18 @@ import SpiPage from "../views/SpiPage.astro";
 import UartWaveformPage from "../views/UartWaveformPage.astro";
 import WebSerialPage from "../views/WebSerialPage.astro";
 import LogicCapturePage from "../views/LogicCapturePage.astro";
+import AdcPage from "../views/AdcPage.astro";
+import EncoderPage from "../views/EncoderPage.astro";
+import LoopLoadPage from "../views/LoopLoadPage.astro";
+import NtcPage from "../views/NtcPage.astro";
+import OpAmpPage from "../views/OpAmpPage.astro";
+import RcFilterPage from "../views/RcFilterPage.astro";
+import TemperaturePage from "../views/TemperaturePage.astro";
+import VoltageDividerPage from "../views/VoltageDividerPage.astro";
+import GigeBandwidthPage from "../views/GigeBandwidthPage.astro";
+import DecibelPage from "../views/DecibelPage.astro";
+import PressurePage from "../views/PressurePage.astro";
+import UnitsPage from "../views/UnitsPage.astro";
 
 interface Props {
   lang: ExtraLang;
@@ -104,6 +116,19 @@ const VIEWS = {
   uartWaveform: UartWaveformPage,
   webSerial: WebSerialPage,
   logicCapture: LogicCapturePage,
+  // 5차 묶음(scope.ts SCOPE5 — 언어별로 번역된 쪽만 그려진다)
+  adc: AdcPage,
+  encoder: EncoderPage,
+  loopLoad: LoopLoadPage,
+  ntc: NtcPage,
+  opAmp: OpAmpPage,
+  rcFilter: RcFilterPage,
+  temperature: TemperaturePage,
+  voltageDivider: VoltageDividerPage,
+  gigeBandwidth: GigeBandwidthPage,
+  decibel: DecibelPage,
+  pressure: PressurePage,
+  units: UnitsPage,
 } satisfies Record<AnyPageId, unknown>;
 const { lang, path } = Astro.props;
 const View = VIEWS[pageOf(path)];

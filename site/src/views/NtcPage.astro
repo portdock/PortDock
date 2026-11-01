@@ -5,18 +5,21 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/ntc/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "NTC 서미스터 계산기",
+      seo: "NTC 서미스터 계산기 — 온도·저항·B값·Steinhart–Hart — PortDock",
       desc: "NTC 서미스터 저항 ↔ 온도를 B 정수 식·Steinhart–Hart 식으로 계산하고 분압 전압·ADC 값, 온도표, 자기 발열까지 봅니다(예: 10k B3950).",
       model: "식",
       models: ["B 정수 (R25·B 값)", "Steinhart–Hart (세 점)"],
@@ -72,9 +75,17 @@ const L = ko
       srcTitle: "출처",
       tNote: "Pt100·열전대 온도 환산은",
       tLink: "Pt100·열전대 온도 환산",
+      tEnd: ".",
+      rdNote: "고정 저항을 표준 값으로 고르려면",
+      rdLink: "분압 저항 계산기",
+      rdMid: ", ADC 1카운트의 크기는 ",
+      adLink: "ADC 분해능 계산기",
+      rdEnd: " 를 쓰세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "NTC Thermistor Calculator",
+      seo: "NTC Thermistor Calculator: Beta, Steinhart–Hart, ADC — PortDock",
       desc: "NTC thermistor resistance ↔ temperature by B (beta) value or Steinhart–Hart, with divider voltage, ADC counts, a table and self-heating (e.g. 10k B3950).",
       model: "Equation",
       models: ["B value (R25, B)", "Steinhart–Hart (three points)"],
@@ -130,7 +141,14 @@ const L = ko
       srcTitle: "Sources",
       tNote: "For Pt100 and thermocouples, use the",
       tLink: "Pt100 & Thermocouple Converter",
-    };
+      tEnd: ".",
+      rdNote: "To pick the fixed resistor from standard values, use the",
+      rdLink: "Voltage Divider Calculator",
+      rdMid: "; for the size of one ADC count, the ",
+      adLink: "ADC Resolution Calculator",
+      rdEnd: ".",
+    }
+  : { ...page5(lang, "ntc"), tLink: pageName(lang, "tools/temperature/"), rdLink: pageName(lang, "tools/voltage-divider/"), adLink: pageName(lang, "tools/adc/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -144,17 +162,17 @@ const SRC = [
 const inp = (id: string, v: string) => ({ id, v });
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "NTC 서미스터 계산기 — 온도·저항·B값·Steinhart–Hart — PortDock" : "NTC Thermistor Calculator: Beta, Steinhart–Hart, ADC — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ntc"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="nt">
+    <form class="calc card" id="nt" data-lang={lang}>
       <label class="fld">{L.model}<select id="model"><option value="b" selected>{L.models[0]}</option><option value="sh">{L.models[1]}</option></select></label>
       <div class="row" id="bRow">
         <label class="fld">{L.r0}<input id="r0" class="mono" value="10000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -226,10 +244,10 @@ const inp = (id: string, v: string) => ({ id, v });
         ))
       }
       <p>
-        {L.tNote} <a href={url(lang, "tools/temperature/")}>{L.tLink}</a>.
+        {L.tNote} <a href={link(lang, "tools/temperature/")}>{L.tLink}</a>{L.tEnd}
       </p>
       <p>
-        {ko ? "고정 저항을 표준 값으로 고르려면" : "To pick the fixed resistor from standard values, use the"} <a href={url(lang, "tools/voltage-divider/")}>{ko ? "분압 저항 계산기" : "Voltage Divider Calculator"}</a>{ko ? ", ADC 1카운트의 크기는 " : "; for the size of one ADC count, the "}<a href={url(lang, "tools/adc/")}>{ko ? "ADC 분해능 계산기" : "ADC Resolution Calculator"}</a>{ko ? " 를 쓰세요." : "."}
+        {L.rdNote} <a href={link(lang, "tools/voltage-divider/")}>{L.rdLink}</a>{L.rdMid}<a href={link(lang, "tools/adc/")}>{L.adLink}</a>{L.rdEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -239,7 +257,8 @@ const inp = (id: string, v: string) => ({ id, v });
   </div>
   <script>
     import { adcCode, betaR, betaT, divider, lsb, ntcFromV, selfHeat, shFit, shR, shT, type SH } from "../lib/ntc";
-    const ko = document.documentElement.lang === "ko";
+    import { msg, type Lang } from "../lib/tr";
+    const lang = (document.getElementById("nt")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("nt") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -338,7 +357,7 @@ const inp = (id: string, v: string) => ({ id, v });
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 저항·B 값은 0 보다 크고, 세 점은 «온도, 저항» 꼴로 서로 달라야 합니다" : "Check the numbers — resistances and B above 0; three points as «temperature, resistance», all different";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 저항·B 값은 0 보다 크고, 세 점은 «온도, 저항» 꼴로 서로 달라야 합니다", "Check the numbers — resistances and B above 0; three points as «temperature, resistance», all different");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

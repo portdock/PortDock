@@ -8,17 +8,20 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { LEVEL_UNITS, dbToAmp, dbToPower, levels } from "../lib/decibel";
 import { fmt } from "../lib/units";
-import { type Lang } from "../data/tools";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { ui } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/db/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "dB·dBm 변환기",
+      seo: "dB·dBm 변환기 — dBm mW W·dBµV·dBu·전압 비 — PortDock",
       desc: "dBm ↔ mW·W, dBW, 그리고 저항(50·75·600 Ω)을 기준으로 dBµV·dBV·dBu·전압까지 바꾸고, 전력 비·전압 비를 dB 로, dB 를 비로 계산합니다. 무선 RSSI·케이블 손실 확인용.",
       lvTitle: "레벨 변환",
       val: "값",
@@ -62,8 +65,10 @@ const L = ko
       ],
       srcTitle: "출처",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "dB & dBm Converter",
+      seo: "dBm to mW, Watts & dBµV Converter (dB Calculator) — PortDock",
       desc: "Convert dBm ↔ mW and W, dBW, and for 50, 75 or 600 Ω dBµV, dBV, dBu and volts; power or voltage ratios ↔ dB. For RSSI and cable loss.",
       lvTitle: "Level conversion",
       val: "Value",
@@ -106,7 +111,8 @@ const L = ko
         ["What is the difference between dBV and dBu?", "The references are 1 V and 0.775 V, so dBu reads about 2.2 dB higher for the same voltage (0 dBV ≈ +2.2 dBu)."],
       ],
       srcTitle: "Sources",
-    };
+    }
+  : page5(lang, "decibel");
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -125,17 +131,17 @@ const tRows = [40, 30, 20, 10, 0, -10, -30, -50, -70, -90, -110].map((d) => {
 const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+" : ""}${d}`, fmt(dbToPower(d), 4), fmt(dbToAmp(d), 4)]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "dB·dBm 변환기 — dBm mW W·dBµV·dBu·전압 비 — PortDock" : "dBm to mW, Watts & dBµV Converter (dB Calculator) — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["decibel", "units"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="db">
+    <form class="calc card" id="db" data-lang={lang}>
       <h2>{L.lvTitle}</h2>
       <div class="row">
         <label class="fld">{L.val}<input id="v" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -201,6 +207,7 @@ const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+
   </div>
   <script>
     import { ampDb, dbToAmp, dbToPower, infText, levels, powerDb, toWatts, type LevelUnit } from "../lib/decibel";
+    import { msg, type Lang } from "../lib/tr";
     import { fmt } from "../lib/units";
     const form = document.getElementById("db") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
@@ -210,7 +217,7 @@ const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+
       const n = s === "" ? NaN : Number(s);
       return Math.abs(n) > 1e12 ? NaN : n;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("db")!.dataset.lang ?? "en") as Lang;
     function level() {
       const cells = form.querySelectorAll<HTMLElement>("td[data-k]");
       try {
@@ -222,7 +229,7 @@ const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 저항은 0 보다 크고, mW·W·V 는 0 이상" : "Check the numbers — impedance above 0; mW, W and V 0 or more";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 저항은 0 보다 크고, mW·W·V 는 0 이상", "Check the numbers — impedance above 0; mW, W and V 0 or more");
         for (const td of cells) td.textContent = "";
       }
     }
@@ -232,7 +239,7 @@ const t2Rows = [-20, -10, -6, -3, -1, 1, 3, 6, 10, 20].map((d) => [`${d > 0 ? "+
         $("dbv").value = fmt($<HTMLSelectElement>("rk").value === "p" ? powerDb(r) : ampDb(r), 6);
         $("rerr").textContent = "";
       } catch {
-        $("rerr").textContent = ko ? "비는 0 보다 커야 합니다" : "The ratio must be greater than 0";
+        $("rerr").textContent = msg(lang, "비는 0 보다 커야 합니다", "The ratio must be greater than 0");
         $("dbv").value = "";
       }
     }

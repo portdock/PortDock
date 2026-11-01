@@ -7,18 +7,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { charge } from "../lib/rc";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/rc-filter/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "RC 시정수·차단 주파수 계산기",
+      seo: "RC 시정수·차단 주파수 계산기 — 저역 필터 — PortDock",
       desc: "저항·콘덴서로 RC 시정수 τ, 충전·방전 시간(63 %·99 %), 1차 저역 필터의 차단 주파수와 주파수별 감쇠·위상을 계산하고, 원하는 차단 주파수에 맞는 R·C 를 구합니다.",
       r: "저항 R",
       c: "콘덴서 C",
@@ -66,9 +69,16 @@ const L = ko
       xLink: "리액턴스·LC 공진 계산기",
       srcTitle: "근거",
       src: "τ·충전 곡선·차단 주파수·감쇠·위상은 정의식(회로 이론)으로 계산합니다. ADC 입력 필터 권고는 Microchip ATmega328P 데이터시트(7810D) §23.6.1 Analog Input Circuitry 를 따랐습니다. 실제 부품 값의 허용차는 각 데이터시트를 보세요.",
+      rUnit: "R unit",
+      cUnit: "C unit",
+      adcEnd: ".",
+      dEnd: ".",
+      xEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "RC Time Constant & Cut-off Frequency Calculator",
+      seo: "RC Time Constant & Low-Pass Cut-off Calculator — PortDock",
       desc: "RC time constant τ, charge and discharge times (63 %, 99 %), first-order low-pass cut-off frequency, attenuation and phase, and R or C for a target cut-off.",
       r: "Resistor R",
       c: "Capacitor C",
@@ -116,7 +126,13 @@ const L = ko
       xLink: "Reactance & LC Resonance Calculator",
       srcTitle: "Basis",
       src: "τ, the charge curve, cut-off, attenuation and phase are computed from circuit definitions. The ADC input filter advice follows Microchip's ATmega328P datasheet (7810D) §23.6.1 Analog Input Circuitry. Check component tolerances in their datasheets.",
-    };
+      rUnit: "R unit",
+      cUnit: "C unit",
+      adcEnd: ".",
+      dEnd: ".",
+      xEnd: ".",
+    }
+  : { ...page5(lang, "rcFilter"), adcLink: pageName(lang, "tools/adc/"), dLink: pageName(lang, "tools/voltage-divider/"), xLink: pageName(lang, "tools/reactance/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -125,22 +141,22 @@ const ld = {
 const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).toFixed(1), ((1 - charge(n, 1)) * 100).toFixed(1)]);
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "RC 시정수·차단 주파수 계산기 — 저역 필터 — PortDock" : "RC Time Constant & Low-Pass Cut-off Calculator — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["rcFilter"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="rc">
+    <form class="calc card" id="rc" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.r}<input id="r" class="mono" value="10" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
-        <label class="fld">&nbsp;<select id="ru" aria-label="R unit"><option value="1">Ω</option><option value="1000" selected>kΩ</option><option value="1000000">MΩ</option></select></label>
+        <label class="fld">&nbsp;<select id="ru" aria-label={L.rUnit}><option value="1">Ω</option><option value="1000" selected>kΩ</option><option value="1000000">MΩ</option></select></label>
         <label class="fld">{L.c}<input id="c" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
-        <label class="fld">&nbsp;<select id="cu" aria-label="C unit"><option value="1e-12">pF</option><option value="1e-9" selected>nF</option><option value="1e-6">µF</option></select></label>
+        <label class="fld">&nbsp;<select id="cu" aria-label={L.cUnit}><option value="1e-12">pF</option><option value="1e-9" selected>nF</option><option value="1e-6">µF</option></select></label>
       </div>
       <div class="row">
         <label class="fld">{L.f}<input id="f" class="mono" value="1000" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -184,7 +200,7 @@ const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).to
         ))
       }
       <p>
-        {L.adcNote} <a href={url(lang, "tools/adc/")}>{L.adcLink}</a>. {L.dNote} <a href={url(lang, "tools/voltage-divider/")}>{L.dLink}</a>. {L.xNote} <a href={url(lang, "tools/reactance/")}>{L.xLink}</a>.
+        {L.adcNote} <a href={link(lang, "tools/adc/")}>{L.adcLink}</a>{L.adcEnd} {L.dNote} <a href={link(lang, "tools/voltage-divider/")}>{L.dLink}</a>{L.dEnd} {L.xNote} <a href={link(lang, "tools/reactance/")}>{L.xLink}</a>{L.xEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -194,8 +210,9 @@ const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).to
   </div>
   <script>
     import { cFor, charge, discharge, fc, gain, gainDb, phaseDeg, rFor, riseTime, tau, timeTo } from "../lib/rc";
+    import { msg, type Lang } from "../lib/tr";
     import { nearestE } from "../lib/divider";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("rc")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("rc") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -237,15 +254,15 @@ const crow = [0.5, 1, 2, 3, 4, 5].map((n) => [`${n} τ`, (charge(n, 1) * 100).to
         if (fw > 0) {
           const c = cFor(fw, R);
           const r = rFor(fw, C);
-          set("cf", `${farad(c)} (E12 ${ko ? "가까운 값" : "nearest"} ${farad(nearestE(c * 1e12, "E12") / 1e12)})`);
-          set("rf", `${ohm(r)} (E24 ${ko ? "가까운 값" : "nearest"} ${ohm(nearestE(r, "E24"))})`);
+          set("cf", `${farad(c)} (E12 ${msg(lang, "가까운 값", "nearest")} ${farad(nearestE(c * 1e12, "E12") / 1e12)})`);
+          set("rf", `${ohm(r)} (E24 ${msg(lang, "가까운 값", "nearest")} ${ohm(nearestE(r, "E24"))})`);
         } else {
           set("cf", "");
           set("rf", "");
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — R·C 는 0 보다 커야 합니다" : "Check the numbers — R and C must be above 0";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — R·C 는 0 보다 커야 합니다", "Check the numbers — R and C must be above 0");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

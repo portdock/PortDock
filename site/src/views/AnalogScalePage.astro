@@ -10,7 +10,7 @@ import { COUNT_PRESETS, SIGNALS } from "../lib/analogScale";
 import { tx } from "../lib/tr";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 import { pageName } from "../i18n/names";
 
 interface Props {
@@ -120,7 +120,11 @@ const L =
       cableLink: "cable selection helper",
       cablePost: ".",
     }
-  : { ...dict(lang).pages.analog, cableLink: pageName(lang, "tools/cable-selection/") };
+  : (() => {
+      // ADC 계산기(5차 묶음)가 그 언어로 번역됐으면 링크 글을 그 언어 이름으로(사전의 글은 «(영어)» 표시가 붙은 이름)
+      const d = dict(lang).pages.analog;
+      return { ...d, cableLink: pageName(lang, "tools/cable-selection/"), adcLink: isTranslated(lang, "tools/adc/") ? pageName(lang, "tools/adc/") : d.adcLink };
+    })();
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

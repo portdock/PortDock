@@ -4,8 +4,8 @@
 //   온도 → mV 는 기준 함수(reference function) 그대로, mV → 온도는 NIST 역함수로 첫 값을 잡고 기준 함수에 맞춰 뉴턴법으로 다듬는다.
 //   mV → 온도의 유효 범위는 NIST 역함수가 덮는 전압 범위(그 밖은 계산하지 않는다).
 
-export type Lang = "ko" | "en";
-const msg = (lang: Lang, ko: string, en: string) => (lang === "ko" ? ko : en);
+import { msg, tx, type Lang } from "./tr.ts";
+export type { Lang };
 
 // ---- 측온저항체 (IEC 60751)
 export const CVD = { A: 3.9083e-3, B: -5.775e-7, C: -4.183e-12 } as const;
@@ -206,11 +206,13 @@ export const TC_EMF_TOL = 0.0005;
 
 const tcRangeError = (type: TcType, lo: number, hi: number, lang: Lang, what: { ko: string; en: string }) => {
   const [a, b] = tcInvTempRange(type);
+  // 무엇의 범위인지(what)를 먼저 옮긴다 — 추가 언어 표에서 «measured mV (cold junction {} °C)» 처럼 틀로 찾는 글도 바뀌게
+  const w = tx(what, lang);
   return new Error(
     msg(
       lang,
-      `${type}형 ${what.ko} 범위(${lo.toFixed(3)}~${hi.toFixed(3)} mV, ${a}~${b} °C) 밖입니다`,
-      `Outside the type ${type} ${what.en} range (${lo.toFixed(3)} to ${hi.toFixed(3)} mV, ${a} to ${b} °C)`,
+      `${type}형 ${w} 범위(${lo.toFixed(3)}~${hi.toFixed(3)} mV, ${a}~${b} °C) 밖입니다`,
+      `Outside the type ${type} ${w} range (${lo.toFixed(3)} to ${hi.toFixed(3)} mV, ${a} to ${b} °C)`,
     ),
   );
 };

@@ -7,18 +7,22 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { PRESSURE, convert, fmt } from "../lib/units";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page5 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { tx } from "../lib/tr";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/pressure/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "압력 단위 변환기",
+      seo: "압력 단위 변환기 — bar·psi·kPa·kgf/cm²·mmH2O — PortDock",
       desc: "bar·psi·kPa·MPa·kgf/cm²·mmH2O·mmHg·atm 을 한 번에 바꾸고, 게이지 압력과 절대 압력을 오가며, 압력 센서 범위를 다른 단위의 4–20mA 환산표로 만듭니다.",
       val: "값",
       unit: "단위",
@@ -66,9 +70,17 @@ const L = ko
       srcTitle: "출처",
       scaleNote: "전류 값을 공학값·PLC 카운트로 바꾸려면",
       scaleLink: "4–20mA 환산 계산기",
+      figAlt: "압력 눈금: 완전 진공이 절대 압력 0, 대기압 101.325 kPa 가 게이지 압력 0. 5 bar g 는 약 6.013 bar a, −0.5 bar g 진공은 약 0.513 bar a",
+      figCap: "게이지 압력은 대기압에서, 절대 압력은 완전 진공에서 잽니다. 두 값의 차이가 그 자리 대기압입니다.",
+      scaleEnd: ".",
+      cNote: "공압 실린더가 그 압력에서 내는 힘은",
+      cLink: "공압 실린더 추력 계산기",
+      cEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Pressure Unit Converter",
+      seo: "Pressure Unit Converter: bar, psi, kPa, kgf/cm², mmH2O — PortDock",
       desc: "Convert bar, psi, kPa, MPa, kgf/cm², mmH2O, inH2O, mmHg and atm at once, gauge ↔ absolute pressure, and a sensor range with a 4–20 mA table.",
       val: "Value",
       unit: "Unit",
@@ -116,7 +128,14 @@ const L = ko
       srcTitle: "Sources",
       scaleNote: "To turn a current into engineering units or PLC counts, use the",
       scaleLink: "4–20 mA Scaling Calculator",
-    };
+      figAlt: "Pressure scale: perfect vacuum is 0 absolute, atmosphere at 101.325 kPa is 0 gauge. 5 bar g is about 6.013 bar a; a −0.5 bar g vacuum is about 0.513 bar a",
+      figCap: "Gauge pressure is measured from the atmosphere, absolute pressure from a perfect vacuum; they differ by the local atmospheric pressure.",
+      scaleEnd: ".",
+      cNote: "For the force a pneumatic cylinder delivers at that pressure, use the",
+      cLink: "Pneumatic Cylinder Force Calculator",
+      cEnd: ".",
+    }
+  : { ...page5(lang, "pressure"), scaleLink: pageName(lang, "tools/4-20ma/"), cLink: pageName(lang, "tools/cylinder-force/") };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -129,21 +148,21 @@ const SRC = [
 const TABLE_UNITS = ["bar", "psi", "kPa", "MPa", "kgfcm2", "mmH2O", "mmHg", "atm"];
 const sym = (id: string) => PRESSURE.find((u) => u.id === id)!.sym;
 const table = TABLE_UNITS.map((from) => ({ from, cells: TABLE_UNITS.map((to) => fmt(convert("pressure", 1, from, to), 6)) }));
-const opts = (sel: string) => PRESSURE.map((u) => ({ id: u.id, sym: u.sym, label: `${u.sym} — ${u.name[lang]}`, sel: u.id === sel }));
-const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
+const opts = (sel: string) => PRESSURE.map((u) => ({ id: u.id, sym: u.sym, label: `${u.sym} — ${tx(u.name, lang)}`, sel: u.id === sel }));
+const fig = `/img/guides/pressure-gauge-abs.${lang === "ko" ? "ko" : "en"}.svg`;
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "압력 단위 변환기 — bar·psi·kPa·kgf/cm²·mmH2O — PortDock" : "Pressure Unit Converter: bar, psi, kPa, kgf/cm², mmH2O — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["pressure", "units"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="pr">
+    <form class="calc card" id="pr" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.val}<input id="v" class="mono" value="1" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.unit}<select id="u">{opts("bar").map((o) => <option value={o.id} selected={o.sel}>{o.label}</option>)}</select></label>
@@ -152,7 +171,7 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
-          <tbody>{PRESSURE.map((u) => <tr><td>{u.sym} <span class="note">{u.name[lang]}</span></td><td class="mono" data-k={u.id}></td></tr>)}</tbody>
+          <tbody>{PRESSURE.map((u) => <tr><td>{u.sym} <span class="note">{tx(u.name, lang)}</span></td><td class="mono" data-k={u.id}></td></tr>)}</tbody>
         </table>
       </div>
 
@@ -188,8 +207,8 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
 
       <h2>{L.gaTitle}</h2>
       <figure class="fig">
-        <img src={fig} width="780" height="330" alt={ko ? "압력 눈금: 완전 진공이 절대 압력 0, 대기압 101.325 kPa 가 게이지 압력 0. 5 bar g 는 약 6.013 bar a, −0.5 bar g 진공은 약 0.513 bar a" : "Pressure scale: perfect vacuum is 0 absolute, atmosphere at 101.325 kPa is 0 gauge. 5 bar g is about 6.013 bar a; a −0.5 bar g vacuum is about 0.513 bar a"} loading="lazy" decoding="async" />
-        <figcaption>{ko ? "게이지 압력은 대기압에서, 절대 압력은 완전 진공에서 잽니다. 두 값의 차이가 그 자리 대기압입니다." : "Gauge pressure is measured from the atmosphere, absolute pressure from a perfect vacuum; they differ by the local atmospheric pressure."}</figcaption>
+        <img src={fig} width="780" height="330" alt={L.figAlt} loading="lazy" decoding="async" />
+        <figcaption>{L.figCap}</figcaption>
       </figure>
       <ul>{L.ga.map((x) => <li>{x}</li>)}</ul>
 
@@ -211,7 +230,7 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
         ))
       }
       <p>
-        {L.scaleNote} <a href={url(lang, "tools/4-20ma/")}>{L.scaleLink}</a>. {ko ? "공압 실린더가 그 압력에서 내는 힘은" : "For the force a pneumatic cylinder delivers at that pressure, use the"} <a href={url(lang, "tools/cylinder-force/")}>{ko ? "공압 실린더 추력 계산기" : "Pneumatic Cylinder Force Calculator"}</a>.
+        {L.scaleNote} <a href={link(lang, "tools/4-20ma/")}>{L.scaleLink}</a>{L.scaleEnd} {L.cNote} <a href={link(lang, "tools/cylinder-force/")}>{L.cLink}</a>{L.cEnd}
       </p>
       <h2>{L.srcTitle}</h2>
       <ul>{SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
@@ -221,6 +240,7 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
   </div>
   <script>
     import { PRESSURE, absToGauge, convert, fmt, gaugeToAbs } from "../lib/units";
+    import { msg, type Lang } from "../lib/tr";
     const form = document.getElementById("pr") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -229,7 +249,7 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
       const n = s === "" ? NaN : Number(s);
       return Math.abs(n) > 1e12 ? NaN : n;
     };
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("pr")!.dataset.lang ?? "en") as Lang;
     const sym = (id: string) => PRESSURE.find((u) => u.id === id)!.sym;
     function run() {
       const err = $("err");
@@ -248,11 +268,11 @@ const fig = `/img/guides/pressure-gauge-abs.${lang}.svg`;
         const other = isGauge ? gaugeToAbs(pa, atmKpa * 1000) : absToGauge(pa, atmKpa * 1000);
         const s = sym(u);
         $("gout").textContent = isGauge
-          ? `${fmt(v)} ${s} g → ${fmt(convert("pressure", other, "Pa", u))} ${s} a${other < 0 ? (ko ? " (진공보다 낮음 — 입력 확인)" : " (below vacuum — check input)") : ""}`
+          ? `${fmt(v)} ${s} g → ${fmt(convert("pressure", other, "Pa", u))} ${s} a${other < 0 ? (msg(lang, " (진공보다 낮음 — 입력 확인)", " (below vacuum — check input)")) : ""}`
           : `${fmt(v)} ${s} a → ${fmt(convert("pressure", other, "Pa", u))} ${s} g`;
-        if (!isGauge && pa < 0) $("gout").textContent = ko ? "절대 압력은 0 보다 작을 수 없습니다" : "Absolute pressure cannot be below 0";
+        if (!isGauge && pa < 0) $("gout").textContent = msg(lang, "절대 압력은 0 보다 작을 수 없습니다", "Absolute pressure cannot be below 0");
       } catch {
-        err.textContent = ko ? "숫자를 확인하세요 — 대기압은 0 보다 커야 합니다" : "Check the numbers — atmospheric pressure must be above 0";
+        err.textContent = msg(lang, "숫자를 확인하세요 — 대기압은 0 보다 커야 합니다", "Check the numbers — atmospheric pressure must be above 0");
         for (const td of cells) td.textContent = "";
         $("gout").textContent = "";
       }
