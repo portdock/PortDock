@@ -1,0 +1,58 @@
+// Diccionario de códigos de detención de pantalla azul (views/BsodCodesPage.astro) — 3.er lote. Significado, causas posibles y pasos de los 39 códigos en lib/bsod
+// Nombres de Windows en español: Visor de eventos, Registros de Windows, Monitor de confiabilidad, «Código de detención»
+import { MS_LIST_URL, MS_USER_URL } from "../../../lib/bsod.ts";
+
+export default {
+  title: "Códigos de error de pantalla azul (BSOD)",
+  seo: "Códigos de pantalla azul (BSOD): significado y causas — PortDock",
+  desc: "Pegue un código de pantalla azul (0xD1, 0x133…), su nombre o un mensaje del evento 1001: significado, causas posibles, qué revisar y la página de Microsoft.",
+  input: "Código de detención, nombre o mensaje del evento 1001",
+  ph: "p. ej. 0xD1 · d1 · DRIVER_IRQL · DPC WATCHDOG VIOLATION · un mensaje completo del evento 1001",
+  examples: "Ejemplos",
+  ex: ["0xD1", "WHEA", "Texto de la pantalla azul", "Mensaje del evento 1001"],
+  privacy: "Lo que pega se busca dentro de este navegador y nunca se envía a ningún sitio.",
+  findTitle: "Dónde encontrar el código",
+  find: [
+    "En la pantalla azul, la línea «Código de detención» (Stop code): anote el nombre (como DPC_WATCHDOG_VIOLATION) y, si aparece, el archivo .sys indicado debajo como lo que falló.",
+    "Si el PC ya se reinició: Inicio → «Visor de eventos» → Registros de Windows → Sistema → «Filtrar registro actual» a la derecha, e introduzca el id. de evento 1001. Copie todo el texto de la pestaña «General» de una entrada con origen «BugCheck» (0x… (0x…, 0x…, 0x…, 0x…)) en el cuadro de arriba: se extraen el código y los cuatro parámetros.",
+    "En el «Monitor de confiabilidad» (Inicio → «Ver el historial de confiabilidad»), haga clic en una X roja «Windows no se apagó correctamente» para ver el BCCode. Una línea como «BCCode: 133» se puede pegar tal cual.",
+    "Los volcados se guardan en C:\\Windows\\Minidump\\ y C:\\Windows\\MEMORY.DMP (según la configuración). Esta página no lee archivos de volcado.",
+  ],
+  kp41Title: "Kernel-Power 41 es el resultado, no la causa",
+  kp41: "El evento 41 (Kernel-Power, «El sistema se ha reiniciado sin apagarse limpiamente primero») solo registra que el último apagado no fue limpio; no dice por qué. Si su BugcheckCode no es 0, hubo una pantalla azul: mire ese código (en decimal; p. ej. 307 = 0x133) o la entrada 1001 de la misma hora. Si BugcheckCode es 0, el PC se apagó sin pantalla azul registrada: revise si se mantuvo pulsado el botón de encendido, un corte de luz, la fuente de alimentación, el sobrecalentamiento o la placa base. El evento 6008 («el apagado anterior del sistema fue inesperado») es el mismo tipo de registro a posteriori.",
+  dec: "BugcheckCode del evento 41 (decimal)",
+  decGo: "A hexadecimal",
+  tableTitle: "Códigos de detención habituales",
+  cols: ["Código", "Nombre", "Significado", "Página de Microsoft"],
+  doc: "página",
+  srcTitle: "Referencias",
+  src: "Los significados, causas posibles y comprobaciones son resúmenes breves propios de este sitio a partir de la referencia de códigos de comprobación de errores de Microsoft (Bug Check Code Reference). Las causas posibles son los sospechosos habituales, no una respuesta única. Para el significado de cada parámetro, vea la página de Microsoft de ese código.",
+  refs: [
+    [MS_LIST_URL, "Microsoft Learn — Bug Check Code Reference", "la lista completa de códigos (para desarrolladores)"],
+    [MS_USER_URL, "Soporte técnico de Microsoft — Solucionar errores de pantalla azul", "orientación para usuarios"],
+  ] as [string, string, string][],
+  appTitle: "Más con las aplicaciones PortDock",
+  app1: "Para ver cuándo y con qué frecuencia hubo pantallas azules y apagados repentinos, abra la pestaña «This PC» de",
+  app2: "y pulse «Read this PC's settings». En solo lectura y sin permisos de administrador, muestra el número y la última hora de los apagados inesperados recientes (Kernel-Power 41, EventLog 6008) y de los errores de hardware (WHEA-Logger, disk, Ntfs).",
+  faqTitle: "Preguntas frecuentes",
+  faq: [
+    ["¿El código me dice la causa?", "El código dice qué tipo de detención fue. Úselo para acotar las causas posibles y las comprobaciones, junto con el nombre .sys de la pantalla, los eventos de la misma hora y si el código es siempre el mismo. Encontrar la causa exacta puede requerir analizar el volcado (WinDbg)."],
+    ["¿Son distintos 0x0000007E y 0x1000007E?", "Mismo significado y mismos parámetros (documentación de Microsoft). Las variantes «-M» con 0x10000000 sumado solo existen para unos pocos códigos, como 0x1000007E, 0x1000007F, 0x1000008E y 0x100000EA; este diccionario muestra la misma entrada."],
+    ["El código es distinto cada vez", "Es más probable el hardware (memoria, alimentación, temperatura, overclocking) que un único controlador. Empiece por el Diagnóstico de memoria de Windows y los valores predeterminados de la BIOS."],
+    ["Aparece ntoskrnl.exe como causa", "ntoskrnl.exe y hal.dll son el propio núcleo de Windows y suelen aparecer donde se detuvo el sistema, pero normalmente como resultado de otro controlador o de un problema de hardware. Mire otros registros de la misma hora antes de reinstalar Windows por ese nombre."],
+  ] as [string, string][],
+  msg: {
+    none: "No se encontró ningún código ni nombre. Pruebe un código hexadecimal que empiece por 0x (p. ej. 0x0000001A), parte de un nombre (p. ej. MEMORY) o un mensaje del evento 1001.",
+    unknown: "Este código no está en este diccionario. Búsquelo en la lista completa de Microsoft:",
+    many: "El nombre coincide con varios códigos; elija uno:",
+    variant: "La variante con 0x10000000: se trata como el mismo código.",
+    meaning: "Significado",
+    causes: "Causas posibles",
+    steps: "Qué revisar, en orden",
+    params: "Parámetros (evento 1001)",
+    files: "Archivos nombrados en el texto",
+    filesNote: "Un controlador nombrado donde se detuvo es el primer candidato. Los archivos de Windows como ntoskrnl.exe, hal.dll o win32k*.sys suelen aparecer como resultado de otro problema.",
+    doc: "Página de Microsoft (para desarrolladores)",
+    from: { "bugcheck-message": "encontrado en un mensaje del evento 1001", keyword: "encontrado en una línea de código del texto", hex: "encontrado por código", name: "encontrado por nombre", none: "" },
+  },
+};
