@@ -83,6 +83,14 @@ test("0x1000007E 처럼 0x10000000 이 붙은 판은 같은 항목, 사전에 �
   assert.equal(findBugcheck("hello").how, "none");
 });
 
+test("프랑스어·이탈리아어 Windows 블루스크린 화면 «Code d’arrêt»·«Codice di arresto»", () => {
+  assert.equal(findBugcheck("Code d’arrêt : DPC_WATCHDOG_VIOLATION\nCe qui a échoué : storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
+  assert.equal(findBugcheck("Code d'arrêt : CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
+  assert.equal(findBugcheck("Code d’arrêt : 133").code, 0x133);
+  assert.equal(findBugcheck("Codice di arresto: VIDEO TDR FAILURE").bc?.name, "VIDEO_TDR_FAILURE");
+  assert.equal(findBugcheck("Codice di arresto: 0x9F").code, 0x9f);
+});
+
 test("일본어 Windows 문구 — 블루스크린 화면 «停止コード»·이벤트 1001 «バグチェック» 메시지·«停止コード: 133»", () => {
   assert.equal(findBugcheck("停止コード: DPC_WATCHDOG_VIOLATION\n失敗した内容: storahci.sys").bc?.name, "DPC_WATCHDOG_VIOLATION");
   assert.equal(findBugcheck("停止コード:CRITICAL PROCESS DIED").bc?.name, "CRITICAL_PROCESS_DIED");
