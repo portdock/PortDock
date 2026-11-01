@@ -1,0 +1,41 @@
+// Convertisseur d’unités industrielles (views/UnitsPage.astro) — 5차 묶음. 영어판에서 옮김.
+// 용어: débit volumique, couple, puissance, cheval-vapeur (ch, métrique) / horsepower (hp, 550 ft·lbf/s), tonne de réfrigération, écart de température
+// press 는 링크 앞 글, pressEnd 는 링크 뒤 글. 단위 이름은 lib/units
+export default {
+  title: "Convertisseur d’unités industrielles — débit, couple, puissance, température",
+  seo: "Conversion d’unités : débit, couple, kW en ch, °C — PortDock",
+  desc: "Unités mélangées sur le terrain : débit m³/h, L/min, gpm ; couple N·m, kgf·cm, lbf·ft ; puissance kW, hp, ch, kcal/h, tonnes de froid ; °C, °F, K.",
+  qty: "Grandeur",
+  q: { flow: "Débit (volume)", torque: "Couple", power: "Puissance / chevaux", temperature: "Température" },
+  val: "Valeur",
+  unit: "Unité",
+  diff: "Convertir comme un « écart » de température (une hausse de 10 °C = une hausse de 18 °F)",
+  res: "Dans toutes les unités",
+  press: "Pour la pression (bar, psi, kPa, mmH₂O) :",
+  how: "Les résultats se mettent à jour pendant la saisie. Tout s’exécute dans votre navigateur ; rien de ce que vous saisissez n’est envoyé.",
+  fTitle: "Définitions et facteurs",
+  formula: [
+    "1 L = 1 dm³ = 0.001 m³,   1 m³/h = 16.667 L/min",
+    "Gallon US = 231 in³ = 3.785 411 784 L,   gallon impérial = 4.546 09 L",
+    "1 kgf = 9.806 65 N,   1 lbf = 0.453 592 37 kg × 9.806 65 m/s² ≈ 4.448 222 N",
+    "1 kgf·m = 9.806 65 N·m,   1 lbf·ft ≈ 1.355 818 N·m",
+    "1 hp = 550 ft·lbf/s ≈ 745.70 W,   1 ch (PS) = 75 kgf·m/s = 735.498 75 W",
+    "1 kcal/h = 4186.8 J ÷ 3600 s = 1.163 W,   1 tonne de réfrigération = 12 000 Btu/h ≈ 3516.85 W",
+    "°F = °C × 9/5 + 32,   K = °C + 273.15,   °R = K × 9/5",
+  ],
+  fNote: "Deux chevaux coexistent : le horsepower impérial/US (hp, 550 ft·lbf/s ≈ 0.7457 kW) et le cheval-vapeur métrique (ch, PS, CV, 75 kgf·m/s ≈ 0.7355 kW), qui diffèrent d’environ 1.4 %. Les kcal utilisent la calorie internationale (4.1868 J). La tonne de réfrigération varie selon les pays ; seule la tonne US (12 000 Btu/h) est utilisée ici.",
+  hpTitle: "kW ↔ chevaux (tailles de moteurs, valeurs calculées)",
+  hpHead: ["kW", "hp (550 ft·lbf/s)", "ch (métrique)"],
+  hpNote: "Valeurs calculées. Les puissances nominales des moteurs existent en séries kW et en séries en chevaux distinctes : le « HP » d’une plaque signalétique ne correspond pas à ce tableau à la décimale près.",
+  flTitle: "Table de débits",
+  tqTitle: "Table de couples",
+  faqTitle: "Questions fréquentes",
+  faq: [
+    ["Combien de chevaux fait 1 kW ?", "Environ 1.341 hp (impérial/US) ou 1.360 ch (métrique). À l’inverse, 1 hp ≈ 0.7457 kW et 1 ch ≈ 0.7355 kW."],
+    ["Comment convertir des kgf·cm en N·m ?", "1 kgf·cm = 0.098 066 5 N·m : multipliez les N·m par environ 10.197 pour obtenir des kgf·cm. Exemple : 1.27 N·m ≈ 12.95 kgf·cm."],
+    ["Des m³/h en L/min ?", "1 m³/h = 1000 L ÷ 60 min ≈ 16.667 L/min. Une pompe de 60 L/min débite 3.6 m³/h."],
+    ["Peut-on convertir des Nm³/h (normaux) ?", "Non. Le Nm³/h est un volume de gaz ramené à une température et une pression de référence : pour passer en m³/h, il faut la température et la pression réelles ainsi que les conditions de référence de ce Nm³, qui varient selon les secteurs et les fabricants — vérifiez la spécification du débitmètre."],
+  ],
+  srcTitle: "Sources",
+  pressEnd: ".",
+};
