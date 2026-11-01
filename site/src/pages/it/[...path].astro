@@ -1,0 +1,10 @@
+---
+// Pagine italiane — solo le pagine nel perimetro di traduzione (i18n/scope.ts) come /it/… (site/I18N.md).
+import LangPage from "../../i18n/LangPage.astro";
+import { staticPaths } from "../../i18n/scope";
+
+export const getStaticPaths = staticPaths;
+const { path } = Astro.props;
+---
+
+<LangPage lang="it" path={path} />

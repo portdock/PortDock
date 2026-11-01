@@ -3,13 +3,14 @@
 // 이 파일은 빌드(서버)에서만 읽는다 — 브라우저 스크립트에서 가져오지 말 것(모든 언어 문구가 JS 에 들어간다).
 import ja from "./ja/index.ts";
 import de from "./de/index.ts";
+import it from "./it/index.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 
 export type Dict = typeof ja;
 export type LibSection = keyof Dict["lib"];
 
-export const DICTS: Record<ExtraLang, Dict> = { ja, de };
+export const DICTS: Record<ExtraLang, Dict> = { ja, de, it };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];

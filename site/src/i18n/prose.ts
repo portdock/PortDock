@@ -5,8 +5,11 @@ import JaSafety from "./ja/SafetyBody.astro";
 import JaPrivacy from "./ja/PrivacyBody.astro";
 import DeSafety from "./de/SafetyBody.astro";
 import DePrivacy from "./de/PrivacyBody.astro";
+import ItSafety from "./it/SafetyBody.astro";
+import ItPrivacy from "./it/PrivacyBody.astro";
 
 export const PROSE = {
   ja: { safety: JaSafety, privacy: JaPrivacy },
   de: { safety: DeSafety, privacy: DePrivacy },
+  it: { safety: ItSafety, privacy: ItPrivacy },
 } satisfies Record<ExtraLang, { safety: unknown; privacy: unknown }>;
