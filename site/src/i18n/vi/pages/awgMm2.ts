@@ -1,0 +1,37 @@
+// Bảng quy đổi AWG ↔ mm² (views/AwgMm2Page.astro) — đợt 6. Thuật ngữ: tiết diện, đường kính dây đặc, điện trở dây đồng
+export default {
+  title: "Bảng quy đổi AWG sang mm²",
+  seo: "Bảng quy đổi AWG sang mm²: đường kính và điện trở — PortDock",
+  desc: "Đường kính và tiết diện AWG 0000 đến 40 (công thức ASTM B258), cỡ mm² hệ mét gần nhất (IEC 60228) và Ω/km của dây đồng ở 20 °C. Quy đổi hai chiều.",
+  inAwg: "AWG (ví dụ 18, 2/0, 0000)",
+  inMm: "Tiết diện mm²",
+  res: "Kết quả",
+  k: { d: "Đường kính (tương đương dây đặc)", area: "Tiết diện", ohm: "Điện trở dây đồng ở 20 °C (một lõi)", near: "Cỡ hệ mét gần nhất", awgNear: "AWG gần nhất", awgUp: "AWG có tiết diện bằng hoặc lớn hơn" },
+  how: "Kết quả cập nhật ngay khi bạn gõ. Mọi tính toán chạy trong trình duyệt; không có gì bạn nhập được gửi đi đâu cả.",
+  err: "Nhập AWG từ 0000 đến 50 (dùng được ký hiệu 2/0) và tiết diện lớn hơn 0",
+  fTitle: "Công thức",
+  formula: [
+    "Đường kính d = 0.127 mm × 92^((36 − n) ÷ 39)   (n: số AWG; 0 = 0, 00 = −1, 000 = −2, 0000 = −3)",
+    "Tiết diện A = π ÷ 4 × d²",
+    "Điện trở R (Ω/km) = ρ × 1000 ÷ A,  ρ = 1/58 ≈ 0.017241 Ω·mm²/m (đồng, 20 °C)",
+  ],
+  fNote: "Công thức AWG lấy từ ASTM B258; điện trở suất của đồng là giá trị đồng ủ theo IEC 60028. Cứ 6 cỡ thì đường kính gấp đôi; cứ 3 cỡ thì tiết diện xấp xỉ gấp đôi.",
+  limitTitle: "Cách đọc bảng",
+  limits: [
+    "Cỡ AWG và cỡ hệ mét không bao giờ khớp hoàn toàn. «Gần nhất» tính theo tỉ số tiết diện; chênh lệch âm nghĩa là cỡ hệ mét nhỏ hơn — khi dòng cho phép hoặc sụt áp sát giới hạn, hãy chọn cỡ bằng hoặc lớn hơn.",
+    "Đường kính tính cho dây đặc. Dây bện cùng tiết diện thì to hơn, cộng thêm lớp cách điện — khi tính độ đầy ống hay máng, hãy dùng đường kính ngoài của nhà sản xuất.",
+    "Điện trở cáp thực tế: IEC 60228 quy định giá trị tối đa theo cấp ruột dẫn (đặc, bện, mềm); ruột bện và mạ thiếc cao hơn một chút.",
+    "Dòng cho phép không suy ra chỉ từ cỡ dây (còn phụ thuộc cách lắp đặt, nhiệt độ môi trường, số dây đi chung) và không được liệt kê ở đây.",
+  ],
+  awgTitle: "Bảng AWG (0000 đến 40)",
+  awgHead: ["AWG", "Đường kính mm", "Tiết diện mm²", "Ω/km (đồng 20 °C)", "mm² gần nhất (chênh lệch)"],
+  mmTitle: "Các cỡ hệ mét (IEC 60228)",
+  mmHead: ["Tiết diện mm²", "Đường kính mm (tương đương dây đặc)", "Ω/km (đồng 20 °C)", "AWG gần nhất", "AWG bằng hoặc lớn hơn"],
+  faqTitle: "Hỏi đáp",
+  faq: [
+    ["18 AWG là bao nhiêu mm²?", "Khoảng 0.823 mm² (đường kính 1.024 mm). Cỡ hệ mét gần nhất là 0.75 mm², nhỏ hơn một chút. 16 AWG khoảng 1.31 mm², 14 AWG khoảng 2.08 mm², 12 AWG khoảng 3.31 mm²."],
+    ["1.5 mm² tương ứng AWG nào?", "15 AWG (1.65 mm²) gần nhất, nhưng 15 AWG ít gặp nên cỡ thay thế thường dùng theo hệ Mỹ là 14 AWG (2.08 mm²). 16 AWG (1.31 mm²) nhỏ hơn 1.5 mm²."],
+    ["4/0 và 2/0 nghĩa là gì?", "Các cỡ lớn hơn 0 lặp lại số không: 1/0 = 0, 2/0 = 00, 3/0 = 000, 4/0 = 0000. 4/0 AWG khoảng 107 mm²."],
+  ],
+  more: ["Để chọn dây theo chiều dài và dòng điện, dùng ", "; để biết loại cáp theo mục đích sử dụng, dùng ", "; để biết một ống luồn chứa được bao nhiêu dây, dùng ", "."],
+};
