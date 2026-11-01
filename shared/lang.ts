@@ -5,7 +5,8 @@
 //   1. 앱마다 apps/<앱>/src/i18n.de.ts(i18n.ja.ts 와 같은 모양)를 만들고 i18n.ts 의 dicts(ko, en, { ja, de }) 에 더한다
 //   2. 공용 글은 shared/de/ 에 shared/ja/ 와 같은 파일(ui·io·autoReply·alarm·aiCopy·parts·tips)을 두고, 각 모듈의 dicts(…, { ja, de })·tips.ts 의 MORE 에 더한다
 //   3. 아래 UI_LANGS 에 넣으면 언어 고르기에 나온다(detectLang 도 그 언어를 인식). 시험: node --test shared/lang.test.ts 에 de 를 더한다
-//   도움말(help.ts)·백엔드 문구(tr!)·점검 결과 글은 한국어·영어 두 판이라 영어로 보인다(baseLang).
+//   도움말(help.ts)·백엔드 문구(tr!)는 한국어·영어 두 판이라 영어로 보인다(baseLang).
+//   점검·판정 글({ ko, en })은 shared/textLang.ts 의 txt() — 영어를 열쇠로 shared/<언어>/text.ts 를 찾는다(0.11.0).
 // 시험: node --test shared/lang.test.ts
 
 /** 화면 언어 코드 — 사이트와 같은 순서 */

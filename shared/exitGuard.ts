@@ -1,7 +1,8 @@
 // 연결·기록 중에 창을 닫으려 하면 한 번 묻는다(설정에서 끌 수 있음).
 // 닫기로 정해지면 사용 통계(켰을 때만)를 짧게 보내고 닫는다 — 닫기 처리는 여기 하나뿐이어야 한다
 // (onCloseRequested 처리기가 둘이면 한쪽이 «취소» 해도 다른 쪽이 창을 닫는다)
-import { baseLang, type Lang } from "./lang.ts";
+import { dicts, type Lang } from "./lang.ts";
+import { JA_EXIT } from "./ja/dialogs.ts";
 import { useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
@@ -11,6 +12,7 @@ const MSG = {
   ko: "연결 중이거나 파일에 기록하는 중입니다. 닫으면 연결이 끊기고 기록이 멈춥니다. 닫을까요?",
   en: "A connection or file log is active. Closing will disconnect and stop logging. Close anyway?",
 };
+const MSG_L = dicts({ msg: MSG.ko }, { msg: MSG.en }, { ja: { msg: JA_EXIT } });
 
 export function useExitGuard(active: boolean, enabled: boolean, lang: Lang, title: string) {
   const cur = useRef({ active, enabled, lang, title });
@@ -23,7 +25,7 @@ export function useExitGuard(active: boolean, enabled: boolean, lang: Lang, titl
       .onCloseRequested(async (e) => {
         const c = cur.current;
         if (c.enabled && c.active) {
-          const ok = await ask(MSG[baseLang(c.lang)], { title: c.title, kind: "warning" });
+          const ok = await ask(MSG_L[c.lang].msg, { title: c.title, kind: "warning" });
           if (!ok) {
             e.preventDefault();
             return;

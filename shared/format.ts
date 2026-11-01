@@ -4,11 +4,13 @@ import type { Lang } from "./lang.ts";
 export const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 
 // ---- 글자 인코딩 — 글자 보기(ascii)와 ASCII 송신(백엔드 codec::Encoding)에 쓴다
-export type Encoding = "utf-8" | "cp949" | "latin1" | "ascii";
+export type Encoding = "utf-8" | "cp949" | "cp932" | "latin1" | "ascii";
 
 export const ENCODINGS: { id: Encoding; label: string }[] = [
   { id: "utf-8", label: "UTF-8" },
   { id: "cp949", label: "CP949 (EUC-KR)" },
+  // (0.11.0) 일본 장비 — 백엔드는 encoding_rs 의 Shift_JIS(WHATWG, 곧 CP932)
+  { id: "cp932", label: "Shift_JIS (CP932)" },
   { id: "latin1", label: "Latin-1 (ISO-8859-1)" },
   { id: "ascii", label: "ASCII (7bit)" },
 ];
@@ -50,6 +52,31 @@ function cp949Pair(a: number, b: number): string | null {
   return out;
 }
 
+/** Shift_JIS(CP932) 두 바이트 → 글자(없으면 null). 한 번 푼 것은 기억한다 */
+const cp932Cache = new Map<number, string | null>();
+let cp932Decoder: TextDecoder | null | undefined;
+function cp932Pair(a: number, b: number): string | null {
+  const key = (a << 8) | b;
+  const hit = cp932Cache.get(key);
+  if (hit !== undefined) return hit;
+  if (cp932Decoder === undefined) {
+    try {
+      cp932Decoder = new TextDecoder("shift_jis", { fatal: true });
+    } catch {
+      cp932Decoder = null;
+    }
+  }
+  let out: string | null = null;
+  try {
+    const s = cp932Decoder ? cp932Decoder.decode(new Uint8Array([a, b])) : "";
+    out = [...s].length === 1 && s.charCodeAt(0) >= 0x80 ? s : null;
+  } catch {
+    out = null;
+  }
+  cp932Cache.set(key, out);
+  return out;
+}
+
 /**
  * 받은 바이트를 글자로 — 제어 문자는 <CR> <LF> <02> 처럼, 그 인코딩으로 읽을 수 없는 바이트는 <XX>.
  * 백엔드 codec::text_view(파일 로그의 ASCII 칸)와 같은 규칙.
@@ -73,6 +100,18 @@ export function ascii(bytes: number[], enc: Encoding = textEncoding) {
       } else out += hx(b);
     } else if (enc === "cp949") {
       const ch = b >= 0x81 && b <= 0xfe && i + 1 < bytes.length ? cp949Pair(b, bytes[i + 1]) : null;
+      if (ch != null) {
+        out += ch;
+        i++;
+      } else out += hx(b);
+    } else if (enc === "cp932") {
+      // 1바이트 반각 가타카나 0xA1~0xDF → U+FF61~U+FF9F, 첫 바이트 0x81~0x9F·0xE0~0xFC 는 두 바이트
+      if (b >= 0xa1 && b <= 0xdf) {
+        out += String.fromCharCode(0xff61 + b - 0xa1);
+        continue;
+      }
+      const lead = (b >= 0x81 && b <= 0x9f) || (b >= 0xe0 && b <= 0xfc);
+      const ch = lead && i + 1 < bytes.length ? cp932Pair(b, bytes[i + 1]) : null;
       if (ch != null) {
         out += ch;
         i++;

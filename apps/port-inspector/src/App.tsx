@@ -1,4 +1,5 @@
-import { baseLang, LANG_NAMES, UI_LANGS } from "@shared/lang";
+import { LANG_NAMES, UI_LANGS } from "@shared/lang";
+import { txt } from "@shared/textLang";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { VERSION } from "@shared/version";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -73,12 +74,12 @@ function Card({ id, title, verdict, lang, expandAll, children, tipKey }: { id: s
     <details className={`card card-${id}`} open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
       <summary data-tip={tipKey ? tip(lang, tipKey) : undefined}>
         <span className="card-title">{title}</span>
-        {verdict && <span className={`lv lv-${verdict.level}`}>{LEVEL_TEXT[verdict.level][baseLang(lang)]}</span>}
+        {verdict && <span className={`lv lv-${verdict.level}`}>{txt(LEVEL_TEXT[verdict.level], lang)}</span>}
       </summary>
       {verdict && verdict.notes.length > 0 && (
         <ul className="card-notes">
           {verdict.notes.map((n, i) => (
-            <li key={i}>{n[baseLang(lang)]}</li>
+            <li key={i}>{txt(n, lang)}</li>
           ))}
         </ul>
       )}
@@ -371,9 +372,9 @@ export default function App() {
   ]);
 
   const wlTotal: Level | null = wl ? overall([wlVerdict(wl, "wifi").level, wlVerdict(wl, "bt").level]) : null;
-  const titleParts = onWl ? [t("wlTitle"), wlTotal && LEVEL_TEXT[wlTotal][baseLang(lang)]] : [sel && portLabel(sel), total && LEVEL_TEXT[total][baseLang(lang)], testing && (lang === "ko" ? "시험 중" : "testing")];
+  const titleParts = onWl ? [t("wlTitle"), wlTotal && txt(LEVEL_TEXT[wlTotal], lang)] : [sel && portLabel(sel), total && txt(LEVEL_TEXT[total], lang), testing && (lang === "ko" ? "시험 중" : "testing")];
   useWindowTitle(windowTitle(APP, titleParts));
-  const summary = onWl ? `${t("wlTitle")} · ${wlTotal ? LEVEL_TEXT[wlTotal][baseLang(lang)] : t("loading")}` : sel ? `${portLabel(sel)} · ${total ? LEVEL_TEXT[total][baseLang(lang)] : t("loading")}` : t(narrow ? "pickNarrow" : "pick");
+  const summary = onWl ? `${t("wlTitle")} · ${wlTotal ? txt(LEVEL_TEXT[wlTotal], lang) : t("loading")}` : sel ? `${portLabel(sel)} · ${total ? txt(LEVEL_TEXT[total], lang) : t("loading")}` : t(narrow ? "pickNarrow" : "pick");
   const shown = onWl ? wlTotal : total;
   const dotCls = shown === "problem" ? "s-disconnected" : shown === "ok" ? "s-connected" : "";
   const nowCount = ports.filter((p) => p.present).length;
@@ -500,7 +501,7 @@ export default function App() {
           <>
             <div className="toolbar">
               <b className="sel-title">{t("wlTitle")}</b>
-              {wlTotal && <span className={`lv lv-${wlTotal}`}>{LEVEL_TEXT[wlTotal][baseLang(lang)]}</span>}
+              {wlTotal && <span className={`lv lv-${wlTotal}`}>{txt(LEVEL_TEXT[wlTotal], lang)}</span>}
               <label className="inline" data-tip={tip(lang, "piWlDays")}>
                 {t("wlDays")}
                 <select className="wl-days" value={wlDays} onChange={(e) => setWlDays(Number(e.target.value))} aria-label={t("wlDays")}>
@@ -545,7 +546,7 @@ export default function App() {
                     <b>{t("wlCannot")}</b>
                     <ul>
                       {WL_CANNOT_SEE.map((c) => (
-                        <li key={c.en}>{c[baseLang(lang)]}</li>
+                        <li key={c.en}>{txt(c, lang)}</li>
                       ))}
                     </ul>
                     <div className="guide-links">
@@ -563,7 +564,7 @@ export default function App() {
                     <b>{t("pcAdminOnly")}</b>
                     <ul>
                       {WL_ADMIN_ONLY.map((c) => (
-                        <li key={c.en}>{c[baseLang(lang)]}</li>
+                        <li key={c.en}>{txt(c, lang)}</li>
                       ))}
                     </ul>
                     <div className="hint">{t("wlReadOnly")}</div>
@@ -577,7 +578,7 @@ export default function App() {
           <>
             <div className="toolbar">
               <b className="sel-title">{sel ? portLabel(sel) : t(narrow ? "pickNarrow" : "pick")}</b>
-              {total && <span className={`lv lv-${total}`}>{LEVEL_TEXT[total][baseLang(lang)]}</span>}
+              {total && <span className={`lv lv-${total}`}>{txt(LEVEL_TEXT[total], lang)}</span>}
               {sel?.port && (
                 <button
                   className="btn small open-serial"
@@ -654,8 +655,8 @@ export default function App() {
                         [t("kStatus"), r.status.present ? (r.status.started ? t("stPresent") : t("stNotStarted")) : t("stAbsent")],
                         ...(r.status.problem
                           ? ([
-                              [t("kProblem"), <span key="p" className="lv lv-problem">{`${r.status.problem.code} — ${r.status.problem.meaning[baseLang(lang)]}`}</span>],
-                              [t("kAction"), r.status.problem.action[baseLang(lang)]],
+                              [t("kProblem"), <span key="p" className="lv lv-problem">{`${r.status.problem.code} — ${txt(r.status.problem.meaning, lang)}`}</span>],
+                              [t("kAction"), txt(r.status.problem.action, lang)],
                             ] as [string, ReactNode][])
                           : []),
                         [t("kArrival"), fmtTime(r.lastArrival)],
@@ -664,7 +665,7 @@ export default function App() {
                         [t("kParents"), r.ancestors.filter((a) => /^USB\\/i.test(a.instanceId)).map((a) => a.name).join(" → ") || null],
                       ]}
                     />
-                    {r.chip?.note && !r.chip.clue && <div className="hint">{r.chip.note[baseLang(lang)]}</div>}
+                    {r.chip?.note && !r.chip.clue && <div className="hint">{txt(r.chip.note, lang)}</div>}
                   </Card>
 
                   {r.usbPath && verdicts.usb && (
@@ -686,10 +687,10 @@ export default function App() {
                               const pw = r.power.devices.find((d) => d.instanceId.toUpperCase() === h.instanceId.toUpperCase());
                               return (
                                 <tr key={h.instanceId} className={`usb-${h.kind}`}>
-                                  <td className="nowrap">{USB_KIND_TEXT[h.kind][baseLang(lang)]}</td>
+                                  <td className="nowrap">{txt(USB_KIND_TEXT[h.kind], lang)}</td>
                                   <td title={h.instanceId}>{h.name}</td>
                                   <td className="mono">{h.port ?? "—"}</td>
-                                  <td>{h.speed ? USB_SPEED_TEXT[h.speed][baseLang(lang)] : "—"}</td>
+                                  <td>{h.speed ? txt(USB_SPEED_TEXT[h.speed], lang) : "—"}</td>
                                   <td>{h.busPowered == null ? "—" : `${h.busPowered ? t("usbBus") : t("usbSelf")}${h.ports != null ? ` · ${t("usbPorts", { n: h.ports })}` : ""}`}</td>
                                   <td>{pw ? (pw.canTurnOff ? t("on") : t("off")) : "—"}</td>
                                 </tr>
@@ -710,7 +711,7 @@ export default function App() {
                   )}
 
                   <Card id="settings" title={t("cardSettings")} verdict={verdicts.settings} lang={lang} expandAll={settings.expandAll} tipKey="piCardSettings">
-                    <KV rows={[[t("kDefault"), r.portDefault ? `${r.portDefault}${r.portDefaultNote ? ` (${r.portDefaultNote[baseLang(lang)]})` : ""}` : null]]} />
+                    <KV rows={[[t("kDefault"), r.portDefault ? `${r.portDefault}${r.portDefaultNote ? ` (${txt(r.portDefaultNote, lang)})` : ""}` : null]]} />
                     <div className="hint">{t("defaultNote")}</div>
                     <div className="sub-title">{t("params")}</div>
                     {r.params.length ? (
@@ -722,7 +723,7 @@ export default function App() {
                               <td className="mono ellipsis-cell" title={p.value}>
                                 {p.value}
                               </td>
-                              <td className="hint">{p.note?.[baseLang(lang)] ?? ""}</td>
+                              <td className="hint">{(p.note ? txt(p.note, lang) : undefined) ?? ""}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -865,7 +866,7 @@ export default function App() {
                   <div className="hint">{t("cannotIntro")}</div>
                   <ul>
                     {CANNOT_SEE.map((c) => (
-                      <li key={c.en}>{c[baseLang(lang)]}</li>
+                      <li key={c.en}>{txt(c, lang)}</li>
                     ))}
                   </ul>
                   <div className="guide-links">
@@ -879,7 +880,7 @@ export default function App() {
                           void link(guideUrl(lang, g.slug));
                         }}
                       >
-                        {g.title[baseLang(lang)]}
+                        {txt(g.title, lang)}
                       </a>
                     ))}
                   </div>

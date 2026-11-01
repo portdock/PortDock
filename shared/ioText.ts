@@ -32,7 +32,7 @@ const ko = {
   // ---- 인코딩·파일 로그(설정)
   ioSection: "글자·파일 로그",
   encoding: "글자 인코딩 (보기·ASCII 송신)",
-  encodingHint: "받은 글자 보기·복사·저장과 ASCII 로 보낼 때 씁니다. 한국 장비는 CP949 가 흔합니다. 이 인코딩에 없는 글자를 보내려 하면 «보낼 바이트» 에 이유가 나옵니다.",
+  encodingHint: "받은 글자 보기·복사·저장과 ASCII 로 보낼 때 씁니다. 한국 장비는 CP949, 일본 장비는 Shift_JIS(CP932, 0.11.0 부터)가 흔합니다. 이 인코딩에 없는 글자를 보내려 하면 «보낼 바이트» 에 이유가 나옵니다.",
   logFormat: "파일 로그 형식",
   fmtHex: "HEX (예전과 같음)",
   fmtAscii: "ASCII (글자)",
@@ -165,7 +165,7 @@ const en: typeof ko = {
   ckNeedKind: "Choose a checksum type first",
   ioSection: "Text and file log",
   encoding: "Text encoding (view and ASCII send)",
-  encodingHint: "Used to show, copy and save received text and to encode ASCII sends. Korean devices often use CP949. Characters the encoding lacks are reported in «Bytes to send».",
+  encodingHint: "Used to show, copy and save received text and to encode ASCII sends. Korean devices often use CP949, Japanese ones Shift_JIS (CP932, from 0.11.0). Characters the encoding lacks are reported in «Bytes to send».",
   logFormat: "File log format",
   fmtHex: "HEX (as before)",
   fmtAscii: "ASCII (text)",

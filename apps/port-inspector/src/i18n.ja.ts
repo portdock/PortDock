@@ -1,5 +1,5 @@
 // 일본어 — 원천은 영어판(i18n.ts 의 en). 빠진 열쇠는 영어로 보인다. 화면 폭이 좁으니 단추 글은 짧게.
-// 점검 결과 본문(portinfo·pcCheck·wireless 의 판정 글)은 아직 영어(0.11.0 1차 범위 밖).
+// 점검 결과 본문(portinfo·pcCheck·nicCheck·wireless 의 판정 글)은 shared/ja/text.ts(txt()). 복사·저장 글은 영어 그대로.
 import type { Key } from "./i18n.ts";
 
 export const ja: Partial<Record<Key, string>> = {

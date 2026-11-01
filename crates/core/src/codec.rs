@@ -1,5 +1,5 @@
 //! 송신 문자열 → 바이트. HEX 는 «01 03 0A», «01030A», «0x01,0x03» 모두 받는다.
-//! ASCII 는 \r \n \t \0 \\ \xNN 이스케이프를 풀고, 나머지 글자는 고른 인코딩(UTF-8·CP949·Latin-1·ASCII)으로 바꾼다.
+//! ASCII 는 \r \n \t \0 \\ \xNN 이스케이프를 풀고, 나머지 글자는 고른 인코딩(UTF-8·CP949·Shift_JIS·Latin-1·ASCII)으로 바꾼다.
 //! 받은 바이트를 글자로 보일 때(`text_view`)도 같은 인코딩 규칙을 쓴다 — 화면(shared/format.ts)과 같은 모양.
 
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,10 @@ pub enum Encoding {
     /// 한국어 윈도우 코드 페이지 949(EUC-KR 의 확장)
     #[serde(rename = "cp949")]
     Cp949,
+    /// (0.11.0) 일본어 윈도우 코드 페이지 932(Shift_JIS 의 확장 — encoding_rs 의 WHATWG Shift_JIS 가 곧 CP932).
+    /// 1바이트 반각 가타카나 0xA1~0xDF 도 있다
+    #[serde(rename = "cp932")]
+    Cp932,
     /// ISO-8859-1 — 한 바이트 = 한 글자(U+0000~U+00FF)
     #[serde(rename = "latin1")]
     Latin1,
@@ -33,6 +37,7 @@ impl Encoding {
         match self {
             Self::Utf8 => "utf-8",
             Self::Cp949 => "cp949",
+            Self::Cp932 => "cp932",
             Self::Latin1 => "latin1",
             Self::Ascii => "ascii",
         }
@@ -54,12 +59,13 @@ impl Encoding {
             Self::Ascii if c.is_ascii() => out.push(c as u8),
             Self::Latin1 if (c as u32) < 0x100 => out.push(c as u32 as u8),
             Self::Ascii | Self::Latin1 => return Err(bad()),
-            Self::Cp949 => {
+            Self::Cp949 | Self::Cp932 => {
                 if c.is_ascii() {
                     out.push(c as u8);
                 } else {
+                    let table = if self == Self::Cp949 { encoding_rs::EUC_KR } else { encoding_rs::SHIFT_JIS };
                     let mut buf = [0u8; 4];
-                    let (b, _, had_errors) = encoding_rs::EUC_KR.encode(c.encode_utf8(&mut buf));
+                    let (b, _, had_errors) = table.encode(c.encode_utf8(&mut buf));
                     if had_errors {
                         return Err(bad());
                     }
@@ -74,6 +80,7 @@ impl Encoding {
         match self {
             Self::Utf8 => "UTF-8",
             Self::Cp949 => "CP949(EUC-KR)",
+            Self::Cp932 => "Shift_JIS(CP932)",
             Self::Latin1 => "Latin-1",
             Self::Ascii => "ASCII",
         }
@@ -307,6 +314,25 @@ pub fn text_view(bytes: &[u8], enc: Encoding) -> String {
                 }
                 out.push_str(&format!("<{b:02X}>"));
             }
+            Encoding::Cp932 => {
+                // 1바이트 반각 가타카나(0xA1~0xDF → U+FF61~U+FF9F)
+                if (0xA1..=0xDF).contains(&b) {
+                    out.push(char::from_u32(0xFF61 + u32::from(b - 0xA1)).unwrap_or('?'));
+                    i += 1;
+                    continue;
+                }
+                if matches!(b, 0x81..=0x9F | 0xE0..=0xFC)
+                    && i + 1 < bytes.len()
+                    && let Some(s) = encoding_rs::SHIFT_JIS.decode_without_bom_handling_and_without_replacement(&bytes[i..i + 2])
+                    && s.chars().count() == 1
+                    && !s.starts_with(|c: char| c.is_ascii())
+                {
+                    out.push_str(&s);
+                    i += 2;
+                    continue;
+                }
+                out.push_str(&format!("<{b:02X}>"));
+            }
         }
         i += 1;
     }
@@ -355,6 +381,13 @@ mod tests {
         assert_eq!(parse_ascii_with("é", Encoding::Utf8).unwrap(), vec![0xC3, 0xA9]);
         // 이스케이프는 인코딩과 상관없이 그 바이트
         assert_eq!(parse_ascii_with("\\xC7", Encoding::Ascii).unwrap(), vec![0xC7]);
+        // Shift_JIS(CP932) — «テスト» 왕복, 반각 가타카나, CP932 확장(① NEC 특수 문자)
+        let jp = parse_ascii_with("テスト", Encoding::Cp932).unwrap();
+        assert_eq!(jp, vec![0x83, 0x65, 0x83, 0x58, 0x83, 0x67]);
+        assert_eq!(text_view(&jp, Encoding::Cp932), "テスト");
+        assert_eq!(parse_ascii_with("ｱA\\r", Encoding::Cp932).unwrap(), vec![0xB1, 0x41, 0x0D]);
+        assert_eq!(parse_ascii_with("①", Encoding::Cp932).unwrap(), vec![0x87, 0x40]);
+        assert!(parse_ascii_with("한", Encoding::Cp932).is_err());
         let e = parse_ascii_with("가€", Encoding::Latin1).unwrap_err();
         assert!(e.contains("U+AC00"), "{e}");
     }
@@ -366,6 +399,8 @@ mod tests {
         assert_eq!(t.build().unwrap(), "한".as_bytes().to_vec());
         let t: SendText = serde_json::from_str(r#"{"text":"한","mode":"ascii","checksum":"sum8","suffix":"\\r","encoding":"cp949"}"#).unwrap();
         assert_eq!(t.build().unwrap(), vec![0xC7, 0xD1, 0x98, 0x0D]);
+        let t: SendText = serde_json::from_str(r#"{"text":"テスト","mode":"ascii","checksum":null,"suffix":"","encoding":"cp932"}"#).unwrap();
+        assert_eq!(t.build().unwrap(), vec![0x83, 0x65, 0x83, 0x58, 0x83, 0x67]);
     }
 
     #[test]
@@ -401,6 +436,9 @@ mod tests {
         assert_eq!(text_view(&[0x8C, 0x63], Encoding::Cp949), "똠");
         assert_eq!(text_view(&[0xFF, 0x41], Encoding::Cp949), "<FF>A");
         assert_eq!(text_view(&[0xE9, 0x85, 0x1B], Encoding::Latin1), "é<85><1B>");
+        assert_eq!(text_view(&[0x93, 0xFA, 0xB1, 0x41], Encoding::Cp932), "日ｱA");
+        // 0x80·0xA0·0xFD 와 짝 없는 첫 바이트는 읽지 못함
+        assert_eq!(text_view(&[0x80, 0xA0, 0xFD, 0x83], Encoding::Cp932), "<80><A0><FD><83>");
         assert_eq!(text_view(&[0xE9], Encoding::Ascii), "<E9>");
         // 잘린 UTF-8
         assert_eq!(text_view(&[0xED, 0x95], Encoding::Utf8), "<ED><95>");
