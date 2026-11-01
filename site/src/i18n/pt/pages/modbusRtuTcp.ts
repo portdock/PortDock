@@ -1,0 +1,30 @@
+// Conversor de quadros Modbus RTU ↔ TCP (views/ModbusRtuTcpPage.astro) — 2º lote
+// Termos: endereço do escravo, Unit ID, ID de transação, gateway, broadcast
+export default {
+  title: "Conversor de quadros Modbus RTU ↔ TCP",
+  seo: "Conversor Modbus RTU para TCP: MBAP, CRC e LRC ASCII — PortDock",
+  desc: "Converta Modbus RTU (endereço + CRC) em Modbus TCP com cabeçalho MBAP e vice-versa, além do modo ASCII (dois-pontos, LRC). Cada byte colorido e explicado.",
+  input: "Quadro (HEX para RTU e TCP, texto começando com «:» para ASCII)",
+  help: "ex.: 01 03 00 00 00 0A C5 CD · 00 01 00 00 00 06 01 03 00 00 00 0A · :01030000000AF2\\r\\n — requisições ou respostas, um quadro por vez",
+  mode: "Formato de entrada",
+  auto: "Detecção automática",
+  tid: "ID de transação (ao converter para TCP, 0–65535)",
+  tidHelp: "Para uma resposta, informe o número da requisição correspondente.",
+  examples: "Exemplos",
+  ex: ["Requisição RTU 03", "Resposta RTU 03", "Requisição TCP", "Exceção TCP", "Requisição ASCII", "Escrita RTU 10"],
+  how: "Tudo é convertido no seu navegador; os bytes que você cola não são enviados para lugar nenhum.",
+  faqTitle: "Perguntas frequentes",
+  srcTitle: "Referências",
+  faq: [
+    ["Qual a diferença entre um quadro RTU e um TCP?", "A PDU do meio (código de função e dados) é idêntica. O RTU acrescenta na frente um endereço de escravo de 1 byte e no fim um CRC16 de 2 bytes (byte baixo primeiro). O TCP não tem CRC e coloca na frente um cabeçalho MBAP de 7 bytes: ID de transação (2), ID de protocolo (2, sempre 0), comprimento (2) e Unit ID (1). O comprimento conta os bytes do Unit ID até o fim."],
+    ["Qual Unit ID uso através de um gateway?", "Um gateway TCP para RTU (servidor de dispositivos serial) usa o Unit ID recebido como endereço do escravo no lado serial, então informe o endereço do equipamento que está atrás dele (1 a 247). O endereço 0 é broadcast numa linha serial, então, conforme o gateway, ele é repassado a todos os equipamentos (sem resposta) ou tratado como o próprio gateway. 255 (FF) é o valor recomendado para um equipamento TCP acessado diretamente; um gateway normalmente não o repassa para a linha serial, ou responde ele mesmo. Confira o comportamento exato no manual do gateway."],
+    ["Como o ID de transação é escolhido?", "Quem envia a requisição escolhe, e o equipamento devolve o mesmo número na resposta; normalmente ele aumenta de um em um a cada requisição. O RTU não tem esse campo, então ele é descartado ao converter de TCP para RTU, e ao converter de RTU para TCP é usado o valor da caixa acima."],
+    ["O que é o modo ASCII?", "O outro modo de transmissão do Modbus sobre linha serial. O endereço, a PDU e o LRC são enviados como dois caracteres HEX maiúsculos por byte, com «:» (3A) na frente e CR LF (0D 0A) no fim. O LRC é o complemento de dois de 8 bits da soma dos bytes do endereço até o fim da PDU. Ele leva a mesma PDU que o RTU, então os dois se convertem diretamente."],
+    ["Diz que o CRC ou o LRC está errado", "Os últimos bytes são tomados como CRC (ou LRC) e removidos, o resto é convertido e o valor correto é mostrado. Se você colou só o endereço e a PDU sem CRC, deixe o formato em RTU e acrescente o CRC correto, ou obtenha-o na calculadora de CRC e checksum."],
+  ],
+  guide: "Conexões Modbus TCP e o cabeçalho MBAP (em inglês)",
+  guide2: "Como ler quadros Modbus RTU (em inglês)",
+  src: ["Cabeçalho MBAP (transação, protocolo, comprimento, Unit ID), Unit ID em gateways", "Quadros RTU e ASCII, endereços (0 broadcast, 1–247), CRC e LRC", "PDU (código de função e dados), respostas de exceção"],
+  seeG: ["Para o cabeçalho MBAP e problemas de conexão, veja ", "; para os bytes do RTU, ", "."],
+  seeT: ["Para decodificar em detalhe os valores e os endereços 40001, use o ", "decodificador de quadros Modbus", "; para praticar com perguntas, experimente o ", "quiz de prática de Modbus (em inglês)", "."],
+};
