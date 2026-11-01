@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de résistance pour LED",
     seo: "Résistance pour LED : 5 V, 12 V, 24 V — PortDock",
-    desc: "Résistance série d’une LED et sa puissance d’après la tension d’alimentation, la tension directe (Vf), le courant et le nombre de LED, plus le courant avec une valeur E12/E24.",
+    desc: "Résistance série d’une LED et sa puissance d’après tension d’alimentation, Vf, courant et nombre de LED, plus le courant avec une valeur E12/E24.",
     vs: "Tension d’alimentation Vs (V)",
     vf: "Tension directe de la LED Vf (V, chacune)",
     i: "Courant de la LED If (mA)",

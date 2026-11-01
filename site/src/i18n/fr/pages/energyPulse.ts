@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur d’impulsions de compteur d’énergie",
     seo: "Impulsions de compteur d’énergie : imp/kWh en kW — PortDock",
-    desc: "Puissance (kW) et énergie (kWh) d’après la constante d’impulsion (imp/kWh), l’intervalle ou le nombre d’impulsions ; multiplicateur TC/TT et fréquence pour un compteur d’automate.",
+    desc: "Puissance (kW) et énergie (kWh) d’après la constante d’impulsion (imp/kWh), l’intervalle ou le nombre d’impulsions ; multiplicateur TC/TT.",
     c: "Constante d’impulsion (imp/kWh)",
     t: "Intervalle entre impulsions (s)",
     n: "Impulsions comptées",

@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur vitesse et puissance de pompes et ventilateurs",
     seo: "Lois de similitude pompes et ventilateurs (Hz) — PortDock",
-    desc: "Lois de similitude pour pompes et ventilateurs à variateur : comment débit, pression et puissance varient avec la vitesse ou la fréquence, et la différence d’énergie annuelle.",
+    desc: "Lois de similitude pour pompes et ventilateurs à variateur : débit, pression et puissance selon la vitesse ou la fréquence, et différence d’énergie annuelle.",
     f1: "Fréquence nominale (Hz)",
     f2: "Fréquence de fonctionnement (Hz)",
     q: "Débit nominal (m³/h etc.)",

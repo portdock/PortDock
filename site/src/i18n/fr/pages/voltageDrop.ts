@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de chute de tension et de section de câble",
     seo: "Chute de tension : section mm², AWG, 24 V DC — PortDock",
-    desc: "Chute de tension et % en continu (alimentations 24 V), mono et triphasé d’après le courant, la distance et la section (mm² ou AWG), plus section minimale et longueur maximale.",
+    desc: "Chute de tension et % en continu (24 V), mono et triphasé d’après courant, distance et section (mm² ou AWG), plus section minimale et longueur maximale.",
     sys: "Circuit",
     dc: "Continu (2 fils)",
     p1: "Alternatif monophasé (2 fils)",

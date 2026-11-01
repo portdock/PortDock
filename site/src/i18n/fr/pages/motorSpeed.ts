@@ -2,7 +2,7 @@
 export default {
     title: "Fréquence du variateur ↔ vitesse du moteur",
     seo: "Variateur Hz en tr/min : pôles, glissement — PortDock",
-    desc: "Vitesse synchrone d’après les Hz du variateur et les pôles, glissement de la plaque, vitesse réelle et en sortie de réducteur approximatives, Hz pour une vitesse cible.",
+    desc: "Vitesse synchrone d’après les Hz du variateur et les pôles, glissement de la plaque, vitesse approximative en sortie de réducteur, Hz pour une vitesse cible.",
     hz: "Fréquence de sortie (Hz)",
     poles: "Pôles",
     rHz: "Fréquence nominale de la plaque (Hz)",

@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de puissance de chauffage (kW, durée de chauffe, ampères)",
     seo: "Puissance de chauffage en kW : durée, débit, courant — PortDock",
-    desc: "kW de chauffe d’après la masse, la chaleur massique, l’élévation de température et la durée, ou pour eau ou huile en circulation, courant mono et triphasé, puissance sous une autre tension.",
+    desc: "kW de chauffe d’après la masse, la chaleur massique, l’élévation de température et la durée, ou pour un fluide en circulation ; courant mono et triphasé.",
     sys: "Unités",
     syss: [["si", "SI (kg, kJ/kg·K, °C, L/min)"], ["us", "US (lb, Btu/lb·°F, °F, gal/min)"]],
     s1: "Chauffer un réservoir ou une pièce",

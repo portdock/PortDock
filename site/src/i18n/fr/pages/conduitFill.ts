@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de remplissage de conduits et goulottes",
     seo: "Remplissage de conduit : NEC 40 %, goulotte — PortDock",
-    desc: "Taux de remplissage d’un conduit ou d’une goulotte d’après les diamètres et le nombre de fils, face au NEC (53/31/40 %), aux chemins de câbles (20 %) et à la NFPA 79 (50 %).",
+    desc: "Taux de remplissage d’un conduit ou d’une goulotte d’après diamètres et nombre de fils, face au NEC (53/31/40 %), aux chemins de câbles et à la NFPA 79.",
     mode: "Où",
     conduit: "Conduit (rond)",
     duct: "Goulotte (rectangulaire)",

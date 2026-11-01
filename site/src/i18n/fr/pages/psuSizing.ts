@@ -4,7 +4,7 @@ import { STD_RATINGS } from "../../../lib/psuSizing.ts";
 export default {
     title: "Calculateur de dimensionnement d’alimentation 24 V DC",
     seo: "Alimentation 24 V : appel de courant, marge — PortDock",
-    desc: "Dimensionnez une alimentation 24 V DC d’après courant, appel de courant et facteur de marche d’automates, IHM, capteurs, vannes, relais : total, calibre avec marge, voies de protection.",
+    desc: "Dimensionnez une alimentation 24 V DC d’après courant, appel de courant et marche des charges : total, calibre avec marge, voies de protection.",
     loads: "Charges",
     head: ["Type", "Nom", "Qté", "Courant mA (unité)", "Appel mA (unité, vide si inconnu)", "Marche %", ""],
     add: "Ajouter une ligne",

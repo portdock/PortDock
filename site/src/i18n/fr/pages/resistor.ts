@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de résistances en série et en parallèle",
     seo: "Résistances série et parallèle (E12, E24, E96) — PortDock",
-    desc: "Résistance totale en série et en parallèle, partage du courant, résistance complémentaire pour une valeur cible et paires E12/E24/E96 pour les valeurs hors série.",
+    desc: "Résistance totale en série et en parallèle, partage du courant, résistance complémentaire pour une cible et paires E12/E24/E96.",
     list: "Valeurs de résistances — séparées par des espaces ou des virgules (p. ex. 10k 4k7 2.2k ; sans unité = Ω)",
     res: "Résultats",
     k: { ser: "Total en série", par: "Total en parallèle", share: "Part de courant en parallèle", pv: "Courant parallèle sous V" },

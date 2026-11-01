@@ -2,7 +2,7 @@
 export default {
     title: "Calculateur de courant de moteur (kW en ampères)",
     seo: "Courant de moteur : kW en ampères, triphasé, HP — PortDock",
-    desc: "Courant du moteur, puissance absorbée et kVA d’après la puissance (kW ou HP), la tension, le rendement et le facteur de puissance — triphasé, monophasé ou continu.",
+    desc: "Courant du moteur, puissance absorbée et kVA d’après la puissance (kW ou HP), la tension, le rendement et le facteur de puissance — triphasé, mono ou continu.",
     phase: "Alimentation",
     p3: "Triphasé (tension composée)",
     p1: "Monophasé",
