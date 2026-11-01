@@ -6,6 +6,7 @@
 // 새 언어: shared/<언어>/text.ts 를 만들고 아래 MORE 에 더한다.
 import type { Lang } from "./lang.ts";
 import { JA_TEXT } from "./ja/text.ts";
+import { VI_TEXT } from "./vi/text.ts";
 import { TR_TEXT } from "./tr/text.ts";
 
 export interface KoEn {
@@ -13,7 +14,7 @@ export interface KoEn {
   en: string;
 }
 
-const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, tr: TR_TEXT };
+const MORE: Partial<Record<Lang, Record<string, string>>> = { ja: JA_TEXT, tr: TR_TEXT, vi: VI_TEXT };
 
 interface Pattern {
   re: RegExp;

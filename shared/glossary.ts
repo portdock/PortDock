@@ -5,6 +5,7 @@ import type { HelpSection } from "./HelpDialog";
 
 import { baseLang, type Lang } from "./lang.ts";
 import { JA_TERMS } from "./ja/glossary.ts";
+import { VI_TERMS } from "./vi/glossary.ts";
 import { TR_TERMS } from "./tr/glossary.ts";
 
 /** 낱말 하나 — [이름, 설명] 한·영 */
@@ -143,7 +144,7 @@ export const TERMS = {
 export type TermId = keyof typeof TERMS;
 
 /** 추가 언어 낱말([이름, 설명]) — 없으면 영어 */
-const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS, tr: TR_TERMS };
+const MORE: Partial<Record<Lang, Partial<Record<TermId, [string, string]>>>> = { ja: JA_TERMS, tr: TR_TERMS, vi: VI_TERMS };
 
 /** 낱말 하나 [이름, 설명] — 화면 언어로 */
 export const term = (id: TermId, lang: Lang): [string, string] => MORE[lang]?.[id] ?? TERMS[id][baseLang(lang)];

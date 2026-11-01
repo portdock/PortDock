@@ -9,6 +9,7 @@ import { DEVICES } from "./deviceData";
 import { commLine, devRegs, KIND_TEXT, matchDevice, pollGroups, readFc, type Device, type Lang } from "./devices";
 import "./devices.css";
 import { JA_DEVICE } from "./ja/dialogs.ts";
+import { VI_DEVICE } from "./vi/dialogs.ts";
 import { TR_DEVICE } from "./tr/dialogs.ts";
 
 export interface DeviceApplyOpts {
@@ -86,7 +87,7 @@ const TX = {
 };
 
 export type DeviceTextKey = keyof typeof TX.ko;
-const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE, tr: TR_DEVICE });
+const TXL = dicts(TX.ko, TX.en, { ja: JA_DEVICE, tr: TR_DEVICE, vi: VI_DEVICE });
 type TKey = keyof typeof TX.ko;
 
 const fillT = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));

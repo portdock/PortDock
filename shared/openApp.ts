@@ -7,6 +7,7 @@ import { copyText } from "./logCopy";
 import type { ToastApi } from "./Toast";
 import type { Lang } from "./uiText";
 import { JA_OPEN_APP } from "./ja/dialogs.ts";
+import { VI_OPEN_APP } from "./vi/dialogs.ts";
 import { TR_OPEN_APP } from "./tr/dialogs.ts";
 
 /** 열 프로그램과 넘길 값 — Rust launch::Target 과 같은 모양 */
@@ -38,7 +39,7 @@ const T = {
 };
 
 export type OpenAppTextKey = keyof typeof T.ko;
-const TL = dicts(T.ko, T.en, { ja: JA_OPEN_APP, tr: TR_OPEN_APP });
+const TL = dicts(T.ko, T.en, { ja: JA_OPEN_APP, tr: TR_OPEN_APP, vi: VI_OPEN_APP });
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (m, k: string) => v[k] ?? m);
 
 /**
