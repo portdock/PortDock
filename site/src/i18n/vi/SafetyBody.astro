@@ -1,0 +1,126 @@
+---
+// Nguyên tắc an toàn (tiếng Việt) — cùng nội dung với bản tiếng Hàn/tiếng Anh trong views/SafetyPage.astro. Vì có liên kết trong câu nên viết dạng markup thay vì bảng văn bản.
+// Khi căn cứ (SECURITY.md, hướng dẫn chương trình) hoặc bản tiếng Hàn/tiếng Anh thay đổi, sửa cả ở đây.
+// Chương trình chỉ có giao diện tiếng Hàn và tiếng Anh — vì vậy tên nút, ô giữ nguyên tên tiếng Anh trong ngoặc kép.
+// Mục 7 không gắn liên kết cơ quan an toàn lao động của Việt Nam vì chưa xác nhận được địa chỉ chính thức hiện hành — chỉ ghi «cơ quan an toàn lao động của nước bạn».
+import { REPO } from "../../data/tools";
+import { link } from "../../lib/i18n";
+
+const lang = "vi";
+const security = `${REPO}/blob/main/SECURITY.md`;
+const advisory = `${REPO}/security/advisories/new`;
+---
+
+<h2>1. Các chức năng kiểm tra chỉ đọc</h2>
+<ul>
+  <li>Port Inspector (cổng COM, card mạng, “This PC”) và Hardware Tester đọc cài đặt và nhật ký mà không cần quyền quản trị. Chúng không cài driver, không sửa giá trị registry hay cài đặt Windows.</li>
+  <li>Kết quả chỉ dừng ở mức “Worth a look” (đáng xem lại), các nguyên nhân có thể và “Where to change” (màn hình Windows nào). Mọi thay đổi do bạn tự làm trong Windows.</li>
+  <li>
+    (từ 0.10.0) Phần kiểm tra mức phơi nhiễm trong Port Inspector “This PC” (Remote Desktop, SMBv1, tường lửa, cổng lắng nghe trên mọi địa chỉ, tự động đăng nhập, USB AutoPlay) và nhãn “Exposed” của Net Scan cũng chỉ đọc. Với tự động đăng nhập, chỉ kiểm tra có giá trị mật khẩu hay không, không bao giờ đọc nội dung. Net Scan không quét thêm cổng nào vì nhãn này. Cách đọc kết quả:
+    <a href={link(lang, "guides/field-pc-exposure-check/")}>Đọc kết quả kiểm tra mức phơi nhiễm của PC hiện trường (tiếng Anh)</a>
+  </li>
+</ul>
+
+<h2>2. Server nhận kết nối ở đâu</h2>
+<p>
+  Modbus, giao thức MC, giao thức chuyên dụng LS XGT, SCPI raw socket và TCP/UDP thuần không có xác thực. Khi server của PortDock đang chạy, ai tới được cổng của nó cũng giao tiếp được với nó, vì vậy mỗi chương trình có địa chỉ mặc định như dưới đây.
+</p>
+<table class="t">
+  <thead>
+    <tr>
+      <th scope="col">Chương trình</th>
+      <th scope="col">Địa chỉ mặc định</th>
+      <th scope="col">Mở cho PC khác</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PLC Simulator (MC mặc định trên TCP 5000, từ 0.10.0 có XGT trên TCP 2004 / UDP 2005)</td>
+      <td>127.0.0.1 (chỉ PC này)</td>
+      <td>Chỉ khi bạn bật “Allow other PCs to connect (0.0.0.0)”</td>
+    </tr>
+    <tr>
+      <td>Chia sẻ cổng serial (từ 0.10.0 — mặc định raw hoặc RFC 2217 trên TCP 7000, gateway Modbus TCP ↔ RTU trên TCP 502)</td>
+      <td>127.0.0.1 (chỉ PC này)</td>
+      <td>Khi đã bật “Allow other PCs to connect (0.0.0.0)”, lúc bắt đầu sẽ hỏi lại một lần nữa. Lựa chọn không được lưu, lần chạy sau lại là 127.0.0.1.</td>
+    </tr>
+    <tr>
+      <td>Modbus Slave (TCP) · TCP server và relay · Simulator</td>
+      <td>127.0.0.1 (chỉ PC này; mặc định khi chạy lần đầu từ 0.10.0 — cài đặt đã lưu từ phiên bản trước được giữ nguyên)</td>
+      <td>Chỉ khi bạn chọn 0.0.0.0 (mọi card mạng) hoặc địa chỉ của một card mạng trong ô địa chỉ</td>
+    </tr>
+    <tr>
+      <td>UDP</td>
+      <td>0.0.0.0 (mọi card mạng)</td>
+      <td>Nhận trên mọi card mạng vì phải nhận được phản hồi của thiết bị. Có thể đổi sang địa chỉ của một card mạng hoặc 127.0.0.1 trong ô địa chỉ.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Chỉ mở server cho PC khác trên mạng bạn tin cậy. Gateway chuyển tiếp lệnh đọc và ghi tới các thiết bị RS-485. Lệnh hỏi tới Unit ID 0 mặc định nhận ngoại lệ 0A (không có đường đi); chỉ khi bạn chọn “Broadcast” thì mới gửi tới mọi thiết bị trên bus. Những điều cơ bản về tách mạng và đóng cổng có trong
+  <a href={link(lang, "guides/industrial-protocol-no-authentication/")}>Modbus, MC và XGT không có xác thực (tiếng Anh)</a>.
+</p>
+
+<h2>3. Ghi vào thiết bị</h2>
+<ul>
+  <li>
+    (từ 0.10.0) Trong “Settings backup &amp; restore” (sao lưu và khôi phục cài đặt) của Modbus Master, thẻ khôi phục (ghi) mở ra mà chưa chọn gì. Nút “Write” bị khóa cho tới khi “Preview” đọc xong giá trị hiện tại, và không ghi gì nếu không đọc được ô nào. Sau “Write” bạn còn phải bấm “Confirm write” thêm một lần nữa thì mới gửi đi; sau đó từng ô được đọc lại và hiện là khớp, khác, ghi thất bại hoặc chưa đọc lại được.
+  </li>
+  <li>Với RTU, không cho khôi phục tới địa chỉ 0 (broadcast — mọi thiết bị trên bus đều nhận) và các địa chỉ dành riêng 248–255. Thanh ghi đầu vào (04), ngõ vào số (02) và thanh ghi được đánh dấu chỉ đọc trong hồ sơ thiết bị cũng bị chặn.</li>
+  <li>Trong PLC Simulator, thao tác điền hàng loạt mà sẽ ghi đè lên ô đã có giá trị sẽ hỏi lại một lần nữa.</li>
+  <li>Đừng ghi vào máy đang chạy. Nhiều thiết bị cần lệnh “lưu” riêng để giữ giá trị sau khi tắt nguồn — hãy xem vùng được phép ghi trong tài liệu hướng dẫn của thiết bị trước.</li>
+</ul>
+
+<h2>4. Công cụ ghi dành cho AI (MCP)</h2>
+<ul>
+  <li>Hai công cụ ghi của PortDock MCP (modbus_write_sim, mc_write_sim) chỉ nhận địa chỉ loopback (127.0.0.1, ::1, localhost). Mọi công cụ khác chỉ đọc.</li>
+  <li>
+    (từ 0.10.0) Lệnh ghi Modbus (modbus_write_sim) trước tiên hỏi thông tin nhận dạng của đích (FC 2B/0E) và chỉ ghi khi tên hãng bắt đầu bằng “PortDock” (mặc định của PortDock Modbus Slave). Nhờ vậy nó từ chối các chương trình chuyển tiếp tới thiết bị thật, như gateway serial đang lắng nghe trên 127.0.0.1:502 của cùng PC.
+  </li>
+  <li>
+    Lệnh ghi MC (mc_write_sim) chỉ được kiểm tra theo địa chỉ. Nếu một chương trình trên PC này chuyển tiếp 127.0.0.1 tới thiết bị khác (TCP relay, gateway của hãng, tunnel), lệnh ghi qua ứng dụng AI có thể tới được thiết bị đó — đừng giao việc ghi cho AI khi chương trình như vậy đang chạy. Cách thiết lập:
+    <a href={link(lang, "guides/portdock-mcp/")}>Dùng PortDock MCP (tiếng Anh)</a>
+  </li>
+</ul>
+
+<h2>5. Những gì rời khỏi PC của bạn</h2>
+<ul>
+  <li>Dữ liệu thiết bị chỉ đi tới cổng và địa chỉ bạn chọn, không gửi đi đâu khác.</li>
+  <li>
+    <b>Thống kê sử dụng</b> mặc định tắt và chỉ gửi khi bạn đồng ý (hỏi một lần khi chạy lần đầu; có thể tắt trong cài đặt). Chỉ gửi số lần dùng từng chức năng, số phút mở chương trình, phiên bản chương trình và Windows, ngôn ngữ hiển thị và loại bản (cài đặt/portable) — không bao giờ gửi dữ liệu truyền thông, địa chỉ IP, cổng, tên COM, đường dẫn tệp hay tên PC, người dùng, thiết bị.
+  </li>
+  <li>
+    <b>Sao chép “AI”</b> chỉ đưa văn bản xem trước vào clipboard. Thư mục người dùng, tên PC mặc định của Windows, 3 byte cuối của địa chỉ MAC và IP công cộng được che; IP riêng mặc định giữ nguyên (bản xem trước cũng có thể che chúng). Khi dán vào khung chat AI, văn bản sẽ đến dịch vụ đó — vì vậy hãy xem lại bản xem trước trước khi dán.
+  </li>
+  <li>
+    <b>Công cụ web</b> (máy tính, bộ giải mã khung, trình phân tích pcap, kiểm tra phần cứng) xử lý những gì bạn nhập và tệp bạn chọn ngay trong trình duyệt này, không bao giờ gửi lên máy chủ.
+  </li>
+  <li>
+    Báo cáo lỗi, kiểm tra cập nhật và các ngoại lệ khác (ping và truy vấn DNS của Hardware Tester) đều được liệt kê trong <a href={link(lang, "privacy/")}>chính sách quyền riêng tư</a>.
+  </li>
+</ul>
+
+<h2>6. Theo dõi giá trị và cảnh báo không phải thiết bị an toàn</h2>
+<p>
+  Theo dõi giá trị và cảnh báo trong Modbus Master và Plot là để hỗ trợ người đang nhìn màn hình. Nếu PC chuyển sang chế độ ngủ hoặc mất kết nối, chúng có thể không kích hoạt. Bảo vệ người và máy là việc của các thiết bị an toàn chuyên dụng — dừng khẩn cấp (E-stop), khóa liên động (interlock), relay an toàn — và PortDock không được thay thế chúng.
+</p>
+
+<h2>7. Công việc về điện</h2>
+<p>
+  PortDock và các bài hướng dẫn giúp kiểm tra truyền thông; chúng không dạy làm điện. Công việc trên cực đấu dây và hệ thống dây phải do người có chuyên môn thực hiện, sau khi cách ly và khóa nguồn (LOTO) rồi xác nhận không còn điện bằng bút thử điện. Hãy làm theo hướng dẫn chính thức của cơ quan quản lý an toàn lao động ở nước bạn và quy trình làm việc của cơ sở.
+</p>
+
+<h2>8. Kiểm tra tệp đã tải</h2>
+<ul>
+  <li>Hiện các tệp phát hành chưa được ký mã (code signing), nên Windows có thể hiện “Windows protected your PC” — xem <a href={link(lang, "code-signing/")}>Chính sách ký mã (tiếng Anh)</a></li>
+  <li>
+    Chỉ tải từ GitHub Releases và đối chiếu với giá trị SHA256 (SHA256SUMS.txt) và kết quả quét Microsoft Defender đăng kèm mỗi bản phát hành. Cách làm:
+    <a href={link(lang, "download/#safe")}>Tải về → Có an toàn không?</a>
+  </li>
+</ul>
+
+<h2>9. Báo cáo vấn đề bảo mật</h2>
+<p>
+  Xin đừng mở issue công khai. Hãy báo riêng qua <a href={advisory}>GitHub Security Advisories (Report a vulnerability)</a> hoặc email (tiêu đề bắt đầu bằng [security]). Phạm vi và cách phản hồi có trong
+  <a href={security}>SECURITY.md</a>. PortDock do một người duy trì trong thời gian rảnh — vì vậy không cam kết ngày sửa lỗi và không có tiền thưởng phát hiện lỗi (bug bounty).
+</p>

@@ -1,0 +1,28 @@
+// Tên hàm Modbus và vùng dữ liệu (lib/modbusDecode.ts, shared/modbusBuild.ts) — dùng chung cho công cụ tạo lệnh hỏi và bộ giải mã
+// Tên hàm giữ nguyên tiếng Anh như đặc tả Modbus và tài liệu thiết bị; chỉ dịch phần chú thích.
+export default {
+  "Read Coils": "Read Coils (đọc coil)",
+  "Read Discrete Inputs": "Read Discrete Inputs (đọc ngõ vào số)",
+  "Read Holding Registers": "Read Holding Registers (đọc thanh ghi giữ)",
+  "Read Input Registers": "Read Input Registers (đọc thanh ghi đầu vào)",
+  "Write Single Coil": "Write Single Coil (ghi một coil)",
+  "Write Single Register": "Write Single Register (ghi một thanh ghi)",
+  "Write Multiple Coils": "Write Multiple Coils (ghi nhiều coil)",
+  "Write Multiple Registers": "Write Multiple Registers (ghi nhiều thanh ghi)",
+  "Read/Write Multiple Registers": "Read/Write Multiple Registers (đọc/ghi nhiều thanh ghi)",
+  "Read Exception Status (serial line only)": "Read Exception Status (chỉ đường serial)",
+  "Diagnostics (serial line only)": "Diagnostics (chẩn đoán, chỉ đường serial)",
+  "Get Comm Event Counter (serial line only)": "Get Comm Event Counter (chỉ đường serial)",
+  "Get Comm Event Log (serial line only)": "Get Comm Event Log (chỉ đường serial)",
+  "Report Server ID (serial line only)": "Report Server ID (chỉ đường serial)",
+  "Read File Record": "Read File Record (đọc bản ghi tệp)",
+  "Write File Record": "Write File Record (ghi bản ghi tệp)",
+  "Mask Write Register": "Mask Write Register (ghi thanh ghi theo mặt nạ)",
+  "Read FIFO Queue": "Read FIFO Queue (đọc hàng đợi FIFO)",
+  "Encapsulated Interface Transport": "Encapsulated Interface Transport (gồm cả nhận dạng thiết bị)",
+  "Unknown function": "Hàm không xác định",
+  Coils: "Coil",
+  "Discrete inputs": "Ngõ vào số (discrete input)",
+  "Holding registers": "Thanh ghi giữ (holding register)",
+  "Input registers": "Thanh ghi đầu vào (input register)",
+};

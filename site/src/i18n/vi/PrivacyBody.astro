@@ -1,0 +1,88 @@
+---
+// Chính sách quyền riêng tư (tiếng Việt) — cùng nội dung với bản tiếng Hàn/tiếng Anh trong views/PrivacyPage.astro. Vì có liên kết trong câu nên viết dạng markup thay vì bảng văn bản.
+// Khi bản tiếng Hàn/tiếng Anh thay đổi, sửa cả ở đây.
+// Chương trình chỉ có giao diện tiếng Hàn và tiếng Anh — vì vậy tên nút, ô giữ nguyên tên tiếng Anh trong ngoặc kép.
+import { CONTACT_EMAIL } from "@shared/links";
+import EmailOff from "../../components/EmailOff.astro";
+import { link } from "../../lib/i18n";
+
+const lang = "vi";
+// Biểu mẫu liên hệ chỉ có khi biến build PUBLIC_TURNSTILE_SITE_KEY được đặt (ContactPage.astro)
+const hasForm = Boolean(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY);
+---
+
+<h2>1. Các chương trình (công cụ PortDock)</h2>
+<ul>
+  <li>Chương trình không bao giờ gửi dữ liệu truyền thông, lệnh, quy tắc hay cài đặt của bạn đi đâu. Cài đặt nằm trên PC này. Việc giao tiếp với thiết bị (serial, TCP, UDP, Modbus, SCPI, giao thức MC, tìm thiết bị trong mạng) chỉ đi tới cổng, địa chỉ và subnet bạn chọn.</li>
+  <li>
+    <b>Nhật ký mất kết nối và độ trễ của Hardware Tester</b>: chỉ trong lúc “Start recording” đang bật, nó ping gateway (router) và một địa chỉ Internet bạn chọn (mặc định 1.1.1.1 = Cloudflare; 8.8.8.8 = Google hoặc địa chỉ riêng của bạn), và cứ 5 giây tra một tên miền (mặc định example.com; để trống thì bỏ qua) ở máy chủ DNS cài trên PC này. Như mọi yêu cầu Internet, bên nhận thấy địa chỉ kết nối (IP) của PC này. Các đích luôn được hiển thị, và sau khi dừng thì không gửi gì nữa. Nhật ký chỉ nằm lại trên PC nếu bạn lưu thành CSV.
+  </li>
+  <li>
+    <b>Xem tín hiệu Wi-Fi của Hardware Tester (chỉ khi bạn bấm)</b>: đọc cường độ tín hiệu, tốc độ liên kết, băng tần, kênh và số mạng lân cận dùng chung từng kênh. Từ Windows 11 24H2, Windows yêu cầu quyền vị trí để đọc các giá trị này — chương trình không đọc vị trí (tọa độ), và không bao giờ đọc hay lưu tên mạng (SSID) và địa chỉ điểm truy cập (BSSID). Nếu bạn từ chối, mọi chức năng khác vẫn hoạt động.
+  </li>
+  <li>
+    <b>Tên thiết bị Bluetooth</b>: nhật ký kết nối của Hardware Tester và thẻ “Wireless” của Port Inspector chỉ hiện tên trên màn hình; văn bản được lưu, sao chép và xuất ra dùng “Device N”. Tên không bao giờ được gửi đi.
+  </li>
+  <li>
+    <b>Server lắng nghe trên mạng (chỉ khi bạn khởi động)</b>: PLC Simulator (MC mặc định trên TCP 5000, từ 0.10.0 có LS XGT trên TCP 2004 / UDP 2005) và chia sẻ cổng serial (từ 0.10.0 — mặc định raw hoặc RFC 2217 trên TCP 7000, gateway Modbus TCP ↔ RTU mặc định trên TCP 502) mặc định chỉ nhận kết nối từ PC này (127.0.0.1). Nếu bạn bật “Allow other PCs to connect (0.0.0.0)”, PC khác trong cùng mạng có thể kết nối mà không cần xác thực, đọc và ghi giá trị thiết bị hoặc gửi tới cổng COM và thiết bị RS-485 (các giao thức này không có xác thực). Modbus Slave TCP, TCP server/relay và Simulator lắng nghe trên địa chỉ trong ô địa chỉ của chúng — từ 0.10.0, lần chạy đầu là 127.0.0.1 (chỉ PC này); để mở cho PC khác, chọn 0.0.0.0 hoặc địa chỉ của một card mạng ở đó. UDP mặc định lắng nghe trên 0.0.0.0 (mọi card mạng) vì phải nhận phản hồi của thiết bị. Chỉ mở chúng trên mạng tin cậy.
+  </li>
+  <li>
+    <b>PortDock MCP (máy chủ cho ứng dụng AI)</b>: với mỗi lần gọi công cụ, nó ghi một dòng vào nhật ký phiên trên PC này (thời gian, công cụ, tham số, đích, thành công hay không, phần đầu của kết quả, thời lượng). Nhật ký nằm ở portdock-data\mcp-log nếu cạnh exe có thư mục portdock-data, nếu không thì ở %LOCALAPPDATA%\dev.portdock\mcp-log; tệp cũ hơn 30 ngày bị xóa. Đường dẫn thư mục người dùng được che thành “~” và địa chỉ MAC thành “xx-…”. PortDock MCP không gửi nhật ký này đi đâu và không gửi báo cáo lỗi hay thống kê sử dụng. Tuy nhiên <b>kết quả của công cụ (giá trị cổng và thiết bị đã đọc) được gửi tới ứng dụng AI bạn dùng, và ứng dụng đó có thể gửi chúng lên máy chủ của công ty phát triển nó (mô hình AI)</b> — từ đó áp dụng chính sách quyền riêng tư của ứng dụng và công ty đó.
+  </li>
+  <li>
+    <b>Sao chép “AI” (sao chép để hỏi AI, 0.8.0 — nút “AI” trên thanh tiêu đề của 12 chương trình)</b>: tạo văn bản dùng cho khung chat AI từ chương trình, cài đặt kết nối, lỗi trong phiên này và dữ liệu truyền thông gần đây (hoặc kết quả kiểm tra), hiện dưới dạng xem trước, và “Copy” đưa nó <b>chỉ vào clipboard</b>. PortDock không gửi văn bản này đi đâu. <b>Khi bạn dán vào khung chat AI (ví dụ ChatGPT, Claude hoặc Gemini), văn bản sẽ đến dịch vụ AI đó và áp dụng chính sách quyền riêng tư của dịch vụ đó.</b> Trong văn bản, đường dẫn thư mục người dùng thành “~”, tên PC mặc định của Windows (DESKTOP-…) và tên PC trong đường dẫn UNC được che, 3 byte cuối của địa chỉ MAC thành “xx”, và IP công cộng thành số như “[IP-1]”. IP riêng (192.168.x.x, 10.x.x.x …) không truy ngược được từ bên ngoài và thường cần để nhận ra nguyên nhân như “PC và thiết bị khác subnet”, nên mặc định được giữ nguyên; bật “Hide private IPs too” trong bản xem trước để che cả chúng. Có thể bỏ dữ liệu truyền thông gần đây trong bản xem trước, và văn bản giới hạn 8.000 ký tự (dòng cũ nhất bị bỏ trước). Hãy kiểm tra thông tin thiết bị và công ty trong bản xem trước trước khi dán.
+  </li>
+  <li>
+    <b>“Save as pcap” của TCP relay (0.8.0)</b>: khi bật, các byte được chuyển tiếp theo cả hai chiều chỉ được ghi vào tệp .pcapng bạn chọn. Tệp nằm trên PC này và không bao giờ được gửi đi. Tệp pcap chứa địa chỉ IP, cổng và nội dung truyền thông, nên hãy cẩn thận trước khi chia sẻ.
+  </li>
+  <li>
+    <b>Kết quả kiểm tra và nhật ký lưu trên PC này (từ 0.10.0)</b>: không bao giờ được gửi; chỉ được ghi vào bộ nhớ của chương trình (cũng được chép vào tệp “Export settings”) hoặc tệp bạn chọn — dữ liệu chuẩn (baseline) của Net Scan (IP, địa chỉ MAC đầy đủ, tên máy và cổng đang mở của từng thiết bị), kết quả kiểm tra đã lưu của Port Inspector (tối đa 20, gồm IP của card mạng và gateway — không có số serial thiết bị, tên PC và tên mạng đã kết nối), bản sao lưu cài đặt thiết bị của Modbus Master (JSON/CSV), nhật ký cảnh báo CSV trong Modbus Master và Plot, và nhật ký cắm/rút USB của Hardware Tester (tên thiết bị và VID:PID — không có số serial). Chúng cho thấy mạng của bạn được xây dựng thế nào, nên hãy cẩn thận trước khi chia sẻ.
+  </li>
+  <li>
+    <b>Báo cáo lỗi</b> chỉ được gửi khi bạn bấm gửi trong cửa sổ báo cáo “!” hoặc đặt “Automatic error reports” thành “Send automatically” (mặc định là “Ask after a crash” — hỏi sau khi chương trình bị lỗi; “Never send” để tắt). Báo cáo gồm nguyên nhân lỗi (nội dung và vị trí ngoại lệ) và phiên bản chương trình, Windows. Dữ liệu truyền thông và cài đặt IP không có trong báo cáo trừ khi bạn chủ động đánh dấu “recent traffic”.
+  </li>
+  <li>Báo cáo được gửi tới Sentry (Functional Software, Inc.), chỉ dùng để sửa lỗi, bị xóa sau 30 ngày, được lưu ở vùng EU (Đức) của Sentry, và không lưu địa chỉ IP.</li>
+  <li>
+    <b>Thống kê sử dụng (tùy chọn, mặc định tắt)</b>: chương trình hỏi một lần khi chạy lần đầu và chỉ gửi thống kê nếu bạn chọn “Send” hoặc bật “Send usage statistics” trong Settings. Đóng câu hỏi mà không chọn thì không gửi gì. Khi bạn đóng cửa sổ, nó gửi tên và phiên bản chương trình, phiên bản Windows (10/11), ngôn ngữ hiển thị, số phút chương trình được mở, số lần dùng từng chức năng (kết nối, gửi, đọc… — chỉ là số đếm) và đó là bản cài đặt hay bản portable. Nó không bao giờ gửi dữ liệu truyền thông, địa chỉ IP, cổng, tên COM, đường dẫn tệp hay tên PC, người dùng, thiết bị, và không tạo mã định danh nào gắn với bản cài đặt hay PC của bạn (chỉ một số ngẫu nhiên thay đổi mỗi lần chạy). Nếu bạn offline hoặc gửi thất bại, dữ liệu bị bỏ đi chứ không lưu trên PC.
+  </li>
+  <li>
+    Thống kê sử dụng được gửi tới vùng EU của Aptabase (Technov Solutions SRL, Romania) và chỉ dùng để quyết định cần cải thiện gì. Aptabase suy ra quốc gia và vùng từ địa chỉ IP của kết nối nhưng không lưu chính địa chỉ đó, và số khách ẩn danh theo ngày mà nó dùng thay đổi mỗi 24 giờ. Aptabase lưu thống kê tối đa 5 năm; vì không thể gắn với một người cụ thể nên không thể tìm từng bản ghi để xóa.
+  </li>
+  <li>
+    <b>Kiểm tra cập nhật (tùy chọn, mặc định tắt)</b>: chỉ khi bạn bật “Check for new versions (once a day)” trong Settings, chương trình mới hỏi GitHub API (api.github.com) mỗi ngày một lần về bản phát hành mới nhất của PortDock. Yêu cầu không mang dữ liệu nào (không cookie hay mã định danh); như mọi yêu cầu web, GitHub thấy địa chỉ IP của kết nối. Nếu có phiên bản mới hơn, chỉ hiện một thanh thông báo — không tải về hay cài đặt gì. GitHub xử lý yêu cầu theo
+    <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.
+  </li>
+</ul>
+<h2>2. Trang web này</h2>
+<ul>
+  <li><b>Thống kê truy cập</b>: Cloudflare Web Analytics đếm lượt xem trang mà không dùng cookie hay mã định danh cá nhân.</li>
+  <li>
+    <b>Quảng cáo</b>: trang công cụ web, trang hướng dẫn và trang bảng thanh ghi của từng thiết bị có thể hiện quảng cáo Google AdSense. Google và đối tác có thể dùng cookie để hiển thị quảng cáo dựa trên các lần truy cập trước. Bạn có thể tắt quảng cáo cá nhân hóa trong
+    <a href="https://adssettings.google.com">Cài đặt quảng cáo của Google</a>; xem thêm <a href="https://policies.google.com/technologies/ads">chính sách quảng cáo của Google</a>. Trang tải về, trang sản phẩm và trang tài liệu không có quảng cáo.
+  </li>
+  <li>
+    <b>Công cụ web</b>: trình phân tích pcap, bộ giải mã khung, máy tính và các bài kiểm tra phần cứng (micro, webcam, bàn phím…) chỉ xử lý tệp bạn chọn, giá trị bạn nhập, âm thanh micro hay hình ảnh camera ngay trong trình duyệt này và không tải lên gì. Mã của công cụ không bao giờ gửi các nội dung đó qua mạng. Script thống kê và quảng cáo trên cùng trang (ở trên) chạy riêng và không nhận nội dung tệp hay dữ liệu nhập.
+  </li>
+  {
+    hasForm ? (
+      <li><b>Biểu mẫu liên hệ</b>: tên, email và tin nhắn của bạn chỉ dùng để trả lời và bị xóa trong vòng một năm. Cloudflare Turnstile được dùng để chống spam.</li>
+    ) : (
+      <li><b>Liên hệ</b>: trang web không có biểu mẫu liên hệ; tin nhắn đến qua email hoặc GitHub (issue, Discussions). Địa chỉ email và tin nhắn chỉ dùng để trả lời và bị xóa trong vòng một năm sau khi trả lời. Bài đăng trên GitHub vẫn công khai trên GitHub.</li>
+    )
+  }
+</ul>
+<h2>3. Bên xử lý dữ liệu và chuyển dữ liệu ra nước ngoài</h2>
+<ul>
+  <li>Cloudflare, Inc. (Hoa Kỳ) — lưu trữ web, thống kê truy cập{hasForm ? ", chống spam, gửi email liên hệ" : ""}</li>
+  <li>Google LLC (Hoa Kỳ) — quảng cáo trên trang công cụ web, hướng dẫn và bảng thanh ghi thiết bị</li>
+  <li>Functional Software, Inc. (Sentry; pháp nhân Hoa Kỳ, vùng dữ liệu EU) — báo cáo lỗi chương trình (chỉ khi bạn cho phép)</li>
+  <li>Technov Solutions SRL (Aptabase; Romania, vùng dữ liệu EU) — thống kê sử dụng chương trình (chỉ khi bạn bật)</li>
+  <li>GitHub, Inc. (Hoa Kỳ) — nhận yêu cầu kiểm tra cập nhật (chỉ khi bạn bật)</li>
+  <li>Đích ping và DNS của Hardware Tester — địa chỉ Internet bạn chọn (mặc định 1.1.1.1 là Cloudflare, 8.8.8.8 là Google) và máy chủ DNS của PC này nhận các lệnh ping và truy vấn (chỉ trong lúc ghi; đây là bên bạn tự chọn để liên lạc, không phải bên xử lý dữ liệu)</li>
+  <li>Ứng dụng AI bạn kết nối với PortDock MCP và công ty phát triển nó (ví dụ nhà phát triển Claude Desktop, VS Code hoặc Cursor) — nhận kết quả của công cụ (ứng dụng do bạn chọn, không phải bên xử lý dữ liệu của PortDock; áp dụng chính sách riêng của nó)</li>
+  <li>Dịch vụ AI mà bạn dán văn bản sao chép “AI” vào — nhận văn bản do chính bạn dán (PortDock không gửi và đây không phải bên xử lý dữ liệu; áp dụng chính sách của dịch vụ đó)</li>
+</ul>
+<h2>4. Liên hệ</h2>
+<p>
+  Câu hỏi về quyền riêng tư hoặc yêu cầu xóa dữ liệu, hãy gửi email tới <EmailOff><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></EmailOff> hoặc dùng <a href={link(lang, "contact/")}>trang liên hệ (tiếng Anh)</a>.
+</p>
