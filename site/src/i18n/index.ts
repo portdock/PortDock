@@ -12,6 +12,7 @@ import tr from "./tr/index.ts";
 import it from "./it/index.ts";
 import id from "./id/index.ts";
 import ja2 from "./ja/batch2.ts";
+import id2 from "./id/batch2.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 import type { Page2Id } from "./scope.ts";
@@ -30,7 +31,7 @@ export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
 /** 2차 묶음을 (일부라도) 옮긴 언어 */
-export const DICTS2: Partial<Record<ExtraLang, Batch2Part>> = { ja: ja2 };
+export const DICTS2: Partial<Record<ExtraLang, Batch2Part>> = { ja: ja2, id: id2 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];

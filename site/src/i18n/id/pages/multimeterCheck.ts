@@ -1,0 +1,28 @@
+// Pemeriksa hasil ukur multimeter (views/MultimeterCheckPage.astro) — paket ke-2. Cara mengukur dan kolom input per item ada di lib/meterUi.ts, teks penilaian di lib/meterCheck.ts
+export default {
+  title: "Pemeriksa Hasil Ukur Multimeter — RS-485, 4–20 mA, 24 V, Sensor",
+  h1: "Pemeriksa hasil ukur multimeter",
+  desc: "Resistansi & tegangan diam A–B RS-485, 4–20 mA (NE 43), jatuh tegangan 24 V, output NPN/PNP, TX RS-232, beda ground — masukkan hasil ukur, lihat penilaiannya.",
+  seo: "Cek Hasil Ukur Multimeter: RS-485, 4–20 mA, 24 V — PortDock",
+  jump: "Item",
+  how: "Cara mengukur",
+  basis: "Dasar",
+  copy: "Salin hasil",
+  copied: "Tersalin.",
+  privacy: "Nilai yang Anda masukkan dihitung di dalam browser ini dan tidak dikirim ke mana pun.",
+  general: "Nilai di sini adalah angka standar yang umum dipakai — jika manual perangkat menyebut lain, ikuti manualnya. Perhatikan keadaan daya dan bahaya sengatan listrik saat mengukur.",
+  ts: "panduan pencarian penyebab gangguan",
+  tsNote: "Untuk mulai dari gejala dan mencari tahu apa yang perlu diukur, pakai",
+  wd: "pembuat diagram pengawatan",
+  wdNote: "Untuk menggambar pengawatan, pakai",
+  rs: "kalkulator resistor terminasi dan bias RS-485",
+  rsNote: "Untuk menentukan resistor terminasi dan bias, pakai",
+  srcTitle: "Sumber",
+  faqTitle: "Pertanyaan umum",
+  end: ".",
+  faq: [
+    ["Bolehkah resistansi A–B diukur dengan daya menyala?", "Tidak. Matikan dulu semua perangkat. Dengan daya menyala, multimeter menunjukkan nilai yang salah, dan perangkat atau multimeter bisa rusak."],
+    ["Saya sudah memasang terminasi, tetapi terbaca «tanpa terminasi»", "Terminasi RC (1 nF + 120 Ω seri) memblokir DC dengan kapasitornya, sehingga tidak terlihat oleh multimeter. Pilih RC di kolom «Terminasi», atau periksa sakelar dan komponen terminasi di perangkat ujung. Sebagian perangkat juga baru menyambungkan terminasi internal saat diberi daya."],
+    ["Apakah «Tidak ditemukan masalah (dalam pengukuran ini)» berarti komunikasi pasti berjalan?", "Artinya satu hasil ukur ini tidak menunjukkan masalah. Untuk kemungkinan penyebab lain — pengaturan, alamat slave, polaritas, derau — lanjutkan dengan panduan pencarian penyebab gangguan."],
+  ] as [string, string][],
+};
