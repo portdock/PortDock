@@ -75,6 +75,9 @@ import ja8 from "./ja/batch8.ts";
 import fr8 from "./fr/batch8.ts";
 import pl8 from "./pl/batch8.ts";
 import de8 from "./de/batch8.ts";
+import it8 from "./it/batch8.ts";
+import pt8 from "./pt/batch8.ts";
+import es8 from "./es/batch8.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id, Page8Id } from "./scope.ts";
@@ -164,7 +167,7 @@ export const DICTS6: Partial<Record<ExtraLang, Batch6Part>> = { ja: ja6, es: es6
 /** 7차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS7: Partial<Record<ExtraLang, Batch7Part>> = { ja: ja7, id: id7, tr: tr7, vi: vi7, de: de7, pl: pl7, fr: fr7, it: it7, pt: pt7, es: es7 };
 /** 8차 묶음을 (일부라도) 옮긴 언어 */
-export const DICTS8: Partial<Record<ExtraLang, Batch8Part>> = { ja: ja8, de: de8, pl: pl8, fr: fr8 };
+export const DICTS8: Partial<Record<ExtraLang, Batch8Part>> = { ja: ja8, fr: fr8, pl: pl8, de: de8, it: it8, pt: pt8, es: es8 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
