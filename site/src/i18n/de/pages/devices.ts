@@ -1,0 +1,20 @@
+// de — Liste der Modbus-Registerbelegungen (views/DevicesIndex.astro).
+export default {
+  title: "Modbus-Registerbelegungen für Industriegeräte",
+  seo: "Modbus-Registerbelegungen: Umrichter, Zähler, Regler — PortDock",
+  desc: (c: { n: number }) => `Modbus-Adressen, Typen, Skalierung und Standardwerte für ${c.n} Umrichter, Regler und Leistungsmesser — mit Handbuchquelle, JSON (CC BY 4.0).`,
+  crumb: "Geräte",
+  find: "Gerät suchen — Hersteller, Modell oder Art (z. B. LS, Frequenzumrichter, TK4)",
+  regs: (c: { n: number }) => `${c.n} Register`,
+  aboutTitle: "Über diese Daten",
+  facts: "Nur Fakten (Adresse, Typ, Einheit, Skalierung, Lesen/Schreiben) aus den veröffentlichten Handbüchern der Hersteller, jeweils mit Dokumenttitel, Ausgabe, Seite und Prüfdatum. Was sich im Handbuch nicht bestätigen ließ, fehlt.",
+  unofficial: "Inoffiziell und nicht mit den Herstellern verbunden. Werte können je nach Firmware oder Modell abweichen — vor dem Schreiben das Gerätehandbuch prüfen.",
+  bundle: (c: { version: string }) => `Datenpaket ${c.version}`,
+  bundleAfter: " — Version, all.json, registers.csv, Felder, Zitierweise und Änderungsverlauf",
+  json: "JSON: ",
+  maker: "Hersteller",
+  model: "Modell",
+  license: "Lizenz: ",
+  licenseAfter: " — frei nutzbar mit Namensnennung.",
+  apps: "Dieselben Daten sind in PortDock Modbus Master («Geräteprofil…») und Modbus Slave («Gerät nachbilden…») eingebaut.",
+};

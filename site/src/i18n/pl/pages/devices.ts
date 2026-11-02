@@ -1,0 +1,20 @@
+// pl — lista map rejestrów Modbus (views/DevicesIndex.astro).
+export default {
+  title: "Mapy rejestrów Modbus urządzeń przemysłowych",
+  seo: "Mapy rejestrów Modbus: falowniki, mierniki, regulatory — PortDock",
+  desc: (c: { n: number }) => `Adresy Modbus, typy, skalowanie i ustawienia domyślne ${c.n} falowników, regulatorów i mierników mocy — ze źródłem w instrukcji, JSON (CC BY 4.0).`,
+  crumb: "Urządzenia",
+  find: "Znajdź urządzenie — producent, model lub rodzaj (np. LS, falownik, TK4)",
+  regs: (c: { n: number }) => `${c.n} rejestrów`,
+  aboutTitle: "O tych danych",
+  facts: "Tylko fakty (adres, typ, jednostka, skala, odczyt/zapis) z instrukcji publikowanych przez producentów, każdy z tytułem dokumentu, wydaniem, stroną i datą sprawdzenia. Czego nie potwierdza instrukcja, tego brak.",
+  unofficial: "Nieoficjalne i niezwiązane z producentami. Wartości mogą się różnić zależnie od firmware’u lub modelu — przed zapisem sprawdź instrukcję urządzenia.",
+  bundle: (c: { version: string }) => `Paczka danych ${c.version}`,
+  bundleAfter: " — wersja, all.json, registers.csv, pola, cytowanie i lista zmian",
+  json: "JSON: ",
+  maker: "producent",
+  model: "model-urządzenia",
+  license: "Licencja: ",
+  licenseAfter: " — wolno używać z podaniem autorstwa.",
+  apps: "Te same dane są wbudowane w PortDock Modbus Master («Profil urządzenia…») i Modbus Slave («Emuluj urządzenie…»).",
+};
