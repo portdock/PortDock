@@ -1,0 +1,47 @@
+// Verificação da resistência de isolamento (views/InsulationPage.astro) — 7.º lote. Termos: resistência de isolamento, tensão de ensaio, SELV/PELV, MΩ
+// Normas coreanas: mantém-se o fato «regulamento da Coreia». see = trechos entre links
+export default {
+  h1: "Verificador de resistência de isolamento",
+  desc: "Informe o tipo de circuito (SELV/PELV, até 500 V, acima de 500 V), a tensão de ensaio e a leitura em MΩ para comparar com a IEC 60364-6 e a norma coreana.",
+  seo: "Resistência de isolamento mínima (IEC 60364-6) — PortDock",
+  helper: "Escolher pela tensão nominal",
+  nominal: "Tensão nominal do circuito (V)",
+  selv: "Circuito SELV ou PELV (transformador / fonte de isolação de segurança)",
+  dc: "CC — o limite de extrabaixa tensão é 50 V CA, 120 V CC",
+  circuit: "Tipo de circuito",
+  testV: "Tensão de ensaio CC (V)",
+  reading: "Leitura (MΩ — também servem >2000, OL, 550k)",
+  copy: "Copiar resultado",
+  copied: "Copiado.",
+  need: "Requisito",
+  noCircuit: "Nenhuma linha corresponde a esta tensão e a este tipo (SELV/PELV vai até 50 V CA ou 120 V CC; a tabela vai até 1000 V).",
+  privacy: "Os valores que você digita são verificados dentro deste navegador e não são enviados a lugar nenhum.",
+  safeTitle: "Antes de medir (segurança)",
+  safe: [
+    "O ensaio de resistência de isolamento é um trabalho elétrico — deve ser feito por pessoa qualificada, conforme as regras de segurança do local (permissão, bloqueio, etiquetagem).",
+    "Isole o circuito e confirme com um detector de tensão que ele está sem energia antes de medir. Trave-o para que ninguém o reenergize.",
+    "Desconecte a eletrônica — CLPs, inversores, fontes, sensores, equipamentos de rede, protetores contra surtos e filtros EMC — para que a tensão de ensaio não chegue a eles (podem ser danificados e as leituras saem baixas).",
+    "Os cabos ficam carregados durante o ensaio e logo depois — não toque nas pontas de prova e descarregue com a função de descarga do instrumento ou para a terra antes de manusear.",
+    "Cabos longos e motores demoram a se estabilizar. Leia sempre no mesmo momento (p. ex. 1 minuto) para poder comparar com registros anteriores.",
+  ],
+  tTitle: "Resistência de isolamento mínima — circuitos de baixa tensão",
+  tHead: ["Tensão nominal do circuito", "Tensão de ensaio CC", "Resistência de isolamento"],
+  tNote:
+    "A extrabaixa tensão (ELV) vai até 50 V CA ou 120 V CC. Os circuitos SELV (sem aterramento) e PELV (aterrado) são separados do primário; os FELV não. Os valores são para instalações novas (Coreia: desde 2021); para instalações antigas, alta tensão ou ensaios em nível de equipamento, veja o texto de origem e os dados do fabricante.",
+  lTitle: "Interpretar o resultado",
+  l: [
+    "Passar do mínimo não é tudo. Uma grande queda em relação a leituras anteriores do mesmo circuito nas mesmas condições pode ser o começo de umidade, poeira ou dano à isolação — registre as leituras e acompanhe a tendência.",
+    "Se vários circuitos medidos juntos dão leitura baixa, separe-os nos disjuntores ou réguas de bornes e meça de novo para localizar o trecho baixo.",
+    "Aplicar 500 V em circuitos SELV/PELV (controle em 24 V) pode danificar a eletrônica que continua ligada — use os 250 V especificados.",
+  ],
+  srcTitle: "Fontes",
+  see: ["Para verificar a ligação de sinal e de alimentação com um multímetro, use o ", ". Para manter registros, use a ", "."],
+  src1: "Normas técnicas de equipamentos elétricos da Coreia, artigo 52 (isolação de circuitos de baixa tensão) — law.go.kr",
+  src2: "Instalações elétricas de baixa tensão — Verificação (6.4.3.3 resistência de isolamento, Tabela 6.1)",
+  faqTitle: "Perguntas frequentes",
+  faq: [
+    ["Um circuito de controle de 24 V é ensaiado a 500 V?", "Não. Os circuitos SELV e PELV (extrabaixa tensão) são ensaiados nos 250 V especificados. 500 V podem danificar peças eletrônicas que fiquem no circuito; desconecte CLPs, inversores, fontes e equipamentos semelhantes antes do ensaio."],
+    ["Uma leitura acima do mínimo está sempre boa?", "O mínimo é apenas a linha de aprovação. Se o valor caiu muito em relação a leituras anteriores feitas do mesmo jeito e no mesmo momento (p. ex. 1 minuto), pode estar começando umidade, poeira ou dano à isolação — registre e acompanhe a tendência."],
+    ["Vários circuitos medidos juntos dão leitura baixa", "Separe-os nos disjuntores ou réguas de bornes e meça de novo para localizar o trecho baixo. Isole, confirme a ausência de tensão e bloqueie antes do ensaio, e descarregue o cabo depois, antes de tocá-lo."],
+  ] as [string, string][],
+};
