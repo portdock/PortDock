@@ -12,7 +12,7 @@ export default {
   "unnamed line": "jalur tanpa nama",
   "Duplicate unit ID {} — {}: {}": "Unit ID ganda {} — {}: {}",
   "Devices on the same line ({}) use different baud/parity: {}": "Perangkat pada jalur yang sama ({}) memakai baud/parity berbeda: {}",
-  "Device": "Device",
+  "Device name": "Nama perangkat",
   "Location": "Lokasi",
   "Protocol": "Protokol",
   "Line": "Jalur",

@@ -12,7 +12,7 @@ export default {
   "unnamed line": "線名なし",
   "Duplicate unit ID {} — {}: {}": "局番 {0} の重複 — {1}: {2}",
   "Devices on the same line ({}) use different baud/parity: {}": "同じ通信線({0})にボーレート・パリティの違う機器があります: {1}",
-  Device: "デバイス",
+  "Device name": "機器名",
   Location: "設置場所",
   Protocol: "プロトコル",
   Line: "通信線",

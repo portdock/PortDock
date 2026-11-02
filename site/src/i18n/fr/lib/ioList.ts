@@ -12,7 +12,7 @@ export default {
   "unnamed line": "ligne sans nom",
   "Duplicate unit ID {} — {}: {}": "Identifiant d’unité {} en double — {} : {}",
   "Devices on the same line ({}) use different baud/parity: {}": "Les équipements de la même ligne ({}) utilisent un débit/une parité différents : {}",
-  "Device": "Opérande",
+  "Device name": "Nom de l'appareil",
   "Location": "Emplacement",
   "Protocol": "Protocole",
   "Line": "Ligne",

@@ -399,7 +399,7 @@ export function csvCell(v: string): string {
 
 /** CSV 머리 줄 — 화면 언어를 따른다 */
 const csvHead = (lang: Lang) => [
-  msg(lang, "장비", "Device"),
+  msg(lang, "장비", "Device name"),
   msg(lang, "위치", "Location"),
   msg(lang, "통신", "Protocol"),
   msg(lang, "통신 선", "Line"),

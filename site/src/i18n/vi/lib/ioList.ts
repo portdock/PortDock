@@ -12,7 +12,7 @@ export default {
   "unnamed line": "đường truyền chưa đặt tên",
   "Duplicate unit ID {} — {}: {}": "Unit ID {} bị trùng — {}: {}",
   "Devices on the same line ({}) use different baud/parity: {}": "Các thiết bị trên cùng đường truyền ({}) dùng baud/parity khác nhau: {}",
-  "Device": "Thiết bị",
+  "Device name": "Tên thiết bị",
   "Location": "Vị trí",
   "Protocol": "Giao thức",
   "Line": "Đường truyền",

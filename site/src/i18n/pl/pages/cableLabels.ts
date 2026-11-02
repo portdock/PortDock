@@ -44,7 +44,7 @@ export default {
   copy: "Kopiuj listę",
   copied: "Skopiowano.",
   copyFail: "Nie udało się skopiować — zaznacz tekst poniżej i skopiuj go samodzielnie.",
-  sum: (n: number, pages: number, w: number, h: number) => `${n} etykiet · ${pages} ${pages === 1 ? "arkusz" : pages % 10 >= 2 && pages % 10 <= 4 && (pages % 100 < 10 || pages % 100 >= 20) ? "arkusze" : "arkuszy"} · etykieta ${w} × ${h} mm`,
+  sum: (n: number, pages: number, w: number, h: number) => `Etykiety: ${n} · arkusze: ${pages} · etykieta ${w} × ${h} mm`,
   previewNote: "Podgląd pokazuje dwa pierwsze arkusze w pomniejszeniu. Wydruk obejmuje wszystkie arkusze.",
   printNote: "W oknie drukowania wybierz «Rzeczywisty rozmiar (100 %)» i marginesy «Brak», a najpierw wydrukuj na zwykłym papierze, aby dopasować do arkusza z etykietami.",
   privacy: "Wpisane nazwy zostają w tej przeglądarce i nie są nigdzie wysyłane.",

@@ -12,7 +12,7 @@ export default {
   "unnamed line": "adsız hat",
   "Duplicate unit ID {} — {}: {}": "Yinelenen unit ID {} — {}: {}",
   "Devices on the same line ({}) use different baud/parity: {}": "Aynı hattaki ({}) cihazlar farklı baud/parity kullanıyor: {}",
-  "Device": "Cihaz",
+  "Device name": "Cihaz adı",
   "Location": "Konum",
   "Protocol": "Protokol",
   "Line": "Hat",

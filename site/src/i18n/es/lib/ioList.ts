@@ -12,7 +12,7 @@ export default {
   "unnamed line": "línea sin nombre",
   "Duplicate unit ID {} — {}: {}": "Identificador de unidad {} duplicado — {}: {}",
   "Devices on the same line ({}) use different baud/parity: {}": "Los dispositivos de la misma línea ({}) usan baudios/paridad distintos: {}",
-  "Device": "Dispositivo",
+  "Device name": "Nombre del dispositivo",
   "Location": "Ubicación",
   "Protocol": "Protocolo",
   "Line": "Línea",

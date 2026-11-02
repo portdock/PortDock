@@ -171,7 +171,7 @@ test("CSV: 머리·장비 칸 되풀이·수식 막기, 신호 없는 장비는 
   assert.equal(rows[2][16], "0.01");
   const csv = toCsv(d, "en");
   assert.ok(csv.endsWith("\r\n"));
-  assert.ok(csv.startsWith("Device,Location,"));
+  assert.ok(csv.startsWith("Device name,Location,"));
 });
 
 test("HTML 표: 글은 escape, 매뉴얼 주소가 없으면 PLC 꼴", () => {
