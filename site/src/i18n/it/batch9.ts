@@ -7,7 +7,7 @@ import summaries from "./deviceSummaries.ts";
 export default {
   pages: { devices, device },
   kinds: {
-    inverter: "Inverter (VFD)",
+    inverter: "Inverter di frequenza (VFD)",
     "power-meter": "Misuratore di potenza",
     "temperature-controller": "Regolatore di temperatura",
     "panel-meter": "Indicatore da pannello",

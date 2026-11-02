@@ -26,7 +26,7 @@ export default {
   enNote: "Tên thanh ghi, mô tả, ý nghĩa giá trị, lưu ý cũng như bản và trang của tài liệu nguồn được giữ nguyên tiếng Anh để dễ đối chiếu với tài liệu.",
   findReg: "Tìm thanh ghi — vd. voltage, 30001",
   scroll: "Vuốt bảng sang ngang — cột đầu (địa chỉ trong tài liệu) được giữ cố định.",
-  th: { manual: "Thủ công", wire: "Dây", table: "Bảng", name: "Tên", type: "Kiểu", unit: "Đơn vị · hệ số", details: "Chi tiết" },
+  th: { manual: "Tài liệu", wire: "Dây", table: "Bảng", name: "Tên", type: "Kiểu", unit: "Đơn vị · hệ số", details: "Chi tiết" },
   range: "Phạm vi",
   notesTitle: "Lưu ý",
   readTitle: "Đọc bằng PortDock",

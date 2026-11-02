@@ -23,7 +23,7 @@ export default {
   "Tag": "Etiqueta",
   "Table": "Tabla",
   "Address (0-based)": "Dirección (base 0)",
-  "Manual address": "Dirección manual",
+  "Manual address": "Dirección según el manual",
   "Function": "Función",
   "Type": "Tipo",
   "Word order": "Orden de palabras",

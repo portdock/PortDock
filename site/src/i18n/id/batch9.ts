@@ -13,7 +13,7 @@ export default {
     "temperature-controller": "Pengendali suhu",
     "panel-meter": "Meter panel",
     "servo-drive": "Penggerak servo",
-    sensor: "Sensor (detektor)",
+    sensor: "Sensor",
     other: "Lainnya",
   } satisfies Record<DeviceKind, string>,
   summaries,

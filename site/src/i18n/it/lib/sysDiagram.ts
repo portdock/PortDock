@@ -48,7 +48,7 @@ export default {
   "Internet": "Internet",
   "Switch (Net Scan)": "Switch (Net Scan)",
   "Industrial PC": "PC industriale",
-  "Inverter (VFD)": "Inverter (VFD)",
+  "Inverter (VFD)": "Inverter di frequenza (VFD)",
   "Power meter": "Misuratore di potenza",
   "Sensor / instrument": "Sensore / strumento",
   "Switch": "Switch",

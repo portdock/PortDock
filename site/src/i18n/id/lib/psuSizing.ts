@@ -4,7 +4,7 @@ export default {
   "HMI / touch panel": "HMI / panel sentuh",
   "Converter / switch": "Konverter / sakelar",
   "Remote I/O": "I/O jarak jauh",
-  "Sensor": "Sensor (detektor)",
+  "Sensor": "Sensor",
   "Indicator / beacon": "Indikator / lampu sinyal",
   "Solenoid valve": "Katup solenoid",
   "Relay / contactor coil": "Kumparan rele / kontaktor",

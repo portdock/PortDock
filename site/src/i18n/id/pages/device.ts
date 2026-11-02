@@ -26,7 +26,7 @@ export default {
   enNote: "Nama register, deskripsi, arti nilai, catatan, serta edisi dan halaman sumber tetap dalam bahasa Inggris agar mudah dicocokkan dengan manual.",
   findReg: "Cari register — mis. voltage, 30001",
   scroll: "Geser tabel ke samping — kolom pertama (alamat manual) tetap di tempat.",
-  th: { manual: "Menurut manual", wire: "Kabel", table: "Tabel", name: "Nama", type: "Tipe data", unit: "Satuan · skala", details: "Detail" },
+  th: { manual: "Manual", wire: "Kabel", table: "Tabel", name: "Nama", type: "Tipe data", unit: "Satuan · skala", details: "Detail" },
   range: "Rentang",
   notesTitle: "Catatan perhatian",
   readTitle: "Baca dengan PortDock",

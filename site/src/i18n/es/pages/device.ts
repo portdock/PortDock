@@ -28,7 +28,7 @@ export default {
   enNote: "Los nombres, descripciones, significados de valores, avisos y la edición y páginas de las fuentes se dejan en inglés, para localizarlos fácilmente en el manual.",
   findReg: "Busque un registro, p. ej. voltage, 30001",
   scroll: "Desplace la tabla hacia los lados: la primera columna (dirección del manual) se queda fija.",
-  th: { manual: "Dir. manual", wire: "Trama", table: "Tabla", name: "Nombre", type: "Tipo de dato", unit: "Unidad · escala", details: "Detalles" },
+  th: { manual: "Manual", wire: "Trama", table: "Tabla", name: "Nombre", type: "Tipo de dato", unit: "Unidad · escala", details: "Detalles" },
   range: "Rango",
   notesTitle: "Avisos",
   readTitle: "Léalo con PortDock",
