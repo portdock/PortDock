@@ -71,9 +71,10 @@ import fr7 from "./fr/batch7.ts";
 import it7 from "./it/batch7.ts";
 import pt7 from "./pt/batch7.ts";
 import es7 from "./es/batch7.ts";
+import ja8 from "./ja/batch8.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
-import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id } from "./scope.ts";
+import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id, Page8Id } from "./scope.ts";
 
 /** 1차 묶음 사전(모든 추가 언어) */
 export type Dict = typeof ja;
@@ -126,6 +127,24 @@ export interface Batch7Part {
   lib: Partial<Batch7["lib"]>;
   pages: Partial<Batch7["pages"]>;
 }
+/** 8차 묶음 쪽 글 하나(앱 하나의 소개) — data/tools.ts 의 {ko,en} 글과 같은 모양(tagline·이름은 빼고). 내장 장비 수가 들어가는 글은 함수 */
+export interface AppPage {
+  seo: { title: string; desc: string };
+  summary: string;
+  who: readonly string[];
+  features: readonly { title: string; body: string | ((c: { nDevices: number }) => string) }[];
+  steps: readonly string[];
+  uses?: readonly { title: string; body: string }[];
+  faq?: readonly { q: string; a: string }[];
+  similar?: string;
+}
+/** 8차 묶음 사전(i18n/<언어>/batch8.ts) — 기준판 ja 의 모양. 쪽 글 pages 는 앱 id 마다(data/tools.ts 의 {ko,en} 글과 같은 모양), toolPage 는 소개 화면(views/ToolPage.astro) 공통 글 */
+export type Batch8 = typeof ja8;
+/** 8차 묶음도 쪽(앱) 단위로 일부만 있어도 된다 — toolPage 는 쪽이 하나라도 있으면 있어야 한다(시험이 본다) */
+export interface Batch8Part {
+  toolPage?: Batch8["toolPage"];
+  pages: Partial<Batch8["pages"]>;
+}
 export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"] | keyof Batch3["lib"] | keyof Batch4["lib"] | keyof Batch5["lib"] | keyof Batch6["lib"] | keyof Batch7["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
@@ -141,6 +160,8 @@ export const DICTS5: Partial<Record<ExtraLang, Batch5Part>> = { ja: ja5, id: id5
 export const DICTS6: Partial<Record<ExtraLang, Batch6Part>> = { ja: ja6, es: es6, pt: pt6, it: it6, vi: vi6, tr: tr6, id: id6, de: de6, pl: pl6, fr: fr6 };
 /** 7차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS7: Partial<Record<ExtraLang, Batch7Part>> = { ja: ja7, id: id7, tr: tr7, vi: vi7, de: de7, pl: pl7, fr: fr7, it: it7, pt: pt7, es: es7 };
+/** 8차 묶음을 (일부라도) 옮긴 언어 */
+export const DICTS8: Partial<Record<ExtraLang, Batch8Part>> = { ja: ja8 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
@@ -185,6 +206,20 @@ export function page7<K extends Page7Id>(lang: ExtraLang, id: K): Batch7["pages"
   const p = DICTS7[lang]?.pages[id];
   if (!p) throw new Error(`${lang}: 7차 묶음 쪽 글 없음 — ${id}`);
   return p as Batch7["pages"][K];
+}
+
+/** 8차 묶음 쪽 글(앱 하나의 소개 글) — page2 와 같음 */
+export function page8(lang: ExtraLang, id: Page8Id): AppPage {
+  const p: AppPage | undefined = DICTS8[lang]?.pages[id];
+  if (!p) throw new Error(`${lang}: 8차 묶음 쪽 글 없음 — ${id}`);
+  return p;
+}
+
+/** 8차 묶음 소개 화면 공통 글(views/ToolPage.astro·components/DownloadBox.astro·AppShot.astro) */
+export function toolPage8(lang: ExtraLang): Batch8["toolPage"] {
+  const p = DICTS8[lang]?.toolPage;
+  if (!p) throw new Error(`${lang}: 8차 묶음 toolPage 없음`);
+  return p;
 }
 
 /** 3차 묶음 하드웨어 테스트 쪽의 개인정보 줄(components/HwPrivacy.astro) */

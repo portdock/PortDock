@@ -3,20 +3,61 @@ import Base from "../layouts/Base.astro";
 import DownloadBox from "../components/DownloadBox.astro";
 import AppShot from "../components/AppShot.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { REPO, isApp, type Lang, type Tool } from "../data/tools";
+import { DEVICE_COUNT, REPO, isApp, type Tool } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
 import { DEVICES, devPath } from "../data/devices";
-import { UI, url } from "../lib/i18n";
+import { appText, isTranslated, link, ui, url, webToolText } from "../lib/i18n";
 import { appIcon } from "../lib/appIcons";
+import { toolPage8 } from "../i18n/index";
+import { pageName } from "../i18n/names";
+import { isCore, type SiteLang } from "../i18n/langs";
 
+// 추가 언어(ja 등)는 8차 묶음(i18n/scope.ts SCOPE8): 쪽마다 다른 글은 appText()(data/tools.ts 의 {ko,en} → i18n/<언어>/apps/<앱>.ts), 화면 공통 글은 L(i18n/<언어>/pages/toolPage.ts)
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   tool: Tool;
 }
 const { lang, tool } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
+const A = appText(tool, lang, { nDevices: DEVICE_COUNT });
+const L =
+  lang === "ko"
+    ? {
+        note: "무료 · 윈도우 10·11 · 프로그램에 광고 없음 · 오픈소스(GPL-3.0)",
+        hw: ["키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 이 프로그램이 아니라 브라우저에서 바로 쓰는 ", " 로 합니다."],
+        hwLink: "PC 하드웨어 테스트(웹, 설치 없음)",
+        ai: "모든 앱에 있는 것 — 머리줄 «AI» 단추(0.8.0, AI 에게 물어보기용 복사): 프로그램·연결 설정·이번 실행의 오류·최근 통신 기록(또는 점검 결과)을 AI 채팅에 붙여 넣을 글로 만들어 미리 보여 주고 클립보드에만 넣습니다. PortDock 은 보내지 않고, 붙여 넣으면 그 AI 서비스로 갑니다. 사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는 가립니다. ",
+        privacy: "개인정보처리방침",
+        uses: "이럴 때 씁니다",
+        faq: "자주 묻는 것",
+        similar: "비슷한 도구",
+        guides: "관련 가이드",
+        devices: "내장 장비 프로필 — 레지스터 맵",
+        devicesNote: "아래 장비는 프로그램에 프로필로 들어 있고, 사이트에서 레지스터 표·JSON 으로도 볼 수 있습니다.",
+        web: "설치 없이 쓰는 웹 도구",
+      }
+    : lang === "en"
+      ? {
+          note: "Free · Windows 10 and 11 · no ads in the program · open source (GPL-3.0)",
+          hw: ["Keyboard, mouse, monitor, speaker, microphone, webcam and gamepad tests are not in this program — use the ", " in your browser."],
+          hwLink: "PC hardware tests (web, no install)",
+          ai: "In every app — the «AI» button in the title bar (0.8.0, copy for asking AI): builds text for an AI chat from the program, connection settings, errors in this session and recent traffic (or check results), shows a preview and puts it on the clipboard only. PortDock sends nothing; once pasted, it goes to that AI service. User folders, PC names, the last half of MAC addresses and public IPs are masked. ",
+          privacy: "Privacy policy",
+          uses: "When to use it",
+          faq: "FAQ",
+          similar: "Similar tools",
+          guides: "Related guides",
+          devices: "Built-in device profiles — register maps",
+          devicesNote: "These devices are built in as profiles; their register tables and JSON are also on this site.",
+          web: "Web tools, no install",
+        }
+      : toolPage8(lang);
+/** 번역이 없는 쪽(사용법 등)으로 가는 링크 글 뒤 «(英語)» 같은 표시 — 한국어·영어는 빈 글 */
+const enMark = (p: string) => (isTranslated(lang, p) ? "" : t.inEnglish);
+const docs = `${tool.id}/docs/`;
+// 장비 맵 쪽은 한국어·영어뿐 — 추가 언어는 영어 이름(머리말 devices 에 «(英語)»)
+const devName = (d: (typeof DEVICES)[number]) => (isCore(lang) ? d.manufacturer[lang] : d.manufacturer.en);
 // 이 도구를 다루는 가이드, 이 도구와 같이 쓰는 웹 도구, Modbus 도구면 장비 레지스터 맵
 const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
 const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
@@ -45,28 +86,28 @@ const ld = {
   ...(tool.upcoming ? {} : { downloadUrl: new URL(url(lang, "download/"), Astro.site).href }),
   operatingSystem: "Windows 10, Windows 11",
   applicationCategory: "DeveloperApplication",
-  description: tool.summary[lang],
+  description: A.summary,
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   isAccessibleForFree: true,
   license: "https://www.gnu.org/licenses/gpl-3.0.html",
   inLanguage: ["ko", "en"],
-  softwareHelp: { "@type": "CreativeWork", url: new URL(url(lang, `${tool.id}/docs/`), Astro.site).href },
-  featureList: tool.features.map((f) => f.title[lang]),
+  softwareHelp: { "@type": "CreativeWork", url: new URL(link(lang, docs), Astro.site).href },
+  featureList: A.features.map((f) => f.title),
   publisher: { "@type": "Organization", name: "PortDock", url: new URL("/", Astro.site).href },
   sameAs: REPO,
 };
 ---
 
-<Base lang={lang} title={tool.name} seoTitle={tool.seo.title[lang]} description={tool.seo.desc[lang]} path={`${tool.id}/`}>
+<Base lang={lang} title={tool.name} seoTitle={A.seo.title} description={A.seo.desc} path={`${tool.id}/`}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   {
-    tool.faq && (
+    A.faq && (
       <script
         type="application/ld+json"
         set:html={JSON.stringify({
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: tool.faq.map((f) => ({ "@type": "Question", name: f.q[lang], acceptedAnswer: { "@type": "Answer", text: f.a[lang] } })),
+          mainEntity: A.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
         })}
       />
     )
@@ -75,23 +116,21 @@ const ld = {
     <div class="wrap">
       <Crumbs lang={lang} items={[{ name: tool.name, path: `${tool.id}/` }]} />
       <h1 class="with-icon">{appIcon(tool.id) && <img class="app-icon" src={appIcon(tool.id)} alt="" width="40" height="40" />}{tool.name}</h1>
-      <p>{tool.summary[lang]}</p>
-      <p class="note">{ko ? "무료 · 윈도우 10·11 · 프로그램에 광고 없음 · 오픈소스(GPL-3.0)" : "Free · Windows 10 and 11 · no ads in the program · open source (GPL-3.0)"}</p>
+      <p>{A.summary}</p>
+      <p class="note">{L.note}</p>
       {
         tool.id === "hw-tester" && (
           <p class="note">
-            {ko
-              ? "키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 이 프로그램이 아니라 브라우저에서 바로 쓰는 "
-              : "Keyboard, mouse, monitor, speaker, microphone, webcam and gamepad tests are not in this program — use the "}
-            <a href={url(lang, "tools/#g-hw")}>{ko ? "PC 하드웨어 테스트(웹, 설치 없음)" : "PC hardware tests (web, no install)"}</a>
-            {ko ? " 로 합니다." : " in your browser."}
+            {L.hw[0]}
+            <a href={url(lang, "tools/#g-hw")}>{L.hwLink}</a>
+            {L.hw[1]}
           </p>
         )
       }
       {/* 좁은 화면에서는 내려받기 칸이 맨 아래로 가므로 위에 바로 가기를 둔다 */}
       <p class="btns only-narrow">
         <a class="btn primary" href="#dl">{t.download}</a>
-        <a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.docs}</a>
+        <a class="btn" href={link(lang, docs)}>{t.docs}{enMark(docs)}</a>
       </p>
     </div>
   </header>
@@ -100,16 +139,16 @@ const ld = {
       {tool.shot !== false && <AppShot lang={lang} tool={tool} lazy={false} />}
       <section>
         <h2>{t.whoTitle}</h2>
-        <ul class="ticks">{tool.who.map((w) => <li>{w[lang]}</li>)}</ul>
+        <ul class="ticks">{A.who.map((w) => <li>{w}</li>)}</ul>
       </section>
       <section>
         <h2>{t.featTitle}</h2>
         <div class="grid">
           {
-            tool.features.map((f) => (
+            A.features.map((f) => (
               <div class="card">
-                <h3>{f.title[lang]}</h3>
-                <p>{f.body[lang]}</p>
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
               </div>
             ))
           }
@@ -117,23 +156,21 @@ const ld = {
         {
           isApp(tool) && (
             <p class="note common-ai">
-              {ko
-                ? "모든 앱에 있는 것 — 머리줄 «AI» 단추(0.8.0, AI 에게 물어보기용 복사): 프로그램·연결 설정·이번 실행의 오류·최근 통신 기록(또는 점검 결과)을 AI 채팅에 붙여 넣을 글로 만들어 미리 보여 주고 클립보드에만 넣습니다. PortDock 은 보내지 않고, 붙여 넣으면 그 AI 서비스로 갑니다. 사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는 가립니다. "
-                : "In every app — the «AI» button in the title bar (0.8.0, copy for asking AI): builds text for an AI chat from the program, connection settings, errors in this session and recent traffic (or check results), shows a preview and puts it on the clipboard only. PortDock sends nothing; once pasted, it goes to that AI service. User folders, PC names, the last half of MAC addresses and public IPs are masked. "}
-              <a href={url(lang, "privacy/")}>{ko ? "개인정보처리방침" : "Privacy policy"} →</a>
+              {L.ai}
+              <a href={url(lang, "privacy/")}>{L.privacy} →</a>
             </p>
           )
         }
       </section>
       {
-        tool.uses && (
+        A.uses && (
           <section style="margin-top:28px">
-            <h2>{ko ? "이럴 때 씁니다" : "When to use it"}</h2>
+            <h2>{L.uses}</h2>
             <div class="grid uses">
-              {tool.uses.map((u) => (
+              {A.uses.map((u) => (
                 <div class="card">
-                  <h3>{u.title[lang]}</h3>
-                  <p>{u.body[lang]}</p>
+                  <h3>{u.title}</h3>
+                  <p>{u.body}</p>
                 </div>
               ))}
             </div>
@@ -142,38 +179,38 @@ const ld = {
       }
       <section style="margin-top:28px">
         <h2>{t.stepsTitle}</h2>
-        <ol class="steps">{tool.steps.map((s) => <li>{s[lang]}</li>)}</ol>
-        <p><a class="btn" href={url(lang, `${tool.id}/docs/`)}>{t.readDocs} →</a></p>
+        <ol class="steps">{A.steps.map((s) => <li>{s}</li>)}</ol>
+        <p><a class="btn" href={link(lang, docs)}>{t.readDocs}{enMark(docs)} →</a></p>
       </section>
       {
-        tool.faq && (
+        A.faq && (
           <section class="related faq">
-            <h2>{ko ? "자주 묻는 것" : "FAQ"}</h2>
-            {tool.faq.map((f) => (
+            <h2>{L.faq}</h2>
+            {A.faq.map((f) => (
               <details>
-                <summary>{f.q[lang]}</summary>
-                <p>{f.a[lang]}</p>
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
               </details>
             ))}
           </section>
         )
       }
       {
-        tool.similar && (
+        A.similar && (
           <section class="related">
-            <h2>{ko ? "비슷한 도구" : "Similar tools"}</h2>
-            <p>{tool.similar[lang]}</p>
+            <h2>{L.similar}</h2>
+            <p>{A.similar}</p>
           </section>
         )
       }
       {
         guides.length > 0 && (
           <section class="related">
-            <h2>{ko ? "관련 가이드" : "Related guides"}</h2>
+            <h2>{L.guides}</h2>
             <ul class="links">
               {guides.map((g) => (
                 <li>
-                  <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+                  <a href={link(lang, `guides/${g.slug}/`)}>{pageName(lang, `guides/${g.slug}/`)}</a>
                 </li>
               ))}
             </ul>
@@ -183,17 +220,13 @@ const ld = {
       {
         devices.length > 0 && (
           <section class="related">
-            <h2>{ko ? "내장 장비 프로필 — 레지스터 맵" : "Built-in device profiles — register maps"}</h2>
-            <p class="note">
-              {ko
-                ? "아래 장비는 프로그램에 프로필로 들어 있고, 사이트에서 레지스터 표·JSON 으로도 볼 수 있습니다."
-                : "These devices are built in as profiles; their register tables and JSON are also on this site."}
-            </p>
+            <h2>{L.devices}</h2>
+            <p class="note">{L.devicesNote}</p>
             <ul class="links cols">
               {devices.map((d) => (
                 <li>
-                  <a href={url(lang, devPath(d))}>
-                    {d.manufacturer[lang]} {d.model}
+                  <a href={link(lang, devPath(d))}>
+                    {devName(d)} {d.model}
                   </a>
                 </li>
               ))}
@@ -204,11 +237,11 @@ const ld = {
       {
         webTools.length > 0 && (
           <section class="related">
-            <h2>{ko ? "설치 없이 쓰는 웹 도구" : "Web tools, no install"}</h2>
+            <h2>{L.web}</h2>
             <ul class="links">
               {webTools.map((w) => (
                 <li>
-                  <a href={url(lang, w.path)}>{w.name[lang]}</a> — {w.blurb[lang]}
+                  <a href={link(lang, w.path)}>{webToolText(w, lang).name}</a> — {webToolText(w, lang).blurb}
                 </li>
               ))}
             </ul>

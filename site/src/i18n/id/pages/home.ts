@@ -22,7 +22,7 @@ export default (c: HomeCtx) => ({
   webSmall: "tanpa instalasi",
   pcPre: "Masalah di PC? ",
   pcHw: "Uji mikrofon, keyboard, mouse, dan webcam (di browser)",
-  pcTester: "Log putusnya Wi-Fi dan Bluetooth (Hardware Tester, halaman bahasa Inggris)",
+  pcTester: "Log putusnya Wi-Fi dan Bluetooth (Hardware Tester)",
   heroAlt: "Layar PortDock Serial — byte yang diterima dan respons Modbus yang sudah diuraikan",
   heroCap: "PortDock Serial — contoh layar (data contoh, tampilan bahasa Inggris)",
   appsTitle: `${c.nApps} program Windows${c.mcp ? " + MCP" : ""}`,

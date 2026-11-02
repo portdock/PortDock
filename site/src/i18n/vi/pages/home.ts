@@ -22,7 +22,7 @@ export default (c: HomeCtx) => ({
   webSmall: "không cần cài",
   pcPre: "PC gặp sự cố? ",
   pcHw: "Kiểm tra micro, bàn phím, chuột, webcam (trên trình duyệt)",
-  pcTester: "Ghi mất kết nối Wi-Fi và Bluetooth (Hardware Tester, trang tiếng Anh)",
+  pcTester: "Ghi mất kết nối Wi-Fi và Bluetooth (Hardware Tester)",
   heroAlt: "Màn hình PortDock Serial — các byte nhận được và một phản hồi Modbus đã giải mã",
   heroCap: "PortDock Serial — màn hình ví dụ (dữ liệu mẫu, giao diện tiếng Anh)",
   appsTitle: `${c.nApps} chương trình Windows${c.mcp ? " + MCP" : ""}`,

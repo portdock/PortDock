@@ -19,7 +19,7 @@ export default (c: { version: string; n: number }) => ({
   q2: "2. Bu PC internete bağlı mı?",
   no: "Hayır",
   get: "İndir",
-  about: "Tanıtım (İngilizce)",
+  about: "Tanıtım", // 링크 글 — 소개 쪽이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   mcpDesktop: "Claude Desktop için (.mcpb)",
   mcpZip: "exe (.zip) — VS Code, Cursor, Claude Code vb.",
   mcpExplain: "Kurulum/taşınabilir ayrımı yok, WebView2 gerekmez. Kurmak için .mcpb dosyasını Claude Desktop’ta açın; diğer istemciler için zip’i açıp portdock-mcp.exe yolunu istemcinin ayarlarına yazın.",

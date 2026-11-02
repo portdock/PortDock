@@ -1,11 +1,12 @@
 // 추가 언어(ja 등)로 번역하는 쪽 — 목록은 여기 한 곳에서만 정한다.
 //   SCOPE  = 1차 묶음: 모든 추가 언어가 갖는 쪽(언어를 붙일 때 다 번역한다).
 //   SCOPE2 = 2차 묶음(산업 웹 도구 10개), SCOPE3 = 3차 묶음(PC 하드웨어 테스트 웹 도구 10개), SCOPE4 = 4차 묶음(통신 웹 도구 11개),
-//   SCOPE5 = 5차 묶음(신호·단위·네트워크 웹 도구 12개), SCOPE6 = 6차 묶음(전기 웹 도구 15개), SCOPE7 = 7차 묶음(기계·배선 작업·문서 웹 도구 15개)
-//   — 묶음마다 사전 파일이 따로(i18n/<언어>/batch2.ts·batch3.ts·batch4.ts·batch5.ts·batch6.ts·batch7.ts).
-//   2차~7차 묶음은 언어마다 번역이 끝난 쪽만 MORE[언어] 한 목록에 적는다 — 번역 전에는 그 언어 주소·hreflang·언어 고르기·sitemap 에 나오지 않는다.
+//   SCOPE5 = 5차 묶음(신호·단위·네트워크 웹 도구 12개), SCOPE6 = 6차 묶음(전기 웹 도구 15개), SCOPE7 = 7차 묶음(기계·배선 작업·문서 웹 도구 15개),
+//   SCOPE8 = 8차 묶음(윈도우 프로그램 소개 13쪽 — 사용법 쪽은 아직 아님)
+//   — 묶음마다 사전 파일이 따로(i18n/<언어>/batch2.ts·batch3.ts·batch4.ts·batch5.ts·batch6.ts·batch7.ts·batch8.ts).
+//   2차~8차 묶음은 언어마다 번역이 끝난 쪽만 MORE[언어] 한 목록에 적는다 — 번역 전에는 그 언어 주소·hreflang·언어 고르기·sitemap 에 나오지 않는다.
 // 번역된 쪽만 /<언어>/… 주소가 생기고, 번역이 없는 쪽으로 가는 링크는 추가 언어 쪽에서 영어판(/en/…)으로 간다(link()).
-// 묶음을 더하면(8차 …): SCOPE8 + LATER 에 펼치기 + i18n/index.ts 의 DICTS8·page8 (site/I18N.md «묶음을 더 더할 때»).
+// 묶음을 더하면(9차 …): SCOPE9 + LATER 에 펼치기 + i18n/index.ts 의 DICTS9·page9 (site/I18N.md «묶음을 더 더할 때»).
 // 쪽을 더하면: 여기 한 줄 + 그 언어의 i18n/<언어>/pages 에 그 쪽 글 + LangPage.astro 의 VIEWS 한 줄(site/I18N.md).
 // 이 파일은 node(site-check·시험)도 .ts 그대로 읽는다 — 사전을 가져오지 말 것.
 import { EXTRA_LANGS, LANGS, isCore, url, type ExtraLang, type SiteLang } from "./langs.ts";
@@ -126,8 +127,28 @@ export const SCOPE7 = {
   "tools/commissioning-checklist/": "commissioning",
 } as const;
 
-/** 1차 묶음 밖(언어별로 고르는) 쪽 전부 — 2차~7차 묶음을 차례로 */
-export const LATER = { ...SCOPE2, ...SCOPE3, ...SCOPE4, ...SCOPE5, ...SCOPE6, ...SCOPE7 } as const;
+/**
+ * 8차 묶음 — 윈도우 프로그램 소개 13쪽(i18n/<언어>/batch8.ts 의 pages/<앱 id>). 쪽 이름 = data/tools.ts 의 앱 id(화면 하나 views/ToolPage.astro 가 13개를 그린다).
+ * 사용법 쪽(<앱>/docs/)은 앱 도움말 본문(apps/<앱>/src/help.ts, 한국어·영어 두 판)을 그대로 보이므로 넣지 않는다 — 추가 언어 쪽에서는 영어판으로 간다.
+ */
+export const SCOPE8 = {
+  "serial/": "serial",
+  "modbus-slave/": "modbus-slave",
+  "tcp/": "tcp",
+  "udp/": "udp",
+  "simulator/": "simulator",
+  "netscan/": "netscan",
+  "modbus-master/": "modbus-master",
+  "scpi/": "scpi",
+  "plot/": "plot",
+  "port-inspector/": "port-inspector",
+  "plc-simulator/": "plc-simulator",
+  "hw-tester/": "hw-tester",
+  "mcp/": "mcp",
+} as const;
+
+/** 1차 묶음 밖(언어별로 고르는) 쪽 전부 — 2차~8차 묶음을 차례로 */
+export const LATER = { ...SCOPE2, ...SCOPE3, ...SCOPE4, ...SCOPE5, ...SCOPE6, ...SCOPE7, ...SCOPE8 } as const;
 
 /** 1차 묶음 경로 */
 export type ScopePath = keyof typeof SCOPE;
@@ -143,8 +164,10 @@ export type Scope5Path = keyof typeof SCOPE5;
 export type Scope6Path = keyof typeof SCOPE6;
 /** 7차 묶음 경로 */
 export type Scope7Path = keyof typeof SCOPE7;
-/** 1차 묶음 밖 경로(2차~7차) */
-export type LaterPath = Scope2Path | Scope3Path | Scope4Path | Scope5Path | Scope6Path | Scope7Path;
+/** 8차 묶음 경로 */
+export type Scope8Path = keyof typeof SCOPE8;
+/** 1차 묶음 밖 경로(2차~8차) */
+export type LaterPath = Scope2Path | Scope3Path | Scope4Path | Scope5Path | Scope6Path | Scope7Path | Scope8Path;
 export type AnyScopePath = ScopePath | LaterPath;
 /** 1차 묶음 쪽 이름 */
 export type PageId = (typeof SCOPE)[ScopePath];
@@ -160,7 +183,9 @@ export type Page5Id = (typeof SCOPE5)[Scope5Path];
 export type Page6Id = (typeof SCOPE6)[Scope6Path];
 /** 7차 묶음 쪽 이름 */
 export type Page7Id = (typeof SCOPE7)[Scope7Path];
-export type AnyPageId = PageId | Page2Id | Page3Id | Page4Id | Page5Id | Page6Id | Page7Id;
+/** 8차 묶음 쪽 이름(= 앱 id) */
+export type Page8Id = (typeof SCOPE8)[Scope8Path];
+export type AnyPageId = PageId | Page2Id | Page3Id | Page4Id | Page5Id | Page6Id | Page7Id | Page8Id;
 
 export const SCOPE_PATHS = Object.keys(SCOPE) as ScopePath[];
 export const SCOPE2_PATHS = Object.keys(SCOPE2) as Scope2Path[];
@@ -169,18 +194,19 @@ export const SCOPE4_PATHS = Object.keys(SCOPE4) as Scope4Path[];
 export const SCOPE5_PATHS = Object.keys(SCOPE5) as Scope5Path[];
 export const SCOPE6_PATHS = Object.keys(SCOPE6) as Scope6Path[];
 export const SCOPE7_PATHS = Object.keys(SCOPE7) as Scope7Path[];
-/** 1차 묶음 밖 경로 전부(2차 다음 3차 … 7차) */
-export const LATER_PATHS: LaterPath[] = [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS];
+export const SCOPE8_PATHS = Object.keys(SCOPE8) as Scope8Path[];
+/** 1차 묶음 밖 경로 전부(2차 다음 3차 … 8차) */
+export const LATER_PATHS: LaterPath[] = [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS];
 /** 1차 묶음의 웹 도구(tools/ 아래 쪽) — 모든 추가 언어에 있다 */
 export const SCOPE_TOOLS = SCOPE_PATHS.filter((p) => p.startsWith("tools/") && p !== "tools/");
 
 /**
- * 언어별로 1차 묶음 밖에서 번역이 끝난 쪽(2차~7차 묶음 — 한 목록). 번역을 다 싣고 시험이 통과할 때만 여기에 더한다.
- * 쪽 하나씩 더해도 된다 — 그 묶음 사전(i18n/<언어>/batch2.ts~batch7.ts)에 그 쪽 글이 있어야 한다(시험이 본다).
+ * 언어별로 1차 묶음 밖에서 번역이 끝난 쪽(2차~8차 묶음 — 한 목록). 번역을 다 싣고 시험이 통과할 때만 여기에 더한다.
+ * 쪽 하나씩 더해도 된다 — 그 묶음 사전(i18n/<언어>/batch2.ts~batch8.ts)에 그 쪽 글이 있어야 한다(시험이 본다).
  * 예: 6차 묶음까지 끝낸 언어는 [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS].
  */
 export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
-  ja: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS],
+  ja: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS],
   id: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS],
   fr: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS],
   it: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS],
@@ -194,10 +220,10 @@ export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
 
 const bare = (path: string) => path.replace(/^\/+/, "").replace(/[#?].*$/, "");
 
-/** 이 추가 언어로 있는 쪽 전부(1차 + 언어별 추가) — 순서는 SCOPE, SCOPE2 … SCOPE7 순 */
+/** 이 추가 언어로 있는 쪽 전부(1차 + 언어별 추가) — 순서는 SCOPE, SCOPE2 … SCOPE8 순 */
 export const pathsOf = (lang: ExtraLang): AnyScopePath[] => [...SCOPE_PATHS, ...LATER_PATHS.filter((p) => MORE[lang]?.includes(p))];
 
-/** 경로 → 쪽 이름(1차~7차) */
+/** 경로 → 쪽 이름(1차~8차) */
 export const pageOf = (path: AnyScopePath): AnyPageId => (path in SCOPE ? SCOPE[path as ScopePath] : LATER[path as LaterPath]);
 
 /** 이 쪽이 이 언어로 있나 */

@@ -4,7 +4,7 @@ import Crumbs from "../components/Crumbs.astro";
 import { TOOLS, RELEASED, RELEASED_TOOLS, REPO, RELEASES, downloadable, isApp, MCP_FILES, latest } from "../data/tools";
 import { VERSION, SIZE, SHA256SUMS } from "../data/release";
 import PickApp from "../components/PickApp.astro";
-import { ui, link, appTagline } from "../lib/i18n";
+import { ui, link, appTagline, isTranslated } from "../lib/i18n";
 import { dict } from "../i18n";
 import { isCore, type SiteLang } from "../i18n/langs";
 import { SPONSOR_URL } from "@shared/links";
@@ -194,7 +194,7 @@ const MCP = TOOLS.filter((x) => !isApp(x));
       MCP.map((x) => (
         <section class="card" id="mcp-dl" aria-labelledby="mcp-dl-h">
           <h2 id="mcp-dl-h">{x.name}</h2>
-          <p class="note">{appTagline(x, lang)} · <a href={link(lang, `${x.id}/`)}>{L.about}</a> · <a href={link(lang, `${x.id}/docs/`)}>{t.docs}</a></p>
+          <p class="note">{appTagline(x, lang)} · <a href={link(lang, `${x.id}/`)}>{L.about}{isTranslated(lang, `${x.id}/`) ? "" : t.inEnglish}</a> · <a href={link(lang, `${x.id}/docs/`)}>{t.docs}</a></p>
           {downloadable(x) ? (
             <div class="dl-list">
               <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{L.mcpDesktop}</a>

@@ -19,7 +19,7 @@ export default (c: { version: string; n: number }) => ({
   q2: "2. この PC はインターネットにつながっていますか?",
   no: "いいえ",
   get: "ダウンロード",
-  about: "紹介(英語)",
+  about: "紹介", // 링크 글 — 소개 쪽이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   mcpDesktop: "Claude Desktop 用(.mcpb)",
   mcpZip: "exe(.zip)— VS Code・Cursor・Claude Code など",
   mcpExplain: "インストーラー・ポータブル版の区別はなく、WebView2 も不要です。.mcpb は Claude Desktop で開くとインストールされ、ほかのクライアントは zip を展開して portdock-mcp.exe のパスを設定に書きます。",

@@ -6,8 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CORE_LANGS, EXTRA_LANGS, LANGS, LANG_META, url } from "../i18n/langs.ts";
-import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE4, SCOPE5, SCOPE6, SCOPE7, SCOPE_PATHS, SCOPE7_PATHS, SCOPE6_PATHS, SCOPE5_PATHS, SCOPE4_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Page4Id, type Page5Id, type Page6Id, type Page7Id, type Scope2Path, type Scope3Path, type Scope4Path, type Scope5Path, type Scope6Path, type Scope7Path } from "../i18n/scope.ts";
-import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6, DICTS7 } from "../i18n/index.ts";
+import { LATER, LATER_PATHS, MORE, SCOPE, SCOPE2, SCOPE3, SCOPE4, SCOPE5, SCOPE6, SCOPE7, SCOPE8, SCOPE_PATHS, SCOPE8_PATHS, SCOPE7_PATHS, SCOPE6_PATHS, SCOPE5_PATHS, SCOPE4_PATHS, SCOPE3_PATHS, SCOPE2_PATHS, extraPages, isTranslated, langsOf, link, pathsOf, staticPaths, type Page2Id, type Page3Id, type Page4Id, type Page5Id, type Page6Id, type Page7Id, type Page8Id, type Scope2Path, type Scope3Path, type Scope4Path, type Scope5Path, type Scope6Path, type Scope7Path, type Scope8Path } from "../i18n/scope.ts";
+import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6, DICTS7, DICTS8 } from "../i18n/index.ts";
 import { fromEn, misses, msg } from "./tr.ts";
 import { decodeFrame } from "./modbusDecode.ts";
 import { decodeMc, buildRequest as buildMc, endText } from "./mcDecode.ts";
@@ -63,7 +63,11 @@ test("언어 목록 — ko 는 루트, 나머지는 /<언어>/, 이름·hreflang
 });
 
 test("번역 범위의 쪽은 한국어·영어 쪽이 있고, 추가 언어마다 pages/<언어>/[...path].astro 가 있다", () => {
-  const page = (rel: string) => [path.join(SRC, "pages", rel + "index.astro"), path.join(SRC, "pages", rel.replace(/\/$/, "") + ".astro")].some((f) => fs.existsSync(f));
+  // 프로그램 소개(8차 묶음 «<앱 id>/»)는 한 파일 pages/[tool]/index.astro(영어는 pages/en/[tool]/)가 data/tools.ts 의 앱마다 만든다
+  const appIds = [...fs.readFileSync(path.join(SRC, "data", "tools.ts"), "utf8").matchAll(/^ {4}id: "([a-z0-9-]+)",$/gm)].map((m) => m[1]);
+  const page = (rel: string) =>
+    [path.join(SRC, "pages", rel + "index.astro"), path.join(SRC, "pages", rel.replace(/\/$/, "") + ".astro")].some((f) => fs.existsSync(f)) ||
+    (appIds.includes(rel.replace(/^en\//, "").replace(/\/$/, "")) && fs.existsSync(path.join(SRC, "pages", rel.startsWith("en/") ? "en" : "", "[tool]", "index.astro")));
   for (const p of [...SCOPE_PATHS, ...LATER_PATHS]) {
     assert.ok(page(p), `한국어 쪽 없음: ${p}`);
     assert.ok(page("en/" + p), `영어 쪽 없음: en/${p}`);
@@ -1255,4 +1259,136 @@ test("7차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
     }
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
+});
+// ---------------------------------------------------------------- 8차 묶음(scope.ts SCOPE8 · MORE) — 윈도우 프로그램 소개 13쪽(views/ToolPage.astro 하나가 data/tools.ts 의 앱마다)
+
+/** data/tools.ts 의 앱마다 소개 글 칸(seo·summary·who·features·steps·uses·faq·similar)의 영어 글 — 소스 순서대로. ${DEVICE_COUNT} 는 {} */
+const APP_FIELDS = ["seo", "summary", "who", "features", "steps", "uses", "faq", "similar"] as const;
+type AppField = (typeof APP_FIELDS)[number];
+const toolsEn = (): Record<string, Partial<Record<AppField, string[]>>> => {
+  const s = fs.readFileSync(path.join(SRC, "data", "tools.ts"), "utf8");
+  const out: Record<string, Partial<Record<AppField, string[]>>> = {};
+  const ids = [...s.matchAll(/^ {4}id: "([a-z0-9-]+)",$/gm)];
+  ids.forEach((m, i) => {
+    const block = s.slice(m.index, i + 1 < ids.length ? ids[i + 1].index : s.indexOf("\n];", m.index));
+    const fields = [...block.matchAll(/^ {4}(\w+):/gm)];
+    const o: Partial<Record<AppField, string[]>> = {};
+    fields.forEach((f, j) => {
+      if (!(APP_FIELDS as readonly string[]).includes(f[1])) return;
+      const part = block.slice(f.index, j + 1 < fields.length ? fields[j + 1].index : block.length);
+      const en: string[] = [];
+      for (const e of part.matchAll(/\ben:\s*/g)) {
+        const r = readLit(part, e.index + e[0].length);
+        if (r) en.push(r[0]);
+      }
+      o[f[1] as AppField] = en;
+    });
+    out[m[1]] = o;
+  });
+  return out;
+};
+/** 사전 글을 펼친다(배열·객체 차례대로, 함수는 시험 값으로 부른다) */
+const flat8 = (v: unknown): string[] =>
+  typeof v === "function" ? flat8((v as (a: unknown) => unknown)(CTX)) : typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(flat8) : v && typeof v === "object" ? Object.values(v).flatMap(flat8) : [];
+/** 그 언어가 번역한 8차 묶음 쪽 이름(= 앱 id) */
+const pages8Of = (l: (typeof EXTRA_LANGS)[number]): Page8Id[] => (MORE[l] ?? []).filter((p): p is Scope8Path => p in SCOPE8).map((p) => SCOPE8[p]);
+
+test("8차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·화면 공통 글이 있다", () => {
+  const ja8 = DICTS8.ja!;
+  const appIds = Object.keys(toolsEn());
+  assert.deepEqual(Object.values(SCOPE8).sort(), [...appIds].sort(), "SCOPE8 = data/tools.ts 의 앱 id 전부");
+  assert.deepEqual(SCOPE8_PATHS.map((p) => p.replace(/\/$/, "")).sort(), [...appIds].sort(), "SCOPE8 경로 = <앱 id>/");
+  assert.deepEqual(Object.keys(ja8.pages).sort(), Object.values(SCOPE8).sort(), "ja 8차 묶음 쪽 글 = SCOPE8");
+  for (const l of EXTRA_LANGS) {
+    const ids = pages8Of(l);
+    if (!ids.length) continue;
+    const d = DICTS8[l];
+    assert.ok(d, `${l}: MORE 에 8차 묶음 쪽이 있는데 i18n/index.ts DICTS8 에 ${l} 사전이 없음`);
+    assert.ok(d.toolPage, `${l}: 8차 묶음 toolPage(소개 화면 공통 글) 없음`);
+    assert.deepEqual(shape(d.toolPage), shape(ja8.toolPage), `${l}: toolPage 모양이 ja 와 다름`);
+    for (const id of ids) {
+      const pg: unknown = (d.pages as Record<string, unknown>)[id];
+      assert.ok(pg, `${l}: 8차 묶음 쪽 글 없음 — ${id}`);
+      assert.deepEqual(shape(pg), shape((ja8.pages as Record<string, unknown>)[id]), `${l}: ${id} 쪽 글 모양이 ja 와 다름`);
+    }
+    const empty: string[] = [];
+    const walkS = (v: unknown, at: string) => {
+      if (typeof v === "function") return walkS((v as (a: unknown) => unknown)(CTX), at);
+      if (typeof v === "string") {
+        if (!v.trim()) empty.push(at);
+        return;
+      }
+      if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walkS(x, `${at}.${k}`);
+    };
+    walkS(d.toolPage, `${l}.toolPage`);
+    for (const id of ids) walkS((d.pages as Record<string, object>)[id], `${l}.${id}`);
+    assert.deepEqual(empty, [], `${l}: 빈 문구`);
+  }
+});
+
+test("8차 묶음 쪽 글 — data/tools.ts 의 영어 글과 칸마다 같은 수, 같은 영어 글은 앱끼리·1~7차 묶음과 같은 번역", () => {
+  const EN = toolsEn();
+  for (const l of EXTRA_LANGS) {
+    const ids = pages8Of(l);
+    if (!ids.length) continue;
+    const before: Record<string, string> = Object.assign({}, ...Object.values(allLibs7(l)));
+    const seen = new Map<string, [string, string]>();
+    for (const id of ids) {
+      const pg = (DICTS8[l]!.pages as Record<string, Record<string, unknown>>)[id];
+      const want = EN[id];
+      assert.deepEqual(Object.keys(pg).sort(), Object.keys(want).sort(), `${l}: ${id} 의 칸이 data/tools.ts 와 다름`);
+      for (const f of APP_FIELDS) {
+        const en = want[f];
+        if (!en) continue;
+        const got = flat8(pg[f]);
+        assert.equal(got.length, en.length, `${l}: ${id}.${f} 글 수가 data/tools.ts(${en.length})와 다름 — tools.ts 를 고쳤으면 번역도`);
+        en.forEach((e, i) => {
+          const x = got[i];
+          assert.ok(!(e in before) || before[e] === x, `${l}: «${e}» 가 1~7차 묶음(«${before[e]}»)과 ${id}.${f}(«${x}»)에서 다름`);
+          const prev = seen.get(e);
+          assert.ok(!prev || prev[1] === x, `${l}: «${e}» 가 ${prev?.[0]} 와 ${id}.${f} 에서 다름`);
+          seen.set(e, [`${id}.${f}`, x]);
+        });
+      }
+    }
+  }
+});
+
+test("8차 묶음 — 옮기지 않고 영어 원문 그대로 둔 글이 없다", () => {
+  const EN = toolsEn();
+  // 화면 공통 글의 영어 원문 — 소개 화면·그림·내려받기 칸의 영어 갈래(한글 없는 글)
+  const viewEn = ["views/ToolPage.astro", "components/AppShot.astro", "components/DownloadBox.astro"].flatMap((f) => {
+    const s = fs.readFileSync(path.join(SRC, f), "utf8");
+    const out: string[] = [];
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== '"' && s[i] !== "`") continue;
+      const r = readLit(s, i);
+      if (!r) continue;
+      if (/[a-z]{3}/.test(r[0]) && !/[가-힣]/.test(r[0])) out.push(r[0]);
+      i = r[1] - 1;
+    }
+    return out;
+  });
+  const english = new Set([...Object.values(EN).flatMap((o) => Object.values(o).flat()), ...viewEn].filter((x) => /[a-z]{3}/.test(x)));
+  for (const l of EXTRA_LANGS) {
+    const ids = pages8Of(l);
+    if (!ids.length) continue;
+    const d = DICTS8[l]!;
+    // 파일 이름만인 글(exe (.zip))은 그대로 둔다
+    const same = [...flat8(d.toolPage), ...ids.flatMap((id) => flat8((d.pages as Record<string, unknown>)[id]))].filter((x) => english.has(x) && !/^exe \(\.zip\)$/.test(x));
+    assert.deepEqual(same, [], `${l}: 영어 원문 그대로인 글`);
+  }
+});
+
+test("8차 묶음 — 추가 언어 소개 글에 영어 문장이 남지 않는다", () => {
+  const EN = /\b(?:the|and|must|above|below|with|than|should|when|from|your|only|every|without|between|until|after|before)\b/i;
+  for (const l of EXTRA_LANGS) {
+    const ids = pages8Of(l);
+    if (!ids.length) continue;
+    const d = DICTS8[l]!;
+    const all: [string, string][] = [...flat8(d.toolPage).map((x): [string, string] => ["toolPage", x]), ...ids.flatMap((id) => flat8((d.pages as Record<string, unknown>)[id]).map((x): [string, string] => [id, x]))];
+    // «…» 안은 앱 화면·메시지 이름(앱이 영어로 내는 글일 수 있다)이라 빼고 본다
+    const left = all.filter(([, x]) => EN.test(x.replace(/«[^»]*»/g, ""))).map(([id, x]) => `${id}: ${x}`);
+    assert.deepEqual(left, [], `${l}: 영어가 남은 글`);
+  }
 });

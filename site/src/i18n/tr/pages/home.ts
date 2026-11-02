@@ -22,7 +22,7 @@ export default (c: HomeCtx) => ({
   webSmall: "kurulum yok",
   pcPre: "PC’de sorun mu var? ",
   pcHw: "Mikrofon, klavye, fare ve web kamerası testleri (tarayıcıda)",
-  pcTester: "Wi-Fi ve Bluetooth kopma kaydı (Hardware Tester, sayfa İngilizce)",
+  pcTester: "Wi-Fi ve Bluetooth kopma kaydı (Hardware Tester)",
   heroAlt: "PortDock Serial ekranı — alınan baytlar ve çözülmüş bir Modbus yanıtı",
   heroCap: "PortDock Serial — örnek ekran (örnek veri, arayüz İngilizce)",
   appsTitle: `${c.nApps} Windows programı${c.mcp ? " + MCP" : ""}`,

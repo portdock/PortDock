@@ -3,7 +3,7 @@ import Base from "../layouts/Base.astro";
 import { TOOLS, RELEASED_TOOLS, REPO } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { DEVICES } from "../data/devices";
-import { ui, url, link, appTagline, webToolText } from "../lib/i18n";
+import { ui, url, link, appTagline, webToolText, isTranslated } from "../lib/i18n";
 import { dict } from "../i18n";
 import { SCOPE_TOOLS, toolCount } from "../i18n/scope";
 import { isCore, type SiteLang } from "../i18n/langs";
@@ -147,7 +147,7 @@ const ld = [
           {L.pcPre}
           <a href={url(lang, "tools/#g-hw")}>{L.pcHw}</a>
           {" · "}
-          <a href={link(lang, "hw-tester/")}>{L.pcTester}</a>
+          <a href={link(lang, "hw-tester/")}>{L.pcTester}{isTranslated(lang, "hw-tester/") ? "" : t.inEnglish}</a>
         </p>
       </div>
       <figure class="shot hero-shot">

@@ -19,7 +19,7 @@ export default (c: { version: string; n: number }) => ({
   q2: "2. Ist dieser PC mit dem Internet verbunden?",
   no: "Nein",
   get: "Herunterladen",
-  about: "Vorstellung (Englisch)",
+  about: "Vorstellung", // 링크 글 — 소개 쪽이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   mcpDesktop: "Für Claude Desktop (.mcpb)",
   mcpZip: "exe (.zip) — VS Code, Cursor, Claude Code usw.",
   mcpExplain: "Keine Trennung in Installer und portabel, kein WebView2 nötig. Die .mcpb-Datei in Claude Desktop öffnen, um sie zu installieren; für andere Clients die ZIP-Datei entpacken und den Pfad zu portdock-mcp.exe in deren Einstellungen eintragen.",

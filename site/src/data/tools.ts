@@ -16,7 +16,7 @@ import { help as hwTesterHelp } from "../../../apps/hw-tester/src/help";
 import { mcpHelp } from "./mcpHelp";
 
 /** 내장 장비 프로필 수 — data/devices 의 JSON 개수(앱 도움말 «내장 장비 N종» 과 같은 데이터). 숫자를 손으로 적지 않는다 */
-const DEVICE_COUNT = Object.keys(import.meta.glob("../../../data/devices/*/*.json")).length;
+export const DEVICE_COUNT = Object.keys(import.meta.glob("../../../data/devices/*/*.json")).length;
 
 export type Lang = "ko" | "en";
 export type L = Record<Lang, string>;

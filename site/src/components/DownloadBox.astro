@@ -1,15 +1,23 @@
 ---
 // 내려받기 칸 — 이 칸 근처에는 광고를 두지 않는다(애드센스 정책: 다운로드 버튼과 오인 금지)
-import { downloadable, isApp, MCP_FILES, REPO, RELEASES, latest, type Lang, type Tool } from "../data/tools";
-import { UI, url } from "../lib/i18n";
+import { downloadable, isApp, MCP_FILES, REPO, RELEASES, latest, type Tool } from "../data/tools";
+import { isTranslated, link, ui } from "../lib/i18n";
+import { toolPage8 } from "../i18n/index";
+import type { SiteLang } from "../i18n/langs";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   tool: Tool;
 }
 const { lang, tool } = Astro.props;
-const t = UI[lang];
-const ko = lang === "ko";
+const t = ui(lang);
+// 작은 글 — 추가 언어는 8차 묶음 toolPage.dl
+const D =
+  lang === "ko"
+    ? { mcpb: "Claude Desktop 용 (.mcpb)", mcpbSub: "열면 설치", zip: "exe (.zip)", zipSub: "VS Code·Cursor·Claude Code 등", offline: "WebView2 포함", portable: "설치 없이" }
+    : lang === "en"
+      ? { mcpb: "For Claude Desktop (.mcpb)", mcpbSub: "open to install", zip: "exe (.zip)", zipSub: "VS Code, Cursor, Claude Code …", offline: "WebView2 bundled", portable: "no install" }
+      : toolPage8(lang).dl;
 const app = isApp(tool);
 ---
 
@@ -18,14 +26,14 @@ const app = isApp(tool);
   {
     downloadable(tool) && !app ? (
       <div class="dl-list">
-        <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{ko ? "Claude Desktop 용 (.mcpb)" : "For Claude Desktop (.mcpb)"} <small>{ko ? "열면 설치" : "open to install"}</small></a>
-        <a class="btn" href={latest(MCP_FILES.zip)}>{ko ? "exe (.zip)" : "exe (.zip)"} <small>{ko ? "VS Code·Cursor·Claude Code 등" : "VS Code, Cursor, Claude Code …"}</small></a>
+        <a class="btn primary" href={latest(MCP_FILES.mcpb)}>{D.mcpb} <small>{D.mcpbSub}</small></a>
+        <a class="btn" href={latest(MCP_FILES.zip)}>{D.zip} <small>{D.zipSub}</small></a>
       </div>
     ) : downloadable(tool) ? (
       <div class="dl-list">
         <a class="btn primary" href={latest(`${tool.file}-setup.exe`)}>{t.dlSetup} <small>x64</small></a>
-        <a class="btn" href={latest(`${tool.file}-setup-offline.exe`)}>{t.dlOffline} <small>{lang === "ko" ? "WebView2 포함" : "WebView2 bundled"}</small></a>
-        <a class="btn" href={latest(`${tool.file}-portable.zip`)}>{t.dlPortable} <small>{lang === "ko" ? "설치 없이" : "no install"}</small></a>
+        <a class="btn" href={latest(`${tool.file}-setup-offline.exe`)}>{t.dlOffline} <small>{D.offline}</small></a>
+        <a class="btn" href={latest(`${tool.file}-portable.zip`)}>{t.dlPortable} <small>{D.portable}</small></a>
       </div>
     ) : (
       <>
@@ -36,5 +44,5 @@ const app = isApp(tool);
   }
   <p class="note">{t.dlNote}</p>
   {app && <p class="note">{t.webview}</p>}
-  <p class="note"><a href={RELEASES}>{t.dlAll} →</a> · <a href={url(lang, "download/#safe")}>{t.safeTitle}</a> · <a href={url(lang, "code-signing/")}>{t.codeSigning}</a></p>
+  <p class="note"><a href={RELEASES}>{t.dlAll} →</a> · <a href={link(lang, "download/#safe")}>{t.safeTitle}</a> · <a href={link(lang, "code-signing/")}>{t.codeSigning}{isTranslated(lang, "code-signing/") ? "" : t.inEnglish}</a></p>
 </div>

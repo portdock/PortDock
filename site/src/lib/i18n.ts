@@ -1,7 +1,7 @@
 // 공용 문구(머리줄·바닥글·내려받기·이용 안내 등) — 한국어·영어는 여기, 추가 언어는 i18n/<언어>/ui.ts(ui() 가 고른다).
 // 주소·언어 목록은 i18n/langs.ts, 번역 범위는 i18n/scope.ts.
 import { isCore, type SiteLang } from "../i18n/langs.ts";
-import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6, DICTS7 } from "../i18n/index.ts";
+import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6, DICTS7, page8, toolPage8 } from "../i18n/index.ts";
 import type { Tool } from "../data/tools";
 import type { WebTool } from "../data/webTools";
 import type { GroupId } from "../data/webToolGroups";
@@ -219,3 +219,52 @@ export const webToolText = (w: WebTool, lang: SiteLang): { name: string; blurb: 
 
 /** 웹 도구 묶음 이름 */
 export const groupName = (g: { id: GroupId; name: { ko: string; en: string } }, lang: SiteLang): string => (isCore(lang) ? g.name[lang] : DICTS[lang].common.groups[g.id]);
+
+/** 프로그램 소개 쪽 글(쪽마다 다른 것) — 글 하나씩 고른 모양 */
+export interface AppText {
+  seo: { title: string; desc: string };
+  summary: string;
+  who: string[];
+  features: { title: string; body: string }[];
+  steps: string[];
+  uses?: { title: string; body: string }[];
+  faq?: { q: string; a: string }[];
+  similar?: string;
+}
+
+/**
+ * 프로그램 소개 쪽(views/ToolPage.astro) 글 — 한국어·영어는 data/tools.ts, 추가 언어는 8차 묶음 사전(i18n/<언어>/apps/<앱>.ts).
+ * 모든 앱 공통 기능 «화면 언어»(tools.ts 의 SCREEN_LANG)는 추가 언어에서 toolPage.screenLang 을 맨 뒤에 붙인다.
+ * 추가 언어 글의 배열 길이·있고 없음이 tools.ts 와 다르면 빌드를 멈춘다 — tools.ts 를 고치면 번역한 언어의 글도 같이 고친다.
+ */
+export function appText(x: Tool, lang: SiteLang, ctx: { nDevices: number }): AppText {
+  if (isCore(lang))
+    return {
+      seo: { title: x.seo.title[lang], desc: x.seo.desc[lang] },
+      summary: x.summary[lang],
+      who: x.who.map((w) => w[lang]),
+      features: x.features.map((f) => ({ title: f.title[lang], body: f.body[lang] })),
+      steps: x.steps.map((s) => s[lang]),
+      uses: x.uses?.map((u) => ({ title: u.title[lang], body: u.body[lang] })),
+      faq: x.faq?.map((f) => ({ q: f.q[lang], a: f.a[lang] })),
+      similar: x.similar?.[lang],
+    };
+  const d = page8(lang, x.id);
+  const s = (v: string | ((c: { nDevices: number }) => string)) => (typeof v === "function" ? v(ctx) : v);
+  const common = x.assets === "mcp" ? [] : [toolPage8(lang).screenLang];
+  const out: AppText = {
+    seo: { ...d.seo },
+    summary: d.summary,
+    who: [...d.who],
+    features: [...d.features, ...common].map((f) => ({ title: f.title, body: s(f.body) })),
+    steps: [...d.steps],
+    uses: d.uses?.map((u) => ({ ...u })),
+    faq: d.faq?.map((f) => ({ ...f })),
+    similar: d.similar,
+  };
+  const n = (v?: readonly unknown[]) => (v ? v.length : -1);
+  const bad: string[] = (["who", "features", "steps", "uses", "faq"] as const).filter((k) => n(out[k]) !== n(x[k]));
+  if ((out.similar === undefined) !== (x.similar === undefined)) bad.push("similar");
+  if (bad.length) throw new Error(`${lang}: 8차 묶음 ${x.id} 소개 글이 data/tools.ts 와 모양이 다름 — ${bad.join(", ")}`);
+  return out;
+}

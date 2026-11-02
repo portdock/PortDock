@@ -22,7 +22,7 @@ export default (c: HomeCtx) => ({
   webSmall: "sem instalar",
   pcPre: "Problemas no PC? ",
   pcHw: "Testes de microfone, teclado, mouse e webcam (no navegador)",
-  pcTester: "Registro de quedas de Wi-Fi e Bluetooth (Hardware Tester, página em inglês)",
+  pcTester: "Registro de quedas de Wi-Fi e Bluetooth (Hardware Tester)",
   heroAlt: "Tela do PortDock Serial — bytes recebidos e uma resposta Modbus decodificada",
   heroCap: "PortDock Serial — tela de exemplo (dados de amostra, tela em inglês)",
   appsTitle: `${c.nApps} programas para Windows${c.mcp ? " + MCP" : ""}`,

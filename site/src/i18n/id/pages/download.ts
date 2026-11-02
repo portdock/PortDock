@@ -19,7 +19,7 @@ export default (c: { version: string; n: number }) => ({
   q2: "2. Apakah PC ini terhubung ke internet?",
   no: "Tidak",
   get: "Unduh",
-  about: "Tentang (bahasa Inggris)",
+  about: "Tentang", // 링크 글 — 소개 쪽이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   mcpDesktop: "Untuk Claude Desktop (.mcpb)",
   mcpZip: "exe (.zip) — VS Code, Cursor, Claude Code, dll.",
   mcpExplain: "Tidak ada pembagian installer/portabel dan tidak perlu WebView2. Buka berkas .mcpb di Claude Desktop untuk memasang; untuk klien lain, ekstrak zip lalu tulis jalur portdock-mcp.exe di pengaturannya.",

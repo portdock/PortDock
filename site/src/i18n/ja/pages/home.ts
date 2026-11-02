@@ -22,7 +22,7 @@ export default (c: HomeCtx) => ({
   webSmall: "インストール不要",
   pcPre: "PC のトラブルなら: ",
   pcHw: "マイク・キーボード・マウス・Web カメラのテスト(ブラウザ)",
-  pcTester: "Wi-Fi・Bluetooth の切断記録(Hardware Tester・ページは英語)",
+  pcTester: "Wi-Fi・Bluetooth の切断記録(Hardware Tester)",
   heroAlt: "PortDock Serial の画面 — 受信したバイト列の記録と Modbus 応答の解析",
   heroCap: "PortDock Serial — 画面の例(サンプルデータ、画面は英語)",
   appsTitle: `Windows ソフト ${c.nApps} 本${c.mcp ? "+MCP" : ""}`,
