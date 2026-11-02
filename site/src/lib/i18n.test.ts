@@ -1377,8 +1377,8 @@ test("8차 묶음 — 옮기지 않고 영어 원문 그대로 둔 글이 없다
     const ids = pages8Of(l);
     if (!ids.length) continue;
     const d = DICTS8[l]!;
-    // 파일 이름만인 글(exe (.zip))은 그대로 둔다
-    const same = [...flat8(d.toolPage), ...ids.flatMap((id) => flat8((d.pages as Record<string, unknown>)[id]))].filter((x) => english.has(x) && !/^exe \(\.zip\)$/.test(x));
+    // 파일 이름만인 글(exe (.zip))과 한 낱말(Sensor·Manual 처럼 그 언어에서도 같은 낱말 — 6차 시험과 같은 규칙)은 그대로 둔다
+    const same = [...flat8(d.toolPage), ...ids.flatMap((id) => flat8((d.pages as Record<string, unknown>)[id]))].filter((x) => english.has(x) && !/^exe \(\.zip\)$/.test(x) && /\s/.test(x));
     assert.deepEqual(same, [], `${l}: 영어 원문 그대로인 글`);
   }
 });
@@ -1509,7 +1509,8 @@ test("9차 묶음 — 옮기지 않고 영어 원문 그대로 둔 글이 없다
   for (const l of EXTRA_LANGS) {
     if (!paths9Of(l).length) continue;
     const d = DICTS9[l]!;
-    const same = [...flat8(d.pages), ...flat8(d.kinds), ...summaryIdsOf(l).map((id) => d.summaries[id]!)].filter((x) => english.has(x));
+    // 한 낱말(Sensor·Manual 처럼 그 언어에서도 같은 낱말)은 그대로 둘 수 있다 — 6차 시험과 같은 규칙
+    const same = [...flat8(d.pages), ...flat8(d.kinds), ...summaryIdsOf(l).map((id) => d.summaries[id]!)].filter((x) => english.has(x) && /\s/.test(x));
     assert.deepEqual(same, [], `${l}: 영어 원문 그대로인 글`);
   }
 });
