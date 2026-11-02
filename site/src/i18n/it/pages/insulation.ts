@@ -1,0 +1,47 @@
+// Verifica della resistenza di isolamento (views/InsulationPage.astro) — 7º lotto. Termini: resistenza di isolamento, tensione di prova, SELV/PELV, MΩ
+// Norme coreane: si mantiene il fatto «norma della Corea». see = frammenti tra i link
+export default {
+  h1: "Verifica della resistenza di isolamento",
+  desc: "Inserite il tipo di circuito (SELV/PELV, fino a 500 V, oltre 500 V), la tensione di prova e la lettura in MΩ per confrontarle con IEC 60364-6 e norma coreana.",
+  seo: "Resistenza di isolamento minima (IEC 60364-6) — PortDock",
+  helper: "Scegli dalla tensione nominale",
+  nominal: "Tensione nominale del circuito (V)",
+  selv: "Circuito SELV o PELV (trasformatore / alimentazione di isolamento di sicurezza)",
+  dc: "CC — il limite della bassissima tensione è 50 V CA, 120 V CC",
+  circuit: "Tipo di circuito",
+  testV: "Tensione di prova CC (V)",
+  reading: "Lettura (MΩ — vanno bene anche >2000, OL, 550k)",
+  copy: "Copia risultato",
+  copied: "Copiato.",
+  need: "Requisito",
+  noCircuit: "Nessuna riga corrisponde a questa tensione e a questo tipo (SELV/PELV arriva a 50 V CA o 120 V CC; la tabella arriva a 1000 V).",
+  privacy: "I valori che inserite vengono controllati all'interno di questo browser e non vengono inviati altrove.",
+  safeTitle: "Prima di misurare (sicurezza)",
+  safe: [
+    "La misura della resistenza di isolamento è un lavoro elettrico — deve farla una persona qualificata secondo le regole di sicurezza dell'impianto (permesso, blocco, cartellino).",
+    "Sezionate il circuito e accertate con un tester di tensione che sia fuori tensione prima di misurare. Bloccatelo perché nessuno possa rimetterlo in tensione.",
+    "Scollegate l'elettronica — PLC, inverter, alimentatori, sensori, apparecchi di rete, scaricatori di sovratensione e filtri EMC — perché la tensione di prova non li raggiunga (possono danneggiarsi e le letture risultano basse).",
+    "I cavi restano carichi durante e subito dopo la prova — non toccate i puntali e scaricate con la funzione di scarica dello strumento o verso terra prima di maneggiarli.",
+    "Cavi lunghi e motori impiegano tempo ad assestarsi. Leggete sempre allo stesso momento (ad es. 1 minuto) per poter confrontare con le registrazioni precedenti.",
+  ],
+  tTitle: "Resistenza di isolamento minima — circuiti a bassa tensione",
+  tHead: ["Tensione nominale del circuito", "Tensione di prova CC", "Resistenza di isolamento"],
+  tNote:
+    "La bassissima tensione (ELV) arriva a 50 V CA o 120 V CC. I circuiti SELV (non a terra) e PELV (a terra) sono separati dal primario; i FELV no. I valori valgono per impianti nuovi (Corea: dal 2021); per impianti vecchi, alta tensione o prove a livello di apparecchio, vedete il testo di origine e i dati del costruttore.",
+  lTitle: "Leggere il risultato",
+  l: [
+    "Superare il minimo non è tutto. Un forte calo rispetto a letture precedenti dello stesso circuito nelle stesse condizioni può essere l'inizio di umidità, polvere o danno all'isolamento — registrate le letture e seguite l'andamento.",
+    "Se più circuiti misurati insieme danno una lettura bassa, separateli agli interruttori o alle morsettiere e misurate di nuovo per restringere la sezione bassa.",
+    "Applicare 500 V ai circuiti SELV/PELV (controllo a 24 V) può danneggiare l'elettronica rimasta collegata — usate i 250 V prescritti.",
+  ],
+  srcTitle: "Fonti",
+  see: ["Per controllare il cablaggio di segnale e di alimentazione con un multimetro usate il ", ". Per tenere le registrazioni usate la ", "."],
+  src1: "Norme tecniche sugli impianti elettrici della Corea, articolo 52 (isolamento dei circuiti a bassa tensione) — law.go.kr",
+  src2: "Impianti elettrici a bassa tensione — Verifica (6.4.3.3 resistenza di isolamento, Tabella 6.1)",
+  faqTitle: "Domande frequenti",
+  faq: [
+    ["Un circuito di controllo a 24 V si prova a 500 V?", "No. I circuiti SELV e PELV (bassissima tensione) si provano ai 250 V prescritti. 500 V possono danneggiare i componenti elettronici rimasti nel circuito; scollegate PLC, inverter, alimentatori e apparecchi simili prima della prova."],
+    ["Una lettura sopra il minimo è sempre a posto?", "Il minimo è solo la soglia di superamento. Se il valore è sceso molto rispetto a letture precedenti prese allo stesso modo e allo stesso momento (ad es. 1 minuto), potrebbero iniziare umidità, polvere o danno all'isolamento — registratelo e seguite l'andamento."],
+    ["Più circuiti misurati insieme danno una lettura bassa", "Separateli agli interruttori o alle morsettiere e misurate di nuovo per restringere la sezione bassa. Sezionate, verificate l'assenza di tensione e bloccate prima della prova, e scaricate il cavo dopo, prima di toccarlo."],
+  ] as [string, string][],
+};
