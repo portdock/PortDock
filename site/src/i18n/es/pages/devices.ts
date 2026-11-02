@@ -1,0 +1,20 @@
+// 장비 레지스터 맵 목록(views/DevicesIndex.astro)의 화면 글 — 스페인어. 기준판 ja/pages/devices.ts.
+export default {
+  title: "Mapas de registros Modbus de equipos industriales",
+  seo: "Mapas de registros Modbus: variadores, medidores — PortDock",
+  desc: (c: { n: number }) => `Direcciones Modbus, tipos, escalas y valores de fábrica de ${c.n} variadores, controladores y analizadores de potencia, con manuales y JSON (CC BY 4.0).`,
+  crumb: "Equipos",
+  find: "Busque un equipo: fabricante, modelo o tipo (p. ej. LS, variador, TK4)",
+  regs: (c: { n: number }) => `${c.n} registros`,
+  aboutTitle: "Sobre estos datos",
+  facts: "Solo hechos (dirección, tipo, unidad, escala, lectura/escritura) tomados de los manuales que publican los fabricantes, cada uno con título del documento, edición, página y fecha de comprobación. Lo que no está confirmado en un manual no se incluye.",
+  unofficial: "No es oficial ni está afiliado a los fabricantes. Los valores pueden variar según el firmware o el modelo: consulte el manual del equipo antes de escribir.",
+  bundle: (c: { version: string }) => `Paquete de datos ${c.version}`,
+  bundleAfter: " — versión, all.json, registers.csv, campos, cita y registro de cambios",
+  json: "JSON: ",
+  maker: "fabricante",
+  model: "modelo",
+  license: "Licencia: ",
+  licenseAfter: " — de uso libre citando la fuente.",
+  apps: "Los mismos datos están integrados en PortDock Modbus Master («Perfil de equipo…») y en Modbus Slave («Emular equipo…»).",
+};
