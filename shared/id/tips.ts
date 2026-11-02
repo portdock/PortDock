@@ -240,7 +240,7 @@ export const ID_TIPS: Record<string, string> = {
   nsToMonitor: "Menambahkan IP ini ke daftar «Pantau ping» (hentikan pemantauan dulu jika sedang berjalan).",
   nsReadIdent: "Mengirim lagi Modbus «Read Device Identification» (FC 2B/0E) — vendor, produk, revisi.",
   nsExpose: " Menandai port terbuka yang membawa protokol industri tanpa autentikasi atau akses admin teks polos. Hanya memakai port yang sudah dicek dan tidak mengubah pengaturan perangkat apa pun.",
-  nsDisc: "(mulai 0.11.0) Hanya saat ditekan, mengirim EtherNet/IP «ListIdentity» (UDP 44818) dan BACnet «Who-Is» (UDP 47808) ke alamat broadcast adaptor terpilih dan menggabungkan jawabannya — vendor, jenis perangkat, nama produk, dan revisi (EtherNet/IP); device instance, vendor ID, dan APDU maks (BACnet) — ke tabel perangkat ditemukan. Request hanya-baca, tanpa hak admin. Hanya menjangkau subnet yang sama.",
+  nsDisc: "Hanya saat ditekan, mengirim EtherNet/IP «ListIdentity» (UDP 44818) dan BACnet «Who-Is» (UDP 47808) ke alamat broadcast adaptor terpilih dan menggabungkan jawabannya — vendor, jenis perangkat, nama produk, dan revisi (EtherNet/IP); device instance, vendor ID, dan APDU maks (BACnet) — ke tabel perangkat ditemukan. Request hanya-baca, tanpa hak admin. Hanya menjangkau subnet yang sama.",
   nsDiscEnip: "Mengirim «ListIdentity» (perintah enkapsulasi 0x0063, 24 byte) ke perangkat EtherNet/IP. Nomor seri tidak pernah ditampilkan atau diekspor.",
   nsDiscBacnet: "Mengirim «Who-Is» tanpa batas (8 byte) ke perangkat BACnet/IP. Banyak perangkat menjawab I-Am secara broadcast, jadi mendengar di port 47808 PC ini (port sementara jika program BACnet lain memakainya).",
   nsDiscWait: "Berapa lama menunggu jawaban (300–10000 ms). Naikkan untuk perangkat lambat. Bawaan 2000.",

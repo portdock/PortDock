@@ -27,7 +27,7 @@ Free communication tools for testing field hardware on Windows. Each tool is a s
 
 All twelve apps: the «AI» button in the header copies the current situation (connection settings, errors, recent traffic or check results) to the clipboard as text to paste into an AI chat. PortDock sends nothing (user folders, PC names, the last part of MAC addresses and public IPs are hidden).
 
-Screen language: Korean and English, and from 0.11.0 Japanese. The first start follows the Windows display language (any other language starts in English); change it in the header or Settings. Help stays in English on the Japanese screen.
+Screen languages: 12 — Korean, English, Japanese, German, Spanish, Portuguese (Brazil), Polish, French, Vietnamese, Turkish, Italian and Indonesian. The first start follows the Windows display language (any other language starts in English); change it in the header or Settings. Help comes in Korean and English, so other screen languages show the English help.
 
 Website: <https://portdock.dev>
 

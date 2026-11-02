@@ -240,7 +240,7 @@ export const VI_TIPS: Record<string, string> = {
   nsToMonitor: "Thêm IP này vào danh sách «Giám sát ping» (dừng giám sát trước nếu đang chạy).",
   nsReadIdent: "Gửi lại Modbus «Read Device Identification» (FC 2B/0E) — hãng, sản phẩm, phiên bản.",
   nsExpose: " Đánh dấu cổng mở mang giao thức công nghiệp không xác thực hoặc truy cập quản trị bằng văn bản thường. Chỉ dùng các cổng đã kiểm tra và không đổi cài đặt thiết bị nào.",
-  nsDisc: "(từ 0.11.0) Chỉ khi nhấn, gửi EtherNet/IP «ListIdentity» (UDP 44818) và BACnet «Who-Is» (UDP 47808) tới địa chỉ broadcast của card mạng đã chọn và gộp các trả lời — hãng, loại thiết bị, tên sản phẩm và phiên bản (EtherNet/IP); device instance, vendor ID và APDU tối đa (BACnet) — vào bảng thiết bị tìm thấy. Yêu cầu chỉ đọc, không cần quyền quản trị. Chỉ tới được cùng subnet.",
+  nsDisc: "Chỉ khi nhấn, gửi EtherNet/IP «ListIdentity» (UDP 44818) và BACnet «Who-Is» (UDP 47808) tới địa chỉ broadcast của card mạng đã chọn và gộp các trả lời — hãng, loại thiết bị, tên sản phẩm và phiên bản (EtherNet/IP); device instance, vendor ID và APDU tối đa (BACnet) — vào bảng thiết bị tìm thấy. Yêu cầu chỉ đọc, không cần quyền quản trị. Chỉ tới được cùng subnet.",
   nsDiscEnip: "Gửi «ListIdentity» (lệnh encapsulation 0x0063, 24 byte) tới thiết bị EtherNet/IP. Số serial không bao giờ được hiển thị hay xuất.",
   nsDiscBacnet: "Gửi «Who-Is» không giới hạn (8 byte) tới thiết bị BACnet/IP. Nhiều thiết bị trả lời I-Am bằng broadcast nên chương trình nghe ở cổng 47808 của PC này (cổng tạm nếu chương trình BACnet khác đang dùng).",
   nsDiscWait: "Thời gian chờ trả lời (300–10000 ms). Tăng lên với thiết bị chậm. Mặc định 2000.",

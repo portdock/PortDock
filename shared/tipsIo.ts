@@ -32,8 +32,8 @@ export const IO_TIPS: Record<string, Tip> = {
     "Repeat stops by itself after this many sends (0 = until turned off). The sent count is shown next to it.",
   ],
   encoding: [
-    "받은 글자를 읽고 ASCII 로 보낼 때 쓰는 인코딩. 한국 장비 대부분 CP949(EUC-KR), 일본 장비 Shift_JIS(CP932, 0.11.0 부터), 유럽 장비 Latin-1. 읽을 수 없는 바이트는 <XX> 로 보입니다.",
-    "Encoding for showing received text and for ASCII sends. Korean devices mostly use CP949 (EUC-KR), Japanese ones Shift_JIS (CP932, from 0.11.0), European ones Latin-1. Unreadable bytes show as <XX>.",
+    "받은 글자를 읽고 ASCII 로 보낼 때 쓰는 인코딩. 한국 장비 대부분 CP949(EUC-KR), 일본 장비 Shift_JIS(CP932), 유럽 장비 Latin-1. 읽을 수 없는 바이트는 <XX> 로 보입니다.",
+    "Encoding for showing received text and for ASCII sends. Korean devices mostly use CP949 (EUC-KR), Japanese ones Shift_JIS (CP932), European ones Latin-1. Unreadable bytes show as <XX>.",
   ],
   logFormat: [
     "«파일로 계속 저장» 의 줄 모양. CSV 는 엑셀에서 바로 열 수 있습니다(ts,dir,len,hex,ascii,check,note,peer).",

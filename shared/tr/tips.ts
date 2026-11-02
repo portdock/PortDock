@@ -240,7 +240,7 @@ export const TR_TIPS: Record<string, string> = {
   nsToMonitor: "Bu IP'yi «Ping izleme» listesine ekler (çalışıyorsa önce izlemeyi durdurun).",
   nsReadIdent: "Modbus «Read Device Identification» (FC 2B/0E) isteğini yeniden gönderir — üretici, ürün, revizyon.",
   nsExpose: " Kimlik doğrulamasız endüstriyel protokol veya düz metin yönetim erişimi taşıyan açık portları işaretler. Yalnızca zaten denetlenen portları kullanır ve hiçbir cihaz ayarını değiştirmez.",
-  nsDisc: "(0.11.0'dan itibaren) Yalnızca basıldığında, seçili bağdaştırıcının yayın adresine EtherNet/IP «ListIdentity» (UDP 44818) ve BACnet «Who-Is» (UDP 47808) gönderir ve yanıtları — üretici, cihaz türü, ürün adı ve revizyon (EtherNet/IP); cihaz örneği, üretici kimliği ve en büyük APDU (BACnet) — bulunan cihazlar tablosuna birleştirir. Salt okunur istekler, yönetici hakkı yok. Yalnızca aynı alt ağa ulaşır.",
+  nsDisc: "Yalnızca basıldığında, seçili bağdaştırıcının yayın adresine EtherNet/IP «ListIdentity» (UDP 44818) ve BACnet «Who-Is» (UDP 47808) gönderir ve yanıtları — üretici, cihaz türü, ürün adı ve revizyon (EtherNet/IP); cihaz örneği, üretici kimliği ve en büyük APDU (BACnet) — bulunan cihazlar tablosuna birleştirir. Salt okunur istekler, yönetici hakkı yok. Yalnızca aynı alt ağa ulaşır.",
   nsDiscEnip: "EtherNet/IP cihazlarına «ListIdentity» (kapsülleme komutu 0x0063, 24 bayt) gönderir. Seri numaraları asla gösterilmez veya dışa aktarılmaz.",
   nsDiscBacnet: "BACnet/IP cihazlarına sınırsız bir «Who-Is» (8 bayt) gönderir. Birçok cihaz I-Am'i yayınla yanıtladığından bu PC'nin 47808 portunda dinler (başka bir BACnet programı kullanıyorsa geçici bir port).",
   nsDiscWait: "Yanıtlar için ne kadar bekleneceği (300–10000 ms). Yavaş cihazlar için artırın. Varsayılan 2000.",

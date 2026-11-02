@@ -161,7 +161,7 @@ export const help: HelpDoc = {
       title: "방송으로 찾기 (EtherNet/IP·BACnet)",
       id: "discover",
       body: [
-        "(0.11.0 부터) IP 를 모르는 EtherNet/IP 장비·BACnet/IP 장치를 방송 한 번으로 찾습니다. 왼쪽 «방송으로 찾기» 를 누를 때만 보냅니다.",
+        "IP 를 모르는 EtherNet/IP 장비·BACnet/IP 장치를 방송 한 번으로 찾습니다. 왼쪽 «방송으로 찾기» 를 누를 때만 보냅니다.",
         "- 보내는 것: 고른 랜카드의 방송 주소(예: 192.168.0.255)로 EtherNet/IP «ListIdentity»(UDP 44818, 캡슐화 명령 0x0063, 24바이트)와 BACnet «Who-Is»(UDP 47808, 범위 없음, 8바이트). «보내는 횟수» 만큼(1~3번) 기다리는 동안 나눠 보냅니다. 둘 다 읽기 요청이라 장비 설정을 바꾸지 않습니다.",
         "- EtherNet/IP 답: 벤더(흔한 40곳은 이름, 나머지는 번호)·장비 종류·제품 코드·제품 이름·버전·장비가 알린 IP. 장비가 보내는 일련번호는 화면·CSV·AI 복사에 넣지 않습니다.",
         "- BACnet 답(I-Am): 장치 인스턴스·벤더 ID·최대 APDU·분할 지원. 라우터 뒤(MS/TP 등) 장치면 망 번호·주소가 붙습니다.",
@@ -179,7 +179,7 @@ export const help: HelpDoc = {
         "- 산업 프로토콜(Modbus·MC·EtherNet/IP·S7·IEC 60870-5-104·DNP3)에는 인증이 없습니다 — 같은 망의 누구나 읽고 쓸 수 있습니다. 장비 고장이 아니라 «누가 닿을 수 있나» 를 보라는 표시입니다.",
         "- 확인 순서: 1) 설비망과 사무망이 스위치·VLAN·방화벽으로 나뉘어 있는지 2) 원격 접속 공유기·게이트웨이가 이 포트를 밖으로 넘기지 않는지(포트 포워딩) 3) 장비 설정에서 쓰지 않는 Telnet·FTP·VNC·HTTP 를 끌 수 있는지, 관리 페이지 기본 비밀번호를 바꿨는지 4) OPC UA 는 보안 모드 «None»·익명 로그인을 쓰는지.",
         "- 이미 확인한 포트(«확인할 포트» 목록)만 보고 표시합니다. 이 표시 때문에 포트를 더 많이 스캔하지 않고, 장비 설정도 바꾸지 않습니다.",
-        "- (0.11.0 부터) «방송으로 찾기» 에 답한 장비도 같은 표시를 받습니다 — EtherNet/IP(44818)·BACnet/IP(UDP 47808).",
+        "- «방송으로 찾기» 에 답한 장비도 같은 표시를 받습니다 — EtherNet/IP(44818)·BACnet/IP(UDP 47808).",
       ],
     },
     {
@@ -374,7 +374,7 @@ export const help: HelpDoc = {
       title: "Broadcast discovery (EtherNet/IP, BACnet)",
       id: "discover",
       body: [
-        "(from 0.11.0) Finds EtherNet/IP devices and BACnet/IP devices whose IP you do not know with a single broadcast. Nothing is sent until you press «Discover by broadcast» on the left.",
+        "Finds EtherNet/IP devices and BACnet/IP devices whose IP you do not know with a single broadcast. Nothing is sent until you press «Discover by broadcast» on the left.",
         "- What is sent: EtherNet/IP «ListIdentity» (UDP 44818, encapsulation command 0x0063, 24 bytes) and BACnet «Who-Is» (UDP 47808, unbounded, 8 bytes) to the selected adapter's broadcast address (e.g. 192.168.0.255), spread over the wait time «Times to send» times (1–3). Both are read-only requests and change no device settings.",
         "- EtherNet/IP answers: vendor (name for 40 common vendors, otherwise the number), device type, product code, product name, revision and the IP the device reports. The serial number the device sends is never shown, exported to CSV or put in the AI copy.",
         "- BACnet answers (I-Am): device instance, vendor ID, max APDU and segmentation support. Devices behind a router (MS/TP etc.) also show the network number and address.",
@@ -392,7 +392,7 @@ export const help: HelpDoc = {
         "- Industrial protocols (Modbus, MC, EtherNet/IP, S7, IEC 60870-5-104, DNP3) have no authentication — anyone on the same network can read and write. The tag is not a device fault; it asks «who can reach this?».",
         "- What to check: 1) the equipment and office networks are separated by switches, VLANs or a firewall 2) a remote-access router or gateway does not forward these ports outside 3) unused Telnet, FTP, VNC or HTTP can be turned off in the device settings and the admin page's default password was changed 4) OPC UA does not use security mode «None» or anonymous login.",
         "- Only ports already checked (the «Ports to check» list) are used. The notes never scan more ports and never change device settings.",
-        "- (from 0.11.0) Devices that answered «Broadcast discovery» get the same notes — EtherNet/IP (44818) and BACnet/IP (UDP 47808).",
+        "- Devices that answered «Broadcast discovery» get the same notes — EtherNet/IP (44818) and BACnet/IP (UDP 47808).",
       ],
     },
     {
