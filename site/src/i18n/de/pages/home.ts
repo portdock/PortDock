@@ -26,7 +26,7 @@ export default (c: HomeCtx) => ({
   heroAlt: "Oberfläche von PortDock Serial — empfangene Bytes und eine entschlüsselte Modbus-Antwort",
   heroCap: "PortDock Serial — Beispielansicht (Beispieldaten, Oberfläche auf Englisch)",
   appsTitle: `${c.nApps} Windows-Programme${c.mcp ? " + MCP" : ""}`,
-  appsLead: "Ein kleines Programm pro Aufgabe — laden Sie nur, was Sie brauchen. Ab 0.11.0 lässt sich die Programmoberfläche auf 12 Sprachen umstellen, darunter Deutsch (0.10.0: nur Koreanisch und Englisch; Hilfe auf Englisch).",
+  appsLead: "Ein kleines Programm pro Aufgabe — laden Sie nur, was Sie brauchen. Die Programmoberfläche gibt es in 12 Sprachen, darunter Deutsch (die Hilfe auf Koreanisch und Englisch, bei anderen Sprachen auf Englisch).",
   screen: "– Oberfläche",
   soon: "Bald verfügbar",
   webTitle: "Web-Tools — ohne Installation",

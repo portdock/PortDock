@@ -23,7 +23,7 @@ export default {
     portable: "senza installazione",
   },
   screenLang: {
-    title: "Schermate in 12 lingue (dalla 0.11.0)",
+    title: "Schermate in 12 lingue",
     body: "Scegli la lingua della schermata tra coreano, inglese, giapponese, tedesco, spagnolo, portoghese, polacco, francese, vietnamita, turco, italiano e indonesiano (nell’intestazione o in Impostazioni). Il primo avvio segue la lingua di visualizzazione di Windows; qualsiasi altra lingua parte in inglese. Nelle schermate diverse da coreano e inglese, la guida e parte del testo dei risultati restano in inglese.",
   },
 };

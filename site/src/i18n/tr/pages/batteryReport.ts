@@ -25,7 +25,7 @@ export default {
   ] as [string, string][],
   appTitle: "PortDock uygulamalarıyla daha fazlası",
   app1: "Dizüstü bir ekipman veya saha PC’si olarak kullanılıyorsa uyku, USB seçici askıya alma, Hızlı başlatma ve güncelleme sonrası yeniden başlatma ilkesi yönetici hakkı olmadan",
-  app2: "uygulamasında «This PC» → «Read this PC's settings» altında okunabilir (salt okunur; adlar uygulamanın İngilizce arayüzündeki gibidir, arayüz 0.11.0 sürümünden itibaren Türkçe de).",
+  app2: "uygulamasında «Bu PC» → «Bu PC'nin ayarlarını oku» altında okunabilir (salt okunur; uygulamanın arayüzü Türkçe dahil 12 dilde).",
   faqTitle: "Sık sorulan sorular",
   faq: [
     ["Yüzde kaçta değiştirmeliyim?", "Tek bir eşik yoktur. Dizüstü üreticinizin garanti ve değişim koşullarına bakın. Pratikte gerçek kullanım süresinin işiniz için hâlâ yeterli olup olmadığına bakın."],

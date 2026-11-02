@@ -23,7 +23,7 @@ export default {
     portable: "sin instalación",
   },
   screenLang: {
-    title: "Pantallas en 12 idiomas (desde 0.11.0)",
+    title: "Pantallas en 12 idiomas",
     body: "Elija el idioma de la pantalla entre coreano, inglés, japonés, alemán, español, portugués, polaco, francés, vietnamita, turco, italiano e indonesio (en la cabecera o en Ajustes). El primer arranque sigue el idioma de pantalla de Windows; cualquier otro idioma arranca en inglés. En las pantallas que no son coreano ni inglés, la ayuda y parte del texto de los resultados siguen en inglés.",
   },
 };

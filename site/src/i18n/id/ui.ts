@@ -33,7 +33,7 @@ export default {
     ["Tersambung ulang sendiri", "Cabut dan colok lagi adaptor USB: PortDock menemukan perangkat yang sama dan mencatat kapan koneksi putus."],
     ["Satu baris, satu pesan", "Frame dipisah menurut jeda diam, karakter akhir, panjang tetap, atau Modbus RTU — data tidak lagi tergabung atau terpotong."],
     ["Lihat sebelum mengirim", "Byte yang benar-benar akan dikirim, termasuk checksum dan akhir baris, tampil selagi Anda mengetik."],
-    ["Layar juga dalam bahasa Indonesia", "Mulai 0.11.0 layar program tersedia dalam 12 bahasa, termasuk bahasa Indonesia (0.10.0: bahasa Korea dan Inggris; bantuan dalam bahasa Inggris), dengan tooltip di setiap kontrol."],
+    ["Layar juga dalam bahasa Indonesia", "Layar program tersedia dalam 12 bahasa, termasuk bahasa Indonesia (bantuan dalam bahasa Korea dan Inggris; pada layar bahasa lain, bahasa Inggris), dengan tooltip di setiap kontrol."],
   ],
   ctaTitle: "Ada pertanyaan, bug, atau usulan?",
   ctaBody: "Tanyakan cara pakai, laporkan bug, usulkan alat web atau panduan baru, atau koreksi peta register perangkat.",

@@ -23,7 +23,7 @@ export default {
       body: "Jika Modbus 502, MC 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23, atau HTTP 80 termasuk port yang sudah diperiksa, ditambahkan catatan seperti «Protokol industri terbuka — siapa pun di jaringan yang sama bisa membaca dan menulis (tanpa autentikasi) — periksa pemisahan jaringan». Tidak memindai port tambahan dan tidak mengubah pengaturan perangkat apa pun.",
     },
     {
-      title: "Penemuan lewat broadcast — EtherNet/IP, BACnet (mulai 0.11.0)",
+      title: "Penemuan lewat broadcast — EtherNet/IP, BACnet",
       body: "Hanya saat ditekan, mengirim EtherNet/IP ListIdentity (UDP 44818) dan BACnet Who-Is (UDP 47808) ke alamat broadcast adaptor yang dipilih dan menggabungkan vendor, tipe perangkat, nama produk, dan revisi — serta instance perangkat BACnet dan ID vendor — dari perangkat yang IP-nya belum Anda ketahui ke dalam tabel. Request hanya-baca; nomor seri tidak ditampilkan.",
     },
     {

@@ -31,8 +31,8 @@ export default {
     [MS_USER_URL, "Hỗ trợ của Microsoft — Khắc phục lỗi màn hình xanh", "hướng dẫn cho người dùng"],
   ] as [string, string, string][],
   appTitle: "Thêm với ứng dụng PortDock",
-  app1: "Để xem màn hình xanh và các lần tắt máy đột ngột xảy ra khi nào và bao nhiêu lần, mở thẻ «This PC» của",
-  app2: "và nhấn «Read this PC's settings» (tên theo giao diện tiếng Anh của ứng dụng; từ 0.11.0 giao diện có cả tiếng Việt). Chỉ đọc và không cần quyền quản trị, ứng dụng hiện số lần và thời điểm gần nhất của các lần tắt bất ngờ gần đây (Kernel-Power 41, EventLog 6008) và lỗi phần cứng (WHEA-Logger, disk, Ntfs).",
+  app1: "Để xem màn hình xanh và các lần tắt máy đột ngột xảy ra khi nào và bao nhiêu lần, mở thẻ «PC này» của",
+  app2: "và nhấn «Đọc cài đặt của PC này» (giao diện ứng dụng có 12 ngôn ngữ, trong đó có tiếng Việt). Chỉ đọc và không cần quyền quản trị, ứng dụng hiện số lần và thời điểm gần nhất của các lần tắt bất ngờ gần đây (Kernel-Power 41, EventLog 6008) và lỗi phần cứng (WHEA-Logger, disk, Ntfs).",
   faqTitle: "Câu hỏi thường gặp",
   faq: [
     ["Mã có cho biết nguyên nhân không?", "Mã cho biết đó là kiểu dừng nào. Hãy dùng nó để thu hẹp nguyên nhân khả dĩ và việc cần kiểm tra, kết hợp với tên .sys trên màn hình, các sự kiện cùng thời điểm và việc mã có giống nhau mỗi lần không. Tìm nguyên nhân chính xác có thể cần phân tích tệp dump (WinDbg)."],

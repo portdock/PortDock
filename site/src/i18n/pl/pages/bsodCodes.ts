@@ -31,8 +31,8 @@ export default {
     [MS_USER_URL, "Pomoc techniczna Microsoft — Rozwiązywanie problemów z błędami niebieskiego ekranu", "wskazówki dla użytkowników"],
   ] as [string, string, string][],
   appTitle: "Więcej w programach PortDock",
-  app1: "Kiedy i jak często zdarzały się niebieskie ekrany i nagłe wyłączenia, zobaczysz na karcie „This PC” programu",
-  app2: "po naciśnięciu „Read this PC's settings”. Tylko do odczytu i bez uprawnień administratora pokazuje liczbę i ostatni czas niedawnych nieoczekiwanych wyłączeń (Kernel-Power 41, EventLog 6008) oraz błędów sprzętu (WHEA-Logger, disk, Ntfs) (interfejs programu po angielsku lub koreańsku, od wersji 0.11.0 także po polsku).",
+  app1: "Kiedy i jak często zdarzały się niebieskie ekrany i nagłe wyłączenia, zobaczysz na karcie „Ten PC” programu",
+  app2: "po naciśnięciu „Odczytaj ustawienia tego PC”. Tylko do odczytu i bez uprawnień administratora pokazuje liczbę i ostatni czas niedawnych nieoczekiwanych wyłączeń (Kernel-Power 41, EventLog 6008) oraz błędów sprzętu (WHEA-Logger, disk, Ntfs) (interfejs programu w 12 językach, także po polsku).",
   faqTitle: "Najczęstsze pytania",
   faq: [
     ["Czy kod powie mi, co jest przyczyną?", "Kod mówi, jaki to był rodzaj zatrzymania. Użyj go, by zawęzić możliwe przyczyny i kroki sprawdzania, razem z nazwą .sys na ekranie, zdarzeniami z tego samego czasu i tym, czy kod jest za każdym razem ten sam. Dokładna przyczyna może wymagać analizy zrzutu (WinDbg)."],

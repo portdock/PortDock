@@ -23,7 +23,7 @@ export default {
     portable: "kurulum gerekmez",
   },
   screenLang: {
-    title: "12 dilde ekran (0.11.0'dan itibaren)",
+    title: "12 dilde ekran",
     body: "Ekran dilini Korece, İngilizce, Japonca, Almanca, İspanyolca, Portekizce, Lehçe, Fransızca, Vietnamca, Türkçe, İtalyanca ve Endonezce arasından seçin (üst bölüm veya Ayarlar). İlk açılışta Windows görüntüleme dili kullanılır; başka bir dil İngilizce olarak açılır. Korece ve İngilizce dışındaki ekranlarda yardım ve bazı sonuç metinleri İngilizce kalır.",
   },
 };

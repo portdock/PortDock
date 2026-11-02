@@ -23,7 +23,7 @@ export default {
     portable: "tanpa instalasi",
   },
   screenLang: {
-    title: "Layar dalam 12 bahasa (mulai 0.11.0)",
+    title: "Layar dalam 12 bahasa",
     body: "Pilih bahasa layar dari Korea, Inggris, Jepang, Jerman, Spanyol, Portugis, Polandia, Prancis, Vietnam, Turki, Italia, dan Indonesia (di header atau Pengaturan). Saat pertama dijalankan, bahasa mengikuti bahasa tampilan Windows; bahasa lain dimulai dalam bahasa Inggris. Pada layar selain bahasa Korea dan Inggris, bantuan dan sebagian teks hasil tetap berbahasa Inggris.",
   },
 };

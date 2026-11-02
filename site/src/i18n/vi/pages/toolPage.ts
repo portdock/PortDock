@@ -23,7 +23,7 @@ export default {
     portable: "không cần cài",
   },
   screenLang: {
-    title: "Giao diện 12 ngôn ngữ (từ 0.11.0)",
+    title: "Giao diện 12 ngôn ngữ",
     body: "Chọn ngôn ngữ giao diện trong tiếng Hàn, Anh, Nhật, Đức, Tây Ban Nha, Bồ Đào Nha, Ba Lan, Pháp, Việt, Thổ Nhĩ Kỳ, Ý và Indonesia (ở phần đầu trang hoặc trong Cài đặt). Lần khởi động đầu theo ngôn ngữ hiển thị của Windows; ngôn ngữ khác sẽ khởi động bằng tiếng Anh. Trên giao diện không phải tiếng Hàn hay tiếng Anh, phần trợ giúp và một số kết quả vẫn bằng tiếng Anh.",
   },
 };

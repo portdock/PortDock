@@ -33,7 +33,7 @@ export default {
     ["Reconecta sozinho", "Tirou e recolocou o adaptador USB? O PortDock encontra o mesmo dispositivo, reconecta e registra a hora em que a conexão caiu."],
     ["Uma linha, uma mensagem", "Separa os quadros por tempo de silêncio, terminador, tamanho fixo ou Modbus RTU — chega de dados emendados ou partidos."],
     ["Veja antes de enviar", "Os bytes exatos que vão sair, já com checksum e fim de linha, aparecem enquanto você digita."],
-    ["Telas também em português", "A partir da 0.11.0, as telas dos programas estão em 12 idiomas, incluindo o português (a 0.10.0, em coreano e inglês; a ajuda, em inglês), com dica em cada controle."],
+    ["Telas também em português", "As telas dos programas estão em 12 idiomas, incluindo o português (a ajuda, em coreano e inglês; com outro idioma de tela, em inglês), com dica em cada controle."],
   ],
   ctaTitle: "Dúvidas, bugs ou sugestões?",
   ctaBody: "Pergunte como algo funciona, relate um bug, sugira uma ferramenta web ou um guia, ou corrija o mapa de registradores de um equipamento.",
