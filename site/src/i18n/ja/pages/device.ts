@@ -3,6 +3,7 @@
 // seo·desc 는 후보 배열 — 화면이 검색 제목 66칸·설명 160칸(한·중·일 글자는 2칸) 안에 드는 첫 후보를 고른다(긴 제조사·모델 이름 대비, 짧아지는 순으로).
 // read1·read4·wiring = 링크(앱 이름·배선도 만들기) 앞·뒤 조각. bundle = 데이터 묶음 쪽(번역 범위 밖) 링크 글 — 화면이 «(英語)» 를 붙인다.
 // enNote = 레지스터 이름·설명·값·주의·출처는 영어 그대로라는 안내(한국어·영어 쪽에는 없다). findReg 의 예는 영어 레지스터 이름으로(표가 영어).
+// 1~7차 lib 표와 같은 영어: Protocol·Table(Modbus 영역)·Manual·Name·None·Even·Odd 는 같은 뜻이라 같은 번역, Registers(절 머리 — lib 은 구성도 비교의 «레지스터 수»)·Type(데이터 형 — lib 은 인계 문서·구성도 비교의 «종류»)·Notes(주의 — lib 은 인계 문서의 «메모» 칸)는 뜻이 달라 문맥대로.
 // «…» 안은 앱 화면 글(apps/modbus-master·modbus-slave, shared/ja/dialogs.ts 의 실제 글).
 export default {
   title: (c: { name: string }) => `${c.name} Modbus レジスタマップ`,
@@ -14,8 +15,8 @@ export default {
   ],
   crumb: "機器",
   parity: { none: "なし", even: "偶数", odd: "奇数" },
-  addr: { zero: "通信アドレスそのまま(0 始まり)", one: "1 始まりの番号(通信アドレス + 1)", plc: "40001・30001 形式(通信アドレス + 1、先頭の桁が区分)" },
-  protocol: "方式",
+  addr: { zero: "通信アドレスそのまま(0 始まり)", one: "1 始まりの番号(通信アドレス + 1)", plc: "40001・30001 形式(通信アドレス + 1、先頭の桁が領域)" },
+  protocol: "プロトコル",
   baud: "ボーレート(出荷時)",
   options: "選択肢",
   frame: "データ・パリティ・ストップ",
@@ -23,16 +24,16 @@ export default {
   tcpPort: "TCP ポート",
   order: "32 ビットの語順",
   max: "1 回の要求の最大",
-  maxRegs: (c: { n: number }) => `${c.n} レジスタ`,
+  maxRegs: (c: { n: number }) => `レジスタ ${c.n} 個`, // 목록 regs 와 같은 영어(«n registers») — 같은 번역
   addressing: "マニュアルのアドレス表記",
   caution: "メーカーのマニュアルから事実(アドレス・型・単位・倍率)だけを写してまとめた非公式の資料です。メーカーとは関係がなく、ファームウェアや形式によって異なることがあります。書き込み(運転指令・設定変更)の前に、必ず機器のマニュアルで確認してください。",
   commTitle: "通信の既定値",
   regsTitle: "レジスタ",
-  regsNote: "«通信アドレス» は要求フレームに載る 0 始まりのアドレスです(PortDock の «0 始まり» 表記)。値 = 生の値 × 倍率。区分: HR 保持レジスタ、IR 入力レジスタ、CO コイル、DI 入力ステータス。ファンクションコードは 16 進。",
+  regsNote: "«通信アドレス» は要求フレームに載る 0 始まりのアドレスです(PortDock の «0 始まり» 表記)。値 = 生の値 × 倍率。領域: HR 保持レジスタ、IR 入力レジスタ、CO コイル、DI 入力ステータス。ファンクションコードは 16 進。",
   enNote: "レジスタ名・説明・値の意味・注意・出典の版とページは、マニュアルの表記と照らし合わせやすいよう英語のまま載せています。",
   findReg: "レジスタを探す — 例: voltage、30001",
   scroll: "表は横にスクロールできます — 最初の列(マニュアルのアドレス)は固定です。",
-  th: { manual: "マニュアル", wire: "通信アドレス", table: "区分", name: "名前", type: "型", unit: "単位・倍率", details: "説明" },
+  th: { manual: "マニュアル", wire: "通信アドレス", table: "領域", name: "名前", type: "型", unit: "単位・倍率", details: "説明" },
   range: "範囲",
   notesTitle: "注意",
   readTitle: "PortDock ですぐ読み出す",
