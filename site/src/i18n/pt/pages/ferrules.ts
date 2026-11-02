@@ -1,0 +1,52 @@
+// Ponteiras (ferrules) e terminais de crimpagem (views/FerrulesPage.astro) — 7.º lote. Termos: ponteira, colar, terminal de olhal, prisioneiro/parafuso, seção em mm²
+// units: a primeira coluna é valor de tela, fica igual. see = trechos entre links
+export default {
+  h1: "Tabela de ponteiras e terminais de crimpagem",
+  desc: "Cor do colar de ponteiras pela seção do fio (mm² ou AWG) nos códigos DIN 46228-4 e francês, e terminais de olhal (1.25, 2, 5.5) pelo parafuso.",
+  seo: "Cores de ponteiras (DIN 46228-4, francês) e terminais — PortDock",
+  find: "Buscar pela seção do fio",
+  unit: "Unidade",
+  units: [
+    ["mm2", "mm²"],
+    ["awg", "AWG"],
+  ],
+  size: "Tamanho",
+  stud: "Parafuso (terminal de olhal)",
+  byColor: "Buscar pela cor — de que tamanho é esta ponteira?",
+  sys: "Código de cores",
+  sysDin: "DIN 46228-4",
+  sysFr: "Código de cores francês",
+  color: "Cor do colar",
+  none: "Esta cor não é usada de 0.5 a 50 mm² neste código.",
+  noFer: "Não é um tamanho da tabela (0.5, 0.75, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50 mm²) — informe a seção nominal.",
+  noLug: "Fora dos tamanhos de terminal de olhal 1.25, 2 e 5.5 (0.25–6.6 mm²) — veja a tabela do fabricante do terminal.",
+  both: "Duas faixas de tamanho se sobrepõem — escolha com a tabela do fabricante do terminal.",
+  kDin: "Cor DIN 46228-4",
+  kFr: "Cor francesa",
+  kAwg: "AWG equivalente (Weidmüller)",
+  kArea: "Área AWG",
+  kLug: "Terminal de olhal",
+  sleeve: "cor usual da capa",
+  tTitle: "Cores do colar das ponteiras — DIN 46228-4 e código francês",
+  tHead: ["mm²", "AWG", "DIN 46228-4", "Francês"],
+  tNote:
+    "O mesmo tamanho pode ter cores diferentes conforme o código (2.5 mm² é azul na DIN e cinza no código francês). Use um só código por caixa e por local, e confira os mm² impressos na caixa ou na ponteira em vez de confiar só na cor. Os fabricantes também têm seus próprios códigos de cores. Cores abaixo de 0.5 mm² e acima de 50 mm² não estão na DIN 46228-4 e ficam de fora. Ponteiras duplas (dois fios) podem usar cores diferentes — veja a tabela do fabricante.",
+  lTitle: "Terminais de olhal — classe de seção do fio e parafuso",
+  lHead: ["Classe", "Faixa do fio mm²", "AWG", "Cor usual da capa", "Exemplo de nome"],
+  lNote:
+    "«R1.25-4» significa um terminal de olhal para a classe de fio 1.25 (0.25–1.65 mm²) e um parafuso M4 (nomenclatura estilo JST). Tamanhos numa sobreposição, como 1.5 mm², servem nas duas classes, então escolha com a tabela do fabricante. Terminais garfo (Y) são escolhidos do mesmo jeito, mas a nomenclatura varia conforme o fabricante. Nem toda combinação de classe e parafuso é fabricada, então confira a tabela do fabricante. Use a ferramenta de crimpagem especificada pelo fabricante do terminal.",
+  sTitle: "Comprimento de decapagem e torque de aperto",
+  sText:
+    "O comprimento de decapagem segue o comprimento da luva metálica da ponteira (6, 8, 10, 12, 18 mm etc.) e a recomendação do fabricante — confira o «comprimento de decapagem» no catálogo. O torque de aperto da régua de bornes segue o valor do fabricante da régua (impresso na régua ou no datasheet); esta tabela não inventa valores.",
+  privacy: "Esta página consulta os dados dentro do seu navegador; o que você digita não é enviado a nenhum servidor.",
+  srcTitle: "Fontes",
+  see: ["Para etiquetas de números de cabo, use o ", ". Para escolher a seção de um fio, use o ", "."],
+  astm: "Diâmetro AWG d = 0.127 mm × 92^((36 − n)/39)",
+  astm24: "Área do AWG 24",
+  faqTitle: "Perguntas frequentes",
+  faq: [
+    ["Por que ponteiras do mesmo tamanho vêm em cores diferentes?", "Há dois sistemas de cores — a DIN 46228-4 e o sistema francês usam cores diferentes para os mesmos mm² (por exemplo, 2.5 mm² é azul na DIN e cinza no sistema francês). Use um só sistema em cada local e confira os mm² impressos na caixa ou na ponteira, não só a cor."],
+    ["O que significa «R1.25-4»?", "Um terminal de olhal para a classe de fio 1.25 (0.25–1.65 mm²) e um parafuso M4 (nomenclatura estilo JST). Onde as faixas se sobrepõem, as duas classes servem — escolha pela tabela do fabricante do terminal."],
+    ["Que comprimento de decapagem e torque de aperto devo usar?", "Depende do produto. O comprimento de decapagem segue o comprimento da luva metálica da ponteira e o «comprimento de decapagem» do fabricante; o torque segue o valor do fabricante da régua de bornes."],
+  ] as [string, string][],
+};

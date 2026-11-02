@@ -1,0 +1,47 @@
+// Comprobación de la resistencia de aislamiento (views/InsulationPage.astro) — 7.º lote. Términos: resistencia de aislamiento, tensión de ensayo, SELV/PELV, MΩ
+// Normativa coreana: se mantiene el hecho «reglamento de Corea». see = fragmentos entre enlaces
+export default {
+  h1: "Comprobador de resistencia de aislamiento",
+  desc: "Introduzca el tipo de circuito (SELV/PELV, hasta 500 V, más de 500 V), la tensión de ensayo y la lectura en MΩ para compararla con IEC 60364-6 y la coreana.",
+  seo: "Resistencia de aislamiento mínima (IEC 60364-6) — PortDock",
+  helper: "Elegir según la tensión nominal",
+  nominal: "Tensión nominal del circuito (V)",
+  selv: "Circuito SELV o PELV (transformador / fuente de aislamiento de seguridad)",
+  dc: "CC — el límite de muy baja tensión es 50 V CA, 120 V CC",
+  circuit: "Tipo de circuito",
+  testV: "Tensión de ensayo CC (V)",
+  reading: "Lectura (MΩ — también sirven >2000, OL, 550k)",
+  copy: "Copiar resultado",
+  copied: "Copiado.",
+  need: "Requisito",
+  noCircuit: "Ninguna fila coincide con esta tensión y este tipo (SELV/PELV llega hasta 50 V CA o 120 V CC; la tabla llega a 1000 V).",
+  privacy: "Los valores que introduce se comprueban dentro de este navegador y no se envían a ningún sitio.",
+  safeTitle: "Antes de medir (seguridad)",
+  safe: [
+    "La medida de la resistencia de aislamiento es un trabajo eléctrico: debe realizarla una persona cualificada según las normas de seguridad de la instalación (permiso, bloqueo, señalización).",
+    "Aísle el circuito y compruebe con un comprobador de tensión que no tiene tensión antes de medir. Bloquéelo para que nadie pueda volver a conectarlo.",
+    "Desconecte la electrónica (PLC, variadores, fuentes de alimentación, sensores, equipos de red, protectores contra sobretensiones y filtros EMC) para que la tensión de ensayo no les llegue (pueden dañarse y las lecturas salen bajas).",
+    "Los cables siguen cargados durante el ensayo y justo después: no toque las puntas de prueba y descárguelos con la función de descarga del comprobador o a tierra antes de manipularlos.",
+    "Los cables largos y los motores tardan en estabilizarse. Lea siempre en el mismo momento (p. ej. 1 minuto) para poder comparar con registros anteriores.",
+  ],
+  tTitle: "Resistencia de aislamiento mínima — circuitos de baja tensión",
+  tHead: ["Tensión nominal del circuito", "Tensión de ensayo CC", "Resistencia de aislamiento"],
+  tNote:
+    "La muy baja tensión (ELV) llega hasta 50 V CA o 120 V CC. Los circuitos SELV (sin puesta a tierra) y PELV (con puesta a tierra) están separados del primario; los FELV no. Los valores son para instalaciones nuevas (Corea: desde 2021); para instalaciones antiguas, alta tensión o ensayos a nivel de equipo, consulte el texto de origen y los datos del fabricante.",
+  lTitle: "Interpretar el resultado",
+  l: [
+    "Superar el mínimo no es toda la historia. Una gran caída respecto a lecturas anteriores del mismo circuito en las mismas condiciones puede ser el comienzo de humedad, polvo o daños en el aislamiento: registre las lecturas y vigile la tendencia.",
+    "Si varios circuitos medidos juntos dan una lectura baja, sepárelos en los interruptores o regletas de bornes y mida de nuevo para acotar el tramo bajo.",
+    "Aplicar 500 V a circuitos SELV/PELV (control a 24 V) puede dañar la electrónica que siga conectada: use los 250 V especificados.",
+  ],
+  srcTitle: "Fuentes",
+  see: ["Para comprobar el cableado de señal y de alimentación con un multímetro, use el ", ". Para llevar registros, use la ", "."],
+  src1: "Normas técnicas de equipos eléctricos de Corea, artículo 52 (aislamiento de los circuitos de baja tensión) — law.go.kr",
+  src2: "Instalaciones eléctricas de baja tensión — Verificación (6.4.3.3 resistencia de aislamiento, Tabla 6.1)",
+  faqTitle: "Preguntas frecuentes",
+  faq: [
+    ["¿Se ensaya un circuito de control de 24 V a 500 V?", "No. Los circuitos SELV y PELV (muy baja tensión) se ensayan a los 250 V especificados. 500 V pueden dañar las piezas electrónicas que queden en el circuito; desconecte PLC, variadores, fuentes de alimentación y equipos similares antes del ensayo."],
+    ["¿Una lectura por encima del mínimo siempre está bien?", "El mínimo es solo la línea de aprobado. Si el valor ha bajado mucho respecto a lecturas anteriores tomadas de la misma forma y en el mismo momento (p. ej. 1 minuto), puede estar empezando humedad, polvo o daño en el aislamiento: regístrelo y vigile la tendencia."],
+    ["Varios circuitos medidos juntos dan una lectura baja", "Sepárelos en los interruptores o regletas de bornes y mida de nuevo para acotar el tramo bajo. Aísle, verifique la ausencia de tensión y bloquee antes del ensayo, y descargue el cable después antes de tocarlo."],
+  ] as [string, string][],
+};

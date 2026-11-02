@@ -1,0 +1,52 @@
+// Punteras (ferrules) y terminales de crimpado (views/FerrulesPage.astro) — 7.º lote. Términos: puntera, collarín, terminal de ojal, espárrago, sección en mm²
+// units: la primera columna es valor de pantalla, se deja igual. see = fragmentos entre enlaces
+export default {
+  h1: "Tabla de punteras y terminales de crimpado",
+  desc: "Color del collarín de punteras según la sección (mm² o AWG) en los códigos DIN 46228-4 y francés, y terminales de ojal (1.25, 2, 5.5) según el espárrago.",
+  seo: "Colores de punteras (DIN 46228-4, francés) y terminales — PortDock",
+  find: "Buscar por sección del cable",
+  unit: "Unidad",
+  units: [
+    ["mm2", "mm²"],
+    ["awg", "AWG"],
+  ],
+  size: "Tamaño",
+  stud: "Espárrago (terminal de ojal)",
+  byColor: "Buscar por color: ¿de qué tamaño es esta puntera?",
+  sys: "Código de color",
+  sysDin: "DIN 46228-4",
+  sysFr: "Código de color francés",
+  color: "Color del collarín",
+  none: "Este color no se usa de 0.5 a 50 mm² en este código.",
+  noFer: "No es un tamaño de la tabla (0.5, 0.75, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50 mm²): introduzca la sección nominal.",
+  noLug: "Fuera de los tamaños de terminal de ojal 1.25, 2 y 5.5 (0.25–6.6 mm²): consulte la tabla del fabricante del terminal.",
+  both: "Dos intervalos de tamaño se solapan: elija con la tabla del fabricante del terminal.",
+  kDin: "Color DIN 46228-4",
+  kFr: "Color francés",
+  kAwg: "AWG equivalente (Weidmüller)",
+  kArea: "Área AWG",
+  kLug: "Terminal de ojal",
+  sleeve: "color habitual de la funda",
+  tTitle: "Colores del collarín de las punteras — DIN 46228-4 y código francés",
+  tHead: ["mm²", "AWG", "DIN 46228-4", "Francés"],
+  tNote:
+    "El mismo tamaño puede tener colores distintos según el código (2.5 mm² es azul en DIN y gris en el código francés). Use un solo código por caja y por instalación, y compruebe los mm² impresos en la caja o en la puntera en lugar de fiarse solo del color. Los fabricantes también tienen sus propios códigos de color. Los colores por debajo de 0.5 mm² y por encima de 50 mm² no están en DIN 46228-4 y se omiten. Las punteras dobles (dos cables) pueden usar colores distintos: consulte la tabla del fabricante.",
+  lTitle: "Terminales de ojal: clase de sección del cable y espárrago",
+  lHead: ["Clase", "Rango de cable mm²", "AWG", "Color habitual de la funda", "Ejemplo de nombre"],
+  lNote:
+    "«R1.25-4» significa un terminal de ojal para la clase de cable 1.25 (0.25–1.65 mm²) y un espárrago M4 (nomenclatura tipo JST). Los tamaños en un solape, como 1.5 mm², caben en ambas clases, así que elija con la tabla del fabricante. Los terminales de horquilla (Y) se eligen igual, pero la nomenclatura varía según el fabricante. No se fabrica toda combinación de clase y espárrago, así que consulte la tabla del fabricante. Use la herramienta de crimpado que especifique el fabricante del terminal.",
+  sTitle: "Longitud de pelado y par de apriete",
+  sText:
+    "La longitud de pelado sigue la longitud del manguito metálico de la puntera (6, 8, 10, 12, 18 mm, etc.) y la recomendación del fabricante: consulte la «longitud de pelado» en el catálogo. El par de apriete de las regletas de bornes sigue el valor del fabricante de la regleta (impreso en la regleta o en su hoja de datos); esta tabla no inventa valores.",
+  privacy: "Esta página consulta los datos dentro de su navegador; lo que introduce no se envía a ningún servidor.",
+  srcTitle: "Fuentes",
+  see: ["Para etiquetas de números de cable, use el ", ". Para elegir la sección de un cable, use la ", "."],
+  astm: "Diámetro AWG d = 0.127 mm × 92^((36 − n)/39)",
+  astm24: "Área de AWG 24",
+  faqTitle: "Preguntas frecuentes",
+  faq: [
+    ["¿Por qué las punteras del mismo tamaño tienen colores distintos?", "Hay dos sistemas de color: DIN 46228-4 y el sistema francés usan colores distintos para los mismos mm² (por ejemplo, 2.5 mm² es azul en DIN y gris en el francés). Use un solo sistema en cada instalación y compruebe los mm² impresos en la caja o en la puntera, no solo el color."],
+    ["¿Qué significa «R1.25-4»?", "Un terminal de ojal para la clase de cable 1.25 (0.25–1.65 mm²) y un tornillo M4 (nomenclatura tipo JST). Donde los rangos se solapan, caben ambas clases: elija con la tabla del fabricante del terminal."],
+    ["¿Qué longitud de pelado y par de apriete debo usar?", "Depende del producto. La longitud de pelado sigue la longitud del manguito metálico de la puntera y la «longitud de pelado» del fabricante; el par sigue el valor del fabricante de la regleta."],
+  ] as [string, string][],
+};

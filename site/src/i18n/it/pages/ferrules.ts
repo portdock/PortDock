@@ -1,0 +1,52 @@
+// Puntalini (ferrule) e capicorda a crimpare (views/FerrulesPage.astro) — 7º lotto. Termini: puntalino, collarino, capocorda ad anello, perno/vite, sezione in mm²
+// units: la prima colonna è il valore dello schermo, resta uguale. see = frammenti tra i link
+export default {
+  h1: "Tabella dei puntalini e dei capicorda a crimpare",
+  desc: "Colore del collarino dei puntalini dalla sezione del filo (mm² o AWG) nei codici DIN 46228-4 e francese, e capicorda ad anello (1.25, 2, 5.5) dal perno.",
+  seo: "Colori puntalini (DIN 46228-4, francese) e capicorda — PortDock",
+  find: "Cerca per sezione del filo",
+  unit: "Unità",
+  units: [
+    ["mm2", "mm²"],
+    ["awg", "AWG"],
+  ],
+  size: "Misura",
+  stud: "Perno (capocorda ad anello)",
+  byColor: "Cerca per colore — di che misura è questo puntalino?",
+  sys: "Codice colore",
+  sysDin: "DIN 46228-4",
+  sysFr: "Codice colore francese",
+  color: "Colore del collarino",
+  none: "Questo colore non è usato da 0.5 a 50 mm² in questo codice.",
+  noFer: "Non è una misura della tabella (0.5, 0.75, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50 mm²) — inserite la sezione nominale.",
+  noLug: "Fuori dalle misure di capocorda ad anello 1.25, 2 e 5.5 (0.25–6.6 mm²) — vedete la tabella del costruttore del capocorda.",
+  both: "Due intervalli di misura si sovrappongono — scegliete con la tabella del costruttore del capocorda.",
+  kDin: "Colore DIN 46228-4",
+  kFr: "Colore francese",
+  kAwg: "AWG corrispondente (Weidmüller)",
+  kArea: "Area AWG",
+  kLug: "Capocorda ad anello",
+  sleeve: "colore abituale della guaina",
+  tTitle: "Colori del collarino dei puntalini — DIN 46228-4 e codice francese",
+  tHead: ["mm²", "AWG", "DIN 46228-4", "Francese"],
+  tNote:
+    "La stessa misura può avere colori diversi a seconda del codice (2.5 mm² è blu nella DIN e grigio nel codice francese). Usate un solo codice per scatola e per impianto, e controllate i mm² stampati sulla scatola o sul puntalino invece di fidarvi solo del colore. Anche i costruttori hanno codici colore propri. I colori sotto 0.5 mm² e sopra 50 mm² non sono nella DIN 46228-4 e sono omessi. I puntalini doppi (due fili) possono usare colori diversi — vedete la tabella del costruttore.",
+  lTitle: "Capicorda ad anello — classe di sezione del filo e perno",
+  lHead: ["Classe", "Campo del filo mm²", "AWG", "Colore abituale della guaina", "Esempio di nome"],
+  lNote:
+    "«R1.25-4» indica un capocorda ad anello per la classe di filo 1.25 (0.25–1.65 mm²) e un perno M4 (denominazione in stile JST). Le misure in una sovrapposizione, come 1.5 mm², vanno bene per entrambe le classi, quindi scegliete con la tabella del costruttore. I capicorda a forcella (Y) si scelgono allo stesso modo, ma la denominazione varia con il costruttore. Non ogni combinazione di classe e perno viene prodotta, quindi controllate la tabella del costruttore. Usate l'utensile di crimpatura indicato dal costruttore del capocorda.",
+  sTitle: "Lunghezza di spelatura e coppia di serraggio",
+  sText:
+    "La lunghezza di spelatura segue la lunghezza del manicotto metallico del puntalino (6, 8, 10, 12, 18 mm e così via) e la raccomandazione del costruttore — controllate la «lunghezza di spelatura» nel catalogo. La coppia di serraggio della morsettiera segue il valore del costruttore della morsettiera (stampato sulla morsettiera o nella sua scheda tecnica); questa tabella non inventa valori.",
+  privacy: "Questa pagina consulta i dati all'interno del vostro browser; ciò che inserite non viene inviato a un server.",
+  srcTitle: "Fonti",
+  see: ["Per le etichette dei numeri di cavo usate il ", ". Per scegliere la sezione di un filo usate la ", "."],
+  astm: "Diametro AWG d = 0.127 mm × 92^((36 − n)/39)",
+  astm24: "Area dell'AWG 24",
+  faqTitle: "Domande frequenti",
+  faq: [
+    ["Perché puntalini della stessa misura hanno colori diversi?", "Esistono due sistemi di colori — la DIN 46228-4 e il sistema francese usano colori diversi per gli stessi mm² (ad esempio 2.5 mm² è blu nella DIN e grigio nel sistema francese). Usate un solo sistema in un impianto e controllate i mm² stampati sulla scatola o sul puntalino, non solo il colore."],
+    ["Che cosa significa «R1.25-4»?", "Un capocorda ad anello per la classe di filo 1.25 (0.25–1.65 mm²) e una vite M4 (denominazione in stile JST). Dove gli intervalli si sovrappongono vanno bene entrambe le classi — scegliete dalla tabella del costruttore del capocorda."],
+    ["Quale lunghezza di spelatura e quale coppia di serraggio devo usare?", "Dipende dal prodotto. La lunghezza di spelatura segue la lunghezza del manicotto metallico del puntalino e la «lunghezza di spelatura» del costruttore; la coppia segue il valore del costruttore della morsettiera."],
+  ] as [string, string][],
+};
