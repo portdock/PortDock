@@ -10,19 +10,21 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { COMPONENTS, ITEMS, WORKS } from "../lib/commissioning";
-import { GUIDES } from "../data/guides";
 import { WEB_TOOLS } from "../data/webTools";
 import { TOOLS } from "../data/tools";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/commissioning-checklist/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "시운전·유지보수 점검표 만들기 — 설치·정기 점검·증설·교체·제거",
       h1: "시운전·유지보수 점검표 만들기",
@@ -61,11 +63,10 @@ const L = ko
         ["항목을 더하고 싶어요.", "메모 칸에 적거나 CSV 로 저장한 뒤 표 계산 프로그램에서 줄을 더하세요. 자주 필요한 항목은 아래 «의견 남기기» 로 알려 주시면 검토합니다."],
       ],
       seeAlso: "함께 쓰기:",
-      wiring: "배선도 만들기",
-      sys: "시스템 구성도 그리기",
-      pin: "커넥터 핀 배치 사전",
+      seeLinks: ["배선도 만들기", "시스템 구성도 그리기", "커넥터 핀 배치 사전"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Commissioning & Maintenance Checklist — Install, Expand, Replace, Remove",
       h1: "Commissioning and maintenance checklist maker",
       desc: "Pick the job (new install, routine inspection, expansion, replacement, removal) and what is on site for a staged checklist. Saves ticks; print or CSV.",
@@ -103,12 +104,11 @@ const L = ko
         ["I want to add items.", "Write them in the note fields, or save as CSV and add rows in a spreadsheet. If an item is commonly needed, tell us via «Leave feedback» below."],
       ],
       seeAlso: "Use with:",
-      wiring: "Wiring diagram maker",
-      sys: "System diagram editor",
-      pin: "Connector pinout reference",
-    };
+      seeLinks: ["Wiring diagram maker", "System diagram editor", "Connector pinout reference"],
+    }
+  : { ...page7(lang, "commissioning"), seeLinks: ["tools/wiring/", "tools/system-diagram/", "tools/pinouts/"].map((p) => pageName(lang, p)) };
 const T = {
-  titles: Object.fromEntries(WORKS.map((w) => [w.id, w.title[lang]])),
+  titles: Object.fromEntries(WORKS.map((w) => [w.id, tx(w.title, lang)])),
   progress: L.progress,
   memo: L.memo,
   clearAsk: L.clearAsk,
@@ -120,10 +120,9 @@ const T = {
 const linkPaths = [...new Set(ITEMS.flatMap((i) => i.links ?? []))];
 const LINKS: Record<string, { href: string; name: string }> = Object.fromEntries(
   linkPaths.map((p) => {
-    const g = GUIDES.find((x) => `guides/${x.slug}/` === p);
-    const w = WEB_TOOLS.find((x) => x.path === p);
+    const w = p.startsWith("guides/") || WEB_TOOLS.some((x) => x.path === p);
     const a = TOOLS.find((x) => `${x.id}/` === p);
-    return [p, { href: url(lang, p), name: g ? g.title[lang] : w ? w.name[lang] : a ? a.name : p }];
+    return [p, { href: link(lang, p), name: w ? pageName(lang, p) : a ? a.name : p }];
   }),
 );
 const ld = {
@@ -133,11 +132,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["commissioning"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.intro}</p>
     </div>
@@ -148,9 +147,9 @@ const ld = {
         <legend>{L.work}</legend>
         {
           WORKS.map((w) => (
-            <label class="ck-comp" title={w.hint[lang]}>
+            <label class="ck-comp" title={tx(w.hint, lang)}>
               <input type="radio" name="work" value={w.id} />
-              <span>{w.name[lang]}</span>
+              <span>{tx(w.name, lang)}</span>
             </label>
           ))
         }
@@ -162,7 +161,7 @@ const ld = {
           COMPONENTS.map((c) => (
             <label class="ck-comp">
               <input type="checkbox" name="comp" value={c.id} />
-              <span>{c.name[lang]}</span>
+              <span>{tx(c.name, lang)}</span>
             </label>
           ))
         }
@@ -191,7 +190,7 @@ const ld = {
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
       <p>
-        {L.seeAlso} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a> · <a href={url(lang, "tools/system-diagram/")}>{L.sys}</a> · <a href={url(lang, "tools/pinouts/")}>{L.pin}</a>
+        {L.seeAlso} <a href={link(lang, "tools/wiring/")}>{L.seeLinks[0]}</a> · <a href={link(lang, "tools/system-diagram/")}>{L.seeLinks[1]}</a> · <a href={link(lang, "tools/pinouts/")}>{L.seeLinks[2]}</a>
       </p>
       <h2>{L.faqTitle}</h2>
       {
@@ -362,9 +361,10 @@ const ld = {
     import { COMPONENTS, WORK_IDS, buildChecklist, byStage, itemKey, parseSaved, toCsv, toText, STORE_KEY, type CompId, type Saved, type WorkId } from "../lib/commissioning";
     import { esc } from "../lib/diagramSvg";
     import { saveText, store, fileStamp } from "../lib/fileSave";
+    import { tx, type Lang } from "../lib/tr";
 
     const form = document.getElementById("ck") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string> & { titles: Record<string, string> };
     const LINKS = JSON.parse(form.dataset.links ?? "{}") as Record<string, { href: string; name: string }>;
     const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
@@ -398,14 +398,14 @@ const ld = {
       $("list").innerHTML = groups
         .map(
           (g, gi) =>
-            `<h3>${gi + 1}. ${esc(g.name[lang])}</h3><ol>${g.items
+            `<h3>${gi + 1}. ${esc(tx(g.name, lang))}</h3><ol>${g.items
               .map((it) => {
                 const done = !!s.done[key(it.id)];
                 const links = (it.links ?? []).map((p) => LINKS[p]).filter(Boolean);
                 const memo = s.memo[key(it.id)] ?? "";
-                return `<li data-id="${it.id}"${done ? ' class="done"' : ""}><label class="row"><input type="checkbox" data-id="${it.id}"${done ? " checked" : ""}/><span class="txt">${esc(it.text[lang])}</span></label>${
+                return `<li data-id="${it.id}"${done ? ' class="done"' : ""}><label class="row"><input type="checkbox" data-id="${it.id}"${done ? " checked" : ""}/><span class="txt">${esc(tx(it.text, lang))}</span></label>${
                   links.length ? `<div class="lk">→ ${links.map((l) => `<a href="${esc(l.href)}">${esc(l.name)}</a>`).join(" · ")}</div>` : ""
-                }<input class="memo" data-id="${it.id}" maxlength="500" placeholder="${esc(T.memo)}" aria-label="${esc(T.memo)}: ${esc(it.text[lang])}" value="${esc(memo)}"/>${
+                }<input class="memo" data-id="${it.id}" maxlength="500" placeholder="${esc(T.memo)}" aria-label="${esc(T.memo)}: ${esc(tx(it.text, lang))}" value="${esc(memo)}"/>${
                   memo.trim() ? `<div class="memo-print">${esc(T.memo)}: ${esc(memo)}</div>` : ""
                 }</li>`;
               })

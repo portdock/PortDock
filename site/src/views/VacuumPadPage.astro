@@ -7,14 +7,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { SMC_PADS, liftForce, padArea } from "../lib/vacuum";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/vacuum-pad/";
 const p3 = (x: number) => (x >= 100 ? Math.round(x).toLocaleString("en-US") : String(+x.toPrecision(3)));
 // 흔한 패드의 이론 흡착력(안전율 없음)과 수평 4·수직 8 로 나눈 값 — −60 kPa(이젝터 기준), −80 kPa
@@ -22,9 +23,11 @@ const tRows = [10, 20, 32, 40, 50, 63, 80, 100].map((d) => {
   const s = padArea(d);
   return [`ø${d}`, p3(s), p3(liftForce(60, s)), p3(liftForce(60, s, 4)), p3(liftForce(60, s, 8)), p3(liftForce(80, s))];
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "진공 패드 흡착력 계산기",
+      seo: "진공 패드 흡착력 계산기 — 패드 지름·진공압·안전율 — PortDock",
       desc: "패드 지름·진공압·안전율로 진공 패드의 흡착력(N·kgf)을 계산하고, 공작물에 필요한 진공압·패드 지름, 배관 용적과 흡착 응답 시간까지 SMC 식으로 봅니다.",
       s1: "흡착력",
       d: "패드 지름 (mm)",
@@ -78,17 +81,15 @@ const L = ko
         ["−60 kPa 은 어디서 나온 값인가요?", "SMC 는 이젝터를 쓸 때 진공압을 대략 −60 kPa 로 보라고 적습니다. 흡착 후 안정된 진공압보다 낮게 잡아야 합니다."],
         ["흡착 시간(응답 시간)은 어떻게 계산하나요?", "T1 = 배관 용적 V × 60 ÷ 평균 흡입 유량 Q 로 최종 진공압의 63 % 까지, 95 % 까지는 그 3배입니다. 배관이 길고 굵을수록 V 가 커져 느려집니다."],
       ],
-      cNote: "패드를 움직이는 실린더의 힘은",
-      cLink: "공압 실린더 추력 계산기",
-      aNote: "진공 이젝터·실린더가 쓰는 압축 공기 양은",
-      aLink: "공압 실린더 공기 소비량 계산기",
-      gNote: "패드·이젝터 고르는 순서는",
-      gLink: "진공 패드 흡착력과 이젝터 고르기 가이드",
+      see: ["패드를 움직이는 실린더의 힘은 ", ". 진공 이젝터·실린더가 쓰는 압축 공기 양은 ", ". 패드·이젝터 고르는 순서는 ", "."],
+      seeLinks: ["공압 실린더 추력 계산기", "공압 실린더 공기 소비량 계산기", "진공 패드 흡착력과 이젝터 고르기 가이드"],
       srcTitle: "근거",
       src: "식과 예는 SMC «Vacuum Equipment Model Selection»(SMC 공식 사이트 PDF) — 4-P0878-883(p.878 예, p.880 흡착력 식·안전율·이론 흡착력 표), 6-4-p0033-vacuum(A33 §3 이젝터 유량 식, §4 누설량), 6-4-p0034-vacuum(A34 §5 응답 시간 식), 4-P0891(p.891 반도체 칩 선정 예), 4-P0892(p.892 배관 용적 그래프 예)에서 옮겼고, 이 계산기가 그 값을 다시 내는지 시험으로 확인했습니다. 이젝터 유량·배관 컨덕턴스는 쓰는 제품의 카탈로그 값을 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Vacuum Pad Lifting Force Calculator",
+      seo: "Vacuum Pad Lifting Force Calculator: Suction Cup Size — PortDock",
       desc: "Vacuum pad lifting force (N, kgf) from pad diameter, vacuum and safety factor; vacuum or pad size for a load; pipe volume and response time (SMC).",
       s1: "Lifting force",
       d: "Pad diameter (mm)",
@@ -142,15 +143,12 @@ const L = ko
         ["Where does −60 kPa come from?", "SMC says the vacuum with an ejector is about −60 kPa as a guide. Use a value below the stable vacuum after adsorption."],
         ["How do I calculate adsorption (response) time?", "T1 = pipe volume V × 60 ÷ average suction flow Q gives the time to 63 % of the final vacuum; 95 % takes three times that. Longer, larger pipes mean more volume and a slower response."],
       ],
-      cNote: "For the force of the cylinder moving the pad, use the",
-      cLink: "Pneumatic Cylinder Force Calculator",
-      aNote: "For the compressed air used by cylinders, use the",
-      aLink: "Pneumatic Cylinder Air Consumption Calculator",
-      gNote: "For how to choose pads and an ejector, see the guide",
-      gLink: "Vacuum pad lifting force and choosing an ejector",
+      see: ["For the force of the cylinder moving the pad, use the ", ". For the compressed air used by cylinders, use the ", ". For how to choose pads and an ejector, see the guide ", "."],
+      seeLinks: ["Pneumatic Cylinder Force Calculator", "Pneumatic Cylinder Air Consumption Calculator", "Vacuum pad lifting force and choosing an ejector"],
       srcTitle: "Basis",
       src: "Formulas and examples are from SMC's «Vacuum Equipment Model Selection» (PDFs on SMC's official site) — 4-P0878-883 (p.878 example; p.880 lifting force formula, safety factors and theoretical lifting force table), 6-4-p0033-vacuum (A33 §3 ejector flow formulas, §4 leakage), 6-4-p0034-vacuum (A34 §5 response time formulas), 4-P0891 (p.891 semiconductor chip example) and 4-P0892 (p.892 pipe volume graph example). Tests check that this calculator reproduces those values. For ejector flow and pipe conductance, use your product's catalogue.",
-    };
+    }
+  : { ...page7(lang, "vacuumPad"), seeLinks: ["tools/cylinder-force/", "tools/air-consumption/", "guides/vacuum-pad-lifting-force/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -158,17 +156,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "진공 패드 흡착력 계산기 — 패드 지름·진공압·안전율 — PortDock" : "Vacuum Pad Lifting Force Calculator: Suction Cup Size — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["vacuumPad"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="vac">
+    <form class="calc card" id="vac" data-lang={lang}>
       <h2 style="margin-top:0">{L.s1}</h2>
       <div class="row">
         <label class="fld">{L.d}<input id="d" class="mono" value="40" inputmode="decimal" spellcheck="false" autocomplete="off" list="pads" /></label>
@@ -229,7 +227,7 @@ const ld = {
         ))
       }
       <p>
-        {L.cNote} <a href={url(lang, "tools/cylinder-force/")}>{L.cLink}</a>. {L.aNote} <a href={url(lang, "tools/air-consumption/")}>{L.aLink}</a>. {L.gNote} <a href={url(lang, "guides/vacuum-pad-lifting-force/")}>{L.gLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/cylinder-force/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/air-consumption/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "guides/vacuum-pad-lifting-force/")}>{L.seeLinks[2]}</a>{L.see[3]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -238,8 +236,9 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { conductanceFlow, flowForTime, kgToN, liftForce, padArea, pickPad, pipeVolume, requiredPad, requiredVacuum, responseTime } from "../lib/vacuum";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("vac")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("vac") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -280,16 +279,16 @@ const ld = {
         } else {
           const wk = kgToN(num("m"));
           set("data-k", "wk", nk(wk));
-          set("data-k", "ok", w >= wk ? (ko ? `듦 — 흡착력이 무게의 ${p4(w / wk)}배` : `Lifts — force is ${p4(w / wk)} × the weight`) : ko ? `모자람 — 흡착력이 무게의 ${p4(w / wk)}배` : `Not enough — force is ${p4(w / wk)} × the weight`);
+          set("data-k", "ok", w >= wk ? msg(lang, `듦 — 흡착력이 무게의 ${p4(w / wk)}배`, `Lifts — force is ${p4(w / wk)} × the weight`) : msg(lang, `모자람 — 흡착력이 무게의 ${p4(w / wk)}배`, `Not enough — force is ${p4(w / wk)} × the weight`));
           const pn = requiredVacuum(wk, s, t, n);
-          set("data-k", "pNeed", pn < 101.325 ? `−${p4(pn)} kPa` : ko ? `−${p4(pn)} kPa — 대기압(101.3 kPa)을 넘어 이 패드로는 못 듦` : `−${p4(pn)} kPa — beyond atmospheric (101.3 kPa), this pad cannot lift it`);
+          set("data-k", "pNeed", pn < 101.325 ? `−${p4(pn)} kPa` : msg(lang, `−${p4(pn)} kPa — 대기압(101.3 kPa)을 넘어 이 패드로는 못 듦`, `−${p4(pn)} kPa — beyond atmospheric (101.3 kPa), this pad cannot lift it`));
           const r = requiredPad(wk, p, t, n);
           const pick = pickPad(r.d);
-          set("data-k", "dNeed", `ø${p4(r.d)} mm / ${pick ? `ø${pick}` : ko ? "표의 ø340 보다 큼 — 패드 수를 늘림" : "larger than ø340 — add pads"}`);
+          set("data-k", "dNeed", `ø${p4(r.d)} mm / ${pick ? `ø${pick}` : msg(lang, "표의 ø340 보다 큼 — 패드 수를 늘림", "larger than ø340 — add pads")}`);
         }
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 지름·질량은 0 보다 크고, 패드 수는 1 이상의 정수, 진공압은 0 보다 크고 101.3 kPa(대기압)보다 작아야 합니다" : "Check the numbers — diameter and mass above 0, pads a whole number 1 or more, vacuum above 0 and below 101.3 kPa (atmospheric)";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 지름·질량은 0 보다 크고, 패드 수는 1 이상의 정수, 진공압은 0 보다 크고 101.3 kPa(대기압)보다 작아야 합니다", "Check the numbers — diameter and mass above 0, pads a whole number 1 or more, vacuum above 0 and below 101.3 kPa (atmospheric)");
         clear("data-k");
       }
       try {
@@ -305,12 +304,12 @@ const ld = {
         const fast = responseTime(v, qe / 2, q2);
         const slow = responseTime(v, qe / 3, q2);
         set("data-k2", "q1", `${p4(qe / 3)} ~ ${p4(qe / 2)} L/min (ANR)`);
-        set("data-k2", "q2", q2 === undefined ? (ko ? "C 를 넣으면 계산" : "Enter C to calculate") : `${p4(q2)} L/min (ANR)`);
+        set("data-k2", "q2", q2 === undefined ? msg(lang, "C 를 넣으면 계산", "Enter C to calculate") : `${p4(q2)} L/min (ANR)`);
         set("data-k2", "t1", `${p4(fast.t1 * 1000)} ~ ${p4(slow.t1 * 1000)} ms`);
         set("data-k2", "t2", `${p4(fast.t2 * 1000)} ~ ${p4(slow.t2 * 1000)} ms`);
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "숫자를 확인하세요 — 내경·길이·목표 시간·이젝터 유량·C 는 0 보다 크고, 누설량은 0 이상이어야 합니다" : "Check the numbers — ID, length, target time, ejector flow and C above 0, leakage 0 or more";
+        $("err2").textContent = msg(lang, "숫자를 확인하세요 — 내경·길이·목표 시간·이젝터 유량·C 는 0 보다 크고, 누설량은 0 이상이어야 합니다", "Check the numbers — ID, length, target time, ejector flow and C above 0, leakage 0 or more");
         clear("data-k2");
       }
     }

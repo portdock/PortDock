@@ -7,7 +7,8 @@ import { LIGHT, esc, renderSvg } from "./diagramSvg.ts";
 import { NODE_NAME, checkDoc as checkSys, toDrawing, validateDoc as validateSys, type SysDoc } from "./sysDiagram.ts";
 import { checkDoc as checkIo, commText, parseDoc as parseIo, toTableHtml, type IoDoc } from "./ioList.ts";
 
-export type Lang = "ko" | "en";
+import { msg, tx, type Lang } from "./tr.ts";
+export type { Lang };
 
 // ---------------------------------------------------------------- 파일 읽기
 
@@ -70,13 +71,15 @@ export interface CheckRow {
   note: string;
 }
 
+// 점검표 CSV 의 머리·완료 표시 — 점검표 화면 언어마다 머리가 그 언어로 나온다(일본어 段階·項目·完了·メモ, 완료 표시 済).
+// 점검표를 새 언어로 옮기면 그 언어의 머리·완료 낱말도 여기에 더한다(site/I18N.md «7차 묶음»).
 const HEADS = {
-  stage: ["단계", "stage"],
-  item: ["항목", "item", "check"],
-  done: ["완료", "done", "checked"],
-  note: ["메모", "note", "notes", "memo"],
+  stage: ["단계", "stage", "段階"],
+  item: ["항목", "item", "check", "項目"],
+  done: ["완료", "done", "checked", "完了"],
+  note: ["메모", "note", "notes", "memo", "メモ"],
 };
-const YES = new Set(["예", "네", "o", "y", "yes", "x", "true", "1", "✓", "✔", "완료", "done", "ok"]);
+const YES = new Set(["예", "네", "o", "y", "yes", "x", "true", "1", "✓", "✔", "완료", "done", "ok", "済", "完了"]);
 
 /** 점검표 CSV → 줄. 머리를 이름으로 찾고, 머리가 없으면 «단계, 항목, 완료, 메모» 순서로 본다 */
 export function parseChecklistCsv(text: string): { rows: CheckRow[]; error?: string } {
@@ -115,54 +118,30 @@ export interface Pack {
   memo?: string;
 }
 
-const T = {
-  ko: {
-    doc: "현장 문서 묶음",
-    site: "현장",
-    date: "날짜",
-    author: "작성자",
-    toc: "목차",
-    sys: "시스템 구성도",
-    devices: "장비 표",
-    io: "IO 리스트·통신 사양",
-    checks: "시운전 점검 결과",
-    contacts: "연락처",
-    memo: "메모",
-    findings: "구성 점검에서 나온 것",
-    ioFindings: "IO 리스트 점검에서 나온 것",
-    devHead: ["이름", "종류", "IP / 마스크", "국번", "보율·패리티", "메모"],
-    ioDevHead: ["이름", "위치", "통신", "신호 수"],
-    chkHead: ["단계", "항목", "완료", "메모"],
-    doneN: (n: number, t: number) => `완료 ${n} / ${t}`,
-    open: "남은 항목",
-    yes: "예",
-    none: "넣은 자료가 없습니다 — 구성도·IO 리스트·점검표 파일을 불러오거나 메모를 적으세요.",
-    parity: { none: "없음", even: "짝수", odd: "홀수" } as Record<string, string>,
-  },
-  en: {
-    doc: "Site handover pack",
-    site: "Site",
-    date: "Date",
-    author: "Prepared by",
-    toc: "Contents",
-    sys: "System diagram",
-    devices: "Device list",
-    io: "I/O list and communication spec",
-    checks: "Commissioning check results",
-    contacts: "Contacts",
-    memo: "Notes",
-    findings: "Findings from the diagram check",
-    ioFindings: "Findings from the I/O list check",
-    devHead: ["Name", "Type", "IP / mask", "Unit ID", "Baud, parity", "Note"],
-    ioDevHead: ["Name", "Location", "Communication", "Signals"],
-    chkHead: ["Stage", "Item", "Done", "Note"],
-    doneN: (n: number, t: number) => `Done ${n} / ${t}`,
-    open: "Open items",
-    yes: "yes",
-    none: "Nothing added yet — load a diagram, I/O list or checklist file, or write notes.",
-    parity: { none: "none", even: "even", odd: "odd" } as Record<string, string>,
-  },
-};
+/** 문서 글 — 한국어·영어는 두 갈래, 추가 언어는 영어 문장으로 번역 표를 찾는다(lib/tr.ts) */
+const tt = (lang: Lang) => ({
+  doc: msg(lang, "현장 문서 묶음", "Site handover pack"),
+  site: msg(lang, "현장", "Site"),
+  date: msg(lang, "날짜", "Date"),
+  author: msg(lang, "작성자", "Prepared by"),
+  toc: msg(lang, "목차", "Contents"),
+  sys: msg(lang, "시스템 구성도", "System diagram"),
+  devices: msg(lang, "장비 표", "Device list"),
+  io: msg(lang, "IO 리스트·통신 사양", "I/O list and communication spec"),
+  checks: msg(lang, "시운전 점검 결과", "Commissioning check results"),
+  contacts: msg(lang, "연락처", "Contacts"),
+  memo: msg(lang, "메모", "Notes"),
+  findings: msg(lang, "구성 점검에서 나온 것", "Findings from the diagram check"),
+  ioFindings: msg(lang, "IO 리스트 점검에서 나온 것", "Findings from the I/O list check"),
+  devHead: [msg(lang, "이름", "Name"), msg(lang, "종류", "Type"), msg(lang, "IP / 마스크", "IP / mask"), msg(lang, "국번", "Unit ID"), msg(lang, "보율·패리티", "Baud, parity"), msg(lang, "메모", "Note")],
+  ioDevHead: [msg(lang, "이름", "Name"), msg(lang, "위치", "Location"), msg(lang, "통신", "Communication"), msg(lang, "신호 수", "Signals")],
+  chkHead: [msg(lang, "단계", "Stage"), msg(lang, "항목", "Item"), msg(lang, "완료", "Done"), msg(lang, "메모", "Note")],
+  doneN: (n: number, t: number) => msg(lang, `완료 ${n} / ${t}`, `Done ${n} / ${t}`),
+  open: msg(lang, "남은 항목", "Open items"),
+  yes: msg(lang, "예", "yes"),
+  none: msg(lang, "넣은 자료가 없습니다 — 구성도·IO 리스트·점검표 파일을 불러오거나 메모를 적으세요.", "Nothing added yet — load a diagram, I/O list or checklist file, or write notes."),
+  parity: { none: msg(lang, "없음", "none"), even: msg(lang, "짝수", "even"), odd: msg(lang, "홀수", "odd") } as Record<string, string>,
+});
 
 export interface Section {
   id: string;
@@ -189,7 +168,7 @@ const findingList = (title: string, items: { level: string; text: string }[]) =>
 
 /** 들어 있는 자료만 절로 — 목차·본문이 같이 쓴다 */
 export function sections(p: Pack, lang: Lang): Section[] {
-  const t = T[lang];
+  const t = tt(lang);
   const out: Section[] = [];
   if (p.sys && (p.sys.nodes.length || p.sys.buses.length)) {
     const svg = renderSvg(toDrawing(p.sys, lang), LIGHT, { bg: true });
@@ -197,7 +176,7 @@ export function sections(p: Pack, lang: Lang): Section[] {
     out.push({ id: "sys", title: t.sys, html: `<figure class="svg">${svg}</figure>${findingList(t.findings, f)}` });
     const rows = p.sys.nodes.map((n) => [
       n.name,
-      NODE_NAME[n.kind]?.[lang] ?? n.kind,
+      (NODE_NAME[n.kind] ? tx(NODE_NAME[n.kind], lang) : n.kind),
       n.ip ? `${n.ip}${n.mask ? ` / ${n.mask}` : ""}` : "",
       n.unit !== undefined ? String(n.unit) : "",
       n.baud !== undefined || n.parity ? `${n.baud ?? ""}${n.parity ? ` ${t.parity[n.parity] ?? n.parity}` : ""}`.trim() : "",
@@ -263,7 +242,7 @@ export interface BuildOpts {
 
 /** 독립 HTML 문서(인쇄·파일 저장) — 스크립트 없음, 글은 모두 escape */
 export function buildHtml(p: Pack, lang: Lang, o: BuildOpts = {}): string {
-  const t = T[lang];
+  const t = tt(lang);
   const secs = sections(p, lang);
   const title = p.cover.site.trim() ? `${p.cover.site.trim()} — ${t.doc}` : t.doc;
   const cover = `<section class="cover"><h1>${esc(title)}</h1><dl>${[

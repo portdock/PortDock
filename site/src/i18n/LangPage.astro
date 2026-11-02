@@ -1,6 +1,6 @@
 ---
 // 추가 언어(ja 등) 쪽 하나를 그린다 — pages/<언어>/[...path].astro 가 부른다. 쪽 이름 → 화면(views/) 표.
-// 번역 범위(scope.ts SCOPE·SCOPE2~SCOPE6)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
+// 번역 범위(scope.ts SCOPE·SCOPE2~SCOPE7)에 쪽을 더하면 여기 VIEWS 에도 한 줄.
 import type { ExtraLang } from "./langs";
 import { pageOf, type AnyPageId, type AnyScopePath } from "./scope";
 import Home from "../views/Home.astro";
@@ -76,6 +76,21 @@ import AffinityPage from "../views/AffinityPage.astro";
 import ReactancePage from "../views/ReactancePage.astro";
 import PowerPage from "../views/PowerPage.astro";
 import VoltageDropPage from "../views/VoltageDropPage.astro";
+import AirConsumptionPage from "../views/AirConsumptionPage.astro";
+import BallScrewPage from "../views/BallScrewPage.astro";
+import ConveyorSpeedPage from "../views/ConveyorSpeedPage.astro";
+import CylinderPage from "../views/CylinderPage.astro";
+import TimingBeltPage from "../views/TimingBeltPage.astro";
+import VacuumPadPage from "../views/VacuumPadPage.astro";
+import CableLabelsPage from "../views/CableLabelsPage.astro";
+import FerrulesPage from "../views/FerrulesPage.astro";
+import InsulationPage from "../views/InsulationPage.astro";
+import MetricThreadsPage from "../views/MetricThreadsPage.astro";
+import PanelHeatPage from "../views/PanelHeatPage.astro";
+import HandoverPage from "../views/HandoverPage.astro";
+import IoListPage from "../views/IoListPage.astro";
+import SystemDiagramPage from "../views/SystemDiagramPage.astro";
+import CommissioningPage from "../views/CommissioningPage.astro";
 
 interface Props {
   lang: ExtraLang;
@@ -160,6 +175,22 @@ const VIEWS = {
   reactance: ReactancePage,
   power: PowerPage,
   voltageDrop: VoltageDropPage,
+  // 7차 묶음(scope.ts SCOPE7 — 언어별로 번역된 쪽만 그려진다)
+  airConsumption: AirConsumptionPage,
+  ballScrew: BallScrewPage,
+  conveyorSpeed: ConveyorSpeedPage,
+  cylinder: CylinderPage,
+  timingBelt: TimingBeltPage,
+  vacuumPad: VacuumPadPage,
+  cableLabels: CableLabelsPage,
+  ferrules: FerrulesPage,
+  insulation: InsulationPage,
+  metricThreads: MetricThreadsPage,
+  panelHeat: PanelHeatPage,
+  handover: HandoverPage,
+  ioList: IoListPage,
+  systemDiagram: SystemDiagramPage,
+  commissioning: CommissioningPage,
 } satisfies Record<AnyPageId, unknown>;
 const { lang, path } = Astro.props;
 const View = VIEWS[pageOf(path)];

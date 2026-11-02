@@ -11,7 +11,7 @@ import { CONNECTORS, CATEGORIES } from "../lib/pinouts";
 import { tx } from "../lib/tr";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 import { pageName } from "../i18n/names";
 
 interface Props {
@@ -105,7 +105,14 @@ const L =
       cableLink: "cable selection helper",
       cablePost: ".",
     }
-  : { ...dict(lang).pages.pinouts, wiring: pageName(lang, "tools/wiring/"), cableLink: pageName(lang, "tools/cable-selection/") };
+  : {
+        ...dict(lang).pages.pinouts,
+        wiring: pageName(lang, "tools/wiring/"),
+        cableLink: pageName(lang, "tools/cable-selection/"),
+        // 7차 묶음 쪽 — 번역됐으면 그 언어 이름, 아니면 사전의 «(영어)» 글
+        ...(isTranslated(lang, "tools/system-diagram/") ? { sys: pageName(lang, "tools/system-diagram/") } : {}),
+        ...(isTranslated(lang, "tools/commissioning-checklist/") ? { check: pageName(lang, "tools/commissioning-checklist/") } : {}),
+      };
 const T = {
   copied: L.copied,
   notes: L.notes,

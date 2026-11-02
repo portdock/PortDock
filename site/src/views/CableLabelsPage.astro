@@ -9,16 +9,19 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { SHEET_PRESETS, MAX_LABELS } from "../lib/cableLabels";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/cable-labels/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       h1: "케이블·단자 라벨 만들기",
       desc: "W001~W120·X1:1~X1:40 연번, 장비 IO 이름 붙여넣기, 양끝 «A→B» 라벨을 만들어 A4 라벨 용지에 인쇄하거나 라벨 프린터용 CSV 로 내보냅니다.",
@@ -81,12 +84,17 @@ const L = ko
         "번호 규칙(케이블 W, 단자대 X, 장비 -K·-M 등)은 현장·도면의 규칙을 먼저 따릅니다. 도면의 번호와 라벨이 같아야 나중에 찾을 수 있습니다.",
         "라벨은 단자에서 읽을 수 있는 방향으로, 피복 위 단자 가까이 붙입니다. 열수축 튜브는 압착 전에 끼워야 합니다.",
       ],
-      seeWiring: "배선도를 그려 두려면",
-      wiring: "배선도 만들기",
-      seeFer: "페룰 색·단자 크기는",
-      fer: "페룰·압착 단자 규격표",
+      see: ["배선도를 그려 두려면 ", ". 페룰 색·단자 크기는 ", "."],
+      seeLinks: ["배선도 만들기", "페룰·압착 단자 규격표"],
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["라벨 용지에 위치가 맞지 않게 찍혀요", "인쇄 창에서 «실제 크기(100 %)»·여백 «없음» 으로 고르고, 먼저 보통 종이에 찍어 라벨 용지에 겹쳐 봅니다. 어긋나면 «용지·배치» 의 위·왼쪽 여백과 가로·세로 간격(mm)을 고칩니다. 용지 예에 없는 용지는 «직접 입력» 으로 너비·높이·행·열을 넣습니다."],
+        ["반쯤 쓴 라벨 용지를 다시 쓸 수 있나요?", "네. «첫 장에서 이미 쓴 칸» 에 이미 떼어 낸 칸 수를 넣으면 그 다음 칸부터 찍습니다."],
+        ["라벨 프린터로 찍으려면?", "«CSV 저장» 으로 라벨 목록을 내보내 라벨 프린터 프로그램에서 불러옵니다. 양끝 라벨에서 «B 끝 라벨은 «B→A» 로 뒤집기» 를 켜면 B 끝에 붙일 라벨이 «B→A» 로 찍힙니다."],
+      ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       h1: "Cable & Terminal Label Maker",
       desc: "Make sequential labels (W001–W120, X1:1–X1:40), labels from pasted I/O names, or two-end «A→B» labels; print on A4 label sheets or export CSV for printers.",
       seo: "Cable Label & Wire Marker Maker: A4 Sheets, CSV — PortDock",
@@ -148,32 +156,27 @@ const L = ko
         "Follow the site and drawing conventions first (cables W, terminal strips X, devices -K, -M and so on). Labels must match the drawing to be useful later.",
         "Place labels near the terminal on the insulation, readable from the terminal side. Heat-shrink sleeves go on before crimping.",
       ],
-      seeWiring: "To draw the wiring, use the",
-      wiring: "wiring diagram maker",
-      seeFer: "For ferrule colours and lug sizes, see the",
-      fer: "ferrule and crimp terminal chart",
-    };
+      see: ["To draw the wiring, use the ", ". For ferrule colours and lug sizes, see the ", "."],
+      seeLinks: ["wiring diagram maker", "ferrule and crimp terminal chart"],
+      faqTitle: "FAQ",
+      faq: [
+        ["The labels print in the wrong place on the sheet", "In the print dialog choose «Actual size (100 %)» and margins «None», then print on plain paper first and hold it over the label sheet. If it is off, adjust the top/left margins and horizontal/vertical gaps (mm) under «Sheet and layout». For a sheet not in the presets, choose «Custom» and enter width, height, rows and columns."],
+        ["Can I reuse a partly used label sheet?", "Yes. Enter the number of labels already peeled off in «Cells already used on the first sheet» and printing starts at the next cell."],
+        ["How do I print on a label printer?", "Use «Save CSV» and import the list in the label printer software. For two-end labels, turn on «Reverse the B-end label to «B→A»» so the label for the B end reads «B→A»."],
+      ] as [string, string][],
+    }
+  : { ...page7(lang, "cableLabels"), seeLinks: ["tools/wiring/", "tools/ferrules/"].map((p) => pageName(lang, p)) };
 const T = { copied: L.copied, copyFail: L.copyFail };
 const SUM_TPL = L.sum(111111, 222222, 333333, 444444);
 const P0 = SHEET_PRESETS[1].s;
 // 자주 묻는 것(FAQPage) — components/FaqBlock.astro
-const FAQ: [string, string][] = ko
-  ? [
-      ["라벨 용지에 위치가 맞지 않게 찍혀요", "인쇄 창에서 «실제 크기(100 %)»·여백 «없음» 으로 고르고, 먼저 보통 종이에 찍어 라벨 용지에 겹쳐 봅니다. 어긋나면 «용지·배치» 의 위·왼쪽 여백과 가로·세로 간격(mm)을 고칩니다. 용지 예에 없는 용지는 «직접 입력» 으로 너비·높이·행·열을 넣습니다."],
-      ["반쯤 쓴 라벨 용지를 다시 쓸 수 있나요?", "네. «첫 장에서 이미 쓴 칸» 에 이미 떼어 낸 칸 수를 넣으면 그 다음 칸부터 찍습니다."],
-      ["라벨 프린터로 찍으려면?", "«CSV 저장» 으로 라벨 목록을 내보내 라벨 프린터 프로그램에서 불러옵니다. 양끝 라벨에서 «B 끝 라벨은 «B→A» 로 뒤집기» 를 켜면 B 끝에 붙일 라벨이 «B→A» 로 찍힙니다."],
-    ]
-  : [
-      ["The labels print in the wrong place on the sheet", "In the print dialog choose «Actual size (100 %)» and margins «None», then print on plain paper first and hold it over the label sheet. If it is off, adjust the top/left margins and horizontal/vertical gaps (mm) under «Sheet and layout». For a sheet not in the presets, choose «Custom» and enter width, height, rows and columns."],
-      ["Can I reuse a partly used label sheet?", "Yes. Enter the number of labels already peeled off in «Cells already used on the first sheet» and printing starts at the next cell."],
-      ["How do I print on a label printer?", "Use «Save CSV» and import the list in the label printer software. For two-end labels, turn on «Reverse the B-end label to «B→A»» so the label for the B end reads «B→A»."],
-    ];
+const FAQ = L.faq as [string, string][];
 ---
 
-<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["cableLabels"]}>
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
@@ -204,7 +207,7 @@ const FAQ: [string, string][] = ko
       </div>
       <h2>{L.sheet}</h2>
       <div class="row">
-        <label class="fld">{L.preset}<select id="preset">{SHEET_PRESETS.map((p, i) => <option value={String(i)} selected={i === 1}>{p.name[lang]}</option>)}<option value="custom">{L.custom}</option></select></label>
+        <label class="fld">{L.preset}<select id="preset">{SHEET_PRESETS.map((p, i) => <option value={String(i)} selected={i === 1}>{tx(p.name, lang)}</option>)}<option value="custom">{L.custom}</option></select></label>
       </div>
       <div class="row">
         <label class="fld">{L.pageW}<input id="pageW" class="mono" value={P0.pageW} inputmode="decimal" autocomplete="off" /></label>
@@ -245,8 +248,8 @@ const FAQ: [string, string][] = ko
       <ul>{L.how.map((x) => <li>{x}</li>)}</ul>
       <h2>{L.noteTitle}</h2>
       <ul>{L.notes.map((x) => <li>{x}</li>)}</ul>
-      <FaqBlock lang={lang} items={FAQ} />
-      <p>{L.seeWiring} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a>. {L.seeFer} <a href={url(lang, "tools/ferrules/")}>{L.fer}</a>.</p>
+      <FaqBlock lang={lang} items={FAQ} title={L.faqTitle} />
+      <p>{L.see[0]}<a href={link(lang, "tools/wiring/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/ferrules/")}>{L.seeLinks[1]}</a>{L.see[2]}</p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
@@ -344,9 +347,10 @@ const FAQ: [string, string][] = ko
   <script>
     import { layoutSheet, listLabels, paginate, pairLabels, repeatEach, seqLabels, toCsv, toText, type Sheet } from "../lib/cableLabels";
     import { saveText, fileStamp } from "../lib/fileSave";
+    import { tx, type Lang } from "../lib/tr";
 
     const form = document.getElementById("cl") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as { copied: string; copyFail: string; sumTpl: string };
     const PRESETS = JSON.parse(form.dataset.presets ?? "[]") as Sheet[];
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as unknown as E;
@@ -365,15 +369,15 @@ const FAQ: [string, string][] = ko
       const copies = Math.min(10, Math.max(1, Math.floor(num("copies")) || 1));
       if (mode === "seq") {
         const r = seqLabels({ prefix: $("prefix").value, start: num("start"), end: num("end"), digits: num("digits"), step: num("step"), suffix: $("suffix").value });
-        if (!r.ok) return { ok: false, msg: r.error[lang] };
+        if (!r.ok) return { ok: false, msg: tx(r.error, lang) };
         rows = repeatEach(r.value, copies).map((label) => ({ label }));
       } else if (mode === "list") {
         const r = listLabels(($("list") as unknown as HTMLTextAreaElement).value);
-        if (!r.ok) return { ok: false, msg: r.error[lang] };
+        if (!r.ok) return { ok: false, msg: tx(r.error, lang) };
         rows = repeatEach(r.value, copies).map((label) => ({ label }));
       } else {
         const r = pairLabels(($("pair") as unknown as HTMLTextAreaElement).value, { arrow: $("arrow").value || "→", reverseAtB: $("reverse").checked });
-        if (!r.ok) return { ok: false, msg: r.error[lang] };
+        if (!r.ok) return { ok: false, msg: tx(r.error, lang) };
         rows = repeatEach(r.value, copies).map((x) => ({ label: x.label, end: x.end }));
       }
       return { ok: true };
@@ -386,7 +390,7 @@ const FAQ: [string, string][] = ko
       const lay = layoutSheet(sheet);
       const host = $("sheets") as HTMLElement;
       if (!b.ok || !lay.ok) {
-        err.textContent = !b.ok ? b.msg : !lay.ok ? lay.error[lang] : "";
+        err.textContent = !b.ok ? b.msg : !lay.ok ? tx(lay.error, lang) : "";
         host.replaceChildren();
         $("sum").textContent = "";
         return;

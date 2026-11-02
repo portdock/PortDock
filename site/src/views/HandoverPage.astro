@@ -7,16 +7,19 @@ import AdSlot from "../components/AdSlot.astro";
 import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { msg } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/handover-pack/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "현장 문서 묶음 만들기(인수인계)",
       seo: "인수인계 문서 만들기 — 구성도·IO 리스트·점검표 — PortDock",
@@ -59,7 +62,8 @@ const L = ko
         ["tools/commissioning-checklist/", "시운전·설치 점검표 만들기"],
       ],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Site Handover Pack Maker",
       seo: "Site Handover Pack: Diagram, I/O List, Checklist — PortDock",
       desc: "Bundle your system diagram, I/O list, commissioning checklist, contacts and notes into one printable document. Save HTML or print to PDF, in your browser.",
@@ -100,15 +104,16 @@ const L = ko
         ["tools/io-list/", "I/O list & communication spec maker"],
         ["tools/commissioning-checklist/", "Commissioning checklist maker"],
       ],
-    };
+    }
+  : { ...page7(lang, "handover"), links: ["tools/system-diagram/", "tools/io-list/", "tools/commissioning-checklist/"].map((p) => [p, pageName(lang, p)]) };
 const T = {
   remove: L.remove,
-  bad: ko ? "읽지 못함: " : "Could not read: ",
-  loaded: ko ? "불러옴" : "Loaded",
-  nodes: ko ? "장비" : "devices",
-  signals: ko ? "신호" : "signals",
-  items: ko ? "항목" : "items",
-  footer: ko ? "PortDock «현장 문서 묶음» 으로 브라우저 안에서 만든 문서 — portdock.dev" : "Made in the browser with the PortDock «Site handover pack» — portdock.dev",
+  bad: msg(lang, "읽지 못함: ", "Could not read: "),
+  loaded: msg(lang, "불러옴", "Loaded"),
+  nodes: msg(lang, "장비", "devices"),
+  signals: msg(lang, "신호", "signals"),
+  items: msg(lang, "항목", "items"),
+  footer: msg(lang, "PortDock «현장 문서 묶음» 으로 브라우저 안에서 만든 문서 — portdock.dev", "Made in the browser with the PortDock «Site handover pack» — portdock.dev"),
 };
 const ld = {
   "@context": "https://schema.org",
@@ -117,11 +122,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["handover", "ioList", "sysDiagram"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -188,7 +193,7 @@ const ld = {
           L.links.map(([p, n], i) => (
             <>
               {i > 0 && " · "}
-              <a href={url(lang, p)}>{n}</a>
+              <a href={link(lang, p)}>{n}</a>
             </>
           ))
         }
@@ -236,9 +241,10 @@ const ld = {
     import type { SysDoc } from "../lib/sysDiagram";
     import type { IoDoc } from "../lib/ioList";
     import { saveText, store, fileStamp } from "../lib/fileSave";
+    import type { Lang } from "../lib/tr";
 
     const form = document.getElementById("hp") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as Record<string, string>;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const pv = $<HTMLIFrameElement>("pv");

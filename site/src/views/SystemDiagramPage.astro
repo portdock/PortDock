@@ -10,17 +10,20 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { NODE_KINDS, NODE_NAME, LINK_KINDS, LINK_NAME, EXAMPLES } from "../lib/sysDiagram";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { msg, tx } from "../lib/tr";
 import { DEFAULT_REGS } from "../lib/sysDiagram";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/system-diagram/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "시스템 구성도 그리기 — 현장 장비·네트워크 구성 점검",
       h1: "시스템 구성도 그리기",
@@ -80,7 +83,6 @@ const L = ko
       busSum: "RS-485 버스 요약",
       bCols: ["버스", "장비", "단위 부하", "보율", "한 바퀴 폴링(어림)"],
       busNote: `폴링 어림은 FC03·장비 응답 10 ms·쉼 없음·RTU 11비트 문자 기준이고, 레지스터 수를 적지 않은 장비는 ${DEFAULT_REGS}개로 봅니다. 실제 장비 응답 시간으로 다시 계산하려면`,
-      timing: "시리얼 통신 시간 계산기",
       assumed: "(보율 없음 — 9600 으로 봄)",
       compare: "변경 비교 — 증설·교체·제거 전후",
       compareIntro: "작업 전에 «지금을 기준으로» 를 눌러 두거나 작업 전 JSON 을 기준으로 불러오면, 지금 구성도와 비교해 더해진·빠진·바뀐 장비·선과 버스 영향(장비 수·단위 부하·폴링 시간)을 보여 줍니다.",
@@ -118,13 +120,15 @@ const L = ko
         ["변경 비교는 장비를 어떻게 짝짓나요?", "같은 id(같은 파일을 고쳤다면 그대로 남음)로 짝짓고, 짝이 없으면 같은 종류·같은 이름으로 한 번 더 찾습니다. 위치만 옮긴 것은 바뀐 것으로 보지 않습니다."],
         ["예전에 저장한 JSON 도 열리나요?", "네. 종단·단위 부하·레지스터 수는 모두 고를 수 있는 칸이라 없는 파일도 그대로 열리고, 비교의 기준으로도 쓸 수 있습니다."],
       ],
-      wiring: "배선도 만들기",
-      wiringNote: "장비 사이 실제 결선(종단·바이어스·핀 배치)은",
-      checkNote: "구성대로 시운전 점검 순서를 만들거나 커넥터 핀을 찾으려면",
-      check: "시운전·유지보수 점검표 만들기",
-      pin: "커넥터 핀 배치 사전",
+      busEnd: ".",
+      wiringNote: "장비 사이 실제 결선(종단·바이어스·핀 배치)은 ",
+      wiringEnd: ".",
+      checkNote: "구성대로 시운전 점검 순서를 만들거나 커넥터 핀을 찾으려면 ",
+      checkEnd: ".",
+      seeLinks: ["시리얼 통신 시간 계산기", "배선도 만들기", "시운전·유지보수 점검표 만들기", "커넥터 핀 배치 사전"],
     }
-  : {
+  : lang === "en"
+  ? {
       title: "System Diagram Editor — Field Device & Network Checks",
       h1: "System diagram editor",
       desc: "Place PCs, PLCs, HMIs, drives and switches on Ethernet or RS-485 buses. Checks IPs, subnets, IDs, termination and unit loads; compares before/after changes.",
@@ -183,7 +187,6 @@ const L = ko
       busSum: "RS-485 bus summary",
       bCols: ["Bus", "Devices", "Unit loads", "Baud", "Polling cycle (estimate)"],
       busNote: `The polling estimate assumes FC03, a 10 ms device response, no extra gap and 11-bit RTU characters; devices without a register count are taken as ${DEFAULT_REGS}. To recalculate with real response times, use the`,
-      timing: "serial timing calculator",
       assumed: "(no baud set — 9600 assumed)",
       compare: "Compare changes — before/after expansion, replacement or removal",
       compareIntro: "Press «Use current as baseline» before the work, or open the before JSON as the baseline, to see added, removed and changed devices and links, and the bus impact (device count, unit loads, polling time) against the current diagram.",
@@ -221,12 +224,14 @@ const L = ko
         ["How does the comparison match devices?", "By id (kept when you edit the same file), then by the same type and name for anything left. Moving a device without changing it is not counted as a change."],
         ["Do older JSON files still open?", "Yes. Termination, unit load and register count are optional fields, so older files open as before and can be used as a baseline."],
       ],
-      wiring: "wiring diagram maker",
-      wiringNote: "For the actual wiring between devices (termination, bias, pinouts) use the",
-      checkNote: "To turn this setup into a start-up checklist, or to look up connector pins, use the",
-      check: "commissioning and maintenance checklist",
-      pin: "connector pinout reference",
-    };
+      busEnd: ".",
+      wiringNote: "For the actual wiring between devices (termination, bias, pinouts) use the ",
+      wiringEnd: ".",
+      checkNote: "To turn this setup into a start-up checklist, or to look up connector pins, use the ",
+      checkEnd: ".",
+      seeLinks: ["serial timing calculator", "wiring diagram maker", "commissioning and maintenance checklist", "connector pinout reference"],
+    }
+  : { ...page7(lang, "systemDiagram"), seeLinks: ["tools/serial-timing/", "tools/wiring/", "tools/commissioning-checklist/", "tools/pinouts/"].map((p) => pageName(lang, p)) };
 const T = {
   ...Object.fromEntries(
     ["name", "kind", "ip", "mask", "unit", "baud", "parity", "pAny", "pN", "pE", "pO", "note", "len", "links", "label", "unlink", "noLinks", "pickNone", "linkTo", "linkBtn", "linkFail", "allOk", "none", "storeOff", "freshAsk", "term", "tOff", "tOn", "ul", "regs", "termStart", "termEnd", "assumed", "noBase", "baseInfo", "same", "dAdded", "dRemoved", "dChanged", "copied"].map((k) => [
@@ -237,11 +242,11 @@ const T = {
   bCols: L.bCols,
   dCols: L.dCols,
   iCols: L.iCols,
-  bad: ko ? "불러오지 못했습니다" : "Could not open",
-  skipped: ko ? "일부 항목은 건너뛰었습니다" : "Some items were skipped",
-  scanAdded: ko ? "Net Scan 장비 {n}대를 넣었습니다" : "Added {n} hosts from Net Scan",
-  scanNone: ko ? "이 CSV 에서 장비를 찾지 못했습니다(Net Scan «CSV 저장» 파일인지 확인)" : "No hosts found in this CSV (is it a Net Scan «Save CSV» file?)",
-  pngFail: ko ? "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요." : "Could not make the PNG — try saving as SVG.",
+  bad: msg(lang, "불러오지 못했습니다", "Could not open"),
+  skipped: msg(lang, "일부 항목은 건너뛰었습니다", "Some items were skipped"),
+  scanAdded: msg(lang, "Net Scan 장비 {n}대를 넣었습니다", "Added {n} hosts from Net Scan"),
+  scanNone: msg(lang, "이 CSV 에서 장비를 찾지 못했습니다(Net Scan «CSV 저장» 파일인지 확인)", "No hosts found in this CSV (is it a Net Scan «Save CSV» file?)"),
+  pngFail: msg(lang, "PNG 를 만들지 못했습니다 — SVG 로 저장해 보세요.", "Could not make the PNG — try saving as SVG."),
   footer: "portdock.dev/tools/system-diagram",
 };
 const ld = {
@@ -251,11 +256,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["sysDiagram", "sysDiff"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
@@ -264,17 +269,17 @@ const ld = {
     <div class="card sd-tools" id="sd" data-lang={lang} data-t={JSON.stringify(T)}>
       <div class="row sd-row">
         <label class="fld sd-title">{L.docTitle}<input id="docTitle" maxlength="80" autocomplete="off" /></label>
-        <label class="fld">{L.example}<select id="example"><option value="">{L.pick}</option>{EXAMPLES.map((e) => <option value={e.id}>{e.name[lang]}</option>)}</select></label>
+        <label class="fld">{L.example}<select id="example"><option value="">{L.pick}</option>{EXAMPLES.map((e) => <option value={e.id}>{tx(e.name, lang)}</option>)}</select></label>
         <button type="button" class="btn tight" id="fresh">{L.fresh}</button>
       </div>
       <div class="sd-palette" role="group" aria-label={L.add}>
         <span class="sd-lbl">{L.add}</span>
-        {NODE_KINDS.map((k) => <button type="button" class="btn tight" data-add={k}>+ {NODE_NAME[k][lang]}</button>)}
+        {NODE_KINDS.map((k) => <button type="button" class="btn tight" data-add={k}>+ {tx(NODE_NAME[k], lang)}</button>)}
         <button type="button" class="btn tight" data-bus="rs485">+ {L.bus485}</button>
         <button type="button" class="btn tight" data-bus="can">+ {L.busCan}</button>
       </div>
       <div class="sd-palette">
-        <label class="fld sd-inline">{L.linkKind}<select id="linkKind">{LINK_KINDS.map((k) => <option value={k}>{LINK_NAME[k][lang]}</option>)}</select></label>
+        <label class="fld sd-inline">{L.linkKind}<select id="linkKind">{LINK_KINDS.map((k) => <option value={k}>{tx(LINK_NAME[k], lang)}</option>)}</select></label>
         <button type="button" class="btn tight" id="connect" aria-pressed="false">{L.connect}</button>
         <button type="button" class="btn tight" id="delSel" disabled>{L.del}</button>
       </div>
@@ -297,7 +302,7 @@ const ld = {
         <ul class="sd-findings" id="findings" aria-live="polite"></ul>
         <h3 class="sd-h3">{L.busSum}</h3>
         <div class="sd-table" id="busSum"></div>
-        <p class="note">{L.busNote} <a href={url(lang, "tools/serial-timing/")}>{L.timing}</a>.</p>
+        <p class="note">{L.busNote} <a href={link(lang, "tools/serial-timing/")}>{L.seeLinks[0]}</a>{L.busEnd}</p>
       </section>
       <aside class="card sd-props" aria-label={L.props}>
         <h2 class="sd-h">{L.props}</h2>
@@ -328,8 +333,8 @@ const ld = {
     <section class="prose">
       <h2>{L.what}</h2>
       {L.whatP.map((p) => <p>{p}</p>)}
-      <p>{L.wiringNote} <a href={url(lang, "tools/wiring/")}>{L.wiring}</a>.</p>
-      <p>{L.checkNote} <a href={url(lang, "tools/commissioning-checklist/")}>{L.check}</a> · <a href={url(lang, "tools/pinouts/")}>{L.pin}</a>.</p>
+      <p>{L.wiringNote}<a href={link(lang, "tools/wiring/")}>{L.seeLinks[1]}</a>{L.wiringEnd}</p>
+      <p>{L.checkNote}<a href={link(lang, "tools/commissioning-checklist/")}>{L.seeLinks[2]}</a> · <a href={link(lang, "tools/pinouts/")}>{L.seeLinks[3]}</a>{L.checkEnd}</p>
       <h2>{L.faqTitle}</h2>
       {
         L.faq.map(([q, a]) => (
@@ -618,9 +623,10 @@ const ld = {
     import { renderSvg, LIGHT, esc } from "../lib/diagramSvg";
     import { diffDocs, diffText, type DocDiff } from "../lib/sysDiff";
     import { saveText, savePng, screenPalette, onThemeChange, fileStamp, store } from "../lib/fileSave";
+    import { tx, type Lang } from "../lib/tr";
 
     const root = document.getElementById("sd") as HTMLDivElement;
-    const lang = (root.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (root.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(root.dataset.t ?? "{}") as Record<string, string> & { bCols: string[]; dCols: string[]; iCols: string[] };
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const canvas = $<HTMLDivElement>("canvas");
@@ -785,7 +791,7 @@ const ld = {
       if (n) {
         box.append(
           field(T.name, n.name, (v) => upd(() => (n.name = v))),
-          field(T.kind, n.kind, (v) => upd(() => (n.kind = v as NodeKind)), { options: NODE_KINDS.map((k) => [k, NODE_NAME[k][lang]]) }),
+          field(T.kind, n.kind, (v) => upd(() => (n.kind = v as NodeKind)), { options: NODE_KINDS.map((k) => [k, tx(NODE_NAME[k], lang)]) }),
           field(T.ip, n.ip ?? "", (v) => upd(() => (v.trim() ? (n.ip = v.trim()) : delete n.ip)), { mono: true }),
           field(T.mask, n.mask ?? "", (v) => upd(() => (v.trim() ? (n.mask = v.trim()) : delete n.mask)), { mono: true }),
           field(T.unit, n.unit?.toString() ?? "", (v) => upd(() => {
@@ -851,7 +857,7 @@ const ld = {
         row.className = "lk";
         const other = l.a === selected ? l.b : l.a;
         const s = document.createElement("span");
-        s.textContent = `${LINK_NAME[l.kind][lang]} → ${nameOf(other)}`;
+        s.textContent = `${tx(LINK_NAME[l.kind], lang)} → ${nameOf(other)}`;
         const del = document.createElement("button");
         del.type = "button";
         del.className = "btn tight";
@@ -927,7 +933,7 @@ const ld = {
         const kind = b.dataset.add as NodeKind;
         const id = newId(doc, "n");
         const count = doc.nodes.filter((n) => n.kind === kind).length + 1;
-        doc.nodes.push({ id, kind, name: `${NODE_NAME[kind][lang]} ${count}`, ...freeSpot(doc) });
+        doc.nodes.push({ id, kind, name: `${tx(NODE_NAME[kind], lang)} ${count}`, ...freeSpot(doc) });
         select(id);
         save();
       });

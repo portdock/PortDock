@@ -9,16 +9,18 @@ import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { DEVICES } from "../data/devices";
 import { deviceName } from "@shared/devices";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/io-list/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "IO 리스트·통신 사양서 만들기",
       seo: "IO 리스트·통신 사양서 만들기 — Modbus 레지스터 표 — PortDock",
@@ -61,8 +63,33 @@ const L = ko
         ["tools/handover-pack/", "현장 문서 묶음"],
         ["devices/", "장비 레지스터 맵"],
       ],
+      ui: {
+        dev: "장비",
+        name: "이름",
+        loc: "위치",
+        proto: "통신",
+        line: "통신 선",
+        unit: "국번",
+        ip: "IP",
+        port: "포트",
+        baud: "보율",
+        parity: "패리티",
+        note: "메모",
+        delDev: "장비 지우기",
+        delDevAsk: "이 장비와 신호를 지울까요?",
+        addSig: "신호 더하기",
+        del: "×",
+        head: ["태그", "영역", "주소(0 기준)", "매뉴얼 주소", "함수", "형식", "워드 순서", "글자 수", "스케일", "단위", "읽기/쓰기", "설명", ""],
+        loadFail: "불러오지 못함: ",
+        mapFail: "장비 맵을 받지 못했습니다 — 연결을 확인하세요.",
+        imported: "가져왔습니다: ",
+        saved: "이 브라우저에 저장됨",
+        noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 사라집니다 — JSON 으로 저장하세요.",
+        auto: "(자동)",
+      },
     }
-  : {
+  : lang === "en"
+  ? {
       title: "I/O List & Communication Spec Maker",
       seo: "I/O List & Modbus Register Map Maker: CSV, Print — PortDock",
       desc: "Devices with protocol, unit ID, IP and baud, plus tags, addresses, types, word order and scale. Overlap and ID checks, device map import, CSV, JSON, print.",
@@ -104,36 +131,7 @@ const L = ko
         ["tools/handover-pack/", "Site handover pack"],
         ["devices/", "Device register maps"],
       ],
-    };
-const T = {
-  clearAsk: L.clearAsk,
-  noFind: L.noFind,
-  ui: ko
-    ? {
-        dev: "장비",
-        name: "이름",
-        loc: "위치",
-        proto: "통신",
-        line: "통신 선",
-        unit: "국번",
-        ip: "IP",
-        port: "포트",
-        baud: "보율",
-        parity: "패리티",
-        note: "메모",
-        delDev: "장비 지우기",
-        delDevAsk: "이 장비와 신호를 지울까요?",
-        addSig: "신호 더하기",
-        del: "×",
-        head: ["태그", "영역", "주소(0 기준)", "매뉴얼 주소", "함수", "형식", "워드 순서", "글자 수", "스케일", "단위", "읽기/쓰기", "설명", ""],
-        loadFail: "불러오지 못함: ",
-        mapFail: "장비 맵을 받지 못했습니다 — 연결을 확인하세요.",
-        imported: "가져왔습니다: ",
-        saved: "이 브라우저에 저장됨",
-        noStore: "이 브라우저는 저장을 막고 있어 새로 고치면 사라집니다 — JSON 으로 저장하세요.",
-        auto: "(자동)",
-      }
-    : {
+      ui: {
         dev: "Device",
         name: "Name",
         loc: "Location",
@@ -157,8 +155,17 @@ const T = {
         noStore: "This browser blocks storage, so this disappears on reload — save as JSON.",
         auto: "(auto)",
       },
+    }
+  : {
+      ...page7(lang, "ioList"),
+      links: [...["tools/modbus-float/", "tools/modbus-blocks/", "tools/system-diagram/", "tools/handover-pack/"].map((p) => [p, pageName(lang, p)]), ["devices/", page7(lang, "ioList").devices + ui(lang).inEnglish]],
+    };
+const T = {
+  clearAsk: L.clearAsk,
+  noFind: L.noFind,
+  ui: L.ui,
 };
-const MAP = DEVICES.map((d) => ({ id: d.id, name: deviceName(d, lang), n: d.registers.length }));
+const MAP = DEVICES.map((d) => ({ id: d.id, name: deviceName(d, lang === "ko" ? "ko" : "en"), n: d.registers.length }));
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -166,11 +173,11 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ioList"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
@@ -223,7 +230,7 @@ const ld = {
           L.links.map(([p, n], i) => (
             <>
               {i > 0 && " · "}
-              <a href={url(lang, p)}>{n}</a>
+              <a href={link(lang, p)}>{n}</a>
             </>
           ))
         }
@@ -377,9 +384,10 @@ const ld = {
       type MapDevice,
     } from "../lib/ioList";
     import { saveText, store, fileStamp } from "../lib/fileSave";
+    import { tx, type Lang } from "../lib/tr";
 
     const form = document.getElementById("io") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as { clearAsk: string; noFind: string; ui: Record<string, string> & { head: string[] } };
     const U = T.ui;
     const $ = <E extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as E;
@@ -394,7 +402,7 @@ const ld = {
       const multi = s.type === "u32" || s.type === "s32" || s.type === "f32" || s.type === "f64";
       return `<tr data-si="${si}">
 <td class="c-tag">${inp("tag", s.tag, "mono", `maxlength="${LIMITS.text}" aria-label="${esc(U.head[0])} ${si + 1}"`)}</td>
-<td><select data-f="table" aria-label="${esc(U.head[1])} ${si + 1}">${TABLES.map((t) => opt(t, TABLE_NAME[t][lang], s.table)).join("")}</select></td>
+<td><select data-f="table" aria-label="${esc(U.head[1])} ${si + 1}">${TABLES.map((t) => opt(t, tx(TABLE_NAME[t], lang), s.table)).join("")}</select></td>
 <td class="c-n">${inp("address", s.address, "mono", `inputmode="numeric" aria-label="${esc(U.head[2])} ${si + 1}"`)}</td>
 <td class="c-n">${inp("manual", s.manual, "mono", `maxlength="20" aria-label="${esc(U.head[3])} ${si + 1}"`)}</td>
 <td class="c-n">${inp("fc", s.fc, "mono", `maxlength="20" placeholder="${esc(defaultFc(s))}" aria-label="${esc(U.head[4])} ${si + 1}"`)}</td>
@@ -403,7 +411,7 @@ const ld = {
 <td class="c-n">${inp("len", s.len, "mono", `inputmode="numeric" aria-label="${esc(U.head[7])} ${si + 1}"${s.type === "string" ? "" : " disabled"}`)}</td>
 <td class="c-n">${inp("scale", s.scale, "mono", `inputmode="decimal" placeholder="1" aria-label="${esc(U.head[8])} ${si + 1}"`)}</td>
 <td class="c-n">${inp("unit", s.unit, "", `maxlength="20" aria-label="${esc(U.head[9])} ${si + 1}"`)}</td>
-<td><select data-f="access" aria-label="${esc(U.head[10])} ${si + 1}">${ACCESSES.map((a) => opt(a, ACCESS_NAME[a][lang], s.access)).join("")}</select></td>
+<td><select data-f="access" aria-label="${esc(U.head[10])} ${si + 1}">${ACCESSES.map((a) => opt(a, tx(ACCESS_NAME[a], lang), s.access)).join("")}</select></td>
 <td class="c-desc">${inp("desc", s.desc, "", `maxlength="${LIMITS.desc}" aria-label="${esc(U.head[11])} ${si + 1}"`)}</td>
 <td><button type="button" class="btn tight" data-act="delSig" aria-label="${esc(U.head[0])} ${esc(s.tag)} ${esc(U.del)}">${esc(U.del)}</button></td></tr>`;
     }
@@ -415,12 +423,12 @@ const ld = {
 <div class="io-dgrid">
 <label>${esc(U.name)}${inp("name", d.name, "", `maxlength="${LIMITS.text}"`)}</label>
 <label>${esc(U.loc)}${inp("location", d.location, "", `maxlength="${LIMITS.text}"`)}</label>
-<label>${esc(U.proto)}<select data-f="protocol">${PROTOCOLS.map((p) => opt(p, PROTOCOL_NAME[p][lang], d.protocol)).join("")}</select></label>
+<label>${esc(U.proto)}<select data-f="protocol">${PROTOCOLS.map((p) => opt(p, tx(PROTOCOL_NAME[p], lang), d.protocol)).join("")}</select></label>
 <label>${esc(U.unit)}${inp("unit", d.unit, "mono", 'inputmode="numeric"')}</label>
 ${
   tcp
     ? `<label>${esc(U.ip)}${inp("ip", d.ip, "mono", 'maxlength="45" placeholder="192.168.0.10"')}</label><label>${esc(U.port)}${inp("port", d.port, "mono", 'inputmode="numeric" placeholder="502"')}</label>`
-    : `<label>${esc(U.line)}${inp("line", d.line, "", `maxlength="${LIMITS.text}" placeholder="COM3"`)}</label><label>${esc(U.baud)}${inp("baud", d.baud, "mono", 'inputmode="numeric" placeholder="9600"')}</label><label>${esc(U.parity)}<select data-f="parity">${opt("", "—", d.parity ?? "")}${PARITIES.map((p) => opt(p, PARITY_NAME[p][lang], d.parity)).join("")}</select></label>`
+    : `<label>${esc(U.line)}${inp("line", d.line, "", `maxlength="${LIMITS.text}" placeholder="COM3"`)}</label><label>${esc(U.baud)}${inp("baud", d.baud, "mono", 'inputmode="numeric" placeholder="9600"')}</label><label>${esc(U.parity)}<select data-f="parity">${opt("", "—", d.parity ?? "")}${PARITIES.map((p) => opt(p, tx(PARITY_NAME[p], lang), d.parity)).join("")}</select></label>`
 }
 <label>${esc(U.note)}${inp("note", d.note, "", `maxlength="${LIMITS.desc}"`)}</label>
 </div>

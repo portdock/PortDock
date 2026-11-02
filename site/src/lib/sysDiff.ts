@@ -4,6 +4,7 @@
 //   - 선은 양 끝(짝지은 id)·종류로 비교
 //   - RS-485 버스마다 전·후 장비 수·단위 부하·한 바퀴 폴링 어림(sysDiagram.busStats)
 //   - 증설·제거 경고: 버스 끝 장비가 빠짐(종단 옮기기), 새 장비가 버스 끝에 붙음, 단위 부하 32 를 새로 넘음, 반납한 국번·IP
+import { msg, tx } from "./tr.ts";
 import { busStats, fmtUl, NODE_NAME, UL_MAX, type BusStat, type Finding, type Lang, type SysDoc, type SysLink, type SysNode } from "./sysDiagram.ts";
 
 export type Change = "added" | "removed" | "changed";
@@ -56,8 +57,7 @@ function pair<T extends { id: string; name: string; kind: string }>(before: T[],
 }
 
 export function diffDocs(before: SysDoc, after: SysDoc, lang: Lang): DocDiff {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const nm = (n: { name: string; id: string }) => n.name || n.id;
   const rows: DiffRow[] = [];
   const findings: Finding[] = [];
@@ -80,7 +80,7 @@ export function diffDocs(before: SysDoc, after: SysDoc, lang: Lang): DocDiff {
     const aid = nodeMap.get(b.id);
     if (!aid) {
       removed.push(b);
-      const det: string[] = [NODE_NAME[b.kind][lang]];
+      const det: string[] = [tx(NODE_NAME[b.kind], lang)];
       if (b.ip) det.push(`IP ${b.ip}`);
       if (b.unit !== undefined) det.push(t(`국번 ${b.unit}`, `ID ${b.unit}`));
       rows.push({ change: "removed", what: "node", id: b.id, name: nm(b), details: det });
@@ -92,7 +92,7 @@ export function diffDocs(before: SysDoc, after: SysDoc, lang: Lang): DocDiff {
       if (x !== y) det.push(`${label} ${x} → ${y}`);
     };
     cmp(t("이름", "Name"), val(b.name), val(a.name));
-    if (a.kind !== b.kind) det.push(`${t("종류", "Type")} ${NODE_NAME[b.kind][lang]} → ${NODE_NAME[a.kind][lang]}`);
+    if (a.kind !== b.kind) det.push(`${t("종류", "Type")} ${tx(NODE_NAME[b.kind], lang)} → ${tx(NODE_NAME[a.kind], lang)}`);
     cmp("IP", val(b.ip), val(a.ip));
     cmp(t("마스크", "Mask"), val(b.mask), val(a.mask));
     cmp(t("국번", "ID"), val(b.unit), val(a.unit));
@@ -109,7 +109,7 @@ export function diffDocs(before: SysDoc, after: SysDoc, lang: Lang): DocDiff {
   for (const a of after.nodes)
     if (!mappedAfter.has(a.id)) {
       added.add(a.id);
-      const det: string[] = [NODE_NAME[a.kind][lang]];
+      const det: string[] = [tx(NODE_NAME[a.kind], lang)];
       if (a.ip) det.push(`IP ${a.ip}`);
       if (a.unit !== undefined) det.push(t(`국번 ${a.unit}`, `ID ${a.unit}`));
       rows.push({ change: "added", what: "node", id: a.id, name: nm(a), details: det });
@@ -222,14 +222,13 @@ export function diffDocs(before: SysDoc, after: SysDoc, lang: Lang): DocDiff {
 
 /** 글로 — 메신저·보고서에 붙이기 */
 export function diffText(d: DocDiff, lang: Lang): string {
-  const ko = lang === "ko";
   const mark = { added: "+", removed: "−", changed: "~" } as const;
   const lines: string[] = [];
-  if (d.same) lines.push(ko ? "바뀐 것 없음" : "No changes");
+  if (d.same) lines.push(msg(lang, "바뀐 것 없음", "No changes"));
   for (const r of d.rows) lines.push(`${mark[r.change]} ${r.name}${r.details.length ? ` (${r.details.join(", ")})` : ""}`);
   const ms = (s: number) => `${Math.round(s * 1000)} ms`;
   for (const b of d.buses) {
-    const f = (st: BusStat | null) => (st ? `${st.devices.length}${ko ? "대" : ""}·UL ${fmtUl(st.unitLoads)}·${ms(st.cycle)}` : "—");
+    const f = (st: BusStat | null) => (st ? `${st.devices.length}${msg(lang, "대", "")}·UL ${fmtUl(st.unitLoads)}·${ms(st.cycle)}` : "—");
     lines.push(`${b.name}: ${f(b.before)} → ${f(b.after)}`);
   }
   for (const f of d.findings) lines.push(`${f.level === "info" ? "·" : "⚠"} ${f.text}`);

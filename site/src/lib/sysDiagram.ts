@@ -13,10 +13,11 @@ import type { Drawing, Ink, LegendItem, Shape } from "./diagramSvg.ts";
 import { maskOf, parseIp, parseMask, ipStr } from "./subnet.ts";
 import { poll, QTY_MAX, type CharFormat } from "./serialTiming.ts";
 
-export type Lang = "ko" | "en";
+import { msg, tx, type Lang } from "./tr.ts";
+export type { Lang };
 export type NodeKind = "pc" | "ipc" | "plc" | "hmi" | "inverter" | "meter" | "sensor" | "switch" | "usb485" | "gateway" | "ap" | "router" | "cloud" | "other";
 export const NODE_KINDS: NodeKind[] = ["pc", "ipc", "plc", "hmi", "inverter", "meter", "sensor", "switch", "usb485", "gateway", "ap", "router", "cloud", "other"];
-export const NODE_NAME: Record<NodeKind, Record<Lang, string>> = {
+export const NODE_NAME: Record<NodeKind, { ko: string; en: string }> = {
   pc: { ko: "PC", en: "PC" },
   ipc: { ko: "산업용 PC", en: "Industrial PC" },
   plc: { ko: "PLC", en: "PLC" },
@@ -35,7 +36,7 @@ export const NODE_NAME: Record<NodeKind, Record<Lang, string>> = {
 
 export type LinkKind = "eth" | "rs485" | "rs232" | "usb" | "can" | "wifi" | "analog";
 export const LINK_KINDS: LinkKind[] = ["eth", "rs485", "rs232", "usb", "can", "wifi", "analog"];
-export const LINK_NAME: Record<LinkKind, Record<Lang, string>> = {
+export const LINK_NAME: Record<LinkKind, { ko: string; en: string }> = {
   eth: { ko: "이더넷", en: "Ethernet" },
   rs485: { ko: "RS-485", en: "RS-485" },
   rs232: { ko: "RS-232", en: "RS-232" },
@@ -414,8 +415,7 @@ export function termProblems(st: BusStat): { side: "left" | "right" | "middle" |
 }
 
 export function checkDoc(doc: SysDoc, lang: Lang): Finding[] {
-  const ko = lang === "ko";
-  const t = (k: string, e: string) => (ko ? k : e);
+  const t = (k: string, e: string) => msg(lang, k, e);
   const out: Finding[] = [];
   const nm = (n: { name: string; id: string }) => n.name || n.id;
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
@@ -580,12 +580,12 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
       S.push({ k: "wire", pts, c: st.c, w: st.w, dash: st.dash });
       const lx = (x1 + x2) / 2;
       const ly = Math.abs(y1 - y2) < 4 ? y1 - 6 : (y1 + y2) / 2 - 6;
-      const tag = l.label || (l.kind === "eth" ? "" : LINK_NAME[l.kind][lang]);
+      const tag = l.label || (l.kind === "eth" ? "" : tx(LINK_NAME[l.kind], lang));
       if (tag) labels.push({ k: "text", x: lx, y: ly, t: tag, anchor: "middle", size: 11, c: "muted", bg: true });
     }
   }
   for (const g of o.ghosts ?? []) {
-    S.push({ k: "box", x: g.x, y: g.y, w: NODE_W, h: NODE_H, title: `− ${(g.name || NODE_NAME[g.kind][lang]).slice(0, 18)}`, sub: lang === "ko" ? "빠짐" : "removed", fill: "bg", stroke: "warn", dash: true });
+    S.push({ k: "box", x: g.x, y: g.y, w: NODE_W, h: NODE_H, title: `− ${(g.name || tx(NODE_NAME[g.kind], lang)).slice(0, 18)}`, sub: msg(lang, "빠짐", "removed"), fill: "bg", stroke: "warn", dash: true });
   }
   for (const b of doc.buses) {
     const st = LINK_STYLE[b.kind];
@@ -604,15 +604,15 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
       }
     }
     const comm = [b.baud ? `${b.baud}` : "", b.kind === "rs485" && b.parity ? { none: "N", even: "E", odd: "O" }[b.parity] : ""].filter(Boolean).join(" ");
-    labels.push({ k: "text", x: b.x + 6, y: b.y + 20, t: `${b.name || LINK_NAME[b.kind][lang]}${comm ? ` · ${comm}` : ""}`, size: 11.5, c: o.flagged?.has(b.id) ? "warn" : "ink", bold: true, bg: true });
+    labels.push({ k: "text", x: b.x + 6, y: b.y + 20, t: `${b.name || tx(LINK_NAME[b.kind], lang)}${comm ? ` · ${comm}` : ""}`, size: 11.5, c: o.flagged?.has(b.id) ? "warn" : "ink", bold: true, bg: true });
   }
   for (const n of doc.nodes) {
     const sel = o.selected === n.id || o.pending === n.id;
     const flagged = o.flagged?.has(n.id);
-    const sub = NODE_NAME[n.kind][lang];
+    const sub = tx(NODE_NAME[n.kind], lang);
     const bits: string[] = [];
     if (n.ip) bits.push(n.ip + (n.mask ? (n.mask.startsWith("/") ? n.mask : parseMask(n.mask) !== null ? `/${parseMask(n.mask)}` : "") : ""));
-    if (n.unit !== undefined) bits.push(lang === "ko" ? `국번 ${n.unit}` : `ID ${n.unit}`);
+    if (n.unit !== undefined) bits.push(msg(lang, `국번 ${n.unit}`, `ID ${n.unit}`));
     if (n.baud) bits.push(`${n.baud}${n.parity ? { none: "N", even: "E", odd: "O" }[n.parity] : ""}`);
     if (n.term) bits.push("Ω");
     S.push({
@@ -630,9 +630,9 @@ export function toDrawing(doc: SysDoc, lang: Lang, o: DrawOpts = {}): Drawing {
   }
   S.push(...labels);
   const used = new Set<LinkKind>([...doc.links.map((l) => l.kind), ...doc.buses.map((b) => b.kind)]);
-  const legend: LegendItem[] = LINK_KINDS.filter((k) => used.has(k)).map((k) => ({ c: LINK_STYLE[k].c, label: LINK_NAME[k][lang], dash: LINK_STYLE[k].dash }));
+  const legend: LegendItem[] = LINK_KINDS.filter((k) => used.has(k)).map((k) => ({ c: LINK_STYLE[k].c, label: tx(LINK_NAME[k], lang), dash: LINK_STYLE[k].dash }));
   const { w, h } = bounds(doc, o.ghosts);
-  return { w, h, title: doc.title || (lang === "ko" ? "시스템 구성도" : "System diagram"), shapes: S, legend };
+  return { w, h, title: doc.title || (msg(lang, "시스템 구성도", "System diagram")), shapes: S, legend };
 }
 
 /** 점 (x, y) 에 있는 노드·버스 id(위에 그린 것부터) */
@@ -687,22 +687,21 @@ export function addLink(doc: SysDoc, kind: LinkKind, a: string, b: string): SysD
 
 // ---------------------------------------------------------------- 예시
 
-export const EXAMPLES: { id: string; name: Record<Lang, string>; make: (lang: Lang) => SysDoc }[] = [
+export const EXAMPLES: { id: string; name: { ko: string; en: string }; make: (lang: Lang) => SysDoc }[] = [
   {
     id: "usb485-vfd",
     name: { ko: "PC + USB-485 + 인버터 3대", en: "PC + USB-485 + 3 inverters" },
     make: (lang) => {
-      const ko = lang === "ko";
       return {
         format: FORMAT,
         version: 1,
-        title: ko ? "PC + USB-RS485 + 인버터 3대" : "PC + USB-RS485 + 3 inverters",
+        title: msg(lang, "PC + USB-RS485 + 인버터 3대", "PC + USB-RS485 + 3 inverters"),
         nodes: [
-          { id: "pc", kind: "pc", name: ko ? "점검 PC" : "Test PC", x: 40, y: 40, note: ko ? "PortDock Modbus Master" : "PortDock Modbus Master" },
+          { id: "pc", kind: "pc", name: msg(lang, "점검 PC", "Test PC"), x: 40, y: 40, note: msg(lang, "PortDock Modbus Master", "PortDock Modbus Master") },
           { id: "cv", kind: "usb485", name: "USB-RS485", x: 40, y: 170, baud: 9600, parity: "even", term: true },
-          { id: "i1", kind: "inverter", name: ko ? "컨베이어 1" : "Conveyor 1", x: 250, y: 330, unit: 1, baud: 9600, parity: "even" },
-          { id: "i2", kind: "inverter", name: ko ? "컨베이어 2" : "Conveyor 2", x: 440, y: 330, unit: 2, baud: 9600, parity: "even" },
-          { id: "i3", kind: "inverter", name: ko ? "팬" : "Fan", x: 630, y: 330, unit: 3, baud: 9600, parity: "even", term: true },
+          { id: "i1", kind: "inverter", name: msg(lang, "컨베이어 1", "Conveyor 1"), x: 250, y: 330, unit: 1, baud: 9600, parity: "even" },
+          { id: "i2", kind: "inverter", name: msg(lang, "컨베이어 2", "Conveyor 2"), x: 440, y: 330, unit: 2, baud: 9600, parity: "even" },
+          { id: "i3", kind: "inverter", name: msg(lang, "팬", "Fan"), x: 630, y: 330, unit: 3, baud: 9600, parity: "even", term: true },
         ],
         buses: [{ id: "b1", kind: "rs485", name: "RS-485 #1", x: 100, y: 290, len: 700, baud: 9600, parity: "even" }],
         links: [
@@ -719,19 +718,18 @@ export const EXAMPLES: { id: string; name: Record<Lang, string>; make: (lang: La
     id: "hmi-plc-io",
     name: { ko: "HMI + PLC + 스위치 + 원격 I/O", en: "HMI + PLC + switch + remote I/O" },
     make: (lang) => {
-      const ko = lang === "ko";
       return {
         format: FORMAT,
         version: 1,
-        title: ko ? "HMI + PLC + 스위치 + 원격 I/O" : "HMI + PLC + switch + remote I/O",
+        title: msg(lang, "HMI + PLC + 스위치 + 원격 I/O", "HMI + PLC + switch + remote I/O"),
         nodes: [
-          { id: "sw", kind: "switch", name: ko ? "제어반 스위치" : "Panel switch", x: 290, y: 170 },
+          { id: "sw", kind: "switch", name: msg(lang, "제어반 스위치", "Panel switch"), x: 290, y: 170 },
           { id: "hmi", kind: "hmi", name: "HMI", x: 60, y: 40, ip: "192.168.10.20", mask: "255.255.255.0" },
           { id: "plc", kind: "plc", name: "PLC", x: 290, y: 40, ip: "192.168.10.10", mask: "255.255.255.0" },
-          { id: "pc", kind: "pc", name: ko ? "엔지니어링 PC" : "Engineering PC", x: 520, y: 40, ip: "192.168.10.100", mask: "255.255.255.0" },
-          { id: "io1", kind: "other", name: ko ? "원격 I/O 1" : "Remote I/O 1", x: 130, y: 320, ip: "192.168.10.31", mask: "255.255.255.0", note: "Modbus TCP" },
-          { id: "io2", kind: "other", name: ko ? "원격 I/O 2" : "Remote I/O 2", x: 450, y: 320, ip: "192.168.10.32", mask: "255.255.255.0", note: "Modbus TCP" },
-          { id: "ts", kind: "sensor", name: ko ? "압력 트랜스미터" : "Pressure transmitter", x: 130, y: 450 },
+          { id: "pc", kind: "pc", name: msg(lang, "엔지니어링 PC", "Engineering PC"), x: 520, y: 40, ip: "192.168.10.100", mask: "255.255.255.0" },
+          { id: "io1", kind: "other", name: msg(lang, "원격 I/O 1", "Remote I/O 1"), x: 130, y: 320, ip: "192.168.10.31", mask: "255.255.255.0", note: "Modbus TCP" },
+          { id: "io2", kind: "other", name: msg(lang, "원격 I/O 2", "Remote I/O 2"), x: 450, y: 320, ip: "192.168.10.32", mask: "255.255.255.0", note: "Modbus TCP" },
+          { id: "ts", kind: "sensor", name: msg(lang, "압력 트랜스미터", "Pressure transmitter"), x: 130, y: 450 },
         ],
         buses: [],
         links: [
@@ -749,22 +747,21 @@ export const EXAMPLES: { id: string; name: Record<Lang, string>; make: (lang: La
     id: "gateway-meters",
     name: { ko: "게이트웨이 + 전력 미터 + 클라우드", en: "Gateway + power meters + cloud" },
     make: (lang) => {
-      const ko = lang === "ko";
       return {
         format: FORMAT,
         version: 1,
-        title: ko ? "전력 감시 — 게이트웨이 + 전력 미터 + 클라우드" : "Energy monitoring — gateway + meters + cloud",
+        title: msg(lang, "전력 감시 — 게이트웨이 + 전력 미터 + 클라우드", "Energy monitoring — gateway + meters + cloud"),
         nodes: [
-          { id: "cl", kind: "cloud", name: ko ? "감시 서버" : "Monitoring server", x: 300, y: 20 },
-          { id: "rt", kind: "router", name: ko ? "공장 라우터" : "Plant router", x: 300, y: 130, ip: "192.168.1.1", mask: "/24" },
+          { id: "cl", kind: "cloud", name: msg(lang, "감시 서버", "Monitoring server"), x: 300, y: 20 },
+          { id: "rt", kind: "router", name: msg(lang, "공장 라우터", "Plant router"), x: 300, y: 130, ip: "192.168.1.1", mask: "/24" },
           { id: "gw", kind: "gateway", name: "Modbus TCP ↔ RTU", x: 300, y: 250, ip: "192.168.1.50", mask: "/24", baud: 9600, parity: "none" },
-          { id: "m1", kind: "meter", name: ko ? "수전반 미터" : "Main meter", x: 120, y: 420, unit: 1, baud: 9600, parity: "none", term: true },
-          { id: "m2", kind: "meter", name: ko ? "라인 A 미터" : "Line A meter", x: 300, y: 420, unit: 2, baud: 9600, parity: "none" },
-          { id: "m3", kind: "meter", name: ko ? "라인 B 미터" : "Line B meter", x: 480, y: 420, unit: 3, baud: 9600, parity: "none", term: true },
+          { id: "m1", kind: "meter", name: msg(lang, "수전반 미터", "Main meter"), x: 120, y: 420, unit: 1, baud: 9600, parity: "none", term: true },
+          { id: "m2", kind: "meter", name: msg(lang, "라인 A 미터", "Line A meter"), x: 300, y: 420, unit: 2, baud: 9600, parity: "none" },
+          { id: "m3", kind: "meter", name: msg(lang, "라인 B 미터", "Line B meter"), x: 480, y: 420, unit: 3, baud: 9600, parity: "none", term: true },
         ],
         buses: [{ id: "b1", kind: "rs485", name: "RS-485", x: 80, y: 380, len: 600, baud: 9600, parity: "none" }],
         links: [
-          { id: "l1", kind: "eth", a: "cl", b: "rt", label: ko ? "인터넷" : "Internet" },
+          { id: "l1", kind: "eth", a: "cl", b: "rt", label: msg(lang, "인터넷", "Internet") },
           { id: "l2", kind: "eth", a: "rt", b: "gw" },
           { id: "l3", kind: "rs485", a: "gw", b: "b1" },
           { id: "l4", kind: "rs485", a: "m1", b: "b1" },
@@ -853,7 +850,7 @@ export function addScanRows(doc: SysDoc, rows: ScanRow[], lang: Lang): SysDoc {
   let d: SysDoc = { ...doc, nodes: [...doc.nodes], links: [...doc.links] };
   const baseY = d.nodes.reduce((m, n) => Math.max(m, n.y + NODE_H), d.buses.reduce((m, b) => Math.max(m, b.y + 30), 0)) + (d.nodes.length ? 40 : 30);
   const swId = newId(d, "sw");
-  d.nodes.push({ id: swId, kind: "switch", name: lang === "ko" ? "스위치(Net Scan)" : "Switch (Net Scan)", x: 30, y: baseY });
+  d.nodes.push({ id: swId, kind: "switch", name: msg(lang, "스위치(Net Scan)", "Switch (Net Scan)"), x: 30, y: baseY });
   const cols = 5;
   rows.forEach((r, i) => {
     const id = newId(d, "n");

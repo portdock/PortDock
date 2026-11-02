@@ -61,9 +61,10 @@ import fr6 from "./fr/batch6.ts";
 import es6 from "./es/batch6.ts";
 import pt6 from "./pt/batch6.ts";
 import it6 from "./it/batch6.ts";
+import ja7 from "./ja/batch7.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
-import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id } from "./scope.ts";
+import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id } from "./scope.ts";
 
 /** 1차 묶음 사전(모든 추가 언어) */
 export type Dict = typeof ja;
@@ -108,7 +109,15 @@ export interface Batch6Part {
   lib: Partial<Batch6["lib"]>;
   pages: Partial<Batch6["pages"]>;
 }
-export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"] | keyof Batch3["lib"] | keyof Batch4["lib"] | keyof Batch5["lib"] | keyof Batch6["lib"];
+/** 7차 묶음 사전(i18n/<언어>/batch7.ts) — 기준판 ja 의 모양 */
+export type Batch7 = typeof ja7;
+/** 7차 묶음도 쪽 단위로 일부만 있어도 된다 */
+export interface Batch7Part {
+  webTools: Partial<Batch7["webTools"]>;
+  lib: Partial<Batch7["lib"]>;
+  pages: Partial<Batch7["pages"]>;
+}
+export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"] | keyof Batch3["lib"] | keyof Batch4["lib"] | keyof Batch5["lib"] | keyof Batch6["lib"] | keyof Batch7["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
 /** 2차 묶음을 (일부라도) 옮긴 언어 */
@@ -121,6 +130,8 @@ export const DICTS4: Partial<Record<ExtraLang, Batch4Part>> = { ja: ja4, id: id4
 export const DICTS5: Partial<Record<ExtraLang, Batch5Part>> = { ja: ja5, id: id5, es: es5, pt: pt5, fr: fr5, it: it5, vi: vi5, tr: tr5, de: de5, pl: pl5 };
 /** 6차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS6: Partial<Record<ExtraLang, Batch6Part>> = { ja: ja6, es: es6, pt: pt6, it: it6, vi: vi6, tr: tr6, id: id6, de: de6, pl: pl6, fr: fr6 };
+/** 7차 묶음을 (일부라도) 옮긴 언어 */
+export const DICTS7: Partial<Record<ExtraLang, Batch7Part>> = { ja: ja7 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
@@ -160,6 +171,13 @@ export function page6<K extends Page6Id>(lang: ExtraLang, id: K): Batch6["pages"
   return p as Batch6["pages"][K];
 }
 
+/** 7차 묶음 쪽 글 — page2 와 같음 */
+export function page7<K extends Page7Id>(lang: ExtraLang, id: K): Batch7["pages"][K] {
+  const p = DICTS7[lang]?.pages[id];
+  if (!p) throw new Error(`${lang}: 7차 묶음 쪽 글 없음 — ${id}`);
+  return p as Batch7["pages"][K];
+}
+
 /** 3차 묶음 하드웨어 테스트 쪽의 개인정보 줄(components/HwPrivacy.astro) */
 export function hwPrivacy(lang: ExtraLang): Batch3["hwPrivacy"] {
   const p = DICTS3[lang]?.hwPrivacy;
@@ -168,6 +186,7 @@ export function hwPrivacy(lang: ExtraLang): Batch3["hwPrivacy"] {
 }
 
 const libOf = (lang: ExtraLang): Record<string, Catalog> => ({
+  ...(DICTS7[lang]?.lib as Record<string, Catalog> | undefined),
   ...(DICTS6[lang]?.lib as Record<string, Catalog> | undefined),
   ...(DICTS5[lang]?.lib as Record<string, Catalog> | undefined),
   ...(DICTS4[lang]?.lib as Record<string, Catalog> | undefined),

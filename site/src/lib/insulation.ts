@@ -7,7 +7,8 @@
 //   특별저압(ELV)은 교류 50 V·직류 120 V 이하.
 // 이 모듈은 규격의 최소값과만 비교한다 — 장비·케이블 제조사 값, 지난 측정과의 추세는 따로 본다.
 
-export type Lang = "ko" | "en";
+import { msg, tx, type Lang } from "./tr.ts";
+export type { Lang };
 export type Level = "ok" | "warn" | "fault";
 export interface T {
   ko: string;
@@ -110,13 +111,13 @@ export function judge(c: Circuit, testV: number, mohm: number): Verdict {
 /** 결과 복사용 글 */
 export function verdictText(c: Circuit, testV: number, mohm: number, v: Verdict, lang: Lang): string {
   const r = rowOf(c);
-  const head = lang === "ko" ? "절연 저항 판정" : "Insulation resistance check";
+  const head = msg(lang, "절연 저항 판정", "Insulation resistance check");
   const lines = [
-    `${head}: ${LEVEL_NAME[v.level][lang]}`,
-    `${lang === "ko" ? "회로" : "Circuit"}: ${r.name[lang]}`,
-    `${lang === "ko" ? "측정" : "Test"}: DC ${testV} V, ${fmt(mohm)} MΩ (${lang === "ko" ? "기준" : "requirement"}: DC ${r.testV} V, ≥ ${r.minMohm} MΩ)`,
-    v.msg[lang],
-    ...v.more.map((m) => `- ${m[lang]}`),
+    `${head}: ${tx(LEVEL_NAME[v.level], lang)}`,
+    `${msg(lang, "회로", "Circuit")}: ${tx(r.name, lang)}`,
+    `${msg(lang, "측정", "Test")}: DC ${testV} V, ${fmt(mohm)} MΩ (${msg(lang, "기준", "requirement")}: DC ${r.testV} V, ≥ ${r.minMohm} MΩ)`,
+    tx(v.msg, lang),
+    ...v.more.map((m) => `- ${tx(m, lang)}`),
   ];
   return lines.join("\n");
 }

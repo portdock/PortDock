@@ -1,7 +1,7 @@
 // 공용 문구(머리줄·바닥글·내려받기·이용 안내 등) — 한국어·영어는 여기, 추가 언어는 i18n/<언어>/ui.ts(ui() 가 고른다).
 // 주소·언어 목록은 i18n/langs.ts, 번역 범위는 i18n/scope.ts.
 import { isCore, type SiteLang } from "../i18n/langs.ts";
-import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6 } from "../i18n/index.ts";
+import { DICTS, DICTS2, DICTS3, DICTS4, DICTS5, DICTS6, DICTS7 } from "../i18n/index.ts";
 import type { Tool } from "../data/tools";
 import type { WebTool } from "../data/webTools";
 import type { GroupId } from "../data/webToolGroups";
@@ -209,10 +209,10 @@ export const ui = (lang: SiteLang): UiText => (isCore(lang) ? UI[lang] : DICTS[l
 /** 프로그램 한 줄 소개 — 추가 언어는 i18n/<언어>/common.ts 의 apps */
 export const appTagline = (x: Tool, lang: SiteLang): string => (isCore(lang) ? x.tagline[lang] : DICTS[lang].common.apps[x.id]);
 
-/** 웹 도구 이름·한 줄 소개 — 추가 언어는 번역 범위(scope.ts)의 도구만 있다(i18n/<언어>/common.ts·batch2.ts~batch6.ts 의 webTools) */
+/** 웹 도구 이름·한 줄 소개 — 추가 언어는 번역 범위(scope.ts)의 도구만 있다(i18n/<언어>/common.ts·batch2.ts~batch7.ts 의 webTools) */
 export const webToolText = (w: WebTool, lang: SiteLang): { name: string; blurb: string } => {
   if (isCore(lang)) return { name: w.name[lang], blurb: w.blurb[lang] };
-  const x = (DICTS[lang].common.webTools as Partial<Record<string, { name: string; blurb: string }>>)[w.path] ?? (DICTS2[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS3[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS4[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS5[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS6[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path];
+  const x = (DICTS[lang].common.webTools as Partial<Record<string, { name: string; blurb: string }>>)[w.path] ?? (DICTS2[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS3[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS4[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS5[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS6[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path] ?? (DICTS7[lang]?.webTools as Partial<Record<string, { name: string; blurb: string }>> | undefined)?.[w.path];
   if (!x) throw new Error(`${lang}: 번역 범위 밖 웹 도구 ${w.path}`);
   return x;
 };

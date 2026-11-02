@@ -8,16 +8,19 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { LEVEL_NAME, ROWS } from "../lib/insulation";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/insulation-resistance/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       h1: "절연 저항 판정",
       desc: "회로 전압(SELV·PELV, 500 V 이하, 500 V 초과)과 측정 전압·잰 값(MΩ)을 넣으면 전기설비기술기준 제52조·IEC 60364-6 최소값과 비교해 판정합니다.",
@@ -53,12 +56,19 @@ const L = ko
         "SELV·PELV(24 V 제어 회로)에 500 V 를 걸면 회로에 남은 전자 부품이 상할 수 있습니다 — 규정 시험 전압(250 V)을 씁니다.",
       ],
       srcTitle: "출처",
-      seeMm: "통신·전원 배선을 멀티미터로 볼 때는",
-      mm: "멀티미터 측정값 점검기",
-      seeLog: "측정값을 남기려면",
-      log: "시운전·설치 점검표",
+      see: ["통신·전원 배선을 멀티미터로 볼 때는 ", ". 측정값을 남기려면 ", "."],
+      seeLinks: ["멀티미터 측정값 점검기", "시운전·설치 점검표"],
+      src1: "전기설비기술기준(산업통상자원부 고시) 제52조 저압전로의 절연성능 — 국가법령정보센터",
+      src2: "저압 전기 설비 — 검사(6.4.3.3 절연 저항, 표 6.1)",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["24 V 제어 회로도 500 V 로 재나요?", "아니요. SELV·PELV(특별저압) 회로는 규정 시험 전압 250 V 로 잽니다. 500 V 를 걸면 회로에 남은 전자 부품이 상할 수 있고, PLC·인버터·전원 장치 같은 장비는 떼어 내거나 단자를 풀고 잽니다."],
+        ["최소값만 넘으면 괜찮은가요?", "최소값은 합격선일 뿐입니다. 같은 회로를 같은 조건·같은 시간(예: 1분)에 잰 지난 값보다 크게 떨어졌다면 습기·먼지·피복 손상의 시작일 수 있으니 기록해 추세를 봅니다."],
+        ["여러 회로를 묶어 쟀더니 낮게 나와요", "차단기·단자대에서 구간을 나눠 다시 재어 낮은 구간을 좁힙니다. 재기 전에는 차단·검전·잠금을 하고, 잰 뒤에는 케이블을 방전한 다음 손댑니다."],
+      ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       h1: "Insulation Resistance Checker",
       desc: "Enter the circuit type (SELV/PELV, up to 500 V, above 500 V), test voltage and reading in MΩ to compare with the IEC 60364-6 and Korean minimum values.",
       seo: "Insulation Resistance Minimum Values (IEC 60364-6) — PortDock",
@@ -93,30 +103,27 @@ const L = ko
         "Putting 500 V on SELV/PELV (24 V control) circuits can damage electronics left connected — use the specified 250 V.",
       ],
       srcTitle: "Sources",
-      seeMm: "To check signal and supply wiring with a multimeter, use the",
-      mm: "multimeter reading checker",
-      seeLog: "To keep records, use the",
-      log: "commissioning checklist maker",
-    };
-const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, v[lang]])) };
+      see: ["To check signal and supply wiring with a multimeter, use the ", ". To keep records, use the ", "."],
+      seeLinks: ["multimeter reading checker", "commissioning checklist maker"],
+      src1: "Korean Electrical Equipment Technical Standards, Article 52 (insulation of low-voltage circuits) — law.go.kr",
+      src2: "Low-voltage electrical installations — Verification (6.4.3.3 insulation resistance, Table 6.1)",
+      faqTitle: "FAQ",
+      faq: [
+        ["Do I test a 24 V control circuit at 500 V?", "No. SELV and PELV (extra-low voltage) circuits are tested at the specified 250 V. 500 V can damage electronic parts left in the circuit; disconnect PLCs, drives, power supplies and similar equipment before testing."],
+        ["Is a reading above the minimum always fine?", "The minimum is only the pass line. If the value has dropped a lot compared with earlier readings taken the same way and at the same time (e.g. 1 minute), moisture, dust or insulation damage may be starting — log it and watch the trend."],
+        ["Several circuits measured together read low", "Split them at breakers or terminal blocks and measure again to narrow down the low section. Isolate, verify absence of voltage and lock out before testing, and discharge the cable afterwards before touching it."],
+      ] as [string, string][],
+    }
+  : { ...page7(lang, "insulation"), seeLinks: ["tools/multimeter-check/", "tools/commissioning-checklist/"].map((p) => pageName(lang, p)) };
+const T = { copied: L.copied, noCircuit: L.noCircuit, level: Object.fromEntries(Object.entries(LEVEL_NAME).map(([k, v]) => [k, tx(v, lang)])) };
 // 자주 묻는 것(FAQPage) — components/FaqBlock.astro
-const FAQ: [string, string][] = ko
-  ? [
-      ["24 V 제어 회로도 500 V 로 재나요?", "아니요. SELV·PELV(특별저압) 회로는 규정 시험 전압 250 V 로 잽니다. 500 V 를 걸면 회로에 남은 전자 부품이 상할 수 있고, PLC·인버터·전원 장치 같은 장비는 떼어 내거나 단자를 풀고 잽니다."],
-      ["최소값만 넘으면 괜찮은가요?", "최소값은 합격선일 뿐입니다. 같은 회로를 같은 조건·같은 시간(예: 1분)에 잰 지난 값보다 크게 떨어졌다면 습기·먼지·피복 손상의 시작일 수 있으니 기록해 추세를 봅니다."],
-      ["여러 회로를 묶어 쟀더니 낮게 나와요", "차단기·단자대에서 구간을 나눠 다시 재어 낮은 구간을 좁힙니다. 재기 전에는 차단·검전·잠금을 하고, 잰 뒤에는 케이블을 방전한 다음 손댑니다."],
-    ]
-  : [
-      ["Do I test a 24 V control circuit at 500 V?", "No. SELV and PELV (extra-low voltage) circuits are tested at the specified 250 V. 500 V can damage electronic parts left in the circuit; disconnect PLCs, drives, power supplies and similar equipment before testing."],
-      ["Is a reading above the minimum always fine?", "The minimum is only the pass line. If the value has dropped a lot compared with earlier readings taken the same way and at the same time (e.g. 1 minute), moisture, dust or insulation damage may be starting — log it and watch the trend."],
-      ["Several circuits measured together read low", "Split them at breakers or terminal blocks and measure again to narrow down the low section. Isolate, verify absence of voltage and lock out before testing, and discharge the cable afterwards before touching it."],
-    ];
+const FAQ = L.faq as [string, string][];
 ---
 
-<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["insulation"]}>
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
@@ -134,7 +141,7 @@ const FAQ: [string, string][] = ko
         <label class="ck"><input type="checkbox" id="dc" /> {L.dc}</label>
       </div>
       <div class="row">
-        <label class="fld">{L.circuit}<select id="circuit">{ROWS.map((r) => <option value={r.id} selected={r.id === "le500"}>{r.name[lang]}</option>)}</select></label>
+        <label class="fld">{L.circuit}<select id="circuit">{ROWS.map((r) => <option value={r.id} selected={r.id === "le500"}>{tx(r.name, lang)}</option>)}</select></label>
         <label class="fld">{L.testV}<input id="testV" class="mono" value="500" inputmode="decimal" autocomplete="off" list="ir-v" /></label>
         <datalist id="ir-v"><option value="250"></option><option value="500"></option><option value="1000"></option></datalist>
         <label class="fld">{L.reading}<input id="mohm" class="mono" value="85" inputmode="decimal" autocomplete="off" /></label>
@@ -152,18 +159,18 @@ const FAQ: [string, string][] = ko
       <div class="tbl">
         <table class="t">
           <thead><tr>{L.tHead.map((x) => <th>{x}</th>)}</tr></thead>
-          <tbody>{ROWS.map((r) => <tr><td>{r.name[lang]}</td><td class="mono">{r.testV} V</td><td class="mono">≥ {r.minMohm.toFixed(1)} MΩ</td></tr>)}</tbody>
+          <tbody>{ROWS.map((r) => <tr><td>{tx(r.name, lang)}</td><td class="mono">{r.testV} V</td><td class="mono">≥ {r.minMohm.toFixed(1)} MΩ</td></tr>)}</tbody>
         </table>
       </div>
       <p>{L.tNote}</p>
       <h2>{L.lTitle}</h2>
       <ul>{L.l.map((x) => <li>{x}</li>)}</ul>
-      <p>{L.seeMm} <a href={url(lang, "tools/multimeter-check/")}>{L.mm}</a>. {L.seeLog} <a href={url(lang, "tools/commissioning-checklist/")}>{L.log}</a>.</p>
-      <FaqBlock lang={lang} items={FAQ} />
+      <p>{L.see[0]}<a href={link(lang, "tools/multimeter-check/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/commissioning-checklist/")}>{L.seeLinks[1]}</a>{L.see[2]}</p>
+      <FaqBlock lang={lang} items={FAQ} title={L.faqTitle} />
       <h2>{L.srcTitle}</h2>
       <ul>
-        <li><a href="https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B8%B0%EC%88%A0%EA%B8%B0%EC%A4%80" rel="noopener" target="_blank">{ko ? "전기설비기술기준(산업통상자원부 고시) 제52조 저압전로의 절연성능 — 국가법령정보센터" : "Korean Electrical Equipment Technical Standards, Article 52 (insulation of low-voltage circuits) — law.go.kr"}</a></li>
-        <li><a href="https://webstore.iec.ch/en/publication/24656" rel="noopener" target="_blank">IEC 60364-6:2016 — {ko ? "저압 전기 설비 — 검사(6.4.3.3 절연 저항, 표 6.1)" : "Low-voltage electrical installations — Verification (6.4.3.3 insulation resistance, Table 6.1)"}</a></li>
+        <li><a href="https://www.law.go.kr/%ED%96%89%EC%A0%95%EA%B7%9C%EC%B9%99/%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B8%B0%EC%88%A0%EA%B8%B0%EC%A4%80" rel="noopener" target="_blank">{L.src1}</a></li>
+        <li><a href="https://webstore.iec.ch/en/publication/24656" rel="noopener" target="_blank">IEC 60364-6:2016 — {L.src2}</a></li>
       </ul>
     </section>
     <UseNotice lang={lang} />
@@ -226,9 +233,10 @@ const FAQ: [string, string][] = ko
     }
   </style>
   <script>
+    import { tx, type Lang } from "../lib/tr";
     import { circuitFor, judge, parseMohm, rowOf, verdictText, type Circuit } from "../lib/insulation";
     const form = document.getElementById("ir") as HTMLFormElement;
-    const lang = (form.dataset.lang === "en" ? "en" : "ko") as "ko" | "en";
+    const lang = (form.dataset.lang ?? "en") as Lang;
     const T = JSON.parse(form.dataset.t ?? "{}") as { copied: string; noCircuit: string; level: Record<string, string> };
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as unknown as E;
     let text = "";
@@ -254,13 +262,13 @@ const FAQ: [string, string][] = ko
       badge.textContent = T.level[v.level];
       const p = document.createElement("p");
       p.style.margin = "0";
-      p.append(badge, v.msg[lang]);
+      p.append(badge, tx(v.msg, lang));
       const kids: HTMLElement[] = [p];
       if (v.more.length) {
         const ul = document.createElement("ul");
         for (const x of v.more) {
           const li = document.createElement("li");
-          li.textContent = x[lang];
+          li.textContent = tx(x, lang);
           ul.append(li);
         }
         kids.push(ul);

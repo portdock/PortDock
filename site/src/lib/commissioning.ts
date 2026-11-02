@@ -3,7 +3,8 @@
 // 항목은 일반 지식만 적는다(특정 회사·고객 점검표 아님). 링크는 사이트의 실제 가이드 slug·웹 도구 경로·앱 소개 페이지만
 // (시험이 guides.ts·webTools.ts·tools.ts 와 맞춰 본다).
 
-export type Lang = "ko" | "en";
+import { msg, tx, type Lang } from "./tr.ts";
+export type { Lang };
 type L = { ko: string; en: string };
 const t = (ko: string, en: string): L => ({ ko, en });
 
@@ -45,7 +46,7 @@ export const STAGES: { id: StageId; name: L; work: L }[] = [
 ];
 export const stageName = (stage: StageId, work: WorkId, lang: Lang) => {
   const s = STAGES.find((x) => x.id === stage)!;
-  return (work === "install" ? s.name : s.work)[lang];
+  return tx(work === "install" ? s.name : s.work, lang);
 };
 
 export interface Item {
@@ -306,28 +307,27 @@ export function parseSaved(text: string | null): Saved {
   }
 }
 
-export const workTitle = (work: WorkId, lang: Lang) => WORKS.find((w) => w.id === work)!.title[lang];
+export const workTitle = (work: WorkId, lang: Lang) => tx(WORKS.find((w) => w.id === work)!.title, lang);
 
 // ---------- 내보내기
 
 /** 글 목록(메신저·메일에 붙이기) */
 export function toText(s: Saved, lang: Lang): string {
   const items = buildChecklist(s.comps, s.work);
-  const ko = lang === "ko";
   const k = (id: string) => itemKey(s.work, id);
   const lines: string[] = [];
   lines.push(s.title.trim() || workTitle(s.work, lang));
-  lines.push((ko ? "작업: " : "Work: ") + WORKS.find((w) => w.id === s.work)!.name[lang]);
-  lines.push((ko ? "구성: " : "Components: ") + COMPONENTS.filter((c) => s.comps.includes(c.id)).map((c) => c.name[lang]).join(", "));
+  lines.push(msg(lang, "작업: ", "Work: ") + tx(WORKS.find((w) => w.id === s.work)!.name, lang));
+  lines.push(msg(lang, "구성: ", "Components: ") + COMPONENTS.filter((c) => s.comps.includes(c.id)).map((c) => tx(c.name, lang)).join(", "));
   const n = items.filter((i) => s.done[k(i.id)]).length;
-  lines.push((ko ? "완료 " : "Done ") + `${n}/${items.length}`);
+  lines.push(msg(lang, "완료 ", "Done ") + `${n}/${items.length}`);
   for (const g of byStage(items, s.work)) {
     lines.push("");
-    lines.push(`## ${g.name[lang]}`);
+    lines.push(`## ${tx(g.name, lang)}`);
     for (const it of g.items) {
-      lines.push(`[${s.done[k(it.id)] ? "x" : " "}] ${it.text[lang]}`);
+      lines.push(`[${s.done[k(it.id)] ? "x" : " "}] ${tx(it.text, lang)}`);
       const m = s.memo[k(it.id)]?.trim();
-      if (m) lines.push(`    ${ko ? "메모" : "Note"}: ${m.replace(/\s*\n\s*/g, " / ")}`);
+      if (m) lines.push(`    ${msg(lang, "메모", "Note")}: ${m.replace(/\s*\n\s*/g, " / ")}`);
     }
   }
   return lines.join("\n");
@@ -341,9 +341,8 @@ export function csvCell(v: string): string {
 }
 
 export function toCsv(s: Saved, lang: Lang): string {
-  const ko = lang === "ko";
   const k = (id: string) => itemKey(s.work, id);
-  const head = ko ? ["단계", "항목", "완료", "메모"] : ["Stage", "Item", "Done", "Note"];
-  const rows = buildChecklist(s.comps, s.work).map((it) => [stageName(it.stage, s.work, lang), it.text[lang], s.done[k(it.id)] ? (ko ? "예" : "yes") : "", s.memo[k(it.id)]?.trim() ?? ""]);
+  const head = [msg(lang, "단계", "Stage"), msg(lang, "항목", "Item"), msg(lang, "완료", "Done"), msg(lang, "메모", "Note")];
+  const rows = buildChecklist(s.comps, s.work).map((it) => [stageName(it.stage, s.work, lang), tx(it.text, lang), s.done[k(it.id)] ? msg(lang, "예", "yes") : "", s.memo[k(it.id)]?.trim() ?? ""]);
   return [head, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }

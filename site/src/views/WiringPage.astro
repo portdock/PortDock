@@ -204,7 +204,10 @@ const L =
       const d = page2(lang, "wiring");
       const cable = [...d.cable];
       if (isTranslated(lang, "tools/conduit-fill/")) cable[3] = pageName(lang, "tools/conduit-fill/");
-      return { ...d, cable };
+      // 시스템 구성도·점검표(7차 묶음)도 번역됐으면 pageName() 으로
+      const sys = isTranslated(lang, "tools/system-diagram/") ? pageName(lang, "tools/system-diagram/") : d.sys;
+      const check = isTranslated(lang, "tools/commissioning-checklist/") ? pageName(lang, "tools/commissioning-checklist/") : d.check;
+      return { ...d, cable, sys, check };
     })();
 const T = {
   copied: L.copied,

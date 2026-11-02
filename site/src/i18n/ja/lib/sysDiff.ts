@@ -1,0 +1,26 @@
+// 구성도 변경 비교(lib/sysDiff.ts) — 7차 묶음. 바뀐 칸 이름·비교 결과 문장. 영어 문장 → 일본어
+// «left»·«right» 는 sysDiagram 묶음에 있다(끼워 넣은 값). « (it had termination on)» 도 끼워 넣는 값.
+export default {
+  off: "オフ",
+  on: "オン",
+  Name: "名前",
+  Type: "種類",
+  Mask: "マスク",
+  Baud: "ボーレート",
+  Parity: "パリティ",
+  Termination: "終端",
+  "Unit load": "ユニット負荷",
+  Registers: "レジスタ数",
+  "Left-end terminator": "左端の終端抵抗",
+  "Right-end terminator": "右端の終端抵抗",
+  left: "左",
+  right: "右",
+  "«{}»: the {}-end device «{}» was removed{} — move termination to the new end «{}».": "«{0}»: {1}端の機器 «{2}» が外されました{3} — 終端を新しい端 «{4}» に移してください。",
+  " (it had termination on)": "(終端はオンでした)",
+  "New device «{}» is now the {} end of «{}» — move termination to it and switch it off on the old end «{}».": "新しい機器 «{0}» が «{2}» の{1}端になりました — 終端を «{0}» に移し、以前の端 «{3}» の終端はオフにします。",
+  "«{}» unit loads went from {} to {}, over 32.": "«{0}» のユニット負荷が {1} → {2} になり、32 を超えました。",
+  "ID {} — remove it from the master's poll list and mark it free": "局番 {0} — マスターのポーリング一覧から外し、局番表に «空き» と記録",
+  "IP {} — clear it from the IP table and client connections": "IP {0} — IP 表・接続設定から整理",
+  "«{}» freed: ": "«{0}» 返却: ",
+  "No changes": "変更なし",
+};

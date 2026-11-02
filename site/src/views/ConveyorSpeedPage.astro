@@ -6,14 +6,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { speedFromHz } from "../lib/conveyor";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/conveyor-speed/";
 const ABB = "https://library.e.abb.com/public/1fd380f8ca8b4934ae3fa609d764fd33/21043_ABB_Motor_Guide_REV_D.pdf";
 // 예: 4극·감속 1/30·지름 100 mm 에서 주파수별 라인 속도(동기 기준)
@@ -21,9 +22,11 @@ const tRows = [10, 20, 30, 40, 50, 60].map((hz) => {
   const o = speedFromHz(hz, { poles: 4, slipRpm: 0, ratio: 30, diaMm: 100 });
   return [`${hz} Hz`, `${+o.motorRpm.toFixed(0)}`, `${+o.rollerRpm.toFixed(2)}`, `${+o.m.toFixed(2)}`];
 });
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "컨베이어 속도 ↔ 인버터 주파수 계산기",
+      seo: "컨베이어 속도 계산기 — m/min ↔ 인버터 Hz·감속비 — PortDock",
       desc: "롤러 지름·감속비·모터 극수·슬립으로 인버터 주파수에서 컨베이어 라인 속도(m/min)를 구하고, 원하는 속도에 필요한 주파수(Hz)를 계산합니다.",
       dia: "구동 롤러(드럼) 지름 (mm)",
       ratio: "감속비 (모터 ÷ 롤러, 예 30)",
@@ -56,16 +59,17 @@ const L = ko
         ["원하는 m/min 에 필요한 Hz 는?", "속도 ÷ (π × 지름) 으로 롤러 회전수, × 감속비로 모터 회전수, 거기에 슬립을 더해 × 극수 ÷ 120 입니다. 위 예에서 15 m/min 은 약 47.7 Hz(슬립 무시)입니다."],
         ["주파수를 두 배로 하면 속도도 두 배인가요?", "기저 주파수 아래에서는 거의 그렇습니다(슬립만큼 차이). 기저 주파수 위로 올리면 토크가 줄어드니 모터·감속기 사양을 확인합니다."],
       ],
-      msNote: "극수·슬립·감속비만으로 회전수를 보려면",
-      msLink: "모터 회전수 계산기",
-      tbNote: "벨트·풀리 치수는",
-      tbLink: "타이밍 벨트 계산기",
+      see: ["극수·슬립·감속비만으로 회전수를 보려면 ", ". 벨트·풀리 치수는 ", "."],
+      seeLinks: ["모터 회전수 계산기", "타이밍 벨트 계산기"],
       srcTitle: "근거",
       src: "라인 속도는 회전 한 번에 둘레(π × 지름)만큼 움직인다는 정의입니다. 동기 속도 = 주파수 × 120 ÷ 극수는 ABB «Low voltage motors — Motor guide»(2019) §9.3, 정격 슬립(동기 속도 − 명판 회전수)을 운전 주파수에서도 그대로 두는 근사는 YASKAWA A1000 매뉴얼 E2-02(모터 정격 슬립)의 정의를 따른 것으로, 모터 회전수 계산기와 같은 식입니다.",
       srcLink: "ABB Motor guide (PDF)",
+      srcEnd: ".",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Conveyor Speed ↔ VFD Frequency Calculator",
+      seo: "Conveyor Speed Calculator: m/min ↔ VFD Hz, Gear Ratio — PortDock",
       desc: "Conveyor line speed (m/min) from drive frequency, roller diameter, gear ratio, motor poles and slip, and the frequency (Hz) needed for a target speed.",
       dia: "Drive roller (drum) diameter (mm)",
       ratio: "Gear ratio (motor ÷ roller, e.g. 30)",
@@ -98,14 +102,14 @@ const L = ko
         ["What frequency gives a target m/min?", "Speed ÷ (π × diameter) gives the roller speed, × ratio the motor speed; add the slip and multiply by poles ÷ 120. In the example, 15 m/min needs about 47.7 Hz (slip ignored)."],
         ["Does doubling the frequency double the speed?", "Nearly, below base frequency (apart from slip). Above base frequency the torque drops, so check the motor and gearbox ratings."],
       ],
-      msNote: "For speed from poles, slip and ratio alone, use the",
-      msLink: "Motor Speed Calculator",
-      tbNote: "For belt and pulley dimensions, use the",
-      tbLink: "Timing Belt Calculator",
+      see: ["For speed from poles, slip and ratio alone, use the ", ". For belt and pulley dimensions, use the ", "."],
+      seeLinks: ["Motor Speed Calculator", "Timing Belt Calculator"],
       srcTitle: "Basis",
       src: "Line speed follows from the definition that one revolution moves one circumference (π × diameter). Synchronous speed = frequency × 120 ÷ poles is from ABB «Low voltage motors — Motor guide» (2019) §9.3; keeping the rated slip (synchronous − nameplate speed) constant at other frequencies follows the definition of motor rated slip in the YASKAWA A1000 manual (E2-02), the same as the motor speed calculator.",
       srcLink: "ABB Motor guide (PDF)",
-    };
+      srcEnd: ".",
+    }
+  : { ...page7(lang, "conveyorSpeed"), seeLinks: ["tools/motor-speed/", "tools/timing-belt/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -113,17 +117,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "컨베이어 속도 계산기 — m/min ↔ 인버터 Hz·감속비 — PortDock" : "Conveyor Speed Calculator: m/min ↔ VFD Hz, Gear Ratio — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["conveyor"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="cv">
+    <form class="calc card" id="cv" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.dia}<input id="dia" class="mono" value="100" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
         <label class="fld">{L.ratio}<input id="ratio" class="mono" value="30" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
@@ -175,18 +179,19 @@ const ld = {
         ))
       }
       <p>
-        {L.msNote} <a href={url(lang, "tools/motor-speed/")}>{L.msLink}</a>. {L.tbNote} <a href={url(lang, "tools/timing-belt/")}>{L.tbLink}</a>.
+        {L.see[0]}<a href={link(lang, "tools/motor-speed/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/timing-belt/")}>{L.seeLinks[1]}</a>{L.see[2]}
       </p>
       <h2>{L.srcTitle}</h2>
-      <p>{L.src} <a href={ABB} rel="noopener">{L.srcLink}</a>.</p>
+      <p>{L.src} <a href={ABB} rel="noopener">{L.srcLink}</a>{L.srcEnd}</p>
     </section>
     <UseNotice lang={lang} />
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { hzForSpeed, perHz, speedFromHz } from "../lib/conveyor";
     import { syncRpm } from "../lib/motor";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("cv")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("cv") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -213,7 +218,7 @@ const ld = {
         const d = { poles, slipRpm, ratio: num("ratio"), diaMm: num("dia") };
         if (!(d.ratio > 0) || !(d.diaMm > 0)) throw new RangeError("in");
         const o = speedFromHz(num("hz"), d);
-        set("slip", ratedS === "" ? (ko ? "0 (비움 — 동기 속도로 계산)" : "0 (blank — synchronous)") : `${p4(slipRpm)} r/min`);
+        set("slip", ratedS === "" ? msg(lang, "0 (비움 — 동기 속도로 계산)", "0 (blank — synchronous)") : `${p4(slipRpm)} r/min`);
         set("motor", `${p4(o.motorRpm)} r/min`);
         set("roller", `${p4(o.rollerRpm)} r/min`);
         set("m", `${p4(o.m)} m/min (${p4(o.m / 60)} m/s)`);
@@ -222,7 +227,7 @@ const ld = {
         set("need", `${p4(hzForSpeed(num("want"), d))} Hz`);
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 지름·감속비는 0 보다 크고, 정격 회전수는 동기 속도 이하, 주파수·속도는 0 이상" : "Check the numbers — diameter and ratio above 0, rated speed at or below synchronous, frequency and speed 0 or more";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 지름·감속비는 0 보다 크고, 정격 회전수는 동기 속도 이하, 주파수·속도는 0 이상", "Check the numbers — diameter and ratio above 0, rated speed at or below synchronous, frequency and speed 0 or more");
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

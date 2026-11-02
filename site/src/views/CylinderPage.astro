@@ -7,14 +7,15 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { SMC_BORES, smcTable } from "../lib/cylinder";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/cylinder-force/";
 const n = (x: number) => x.toLocaleString("en-US");
 // Data 3 표(ø20~ø100, 0.5 MPa) — 면적·출력 모두 유효 숫자 3자리
@@ -30,9 +31,11 @@ const PRESS = [
   ["psi", "psi"],
 ];
 const LF = ["1", "0.7", "0.5", "0.4", "0.3", "0.2"];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "공압 실린더 추력 계산기",
+      seo: "공압 실린더 추력 계산기 — 보어·압력별 출력 N·kgf — PortDock",
       desc: "보어·로드 지름·압력으로 공압 실린더의 이론 출력(미는 쪽·당기는 쪽, N·kgf)을 계산하고, 필요한 힘·부하율로 SMC 표의 보어를 고릅니다.",
       s1: "이론 출력",
       bore: "보어 D (mm)",
@@ -87,15 +90,16 @@ const L = ko
         ["부하율은 왜 곱하나요?", "실린더 안의 마찰과 배기 압력 때문에 실제 힘은 이론 출력보다 작습니다. SMC 는 정적 0.7 이하, 동적 0.5 이하, 가이드 위 수평 이동 1 이하를 기준으로 줍니다."],
         ["압력 단위가 bar·kgf/cm² 면?", "위 «사용 압력» 단위를 바꾸면 됩니다. 0.5 MPa = 5 bar ≈ 5.1 kgf/cm² ≈ 72.5 psi 입니다."],
       ],
-      pNote: "압력 단위를 따로 바꾸려면",
-      pLink: "압력 단위 변환기",
-      gNote: "보어 고르는 순서와 부하율은",
-      gLink: "공압 실린더 추력과 부하율 가이드",
+      fieldsNote: "압력·부하율은 위 칸 값을 씁니다.",
+      see: ["압력 단위를 따로 바꾸려면 ", ". 보어 고르는 순서와 부하율은 ", ". 그 실린더가 쓰는 압축 공기 양은 ", ", 진공 패드로 집는 힘은 ", "."],
+      seeLinks: ["압력 단위 변환기", "공압 실린더 추력과 부하율 가이드", "공압 실린더 공기 소비량 계산기", "진공 패드 흡착력 계산기"],
       srcTitle: "근거",
       src: "식·부하율·선정 예제는 SMC «Best Pneumatics» 기술 자료 «Air Cylinders Model Selection» 과 «Technical Data 1: Bore Size Selection», 표는 «Technical Data 3: Theoretical Output Table»(SMC 공식 사이트 PDF)에서 옮겼고, SMC CLQ 카탈로그의 이론 출력 표와 함께 이 계산기가 같은 값을 내는지 시험으로 확인했습니다. 1 kgf = 9.806 65 N 은 NIST SP 811 의 표준 중력 가속도입니다. 로드 지름·최고 사용 압력은 시리즈마다 다르니 쓰는 실린더의 카탈로그를 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Pneumatic Cylinder Force Calculator",
+      seo: "Pneumatic Cylinder Force Calculator: Bore, MPa, kgf — PortDock",
       desc: "Pneumatic cylinder theoretical output (extend and retract, N and kgf) from bore, rod and pressure, and the SMC bore for a required force and load factor.",
       s1: "Theoretical output",
       bore: "Bore D (mm)",
@@ -150,13 +154,13 @@ const L = ko
         ["Why multiply by a load factor?", "Friction inside the cylinder and exhaust back pressure make the real force smaller than the theoretical output. SMC's guideline is 0.7 or less for static, 0.5 or less for dynamic, and 1 or less for horizontal movement on a guide."],
         ["What if my pressure is in bar, psi or kgf/cm²?", "Change the «Operating pressure» unit above. 0.5 MPa = 5 bar ≈ 72.5 psi ≈ 5.1 kgf/cm²."],
       ],
-      pNote: "To convert pressure units, use the",
-      pLink: "Pressure Unit Converter",
-      gNote: "For how to pick a bore and load factor, see the guide",
-      gLink: "Pneumatic cylinder force and load factor",
+      fieldsNote: "Pressure and load factor come from the fields above.",
+      see: ["To convert pressure units, use the ", ". For how to pick a bore and load factor, see the guide ", ". For the compressed air it uses, see the ", "; for gripping with vacuum pads, the ", "."],
+      seeLinks: ["Pressure Unit Converter", "Pneumatic cylinder force and load factor", "Pneumatic Cylinder Air Consumption Calculator", "Vacuum Pad Lifting Force Calculator"],
       srcTitle: "Basis",
       src: "Formulas, load factors and selection examples are from SMC's «Best Pneumatics» technical data «Air Cylinders Model Selection» and «Technical Data 1: Bore Size Selection»; the table is «Technical Data 3: Theoretical Output Table» (PDF on SMC's official site). Tests check that this calculator reproduces those values and SMC's CLQ catalogue output table. 1 kgf = 9.806 65 N uses standard gravity from NIST SP 811. Rod diameters and maximum pressure differ by series — check your cylinder's catalogue.",
-    };
+    }
+  : { ...page7(lang, "cylinder"), seeLinks: ["tools/pressure/", "guides/pneumatic-cylinder-force/", "tools/air-consumption/", "tools/vacuum-pad/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -164,17 +168,17 @@ const ld = {
 };
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "공압 실린더 추력 계산기 — 보어·압력별 출력 N·kgf — PortDock" : "Pneumatic Cylinder Force Calculator: Bore, MPa, kgf — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["cylinder", "units"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="cyl">
+    <form class="calc card" id="cyl" data-lang={lang}>
       <h2 style="margin-top:0">{L.s1}</h2>
       <div class="row">
         <label class="fld">{L.bore}<input id="bore" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" list="bores" /></label>
@@ -197,7 +201,7 @@ const ld = {
         <label class="fld">{L.needU}<select id="nu">{L.forceUnits.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
         <label class="fld">{L.dir}<select id="dir">{L.dirs.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
       </div>
-      <p class="note">{ko ? "압력·부하율은 위 칸 값을 씁니다." : "Pressure and load factor come from the fields above."}</p>
+      <p class="note">{L.fieldsNote}</p>
       <p class="err" id="err2" role="alert"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
@@ -243,7 +247,7 @@ const ld = {
         ))
       }
       <p>
-        {L.pNote} <a href={url(lang, "tools/pressure/")}>{L.pLink}</a>. {L.gNote} <a href={url(lang, "guides/pneumatic-cylinder-force/")}>{L.gLink}</a>. {ko ? "그 실린더가 쓰는 압축 공기 양은" : "For the compressed air it uses, see the"} <a href={url(lang, "tools/air-consumption/")}>{ko ? "공압 실린더 공기 소비량 계산기" : "Pneumatic Cylinder Air Consumption Calculator"}</a>{ko ? ", 진공 패드로 집는 힘은" : "; for gripping with vacuum pads, the"} <a href={url(lang, "tools/vacuum-pad/")}>{ko ? "진공 패드 흡착력 계산기" : "Vacuum Pad Lifting Force Calculator"}</a>.
+        {L.see[0]}<a href={link(lang, "tools/pressure/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "guides/pneumatic-cylinder-force/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "tools/air-consumption/")}>{L.seeLinks[2]}</a>{L.see[3]}<a href={link(lang, "tools/vacuum-pad/")}>{L.seeLinks[3]}</a>{L.see[4]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -252,9 +256,10 @@ const ld = {
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { force, pickBore, pistonArea, requiredArea, minBoreOut, rodSideArea, toKgf, type Dir } from "../lib/cylinder";
     import { G0, unit } from "../lib/units";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("cyl")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("cyl") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -297,7 +302,7 @@ const ld = {
         set("data-k", "uIn", nk(force(aIn, P, lf)));
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko ? "숫자를 확인하세요 — 보어·압력은 0 보다 크고, 로드 지름은 0 이상이면서 보어보다 작아야 합니다" : "Check the numbers — bore and pressure above 0, rod diameter 0 or more and smaller than the bore";
+        $("err").textContent = msg(lang, "숫자를 확인하세요 — 보어·압력은 0 보다 크고, 로드 지름은 0 이상이면서 보어보다 작아야 합니다", "Check the numbers — bore and pressure above 0, rod diameter 0 or more and smaller than the bore");
         clear("data-k");
       }
       try {
@@ -309,11 +314,11 @@ const ld = {
         set("data-k2", "area", `${p4(need)} mm²`);
         set("data-k2", "min", `ø${p4(minBoreOut(need))} mm`);
         const pick = pickBore(f, P, lf, dir);
-        set("data-k2", "pick", pick ? `ø${pick.bore} / ${pick.rod} mm` : ko ? "표의 가장 큰 보어(ø300)로도 모자랍니다" : "Not enough even with ø300, the largest bore in the table");
+        set("data-k2", "pick", pick ? `ø${pick.bore} / ${pick.rod} mm` : msg(lang, "표의 가장 큰 보어(ø300)로도 모자랍니다", "Not enough even with ø300, the largest bore in the table"));
         set("data-k2", "f", pick ? nk(pick.force) : "");
         $("err2").textContent = "";
       } catch {
-        $("err2").textContent = ko ? "숫자를 확인하세요 — 필요한 힘과 위의 압력은 0 보다 커야 합니다" : "Check the numbers — the required force and the pressure above must be above 0";
+        $("err2").textContent = msg(lang, "숫자를 확인하세요 — 필요한 힘과 위의 압력은 0 보다 커야 합니다", "Check the numbers — the required force and the pressure above must be above 0");
         clear("data-k2");
       }
     }

@@ -7,14 +7,16 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { ballScrew, holdTorque, kgcm2, rmsTorque, type ScrewIn } from "../lib/ballscrew";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { msg } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/ball-screw/";
 // THK 예제 두 개를 이 계산기로 다시 계산한 표
 const H: ScrewIn = { mount: "horizontal", m: 80, mu: 0.003, f: 15, v: 1, t1: 0.15, ph: 40, eta: 0.9, a: 1, js: kgcm2(1.476), jm: 1e-3, tp: 0 };
@@ -26,16 +28,18 @@ const ts = holdTorque(40, 20, 10, 0.9);
 const vRms = rmsTorque([[v.tk[0], 0.2], [v.tt[0], 1.8], [v.tg[0], 0.2], [v.tk[1], 0.2], [v.tt[1], 1.8], [v.tg[1], 0.2], [ts, 7.6]]);
 const r0 = (x: number) => Math.round(x).toLocaleString("en-US");
 const exRows = [
-  [ko ? "축 하중 최대 Famax" : "Max axial load Famax", `${r0(h.famax)} N`, `${r0(v.famax)} N`, "550 / 585 N"],
-  [ko ? "모터 회전수" : "Motor speed", `${r0(h.nm)} min⁻¹`, `${r0(v.nm)} min⁻¹`, "1,500 / 1,800"],
-  [ko ? "모터 축 부하 관성 J" : "Load inertia at motor J", `${(h.j * 1e3).toFixed(2)}×10⁻³ kg·m²`, `${(v.j * 1e4).toFixed(2)}×10⁻⁴ kg·m²`, "3.39×10⁻³ / 1.58×10⁻⁴"],
-  [ko ? "등속 토크" : "Uniform-speed torque", `${r0(h.tt[0])} N·mm`, `${r0(v.tt[0])} / ${r0(v.tt[1])} N·mm`, "120 / 900·830"],
-  [ko ? "가속 중 토크(최대)" : "Torque while accelerating (peak)", `${r0(h.tk[0])} N·mm`, `${r0(v.tk[0])} N·mm`, "4,730 / 1,100"],
-  [ko ? "실효 토크 Trms" : "RMS torque Trms", `${r0(hRms)} N·mm`, `${r0(vRms)} N·mm`, "1,305 / 743"],
+  [msg(lang, "축 하중 최대 Famax", "Max axial load Famax"), `${r0(h.famax)} N`, `${r0(v.famax)} N`, "550 / 585 N"],
+  [msg(lang, "모터 회전수", "Motor speed"), `${r0(h.nm)} min⁻¹`, `${r0(v.nm)} min⁻¹`, "1,500 / 1,800"],
+  [msg(lang, "모터 축 부하 관성 J", "Load inertia at motor J"), `${(h.j * 1e3).toFixed(2)}×10⁻³ kg·m²`, `${(v.j * 1e4).toFixed(2)}×10⁻⁴ kg·m²`, "3.39×10⁻³ / 1.58×10⁻⁴"],
+  [msg(lang, "등속 토크", "Uniform-speed torque"), `${r0(h.tt[0])} N·mm`, `${r0(v.tt[0])} / ${r0(v.tt[1])} N·mm`, "120 / 900·830"],
+  [msg(lang, "가속 중 토크(최대)", "Torque while accelerating (peak)"), `${r0(h.tk[0])} N·mm`, `${r0(v.tk[0])} N·mm`, "4,730 / 1,100"],
+  [msg(lang, "실효 토크 Trms", "RMS torque Trms"), `${r0(hRms)} N·mm`, `${r0(vRms)} N·mm`, "1,305 / 743"],
 ];
-const L = ko
+const L =
+  lang === "ko"
   ? {
       title: "볼스크류 토크·모터 선정 계산기",
+      seo: "볼스크류 토크 계산기 — 추력·모터 회전수·실효 토크 — PortDock",
       desc: "질량·속도·가속 시간·리드로 볼스크류 축 하중, 모터 회전수, 등속·가속·감속 토크, 부하 관성, 실효 토크를 계산합니다. 수평·수직, 감속비, THK 식과 예제.",
       mount: "설치",
       mounts: [["horizontal", "수평"], ["vertical", "수직"]],
@@ -99,17 +103,15 @@ const L = ko
         ["필요한 모터 회전수는?", "NM = 속도(m/s) × 60 000 ÷ 리드(mm) 입니다. 1 m/s 에 리드 20 mm 면 3,000 min⁻¹, 리드 40 mm 면 1,500 min⁻¹ 입니다."],
         ["수직 축은 왜 토크가 다르나?", "올라갈 때는 무게 + 저항을, 내려갈 때는 무게 − 저항을 나사가 받습니다. 내려가는 중 감속하면 무게와 관성이 같은 방향이라 토크가 커집니다(THK 수직 예제 1,030 N·mm)."],
       ],
-      sNote: "모터 회전수를 인버터 주파수로 바꾸려면",
-      sLink: "인버터 주파수 ↔ 회전수 계산기",
-      eNote: "엔코더 펄스와 rpm 은",
-      eLink: "엔코더 펄스 ↔ rpm 계산기",
-      gNote: "식의 뜻과 THK 예제를 차례로 따라가려면",
-      gLink: "볼스크류 토크와 서보 모터 고르기 가이드",
+      see: ["모터 회전수를 인버터 주파수로 바꾸려면 ", ". 엔코더 펄스와 rpm 은 ", ". 식의 뜻과 THK 예제를 차례로 따라가려면 ", ". 모터와 나사축 사이를 타이밍 벨트로 감속하면 ", "로 벨트를 고릅니다."],
+      seeLinks: ["인버터 주파수 ↔ 회전수 계산기", "엔코더 펄스 ↔ rpm 계산기", "볼스크류 토크와 서보 모터 고르기 가이드", "타이밍 벨트 길이·축간 거리 계산기"],
       srcTitle: "근거",
       src: "식은 THK 종합 카탈로그 «Ball Screw»(515-1E) A15 «Calculating the Axial Load»(식 18~29)·«Considering the Rotational Torque»(식 45~49)·«Considering the Driving Motor»(식 52·53), 두 예제는 B15 «Example Ball Screw Selections»(THK 기술 자료 사이트 PDF)에서 옮겼고, 이 계산기가 그 값을 1 % 안쪽으로 다시 내는지 시험으로 확인했습니다. g = 9.806 65 m/s². 나사축·모터 관성, 허용 회전수·좌굴 하중 같은 다른 검토는 각 카탈로그를 보세요.",
     }
-  : {
+  : lang === "en"
+  ? {
       title: "Ball Screw Torque & Motor Sizing Calculator",
+      seo: "Ball Screw Torque Calculator: Thrust, Motor RPM, RMS — PortDock",
       desc: "Ball screw axial load, motor speed, accel and steady torque, load inertia and RMS torque from mass, speed and lead. Horizontal or vertical, THK formula.",
       mount: "Mounting",
       mounts: [["horizontal", "Horizontal"], ["vertical", "Vertical"]],
@@ -173,15 +175,12 @@ const L = ko
         ["What motor speed do I need?", "NM = speed (m/s) × 60 000 ÷ lead (mm). 1 m/s with a 20 mm lead is 3,000 min⁻¹; with 40 mm it is 1,500 min⁻¹."],
         ["Why is a vertical axis different?", "Going up the screw carries weight + resistance; going down, weight − resistance. Decelerating on the way down, weight and inertia act together and torque rises (1,030 N·mm in THK's vertical example)."],
       ],
-      sNote: "To convert motor speed to drive frequency, use the",
-      sLink: "VFD Hz ↔ RPM Calculator",
-      eNote: "For encoder pulses and rpm, use the",
-      eLink: "Encoder Pulses ↔ RPM Calculator",
-      gNote: "To follow the formulas and THK's examples step by step, see the guide",
-      gLink: "Ball screw torque and servo motor sizing",
+      see: ["To convert motor speed to drive frequency, use the ", ". For encoder pulses and rpm, use the ", ". To follow the formulas and THK's examples step by step, see the guide ", ". If a timing belt reduces between motor and screw, use the ", " to pick the belt."],
+      seeLinks: ["VFD Hz ↔ RPM Calculator", "Encoder Pulses ↔ RPM Calculator", "Ball screw torque and servo motor sizing", "Timing Belt Length & Center Distance Calculator"],
       srcTitle: "Basis",
       src: "Formulas are from THK's general catalogue «Ball Screw» (515-1E) A15 «Calculating the Axial Load» (equations 18–29), «Considering the Rotational Torque» (45–49) and «Considering the Driving Motor» (52, 53); the two examples are B15 «Example Ball Screw Selections» (PDFs on THK's technical site). Tests check that this calculator reproduces their values within 1 %. g = 9.806 65 m/s². For screw and motor inertia, permissible speed, buckling load and other checks, see each catalogue.",
-    };
+    }
+  : { ...page7(lang, "ballScrew"), seeLinks: ["tools/motor-speed/", "tools/encoder/", "guides/ball-screw-torque-motor/", "tools/timing-belt/"].map((p) => pageName(lang, p)) };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -206,17 +205,17 @@ const FIELDS = [
 ];
 ---
 
-<Base lang={lang} title={L.title} seoTitle={ko ? "볼스크류 토크 계산기 — 추력·모터 회전수·실효 토크 — PortDock" : "Ball Screw Torque Calculator: Thrust, Motor RPM, RMS — PortDock"} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.title} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ballScrew"]}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.title, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.title, path: PATH }]} />
       <h1>{L.title}</h1>
       <p>{L.desc}</p>
     </div>
   </header>
   <div class="wrap" style="padding-top:24px">
-    <form class="calc card" id="bs">
+    <form class="calc card" id="bs" data-lang={lang}>
       <div class="row">
         <label class="fld">{L.mount}<select id="mount">{L.mounts.map(([v, s]) => <option value={v}>{s}</option>)}</select></label>
         {FIELDS.map((x) => <label class="fld">{x.label}<input id={x.id} class="mono" value={x.val} inputmode={x.mode as "decimal"} spellcheck="false" autocomplete="off" /></label>)}
@@ -257,7 +256,7 @@ const FIELDS = [
         ))
       }
       <p>
-        {L.sNote} <a href={url(lang, "tools/motor-speed/")}>{L.sLink}</a>. {L.eNote} <a href={url(lang, "tools/encoder/")}>{L.eLink}</a>. {L.gNote} <a href={url(lang, "guides/ball-screw-torque-motor/")}>{L.gLink}</a>. {ko ? "모터와 나사축 사이를 타이밍 벨트로 감속하면" : "If a timing belt reduces between motor and screw, use the"} <a href={url(lang, "tools/timing-belt/")}>{ko ? "타이밍 벨트 길이·축간 거리 계산기" : "Timing Belt Length & Center Distance Calculator"}</a>{ko ? "로 벨트를 고릅니다." : " to pick the belt."}
+        {L.see[0]}<a href={link(lang, "tools/motor-speed/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/encoder/")}>{L.seeLinks[1]}</a>{L.see[2]}<a href={link(lang, "guides/ball-screw-torque-motor/")}>{L.seeLinks[2]}</a>{L.see[3]}<a href={link(lang, "tools/timing-belt/")}>{L.seeLinks[3]}</a>{L.see[4]}
       </p>
       <h2>{L.srcTitle}</h2>
       <p>{L.src}</p>
@@ -266,8 +265,9 @@ const FIELDS = [
     <WebToolLinks lang={lang} path={PATH} />
   </div>
   <script>
+    import { msg, type Lang } from "../lib/tr";
     import { ballScrew, holdTorque, kgcm2, minLead, rmsTorque, type Mount } from "../lib/ballscrew";
-    const ko = document.documentElement.lang === "ko";
+    const lang = (document.getElementById("bs")!.dataset.lang ?? "en") as Lang;
     const form = document.getElementById("bs") as HTMLFormElement;
     const $ = <E extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as E;
     const num = (id: string) => {
@@ -300,7 +300,7 @@ const FIELDS = [
         set("alpha", `${p4(o.alpha)} m/s²`);
         set("fa", `${n0(o.fa[0])} · ${n0(o.fa[1])} · ${n0(o.fa[2])} N`);
         set("fb", `${n0(o.fa[3])} · ${n0(o.fa[4])} · ${n0(o.fa[5])} N`);
-        set("nm", `${p4(o.nm)} / ${p4(nr)} min⁻¹${o.nm > nr ? (ko ? " — 정격 초과" : " — above rated") : ""}`);
+        set("nm", `${p4(o.nm)} / ${p4(nr)} min⁻¹${o.nm > nr ? msg(lang, " — 정격 초과", " — above rated") : ""}`);
         set("lead", `${p4(minLead(p.v, nr, a))} mm`);
         set("j", `${sci(o.j)} kg·m² / ${p.jm > 0 ? `${p4(o.j / p.jm)} ×` : "—"}`);
         set("t3", nm(o.t3));
@@ -318,9 +318,11 @@ const FIELDS = [
         set("rms", nm(rmsTorque(seg)));
         $("err").textContent = "";
       } catch {
-        $("err").textContent = ko
-          ? "숫자를 확인하세요 — 질량·속도·가속 시간·리드·감속비·정격 회전수는 0 보다 크고, 효율은 0~1, 마찰 계수 0~1, 나머지는 0 이상"
-          : "Check the numbers — mass, speed, acceleration time, lead, gear ratio and rated speed above 0, efficiency 0–1, friction coefficient 0–1, the rest 0 or more";
+        $("err").textContent = msg(
+          lang,
+          "숫자를 확인하세요 — 질량·속도·가속 시간·리드·감속비·정격 회전수는 0 보다 크고, 효율은 0~1, 마찰 계수 0~1, 나머지는 0 이상",
+          "Check the numbers — mass, speed, acceleration time, lead, gear ratio and rated speed above 0, efficiency 0–1, friction coefficient 0–1, the rest 0 or more",
+        );
         for (const td of form.querySelectorAll<HTMLElement>("td[data-k]")) td.textContent = "";
       }
     }

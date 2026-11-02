@@ -8,16 +8,19 @@ import Crumbs from "../components/Crumbs.astro";
 import WebToolLinks from "../components/WebToolLinks.astro";
 import UseNotice from "../components/UseNotice.astro";
 import { COLOR_HEX, COLOR_NAME, FERRULES, LUG_CLASSES, STUDS, awgLabel, awgToMm2, type Color } from "../lib/ferrules";
-import { type Lang } from "../data/tools";
-import { url } from "../lib/i18n";
+import type { SiteLang } from "../i18n/langs";
+import { page7 } from "../i18n";
+import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
+import { tx } from "../lib/tr";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
 const PATH = "tools/ferrules/";
-const L = ko
+const L =
+  lang === "ko"
   ? {
       h1: "페룰·압착 단자 규격표",
       desc: "전선 단면적(mm²·AWG)으로 페룰(봉형 단자) 칼라 색을 DIN 46228-4 와 프랑스 색 체계로 찾고, 링 단자 등급(1.25·2·5.5)과 나사 크기를 고릅니다.",
@@ -58,12 +61,19 @@ const L = ko
         "피복 벗김 길이는 페룰 금속 슬리브 길이(제품마다 6·8·10·12·18 mm 등)와 제조사 권장값을 따릅니다 — 제조사 카탈로그의 «stripping length» 값을 볼 것. 단자대 체결 토크도 단자대 제조사의 값(단자대 측면·데이터시트)을 따르며, 이 표에는 지어낸 값을 넣지 않았습니다.",
       privacy: "이 페이지는 브라우저 안에서만 찾고 입력한 값은 서버로 보내지 않습니다.",
       srcTitle: "출처",
-      seeLbl: "케이블 번호 라벨은",
-      lbl: "케이블·단자 라벨 만들기",
-      seeVd: "전선 굵기를 정하려면",
-      vd: "전압 강하·전선 굵기 계산기",
+      see: ["케이블 번호 라벨은 ", ". 전선 굵기를 정하려면 ", "."],
+      seeLinks: ["케이블·단자 라벨 만들기", "전압 강하·전선 굵기 계산기"],
+      astm: "AWG 지름 식 d = 0.127 mm × 92^((36 − n)/39)",
+      astm24: "AWG 24 면적",
+      faqTitle: "자주 묻는 것",
+      faq: [
+        ["같은 굵기인데 페룰 색이 상자마다 다른 이유는?", "색 체계가 둘이기 때문입니다 — DIN 46228-4 와 프랑스 색 체계는 같은 mm² 에 다른 색을 씁니다(예: 2.5 mm² 는 DIN 파랑, 프랑스 회색). 한 현장에서는 한 체계로 맞추고, 색만 믿지 말고 상자·페룰에 적힌 mm² 를 함께 봅니다."],
+        ["«R1.25-4» 는 무슨 뜻인가요?", "전선 등급 1.25(0.25~1.65 mm²)와 나사 M4 용 링 단자라는 뜻입니다(JST 식 이름). 범위가 겹치는 굵기는 두 등급 모두 쓸 수 있으니 단자 제조사 표로 고릅니다."],
+        ["피복 벗김 길이와 조임 토크는?", "제품마다 다릅니다. 피복 벗김 길이는 페룰 금속 슬리브 길이와 제조사 카탈로그의 «stripping length», 조임 토크는 단자대 제조사가 정한 값을 따릅니다."],
+      ] as [string, string][],
     }
-  : {
+  : lang === "en"
+  ? {
       h1: "Ferrule & Crimp Terminal Chart",
       desc: "Find bootlace ferrule collar colours by wire size (mm² or AWG) in the DIN 46228-4 and French colour codes, and pick ring terminal sizes (1.25, 2, 5.5) by stud.",
       seo: "Ferrule Color Chart (DIN 46228-4, French) & Ring Lugs — PortDock",
@@ -103,12 +113,19 @@ const L = ko
         "Strip length follows the ferrule's metal sleeve length (6, 8, 10, 12, 18 mm and so on) and the maker's recommendation — check the «stripping length» in the catalogue. Terminal block tightening torque follows the terminal block maker's value (printed on the block or in its data sheet); this chart does not make up values.",
       privacy: "This page looks things up inside your browser; what you enter is not sent to a server.",
       srcTitle: "Sources",
-      seeLbl: "For cable number labels, use the",
-      lbl: "cable and terminal label maker",
-      seeVd: "To choose a wire size, use the",
-      vd: "voltage drop and wire size calculator",
-    };
-const sw = (c: Color) => `<span class="sw" style="background:${COLOR_HEX[c]}"></span>${COLOR_NAME[c][lang]}`;
+      see: ["For cable number labels, use the ", ". To choose a wire size, use the ", "."],
+      seeLinks: ["cable and terminal label maker", "voltage drop and wire size calculator"],
+      astm: "AWG diameter d = 0.127 mm × 92^((36 − n)/39)",
+      astm24: "AWG 24 area",
+      faqTitle: "FAQ",
+      faq: [
+        ["Why do ferrules of the same size come in different colours?", "There are two colour systems — DIN 46228-4 and the French system use different colours for the same mm² (for example 2.5 mm² is blue in DIN and grey in the French system). Stick to one system on a site and check the mm² printed on the box or ferrule, not just the colour."],
+        ["What does «R1.25-4» mean?", "A ring terminal for wire class 1.25 (0.25–1.65 mm²) and an M4 screw (JST-style naming). Where the ranges overlap, both classes fit — choose from the terminal maker's table."],
+        ["What strip length and tightening torque should I use?", "It depends on the product. Strip length follows the ferrule's metal sleeve length and the maker's «stripping length»; torque follows the terminal block maker's value."],
+      ] as [string, string][],
+    }
+  : { ...page7(lang, "ferrules"), seeLinks: ["tools/cable-labels/", "tools/voltage-drop/"].map((p) => pageName(lang, p)) };
+const sw = (c: Color) => `<span class="sw" style="background:${COLOR_HEX[c]}"></span>${tx(COLOR_NAME[c], lang)}`;
 const COLORS: Color[] = ["white", "grey", "red", "black", "blue", "yellow", "orange", "green", "brown", "ivory"];
 const T = {
   none: L.none,
@@ -116,7 +133,7 @@ const T = {
   noLug: L.noLug,
   both: L.both,
   k: { din: L.kDin, fr: L.kFr, awg: L.kAwg, area: L.kArea, lug: L.kLug, sleeve: L.sleeve },
-  colors: Object.fromEntries(COLORS.map((c) => [c, COLOR_NAME[c][lang]])),
+  colors: Object.fromEntries(COLORS.map((c) => [c, tx(COLOR_NAME[c], lang)])),
 };
 const SRC = [
   { name: "Wikipedia (de) — Aderendhülse: Farbcodes DIN 46228-4 / Frankreich", href: "https://de.wikipedia.org/wiki/Aderendh%C3%BClse" },
@@ -128,23 +145,13 @@ const SRC = [
   { name: "RS Components — JST FV5.5-4 ring terminal (2.6–6.6 mm², M4)", href: "https://uk.rs-online.com/web/p/ring-terminals/6881290" },
 ];
 // 자주 묻는 것(FAQPage) — components/FaqBlock.astro
-const FAQ: [string, string][] = ko
-  ? [
-      ["같은 굵기인데 페룰 색이 상자마다 다른 이유는?", "색 체계가 둘이기 때문입니다 — DIN 46228-4 와 프랑스 색 체계는 같은 mm² 에 다른 색을 씁니다(예: 2.5 mm² 는 DIN 파랑, 프랑스 회색). 한 현장에서는 한 체계로 맞추고, 색만 믿지 말고 상자·페룰에 적힌 mm² 를 함께 봅니다."],
-      ["«R1.25-4» 는 무슨 뜻인가요?", "전선 등급 1.25(0.25~1.65 mm²)와 나사 M4 용 링 단자라는 뜻입니다(JST 식 이름). 범위가 겹치는 굵기는 두 등급 모두 쓸 수 있으니 단자 제조사 표로 고릅니다."],
-      ["피복 벗김 길이와 조임 토크는?", "제품마다 다릅니다. 피복 벗김 길이는 페룰 금속 슬리브 길이와 제조사 카탈로그의 «stripping length», 조임 토크는 단자대 제조사가 정한 값을 따릅니다."],
-    ]
-  : [
-      ["Why do ferrules of the same size come in different colours?", "There are two colour systems — DIN 46228-4 and the French system use different colours for the same mm² (for example 2.5 mm² is blue in DIN and grey in the French system). Stick to one system on a site and check the mm² printed on the box or ferrule, not just the colour."],
-      ["What does «R1.25-4» mean?", "A ring terminal for wire class 1.25 (0.25–1.65 mm²) and an M4 screw (JST-style naming). Where the ranges overlap, both classes fit — choose from the terminal maker's table."],
-      ["What strip length and tightening torque should I use?", "It depends on the product. Strip length follows the ferrule's metal sleeve length and the maker's «stripping length»; torque follows the terminal block maker's value."],
-    ];
+const FAQ = L.faq as [string, string][];
 ---
 
-<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads>
+<Base lang={lang} title={L.h1} seoTitle={L.seo} description={L.desc} path={PATH} ads libText={["ferrules"]}>
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: ko ? "웹 도구" : "Web tools", path: "tools/" }, { name: L.h1, path: PATH }]} />
+      <Crumbs lang={lang} items={[{ name: ui(lang).webTools, path: "tools/" }, { name: L.h1, path: PATH }]} />
       <h1>{L.h1}</h1>
       <p>{L.desc}</p>
     </div>
@@ -165,7 +172,7 @@ const FAQ: [string, string][] = ko
       <h2>{L.byColor}</h2>
       <div class="row">
         <label class="fld">{L.sys}<select id="sys"><option value="din">{L.sysDin}</option><option value="fr">{L.sysFr}</option></select></label>
-        <label class="fld">{L.color}<select id="color">{COLORS.map((c) => <option value={c}>{COLOR_NAME[c][lang]}</option>)}</select></label>
+        <label class="fld">{L.color}<select id="color">{COLORS.map((c) => <option value={c}>{tx(COLOR_NAME[c], lang)}</option>)}</select></label>
       </div>
       <p class="fe-by" id="byOut" aria-live="polite"></p>
       <p class="note">{L.privacy}</p>
@@ -192,12 +199,12 @@ const FAQ: [string, string][] = ko
       <p>{L.lNote}</p>
       <h2>{L.sTitle}</h2>
       <p>{L.sText}</p>
-      <p>{L.seeLbl} <a href={url(lang, "tools/cable-labels/")}>{L.lbl}</a>. {L.seeVd} <a href={url(lang, "tools/voltage-drop/")}>{L.vd}</a>.</p>
-      <FaqBlock lang={lang} items={FAQ} />
+      <p>{L.see[0]}<a href={link(lang, "tools/cable-labels/")}>{L.seeLinks[0]}</a>{L.see[1]}<a href={link(lang, "tools/voltage-drop/")}>{L.seeLinks[1]}</a>{L.see[2]}</p>
+      <FaqBlock lang={lang} items={FAQ} title={L.faqTitle} />
       <h2>{L.srcTitle}</h2>
       <ul>
         {SRC.map((s) => <li><a href={s.href} rel="noopener" target="_blank">{s.name}</a></li>)}
-        <li>ASTM B258 — {ko ? "AWG 지름 식 d = 0.127 mm × 92^((36 − n)/39)" : "AWG diameter d = 0.127 mm × 92^((36 − n)/39)"} ({ko ? "AWG 24 면적" : "AWG 24 area"} {awgToMm2(24).toFixed(3)} mm²)</li>
+        <li>ASTM B258 — {L.astm} ({L.astm24} {awgToMm2(24).toFixed(3)} mm²)</li>
       </ul>
     </section>
     <UseNotice lang={lang} />
