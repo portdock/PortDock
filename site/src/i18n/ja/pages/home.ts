@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `日本語の Web ツール ${c.nWeb} 種類をすべて見る`,
   guidesTitle: "ガイドと機器のレジスタマップ",
   read: "読む",
-  devTitle: `産業機器の Modbus レジスタマップ ${c.nDevices} 機種(英語)`,
+  devTitle: `産業機器の Modbus レジスタマップ ${c.nDevices} 機種`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "インバータ・温度調節計・電力計 — マニュアルの出典、JSON",
   guidesEnTitle: `現場向けガイド ${c.nGuides} 本(英語)`,
   guidesEnBody: "Modbus の無応答、RS-485 配線、アドレス表記、4-20mA ループ、USB シリアルの切断など。",

@@ -1,5 +1,5 @@
 // IO 리스트·통신 사양서(views/IoListPage.astro) — 7차 묶음. 용어: I/O リスト, 通信仕様書, 局番, ボーレート, パリティ, 保持レジスタ, ワード順, スケール, デバイスマップ
-// 점검 문장·CSV 머리글·영역 이름은 lib/ioList.ts 의 번역(ja/lib/ioList.ts). 함께 쓰기 링크는 화면이 pageName() 으로 — devices 는 장비 레지스터 맵(번역 범위 밖, 화면이 «(英語)» 를 붙인다).
+// 점검 문장·CSV 머리글·영역 이름은 lib/ioList.ts 의 번역(ja/lib/ioList.ts). 함께 쓰기 링크는 화면이 pageName() 으로 — devices 는 장비 레지스터 맵(9차 묶음 — 그 언어로 없으면 화면이 «(英語)» 를 붙인다).
 export default {
   title: "I/O リスト・通信仕様書の作成",
   seo: "I/O リスト・通信仕様書の作成 — Modbus レジスタ表 — PortDock",

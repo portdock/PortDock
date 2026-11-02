@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Wszystkie narzędzia online po polsku (${c.nWeb})`,
   guidesTitle: "Poradniki i mapy rejestrów urządzeń",
   read: "Czytaj",
-  devTitle: `Mapy rejestrów Modbus dla urządzeń przemysłowych: ${c.nDevices} (po angielsku)`,
+  devTitle: `Mapy rejestrów Modbus dla urządzeń przemysłowych: ${c.nDevices}`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Falowniki, regulatory temperatury, mierniki energii — źródła z instrukcji, JSON",
   guidesEnTitle: `Poradniki dla praktyków: ${c.nGuides} (po angielsku)`,
   guidesEnBody: "Brak odpowiedzi Modbus, okablowanie RS-485, zapis adresów, pętla 4–20 mA, zaniki konwerterów USB–RS i więcej.",

@@ -252,7 +252,7 @@ const ld = [
           )
         }
         <a class="card" href={link(lang, "devices/")}>
-          <h3>{L.devTitle}</h3>
+          <h3>{L.devTitle}{isTranslated(lang, "devices/") ? "" : t.inEnglish}</h3>
           <p>{L.devBody}</p>
           <span class="go">{t.more} →</span>
         </a>

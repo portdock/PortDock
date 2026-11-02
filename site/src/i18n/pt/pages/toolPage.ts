@@ -9,7 +9,7 @@ export default {
   faq: "Perguntas frequentes",
   similar: "Ferramentas parecidas",
   guides: "Guias relacionados",
-  devices: "Perfis de dispositivos incluídos — mapas de registradores (em inglês)",
+  devices: "Perfis de dispositivos incluídos — mapas de registradores", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Esses dispositivos vêm incluídos como perfis; as tabelas de registradores e o JSON também estão neste site.",
   web: "Ferramentas web, sem instalar",
   shotAlt: "tela",

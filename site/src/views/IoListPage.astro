@@ -12,7 +12,7 @@ import { deviceName } from "@shared/devices";
 import type { SiteLang } from "../i18n/langs";
 import { page7 } from "../i18n";
 import { pageName } from "../i18n/names";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 
 interface Props {
   lang: SiteLang;
@@ -158,7 +158,7 @@ const L =
     }
   : {
       ...page7(lang, "ioList"),
-      links: [...["tools/modbus-float/", "tools/modbus-blocks/", "tools/system-diagram/", "tools/handover-pack/"].map((p) => [p, pageName(lang, p)]), ["devices/", page7(lang, "ioList").devices + ui(lang).inEnglish]],
+      links: [...["tools/modbus-float/", "tools/modbus-blocks/", "tools/system-diagram/", "tools/handover-pack/"].map((p) => [p, pageName(lang, p)]), ["devices/", page7(lang, "ioList").devices + (isTranslated(lang, "devices/") ? "" : ui(lang).inEnglish)]],
     };
 const T = {
   clearAsk: L.clearAsk,

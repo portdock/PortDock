@@ -11,7 +11,7 @@ import { fmtTime } from "../lib/serialTiming";
 import type { SiteLang } from "../i18n/langs";
 import { page4 } from "../i18n";
 import { pageName } from "../i18n/names";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 
 interface Props {
   lang: SiteLang;
@@ -166,7 +166,7 @@ const L =
         tLink: pageName(lang, "tools/modbus/"),
         sLink: pageName(lang, "tools/serial-timing/"),
         gLink: pageName(lang, "guides/modbus-exception-codes/"),
-        dLink: d.dLink + ui(lang).inEnglish,
+        dLink: d.dLink + (isTranslated(lang, "devices/") ? "" : ui(lang).inEnglish),
       };
     })();
 const ld = {

@@ -9,7 +9,7 @@ export default {
   faq: "FAQ",
   similar: "Ähnliche Werkzeuge",
   guides: "Passende Ratgeber",
-  devices: "Eingebaute Geräteprofile — Registerkarten (auf Englisch)",
+  devices: "Eingebaute Geräteprofile — Registerkarten", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Diese Geräte sind als Profile eingebaut; ihre Registertabellen und das JSON stehen auch auf dieser Website.",
   web: "Web-Werkzeuge, ohne Installation",
   shotAlt: "Bildschirm",

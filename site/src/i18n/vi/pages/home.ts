@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Tất cả ${c.nWeb} công cụ web bằng tiếng Việt`,
   guidesTitle: "Hướng dẫn và bảng thanh ghi",
   read: "Đọc",
-  devTitle: `Bảng thanh ghi Modbus của ${c.nDevices} thiết bị công nghiệp (tiếng Anh)`,
+  devTitle: `Bảng thanh ghi Modbus của ${c.nDevices} thiết bị công nghiệp`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Biến tần, bộ điều khiển nhiệt độ, đồng hồ đo điện năng — có nguồn tài liệu hướng dẫn, JSON",
   guidesEnTitle: `${c.nGuides} bài hướng dẫn thực hành (tiếng Anh)`,
   guidesEnBody: "Modbus không trả lời, đấu dây RS-485, cách ghi địa chỉ, vòng dòng 4–20 mA, bộ chuyển USB-serial hay rớt kết nối và nhiều nội dung khác.",

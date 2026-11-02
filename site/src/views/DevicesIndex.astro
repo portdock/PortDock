@@ -1,58 +1,103 @@
 ---
 // 장비 레지스터 맵 목록 — 종류별 묶음, 데이터셋 안내(JSON·스키마·라이선스)
+// 추가 언어(ja 등)는 9차 묶음(i18n/scope.ts SCOPE9): 화면 글은 T(i18n/<언어>/pages/devices.ts), 장비 종류 이름·장비 요약은 kinds9()·summary9(), 제조사·모델은 영어 그대로
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
-import { type Lang } from "../data/tools";
 import { CC_BY, DEVICES, LICENSE_URL, RAW, RELEASE, SCHEMA_URL, devPath } from "../data/devices";
-import { url } from "../lib/i18n";
+import { isTranslated, link, ui } from "../lib/i18n";
 import { versionLabel } from "../lib/dataRelease";
 import ListFilter from "../components/ListFilter.astro";
 import { KIND_TEXT, type Device } from "@shared/devices";
+import { kinds9, page9, summary9 } from "../i18n/index";
+import { isCore, type SiteLang } from "../i18n/langs";
 import "../styles/devices.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
 }
 const { lang } = Astro.props;
-const ko = lang === "ko";
-const L = (k: string, e: string) => (ko ? k : e);
+const T =
+  lang === "ko"
+    ? {
+        title: "산업 장비 Modbus 레지스터 맵",
+        seo: "Modbus 주소표 — 인버터·온도 조절기·전력 미터 — PortDock",
+        desc: (c: { n: number }) => `국산·해외 산업용 인버터·온도 조절기·전력 미터 ${c.n}종의 Modbus 주소·형식·단위·배율과 통신 기본값. 제조사 매뉴얼 출처, JSON(CC BY 4.0).`,
+        crumb: "장비",
+        find: "장비 찾기 — 제조사·모델·종류(예: LS, 인버터, TK4)",
+        regs: (c: { n: number }) => `레지스터 ${c.n}개`,
+        aboutTitle: "이 자료에 대해",
+        facts: "제조사가 공개한 매뉴얼에서 주소·형식·단위·배율·읽기/쓰기 같은 사실만 옮겼고, 장비마다 문서 이름·판·쪽과 확인일을 붙였습니다. 매뉴얼에서 확인하지 못한 항목은 넣지 않았습니다.",
+        unofficial: "제조사와 관계없는 비공식 자료입니다. 펌웨어·형번에 따라 다를 수 있으니 쓰기 전에 장비 매뉴얼로 확인하세요.",
+        bundle: (c: { version: string }) => `데이터 묶음 ${c.version}`,
+        bundleAfter: " — 판·all.json·registers.csv·칸 설명·인용 방법·바뀐 점",
+        json: "JSON: ",
+        maker: "제조사",
+        model: "모델",
+        license: "라이선스: ",
+        licenseAfter: " — 출처를 밝히면 자유롭게 쓸 수 있습니다.",
+        apps: "PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 흉내…» 에 같은 데이터가 들어 있습니다.",
+      }
+    : lang === "en"
+      ? {
+          title: "Modbus register maps for industrial devices",
+          seo: "Modbus Register Maps: Inverters, Meters, Controllers — PortDock",
+          desc: (c: { n: number }) => `Modbus addresses, types, scaling and defaults for ${c.n} inverters, controllers and power meters from Korean and global makers — manual sources, JSON (CC BY 4.0).`,
+          crumb: "Devices",
+          find: "Find a device — maker, model or type (e.g. LS, inverter, TK4)",
+          regs: (c: { n: number }) => `${c.n} registers`,
+          aboutTitle: "About this dataset",
+          facts: "Only facts (address, type, unit, scale, read/write) taken from manuals the makers publish, each with document title, edition, page and the date checked. Anything not confirmed in a manual is left out.",
+          unofficial: "Unofficial and not affiliated with the makers. Values can differ by firmware or model — check the device manual before writing.",
+          bundle: (c: { version: string }) => `Data bundle ${c.version}`,
+          bundleAfter: " — version, all.json, registers.csv, fields, citation and changelog",
+          json: "JSON: ",
+          maker: "maker",
+          model: "model",
+          license: "License: ",
+          licenseAfter: " — free to use with attribution.",
+          apps: "The same data is built into PortDock Modbus Master («Device profile…») and Modbus Slave («Emulate device…»).",
+          }
+      : page9(lang, "devices");
 const kinds = [...new Set(DEVICES.map((d) => d.kind))] as Device["kind"][];
-const title = L("산업 장비 Modbus 레지스터 맵", "Modbus register maps for industrial devices");
-const desc = L(
-  `국산·해외 산업용 인버터·온도 조절기·전력 미터 ${DEVICES.length}종의 Modbus 주소·형식·단위·배율과 통신 기본값. 제조사 매뉴얼 출처, JSON(CC BY 4.0).`,
-  `Modbus addresses, types, scaling and defaults for ${DEVICES.length} inverters, controllers and power meters from Korean and global makers — manual sources, JSON (CC BY 4.0).`,
-);
+const kindName = (k: Device["kind"]) => (isCore(lang) ? KIND_TEXT[k][lang] : kinds9(lang)[k]);
+// 제조사 이름은 추가 언어에서 영어 표기 그대로
+const maker = (d: Device) => (isCore(lang) ? d.manufacturer[lang] : d.manufacturer.en);
+const summary = (d: Device) => (isCore(lang) ? (d.summary?.[lang] ?? d.title[lang]) : summary9(lang, d.id));
+// 번역이 없는 쪽(데이터 묶음 data/)으로 가는 링크 글 뒤 «(英語)» 같은 표시 — 한국어·영어는 빈 글
+const enMark = (p: string) => (isTranslated(lang, p) ? "" : ui(lang).inEnglish);
+const title = T.title;
+const desc = T.desc({ n: DEVICES.length });
 ---
 
 <Base
   lang={lang}
   title={title}
-  seoTitle={L("Modbus 주소표 — 인버터·온도 조절기·전력 미터 — PortDock", "Modbus Register Maps: Inverters, Meters, Controllers — PortDock")}
+  seoTitle={T.seo}
   description={desc}
   path="devices/"
 >
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: L("장비", "Devices"), path: "devices/" }]} />
+      <Crumbs lang={lang} items={[{ name: T.crumb, path: "devices/" }]} />
       <h1>{title}</h1>
       <p>{desc}</p>
     </div>
   </header>
   <div class="wrap list-page" id="dev-list">
-    <ListFilter lang={lang} target="dev-list" total={DEVICES.length} placeholder={L("장비 찾기 — 제조사·모델·종류(예: LS, 인버터, TK4)", "Find a device — maker, model or type (e.g. LS, inverter, TK4)")} />
+    <ListFilter lang={lang} target="dev-list" total={DEVICES.length} placeholder={T.find} />
     {
       kinds.map((k) => (
         <section class="dev-kind" data-filter-group>
-          <h2>{KIND_TEXT[k][lang]}</h2>
+          <h2>{kindName(k)}</h2>
           <div class="grid">
             {DEVICES.filter((d) => d.kind === k).map((d) => (
-              <a class="card" href={url(lang, devPath(d))} data-filter-item data-filter-text={`${KIND_TEXT[k].ko} ${KIND_TEXT[k].en} ${d.manufacturer.ko} ${d.manufacturer.en} ${d.models?.join(" ") ?? ""}`}>
+              <a class="card" href={link(lang, devPath(d))} data-filter-item data-filter-text={`${KIND_TEXT[k].ko} ${KIND_TEXT[k].en} ${d.manufacturer.ko} ${d.manufacturer.en} ${d.models?.join(" ") ?? ""}${isCore(lang) ? "" : ` ${kindName(k)}`}`}>
                 <h3>
-                  {d.manufacturer[lang]} {d.model}
+                  {maker(d)} {d.model}
                 </h3>
-                <p>{d.summary?.[lang] ?? d.title[lang]}</p>
+                <p>{summary(d)}</p>
                 <span class="go">
-                  {L(`레지스터 ${d.registers.length}개`, `${d.registers.length} registers`)} →
+                  {T.regs({ n: d.registers.length })} →
                 </span>
               </a>
             ))}
@@ -61,20 +106,20 @@ const desc = L(
       ))
     }
     <section class="prose dev-about">
-      <h2>{L("이 자료에 대해", "About this dataset")}</h2>
+      <h2>{T.aboutTitle}</h2>
       <ul>
-        <li>{L("제조사가 공개한 매뉴얼에서 주소·형식·단위·배율·읽기/쓰기 같은 사실만 옮겼고, 장비마다 문서 이름·판·쪽과 확인일을 붙였습니다. 매뉴얼에서 확인하지 못한 항목은 넣지 않았습니다.", "Only facts (address, type, unit, scale, read/write) taken from manuals the makers publish, each with document title, edition, page and the date checked. Anything not confirmed in a manual is left out.")}</li>
-        <li>{L("제조사와 관계없는 비공식 자료입니다. 펌웨어·형번에 따라 다를 수 있으니 쓰기 전에 장비 매뉴얼로 확인하세요.", "Unofficial and not affiliated with the makers. Values can differ by firmware or model — check the device manual before writing.")}</li>
+        <li>{T.facts}</li>
+        <li>{T.unofficial}</li>
         <li>
-          <a href={url(lang, "data/")}>{L(`데이터 묶음 ${versionLabel(RELEASE)}`, `Data bundle ${versionLabel(RELEASE)}`)}</a>{L(" — 판·all.json·registers.csv·칸 설명·인용 방법·바뀐 점", " — version, all.json, registers.csv, fields, citation and changelog")}
+          <a href={link(lang, "data/")}>{T.bundle({ version: versionLabel(RELEASE) })}{enMark("data/")}</a>{T.bundleAfter}
         </li>
         <li>
-          {L("JSON: ", "JSON: ")}<code>{RAW}/&lt;{L("제조사", "maker")}&gt;/&lt;{L("모델", "model")}&gt;.json</code> · <a href={SCHEMA_URL}>schema.json</a> · <a href="/devices/index.json">index.json</a> · <a href="/llms.txt">llms.txt</a>
+          {T.json}<code>{RAW}/&lt;{T.maker}&gt;/&lt;{T.model}&gt;.json</code> · <a href={SCHEMA_URL}>schema.json</a> · <a href="/devices/index.json">index.json</a> · <a href="/llms.txt">llms.txt</a>
         </li>
         <li>
-          {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a> (<a href={LICENSE_URL}>LICENSE</a>){L(" — 출처를 밝히면 자유롭게 쓸 수 있습니다.", " — free to use with attribution.")}
+          {T.license}<a href={CC_BY}>CC BY 4.0</a> (<a href={LICENSE_URL}>LICENSE</a>){T.licenseAfter}
         </li>
-        <li>{L("PortDock Modbus Master 의 «장비 프로필…», Modbus Slave 의 «장비 흉내…» 에 같은 데이터가 들어 있습니다.", "The same data is built into PortDock Modbus Master («Device profile…») and Modbus Slave («Emulate device…»).")}</li>
+        <li>{T.apps}</li>
       </ul>
     </section>
   </div>

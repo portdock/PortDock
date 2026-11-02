@@ -1,6 +1,6 @@
 // 일본어 — 8차 묶음 프로그램 소개 쪽(views/ToolPage.astro)의 화면 공통 글. 13개 앱이 함께 쓴다.
 // hw = Hardware Tester 쪽의 링크(hwLink) 앞·뒤 조각, ai = 모든 앱 공통 «AI» 단추 줄(뒤에 privacy 링크),
-// devices 는 장비 레지스터 맵(번역 범위 밖 — 영어 이름으로 나열하므로 머리말에 «(英語)»),
+// devices 는 장비 레지스터 맵 목록의 머리말(제조사는 영어 이름 그대로 — 장비 맵이 그 언어로 없으면 화면이 «(英語)» 를 붙인다),
 // shotAlt·shotCap = 화면 그림(components/AppShot.astro — 그림은 영어판), dl = 내려받기 칸(components/DownloadBox.astro)의 작은 글,
 // screenLang = 모든 윈도우 앱 공통 기능 «화면 언어»(data/tools.ts 의 SCREEN_LANG — 앱마다 기능 목록 맨 뒤에 붙는다).
 export default {
@@ -13,7 +13,7 @@ export default {
   faq: "よくある質問",
   similar: "似たツール",
   guides: "関連ガイド",
-  devices: "内蔵機器プロファイル — レジスタマップ(英語)",
+  devices: "内蔵機器プロファイル — レジスタマップ", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "次の機器はソフトにプロファイルとして入っていて、サイトでもレジスタ表・JSON で見られます。",
   web: "インストール不要の Web ツール",
   shotAlt: "の画面",

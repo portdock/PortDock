@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Alle ${c.nWeb} Web-Tools auf Deutsch`,
   guidesTitle: "Anleitungen und Register-Maps",
   read: "Lesen",
-  devTitle: `Modbus-Register-Maps für ${c.nDevices} Industriegeräte (Englisch)`,
+  devTitle: `Modbus-Register-Maps für ${c.nDevices} Industriegeräte`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Frequenzumrichter, Temperaturregler, Energiemessgeräte — mit Handbuchquellen, JSON",
   guidesEnTitle: `${c.nGuides} Praxisanleitungen (Englisch)`,
   guidesEnBody: "Modbus antwortet nicht, RS-485-Verdrahtung, Adressschreibweisen, 4–20-mA-Schleifen, abreißende USB-Seriell-Adapter und mehr.",

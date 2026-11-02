@@ -1,5 +1,5 @@
 // 전력량계 펄스 계산기(views/EnergyPulsePage.astro) — 6차 묶음. 용어: パルス定数(imp/kWh), 乗率(CT 比 × VT 比), 一次側・二次側, 高速カウンタ
-// see = 링크 사이 글 조각(링크 글은 화면이 pageName() 으로). devLink = 장비 레지스터 맵 링크 글(번역 범위 밖 — 화면이 «(英語)» 를 붙인다). srcLink 는 바깥 링크 글
+// see = 링크 사이 글 조각(링크 글은 화면이 pageName() 으로). devLink = 장비 레지스터 맵 링크 글(9차 묶음 — 그 언어로 없으면 화면이 «(英語)» 를 붙인다). srcLink 는 바깥 링크 글
 export default {
   title: "電力量計パルス計算ツール",
   seo: "電力量計パルスの計算 — imp/kWh から kW・kWh — PortDock",

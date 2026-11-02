@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Semua ${c.nWeb} alat web berbahasa Indonesia`,
   guidesTitle: "Panduan dan peta register",
   read: "Baca",
-  devTitle: `Peta register Modbus untuk ${c.nDevices} perangkat industri (bahasa Inggris)`,
+  devTitle: `Peta register Modbus untuk ${c.nDevices} perangkat industri`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Inverter, pengendali suhu, power meter — dengan sumber manual, JSON",
   guidesEnTitle: `${c.nGuides} panduan lapangan (bahasa Inggris)`,
   guidesEnBody: "Modbus tidak menjawab, pengawatan RS-485, cara penulisan alamat, loop 4–20 mA, adaptor USB-serial yang sering putus, dan lainnya.",

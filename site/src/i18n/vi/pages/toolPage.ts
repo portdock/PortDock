@@ -9,7 +9,7 @@ export default {
   faq: "Câu hỏi thường gặp",
   similar: "Công cụ tương tự",
   guides: "Hướng dẫn liên quan",
-  devices: "Hồ sơ thiết bị tích hợp — bản đồ thanh ghi (tiếng Anh)",
+  devices: "Hồ sơ thiết bị tích hợp — bản đồ thanh ghi", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Các thiết bị này được tích hợp sẵn dưới dạng hồ sơ; bảng thanh ghi và JSON của chúng cũng có trên trang này.",
   web: "Công cụ web, không cần cài",
   shotAlt: "màn hình",

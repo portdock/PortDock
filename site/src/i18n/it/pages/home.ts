@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Tutti i ${c.nWeb} strumenti web in italiano`,
   guidesTitle: "Guide e mappe dei registri",
   read: "Leggi",
-  devTitle: `Mappe dei registri Modbus di ${c.nDevices} dispositivi industriali (in inglese)`,
+  devTitle: `Mappe dei registri Modbus di ${c.nDevices} dispositivi industriali`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Inverter, termoregolatori, multimetri di rete — con le fonti dei manuali, JSON",
   guidesEnTitle: `${c.nGuides} guide pratiche (in inglese)`,
   guidesEnBody: "Modbus che non risponde, cablaggio RS-485, notazioni degli indirizzi, loop 4–20 mA, adattatori USB-seriale che si scollegano e altro.",

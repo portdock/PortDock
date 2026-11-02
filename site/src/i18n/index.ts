@@ -81,9 +81,10 @@ import es8 from "./es/batch8.ts";
 import vi8 from "./vi/batch8.ts";
 import tr8 from "./tr/batch8.ts";
 import id8 from "./id/batch8.ts";
+import ja9 from "./ja/batch9.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
-import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id, Page8Id } from "./scope.ts";
+import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id, Page8Id, Page9Id } from "./scope.ts";
 
 /** 1차 묶음 사전(모든 추가 언어) */
 export type Dict = typeof ja;
@@ -154,6 +155,20 @@ export interface Batch8Part {
   toolPage?: Batch8["toolPage"];
   pages: Partial<Batch8["pages"]>;
 }
+/** 장비 종류(shared/devices.ts 의 Device["kind"]) — 9차 묶음 kinds 의 열쇠 */
+export type DeviceKind = "inverter" | "power-meter" | "temperature-controller" | "panel-meter" | "servo-drive" | "sensor" | "other";
+/**
+ * 9차 묶음 사전(i18n/<언어>/batch9.ts) — 기준판 ja 의 모양. pages = 화면 공통 글(devices 목록 views/DevicesIndex.astro, device 장비 한 종 views/DevicePage.astro),
+ * kinds = 장비 종류 이름(shared/devices.ts KIND_TEXT 의 영어), summaries = 장비마다 요약(data/devices/<id>.json 의 summary.en — 열쇠는 장비 id).
+ * 레지스터 이름·설명·값·주의(notes)·출처는 옮기지 않는다(데이터 영어 그대로).
+ */
+export type Batch9 = typeof ja9;
+/** 9차 묶음도 쪽 단위로 일부만 있어도 된다 — kinds 는 쪽이 하나라도 있으면, 요약은 목록(devices/)이 있으면 모든 장비, 아니면 공개한 장비 것이 있어야 한다(시험이 본다) */
+export interface Batch9Part {
+  kinds?: Batch9["kinds"];
+  pages: Partial<Batch9["pages"]>;
+  summaries: Partial<Record<string, string>>;
+}
 export type LibSection = keyof Dict["lib"] | keyof Batch2["lib"] | keyof Batch3["lib"] | keyof Batch4["lib"] | keyof Batch5["lib"] | keyof Batch6["lib"] | keyof Batch7["lib"];
 
 export const DICTS: Record<ExtraLang, Dict> = { ja, de, es, pt, pl, fr, vi, tr, it, id };
@@ -171,6 +186,8 @@ export const DICTS6: Partial<Record<ExtraLang, Batch6Part>> = { ja: ja6, es: es6
 export const DICTS7: Partial<Record<ExtraLang, Batch7Part>> = { ja: ja7, id: id7, tr: tr7, vi: vi7, de: de7, pl: pl7, fr: fr7, it: it7, pt: pt7, es: es7 };
 /** 8차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS8: Partial<Record<ExtraLang, Batch8Part>> = { ja: ja8, fr: fr8, pl: pl8, de: de8, it: it8, pt: pt8, es: es8, vi: vi8, tr: tr8, id: id8 };
+/** 9차 묶음을 (일부라도) 옮긴 언어 */
+export const DICTS9: Partial<Record<ExtraLang, Batch9Part>> = { ja: ja9 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];
@@ -229,6 +246,27 @@ export function toolPage8(lang: ExtraLang): Batch8["toolPage"] {
   const p = DICTS8[lang]?.toolPage;
   if (!p) throw new Error(`${lang}: 8차 묶음 toolPage 없음`);
   return p;
+}
+
+/** 9차 묶음 화면 공통 글 — devices(목록)·device(장비 한 종). page2 와 같음 */
+export function page9<K extends Page9Id>(lang: ExtraLang, id: K): Batch9["pages"][K] {
+  const p = DICTS9[lang]?.pages[id];
+  if (!p) throw new Error(`${lang}: 9차 묶음 쪽 글 없음 — ${id}`);
+  return p as Batch9["pages"][K];
+}
+
+/** 9차 묶음 장비 종류 이름 */
+export function kinds9(lang: ExtraLang): Batch9["kinds"] {
+  const k = DICTS9[lang]?.kinds;
+  if (!k) throw new Error(`${lang}: 9차 묶음 kinds 없음`);
+  return k;
+}
+
+/** 9차 묶음 장비 요약(장비 id → 글) — 목록 카드·장비 쪽 머리 */
+export function summary9(lang: ExtraLang, id: string): string {
+  const s = DICTS9[lang]?.summaries[id];
+  if (!s) throw new Error(`${lang}: 9차 묶음 장비 요약 없음 — ${id}`);
+  return s;
 }
 
 /** 3차 묶음 하드웨어 테스트 쪽의 개인정보 줄(components/HwPrivacy.astro) */

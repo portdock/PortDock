@@ -56,7 +56,7 @@ const L =
 /** 번역이 없는 쪽(사용법 등)으로 가는 링크 글 뒤 «(英語)» 같은 표시 — 한국어·영어는 빈 글 */
 const enMark = (p: string) => (isTranslated(lang, p) ? "" : t.inEnglish);
 const docs = `${tool.id}/docs/`;
-// 장비 맵 쪽은 한국어·영어뿐 — 추가 언어는 영어 이름(머리말 devices 에 «(英語)»)
+// 장비 맵(9차 묶음)의 제조사 이름은 추가 언어에서도 영어 표기 그대로. 장비 맵이 그 언어로 없으면 머리말 devices 뒤에 «(英語)»(enMark)
 const devName = (d: (typeof DEVICES)[number]) => (isCore(lang) ? d.manufacturer[lang] : d.manufacturer.en);
 // 이 도구를 다루는 가이드, 이 도구와 같이 쓰는 웹 도구, Modbus 도구면 장비 레지스터 맵
 const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
@@ -220,7 +220,7 @@ const ld = {
       {
         devices.length > 0 && (
           <section class="related">
-            <h2>{L.devices}</h2>
+            <h2>{L.devices}{enMark("devices/")}</h2>
             <p class="note">{L.devicesNote}</p>
             <ul class="links cols">
               {devices.map((d) => (

@@ -9,7 +9,7 @@ export default {
   faq: "Tanya jawab",
   similar: "Alat serupa",
   guides: "Panduan terkait",
-  devices: "Profil perangkat bawaan — peta register (dalam bahasa Inggris)",
+  devices: "Profil perangkat bawaan — peta register", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Perangkat ini tertanam sebagai profil; tabel register dan JSON-nya juga ada di situs ini.",
   web: "Alat web, tanpa instalasi",
   shotAlt: "layar",

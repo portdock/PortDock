@@ -9,7 +9,7 @@ export default {
   faq: "Domande frequenti",
   similar: "Strumenti simili",
   guides: "Guide correlate",
-  devices: "Profili di dispositivi inclusi: mappe dei registri (in inglese)",
+  devices: "Profili di dispositivi inclusi: mappe dei registri", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Questi dispositivi sono inclusi come profili; le loro tabelle di registri e il JSON sono anche su questo sito.",
   web: "Strumenti web, senza installare",
   shotAlt: "schermata",

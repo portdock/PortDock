@@ -1,5 +1,5 @@
 // Modbus 읽기 요청 묶기(views/ModbusBlocksPage.astro) — 4차 묶음. tNote 는 예시 목록을 값마다 따로 읽을 때의 수(요청 수, 바이트, 한 바퀴 시간)를 받는다.
-// dLink 는 번역이 없는 장비 맵으로 가는 링크 글 — 화면이 «(in inglese)» 표시를 붙인다. ends 는 링크 뒤 문장 끝(4개) + 근거 링크 뒤.
+// dLink 는 장비 맵(9차 묶음)으로 가는 링크 글 — 그 언어로 없으면 화면이 «(in inglese)» 표시를 붙인다. ends 는 링크 뒤 문장 끝(4개) + 근거 링크 뒤.
 // Termini: holding register, input register, coil, discrete input (come nei manuali italiani), ciclo di polling, buco ammesso
 export default {
   title: "Raggruppamento delle richieste di lettura Modbus",

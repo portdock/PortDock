@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Türkçe ${c.nWeb} web aracının tamamı`,
   guidesTitle: "Kılavuzlar ve register haritaları",
   read: "Oku",
-  devTitle: `${c.nDevices} endüstriyel cihaz için Modbus register haritaları (İngilizce)`,
+  devTitle: `${c.nDevices} endüstriyel cihaz için Modbus register haritaları`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Sürücüler (inverter), sıcaklık kontrol cihazları, enerji analizörleri — kılavuz kaynakları, JSON",
   guidesEnTitle: `${c.nGuides} saha kılavuzu (İngilizce)`,
   guidesEnBody: "Modbus yanıt vermiyor, RS-485 kablolaması, adres yazımları, 4–20 mA döngüleri, kopan USB-seri dönüştürücüler ve daha fazlası.",

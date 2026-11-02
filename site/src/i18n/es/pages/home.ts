@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Ver las ${c.nWeb} herramientas web en español`,
   guidesTitle: "Guías y mapas de registros de equipos",
   read: "Leer",
-  devTitle: `Mapas de registros Modbus de ${c.nDevices} equipos industriales (en inglés)`,
+  devTitle: `Mapas de registros Modbus de ${c.nDevices} equipos industriales`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Variadores, controladores de temperatura, medidores de energía: fuentes de los manuales, JSON",
   guidesEnTitle: `${c.nGuides} guías para campo (en inglés)`,
   guidesEnBody: "Esclavos Modbus que no responden, cableado RS-485, notación de direcciones, lazos de 4-20 mA, cortes de USB serie y más.",

@@ -9,7 +9,7 @@ export default {
   faq: "FAQ",
   similar: "Outils similaires",
   guides: "Guides associés",
-  devices: "Profils d’appareils intégrés — cartes de registres (en anglais)",
+  devices: "Profils d’appareils intégrés — cartes de registres", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Ces appareils sont intégrés sous forme de profils ; leurs tables de registres et le JSON se trouvent aussi sur ce site.",
   web: "Outils web, sans installation",
   shotAlt: "écran",

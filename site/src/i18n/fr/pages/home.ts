@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Voir les ${c.nWeb} outils web en français`,
   guidesTitle: "Guides et tables de registres d’appareils",
   read: "Lire",
-  devTitle: `Tables de registres Modbus de ${c.nDevices} appareils industriels (en anglais)`,
+  devTitle: `Tables de registres Modbus de ${c.nDevices} appareils industriels`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Variateurs, régulateurs de température, compteurs d’énergie — sources des notices, JSON",
   guidesEnTitle: `${c.nGuides} guides de terrain (en anglais)`,
   guidesEnBody: "Esclave Modbus qui ne répond pas, câblage RS-485, notation des adresses, boucle 4-20 mA, adaptateur USB-série qui se déconnecte, etc.",

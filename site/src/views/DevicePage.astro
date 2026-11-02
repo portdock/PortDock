@@ -1,43 +1,164 @@
 ---
 // 장비 한 종의 Modbus 레지스터 맵 — 통신 기본값·레지스터 표·PortDock 으로 읽기·JSON·출처. 본문 아래에만 광고(AdSlot, 가이드와 같은 정책).
+// 추가 언어(ja 등)는 9차 묶음(i18n/scope.ts SCOPE9): 화면 글은 T(i18n/<언어>/pages/device.ts), 장비 종류 이름·요약은 kinds9()·summary9().
+// 데이터 글(제조사·레지스터 이름·설명·값·비트·통신 주의·주의·출처의 판·쪽)은 추가 언어에서 영어 그대로(lang="en") — 매뉴얼 표기와 맞춰 찾을 수 있게.
 import Base from "../layouts/Base.astro";
 import AdSlot from "../components/AdSlot.astro";
 import UseNotice from "../components/UseNotice.astro";
 import Crumbs from "../components/Crumbs.astro";
 import ListFilter from "../components/ListFilter.astro";
-import { toolById, type Lang } from "../data/tools";
+import { toolById } from "../data/tools";
 import { GUIDES } from "../data/guides";
 import { webToolByPath } from "../data/webTools";
 import { CC_BY, DEVICES, LICENSE_URL, RELEASE, SCHEMA_URL, dataHome, devPath, rawUrl, sourceUrl } from "../data/devices";
 import { DATASET_NAME, citeText } from "../lib/dataRelease";
-import { url } from "../lib/i18n";
+import { appTagline, isTranslated, link, ui, url } from "../lib/i18n";
 import { KIND_TEXT, devRegs, refText, type Device, type DevRegister } from "@shared/devices";
+import { kinds9, page9, summary9 } from "../i18n/index";
+import { pageName } from "../i18n/names";
+import { isCore, type SiteLang } from "../i18n/langs";
 import "../styles/devices.css";
 
 interface Props {
-  lang: Lang;
+  lang: SiteLang;
   dev: Device;
 }
 const { lang, dev } = Astro.props;
-const ko = lang === "ko";
-const L = (ko_: string, en: string) => (ko ? ko_ : en);
-const maker = dev.manufacturer[lang];
+const T =
+  lang === "ko"
+    ? {
+        title: (c: { name: string }) => `${c.name} Modbus 레지스터 맵`,
+        seo: (c: { name: string; model: string }) => [`${c.name} Modbus 주소·레지스터 맵 — PortDock`, `${c.name} Modbus 레지스터 맵 — PortDock`],
+        desc: (c: { name: string; kind: string; n: number }) => [`${c.name}(${c.kind}) Modbus(모드버스) 통신 주소·형식·단위·배율 ${c.n}개와 통신 기본값. 매뉴얼 쪽 번호 출처, JSON, PortDock 으로 바로 읽기.`],
+        crumb: "장비",
+        parity: { none: "없음", even: "짝수", odd: "홀수" },
+        addr: { zero: "통신 주소 그대로(0 기준)", one: "1 기준 번호(통신 주소 + 1)", plc: "40001·30001 꼴(통신 주소 + 1, 앞자리가 표)" },
+        protocol: "형태",
+        baud: "속도(출하)",
+        options: "고를 수 있음",
+        frame: "데이터·패리티·정지",
+        unit: "국번(출하)",
+        tcpPort: "TCP 포트",
+        order: "32비트 순서",
+        max: "한 번에 최대",
+        maxRegs: (c: { n: number }) => `${c.n} 레지스터`,
+        addressing: "매뉴얼 주소 표기",
+        caution: "제조사 매뉴얼에서 사실 정보(주소·형식·단위·배율)만 옮겨 정리한 비공식 자료입니다. 제조사와 관계없고, 펌웨어·형번에 따라 다를 수 있습니다. 쓰기(운전 명령·설정 변경) 전에 반드시 장비 매뉴얼로 확인하세요.",
+        commTitle: "통신 기본값",
+        regsTitle: "레지스터",
+        regsNote: "«통신 주소» 는 요청 프레임에 실리는 0 기준 주소입니다(PortDock 의 «0 기준» 표기). 값 = 원시 값 × 배율. 표: HR 보유 레지스터, IR 입력 레지스터, CO 코일, DI 입력 접점. 함수 코드는 16진.",
+        enNote: "",
+        findReg: "레지스터 찾기 — 예: 전압, 30001",
+        scroll: "표는 옆으로 밀어 볼 수 있습니다 — 첫 열(매뉴얼 주소)은 고정됩니다.",
+        th: { manual: "매뉴얼 주소", wire: "통신 주소", table: "표", name: "이름", type: "형식", unit: "단위·배율", details: "설명" },
+        range: "범위",
+        notesTitle: "주의",
+        readTitle: "PortDock 으로 바로 읽기",
+        read1: ["무료 ", " 를 설치하고 장비와 같은 통신 설정으로 연결합니다."],
+        read2: "가운데 표 도구줄의 «장비 프로필…» 에서 이 장비를 고르고 «불러오기» — 폴링 표·칸 이름·형식·국번이 채워집니다(통신 기본값도 맞출 수 있음).",
+        read3: "칸 이름에 단위·배율(예 «×0.01 Hz»)이 붙습니다. 화면 값은 원시 값이므로 배율을 곱해 읽습니다.",
+        read4: ["장비 없이 프로그램을 시험하려면 ", " 의 «장비 흉내…» 로 같은 맵(예시 값)을 띄웁니다."],
+        wiring: ["RS-485 배선은 ", " 에서 이 장비의 이름·국번·보율·패리티로 미리 채운 그림을 그릴 수 있습니다(단자 번호는 매뉴얼 확인)."],
+        jsonTitle: "JSON 내려받기",
+        raw: "(GitHub 원본)",
+        copy: "이 사이트 사본",
+        history: "고친 이력",
+        schema: "형식 설명(JSON Schema). table·address(0 기준)·type·order 는 PortDock CSV 와 같습니다.",
+        license: "라이선스: ",
+        cite: " — 쓰실 때 출처를 밝혀 주세요: ",
+        citeAfter: " 와 이 쪽 주소. ",
+        bundle: "데이터 묶음·판·바뀐 점",
+        mistake: "틀린 곳을 찾으면 GitHub 이슈로 알려 주세요(쪽 번호와 함께).",
+        sourcesTitle: "출처",
+        checked: (c: { date: string }) => `확인 ${c.date}`,
+        sameKind: (c: { kind: string }) => `같은 종류 장비 — ${c.kind}`,
+        allMaps: "모든 장비 레지스터 맵",
+        kindGuides: (c: { kind: string }) => `${c.kind} 가이드·계산기`,
+        webTool: "웹 도구",
+        modbusGuides: "Modbus 가이드",
+        testTools: "이 장비를 시험하는 도구",
+        seeTool: "도구 보기",
+        dlFree: "무료로 내려받기(윈도우 10·11)",
+      }
+    : lang === "en"
+      ? {
+          title: (c: { name: string }) => `${c.name} Modbus register map`,
+          seo: (c: { name: string; model: string }) => [`${c.name} Modbus Register Map & Addresses — PortDock`, `${c.name} Modbus Register Map — PortDock`, `${c.model} Modbus Register Map — PortDock`],
+          desc: (c: { name: string; kind: string; n: number }) => [
+            `${c.name} (${c.kind}) Modbus register map: ${c.n} addresses with type, unit and scale, default settings, manual page references and JSON.`,
+            `${c.name} (${c.kind}) Modbus register map: ${c.n} addresses with type, unit, scale, defaults, manual pages and JSON.`,
+          ],
+          crumb: "Devices",
+          parity: { none: "None", even: "Even", odd: "Odd" },
+          addr: { zero: "Wire address as is (0-based)", one: "1-based numbers (wire address + 1)", plc: "40001/30001 style (wire address + 1, first digit = table)" },
+          protocol: "Protocol",
+          baud: "Baud (factory)",
+          options: "options",
+          frame: "Data · parity · stop",
+          unit: "Slave ID (factory)",
+          tcpPort: "TCP port",
+          order: "32-bit order",
+          max: "Max per request",
+          maxRegs: (c: { n: number }) => `${c.n} registers`,
+          addressing: "Manual address style",
+          caution: "An unofficial summary of facts (addresses, types, units, scaling) from the maker's manual. Not affiliated with the maker; values can differ by firmware or model. Always check the device manual before writing (run commands, settings).",
+          commTitle: "Default communication",
+          regsTitle: "Registers",
+          regsNote: "«Wire» is the 0-based address in the request frame (PortDock's «0-based» notation). Value = raw × scale. Table: HR holding register, IR input register, CO coil, DI discrete input. Function codes in hex.",
+          enNote: "",
+          findReg: "Find a register — e.g. voltage, 30001",
+          scroll: "Swipe the table sideways — the first column (manual address) stays put.",
+          th: { manual: "Manual", wire: "Wire", table: "Table", name: "Name", type: "Type", unit: "Unit · scale", details: "Details" },
+          range: "Range",
+          notesTitle: "Notes",
+          readTitle: "Read it with PortDock",
+          read1: ["Install the free ", " and connect with the device's settings."],
+          read2: "On the table toolbar, «Device profile…» → pick this device → «Load». Polling tables, names, types and the Slave ID are filled in (optionally the serial settings too).",
+          read3: "Names carry the unit and scale (e.g. «×0.01 Hz»). Values on screen are raw — multiply by the scale.",
+          read4: ["To test your program without the device, ", "'s «Emulate device…» serves the same map with example values."],
+          wiring: ["To draw the RS-485 wiring, open the ", " pre-filled with this device's name, slave ID, baud rate and parity (check terminal numbers in the manual)."],
+          jsonTitle: "Download JSON",
+          raw: "(GitHub raw)",
+          copy: "copy on this site",
+          history: "history",
+          schema: "format (JSON Schema). table, address (0-based), type and order match the PortDock CSV.",
+          license: "License: ",
+          cite: " — please cite: ",
+          citeAfter: " and this page. ",
+          bundle: "data bundle, version and changelog",
+          mistake: "Found a mistake? Please open a GitHub issue with the manual page.",
+          sourcesTitle: "Sources",
+          checked: (c: { date: string }) => `checked ${c.date}`,
+          sameKind: (c: { kind: string }) => `Other ${c.kind} maps`,
+          allMaps: "All device register maps",
+          kindGuides: (c: { kind: string }) => `${c.kind} guides and calculators`,
+          webTool: "web tool",
+          modbusGuides: "Modbus guides",
+          testTools: "Tools to test this device",
+          seeTool: "See the tool",
+          dlFree: "Download free (Windows 10/11)",
+        }
+      : page9(lang, "device");
+const core = isCore(lang);
+/** 데이터 글({ko,en}) — 추가 언어는 영어 그대로 */
+const dt = (t: { ko: string; en: string }) => (isCore(lang) ? t[lang] : t.en);
+/** 데이터 글을 보이는 요소의 lang — 추가 언어 쪽에서만 «en»(한국어·영어 쪽은 속성 없음) */
+const dataLang = core ? undefined : "en";
+// 번역이 없는 쪽(데이터 묶음 data/)으로 가는 링크 글 뒤 «(英語)» 같은 표시 — 한국어·영어는 빈 글
+const enMark = (p: string) => (isTranslated(lang, p) ? "" : ui(lang).inEnglish);
+const kindName = isCore(lang) ? KIND_TEXT[dev.kind][lang] : kinds9(lang)[dev.kind];
+const maker = dt(dev.manufacturer);
 const name = `${maker} ${dev.model}`;
-const title = L(`${name} Modbus 레지스터 맵`, `${name} Modbus register map`);
+const title = T.title({ name });
 // 검색 결과 제목 — «<제조사> <모델> 모드버스 주소» 로 찾는 사람이 많아 «주소» 를 넣는다(site/SEO.md)
 // 영어 제목이 검색 결과에서 잘리지 않게(66칸) — 제조사 이름이 긴 장비는 «& Addresses» 를 뺀다
 // 모델 이름이 아주 긴 장비(예: FRENIC-Mini/Eco/Multi/MEGA)는 한 단계 더 줄인다 — 칸 세기는 tools/site-check.mjs 와 같다
 const cols = (s: string) => [...s].reduce((n, c) => n + (/[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c) ? 2 : 1), 0);
 const fit = (...xs: string[]) => xs.find((x) => cols(x) <= 66) ?? xs[xs.length - 1];
-const seoTitle = L(
-  fit(`${name} Modbus 주소·레지스터 맵 — PortDock`, `${name} Modbus 레지스터 맵 — PortDock`),
-  fit(`${name} Modbus Register Map & Addresses — PortDock`, `${name} Modbus Register Map — PortDock`, `${dev.model} Modbus Register Map — PortDock`),
-);
-const descEn = `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit and scale, default settings, manual page references and JSON.`;
-const desc = L(
-  `${name}(${KIND_TEXT[dev.kind].ko}) Modbus(모드버스) 통신 주소·형식·단위·배율 ${dev.registers.length}개와 통신 기본값. 매뉴얼 쪽 번호 출처, JSON, PortDock 으로 바로 읽기.`,
-  cols(descEn) <= 160 ? descEn : `${name} (${KIND_TEXT[dev.kind].en}) Modbus register map: ${dev.registers.length} addresses with type, unit, scale, defaults, manual pages and JSON.`,
-);
+// 검색 결과 설명도 160칸 안에 드는 첫 글(추가 언어도 후보를 짧아지는 순으로 둔다)
+const fitTo = (n: number, xs: string[]) => xs.find((x) => cols(x) <= n) ?? xs[xs.length - 1];
+const seoTitle = fit(...T.seo({ name, model: dev.model }));
+const desc = fitTo(160, T.desc({ name, kind: kindName, n: dev.registers.length }));
 // 같은 종류 장비(다른 제조사 포함)·Modbus 가이드
 const sameKind = DEVICES.filter((d) => d.kind === dev.kind && d.id !== dev.id);
 const guides = GUIDES.filter((g) => g.devices && !g.deviceKinds?.length);
@@ -45,14 +166,17 @@ const guides = GUIDES.filter((g) => g.devices && !g.deviceKinds?.length);
 const kindGuides = GUIDES.filter((g) => g.deviceKinds?.includes(dev.kind));
 const kindWebTools = [...new Set(kindGuides.flatMap((g) => g.webTools ?? []))].map(webToolByPath);
 const master = toolById("modbus-master");
+// 배선도 만들기(2차 묶음 웹 도구) 링크 글 — 한국어·영어는 이 쪽의 짧은 이름, 추가 언어는 그 도구 이름(pageName — 번역이 없으면 «(英語)»)
+const wiringName = lang === "ko" ? "배선도 만들기" : lang === "en" ? "wiring diagram maker" : pageName(lang, "tools/wiring/");
 const slave = toolById("modbus-slave");
 const here = new URL(url(lang, devPath(dev)), Astro.site).href;
+const summary = isCore(lang) ? (dev.summary?.[lang] ?? dev.title[lang]) : summary9(lang, dev.id);
 const siteJson = new URL(`/devices/${dev.id}.json`, Astro.site).href;
 
 const TABLE_SHORT: Record<DevRegister["table"], string> = { coils: "CO", "discrete-inputs": "DI", "input-registers": "IR", "holding-registers": "HR" };
 const hex = (n: number) => "0x" + n.toString(16).toUpperCase().padStart(4, "0");
-const parityText = { none: L("없음", "None"), even: L("짝수", "Even"), odd: L("홀수", "Odd") };
-const addrText = { zero: L("통신 주소 그대로(0 기준)", "Wire address as is (0-based)"), one: L("1 기준 번호(통신 주소 + 1)", "1-based numbers (wire address + 1)"), plc: L("40001·30001 꼴(통신 주소 + 1, 앞자리가 표)", "40001/30001 style (wire address + 1, first digit = table)") };
+const parityText = T.parity;
+const addrText = T.addr;
 const typeText = (r: DevRegister) => {
   const order = r.order ?? dev.comm.order;
   const t = r.type === "string" ? `STRING(${r.len})` : r.type.toUpperCase();
@@ -64,15 +188,15 @@ const accessText = { r: "R", rw: "R/W", w: "W" };
 
 const c = dev.comm;
 const commRows: [string, string][] = [];
-commRows.push([L("형태", "Protocol"), dev.protocols.map((p) => ({ rtu: "Modbus RTU", ascii: "Modbus ASCII", tcp: "Modbus TCP" })[p]).join(", ")]);
-if (c.baud) commRows.push([L("속도(출하)", "Baud (factory)"), `${c.baud} bps${c.bauds?.length ? ` — ${L("고를 수 있음", "options")}: ${c.bauds.join(", ")}` : ""}`]);
+commRows.push([T.protocol, dev.protocols.map((p) => ({ rtu: "Modbus RTU", ascii: "Modbus ASCII", tcp: "Modbus TCP" })[p]).join(", ")]);
+if (c.baud) commRows.push([T.baud, `${c.baud} bps${c.bauds?.length ? ` — ${T.options}: ${c.bauds.join(", ")}` : ""}`]);
 if (c.dataBits || c.parity || c.stopBits)
-  commRows.push([L("데이터·패리티·정지", "Data · parity · stop"), [c.dataBits ?? "—", c.parity ? parityText[c.parity] : "—", c.stopBits ?? "—"].join(" · ")]);
-if (c.unit != null) commRows.push([L("국번(출하)", "Slave ID (factory)"), `${c.unit}${c.unitRange ? ` (${c.unitRange[0]}~${c.unitRange[1]})` : ""}`]);
-if (c.tcpPort) commRows.push([L("TCP 포트", "TCP port"), String(c.tcpPort)]);
-if (c.order) commRows.push([L("32비트 순서", "32-bit order"), c.order]);
-if (c.maxRegisters) commRows.push([L("한 번에 최대", "Max per request"), L(`${c.maxRegisters} 레지스터`, `${c.maxRegisters} registers`)]);
-commRows.push([L("매뉴얼 주소 표기", "Manual address style"), addrText[c.addressing]]);
+  commRows.push([T.frame, [c.dataBits ?? "—", c.parity ? parityText[c.parity] : "—", c.stopBits ?? "—"].join(" · ")]);
+if (c.unit != null) commRows.push([T.unit, `${c.unit}${c.unitRange ? ` (${c.unitRange[0]}~${c.unitRange[1]})` : ""}`]);
+if (c.tcpPort) commRows.push([T.tcpPort, String(c.tcpPort)]);
+if (c.order) commRows.push([T.order, c.order]);
+if (c.maxRegisters) commRows.push([T.max, T.maxRegs({ n: c.maxRegisters })]);
+commRows.push([T.addressing, addrText[c.addressing]]);
 
 const manuals = dev.sources.map((s) => ({
   "@type": "CreativeWork",
@@ -99,7 +223,7 @@ const ld = {
   creditText: `${citeText(RELEASE, dataHome(Astro.site))} — ${name}`,
   version: RELEASE.version,
   dateModified: dev.sources.map((s) => s.checked).sort().pop(),
-  isPartOf: { "@type": "Dataset", name: DATASET_NAME, url: new URL(url(lang, "data/"), Astro.site).href },
+  isPartOf: { "@type": "Dataset", name: DATASET_NAME, url: new URL(link(lang, "data/"), Astro.site).href },
   distribution: [
     { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: siteJson },
     { "@type": "DataDownload", encodingFormat: "text/markdown", contentUrl: new URL(`/devices/${dev.id}.md`, Astro.site).href },
@@ -112,54 +236,45 @@ const ld = {
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <header class="page-head">
     <div class="wrap">
-      <Crumbs lang={lang} items={[{ name: L("장비", "Devices"), path: "devices/" }, { name, path: devPath(dev) }]} />
+      <Crumbs lang={lang} items={[{ name: T.crumb, path: "devices/" }, { name, path: devPath(dev) }]} />
       <h1>{title}</h1>
-      <p>{dev.summary?.[lang] ?? dev.title[lang]} · {KIND_TEXT[dev.kind][lang]}{dev.models?.length ? ` · ${dev.models.join(", ")}` : ""}</p>
+      <p>{summary} · {kindName}{dev.models?.length ? ` · ${dev.models.join(", ")}` : ""}</p>
     </div>
   </header>
   <article class="wrap prose dev-page" style="padding-top:20px">
     <p class="dev-caution">
-      {
-        L(
-          "제조사 매뉴얼에서 사실 정보(주소·형식·단위·배율)만 옮겨 정리한 비공식 자료입니다. 제조사와 관계없고, 펌웨어·형번에 따라 다를 수 있습니다. 쓰기(운전 명령·설정 변경) 전에 반드시 장비 매뉴얼로 확인하세요.",
-          "An unofficial summary of facts (addresses, types, units, scaling) from the maker's manual. Not affiliated with the maker; values can differ by firmware or model. Always check the device manual before writing (run commands, settings).",
-        )
-      }
+      {T.caution}
     </p>
 
-    <h2>{L("통신 기본값", "Default communication")}</h2>
+    <h2>{T.commTitle}</h2>
     <div class="tbl">
       <table class="t">
         <tbody>{commRows.map(([k, v]) => <tr><th>{k}</th><td>{v}</td></tr>)}</tbody>
       </table>
     </div>
-    {!!c.notes?.length && <ul>{c.notes.map((n) => <li>{n[lang]}</li>)}</ul>}
+    {!!c.notes?.length && <ul lang={dataLang}>{c.notes.map((n) => <li>{dt(n)}</li>)}</ul>}
 
-    <h2>{L("레지스터", "Registers")} ({dev.registers.length})</h2>
+    <h2>{T.regsTitle} ({dev.registers.length})</h2>
     <p class="note">
-      {
-        L(
-          "«통신 주소» 는 요청 프레임에 실리는 0 기준 주소입니다(PortDock 의 «0 기준» 표기). 값 = 원시 값 × 배율. 표: HR 보유 레지스터, IR 입력 레지스터, CO 코일, DI 입력 접점. 함수 코드는 16진.",
-          "«Wire» is the 0-based address in the request frame (PortDock's «0-based» notation). Value = raw × scale. Table: HR holding register, IR input register, CO coil, DI discrete input. Function codes in hex.",
-        )
-      }
+      {T.regsNote}
     </p>
+    {T.enNote && <p class="note">{T.enNote}</p>}
     <div id="regs">
-    {dev.registers.length > 12 && <ListFilter lang={lang} target="regs" total={dev.registers.length} placeholder={L("레지스터 찾기 — 예: 전압, 30001", "Find a register — e.g. voltage, 30001")} />}
-    <p class="note only-narrow scroll-hint">{L("표는 옆으로 밀어 볼 수 있습니다 — 첫 열(매뉴얼 주소)은 고정됩니다.", "Swipe the table sideways — the first column (manual address) stays put.")}</p>
+    {dev.registers.length > 12 && <ListFilter lang={lang} target="regs" total={dev.registers.length} placeholder={T.findReg} />}
+    <p class="note only-narrow scroll-hint">{T.scroll}</p>
     <div class="tbl regs-scroll">
       <table class="t dev-regs">
         <thead>
           <tr>
-            <th>{L("매뉴얼 주소", "Manual")}</th>
-            <th>{L("통신 주소", "Wire")}</th>
-            <th>{L("표", "Table")}</th>
-            <th>{L("이름", "Name")}</th>
-            <th>{L("형식", "Type")}</th>
-            <th>{L("단위·배율", "Unit · scale")}</th>
+            <th>{T.th.manual}</th>
+            <th>{T.th.wire}</th>
+            <th>{T.th.table}</th>
+            <th>{T.th.name}</th>
+            <th>{T.th.type}</th>
+            <th>{T.th.unit}</th>
             <th>R/W</th>
             <th>FC</th>
-            <th>{L("설명", "Details")}</th>
+            <th>{T.th.details}</th>
           </tr>
         </thead>
         <tbody>
@@ -171,21 +286,21 @@ const ld = {
                   {r.address} <small>({hex(r.address)})</small>
                 </td>
                 <td class="mono">{TABLE_SHORT[r.table]}</td>
-                <td>{r.name[lang]}</td>
+                <td lang={dataLang}>{dt(r.name)}</td>
                 <td class="mono">{typeText(r)}</td>
                 <td class="mono">{scaleText(r)}</td>
                 <td class="mono">{accessText[r.access]}</td>
                 <td class="mono">{fcText(r)}</td>
                 <td class="dev-desc">
-                  {r.description && <div>{r.description[lang]}</div>}
+                  {r.description && <div lang={dataLang}>{dt(r.description)}</div>}
                   {r.range && (
                     <div>
-                      {L("범위", "Range")} {r.range.min ?? "…"} ~ {r.range.max ?? "…"}
+                      {T.range} {r.range.min ?? "…"} ~ {r.range.max ?? "…"}
                       {r.unit ? ` ${r.unit}` : ""}
                     </div>
                   )}
-                  {!!r.values?.length && <div>{r.values.map((v) => `${v.value} = ${v[lang]}`).join(" · ")}</div>}
-                  {!!r.bits?.length && <div>{r.bits.map((b) => `b${b.bit} ${b[lang]}`).join(" · ")}</div>}
+                  {!!r.values?.length && <div lang={dataLang}>{r.values.map((v) => `${v.value} = ${dt(v)}`).join(" · ")}</div>}
+                  {!!r.bits?.length && <div lang={dataLang}>{r.bits.map((b) => `b${b.bit} ${dt(b)}`).join(" · ")}</div>}
                   {r.ref && <div class="note">{refText(r.ref, lang)}</div>}
                 </td>
               </tr>
@@ -197,51 +312,51 @@ const ld = {
     </div>
     {!!dev.notes?.length && (
       <>
-        <h2>{L("주의", "Notes")}</h2>
-        <ul>{dev.notes.map((n) => <li>{n[lang]}</li>)}</ul>
+        <h2>{T.notesTitle}</h2>
+        <ul lang={dataLang}>{dev.notes.map((n) => <li>{dt(n)}</li>)}</ul>
       </>
     )}
 
-    <h2>{L("PortDock 으로 바로 읽기", "Read it with PortDock")}</h2>
+    <h2>{T.readTitle}</h2>
     <ol>
       <li>
-        {L("무료 ", "Install the free ")}<a href={url(lang, `${master.id}/`)}>{master.name}</a>{L(" 를 설치하고 장비와 같은 통신 설정으로 연결합니다.", " and connect with the device's settings.")}
+        {T.read1[0]}<a href={link(lang, `${master.id}/`)}>{master.name}</a>{T.read1[1]}
       </li>
-      <li>{L("가운데 표 도구줄의 «장비 프로필…» 에서 이 장비를 고르고 «불러오기» — 폴링 표·칸 이름·형식·국번이 채워집니다(통신 기본값도 맞출 수 있음).", "On the table toolbar, «Device profile…» → pick this device → «Load». Polling tables, names, types and the Slave ID are filled in (optionally the serial settings too).")}</li>
-      <li>{L("칸 이름에 단위·배율(예 «×0.01 Hz»)이 붙습니다. 화면 값은 원시 값이므로 배율을 곱해 읽습니다.", "Names carry the unit and scale (e.g. «×0.01 Hz»). Values on screen are raw — multiply by the scale.")}</li>
+      <li>{T.read2}</li>
+      <li>{T.read3}</li>
       <li>
-        {L("장비 없이 프로그램을 시험하려면 ", "To test your program without the device, ")}<a href={url(lang, `${slave.id}/`)}>{slave.name}</a>{L(" 의 «장비 흉내…» 로 같은 맵(예시 값)을 띄웁니다.", "'s «Emulate device…» serves the same map with example values.")}
+        {T.read4[0]}<a href={link(lang, `${slave.id}/`)}>{slave.name}</a>{T.read4[1]}
       </li>
     </ol>
     {
       dev.protocols.some((p) => p !== "tcp") && (
         <p>
-          {L("RS-485 배선은 ", "To draw the RS-485 wiring, open the ")}
-          <a href={`${url(lang, "tools/wiring/")}#tpl=rs485-2w&ref=${dev.id}`}>{L("배선도 만들기", "wiring diagram maker")}</a>
-          {L(" 에서 이 장비의 이름·국번·보율·패리티로 미리 채운 그림을 그릴 수 있습니다(단자 번호는 매뉴얼 확인).", " pre-filled with this device's name, slave ID, baud rate and parity (check terminal numbers in the manual).")}
+          {T.wiring[0]}
+          <a href={`${link(lang, "tools/wiring/")}#tpl=rs485-2w&ref=${dev.id}`}>{wiringName}</a>
+          {T.wiring[1]}
         </p>
       )
     }
 
-    <h2>{L("JSON 내려받기", "Download JSON")}</h2>
+    <h2>{T.jsonTitle}</h2>
     <ul>
-      <li><a href={rawUrl(dev)}>{dev.id}.json</a> {L("(GitHub 원본)", "(GitHub raw)")} · <a href={siteJson}>{L("이 사이트 사본", "copy on this site")}</a> · <a href={sourceUrl(dev)}>{L("고친 이력", "history")}</a></li>
-      <li><a href={SCHEMA_URL}>schema.json</a> — {L("형식 설명(JSON Schema). table·address(0 기준)·type·order 는 PortDock CSV 와 같습니다.", "format (JSON Schema). table, address (0-based), type and order match the PortDock CSV.")}</li>
+      <li><a href={rawUrl(dev)}>{dev.id}.json</a> {T.raw} · <a href={siteJson}>{T.copy}</a> · <a href={sourceUrl(dev)}>{T.history}</a></li>
+      <li><a href={SCHEMA_URL}>schema.json</a> — {T.schema}</li>
       <li>
-        {L("라이선스: ", "License: ")}<a href={CC_BY}>CC BY 4.0</a>{L(" — 쓰실 때 출처를 밝혀 주세요: ", " — please cite: ")}<q>{citeText(RELEASE, dataHome(Astro.site))}</q>{L(" 와 이 쪽 주소. ", " and this page. ")}<a href={LICENSE_URL}>LICENSE</a> · <a href={url(lang, "data/")}>{L("데이터 묶음·판·바뀐 점", "data bundle, version and changelog")}</a>
+        {T.license}<a href={CC_BY}>CC BY 4.0</a>{T.cite}<q>{citeText(RELEASE, dataHome(Astro.site))}</q>{T.citeAfter}<a href={LICENSE_URL}>LICENSE</a> · <a href={link(lang, "data/")}>{T.bundle}{enMark("data/")}</a>
       </li>
-      <li>{L("틀린 곳을 찾으면 GitHub 이슈로 알려 주세요(쪽 번호와 함께).", "Found a mistake? Please open a GitHub issue with the manual page.")}</li>
+      <li>{T.mistake}</li>
     </ul>
 
-    <h2>{L("출처", "Sources")}</h2>
+    <h2>{T.sourcesTitle}</h2>
     <ul>
       {
         dev.sources.map((s) => (
           <li>
             <a href={s.url} rel="nofollow noopener">{s.title}</a>
             {s.publisher ? ` — ${s.publisher}` : ""}
-            {s.edition ? `, ${s.edition[lang]}` : ""}
-            {s.pages ? ` · ${s.pages[lang]}` : ""} · {L(`확인 ${s.checked}`, `checked ${s.checked}`)}
+            {s.edition ? `, ${dt(s.edition)}` : ""}
+            {s.pages ? ` · ${dt(s.pages)}` : ""} · {T.checked({ date: s.checked })}
           </li>
         ))
       }
@@ -253,33 +368,33 @@ const ld = {
     {
       sameKind.length > 0 && (
         <section class="related">
-          <h2>{L(`같은 종류 장비 — ${KIND_TEXT[dev.kind].ko}`, `Other ${KIND_TEXT[dev.kind].en} maps`)}</h2>
+          <h2>{T.sameKind({ kind: kindName })}</h2>
           <ul class="links cols">
             {sameKind.map((d) => (
               <li>
-                <a href={url(lang, devPath(d))}>
-                  {d.manufacturer[lang]} {d.model}
+                <a href={link(lang, devPath(d))}>
+                  {dt(d.manufacturer)} {d.model}
                 </a>
               </li>
             ))}
           </ul>
-          <p class="note"><a href={url(lang, "devices/")}>{L("모든 장비 레지스터 맵", "All device register maps")} →</a></p>
+          <p class="note"><a href={link(lang, "devices/")}>{T.allMaps} →</a></p>
         </section>
       )
     }
     {
       kindGuides.length > 0 && (
         <section class="related">
-          <h2>{L(`${KIND_TEXT[dev.kind].ko} 가이드·계산기`, `${KIND_TEXT[dev.kind].en} guides and calculators`)}</h2>
+          <h2>{T.kindGuides({ kind: kindName })}</h2>
           <ul class="links">
             {kindGuides.map((g) => (
               <li>
-                <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+                <a href={link(lang, `guides/${g.slug}/`)}>{pageName(lang, `guides/${g.slug}/`)}</a>
               </li>
             ))}
             {kindWebTools.map((w) => (
               <li>
-                <a href={url(lang, w.path)}>{w.name[lang]}</a> — {L("웹 도구", "web tool")}
+                <a href={link(lang, w.path)}>{pageName(lang, w.path)}</a> — {T.webTool}
               </li>
             ))}
           </ul>
@@ -287,27 +402,27 @@ const ld = {
       )
     }
     <section class="related">
-      <h2>{L("Modbus 가이드", "Modbus guides")}</h2>
+      <h2>{T.modbusGuides}</h2>
       <ul class="links">
         {guides.map((g) => (
           <li>
-            <a href={url(lang, `guides/${g.slug}/`)}>{g.title[lang]}</a>
+            <a href={link(lang, `guides/${g.slug}/`)}>{pageName(lang, `guides/${g.slug}/`)}</a>
           </li>
         ))}
       </ul>
     </section>
     <section class="related">
-      <h2>{L("이 장비를 시험하는 도구", "Tools to test this device")}</h2>
+      <h2>{T.testTools}</h2>
       <div class="grid">
         {[master, slave].map((t) => (
-          <a class="card" href={url(lang, `${t.id}/`)}>
+          <a class="card" href={link(lang, `${t.id}/`)}>
             <h3>{t.name}</h3>
-            <p>{t.tagline[lang]}</p>
-            <span class="go">{L("도구 보기", "See the tool")} →</span>
+            <p>{appTagline(t, lang)}</p>
+            <span class="go">{T.seeTool} →</span>
           </a>
         ))}
       </div>
-      <p class="note"><a href={url(lang, "download/")}>{L("무료로 내려받기(윈도우 10·11)", "Download free (Windows 10/11)")} →</a></p>
+      <p class="note"><a href={link(lang, "download/")}>{T.dlFree} →</a></p>
     </section>
   </div>
 </Base>

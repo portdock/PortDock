@@ -36,7 +36,7 @@ export default (c: HomeCtx) => ({
   allWeb: `Ver as ${c.nWeb} ferramentas web em português`,
   guidesTitle: "Guias e mapas de registradores de equipamentos",
   read: "Ler",
-  devTitle: `Mapas de registradores Modbus de ${c.nDevices} equipamentos industriais (em inglês)`,
+  devTitle: `Mapas de registradores Modbus de ${c.nDevices} equipamentos industriais`, // 링크 글 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devBody: "Inversores de frequência, controladores de temperatura, medidores de energia — fontes dos manuais, JSON",
   guidesEnTitle: `${c.nGuides} guias para o campo (em inglês)`,
   guidesEnBody: "Modbus sem resposta, ligação RS-485, notação de endereços, malha 4-20 mA, quedas de USB-serial e mais.",

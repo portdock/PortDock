@@ -10,7 +10,7 @@ import { intervalFromPower, pulseHz } from "../lib/energyPulse";
 import type { SiteLang } from "../i18n/langs";
 import { page6 } from "../i18n";
 import { pageName } from "../i18n/names";
-import { ui, link } from "../lib/i18n";
+import { ui, link, isTranslated } from "../lib/i18n";
 
 interface Props {
   lang: SiteLang;
@@ -139,7 +139,7 @@ const L =
       see: ["For CT ratio, secondary current and burden, use the ", ". For kW, kVA and power factor, use the ", ". For power meter addresses read over Modbus, see the ", "."],
       seeLinks: ["CT Ratio Calculator", "Three-Phase Power Calculator", "device register maps"],
     }
-  : { ...page6(lang, "energyPulse"), seeLinks: [pageName(lang, "tools/ct-ratio/"), pageName(lang, "tools/three-phase-power/"), page6(lang, "energyPulse").devLink + ui(lang).inEnglish] };
+  : { ...page6(lang, "energyPulse"), seeLinks: [pageName(lang, "tools/ct-ratio/"), pageName(lang, "tools/three-phase-power/"), page6(lang, "energyPulse").devLink + (isTranslated(lang, "devices/") ? "" : ui(lang).inEnglish)] };
 const ld = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

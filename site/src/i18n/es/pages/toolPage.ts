@@ -9,7 +9,7 @@ export default {
   faq: "Preguntas frecuentes",
   similar: "Herramientas parecidas",
   guides: "Guías relacionadas",
-  devices: "Perfiles de equipos incluidos: mapas de registros (en inglés)",
+  devices: "Perfiles de equipos incluidos: mapas de registros", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Estos equipos vienen incluidos como perfiles; sus tablas de registros y el JSON también están en este sitio.",
   web: "Herramientas web, sin instalar",
   shotAlt: "pantalla",

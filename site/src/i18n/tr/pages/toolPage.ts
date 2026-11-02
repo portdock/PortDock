@@ -9,7 +9,7 @@ export default {
   faq: "Sık sorulan sorular",
   similar: "Benzer araçlar",
   guides: "İlgili rehberler",
-  devices: "Yerleşik cihaz profilleri — kayıt (register) haritaları (İngilizce)",
+  devices: "Yerleşik cihaz profilleri — kayıt (register) haritaları", // 머리말 — 장비 맵이 그 언어로 없으면 화면이 «(영어)» 표시를 붙인다
   devicesNote: "Bu cihazlar profil olarak yerleşiktir; kayıt tabloları ve JSON dosyaları bu sitede de bulunur.",
   web: "Web araçları, kurulum gerekmez",
   shotAlt: "ekranı",
