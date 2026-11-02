@@ -23,7 +23,7 @@ export default {
     portable: "ohne Installation",
   },
   screenLang: {
-    title: "Oberfläche in 12 Sprachen (ab 0.11.0)",
+    title: "Oberfläche in 12 Sprachen",
     body: "Die Sprache der Oberfläche wählen Sie aus Koreanisch, Englisch, Japanisch, Deutsch, Spanisch, Portugiesisch, Polnisch, Französisch, Vietnamesisch, Türkisch, Italienisch und Indonesisch (Kopfzeile oder Einstellungen). Beim ersten Start gilt die Anzeigesprache von Windows; jede andere Sprache startet auf Englisch. Bei anderen Oberflächensprachen als Koreanisch und Englisch bleiben die Hilfe und einige Ergebnistexte auf Englisch.",
   },
 };

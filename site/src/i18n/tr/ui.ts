@@ -33,7 +33,7 @@ export default {
     ["Yeniden bağlanır", "USB dönüştürücüyü çıkarıp yeniden takın: PortDock aynı cihazı yeniden bulur ve bağlantının ne zaman koptuğunu kaydeder."],
     ["Bir satır, bir mesaj", "Çerçeveler bekleme aralığı, bitiş karakteri, sabit uzunluk veya Modbus RTU ile ayrılır — birleşmiş ya da bölünmüş veriyle uğraşmazsınız."],
     ["Göndermeden önce görün", "Sağlama toplamı ve satır sonu dahil, gerçekten gidecek baytlar siz yazarken gösterilir."],
-    ["Türkçe arayüz de", "0.11.0 sürümünden itibaren programların ekranları Türkçe dahil 12 dilde (0.10.0 Korece ve İngilizce; yardım İngilizce); her denetimin üzerinde açıklama balonu var."],
+    ["Türkçe arayüz de", "Programların ekranları Türkçe dahil 12 dilde (yardım Korece ve İngilizce; başka dilde ekranda İngilizce); her denetimin üzerinde açıklama balonu var."],
   ],
   ctaTitle: "Soru, hata ya da öneri mi var?",
   ctaBody: "Bir şeyin nasıl çalıştığını sorun, hata bildirin, yeni bir web aracı ya da kılavuz önerin veya bir cihazın register haritasındaki yanlışı düzeltin.",

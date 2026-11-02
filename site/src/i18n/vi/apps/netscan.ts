@@ -23,7 +23,7 @@ export default {
       body: "Nếu Modbus 502, MC 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23 hoặc HTTP 80 nằm trong số cổng đã kiểm tra, sẽ thêm ghi chú như «Giao thức công nghiệp đang mở — ai trong cùng mạng cũng đọc và ghi được (không xác thực) — hãy kiểm tra việc tách mạng». Không quét thêm cổng nào và không đổi cài đặt thiết bị nào.",
     },
     {
-      title: "Dò bằng broadcast — EtherNet/IP, BACnet (từ 0.11.0)",
+      title: "Dò bằng broadcast — EtherNet/IP, BACnet",
       body: "Chỉ khi bạn nhấn, gửi EtherNet/IP ListIdentity (UDP 44818) và BACnet Who-Is (UDP 47808) tới địa chỉ broadcast của card mạng đã chọn, rồi gộp vào bảng hãng, loại thiết bị, tên sản phẩm và phiên bản — cùng mã thể hiện thiết bị BACnet và ID hãng — của những thiết bị chưa biết IP. Chỉ là yêu cầu đọc; số serial không được hiện.",
     },
     {

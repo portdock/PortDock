@@ -26,7 +26,7 @@ export default (c: HomeCtx) => ({
   heroAlt: "Layar PortDock Serial — byte yang diterima dan respons Modbus yang sudah diuraikan",
   heroCap: "PortDock Serial — contoh layar (data contoh, tampilan bahasa Inggris)",
   appsTitle: `${c.nApps} program Windows${c.mcp ? " + MCP" : ""}`,
-  appsLead: "Satu program kecil untuk setiap pekerjaan — ambil yang Anda perlukan saja. Mulai 0.11.0 tampilan program tersedia dalam 12 bahasa, termasuk bahasa Indonesia (0.10.0: bahasa Korea dan Inggris saja; bantuan dalam bahasa Inggris).",
+  appsLead: "Satu program kecil untuk setiap pekerjaan — ambil yang Anda perlukan saja. Tampilan program tersedia dalam 12 bahasa, termasuk bahasa Indonesia (bantuan dalam bahasa Korea dan Inggris; pada layar bahasa lain, bahasa Inggris).",
   screen: "– tampilan",
   soon: "Segera hadir",
   webTitle: "Alat web — tanpa instalasi",

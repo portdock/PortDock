@@ -23,7 +23,7 @@ export default {
     portable: "bez instalacji",
   },
   screenLang: {
-    title: "Ekrany w 12 językach (od 0.11.0)",
+    title: "Ekrany w 12 językach",
     body: "Język ekranu wybierzesz spośród koreańskiego, angielskiego, japońskiego, niemieckiego, hiszpańskiego, portugalskiego, polskiego, francuskiego, wietnamskiego, tureckiego, włoskiego i indonezyjskiego (nagłówek lub Ustawienia). Przy pierwszym uruchomieniu program używa języka wyświetlania Windows; każdy inny język uruchamia się po angielsku. Na ekranach w innych językach niż koreański i angielski pomoc i część tekstów wyników pozostają po angielsku.",
   },
 };

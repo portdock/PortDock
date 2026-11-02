@@ -26,7 +26,7 @@ export default (c: HomeCtx) => ({
   heroAlt: "PortDock Serial の画面 — 受信したバイト列の記録と Modbus 応答の解析",
   heroCap: "PortDock Serial — 画面の例(サンプルデータ、画面は英語)",
   appsTitle: `Windows ソフト ${c.nApps} 本${c.mcp ? "+MCP" : ""}`,
-  appsLead: "用途ごとに分かれた小さなソフトです。必要なものだけダウンロードして使えます。ソフトの画面は 0.11.0 から日本語を含む 12 言語で使えます(0.10.0 は韓国語・英語のみ、ヘルプは英語)。",
+  appsLead: "用途ごとに分かれた小さなソフトです。必要なものだけダウンロードして使えます。ソフトの画面は日本語を含む 12 言語で使えます(ヘルプは韓国語・英語で、他の言語の画面では英語)。",
   screen: "の画面",
   soon: "近日公開",
   webTitle: "Web ツール — インストール不要",

@@ -23,7 +23,7 @@ export default {
       body: "Denetlenen portlar arasında Modbus 502, MC 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23 veya HTTP 80 varsa «Endüstriyel protokol açık — aynı ağdaki herkes okuyup yazabilir (kimlik doğrulama yok) — ağ ayrımını kontrol edin» gibi bir not ekler. Ek port taramaz, hiçbir cihaz ayarını değiştirmez.",
     },
     {
-      title: "Yayınla keşif — EtherNet/IP, BACnet (0.11.0'dan itibaren)",
+      title: "Yayınla keşif — EtherNet/IP, BACnet",
       body: "Yalnızca düğmeye bastığınızda, seçili bağdaştırıcının yayın adresine EtherNet/IP ListIdentity (UDP 44818) ve BACnet Who-Is (UDP 47808) gönderir; IP'sini bilmediğiniz cihazların üreticisini, cihaz türünü, ürün adını ve revizyonunu — ayrıca BACnet cihaz örneğini ve üretici kimliğini — tabloya ekler. Salt okunur isteklerdir; seri numaraları gösterilmez.",
     },
     {

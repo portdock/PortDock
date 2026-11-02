@@ -23,7 +23,7 @@ export default {
     portable: "sem instalação",
   },
   screenLang: {
-    title: "Telas em 12 idiomas (a partir da 0.11.0)",
+    title: "Telas em 12 idiomas",
     body: "Escolha o idioma da tela entre coreano, inglês, japonês, alemão, espanhol, português, polonês, francês, vietnamita, turco, italiano e indonésio (no cabeçalho ou em Configurações). A primeira inicialização segue o idioma de exibição do Windows; qualquer outro idioma começa em inglês. Nas telas que não são em coreano nem em inglês, a ajuda e parte do texto dos resultados continuam em inglês.",
   },
 };

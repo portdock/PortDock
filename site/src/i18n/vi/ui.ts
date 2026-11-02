@@ -33,7 +33,7 @@ export default {
     ["Tự kết nối lại", "Rút ra cắm lại bộ chuyển đổi USB: PortDock tìm lại đúng thiết bị đó và ghi lại thời điểm mất kết nối."],
     ["Một dòng là một bản tin", "Tách khung (frame) theo khoảng nghỉ, ký tự kết thúc, độ dài cố định hoặc Modbus RTU — không còn dữ liệu bị dính hay bị cắt đôi."],
     ["Thấy trước khi gửi", "Các byte sẽ được gửi đi, gồm cả checksum và ký tự xuống dòng, hiện ra ngay khi bạn gõ."],
-    ["Có cả tiếng Việt", "Từ 0.11.0, màn hình chương trình có 12 ngôn ngữ, trong đó có tiếng Việt (0.10.0: tiếng Hàn và tiếng Anh; trợ giúp bằng tiếng Anh), mỗi nút đều có chú thích (tooltip)."],
+    ["Có cả tiếng Việt", "Màn hình chương trình có 12 ngôn ngữ, trong đó có tiếng Việt (trợ giúp bằng tiếng Hàn và tiếng Anh; ở màn hình ngôn ngữ khác là tiếng Anh), mỗi nút đều có chú thích (tooltip)."],
   ],
   ctaTitle: "Có câu hỏi, lỗi hay ý tưởng?",
   ctaBody: "Hỏi cách dùng, báo lỗi, đề xuất công cụ web hay bài hướng dẫn mới, hoặc sửa bảng thanh ghi (register map) của thiết bị.",

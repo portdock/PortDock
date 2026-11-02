@@ -23,7 +23,7 @@ export default {
       body: "Jeśli wśród już sprawdzanych portów jest Modbus 502, MC 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23 lub HTTP 80, dodaje uwagę w rodzaju «Protokół przemysłowy otwarty — każdy w tej samej sieci może czytać i zapisywać (bez uwierzytelniania) — sprawdź separację sieci». Nie skanuje dodatkowych portów i nie zmienia ustawień urządzeń.",
     },
     {
-      title: "Wykrywanie rozgłoszeniowe — EtherNet/IP, BACnet (od 0.11.0)",
+      title: "Wykrywanie rozgłoszeniowe — EtherNet/IP, BACnet",
       body: "Tylko po naciśnięciu wysyła EtherNet/IP ListIdentity (UDP 44818) i BACnet Who-Is (UDP 47808) na adres rozgłoszeniowy wybranej karty i dołącza do tabeli producenta, typ urządzenia, nazwę produktu i rewizję — a dla BACnet także numer instancji urządzenia i ID producenta — urządzeń, których IP nie znasz. Zapytania tylko do odczytu; numery seryjne nie są pokazywane.",
     },
     {

@@ -23,7 +23,7 @@ export default {
       body: "Ist Modbus 502, MC 5006/5007, EtherNet/IP 44818, S7 102, OPC UA 4840, Telnet 23 oder HTTP 80 unter den bereits geprüften Ports, kommt ein Hinweis wie «Industrieprotokoll offen — jeder im selben Netz kann lesen und schreiben (keine Authentifizierung) — Netztrennung prüfen». Es werden keine weiteren Ports gescannt und keine Geräteeinstellungen verändert.",
     },
     {
-      title: "Broadcast-Suche — EtherNet/IP, BACnet (ab 0.11.0)",
+      title: "Broadcast-Suche — EtherNet/IP, BACnet",
       body: "Sendet nur auf Knopfdruck EtherNet/IP ListIdentity (UDP 44818) und BACnet Who-Is (UDP 47808) an die Broadcast-Adresse des gewählten Adapters und führt Hersteller, Gerätetyp, Produktname und Revision — bei BACnet auch Geräteinstanz und Hersteller-ID — von Geräten, deren IP Sie nicht kennen, in die Tabelle ein. Nur lesende Anfragen; Seriennummern werden nicht angezeigt.",
     },
     {

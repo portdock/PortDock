@@ -25,7 +25,7 @@ export default {
   ] as [string, string][],
   appTitle: "Więcej w programach PortDock",
   app1: "Gdy laptop służy jako komputer przy maszynie lub w terenie, uśpienie, selektywne wstrzymywanie USB, szybkie uruchamianie i zasady ponownego uruchamiania po aktualizacjach odczytasz bez uprawnień administratora w programie",
-  app2: "na karcie „This PC” → „Read this PC's settings” (tylko odczyt, interfejs programu po angielsku lub koreańsku, od wersji 0.11.0 także po polsku).",
+  app2: "na karcie „Ten PC” → „Odczytaj ustawienia tego PC” (tylko odczyt, interfejs programu w 12 językach, także po polsku).",
   faqTitle: "Najczęstsze pytania",
   faq: [
     ["Przy ilu procentach wymienić baterię?", "Nie ma jednego progu. Sprawdź warunki gwarancji i wymiany producenta laptopa. W praktyce liczy się, czy rzeczywisty czas pracy wystarcza do twojej pracy."],

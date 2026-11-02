@@ -33,7 +33,7 @@ export default {
     ["Se vuelve a conectar", "Desconecte y vuelva a conectar el adaptador USB: PortDock encuentra el mismo dispositivo y registra la hora del corte."],
     ["Una línea, un mensaje", "Separa las tramas por tiempo de silencio, carácter final, longitud fija o Modbus RTU: se acabaron los datos pegados o partidos."],
     ["Vea lo que va a enviar", "Mientras escribe, muestra los bytes exactos que saldrán, con checksum y fin de línea incluidos."],
-    ["También en español", "Desde la 0.11.0, pantallas en 12 idiomas, entre ellos el español (la 0.10.0, en coreano e inglés; la ayuda, en inglés), con una descripción emergente en cada control."],
+    ["También en español", "Pantallas en 12 idiomas, entre ellos el español (la ayuda, en coreano e inglés; con otro idioma de pantalla, en inglés), con una descripción emergente en cada control."],
   ],
   ctaTitle: "¿Preguntas, errores o ideas?",
   ctaBody: "Pregunte cómo funciona algo, reporte un error, proponga una herramienta web o una guía, o corrija un mapa de registros de un equipo.",
