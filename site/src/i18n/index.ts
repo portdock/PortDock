@@ -88,6 +88,9 @@ import fr9 from "./fr/batch9.ts";
 import it9 from "./it/batch9.ts";
 import pt9 from "./pt/batch9.ts";
 import es9 from "./es/batch9.ts";
+import vi9 from "./vi/batch9.ts";
+import tr9 from "./tr/batch9.ts";
+import id9 from "./id/batch9.ts";
 import { registerCatalog, type Catalog } from "../lib/tr.ts";
 import type { ExtraLang } from "./langs.ts";
 import type { Page2Id, Page3Id, Page4Id, Page5Id, Page6Id, Page7Id, Page8Id, Page9Id } from "./scope.ts";
@@ -193,7 +196,7 @@ export const DICTS7: Partial<Record<ExtraLang, Batch7Part>> = { ja: ja7, id: id7
 /** 8차 묶음을 (일부라도) 옮긴 언어 */
 export const DICTS8: Partial<Record<ExtraLang, Batch8Part>> = { ja: ja8, fr: fr8, pl: pl8, de: de8, it: it8, pt: pt8, es: es8, vi: vi8, tr: tr8, id: id8 };
 /** 9차 묶음을 (일부라도) 옮긴 언어 */
-export const DICTS9: Partial<Record<ExtraLang, Batch9Part>> = { ja: ja9, de: de9, pl: pl9, fr: fr9, it: it9, pt: pt9, es: es9 };
+export const DICTS9: Partial<Record<ExtraLang, Batch9Part>> = { ja: ja9, de: de9, pl: pl9, fr: fr9, it: it9, pt: pt9, es: es9, vi: vi9, tr: tr9, id: id9 };
 
 /** 추가 언어 사전 */
 export const dict = (lang: ExtraLang): Dict => DICTS[lang];

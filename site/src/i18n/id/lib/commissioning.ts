@@ -18,7 +18,7 @@ export default {
   "PC / industrial PC": "PC / PC industri",
   "HMI (touch panel)": "HMI (panel sentuh)",
   "Variable frequency drive": "Inverter (variable frequency drive)",
-  "Power meter": "Power meter",
+  "Power meter": "Meter daya",
   "4-20 mA sensor": "Sensor 4-20 mA",
   "NPN/PNP sensor": "Sensor NPN/PNP",
   "RS-485 bus": "Bus RS-485",
