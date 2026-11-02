@@ -1,0 +1,20 @@
+// fr — liste des cartes de registres Modbus (views/DevicesIndex.astro).
+export default {
+  title: "Cartes de registres Modbus d’appareils industriels",
+  seo: "Registres Modbus : variateurs, compteurs, régulateurs — PortDock",
+  desc: (c: { n: number }) => `Adresses Modbus, types, échelles et réglages par défaut de ${c.n} variateurs, régulateurs et compteurs d’énergie — avec la source du manuel, JSON (CC BY 4.0).`,
+  crumb: "Appareils",
+  find: "Trouver un appareil — fabricant, modèle ou type (p. ex. LS, variateur, TK4)",
+  regs: (c: { n: number }) => `${c.n} registres`,
+  aboutTitle: "À propos de ces données",
+  facts: "Uniquement des faits (adresse, type, unité, échelle, lecture/écriture) tirés des manuels publiés par les fabricants, chacun avec titre du document, édition, page et date de vérification. Ce qu’un manuel ne confirme pas est omis.",
+  unofficial: "Non officiel et sans lien avec les fabricants. Les valeurs peuvent varier selon le micrologiciel ou le modèle — consultez le manuel de l’appareil avant d’écrire.",
+  bundle: (c: { version: string }) => `Lot de données ${c.version}`,
+  bundleAfter: " — version, all.json, registers.csv, champs, citation et journal des modifications",
+  json: "JSON : ",
+  maker: "fabricant",
+  model: "modèle",
+  license: "Licence : ",
+  licenseAfter: " — utilisation libre avec attribution.",
+  apps: "Les mêmes données sont intégrées à PortDock Modbus Master (« Profil d’appareil… ») et à Modbus Slave (« Émuler un appareil… »).",
+};
