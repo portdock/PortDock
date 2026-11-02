@@ -267,7 +267,7 @@ export const MORE: Partial<Record<ExtraLang, readonly LaterPath[]>> = {
   es: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS],
   pt: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS],
   tr: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS],
-  vi: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS],
+  vi: [...SCOPE2_PATHS, ...SCOPE3_PATHS, ...SCOPE4_PATHS, ...SCOPE5_PATHS, ...SCOPE6_PATHS, ...SCOPE7_PATHS, ...SCOPE8_PATHS, ...SCOPE9_PATHS],
 };
 
 const bare = (path: string) => path.replace(/^\/+/, "").replace(/[#?].*$/, "");
