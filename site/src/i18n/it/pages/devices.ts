@@ -1,0 +1,20 @@
+// 장비 레지스터 맵 목록(views/DevicesIndex.astro)의 화면 글 — 이탈리아어. 기준판 ja/pages/devices.ts.
+export default {
+  title: "Mappe dei registri Modbus dei dispositivi industriali",
+  seo: "Mappe dei registri Modbus: inverter, misuratori — PortDock",
+  desc: (c: { n: number }) => `Indirizzi Modbus, tipi, scale e valori di fabbrica di ${c.n} inverter, regolatori e misuratori di potenza, con manuali e JSON (CC BY 4.0).`,
+  crumb: "Dispositivi",
+  find: "Cercate un dispositivo: produttore, modello o tipo (es. LS, inverter, TK4)",
+  regs: (c: { n: number }) => `${c.n} registri`,
+  aboutTitle: "Informazioni su questi dati",
+  facts: "Solo fatti (indirizzo, tipo, unità, scala, lettura/scrittura) ricavati dai manuali pubblicati dai produttori, ciascuno con titolo del documento, edizione, pagina e data di verifica. Ciò che non è confermato in un manuale non viene incluso.",
+  unofficial: "Non ufficiale e non affiliato ai produttori. I valori possono variare in base al firmware o al modello: prima di scrivere consultate il manuale del dispositivo.",
+  bundle: (c: { version: string }) => `Pacchetto di dati ${c.version}`,
+  bundleAfter: " — versione, all.json, registers.csv, campi, citazione e registro delle modifiche",
+  json: "JSON: ",
+  maker: "produttore",
+  model: "modello",
+  license: "Licenza: ",
+  licenseAfter: " — uso libero con attribuzione.",
+  apps: "Gli stessi dati sono integrati in PortDock Modbus Master («Profilo dispositivo…») e in Modbus Slave («Emula dispositivo…»).",
+};
