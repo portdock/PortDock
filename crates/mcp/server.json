@@ -14,7 +14,7 @@
       "registryType": "mcpb",
       "identifier": "https://github.com/portdock/PortDock/releases/download/v0.11.0/PortDock-MCP.mcpb",
       "version": "0.11.0",
-      "fileSha256": "3d0fbbabd7cfb04dd5c209b06ecc22be43f649ca49d7a926695d09e053e54151",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "transport": {
         "type": "stdio"
       }
