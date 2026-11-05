@@ -1,4 +1,4 @@
-// pl — 9. paczka (mapy rejestrów Modbus: lista + 77 urządzeń, scope.ts SCOPE9). Wzór: ja/batch9.ts.
+// pl — 9. paczka (mapy rejestrów Modbus: lista + 86 urządzeń, scope.ts SCOPE9). Wzór: ja/batch9.ts.
 // Nie tłumaczymy: nazw producentów i modeli, nazw rejestrów, opisów, wartości, bitów, jednostek, uwag i źródeł (dane zostają po angielsku).
 import type { DeviceKind } from "../index.ts";
 import devices from "./pages/devices.ts";

@@ -101,14 +101,14 @@ export function devicesDigest(devices: Device[], links: (d: Device) => { page: s
   for (const d of devices) {
     const l = links(d);
     out.push(`## ${d.manufacturer.en} ${d.model} — ${d.title.en}`, "");
-    out.push(`- Page: ${l.page} · JSON: ${l.json} · Full table: ${l.md}`);
+    out.push(`- Full table: ${l.md}`);
     out.push(`- Protocols: ${d.protocols.join(", ")}${fmtComm(d) ? ` · factory settings: ${fmtComm(d)}` : ""} · manual address style: ${d.comm.addressing}${d.comm.order ? ` · 32-bit order ${d.comm.order}` : ""}`);
-    for (const s of d.sources) out.push(`- Source: ${s.title}${s.edition ? `, ${s.edition.en}` : ""}${s.pages ? `, ${s.pages.en}` : ""} — checked ${s.checked}`);
-    out.push(`- Registers (${d.registers.length}) — table, 0-based wire address, type, scale and unit, access, name:`);
+    for (const s of d.sources) out.push(`- Source: ${s.title}${s.edition ? `, ${s.edition.en}` : ""} — checked ${s.checked}`);
+    out.push(`- Registers (${d.registers.length}):`);
     for (const r of d.registers) {
       const type = r.type + (r.order ? ` ${r.order}` : "") + (r.len ? `×${r.len}` : "");
       const su = [r.scale != null && r.scale !== 1 ? `×${r.scale}` : "", r.unit ?? ""].filter(Boolean).join(" ");
-      out.push(`  - ${TABLE_SHORT[r.table]} ${r.address} ${type}${su ? ` ${su}` : ""} ${r.access} — ${r.name.en.replace(/\r?\n/g, " ")}`);
+      out.push(`  - ${TABLE_SHORT[r.table]} ${r.address} ${type}${su ? ` ${su}` : ""} ${r.access}: ${r.name.en.replace(/\r?\n/g, " ")}`);
     }
     out.push("");
   }

@@ -1,4 +1,4 @@
-// de — 9. Paket (Modbus-Registerbelegungen: Liste + 77 Geräte, scope.ts SCOPE9). Vorlage: ja/batch9.ts.
+// de — 9. Paket (Modbus-Registerbelegungen: Liste + 86 Geräte, scope.ts SCOPE9). Vorlage: ja/batch9.ts.
 // Nicht übersetzt: Hersteller- und Modellnamen, Registernamen, Beschreibungen, Werte, Bits, Einheiten, Hinweise und Quellenangaben (Daten bleiben Englisch).
 import type { DeviceKind } from "../index.ts";
 import devices from "./pages/devices.ts";

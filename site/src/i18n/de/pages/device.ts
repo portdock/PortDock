@@ -1,4 +1,4 @@
-// de — Modbus-Registerbelegung eines Geräts (views/DevicePage.astro), von allen 77 Geräten gemeinsam genutzt.
+// de — Modbus-Registerbelegung eines Geräts (views/DevicePage.astro), von allen 86 Geräten gemeinsam genutzt.
 export default {
   title: (c: { name: string }) => `${c.name} Modbus-Registerbelegung`,
   seo: (c: { name: string; model: string }) => [`${c.name} Modbus-Register und Adressen — PortDock`, `${c.name} Modbus-Registerbelegung — PortDock`, `${c.model} Modbus-Register — PortDock`],

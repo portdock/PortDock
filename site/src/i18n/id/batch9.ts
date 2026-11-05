@@ -1,4 +1,4 @@
-// Bahasa Indonesia — paket 9 (peta register perangkat: daftar + 77 perangkat, scope.ts SCOPE9). Contoh: ja/batch9.ts.
+// Bahasa Indonesia — paket 9 (peta register perangkat: daftar + 86 perangkat, scope.ts SCOPE9). Contoh: ja/batch9.ts.
 // Tidak diterjemahkan: nama pabrikan dan model, nama/deskripsi/nilai/bit/satuan register, catatan, nama-edisi-halaman dokumen sumber (data tetap berbahasa Inggris — layar memakai lang="en").
 import type { DeviceKind } from "../index.ts";
 import devices from "./pages/devices.ts";

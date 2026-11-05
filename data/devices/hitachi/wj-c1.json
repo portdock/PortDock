@@ -1,0 +1,1130 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "hitachi/wj-c1",
+  "manufacturer": {
+    "ko": "히타치",
+    "en": "Hitachi"
+  },
+  "model": "WJ-C1",
+  "models": [
+    "WJ Series C1"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "히타치 WJ 시리즈 C1 인버터 (RS485 Modbus RTU)",
+    "en": "Hitachi WJ Series C1 inverter (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "WJ200 후속. 내장 RS485 Modbus RTU. 코일 0001h 운전 명령, 레지스터 0001h F001 주파수 지령, 1001h d001 출력 주파수, 1003h 출력 전류, 1011h 출력 전압. 프레임 주소 = 번호 − 1",
+    "en": "Successor to the WJ200. Built-in RS485 Modbus RTU. Coil 0001h run command, register 0001h F001 frequency, 1001h d001 output frequency, 1003h output current, 1011h output voltage. Frame address = number - 1"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 9600,
+    "bauds": [
+      2400,
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      115200
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 16,
+    "order": "ABCD",
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 프레임 시작 번호 = 레지스터 번호 − 1 (11.2.2). 읽기 예(PDF p.341)는 01 03 00 11 00 06 95 CD 로 0012h(최근 트립 정보)부터 6개를 읽는다.",
+        "en": "Addressing: register start number in the frame = register number - 1 (11.2.2). The read example (PDF p.341) 01 03 00 11 00 06 95 CD reads 6 registers from 0012h (latest trip information)."
+      },
+      {
+        "ko": "출하값: C071 05 = 9600 bps, C072 국번 1, C074 00 = 패리티 없음, C075 01 = 정지 1비트 (PDF p.454). 함수 코드 01h·03h·05h·06h·08h·0Fh·10h, 레지스터 16개·코일 32개까지 (PDF p.335~336).",
+        "en": "Factory settings: C071 05 = 9600 bps, C072 address 1, C074 00 = no parity, C075 01 = 1 stop bit (PDF p.454). Function codes 01h, 03h, 05h, 06h, 08h, 0Fh and 10h; up to 16 registers or 32 coils (PDF pp.335-336)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "0001h",
+      "type": "bit",
+      "name": {
+        "ko": "운전 명령 (1 운전, 0 정지)",
+        "en": "Run command (1 run, 0 stop)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "0002h",
+      "type": "bit",
+      "name": {
+        "ko": "회전 방향 명령 (1 역, 0 정)",
+        "en": "Rotation direction command (1 reverse, 0 forward)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "0003h",
+      "type": "bit",
+      "name": {
+        "ko": "외부 트립 EXT",
+        "en": "External trip (EXT)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "0004h",
+      "type": "bit",
+      "name": {
+        "ko": "트립 리셋 RS",
+        "en": "Trip reset (RS)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "0007h",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [1]",
+        "en": "Intelligent input terminal [1]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 7,
+      "manualAddress": "0008h",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [2]",
+        "en": "Intelligent input terminal [2]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 8,
+      "manualAddress": "0009h",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [3]",
+        "en": "Intelligent input terminal [3]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 9,
+      "manualAddress": "000Ah",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [4]",
+        "en": "Intelligent input terminal [4]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 10,
+      "manualAddress": "000Bh",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [5]",
+        "en": "Intelligent input terminal [5]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 11,
+      "manualAddress": "000Ch",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [6]",
+        "en": "Intelligent input terminal [6]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 12,
+      "manualAddress": "000Dh",
+      "type": "bit",
+      "name": {
+        "ko": "입력 단자 [7]",
+        "en": "Intelligent input terminal [7]"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 14,
+      "manualAddress": "000Fh",
+      "type": "bit",
+      "name": {
+        "ko": "운전 상태",
+        "en": "Operation status"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 15,
+      "manualAddress": "0010h",
+      "type": "bit",
+      "name": {
+        "ko": "회전 방향",
+        "en": "Rotation direction"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 16,
+      "manualAddress": "0011h",
+      "type": "bit",
+      "name": {
+        "ko": "인버터 준비",
+        "en": "Inverter ready"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 18,
+      "manualAddress": "0013h",
+      "type": "bit",
+      "name": {
+        "ko": "RUN 운전 중",
+        "en": "RUN (running)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 19,
+      "manualAddress": "0014h",
+      "type": "bit",
+      "name": {
+        "ko": "FA1 정속 도달",
+        "en": "FA1 constant speed reached"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 20,
+      "manualAddress": "0015h",
+      "type": "bit",
+      "name": {
+        "ko": "FA2 설정 주파수 이상",
+        "en": "FA2 set frequency overreached"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 21,
+      "manualAddress": "0016h",
+      "type": "bit",
+      "name": {
+        "ko": "OL 과부하 예고",
+        "en": "OL overload notice"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 23,
+      "manualAddress": "0018h",
+      "type": "bit",
+      "name": {
+        "ko": "AL 알람",
+        "en": "AL alarm signal"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 25,
+      "manualAddress": "001Ah",
+      "type": "bit",
+      "name": {
+        "ko": "OTQ 과토크",
+        "en": "OTQ over-torque"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 27,
+      "manualAddress": "001Ch",
+      "type": "bit",
+      "name": {
+        "ko": "UV 저전압",
+        "en": "UV undervoltage"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 28,
+      "manualAddress": "001Dh",
+      "type": "bit",
+      "name": {
+        "ko": "TRQ 토크 제한",
+        "en": "TRQ torque limited"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "coils",
+      "address": 39,
+      "manualAddress": "0028h",
+      "type": "bit",
+      "name": {
+        "ko": "ZS 0 속도 검출",
+        "en": "ZS zero speed detection"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "PDF p.430"
+    },
+    {
+      "table": "holding-registers",
+      "address": 0,
+      "manualAddress": "0001h (high), 0002h (low)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수 지령 F001",
+        "en": "Frequency setting or monitor (F001)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.437"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2,
+      "manualAddress": "0003h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 A",
+        "en": "Inverter state A"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "초기 상태",
+          "en": "Initial status"
+        },
+        {
+          "value": 2,
+          "ko": "정지",
+          "en": "Stopping"
+        },
+        {
+          "value": 3,
+          "ko": "운전",
+          "en": "Running"
+        },
+        {
+          "value": 4,
+          "ko": "프리런 정지",
+          "en": "Free-run stop"
+        },
+        {
+          "value": 5,
+          "ko": "조깅",
+          "en": "Jogging"
+        },
+        {
+          "value": 6,
+          "ko": "DC 제동",
+          "en": "DC braking"
+        },
+        {
+          "value": 7,
+          "ko": "재시도",
+          "en": "Retrying"
+        },
+        {
+          "value": 8,
+          "ko": "트립",
+          "en": "Tripping"
+        },
+        {
+          "value": 9,
+          "ko": "저전압",
+          "en": "Undervoltage"
+        }
+      ],
+      "ref": "PDF p.432"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "0004h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 B",
+        "en": "Inverter status B"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stop"
+        },
+        {
+          "value": 1,
+          "ko": "운전",
+          "en": "Running"
+        },
+        {
+          "value": 2,
+          "ko": "트립",
+          "en": "Trip"
+        }
+      ],
+      "ref": "PDF p.432"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4,
+      "manualAddress": "0005h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 상태 C",
+        "en": "Inverter status C"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.432"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "0006h",
+      "type": "u16",
+      "name": {
+        "ko": "PID 피드백",
+        "en": "PID feedback"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "ref": "PDF p.432"
+    },
+    {
+      "table": "holding-registers",
+      "address": 16,
+      "manualAddress": "0011h",
+      "type": "u16",
+      "name": {
+        "ko": "트립 횟수 d080",
+        "en": "Trip count (d080)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.435"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2303,
+      "manualAddress": "0900h",
+      "type": "u16",
+      "name": {
+        "ko": "EEPROM 쓰기",
+        "en": "Write EEPROM"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "PDF p.432"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4096,
+      "manualAddress": "1001h (high), 1002h (low)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "출력 주파수 d001",
+        "en": "Output frequency (d001)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4098,
+      "manualAddress": "1003h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전류 d002",
+        "en": "Output current (d002)"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4099,
+      "manualAddress": "1004h",
+      "type": "u16",
+      "name": {
+        "ko": "회전 방향 d003",
+        "en": "Rotation direction (d003)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "정지",
+          "en": "Stopping"
+        },
+        {
+          "value": 1,
+          "ko": "정회전",
+          "en": "Forward rotation"
+        },
+        {
+          "value": 2,
+          "ko": "역회전",
+          "en": "Reverse rotation"
+        }
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4100,
+      "manualAddress": "1005h (high), 1006h (low)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "PID 피드백 d004",
+        "en": "PID feedback (d004)"
+      },
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4102,
+      "manualAddress": "1007h",
+      "type": "u16",
+      "name": {
+        "ko": "입력 단자 d005",
+        "en": "Input terminal monitor (d005)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4103,
+      "manualAddress": "1008h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 단자 d006",
+        "en": "Output terminal monitor (d006)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4106,
+      "manualAddress": "100Bh (high), 100Ch (low)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "검출 속도 d008",
+        "en": "Detect speed (d008)"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4111,
+      "manualAddress": "1010h",
+      "type": "s16",
+      "name": {
+        "ko": "출력 토크 d012",
+        "en": "Output torque (d012)"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4112,
+      "manualAddress": "1011h",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압 d013",
+        "en": "Output voltage (d013)"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4113,
+      "manualAddress": "1012h",
+      "type": "u16",
+      "name": {
+        "ko": "입력 전력 d014",
+        "en": "Input power (d014)"
+      },
+      "unit": "kW",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.434"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4124,
+      "manualAddress": "101Dh",
+      "type": "u16",
+      "name": {
+        "ko": "수명 진단 d022",
+        "en": "Life assessment monitor (d022)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.435"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4182,
+      "manualAddress": "1057h",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 모드 d060",
+        "en": "Inverter mode (d060)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.435"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4354,
+      "manualAddress": "1103h (high), 1104h (low)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "가속 시간 F002",
+        "en": "Acceleration time 1 (F002)"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.437"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4356,
+      "manualAddress": "1105h (high), 1106h (low)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "감속 시간 F003",
+        "en": "Deceleration time 1 (F003)"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.437"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4358,
+      "manualAddress": "1107h",
+      "type": "u16",
+      "name": {
+        "ko": "키패드 RUN 방향 F004",
+        "en": "Keypad RUN direction (F004)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "PDF p.437"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4608,
+      "manualAddress": "1201h",
+      "type": "u16",
+      "name": {
+        "ko": "주파수 소스 A001",
+        "en": "Frequency source (A001)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "PDF p.438"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4609,
+      "manualAddress": "1202h",
+      "type": "u16",
+      "name": {
+        "ko": "운전 명령 소스 A002",
+        "en": "Run command source (A002)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "제어 단자",
+          "en": "Control terminal"
+        },
+        {
+          "value": 2,
+          "ko": "디지털 오퍼레이터",
+          "en": "Digital operator"
+        },
+        {
+          "value": 3,
+          "ko": "Modbus",
+          "en": "Modbus"
+        },
+        {
+          "value": 4,
+          "ko": "옵션",
+          "en": "Option"
+        }
+      ],
+      "ref": "PDF p.438"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4610,
+      "manualAddress": "1203h",
+      "type": "u16",
+      "name": {
+        "ko": "기저 주파수 A003",
+        "en": "Base frequency (A003)"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "PDF p.438"
+    },
+    {
+      "table": "holding-registers",
+      "address": 4611,
+      "manualAddress": "1204h",
+      "type": "u16",
+      "name": {
+        "ko": "최대 주파수 A004",
+        "en": "Maximum frequency (A004)"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "PDF p.438"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5194,
+      "manualAddress": "144Bh",
+      "type": "u16",
+      "name": {
+        "ko": "통신 속도 C071",
+        "en": "Baud rate (C071)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 3,
+          "ko": "2400 bps",
+          "en": "2400 bps"
+        },
+        {
+          "value": 4,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 5,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 6,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 7,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        },
+        {
+          "value": 8,
+          "ko": "57600 bps",
+          "en": "57600 bps"
+        },
+        {
+          "value": 9,
+          "ko": "76800 bps",
+          "en": "76800 bps"
+        },
+        {
+          "value": 10,
+          "ko": "115200 bps",
+          "en": "115200 bps"
+        }
+      ],
+      "ref": "PDF p.454"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5195,
+      "manualAddress": "144Ch",
+      "type": "u16",
+      "name": {
+        "ko": "통신 국번 C072",
+        "en": "Node address (C072)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "ref": "PDF p.454"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5197,
+      "manualAddress": "144Eh",
+      "type": "u16",
+      "name": {
+        "ko": "통신 패리티 C074",
+        "en": "Parity (C074)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "패리티 없음",
+          "en": "No parity"
+        },
+        {
+          "value": 1,
+          "ko": "짝수",
+          "en": "Even"
+        },
+        {
+          "value": 2,
+          "ko": "홀수",
+          "en": "Odd"
+        }
+      ],
+      "ref": "PDF p.454"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5198,
+      "manualAddress": "144Fh",
+      "type": "u16",
+      "name": {
+        "ko": "통신 정지 비트 C075",
+        "en": "Stop bit (C075)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 1,
+          "ko": "1비트",
+          "en": "1 bit"
+        },
+        {
+          "value": 2,
+          "ko": "2비트",
+          "en": "2 bits"
+        }
+      ],
+      "ref": "PDF p.454"
+    }
+  ],
+  "sources": [
+    {
+      "title": "WJ Series C1 User's Guide",
+      "publisher": "Hitachi",
+      "edition": {
+        "ko": "NT361X",
+        "en": "NT361X"
+      },
+      "url": "https://www.hitachi-iesa.com/sites/default/files/inverter-pdf/WJ-C1_UsersGuide_NT361X%20%281%29%20%281%29.pdf",
+      "pages": {
+        "ko": "통신 설정 PDF p.332, 프레임 예 PDF p.341, 코일·레지스터 목록(18장) PDF p.430~454",
+        "en": "Communication settings PDF p.332, frame example PDF p.341, coil and register lists (chapter 18) PDF pp.430-454"
+      },
+      "checked": "2026-11-05"
+    }
+  ]
+}

@@ -23,8 +23,8 @@ export const GET: APIRoute = ({ site }) => {
     "## Reading the lines below",
     "",
     "- `HR` holding register, `IR` input register, `CO` coil, `DI` discrete input. The number is the 0-based address on the wire (the manual may write it 1-based or as 40001; the JSON keeps that in `manualAddress`).",
-    "- Real value = raw × scale, in the given unit. Types: u16 s16 u32 s32 f32 f64 string bit; ABCD = big-endian, CDAB = word swap. Access r / rw / w.",
-    `- Full tables with manual address, function codes, value meanings and page: ${new URL("/", site).origin}/devices/<maker>/<model>.md (e.g. ${abs(`/devices/${DEVICES[0].id}.md`)}), or ${abs("/devices/all.json")} (schema ${abs("/data/schema.json")}).`,
+    "- Real value = raw × scale, in the given unit. Types: u16 s16 u32 s32 f32 f64 string bit; ABCD = big-endian, CDAB = word swap. Access r / rw / w. Each register line: table, 0-based wire address, type, scale and unit, access: name.",
+    `- Full tables with manual address, function codes, value meanings and page: ${new URL("/", site).origin}/devices/<maker>/<model>.md (e.g. ${abs(`/devices/${DEVICES[0].id}.md`)}), the same path with .json, or ${abs("/devices/all.json")} (schema ${abs("/data/schema.json")}).`,
     "",
   ];
   const body = devicesDigest(DEVICES, (d) => ({ page: abs(url("en", devPath(d))), json: abs(`/devices/${d.id}.json`), md: abs(`/devices/${d.id}.md`) }));

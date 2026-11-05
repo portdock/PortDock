@@ -1,0 +1,879 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "siemens/sinamics-g120",
+  "manufacturer": {
+    "ko": "지멘스",
+    "en": "Siemens"
+  },
+  "model": "SINAMICS G120",
+  "models": [
+    "SINAMICS G120C"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "지멘스 SINAMICS G120 / G120C 인버터 (RS485 Modbus RTU)",
+    "en": "Siemens SINAMICS G120 / G120C converter (RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "RS485 Modbus RTU (p2030 = 2). 프레임 주소 = 레지스터 − 40001: 제어 워드 40100, 설정값 40101, 상태 워드 40110, 실제값 40111, 출력 주파수 40342, 전류 40345, 전력 40347, 고장 40400",
+    "en": "RS485 Modbus RTU (p2030 = 2). Frame address = register - 40001: control word 40100, setpoint 40101, status word 40110, actual value 40111, output frequency 40342, current 40345, power 40347, fault 40400"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400,
+      57600,
+      76800,
+      93750,
+      115200,
+      187500
+    ],
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 125,
+    "addressing": "plc",
+    "notes": [
+      {
+        "ko": "주소 체계: 읽기 예(p.131)는 서버 17 에 11 03 00 6D 00 02 로 40110·40111 을 읽고(006Dh = 109 = 40110 − 40001), 쓰기 예(p.132)는 11 06 00 63 55 66 으로 40100 에 쓴다(0063h = 99).",
+        "en": "Addressing: the read example (p.131) sends 11 03 00 6D 00 02 to server 17 for 40110 and 40111 (006Dh = 109 = 40110 - 40001); the write example (p.132) is 11 06 00 63 55 66 for 40100 (0063h = 99)."
+      },
+      {
+        "ko": "출하값: 19200 bit/s (p.125), 짝수 패리티·정지 1비트 p2031 = 2 (p.122). 함수 코드 03·06·16, 최대 125 레지스터 (p.131~132). 범위 밖 주소는 Exception Code 를 돌려준다. RS485 가 있는 컨트롤 유닛에만 해당 — 형번은 매뉴얼로 확인한다.",
+        "en": "Factory settings: 19200 bit/s (p.125), even parity with 1 stop bit, p2031 = 2 (p.122). Function codes 03, 06, 16, up to 125 registers (pp.131-132). Other addresses return an exception code. Applies only to control units with RS485; check the type in the manual."
+      },
+      {
+        "ko": "표의 Scaling 100 은 «원시 값 = 실제 값 × 100» 이라 scale 0.01 로 적었다.",
+        "en": "Scaling 100 in the table means raw value = real value × 100, written here as scale 0.01."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 99,
+      "manualAddress": "40100",
+      "type": "u16",
+      "name": {
+        "ko": "제어 워드 (프로세스 데이터 1)",
+        "en": "Control word (process data 1)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.126"
+    },
+    {
+      "table": "holding-registers",
+      "address": 100,
+      "manualAddress": "40101",
+      "type": "u16",
+      "name": {
+        "ko": "주 설정값 (프로세스 데이터 2)",
+        "en": "Main setpoint (process data 2)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.126"
+    },
+    {
+      "table": "holding-registers",
+      "address": 109,
+      "manualAddress": "40110",
+      "type": "u16",
+      "name": {
+        "ko": "상태 워드 (프로세스 데이터 1)",
+        "en": "Status word (process data 1)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.126"
+    },
+    {
+      "table": "holding-registers",
+      "address": 110,
+      "manualAddress": "40111",
+      "type": "u16",
+      "name": {
+        "ko": "주 실제값 (프로세스 데이터 2)",
+        "en": "Main actual value (process data 2)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.126"
+    },
+    {
+      "table": "holding-registers",
+      "address": 199,
+      "manualAddress": "40200",
+      "type": "u16",
+      "name": {
+        "ko": "DO 0 (p0730)",
+        "en": "DO 0 (p0730)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 200,
+      "manualAddress": "40201",
+      "type": "u16",
+      "name": {
+        "ko": "DO 1 (p0731)",
+        "en": "DO 1 (p0731)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 201,
+      "manualAddress": "40202",
+      "type": "u16",
+      "name": {
+        "ko": "DO 2 (p0732)",
+        "en": "DO 2 (p0732)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 219,
+      "manualAddress": "40220",
+      "type": "s16",
+      "name": {
+        "ko": "AO 0 (r0774.0)",
+        "en": "AO 0 (r0774.0)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -100,
+        "max": 100
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 220,
+      "manualAddress": "40221",
+      "type": "s16",
+      "name": {
+        "ko": "AO 1 (r0774.1)",
+        "en": "AO 1 (r0774.1)"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -100,
+        "max": 100
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 239,
+      "manualAddress": "40240",
+      "type": "u16",
+      "name": {
+        "ko": "DI 0",
+        "en": "DI 0"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 240,
+      "manualAddress": "40241",
+      "type": "u16",
+      "name": {
+        "ko": "DI 1",
+        "en": "DI 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 241,
+      "manualAddress": "40242",
+      "type": "u16",
+      "name": {
+        "ko": "DI 2",
+        "en": "DI 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 242,
+      "manualAddress": "40243",
+      "type": "u16",
+      "name": {
+        "ko": "DI 3",
+        "en": "DI 3"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 243,
+      "manualAddress": "40244",
+      "type": "u16",
+      "name": {
+        "ko": "DI 4",
+        "en": "DI 4"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 244,
+      "manualAddress": "40245",
+      "type": "u16",
+      "name": {
+        "ko": "DI 5",
+        "en": "DI 5"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 259,
+      "manualAddress": "40260",
+      "type": "s16",
+      "name": {
+        "ko": "AI 0 (r0755[0])",
+        "en": "AI 0 (r0755[0])"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -300,
+        "max": 300
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 260,
+      "manualAddress": "40261",
+      "type": "s16",
+      "name": {
+        "ko": "AI 1 (r0755[1])",
+        "en": "AI 1 (r0755[1])"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "range": {
+        "min": -300,
+        "max": 300
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 299,
+      "manualAddress": "40300",
+      "type": "u16",
+      "name": {
+        "ko": "파워 스택 번호 r0200",
+        "en": "Powerstack number r0200"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 300,
+      "manualAddress": "40301",
+      "type": "u16",
+      "name": {
+        "ko": "펌웨어 r0018",
+        "en": "Converter firmware r0018"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 319,
+      "manualAddress": "40320",
+      "type": "u16",
+      "name": {
+        "ko": "정격 출력 r0206",
+        "en": "Rated power r0206"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 320,
+      "manualAddress": "40321",
+      "type": "u16",
+      "name": {
+        "ko": "전류 한계 p0640",
+        "en": "Current limit p0640"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 10,
+        "max": 400
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 321,
+      "manualAddress": "40322",
+      "type": "u16",
+      "name": {
+        "ko": "가속 시간 p1120",
+        "en": "Ramp-up time p1120"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 650
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 322,
+      "manualAddress": "40323",
+      "type": "u16",
+      "name": {
+        "ko": "감속 시간 p1121",
+        "en": "Ramp-down time p1121"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 650
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 323,
+      "manualAddress": "40324",
+      "type": "u16",
+      "name": {
+        "ko": "기준 속도 p2000",
+        "en": "Reference speed p2000"
+      },
+      "unit": "rpm",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 6,
+        "max": 32767
+      },
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 339,
+      "manualAddress": "40340",
+      "type": "s16",
+      "name": {
+        "ko": "속도 설정값 r0020",
+        "en": "Speed setpoint r0020"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 340,
+      "manualAddress": "40341",
+      "type": "s16",
+      "name": {
+        "ko": "실제 속도 r0022",
+        "en": "Actual speed value r0022"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.127"
+    },
+    {
+      "table": "holding-registers",
+      "address": 341,
+      "manualAddress": "40342",
+      "type": "s16",
+      "name": {
+        "ko": "출력 주파수 r0024",
+        "en": "Output frequency r0024"
+      },
+      "unit": "Hz",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 342,
+      "manualAddress": "40343",
+      "type": "u16",
+      "name": {
+        "ko": "출력 전압 r0025",
+        "en": "Output voltage r0025"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 343,
+      "manualAddress": "40344",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압 r0026",
+        "en": "DC link voltage r0026"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 344,
+      "manualAddress": "40345",
+      "type": "u16",
+      "name": {
+        "ko": "실제 전류 r0027",
+        "en": "Current actual value r0027"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 345,
+      "manualAddress": "40346",
+      "type": "s16",
+      "name": {
+        "ko": "실제 토크 r0031",
+        "en": "Actual torque value r0031"
+      },
+      "unit": "Nm",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 346,
+      "manualAddress": "40347",
+      "type": "u16",
+      "name": {
+        "ko": "실제 유효 전력 r0032",
+        "en": "Actual active power r0032"
+      },
+      "unit": "kW",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 347,
+      "manualAddress": "40348",
+      "type": "u16",
+      "name": {
+        "ko": "소비 전력량 r0039",
+        "en": "Energy consumption r0039"
+      },
+      "unit": "kWh",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 348,
+      "manualAddress": "40349",
+      "type": "u16",
+      "name": {
+        "ko": "제어 우선권 r0807 (HAND/AUTO)",
+        "en": "Control priority r0807 (HAND/AUTO)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 399,
+      "manualAddress": "40400",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 0 (r0947)",
+        "en": "Fault number, index 0 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 400,
+      "manualAddress": "40401",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 1 (r0947)",
+        "en": "Fault number, index 1 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 401,
+      "manualAddress": "40402",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 2 (r0947)",
+        "en": "Fault number, index 2 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 402,
+      "manualAddress": "40403",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 3 (r0947)",
+        "en": "Fault number, index 3 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 403,
+      "manualAddress": "40404",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 4 (r0947)",
+        "en": "Fault number, index 4 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 404,
+      "manualAddress": "40405",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 5 (r0947)",
+        "en": "Fault number, index 5 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 405,
+      "manualAddress": "40406",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 6 (r0947)",
+        "en": "Fault number, index 6 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 406,
+      "manualAddress": "40407",
+      "type": "u16",
+      "name": {
+        "ko": "고장 번호, 인덱스 7 (r0947)",
+        "en": "Fault number, index 7 (r0947)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 407,
+      "manualAddress": "40408",
+      "type": "u16",
+      "name": {
+        "ko": "알람 번호 r2110",
+        "en": "Alarm number r2110"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 408,
+      "manualAddress": "40409",
+      "type": "u16",
+      "name": {
+        "ko": "현재 알람 코드 r2132",
+        "en": "Actual alarm code r2132"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 498,
+      "manualAddress": "40499",
+      "type": "u16",
+      "name": {
+        "ko": "PRM ERROR 코드",
+        "en": "PRM ERROR code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 499,
+      "manualAddress": "40500",
+      "type": "u16",
+      "name": {
+        "ko": "기술 제어기 사용 p2200",
+        "en": "Technology controller enable p2200"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "ref": "p.128"
+    },
+    {
+      "table": "holding-registers",
+      "address": 500,
+      "manualAddress": "40501",
+      "type": "s16",
+      "name": {
+        "ko": "기술 제어기 MOP p2240",
+        "en": "Technology controller MOP p2240"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": -200,
+        "max": 200
+      },
+      "ref": "p.128"
+    }
+  ],
+  "sources": [
+    {
+      "title": "SINAMICS G115D, G120, G120C, G120D, G120P Fieldbuses Function Manual",
+      "publisher": "Siemens AG",
+      "edition": {
+        "ko": "07/2025, FW V4.7 SP14, A5E34229197B AJ",
+        "en": "07/2025, FW V4.7 SP14, A5E34229197B AJ"
+      },
+      "url": "https://cache.industry.siemens.com/dl/files/118/109818118/att_1338522/v1/G120_fieldbus_fct_man_0725_en-US.pdf",
+      "pages": {
+        "ko": "패리티 p.122, 속도 p.125, 레지스터 표 p.126~128, 프레임 예 p.131~132",
+        "en": "Parity p.122, baud rates p.125, register tables pp.126-128, frame examples pp.131-132"
+      },
+      "checked": "2026-11-05"
+    }
+  ]
+}

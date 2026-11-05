@@ -1,0 +1,794 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "schneider-electric/atv71",
+  "manufacturer": {
+    "ko": "슈나이더 일렉트릭",
+    "en": "Schneider Electric"
+  },
+  "model": "ATV71",
+  "models": [
+    "Altivar 71"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "슈나이더 일렉트릭 Altivar 71 (ATV71) 인버터 (내장 Modbus RTU)",
+    "en": "Schneider Electric Altivar 71 (ATV71) drive (integrated Modbus RTU)"
+  },
+  "summary": {
+    "ko": "내장 Modbus RTU. 논리 주소 = 프레임 주소: 제어 워드 8501·8601, 주파수 지령 8502, 상태 워드 3201·8603, 출력 주파수 3202, 전류 3204, 고장 코드 7121",
+    "en": "Integrated Modbus RTU. Logical address = frame address: control word 8501/8601, frequency reference 8502, status word 3201/8603, output frequency 3202, current 3204, fault code 7121"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "dataBits": 8,
+    "parity": "even",
+    "stopBits": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 63,
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: Modbus 매뉴얼 읽기 예(p.30)는 02 03 0C1E 0004 276C 로 W3102~W3105(16#0C1E~)를 읽고 02 03 08 0028 0258 01F4 0000 52B0 을 받는다. 쓰기 예(p.31)는 02 06 2329 000D 9270 (W9001). 매뉴얼 번호 = 프레임 주소(0 기준).",
+        "en": "Addressing: the read example (Modbus manual p.30) sends 02 03 0C1E 0004 276C to read W3102-W3105 (16#0C1E-) and gets 02 03 08 0028 0258 01F4 0000 52B0; the write example (p.31) is 02 06 2329 000D 9270 (W9001). Manual number = frame address (0-based)."
+      },
+      {
+        "ko": "출하값: 19.2 kbps, 8E1, [Modbus Address] 는 OFF — 응답을 받으려면 1~247 로 바꾼다 (Modbus 매뉴얼 p.15).",
+        "en": "Factory settings: 19.2 kbps, 8E1, [Modbus Address] OFF; set 1-247 to get replies (Modbus manual p.15)."
+      },
+      {
+        "ko": "함수 코드 03(최대 63워드)·06·08·16(최대 61워드)·23(읽기·쓰기 20/20)·43 (p.30). 8501 과 8601 처럼 같은 값이 두 주소에 있는 것은 블록 쓰기 편의용(파라미터 매뉴얼 p.81).",
+        "en": "Function codes 03 (up to 63 words), 06, 08, 16 (up to 61 words), 23 (20/20 read/write) and 43 (p.30). Values at two addresses such as 8501 and 8601 are there for block writes (parameters manual p.81)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 3102,
+      "manualAddress": "3102",
+      "type": "u16",
+      "name": {
+        "ko": "SFr 스위칭 주파수",
+        "en": "SFr switching frequency"
+      },
+      "unit": "kHz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "Modbus 매뉴얼 읽기 예: 4 kHz = 16#0028",
+        "en": "Modbus manual read example: 4 kHz = 16#0028"
+      },
+      "ref": "p.30"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3103,
+      "manualAddress": "3103",
+      "type": "u16",
+      "name": {
+        "ko": "tFr 최대 출력 주파수",
+        "en": "tFr maximum output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "읽기 예: 60 Hz = 16#0258",
+        "en": "Read example: 60 Hz = 16#0258"
+      },
+      "ref": "p.30"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3104,
+      "manualAddress": "3104",
+      "type": "u16",
+      "name": {
+        "ko": "HSP 고속",
+        "en": "HSP high speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "읽기 예: 50 Hz = 16#01F4",
+        "en": "Read example: 50 Hz = 16#01F4"
+      },
+      "ref": "p.30"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3105,
+      "manualAddress": "3105",
+      "type": "u16",
+      "name": {
+        "ko": "LSP 저속",
+        "en": "LSP low speed"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.30"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3201,
+      "manualAddress": "3201 (16#0C81)",
+      "type": "u16",
+      "name": {
+        "ko": "ETA 상태 워드(주파수 쪽)",
+        "en": "ETA status word (frequency side)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "bits": [
+        {
+          "bit": 1,
+          "ko": "준비",
+          "en": "Ready"
+        },
+        {
+          "bit": 2,
+          "ko": "운전 중",
+          "en": "Running"
+        },
+        {
+          "bit": 3,
+          "ko": "고장",
+          "en": "Fault"
+        },
+        {
+          "bit": 4,
+          "ko": "주회로 전원 있음",
+          "en": "Power section line supply present"
+        },
+        {
+          "bit": 7,
+          "ko": "경보",
+          "en": "Alarm"
+        },
+        {
+          "bit": 9,
+          "ko": "네트워크로 제어",
+          "en": "Command via a network"
+        },
+        {
+          "bit": 10,
+          "ko": "지령 도달",
+          "en": "Reference reached"
+        },
+        {
+          "bit": 11,
+          "ko": "지령이 한계 밖",
+          "en": "Reference outside limits"
+        },
+        {
+          "bit": 14,
+          "ko": "STOP 키로 정지",
+          "en": "Stop via STOP key"
+        },
+        {
+          "bit": 15,
+          "ko": "역회전 출력",
+          "en": "Reverse rotation at output"
+        }
+      ],
+      "description": {
+        "ko": "비트는 I/O 프로파일 기준. 같은 값이 8603 에도 있다",
+        "en": "Bits per the I/O profile. The same value is also at 8603"
+      },
+      "ref": "p.86",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3202,
+      "manualAddress": "3202 (16#0C82)",
+      "type": "s16",
+      "name": {
+        "ko": "rFr 출력 주파수",
+        "en": "rFr output frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.94",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3203,
+      "manualAddress": "3203 (16#0C83)",
+      "type": "s16",
+      "name": {
+        "ko": "FrH 램프 앞 주파수 지령",
+        "en": "FrH frequency reference before ramp"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.98",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3204,
+      "manualAddress": "3204 (16#0C84)",
+      "type": "u16",
+      "name": {
+        "ko": "LCr 전동기 전류",
+        "en": "LCr motor current"
+      },
+      "unit": "A",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.96",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3205,
+      "manualAddress": "3205 (16#0C85)",
+      "type": "s16",
+      "name": {
+        "ko": "Otr 출력 토크",
+        "en": "Otr output torque"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "전동기 정격 토크 대비",
+        "en": "Relative to nominal motor torque"
+      },
+      "ref": "p.95",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3206,
+      "manualAddress": "3206 (16#0C86)",
+      "type": "u16",
+      "name": {
+        "ko": "ETI 확장 상태 워드",
+        "en": "ETI extended status word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.88",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3207,
+      "manualAddress": "3207 (16#0C87)",
+      "type": "u16",
+      "name": {
+        "ko": "ULn 전원 전압",
+        "en": "ULn power supply voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3208,
+      "manualAddress": "3208 (16#0C88)",
+      "type": "u16",
+      "name": {
+        "ko": "UOP 전동기 전압",
+        "en": "UOP motor voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.96",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3209,
+      "manualAddress": "3209 (16#0C89)",
+      "type": "u16",
+      "name": {
+        "ko": "tHd 인버터 열 상태",
+        "en": "tHd drive thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3211,
+      "manualAddress": "3211 (16#0C8B)",
+      "type": "s16",
+      "name": {
+        "ko": "OPr 전동기 출력",
+        "en": "OPr motor power"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.96",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3231,
+      "manualAddress": "3231 (16#0C9F)",
+      "type": "u16",
+      "name": {
+        "ko": "rtH 전동기 누적 운전 시간",
+        "en": "rtH total motor operating time"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "description": {
+        "ko": "단위는 UNT(3234)가 정한다",
+        "en": "Unit is given by UNT (3234)"
+      },
+      "ref": "p.102",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3234,
+      "manualAddress": "3234 (16#0CA2)",
+      "type": "u16",
+      "name": {
+        "ko": "UNT APH·PTH·RTH 단위",
+        "en": "UNT units of APH, PTH and RTH"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.96",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3250,
+      "manualAddress": "3250 (16#0CB2)",
+      "type": "u16",
+      "name": {
+        "ko": "확장 상태 워드 1",
+        "en": "Extended status word 1"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.88",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3251,
+      "manualAddress": "3251 (16#0CB3)",
+      "type": "u16",
+      "name": {
+        "ko": "확장 상태 워드 2",
+        "en": "Extended status word 2"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.89",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3252,
+      "manualAddress": "3252 (16#0CB4)",
+      "type": "u16",
+      "name": {
+        "ko": "확장 상태 워드 3",
+        "en": "Extended status word 3"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.89",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5202,
+      "manualAddress": "5202 (16#1452)",
+      "type": "u16",
+      "name": {
+        "ko": "논리 입력 상태",
+        "en": "Logic inputs states"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.104",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5212,
+      "manualAddress": "5212 (16#145C)",
+      "type": "u16",
+      "name": {
+        "ko": "논리 출력 상태",
+        "en": "Logic outputs states"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.104",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5242,
+      "manualAddress": "5242 (16#147A)",
+      "type": "s16",
+      "name": {
+        "ko": "아날로그 입력 1 물리값",
+        "en": "Analog input 1 physical value"
+      },
+      "unit": "V",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.105",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 5244,
+      "manualAddress": "5244 (16#147C)",
+      "type": "s16",
+      "name": {
+        "ko": "아날로그 입력 3 물리값",
+        "en": "Analog input 3 physical value"
+      },
+      "unit": "mA",
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.105",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 7121,
+      "manualAddress": "7121 (16#1BD1)",
+      "type": "u16",
+      "name": {
+        "ko": "LFt Altivar 고장 코드",
+        "en": "LFt Altivar fault code"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.110",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8501,
+      "manualAddress": "8501 (16#2135)",
+      "type": "u16",
+      "name": {
+        "ko": "CMD 제어 워드(주파수 쪽)",
+        "en": "CMD control word (frequency side)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "같은 값이 8601 에도 있다. 8502 와 잇달아 쓰기 좋다",
+        "en": "Also at 8601. Sits next to 8502 for block writes"
+      },
+      "ref": "p.81",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8502,
+      "manualAddress": "8502 (16#2136)",
+      "type": "s16",
+      "name": {
+        "ko": "LFr 주파수 지령",
+        "en": "LFr frequency reference"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.84",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8503,
+      "manualAddress": "8503 (16#2137)",
+      "type": "s16",
+      "name": {
+        "ko": "PID 조절기 설정값",
+        "en": "PID regulator setpoint"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.85",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8504,
+      "manualAddress": "8504 (16#2138)",
+      "type": "u16",
+      "name": {
+        "ko": "CMI 확장 제어 워드",
+        "en": "CMI extended control word"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.83",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8601,
+      "manualAddress": "8601 (16#2199)",
+      "type": "u16",
+      "name": {
+        "ko": "CMd 제어 워드(속도 쪽)",
+        "en": "CMd control word (speed side)"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.81",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8602,
+      "manualAddress": "8602 (16#219A)",
+      "type": "s16",
+      "name": {
+        "ko": "속도 설정값",
+        "en": "Speed setpoint"
+      },
+      "unit": "rpm",
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "p.84",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8603,
+      "manualAddress": "8603 (16#219B)",
+      "type": "u16",
+      "name": {
+        "ko": "ETA 상태 워드(속도 쪽)",
+        "en": "ETA status word (speed side)"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.86",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8604,
+      "manualAddress": "8604 (16#219C)",
+      "type": "s16",
+      "name": {
+        "ko": "출력 속도",
+        "en": "Output velocity"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.94",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8605,
+      "manualAddress": "8605 (16#219D)",
+      "type": "s16",
+      "name": {
+        "ko": "램프 앞 속도 지령",
+        "en": "Speed reference before ramp"
+      },
+      "unit": "rpm",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.98",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 9001,
+      "manualAddress": "9001 (16#2329)",
+      "type": "u16",
+      "name": {
+        "ko": "ACC 가속 시간",
+        "en": "ACC acceleration time"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "description": {
+        "ko": "Modbus 매뉴얼 쓰기 예: 값 16#000D 를 «ACC = 13 s» 로 설명",
+        "en": "Modbus manual write example: value 16#000D is described as ACC = 13 s"
+      },
+      "ref": "p.31"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9630,
+      "manualAddress": "9630 (16#259E)",
+      "type": "u16",
+      "name": {
+        "ko": "tHr 전동기 열 상태",
+        "en": "tHr motor thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 14114,
+      "manualAddress": "14114 (16#3722)",
+      "type": "u16",
+      "name": {
+        "ko": "tHb 제동 저항 열 상태",
+        "en": "tHb DBR thermal state"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.101",
+      "source": 1
+    }
+  ],
+  "sources": [
+    {
+      "title": "Altivar 71 Integrated Modbus User's manual",
+      "publisher": "Schneider Electric",
+      "edition": {
+        "ko": "1755863 11/2010",
+        "en": "1755863 11/2010"
+      },
+      "url": "https://download.schneider-electric.com/files?p_Doc_Ref=1755863",
+      "pages": {
+        "ko": "통신 설정 p.15, Modbus 함수·프레임 예 p.30~31",
+        "en": "Communication settings p.15; Modbus functions and frame examples pp.30-31"
+      },
+      "checked": "2026-11-05"
+    },
+    {
+      "title": "Altivar 71 Communication parameters User manual",
+      "publisher": "Schneider Electric",
+      "edition": {
+        "ko": "1755861 02/2013, Software V5.7",
+        "en": "1755861 02/2013, Software V5.7"
+      },
+      "url": "https://download.schneider-electric.com/files?p_Doc_Ref=1755861",
+      "pages": {
+        "ko": "명령 파라미터 p.81~85, 상태 p.86~89, 출력·측정 p.94~105, 고장 p.110",
+        "en": "Command parameters pp.81-85, status pp.86-89, output and measurement pp.94-105, faults p.110"
+      },
+      "checked": "2026-11-05"
+    }
+  ]
+}

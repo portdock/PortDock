@@ -1,4 +1,4 @@
-// fr — carte de registres Modbus d’un appareil (views/DevicePage.astro), commune aux 77 appareils.
+// fr — carte de registres Modbus d’un appareil (views/DevicePage.astro), commune aux 86 appareils.
 export default {
   title: (c: { name: string }) => `${c.name} — carte de registres Modbus`,
   seo: (c: { name: string; model: string }) => [`${c.name} — carte de registres et adresses Modbus — PortDock`, `${c.name} — carte de registres Modbus — PortDock`, `${c.model} — registres Modbus — PortDock`],

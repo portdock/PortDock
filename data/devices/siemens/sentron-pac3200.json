@@ -1,0 +1,1386 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "siemens/sentron-pac3200",
+  "manufacturer": {
+    "ko": "지멘스",
+    "en": "Siemens"
+  },
+  "model": "SENTRON PAC3200",
+  "models": [
+    "PAC RS485"
+  ],
+  "kind": "power-meter",
+  "title": {
+    "ko": "지멘스 SENTRON PAC3200 전력 미터 (PAC RS485 모듈 Modbus RTU)",
+    "en": "Siemens SENTRON PAC3200 power monitoring device (PAC RS485 module, Modbus RTU)"
+  },
+  "summary": {
+    "ko": "PAC RS485 확장 모듈 Modbus RTU. 오프셋 = 프레임 주소. 측정값은 Float(2칸, 상위 워드 먼저): 전압 1~11, 전류 13~17, 유효 전력 25~29, 주파수 55, 총 유효 전력 65. 전력량은 Double(4칸) 801~837",
+    "en": "PAC RS485 expansion module, Modbus RTU. Offset = frame address. Measured values are floats (2 registers, high word first): voltage 1-11, current 13-17, active power 25-29, frequency 55, total active power 65. Energy is double (4 registers) 801-837"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "baud": 19200,
+    "bauds": [
+      4800,
+      9600,
+      19200,
+      38400
+    ],
+    "dataBits": 8,
+    "parity": "none",
+    "stopBits": 2,
+    "unit": 126,
+    "unitRange": [
+      1,
+      247
+    ],
+    "maxRegisters": 125,
+    "order": "ABCD",
+    "addressing": "zero",
+    "notes": [
+      {
+        "ko": "주소 체계: 읽기 예(p.75)는 01 04 00 01 00 06 21 C8 로 «오프셋 0001: Va-n» 을 읽고 43 68 70 22 = 232.4 를 받는다. 파라미터 예(p.76)는 01 04 C3 51 00 10 9C 53 (오프셋 50001 = C351h), 명령 예(p.76)는 01 06 EA 66 00 01 9C 0D (오프셋 60006 = EA66h). 오프셋 = 프레임 주소(0 기준).",
+        "en": "Addressing: the read example (p.75) 01 04 00 01 00 06 21 C8 reads «offset 0001: Va-n» and gets 43 68 70 22 = 232.4. The parameter example (p.76) is 01 04 C3 51 00 10 9C 53 (offset 50001 = C351h), the command example (p.76) 01 06 EA 66 00 01 9C 0D (offset 60006 = EA66h). Offset = frame address (0-based)."
+      },
+      {
+        "ko": "출하 설정: 국번 126, 19200 baud, 8N2 (p.57). 함수 코드 02·03·04·06·10h·2Bh (p.31). 읽기는 125 레지스터까지.",
+        "en": "Factory settings: address 126, 19200 baud, 8N2 (p.57). Function codes 02, 03, 04, 06, 10h and 2Bh (p.31). Up to 125 registers per read."
+      },
+      {
+        "ko": "여러 칸 값의 중간 칸부터 읽거나 쓰면 오류 코드가 돌아온다 (p.34).",
+        "en": "Starting a read or write in the middle of a multi-register value returns an error code (p.34)."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "holding-registers",
+      "address": 1,
+      "manualAddress": "1",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Va-n",
+        "en": "Voltage Va-n"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3,
+      "manualAddress": "3",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Vb-n",
+        "en": "Voltage Vb-n"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 5,
+      "manualAddress": "5",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Vc-n",
+        "en": "Voltage Vc-n"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 7,
+      "manualAddress": "7",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Va-b",
+        "en": "Voltage Va-b"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 9,
+      "manualAddress": "9",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Vb-c",
+        "en": "Voltage Vb-c"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 11,
+      "manualAddress": "11",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 Vc-a",
+        "en": "Voltage Vc-a"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 13,
+      "manualAddress": "13",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 a상",
+        "en": "Current a"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 15,
+      "manualAddress": "15",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 b상",
+        "en": "Current b"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 17,
+      "manualAddress": "17",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 c상",
+        "en": "Current c"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 19,
+      "manualAddress": "19",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력 a상",
+        "en": "Apparent power a"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 21,
+      "manualAddress": "21",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력 b상",
+        "en": "Apparent power b"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 23,
+      "manualAddress": "23",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력 c상",
+        "en": "Apparent power c"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 25,
+      "manualAddress": "25",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력 a상",
+        "en": "Active power a"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 27,
+      "manualAddress": "27",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력 b상",
+        "en": "Active power b"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 29,
+      "manualAddress": "29",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력 c상",
+        "en": "Active power c"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 31,
+      "manualAddress": "31",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력 a상",
+        "en": "Reactive power a"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 33,
+      "manualAddress": "33",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력 b상",
+        "en": "Reactive power b"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 35,
+      "manualAddress": "35",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력 c상",
+        "en": "Reactive power c"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 37,
+      "manualAddress": "37",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "역률 a상",
+        "en": "Power factor a"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 39,
+      "manualAddress": "39",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "역률 b상",
+        "en": "Power factor b"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 41,
+      "manualAddress": "41",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "역률 c상",
+        "en": "Power factor c"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 43,
+      "manualAddress": "43",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 THD-R a상",
+        "en": "THD-R voltage a"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 45,
+      "manualAddress": "45",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 THD-R b상",
+        "en": "THD-R voltage b"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 47,
+      "manualAddress": "47",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 THD-R c상",
+        "en": "THD-R voltage c"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 49,
+      "manualAddress": "49",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 THD-R a상",
+        "en": "THD-R current a"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 51,
+      "manualAddress": "51",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 THD-R b상",
+        "en": "THD-R current b"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 53,
+      "manualAddress": "53",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 THD-R c상",
+        "en": "THD-R current c"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 55,
+      "manualAddress": "55",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 57,
+      "manualAddress": "57",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 상전압",
+        "en": "Average voltage Vph-n"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.34"
+    },
+    {
+      "table": "holding-registers",
+      "address": 59,
+      "manualAddress": "59",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 선간 전압",
+        "en": "Average voltage Vph-ph"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 61,
+      "manualAddress": "61",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "평균 전류",
+        "en": "Average current"
+      },
+      "unit": "A",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 63,
+      "manualAddress": "63",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 피상 전력",
+        "en": "Total apparent power"
+      },
+      "unit": "VA",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 65,
+      "manualAddress": "65",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 유효 전력",
+        "en": "Total active power"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 67,
+      "manualAddress": "67",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 무효 전력",
+        "en": "Total reactive power"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 69,
+      "manualAddress": "69",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "총 역률",
+        "en": "Total power factor"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 71,
+      "manualAddress": "71",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 불평형",
+        "en": "Amplitude unbalance voltage"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 73,
+      "manualAddress": "73",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 불평형",
+        "en": "Amplitude unbalance current"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.35"
+    },
+    {
+      "table": "holding-registers",
+      "address": 207,
+      "manualAddress": "207",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "디지털 출력 상태",
+        "en": "Status of the digital outputs"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 209,
+      "manualAddress": "209",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "디지털 입력 상태",
+        "en": "Status of the digital inputs"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 211,
+      "manualAddress": "211",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "현재 요금제",
+        "en": "Active tariff"
+      },
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "요금제 1",
+          "en": "Tariff 1"
+        },
+        {
+          "value": 1,
+          "ko": "요금제 2",
+          "en": "Tariff 2"
+        }
+      ],
+      "ref": "p.36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 213,
+      "manualAddress": "213",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "운전 시간 계수기",
+        "en": "Working hours counter"
+      },
+      "unit": "s",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 215,
+      "manualAddress": "215",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "범용 계수기",
+        "en": "Universal counter"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.36"
+    },
+    {
+      "table": "holding-registers",
+      "address": 501,
+      "manualAddress": "501",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수요 유효 전력(수입)",
+        "en": "Demand active power, import"
+      },
+      "unit": "W",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 503,
+      "manualAddress": "503",
+      "type": "f32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수요 무효 전력(수입)",
+        "en": "Demand reactive power, import"
+      },
+      "unit": "var",
+      "access": "r",
+      "fc": [
+        3,
+        4
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 801,
+      "manualAddress": "801",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량 수입 T1",
+        "en": "Active energy import T1"
+      },
+      "unit": "Wh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 805,
+      "manualAddress": "805",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량 수입 T2",
+        "en": "Active energy import T2"
+      },
+      "unit": "Wh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 809,
+      "manualAddress": "809",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량 수출 T1",
+        "en": "Active energy export T1"
+      },
+      "unit": "Wh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 813,
+      "manualAddress": "813",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "유효 전력량 수출 T2",
+        "en": "Active energy export T2"
+      },
+      "unit": "Wh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 817,
+      "manualAddress": "817",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량 수입 T1",
+        "en": "Reactive energy import T1"
+      },
+      "unit": "varh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 821,
+      "manualAddress": "821",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량 수입 T2",
+        "en": "Reactive energy import T2"
+      },
+      "unit": "varh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 825,
+      "manualAddress": "825",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량 수출 T1",
+        "en": "Reactive energy export T1"
+      },
+      "unit": "varh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 829,
+      "manualAddress": "829",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "무효 전력량 수출 T2",
+        "en": "Reactive energy export T2"
+      },
+      "unit": "varh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 833,
+      "manualAddress": "833",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력량 T1",
+        "en": "Apparent energy T1"
+      },
+      "unit": "VAh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 837,
+      "manualAddress": "837",
+      "type": "f64",
+      "order": "ABCD",
+      "name": {
+        "ko": "피상 전력량 T2",
+        "en": "Apparent energy T2"
+      },
+      "unit": "VAh",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "ref": "p.37"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50001,
+      "manualAddress": "50001",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "결선 방식",
+        "en": "Connection type"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "3P4W",
+          "en": "3P4W"
+        },
+        {
+          "value": 1,
+          "ko": "3P3W",
+          "en": "3P3W"
+        },
+        {
+          "value": 2,
+          "ko": "3P4WB",
+          "en": "3P4WB"
+        },
+        {
+          "value": 3,
+          "ko": "3P3WB",
+          "en": "3P3WB"
+        }
+      ],
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50005,
+      "manualAddress": "50005",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 1차",
+        "en": "Primary voltage"
+      },
+      "unit": "V",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 999999
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50007,
+      "manualAddress": "50007",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전압 2차",
+        "en": "Secondary voltage"
+      },
+      "unit": "V",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 690
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50011,
+      "manualAddress": "50011",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 1차",
+        "en": "Primary current"
+      },
+      "unit": "A",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 99999
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50013,
+      "manualAddress": "50013",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전류 2차",
+        "en": "Secondary current"
+      },
+      "unit": "A",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 5
+      },
+      "ref": "p.40"
+    },
+    {
+      "table": "holding-registers",
+      "address": 50021,
+      "manualAddress": "50021",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "수요 주기",
+        "en": "Demand period"
+      },
+      "unit": "min",
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 60
+      },
+      "ref": "p.41"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60002,
+      "manualAddress": "60002",
+      "type": "u16",
+      "name": {
+        "ko": "최대값 리셋",
+        "en": "Reset maximum values"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "p.51"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60003,
+      "manualAddress": "60003",
+      "type": "u16",
+      "name": {
+        "ko": "최소값 리셋",
+        "en": "Reset minimum values"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "p.51"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60004,
+      "manualAddress": "60004",
+      "type": "u16",
+      "name": {
+        "ko": "전력량 리셋",
+        "en": "Reset energy counter"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "p.51"
+    },
+    {
+      "table": "holding-registers",
+      "address": 60006,
+      "manualAddress": "60006",
+      "type": "u16",
+      "name": {
+        "ko": "요금제 전환",
+        "en": "Switching tariff"
+      },
+      "access": "w",
+      "fc": [
+        6,
+        16
+      ],
+      "ref": "p.51, p.76"
+    },
+    {
+      "table": "holding-registers",
+      "address": 63019,
+      "manualAddress": "63019",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "Modbus 국번",
+        "en": "Modbus address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "ref": "p.53"
+    },
+    {
+      "table": "holding-registers",
+      "address": 63021,
+      "manualAddress": "63021",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "통신 속도",
+        "en": "Baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "4800 bps",
+          "en": "4800 bps"
+        },
+        {
+          "value": 1,
+          "ko": "9600 bps",
+          "en": "9600 bps"
+        },
+        {
+          "value": 2,
+          "ko": "19200 bps",
+          "en": "19200 bps"
+        },
+        {
+          "value": 3,
+          "ko": "38400 bps",
+          "en": "38400 bps"
+        }
+      ],
+      "ref": "p.53"
+    },
+    {
+      "table": "holding-registers",
+      "address": 63023,
+      "manualAddress": "63023",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "데이터·패리티·정지 비트",
+        "en": "Data, parity and stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        4,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "8N2",
+          "en": "8N2"
+        },
+        {
+          "value": 1,
+          "ko": "8E1",
+          "en": "8E1"
+        },
+        {
+          "value": 2,
+          "ko": "8O1",
+          "en": "8O1"
+        },
+        {
+          "value": 3,
+          "ko": "8N1",
+          "en": "8N1"
+        }
+      ],
+      "ref": "p.53"
+    }
+  ],
+  "sources": [
+    {
+      "title": "SENTRON PAC RS485 Expansion module Manual",
+      "publisher": "Siemens AG",
+      "edition": {
+        "ko": "02/2008, A5E02091800B-01",
+        "en": "02/2008, A5E02091800B-01"
+      },
+      "url": "https://cache.industry.siemens.com/dl/files/965/28865965/att_37895/v1/SENTRON_PAC_RS485-Modul_Manual_01_US.pdf",
+      "pages": {
+        "ko": "함수 코드 p.31, 측정값 p.34~37, 설정 p.40~41, 명령 p.51, 통신 p.53·57, 프레임 예 p.75~76",
+        "en": "Function codes p.31, measured values pp.34-37, settings pp.40-41, commands p.51, communication pp.53, 57, frame examples pp.75-76"
+      },
+      "checked": "2026-11-05"
+    }
+  ]
+}

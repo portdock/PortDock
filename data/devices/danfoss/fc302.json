@@ -1,0 +1,983 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "id": "danfoss/fc302",
+  "manufacturer": {
+    "ko": "댄포스",
+    "en": "Danfoss"
+  },
+  "model": "FC 302",
+  "models": [
+    "VLT AutomationDrive FC 301",
+    "VLT AutomationDrive FC 302"
+  ],
+  "kind": "inverter",
+  "title": {
+    "ko": "댄포스 VLT AutomationDrive FC 301/FC 302 인버터 (내장 RS485 Modbus RTU)",
+    "en": "Danfoss VLT AutomationDrive FC 301/FC 302 drive (built-in RS485 Modbus RTU)"
+  },
+  "summary": {
+    "ko": "코일로 제어: 1~16 제어 워드, 17~32 지령, 33~48 상태 워드, 49~64 출력 주파수. 파라미터는 보유 레지스터 «10 × 파라미터 번호»(예 16-14 → 16140, 프레임 주소 16139). PCD 2810·2910",
+    "en": "Control through coils: 1-16 control word, 17-32 reference, 33-48 status word, 49-64 output frequency. Parameters are holding registers '10 × parameter number' (e.g. 16-14 → 16140, wire address 16139). PCD 2810/2910"
+  },
+  "protocols": [
+    "rtu"
+  ],
+  "comm": {
+    "parity": "even",
+    "stopBits": 1,
+    "unit": 1,
+    "unitRange": [
+      1,
+      247
+    ],
+    "order": "ABCD",
+    "addressing": "one",
+    "notes": [
+      {
+        "ko": "주소 체계: 코일·레지스터 번호는 1 기준. 읽기 예(MG92B102 p.21)는 01 01 00 20 00 10 으로 코일 33~48, 코일 쓰기 예는 01 05 00 40 FF 00 으로 코일 65, 레지스터 읽기 예(p.22)는 01 03 0B D5 00 02 로 3-03(3030 → 3029)을 읽는다. 쓰기 예는 01 06 03 E7 00 01 (1-00 → 999). 설명문의 «3-41 → 2809 (D51 Hex)» 는 D51h = 3409 와 맞지 않아 프레임 예를 따랐다.",
+        "en": "Addressing: coil and register numbers are 1-based. The read example (MG92B102 p.21) 01 01 00 20 00 10 reads coils 33-48, the coil write example 01 05 00 40 FF 00 writes coil 65, the register read example (p.22) 01 03 0B D5 00 02 reads 3-03 (3030 → 3029), and the write example is 01 06 03 E7 00 01 (1-00 → 999). The text «3-41 → 2809 (D51 Hex)» does not match D51h = 3409, so the frame examples were followed."
+      },
+      {
+        "ko": "쓰려면 8-30 = Modbus RTU [2], 8-31 국번 1~247, 8-32 2400~19200, 8-33 기본 짝수·정지 1 (p.18). 코일 65 를 켜지 않으면 RAM 에만 저장되고 전원을 끄면 다시 꺼진다 (p.16). 인덱스 파라미터는 레지스터 009 로 인덱스를 정한다 (p.16). 8-32 기본값과 데이터 비트는 확인하지 못해 비웠다.",
+        "en": "Set 8-30 = Modbus RTU [2], 8-31 address 1-247, 8-32 2400-19200, 8-33 even parity with 1 stop bit by default (p.18). Without coil 65 changes stay in RAM, and coil 65 resets at power cycle (p.16). Indexed parameters use register 009 for the index (p.16). The 8-32 default and data bits could not be confirmed, so they are left empty."
+      },
+      {
+        "ko": "배율: 파라미터 목록의 변환 지수(-1 = 0.1, -2 = 0.01 …, MG92B102 p.17). 16-10 전력(지수 1)·16-17 속도(지수 67)·15-00 시간 등은 단위 해석을 확인 못 해 넣지 않았다. 2810·2910 은 8-42·8-43 PCD 구성을 따른다.",
+        "en": "Scale: conversion index in the parameter list (-1 = 0.1, -2 = 0.01 ..., MG92B102 p.17). 16-10 power (index 1), 16-17 speed (index 67), 15-00 hours and similar are left out because their units could not be confirmed. 2810/2910 follow the 8-42/8-43 PCD configuration."
+      }
+    ]
+  },
+  "registers": [
+    {
+      "table": "coils",
+      "address": 0,
+      "manualAddress": "coil 1",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 00: 지령값 선택 LSB",
+        "en": "Control word bit 00: External selection LSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 1,
+      "manualAddress": "coil 2",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 01: 지령값 선택 MSB",
+        "en": "Control word bit 01: External selection MSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 2,
+      "manualAddress": "coil 3",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 02: 1 = 램프, 0 = DC 제동",
+        "en": "Control word bit 02: 1 = ramp, 0 = DC brake"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 3,
+      "manualAddress": "coil 4",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 03: 1 = 코스팅 안 함",
+        "en": "Control word bit 03: 1 = no coasting"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 4,
+      "manualAddress": "coil 5",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 04: 1 = 램프, 0 = 급정지",
+        "en": "Control word bit 04: 1 = ramp, 0 = quick stop"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 5,
+      "manualAddress": "coil 6",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 05: 1 = 램프 사용, 0 = 출력 유지",
+        "en": "Control word bit 05: 1 = use ramp, 0 = hold output frequency"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 6,
+      "manualAddress": "coil 7",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 06: 1 = 기동, 0 = 램프 정지",
+        "en": "Control word bit 06: 1 = start, 0 = ramp stop"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 7,
+      "manualAddress": "coil 8",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 07: 1 = 리셋",
+        "en": "Control word bit 07: 1 = reset"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 8,
+      "manualAddress": "coil 9",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 08: 1 = 조그",
+        "en": "Control word bit 08: 1 = jog"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 9,
+      "manualAddress": "coil 10",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 09: 1 = 램프 2, 0 = 램프 1",
+        "en": "Control word bit 09: 1 = ramp 2, 0 = ramp 1"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 10,
+      "manualAddress": "coil 11",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 10: 1 = 데이터 유효",
+        "en": "Control word bit 10: 1 = data valid"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 11,
+      "manualAddress": "coil 12",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 11: 1 = 릴레이 01 동작",
+        "en": "Control word bit 11: 1 = relay 01 active"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 12,
+      "manualAddress": "coil 13",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 12: 1 = 릴레이 02 동작",
+        "en": "Control word bit 12: 1 = relay 02 active"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 13,
+      "manualAddress": "coil 14",
+      "type": "bit",
+      "name": {
+        "ko": "제어 워드 비트 13: 셋업 선택 LSB",
+        "en": "Control word bit 13: Set-up selection LSB"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.15"
+    },
+    {
+      "table": "coils",
+      "address": 16,
+      "manualAddress": "coil 17 (17-32)",
+      "type": "bit",
+      "name": {
+        "ko": "지령값 첫 코일(17~32 = 16비트 지령)",
+        "en": "Reference, first coil (17-32 = 16-bit reference)"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.14"
+    },
+    {
+      "table": "coils",
+      "address": 32,
+      "manualAddress": "coil 33 (33-48)",
+      "type": "bit",
+      "name": {
+        "ko": "상태 워드 첫 코일(33~48)",
+        "en": "Status word, first coil (33-48)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.14, p.21"
+    },
+    {
+      "table": "coils",
+      "address": 48,
+      "manualAddress": "coil 49 (49-64)",
+      "type": "bit",
+      "name": {
+        "ko": "출력 주파수·피드백 첫 코일(49~64)",
+        "en": "Output frequency or feedback, first coil (49-64)"
+      },
+      "access": "r",
+      "fc": [
+        1
+      ],
+      "ref": "p.14"
+    },
+    {
+      "table": "coils",
+      "address": 64,
+      "manualAddress": "coil 65",
+      "type": "bit",
+      "name": {
+        "ko": "파라미터 쓰기 제어: 1 = RAM·EEPROM, 0 = RAM",
+        "en": "Parameter write control: 1 = RAM and EEPROM, 0 = RAM"
+      },
+      "access": "rw",
+      "fc": [
+        1,
+        5,
+        15
+      ],
+      "ref": "p.14, p.16, p.21"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2809,
+      "manualAddress": "2810",
+      "type": "u16",
+      "name": {
+        "ko": "PCD 쓰기: 제어 워드 CTW",
+        "en": "PCD write: control word CTW"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "p.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2810,
+      "manualAddress": "2811",
+      "type": "u16",
+      "name": {
+        "ko": "PCD 쓰기: 지령 REF",
+        "en": "PCD write: reference REF"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "p.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2909,
+      "manualAddress": "2910",
+      "type": "u16",
+      "name": {
+        "ko": "PCD 읽기: 상태 워드 STW",
+        "en": "PCD read: status word STW"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 2910,
+      "manualAddress": "2911",
+      "type": "u16",
+      "name": {
+        "ko": "PCD 읽기: 주 실제값 MAV",
+        "en": "PCD read: main actual value MAV"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "p.18"
+    },
+    {
+      "table": "holding-registers",
+      "address": 3019,
+      "manualAddress": "3-02 (3020)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "최소 지령",
+        "en": "Minimum reference"
+      },
+      "scale": 0.001,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.279",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3029,
+      "manualAddress": "3-03 (3030)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "최대 지령",
+        "en": "Maximum reference"
+      },
+      "scale": 0.001,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.279",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3409,
+      "manualAddress": "3-41 (3410)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "램프 1 가속 시간",
+        "en": "Ramp 1 ramp up time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.280",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 3419,
+      "manualAddress": "3-42 (3420)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "램프 1 감속 시간",
+        "en": "Ramp 1 ramp down time"
+      },
+      "unit": "s",
+      "scale": 0.01,
+      "access": "rw",
+      "fc": [
+        3,
+        16
+      ],
+      "ref": "PDF p.280",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8299,
+      "manualAddress": "8-30 (8300)",
+      "type": "u16",
+      "name": {
+        "ko": "프로토콜",
+        "en": "Protocol"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "FC",
+          "en": "FC"
+        },
+        {
+          "value": 2,
+          "ko": "Modbus RTU",
+          "en": "Modbus RTU"
+        }
+      ],
+      "ref": "PDF p.286",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8309,
+      "manualAddress": "8-31 (8310)",
+      "type": "u16",
+      "name": {
+        "ko": "주소",
+        "en": "Address"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "range": {
+        "min": 1,
+        "max": 247
+      },
+      "ref": "PDF p.286",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8319,
+      "manualAddress": "8-32 (8320)",
+      "type": "u16",
+      "name": {
+        "ko": "FC 포트 통신 속도",
+        "en": "FC port baud rate"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "ref": "PDF p.286",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 8329,
+      "manualAddress": "8-33 (8330)",
+      "type": "u16",
+      "name": {
+        "ko": "패리티·정지 비트",
+        "en": "Parity / stop bits"
+      },
+      "access": "rw",
+      "fc": [
+        3,
+        6,
+        16
+      ],
+      "values": [
+        {
+          "value": 0,
+          "ko": "짝수, 정지 1",
+          "en": "Even parity, 1 stop bit"
+        },
+        {
+          "value": 1,
+          "ko": "홀수, 정지 1",
+          "en": "Odd parity, 1 stop bit"
+        },
+        {
+          "value": 2,
+          "ko": "패리티 없음, 정지 1",
+          "en": "No parity, 1 stop bit"
+        }
+      ],
+      "ref": "PDF p.286",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 15999,
+      "manualAddress": "16-00 (16000)",
+      "type": "u16",
+      "name": {
+        "ko": "제어 워드",
+        "en": "Control word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16009,
+      "manualAddress": "16-01 (16010)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "지령 [단위]",
+        "en": "Reference [unit]"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16019,
+      "manualAddress": "16-02 (16020)",
+      "type": "s16",
+      "name": {
+        "ko": "지령 %",
+        "en": "Reference %"
+      },
+      "unit": "%",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16029,
+      "manualAddress": "16-03 (16030)",
+      "type": "u16",
+      "name": {
+        "ko": "상태 워드",
+        "en": "Status word"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16049,
+      "manualAddress": "16-05 (16050)",
+      "type": "s16",
+      "name": {
+        "ko": "주 실제값 [%]",
+        "en": "Main actual value [%]"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16089,
+      "manualAddress": "16-09 (16090)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "사용자 표시값",
+        "en": "Custom readout"
+      },
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16119,
+      "manualAddress": "16-12 (16120)",
+      "type": "u16",
+      "name": {
+        "ko": "전동기 전압",
+        "en": "Motor voltage"
+      },
+      "unit": "V",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16129,
+      "manualAddress": "16-13 (16130)",
+      "type": "u16",
+      "name": {
+        "ko": "주파수",
+        "en": "Frequency"
+      },
+      "unit": "Hz",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16139,
+      "manualAddress": "16-14 (16140)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "전동기 전류",
+        "en": "Motor current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16149,
+      "manualAddress": "16-15 (16150)",
+      "type": "s16",
+      "name": {
+        "ko": "주파수 [%]",
+        "en": "Frequency [%]"
+      },
+      "unit": "%",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16159,
+      "manualAddress": "16-16 (16160)",
+      "type": "s16",
+      "name": {
+        "ko": "토크 [Nm]",
+        "en": "Torque [Nm]"
+      },
+      "unit": "Nm",
+      "scale": 0.1,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16179,
+      "manualAddress": "16-18 (16180)",
+      "type": "u16",
+      "name": {
+        "ko": "전동기 열 상태",
+        "en": "Motor thermal"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16219,
+      "manualAddress": "16-22 (16220)",
+      "type": "s16",
+      "name": {
+        "ko": "토크 [%]",
+        "en": "Torque [%]"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16299,
+      "manualAddress": "16-30 (16300)",
+      "type": "u16",
+      "name": {
+        "ko": "DC 링크 전압",
+        "en": "DC link voltage"
+      },
+      "unit": "V",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16349,
+      "manualAddress": "16-35 (16350)",
+      "type": "u16",
+      "name": {
+        "ko": "인버터 열 상태",
+        "en": "Inverter thermal"
+      },
+      "unit": "%",
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16359,
+      "manualAddress": "16-36 (16360)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "인버터 정격 전류",
+        "en": "Inverter nominal current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16369,
+      "manualAddress": "16-37 (16370)",
+      "type": "u32",
+      "order": "ABCD",
+      "name": {
+        "ko": "인버터 최대 전류",
+        "en": "Inverter maximum current"
+      },
+      "unit": "A",
+      "scale": 0.01,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.294",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16599,
+      "manualAddress": "16-60 (16600)",
+      "type": "u16",
+      "name": {
+        "ko": "디지털 입력",
+        "en": "Digital input"
+      },
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.295",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16619,
+      "manualAddress": "16-62 (16620)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "아날로그 입력 53",
+        "en": "Analog input 53"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.295",
+      "source": 1
+    },
+    {
+      "table": "holding-registers",
+      "address": 16639,
+      "manualAddress": "16-64 (16640)",
+      "type": "s32",
+      "order": "ABCD",
+      "name": {
+        "ko": "아날로그 입력 54",
+        "en": "Analog input 54"
+      },
+      "scale": 0.001,
+      "access": "r",
+      "fc": [
+        3
+      ],
+      "ref": "PDF p.295",
+      "source": 1
+    }
+  ],
+  "sources": [
+    {
+      "title": "Modbus RTU Operating Instructions",
+      "publisher": "Danfoss A/S",
+      "edition": {
+        "ko": "MG92B102",
+        "en": "MG92B102"
+      },
+      "url": "https://assets.danfoss.com/documents/latest/271338/AQ361181101347en-000101.pdf",
+      "pages": {
+        "ko": "주소 p.13~16, 변환 p.17, 설정·PCD p.18, 프레임 예 p.21~22",
+        "en": "Addressing pp.13-16, conversion p.17, settings and PCD p.18, frame examples pp.21-22"
+      },
+      "checked": "2026-11-05"
+    },
+    {
+      "title": "VLT AutomationDrive FC 301/302 Programming Guide",
+      "publisher": "Danfoss A/S",
+      "edition": {
+        "ko": "AU275636650261en-US3101, Software 7.62 / 8.10",
+        "en": "AU275636650261en-US3101, Software 7.62 / 8.10"
+      },
+      "url": "https://assets.danfoss.com/documents/latest/271681/AU275636650261en-US3101.pdf",
+      "pages": {
+        "ko": "파라미터 목록 PDF p.279~295",
+        "en": "Parameter lists PDF pp.279-295"
+      },
+      "checked": "2026-11-05"
+    }
+  ]
+}

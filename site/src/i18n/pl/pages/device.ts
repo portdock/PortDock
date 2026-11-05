@@ -1,4 +1,4 @@
-// pl — mapa rejestrów Modbus jednego urządzenia (views/DevicePage.astro), wspólna dla wszystkich 77 urządzeń.
+// pl — mapa rejestrów Modbus jednego urządzenia (views/DevicePage.astro), wspólna dla wszystkich 86 urządzeń.
 export default {
   title: (c: { name: string }) => `${c.name} — mapa rejestrów Modbus`,
   seo: (c: { name: string; model: string }) => [`${c.name} — mapa rejestrów i adresy Modbus — PortDock`, `${c.name} — mapa rejestrów Modbus — PortDock`, `${c.model} — rejestry Modbus — PortDock`],

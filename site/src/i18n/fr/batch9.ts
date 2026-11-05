@@ -1,4 +1,4 @@
-// fr — 9e lot (cartes de registres Modbus : liste + 77 appareils, scope.ts SCOPE9). Modèle : ja/batch9.ts.
+// fr — 9e lot (cartes de registres Modbus : liste + 86 appareils, scope.ts SCOPE9). Modèle : ja/batch9.ts.
 // Non traduits : noms de fabricants et de modèles, noms de registres, descriptions, valeurs, bits, unités, remarques et sources (les données restent en anglais).
 import type { DeviceKind } from "../index.ts";
 import devices from "./pages/devices.ts";
