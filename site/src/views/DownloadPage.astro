@@ -135,7 +135,7 @@ const MCP = TOOLS.filter((x) => !isApp(x));
   </header>
   <div class="wrap" style="padding-top:28px">
     {/* 상자의 프로그램 이름은 이 쪽 표의 그 줄로 간다(#dl-<id>, :target 으로 강조) */}
-    <PickApp lang={lang} toRow />
+    <PickApp lang={lang} toRow getLabel={L.get} />
     {/* 어느 걸 받을지 — 질문 2개. 스크립트가 없어도 세 줄 안내는 그대로 읽힌다 */}
     <section class="pick card" id="pick" aria-labelledby="pick-h">
       <h2 id="pick-h">{L.pickTitle}</h2>

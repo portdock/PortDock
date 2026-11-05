@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — kostenlose Testtools für Seriell, Modbus und TCP",
   desc: `${c.nApps} kostenlose Windows-Programme${c.mcp ? " + MCP" : ""}: Seriell, Modbus Master/Slave, TCP, UDP, SCPI, Plotter, COM-Port-Prüfung, SPS-Simulator (MC), WLAN-Abbrüche. Quelloffen.`,
-  sub: `${c.nApps} kostenlose Windows-Programme zum Testen von seriellen (COM-), Modbus- und TCP/UDP-Geräten${c.mcp ? " und ein MCP-Server für KI" : ""} — dazu ${c.nWeb} Kommunikations- und Rechentools für die Praxis, die ohne Installation im Browser laufen (auf Deutsch).`,
+  sub: `${c.nApps} Windows-Programme zum Testen von seriellen, Modbus- und TCP/UDP-Geräten${c.mcp ? ", ein MCP-Server für KI" : ""} und ${c.nWeb} Web-Tools ohne Installation. Alles kostenlos.`,
   dl: "Programme herunterladen",
   dlSmall: "kostenlos · Windows 10/11",
   web: "Web-Tools sofort nutzen",

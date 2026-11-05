@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — Programas gratis para probar serie, Modbus y TCP/UDP",
   desc: `${c.nApps} programas gratis y de código abierto (Windows)${c.mcp ? " + MCP" : ""}: terminal serie, maestro/esclavo Modbus, TCP, UDP, SCPI, gráficas, puertos COM, simulador de PLC (MC).`,
-  sub: `${c.nApps} programas gratuitos para Windows para probar equipos serie (COM), Modbus y TCP/UDP${c.mcp ? ", un servidor MCP para IA" : ""} y ${c.nWeb} herramientas de comunicación y cálculo para campo que funcionan en el navegador, sin instalar (en español).`,
+  sub: `${c.nApps} programas para Windows para probar equipos serie, Modbus y TCP/UDP${c.mcp ? ", un servidor MCP para IA" : ""} y ${c.nWeb} herramientas web sin instalar. Todo gratis.`,
   dl: "Descargar los programas",
   dlSmall: "gratis · Windows 10/11",
   web: "Usar las herramientas web",

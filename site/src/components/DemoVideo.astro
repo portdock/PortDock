@@ -1,0 +1,50 @@
+---
+// 앱 화면 그림(img[data-demo])을 움직이는 화면(mp4)으로 바꾼다 — site/shots/make_video.py 로 만든 소리 없는 10초 남짓 영상.
+// 글을 읽지 않아도 무엇을 하는 프로그램인지 보이게. 그림은 HTML 에 그대로 두어 첫 표시·검색·스크립트 없는 경우는 그림이다.
+// 보일 때만 받고 재생한다. «동작 줄이기»·데이터 절약이면 그림 그대로.
+---
+
+<script>
+  const quiet = matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+  const imgs = document.querySelectorAll<HTMLImageElement>("img[data-demo]");
+  if (!quiet && imgs.length && "IntersectionObserver" in window) {
+    const seen = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const el = e.target as HTMLImageElement | HTMLVideoElement;
+          if (el instanceof HTMLVideoElement) {
+            if (e.isIntersecting) void el.play().catch(() => {});
+            else el.pause();
+          } else if (e.isIntersecting) {
+            seen.unobserve(el);
+            swap(el);
+          }
+        }
+      },
+      { threshold: 0.25 },
+    );
+    const swap = (img: HTMLImageElement) => {
+      const v = document.createElement("video");
+      v.muted = true;
+      v.loop = true;
+      v.playsInline = true;
+      v.autoplay = true;
+      v.poster = img.currentSrc || img.src;
+      v.width = img.width;
+      v.height = img.height;
+      v.setAttribute("aria-label", img.alt);
+      v.src = img.dataset.demo!;
+      // 재생이 시작된 뒤에만 바꾼다 — 못 받으면 그림이 그대로 남는다
+      v.addEventListener(
+        "playing",
+        () => {
+          img.replaceWith(v);
+          seen.observe(v);
+        },
+        { once: true },
+      );
+      void v.play().catch(() => {});
+    };
+    imgs.forEach((i) => seen.observe(i));
+  }
+</script>

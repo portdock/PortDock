@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — 無料のシリアル・Modbus・TCP 通信テストソフト",
   desc: `シリアル・Modbus マスター/スレーブ・TCP・UDP・SCPI・グラフ・COM ポート点検・PLC(MC)シミュレータなど無料の Windows ソフト ${c.nApps} 本${c.mcp ? "+MCP" : ""}。オープンソース。`,
-  sub: `シリアル(COM)・Modbus・TCP/UDP 機器を試験する無料の Windows ソフト ${c.nApps} 本${c.mcp ? "と AI 用の MCP サーバー" : ""}、そしてインストールせずにブラウザで使える現場の通信・計算ツール ${c.nWeb} 種類(日本語版)。`,
+  sub: `シリアル・Modbus・TCP/UDP 機器の試験ソフト ${c.nApps} 本${c.mcp ? "と AI 用 MCP" : ""}、インストール不要の Web ツール ${c.nWeb} 種類。すべて無料。`,
   dl: "ソフトをダウンロード",
   dlSmall: "無料 · Windows 10・11",
   web: "Web ツールをすぐ使う",

@@ -1232,6 +1232,7 @@ details.more ul {
   margin: 0 0 24px;
 }
 .shot img,
+.shot video,
 .shot-card img {
   display: block;
   width: 100%;
@@ -1366,12 +1367,6 @@ details.more ul {
   line-height: 1.45;
 }
 
-/* 첫 화면 — PC 문제로 들어온 사람에게 한 줄 */
-.hero-pc {
-  margin: 14px 0 0;
-  font-size: 15px;
-  color: var(--muted);
-}
 
 /* 휴대폰에서만 — 내려받기 «윈도우 PC 용» 안내 */
 .only-phone {
@@ -1380,5 +1375,40 @@ details.more ul {
 @media (max-width: 640px), (pointer: coarse) and (max-width: 1024px) {
   .only-phone {
     display: block;
+  }
+}
+
+/* 내려받기 상자 — 프로그램마다 바로 받기 */
+.pick-grid li a.pick-get {
+  float: right;
+  margin-left: 8px;
+  padding: 3px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 0;
+}
+
+/* 휴대폰 목록(웹 도구·장비·가이드) — 이름 위주로 짧게. 찾기는 숨은 글까지 그대로 본다 */
+@media (max-width: 640px) {
+  .card[data-filter-item] {
+    padding: 10px 14px;
+  }
+  .card[data-filter-item] h3 {
+    font-size: 15px;
+    margin: 0;
+  }
+  .card[data-filter-item] p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    font-size: 13px;
+    margin: 2px 0 0;
+  }
+  .card[data-filter-item] .go {
+    display: none;
+  }
+  .grid:has(> .card[data-filter-item]) {
+    gap: 8px;
   }
 }

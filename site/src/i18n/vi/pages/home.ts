@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — phần mềm test Serial, Modbus, TCP miễn phí",
   desc: `${c.nApps} chương trình Windows miễn phí${c.mcp ? " + MCP" : ""}: serial, Modbus master/slave, TCP, UDP, SCPI, vẽ đồ thị, kiểm tra cổng COM, mô phỏng PLC (MC), ghi mất Wi-Fi. Mã mở.`,
-  sub: `${c.nApps} chương trình Windows miễn phí để thử nghiệm thiết bị serial (COM), Modbus và TCP/UDP${c.mcp ? " cùng một máy chủ MCP cho AI" : ""} — kèm ${c.nWeb} công cụ truyền thông và tính toán cho hiện trường, chạy ngay trên trình duyệt, không cần cài (bằng tiếng Việt).`,
+  sub: `${c.nApps} chương trình Windows để thử thiết bị serial, Modbus và TCP/UDP${c.mcp ? ", một máy chủ MCP cho AI" : ""} và ${c.nWeb} công cụ web không cần cài đặt. Tất cả miễn phí.`,
   dl: "Tải chương trình",
   dlSmall: "miễn phí · Windows 10/11",
   web: "Dùng ngay công cụ web",

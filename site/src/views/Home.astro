@@ -1,4 +1,5 @@
 ---
+import DemoVideo from "../components/DemoVideo.astro";
 import Base from "../layouts/Base.astro";
 import { TOOLS, RELEASED_TOOLS, REPO } from "../data/tools";
 import { GUIDES } from "../data/guides";
@@ -43,7 +44,7 @@ const L =
     ? {
         seo: "PortDock — 무료 시리얼·Modbus·TCP 통신 테스트 프로그램",
         desc: `시리얼·Modbus 마스터/슬레이브·TCP·UDP·SCPI·그래프·COM 포트 점검·PLC(MC) 시뮬레이터·Wi-Fi 끊김 기록까지 무료 윈도우 프로그램 ${nApps}종${mcpKo}. 오픈소스.`,
-        sub: `시리얼(COM)·Modbus·TCP/UDP 장비를 시험하는 무료 윈도우 프로그램 ${nApps}종${mcp ? "과 AI 용 MCP 서버" : ""}, 그리고 설치 없이 브라우저에서 쓰는 현장 계산기와 마이크·키보드·마우스 같은 PC 하드웨어 테스트 ${nWeb}개.`,
+        sub: `시리얼·Modbus·TCP/UDP 장비 시험 프로그램 ${nApps}종${mcp ? "과 AI 용 MCP" : ""}, 설치 없는 웹 도구 ${nWeb}개. 모두 무료.`,
         dl: "프로그램 내려받기",
         dlSmall: "무료 · 윈도우 10·11",
         web: "웹 도구 바로 쓰기",
@@ -74,7 +75,7 @@ const L =
       ? {
           seo: "PortDock — Free Serial, Modbus, TCP/UDP Test Tools for Windows",
           desc: `${nApps} free Windows test tools${mcpKo}: serial, Modbus master/slave, TCP, UDP, SCPI, plotter, COM port inspector, PLC (MC) simulator, Wi-Fi drop log. Open source.`,
-          sub: `${nApps} free Windows programs for testing serial (COM), Modbus and TCP/UDP devices${mcp ? " and an MCP server for AI" : ""} — plus ${nWeb} field calculators and PC hardware tests (mic, keyboard, mouse …) that run in your browser.`,
+          sub: `${nApps} Windows programs for testing serial, Modbus and TCP/UDP devices${mcp ? ", an MCP server for AI" : ""}, and ${nWeb} web tools with no install. All free.`,
           dl: "Download the programs",
           dlSmall: "free · Windows 10/11",
           web: "Use the web tools",
@@ -142,18 +143,13 @@ const ld = [
           <a class="btn primary big" href={url(lang, "download/")}>{L.dl} <small>{L.dlSmall}</small></a>
           <a class="btn big" href={url(lang, "tools/")}>{L.web} <small>{L.webSmall}</small></a>
         </div>
-        <ul class="trust">{t.trust.map((x) => <li>{x}</li>)}</ul>
-        <p class="hero-pc">
-          {L.pcPre}
-          <a href={url(lang, "tools/#g-hw")}>{L.pcHw}</a>
-          {" · "}
-          <a href={link(lang, "hw-tester/")}>{L.pcTester}{isTranslated(lang, "hw-tester/") ? "" : t.inEnglish}</a>
-        </p>
+        <ul class="trust">{t.trust.slice(0, 2).map((x) => <li>{x}</li>)}</ul>
       </div>
       <figure class="shot hero-shot">
-        <img src={`/img/apps/serial.${imgLang}.webp`} width="1200" height="760" alt={L.heroAlt} fetchpriority="high" decoding="async" />
+        <img src={`/img/apps/serial.${imgLang}.webp`} data-demo={`/img/apps/serial.${imgLang}.mp4`} width="1200" height="760" alt={L.heroAlt} fetchpriority="high" decoding="async" />
         <figcaption>{L.heroCap}</figcaption>
       </figure>
+      <DemoVideo />
     </div>
   </section>
 

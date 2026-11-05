@@ -1,6 +1,7 @@
 ---
 // 앱 화면 그림 — public/img/apps/<앱>.<언어>.webp (site/shots/make.py 로 만든다. 가짜 데이터로 띄운 미리보기 화면)
 // 누르면 원래 크기(1200×760)로 열린다.
+import DemoVideo from "./DemoVideo.astro";
 import { type Tool } from "../data/tools";
 import { appTagline } from "../lib/i18n";
 import { toolPage8 } from "../i18n/index";
@@ -22,6 +23,7 @@ const alt = ko ? `${tool.name} 화면 — ${tool.tagline.ko}` : X ? `${tool.name
 ---
 
 <figure class="shot">
-  <a href={src}><img src={src} width="1200" height="760" alt={alt} loading={lazy ? "lazy" : "eager"} decoding="async" /></a>
+  <a href={src}><img src={src} data-demo={src.replace(/\.webp$/, ".mp4")} width="1200" height="760" alt={alt} loading={lazy ? "lazy" : "eager"} decoding="async" /></a>
   {caption && <figcaption>{ko ? "화면 예시 — 미리보기용 가짜 데이터로 띄운 화면입니다. 누르면 크게 봅니다." : X ? X.shotCap : "Example screen with sample data. Click to enlarge."}</figcaption>}
 </figure>
+<DemoVideo />

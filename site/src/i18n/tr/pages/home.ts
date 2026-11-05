@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — ücretsiz seri port, Modbus ve TCP test araçları",
   desc: `${c.nApps} ücretsiz Windows programı${c.mcp ? " + MCP" : ""}: seri port, Modbus master/slave, TCP, UDP, SCPI, grafik, COM port denetimi, PLC (MC) simülatörü, Wi-Fi kopma kaydı.`,
-  sub: `Seri port (COM), Modbus ve TCP/UDP cihazlarını test etmek için ${c.nApps} ücretsiz Windows programı${c.mcp ? " ve yapay zekâ için bir MCP sunucusu" : ""} — ayrıca tarayıcıda kurulum olmadan çalışan ${c.nWeb} haberleşme ve hesaplama aracı (Türkçe).`,
+  sub: `Seri port, Modbus ve TCP/UDP cihazlarını test eden ${c.nApps} Windows programı${c.mcp ? ", yapay zekâ için MCP sunucusu" : ""} ve kurulum gerektirmeyen ${c.nWeb} web aracı. Hepsi ücretsiz.`,
   dl: "Programları indirin",
   dlSmall: "ücretsiz · Windows 10/11",
   web: "Web araçlarını hemen kullanın",

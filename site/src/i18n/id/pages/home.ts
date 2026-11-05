@@ -15,7 +15,7 @@ export interface HomeCtx {
 export default (c: HomeCtx) => ({
   seo: "PortDock — Alat Uji Serial, Modbus, TCP/UDP Gratis untuk Windows",
   desc: `${c.nApps} program Windows gratis${c.mcp ? " + MCP" : ""}: serial, Modbus master/slave, TCP, UDP, SCPI, grafik, cek port COM, simulator PLC (MC), log putus Wi-Fi. Open source.`,
-  sub: `${c.nApps} program Windows gratis untuk menguji perangkat serial (COM), Modbus, dan TCP/UDP${c.mcp ? " serta server MCP untuk AI" : ""} — ditambah ${c.nWeb} alat komunikasi dan kalkulator lapangan yang berjalan di browser tanpa instalasi (dalam bahasa Indonesia).`,
+  sub: `${c.nApps} program Windows untuk menguji perangkat serial, Modbus, dan TCP/UDP${c.mcp ? ", server MCP untuk AI" : ""}, serta ${c.nWeb} alat web tanpa instalasi. Semuanya gratis.`,
   dl: "Unduh programnya",
   dlSmall: "gratis · Windows 10/11",
   web: "Pakai alat web sekarang",
