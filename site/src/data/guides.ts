@@ -5893,7 +5893,7 @@ export const GUIDES: Guide[] = [
     slug: "portdock-mcp",
     date: "2026-10-30",
     tools: ["mcp", "port-inspector", "plc-simulator", "modbus-slave"],
-    related: ["mc-protocol-test-without-plc", "usb-serial-disconnects", "modbus-tcp-connection", "modbus-function-codes"],
+    related: ["ai-modbus-code-test-without-device", "mc-protocol-test-without-plc", "usb-serial-disconnects", "modbus-tcp-connection", "modbus-function-codes"],
     devices: true,
     title: { ko: "AI(Claude Desktop 등)에서 PortDock MCP 쓰기 — 설정 예시와 연습 순서", en: "Using PortDock MCP from AI clients (Claude Desktop and others) — setup and practice" },
     seoTitle: { ko: "AI 에서 PortDock MCP 쓰기 — 설정 예시 — PortDock", en: "PortDock MCP Setup for Claude Desktop, VS Code, Cursor — PortDock" },
@@ -6024,6 +6024,222 @@ export const GUIDES: Guide[] = [
       { title: "VS Code — Use MCP servers", url: "https://code.visualstudio.com/docs/copilot/chat/mcp-servers", note: { ko: ".vscode/mcp.json 의 servers·type stdio", en: "servers and type stdio in .vscode/mcp.json" } },
       { title: "Cursor — Model Context Protocol", url: "https://cursor.com/docs/context/mcp", note: { ko: "mcp.json 의 mcpServers", en: "mcpServers in mcp.json" } },
       { title: "MCP Bundles (.mcpb)", url: "https://github.com/modelcontextprotocol/mcpb", note: { ko: "묶음 형식(manifest.json)", en: "bundle format (manifest.json)" } },
+    ],
+  },
+  {
+    // 근거: 2026-11-05 PortDock Modbus Slave 0.11.0 휴대판을 WebDriver 로 조작해 127.0.0.1:1502 에서 Python 3.14·pymodbus 3.16.2 로 실제 실행(출력·틀린 코드 결과 모두 그때 값). 맵 값은 data/devices/mitsubishi-electric/fr-e800.json 그대로. RTU 연결 줄은 객체 생성까지만 확인.
+    slug: "ai-modbus-code-test-without-device",
+    date: "2026-11-05",
+    tools: ["modbus-slave", "modbus-master", "mcp"],
+    related: ["portdock-mcp", "modbus-address-notation", "modbus-float-word-order", "modbus-exception-codes", "modbus-tcp-connection"],
+    devices: true,
+    deviceKinds: ["inverter"],
+    title: { ko: "AI 로 Modbus 코드 짜고 장비 없이 검증하기 — 장비 맵·pymodbus·시뮬레이터", en: "Write Modbus code with AI and test it without hardware — device map, pymodbus, simulator" },
+    seoTitle: { ko: "AI 로 Modbus 코드 짜고 장비 없이 검증하기 — PortDock", en: "Test AI-Written Modbus Code Without Hardware — PortDock" },
+    desc: {
+      ko: "AI 가 Modbus 주소를 지어내지 않게 장비 맵을 프롬프트에 주고, pymodbus 코드를 시뮬레이터에 돌려 대조합니다. 주소·워드 순서·배율 실수의 실제 결과까지.",
+      en: "Give AI a device map so it does not invent Modbus addresses, then run the pymodbus code against a simulator. See real address and word order mistakes.",
+    },
+    body: {
+      ko: [
+        { p: "AI 는 없는 레지스터 주소도 그럴듯하게 적습니다. 그래서 근거 있는 장비 맵을 주고 짜게 한 뒤, 장비 없이 돌려 값을 대조합니다. 아래 출력은 PortDock Modbus Slave 0.11.0 휴대판(127.0.0.1)에 Python 3.14·pymodbus 3.16.2 로 실제 돌린 결과입니다. 예시 장비는 미쓰비시전기 FR-E800 인버터입니다." },
+        { h: "먼저 회사 규정부터" },
+        {
+          ul: [
+            "외부 AI 를 써도 되는지 회사 규정을 먼저 확인합니다.",
+            "사내 코드·고객사 정보·통신 기록·설비 정보는 외부 AI 에 넣지 않습니다. AI 에는 제조사 공개 자료에서 옮긴 장비 맵(JSON)만 줍니다.",
+            "외부 AI 를 쓸 수 없어도 3번 검증은 사람이 쓴 코드에 그대로 쓸 수 있습니다. 묶을 주소가 127.0.0.1 이면 Modbus Slave 는 이 PC 안에서만 접속을 받습니다.",
+            "사내에서 승인된 AI 나 로컬 모델이면 같은 순서로 쓸 수 있습니다.",
+          ],
+        },
+        { h: "1. 프롬프트에 장비 맵을 같이 주기" },
+        { p: "맵 전체: portdock.dev/devices/mitsubishi-electric/fr-e800.json — 제조사 매뉴얼에서 옮긴 비공식 자료로, 칸마다 근거 쪽이 붙어 있습니다. 쓸 칸만 잘라 줘도 됩니다." },
+        { code: "아래 장비 맵만 근거로 Python(pymodbus 3.x) 읽기 코드를 짜 줘.\n\n규칙:\n- address 는 이미 0 기준이다. manualAddress 로 다시 계산하지 마.\n- 맵에 없는 주소는 쓰지 마. 필요한 칸이 없으면 «맵에 없음» 이라고 답해.\n- 실제 값 = 원시 값 × scale.\n- u32 는 order 대로 합쳐. CDAB 는 첫 워드가 하위다.\n- 읽기(FC 03)만. 쓰기 코드는 넣지 마.\n- 연결: Modbus TCP 127.0.0.1:1502, 국번 1.\n\n장비 맵(미쓰비시전기 FR-E800):\n[\n  {\"table\":\"holding-registers\",\"address\":200,\"manualAddress\":\"40201\",\"type\":\"u16\",\"name\":{\"ko\":\"출력 주파수\"},\"unit\":\"Hz\",\"scale\":0.01,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":201,\"manualAddress\":\"40202\",\"type\":\"u16\",\"name\":{\"ko\":\"출력 전류\"},\"unit\":\"A\",\"scale\":0.01,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":202,\"manualAddress\":\"40203\",\"type\":\"u16\",\"name\":{\"ko\":\"출력 전압\"},\"unit\":\"V\",\"scale\":0.1,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":276,\"manualAddress\":\"40277\",\"type\":\"u32\",\"order\":\"CDAB\",\"name\":{\"ko\":\"32비트 누적 전력량(kWh)\"},\"unit\":\"kWh\",\"access\":\"r\",\"fc\":[3]}\n]" },
+        { p: "PortDock MCP 를 붙였다면 device_map_get 도구로 같은 맵을 가져오게 할 수 있습니다." },
+        { h: "2. 나온 코드 보기 — read_e800.py" },
+        { p: "AI 의 답은 매번 다릅니다. 아래는 위 규칙대로 짠 예입니다." },
+        { code: "from pymodbus.client import ModbusTcpClient\n\n# Modbus TCP — 3번의 Modbus Slave 에 연결\nclient = ModbusTcpClient(\"127.0.0.1\", port=1502, timeout=2)\nif not client.connect():\n    raise SystemExit(\"connect failed\")\ntry:\n    # 200=출력 주파수(×0.01 Hz), 201=출력 전류(×0.01 A), 202=출력 전압(×0.1 V)\n    r = client.read_holding_registers(200, count=3, device_id=1)\n    if r.isError():\n        raise SystemExit(f\"read error: {r}\")\n    print(\"raw 200-202:\", r.registers)\n    print(f\"output frequency: {r.registers[0] * 0.01:.2f} Hz\")\n    print(f\"output current:   {r.registers[1] * 0.01:.2f} A\")\n    print(f\"output voltage:   {r.registers[2] * 0.1:.1f} V\")\n\n    # 276=누적 전력량(u32, CDAB — 첫 워드가 하위)\n    r = client.read_holding_registers(276, count=2, device_id=1)\n    if r.isError():\n        raise SystemExit(f\"read error: {r}\")\n    print(\"raw 276-277:\", r.registers)\n    print(\"energy:\", (r.registers[1] << 16) | r.registers[0], \"kWh\")\nfinally:\n    client.close()" },
+        { p: "틀리기 쉬운 곳입니다. 결과는 3번처럼 띄운 Modbus Slave 에 틀린 코드를 일부러 돌린 그대로입니다." },
+        {
+          table: {
+            head: ["틀린 코드", "실제 결과", "맞는 것"],
+            rows: [
+              ["read_holding_registers(40200, count=1, device_id=1)", "ExceptionResponse(dev_id=1, function_code=131, exception_code=2)", "40201 꼴 번호는 통신 주소가 아닙니다. 40201 − 40001 = 200"],
+              ["read_holding_registers(201, count=1, device_id=1)", "[250] — 오류 없음", "201 은 출력 전류 칸입니다. 주파수로 읽으면 2.50 Hz 로 보입니다. 오류가 나지 않아 가장 찾기 어렵습니다"],
+              ["r.registers[0]", "3000 — «3000 Hz»", "배율 0.01 을 곱해 30.00 Hz"],
+              ["(r.registers[0] << 16) | r.registers[1]", "3795845121", "CDAB 는 첫 워드가 하위 — 맞는 값은 123456"],
+              ["read_holding_registers(200, count=1, slave=1)", "TypeError: ... unexpected keyword argument 'slave'", "pymodbus 3.16.2 는 device_id. 판에 따라 인자 이름이 달라 옛 이름이 나오기도 합니다"],
+            ],
+          },
+        },
+        { h: "3. 장비 없이 돌려 대조하기" },
+        {
+          table: {
+            head: ["순서", "할 일"],
+            plain: true,
+            rows: [
+              ["1", "PortDock Modbus Slave 를 엽니다."],
+              ["2", "연결 방식 «TCP 서버 (Modbus TCP)», 묶을 주소 127.0.0.1, 포트 1502."],
+              ["3", "«장비 흉내…» → 찾기에 FR-E800 → 고르고 «불러오기»(선택지는 기본 그대로)."],
+              ["4", "«시작» → 상태가 «듣는 중» 이 되는지 봅니다."],
+              ["5", "주소 표기 «0 기준» 표에서 8번 칸에 2(정회전 비트)를 넣고 Enter → 200번 칸이 3000 까지 오릅니다."],
+              ["6", "워드 순서를 보려고 276번 칸에 123456 을 넣고 Enter."],
+              ["7", "아래 명령으로 코드를 돌립니다."],
+            ],
+          },
+        },
+        { code: "python -m venv .venv\n.venv\\Scripts\\python -m pip install pymodbus==3.16.2\n.venv\\Scripts\\python read_e800.py" },
+        { code: "raw 200-202: [3000, 250, 1100]\noutput frequency: 30.00 Hz\noutput current:   2.50 A\noutput voltage:   110.0 V\nraw 276-277: [57920, 1]\nenergy: 123456 kWh" },
+        { p: "화면과 대조합니다. 통신 기록에서도 요청의 시작 주소가 00 C8(200)인지 볼 수 있습니다." },
+        {
+          table: {
+            head: ["칸", "화면 값", "코드 출력"],
+            rows: [
+              ["200", "3000", "30.00 Hz"],
+              ["201", "250", "2.50 A"],
+              ["202", "1100", "110.0 V"],
+              ["276", "123456", "123456 kWh"],
+            ],
+          },
+        },
+        { p: "값은 시뮬레이터가 만든 예시이고 실제 장비의 전류·전압이 아닙니다. 그리고 시뮬레이터도 같은 맵으로 만들어지므로, 통과했다는 뜻은 «코드가 맵과 맞는다» 까지입니다." },
+        {
+          table: {
+            head: ["장비 없이 확인되는 것", "확인되지 않는 것"],
+            plain: true,
+            rows: [
+              ["주소·개수·국번", "맵 자체의 오류, 펌웨어·형번 차이"],
+              ["배율·워드 순서 계산", "실제 가감속·제어 응답"],
+              ["예외 처리 — 읽기 전용 200번에 쓰면 예외 02, 값은 그대로", "운전 상태 비트·알람(흉내 내지 않음)"],
+              ["연결 실패 처리", "RS-485 배선·통신 타이밍"],
+            ],
+          },
+        },
+        { h: "4. 실제 장비로 넘어가기 전" },
+        { p: "쓰기(운전 명령)는 AI 코드를 그대로 돌리지 마세요. 모터가 움직입니다. 읽기부터 합니다." },
+        {
+          table: {
+            head: ["순서", "할 일"],
+            plain: true,
+            rows: [
+              ["1", "맵의 주소·배율을 그 장비의 매뉴얼로 확인합니다. 맵은 비공식 자료입니다."],
+              ["2", "읽기 코드만 돌려 값을 장비 표시와 맞춰 봅니다."],
+              ["3", "쓰기는 주소·값을 사람이 한 줄씩 매뉴얼과 맞춥니다. 운전 중인 장비에는 쓰지 말고, 주변에 사람이 없는지와 정지 수단을 먼저 확인합니다."],
+              ["4", "쓴 뒤에는 다시 읽어 확인합니다."],
+            ],
+          },
+        },
+        {
+          ul: [
+            "FR-E800 의 40009(address 8)는 읽기와 쓰기의 뜻이 다릅니다. 비트 0 은 쓰면 정지, 읽으면 RUN(운전 중)입니다. 시뮬레이터는 쓴 값을 그대로 돌려주므로 이 차이가 드러나지 않습니다.",
+            "이 맵은 PU 커넥터(RS-485) Modbus RTU 기준이고 공장값은 19200 8E1 입니다. TCP 는 시험용이라 실제 장비에서는 아래처럼 연결 줄을 바꿉니다. Pr.549 = 1 과 Pr.117 = 1~247(초기값 0 은 응답 없음)을 먼저 맞춥니다.",
+          ],
+        },
+        { code: ".venv\\Scripts\\python -m pip install pyserial\n\nfrom pymodbus.client import ModbusSerialClient\nclient = ModbusSerialClient(\"COM3\", baudrate=19200, bytesize=8, parity=\"E\", stopbits=1, timeout=2)" },
+        { p: "이 연결 줄은 객체 생성까지만 확인했고 실제 FR-E800 에 연결해 보지는 않았습니다." },
+      ],
+      en: [
+        { p: "AI can write a plausible register address that does not exist. So give it a device map with sources, then run the code without hardware and compare the values. The output below is a real run against the PortDock Modbus Slave 0.11.0 portable edition (127.0.0.1) with Python 3.14 and pymodbus 3.16.2. The example device is a Mitsubishi Electric FR-E800 inverter." },
+        { h: "First, your company's rules" },
+        {
+          ul: [
+            "Check your company's rules on external AI first.",
+            "Do not put in-house code, customer information, traffic logs or equipment information into an external AI. Give the AI only the device map (JSON), which is taken from manufacturers' public documents.",
+            "If you cannot use an external AI, step 3 still works as is for code written by a person. With the bind address at 127.0.0.1, Modbus Slave accepts connections only from this PC.",
+            "With an AI approved by your company or a local model, you can follow the same order.",
+          ],
+        },
+        { h: "1. Put the device map in the prompt" },
+        { p: "Full map: portdock.dev/devices/mitsubishi-electric/fr-e800.json — unofficial data taken from the manufacturer's manuals, with the source page on every register. You can paste only the registers you need." },
+        { code: "Write Python (pymodbus 3.x) read code using only the device map below.\n\nRules:\n- address is already 0-based. Do not recalculate it from manualAddress.\n- Do not use addresses that are not in the map. If a register is missing, answer «not in the map».\n- Real value = raw value × scale.\n- Combine u32 values by order. In CDAB the first word is the low word.\n- Reads only (FC 03). No write code.\n- Connection: Modbus TCP 127.0.0.1:1502, unit 1.\n\nDevice map (Mitsubishi Electric FR-E800):\n[\n  {\"table\":\"holding-registers\",\"address\":200,\"manualAddress\":\"40201\",\"type\":\"u16\",\"name\":{\"en\":\"Output frequency\"},\"unit\":\"Hz\",\"scale\":0.01,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":201,\"manualAddress\":\"40202\",\"type\":\"u16\",\"name\":{\"en\":\"Output current\"},\"unit\":\"A\",\"scale\":0.01,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":202,\"manualAddress\":\"40203\",\"type\":\"u16\",\"name\":{\"en\":\"Output voltage\"},\"unit\":\"V\",\"scale\":0.1,\"access\":\"r\",\"fc\":[3]},\n  {\"table\":\"holding-registers\",\"address\":276,\"manualAddress\":\"40277\",\"type\":\"u32\",\"order\":\"CDAB\",\"name\":{\"en\":\"32-bit cumulative energy (kWh)\"},\"unit\":\"kWh\",\"access\":\"r\",\"fc\":[3]}\n]" },
+        { p: "With PortDock MCP added, you can have the AI fetch the same map with the device_map_get tool." },
+        { h: "2. Review the code — read_e800.py" },
+        { p: "AI answers differ every time. This is an example written to the rules above." },
+        { code: "from pymodbus.client import ModbusTcpClient\n\n# Modbus TCP — connects to the Modbus Slave from step 3\nclient = ModbusTcpClient(\"127.0.0.1\", port=1502, timeout=2)\nif not client.connect():\n    raise SystemExit(\"connect failed\")\ntry:\n    # 200=output frequency (×0.01 Hz), 201=output current (×0.01 A), 202=output voltage (×0.1 V)\n    r = client.read_holding_registers(200, count=3, device_id=1)\n    if r.isError():\n        raise SystemExit(f\"read error: {r}\")\n    print(\"raw 200-202:\", r.registers)\n    print(f\"output frequency: {r.registers[0] * 0.01:.2f} Hz\")\n    print(f\"output current:   {r.registers[1] * 0.01:.2f} A\")\n    print(f\"output voltage:   {r.registers[2] * 0.1:.1f} V\")\n\n    # 276=cumulative energy (u32, CDAB — first word is the low word)\n    r = client.read_holding_registers(276, count=2, device_id=1)\n    if r.isError():\n        raise SystemExit(f\"read error: {r}\")\n    print(\"raw 276-277:\", r.registers)\n    print(\"energy:\", (r.registers[1] << 16) | r.registers[0], \"kWh\")\nfinally:\n    client.close()" },
+        { p: "Where it goes wrong. The results are from deliberately running the wrong code against the Modbus Slave set up in step 3." },
+        {
+          table: {
+            head: ["Wrong code", "Actual result", "Correct"],
+            rows: [
+              ["read_holding_registers(40200, count=1, device_id=1)", "ExceptionResponse(dev_id=1, function_code=131, exception_code=2)", "A 40201-style number is not a wire address. 40201 − 40001 = 200"],
+              ["read_holding_registers(201, count=1, device_id=1)", "[250] — no error", "201 is output current. Read as frequency it looks like 2.50 Hz. With no error, this is the hardest one to spot"],
+              ["r.registers[0]", "3000 — «3000 Hz»", "Multiply by the 0.01 scale: 30.00 Hz"],
+              ["(r.registers[0] << 16) | r.registers[1]", "3795845121", "In CDAB the first word is the low word — the right value is 123456"],
+              ["read_holding_registers(200, count=1, slave=1)", "TypeError: ... unexpected keyword argument 'slave'", "pymodbus 3.16.2 uses device_id. The argument name varies by version, so an old name can appear"],
+            ],
+          },
+        },
+        { h: "3. Run it without hardware and compare" },
+        {
+          table: {
+            head: ["Step", "Do this"],
+            plain: true,
+            rows: [
+              ["1", "Open PortDock Modbus Slave."],
+              ["2", "Connection «TCP server (Modbus TCP)», bind address 127.0.0.1, port 1502."],
+              ["3", "«Emulate device…» → search FR-E800 → select it and «Load» (leave the options at their defaults)."],
+              ["4", "«Start» → check the status shows «Listening»."],
+              ["5", "With «Addresses» set to «0-based», enter 2 (the forward bit) in cell 8 and press Enter → cell 200 rises to 3000."],
+              ["6", "To see word order, enter 123456 in cell 276 and press Enter."],
+              ["7", "Run the code with the commands below."],
+            ],
+          },
+        },
+        { code: "python -m venv .venv\n.venv\\Scripts\\python -m pip install pymodbus==3.16.2\n.venv\\Scripts\\python read_e800.py" },
+        { code: "raw 200-202: [3000, 250, 1100]\noutput frequency: 30.00 Hz\noutput current:   2.50 A\noutput voltage:   110.0 V\nraw 276-277: [57920, 1]\nenergy: 123456 kWh" },
+        { p: "Compare with the screen. In the traffic log you can also check that the request's start address is 00 C8 (200)." },
+        {
+          table: {
+            head: ["Cell", "On screen", "Code output"],
+            rows: [
+              ["200", "3000", "30.00 Hz"],
+              ["201", "250", "2.50 A"],
+              ["202", "1100", "110.0 V"],
+              ["276", "123456", "123456 kWh"],
+            ],
+          },
+        },
+        { p: "These are example values from the simulator, not a real drive's current or voltage. The simulator is also built from the same map, so a pass only means «the code matches the map»." },
+        {
+          table: {
+            head: ["Checked without hardware", "Not checked"],
+            plain: true,
+            rows: [
+              ["Address, count, unit ID", "Errors in the map itself, firmware and model differences"],
+              ["Scale and word order calculation", "Real ramps and control response"],
+              ["Exception handling — writing to read-only cell 200 gives exception 02 and the value stays", "Run status bits and alarms (not emulated)"],
+              ["Handling a failed connection", "RS-485 wiring and timing"],
+            ],
+          },
+        },
+        { h: "4. Before moving to a real device" },
+        { p: "Do not run AI code for writes (run commands) as is. The motor will move. Start with reads." },
+        {
+          table: {
+            head: ["Step", "Do this"],
+            plain: true,
+            rows: [
+              ["1", "Check the map's addresses and scales against that device's manual. The map is unofficial."],
+              ["2", "Run only the read code and compare the values with the device's display."],
+              ["3", "For writes, match each address and value against the manual yourself, line by line. Do not write to running equipment, and first make sure no one is near the machine and you can stop it."],
+              ["4", "Read back after writing."],
+            ],
+          },
+        },
+        {
+          ul: [
+            "On the FR-E800, 40009 (address 8) means different things for reads and writes. Writing bit 0 means stop; reading it means RUN (running). The simulator returns what you wrote, so this difference does not show.",
+            "This map is for Modbus RTU over the PU connector (RS-485), with a factory default of 19200 8E1. TCP is only for this test, so on a real device change the connection line as below. Set Pr.549 = 1 and Pr.117 = 1–247 first (the default 0 gets no reply).",
+          ],
+        },
+        { code: ".venv\\Scripts\\python -m pip install pyserial\n\nfrom pymodbus.client import ModbusSerialClient\nclient = ModbusSerialClient(\"COM3\", baudrate=19200, bytesize=8, parity=\"E\", stopbits=1, timeout=2)" },
+        { p: "This connection line was only checked as far as creating the object; it was not connected to a real FR-E800." },
+      ],
+    },
+    refs: [
+      { title: "FR-E800 Instruction Manual (Communication) IB(NA)-0600871ENG-S", url: "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600871eng/ib0600871engs.pdf", note: { ko: "3.5 MODBUS RTU p.257~267: 40001 주소 규칙, 40009 비트(p.265), Pr.549·Pr.117", en: "3.5 MODBUS RTU pp.257-267: 40001 addressing, 40009 bits (p.265), Pr.549 and Pr.117" } },
+      { title: "FR-E800 Instruction Manual (Function) IB(NA)-0600868ENG-U", url: "https://dl.mitsubishielectric.com/dl/fa/document/manual/inv/ib0600868eng/ib0600868engu.pdf", note: { ko: "Pr.52 모니터 항목표 p.395~399: 40201~40203, 40277(CDAB)", en: "Pr.52 monitor item list pp.395-399: 40201-40203, 40277 (CDAB)" } },
+      { title: "PyModbus — Client", url: "https://pymodbus.readthedocs.io/en/latest/source/client.html", note: { ko: "ModbusTcpClient·ModbusSerialClient, device_id", en: "ModbusTcpClient, ModbusSerialClient, device_id" } },
     ],
   },
   {

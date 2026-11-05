@@ -35,6 +35,7 @@
 | 모드버스 float 읽기, modbus 32비트 워드 순서, CDAB | `/guides/modbus-float-word-order/` | «Modbus float·32비트 값 읽기 — 워드 순서 맞추기», 설명에 «ABCD·CDAB» |
 | 모드버스 TCP 연결 안됨, modbus tcp 502, unit id | `/guides/modbus-tcp-connection/` | «Modbus TCP 연결 안 됨 — 502 포트·Unit ID 점검», 설명에 «방화벽·접속 수 제한» |
 | modbus tcp rtu 게이트웨이 프로그램, modbus tcp to rtu gateway software free | `/guides/modbus-tcp-rtu-gateway-pc/` | «PC 를 Modbus TCP ↔ RTU 게이트웨이로 쓰기», 설명에 «게이트웨이 장비 없이·예외 0B·0A» |
+| AI Modbus 코드, 장비 없이 Modbus 시험, pymodbus 예제(검색량 확인 안 함) | `/guides/ai-modbus-code-test-without-device/` | «AI 로 Modbus 코드 짜고 장비 없이 검증하기», 설명에 «장비 맵», «pymodbus» |
 | RS232 RS485 차이, RS422 RS485 차이 | `/guides/rs232-rs422-rs485/` | «RS232·RS422·RS485 차이 — 배선·거리·장비 수 비교» |
 | 4-20mA 원리, 4-20mA 단선, 2선식 4선식 차이 | `/guides/4-20ma-loop/` | «4-20mA 신호 기초와 고장 찾기 (2선식·4선식·단선)», 설명에 «NAMUR NE 43», «3.6 mA·21 mA» |
 | PT100 3선식, 측온저항체 2선식 3선식 4선식, 열전대 종류 | `/guides/pt100-thermocouple-wiring/` | «Pt100 2선·3선·4선식 차이와 열전대 K·J·T 고르기», 설명에 «냉접점 보정» |
@@ -159,6 +160,7 @@
 | ftdi latency timer modbus | `/en/guides/usb-serial-latency/` | «USB-Serial Adapter Latency: Split Frames, Late Replies» |
 | modbus function codes, fc03 vs fc04, fc06 vs fc16 | `/en/guides/modbus-function-codes/` | «Modbus Function Codes 01–06, 0F, 10, 17 Explained», description «quantity limits», «06 vs 10» |
 | modbus float word order, modbus 32 bit registers, cdab | `/en/guides/modbus-float-word-order/` | «Modbus Float & 32-bit Values: Finding the Word Order», description «ABCD or CDAB» |
+| ai modbus code, test modbus code without hardware, pymodbus example (search demand not checked) | `/en/guides/ai-modbus-code-test-without-device/` | «Test AI-Written Modbus Code Without Hardware», description has «device map», «pymodbus» |
 | modbus tcp not connecting, modbus tcp port 502, modbus unit id | `/en/guides/modbus-tcp-connection/` | «Modbus TCP Not Connecting: Port 502, Unit ID, Limits» |
 | rs232 vs rs485, rs422 vs rs485 | `/en/guides/rs232-rs422-rs485/` | «RS-232 vs RS-422 vs RS-485: Wiring, Distance, Nodes» |
 | 4-20ma troubleshooting, 4-20ma 2 wire vs 4 wire, namur ne43 | `/en/guides/4-20ma-loop/` | «4–20 mA Loop Basics & Troubleshooting (2-Wire, 4-Wire)», description «NAMUR NE 43» |
