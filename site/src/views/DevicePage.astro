@@ -85,8 +85,8 @@ const T =
           title: (c: { name: string }) => `${c.name} Modbus register map`,
           seo: (c: { name: string; model: string }) => [`${c.name} Modbus Register Map & Addresses — PortDock`, `${c.name} Modbus Register Map — PortDock`, `${c.model} Modbus Register Map — PortDock`],
           desc: (c: { name: string; kind: string; n: number }) => [
-            `${c.name} (${c.kind}) Modbus register map: ${c.n} addresses with type, unit and scale, default settings, manual page references and JSON.`,
-            `${c.name} (${c.kind}) Modbus register map: ${c.n} addresses with type, unit, scale, defaults, manual pages and JSON.`,
+            `${c.name} ${c.kind} Modbus register list: ${c.n} addresses with type, unit and scale, default settings, manual page references and JSON.`,
+            `${c.name} ${c.kind} Modbus register list: ${c.n} addresses with type, unit, scale, defaults, manual pages and JSON.`,
           ],
           crumb: "Devices",
           parity: { none: "None", even: "Even", odd: "Odd" },
