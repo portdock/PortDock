@@ -189,13 +189,13 @@ const SRC = [
         <label class="fld">{L.mode}<select id="mode"><option value="sm">{L.modes[0]}</option><option value="fm" selected>{L.modes[1]}</option><option value="fmp">{L.modes[2]}</option></select></label>
       </div>
       <p class="err" id="pu-err" role="alert"></p>
+      <p class="verdict" id="pu-vd" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{(["min", "max", "vol", "tr", "pick"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="pu-vd"></p>
     </form>
 
     <form class="calc card" id="ad" style="margin-top:16px">

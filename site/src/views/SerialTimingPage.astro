@@ -237,6 +237,8 @@ const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
         </label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict warn" id="w1" aria-live="polite"></p>
+      <p class="verdict" id="w2" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv" id="out">
           <caption class="note" style="text-align:left">{L.res}</caption>
@@ -245,8 +247,6 @@ const fcName = (f: number) => f.toString(16).toUpperCase().padStart(2, "0");
           </tbody>
         </table>
       </div>
-      <p class="verdict warn" id="w1"></p>
-      <p class="verdict" id="w2"></p>
       <p class="note">{L.usb}</p>
       <p class="note">{L.how}</p>
     </form>

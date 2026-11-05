@@ -174,6 +174,7 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
         <label class="fld">{L.pf2}<input id="pf2" class="mono" value="0.95" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="vd" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
@@ -186,7 +187,6 @@ const krows = PF1.map((p) => [p.toFixed(2), ...[0.85, 0.9, 0.95].map((t) => kFac
       <div class="row">
         <label class="fld">{L.inst}<input id="inst" class="mono" value="50" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
-      <p class="verdict" id="vd" aria-live="polite"></p>
       <p class="note">{L.how}</p>
     </form>
 

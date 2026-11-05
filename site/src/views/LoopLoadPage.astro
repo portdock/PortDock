@@ -171,13 +171,13 @@ const fig = `/img/guides/4-20ma-budget.${lang === "ko" ? "ko" : "en"}.svg`;
         <label class="fld">{L.temp}<input id="temp" class="mono" value="20" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="verdict" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="verdict"></p>
       <p class="note">{L.example}</p>
       <p class="note">{L.how}</p>
     </form>

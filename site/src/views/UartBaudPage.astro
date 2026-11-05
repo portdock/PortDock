@@ -151,13 +151,13 @@ const rRows = [5, 6, 7, 8, 9, 10].map((d) => {
         <label class="fld">{L.other}<input id="other" class="mono" value="0" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="vd" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{(["ideal", "div", "ubrr", "act", "err", "tot", "rng"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="vd"></p>
       <div class="tbl">
         <table class="t">
           <caption class="note" style="text-align:left">{L.tTitle}</caption>

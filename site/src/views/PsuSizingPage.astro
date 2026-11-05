@@ -203,13 +203,13 @@ const ld = {
         <label class="fld">{L.ch}<input id="ch" class="mono" value="4" inputmode="decimal" autocomplete="off" /></label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="verdict" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{Object.entries(L.k).map(([id, name]) => <tr><td>{name}</td><td data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="verdict"></p>
       <h3>{L.chTitle}</h3>
       <p class="note">{L.chNote}</p>
       <div class="tbl" id="chs"></div>

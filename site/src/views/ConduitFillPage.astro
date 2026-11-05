@@ -167,13 +167,13 @@ const ld = {
         ))
       }
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="verdict" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{Object.entries(L.k).map(([id, name]) => <tr data-row={id}><td>{name}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="verdict"></p>
       <p class="note">{L.how}</p>
     </form>
 

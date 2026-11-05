@@ -162,13 +162,13 @@ const rows = PPRS.map((p) => [p, ...[1000, 1800, 3000, 6000].map((r) => +(pulseH
         <label class="fld">{L.lead}<input id="lead" class="mono" value="" inputmode="decimal" spellcheck="false" autocomplete="off" /></label>
       </div>
       <p class="err" id="err" role="alert"></p>
+      <p class="verdict" id="vd" aria-live="polite"></p>
       <div class="tbl" aria-live="polite">
         <table class="t kv">
           <caption class="note" style="text-align:left">{L.res}</caption>
           <tbody>{(["hz", "rate", "rev", "deg", "mm", "c2r", "max"] as const).map((id) => <tr><td>{L.k[id]}</td><td class="mono" data-k={id}></td></tr>)}</tbody>
         </table>
       </div>
-      <p class="verdict" id="vd"></p>
       <p class="note">{L.example}</p>
       <p class="note">{L.how}</p>
     </form>

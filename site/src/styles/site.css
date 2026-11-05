@@ -640,24 +640,44 @@ p.verdict {
 p.verdict:empty {
   display: none;
 }
-p.verdict.ok {
-  color: var(--tx);
+/* 판정이 있으면 결과 표 위에 칸으로 — 글을 읽지 않아도 색으로 보이게 */
+p.verdict.ok,
+p.verdict.warn,
+p.verdict.fault {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-left: 4px solid;
+  border-radius: 6px;
+  font-size: 15px;
   font-weight: 600;
 }
+p.verdict.ok {
+  color: #05603a;
+  background: #ecfdf3;
+  border-color: #12b76a;
+}
 p.verdict.warn {
-  color: #b54708;
-  font-weight: 600;
+  color: #93370d;
+  background: #fffaeb;
+  border-color: #f79009;
 }
 p.verdict.fault {
   color: #b42318;
-  font-weight: 600;
+  background: #fef3f2;
+  border-color: #f04438;
 }
 @media (prefers-color-scheme: dark) {
+  p.verdict.ok {
+    color: #6ce9a6;
+    background: rgba(18, 183, 106, 0.12);
+  }
   p.verdict.warn {
     color: #f5a35c;
+    background: rgba(247, 144, 9, 0.12);
   }
   p.verdict.fault {
     color: #f97066;
+    background: rgba(240, 68, 56, 0.12);
   }
 }
 /* 계산 결과 표 — 왼쪽 이름, 오른쪽 값 */
