@@ -6033,7 +6033,6 @@ export const GUIDES: Guide[] = [
     tools: ["modbus-slave", "modbus-master", "mcp"],
     related: ["portdock-mcp", "modbus-address-notation", "modbus-float-word-order", "modbus-exception-codes", "modbus-tcp-connection"],
     devices: true,
-    deviceKinds: ["inverter"],
     title: { ko: "AI 로 Modbus 코드 짜고 장비 없이 검증하기 — 장비 맵·pymodbus·시뮬레이터", en: "Write Modbus code with AI and test it without hardware — device map, pymodbus, simulator" },
     seoTitle: { ko: "AI 로 Modbus 코드 짜고 장비 없이 검증하기 — PortDock", en: "Test AI-Written Modbus Code Without Hardware — PortDock" },
     desc: {
