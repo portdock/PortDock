@@ -11,8 +11,7 @@ import { EXCEPTIONS } from "../lib/modbusDecode";
 import { tx } from "../lib/tr";
 import { dict } from "../i18n";
 import type { SiteLang } from "../i18n/langs";
-import { ui, link, isTranslated } from "../lib/i18n";
-import { pageName } from "../i18n/names";
+import { ui, link } from "../lib/i18n";
 
 interface Props {
   lang: SiteLang;
@@ -56,9 +55,6 @@ const L =
       guidePre: "바이트 하나하나의 풀이는 가이드 ",
       guideMid: ", 주소 표기는 ",
       guidePost: " 를 보세요.",
-      pcapPre: "Wireshark·pktmon 으로 뜬 캡처 파일을 통째로 보려면(요청·응답 짝, 응답 시간, 무응답) ",
-      pcapLink: "산업 통신 pcap 해석기",
-      pcapPost: " 를 쓰세요. 표의 행을 누르면 이 해석기로 그 프레임을 넘겨 줍니다.",
     }
   : lang === "en"
   ? {
@@ -92,15 +88,8 @@ const L =
       guidePre: "For a byte-by-byte walkthrough see ",
       guideMid: "; for addresses see ",
       guidePost: ".",
-      pcapPre: "To look at a whole Wireshark or pktmon capture (request/response pairs, response times, missing replies) use the ",
-      pcapLink: "Industrial pcap Analyzer",
-      pcapPost: ". Clicking a row there opens that frame in this decoder.",
     }
-  : (() => {
-      // pcap 해석기(4차 묶음)가 그 언어로 번역됐으면 링크 글을 그 언어 이름으로(사전의 글은 «(영어)» 표시가 붙은 이름)
-      const d = dict(lang).pages.modbusDecoder;
-      return { ...d, pcapLink: isTranslated(lang, "tools/pcap-analyzer/") ? pageName(lang, "tools/pcap-analyzer/") : d.pcapLink };
-    })();
+  : dict(lang).pages.modbusDecoder;
 const EXAMPLES = [
   rtu([0x01, 0x03, 0x00, 0x00, 0x00, 0x0a]),
   rtu([0x01, 0x03, 0x06, 0x02, 0x2b, 0x00, 0x00, 0x00, 0x64]),
@@ -201,10 +190,6 @@ const ld = {
       </p>
       <p>
         {L.appNote} <a href={link(lang, "modbus-master/")}>PortDock Modbus Master</a>{ui(lang).period}
-      </p>
-      <p>
-        {L.pcapPre}
-        <a href={link(lang, "tools/pcap-analyzer/")}>{L.pcapLink}</a>{L.pcapPost}
       </p>
     </section>
     <UseNotice lang={lang} />
@@ -379,7 +364,7 @@ const ld = {
     form.addEventListener("input", run);
     form.addEventListener("change", run);
     form.addEventListener("submit", (e) => e.preventDefault());
-    // pcap 해석기 등에서 넘긴 프레임 — 주소의 # 뒤라 서버로 가지 않는다(#frame=…&mode=tcp&start=…)
+    // 다른 쪽에서 넘긴 프레임 — 주소의 # 뒤라 서버로 가지 않는다(#frame=…&mode=tcp&start=…)
     const hp = new URLSearchParams(location.hash.slice(1));
     if (hp.get("frame")) {
       data.value = hp.get("frame") ?? "";

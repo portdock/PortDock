@@ -49,7 +49,6 @@ export interface WebTool {
     | "tools/energy-pulse/"
     | "tools/mc-decoder/"
     | "tools/xgt-decoder/"
-    | "tools/pcap-analyzer/"
     | "tools/pump-fan-affinity/"
     | "tools/conveyor-speed/"
     | "tools/mic-test/"
@@ -60,7 +59,6 @@ export interface WebTool {
     | "tools/mouse-test/"
     | "tools/monitor-test/"
     | "tools/bsod-codes/"
-    | "tools/battery-report/"
     | "tools/barcode-scanner-test/"
     | "tools/mqtt-decoder/"
     | "tools/wiring/"
@@ -85,8 +83,7 @@ export interface WebTool {
     | "tools/can-decoder/"
     | "tools/i2c/"
     | "tools/spi/"
-    | "tools/uart-waveform/"
-    | "tools/logic-capture/";
+    | "tools/uart-waveform/";
   name: L;
   blurb: L;
 }
@@ -318,11 +315,6 @@ export const WEB_TOOLS: WebTool[] = [
     blurb: { ko: "«LSIS-XGT» 머리 프레임 → 머리 칸·BCC·명령·변수(%MW·%MX·%DB)·값·오류 코드. 짝 요청으로 응답 값 풀이, 요청 만들기. PLC Simulator 의 XGT 흉내(0.10.0 부터)와 짝.", en: "«LSIS-XGT» header frames → header fields, BCC, instruction, variables (%MW, %MX, %DB), values and error code. Pair a reply with its request; build requests. Pairs with PLC Simulator's XGT mode (from 0.10.0)." },
   },
   {
-    path: "tools/pcap-analyzer/",
-    name: { ko: "산업 통신 pcap 해석기", en: "Industrial pcap Analyzer" },
-    blurb: { ko: "Wireshark·pktmon 캡처 → Modbus TCP·MC 요청/응답 짝, 응답 시간, 무응답, 예외·종료 코드 집계. 브라우저 안에서만.", en: "Wireshark or pktmon capture → Modbus TCP and MC request/response pairs, response times, missing replies, exception and end codes. In your browser only." },
-  },
-  {
     path: "tools/mqtt-decoder/",
     name: { ko: "MQTT 페이로드 디코더 (Sparkplug B)", en: "MQTT Payload Decoder (Sparkplug B)" },
     blurb: { ko: "HEX·Base64·텍스트 → JSON 정리, Sparkplug B 지표(이름·별칭·형·값), 원시 MQTT 패킷(헤더·토픽·QoS·패킷 ID) 풀이.", en: "HEX, Base64 or text → pretty JSON, Sparkplug B metrics (name, alias, type, value), raw MQTT packets (header, topic, QoS, packet ID)." },
@@ -383,11 +375,6 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/bsod-codes/",
     name: { ko: "블루스크린 정지 코드 사전", en: "Blue Screen (BSOD) Stop Code Lookup" },
     blurb: { ko: "0xD1·0x133·WHEA 같은 코드나 이벤트 1001 메시지를 붙여 넣으면 뜻·원인 후보·볼 순서·Microsoft 문서 링크.", en: "Paste a code like 0xD1 or 0x133, a name, or an Event 1001 message for its meaning, likely causes, what to check and the Microsoft page." },
-  },
-  {
-    path: "tools/battery-report/",
-    name: { ko: "노트북 배터리 리포트 해석기", en: "Laptop Battery Report Reader" },
-    blurb: { ko: "powercfg /batteryreport 의 HTML 을 끌어 놓으면 설계 대비 남은 용량 %, 충전 횟수, 용량 이력 그래프. 브라우저 안에서만.", en: "Drop the powercfg /batteryreport HTML for remaining capacity vs design, cycle count and a capacity history chart. In your browser only." },
   },
   {
     path: "tools/wiring/",
@@ -505,11 +492,6 @@ export const WEB_TOOLS: WebTool[] = [
     path: "tools/uart-waveform/",
     name: { ko: "UART 파형 그리기", en: "UART Waveform Drawer" },
     blurb: { ko: "글자·HEX → 시작·데이터(LSB 먼저)·패리티·정지 비트 파형, TTL·RS-232 전압, 비트·프레임 시간, 펄스 폭 → 표준 보율 추정.", en: "Text or hex → start, data (LSB first), parity and stop bit waveform at TTL or RS-232 levels, bit and frame time, pulse width → standard baud." },
-  },
-  {
-    path: "tools/logic-capture/",
-    name: { ko: "로직 분석기 캡처 해석기 (UART·SPI·I2C·CAN)", en: "Logic Analyzer Capture Decoder (UART, SPI, I2C, CAN)" },
-    blurb: { ko: "sigrok·PulseView CSV, Saleae Logic 2 CSV, VCD → 채널 골라 UART(보율 자동 추정)·SPI 모드 0~3·I2C 주소/ACK·CAN(스터핑·CRC) 해석, 미니 파형·표·CSV. 브라우저 안에서만.", en: "sigrok/PulseView CSV, Saleae Logic 2 CSV or VCD → pick channels and decode UART (baud detection), SPI modes 0–3, I2C address/ACK, CAN (stuffing, CRC); mini waveform, table, CSV. In your browser only." },
   },
 ];
 

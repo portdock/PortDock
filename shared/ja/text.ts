@@ -229,7 +229,6 @@ export const JA_TEXT: Record<string, string> = {
   "Battery {a}": "バッテリー {a}",
   "design {a} · full charge {b}{c} · cycles {d}": "設計 {a} · 満充電 {b}{c} · サイクル {d}",
   "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)": "コマンド プロンプトで powercfg /batteryreport を実行して作る battery-report.html(管理者権限は不要)",
-  "Battery report reader — full history": "バッテリー レポート リーダー — すべての履歴",
   "Full charge capacity is {a}% of design — shorter runtime than new (below {b}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.": "満充電容量が設計の {a}% — 新品より駆動時間が短くなります({b}% 未満で «確認推奨»)。メーカーの保証・交換基準を確認してください。",
   "Programs and drivers keeping the PC awake (powercfg /requests)": "PC のスリープを妨げているプログラム・ドライバー(powercfg /requests)",
   "Microsoft Defender exclusion list": "Microsoft Defender の除外リスト",

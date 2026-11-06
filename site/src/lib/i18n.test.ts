@@ -37,12 +37,7 @@ import { ASCII } from "./ascii.ts";
 import { parseBits } from "./intConv.ts";
 import { KINDS, KIND_NAMES, makeQuestion } from "./modbusQuiz.ts";
 import { LABELS, analyze as analyzeMqtt } from "./mqttDecode.ts";
-import { analyzeCapture, toCsv } from "./pcapAnalyze.ts";
-import { samplePcapng } from "./pcapSample.ts";
 import { buildTx, portOptions } from "./webSerial.ts";
-import { parseCapture } from "./logicCapture.ts";
-import { decodeUart, errText as logicErrText, itemsCsv, itemsText, kindText, valueText, type Item } from "./logicDecode.ts";
-import { sampleUartCsv } from "./logicSample.ts";
 import { UNITS } from "./units.ts";
 import { KINDS as PSU_KINDS, GROUP_NAME as PSU_GROUPS } from "./psuSizing.ts";
 import { DUCT_RULES } from "./conduitFill.ts";
@@ -536,7 +531,7 @@ test("2차 묶음 계산 라이브러리 — 추가 언어로 돌려도 영어�
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
 });
 
-// ---------------------------------------------------------------- 3차 묶음(scope.ts SCOPE3 · MORE) — PC 하드웨어 테스트 웹 도구 10개
+// ---------------------------------------------------------------- 3차 묶음(scope.ts SCOPE3 · MORE) — PC 하드웨어 테스트 웹 도구 9개
 
 const VIEW3: Record<Page3Id, string> = {
   micTest: "MicTestPage",
@@ -547,7 +542,6 @@ const VIEW3: Record<Page3Id, string> = {
   gamepadTest: "GamepadTestPage",
   monitorTest: "MonitorTestPage",
   bsodCodes: "BsodCodesPage",
-  batteryReport: "BatteryReportPage",
   barcodeTest: "BarcodeTestPage",
 };
 /** 화면(서버)이 쓰는 라이브러리 — 브라우저 스크립트가 가져오는 것은 clientOf 가 따로 찾는다 */
@@ -560,7 +554,6 @@ const LIB3: Record<Page3Id, string[]> = {
   gamepadTest: ["lib/hwSignal.ts"],
   monitorTest: [],
   bsodCodes: ["lib/bsod.ts"],
-  batteryReport: ["lib/batteryReport.ts"],
   barcodeTest: ["lib/barcode.ts"],
 };
 /** 개인정보 줄(components/HwPrivacy.astro)을 쓰는 쪽 */
@@ -655,7 +648,6 @@ test("3차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
         causesOf(b, l);
       }
     }
-    if (ids.includes("batteryReport")) msg(l, "x", "2026-01-01 → 2026-06-01: 98.2 % → 91.0 % of design");
     if (ids.includes("barcodeTest")) {
       const ais = ["00", "01", "02", "10", "11", "12", "13", "15", "16", "17", "20", "21", "22", "240", "241", "30", "37", "400", "410", "414", "3100", "3101", "3102", "3103", "3104", "3105", "99"];
       const val = (ai: string) => (["11", "12", "13", "15", "16"].includes(ai) ? "260115" : ai === "17" ? "261100" : ai === "00" ? "106141412345678908" : ai === "01" ? "09506000134352" : ai === "02" ? "09506000134353" : ai.startsWith("310") ? "001250" : "AB12");
@@ -670,7 +662,7 @@ test("3차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");
 });
 
-// ---------------------------------------------------------------- 4차 묶음(scope.ts SCOPE4 · MORE) — 통신 웹 도구 11개
+// ---------------------------------------------------------------- 4차 묶음(scope.ts SCOPE4 · MORE) — 통신 웹 도구 9개
 
 const VIEW4: Record<Page4Id, string> = {
   ascii: "AsciiPage",
@@ -679,11 +671,9 @@ const VIEW4: Record<Page4Id, string> = {
   modbusBlocks: "ModbusBlocksPage",
   modbusPractice: "ModbusPracticePage",
   mqttDecoder: "MqttDecoderPage",
-  pcapAnalyzer: "PcapAnalyzerPage",
   spi: "SpiPage",
   uartWaveform: "UartWaveformPage",
   webSerial: "WebSerialPage",
-  logicCapture: "LogicCapturePage",
 };
 /** 화면(서버)이 쓰는 라이브러리 — 브라우저 스크립트가 가져오는 것은 clientOf 가 따로 찾는다 */
 const LIB4: Record<Page4Id, string[]> = {
@@ -693,11 +683,9 @@ const LIB4: Record<Page4Id, string[]> = {
   modbusBlocks: ["lib/modbusPlan.ts", "lib/serialTiming.ts"],
   modbusPractice: ["lib/modbusQuiz.ts"],
   mqttDecoder: ["lib/mqttDecode.ts"],
-  pcapAnalyzer: ["lib/pcapAnalyze.ts", "lib/pcapRead.ts"],
   spi: ["lib/spi.ts"],
   uartWaveform: ["lib/uartWave.ts"],
   webSerial: ["lib/webSerial.ts", "lib/checksum.ts"],
-  logicCapture: ["lib/logicDecode.ts", "lib/logicCapture.ts"],
 };
 /** 그 언어가 번역한 4차 묶음 쪽 이름 */
 const pages4Of = (l: (typeof EXTRA_LANGS)[number]) => (MORE[l] ?? []).filter((p): p is Scope4Path => p in SCOPE4).map((p) => SCOPE4[p]);
@@ -796,42 +784,9 @@ test("4차 묶음 라이브러리 — 추가 언어로 돌려도 영어가 남�
         if (a.kind === "packets") for (const p of a.packets) for (const f of p.fields) if (f.note) tx(f.note, l);
       }
     }
-    if (ids.includes("pcapAnalyzer")) {
-      const a = analyzeCapture(samplePcapng(), { lang: l, mcPorts: [5000] });
-      assert.ok(a.rows.length > 0, "예시 캡처에서 거래를 찾음");
-      toCsv(a, { withAddr: true, withBytes: true, lang: l });
-      // 화면에 나오는 함수 이름·종료 코드(1차 묶음 번역) — 영어 함수 이름이 남지 않는다
-      for (const r of a.rows) assert.ok(!/Read Holding|Batch read|Unknown function/.test(r.fnName + (r.codeName ?? "")), `${l}: 거래 표에 영어 — ${r.fnName} ${r.codeName}`);
-    }
     if (ids.includes("webSerial")) {
       for (const f of [{ baud: "x" }, { dataBits: "6" }, { stopBits: "3" }, { parity: "mark" }, { flow: "soft" }]) assert.throws(() => portOptions({ baud: "9600", dataBits: "8", stopBits: "1", parity: "none", flow: "none", ...f }, l));
       for (const [txt, mode] of [["0G", "hex"], ["123", "hex"], ["\\q", "ascii"], ["\\xZZ", "ascii"]] as const) assert.throws(() => buildTx(txt, mode, "none", "none", l));
-    }
-    if (ids.includes("logicCapture")) {
-      const c = parseCapture(sampleUartCsv());
-      const real = decodeUart(c.channels[0], c.start, c.end, { baud: 9600, dataBits: 8, parity: "even", stopBits: 1, invert: false });
-      assert.ok(real.length > 0, "예시 UART 캡처를 풂");
-      const errs = ["parity", "frame", "glitch", "partial", "mode", "stuff", "errflag", "crc", "form", "noack", "fd"] as const;
-      const items: Item[] = [
-        { t0: 0, t1: 1, kind: "byte", v: 0x41, err: ["parity"] },
-        { t0: 0, t1: 1, kind: "break", v: 0, err: ["frame"] },
-        { t0: 0, t1: 1, kind: "word", v: 0x9f, miso: 0xef, err: [] },
-        { t0: 0, t1: 0, kind: "cs", on: true, err: [] },
-        { t0: 0, t1: 0, kind: "cs", on: false, err: ["mode"] },
-        { t0: 0, t1: 0, kind: "start", err: [] },
-        { t0: 0, t1: 0, kind: "restart", err: [] },
-        { t0: 0, t1: 0, kind: "stop", err: [] },
-        { t0: 0, t1: 1, kind: "addr", addr: 0x50, rw: 1, ack: true, err: [] },
-        { t0: 0, t1: 1, kind: "addr", addr: 0x150, rw: 0, tenBit: true, ack: false, err: [] },
-        { t0: 0, t1: 1, kind: "data", v: 0x12, ack: false, err: [] },
-        { t0: 0, t1: 1, kind: "frame", id: 0x18ff50e5, ext: true, rtr: true, dlc: 0, crc: 0x1234, crcCalc: 0x4321, err: [...errs] },
-        ...real,
-      ];
-      for (const it of items) kindText(it, l), valueText(it, l, 8), logicErrText(it, l);
-      itemsCsv(items, l, 8);
-      itemsText(items, l, 8);
-      const shown = items.map((it) => [kindText(it, l), valueText(it, l, 8), logicErrText(it, l)].join(" ")).join(" ");
-      assert.ok(!/remote|calc|\bext\b|\bread\b|\bwrite\b|10-bit|CS on|no ACK/.test(shown), `${l}: 로직 해석 글에 영어`);
     }
   }
   assert.deepEqual([...misses], [], "번역 표에 없는 영어 문장");

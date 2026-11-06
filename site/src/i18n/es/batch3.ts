@@ -1,4 +1,4 @@
-// 스페인어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 10개, scope.ts SCOPE3). 기준판 ja/batch3.ts 와 같은 모양, 번역 원천은 영어판(site/I18N.md «3차 묶음 붙이는 법»).
+// 스페인어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 9개, scope.ts SCOPE3). 기준판 ja/batch3.ts 와 같은 모양, 번역 원천은 영어판(site/I18N.md «3차 묶음 붙이는 법»).
 // webTools = 도구 이름·한 줄 소개, hwPrivacy = 하드웨어 테스트 쪽 개인정보 줄(components/HwPrivacy.astro), lib = 라이브러리·화면 스크립트 문구(영어 문장 → 번역), pages = 쪽 글
 import type { Page3Id, Scope3Path } from "../scope.ts";
 import micTest from "./pages/micTest.ts";
@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Prueba de mando (drift del joystick y zona muerta)", blurb: "Botones, gatillos y ejes en directo, desviación y trazo del joystick al soltarlo, vista previa de la zona muerta y vibración (navegadores compatibles)." },
     "tools/monitor-test/": { name: "Prueba de píxeles muertos y frecuencia de actualización", blurb: "Colores lisos a pantalla completa para píxeles muertos o atascados, banding en degradados, estimación de los Hz y barra móvil para ver el ghosting." },
     "tools/bsod-codes/": { name: "Códigos de error de pantalla azul (BSOD)", blurb: "Pegue un código como 0xD1 o 0x133, su nombre o un mensaje del evento 1001: significado, causas posibles, qué revisar en orden y documentación de Microsoft." },
-    "tools/battery-report/": { name: "Lector del informe de batería del portátil", blurb: "Suelte el HTML de powercfg /batteryreport: porcentaje restante frente a la capacidad de diseño, ciclos y gráfica del historial. Todo dentro del navegador." },
     "tools/barcode-scanner-test/": { name: "Prueba de lector de códigos de barras", blurb: "Caracteres leídos con Enter, Tab y GS visibles, ms entre caracteres (lector o tecleo), distribución de teclado, Caps Lock y análisis de AI GS1." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

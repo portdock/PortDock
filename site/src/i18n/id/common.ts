@@ -64,13 +64,7 @@ export default {
       scpi: "Mengendalikan instrumen (SCPI) dan merekam hasil ukur",
       pc: "Masalah koneksi PC — port COM, adaptor jaringan, Wi-Fi, Bluetooth",
       mcp: "Membaca perangkat dari klien AI (MCP)",
-      pcap: "Menganalisis rekaman lalu lintas (pcap) — waktu respons, respons yang hilang",
     },
-    notes: {
-      "pcap:tcp": "Pasang sebagai relay di antara HMI dan PLC lalu simpan sebagai pcap — tanpa Wireshark",
-    },
-    pcapName: "Penganalisis pcap (bahasa Inggris)",
-    pcapNote: "Rekaman Wireshark atau pktmon langsung di browser, tanpa instalasi — pasangan request/respons Modbus TCP dan MC",
     hwTitle: "Uji mikrofon, keyboard, mouse, webcam, atau monitor",
     hwName: "Uji perangkat keras PC",
     hwNote: (n: number) => `Bukan program Windows — langsung di browser, tanpa instalasi (${n} uji)`,

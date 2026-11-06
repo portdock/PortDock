@@ -90,7 +90,7 @@
 | USB 시리얼 끊김, COM 포트 사라짐, COM 포트 번호 바뀜 | `/guides/usb-serial-disconnects/` | «USB 시리얼 변환기 끊김·COM 포트 사라짐 — 점검 순서» |
 | MC 프로토콜 해석, SLMP 프레임, 3E 프레임 분석, MC 프로토콜 종료 코드, C059·C056 | `/tools/mc-decoder/` + 가이드 `mc-protocol-3e-binary-frame`·`mc-protocol-end-codes` | «MC 프로토콜(SLMP) 프레임 해석기 — 3E·4E 풀이», 가이드 «MC 프로토콜 3E 이진 프레임 읽는 법»·«종료 코드 C050~C061 확인 순서» |
 | PLC 없이 통신 테스트, MC 프로토콜 시뮬레이터, 가상 PLC, 미쓰비시 X Y 16진 | 가이드 `mc-protocol-test-without-plc`·`mc-protocol-device-numbers` → `/plc-simulator/` | «PLC 없이 MC 프로토콜 통신 시험하기», «MC 프로토콜 디바이스 번호 — X·Y 16진·D·W·ZR» |
-| 와이어샤크 모드버스, 모드버스 패킷 분석, modbus pcap, 모드버스 응답 시간, PLC 통신 캡처, 포트 미러링, pktmon | `/tools/pcap-analyzer/` + 가이드 `capture-plc-traffic-wireshark-pktmon`·`modbus-response-time-pcap` | «산업 통신 pcap 해석기 — Modbus·MC 응답 시간», 설명에 «Wireshark·pktmon», «무응답·예외·종료 코드», 가이드 «Wireshark·pktmon 으로 PLC 통신 캡처 — 포트 미러링»·«Modbus 응답 시간·무응답 읽기» |
+| 와이어샤크 모드버스, 모드버스 패킷 분석, PLC 통신 캡처, 포트 미러링, pktmon | 가이드 `capture-plc-traffic-wireshark-pktmon` | 가이드 «Wireshark·pktmon 으로 PLC 통신 캡처 — 포트 미러링» (해석기 쪽과 응답 시간 가이드는 11/06 삭제) |
 | rs485 배선도·결선도, rs232 크로스 결선, 4-20mA 2선식 3선식 배선, npn pnp 센서 plc 배선, 시스템 구성도·네트워크 구성도 그리기, rs485 종단 위치·단위 부하·증설 영향 | `/tools/wiring/`·`/tools/system-diagram/` | «배선도 만들기 — RS485·RS232·4-20mA·NPN/PNP 결선도», «시스템 구성도 그리기 — 네트워크·RS485 구성 점검», 설명에 «종단·단위 부하 점검, 증설 전후 변경 비교» |
 | rs485 통신 안됨 원인, 모드버스 응답 없음 원인, 4-20mA 값 이상, npn pnp 센서 입력 안들어옴, usb 장치 계속 끊김, 멀티미터로 rs485 점검·종단 저항 측정(60옴), 4-20mA 측정 방법, 24v 전압 강하 측정 | `/tools/troubleshoot/`·`/tools/multimeter-check/` | «통신·배선 고장 원인 찾기 — RS485·Modbus·4-20mA·센서», «멀티미터 측정값 점검 — RS485 저항·4-20mA·24V 강하» |
 | db9 핀배치·rs232 핀맵, rj45 568b 배열·랜선 색 순서, m12 4핀 선 색·m12 핀배치, m8 3핀, usb c 핀배치, rs485 a b 극성·d+ d- | `/tools/pinouts/` | «커넥터 핀 배치 사전 — DB9 RS232·RJ45·M12·M8·USB 핀배치», 설명에 «수/암 정면 그림·선 색·출처» |
@@ -125,7 +125,6 @@
 | 마우스 더블클릭 테스트·증상, 마우스 테스트, 폴링레이트 테스트·측정 | `/tools/mouse-test/` | «마우스 더블클릭 테스트 — 채터링·휠·폴링 레이트 확인» |
 | 불량화소 테스트, 모니터 주사율 확인·테스트 | `/tools/monitor-test/` | «불량화소 테스트 — 모니터 단색 화면·주사율 확인» |
 | 블루스크린 코드, 블루스크린 원인 확인, whea_uncorrectable_error, dpc_watchdog_violation, 이벤트 1001, kernel power 41 | `/tools/bsod-codes/` | «블루스크린 코드 사전 — 정지 코드 뜻·원인 후보», 본문에 «이벤트 1001 에서 코드 찾기»·«Kernel-Power 41 은 결과» |
-| 노트북 배터리 수명 확인, 배터리 리포트 보는법, powercfg batteryreport | `/tools/battery-report/` | «배터리 리포트 해석기 — 노트북 배터리 수명 확인», 명령 복사 단추 |
 | 바코드 스캐너 테스트(프로그램), 바코드 한글 깨짐, 바코드 엔터 | `/tools/barcode-scanner-test/` | «바코드 스캐너 테스트 — Enter·간격·한글 깨짐 확인» |
 | MQTT 디코더, Sparkplug B 디코딩, MQTT 패킷 분석 | `/tools/mqtt-decoder/` | «MQTT 페이로드 디코더 — Sparkplug B·HEX 풀이» |
 | 윈도우 마이크 안됨·인식 안됨, 마이크 권한, 마이크 독점 모드 | 가이드 `windows-microphone-not-working` → `/tools/mic-test/` | «윈도우 마이크 안 됨 — 권한·기본 장치·드라이버 순서» |
@@ -137,7 +136,6 @@
 | i2c 풀업 저항 계산·값, i2c 주소 (표·확인), i2c 8비트 주소 7비트 변환 (자동완성 확인 안 함) | `/tools/i2c/` | «I2C 풀업 저항 계산·주소표·바이트 풀이», 설명에 «UM10204·100k/400k/1M» |
 | spi 모드 (0·1·2·3), cpol cpha, spi 타이밍도 (자동완성 확인 안 함) | `/tools/spi/` | «SPI 모드 0·1·2·3 — CPOL·CPHA 파형 그리기», 설명에 «샘플·시프트 엣지·제조사 표기» |
 | uart 파형·신호 보는 법, uart 프레임 구조, 오실로스코프 보율 측정, rs232 전압 레벨 (자동완성 확인 안 함) | `/tools/uart-waveform/` | «UART 파형 그리기 — 비트·보율·RS-232 전압», 설명에 «펄스 폭 → 보율 추정» |
-| 로직 분석기 해석·saleae csv·pulseview csv 분석, vcd 파일 보기, uart 파형 해석·보율 확인, i2c 파형 해석·ack nack, spi 모드 확인, can 파형 해석(rx) | `/tools/logic-capture/` + 가이드 `uart-spi-i2c-can-rs485`·`i2c-troubleshooting`·`can-wiring-termination-check` | «로직 분석기 캡처 해석기 — UART·SPI·I2C·CAN», 설명에 «브라우저 안에서만», 가이드 «UART·SPI·I2C·CAN·RS-485 차이와 고르는 법», «I2C 안 될 때 — 풀업·주소·SDA 걸림·선 길이 점검», «CAN 종단 60 Ω 점검·접지·샘플 포인트·버스 오프» |
 
 ## 영어 검색어
 | Query (examples) | Page | Words in title/description |
@@ -219,7 +217,7 @@
 | usb serial adapter keeps disconnecting, com port disappears, com port number changes | `/en/guides/usb-serial-disconnects/` | «USB-Serial Adapter Keeps Disconnecting: COM Port Drops» |
 | mc protocol decoder, slmp frame parser, 3e frame format, mc protocol end code c059 | `/en/tools/mc-decoder/` + guides `mc-protocol-3e-binary-frame`, `mc-protocol-end-codes` | «MC Protocol (SLMP) Frame Decoder: 3E/4E Online», guides «MC Protocol 3E Binary Frame Explained Byte by Byte», «MC Protocol End Codes C050–C061» |
 | test mc protocol without plc, slmp simulator, dummy plc, mitsubishi x y hex numbering | guides `mc-protocol-test-without-plc`, `mc-protocol-device-numbers` → `/en/plc-simulator/` | «Test MC Protocol (SLMP) Without a PLC», «MC Protocol Device Numbers: Hex X/Y, D, W, ZR» |
-| modbus pcap analysis, modbus pcap analyzer, pcap analyzer online, wireshark modbus response time, wireshark mc protocol, capture plc traffic, port mirroring plc, pktmon pcapng | `/en/tools/pcap-analyzer/` + guides `capture-plc-traffic-wireshark-pktmon`, `modbus-response-time-pcap` | «Industrial pcap Analyzer: Modbus TCP & MC Timing», guides «Capture PLC Traffic with Wireshark or pktmon: Port Mirroring», «Modbus Response Time & Missing Replies from a pcap» |
+| wireshark modbus response time, wireshark mc protocol, capture plc traffic, port mirroring plc, pktmon pcapng | guide `capture-plc-traffic-wireshark-pktmon` | guide «Capture PLC Traffic with Wireshark or pktmon: Port Mirroring» |
 | rs485 wiring diagram, rs232 null modem wiring, 4-20ma 2 wire 3 wire wiring, npn pnp sensor plc wiring, system diagram / network diagram maker, rs485 termination position, rs485 unit load | `/en/tools/wiring/`, `/en/tools/system-diagram/` | «Wiring Diagram Maker: RS-485, RS-232, 4-20 mA, NPN/PNP», «System Diagram Editor: Network & RS-485 Checks», description mentions termination, unit loads and before/after comparison |
 | rs485 troubleshooting, modbus no response troubleshooting, 4-20ma troubleshooting, npn pnp sensor not detected, usb keeps disconnecting, rs485 termination resistance measurement 60 ohm, measure 4-20ma with multimeter, rs232 voltage levels | `/en/tools/troubleshoot/`, `/en/tools/multimeter-check/` | «Field Troubleshooting Wizard: RS-485, Modbus, 4–20 mA», «Multimeter Reading Checker: RS-485, 4–20 mA, 24 V» |
 | db9 pinout, rs232 pinout, rj45 pinout t568b, m12 pinout colors, m8 3 pin pinout, usb c pinout, rs485 a b polarity | `/en/tools/pinouts/` | «Connector Pinout Reference: DB9 RS-232, RJ45, M12, M8, USB» |
@@ -252,7 +250,6 @@
 | mouse double click test, double click test, mouse test, polling rate test | `/en/tools/mouse-test/` | «Mouse Double Click Test: Chatter, Wheel & Polling Rate» |
 | dead pixel test, stuck pixel test, refresh rate test, test hz | `/en/tools/monitor-test/` | «Dead Pixel Test & Refresh Rate Check Online» |
 | bsod code lookup, blue screen error codes, whea uncorrectable error, dpc watchdog violation, event 1001 bugcheck, kernel power 41 | `/en/tools/bsod-codes/` | «BSOD Stop Code Lookup: Meaning & Likely Causes» |
-| battery report, battery health check, powercfg batteryreport, laptop battery health | `/en/tools/battery-report/` | «Battery Report Reader: Laptop Battery Health Check» |
 | barcode scanner test, test barcode scanner online, scanner suffix enter | `/en/tools/barcode-scanner-test/` | «Barcode Scanner Test Online: Suffix, Timing & GS1» |
 | mqtt payload decoder, sparkplug b decoder, mqtt packet decoder hex | `/en/tools/mqtt-decoder/` | «MQTT Payload Decoder: Sparkplug B & Hex Online» |
 | microphone not working windows 11, mic not detected, exclusive mode microphone | guide `windows-microphone-not-working` → `/en/tools/mic-test/` | «Microphone Not Working on Windows: What to Check» |
@@ -264,7 +261,6 @@
 | i2c pull up resistor calculator, i2c pull-up value, i2c address list, i2c 7-bit 8-bit address | `/en/tools/i2c/` | «I2C Pull-up Resistor Calculator & Address Table» |
 | spi modes, cpol cpha, spi mode 0 1 2 3 timing diagram | `/en/tools/spi/` | «SPI Modes 0–3: CPOL & CPHA Timing Diagram» |
 | uart waveform, uart frame diagram, measure baud rate oscilloscope, rs232 voltage levels | `/en/tools/uart-waveform/` | «UART Waveform Drawer: Bits, Baud & RS-232 Levels» |
-| logic analyzer csv decoder online, saleae csv export decode, pulseview csv, vcd viewer online, uart decoder from capture, i2c decoder ack nack, spi mode decoder, can bus decoder from logic analyzer, uart vs spi vs i2c vs can, i2c not working pull-up, i2c bus stuck sda low, can bus termination 60 ohm, can bus off | `/en/tools/logic-capture/` + guides `uart-spi-i2c-can-rs485`, `i2c-troubleshooting`, `can-wiring-termination-check` | «Logic Analyzer Capture Decoder: UART, SPI, I2C, CAN», guides «UART vs SPI vs I2C vs CAN vs RS-485: How to Choose», «I2C Not Working: Pull-ups, Address, Stuck SDA, Length», «CAN Termination 60 Ω Check, Ground, Bus-Off» |
 
 ## 다음 후보 — 아직 페이지가 없는 검색어 (2026-10-23, 10/24 갱신)
 검색 수요 확인: 네이버 데이터랩·구글 트렌드 상대값은 **확인 못 함**(트렌드는 자동 조회에 429, 데이터랩은 로그인 화면 조작이 필요). 대신 네이버·구글 **자동완성**에 그 검색어가 뜨는지만 봤다(뜨면 «검색하는 사람이 있다» 는 정도, 양은 모름). 10/23 오전에 1~5, 오후에 6·8·10·11(웹 도구 5종·가이드 3편)을 만들었다. 7(허용 전류)은 원문을 확인하지 못해 뺐다. 10/23 저녁에 13~20(웹 도구 6종·가이드 3편, 21 은 정수 변환기에 합침)을, 그 뒤 22~26(웹 도구 5종·가이드 2편)을 만들었다. 10/23 저녁 늦게 31·32·33·35·36(웹 도구 4종·가이드 2편, 36 은 리액턴스 도구에 합침)을 만들었다. 자동완성은 구글 `suggestqueries`(client=firefox)·네이버 `ac.search.naver.com` 으로 조회 — 네이버는 영문 검색어에 거의 답하지 않고 한국어도 빈 경우가 많아, 구글(hl=ko) 결과를 함께 적었다. 10/24 에 34·37·39·40(웹 도구 4종·가이드 2편)을 만들었다 — 37 은 SMC 공식 사이트의 다른 PDF(Best Pneumatics 기술 자료)로 원문을 확인했다. 10/24 두 번째 묶음으로 42·43·44(웹 도구 3종·가이드 2편, 44 는 도구만)를 만들었다 — 45·46·47 은 원문을 확인하지 못했거나 한국어 수요가 없어 보류.
@@ -329,7 +325,7 @@
 | 57 | i2c 풀업 저항 계산·i2c 주소(한국어), i2c pull up resistor calculator·i2c address list(영어) — 자동완성 확인 안 함 | `/tools/i2c/` | UM10204 §7.1 식·표 10 값을 시험으로 손계산과 대조(TI SLVA689 와 같은 식). 칩 주소 49줄은 데이터시트 값이지만 칩마다 원문을 이번에 다시 열어 보지는 않음 | ✅ 11/01 |
 | 58 | spi 모드·cpol cpha(한국어), spi modes·cpol cpha timing diagram(영어) — 자동완성 확인 안 함 | `/tools/spi/` | Linux spi-summary 정의(CPHA 0 = 앞 엣지 샘플)를 시험으로. MSP430 UCCKPH·PIC CKE 가 CPHA 의 반대라는 표기 차이 표 — PIC 은 링크할 원문을 고르지 않음 | ✅ 11/01 |
 | 59 | uart 파형·오실로스코프 보율 측정(한국어), uart waveform·measure baud rate oscilloscope(영어) — 자동완성 확인 안 함 | `/tools/uart-waveform/` | ATmega328P §19.4 프레임·패리티, TI SLLA037A 전압 그림(드라이버 ±5~15 V, 수신 ±3 V). 기존 `uart-baud`(오차)·`serial-timing`(3.5문자)과 서로 링크 | ✅ 11/01 |
-| 56 | 로직 분석기 해석·UART·I2C·CAN 파형 해석(한국어), logic analyzer csv decoder·i2c not working·can termination 60 ohm(영어) — 자동완성 확인 안 함 | `/tools/logic-capture/` + 가이드 `uart-spi-i2c-can-rs485`·`i2c-troubleshooting`·`can-wiring-termination-check` | 해석 규칙: NXP UM10204 Rev. 7(§3.1.3~3.1.6·3.1.10·3.1.11, 풀업 식 §7.1, 버스 해제 §3.1.16, 표 10·11), Microchip AVR151 표 1-3(SPI 모드), ATmega328P USART 프레임, TI SLOA101B·SLLA270(CAN 프레임·오류 프레임·120 Ω·표 1 길이↔속도·−2~7 V), MCP2515 DS20001801J §5·§6(샘플 포인트·오류 상태·버스 오프 128 × 11비트). CRC-15 는 검사값 «123456789» → 0x059E 로 시험. 파일 형식: Saleae «Exporting Data»·sigrok wiki «File format:Csv»(예시 출력은 없어 머리 줄을 너그럽게 읽음). CiA 공개 요약·Bosch CAN 2.0 원문은 이번에 받지 못해(Bosch 주소 404) 쓰지 않음. 예시 캡처 세 개는 합성 | ✅ 11/01 |
+| 56 | 로직 분석기 해석·UART·I2C·CAN 파형 해석(한국어), logic analyzer csv decoder·i2c not working·can termination 60 ohm(영어) — 자동완성 확인 안 함 | (웹 도구는 11/06 삭제) 가이드 `uart-spi-i2c-can-rs485`·`i2c-troubleshooting`·`can-wiring-termination-check` | 해석 규칙: NXP UM10204 Rev. 7(§3.1.3~3.1.6·3.1.10·3.1.11, 풀업 식 §7.1, 버스 해제 §3.1.16, 표 10·11), Microchip AVR151 표 1-3(SPI 모드), ATmega328P USART 프레임, TI SLOA101B·SLLA270(CAN 프레임·오류 프레임·120 Ω·표 1 길이↔속도·−2~7 V), MCP2515 DS20001801J §5·§6(샘플 포인트·오류 상태·버스 오프 128 × 11비트). CRC-15 는 검사값 «123456789» → 0x059E 로 시험. 파일 형식: Saleae «Exporting Data»·sigrok wiki «File format:Csv»(예시 출력은 없어 머리 줄을 너그럽게 읽음). CiA 공개 요약·Bosch CAN 2.0 원문은 이번에 받지 못해(Bosch 주소 404) 쓰지 않음. 예시 캡처 세 개는 합성 | ✅ 11/01 |
 
 ## 내부 링크
 - 모든 하위 페이지 머리에 빵부스러기(`src/components/Crumbs.astro`, 화면 줄 + BreadcrumbList).
@@ -337,7 +333,7 @@
 - 도구 → 관련 가이드(가이드의 `tools` 에 든 것)·비슷한 도구·웹 도구·(Modbus 도구) 내장 장비 전체(수는 `data/devices` 에서 자동).
 - 사용법 → 목차 아래 관련 가이드.
 - 장비 → 같은 종류 장비·Modbus 가이드·Modbus Master/Slave·내려받기.
-- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭, PLC Simulator → MC 프레임 해석기·서브넷·정수 변환, TCP·Modbus Master·Modbus Slave·PLC Simulator → pcap 해석기).
+- 웹 도구 → 그 도구를 쓰는 가이드·다른 웹 도구·내려받기. 도구 페이지 «이어지는 웹 도구» 는 `ToolPage.astro` 의 `WEB_FOR`(시리얼 → 통신 시간·RS-485·ASCII·UART 보율, Modbus Master → 통신 시간·요청 묶기·서브넷·모터 회전수·정수 변환, TCP·UDP·Net Scan → 서브넷, Simulator → ASCII, Plot → NTC·엔코더·ADC, Port Inspector → 통신 시간·RS-485·UART 보율·GigE 대역폭, PLC Simulator → MC 프레임 해석기·서브넷·정수 변환, 
 - 가이드의 `deviceKinds` ↔ 장비 종류: 가이드 «이어 읽기» 에 그 종류 장비 맵, 장비 페이지에 «<종류> 가이드·계산기»(인버터 → 주파수·회전수·모터 전류 글과 웹 도구, 전력 미터 → 모터 전류·역률 콘덴서, 패널 미터 → 압력 단위·아날로그 입력 스케일링). 이 글들은 모든 장비의 «Modbus 가이드» 목록에서는 뺀다.
 - 첫 화면 → 도구 10개·가이드 전부·장비 목록.
 

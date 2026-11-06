@@ -64,13 +64,7 @@ export default {
       scpi: "Controlar um instrumento (SCPI) e registrar medições",
       pc: "Problemas de conexão no PC — porta COM, placa de rede, Wi-Fi, Bluetooth",
       mcp: "Ler equipamentos a partir de uma IA (MCP)",
-      pcap: "Analisar uma captura de tráfego (pcap) — tempo de resposta, falta de resposta",
     },
-    notes: {
-      "pcap:tcp": "Fica entre a IHM e o CLP como relay e salva em pcap — sem Wireshark",
-    },
-    pcapName: "Analisador de pcap (em inglês)",
-    pcapNote: "Capturas do Wireshark ou pktmon direto no navegador, sem instalar — pares requisição/resposta Modbus TCP e MC",
     hwTitle: "Testar microfone, teclado, mouse, webcam ou monitor",
     hwName: "Testes de hardware do PC",
     hwNote: (n: number) => `Não é um programa para Windows — roda no navegador, sem instalar (${n} testes)`,

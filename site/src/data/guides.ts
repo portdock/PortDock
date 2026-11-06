@@ -6248,8 +6248,8 @@ export const GUIDES: Guide[] = [
     slug: "capture-plc-traffic-wireshark-pktmon",
     date: "2026-10-31",
     tools: ["tcp", "modbus-master", "plc-simulator"],
-    related: ["modbus-response-time-pcap", "modbus-tcp-connection", "modbus-no-response", "mc-protocol-end-codes", "plc-ip-subnet"],
-    webTools: ["tools/pcap-analyzer/", "tools/modbus-decoder/", "tools/mc-decoder/"],
+    related: ["modbus-tcp-connection", "modbus-no-response", "mc-protocol-end-codes", "plc-ip-subnet"],
+    webTools: ["tools/modbus-decoder/", "tools/mc-decoder/"],
     title: { ko: "Wireshark·pktmon 으로 PLC 통신 기록 뜨기 — 포트 미러링·관리자 권한·스위치 한계", en: "Capturing PLC traffic with Wireshark or pktmon: port mirroring, admin rights, switch limits" },
     seoTitle: { ko: "Wireshark·pktmon 으로 PLC 통신 캡처 — 포트 미러링 — PortDock", en: "Capture PLC Traffic: Wireshark, pktmon, Port Mirroring — PortDock" },
     desc: {
@@ -6288,7 +6288,7 @@ export const GUIDES: Guide[] = [
         { ul: [
           "filter add -p 502 는 출발·도착 어느 쪽이든 포트 502 인 패킷만 남깁니다. MC 는 PLC 에 설정한 포트 번호로 바꿉니다.",
           "--pkt-size 0 은 패킷 전체를 남깁니다. 기본값은 앞 128바이트뿐이라, 긴 Modbus·MC 프레임은 잘립니다.",
-          "--comp nics 는 네트워크 어댑터에서만 잡습니다. 빼면 pktmon 은 네트워크 스택의 여러 지점에서 같은 패킷을 잡고, etl2pcap 은 그것들을 구분하지 않고 모두 씁니다(Microsoft 문서). 그런 파일은 etl2pcap 에 --component-id 로 한 지점만 뽑거나, PortDock pcap 해석기의 «겹친 패킷 빼기» 로 정리합니다.",
+          "--comp nics 는 네트워크 어댑터에서만 잡습니다. 빼면 pktmon 은 네트워크 스택의 여러 지점에서 같은 패킷을 잡고, etl2pcap 은 그것들을 구분하지 않고 모두 씁니다(Microsoft 문서). 그런 파일은 etl2pcap 에 --component-id 로 한 지점만 뽑아 정리합니다.",
           "기본 기록 방식은 원형(512MB 가 차면 오래된 것부터 덮어씀)입니다. 오래 뜰 때는 필터를 좁혀 둡니다.",
         ] },
         { h: "4. 스위치 미러링 설정 요령" },
@@ -6300,7 +6300,7 @@ export const GUIDES: Guide[] = [
         { h: "5. PortDock TCP 중계 — 미러 포트·드라이버 없이" },
         { p: "HMI(또는 PC 프로그램)가 PLC 주소로 접속하는 구조라면, HMI 의 접속 대상만 «이 PC 의 IP:포트» 로 바꾸고 PortDock TCP 를 «중계» 로 두면 이 PC 가 둘 사이에서 바이트를 바꾸지 않고 넘기며 방향별로 기록합니다. 드라이버·미러 포트가 필요 없고 설치·실행에도 관리자 권한이 필요 없습니다. 중계의 «A 가 연결할 이 PC 주소» 는 0.10.0 부터 처음 127.0.0.1(이 PC 안)이라, HMI 가 다른 PC·장비면 그 칸에서 0.0.0.0(모든 랜카드)이나 HMI 쪽 랜카드 주소를 고릅니다. 또 다른 PC·HMI 가 이 PC 에 붙으려면 중계를 처음 열 때 뜨는 윈도우 방화벽 허용 창에서 관리자 승인이 필요할 수 있고, 장비 설정을 바꿔야 하므로 시험 환경이나 정비 시간에 씁니다. 중계에서 «pcap 으로 저장» 을 켜면 사용자가 고른 파일에만 남고 밖으로 보내지 않습니다." },
         { h: "6. 뜬 파일 보기" },
-        { p: "Wireshark 로 열어도 되고, PortDock 웹 도구 «산업 통신 pcap 해석기» 에 끌어 놓으면 Modbus TCP·MC 3E/4E 의 요청·응답 짝, 응답 시간(최소·중앙·95%·최대), 무응답, 예외·종료 코드를 연결·장치별로 모아 줍니다. 파일은 그 브라우저 안에서만 처리하고 올리지 않습니다. 결과 읽는 법은 «Modbus 응답 시간 읽기» 글에 있습니다." },
+        { p: "Wireshark 로 열어 «modbus» 표시 필터로 요청과 응답을 시간 순으로 봅니다." },
         { p: "pcap 파일에는 같은 네트워크의 다른 통신(웹·파일 공유 등)과 IP·MAC 주소가 함께 들어갑니다. 다른 사람에게 보낼 때는 필요한 포트만 내보낸 파일을 보내세요." },
         { p: "Wireshark 는 Wireshark Foundation 의 상표이며, PortDock 은 Wireshark·Microsoft 와 제휴 관계가 아닙니다." },
       ],
@@ -6335,7 +6335,7 @@ export const GUIDES: Guide[] = [
         { ul: [
           "filter add -p 502 keeps only packets with port 502 as source or destination. For MC use the port configured in the PLC.",
           "--pkt-size 0 logs whole packets. The default is the first 128 bytes, which cuts long Modbus or MC frames.",
-          "--comp nics captures at the network adapters only. Without it pktmon captures the same packet at several points in the stack, and etl2pcap writes them all without telling them apart (Microsoft docs). Clean such a file with etl2pcap --component-id for one point, or with «Drop duplicated packets» in the PortDock pcap analyzer.",
+          "--comp nics captures at the network adapters only. Without it pktmon captures the same packet at several points in the stack, and etl2pcap writes them all without telling them apart (Microsoft docs). Clean such a file with etl2pcap --component-id to keep only one point.",
           "The default log mode is circular (once 512 MB is full, the oldest data is overwritten). Narrow the filter for long captures.",
         ] },
         { h: "4. Setting up switch mirroring" },
@@ -6347,7 +6347,7 @@ export const GUIDES: Guide[] = [
         { h: "5. PortDock TCP relay — no mirror port or driver" },
         { p: "If the HMI (or a PC program) connects to the PLC's address, change only the HMI's target to «this PC's IP:port» and run PortDock TCP in «Relay» mode: the PC passes the bytes through unchanged and logs both directions. No driver or mirror port is needed, and installing and running it needs no admin rights. The relay's «This PC address for A to connect to» starts as 127.0.0.1 (this PC only) from 0.10.0, so when the HMI is another PC or device, pick 0.0.0.0 (all adapters) or the address of the adapter on the HMI's side there. For another PC or the HMI to connect to this PC, the Windows Firewall prompt that appears the first time the relay listens may need administrator approval; and since you change a device setting, use it on a test setup or during maintenance. With «Save as pcap» on, the relay writes only to the file you choose and sends nothing out." },
         { h: "6. Looking at the file" },
-        { p: "Open it in Wireshark, or drop it on the PortDock web tool «Industrial pcap Analyzer» to get Modbus TCP and MC 3E/4E request/response pairs, response times (min, median, 95%, max), missing replies and exception/end codes per connection and device. The file is processed only in that browser and never uploaded. How to read the results is in «Reading Modbus response times from a capture»." },
+        { p: "Open it in Wireshark and use the «modbus» display filter to see the requests and replies in time order." },
         { p: "A pcap file also holds other traffic on the same network (web, file sharing …) and IP and MAC addresses. Before sending one to someone, export only the ports they need." },
         { p: "Wireshark is a trademark of the Wireshark Foundation; PortDock is not affiliated with Wireshark or Microsoft." },
       ],
@@ -6358,116 +6358,6 @@ export const GUIDES: Guide[] = [
       { title: "Microsoft — pktmon start", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-start", note: { ko: "--capture·--comp nics·--pkt-size(기본 128바이트)·기록 방식", en: "--capture, --comp nics, --pkt-size (128 bytes by default), log modes" } },
       { title: "Microsoft — pktmon filter add", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-filter-add", note: { ko: "-p 포트·-i IP 필터", en: "-p port and -i IP filters" } },
       { title: "Microsoft — pktmon etl2pcap", url: "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-etl2pcap", note: { ko: "pcapng 변환, --component-id", en: "pcapng conversion, --component-id" } },
-    ],
-  },
-  {
-    // 근거: Modbus Messaging on TCP/IP Implementation Guide V1.0b(트랜잭션 ID·유닛 ID), Application Protocol V1.1b3 §7(예외 코드),
-    // 응답 시간 계산은 lib/pcapAnalyze.ts(마지막 바이트 기준, 가장 가까운 순위 백분위). 시리얼 시간 예: 9600bps, 1문자 11비트 → 33문자 ≈ 37.8ms.
-    slug: "modbus-response-time-pcap",
-    date: "2026-10-31",
-    tools: ["modbus-master", "modbus-slave", "tcp"],
-    related: ["capture-plc-traffic-wireshark-pktmon", "modbus-no-response", "modbus-exception-codes", "modbus-rtu-timeout-polling", "modbus-tcp-connection"],
-    webTools: ["tools/pcap-analyzer/", "tools/serial-timing/", "tools/modbus-decoder/"],
-    title: { ko: "Modbus 응답 시간 읽기 — pcap 해석기 결과 보는 법", en: "Reading Modbus response times from a capture" },
-    seoTitle: { ko: "Modbus 응답 시간·무응답 읽기 — pcap 해석기 결과 — PortDock", en: "Modbus Response Time & Missing Replies from a pcap — PortDock" },
-    desc: {
-      ko: "캡처한 Modbus TCP 통신에서 응답 시간 중앙값·95%·최대, 무응답, 짝 없는 응답, 예외 코드를 읽는 법. 타임아웃·폴링 주기를 정할 때 볼 숫자와 캡처가 놓친 것 가리기.",
-      en: "Read median, 95% and max response time, missing replies and exception codes in a Modbus TCP capture, and which numbers set timeouts and polling.",
-    },
-    body: {
-      ko: [
-        { p: "PortDock 웹 도구 «산업 통신 pcap 해석기» 는 캡처 파일에서 Modbus TCP 요청과 응답을 트랜잭션 ID 로 짝지어 응답 시간을 잽니다. 이 글은 그 결과 표를 읽는 순서입니다. MC 프로토콜도 같은 표로 나오며, 짝은 4E 일련번호(3E 는 보낸 순서)로 맞춥니다." },
-        { h: "1. 응답 시간은 무엇을 잰 것인가" },
-        { p: "요청 프레임의 마지막 바이트가 캡처된 시각부터, 같은 트랜잭션 ID 의 응답 프레임 마지막 바이트가 캡처된 시각까지입니다. 장비의 처리 시간과 네트워크 왕복이 들어 있고, 게이트웨이 뒤 시리얼 장비라면 시리얼로 주고받는 시간까지 들어갑니다. 캡처한 위치에 따라 숫자가 달라집니다 — 클라이언트 PC 에서 뜨면 그 PC 가 본 시간, 미러 포트에서 뜨면 장비 사이에 가까운 시간입니다." },
-        { h: "2. 요약 칸 읽기" },
-        {
-          table: {
-            head: ["칸", "뜻", "볼 점"],
-            plain: true,
-            rows: [
-              ["중앙", "응답 시간을 줄 세웠을 때 가운데 값", "평소 속도. 폴링 주기보다 충분히 짧은지"],
-              ["95%", "응답의 95% 가 이 값 안에 들어옴", "타임아웃을 정할 때의 바닥. 타임아웃이 이보다 짧으면 평소에도 가끔 무응답이 남"],
-              ["최대", "가장 늦은 응답", "한 번 튄 값인지 여러 번인지는 시간축 그래프로"],
-              ["무응답", "기준 시간(기본 1000ms) 안에 짝 응답이 없음", "캡처 누락일 수도 있음 — 아래 4절"],
-              ["짝 없는 응답", "요청 없이 온 응답, 또는 기준 시간이 지난 뒤 온 응답", "늦게라도 답이 온 것 — 클라이언트 타임아웃이 짧을 수 있음"],
-              ["캡처 끝", "캡처가 끝나 판단할 수 없는 마지막 요청", "문제로 세지 않음"],
-            ],
-          },
-        },
-        { p: "무응답 기준 시간은 화면에서 바꿀 수 있습니다. 쓰는 HMI·PLC·프로그램의 타임아웃과 같게 두면, 그쪽이 «시간 초과» 로 본 요청과 같은 것을 셉니다." },
-        { h: "3. 표를 어느 순서로 보나" },
-        { ul: [
-          "연결별: 클라이언트가 같은 서버에 연결을 여러 개 열었는지, 연결마다 요청 간격(폴링 주기)과 응답 시간이 다른지. 재전송·빠짐 수가 크면 네트워크(선·스위치·혼잡) 쪽부터 봅니다.",
-          "장치(국번)별: 게이트웨이 하나 뒤에 유닛 ID 가 여럿이면, 특정 국번만 느리거나 무응답이 몰리는지. 그 국번의 시리얼 배선·국번 설정·보율을 봅니다.",
-          "함수 코드별: 읽기(03·04)는 빠른데 쓰기(06·10)만 느린 장비가 있습니다. 한 번에 읽는 개수가 많은 요청이 느린지도 봅니다.",
-          "예외 코드: 02(주소 없음)·03(값 틀림)은 요청을 고칠 일이고, 04·06·0B 는 장비·게이트웨이 상태 쪽입니다. 행을 누르면 그 프레임을 Modbus 해석기로 열어 칸마다 볼 수 있습니다.",
-        ] },
-        { h: "4. «무응답» 이 정말 장비 탓인지 가리기" },
-        { ul: [
-          "결과 위의 알림에 «빠진 바이트» 가 있으면 캡처 자체가 패킷을 잃은 것입니다. 미러 포트가 바쁘거나 느리면 생깁니다.",
-          "같은 시각에 다른 연결·다른 국번도 함께 무응답이면 장비 하나보다 네트워크나 게이트웨이 쪽일 가능성이 큽니다.",
-          "무응답 직후 같은 트랜잭션 ID 의 짝 없는 응답이 오면, 장비는 답했지만 기준 시간보다 늦은 것입니다.",
-          "무응답 뒤 클라이언트가 연결을 끊고 다시 여는 모습(연결 끊김, 새 연결)도 흔합니다 — 접속 수가 적은 장비는 새 연결을 거절하기도 합니다.",
-        ] },
-        { h: "5. 게이트웨이 뒤 시리얼 장비라면" },
-        { p: "Modbus TCP → RTU 게이트웨이 뒤의 장비는 시리얼로 주고받는 시간이 응답 시간에 그대로 더해집니다. 예를 들어 9600bps, 1문자 11비트(8비트 + 시작·정지·패리티)에서 보유 레지스터 10개 읽기는 요청 8바이트 + 응답 25바이트 = 33문자로, 전송만 약 37.8ms 입니다(33 × 11 ÷ 9600). 여기에 장비 처리 시간과 프레임 사이 쉼(3.5문자)이 붙습니다. 보율·개수별 시간은 «시리얼 통신 시간 계산기» 로 셉니다. 게이트웨이 하나에 국번이 여럿이면 요청을 차례로 처리하므로 국번 수만큼 기다림이 늘어납니다." },
-        { h: "6. 숫자로 설정 정하기" },
-        { ul: [
-          "타임아웃: 95% 와 최대를 보고 최대보다 여유 있게 — 시간축 그래프에서 한두 번 튄 값이 모두 무응답이 되지 않을 만큼.",
-          "폴링 주기: 연결의 요청 간격(중앙)이 응답 시간 중앙에 너무 가까우면 요청이 쌓입니다. 장비 수 × 응답 시간보다 길게 둡니다.",
-          "바꾼 뒤 다시 떠서 같은 표로 비교합니다. 장비 없이 늦은 응답·무응답을 일부러 만들어 보려면 PortDock Modbus Slave 의 장애 주입(응답 지연·응답 안 함)을 씁니다.",
-        ] },
-        { p: "Wireshark 는 Wireshark Foundation 의 상표이며, PortDock 은 Wireshark·Microsoft 와 제휴 관계가 아닙니다." },
-      ],
-      en: [
-        { p: "The PortDock web tool «Industrial pcap Analyzer» pairs Modbus TCP requests and responses in a capture by transaction ID and measures response times. This guide is the order to read its tables in. MC protocol traffic appears in the same tables, paired by the 4E serial number (3E by send order)." },
-        { h: "1. What the response time measures" },
-        { p: "From the moment the last byte of a request frame was captured to the moment the last byte of the response with the same transaction ID was captured. It includes the device's processing time and the network round trip, and for a serial device behind a gateway also the serial transfer time. The value depends on where you captured: on the client PC it is that PC's view, on a mirror port it is closer to the time between the devices." },
-        { h: "2. Reading the summary" },
-        {
-          table: {
-            head: ["Field", "Meaning", "What to look at"],
-            plain: true,
-            rows: [
-              ["Median", "The middle value of all response times", "The usual speed. Is it well below the polling interval?"],
-              ["95%", "95% of replies arrive within this", "The floor for a timeout. A timeout below it means occasional missing replies even on a good day"],
-              ["Max", "The slowest reply", "One spike or many? Check the time chart"],
-              ["No response", "No matching reply within the limit (1000 ms by default)", "May be capture loss — see section 4"],
-              ["Unmatched response", "A reply with no request, or one that arrived after the limit", "The device did answer, late — the client timeout may be too short"],
-              ["Capture ended", "Last requests the capture ended too early to judge", "Not counted as a problem"],
-            ],
-          },
-        },
-        { p: "You can change the no-response limit on the page. Set it to the timeout of the HMI, PLC or program in use and you count the same requests that side treated as timed out." },
-        { h: "3. Which table first" },
-        { ul: [
-          "By connection: does the client open several connections to the same server, and do the request interval (polling) or response time differ per connection? Many retransmissions or gaps point to the network first (cables, switches, congestion).",
-          "By device (station): with several unit IDs behind one gateway, is one station slower or missing replies? Check that station's serial wiring, address and baud rate.",
-          "By function code: some devices read (03, 04) quickly but write (06, 10) slowly. Also see whether requests for many registers are the slow ones.",
-          "Exception codes: 02 (no such address) and 03 (bad value) mean fix the request; 04, 06 and 0B point at the device or gateway state. Click a row to open that frame in the Modbus decoder field by field.",
-        ] },
-        { h: "4. Is «no response» really the device?" },
-        { ul: [
-          "If the notes above the results mention missing bytes, the capture itself lost packets. Busy or slow mirror ports cause this.",
-          "If other connections or stations go silent at the same moment, the network or gateway is more likely than one device.",
-          "An unmatched response with the same transaction ID right after a missing reply means the device answered, just later than the limit.",
-          "After a missing reply, clients often close and reopen the connection (connection closed, new connection) — devices that accept few connections may refuse the new one.",
-        ] },
-        { h: "5. Serial devices behind a gateway" },
-        { p: "For a device behind a Modbus TCP-to-RTU gateway, the serial transfer time adds directly to the response time. At 9600 bit/s and 11 bits per character (8 data bits plus start, stop and parity), reading 10 holding registers takes an 8-byte request plus a 25-byte reply = 33 characters, about 37.8 ms of transfer alone (33 × 11 ÷ 9600). Device processing and the 3.5-character gaps come on top. Use the «Serial Timing Calculator» for other baud rates and counts. With several stations on one gateway, requests are served one after another, so waiting grows with the number of stations." },
-        { h: "6. Choosing settings from the numbers" },
-        { ul: [
-          "Timeout: look at the 95% and max and leave room above the max, so the one or two spikes on the time chart do not all become missing replies.",
-          "Polling interval: if a connection's request interval (median) is too close to the median response time, requests pile up. Keep it above number of devices × response time.",
-          "After changing settings, capture again and compare the same tables. To create slow or missing replies on purpose without a device, use PortDock Modbus Slave's fault injection (response delay, no response).",
-        ] },
-        { p: "Wireshark is a trademark of the Wireshark Foundation; PortDock is not affiliated with Wireshark or Microsoft." },
-      ],
-    },
-    refs: [
-      { title: "Modbus Messaging on TCP/IP Implementation Guide V1.0b", url: "https://www.modbus.org/modbus-specifications", note: { ko: "MBAP 머리 — 트랜잭션 ID 로 요청·응답 짝, 유닛 ID", en: "MBAP header — transaction ID pairs requests and responses; unit ID" } },
-      { title: "Modbus Application Protocol Specification V1.1b3", url: "https://www.modbus.org/modbus-specifications", note: { ko: "§7 예외 코드", en: "§7 exception codes" } },
-      { title: "Wireshark Wiki — CaptureSetup/Ethernet", url: "https://wiki.wireshark.org/CaptureSetup/Ethernet", note: { ko: "미러 포트의 캡처 손실", en: "capture loss on mirror ports" } },
     ],
   },
   // 근거: MODBUS over serial line V1.02 §3.4(공통선은 버스 한 곳에서 보호 접지, 케이블 실드는 한쪽 끝을 보호 접지 — Danfoss 매뉴얼이 같은 문장 인용),
@@ -8004,8 +7894,8 @@ export const GUIDES: Guide[] = [
     slug: "communication-fault-log",
     date: "2026-10-31",
     tools: ["modbus-master", "netscan", "port-inspector", "serial"],
-    related: ["communication-preventive-maintenance", "capture-plc-traffic-wireshark-pktmon", "modbus-response-time-pcap", "field-noise-communication-errors", "modbus-no-response", "device-replacement-settings"],
-    webTools: ["tools/troubleshoot/", "tools/pcap-analyzer/", "tools/commissioning-checklist/", "tools/system-diagram/"],
+    related: ["communication-preventive-maintenance", "capture-plc-traffic-wireshark-pktmon", "field-noise-communication-errors", "modbus-no-response", "device-replacement-settings"],
+    webTools: ["tools/troubleshoot/", "tools/commissioning-checklist/", "tools/system-diagram/"],
     title: { ko: "통신 장애 기록 남기기·유지보수 일지 — 언제·어디서·증상·측정값·조치, 통신 기록 보관, 바뀐 것 비교", en: "Logging communication faults and keeping a maintenance log — readings, captures, what changed" },
     seoTitle: { ko: "통신 장애 기록·유지보수 일지 쓰는 법 — PortDock", en: "Communication Fault Log & Maintenance Log — PortDock" },
     desc: {
@@ -8065,7 +7955,6 @@ export const GUIDES: Guide[] = [
             "Net Scan: 장비 목록을 CSV 로 저장해 기준으로 두고, 장애 때 다시 찾아 비교합니다. (0.10.0 부터 기준 목록과의 비교가 들어갑니다.)",
             "Port Inspector: 장비 PC 점검 결과를 저장해 두고 장애 때 다시 읽어 비교합니다. (0.10.0 부터 점검 결과 비교가 들어갑니다.)",
             "웹 도구 «고장 원인 찾기 도우미»: 증상에서 예/아니오로 원인 후보를 좁히고, 결과를 텍스트로 복사해 일지에 붙입니다.",
-            "웹 도구 «산업 통신 pcap 해석기»: 받아 둔 pcap 에서 Modbus TCP 응답 시간·예외·재전송을 브라우저 안에서 봅니다.",
           ],
         },
       ],
@@ -8121,7 +8010,6 @@ export const GUIDES: Guide[] = [
             "Net Scan: save the device list as CSV as a baseline, and scan again at fault time to compare. (Comparison against a saved baseline arrives in 0.10.0.)",
             "Port Inspector: save the equipment PC's check results and read again at fault time to compare. (Comparing check results arrives in 0.10.0.)",
             "«Field Troubleshooting Wizard» web tool: narrow down possible causes from a symptom by yes/no, and copy the result as text into the log.",
-            "«Industrial pcap Analyzer» web tool: Modbus TCP response times, exceptions and retransmissions from a saved pcap, in your browser.",
           ],
         },
       ],
@@ -8521,7 +8409,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: ["serial"],
     related: ["rs232-rs422-rs485", "rs485-wiring", "i2c-troubleshooting", "can-wiring-termination-check", "usb-serial-latency"],
-    webTools: ["tools/logic-capture/", "tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/wiring/", "tools/can-decoder/", "tools/i2c/", "tools/spi/", "tools/uart-waveform/"],
+    webTools: ["tools/uart-baud/", "tools/can-bit-timing/", "tools/pinouts/", "tools/wiring/", "tools/can-decoder/", "tools/i2c/", "tools/spi/", "tools/uart-waveform/"],
     title: { ko: "UART·SPI·I2C·CAN·RS-485 차이 — 거리·속도·장비 수·배선으로 고르기", en: "UART vs SPI vs I2C vs CAN vs RS-485 — choosing by distance, speed, device count and wiring" },
     seoTitle: { ko: "UART·SPI·I2C·CAN·RS-485 차이와 고르는 법 — PortDock", en: "UART vs SPI vs I2C vs CAN vs RS-485: How to Choose — PortDock" },
     desc: {
@@ -8584,7 +8472,6 @@ export const GUIDES: Guide[] = [
         { h: "PortDock 으로" },
         {
           ul: [
-            "«로직 분석기 캡처 해석기» 웹 도구: 로직 분석기로 뜬 CSV·VCD 를 브라우저에서 UART·SPI·I2C·CAN 으로 풉니다(설치·업로드 없음).",
             "Serial: USB-시리얼 변환기로 UART·RS-232·RS-485 장비와 바이트를 주고받습니다.",
             "«CAN 비트 타이밍 계산기»·«UART 보율 오차 계산기» 웹 도구로 설정 값을 맞춥니다.",
           ],
@@ -8645,7 +8532,6 @@ export const GUIDES: Guide[] = [
         { h: "In PortDock" },
         {
           ul: [
-            "«Logic Analyzer Capture Decoder» web tool: decode CSV or VCD captures as UART, SPI, I2C or CAN in the browser (no install, no upload).",
             "Serial: exchange bytes with UART, RS-232 and RS-485 devices through a USB-serial adapter.",
             "«CAN Bit Timing Calculator» and «UART Baud Rate Error Calculator» web tools help get the settings right.",
           ],
@@ -8668,7 +8554,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: [],
     related: ["uart-spi-i2c-can-rs485", "can-wiring-termination-check", "cable-shield-grounding", "field-noise-communication-errors"],
-    webTools: ["tools/logic-capture/", "tools/parallel-resistor/", "tools/multimeter-check/", "tools/pinouts/", "tools/troubleshoot/", "tools/i2c/"],
+    webTools: ["tools/parallel-resistor/", "tools/multimeter-check/", "tools/pinouts/", "tools/troubleshoot/", "tools/i2c/"],
     title: { ko: "I2C 가 안 될 때 점검 순서 — 풀업·주소·전압 레벨·버스 걸림(SDA low) 풀기·선 길이", en: "I2C troubleshooting, in order — pull-ups, address, voltage levels, clearing a stuck SDA, wire length" },
     seoTitle: { ko: "I2C 안 될 때 — 풀업·주소·SDA 걸림·선 길이 점검 — PortDock", en: "I2C Not Working: Pull-ups, Address, Stuck SDA, Length — PortDock" },
     desc: {
@@ -8728,7 +8614,7 @@ export const GUIDES: Guide[] = [
         { h: "6. 로직 분석기로 확인" },
         {
           ul: [
-            "SCL·SDA 를 뜨고 «로직 분석기 캡처 해석기» 에서 I2C 로 풀면 시작·반복 시작·정지, 주소·R/W·ACK/NACK, 데이터가 표로 나옵니다.",
+            "SCL·SDA 를 뜨고 로직 분석기 프로그램에서 I2C 로 풀면 시작·반복 시작·정지, 주소·R/W·ACK/NACK, 데이터가 표로 나옵니다.",
             "주소 바이트 뒤 NACK → 주소·전원·풀업. 데이터 중간 NACK → 장치가 그 레지스터·길이를 받지 않음(데이터시트의 쓰기 순서).",
             "샘플 속도는 SCL 의 여러 배로 잡습니다. SCL 과 SDA 가 같은 샘플에서 바뀌면 시작·정지를 놓칠 수 있습니다.",
             "가장자리가 둥글게 오래 올라가는지는 로직 분석기로는 안 보입니다. 오실로스코프로 올라가는 시간을 봅니다.",
@@ -8787,7 +8673,7 @@ export const GUIDES: Guide[] = [
         { h: "6. Checking with a logic analyzer" },
         {
           ul: [
-            "Capture SCL and SDA and decode them as I2C in the «Logic Analyzer Capture Decoder»: start, repeated start, stop, address, R/W, ACK/NACK and data appear in a table.",
+            "Capture SCL and SDA and decode them as I2C in your logic analyzer software: start, repeated start, stop, address, R/W, ACK/NACK and data appear in a table.",
             "NACK right after the address → address, power, pull-ups. NACK in the middle of data → the device does not accept that register or length (see the datasheet's write sequence).",
             "Sample several times faster than SCL. If SCL and SDA change in the same sample, a start or stop can be missed.",
             "A logic analyzer cannot show a slow, rounded rising edge. Use an oscilloscope to see the rise time.",
@@ -8808,7 +8694,7 @@ export const GUIDES: Guide[] = [
     date: "2026-11-01",
     tools: [],
     related: ["uart-spi-i2c-can-rs485", "rs485-bias-termination", "cable-shield-grounding", "field-noise-communication-errors", "rs485-multimeter-check"],
-    webTools: ["tools/can-bit-timing/", "tools/logic-capture/", "tools/multimeter-check/", "tools/wiring/", "tools/pinouts/", "tools/troubleshoot/", "tools/can-decoder/"],
+    webTools: ["tools/can-bit-timing/", "tools/multimeter-check/", "tools/wiring/", "tools/pinouts/", "tools/troubleshoot/", "tools/can-decoder/"],
     title: { ko: "CAN 배선·종단 점검 — 양 끝 120 Ω(전원 끄고 약 60 Ω), 공통 접지, 비트 타이밍·샘플 포인트, 오류 프레임·버스 오프", en: "CAN wiring and termination checks — 120 Ω ends (60 Ω power-off), ground, bit timing, error frames, bus-off" },
     seoTitle: { ko: "CAN 종단 60 Ω 점검·접지·샘플 포인트·버스 오프 — PortDock", en: "CAN Termination 60 Ω Check, Ground, Bus-Off — PortDock" },
     desc: {
@@ -8883,7 +8769,7 @@ export const GUIDES: Guide[] = [
         { h: "7. 로직 분석기로 RX 보기" },
         {
           ul: [
-            "트랜시버와 컨트롤러 사이 RX 선을 뜨고 «로직 분석기 캡처 해석기» 에서 CAN 으로 풀면 ID·DLC·데이터·CRC 확인, ACK 없음, 스터핑 오류, 우성 6비트 이상(오류 프레임 후보)이 표로 나옵니다.",
+            "트랜시버와 컨트롤러 사이 RX 선을 뜨고 로직 분석기 프로그램에서 CAN 으로 풀면 ID·DLC·데이터·CRC 확인, ACK 없음, 스터핑 오류, 우성 6비트 이상(오류 프레임 후보)이 표로 나옵니다.",
             "비트 속도를 모르면 «자동 추정» 으로 가장 짧은 펄스에서 구해 봅니다(스터핑 때문에 1비트 펄스가 자주 나옵니다).",
             "CAN_H·CAN_L 의 전압 모양(반사·링잉)은 로직 분석기로 안 보입니다. 오실로스코프의 차동 측정으로 봅니다.",
           ],
@@ -8956,7 +8842,7 @@ export const GUIDES: Guide[] = [
         { h: "7. Looking at RX with a logic analyzer" },
         {
           ul: [
-            "Capture the RX line between the transceiver and the controller and decode it as CAN in the «Logic Analyzer Capture Decoder»: ID, DLC, data, CRC check, missing ACK, stuff errors and runs of six or more dominant bits (possible error frames) appear in a table.",
+            "Capture the RX line between the transceiver and the controller and decode it as CAN in your logic analyzer software: ID, DLC, data, CRC check, missing ACK, stuff errors and runs of six or more dominant bits (possible error frames) appear in a table.",
             "If you do not know the bit rate, try «Detect», which works from the shortest pulses (stuffing makes one-bit pulses common).",
             "A logic analyzer cannot show the CAN_H/CAN_L voltage shape (reflections, ringing). Use an oscilloscope with a differential measurement.",
           ],

@@ -61,7 +61,4 @@ export default {
   guide2: "Codici di fine del protocollo MC: che cosa controllare (in inglese)",
   guidePost: ".",
   guide3: "Collaudare la comunicazione con protocollo MC senza PLC (in inglese)",
-  pcapPre: "Per esaminare un'intera cattura di Wireshark o pktmon (coppie richiesta/risposta, tempi di risposta, risposte mancanti) usate l'",
-  pcapLink: "analizzatore pcap per protocolli industriali (in inglese)",
-  pcapPost: ". Facendo clic su una riga, il frame si apre in questo decodificatore.",
 };

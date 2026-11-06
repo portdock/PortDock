@@ -61,7 +61,4 @@ export default {
   guide2: "Endcodes des MC-Protokolls: was zu prüfen ist (Englisch)",
   guidePost: ".",
   guide3: "MC-Protokoll-Kommunikation ohne SPS testen (Englisch)",
-  pcapPre: "Um einen ganzen Mitschnitt aus Wireshark oder pktmon anzusehen (Anfrage/Antwort-Paare, Antwortzeiten, fehlende Antworten), nutzen Sie den ",
-  pcapLink: "pcap-Analyzer für Industrieprotokolle (Englisch)",
-  pcapPost: ". Ein Klick auf eine Zeile dort öffnet das Telegramm in diesem Decoder.",
 };

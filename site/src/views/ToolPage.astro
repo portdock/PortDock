@@ -62,16 +62,16 @@ const devName = (d: (typeof DEVICES)[number]) => (isCore(lang) ? d.manufacturer[
 const guides = GUIDES.filter((g) => g.tools.includes(tool.id));
 const WEB_FOR: Partial<Record<Tool["id"], string[]>> = {
   serial: ["tools/checksum/", "tools/modbus/", "tools/hex-ascii/", "tools/serial-timing/", "tools/rs485/", "tools/ascii/", "tools/uart-baud/", "tools/barcode-scanner-test/", "tools/wiring/", "tools/troubleshoot/", "tools/pinouts/", "tools/cable-selection/", "tools/cable-labels/"],
-  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/modbus-blocks/", "tools/subnet/", "tools/motor-speed/", "tools/integer/", "tools/pcap-analyzer/", "tools/wiring/", "tools/system-diagram/", "tools/troubleshoot/", "tools/pinouts/", "tools/commissioning-checklist/", "tools/io-list/", "tools/handover-pack/", "tools/cable-labels/", "tools/modbus-rtu-tcp/", "tools/modbus-practice/"],
-  "modbus-slave": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/pcap-analyzer/", "tools/io-list/", "tools/modbus-rtu-tcp/", "tools/modbus-practice/"],
-  tcp: ["tools/hex-ascii/", "tools/subnet/", "tools/pcap-analyzer/", "tools/mqtt-decoder/", "tools/troubleshoot/", "tools/modbus-rtu-tcp/"],
+  "modbus-master": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/modbus-blocks/", "tools/subnet/", "tools/motor-speed/", "tools/integer/", "tools/wiring/", "tools/system-diagram/", "tools/troubleshoot/", "tools/pinouts/", "tools/commissioning-checklist/", "tools/io-list/", "tools/handover-pack/", "tools/cable-labels/", "tools/modbus-rtu-tcp/", "tools/modbus-practice/"],
+  "modbus-slave": ["tools/modbus/", "tools/checksum/", "tools/serial-timing/", "tools/io-list/", "tools/modbus-rtu-tcp/", "tools/modbus-practice/"],
+  tcp: ["tools/hex-ascii/", "tools/subnet/", "tools/mqtt-decoder/", "tools/troubleshoot/", "tools/modbus-rtu-tcp/"],
   udp: ["tools/hex-ascii/", "tools/subnet/"],
   netscan: ["tools/subnet/", "tools/system-diagram/", "tools/troubleshoot/", "tools/commissioning-checklist/", "tools/handover-pack/"],
   simulator: ["tools/checksum/", "tools/hex-ascii/", "tools/ascii/"],
   plot: ["tools/ntc/", "tools/encoder/", "tools/adc/"],
-  "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/", "tools/gige-bandwidth/", "tools/bsod-codes/", "tools/wiring/", "tools/troubleshoot/", "tools/multimeter-check/", "tools/pinouts/", "tools/insulation-resistance/", "tools/panel-heat/", "tools/battery-report/"],
-  "plc-simulator": ["tools/mc-decoder/", "tools/pcap-analyzer/", "tools/subnet/", "tools/integer/", "tools/troubleshoot/", "tools/xgt-decoder/"],
-  "hw-tester": ["tools/speaker-test/", "tools/mic-test/", "tools/keyboard-test/", "tools/mouse-test/", "tools/webcam-test/", "tools/monitor-test/", "tools/gamepad-test/", "tools/troubleshoot/", "tools/battery-report/", "tools/barcode-scanner-test/"],
+  "port-inspector": ["tools/serial-timing/", "tools/rs485/", "tools/uart-baud/", "tools/gige-bandwidth/", "tools/bsod-codes/", "tools/wiring/", "tools/troubleshoot/", "tools/multimeter-check/", "tools/pinouts/", "tools/insulation-resistance/", "tools/panel-heat/"],
+  "plc-simulator": ["tools/mc-decoder/", "tools/subnet/", "tools/integer/", "tools/troubleshoot/", "tools/xgt-decoder/"],
+  "hw-tester": ["tools/speaker-test/", "tools/mic-test/", "tools/keyboard-test/", "tools/mouse-test/", "tools/webcam-test/", "tools/monitor-test/", "tools/gamepad-test/", "tools/troubleshoot/", "tools/barcode-scanner-test/"],
 };
 const webTools = WEB_TOOLS.filter((w) => WEB_FOR[tool.id]?.includes(w.path));
 const devices = tool.id === "modbus-master" || tool.id === "modbus-slave" ? DEVICES : [];

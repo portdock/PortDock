@@ -195,7 +195,7 @@ export default {
         "Sisi RTU gateway (baud rate, pengawatan) gagal — gateway membuang request atau mengembalikan exception 0B",
         "Kode fungsi yang tidak didukung perangkat",
       ],
-      checks: ["Urai byte yang dipertukarkan di dekoder frame Modbus untuk melihat MBAP dan Unit ID", "Rekam dengan Wireshark atau pktmon, lalu periksa jawaban dan waktunya dengan penganalisis pcap"],
+      checks: ["Urai byte yang dipertukarkan di dekoder frame Modbus untuk melihat MBAP dan Unit ID"],
     },
     "r-tcp-exception": {
       title: "Perangkat menjawab dengan exception — alamat, fungsi, atau jumlah",
@@ -371,7 +371,7 @@ export default {
     "r-mc-frame": {
       title: "Format frame tidak cocok, sehingga PLC diam saja",
       causes: ["Frame 3E/4E atau biner/ASCII berbeda dari pengaturan PLC", "Nilai header (nomor jaringan, nomor PC, modul tujuan) atau panjang data salah", "Memakai UDP padahal PLC mengharapkan TCP (atau sebaliknya)"],
-      checks: ["Urai byte yang dikirim kolom demi kolom di dekoder frame MC protocol", "Rekam dengan Wireshark atau pktmon, lalu periksa pasangan request/jawaban di penganalisis pcap"],
+      checks: ["Urai byte yang dikirim kolom demi kolom di dekoder frame MC protocol"],
     },
     "r-mc-values": {
       title: "Jawaban datang tetapi nilainya tampak salah — nomor device atau satuan",

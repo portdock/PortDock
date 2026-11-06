@@ -154,7 +154,7 @@ export default {
     "r-tcp-unitid": {
       title: "Połączono, ale brak odpowiedzi — identyfikator jednostki lub bramka",
       causes: ["Zły identyfikator jednostki — za bramką musi być równy adresowi urządzenia RTU; dla urządzeń podłączonych bezpośrednio użyj wartości z instrukcji (często 1 lub 255)", "Strona RTU bramki (prędkość, okablowanie) zawodzi — bramka odrzuca zapytanie lub zwraca wyjątek 0B", "Kod funkcji nieobsługiwany przez urządzenie"],
-      checks: ["Zdekoduj wymieniane bajty w dekoderze ramek Modbus, aby zobaczyć MBAP i identyfikator jednostki", "Przechwyć ruch Wiresharkiem lub pktmon i sprawdź odpowiedzi i czasy w analizatorze pcap"],
+      checks: ["Zdekoduj wymieniane bajty w dekoderze ramek Modbus, aby zobaczyć MBAP i identyfikator jednostki"],
     },
     "r-tcp-exception": {
       title: "Urządzenie odpowiada wyjątkiem — adres, funkcja lub liczba",
@@ -318,7 +318,7 @@ export default {
     "r-mc-frame": {
       title: "Niezgodny format ramki, więc PLC milczy",
       causes: ["Ramka 3E/4E lub kod binarny/ASCII różni się od ustawienia PLC", "Błędne wartości nagłówka (nr sieci, nr PC, moduł docelowy) lub długość danych", "Użyto UDP, a PLC oczekuje TCP (lub odwrotnie)"],
-      checks: ["Zdekoduj wysłane bajty pole po polu w dekoderze ramek protokołu MC", "Przechwyć ruch Wiresharkiem lub pktmon i sprawdź pary zapytanie/odpowiedź w analizatorze pcap"],
+      checks: ["Zdekoduj wysłane bajty pole po polu w dekoderze ramek protokołu MC"],
     },
     "r-mc-values": {
       title: "Odpowiedzi przychodzą, ale wartości wyglądają źle — numery obszarów lub jednostki",

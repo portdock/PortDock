@@ -64,13 +64,7 @@ export default {
       scpi: "Comandare uno strumento di misura (SCPI) e registrare le misure",
       pc: "Problemi di connessione del PC — porta COM, scheda di rete, Wi-Fi, Bluetooth",
       mcp: "Leggere i dispositivi da un client di IA (MCP)",
-      pcap: "Analizzare una cattura del traffico (pcap) — tempi di risposta, risposte mancanti",
     },
-    notes: {
-      "pcap:tcp": "Inserirlo come relay tra HMI e PLC e salvare un pcap — senza Wireshark",
-    },
-    pcapName: "Analizzatore pcap (in inglese)",
-    pcapNote: "Catture di Wireshark o pktmon direttamente nel browser, senza installazione — coppie richiesta/risposta per Modbus TCP e MC",
     hwTitle: "Provare microfono, tastiera, mouse, webcam o monitor",
     hwName: "Test dell'hardware del PC",
     hwNote: (n: number) => `Non è un programma Windows: funziona nel browser, senza installazione (${n} test)`,

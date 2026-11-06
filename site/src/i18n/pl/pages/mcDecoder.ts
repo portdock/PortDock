@@ -61,7 +61,4 @@ export default {
   guide2: "Kody zakończenia protokołu MC: co sprawdzić (po angielsku)",
   guidePost: ".",
   guide3: "Testowanie komunikacji protokołem MC bez sterownika PLC (po angielsku)",
-  pcapPre: "Aby obejrzeć cały zapis z Wiresharka lub pktmon (pary zapytanie/odpowiedź, czasy odpowiedzi, brakujące odpowiedzi), użyj narzędzia ",
-  pcapLink: "Analizator pcap dla komunikacji przemysłowej (po angielsku)",
-  pcapPost: ". Kliknięcie wiersza w jego tabeli otwiera tę ramkę w tym dekoderze.",
 };

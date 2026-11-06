@@ -1,4 +1,4 @@
-// Dekoder ładunku MQTT (views/MqttDecoderPage.astro) — 4. pakiet. m = teksty wyników skryptu strony, pcap = fragmenty przed i po linku do analizatora pcap
+// Dekoder ładunku MQTT (views/MqttDecoderPage.astro) — 4. pakiet. m = teksty wyników skryptu strony
 export default {
   title: "Dekoder ładunku MQTT (Sparkplug B)",
   seo: "Dekoder MQTT: payload Sparkplug B i hex online — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "Flagi",
     err: { empty: "Nie ma czego dekodować.", hex: "To nie jest poprawny HEX (dwie cyfry szesnastkowe na bajt).", base64: "To nie jest poprawny Base64." },
   },
-  pcap: ["Do przechwyceń Modbus TCP i protokołu MC użyj narzędzia ", "."],
 };

@@ -64,13 +64,7 @@ export default {
       scpi: "Sterowanie przyrządem pomiarowym (SCPI) i zapis odczytów",
       pc: "Problemy z połączeniem w komputerze — port COM, karta sieciowa, Wi-Fi, Bluetooth",
       mcp: "Odczyt urządzeń z klienta AI (MCP)",
-      pcap: "Analiza zapisu ruchu (pcap) — czasy odpowiedzi, brak odpowiedzi",
     },
-    notes: {
-      "pcap:tcp": "Działa jako przekaźnik między HMI a sterownikiem PLC i zapisuje pcap — bez Wiresharka",
-    },
-    pcapName: "Analizator pcap (po angielsku)",
-    pcapNote: "Zapisy z Wiresharka lub pktmon w przeglądarce, bez instalacji — pary zapytanie/odpowiedź Modbus TCP i MC",
     hwTitle: "Test mikrofonu, klawiatury, myszy, kamery internetowej lub monitora",
     hwName: "Testy sprzętu PC",
     hwNote: (n: number) => `To nie program na Windows — działa w przeglądarce, bez instalacji (testy: ${n})`,

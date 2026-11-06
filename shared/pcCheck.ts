@@ -174,9 +174,8 @@ export const PC_GROUP_TEXT: Record<PcGroup, Text> = {
   exposure: t("현장 PC 노출(같은 망에서 닿는 것)", "Field PC exposure (reachable from the network)"),
 };
 
-/** 사이트 웹 도구 — 블루스크린 코드 사전(원인 후보·확인 순서) · 배터리 리포트 해석기 */
+/** 사이트 웹 도구 — 블루스크린 코드 사전(원인 후보·확인 순서) */
 export const BSOD_CODES_URL = "https://portdock.dev/tools/bsod-codes/";
-export const BATTERY_REPORT_URL = "https://portdock.dev/tools/battery-report/";
 
 /** 자주 보이는 정지 코드(버그체크) 이름 — Microsoft «Bug check code reference» 의 이름 그대로. 뜻·원인 후보는 사이트 사전에서 */
 export const BUGCHECK_NAMES: Record<number, string> = {
@@ -691,8 +690,6 @@ export function pcItems(pc: PcCheck, purpose: PcPurpose, fmtTime: (ms: number) =
       ),
       level: hp == null ? "unread" : "ok",
       where: t("명령 프롬프트에서 powercfg /batteryreport 로 만든 battery-report.html(관리자 권한 없이 됨)", "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)"),
-      link: BATTERY_REPORT_URL,
-      linkLabel: t("배터리 리포트 해석기 — 자세한 이력", "Battery report reader — full history"),
     });
     if (hp != null && hp < BATTERY_LOOK)
       look(last(), t(`완전 충전 용량이 설계의 ${hp}% — 새것보다 사용 시간이 짧습니다(${BATTERY_LOOK}% 아래를 «볼 것» 으로 봄). 제조사 보증·교체 기준을 봅니다.`, `Full charge capacity is ${hp}% of design — shorter runtime than new (below ${BATTERY_LOOK}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.`));

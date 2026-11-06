@@ -61,7 +61,4 @@ export default {
   guide2: "Codes de fin du protocole MC, que vérifier (en anglais)",
   guidePost: ".",
   guide3: "Tester une communication protocole MC sans automate (en anglais)",
-  pcapPre: "Pour examiner une capture Wireshark ou pktmon entière (paires requête/réponse, temps de réponse, réponses manquantes), utilisez",
-  pcapLink: "l’analyseur pcap industriel (en anglais)",
-  pcapPost: ". Un clic sur une ligne ouvre la trame dans ce décodeur.",
 };

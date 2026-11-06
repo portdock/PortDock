@@ -229,7 +229,6 @@ export const TR_TEXT: Record<string, string> = {
   "Battery {a}": "Pil {a}",
   "design {a} · full charge {b}{c} · cycles {d}": "tasarım {a} · tam şarj {b}{c} · döngü {d}",
   "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)": "Komut İstemi'nde powercfg /batteryreport ile oluşturulan battery-report.html (yönetici hakları gerekmez)",
-  "Battery report reader — full history": "Pil raporu okuyucu — tüm geçmiş",
   "Full charge capacity is {a}% of design — shorter runtime than new (below {b}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.": "Tam şarj kapasitesi tasarımın {a}%'i — yeniye göre daha kısa çalışma süresi ({b}% altı «Bakmaya değer» olarak işaretlenir). Üreticinin garanti ve değişim koşullarını kontrol edin.",
   "Programs and drivers keeping the PC awake (powercfg /requests)": "PC'yi uyanık tutan programlar ve sürücüler (powercfg /requests)",
   "Microsoft Defender exclusion list": "Microsoft Defender dışlama listesi",

@@ -7,21 +7,17 @@ import integer from "./pages/integer.ts";
 import modbusBlocks from "./pages/modbusBlocks.ts";
 import modbusPractice from "./pages/modbusPractice.ts";
 import mqttDecoder from "./pages/mqttDecoder.ts";
-import pcapAnalyzer from "./pages/pcapAnalyzer.ts";
 import spi from "./pages/spi.ts";
 import uartWaveform from "./pages/uartWaveform.ts";
 import webSerial from "./pages/webSerial.ts";
-import logicCapture from "./pages/logicCapture.ts";
 import libAscii from "./lib/ascii.ts";
 import libIntConv from "./lib/intConv.ts";
 import libModbusBlocks from "./lib/modbusBlocks.ts";
 import libModbusQuiz from "./lib/modbusQuiz.ts";
 import libMqttDecode from "./lib/mqttDecode.ts";
-import libPcap from "./lib/pcap.ts";
 import libSpi from "./lib/spi.ts";
 import libUartWave from "./lib/uartWave.ts";
 import libWebSerial from "./lib/webSerial.ts";
-import libLogic from "./lib/logic.ts";
 
 export default {
   /** 웹 도구 이름·한 줄 소개(webTools.ts 의 name·blurb) */
@@ -32,11 +28,9 @@ export default {
     "tools/modbus-blocks/": { name: "Gộp lệnh đọc Modbus", blurb: "Danh sách địa chỉ → lệnh hỏi theo mã hàm. Giới hạn 125 thanh ghi, khoảng trống cho phép, thanh ghi không dùng, chu kỳ polling RTU và số byte." },
     "tools/modbus-practice/": { name: "Bài tập trắc nghiệm Modbus", blurb: "Câu hỏi tự sinh cho người mới — HEX của lệnh đọc, giá trị 40003 trong phản hồi, ngoại lệ 83 02, thứ tự byte CRC, float ABCD và CDAB. Có lời giải, liên kết hướng dẫn và điểm." },
     "tools/mqtt-decoder/": { name: "Giải mã payload MQTT (Sparkplug B)", blurb: "HEX, Base64 hoặc văn bản → JSON đã định dạng, metric Sparkplug B (tên, alias, kiểu, giá trị), gói MQTT thô (header, topic, QoS, packet ID)." },
-    "tools/pcap-analyzer/": { name: "Phân tích pcap truyền thông công nghiệp", blurb: "Bản ghi Wireshark hoặc pktmon → cặp lệnh hỏi/phản hồi Modbus TCP và MC, thời gian phản hồi, lần không phản hồi, mã ngoại lệ và mã kết thúc. Chỉ trong trình duyệt." },
     "tools/spi/": { name: "Trợ giúp chế độ SPI (dạng sóng CPOL/CPHA)", blurb: "Chế độ 0–3 → dạng sóng SCK, MOSI, MISO, CS với sườn lấy mẫu và sườn dịch, các bit của byte (MSB/LSB trước), thời gian truyền, cách ghi của các hãng (CKE, UCCKPH)." },
     "tools/uart-waveform/": { name: "Vẽ dạng sóng UART", blurb: "Văn bản hoặc hex → dạng sóng bit start, dữ liệu (LSB trước), parity, stop ở mức TTL hoặc RS-232, thời gian bit và khung, độ rộng xung → tốc độ baud chuẩn." },
     "tools/web-serial/": { name: "Terminal serial trên web", blurb: "Mở cổng COM ngay trên trình duyệt. Xem HEX/ASCII, thêm checksum và ký tự xuống dòng, lưu log." },
-    "tools/logic-capture/": { name: "Giải mã bản ghi logic analyzer (UART, SPI, I2C, CAN)", blurb: "CSV của sigrok/PulseView, CSV của Saleae Logic 2 hoặc VCD → chọn kênh và giải mã UART (ước lượng baud), SPI chế độ 0–3, I2C địa chỉ/ACK, CAN (nhồi bit, CRC); dạng sóng nhỏ, bảng, CSV. Chỉ trong trình duyệt." },
   } satisfies Record<Scope4Path, { name: string; blurb: string }>,
 
   /** 라이브러리·화면 스크립트 문구 묶음(쪽의 Base libText 로 고른 묶음만 싣는다) */
@@ -46,13 +40,11 @@ export default {
     modbusBlocks: libModbusBlocks,
     modbusQuiz: libModbusQuiz,
     mqttDecode: libMqttDecode,
-    pcap: libPcap,
     spi: libSpi,
     uartWave: libUartWave,
     webSerial: libWebSerial,
-    logic: libLogic,
   },
 
   /** 쪽 글 */
-  pages: { ascii, hexAscii, integer, modbusBlocks, modbusPractice, mqttDecoder, pcapAnalyzer, spi, uartWaveform, webSerial, logicCapture } satisfies Record<Page4Id, unknown>,
+  pages: { ascii, hexAscii, integer, modbusBlocks, modbusPractice, mqttDecoder, spi, uartWaveform, webSerial } satisfies Record<Page4Id, unknown>,
 };

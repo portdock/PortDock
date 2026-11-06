@@ -252,7 +252,6 @@ export default {
       ],
       checks: [
         "Decodifique os bytes trocados no decodificador de quadros Modbus para ver o MBAP e o Unit ID",
-        "Capture com Wireshark ou pktmon e confira respostas e tempos no analisador de pcap",
       ],
     },
     "r-tcp-exception": {
@@ -592,7 +591,6 @@ export default {
       ],
       checks: [
         "Decodifique campo a campo os bytes enviados no decodificador do protocolo MC",
-        "Capture com Wireshark ou pktmon e confira os pares requisição/resposta no analisador de pcap",
       ],
     },
     "r-mc-values": {

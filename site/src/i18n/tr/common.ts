@@ -64,13 +64,7 @@ export default {
       scpi: "Ölçü aletini (SCPI) kumanda etmek ve ölçümleri kaydetmek",
       pc: "PC bağlantı sorunları — COM port, ağ bağdaştırıcısı, Wi-Fi, Bluetooth",
       mcp: "Cihazları bir yapay zekâ istemcisinden okumak (MCP)",
-      pcap: "Trafik kaydını (pcap) incelemek — yanıt süreleri, gelmeyen yanıtlar",
     },
-    notes: {
-      "pcap:tcp": "HMI ile PLC arasına aktarıcı (relay) olarak girip pcap kaydedin — Wireshark gerekmez",
-    },
-    pcapName: "pcap çözümleyici (İngilizce)",
-    pcapNote: "Wireshark veya pktmon kayıtları doğrudan tarayıcıda, kurulum yok — Modbus TCP ve MC istek/yanıt çiftleri",
     hwTitle: "Mikrofon, klavye, fare, web kamerası veya monitör testi",
     hwName: "PC donanım testleri",
     hwNote: (n: number) => `Windows programı değil, doğrudan tarayıcıda çalışır, kurulum yok (${n} test)`,

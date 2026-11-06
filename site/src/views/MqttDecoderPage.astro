@@ -9,7 +9,6 @@ import UseNotice from "../components/UseNotice.astro";
 import { LABELS } from "../lib/mqttDecode";
 import type { SiteLang } from "../i18n/langs";
 import { page4 } from "../i18n";
-import { weave } from "../i18n/names";
 import { tx } from "../lib/tr";
 import { ui, link } from "../lib/i18n";
 
@@ -94,7 +93,6 @@ const L =
         flags: "표시",
         err: { empty: "붙여 넣은 내용이 없습니다.", hex: "HEX 로 읽을 수 없습니다(16진 글자 두 개씩).", base64: "Base64 로 읽을 수 없습니다." },
       },
-      pcap: ["Modbus TCP·MC 프로토콜 캡처는 ", "산업 통신 pcap 해석기", " 를 씁니다."],
     }
   : lang === "en"
   ? {
@@ -160,12 +158,8 @@ const L =
         flags: "Flags",
         err: { empty: "Nothing to decode.", hex: "Not valid HEX (two hex digits per byte).", base64: "Not valid Base64." },
       },
-      pcap: ["For Modbus TCP and MC protocol captures, use the ", "Industrial pcap Analyzer", "."],
     }
-  : (() => {
-      const d = page4(lang, "mqttDecoder");
-      return { ...d, pcap: weave(lang, d.pcap, ["tools/pcap-analyzer/"]) };
-    })();
+  : page4(lang, "mqttDecoder");
 const labels = Object.fromEntries(Object.entries(LABELS).map(([k, v]) => [k, tx(v, lang)]));
 const ld = {
   "@context": "https://schema.org",
@@ -228,10 +222,6 @@ const ld = {
       <h2>{L.appTitle}</h2>
       <p>
         {L.app1} <a href={link(lang, "tcp/")}>PortDock TCP</a> {L.app2}
-      </p>
-      <p>
-        {L.pcap[0]}
-        <a href={link(lang, "tools/pcap-analyzer/")}>{L.pcap[1]}</a>{L.pcap[2]}
       </p>
       <h2>{L.faqTitle}</h2>
       {

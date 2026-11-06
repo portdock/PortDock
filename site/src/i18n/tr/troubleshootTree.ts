@@ -195,7 +195,7 @@ export default {
         "Ağ geçidinin RTU tarafı (baud, bağlantı) çalışmıyor — isteği düşürüyor ya da 0B istisnasını döndürüyor",
         "Cihazın desteklemediği bir fonksiyon kodu",
       ],
-      checks: ["MBAP’ı ve Unit ID’yi görmek için alışverişteki baytları Modbus çerçeve çözücüde çözün", "Wireshark ya da pktmon ile yakalayın; yanıtları ve zamanlamayı pcap çözümleyiciyle kontrol edin"],
+      checks: ["MBAP’ı ve Unit ID’yi görmek için alışverişteki baytları Modbus çerçeve çözücüde çözün"],
     },
     "r-tcp-exception": {
       title: "Cihaz istisnayla yanıt veriyor — adres, fonksiyon ya da adet",
@@ -355,7 +355,7 @@ export default {
     "r-mc-frame": {
       title: "Çerçeve biçimi uyuşmuyor, bu yüzden PLC sessiz kalıyor",
       causes: ["3E/4E çerçeve ya da binary/ASCII PLC ayarından farklı", "Başlık değerleri (ağ no., PC no., hedef modül) ya da veri uzunluğu yanlış", "PLC TCP beklerken UDP kullanılıyor (ya da tersi)"],
-      checks: ["Gönderilen baytları MC protokolü çözücüde alan alan çözün", "Wireshark ya da pktmon ile yakalayıp istek/yanıt çiftlerini pcap çözümleyicide kontrol edin"],
+      checks: ["Gönderilen baytları MC protokolü çözücüde alan alan çözün"],
     },
     "r-mc-values": {
       title: "Yanıtlar geliyor ama değerler yanlış görünüyor — cihaz numaraları ya da birimler",

@@ -30,7 +30,4 @@ export default {
   guidePre: "Pour une explication octet par octet, voir le guide ",
   guideMid: " ; pour les adresses, voir ",
   guidePost: ".",
-  pcapPre: "Pour examiner une capture Wireshark ou pktmon entière (paires requête/réponse, temps de réponse, réponses manquantes), utilisez",
-  pcapLink: "l’analyseur pcap industriel (en anglais)",
-  pcapPost: ". Un clic sur une ligne ouvre la trame dans ce décodeur.",
 };

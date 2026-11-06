@@ -1,4 +1,4 @@
-// MQTT 페이로드 디코더(views/MqttDecoderPage.astro) — 4차 묶음. m = 화면 스크립트가 쓰는 결과 문구, pcap = pcap 해석기 링크의 앞·뒤 조각
+// MQTT 페이로드 디코더(views/MqttDecoderPage.astro) — 4차 묶음. m = 화면 스크립트가 쓰는 결과 문구
 export default {
   title: "MQTT ペイロードデコーダ(Sparkplug B)",
   seo: "MQTT ペイロードデコーダ — Sparkplug B・HEX を解析 — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "フラグ",
     err: { empty: "貼り付けた内容がありません。", hex: "HEX として読めません(16 進 2 文字ずつ)。", base64: "Base64 として読めません。" },
   },
-  pcap: ["Modbus TCP・MC プロトコルのキャプチャは ", " で解析します。"],
 };

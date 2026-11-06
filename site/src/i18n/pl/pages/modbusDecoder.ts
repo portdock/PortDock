@@ -31,7 +31,4 @@ export default {
   guidePre: "Omówienie bajt po bajcie znajdziesz w poradniku ",
   guideMid: ", a o adresach — w ",
   guidePost: ".",
-  pcapPre: "Aby obejrzeć cały zapis z Wiresharka lub pktmon (pary zapytanie/odpowiedź, czasy odpowiedzi, brakujące odpowiedzi), użyj narzędzia ",
-  pcapLink: "Analizator pcap dla komunikacji przemysłowej (po angielsku)",
-  pcapPost: ". Kliknięcie wiersza w jego tabeli otwiera tę ramkę w tym dekoderze.",
 };

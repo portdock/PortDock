@@ -229,7 +229,6 @@ export const PL_TEXT: Record<string, string> = {
   "Battery {a}": "Bateria {a}",
   "design {a} · full charge {b}{c} · cycles {d}": "projektowa {a} · pełne naładowanie {b}{c} · cykle {d}",
   "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)": "battery-report.html utworzony poleceniem powercfg /batteryreport w Wierszu polecenia (bez uprawnień administratora)",
-  "Battery report reader — full history": "Czytnik raportu baterii — pełna historia",
   "Full charge capacity is {a}% of design — shorter runtime than new (below {b}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.": "Pojemność pełnego naładowania to {a}% projektowej — krótszy czas pracy niż nowa (poniżej {b}% oznaczane «Warto sprawdzić»). Sprawdź gwarancję i kryteria wymiany producenta.",
   "Programs and drivers keeping the PC awake (powercfg /requests)": "Programy i sterowniki, które nie pozwalają PC zasnąć (powercfg /requests)",
   "Microsoft Defender exclusion list": "Lista wykluczeń Microsoft Defender",

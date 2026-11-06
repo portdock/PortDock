@@ -1,4 +1,4 @@
-// Dekoder payload MQTT (views/MqttDecoderPage.astro) — paket ke-4. m = teks hasil untuk skrip halaman, pcap = potongan sebelum/sesudah tautan penganalisis pcap
+// Dekoder payload MQTT (views/MqttDecoderPage.astro) — paket ke-4. m = teks hasil untuk skrip halaman
 export default {
   title: "Dekoder payload MQTT (Sparkplug B)",
   seo: "Dekoder Payload MQTT Online: Sparkplug B dan Hex — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "Flag",
     err: { empty: "Tidak ada yang bisa diuraikan.", hex: "Bukan HEX yang valid (dua digit hex per byte).", base64: "Bukan Base64 yang valid." },
   },
-  pcap: ["Untuk tangkapan Modbus TCP dan MC protocol, pakai ", "."],
 };

@@ -61,7 +61,4 @@ export default {
   guide2: "Códigos de término do protocolo MC: o que conferir (em inglês)",
   guidePost: ".",
   guide3: "Testar a comunicação do protocolo MC sem CLP (em inglês)",
-  pcapPre: "Para examinar uma captura inteira do Wireshark ou do pktmon (pares requisição/resposta, tempos de resposta, falta de resposta), use o ",
-  pcapLink: "analisador de pcap industrial (em inglês)",
-  pcapPost: ". Clicar numa linha da tabela de lá abre aquele quadro neste decodificador.",
 };

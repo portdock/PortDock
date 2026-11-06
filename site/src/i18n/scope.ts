@@ -1,6 +1,6 @@
 // 추가 언어(ja 등)로 번역하는 쪽 — 목록은 여기 한 곳에서만 정한다.
 //   SCOPE  = 1차 묶음: 모든 추가 언어가 갖는 쪽(언어를 붙일 때 다 번역한다).
-//   SCOPE2 = 2차 묶음(산업 웹 도구 10개), SCOPE3 = 3차 묶음(PC 하드웨어 테스트 웹 도구 10개), SCOPE4 = 4차 묶음(통신 웹 도구 11개),
+//   SCOPE2 = 2차 묶음(산업 웹 도구 10개), SCOPE3 = 3차 묶음(PC 하드웨어 테스트 웹 도구 9개), SCOPE4 = 4차 묶음(통신 웹 도구 9개),
 //   SCOPE5 = 5차 묶음(신호·단위·네트워크 웹 도구 12개), SCOPE6 = 6차 묶음(전기 웹 도구 15개), SCOPE7 = 7차 묶음(기계·배선 작업·문서 웹 도구 15개),
 //   SCOPE8 = 8차 묶음(윈도우 프로그램 소개 13쪽 — 사용법 쪽은 아직 아님), SCOPE9 = 9차 묶음(장비 레지스터 맵 — 목록 1쪽 + 장비마다 1쪽, 장비 목록은 data/devices 에서)
 //   — 묶음마다 사전 파일이 따로(i18n/<언어>/batch2.ts·batch3.ts·batch4.ts·batch5.ts·batch6.ts·batch7.ts·batch8.ts·batch9.ts).
@@ -47,7 +47,7 @@ export const SCOPE2 = {
   "tools/cable-selection/": "cableSelection",
 } as const;
 
-/** 3차 묶음 — PC 하드웨어 테스트 웹 도구 10개(i18n/<언어>/batch3.ts 의 pages/<쪽 이름>) */
+/** 3차 묶음 — PC 하드웨어 테스트 웹 도구 9개(i18n/<언어>/batch3.ts 의 pages/<쪽 이름>) */
 export const SCOPE3 = {
   "tools/mic-test/": "micTest",
   "tools/keyboard-test/": "keyboardTest",
@@ -57,11 +57,10 @@ export const SCOPE3 = {
   "tools/gamepad-test/": "gamepadTest",
   "tools/monitor-test/": "monitorTest",
   "tools/bsod-codes/": "bsodCodes",
-  "tools/battery-report/": "batteryReport",
   "tools/barcode-scanner-test/": "barcodeTest",
 } as const;
 
-/** 4차 묶음 — 통신 웹 도구 11개(i18n/<언어>/batch4.ts 의 pages/<쪽 이름>) */
+/** 4차 묶음 — 통신 웹 도구 9개(i18n/<언어>/batch4.ts 의 pages/<쪽 이름>) */
 export const SCOPE4 = {
   "tools/ascii/": "ascii",
   "tools/hex-ascii/": "hexAscii",
@@ -69,11 +68,9 @@ export const SCOPE4 = {
   "tools/modbus-blocks/": "modbusBlocks",
   "tools/modbus-practice/": "modbusPractice",
   "tools/mqtt-decoder/": "mqttDecoder",
-  "tools/pcap-analyzer/": "pcapAnalyzer",
   "tools/spi/": "spi",
   "tools/uart-waveform/": "uartWaveform",
   "tools/web-serial/": "webSerial",
-  "tools/logic-capture/": "logicCapture",
 } as const;
 
 /** 5차 묶음 — 신호·단위·네트워크 웹 도구 12개(i18n/<언어>/batch5.ts 의 pages/<쪽 이름>) */

@@ -1,4 +1,4 @@
-// MQTT 페이로드 디코더(views/MqttDecoderPage.astro) — 4차 묶음. m = 화면 스크립트가 쓰는 결과 문구, pcap = pcap 해석기 링크의 앞·뒤 조각
+// MQTT 페이로드 디코더(views/MqttDecoderPage.astro) — 4차 묶음. m = 화면 스크립트가 쓰는 결과 문구
 // Termini: payload, topic, broker, metriche (Sparkplug), packet ID — uso corrente in italiano
 export default {
   title: "Decodificatore di payload MQTT (Sparkplug B)",
@@ -63,5 +63,4 @@ export default {
     flags: "Flag",
     err: { empty: "Niente da decodificare.", hex: "HEX non valido (due cifre esadecimali per byte).", base64: "Base64 non valido." },
   },
-  pcap: ["Per le catture Modbus TCP e protocollo MC usate l'", "."],
 };

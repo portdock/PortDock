@@ -30,7 +30,4 @@ export default {
   guidePre: "Eine Erklärung Byte für Byte finden Sie in ",
   guideMid: ", zu Adressen in ",
   guidePost: ".",
-  pcapPre: "Um einen ganzen Mitschnitt aus Wireshark oder pktmon anzusehen (Anfrage/Antwort-Paare, Antwortzeiten, fehlende Antworten), nutzen Sie den ",
-  pcapLink: "pcap-Analyzer für Industrieprotokolle (Englisch)",
-  pcapPost: ". Ein Klick auf eine Zeile dort öffnet das Telegramm in diesem Decoder.",
 };

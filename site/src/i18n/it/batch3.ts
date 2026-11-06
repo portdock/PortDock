@@ -1,4 +1,4 @@
-// 이탈리아어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 10개, scope.ts SCOPE3). 기준판 ja/batch3.ts 를 본떠 영어판에서 옮겼다(site/I18N.md «3차 묶음 붙이는 법»).
+// 이탈리아어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 9개, scope.ts SCOPE3). 기준판 ja/batch3.ts 를 본떠 영어판에서 옮겼다(site/I18N.md «3차 묶음 붙이는 법»).
 // webTools = 도구 이름·한 줄 소개, hwPrivacy = 하드웨어 테스트 쪽 개인정보 줄(components/HwPrivacy.astro), lib = 라이브러리·화면 스크립트 문구(영어 문장 → 번역), pages = 쪽 글
 import type { Page3Id, Scope3Path } from "../scope.ts";
 import micTest from "./pages/micTest.ts";
@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Test del gamepad (drift degli stick e zona morta)", blurb: "Pulsanti, grilletti e assi in tempo reale, drift degli stick a riposo con la traccia, anteprima della zona morta, vibrazione dove supportata." },
     "tools/monitor-test/": { name: "Test pixel difettosi e frequenza di aggiornamento", blurb: "Colori pieni a schermo intero per pixel morti o bloccati, banding dei gradienti, frequenza di aggiornamento stimata, barra in movimento per il ghosting." },
     "tools/bsod-codes/": { name: "Codici di arresto della schermata blu (BSOD)", blurb: "Incollate un codice come 0xD1 o 0x133, un nome o un messaggio dell'evento 1001: significato, cause possibili, cosa controllare e pagina Microsoft." },
-    "tools/battery-report/": { name: "Lettore del report della batteria del portatile", blurb: "Trascinate l'HTML di powercfg /batteryreport: capacità residua rispetto a quella di progetto, numero di cicli, storico della capacità. Solo nel browser." },
     "tools/barcode-scanner-test/": { name: "Test del lettore di codici a barre", blurb: "Testo letto con Invio, Tab e GS visibili, ms tra i caratteri, testo alterato da un IME coreano ripristinato, Bloc Maiusc, AI GS1." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

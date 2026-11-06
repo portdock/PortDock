@@ -1,4 +1,4 @@
-// MQTT-Payload-Decoder (views/MqttDecoderPage.astro) — 4. Paket. m = Ergebnistexte des Seitenskripts, pcap = Teile vor und nach dem Link zum pcap-Analyzer
+// MQTT-Payload-Decoder (views/MqttDecoderPage.astro) — 4. Paket. m = Ergebnistexte des Seitenskripts
 export default {
   title: "MQTT-Payload-Decoder (Sparkplug B)",
   seo: "MQTT Payload Decoder: Sparkplug B und Hex online — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "Flags",
     err: { empty: "Nichts zu decodieren.", hex: "Kein gültiges HEX (zwei Hex-Ziffern pro Byte).", base64: "Kein gültiges Base64." },
   },
-  pcap: ["Für Mitschnitte von Modbus TCP und dem MC-Protokoll nutzen Sie den ", "."],
 };

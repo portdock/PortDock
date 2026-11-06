@@ -154,7 +154,7 @@ export default {
     "r-tcp-unitid": {
       title: "Verbunden, aber keine Antwort — Unit-ID oder Gateway",
       causes: ["Falsche Unit-ID — hinter einem Gateway muss sie der RTU-Slave-Adresse entsprechen; bei direkt angeschlossenen Geräten den Wert aus dem Handbuch verwenden (1 oder 255 sind üblich)", "Die RTU-Seite des Gateways (Baudrate, Verdrahtung) scheitert — es verwirft die Anfrage oder gibt Ausnahme 0B zurück", "Ein Funktionscode, den das Gerät nicht unterstützt"],
-      checks: ["Die ausgetauschten Bytes im Modbus-Telegramm-Decoder entschlüsseln, um MBAP und Unit-ID zu sehen", "Mit Wireshark oder pktmon mitschneiden und Antworten und Zeitverhalten mit dem pcap-Analysator prüfen"],
+      checks: ["Die ausgetauschten Bytes im Modbus-Telegramm-Decoder entschlüsseln, um MBAP und Unit-ID zu sehen"],
     },
     "r-tcp-exception": {
       title: "Das Gerät antwortet mit einer Ausnahme — Adresse, Funktion oder Anzahl",
@@ -318,7 +318,7 @@ export default {
     "r-mc-frame": {
       title: "Telegrammformat passt nicht, daher schweigt die SPS",
       causes: ["3E-/4E-Telegramm oder Binär/ASCII weichen von der SPS-Einstellung ab", "Header-Werte (Netzwerk-Nr., PC-Nr., Zielmodul) oder Datenlänge falsch", "UDP wird verwendet, während die SPS TCP erwartet (oder umgekehrt)"],
-      checks: ["Die gesendeten Bytes im MC-Protokoll-Decoder Feld für Feld entschlüsseln", "Mit Wireshark oder pktmon mitschneiden und Anfrage-/Antwortpaare im pcap-Analysator prüfen"],
+      checks: ["Die gesendeten Bytes im MC-Protokoll-Decoder Feld für Feld entschlüsseln"],
     },
     "r-mc-values": {
       title: "Antworten kommen, aber die Werte sehen falsch aus — Operandennummern oder Einheiten",

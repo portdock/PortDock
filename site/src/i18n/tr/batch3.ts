@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Gamepad testi (analog çubuk kayması, ölü bölge)", blurb: "Düğmeler, tetikler ve eksenler canlı, bırakılan çubuğun kayması ve izi, ölü bölge önizlemesi ve titreşim (destekleyen tarayıcılarda)." },
     "tools/monitor-test/": { name: "Ölü piksel ve yenileme hızı testi", blurb: "Ölü ve takılı pikseller için tam ekran düz renkler, renk geçişinde bantlanma, yenileme hızı tahmini ve gölgelenmeyi gösteren hareketli çubuk." },
     "tools/bsod-codes/": { name: "Mavi ekran durdurma kodu sözlüğü", blurb: "0xD1, 0x133 gibi kodları, adları veya olay 1001 iletisini yapıştırın; anlamı, olası nedenler, kontrol sırası ve Microsoft belgeleri." },
-    "tools/battery-report/": { name: "Dizüstü pil raporu okuyucu", blurb: "powercfg /batteryreport HTML dosyasını bırakın: tasarıma göre kalan kapasite, döngü sayısı ve kapasite geçmişi grafiği. Yalnızca tarayıcıda işlenir." },
     "tools/barcode-scanner-test/": { name: "Barkod okuyucu testi", blurb: "Enter, Tab ve GS gösterilerek okunan metin, karakterler arası ms (okuyucu mu insan mı), klavye düzeni kaynaklı bozulma, Caps Lock ve GS1 AI çözümü." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

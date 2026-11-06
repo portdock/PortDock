@@ -30,7 +30,4 @@ export default {
   guidePre: "バイトごとの詳しい解説はガイド ",
   guideMid: "、アドレスの書き方は ",
   guidePost: " をご覧ください。",
-  pcapPre: "Wireshark・pktmon で取ったキャプチャファイルを丸ごと見るには(要求・応答の組、応答時間、無応答)",
-  pcapLink: "産業通信 pcap 解析ツール(英語)",
-  pcapPost: " を使ってください。表の行をクリックすると、そのフレームをこの解析ツールに渡します。",
 };

@@ -229,7 +229,6 @@ export const ID_TEXT: Record<string, string> = {
   "Battery {a}": "Baterai {a}",
   "design {a} · full charge {b}{c} · cycles {d}": "desain {a} · terisi penuh {b}{c} · siklus {d}",
   "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)": "battery-report.html yang dibuat dengan powercfg /batteryreport di Command Prompt (tanpa hak administrator)",
-  "Battery report reader — full history": "Pembaca laporan baterai — riwayat lengkap",
   "Full charge capacity is {a}% of design — shorter runtime than new (below {b}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.": "Kapasitas terisi penuh {a}% dari desain — waktu pakai lebih singkat dari baru (di bawah {b}% ditandai «Perlu dilihat»). Periksa garansi dan kriteria penggantian dari pabrikan.",
   "Programs and drivers keeping the PC awake (powercfg /requests)": "Program dan driver yang membuat PC tetap terjaga (powercfg /requests)",
   "Microsoft Defender exclusion list": "Daftar pengecualian Microsoft Defender",

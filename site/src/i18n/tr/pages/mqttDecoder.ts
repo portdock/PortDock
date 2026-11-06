@@ -1,4 +1,4 @@
-// MQTT payload çözücü (views/MqttDecoderPage.astro) — 4. paket. m = betiğin data-msg ile aldığı sonuç metinleri, pcap = bağlantının önü ve arkası (weave())
+// MQTT payload çözücü (views/MqttDecoderPage.astro) — 4. paket. m = betiğin data-msg ile aldığı sonuç metinleri
 export default {
   title: "MQTT payload çözücü (Sparkplug B)",
   seo: "MQTT payload çözücü: Sparkplug B ve hex, çevrim içi — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "Bayraklar",
     err: { empty: "Çözülecek bir şey yok.", hex: "Geçerli HEX değil (bayt başına iki hex basamağı).", base64: "Geçerli Base64 değil." },
   },
-  pcap: ["Modbus TCP ve MC protokolü kayıtları için şunu kullanın: ", "."],
 };

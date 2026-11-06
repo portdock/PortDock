@@ -1,7 +1,7 @@
 // @ts-nocheck — 앱 tsconfig 에는 node 타입이 없다. 실행: node --test shared/pcCheck.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { batteryHealth, BATTERY_REPORT_URL, BSOD_CODES_URL, bugcheckText, dur, eventsUnread, IOT_POLICY_URL, PC_ADMIN_ONLY, pcFailed, pcItems, pcLines, pcVerdict, restartLimited } from "./pcCheck.ts";
+import { batteryHealth, BSOD_CODES_URL, bugcheckText, dur, eventsUnread, IOT_POLICY_URL, PC_ADMIN_ONLY, pcFailed, pcItems, pcLines, pcVerdict, restartLimited } from "./pcCheck.ts";
 import { bundleText } from "./portinfo.ts";
 
 const ft = (ms) => `T${ms}`;
@@ -183,7 +183,7 @@ test("(0.10.0) 블루스크린·꺼짐·저장장치·깨어남·배터리", () 
   const bat = item(items, "battery-0");
   assert.equal(batteryHealth(data.batteries[0]), 72);
   assert.equal(bat.level, "look");
-  assert.equal(bat.link, BATTERY_REPORT_URL);
+  assert.equal(bat.link, undefined);
   for (const i of items) for (const x of [i.value, ...i.notes]) assert.ok(!BAN.test(x.ko), x.ko);
   // 배터리가 없으면 카드 줄이 없다, 0.9 백엔드 모양(새 칸 없음)도 깨지지 않는다
   assert.equal(pcItems(pc(), "general", ft).filter((i) => i.group === "battery").length, 0);

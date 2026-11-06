@@ -229,7 +229,6 @@ export const VI_TEXT: Record<string, string> = {
   "Battery {a}": "Pin {a}",
   "design {a} · full charge {b}{c} · cycles {d}": "thiết kế {a} · sạc đầy {b}{c} · chu kỳ {d}",
   "battery-report.html made with powercfg /batteryreport in Command Prompt (no administrator rights needed)": "battery-report.html tạo bằng powercfg /batteryreport trong Command Prompt (không cần quyền quản trị)",
-  "Battery report reader — full history": "Trình đọc báo cáo pin — toàn bộ lịch sử",
   "Full charge capacity is {a}% of design — shorter runtime than new (below {b}% is marked «Worth a look»). Check the maker's warranty and replacement criteria.": "Dung lượng sạc đầy bằng {a}% thiết kế — thời gian dùng ngắn hơn lúc mới (dưới {b}% được đánh dấu «Nên xem»). Kiểm tra điều kiện bảo hành và thay thế của nhà sản xuất.",
   "Programs and drivers keeping the PC awake (powercfg /requests)": "Chương trình và driver giữ PC thức (powercfg /requests)",
   "Microsoft Defender exclusion list": "Danh sách loại trừ của Microsoft Defender",

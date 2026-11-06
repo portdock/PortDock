@@ -64,13 +64,7 @@ export default {
       scpi: "計測器(SCPI)の制御・測定の記録",
       pc: "PC の接続の問題 — COM ポート・LAN アダプター・Wi-Fi・Bluetooth",
       mcp: "AI から機器を読む(MCP)",
-      pcap: "通信ログの解析(pcap)— 応答時間・無応答",
     },
-    notes: {
-      "pcap:tcp": "Wireshark なしで HMI と PLC の間に入って中継し、pcap で保存",
-    },
-    pcapName: "pcap 解析ツール(英語)",
-    pcapNote: "Wireshark・pktmon のキャプチャをブラウザで直接(インストール不要)— Modbus TCP・MC の要求/応答の組",
     hwTitle: "マイク・キーボード・マウス・Web カメラ・モニターの試験",
     hwName: "PC ハードウェアテスト",
     hwNote: (n: number) => `Windows ソフトではなくブラウザですぐ使えます(インストール不要)— ${n} 種類`,

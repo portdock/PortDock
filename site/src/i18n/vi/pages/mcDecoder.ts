@@ -61,7 +61,4 @@ export default {
   guide2: "Mã kết thúc giao thức MC: cần kiểm tra gì (tiếng Anh)",
   guidePost: ".",
   guide3: "Thử truyền thông giao thức MC không cần PLC (tiếng Anh)",
-  pcapPre: "Để xem cả một bản ghi Wireshark hoặc pktmon (cặp hỏi/đáp, thời gian phản hồi, lệnh không được trả lời), dùng ",
-  pcapLink: "Trình phân tích pcap cho giao thức công nghiệp (tiếng Anh)",
-  pcapPost: ". Bấm vào một dòng ở đó sẽ mở khung đó trong bộ giải mã này.",
 };

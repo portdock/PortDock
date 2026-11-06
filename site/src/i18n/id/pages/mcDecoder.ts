@@ -61,7 +61,4 @@ export default {
   guide2: "End code MC protocol: apa yang perlu diperiksa (bahasa Inggris)",
   guidePost: ".",
   guide3: "Menguji komunikasi MC protocol tanpa PLC (bahasa Inggris)",
-  pcapPre: "Untuk melihat seluruh rekaman Wireshark atau pktmon (pasangan request/respons, waktu respons, respons yang hilang), pakai ",
-  pcapLink: "penganalisis pcap protokol industri (bahasa Inggris)",
-  pcapPost: ". Mengklik satu baris di sana membuka frame itu di dekoder ini.",
 };

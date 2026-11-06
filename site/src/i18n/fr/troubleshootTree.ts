@@ -236,7 +236,6 @@ export default {
       ],
       checks: [
         "Décodez les octets échangés dans le décodeur de trames Modbus pour voir le MBAP et l’identifiant d’unité",
-        "Capturez avec Wireshark ou pktmon et vérifiez réponses et temps avec l’analyseur pcap",
       ],
     },
     "r-tcp-exception": {
@@ -514,7 +513,6 @@ export default {
       ],
       checks: [
         "Décodez champ par champ les octets envoyés dans le décodeur de protocole MC",
-        "Capturez avec Wireshark ou pktmon et vérifiez les paires requête/réponse dans l’analyseur pcap",
       ],
     },
     "r-mc-values": {

@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Gamepad testen (Stick-Drift und Deadzone)", blurb: "Tasten, Trigger und Achsen live, Stick-Drift in Ruhe mit Spur, Deadzone-Vorschau, Vibration, wo unterstützt." },
     "tools/monitor-test/": { name: "Pixelfehler- und Hz-Test", blurb: "Vollbild-Volltonfarben für tote oder hängende Pixel, Banding im Verlauf, geschätzte Bildwiederholrate, bewegter Balken für Schlieren." },
     "tools/bsod-codes/": { name: "Bluescreen-Stoppcodes nachschlagen", blurb: "Code wie 0xD1 oder 0x133, Namen oder Meldung von Ereignis 1001 einfügen: Bedeutung, mögliche Ursachen, Prüfschritte und Microsoft-Seite." },
-    "tools/battery-report/": { name: "Laptop-Akkubericht auslesen", blurb: "Die HTML von powercfg /batteryreport ablegen: Restkapazität gegenüber Auslegung, Ladezyklen, Kapazitätsverlauf. Nur im Browser." },
     "tools/barcode-scanner-test/": { name: "Barcodescanner testen", blurb: "Gescannter Text mit sichtbarem Enter, Tab und GS, ms zwischen Zeichen, Präfix/Suffix, Caps Lock, GS1-AIs ausgewertet." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

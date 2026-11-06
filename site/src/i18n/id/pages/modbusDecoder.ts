@@ -30,7 +30,4 @@ export default {
   guidePre: "Penjelasan byte demi byte ada di ",
   guideMid: "; tentang alamat, lihat ",
   guidePost: ".",
-  pcapPre: "Untuk melihat seluruh rekaman Wireshark atau pktmon (pasangan request/respons, waktu respons, respons yang hilang), pakai ",
-  pcapLink: "penganalisis pcap protokol industri (bahasa Inggris)",
-  pcapPost: ". Mengklik satu baris di sana membuka frame itu di dekoder ini.",
 };

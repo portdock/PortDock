@@ -30,7 +30,4 @@ export default {
   guidePre: "Bayt bayt açıklama için bkz. ",
   guideMid: "; adresler için bkz. ",
   guidePost: ".",
-  pcapPre: "Wireshark veya pktmon kaydının tamamına bakmak için (istek/yanıt çiftleri, yanıt süreleri, gelmeyen yanıtlar) şunu kullanın: ",
-  pcapLink: "endüstriyel pcap çözümleyici (İngilizce)",
-  pcapPost: ". Oradaki bir satıra tıklamak o çerçeveyi bu çözücüde açar.",
 };

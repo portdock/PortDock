@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Tes Gamepad (Stick Drift & Dead Zone)", blurb: "Tombol, trigger, dan sumbu secara langsung, stick drift saat dilepas dengan jejaknya, pratinjau dead zone, getar jika didukung." },
     "tools/monitor-test/": { name: "Tes Dead Pixel & Refresh Rate", blurb: "Warna polos layar penuh untuk dead pixel atau stuck pixel, banding gradasi, perkiraan refresh rate, pola gerak untuk ghosting." },
     "tools/bsod-codes/": { name: "Kamus Kode Stop Layar Biru (BSOD)", blurb: "Tempel kode seperti 0xD1 atau 0x133, nama, atau pesan Event 1001 untuk arti, kemungkinan penyebab, apa yang diperiksa, dan halaman Microsoft." },
-    "tools/battery-report/": { name: "Penganalisis Laporan Baterai Laptop", blurb: "Jatuhkan HTML powercfg /batteryreport untuk sisa kapasitas dibanding desain, jumlah siklus, dan grafik riwayat kapasitas. Hanya di browser Anda." },
     "tools/barcode-scanner-test/": { name: "Tes Pemindai Barcode", blurb: "Teks hasil pindai dengan Enter, Tab, dan GS terlihat, ms antarkarakter, pemulihan teks yang kacau karena IME Korea, Caps Lock, AI GS1." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** Teks halaman */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

@@ -195,7 +195,7 @@ export default {
         "Phía RTU của gateway (baud, dây) không chạy — gateway bỏ lệnh hỏi hoặc trả ngoại lệ 0B",
         "Mã hàm mà thiết bị không hỗ trợ",
       ],
-      checks: ["Giải mã các byte trao đổi bằng công cụ giải mã khung Modbus để xem MBAP và Unit ID", "Bắt gói bằng Wireshark hoặc pktmon và kiểm tra phản hồi và thời gian bằng trình phân tích pcap"],
+      checks: ["Giải mã các byte trao đổi bằng công cụ giải mã khung Modbus để xem MBAP và Unit ID"],
     },
     "r-tcp-exception": {
       title: "Thiết bị trả lời bằng ngoại lệ — địa chỉ, mã hàm hoặc số lượng",
@@ -355,7 +355,7 @@ export default {
     "r-mc-frame": {
       title: "Định dạng khung không khớp nên PLC im lặng",
       causes: ["Khung 3E/4E hoặc binary/ASCII khác với cài đặt PLC", "Giá trị header (số mạng, số PC, module đích) hoặc độ dài dữ liệu sai", "Dùng UDP trong khi PLC chờ TCP (hoặc ngược lại)"],
-      checks: ["Giải mã từng trường của các byte đã gửi bằng công cụ giải mã giao thức MC", "Bắt gói bằng Wireshark hoặc pktmon và kiểm tra các cặp hỏi/đáp bằng trình phân tích pcap"],
+      checks: ["Giải mã từng trường của các byte đã gửi bằng công cụ giải mã giao thức MC"],
     },
     "r-mc-values": {
       title: "Có phản hồi nhưng giá trị trông sai — số thiết bị hoặc đơn vị",

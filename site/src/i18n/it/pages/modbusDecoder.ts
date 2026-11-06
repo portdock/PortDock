@@ -30,7 +30,4 @@ export default {
   guidePre: "Per una spiegazione byte per byte vedete ",
   guideMid: "; per gli indirizzi ",
   guidePost: ".",
-  pcapPre: "Per esaminare un'intera cattura di Wireshark o pktmon (coppie richiesta/risposta, tempi di risposta, risposte mancanti) usate l'",
-  pcapLink: "analizzatore pcap per protocolli industriali (in inglese)",
-  pcapPost: ". Facendo clic su una riga, il frame si apre in questo decodificatore.",
 };

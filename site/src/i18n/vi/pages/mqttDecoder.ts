@@ -1,4 +1,4 @@
-// Giải mã payload MQTT (views/MqttDecoderPage.astro) — gói 4. m = câu kết quả mà script nhận qua data-msg, pcap = hai mảnh quanh liên kết (weave())
+// Giải mã payload MQTT (views/MqttDecoderPage.astro) — gói 4. m = câu kết quả mà script nhận qua data-msg
 export default {
   title: "Giải mã payload MQTT (Sparkplug B)",
   seo: "Giải mã payload MQTT online: Sparkplug B, HEX, Base64 — PortDock",
@@ -62,5 +62,4 @@ export default {
     flags: "Cờ",
     err: { empty: "Không có gì để giải mã.", hex: "HEX không hợp lệ (mỗi byte hai chữ số hex).", base64: "Base64 không hợp lệ." },
   },
-  pcap: ["Với bản ghi giao thức Modbus TCP và MC, hãy dùng ", "."],
 };

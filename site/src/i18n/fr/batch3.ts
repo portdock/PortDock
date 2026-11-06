@@ -1,4 +1,4 @@
-// 프랑스어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 10개, scope.ts SCOPE3). 기준판 ja/batch3.ts 를 본떠 영어판에서 옮겼다(site/I18N.md «3차 묶음 붙이는 법»).
+// 프랑스어 — 3차 묶음(PC 하드웨어 테스트 웹 도구 9개, scope.ts SCOPE3). 기준판 ja/batch3.ts 를 본떠 영어판에서 옮겼다(site/I18N.md «3차 묶음 붙이는 법»).
 // webTools = 도구 이름·한 줄 소개, hwPrivacy = 하드웨어 테스트 쪽 개인정보 줄(components/HwPrivacy.astro), lib = 라이브러리·화면 스크립트 문구(영어 문장 → 번역), pages = 쪽 글
 import type { Page3Id, Scope3Path } from "../scope.ts";
 import micTest from "./pages/micTest.ts";
@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Test de manette (drift des sticks et zone morte)", blurb: "Boutons, gâchettes et axes en direct, drift des sticks au repos avec trajectoire, aperçu de la zone morte, vibration selon le navigateur." },
     "tools/monitor-test/": { name: "Test des pixels morts et du taux de rafraîchissement", blurb: "Couleurs unies en plein écran pour les pixels morts ou bloqués, banding des dégradés, estimation du taux de rafraîchissement, barre mobile pour la rémanence." },
     "tools/bsod-codes/": { name: "Codes d’arrêt de l’écran bleu (BSOD)", blurb: "Collez un code comme 0xD1 ou 0x133, un nom ou un message de l’événement 1001 : signification, causes possibles, vérifications et page Microsoft." },
-    "tools/battery-report/": { name: "Lecteur de rapport de batterie pour portable", blurb: "Déposez le HTML de powercfg /batteryreport : capacité restante par rapport à la capacité nominale, nombre de cycles, historique. Uniquement dans le navigateur." },
     "tools/barcode-scanner-test/": { name: "Test de lecteur de codes-barres", blurb: "Texte scanné avec Entrée, Tab et GS visibles, ms entre caractères, texte déformé par un IME coréen restauré, Verr. Maj, AI GS1." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

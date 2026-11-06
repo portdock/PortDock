@@ -461,12 +461,10 @@ export const TREE: TreeData = {
       ],
       checks: [
         { ko: "주고받은 바이트를 Modbus 프레임 해석기로 풀어 MBAP·Unit ID 보기", en: "Decode the exchanged bytes in the Modbus frame decoder to see MBAP and Unit ID" },
-        { ko: "Wireshark·pktmon 으로 기록을 떠 pcap 해석기로 응답 유무·시간 보기", en: "Capture with Wireshark or pktmon and check replies and timing with the pcap analyzer" },
       ],
       links: [
         { k: "guide", to: "modbus-tcp-connection" },
         { k: "web", to: "tools/modbus-decoder/" },
-        { k: "web", to: "tools/pcap-analyzer/" },
         { k: "guide", to: "capture-plc-traffic-wireshark-pktmon" },
       ],
     },
@@ -1067,12 +1065,10 @@ export const TREE: TreeData = {
       ],
       checks: [
         { ko: "보낸 바이트를 MC 프로토콜 해석기로 풀어 필드마다 보기", en: "Decode the sent bytes field by field in the MC protocol decoder" },
-        { ko: "Wireshark·pktmon 으로 기록을 떠 pcap 해석기로 요청·응답 짝 보기", en: "Capture with Wireshark or pktmon and check request/reply pairs in the pcap analyzer" },
       ],
       links: [
         { k: "guide", to: "mc-protocol-3e-binary-frame" },
         { k: "web", to: "tools/mc-decoder/" },
-        { k: "web", to: "tools/pcap-analyzer/" },
         { k: "guide", to: "capture-plc-traffic-wireshark-pktmon" },
       ],
     },

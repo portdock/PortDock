@@ -9,11 +9,9 @@ import mouseTest from "./pages/mouseTest.ts";
 import gamepadTest from "./pages/gamepadTest.ts";
 import monitorTest from "./pages/monitorTest.ts";
 import bsodCodes from "./pages/bsodCodes.ts";
-import batteryReport from "./pages/batteryReport.ts";
 import barcodeTest from "./pages/barcodeTest.ts";
 import libHwSignal from "./lib/hwSignal.ts";
 import libBsod from "./lib/bsod.ts";
-import libBatteryReport from "./lib/batteryReport.ts";
 import libBarcode from "./lib/barcode.ts";
 import libInputTiming from "./lib/inputTiming.ts";
 import libKeyboardLayout from "./lib/keyboardLayout.ts";
@@ -29,7 +27,6 @@ export default {
     "tools/gamepad-test/": { name: "Kiểm tra tay cầm (drift cần analog, vùng chết)", blurb: "Nút, cò và trục theo thời gian thực, độ lệch và vết của cần analog khi thả, xem trước vùng chết và rung (trên trình duyệt hỗ trợ)." },
     "tools/monitor-test/": { name: "Kiểm tra điểm chết và tần số quét màn hình", blurb: "Màu toàn màn hình để tìm điểm chết, điểm kẹt, phân dải màu trên dải chuyển, ước lượng tần số quét và thanh chạy để xem bóng mờ." },
     "tools/bsod-codes/": { name: "Tra mã dừng màn hình xanh", blurb: "Dán mã như 0xD1, 0x133, tên mã hoặc thông báo sự kiện 1001 để xem ý nghĩa, nguyên nhân khả dĩ, thứ tự kiểm tra và tài liệu Microsoft." },
-    "tools/battery-report/": { name: "Đọc báo cáo pin laptop", blurb: "Thả tệp HTML của powercfg /batteryreport để xem dung lượng còn lại so với thiết kế, số chu kỳ và biểu đồ lịch sử dung lượng. Xử lý ngay trong trình duyệt." },
     "tools/barcode-scanner-test/": { name: "Kiểm tra máy quét mã vạch", blurb: "Chuỗi đã nhận kèm Enter, Tab, GS, khoảng cách ms giữa ký tự (máy quét hay người gõ), lỗi do bộ gõ, Caps Lock và giải mã AI GS1." },
   } satisfies Record<Scope3Path, { name: string; blurb: string }>,
 
@@ -46,12 +43,11 @@ export default {
   lib: {
     hwSignal: libHwSignal,
     bsod: libBsod,
-    batteryReport: libBatteryReport,
     barcode: libBarcode,
     inputTiming: libInputTiming,
     keyboardLayout: libKeyboardLayout,
   },
 
   /** 쪽 글 */
-  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, batteryReport, barcodeTest } satisfies Record<Page3Id, unknown>,
+  pages: { micTest, keyboardTest, webcamTest, speakerTest, mouseTest, gamepadTest, monitorTest, bsodCodes, barcodeTest } satisfies Record<Page3Id, unknown>,
 };

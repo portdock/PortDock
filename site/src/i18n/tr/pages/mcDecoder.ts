@@ -61,7 +61,4 @@ export default {
   guide2: "MC protokolü bitiş kodları: neler kontrol edilmeli (İngilizce)",
   guidePost: ".",
   guide3: "MC protokolü haberleşmesini PLC olmadan test etmek (İngilizce)",
-  pcapPre: "Wireshark veya pktmon kaydının tamamına bakmak için (istek/yanıt çiftleri, yanıt süreleri, gelmeyen yanıtlar) şunu kullanın: ",
-  pcapLink: "endüstriyel pcap çözümleyici (İngilizce)",
-  pcapPost: ". Oradaki bir satıra tıklamak o çerçeveyi bu çözücüde açar.",
 };
