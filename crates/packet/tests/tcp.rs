@@ -131,10 +131,7 @@ fn dissection_uses_analysis_for_relative_seq_and_expert() {
     let cap = open(&c);
     let prefs = Prefs::default();
     let a = Analysis::build(&cap, &prefs);
-    let ctx = Ctx {
-        prefs: &prefs,
-        analysis: Some(&a),
-    };
+    let ctx = Ctx::basic(&prefs).with_analysis(&a, &cap);
     let i = 4;
     let p = &cap.packets[i];
     let meta = Meta {
@@ -157,10 +154,7 @@ fn dissection_uses_analysis_for_relative_seq_and_expert() {
     );
     assert!(d.experts.iter().any(|e| e.key == "tcp.retransmission"));
     // 분석이 없으면 상대 번호 필드는 나오지 않는다
-    let none = Ctx {
-        prefs: &prefs,
-        analysis: None,
-    };
+    let none = Ctx::basic(&prefs);
     let d = dissect(cap.data(p), p.link, &meta, &none, Opts::FULL);
     assert!(d.get("tcp.seq").is_none() && d.get("tcp.seq_raw").is_some());
 }

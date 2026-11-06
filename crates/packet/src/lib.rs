@@ -3,7 +3,9 @@
 pub mod analysis;
 pub mod appl;
 pub mod capture;
+pub mod devmap;
 pub mod dissect;
+pub mod expert;
 pub mod fixture;
 pub mod industrial;
 mod layers;

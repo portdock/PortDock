@@ -131,6 +131,8 @@ pub struct PduRec {
     pub status: PairStatus,
     /// 응답 시간(ns). 요청·응답 양쪽에 같은 값. 없으면 -1
     pub resp_ns: i64,
+    /// Modbus: 트랜잭션 ID 는 같은데 국번(Unit ID)이 다른 짝
+    pub unit_mismatch: bool,
     pub peek: Peek,
 }
 
@@ -417,6 +419,17 @@ impl Analysis {
         a.end_ts_ns = last_ts;
         finalize_pairs(&mut a, &mut states, prefs);
         a
+    }
+
+    /// PDU 의 바이트(프레임 안 위치이면 파일에서, 조립한 것이면 보관한 바이트)
+    pub fn pdu_bytes<'a>(&'a self, cap: &'a Capture, i: usize) -> &'a [u8] {
+        let p = &self.pdus[i];
+        match &p.loc {
+            PduLoc::Owned(b) => b,
+            PduLoc::InFrame(off, len) => {
+                &cap.data(&cap.packets[p.frame as usize - 1])[*off as usize..(*off + *len) as usize]
+            }
+        }
     }
 
     /// 프레임(1부터)에서 끝난 PDU 들
@@ -804,6 +817,7 @@ fn feed_stream(
                             pair: u32::MAX,
                             status: PairStatus::Unpaired,
                             resp_ns: -1,
+                            unit_mismatch: false,
                             peek,
                         },
                         pa,
@@ -849,6 +863,7 @@ fn feed_stream(
                         pair: u32::MAX,
                         status: PairStatus::Unpaired,
                         resp_ns: -1,
+                        unit_mismatch: false,
                         peek,
                     },
                     pa,
@@ -909,6 +924,7 @@ fn feed_datagram(
                         pair: u32::MAX,
                         status: PairStatus::Unpaired,
                         resp_ns: -1,
+                        unit_mismatch: false,
                         peek,
                     },
                     pa,
@@ -969,6 +985,10 @@ fn push_pdu(a: &mut Analysis, st: &mut FlowState, rec: PduRec, pa: &mut PacketAn
             a.pdus[ri].pair = idx;
             a.pdus[ri].status = status;
             a.pdus[ri].resp_ns = dtv;
+            let mm = a.pdus[ri].app == App::Modbus
+                && a.pdus[ri].peek.unit != a.pdus[idx as usize].peek.unit;
+            a.pdus[ri].unit_mismatch = mm;
+            a.pdus[idx as usize].unit_mismatch = mm;
             a.pdus[idx as usize].pair = ri as u32;
             a.pdus[idx as usize].status = status;
             a.pdus[idx as usize].resp_ns = dtv;

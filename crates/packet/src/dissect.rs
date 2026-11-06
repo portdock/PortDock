@@ -5,6 +5,8 @@
 //! 지연 해석: `Depth` 까지만 푼다(필터가 `ip.addr` 만 쓰면 TCP 이하는 풀지 않는다). 트리·열 글자는 요청할 때만 만든다.
 
 use crate::analysis::Analysis;
+use crate::capture::Capture;
+use crate::devmap::RegisterNamer;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -43,6 +45,8 @@ pub struct ExpertInfo {
     pub severity: Severity,
     /// 평문 설명 표(`expert::explain`)의 열쇠
     pub key: &'static str,
+    /// 예외·종료·오류 코드(없으면 0)
+    pub code: u32,
     pub text: String,
     pub start: u32,
     pub len: u32,
@@ -281,6 +285,30 @@ pub fn tcp_flag_names(fl: u16) -> String {
 pub struct Ctx<'a> {
     pub prefs: &'a Prefs,
     pub analysis: Option<&'a Analysis>,
+    /// 짝 요청의 바이트를 찾는 데 쓴다(응답 해석에 요청이 필요한 프로토콜)
+    pub capture: Option<&'a Capture>,
+    /// 장비 맵 — 레지스터 주소를 이름으로
+    pub namer: Option<&'a dyn RegisterNamer>,
+}
+
+impl<'a> Ctx<'a> {
+    pub fn basic(prefs: &'a Prefs) -> Ctx<'a> {
+        Ctx {
+            prefs,
+            analysis: None,
+            capture: None,
+            namer: None,
+        }
+    }
+    pub fn with_analysis(mut self, a: &'a Analysis, cap: &'a Capture) -> Ctx<'a> {
+        self.analysis = Some(a);
+        self.capture = Some(cap);
+        self
+    }
+    pub fn with_namer(mut self, n: &'a dyn RegisterNamer) -> Ctx<'a> {
+        self.namer = Some(n);
+        self
+    }
 }
 
 pub struct Dz<'a> {
@@ -401,6 +429,18 @@ impl<'a> Dz<'a> {
         s: usize,
         l: usize,
     ) {
+        self.expert_c(sev, key, 0, text, s, l);
+    }
+
+    pub(crate) fn expert_c(
+        &mut self,
+        sev: Severity,
+        key: &'static str,
+        code: u32,
+        text: impl Into<String>,
+        s: usize,
+        l: usize,
+    ) {
         let text = text.into();
         let (s, l) = self.rng(s, l);
         if self.o.tree {
@@ -416,6 +456,7 @@ impl<'a> Dz<'a> {
         self.d.experts.push(ExpertInfo {
             severity: sev,
             key,
+            code,
             text,
             start: s,
             len: l,

@@ -1,13 +1,9 @@
-use portdock_packet::analysis::Analysis;
 use portdock_packet::dissect::*;
 use portdock_packet::fixture::*;
 
 fn run(frame: &[u8], link: u16, o: Opts) -> Dissection {
     let p = Prefs::default();
-    let ctx = Ctx {
-        prefs: &p,
-        analysis: None::<&Analysis>,
-    };
+    let ctx = Ctx::basic(&p);
     let meta = Meta {
         number: 3,
         ts_ns: 1_700_000_000_500_000_000,

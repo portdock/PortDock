@@ -2,11 +2,13 @@
 //!
 //! 이 모듈은 PDU 를 «자르고(frame_len) · 엿보고(peek) · 짝 맞추는(matches)» 부분이다. 칸마다 풀이는 modbus·mc·xgt 모듈.
 
-use crate::dissect::{Dz, Prefs, be16};
+use crate::dissect::{Prefs, be16};
 
 pub mod mc;
 pub mod modbus;
+mod view;
 pub mod xgt;
+pub(crate) use view::dissect_payload;
 
 /// 오류·종료·예외 코드 한 줄 — 사람 말로 풀어 쓴 원인과 점검 순서(한국어·영어)
 #[derive(Clone, Copy, Debug)]
@@ -369,7 +371,7 @@ pub fn peek(app: App, d: &[u8], req_side: bool) -> Peek {
 /// 응답이 이 요청의 짝인가
 pub fn matches(req: &Peek, resp: &Peek, app: App) -> bool {
     match app {
-        App::Modbus => req.key == resp.key && req.unit == resp.unit,
+        App::Modbus => req.key == resp.key,
         App::ModbusRtu => req.unit == resp.unit && (req.func & 0x7f) == (resp.func & 0x7f),
         App::Mc => !req.mc4e || !resp.mc4e || req.key == resp.key,
         App::Xgt => req.key == resp.key,
@@ -379,15 +381,4 @@ pub fn matches(req: &Peek, resp: &Peek, app: App) -> bool {
 /// 같은 번호가 여러 개 기다릴 때 가장 최근 요청과 짝지을지(Modbus·XGT) 가장 오래된 것과 짝지을지(MC 3E·RTU)
 pub fn match_newest_first(app: App) -> bool {
     matches!(app, App::Modbus | App::Xgt)
-}
-
-/// 응용 계층 해석 — 해석 결과 PDU 가 있으면 그것을, 없으면 이 데이터를 직접 잘라 푼다
-pub(crate) fn dissect_payload(
-    _z: &mut Dz,
-    _from: usize,
-    _end: usize,
-    _sp: u16,
-    _dp: u16,
-    _tcp: bool,
-) {
 }
