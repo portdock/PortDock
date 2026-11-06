@@ -518,7 +518,11 @@ fn modbus_view(
             }
         }
         // 규격과 다른 점은 Note 로
-        let kind_ok = modbus::decode_pdu(pdu);
+        let kind_ok = if z.o.tree {
+            modbus::decode_pdu(pdu)
+        } else {
+            Vec::new()
+        };
         for r in &kind_ok {
             for i in &r.issues {
                 if r.role != modbus::Role::Response || f7 > 4 {

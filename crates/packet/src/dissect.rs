@@ -116,21 +116,37 @@ pub struct Opts {
     pub depth: Depth,
     pub tree: bool,
     pub columns: bool,
+    /// 응용 계층 중 풀 것(`APP_*` 비트) — 필터가 DNS 필드만 쓰면 산업 프로토콜은 풀지 않는다
+    pub apps: u8,
 }
+
+pub const APP_DNS: u8 = 1;
+pub const APP_DHCP: u8 = 2;
+pub const APP_INDUSTRIAL: u8 = 4;
+pub const APP_ALL: u8 = 7;
 
 impl Opts {
     pub const FULL: Opts = Opts {
         depth: Depth::App,
         tree: true,
         columns: true,
+        apps: APP_ALL,
     };
     pub fn filter(depth: Depth) -> Opts {
         Opts {
             depth,
             tree: false,
             columns: false,
+            apps: APP_ALL,
         }
     }
+    /// 목록 한 줄(열)만 필요할 때
+    pub const COLUMNS: Opts = Opts {
+        depth: Depth::App,
+        tree: false,
+        columns: true,
+        apps: APP_ALL,
+    };
 }
 
 /// 프레임 바깥에서 오는 정보

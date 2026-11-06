@@ -1174,13 +1174,15 @@ impl<'a> Dz<'a> {
     fn application(&mut self, from: usize, end: usize, sp: u16, dp: u16, tcp: bool) {
         self.d.reached = Depth::App as u8;
         if !tcp {
-            if sp == 53 || dp == 53 {
+            if (sp == 53 || dp == 53) && self.o.apps & APP_DNS != 0 {
                 return crate::appl::dns(self, from, end);
             }
-            if (sp == 67 || sp == 68) && (dp == 67 || dp == 68) {
+            if (sp == 67 || sp == 68) && (dp == 67 || dp == 68) && self.o.apps & APP_DHCP != 0 {
                 return crate::appl::dhcp(self, from, end);
             }
         }
-        industrial::dissect_payload(self, from, end, sp, dp, tcp);
+        if self.o.apps & APP_INDUSTRIAL != 0 {
+            industrial::dissect_payload(self, from, end, sp, dp, tcp);
+        }
     }
 }

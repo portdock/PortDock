@@ -403,3 +403,15 @@ pub fn needs_analysis(name: &str) -> bool {
         )
         || name.starts_with("tcp.analysis.")
 }
+
+/// 이 필드를 보려면 풀어야 하는 응용 계층 비트(`dissect::APP_*`)
+pub fn apps_of(name: &str) -> u8 {
+    use crate::dissect::{APP_ALL, APP_DHCP, APP_DNS, APP_INDUSTRIAL};
+    match name.split('.').next().unwrap_or("") {
+        "dns" => APP_DNS,
+        "dhcp" => APP_DHCP,
+        "mbtcp" | "modbus" | "mc" | "xgt" => APP_INDUSTRIAL,
+        "frame" if name == "frame.protocols" => APP_ALL,
+        _ => 0,
+    }
+}

@@ -261,6 +261,7 @@ pub fn protocol_hierarchy(s: &Session, which: Option<&[u32]>) -> Vec<HierNode> {
         depth: crate::dissect::Depth::App,
         tree: false,
         columns: false,
+        apps: crate::dissect::APP_ALL,
     };
     let mut d = Dissection::default();
     for i in each(&s.cap, which) {
@@ -427,6 +428,7 @@ pub fn expert_counts(s: &Session, which: Option<&[u32]>) -> Vec<(&'static str, u
         depth: crate::dissect::Depth::App,
         tree: false,
         columns: false,
+        apps: crate::dissect::APP_ALL,
     };
     let mut d = Dissection::default();
     for i in each(&s.cap, which) {

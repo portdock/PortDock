@@ -102,6 +102,7 @@ impl Session {
             depth: f.depth(),
             tree: false,
             columns: false,
+            apps: f.apps(),
         };
         let mut d = Dissection::default();
         let mut out = Vec::new();

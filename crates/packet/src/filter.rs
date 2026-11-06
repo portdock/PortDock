@@ -93,6 +93,7 @@ pub struct Filter {
     expr: Option<Expr>,
     depth: Depth,
     needs_analysis: bool,
+    apps: u8,
     fields: Vec<&'static str>,
 }
 
@@ -833,6 +834,7 @@ impl Filter {
             expr: None,
             depth: Depth::Frame,
             needs_analysis: false,
+            apps: 0,
             fields: vec![],
         }
     }
@@ -859,7 +861,9 @@ impl Filter {
         }
         let mut depth = Depth::Frame;
         let mut na = false;
+        let mut apps = 0u8;
         for n in &p.fields {
+            apps |= fields::apps_of(n);
             depth = depth.max(fields::depth_of(n));
             na |= fields::needs_analysis(n);
         }
@@ -870,6 +874,7 @@ impl Filter {
             expr: Some(e),
             depth,
             needs_analysis: na,
+            apps,
             fields: fl,
         })
     }
@@ -877,6 +882,11 @@ impl Filter {
     /// 이 필터를 평가하려면 풀어야 하는 가장 깊은 계층(지연 해석)
     pub fn depth(&self) -> Depth {
         self.depth
+    }
+
+    /// 풀어야 하는 응용 계층(`APP_*` 비트)
+    pub fn apps(&self) -> u8 {
+        self.apps
     }
 
     /// 흐름 분석(상대 번호·재조립·요청/응답 짝)이 필요한가
