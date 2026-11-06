@@ -4,6 +4,55 @@
 
 use crate::dissect::{Dz, Prefs, be16};
 
+pub mod mc;
+pub mod modbus;
+pub mod xgt;
+
+/// 오류·종료·예외 코드 한 줄 — 사람 말로 풀어 쓴 원인과 점검 순서(한국어·영어)
+#[derive(Clone, Copy, Debug)]
+pub struct CodeInfo {
+    pub code: u32,
+    pub name_en: &'static str,
+    pub name_ko: &'static str,
+    pub cause_en: &'static str,
+    pub cause_ko: &'static str,
+    pub check_en: &'static str,
+    pub check_ko: &'static str,
+}
+
+/// «00 07 …» 꼴 HEX(대문자, 띄어쓰기)
+pub fn hex(b: &[u8]) -> String {
+    b.iter()
+        .map(|x| format!("{x:02X}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Modbus CRC-16(다항식 0xA001)
+pub fn modbus_crc(d: &[u8]) -> u16 {
+    let mut c: u16 = 0xffff;
+    for &b in d {
+        c ^= b as u16;
+        for _ in 0..8 {
+            c = if c & 1 != 0 {
+                (c >> 1) ^ 0xa001
+            } else {
+                c >> 1
+            };
+        }
+    }
+    c
+}
+
+/// 끝 2바이트가 앞 바이트들의 CRC(작은 자리 먼저)인가
+pub fn modbus_crc_ok(d: &[u8]) -> bool {
+    if d.len() < 4 {
+        return false;
+    }
+    let c = modbus_crc(&d[..d.len() - 2]);
+    d[d.len() - 2] == (c & 0xff) as u8 && d[d.len() - 1] == (c >> 8) as u8
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum App {
     Modbus,
@@ -177,7 +226,7 @@ pub fn frame_len(app: App, d: &[u8]) -> FrameLen {
                 return FrameLen::Need;
             }
             // 세그먼트 하나가 RTU 프레임 하나라고 본다 — CRC 가 맞아야 한다
-            if crate::industrial::modbus::crc_ok(d) {
+            if modbus_crc_ok(d) {
                 FrameLen::Len(d.len())
             } else {
                 FrameLen::Bad
@@ -341,31 +390,4 @@ pub(crate) fn dissect_payload(
     _dp: u16,
     _tcp: bool,
 ) {
-}
-
-pub mod modbus {
-    /// Modbus CRC-16(다항식 0xA001)
-    pub fn crc16(d: &[u8]) -> u16 {
-        let mut c: u16 = 0xffff;
-        for &b in d {
-            c ^= b as u16;
-            for _ in 0..8 {
-                c = if c & 1 != 0 {
-                    (c >> 1) ^ 0xa001
-                } else {
-                    c >> 1
-                };
-            }
-        }
-        c
-    }
-
-    /// 끝 2바이트가 앞 바이트들의 CRC(작은 자리 먼저)인가
-    pub fn crc_ok(d: &[u8]) -> bool {
-        if d.len() < 4 {
-            return false;
-        }
-        let c = crc16(&d[..d.len() - 2]);
-        d[d.len() - 2] == (c & 0xff) as u8 && d[d.len() - 1] == (c >> 8) as u8
-    }
 }
