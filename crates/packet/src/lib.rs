@@ -12,3 +12,4 @@ pub mod fixture;
 pub mod industrial;
 mod layers;
 pub mod session;
+pub mod stats;
