@@ -1,0 +1,11 @@
+[package]
+name = "portdock-capture"
+description = "PortDock Packet 캡처 — Windows 내장 PktMon API 로 실시간 패킷 캡처(Npcap 불필요), pcapng 쓰기"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+# 어댑터 목록(GetAdaptersAddresses)·pktmonapi.dll 동적 로드·관리자 여부(토큰)만 쓴다
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security", "Win32_System_LibraryLoader", "Win32_System_Threading"] }
