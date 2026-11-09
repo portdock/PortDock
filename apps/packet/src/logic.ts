@@ -124,7 +124,7 @@ export function missingChunks(first: number, last: number, size: number, have: (
 
 export const COLUMN_IDS = ["no", "time", "src", "dst", "proto", "len", "rt", "info"] as const;
 export type ColId = (typeof COLUMN_IDS)[number];
-export const DEFAULT_WIDTHS: Record<ColId, number> = { no: 64, time: 110, src: 150, dst: 150, proto: 96, len: 60, rt: 90, info: 600 };
+export const DEFAULT_WIDTHS: Record<ColId, number> = { no: 64, time: 110, src: 150, dst: 150, proto: 96, len: 60, rt: 110, info: 600 };
 export const MIN_COL = 40;
 
 export interface ColCfg {
