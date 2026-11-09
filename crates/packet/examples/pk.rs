@@ -8,6 +8,7 @@
 //!   pk export <입력> <출력.pcapng> [--filter 식]
 //!   pk bench [패킷 수]             합성 파일(임시 폴더)을 만들어 색인·필터 시간을 재고 지운다
 //!   pk gen <경로> <패킷 수>        합성 파일만 만든다(확인용 — 저장소에 넣지 않는다)
+//!   pk demo <경로>                 시연용 작은 파일(Modbus·MC·XGT 정상·예외·무응답·재전송)
 
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -28,7 +29,7 @@ fn usage() -> ! {
         include_str!("pk.rs")
             .lines()
             .skip(2)
-            .take(10)
+            .take(11)
             .map(|l| l.trim_start_matches("//!"))
             .collect::<Vec<_>>()
             .join("\n")
@@ -653,6 +654,74 @@ fn main() {
             (Some(p), Some(n)) => synth(&PathBuf::from(p), n),
             _ => usage(),
         },
+        Some("demo") => match a.get(1) {
+            Some(p) => demo(&PathBuf::from(p)),
+            None => usage(),
+        },
         _ => usage(),
     }
+}
+
+/// 작은 시연 파일 — Modbus(정상·예외·무응답)·MC(정상·C059)·XGT(정상·오류)·TCP 재전송·DNS 가 한 파일에
+fn demo(path: &PathBuf) {
+    use portdock_packet::fixture::{TcpConv, Rec, mc3e_req, mc3e_resp, pcap, xgt_req};
+    let mut recs: Vec<Rec> = Vec::new();
+    let base = 1_700_000_000.0;
+    // Modbus: 10.0.0.5 -> 10.0.0.10:502
+    let mut c = TcpConv::new([10, 0, 0, 5], 50100, [10, 0, 0, 10], 502);
+    c.handshake(base);
+    for k in 0..6u16 {
+        let t = base + 0.1 + k as f64 * 0.2;
+        c.c2s(t, &mbap(k + 1, 1, &[3, 0, 0x64, 0, 2]));
+        c.s2c(t + 0.004 + k as f64 * 0.002, &mbap(k + 1, 1, &[3, 4, 0x12, 0x34, 0, 5]));
+    }
+    c.c2s(base + 1.5, &mbap(7, 1, &[3, 0x27, 0x10, 0, 1]));
+    c.s2c(base + 1.503, &mbap(7, 1, &[0x83, 2]));
+    c.c2s(base + 1.7, &mbap(8, 1, &[3, 0, 0, 0, 1]));
+    c.c2s_at(base + 2.2, -12, &mbap(8, 1, &[3, 0, 0, 0, 1]));
+    c.s2c(base + 2.25, &mbap(8, 1, &[3, 2, 0, 9]));
+    c.c2s(base + 2.6, &mbap(9, 1, &[3, 0, 0, 0, 1]));
+    c.rst(false, base + 5.0);
+    recs.extend(c.recs(1, None));
+    // MC 3E: 10.0.0.6 -> 10.0.0.20:5007
+    let mut m = TcpConv::new([10, 0, 0, 6], 50200, [10, 0, 0, 20], 5007);
+    m.handshake(base + 0.05);
+    let rd = mc3e_req(&[0x01, 0x04, 0x00, 0x00, 0x64, 0x00, 0x00, 0xa8, 0x02, 0x00]);
+    m.c2s(base + 0.3, &rd);
+    m.s2c(base + 0.3035, &mc3e_resp(0, &[0x34, 0x12, 0x02, 0x00]));
+    m.c2s(base + 0.9, &rd);
+    m.s2c(base + 0.912, &mc3e_resp(0xc059, &[0, 0xff, 0xff, 0x03, 0x00, 0x01, 0x04, 0x00, 0x00]));
+    recs.extend(m.recs(1, None));
+    // XGT: 10.0.0.7 -> 10.0.0.30:2004
+    let mut x = TcpConv::new([10, 0, 0, 7], 50300, [10, 0, 0, 30], 2004);
+    x.handshake(base + 0.07);
+    let hdr = |inv: u16, body: &[u8]| {
+        let mut h = b"LSIS-XGT".to_vec();
+        h.extend([0, 0, 0, 1, 0xa0, 0x11]);
+        h.extend(inv.to_le_bytes());
+        h.extend((body.len() as u16).to_le_bytes());
+        h.push(0);
+        let sum = h.iter().fold(0u8, |a, &x| a.wrapping_add(x));
+        h.push(sum);
+        h.extend(body);
+        h
+    };
+    x.c2s(base + 0.4, &xgt_req(1, &[&[0x54u8, 0, 2, 0, 0, 0, 1, 0, 6, 0][..], b"%MW100"].concat()));
+    x.s2c(base + 0.409, &hdr(1, &[0x55, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0x34, 0x12]));
+    x.c2s(base + 1.1, &xgt_req(2, &[&[0x54u8, 0, 2, 0, 0, 0, 1, 0, 6, 0][..], b"%MW999"].concat()));
+    x.s2c(base + 1.118, &hdr(2, &[0x55, 0, 2, 0, 0, 0, 0xff, 0xff, 4, 0]));
+    recs.extend(x.recs(1, None));
+    // DNS
+    let dns = {
+        let mut d = vec![0x12, 0x34, 0x01, 0x00, 0, 1, 0, 0, 0, 0, 0, 0];
+        d.extend([7, b'e', b'x', b'a', b'm', b'p', b'l', b'e', 3, b'c', b'o', b'm', 0, 0, 1, 0, 1]);
+        d
+    };
+    recs.push(Rec::t(
+        base + 0.02,
+        wrap(1, &ipv4(&IpPkt { src: [10, 0, 0, 5], dst: [10, 0, 0, 1], sport: 40000, dport: 53, udp: true, payload: dns, ..Default::default() }), None),
+    ));
+    recs.sort_by(|a, b| a.t.total_cmp(&b.t));
+    std::fs::write(path, pcap(&recs, 1, false, false)).expect("write");
+    println!("wrote {} packets to {}", recs.len(), path.display());
 }
