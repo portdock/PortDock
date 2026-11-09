@@ -276,7 +276,7 @@ export interface FlatNode {
   hasKids: boolean;
 }
 
-/** 펼친 노드만 줄로 편다. 기본: 맨 위 계층은 펼침 */
+/** 펼친 노드만 줄로 편다. 기본: 계층(프로토콜)과 그 아래 한 단계(필드 묶음)까지 펼침 */
 export function flattenTree(tree: TNode[], collapsed: Set<string>, expandedDeep: Set<string>): FlatNode[] {
   const out: FlatNode[] = [];
   const walk = (nodes: TNode[], base: number[], depth: number) => {
@@ -284,7 +284,7 @@ export function flattenTree(tree: TNode[], collapsed: Set<string>, expandedDeep:
       const path = [...base, i];
       const key = pathKey(path);
       const hasKids = n.children.length > 0;
-      const defaultOpen = depth === 0 || expandedDeep.has(key);
+      const defaultOpen = depth <= 1 || expandedDeep.has(key);
       const open = hasKids && (defaultOpen ? !collapsed.has(key) : false);
       out.push({ node: n, path, depth, open, hasKids });
       if (open) walk(n.children, path, depth + 1);

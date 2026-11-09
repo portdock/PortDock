@@ -335,14 +335,15 @@ export function TreeView({ t, detail, selPath, onPick, onMenu }: TreeProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [deep, setDeep] = useState<Set<string>>(new Set());
   const tree = detail?.tree;
+  // 새 패킷: 맨 위 «Frame» 묶음은 접어 둔다(Wireshark 와 같게)
   useEffect(() => {
-    setCollapsed(new Set());
+    setCollapsed(new Set(["0"]));
     setDeep(new Set());
   }, [detail?.no]);
   const flat = useMemo(() => (tree ? flattenTree(tree, collapsed, deep) : []), [tree, collapsed, deep]);
   const toggle = (n: FlatNode) => {
     const key = pathKey(n.path);
-    if (n.depth === 0) setCollapsed((s) => (s.has(key) ? new Set([...s].filter((x) => x !== key)) : new Set(s).add(key)));
+    if (n.depth <= 1) setCollapsed((s) => (s.has(key) ? new Set([...s].filter((x) => x !== key)) : new Set(s).add(key)));
     else setDeep((s) => (s.has(key) ? new Set([...s].filter((x) => x !== key)) : new Set(s).add(key)));
   };
   const keyDown = (e: KeyboardEvent<HTMLDivElement>) => {

@@ -89,10 +89,10 @@ test("해석 트리 — 펼치기·접기·필터", () => {
   const leaf = (label, name = "", start = 0, len = 0) => ({ label, name, start, len, expert: null, children: [] });
   const tree = [{ ...leaf("Frame"), children: [leaf("a")] }, { ...leaf("Ethernet"), children: [{ ...leaf("Src", "eth.src", 6, 6), children: [leaf("x")] }] }];
   let f = flattenTree(tree, new Set(), new Set());
-  assert.deepEqual(f.map((x) => x.node.label), ["Frame", "a", "Ethernet", "Src"]);
-  assert.equal(f[3].open, false); // 둘째 단계는 기본 접힘
-  f = flattenTree(tree, new Set(["0"]), new Set(["1.0"]));
-  assert.deepEqual(f.map((x) => x.node.label), ["Frame", "Ethernet", "Src", "x"]);
+  assert.deepEqual(f.map((x) => x.node.label), ["Frame", "a", "Ethernet", "Src", "x"]);
+  assert.equal(f[3].open, true); // 둘째 단계까지 기본 펼침
+  f = flattenTree(tree, new Set(["0", "1.0"]), new Set());
+  assert.deepEqual(f.map((x) => x.node.label), ["Frame", "Ethernet", "Src"]);
   assert.deepEqual(allPaths(tree), new Set(["0", "1", "1.0"]));
   const fields = [{ name: "eth.src", start: 6, len: 6, filter: "eth.src == aa:bb:cc:dd:ee:ff" }];
   assert.deepEqual(nodeFilters(tree[1].children[0], fields), { apply: "eth.src", only: "eth.src == aa:bb:cc:dd:ee:ff" });
