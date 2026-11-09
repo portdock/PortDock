@@ -19,6 +19,8 @@
     "build:simulator": "npm run tauri build -w portdock-simulator",
     "netscan": "npm run tauri dev -w portdock-netscan",
     "build:netscan": "npm run tauri build -w portdock-netscan",
+    "packet": "npm run tauri dev -w portdock-packet",
+    "build:packet": "npm run tauri build -w portdock-packet",
     "modbus-master": "npm run tauri dev -w portdock-modbus-master",
     "build:modbus-master": "npm run tauri build -w portdock-modbus-master",
     "scpi": "npm run tauri dev -w portdock-scpi",

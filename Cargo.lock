@@ -2926,6 +2926,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-packet-app"
+version = "0.11.0"
+dependencies = [
+ "portdock-core",
+ "portdock-packet",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-window-state",
+]
+
+[[package]]
 name = "portdock-plc-simulator"
 version = "0.11.0"
 dependencies = [

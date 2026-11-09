@@ -359,6 +359,9 @@ pub static FIELDS: &[FieldDef] = &[
     c("xgt.request_frame", Uint, "Request Frame (frame number)"),
     c("xgt.response_in", Uint, "Response In (frame number)"),
     c("xgt.response_time", Float, "Time from request (seconds)"),
+    // Expert 항목 — PortDock 이 정한 이름(Wireshark 의 expert.* 와 다르다)
+    c("expert.key", Str, "Expert item key (e.g. pair.no_response, tcp.retransmission)"),
+    c("expert.severity", Str, "Expert severity (chat, note, warn, error)"),
 ];
 
 pub fn lookup(name: &str) -> Option<&'static FieldDef> {
@@ -396,7 +399,7 @@ pub fn depth_of(name: &str) -> Depth {
 /// 흐름 분석(상대 번호·재조립·짝)이 있어야 값이 나오는 필드인가
 pub fn needs_analysis(name: &str) -> bool {
     let head = name.split('.').next().unwrap_or("");
-    matches!(head, "mbtcp" | "modbus" | "mc" | "xgt")
+    matches!(head, "mbtcp" | "modbus" | "mc" | "xgt" | "expert")
         || matches!(
             name,
             "tcp.stream" | "tcp.seq" | "tcp.nxtseq" | "tcp.ack" | "tcp.window_size"
@@ -411,6 +414,7 @@ pub fn apps_of(name: &str) -> u8 {
         "dns" => APP_DNS,
         "dhcp" => APP_DHCP,
         "mbtcp" | "modbus" | "mc" | "xgt" => APP_INDUSTRIAL,
+        "expert" => APP_ALL,
         "frame" if name == "frame.protocols" => APP_ALL,
         _ => 0,
     }

@@ -469,6 +469,19 @@ impl<'a> Dz<'a> {
             };
             self.stack.last_mut().unwrap().children.push(node);
         }
+        // 표시 필터가 `expert.key == "pair.no_response"` 처럼 걸 수 있게 필드로도 둔다
+        self.d.fields.push(FieldVal {
+            name: "expert.key",
+            value: Value::Str(key.into()),
+            start: s,
+            len: l,
+        });
+        self.d.fields.push(FieldVal {
+            name: "expert.severity",
+            value: Value::Str(format!("{sev:?}").to_ascii_lowercase()),
+            start: s,
+            len: l,
+        });
         self.d.experts.push(ExpertInfo {
             severity: sev,
             key,
