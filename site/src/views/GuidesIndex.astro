@@ -32,7 +32,7 @@ const name = ko ? "가이드" : "Guides";
     </div>
   </header>
   <div class="wrap list-page" id="gd-list">
-    <ListFilter lang={lang} target="gd-list" total={GUIDES.length} placeholder={ko ? "가이드 찾기 — 예: 응답 없음, 485, 4-20, 모터" : "Find a guide — e.g. no reply, 485, 4-20, motor"} />
+    <ListFilter lang={lang} target="gd-list" total={GUIDES.filter((g) => !isHiddenSlug(g.slug)).length} placeholder={ko ? "가이드 찾기 — 예: 응답 없음, 485, 4-20, 모터" : "Find a guide — e.g. no reply, 485, 4-20, motor"} />
     <div class="grid">
       {
         GUIDES.filter((g) => !isHiddenSlug(g.slug)).map((g) => (

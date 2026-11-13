@@ -8,6 +8,7 @@ import { ui, url, link, appTagline, webToolText, isTranslated } from "../lib/i18
 import { dict } from "../i18n";
 import { SCOPE_TOOLS, toolCount } from "../i18n/scope";
 import { isCore, type SiteLang } from "../i18n/langs";
+import { isHiddenPath, isHiddenSlug } from "../data/hidden";
 import { WEB_TOOLS, webToolByPath } from "../data/webTools";
 import { POPULAR_WEB_TOOLS } from "../data/webToolGroups";
 import { appIcon } from "../lib/appIcons";
@@ -31,14 +32,15 @@ const root = new URL("/", Astro.site).href;
 const popular = core ? POPULAR_WEB_TOOLS.map(webToolByPath) : SCOPE_TOOLS.map((p) => webToolByPath(p as (typeof POPULAR_WEB_TOOLS)[number]));
 // 현장 글 6편 + PC 문제 글 2편(마이크·블루투스로 들어온 사람도 «내 사이트» 로 보이게)
 const FEATURED_GUIDES = ["modbus-no-response", "rs485-wiring", "modbus-address-notation", "4-20ma-loop", "usb-serial-disconnects", "modbus-float-word-order", "bluetooth-headphones-cutting-out-windows", "windows-microphone-not-working"];
-const hwTests = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw");
+const hwTests = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw" && !isHiddenPath(w.path));
 // 가이드는 한국어·영어만 — 추가 언어 쪽은 영어판 가이드 목록으로 잇는다
 const featured = core ? FEATURED_GUIDES.map((s) => GUIDES.find((g) => g.slug === s)).filter((g) => g !== undefined) : [];
 // 윈도우 프로그램 12종 + MCP 서버(창 없음) — 13 과 12 가 섞여 보이지 않게 둘을 나눠 적는다
 const nApps = RELEASED_TOOLS.filter((t) => t.id !== "mcp").length;
 const mcpKo = nApps < RELEASED_TOOLS.length ? " + MCP" : "";
 const mcp = nApps < RELEASED_TOOLS.length;
-const nWeb = WEB_TOOLS.length;
+const NG = GUIDES.filter((g) => !isHiddenSlug(g.slug)).length;
+const nWeb = WEB_TOOLS.filter((w) => !isHiddenPath(w.path)).length;
 const L =
   lang === "ko"
     ? {
@@ -69,7 +71,7 @@ const L =
         devBody: "인버터·온도 조절기·전력 미터 — 매뉴얼 출처, JSON",
         guidesEnTitle: "",
         guidesEnBody: "",
-        allGuides: `가이드 ${GUIDES.length}편 모두 보기`,
+        allGuides: `가이드 ${NG}편 모두 보기`,
       }
     : lang === "en"
       ? {
@@ -100,9 +102,9 @@ const L =
           devBody: "Inverters, temperature controllers, power meters — sources, JSON",
           guidesEnTitle: "",
           guidesEnBody: "",
-          allGuides: `All ${GUIDES.length} guides`,
+          allGuides: `All ${NG} guides`,
         }
-      : dict(lang).pages.home({ nApps, mcp, nWeb: toolCount(lang), nHw: hwTests.length, nDevices: DEVICES.length, nGuides: GUIDES.length });
+      : dict(lang).pages.home({ nApps, mcp, nWeb: toolCount(lang), nHw: hwTests.length, nDevices: DEVICES.length, nGuides: NG });
 // 사이트·만든 곳 정보(검색 결과의 사이트 이름·로고 후보)
 const ld = [
   {

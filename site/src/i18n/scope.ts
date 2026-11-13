@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EXTRA_LANGS, LANGS, isCore, url, type ExtraLang, type SiteLang } from "./langs.ts";
+import { isHiddenPath } from "../data/hidden.ts";
 
 /** 1차 묶음 — 언어를 뺀 경로 → 쪽 이름(i18n/<언어>/pages/<쪽 이름>.ts) */
 export const SCOPE = {
@@ -295,4 +296,4 @@ export const extraPages = () => EXTRA_LANGS.flatMap((l) => pathsOf(l).map((p) =>
 export const staticPaths = (lang: ExtraLang) => pathsOf(lang).map((p) => ({ params: { path: p.replace(/\/$/, "") || undefined }, props: { path: p } }));
 
 /** 이 추가 언어로 번역된 웹 도구 수(홈의 «웹 도구 n개») */
-export const toolCount = (lang: ExtraLang) => pathsOf(lang).filter((p) => p.startsWith("tools/") && p !== "tools/").length;
+export const toolCount = (lang: ExtraLang) => pathsOf(lang).filter((p) => p.startsWith("tools/") && p !== "tools/" && !isHiddenPath(p)).length;

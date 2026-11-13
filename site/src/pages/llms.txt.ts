@@ -6,7 +6,8 @@ import { TOOLS, REPO, isApp } from "../data/tools";
 import { WEB_TOOLS } from "../data/webTools";
 import { groupedWebTools } from "../data/webToolGroups";
 import { GUIDES } from "../data/guides";
-import { isHiddenSlug } from "../data/hidden";
+import { isHiddenPath, isHiddenSlug } from "../data/hidden";
+const NG = GUIDES.filter((g) => !isHiddenSlug(g.slug)).length;
 import { DATA_FILES, citeText } from "../lib/dataRelease";
 import { url } from "../lib/i18n";
 
@@ -18,7 +19,7 @@ export const GET: APIRoute = ({ site }) => {
   const lines = [
     "# PortDock",
     "",
-    `> Free, open-source (GPL-3.0) Windows tools for field hardware and industrial communication testing — ${apps} desktop apps${mcp ? " and an MCP server for AI clients" : ""} — plus an open dataset of Modbus register maps for ${RELEASE.devices} industrial devices (CC BY 4.0), ${WEB_TOOLS.length} browser tools (calculators, Modbus/MC frame decoders, PC hardware tests) and ${GUIDES.length} field guides.`,
+    `> Free, open-source (GPL-3.0) Windows tools for field hardware and industrial communication testing — ${apps} desktop apps${mcp ? " and an MCP server for AI clients" : ""} — plus an open dataset of Modbus register maps for ${RELEASE.devices} industrial devices (CC BY 4.0), ${WEB_TOOLS.filter((w) => !isHiddenPath(w.path)).length} browser tools (calculators, Modbus/MC frame decoders, PC hardware tests) and ${NG} field guides.`,
     "",
     `Register maps are facts taken only from manufacturer manuals; every device lists document title, edition, pages and the date it was checked, and every register its page. Not affiliated with the makers — check the device manual before writing to a device. Data version v${RELEASE.version} (latest source check ${RELEASE.date}, content hash ${RELEASE.contentHash}).`,
     "",

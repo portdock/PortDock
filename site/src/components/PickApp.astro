@@ -10,6 +10,7 @@ import { dict } from "../i18n";
 import { isCore, type SiteLang } from "../i18n/langs";
 import { appIcon } from "../lib/appIcons";
 import { WEB_TOOLS } from "../data/webTools";
+import { isHiddenPath } from "../data/hidden";
 import { groupOf } from "../data/webToolGroups";
 
 interface Props {
@@ -24,7 +25,7 @@ interface Props {
 const { lang, id = "pick-app", toRow = false, getLabel } = Astro.props;
 const ko = lang === "ko";
 const x = isCore(lang) ? null : dict(lang).common.pick;
-const hwCount = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw").length;
+const hwCount = WEB_TOOLS.filter((w) => groupOf(w.path) === "hw" && !isHiddenPath(w.path)).length;
 
 type Item = { app: Tool["id"] };
 type PathId = "serial" | "modbus" | "net" | "sim" | "scpi" | "pc" | "mcp";

@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import Crumbs from "../components/Crumbs.astro";
 import { WEB_TOOLS } from "../data/webTools";
+import { isHiddenPath } from "../data/hidden";
 import { groupedWebTools } from "../data/webToolGroups";
 import ListFilter from "../components/ListFilter.astro";
 import { ui, url, webToolText, groupName, isTranslated } from "../lib/i18n";
@@ -12,7 +13,7 @@ interface Props {
   lang: SiteLang;
 }
 const { lang } = Astro.props;
-const n = WEB_TOOLS.length;
+const n = WEB_TOOLS.filter((w) => !isHiddenPath(w.path)).length;
 const L =
   lang === "ko"
     ? {
