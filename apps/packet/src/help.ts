@@ -6,9 +6,9 @@ export const help: HelpDoc = {
     {
       title: "이 프로그램은",
       body: [
-        "PortDock Packet 은 pcap·pcapng 패킷 파일을 열어 보는 분석 도구입니다. Wireshark 로 만든 파일도 열리고, 저장한 pcapng 는 Wireshark 에서 열립니다.",
+        "PortDock Packet 은 pcap·pcapng 패킷 파일을 열어 보는 분석 도구입니다. Wireshark 로 만든 파일도 열리고, 저장은 표준 pcapng 형식입니다.",
         "일반 프로토콜(이더넷·ARP·IP·TCP·UDP·DNS·DHCP)에 더해 Modbus TCP·MC(SLMP)·LS XGT FEnet 을 풉니다. 요청과 응답을 짝지어 응답 시간·무응답·예외를 맨 위에 요약합니다.",
-        "읽기만 합니다 — 패킷을 만들어 보내지 않고, 파일 내용을 밖으로 보내지 않습니다. 실시간 캡처는 다음 판에서 들어옵니다.",
+        "읽기만 합니다 — 패킷을 만들어 보내지 않고, 파일·캡처 내용을 밖으로 보내지 않습니다. 위쪽 «캡처» 로 이 PC 를 지나는 통신을 바로 캡처할 수도 있습니다.",
       ],
     },
     {
@@ -54,6 +54,19 @@ export const help: HelpDoc = {
       ],
     },
     {
+      title: "실시간 캡처",
+      id: "capture",
+      body: [
+        "- 위쪽 «● 캡처» → 어댑터·IP·포트·프로토콜을 고르고 «캡처 시작». Windows 내장 Packet Monitor 를 써서 설치할 것이 없습니다.",
+        "- 관리자 권한이 필요합니다. 아니면 «관리자로 다시 시작» 단추가 나오고, Windows 허용 창이 한 번 뜹니다.",
+        "- 1.5초마다 목록이 갱신됩니다. 필터는 그대로 유지되고, 목록 맨 아래를 보고 있으면 새 패킷을 따라갑니다. «■ 중지» 로 멈추고 «저장» 으로 pcapng 를 남깁니다.",
+        "- «네트워크 어댑터만» 이 권장입니다(중복이 적음). «스택 전체» 는 같은 패킷이 여러 계층에서 보이는 것을 줄여서 보여 줍니다.",
+        "- 이 PC 를 지나는 통신만 보입니다. 스위치 너머의 다른 기기끼리 통신은 미러링 포트가 있어야 보입니다.",
+        "- 127.0.0.1(자기 자신) 통신은 잡히지 않습니다. 로컬 시험은 파일을 열어 하세요.",
+        "- 읽기·듣기만 합니다 — 패킷을 만들어 보내지 않습니다.",
+      ],
+    },
+    {
       title: "장비 맵",
       id: "devmap",
       body: ["위 띠의 «장비 맵» 에서 장비를 고르면 Modbus 응답의 레지스터 주소가 그 장비의 이름·단위(예: 출력 주파수 ×0.01 Hz)로 해석 트리에 붙습니다. 86종 장비 목록이며, 모르면 «(없음)» 으로 둡니다."],
@@ -63,9 +76,9 @@ export const help: HelpDoc = {
     {
       title: "About this program",
       body: [
-        "PortDock Packet opens pcap and pcapng capture files. Files made by Wireshark open here, and the pcapng files saved here open in Wireshark.",
+        "PortDock Packet opens pcap and pcapng capture files. Files made by Wireshark open here, and files are saved in the standard pcapng format.",
         "Besides the common protocols (Ethernet, ARP, IP, TCP, UDP, DNS, DHCP) it dissects Modbus TCP, MC (SLMP) and LS XGT FEnet. Requests and responses are paired, and response times, unanswered requests and exceptions are summarized at the top.",
-        "It only reads — it never sends packets and never uploads file contents. Live capture arrives in the next release.",
+        "It only reads — it never sends packets and never uploads file or capture contents. The «Capture» button at the top records the traffic passing through this PC.",
       ],
     },
     {
@@ -108,6 +121,19 @@ export const help: HelpDoc = {
         "- exceptions: the device answered «cannot do that» (Modbus exception code, MC end code, XGT error). The Expert tab gives the cause and what to check.",
         "- «Response time distribution» shows bars per range and can filter the slow responses.",
         "- In the list, the «Response time» column shows the time on the response row and a red «no response» on an unanswered request.",
+      ],
+    },
+    {
+      title: "Live capture",
+      id: "capture",
+      body: [
+        "- Top «● Capture» → pick adapter, IP, port and protocol, then «Start capture». It uses Windows' built-in Packet Monitor, so nothing to install.",
+        "- Administrator rights are required. Otherwise a «Restart as administrator» button appears and Windows shows one permission prompt.",
+        "- The list refreshes every 1.5 s. Your filter stays applied, and the list follows new packets while you are at the bottom. «■ Stop» ends it, «Save» keeps a pcapng.",
+        "- «Network adapters only» is recommended (fewer duplicates). «Whole stack» reduces the same packet showing up at several layers.",
+        "- Only traffic passing through this PC is visible. Traffic between other devices beyond a switch needs a mirror port.",
+        "- Traffic to 127.0.0.1 (this PC itself) is not captured. Open a file for local tests.",
+        "- It only listens — it never sends packets.",
       ],
     },
     {
