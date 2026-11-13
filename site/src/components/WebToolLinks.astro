@@ -2,6 +2,7 @@
 // 웹 도구 페이지 아래 «이어 읽기» — 이 웹 도구를 쓰는 가이드(guides.ts 의 webTools)와 다른 웹 도구
 // 추가 언어(ja 등) 쪽에서는 그 언어로 번역된 웹 도구만 보이고, 가이드·나머지 도구는 영어판 목록으로 잇는다.
 import { GUIDES } from "../data/guides";
+import { isHiddenPath, isHiddenSlug } from "../data/hidden";
 import { WEB_TOOLS } from "../data/webTools";
 import { groupOf } from "../data/webToolGroups";
 import { ui, url, link, webToolText, isTranslated } from "../lib/i18n";
@@ -15,9 +16,9 @@ interface Props {
 const { lang, path } = Astro.props;
 const t = ui(lang);
 const core = isCore(lang);
-const guides = isCore(lang) ? GUIDES.filter((g) => g.webTools?.includes(path)) : [];
+const guides = isCore(lang) ? GUIDES.filter((g) => g.webTools?.includes(path) && !isHiddenSlug(g.slug)) : [];
 // 같은 묶음 도구를 먼저 보이고, 나머지는 접어 둔다(목록이 길어 본문보다 길어지지 않게 — 링크는 그대로 남는다)
-const others = WEB_TOOLS.filter((w) => w.path !== path && isTranslated(lang, w.path));
+const others = WEB_TOOLS.filter((w) => w.path !== path && !isHiddenPath(w.path) && isTranslated(lang, w.path));
 const near = others.filter((w) => groupOf(w.path) === groupOf(path)).slice(0, 6);
 const rest = others.filter((w) => !near.includes(w));
 ---

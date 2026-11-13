@@ -1,5 +1,6 @@
 // 웹 도구 묶음 — 웹 도구 목록을 종류별로 나누고, 웹 도구 페이지 아래 «이어 읽기» 에 같은 묶음 도구를 먼저 보여 준다.
 // 새 웹 도구를 webTools.ts 에 넣으면 여기 한 줄(경로 → 묶음)을 더한다 — 빠지면 «그 밖의 도구» 묶음에 들어간다.
+import { isHiddenPath } from "./hidden";
 import { WEB_TOOLS, type WebTool } from "./webTools";
 import type { L } from "./tools";
 
@@ -106,7 +107,7 @@ export const groupOf = (path: string): GroupId => GROUP_OF[path as WebTool["path
 
 /** 묶음별 웹 도구(빈 묶음은 뺀다) */
 export const groupedWebTools = () =>
-  GROUPS.map((g) => ({ ...g, tools: WEB_TOOLS.filter((w) => groupOf(w.path) === g.id) })).filter((g) => g.tools.length > 0);
+  GROUPS.map((g) => ({ ...g, tools: WEB_TOOLS.filter((w) => groupOf(w.path) === g.id && !isHiddenPath(w.path)) })).filter((g) => g.tools.length > 0);
 
 /** 첫 화면에 먼저 보일 웹 도구 — 많이 찾는 통신 계산기 위주 */
 export const POPULAR_WEB_TOOLS: WebTool["path"][] = [

@@ -14,6 +14,7 @@ import { releaseAssetNames } from "./release-assets.mjs";
 // 언어 목록·번역 범위는 사이트 소스 한 곳에서(node 가 .ts 를 그대로 읽는다 — 타입 지우기)
 import { LANGS, LANG_META, EXTRA_LANGS } from "../site/src/i18n/langs.ts";
 import { extraPages } from "../site/src/i18n/scope.ts";
+import { isHiddenUrl } from "../site/src/data/hidden.ts";
 
 const argv = process.argv.slice(2);
 const ai = argv.indexOf("--assets");
@@ -261,7 +262,8 @@ for (const u of inSitemap) {
 for (const p of indexable) if (!inSitemap.has(SITE + p)) err("sitemap", `빠진 페이지: ${p}`);
 
 // 추가 언어: 그 언어의 번역 범위(scope.ts pathsOf — 1차 + MORE[언어]) = 빌드된 /<언어>/ 쪽 = sitemap 의 /<언어>/ 주소
-const want = new Set(extraPages());
+// 정리로 noindex 처리한 쪽(site/src/data/hidden.ts)은 번역 범위에 있어도 색인·sitemap 에 없다
+const want = new Set(extraPages().filter((p) => !isHiddenUrl(SITE + p)));
 for (const l of EXTRA_LANGS) {
   const built = new Set(indexable.filter((p) => p.startsWith(`/${l}/`)));
   const listed = new Set([...inSitemap].map((u) => u.slice(SITE.length)).filter((p) => p.startsWith(`/${l}/`)));

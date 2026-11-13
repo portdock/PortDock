@@ -25,7 +25,8 @@ interface Props {
   /** 브라우저 스크립트가 쓰는 계산 라이브러리 문구 묶음(추가 언어 쪽에서만 넣는다 — lib/tr.ts) */
   libText?: readonly LibSection[];
 }
-const { lang, title, description, path, ads = false, seoTitle, noindex = false, ogType = "website", libText = [] } = Astro.props;
+const { lang, title, description, path, ads = false, seoTitle, noindex: noindexProp = false, ogType = "website", libText = [] } = Astro.props;
+const noindex = noindexProp || isHiddenPath(path);
 const t = ui(lang);
 const site = Astro.site!;
 const here = new URL(url(lang, path), site).href;
@@ -44,6 +45,7 @@ const adsenseClient = ADSENSE_CLIENT;
 const naverVerify = import.meta.env.PUBLIC_NAVER_SITE_VERIFICATION || "64cb1920e3c09d3df5cc3cab1fdcc65d30247011"; // 네이버 서치어드바이저(https://portdock.dev) — 지우지 않는다
 const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION || "Ou5LSmDQdGQwykHcdQmPRAEAq0GfLKa8nsOWjnFhE8w"; // Search Console(https://portdock.dev/ 속성, portdock.contact) — 지우지 않는다
 import { ADSENSE_CLIENT } from "../lib/ads";
+import { isHiddenPath } from "../data/hidden";
 ---
 
 <!doctype html>

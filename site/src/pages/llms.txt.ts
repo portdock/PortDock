@@ -6,6 +6,7 @@ import { TOOLS, REPO, isApp } from "../data/tools";
 import { WEB_TOOLS } from "../data/webTools";
 import { groupedWebTools } from "../data/webToolGroups";
 import { GUIDES } from "../data/guides";
+import { isHiddenSlug } from "../data/hidden";
 import { DATA_FILES, citeText } from "../lib/dataRelease";
 import { url } from "../lib/i18n";
 
@@ -39,7 +40,7 @@ export const GET: APIRoute = ({ site }) => {
     "## Guides",
     "",
     `- [All guides](${abs(url("en", "guides/"))})`,
-    ...GUIDES.map((g) => `- [${g.title.en}](${abs(url("en", `guides/${g.slug}/`))}): ${g.desc.en}`),
+    ...GUIDES.filter((g) => !isHiddenSlug(g.slug)).map((g) => `- [${g.title.en}](${abs(url("en", `guides/${g.slug}/`))}): ${g.desc.en}`),
     "",
     "## Optional",
     "",
