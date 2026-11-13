@@ -115,6 +115,8 @@ export interface ListProps {
   /** 밖에서 스크롤을 요청(찾기·짝으로 이동) — 위치와 요청 번호 */
   reveal: { pos: number; n: number } | null;
   onRows?: (pos: number, row: Row) => void;
+  /** 실시간 캡처 중 — 갱신해도 스크롤을 유지하고, 맨 아래를 보고 있으면 따라간다 */
+  live?: boolean;
 }
 
 const HEAD_KEYS: Record<ColId, "colNo" | "colTime" | "colSrc" | "colDst" | "colProto" | "colLen" | "colRt" | "colInfo"> = { no: "colNo", time: "colTime", src: "colSrc", dst: "colDst", proto: "colProto", len: "colLen", rt: "colRt", info: "colInfo" };
@@ -137,6 +139,7 @@ export function PacketList(p: ListProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(400);
   const [head, setHead] = useState<{ x: number; y: number } | null>(null);
+  const atBottom = useRef(true);
 
   // 보이는 높이
   useLayoutEffect(() => {
@@ -153,8 +156,13 @@ export function PacketList(p: ListProps) {
     cache.current.clear();
     inflight.current.clear();
     setVer((v) => v + 1);
-    if (box.current) box.current.scrollTop = 0;
-    setScrollTop(0);
+    if (p.live) {
+      if (box.current && atBottom.current) box.current.scrollTop = box.current.scrollHeight;
+    } else {
+      if (box.current) box.current.scrollTop = 0;
+      setScrollTop(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.viewKey]);
 
   const win = useMemo(() => windowOf(scrollTop, Math.max(0, viewH - 1), rowH, total), [scrollTop, viewH, rowH, total]);
@@ -297,7 +305,11 @@ export function PacketList(p: ListProps) {
           </div>
         ))}
       </div>
-      <div className="pk-scroll" ref={box} tabIndex={0} onKeyDown={keyDown} onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
+      <div className="pk-scroll" ref={box} tabIndex={0} onKeyDown={keyDown} onScroll={(e) => {
+        const el = e.currentTarget;
+        atBottom.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+        setScrollTop(el.scrollTop);
+      }}>
         <div style={{ height: win.spacer, position: "relative" }}>
           <div className="pk-rows" style={{ transform: `translateY(${win.offset}px)` }}>
             {rows}

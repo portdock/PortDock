@@ -2929,6 +2929,7 @@ dependencies = [
 name = "portdock-packet-app"
 version = "0.11.0"
 dependencies = [
+ "portdock-capture",
  "portdock-core",
  "portdock-packet",
  "serde",

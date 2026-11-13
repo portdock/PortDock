@@ -14,9 +14,9 @@ import { useWindowTitle, windowTitle } from "@shared/useWindowTitle";
 import { PinButton } from "@shared/PinButton";
 import { ui } from "@shared/uiText";
 import { DEVICES } from "@shared/deviceData";
-import { api, type DevMapInfo, type Detail, type ExpertReply, type FileInfo, type FilterFail, type Row, type Summary } from "./api";
+import { api, type CapStart, type CapState, type DevMapInfo, type Detail, type ExpertReply, type FileInfo, type FilterFail, type Row, type Summary } from "./api";
 import { ExpertPanel, FilterBar, FindBar, SummaryBar } from "./Bars";
-import { ConvDialog, FollowDialog, RtDialog } from "./Dialogs";
+import { CaptureDialog, ConvDialog, FollowDialog, RtDialog } from "./Dialogs";
 import { help } from "./help";
 import { dict, fill, type Key, type Lang } from "./i18n";
 import { andFilter, pushHistory, sanitizeCols, type FlatNode, type TimeMode } from "./logic";
@@ -71,6 +71,9 @@ export default function App() {
   const [injected, setInjected] = useState<{ text: string; n: number } | null>(null);
   const [analysisReady, setAnalysisReady] = useState(false);
   const [filterSeq, setFilterSeq] = useState(0);
+  const [live, setLive] = useState<CapState | null>(null);
+  const [capOpen, setCapOpen] = useState(false);
+  const liveBusy = useRef(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [experts, setExperts] = useState<ExpertReply | null>(null);
   const [devId, setDevId] = useState("");
@@ -92,10 +95,12 @@ export default function App() {
   const [findMsg, setFindMsg] = useState("");
   const findFrom = useRef<number | null>(null);
 
+  const appliedRef = useRef("");
   const sidRef = useRef(0);
   sidRef.current = file?.sid ?? 0;
+  appliedRef.current = applied;
 
-  const viewKey = `${file?.sid ?? 0}:${filterSeq}:${analysisReady ? 1 : 0}`;
+  const viewKey = `${live?.running ? `live${file?.packets ?? 0}` : file?.sid ?? 0}:${filterSeq}:${analysisReady ? 1 : 0}`;
   const rowH = rowHeight(settings.fontSize);
 
   const resetFile = (f: FileInfo) => {
@@ -143,6 +148,73 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
   );
+
+  // 실시간 캡처 — 받은 것을 파일로 내려 쓰고 다시 열어 목록을 갱신한다(필터는 그대로, 고른 패킷도 그대로)
+  const refreshLive = useCallback(
+    async (final: boolean) => {
+      if (liveBusy.current) return;
+      liveBusy.current = true;
+      try {
+        const f = await (final ? api.captureStop() : api.captureRefresh());
+        if (!f) return;
+        setFile(f);
+        if (appliedRef.current) {
+          const r = await api.setFilter(appliedRef.current);
+          setOutcome({ shown: r.shown, total: r.total, ms: r.ms });
+          setTotal(r.shown);
+        } else {
+          setTotal(f.packets);
+        }
+        setFilterSeq((n) => n + 1);
+        setTimeout(() => {
+          api.readyState().then(([a, p]) => {
+            if (sidRef.current !== f.sid) return;
+            if (a) setAnalysisReady(true);
+            if (p) loadSummary(f.sid);
+          });
+        }, 900);
+      } catch (e) {
+        toast.show(String(e), { error: true, ms: 5000 });
+      } finally {
+        liveBusy.current = false;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const startCapture = useCallback(
+    async (o: CapStart): Promise<string | null> => {
+      try {
+        await api.captureStart(o);
+      } catch (e) {
+        return t("capFail", { e: String(e) });
+      }
+      setCapOpen(false);
+      setLive({ running: true, frames: 0, written: 0, secs: 0, error: null, path: "" });
+      return null;
+    },
+    [t],
+  );
+
+  const stopCapture = useCallback(async () => {
+    const s = await api.captureState();
+    setLive({ ...s, running: false });
+    for (let i = 0; i < 30 && liveBusy.current; i++) await new Promise((r) => setTimeout(r, 100));
+    await refreshLive(true);
+    toast.show(t("capStopped", { n: s.written.toLocaleString() }));
+  }, [refreshLive, t]);
+
+  useEffect(() => {
+    if (!live?.running) return;
+    const id = window.setInterval(async () => {
+      const s = await api.captureState().catch(() => null);
+      if (!s) return;
+      setLive(s);
+      if (s.written > 0) void refreshLive(false);
+    }, 1500);
+    return () => window.clearInterval(id);
+  }, [live?.running, refreshLive]);
 
   const loadSummary = useCallback(
     (sid: number) => {
@@ -400,9 +472,15 @@ export default function App() {
           {t("columns")} ▾
         </button>
         <span className="sm-spacer" />
-        <button className="btn small" disabled title={t("captureSoonTip")}>
-          {t("captureSoon")}
-        </button>
+        {live?.running ? (
+          <button className="btn small danger" onClick={() => void stopCapture()} title={t("capStop")}>
+            ■ {t("capStop")}
+          </button>
+        ) : (
+          <button className="btn small" onClick={() => setCapOpen(true)} title={t("captureTip")}>
+            ● {t("capture")}
+          </button>
+        )}
         <select className="lang" aria-label={ui(lang, "language")} value={lang} onChange={(e) => update({ lang: e.target.value as Lang })}>
           {UI_LANGS.map((l) => (
             <option key={l} value={l}>
@@ -446,7 +524,7 @@ export default function App() {
         ) : (
           <>
             <div className="pane list-pane" style={{ height: listH }}>
-              {total === 0 ? <div className="pk-empty hint">{t("empty0")}</div> : <PacketList t={t} total={total} viewKey={viewKey} rowH={rowH} cols={cols} setCols={setCols} timeMode={timeMode} sel={sel} onSel={onSel} onMenu={listMenu} reveal={reveal} />}
+              {total === 0 ? <div className="pk-empty hint">{t("empty0")}</div> : <PacketList t={t} total={total} viewKey={viewKey} rowH={rowH} cols={cols} setCols={setCols} timeMode={timeMode} sel={sel} onSel={onSel} onMenu={listMenu} reveal={reveal} live={!!live?.running} />}
             </div>
             <Bar dir="v" invert size={listH} onSize={setListH} min={90} label="↕" />
             <div className="pane mid-pane">
@@ -473,6 +551,7 @@ export default function App() {
       </main>
 
       <footer className="pk-status">
+        {live?.running && <span className="rec">● {t("capRunning", { n: live.written.toLocaleString(), s: live.secs })}</span>}
         <span>{file ? t("statusFile", { a: file.packets.toLocaleString() }) : t("noFile")}</span>
         {file && applied && <span>{t("statusShown", { a: total.toLocaleString() })}</span>}
         {selNo > 0 && <span>{t("statusSel", { n: selNo })}</span>}
@@ -482,6 +561,7 @@ export default function App() {
       </footer>
 
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
+      {capOpen && <CaptureDialog t={t} onClose={() => setCapOpen(false)} onStart={startCapture} />}
       {dlg === "conv" && <ConvDialog t={t} onClose={() => setDlg(null)} onFilter={filterFromOutside} />}
       {dlg === "follow" && selNo > 0 && <FollowDialog t={t} no={selNo} onClose={() => setDlg(null)} onFilter={filterFromOutside} />}
       {dlg === "rt" && <RtDialog t={t} onClose={() => setDlg(null)} onFilter={filterFromOutside} />}

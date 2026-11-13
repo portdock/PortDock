@@ -192,7 +192,46 @@ export interface DevMapInfo {
   entries: number;
 }
 
+export interface CapAdapter {
+  name: string;
+  description: string;
+  mac: string;
+  ips: string[];
+  up: boolean;
+  wireless: boolean;
+  loopback: boolean;
+}
+
+export interface CapEnv {
+  elevated: boolean;
+  adapters: CapAdapter[];
+  error: string | null;
+}
+
+export interface CapStart {
+  scope: "nic" | "all";
+  adapter: string;
+  ip: string;
+  port: number | null;
+  proto: "" | "tcp" | "udp" | "icmp";
+}
+
+export interface CapState {
+  running: boolean;
+  frames: number;
+  written: number;
+  secs: number;
+  error: string | null;
+  path: string;
+}
+
 export const api = {
+  captureEnv: () => invoke<CapEnv>("capture_env"),
+  captureStart: (opts: CapStart) => invoke<void>("capture_start", { opts }).then(() => count("capture")),
+  captureState: () => invoke<CapState>("capture_state"),
+  captureRefresh: () => invoke<FileInfo | null>("capture_refresh"),
+  captureStop: () => invoke<FileInfo | null>("capture_stop"),
+  relaunchAdmin: () => invoke<void>("relaunch_admin"),
   openFile: (path: string) => invoke<FileInfo>("open_file", { path }).then((r) => (count("open_file"), r)),
   fileInfo: () => invoke<FileInfo | null>("file_info"),
   initialFile: () => invoke<string | null>("initial_file"),

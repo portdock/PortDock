@@ -50,3 +50,10 @@ body {
   font: 13px/1.45 var(--sans);
 }
 
+
+/* 실시간 캡처 */
+.rec { color: #ff6b6b; font-weight: 600; }
+.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+.cap-form { display: grid; gap: 10px; }
+.cap-form label { display: grid; gap: 4px; font-size: 13px; }
+.cap-form select, .cap-form input { padding: 6px 8px; }

@@ -1,6 +1,6 @@
 // 보조 창 — 대화·끝점 표, 흐름 따라가기, 응답 시간 분포
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, type Conv, type Endpoint, type Follow, type RtDist } from "./api";
+import { api, type CapEnv, type CapStart, type Conv, type Endpoint, type Follow, type RtDist } from "./api";
 import type { TFn } from "./i18n";
 import { barFractions, bucketLabel, bytesText, durationText, followPieces, rtText, secText } from "./logic";
 
@@ -263,6 +263,85 @@ export function RtDialog({ t, onClose, onFilter }: { t: TFn; onClose: () => void
           </section>
         );
       })}
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------- 실시간 캡처
+
+export function CaptureDialog({ t, onClose, onStart }: { t: TFn; onClose: () => void; onStart: (o: CapStart) => Promise<string | null> }) {
+  const [env, setEnv] = useState<CapEnv | null>(null);
+  const [o, setO] = useState<CapStart>({ scope: "nic", adapter: "", ip: "", port: null, proto: "" });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api.captureEnv().then(setEnv).catch((e) => setErr(String(e)));
+  }, []);
+  const go = async () => {
+    setBusy(true);
+    setErr("");
+    const e = await onStart(o);
+    setBusy(false);
+    if (e) setErr(e);
+  };
+  const real = env?.adapters.filter((a) => !a.loopback) ?? [];
+  return (
+    <Modal title={t("captureTitle")} onClose={onClose}>
+      {!env && <div className="hint">{t("loading")}</div>}
+      {env && !env.elevated && (
+        <>
+          <p className="hint">{t("capNeedAdmin")}</p>
+          <button className="btn primary" onClick={() => void api.relaunchAdmin().catch((e) => setErr(String(e)))}>
+            {t("capRelaunch")}
+          </button>
+        </>
+      )}
+      {env && env.elevated && (
+        <div className="cap-form">
+          <label>
+            {t("capWhat")}
+            <select value={o.scope} onChange={(e) => setO({ ...o, scope: e.target.value as CapStart["scope"] })}>
+              <option value="nic">{t("capNic")}</option>
+              <option value="all">{t("capAll")}</option>
+            </select>
+          </label>
+          <label>
+            {t("capAdapter")}
+            <select value={o.adapter} onChange={(e) => setO({ ...o, adapter: e.target.value })} disabled={o.scope === "all"}>
+              <option value="">{t("capAdapterAny")}</option>
+              {real.map((a) => (
+                <option key={a.name} value={a.description || a.name}>
+                  {a.name}{a.up ? "" : " (down)"}{a.ips.length ? ` — ${a.ips.find((i) => !i.includes(":")) ?? a.ips[0]}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          {real.length === 0 && <div className="hint">{t("capNoAdapters")}</div>}
+          <label>
+            {t("capIp")}
+            <input className="mono" value={o.ip} onChange={(e) => setO({ ...o, ip: e.target.value })} placeholder="192.168.0.10" />
+          </label>
+          <label>
+            {t("capPort")}
+            <input className="mono" value={o.port ?? ""} inputMode="numeric" onChange={(e) => setO({ ...o, port: e.target.value.trim() === "" ? null : Math.min(65535, Math.max(0, Number(e.target.value.replace(/\D/g, "")) || 0)) })} placeholder="502" />
+          </label>
+          <label>
+            {t("capProto")}
+            <select value={o.proto} onChange={(e) => setO({ ...o, proto: e.target.value as CapStart["proto"] })}>
+              <option value="">{t("capProtoAny")}</option>
+              <option value="tcp">TCP</option>
+              <option value="udp">UDP</option>
+              <option value="icmp">ICMP</option>
+            </select>
+          </label>
+          <p className="hint">{t("capScopeNote")}</p>
+          <p className="hint">{t("capSaveHint")}</p>
+          <button className="btn primary" onClick={() => void go()} disabled={busy}>
+            {t("capStart")}
+          </button>
+        </div>
+      )}
+      {err && <div className="err pad">{err}</div>}
     </Modal>
   );
 }

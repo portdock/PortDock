@@ -2,6 +2,7 @@
 //! 읽기만 한다 — 패킷을 만들어 보내지 않는다. 엔진은 crates/packet. 무거운 명령은 전부 `command(async)`(스레드)에서.
 
 mod dto;
+mod live;
 
 use dto::*;
 use portdock_packet::analysis::{PairStatus, ann};
@@ -70,6 +71,7 @@ impl Loaded {
 struct AppState {
     cur: Mutex<Option<Arc<Loaded>>>,
     sid: AtomicU64,
+    live: Mutex<Option<live::Live>>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -165,10 +167,15 @@ fn prepare(l: &Loaded) -> Prepared {
 
 #[tauri::command(async)]
 fn open_file(app: AppHandle, st: State<AppState>, path: String) -> Result<FileInfo, String> {
+    load_path(&app, &st, path, None)
+}
+
+fn load_path(app: &AppHandle, st: &State<AppState>, path: String, name_override: Option<String>) -> Result<FileInfo, String> {
+    let app = app.clone();
     let t = Instant::now();
     let sess = Session::open(&path, Prefs::default()).map_err(|e| format!("{path}: {e}"))?;
     let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
-    let name = std::path::Path::new(&path).file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| path.clone());
+    let name = name_override.unwrap_or_else(|| std::path::Path::new(&path).file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| path.clone()));
     let sid = st.sid.fetch_add(1, Ordering::SeqCst) + 1;
     let l = Arc::new(Loaded {
         sess,
@@ -192,6 +199,71 @@ fn open_file(app: AppHandle, st: State<AppState>, path: String) -> Result<FileIn
         let _ = app.emit("pk-ready", l.sid);
     });
     Ok(info)
+}
+
+// ---------------------------------------------------------------- 실시간 캡처(M3)
+
+#[tauri::command(async)]
+fn capture_env() -> live::CapEnv {
+    live::env()
+}
+
+#[tauri::command(async)]
+fn capture_start(st: State<AppState>, opts: live::StartDto) -> Result<(), String> {
+    let mut g = lock(&st.live);
+    if g.as_ref().is_some_and(|l| l.stats().running) {
+        return Err(portdock_core::tr!("이미 캡처 중입니다", "A capture is already running").to_string());
+    }
+    *g = Some(live::start(&opts)?);
+    Ok(())
+}
+
+#[tauri::command]
+fn capture_state(st: State<AppState>) -> live::LiveStats {
+    lock(&st.live).as_ref().map(|l| l.stats()).unwrap_or_default()
+}
+
+/// 지금까지 받은 것을 파일로 내려 쓰고 다시 연다 — 화면이 주기적으로 부른다
+#[tauri::command(async)]
+fn capture_refresh(app: AppHandle, st: State<AppState>) -> Result<Option<FileInfo>, String> {
+    let path = {
+        let g = lock(&st.live);
+        let Some(l) = g.as_ref() else { return Ok(None) };
+        l.flush();
+        l.path.to_string_lossy().into_owned()
+    };
+    let name = portdock_core::tr!("캡처", "Capture").to_string();
+    load_path(&app, &st, path, Some(name)).map(Some)
+}
+
+#[tauri::command(async)]
+fn capture_stop(app: AppHandle, st: State<AppState>) -> Result<Option<FileInfo>, String> {
+    let path = {
+        let mut g = lock(&st.live);
+        let Some(l) = g.as_mut() else { return Ok(None) };
+        l.stop();
+        l.path.to_string_lossy().into_owned()
+    };
+    let name = portdock_core::tr!("캡처", "Capture").to_string();
+    load_path(&app, &st, path, Some(name)).map(Some)
+}
+
+/// 관리자 권한으로 이 프로그램을 다시 띄운다(Windows 허용 창 한 번)
+#[tauri::command]
+fn relaunch_admin(app: AppHandle) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        let ps = format!("Start-Process -FilePath '{}' -Verb RunAs", exe.to_string_lossy().replace('\'', "''"));
+        std::process::Command::new("powershell").args(["-NoProfile", "-WindowStyle", "Hidden", "-Command", &ps]).spawn().map_err(|e| e.to_string())?;
+        app.exit(0);
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("Windows only".into())
+    }
 }
 
 #[tauri::command]
@@ -902,6 +974,12 @@ pub fn run() {
             write_text,
             read_text,
             open_file,
+            capture_env,
+            capture_start,
+            capture_state,
+            capture_refresh,
+            capture_stop,
+            relaunch_admin,
             file_info,
             initial_file,
             ready_state,
