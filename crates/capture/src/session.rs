@@ -13,9 +13,8 @@
 //!   MiniportIfIndex·LowerIfIndex·FragmentSize·Fragment 를 읽는 법)도 이 PC 의 공급자 메타데이터(`Get-WinEvent -ListProvider`)로
 //!   필드 배치를 확인했으나 채택하지 않았다: 문서화된 API 가 없어 이벤트 모양이 바뀔 위험이 크고, 방향·루프백·필터를 직접 해야 한다.
 //!   pktmon API 가 실패하는 PC 에 대비한 대안으로만 남긴다(구현 안 함).
-//! - 루프백: pktmon 은 NIC 가 아니라 TCP/IP 스택의 구성 요소도 데이터 원본으로 본다. `SourceScope::All` 로 모든 구성 요소를
-//!   붙이면 스택 안에서 도는 127.0.0.1 패킷이 보일 것으로 **예상**하나, 이 세션은 관리자가 아니어서 **확인하지 못했다**.
-//!   `SourceScope::NetworkInterfaces` 만으로 루프백이 되는지도 미확인 — tools/capture-probe-test.ps1 이 둘 다 돌려 세어 준다.
+//! - 루프백: **안 잡힌다**(2026-11-13 관리자 실측, Windows 11 26300). `NetworkInterfaces` 12초 398프레임·`All`(48개 구성 요소) 4,071프레임
+//!   모두 127.0.0.1·::1 프레임 0 — 같은 시간에 로컬 HTTP·ping 127.0.0.1 을 일으켰다. 로컬 시험은 합성 파일(pk gen·demo)로 한다.
 //!
 //! ## 한계
 //! - 관리자 권한 필요(없으면 `CaptureError::NeedAdmin`).
