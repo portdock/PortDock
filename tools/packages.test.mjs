@@ -23,7 +23,7 @@ const sums = parseSums(sumsText);
 const ID_RE = /^[^.\s\\/:*?"<>|\x01-\x1f]{1,32}(\.[^.\s\\/:*?"<>|\x01-\x1f]{1,32}){1,7}$/;
 
 test("앱 12개 — release.yml matrix 와 같고, 모든 앱이 같은 버전", () => {
-  assert.equal(apps.length, 12);
+  assert.equal(apps.length, 13);
   assert.deepEqual(apps.map((a) => a.asset), readMatrix().map((m) => m.asset));
   for (const a of apps) assert.equal(a.version, version);
 });

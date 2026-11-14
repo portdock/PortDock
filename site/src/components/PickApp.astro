@@ -31,8 +31,8 @@ type Item = { app: Tool["id"] };
 type PathId = "serial" | "modbus" | "net" | "sim" | "scpi" | "pc" | "mcp";
 const PATHS: { id: PathId; q: { ko: string; en: string }; items: Item[] }[] = [
   { id: "serial", q: { ko: "시리얼(COM)·RS-485 장비와 주고받기", en: "Talk to a serial (COM) or RS-485 device" }, items: [{ app: "serial" }, { app: "plot" }] },
-  { id: "modbus", q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, items: [{ app: "modbus-master" }, { app: "modbus-slave" }] },
-  { id: "net", q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, items: [{ app: "netscan" }, { app: "tcp" }, { app: "udp" }] },
+  { id: "modbus", q: { ko: "Modbus 장비 값 읽기·쓰기, 장비 흉내", en: "Read and write Modbus devices, or simulate one" }, items: [{ app: "modbus-master" }, { app: "modbus-slave" }, { app: "packet" }] },
+  { id: "net", q: { ko: "네트워크 장비 IP 찾기, TCP·UDP 통신", en: "Find devices on the network, TCP and UDP" }, items: [{ app: "netscan" }, { app: "tcp" }, { app: "udp" }, { app: "packet" }] },
   { id: "sim", q: { ko: "PLC·장비 없이 HMI·상위 프로그램 시험", en: "Test HMI or host software without the PLC or device" }, items: [{ app: "plc-simulator" }, { app: "simulator" }, { app: "modbus-slave" }] },
   { id: "scpi", q: { ko: "계측기(SCPI) 제어·측정 기록", en: "Control an instrument (SCPI) and log readings" }, items: [{ app: "scpi" }, { app: "plot" }] },
   { id: "pc", q: { ko: "PC 연결 문제 — COM 포트·랜카드·Wi-Fi·블루투스", en: "PC connection problems — COM port, network adapter, Wi-Fi, Bluetooth" }, items: [{ app: "port-inspector" }, { app: "hw-tester" }] },

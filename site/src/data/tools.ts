@@ -13,6 +13,7 @@ import { help as plotHelp } from "../../../apps/plot/src/help";
 import { help as portInspectorHelp } from "../../../apps/port-inspector/src/help";
 import { help as plcSimulatorHelp } from "../../../apps/plc-simulator/src/help";
 import { help as hwTesterHelp } from "../../../apps/hw-tester/src/help";
+import { help as packetHelp } from "../../../apps/packet/src/help";
 import { mcpHelp } from "./mcpHelp";
 
 /** 내장 장비 프로필 수 — data/devices 의 JSON 개수(앱 도움말 «내장 장비 N종» 과 같은 데이터). 숫자를 손으로 적지 않는다 */
@@ -29,7 +30,7 @@ export const latest = (file: string) => `${RELEASES}/latest/download/${file}`;
 export const RELEASED = true;
 
 export interface Tool {
-  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator" | "hw-tester" | "mcp";
+  id: "serial" | "modbus-slave" | "tcp" | "udp" | "simulator" | "netscan" | "modbus-master" | "scpi" | "plot" | "port-inspector" | "plc-simulator" | "hw-tester" | "packet" | "mcp";
   name: string;
   /** 파일 이름에 쓰는 이름 — PortDock-Serial */
   file: string;
@@ -639,6 +640,62 @@ export const TOOLS: Tool[] = [
       en: "Similar tools include PingPlotter (commercial, with a free edition) and WifiHistoryView (free, connect/disconnect history). PortDock Hardware Tester is free (GPL-3.0) and puts gateway and internet pings and Windows' disconnect reasons on one chart, together with a Bluetooth connection log.",
     },
     help: hwTesterHelp,
+  },
+  {
+    id: "packet",
+    name: "PortDock Packet",
+    file: "PortDock-Packet",
+    upcoming: true, // 0.12.0 릴리스를 공개하면 지운다(docs/release.md 7)
+    tagline: { ko: "패킷 분석 — Modbus TCP·MC(SLMP)·LS XGT 요청/응답 짝, 응답 시간·무응답, 실시간 캡처", en: "Packet analyzer — Modbus TCP, MC (SLMP) and LS XGT request/response pairing, response times, unanswered requests, live capture" },
+    seo: {
+      title: { ko: "PortDock Packet — Modbus·MC·XGT 패킷 분석 (무료)", en: "PortDock Packet — Modbus, MC & XGT Packet Analyzer (Free)" },
+      desc: {
+        ko: "PLC·HMI·인버터 통신을 캡처해 응답 시간·무응답·예외를 한눈에 보는 무료 윈도우 도구. Modbus TCP·MC(SLMP)·LS XGT 해석, 평문 진단, 설치 없이 실시간 캡처.",
+        en: "Free Windows tool: capture PLC and HMI traffic and see response times, unanswered requests and exceptions. Decodes Modbus TCP, MC (SLMP) and LS XGT.",
+      },
+    },
+    summary: {
+      ko: "PLC·HMI·인버터가 주고받는 통신을 캡처하거나 pcap·pcapng 파일로 열어, 요청과 응답을 짝지어 보여 줍니다. 맨 위에 응답 시간(최소·중앙·95%·최대)과 «무응답»·«예외» 수가 요약되고, 눌러서 그 패킷만 걸러 볼 수 있습니다. Modbus TCP·MC(SLMP)·LS XGT FEnet 을 풀고, 재전송·무응답·예외는 «Expert» 탭에서 원인과 다음에 볼 곳을 평문으로 설명합니다. 읽기·듣기만 하고 패킷을 만들어 보내지 않습니다.",
+      en: "Captures the traffic between PLCs, HMIs and drives, or opens pcap/pcapng files, and pairs every request with its response. The top bar summarizes response time (min, median, 95th percentile, max) and the number of unanswered requests and exceptions — click one to filter to those packets. It decodes Modbus TCP, MC (SLMP) and LS XGT FEnet, and the «Expert» tab explains retransmissions, unanswered requests and exceptions in plain words with what to check next. It only listens — it never sends packets.",
+    },
+    who: [
+      { ko: "HMI 와 PLC 사이가 «가끔 느리다»·«가끔 응답이 없다» 를 숫자로 보고 싶은 현장 엔지니어", en: "Field engineers who want numbers for «sometimes slow» or «sometimes no reply» between an HMI and a PLC" },
+      { ko: "Modbus TCP·MC·XGT 통신을 바이트 단위로 확인하는 설비·제어 개발자", en: "Machine and control developers checking Modbus TCP, MC or XGT traffic byte by byte" },
+      { ko: "Wireshark 필터 문법은 아는데 산업 프로토콜 집계까지 한 화면에서 보고 싶은 분", en: "People who know Wireshark's filter syntax and want industrial protocol statistics on the same screen" },
+    ],
+    features: [
+      { title: { ko: "요청/응답 짝·응답 시간", en: "Request/response pairing and response time" }, body: { ko: "요청과 응답을 짝지어 목록에 «응답 시간» 열을 보이고, 응답이 없으면 빨간 «무응답» 으로 표시합니다. 맨 위 띠에 프로토콜별 최소·중앙·95%·최대와 무응답·예외 수가 나옵니다.", en: "Pairs requests with responses, shows a «response time» column and marks a missing reply as a red «no response». The top bar gives min, median, 95th percentile and max per protocol with the counts of unanswered requests and exceptions." } },
+      { title: { ko: "Modbus TCP·MC(SLMP)·LS XGT 해석", en: "Modbus TCP, MC (SLMP) and LS XGT decoding" }, body: { ko: "일반 프로토콜(이더넷·ARP·IP·TCP·UDP·DNS·DHCP)에 더해 세 산업 프로토콜을 해석 트리로 풉니다. 필드를 누르면 바이트 칸에서 그 범위가 강조됩니다.", en: "Besides the general protocols (Ethernet, ARP, IP, TCP, UDP, DNS, DHCP) it decodes three industrial protocols into a tree. Click a field to highlight its bytes." } },
+      { title: { ko: "«왜 안 되지» 평문 진단", en: "Plain-words «why isn't it working»" }, body: { ko: "재전송·무응답·예외 코드(Modbus 예외, MC 종료 코드, XGT 오류)를 Expert 탭이 뜻과 «다음에 볼 곳» 으로 설명합니다.", en: "The Expert tab explains retransmissions, unanswered requests and exception codes (Modbus exceptions, MC end codes, XGT errors) with what to check next." } },
+      { title: { ko: "Wireshark 문법 표시 필터", en: "Wireshark-style display filter" }, body: { ko: "tcp.port == 502, modbus.func_code == 3 같은 식을 입력하는 동안 초록·빨강으로 검사하고 틀린 곳과 이유를 알려 줍니다. 버튼(«오류만»·«무응답»)과 필드 우클릭으로도 식이 채워집니다.", en: "Expressions such as tcp.port == 502 or modbus.func_code == 3 are checked as you type, with the mistake and reason shown. Buttons («errors only», «no response») and right-clicking a field fill the expression for you." } },
+      { title: { ko: "대화·끝점·흐름 따라가기·응답 시간 분포", en: "Conversations, endpoints, follow flow, response-time distribution" }, body: { ko: "대화·끝점 표, TCP 흐름 따라가기, 구간별 응답 시간 막대로 «가끔 크게 늦는» 장비를 찾습니다.", en: "Conversation and endpoint tables, TCP flow following and a response-time distribution bar chart help you find a device that is only occasionally very late." } },
+      { title: { ko: "장비 맵으로 레지스터 이름", en: "Register names from device maps" }, body: { ko: "PortDock 장비 맵을 고르면 Modbus 응답의 레지스터 주소가 장비의 이름·단위로 해석 트리에 붙습니다.", en: "Pick a PortDock device map and Modbus register addresses appear in the tree with the device's names and units." } },
+      { title: { ko: "설치 없는 실시간 캡처", en: "Live capture with nothing to install" }, body: { ko: "Windows 11 내장 Packet Monitor 를 써서 드라이버를 따로 설치하지 않습니다. 관리자 권한이 필요하며(허용 창 한 번), 이 PC 를 지나는 통신만 보입니다. 127.0.0.1 통신은 잡히지 않습니다.", en: "Uses the Packet Monitor built into Windows 11, so no driver to install. Administrator rights are needed (one permission prompt) and only traffic passing through this PC is visible. Traffic to 127.0.0.1 is not captured." } },
+    ],
+    steps: [
+      { ko: "«캡처» 에서 어댑터를 고르고 «캡처 시작» (또는 pcap·pcapng 파일을 끌어 놓기)", en: "Pick an adapter under «Capture» and press «Start capture» (or drop a pcap/pcapng file)" },
+      { ko: "맨 위 띠에서 응답 시간과 «무응답»·«예외» 수 보기 — 눌러서 그 패킷만 걸러 보기", en: "Read response times and the «no response» and «exception» counts in the top bar — click to filter to those packets" },
+      { ko: "패킷을 눌러 해석 트리·바이트를 보고 «Expert» 탭에서 다음에 볼 곳 읽기", en: "Click a packet for the tree and bytes, then read what to check next in the «Expert» tab" },
+    ],
+    faq: [
+      {
+        q: { ko: "관리자 권한이 꼭 필요한가요?", en: "Do I need administrator rights?" },
+        a: { ko: "실시간 캡처에만 필요합니다. 파일을 열어 분석하는 데는 필요 없습니다. 캡처를 누르면 «관리자로 다시 시작» 단추가 나오고 Windows 허용 창이 한 번 뜹니다.", en: "Only for live capture. Opening and analyzing files does not need it. Pressing Capture shows a «Restart as administrator» button and Windows asks for permission once." },
+      },
+      {
+        q: { ko: "PLC 와 HMI 사이 통신이 다 보이나요?", en: "Will I see all traffic between a PLC and an HMI?" },
+        a: { ko: "이 PC 를 지나는 통신만 보입니다. 스위치 너머의 다른 기기끼리 통신은 미러링 포트가 있어야 보입니다.", en: "Only traffic passing through this PC. Traffic between other devices beyond a switch needs a mirror port." },
+      },
+      {
+        q: { ko: "패킷을 만들어 보내나요?", en: "Does it send packets?" },
+        a: { ko: "아닙니다. 듣기만 합니다. 패킷을 만들거나 재생·주입하지 않고, 파일·캡처 내용을 밖으로 보내지 않습니다.", en: "No. It only listens. It never crafts, replays or injects packets and never sends file or capture contents anywhere." },
+      },
+    ],
+    similar: {
+      ko: "비슷한 도구로 Wireshark(무료·오픈소스, 범용)가 있습니다. PortDock Packet 은 무료(GPL-3.0)·한국어이고, 범용 기능을 겨루지 않고 PLC·HMI 통신의 응답 시간·무응답 집계와 평문 진단에 집중합니다. 표준 pcap·pcapng 파일을 읽습니다.",
+      en: "A similar tool is Wireshark (free, open source, general purpose). PortDock Packet is free (GPL-3.0) and does not compete on general features; it focuses on response-time and no-response statistics and plain-words diagnostics for PLC and HMI traffic. It reads standard pcap and pcapng files.",
+    },
+    help: packetHelp,
   },
   {
     id: "mcp",

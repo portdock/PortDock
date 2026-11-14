@@ -170,6 +170,8 @@ pub mod apps {
     pub const PLC_SIMULATOR: AppId = AppId { product: "PortDock PLC Simulator", asset: "PLC-Simulator", bin: "portdock-plc-simulator" };
     /// Hardware Tester(0.4.x) — 아직 여는 대상(Target)은 없고 이름만 맞춰 둔다. 이름 겹침을 피해 늘 «PortDock» 을 붙인다
     pub const HW_TESTER: AppId = AppId { product: "PortDock Hardware Tester", asset: "Hardware-Tester", bin: "portdock-hw-tester" };
+    /// Packet(0.12.0) — 여는 대상(Target)은 없고 이름만 맞춰 둔다
+    pub const PACKET: AppId = AppId { product: "PortDock Packet", asset: "Packet", bin: "portdock-packet" };
 }
 
 /// 열 프로그램과 넘길 값 — 화면이 보낸 것(JSON). 글자를 그대로 옮기지 않고 아래 검사를 거친 값으로 인자를 만든다
@@ -386,5 +388,6 @@ mod tests {
         check(apps::MODBUS_MASTER, "modbus-master", include_str!("../../../apps/modbus-master/src-tauri/tauri.conf.json"), include_str!("../../../apps/modbus-master/src-tauri/Cargo.toml"));
         check(apps::PLC_SIMULATOR, "plc-simulator", include_str!("../../../apps/plc-simulator/src-tauri/tauri.conf.json"), include_str!("../../../apps/plc-simulator/src-tauri/Cargo.toml"));
         check(apps::HW_TESTER, "hw-tester", include_str!("../../../apps/hw-tester/src-tauri/tauri.conf.json"), include_str!("../../../apps/hw-tester/src-tauri/Cargo.toml"));
+        check(apps::PACKET, "packet", include_str!("../../../apps/packet/src-tauri/tauri.conf.json"), include_str!("../../../apps/packet/src-tauri/Cargo.toml"));
     }
 }

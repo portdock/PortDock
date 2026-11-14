@@ -1253,7 +1253,8 @@ const pages8Of = (l: (typeof EXTRA_LANGS)[number]): Page8Id[] => (MORE[l] ?? [])
 
 test("8차 묶음 사전 — 번역 범위(MORE)의 쪽마다 기준판(ja)과 같은 모양의 글·화면 공통 글이 있다", () => {
   const ja8 = DICTS8.ja!;
-  const appIds = Object.keys(toolsEn());
+  // Packet(0.12.0) 소개는 한·영만 — 추가 언어 번역은 사용자 반응을 본 뒤(번역 안 한 쪽은 만들지 않는다)
+  const appIds = Object.keys(toolsEn()).filter((id) => id !== "packet");
   assert.deepEqual(Object.values(SCOPE8).sort(), [...appIds].sort(), "SCOPE8 = data/tools.ts 의 앱 id 전부");
   assert.deepEqual(SCOPE8_PATHS.map((p) => p.replace(/\/$/, "")).sort(), [...appIds].sort(), "SCOPE8 경로 = <앱 id>/");
   assert.deepEqual(Object.keys(ja8.pages).sort(), Object.values(SCOPE8).sort(), "ja 8차 묶음 쪽 글 = SCOPE8");

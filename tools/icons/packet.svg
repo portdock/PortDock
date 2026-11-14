@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- PortDock Packet (패킷 목록 — 세 줄, 가운데 줄이 골라진 패킷) — 배경: 앱 색(하늘 700). 16px 에서도 읽히게 굵은 획만 쓴다 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#0369a1"/>
+  <rect x="48" y="60" width="160" height="30" rx="15" fill="#ffffff" fill-opacity="0.85"/>
+  <rect x="48" y="113" width="160" height="30" rx="15" fill="#fbbf24"/>
+  <rect x="48" y="166" width="110" height="30" rx="15" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

@@ -1,6 +1,6 @@
 # 릴리스 절차
 
-모든 프로그램(12개)을 한 번에, 같은 버전으로 낸다. 빌드·업로드는 GitHub Actions(`.github/workflows/release.yml`)가 하고, 사람은 버전을 올리고 태그를 달고, 초안을 확인해 공개한다.
+모든 프로그램(13개)을 한 번에, 같은 버전으로 낸다. 빌드·업로드는 GitHub Actions(`.github/workflows/release.yml`)가 하고, 사람은 버전을 올리고 태그를 달고, 초안을 확인해 공개한다.
 
 ## 올라가는 파일
 
@@ -14,7 +14,7 @@
 | `PortDock-MCP.zip` · `PortDock-MCP.mcpb` | MCP 서버(`portdock-mcp.exe`) — `build-mcp` 작업(앱 matrix 와 따로). 내용·레지스트리 등록은 [mcp.md](mcp.md) «배포» |
 | `SHA256SUMS.txt` | 위 파일 모두의 SHA-256 |
 
-`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` · `Port-Inspector` · `PLC-Simulator` · `Hardware-Tester` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
+`<App>` = `Serial` · `Modbus-Slave` · `TCP` · `UDP` · `Simulator` · `Net-Scan` · `Modbus-Master` · `SCPI` · `Plot` · `Port-Inspector` · `PLC-Simulator` · `Hardware-Tester` · `Packet` (`release.yml` 의 matrix `asset`). 소스 압축본(zip·tar.gz)은 GitHub 가 태그마다 자동으로 붙인다(GPL 소스 제공).
 
 ## 설치판과 휴대판의 차이
 
@@ -48,7 +48,7 @@
    git tag v0.2.0
    git push origin main v0.2.0
    ```
-5. **Actions 확인** — `release` 워크플로가 모든 앱(12개)을 병렬로 빌드하고 «초안(draft)» 릴리스를 만든다. (태그 없이 시험하려면 Actions 화면에서 *Run workflow* — 빌드 결과만 artifact 로 남고 릴리스는 만들지 않는다.)
+5. **Actions 확인** — `release` 워크플로가 모든 앱(13개)을 병렬로 빌드하고 «초안(draft)» 릴리스를 만든다. (태그 없이 시험하려면 Actions 화면에서 *Run workflow* — 빌드 결과만 artifact 로 남고 릴리스는 만들지 않는다.)
 6. **초안 검사**
    - 설치판 하나를 깨끗한 PC(또는 Windows Sandbox)에서 설치 → 실행 → 설정 «정보» 의 버전 확인 → 제거.
    - 휴대판 zip 을 풀어 실행 → `portdock-data` 에 `EBWebView` 폴더가 생기는지 확인.
@@ -70,7 +70,7 @@
 
 ## 아이콘
 
-원본은 `tools/icons/*.svg`(앱마다 색과 글자: S 청록 `#0b6e75`(Serial), M 남색 `#4338ca`(Modbus Slave), T 파랑 `#1d4ed8`(TCP), U 보라 `#7c3aed`(UDP), Σ 호박색 `#b45309`(Simulator), N 초록 `#15803d`(Net Scan), M▶ 짙은 남색 `#3730a3`(Modbus Master), S? 자홍 `#be185d`(SCPI), 값 선 빨강 `#b91c1c`(Plot), 돋보기 청회색 `#475569`(Port Inspector), 제어기 몸통·단자 벽돌색 `#9a3412`(PLC Simulator), Wi-Fi 부채꼴 짙은 시안 `#0e7490`(Hardware Tester); `portdock.svg` 는 글자 없는 기본 마크). 바꾸면:
+원본은 `tools/icons/*.svg`(앱마다 색과 글자: S 청록 `#0b6e75`(Serial), M 남색 `#4338ca`(Modbus Slave), T 파랑 `#1d4ed8`(TCP), U 보라 `#7c3aed`(UDP), Σ 호박색 `#b45309`(Simulator), N 초록 `#15803d`(Net Scan), M▶ 짙은 남색 `#3730a3`(Modbus Master), S? 자홍 `#be185d`(SCPI), 값 선 빨강 `#b91c1c`(Plot), 돋보기 청회색 `#475569`(Port Inspector), 제어기 몸통·단자 벽돌색 `#9a3412`(PLC Simulator), Wi-Fi 부채꼴 짙은 시안 `#0e7490`(Hardware Tester), 패킷 목록 세 줄 하늘색 `#0369a1`(Packet); `portdock.svg` 는 글자 없는 기본 마크). 바꾸면:
 
 ```powershell
 npx tauri icon tools/icons/serial.svg -o apps/serial/src-tauri/icons

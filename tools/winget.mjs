@@ -33,6 +33,7 @@ const TAGS = {
   "port-inspector": ["com-port", "serial", "usb-serial", "ftdi", "driver", "loopback"],
   "plc-simulator": ["plc", "mc-protocol", "slmp", "simulator", "hmi", "test-tool"],
   "hw-tester": ["wifi", "bluetooth", "ping", "packet-loss", "latency", "network"],
+  packet: ["packet-analyzer", "pcap", "pcapng", "modbus-tcp", "slmp", "mc-protocol", "network"],
 };
 
 /** YAML 문자열 — JSON 큰따옴표 문자열은 YAML 큰따옴표 문자열로도 같은 뜻 */

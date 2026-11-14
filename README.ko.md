@@ -23,6 +23,7 @@
 | **PortDock Port Inspector** | COM 포트 읽기 전용 점검(관리자 권한 없이) — 장치·드라이버(제공자·버전·날짜·INF), 장치 관리자 문제 코드와 뜻·해 볼 것, VID/PID 로 본 USB 칩(FTDI·Prolific·WCH·Silicon Labs 등), FTDI 지연 타이머 같은 장치 설정, USB 절전, 이벤트 로그의 연결·드라이버 기록, COM 번호 예약(주인 없는·겹친 번호). TX–RX 루프백으로 속도마다 잃은·바뀐 바이트와 왕복 시간(ms), 2선 RS-485 에코 확인. 0.10.0 부터 두 포트 시험(변환기 두 개를 서로 이어 양방향)·무늬(0x00~0xFF·0x55/0xAA)·잇는 법 그림 — Serial «연결 점검…» 에서도. 0.10.0 부터 «지난번과 비교»(점검 결과를 저장해 두고 나중에 바뀐 것만: COM 번호·드라이버 버전/날짜·USB 위치·랜카드·PC 설정·새 블루스크린, 일련번호는 넣지 않음). 그 밖에 «이 PC 랜카드»(링크 속도·이중·점보 프레임·절전, GigE 카메라 용도), «이 PC»(빠른 시작·절전·업데이트 재시작·시간 동기화·예기치 않은 종료 등 장비 PC 설정, 0.10.0 부터 블루스크린·갑자기 꺼짐 — 정지 코드·Kernel-Power 41·EventLog 6008, Minidump 는 개수·날짜만 — ·NVMe 저장장치 수명·절전을 깨운 원인·배터리 용량·현장 PC 노출 점검 — 원격 데스크톱·NLA·SMBv1·방화벽 프로필·모든 주소에 연 포트·자동 로그온·USB 자동 실행), «무선»(Wi-Fi 어댑터 절전·끊김 기록, 블루투스 어댑터·서비스·핸즈프리 소리) 탭. 텍스트·JSON 내보내기. 설정은 바꾸지 않음 |
 | **PortDock PLC Simulator** | MC 프로토콜(SLMP) 서버 흉내 — 미쓰비시 공개 매뉴얼 기준 구현(제휴 아님, 실제 PLC 와 동작이 다를 수 있음). 3E/4E 프레임·이진/ASCII·TCP 서버 또는 UDP, 일괄·랜덤 읽기쓰기·루프백, 디바이스 18종(D·W·R·ZR·M·X·Y·B·L·SM·SD …, X·Y·B·W·ZR 는 16진 번호), 종료 코드 오류 응답, 장애 주입, 값 자동 변화, JSON 저장·불러오기. 0.10.0 부터 LS ELECTRIC XGT 전용 프로토콜(FEnet, TCP 2004 · UDP 2005 — %MW·%MX·%DB… 변수 개별·연속 읽기쓰기, LS ELECTRIC 공개 사용설명서 기준·제휴 아님)에도 답함. 기본은 127.0.0.1 에서만 받고, «다른 PC 에서 연결 허용 (0.0.0.0)» 을 켜면 같은 망에서 연결 가능. |
 | **PortDock Hardware Tester** | 윈도우 PC 의 Wi-Fi·블루투스·USB 기록기(관리자 권한 없이 읽기만): 기록을 켠 동안만 게이트웨이와 인터넷 주소 하나에 핑을 나란히(지연·손실·흔들림), DNS 응답 시간과 Windows 가 남긴 Wi-Fi 끊김 이유를 한 시간축에, «공유기 쪽 / 공유기 너머» 볼 곳 요약·CSV 저장. 짝지은 블루투스 장치의 연결·끊김 기록(이름은 화면에만), 블루투스 소리 모드(스테레오/핸즈프리)·좌우 시험 소리, 누를 때만 Wi-Fi 신호·링크 속도·대역·채널과 채널별 주변 Wi-Fi 수(Windows 11 24H2 부터 위치 권한, 네트워크 이름은 읽지 않음). 0.10.0 부터 USB 연결·끊김 기록(장치 알림 + 3초마다 목록 견줌, 이름·VID:PID·허브 포트·속도, 10분 안에 3번 이상 끊기면 «반복 끊김 의심», USB 3 장치가 2.0 속도로 붙으면 «볼 것», Kernel-PnP 로그의 «지난 기록» — 장치 일련번호는 화면·복사·저장에 넣지 않음). 키보드·마우스·모니터·스피커·마이크·웹캠·게임패드 시험은 사이트의 [PC 하드웨어 테스트](https://portdock.dev/tools/#g-hw)(브라우저, 설치 없음)로. |
+| **PortDock Packet** | 산업 네트워크용 패킷 분석: pcap·pcapng 파일을 열거나 실시간 캡처(Windows 11 내장 Packet Monitor — 설치할 것 없음, 관리자 권한·허용 창 한 번, 이 PC 를 지나는 통신만·127.0.0.1 은 안 잡힘). 이더넷·ARP·IP·TCP·UDP·DNS·DHCP 에 더해 Modbus TCP·MC(SLMP)·LS XGT FEnet 해석, 요청/응답 짝과 응답 시간(최소·중앙·95%·최대)·무응답·예외 요약, 평문 «Expert» 진단, Wireshark 문법 표시 필터, 대화·끝점, TCP 흐름 따라가기, 장비 맵 레지스터 이름. 듣기만 하고 패킷을 만들어 보내지 않습니다. |
 | **PortDock MCP** | AI 클라이언트(Claude Desktop·VS Code·Cursor 등)용 MCP 서버, 창 없음·stdio: AI 가 COM 포트 목록과 Port Inspector 보고서를 *읽고*, 시리얼을 듣고(보내지 않음), Modbus(FC 01~04)·MC 프로토콜 3E(0401)·SCPI 질의로 값을 읽고, 핑·랜카드·내장 장비 레지스터 맵을 봅니다. 쓰기 도구 두 개는 127.0.0.1(이 PC) 주소만 받아 시뮬레이터 연습용입니다. 0.10.0 부터 `modbus_write_sim` 은 대상이 장치 식별(FC 2B/0E)에 «PortDock» 으로 시작하는 제조사로 답할 때만 씁니다(PortDock Modbus Slave 의 기본값) — 그래서 PortDock Serial 의 Modbus TCP ↔ RTU 게이트웨이(기본 127.0.0.1:502)처럼 실장비로 넘겨 주는 곳에는 쓰지 않습니다. `mc_write_sim` 은 주소로만 판정하므로(Serial 게이트웨이는 Modbus 만 넘김), 이 PC 에서 다른 장비로 넘겨 주는 프로그램(TCP 중계·게이트웨이·터널)을 띄운 채 쓰지 마세요. 모든 호출은 이 PC 의 세션 기록에 남습니다. 자세히: [docs/mcp.md](docs/mcp.md) |
 
 열두 앱 공통: 머리줄 «AI» 단추 — 지금 상황(연결 설정·오류·최근 통신 기록 또는 점검 결과)을 AI 채팅에 붙여 넣을 글로 클립보드에 복사합니다. PortDock 은 아무 데도 보내지 않습니다(사용자 폴더·PC 이름·MAC 뒤쪽·공인 IP 는 가림).
@@ -49,6 +50,7 @@
 | Port Inspector | [PortDock-Port-Inspector-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-setup.exe) | [PortDock-Port-Inspector-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Port-Inspector-portable.zip) |
 | PLC Simulator | [PortDock-PLC-Simulator-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-setup.exe) | [PortDock-PLC-Simulator-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-PLC-Simulator-portable.zip) |
 | Hardware Tester | [PortDock-Hardware-Tester-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-setup.exe) | [PortDock-Hardware-Tester-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Hardware-Tester-portable.zip) |
+| Packet | [PortDock-Packet-setup.exe](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Packet-setup.exe) | [PortDock-Packet-portable.zip](https://github.com/portdock/PortDock/releases/latest/download/PortDock-Packet-portable.zip) |
 
 윈도우 10·11, x64.
 
@@ -89,7 +91,7 @@ PortDock 은 창을 그릴 때 Microsoft Edge WebView2 를 씁니다. 윈도우 
 
 ## 검사
 
-push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열두 앱의 화면 빌드·타입 검사, Node 시험 346개(`shared/`·앱·도구), 장비 레지스터 맵 검사(77종·레지스터 2987개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 467개(459개 실행, 8개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
+push·풀 리퀘스트마다 Windows 에서 자동으로 검사합니다([ci.yml](.github/workflows/ci.yml)): 열세 앱의 화면 빌드·타입 검사, Node 시험 346개(`shared/`·앱·도구), 장비 레지스터 맵 검사(77종·레지스터 2987개), 경고를 실패로 보는 `cargo clippy`, Rust 시험 467개(459개 실행, 8개 제외), 제3자 고지·설치 안내문 검사, 사이트 검사·시험·빌드와 빌드된 페이지 검사(제목·링크·구조화 데이터·sitemap). 코드 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 소스에서 빌드
 
@@ -100,7 +102,7 @@ git clone https://github.com/portdock/PortDock
 cd PortDock
 npm install
 
-npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator · hw-tester 도 같음)
+npm run serial            # 개발 모드로 실행 (modbus-slave · tcp · udp · simulator · netscan · modbus-master · scpi · plot · port-inspector · plc-simulator · hw-tester · packet 도 같음)
 npm run build:serial      # 설치판 → target\release\bundle\nsis\
 cargo test --workspace    # 테스트
 
