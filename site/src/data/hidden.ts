@@ -26,11 +26,18 @@ export const HIDDEN_PATHS: ReadonlySet<string> = new Set([
   "guides/pneumatic-cylinder-force/",
 ]);
 
+/** 번역 언어 숨김(사용자 11/13 «언어 숨겨») — 원어민 검토 전까지 검색에서 뺀다. 쪽은 남고 언어 선택으로 들어오면 열린다. 일본어만 노출이 있어 둔다.
+ *  다시 열려면 여기서 지운다(검토를 마친 언어부터) */
+export const HIDDEN_LANGS: ReadonlySet<string> = new Set(["de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
+export const isHiddenLang = (lang: string) => HIDDEN_LANGS.has(lang);
+
 export const isHiddenPath = (path: string) => HIDDEN_PATHS.has(path);
 export const isHiddenSlug = (slug: string) => HIDDEN_PATHS.has(`guides/${slug}/`);
 
 /** sitemap 용 — 완성 주소(언어 접두 포함)에서 언어를 뺀 경로를 만들어 판정 */
 export const isHiddenUrl = (u: string) => {
+  const lang = new URL(u).pathname.split("/")[1];
+  if (isHiddenLang(lang)) return true;
   const p = new URL(u).pathname.replace(/^\/(?:en|ja|de|es|pt|pl|fr|vi|tr|it|id)\//, "/").replace(/^\//, "");
   return HIDDEN_PATHS.has(p);
 };

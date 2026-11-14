@@ -26,12 +26,12 @@ interface Props {
   libText?: readonly LibSection[];
 }
 const { lang, title, description, path, ads = false, seoTitle, noindex: noindexProp = false, ogType = "website", libText = [] } = Astro.props;
-const noindex = noindexProp || isHiddenPath(path);
+const noindex = noindexProp || isHiddenPath(path) || isHiddenLang(lang);
 const t = ui(lang);
 const site = Astro.site!;
 const here = new URL(url(lang, path), site).href;
 // 이 쪽이 있는 언어들 — 서로 모두 가리킨다(빠지면 검색엔진이 무시한다)
-const alternates = langsOf(path).map((l) => ({ lang: l, href: new URL(url(l, path), site).href }));
+const alternates = langsOf(path).filter((l) => !isHiddenLang(l)).map((l) => ({ lang: l, href: new URL(url(l, path), site).href }));
 const enUrl = new URL(url("en", path), site).href;
 const go = (p = "") => link(lang, p);
 const libJson = isExtra(lang) && libText.length ? JSON.stringify(libCatalog(lang, libText)).replace(/</g, "\\u003c") : "";
@@ -45,7 +45,7 @@ const adsenseClient = ADSENSE_CLIENT;
 const naverVerify = import.meta.env.PUBLIC_NAVER_SITE_VERIFICATION || "64cb1920e3c09d3df5cc3cab1fdcc65d30247011"; // 네이버 서치어드바이저(https://portdock.dev) — 지우지 않는다
 const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION || "Ou5LSmDQdGQwykHcdQmPRAEAq0GfLKa8nsOWjnFhE8w"; // Search Console(https://portdock.dev/ 속성, portdock.contact) — 지우지 않는다
 import { ADSENSE_CLIENT } from "../lib/ads";
-import { isHiddenPath } from "../data/hidden";
+import { isHiddenLang, isHiddenPath } from "../data/hidden";
 ---
 
 <!doctype html>
