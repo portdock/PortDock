@@ -646,7 +646,6 @@ export const TOOLS: Tool[] = [
     name: "PortDock Packet",
     file: "PortDock-Packet",
     tagline: { ko: "패킷 분석 — Modbus TCP·MC(SLMP)·LS XGT 요청/응답 짝, 응답 시간·무응답, 실시간 캡처", en: "Packet analyzer — Modbus TCP, MC (SLMP) and LS XGT request/response pairing, response times, unanswered requests, live capture" },
-    upcoming: true, // 0.12.0 릴리스를 공개하면 지운다(docs/release.md 7)
     seo: {
       title: { ko: "PortDock Packet — Modbus·MC·XGT 패킷 분석 (무료)", en: "PortDock Packet — Modbus, MC & XGT Packet Analyzer (Free)" },
       desc: {
