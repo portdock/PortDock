@@ -26,7 +26,7 @@ export const HIDDEN_PATHS: ReadonlySet<string> = new Set([
   "guides/pneumatic-cylinder-force/",
 ]);
 
-/** 번역 언어 숨김(사용자 11/13 «언어 숨겨») — 원어민 검토 전까지 검색에서 뺀다. 쪽은 남고 언어 선택으로 들어오면 열린다. 일본어만 노출이 있어 둔다.
+/** 번역 언어 숨김 — 원어민 검토 전까지 검색에서 뺀다. 쪽은 남고 언어 선택으로 들어오면 열린다. 일본어만 노출이 있어 둔다.
  *  다시 열려면 여기서 지운다(검토를 마친 언어부터) */
 export const HIDDEN_LANGS: ReadonlySet<string> = new Set(["de", "es", "pt", "pl", "fr", "vi", "tr", "it", "id"]);
 export const isHiddenLang = (lang: string) => HIDDEN_LANGS.has(lang);
