@@ -1,0 +1,25 @@
+[package]
+name = "portdock-packet-app"
+description = "PortDock Packet — 패킷 파일 분석(Modbus·MC·XGT 해석, 요청/응답 짝·응답 시간, Expert)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "portdock_packet_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+portdock-core = { path = "../../../crates/core" }
+portdock-packet = { path = "../../../crates/packet" }
+portdock-capture = { path = "../../../crates/capture" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-window-state = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

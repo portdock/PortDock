@@ -1,0 +1,59 @@
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5f6b78;
+  --line: #d9dee4;
+  --accent: #0b6e75;
+  --accent-ink: #ffffff;
+  --rx: #1d4ed8;
+  --tx: #0f7a3d;
+  --sel: #e6f2f3;
+  --ok: #0f7a3d;
+  --fail: #b42318;
+  --danger: #b42318;
+  --mono: "Cascadia Mono", Consolas, "D2Coding", "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Segoe UI", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --panel: #181c21;
+    --ink: #e4e8ec;
+    --muted: #93a0ad;
+    --line: #2a3038;
+    --accent: #4fb3ba;
+    --accent-ink: #0b1215;
+    --rx: #7aa7ff;
+    --tx: #6ccf92;
+    --sel: #1f2c30;
+    --ok: #6ccf92;
+    --fail: #ff8a80;
+    --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+}
+
+
+/* 실시간 캡처 */
+.rec { color: #ff6b6b; font-weight: 600; }
+.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+.cap-form { display: grid; gap: 10px; }
+.cap-form label { display: grid; gap: 4px; font-size: 13px; }
+.cap-form select, .cap-form input { padding: 6px 8px; }

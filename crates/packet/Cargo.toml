@@ -1,0 +1,16 @@
+[package]
+name = "portdock-packet"
+description = "PortDock Packet 엔진 — pcap/pcapng 읽기·쓰기, 해석 트리, TCP 조립, 산업 프로토콜(Modbus·MC·XGT), 표시 필터, 통계"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# 큰 파일은 메모리 지도로 — 패킷 바이트를 복사해 쌓지 않고 (오프셋·길이·시각) 색인만 메모리에 둔다
+memmap2 = "0.9"
+# 표시 필터 `matches` 연산자
+regex = "1"
+# 장비 맵(data/devices/*.json) 읽기
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

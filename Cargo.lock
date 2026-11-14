@@ -2820,6 +2820,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "portdock-capture"
+version = "0.11.0"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "portdock-core"
 version = "0.11.0"
 dependencies = [
@@ -2906,6 +2913,32 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-window-state",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "portdock-packet"
+version = "0.11.0"
+dependencies = [
+ "memmap2",
+ "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "portdock-packet-app"
+version = "0.11.0"
+dependencies = [
+ "portdock-capture",
+ "portdock-core",
+ "portdock-packet",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-window-state",
 ]
 
 [[package]]
